@@ -8,30 +8,131 @@ import Numlib.Analysis.Calculus.Taylor
 import Mathlib.Topology.Order.MonotoneConvergence
 import Mathlib.Analysis.SpecificLimits.Basic
 
-/-! # Generalized Cauchy decrease -/
+/-!
+# Conn, Gould and Toint, Section 12.2: Generalized Cauchy decrease
+
+This module formalizes Section 12.2 of [conn2000trust] on the trust-region method for minimizing $f$
+over a closed convex set $C$ in a real Hilbert space $E$. An approximate generalized Cauchy point
+(12.2.1)–(12.2.4) is a point $z = p(t)$ of the projected-gradient path
+$p(t) = P_C(x - t \nabla f(x))$ that lies in the trust region, decreases the model $m$ by a fixed
+fraction of the linear decrease, and is not too short. Theorem 12.2.2 shows that such a point
+decreases the model by a multiple of $\chi \min\{\chi/\beta, \Delta, 1\}$, where $\chi = \chi(x, 1)$
+is the criticality measure (12.1.13) and $\beta$ bounds the curvature of the model. Algorithm 12.2.2
+searches for such a point by doubling and bisection of $t$, and Theorem 12.2.1 shows that the search
+terminates at a noncritical point when the model gradient agrees with the objective gradient. A
+feasible run of the trust-region Algorithm 12.2.1 whose steps decrease the model at least as much as
+a fraction of the generalized Cauchy decrease converges to first-order critical points (Section
+12.2.2).
+
+The path and the criticality measure come from `NumlibSurface.ConnGouldToint.Chapter12.Section01`,
+and the run is `ConnGouldToint.Chapter06.BTRRun` of Chapter 6.
+
+## Main definitions
+
+* Equation (12.2.3), `ConnGouldToint.Chapter12.GeneralizedCauchyParams`: the constants of the
+  search.
+* Equations (12.2.1)–(12.2.4), `ConnGouldToint.Chapter12.IsApproxGeneralizedCauchyPoint`: an
+  approximate generalized Cauchy point.
+* Equation (12.2.15), `ConnGouldToint.Chapter12.cappedCriticality`: the capped criticality measure
+  $\pi(x) = \min\{1, \chi(x, 1)\}$.
+* Algorithm 12.2.2, `ConnGouldToint.Chapter12.CauchySearchState`,
+  `ConnGouldToint.Chapter12.cauchySearchStep` and `ConnGouldToint.Chapter12.cauchySearchIterate`:
+  the bracket states and the iteration of the search.
+* Algorithm 12.2.2, `ConnGouldToint.Chapter12.InfiniteCauchySearch`: an infinite nonterminating
+  trace of the search.
+
+## Main results
+
+* Theorem 12.2.1, `ConnGouldToint.Chapter12.theorem_12_2_1`: at a noncritical point, with
+  model-gradient agreement, the search has no infinite nonterminating trace.
+* Theorem 12.2.1, termination, `ConnGouldToint.Chapter12.theorem_12_2_1_terminates`: Algorithm
+  12.2.2 reaches an approximate generalized Cauchy point for every positive initial trial.
+* Theorem 12.2.1, critical points,
+  `ConnGouldToint.Chapter12.isApproxGeneralizedCauchyPoint_of_normal`: a first-order critical point
+  is its own approximate generalized Cauchy point.
+* Theorem 12.2.1, bisection argument, `ConnGouldToint.Chapter12.not_infiniteCauchySearch`: scalar
+  conditions on the tests that exclude an infinite nonterminating trace.
+* Theorem 12.2.1, finite stopping, `ConnGouldToint.Chapter12.exists_cauchySearch_accept`: without
+  infinite traces, the iteration reaches a parameter that passes the tests.
+* Theorem 12.2.1, counterexample,
+  `ConnGouldToint.Chapter12.theorem_12_2_1_without_model_gradient_agreement_counterexample`: with
+  opposite model and objective gradients, no approximate generalized Cauchy point exists.
+* Theorem 12.2.2, `ConnGouldToint.Chapter12.theorem_12_2_2`: an approximate generalized Cauchy point
+  gives the decrease $\kappa \chi \min\{\chi/\beta, \Delta, 1\}$.
+* Theorem 12.2.2, with an explicit Taylor estimate,
+  `ConnGouldToint.Chapter12.theorem_12_2_2_of_taylor_bound`: the same decrease bounds from a
+  quadratic upper bound on the model error at the trial point.
+* Equation (12.2.15), `ConnGouldToint.Chapter12.cappedCriticality_decrease`: the decrease bound in
+  terms of the capped measure $\pi$.
+* Section 12.2.2, `ConnGouldToint.Chapter12.feasible_cauchy_run_firstOrder_convergence`: a feasible
+  run has $\pi(x_k) \to 0$ and $\chi(x_k, 1) \to 0$, and every limit point is first-order critical.
+* Section 12.2.2, with Hessian bounds,
+  `ConnGouldToint.Chapter12.feasible_cauchy_run_firstOrder_convergence_of_hessian_bounds`: the same
+  conclusions from bounds on the Hessians of the objective and the models.
+
+## Notation
+
+* $\kappa_1, \kappa_2, \kappa_3, \kappa_4$: the constants `upperSlope`, `lowerSlope`,
+  `radiusFraction` and `endpointFactor` of (12.2.3).
+* $P_{T_C(z)}$: the projection onto the tangent cone of $C$ at $z$.
+
+## Deviations from the source
+
+* **Theorem 12.2.1** (correction). The statement assumes that the model gradient at the base point
+  equals the objective gradient. With opposite gradients every positive trial fails the upper
+  decrease test. See
+  `ConnGouldToint.Chapter12.theorem_12_2_1_without_model_gradient_agreement_counterexample`.
+* **Algorithm 12.2.2** (reading). A first-order critical base point is returned before the initial
+  trial parameter is computed, which would divide by a zero gradient. See
+  `ConnGouldToint.Chapter12.isApproxGeneralizedCauchyPoint_of_normal`.
+-/
 
 open Optimization Filter Topology
 open scoped RealInnerProductSpace
 
 namespace ConnGouldToint.Chapter12
 
-/-- The constants in the projected-path line search (12.2.3). -/
+/-- **Equation (12.2.3)** of [conn2000trust]. The constants of the projected-path search are real
+numbers $\kappa_1, \kappa_2, \kappa_3, \kappa_4$ with
+$$0 < \kappa_1 < \kappa_2 < 1, \qquad 0 < \kappa_3 < 1, \qquad 0 < \kappa_4 < \tfrac12.$$
+-/
 structure GeneralizedCauchyParams where
+  /-- The slope $\kappa_1$ of the upper decrease test. -/
   upperSlope : ℝ
+  /-- The slope $\kappa_2$ of the lower decrease test. -/
   lowerSlope : ℝ
+  /-- The fraction $\kappa_3$ of the radius in the length test. -/
   radiusFraction : ℝ
+  /-- The factor $\kappa_4$ of the tangent endpoint test. -/
   endpointFactor : ℝ
+  /-- The upper slope is positive: $\kappa_1 > 0$. -/
   upper_pos : 0 < upperSlope
+  /-- The slopes are ordered: $\kappa_1 < \kappa_2$. -/
   slope_order : upperSlope < lowerSlope
+  /-- The lower slope is less than one: $\kappa_2 < 1$. -/
   lower_lt_one : lowerSlope < 1
+  /-- The radius fraction is positive: $\kappa_3 > 0$. -/
   fraction_pos : 0 < radiusFraction
+  /-- The radius fraction is less than one: $\kappa_3 < 1$. -/
   fraction_lt_one : radiusFraction < 1
+  /-- The endpoint factor is positive: $\kappa_4 > 0$. -/
   endpoint_pos : 0 < endpointFactor
+  /-- The endpoint factor is less than one half: $\kappa_4 < 1/2$. -/
   endpoint_lt_half : endpointFactor < 1 / 2
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
 
-/-- Conditions (12.2.1)–(12.2.4) for an approximate generalized Cauchy point. -/
+/-- **Equations (12.2.1)–(12.2.4)** of [conn2000trust]. A point $z$ is an **approximate generalized
+Cauchy point** for the objective $f$, the model $m$, the base point $x$ and the radius $\Delta$
+if $z = p(t)$ for some $t > 0$, $\|z - x\| \le \Delta$,
+$$m(z) \le m(x) + \kappa_1 \langle \nabla f(x), z - x \rangle,$$
+and at least one of the following holds:
+* $\|z - x\| \ge \kappa_3 \Delta$;
+* $m(z) \ge m(x) + \kappa_2 \langle \nabla f(x), z - x \rangle$;
+* $\|P_{T_C(z)}(-\nabla f(x))\| \le \kappa_4 |\langle \nabla f(x), z - x \rangle| / \Delta$.
+
+The last alternative is the tangent stopping test. The path $p$ is
+`ConnGouldToint.Chapter12.projectedGradientPath C f x`. -/
 def IsApproxGeneralizedCauchyPoint (P : GeneralizedCauchyParams) (C : Set E)
     (f m : E → ℝ) (x : E) (Δ : ℝ) (z : E) : Prop :=
   ∃ t > 0, z = projectedGradientPath C f x t ∧ ‖z - x‖ ≤ Δ ∧
@@ -41,8 +142,17 @@ def IsApproxGeneralizedCauchyPoint (P : GeneralizedCauchyParams) (C : Set E)
       ‖bestApprox (tangentDirections C z) (-gradient f x)‖ ≤
         P.endpointFactor * (|⟪gradient f x, z - x⟫| / Δ))
 
-/-- Theorem 12.2.2. The curvature bound is only needed on the segment
-to the trial point. The Taylor estimate is used in the lower-slope case. -/
+/-- **Theorem 12.2.2** of [conn2000trust], with the Taylor estimate explicit. Let $C$ be closed and
+convex, $x \in C$, $\Delta > 0$ and $\beta > 0$, and let $z$ be an approximate generalized
+Cauchy point with
+$$m(z) - m(x) - \langle \nabla f(x), z - x \rangle \le \frac{\beta}{2} \|z - x\|^2.$$
+Let $\kappa = \min\{\kappa_1 \kappa_3 / 2, \ 2 \kappa_1 (1 - \kappa_2)\}$ and
+$\chi = \chi(x, 1)$. Then $\kappa > 0$,
+$$\kappa \chi \min\left\{\frac{\chi}{\beta}, \Delta, 1\right\} \le m(x) - m(z), \qquad \kappa_1
+  |\langle \nabla f(x), z - x \rangle| \le m(x) - m(z).$$
+
+The curvature estimate is needed only at the trial point, and it is used in the case of the
+lower decrease test. -/
 theorem theorem_12_2_2_of_taylor_bound (P : GeneralizedCauchyParams) {C : Set E}
     (hclosed : IsClosed C) (hconv : Convex ℝ C) {f m : E → ℝ} {x z : E}
     (hx : x ∈ C) {Δ β : ℝ} (hΔ : 0 < Δ) (hβ : 0 < β)
@@ -192,8 +302,15 @@ theorem theorem_12_2_2_of_taylor_bound (P : GeneralizedCauchyParams) {C : Set E}
     · have hh := (mul_le_mul_of_nonneg_left hab hχ).trans hχb
       linarith
 
-/-- The generalized Cauchy decrease follows from gradient agreement and a
-uniform model Hessian bound on the trial segment. -/
+/-- **Theorem 12.2.2** of [conn2000trust]. Let $C$ be closed and convex, $x \in C$, $\Delta > 0$ and
+$\beta > 0$, and let $z$ be an approximate generalized Cauchy point. Let $m$ be twice
+differentiable with $m'(x) = f'(x)$ and $\|\nabla^2 m(y)\| \le \beta$ for every $y$ on the
+segment $[x, z]$. Then, with $\kappa$ and $\chi$ as in
+`ConnGouldToint.Chapter12.theorem_12_2_2_of_taylor_bound`, $\kappa > 0$,
+$$\kappa \chi \min\left\{\frac{\chi}{\beta}, \Delta, 1\right\} \le m(x) - m(z), \qquad \kappa_1
+  |\langle \nabla f(x), z - x \rangle| \le m(x) - m(z).$$
+
+The curvature bound is needed only on the segment to the trial point. -/
 theorem theorem_12_2_2 (P : GeneralizedCauchyParams) {C : Set E}
     (hclosed : IsClosed C) (hconv : Convex ℝ C) {f m : E → ℝ} {x z : E}
     (hx : x ∈ C) {Δ β : ℝ} (hΔ : 0 < Δ) (hβ : 0 < β)
@@ -215,12 +332,17 @@ theorem theorem_12_2_2 (P : GeneralizedCauchyParams) {C : Set E}
   apply theorem_12_2_2_of_taylor_bound P hclosed hconv hx hΔ hβ hpoint
   exact (le_abs_self _).trans (ht.trans_eq (by ring))
 
-/-- The capped first-order criticality measure (12.2.15). -/
+/-- **Equation (12.2.15)** of [conn2000trust]. The **capped criticality measure** is
+$\pi(x) = \min\{1, \chi(x, 1)\}$. -/
 noncomputable def cappedCriticality (C : Set E) (f : E → ℝ) (x : E) : ℝ :=
   min 1 (criticality C f x 1)
 
-/-- The decrease bound gives the sufficient-decrease test with the capped
-criticality measure and the conventional curvature denominator `β ≥ 1`. -/
+/-- **Equation (12.2.15)** of [conn2000trust], sufficient decrease. Let $x \in C$, $\kappa \ge 0$,
+$\beta \ge 1$ and $\Delta \ge 0$, and let $\chi = \chi(x, 1)$. If $\kappa \chi \min\{\chi/\beta,
+\min\{\Delta, 1\}\} \le D$, then
+$$\kappa \pi(x) \min\left\{\frac{\pi(x)}{\beta}, \Delta\right\} \le D.$$
+So the decrease of Theorem 12.2.2 gives the sufficient-decrease test with the capped measure and
+the conventional curvature denominator $\beta \ge 1$. -/
 theorem cappedCriticality_decrease {C : Set E} {f : E → ℝ} {x : E}
     (hx : x ∈ C) {κ β Δ D : ℝ} (hκ : 0 ≤ κ) (hβ : 1 ≤ β) (hΔ : 0 ≤ Δ)
     (h : κ * criticality C f x 1 * min (criticality C f x 1 / β) (min Δ 1) ≤ D) :
@@ -239,9 +361,20 @@ theorem cappedCriticality_decrease {C : Set E} {f : E → ℝ} {x : E}
     (mul_nonneg hκ hχ)).trans h
 
 open Chapter06 in
-/-- First-order convergence of the feasible Cauchy trust-region run in
-Section 12.2.2. The capped and uncapped feasible decreases both tend to zero,
-and each subsequential limit satisfies the convex first-order condition. -/
+/-- **Section 12.2.2** of [conn2000trust], first-order convergence of Algorithm 12.2.1. Consider a
+run of the basic trust-region algorithm whose iterates lie in $C \cap K$, with $C$ closed and
+convex and $K$ compact, and let $\nabla f$ be continuous and $f(x_k)$ bounded below. Let
+$\|s_k\| \le \Delta_k$, let $u_k$ be an approximate generalized Cauchy point for the model $m_k$
+at $x_k$ with radius $\Delta_k$, and let $a \in (0, 1]$, $B$ and $\beta_k \in [1, B]$ satisfy,
+for all $k$,
+$$a \bigl(m_k(x_k) - m_k(u_k)\bigr) \le m_k(x_k) - m_k(x_k + s_k), \qquad m_k(u_k) - m_k(x_k) -
+  \langle \nabla f(x_k), u_k - x_k \rangle \le \frac{\beta_k}{2} \|u_k - x_k\|^2,$$
+$f(x_k) = m_k(x_k)$ and $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$. Then
+$\pi(x_k) \to 0$ and $\chi(x_k, 1) \to 0$, and every limit $z$ of a subsequence $x_{j(k)}$ with
+$j(k) \to \infty$ satisfies $z \in C$ and $-\nabla f(z) \in N_C(z)$.
+
+So the capped and the uncapped criticality measures both tend to zero, and every limit point
+satisfies the convex first-order condition. -/
 theorem feasible_cauchy_run_firstOrder_convergence
     {P : BTRParams} {C K : Set E} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop}
@@ -307,9 +440,18 @@ theorem feasible_cauchy_run_firstOrder_convergence
   exact ⟨hz, (linearDecrease_eq_zero_iff hconv hz).mp hz0⟩
 
 open Chapter06 in
-/-- In a feasible Cauchy run, the smooth objective and the model Hessian
-bounds on the trust-region balls imply the accuracy hypotheses of the
-first-order convergence theorem. -/
+/-- **Section 12.2.2** of [conn2000trust], first-order convergence under Hessian bounds. Consider a
+run as in `ConnGouldToint.Chapter12.feasible_cauchy_run_firstOrder_convergence`, with iterates
+in $C \cap K$, $\|s_k\| \le \Delta_k$, approximate generalized Cauchy points $u_k$, the
+comparison $a (m_k(x_k) - m_k(u_k)) \le m_k(x_k) - m_k(x_k + s_k)$ with $a \in (0, 1]$, and
+$f(x_k) = m_k(x_k)$. Assume that $f$ is twice continuously differentiable with
+$\|\nabla^2 f(y)\| \le H$ for all $y$, that each $m_k$ is twice differentiable with
+$m_k'(x_k) = f'(x_k)$, and that $\|\nabla^2 m_k(y)\| \le \beta_k - 1$ on the closed ball of
+radius $\Delta_k$ about $x_k$, with $1 \le \beta_k \le B$. Then $\pi(x_k) \to 0$ and
+$\chi(x_k, 1) \to 0$, and every limit $z$ of a subsequence $x_{j(k)}$ with $j(k) \to \infty$
+satisfies $z \in C$ and $-\nabla f(z) \in N_C(z)$.
+
+The Hessian bounds supply the model accuracy hypotheses of the first-order convergence theorem. -/
 theorem feasible_cauchy_run_firstOrder_convergence_of_hessian_bounds
     {P : BTRParams} {C K : Set E} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop}
@@ -371,10 +513,14 @@ theorem feasible_cauchy_run_firstOrder_convergence_of_hessian_bounds
   exact feasible_cauchy_run_firstOrder_convergence run Q hclosed hconv hK hx hxK hg hstep
     u β hβ (fun k ↦ (hβB k).trans (le_max_right _ _)) ha htrial hcmp hTaylor hval herr hbelow
 
-/-- The printed Theorem 12.2.1 needs a descent assumption on the model.
-With opposite gradients, every positive projected trial fails (12.2.1).
-The feasible set is the whole line, which can be described by the constant
-strictly feasible constraint `1 ≥ 0`. -/
+/-- **Theorem 12.2.1** of [conn2000trust], counterexample to the printed statement. For any
+constants (12.2.3), let $C = \mathbb{R}$, $f(y) = y$, $m(y) = -y$, $x = 0$ and $\Delta = 1$.
+Both functions are twice continuously differentiable, but no point $z$ is an approximate
+generalized Cauchy point.
+
+The model gradient is opposite to the objective gradient, so every positive projected trial
+fails the upper decrease test (12.2.1). The feasible set is the whole line, which is described
+by the constant strictly feasible constraint $1 \ge 0$. -/
 theorem theorem_12_2_1_without_model_gradient_agreement_counterexample
     (P : GeneralizedCauchyParams) :
     ContDiff ℝ 2 (id : ℝ → ℝ) ∧ ContDiff ℝ 2 (fun y : ℝ ↦ -y) ∧
@@ -394,15 +540,25 @@ theorem theorem_12_2_1_without_model_gradient_agreement_counterexample
   simp only [neg_neg, neg_zero, sub_zero, zero_add, Real.inner_apply, one_mul] at hm
   nlinarith [mul_pos P.upper_pos ht]
 
-/-- A bracket state for Algorithm 12.2.2. A missing upper endpoint
-indicates that the algorithm is still doubling its trial parameter. -/
+/-- **Algorithm 12.2.2** of [conn2000trust]. A bracket state of the search consists of a lower
+endpoint, an optional upper endpoint and a trial parameter. A missing upper endpoint means that
+the search is still doubling its trial parameter. -/
 structure CauchySearchState where
+  /-- The lower endpoint of the bracket. -/
   lo : ℝ
+  /-- The upper endpoint of the bracket, if one has been found. -/
   hi : Option ℝ
+  /-- The current trial parameter. -/
   trial : ℝ
 
-/-- The two test branches of Algorithm 12.2.2, with accepted states
-retained so that the iteration is defined at every natural index. -/
+/-- **Algorithm 12.2.2** of [conn2000trust], one step. Given the upper test $U$, the lower test $L$
+and the endpoint test, a state with trial $t$ is updated as follows. If $U(t) \le 0$ and either
+$L(t) \ge 0$ or the endpoint test holds at $t$, the state is accepted and kept. If $U(t) \le 0$
+and both stopping tests fail, $t$ becomes the lower endpoint and the next trial is $2t$ without
+an upper endpoint $b$, or $(t + b)/2$ with one. If $U(t) > 0$, $t$ becomes the upper endpoint
+and the next trial is $(\ell + t)/2$, with $\ell$ the lower endpoint.
+
+Accepted states are kept, so that the iteration is defined at every natural index. -/
 noncomputable def cauchySearchStep (U L : ℝ → ℝ) (endpoint : ℝ → Prop)
     (s : CauchySearchState) : CauchySearchState :=
   open Classical in
@@ -414,32 +570,57 @@ noncomputable def cauchySearchStep (U L : ℝ → ℝ) (endpoint : ℝ → Prop)
   else
     ⟨s.lo, some s.trial, (s.lo + s.trial) / 2⟩
 
-/-- The bracket sequence of Algorithm 12.2.2. -/
+/-- **Algorithm 12.2.2** of [conn2000trust]. The sequence of bracket states, which starts with the
+lower endpoint $0$, no upper endpoint and the trial $t_0$, and applies
+`ConnGouldToint.Chapter12.cauchySearchStep` at each index. -/
 noncomputable def cauchySearchIterate (U L : ℝ → ℝ) (endpoint : ℝ → Prop) (t₀ : ℝ) :
     ℕ → CauchySearchState
   | 0 => ⟨0, none, t₀⟩
   | k + 1 => cauchySearchStep U L endpoint (cauchySearchIterate U L endpoint t₀ k)
 
-/-- An infinite nonterminating trace of Algorithm 12.2.2. The upper test
-passes when `U ≤ 0`, the two scalar stopping tests pass when `0 ≤ L`,
-and `endpoint` is the remaining stopping test. -/
+/-- **Algorithm 12.2.2** of [conn2000trust]. An infinite nonterminating trace of the search consists
+of lower endpoints $\ell_k$, optional upper endpoints $b_k$ and trials $t_k$ with $t_0 > 0$,
+$\ell_0 = 0$ and no initial upper endpoint, such that for all $k$:
+* if $U(t_k) \le 0$, then $L(t_k) < 0$ and the endpoint test fails at $t_k$, and
+  $\ell_{k+1} = t_k$, $b_{k+1} = b_k$;
+* if $U(t_k) > 0$, then $\ell_{k+1} = \ell_k$ and $b_{k+1} = t_k$;
+* $t_{k+1} = 2 t_k$ if there is no upper endpoint $b_{k+1}$, and
+  $t_{k+1} = (\ell_{k+1} + b_{k+1})/2$ otherwise.
+
+The upper test passes when $U \le 0$, the two scalar stopping tests pass when $L \ge 0$, and the
+endpoint test is the remaining stopping test. -/
 structure InfiniteCauchySearch (U L : ℝ → ℝ) (endpoint : ℝ → Prop) where
+  /-- The lower endpoints $\ell_k$. -/
   lo : ℕ → ℝ
+  /-- The optional upper endpoints $b_k$. -/
   hi : ℕ → Option ℝ
+  /-- The trial parameters $t_k$. -/
   trial : ℕ → ℝ
+  /-- The initial trial is positive: $t_0 > 0$. -/
   trial_initial_pos : 0 < trial 0
+  /-- The initial lower endpoint is $\ell_0 = 0$. -/
   lo_initial : lo 0 = 0
+  /-- There is no initial upper endpoint. -/
   hi_initial : hi 0 = none
+  /-- The search never stops: whenever $U(t_k) \le 0$, also $L(t_k) < 0$ and the endpoint test
+  fails. -/
   no_stop : ∀ k, U (trial k) ≤ 0 → L (trial k) < 0 ∧ ¬endpoint (trial k)
+  /-- A trial that passes the upper test becomes the lower endpoint, and the upper endpoint is kept.
+  -/
   pass : ∀ k, U (trial k) ≤ 0 → lo (k + 1) = trial k ∧ hi (k + 1) = hi k
+  /-- A trial that fails the upper test becomes the upper endpoint, and the lower endpoint is kept.
+  -/
   fail : ∀ k, 0 < U (trial k) → lo (k + 1) = lo k ∧ hi (k + 1) = some (trial k)
+  /-- The next trial doubles without an upper endpoint and bisects the bracket with one. -/
   next : ∀ k, trial (k + 1) =
     match hi (k + 1) with
     | none => 2 * trial k
     | some b => (lo (k + 1) + b) / 2
 
-/-- If infinite nonterminating traces are impossible, the iterate sequence
-reaches a positive parameter satisfying both stopping tests. -/
+/-- **Theorem 12.2.1** of [conn2000trust], finite stopping. If the tests $U$, $L$ and the endpoint
+test admit no infinite nonterminating trace, then for every $t_0 > 0$ there is an index $k$ such
+that the trial $t$ of `ConnGouldToint.Chapter12.cauchySearchIterate` at $k$ satisfies $t > 0$,
+$U(t) \le 0$, and $L(t) \ge 0$ or the endpoint test holds at $t$. -/
 theorem exists_cauchySearch_accept {U L : ℝ → ℝ} {endpoint : ℝ → Prop}
     (hfinite : IsEmpty (InfiniteCauchySearch U L endpoint)) {t₀ : ℝ} (ht₀ : 0 < t₀) :
     ∃ k, let t := (cauchySearchIterate U L endpoint t₀ k).trial
@@ -496,10 +677,17 @@ theorem exists_cauchySearch_accept {U L : ℝ → ℝ} {endpoint : ℝ → Prop}
     · rw [hpass k h]
     · rw [hfail k h]
 
-/-- The doubling and bisection argument of Theorem 12.2.1. A failed upper
-endpoint and a passed lower endpoint cannot accumulate at the same
-positive parameter when failure of the scalar stopping tests forces
-strict satisfaction of the upper test. -/
+/-- **Theorem 12.2.1** of [conn2000trust], the doubling and bisection argument. Let $U$ and $L$ be
+continuous with $L(0) \le 0$, and assume:
+* there is $\varepsilon > 0$ with $U(t) \le 0$ for all $t \in (0, \varepsilon)$;
+* $L(t) \le 0$ implies $U(t) < 0$ for every $t > 0$;
+* for all sufficiently large $t$, $U(t) \le 0$ implies $L(t) \ge 0$ or the endpoint test at $t$.
+
+Then there is no infinite nonterminating trace of the search.
+
+A failed upper endpoint and a passed lower endpoint cannot accumulate at the same positive
+parameter, because failure of the scalar stopping tests forces strict satisfaction of the upper
+test. -/
 theorem not_infiniteCauchySearch {U L : ℝ → ℝ} {endpoint : ℝ → Prop}
     (hU : Continuous U) (hL : Continuous L) (hL₀ : L 0 ≤ 0)
     {ε : ℝ} (hε : 0 < ε) (hsmall : ∀ t, 0 < t → t < ε → U t ≤ 0)
@@ -653,11 +841,23 @@ theorem not_infiniteCauchySearch {U L : ℝ → ℝ} {endpoint : ℝ → Prop}
     ge_of_tendsto' ((hU.continuousAt.tendsto).comp hBl) (fun k ↦ (hbounds k).2.2.1.le)
   exact (not_lt_of_ge hBU) (hsep τ hτ hAL)
 
-/-- Corrected Theorem 12.2.1. At a noncritical base point, agreement of
-the model gradient with the objective gradient ensures that every sufficiently
-small positive trial passes the upper tests. The projected-path line search
-then has no infinite nonterminating trace. A critical base point can be
-returned directly, avoiding initialization by division by a zero gradient. -/
+/-- **Theorem 12.2.1** of [conn2000trust]. Let $C$ be a closed convex subset of a real Hilbert space
+$E$, let $x \in C$ be noncritical, $-\nabla f(x) \notin N_C(x)$, and let $\Delta > 0$. Let the
+model $m$ be continuous and differentiable at $x$ with $m'(x) = f'(x)$. With
+$r(t) = \|p(t) - x\|$ and $l(t) = \langle \nabla f(x), p(t) - x \rangle$, define the tests
+$$U(t) = \max\{r(t) - \Delta, \ m(p(t)) - m(x) - \kappa_1 l(t)\}, \qquad L(t) = \max\{r(t) -
+  \kappa_3 \Delta, \ m(p(t)) - m(x) - \kappa_2 l(t)\},$$
+and the endpoint test $\|P_{T_C(p(t))}(-\nabla f(x))\| \le \kappa_4 |l(t)|/\Delta$. Then the
+search of Algorithm 12.2.2 with these tests has no infinite nonterminating trace.
+
+**Correction.** The source does not assume agreement of the model gradient with the objective
+gradient. Without it, every positive trial can fail the upper test
+(`ConnGouldToint.Chapter12.theorem_12_2_1_without_model_gradient_agreement_counterexample`).
+With it, every sufficiently small positive trial passes the upper test.
+
+A critical base point is handled separately by
+`ConnGouldToint.Chapter12.isApproxGeneralizedCauchyPoint_of_normal`, which avoids an initial
+trial parameter that divides by a zero gradient. -/
 theorem theorem_12_2_1 (P : GeneralizedCauchyParams) {C : Set E}
     (hclosed : IsClosed C) (hconv : Convex ℝ C) {f m : E → ℝ} {x : E} (hx : x ∈ C)
     (hncrit : -gradient f x ∉ normalDirections C x) {Δ : ℝ} (hΔ : 0 < Δ)
@@ -807,8 +1007,13 @@ theorem theorem_12_2_1 (P : GeneralizedCauchyParams) {C : Set E}
         (mul_le_mul_of_nonneg_left hlmono P.endpoint_pos.le) hΔ.le)))
   exact not_infiniteCauchySearch hUc hLc hL₀ hε hsmall hsep hlarge
 
-/-- Algorithm 12.2.2 reaches an approximate generalized Cauchy point at
-a finite index for every positive initial trial parameter. -/
+/-- **Theorem 12.2.1** of [conn2000trust], termination of Algorithm 12.2.2. Under the hypotheses of
+`ConnGouldToint.Chapter12.theorem_12_2_1` and with the same tests, for every initial trial
+$t_0 > 0$ there is an index $k$ such that $p(t_k)$ is an approximate generalized Cauchy point,
+where $t_k$ is the trial of `ConnGouldToint.Chapter12.cauchySearchIterate` at $k$.
+
+**Correction.** As in `ConnGouldToint.Chapter12.theorem_12_2_1`, the statement assumes
+$m'(x) = f'(x)$. -/
 theorem theorem_12_2_1_terminates (P : GeneralizedCauchyParams) {C : Set E}
     (hclosed : IsClosed C) (hconv : Convex ℝ C) {f m : E → ℝ} {x : E} (hx : x ∈ C)
     (hncrit : -gradient f x ∉ normalDirections C x) {Δ : ℝ} (hΔ : 0 < Δ)
@@ -835,8 +1040,13 @@ theorem theorem_12_2_1_terminates (P : GeneralizedCauchyParams) {C : Set E}
     · exact Or.inr (Or.inl (by linarith))
   · exact Or.inr (Or.inr he)
 
-/-- A first-order critical base point already satisfies the generalized
-Cauchy tests and can be returned before initializing the search. -/
+/-- **Algorithm 12.2.2** of [conn2000trust], critical base point. Let $C$ be closed and convex,
+$x \in C$ with $-\nabla f(x) \in N_C(x)$, and $\Delta \ge 0$. Then $x$ is an approximate
+generalized Cauchy point for any model $m$.
+
+**Reading.** The source computes the initial trial parameter by a division by the gradient,
+which is undefined at a critical point. Such a point already satisfies the tests and is returned
+before the search starts. -/
 theorem isApproxGeneralizedCauchyPoint_of_normal (P : GeneralizedCauchyParams)
     {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C) {f m : E → ℝ} {x : E}
     (hx : x ∈ C) (hn : -gradient f x ∈ normalDirections C x) {Δ : ℝ} (hΔ : 0 ≤ Δ) :

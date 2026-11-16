@@ -8,10 +8,70 @@ import Numlib.LinearAlgebra.Matrix.Cholesky
 import NumlibSurface.ConnGouldToint.Chapter07.Section03Matrix
 
 /-!
-# Cholesky pivot detection in the Moré–Sorensen algorithm
+# Conn, Gould and Toint, Section 7.3.7: Cholesky pivot detection in the Moré–Sorensen algorithm
 
-Section 7.3.7 of [conn2000trust]. The Cholesky recurrence computes a
-factor or gives the partial factor used by the failed-pivot bound.
+This module connects the Moré–Sorensen algorithm of Section 7.3 of [conn2000trust] with computed
+Cholesky factorizations. Let $M$ be a real symmetric matrix of order $n \ge 1$ with least eigenvalue
+$\lambda_1$, and let $\lambda$ be a trial multiplier. The Cholesky recurrence for $M + \lambda I$
+either computes a lower triangular factor with positive diagonal, which happens exactly when
+$\lambda > -\lambda_1$, or stops at the first nonpositive pivot. In the first case two triangular
+solves give the step $s(\lambda)$ and the LINPACK direction of Section 7.3.7. In the second case the
+computed part of the factor gives the corrected kernel identity (7.3.17) on a leading principal
+block. Either outcome gives a lower estimate of the pole $-\lambda_1$ (Algorithm 7.3.4, Steps 3b–d).
+The resulting matrix recurrence agrees with the spectral recurrence of
+`NumlibSurface.ConnGouldToint.Chapter07.Section03`, so its hard-case convergence follows from the
+spectral results.
+
+## Main definitions
+
+* Algorithm 7.3.4, Step 1, `ConnGouldToint.Chapter07.firstFailedCholeskyPivot`: the first
+  nonpositive computed pivot, if any.
+* Algorithm 7.3.4, Step 3b(iii), `ConnGouldToint.Chapter07.moreSorensenBestBoundaryCoefficient`: the
+  root of the boundary equation with the smaller model value.
+* Algorithm 7.3.4, Steps 3b–d, `ConnGouldToint.Chapter07.moreSorensenMatrixLowerEstimate`: the
+  computed lower estimate of the pole.
+* Algorithm 7.3.4, `ConnGouldToint.Chapter07.moreSorensenMatrixIterates`: the computed multiplier
+  orbit.
+
+## Main results
+
+* Algorithm 7.3.4, Step 1, `ConnGouldToint.Chapter07.firstFailedCholeskyPivot_spec` and
+  `ConnGouldToint.Chapter07.firstFailedCholeskyPivot_eq_none_iff`: the scan returns a full factor or
+  the first failed pivot, and it succeeds exactly for positive definite matrices.
+* Algorithm 7.3.4, Steps 1 and 3b, `ConnGouldToint.Chapter07.cholesky_linpack_certificate`: a
+  successful factorization gives the LINPACK certificate.
+* Equation (7.3.17), `ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`: a failed pivot
+  gives the kernel identity of the corrected leading block.
+* Algorithm 7.3.4, Step 3d, `ConnGouldToint.Chapter07.choleskyFailedPivot_lower_bound`: the failed
+  pivot gives a lower bound on the pole.
+* Algorithm 7.3.4, Step 3b(iii),
+  `ConnGouldToint.Chapter07.moreSorensenBestBoundaryCoefficient_spec`: the selected root reaches the
+  boundary with the least model value.
+* Algorithm 7.3.4, Step 1, `ConnGouldToint.Chapter07.shiftedCholesky_succeeds_iff`: the computed
+  pivot test succeeds exactly above the pole.
+* Algorithm 7.3.4, `ConnGouldToint.Chapter07.moreSorensenMatrixLowerEstimate_spec`,
+  `ConnGouldToint.Chapter07.moreSorensenMatrixIterates_succ` and
+  `ConnGouldToint.Chapter07.shiftedStep_eq_cholesky_subst`: the computed estimate, recurrence and
+  step agree with the spectral ones.
+* Theorem 7.3.4, `ConnGouldToint.Chapter07.moreSorensen_computed_hard_matrix_run`: in the hard case
+  the computed run converges to the pole, and the computed corrected steps have minimizing model
+  values and limit points.
+
+## Implementation notes
+
+* The computed factor is `Matrix.cholesky`, the Cholesky recurrence evaluated without a positivity
+  check. Its first nonpositive diagonal entry is the failed pivot.
+* A symmetric matrix $M$ acts on `EuclideanSpace ℝ (Fin n)` through `Matrix.toEuclideanCLM`, and
+  $\lambda_1$ is `Subproblem.leftmost` of that operator.
+
+## Deviations from the source
+
+* **Equation (7.3.17)** (correction). The kernel identity at a failed pivot holds on the leading
+  principal block, not on the full matrix. See
+  `ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`.
+* **Algorithm 7.3.4, Step 3b(iii)** (reading). When the two roots of the boundary equation give the
+  same model value, the root with the positive square root is chosen. See
+  `ConnGouldToint.Chapter07.moreSorensenBestBoundaryCoefficient`.
 -/
 
 namespace ConnGouldToint.Chapter07
@@ -49,14 +109,17 @@ private theorem cholesky_mul_transpose_apply_of_pos {n : ℕ}
     rw [hsum, mul_comm (L j j), hm]
     ring
 
-/-- Scan the computed Cholesky diagonals in order and stop at the first
-nonpositive one. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 1, the first failed pivot. For a square matrix $A$
+of order $n$, scan the computed Cholesky diagonal entries $L_{11}, L_{22}, \dots$ in order and
+return the first index $k$ with $L_{kk} \le 0$, or no index if all are positive. -/
 noncomputable def firstFailedCholeskyPivot {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     Option (Fin n) :=
   (List.ofFn (id : Fin n → Fin n)).find? (fun i => decide (cholesky A i i ≤ 0))
 
-/-- Pivot detection returns the first failure, or the full lower triangular
-Cholesky factor with positive diagonal. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 1, full factor or first failed pivot. Let $A$ be
+symmetric, and let $L$ be its computed Cholesky factor. If the scan finds no failed pivot, then
+$L$ is lower triangular with positive diagonal and $L L^T = A$. If the scan returns $k$, then
+$L_{kk} \le 0$ and $L_{jj} > 0$ for all $j < k$. -/
 theorem firstFailedCholeskyPivot_spec {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) :
     match firstFailedCholeskyPivot A with
@@ -85,7 +148,8 @@ theorem firstFailedCholeskyPivot_spec {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     have hk := (List.find?_ofFn_eq_some_of_injective (f := id) Function.injective_id).mp h
     simpa only [id_eq, failed, decide_eq_true_eq, not_le] using hk
 
-/-- Successful detection is equivalent to positive definiteness. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 1, the positive definiteness test. For a symmetric
+matrix $A$, the scan finds no failed pivot if and only if $A$ is positive definite. -/
 theorem firstFailedCholeskyPivot_eq_none_iff {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) : firstFailedCholeskyPivot A = none ↔ A.PosDef := by
   constructor
@@ -104,8 +168,15 @@ theorem firstFailedCholeskyPivot_eq_none_iff {n : ℕ} {A : Matrix (Fin n) (Fin 
     intro i _ hi
     exact (hd i).not_ge (of_decide_eq_true hi)
 
-/-- The successful Cholesky recurrence and triangular solves produce the
-matrix certificate used in the LINPACK direction theorem. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Steps 1 and 3b, the certificate of a successful
+factorization. Let $A$ be symmetric and suppose that the scan finds no failed pivot. Let $L$ be
+the computed factor, $w$ the greedy forward substitution for $L$,
+$v_i = \sigma(\sum_{j < i} L_{ij} w_j)$ with the LINPACK sign $\sigma$, and $y$ the back
+substitution solution of $L^T y = w$. Then $L L^T = A$, $L$ is lower triangular with positive
+diagonal, and
+$$L w = v, \qquad L^T y = w, \qquad v_i = \sigma(v_i - L_{ii} w_i) \text{ for all } i.$$
+
+This is the certificate that `ConnGouldToint.Chapter07.linpackCurvature_bound` uses. -/
 theorem cholesky_linpack_certificate {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) (h : firstFailedCholeskyPivot A = none) :
     let L := cholesky A
@@ -119,9 +190,19 @@ theorem cholesky_linpack_certificate {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
   obtain ⟨hL, hd, hfact⟩ := hs
   exact ⟨hfact, hL, hd, linpack_triangular_solves hL (fun i => (hd i).ne')⟩
 
-/-- The first failed pivot gives the corrected leading-block kernel
-identity (7.3.17), using only entries the Cholesky recurrence computed
-before the failure. -/
+/-- **Equation (7.3.17)** of [conn2000trust] and Algorithm 7.3.4, Steps 3c–d, the computed
+leading-block correction. Let $A$ be symmetric, and suppose that the scan returns the failed
+pivot $k$. Let $B$ be the leading principal block of $A$ on the indices $j \le k$, let $L$ be
+the leading $k \times k$ block of the computed factor, let $c$ be row $k$ of the computed factor
+in the columns $j < k$, and let $\delta = c c^T - A_{kk}$. Let $v$ be the back solve at the
+failed pivot and $e$ the unit vector of the pivot. Then
+$$\delta \ge 0, \qquad v_k = 1, \qquad (B + \delta e e^T) v = 0, \qquad v^T B v = -\delta.$$
+
+**Correction.** The kernel identity holds on the leading principal block; it can fail for the
+full matrix, as `ConnGouldToint.Chapter07.failedCholeskyPivot_full_residual_counterexample`
+shows.
+
+The identity uses only entries that the Cholesky recurrence computed before the failure. -/
 theorem choleskyFailedPivot_certificate {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) {k : Fin n} (hk : firstFailedCholeskyPivot A = some k) :
     let ι := {j : Fin n // j < k}
@@ -195,8 +276,14 @@ theorem choleskyFailedPivot_certificate {n : ℕ} {A : Matrix (Fin n) (Fin n) �
     cholesky_apply_of_gt A (show (i : Fin n) < j from hij)
   exact ⟨hδ, failedCholeskyBackSubst_spec hL (fun i => hspec.2 i i.2) C δ B e rfl hB⟩
 
-/-- Extend the computed pivot witness by zero to the full matrix. Its
-Rayleigh quotient gives the lower-bound update in Step 3d. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 3d, the computed lower bound in the full matrix.
+Let $A$ be symmetric, and suppose that the scan returns the failed pivot $k$, with $L$, $c$,
+$\delta$ and $v$ as in `ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`. If
+$(\lambda + \lambda_{\min}) z^T z \le z^T A z$ for all $z$, then
+$$\lambda + \frac{\delta}{v^T v} \le -\lambda_{\min}.$$
+
+Here $A = M + \lambda I$ and $\lambda_{\min}$ is a lower bound on the eigenvalues of $M$. The
+bound is the Rayleigh quotient of the zero extension of $v$ to the full matrix. -/
 theorem choleskyFailedPivot_lower_bound {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) {k : Fin n} (hk : firstFailedCholeskyPivot A = some k)
     {lam lamMin : ℝ} (hRayleigh : ∀ z, (lam + lamMin) * (z ⬝ᵥ z) ≤ z ⬝ᵥ A *ᵥ z) :
@@ -252,16 +339,27 @@ open scoped RealInnerProductSpace
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- Compare the two boundary roots by their model values. In a tie
-choose the root given by the positive square root. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 3b(iii), the computed model-minimizing boundary
+root. For a step $s$ and a unit direction $u$, let
+$$a = \sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \rangle, \qquad b =
+  -\sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \rangle$$
+be the two roots of $\|s + \alpha u\| = \Delta$. The **best boundary coefficient** is $a$ if
+$q(s + a u) \le q(s + b u)$, and $b$ otherwise.
+
+**Reading.** The source chooses the root with the smaller model value but does not say which
+root to take in a tie. A tie gives the root $a$ with the positive square root.
+
+The root $b$ is written as `-moreSorensenBoundaryCoefficient Δ s (-u)`. -/
 noncomputable def moreSorensenBestBoundaryCoefficient (g : E) (H : E →L[ℝ] E)
     (Δ : ℝ) (s u : E) : ℝ :=
   let a := moreSorensenBoundaryCoefficient Δ s u
   let b := -moreSorensenBoundaryCoefficient Δ s (-u)
   if quadModel g H (s + a • u) ≤ quadModel g H (s + b • u) then a else b
 
-/-- The selected coefficient is feasible and has minimum model value over
-all coefficients that reach the boundary along the chosen direction. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 3b(iii), boundary and minimum model value. Let
+$\|s\| \le \Delta$ and $\|u\| = 1$, and let $\alpha$ be the best boundary coefficient. Then
+$\|s + \alpha u\| = \Delta$, and $q(s + \alpha u) \le q(s + t u)$ for every $t$ with
+$\|s + t u\| = \Delta$. -/
 theorem moreSorensenBestBoundaryCoefficient_spec (g : E) (H : E →L[ℝ] E)
     {Δ : ℝ} {s u : E} (hs : ‖s‖ ≤ Δ) (hu : ‖u‖ = 1) :
     let α := moreSorensenBestBoundaryCoefficient g H Δ s u
@@ -325,7 +423,9 @@ private theorem isSymm_shift_of_isSymmetric
   exact (isHermitian_iff_isSymm.mp (isSymmetric_toEuclideanLin_iff.mp hsymm)).add
     (isSymm_one.smul x)
 
-/-- The computed Cholesky pivot test succeeds precisely above the pole. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 1, the computed pivot test and the pole. Let $M$ be
+symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$. For every $x \in \mathbb{R}$,
+the Cholesky scan of $M + x I$ finds no failed pivot if and only if $x > -\lambda_1$. -/
 theorem shiftedCholesky_succeeds_iff (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (x : ℝ) : firstFailedCholeskyPivot (M + x • 1) = none ↔ -leftmost hM < x := by
@@ -335,8 +435,12 @@ theorem shiftedCholesky_succeeds_iff (hn : 0 < n)
     toEuclideanCLM_add_smul_one]
   exact isSymmetricCoercive_add_smul_iff (hH := hM) x
 
-/-- Compute the lower estimate from either the successful LINPACK solve
-or the back solve at the first failed Cholesky pivot. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Steps 3b–d, the computed lower estimate. For a square
+matrix $M$ and a trial $x$, let $A = M + x I$ with computed factor $L$. If the scan of $A$ finds
+no failed pivot, the estimate is $x - c$, where $c$ is the Rayleigh quotient for $L L^T$ of the
+LINPACK back solve $y$. If the scan returns the failed pivot $k$, the estimate is
+$x + \delta / v^T v$, with $\delta$ and $v$ as in
+`ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`. -/
 noncomputable def moreSorensenMatrixLowerEstimate (M : Matrix (Fin n) (Fin n) ℝ)
     (x : ℝ) : ℝ :=
   let A := M + x • 1
@@ -353,8 +457,10 @@ noncomputable def moreSorensenMatrixLowerEstimate (M : Matrix (Fin n) (Fin n) �
     let v := failedCholeskyBackSubst L₀ C
     x + δ / (v ⬝ᵥ v)
 
-/-- Both branches return valid lower bounds on the pole. In the successful
-branch the estimate is exactly the shifted LINPACK Rayleigh bound. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Steps 3b–d, validity of the computed lower estimate. Let
+$M$ be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$. For every $x$, the
+computed lower estimate is at most $-\lambda_1$. If $x > -\lambda_1$, the estimate is exactly
+$x - c$, where $c$ is the Rayleigh quotient of the LINPACK back solve for $M + x I$. -/
 theorem moreSorensenMatrixLowerEstimate_spec (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (x : ℝ) :
@@ -388,8 +494,12 @@ theorem moreSorensenMatrixLowerEstimate_spec (hn : 0 < n)
       rw [hp] at hnone
       cases hnone
 
-/-- The matrix multiplier orbit uses the computed pivot test and lower
-estimate at every trial. It does not need the spectral pole as input. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], the computed multiplier orbit. Starting from a triple
+(lower end, upper end, trial), each state is obtained by
+`ConnGouldToint.Chapter07.moreSorensenSafeguardedStepBy` with the Cholesky scan as the test of
+positive definiteness and with the computed lower estimate at the current trial.
+
+The orbit does not need the pole $-\lambda_1$ as an input. -/
 noncomputable def moreSorensenMatrixIterates (M : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (Δ θ : ℝ) (initial : ℝ × ℝ × ℝ) :
     ℕ → ℝ × ℝ × ℝ
@@ -400,8 +510,10 @@ noncomputable def moreSorensenMatrixIterates (M : Matrix (Fin n) (Fin n) ℝ)
       (fun t => firstFailedCholeskyPivot (M + t • 1) = none) Δ θ
       state.1 state.2.1 state.2.2 (moreSorensenMatrixLowerEstimate M state.2.2)
 
-/-- The computed matrix recurrence agrees with the spectral recurrence
-used to prove convergence. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], agreement of the computed recurrence with the spectral
+one. Let $M$ be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$. Each step of the
+computed orbit equals the update `ConnGouldToint.Chapter07.moreSorensenSafeguardedStep` with the
+pole $-\lambda_1$ and the computed lower estimate at the current trial. -/
 theorem moreSorensenMatrixIterates_succ (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (g : EuclideanSpace ℝ (Fin n)) (Δ θ : ℝ) (initial : ℝ × ℝ × ℝ) (k : ℕ) :
@@ -413,8 +525,11 @@ theorem moreSorensenMatrixIterates_succ (hn : 0 < n)
   simp only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy,
     shiftedCholesky_succeeds_iff hn hM]
 
-/-- The two triangular solves with the successful Cholesky factor produce
-the shifted raw step in Algorithm 7.3.4. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 1a, the step by triangular solves. Let $M$ be
+symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$, and let $x > -\lambda_1$. If $L$
+is the computed Cholesky factor of $M + x I$, then
+$$s(x) = L^{-T} \bigl(L^{-1} (-g)\bigr),$$
+computed by forward and backward substitution. -/
 theorem shiftedStep_eq_cholesky_subst (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (g : EuclideanSpace ℝ (Fin n)) {x : ℝ} (hx : -leftmost hM < x) :
@@ -434,9 +549,20 @@ theorem shiftedStep_eq_cholesky_subst (hn : 0 < n)
       ← Matrix.mulVec_mulVec, hy, hw, WithLp.toLp_neg, WithLp.toLp_ofLp]
   exact ((step_spec (H := Mop) (hH := hM) hx).2 _ hsol).symm
 
-/-- In the generated hard-case orbit all multiplier and curvature
-certificates come from the original matrix. Each successful trial uses the
-computed model-minimizing boundary root. -/
+/-- **Theorem 7.3.4** of [conn2000trust], the hard case with computed Cholesky and LINPACK data. Let
+$M$ be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$, $g \neq 0$, $\Delta > 0$
+and $\theta \in (0, 1)$. Suppose that $-\lambda_1$ is an optimal multiplier for a global
+minimizer $s_M$ with $\|s_M\| \le \Delta$ (the hard case). Let the initial triple satisfy
+$0 \le \lambda^L_0 \le -\lambda_1 < \lambda^U_0$ and $\lambda_0 \in [\lambda^L_0, \lambda^U_0]$,
+and let $\lambda_k$ be the trials of the computed orbit. Then $\lambda_k \to -\lambda_1$, there
+are infinitely many $k$ with $\lambda_k > -\lambda_1$, and along every sequence $k_j \to \infty$
+of such indices the corrected steps
+$$s_j = s(\lambda_{k_j}) + \alpha_j u_j$$
+satisfy $q(s_j) \to q(s_M)$, and every limit of a subsequence of $(s_j)$ lies in the ball and is
+a global minimizer of $q$ there. Here $u_j$ is the normalized LINPACK direction for
+$M + \lambda_{k_j} I$ and $\alpha_j$ is the best boundary coefficient.
+
+All multiplier and curvature certificates come from the matrix $M$. -/
 theorem moreSorensen_computed_hard_matrix_run (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     {g sM : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0)

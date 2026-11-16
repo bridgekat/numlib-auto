@@ -5,7 +5,80 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter06.Section06
 import NumlibSurface.ConnGouldToint.Chapter13.Section01
 
-/-! # First primal barrier inner algorithm -/
+/-!
+# Conn, Gould and Toint, Section 13.2: First primal barrier inner algorithm
+
+This module formalizes the first primal barrier inner algorithm of Section 13.2 of [conn2000trust].
+For a fixed barrier parameter, the inner algorithm minimizes a barrier objective $\varphi = f + b$
+over the interior of a feasible set $C$. Algorithm 13.2.1 is the basic trust-region algorithm of
+Chapter 6, except that a trial point $x + s$ is rejected unless it lies in the interior of $C$ and
+passes the fraction-to-boundary test
+$$\operatorname{dist}(x + s, \partial C) \ge \sigma \operatorname{dist}(x, \partial C), \qquad
+  \sigma \in (0, 1).$$
+The iterates of a run stay in the interior and do not increase $\varphi$. If the barrier $b$ tends
+to infinity at the boundary (AC.8) and $f$ is bounded below along the run, the iterates stay a
+uniform distance away from the boundary (Theorem 13.2.1). On this layer the barrier and model
+Hessians are bounded, so the model error is quadratic in the radius (Theorem 13.2.2), and short
+trials are very successful (Theorem 13.2.3).
+
+The module also treats the logarithmic barrier $b(x) = -\mu \sum_i \log x_i$ on the nonnegative
+orthant, which satisfies AC.8 only along bounded paths, and proves the first- and second-order inner
+limits of Algorithm 13.2.1 that Theorem 13.4.2 uses. The proofs build on the basic trust-region
+algorithm in `NumlibSurface.ConnGouldToint.Chapter06.Section06` and the logarithmic barrier in
+`NumlibSurface.ConnGouldToint.Chapter13.Section01`.
+
+## Main definitions
+
+* Assumption AC.8, `ConnGouldToint.Chapter13.BarrierDivergesAtBoundary`: the barrier tends to
+  $+\infty$ along every interior sequence that approaches the boundary.
+* Equation (13.2.1), `ConnGouldToint.Chapter13.BarrierAdmissibleTrial`: the interior and
+  fraction-to-boundary test.
+* Algorithm 13.2.1, Step 3, `ConnGouldToint.Chapter13.primalBarrierRatio`: the reduction ratio of an
+  admissible trial, and $0$ for an inadmissible one.
+* Algorithm 13.2.1, `ConnGouldToint.Chapter13.PrimalBarrierInnerRun`: an infinite run of the inner
+  algorithm for a fixed barrier parameter.
+* Theorem 13.2.2, `ConnGouldToint.Chapter13.primalBarrierHessianConstant`: the constant
+  $\kappa_{\rm ubh}$.
+
+## Main results
+
+* Equation (13.1.5), `ConnGouldToint.Chapter13.barrierBoundary_dist_le_add`:
+  $\operatorname{dist}(x + s, \partial C) \le \operatorname{dist}(x, \partial C) + \|s\|$.
+* Theorem 13.2.1, `ConnGouldToint.Chapter13.theorem_13_2_1`: the iterates of a run stay a uniform
+  distance $\varepsilon$ away from the boundary, and the barrier and model Hessian bounds of the
+  layer $\operatorname{dist} \ge \sigma \varepsilon$ hold on the reduced balls around the iterates.
+* Theorem 13.2.2, `ConnGouldToint.Chapter13.theorem_13_2_2`: a trial within the reduced radius is
+  admissible, and the model error is at most $\kappa_{\rm ubh} \Delta^2$.
+* Theorem 13.2.3, `ConnGouldToint.Chapter13.theorem_13_2_3`: a sufficiently short trial at a
+  noncritical point is admissible and very successful, and the radius does not decrease.
+
+## Implementation notes
+
+* The feasible set $C$ is a subset of a normed space $E$, which plays the role of the affine hull of
+  $C$. Interior and boundary are the topological `interior C` and `frontier C` in $E$.
+* The ratio of an inadmissible trial is $0$. Since the acceptance threshold $\eta_1$ is positive,
+  such a trial is rejected and the radius decreases.
+* Vectors of the logarithmic barrier results are functions `ι → ℝ` with the sup norm of Mathlib, so
+  the distance of a positive vector to the boundary of the orthant is its smallest coordinate.
+* Algorithms 13.1.1 and 13.4.1 use finite inner traces,
+  `ConnGouldToint.Chapter13.PrimalBarrierInnerPrefix`, which may stop at index zero.
+
+## Deviations from the source
+
+* **Theorem 13.2.1** (correction). The theorem assumes that the objective $f$ is bounded below along
+  the run; this bounds the barrier values, so that AC.8 applies. AC.8 is needed only along
+  reindexings of the run. See `ConnGouldToint.Chapter13.theorem_13_2_1`.
+* **Theorem 13.2.1 for the logarithmic barrier** (correction). The logarithmic barrier satisfies
+  AC.8 only along bounded paths, and a lower-bounded objective does not separate a level set from
+  the boundary. Separation holds for bounded iterates, or under a global lower bound, a bounded
+  Hessian and AW.2 at a larger parameter. See
+  `ConnGouldToint.Chapter13.logBarrier_unbounded_level_counterexample`,
+  `ConnGouldToint.Chapter13.logBarrier_bounded_level_separation` and
+  `ConnGouldToint.Chapter13.logBarrier_sublevel_separation_of_global_lower`.
+* **Theorem 13.4.2, boundary clearance** (correction). AF.1, AF.3 and AW.2 as printed do not imply
+  that the sublevel sets of the log-barrier objective stay away from the boundary. See
+  `ConnGouldToint.Chapter13.logBarrier_level_clearance_counterexample_of_bounded_hessian`.
+-/
 
 open Filter Metric Set
 open scoped Topology
@@ -14,66 +87,125 @@ namespace ConnGouldToint.Chapter13
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- AC.8 for a fixed barrier parameter and a feasible set in its ambient affine hull. -/
+/-- **Assumption AC.8** of [conn2000trust]. Let $C$ be a subset of a normed space $E$ and
+$b : E \to \mathbb{R}$. The barrier $b$ **diverges at the boundary** of $C$ if, for every
+sequence $(y_j)$ in the interior of $C$ with $\operatorname{dist}(y_j, \partial C) \to 0$, we
+have $b(y_j) \to +\infty$.
+
+This is AC.8 for a fixed barrier parameter. The feasible set is considered in its affine hull,
+which is the ambient space $E$, so the interior and the boundary are those of $E$. -/
 def BarrierDivergesAtBoundary (C : Set E) (b : E → ℝ) : Prop :=
   ∀ y : ℕ → E, (∀ j, y j ∈ interior C) →
     Tendsto (fun j ↦ infDist (y j) (frontier C)) atTop (𝓝 0) →
     Tendsto (fun j ↦ b (y j)) atTop atTop
 
 omit [NormedSpace ℝ E] in
-/-- Distance to a set satisfies the triangle estimate (13.1.5). -/
+/-- **Equation (13.1.5)** of [conn2000trust]. Let $C$ be a subset of a normed group $E$. For all
+$x, s \in E$,
+$$\operatorname{dist}(x + s, \partial C) \le \operatorname{dist}(x, \partial C) + \|s\|.$$
+
+This is the triangle inequality for the distance to a set. -/
 theorem barrierBoundary_dist_le_add (C : Set E) (x s : E) :
     infDist (x + s) (frontier C) ≤ infDist x (frontier C) + ‖s‖ := by
   simpa only [dist_eq_norm, add_sub_cancel_left] using
     (infDist_le_infDist_add_dist (x := x + s) (y := x) (s := frontier C))
 
-/-- The interior and fraction-to-boundary test (13.2.1). -/
+/-- **Equation (13.2.1)** of [conn2000trust]. Let $C \subseteq E$ and $\sigma \in \mathbb{R}$. A
+trial point $y$ from the iterate $x$ is **admissible** if $y$ lies in the interior of $C$ and
+$$\sigma \operatorname{dist}(x, \partial C) \le \operatorname{dist}(y, \partial C).$$
+-/
 def BarrierAdmissibleTrial (C : Set E) (σ : ℝ) (x y : E) : Prop :=
   y ∈ interior C ∧ σ * infDist x (frontier C) ≤ infDist y (frontier C)
 
-/-- Algorithm 13.2.1 evaluates the usual ratio on admissible trials.
-Zero represents the rejection sentinel, since the two thresholds are positive. -/
+/-- **Algorithm 13.2.1** of [conn2000trust], Step 3. For the barrier objective $\varphi$, a model
+$m$, an iterate $x$ and a step $s$, the **guarded ratio** is
+$$\rho = \frac{\varphi(x) - \varphi(x + s)}{m(x) - m(x + s)}$$
+if the trial point $x + s$ is admissible in the sense of (13.2.1), and $\rho = 0$ otherwise.
+
+The value $0$ marks a rejection: both acceptance thresholds are positive, so a trial with
+$\rho = 0$ is unsuccessful. The ratio is `ConnGouldToint.Chapter06.btrRatio`, which is $0$ when
+the predicted decrease is $0$. -/
 noncomputable def primalBarrierRatio (C : Set E) (σ : ℝ) (φ m : E → ℝ) (x s : E) : ℝ :=
   open Classical in
   if BarrierAdmissibleTrial C σ x (x + s) then Chapter06.btrRatio φ m x s else 0
 
-/-- The state and update rules of Algorithm 13.2.1 for a fixed barrier parameter.
-A run consists of trials with positive predicted decrease. -/
+/-- **Algorithm 13.2.1** of [conn2000trust]. Let $C$ be a subset of a normed space $E$, let
+$\sigma \in \mathbb{R}$, let $\varphi : E \to \mathbb{R}$ be the barrier objective for a fixed
+barrier parameter, and let $P$ give the parameters $0 < \eta_1 \le \eta_2 < 1$ and
+$0 < \gamma_1 \le \gamma_2 < 1$. A **run of Algorithm 13.2.1** consists of iterates $x_j$, steps
+$s_j$, radii $\Delta_j$ and models $m_j$ such that $x_0$ lies in the interior of $C$,
+$\Delta_0 > 0$, and for every $j$:
+* $\|s_j\| \le \Delta_j$ and $m_j(x_j) - m_j(x_j + s_j) > 0$;
+* $x_{j+1} = x_j + s_j$ if $\rho_j \ge \eta_1$, and $x_{j+1} = x_j$ otherwise, where $\rho_j$ is
+  the guarded ratio `ConnGouldToint.Chapter13.primalBarrierRatio`;
+* $\Delta_{j+1}$ follows the radius update (6.1.5) for $\rho_j$.
+
+The requirement that the predicted decrease be positive excludes a zero step. The radius update
+is `ConnGouldToint.Chapter06.BTRRadiusUpdate`. Agreement of the model with $\varphi$ and the
+sufficient decrease conditions are hypotheses of the theorems below, not part of the run. -/
 structure PrimalBarrierInnerRun (P : Chapter06.BTRParams) (C : Set E) (σ : ℝ) (φ : E → ℝ) where
+  /-- The iterates $x_j$. -/
   x : ℕ → E
+  /-- The trial steps $s_j$. -/
   s : ℕ → E
+  /-- The trust-region radii $\Delta_j$. -/
   Δ : ℕ → ℝ
+  /-- The models $m_j$. -/
   model : ℕ → E → ℝ
+  /-- The initial iterate $x_0$ lies in the interior of $C$. -/
   initial_interior : x 0 ∈ interior C
+  /-- The initial radius $\Delta_0$ is positive. -/
   initial_radius_pos : 0 < Δ 0
+  /-- Each step lies in the trust region: $\|s_j\| \le \Delta_j$. -/
   step_feasible : ∀ j, ‖s j‖ ≤ Δ j
+  /-- Each step has positive predicted decrease: $m_j(x_j + s_j) < m_j(x_j)$. -/
   predicted_pos : ∀ j, 0 < model j (x j) - model j (x j + s j)
+  /-- The trial is accepted, $x_{j+1} = x_j + s_j$, if the guarded ratio is at least $\eta_1$, and
+  otherwise $x_{j+1} = x_j$. -/
   iterate_update : ∀ j,
     x (j + 1) = if P.η₁ ≤ primalBarrierRatio C σ φ (model j) (x j) (s j)
       then x j + s j else x j
+  /-- The radius $\Delta_{j+1}$ follows the radius update (6.1.5) for the guarded ratio. -/
   radius_update : ∀ j,
     Chapter06.BTRRadiusUpdate P (primalBarrierRatio C σ φ (model j) (x j) (s j)) (Δ j) (Δ (j + 1))
 
-/-- The common primal inner state on a finite trace. The ratio and update
-rules apply to trial indices strictly before the terminal index, so an
-inner minimizer can terminate even when its terminal model has no
-positive-decrease trial. -/
+/-- A finite trace of the primal inner iteration of Algorithm 13.2.1 in [conn2000trust]. For given
+iterates $x_j$ and a terminal index $J$, it consists of steps $s_j$, radii $\Delta_j$ and models
+$m_j$ such that $x_0$ lies in the interior of $C$, $\Delta_0 > 0$, and the conditions of a run
+of Algorithm 13.2.1 hold for every trial index $j < J$.
+
+The ratio and update rules apply only before the terminal index. So an inner minimization can
+stop at $J$ even when the model at $J$ has no trial with positive predicted decrease, and it can
+stop at $J = 0$. The inner solvers of Algorithms 13.1.1 and 13.4.1 are finite traces of this
+kind. -/
 structure PrimalBarrierInnerPrefix (P : Chapter06.BTRParams) (C : Set E)
     (σ : ℝ) (φ : E → ℝ) (x : ℕ → E) (J : ℕ) where
+  /-- The trial steps $s_j$. -/
   s : ℕ → E
+  /-- The trust-region radii $\Delta_j$. -/
   Δ : ℕ → ℝ
+  /-- The models $m_j$. -/
   model : ℕ → E → ℝ
+  /-- The initial iterate $x_0$ lies in the interior of $C$. -/
   initial_interior : x 0 ∈ interior C
+  /-- The initial radius $\Delta_0$ is positive. -/
   initial_radius_pos : 0 < Δ 0
+  /-- Each step before the terminal index lies in the trust region. -/
   step_feasible : ∀ j < J, ‖s j‖ ≤ Δ j
+  /-- Each step before the terminal index has positive predicted decrease. -/
   predicted_pos : ∀ j < J, 0 < model j (x j) - model j (x j + s j)
+  /-- Before the terminal index, a trial is accepted if and only if the guarded ratio is at least
+  $\eta_1$. -/
   iterate_update : ∀ j < J,
     x (j + 1) = if P.η₁ ≤ primalBarrierRatio C σ φ (model j) (x j) (s j)
       then x j + s j else x j
+  /-- Before the terminal index, the radius follows the radius update (6.1.5) for the guarded ratio.
+  -/
   radius_update : ∀ j < J,
     Chapter06.BTRRadiusUpdate P (primalBarrierRatio C σ φ (model j) (x j) (s j)) (Δ j) (Δ (j + 1))
 
-/-- Restrict an infinite run to its first prescribed number of trials. -/
+/-- The first $J$ trials of a run of Algorithm 13.2.1 form a finite trace with terminal index $J$,
+with the same iterates, steps, radii and models. -/
 def PrimalBarrierInnerRun.prefix {P : Chapter06.BTRParams} {C : Set E} {σ : ℝ}
     {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ) (J : ℕ) :
     PrimalBarrierInnerPrefix P C σ φ r.x J where
@@ -88,8 +220,11 @@ def PrimalBarrierInnerRun.prefix {P : Chapter06.BTRParams} {C : Set E} {σ : ℝ
   radius_update := fun j _ ↦ r.radius_update j
 
 omit [NormedSpace ℝ E] in
-/-- The guarded update preserves strict feasibility through the last iterate
-of the finite trace. -/
+/-- On a finite trace of the primal inner iteration with terminal index $J$, every iterate $x_j$
+with $j \le J$ lies in the interior of $C$.
+
+The guarded update accepts only admissible trials, so strict feasibility is preserved up to the
+last iterate. -/
 theorem PrimalBarrierInnerPrefix.interior_iterate {P : Chapter06.BTRParams} {C : Set E}
     {σ : ℝ} {φ : E → ℝ} {x : ℕ → E} {J : ℕ}
     (r : PrimalBarrierInnerPrefix P C σ φ x J) {j : ℕ} (hj : j ≤ J) :
@@ -110,7 +245,8 @@ theorem PrimalBarrierInnerPrefix.interior_iterate {P : Chapter06.BTRParams} {C :
       exact ih hj'.le
 
 omit [NormedSpace ℝ E] in
-/-- Accepted trials and retained iterates both stay in the interior. -/
+/-- Every iterate $x_j$ of a run of Algorithm 13.2.1 lies in the interior of $C$: accepted trials
+pass the interior test, and rejected trials keep the previous iterate. -/
 theorem PrimalBarrierInnerRun.interior_iterate {P : Chapter06.BTRParams} {C : Set E}
     {σ : ℝ} {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ) (j : ℕ) :
     r.x j ∈ interior C := by
@@ -130,8 +266,10 @@ theorem PrimalBarrierInnerRun.interior_iterate {P : Chapter06.BTRParams} {C : Se
       exact ih
 
 omit [NormedSpace ℝ E] in
-/-- Positive predicted decrease and a positive acceptance threshold give a
-nonincreasing barrier-objective sequence. -/
+/-- Along a run of Algorithm 13.2.1, the values $\varphi(x_j)$ are nonincreasing in $j$.
+
+An accepted trial has $\rho_j \ge \eta_1 > 0$ and positive predicted decrease, so it decreases
+$\varphi$. -/
 theorem PrimalBarrierInnerRun.objective_antitone {P : Chapter06.BTRParams} {C : Set E}
     {σ : ℝ} {φ : E → ℝ} (r : PrimalBarrierInnerRun P C σ φ) :
     Antitone (fun j ↦ φ (r.x j)) := by
@@ -150,9 +288,15 @@ theorem PrimalBarrierInnerRun.objective_antitone {P : Chapter06.BTRParams} {C : 
       ite_eq_right (not_le_of_gt P.eta₁_pos)]
 
 omit [NormedSpace ℝ E] in
-/-- A sequence with bounded barrier values stays uniformly separated from the
-boundary under AC.8. The argument only requires divergence along paths in the
-class that contains the sequence and its reindexings. -/
+/-- Boundary separation in Theorem 13.2.1 of [conn2000trust]. Let $C$ be a subset of a normed group
+$E$, let $b : E \to \mathbb{R}$, and let $(x_j)$ be a sequence in the interior of $C$ with
+$b(x_j) \le M$ for all $j$. Assume that for every map $p : \mathbb{N} \to \mathbb{N}$ with
+$\operatorname{dist}(x_{p(n)}, \partial C) \to 0$ we have $b(x_{p(n)}) \to +\infty$. Then there
+is $\varepsilon \in (0, 1)$ with $\operatorname{dist}(x_j, \partial C) \ge \varepsilon$ for all
+$j$.
+
+The hypothesis is AC.8 restricted to the reindexings $(x_{p(n)})$ of the sequence, and AC.8
+implies it. -/
 theorem barrier_boundary_separation {C : Set E} {b : E → ℝ} {x : ℕ → E}
     (hx : ∀ j, x j ∈ interior C) {M : ℝ} (hb : ∀ j, b (x j) ≤ M)
     (hdiv : ∀ p : ℕ → ℕ, (∀ n, x (p n) ∈ interior C) →
@@ -189,8 +333,14 @@ private theorem PrimalBarrierInnerRun.boundary_separation_of_reindexings
   exact barrier_boundary_separation r.interior_iterate hlevel hdiv
 
 omit [NormedSpace ℝ E] in
-/-- AC.8 separates an inner run from the boundary whenever the objective is
-bounded below along that run. -/
+/-- The AC.8 implication in Theorem 13.2.1 of [conn2000trust]. Consider a run of Algorithm 13.2.1
+for the barrier objective $f + b$. If $f(x_j) \ge L$ for all $j$ and $b$ satisfies AC.8, then
+there is $\varepsilon \in (0, 1)$ with $\operatorname{dist}(x_j, \partial C) \ge \varepsilon$
+for all $j$.
+
+Since $f + b$ does not increase along the run, the lower bound on $f$ gives the upper bound
+$b(x_j) \le f(x_0) + b(x_0) - L$, and `ConnGouldToint.Chapter13.barrier_boundary_separation`
+applies. -/
 theorem PrimalBarrierInnerRun.boundary_separation
     {P : Chapter06.BTRParams} {C : Set E} {σ : ℝ} {f b : E → ℝ}
     (r : PrimalBarrierInnerRun P C σ (f + b)) {L : ℝ} (hf : ∀ j, L ≤ f (r.x j))
@@ -202,8 +352,11 @@ section Geometry
 
 variable [FiniteDimensional ℝ E]
 
-/-- A displacement no larger than the admissible fraction of the boundary
-distance stays in the interior and retains the prescribed clearance. -/
+/-- The clearance estimate (13.2.2)–(13.2.3) of [conn2000trust]. Let $E$ be a finite-dimensional
+normed space and let $C \ne E$. Let $x$ lie in the interior of $C$, let $\sigma \in (0, 1)$ and
+$\varepsilon > 0$ with $\varepsilon \le \operatorname{dist}(x, \partial C)$. If $\|y - x\| \le
+(1 - \sigma) \operatorname{dist}(x, \partial C)$, then $y$ is an admissible trial from $x$ in
+the sense of (13.2.1), and $\operatorname{dist}(y, \partial C) \ge \sigma \varepsilon$. -/
 theorem barrierBoundary_clearance {C : Set E} (hC : C ≠ univ)
     {x y : E} (hx : x ∈ interior C) {σ ε : ℝ}
     (hσ : σ ∈ Ioo (0 : ℝ) 1) (hε : 0 < ε) (hd : ε ≤ infDist x (frontier C))
@@ -225,11 +378,34 @@ theorem barrierBoundary_clearance {C : Set E} (hC : C ≠ univ)
   have hkeep : σ * infDist x (frontier C) ≤ infDist y (frontier C) := by linarith
   exact ⟨⟨hmem, hkeep⟩, (mul_le_mul_of_nonneg_left hd hσ.1.le).trans hkeep⟩
 
-/-- Corrected Theorem 13.2.1. A lower bound on the objective converts the
-accepted-level bound to an upper bound on barrier values. AC.8, or its
-restriction to reindexings of this run, then separates all iterates from the
-boundary. The layer bounds for the barrier and model Hessians apply throughout
-the resulting reduced balls. -/
+/-- **Theorem 13.2.1** of [conn2000trust]. Let $E$ be a finite-dimensional normed space, let
+$C \ne E$, let $\sigma \in (0, 1)$, and consider a run of Algorithm 13.2.1 for the barrier
+objective $f + b$ with iterates $x_j$ and radii $\Delta_j$. Let $m^b_j$ be barrier models.
+Assume:
+* $f(x_j) \ge L$ for all $j$;
+* for every map $p : \mathbb{N} \to \mathbb{N}$ with $\operatorname{dist}(x_{p(n)}, \partial C)
+  \to 0$, we have $b(x_{p(n)}) \to +\infty$;
+* for every $\varepsilon > 0$, $\|\nabla^2 b(y)\| \le B_h(\varepsilon)$ at every interior point
+  $y$ with $\operatorname{dist}(y, \partial C) \ge \varepsilon$;
+* for every $\varepsilon > 0$ and $j$, $\|\nabla^2 m^b_j(y)\| \le B_m(\varepsilon)$ at every
+  interior point $y$ with $\|y - x_j\| \le \Delta_j$ and $\operatorname{dist}(y, \partial C) \ge
+  \varepsilon$.
+
+Then there is $\varepsilon \in (0, 1)$ with $\operatorname{dist}(x_j, \partial C) \ge
+\varepsilon$ for all $j$. Moreover, for all $j$ and every $y$ with $\|y - x_j\| \le (1 - \sigma)
+\operatorname{dist}(x_j, \partial C)$, the point $y$ lies in the interior of $C$,
+$\|\nabla^2 b(y)\| \le B_h(\sigma \varepsilon)$, and if also $\|y - x_j\| \le \Delta_j$, then
+$\|\nabla^2 m^b_j(y)\| \le B_m(\sigma \varepsilon)$.
+
+**Correction.** The statement adds the hypothesis that the objective is bounded below along the
+run. With it, the bound on the accepted values of $f + b$ becomes an upper bound on the barrier
+values $b(x_j)$, which AC.8 needs.
+
+The second hypothesis is AC.8 restricted to reindexings of the run, and
+`ConnGouldToint.Chapter13.BarrierDivergesAtBoundary` implies it. The Hessians are second Fréchet
+derivatives with the operator norm. The proof combines
+`ConnGouldToint.Chapter13.barrier_boundary_separation` with
+`ConnGouldToint.Chapter13.barrierBoundary_clearance`. -/
 theorem theorem_13_2_1 {P : Chapter06.BTRParams} {C : Set E} (hC : C ≠ univ)
     {σ : ℝ} (hσ : σ ∈ Ioo (0 : ℝ) 1) {f b : E → ℝ}
     (r : PrimalBarrierInnerRun P C σ (f + b)) {mB : ℕ → E → ℝ}
@@ -269,13 +445,30 @@ private theorem barrierTaylorRemainder {F : E → ℝ} {x s : E} {Δ B : ℝ}
   simpa only [Real.norm_eq_abs] using
     norm_sub_firstOrder_le_of_hessian_bound (convex_closedBall x Δ) hx hy h₁ h₂ hB
 
-/-- The constant κ_ubh in Theorem 13.2.2 combines the objective and barrier
-bounds for the exact function and for the model. -/
+/-- **Theorem 13.2.2** of [conn2000trust], the constant $\kappa_{\rm ubh}$. For bounds $F$ and $B$
+on the Hessians of the objective and the barrier, and bounds $M$ and $M_B$ on the Hessians of
+their models,
+$$\kappa_{\rm ubh} = \max\{F + B, M + M_B\}.$$
+-/
 noncomputable def primalBarrierHessianConstant (F B M MB : ℝ) : ℝ := max (F + B) (M + MB)
 
-/-- Theorem 13.2.2. A small trust region lies in the separated interior
-layer. Taylor remainder estimates for the two exact terms and their two
-model terms give the combined error bound. -/
+/-- **Theorem 13.2.2** of [conn2000trust]. Let $E$ be a finite-dimensional normed space, let
+$C \ne E$, $\sigma \in (0, 1)$ and $\varepsilon > 0$. Let $x$ lie in the interior of $C$ with
+$\operatorname{dist}(x, \partial C) \ge \varepsilon$, and let
+$\|s\| \le \Delta \le (1 - \sigma) \varepsilon$. Let $f$ be twice continuously differentiable on
+$E$, $b$ on the interior of $C$, and the models $m^f$ and $m^b$ on the interior points of the
+ball $\|y - x\| \le \Delta$. Assume that $f(x) = m^f(x)$, $b(x) = m^b(x)$,
+$\nabla f(x) = \nabla m^f(x)$ and $\nabla b(x) = \nabla m^b(x)$. Assume the Hessian bounds
+$\|\nabla^2 f\| \le F$ on $E$, $\|\nabla^2 b(y)\| \le B$ at interior points $y$ with
+$\operatorname{dist}(y, \partial C) \ge \sigma \varepsilon$, $\|\nabla^2 m^f\| \le M$ at
+interior points of the ball, and $\|\nabla^2 m^b(y)\| \le M_B$ at interior points $y$ of the
+ball with $\operatorname{dist}(y, \partial C) \ge \sigma \varepsilon$. Then $x + s$ is an
+admissible trial from $x$ in the sense of (13.2.1), and
+$$|(f + b)(x + s) - (m^f + m^b)(x + s)| \le \kappa_{\rm ubh} \Delta^2, \qquad \kappa_{\rm ubh} =
+  \max\{F + B, M + M_B\}.$$
+
+A small trust region lies in the separated interior layer. The proof adds the Taylor remainder
+estimates of the two exact terms and of their two models. -/
 theorem theorem_13_2_2 {C : Set E} (hC : C ≠ univ) {σ ε : ℝ}
     (hσ : σ ∈ Ioo (0 : ℝ) 1) (hε : 0 < ε)
     {x s : E} (hx : x ∈ interior C) (hclear : ε ≤ infDist x (frontier C))
@@ -334,8 +527,20 @@ theorem theorem_13_2_2 {C : Set E} (hC : C ≠ univ) {σ ε : ℝ}
   exact he.trans (mul_le_mul_of_nonneg_left
     ((sq_le_sq₀ (norm_nonneg _) hΔ₀).mpr hs) hK₀)
 
-/-- Theorem 13.2.3. The radius bound has two parts. The boundary bound makes
-the trial admissible, and the usual agreement bound makes it very successful. -/
+/-- **Theorem 13.2.3** of [conn2000trust]. Let $E$ be a finite-dimensional normed space, let
+$C \ne E$, $\sigma \in (0, 1)$ and $\varepsilon > 0$, and let $x$ lie in the interior of $C$
+with $\operatorname{dist}(x, \partial C) \ge \varepsilon$. Let $0 < \beta \le K$, $\Delta > 0$,
+$g \ne 0$ and $\|s\| \le \Delta$. Assume that $\varphi(x) = m(x)$, that the step satisfies the
+sufficient decrease condition
+$$m(x) - m(x + s) \ge \kappa \|g\| \min\{\|g\| / \beta, \Delta\}, \qquad \kappa \in (0, 1),$$
+that $|\varphi(x + s) - m(x + s)| \le K \Delta^2$, and that
+$$\Delta \le \min\left\{\frac{\kappa \|g\| (1 - \eta_2)}{K}, (1 - \sigma) \varepsilon\right\}.$$
+If $\Delta'$ follows the radius update (6.1.5) for the guarded ratio $\rho$ of the trial, then
+$x + s$ is admissible, $\rho \ge \eta_2$, and $\Delta' \ge \Delta$.
+
+The bound on $\Delta$ has two parts. The boundary part makes the trial admissible, and the usual
+agreement part makes it very successful. The decrease condition is
+`ConnGouldToint.Chapter06.HasSufficientModelDecrease`. -/
 theorem theorem_13_2_3 {P : Chapter06.BTRParams} {C : Set E} (hC : C ≠ univ)
     {σ ε : ℝ} (hσ : σ ∈ Ioo (0 : ℝ) 1) (hε : 0 < ε)
     {φ m : E → ℝ} {x s g : E} (hx : x ∈ interior C)
@@ -380,9 +585,20 @@ private theorem primalBarrier_model_curvature_le {C : Set E} {x : E}
   rw [he.fderiv_eq, (hf'.hasFDerivAt.add hb'.hasFDerivAt).fderiv]
   linarith [norm_add_le (fderiv ℝ (fderiv ℝ mf) x) (fderiv ℝ (fderiv ℝ mb) x)]
 
-/-- Theorem 13.2.3 under the objective and barrier Taylor-model assumptions.
-The curvature denominator is the usual one plus the norm of the model
-Hessian at the center. -/
+/-- Theorem 13.2.3 of [conn2000trust] under the Taylor-model assumptions of Theorem 13.2.2. Let $E$,
+$C$, $\sigma$, $\varepsilon$, $x$, $f$, $b$, $m^f$, $m^b$, $F$, $B$, $M_B$ and the agreement at
+$x$ be as in Theorem 13.2.2, but with the model bound $\|\nabla^2 m^f\| \le M - 1$ at interior
+points of the ball $\|y - x\| \le \Delta$. Let $\Delta > 0$, $g \ne 0$ and $\|s\| \le \Delta$.
+Assume that $m = m^f + m^b$ satisfies the sufficient decrease condition of Theorem 13.2.3 with
+the curvature $\beta = 1 + \|\nabla^2 m(x)\|$, and that
+$$\Delta \le \min\left\{\frac{\kappa \|g\| (1 - \eta_2)}{\kappa_{\rm ubh}}, (1 - \sigma)
+  \varepsilon\right\}, \qquad \kappa_{\rm ubh} = \max\{F + B, M + M_B\}.$$
+If $\Delta'$ follows the radius update (6.1.5) for the guarded ratio $\rho$ of $f + b$ and $m$,
+then $x + s$ is admissible, $\rho \ge \eta_2$, and $\Delta' \ge \Delta$.
+
+The curvature in the decrease condition is the usual $1$ plus the norm of the model Hessian at
+the center. The proof combines `ConnGouldToint.Chapter13.theorem_13_2_2` and
+`ConnGouldToint.Chapter13.theorem_13_2_3`. -/
 theorem theorem_13_2_3_of_models {P : Chapter06.BTRParams} {C : Set E} (hC : C ≠ univ)
     {σ ε : ℝ} (hσ : σ ∈ Ioo (0 : ℝ) 1) (hε : 0 < ε)
     {x s g : E} (hx : x ∈ interior C) (hclear : ε ≤ infDist x (frontier C))
@@ -420,9 +636,18 @@ theorem theorem_13_2_3_of_models {P : Chapter06.BTRParams} {C : Set E} (hC : C �
 
 end Geometry
 
-/-- For the logarithmic barrier, the corrected separation result applies to
-uniformly bounded positive iterates. A lower bound on the objective and an
-upper bound on its barrier level supply the required barrier-value bound. -/
+/-! ### The logarithmic barrier -/
+
+/-- Theorem 13.2.1 of [conn2000trust] for the logarithmic barrier on bounded iterates. Let
+$n \ge 1$, $\mu > 0$, $f : \mathbb{R}^n \to \mathbb{R}$, and let $(x_j)$ be vectors with
+$0 < x_{j,i} \le M$ for all $j$ and $i$. If $f(x_j) \ge L$ and
+$f(x_j) - \mu \sum_i \log x_{j,i} \le U$ for all $j$, then there is $\varepsilon \in (0, 1)$
+such that the distance from $x_j$ to the boundary of the nonnegative orthant is at least
+$\varepsilon$ for all $j$.
+
+The logarithmic barrier satisfies AC.8 on uniformly bounded positive paths, and the bounds on
+$f$ and on the barrier objective bound the barrier values. The barrier objective is
+`ConnGouldToint.Chapter13.logBarrierObjective`. -/
 theorem logBarrier_bounded_level_separation {ι : Type*} [Fintype ι] [Nonempty ι]
     {μ L M U : ℝ} (hμ : 0 < μ) {f : (ι → ℝ) → ℝ} {x : ℕ → ι → ℝ}
     (hx : ∀ j i, 0 < x j i) (hM : ∀ j i, x j i ≤ M)
@@ -438,9 +663,18 @@ theorem logBarrier_bounded_level_separation {ι : Type*} [Fintype ι] [Nonempty 
   exact barrier_boundary_separation hi hb fun p _ hp ↦
     logBarrier_boundary_divergence hμ (fun j ↦ hx (p j)) (fun j ↦ hM (p j)) hp
 
-/-- A lower-bounded objective and lower-bounded log-barrier objectives for
-every positive parameter do not, by themselves, separate all fixed-level
-points from the boundary. The two coordinates can compensate each other. -/
+/-- A counterexample to boundary separation in Theorem 13.2.1 of [conn2000trust] for the logarithmic
+barrier without bounded iterates. There are a twice continuously differentiable
+$f : \mathbb{R}^2 \to \mathbb{R}$ with $f \ge 0$ and a sequence $(x_j)$ of positive vectors such
+that:
+* for every $\mu > 0$, the barrier objective $f(y) - \mu \sum_i \log y_i$ is bounded below on
+  the positive orthant;
+* $f(x_j) - \sum_i \log x_{j,i} = 1$ for all $j$;
+* the distance from $x_j$ to the boundary of the nonnegative orthant tends to $0$.
+
+A lower-bounded objective and lower-bounded barrier objectives for every parameter do not, by
+themselves, separate a level set from the boundary: the two coordinates can compensate each
+other. -/
 theorem logBarrier_unbounded_level_counterexample :
     ∃ (f : (Fin 2 → ℝ) → ℝ) (x : ℕ → Fin 2 → ℝ),
       ContDiff ℝ 2 f ∧ (∀ y, 0 ≤ f y) ∧
@@ -475,15 +709,21 @@ theorem logBarrier_unbounded_level_counterexample :
     rw [hprod, hb j]
     norm_num
 
+/-! ### A global lower bound on the objective -/
+
 section GlobalLowerBound
 
 variable {ι : Type*} [Fintype ι]
 
-/-- Under a global lower bound on the objective and a bounded objective
-Hessian, a lower bound on the log-barrier objective at a larger parameter
-forces every fixed sublevel of the smaller-parameter barrier to be
-bounded. The proof compares each point to its translate by the all-ones
-vector, where every coordinate is at least one. -/
+/-- A sublevel bound for the logarithmic barrier objective, the corrected compactness hypothesis for
+Theorems 13.2.1 and 13.4.2 of [conn2000trust]. Let $f : \mathbb{R}^n \to \mathbb{R}$ be twice
+continuously differentiable with $f \ge L$ and $\|\nabla^2 f\| \le H$ on $\mathbb{R}^n$, and let
+$0 < \mu < \nu$. Assume that $f(y) - \nu \sum_i \log y_i \ge A$ for all positive $y$. Then for
+every $U$ there is $M$ such that every positive $x$ with $f(x) - \mu \sum_i \log x_i \le U$
+satisfies $x_i \le M$ for all $i$.
+
+The proof compares each point with its translate by the all-ones vector, where every coordinate
+is at least one. -/
 theorem logBarrier_sublevel_coordinate_bound {f : (ι → ℝ) → ℝ} {μ ν L A U H : ℝ}
     (hμ : 0 < μ) (hν : μ < ν) (hf : ContDiff ℝ 2 f)
     (hlower : ∀ y, L ≤ f y)
@@ -537,9 +777,16 @@ theorem logBarrier_sublevel_coordinate_bound {f : (ι → ℝ) → ℝ} {μ ν L
   change x i + 1 ≤ _ at he
   linarith
 
-/-- The stronger global objective lower bound, together with AF.1, AF.3,
-and AW.2 at a larger parameter, supplies the clearance needed in the
-logarithmic barrier inner convergence proof. -/
+/-- Boundary separation for Theorem 13.4.2 of [conn2000trust] under a global lower bound on the
+objective. Let $n \ge 1$ and let $f$, $L$, $H$, $0 < \mu < \nu$ and $A$ be as in
+`ConnGouldToint.Chapter13.logBarrier_sublevel_coordinate_bound`. If $(x_j)$ are positive vectors
+with $f(x_j) - \mu \sum_i \log x_{j,i} \le U$ for all $j$, then there is
+$\varepsilon \in (0, 1)$ such that the distance from $x_j$ to the boundary of the nonnegative
+orthant is at least $\varepsilon$ for all $j$.
+
+The hypotheses are AF.1, AF.3, AW.2 at the larger parameter $\nu$, and a global lower bound on
+the objective. Together they supply the clearance needed in the inner convergence proof for the
+logarithmic barrier. -/
 theorem logBarrier_sublevel_separation_of_global_lower [Nonempty ι]
     {f : (ι → ℝ) → ℝ} {x : ℕ → ι → ℝ} {μ ν L A U H : ℝ}
     (hμ : 0 < μ) (hν : μ < ν) (hf : ContDiff ℝ 2 f)
@@ -557,7 +804,10 @@ end GlobalLowerBound
 private def barrierProjection (i : Fin 2) : (Fin 2 → ℝ) →L[ℝ] ℝ :=
   ContinuousLinearMap.proj i
 
-/-- The bilinear objective for the unbounded logarithmic barrier examples. -/
+/-- The bilinear objective $f(x) = x_1 x_2$ on $\mathbb{R}^2$, used in the counterexamples for the
+logarithmic barrier in [conn2000trust].
+
+In Lean the coordinates are indexed by `Fin 2`, so $x_1$ and $x_2$ are `x 0` and `x 1`. -/
 noncomputable def barrierBilinearObjective (x : Fin 2 → ℝ) : ℝ := x 0 * x 1
 
 private theorem barrierBilinearObjective_fderiv (x : Fin 2 → ℝ) :
@@ -565,7 +815,8 @@ private theorem barrierBilinearObjective_fderiv (x : Fin 2 → ℝ) :
       x 0 • barrierProjection 1 + x 1 • barrierProjection 0 :=
   ((barrierProjection 0).hasFDerivAt.mul (barrierProjection 1).hasFDerivAt).fderiv
 
-/-- The derivative of the bilinear objective in an arbitrary direction. -/
+/-- The derivative of the bilinear objective $f(x) = x_1 x_2$ in a direction $d \in \mathbb{R}^2$ is
+$Df(x) d = x_1 d_2 + x_2 d_1$. -/
 theorem barrierBilinearObjective_fderiv_apply (x d : Fin 2 → ℝ) :
     fderiv ℝ barrierBilinearObjective x d = x 0 * d 1 + x 1 * d 0 := by
   rw [barrierBilinearObjective_fderiv]
@@ -580,19 +831,28 @@ private theorem barrierBilinearObjective_hessian (x : Fin 2 → ℝ) :
     ((barrierProjection 1).hasFDerivAt (x := x) |>.smul_const (barrierProjection 0))
   exact h.fderiv
 
-/-- The bilinear example satisfies AF.1 and AF.3 on the full space. -/
+/-- The bilinear objective $f(x) = x_1 x_2$ satisfies AF.1 and AF.3 on $\mathbb{R}^2$: it is twice
+continuously differentiable, and its Hessian is bounded. -/
 theorem barrierBilinearObjective_smooth_bounded_hessian :
     ContDiff ℝ 2 barrierBilinearObjective ∧
       ∃ H, ∀ x, ‖fderiv ℝ (fderiv ℝ barrierBilinearObjective) x‖ ≤ H :=
   ⟨by unfold barrierBilinearObjective; fun_prop,
     ⟨_, fun x ↦ (congrArg norm (barrierBilinearObjective_hessian x)).le⟩⟩
 
-/-- AF.1, AF.3, and AW.2 as printed in Theorem 13.4.2 do not imply
-uniform clearance of log-barrier sublevels. For the bilinear objective
-the Hessian is constant, and all the barrier objectives are bounded below
-on the positive orthant. A constant-product path still approaches its
-boundary. This refutes the sublevel-separation implication, independently
-of whether a particular inner algorithm follows that path. -/
+/-- A counterexample to boundary separation from the hypotheses of Theorem 13.4.2 of
+[conn2000trust]. There are a twice continuously differentiable $f : \mathbb{R}^2 \to \mathbb{R}$
+with bounded Hessian and a sequence $(x_j)$ of positive vectors such that:
+* $f \ge 0$ on the positive orthant;
+* for every $\mu > 0$, the barrier objective $f(y) - \mu \sum_i \log y_i$ is bounded below on
+  the positive orthant;
+* $f(x_j) - \sum_i \log x_{j,i} = 1$ for all $j$;
+* the distance from $x_j$ to the boundary of the nonnegative orthant tends to $0$.
+
+So AF.1, AF.3 and AW.2 as printed in Theorem 13.4.2 do not imply that the sublevel sets of the
+log-barrier objective stay away from the boundary. This refutes the separation step
+independently of whether a particular inner algorithm follows the path. The witness is the
+bilinear objective `ConnGouldToint.Chapter13.barrierBilinearObjective`, whose Hessian is
+constant, along a path of constant product $x_1 x_2$. -/
 theorem logBarrier_level_clearance_counterexample_of_bounded_hessian :
     ∃ (f : (Fin 2 → ℝ) → ℝ) (x : ℕ → Fin 2 → ℝ),
       ContDiff ℝ 2 f ∧ (∃ H, ∀ y, ‖fderiv ℝ (fderiv ℝ f) y‖ ≤ H) ∧
@@ -626,6 +886,8 @@ theorem logBarrier_level_clearance_counterexample_of_bounded_hessian :
       rwa [Real.exp_log (mul_pos (hx j 0) (hx j 1)), Real.exp_zero] at he
     change x j 0 * x j 1 + logBarrier (x j) 1 = 1
     rw [hprod, hb j, add_zero]
+
+/-! ### Inner limits of Algorithm 13.2.1 -/
 
 section FirstOrderLimit
 
@@ -661,10 +923,19 @@ private theorem PrimalBarrierInnerRun.value_tendsto {P : BTRParams} {C : Set E} 
   tendsto_atTop_ciInf r.objective_antitone hlower
 
 omit [NormedSpace ℝ E] in
-/-- A guarded inner run has arbitrarily small criticality values if
-sufficiently short trials become very successful away from zero criticality,
-and a successful trial with radius bounded below gives a uniform positive
-objective decrease. This argument uses the actual guarded ratio. -/
+/-- The basic trust-region argument of [conn2000trust] for the guarded ratio of Algorithm 13.2.1.
+Consider a run of Algorithm 13.2.1 and a criticality measure $a_j$, and assume that the values
+$\varphi(x_j)$ are bounded below. Assume:
+* for every $\varepsilon > 0$ there is $\delta > 0$ such that, for all large $j$,
+  $a_j \ge \varepsilon$ and $\Delta_j \le \delta$ imply $\rho_j \ge \eta_2$;
+* for every $\varepsilon > 0$ and $d > 0$ there is $q > 0$ such that, for all $j$,
+  $a_j \ge \varepsilon$, $\Delta_j \ge d$ and $\rho_j \ge \eta_1$ imply
+  $\varphi(x_j) - \varphi(x_{j+1}) \ge q$.
+
+Then for every $\varepsilon > 0$ there are infinitely many $j$ with $a_j < \varepsilon$.
+
+Here $\rho_j$ is the guarded ratio `ConnGouldToint.Chapter13.primalBarrierRatio`, so the
+fraction-to-boundary test is part of the acceptance. -/
 theorem PrimalBarrierInnerRun.frequently_small_criticality
     {P : BTRParams} {C : Set E} {σ : ℝ} {φ : E → ℝ}
     (r : PrimalBarrierInnerRun P C σ φ) (a : ℕ → ℝ)
@@ -724,10 +995,22 @@ theorem PrimalBarrierInnerRun.frequently_small_criticality
   obtain ⟨j, hj⟩ := (hlim.eventually (gt_mem_nhds hd)).exists
   exact hj.not_ge ((hrad _ ((le_max_left N J).trans (Nat.le_add_right I j))).trans (hshrink j))
 
-/-- The first-order inner limit of Algorithm 13.2.1 under fixed clearance,
-the uniform short-trial Taylor estimate, and a Lipschitz bound on the
-variation of the criticality measure between successive iterates. The
-fraction-to-boundary sentinel is kept throughout the acceptance proof. -/
+/-- The first-order inner limit of Algorithm 13.2.1 used in Theorem 13.4.2 of [conn2000trust]. Let
+$E$ be a finite-dimensional real inner product space, let $C \ne E$, $\sigma \in (0, 1)$ and
+$\delta > 0$, and consider a run of Algorithm 13.2.1 with $\operatorname{dist}(x_j, \partial C)
+\ge \delta$ for all $j$. Let $g_j \in E$ and $0 < \beta_j \le K$, and let $L \ge 0$. Assume that
+for all $j$:
+* $\varphi(x_j) = m_j(x_j)$;
+* $m_j(x_j) - m_j(x_j + s_j) \ge \kappa \|g_j\| \min\{\|g_j\| / \beta_j, \Delta_j\}$ with
+  $\kappa \in (0, 1)$;
+* if $\Delta_j \le (1 - \sigma) \delta$, then $|\varphi(x_j + s_j) - m_j(x_j + s_j)| \le K
+  \Delta_j^2$;
+* $\|g_j\| - \|g_{j+1}\| \le L \|x_j - x_{j+1}\|$.
+
+If the values $\varphi(x_j)$ are bounded below, then $\|g_j\| \to 0$.
+
+The uniform clearance $\delta$ replaces the separation of Theorem 13.2.1. The
+fraction-to-boundary test stays in the ratio throughout the acceptance proof. -/
 theorem PrimalBarrierInnerRun.gradient_norm_tendsto_zero
     {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [FiniteDimensional ℝ F]
     {P : BTRParams} {C : Set F} {σ : ℝ} {φ : F → ℝ}
@@ -842,9 +1125,23 @@ theorem PrimalBarrierInnerRun.gradient_norm_tendsto_zero
       rwa [mul_comm]
   exact hlast.not_ge ((mul_le_mul_of_nonneg_left hgap'.le hc.le).trans (htel j hj.1 le_rfl))
 
-/-- The second-order inner curvature bound of Algorithm 13.2.1. The
-normalized model error is required only on sufficiently short trials,
-which pass the fraction-to-boundary test by the uniform clearance. -/
+/-- The second-order inner limit of Algorithm 13.2.1 used in Theorem 13.4.2 of [conn2000trust]. Let
+$E$ be a finite-dimensional normed space, let $C \ne E$, $\sigma \in (0, 1)$ and $\delta > 0$,
+and consider a run of Algorithm 13.2.1 with $\operatorname{dist}(x_j, \partial C) \ge \delta$
+for all $j$. Let $\tau_j$ and $c_j$ be real sequences and $\kappa > 0$. Assume that for all $j$:
+* $\varphi(x_j) = m_j(x_j)$;
+* if $\tau_j < 0$, then $m_j(x_j) - m_j(x_j + s_j) \ge \kappa |\tau_j| \min\{\tau_j^2,
+  \Delta_j^2\}$;
+* for every $e > 0$ there is $D > 0$ such that, for all large $j$, $\Delta_j \le D$ implies
+  $|\varphi(x_j + s_j) - m_j(x_j + s_j)| \le e \Delta_j^2$;
+* $|c_j - \tau_j| \to 0$.
+
+If the values $\varphi(x_j)$ are bounded below, then for every $\varepsilon > 0$ there are
+infinitely many $j$ with $c_j > -\varepsilon$.
+
+The normalized model error is needed only on short trials, and these pass the
+fraction-to-boundary test by the uniform clearance. The decrease condition is
+`ConnGouldToint.Chapter06.HasNegativeCurvatureDecrease`. -/
 theorem PrimalBarrierInnerRun.frequently_near_nonnegative_curvature
     [FiniteDimensional ℝ E] {P : BTRParams} {C : Set E} {σ : ℝ} {φ : E → ℝ}
     (r : PrimalBarrierInnerRun P C σ φ) (hC : C ≠ univ)
@@ -913,9 +1210,22 @@ private theorem barrier_hessian_sub {f m : E → ℝ} {x : E}
   rw [he.fderiv_eq]
   exact (hdf.hasFDerivAt.sub hdm.hasFDerivAt).fderiv
 
-/-- Center Hessian agreement and uniform Hessian variation on short
-interior trust regions give the normalized model error used by the
-second-order inner convergence proof. -/
+/-- Local Hessian agreement in the curvature argument for Algorithm 13.2.1 of [conn2000trust]. Let
+$E$ be a finite-dimensional normed space, let $C \ne E$, $\sigma \in (0, 1)$ and $\delta > 0$,
+and consider a run of Algorithm 13.2.1 with $\operatorname{dist}(x_j, \partial C) \ge \delta$
+for all $j$. Assume that $\varphi$ is twice continuously differentiable on the interior of $C$,
+each $m_j$ on the interior points of the ball $\|y - x_j\| \le \Delta_j$, and that
+$\varphi(x_j) = m_j(x_j)$ and $\nabla \varphi(x_j) = \nabla m_j(x_j)$. Assume that $\|\nabla^2
+\varphi(x_j) - \nabla^2 m_j(x_j)\| \to 0$, and that for every $e > 0$ there is $D > 0$ such
+that, for all $j$ with $\Delta_j \le D$ and all interior points $y$ of the ball
+$\|y - x_j\| \le \Delta_j$,
+$$\|\nabla^2 \varphi(y) - \nabla^2 \varphi(x_j)\| + \|\nabla^2 m_j(y) - \nabla^2 m_j(x_j)\| \le
+  e.$$
+Then for every $e > 0$ there is $D > 0$ such that, for all large $j$, $\Delta_j \le D$ implies
+$|\varphi(x_j + s_j) - m_j(x_j + s_j)| \le e \Delta_j^2$.
+
+This supplies the normalized model error of
+`ConnGouldToint.Chapter13.PrimalBarrierInnerRun.frequently_near_nonnegative_curvature`. -/
 theorem PrimalBarrierInnerRun.small_radius_model_error_of_hessians
     [FiniteDimensional ℝ E] {P : BTRParams} {C : Set E} {σ : ℝ} {φ : E → ℝ}
     (r : PrimalBarrierInnerRun P C σ φ) (hC : C ≠ univ)
@@ -972,8 +1282,15 @@ theorem PrimalBarrierInnerRun.small_radius_model_error_of_hessians
   have hs := (sq_le_sq₀ (norm_nonneg _) hΔ).mpr (r.step_feasible j)
   nlinarith only [ht, mul_le_mul_of_nonneg_left hs he.le]
 
-/-- A uniform Hessian bound on a convex region containing the accepted
-iterates supplies the gradient variation estimate for Algorithm 13.2.1. -/
+/-- The first-order variation estimate for Algorithm 13.2.1 of [conn2000trust]. Let $E$ be a real
+Hilbert space, let $S \subseteq E$ be convex and contain all iterates $x_j$ of a run of
+Algorithm 13.2.1, and let $\varphi$ be twice continuously differentiable at every point of $S$
+with $\|\nabla^2 \varphi\| \le L$ on $S$. Then for all $j$,
+$$\|\nabla \varphi(x_j)\| - \|\nabla \varphi(x_{j+1})\| \le L \|x_j - x_{j+1}\|.$$
+
+This supplies the variation hypothesis of
+`ConnGouldToint.Chapter13.PrimalBarrierInnerRun.gradient_norm_tendsto_zero` on a convex region
+in the separated layer. -/
 theorem PrimalBarrierInnerRun.gradient_norm_variation_of_hessian_bound
     {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
     {P : BTRParams} {C S : Set F} {σ : ℝ} {φ : F → ℝ}

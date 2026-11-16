@@ -7,7 +7,79 @@ import NumlibSurface.ConnGouldToint.Chapter03.Section01
 import NumlibSurface.ConnGouldToint.Chapter12.Section03
 import NumlibSurface.ConnGouldToint.Chapter06.Section06
 
-/-! # Lagrangian models on an identified face -/
+/-!
+# Conn, Gould and Toint, Section 12.4: Lagrangian models on an identified face
+
+This module formalizes the analysis of Section 12.4 of [conn2000trust] once the active set has been
+identified. The constraints are written as $c_i(x) \ge 0$, and the active set at $x$ is
+$\mathcal{A}(x) = \{i : c_i(x) = 0\}$. For a model $m$ and multipliers $y$ that vanish off
+$\mathcal{A}(x)$, the fixed-multiplier Lagrangian model is $L(z) = m(z) - \sum_i y_i c_i(z)$. It
+agrees with $m$ at every point with the same active set as $x$. When the multiplier term is the
+normal component of $-\nabla f(x)$, the derivative of $L$ at $x$ is minus the tangent component
+$P_{T(x)}[-\nabla f(x)]$, as in (12.4.1). Curvature of $L$ along the step then bounds the step by
+the tangent linear decrease (Lemmas 12.4.1 and 12.4.2), which gives convergence of the iterates to a
+strict minimizer on the face (Theorem 12.4.3), a quadratic model decrease (Lemma 12.4.4) and
+eventually very successful iterations (Theorem 12.4.5). The last part treats steps of negative
+curvature along the projected ray $t \mapsto P_C[x + t u]$ (Theorem 12.4.6). The proofs use the
+projections of `Numlib.Optimization.ModelBased.ProjectedPath` and the Lagrangian of
+`Numlib.Optimization.Constrained`.
+
+## Main definitions
+
+* Equation (12.4.3), `ConnGouldToint.Chapter12.faceLagrangianModel`: the fixed-multiplier model
+  $m(z) - \sum_i y_i c_i(z)$.
+* Equation (12.4.14), `ConnGouldToint.Chapter12.ProjectedEigenTrialAccepted`: the acceptance test of
+  a projected negative-curvature trial, with the corrected sign.
+* Equation (12.4.16), `ConnGouldToint.Chapter12.activeFaceBoundaryDistance`: the distance from $x$
+  to the relative frontier of the feasible part of the active equality locus.
+
+## Main results
+
+* Equation (12.4.1),
+  `ConnGouldToint.Chapter12.fderiv_faceLagrangianModel_eq_tangent_of_normal_projection`: if the
+  multiplier term is the normal projection of $-\nabla f(x)$, then $DL(x)v = -\langle
+  P_{T(x)}[-\nabla f(x)], v \rangle$.
+* Equations (12.4.2)–(12.4.3), `ConnGouldToint.Chapter12.faceLagrangianModel_eq_of_active`: at a
+  point with the active set of $x$, the Lagrangian model equals the model.
+* Lemma 12.4.1, `ConnGouldToint.Chapter12.lemma_12_4_1`: on a fixed face, $m(x + s) = m(x) - \langle
+  P_{T(x)}[-\nabla f(x)], s \rangle + \frac12 \nabla^2 L(x + ts)[s, s]$ for some $t \in (0, 1]$.
+* Lemma 12.4.2, `ConnGouldToint.Chapter12.lemma_12_4_2`: positive curvature of $L$ on the step
+  segment and model decrease give $\varepsilon \|s\|^2 \le 2 \langle P_{T(x)}[-\nabla f(x)], s
+  \rangle$.
+* Theorem 12.4.3, `ConnGouldToint.Chapter12.theorem_12_4_3`: a run with a subsequence converging to
+  a strict local minimizer on a closed face, which it cannot leave near that point, and with small
+  steps near that point, converges to it.
+* Lemma 12.4.4, `ConnGouldToint.Chapter12.lemma_12_4_4`: a feasible extension of the step direction
+  and AA.1b give a model decrease of order $\|s\|^2$.
+* Theorem 12.4.5, `ConnGouldToint.Chapter12.theorem_12_4_5`: Hessian agreement on the trial segments
+  and a quadratic model decrease make every late iteration very successful and keep the radii
+  bounded away from zero.
+* Equation (12.4.16), `ConnGouldToint.Chapter12.activeFaceBoundaryDistance_pos`: the face clearance
+  of a feasible point is positive.
+* Theorem 12.4.6, `ConnGouldToint.Chapter12.theorem_12_4_6`: the backtracking search along a
+  projected negative-curvature ray stops, with a decrease proportional to $-\tau$.
+* Equations (12.4.19)–(12.4.22), `ConnGouldToint.Chapter12.projectedRay_taylor_upper_of_face`: a
+  Taylor upper bound for the model at a projected trial on the face, with a cubic remainder.
+
+## Deviations from the source
+
+* **Theorem 12.4.3** (reading). The trapping of the iterates on the identified face near the limit
+  and the small steps near the limit are explicit hypotheses. See
+  `ConnGouldToint.Chapter12.theorem_12_4_3`.
+* **Lemma 12.4.4** (reading). The feasible extension of the step direction by a uniform length is an
+  explicit hypothesis. See `ConnGouldToint.Chapter12.lemma_12_4_4`.
+* **Theorem 12.4.5** (reading). The Hessian agreement (12.4.7) is assumed on the trial segments. See
+  `ConnGouldToint.Chapter12.theorem_12_4_5`.
+* **Equation (12.4.14)** (correction). The printed test has the sign that accepts a strict model
+  increase at negative curvature. The test here requires a decrease. See
+  `ConnGouldToint.Chapter12.ProjectedEigenTrialAccepted` and
+  `ConnGouldToint.Chapter12.eigenTrial_printed_sign_counterexample`.
+* **Equation (12.4.16)** (reading). The distance uses the frontier relative to the active equality
+  locus, and it is infinite when that frontier is empty. See
+  `ConnGouldToint.Chapter12.activeFaceBoundaryDistance`.
+* **Theorem 12.4.6** (correction). The decrease bound uses the corrected sign of (12.4.14) and
+  includes the face radius. See `ConnGouldToint.Chapter12.theorem_12_4_6`.
+-/
 
 open Set Optimization Filter Topology
 open scoped RealInnerProductSpace
@@ -16,12 +88,20 @@ namespace ConnGouldToint.Chapter12
 
 variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [Fintype ι]
 
-/-- The fixed-multiplier model (12.4.3), for constraints written as (c_i ≥ 0). -/
+/-- **Equation (12.4.3)** of [conn2000trust]. For a model $m : E \to \mathbb{R}$, constraints
+$c_i : E \to \mathbb{R}$ written as $c_i(x) \ge 0$, and multipliers $y \in \mathbb{R}^\iota$,
+the **fixed-multiplier Lagrangian model** is
+$$L(x) = m(x) - \sum_i y_i\, c_i(x).$$
+
+The definition is `Constrained.lagrangian` with the multipliers $-y_i$, because the constraints
+are inequalities $c_i \ge 0$. -/
 def faceLagrangianModel (m : E → ℝ) (c : ι → E → ℝ) (y : ι → ℝ) (x : E) : ℝ :=
   Constrained.lagrangian m c x (fun i ↦ -y i)
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] in
-/-- The Lagrangian model agrees with the objective model on the active face. -/
+/-- **Equations (12.4.2)–(12.4.3)** of [conn2000trust]. Let $x, z \in E$ have the same active set,
+$\mathcal{A}(z) = \mathcal{A}(x)$, and let $y_i = 0$ for every $i \notin \mathcal{A}(x)$. Then
+the Lagrangian model agrees with the model at $z$: $L(z) = m(z)$. -/
 theorem faceLagrangianModel_eq_of_active {m : E → ℝ} {c : ι → E → ℝ} {y : ι → ℝ}
     {x z : E} (hA : activeConstraintSet c z = activeConstraintSet c x)
     (hy : ∀ i ∉ activeConstraintSet c x, y i = 0) :
@@ -62,9 +142,20 @@ private theorem exists_affine_ray_taylor {L : E → ℝ} (hL : ContDiff ℝ 2 L)
 
 variable [CompleteSpace E]
 
-/-- The projected gradient identity (12.4.1). The normal projection is
-represented by the active multipliers, and the two projections add to
-the negative objective gradient by the tangent/normal decomposition. -/
+/-- **Equation (12.4.1)** of [conn2000trust]. Let $E$ be a real Hilbert space, let $m$ and every
+$c_i$ be differentiable at $x$, and let $Dm(x) = Df(x)$. Write $T(x)$ and $N(x)$ for the tangent
+and normal cones of $C$ at $x$, and $P_K$ for the projection onto a closed convex cone $K$.
+Suppose that
+$$P_{N(x)}[-\nabla f(x)] = -\sum_i y_i \nabla c_i(x) \quad\text{and}\quad P_{T(x)}[-\nabla
+  f(x)] + P_{N(x)}[-\nabla f(x)] = -\nabla f(x).$$
+Then for every $v \in E$ the Lagrangian model `ConnGouldToint.Chapter12.faceLagrangianModel`
+satisfies
+$$DL(x)\, v = -\langle P_{T(x)}[-\nabla f(x)], v \rangle.$$
+
+The cones are `Optimization.tangentDirections` and `Optimization.normalDirections`, and the
+projections are `bestApprox`. The second hypothesis is Moreau's decomposition;
+`ConnGouldToint.Chapter12.fderiv_faceLagrangianModel_eq_tangent_of_normal_projection` derives
+it. -/
 theorem fderiv_faceLagrangianModel_eq_tangent {C : Set E} {m f : E → ℝ}
     {c : ι → E → ℝ} {y : ι → ℝ} {x : E}
     (hm : DifferentiableAt ℝ m x) (hc : ∀ i, DifferentiableAt ℝ (c i) x)
@@ -87,8 +178,16 @@ theorem fderiv_faceLagrangianModel_eq_tangent {C : Set E} {m f : E → ℝ}
   simp only [real_inner_smul_left] at h
   linarith only [h]
 
-/-- Equation (12.4.1) uses the normal projection to identify the multiplier
-term. The tangent component then follows from Moreau's decomposition. -/
+/-- **Equation (12.4.1)** of [conn2000trust]. Let $E$ be a real Hilbert space, let $m$ and every
+$c_i$ be differentiable at $x$, and let $Dm(x) = Df(x)$. If the projection of $-\nabla f(x)$
+onto the normal cone $N(x)$ of $C$ at $x$ is $-\sum_i y_i \nabla c_i(x)$, then for every
+$v \in E$
+$$DL(x)\, v = -\langle P_{T(x)}[-\nabla f(x)], v \rangle,$$
+where $L$ is the Lagrangian model `ConnGouldToint.Chapter12.faceLagrangianModel` and $P_{T(x)}$
+is the projection onto the tangent cone of $C$ at $x$.
+
+The tangent component follows from Moreau's decomposition (3.1.7) of $-\nabla f(x)$ into its
+projections onto the polar cones $T(x)$ and $N(x)$. -/
 theorem fderiv_faceLagrangianModel_eq_tangent_of_normal_projection {C : Set E}
     {m f : E → ℝ} {c : ι → E → ℝ} {y : ι → ℝ} {x : E}
     (hm : DifferentiableAt ℝ m x) (hc : ∀ i, DifferentiableAt ℝ (c i) x)
@@ -100,9 +199,16 @@ theorem fderiv_faceLagrangianModel_eq_tangent_of_normal_projection {C : Set E}
   fderiv_faceLagrangianModel_eq_tangent hm hc hmatch hnormal
     (Chapter03.moreau_normal_tangent C x (-gradient f x)).1.symm v
 
-/-- Lemma 12.4.1. On a fixed face the endpoint values of the model are those
-of its Lagrangian. The first-order identity is (12.4.1), obtained from the
-least-squares multipliers and the tangent/normal decomposition. -/
+/-- **Lemma 12.4.1** of [conn2000trust]. Let $E$ be a real Hilbert space, let $x, s \in E$ with
+$\mathcal{A}(x + s) = \mathcal{A}(x)$, and let $y_i = 0$ for every $i \notin \mathcal{A}(x)$.
+Suppose that the Lagrangian model $L$ of (12.4.3) is twice continuously differentiable and that
+$DL(x)\, s = -\langle P_{T(x)}[-\nabla f(x)], s \rangle$. Then there is $t \in (0, 1]$ with
+$$m(x + s) = m(x) - \langle P_{T(x)}[-\nabla f(x)], s \rangle + \tfrac12 \nabla^2 L(x + ts)[s,
+  s].$$
+
+The derivative hypothesis is the identity (12.4.1); see
+`ConnGouldToint.Chapter12.fderiv_faceLagrangianModel_eq_tangent_of_normal_projection`. The proof
+applies Taylor's theorem to $L$ on the segment and uses $L = m$ at $x$ and $x + s$. -/
 theorem lemma_12_4_1 {C : Set E} {m f : E → ℝ} {c : ι → E → ℝ} {y : ι → ℝ} {x s : E}
     (hA : activeConstraintSet c (x + s) = activeConstraintSet c x)
     (hy : ∀ i ∉ activeConstraintSet c x, y i = 0)
@@ -116,9 +222,14 @@ theorem lemma_12_4_1 {C : Set E} {m f : E → ℝ} {c : ι → E → ℝ} {y : �
   rw [faceLagrangianModel_eq_of_active hA hy, faceLagrangianModel_eq_of_active rfl hy, hgrad] at h
   exact ⟨t, ht, by simpa only [sub_eq_add_neg] using h⟩
 
-/-- Lemma 12.4.2. Positive curvature on the step segment bounds the
-step by its tangent linear decrease. The product inequality includes the
-zero step. Division by its norm gives (12.4.5) for nonzero steps. -/
+/-- **Lemma 12.4.2** of [conn2000trust]. Let the hypotheses of Lemma 12.4.1 hold for $x$ and $s$,
+let $\varepsilon > 0$, let $m(x + s) \le m(x)$, and suppose that $\varepsilon \|s\|^2 \le
+\nabla^2 L(x + ts)[s, s]$ for every $t \in (0, 1]$. Put $\ell = \langle P_{T(x)}[-\nabla f(x)],
+s \rangle$. Then
+$$\varepsilon \|s\|^2 \le 2 \ell,$$
+and, if $s \neq 0$, $\|s\| \le 2 \ell / (\varepsilon \|s\|)$.
+
+The product inequality also covers the zero step. The quotient form for $s \neq 0$ is (12.4.5). -/
 theorem lemma_12_4_2 {C : Set E} {m f : E → ℝ} {c : ι → E → ℝ} {y : ι → ℝ} {x s : E}
     (hA : activeConstraintSet c (x + s) = activeConstraintSet c x)
     (hy : ∀ i ∉ activeConstraintSet c x, y i = 0)
@@ -139,9 +250,24 @@ theorem lemma_12_4_2 {C : Set E} {m f : E → ℝ} {c : ι → E → ℝ} {y : �
     (by nlinarith only [hprod])⟩
 
 omit [Fintype ι] [CompleteSpace E] in
-/-- Theorem 12.4.3 in its identified-face form. A strict minimum on the
-closed face and a locally vanishing step bound trap the monotone run
-once a subsequence enters a sufficiently low objective sublevel. -/
+/-- **Theorem 12.4.3** of [conn2000trust], identified-face form. Let $E$ be a real inner product
+space in which closed balls are compact, and consider a run of the basic trust-region algorithm
+(Algorithm 6.1.1) for a continuous objective $f$. Let $F \subseteq E$ be closed, and let a
+subsequence $x_{j(k)}$ converge to $z$. Let $\rho > 0$ and suppose that
+
+* $f(z) < f(y)$ for every $y \in F$ with $0 < \operatorname{dist}(y, z) \le \rho$;
+* eventually, $\operatorname{dist}(x_k, z) \le \rho$ implies $x_k \in F$;
+* for every $\varepsilon > 0$ there is $R > 0$ such that, eventually,
+  $\operatorname{dist}(x_k, z) < R$ implies $\operatorname{dist}(x_{k+1}, x_k) \le \varepsilon$.
+
+Then the whole sequence converges: $x_k \to z$.
+
+**Reading.** The statement makes the local trapping on the identified face explicit: the
+iterates near $z$ lie on the face $F$, $z$ is a strict minimizer of $f$ on $F$ near $z$, and the
+steps are small near $z$. `ConnGouldToint.Chapter12.theorem_12_4_3_of_lagrangian` derives the
+small steps from the curvature of the Lagrangian model.
+
+The argument uses that the objective values of the run do not increase. -/
 theorem theorem_12_4_3 [ProperSpace E] {P : Chapter06.BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : Chapter06.BTRRun f P sufficient)
     {F : Set E} (hF : IsClosed F) {z : E} {j : ℕ → ℕ} (hj : StrictMono j)
@@ -199,8 +325,26 @@ theorem theorem_12_4_3 [ProperSpace E] {P : Chapter06.BTRParams} {f : E → ℝ}
     rw [Nat.add_sub_of_le hk] at hh
     exact hh.trans_le (hre.trans (heε.trans (half_le_self hε.le)))⟩
 
-/-- The convergence theorem on an identified face, with the local step
-bound derived from the Lagrangian curvature and the small projected gradient. -/
+/-- **Theorem 12.4.3** of [conn2000trust], with the step bound of Lemma 12.4.2. Let $E$ be a real
+inner product space in which closed balls are compact, and consider a run of the basic
+trust-region algorithm for a continuous objective $f$. Let $F$ be closed, let a subsequence
+$x_{j(k)}$ converge to $z$, let $\rho > 0$ and $\varepsilon > 0$, let $f(z) < f(y)$ for every
+$y \in F$ with $0 < \operatorname{dist}(y, z) \le \rho$, and let
+$\operatorname{dist}(x_k, z) \le \rho$ imply $x_k \in F$ for all large $k$. Let $y_k$ be
+multipliers and $L_k$ the Lagrangian model (12.4.3) of $m_k$ with $y_k$. Suppose that, for all
+large successful $k$ with $\operatorname{dist}(x_k, z) < \rho$,
+
+* $\mathcal{A}(x_k + s_k) = \mathcal{A}(x_k)$ and $(y_k)_i = 0$ for $i \notin \mathcal{A}(x_k)$;
+* $L_k$ is twice continuously differentiable and $DL_k(x_k)\, s_k = -\langle P_{T(x_k)}[-\nabla
+  f(x_k)], s_k \rangle$;
+* $\varepsilon \|s_k\|^2 \le \nabla^2 L_k(x_k + t s_k)[s_k, s_k]$ for every $t \in (0, 1]$.
+
+Suppose also that for every $a > 0$ there is $R > 0$ such that, eventually,
+$\operatorname{dist}(x_k, z) < R$ implies $\|P_{T(x_k)}[-\nabla f(x_k)]\| \le a$. Then
+$x_k \to z$.
+
+The step bound of Lemma 12.4.2 turns the small projected gradient into small steps, and
+`ConnGouldToint.Chapter12.theorem_12_4_3` then applies. -/
 theorem theorem_12_4_3_of_lagrangian [ProperSpace E] {P : Chapter06.BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : Chapter06.BTRRun f P sufficient)
     {C F : Set E} (hF : IsClosed F) {z : E} {j : ℕ → ℕ} (hj : StrictMono j)
@@ -242,9 +386,17 @@ theorem theorem_12_4_3_of_lagrangian [ProperSpace E] {P : Chapter06.BTRParams} {
     exact ha.le
 
 omit [Fintype ι] [CompleteSpace E] in
-/-- A face-preserving direction extends through the linear active
-constraints. A uniform inactive slack and a local Lipschitz bound keep
-the extension feasible for the same length in every such direction. -/
+/-- A step direction that keeps the active set extends feasibly through linear active constraints.
+Let $a \ge 0$, $L$ and $\sigma$ satisfy $L a \le \sigma$, let $s \neq 0$ with
+$\mathcal{A}(x + s) = \mathcal{A}(x)$, and suppose that
+
+* each active $c_i$ is affine on the line through $x$ in the direction $s$: $c_i(x + ts) =
+  c_i(x) + t\,(c_i(x + s) - c_i(x))$ for all $t \in \mathbb{R}$ and $i \in \mathcal{A}(x)$;
+* each inactive constraint has slack $c_i(x) \ge \sigma$;
+* each inactive $c_i$ satisfies $|c_i(z) - c_i(x)| \le L \|z - x\|$ for $\|z - x\| \le a$.
+
+Then $x + (a / \|s\|)\, s$ satisfies $c_i \ge 0$ for every $i$. This gives the uniform feasible
+extension that Lemma 12.4.4 of [conn2000trust] uses. -/
 theorem extendStep_mem_of_linear_active_face {c : ι → E → ℝ} {x s : E}
     {a L σ : ℝ} (ha : 0 ≤ a) (hσ : L * a ≤ σ) (hs : s ≠ 0)
     (hA : activeConstraintSet c (x + s) = activeConstraintSet c x)
@@ -270,10 +422,24 @@ theorem extendStep_mem_of_linear_active_face {c : ι → E → ℝ} {x s : E}
     change 0 ≤ c i z
     linarith only [h, hc, hσ, hslack i hi]
 
-/-- Lemma 12.4.4 with explicit face geometry. An extension of the step
-direction by a uniform feasible length transfers positive curvature to the
-capped linear criticality. AA.1b then gives a uniform quadratic decrease.
-For a linear active face the tangent linear term equals the full one. -/
+/-- **Lemma 12.4.4** of [conn2000trust], with explicit face geometry. Let $E$ be a real Hilbert
+space, let $\varepsilon, a, M, \beta, \kappa > 0$ with $a \le 1$, and let $\|s\| \le \Delta$ and
+$\|s\| \le M$. Suppose that $x + (a / \|s\|)\, s \in C$ if $s \neq 0$, that
+$$\varepsilon \|s\|^2 \le 2 \langle -\nabla f(x), s \rangle,$$
+and that the model decrease condition AA.1b holds:
+$$\kappa\, \pi(x) \min\{\pi(x)/\beta, \Delta\} \le m(x) - m(x + s),$$
+where $\pi$ is the capped criticality measure (12.2.15). Then there is $\delta > 0$ with
+$\delta \|s\|^2 \le m(x) - m(x + s)$.
+
+**Reading.** The extension of the step direction by the uniform feasible length $a$ is an
+explicit hypothesis; `ConnGouldToint.Chapter12.extendStep_mem_of_linear_active_face` supplies it
+on a linear active face.
+
+The proof takes $\delta = \kappa b \min\{b / \beta, 1\}$ with $b = \min\{1/M, a\varepsilon/2\}$,
+which depends only on $\varepsilon$, $a$, $M$, $\beta$ and $\kappa$. The statement records only
+the existence of $\delta$ for the given step. The linear term is the full one,
+$\langle -\nabla f(x), s \rangle$; on a linear active face it equals the tangent linear term of
+Lemma 12.4.2. -/
 theorem lemma_12_4_4 {C : Set E} {m f : E → ℝ} {x s : E}
     {ε a M Δ β κ : ℝ} (hε : 0 < ε) (ha : 0 < a) (ha₁ : a ≤ 1)
     (hM : 0 < M) (hβ : 0 < β) (hκ : 0 < κ)
@@ -317,9 +483,18 @@ theorem lemma_12_4_4 {C : Set E} {m f : E → ℝ} {x s : E}
   exact (le_trans (by nlinarith only [hpred]) hdec)
 
 omit [Fintype ι] [CompleteSpace E] in
-/-- Theorem 12.4.5. Uniform Hessian agreement on the trial segments, as in
-(12.4.7) for linear active constraints, and the quadratic decrease from
-Lemma 12.4.4 make every sufficiently late iteration very successful. -/
+/-- **Theorem 12.4.5** of [conn2000trust]. Consider a run of the basic trust-region algorithm for a
+twice continuously differentiable objective $f$. Suppose that each model $m_k$ and its
+derivative are differentiable on the segment $[x_k, x_k + s_k]$, that $m_k(x_k) = f(x_k)$ and
+$Df(x_k) = Dm_k(x_k)$ for all $k$, and that for every $a > 0$, eventually,
+$$\|\nabla^2 f(z) - \nabla^2 m_k(z)\| \le a \quad \text{for all } z \in [x_k, x_k + s_k].$$
+Let $\delta > 0$ with $\delta \|s_k\|^2 \le m_k(x_k) - m_k(x_k + s_k)$ for all large $k$. Then
+every sufficiently late iteration is very successful, and there is $r > 0$ with $\Delta_k \ge r$
+for all $k$.
+
+**Reading.** The Hessian agreement on the trial segments, the estimate (12.4.7) for linear
+active constraints, is assumed directly. The quadratic decrease is the conclusion of Lemma
+12.4.4. -/
 theorem theorem_12_4_5 {P : Chapter06.BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : Chapter06.BTRRun f P sufficient)
     (hf : ContDiff ℝ 2 f)
@@ -357,20 +532,32 @@ section FaceBoundary
 
 open scoped ENNReal
 
-/-- The locus where all constraints active at the center vanish. -/
+/-- The **active equality locus** at $x$: the set of points $z$ at which every constraint active at
+$x$ vanishes, $\{z : c_i(z) = 0 \text{ for all } i \in \mathcal{A}(x)\}$. -/
 def activeEqualityLocus (c : ι → E → ℝ) (x : E) : Set E :=
   {z | ∀ i ∈ activeConstraintSet c x, c i z = 0}
 
-/-- The distance in (12.4.16) uses the frontier relative to the active
-equality locus. An empty frontier gives infinite distance. -/
+/-- **Equation (12.4.16)** of [conn2000trust]. Let $\mathcal{L}$ be the active equality locus at
+$x$, with the subspace topology. The **face clearance** of $x$ is the extended distance in
+$\mathcal{L}$ from $x$ to the frontier, relative to $\mathcal{L}$, of $C \cap \mathcal{L}$.
+
+**Reading.** The distance uses the frontier relative to the active equality locus. When that
+frontier is empty, the distance is $+\infty$.
+
+The value lies in $[0, \infty]$ and is `Metric.infEDist` in the subtype
+`ConnGouldToint.Chapter12.activeEqualityLocus c x`. -/
 noncomputable def activeFaceBoundaryDistance (C : Set E) (c : ι → E → ℝ) (x : E) :
     ℝ≥0∞ :=
   Metric.infEDist (⟨x, fun _ hi ↦ hi⟩ : activeEqualityLocus c x)
     (frontier ((↑) ⁻¹' C : Set (activeEqualityLocus c x)))
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
-/-- Strict slack in every inactive inequality makes the center interior
-relative to the active equality locus, giving positive face clearance. -/
+/-- **Equation (12.4.16)** of [conn2000trust], positivity. Let
+$C = \{z : c_i(z) \ge 0 \text{ for all } i\}$ (AC.7), with continuous $c_i$, and let $x \in C$.
+Then the face clearance of $x$ is positive.
+
+Every inactive inequality has strict slack at $x$, so $x$ is interior to $C \cap \mathcal{L}$
+relative to the active equality locus $\mathcal{L}$. -/
 theorem activeFaceBoundaryDistance_pos {C : Set E} {c : ι → E → ℝ} {x : E}
     (hC : Chapter03.AC7 C c) (hc : ∀ i, Continuous (c i)) (hx : x ∈ C) :
     0 < activeFaceBoundaryDistance C c x := by
@@ -406,9 +593,20 @@ theorem activeFaceBoundaryDistance_pos {C : Set E} {c : ι → E → ℝ} {x : E
 end FaceBoundary
 
 omit [Fintype ι] [CompleteSpace E] in
-/-- The generalized eigenpoint test (12.4.14), with the sign corrected
-so that a negative eigenvalue requires a decrease, and with the active-face
-test included in the backtrack. -/
+/-- **Equation (12.4.14)** of [conn2000trust], corrected. Let $C, F \subseteq E$, let $m$ be a
+model, $x$ a base point, $u$ a direction, $q$, $b$ and $\tau$ real numbers and
+$j \in \mathbb{N}$. Put $t_j = q^j$. The $j$-th **projected eigenpoint trial is accepted** if
+$P_C[x + t_j u] \in F$ and
+$$m(P_C[x + t_j u]) \le m(x) + b\, \tau\, (t_j \|u\|)^2.$$
+
+**Correction.** The printed test has $-b\, \tau$ in place of $b\, \tau$. For a negative
+eigenvalue estimate $\tau < 0$ it accepts a strict model increase; see
+`ConnGouldToint.Chapter12.eigenTrial_printed_sign_counterexample`. With the sign here,
+$\tau < 0$ requires a decrease. The membership $P_C[x + t_j u] \in F$ adds the active-face test
+to the backtracking.
+
+The projection $P_C[x + t u]$ is `Optimization.projectedRay C x u t`, and $t_j$ is
+`ConnGouldToint.Chapter06.eigenTrialTime q j`. -/
 def ProjectedEigenTrialAccepted (C F : Set E) (m : E → ℝ) (x u : E)
     (q b τ : ℝ) (j : ℕ) : Prop :=
   projectedRay C x u (Chapter06.eigenTrialTime q j) ∈ F ∧
@@ -421,10 +619,18 @@ private theorem sq_min_eq_min_sq {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
   · rw [min_eq_left h, min_eq_left (pow_le_pow_left₀ ha h 2)]
   · rw [min_eq_right h, min_eq_right (pow_le_pow_left₀ hb h 2)]
 
-/-- A quadratically small projection correction gives the generalized
-eigenpoint Taylor bound. The change in the quadratic form is cubic
-because both the trial and the projected step have length at most the
-ray length. -/
+/-- **Equations (12.4.19)–(12.4.22)** of [conn2000trust]. Let $C$ be closed and convex, let
+$x \in C$, $t \ge 0$, and put $p = P_C[x + tu]$. Suppose that $\mathcal{A}(p) = \mathcal{A}(x)$,
+that $y_i = 0$ for $i \notin \mathcal{A}(x)$, and that $\|p - (x + tu)\| \le B (t\|u\|)^2$. Let
+$S$ be an open set that contains the segment $[x, p]$, on which the Lagrangian model $L$ of
+(12.4.3) is twice continuously differentiable with $\|\nabla^2 L(z) - \nabla^2 L(x)\| \le \gamma
+\|z - x\|$ for $z \in S$, where $\gamma \ge 0$. If
+$\nabla^2 L(x)[u, u] \le \kappa \tau \|u\|^2$, then, with $H = \nabla^2 L(x)$,
+$$m(p) \le m(x) + t\, DL(x)\, u + \Bigl(\tfrac{\kappa}{2} \tau + \|DL(x)\|\, B\Bigr)(t\|u\|)^2 +
+  \Bigl(\tfrac{\gamma}{6} + \|H\|\, B\Bigr)(t\|u\|)^3.$$
+
+The change in the quadratic term is cubic, because the trial step $tu$ and the projected step
+$p - x$ both have length at most the ray length $t\|u\|$. -/
 theorem projectedRay_taylor_upper_of_face {C : Set E} {m : E → ℝ}
     {c : ι → E → ℝ} {y : ι → ℝ} {x u : E} {t B γ κ τ : ℝ} (ht : 0 ≤ t)
     (hA : activeConstraintSet c (projectedRay C x u t) = activeConstraintSet c x)
@@ -496,11 +702,24 @@ theorem projectedRay_taylor_upper_of_face {C : Set E} {m : E → ℝ}
   nlinarith only [hTaylor, hlinear, hquad, hq]
 
 omit [Fintype ι] [CompleteSpace E] in
-/-- Corrected Theorem 12.4.6. The local projection geometry gives a
-positive face radius and a Taylor estimate on projected trials. The
-quadratic distortion accounts for the tangent gradient and multiplier
-errors. A negative eigenvalue gives a positive decrease proportional to
-its magnitude, with the face radius included in the bound. -/
+/-- **Theorem 12.4.6** of [conn2000trust], corrected. Let $0 < q < 1$, $b > 0$ and $\kappa$ with
+$b < \kappa/2$, let $\tau < 0$, $u \neq 0$, $\sigma > 0$, $R > 0$, $g \le 0$ and
+$D \le (\kappa/2 - b)(-\tau)/2$. Suppose that, for every $t \in (0, 1]$ with
+$t\|u\| \le \sigma$, the point $P_C[x + tu]$ lies in $F$, and, if also $t\|u\| \le 1$,
+$$m(P_C[x + tu]) \le m(x) + t g + \Bigl(\tfrac{\kappa}{2} \tau + D\Bigr)(t\|u\|)^2 +
+  R\,(t\|u\|)^3.$$
+Then there is a first index $j$ at which the projected eigenpoint trial (12.4.14) is accepted,
+and with $t_j = q^j$,
+$$b \Bigl(q \min\Bigl\{1, \frac{\kappa/2 - b}{2R}\Bigr\}\Bigr)^2 (-\tau) \min\{\|u\|^2, 1,
+  \sigma^2, \tau^2\} \le m(x) - m(P_C[x + t_j u]).$$
+
+**Correction.** The theorem uses the corrected sign of the acceptance test (12.4.14), and the
+decrease bound includes the face radius $\sigma$. With the printed sign the test can accept a
+model increase.
+
+The Taylor hypothesis is the form that
+`ConnGouldToint.Chapter12.projectedRay_taylor_upper_of_face` gives: $D$ collects the errors of
+the tangent gradient and the multipliers, and $R$ the cubic remainder. -/
 theorem theorem_12_4_6 {C F : Set E} {m : E → ℝ} {x u : E}
     {q b κ τ σ D R g : ℝ} (hq : 0 < q) (hq' : q < 1) (hb : 0 < b)
     (hbκ : b < κ / 2) (hτ : τ < 0) (hu : u ≠ 0) (hσ : 0 < σ) (hR : 0 < R)
@@ -576,9 +795,14 @@ theorem theorem_12_4_6 {C F : Set E} {m : E → ℝ} {x u : E}
   change b * (q * w) ^ 2 * (-τ) * min (U ^ 2) (min 1 (min (σ ^ 2) (τ ^ 2))) ≤ _
   linarith only [hp, hmodel]
 
-/-- The minus sign in the printed acceptance inequality (12.4.14) can
-accept a strict model increase at the initial trial, even for a smooth
-model with unit negative curvature and zero slope at the base point. -/
+/-- **Equation (12.4.14)** of [conn2000trust], counterexample to the printed sign. There is a twice
+continuously differentiable $m : \mathbb{R} \to \mathbb{R}$ with $m'(0) = 0$ and $m''(0) = -1$
+such that
+$$m(1) \le m(0) - \tfrac14 \cdot (-1) \quad\text{and}\quad m(0) < m(1).$$
+So the printed test with $b = 1/4$, $\tau = -1$, unit direction and initial trial time $1$
+accepts a strict increase of the model.
+
+The function is $m(t) = -t^2/2 + 3t^3/4$, with $m(1) = 1/4$. -/
 theorem eigenTrial_printed_sign_counterexample :
     ∃ m : ℝ → ℝ, ContDiff ℝ 2 m ∧ deriv m 0 = 0 ∧ iteratedDeriv 2 m 0 = -1 ∧
       m 1 ≤ m 0 - (1 / 4 : ℝ) * (-1) ∧ m 0 < m 1 := by

@@ -9,7 +9,65 @@ import Mathlib.Analysis.Calculus.ContDiff.Comp
 import Mathlib.Analysis.Calculus.FDeriv.CompCLM
 import Mathlib.Analysis.Normed.Operator.Bilinear
 
-/-! # Composite objective functions -/
+/-!
+# Conn, Gould and Toint, Section 8.5: Composite objective functions
+
+Section 8.5 of [conn2000trust] treats objectives of the composite form $f(x) = f_0(x, u(x))$ of
+(8.5.1), where $f_0 : E \times F \to \mathbb{R}$ is an outer function and $u : E \to F$ an inner
+function, and models of the form $f_0(x, m(x))$ of (8.5.2), where $m$ models $u$. The module proves
+the first and second derivative formulas (8.5.3)–(8.5.5) of the composite, the properties of Theorem
+8.5.1 that transfer the assumptions on the objective and the model from the constituents, and
+Theorem 8.5.2 on the agreement and Lipschitz continuity of the composite Hessians. A polynomial
+counterexample shows that the printed Lipschitz part of Theorem 8.5.2 needs uniform bounds on the
+constituent Hessians.
+
+## Main definitions
+
+* Equations (8.5.1) and (8.5.2), `ConnGouldToint.Chapter08.compositeObjective`: the composite
+  $x \mapsto f_0(x, u(x))$.
+
+## Main results
+
+* Equation (8.5.3), `ConnGouldToint.Chapter08.fderiv_compositeObjective`: the derivative of the
+  composite is $Df_0(x, u(x)) \circ (I, Du(x))$.
+* Equations (8.5.4) and (8.5.5), `ConnGouldToint.Chapter08.second_fderiv_compositeObjective`: the
+  second derivative of the composite in graph coordinates.
+* Theorem 8.5.1(i) and (iv), `ConnGouldToint.Chapter08.theorem_8_5_1_smooth`: the composite of $C^2$
+  functions is $C^2$.
+* Theorem 8.5.1(ii), `ConnGouldToint.Chapter08.theorem_8_5_1_lower`: a lower bound on $f_0$ bounds
+  the composite below.
+* Theorem 8.5.1(iii) and (vi), `ConnGouldToint.Chapter08.theorem_8_5_1_hessian`: bounds on the
+  constituent derivatives bound the composite Hessian.
+* Theorem 8.5.1(v), `ConnGouldToint.Chapter08.theorem_8_5_1_agreement`: value and derivative
+  agreement of the inner model pass to the composite.
+* Theorem 8.5.2(i), `ConnGouldToint.Chapter08.theorem_8_5_2_hessian_agreement`: Hessian agreement of
+  the inner models passes to the composite.
+* Theorem 8.5.2(ii), `ConnGouldToint.Chapter08.theorem_8_5_2_lipschitz_counterexample`: Lipschitz
+  constituent Hessians do not give uniformly Lipschitz composite Hessians.
+* Theorem 8.5.2(ii), `ConnGouldToint.Chapter08.theorem_8_5_2_lipschitz`: with uniform bounds on the
+  constituent Hessians, the composite Hessian is Lipschitz with an explicit constant.
+
+## Implementation notes
+
+* The product $E \times F$ carries the maximum norm, $\|(v, z)\| = \max\{\|v\|, \|z\|\}$. Hence
+  $\|(v, Du(x) v)\| \le \max\{1, C\} \|v\|$ when $\|Du(x)\| \le C$, which is the source of the
+  factors $\max\{1, C\}$.
+* Second derivatives are iterated Fréchet derivatives: $\nabla^2 f(x)(v, w)$ is
+  `fderiv ℝ (fderiv ℝ f) x v w`.
+
+## Deviations from the source
+
+* **Theorems 8.5.1 and 8.5.2(i)** (reading). The agreement of the inner model with $u$ in value and
+  derivative at the center, and the bound $|Df_0(x, u(x))(0, z)| \le D \|z\|$ on the outer partial
+  derivative in the inner variable, are explicit hypotheses. See
+  `ConnGouldToint.Chapter08.theorem_8_5_1_hessian` and
+  `ConnGouldToint.Chapter08.theorem_8_5_2_hessian_agreement`.
+* **Theorem 8.5.2(ii)** (correction). Lipschitz constants of the constituent Hessians alone do not
+  give a uniform Lipschitz constant for the composite Hessians. The corrected statement also assumes
+  uniform bounds on both constituent Hessians. See
+  `ConnGouldToint.Chapter08.theorem_8_5_2_lipschitz_counterexample` and
+  `ConnGouldToint.Chapter08.theorem_8_5_2_lipschitz`.
+-/
 
 open Filter Topology ContinuousLinearMap
 
@@ -18,10 +76,18 @@ namespace ConnGouldToint.Chapter08
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- The outer objective evaluated on the graph of the inner objective or model. -/
+/-- **Equations (8.5.1) and (8.5.2)** of [conn2000trust]. For an outer function
+$f_0 : E \times F \to \mathbb{R}$ and an inner function $u : E \to F$, the **composite
+objective** is
+$$x \mapsto f_0(x, u(x)).$$
+
+With $u$ replaced by an inner model $m$, the same definition gives the composite model (8.5.2). -/
 def compositeObjective (f₀ : E × F → ℝ) (u : E → F) (x : E) : ℝ := f₀ (x, u x)
 
-/-- The first derivative of a composite objective. -/
+/-- **Equation (8.5.3)** of [conn2000trust]. If $f_0$ is differentiable at $(x, u(x))$ and $u$ is
+differentiable at $x$, then the derivative of the composite objective at $x$ is
+$$Df_0(x, u(x)) \circ (I, Du(x)),$$
+that is, $v \mapsto Df_0(x, u(x))(v, Du(x) v)$. -/
 theorem fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F} {x : E}
     (hf : DifferentiableAt ℝ f₀ (x, u x)) (hu : DifferentiableAt ℝ u x) :
     fderiv ℝ (compositeObjective f₀ u) x =
@@ -29,8 +95,13 @@ theorem fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F} {x : E}
   change fderiv ℝ (f₀ ∘ fun z => (id z, u z)) x = _
   exact (hf.hasFDerivAt.comp x ((hasFDerivAt_id x).prodMk hu.hasFDerivAt)).fderiv
 
-/-- The Hessian chain rule in graph coordinates. The two graph tangent
-arguments generate the four second-derivative terms of the outer function. -/
+/-- **Equations (8.5.4) and (8.5.5)** of [conn2000trust]. Let $f_0$ and $u$ be $C^2$, and let
+$x, v, w \in E$. Then the composite objective $f$ satisfies
+$$\nabla^2 f(x)(v, w) = \nabla^2 f_0(x, u(x))\big((v, Du(x) v), (w, Du(x) w)\big) + Df_0(x,
+  u(x))\big(0, \nabla^2 u(x)(v, w)\big).$$
+
+The two graph tangents $(v, Du(x) v)$ and $(w, Du(x) w)$ produce the four second-derivative
+terms of the outer function in block form. -/
 theorem second_fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) (x v w : E) :
     fderiv ℝ (fderiv ℝ (compositeObjective f₀ u)) x v w =
@@ -67,24 +138,35 @@ theorem second_fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F}
   have h := DFunLike.congr_fun hev v
   exact (add_comm _ _).trans h |>.symm
 
-/-- The smoothness requirements on the objective and model follow from
-twice continuous differentiability of the two constituent functions. -/
+/-- **Theorem 8.5.1(i)** and (iv) of [conn2000trust]. If $f_0$ and $u$ are $C^2$, then the composite
+objective $x \mapsto f_0(x, u(x))$ is $C^2$.
+
+Applied to $u$ and to an inner model $m$, this gives the smoothness requirements on the
+objective and the model. -/
 theorem theorem_8_5_1_smooth {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) :
     ContDiff ℝ 2 (compositeObjective f₀ u) :=
   hf.comp (contDiff_id.prodMk hu)
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] in
-/-- A global lower bound on the outer objective is preserved on every graph. -/
+/-- **Theorem 8.5.1(ii)** of [conn2000trust]. If $f_0$ is bounded below, then the composite
+$x \mapsto f_0(x, u(x))$ is bounded below for every $u : E \to F$. -/
 theorem theorem_8_5_1_lower {f₀ : E × F → ℝ} (u : E → F)
     (hf : BddBelow (Set.range f₀)) : BddBelow (Set.range (compositeObjective f₀ u)) :=
   hf.mono (show Set.range (compositeObjective f₀ u) ⊆ Set.range f₀ from
     fun _ ⟨x, hx⟩ => ⟨(x, u x), hx⟩)
 
-/-- Uniform bounds on the outer Hessian, the inner Hessian, the inner
-derivative and the outer partial derivative in the inner variable give
-a uniform composite Hessian bound. The estimate is pointwise, so the
-same constants apply on every trust region. -/
+/-- **Theorem 8.5.1(iii)** and (vi) of [conn2000trust]. Let $f_0$ and $u$ be $C^2$, let $x \in E$,
+and let $A, B, D \ge 0$ and $C \in \mathbb{R}$ satisfy
+$$\|\nabla^2 f_0(x, u(x))\| \le A, \qquad \|\nabla^2 u(x)\| \le B, \qquad \|Du(x)\| \le C,
+  \qquad |Df_0(x, u(x))(0, z)| \le D \|z\| \text{ for all } z \in F.$$
+Then the composite objective $f$ satisfies
+$$\|\nabla^2 f(x)\| \le A \max\{1, C\}^2 + D B.$$
+
+**Reading.** The bound $D$ on the outer partial derivative in the inner variable is an explicit
+hypothesis.
+
+The estimate is pointwise, so the same constants apply on every trust region. -/
 theorem theorem_8_5_1_hessian {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) (x : E)
     {A B C D : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) (hD : 0 ≤ D)
@@ -124,8 +206,12 @@ theorem theorem_8_5_1_hessian {f₀ : E × F → ℝ} {u : E → F}
   change _ = (A * C' ^ 2 + D * B) * ‖v‖ * ‖w‖
   ring
 
-/-- Matching the value and first derivative of the inner model at a center
-preserves both agreements after outer composition. -/
+/-- **Theorem 8.5.1(v)** of [conn2000trust]. Let $f_0$ be differentiable at $(x, u(x))$, and let $u$
+and $m$ be differentiable at $x$ with $m(x) = u(x)$ and $Dm(x) = Du(x)$. Then the composites
+agree at $x$ in value and derivative:
+$$f_0(x, m(x)) = f_0(x, u(x)) \qquad \text{and} \qquad D\big[f_0(\cdot, m(\cdot))\big](x) =
+  D\big[f_0(\cdot, u(\cdot))\big](x).$$
+-/
 theorem theorem_8_5_1_agreement {f₀ : E × F → ℝ} {u m : E → F} {x : E}
     (hf : DifferentiableAt ℝ f₀ (x, u x)) (hu : DifferentiableAt ℝ u x)
     (hm : DifferentiableAt ℝ m x) (hval : m x = u x) (hderiv : fderiv ℝ m x = fderiv ℝ u x) :
@@ -136,9 +222,17 @@ theorem theorem_8_5_1_agreement {f₀ : E × F → ℝ} {u m : E → F} {x : E}
   · simp only [compositeObjective, hval]
   · rw [fderiv_compositeObjective hfm hm, fderiv_compositeObjective hf hu, hval, hderiv]
 
-/-- Under center value and derivative agreement, the composite Hessian error
-comes entirely from the inner Hessian error multiplied by the outer partial
-derivative. A uniform bound on that derivative transfers AM.5. -/
+/-- **Theorem 8.5.2(i)** of [conn2000trust]. Let $f_0$, $u$ and the inner models $m_k$ be $C^2$, and
+let $(x_k)$ be a sequence in $E$ with $m_k(x_k) = u(x_k)$ and $Dm_k(x_k) = Du(x_k)$ for every
+$k$. Let $D \ge 0$ with $|Df_0(x_k, u(x_k))(0, z)| \le D \|z\|$ for all $k$ and $z$. If
+$\|\nabla^2 u(x_k) - \nabla^2 m_k(x_k)\| \to 0$, then
+$$\big\|\nabla^2 f(x_k) - \nabla^2 \big[f_0(\cdot, m_k(\cdot))\big](x_k)\big\| \to 0,$$
+where $f$ is the composite objective.
+
+**Reading.** The agreement of $m_k$ with $u$ in value and derivative at the centers and the
+bound $D$ on the outer partial derivative are explicit hypotheses. Under them, the error of the
+composite Hessian is the inner Hessian error multiplied by the outer partial derivative, so AM.5
+transfers from the inner models to the composite. -/
 theorem theorem_8_5_2_hessian_agreement {f₀ : E × F → ℝ} {u : E → F}
     {m : ℕ → E → F} {x : ℕ → E} {D : ℝ} (hD : 0 ≤ D)
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) (hm : ∀ k, ContDiff ℝ 2 (m k))
@@ -174,11 +268,19 @@ theorem theorem_8_5_2_hessian_agreement {f₀ : E × F → ℝ} {u : E → F}
     _ ≤ D * (‖Q‖ * ‖v‖ * ‖w‖) := mul_le_mul_of_nonneg_left hQ hD
     _ = _ := by ring
 
-/-- The uniform Lipschitz conclusion in Theorem 8.5.2(ii) fails even for
-polynomials. The outer function is independent of the explicit (x) argument.
-Both constituent second derivatives are constant, and both first derivatives
-are bounded by two on the model graphs. The composite second derivatives have
-Lipschitz constants growing at least linearly in the iteration index. -/
+/-- **Theorem 8.5.2(ii)** of [conn2000trust], counterexample to uniform AM.6. Let $f(z) = z^2$ on
+$\mathbb{R}$, let $m_k(x) = (k + 1) x^2$, and let $B_k$ be the closed ball of radius
+$1 / (k + 1)$ about $0$. Then $f'' = 2$, $m_k'' = 2(k + 1)$, and $|m_k'(x)| \le 2$ and
+$|f'(m_k(x))| \le 2$ for $x \in B_k$. But no $L$ satisfies
+$$\big|(f \circ m_k)''(x) - (f \circ m_k)''(y)\big| \le L |x - y| \qquad \text{for all } k
+  \text{ and } x, y \in B_k.$$
+
+**Correction.** The source claims a uniform Lipschitz constant for the composite Hessians when
+the constituent Hessians are Lipschitz. Here the outer function does not depend on the explicit
+argument $x$, both constituent second derivatives are constant in $x$, and both first
+derivatives are bounded by $2$ on the model regions, yet the Lipschitz constants of the
+composite second derivatives grow at least linearly in $k$. See
+`ConnGouldToint.Chapter08.theorem_8_5_2_lipschitz` for the corrected statement. -/
 theorem theorem_8_5_2_lipschitz_counterexample :
     let f : ℝ → ℝ := fun z => z ^ 2
     let m : ℕ → ℝ → ℝ := fun k x => ((k : ℝ) + 1) * x ^ 2
@@ -266,9 +368,19 @@ private theorem norm_apply₂_le {X Y Z : Type*} [NormedAddCommGroup X] [NormedS
     ‖A v w‖ ≤ ‖A‖ * ‖v‖ * ‖w‖ :=
   ((A v).le_opNorm w).trans (mul_le_mul_of_nonneg_right (A.le_opNorm v) (norm_nonneg _))
 
-/-- Corrected Theorem 8.5.2(ii). Uniform bounds on both constituent Hessians,
-in addition to their Lipschitz constants, control the terms in which the
-first derivatives vary. The convex set T contains the graph over S. -/
+/-- **Theorem 8.5.2(ii)** of [conn2000trust], corrected. Let $f_0$ and $u$ be $C^2$, let
+$S \subseteq E$ and $T \subseteq E \times F$ be convex with $(x, u(x)) \in T$ for every
+$x \in S$, and let $A, B, D, L_f, L_u \ge 0$ and $C \in \mathbb{R}$. Assume that on $T$,
+$\|\nabla^2 f_0\| \le A$, $|Df_0(z)(0, a)| \le D \|a\|$ for all $a \in F$, and $\nabla^2 f_0$ is
+$L_f$-Lipschitz, and that on $S$, $\|\nabla^2 u\| \le B$, $\|Du\| \le C$ and $\nabla^2 u$ is
+$L_u$-Lipschitz. Then for all $x, y \in S$ the composite objective $f$ satisfies
+$$\|\nabla^2 f(x) - \nabla^2 f(y)\| \le \big(L_f \max\{1, C\}^3 + 3 A B \max\{1, C\} + D
+  L_u\big) \|x - y\|.$$
+
+**Correction.** The source derives the Lipschitz continuity of the composite Hessian from the
+Lipschitz continuity of the constituent Hessians. The uniform bounds $A$ and $B$ on both
+constituent Hessians are also needed, because they control the terms in which the first
+derivatives vary; see `ConnGouldToint.Chapter08.theorem_8_5_2_lipschitz_counterexample`. -/
 theorem theorem_8_5_2_lipschitz {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) {S : Set E} {T : Set (E × F)}
     (hS : Convex ℝ S) (hT : Convex ℝ T) (hmem : ∀ x ∈ S, (x, u x) ∈ T)

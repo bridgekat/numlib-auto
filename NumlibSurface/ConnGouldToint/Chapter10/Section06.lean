@@ -4,20 +4,67 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.ConnGouldToint.Chapter06.Section06
 
-/-! # Dynamic accuracy in objective evaluations -/
+/-!
+# Conn, Gould and Toint, Section 10.6: Dynamic accuracy in objective evaluations
+
+This module formalizes the accuracy test for inexact objective values from Section 10.6 of
+[conn2000trust]. The algorithm computes approximations $\tilde f(x_k)$ and $\tilde f(x_k + s_k)$
+with errors at most $\delta_k^c$ and $\delta_k^t$, and requires both tolerances to be at most a
+fixed fraction $\eta_0$ of the predicted decrease (10.6.2). An accepted step then decreases the
+exact objective by at least $(\eta_1 - 2\eta_0)$ times the predicted decrease. Lemma 10.6.1 shows
+that the refinement loop of Algorithm 10.6.1, which keeps the center and the radius fixed and
+reduces the tolerances, passes the test after finitely many refinements at a center that is not
+second-order critical.
+
+The decrease conditions are AA.1, `ConnGouldToint.Chapter06.HasSufficientModelDecrease`, and the
+negative-curvature condition `ConnGouldToint.Chapter06.HasNegativeCurvatureDecrease` of Chapter 6.
+
+## Main definitions
+
+* Equation (10.6.2), `ConnGouldToint.Chapter10.HasDecreaseAccuracy`: both tolerances are at most
+  $\eta$ times the predicted decrease.
+
+## Main results
+
+* Equation (10.6.2), `ConnGouldToint.Chapter10.actual_decrease_of_accurate_ratio`: an accepted step
+  with accurate evaluations decreases $f$ by at least $(\eta_1 - 2\eta_0)$ times the predicted
+  decrease.
+* Lemma 10.6.1, `ConnGouldToint.Chapter10.lemma_10_6_1`: at a center that is first-order
+  noncritical, or critical with negative curvature, vanishing tolerances eventually pass the test
+  (10.6.2).
+* Algorithm 10.6.1, `ConnGouldToint.Chapter10.lemma_10_6_1_of_geometric_refinement`: if the
+  tolerances contract by a uniform factor and the predicted decreases stay above a positive floor,
+  the refinement loop ends.
+
+## Implementation notes
+
+* Lemma 10.6.1 is stated for a sequence of refinements $j$ with tolerances that tend to zero. At a
+  first-order critical center, the negative curvature is given as an eventual margin
+  $\tau_j \le -a < 0$ on the model curvatures.
+-/
 
 open Filter Topology
 open ConnGouldToint.Chapter06
 
 namespace ConnGouldToint.Chapter10
 
-/-- Both objective error tolerances are at most a fixed fraction of the
-predicted decrease, as required by (10.6.2). -/
+/-- **Equation (10.6.2)** of [conn2000trust]. The tolerances $\delta^c$ and $\delta^t$ of the
+objective values at the center and at the trial point satisfy the **decrease accuracy**
+condition for $\eta$ and the predicted decrease $\delta^m$ if
+$$\max\{\delta^c, \delta^t\} \le \eta\, \delta^m.$$
+-/
 def HasDecreaseAccuracy (η predicted centerTol trialTol : ℝ) : Prop :=
   max centerTol trialTol ≤ η * predicted
 
-/-- Accepted steps with accurate objective evaluations reduce the exact
-objective by at least `η₁ - 2 * η₀` times the predicted decrease. -/
+/-- **Equation (10.6.2)** of [conn2000trust], decrease of the exact objective. Let the predicted
+decrease be $\delta^m > 0$, let the approximations satisfy $|\tilde f(x) - f(x)| \le \delta^c$
+and $|\tilde f(x + s) - f(x + s)| \le \delta^t$, and let the tolerances satisfy (10.6.2) with
+$\eta_0$. If the approximate ratio satisfies $(\tilde f(x) - \tilde f(x + s)) / \delta^m \ge
+\eta_1$, then
+$$(\eta_1 - 2\eta_0)\, \delta^m \le f(x) - f(x + s).$$
+
+The real numbers `center` and `trial` stand for $f(x)$ and $f(x + s)$, and `centerApprox` and
+`trialApprox` for their approximations. -/
 theorem actual_decrease_of_accurate_ratio
     {center trial centerApprox trialApprox centerTol trialTol predicted η₀ η₁ : ℝ}
     (hp : 0 < predicted)
@@ -40,11 +87,23 @@ private theorem eventually_decreaseAccuracy_of_floor {η d : ℝ} (hη : 0 < η)
   filter_upwards [hp, ht.eventually_lt_const (mul_pos hη hd)] with j hj hsmall
   exact hsmall.le.trans (mul_le_mul_of_nonneg_left hj hη.le)
 
-/-- Lemma 10.6.1. During refinement the center and radius stay fixed.
-Gradient agreement supplies a positive model-gradient floor at a
-first-order noncritical center. At a first-order critical center with
-negative curvature, Hessian agreement supplies a negative model
-curvature margin. In either case, vanishing tolerances pass the test. -/
+/-- **Lemma 10.6.1** of [conn2000trust]. Let $E$ be a real normed space, $x \in E$ a fixed center,
+$g \in E$ the objective gradient at $x$, and $\Delta, B, \eta > 0$. For each refinement $j$, let
+$m_j$ be a model with gradient $g_j$ and curvature $\tau_j$, and $s_j$ a step, and assume:
+* $0 < \beta_j \le B$, and $\|g_j - g\| \le e \|g\|$ for all $j$ with a fixed $e \in [0, 1)$;
+* each $s_j$ satisfies AA.1 for $m_j$, $g_j$, $\beta_j$, $\Delta$ and $\kappa_1$;
+* if $g = 0$, each $s_j$ satisfies the negative-curvature decrease condition for $m_j$,
+  $\tau_j$, $\Delta$ and $\kappa_2$, and there is $a > 0$ with $\tau_j \le -a$ for all large
+  $j$;
+* the tolerances satisfy $\max\{\delta^c_j, \delta^t_j\} \to 0$.
+
+Then, for all sufficiently large $j$, the tolerances satisfy the accuracy condition (10.6.2)
+with $\eta$ and the predicted decrease $m_j(x) - m_j(x + s_j)$.
+
+During refinement the center and the radius stay fixed. At a first-order noncritical center, the
+gradient agreement gives a positive floor for $\|g_j\|$; at a first-order critical center, the
+curvature margin gives a positive floor for the predicted decrease. In either case the vanishing
+tolerances eventually pass the test. The curvature margin is a hypothesis of the statement. -/
 theorem lemma_10_6_1 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (g : E) (gModel : ℕ → E) (τ : ℕ → ℝ) (m : ℕ → E → ℝ) (x : E) (s : ℕ → E)
     (β : ℕ → ℝ) (centerTol trialTol : ℕ → ℝ) {η Δ B κ₁ κ₂ : ℝ}
@@ -81,8 +140,11 @@ theorem lemma_10_6_1 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     exact (mul_le_mul (mul_le_mul_of_nonneg_left hgn hκ.le) (min_le_min hh le_rfl)
       (le_min (div_nonneg ha.le hB.le) hΔ.le) (by positivity)).trans (hfirst j).2
 
-/-- A uniform contraction factor gives the vanishing tolerances used
-by the accuracy-refinement termination proof. -/
+/-- **Algorithm 10.6.1** of [conn2000trust], termination of the refinement loop. Let $\eta, d > 0$
+and $0 \le q < 1$. Let the tolerances satisfy $\max\{\delta^c_j, \delta^t_j\} \ge 0$ and
+$\max\{\delta^c_{j+1}, \delta^t_{j+1}\} \le q \max\{\delta^c_j, \delta^t_j\}$ for all $j$, and
+let the predicted decreases satisfy $\delta^m_j \ge d$ for all large $j$. Then the accuracy
+condition (10.6.2) holds with $\eta$ for some $j$. -/
 theorem lemma_10_6_1_of_geometric_refinement {η d q : ℝ} (hη : 0 < η) (hd : 0 < d)
     (hq : 0 ≤ q) (hq' : q < 1) {predicted centerTol trialTol : ℕ → ℝ}
     (ht₀ : ∀ j, 0 ≤ max (centerTol j) (trialTol j))

@@ -11,7 +11,119 @@ import Mathlib.Topology.Instances.Matrix
 import Mathlib.Topology.Connected.TotallyDisconnected
 import Mathlib.Topology.MetricSpace.Thickening
 
-/-! # Geometry of active constraints at limit points -/
+/-!
+# Conn, Gould and Toint, Section 12.3: active constraints at limit points
+
+This module formalizes Section 12.3 of [conn2000trust], which studies the active constraints of the
+iterates of a projection-based trust-region method near its limit points. The feasible set is
+$C = \{x : c_i(x) \ge 0 \text{ for all } i\}$ with finitely many constraints, and the active set at
+$x$ is $\mathcal{A}(x) = \{i : c_i(x) = 0\}$. At a limit point $z$ the module assumes that the
+active gradients are linearly independent (AO.1c) and that strict complementarity holds:
+$\nabla f(z) = \sum_i \mu_i \nabla c_i(z)$ with $\mu_i > 0$ exactly on $\mathcal{A}(z)$, as in
+(12.3.1). The relative-interior condition AO.4b gives these strictly positive multipliers, and
+independence makes them unique. Under these conditions the active set is locally constant on the set
+of limit points (Lemma 12.3.1), different active sets on a compact limit set are uniformly separated
+(Lemma 12.3.2), and the iterates eventually stay near one component of the limit set (Theorem
+12.3.3).
+
+The main subject is Theorem 12.3.8, which asserts that the iterates and the generalized Cauchy
+points eventually have the active set of the limit. The printed theorem and the subsequence claim of
+Lemma 12.3.7 fail; the counterexamples are in
+`NumlibSurface.ConnGouldToint.Chapter12.Section03Counterexample` and
+`NumlibSurface.ConnGouldToint.Chapter12.Section03IterateCounterexample`. This module proves
+corrected versions. The key estimate is a uniform lower bound on the tangent component
+$\|P_{T(u)}[-\nabla f(x)]\|$ at points $u$ near $z$ with a different active set. At small radii it
+gives a model decrease linear in the radius, so a Cauchy point with the wrong active set comes from
+a very successful iteration. The module also proves Lemmas 12.3.5 and 12.3.6, Corollary 12.3.9 under
+eventual identification, and a relaxed form of Theorem 12.3.4. The proofs use the projections and
+cones of `Numlib.Optimization.ModelBased.ProjectedPath`, the normal-cone formula
+`ConnGouldToint.Chapter03.theorem_3_2_10_normalCone`, and the run of Algorithm 6.1.1 in
+`ConnGouldToint.Chapter06.BTRRun`.
+
+## Main definitions
+
+* `ConnGouldToint.Chapter12.activeConstraintSet`: the active set
+  $\mathcal{A}(x) = \{i : c_i(x) = 0\}$.
+* Equation (12.3.1), `ConnGouldToint.Chapter12.HasStrictActiveMultipliers`:
+  $g(x) = \sum_i \mu_i n_i(x)$ with $\mu_i > 0$ on $\mathcal{A}(x)$ and $\mu_i = 0$ off it.
+
+## Main results
+
+* Lemma 12.3.1, `ConnGouldToint.Chapter12.lemma_12_3_1`: the active set is constant on a connected
+  set of strictly complementary points with independent active normals.
+* Lemma 12.3.2, `ConnGouldToint.Chapter12.lemma_12_3_2`: on a compact such set, points with
+  different active sets are at distance at least some $\psi \in (0, 1)$.
+* Theorem 12.3.3, `ConnGouldToint.Chapter12.theorem_12_3_3`: the iterates eventually lie in a
+  $\delta$-neighborhood of a compact component of the limit set, in which no constraint inactive on
+  the component becomes active.
+* Theorem 12.3.4, `ConnGouldToint.Chapter12.theorem_12_3_4_relaxed`: a lower bound $\varepsilon$ on
+  the capped criticality measure of the relaxed feasible set.
+* Lemma 12.3.5, `ConnGouldToint.Chapter12.lemma_12_3_5`: at small radii an iteration that satisfies
+  AA.1b is very successful and the radius does not decrease.
+* Lemma 12.3.6, `ConnGouldToint.Chapter12.lemma_12_3_6`: projected gradients tend to zero at nearby
+  feasible points with the active set of the limit set.
+* Lemma 12.3.7, `ConnGouldToint.Chapter12.lemma_12_3_7_of_normal_certificates`: with a common active
+  set on the limit set and normal certificates, infinitely many successful iterates have that active
+  set.
+* Theorem 12.3.8,
+  `ConnGouldToint.Chapter12.theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero`: in
+  a compact run with vanishing Cauchy and iterate displacements, the late iterates and Cauchy points
+  have the common active set of the limit points.
+* Theorem 12.3.8, `ConnGouldToint.Chapter12.theorem_12_3_8_of_smooth_compact_run`: the same
+  conclusion for continuously differentiable constraints and objective.
+* Theorem 12.3.8,
+  `ConnGouldToint.Chapter12.theorem_12_3_8_of_convergent_run_of_radius_tendsto_zero`: the same
+  conclusion for a convergent run with vanishing radii.
+* Corollary 12.3.9, `ConnGouldToint.Chapter12.corollary_12_3_9_of_eventually_active`: if the
+  iterates eventually have the active set of the limit set, the projected gradients tend to zero.
+
+## Conventions
+
+* The constraints are $c_i \ge 0$ with $i$ in a finite type $\iota$, and
+  $C = \{x : c_i(x) \ge 0 \text{ for all } i\}$ is `ConnGouldToint.Chapter03.AC7 C c`. AC.2
+  (`ConnGouldToint.Chapter03.AC2`) says that $C$ is nonempty, closed and convex.
+* $T(x)$ and $N(x)$ are the tangent and normal cones of $C$ at $x$ (`Optimization.tangentDirections`
+  and `Optimization.normalDirections`), and $P_K$ is the projection onto a closed convex set $K$
+  (`bestApprox`). The point $P_C[x - t \nabla f(x)]$ of the projected-gradient path (12.1.4) is
+  `ConnGouldToint.Chapter12.projectedGradientPath C f x t`.
+* The tangent qualification at $x$ is `ConnGouldToint.Chapter03.ActiveLinearizedConeMatches C c x`:
+  the tangent cone of $C$ at $x$ is $\{d : Dc_i(x)\, d \ge 0 \text{ for all } i \in
+  \mathcal{A}(x)\}$.
+* A **supported normal representation** of $v$ at $u$ is a family $\mu$ with
+  $v = \sum_i \mu_i n_i(u)$ and $\mu_i = 0$ for $i \notin \mathcal{A}(u)$. Several results take such
+  representations of approximations of $g(x_k)$ as hypotheses ("normal certificates").
+* AO.1c at $z$ is the linear independence of the active normals $(n_i(z))_{i \in \mathcal{A}(z)}$,
+  and AO.4b at $z$ is $-\nabla f(z) \in \operatorname{ri} N(z)$, with `intrinsicInterior ℝ` for the
+  relative interior.
+* A run is `ConnGouldToint.Chapter06.BTRRun` with iterates $x_k$, steps $s_k$, radii $\Delta_k$ and
+  models $m_k$, and $\rho_k$ is the ratio `ConnGouldToint.Chapter06.btrRatio`. An iteration is
+  successful if $\rho_k \ge \eta_1$ and very successful if $\rho_k \ge \eta_2$.
+* $\kappa_{\mathrm{up}} < \kappa_{\mathrm{lo}}$, $\kappa_{\mathrm{fr}}$ and $\kappa_{\mathrm{ep}}$
+  are the constants of the generalized Cauchy point (12.2.1)–(12.2.4), the fields `upperSlope`,
+  `lowerSlope`, `radiusFraction` and `endpointFactor` of
+  `ConnGouldToint.Chapter12.GeneralizedCauchyParams`. The capped criticality measure (12.2.15) is
+  $\pi_C(x) = \min\{1, \chi_C(x)\}$, where $\chi_C(x)$ is the criticality measure (12.1.13) with
+  radius $1$.
+
+## Deviations from the source
+
+* **Theorem 12.3.4** (correction). The local comparison bounds the criticality measure of the
+  relaxed feasible set, with a shifted displacement; a half-line example shows that the trial
+  conditions alone do not give the bound for the full feasible set. See
+  `ConnGouldToint.Chapter12.theorem_12_3_4_relaxed` and
+  `ConnGouldToint.Chapter12.missing_active_local_criticality_counterexample`.
+* **Lemma 12.3.7** (correction). The subsequence claim fails; it holds when the limit set has a
+  common active set and the iterates carry asymptotically accurate normal certificates. See
+  `ConnGouldToint.Chapter12.lemma_12_3_7_of_normal_certificates`.
+* **Theorem 12.3.8** (correction). Eventual identification fails at the Cauchy points for
+  nonvanishing radii and at the iterates for constant radii. The corrected versions assume normal
+  certificates, vanishing radii, vanishing Cauchy and iterate displacements, vanishing trial
+  displacements, or bounded positive trial times. See
+  `ConnGouldToint.Chapter12.theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero`.
+* **Corollary 12.3.9** (correction). The corollary assumes that the iterates eventually have the
+  active set of the limit set, which the printed Theorem 12.3.8 does not provide. See
+  `ConnGouldToint.Chapter12.corollary_12_3_9_of_eventually_active`.
+-/
 
 open Filter Topology
 open scoped RealInnerProductSpace Matrix
@@ -20,12 +132,21 @@ namespace ConnGouldToint.Chapter12
 
 variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The indices of zero-valued inequality constraints at the point. -/
+/-- **Section 12.3** of [conn2000trust], active set. For constraints $c_i : E \to \mathbb{R}$, the
+**active set** at $x$ is the set of indices of the constraints that vanish there:
+$$\mathcal{A}(x) = \{i : c_i(x) = 0\}.$$
+-/
 def activeConstraintSet (c : ι → E → ℝ) (x : E) : Set ι := {i | c i x = 0}
 
-/-- Positive multipliers on the active constraints, with stationarity in the
-book's convention (c_i ≥ 0). The supplied normal fields are the inward
-constraint gradients. -/
+/-- **Equation (12.3.1)** of [conn2000trust]. Let $c_i : E \to \mathbb{R}$ be constraints,
+$n_i : E \to E$ vector fields and $g : E \to E$. The field $g$ has **strictly positive active
+multipliers** at $x$ if there is $\mu \in \mathbb{R}^\iota$ with
+$$g(x) = \sum_i \mu_i\, n_i(x), \qquad \mu_i > 0 \text{ for } i \in \mathcal{A}(x), \qquad
+  \mu_i = 0 \text{ for } i \notin \mathcal{A}(x).$$
+
+With $n_i = \nabla c_i$ and $g = \nabla f$, this is the stationarity condition (12.3.1) with
+strict complementarity, in the convention $c_i \ge 0$ of the source; AO.1c and AO.4b imply it.
+The fields $n_i$ are the inward constraint gradients. -/
 def HasStrictActiveMultipliers [Fintype ι] (c : ι → E → ℝ) (n : ι → E → E)
     (g : E → E) (x : E) : Prop :=
   ∃ μ : ι → ℝ, g x = ∑ i, μ i • n i x ∧
@@ -33,9 +154,14 @@ def HasStrictActiveMultipliers [Fintype ι] (c : ι → E → ℝ) (n : ι → E
     ∀ i ∉ activeConstraintSet c x, μ i = 0
 
 open Optimization ConvexAnalysis in
-/-- The relative-interior condition AO.4b is equivalent to the existence of
-strictly positive multipliers on the active inequalities, under the tangent
-qualification. No independence is needed for this existence equivalence. -/
+/-- **Section 12.3** of [conn2000trust], AO.4b and the multipliers (12.3.1). Let $E$ be a
+finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7 for the constraints
+$c_i$, let $x \in C$, and let the tangent qualification hold at $x$. Then $g$ has strictly
+positive active multipliers with respect to the gradients $\nabla c_i$ at $x$ if and only if
+$$-g(x) \in \operatorname{ri} N(x).$$
+
+The equivalence needs no independence of the active gradients. The proof uses the normal-cone
+formula `ConnGouldToint.Chapter03.theorem_3_2_10_normalCone`. -/
 theorem strictActiveMultipliers_iff_mem_relint_normalDirections [Fintype ι]
     [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {g : E → E} {x : E}
@@ -93,8 +219,10 @@ theorem strictActiveMultipliers_iff_mem_relint_normalDirections [Fintype ι]
     change c i x = 0 at hi
     simpa only [m, dite_eq_left hi] using hpos ⟨i, hi⟩
 
-/-- Independence of the active normals makes the supported coefficients in
-the stationarity representation unique. -/
+/-- **Equation (12.3.1)** of [conn2000trust], uniqueness of the multipliers. Let the active normals
+$(n_i(x))_{i \in \mathcal{A}(x)}$ be linearly independent, and let
+$\mu, \nu \in \mathbb{R}^\iota$ vanish outside $\mathcal{A}(x)$. If
+$\sum_i \mu_i n_i(x) = \sum_i \nu_i n_i(x)$, then $\mu = \nu$. -/
 theorem activeCoefficients_unique [Fintype ι] {c : ι → E → ℝ} {n : ι → E → E}
     {x : E} {μ ν : ι → ℝ}
     (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ n i x))
@@ -135,8 +263,13 @@ private theorem eventually_activeConstraintSet_subset_of_tendsto [Fintype ι]
       ((show IsOpen {r : ℝ | r ≠ 0} from isOpen_ne).mem_nhds hi)
     exact he.mono fun _ hk hzero ↦ (hk hzero).elim
 
-/-- A supported normal representation near a strictly complementary point
-identifies the active set even when the represented vector is perturbed. -/
+/-- **Section 12.3** of [conn2000trust], active-set perturbation. Let the $c_i$ and $n_i$ be
+continuous, let the active normals at $x$ be linearly independent, and let $g$ have strictly
+positive active multipliers at $x$. Then for every pair $(y, v)$ close enough to $(x, g(x))$: if
+$v$ has a supported normal representation $v = \sum_i \mu_i n_i(y)$ with $\mu_i = 0$ for
+$i \notin \mathcal{A}(y)$, then $\mathcal{A}(y) = \mathcal{A}(x)$.
+
+The represented vector $v$ may differ from $g(y)$; it only has to be close to $g(x)$. -/
 theorem eventually_activeConstraintSet_eq_of_normal_representation [Fintype ι]
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E} {x : E}
     (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
@@ -212,8 +345,11 @@ theorem eventually_activeConstraintSet_eq_of_normal_representation [Fintype ι]
   rw [haν] at hi'
   exact not_not.mp fun hn ↦ hi'.ne' (hνzero i hn)
 
-/-- Active-set identification along convergent primal and represented normal
-sequences, provided the coefficients are eventually supported on the active constraints. -/
+/-- **Section 12.3** of [conn2000trust], sequential active-set identification. Let the $c_i$ and
+$n_i$ be continuous, let the active normals at $x$ be linearly independent, and let $g$ have
+strictly positive active multipliers at $x$. Let $u_k \to x$ and $v_k \to g(x)$ along a filter,
+and suppose that eventually $v_k$ has a supported normal representation at $u_k$. Then
+eventually $\mathcal{A}(u_k) = \mathcal{A}(x)$. -/
 theorem eventually_activeConstraintSet_eq_of_tendsto [Fintype ι] {α : Type*}
     {l : Filter α} {u v : α → E} {c : ι → E → ℝ} {n : ι → E → E}
     {g : E → E} {x : E}
@@ -229,9 +365,13 @@ theorem eventually_activeConstraintSet_eq_of_tendsto [Fintype ι] {α : Type*}
     with k hnear hrep
   exact hnear hrep
 
-/-- Independence of the active gradients persists in a neighborhood. The
-inactive constraints remain inactive there, and the reference Gram matrix
-stays nonsingular. -/
+/-- **Section 12.3** of [conn2000trust], persistence of AO.1c. Let the $c_i$ and $n_i$ be
+continuous, and let the active normals $(n_i(x))_{i \in \mathcal{A}(x)}$ be linearly
+independent. Then for every $y$ near $x$ the active normals $(n_i(y))_{i \in \mathcal{A}(y)}$
+are linearly independent.
+
+Near $x$ the inactive constraints stay inactive, so $\mathcal{A}(y) \subseteq \mathcal{A}(x)$,
+and the Gram matrix of the normals indexed by $\mathcal{A}(x)$ stays nonsingular. -/
 theorem eventually_activeGradient_independent [Fintype ι] {c : ι → E → ℝ}
     {n : ι → E → E} {x : E}
     (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
@@ -250,8 +390,14 @@ theorem eventually_activeGradient_independent [Fintype ι] {c : ι → E → ℝ
   have hj : Function.Injective j := fun _ _ h ↦ Subtype.ext (congrArg (fun z : J ↦ (z : ι)) h)
   exact (Matrix.det_gram_ne_zero_iff_linearIndependent.mp hy).comp j hj
 
-/-- For smooth inequality constraints, independence of the active gradients
-gives exact linearization of the feasible tangent cone. -/
+/-- **Section 12.3** of [conn2000trust], the tangent qualification from AC.1, AC.7 and AO.1c. Let
+$E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.7 for the constraints
+$c_i$, and let $x \in C$. Suppose that each $c_i$ is strictly differentiable at $x$ and that the
+active gradients $(\nabla c_i(x))_{i \in \mathcal{A}(x)}$ are linearly independent. Then the
+tangent qualification holds at $x$: the tangent cone of $C$ at $x$ is $\{d : Dc_i(x)\, d \ge 0
+\text{ for all } i \in \mathcal{A}(x)\}$.
+
+The tangent cone is Mathlib's `posTangentConeAt`. -/
 theorem activeLinearizedConeMatches_of_activeGradient_independent [Fintype ι]
     [CompleteSpace E] [FiniteDimensional ℝ E] {C : Set E} {c : ι → E → ℝ} {x : E}
     (hset : Chapter03.AC7 C c) (hx : x ∈ C)
@@ -313,8 +459,15 @@ theorem activeLinearizedConeMatches_of_activeGradient_independent [Fintype ι]
         exact neg_nonpos.mpr (hd i hi))
 
 open Optimization in
-/-- For smooth inequalities with independent active gradients, AO.4b in its
-geometric form supplies the strict active multipliers in (12.3.1). -/
+/-- **Equation (12.3.1)** of [conn2000trust], from AC.1, AC.2, AC.7, AO.1c and AO.4b. Let $E$ be a
+finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, let $x \in C$, let
+each $c_i$ be strictly differentiable at $x$, and let the active gradients at $x$ be linearly
+independent. If $-g(x) \in \operatorname{ri} N(x)$, then $g$ has strictly positive active
+multipliers with respect to the gradients $\nabla c_i$ at $x$.
+
+The proof combines
+`ConnGouldToint.Chapter12.activeLinearizedConeMatches_of_activeGradient_independent` and
+`ConnGouldToint.Chapter12.strictActiveMultipliers_iff_mem_relint_normalDirections`. -/
 theorem strictActiveMultipliers_of_activeGradient_independent_of_mem_relint
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {g : E → E} {x : E}
@@ -387,9 +540,15 @@ private theorem sub_tangentProjection_mem_normal [CompleteSpace E] (C : Set E) (
   rwa [inner_sub_right, horth, sub_zero] at hh
 
 open Optimization in
-/-- Strict complementarity gives a uniform tangent-gradient lower bound at
-nearby points with a different active set. The compared gradient is allowed
-to be evaluated at a separate convergent sequence of base points. -/
+/-- **Section 12.3** of [conn2000trust], tangent-gradient gap. Let $E$ be a finite-dimensional real
+inner product space, let $C$ satisfy AC.2 and AC.7, and let $c_i$, $\nabla c_i$ and $\nabla f$
+be continuous. At $z$ let the active gradients be linearly independent, and let $\nabla f$ have
+strictly positive active multipliers with respect to the $\nabla c_i$. Let $x_k \to z$ and
+$u_k \to z$ along a filter, and suppose that eventually $u_k \in C$ and the tangent
+qualification holds at $u_k$. Then there is $\gamma > 0$ such that eventually
+$$\mathcal{A}(u_k) \neq \mathcal{A}(z) \implies \gamma \le \|P_{T(u_k)}[-\nabla f(x_k)]\|.$$
+
+The gradient is evaluated at the separate sequence $x_k$ of base points. -/
 theorem eventually_tangentProjection_lower_of_active_mismatch
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
     {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
@@ -430,9 +589,16 @@ theorem eventually_tangentProjection_lower_of_active_mismatch
   exact hneq (hball hv (exists_activeCoefficients_of_neg_mem_normal hC hset hk hQk hvn))
 
 open Optimization in
-/-- A projected-gradient trial approaching a strictly complementary limit
-identifies its active set when its displacement divided by its time tends to zero.
-The active linearization qualification supplies the trial normal certificate. -/
+/-- **Section 12.3** of [conn2000trust], identification from a vanishing normalized displacement.
+Let $E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, and let
+$c_i$, $\nabla c_i$ and $\nabla f$ be continuous; assume AO.1c and strictly positive active
+multipliers at $z$. Let $x_k \to z$ along a filter, let eventually $t_k > 0$, and put
+$p_k = P_C[x_k - t_k \nabla f(x_k)]$. If $p_k \to z$, $(p_k - x_k)/t_k \to 0$, and eventually
+the tangent qualification holds at $p_k$, then eventually $\mathcal{A}(p_k) = \mathcal{A}(z)$.
+
+The tangent qualification at $p_k$ gives a supported normal representation of the projection
+residual, to which `ConnGouldToint.Chapter12.eventually_activeConstraintSet_eq_of_tendsto`
+applies. -/
 theorem eventually_activeConstraintSet_eq_of_projectedGradient_residual
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
     {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
@@ -474,9 +640,13 @@ theorem eventually_activeConstraintSet_eq_of_projectedGradient_residual
   exact exists_activeCoefficients_of_neg_mem_normal hC hset huk hQk hvn
 
 open Optimization in
-/-- Near a strictly complementary limit, projected-gradient trials with times
-bounded above and away from zero identify the active set. The active
-linearization qualification at the trials supplies their normal certificates. -/
+/-- **Section 12.3** of [conn2000trust], identification at projected-gradient trials with bounded
+positive times. Let $E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.2
+and AC.7, and let $c_i$, $\nabla c_i$ and $\nabla f$ be continuous. Let $z \in C$ be stationary,
+$-\nabla f(z) \in N(z)$, with AO.1c and strictly positive active multipliers at $z$. Let
+$x_k \to z$ along a filter, let $0 < a$ and eventually $a \le t_k \le b$, and put
+$p_k = P_C[x_k - t_k \nabla f(x_k)]$. If eventually the tangent qualification holds at $p_k$,
+then eventually $\mathcal{A}(p_k) = \mathcal{A}(z)$. -/
 theorem eventually_activeConstraintSet_eq_projectedGradientPath
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
     {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
@@ -531,8 +701,13 @@ theorem eventually_activeConstraintSet_eq_projectedGradientPath
     hmul hx (ht.mono fun _ hk ↦ ha.trans_le hk.1) hu huv hQ
 
 open Optimization in
-/-- Cauchy trials identify the active set near a strictly complementary limit
-when the radius and the radius divided by the trial time both vanish. -/
+/-- **Section 12.3** of [conn2000trust], identification at Cauchy trials with vanishing radii. Let
+$E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, and let
+$c_i$, $\nabla c_i$ and $\nabla f$ be continuous; assume AO.1c and strictly positive active
+multipliers at $z$. Let $x_k \to z$ along a filter, let eventually $t_k > 0$, and put
+$p_k = P_C[x_k - t_k \nabla f(x_k)]$. Suppose that $\Delta_k \to 0$, $\Delta_k / t_k \to 0$,
+eventually $\|p_k - x_k\| \le \Delta_k$, and eventually the tangent qualification holds at
+$p_k$. Then eventually $\mathcal{A}(p_k) = \mathcal{A}(z)$. -/
 theorem eventually_activeConstraintSet_eq_of_small_Cauchy_radius
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E] {α : Type*}
     {l : Filter α} {C : Set E} {c : ι → E → ℝ} {f : E → ℝ}
@@ -562,8 +737,10 @@ theorem eventually_activeConstraintSet_eq_of_small_Cauchy_radius
   exact eventually_activeConstraintSet_eq_of_projectedGradient_residual
     hC hset hc hn hg hind hmul hx ht hu huv hQ
 
-/-- The active set is locally constant relative to a set of strictly
-complementary stationary points with independent active normals. -/
+/-- **Lemma 12.3.1** of [conn2000trust], local constancy. Let $S \subseteq E$ and $x \in S$, let the
+$c_i$, $n_i$ and $g$ be continuous, let the active normals at $x$ be linearly independent, and
+let $g$ have strictly positive active multipliers at every point of $S$. Then
+$\mathcal{A}(y) = \mathcal{A}(x)$ for every $y \in S$ near $x$. -/
 theorem eventually_activeConstraintSet_eq [Fintype ι] {S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E} {x : E}
     (hx : x ∈ S) (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
@@ -593,8 +770,15 @@ private theorem activeConstraintSet_continuousOn [Fintype ι]
     exact hy hyS
   · rfl
 
-/-- Lemma 12.3.1. Local constancy suffices on any connected set of limit
-points. No path-connectedness assumption is needed. -/
+/-- **Lemma 12.3.1** of [conn2000trust]. Let $S \subseteq E$ be nonempty and connected, and let the
+$c_i$, $n_i$ and $g$ be continuous. Suppose that at every $x \in S$ the active normals
+$(n_i(x))_{i \in \mathcal{A}(x)}$ are linearly independent and $g$ has strictly positive active
+multipliers. Then the active set is constant on $S$: there is $\mathcal{A}$ with
+$\mathcal{A}(x) = \mathcal{A}$ for all $x \in S$.
+
+The proof uses only the local constancy
+`ConnGouldToint.Chapter12.eventually_activeConstraintSet_eq` and the connectedness of $S$;
+path-connectedness is not needed. -/
 theorem lemma_12_3_1 [Fintype ι] {S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     (hS : IsConnected S) (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
@@ -608,8 +792,13 @@ theorem lemma_12_3_1 [Fintype ι] {S : Set E}
   obtain ⟨x, hx⟩ := hS.nonempty
   exact ⟨activeConstraintSet c x, fun y hy ↦ hS.isPreconnected.constant hcont hy hx⟩
 
-/-- Supported normal certificates identify the common active set uniformly
-along a compact sequence and nearby trial points. -/
+/-- **Section 12.3** of [conn2000trust], identification along a compact run from normal
+certificates. Let $K$ be compact, $x_k \in K$, and let every limit of a subsequence of $(x_k)$
+lie in $S$. Let the $c_i$, $n_i$ and $g$ be continuous, and suppose that at every $z \in S$ the
+active normals are linearly independent, $g$ has strictly positive active multipliers, and
+$\mathcal{A}(z) = \mathcal{A}$. If $u_k - x_k \to 0$, $v_k - g(x_k) \to 0$, and eventually $v_k$
+has a supported normal representation at $u_k$, then eventually
+$\mathcal{A}(u_k) = \mathcal{A}$. -/
 theorem eventually_activeConstraintSet_eq_of_compact_normal_certificates [Fintype ι]
     {K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x u v : ℕ → E} {A : Set ι}
@@ -645,9 +834,22 @@ theorem eventually_activeConstraintSet_eq_of_compact_normal_certificates [Fintyp
   obtain ⟨k, hk⟩ := hgood.exists
   exact hjbad (i k) (hk.trans (hAS z hz))
 
-/-- A certificate-based version of Theorem 12.3.8. On a connected limit set,
-asymptotically accurate supported normal certificates at the iterates and at
-the Cauchy points identify the same active set at both sequences. -/
+/-- **Theorem 12.3.8** of [conn2000trust], with normal certificates. Let $K$ be compact,
+$x_k \in K$, let $S$ be connected, and let every limit of a subsequence of $(x_k)$ lie in $S$.
+Let the $c_i$, $n_i$ and $g$ be continuous, and suppose that at every $z \in S$ the active
+normals are linearly independent and $g$ has strictly positive active multipliers. Let
+$u_k - x_k \to 0$, $v_k - g(x_k) \to 0$ and $w_k - g(x_k) \to 0$, and suppose that eventually
+$v_k$ has a supported normal representation at $x_k$ and $w_k$ has one at $u_k$. Then there is
+$\mathcal{A}$ with $\mathcal{A}(z) = \mathcal{A}$ for all $z \in S$, and eventually
+$$\mathcal{A}(x_k) = \mathcal{A} \quad\text{and}\quad \mathcal{A}(u_k) = \mathcal{A}.$$
+
+**Correction.** The printed theorem fails at the Cauchy points and at the iterates; see
+`ConnGouldToint.Chapter12.theorem_12_3_8_nonvanishing_radius_counterexample` and
+`ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`. This version
+assumes asymptotically accurate supported normal certificates $v_k$ at the iterates and $w_k$ at
+the Cauchy points $u_k$.
+
+Lemma 12.3.1 gives the common active set on $S$. -/
 theorem theorem_12_3_8_of_normal_certificates [Fintype ι]
     {K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x u v w : ℕ → E}
@@ -674,8 +876,19 @@ theorem theorem_12_3_8_of_normal_certificates [Fintype ι]
     (eventually_activeConstraintSet_eq_of_compact_normal_certificates
       hK hx hlim hc hn hg hind hstat hA hu hw hwrep)⟩
 
-/-- Lemma 12.3.7 under the compact-run normal certificate condition.
-Infinitely many successful iterations then give an identified subsequence. -/
+/-- **Lemma 12.3.7** of [conn2000trust], with normal certificates. Let $K$ be compact, $x_k \in K$,
+and let every limit of a subsequence of $(x_k)$ lie in $S$. Let the $c_i$, $n_i$ and $g$ be
+continuous, and suppose that at every $z \in S$ the active normals are linearly independent, $g$
+has strictly positive active multipliers, and $\mathcal{A}(z) = \mathcal{A}$. Let
+$v_k - g(x_k) \to 0$, let eventually $v_k$ have a supported normal representation at $x_k$, and
+let a property "successful" hold for infinitely many $k$. Then there is a strictly increasing
+sequence $(j_i)$ such that, for every $i$, iteration $j_i$ is successful and
+$\mathcal{A}(x_{j_i}) = \mathcal{A}$.
+
+**Correction.** The printed lemma claims such a subsequence without the normal certificates; the
+claim fails, see
+`ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`. This version
+assumes a common active set on the limit set and supported normal certificates at the iterates. -/
 theorem lemma_12_3_7_of_normal_certificates [Fintype ι]
     {K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x v : ℕ → E} {A : Set ι} {success : ℕ → Prop}
@@ -696,9 +909,14 @@ theorem lemma_12_3_7_of_normal_certificates [Fintype ι]
     hK hx hlim hc hn hg hind hstat hA hzero hv hrep
   exact extraction_of_frequently_atTop (hsuccess.and_eventually hid)
 
-/-- Lemma 12.3.2. On a compact limit set, points with different active
-sets are uniformly separated. This pairwise statement also separates a point
-from any nonempty component with a different active set. -/
+/-- **Lemma 12.3.2** of [conn2000trust]. Let $S \subseteq E$ be compact, let the $c_i$, $n_i$ and
+$g$ be continuous, and suppose that at every $x \in S$ the active normals are linearly
+independent and $g$ has strictly positive active multipliers. Then there is $\psi \in (0, 1)$
+such that for all $x, y \in S$,
+$$\mathcal{A}(x) \neq \mathcal{A}(y) \implies \psi \le \operatorname{dist}(x, y).$$
+
+The statement is pairwise. It also separates a point from any nonempty component of $S$ with a
+different active set. -/
 theorem lemma_12_3_2 [Fintype ι] {S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     (hS : IsCompact S) (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
@@ -736,9 +954,15 @@ theorem lemma_12_3_2 [Fintype ι] {S : Set E}
     intro x hx y hy hxy
     exact (hne ⟨(⟨x, hx⟩, ⟨y, hy⟩), hxy⟩).elim
 
-/-- Compact runs with vanishing successive displacements have a common
-active set at all cluster points. Strict complementarity separates distinct
-active sets even when the limit set has several connected components. -/
+/-- **Section 12.3** of [conn2000trust], common active set of the limit points. Let $S$ and $K$ be
+compact, let $x_k \in K$, and let $S$ be exactly the set of limits of subsequences of $(x_k)$.
+Suppose that $\operatorname{dist}(x_{k+1}, x_k) \to 0$, that the $c_i$, $n_i$ and $g$ are
+continuous, and that at every $z \in S$ the active normals are linearly independent and $g$ has
+strictly positive active multipliers. Then there is $\mathcal{A}$ with
+$\mathcal{A}(z) = \mathcal{A}$ for all $z \in S$.
+
+The limit set may have several connected components; the uniform separation of Lemma 12.3.2 and
+the vanishing steps rule out different active sets on different components. -/
 theorem activeConstraintSet_eq_on_limits_of_vanishing_steps [Fintype ι]
     {S K : Set E} {x : ℕ → E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     (hS : IsCompact S) (hK : IsCompact K) (hx : ∀ k, x k ∈ K)
@@ -799,9 +1023,19 @@ theorem activeConstraintSet_eq_on_limits_of_vanishing_steps [Fintype ι]
   obtain ⟨k, hk₁, hk₂⟩ := (hnear.and (hl.tendsto_atTop.eventually htail)).exists
   exact (hk₁ (hy (l k))).symm.trans hk₂
 
-/-- Theorem 12.3.3. In a compact run, the iterates eventually lie in a
-fixed-radius neighborhood of a component of the limit set. Throughout
-that neighborhood no constraint inactive on the component becomes active. -/
+/-- **Theorem 12.3.3** of [conn2000trust], with (12.3.9)–(12.3.10). Let $S$ and $\Omega$ be compact,
+let $x_k \in \Omega$, and let every limit of a subsequence of $(x_k)$ lie in $S$. Let the $c_i$,
+$n_i$ and $g$ be continuous, and suppose that at every $z \in S$ the active normals are linearly
+independent and $g$ has strictly positive active multipliers. Then there are $\psi \in (0, 1)$
+and $\delta \in (0, \psi/4)$ such that
+
+* any two points of $S$ with different active sets are at distance at least $\psi$, and
+* for all large $k$ there is $z \in S$ whose connected component $S_z$ in $S$ is compact, such
+  that $x_k$ lies in the closed $\delta$-neighborhood of $S_z$ and every $y$ in that
+  neighborhood satisfies $\mathcal{A}(y) \subseteq \mathcal{A}(z)$.
+
+The closed neighborhood is `Metric.cthickening δ`, and the component is
+`connectedComponentIn S z`. -/
 theorem theorem_12_3_3 [Fintype ι] {S Ω : Set E} {x : ℕ → E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     (hS : IsCompact S) (hΩ : IsCompact Ω) (hx : ∀ k, x k ∈ Ω)
@@ -882,9 +1116,18 @@ theorem theorem_12_3_3 [Fintype ι] {S Ω : Set E} {x : ℕ → E}
   exact hεsub i hye hi
 
 open Optimization in
-/-- The relaxed comparison (12.3.15)–(12.3.16). The endpoint feasible
-after dropping a constraint can be compared with criticality on the
-relaxed set. Moving the base point also shifts the displacement. -/
+/-- **Equations (12.3.15)–(12.3.16)** of [conn2000trust], relaxed comparison. Let $E$ be a real
+Hilbert space, $R \subseteq E$, and let $x, z, d \in E$ with $z + d \in R$, $\|d\| \le 1/2$ and
+$\|z - x\| \le 1/2$. Then
+$$\langle -\nabla f(z), d \rangle - \|\nabla f(x) - \nabla f(z)\|\, \|d\| - \|\nabla f(x)\|\,
+  \|z - x\| \le \chi_R(x),$$
+where $\chi_R(x)$ is the criticality measure (12.1.13) of $R$ at $x$ with radius $1$.
+
+The set $R$ is the relaxed feasible set, in which a constraint is dropped. Moving the base point
+from $z$ to $x$ changes the displacement from $d$ to $z - x + d$, which has norm at most $1$.
+This comparison replaces the pointwise comparison with the full feasible set in the proof of
+Theorem 12.3.4, which `ConnGouldToint.Chapter12.missing_active_local_criticality_counterexample`
+shows to be unavailable. -/
 theorem relaxedCriticality_lower_bound_of_nearby [CompleteSpace E]
     {R : Set E} {f : E → ℝ} {x z d : E}
     (hd : z + d ∈ R) (hdnorm : ‖d‖ ≤ 1 / 2) (hxz : ‖z - x‖ ≤ 1 / 2) :
@@ -907,9 +1150,19 @@ theorem relaxedCriticality_lower_bound_of_nearby [CompleteSpace E]
   linarith only [h₁, h₁', h₂, h₂', hχ]
 
 open Optimization in
-/-- The relaxed criticality bound supported by the comparison in Theorem
-12.3.4. The transported trial must be feasible in the set used to compute
-criticality, and the linear decrease pays for the translation of the base. -/
+/-- **Theorem 12.3.4** of [conn2000trust], relaxed criticality bound. Let $E$ be a real Hilbert
+space, $R \subseteq E$, $\varepsilon \le 1$, and let $x, z, d \in E$ with $z + d \in R$,
+$\|d\| \le 1/2$ and $\|z - x\| \le 1/2$. Suppose that
+$$2 \varepsilon \le \langle -\nabla f(z), d \rangle, \qquad \|\nabla f(x) - \nabla f(z)\| \le
+  \varepsilon, \qquad \|\nabla f(x)\|\, \|z - x\| \le \varepsilon / 2.$$
+Then $\varepsilon \le \pi_R(x)$, where $\pi_R$ is the capped criticality measure (12.2.15) of
+$R$.
+
+**Correction.** The comparison in the proof of the source bounds the criticality measure of the
+full feasible set. The trial conditions alone do not give that bound; see
+`ConnGouldToint.Chapter12.missing_active_local_criticality_counterexample`. Here the transported
+trial $z + d$ must be feasible for the set $R$ whose criticality is bounded, and the linear
+decrease pays for the translation of the base point. -/
 theorem theorem_12_3_4_relaxed [CompleteSpace E] {R : Set E} {f : E → ℝ} {x z d : E}
     {ε : ℝ} (hε : ε ≤ 1) (hd : z + d ∈ R) (hdnorm : ‖d‖ ≤ 1 / 2)
     (hxz : ‖z - x‖ ≤ 1 / 2)
@@ -954,9 +1207,17 @@ private theorem cauchyProjection_linear_lower [CompleteSpace E] {C : Set E}
   exact ⟨hrpos, hlin⟩
 
 open Optimization in
-/-- At small radii, a Cauchy trial with a tangent-gradient lower bound yields
-model decrease linear in the radius. This estimate uses the actual feasible
-trial and does not compare full and relaxed criticality measures. -/
+/-- **Section 12.3** of [conn2000trust], linear decrease at a tangent-gradient gap. Let $E$ be a
+real Hilbert space, $C$ closed and convex, $x \in C$, and $\Delta, \beta, \gamma > 0$ with
+$\beta \Delta / 2 < (1 - \kappa_{\mathrm{lo}}) \gamma$. Let $u$ be an approximate generalized
+Cauchy point for $C$, $f$, $m$, $x$ and $\Delta$, and suppose that
+$$\gamma \le \|P_{T(u)}[-\nabla f(x)]\| \quad\text{and}\quad m(u) - m(x) - \langle \nabla f(x),
+  u - x \rangle \le \tfrac{\beta}{2} \|u - x\|^2.$$
+Then
+$$\kappa_{\mathrm{up}}\, \kappa_{\mathrm{fr}}\, \gamma\, \Delta \le m(x) - m(u).$$
+
+The estimate uses the actual feasible trial $u$ and does not compare criticality measures of the
+full and the relaxed feasible sets. -/
 theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
     (P : GeneralizedCauchyParams) {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C)
     {f m : E → ℝ} {x u : E} (hx : x ∈ C) {Δ β γ : ℝ}
@@ -1015,9 +1276,19 @@ theorem cauchyDecrease_linear_of_tangentProjection_lower [CompleteSpace E]
       linarith only [hupper]
 
 open Optimization in
-/-- A Cauchy trial with a tangent-gradient gap and small displacement has
-radius bounded by a constant times its displacement. The radius itself
-need not be assumed small. -/
+/-- **Section 12.3** of [conn2000trust], radius estimate at a tangent-gradient gap. Let $E$ be a
+real Hilbert space, $C$ closed and convex, $x \in C$, $\Delta > 0$, $\gamma > 0$ and
+$\|\nabla f(x)\| \le G$. Let $u$ be an approximate generalized Cauchy point for $C$, $f$, $m$,
+$x$ and $\Delta$ with $\beta \|u - x\| / 2 < (1 - \kappa_{\mathrm{lo}}) \gamma$, and suppose
+that
+$$\gamma \le \|P_{T(u)}[-\nabla f(x)]\| \quad\text{and}\quad m(u) - m(x) - \langle \nabla f(x),
+  u - x \rangle \le \tfrac{\beta}{2} \|u - x\|^2.$$
+Then
+$$\Delta \le \max\Bigl\{\kappa_{\mathrm{fr}}^{-1}, \frac{\kappa_{\mathrm{ep}}\,
+  G}{\gamma}\Bigr\} \|u - x\|.$$
+
+The radius itself need not be small; only the displacement $\|u - x\|$ enters the smallness
+condition. -/
 theorem radius_le_mul_displacement_of_tangentProjection_lower [CompleteSpace E]
     (P : GeneralizedCauchyParams) {C : Set E} (hclosed : IsClosed C) (hconv : Convex ℝ C)
     {f m : E → ℝ} {x u : E} (hx : x ∈ C) {Δ β γ G : ℝ}
@@ -1057,9 +1328,27 @@ theorem radius_le_mul_displacement_of_tangentProjection_lower [CompleteSpace E]
       _ ≤ _ := mul_le_mul_of_nonneg_right (le_max_right _ _) hrpos.le
 
 open Optimization Chapter06 in
-/-- At vanishing radii near a strictly complementary limit, a misidentified
-Cauchy trial is very successful whenever the chosen step improves the Cauchy
-model value. The proof uses a tangent-gradient gap at the trial. -/
+/-- **Section 12.3** of [conn2000trust], very successful misidentified trials. Let $E$ be a
+finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, and let $c_i$,
+$\nabla c_i$ and $\nabla f$ be continuous. At $z$ let the active gradients be linearly
+independent and let $\nabla f$ have strictly positive active multipliers. Along a filter let
+$x_k \to z$, $u_k \to z$ and $\Delta_k \to 0$, and let eventually the tangent qualification hold
+at $u_k$. Let $\beta > 0$ and $B$ be constants, and suppose that eventually
+
+* $x_k \in C$, $\Delta_k > 0$, and $u_k$ is an approximate generalized Cauchy point for $C$,
+  $f$, $m_k$, $x_k$ and $\Delta_k$;
+* $m_k(u_k) - m_k(x_k) - \langle \nabla f(x_k), u_k - x_k \rangle \le \frac{\beta}{2} \|u_k -
+  x_k\|^2$;
+* $f(x_k) = m_k(x_k)$, $m_k(x_k + s_k) \le m_k(u_k)$ and $|f(x_k + s_k) - m_k(x_k + s_k)| \le B
+  \Delta_k^2$.
+
+Then there is $\kappa > 0$ such that eventually, if $\mathcal{A}(u_k) \neq \mathcal{A}(z)$, then
+$\kappa \Delta_k \le m_k(x_k) - m_k(x_k + s_k)$ and $\rho_k \ge \eta_2$, where $\rho_k$ is the
+ratio (6.1.4) of the step $s_k$.
+
+The proof combines the tangent-gradient gap
+`ConnGouldToint.Chapter12.eventually_tangentProjection_lower_of_active_mismatch` with the linear
+decrease `ConnGouldToint.Chapter12.cauchyDecrease_linear_of_tangentProjection_lower`. -/
 theorem eventually_verySuccessful_of_active_mismatch [Fintype ι] [CompleteSpace E]
     [FiniteDimensional ℝ E] {α : Type*} {l : Filter α} {C : Set E} {c : ι → E → ℝ}
     {f : E → ℝ} {m : α → E → ℝ} {x u s : α → E} {z : E} {Δ : α → ℝ}
@@ -1115,8 +1404,13 @@ theorem eventually_verySuccessful_of_active_mismatch [Fintype ι] [CompleteSpace
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] in
 open Chapter06 in
-/-- With positive radii converging to zero, arbitrarily late Cauchy trials
-identify the target face if each misidentified trial is very successful. -/
+/-- **Section 12.3** of [conn2000trust], identified Cauchy trials at vanishing radii. Let
+$\Delta_k > 0$ with $\Delta_k \to 0$, let the radii follow the update (6.1.5) with ratios
+$\rho_k$, and suppose that eventually $\mathcal{A}(u_k) \neq \mathcal{A}$ implies
+$\rho_k \ge \eta_2$. Then $\mathcal{A}(u_k) = \mathcal{A}$ for infinitely many $k$.
+
+A very successful iteration does not decrease the radius, so the radii could not tend to zero if
+all late trials were misidentified. -/
 theorem frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero
     {P : BTRParams} {ρ Δ : ℕ → ℝ} {u : ℕ → E} {c : ι → E → ℝ} {A : Set ι}
     (hΔ : Tendsto Δ atTop (𝓝 0)) (hpos : ∀ k, 0 < Δ k)
@@ -1136,8 +1430,14 @@ theorem frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero
   exact (not_lt_of_ge (hmono M)) (hM (N + M) (Nat.le_add_left _ _))
 
 open Optimization in
-/-- At a common center, a rejected trial whose endpoint has an accurate
-normal vector cannot have a prediction much smaller than the next trial's. -/
+/-- **Section 12.3** of [conn2000trust], comparison of predictions at a common center. Let
+$x + s' \in C$, let $n$ be a normal vector of $C$ at $x + s$, and suppose that
+$$|m(x + s) - m(x) - \langle g, s \rangle| \le e, \qquad |m'(x + s') - m'(x) - \langle g, s'
+  \rangle| \le e'.$$
+Then
+$$m'(x) - m'(x + s') \le m(x) - m(x + s) + e + e' + \|-g - n\|\, \|s' - s\|.$$
+
+This applies to a rejected trial $x + s$ and the next trial $x + s'$ from the same center $x$. -/
 theorem prediction_le_of_common_center {C : Set E}
     {m m' : E → ℝ} {x s s' g n : E} {e e' : ℝ}
     (hfeas : x + s' ∈ C) (hn : n ∈ normalDirections C (x + s))
@@ -1183,8 +1483,14 @@ private theorem exists_continuous_normal_on_active_face [Fintype ι] [CompleteSp
     · rw [hμzero i hi, zero_mul]
 
 open Optimization in
-/-- Once a nearby base point has the limiting active set, its Cauchy trial
-retains that set provided the trial also approaches the same limit. -/
+/-- **Theorem 12.3.8** of [conn2000trust], preservation of the limiting active set. Let $E$ be a
+finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, let $c_i$,
+$\nabla c_i$ and $\nabla f$ be continuous, and let $-\nabla c_i(y) \in N(y)$ for every $y \in C$
+and $i \in \mathcal{A}(y)$. At $z$ let the active gradients be linearly independent and let
+$\nabla f$ have strictly positive active multipliers. Along a filter let $x_k \to z$ and
+$u_k \to z$, let eventually the tangent qualification hold at $u_k$, and let eventually
+$x_k \in C$ and $u_k = P_C[x_k - t \nabla f(x_k)]$ for some $t > 0$. Then eventually, if
+$\mathcal{A}(x_k) = \mathcal{A}(z)$, then $\mathcal{A}(u_k) = \mathcal{A}(z)$. -/
 theorem eventually_CauchyTrial_preserves_active_face [Fintype ι] [CompleteSpace E]
     [FiniteDimensional ℝ E] {α : Type*} {l : Filter α} {C : Set E} {c : ι → E → ℝ}
     {f : E → ℝ} {x u : α → E} {z : E}
@@ -1325,9 +1631,23 @@ private theorem eventually_rejection_then_identifiedOn [Fintype ι] [CompleteSpa
   simpa [BTRRun.successful, btrRatio, y] using le_reductionRatio_of_abs_sub_le hp he
 
 open Optimization Chapter06 in
-/-- A rejection cannot immediately precede a misidentified Cauchy trial
-near a strictly complementary limit at vanishing radii. The old endpoint
-inherits the identified Cauchy face, allowing comparison at the common center. -/
+/-- **Lemma 12.3.7** of [conn2000trust], the rejection step in the proof. Consider a run of the
+basic trust-region algorithm, and let $u_k$ be points. Let $\nabla f$ and the $\nabla c_i$ be
+continuous, let $\nabla f$ have strictly positive active multipliers at $z$, and let
+$-\nabla c_i(y) \in N(y)$ for every $y \in C$ and $i \in \mathcal{A}(y)$. Suppose that
+$x_k \to z$, $\Delta_k \to 0$, $\|s_k\| \le \Delta_k$ and $x_k + s_k \in C$ for all $k$, and
+that eventually $\mathcal{A}(u_k) = \mathcal{A}(z)$ implies
+$\mathcal{A}(x_k + s_k) = \mathcal{A}(z)$. Let $\beta \ge 0$, $\kappa > 0$ and $B$ be constants
+with
+$$|m_k(x_k + s_k) - m_k(x_k) - \langle \nabla f(x_k), s_k \rangle| \le \beta \Delta_k^2, \qquad
+  f(x_k) = m_k(x_k), \qquad |f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$$
+for all $k$, and suppose that eventually $\mathcal{A}(u_k) \neq \mathcal{A}(z)$ implies
+$\kappa \Delta_k \le m_k(x_k) - m_k(x_k + s_k)$ and that iteration $k$ is very successful. Then
+eventually, if iteration $k$ is not successful, then $\mathcal{A}(u_{k+1}) = \mathcal{A}(z)$.
+
+A rejected step $x_k + s_k$ inherits the identified active set of its Cauchy point, which allows
+the comparison `ConnGouldToint.Chapter12.prediction_le_of_common_center` at the common center
+$x_{k+1} = x_k$. -/
 theorem eventually_rejection_then_identified [Fintype ι] [CompleteSpace E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop}
@@ -1384,8 +1704,12 @@ private theorem frequently_successful_identified_of_frequently_identified
 
 omit [NormedAddCommGroup E] [InnerProductSpace ℝ E] in
 open Chapter06 in
-/-- At vanishing radii there are arbitrarily late identified successful
-trials when successes continue and rejections cannot precede a mismatch. -/
+/-- **Lemma 12.3.7** of [conn2000trust], successful identified trials at vanishing radii. Let
+$\Delta_k > 0$ with $\Delta_k \to 0$, and let the radii follow the update (6.1.5) with ratios
+$\rho_k$. Suppose that eventually $\mathcal{A}(u_k) \neq \mathcal{A}$ implies
+$\rho_k \ge \eta_2$, that eventually $\rho_k < \eta_1$ implies
+$\mathcal{A}(u_{k+1}) = \mathcal{A}$, and that $\rho_k \ge \eta_1$ for infinitely many $k$. Then
+there are infinitely many $k$ with $\rho_k \ge \eta_1$ and $\mathcal{A}(u_k) = \mathcal{A}$. -/
 theorem frequently_successful_identified_of_radius_tendsto_zero
     {P : BTRParams} {ρ Δ : ℕ → ℝ} {u : ℕ → E} {c : ι → E → ℝ} {A : Set ι}
     (hΔ : Tendsto Δ atTop (𝓝 0)) (hpos : ∀ k, 0 < Δ k)
@@ -1456,9 +1780,12 @@ private theorem eventually_iterate_eq_limit_of_finitely_successful
     (tendsto_const_nhds.congr' (eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).symm⟩)) hx
   exact eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).trans hxN⟩
 
-/-- Cauchy trials close to a compact run eventually have exact tangent
-linearizations when the constraints are smooth and all cluster points satisfy
-active-gradient independence. -/
+/-- **Section 12.3** of [conn2000trust], the tangent qualification at late Cauchy points. Let $E$ be
+a finite-dimensional real inner product space, let $C$ satisfy AC.7, and let each $c_i$ be
+strictly differentiable at every point with continuous $c_i$ and $\nabla c_i$. Let $K$ be
+compact, $x_k \in K$, and let every limit of a subsequence of $(x_k)$ lie in $S$, where the
+active gradients are linearly independent at every point of $S$. If $u_k - x_k \to 0$ and
+eventually $u_k \in C$, then eventually the tangent qualification holds at $u_k$. -/
 theorem eventually_activeLinearizedConeMatches_of_compact [Fintype ι] [CompleteSpace E]
     [FiniteDimensional ℝ E] {C K S : Set E} {c : ι → E → ℝ} {x u : ℕ → E}
     (hset : Chapter03.AC7 C c)
@@ -1481,9 +1808,38 @@ theorem eventually_activeLinearizedConeMatches_of_compact [Fintype ι] [Complete
     (fun i ↦ hder i _) hindk
 
 open Optimization Chapter06 in
-/-- In a compact run with vanishing Cauchy and iterate displacements, all
-cluster points, late iterates and late Cauchy points share an active set.
-A rejected trial can have a large step unless it precedes a mismatch. -/
+/-- **Theorem 12.3.8** of [conn2000trust], corrected, for compact runs with vanishing Cauchy and
+iterate displacements. Let $E$ be a finite-dimensional real inner product space, let $C$ satisfy
+AC.2 and AC.7, let $c_i$, $\nabla c_i$ and $\nabla f$ be continuous, and let
+$-\nabla c_i(y) \in N(y)$ for every $y \in C$ and $i \in \mathcal{A}(y)$. Consider a run of the
+basic trust-region algorithm for $f$, parameters of the generalized Cauchy point, and points
+$u_k$. Let $S$ and $K$ be compact, $x_k \in K$, and let $S$ be exactly the set of limits of
+subsequences of $(x_k)$. At every $z \in S$ let the active gradients be linearly independent and
+let $\nabla f$ have strictly positive active multipliers. Let $\beta > 0$ and $B$ be constants.
+Suppose that
+
+* $\operatorname{dist}(x_{k+1}, x_k) \to 0$ and $u_k - x_k \to 0$, and eventually the tangent
+  qualification holds at $u_k$;
+* for every $k$: $x_k \in C$, $\|s_k\| \le \Delta_k$, $x_k + s_k \in C$, $u_k$ is an approximate
+  generalized Cauchy point for $C$, $f$, $m_k$, $x_k$ and $\Delta_k$,
+  $m_k(x_k + s_k) \le m_k(u_k)$, and $\mathcal{A}(u_k) \subseteq \mathcal{A}(x_k + s_k)$ (AA.5);
+* for every $k$: $f(x_k) = m_k(x_k)$, $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$, and
+$$m_k(u_k) - m_k(x_k) - \langle \nabla f(x_k), u_k - x_k \rangle \le \tfrac{\beta}{2} \|u_k -
+  x_k\|^2, \qquad |m_k(x_k + s_k) - m_k(x_k) - \langle \nabla f(x_k), s_k \rangle| \le \beta
+  \Delta_k^2.$$
+
+Then there is $\mathcal{A}$ with $\mathcal{A}(z) = \mathcal{A}$ for all $z \in S$, and
+eventually $\mathcal{A}(x_k) = \mathcal{A}$ and $\mathcal{A}(u_k) = \mathcal{A}$.
+
+**Correction.** The printed theorem fails at the Cauchy points for nonvanishing radii and at the
+iterates for constant radii; see
+`ConnGouldToint.Chapter12.theorem_12_3_8_nonvanishing_radius_counterexample` and
+`ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`. This version
+adds the vanishing Cauchy displacements $u_k - x_k \to 0$ and iterate displacements
+$x_{k+1} - x_k \to 0$. The limit set may have several connected components.
+
+A misidentified trial gives a model decrease linear in the radius and is very successful. A
+rejected trial can have a large step only if it does not precede a misidentified trial. -/
 theorem theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
@@ -1682,10 +2038,25 @@ theorem theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero
   exact ⟨A, hA, hbase.and (hbase.mp hkeep)⟩
 
 open Optimization Chapter06 in
-/-- Corrected Theorem 12.3.8 for smooth convex constraints and a compact run
-with vanishing iterate and Cauchy displacements. The supporting normals and
-the late trial constraint qualification follow from the smooth constraints
-and active-gradient independence at the cluster points. -/
+/-- **Theorem 12.3.8** of [conn2000trust], corrected, for smooth constraints and compact runs. Let
+$E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, and let the
+$c_i$ and $f$ be continuously differentiable. Suppose that the run, the points $u_k$, the
+compact sets $S$ and $K$, and the constants $\beta > 0$ and $B$ satisfy all hypotheses of
+`ConnGouldToint.Chapter12.theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero`
+except two, which are dropped: the normality of $-\nabla c_i$ and the tangent qualification at
+$u_k$. The remaining hypotheses are AO.1c and strictly positive active multipliers at every
+point of the limit set $S$, $\operatorname{dist}(x_{k+1}, x_k) \to 0$, $u_k - x_k \to 0$, the
+conditions on $x_k$, $s_k$ and $u_k$ including AA.5, and the model estimates with $\beta$ and
+$B$. Then there is $\mathcal{A}$ with $\mathcal{A}(z) = \mathcal{A}$ for all $z \in S$, and
+eventually $\mathcal{A}(x_k) = \mathcal{A}$ and $\mathcal{A}(u_k) = \mathcal{A}$.
+
+**Correction.** This version of the printed theorem, which fails in general, adds vanishing
+Cauchy and iterate displacements; see
+`ConnGouldToint.Chapter12.theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero`.
+
+The smooth constraints make the inward gradients normal to $C$, and active-gradient independence
+at the cluster points gives the tangent qualification at the late Cauchy points
+(`ConnGouldToint.Chapter12.eventually_activeLinearizedConeMatches_of_compact`). -/
 theorem theorem_12_3_8_of_smooth_compact_run
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
@@ -1746,9 +2117,20 @@ theorem theorem_12_3_8_of_smooth_compact_run
     htrial hcmp hβ hTaylorC hTaylor hval herr
 
 open Optimization Chapter06 in
-/-- In a compact run with vanishing trial displacements, all cluster points,
-late iterates and late Cauchy points share an active set. The radius need
-only shrink on misidentified trials, as follows from the tangent gap. -/
+/-- **Theorem 12.3.8** of [conn2000trust], corrected, with vanishing trial displacements. Let $E$,
+$C$, the $c_i$, $f$, the run, the points $u_k$, the sets $S$ and $K$ and the constants
+$\beta > 0$ and $B$ satisfy the hypotheses of
+`ConnGouldToint.Chapter12.theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero`,
+with two changes: the steps satisfy $s_k \to 0$ in place of
+$\operatorname{dist}(x_{k+1}, x_k) \to 0$, and the tangent qualification holds at $u_k$ for
+every $k$. Then there is $\mathcal{A}$ with $\mathcal{A}(z) = \mathcal{A}$ for all $z \in S$,
+and eventually $\mathcal{A}(x_k) = \mathcal{A}$ and $\mathcal{A}(u_k) = \mathcal{A}$.
+
+**Correction.** This version of the printed theorem, which fails in general, adds the vanishing
+trial displacements $s_k \to 0$ and $u_k - x_k \to 0$.
+
+The radius need only shrink on misidentified trials, and the tangent-gradient gap shows that it
+does. -/
 theorem theorem_12_3_8_of_compact_run_of_trial_displacements_tendsto_zero
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
@@ -1798,9 +2180,20 @@ theorem theorem_12_3_8_of_compact_run_of_trial_displacements_tendsto_zero
     hxC hstep hfeas hface (.of_forall hQ) htrial hcmp hβ hTaylorC hTaylor hval herr
 
 open Optimization Chapter06 in
-/-- In a compact run with vanishing radii, all cluster points, late iterates,
-and late Cauchy trials share an active set. The proof obtains uniform model
-decrease on mismatched trials by compactness and strict complementarity. -/
+/-- **Theorem 12.3.8** of [conn2000trust], corrected, for compact runs with vanishing radii. Let
+$E$, $C$, the $c_i$, $f$, the run, the points $u_k$, the sets $S$ and $K$ and the constants
+$\beta > 0$ and $B$ satisfy the hypotheses of
+`ConnGouldToint.Chapter12.theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero`,
+with these changes: the radii satisfy $\Delta_k \to 0$ in place of the conditions
+$\operatorname{dist}(x_{k+1}, x_k) \to 0$ and $u_k - x_k \to 0$, and the tangent qualification
+holds at $u_k$ for every $k$. Then there is $\mathcal{A}$ with $\mathcal{A}(z) = \mathcal{A}$
+for all $z \in S$, and eventually $\mathcal{A}(x_k) = \mathcal{A}$ and
+$\mathcal{A}(u_k) = \mathcal{A}$.
+
+**Correction.** This version of the printed theorem, which fails in general, adds the vanishing
+radii $\Delta_k \to 0$.
+
+Compactness and strict complementarity give a uniform model decrease on misidentified trials. -/
 theorem theorem_12_3_8_of_compact_run_of_radius_tendsto_zero
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
@@ -1840,9 +2233,31 @@ theorem theorem_12_3_8_of_compact_run_of_radius_tendsto_zero
     hxC hstep hfeas hface hQ htrial hcmp hβ hTaylorC hTaylor hval herr
 
 open Optimization Chapter06 in
-/-- Theorem 12.3.8 for a convergent BTR run with vanishing radii. The corrected
-argument uses trial tangent gradients and preserves all constraints active at
-the Cauchy point, as required by AA.5. -/
+/-- **Theorem 12.3.8** of [conn2000trust], corrected, for convergent runs with vanishing radii. Let
+$E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, let $c_i$,
+$\nabla c_i$ and $\nabla f$ be continuous, and let $-\nabla c_i(y) \in N(y)$ for every $y \in C$
+and $i \in \mathcal{A}(y)$. Consider a run of the basic trust-region algorithm for $f$,
+parameters of the generalized Cauchy point, and points $u_k$, with $x_k \to z$ and
+$\Delta_k \to 0$. At $z$ let the active gradients be linearly independent and let $\nabla f$
+have strictly positive active multipliers. Let $\beta > 0$ and $B$ be constants, and suppose
+that for every $k$:
+
+* the tangent qualification holds at $u_k$;
+* $x_k \in C$, $\|s_k\| \le \Delta_k$, $x_k + s_k \in C$, $u_k$ is an approximate generalized
+  Cauchy point for $C$, $f$, $m_k$, $x_k$ and $\Delta_k$, $m_k(x_k + s_k) \le m_k(u_k)$, and
+  $\mathcal{A}(u_k) \subseteq \mathcal{A}(x_k + s_k)$ (AA.5);
+* $f(x_k) = m_k(x_k)$, $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$, and
+$$m_k(u_k) - m_k(x_k) - \langle \nabla f(x_k), u_k - x_k \rangle \le \tfrac{\beta}{2} \|u_k -
+  x_k\|^2, \qquad |m_k(x_k + s_k) - m_k(x_k) - \langle \nabla f(x_k), s_k \rangle| \le \beta
+  \Delta_k^2.$$
+
+Then eventually $\mathcal{A}(x_k) = \mathcal{A}(z)$ and $\mathcal{A}(u_k) = \mathcal{A}(z)$.
+
+**Correction.** This version of the printed theorem, which fails in general, assumes a
+convergent run with vanishing radii.
+
+The argument uses the tangent gradients at the trials, and it keeps all constraints active at
+the Cauchy point active at the step, as AA.5 requires. -/
 theorem theorem_12_3_8_of_convergent_run_of_radius_tendsto_zero
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
@@ -1889,9 +2304,20 @@ theorem theorem_12_3_8_of_convergent_run_of_radius_tendsto_zero
   exact (hA z (Set.mem_singleton z)).symm ▸ hfinal
 
 open Optimization Chapter06 in
-/-- A convergent run also identifies its limiting face if the chosen Cauchy
-times stay bounded above and away from zero. This case permits positive
-limiting radii and needs no model curvature estimate. -/
+/-- **Theorem 12.3.8** of [conn2000trust], for convergent runs with bounded positive trial times.
+Let $E$ be a finite-dimensional real inner product space, let $C$ satisfy AC.2 and AC.7, and let
+$c_i$, $\nabla c_i$ and $\nabla f$ be continuous. Let $z \in C$ with $-\nabla f(z) \in N(z)$,
+let the active gradients at $z$ be linearly independent, and let $\nabla f$ have strictly
+positive active multipliers at $z$. Consider a run of the basic trust-region algorithm for $f$
+with $x_k \to z$, let $0 < a$, let eventually $a \le t_k \le b$, and put
+$p_k = P_C[x_k - t_k \nabla f(x_k)]$. Suppose that eventually the tangent qualification holds at
+$p_k$ and $\mathcal{A}(p_k) \subseteq \mathcal{A}(x_k + s_k)$. Then eventually
+$\mathcal{A}(x_k) = \mathcal{A}(z)$ and $\mathcal{A}(p_k) = \mathcal{A}(z)$.
+
+**Correction.** This version of the printed theorem, which fails in general, assumes that the
+trial times stay in a fixed interval $[a, b]$ with $a > 0$.
+
+The radii need not tend to zero, and no estimate of the model curvature is needed. -/
 theorem theorem_12_3_8_of_bounded_trial_times
     [Fintype ι] [CompleteSpace E] [FiniteDimensional ℝ E]
     {C : Set E} {c : ι → E → ℝ} {f : E → ℝ} {P : BTRParams}
@@ -1940,11 +2366,19 @@ theorem theorem_12_3_8_of_bounded_trial_times
   exact hbase.and htrial
 
 open Optimization in
-/-- Missing an active constraint at a generalized Cauchy trial does not
-itself bound the full feasible criticality away from zero. On the
-nonnegative half-line the radius-boundary Cauchy trial is strictly
-positive while both the base point and criticality can tend to zero.
-This example concerns the local comparison, without a radius-update run. -/
+/-- **Theorem 12.3.4** of [conn2000trust], counterexample to the pointwise comparison in the proof.
+Let $0 < x \le 1$, take $C = [0, \infty)$ with the single constraint $c(y) = y$, and take $f$
+and the model $m$ equal to the identity. Then, for any parameters of the generalized Cauchy
+point,
+
+* $x/2$ is an approximate generalized Cauchy point for $C$, $f$, $m$, $x$ and the radius $x/2$;
+* the active set at $x/2$ differs from the active set at the limit $0$;
+* the capped criticality measure (12.2.15) is $\pi_C(x) = x$.
+
+So the Cauchy point at the radius boundary misses the active constraint of the limit, while the
+base point and the criticality measure both tend to zero as $x \to 0$. Missing an active
+constraint at a generalized Cauchy point therefore does not bound the criticality measure of the
+full feasible set away from zero. The example concerns the local comparison only, without a run. -/
 theorem missing_active_local_criticality_counterexample
     (P : GeneralizedCauchyParams) {x : ℝ} (hx : 0 < x) (hx₁ : x ≤ 1) :
     IsApproxGeneralizedCauchyPoint P (Set.Ici (0 : ℝ)) id id x (x / 2) (x / 2) ∧
@@ -1991,8 +2425,14 @@ theorem missing_active_local_criticality_counterexample
     rw [cappedCriticality, hχ, min_eq_right hx₁]
 
 open ConnGouldToint.Chapter06 in
-/-- Lemma 12.3.5. The small-radius acceptance estimate with the capped
-criticality measure and the model decrease condition AA.1b. -/
+/-- **Lemma 12.3.5** of [conn2000trust]. Let $E$ be a real Hilbert space, let $0 < \beta \le B$,
+$\Delta > 0$, $0 < \kappa < 1$, and let $\pi = \pi_C(x) > 0$ be the capped criticality measure
+(12.2.15). Suppose that $f(x) = m(x)$, that the model decrease condition AA.1b holds,
+$$\kappa\, \pi \min\{\pi / \beta, \Delta\} \le m(x) - m(x + s),$$
+that $|f(x + s) - m(x + s)| \le B \Delta^2$, and that
+$$\Delta \le \frac{\kappa\, \pi\, (1 - \eta_2)}{B}.$$
+If $\Delta'$ is obtained from $\Delta$ by the radius update (6.1.5) with the ratio $\rho$ of the
+step $s$, then $\rho \ge \eta_2$ and $\Delta \le \Delta'$. -/
 theorem lemma_12_3_5 [CompleteSpace E] {P : BTRParams} {C : Set E}
     {f m : E → ℝ} {x s : E} {β Δ Δ' κ B : ℝ}
     (hβ : 0 < β) (hβB : β ≤ B) (hΔ : 0 < Δ)
@@ -2009,9 +2449,8 @@ theorem lemma_12_3_5 [CompleteSpace E] {P : BTRParams} {C : Set E}
   exact ⟨hsuccess, hupdate.very_successful hsuccess⟩
 
 open Optimization ConvexAnalysis in
-/-- Lemma 12.3.6. For an already reindexed subsequence, the projected gradients
-tend to zero when the nearby feasible points have the component's active set.
-The outward normals generate supporting directions at those feasible points. -/
+/-- Lemma 12.3.6 of [conn2000trust] when the points $u_k$ only eventually have the active set
+$\mathcal{A}$: the projections $P_{T(u_k)}[-g(x_k)]$ tend to zero. -/
 private theorem projectedGradient_tendsto_zero_of_eventually_active [Fintype ι] [CompleteSpace E]
     {C K S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
@@ -2087,9 +2526,17 @@ private theorem projectedGradient_tendsto_zero_of_eventually_active [Fintype ι]
     exact (hbound k hak).trans_lt hk)
 
 open Optimization ConvexAnalysis in
-/-- Lemma 12.3.6. For an already reindexed subsequence, the projected gradients
-tend to zero when the nearby feasible points have the component's active set.
-The outward normals generate supporting directions at those feasible points. -/
+/-- **Lemma 12.3.6** of [conn2000trust]. Let $E$ be a real Hilbert space, let $K$ be compact,
+$x_k \in K$, and let every limit of a subsequence of $(x_k)$ lie in $S$. Let $u_k \in C$ with
+$u_k - x_k \to 0$ and $\mathcal{A}(u_k) = \mathcal{A}$ for all $k$, and let
+$\mathcal{A}(z) = \mathcal{A}$ and $g$ have strictly positive active multipliers at every
+$z \in S$. Let $g$ and the $n_i$ be continuous, and let $-n_i(y) \in N(y)$ for every $y \in C$
+and $i \in \mathcal{A}(y)$. Then
+$$P_{T(u_k)}[-g(x_k)] \to 0.$$
+
+The sequence is the subsequence of the source, already reindexed. At each $u_k$ the outward
+normals $-n_i(u_k)$, $i \in \mathcal{A}$, are supporting directions of $C$, and nearby
+combinations of them approximate $-g(x_k)$. -/
 theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
     {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x u : ℕ → E} {A : Set ι}
@@ -2106,7 +2553,17 @@ theorem lemma_12_3_6 [Fintype ι] [CompleteSpace E] {C K S : Set E}
     (Eventually.of_forall hAu) hAS hstat hg hn hnormal
 
 open Optimization ConvexAnalysis in
-/-- Corollary 12.3.9 on a component with an eventually identified active set. -/
+/-- **Corollary 12.3.9** of [conn2000trust], under eventual identification. Let $E$ be a real
+Hilbert space, let $K$ be compact, $x_k \in K \cap C$, and let every limit of a subsequence of
+$(x_k)$ lie in $S$. Suppose that eventually $\mathcal{A}(x_k) = \mathcal{A}$, that
+$\mathcal{A}(z) = \mathcal{A}$ and $g$ has strictly positive active multipliers at every
+$z \in S$, that $g$ and the $n_i$ are continuous, and that $-n_i(y) \in N(y)$ for every
+$y \in C$ and $i \in \mathcal{A}(y)$. Then
+$$P_{T(x_k)}[-g(x_k)] \to 0.$$
+
+**Correction.** The printed corollary takes the eventual identification of the active set from
+Theorem 12.3.8, which fails as printed. Here the identification $\mathcal{A}(x_k) = \mathcal{A}$
+is a hypothesis. -/
 theorem corollary_12_3_9_of_eventually_active [Fintype ι] [CompleteSpace E]
     {C K S : Set E} {c : ι → E → ℝ} {n : ι → E → E} {g : E → E}
     {x : ℕ → E} {A : Set ι}

@@ -7,7 +7,69 @@ import Mathlib.Topology.Order.MonotoneConvergence
 import Numlib.Analysis.Calculus.Taylor
 import NumlibSurface.ConnGouldToint.Chapter06.Section03
 
-/-! # Convergence to first-order critical points -/
+/-!
+# Conn, Gould and Toint, Section 6.4: Convergence to first-order critical points
+
+This module formalizes the first-order convergence theory of the basic trust-region algorithm
+(Algorithm 6.1.1) in Section 6.4 of [conn2000trust]. A run has iterates $x_k$, steps $s_k$, radii
+$\Delta_k > 0$, models $m_k$, trust-region norms $\|\cdot\|_k$ and reduction ratios $\rho_k =
+(f(x_k) - f(x_k + s_k)) / (m_k(x_k) - m_k(x_k + s_k))$. If the model agrees with the objective in
+value and first derivative at the center and both Hessians are bounded, the model error is at most
+a constant times $\Delta_k^2$ (Theorem 6.4.1). Together with the Cauchy decrease of Section 6.3,
+this makes every iteration with a small enough radius very successful (Theorem 6.4.2). Hence the
+radius stays bounded away from zero while the gradients stay bounded away from zero (Theorem
+6.4.3). A run with finitely many successful iterations stops at a critical point (Theorem 6.4.4),
+and in general the gradient norms have limit inferior zero (Theorem 6.4.5). With a uniform norm
+comparison and a bounded objective
+Hessian, the gradient norms tend to zero (Theorem 6.4.6). The run is
+`ConnGouldToint.Chapter06.BTRRun` from `NumlibSurface.ConnGouldToint.Chapter06.Section01`.
+
+## Main definitions
+
+* Equation (6.4.2), `ConnGouldToint.Chapter06.stepNormRatio`: the ratio $\|s\| / \|s\|_k$ of the
+  norm of a step to its trust-region norm.
+* Equation (6.4.4), `ConnGouldToint.Chapter06.uniformHessianConstant`: the constant
+  $K^2 \max\{\kappa_f, \kappa_m\}$ of the uniform model error bound.
+
+## Main results
+
+* Theorem 6.4.1, `ConnGouldToint.Chapter06.theorem_6_4_1`: second-order agreement at the center
+  gives a model error of order $\Delta^2$ in the trust region.
+* Theorem 6.4.2, `ConnGouldToint.Chapter06.theorem_6_4_2`: an iteration with a small enough radius
+  is very successful, and its radius does not decrease.
+* Equation (6.4.12), `ConnGouldToint.Chapter06.btrRatio_ge_eta₂_of_small_radius`: the ratio estimate
+  $\rho \ge \eta_2$ for a small radius.
+* Proof of Theorem 6.4.2, `ConnGouldToint.Chapter06.btrRatio_ge_eta₂_of_small_radius_of_decrease`:
+  the same estimate for a decrease bound in a general positive criticality measure.
+* Theorem 6.4.3, `ConnGouldToint.Chapter06.theorem_6_4_3`: gradients bounded away from zero keep the
+  radii bounded away from zero.
+* Theorem 6.4.4, `ConnGouldToint.Chapter06.theorem_6_4_4`: a run with finitely many successful
+  iterations is eventually constant at a first-order critical point.
+* Theorem 6.4.5, `ConnGouldToint.Chapter06.theorem_6_4_5`: if $f$ is bounded below, then
+  $\liminf_k \|\nabla f(x_k)\| = 0$.
+* Theorem 6.4.6, `ConnGouldToint.Chapter06.theorem_6_4_6`: under a uniform norm comparison and a
+  bounded objective Hessian, $\|\nabla f(x_k)\| \to 0$.
+* Sections 8.1.2 and 12.2.2, `ConnGouldToint.Chapter06.frequently_criticality_lt_of_model_decrease`:
+  a decrease bound in a general criticality measure makes the measure small infinitely often.
+* Sections 8.1.2 and 12.2.2,
+  `ConnGouldToint.Chapter06.tendsto_criticality_zero_of_uniformContinuousOn`: a uniformly continuous
+  criticality measure tends to zero along the run.
+
+## Conventions
+
+* The assumptions AF.1–AF.3, AM.1–AM.4 and AN.1 of the source appear as explicit hypotheses of each
+  theorem: agreement of the value at the center, the sufficient model decrease
+  `ConnGouldToint.Chapter06.HasSufficientModelDecrease`, the quadratic error bound (6.4.3), and the
+  norm comparison $\|v\| \le K \|v\|_k$.
+* The curvature constants $\beta_k$ of the Cauchy decrease are bounded by the error constant $C$. In
+  the source this follows from (6.3.2) and (6.4.4); here it is a hypothesis.
+
+## Implementation notes
+
+* The explicit lower bound on the radius in the proof of Theorem 6.4.3 is
+  $\min\{\Delta_0, \gamma_1 \theta\}$. It includes the initial radius, which the constant displayed
+  in the source omits.
+-/
 
 open Filter Topology
 
@@ -15,16 +77,32 @@ namespace ConnGouldToint.Chapter06
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The ratio (6.4.2) of the step norm to its trust-region norm. -/
+/-- **Equation (6.4.2)** of [conn2000trust]. For a seminorm $p$ on $E$ (a trust-region norm) and a
+step $s \in E$, the **step norm ratio** is $\|s\| / p(s)$.
+
+Its value is $0$ when $p(s) = 0$. -/
 noncomputable def stepNormRatio (p : Seminorm ℝ E) (s : E) : ℝ :=
   ‖s‖ / p s
 
-/-- The uniform error constant (6.4.4) from norm equivalence and Hessian bounds. -/
+/-- **Equation (6.4.4)** of [conn2000trust]. For a norm comparison constant $K$ and Hessian bounds
+$\kappa_f$ and $\kappa_m$, the **uniform error constant** is $K^2 \max\{\kappa_f, \kappa_m\}$. -/
 noncomputable def uniformHessianConstant (K κf κm : ℝ) : ℝ :=
   K ^ 2 * max κf κm
 
-/-- Theorem 6.4.1. Agreement of the function and model values and derivatives
-at the center gives quadratic accuracy throughout the trust region. -/
+/-- **Theorem 6.4.1** of [conn2000trust]. Let $E$ be a real normed space and let $p$ be a seminorm
+on $E$ with $p(v) = 0$ only for $v = 0$. Let $x, s \in E$, $\Delta \ge 0$ and $\kappa_m \ge 1$,
+with $p(s) \le \Delta$. Let $f : E \to \mathbb{R}$ be twice continuously differentiable with
+$\|D^2 f(z)\| \le \kappa_f$ for all $z$. Let $m : E \to \mathbb{R}$ be such that $m$ and $Dm$
+are differentiable at every point $z$ of the ball $\{z : p(z - x) \le \Delta\}$, with
+$\|D^2 m(z)\| \le \kappa_m - 1$ there. If $m(x) = f(x)$ and $Dm(x) = Df(x)$, then
+$$|f(x + s) - m(x + s)| \le \nu(s)^2 \max\{\kappa_f, \kappa_m\} \Delta^2,$$
+where $\nu(s) = \|s\| / p(s)$ is the step norm ratio (6.4.2). Moreover, for every $K \ge 0$ with
+$\|v\| \le K p(v)$ for all $v$,
+$$|f(x + s) - m(x + s)| \le K^2 \max\{\kappa_f, \kappa_m\} \Delta^2.$$
+
+The ratio is `ConnGouldToint.Chapter06.stepNormRatio` and the second constant is
+`ConnGouldToint.Chapter06.uniformHessianConstant`. The second derivatives are
+`fderiv ℝ (fderiv ℝ f)`, with the operator norm. -/
 theorem theorem_6_4_1 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ κf κm : ℝ} (hΔ : 0 ≤ Δ) (hκm : 1 ≤ κm)
     (hs : p s ≤ Δ) (hf : ContDiff ℝ 2 f)
@@ -77,8 +155,16 @@ theorem theorem_6_4_1 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
       _ = _ := by unfold uniformHessianConstant; ring
 
 omit [NormedSpace ℝ E] in
-/-- A small radius ensures very successful acceptance when the decrease bound
-uses a positive scalar criticality measure. -/
+/-- **Proof of Theorem 6.4.2** of [conn2000trust], acceptance argument, also used for Lemma 12.3.5.
+Let $f, m : E \to \mathbb{R}$, $x, s \in E$, and let $\eta_2$ be the very successful threshold
+of the parameters $P$. Let $0 < \beta \le C$, $\Delta > 0$, $a > 0$ and $0 < \kappa < 1$.
+Suppose that $f(x) = m(x)$, that
+$$\kappa a \min\{a / \beta, \Delta\} \le m(x) - m(x + s),$$
+that $|f(x + s) - m(x + s)| \le C \Delta^2$, and that $\Delta \le \kappa a (1 - \eta_2) / C$.
+Then the reduction ratio satisfies $\rho \ge \eta_2$.
+
+The number $a$ is any positive criticality measure; Theorem 6.4.2 takes $a = \|g\|$. The ratio
+is `ConnGouldToint.Chapter06.btrRatio f m x s`. -/
 theorem btrRatio_ge_eta₂_of_small_radius_of_decrease {P : BTRParams}
     {f m : E → ℝ} {x s : E} {β Δ κ C a : ℝ}
     (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (ha : 0 < a)
@@ -112,7 +198,15 @@ theorem btrRatio_ge_eta₂_of_small_radius_of_decrease {P : BTRParams}
   simpa [btrRatio] using Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
 
 omit [NormedSpace ℝ E] in
-/-- The acceptance-ratio estimate (6.4.12) before applying the radius update. -/
+/-- **Equation (6.4.12)** of [conn2000trust]. Let $f, m : E \to \mathbb{R}$, $x, s, g \in E$ with
+$g \neq 0$, and let $\eta_2$ be the very successful threshold of the parameters $P$. Let
+$0 < \beta \le C$ and $\Delta > 0$. Suppose that $f(x) = m(x)$, that the step satisfies the
+sufficient decrease condition $\kappa \|g\| \min\{\|g\| / \beta, \Delta\} \le m(x) - m(x + s)$
+with $0 < \kappa < 1$, that $|f(x + s) - m(x + s)| \le C \Delta^2$, and that
+$$\Delta \le \frac{\kappa \|g\| (1 - \eta_2)}{C}.$$
+Then the reduction ratio satisfies $\rho \ge \eta_2$.
+
+The decrease condition is `ConnGouldToint.Chapter06.HasSufficientModelDecrease m x s g β Δ κ`. -/
 theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x s g : E}
     {β Δ κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
     (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
@@ -123,9 +217,17 @@ theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x 
     (norm_pos_iff.mpr hg) hdec.1.1 hdec.1.2 hval hdec.2 herr hsmall
 
 omit [NormedSpace ℝ E] in
-/-- Theorem 6.4.2. Under the quadratic error bound (6.4.3), a small enough radius
-gives a very successful iteration. The curvature bound β is at most the error
-constant C by (6.3.2) and (6.4.4). -/
+/-- **Theorem 6.4.2** of [conn2000trust]. Let $f, m : E \to \mathbb{R}$, $x, s, g \in E$ with
+$g \neq 0$, and let $\eta_2$ be the very successful threshold of the parameters $P$. Let
+$0 < \beta \le C$ and $\Delta > 0$. Suppose that $f(x) = m(x)$, that the step satisfies the
+sufficient decrease condition $\kappa \|g\| \min\{\|g\| / \beta, \Delta\} \le m(x) - m(x + s)$
+with $0 < \kappa < 1$, that the error bound (6.4.3) $|f(x + s) - m(x + s)| \le C \Delta^2$
+holds, and that $\Delta \le \kappa \|g\| (1 - \eta_2) / C$. If $\Delta'$ is a radius given by
+the update (6.1.5) for the ratio $\rho$, then $\rho \ge \eta_2$ and $\Delta \le \Delta'$, so the
+iteration is very successful and the radius does not decrease.
+
+The bound $\beta \le C$ follows in the source from (6.3.2) and (6.4.4); here it is a hypothesis.
+The update is `ConnGouldToint.Chapter06.BTRRadiusUpdate`. -/
 theorem theorem_6_4_2 {P : BTRParams} {f m : E → ℝ} {x s g : E}
     {β Δ Δ' κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
     (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
@@ -136,8 +238,19 @@ theorem theorem_6_4_2 {P : BTRParams} {f m : E → ℝ} {x s g : E}
   have hsuccess := btrRatio_ge_eta₂_of_small_radius hβ hβC hΔ hg hval hdec herr hsmall
   exact ⟨hsuccess, hupdate.very_successful hsuccess⟩
 
-/-- Theorem 6.4.3. Uniformly nonzero gradients keep the radius bounded away
-from zero. The explicit bound includes the initial radius. -/
+/-- **Theorem 6.4.3** of [conn2000trust]. Consider a run of Algorithm 6.1.1 with iterates $x_k$,
+steps $s_k$, radii $\Delta_k$ and models $m_k$. Let $g_k \in E$ and $\beta_k \in \mathbb{R}$,
+and let $g_{\min} > 0$, $\kappa$ and $C$ be constants with $\|g_k\| \ge g_{\min}$ and
+$0 < \beta_k \le C$ for all $k$. Suppose that, for all $k$, $f(x_k) = m_k(x_k)$, the step
+satisfies the sufficient decrease condition $\kappa \|g_k\| \min\{\|g_k\| / \beta_k, \Delta_k\}
+\le m_k(x_k) - m_k(x_k + s_k)$ with $0 < \kappa < 1$, and
+$$|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2.$$
+Then there is $r > 0$ with $\Delta_k \ge r$ for all $k$.
+
+The proof gives the bound $r = \min\{\Delta_0, \gamma_1 \theta\}$, where
+$\theta = \kappa g_{\min} (1 - \eta_2) / C$. The constant displayed in the proof of the source
+omits the initial radius $\Delta_0$. The bound comes from
+`ConnGouldToint.Chapter06.BTRRun.delta_lower_bound`. -/
 theorem theorem_6_4_3 {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (β : ℕ → ℝ) {κ C gmin : ℝ} (hgmin : 0 < gmin)
@@ -163,8 +276,17 @@ theorem theorem_6_4_3 {P : BTRParams} {f : E → ℝ}
   exact (theorem_6_4_2 (hβ k) (hβC k) (run.delta_pos k) hg₀ (hval k) (hdec k)
     (herr k) hsmall (run.radius_update k)).1
 
-/-- Theorem 6.4.4. A run with finitely many successful iterations is eventually
-constant at a first-order critical point. -/
+/-- **Theorem 6.4.4** of [conn2000trust]. Let $F$ be a real Hilbert space and consider a run of
+Algorithm 6.1.1 for $f : F \to \mathbb{R}$, with iterates $x_k$, steps $s_k$, radii $\Delta_k$
+and models $m_k$. Let $0 < \beta_k \le C$ for all $k$. Suppose that, for all $k$,
+$f(x_k) = m_k(x_k)$, the step satisfies the sufficient decrease condition $\kappa \|\nabla
+f(x_k)\| \min\{\|\nabla f(x_k)\| / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k)$ with
+$0 < \kappa < 1$, and $|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2$. If only finitely many
+iterations are successful, then there is $x \in F$ with $x_k = x$ for all large $k$ and
+$\nabla f(x) = 0$.
+
+The gradient $\nabla f(x)$ is `gradient f x`, which is $0$ at a point where $f$ is not
+differentiable. -/
 theorem theorem_6_4_4 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -219,9 +341,16 @@ theorem theorem_6_4_4 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ 
       (run.radius_update (n + j))).1
     exact (hfail j).not_ge (P.eta₁_le_eta₂.trans hs)
 
-/-- A trust-region decrease estimate expressed in a scalar criticality
-measure guarantees arbitrarily late small values. The measure need not be
-a norm or depend on the point continuously. -/
+/-- **Sections 8.1.2 and 12.2.2** of [conn2000trust], small values of a general criticality measure.
+Let $F$ be a real inner product space and consider a run of Algorithm 6.1.1 for
+$f : F \to \mathbb{R}$, with iterates $x_k$, steps $s_k$, radii $\Delta_k$ and models $m_k$. Let
+$u_k, \beta_k \in \mathbb{R}$, $0 < \kappa < 1$, $\varepsilon > 0$, and $0 < \beta_k \le B$ for
+all $k$. Suppose that, for all $k$, $f(x_k) = m_k(x_k)$,
+$$\kappa u_k \min\{u_k / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k),$$
+and $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$. If the values $f(x_k)$ are bounded
+below, then $u_k < \varepsilon$ for infinitely many $k$.
+
+The measure $u_k$ need not be a norm, and it need not depend continuously on the iterate. -/
 theorem frequently_criticality_lt_of_model_decrease
     {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     {P : BTRParams} {f : F → ℝ} {sufficient : ℕ → (F → ℝ) → F → F → Prop}
@@ -313,8 +442,17 @@ private theorem frequently_gradient_norm_lt {F : Type*} [NormedAddCommGroup F]
   exact frequently_criticality_lt_of_model_decrease run (fun k ↦ ‖gradient f (run.x k)‖)
     β (hdec 0).1 hε hβ hβC hval (fun k ↦ (hdec k).2) herr hb
 
-/-- Theorem 6.4.5. The gradient norms on a basic trust-region run have zero
-limit inferior when the objective is bounded below. -/
+/-- **Theorem 6.4.5** of [conn2000trust]. Let $F$ be a real Hilbert space and consider a run of
+Algorithm 6.1.1 for $f : F \to \mathbb{R}$, with iterates $x_k$, steps $s_k$, radii $\Delta_k$
+and models $m_k$. Let $0 < \beta_k \le C$ for all $k$. Suppose that, for all $k$,
+$f(x_k) = m_k(x_k)$, the step satisfies the sufficient decrease condition $\kappa \|\nabla
+f(x_k)\| \min\{\|\nabla f(x_k)\| / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k)$ with
+$0 < \kappa < 1$, and $|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2$. If $f$ is bounded
+below on $F$, then
+$$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
+
+The gradient $\nabla f(x)$ is `gradient f x`, which is $0$ at a point where $f$ is not
+differentiable. -/
 theorem theorem_6_4_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -339,9 +477,18 @@ theorem theorem_6_4_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ 
   have hlim := liminf_le_of_frequently_le ((hfreq _ (half_pos hp)).mono fun _ h ↦ h.le) hb
   linarith
 
-/-- A uniformly continuous first-order criticality measure tends to zero
-on a basic trust-region run. On excursions away from zero, the objective
-drop bounds the path length until the next small criticality value. -/
+/-- **Sections 8.1.2 and 12.2.2** of [conn2000trust], convergence of a uniformly continuous
+criticality measure. Let $F$ be a real inner product space and consider a run of Algorithm 6.1.1
+for $f : F \to \mathbb{R}$, with iterates $x_k$, steps $s_k$, radii $\Delta_k$ and models $m_k$.
+Let $S \subseteq F$ contain every $x_k$, and let $u : F \to \mathbb{R}$ be uniformly continuous
+on $S$ with $u(x_k) \ge 0$ for all $k$. Let $0 < \kappa < 1$, $K \ge 0$, and $0 < \beta_k \le B$
+for all $k$. Suppose that, for all $k$, $\|s_k\| \le K \Delta_k$, $f(x_k) = m_k(x_k)$,
+$$\kappa u(x_k) \min\{u(x_k) / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k),$$
+and $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$. If the values $f(x_k)$ are bounded
+below, then $u(x_k) \to 0$.
+
+On an excursion of $u(x_k)$ away from zero, the decrease of the objective bounds the length of
+the path of iterates until the next small value of $u$. -/
 theorem tendsto_criticality_zero_of_uniformContinuousOn
     {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     {P : BTRParams} {f : F → ℝ} {sufficient : ℕ → (F → ℝ) → F → F → Prop}
@@ -440,8 +587,19 @@ theorem tendsto_criticality_zero_of_uniformContinuousOn
   dsimp only [e] at hgap hj
   linarith only [hgap, hj.2, hhigh]
 
-/-- Theorem 6.4.6. With the norm comparison of AN.1 and the global Lipschitz bound
-on the objective gradient from AF.3, the whole gradient norm sequence tends to zero. -/
+/-- **Theorem 6.4.6** of [conn2000trust]. Let $F$ be a real Hilbert space and consider a run of
+Algorithm 6.1.1 for $f : F \to \mathbb{R}$, with iterates $x_k$, steps $s_k$, radii $\Delta_k$,
+models $m_k$ and trust-region norms $\|\cdot\|_k$. Let $0 < \beta_k \le C$ for all $k$. Suppose
+that, for all $k$, $f(x_k) = m_k(x_k)$, the step satisfies the sufficient decrease condition
+$\kappa \|\nabla f(x_k)\| \min\{\|\nabla f(x_k)\| / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k +
+s_k)$ with $0 < \kappa < 1$, and $|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2$. Suppose
+also that $f$ is bounded below, that $f$ is twice continuously differentiable with
+$\|D^2 f(x)\| \le L$ for all $x$, and that there is $K \ge 0$ with $\|v\| \le K \|v\|_k$ for all
+$k$ and $v$. Then
+$$\lim_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
+
+The norm comparison is AN.1 of the source. The Hessian bound gives the global Lipschitz bound on
+$\nabla f$ that AF.3 states. -/
 theorem theorem_6_4_6 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)

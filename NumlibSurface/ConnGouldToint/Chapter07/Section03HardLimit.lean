@@ -6,11 +6,48 @@ import Mathlib.Analysis.Polynomial.SignRight
 import NumlibSurface.ConnGouldToint.Chapter07.Section03Cholesky
 
 /-!
-# One-sided stabilization in the hard case
+# Conn, Gould and Toint, Section 7.3: One-sided stabilization in the hard case
 
-A greedy Cholesky row comparison is rational once its previous signs
-are fixed. Polynomial right-hand signs then control the branch decisions
-in the corrected LINPACK recurrence of [conn2000trust].
+This module proves that the computed hard-case steps of the Moré–Sorensen algorithm in Section 7.3
+of [conn2000trust] converge to a single minimizer. Let $M$ be a real symmetric matrix with least
+eigenvalue $\lambda_1$, and let the trial multipliers $x$ approach the pole $-\lambda_1$ from above.
+Once the signs chosen by earlier rows are fixed, each row decision of the greedy LINPACK forward
+solve for $M + x I$ is the sign of a rational function of $x$, so the sign vector is constant for
+$x$ near the pole (Theorem 7.3.4). The LINPACK back solve is then a polynomial vector in $x$ up to a
+positive factor, and its normalized direction has a one-sided limit. The model-minimizing root of
+the boundary equation is fixed by the sign of an inner product, so the computed corrected step also
+has a one-sided limit. Along the successful factorizations of the computed run, the corrected steps
+therefore converge to one global minimizer of the model, even when the minimizer is not unique.
+
+## Main definitions
+
+* Section 7.3.7, `ConnGouldToint.Chapter07.linpackShiftedSigns`: the signs of the greedy forward
+  solve for $M + x I$.
+* Algorithm 7.3.4, Step 3b(iii), `ConnGouldToint.Chapter07.moreSorensenComputedHardStep`: the
+  computed corrected hard-case step at a successful trial.
+
+## Main results
+
+* Theorem 7.3.4, `ConnGouldToint.Chapter07.linpackShiftedSigns_eventually_constant`: the greedy
+  signs are constant on a right neighborhood of the pole.
+* Theorem 7.3.4, `ConnGouldToint.Chapter07.linpackDirection_eventually_tendsto`: the normalized
+  LINPACK direction has a one-sided limit.
+* Algorithm 7.3.4, Step 3b(iii),
+  `ConnGouldToint.Chapter07.moreSorensenBestBoundaryCoefficient_eq_ite_inner`: the sign of
+  $\langle s, u \rangle$ selects the model-minimizing root.
+* Theorem 7.3.4, `ConnGouldToint.Chapter07.moreSorensen_computed_hard_step_tendsto`: the computed
+  hard step has a one-sided limit at the pole.
+* Theorem 7.3.4, `ConnGouldToint.Chapter07.moreSorensen_computed_hard_matrix_run_vector_limit`:
+  along the successful factorizations of the computed run, the hard steps converge to one global
+  minimizer.
+
+## Proof outline
+
+Fix the signs of the rows before row $i$. The forward contribution of row $i$ is then a rational
+function of $x$ whose sign is that of a polynomial, so it has a constant sign on a right
+neighborhood of the pole. Induction over the rows gives a constant sign vector $v$. Then the back
+solve is a positive multiple of $\operatorname{adj}(M + x I) v$, a polynomial vector in $x$, and
+removing the common vanishing factor of its entries gives the limit of its normalized direction.
 -/
 
 namespace ConnGouldToint.Chapter07
@@ -22,7 +59,11 @@ private noncomputable def linpackRowSum {n : ℕ} (L : Matrix (Fin n) (Fin n) �
     (i : Fin n) : ℝ :=
   ∑ j ∈ Finset.univ.filter (· < i), L i j * linpackForwardSubst L j
 
-/-- The right-hand-side signs selected in the shifted greedy forward solve. -/
+/-- **Section 7.3.7** of [conn2000trust], the deterministic sign sequence of the corrected forward
+solve. For a square matrix $M$, a shift $x$ and a row $i$, the **shifted sign** is
+$\sigma(b_i)$, where $\sigma$ is the LINPACK sign and $b_i = \sum_{j < i} L_{ij} w_j$ is the
+forward contribution of the earlier rows, for the computed Cholesky factor $L$ of $M + x I$ and
+its greedy forward substitution $w$. -/
 noncomputable def linpackShiftedSigns {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ)
     (x : ℝ) (i : Fin n) : ℝ :=
   linpackSign (linpackRowSum (cholesky (M + x • 1)) i)
@@ -105,9 +146,13 @@ private theorem eval_polynomialShift {ι : Type*} [Fintype ι] [DecidableEq ι]
     simp [polynomialShift, RingHom.mapMatrix_apply, Matrix.one_apply_eq]
   · simp [polynomialShift, RingHom.mapMatrix_apply, Matrix.one_apply_ne h]
 
-/-- The signs in the corrected greedy solve are constant sufficiently near
-the pole on its positive-definite side. Each row uses a polynomial numerator
-for its forward contribution after fixing the signs of its predecessors. -/
+/-- **Theorem 7.3.4** of [conn2000trust], right-sided stabilization of the greedy signs. Let $M$ be
+a square matrix of order $n$ and $a \in \mathbb{R}$, and suppose that $M + x I$ is positive
+definite for all $x > a$ near $a$. Then there is a sign vector $v$ such that the shifted signs
+of $M + x I$ equal $v$ for all $x > a$ near $a$.
+
+After the signs of the earlier rows are fixed, the forward contribution of each row has a
+polynomial numerator in $x$, so its sign is eventually constant. -/
 theorem linpackShiftedSigns_eventually_constant {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
     {a : ℝ} (hpos : ∀ᶠ x in 𝓝[>] a, (M + x • 1).PosDef) :
     ∃ v : Fin n → ℝ, ∀ᶠ x in 𝓝[>] a, linpackShiftedSigns M x = v := by
@@ -249,9 +294,16 @@ private theorem linpack_backsolve_mul_shift {n : ℕ} {M : Matrix (Fin n) (Fin n
   rw [← hf, ← Matrix.mulVec_mulVec, hy]
   exact hw
 
-/-- The actual normalized back solve has a one-sided vector limit. Its
-eventually fixed signs make it an adjugate polynomial vector up to a
-positive scalar. Removing the common vanishing factor gives the limit. -/
+/-- **Theorem 7.3.4** of [conn2000trust], one-sided limit of the normalized back solve. Let $M$ be a
+square matrix of order $n \ge 1$ and $a \in \mathbb{R}$, and suppose that $M + x I$ is positive
+definite for all $x > a$ near $a$. Then there is a sign vector $v$ with the shifted signs equal
+to $v$ for all $x > a$ near $a$, and the normalized LINPACK direction
+$$u(x) = \frac{y(x)}{\|y(x)\|}, \qquad L^T y(x) = w(x),$$
+for the computed factor $L$ of $M + x I$ and its greedy forward substitution $w(x)$, converges
+to some vector $u$ as $x \to a$ from above.
+
+With the signs fixed, $y(x)$ is a positive multiple of a polynomial vector in $x$, the adjugate
+of $M + x I$ applied to $v$. Removing the common vanishing factor gives the limit. -/
 theorem linpackDirection_eventually_tendsto {n : ℕ} (hn : 0 < n)
     {M : Matrix (Fin n) (Fin n) ℝ} {a : ℝ}
     (hpos : ∀ᶠ x in 𝓝[>] a, (M + x • 1).PosDef) :
@@ -294,9 +346,15 @@ theorem linpackDirection_eventually_tendsto {n : ℕ} (hn : 0 < n)
   change linpackEuclideanDirection (fun i => (p i).eval x) = linpackEuclideanDirection y
   rw [heq, linpackEuclideanDirection_smul _ hpd.det_pos]
 
-/-- For a strict interior shifted solve, the sign of its inner product with
-the correction direction determines which of the two roots minimizes the
-model. A zero inner product uses the positive-square-root convention. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 3b(iii), root selection by the sign of an inner
+product. Let $H$ be symmetric, $(H + x I) s = -g$ with $\|s\| < \Delta$, and let $u$ be a unit
+vector with $\langle u, (H + x I) u \rangle > 0$. Then the best boundary coefficient is the root
+$$\sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \rangle \quad \text{if }
+  \langle s, u \rangle \ge 0,$$
+and the other root $-\sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \rangle$
+if $\langle s, u \rangle < 0$.
+
+A zero inner product uses the convention of the positive square root. -/
 theorem moreSorensenBestBoundaryCoefficient_eq_ite_inner {E : Type*}
     [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     {g s u : E} {H : E →L[ℝ] E} {x Δ : ℝ}
@@ -422,7 +480,11 @@ private theorem shiftedStep_norm_lt_of_hard
       (pow_le_pow_left₀ (norm_nonneg sM) hsM 2)
     exact (pow_lt_pow_iff_left₀ (norm_nonneg _) hΔ.le two_ne_zero).mp hsq
 
-/-- The actual corrected hard step at a successful matrix trial. -/
+/-- **Algorithm 7.3.4** of [conn2000trust], Step 3b(iii), the computed corrected step. For a square
+matrix $M$ of order $n$, a gradient $g$, a radius $\Delta$ and a trial $x$, let $u$ be the
+normalized LINPACK direction for the computed Cholesky factor of $M + x I$ and $s = s(x)$ the
+shifted step. The **computed hard step** is $s + \alpha u$, where $\alpha$ is the best boundary
+coefficient of $s$ and $u$. -/
 noncomputable def moreSorensenComputedHardStep (M : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (Δ x : ℝ) : EuclideanSpace ℝ (Fin n) :=
   let H := toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M
@@ -431,9 +493,13 @@ noncomputable def moreSorensenComputedHardStep (M : Matrix (Fin n) (Fin n) ℝ)
   let s := shiftedStep g H x
   s + moreSorensenBestBoundaryCoefficient g H Δ s u • u
 
-/-- The computed hard correction has a one-sided vector limit at the pole.
-Both the normalized direction and the deterministic boundary branch
-stabilize sufficiently to pass to the limit. -/
+/-- **Theorem 7.3.4** of [conn2000trust], one-sided limit of the computed hard correction. Let $M$
+be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$, and $\Delta > 0$. Suppose
+that $-\lambda_1$ is an optimal multiplier for a global minimizer $s_M$ with
+$\|s_M\| \le \Delta$ (the hard case). Then the computed hard step at $x$ converges to some
+vector $z$ as $x \to -\lambda_1$ from above.
+
+Both the normalized direction and the choice of the boundary root stabilize near the pole. -/
 theorem moreSorensen_computed_hard_step_tendsto (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     {g sM : EuclideanSpace ℝ (Fin n)} {Δ : ℝ} (hΔ : 0 < Δ)
@@ -498,9 +564,18 @@ theorem moreSorensen_computed_hard_step_tendsto (hn : 0 < n)
       moreSorensenBestBoundaryCoefficient g Mop Δ (shiftedStep g Mop x) (u x) • u x
     rw [hcx, ite_eq_right (fun h => hc₀ (hx.mp h)), neg_smul, sub_eq_add_neg]
 
-/-- The actual deterministic hard-case run converges to a single model
-minimizer along its successful factorizations, even if the minimizer is
-nonunique. The starting upper endpoint must exceed the pole. -/
+/-- **Theorem 7.3.4** of [conn2000trust], vector convergence with deterministic tie handling. Let
+$M$ be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$, $\Delta > 0$ and
+$\theta \in (0, 1)$. Suppose that $-\lambda_1$ is an optimal multiplier for a global minimizer
+$s_M$ with $\|s_M\| \le \Delta$ (the hard case). Let the initial triple satisfy
+$0 \le \lambda^L_0 \le -\lambda_1 < \lambda^U_0$ and $\lambda_0 \in [\lambda^L_0, \lambda^U_0]$,
+and let $\lambda_k$ be the trials of the computed orbit
+`ConnGouldToint.Chapter07.moreSorensenMatrixIterates`. Then $\lambda_k \to -\lambda_1$,
+$\lambda_k > -\lambda_1$ for infinitely many $k$, and there is a global minimizer $z$ of $q$ on
+the ball of radius $\Delta$ such that the computed hard steps at $\lambda_k$ converge to $z$
+along the indices $k$ with $\lambda_k > -\lambda_1$.
+
+The minimizer need not be unique. The initial upper end must exceed the pole. -/
 theorem moreSorensen_computed_hard_matrix_run_vector_limit (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     {g sM : EuclideanSpace ℝ (Fin n)}

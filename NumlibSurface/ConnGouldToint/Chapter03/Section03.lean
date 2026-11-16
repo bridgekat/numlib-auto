@@ -7,14 +7,59 @@ import Mathlib.Topology.ClusterPt
 import Mathlib.Analysis.Asymptotics.Defs
 import Mathlib.Analysis.SpecificLimits.Basic
 
-/-! # Sequences and basic iterations
+/-!
+# Conn, Gould and Toint, Section 3.3: Sequences and basic iterations
 
-Section 3.3.1 of [conn2000trust] measures convergence rates by comparing errors to the limit.
-The displayed Q-rate criteria on pp. 50–51 have an indexing error: the left-hand side must
-be the error at the successor index, `‖u (k + 1) - x‖`. The reciprocal sequence below satisfies
-the printed quadratic inequality despite failing the corrected one.
-The Newton–Kantorovich statement makes the required containment of a closed ball in
-the differentiability domain explicit.
+This module formalizes Section 3.3 of [conn2000trust]. A sequence $(u_k)$ that converges to $x$
+converges Q-linearly, Q-superlinearly or Q-quadratically if the error $\|u_{k+1} - x\|$ at the
+successor index is eventually at most $q \|u_k - x\|$ with $q < 1$, is $o(\|u_k - x\|)$, or is at
+most $C \|u_k - x\|^2$. It converges R-quadratically if its error is dominated by a Q-quadratically
+convergent sequence of real numbers. Newton's method $x_{k+1} = x_k - J(x_k)^{-1} f(x_k)$ for a
+nonlinear system $f(x) = 0$ (Algorithm 3.3.1) converges Q-quadratically near a regular root (Theorem
+3.3.1), and the Newton–Kantorovich theorem gives R-quadratic convergence from a starting point with
+a small first Newton correction (Theorem 3.3.2).
+
+The proofs specialize the backbone module `Numlib.Nonlinear.Newton`.
+
+## Main definitions
+
+* Section 3.3.1, Q-linear convergence, `ConnGouldToint.Chapter03.ConvergesQLinearly`: eventually
+  $\|u_{k+1} - x\| \le q \|u_k - x\|$ with $q \in [0, 1)$.
+* Section 3.3.1, Q-superlinear convergence, `ConnGouldToint.Chapter03.ConvergesQSuperlinearly`:
+  $\|u_{k+1} - x\| = o(\|u_k - x\|)$.
+* Section 3.3.1, Q-quadratic convergence, `ConnGouldToint.Chapter03.ConvergesQQuadratically`:
+  eventually $\|u_{k+1} - x\| \le C \|u_k - x\|^2$.
+* Section 3.3.1, R-quadratic convergence, `ConnGouldToint.Chapter03.ConvergesRQuadratically`: the
+  error is dominated by a Q-quadratically convergent real sequence.
+
+## Main results
+
+* Section 3.3.1, `ConnGouldToint.Chapter03.reciprocal_succ_counterexample`: the sequence $1/(k+1)$
+  satisfies the printed Q-quadratic inequality but does not converge Q-quadratically.
+* Algorithm 3.3.1, `ConnGouldToint.Chapter03.algorithm_3_3_1`: where the Jacobian is invertible, the
+  Newton step is the unique solution of the Newton equation (3.3.1).
+* Theorem 3.3.1, `ConnGouldToint.Chapter03.theorem_3_3_1`: if a regular root is a cluster point of
+  the Newton iterates, the iterates and the residuals converge Q-quadratically.
+* Theorem 3.3.2, `ConnGouldToint.Chapter03.theorem_3_3_2` (Newton–Kantorovich): under the
+  Kantorovich condition $\beta L \eta < 1/2$, the Newton iterates converge R-quadratically to a
+  root.
+* Theorem 3.3.2, `ConnGouldToint.Chapter03.newton_correction_small_without_domain_ball`: without the
+  ball condition, a small first Newton correction does not keep the first iterate in the domain.
+
+## Conventions
+
+* The Newton iterates are `Newton.iterate f (fderiv ℝ f) x₀`. The step uses
+  `ContinuousLinearMap.inverse`, which is zero at a noninvertible derivative.
+
+## Deviations from the source
+
+* **Q-rate definitions of Section 3.3.1** (typo). The printed criteria on pp. 50–51 compare the
+  successive difference $\|u_{k+1} - u_k\|$ with the error $\|u_k - x\|$. The definitions use the
+  successor error $\|u_{k+1} - x\|$. See `ConnGouldToint.Chapter03.ConvergesQQuadratically` and
+  `ConnGouldToint.Chapter03.reciprocal_succ_counterexample`.
+* **Theorem 3.3.2** (correction). The statement adds the hypothesis that the closed ball of the
+  Kantorovich radius about $x_0$ lies in the domain. See `ConnGouldToint.Chapter03.theorem_3_3_2`
+  and `ConnGouldToint.Chapter03.newton_correction_small_without_domain_ball`.
 -/
 
 open Filter Topology Asymptotics
@@ -23,28 +68,56 @@ namespace ConnGouldToint.Chapter03
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- Q-linear convergence, with the successor error bounded by a fixed strict contraction
-factor times the current error. -/
+/-- **Section 3.3.1** of [conn2000trust], Q-linear convergence. A sequence $(u_k)$ in a normed group
+**converges Q-linearly** to $x$ if $u_k \to x$ and there is $q \in [0, 1)$ with
+$$\|u_{k+1} - x\| \le q \|u_k - x\|$$
+for all sufficiently large $k$.
+
+**Typo.** The source compares the successive difference $\|u_{k+1} - u_k\|$ with the error
+$\|u_k - x\|$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here. -/
 def ConvergesQLinearly (u : ℕ → E) (x : E) : Prop :=
   Tendsto u atTop (𝓝 x) ∧ ∃ q ∈ Set.Ico (0 : ℝ) 1,
     ∀ᶠ k in atTop, ‖u (k + 1) - x‖ ≤ q * ‖u k - x‖
 
-/-- Q-superlinear convergence, with the successor error little-o of the current error. -/
+/-- **Section 3.3.1** of [conn2000trust], Q-superlinear convergence. A sequence $(u_k)$ in a normed
+group **converges Q-superlinearly** to $x$ if $u_k \to x$ and
+$$\|u_{k+1} - x\| = o(\|u_k - x\|) \qquad (k \to \infty).$$
+
+**Typo.** The source compares the successive difference $\|u_{k+1} - u_k\|$ with the error
+$\|u_k - x\|$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here.
+
+The little-o is Mathlib's `Asymptotics.IsLittleO` along `atTop`. -/
 def ConvergesQSuperlinearly (u : ℕ → E) (x : E) : Prop :=
   Tendsto u atTop (𝓝 x) ∧ (fun k => u (k + 1) - x) =o[atTop] fun k => u k - x
 
-/-- Q-quadratic convergence, with the successor error bounded by a fixed multiple of
-the squared current error. -/
+/-- **Section 3.3.1** of [conn2000trust], Q-quadratic convergence. A sequence $(u_k)$ in a normed
+group **converges Q-quadratically** to $x$ if $u_k \to x$ and there is $C \in \mathbb{R}$ with
+$$\|u_{k+1} - x\| \le C \|u_k - x\|^2$$
+for all sufficiently large $k$.
+
+**Typo.** The source compares the successive difference $\|u_{k+1} - u_k\|$ with
+$\|u_k - x\|^2$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here.
+`ConnGouldToint.Chapter03.reciprocal_succ_counterexample` shows that the printed inequality
+holds for a sequence that does not converge Q-quadratically. -/
 def ConvergesQQuadratically (u : ℕ → E) (x : E) : Prop :=
   Tendsto u atTop (𝓝 x) ∧ ∃ C : ℝ, ∀ᶠ k in atTop, ‖u (k + 1) - x‖ ≤ C * ‖u k - x‖ ^ 2
 
-/-- R-quadratic convergence, with the error dominated by a Q-quadratically convergent
-sequence of nonnegative real numbers. -/
+/-- **Section 3.3.1** of [conn2000trust], R-quadratic convergence. A sequence $(u_k)$ in a normed
+group **converges R-quadratically** to $x$ if there is a real sequence $(w_k)$ that converges
+Q-quadratically to $0$ with
+$$\|u_k - x\| \le w_k \quad \text{for all } k.$$
+
+The bound forces $w_k \ge 0$ and $u_k \to x$. -/
 def ConvergesRQuadratically (u : ℕ → E) (x : E) : Prop :=
   ∃ w : ℕ → ℝ, ConvergesQQuadratically w 0 ∧ ∀ k, ‖u k - x‖ ≤ w k
 
-/-- The sequence `1 / (k + 1)` converges to zero and satisfies the printed Q-quadratic
-inequality with constant one, although its convergence fails the corrected Q-quadratic test. -/
+/-- **Section 3.3.1** of [conn2000trust], counterexample to the printed Q-quadratic criterion. The
+real sequence $u_k = 1/(k+1)$ converges to $0$ and satisfies
+$$|u_{k+1} - u_k| \le |u_k|^2 \quad \text{for all } k,$$
+but it does not converge Q-quadratically to $0$.
+
+The printed criterion, with the successive difference on the left, therefore does not define
+Q-quadratic convergence; see `ConnGouldToint.Chapter03.ConvergesQQuadratically`. -/
 theorem reciprocal_succ_counterexample :
     let u : ℕ → ℝ := fun k => 1 / ((k : ℝ) + 1)
     Tendsto u atTop (𝓝 0) ∧ (∀ k, ‖u (k + 1) - u k‖ ≤ ‖u k‖ ^ 2) ∧
@@ -88,8 +161,13 @@ variable {F : Type*} [NormedSpace ℝ E] [CompleteSpace E]
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
 omit [CompleteSpace E] in
-/-- Algorithm 3.3.1. Where the derivative is invertible, the Newton
-iterate uses the unique solution of (3.3.1). -/
+/-- **Algorithm 3.3.1** of [conn2000trust] (Newton's method) and **Equation (3.3.1)**. Let $E$ and
+$F$ be real normed spaces, let $f : E \to F$, and let $x_k$ be the $k$-th Newton iterate from
+$x_0$. If $f$ has an invertible derivative $J(x_k)$ at $x_k$, then there is exactly one step $s$
+that solves the Newton equation and gives the next iterate:
+$$J(x_k) s = -f(x_k) \quad \text{and} \quad x_{k+1} = x_k + s.$$
+
+The iterates are `Newton.iterate f (fderiv ℝ f) x₀`. -/
 theorem algorithm_3_3_1 (f : E → F) (x₀ : E) (k : ℕ)
     (e : E ≃L[ℝ] F)
     (he : HasFDerivAt f (e : E →L[ℝ] F) (Newton.iterate f (fderiv ℝ f) x₀ k)) :
@@ -148,8 +226,15 @@ private theorem eventually_residual_comparable {f : E → F} {x : E} (hroot : f 
         _ = _ := by rw [mul_add, ← mul_assoc, hhalf]
     linarith
 
-/-- **Theorem 3.3.1.** If a regular root is a cluster point of the Newton iterates,
-both the iterates and their residuals converge Q-quadratically. -/
+/-- **Theorem 3.3.1** of [conn2000trust]. Let $E$ be a real Banach space and $F$ a real normed
+space, let $S \subseteq E$ be open, and let $f : E \to F$ be differentiable at every point of
+$S$, with $\|J(z) - J(w)\| \le L \|z - w\|$ for all $z, w \in S$. Let $x \in S$ be a root,
+$f(x) = 0$, at which $J(x)$ is invertible. If $x$ is a cluster point of the Newton iterates
+$(x_k)$ from $x_0$, then $x_k$ converges Q-quadratically to $x$ and $f(x_k)$ converges
+Q-quadratically to $0$.
+
+The invertibility of $J(x)$ is a continuous linear equivalence `e : E ≃L[ℝ] F` equal to
+`fderiv ℝ f x`. -/
 theorem theorem_3_3_1 {S : Set E} (hS : IsOpen S) {f : E → F} {x₀ x : E} (hx : x ∈ S)
     (hF : ∀ z ∈ S, DifferentiableAt ℝ f z) {L : ℝ}
     (hLip : ∀ z ∈ S, ∀ w ∈ S, ‖fderiv ℝ f z - fderiv ℝ f w‖ ≤ L * ‖z - w‖)
@@ -193,10 +278,24 @@ theorem theorem_3_3_1 {S : Set E} (hS : IsOpen S) {f : E → F} {x₀ x : E} (hx
     _ ≤ A * (max C 0 * (B * ‖f (u k)‖) ^ 2) := by gcongr; exact hcurr.2
     _ = _ := by ring
 
-/-- **Theorem 3.3.2 (Newton–Kantorovich).** If the inverse at the start and the first Newton
-correction have bounds `β` and `η`, the derivative has Lipschitz constant `L`, and
-`β L η < 1/2`, the Newton iterates converge R-quadratically to a root. The closed ball
-of the Kantorovich radius must be contained in the differentiability domain. -/
+/-- **Theorem 3.3.2** of [conn2000trust] (Newton–Kantorovich theorem). Let $E$ be a real Banach
+space and $F$ a real normed space, let $S \subseteq E$, and let $f : E \to F$ be differentiable
+at every point of $S$, with $\|J(z) - J(w)\| \le L \|z - w\|$ for all $z, w \in S$. Let $J(x_0)$
+be invertible with
+$$\|J(x_0)^{-1}\| \le \beta, \qquad \|J(x_0)^{-1} f(x_0)\| \le \eta, \qquad h = \beta L \eta <
+  \tfrac{1}{2},$$
+where $\beta > 0$, $L > 0$ and $\eta \ge 0$. Suppose that the closed ball about $x_0$ of radius
+$$r = \frac{1 - \sqrt{1 - 2h}}{\beta L}$$
+lies in $S$. Then there is a root $x \in S$ of $f$, the Newton iterates $x_k$ from $x_0$
+converge R-quadratically to $x$, and every $x_k$ lies in $S$ and has an invertible derivative
+$J(x_k)$.
+
+**Correction.** The source does not require the ball of radius $r$ to lie in the domain. Without
+this condition the first Newton step can leave the domain, even when the first correction is
+arbitrarily small; see `ConnGouldToint.Chapter03.newton_correction_small_without_domain_ball`.
+
+The invertibility of $J(x_0)$ is a continuous linear equivalence `e : E ≃L[ℝ] F` equal to
+`fderiv ℝ f x₀`. -/
 theorem theorem_3_3_2 {S : Set E} {f : E → F} {x₀ : E}
     (hF : ∀ z ∈ S, DifferentiableAt ℝ f z) {β L η : ℝ}
     (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η)
@@ -249,9 +348,14 @@ theorem theorem_3_3_2 {S : Set E} {f : E → F} {x₀ : E}
 
 end Newton
 
-/-- An arbitrarily small initial Newton correction and a constant, invertible derivative
-do not suffice on the open half-line. The first Newton step can leave the domain, which
-contains no root in this example. -/
+/-- **Theorem 3.3.2** of [conn2000trust], counterexample without the ball condition. For every
+$\varepsilon > 0$ there are $f : \mathbb{R} \to \mathbb{R}$ and $x_0 > 0$ such that $f'(x) = 1$
+for all $x$, the first Newton correction satisfies $|f'(x_0)^{-1} f(x_0)| < \varepsilon$, the
+first Newton iterate is negative, and $f$ has no root in $(0, \infty)$.
+
+On the domain $S = (0, \infty)$ the derivative is constant and invertible, so all hypotheses of
+Theorem 3.3.2 except the ball condition hold with $\beta = 1$ and a small $L > 0$. The
+conclusion fails, because the domain contains no root. -/
 theorem newton_correction_small_without_domain_ball (ε : ℝ) (hε : 0 < ε) :
     ∃ (f : ℝ → ℝ) (x₀ : ℝ), 0 < x₀ ∧
       (∀ x, HasFDerivAt f (ContinuousLinearMap.id ℝ ℝ) x) ∧

@@ -15,19 +15,105 @@ import Mathlib.Topology.MetricSpace.Pseudo.Defs
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Tactic.Linarith
 
-/-! # Composite nonsmooth equations -/
+/-!
+# Conn, Gould and Toint, Section 16.2: Composite nonsmooth equations
+
+Section 16.2 of [conn2000trust] treats the composite problem of minimizing $h(c(x))$, where
+$c : E \to Y$ is smooth and $h(y) = \max_i (p_i(y) + b_i)$ is a maximum of finitely many affine
+functions. The problem is equivalent to the smooth epigraph problem of minimizing $t$ subject to
+$p_i(c(x)) + b_i \le t$ for all $i$. The trust-region model replaces $c$ by its linearization and
+adds a quadratic term. This module formalizes the polyhedral objective and its model, the epigraph
+problem and its multipliers, the equivalence of the second-order conditions in Theorem 16.2.2, the
+convergence result of Theorem 16.2.1 for the monotone nonsmooth algorithm, and the exact merit
+function of Lemma 16.2.3. The penalty is `Numlib.Optimization.epigraphPenalty`, and the nonsmooth
+algorithms come from `NumlibSurface.ConnGouldToint.Chapter11.Section01` and
+`NumlibSurface.ConnGouldToint.Chapter11.Section03`.
+
+## Main definitions
+
+* Equation (16.2.1), `ConnGouldToint.Chapter16.polyhedralAffineMaximum`: the maximum
+  $h(y) = \max_i (p_i(y) + b_i)$.
+* Equation (16.2.2), `ConnGouldToint.Chapter16.affineResidualBranch`: one affine branch
+  $p_i(y) + b_i$.
+* Equation (16.2.3), `ConnGouldToint.Chapter16.polyhedralResidualValue`: the objective $h(c(x))$.
+* Equation (16.2.4), `ConnGouldToint.Chapter16.polyhedralResidualModel`: the model
+  $\frac{1}{2} H(s, s) + h(c(x) + J(x) s)$.
+* Algorithm 16.2.1, `ConnGouldToint.Chapter16.polyhedralResidualCorrectionModel` and
+  `ConnGouldToint.Chapter16.algorithm_16_2_1`: the correction model and the correction step.
+* Equation (16.2.5), `ConnGouldToint.Chapter16.IsPolyhedralModelSolution`: a solution of the
+  trust-region model problem.
+* Equation (16.2.9), `ConnGouldToint.Chapter16.polyhedralEpigraphFeasible`: the feasible set of the
+  epigraph problem.
+* Equations (16.2.11)–(16.2.14), `ConnGouldToint.Chapter16.EpigraphMultiplier`: the first-order
+  conditions of the epigraph problem.
+* Theorem 16.2.2, `ConnGouldToint.Chapter16.epigraphCriticalCone`: the critical cone of the epigraph
+  problem.
+* Equations (16.2.16)–(16.2.18), `ConnGouldToint.Chapter16.IsActiveBranchCombination`: a convex
+  combination of the active slopes.
+* Equation (16.2.15), `ConnGouldToint.Chapter16.polyhedralEpigraphLagrangian`: the Lagrangian of the
+  epigraph problem.
+* Equation (16.2.23), `ConnGouldToint.Chapter16.epigraphMerit`: the exact merit function in the
+  epigraph variable.
+
+## Main results
+
+* Equations (16.2.9)–(16.2.10), `ConnGouldToint.Chapter16.isMinOn_polyhedralEpigraph_iff`: the
+  epigraph problem and the composite problem have the same minimizers.
+* `ConnGouldToint.Chapter16.mem_epigraphCriticalCone_iff`: at a multiplier, the critical cone
+  consists of the directions with nonpositive active derivatives and height $0$.
+* `ConnGouldToint.Chapter16.isActiveBranchCombination_iff_mem_convexHull`: the active combinations
+  are the convex hull of the active slopes.
+* Equation (16.2.15), `ConnGouldToint.Chapter16.fderiv_fderiv_polyhedralEpigraphLagrangian`: the
+  second derivative of the Lagrangian.
+* Theorem 16.2.2, `ConnGouldToint.Chapter16.theorem_16_2_2`: the second-order sufficient condition
+  of the epigraph problem is equivalent to the composite second-order condition.
+* `ConnGouldToint.Chapter16.lipschitzWith_polyhedralAffineMaximum`: $h$ is Lipschitz with constant
+  $\sum_i \|p_i\|$.
+* `ConnGouldToint.Chapter16.polyhedralResidualModel_uniformAgreement`: the models agree uniformly
+  with the objective after normalization.
+* Theorem 16.2.1, `ConnGouldToint.Chapter16.theorem_16_2_1_monotone`: every limit point of a run of
+  Algorithm 11.1.1 is Clarke stationary.
+* Lemma 16.2.3, `ConnGouldToint.Chapter16.lemma_16_2_3`: for $\sigma > 1$ the merit function has the
+  minimum value $h(c(x))$, attained only at $t = h(c(x))$.
+
+## Conventions
+
+* The Jacobian $J(x)$ is `fderiv ℝ c x`, and the second derivative $\nabla^2 c(x)$ is
+  `fderiv ℝ (fderiv ℝ c) x`, applied to two directions.
+* Quadratic terms $H$ are continuous bilinear forms `E →L[ℝ] E →L[ℝ] ℝ`, and $H(s, s)$ is `H s s`.
+* A branch $i$ is **active** at the height $t$ if its value $a_i$ equals $t$.
+
+## Deviations from the source
+
+* **Equation (16.2.15)** (reading). The Hessian of the epigraph Lagrangian sums the residual
+  Hessians over the residual components, weighted by the convex combination of the slopes;
+  equivalently it weights the Hessians of the affine branches. See
+  `ConnGouldToint.Chapter16.fderiv_fderiv_polyhedralEpigraphLagrangian`.
+* **Equation (16.2.24)** (reading). The minimum of the merit function is the real number $h(c(x))$,
+  and the set of minimizers is the singleton $\{h(c(x))\}$. See
+  `ConnGouldToint.Chapter16.lemma_16_2_3`.
+-/
 
 open Filter Topology
 
 namespace ConnGouldToint.Chapter16
 
-/-- The exact merit function (16.2.23) for the composite objective `h ∘ c`. -/
+/-- **Equation (16.2.23)** of [conn2000trust]. Let $c : X \to Y$, $h : Y \to \mathbb{R}$, $x \in X$
+and $\sigma, t \in \mathbb{R}$. The **exact merit function** in the epigraph variable $t$ is
+$$\phi(x, \sigma, t) = (1 - \sigma) t + \sigma \max\{t, h(c(x))\} = t + \sigma \max\{0,
+  h(c(x)) - t\}.$$
+
+The definition is `Numlib.Optimization.epigraphPenalty` at the value $h(c(x))$. -/
 def epigraphMerit {X Y : Type*} (c : X → Y) (h : Y → ℝ)
     (x : X) (σ t : ℝ) : ℝ :=
   Numlib.Optimization.epigraphPenalty (h (c x)) σ t
 
-/-- Lemma 16.2.3. The minimum merit value over the epigraph variable is `h (c x)`,
-and the set of minimizers is the singleton with that same value. -/
+/-- **Lemma 16.2.3** of [conn2000trust]. Let $c : X \to Y$, $h : Y \to \mathbb{R}$, $x \in X$ and
+$\sigma > 1$. Then $h(c(x))$ is the least value of $t \mapsto \phi(x, \sigma, t)$, and the set
+of its global minimizers is $\{h(c(x))\}$.
+
+**Reading.** Equation (16.2.24) gives the minimum value $h(c(x))$, a real number. The set of
+minimizers is the singleton that contains this value. -/
 theorem lemma_16_2_3 {X Y : Type*} (c : X → Y) (h : Y → ℝ)
     (x : X) {σ : ℝ} (hσ : 1 < σ) :
     IsLeast (Set.range (epigraphMerit c h x σ)) (h (c x)) ∧
@@ -57,33 +143,54 @@ section EpigraphConditions
 variable {E Y ι : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] [Fintype ι]
 
-/-- The affine contribution (16.2.2) to the polyhedral maximum. -/
+/-- **Equation (16.2.2)** of [conn2000trust]. For a continuous linear functional $p$ on $Y$ and
+$b \in \mathbb{R}$, the **affine branch** is $y \mapsto p(y) + b$. -/
 def affineResidualBranch (p : Y →L[ℝ] ℝ) (b : ℝ) (y : Y) : ℝ := p y + b
 
-/-- The polyhedral maximum (16.2.1) of the affine contributions. -/
+/-- **Equation (16.2.1)** of [conn2000trust]. Let $\iota$ be a nonempty finite index type, and let
+$p_i$ be continuous linear functionals on $Y$ and $b_i \in \mathbb{R}$. The **polyhedral
+maximum** is
+$$h(y) = \max_i \bigl(p_i(y) + b_i\bigr).$$
+-/
 noncomputable def polyhedralAffineMaximum [Nonempty ι]
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (y : Y) : ℝ :=
   Finset.univ.sup' Finset.univ_nonempty (fun i ↦ affineResidualBranch (p i) (b i) y)
 
-/-- The polyhedral residual objective (16.2.3). -/
+/-- **Equation (16.2.3)** of [conn2000trust]. For $c : E \to Y$ and the polyhedral maximum $h$, the
+**polyhedral residual objective** is $x \mapsto h(c(x))$. -/
 noncomputable def polyhedralResidualValue [Nonempty ι] (c : E → Y)
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (x : E) : ℝ :=
   polyhedralAffineMaximum p b (c x)
 
-/-- The composite trust-region model (16.2.4). -/
+/-- **Equation (16.2.4)** of [conn2000trust]. For $c : E \to Y$, the polyhedral maximum $h$, a
+continuous bilinear form $H$ on $E$ and $x \in E$, the **composite model** is
+$$m(s) = \tfrac{1}{2} H(s, s) + h\bigl(c(x) + J(x) s\bigr).$$
+-/
 noncomputable def polyhedralResidualModel [Nonempty ι] (c : E → Y)
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (H : E →L[ℝ] E →L[ℝ] ℝ) (x s : E) : ℝ :=
   H s s / 2 + polyhedralAffineMaximum p b (c x + fderiv ℝ c x s)
 
-/-- The correction model of Algorithm 16.2.1 uses the affine maximum of
-the residual at the original trial and its shifted Jacobian. -/
+/-- **Algorithm 16.2.1** of [conn2000trust], correction model. Let $x, s, z \in E$ and let $H_{CS}$
+be a continuous bilinear form on $E$. The **correction model** is
+$$m_{CS}(d) = \tfrac{1}{2} H_{CS}(d, d) + h\bigl(c(x + s) + J(x + z) d\bigr),$$
+the polyhedral maximum of the residual at the original trial point $x + s$, linearized with the
+Jacobian at the shifted point $x + z$.
+
+The shift $z$ is the argument `shift`. -/
 noncomputable def polyhedralResidualCorrectionModel [Nonempty ι] (c : E → Y)
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (HCS : E →L[ℝ] E →L[ℝ] ℝ)
     (x s shift d : E) : ℝ :=
   HCS d d / 2 + polyhedralAffineMaximum p b (c (x + s) + fderiv ℝ c (x + shift) d)
 
-/-- Algorithm 16.2.1 supplies Step 2 of Algorithm 11.3.1 with the
-polyhedral residual objective and correction model. -/
+/-- **Algorithm 16.2.1** of [conn2000trust]. It is Step 2 of Algorithm 11.3.1 for the polyhedral
+residual objective $h \circ c$, the composite model $m$ of (16.2.4) at $x$, and the correction
+model $m_{CS}$. The step $s$ and the correction form a valid step if $\Delta \ge 0$, $\tau > 1$,
+$\|s\| \le \Delta$ in the trust-region seminorm, the required decrease $r$ satisfies
+$0 \le r \le m(0) - m(s)$, each proposed correction $d$ satisfies $m_{CS}(d) \le m_{CS}(0)$ and
+$\|s + d\| \le \tau \Delta$, and the correction is the proposal if it does not increase
+$h \circ c$ at the trial point, and $0$ otherwise.
+
+The step is `ConnGouldToint.Chapter11.OptionalCorrectionStep`. -/
 def algorithm_16_2_1 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
     (H HCS : E →L[ℝ] E →L[ℝ] ℝ) (normK : Seminorm ℝ E) (x s shift : E)
     (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop :=
@@ -91,20 +198,25 @@ def algorithm_16_2_1 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ) (b
     (polyhedralResidualModel c p b H x) (polyhedralResidualCorrectionModel c p b HCS x s shift)
     normK x s Δ τ required proposal correction
 
-/-- The trust-region model problem (16.2.5). -/
+/-- **Equation (16.2.5)** of [conn2000trust]. A step $s$ **solves the trust-region model problem**
+if $\|s\| \le \Delta$ and $s$ minimizes the composite model $m$ of (16.2.4) over the closed ball
+$\{s : \|s\| \le \Delta\}$. -/
 def IsPolyhedralModelSolution [Nonempty ι] (c : E → Y)
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (H : E →L[ℝ] E →L[ℝ] ℝ)
     (x : E) (Δ : ℝ) (s : E) : Prop :=
   s ∈ Metric.closedBall 0 Δ ∧ IsMinOn (polyhedralResidualModel c p b H x) (Metric.closedBall 0 Δ) s
 
-/-- The constraints of the epigraph problem (16.2.9). -/
+/-- **Equation (16.2.9)** of [conn2000trust]. The feasible set of the **epigraph problem** is the
+set of pairs $(x, t) \in E \times \mathbb{R}$ with
+$$p_i(c(x)) + b_i \le t \quad \text{for all } i.$$
+-/
 def polyhedralEpigraphFeasible (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
     (b : ι → ℝ) : Set (E × ℝ) :=
   {w | ∀ i, affineResidualBranch (p i) (b i) (c w.1) ≤ w.2}
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The epigraph is the set of feasible pairs whose height is at least the
-polyhedral residual value. -/
+/-- A pair $(x, t)$ lies in the feasible set (16.2.9) of the epigraph problem if and only if
+$h(c(x)) \le t$. -/
 theorem mem_polyhedralEpigraphFeasible [Nonempty ι] {c : E → Y}
     {p : ι → Y →L[ℝ] ℝ} {b : ι → ℝ} {w : E × ℝ} :
     w ∈ polyhedralEpigraphFeasible c p b ↔ polyhedralResidualValue c p b w.1 ≤ w.2 := by
@@ -114,8 +226,9 @@ theorem mem_polyhedralEpigraphFeasible [Nonempty ι] {c : E → Y}
   simp only [Finset.sup'_le_iff, Finset.mem_univ, true_implies]
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The epigraph problem (16.2.9) and the composite problem (16.2.10) have
-the same minimizing points once the epigraph height is eliminated. -/
+/-- **Equations (16.2.9)–(16.2.10)** of [conn2000trust]. A pair $(x, t)$ is feasible for the
+epigraph problem and minimizes $t$ over its feasible set if and only if $t = h(c(x))$ and $x$ is
+a global minimizer of $h \circ c$. -/
 theorem isMinOn_polyhedralEpigraph_iff [Nonempty ι] {c : E → Y}
     {p : ι → Y →L[ℝ] ℝ} {b : ι → ℝ} {x : E} {t : ℝ} :
     ((x, t) ∈ polyhedralEpigraphFeasible c p b ∧
@@ -135,18 +248,31 @@ theorem isMinOn_polyhedralEpigraph_iff [Nonempty ι] {c : E → Y}
     exact ⟨hfeas x, isMinOn_iff.2 fun w hw ↦
       ((isMinOn_univ_iff.1 hm) w.1).trans (mem_polyhedralEpigraphFeasible.1 hw)⟩
 
-/-- Equations (16.2.11)–(16.2.14) in a finite branch representation.
-Here `a i` is the value of the `i`th branch, `A i` its derivative,
-and `t` the epigraph height. -/
+/-- **Equations (16.2.11)–(16.2.14)** of [conn2000trust]. Let $a_i \in \mathbb{R}$ be the branch
+values, $A_i$ continuous linear functionals on $E$ the branch derivatives, $t$ the epigraph
+height and $\theta_i \in \mathbb{R}$. Then $\theta$ is an **epigraph multiplier** if
+$$a_i \le t, \quad \theta_i \ge 0, \quad \theta_i (t - a_i) = 0 \quad \text{for all } i, \qquad
+  \sum_i \theta_i = 1, \qquad \sum_i \theta_i A_i = 0.$$
+
+At $a_i = p_i(c(x)) + b_i$ and $A_i = p_i \circ J(x)$, these are the first-order conditions of
+the epigraph problem. -/
 structure EpigraphMultiplier (a : ι → ℝ) (A : ι → E →L[ℝ] ℝ)
     (t : ℝ) (θ : ι → ℝ) : Prop where
+  /-- Feasibility: $a_i \le t$ for every $i$. -/
   feasible : ∀ i, a i ≤ t
+  /-- Nonnegativity: $\theta_i \ge 0$ for every $i$. -/
   nonneg : ∀ i, 0 ≤ θ i
+  /-- Complementarity: $\theta_i (t - a_i) = 0$ for every $i$. -/
   complementary : ∀ i, θ i * (t - a i) = 0
+  /-- Stationarity in the height: $\sum_i \theta_i = 1$. -/
   sum_eq_one : ∑ i, θ i = 1
+  /-- Stationarity in $x$: $\sum_i \theta_i A_i = 0$. -/
   stationary : ∑ i, θ i • A i = 0
 
-/-- The epigraph critical cone in the proof of Theorem 16.2.2. -/
+/-- **Theorem 16.2.2** of [conn2000trust], critical cone of the epigraph problem, from its proof.
+For branch values $a_i$, derivatives $A_i$, height $t$ and multipliers $\theta_i$, the
+**critical cone** is the set of $(d, u) \in E \times \mathbb{R}$ with $A_i d \le u$ for every
+active $i$, and $A_i d = u$ for every active $i$ with $\theta_i > 0$. -/
 def epigraphCriticalCone (a : ι → ℝ) (A : ι → E →L[ℝ] ℝ)
     (t : ℝ) (θ : ι → ℝ) : Set (E × ℝ) :=
   {v | (∀ i, a i = t → A i v.1 ≤ v.2) ∧
@@ -164,8 +290,8 @@ private theorem EpigraphMultiplier.sum_apply_eq_zero {a : ι → ℝ} {A : ι �
   have hs := congrArg (fun f : E →L[ℝ] ℝ ↦ f d) h.stationary
   simpa only [sum_apply, smul_apply, smul_eq_mul, zero_apply] using hs
 
-/-- The epigraph cone projects onto the directions with nonpositive active
-branch derivatives. Its height component vanishes at a stationary point. -/
+/-- Let $\theta$ be an epigraph multiplier for $(a, A, t)$. Then $(d, u)$ lies in the critical cone
+if and only if $u = 0$ and $A_i d \le 0$ for every active $i$. -/
 theorem mem_epigraphCriticalCone_iff {a : ι → ℝ} {A : ι → E →L[ℝ] ℝ}
     {t : ℝ} {θ : ι → ℝ} (h : EpigraphMultiplier a A t θ) {d : E} {u : ℝ} :
     (d, u) ∈ epigraphCriticalCone a A t θ ↔ u = 0 ∧ ∀ i, a i = t → A i d ≤ 0 := by
@@ -189,11 +315,16 @@ theorem mem_epigraphCriticalCone_iff {a : ι → ℝ} {A : ι → E →L[ℝ] �
     exact (mul_eq_zero.1 ((Finset.sum_eq_zero_iff_of_nonpos hnonpos).1 hstat i
       (Finset.mem_univ i))).resolve_left hi.ne'
 
-/-- Theorem 16.2.2, in active-branch coordinates. The epigraph Lagrangian
-and the composite condition have the same weighted branch Hessian.
-A stationary convex combination of the active branches has directional
-derivative zero, so the maximum over those branches is zero exactly when
-all active derivatives are nonpositive. -/
+/-- **Theorem 16.2.2** of [conn2000trust], in active-branch coordinates. Let $\theta$ be an epigraph
+multiplier for $(a, A, t)$, and let $H_i$ be continuous bilinear forms on $E$. Then
+$$\sum_i \theta_i H_i(d, d) > 0 \text{ for all nonzero } (d, u) \text{ in the critical cone}$$
+if and only if $\sum_i \theta_i H_i(d, d) > 0$ for all $d$ with $\|d\| = 1$ and $A_i d \le 0$
+for every active $i$.
+
+The epigraph Lagrangian and the composite condition have the same weighted branch Hessian. A
+stationary convex combination of the active branches has directional derivative $0$, so the
+maximum of the active derivatives in a direction is $0$ exactly when all of them are
+nonpositive. -/
 theorem epigraphSecondOrder_iff_activeBranch {a : ι → ℝ} {A : ι → E →L[ℝ] ℝ}
     {t : ℝ} {θ : ι → ℝ} (h : EpigraphMultiplier a A t θ)
     (H : ι → E →L[ℝ] E →L[ℝ] ℝ) :
@@ -228,8 +359,13 @@ theorem epigraphSecondOrder_iff_activeBranch {a : ι → ℝ} {A : ι → E →L
     simp only [hscale, ← Finset.mul_sum] at hp
     exact pos_of_mul_pos_right hp (sq_nonneg r)
 
-/-- The active-branch convex combination used in (16.2.16)–(16.2.18),
-which represents an element of the subdifferential of the affine maximum. -/
+/-- **Equations (16.2.16)–(16.2.18)** of [conn2000trust]. Let $a_i$ be branch values, $p_i$
+continuous linear functionals on $Y$ and $t \in \mathbb{R}$. A functional $y$ is an **active
+branch combination** if there are $\theta_i \ge 0$ with $\sum_i \theta_i = 1$, $\theta_i = 0$
+whenever $a_i \neq t$, and $y = \sum_i \theta_i p_i$.
+
+At $t = h(c(x))$, these functionals are the elements of the subdifferential of the polyhedral
+maximum at $c(x)$. -/
 def IsActiveBranchCombination (a : ι → ℝ) (p : ι → Y →L[ℝ] ℝ)
     (t : ℝ) (y : Y →L[ℝ] ℝ) : Prop :=
   ∃ θ : ι → ℝ, (∀ i, 0 ≤ θ i) ∧ ∑ i, θ i = 1 ∧
@@ -246,8 +382,9 @@ private theorem activeBranchCombination_self {a : ι → ℝ} {p : ι → Y →L
     simp [hji]
   · simp [ite_smul]
 
-/-- The multiplier representation (16.2.16)–(16.2.18) is equivalent to
-membership in the convex hull of the active slopes. -/
+/-- **Equations (16.2.16)–(16.2.18)** of [conn2000trust], convex hull form. A functional $y$ is an
+active branch combination if and only if $y$ lies in the convex hull of the active slopes
+$\{p_i : a_i = t\}$. -/
 theorem isActiveBranchCombination_iff_mem_convexHull {a : ι → ℝ}
     {p : ι → Y →L[ℝ] ℝ} {t : ℝ} {y : Y →L[ℝ] ℝ} :
     IsActiveBranchCombination a p t y ↔
@@ -309,14 +446,17 @@ private theorem EpigraphMultiplier.height_eq_sup [Nonempty ι] {a : ι → ℝ}
   rw [← h.eq_height_of_pos (lt_of_le_of_ne (h.nonneg i) hn.symm)]
   exact Finset.le_sup' _ hi
 
-/-- Derivative of an affine branch composed with the residual map. -/
+/-- Let $c : E \to Y$ be differentiable at $x$, $p$ a continuous linear functional on $Y$ and
+$b \in \mathbb{R}$. The derivative of the branch $z \mapsto p(c(z)) + b$ at $x$ is
+$p \circ J(x)$. -/
 theorem fderiv_affineResidualBranch {c : E → Y} {x : E}
     (hc : DifferentiableAt ℝ c x) (p : Y →L[ℝ] ℝ) (b : ℝ) :
     fderiv ℝ (fun z ↦ p (c z) + b) x = p.comp (fderiv ℝ c x) :=
   ((p.hasFDerivAt.comp x hc.hasFDerivAt).add_const b).fderiv
 
-/-- The second variation of an affine branch is the residual's second
-variation evaluated against its slope. -/
+/-- Let $c : E \to Y$ be twice continuously differentiable at $x$, $p$ a continuous linear
+functional on $Y$ and $b \in \mathbb{R}$. For all $d, e \in E$, the second derivative of the
+branch $z \mapsto p(c(z)) + b$ at $x$ in the directions $d, e$ is $p(\nabla^2 c(x)(d, e))$. -/
 theorem fderiv_fderiv_affineResidualBranch {c : E → Y} {x : E}
     (hc : ContDiffAt ℝ 2 c x) (p : Y →L[ℝ] ℝ) (b : ℝ) (d e : E) :
     fderiv ℝ (fderiv ℝ (fun z ↦ p (c z) + b)) x d e =
@@ -332,8 +472,10 @@ theorem fderiv_fderiv_affineResidualBranch {c : E → Y} {x : E}
   rw [(((ContinuousLinearMap.compL ℝ E Y ℝ) p).hasFDerivAt.comp x hd.hasFDerivAt).fderiv]
   rfl
 
-/-- The Lagrangian of the epigraph problem with nonnegative inequality
-multipliers for the constraints `pᵢ(c(x)) + bᵢ - t ≤ 0`. -/
+/-- **Equation (16.2.15)** of [conn2000trust], the Lagrangian. For multipliers $\theta_i$ of the
+constraints $p_i(c(x)) + b_i - t \le 0$, the **epigraph Lagrangian** is
+$$L(x, t) = t + \sum_i \theta_i \bigl(p_i(c(x)) + b_i - t\bigr).$$
+-/
 def polyhedralEpigraphLagrangian (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
     (b θ : ι → ℝ) (w : E × ℝ) : ℝ :=
   w.2 + ∑ i, θ i * (affineResidualBranch (p i) (b i) (c w.1) - w.2)
@@ -349,9 +491,15 @@ private theorem polyhedralEpigraphLagrangian_eq_of_sum_eq_one
     ← Finset.sum_mul, hθ, one_mul]
   ring
 
-/-- The epigraph Lagrangian's second variation (16.2.15). The residual
-Hessian is evaluated against the convex combination of the slopes,
-independently of the number of affine branches. -/
+/-- **Equation (16.2.15)** of [conn2000trust]. Let $c : E \to Y$ be twice continuously
+differentiable at $x$, and let $\theta_i$ satisfy $\sum_i \theta_i = 1$. For all
+$t \in \mathbb{R}$ and all $v, w \in E \times \mathbb{R}$ with first components $v_1, w_1$,
+$$\nabla^2 L(x, t)(v, w) = \sum_i \theta_i \, p_i\bigl(\nabla^2 c(x)(v_1, w_1)\bigr).$$
+
+**Reading.** The residual Hessian is evaluated against the convex combination
+$\sum_i \theta_i p_i$ of the slopes, that is, the Hessians of the residual components are
+summed. Equivalently, the formula weights the Hessians of the affine branches. It does not
+depend on the number of branches. -/
 theorem fderiv_fderiv_polyhedralEpigraphLagrangian
     {c : E → Y} {x : E} (hc : ContDiffAt ℝ 2 c x) (p : ι → Y →L[ℝ] ℝ)
     (b θ : ι → ℝ) (hθ : ∑ i, θ i = 1) (t : ℝ) (v w : E × ℝ) :
@@ -377,11 +525,21 @@ theorem fderiv_fderiv_polyhedralEpigraphLagrangian
   exact congrArg (fun f : (E × ℝ) →L[ℝ] (E × ℝ) →L[ℝ] Y ↦ f v w)
     (L.hasFDerivAt.comp (x, t) (hd.hasFDerivAt.comp (x, t) F.hasFDerivAt)).fderiv
 
-/-- Theorem 16.2.2 for an affine maximum composed with a residual map.
-The left side uses the epigraph height and its KKT multipliers. The right
-side uses a subgradient represented by active affine slopes and restricts
-the residual Hessian to unit directions with zero support value. Stationarity
-supplies a subgradient attaining zero on every direction in this test. -/
+/-- **Theorem 16.2.2** of [conn2000trust]. Let $\iota$ be nonempty and finite, $c : E \to Y$, $p_i$
+continuous linear functionals on $Y$, $b_i \in \mathbb{R}$ and $x \in E$. Let
+$a_i = p_i(c(x)) + b_i$, $A_i = p_i \circ J(x)$, $H = \nabla^2 c(x)$ and $t_0 = h(c(x))$. The
+following are equivalent.
+
+* There are a height $t$ and an epigraph multiplier $\theta$ for $(a, A, t)$ such that
+  $\sum_i \theta_i p_i(H(d, d)) > 0$ for every nonzero $(d, u)$ in the critical cone.
+* There is an active branch combination $y$ at the height $t_0$ with $y \circ J(x) = 0$ and
+  $y(H(d, d)) > 0$ for every $d$ with $\|d\| = 1$ such that $z(J(x) d) \le 0$ for all active
+  branch combinations $z$ at $t_0$.
+
+The first condition uses the epigraph height and its first-order multipliers. The second uses a
+subgradient of $h$ at $c(x)$, represented by the active slopes, and restricts the residual
+Hessian to the unit directions with support value $0$. Stationarity supplies a subgradient that
+is $0$ on every direction of this test. -/
 theorem theorem_16_2_2 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
     (b : ι → ℝ) (x : E) :
     let a i := p i (c x) + b i
@@ -437,8 +595,8 @@ theorem theorem_16_2_2 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
     exact hpos d hd (activeBranchCombination_le_iff (p := p) (v := fderiv ℝ c x d) |>.2 hactive)
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The maximum of affine branches is globally Lipschitz, with a constant
-bounded by the sum of the operator norms of the slopes. -/
+/-- Let $\iota$ be nonempty and finite. The polyhedral maximum $h(y) = \max_i (p_i(y) + b_i)$ is
+Lipschitz with constant $\sum_i \|p_i\|$. -/
 theorem lipschitzWith_polyhedralAffineMaximum [Nonempty ι]
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) :
     LipschitzWith (∑ i, ‖p i‖₊) (polyhedralAffineMaximum p b) := by
@@ -510,8 +668,14 @@ variable {E Y ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y] [Fintype ι]
 
 open Chapter11 in
-/-- A bounded family of quadratic terms gives uniform normalized model
-agreement for (16.2.4), using the affine maximum's Lipschitz bound. -/
+/-- Let $E$ be a real inner product space, let $c : E \to Y$ be continuously differentiable, and let
+$(B_j)_{j \in I}$ be continuous bilinear forms on $E$ with $\|B_j\| \le M$ for some $M \ge 0$.
+Then at every $x \in E$ the composite models (16.2.4) with quadratic terms $B_j$ agree uniformly
+with $h \circ c$ after normalization by the step length, uniformly in the base point near $x$
+and in $j$.
+
+The agreement is `ConnGouldToint.Chapter11.UniformNormalizedModelAgreementAt`. The proof uses
+the Lipschitz bound `ConnGouldToint.Chapter16.lipschitzWith_polyhedralAffineMaximum`. -/
 theorem polyhedralResidualModel_uniformAgreement
     [Nonempty ι] {I : Type*} {c : E → Y}
     (hc : ContDiff ℝ 1 c) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
@@ -568,9 +732,17 @@ theorem polyhedralResidualModel_uniformAgreement
   exact (abs_sub _ _).trans (by linarith only [hpoly, hquad])
 
 open Chapter11 in
-/-- Theorem 16.2.1 for Algorithm 11.1.1. Every subsequential limit of a
-monotone nonsmooth trust-region run for the polyhedral residual objective
-is Clarke stationary. -/
+/-- **Theorem 16.2.1** of [conn2000trust], for Algorithm 11.1.1. Let $E$ be a real Hilbert space,
+let $c : E \to Y$ be continuously differentiable, and let $(B_j)_{j \in I}$ be continuous
+bilinear forms on $E$ with $\|B_j\| \le M$ for some $M \ge 0$. Consider a run of Algorithm
+11.1.1 for the objective $h \circ c$ with the composite models (16.2.4), with quadratic terms
+$B_j$, and suppose that the local sufficient decrease condition AA.1n holds at every point. If a
+subsequence of the iterates converges to $x$, then $0$ lies in the Clarke subdifferential of
+$h \circ c$ at $x$.
+
+The run is `ConnGouldToint.Chapter11.NonsmoothTRRun`, AA.1n is
+`ConnGouldToint.Chapter11.NonsmoothTRRun.HasLocalSufficientDecrease`, and the subdifferential is
+`Optimization.clarkeSubgradient`. -/
 theorem theorem_16_2_1_monotone
     [CompleteSpace E] [Nonempty ι] {I : Type*} {c : E → Y}
     (hc : ContDiff ℝ 1 c) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)

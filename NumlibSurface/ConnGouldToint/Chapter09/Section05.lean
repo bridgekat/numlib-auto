@@ -8,18 +8,73 @@ import Mathlib.Algebra.BigOperators.Intervals
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Tactic.Ring
 
-/-! # Conditional models with memory -/
+/-!
+# Conn, Gould and Toint, Section 9.5: Conditional models with memory
+
+This module formalizes the models with memory of Section 9.5 of [conn2000trust]. Given local models
+$q_k$ and weights $\alpha_k$, the **memory model** is $m_0 = q_0$ and $m_{k+1} = (1 - \alpha_{k+1})
+q_{k+1} + \alpha_{k+1} m_k$ (9.5.1), a convex combination of the local models. After the last
+accepted step the local model stays fixed, and the memory error decays like the product of the
+weights since that step (Theorem 9.5.1). If the weights are bounded by a power of the radius and the
+radius cannot drop by more than a fixed factor per iteration, a fixed number of recent weights makes
+the memory error quadratic in the radius (Theorem 9.5.2). The run of Algorithm 9.1.1 is
+`ConnGouldToint.Chapter09.ConditionalRadiusRun` from
+`NumlibSurface.ConnGouldToint.Chapter09.Section02`, and the local error bound comes from Theorem
+6.4.1 in `NumlibSurface.ConnGouldToint.Chapter06.Section04`.
+
+## Main definitions
+
+* Equation (9.5.1), `ConnGouldToint.Chapter09.memoryModel`: the memory model built from local models
+  and weights.
+
+## Main results
+
+* Equation (9.5.2), `ConnGouldToint.Chapter09.memoryModel_eq_sum`: the memory model as a weighted
+  sum of the local models.
+* Equation (9.5.3), `ConnGouldToint.Chapter09.memoryModel_sub_local_eq_prod`: after the last
+  accepted step, the memory error is the earlier error times the product of the intervening weights.
+* Theorem 9.5.1, `ConnGouldToint.Chapter09.theorem_9_5_1`: the memory error after a block with a
+  fixed center decays geometrically.
+* Equation (9.5.16), `ConnGouldToint.Chapter09.ConditionalRadiusRun.radius_next_ge_factor`: the
+  corrected radius update satisfies $\gamma_1 \Delta_k \le \Delta_{k+1}$.
+* Equation (9.5.16), `ConnGouldToint.Chapter09.memoryWeight_le_radius_rpow`: the step-size
+  restriction AM.10 bounds a weight by a power of the next radius.
+* Theorem 9.5.2, `ConnGouldToint.Chapter09.memoryProduct_le_radius_sq`: a fixed number of recent
+  weights has product of order $\Delta_k^2$.
+* Theorem 9.5.2, `ConnGouldToint.Chapter09.theorem_9_5_2`: after enough rejected steps, the memory
+  model has error of order $\Delta_k^2$.
+* Theorem 9.5.2, `ConnGouldToint.Chapter09.theorem_9_5_2_of_conditional_run`: the same conclusion
+  for a run of Algorithm 9.1.1 under AM.10, AM.11 and AN.1.
+
+## Conventions
+
+* Products such as $\prod_{j=t+1}^{k} \alpha_j$ run over the integers $j$ with $t < j \le k$, and
+  are $1$ when $t = k$.
+
+## Deviations from the source
+
+* **Theorem 9.5.2** (correction). The memory estimate uses the bound on the past local models at the
+  last accepted center. The product of recent weights is controlled by the lower radius factor
+  $\gamma \Delta_k \le \Delta_{k+1}$ of adjacent iterations, so that the radii can vary during a
+  block of rejected iterations. See `ConnGouldToint.Chapter09.theorem_9_5_2`.
+-/
 
 namespace ConnGouldToint.Chapter09
 
 variable {E : Type*}
 
-/-- The memory model (9.5.1), with the initial model equal to the initial local model. -/
+/-- **Equation (9.5.1)** of [conn2000trust]. Given local models $q_k : E \to \mathbb{R}$ and weights
+$\alpha_k \in \mathbb{R}$, the **memory model** is defined by $m_0 = q_0$ and
+$$m_{k+1}(z) = (1 - \alpha_{k+1}) q_{k+1}(z) + \alpha_{k+1} m_k(z).$$
+
+The initial memory model is the initial local model. -/
 noncomputable def memoryModel (q : ℕ → E → ℝ) (α : ℕ → ℝ) : ℕ → E → ℝ
   | 0 => q 0
   | k + 1 => fun z ↦ (1 - α (k + 1)) * q (k + 1) z + α (k + 1) * memoryModel q α k z
 
-/-- The unrolled formula (9.5.2) for the memory model. -/
+/-- **Equation (9.5.2)** of [conn2000trust]. If $\alpha_0 = 0$, then for every $k$ and $z$
+$$m_k(z) = \sum_{i=0}^{k} (1 - \alpha_i) \Big(\prod_{j=i+1}^{k} \alpha_j\Big) q_i(z).$$
+-/
 theorem memoryModel_eq_sum (q : ℕ → E → ℝ) (α : ℕ → ℝ) (hα₀ : α 0 = 0) (k : ℕ) (z : E) :
     memoryModel q α k z = ∑ i ∈ Finset.range (k + 1),
       (1 - α i) * (∏ j ∈ Finset.Ioc i k, α j) * q i z := by
@@ -35,8 +90,12 @@ theorem memoryModel_eq_sum (q : ℕ → E → ℝ) (α : ℕ → ℝ) (hα₀ : 
     rw [Finset.prod_Ioc_succ_top (Nat.le_of_lt_succ (Finset.mem_range.mp hi))]
     ring
 
-/-- After the last accepted step, the local model stays fixed. The remaining
-memory error is the initial error multiplied by exactly the intervening weights. -/
+/-- **Equation (9.5.3)** of [conn2000trust], the memory error identity. Let $t \le k$, $z \in E$ and
+$v \in \mathbb{R}$ with $q_j(z) = v$ for all $j$ with $t < j \le k$. Then
+$$m_k(z) - v = \Big(\prod_{j=t+1}^{k} \alpha_j\Big) (m_t(z) - v).$$
+
+After the last accepted step $t$ the local model stays fixed, and the remaining memory error is
+the error at $t$ multiplied by exactly the intervening weights. -/
 theorem memoryModel_sub_local_eq_prod (q : ℕ → E → ℝ) (α : ℕ → ℝ)
     {t k : ℕ} (ht : t ≤ k) {z : E} {v : ℝ} (hq : ∀ j, t < j → j ≤ k → q j z = v) :
     memoryModel q α k z - v =
@@ -68,9 +127,13 @@ private theorem abs_memoryModel_le (q : ℕ → E → ℝ) (α : ℕ → ℝ)
           (sub_nonneg.mpr (hα (k + 1)).2)) (mul_le_mul_of_nonneg_left hprev (hα (k + 1)).1)
       _ = B := by ring
 
-/-- Theorem 9.5.1. The memory error after a fixed-center block decays
-geometrically. The constant (B) bounds the earlier local models and the
-new fixed local model at the point under consideration. -/
+/-- **Theorem 9.5.1** of [conn2000trust]. Let $t < k$, $z \in E$, $B \in \mathbb{R}$ and $a \ge 0$.
+Let $0 \le \alpha_j \le 1$ for all $j$, and $\alpha_j \le a$ for $t < j \le k$. Suppose that
+$|q_j(z)| \le B$ for all $j \le t$, that $|q_k(z)| \le B$, and that $q_j(z) = q_k(z)$ for
+$t < j \le k$. Then
+$$|m_k(z) - q_k(z)| \le 2 B a^{k - t}.$$
+
+The constant $B$ bounds the earlier local models and the new fixed local model at the point $z$. -/
 theorem theorem_9_5_1 (q : ℕ → E → ℝ) (α : ℕ → ℝ)
     {t k : ℕ} (ht : t < k) {z : E} {B a : ℝ} (ha : 0 ≤ a)
     (hα : ∀ j, 0 ≤ α j ∧ α j ≤ 1)
@@ -91,8 +154,10 @@ theorem theorem_9_5_1 (q : ℕ → E → ℝ) (α : ℕ → ℝ)
       mul_le_mul hprod herr (abs_nonneg _) (by positivity)
     _ = _ := by ring
 
-/-- The corrected conditional radius update satisfies the adjacent lower
-factor required in (9.5.16). -/
+/-- **Equation (9.5.16)** of [conn2000trust], adjacent radius factor. Let a conditional radius run
+with the corrected update be given, with $0 < \gamma_1 \le 1$, and suppose that
+$\rho_k \ge \eta_1$ implies $\hat{\rho}_k \ge \eta_0$ for every $k$. Then
+$\gamma_1 \Delta_k \le \Delta_{k+1}$ for every $k$. -/
 theorem ConditionalRadiusRun.radius_next_ge_factor {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (hγ : 0 < γ₁) (hγ₁ : γ₁ ≤ 1)
     (haccept : ∀ k, η₁ ≤ run.raw k → η₀ ≤ run.selected k) (k : ℕ) :
@@ -107,8 +172,14 @@ theorem ConditionalRadiusRun.radius_next_ge_factor {η₀ η₁ γ₁ γ₂ : �
       rwa [run.ref_reset k (Or.inr hv)] at hnext
     · rwa [run.invalid_update k (lt_of_not_ge h) hv not_false]
 
-/-- The step-size restriction in AM.10 yields the radius bound (9.5.16)
-under the adjacent lower update factor. -/
+/-- **Equation (9.5.16)** of [conn2000trust]. Let $\Delta' \ge 0$, $s \ge 0$, $\kappa \ge 0$,
+$K \ge 0$, $\gamma > 0$ and $\psi \ge 0$. Suppose that $s \le K \Delta$,
+$\gamma \Delta \le \Delta'$, $\alpha \le \kappa s^\psi$ and $\kappa (K / \gamma)^\psi \le 1$.
+Then $\alpha \le (\Delta')^\psi$.
+
+The hypothesis $\alpha \le \kappa s^\psi$ is the step-size restriction of AM.10, and
+$\gamma \Delta \le \Delta'$ is the lower update factor of adjacent radii. The powers are real
+powers `Real.rpow`. -/
 theorem memoryWeight_le_radius_rpow {α Δ Δ' s κ K γ ψ : ℝ}
     (hΔ' : 0 ≤ Δ') (hs : 0 ≤ s)
     (hκ : 0 ≤ κ) (hK : 0 ≤ K) (hγ : 0 < γ) (hψ : 0 ≤ ψ)
@@ -129,8 +200,14 @@ theorem memoryWeight_le_radius_rpow {α Δ Δ' s κ K γ ψ : ℝ}
       rw [Real.mul_rpow (div_nonneg hK hγ.le) hΔ', mul_assoc]
     _ ≤ _ := mul_le_of_le_one_left (Real.rpow_nonneg hΔ' _) hscale
 
-/-- A fixed number of recent memory factors suffices for a quadratic
-error bound. The radius may vary throughout the rejected block. -/
+/-- **Theorem 9.5.2** of [conn2000trust], bound on the memory factor. Let $0 < \gamma \le 1$ and
+$\psi > 0$. Let $\Delta_k > 0$ with $\gamma \Delta_k \le \Delta_{k+1}$, and let
+$0 \le \alpha_k \le 1$ with $\alpha_k \le \Delta_k^\psi$, for all $k$. Then there are
+$p \in \mathbb{N}$ and $C > 0$ such that for all $t, k$ with $t + p \le k$,
+$$\prod_{j=t+1}^{k} \alpha_j \le C \Delta_k^2.$$
+
+**Correction.** The bound uses only the lower factor of adjacent radii, so the radius may vary
+during the block of rejected iterations. -/
 theorem memoryProduct_le_radius_sq {α Δ : ℕ → ℝ} {γ ψ : ℝ}
     (hγ : 0 < γ) (hγ₁ : γ ≤ 1) (hψ : 0 < ψ)
     (hΔ : ∀ k, 0 < Δ k) (hstep : ∀ k, γ * Δ k ≤ Δ (k + 1))
@@ -190,10 +267,21 @@ theorem memoryProduct_le_radius_sq {α Δ : ℕ → ℝ} {γ ψ : ℝ}
     have hsq : 1 ≤ (Δ k) ^ 2 := by nlinarith [le_of_not_ge hsmall, sq_nonneg (Δ k - 1)]
     exact hprod.trans (hsq.trans (le_mul_of_one_le_left (sq_nonneg _) (le_max_left _ _)))
 
-/-- Corrected Theorem 9.5.2. The current local model has quadratic accuracy,
-and after sufficiently many rejected steps the memory term has the same
-order. The radius hypothesis is the adjacent lower update factor, which
-allows varying radii during the rejection block. -/
+/-- **Theorem 9.5.2** of [conn2000trust]. Let $f : E \to \mathbb{R}$, local models $q_k$, weights
+$\alpha_k$ and radii $\Delta_k$ be given, with $0 < \gamma \le 1$, $\psi > 0$, $A \ge 0$ and
+$B \ge 0$. Suppose that for all $k$, $\Delta_k > 0$, $\gamma \Delta_k \le \Delta_{k+1}$,
+$0 \le \alpha_k \le 1$ and $\alpha_k \le \Delta_k^\psi$. Let $t \in \mathbb{N}$ and let
+$R_k \subseteq E$ be regions with $|f(z) - q_k(z)| \le A \Delta_k^2$ for all $k$ and
+$z \in R_k$. Suppose that for every $k > t$ and $z \in R_k$, $|q_j(z)| \le B$ for $j \le t$,
+$|q_k(z)| \le B$, and $q_j(z) = q_k(z)$ for $t < j \le k$. Then there are $p \in \mathbb{N}$ and
+$C > 0$ such that for all $k > t$ with $k \ge t + p$ and all $z \in R_k$,
+$$|f(z) - m_k(z)| \le C \Delta_k^2.$$
+
+**Correction.** The radius hypothesis is the lower factor $\gamma \Delta_k \le \Delta_{k+1}$ of
+adjacent radii, which allows the radii to vary during the block of rejected iterations.
+
+The current local model has quadratic accuracy, and after enough rejected iterations the memory
+term has the same order. -/
 theorem theorem_9_5_2 (f : E → ℝ) (q : ℕ → E → ℝ) {α Δ : ℕ → ℝ}
     {γ ψ A B : ℝ} (hγ : 0 < γ) (hγ₁ : γ ≤ 1) (hψ : 0 < ψ) (hA : 0 ≤ A) (hB : 0 ≤ B)
     (hΔ : ∀ k, 0 < Δ k) (hstep : ∀ k, γ * Δ k ≤ Δ (k + 1))
@@ -225,8 +313,37 @@ theorem theorem_9_5_2 (f : E → ℝ) (q : ℕ → E → ℝ) {α Δ : ℕ → �
     _ ≤ _ := by nlinarith [sq_nonneg (Δ k)]
 
 open Chapter06 in
-/-- The conditional-run form of Theorem 9.5.2. The local model depends only
-on its center, and the norm comparison transfers step feasibility to AM.10. -/
+/-- **Theorem 9.5.2** of [conn2000trust], for a run of Algorithm 9.1.1. Let $F$ be a real normed
+space and let $f : F \to \mathbb{R}$ be twice continuously differentiable with
+$\|\nabla^2 f(z)\| \le \kappa_f$ for all $z$. For each center $c$ let $q(c) : F \to \mathbb{R}$
+be a local model. Let centers $x_k$, steps $s_k$, trust-region seminorms $p_k$ and weights
+$\alpha_k$ be given, together with a conditional radius run with the corrected update. Let
+$0 < \gamma_1 \le 1$, $K \ge 0$, $\kappa \ge 0$, $\psi > 0$, $B \ge 0$ and $\kappa_m \ge 1$.
+Suppose that for every $k$:
+
+* $\rho_k \ge \eta_1$ implies $\hat{\rho}_k \ge \eta_0$;
+* $p_k(v) = 0$ only for $v = 0$, and $\|v\| \le K p_k(v)$ for all $v$ (AN.1);
+* $p_k(s_k) \le \Delta_k$;
+* $0 \le \alpha_k \le 1$, $\alpha_0 = 0$, and $\alpha_{k+1} \le \kappa \|s_k\|^\psi$ (AM.10),
+  with $\kappa (K / \gamma_1)^\psi \le 1$;
+* $q(x_k)$ is twice continuously differentiable, $q(x_k)(x_k) = f(x_k)$,
+  $\nabla q(x_k)(x_k) = \nabla f(x_k)$, and $\|\nabla^2 q(x_k)(z)\| \le \kappa_m - 1$ on the
+  ball $\{z : p_k(z - x_k) \le \Delta_k\}$.
+
+Let $t \in \mathbb{N}$ with $x_k = x_{t+1}$ for all $k > t$, and suppose that
+$|q(x_j)(z)| \le B$ for all $k > t$, all $z$ in the ball of iteration $k$ and all $j \le t + 1$.
+Then there are $n \in \mathbb{N}$ and $C > 0$ such that for all $k > t$ with $k \ge t + n$ and
+all $z$ in the ball of iteration $k$,
+$$|f(z) - m_k(z)| \le C \Delta_k^2,$$
+where $m_k$ is the memory model (9.5.1) of the local models $q(x_j)$.
+
+**Correction.** As in `ConnGouldToint.Chapter09.theorem_9_5_2`, the memory estimate uses the
+bound on the past local models at the last accepted center and the lower factor of adjacent
+radii.
+
+The local model depends only on its center. The norm comparison turns the trust-region bound on
+the steps into the step-size condition of AM.10. The local error bound is Theorem 6.4.1
+(`ConnGouldToint.Chapter06.theorem_6_4_1`). -/
 theorem theorem_9_5_2_of_conditional_run {F : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] {f : F → ℝ} (hf : ContDiff ℝ 2 f)
     (q : F → F → ℝ) (x s : ℕ → F) (p : ℕ → Seminorm ℝ F) (α : ℕ → ℝ)

@@ -12,35 +12,146 @@ import Mathlib.LinearAlgebra.Matrix.Block
 import Mathlib.RingTheory.MvPolynomial.Basic
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
-/-! # Newton fundamental polynomials and interpolation -/
+/-!
+# Conn, Gould and Toint, Section 9.4: Newton interpolation models
+
+This module formalizes the Newton interpolation models of Section 9.4 of [conn2000trust], which give
+conditional models without derivatives. The interpolation points are grouped into blocks
+$y_{l,1}, \dots, y_{l,n_l}$, for $l = 0, 1, \dots$, and each point $y_{l,i}$ has a fundamental
+function $N_{l,i}$. The family is a **Newton fundamental family** up to degree $d$ (9.4.4) if
+$N_{l,i}(y_{l,j}) = \delta_{ij}$ and $N_{l,i}$ vanishes on all points of earlier blocks. The
+generalized finite differences are $\lambda_0 = f$ and
+$$\lambda_{l+1}(x) = \lambda_l(x) - \sum_i \lambda_l(y_{l,i}) N_{l,i}(x) \qquad (9.4.8),$$
+and the Newton model (9.4.9) is $m(x) = \sum_{l=0}^{d} \sum_i \lambda_l(y_{l,i}) N_{l,i}(x)$. The
+model interpolates $f$ at all points (Theorem 9.4.1), and Algorithm 9.4.2 computes its coefficients
+from the function values. The module also formalizes the interpolation matrix (9.4.3), the
+elimination with pivots of Algorithm 9.4.1 (Theorem 9.4.2), a bounded graded Newton family on a
+Euclidean ball (Theorem 9.4.3), and a model error bound for Theorem 9.4.4.
+
+## Main definitions
+
+* Equation (9.4.4), `ConnGouldToint.Chapter09.IsNewtonFundamentalFamily`: the Newton conditions on
+  the blocks up to degree $d$.
+* Equation (9.4.8), `ConnGouldToint.Chapter09.generalizedFiniteDifference`: the generalized finite
+  differences $\lambda_l$.
+* Equation (9.4.13), `ConnGouldToint.Chapter09.newtonInterpolationCoefficient`: the coefficient
+  $\lambda_l(y_{l,i})$.
+* Algorithm 9.4.2, `ConnGouldToint.Chapter09.newtonDifferenceTable`: the table of values after $k$
+  passes of the algorithm.
+* Algorithm 9.4.2, `ConnGouldToint.Chapter09.algorithm_9_4_2`: the table after $d$ passes on the
+  blocks $0, \dots, d$.
+* Equation (9.4.9), `ConnGouldToint.Chapter09.newtonInterpolationModel`: the Newton interpolation
+  model of degree $d$.
+* Equation (9.4.3), `ConnGouldToint.Chapter09.interpolationMatrix`: the matrix of the interpolation
+  equations.
+* Equation (9.4.3), `ConnGouldToint.Chapter09.IsPoised`: the interpolation matrix has nonzero
+  determinant.
+* Algorithm 9.4.1, `ConnGouldToint.Chapter09.interpolationPivots`: the list of pivots of the
+  elimination with a given row selector.
+* Equation (9.4.7), `ConnGouldToint.Chapter09.HasPivotThreshold`: every pivot has absolute value at
+  least $\theta > 0$.
+
+## Main results
+
+* Algorithm 9.4.2, `ConnGouldToint.Chapter09.newtonDifferenceTable_eq_finiteDifference`: after $k$
+  passes, the table holds the finite differences of order $\min\{k, l\}$.
+* Algorithm 9.4.2, `ConnGouldToint.Chapter09.algorithm_9_4_2_eq_coefficient`: the algorithm returns
+  the coefficients (9.4.13).
+* Equation (9.4.11), `ConnGouldToint.Chapter09.generalizedFiniteDifference_eq_sub_sum`: $\lambda_j$
+  is $f$ minus the partial Newton model.
+* Theorem 9.4.1, `ConnGouldToint.Chapter09.theorem_9_4_1`: the Newton model interpolates $f$ at all
+  points of the blocks up to degree $d$.
+* Algorithm 9.4.2, `ConnGouldToint.Chapter09.algorithm_9_4_2_interpolates`: the model with the
+  computed coefficients interpolates $f$.
+* `ConnGouldToint.Chapter09.generalizedFiniteDifference_sub`: the finite differences are linear in
+  $f$.
+* `ConnGouldToint.Chapter09.abs_generalizedFiniteDifference_le`: uniform bounds on $f$ and on the
+  fundamental functions bound the finite differences.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.theorem_9_4_4_of_uniform_newton_bound`: a model that
+  reproduces affine functions, with uniformly bounded fundamental functions on the ball, has error
+  of order $\delta^2$.
+* Equation (9.4.5), `ConnGouldToint.Chapter09.signedPivotNormalization_at_pivot`: division by the
+  signed pivot gives the value $1$ at the pivot point.
+* Equation (9.4.5), `ConnGouldToint.Chapter09.absolutePivotNormalization_counterexample`: division
+  by the absolute value of a negative pivot does not give $1$.
+* Equation (9.4.6), `ConnGouldToint.Chapter09.newtonElimination_at_pivot`: the update makes the
+  other functions vanish at the pivot point.
+* Theorem 9.4.2, `ConnGouldToint.Chapter09.theorem_9_4_2`: the interpolation set is poised if and
+  only if all pivots are nonzero.
+* Algorithm 9.4.1, `ConnGouldToint.Chapter09.exists_maxMagnitudePivotSelector`: a row selector of
+  maximal magnitude exists.
+* Theorem 9.4.3, `ConnGouldToint.Chapter09.theorem_9_4_3`: a lattice in a Euclidean ball carries a
+  graded Newton family of polynomials with a uniform bound.
+* Theorem 9.4.3, `ConnGouldToint.Chapter09.theorem_9_4_3_basis`: this family is a basis of the
+  polynomials of total degree at most $d$.
+
+## Implementation notes
+
+* The fundamental functions $N_{l,i}$ are arbitrary functions $E \to \mathbb{R}$. Theorem 9.4.1 and
+  Algorithm 9.4.2 use only the evaluation identities (9.4.4), so they also apply to basis functions
+  that are not polynomials.
+* Block $l$ has $n_l$ points, indexed by `Fin (n l)`, and the blocks are indexed by all of
+  $\mathbb{N}$. The degree $d$ selects the blocks $0, \dots, d$.
+* Theorem 9.4.3 is proved by an explicit construction. The points are the multi-indices of total
+  degree at most $d$, scaled by $\delta / (d + 1)$ and shifted to the center, and the polynomials
+  are products of one-dimensional Lagrange factors.
+
+## Deviations from the source
+
+* **Equation (9.4.5)** (correction). The normalization divides by the signed pivot, so that the
+  diagonal value is $1$. Division by the absolute value fails for a negative pivot. See
+  `ConnGouldToint.Chapter09.absolutePivotNormalization_counterexample`.
+* **Equation (9.4.6)** (correction). The update is applied after the normalization (9.4.5), so that
+  it makes the other functions vanish at the pivot point. See
+  `ConnGouldToint.Chapter09.newtonElimination_at_pivot`.
+* **Theorem 9.4.4** (correction). The model error bound uses affine reproduction and uniform bounds
+  on all Newton blocks on the ball. The bounds on adjacent blocks and on the last block do not
+  suffice: an incomplete quadratic example with five points violates (9.4.21) for every uniform
+  constant. See `ConnGouldToint.Chapter09.theorem_9_4_4_of_uniform_newton_bound` and
+  `ConnGouldToint.Chapter09.theorem_9_4_4_incompleteQuadratic_counterexample`.
+-/
 
 namespace ConnGouldToint.Chapter09
 
 variable {E : Type*} {n : ℕ → ℕ}
 
-/-- The Newton conditions (9.4.4) on the block-indexed interpolation points.
-A later block vanishes on earlier points, and each diagonal block is the identity. -/
+/-- **Equation (9.4.4)** of [conn2000trust]. Let blocks of points $y_{l,i} \in E$ and functions
+$N_{l,i} : E \to \mathbb{R}$ be given, for $l \in \mathbb{N}$ and $1 \le i \le n_l$, and let
+$d \in \mathbb{N}$. They form a **Newton fundamental family** up to degree $d$ if for all
+$l \le d$:
+
+* $N_{l,i}(y_{l,j}) = 1$ if $i = j$ and $0$ otherwise, and
+* $N_{l,i}(y_{j,k}) = 0$ for every earlier block $j < l$ and all $i, k$. -/
 def IsNewtonFundamentalFamily (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) (d : ℕ) : Prop :=
   (∀ l ≤ d, ∀ i j, N l i (y l j) = if i = j then 1 else 0) ∧
   ∀ l ≤ d, ∀ j < l, ∀ i k, N l i (y j k) = 0
 
-/-- Generalized finite differences (9.4.8). -/
+/-- **Equation (9.4.8)** of [conn2000trust]. Given $f : E \to \mathbb{R}$, points $y_{l,i}$ and
+functions $N_{l,i}$, the **generalized finite differences** are $\lambda_0 = f$ and
+$$\lambda_{l+1}(x) = \lambda_l(x) - \sum_{i=1}^{n_l} \lambda_l(y_{l,i}) N_{l,i}(x).$$
+-/
 noncomputable def generalizedFiniteDifference (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) : ℕ → E → ℝ
   | 0 => f
   | l + 1 => fun x ↦ generalizedFiniteDifference f y N l x -
       ∑ i, generalizedFiniteDifference f y N l (y l i) * N l i x
 
-/-- The Newton coefficient at a block node, as in (9.4.13). -/
+/-- **Equation (9.4.13)** of [conn2000trust]. The **Newton coefficient** at the point $y_{l,i}$ is
+the generalized finite difference $\lambda_l(y_{l,i})$ (9.4.8). -/
 noncomputable def newtonInterpolationCoefficient (f : E → ℝ)
     (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ)
     (l : ℕ) (i : Fin (n l)) : ℝ :=
   generalizedFiniteDifference f y N l (y l i)
 
-/-- The nodal table of Algorithm 9.4.2 after `k` passes. Pass `k + 1`
-uses the finished block `k` to update every later block, leaving the finished
-entries unchanged. Only the function values at the supplied nodes are used. -/
+/-- **Algorithm 9.4.2** of [conn2000trust], Steps 0–1. Given values $v_{l,i} \in \mathbb{R}$, points
+$y_{l,i}$ and functions $N_{l,i}$, the **difference table** after $k$ passes is defined by
+$T_0(l, i) = v_{l,i}$ and
+$$T_{k+1}(l, i) = \begin{cases} T_k(l, i) - \sum_j T_k(k, j) N_{k,j}(y_{l,i}) & \text{if } k <
+  l, \\ T_k(l, i) & \text{otherwise.} \end{cases}$$
+
+Pass $k + 1$ uses the finished block $k$ to update every later block, and leaves the finished
+blocks unchanged. The table uses only the values at the given points. -/
 noncomputable def newtonDifferenceTable
     (values : (l : ℕ) → Fin (n l) → ℝ) (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) :
@@ -52,8 +163,11 @@ noncomputable def newtonDifferenceTable
           ∑ j, newtonDifferenceTable values y N k k j * N k j (y l i)
       else newtonDifferenceTable values y N k l i
 
-/-- At pass `k`, later rows contain the order-`k` residual values and the
-finished rows retain their generalized finite differences. -/
+/-- **Algorithm 9.4.2** of [conn2000trust], loop invariant. If the input values are
+$v_{l,i} = f(y_{l,i})$, then after $k$ passes
+$$T_k(l, i) = \lambda_{\min\{k, l\}}(y_{l,i}).$$
+So the later blocks hold the residuals of order $k$, and the finished blocks keep their
+generalized finite differences. -/
 theorem newtonDifferenceTable_eq_finiteDifference (f : E → ℝ)
     (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ)
     (k l : ℕ) (i : Fin (n l)) :
@@ -70,15 +184,19 @@ theorem newtonDifferenceTable_eq_finiteDifference (f : E → ℝ)
       simp only [newtonDifferenceTable, ite_eq_right h, ih,
         min_eq_right hle, min_eq_right (hle.trans (Nat.le_succ _))]
 
-/-- Algorithm 9.4.2 returns the table on the blocks of degrees zero through
-`d`, after `d` passes. -/
+/-- **Algorithm 9.4.2** of [conn2000trust]. Given values $v_{l,i}$, points $y_{l,i}$, functions
+$N_{l,i}$ and a degree $d$, the algorithm returns the difference table $T_d(l, i)$ after $d$
+passes, on the blocks $l = 0, \dots, d$. -/
 noncomputable def algorithm_9_4_2 (values : (l : ℕ) → Fin (n l) → ℝ)
     (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ)
     (d : ℕ) (l : Fin (d + 1)) (i : Fin (n l)) : ℝ :=
   newtonDifferenceTable values y N d l i
 
-/-- The returned table gives exactly the coefficients of (9.4.13).
-This computation is valid for every input table of objective values. -/
+/-- **Algorithm 9.4.2** of [conn2000trust], output. If the input values are $f(y_{l,i})$, the
+algorithm returns the Newton coefficients (9.4.13): $T_d(l, i) = \lambda_l(y_{l,i})$ for all
+$l \le d$ and all $i$.
+
+The identity holds for every $f$, points and functions, without the Newton conditions (9.4.4). -/
 theorem algorithm_9_4_2_eq_coefficient (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) (d : ℕ) (l : Fin (d + 1)) (i : Fin (n l)) :
     algorithm_9_4_2 (fun j a ↦ f (y j a)) y N d l i =
@@ -86,12 +204,17 @@ theorem algorithm_9_4_2_eq_coefficient (f : E → ℝ) (y : (l : ℕ) → Fin (n
   rw [algorithm_9_4_2, newtonDifferenceTable_eq_finiteDifference,
     min_eq_right (Nat.le_of_lt_succ l.isLt), newtonInterpolationCoefficient]
 
-/-- The interpolating model (9.4.9) in the supplied block basis. -/
+/-- **Equation (9.4.9)** of [conn2000trust]. The **Newton interpolation model** of degree $d$ for
+$f$ is
+$$m(x) = \sum_{l=0}^{d} \sum_{i=1}^{n_l} \lambda_l(y_{l,i}) N_{l,i}(x),$$
+with the Newton coefficients (9.4.13) and the given functions $N_{l,i}$. -/
 noncomputable def newtonInterpolationModel (f : E → ℝ)
     (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ) (d : ℕ) (x : E) : ℝ :=
   ∑ l ∈ Finset.range (d + 1), ∑ i, newtonInterpolationCoefficient f y N l i * N l i x
 
-/-- Telescoping the finite-difference recursion gives (9.4.11). -/
+/-- **Equation (9.4.11)** of [conn2000trust]. For every $x \in E$ and $j \in \mathbb{N}$,
+$$\lambda_j(x) = f(x) - \sum_{l=0}^{j-1} \sum_{i=1}^{n_l} \lambda_l(y_{l,i}) N_{l,i}(x).$$
+This follows from the recursion (9.4.8) by telescoping. -/
 theorem generalizedFiniteDifference_eq_sub_sum (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) (x : E) (j : ℕ) :
     generalizedFiniteDifference f y N j x =
@@ -102,9 +225,12 @@ theorem generalizedFiniteDifference_eq_sub_sum (f : E → ℝ) (y : (l : ℕ) �
     simp only [generalizedFiniteDifference, Finset.sum_range_succ, sub_add_eq_sub_sub]
     rw [ih]
 
-/-- Theorem 9.4.1. The generalized Newton model interpolates the data on
-all included blocks. The argument uses the evaluation identities of the
-fundamental polynomials and also applies to basis functions with those identities. -/
+/-- **Theorem 9.4.1** of [conn2000trust]. If the points $y_{l,i}$ and the functions $N_{l,i}$ form a
+Newton fundamental family up to degree $d$ (9.4.4), then the Newton model (9.4.9) interpolates
+$f$: $m(y_{j,k}) = f(y_{j,k})$ for all $j \le d$ and all $k$.
+
+The proof uses only the evaluation identities (9.4.4), so it applies to any functions $N_{l,i}$
+with these identities. -/
 theorem theorem_9_4_1 (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) {d : ℕ} (hN : IsNewtonFundamentalFamily y N d) :
     ∀ j ≤ d, ∀ k, newtonInterpolationModel f y N d (y j k) = f (y j k) := by
@@ -135,8 +261,12 @@ theorem theorem_9_4_1 (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
   rw [generalizedFiniteDifference_eq_sub_sum f y N (y j k) j]
   ring
 
-/-- With the Newton identities, the coefficients returned by Algorithm 9.4.2
-give an interpolating model on the nodes of every included block. -/
+/-- **Algorithm 9.4.2** of [conn2000trust], interpolation. If the points and functions form a Newton
+fundamental family up to degree $d$, the coefficients $T_d(j, a)$ returned for the values
+$f(y_{j,a})$ give an interpolating model:
+$$\sum_{j=0}^{d} \sum_a T_d(j, a) N_{j,a}(y_{l,i}) = f(y_{l,i}) \quad \text{for all } l \le d
+  \text{ and all } i.$$
+-/
 theorem algorithm_9_4_2_interpolates (f : E → ℝ) (y : (l : ℕ) → Fin (n l) → E)
     (N : (l : ℕ) → Fin (n l) → E → ℝ) {d : ℕ} (hN : IsNewtonFundamentalFamily y N d)
     (l : Fin (d + 1)) (i : Fin (n l)) :
@@ -147,7 +277,9 @@ theorem algorithm_9_4_2_interpolates (f : E → ℝ) (y : (l : ℕ) → Fin (n l
     (fun j ↦ ∑ a, newtonInterpolationCoefficient f y N j a * N j a (y l i))]
   exact theorem_9_4_1 f y N hN l (Nat.le_of_lt_succ l.isLt) i
 
-/-- Generalized finite differences are linear in the supplied values. -/
+/-- The generalized finite differences (9.4.8) are linear in the function: for
+$f, g : E \to \mathbb{R}$, the difference of order $j$ of $f - g$ is the difference of order $j$
+of $f$ minus that of $g$. -/
 theorem generalizedFiniteDifference_sub (f g : E → ℝ)
     (y : (l : ℕ) → Fin (n l) → E) (N : (l : ℕ) → Fin (n l) → E → ℝ)
     (j : ℕ) (x : E) :
@@ -159,8 +291,11 @@ theorem generalizedFiniteDifference_sub (f g : E → ℝ)
     simp only [generalizedFiniteDifference, ih, sub_mul, Finset.sum_sub_distrib]
     ring
 
-/-- Uniform bounds on the Newton blocks bound the residual at each level by
-the initial uniform bound times the product of the level factors. -/
+/-- Let $S \subseteq E$, $B \ge 0$ and $K \ge 0$, with $|f(z)| \le B$ for all $z \in S$. Suppose
+that for all $l < j$ the points $y_{l,i}$ lie in $S$ and $|N_{l,i}(z)| \le K$ for all $z \in S$.
+Then for every $x \in S$,
+$$|\lambda_j(x)| \le B \prod_{l=0}^{j-1} (1 + n_l K).$$
+-/
 theorem abs_generalizedFiniteDifference_le {f : E → ℝ}
     {y : (l : ℕ) → Fin (n l) → E} {N : (l : ℕ) → Fin (n l) → E → ℝ}
     {S : Set E} {B K : ℝ} (hB : 0 ≤ B) (hK : 0 ≤ K)
@@ -195,10 +330,24 @@ theorem abs_generalizedFiniteDifference_le {f : E → ℝ}
       _ ≤ P + (n j : ℝ) * (P * K) := add_le_add (hb x hx) hsum
       _ = _ := by rw [Finset.prod_range_succ]; dsimp [P]; ring
 
-/-- A model error bound for Theorem 9.4.4 using a uniform bound on every
-Newton block on the ball. Affine reproduction is the fully linear
-condition. Subtracting the affine Taylor polynomial makes the error
-quadratic in the radius without a bound on the objective gradient. -/
+/-- **Theorem 9.4.4** of [conn2000trust], form with uniform bounds on all blocks. Let $F$ be a real
+normed space and let $f : F \to \mathbb{R}$ be twice continuously differentiable. Let $x \in F$,
+$\delta \ge 0$, $B \ge 0$ and $K \ge 0$, with $\|\nabla^2 f(z)\| \le B$ on the ball
+$B(x, \delta)$. Suppose that for all $l \le d$ the points $y_{l,i}$ lie in the ball and
+$|N_{l,i}(z)| \le K$ for all $z$ in the ball. Suppose also that the Newton model of degree $d$
+reproduces affine functions: for every $a \in \mathbb{R}$ and continuous linear
+$A : F \to \mathbb{R}$, the model of $w \mapsto a + A(w - x)$ is the same function. Then for all
+$z$ in the ball
+$$|f(z) - m(z)| \le \left(\frac{B}{2} \prod_{l=0}^{d} (1 + n_l K)\right) \delta^2.$$
+
+**Correction.** This form uses uniform bounds on all Newton blocks on the ball. The printed
+bounds on adjacent blocks and on the last block do not control the model error. An incomplete
+quadratic example with five points satisfies them and violates (9.4.21) for every uniform
+constant; see `ConnGouldToint.Chapter09.theorem_9_4_4_incompleteQuadratic_counterexample`.
+
+Affine reproduction is the condition that the model is fully linear. The proof subtracts the
+affine Taylor polynomial at $x$, which makes the error quadratic in the radius without a bound
+on the gradient of $f$. -/
 theorem theorem_9_4_4_of_uniform_newton_bound {F : Type*}
     [NormedAddCommGroup F] [NormedSpace ℝ F] {f : F → ℝ}
     (hf : ContDiff ℝ 2 f) {x : F} {δ B K : ℝ} (hδ : 0 ≤ δ) (hB : 0 ≤ B) (hK : 0 ≤ K)
@@ -238,27 +387,40 @@ theorem theorem_9_4_4_of_uniform_newton_bound {F : Type*}
   rw [he f, he a, haffine (f x) (fderiv ℝ f x) z, sub_self, sub_zero] at hb
   exact hb.trans_eq (by ring)
 
-/-- The evaluation matrix of the interpolation equations (9.4.3). -/
+/-- **Equation (9.4.3)** of [conn2000trust]. For points $y_1, \dots, y_d \in E$ and functions
+$P_1, \dots, P_d : E \to \mathbb{R}$, the **interpolation matrix** is the $d \times d$ matrix
+with entries $P_j(y_i)$. -/
 def interpolationMatrix {d : ℕ} (y : Fin d → E) (P : Fin d → E → ℝ) :
     Matrix (Fin d) (Fin d) ℝ := fun i j ↦ P j (y i)
 
-/-- A square interpolation set is poised when its evaluation matrix is invertible. -/
+/-- **Equation (9.4.3)** of [conn2000trust], poisedness. A square interpolation set
+$y_1, \dots, y_d$ is **poised** for $P_1, \dots, P_d$ if its interpolation matrix has nonzero
+determinant. -/
 def IsPoised {d : ℕ} (y : Fin d → E) (P : Fin d → E → ℝ) : Prop :=
   (interpolationMatrix y P).det ≠ 0
 
-/-- Corrected normalization (9.4.5). Division by the signed pivot gives
-the unit diagonal required by the Newton conditions. -/
+/-- **Equation (9.4.5)** of [conn2000trust]. Let $N : E \to \mathbb{R}$ and $y \in E$ with
+$N(y) \neq 0$. The normalized function $x \mapsto N(x) / N(y)$ takes the value $1$ at $y$.
+
+**Correction.** The source divides by the absolute value of the pivot $N(y)$. This gives $-1$ at
+$y$ when $N(y) < 0$; see `ConnGouldToint.Chapter09.absolutePivotNormalization_counterexample`.
+Division by the signed pivot gives the unit diagonal of the Newton conditions (9.4.4). -/
 theorem signedPivotNormalization_at_pivot {N : E → ℝ} {y : E} (h : N y ≠ 0) :
     (fun x ↦ N x / N y) y = 1 :=
   div_self h
 
-/-- The corrected update (9.4.6) annihilates the other polynomials at the
-chosen point. The pivot polynomial has already been normalized. -/
+/-- **Equation (9.4.6)** of [conn2000trust]. Let $N, P : E \to \mathbb{R}$ and $y \in E$ with
+$N(y) = 1$. The updated function $x \mapsto P(x) - P(y) N(x)$ vanishes at $y$.
+
+**Correction.** The update is applied with the pivot function after its normalization (9.4.5),
+so that $N(y) = 1$. -/
 theorem newtonElimination_at_pivot {N P : E → ℝ} {y : E} (h : N y = 1) :
     (fun x ↦ P x - P y * N x) y = 0 := by
   simp [h]
 
-/-- A negative pivot refutes normalization by its absolute value in (9.4.5). -/
+/-- **Equation (9.4.5)** of [conn2000trust], counterexample to the normalization by the absolute
+value: $(-1) / |-1| \neq 1$. A negative pivot normalized by its absolute value does not give the
+value $1$ at the pivot point. -/
 theorem absolutePivotNormalization_counterexample : (-1 : ℝ) / |(-1 : ℝ)| ≠ 1 := by
   norm_num
 
@@ -297,8 +459,15 @@ private theorem det_eq_pivot_mul_det_remainder {d : ℕ}
     pow_zero, one_mul, Fin.succAbove_zero, h0, hR] at hdet
   simpa only [Matrix.det_mul, hL, one_mul] using hdet
 
-/-- The pivot list of the interpolation elimination. The row selector is
-applied to the remaining evaluation matrix after each elimination. -/
+/-- **Algorithm 9.4.1** of [conn2000trust], the list of pivots. Let a row selector choose a row of
+every square matrix of order $r + 1$. The pivots of a $d \times d$ matrix $A$ are defined
+recursively. For $d = 0$ the list is empty. For a matrix of order $d + 1$, swap row $0$ with the
+selected row to get $B$. The first pivot is $B_{00}$, and the remaining pivots are those of the
+$d \times d$ matrix with entries
+$$B_{i+1, j+1} - \frac{B_{i+1, 0}}{B_{00}} B_{0, j+1}.$$
+
+The row selector is applied again to each remaining matrix. The entries of the remaining matrix
+are $B_{i+1, j+1}$ when $B_{00} = 0$, because division by zero gives $0$ in Lean. -/
 noncomputable def interpolationPivots
     (chooseRow : (d : ℕ) → Matrix (Fin (d + 1)) (Fin (d + 1)) ℝ → Fin (d + 1)) :
     (d : ℕ) → Matrix (Fin d) (Fin d) ℝ → List ℝ
@@ -307,17 +476,21 @@ noncomputable def interpolationPivots
     let B := A.submatrix (Equiv.swap 0 (chooseRow d A)) id
     B 0 0 :: interpolationPivots chooseRow d (pivotRemainder B)
 
-/-- A pivot list is well poised at threshold `θ` when every pivot meets
-the positive lower bound (9.4.7). -/
+/-- **Equation (9.4.7)** of [conn2000trust]. A list of pivots **meets the threshold** $\theta$ if
+$\theta > 0$ and $|p| \ge \theta$ for every pivot $p$ in the list.
+
+This is the condition that the interpolation set is well poised at threshold $\theta$. -/
 def HasPivotThreshold (θ : ℝ) (pivots : List ℝ) : Prop :=
   0 < θ ∧ ∀ p ∈ pivots, θ ≤ |p|
 
-/-- Theorem 9.4.2. If the selector chooses a nonzero pivot whenever one
-is available, the interpolation matrix is invertible exactly when all
-pivots are nonzero.
-The row elimination uses the Schur complement of the normalized Newton
-column. Updating already processed columns within a block leaves the
-remaining pivots unchanged. -/
+/-- **Theorem 9.4.2** of [conn2000trust]. Let $y_1, \dots, y_d \in E$, let
+$P_1, \dots, P_d : E \to \mathbb{R}$, and let a row selector be given that picks a row with a
+nonzero entry in the first column whenever such a row exists. Then the interpolation set is
+poised if and only if every pivot of Algorithm 9.4.1 applied to the interpolation matrix is
+nonzero.
+
+Each elimination step takes the Schur complement of the normalized Newton column. Updating the
+columns already processed within a block does not change the remaining pivots. -/
 theorem theorem_9_4_2 {d : ℕ} (y : Fin d → E) (P : Fin d → E → ℝ)
     (chooseRow : (r : ℕ) → Matrix (Fin (r + 1)) (Fin (r + 1)) ℝ → Fin (r + 1))
     (hchoose : ∀ (r : ℕ) (A : Matrix (Fin (r + 1)) (Fin (r + 1)) ℝ),
@@ -352,7 +525,9 @@ theorem theorem_9_4_2 {d : ℕ} (y : Fin d → E) (P : Fin d → E → ℝ)
       simp [hp, hdet]
     · rw [det_eq_pivot_mul_det_remainder B hp, mul_ne_zero_iff]
 
-/-- Maximum-magnitude row selection is available at every pivot stage. -/
+/-- **Algorithm 9.4.1** of [conn2000trust], pivot choice. There is a row selector that picks, for
+every square matrix $A$, a row $r$ with $|A_{i0}| \le |A_{r0}|$ for all rows $i$. This selector
+satisfies the hypothesis of `ConnGouldToint.Chapter09.theorem_9_4_2`. -/
 theorem exists_maxMagnitudePivotSelector :
     ∃ chooseRow : (r : ℕ) → Matrix (Fin (r + 1)) (Fin (r + 1)) ℝ → Fin (r + 1),
       ∀ (r : ℕ) (A : Matrix (Fin (r + 1)) (Fin (r + 1)) ℝ) (i : Fin (r + 1)),
@@ -377,9 +552,20 @@ private theorem mvPolynomial_totalDegree_prod {ι J : Type*} (s : Finset J)
     rw [Finset.prod_insert hj, Finset.sum_insert hj,
       MvPolynomial.totalDegree_mul_of_isDomain hn₁ (Finset.prod_ne_zero_iff.mpr hn₂), ih hn₂]
 
-/-- Theorem 9.4.3. A simplex of coordinate lattice points in the ball admits
-a uniformly bounded Newton polynomial for every multi-index of degree at most
-`d`. Grouping these indices by total degree gives the blocks in (9.4.4). -/
+/-- **Theorem 9.4.3** of [conn2000trust], graded Newton family on a Euclidean ball. Let $\iota$ be a
+finite index set, let $x \in \mathbb{R}^\iota$ with the Euclidean norm, let $\delta > 0$ and
+$d \in \mathbb{N}$. For a multi-index $a \in \mathbb{N}^\iota$, write $|a| = \sum_i a_i$. Then
+there are points $y_a \in \mathbb{R}^\iota$ and real polynomials $P_a$ in the variables $\iota$,
+for $a \in \mathbb{N}^\iota$, such that
+
+* $y_0 = x$;
+* for $|a| \le d$, $y_a \in B(x, \delta)$ and $P_a$ has total degree $|a|$;
+* for all $a, b$ with $|b| \le |a|$, $P_a(y_b) = 1$ if $a = b$ and $0$ otherwise;
+* for $|a| \le d$ and all $z \in B(x, \delta)$, $|P_a(z)| \le (2(d + 1))^d$.
+
+Grouping the multi-indices by total degree gives the blocks of (9.4.4). The points form a
+simplex of coordinate lattice points with spacing $\delta / (d + 1)$, and each $P_a$ is a
+product of one-dimensional Lagrange factors. -/
 theorem theorem_9_4_3 {ι : Type*} [Fintype ι] (x : EuclideanSpace ℝ ι)
     {δ : ℝ} (hδ : 0 < δ) (d : ℕ) :
     let w (a : ι → ℕ) := ∑ i, a i
@@ -537,8 +723,17 @@ theorem theorem_9_4_3 {ι : Type*} [Fintype ι] (x : EuclideanSpace ℝ ι)
       _ ≤ _ := pow_le_pow_right₀ hC ha
 
 open Module in
-/-- The graded Newton family in Theorem 9.4.3 is a complete basis of the
-submodule of polynomials of degree at most `d`. -/
+/-- **Theorem 9.4.3** of [conn2000trust], complete polynomial basis. Let $\iota$ be a finite index
+set, let $x \in \mathbb{R}^\iota$ with the Euclidean norm, let $\delta > 0$ and
+$d \in \mathbb{N}$, and let $I$ be the set of multi-indices $a$ with $|a| \le d$. Then there are
+points $y_a \in B(x, \delta)$, for $a \in I$, and a basis $(B_a)_{a \in I}$ of the space of real
+polynomials of total degree at most $d$, such that $y_0 = x$, $B_a$ has total degree $|a|$,
+$B_a(y_b) = 1$ if $a = b$ and $0$ otherwise whenever $|b| \le |a|$, and
+$|B_a(z)| \le (2(d + 1))^d$ for all $z \in B(x, \delta)$.
+
+The space is `MvPolynomial.restrictTotalDegree ι ℝ d`, and the multi-indices are finitely
+supported functions `ι →₀ ℕ`. The basis is the family of
+`ConnGouldToint.Chapter09.theorem_9_4_3`. -/
 theorem theorem_9_4_3_basis {ι : Type*} [Fintype ι] [DecidableEq ι] (x : EuclideanSpace ℝ ι)
     {δ : ℝ} (hδ : 0 < δ) (d : ℕ) :
     let I := {a : ι →₀ ℕ // a.sum (fun _ n ↦ n) ≤ d}

@@ -11,11 +11,97 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Topology.Algebra.InfiniteSum.Real
 
 /-!
-# A nonmonotone trust-region method
+# Conn, Gould and Toint, Section 10.1: A nonmonotone trust-region method
 
-The historical sum can be zero when there are no accepted steps since the reference iteration.
-The historical ratio still has a positive denominator because it includes the current predicted
-reduction.
+This module formalizes the nonmonotone trust-region method of Section 10.1 of [conn2000trust]. The
+method compares the trial value $f(x_k + s_k)$ with the value at a reference iteration $r_k \le k$,
+and measures the predicted decrease by the model decreases $d_i$ accumulated over the accepted
+iterations since $r_k$. The acceptance ratio (10.1.3) is
+$$\rho_k = \max\left\{ \frac{f(x_{r_k}) - f(x_k + s_k)}{\sum_{i = r_k}^{k-1} [i \in S]\, d_i + d_k},
+  \; \frac{f(x_k) - f(x_k + s_k)}{d_k} \right\},$$
+where $S$ is the set of accepted iterations. The accepted decreases are bounded by the total
+decrease of $f$ (Lemma 10.1.1), a small radius makes an iteration very successful (Theorem 10.1.2),
+and the gradients have limit inferior zero (Theorem 10.1.3) and tend to zero (Theorem 10.1.4). The
+module also formalizes the buffer of Algorithm 10.1.2, which updates the reference value with a
+fixed amount of memory. The run uses the radius update `ConnGouldToint.Chapter06.BTRRadiusUpdate` of
+`NumlibSurface.ConnGouldToint.Chapter06.Section01`, and the model error bounds come from Theorem
+6.4.1 (`ConnGouldToint.Chapter06.theorem_6_4_1`).
+
+## Main definitions
+
+* Equation (10.1.1), `ConnGouldToint.Chapter10.logRosenbrock`: the logarithmically rescaled
+  Rosenbrock function.
+* Equation (10.1.2), `ConnGouldToint.Chapter10.IsReferenceSchedule`: reference indices $r_k \le k$
+  whose objective value decreases strictly when the index changes.
+* `ConnGouldToint.Chapter10.acceptedDecrease`: the decrease $d_k$ at an accepted iteration, and $0$
+  otherwise.
+* Equation (10.1.3), `ConnGouldToint.Chapter10.nonmonotoneRatio`: the maximum of the historical and
+  the current ratio.
+* Algorithm 10.1.2, `ConnGouldToint.Chapter10.ReferenceBuffer`: the values and counters kept between
+  iterations.
+* Algorithm 10.1.2, `ConnGouldToint.Chapter10.ReferenceBuffer.initial`: the buffer at the initial
+  point.
+* Algorithm 10.1.2, `ConnGouldToint.Chapter10.ReferenceBuffer.ratio`: the ratio of Step 3a with the
+  running sum.
+* Algorithm 10.1.2, `ConnGouldToint.Chapter10.ReferenceBuffer.step`: Steps 3a–3d of the algorithm.
+* Algorithm 10.1.1, `ConnGouldToint.Chapter10.NonmonotoneRun`: an infinite run of the nonmonotone
+  algorithm.
+* Algorithm 10.1.1, `ConnGouldToint.Chapter10.NonmonotoneRun.predictedDecrease`: the model decrease
+  $d_k$ at the trial step.
+* Equation (10.1.3), `ConnGouldToint.Chapter10.NonmonotoneRun.ratio`: the ratio $\rho_k$ of the run.
+
+## Main results
+
+* Algorithm 10.1.2, `ConnGouldToint.Chapter10.ReferenceBuffer.ratio_eq_nonmonotoneRatio`: the ratio
+  of the buffer is the ratio (10.1.3).
+* Algorithm 10.1.2, `ConnGouldToint.Chapter10.ReferenceBuffer.step_preserves_bounds`: a step keeps
+  the invariants of the buffer.
+* Lemma 10.1.1, `ConnGouldToint.Chapter10.accepted_predicted_sum_le`: $\eta$ times the sum of the
+  accepted predicted decreases is at most $f_0 - f_{k+1}$.
+* Lemma 10.1.1, `ConnGouldToint.Chapter10.lemma_10_1_1`: under the decrease condition AA.1, the sum
+  of the Cauchy decreases over the accepted iterations is bounded (10.1.4).
+* Theorem 10.1.2, `ConnGouldToint.Chapter10.theorem_10_1_2`: a small radius makes the iteration very
+  successful, and the radius does not decrease.
+* `ConnGouldToint.Chapter10.NonmonotoneRun.delta_pos`: all radii of a run are positive.
+* Equation (10.1.13), `ConnGouldToint.Chapter10.high_gradient_radius_sum_le`: a bound on the sum of
+  the truncated radii of the accepted iterations with large gradient.
+* Equation (10.1.11), `ConnGouldToint.Chapter10.successful_count_le`: a bound on the number of
+  accepted iterations under lower bounds on the gradients and the radii.
+* Equation (10.1.14), `ConnGouldToint.Chapter10.summable_high_gradient_radius`: the radii of the
+  accepted iterations with large gradient are summable.
+* Theorem 10.1.3, `ConnGouldToint.Chapter10.theorem_10_1_3_of_error_bound`: under a quadratic model
+  error bound, $\liminf_k \|\nabla f(x_k)\| = 0$.
+* Theorem 10.1.4, `ConnGouldToint.Chapter10.theorem_10_1_4_of_error_bound`: under a quadratic model
+  error bound and a bounded Hessian, $\|\nabla f(x_k)\| \to 0$.
+* Theorem 10.1.3, `ConnGouldToint.Chapter10.theorem_10_1_3`: the same conclusion under uniform
+  Hessian bounds and first-order model agreement.
+* Theorem 10.1.4, `ConnGouldToint.Chapter10.theorem_10_1_4`: the same conclusion under uniform
+  Hessian bounds and first-order model agreement.
+
+## Conventions
+
+* The assumptions AF.1, AF.3, AN.1 and AM.1–AM.4 of the source appear as explicit hypotheses: the
+  objective is twice continuously differentiable with a bounded Hessian, the model agrees with $f$
+  to first order at the center, the model Hessian is bounded on the trust region, and
+  $\|v\| \le K p_k(v)$ for the trust-region seminorms $p_k$.
+* The gradient $\nabla f(x)$ is `gradient f x` in a real Hilbert space $E$.
+
+## Implementation notes
+
+* The historical sum in (10.1.3) is zero when no step was accepted since the reference iteration.
+  The denominator of the historical ratio is still positive, because it includes the current
+  predicted decrease $d_k > 0$.
+
+## Deviations from the source
+
+* **Equation (10.1.2)** (correction). The reference index may stay the same from one iteration to
+  the next. The reference value must decrease strictly only when the reference index changes. See
+  `ConnGouldToint.Chapter10.IsReferenceSchedule`.
+* **Algorithm 10.1.2, Step 3d** (reading). The boxed algorithm tests whether the counter equals the
+  window, while the prose before it says that the counter exceeds the window. The definition uses
+  the equality test. See `ConnGouldToint.Chapter10.ReferenceBuffer.step`.
+* **Equation (10.1.11)** (reading). The count of accepted iterations includes iteration $0$. See
+  `ConnGouldToint.Chapter10.successful_count_le`.
 -/
 
 open Filter Topology
@@ -23,34 +109,60 @@ open scoped BigOperators
 
 namespace ConnGouldToint.Chapter10
 
-/-- The logarithmically rescaled Rosenbrock objective (10.1.1). -/
+/-- **Equation (10.1.1)** of [conn2000trust]. The **logarithmically rescaled Rosenbrock function**
+on $\mathbb{R}^2$ is
+$$f(x) = \log\left(1 + 10^4 (x_2 - x_1^2)^2 + (1 - x_1)^2\right).$$
+-/
 noncomputable def logRosenbrock (x : ℝ × ℝ) : ℝ :=
   Real.log (1 + 10000 * (x.2 - x.1 ^ 2) ^ 2 + (1 - x.1) ^ 2)
 
-/-- Reference indices for (10.1.2), corrected to allow the same index to be retained.
-The reference objective decreases strictly whenever the reference index changes. -/
+/-- **Equation (10.1.2)** of [conn2000trust]. Let $f_k \in \mathbb{R}$ be the objective values of
+the iterates and $r_k \in \mathbb{N}$ reference indices. They form a **reference schedule** if
+$r_k \le k$ for all $k$, and $f_{r_{k+1}} < f_{r_k}$ whenever $r_{k+1} \neq r_k$.
+
+**Correction.** The definition allows the same reference index to be kept, and requires a strict
+decrease of the reference value only when the reference index changes. -/
 def IsReferenceSchedule (f : ℕ → ℝ) (r : ℕ → ℕ) : Prop :=
   (∀ k, r k ≤ k) ∧ ∀ k, r (k + 1) ≠ r k → f (r (k + 1)) < f (r k)
 
-/-- An iteration contributes to the cumulative decrease only when accepted. -/
+/-- Given a set $S \subseteq \mathbb{N}$ of accepted iterations and decreases $d_k$, the **accepted
+decrease** at iteration $k$ is $d_k$ if $k \in S$ and $0$ otherwise. -/
 noncomputable def acceptedDecrease (S : Set ℕ) (d : ℕ → ℝ) (k : ℕ) : ℝ :=
   open Classical in if k ∈ S then d k else 0
 
-/-- The acceptance ratio (10.1.3), the maximum of the historical and current ratios. -/
+/-- **Equation (10.1.3)** of [conn2000trust]. Let $S \subseteq \mathbb{N}$ be the accepted
+iterations, $f_k$ the objective values of the iterates, $f^+_k$ the objective values of the
+trial points, $d_k$ the predicted decreases, and $r \le k$ a reference index. The **nonmonotone
+ratio** is
+$$\rho_k = \max\left\{ \frac{f_r - f^+_k}{\sum_{i=r}^{k-1} [i \in S]\, d_i + d_k}, \;
+  \frac{f_k - f^+_k}{d_k} \right\},$$
+the maximum of the historical ratio and the current ratio.
+
+A quotient with zero denominator is $0$ in Lean. -/
 noncomputable def nonmonotoneRatio (S : Set ℕ) (f trial d : ℕ → ℝ) (r k : ℕ) : ℝ :=
   max ((f r - trial k) / ((∑ i ∈ Finset.Ico r k, acceptedDecrease S d i) + d k))
     ((f k - trial k) / d k)
 
-/-- The values and counters retained between iterations of Algorithm 10.1.2. -/
+/-- **Algorithm 10.1.2** of [conn2000trust], the buffer. A **reference buffer** consists of the best
+value $f_{\min}$, the reference value $f_r$, the candidate value $f_c$, the accumulated
+decreases $\sigma_r$ and $\sigma_c$ since the reference and the candidate, and the number $\ell$
+of accepted iterations since the last new best value. -/
 structure ReferenceBuffer where
+  /-- The best objective value $f_{\min}$ found so far. -/
   bestValue : ℝ
+  /-- The reference value $f_r$. -/
   referenceValue : ℝ
+  /-- The candidate value $f_c$ for the next reference. -/
   candidateValue : ℝ
+  /-- The decrease $\sigma_r$ accumulated since the reference iteration. -/
   referenceDecrease : ℝ
+  /-- The decrease $\sigma_c$ accumulated since the candidate iteration. -/
   candidateDecrease : ℝ
+  /-- The number $\ell$ of accepted iterations since the last new best value. -/
   sinceBest : ℕ
 
-/-- Algorithm 10.1.2 starts all three values at the objective of the initial point. -/
+/-- **Algorithm 10.1.2** of [conn2000trust], initialization. The initial buffer for the value
+$f(x_0)$ has $f_{\min} = f_r = f_c = f(x_0)$, $\sigma_r = \sigma_c = 0$ and $\ell = 0$. -/
 def ReferenceBuffer.initial (value : ℝ) : ReferenceBuffer where
   bestValue := value
   referenceValue := value
@@ -59,14 +171,32 @@ def ReferenceBuffer.initial (value : ℝ) : ReferenceBuffer where
   candidateDecrease := 0
   sinceBest := 0
 
-/-- Algorithm 10.1.2, Step 3a. The historical ratio uses the running sum. -/
+/-- **Algorithm 10.1.2** of [conn2000trust], Step 3a. For a buffer, the current value $f$, the trial
+value $f^+$ and the predicted decrease $d$, the **buffered ratio** is
+$$\max\left\{ \frac{f_r - f^+}{\sigma_r + d}, \; \frac{f - f^+}{d} \right\}.$$
+
+The historical ratio uses the running sum $\sigma_r$ of the accepted decreases. -/
 noncomputable def ReferenceBuffer.ratio (b : ReferenceBuffer) (value trial decrease : ℝ) : ℝ :=
   max ((b.referenceValue - trial) / (b.referenceDecrease + decrease))
     ((value - trial) / decrease)
 
-/-- Algorithm 10.1.2, Steps 3a–3d. A rejected trial leaves the iterate and buffer unchanged.
-The counter is reset only on a new best value. Step 3d uses the boxed equality test with
-the window, while the preceding prose says the counter exceeds the window. -/
+/-- **Algorithm 10.1.2** of [conn2000trust], Steps 3a–3d. Given a buffer, a threshold $\eta$, a
+window $w \in \mathbb{N}$, the objective $f$, the current point $x$, the trial point $x^+$ and
+the predicted decrease $d$, one step returns a new point and a new buffer as follows.
+
+* If the buffered ratio is less than $\eta$, the trial is rejected: the point stays $x$ and the
+  buffer is unchanged.
+* Otherwise $d$ is added to $\sigma_r$ and $\sigma_c$, and the new point is $x^+$. If
+  $f(x^+) < f_{\min}$, then $f_{\min}$ and $f_c$ become $f(x^+)$, and $\sigma_c$ and $\ell$
+  become $0$.
+* Otherwise $\ell$ increases by $1$, and if $f_c < f(x^+)$, then $f_c$ becomes $f(x^+)$ and
+  $\sigma_c$ becomes $0$. If then $\ell = w$, the reference is replaced by the candidate: $f_r$
+  becomes $f_c$ and $\sigma_r$ becomes $\sigma_c$.
+
+**Reading.** The boxed Step 3d tests whether the counter equals the window, while the prose
+before it says that the counter exceeds the window. The definition uses the equality test.
+
+The counter $\ell$ is reset only at a new best value. -/
 noncomputable def ReferenceBuffer.step {E : Type*} (b : ReferenceBuffer)
     (η : ℝ) (window : ℕ) (f : E → ℝ) (current trial : E) (decrease : ℝ) :
     E × ReferenceBuffer :=
@@ -95,16 +225,20 @@ noncomputable def ReferenceBuffer.step {E : Type*} (b : ReferenceBuffer)
           referenceDecrease := candidate.candidateDecrease })
       else (trial, candidate)
 
-/-- With the recorded reference value and cumulative accepted decrease, the buffered ratio
-is the ratio of Algorithm 10.1.1. -/
+/-- **Algorithm 10.1.2** of [conn2000trust] and (10.1.3). If the reference value of the buffer is
+$f_r$ for a reference index $r$, and $\sigma_r = \sum_{i=r}^{k-1} [i \in S]\, d_i$, then the
+buffered ratio at iteration $k$ equals the nonmonotone ratio (10.1.3). -/
 theorem ReferenceBuffer.ratio_eq_nonmonotoneRatio (b : ReferenceBuffer) (S : Set ℕ)
     (f trial d : ℕ → ℝ) (r k : ℕ) (hvalue : b.referenceValue = f r)
     (hsum : b.referenceDecrease = ∑ i ∈ Finset.Ico r k, acceptedDecrease S d i) :
     b.ratio (f k) (trial k) (d k) = nonmonotoneRatio S f trial d r k := by
   rw [ReferenceBuffer.ratio, nonmonotoneRatio, hvalue, hsum]
 
-/-- The new iterate remains below or equal to the reference and candidate. The accumulated
-decreases stay nonnegative, and the best value is the minimum of the old best and the new iterate value. -/
+/-- **Algorithm 10.1.2** of [conn2000trust], invariants of a step. Let $\eta > 0$ and $d > 0$.
+Suppose that $f(x) \le f_r$, $f(x) \le f_c$, $f_{\min} \le f(x)$, $\sigma_r \ge 0$ and
+$\sigma_c \ge 0$. Then after one step with the new point $x'$ and the new buffer,
+$f(x') \le f_r$, $f(x') \le f_c$, $\sigma_r \ge 0$ and $\sigma_c \ge 0$, and the new best value
+is $\min\{f_{\min}, f(x')\}$. -/
 theorem ReferenceBuffer.step_preserves_bounds {E : Type*} (b : ReferenceBuffer)
     {η : ℝ} (window : ℕ) (f : E → ℝ) (current trial : E) {decrease : ℝ}
     (hη : 0 < η) (hd : 0 < decrease) (hr : f current ≤ b.referenceValue)
@@ -135,8 +269,14 @@ theorem ReferenceBuffer.step_preserves_bounds {E : Type*} (b : ReferenceBuffer)
         simp [ReferenceBuffer.step, hreject, hbest, hcandidate, hreset,
           le_of_not_gt hcandidate, htrial.le, hsr', hsc', hmin]
 
-/-- The nonmonotone acceptance rule accounts for every accepted model
-decrease along the historical reference intervals. -/
+/-- **Lemma 10.1.1** of [conn2000trust], sum of the accepted predicted decreases. Let
+$S \subseteq \mathbb{N}$, objective values $f_k$, trial values $f^+_k$, predicted decreases
+$d_k > 0$ and reference indices $r_k \le k$ be given. Suppose that $\eta \le \rho_k$ for every
+$k \in S$, where $\rho_k$ is the nonmonotone ratio (10.1.3) with reference $r_k$, that
+$f_{k+1} = f^+_k$ for $k \in S$, and that $f_{k+1} = f_k$ for $k \notin S$. Then for every $k$
+$$\eta \sum_{i=0}^{k} [i \in S]\, d_i \le f_0 - f_{k+1}.$$
+
+The same estimate is used for (11.3.1). -/
 theorem accepted_predicted_sum_le (S : Set ℕ) (f trial d : ℕ → ℝ) (r : ℕ → ℕ)
     {η : ℝ} (hr : ∀ k, r k ≤ k) (hd : ∀ k, 0 < d k)
     (hs : ∀ k ∈ S, η ≤ nonmonotoneRatio S f trial d (r k) k)
@@ -170,10 +310,15 @@ theorem accepted_predicted_sum_le (S : Set ℕ) (f trial d : ℕ → ℝ) (r : �
   have h := Optimization.reference_decrease_sum f (fun i ↦ η * acceptedDecrease S d i) hstep (k + 1)
   rwa [← Finset.mul_sum] at h
 
-/-- Lemma 10.1.1. Under the model decrease condition AA.1, the nonmonotone
-acceptance rule yields a bound on the sum of decreases over successful iterations.
-Here `f` and `trial` are the objective values at the iterates and trial points,
-`d` is predicted reduction, and `g` is the gradient norm. -/
+/-- **Lemma 10.1.1** of [conn2000trust] and (10.1.4). Let $S$, $f_k$, $f^+_k$, $d_k > 0$ and
+$r_k \le k$ be as in `ConnGouldToint.Chapter10.accepted_predicted_sum_le`, with $\eta > 0$. Let
+$g_k$ be the gradient norms, $\beta_k$ the curvature constants and $\Delta_k$ the radii, and
+suppose the decrease condition AA.1:
+$$\kappa\, g_k \min\{g_k / \beta_k, \Delta_k\} \le d_k \quad \text{for all } k.$$
+Then for every $k$
+$$\eta \kappa \sum_{i=0}^{k} [i \in S]\, g_i \min\{g_i / \beta_i, \Delta_i\} \le f_0 -
+  f_{k+1}.$$
+-/
 theorem lemma_10_1_1 (S : Set ℕ) (f trial d g β Δ : ℕ → ℝ) (r : ℕ → ℕ)
     {η κ : ℝ} (hη : 0 < η) (hr : ∀ k, r k ≤ k) (hd : ∀ k, 0 < d k)
     (haa : ∀ k, κ * (g k * min (g k / β k) (Δ k)) ≤ d k)
@@ -194,8 +339,19 @@ theorem lemma_10_1_1 (S : Set ℕ) (f trial d g β Δ : ℕ → ℝ) (r : ℕ �
     (accepted_predicted_sum_le S f trial d r hr hd hs haccept hreject k)
 
 open Chapter06 in
-/-- Theorem 10.1.2. The nonmonotone ratio dominates the current reduction ratio,
-so the small-radius acceptance bound also prevents radius contraction here. -/
+/-- **Theorem 10.1.2** of [conn2000trust]. Let $E$ be a normed group, $f, m : E \to \mathbb{R}$,
+$x, s, g \in E$ with $g \neq 0$, and let $P$ be the parameters of the basic trust-region
+algorithm. Let $0 < \beta \le C$ and $\Delta > 0$. Let the values $f_k = f(x)$,
+$f^+_k = f(x + s)$ and $d_k = m(x) - m(x + s)$ enter the nonmonotone ratio $\rho_k$ (10.1.3) at
+iteration $k$. Suppose that $f(x) = m(x)$, that $s$ satisfies the sufficient model decrease
+condition
+$$\kappa \|g\| \min\{\|g\| / \beta, \Delta\} \le m(x) - m(x + s), \qquad 0 < \kappa < 1,$$
+that $|f(x + s) - m(x + s)| \le C \Delta^2$, and that
+$\Delta \le \kappa \|g\| (1 - \eta_2) / C$. If $\Delta'$ is a radius update (6.1.5) of $\Delta$
+for the ratio $\rho_k$, then $\rho_k \ge \eta_2$ and $\Delta \le \Delta'$.
+
+The nonmonotone ratio is at least the current ratio, so the estimate (6.4.12) for small radii,
+`ConnGouldToint.Chapter06.btrRatio_ge_eta₂_of_small_radius`, applies. -/
 theorem theorem_10_1_2 {E : Type*} [NormedAddCommGroup E] {P : BTRParams}
     {f m : E → ℝ} {x s g : E} {β Δ Δ' κ C : ℝ}
     (S : Set ℕ) (values trial d : ℕ → ℝ) (r k : ℕ)
@@ -215,29 +371,59 @@ theorem theorem_10_1_2 {E : Type*} [NormedAddCommGroup E] {P : BTRParams}
 
 open Chapter06
 
-/-- An infinite run of Algorithm 10.1.1. The set of accepted indices is part
-of the run, and the acceptance condition determines membership from the
-earlier accepted decreases and the current trial. The ratios are evaluated
-only for steps of positive predicted decrease. -/
+/-- **Algorithm 10.1.1** of [conn2000trust], an infinite run. Let $E$ be a real normed space,
+$f : E \to \mathbb{R}$, and $P$ the parameters of the basic trust-region algorithm. A
+**nonmonotone run** consists of iterates $x_k$, steps $s_k$, radii $\Delta_k$, trust-region
+seminorms $p_k$ that vanish only at $0$, models $m_k$, reference indices $r_k$ that form a
+reference schedule (10.1.2) for the values $f(x_k)$, and a set $S$ of accepted iterations, such
+that $\Delta_0 > 0$ and for every $k$:
+
+* $p_k(s_k) \le \Delta_k$ and $m_k(x_k) - m_k(x_k + s_k) > 0$;
+* $k \in S$ if and only if $\rho_k \ge \eta_1$, where $\rho_k$ is the nonmonotone ratio (10.1.3)
+  with reference $r_k$;
+* $x_{k+1} = x_k + s_k$ if $k \in S$, and $x_{k+1} = x_k$ otherwise;
+* $\Delta_{k+1}$ is a radius update (6.1.5) of $\Delta_k$ for the ratio $\rho_k$.
+
+The set $S$ is part of the run. The acceptance condition determines whether $k \in S$ from the
+earlier accepted decreases and the current trial. The ratios are evaluated only for steps with
+positive predicted decrease. -/
 structure NonmonotoneRun {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (f : E → ℝ) (P : BTRParams) where
+  /-- The iterate $x_k$. -/
   x : ℕ → E
+  /-- The step $s_k$. -/
   s : ℕ → E
+  /-- The radius $\Delta_k$. -/
   Δ : ℕ → ℝ
+  /-- The trust-region seminorm $p_k$. -/
   p : ℕ → Seminorm ℝ E
+  /-- Each seminorm $p_k$ vanishes only at $0$. -/
   norm_separates : ∀ k v, p k v = 0 → v = 0
+  /-- The model $m_k$. -/
   model : ℕ → E → ℝ
+  /-- The reference index $r_k$. -/
   reference : ℕ → ℕ
+  /-- The reference indices form a reference schedule (10.1.2) for the values $f(x_k)$. -/
   reference_schedule : IsReferenceSchedule (fun k ↦ f (x k)) reference
+  /-- The set $S$ of accepted iterations. -/
   successful : Set ℕ
+  /-- The initial radius is positive. -/
   delta_initial_pos : 0 < Δ 0
+  /-- The trial point lies in the trust region: $p_k(s_k) \le \Delta_k$. -/
   feasible : ∀ k, x k + s k ∈ trustRegion (p k) (x k) (Δ k)
+  /-- The predicted decrease is positive: $m_k(x_k) - m_k(x_k + s_k) > 0$. -/
   predicted_pos : ∀ k, 0 < model k (x k) - model k (x k + s k)
+  /-- Iteration $k$ is accepted if and only if the nonmonotone ratio (10.1.3) with reference $r_k$
+  is at least $\eta_1$. -/
   accepted_iff : ∀ k, k ∈ successful ↔ P.η₁ ≤
     nonmonotoneRatio successful (fun j ↦ f (x j)) (fun j ↦ f (x j + s j))
       (fun j ↦ model j (x j) - model j (x j + s j)) (reference k) k
+  /-- An accepted iteration moves to $x_k + s_k$. -/
   accepted_update : ∀ k ∈ successful, x (k + 1) = x k + s k
+  /-- A rejected iteration keeps the iterate. -/
   rejected_update : ∀ k ∉ successful, x (k + 1) = x k
+  /-- The radius $\Delta_{k+1}$ is a radius update (6.1.5) of $\Delta_k$ for the nonmonotone ratio.
+  -/
   radius_update : ∀ k,
     BTRRadiusUpdate P
       (nonmonotoneRatio successful (fun j ↦ f (x j)) (fun j ↦ f (x j + s j))
@@ -248,16 +434,19 @@ namespace NonmonotoneRun
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : E → ℝ} {P : BTRParams}
 
-/-- The reduction of the current model at the trial step. -/
+/-- **Algorithm 10.1.1** of [conn2000trust]. The **predicted decrease** of a run at iteration $k$ is
+$d_k = m_k(x_k) - m_k(x_k + s_k)$. -/
 noncomputable def predictedDecrease (run : NonmonotoneRun f P) (k : ℕ) : ℝ :=
   run.model k (run.x k) - run.model k (run.x k + run.s k)
 
-/-- The ratio used by Algorithm 10.1.1 to update the iterate and radius. -/
+/-- **Equation (10.1.3)** of [conn2000trust]. The **ratio** $\rho_k$ of a run is the nonmonotone
+ratio with the values $f(x_j)$, the trial values $f(x_j + s_j)$, the predicted decreases and the
+reference index $r_k$. Algorithm 10.1.1 uses it to update the iterate and the radius. -/
 noncomputable def ratio (run : NonmonotoneRun f P) (k : ℕ) : ℝ :=
   nonmonotoneRatio run.successful (fun j ↦ f (run.x j)) (fun j ↦ f (run.x j + run.s j))
     run.predictedDecrease (run.reference k) k
 
-/-- Every trust-region radius of a nonmonotone run is positive. -/
+/-- Every radius of a nonmonotone run is positive: $\Delta_k > 0$ for all $k$. -/
 theorem delta_pos (run : NonmonotoneRun f P) (k : ℕ) : 0 < run.Δ k := by
   induction k with
   | zero => exact run.delta_initial_pos
@@ -418,8 +607,14 @@ section Convergence
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
   {f : E → ℝ} {P : BTRParams}
 
-/-- The high-gradient radius sum in (10.1.13), with the curvature bound `C`.
-Only accepted iterations with gradient norm at least `ε` contribute. -/
+/-- **Equation (10.1.13)** of [conn2000trust]. Let a nonmonotone run in a real Hilbert space be
+given, with curvature constants $0 < \beta_k \le C$, and suppose that every step satisfies the
+sufficient model decrease condition $\kappa \|\nabla f(x_k)\| \min\{\|\nabla f(x_k)\| / \beta_k,
+\Delta_k\} \le d_k$ with $0 < \kappa < 1$. Let $\varepsilon > 0$, and let $S_\varepsilon$ be the
+set of accepted iterations $k$ with $\|\nabla f(x_k)\| \ge \varepsilon$. Then for every $k$
+$$\eta_1 \kappa \varepsilon \sum_{i=0}^{k} [i \in S_\varepsilon] \min\{\varepsilon / C,
+  \Delta_i\} \le f(x_0) - f(x_{k+1}).$$
+-/
 theorem high_gradient_radius_sum_le (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ C ε : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hdec : ∀ k, HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
@@ -445,8 +640,14 @@ theorem high_gradient_radius_sum_le (run : NonmonotoneRun f P)
   exact (mul_le_mul_of_nonneg_left hsum (mul_nonneg P.eta₁_pos.le (hdec 0).1.1.le)).trans
     (run.cumulative_decreaseCost_le β hdec k)
 
-/-- The accepted-iteration count estimate (10.1.11) under uniform lower bounds
-on the gradient norms and radii. The count includes iteration zero. -/
+/-- **Equation (10.1.11)** of [conn2000trust]. Let a nonmonotone run be given with
+$0 < \beta_k \le C$ and the sufficient model decrease condition as in
+`ConnGouldToint.Chapter10.high_gradient_radius_sum_le`. Let $\varepsilon > 0$ and
+$\delta \in \mathbb{R}$ with $\|\nabla f(x_k)\| \ge \varepsilon$ and $\Delta_k \ge \delta$ for
+all $k$. If $N_k$ is the number of accepted iterations among $0, \dots, k$, then
+$$\eta_1 \kappa \varepsilon N_k \min\{\varepsilon / C, \delta\} \le f(x_0) - f(x_{k+1}).$$
+
+**Reading.** The count includes iteration $0$. -/
 theorem successful_count_le (run : NonmonotoneRun f P) [DecidablePred (· ∈ run.successful)]
     (β : ℕ → ℝ) {κ C ε δ : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hdec : ∀ k, HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
@@ -470,8 +671,13 @@ theorem successful_count_le (run : NonmonotoneRun f P) [DecidablePred (· ∈ ru
         min_le_min le_rfl (hrad i)))
   exact (mul_le_mul_of_nonneg_left hle (by positivity [P.eta₁_pos, (hdec 0).1.1])).trans hsum
 
-/-- The radii of accepted high-gradient iterations are summable, as in (10.1.14).
-Including the finite initial part does not affect summability. -/
+/-- **Equation (10.1.14)** of [conn2000trust]. Let a nonmonotone run be given with
+$0 < \beta_k \le C$ and the sufficient model decrease condition as in
+`ConnGouldToint.Chapter10.high_gradient_radius_sum_le`, and let $f$ be bounded below. Then for
+every $\varepsilon > 0$ the radii $\Delta_k$ of the accepted iterations with
+$\|\nabla f(x_k)\| \ge \varepsilon$ have a finite sum.
+
+The sum includes the initial iterations, which does not affect summability. -/
 theorem summable_high_gradient_radius (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ C ε : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hdec : ∀ k, HasSufficientModelDecrease (run.model k) (run.x k) (run.s k)
@@ -507,10 +713,17 @@ theorem summable_high_gradient_radius (run : NonmonotoneRun f P)
     · simpa only [acceptedDecrease, ite_eq_right hj] using
         div_nonneg (run.decreaseCost_nonneg β hβ (j + N)) hε.le
 
-/-- Theorem 10.1.3. The gradient norms of the nonmonotone run have zero limit inferior.
-The quadratic model error is the consequence of AF.1, AF.3, AN.1, and AM.1–4
-from Theorem 6.4.1. The proof excludes a positive gradient lower bound on
-every tail, which is the condition needed for the limit inferior. -/
+/-- **Theorem 10.1.3** of [conn2000trust], form with a model error bound. Let a nonmonotone run in a
+real Hilbert space be given, with curvature constants $0 < \beta_k \le C$. Suppose that for
+every $k$, $f(x_k) = m_k(x_k)$, the step satisfies the sufficient model decrease condition with
+the gradient $\nabla f(x_k)$, and
+$$|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2.$$
+If $f$ is bounded below, then
+$$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
+
+The quadratic model error bound follows from AF.1, AF.3, AN.1 and AM.1–AM.4 by Theorem 6.4.1;
+see `ConnGouldToint.Chapter10.theorem_10_1_3`. The proof excludes a positive lower bound on the
+gradient norms on every tail, which is the condition that the limit inferior needs. -/
 theorem theorem_10_1_3_of_error_bound (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ C : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -534,10 +747,16 @@ theorem theorem_10_1_3_of_error_bound (run : NonmonotoneRun f P)
   have hlim := liminf_le_of_frequently_le ((hfreq _ (half_pos hp)).mono fun _ h ↦ h.le) hb
   linarith
 
-/-- Theorem 10.1.4. The whole gradient norm sequence of the nonmonotone run tends
-to zero. Uniform gradient continuity comes from the bounded Hessian in AF.3.
-The argument controls the motion on high-gradient stretches by a tail of the
-summable accepted decrease costs, so it permits increases in the objective. -/
+/-- **Theorem 10.1.4** of [conn2000trust], form with a model error bound. Let a nonmonotone run in a
+real Hilbert space be given, with the hypotheses of
+`ConnGouldToint.Chapter10.theorem_10_1_3_of_error_bound`. Suppose also that $f$ is twice
+continuously differentiable with $\|\nabla^2 f(x)\| \le L$ for all $x$, and that
+$\|v\| \le K p_k(v)$ for all $k$ and $v$, with $K \ge 0$. Then
+$$\|\nabla f(x_k)\| \to 0.$$
+
+The bounded Hessian gives uniform continuity of the gradient. The proof bounds the motion of the
+iterates on stretches with large gradient by a tail of the summable accepted decreases, so it
+allows increases of the objective. -/
 theorem theorem_10_1_4_of_error_bound (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ C L K : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -663,8 +882,19 @@ private theorem le_uniformHessianConstant {K κf κm : ℝ} (hK : 1 ≤ K) (hκm
     _ ≤ K ^ 2 * max κf κm :=
       le_mul_of_one_le_left ((zero_le_one.trans hκm).trans (le_max_right _ _)) hK₂
 
-/-- Theorem 10.1.3 under the uniform Hessian bounds and first-order model agreement.
-The curvature parameters of the decrease test are bounded as in (6.3.2) and AM.4. -/
+/-- **Theorem 10.1.3** of [conn2000trust]. Let a nonmonotone run in a real Hilbert space be given,
+with $K \ge 1$ and $\kappa_m \ge 1$, and with $\|v\| \le K p_k(v)$ for all $k$ and $v$. Let $f$
+be twice continuously differentiable with $\|\nabla^2 f(z)\| \le \kappa_f$ for all $z$, and
+bounded below. Suppose that for every $k$, the model $m_k$ and its derivative are differentiable
+on the trust region $\{z : p_k(z - x_k) \le \Delta_k\}$ with
+$\|\nabla^2 m_k(z)\| \le \kappa_m - 1$ there, that $m_k(x_k) = f(x_k)$ and
+$\nabla m_k(x_k) = \nabla f(x_k)$, and that the step satisfies the sufficient model decrease
+condition with curvature constant $0 < \beta_k \le \kappa_m$. Then
+$$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
+
+The bound $\beta_k \le \kappa_m$ on the curvature constants is the one of (6.3.2) and AM.4. The
+model error bound comes from Theorem 6.4.1, and the proof applies
+`ConnGouldToint.Chapter10.theorem_10_1_3_of_error_bound`. -/
 theorem theorem_10_1_3 (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ K κf κm : ℝ} (hK : 1 ≤ K) (hκm : 1 ≤ κm)
     (hβ : ∀ k, 0 < β k) (hβm : ∀ k, β k ≤ κm)
@@ -685,8 +915,12 @@ theorem theorem_10_1_3 (run : NonmonotoneRun f P)
     (fun k ↦ (hβm k).trans (le_uniformHessianConstant hK hκm)) (fun k ↦ (hval k).symm) hdec
     (trial_error_of_uniform_hessian run hK hκm hnorm hf hF hm hDm hM hval hgrad) hlower
 
-/-- Theorem 10.1.4 under the uniform Hessian bounds and first-order model agreement.
-The bounded objective Hessian supplies the uniform gradient estimate along the iterates. -/
+/-- **Theorem 10.1.4** of [conn2000trust]. Under the hypotheses of
+`ConnGouldToint.Chapter10.theorem_10_1_3`,
+$$\|\nabla f(x_k)\| \to 0.$$
+
+The bounded objective Hessian gives the uniform gradient estimate along the iterates. The proof
+applies `ConnGouldToint.Chapter10.theorem_10_1_4_of_error_bound`. -/
 theorem theorem_10_1_4 (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ K κf κm : ℝ} (hK : 1 ≤ K) (hκm : 1 ≤ κm)
     (hβ : ∀ k, 0 < β k) (hβm : ∀ k, β k ≤ κm)

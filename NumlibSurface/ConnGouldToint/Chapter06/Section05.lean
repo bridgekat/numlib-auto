@@ -4,7 +4,71 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
 
-/-! # Asymptotically convex models -/
+/-!
+# Conn, Gould and Toint, Section 6.5: Asymptotically convex models
+
+This module formalizes Section 6.5 of [conn2000trust], which studies runs of the basic trust-region
+algorithm whose models become uniformly convex near a limit point. If a model has curvature at least
+$\varepsilon$ along a step that does not increase it, the step is at most
+$(2/\varepsilon) \|\nabla m(x)\|$ (Lemma 6.5.1). If the model Hessians agree with the objective
+Hessian at the centers (assumption AM.5) and the steps give a decrease proportional to $\|s_k\|^2$,
+then late iterations are very successful (Lemma 6.5.3) and the radii stay bounded away from zero
+(Lemma 6.5.4). Near a critical point with a nonsingular Hessian, convergence of a subsequence then
+forces convergence of the whole sequence (Theorems 6.5.2 and 6.5.5).
+
+The printed Lemmas 6.5.3 and 6.5.4 need uniform control of the Hessians along the trial segments,
+which pointwise twice differentiability does not give. The corrected statements assume that the
+Hessian variation on the trial segments vanishes, and a counterexample shows that the printed
+statements fail without it.
+
+## Main definitions
+
+* Assumption AM.5, (6.5.14), `ConnGouldToint.Chapter06.ModelHessianAgreement`: if the objective
+  derivatives at the centers tend to zero, the model Hessians at the centers approach the objective
+  Hessians.
+* `ConnGouldToint.Chapter06.HessianVariationVanishes`: the variation of the Hessians on the trial
+  segments tends to zero uniformly.
+* Equation (6.5.6), `ConnGouldToint.Chapter06.asymptoticConvexEntryRadius`: the entry radius
+  $\mu R / (2c + \mu)$.
+
+## Main results
+
+* Lemma 6.5.1, `ConnGouldToint.Chapter06.lemma_6_5_1`: the step bound (6.5.2)
+  $\|s\| \le (2/\varepsilon) \|Dm(x)\|$.
+* Theorem 6.5.2, `ConnGouldToint.Chapter06.theorem_6_5_2`: with locally convex models, a subsequence
+  converging to a critical point with a nonsingular Hessian makes the whole sequence converge.
+* Lemma 6.5.3, `ConnGouldToint.Chapter06.lemma_6_5_3`: along a subsequence with quadratic model
+  decrease and vanishing Hessian variation, the iterations are eventually very successful.
+* Lemma 6.5.4, `ConnGouldToint.Chapter06.lemma_6_5_4`: under the same conditions along the whole
+  run, the iterations are eventually very successful and the radii are bounded away from zero.
+* Theorem 6.5.5, `ConnGouldToint.Chapter06.theorem_6_5_5`: near a critical point with a positive
+  definite Hessian, the run converges, is eventually very successful, and has radii bounded away
+  from zero.
+* `ConnGouldToint.Chapter06.lemma_6_5_3_4_counterexample`: a run with exact center data for which
+  the printed Lemmas 6.5.3 and 6.5.4 fail.
+* `ConnGouldToint.Chapter06.abs_model_error_le`, `ConnGouldToint.Chapter06.norm_fderiv_lower_bound`,
+  `ConnGouldToint.Chapter06.tendsto_of_local_step_bound`,
+  `ConnGouldToint.Chapter06.BTRRun.exists_delta_lower_bound_of_eventually_verySuccessful` and
+  `ConnGouldToint.Chapter06.asymptoticConvexEntryRadius_controls_step`: the estimates in the proofs
+  of Lemmas 6.5.3 and 6.5.4 and Theorem 6.5.2.
+
+## Conventions
+
+* The gradient norm of the source is the norm of the derivative `fderiv ℝ f x`. The two agree in a
+  Euclidean space.
+* A subsequence $(x_{k_i})$ is `x ∘ j`, for a map `j : ℕ → ℕ` with `Tendsto j atTop atTop`. The
+  indices need not increase.
+
+## Deviations from the source
+
+* **Lemma 6.5.3** (correction). The statement adds uniform vanishing of the objective and model
+  Hessian variation along the trial segments. See `ConnGouldToint.Chapter06.lemma_6_5_3`.
+* **Lemma 6.5.4** (correction). The statement adds uniform vanishing of the objective and model
+  Hessian variation along the trial segments. See `ConnGouldToint.Chapter06.lemma_6_5_4`.
+* **Theorem 6.5.5** (correction). The statement adds local model curvature on the trial segments
+  near the limit and vanishing model Hessian variation once the steps vanish. See
+  `ConnGouldToint.Chapter06.theorem_6_5_5`.
+-/
 
 open Set Filter Topology
 
@@ -12,9 +76,16 @@ namespace ConnGouldToint.Chapter06
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The step bound (6.5.2). The Hessian bound (6.5.1) is expressed as a bound on its
-quadratic form in the step direction. The BTR decrease condition supplies
-`m (x + s) ≤ m x`. The derivative norm equals the gradient norm in Euclidean space. -/
+/-- **Lemma 6.5.1** of [conn2000trust]. Let $E$ be a real normed space, $m : E \to \mathbb{R}$,
+$x, s \in E$ and $\varepsilon > 0$. Suppose that $m$ and $Dm$ are differentiable at every point
+$x + ts$ with $t \in [0, 1]$, that
+$$\varepsilon \|s\|^2 \le D^2 m(x + ts)(s, s) \quad \text{for all } t \in [0, 1],$$
+and that $m(x + s) \le m(x)$. Then the step bound (6.5.2) holds:
+$$\|s\| \le \frac{2}{\varepsilon} \|Dm(x)\|.$$
+
+The Hessian bound (6.5.1) is stated only for the quadratic form in the direction of the step.
+The decrease condition of the basic trust-region algorithm supplies $m(x + s) \le m(x)$. The
+norm of the derivative $Dm(x)$ equals the gradient norm in a Euclidean space. -/
 theorem lemma_6_5_1 {m : E → ℝ} {x s : E} {ε : ℝ} (hε : 0 < ε)
     (hm : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ m (x + t • s))
     (hDm : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ (fderiv ℝ m) (x + t • s))
@@ -65,20 +136,32 @@ theorem lemma_6_5_1 {m : E → ℝ} {x s : E} {ε : ℝ} (hε : 0 < ε)
   rw [div_mul_eq_mul_div]
   exact (le_div_iff₀ hε).mpr (by linarith)
 
-/-- AM.5, agreement of the Hessians at the model centers when the objective
-derivatives at those centers tend to zero. -/
+/-- **Assumption AM.5** of [conn2000trust], (6.5.14). Let $f : E \to \mathbb{R}$, models
+$m_k : E \to \mathbb{R}$ and centers $x_k \in E$. The models satisfy **Hessian agreement** if
+$$\lim_{k \to \infty} \|Df(x_k)\| = 0 \implies \lim_{k \to \infty} \|D^2 f(x_k) - D^2
+  m_k(x_k)\| = 0.$$
+-/
 def ModelHessianAgreement (f : E → ℝ) (m : ℕ → E → ℝ) (x : ℕ → E) : Prop :=
   Tendsto (fun k ↦ ‖fderiv ℝ f (x k)‖) atTop (𝓝 0) →
     Tendsto (fun k ↦ ‖fderiv ℝ (fderiv ℝ f) (x k) - fderiv ℝ (fderiv ℝ (m k)) (x k)‖)
       atTop (𝓝 0)
 
-/-- Uniform vanishing of the Hessian variation on a family of step segments. -/
+/-- Let $m_k : E \to \mathbb{R}$ be functions and $x_k, s_k \in E$. The **Hessian variation
+vanishes** on the segments $[x_k, x_k + s_k]$ if for every $\varepsilon > 0$, for all large $k$,
+$$\|D^2 m_k(x_k + t s_k) - D^2 m_k(x_k)\| \le \varepsilon \quad \text{for all } t \in [0, 1].$$
+
+This condition supports the corrected Lemmas 6.5.3 and 6.5.4. For a single function $f$ it is
+`HessianVariationVanishes (fun _ ↦ f) x s`. -/
 def HessianVariationVanishes (m : ℕ → E → ℝ) (x s : ℕ → E) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ k in atTop, ∀ t ∈ Icc (0 : ℝ) 1,
     ‖fderiv ℝ (fderiv ℝ (m k)) (x k + t • s k) - fderiv ℝ (fderiv ℝ (m k)) (x k)‖ ≤ ε
 
-/-- Matching values and first derivatives give a quadratic model error bound
-from the Hessian mismatch along the full trial segment. -/
+/-- **Proof of Lemma 6.5.3** of [conn2000trust], model error estimate. Let $f, m : E \to \mathbb{R}$
+and $x, s \in E$, with $f$ twice continuously differentiable, $f(x) = m(x)$ and $Df(x) = Dm(x)$.
+Suppose that $m$ and $Dm$ are differentiable on the segment $[x, x + s]$, and that
+$\|D^2 f(z) - D^2 m(z)\| \le B$ for all $z$ in the segment. Then
+$$|f(x + s) - m(x + s)| \le \tfrac12 B \|s\|^2.$$
+-/
 theorem abs_model_error_le {f m : E → ℝ} {x s : E} {B : ℝ}
     (hf : ContDiff ℝ 2 f) (hval : f x = m x) (hgrad : fderiv ℝ f x = fderiv ℝ m x)
     (hm : ∀ z ∈ segment ℝ x (x + s), DifferentiableAt ℝ m z)
@@ -111,10 +194,25 @@ theorem abs_model_error_le {f m : E → ℝ} {x s : E} {B : ℝ}
       simpa only [add_sub_cancel_left, norm_smul, Real.norm_of_nonneg ht.1, mul_assoc] using hb)
   simpa [D, hval, hderiv x hx, hgrad, Real.norm_eq_abs] using hbound
 
-/-- Corrected Lemma 6.5.3. The two variation assumptions supply the uniform
-control along vanishing steps used in the printed proof. Pointwise twice
-differentiability alone does not give this control. The center gradient limit
-is supplied by Theorem 6.4.6 for a BTR run. -/
+/-- **Lemma 6.5.3** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be twice continuously
+differentiable, let $m_k : E \to \mathbb{R}$ be models with centers $x_k$ and steps $s_k$, and
+let $\eta_2$ be the very successful threshold of the parameters $P$. Let $(k_i)$ be a sequence
+of indices with $k_i \to \infty$, and let $\kappa > 0$. Suppose that, for all $k$, $m_k$ and
+$Dm_k$ are differentiable on the segment $[x_k, x_k + s_k]$, $f(x_k) = m_k(x_k)$ and
+$Df(x_k) = Dm_k(x_k)$. Suppose that $\|Df(x_k)\| \to 0$, that the models satisfy AM.5, and that
+the Hessian variation of $f$ and of $m_{k_i}$ vanishes on the segments
+$[x_{k_i}, x_{k_i} + s_{k_i}]$. If for all large $i$
+$$0 < \kappa \|s_{k_i}\|^2 \le m_{k_i}(x_{k_i}) - m_{k_i}(x_{k_i} + s_{k_i}),$$
+then $\rho_{k_i} \ge \eta_2$ for all large $i$.
+
+**Correction.** The printed proof needs uniform control of the Hessians along vanishing steps,
+which pointwise twice differentiability does not give. The statement adds the two Hessian
+variation hypotheses. Without them the lemma fails, as
+`ConnGouldToint.Chapter06.lemma_6_5_3_4_counterexample` shows.
+
+For a run of the basic trust-region algorithm, Theorem 6.4.6 supplies the limit
+$\|Df(x_k)\| \to 0$. The two variation hypotheses are
+`ConnGouldToint.Chapter06.HessianVariationVanishes`. -/
 theorem lemma_6_5_3 {P : BTRParams} {f : E → ℝ}
     {x s : ℕ → E} {m : ℕ → E → ℝ} {j : ℕ → ℕ} (hj : Tendsto j atTop atTop)
     {κ : ℝ} (hκ : 0 < κ) (hf : ContDiff ℝ 2 f)
@@ -176,8 +274,9 @@ theorem lemma_6_5_3 {P : BTRParams} {f : E → ℝ}
     (f := f) (x := x k) (s := s k) hp (by rwa [hfit])
   simpa [btrRatio] using h
 
-/-- Once all later iterations are very successful, the radius is bounded
-below by the minimum of its positive finite prefix. -/
+/-- **Proof of Lemma 6.5.4** of [conn2000trust], radius floor, also used for Theorem 12.4.5. If all
+iterations of a run of the basic trust-region algorithm from some index on are very successful,
+then there is $\delta > 0$ with $\Delta_k \ge \delta$ for all $k$. -/
 theorem BTRRun.exists_delta_lower_bound_of_eventually_verySuccessful
     {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
     (run : BTRRun f P sufficient) (hv : ∀ᶠ k in atTop, k ∈ run.verySuccessful) :
@@ -202,8 +301,22 @@ theorem BTRRun.exists_delta_lower_bound_of_eventually_verySuccessful
     · exact ih.trans ((run.radius_update k).very_successful (hN k hk))
     · exact hδN (k + 1) (Nat.succ_le_of_lt (lt_of_not_ge hk))
 
-/-- Corrected Lemma 6.5.4. Once the ratio estimate is valid on the full
-sequence, radius updates give a positive lower bound, including the finite prefix. -/
+/-- **Lemma 6.5.4** of [conn2000trust]. Consider a run of the basic trust-region algorithm for a
+twice continuously differentiable $f : E \to \mathbb{R}$, with iterates $x_k$, steps $s_k$,
+radii $\Delta_k$ and models $m_k$, and let $\kappa > 0$. Suppose that, for all $k$, $m_k$ and
+$Dm_k$ are differentiable on the segment $[x_k, x_k + s_k]$, $f(x_k) = m_k(x_k)$ and
+$Df(x_k) = Dm_k(x_k)$. Suppose that $\|Df(x_k)\| \to 0$, that the models satisfy AM.5, and that
+the Hessian variation of $f$ and of $m_k$ vanishes on the segments $[x_k, x_k + s_k]$. If for
+all large $k$
+$$0 < \kappa \|s_k\|^2 \le m_k(x_k) - m_k(x_k + s_k),$$
+then all iterations from some index on are very successful, and there is $\delta > 0$ with
+$\Delta_k \ge \delta$ for all $k$.
+
+**Correction.** As in Lemma 6.5.3, the statement adds the two Hessian variation hypotheses, here
+along the whole sequence. Without them the lemma fails, as
+`ConnGouldToint.Chapter06.lemma_6_5_3_4_counterexample` shows.
+
+The lower bound covers the finite prefix of the run as well as the tail. -/
 theorem lemma_6_5_4 {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     {κ : ℝ} (hκ : 0 < κ) (hf : ContDiff ℝ 2 f)
@@ -224,8 +337,12 @@ theorem lemma_6_5_4 {P : BTRParams} {f : E → ℝ}
     lemma_6_5_3 (P := P) (j := id) tendsto_id hκ hf hm hDm hval hgrad hcrit hagree hFvar hMvar hdec
   exact ⟨hv, run.exists_delta_lower_bound_of_eventually_verySuccessful hv⟩
 
-/-- A derivative that is bounded below at a stationary point stays linearly
-bounded below in the distance to that point in a neighborhood. -/
+/-- **Proofs of Theorems 6.5.2 and 8.4.8** of [conn2000trust], local derivative lower bound. Let
+$f : E \to \mathbb{R}$ and $x_0 \in E$, with $Df$ differentiable at $x_0$ and $Df(x_0) = 0$. Let
+$\sigma > 0$ with $\|D^2 f(x_0) v\| \ge \sigma \|v\|$ for all $v$. Then there is $R > 0$ such
+that
+$$\tfrac{\sigma}{2} \|x - x_0\| \le \|Df(x)\| \quad \text{whenever } \|x - x_0\| < R.$$
+-/
 theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
     (hf : DifferentiableAt ℝ (fderiv ℝ f) x₀) (hzero : fderiv ℝ f x₀ = 0)
     {σ : ℝ} (hσ : 0 < σ) (hH : ∀ v, σ * ‖v‖ ≤ ‖fderiv ℝ (fderiv ℝ f) x₀ v‖) :
@@ -240,13 +357,19 @@ theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
   rw [sub_sub_cancel] at ht
   linarith only [ht, hx', hH (x - x₀)]
 
-/-- The entry radius in (6.5.6) for neighborhood radius R, model
-curvature μ, and the local upper gradient slope c. -/
+/-- **Equation (6.5.6)** of [conn2000trust]. For a neighborhood radius $R$, a model curvature $\mu$
+and a local upper slope $c$ of the gradient, the **entry radius** is
+$$\frac{\mu R}{2c + \mu}.$$
+
+Its value is $0$ when $2c + \mu = 0$. -/
 noncomputable def asymptoticConvexEntryRadius (R μ c : ℝ) : ℝ :=
   μ * R / (2 * c + μ)
 
-/-- Entering the radius (6.5.6) keeps the next iterate within radius R
-whenever its displacement is bounded by the local gradient slope times 2/μ. -/
+/-- **Equation (6.5.6)** of [conn2000trust], step control. Let $\mu > 0$ and $c \ge 0$. If
+$d \le \mu R / (2c + \mu)$ and $t \le (2 / \mu) c d$, then $d + t \le R$.
+
+Here $d$ is the distance of an iterate to the limit point and $t$ is the length of the next
+step, so the next iterate stays within distance $R$. -/
 theorem asymptoticConvexEntryRadius_controls_step {R μ c d step : ℝ}
     (hμ : 0 < μ) (hc : 0 ≤ c)
     (hd : d ≤ asymptoticConvexEntryRadius R μ c)
@@ -260,7 +383,11 @@ theorem asymptoticConvexEntryRadius_controls_step {R μ c d step : ℝ}
   ring
 
 omit [NormedSpace ℝ E] in
-/-- A subsequential limit traps the full sequence under the local step bound. -/
+/-- **Proofs of Theorems 6.5.2 and 8.4.8** of [conn2000trust], neighborhood trapping argument. Let
+$E$ be a normed group, $x_k, x_0 \in E$, and $u_k \to 0$ in $\mathbb{R}$. Let $R > 0$, $c > 0$
+and $C \in \mathbb{R}$. Suppose that a subsequence $x_{k_i}$ converges to $x_0$, that
+$c \|x_k - x_0\| \le u_k$ for every $k$ with $\|x_k - x_0\| < R$, and that, for all large $k$,
+$\|x_k - x_0\| < R$ implies $\|x_{k+1} - x_k\| \le C u_k$. Then $x_k \to x_0$. -/
 theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
     {R C c : ℝ} (hR : 0 < R) (hc : 0 < c)
     (hu : Tendsto u atTop (𝓝 0))
@@ -320,10 +447,19 @@ private theorem step_norm_le_of_model_curvature {P : BTRParams} {f : E → ℝ}
   exact lemma_6_5_1 hμ (fun t ht ↦ hm _ (hseg t ht)) (fun t ht ↦ hDm _ (hseg t ht))
     (fun t ht ↦ hcurv _ (hseg t ht)) (sub_nonneg.mp (run.predicted_pos k).le)
 
-/-- Theorem 6.5.2. A subsequence converges to a first-order point with a nonsingular
-Hessian. The lower bound on the Hessian as a linear map is the finite-dimensional
-form of nonsingularity. Uniform local model convexity need only hold along the
-trial steps. The gradient limit is supplied by Theorem 6.4.6. -/
+/-- **Theorem 6.5.2** of [conn2000trust]. Consider a run of the basic trust-region algorithm for a
+twice continuously differentiable $f : E \to \mathbb{R}$, with iterates $x_k$, steps $s_k$ and
+models $m_k$. Let $x_0 \in E$ be the limit of a subsequence $x_{k_i}$, with $Df(x_0) = 0$, and
+suppose that $\|Df(x_k)\| \to 0$. Let $\sigma, R, \mu > 0$ with
+$\|D^2 f(x_0) v\| \ge \sigma \|v\|$ for all $v$. Suppose that, for all $k$, $m_k$ and $Dm_k$ are
+differentiable on the segment $[x_k, x_k + s_k]$ and $Df(x_k) = Dm_k(x_k)$. Suppose also that,
+for all large $k$ with $\|x_k - x_0\| < R$,
+$$\mu \|s_k\|^2 \le D^2 m_k(z)(s_k, s_k) \quad \text{for all } z \in [x_k, x_k + s_k].$$
+Then $x_k \to x_0$.
+
+The lower bound on $D^2 f(x_0)$ as a linear map is the finite-dimensional form of
+nonsingularity. The convexity of the models is needed only along the trial steps near $x_0$. For
+a run of the basic trust-region algorithm, Theorem 6.4.6 supplies the limit $\|Df(x_k)\| \to 0$. -/
 theorem theorem_6_5_2 {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     {x₀ : E} {j : ℕ → ℕ} (hj : Tendsto j atTop atTop)
@@ -381,11 +517,31 @@ private theorem hessianVariationVanishes_of_tendsto {f : E → ℝ} (hf : ContDi
   rw [sub_sub_sub_cancel_right] at hb
   exact hb.trans (by linarith)
 
-/-- Corrected Theorem 6.5.5. The local model curvature condition keeps trial
-steps near a positive-definite limit once the iterates enter its neighborhood.
-Center Hessian agreement alone does not control the models on whole trial
-segments. The uniform model variation condition supplies the remaining
-hypothesis of the ratio estimate once the steps vanish. -/
+/-- **Theorem 6.5.5** of [conn2000trust]. Let $F$ be a real Hilbert space, and consider a run of the
+basic trust-region algorithm for a twice continuously differentiable $f : F \to \mathbb{R}$,
+with iterates $x_k$, steps $s_k$, radii $\Delta_k$, models $m_k$ and trust-region norms
+$\|\cdot\|_k$. Let $x_0$ be the limit of a subsequence $x_{k_i}$, with $Df(x_0) = 0$, and
+suppose that $\|Df(x_k)\| \to 0$. Let $\sigma, R, \mu, K, B, \kappa > 0$, and suppose:
+
+* $D^2 f(x_0)(v, v) \ge \sigma \|v\|^2$ for all $v$, and $\|v\| \le K \|v\|_k$ for all $k$ and
+  $v$;
+* $0 < \beta_k \le B$, and the step satisfies the sufficient decrease condition $\kappa \|\nabla
+  f(x_k)\| \min\{\|\nabla f(x_k)\| / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k)$ with
+  $\kappa < 1$, for all $k$;
+* for all $k$, $m_k$ and $Dm_k$ are differentiable on $[x_k, x_k + s_k]$, $f(x_k) = m_k(x_k)$
+  and $Df(x_k) = Dm_k(x_k)$, and the models satisfy AM.5;
+* for all large $k$ with $\|x_k - x_0\| < R$, $\mu \|s_k\|^2 \le D^2 m_k(z)(s_k, s_k)$ for all
+  $z \in [x_k, x_k + s_k]$;
+* if $s_k \to 0$, then the Hessian variation of the models vanishes on the segments
+  $[x_k, x_k + s_k]$.
+
+Then $x_k \to x_0$, all iterations from some index on are very successful, and there is
+$\delta > 0$ with $\Delta_k \ge \delta$ for all $k$.
+
+**Correction.** Agreement of the Hessians at the centers alone does not control the models on
+whole trial segments. The statement adds the local model curvature condition, which keeps the
+trial steps near $x_0$ once the iterates enter its neighborhood, and the model variation
+condition, which supplies the remaining hypothesis of Lemma 6.5.4 once the steps vanish. -/
 theorem theorem_6_5_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -552,11 +708,25 @@ private noncomputable def shrinkingQuarticRun :
     · norm_num [defaultBTRParams] at h
     · simp [defaultBTRParams, shrinkingRadius, pow_succ, mul_comm]
 
-/-- The literal Lemmas 6.5.3 and 6.5.4 fail for smooth models with exact center
-value, gradient, and Hessian. The decrease equals the square of the vanishing
-step length, but the objective is constant, every trial is rejected, and the
-radius tends to zero. The model Hessians are uniformly bounded on their
-trust regions, even though their variation on the trial segments persists. -/
+/-- **Counterexample** to Lemmas 6.5.3 and 6.5.4 of [conn2000trust] as printed. There is a run of
+the basic trust-region algorithm for the objective $f = 0$ on $\mathbb{R}$, with the parameters
+(6.1.6) and the absolute value as trust-region norm, such that:
+
+* each model $m_k$ is twice continuously differentiable, with $m_k(x_k) = 0$, $Dm_k(x_k) = 0$
+  and $D^2 m_k(x_k) = 0$;
+* $\|D^2 m_k(y)\| \le 12$ for every $y$ in the trust region, and $\|D^2 m_k(x_k + s_k)\| = 12$;
+* the model decrease is $m_k(x_k) - m_k(x_k + s_k) = \|s_k\|^2$;
+* $\|s_k\| \to 0$ and $\Delta_k \to 0$;
+* the reduction ratio is $\rho_k = 0$ for every $k$.
+
+So the models agree exactly with the objective in value, gradient and Hessian at the centers and
+the decrease is quadratic in the vanishing step, but every trial is rejected and the radius
+tends to zero. The model Hessians are uniformly bounded on the trust regions, but their
+variation on the trial segments does not vanish.
+
+The run has $x_k = 0$, $s_k = \Delta_k = 2^{-k}$ and $m_k(y) = -y^4 / \Delta_k^2$. Its
+sufficient decrease test is `ConnGouldToint.Chapter06.HasSufficientModelDecrease` with gradient
+$0$, which holds for every step that does not increase the model. -/
 theorem lemma_6_5_3_4_counterexample :
     ∃ run : BTRRun (fun _ : ℝ ↦ 0) defaultBTRParams
       (fun _ m x s ↦ HasSufficientModelDecrease m x s 0 13 s (1 / 2)),

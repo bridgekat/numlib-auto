@@ -5,7 +5,62 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter11.Section02
 import NumlibSurface.ConnGouldToint.Chapter10.Section01
 
-/-! # Nonmonotone and corrected nonsmooth iterations -/
+/-!
+# Conn, Gould and Toint, Section 11.3: Nonmonotone and corrected nonsmooth iterations
+
+This module formalizes two variants of the nonsmooth trust-region method from Section 11.3 of
+[conn2000trust]. Theorem 11.3.1 applies the nonmonotone acceptance rule of Algorithm 10.1.1 to a
+locally Lipschitz objective. The cumulative rule bounds the sum of the accepted predicted decreases,
+and near a nonstationary limit point the capped expansion rule and uniform model agreement keep the
+radius away from zero, so every limit point is Clarke stationary. Algorithm 11.3.1 adds to each
+trial step $s_k$ a correction $c_k$ that does not increase the objective at $x_k + s_k$, but keeps
+the predicted decrease of the original step $s_k$ in the ratio. Theorem 11.3.2 shows that every
+limit point of such a run is Clarke stationary.
+
+The local radius argument of Lemma 11.2.4 is isolated in
+`ConnGouldToint.Chapter11.radius_floor_of_local_expansion`, which also covers corrected steps. The
+nonmonotone run is `ConnGouldToint.Chapter10.NonmonotoneRun` of
+`NumlibSurface.ConnGouldToint.Chapter10.Section01`. The optional correction steps of this module are
+also used by Algorithms 15.3.1 and 16.2.1.
+
+## Main definitions
+
+* Algorithms 15.3.1 and 16.2.1, Step 2, `ConnGouldToint.Chapter11.selectOptionalCorrection` and
+  `ConnGouldToint.Chapter11.OptionalCorrectionStep`: a proposed correction is kept exactly when it
+  does not increase the objective at the original trial.
+* Algorithm 11.3.1, `ConnGouldToint.Chapter11.NonsmoothCorrectionRun`: an infinite run with
+  corrections and the original prediction.
+* Algorithms 11.3.1, 15.3.1 and 16.2.1,
+  `ConnGouldToint.Chapter11.NonsmoothCorrectionRun.ofOptionalCorrectionSteps`: optional correction
+  steps give a run of Algorithm 11.3.1.
+
+## Main results
+
+* Lemma 11.2.4 and Theorems 11.3.1–11.3.2,
+  `ConnGouldToint.Chapter11.radius_floor_of_local_expansion`: forced expansion at small radii near
+  $z$ gives a positive lower bound on the radii near $z$.
+* Theorem 11.3.1, `ConnGouldToint.Chapter11.theorem_11_3_1`: every limit point of a nonmonotone
+  nonsmooth run is Clarke stationary.
+* Algorithms 11.3.1, 15.3.1 and 16.2.1,
+  `ConnGouldToint.Chapter11.OptionalCorrectionStep.selected_bounds`: the selected correction
+  satisfies the enlarged radius and does not increase the objective.
+* Algorithms 11.3.1, 15.3.1 and 16.2.1,
+  `ConnGouldToint.Chapter11.OptionalCorrectionStep.original_ratio_le`: with the original prediction,
+  the selected correction does not decrease the ratio.
+* Theorem 11.3.2, `ConnGouldToint.Chapter11.theorem_11_3_2`: every limit point of a run of Algorithm
+  11.3.1 is Clarke stationary.
+
+## Implementation notes
+
+* The steps satisfy the explicit bound $\|s_k\| \le \Delta_k$ in the norm of $E$, and the corrected
+  steps satisfy $\|s_k + c_k\| \le \tau \Delta_k$ for a fixed enlargement $\tau$.
+
+## Deviations from the source
+
+* **Theorems 11.3.1 and 11.3.2** (correction). Both assume uniform normalized agreement of the
+  models (11.2.1), as the corrected Lemma 11.2.3 does. See `ConnGouldToint.Chapter11.theorem_11_3_1`
+  and `ConnGouldToint.Chapter11.theorem_11_3_2`.
+-/
 
 open Filter Topology Metric Set Optimization
 open ConnGouldToint.Chapter10
@@ -14,8 +69,15 @@ namespace ConnGouldToint.Chapter11
 
 variable {E P : Type*} [NormedAddCommGroup E]
 
-/-- The local radius floor argument of Lemma 11.2.4 also applies to
-composite steps bounded by a fixed multiple of the radius. -/
+/-- **Lemma 11.2.4** of [conn2000trust], radius estimate, as used in Theorems 11.3.1 and 11.3.2. Let
+$E$ be a normed additive group, let $(x_k)$ be a sequence in $E$ and $(\Delta_k)$ a sequence of
+positive radii, and let $\varepsilon, T, K, \gamma_1 > 0$ and $\gamma_3 > 1$. Assume that
+$\Delta_{k+1} \ge \gamma_1 \Delta_k$ and $\|x_{k+1} - x_k\| \le K \Delta_k$ for all $k$, and
+that $\Delta_{k+1} \ge \gamma_3 \Delta_k$ whenever $\|x_k - z\| < \varepsilon$ and
+$\Delta_k < T$. Then there is $r > 0$ with $\Delta_k \ge r$ for every $k$ with
+$\|x_k - z\| < \varepsilon/2$.
+
+The constant $K$ allows composite steps that are bounded by a fixed multiple of the radius. -/
 theorem radius_floor_of_local_expansion {x : ℕ → E} {z : E} {Δ : ℕ → ℝ}
     {ε T K γ₁ γ₃ : ℝ} (hε : 0 < ε) (hT : 0 < T) (hK : 0 < K)
     (hγ₁ : 0 < γ₁) (hγ₃ : 1 < γ₃)
@@ -112,10 +174,25 @@ private theorem summable_of_bounded_accepted_decrease {S : Set ℕ} {pred : ℕ 
 
 variable [InnerProductSpace ℝ E] [CompleteSpace E]
 
-/-- Theorem 11.3.1. The cumulative nonmonotone acceptance rule bounds
-the sum of accepted predicted decreases. Near a nonstationary limit,
-the capped expansion rule and uniform model agreement prevent the
-radius from tending to zero. -/
+/-- **Theorem 11.3.1** of [conn2000trust]. Let $E$ be a real Hilbert space, let
+$f : E \to \mathbb{R}$ be bounded below, and consider a run of the nonmonotone Algorithm 10.1.1
+with parameters $B$ and model parameters $p_k$ such that $m(x_k, p_k, s) = m_k(x_k + s)$ for all
+$k$ and $s$. Let the parameters $Q$ satisfy (11.1.15), and assume that $\|s_k\| \le \Delta_k$
+and that $\Delta_{k+1} \ge \min\{\gamma_3 \Delta_k, \Delta_{\max}\}$ whenever the ratio of
+iteration $k$ is at least $\eta_2$, both with the constants of $Q$. Let $z$ be the limit of a
+subsequence $x_{j(k)}$, let $f$ be Lipschitz on a neighborhood of $z$, and let the models match
+the value of $f$ (11.1.1) and have uniform normalized agreement with $f$ at $z$. Let
+$\varepsilon, \delta, \kappa > 0$ with
+$$\kappa \|g^*(x_k)\| \min\{\delta, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k) \quad
+  \text{whenever } \|x_k - z\| < \varepsilon.$$
+Then $z$ is Clarke stationary: $0 \in \partial f(z)$.
+
+**Correction.** The source assumes only pointwise model agreement. The statement assumes uniform
+normalized agreement, as in the corrected Lemma 11.2.3.
+
+The cumulative nonmonotone acceptance rule bounds the sum of the accepted predicted decreases.
+Near a nonstationary limit point, the capped expansion rule and the uniform agreement prevent
+the radius from tending to zero. -/
 theorem theorem_11_3_1 {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → E → ℝ}
     {B : Chapter06.BTRParams} (run : NonmonotoneRun f B)
     (parameter : ℕ → P) (hmodel : ∀ k s, m (run.x k) (parameter k) s =
@@ -202,30 +279,51 @@ theorem theorem_11_3_1 {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → 
       (lt_of_not_ge (fun h ↦ hk ((run.accepted_iff k).mpr h)))).2) hj hz
 
 
-/-- The optional correction is kept exactly when it does not worsen the merit
-of the original trial. A skipped or rejected correction is zero. -/
+/-- **Algorithms 15.3.1 and 16.2.1** of [conn2000trust], Steps 2a–2b. The **selected correction**
+for a trial $x + s$ and an optional proposal $d$ is $d$ if a proposal exists and
+$f(x + s + d) \le f(x + s)$, and $0$ otherwise.
+
+So a skipped or rejected correction is zero. -/
 noncomputable def selectOptionalCorrection (f : E → ℝ) (x s : E) (proposal : Option E) : E :=
   match proposal with
   | none => 0
   | some d => if f (x + s + d) ≤ f (x + s) then d else 0
 
-/-- Step 2 of a nonsmooth trust-region correction algorithm. The input
-required is the current sufficient-decrease benchmark. A proposed correction
-reduces its own model and satisfies the enlarged radius before the merit
-comparison is made. -/
+/-- **Algorithms 15.3.1 and 16.2.1** of [conn2000trust], Step 2. An **optional correction step** at
+$x$ with trial step $s$, radius $\Delta \ge 0$ and enlargement $\tau > 1$ consists of the facts
+that $p(s) \le \Delta$, that the original step meets the decrease benchmark
+$0 \le r \le m(0) - m(s)$, that every proposed correction $d$ satisfies
+$m_{CS}(d) \le m_{CS}(0)$ and $p(s + d) \le \tau \Delta$, and that the correction is the
+selected correction.
+
+Here $m$ is the model of the trial step, $m_{CS}$ the model of the correction, $p$ the
+trust-region norm, and $r$ the current sufficient-decrease benchmark. A proposed correction must
+reduce its own model and fit in the enlarged radius before the comparison of the objective
+values. -/
 structure OptionalCorrectionStep (f m mCS : E → ℝ) (p : E → ℝ)
     (x s : E) (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop where
+  /-- The radius is nonnegative: $\Delta \ge 0$. -/
   radius_nonneg : 0 ≤ Δ
+  /-- The enlargement factor is larger than one: $\tau > 1$. -/
   enlargement_gt_one : 1 < τ
+  /-- The original step lies in the trust region: $p(s) \le \Delta$. -/
   original_radius : p s ≤ Δ
+  /-- The decrease benchmark is nonnegative: $r \ge 0$. -/
   required_nonneg : 0 ≤ required
+  /-- The original step meets the decrease benchmark: $r \le m(0) - m(s)$. -/
   original_decrease : required ≤ m 0 - m s
+  /-- Every proposed correction $d$ reduces its model, $m_{CS}(d) \le m_{CS}(0)$, and satisfies
+  $p(s + d) \le \tau \Delta$. -/
   proposal_valid : ∀ d, proposal = some d → mCS d ≤ mCS 0 ∧ p (s + d) ≤ τ * Δ
+  /-- The correction is the selected correction for the proposal. -/
   selected : correction = selectOptionalCorrection f x s proposal
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
-/-- The selected correction satisfies the enlarged radius and cannot worsen
-the original trial merit, including when the correction is reset to zero. -/
+/-- **Algorithms 11.3.1, 15.3.1 and 16.2.1** of [conn2000trust]. The selected correction $c$ of an
+optional correction step satisfies the enlarged radius, $p(s + c) \le \tau \Delta$, and does not
+increase the objective at the original trial, $f(x + s + c) \le f(x + s)$.
+
+This also holds when the correction is reset to zero. -/
 theorem OptionalCorrectionStep.selected_bounds
     {f m mCS : E → ℝ} {p : E → ℝ} {x s : E} {Δ τ required : ℝ}
     {proposal : Option E} {correction : E}
@@ -246,8 +344,11 @@ theorem OptionalCorrectionStep.selected_bounds
       exact hbase
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
-/-- Algorithm 11.3.1 keeps the prediction from the original step. With this
-denominator the selected correction can only improve the reduction ratio. -/
+/-- **Algorithms 11.3.1, 15.3.1 and 16.2.1** of [conn2000trust]. For an optional correction step
+with selected correction $c$, the ratios with the original prediction $m(0) - m(s)$ satisfy
+$$\frac{f(x) - f(x + s)}{m(0) - m(s)} \le \frac{f(x) - f(x + s + c)}{m(0) - m(s)}.$$
+So the correction can only improve the reduction ratio when the prediction comes from the
+original step. -/
 theorem OptionalCorrectionStep.original_ratio_le
     {f m mCS : E → ℝ} {p : E → ℝ} {x s : E} {Δ τ required : ℝ}
     {proposal : Option E} {correction : E}
@@ -259,35 +360,61 @@ theorem OptionalCorrectionStep.original_ratio_le
     (h.required_nonneg.trans h.original_decrease)
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
-/-- Algorithm 11.3.1. The correction can improve the objective at the
-original trial, while the prediction still comes from the original step. -/
+/-- **Algorithm 11.3.1** of [conn2000trust], with (11.3.4)–(11.3.5). An infinite run of the
+nonsmooth trust-region algorithm with corrections, for parameters (11.1.15), an objective $f$
+and models $m(x, p, \cdot)$, consists of iterates $x_k$, steps $s_k$, corrections $c_k$, radii
+$\Delta_k$ with $0 < \Delta_0 \le \Delta_{\max}$, model parameters $p_k$ and an enlargement
+$\tau \ge 1$, such that $\|s_k\| \le \Delta_k$, $\|s_k + c_k\| \le \tau \Delta_k$,
+$f(x_k + s_k + c_k) \le f(x_k + s_k)$ and $m(x_k, p_k, 0) - m(x_k, p_k, s_k) \ge 0$. The ratio
+$$\rho_k = \frac{f(x_k) - f(x_k + s_k + c_k)}{m(x_k, p_k, 0) - m(x_k, p_k, s_k)}$$
+uses the corrected trial and the original prediction. The next iterate is $x_k + s_k + c_k$ if
+$\rho_k \ge \eta_1$ and $x_k$ otherwise, and the radius is updated by (11.1.16) with $\rho_k$. -/
 structure NonsmoothCorrectionRun (Q : NonsmoothTRParams) (f : E → ℝ)
     (m : E → P → E → ℝ) where
+  /-- The iterates $x_k$. -/
   x : ℕ → E
+  /-- The trial steps $s_k$. -/
   s : ℕ → E
+  /-- The corrections $c_k$. -/
   correction : ℕ → E
+  /-- The trust-region radii $\Delta_k$. -/
   Δ : ℕ → ℝ
+  /-- The model parameters $p_k$. -/
   parameter : ℕ → P
+  /-- The initial radius is positive: $\Delta_0 > 0$. -/
   radius_initial_pos : 0 < Δ 0
+  /-- The initial radius is at most the cap: $\Delta_0 \le \Delta_{\max}$. -/
   radius_initial_le : Δ 0 ≤ Q.Δmax
+  /-- Each original step lies in the trust region: $\|s_k\| \le \Delta_k$. -/
   step_bound : ∀ k, ‖s k‖ ≤ Δ k
+  /-- The enlargement factor $\tau$ of the corrected steps. -/
   enlargement : ℝ
+  /-- The enlargement factor is at least one: $\tau \ge 1$. -/
   enlargement_ge_one : 1 ≤ enlargement
+  /-- Each corrected step lies in the enlarged region: $\|s_k + c_k\| \le \tau \Delta_k$. -/
   corrected_bound : ∀ k, ‖s k + correction k‖ ≤ enlargement * Δ k
+  /-- Each correction does not increase the objective: $f(x_k + s_k + c_k) \le f(x_k + s_k)$. -/
   improves : ∀ k, f (x k + s k + correction k) ≤ f (x k + s k)
+  /-- The predicted decrease of the original step is nonnegative. -/
   pred_nonneg : ∀ k, 0 ≤ m (x k) (parameter k) 0 - m (x k) (parameter k) (s k)
+  /-- The next iterate is $x_k + s_k + c_k$ if $\rho_k \ge \eta_1$, and $x_k$ otherwise. -/
   next_x : ∀ k, x (k + 1) =
     if Q.η₁ ≤ reductionRatio f (x k) (s k + correction k)
       (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k))
     then x k + (s k + correction k) else x k
+  /-- The next radius is a legal update (11.1.16) of $\Delta_k$ for $\rho_k$. -/
   next_radius : ∀ k, NonsmoothRadiusUpdate Q
     (reductionRatio f (x k) (s k + correction k)
       (m (x k) (parameter k) 0 - m (x k) (parameter k) (s k))) (Δ k) (Δ (k + 1))
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
-/-- Optional correction steps measured in the ambient norm give the trial
-fields of Algorithm 11.3.1. The iterate and radius updates use the selected
-trial but retain the original prediction. -/
+/-- **Algorithms 11.3.1, 15.3.1 and 16.2.1** of [conn2000trust]. Optional correction steps with the
+norm of $E$ as trust-region norm, an enlargement $\tau > 1$, an initial radius
+$0 < \Delta_0 \le \Delta_{\max}$, the iterate update by the acceptance test with $\eta_1$ and
+the radius update (11.1.16) form a run of Algorithm 11.3.1.
+
+The iterate and radius updates use the selected trial $s_k + c_k$ and the original prediction
+$m(x_k, p_k, 0) - m(x_k, p_k, s_k)$. -/
 def NonsmoothCorrectionRun.ofOptionalCorrectionSteps
     {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → E → ℝ}
     (x s correction : ℕ → E) (Δ required : ℕ → ℝ) (parameter : ℕ → P)
@@ -317,10 +444,20 @@ def NonsmoothCorrectionRun.ofOptionalCorrectionSteps
   next_x := hnext
   next_radius := hrad
 
-/-- Theorem 11.3.2. Correction improves the numerator of the acceptance
-ratio, and its fixed enlargement only changes the displacement coefficient
-in the local radius estimate. A convergent subsequence supplies the lower
-objective bound needed for the sum of accepted decreases. -/
+/-- **Theorem 11.3.2** of [conn2000trust]. Let $E$ be a real Hilbert space and consider a run of
+Algorithm 11.3.1. Let $z$ be the limit of a subsequence $x_{j(k)}$, let $f$ be Lipschitz on a
+neighborhood of $z$, and let the models match the value of $f$ (11.1.1) and have uniform
+normalized agreement with $f$ at $z$. Let $\varepsilon, \delta, \kappa > 0$ with
+$$\kappa \|g^*(x_k)\| \min\{\delta, \Delta_k\} \le m(x_k, p_k, 0) - m(x_k, p_k, s_k) \quad
+  \text{whenever } \|x_k - z\| < \varepsilon.$$
+Then $z$ is Clarke stationary: $0 \in \partial f(z)$.
+
+**Correction.** The source assumes only pointwise model agreement. The statement assumes uniform
+normalized agreement, as in the corrected Lemma 11.2.3.
+
+The correction only improves the numerator of the ratio, and the fixed enlargement only changes
+the displacement coefficient in the local radius estimate. The convergent subsequence supplies
+the lower bound on the objective that the sum of the accepted decreases needs. -/
 theorem theorem_11_3_2 {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → E → ℝ}
     (run : NonsmoothCorrectionRun Q f m) {z : E} {U : Set E} {L : NNReal}
     (hU : U ∈ 𝓝 z) (hL : LipschitzOnWith L f U) (hmatch : modelValueMatches f m)

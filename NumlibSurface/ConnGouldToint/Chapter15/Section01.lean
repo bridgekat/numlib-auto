@@ -6,27 +6,74 @@ import Mathlib.Order.Filter.Extr
 import Mathlib.Topology.Order.OrderClosed
 import Mathlib.Topology.Instances.Real.Lemmas
 
-/-! # The nonlinear programs underlying SQP -/
+/-!
+# Conn, Gould and Toint, Section 15.1: The nonlinear programs of SQP
+
+This module states the two nonlinear programs that the sequential quadratic programming (SQP)
+methods of Chapter 15 of [conn2000trust] solve. The mixed program (15.1.1) is
+$$\min_{x \in E} f(x) \quad \text{subject to} \quad c_i(x) = 0 \ (i \in \mathcal{E}), \qquad c_j(x)
+  \ge 0 \ (j \in \mathcal{I}),$$
+and the equality program (15.1.2) has only the equality constraints. A solution is a global
+minimizer of $f$ on the feasible set. The equality program is the mixed program with no inequality
+constraints, and continuous constraints give a closed feasible set.
+
+## Main definitions
+
+* Equation (15.1.1), `ConnGouldToint.Chapter15.nonlinearFeasibleSet`: the feasible set of the mixed
+  program.
+* Equation (15.1.1), `ConnGouldToint.Chapter15.IsMixedNonlinearSolution`: a feasible point that
+  minimizes $f$ on the feasible set.
+* Equation (15.1.2), `ConnGouldToint.Chapter15.IsEqualityNonlinearSolution`: a solution of the
+  equality program.
+
+## Main results
+
+* Equations (15.1.1)–(15.1.2),
+  `ConnGouldToint.Chapter15.isMixedNonlinearSolution_iff_isEqualityNonlinearSolution`: with no
+  inequality constraints, the two solution notions agree.
+* `ConnGouldToint.Chapter15.isClosed_nonlinearFeasibleSet`: continuous constraints give a closed
+  feasible set.
+
+## Implementation notes
+
+* The equality and inequality constraints are two families `cEq : ι → E → ℝ` and `cIneq : κ → E → ℝ`
+  with separate index types. The index sets $\mathcal{E}$ and $\mathcal{I}$ of the source are `ι`
+  and `κ`.
+-/
 
 namespace ConnGouldToint.Chapter15
 
 variable {E ι κ : Type*}
 
-/-- The feasible set for the mixed equality and inequality program (15.1.1).
-The two constraint families are indexed separately. -/
+/-- **Equation (15.1.1)** of [conn2000trust]. For constraint functions $c_i : E \to \mathbb{R}$,
+$i \in \mathcal{E}$, and $c_j : E \to \mathbb{R}$, $j \in \mathcal{I}$, the **feasible set** of
+the mixed program is
+$$\{x \in E : c_i(x) = 0 \text{ for all } i \in \mathcal{E}, \ c_j(x) \ge 0 \text{ for all } j
+  \in \mathcal{I}\}.$$
+
+The two constraint families are indexed by separate types `ι` and `κ`. -/
 def nonlinearFeasibleSet (cEq : ι → E → ℝ) (cIneq : κ → E → ℝ) : Set E :=
   {x | (∀ i, cEq i x = 0) ∧ ∀ j, 0 ≤ cIneq j x}
 
-/-- The solution condition for the mixed program (15.1.1). -/
+/-- **Equation (15.1.1)** of [conn2000trust]. A point $x \in E$ **solves the mixed program** if $x$
+lies in the feasible set of `ConnGouldToint.Chapter15.nonlinearFeasibleSet` and $f(x) \le f(y)$
+for every feasible $y$. -/
 def IsMixedNonlinearSolution (f : E → ℝ) (cEq : ι → E → ℝ)
     (cIneq : κ → E → ℝ) (x : E) : Prop :=
   x ∈ nonlinearFeasibleSet cEq cIneq ∧ IsMinOn f (nonlinearFeasibleSet cEq cIneq) x
 
-/-- The solution condition for the equality-only program (15.1.2). -/
+/-- **Equation (15.1.2)** of [conn2000trust]. A point $x \in E$ **solves the equality program** if
+$c_i(x) = 0$ for all $i \in \mathcal{E}$ and $f(x) \le f(y)$ for every $y$ with $c_i(y) = 0$ for
+all $i \in \mathcal{E}$. -/
 def IsEqualityNonlinearSolution (f : E → ℝ) (cEq : ι → E → ℝ) (x : E) : Prop :=
   (∀ i, cEq i x = 0) ∧ IsMinOn f {y | ∀ i, cEq i y = 0} x
 
-/-- The equality-only program is the mixed program with an empty inequality family. -/
+/-- **Equations (15.1.1)–(15.1.2)** of [conn2000trust]. If the inequality index set $\mathcal{I}$ is
+empty, then $x$ solves the mixed program (15.1.1) if and only if $x$ solves the equality program
+(15.1.2).
+
+The empty index set is the hypothesis `[IsEmpty κ]`; the inequality functions `cIneq` are then
+arbitrary. -/
 theorem isMixedNonlinearSolution_iff_isEqualityNonlinearSolution [IsEmpty κ]
     (f : E → ℝ) (cEq : ι → E → ℝ) (cIneq : κ → E → ℝ) (x : E) :
     IsMixedNonlinearSolution f cEq cIneq x ↔ IsEqualityNonlinearSolution f cEq x := by
@@ -35,7 +82,8 @@ theorem isMixedNonlinearSolution_iff_isEqualityNonlinearSolution [IsEmpty κ]
     simp [nonlinearFeasibleSet]
   simp [IsMixedNonlinearSolution, IsEqualityNonlinearSolution, h]
 
-/-- Continuous constraints make the feasible set of (15.1.1) closed. -/
+/-- Let $E$ be a topological space. If every equality constraint $c_i$ and every inequality
+constraint $c_j$ is continuous, then the feasible set of the mixed program (15.1.1) is closed. -/
 theorem isClosed_nonlinearFeasibleSet [TopologicalSpace E]
     {cEq : ι → E → ℝ} {cIneq : κ → E → ℝ}
     (hEq : ∀ i, Continuous (cEq i)) (hIneq : ∀ j, Continuous (cIneq j)) :

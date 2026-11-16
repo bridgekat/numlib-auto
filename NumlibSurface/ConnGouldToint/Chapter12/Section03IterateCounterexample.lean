@@ -4,7 +4,35 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.ConnGouldToint.Chapter12.Section03ConstraintExample
 
-/-! # Failure of iterate active-set identification -/
+/-!
+# Conn, Gould and Toint, Section 12.3: failure of iterate active-set identification
+
+This module shows that Lemma 12.3.7 and Theorem 12.3.8 of [conn2000trust] fail as printed at the
+iterates. The feasible set is the quadrant $C = \{v \in \mathbb{R}^3 : v_0 \ge 0, v_1 \ge 0\}$,
+written with the smooth constraints of `ConnGouldToint.Chapter12.ConstraintExample.constraints`. The
+objective is $f(v) = v_0 + v_0^2 + v_1 + v_1^2 + v_2^2/2$. Its gradient at the origin is
+$(1, 1, 0)$, so the origin is a strictly complementary stationary point with both constraints active
+and independent active gradients. A run with constant radius $2$ and only very successful steps has
+iterates $x_k = (0, a_k, a_k^2)$ with $a_k = 2^{-k}/8$, which converge to the origin. The
+generalized Cauchy point at every iterate is the remote point $w = (0, 0, -1)$, where only one
+constraint is active and its gradient is zero. No iterate has the active set $\{0, 1\}$ of the
+limit.
+
+## Main results
+
+* `ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`: a convergent run
+  that meets the hypotheses of Lemma 12.3.7 and Theorem 12.3.8, in which no iterate has the active
+  set of the limit.
+
+## Deviations from the source
+
+* **Lemma 12.3.7** (correction). The claimed subsequence of successful iterations with the limiting
+  active set need not exist. See
+  `ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`.
+* **Theorem 12.3.8** (correction). Eventual identification of the active set at the iterates fails
+  for a run with constant radii and only very successful steps. See
+  `ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`.
+-/
 
 open Filter Optimization
 open scoped Topology RealInnerProductSpace
@@ -470,11 +498,41 @@ private theorem example_sufficient_decrease (k : ℕ) (β : ℝ) (hβ : 1 ≤ β
     _ ≤ model k (center k) - model k remote := hdec
     _ ≤ _ := sub_le_sub_left (model_dominates_cauchy k) _
 
-/-- Theorem 12.3.8 as printed can fail at the iterates as well as at the
-Cauchy points. The same run refutes the subsequence claim of Lemma 12.3.7.
-A smooth representation of the orthant has two independent
-active gradients at the limit, but only one active constraint at the remote
-Cauchy point. Every trial is very successful and satisfies AA.5. -/
+/-- **Theorem 12.3.8** and **Lemma 12.3.7** of [conn2000trust], counterexample at the iterates.
+There are a closed convex set $C \subseteq \mathbb{R}^3$, an objective $f$, constraints
+$c_0, c_1$, parameters $Q$ of the generalized Cauchy point, constants $\kappa$, $B_f$ and $B_m$,
+a point $w$ and a run of the basic trust-region algorithm for $f$ with the default parameters
+(6.1.6) and no further decrease requirement, such that the following hold.
+
+* $C$ is nonempty, closed and convex (AC.2), $C = \{v : c_0(v) \ge 0, c_1(v) \ge 0\}$ (AC.7),
+  and each $c_i$ is twice continuously differentiable.
+* $f$ is twice continuously differentiable and bounded below, and $\|\nabla^2 f(v)\| \le B_f$
+  for all $v$.
+* The iterates converge, $x_k \to 0$, and the set $\{0\} \cup \{x_k : k \in \mathbb{N}\}$ is
+  compact.
+* At $0$ the active gradients are linearly independent, and $-\nabla f(0)$ lies in the relative
+  interior of the normal cone of $C$ at $0$ (AO.4b).
+* $0 < \kappa < 1$ and $w \in C$.
+* For every $k$: $x_k$ and $x_k + s_k$ lie in $C$, $\Delta_k = 2$, the trust-region norm is the
+  Euclidean norm, the model $m_k$ is twice continuously differentiable with $m_k(x_k) = f(x_k)$,
+  $Dm_k(x_k) = Df(x_k)$ and $\|\nabla^2 m_k(v)\| \le B_m$ for all $v$, the point $w$ is an
+  approximate generalized Cauchy point for $Q$, $C$, $f$, $m_k$, $x_k$ and $\Delta_k$, the step
+  satisfies $m_k(x_k + s_k) \le m_k(w)$ and keeps every constraint active at $w$ active at
+  $x_k + s_k$ (AA.5), the iteration is very successful, and for every $\beta \ge 1$ the decrease
+  condition AA.1b
+$$\kappa\, \pi_k \min\{\pi_k / \beta, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k)$$
+holds, where $\pi_k$ is the capped criticality measure (12.2.15) at $x_k$.
+* For every $k$, the active set at $x_k$ differs from the active set at $0$.
+
+**Correction.** Theorem 12.3.8 asserts that the iterates eventually have the active set of the
+limit, and Lemma 12.3.7 asserts that infinitely many successful iterates have it. Here every
+iteration is very successful and no iterate has that active set. The remote Cauchy point has a
+degenerate active constraint, although the active gradients at the limit are independent.
+
+The constraints are `ConnGouldToint.Chapter12.ConstraintExample.constraints`, $C$ is the
+quadrant $v_0, v_1 \ge 0$, and $f(v) = v_0 + v_0^2 + v_1 + v_1^2 + v_2^2/2$. The iterates are
+$x_k = (0, a_k, a_k^2)$ with $a_k = 2^{-k}/8$, so only $c_0$ is active at $x_k$. The Cauchy
+point is $w = (0, 0, -1)$ for every $k$. -/
 theorem theorem_12_3_8_iterate_identification_counterexample :
     ∃ (C : Set (EuclideanSpace ℝ (Fin 3))) (f : EuclideanSpace ℝ (Fin 3) → ℝ)
       (c : Fin 2 → EuclideanSpace ℝ (Fin 3) → ℝ) (Q : GeneralizedCauchyParams)

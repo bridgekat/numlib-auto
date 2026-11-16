@@ -7,10 +7,55 @@ import Numlib.Optimization.ModelBased.ProjectedPath
 import Numlib.Analysis.Calculus.Taylor
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 
-/-! # Basic real analysis
+/-!
+# Conn, Gould and Toint, Section 3.1: Basic real analysis
 
-Taylor and mean-value formulas in Section 3.1 of [conn2000trust].
-The derivative applied to the step represents the gradient pairing or Jacobian action.
+This module formalizes the mean-value and Taylor theorems of Section 3.1 of [conn2000trust]. Let $f$
+be continuously differentiable on an open set $S$ that contains the segment $[x, x + s]$. Then
+$f(x + s) - f(x)$ is the derivative at an intermediate point applied to $s$ (Theorem 3.1.1), or the
+integral of the derivative along the segment (Theorem 3.1.3). Lipschitz bounds on the derivative or
+on the Hessian give the remainder estimates
+$$|f(x + s) - f(x) - \langle g(x), s \rangle| \le \tfrac{1}{2} \gamma \|s\|^2, \qquad |f(x + s) -
+  m^Q(x + s)| \le \tfrac{1}{6} \gamma \|s\|^3$$
+of Theorems 3.1.4 and 3.1.5, where $m^Q$ is the second-order Taylor model. The module also proves
+the support identity (3.1.4) for the Clarke directional derivative and Moreau's decomposition
+(3.1.7) of a vector into its tangent and normal components.
+
+The proofs use the backbone modules `Numlib.Analysis.Calculus.Taylor`,
+`Numlib.Optimization.Optimality.Clarke` and `Numlib.Optimization.ModelBased.ProjectedPath`.
+
+## Main results
+
+* Theorem 3.1.1, `ConnGouldToint.Chapter03.theorem_3_1_1`: the mean-value theorem along a segment.
+* Theorem 3.1.2, `ConnGouldToint.Chapter03.theorem_3_1_2`: Taylor's theorem with the second-order
+  Lagrange remainder.
+* Theorem 3.1.3, `ConnGouldToint.Chapter03.theorem_3_1_3`: the integral mean-value theorem for a
+  vector-valued function.
+* Theorem 3.1.4, `ConnGouldToint.Chapter03.theorem_3_1_4`: a Lipschitz derivative gives a quadratic
+  remainder for the first-order Taylor model.
+* Theorem 3.1.5, `ConnGouldToint.Chapter03.theorem_3_1_5`: a Lipschitz Hessian gives a cubic
+  remainder for the second-order Taylor model.
+* Theorem 3.1.6, `ConnGouldToint.Chapter03.theorem_3_1_6`: a Lipschitz Jacobian gives a quadratic
+  remainder for a vector-valued function.
+* Equation (3.1.4), `ConnGouldToint.Chapter03.clarkeDerivative_isGreatest`: the Clarke directional
+  derivative is the maximum of $\langle g, d \rangle$ over the Clarke subgradients $g$.
+* Equation (3.1.7), `ConnGouldToint.Chapter03.moreau_normal_tangent`: Moreau's decomposition of a
+  vector into orthogonal tangent and normal components.
+
+## Conventions
+
+* The gradient pairing $\langle g(x), s \rangle$ and the Jacobian action $J(x) s$ are both
+  `fderiv ℝ f x s`, the derivative applied to the step. The Hessian form $\langle s, H(x) s \rangle$
+  is `fderiv ℝ (fderiv ℝ f) x s s`.
+* The norm of the derivative is the operator norm of `E →L[ℝ] F`. For a real-valued $f$ this is the
+  dual norm of the norm on steps.
+
+## Implementation notes
+
+* The theorems hold in any real normed space $E$; the integral form needs a complete codomain. The
+  segment is the condition $x + ts \in S$ for all $t \in [0, 1]$.
+* The Lipschitz conditions of Theorems 3.1.4–3.1.6 compare the derivative at each point $z \in S$
+  with the derivative at the expansion point $x$ only.
 -/
 
 open Set Filter Topology
@@ -20,8 +65,11 @@ namespace ConnGouldToint.Chapter03
 variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
   [NormedAddCommGroup F] [NormedSpace ℝ F]
 
-/-- **Theorem 3.1.1.** Along a segment, the difference in the values of a scalar function
-equals its directional derivative at an intermediate point. -/
+/-- **Theorem 3.1.1** of [conn2000trust]. Let $E$ be a real normed space, let $S \subseteq E$ be
+open, and let $f : E \to \mathbb{R}$ be continuously differentiable on $S$. Let $x, s \in E$
+with $x + ts \in S$ for all $t \in [0, 1]$. Then there is $t \in [0, 1]$ with
+$$f(x + s) = f(x) + \langle g(x + ts), s \rangle.$$
+-/
 theorem theorem_3_1_1 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiffOn ℝ 1 f S)
     {x s : E} (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S) :
     ∃ t ∈ Icc (0 : ℝ) 1, f (x + s) = f x + fderiv ℝ f (x + t • s) s := by
@@ -38,8 +86,11 @@ theorem theorem_3_1_1 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiff
   simp only [one_smul, zero_smul, add_zero, sub_zero, div_one] at he
   linarith
 
-/-- **Theorem 3.1.2.** The second-order Lagrange remainder equals half the Hessian
-quadratic form evaluated at an intermediate point of the segment. -/
+/-- **Theorem 3.1.2** of [conn2000trust]. Let $E$ be a real normed space, let $S \subseteq E$ be
+open, and let $f : E \to \mathbb{R}$ be twice continuously differentiable on $S$. Let
+$x, s \in E$ with $x + ts \in S$ for all $t \in [0, 1]$. Then there is $t \in [0, 1]$ with
+$$f(x + s) = f(x) + \langle g(x), s \rangle + \tfrac{1}{2} \langle s, H(x + ts) s \rangle.$$
+-/
 theorem theorem_3_1_2 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiffOn ℝ 2 f S)
     {x s : E} (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S) :
     ∃ t ∈ Icc (0 : ℝ) 1, f (x + s) = f x + fderiv ℝ f x s +
@@ -79,8 +130,13 @@ theorem theorem_3_1_2 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiff
   simp only [g, zero_smul, one_smul, add_zero] at he
   linarith
 
-/-- **Theorem 3.1.3 (integral mean value theorem).** The integral of the derivative along
-a segment recovers the increment of a vector-valued function. -/
+/-- **Theorem 3.1.3** of [conn2000trust] (integral mean-value theorem). Let $E$ be a real normed
+space and $F$ a real Banach space, let $S \subseteq E$ be open, and let $f : E \to F$ be
+continuously differentiable on $S$. Let $x, s \in E$ with $x + ts \in S$ for all $t \in [0, 1]$.
+Then
+$$f(x + s) = f(x) + \int_0^1 J(x + ts) s \, dt.$$
+
+The completeness of $F$ is needed for the Bochner integral `intervalIntegral`. -/
 theorem theorem_3_1_3 [CompleteSpace F] {S : Set E} (hS : IsOpen S) {f : E → F}
     (hf : ContDiffOn ℝ 1 f S) {x s : E}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S) :
@@ -100,9 +156,14 @@ theorem theorem_3_1_3 [CompleteSpace F] {S : Set E} (hS : IsOpen S) {f : E → F
   rw [he]
   simp [add_comm (f x)]
 
-/-- **Theorem 3.1.4.** A derivative that is Lipschitz relative to the expansion point
-gives a quadratic remainder for a real-valued function. The derivative is measured in
-the dual norm of the step norm. -/
+/-- **Theorem 3.1.4** of [conn2000trust]. Let $E$ be a real normed space, let $S \subseteq E$ be
+open, and let $f : E \to \mathbb{R}$ be continuously differentiable on $S$. Let $x, s \in E$
+with $x + ts \in S$ for all $t \in [0, 1]$, and let $\gamma \in \mathbb{R}$ satisfy
+$\|g(z) - g(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
+$$|f(x + s) - f(x) - \langle g(x), s \rangle| \le \tfrac{1}{2} \gamma \|s\|^2.$$
+
+The norm of $g(z) - g(x)$ is the dual norm of the norm on $E$, that is, the operator norm of
+`fderiv ℝ f z - fderiv ℝ f x`. -/
 theorem theorem_3_1_4 {S : Set E} (hS : IsOpen S) {f : E → ℝ}
     (hf : ContDiffOn ℝ 1 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
@@ -110,8 +171,14 @@ theorem theorem_3_1_4 {S : Set E} (hS : IsOpen S) {f : E → ℝ}
     |f (x + s) - (f x + fderiv ℝ f x s)| ≤ (1 / 2 : ℝ) * γ * ‖s‖ ^ 2 := by
   simpa only [Real.norm_eq_abs] using norm_sub_firstOrder_le_of_lipschitzAt_segment hS hf hseg hlip
 
-/-- **Theorem 3.1.5.** A Hessian that is Lipschitz relative to the expansion point
-gives a cubic remainder for the second-order Taylor model. -/
+/-- **Theorem 3.1.5** of [conn2000trust]. Let $E$ be a real normed space, let $S \subseteq E$ be
+open, and let $f : E \to \mathbb{R}$ be twice continuously differentiable on $S$. Let
+$x, s \in E$ with $x + ts \in S$ for all $t \in [0, 1]$, and let $\gamma \in \mathbb{R}$ satisfy
+$\|H(z) - H(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
+$$\left| f(x + s) - f(x) - \langle g(x), s \rangle - \tfrac{1}{2} \langle s, H(x) s \rangle
+  \right| \le \tfrac{1}{6} \gamma \|s\|^3.$$
+
+The norm of $H(z) - H(x)$ is the operator norm of the second derivative `fderiv ℝ (fderiv ℝ f)`. -/
 theorem theorem_3_1_5 {S : Set E} (hS : IsOpen S) {f : E → ℝ}
     (hf : ContDiffOn ℝ 2 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
@@ -120,8 +187,12 @@ theorem theorem_3_1_5 {S : Set E} (hS : IsOpen S) {f : E → ℝ}
       (1 / 6 : ℝ) * γ * ‖s‖ ^ 3 :=
   abs_sub_secondOrder_le_of_lipschitzAt_segment hS hf hseg hlip
 
-/-- **Theorem 3.1.6.** A Jacobian that is Lipschitz relative to the expansion point
-gives a quadratic remainder for a vector-valued function. -/
+/-- **Theorem 3.1.6** of [conn2000trust]. Let $E$ and $F$ be real normed spaces, let $S \subseteq E$
+be open, and let $f : E \to F$ be continuously differentiable on $S$ with Jacobian $J$. Let
+$x, s \in E$ with $x + ts \in S$ for all $t \in [0, 1]$, and let $\gamma \in \mathbb{R}$ satisfy
+$\|J(z) - J(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
+$$\|f(x + s) - f(x) - J(x) s\| \le \tfrac{1}{2} \gamma \|s\|^2.$$
+-/
 theorem theorem_3_1_6 {S : Set E} (hS : IsOpen S) {f : E → F}
     (hf : ContDiffOn ℝ 1 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
@@ -130,9 +201,17 @@ theorem theorem_3_1_6 {S : Set E} (hS : IsOpen S) {f : E → F}
   norm_sub_firstOrder_le_of_lipschitzAt_segment hS hf hseg hlip
 
 open Optimization ConvexAnalysis in
-/-- Equation (3.1.4). The Clarke directional derivative is the maximum of the
-pairing with a Clarke subgradient. Local Lipschitz continuity ensures the
-support identity and compactness supplies attainment in finite dimension. -/
+/-- **Equation (3.1.4)** of [conn2000trust]. Let $V$ be a finite-dimensional real inner product
+space, and let $f : V \to \mathbb{R}$ be Lipschitz continuous on a neighbourhood of $x \in V$.
+Then for every direction $d \in V$ the Clarke directional derivative is attained as a maximum
+over the Clarke subdifferential:
+$$f^\circ(x; d) = \max_{g \in \partial f(x)} \langle g, d \rangle.$$
+
+The Clarke derivative is `Optimization.clarkeDerivative`, the upper limit of the difference
+quotients. The subdifferential `Optimization.clarkeSubgradient` is the set of $g$ with
+$\langle g, d \rangle \le f^\circ(x; d)$ for all $d$. Local Lipschitz continuity makes the upper
+limit finite and gives the support identity, and compactness of the subdifferential in finite
+dimension gives attainment. -/
 theorem clarkeDerivative_isGreatest {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] [FiniteDimensional ℝ V] {f : V → ℝ} {x : V}
     {U : Set V} {L : NNReal} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) (d : V) :
@@ -162,8 +241,15 @@ open ConvexAnalysis Optimization
 
 variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V]
 
-/-- Moreau's normal–tangent decomposition (3.1.7), with orthogonality
-of the two projection components. -/
+/-- **Equation (3.1.7)** of [conn2000trust] (Moreau decomposition). Let $V$ be a real Hilbert space,
+let $C \subseteq V$, and let $x, v \in V$. Let $N$ be the normal cone of $C$ at $x$, the set of
+$d$ with $\langle d, y - x \rangle \le 0$ for all $y \in C$, and let $T$ be its polar cone, the
+tangent cone. Then
+$$v = P_T(v) + P_N(v) \quad \text{and} \quad \langle P_T(v), P_N(v) \rangle = 0.$$
+
+The cones are `Optimization.normalDirections C x` and `Optimization.tangentDirections C x`, and
+the projections are `bestApprox`. The set $C$ need not be convex, because $N$ is a closed convex
+cone for every $C$. -/
 theorem moreau_normal_tangent (C : Set V) (x v : V) :
     let n := bestApprox (normalDirections C x) v
     let t := bestApprox (tangentDirections C x) v

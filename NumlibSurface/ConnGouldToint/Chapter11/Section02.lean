@@ -10,11 +10,64 @@ import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 
 /-!
-# Normalized model error and the success ratio
+# Conn, Gould and Toint, Section 11.2: Normalized model error and the success ratio
 
-[conn2000trust], Section 11.2. Compactness of the parameter set does not upgrade
-pointwise limits to uniform estimates without additional control. The corrected
-uniformity lemma uses equicontinuity of the normalized errors.
+This module formalizes the convergence analysis of Algorithm 11.1.1 in Section 11.2 of
+[conn2000trust]. For a family of models $m(x, p, \cdot)$ of a locally Lipschitz objective $f$, the
+normalized model error (11.2.2) is
+$$e(x, p, s) = \frac{f(x + s) - m(x, p, s)}{\|s\|}.$$
+For regular $f$ and models, the matching conditions (11.1.1)–(11.1.2) hold if and only if
+$e(x, p, s) \to 0$ as $s \to 0$ (Lemma 11.2.1). The analysis needs this limit uniformly in the base
+point near $x$ and in the parameter $p$. Under this uniform agreement, a step with sufficient
+decrease is successful at every small radius near a nonstationary point (Lemma 11.2.3), the radii
+are bounded below near such a point (Lemma 11.2.4), and every limit point of the iterates is Clarke
+stationary (Theorem 11.2.5).
+
+Compactness of the parameter set does not turn the pointwise limits into a uniform estimate. A model
+family with parameters in $[0, 1]$ satisfies all the matching and smoothness conditions, has
+pointwise vanishing normalized error, and still rejects steps at arbitrarily small radii. The
+corrected Lemma 11.2.2 obtains the uniform estimate from the equicontinuity of the normalized
+errors.
+
+## Main definitions
+
+* Equation (11.2.2), `ConnGouldToint.Chapter11.normalizedModelError`: the normalized model error
+  $e(x, p, s)$.
+* Equation (11.2.1), `ConnGouldToint.Chapter11.UniformNormalizedModelAgreementAt`:
+  $e(y, p, s) \to 0$ uniformly in $y$ near $x$ and in $p$.
+* Lemma 11.2.2, `ConnGouldToint.Chapter11.ModelErrorEquicontinuousAt`: the normalized errors for
+  steps $\|s\| \le 1$ are equicontinuous in the base point and the parameter.
+* Counterexample to Lemmas 11.2.2 and 11.2.3, `ConnGouldToint.Chapter11.compactPerturbedModel`: a
+  model family with parameters in $[0, 1]$.
+
+## Main results
+
+* Lemma 11.2.1, `ConnGouldToint.Chapter11.lemma_11_2_1`: for regular $f$ and models, the matching
+  conditions hold if and only if $e(x, p, s) \to 0$ as $s \to 0$.
+* Lemma 11.2.2, `ConnGouldToint.Chapter11.lemma_11_2_2`: pointwise agreement at $x$, equicontinuity
+  and a compact parameter space give uniform agreement.
+* Lemma 11.2.3, `ConnGouldToint.Chapter11.lemma_11_2_3`: near a nonstationary point, a step with
+  sufficient decrease has ratio at least $\eta$ at every small radius.
+* Lemma 11.2.4, `ConnGouldToint.Chapter11.lemma_11_2_4`: near a nonstationary point, the radii of
+  the iterates are bounded below by a positive constant.
+* Theorem 11.2.5, `ConnGouldToint.Chapter11.theorem_11_2_5`: every limit point of the iterates is
+  Clarke stationary.
+* Counterexample, `ConnGouldToint.Chapter11.compactPerturbedModel_matches`,
+  `ConnGouldToint.Chapter11.compactPerturbedModel_pointwise`,
+  `ConnGouldToint.Chapter11.compactPerturbedModel_not_uniform` and
+  `ConnGouldToint.Chapter11.compactPerturbedModel_rejected`: the compact-parameter family satisfies
+  the printed hypotheses, but not uniform agreement, and rejects steps at arbitrarily small radii.
+
+## Deviations from the source
+
+* **Lemma 11.2.2** (correction). Pointwise agreement and a compact parameter set do not give uniform
+  agreement. The statement adds the equicontinuity of the normalized errors. See
+  `ConnGouldToint.Chapter11.compactPerturbedModel_not_uniform`.
+* **Lemma 11.2.3** (correction). The statement assumes uniform control (11.2.1) of the normalized
+  error. Pointwise agreement alone permits rejections at small radii. See
+  `ConnGouldToint.Chapter11.compactPerturbedModel_rejected`.
+* **Lemma 11.2.4 and Theorem 11.2.5** (correction). Both use the uniform agreement that the
+  corrected Lemma 11.2.3 needs. See `ConnGouldToint.Chapter11.theorem_11_2_5`.
 -/
 
 open Filter Metric Optimization
@@ -24,7 +77,11 @@ namespace ConnGouldToint.Chapter11
 
 variable {E P : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The normalized model error (11.2.2). -/
+/-- **Equation (11.2.2)** of [conn2000trust]. The **normalized model error** of the model
+$m(x, p, \cdot)$ at the step $s$ is
+$$e(x, p, s) = \frac{f(x + s) - m(x, p, s)}{\|s\|}.$$
+
+Division is the Lean division, so $e(x, p, 0) = 0$. -/
 noncomputable def normalizedModelError (f : E → ℝ) (m : E → P → E → ℝ)
     (x : E) (p : P) (s : E) : ℝ :=
   (f (x + s) - m x p s) / ‖s‖
@@ -88,9 +145,18 @@ private theorem tendsto_normalized_of_rays [FiniteDimensional ℝ E] {G : E → 
   rw [heq] at hs'
   exact hs'.trans_lt (by linarith)
 
-/-- Lemma 11.2.1 at a fixed base point and parameter. Regularity is expressed
-by the positive-ray limits. Nontriviality excludes the zero-dimensional
-case, where the normalized quotient does not detect value agreement. -/
+/-- **Lemma 11.2.1** of [conn2000trust]. Let $E$ be a finite-dimensional real inner product space of
+dimension at least $1$. Let $f$ be Lipschitz on a neighborhood of $x$, and let the model
+$m(x, p, \cdot)$ be Lipschitz on a neighborhood of $0$. Assume that $f$ and the model are
+regular: for every direction $d$,
+$$\lim_{t \downarrow 0} \frac{f(x + t d) - f(x)}{t} = f^\circ(x; d), \qquad \lim_{t \downarrow
+  0} \frac{m(x, p, t d) - m(x, p, 0)}{t} = m(x, p, \cdot)^\circ(0; d).$$
+Then $m(x, p, 0) = f(x)$ and $m(x, p, \cdot)^\circ(0; d) = f^\circ(x; d)$ for all $d \neq 0$ if
+and only if $e(x, p, s) \to 0$ as $s \to 0$.
+
+The statement is for one fixed base point and parameter. Regularity is expressed by the limits
+along positive rays. The dimension condition excludes $E = \{0\}$, where the normalized error is
+always $0$ and does not detect value agreement. -/
 theorem lemma_11_2_1 [FiniteDimensional ℝ E] [Nontrivial E] {f : E → ℝ}
     {m : E → P → E → ℝ} {x : E} {p : P} {U V : Set E} {Lf Lm : NNReal}
     (hU : U ∈ 𝓝 x) (hLf : LipschitzOnWith Lf f U)
@@ -172,14 +238,24 @@ theorem lemma_11_2_1 [FiniteDimensional ℝ E] [Nontrivial E] {f : E → ℝ}
       ring
     exact (sub_eq_zero.mp (tendsto_nhds_unique hh hq)).symm
 
-/-- The normalized model error tends to zero uniformly in the base point near
-`x` and in all admissible parameters. -/
+/-- **Equation (11.2.1)** of [conn2000trust], uniform form. The models have **uniform normalized
+agreement** with $f$ at $x$ if for every $a > 0$ there are $\varepsilon, \Delta > 0$ with
+$$|e(y, p, s)| \le a$$
+for every $y$ in the open ball of radius $\varepsilon$ about $x$, every parameter $p$ and every
+step with $\|s\| \le \Delta$.
+
+**Correction.** The source requires only that $e(x, p, s) \to 0$ for each base point and
+parameter. The analysis of Lemmas 11.2.3 and 11.2.4 needs the uniform form (see
+`ConnGouldToint.Chapter11.compactPerturbedModel_rejected`). -/
 def UniformNormalizedModelAgreementAt (f : E → ℝ) (m : E → P → E → ℝ) (x : E) : Prop :=
   ∀ a : ℝ, 0 < a → ∃ ε Δ : ℝ, 0 < ε ∧ 0 < Δ ∧
     ∀ y ∈ ball x ε, ∀ (p : P) (s : E), ‖s‖ ≤ Δ → |normalizedModelError f m y p s| ≤ a
 
-/-- Equicontinuity in the base point and parameter for the family of normalized
-errors indexed by small steps. -/
+/-- **Lemma 11.2.2** of [conn2000trust], equicontinuity hypothesis. For a topological parameter
+space, the normalized errors are **equicontinuous** at $(x, p)$ if for every $a > 0$, all
+$(y, q)$ near $(x, p)$ satisfy
+$$|e(y, q, s) - e(x, p, s)| \le a \quad \text{for all } \|s\| \le 1.$$
+-/
 def ModelErrorEquicontinuousAt [TopologicalSpace P] (f : E → ℝ)
     (m : E → P → E → ℝ) (x : E) (p : P) : Prop :=
   ∀ a : ℝ, 0 < a → ∀ᶠ z : E × P in 𝓝 (x, p),
@@ -187,9 +263,16 @@ def ModelErrorEquicontinuousAt [TopologicalSpace P] (f : E → ℝ)
       normalizedModelError f m x p s| ≤ a
 
 omit [InnerProductSpace ℝ E] in
-/-- Corrected Lemma 11.2.2. Pointwise agreement at the reference base point
-becomes uniform under equicontinuity of the normalized errors and compactness
-of the admissible parameter space. -/
+/-- **Lemma 11.2.2** of [conn2000trust]. Let $E$ be a real normed space and $P$ a compact
+topological space of parameters. If $e(x, p, s) \to 0$ as $s \to 0$ for every $p \in P$, and the
+normalized errors are equicontinuous at $(x, p)$ for every $p$, then the models have uniform
+normalized agreement with $f$ at $x$.
+
+**Correction.** The source derives uniform agreement from the pointwise limits and the
+compactness of the parameter set. The family `ConnGouldToint.Chapter11.compactPerturbedModel`
+has parameters in $[0, 1]$ and pointwise vanishing errors, but no uniform agreement
+(`ConnGouldToint.Chapter11.compactPerturbedModel_not_uniform`). The statement adds the
+equicontinuity hypothesis. -/
 theorem lemma_11_2_2 [TopologicalSpace P] [CompactSpace P] {f : E → ℝ}
     {m : E → P → E → ℝ} {x : E}
     (hpoint : ∀ p, Tendsto (normalizedModelError f m x p) (𝓝 0) (𝓝 0))
@@ -230,9 +313,19 @@ theorem lemma_11_2_2 [TopologicalSpace P] [CompactSpace P] {f : E → ℝ}
   apply hab (hεA hy) (hrB ?_) p
   exact mem_ball_zero_iff.mpr (hs.trans_lt (half_lt_self hr))
 
-/-- Corrected Lemma 11.2.3. Uniform model agreement, together with sufficient
-model decrease and a nonstationary reference point, forces acceptance for every
-sufficiently small radius. -/
+/-- **Lemma 11.2.3** of [conn2000trust]. Let $E$ be a real Hilbert space, let $f$ be Lipschitz on a
+neighborhood of $x$ with $0 \notin \partial f(x)$, and let the models match the value of $f$
+(11.1.1) and have uniform normalized agreement with $f$ at $x$. Let $\eta < 1$ and
+$\kappa, \delta > 0$. Then there are $\varepsilon, \bar\Delta > 0$ such that for every $y$ in
+the open ball of radius $\varepsilon$ about $x$, every parameter $p$, every radius
+$0 < \Delta < \bar\Delta$ and every step with $\|s\| \le \Delta$ and
+$$\kappa \|g^*(y)\| \min\{\delta, \Delta\} \le m(y, p, 0) - m(y, p, s),$$
+the ratio satisfies $(f(y) - f(y + s)) / (m(y, p, 0) - m(y, p, s)) \ge \eta$.
+
+**Correction.** The source assumes only pointwise agreement. With compact parameters, pointwise
+agreement permits a step with sufficient decrease and a low ratio at arbitrarily small radii
+(`ConnGouldToint.Chapter11.compactPerturbedModel_rejected`). The statement assumes uniform
+normalized agreement. -/
 theorem lemma_11_2_3 [CompleteSpace E] {f : E → ℝ} {m : E → P → E → ℝ}
     {x : E} {U : Set E} {L : NNReal} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
     (hx : (0 : E) ∉ clarkeSubgradient f x) (hmatch : modelValueMatches f m)
@@ -323,9 +416,17 @@ private theorem NonsmoothTRRun.dist_next_le_radius {Q : NonsmoothTRParams}
   · rw [ite_eq_right h, dist_self]
     exact (R.radius_bounds k).1.le
 
-/-- Lemma 11.2.4. Around a nonstationary reference point, all visiting iterates
-have a common positive lower radius bound. The proof propagates a small radius
-backwards using a distance-plus-radius bound and the very-successful expansion. -/
+/-- **Lemma 11.2.4** of [conn2000trust]. Consider a run of Algorithm 11.1.1 in a real Hilbert space.
+Let $f$ be Lipschitz on a neighborhood of $x$ with $0 \notin \partial f(x)$, let the models
+match the value of $f$ and have uniform normalized agreement with $f$ at $x$, and let the run
+satisfy AA.1n near $x$. Then there are $\varepsilon, r > 0$ with $\Delta_k \ge r$ for every $k$
+with $x_k$ in the open ball of radius $\varepsilon$ about $x$.
+
+**Correction.** The source uses the pointwise agreement of Lemma 11.2.3; the statement assumes
+uniform agreement.
+
+The proof propagates a small radius backwards along the run, with a bound on the distance plus
+the radius, and uses the expansion at very successful iterations. -/
 theorem lemma_11_2_4 [CompleteSpace E] {Q : NonsmoothTRParams} {f : E → ℝ}
     {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) {x : E} {U : Set E} {L : NNReal}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
@@ -426,10 +527,17 @@ private theorem NonsmoothTRRun.antitone_value {Q : NonsmoothTRParams}
       (R.acceptedDecrease hAA h))
   · rw [R.next_x_eq_ite, ite_eq_right h]
 
-/-- Theorem 11.2.5 with the uniform normalized model agreement required
-by corrected Lemma 11.2.3. Every limit point of a run is Clarke stationary.
-If the run stopped accepting near a nonstationary limit point, rejection
-would shrink the radius below the local lower bound. -/
+/-- **Theorem 11.2.5** of [conn2000trust]. Consider a run of Algorithm 11.1.1 in a real Hilbert
+space that satisfies AA.1n near every point. Let $x$ be the limit of a subsequence $x_{j(k)}$,
+let $f$ be Lipschitz on a neighborhood of $x$, and let the models match the value of $f$ and
+have uniform normalized agreement with $f$ at $x$. Then $x$ is Clarke stationary:
+$0 \in \partial f(x)$.
+
+**Correction.** The source uses pointwise agreement; the statement assumes the uniform agreement
+that the corrected Lemma 11.2.3 needs.
+
+If the run stopped accepting steps near a nonstationary limit point, the rejections would shrink
+the radius below the lower bound of Lemma 11.2.4. -/
 theorem theorem_11_2_5 [CompleteSpace E] {Q : NonsmoothTRParams} {f : E → ℝ}
     {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) {x : E} {U : Set E} {L : NNReal}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
@@ -502,11 +610,16 @@ theorem theorem_11_2_5 [CompleteSpace E] {Q : NonsmoothTRParams} {f : E → ℝ}
 
 /-! ### A compact-parameter counterexample -/
 
-/-- The compact parameter set for the model-error counterexample. -/
+/-- The compact parameter set $[0, 1]$ of the counterexample
+`ConnGouldToint.Chapter11.compactPerturbedModel`. -/
 abbrev CompactModelParameter := Set.Icc (0 : ℝ) 1
 
-/-- The smooth model perturbation has amplitude at most the parameter, while
-its frequency grows as the parameter tends to zero. -/
+/-- **Section 11.2** of [conn2000trust], counterexample to Lemmas 11.2.2 and 11.2.3. For
+$x, s \in \mathbb{R}$ and $p \in [0, 1]$, the model is
+$$m(x, p, s) = f(x + s) - p \sin^2(s/p), \qquad f(x) = x^2 - x.$$
+The perturbation has amplitude at most $p$, and its frequency grows as $p \to 0$.
+
+At $p = 0$, Lean division gives $s/0 = 0$, so $m(x, 0, s) = f(x + s)$. -/
 noncomputable def compactPerturbedModel (x : ℝ) (p : CompactModelParameter) (s : ℝ) : ℝ :=
   oscillatoryObjective (x + s) - p.val * Real.sin (s / p.val) ^ 2
 
@@ -535,8 +648,10 @@ private theorem continuous_perturbation_parameter (s : ℝ) :
   · exact continuousAt_id.mul ((Real.continuous_sin.continuousAt.comp
       (continuousAt_const.div continuousAt_id hp)).pow 2)
 
-/-- The counterexample satisfies the matching conditions and the model's
-pointwise smoothness and parameter continuity assumptions. -/
+/-- **Section 11.2** of [conn2000trust], counterexample to Lemmas 11.2.2 and 11.2.3. The parameter
+set $[0, 1]$ is compact, each model $m(x, p, \cdot)$ is infinitely differentiable, for every
+fixed step $s$ the model value is continuous in $(x, p)$, and the family matches
+$f(x) = x^2 - x$ in value (11.1.1) and in Clarke derivative (11.1.2). -/
 theorem compactPerturbedModel_matches :
     CompactSpace CompactModelParameter ∧
     (∀ x p, ContDiff ℝ ⊤ (compactPerturbedModel x p)) ∧
@@ -573,7 +688,9 @@ theorem compactPerturbedModel_matches :
     rw [clarkeDerivative_eq_of_hasStrictFDerivAt hm'.hasStrictFDerivAt,
       clarkeDerivative_eq_of_hasStrictFDerivAt (hf x).hasStrictFDerivAt]
 
-/-- For each fixed parameter the normalized model error converges to zero. -/
+/-- **Section 11.2** of [conn2000trust], counterexample to Lemmas 11.2.2 and 11.2.3. For every base
+point $x$ and every parameter $p \in [0, 1]$, the normalized model error satisfies
+$e(x, p, s) \to 0$ as $s \to 0$. -/
 theorem compactPerturbedModel_pointwise (x : ℝ) (p : CompactModelParameter) :
     Tendsto (normalizedModelError oscillatoryObjective compactPerturbedModel x p) (𝓝 0) (𝓝 0) := by
   by_cases hp : p.val = 0
@@ -603,8 +720,12 @@ theorem compactPerturbedModel_pointwise (x : ℝ) (p : CompactModelParameter) :
       _ = |s| / p.val * |s| := by field_simp
   · simpa only [abs_zero, zero_div] using (continuous_abs.div_const p.val).tendsto (0 : ℝ)
 
-/-- Despite compactness and pointwise agreement, the normalized error stays
-away from zero along a sequence of parameter-dependent steps. -/
+/-- **Lemma 11.2.2** of [conn2000trust], counterexample to the printed statement. The family
+`ConnGouldToint.Chapter11.compactPerturbedModel` does not have uniform normalized agreement with
+$f(x) = x^2 - x$ at $0$.
+
+Despite compactness and pointwise agreement, the normalized error stays away from zero along a
+sequence of steps that depend on the parameter. -/
 theorem compactPerturbedModel_not_uniform :
     ¬ UniformNormalizedModelAgreementAt oscillatoryObjective compactPerturbedModel 0 := by
   intro h
@@ -632,9 +753,14 @@ theorem compactPerturbedModel_not_uniform :
   have hfalse := (div_le_div_iff_of_pos_right Real.pi_pos).mp hh
   norm_num at hfalse
 
-/-- Literal Lemma 11.2.3 fails with compact parameters. For each positive radius
-bound there is a boundary step satisfying the sufficient-decrease test with
-constant one half whose ratio is below three quarters. -/
+/-- **Lemma 11.2.3** of [conn2000trust], counterexample to the printed statement. For every $D > 0$
+there are a parameter $p \in [0, 1]$ and a radius $0 < \Delta < D$ such that the boundary step
+$s = \Delta$ satisfies the sufficient-decrease test
+$$\frac12 \|g^*(0)\| \min\{1, \Delta\} \le m(0, p, 0) - m(0, p, \Delta),$$
+but its ratio is less than $3/4$.
+
+So with compact parameters and pointwise agreement, steps can be rejected at arbitrarily small
+radii. -/
 theorem compactPerturbedModel_rejected {D : ℝ} (hD : 0 < D) :
     ∃ (p : CompactModelParameter) (Δ : ℝ), 0 < Δ ∧ Δ < D ∧
       (1 / 2 : ℝ) * ‖minimumNormSubgradient oscillatoryObjective 0‖ * min 1 Δ ≤

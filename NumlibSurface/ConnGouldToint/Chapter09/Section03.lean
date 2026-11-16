@@ -7,7 +7,68 @@ import Mathlib.Analysis.Calculus.FDeriv.Symmetric
 import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.Topology.Algebra.Order.LiminfLimsup
 
-/-! # Second-order conditional models -/
+/-!
+# Conn, Gould and Toint, Section 9.3: Convergence to second-order critical points
+
+This module formalizes the second-order theory of conditional models in Section 9.3 of
+[conn2000trust]. A model $m$ of $f$ is **second-order valid** on the ball $B(x, \delta)$ if it is
+valid in the sense of Section 9.1 with a constant $\kappa_1$ and also satisfies
+$|f(z) - m(z)| \le \kappa_2 \delta^3$ on the ball (9.3.1). For a positive radius, second-order
+validity gives a Hessian error of order $\delta$ at the center (Theorem 9.3.1), so the model
+Hessians approach the objective Hessians when the radii tend to zero (Corollary 9.3.2). Theorem
+9.3.3 shows that a point where the model gradients and the negative model curvature are controlled
+by a vanishing sequence is a second-order critical point of $f$. The criticality test of Algorithm
+9.3.1 combines the model gradient with the negative model curvature. The infinite refinement loop of
+the corrected algorithm supplies the hypotheses of Theorem 9.3.3.
+
+The Hessian $\nabla^2 f(x)$ is the bilinear map $(u, v) \mapsto \nabla^2 f(x)[u, v]$, and the third
+derivative is $\nabla^3 f$. The validity condition of Section 9.1 is
+`ConnGouldToint.Chapter09.modelValidOnBall` from `NumlibSurface.ConnGouldToint.Chapter09.Section01`.
+
+## Main definitions
+
+* Equation (9.3.1), `ConnGouldToint.Chapter09.modelSecondOrderValidOnBall`: validity together with
+  the error bound $\kappa_2 \delta^3$ on the ball.
+* Algorithm 9.3.1, `ConnGouldToint.Chapter09.secondOrderModelCriticality`: the criticality measure
+  $\max\{\|\nabla m(x)\|, -\lambda\}$ for a curvature lower bound $\lambda$.
+* Algorithm 9.3.1, `ConnGouldToint.Chapter09.secondOrderModelPasses`: the model is second-order
+  valid on a ball of positive radius at most $\mu$ times the criticality measure.
+* Algorithm 9.3.1, `ConnGouldToint.Chapter09.secondOrderRefinementRadius`: the next radius in the
+  refinement loop, which stays positive at zero model criticality.
+* Algorithm 9.3.1, `ConnGouldToint.Chapter09.SecondOrderModelRefinement`: an infinite trace of the
+  refinement loop in which every test fails.
+
+## Main results
+
+* Theorem 9.3.1, `ConnGouldToint.Chapter09.theorem_9_3_1_of_hessian_lipschitz`: under Lipschitz
+  bounds on the Hessians at the center, second-order validity gives a Hessian error of order
+  $\delta$.
+* Theorem 9.3.1, `ConnGouldToint.Chapter09.theorem_9_3_1`: the same bound under bounds on the third
+  derivatives.
+* `ConnGouldToint.Chapter09.second_order_zero_radius_counterexample`: at radius $0$, second-order
+  validity gives no bound on the Hessian error.
+* Corollary 9.3.2, `ConnGouldToint.Chapter09.corollary_9_3_2`: if the model gradients tend to zero
+  and the models are eventually second-order valid on balls of radius at most
+  $\mu \|\nabla m_k(x_k)\|$, the Hessian errors tend to zero.
+* Theorem 9.3.3, `ConnGouldToint.Chapter09.theorem_9_3_3`: the point is first-order critical and its
+  Hessian is positive semidefinite.
+* Algorithm 9.3.1, `ConnGouldToint.Chapter09.SecondOrderModelRefinement.tendsto_radius`: the radii
+  of the refinement loop tend to zero.
+* Theorem 9.3.3, `ConnGouldToint.Chapter09.theorem_9_3_3_of_refinement`: an infinite refinement loop
+  ends at a second-order critical point.
+
+## Deviations from the source
+
+* **Theorem 9.3.1** (correction). The radius of the ball must be positive. At radius $0$,
+  second-order validity gives no Hessian bound. See
+  `ConnGouldToint.Chapter09.second_order_zero_radius_counterexample`.
+* **Equation (9.3.4)** (correction). The model curvature can stay negative at every refinement. The
+  proof of Theorem 9.3.3 needs only a lower bound on the model curvature that tends to zero. See
+  `ConnGouldToint.Chapter09.theorem_9_3_3`.
+* **Algorithm 9.3.1** (correction). At zero model criticality the printed radius is zero. The
+  corrected loop keeps refining at a positive radius, so that the derivative estimates still apply.
+  See `ConnGouldToint.Chapter09.secondOrderRefinementRadius`.
+-/
 
 open Filter Topology
 
@@ -15,7 +76,12 @@ namespace ConnGouldToint.Chapter09
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- Second-order validity, as in (9.3.1), in addition to the validity of Section 9.1. -/
+/-- **Equation (9.3.1)** of [conn2000trust]. Let $f, m : E \to \mathbb{R}$, $x \in E$ and
+$\delta, \kappa_1, \kappa_2 \in \mathbb{R}$. The model $m$ is **second-order valid** for $f$ on
+$B(x, \delta)$ if it is valid on $B(x, \delta)$ with constant $\kappa_1$ (9.1.1)–(9.1.2) and
+$$|f(z) - m(z)| \le \kappa_2 \delta^3 \quad \text{for all } z \text{ with } \|z - x\| \le
+  \delta.$$
+-/
 def modelSecondOrderValidOnBall (f m : E → ℝ) (x : E) (δ κ₁ κ₂ : ℝ) : Prop :=
   modelValidOnBall f m x δ κ₁ ∧
     ∀ z ∈ Metric.closedBall x δ, |f z - m z| ≤ κ₂ * δ ^ 3
@@ -56,9 +122,23 @@ private theorem opNorm_le_of_diagonal {B : E →L[ℝ] E →L[ℝ] ℝ} {K : ℝ
   · field_simp
   · ring
 
-/-- Theorem 9.3.1 under Lipschitz bounds on the two Hessians. The centered difference
-eliminates the constant and linear Taylor terms, allowing a positive radius and an
-arbitrary center mismatch within the validity bound. -/
+/-- **Theorem 9.3.1** of [conn2000trust], form with Lipschitz Hessians. Let
+$f, m : E \to \mathbb{R}$ be twice continuously differentiable, let $\delta > 0$,
+$\kappa_2 \ge 0$, $L_f \ge 0$ and $L_m \ge 0$, and suppose that for all $z \in E$
+$$\|\nabla^2 f(z) - \nabla^2 f(x)\| \le L_f \|z - x\|, \qquad \|\nabla^2 m(z) - \nabla^2 m(x)\|
+  \le L_m \|z - x\|.$$
+If $m$ is second-order valid for $f$ on $B(x, \delta)$ with constants $\kappa_1$ and $\kappa_2$,
+then
+$$\|\nabla^2 f(x) - \nabla^2 m(x)\| \le 2 \left(4 \kappa_2 + \tfrac{1}{3}(L_f + L_m)\right)
+  \delta.$$
+
+**Correction.** The hypothesis $\delta > 0$ is necessary; see
+`ConnGouldToint.Chapter09.second_order_zero_radius_counterexample`.
+
+The proof uses a centered difference, which removes the constant and linear Taylor terms. Hence
+the bound holds even when $f(x) \neq m(x)$, within the validity bound. The Hessians are
+`fderiv ℝ (fderiv ℝ f) x` and `fderiv ℝ (fderiv ℝ m) x`, with the operator norm of bilinear
+maps. -/
 theorem theorem_9_3_1_of_hessian_lipschitz {f m : E → ℝ} (hf : ContDiff ℝ 2 f)
     (hm : ContDiff ℝ 2 m) {x : E} {δ κ₁ κ₂ Lf Lm : ℝ} (hδ : 0 < δ)
     (hκ : 0 ≤ κ₂) (hLf : 0 ≤ Lf) (hLm : 0 ≤ Lm)
@@ -124,8 +204,19 @@ noncomputable local instance : NormedAddCommGroup (E →L[ℝ] E →L[ℝ] ℝ) 
 noncomputable local instance : NormedSpace ℝ (E →L[ℝ] E →L[ℝ] ℝ) :=
   ContinuousLinearMap.toNormedSpace
 
-/-- Theorem 9.3.1 under uniform bounds on third derivatives. The model Hessian
-is differentiable and hence continuous, as required for the Taylor estimate. -/
+/-- **Theorem 9.3.1** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be three times continuously
+differentiable, and let $m : E \to \mathbb{R}$ be differentiable with differentiable first and
+second derivatives. Let $\delta > 0$, $\kappa_2 \ge 0$, $L_f \ge 0$ and $L_m \ge 0$, with
+$\|\nabla^3 f(z)\| \le L_f$ and $\|\nabla^3 m(z)\| \le L_m$ for all $z \in E$. If $m$ is
+second-order valid for $f$ on $B(x, \delta)$ with constants $\kappa_1$ and $\kappa_2$, then
+$$\|\nabla^2 f(x) - \nabla^2 m(x)\| \le 2 \left(4 \kappa_2 + \tfrac{1}{3}(L_f + L_m)\right)
+  \delta.$$
+
+**Correction.** The hypothesis $\delta > 0$ is necessary; see
+`ConnGouldToint.Chapter09.second_order_zero_radius_counterexample`.
+
+The model Hessian is differentiable, hence continuous, as the Taylor estimate requires. The
+proof reduces to `ConnGouldToint.Chapter09.theorem_9_3_1_of_hessian_lipschitz`. -/
 theorem theorem_9_3_1 {f m : E → ℝ} (hf : ContDiff ℝ 3 f)
     (hm : Differentiable ℝ m) (hDm₁ : Differentiable ℝ (fderiv ℝ m))
     (hDm₂ : Differentiable ℝ (fderiv ℝ (fderiv ℝ m)))
@@ -148,8 +239,18 @@ theorem theorem_9_3_1 {f m : E → ℝ} (hf : ContDiff ℝ 3 f)
   exact theorem_9_3_1_of_hessian_lipschitz (hf.of_le (by norm_num)) hCm hδ hκ hLf hLm
     (lip (hD2f.differentiable (by norm_num)) hF) (lip hDm₂ hM) hv
 
-/-- Corollary 9.3.2. The modified acceptance test provides eventual second-order
-validity on balls of positive radii capped by a multiple of the model gradient. -/
+/-- **Corollary 9.3.2** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be three times continuously
+differentiable, and let the models $m_k : E \to \mathbb{R}$ be differentiable with
+differentiable first and second derivatives. Let $\kappa_2 \ge 0$, $L_f \ge 0$ and $L_m \ge 0$,
+with $\|\nabla^3 f(z)\| \le L_f$ and $\|\nabla^3 m_k(z)\| \le L_m$ for all $k$ and $z$. Let
+$x_k \in E$ and $\delta_k \in \mathbb{R}$. Suppose that for all sufficiently large $k$,
+$0 < \delta_k \le \mu \|\nabla m_k(x_k)\|$ and $m_k$ is second-order valid for $f$ on
+$B(x_k, \delta_k)$ with constants $\kappa_1$ and $\kappa_2$. If $\|\nabla m_k(x_k)\| \to 0$,
+then
+$$\|\nabla^2 f(x_k) - \nabla^2 m_k(x_k)\| \to 0.$$
+
+The modified acceptance test of the algorithm provides the eventual second-order validity on
+balls of positive radius at most a multiple of the model gradient norm. -/
 theorem corollary_9_3_2 {f : E → ℝ} (hf : ContDiff ℝ 3 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k))
     (hDm₁ : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
@@ -176,9 +277,26 @@ theorem corollary_9_3_2 {f : E → ℝ} (hf : ContDiff ℝ 3 f) {m : ℕ → E �
     _ ≤ C * (μ * ‖fderiv ℝ (m k) (x k)‖) := mul_le_mul_of_nonneg_left hk.2.1 hC
     _ = _ := (mul_assoc C μ _).symm
 
-/-- Theorem 9.3.3 in terms of the bounds supplied by an infinite refinement loop.
-The model curvature may stay negative at each finite refinement. Its lower bound
-tends to zero, which is what the proof needs in place of the printed (9.3.4). -/
+/-- **Theorem 9.3.3** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be three times continuously
+differentiable, and let the models $m_k : E \to \mathbb{R}$ be differentiable with
+differentiable first and second derivatives. Let $\kappa_1 > 0$ and
+$\kappa_2, B_f, B_m, L_f, L_m \ge 0$, with $\|\nabla^2 f(z)\| \le B_f$,
+$\|\nabla^2 m_k(z)\| \le B_m$, $\|\nabla^3 f(z)\| \le L_f$ and $\|\nabla^3 m_k(z)\| \le L_m$ for
+all $k$ and $z$. Let $x \in E$, and let $\delta_k$ and $\tau_k$ be real sequences with
+$\tau_k \to 0$. Suppose that for all sufficiently large $k$, $0 < \delta_k \le \mu \tau_k$,
+$m_k$ is second-order valid for $f$ on $B(x, \delta_k)$ with constants $\kappa_1$ and
+$\kappa_2$, and $\|\nabla m_k(x)\| \le \tau_k$. Suppose also that for every $v \in E$,
+eventually
+$$-\tau_k \|v\|^2 \le \nabla^2 m_k(x)[v, v].$$
+Then $\nabla f(x) = 0$ and $\nabla^2 f(x)[v, v] \ge 0$ for all $v \in E$.
+
+**Correction.** The printed condition (9.3.4) on the model curvature does not hold for the
+refinement loop: the model curvature can stay negative at every refinement. The proof needs only
+the lower curvature bound $-\tau_k$, which tends to zero.
+
+The sequence $\tau_k$ bounds both the model gradient norm and the negative model curvature, as
+in an infinite refinement loop of Algorithm 9.3.1; see
+`ConnGouldToint.Chapter09.theorem_9_3_3_of_refinement`. -/
 theorem theorem_9_3_3 {f : E → ℝ} (hf : ContDiff ℝ 3 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k))
     (hDm₁ : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
@@ -242,7 +360,10 @@ theorem theorem_9_3_3 {f : E → ℝ} (hf : ContDiff ℝ 3 f) {m : ℕ → E →
       _ ≤ (A v v - B v v) + B v v := add_le_add hd' hc
       _ = _ := sub_add_cancel _ _
 
-/-- At radius zero, two smooth models can agree in value and have distinct Hessians. -/
+/-- Second-order validity on a ball of radius $0$ gives no control of the Hessian error. On
+$\mathbb{R}$, the model $m = 0$ is second-order valid for $f(x) = x^2$ on $B(0, 0)$ with
+constants $1$ and $1$, but $f''(0) \neq m''(0)$. This shows that the hypothesis $\delta > 0$ of
+Theorem 9.3.1 is necessary. -/
 theorem second_order_zero_radius_counterexample :
     modelSecondOrderValidOnBall (fun x : ℝ ↦ x ^ 2) (fun _ ↦ 0) 0 0 1 1 ∧
       fderiv ℝ (fderiv ℝ (fun x : ℝ ↦ x ^ 2)) 0 ≠
@@ -274,31 +395,65 @@ theorem second_order_zero_radius_counterexample :
       ← fderiv_apply_one_eq_deriv, h] at hsecond
     simp at hsecond
 
-/-- The norm and negative-curvature measure in Algorithm 9.3.1. -/
+/-- **Algorithm 9.3.1** of [conn2000trust], criticality measure. For a model $m : E \to \mathbb{R}$,
+a point $x$ and a lower bound $\lambda$ on the curvature of $m$ at $x$, the **second-order model
+criticality** is
+$$\max\{\|\nabla m(x)\|, -\lambda\}.$$
+-/
 noncomputable def secondOrderModelCriticality (m : E → ℝ) (x : E) (curvature : ℝ) : ℝ :=
   max ‖fderiv ℝ m x‖ (-curvature)
 
-/-- The validity test in Algorithm 9.3.1 uses a positive certificate radius. -/
+/-- **Algorithm 9.3.1** of [conn2000trust], validity test. The model $m$ **passes** the second-order
+test at $x$, with constants $\kappa_1, \kappa_2, \mu$ and curvature bound $\lambda$, if there is
+$\delta > 0$ with $\delta \le \mu \max\{\|\nabla m(x)\|, -\lambda\}$ such that $m$ is
+second-order valid for $f$ on $B(x, \delta)$ with constants $\kappa_1$ and $\kappa_2$.
+
+The certificate radius $\delta$ must be positive. -/
 def secondOrderModelPasses (f m : E → ℝ) (x : E) (κ₁ κ₂ μ curvature : ℝ) : Prop :=
   ∃ δ > 0, δ ≤ μ * secondOrderModelCriticality m x curvature ∧
     modelSecondOrderValidOnBall f m x δ κ₁ κ₂
 
-/-- At zero model criticality the printed target radius is zero. Shrink
-the current positive certificate instead, so further estimates still apply. -/
+/-- **Algorithm 9.3.1** of [conn2000trust], refinement radius. For
+$\alpha, \mu, \delta, \tau \in \mathbb{R}$, the **refinement radius** is $\alpha \mu \tau$ if
+$\tau > 0$, and $\alpha \delta$ otherwise. Here $\delta$ is the current radius and $\tau$ the
+current model criticality.
+
+**Correction.** At zero model criticality, the printed target radius $\alpha \mu \tau$ is zero.
+The definition shrinks the current positive radius instead, so that the estimates for positive
+radii still apply. -/
 noncomputable def secondOrderRefinementRadius (α μ δ τ : ℝ) : ℝ :=
   α * (if 0 < τ then μ * τ else δ)
 
-/-- An infinite inner trace, starting at a positive-radius validity
-certificate. Each model is tested again after the refinement. -/
+/-- **Algorithm 9.3.1** of [conn2000trust], infinite refinement trace at a fixed point $x \in E$,
+with constants $\kappa_1, \kappa_2, \mu, \alpha, \varepsilon$. A **second-order model
+refinement** consists of models $m_k : E \to \mathbb{R}$, radii $\delta_k$ and curvature bounds
+$\lambda_k$, for $k \in \mathbb{N}$, such that for every $k$: $\delta_k > 0$; $m_k$ is
+second-order valid for $f$ on $B(x, \delta_k)$; $\|\nabla m_k(x)\| \le \varepsilon$;
+$\lambda_k \|v\|^2 \le \nabla^2 m_k(x)[v, v]$ for all $v$; $m_k$ fails the second-order test
+with curvature bound $\lambda_k$; and $\delta_{k+1}$ is the refinement radius for $\delta_k$ and
+the criticality $\max\{\|\nabla m_k(x)\|, -\lambda_k\}$.
+
+The trace starts at a validity certificate of positive radius, and each model is tested again
+after the refinement. -/
 structure SecondOrderModelRefinement (f : E → ℝ) (x : E) (κ₁ κ₂ μ α ε : ℝ) where
+  /-- The model $m_k$ after $k$ refinements. -/
   model : ℕ → E → ℝ
+  /-- The radius $\delta_k$ of the validity certificate of $m_k$. -/
   radius : ℕ → ℝ
+  /-- The lower bound $\lambda_k$ on the curvature of $m_k$ at $x$. -/
   leastCurvature : ℕ → ℝ
+  /-- Each radius is positive: $\delta_k > 0$. -/
   radius_pos : ∀ k, 0 < radius k
+  /-- The model $m_k$ is second-order valid for $f$ on $B(x, \delta_k)$ with constants $\kappa_1$
+  and $\kappa_2$. -/
   valid : ∀ k, modelSecondOrderValidOnBall f (model k) x (radius k) κ₁ κ₂
+  /-- The model gradient is small: $\|\nabla m_k(x)\| \le \varepsilon$. -/
   small_gradient : ∀ k, ‖fderiv ℝ (model k) x‖ ≤ ε
+  /-- The curvature bound holds: $\lambda_k \|v\|^2 \le \nabla^2 m_k(x)[v, v]$ for all $v \in E$. -/
   curvature_bound : ∀ k v, leastCurvature k * ‖v‖ ^ 2 ≤ fderiv ℝ (fderiv ℝ (model k)) x v v
+  /-- The model $m_k$ fails the second-order validity test with curvature bound $\lambda_k$. -/
   test_fails : ∀ k, ¬ secondOrderModelPasses f (model k) x κ₁ κ₂ μ (leastCurvature k)
+  /-- The next radius is the refinement radius for $\delta_k$ and the criticality of $m_k$. -/
   refine_radius : ∀ k, radius (k + 1) = secondOrderRefinementRadius α μ (radius k)
     (secondOrderModelCriticality (model k) x (leastCurvature k))
 
@@ -306,13 +461,16 @@ namespace SecondOrderModelRefinement
 
 variable {f : E → ℝ} {x : E} {κ₁ κ₂ μ α ε : ℝ}
 
-/-- A failed test bounds the model criticality by the current radius. -/
+/-- A failed test gives $\mu \max\{\|\nabla m_k(x)\|, -\lambda_k\} < \delta_k$. -/
 private theorem criticality_lt (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε) (k : ℕ) :
     μ * secondOrderModelCriticality (run.model k) x (run.leastCurvature k) < run.radius k :=
   lt_of_not_ge fun h ↦ run.test_fails k ⟨run.radius k, run.radius_pos k, h, run.valid k⟩
 
-/-- Every refinement reduces the certificate radius by at least the
-fixed factor. This also holds in the zero-criticality branch. -/
+/-- **Algorithm 9.3.1** of [conn2000trust], radius decay. If $0 \le \alpha < 1$, the radii
+$\delta_k$ of a second-order model refinement tend to zero.
+
+Each refinement multiplies the radius by at most $\alpha$, also in the branch with zero
+criticality. -/
 theorem tendsto_radius (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε)
     (hα : 0 ≤ α) (hα₁ : α < 1) : Tendsto run.radius atTop (𝓝 0) := by
   have hstep (k : ℕ) : run.radius (k + 1) ≤ α * run.radius k := by
@@ -335,9 +493,17 @@ theorem tendsto_radius (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α �
 
 end SecondOrderModelRefinement
 
-/-- The corrected loop directly supplies the convergence hypotheses of
-Theorem 9.3.3. The certificate radius divided by `μ` is an upper bound
-on both the model gradient norm and the magnitude of negative curvature. -/
+/-- **Theorem 9.3.3** of [conn2000trust], for the corrected Algorithm 9.3.1. Let a second-order
+model refinement for $f$ at $x$ be given, with $\mu > 0$ and $0 \le \alpha < 1$. Let $f$ be
+three times continuously differentiable, and let the models $m_k$ be differentiable with
+differentiable first and second derivatives. Let $\kappa_1 > 0$ and
+$\kappa_2, B_f, B_m, L_f, L_m \ge 0$, with $\|\nabla^2 f(z)\| \le B_f$,
+$\|\nabla^2 m_k(z)\| \le B_m$, $\|\nabla^3 f(z)\| \le L_f$ and $\|\nabla^3 m_k(z)\| \le L_m$ for
+all $k$ and $z$. Then $\nabla f(x) = 0$ and $\nabla^2 f(x)[v, v] \ge 0$ for all $v \in E$.
+
+The proof applies `ConnGouldToint.Chapter09.theorem_9_3_3` with $\tau_k = \delta_k / \mu$. A
+failed test makes $\delta_k / \mu$ an upper bound on both the model gradient norm and the
+negative curvature. -/
 theorem theorem_9_3_3_of_refinement {f : E → ℝ} {x : E} {κ₁ κ₂ μ α ε Bf Bm Lf Lm : ℝ}
     (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε)
     (hμ : 0 < μ) (hα : 0 ≤ α) (hα₁ : α < 1) (hf : ContDiff ℝ 3 f)

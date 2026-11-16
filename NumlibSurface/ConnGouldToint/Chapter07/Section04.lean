@@ -5,9 +5,52 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Optimization.Subproblem.Matrix
 
 /-!
-# The scaled Euclidean trust-region problem
+# Conn, Gould and Toint, Section 7.4: The scaled Euclidean trust-region problem
 
-Section 7.4 of [conn2000trust].
+Section 7.4 of [conn2000trust] treats the trust-region subproblem in the norm
+$\|s\|_M = \sqrt{s^T M s}$ of a symmetric positive definite matrix $M \in \mathbb{R}^{n \times n}$:
+$$\min_{s} \; m(s) = g^T s + \tfrac{1}{2} s^T H s \quad \text{subject to} \quad \|s\|_M \le \Delta.
+  \qquad (7.4.1)$$
+The module shows that (7.4.1) is the Euclidean ball problem in two sets of coordinates:
+intrinsically, in the inner product $\langle x, y \rangle_M = x^T M y$ with gradient $M^{-1} g$ and
+operator $M^{-1} H$, and explicitly, after a congruence $S^T M S = I$ as in (7.4.2)–(7.4.4). It then
+proves Theorem 7.4.1, the characterization of the global minimizers of (7.4.1). The proofs use the
+scaled space of `Numlib.Optimization.Subproblem.Matrix` and the ball characterization
+`Subproblem.isMinOn_closedBall_iff`.
+
+## Main definitions
+
+* Section 7.4, `ConnGouldToint.Chapter07.mNorm`: the norm $\|s\|_M = \sqrt{s^T M s}$.
+* Equation (7.4.1), `ConnGouldToint.Chapter07.matrixQuadModel`: the quadratic model
+  $m(s) = g^T s + \frac{1}{2} s^T H s$.
+* Equation (7.4.1), `ConnGouldToint.Chapter07.weightedTrustRegion`: the feasible set
+  $\{s : \|s\|_M \le \Delta\}$.
+
+## Main results
+
+* Equations (7.4.1)–(7.4.4), `ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_scaled`: $s$
+  solves (7.4.1) if and only if it solves the ball problem in the $M$-inner product with gradient
+  $M^{-1} g$ and operator $M^{-1} H$.
+* Equations (7.4.2)–(7.4.4), `ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_congruence`:
+  if $S^T M S = I$, then $Sy$ solves (7.4.1) if and only if $y$ solves the Euclidean ball problem
+  with gradient $S^T g$ and Hessian $S^T H S$.
+* Theorem 7.4.1, `ConnGouldToint.Chapter07.theorem_7_4_1`: a global minimizer of (7.4.1) satisfies
+  $(H + \mu M) s = -g$ with $H + \mu M$ positive semidefinite, $\mu \ge 0$ and
+  $\mu (\|s\|_M - \Delta) = 0$, and it is unique if $H + \mu M$ is positive definite.
+
+## Implementation notes
+
+* Vectors are elements of `EuclideanSpace ℝ ι` for a finite index type `ι`, and a matrix acts on
+  them through `Matrix.toEuclideanLin`.
+* The $M$-inner product space is `Subproblem.ScaledSpace hM`, and `Subproblem.toScaled hM` is the
+  identity map into it. The gradient $M^{-1} g$ and the operator $M^{-1} H$ are
+  `Subproblem.scaledGrad hM g` and `Subproblem.scaledOp H hM`.
+
+## Deviations from the source
+
+* **Theorem 7.4.1** (correction). The statement requires $\Delta > 0$, as in Section 7.2. At
+  $\Delta = 0$ the only feasible point is $0$, and the shifted system has no solution when
+  $g \neq 0$. See `ConnGouldToint.Chapter07.theorem_7_4_1`.
 -/
 
 open Matrix Metric
@@ -20,16 +63,26 @@ open Subproblem
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
   {H M : Matrix ι ι ℝ} {g : EuclideanSpace ℝ ι} {Δ : ℝ}
 
-/-- The trust-region norm induced by the positive definite scaling matrix. -/
+/-- **Section 7.4** of [conn2000trust], scaled norm. For a matrix $M \in \mathbb{R}^{n \times n}$,
+the **$M$-norm** of $s \in \mathbb{R}^n$ is
+$$\|s\|_M = \sqrt{s^T M s}.$$
+
+The square root is `Real.sqrt`, so the value is $0$ when $s^T M s < 0$. The results of this
+module assume that $M$ is symmetric positive definite. -/
 noncomputable def mNorm (M : Matrix ι ι ℝ) (s : EuclideanSpace ℝ ι) : ℝ :=
   √⟪s, toEuclideanLin M s⟫
 
-/-- The matrix quadratic objective of (7.4.1). -/
+/-- **Equation (7.4.1)** of [conn2000trust], objective. For $g \in \mathbb{R}^n$ and
+$H \in \mathbb{R}^{n \times n}$, the **quadratic model** is
+$$m(s) = g^T s + \tfrac{1}{2} s^T H s.$$
+-/
 noncomputable def matrixQuadModel (g : EuclideanSpace ℝ ι) (H : Matrix ι ι ℝ)
     (s : EuclideanSpace ℝ ι) : ℝ :=
   ⟪g, s⟫ + (1 / 2) * ⟪s, toEuclideanLin H s⟫
 
-/-- The ellipsoidal feasible set of (7.4.1). -/
+/-- **Equation (7.4.1)** of [conn2000trust], feasible set. For $M \in \mathbb{R}^{n \times n}$ and
+$\Delta \in \mathbb{R}$, the **weighted trust region** is the ellipsoid
+$\{s \in \mathbb{R}^n : \|s\|_M \le \Delta\}$. -/
 def weightedTrustRegion (M : Matrix ι ι ℝ) (Δ : ℝ) : Set (EuclideanSpace ℝ ι) :=
   {s | mNorm M s ≤ Δ}
 
@@ -37,8 +90,19 @@ private theorem norm_toScaled_eq_mNorm (hM : M.PosDef) (s : EuclideanSpace ℝ �
     ‖toScaled hM s‖ = mNorm M s := by
   rw [norm_toScaled, mNorm, real_inner_comm]
 
-/-- The weighted subproblem is the ordinary ball subproblem in the `M`-inner product.
-The identity map to the scaled space implements the change of coordinates intrinsically. -/
+/-- **Equations (7.4.1)–(7.4.4)** of [conn2000trust], intrinsic change of coordinates. Let
+$M \in \mathbb{R}^{n \times n}$ be symmetric positive definite, and let $g \in \mathbb{R}^n$,
+$H \in \mathbb{R}^{n \times n}$ and $\Delta \in \mathbb{R}$. Equip $\mathbb{R}^n$ with the inner
+product $\langle x, y \rangle_M = x^T M y$. Then $s$ minimizes
+$m(s) = g^T s + \frac{1}{2} s^T H s$ on $\{s : \|s\|_M \le \Delta\}$ if and only if $s$
+minimizes
+$$\langle M^{-1} g, s \rangle_M + \tfrac{1}{2} \langle s, M^{-1} H s \rangle_M$$
+on the closed ball of radius $\Delta$ of this inner product space.
+
+The inner product space is `Subproblem.ScaledSpace hM`, the identity map into it is
+`Subproblem.toScaled hM`, and the model on the right is `Subproblem.quadModel
+(Subproblem.scaledGrad hM g) (Subproblem.scaledOp H hM)`. The two models agree pointwise, so no
+symmetry of $H$ is needed. -/
 theorem isMinOn_weightedTrustRegion_iff_scaled (hM : M.PosDef) (s : EuclideanSpace ℝ ι) :
     IsMinOn (matrixQuadModel g H) (weightedTrustRegion M Δ) s ↔
       IsMinOn (quadModel (scaledGrad hM g) (scaledOp H hM)) (closedBall 0 Δ)
@@ -53,9 +117,15 @@ theorem isMinOn_weightedTrustRegion_iff_scaled (hM : M.PosDef) (s : EuclideanSpa
     have hy' : ‖toScaled hM y‖ ≤ Δ := by rwa [norm_toScaled_eq_mNorm]
     simpa only [matrixQuadModel, quadModel_scaled (hM := hM)] using hs (toScaled hM y) hy'
 
-/-- The congruence in (7.4.2)–(7.4.4): for an invertible `S` with `Sᵀ M S = I`,
-the weighted problem becomes the Euclidean ball problem with gradient `Sᵀ g`
-and Hessian `Sᵀ H S`. Solutions transform by multiplication by `S`. -/
+/-- **Equations (7.4.2)–(7.4.4)** of [conn2000trust], congruence. Let
+$M, S \in \mathbb{R}^{n \times n}$ with $S$ invertible and $S^T M S = I$, and let
+$g \in \mathbb{R}^n$, $H \in \mathbb{R}^{n \times n}$ and $\Delta \in \mathbb{R}$. Then for
+every $y \in \mathbb{R}^n$, the point $Sy$ minimizes $m(s) = g^T s + \frac{1}{2} s^T H s$ on
+$\{s : \|s\|_M \le \Delta\}$ if and only if $y$ minimizes
+$$(S^T g)^T y + \tfrac{1}{2} y^T (S^T H S) y$$
+on the Euclidean ball $\|y\| \le \Delta$.
+
+Solutions of the two problems correspond by multiplication by $S$. -/
 theorem isMinOn_weightedTrustRegion_iff_congruence {S : Matrix ι ι ℝ} (hS : IsUnit S)
     (hcongr : Sᵀ * M * S = 1) (y : EuclideanSpace ℝ ι) :
     IsMinOn (matrixQuadModel g H) (weightedTrustRegion M Δ) (toEuclideanLin S y) ↔
@@ -86,9 +156,21 @@ theorem isMinOn_weightedTrustRegion_iff_congruence {S : Matrix ι ι ℝ} (hS : 
     rw [hnorm] at hu
     simpa only [hmodel] using hm z hu
 
-/-- Theorem 7.4.1. A global minimizer over the weighted ball solves the shifted system
-with a nonnegative complementary multiplier and positive semidefinite shifted matrix.
-Positive definiteness implies uniqueness. A positive radius is required, as in Section 7.2. -/
+/-- **Theorem 7.4.1** of [conn2000trust]. Let $M \in \mathbb{R}^{n \times n}$ be symmetric positive
+definite, let $H \in \mathbb{R}^{n \times n}$ be symmetric, let $g \in \mathbb{R}^n$ and
+$\Delta > 0$. If $s$ satisfies $\|s\|_M \le \Delta$ and minimizes
+$m(s) = g^T s + \frac{1}{2} s^T H s$ on $\{s : \|s\|_M \le \Delta\}$, then there is
+$\mu \in \mathbb{R}$ with
+$$(H + \mu M) s = -g, \qquad H + \mu M \succeq 0, \qquad \mu \ge 0, \qquad \mu (\|s\|_M -
+  \Delta) = 0.$$
+If moreover $H + \mu M$ is positive definite, then $s$ is the only minimizer of $m$ on
+$\{s : \|s\|_M \le \Delta\}$.
+
+**Correction.** The statement requires $\Delta > 0$, as in Section 7.2. At $\Delta = 0$ the only
+feasible point is $s = 0$, and the system $(H + \mu M) 0 = -g$ has no solution when $g \neq 0$.
+
+The proof transports the ball characterization `Subproblem.isMinOn_closedBall_iff` through
+`ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_scaled`. -/
 theorem theorem_7_4_1 (hM : M.PosDef) (hH : H.IsHermitian) (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ ι} (hs : s ∈ weightedTrustRegion M Δ)
     (hmin : IsMinOn (matrixQuadModel g H) (weightedTrustRegion M Δ) s) :

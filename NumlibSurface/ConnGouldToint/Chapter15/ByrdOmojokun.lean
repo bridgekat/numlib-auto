@@ -4,13 +4,55 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.ConnGouldToint.Chapter15.Corrections
 
-/-! # Byrd–Omojokun SQP convergence
+/-!
+# Conn, Gould and Toint, Section 15.4: Byrd–Omojokun SQP convergence
 
-The statements use the uniform full-trial error and accepted-step
-variation bounds from the earlier corrected convergence results.
-The correction variant retains the normal and tangential models and
-penalty update, while distinguishing original-trial agreement from
-accepted-iterate decrease.
+This module formalizes the convergence theorems for the Byrd–Omojokun composite-step SQP method in
+[conn2000trust], Section 15.4, Theorems 15.4.22–15.4.25. At iteration $k$ the step is the sum of a
+normal step $n_k$, which reduces the linearized constraint violation, and a tangential step, which
+reduces the model in reduced coordinates. With the reduced-coordinate map $N_k^T$, the criticality
+measure is $\|N_k^T g_k\|$. The predicted decrease of the merit function $f(x) + \sigma \|c(x)\|$
+splits as
+$$d_k = d^T_k + \sigma_{k+1} d^N_k - \langle g_k, n_k \rangle - \tfrac12 \langle n_k, H_k n_k
+  \rangle,$$
+and the penalty update enforces (15.4.7), $\nu \sigma_{k+1} d^N_k \le d_k$.
+
+Theorem 15.4.22 shows that, if the constraint values tend to zero, the penalty parameter stabilizes
+and the reduced gradient tends to zero. Theorem 15.4.23 extends this to the method with a
+second-order correction step (Algorithm 15.4.6) and derives feasibility from a uniform rank
+condition. Theorem 15.4.24 gives Q-superlinear and Q-quadratic local convergence, and Theorem
+15.4.25 gives a second-order condition at a cluster point. The statements use uniform bounds on the
+error of the full trial and on the variation of the accepted steps, from the corrected convergence
+results of Section 15.4 (`ConnGouldToint.Chapter15.SQPTangentialRun`). The original trial determines
+the agreement between the model and the merit function, and the accepted trial, possibly corrected,
+determines the decrease of the merit function.
+
+## Main definitions
+
+* Theorem 15.4.22, `ConnGouldToint.Chapter15.ByrdOmojokunTangentialData`: the model and penalty data
+  of a run.
+
+## Main results
+
+* Equation (15.4.7), `ConnGouldToint.Chapter15.ByrdOmojokunTangentialData.model_penalty`: the
+  penalty update gives $\nu \sigma_{k+1} d^N_k \le d_k$.
+* Theorem 15.4.22, `ConnGouldToint.Chapter15.theorem_15_4_22`: stabilization of the penalty
+  parameter and convergence of the reduced gradient.
+* Theorem 15.4.23, `ConnGouldToint.Chapter15.theorem_15_4_23`: feasibility and convergence of the
+  reduced gradient with a second-order correction.
+* Theorem 15.4.24, `ConnGouldToint.Chapter15.theorem_15_4_24`: Q-superlinear and Q-quadratic local
+  convergence.
+* Theorem 15.4.25, `ConnGouldToint.Chapter15.theorem_15_4_25`: nonnegative curvature at a
+  first-order cluster point.
+
+## Deviations from the source
+
+* **Theorem 15.4.23** (typo). The printed statement refers to the wrong algorithm; the theorem
+  concerns Algorithm 15.4.6, the method with the second-order correction. See
+  `ConnGouldToint.Chapter15.theorem_15_4_23`.
+* **Theorem 15.4.25** (correction). The argument uses the cluster point of maximal curvature, with a
+  corrected curvature margin, and the coverage of the tail by the cluster set is a hypothesis. See
+  `ConnGouldToint.Chapter15.theorem_15_4_25`.
 -/
 
 open Filter Topology
@@ -24,64 +66,133 @@ variable {E Y Z : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [NormedAddCommGroup Y] [NormedSpace ℝ Y]
   [NormedAddCommGroup Z] [NormedSpace ℝ Z]
 
-/-- The model and penalty estimates used for the tangential convergence
-of Byrd–Omojokun SQP. The uncorrected trial determines the small-radius
-guarantee, and the accepted trial determines the merit decrease. -/
+/-- **Theorem 15.4.22** of [conn2000trust], the data of a run. For constraint values $c_k$,
+gradients $g_k$, normal steps $n_k$, Hessians $H_k$, reduced-coordinate maps $N_k^T$, penalty
+parameters $\sigma_k$, normal, tangential and total predicted decreases $d^N_k$, $d^T_k$, $d_k$,
+shifted merit values $v_k$, radii $\Delta_k$, actual reductions of the original trials and
+successful iterations $S$, the data consist of:
+
+* a stabilized SQP tail `ConnGouldToint.Chapter15.SQPTangentialRun` for the criticality measures
+  $\|N_k^T g_k\|$ and $\|N_k^T (g_k + H_k n_k)\|$, with the actual reductions of the original
+  trials in the ratio test;
+* uniform bounds $\|g_k\| \le G$, $\|H_k\| \le B$, $\|N_k^T\| \le D$ and $\|c_k\| \le U$;
+* the normal decrease bound $b_N \|n_k\| \le d^N_k \le \|c_k\|$ with $b_N > 0$, and
+  $d^T_k \ge 0$;
+* the penalty update of Step 2 of Algorithm 15.4.1 with constants $\tau_1 \ge 0$ and
+  $\tau_2 > 0$, starting from $\sigma_0 > 0$, whose required value is the maximum of a bounded
+  auxiliary value and, if $d^N_k > 0$, the threshold (15.4.8) for $\nu \in (0, 1)$;
+* the splitting $d_k = d^T_k + \sigma_{k+1} d^N_k - \langle g_k, n_k \rangle - \frac12 \langle
+  n_k, H_k n_k \rangle$;
+* the tangential Cauchy decrease $\kappa w_k \min\{b \Delta_k, w_k / \beta\} \le d^T_k$ with
+  $w_k = \|N_k^T (g_k + H_k n_k)\|$ and $\kappa, b, \beta > 0$;
+* the error bound $|\mathrm{original}_k - d_k| \le C (1 + \sigma_{k+1}) \Delta_k^2$ for the
+  original trial.
+
+The original, uncorrected trial determines the small-radius guarantee, and the accepted trial
+determines the decrease of the merit function. -/
 structure ByrdOmojokunTangentialData (P : BTRParams)
     (c : ℕ → Y) (g n : ℕ → E) (H : ℕ → E →L[ℝ] E) (NT : ℕ → E →L[ℝ] Z)
     (σ dN dT d v Δ original : ℕ → ℝ) (S : Set ℕ) where
+  /-- The stabilized SQP tail for the criticality measures $\|N_k^T g_k\|$ and
+  $\|N_k^T (g_k + H_k n_k)\|$. -/
   run : SQPTangentialRun P (fun k => ‖NT k (g k)‖) (fun k => ‖NT k (g k + H k (n k))‖)
     v Δ d original S
+  /-- The bound $G$ on the gradients. -/
   G : ℝ
+  /-- The bound $B$ on the Hessians. -/
   B : ℝ
+  /-- The bound $U$ on the constraint values. -/
   U : ℝ
+  /-- The bound $D$ on the reduced-coordinate maps. -/
   D : ℝ
+  /-- The constant $b_N$ of the normal decrease bound. -/
   bN : ℝ
+  /-- The fraction $\nu$ in the penalty condition (15.4.7). -/
   ν : ℝ
+  /-- The multiplicative constant $\tau_1$ of the penalty update. -/
   τ₁ : ℝ
+  /-- The additive constant $\tau_2$ of the penalty update. -/
   τ₂ : ℝ
+  /-- The constant $C$ of the error bound for the original trial. -/
   C : ℝ
+  /-- The constant $\kappa$ of the tangential Cauchy decrease. -/
   κ : ℝ
+  /-- The constant $b$ of the tangential Cauchy decrease. -/
   b : ℝ
+  /-- The curvature constant $\beta$ of the tangential Cauchy decrease. -/
   β : ℝ
+  /-- The auxiliary lower bounds for the required penalty parameter. -/
   auxiliary : ℕ → ℝ
+  /-- The upper bound of the auxiliary values. -/
   auxiliaryBound : ℝ
+  /-- The gradient bound is nonnegative. -/
   G_nonneg : 0 ≤ G
+  /-- The Hessian bound is nonnegative. -/
   B_nonneg : 0 ≤ B
+  /-- The constraint bound is nonnegative. -/
   U_nonneg : 0 ≤ U
+  /-- The bound on the reduced-coordinate maps is nonnegative. -/
   D_nonneg : 0 ≤ D
+  /-- The constant $b_N$ is positive. -/
   bN_pos : 0 < bN
+  /-- The fraction $\nu$ is positive. -/
   ν_pos : 0 < ν
+  /-- The fraction $\nu$ is less than one. -/
   ν_lt_one : ν < 1
+  /-- The constant $\tau_1$ is nonnegative. -/
   τ₁_nonneg : 0 ≤ τ₁
+  /-- The constant $\tau_2$ is positive. -/
   τ₂_pos : 0 < τ₂
+  /-- The constant $C$ is nonnegative. -/
   C_nonneg : 0 ≤ C
+  /-- The constant $\kappa$ is positive. -/
   κ_pos : 0 < κ
+  /-- The constant $b$ is positive. -/
   b_pos : 0 < b
+  /-- The constant $\beta$ is positive. -/
   β_pos : 0 < β
+  /-- The initial penalty parameter is positive. -/
   penalty_initial : 0 < σ 0
+  /-- The gradients satisfy $\|g_k\| \le G$. -/
   gradient_bound : ∀ k, ‖g k‖ ≤ G
+  /-- The Hessians satisfy $\|H_k\| \le B$. -/
   hessian_bound : ∀ k, ‖H k‖ ≤ B
+  /-- The reduced-coordinate maps satisfy $\|N_k^T\| \le D$. -/
   reduced_map_bound : ∀ k, ‖NT k‖ ≤ D
+  /-- The constraint values satisfy $\|c_k\| \le U$. -/
   constraint_bound : ∀ k, ‖c k‖ ≤ U
+  /-- The normal decrease satisfies $b_N \|n_k\| \le d^N_k \le \|c_k\|$. -/
   normal_decrease : ∀ k, bN * ‖n k‖ ≤ dN k ∧ dN k ≤ ‖c k‖
+  /-- The tangential decrease is nonnegative. -/
   tangential_nonneg : ∀ k, 0 ≤ dT k
+  /-- The auxiliary values are bounded above. -/
   auxiliary_bound : ∀ k, auxiliary k ≤ auxiliaryBound
+  /-- The penalty parameter follows the update of Step 2 of Algorithm 15.4.1. The required value is
+  the auxiliary value if $d^N_k = 0$, and otherwise the maximum of the auxiliary value and the
+  threshold (15.4.8). -/
   penalty_update : ∀ k,
     let dq := -⟪g k, n k⟫ - (1 / 2) * ⟪n k, H k (n k)⟫
     let required := if dN k = 0 then auxiliary k
       else max (auxiliary k) (sqpPenaltyThreshold ν (dN k) (dT k) dq)
     σ (k + 1) = sqpPenaltyUpdate τ₁ τ₂ required (σ k)
+  /-- The total predicted decrease splits as $d_k = d^T_k + \sigma_{k+1} d^N_k - \langle g_k, n_k
+  \rangle - \frac12 \langle n_k, H_k n_k \rangle$. -/
   model_split : ∀ k, d k = dT k + σ (k + 1) * dN k +
     (-⟪g k, n k⟫ - (1 / 2) * ⟪n k, H k (n k)⟫)
+  /-- The tangential decrease satisfies $\kappa w_k \min\{b \Delta_k, w_k / \beta\} \le d^T_k$, with
+  $w_k = \|N_k^T (g_k + H_k n_k)\|$. -/
   tangential_cauchy : ∀ k,
     let w := ‖NT k (g k + H k (n k))‖
     κ * w * min (b * Δ k) (w / β) ≤ dT k
+  /-- The actual reduction of the original trial satisfies $|\mathrm{original}_k - d_k| \le C (1 +
+  \sigma_{k+1}) \Delta_k^2$. -/
   original_error : ∀ k, |original k - d k| ≤ C * (1 + σ (k + 1)) * Δ k ^ 2
 
 omit [NormedSpace ℝ Y] in
-/-- The penalty update enforces (15.4.7). A zero normal decrease forces
-the normal step to vanish, so the tangential decrease suffices in that case. -/
+/-- **Equation (15.4.7)** of [conn2000trust]. For every $k$, the data of a run satisfy
+$$\nu \sigma_{k+1} d^N_k \le d_k.$$
+
+If $d^N_k = 0$, the normal decrease bound forces $n_k = 0$, and then $d_k = d^T_k \ge 0$. -/
 theorem ByrdOmojokunTangentialData.model_penalty {P : BTRParams}
     {c : ℕ → Y} {g n : ℕ → E} {H : ℕ → E →L[ℝ] E} {NT : ℕ → E →L[ℝ] Z}
     {σ dN dT d v Δ original : ℕ → ℝ} {S : Set ℕ}
@@ -109,9 +220,17 @@ theorem ByrdOmojokunTangentialData.model_penalty {P : BTRParams}
   exact (sqpPenaltyThreshold_le_iff data.ν_lt_one hd).mp hσ
 
 omit [NormedSpace ℝ Y] in
-/-- Theorem 15.4.22. Feasibility makes the normal perturbation vanish.
-The penalty stabilizes and the overall predicted decrease dominates a
-fixed positive fraction of the tangential decrease on the stabilized tail. -/
+/-- **Theorem 15.4.22** of [conn2000trust]. Let the data of a run be given, with $c_k \to 0$. Let
+$L \ge 0$ with
+$$\|N_k^T g_k\| - \|N_{k+1}^T g_{k+1}\| \le L \Delta_k \text{ for } k \in S, \qquad \|N_{k+1}^T
+  g_{k+1}\| = \|N_k^T g_k\| \text{ for } k \notin S.$$
+Then there are $\sigma_{\max} > 0$, $\kappa > 0$ and $j$ such that
+$\sigma_{k+1} = \sigma_{\max}$ and $\kappa d^T_k \le d_k$ for all $k \ge j$, and
+$$\|N_k^T g_k\| \to 0.$$
+
+Feasibility makes the normal perturbation vanish. The penalty parameter then stabilizes, and on
+the stabilized tail the total predicted decrease dominates a fixed fraction of the tangential
+decrease. -/
 theorem theorem_15_4_22 {P : BTRParams}
     {c : ℕ → Y} {g n : ℕ → E} {H : ℕ → E →L[ℝ] E} {NT : ℕ → E →L[ℝ] Z}
     {σ dN dT d v Δ original : ℕ → ℝ} {S : Set ℕ}
@@ -160,11 +279,31 @@ theorem theorem_15_4_22 {P : BTRParams}
     simpa only [(hj k hk).1] using data.original_error k
 
 omit [NormedSpace ℝ Y] in
-/-- Theorem 15.4.23 for Byrd–Omojokun with second-order correction.
-The original trial supplies the model agreement. The selected trial
-supplies the actual decrease, and (15.4.155) bounds its displacement.
-Uniform rank transfers normal criticality to feasibility, after which
-the stabilized tangential estimates apply without changing the models. -/
+/-- **Theorem 15.4.23** of [conn2000trust], for the Byrd–Omojokun method with second-order
+correction. Let the data of a run be given for the constraint values $c(x_k)$ and the merit
+function $\phi_k(x) = f(x) + \sigma_{k+1} \|c(x)\|$. Let $f(x_k) \ge f_{\min}$, let
+$m, \kappa_N, c_{\max}, \beta_N, \xi_N > 0$ and $L, \xi, \chi \ge 0$, and suppose that for all
+$k$ and $i, j$:
+
+* $m \|c(x_k)\| \le \|a(x_k)\|$ (uniform rank), where $a$ is the normal criticality measure;
+* $\kappa_N (\|a(x_k)\| / c_{\max}) \min\{\xi_N \Delta_k, \|a(x_k)\| / \beta_N\} \le d^N_k$;
+* $\mathrm{original}_k = \phi_k(x_k) - \phi_k(x_k + s_k)$, and
+  $\eta_1 d_k \le \phi_k(x_k) - \phi_k(x_{k+1})$ for $k \in S$;
+* for $k \in S$, $x_{k+1}$ is $x_k + s_k$ or $x_k + s_k + u_k$ with a correction
+  $\|u_k\| \le \chi \Delta_k$, as in (15.4.155), and $x_{k+1} = x_k$ for $k \notin S$;
+* $\|s_k\| \le \xi \Delta_k$;
+* $\|a(x_i) - a(x_j)\| \le L \|x_i - x_j\|$ and $\big|\|N_i^T g_i\| - \|N_j^T g_j\|\big| \le L
+  \|x_i - x_j\|$.
+
+Then $a(x_k) \to 0$, $c(x_k) \to 0$, the conclusions of Theorem 15.4.22 hold, and
+$\|N_k^T g_k\| \to 0$.
+
+**Typo.** The printed theorem refers to the wrong algorithm. It concerns Algorithm 15.4.6, the
+Byrd–Omojokun method with the second-order correction step.
+
+The original trial gives the model agreement, and the selected trial gives the actual decrease.
+The uniform rank condition transfers normal criticality to feasibility, after which the
+tangential estimates apply with the same models. -/
 theorem theorem_15_4_23 {P : BTRParams}
     (f : E → ℝ) (c : E → Y) (a : E → E) (x s correction g n : ℕ → E)
     (H : ℕ → E →L[ℝ] E) (NT : ℕ → E →L[ℝ] Z)
@@ -242,10 +381,21 @@ theorem theorem_15_4_23 {P : BTRParams}
     exact (sub_eq_zero.mp (abs_eq_zero.mp (le_antisymm h (abs_nonneg _)))).symm
 
 omit [InnerProductSpace ℝ E] in
-/-- Theorem 15.4.24. A small-radius nonshrinkage rule keeps the radius
-bounded below. The vanishing standard normal and tangential steps
-then fit within their respective radii. On the trapped tail, the
-accepted standard step or its full correction gives the local rate. -/
+/-- **Theorem 15.4.24** of [conn2000trust]. Let $E$ be a real normed space, and let $x_k$, steps
+$s_k$, corrections $u_k$, standard normal and tangential steps $n_k, t_k \to 0$, multiplier
+errors $e_k \ge 0$ with $e_k \to 0$, and radii $\Delta_k > 0$ be given. Let $M, D \ge 0$ and
+$r, r_0, \gamma, \xi_N, \xi_T > 0$ with $(M + D) \cdot 2r \le 1/2$. Suppose that
+$\|x_k - x_*\| < r$ for infinitely many $k$, $\gamma \Delta_k \le \Delta_{k+1}$ for all $k$, and
+eventually $\Delta_k \le r_0$ implies $\Delta_k \le \Delta_{k+1}$. Suppose also that, for all
+large $k$ with $\|x_k - x_*\| < r$, $\|n_k\| \le \xi_N \Delta_k$ and
+$\|t_k\| \le \xi_T \Delta_k$, the next iterate is $x_k + s_k$ or $x_k + s_k + u_k$, and
+$$\|x_k + s_k - x_*\| \le M (\|x_k - x_*\| + e_k) \|x_k - x_*\|, \qquad \|u_k\| \le D (\|x_k -
+  x_*\| + e_k) \|x_k - x_*\|.$$
+Then $x_k \to x_*$ Q-superlinearly. If moreover $e_k \le C \|x_k - x_*\|$ eventually for some
+$C \ge 0$, then $x_k \to x_*$ Q-quadratically.
+
+The nonshrinkage rule for small radii keeps the radius bounded below, so the vanishing standard
+steps fit in their trust regions. The trapping and step bounds are hypotheses. -/
 theorem theorem_15_4_24 (x s u nStandard tStandard : ℕ → E) (xstar : E) (ey Δ : ℕ → ℝ)
     {M D r r₀ γ ξN ξT : ℝ} (hM : 0 ≤ M) (hD : 0 ≤ D) (hr : 0 < r) (hr₀ : 0 < r₀)
     (hγ : 0 < γ) (hξN : 0 < ξN) (hξT : 0 < ξT)
@@ -283,11 +433,33 @@ theorem theorem_15_4_24 (x s u nStandard tStandard : ℕ → E) (xstar : E) (ey 
   exact hk hx (hn₀.le.trans (mul_le_mul_of_nonneg_left (hbound k hK') hξN.le))
     (ht₀.le.trans (mul_le_mul_of_nonneg_left (hbound k hK') hξT.le))
 
-/-- Theorem 15.4.25 for the second-order Byrd–Omojokun variant.
-Relative compactness supplies uniform tail coverage by the cluster
-set. The large-normal-step branch and the negative-curvature branch
-supply sufficient decrease, with the original or corrected acceptance
-ratio determining which trial is accepted. -/
+/-- **Theorem 15.4.25** of [conn2000trust], for the second-order Byrd–Omojokun method. Let $z_k$ lie
+eventually in a compact set $U$ of a topological space, and let every cluster point of $(z_k)$
+in $U$ be one of finitely many points $z^*_i$, $i \in \iota$, with $\iota$ nonempty. Let the
+curvature function be continuous at each $z^*_i$, and let each $z^*_i$ be first-order critical.
+Let $a, b, \kappa, \beta > 0$ and $C \ge 0$. Suppose that the merit values $v_k \ge 0$ are
+nonincreasing, $\Delta_k > 0$, $\gamma_1 \Delta_k \le \Delta_{k+1}$, and
+$\Delta_{k+1} \le \gamma_2 \Delta_k$ for $k \notin S$, and that:
+
+* for $k$ in the set of normal iterations, $a \Delta_k \le \|n_k\|$ and
+  $|\mathrm{original}_k - d_k| \le C \Delta_k^2$;
+* $b \|n_k\| \le d^N_k$, $\kappa d^N_k \le d_k$ and $\kappa d^T_k \le d_k$ for all $k$;
+* for the other $k$, $\beta (-\mathrm{curvature}(z_k)) \Delta_k^2 \le d^T_k$, and for every
+  $\epsilon > 0$ there is $r > 0$ such that eventually $\Delta_k \le r$ implies
+  $|\mathrm{corrected}_k - d_k| \le \epsilon \Delta_k^2$;
+* $\eta_1 d_k \le v_k - v_{k+1}$ for $k \in S$;
+* $k \in S$ and $\Delta_k \le \Delta_{k+1}$ if $\mathrm{original}_k / d_k \ge \eta_2$, and, for
+  $k$ not a normal iteration, also if $\mathrm{original}_k / d_k \ge \eta_1$, or if
+  $\mathrm{original}_k / d_k < \eta_1$ and $\mathrm{corrected}_k / d_k \ge \eta_2$.
+
+Then some $z^*_i$ is first-order critical with $\mathrm{curvature}(z^*_i) \ge 0$.
+
+**Correction.** The argument uses the cluster point of maximal curvature, with a corrected
+curvature margin. The coverage of the tail by the finitely many cluster points is a hypothesis;
+relative compactness of the iterates supplies it.
+
+The branch with a large normal step and the branch with negative curvature give the sufficient
+decrease. The original or the corrected acceptance ratio decides which trial is accepted. -/
 theorem theorem_15_4_25 {X ι : Type*} [TopologicalSpace X] [Fintype ι] [Nonempty ι]
     {P : BTRParams} (z : ℕ → X) (zstar : ι → X) (curvature : X → ℝ)
     (firstOrder : ι → Prop) (v Δ d dN dT nNorm original corrected : ℕ → ℝ)

@@ -4,7 +4,30 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.ConnGouldToint.Chapter12.Section03
 
-/-! # Failure of Cauchy active-set identification at nonvanishing radii -/
+/-!
+# Conn, Gould and Toint, Section 12.3: Cauchy active sets at nonvanishing radii
+
+This module shows that Theorem 12.3.8 of [conn2000trust] fails as printed at the generalized Cauchy
+points. On the interval $[0, 1]$, written as $c_0(x) = x \ge 0$ and $c_1(x) = 1 - x \ge 0$, the
+objective $f(x) = (x - 1/2)^2 / 2$ has the interior minimizer $1/2$, where no constraint is active.
+A run of the basic trust-region algorithm alternates two kinds of iterations. At even iterations the
+radius is $2$, the model is affine, and the Cauchy point is the boundary point $0$; the trial is
+rejected. At odd iterations the radius is $1$, the model is $f$ itself, and the trial is accepted.
+The iterates converge to $1/2$, but infinitely many Cauchy points have the active set $\{0\}$
+instead of the empty active set of the limit.
+
+## Main results
+
+* `ConnGouldToint.Chapter12.theorem_12_3_8_nonvanishing_radius_counterexample`: a convergent run
+  that meets the hypotheses of Theorem 12.3.8, with radii bounded below by $1$, whose Cauchy points
+  do not eventually have the active set of the limit.
+
+## Deviations from the source
+
+* **Theorem 12.3.8** (correction). Eventual identification of the active set at the generalized
+  Cauchy points fails for a scalar interval run whose radii alternate between $2$ and $1$. See
+  `ConnGouldToint.Chapter12.theorem_12_3_8_nonvanishing_radius_counterexample`.
+-/
 
 open Filter Optimization
 open scoped Topology RealInnerProductSpace
@@ -249,10 +272,34 @@ private theorem intervalModel_Taylor (k : ℕ) (y : ℝ) :
     rfl
 
 
-/-- The printed Theorem 12.3.8 can fail at the generalized Cauchy points.
-A scalar interval run alternates rejected affine-model trials at the
-boundary and successful exact-model trials converging to the interior
-minimizer. The selected step is the Cauchy step, so AA.5 holds with equality. -/
+/-- **Theorem 12.3.8** of [conn2000trust], counterexample at nonvanishing radii. There are a
+function $f : \mathbb{R} \to \mathbb{R}$, constraints $c_0, c_1 : \mathbb{R} \to \mathbb{R}$,
+parameters $Q$ of the generalized Cauchy point, a constant $\kappa$ and a run of the basic
+trust-region algorithm for $f$ with the default parameters (6.1.6) and no further decrease
+requirement, such that the following hold.
+
+* $f$ is twice continuously differentiable, bounded below and $f'' = 1$. Each $c_i$ is twice
+  continuously differentiable, and $[0, 1] = \{x : c_0(x) \ge 0, c_1(x) \ge 0\}$ (AC.7).
+* The iterates converge, $x_k \to 1/2$. At $1/2$ the active gradients are linearly independent,
+  and $f'(1/2)$ has strictly positive multipliers on the active constraints.
+* $0 < \kappa < 1$.
+* For every $k$: $x_k$ and $x_k + s_k$ lie in $[0, 1]$, $\Delta_k \ge 1$, the model $m_k$ is
+  twice continuously differentiable with $m_k(x_k) = f(x_k)$, $m_k'(x_k) = f'(x_k)$ and
+  $|m_k''| \le 1$, the trial $x_k + s_k$ is an approximate generalized Cauchy point for $Q$,
+  $[0, 1]$, $f$, $m_k$, $x_k$ and $\Delta_k$, and AA.1b holds in the form
+$$\kappa\, \pi_k \min\{\pi_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k),$$
+where $\pi_k$ is the capped criticality measure (12.2.15) at $x_k$.
+* For infinitely many $k$, the active set at $x_k + s_k$ differs from the active set at $1/2$.
+
+**Correction.** The printed Theorem 12.3.8 asserts that the active set at the generalized Cauchy
+points is eventually the active set of the limit. This run meets its hypotheses and has radii
+bounded below, but its Cauchy points return infinitely often to the boundary point $0$.
+
+The run has $f(x) = (x - 1/2)^2/2$, $c_0(x) = x$ and $c_1(x) = 1 - x$, so the active set at
+$1/2$ is empty and the multiplier and independence conditions hold trivially. At even $k$ the
+radius is $2$, the model is the linearization of $f$ at $x_k$, and the trial $0$ is rejected. At
+odd $k$ the radius is $1$, the model is $f$, and the trial halfway between $x_k$ and $1/2$ is
+accepted with ratio $1$. The step is the Cauchy step, so AA.5 holds with equality. -/
 theorem theorem_12_3_8_nonvanishing_radius_counterexample :
     ∃ (f : ℝ → ℝ) (c : Fin 2 → ℝ → ℝ) (Q : GeneralizedCauchyParams) (κ : ℝ)
       (run : BTRRun f defaultBTRParams (fun _ _ _ _ ↦ True)),

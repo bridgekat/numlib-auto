@@ -8,10 +8,122 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 
 /-!
-# Structured trust regions
+# Conn, Gould and Toint, Section 10.2: Structured trust regions
 
-Element objectives and models are invariant along their corresponding null subspaces.
-Their trust regions constrain only the projected components of the trial step.
+This module formalizes the structured trust-region method of Section 10.2 of [conn2000trust] for a
+partially separable objective $f = \sum_{i=1}^{p} f_i$ on a real Hilbert space $E$. Each element
+$f_i$ and its model $m_i$ are invariant along a nontrivial subspace $N_i$, so they depend only on
+the component of the point in $N_i^\perp$. Each element has its own radius $\Delta_i$, and its trust
+region is the cylinder $\{y : p_k(P_{N_i^\perp}(y - x)) \le \Delta_i\}$ (10.2.3), where $p_k$ is the
+trust-region seminorm. The cylinder constrains only the projected component of the step. The overall
+trust region is the intersection of the cylinders. Algorithm 10.2.1 updates each radius from a fit
+test that compares the predicted decrease $d_i$ and the achieved decrease $a_i$ of element $i$, with
+a separate test for the negligible elements (10.2.8), and Algorithm 10.2.2 accepts a step by the
+total test $\eta_1 \sum_i d_i \le \sum_i a_i$ (10.2.10). The module proves the bounds of Lemmas
+10.2.1, 10.2.2 and 10.2.4, the element error bound of Theorem 10.2.3, the floor on the radii of
+Theorem 10.2.5, and the criticality result of Theorem 10.2.6 for a run with finitely many successful
+iterations.
+
+Theorem 10.2.6 needs the uniform norm comparison $\|v\| \le K p_k(v)$ of AN.1. A counterexample with
+a single element shows that without it every trial can be rejected at a fixed noncritical iterate.
+The parameters and the error constant come from the basic trust-region algorithm in
+`NumlibSurface.ConnGouldToint.Chapter06.Section01` and
+`NumlibSurface.ConnGouldToint.Chapter06.Section04`.
+
+## Main definitions
+
+* Section 10.2.1, `ConnGouldToint.Chapter10.InvariantAlong`: a function is invariant under
+  translations along a subspace.
+* Equation (10.2.2), `ConnGouldToint.Chapter10.PartiallySeparable`: $f$ is a sum of elements, each
+  invariant along a nontrivial subspace.
+* Equation (10.2.1), `ConnGouldToint.Chapter10.separableObjective`: the fully separable objective
+  $\sum_i f_i(x_i)$.
+* Equation (10.2.3), `ConnGouldToint.Chapter10.elementTrustRegion`: the cylinder of one element.
+* Section 10.2.1, `ConnGouldToint.Chapter10.structuredTrustRegion`: the intersection of the element
+  cylinders.
+* Equation (10.2.4), `ConnGouldToint.Chapter10.minimumRadius`: the smallest element radius.
+* Equation (10.2.5), `ConnGouldToint.Chapter10.StructuredTRParams`: the parameters of the structured
+  algorithm and their compatibility condition.
+* Equation (10.2.8), `ConnGouldToint.Chapter10.negligibleElements`: the elements with a small
+  predicted change.
+* `ConnGouldToint.Chapter10.meaningfulElements`: the elements that are not negligible.
+* Equations (10.2.9) and (10.2.12), `ConnGouldToint.Chapter10.elementFit`: the fit test of a
+  meaningful element.
+* Equation (10.2.10), `ConnGouldToint.Chapter10.structuredSuccessful`: the total acceptance test.
+* Equation (10.2.13), `ConnGouldToint.Chapter10.negligibleFit`: the fit test of a negligible
+  element.
+* Algorithm 10.2.1, `ConnGouldToint.Chapter10.StructuredRadiusUpdate`: the seven cases of the update
+  of the element radii.
+* AA.1s, `ConnGouldToint.Chapter10.structuredSufficientDecrease`: the sufficient decrease condition
+  of the structured method.
+* Algorithm 10.2.2, `ConnGouldToint.Chapter10.StructuredTRRun`: an infinite run of the structured
+  algorithm.
+* `ConnGouldToint.Chapter10.StructuredTRRun.predictedDrop`,
+  `ConnGouldToint.Chapter10.StructuredTRRun.actualDrop`,
+  `ConnGouldToint.Chapter10.StructuredTRRun.modelGradient`,
+  `ConnGouldToint.Chapter10.StructuredTRRun.objectiveGradient` and
+  `ConnGouldToint.Chapter10.StructuredTRRun.successful`: the element decreases, the gradients and
+  the successful iterations of a run.
+* Equation (10.2.24), `ConnGouldToint.Chapter10.structuredRadiusFloor`: the corrected lower bound
+  for the radii.
+* Equation (6.3.1), `ConnGouldToint.Chapter10.StructuredTRRun.aggregateCurvature`: the curvature
+  constant of the total model on the structured trust region.
+
+## Main results
+
+* Equations (10.2.6)–(10.2.7), `ConnGouldToint.Chapter10.elementRatio_iff_fit`: for a positive
+  predicted decrease, the ratio test is equivalent to the fit test.
+* Equations (10.2.6)–(10.2.7), `ConnGouldToint.Chapter10.elementRatio_zero_counterexample`: at zero
+  predicted decrease the two tests disagree.
+* Equation (10.2.10), `ConnGouldToint.Chapter10.structuredSuccessful_iff_ratio`: for a positive
+  total predicted decrease, the total test is the ratio test.
+* Lemma 10.2.1(ii), `ConnGouldToint.Chapter10.lemma_10_2_1_ii`: every radius keeps at least the
+  fraction $\gamma_1$.
+* Lemma 10.2.1(i), `ConnGouldToint.Chapter10.lemma_10_2_1_i`: there is a meaningful element, and the
+  meaningful decreases satisfy (10.2.14).
+* Lemma 10.2.2, `ConnGouldToint.Chapter10.lemma_10_2_2`: the element fit tests imply the total
+  acceptance test.
+* `ConnGouldToint.Chapter10.StructuredTRRun.delta_pos`: all radii of a run are positive.
+* Theorem 10.2.3, `ConnGouldToint.Chapter10.theorem_10_2_3`: the error of each element model is
+  quadratic in the radius of the element.
+* Lemma 10.2.4, `ConnGouldToint.Chapter10.lemma_10_2_4`: for a small radius, the model change of an
+  element is linear in its radius.
+* Theorem 10.2.5, `ConnGouldToint.Chapter10.structuredRadiusFloor_pos_and_le`: on a tail with
+  gradients bounded away from zero, the radii stay above the floor (10.2.24).
+* Theorem 10.2.5, `ConnGouldToint.Chapter10.theorem_10_2_5_of_error_bound`: under a quadratic error
+  bound, gradients bounded away from zero keep the radii bounded away from zero.
+* Theorem 10.2.6, `ConnGouldToint.Chapter10.theorem_10_2_6_of_error_bound`: under a quadratic error
+  bound, a run with finitely many successful iterations ends at a first-order critical point.
+* Equation (6.3.2), `ConnGouldToint.Chapter10.StructuredTRRun.aggregateCurvature_le`: element
+  Hessian bounds bound the curvature of the total model.
+* Theorem 10.2.5, `ConnGouldToint.Chapter10.theorem_10_2_5`: the same floor under the smoothness
+  assumptions.
+* Theorem 10.2.6, `ConnGouldToint.Chapter10.theorem_10_2_6`: the same criticality result under the
+  smoothness assumptions and AN.1.
+* Theorem 10.2.6, `ConnGouldToint.Chapter10.theorem_10_2_6_without_norm_bound_counterexample`:
+  without AN.1, every trial can be rejected at a noncritical point.
+
+## Conventions
+
+* The number of elements is $p = |\iota| \ge 1$, and $\iota$ is a finite type. The element decreases
+  are $d_i = m_i(x) - m_i(x + s)$ and $a_i = f_i(x) - f_i(x + s)$.
+* $P_{N^\perp}$ is the orthogonal projection onto $N^\perp$, `Submodule.starProjection`. The
+  gradient $\nabla f(x)$ is `gradient f x`.
+* The assumptions AF.5s, AM.4s, AN.1 and AA.1s of the source appear as explicit hypotheses: a bound
+  on the element gradients, a bound on the model Hessians on the structured trust region, the norm
+  comparison $\|v\| \le K p_k(v)$, and `ConnGouldToint.Chapter10.structuredSufficientDecrease`.
+
+## Deviations from the source
+
+* **Equations (10.2.6)–(10.2.7)** (reading). The ratio test and the fit test are equivalent only for
+  a positive predicted decrease. At zero predicted decrease they can disagree. The module uses the
+  fit test. See `ConnGouldToint.Chapter10.elementRatio_zero_counterexample`.
+* **Equation (10.2.24)** (correction). The floor on the radii compares the model error directly with
+  the two fit tolerances, and the curvature bound uses the sum of the element curvature bounds. See
+  `ConnGouldToint.Chapter10.structuredRadiusFloor`.
+* **Theorem 10.2.6** (correction). The theorem needs the uniform norm comparison AN.1. Without it,
+  every trial can be rejected at a fixed noncritical iterate. See
+  `ConnGouldToint.Chapter10.theorem_10_2_6_without_norm_bound_counterexample`.
 -/
 
 open scoped BigOperators Topology
@@ -25,34 +137,50 @@ section Geometry
 
 variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- Translation along the invariant subspace leaves the element unchanged. -/
+/-- **Section 10.2.1** of [conn2000trust], invariant subspace. Let $N$ be a subspace of $E$ and $f$
+a function on $E$. Then $f$ is **invariant along** $N$ if $f(x + w) = f(x)$ for all $x \in E$
+and $w \in N$. -/
 def InvariantAlong {F : Type*} (N : Submodule ℝ E) (f : E → F) : Prop :=
   ∀ x w, w ∈ N → f (x + w) = f x
 
-/-- The partial separability representation (10.2.2). Each element is invariant
-along a nontrivial subspace. Its range subspace is the orthogonal complement. -/
+/-- **Equation (10.2.2)** of [conn2000trust]. The function $f : E \to \mathbb{R}$ is **partially
+separable** with elements $f_i$ and invariant subspaces $N_i$, for $i$ in a finite index set, if
+$f(x) = \sum_i f_i(x)$ for all $x$, every $N_i$ is nonzero, and every $f_i$ is invariant along
+$N_i$.
+
+The range subspace of element $i$ is the orthogonal complement $N_i^\perp$. -/
 structure PartiallySeparable [Fintype ι] (f : E → ℝ)
     (elements : ι → E → ℝ) (N : ι → Submodule ℝ E) : Prop where
+  /-- Every $x$ satisfies $f(x) = \sum_i f_i(x)$. -/
   sum_elements : ∀ x, f x = ∑ i, elements i x
+  /-- Every invariant subspace $N_i$ is nonzero. -/
   nontrivial : ∀ i, N i ≠ ⊥
+  /-- Every element $f_i$ is invariant along $N_i$. -/
   invariant : ∀ i, InvariantAlong (N i) (elements i)
 
-/-- The objective in the fully separable case (10.2.1). -/
+/-- **Equation (10.2.1)** of [conn2000trust]. For element functions $f_i : X_i \to \mathbb{R}$ on
+the factors of a finite product, the **separable objective** is $f(x) = \sum_i f_i(x_i)$. -/
 def separableObjective [Fintype ι] {X : ι → Type*} (elements : ∀ i, X i → ℝ)
     (x : ∀ i, X i) : ℝ :=
   ∑ i, elements i (x i)
 
-/-- The cylinder (10.2.3) for the element whose invariant subspace is `N`. -/
+/-- **Equation (10.2.3)** of [conn2000trust]. For a seminorm $p$ on $E$, a subspace $N$, a center
+$x$ and a radius $\Delta$, the **element trust region** is the cylinder
+$$\{y \in E : p(P_{N^\perp}(y - x)) \le \Delta\},$$
+where $P_{N^\perp}$ is the orthogonal projection onto $N^\perp$. -/
 def elementTrustRegion (p : Seminorm ℝ E) (N : Submodule ℝ E)
     [Nᗮ.HasOrthogonalProjection] (x : E) (Δ : ℝ) : Set E :=
   {y | p (Nᗮ.starProjection (y - x)) ≤ Δ}
 
-/-- The overall trust region is the intersection of the element cylinders. -/
+/-- **Section 10.2.1** of [conn2000trust], the overall trust region. For a seminorm $p$, subspaces
+$N_i$, a center $x$ and radii $\Delta_i$, the **structured trust region** is the intersection
+over $i$ of the element trust regions (10.2.3) of $N_i$ with radius $\Delta_i$. -/
 def structuredTrustRegion [CompleteSpace E] (p : Seminorm ℝ E) (N : ι → Submodule ℝ E)
     (x : E) (Δ : ι → ℝ) : Set E :=
   ⋂ i, elementTrustRegion p (N i) x (Δ i)
 
-/-- The minimum element radius (10.2.4). -/
+/-- **Equation (10.2.4)** of [conn2000trust]. For radii $\Delta_i$ indexed by a finite nonempty set,
+the **minimum radius** is $\Delta_{\min} = \min_i \Delta_i$. -/
 noncomputable def minimumRadius [Fintype ι] [Nonempty ι] (Δ : ι → ℝ) : ℝ :=
   Finset.univ.inf' Finset.univ_nonempty Δ
 
@@ -65,28 +193,50 @@ private theorem structuredTrustRegion_convex [CompleteSpace E]
 
 end Geometry
 
-/-- The structured radius parameters and their compatibility condition (10.2.5). -/
+/-- **Equation (10.2.5)** of [conn2000trust]. The **structured parameters** are the parameters
+$\eta_1, \eta_2, \gamma_1, \gamma_2$ of the basic trust-region algorithm together with $\eta_3$,
+$\mu_1$ and $\mu_2$, such that $\eta_2 < \eta_3 < 1$, $0 < \mu_1 < \mu_2 < 1$ and
+$$\mu_1 + \mu_2 \le \eta_2 - \eta_1.$$
+-/
 structure StructuredTRParams extends BTRParams where
+  /-- The threshold $\eta_3$ of the fit test at which a meaningful element does not shrink its
+  radius. -/
   η₃ : ℝ
+  /-- The constant $\mu_1$ that defines the negligible elements (10.2.8). -/
   μ₁ : ℝ
+  /-- The constant $\mu_2$ of the negligible fit test (10.2.13). -/
   μ₂ : ℝ
+  /-- The threshold $\eta_3$ is above $\eta_2$. -/
   eta₂_lt_eta₃ : η₂ < η₃
+  /-- The threshold $\eta_3$ is below $1$. -/
   eta₃_lt_one : η₃ < 1
+  /-- The negligibility constant $\mu_1$ is positive. -/
   mu₁_pos : 0 < μ₁
+  /-- The constants satisfy $\mu_1 < \mu_2$. -/
   mu₁_lt_mu₂ : μ₁ < μ₂
+  /-- The constant $\mu_2$ is below $1$. -/
   mu₂_lt_one : μ₂ < 1
+  /-- The compatibility condition $\mu_1 + \mu_2 \le \eta_2 - \eta_1$ (10.2.5). -/
   compatible : μ₁ + μ₂ ≤ η₂ - η₁
 
-/-- The ratio test (10.2.6) is equivalent to the signed-free test (10.2.7)
-when the predicted decrease is strictly positive. At zero the ratio test
-has no such interpretation. -/
+/-- **Equations (10.2.6)–(10.2.7)** of [conn2000trust], positive predicted decrease. Let
+$a, d, \eta \in \mathbb{R}$ with $d > 0$. Then
+$$\eta \le \frac{a}{d} \iff d - (1 - \eta) |d| \le a.$$
+
+At $d = 0$ the ratio test has no such meaning; see
+`ConnGouldToint.Chapter10.elementRatio_zero_counterexample`. -/
 theorem elementRatio_iff_fit {a d η : ℝ} (hd : 0 < d) :
     η ≤ a / d ↔ d - (1 - η) * |d| ≤ a := by
   rw [le_div_iff₀ hd, abs_of_pos hd]
   have h : d - (1 - η) * d = η * d := by ring
   rw [h]
 
-/-- At zero predicted decrease, the two tests in (10.2.6) and (10.2.7) can disagree. -/
+/-- **Equations (10.2.6)–(10.2.7)** of [conn2000trust], zero predicted decrease. For $a = d = 0$ and
+$\eta = 1/2$, the ratio test $\eta \le a / d$ and the fit test $d - (1 - \eta)|d| \le a$
+disagree.
+
+**Reading.** In Lean $0 / 0 = 0$, so the ratio test fails while the fit test holds. The module
+uses the fit test. -/
 theorem elementRatio_zero_counterexample :
     ¬ ((1 / 2 : ℝ) ≤ 0 / 0 ↔ (0 : ℝ) - (1 - 1 / 2) * |0| ≤ 0) := by norm_num
 
@@ -94,49 +244,88 @@ section Radii
 
 variable {ι : Type*} [Fintype ι]
 
-/-- The negligible set (10.2.8), using the total predicted change. -/
+/-- **Equation (10.2.8)** of [conn2000trust]. For $\mu \in \mathbb{R}$ and predicted decreases $d_i$
+of the $p$ elements, the set of **negligible elements** is
+$$\{i : |d_i| \le \tfrac{\mu}{p} \textstyle\sum_j d_j\}.$$
+
+The set is defined with the total predicted change $\sum_j d_j$. -/
 noncomputable def negligibleElements (μ : ℝ) (d : ι → ℝ) : Finset ι :=
   open Classical in
   Finset.univ.filter fun i ↦ |d i| ≤ μ / Fintype.card ι * ∑ j, d j
 
-/-- The complement of the negligible set, within the finite element family. -/
+/-- The **meaningful elements** are the elements that are not negligible (10.2.8). -/
 noncomputable def meaningfulElements (μ : ℝ) (d : ι → ℝ) : Finset ι :=
   open Classical in
   Finset.univ \ negligibleElements μ d
 
-/-- The fit test (10.2.9) or (10.2.12), according to the choice of `η`. -/
+/-- **Equations (10.2.9) and (10.2.12)** of [conn2000trust]. Element $i$ passes the **fit test**
+with threshold $\eta$ if
+$$d_i - \frac{1 - \eta}{p} \sum_j d_j \le a_i.$$
+The threshold $\eta_2$ gives (10.2.9), and the threshold $\eta_3$ gives (10.2.12). -/
 def elementFit (η : ℝ) (d a : ι → ℝ) (i : ι) : Prop :=
   d i - (1 - η) / Fintype.card ι * ∑ j, d j ≤ a i
 
-/-- The total acceptance test (10.2.10). -/
+/-- **Equation (10.2.10)** of [conn2000trust]. The iteration is **successful** if
+$\eta_1 \sum_i d_i \le \sum_i a_i$. -/
 def structuredSuccessful (η₁ : ℝ) (d a : ι → ℝ) : Prop :=
   η₁ * (∑ i, d i) ≤ ∑ i, a i
 
-/-- With positive total predicted decrease, (10.2.10) is the ratio test in
-Step 3 of Algorithm 10.2.2. -/
+/-- **Equation (10.2.10)** of [conn2000trust] and Algorithm 10.2.2. If $\sum_i d_i > 0$, the
+iteration is successful if and only if
+$$\eta_1 \le \frac{\sum_i a_i}{\sum_i d_i},$$
+which is the ratio test in Step 3 of Algorithm 10.2.2. -/
 theorem structuredSuccessful_iff_ratio (η₁ : ℝ) {d a : ι → ℝ} (hd : 0 < ∑ i, d i) :
     structuredSuccessful η₁ d a ↔ η₁ ≤ (∑ i, a i) / ∑ i, d i :=
   (le_div_iff₀ hd).symm
 
-/-- The fit test (10.2.13) used for a negligible element. -/
+/-- **Equation (10.2.13)** of [conn2000trust]. A negligible element $i$ passes the **negligible fit
+test** if $|a_i| \le \frac{\mu_2}{p} \sum_j d_j$. -/
 def negligibleFit (μ₂ : ℝ) (d a : ι → ℝ) (i : ι) : Prop :=
   |a i| ≤ μ₂ / Fintype.card ι * ∑ j, d j
 
-/-- The seven radius update cases of Algorithm 10.2.1. -/
+/-- **Algorithm 10.2.1** of [conn2000trust] and (10.2.11). Let $P$ be structured parameters, $d_i$
+and $a_i$ the predicted and achieved element decreases, and $\Delta_i$, $\Delta'_i$ the old and
+new radii. The radii satisfy the **structured radius update** if, with the meaningful and
+negligible elements taken for $\mu_1$:
+
+* a meaningful element that passes the fit test with $\eta_3$ has $\Delta'_i \ge \Delta_i$ if
+  the iteration is successful, and $\Delta'_i = \Delta_i$ otherwise;
+* a meaningful element that fails the fit test with $\eta_3$ and passes it with $\eta_2$ has
+  $\gamma_2 \Delta_i \le \Delta'_i \le \Delta_i$;
+* a meaningful element that fails the fit test with $\eta_2$ has $\gamma_1 \Delta_i \le
+  \Delta'_i \le \gamma_2 \Delta_i$;
+* a negligible element that passes the negligible fit test with $\mu_2$ has
+  $\Delta'_i \ge \Delta_i$ if the iteration is successful, and $\Delta'_i = \Delta_i$ otherwise;
+* a negligible element that fails the negligible fit test has $\gamma_1 \Delta_i \le \Delta'_i
+  \le \gamma_2 \Delta_i$. -/
 structure StructuredRadiusUpdate (P : StructuredTRParams) (d a Δ Δ' : ι → ℝ) : Prop where
+  /-- A meaningful element that passes the fit test with $\eta_3$ at a successful iteration does not
+  shrink. -/
   meaningful_expand : ∀ i ∈ meaningfulElements P.μ₁ d,
     elementFit P.η₃ d a i → structuredSuccessful P.η₁ d a → Δ i ≤ Δ' i
+  /-- A meaningful element that passes the fit test with $\eta_3$ at an unsuccessful iteration keeps
+  its radius. -/
   meaningful_hold : ∀ i ∈ meaningfulElements P.μ₁ d,
     elementFit P.η₃ d a i → ¬ structuredSuccessful P.η₁ d a → Δ' i = Δ i
+  /-- A meaningful element that passes the fit test with $\eta_2$ but not with $\eta_3$ has
+  $\gamma_2 \Delta_i \le \Delta'_i \le \Delta_i$. -/
   meaningful_moderate : ∀ i ∈ meaningfulElements P.μ₁ d,
     ¬ elementFit P.η₃ d a i → elementFit P.η₂ d a i →
       P.γ₂ * Δ i ≤ Δ' i ∧ Δ' i ≤ Δ i
+  /-- A meaningful element that fails the fit test with $\eta_2$ has $\gamma_1 \Delta_i \le
+  \Delta'_i \le \gamma_2 \Delta_i$. -/
   meaningful_contract : ∀ i ∈ meaningfulElements P.μ₁ d,
     ¬ elementFit P.η₂ d a i → P.γ₁ * Δ i ≤ Δ' i ∧ Δ' i ≤ P.γ₂ * Δ i
+  /-- A negligible element that passes the negligible fit test at a successful iteration does not
+  shrink. -/
   negligible_expand : ∀ i ∈ negligibleElements P.μ₁ d,
     negligibleFit P.μ₂ d a i → structuredSuccessful P.η₁ d a → Δ i ≤ Δ' i
+  /-- A negligible element that passes the negligible fit test at an unsuccessful iteration keeps
+  its radius. -/
   negligible_hold : ∀ i ∈ negligibleElements P.μ₁ d,
     negligibleFit P.μ₂ d a i → ¬ structuredSuccessful P.η₁ d a → Δ' i = Δ i
+  /-- A negligible element that fails the negligible fit test has $\gamma_1 \Delta_i \le \Delta'_i
+  \le \gamma_2 \Delta_i$. -/
   negligible_contract : ∀ i ∈ negligibleElements P.μ₁ d,
     ¬ negligibleFit P.μ₂ d a i → P.γ₁ * Δ i ≤ Δ' i ∧ Δ' i ≤ P.γ₂ * Δ i
 
@@ -150,7 +339,8 @@ private theorem mem_meaningfulElements {μ : ℝ} {d : ι → ℝ} {i : ι} :
   classical
   simp [meaningfulElements]
 
-/-- Lemma 10.2.1(ii). Every element radius retains at least the fraction `γ₁`. -/
+/-- **Lemma 10.2.1(ii)** of [conn2000trust] and (10.2.15). If the radii satisfy the structured
+radius update and $\Delta_i \ge 0$, then $\gamma_1 \Delta_i \le \Delta'_i$. -/
 theorem lemma_10_2_1_ii {P : StructuredTRParams} {d a Δ Δ' : ι → ℝ}
     (hu : StructuredRadiusUpdate P d a Δ Δ') (hΔ : ∀ i, 0 ≤ Δ i) (i : ι) :
     P.γ₁ * Δ i ≤ Δ' i := by
@@ -222,8 +412,12 @@ private theorem sum_abs_le_card_bound {d a : ι → ℝ} {μ c : ℝ}
     rw [Finset.sum_const, nsmul_eq_mul]
     exact mul_le_mul_of_nonneg_right hcard hc
 
-/-- Lemma 10.2.1(i). A positive total predicted change forces a meaningful
-element, and the sum of the meaningful changes lies in (10.2.14). -/
+/-- **Lemma 10.2.1(i)** of [conn2000trust] and (10.2.14). Let $0 \le \mu < 1$ and let the predicted
+decreases satisfy $\sum_i d_i > 0$, with $p \ge 1$ elements. Then there is a meaningful element,
+and
+$$\left(1 - \tfrac{p - 1}{p} \mu\right) \sum_i d_i \le \sum_{i \text{ meaningful}} d_i \le
+  \left(1 + \tfrac{p - 1}{p} \mu\right) \sum_i d_i.$$
+-/
 theorem lemma_10_2_1_i {μ : ℝ} {d : ι → ℝ} (hμ₀ : 0 ≤ μ) (hμ₁ : μ < 1)
     (hd : 0 < ∑ i, d i) :
     (meaningfulElements μ d).Nonempty ∧
@@ -243,8 +437,13 @@ theorem lemma_10_2_1_i {μ : ℝ} {d : ι → ℝ} (hμ₀ : 0 ≤ μ) (hμ₁ :
   rw [hscale] at hnegligible
   refine ⟨hm, ?_, ?_⟩ <;> nlinarith [(abs_le.mp hnegligible).1, (abs_le.mp hnegligible).2]
 
-/-- Lemma 10.2.2. The element fit tests imply global acceptance. The conclusion
-includes both intermediate estimates (10.2.16)–(10.2.17). -/
+/-- **Lemma 10.2.2** of [conn2000trust] and (10.2.16)–(10.2.17). Let $P$ be structured parameters
+and $\sum_i d_i > 0$, with $p \ge 1$ elements. Suppose that every meaningful element passes the
+fit test with $\eta_2$ and every negligible element passes the negligible fit test with $\mu_2$.
+Then
+$$\left(\eta_2 - \tfrac{p - 1}{p} \mu_1\right) \sum_i d_i \le \sum_{i \text{ meaningful}} a_i,
+  \qquad \sum_{i \text{ negligible}} |a_i| \le \tfrac{p - 1}{p} \mu_2 \sum_i d_i,$$
+and the iteration is successful (10.2.10). -/
 theorem lemma_10_2_2 (P : StructuredTRParams) {d a : ι → ℝ}
     (hd : 0 < ∑ i, d i)
     (hm : ∀ i ∈ meaningfulElements P.μ₁ d, elementFit P.η₂ d a i)
@@ -304,43 +503,79 @@ section Run
 variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
   [Fintype ι] [Nonempty ι]
 
-/-- The structured sufficient-decrease condition AA.1s. For a nonzero step,
-`p s` is the ratio of `‖s‖` to the step norm conversion factor. -/
+/-- **AA.1s** of [conn2000trust]. A step $s$ from $x$ for the model $m$, with seminorm $p$, element
+radii $\Delta_i$, curvature constant $\beta$ and constant $\kappa$, satisfies the **structured
+sufficient decrease** condition if
+$$\kappa \|\nabla m(x)\| \min\left\{\frac{\|\nabla m(x)\|}{\beta}, \max\{\Delta_{\min},
+  p(s)\}\right\} \le m(x) - m(x + s).$$
+
+For a nonzero step, $p(s)$ stands for the ratio of $\|s\|$ to the conversion factor between the
+norms in the source. -/
 def structuredSufficientDecrease (model : E → ℝ) (x s : E) (p : Seminorm ℝ E)
     (Δ : ι → ℝ) (β κ : ℝ) : Prop :=
   κ * ‖gradient model x‖ * min (‖gradient model x‖ / β) (max (minimumRadius Δ) (p s)) ≤
     model x - model (x + s)
 
 open Classical in
-/-- An infinite structured trust-region run following Algorithm 10.2.2.
-The element objectives and models share the specified invariant subspaces. -/
+/-- **Algorithm 10.2.2** of [conn2000trust], an infinite run. Let $E$ be a real Hilbert space, $P$
+structured parameters, $f_i : E \to \mathbb{R}$ elements with invariant subspaces $N_i$,
+$\beta_k$ curvature constants and $\kappa$ a constant. A **structured trust-region run**
+consists of iterates $x_k$, steps $s_k$, seminorms $p_k$ that vanish only at $0$, element models
+$m_{k,i}$ and element radii $\Delta_{k,i}$, such that every $N_i$ is nonzero, every $f_i$ and
+every $m_{k,i}$ is invariant along $N_i$, $\Delta_{0,i} > 0$, $\beta_k > 0$, $\kappa > 0$, and
+for every $k$:
+
+* $x_k + s_k$ lies in the structured trust region of $p_k$, $x_k$ and the radii $\Delta_{k,i}$;
+* $s_k$ satisfies the structured sufficient decrease condition for the total model
+  $\sum_i m_{k,i}$, and $\sum_i (m_{k,i}(x_k) - m_{k,i}(x_k + s_k)) > 0$;
+* the radii $\Delta_{k+1,i}$ satisfy the structured radius update for the predicted decreases
+  $m_{k,i}(x_k) - m_{k,i}(x_k + s_k)$ and the achieved decreases $f_i(x_k) - f_i(x_k + s_k)$;
+* $x_{k+1} = x_k + s_k$ if the iteration is successful (10.2.10), and $x_{k+1} = x_k$ otherwise. -/
 structure StructuredTRRun (P : StructuredTRParams) (elements : ι → E → ℝ)
     (N : ι → Submodule ℝ E) (β : ℕ → ℝ) (κ : ℝ) where
+  /-- The iterate $x_k$. -/
   x : ℕ → E
+  /-- The step $s_k$. -/
   s : ℕ → E
+  /-- The trust-region seminorm $p_k$. -/
   p : ℕ → Seminorm ℝ E
+  /-- The model $m_{k,i}$ of element $i$ at iteration $k$. -/
   model : ℕ → ι → E → ℝ
+  /-- The radius $\Delta_{k,i}$ of element $i$ at iteration $k$. -/
   Δ : ℕ → ι → ℝ
+  /-- Each seminorm $p_k$ vanishes only at $0$. -/
   norm_separates : ∀ k v, p k v = 0 → v = 0
+  /-- Every invariant subspace $N_i$ is nonzero. -/
   invariant_nontrivial : ∀ i, N i ≠ ⊥
+  /-- Every element $f_i$ is invariant along $N_i$. -/
   objective_invariant : ∀ i, InvariantAlong (N i) (elements i)
+  /-- Every element model $m_{k,i}$ is invariant along $N_i$. -/
   model_invariant : ∀ k i, InvariantAlong (N i) (model k i)
+  /-- The initial radii are positive. -/
   initial_pos : ∀ i, 0 < Δ 0 i
+  /-- Each curvature constant is positive: $\beta_k > 0$. -/
   β_pos : ∀ k, 0 < β k
+  /-- The decrease constant is positive: $\kappa > 0$. -/
   κ_pos : 0 < κ
+  /-- The trial point lies in the structured trust region. -/
   feasible : ∀ k, x k + s k ∈ structuredTrustRegion (p k) N (x k) (Δ k)
+  /-- The step satisfies the structured sufficient decrease condition AA.1s for the total model. -/
   sufficient : ∀ k, structuredSufficientDecrease (fun z ↦ ∑ i, model k i z)
     (x k) (s k) (p k) (Δ k) (β k) κ
+  /-- The total predicted decrease is positive. -/
   predicted_pos : ∀ k, 0 < ∑ i, (model k i (x k) - model k i (x k + s k))
+  /-- The radii follow the structured radius update for the element decreases. -/
   radius_update : ∀ k,
     StructuredRadiusUpdate P (fun i ↦ model k i (x k) - model k i (x k + s k))
       (fun i ↦ elements i (x k) - elements i (x k + s k)) (Δ k) (Δ (k + 1))
+  /-- The iterate moves to $x_k + s_k$ exactly at a successful iteration. -/
   iterate_update : ∀ k, x (k + 1) =
     if structuredSuccessful P.η₁ (fun i ↦ model k i (x k) - model k i (x k + s k))
         (fun i ↦ elements i (x k) - elements i (x k + s k))
     then x k + s k else x k
 
-/-- All radii in a structured run remain positive by Lemma 10.2.1(ii). -/
+/-- Every radius of a structured trust-region run is positive: $\Delta_{k,i} > 0$. This follows from
+Lemma 10.2.1(ii). -/
 theorem StructuredTRRun.delta_pos {P : StructuredTRParams} {elements : ι → E → ℝ}
     {N : ι → Submodule ℝ E} {β : ℕ → ℝ} {κ : ℝ}
     (run : StructuredTRRun P elements N β κ) (k : ℕ) (i : ι) : 0 < run.Δ k i := by
@@ -446,10 +681,18 @@ private theorem StructuredTRRun.projected_step_le (run : StructuredTRRun P eleme
     simpa [elementTrustRegion] using h i
   exact (hnorm k _).trans (mul_le_mul_of_nonneg_left hi hK)
 
-/-- Theorem 10.2.3. The error for each element is quadratic in its own radius.
-The model Hessian bound is required on the full structured trust region.
-Translation invariance permits the projected step estimate without requiring
-the projected trial point to belong to that region. -/
+/-- **Theorem 10.2.3** of [conn2000trust] and (10.2.18). Let a structured trust-region run be given,
+with $K \ge 1$, $\kappa_f \ge 1$, $\kappa_m \ge 1$ and $\|v\| \le K p_k(v)$ for all $k$ and $v$.
+Suppose that every $f_i$ is twice continuously differentiable with
+$\|\nabla^2 f_i(z)\| \le \kappa_f$ for $z \in N_i^\perp$, that every model $m_{k,i}$ and its
+derivative are differentiable on the structured trust region with
+$\|\nabla^2 m_{k,i}(z)\| \le \kappa_m - 1$ there, and that $m_{k,i}(x_k) = f_i(x_k)$ and
+$\nabla m_{k,i}(x_k) = \nabla f_i(x_k)$. Then $C = K^2 \max\{\kappa_f, \kappa_m\} \ge 1$ and
+$$|f_i(x_k + s_k) - m_{k,i}(x_k + s_k)| \le C \Delta_{k,i}^2.$$
+
+The constant is `ConnGouldToint.Chapter06.uniformHessianConstant`. The model Hessian bound is
+needed on the whole structured trust region. By translation invariance, the estimate uses the
+projected step without requiring the projected trial point to lie in that region. -/
 theorem theorem_10_2_3 (run : StructuredTRRun P elements N β κ)
     {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -499,9 +742,16 @@ theorem theorem_10_2_3 (run : StructuredTRRun P elements N β κ)
     _ ≤ C * (K * run.Δ k i) ^ 2 := by gcongr
     _ = _ := by unfold uniformHessianConstant C; ring
 
-/-- Lemma 10.2.4. The small element radius condition bounds the element model
-change linearly in that radius. The estimate uses the bounded objective
-element gradients of AF.5s and the model Hessian bound of AM.4s. -/
+/-- **Lemma 10.2.4** of [conn2000trust] and (10.2.19)–(10.2.22). Let a structured trust-region run
+be given, with $K \ge 1$, $\kappa_{fg} > 0$, $\kappa_m \ge 1$ and $\|v\| \le K p_k(v)$ for all
+$k$ and $v$. Suppose that $\|\nabla f_i(z)\| \le \kappa_{fg}$ for $z \in N_i^\perp$ (AF.5s),
+that every model $m_{k,i}$ and its derivative are differentiable on the structured trust region
+with $\|\nabla^2 m_{k,i}(z)\| \le \kappa_m - 1$ there (AM.4s), and that
+$\nabla m_{k,i}(x_k) = \nabla f_i(x_k)$. If $K \Delta_{k,i} \le 1$, then $K \Delta_{\min} \le 1$
+for the radii of iteration $k$, and
+$$|m_{k,i}(x_k) - m_{k,i}(x_k + s_k)| \le K \left(\kappa_{fg} + \tfrac{1}{2} \kappa_m\right)
+  \Delta_{k,i}.$$
+-/
 theorem lemma_10_2_4 (run : StructuredTRRun P elements N β κ)
     {K κfg κm : ℝ} (hK : 1 ≤ K) (hκfg : 0 < κfg) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -563,27 +813,31 @@ variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [Comple
   [Fintype ι] [Nonempty ι] {P : StructuredTRParams} {elements : ι → E → ℝ}
   {N : ι → Submodule ℝ E} {β : ℕ → ℝ} {κ : ℝ}
 
-/-- The predicted change of each element in the structured run. -/
+/-- The **predicted decrease** of element $i$ at iteration $k$ of a structured run:
+$m_{k,i}(x_k) - m_{k,i}(x_k + s_k)$. -/
 noncomputable def StructuredTRRun.predictedDrop (run : StructuredTRRun P elements N β κ)
     (k : ℕ) (i : ι) : ℝ :=
   run.model k i (run.x k) - run.model k i (run.x k + run.s k)
 
-/-- The achieved change of each element in the structured run. -/
+/-- The **achieved decrease** of element $i$ at iteration $k$ of a structured run:
+$f_i(x_k) - f_i(x_k + s_k)$. -/
 noncomputable def StructuredTRRun.actualDrop (run : StructuredTRRun P elements N β κ)
     (k : ℕ) (i : ι) : ℝ :=
   elements i (run.x k) - elements i (run.x k + run.s k)
 
-/-- The gradient of the total model at the current iterate. -/
+/-- The gradient $\nabla m_k(x_k)$ of the total model $m_k = \sum_i m_{k,i}$ at the current iterate.
+-/
 noncomputable def StructuredTRRun.modelGradient (run : StructuredTRRun P elements N β κ)
     (k : ℕ) : E :=
   gradient (fun x ↦ ∑ i, run.model k i x) (run.x k)
 
-/-- The gradient of the total objective at the current iterate. -/
+/-- The gradient $\nabla f(x_k)$ of the total objective $f = \sum_i f_i$ at the current iterate. -/
 noncomputable def StructuredTRRun.objectiveGradient (run : StructuredTRRun P elements N β κ)
     (k : ℕ) : E :=
   gradient (fun x ↦ ∑ i, elements i x) (run.x k)
 
-/-- The successful iterations of the structured run. -/
+/-- The **successful iterations** of a structured run: the $k$ at which the total test (10.2.10)
+holds for the element decreases. -/
 def StructuredTRRun.successful (run : StructuredTRRun P elements N β κ) : Set ℕ :=
   {k | structuredSuccessful P.η₁ (run.predictedDrop k) (run.actualDrop k)}
 
@@ -647,17 +901,29 @@ private theorem StructuredTRRun.predicted_total_ge (run : StructuredTRRun P elem
     (le_min (div_nonneg hε.le hB.le) hmin.le) (mul_nonneg run.κ_pos.le (norm_nonneg _))) hs
   exact min_le_min (div_le_div₀ (norm_nonneg _) hg (run.β_pos k) hβ) (le_max_left _ _)
 
-/-- A radius floor for a tail with gradient norm at least `ε`. The two error
-terms come from the meaningful and negligible element tests. This replaces
-the sufficient threshold printed in (10.2.24). -/
+/-- **Equation (10.2.24)** of [conn2000trust], corrected. For structured parameters $P$, $p$
+elements, constants $\kappa$, $\varepsilon$, $B$, $C$ and an initial radius $\Delta^0$, let
+$e = \gamma_1 \kappa \varepsilon$. The **structured radius floor** is
+$$\min\left\{\Delta^0, \; \gamma_1 \min\left\{\frac{\varepsilon}{B}, \; \frac{1 - \eta_3}{p}
+  \frac{e}{C}, \; \frac{\mu_2 - \mu_1}{p} \frac{e}{C}\right\}\right\}.$$
+
+**Correction.** This floor replaces the sufficient threshold printed in (10.2.24). The two error
+terms come from the fit test of the meaningful elements and the test of the negligible elements. -/
 noncomputable def structuredRadiusFloor (P : StructuredTRParams) (p : ℕ)
     (κ ε B C initial : ℝ) : ℝ :=
   let e := P.γ₁ * (κ * ε)
   min initial (P.γ₁ * min (ε / B)
     (min (((1 - P.η₃) / p) * e / C) (((P.μ₂ - P.μ₁) / p) * e / C)))
 
-/-- The quantitative radius floor remains valid for every tail on which the
-gradient norm has a positive lower bound. -/
+/-- **Theorem 10.2.5** of [conn2000trust], on a tail. Let a structured trust-region run be given,
+with $\beta_k \le B$ for all $k$, $C > 0$ and $\varepsilon > 0$. Suppose that
+$|a_{k,i} - d_{k,i}| \le C \Delta_{k,i}^2$ for all $k$ and $i$, and that
+$\|\nabla m_k(x_k)\| \ge \varepsilon$ for all $k \ge n$. Then the structured radius floor with
+initial radius $\Delta_{\min}$ at iteration $n$ is positive, and it is at most $\Delta_{\min}$
+at every iteration $k \ge n$.
+
+**Correction.** The floor is the corrected bound (10.2.24); see
+`ConnGouldToint.Chapter10.structuredRadiusFloor`. -/
 theorem structuredRadiusFloor_pos_and_le (run : StructuredTRRun P elements N β κ)
     {B C ε : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C) (hε : 0 < ε) (n : ℕ)
     (hg : ∀ k ≥ n, ε ≤ ‖run.modelGradient k‖)
@@ -721,10 +987,14 @@ theorem structuredRadiusFloor_pos_and_le (run : StructuredTRRun P elements N β 
     have hkeep := hu.noncontract_of_scaled_error i (hscale ha.le haup) (hscale hb.le hbup)
     exact hnext.not_ge ((ih.trans (minimumRadius_le (run.Δ k) i)).trans hkeep)
 
-/-- Theorem 10.2.5 in terms of the quantitative model accuracy and aggregate
-curvature bounds. A uniformly positive model gradient prevents any element
-radius from approaching zero. The proof compares absolute model error
-directly with the two fit tolerances and uses no bound on element gradients. -/
+/-- **Theorem 10.2.5** of [conn2000trust], form with a model error bound. Let a structured
+trust-region run be given, with $\beta_k \le B$ for all $k$, $C > 0$ and $\varepsilon > 0$.
+Suppose that $|a_{k,i} - d_{k,i}| \le C \Delta_{k,i}^2$ and
+$\|\nabla m_k(x_k)\| \ge \varepsilon$ for all $k$ and $i$. Then there is $\delta > 0$ with
+$\delta \le \Delta_{\min}$ at every iteration.
+
+**Correction.** The proof compares the model error directly with the two fit tolerances, as in
+the corrected (10.2.24), and uses no bound on the element gradients. -/
 theorem theorem_10_2_5_of_error_bound (run : StructuredTRRun P elements N β κ)
     {B C ε : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C) (hε : 0 < ε)
     (hg : ∀ k, ε ≤ ‖run.modelGradient k‖)
@@ -764,11 +1034,16 @@ private theorem StructuredRadiusUpdate.exists_contraction_of_unsuccessful
       by_contra h
       exact (hn i).not_ge (hu.negligible_contract i hi h).2)).2.2
 
-/-- Theorem 10.2.6 in terms of the quadratic error and aggregate curvature
-bounds. After the last accepted step the iterate is constant. On every
-unsuccessful iteration at least one element radius contracts and none grows.
-A nonzero gradient would force a uniform radius floor, contradicting the
-resulting uniform decrease in the sum of the radii. -/
+/-- **Theorem 10.2.6** of [conn2000trust], form with a model error bound. Let a structured
+trust-region run be given, with $\beta_k \le B$ for all $k$ and $C > 0$. Suppose that
+$|a_{k,i} - d_{k,i}| \le C \Delta_{k,i}^2$ for all $k$ and $i$, that
+$\nabla m_k(x_k) = \nabla f(x_k)$ for all $k$, and that there are only finitely many successful
+iterations. Then there is $x$ with $x_k = x$ for all large $k$ and $\nabla f(x) = 0$, where
+$f = \sum_i f_i$.
+
+After the last successful iteration the iterate is constant. At every unsuccessful iteration at
+least one radius contracts and none grows. A nonzero gradient would give a positive floor on the
+radii, which contradicts the resulting uniform decrease of the sum of the radii. -/
 theorem theorem_10_2_6_of_error_bound (run : StructuredTRRun P elements N β κ)
     {B C : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C)
     (herr : ∀ k i, |run.actualDrop k i - run.predictedDrop k i| ≤ C * (run.Δ k i) ^ 2)
@@ -838,15 +1113,24 @@ theorem theorem_10_2_6_of_error_bound (run : StructuredTRRun P elements N β κ)
 
 variable [∀ i, (N i).HasOrthogonalProjection]
 
-/-- The curvature quantity (6.3.1) for the aggregate model on the structured
-trust region, using the supremum of the Hessian norms. -/
+/-- **Equation (6.3.1)** of [conn2000trust], for the total model of a structured run. The
+**aggregate curvature** at iteration $k$ is
+$$1 + \sup\{\|\nabla^2 m_k(z)\| : z \text{ in the structured trust region of iteration } k\},$$
+where $m_k = \sum_i m_{k,i}$.
+
+The supremum is `sSup`, which is $0$ for a set that is not bounded above. -/
 noncomputable def StructuredTRRun.aggregateCurvature (run : StructuredTRRun P elements N β κ)
     (k : ℕ) : ℝ :=
   1 + sSup ((fun z ↦ ‖fderiv ℝ (fderiv ℝ (fun x ↦ ∑ i, run.model k i x)) z‖) ''
     structuredTrustRegion (run.p k) N (run.x k) (run.Δ k))
 
-/-- An elementwise Hessian bound gives a uniform bound on the aggregate
-curvature. The factor counting elements allows their Hessians to overlap. -/
+/-- **Equation (6.3.2)** of [conn2000trust], with the aggregate bound under AM.4s. Let a structured
+trust-region run be given. Suppose that every model $m_{k,i}$ is twice continuously
+differentiable at every point of the structured trust region, with
+$\|\nabla^2 m_{k,i}(z)\| \le \kappa_m - 1$ there. Then the aggregate curvature at every
+iteration $k$ is at most $1 + p (\kappa_m - 1)$.
+
+The factor $p$ allows the Hessians of the elements to overlap. -/
 theorem StructuredTRRun.aggregateCurvature_le (run : StructuredTRRun P elements N β κ)
     {κm : ℝ}
     (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
@@ -926,9 +1210,18 @@ private theorem uniformHessianConstant_pos {K κf κm : ℝ} (hK : 1 ≤ K) (hκ
   mul_pos (pow_pos (zero_lt_one.trans_le hK) 2)
     ((zero_lt_one.trans_le hκf).trans_le (le_max_left _ _))
 
-/-- Theorem 10.2.5. With the usual aggregate curvature choice and quadratic
-element accuracy from the smoothness assumptions, a uniform positive gradient
-floor forces a uniform positive floor on the minimum radius. -/
+/-- **Theorem 10.2.5** of [conn2000trust]. Let a structured trust-region run be given, with
+$K \ge 1$, $\kappa_f \ge 1$, $\kappa_m \ge 1$ and $\|v\| \le K p_k(v)$ for all $k$ and $v$.
+Suppose that every $f_i$ is twice continuously differentiable with
+$\|\nabla^2 f_i(z)\| \le \kappa_f$ for $z \in N_i^\perp$, that every model $m_{k,i}$ is twice
+continuously differentiable on the structured trust region with
+$\|\nabla^2 m_{k,i}(z)\| \le \kappa_m - 1$ there, that $m_{k,i}(x_k) = f_i(x_k)$ and
+$\nabla m_{k,i}(x_k) = \nabla f_i(x_k)$, and that $\beta_k$ is the aggregate curvature at
+iteration $k$. If $\varepsilon > 0$ and $\|\nabla m_k(x_k)\| \ge \varepsilon$ for all $k$, then
+there is $\delta > 0$ with $\delta \le \Delta_{\min}$ at every iteration.
+
+The element error bound comes from Theorem 10.2.3, and the proof applies
+`ConnGouldToint.Chapter10.theorem_10_2_5_of_error_bound`. -/
 theorem theorem_10_2_5 (run : StructuredTRRun P elements N β κ)
     {K κf κm ε : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -948,10 +1241,18 @@ theorem theorem_10_2_5 (run : StructuredTRRun P elements N β κ)
     (uniformHessianConstant_pos hK hκf) hε hg
     (run.drop_error hK hκf hκm hnorm hf hF hmodel hM hval hgrad)
 
-/-- Theorem 10.2.6. A structured run with only finitely many successful
-iterations is eventually constant at a first-order critical point. The
-quantitative proof uses the lower norm comparison of AN.1 and does not
-require the separate element gradient bound AF.5s. -/
+/-- **Theorem 10.2.6** of [conn2000trust]. Let a structured trust-region run satisfy the hypotheses
+of `ConnGouldToint.Chapter10.theorem_10_2_5` except the gradient bound, including
+$\|v\| \le K p_k(v)$ for all $k$ and $v$ (AN.1). If there are only finitely many successful
+iterations, then there is $x$ with $x_k = x$ for all large $k$ and $\nabla f(x) = 0$, where
+$f = \sum_i f_i$.
+
+**Correction.** The theorem needs the uniform norm comparison AN.1. Without it, every trial can
+be rejected at a fixed noncritical iterate; see
+`ConnGouldToint.Chapter10.theorem_10_2_6_without_norm_bound_counterexample`.
+
+The proof uses the lower norm comparison of AN.1 and does not need the bound AF.5s on the
+element gradients. It applies `ConnGouldToint.Chapter10.theorem_10_2_6_of_error_bound`. -/
 theorem theorem_10_2_6 (run : StructuredTRRun P elements N β κ)
     {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -1185,10 +1486,22 @@ private theorem counterModel_hessian (z : CounterSpace) :
     funext fun _ ↦ counterCoord.fderiv]
   exact fderiv_const_apply _
 
-/-- Without uniform norm equivalence, all trials can be rejected at a fixed
-noncritical iterate even though the element objective and model satisfy the
-uniform smoothness and gradient bounds. This supplies the missing AN.1 premise
-in the printed statement of Theorem 10.2.6. -/
+/-- **Theorem 10.2.6** of [conn2000trust], counterexample without AN.1. There are structured
+parameters, a single element $f$ on $\mathbb{R}^2$ with an invariant subspace, and a structured
+trust-region run with $\beta_k = 1$ and $\kappa = \pi / 2$, such that:
+
+* $f$ is twice continuously differentiable with $\|\nabla^2 f(z)\| \le 1$ and
+  $\|\nabla f(z)\| \le 1$ for all $z$;
+* every model is twice continuously differentiable with zero Hessian, and agrees with $f$ in
+  value and derivative at the iterate;
+* the aggregate curvature is $1$ at every iteration;
+* no iteration is successful, and $x_k = 0$ with $\nabla f(x_k) \neq 0$ for all $k$;
+* for every $K$ there are $k$ and $v$ with $K p_k(v) < \|v\|$.
+
+So all trials are rejected at a fixed noncritical iterate, although the element and the models
+satisfy uniform smoothness and gradient bounds. This shows that the hypothesis AN.1 of
+`ConnGouldToint.Chapter10.theorem_10_2_6` is needed. The construction has $f(x) = \sin x_1$, the
+model $x \mapsto x_1$, the step $-\pi e_1$ and the seminorms $p_k = (2^{-k} / \pi) \|\cdot\|$. -/
 theorem theorem_10_2_6_without_norm_bound_counterexample :
     ∃ (P : StructuredTRParams)
       (f : Unit → EuclideanSpace ℝ (Fin 2) → ℝ)

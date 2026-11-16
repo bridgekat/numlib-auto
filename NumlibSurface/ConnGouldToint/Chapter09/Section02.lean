@@ -7,7 +7,113 @@ import Mathlib.Topology.Algebra.Order.LiminfLimsup
 import Mathlib.Topology.Order.MonotoneConvergence
 import Mathlib.Analysis.SpecificLimits.Basic
 
-/-! # First-order criticality transfer -/
+/-!
+# Conn, Gould and Toint, Section 9.2: Convergence to first-order critical points
+
+This module formalizes the first-order convergence theory of Section 9.2 of [conn2000trust] for
+Algorithm 9.1.1, the trust-region method with conditional models. At iteration $k$ the algorithm has
+a center $x_k$, a radius $\Delta_k$, a reference radius $\Delta^{\mathrm{ref}}_k$, a model $m_k$, an
+original trial point $x_k^+$ with ratio $\rho_k$, and a selected point with ratio $\hat{\rho}_k$
+(9.1.5). The radius part of the algorithm is the structure
+`ConnGouldToint.Chapter09.ConditionalRadiusRun`. If valid models with small radii give
+$\rho_k \ge \eta_1$, the radii stay bounded away from zero (Theorem 9.2.1). If all iterations from
+some index on are unsuccessful, the center is eventually constant at a first-order critical point
+(Theorem 9.2.2). If $f$ is bounded below, the criticality measures have limit inferior zero (Theorem
+9.2.3), and an accepted criticality test transfers small model gradients to small objective
+gradients (Lemma 9.2.4 and Theorem 9.2.5). With a Lipschitz gradient, the objective gradients tend
+to zero (Theorem 9.2.6).
+
+The printed radius update of Algorithm 9.1.1 contracts the radius on every iteration with
+$\rho_k < \eta_1$. The selected point can then reset the reference radius while the original trial
+point still triggers contraction. This module records a quadratic example in which every iteration
+is successful, every model is invalid and the radii tend to zero. The theorems use the corrected
+update, which keeps the radius on an iteration with $\rho_k < \eta_1$ and an invalid model, and
+contracts only after model validity is certified.
+
+## Main definitions
+
+* Equations (9.1.6)–(9.1.7), `ConnGouldToint.Chapter09.ConditionalRadiusRun`: the radii, the
+  reference radii, the two ratios and the validity flags of a run of Algorithm 9.1.1, with the
+  radius update as a parameter.
+
+## Main results
+
+* Lemma 9.1.2(ii), `ConnGouldToint.Chapter09.lemma_9_1_2_ii`: under the corrected update and a
+  finite-improvement condition, the reference radius is reset infinitely often.
+* Equations (9.2.3)–(9.2.5),
+  `ConnGouldToint.Chapter09.conditionalRatio_ge_eta_of_small_valid_radius`: a valid model at a small
+  radius gives $\rho \ge \eta$.
+* `ConnGouldToint.Chapter09.ConditionalRadiusRun.radius_and_ref_pos`: the corrected update keeps the
+  radii and the reference radii positive.
+* `ConnGouldToint.Chapter09.ConditionalRadiusRun.tail_radius_floor`: the radii are bounded away from
+  zero on a tail where valid models at small radii pass the test.
+* Theorem 9.2.1, `ConnGouldToint.Chapter09.theorem_9_2_1`: the radii are bounded away from zero.
+* Theorem 9.2.1, `ConnGouldToint.Chapter09.theorem_9_2_1_of_model_bounds`: the same conclusion from
+  a sufficient model decrease and model error bounds.
+* Theorem 9.2.1, `ConnGouldToint.Chapter09.theorem_9_2_1_quadratic_counterexample`: under the
+  printed update, the radii of a run on a bounded-below quadratic tend to zero while the gradients
+  stay away from zero.
+* `ConnGouldToint.Chapter09.ConditionalRadiusRun.exists_valid_small_radius`: under continued
+  rejection, valid models occur at arbitrarily small radii.
+* Theorem 9.2.2, `ConnGouldToint.Chapter09.theorem_9_2_2`: if all iterations after $N$ are
+  unsuccessful, the center is eventually constant at a first-order critical point.
+* Theorem 9.2.3, `ConnGouldToint.Chapter09.theorem_9_2_3`: if $f$ is bounded below, the criticality
+  measures have limit inferior zero.
+* Equation (9.2.8), `ConnGouldToint.Chapter09.norm_fderiv_le_of_accepted_criticality`: an accepted
+  criticality test bounds $\|\nabla f(x)\|$ by a multiple of $\|\nabla m(x)\|$.
+* Lemma 9.2.4, `ConnGouldToint.Chapter09.lemma_9_2_4`: if the model gradients tend to zero, the
+  objective gradients tend to zero.
+* Theorem 9.2.5, `ConnGouldToint.Chapter09.theorem_9_2_5`: the objective gradients have limit
+  inferior zero.
+* Theorem 9.2.5, `ConnGouldToint.Chapter09.frequently_successful_small_gradient`: small gradients
+  occur infinitely often also at successful iterations.
+* Theorem 9.2.5, `ConnGouldToint.Chapter09.theorem_9_2_5_exists_critical_subseq`: with compact
+  containment, a subsequence of successful iterates converges to a first-order critical point.
+* Theorem 9.2.6, `ConnGouldToint.Chapter09.theorem_9_2_6`: with a Lipschitz gradient,
+  $\|\nabla f(x_k)\| \to 0$, and every limit point is first-order critical.
+
+## Conventions
+
+* The ratio $\rho_k$ of the original trial point is
+  `ConnGouldToint.Chapter09.ConditionalRadiusRun.raw`, and the selected-trial ratio $\hat{\rho}_k$
+  is `ConnGouldToint.Chapter09.ConditionalRadiusRun.selected`. Iteration $k$ is successful if
+  $\hat{\rho}_k \ge \eta_0$.
+* The sufficient model decrease AA.1 is the explicit hypothesis $\kappa a_k \min\{a_k / \beta,
+  \Delta_k\} \le m_k(x_k) - m_k(x_k^+)$, with a criticality measure $a_k$.
+* The gradient $\nabla f(x)$ is the Fréchet derivative `fderiv ℝ f x`, as in
+  `NumlibSurface.ConnGouldToint.Chapter09.Section01`.
+
+## Implementation notes
+
+* The proposition `contractOnInvalid` of `ConnGouldToint.Chapter09.ConditionalRadiusRun` selects the
+  update. The value `True` is the printed update, and the value `False` is the corrected update.
+* The ratio estimates bound the model error at both the center and the trial point, so that the
+  models need not interpolate $f$ at the center.
+
+## Deviations from the source
+
+* **Algorithm 9.1.1** (correction). The printed update contracts the radius after every low-ratio
+  iteration, also when the model is invalid. The theorems use the corrected update, which keeps the
+  radius in that case. See `ConnGouldToint.Chapter09.theorem_9_2_1_quadratic_counterexample`.
+* **Lemma 9.1.2(ii)** (correction). The finite-improvement argument needs a fixed center and a fixed
+  radius during a block of rejected iterations with invalid models, which the corrected update
+  gives. See `ConnGouldToint.Chapter09.lemma_9_1_2_ii`.
+* **Theorem 9.2.1** (correction). The radii are bounded away from zero only under the corrected
+  update. See `ConnGouldToint.Chapter09.theorem_9_2_1`.
+* **Theorem 9.2.2** (correction). The theorem is proved for the corrected update, with the
+  finite-improvement condition on the rejected tail. See `ConnGouldToint.Chapter09.theorem_9_2_2`.
+* **Theorem 9.2.3** (correction). The theorem is proved for the corrected update. See
+  `ConnGouldToint.Chapter09.theorem_9_2_3`.
+* **Lemma 9.2.4** (reading). The condition that the criticality test of Step 1 eventually accepts
+  the model is an explicit hypothesis. See `ConnGouldToint.Chapter09.lemma_9_2_4`.
+* **Theorem 9.2.5** (correction). The subsequence conclusion needs infinitely many successful
+  iterations and compact containment of the successful iterates. The limit-inferior conclusion needs
+  neither. See `ConnGouldToint.Chapter09.theorem_9_2_5` and
+  `ConnGouldToint.Chapter09.theorem_9_2_5_exists_critical_subseq`.
+* **Theorem 9.2.6** (correction). The criticality test supplies the comparison of the objective and
+  model gradients at small model gradients, which is an explicit hypothesis. See
+  `ConnGouldToint.Chapter09.theorem_9_2_6`.
+-/
 
 open Filter Topology
 
@@ -15,29 +121,75 @@ namespace ConnGouldToint.Chapter09
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- The radius and reference-radius part of Algorithm 9.1.1. Here `ref k`
-is the reference before the test at iteration `k`; `ref (k + 1)` is the value
-used in the update (9.1.6). -/
+/-- **Equations (9.1.6)–(9.1.7)** of [conn2000trust], the radius update of Algorithm 9.1.1. Let
+$\eta_0, \eta_1, \gamma_1, \gamma_2 \in \mathbb{R}$ and let $c$ be a proposition. A
+**conditional radius run** consists of radii $\Delta_k$, reference radii
+$\Delta^{\mathrm{ref}}_k$, ratios $\rho_k$ of the original trial points, selected-trial ratios
+$\hat{\rho}_k$ and validity flags $v_k$, for $k \in \mathbb{N}$, such that $\Delta_0 > 0$,
+$\Delta^{\mathrm{ref}}_0 = \Delta_0$, and for every $k$:
+
+* if $\hat{\rho}_k \ge \eta_0$ or $v_k$ holds, then $\Delta^{\mathrm{ref}}_{k+1} = \Delta_k$;
+  otherwise $\Delta^{\mathrm{ref}}_{k+1} = \Delta^{\mathrm{ref}}_k$ (9.1.7);
+* if $\rho_k \ge \eta_1$, then $\Delta_{k+1} \ge \Delta^{\mathrm{ref}}_{k+1}$;
+* if $\rho_k < \eta_1$ and ($v_k$ or $c$) holds, then $\gamma_1 \Delta^{\mathrm{ref}}_{k+1} \le
+  \Delta_{k+1} \le \gamma_2 \Delta^{\mathrm{ref}}_{k+1}$ (9.1.6);
+* if $\rho_k < \eta_1$, $v_k$ fails and $c$ fails, then $\Delta_{k+1} = \Delta_k$.
+
+**Correction.** The printed update contracts the radius on every iteration with
+$\rho_k < \eta_1$, which is the case $c$ true. The theorems of this module use $c$ false: an
+iteration with $\rho_k < \eta_1$ and an invalid model keeps its radius. See
+`ConnGouldToint.Chapter09.theorem_9_2_1_quadratic_counterexample`.
+
+The reference radius $\Delta^{\mathrm{ref}}_k$ is the value before the test at iteration $k$,
+and $\Delta^{\mathrm{ref}}_{k+1}$ is the value that the update (9.1.6) uses. -/
 structure ConditionalRadiusRun (η₀ η₁ γ₁ γ₂ : ℝ) (contractOnInvalid : Prop) where
+  /-- The radius $\Delta_k$ at iteration $k$. -/
   radius : ℕ → ℝ
+  /-- The reference radius $\Delta^{\mathrm{ref}}_k$ before the test at iteration $k$. -/
   ref : ℕ → ℝ
+  /-- The ratio $\rho_k$ of the original trial point at iteration $k$. -/
   raw : ℕ → ℝ
+  /-- The selected-trial ratio $\hat{\rho}_k$ (9.1.5) at iteration $k$. -/
   selected : ℕ → ℝ
+  /-- The proposition that the model of iteration $k$ is valid. -/
   valid : ℕ → Prop
+  /-- The initial radius is positive: $\Delta_0 > 0$. -/
   initial_pos : 0 < radius 0
+  /-- The initial reference radius is the initial radius: $\Delta^{\mathrm{ref}}_0 = \Delta_0$. -/
   initial_ref : ref 0 = radius 0
+  /-- A successful iteration or a valid model resets the reference radius:
+  $\Delta^{\mathrm{ref}}_{k+1} = \Delta_k$. -/
   ref_reset : ∀ k, η₀ ≤ selected k ∨ valid k → ref (k + 1) = radius k
+  /-- Otherwise the reference radius is kept: $\Delta^{\mathrm{ref}}_{k+1} =
+  \Delta^{\mathrm{ref}}_k$. -/
   ref_keep : ∀ k, ¬(η₀ ≤ selected k ∨ valid k) → ref (k + 1) = ref k
+  /-- If $\rho_k \ge \eta_1$, then $\Delta_{k+1} \ge \Delta^{\mathrm{ref}}_{k+1}$. -/
   high_update : ∀ k, η₁ ≤ raw k → ref (k + 1) ≤ radius (k + 1)
+  /-- If $\rho_k < \eta_1$ and the model is valid or `contractOnInvalid` holds, then $\gamma_1
+  \Delta^{\mathrm{ref}}_{k+1} \le \Delta_{k+1} \le \gamma_2 \Delta^{\mathrm{ref}}_{k+1}$. -/
   low_update : ∀ k, raw k < η₁ → valid k ∨ contractOnInvalid →
     γ₁ * ref (k + 1) ≤ radius (k + 1) ∧ radius (k + 1) ≤ γ₂ * ref (k + 1)
+  /-- If $\rho_k < \eta_1$, the model is invalid and `contractOnInvalid` fails, then
+  $\Delta_{k+1} = \Delta_k$. -/
   invalid_update : ∀ k, raw k < η₁ → ¬valid k → ¬contractOnInvalid →
     radius (k + 1) = radius k
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- Corrected Lemma 9.1.2(ii). The finite-improvement guarantee applies to
-a block of rejected invalid models because the repaired update keeps both
-the center and the radius fixed until the next reference reset. -/
+/-- **Lemma 9.1.2(ii)** of [conn2000trust]. Let a conditional radius run with the corrected update
+be given, together with centers $x_k \in E$. Suppose that $\rho_k \ge \eta_1$ implies
+$\hat{\rho}_k \ge \eta_0$, and that $\hat{\rho}_k < \eta_0$ implies $x_{k+1} = x_k$. Suppose
+also the finite-improvement condition: for every $N$ there is $j \ge N$ such that the model at
+iteration $j$ is valid whenever every $k$ with $N \le k < j$ has $\rho_k < \eta_1$, an invalid
+model, $x_k = x_N$ and $\Delta_k = \Delta_N$. Then for every $N$ there is $k \ge N$ with
+$\hat{\rho}_k \ge \eta_0$ or a valid model at iteration $k$. That is, the reference radius is
+reset (9.1.7) infinitely often.
+
+**Correction.** The finite-improvement condition concerns a block of rejected iterations with
+invalid models at a fixed center and a fixed radius. Under the printed update, the radius
+contracts during such a block, and the condition does not apply. The corrected update keeps both
+the center and the radius fixed until the next reset.
+
+The run is `ConnGouldToint.Chapter09.ConditionalRadiusRun` with `contractOnInvalid = False`. -/
 theorem lemma_9_1_2_ii {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (x : ℕ → E)
     (haccept : ∀ k, η₁ ≤ run.raw k → η₀ ≤ run.selected k)
@@ -59,8 +211,17 @@ theorem lemma_9_1_2_ii {η₀ η₁ γ₁ γ₂ : ℝ}
   exact (h j hj).2 (hcert fun k hk _ ↦ ⟨hraw k hk, (h k hk).2, hconst k hk⟩)
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The ratio estimate in the proof of Theorem 9.2.1. The two endpoint bounds
-allow for conditional models that need not interpolate the center. -/
+/-- **Equations (9.2.3)–(9.2.5)** of [conn2000trust], the ratio estimate in the proof of Theorem
+9.2.1. Let $f, m : E \to \mathbb{R}$, $x, x^+ \in E$, and let $\Delta > 0$, $a > 0$,
+$\beta > 0$, $0 < \kappa \le 1$, $0 \le \eta < 1$ and $C$ with $2C \le \beta$. Suppose that
+$\Delta \le \kappa a (1 - \eta) / \beta$, that
+$$\kappa a \min\{a / \beta, \Delta\} \le m(x) - m(x^+),$$
+and that $|f(x) - m(x)| \le C \Delta^2$ and $|f(x^+) - m(x^+)| \le C \Delta^2$. Then
+$$\eta \le \frac{f(x) - f(x^+)}{m(x) - m(x^+)}.$$
+
+The error bounds at both endpoints allow conditional models that do not interpolate $f$ at the
+center. The ratio is `ConnGouldToint.Chapter09.selectedTrialRatio`, with the original trial
+point as the selected point. -/
 theorem conditionalRatio_ge_eta_of_small_valid_radius {f m : E → ℝ} {x trial : E}
     {Δ a β κ C η : ℝ} (hΔ : 0 < Δ) (ha : 0 < a) (hβ : 0 < β)
     (hκ : 0 < κ) (hκ₁ : κ ≤ 1) (hη₀ : 0 ≤ η) (hη₁ : η < 1)
@@ -101,7 +262,8 @@ theorem conditionalRatio_ge_eta_of_small_valid_radius {f m : E → ℝ} {x trial
   apply (le_div_iff₀ hp).mpr
   linarith [(abs_le.mp herror).1]
 
-/-- The corrected update preserves positivity of the radius and the reference. -/
+/-- Let a conditional radius run with the corrected update and $\gamma_1 > 0$ be given. Then
+$\Delta^{\mathrm{ref}}_k > 0$ and $\Delta_k > 0$ for all $k$. -/
 theorem ConditionalRadiusRun.radius_and_ref_pos {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (hγ : 0 < γ₁) :
     ∀ k, 0 < run.ref k ∧ 0 < run.radius k := by
@@ -126,7 +288,10 @@ theorem ConditionalRadiusRun.radius_and_ref_pos {η₀ η₁ γ₁ γ₂ : ℝ}
       · rw [run.invalid_update k (lt_of_not_ge hr) hv not_false]
         exact ih.2
 
-/-- A radius floor on a tail where valid small-radius trials are accepted. -/
+/-- Let a conditional radius run with the corrected update be given, with $\gamma_1 > 0$, $t > 0$
+and $N \in \mathbb{N}$. Suppose that for every $k \ge N$, a valid model at iteration $k$ with
+$\Delta_k \le t$ gives $\rho_k \ge \eta_1$. Then there is $r > 0$ with $r < \Delta_k$ for all
+$k \ge N$. This is the radius argument of Theorem 9.2.1 on a tail of the run. -/
 theorem ConditionalRadiusRun.tail_radius_floor {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (N : ℕ) {t : ℝ}
     (ht : 0 < t) (hγ : 0 < γ₁)
@@ -161,9 +326,19 @@ theorem ConditionalRadiusRun.tail_radius_floor {η₀ η₁ γ₁ γ₂ : ℝ}
           exact ih.2
   exact ⟨b / 2, by positivity, fun k hk ↦ (half_lt_self hb).trans_le (hinv k hk).2⟩
 
-/-- Corrected Theorem 9.2.1. A low raw ratio can contract the radius only
-after model validity has been certified. A low-ratio invalid iteration
-keeps its current radius. The lower bound includes the initial radius. -/
+/-- **Theorem 9.2.1** of [conn2000trust]. Let a conditional radius run with the corrected update be
+given, with $\gamma_1 > 0$ and $t > 0$. Suppose that for every $k$, a valid model at iteration
+$k$ with $\Delta_k \le t$ gives $\rho_k \ge \eta_1$. Then there is $r > 0$ with $r < \Delta_k$
+for all $k$.
+
+**Correction.** The printed update contracts the radius also on low-ratio iterations with
+invalid models, and then the radii can tend to zero; see
+`ConnGouldToint.Chapter09.theorem_9_2_1_quadratic_counterexample`. Under the corrected update, a
+low ratio can contract the radius only after the model is certified valid, and a low-ratio
+iteration with an invalid model keeps its radius.
+
+The proof shows $\Delta_k \ge \min\{\Delta_0, \gamma_1 t\}$, a bound that includes the initial
+radius. -/
 theorem theorem_9_2_1 {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) {t : ℝ}
     (ht : 0 < t) (hγ : 0 < γ₁)
@@ -173,9 +348,21 @@ theorem theorem_9_2_1 {η₀ η₁ γ₁ γ₂ : ℝ}
   exact ⟨r, hr, fun k ↦ h k (Nat.zero_le k)⟩
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The model-bound form of the corrected Theorem 9.2.1. A common upper
-bound `β` covers the curvature denominator in AA.1 and twice the endpoint
-error constant measured in the trust-region radius. -/
+/-- **Theorem 9.2.1** of [conn2000trust], form with model bounds. Let $f : E \to \mathbb{R}$, models
+$m_k$, centers $x_k$ and trial points $x_k^+$ be given, together with a conditional radius run
+with the corrected update. Let $\gamma_1 > 0$, $\beta > 0$, $0 < \kappa \le 1$,
+$0 \le \eta_1 < 1$ and $C$ with $2C \le \beta$. Let $a_k \ge a_{\min} > 0$ for all $k$. Suppose
+that for every $k$, $\rho_k = (f(x_k) - f(x_k^+)) / (m_k(x_k) - m_k(x_k^+))$,
+$$\kappa a_k \min\{a_k / \beta, \Delta_k\} \le m_k(x_k) - m_k(x_k^+),$$
+and a valid model at iteration $k$ satisfies $|f(x_k) - m_k(x_k)| \le C \Delta_k^2$ and
+$|f(x_k^+) - m_k(x_k^+)| \le C \Delta_k^2$. Then there is $r > 0$ with $r < \Delta_k$ for all
+$k$.
+
+**Correction.** As for `ConnGouldToint.Chapter09.theorem_9_2_1`, the run uses the corrected
+update.
+
+The single constant $\beta$ bounds the curvature term of the sufficient decrease condition AA.1
+and twice the error constant $C$, which is measured in terms of the trust-region radius. -/
 theorem theorem_9_2_1_of_model_bounds {f : E → ℝ} {m : ℕ → E → ℝ} {x trial : ℕ → E}
     {η₀ η₁ γ₁ γ₂ κ C β amin : ℝ} (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False)
     {a : ℕ → ℝ} (ha : 0 < amin) (hgrad : ∀ k, amin ≤ a k)
@@ -198,10 +385,29 @@ theorem theorem_9_2_1_of_model_bounds {f : E → ℝ} {m : ℕ → E → ℝ} {x
   exact hs.trans (div_le_div_of_nonneg_right
     (mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left (hgrad k) hκ.le) hη.le) hβ.le)
 
-/-- A bounded-below quadratic objective and affine conditional models realize
-the failing radius behavior. An exact replacement model is available in a
-single improvement, but selection of the improved trial makes Step 5 move
-to a new center, where it may construct another invalid model. -/
+/-- **Theorem 9.2.1** of [conn2000trust], counterexample for the printed update. Let
+$f(z) = (2 - z)^2$ on $\mathbb{R}$. With $\eta_0 = 1/4$, $\eta_1 = 1/2$,
+$\gamma_1 = \gamma_2 = 1/2$ and the printed update (contraction also on invalid iterations),
+there are a conditional radius run, centers $x_k$ and models $m_k$ with the following
+properties. The function $f$ is twice continuously differentiable with $f \ge 0$ and $f'' = 2$.
+Each $m_k$ is twice continuously differentiable with $m_k'' = 0$. For every $k$, with trial
+point $x_k^+ = x_k - \Delta_k$ and selected point $x_{k+1}$:
+
+* $\rho_k$ is the ratio (9.1.5) at $x_k^+$ and $\hat{\rho}_k$ is the ratio (9.1.5) at $x_{k+1}$,
+  with $\rho_k < 1/2$ and $\hat{\rho}_k \ge 1/4$, so every iteration is successful;
+* the validity flag is validity of $m_k$ on $B(x_k, \Delta_k)$ with constant $1$, and it is
+  false, while $f$ itself is valid there;
+* $x_{k+1} \in B(x_k, \Delta_k)$ and $f(x_{k+1}) \le f(x_k)$;
+* $|m_k'(x_k)| = 1$, $|f'(x_k)| \ge 2$, and $\frac{1}{2} \min\{1, \Delta_k\} \le m_k(x_k) -
+  m_k(x_k^+)$.
+
+Moreover $\Delta_k \to 0$. The gradients stay away from zero, so the conclusion of Theorem 9.2.1
+fails under the printed update.
+
+An exact replacement model, $f$ itself, is available after a single improvement. But the
+selection of the improved point moves the center in Step 5, and at the new center the algorithm
+can again build an invalid model. The run has $\Delta_k = 2^{-k}$, $x_k = 1 - \Delta_k$ and
+$m_k(z) = f(x_k) + (z - x_k)$. -/
 theorem theorem_9_2_1_quadratic_counterexample :
     let f : ℝ → ℝ := fun z ↦ (2 - z) ^ 2
     ∃ (run : ConditionalRadiusRun (1 / 4) (1 / 2) (1 / 2) (1 / 2) True)
@@ -317,9 +523,14 @@ theorem theorem_9_2_1_quadratic_counterexample :
       linarith
   · exact tendsto_pow_atTop_nhds_zero_of_lt_one (by norm_num) (by norm_num)
 
-/-- Under continued rejection, each certified-valid iteration contracts the
-radius and each intervening invalid iteration retains it. Repeated certification
-then gives valid iterations at arbitrarily small radii. -/
+/-- Let a conditional radius run with the corrected update be given, with $0 < \gamma_2 < 1$,
+$\Delta_k > 0$ for all $k$, and $N \in \mathbb{N}$. Suppose that $\rho_k < \eta_1$ for all
+$k \ge N$, and that valid models occur at infinitely many iterations. Then for every $t > 0$
+there is $k \ge N$ with a valid model and $\Delta_k < t$.
+
+This is the radius argument in the proof of Theorem 9.2.2 of [conn2000trust]: each valid
+iteration contracts the radius by the factor $\gamma_2$, and each invalid iteration between them
+keeps it. -/
 theorem ConditionalRadiusRun.exists_valid_small_radius {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (N : ℕ) (hγ₂ : 0 < γ₂) (hγ₂' : γ₂ < 1)
     (hpos : ∀ k, 0 < run.radius k)
@@ -362,10 +573,33 @@ theorem ConditionalRadiusRun.exists_valid_small_radius {η₀ η₁ γ₁ γ₂ 
   obtain ⟨k, hk, hv, hb⟩ := hgeom n
   exact ⟨k, hk, hv, hb.trans_lt hn⟩
 
-/-- Corrected Theorem 9.2.2 for an infinite outer run. The finite-improvement
-condition is applied to the rejected tail, where the center and the radius
-stay fixed between valid models. The conclusion also follows from Lemma
-9.1.2(iii) when the inner refinement loop does not terminate. -/
+/-- **Theorem 9.2.2** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be twice continuously
+differentiable, and let the models $m_k : E \to \mathbb{R}$ be differentiable with
+differentiable derivatives. Let $\|\nabla^2 f(z)\| \le B_f$ and $\|\nabla^2 m_k(z)\| \le B_m$
+for all $k$ and $z$, with $B_f, B_m \ge 0$. Let a conditional radius run with the corrected
+update be given, with centers $x_k$ and trial points $x_k^+$, and constants $0 \le \eta_1 < 1$,
+$0 < \gamma_2 < 1$, $\kappa_v > 0$, $0 < \kappa \le 1$, $\beta > 0$ and $\nu > 0$ with
+$2 \kappa_v \nu^2 \le \beta$. Suppose that for every $k$:
+
+* $\Delta_k > 0$, and $\rho_k$ is the ratio (9.1.5) at $x_k^+$;
+* $\rho_k \ge \eta_1$ implies $\hat{\rho}_k \ge \eta_0$, and $\hat{\rho}_k < \eta_0$ implies
+  $x_{k+1} = x_k$;
+* a valid model at iteration $k$ means that $m_k$ is valid for $f$ on $B(x_k, \nu \Delta_k)$
+  with constant $\kappa_v$ and that $x_k^+ \in B(x_k, \nu \Delta_k)$;
+* $\kappa a \min\{a / \beta, \Delta_k\} \le m_k(x_k) - m_k(x_k^+)$ with
+  $a = \|\nabla m_k(x_k)\|$.
+
+Let $N \in \mathbb{N}$ be such that $\hat{\rho}_k < \eta_0$ for all $k \ge N$, and suppose that
+valid models occur at infinitely many iterations. Then there is $x^*$ with $x_k = x^*$ for all
+$k \ge N$ and $\nabla f(x^*) = 0$.
+
+**Correction.** The theorem is proved for the corrected update. The finite-improvement condition
+is applied to the rejected tail, where the center and the radius stay fixed between valid
+models.
+
+The theorem covers an infinite run of outer iterations. When the inner refinement loop does not
+terminate, the same conclusion follows from Lemma 9.1.2(iii)
+(`ConnGouldToint.Chapter09.lemma_9_1_2_iii`). -/
 theorem theorem_9_2_2 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k)) (hDm : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
     {x trial : ℕ → E} {η₀ η₁ γ₁ γ₂ κv κ β ν Bf Bm : ℝ}
@@ -450,10 +684,29 @@ private theorem liminf_eq_zero_of_frequently_lt {a : ℕ → ℝ}
   linarith
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- Corrected Theorem 9.2.3 for Algorithm 9.1.1 with the validity-gated radius
-update. On a tail with model gradients bounded below, valid small-radius
-trials are accepted. The resulting radius floor rules out both infinitely
-many uniformly productive steps and an infinite rejected tail. -/
+/-- **Theorem 9.2.3** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be bounded below, and let
+models $m_k$, centers $x_k$, trial points $x_k^+$ and criticality measures $a_k \ge 0$ be given,
+together with a conditional radius run with the corrected update. Let
+$0 < \eta_0 \le \eta_1 < 1$, $\gamma_1 > 0$, $0 < \gamma_2 < 1$, $\beta > 0$, $0 < \kappa \le 1$
+and $C$ with $2C \le \beta$. Suppose that for every $k$:
+
+* $\rho_k$ is the ratio (9.1.5) at $x_k^+$, and $\kappa a_k \min\{a_k / \beta, \Delta_k\} \le
+  m_k(x_k) - m_k(x_k^+)$;
+* a valid model at iteration $k$ satisfies $|f(x_k) - m_k(x_k)| \le C \Delta_k^2$ and
+  $|f(x_k^+) - m_k(x_k^+)| \le C \Delta_k^2$;
+* $\rho_k \ge \eta_1$ implies $\hat{\rho}_k \ge \eta_0$;
+* $\hat{\rho}_k \ge \eta_0$ implies $\eta_0 (m_k(x_k) - m_k(x_k^+)) \le f(x_k) - f(x_{k+1})$,
+  and $\hat{\rho}_k < \eta_0$ implies $x_{k+1} = x_k$.
+
+Suppose also that whenever all iterations from $n$ on are unsuccessful, some iteration $k \ge n$
+has a valid model. Then $\liminf_{k \to \infty} a_k = 0$, and for every $\varepsilon > 0$ there
+are infinitely many $k$ with $a_k < \varepsilon$.
+
+**Correction.** The theorem is proved for the corrected update.
+
+On a tail where the criticality measures are bounded below, valid models at small radii pass the
+test. The resulting floor on the radii rules out both infinitely many successful iterations with
+a uniform decrease and an infinite tail of rejected iterations. -/
 theorem theorem_9_2_3 {f : E → ℝ} {m : ℕ → E → ℝ} {x trial : ℕ → E}
     {η₀ η₁ γ₁ γ₂ κ C β : ℝ} (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False)
     (a : ℕ → ℝ) (ha : ∀ k, 0 ≤ a k) (hη₀ : 0 < η₀) (hη : η₀ ≤ η₁)
@@ -528,8 +781,15 @@ theorem theorem_9_2_3 {f : E → ℝ} {m : ℕ → E → ℝ} {x trial : ℕ →
     exact (not_lt_of_ge (hfloor k ((le_max_right _ _).trans hk)).le) hs
   exact ⟨liminf_eq_zero_of_frequently_lt ha hfreq, hfreq⟩
 
-/-- Equation (9.2.8) and its triangle-inequality consequence at one
-accepted criticality test. -/
+/-- **Equation (9.2.8)** of [conn2000trust] and its consequence at one accepted criticality test.
+Let $f : E \to \mathbb{R}$ be twice continuously differentiable, and let $m : E \to \mathbb{R}$
+be differentiable with a differentiable derivative, with $\|\nabla^2 f(z)\| \le B_f$ and
+$\|\nabla^2 m(z)\| \le B_m$ for all $z$, where $B_f, B_m \ge 0$. Let $\delta > 0$ and
+$\kappa > 0$. If $m$ is valid for $f$ on $B(x, \delta)$ with constant $\kappa$ and
+$\delta \le \mu \|\nabla m(x)\|$, then
+$$\|\nabla f(x)\| \le \left(1 + \left(2\kappa + \tfrac{1}{2}(B_f + B_m)\right) \mu\right)
+  \|\nabla m(x)\|.$$
+-/
 theorem norm_fderiv_le_of_accepted_criticality {f m : E → ℝ} (hf : ContDiff ℝ 2 f)
     (hm : Differentiable ℝ m) (hDm : Differentiable ℝ (fderiv ℝ m)) {x : E}
     {δ κ Bf Bm μ : ℝ} (hδ : 0 < δ) (hκ : 0 < κ) (hBf : 0 ≤ Bf) (hBm : 0 ≤ Bm)
@@ -549,8 +809,18 @@ theorem norm_fderiv_le_of_accepted_criticality {f m : E → ℝ} (hf : ContDiff 
     _ ≤ C * (μ * ‖b‖) + ‖b‖ := add_le_add (mul_le_mul_of_nonneg_left hcap hC) le_rfl
     _ = _ := by ring
 
-/-- Lemma 9.2.4, with the eventual accepted-model condition of Step 1 made explicit.
-The sequences may already be restricted to the subsequence in (9.2.6). -/
+/-- **Lemma 9.2.4** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be twice continuously
+differentiable, and let the models $m_k$ be differentiable with differentiable derivatives, with
+$\|\nabla^2 f(z)\| \le B_f$ and $\|\nabla^2 m_k(z)\| \le B_m$ for all $k$ and $z$, where
+$B_f, B_m \ge 0$. Let $\kappa > 0$, $\mu \in \mathbb{R}$, centers $x_k$ and radii $\delta_k$ be
+given. Suppose that for all sufficiently large $k$, $0 < \delta_k \le \mu \|\nabla m_k(x_k)\|$
+and $m_k$ is valid for $f$ on $B(x_k, \delta_k)$ with constant $\kappa$. If
+$\|\nabla m_k(x_k)\| \to 0$, then $\|\nabla f(x_k)\| \to 0$.
+
+**Reading.** The condition that the criticality test of Step 1 eventually accepts the model is
+an explicit hypothesis.
+
+The sequences may already be restricted to the subsequence of (9.2.6). -/
 theorem lemma_9_2_4 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k)) (hDm : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
     {x : ℕ → E} {δ : ℕ → ℝ} {κ Bf Bm μ : ℝ} (hκ : 0 < κ)
@@ -569,8 +839,22 @@ theorem lemma_9_2_4 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → �
   exact norm_fderiv_le_of_accepted_criticality hf (hm k) (hDm k) hk.1 hκ hBf hBm
     hF (hM k) hk.2.2 hk.2.1
 
-/-- The liminf conclusion of Theorem 9.2.5. The accepted-model test is
-needed only at sufficiently small model gradients, as in Step 1. -/
+/-- **Theorem 9.2.5** of [conn2000trust], limit-inferior conclusion. Let $f$, $m_k$, $B_f$, $B_m$ be
+as in Lemma 9.2.4, and let $\kappa > 0$, $\varepsilon_c > 0$ and $\mu \ge 0$. Suppose that for
+every $k$ with $\|\nabla m_k(x_k)\| \le \varepsilon_c$, we have
+$0 < \delta_k \le \mu \|\nabla m_k(x_k)\|$ and $m_k$ is valid for $f$ on $B(x_k, \delta_k)$ with
+constant $\kappa$. If for every $\varepsilon > 0$ there are infinitely many $k$ with
+$\|\nabla m_k(x_k)\| < \varepsilon$, then
+$$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0,$$
+and for every $\varepsilon > 0$ there are infinitely many $k$ with
+$\|\nabla f(x_k)\| < \varepsilon$.
+
+**Correction.** The limit-inferior conclusion needs neither infinitely many successful
+iterations nor compact containment of the iterates. The subsequence conclusion needs both; see
+`ConnGouldToint.Chapter09.theorem_9_2_5_exists_critical_subseq`.
+
+As in Step 1 of the algorithm, the accepted criticality test is needed only at small model
+gradients. -/
 theorem theorem_9_2_5 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k)) (hDm : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
     {x : ℕ → E} {δ : ℕ → ℝ} {κ Bf Bm μ εc : ℝ} (hκ : 0 < κ) (hεc : 0 < εc)
@@ -596,9 +880,14 @@ theorem theorem_9_2_5 {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E →
   exact ⟨liminf_eq_zero_of_frequently_lt (fun _ ↦ norm_nonneg _) hfreq, hfreq⟩
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- An unsuccessful iterate stays fixed until the next successful iteration.
-If successes are infinite, small gradient norms therefore occur frequently
-also among successful iterations. -/
+/-- **Theorem 9.2.5** of [conn2000trust], successful iterations. Let $x_k \in E$,
+$u : E \to \mathbb{R}$, and let $S \subseteq \mathbb{N}$ be infinite. Suppose that
+$x_{k+1} = x_k$ for every $k \notin S$, and that for every $\varepsilon > 0$ there are
+infinitely many $k$ with $u(x_k) < \varepsilon$. Then for every $\varepsilon > 0$ there are
+infinitely many $k \in S$ with $u(x_k) < \varepsilon$.
+
+An unsuccessful iterate stays fixed until the next successful iteration, which has the same
+value of $u$. -/
 theorem frequently_successful_small_gradient {x : ℕ → E} {u : E → ℝ} {S : Set ℕ}
     (hS : ∃ᶠ k in atTop, k ∈ S) (hstay : ∀ k ∉ S, x (k + 1) = x k)
     (hfreq : ∀ ε > 0, ∃ᶠ k in atTop, u (x k) < ε) :
@@ -621,9 +910,16 @@ theorem frequently_successful_small_gradient {x : ℕ → E} {u : E → ℝ} {S 
       rw [hstay i hn, ih hlt.le]
   exact ⟨j, hk.trans hj.1, hj.2, by simpa only [hx j hj.1 le_rfl] using hsmall⟩
 
-/-- Compact containment of the successful iterates gives an actual convergent
-subsequence in Theorem 9.2.5, provided that successful small-gradient
-iterations occur frequently. -/
+/-- **Theorem 9.2.5** of [conn2000trust], subsequence conclusion. Let $f : E \to \mathbb{R}$ be
+continuously differentiable, let $K \subseteq E$ be compact, let $S \subseteq \mathbb{N}$, and
+let $x_k \in K$ for all $k \in S$. Suppose that for every $\varepsilon > 0$ there are infinitely
+many $k \in S$ with $\|\nabla f(x_k)\| < \varepsilon$. Then there are $z \in K$ and a strictly
+increasing sequence $(j_n)$ in $S$ with $x_{j_n} \to z$ and $\nabla f(z) = 0$.
+
+**Correction.** The subsequence conclusion needs infinitely many successful iterations with
+small gradients and compact containment of the successful iterates.
+`ConnGouldToint.Chapter09.frequently_successful_small_gradient` gives the first hypothesis from
+the limit-inferior conclusion. -/
 theorem theorem_9_2_5_exists_critical_subseq {f : E → ℝ} (hf : ContDiff ℝ 1 f)
     {x : ℕ → E} {K : Set E} {S : Set ℕ} (hK : IsCompact K) (hx : ∀ k ∈ S, x k ∈ K)
     (hfreq : ∀ ε > 0, ∃ᶠ k in atTop, k ∈ S ∧ ‖fderiv ℝ f (x k)‖ < ε) :
@@ -640,10 +936,29 @@ theorem theorem_9_2_5_exists_critical_subseq {f : E → ℝ} (hf : ContDiff ℝ 
     tendsto_nhds_unique (hgrad.continuousAt.tendsto.comp hzi) (hja.comp hi.tendsto_atTop)
   exact ⟨z, hz, j ∘ i, hj.comp hi, fun n ↦ (hjS (i n)).1, hzi, norm_eq_zero.mp hn⟩
 
-/-- Corrected Theorem 9.2.6. The criticality test supplies the comparison
-between the objective and model gradients when the model gradient is small.
-Combined with valid selected steps and the small-gradient subsequence, the
-objective gradient norms tend to zero along the full run. -/
+/-- **Theorem 9.2.6** of [conn2000trust]. Let $f : E \to \mathbb{R}$ be bounded below, with
+$\|\nabla f(y) - \nabla f(z)\| \le L \|y - z\|$ for all $y, z$. Let $x_k \in E$, criticality
+measures $a_k \ge 0$, predicted decreases $p_k$, radii $\Delta_k > 0$ and a set
+$S \subseteq \mathbb{N}$ of successful iterations be given, with constants $\eta > 0$,
+$\kappa > 0$, $\beta > 0$, $\varepsilon_c > 0$, $A > 0$, $L \ge 0$ and $K \ge 0$. Suppose that
+for every $k$:
+
+* $a_k \le \varepsilon_c$ implies $\|\nabla f(x_k)\| \le A a_k$;
+* $\kappa a_k \min\{a_k / \beta, \Delta_k\} \le p_k$;
+* if $k \in S$, then $\eta p_k \le f(x_k) - f(x_{k+1})$ and $\|x_k - x_{k+1}\| \le K \Delta_k$;
+* if $k \notin S$, then $x_{k+1} = x_k$.
+
+If for every $\varepsilon > 0$ there are infinitely many $k$ with
+$\|\nabla f(x_k)\| < \varepsilon$, then $\|\nabla f(x_k)\| \to 0$, and $\nabla f(z) = 0$ for
+every limit $z$ of a sequence $x_{j_n}$ with $j_n \to \infty$.
+
+**Correction.** The comparison between the objective and model gradients at small model
+gradients comes from the criticality test, and is an explicit hypothesis. Together with valid
+selected steps and the small-gradient subsequence of Theorem 9.2.5, it gives convergence of the
+full sequence of gradient norms.
+
+The statement has no differentiability hypothesis on $f$: the derivative is `fderiv ℝ f`, and
+only its Lipschitz bound is used. -/
 theorem theorem_9_2_6 {f : E → ℝ} {x : ℕ → E} {a pred Δ : ℕ → ℝ} {S : Set ℕ}
     {η κ β εc A L K : ℝ} (hη : 0 < η) (hκ : 0 < κ) (hβ : 0 < β)
     (hεc : 0 < εc) (hA : 0 < A) (hL : 0 ≤ L) (hK : 0 ≤ K)

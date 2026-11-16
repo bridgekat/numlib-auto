@@ -6,9 +6,76 @@ import Numlib.Analysis.Matrix.ToEuclideanLin
 import NumlibSurface.ConnGouldToint.Chapter07.Section03Algorithms
 
 /-!
-# Diagonal trust-region Newton iteration
+# Conn, Gould and Toint, Section 7.7: The diagonal trust-region Newton iteration
 
-Algorithm 7.7.1 of [conn2000trust].
+Section 7.7 of [conn2000trust] uses a symmetric indefinite factorization of the Hessian, with a
+permutation $P$, a triangular factor $L$ and a block diagonal factor, to define the trust-region
+norm of the modified absolute-value preconditioner $P L C L^T P^T$ of (7.7.12), where $C$ is the
+modified block diagonal. In the coordinates of this factorization the model Hessian becomes
+diagonal, as in (7.7.14), and Algorithm 7.7.1 solves the trust-region subproblem for a diagonal
+Hessian $D = \operatorname{diag}(d_0, \dots, d_n)$ on $\mathbb{R}^{n+1}$ by coordinate division.
+This module defines the preconditioner, the coordinate pseudoinverse $(D + xI)^+$ and the scalar
+Newton update of Algorithm 7.7.1, and the algorithm itself. It proves that the coordinate solves and
+the Newton update agree with the Moré–Sorensen quantities of Section 7.3 above the pole, that the
+Newton iteration converges Q-linearly and with Q-order two from an exterior compatible start, and
+that the algorithm returns either an exact minimizer or a step that passes the relative radius test.
+
+## Main definitions
+
+* Equation (7.7.12), `ConnGouldToint.Chapter07.modifiedAbsoluteValuePreconditioner`: the matrix
+  $P L C L^T P^T$.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.diagonalShiftInverse`: the coordinate pseudoinverse
+  $(D + xI)^+$.
+* Algorithm 7.7.1, Step 2, `ConnGouldToint.Chapter07.diagonalNullGradient`: the part of $g$ on the
+  coordinates with $d_i + x = 0$.
+* Algorithm 7.7.1, Steps 4–5, `ConnGouldToint.Chapter07.diagonalNewtonStep`: the scalar Newton
+  update of the shift.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.algorithm_7_7_1`: the algorithm with a supplied index
+  of a least diagonal entry.
+* Equation (7.7.14), `ConnGouldToint.Chapter07.diagonalOperator`: the diagonal Hessian $D$ as an
+  operator.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.algorithm_7_7_1_auto`: the algorithm with an
+  automatically chosen least diagonal entry.
+
+## Main results
+
+* Equation (7.7.12), `ConnGouldToint.Chapter07.modifiedAbsoluteValuePreconditioner_posDef`: the
+  preconditioner is positive definite when $P$ and $L$ are invertible and $C$ is positive definite.
+* Equation (7.7.14), `ConnGouldToint.Chapter07.diagonalOperator_symm`: the diagonal Hessian is
+  symmetric.
+* Algorithm 7.7.1, Step 2, `ConnGouldToint.Chapter07.diagonal_leftmost`: the least eigenvalue of $D$
+  is its least diagonal entry.
+* Algorithm 7.7.1, Steps 1, 2 and 5, `ConnGouldToint.Chapter07.diagonalShiftStep_solves`: the
+  coordinate solve solves a compatible shifted system.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.diagonalShiftStep_eq`: above the pole the coordinate
+  solve is the shifted step $s(x)$.
+* Algorithm 7.7.1, Step 4, `ConnGouldToint.Chapter07.diagonalNewtonStep_eq`: above the pole the
+  update is Newton's method on the Moré–Sorensen secular function.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.algorithm_7_7_1_newton_converges`: from an exterior
+  compatible start, the Newton shifts converge Q-linearly and with Q-order two, and
+  $\|s(x_k)\| \to \Delta$.
+* Algorithm 7.7.1, Steps 3–5, `ConnGouldToint.Chapter07.algorithm_7_7_1_newton_stop`: the relative
+  radius test is met after finitely many Newton steps.
+* Algorithm 7.7.1, Step 2b, `ConnGouldToint.Chapter07.algorithm_7_7_1_seed_norm`: the starting trial
+  of the singular case lies outside or on the boundary.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.algorithm_7_7_1_returns`: the algorithm returns an
+  exact minimizer or a step that passes the relative radius test.
+* Algorithm 7.7.1, `ConnGouldToint.Chapter07.algorithm_7_7_1_auto_returns`: the same guarantee with
+  the automatic choice of the least diagonal entry.
+
+## Conventions
+
+* Vectors are elements of `EuclideanSpace ℝ (Fin (n + 1))`, with coordinates indexed from $0$, and
+  the diagonal Hessian is given by its diagonal $d$.
+* The model is $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, D s \rangle$, which is
+  `Subproblem.quadModel g (diagonalOperator d)`.
+
+## Implementation notes
+
+* The coordinate pseudoinverse divides by $d_i + x$ in every coordinate. Division by zero gives
+  zero, so a coordinate with $d_i + x = 0$ contributes $0$.
+* The algorithm returns `Option V`. The value `none` occurs only if no Newton iterate passes the
+  relative radius test, which `ConnGouldToint.Chapter07.algorithm_7_7_1_returns` excludes.
 -/
 
 namespace ConnGouldToint.Chapter07
@@ -20,14 +87,18 @@ variable {n : ℕ}
 
 local notation "V" => EuclideanSpace ℝ (Fin (n + 1))
 
-/-- The modified absolute-value factorization (7.7.12) defines the metric
-from the permutation, the triangular factor and the modified block diagonal. -/
+/-- **Equation (7.7.12)** of [conn2000trust]. For matrices $P$, $L$ and $C$, the **modified
+absolute-value preconditioner** is
+$$P L C L^T P^T.$$
+
+Here $P$ is the permutation, $L$ the triangular factor and $C$ the modified block diagonal of
+the factorization of the Hessian. -/
 def modifiedAbsoluteValuePreconditioner {ι : Type*} [Fintype ι]
     (P L C : Matrix ι ι ℝ) : Matrix ι ι ℝ :=
   P * L * C * Lᵀ * Pᵀ
 
-/-- Invertible congruence factors preserve positive definiteness of the
-modified block diagonal. -/
+/-- **Equation (7.7.12)** of [conn2000trust], positive definite metric. If $P$ and $L$ are
+invertible and $C$ is positive definite, then $P L C L^T P^T$ is positive definite. -/
 theorem modifiedAbsoluteValuePreconditioner_posDef {ι : Type*} [Fintype ι] [DecidableEq ι]
     {P L C : Matrix ι ι ℝ} (hP : IsUnit P) (hL : IsUnit L) (hC : C.PosDef) :
     (modifiedAbsoluteValuePreconditioner P L C).PosDef := by
@@ -36,24 +107,47 @@ theorem modifiedAbsoluteValuePreconditioner_posDef {ι : Type*} [Fintype ι] [De
   simpa only [modifiedAbsoluteValuePreconditioner, conjTranspose_eq_transpose_of_trivial,
     transpose_mul, Matrix.mul_assoc] using h
 
-/-- The diagonal shifted pseudoinverse divides each coordinate by its
-shifted diagonal entry, with zero output at a zero entry. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], coordinate pseudoinverse. For $d \in \mathbb{R}^{n+1}$,
+$x \in \mathbb{R}$ and $v \in \mathbb{R}^{n+1}$,
+$$\big((D + xI)^+ v\big)_i = \frac{v_i}{d_i + x},$$
+where $D = \operatorname{diag}(d)$, with value $0$ in every coordinate where $d_i + x = 0$. -/
 noncomputable def diagonalShiftInverse (d : Fin (n + 1) → ℝ) (x : ℝ) (v : V) : V :=
   toLp 2 (fun i => v i / (d i + x))
 
-/-- The part of the gradient on the zero shifted diagonal entries. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Step 2. For $d, g \in \mathbb{R}^{n+1}$ and
+$x \in \mathbb{R}$, the **null gradient** $g^0$ keeps the coordinates of $g$ where the shifted
+diagonal vanishes:
+$$g^0_i = \begin{cases} g_i & \text{if } d_i + x = 0, \\ 0 & \text{otherwise.} \end{cases}$$
+-/
 noncomputable def diagonalNullGradient (d : Fin (n + 1) → ℝ) (x : ℝ) (g : V) : V :=
   toLp 2 (fun i => if d i + x = 0 then g i else 0)
 
-/-- The scalar update in Step 4 of Algorithm 7.7.1. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Steps 4–5. For $d, g \in \mathbb{R}^{n+1}$ and
+$\Delta, x \in \mathbb{R}$, let $s = -(D + xI)^+ g$. The **Newton update** of the shift is
+$$x + \frac{\|s\| - \Delta}{\Delta} \cdot \frac{\|s\|^2}{\langle s, (D + xI)^+ s \rangle}.$$
+-/
 noncomputable def diagonalNewtonStep (d : Fin (n + 1) → ℝ) (g : V) (Δ x : ℝ) : ℝ :=
   let s := -diagonalShiftInverse d x g
   x + ((‖s‖ - Δ) / Δ) * (‖s‖ ^ 2 / ⟪s, diagonalShiftInverse d x s⟫)
 
-/-- Algorithm 7.7.1 with the index of a least diagonal entry supplied.
-An exterior positive-definite unshifted trial starts Newton at zero.
-For a singular compatible boundary problem either boundary root has
-the same model value, so the positive square root is used. -/
+/-- **Algorithm 7.7.1** of [conn2000trust]. Let $d, g \in \mathbb{R}^{n+1}$,
+$\Delta, \varepsilon \in \mathbb{R}$, and let $i_0$ be an index, intended to satisfy
+$d_{i_0} = \min_i d_i$. Put $D = \operatorname{diag}(d)$, $s_0 = -D^+ g$, the pole
+$\lambda = -d_{i_0}$, the null gradient $g^0$ at $\lambda$, and $p = -(D + \lambda I)^+ g$. The
+algorithm returns:
+
+* $s_0$, if $d_{i_0} > 0$ and $\|s_0\| \le \Delta$;
+* otherwise $p + \alpha e_{i_0}$ with $\alpha = \sqrt{\Delta^2 - \|p\|^2 + p_{i_0}^2} -
+  p_{i_0}$, if $d_{i_0} \le 0$, $g^0 = 0$ and $\|p\| \le \Delta$;
+* otherwise the step $s_k = -(D + x_k I)^+ g$ for the first $k$ with
+  $|\|s_k\| - \Delta| \le \varepsilon \Delta$, where $x_k$ is the $k$-th Newton update from
+  $x_0 = 0$ if $d_{i_0} > 0$ and from $x_0 = \lambda + \|g^0\| / \Delta$ otherwise, and nothing
+  if no such $k$ exists.
+
+If the unshifted matrix is positive definite and its trial lies outside the trust region, Newton
+starts at $x_0 = 0$. In the singular compatible boundary case both roots of
+$\|p + \alpha e_{i_0}\| = \Delta$ give the same model value, so the positive square root is
+used; the coefficient is `ConnGouldToint.Chapter07.moreSorensenBoundaryCoefficient`. -/
 noncomputable def algorithm_7_7_1 (d : Fin (n + 1) → ℝ) (g : V) (Δ ε : ℝ)
     (i₀ : Fin (n + 1)) : Option V := by
   classical
@@ -71,10 +165,14 @@ noncomputable def algorithm_7_7_1 (d : Fin (n + 1) → ℝ) (g : V) (Δ ε : ℝ
       let s := fun k : ℕ => -diagonalShiftInverse d ((diagonalNewtonStep d g Δ)^[k] x₀) g
       if h : ∃ k, |‖s k‖ - Δ| ≤ ε * Δ then some (s (Nat.find h)) else none
 
-/-- The Euclidean operator of the diagonal model. -/
+/-- **Equation (7.7.14)** of [conn2000trust], diagonal Hessian. For $d \in \mathbb{R}^{n+1}$, this
+is the operator of the diagonal matrix $D = \operatorname{diag}(d)$ on the Euclidean space
+$\mathbb{R}^{n+1}$. -/
 noncomputable def diagonalOperator (d : Fin (n + 1) → ℝ) : V →L[ℝ] V :=
   toEuclideanCLM (n := Fin (n + 1)) (𝕜 := ℝ) (diagonal d)
 
+/-- **Equation (7.7.14)** of [conn2000trust], symmetry. The diagonal operator
+$D = \operatorname{diag}(d)$ is symmetric. -/
 theorem diagonalOperator_symm (d : Fin (n + 1) → ℝ) :
     ((diagonalOperator d : V →L[ℝ] V) : V →ₗ[ℝ] V).IsSymmetric :=
   (isSymm_diagonal d).isSymmetric_toEuclideanLin
@@ -99,7 +197,10 @@ private theorem leftmost_le_diagonal (d : Fin (n + 1) → ℝ) (i : Fin (n + 1))
   rw [hu, one_pow, mul_one, diagonalInner] at h
   simpa [u, Pi.single_apply] using h
 
-/-- An index minimizing the diagonal gives the leftmost eigenvalue. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Step 2, least eigenvalue. If $d_{i_0} \le d_i$ for every
+$i$, then the least eigenvalue of $D = \operatorname{diag}(d)$ is $d_{i_0}$.
+
+The least eigenvalue is `Subproblem.leftmost (diagonalOperator_symm d)`. -/
 theorem diagonal_leftmost (d : Fin (n + 1) → ℝ) (i₀ : Fin (n + 1))
     (hi : ∀ i, d i₀ ≤ d i) :
     leftmost (diagonalOperator_symm d) = d i₀ := by
@@ -110,7 +211,11 @@ theorem diagonal_leftmost (d : Fin (n + 1) → ℝ) (i₀ : Fin (n + 1))
     exact Finset.sum_le_sum fun i _ => mul_le_mul_of_nonneg_right (hi i) (sq_nonneg _)
   exact le_antisymm (leftmost_le_diagonal d i₀) hlo
 
-/-- Coordinate pseudoinverse division solves a compatible shifted system. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Steps 1, 2 and 5, coordinate shifted solve. Let
+$d, g \in \mathbb{R}^{n+1}$ and $x \in \mathbb{R}$, and assume $g_i = 0$ whenever $d_i + x = 0$.
+Then
+$$(D + xI)\big(-(D + xI)^+ g\big) = -g.$$
+-/
 theorem diagonalShiftStep_solves (d : Fin (n + 1) → ℝ) (g : V) (x : ℝ)
     (hg : ∀ i, d i + x = 0 → g i = 0) :
     (diagonalOperator d + x • 1) (-diagonalShiftInverse d x g) = -g := by
@@ -125,7 +230,12 @@ theorem diagonalShiftStep_solves (d : Fin (n + 1) → ℝ) (g : V) (x : ℝ)
       _ = -((g i / (d i + x)) * (d i + x)) := by ring
       _ = _ := by rw [div_mul_cancel₀ _ hz]
 
-/-- Above the pole the coordinate solve equals the ordinary shifted solve. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], shifted step above the pole. Let $\lambda_1$ be the
+least eigenvalue of $D = \operatorname{diag}(d)$, and let $x > -\lambda_1$ with $d_i + x \neq 0$
+for every $i$. Then
+$$-(D + xI)^+ g = s(x) = -(D + xI)^{-1} g.$$
+
+The step $s(x)$ is `ConnGouldToint.Chapter07.shiftedStep`. -/
 theorem diagonalShiftStep_eq (d : Fin (n + 1) → ℝ) (g : V) {x : ℝ}
     (hx : -leftmost (diagonalOperator_symm d) < x)
     (hd : ∀ i, d i + x ≠ 0) :
@@ -133,8 +243,14 @@ theorem diagonalShiftStep_eq (d : Fin (n + 1) → ℝ) (g : V) {x : ℝ}
   (step_spec (hH := diagonalOperator_symm d) hx).2 _
     (diagonalShiftStep_solves d g x (fun i h => (hd i h).elim))
 
-/-- Step 4 above the pole is exactly Newton on the Moré–Sorensen secular
-function, with its denominator evaluated by diagonal division. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Step 4, equivalence to secular Newton. Let $g \neq 0$,
+$\Delta > 0$, let $\lambda_1$ be the least eigenvalue of $D = \operatorname{diag}(d)$, and let
+$x > -\lambda_1$ with $d_i + x \neq 0$ for every $i$. Then the Newton update of the shift equals
+one Newton step at $x$ for the Moré–Sorensen secular function
+$$\phi(x) = \frac{1}{\|s(x)\|} - \frac{1}{\Delta}.$$
+
+The denominator of the Newton step is evaluated by diagonal division. The Newton step is
+`ConnGouldToint.Chapter07.moreSorensenNewtonStep`. -/
 theorem diagonalNewtonStep_eq (d : Fin (n + 1) → ℝ) {g : V} (hg : g ≠ 0) {Δ x : ℝ}
     (hΔ : 0 < Δ) (hx : -leftmost (diagonalOperator_symm d) < x)
     (hd : ∀ i, d i + x ≠ 0) :
@@ -265,10 +381,18 @@ private theorem diagonalInverse_eq_on_support {d e : Fin (n + 1) → ℝ} (x : �
   · simp [hi]
   · rw [h i hi]
 
-/-- Newton has a global Q-linear bound and asymptotic Q-quadratic order
-from an exterior compatible trial with nonnegative shifted diagonals. At a singular starting
-shift the inactive diagonal entries can be moved to make the shift positive
-definite, without changing any computed Newton step. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], convergence of the Newton shifts. Let
+$d, g \in \mathbb{R}^{n+1}$, $\Delta > 0$ and $x_0 \ge 0$. Assume $d_i + x_0 \ge 0$ for every
+$i$, $g_i = 0$ whenever $d_i + x_0 = 0$, and $\Delta < \|(D + x_0 I)^+ g\|$. Let $x_k$ be the
+iterates of the Newton update from $x_0$. Then there is $r \ge 0$ such that $x_k \to r$ with
+order $2$, there is $\gamma \in [0, 1)$ with
+$$|x_{k+1} - r| \le \gamma |x_k - r| \qquad \text{for all } k,$$
+and $\|(D + x_k I)^+ g\| \to \Delta$.
+
+Convergence with order $2$ is `ConvergesWithOrder x r 2`: $x_k \to r$ and eventually
+$|x_{k+1} - r| \le C |x_k - r|^2$ for some $C > 0$. At a singular starting shift, the proof
+moves the diagonal entries with $d_i + x_0 = 0$ so that $D + x_0 I$ becomes positive definite;
+this changes no computed Newton step. -/
 theorem algorithm_7_7_1_newton_converges (d : Fin (n + 1) → ℝ) (g : V)
     {Δ x₀ : ℝ} (hΔ : 0 < Δ) (hx₀ : 0 ≤ x₀)
     (hd : ∀ i, 0 ≤ d i + x₀) (hg : ∀ i, d i + x₀ = 0 → g i = 0)
@@ -306,8 +430,12 @@ theorem algorithm_7_7_1_newton_converges (d : Fin (n + 1) → ℝ) (g : V)
   simp_rw [heq]
   exact diagonalNewton_open_converges e g hΔ hx₀ hp (by rwa [← heq x₀])
 
-/-- The relative-radius stopping condition is reached in finitely many
-iterations from any compatible exterior starting trial. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Steps 3–5, finite stopping. Under the hypotheses of
+`ConnGouldToint.Chapter07.algorithm_7_7_1_newton_converges`, and for $\varepsilon > 0$, some
+Newton iterate $x_k$ satisfies
+$$\big| \|(D + x_k I)^+ g\| - \Delta \big| \le \varepsilon \Delta.$$
+
+This covers a compatible start at the pole. -/
 theorem algorithm_7_7_1_newton_stop (d : Fin (n + 1) → ℝ) (g : V)
     {Δ ε x₀ : ℝ} (hΔ : 0 < Δ) (hε : 0 < ε) (hx₀ : 0 ≤ x₀)
     (hd : ∀ i, 0 ≤ d i + x₀) (hg : ∀ i, d i + x₀ = 0 → g i = 0)
@@ -317,8 +445,12 @@ theorem algorithm_7_7_1_newton_stop (d : Fin (n + 1) → ℝ) (g : V)
   obtain ⟨k, hk⟩ := (ht.eventually (Metric.ball_mem_nhds Δ (mul_pos hε hΔ))).exists
   exact ⟨k, (by simpa [Metric.mem_ball, Real.dist_eq] using hk : _ < _).le⟩
 
-/-- The shifted trial in Step 2b is outside or on the trust-region boundary.
-Its nullspace coordinates alone have norm exactly the prescribed radius. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], Step 2b. Let $d, g \in \mathbb{R}^{n+1}$,
+$\lambda \in \mathbb{R}$ and $\Delta > 0$, and let $g^0 \neq 0$ be the null gradient at
+$\lambda$. Then the starting shift $x = \lambda + \|g^0\| / \Delta$ satisfies
+$$\Delta \le \|(D + xI)^+ g\|.$$
+
+The coordinates where $d_i + \lambda = 0$ alone contribute a vector of norm exactly $\Delta$. -/
 theorem algorithm_7_7_1_seed_norm (d : Fin (n + 1) → ℝ) (g : V) {pole Δ : ℝ}
     (hΔ : 0 < Δ) (hgn : diagonalNullGradient d pole g ≠ 0) :
     let x := pole + ‖diagonalNullGradient d pole g‖ / Δ
@@ -353,9 +485,14 @@ private theorem diagonalNullGradient_eq_zero_apply (d : Fin (n + 1) → ℝ) (g 
   change (if d i + x = 0 then g i else 0) = 0 at he
   rwa [ite_eq_left hi] at he
 
-/-- The algorithm returns in finitely many Newton iterations or at its
-exact terminal branches. The terminal solves minimize the model, and
-a Newton return meets the prescribed relative radius test. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], finite return. Let $d, g \in \mathbb{R}^{n+1}$,
+$\Delta > 0$ and $\varepsilon > 0$, and let $d_{i_0} \le d_i$ for every $i$. Then Algorithm
+7.7.1 returns a step $s$, and either $\|s\| \le \Delta$ and $s$ minimizes $m(s) = \langle g, s
+\rangle + \frac{1}{2} \langle s, D s \rangle$ on the ball $\|s\| \le \Delta$, or
+$$\big| \|s\| - \Delta \big| \le \varepsilon \Delta.$$
+
+The exact branches in Steps 1 and 2 return minimizers, and a Newton return passes the relative
+radius test. -/
 theorem algorithm_7_7_1_returns (d : Fin (n + 1) → ℝ) (g : V) {Δ ε : ℝ}
     (hΔ : 0 < Δ) (hε : 0 < ε) (i₀ : Fin (n + 1)) (hi : ∀ i, d i₀ ≤ d i) :
     ∃ s, algorithm_7_7_1 d g Δ ε i₀ = some s ∧
@@ -433,14 +570,18 @@ theorem algorithm_7_7_1_returns (d : Fin (n + 1) → ℝ) (g : V) {Δ ε : ℝ}
   dsimp only
   rw [ite_eq_right hfirst, ite_eq_right hsecond, dite_eq_left h]
 
-/-- Select an index attaining the least diagonal entry, then run
-Algorithm 7.7.1. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], automatic selection. For $d, g \in \mathbb{R}^{n+1}$ and
+$\Delta, \varepsilon \in \mathbb{R}$, this runs Algorithm 7.7.1 with an index $i_0$ that attains
+$\min_i d_i$, chosen by `Classical.choose`. -/
 noncomputable def algorithm_7_7_1_auto (d : Fin (n + 1) → ℝ) (g : V) (Δ ε : ℝ) : Option V :=
   algorithm_7_7_1 d g Δ ε (Classical.choose
     (Finset.exists_min_image Finset.univ d Finset.univ_nonempty))
 
-/-- The automatic least-diagonal selection preserves the guarantees of
-Algorithm 7.7.1. -/
+/-- **Algorithm 7.7.1** of [conn2000trust], run with automatic selection. Let
+$d, g \in \mathbb{R}^{n+1}$, $\Delta > 0$ and $\varepsilon > 0$. Then the algorithm with
+automatic least-diagonal selection returns a step $s$, and either $\|s\| \le \Delta$ and $s$
+minimizes $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, D s \rangle$ on the ball
+$\|s\| \le \Delta$, or $\big| \|s\| - \Delta \big| \le \varepsilon \Delta$. -/
 theorem algorithm_7_7_1_auto_returns (d : Fin (n + 1) → ℝ) (g : V) {Δ ε : ℝ}
     (hΔ : 0 < Δ) (hε : 0 < ε) :
     ∃ s, algorithm_7_7_1_auto d g Δ ε = some s ∧

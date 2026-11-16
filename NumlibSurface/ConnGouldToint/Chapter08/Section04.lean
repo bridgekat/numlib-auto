@@ -5,7 +5,80 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import NumlibSurface.ConnGouldToint.Chapter06.Section05
 
-/-! # Approximate derivatives in trust-region models -/
+/-!
+# Conn, Gould and Toint, Section 8.4: Approximate derivatives in trust-region models
+
+Section 8.4 of [conn2000trust] studies the basic trust-region algorithm when the model gradient
+$g_k$ only approximates the objective gradient $\nabla f(x_k)$ and the model Hessians may grow. The
+gradient error is relative, $\|\nabla f(x_k) - g_k\| \le \kappa \|g_k\|$ (AM.3b), and the growth of
+the model Hessians is measured by the running curvature $\varphi_k = 1 + \max_{j \le k} \|\nabla^2
+m_j\|$ of (8.4.9). This module proves the model error estimate of Theorem 8.4.2, the very successful
+small-radius iterations of Theorem 8.4.3, the radius lower bound $\Delta_k \ge r / \varphi_k$ of
+Theorem 8.4.4, and the convergence results: $\liminf \|g_k\| = 0$ when
+$\sum_k 1 / \varphi_k = \infty$ (Theorem 8.4.5), stationarity with finitely many successful
+iterations (Theorem 8.4.6), $\|g_k\| \to 0$ and $\|\nabla f(x_k)\| \to 0$ (Theorem 8.4.7), and
+convergence of the whole sequence to a nondegenerate limit point (Theorem 8.4.8). The proofs build
+on the runs of Algorithm 6.1.1 in `NumlibSurface.ConnGouldToint.Chapter06.Section01` and the Cauchy
+decrease AA.1 of `NumlibSurface.ConnGouldToint.Chapter06.Section03`.
+
+## Main definitions
+
+* Equation (8.4.9), `ConnGouldToint.Chapter08.modelHessianNormsThrough`: the set of the model
+  Hessian norms on the model regions up to iteration $k$.
+* Equation (8.4.9), `ConnGouldToint.Chapter08.runningModelCurvature`: the running curvature
+  $\varphi_k$.
+* Equation (8.4.33), `ConnGouldToint.Chapter08.localHessianTolerance`: the tolerance
+  $\min\{1, \sigma, \kappa\} / 4$.
+* Equation (8.4.35), `ConnGouldToint.Chapter08.localEntryRadius`: the entry radius of the local
+  convergence proof.
+
+## Main results
+
+* Equation (8.4.9), `ConnGouldToint.Chapter08.runningModelCurvature_spec`: the running curvature is
+  nondecreasing, at least $1$, and bounds the model Hessians used so far.
+* Lemma 8.4.1, `ConnGouldToint.Chapter08.lemma_8_4_1`: with relative error less than $1$, one
+  gradient sequence tends to zero if and only if the other does.
+* Theorem 8.4.2, `ConnGouldToint.Chapter08.theorem_8_4_2`: the model error is linear in the radius
+  in the gradient error and quadratic in the curvatures.
+* Theorem 8.4.3, `ConnGouldToint.Chapter08.theorem_8_4_3`: a radius small relative to
+  $\|g\| / \varphi$ gives a very successful iteration.
+* Theorem 8.4.4, `ConnGouldToint.Chapter08.theorem_8_4_4`: a uniform lower bound on $\|g_k\|$ gives
+  $\Delta_k \ge r / \varphi_k$.
+* Theorem 8.4.5, `ConnGouldToint.Chapter08.frequently_model_gradient_norm_lt`: if
+  $\sum_k 1 / \varphi_k = \infty$, then $\|g_k\| < \varepsilon$ for infinitely many $k$.
+* Theorem 8.4.5, `ConnGouldToint.Chapter08.theorem_8_4_5`: under the same hypotheses,
+  $\liminf_k \|g_k\| = 0$.
+* Theorem 8.4.6, `ConnGouldToint.Chapter08.theorem_8_4_6`: with finitely many successful iterations,
+  the iterates are eventually constant at a critical point.
+* Theorem 8.4.7, `ConnGouldToint.Chapter08.theorem_8_4_7`: if the scaled objective decreases tend to
+  zero on successful iterations, then $\|g_k\| \to 0$ and $\|\nabla f(x_k)\| \to 0$.
+* Equations (8.4.33), (8.4.35) and (8.4.36),
+  `ConnGouldToint.Chapter08.exists_localHessianEntryBounds`: the radii and bounds that start the
+  local convergence argument exist.
+* Theorem 8.4.8, `ConnGouldToint.Chapter08.theorem_8_4_8`: near a nondegenerate critical limit point
+  with locally convex models, the whole sequence converges.
+
+## Conventions
+
+* A run of Algorithm 6.1.1 is `ConnGouldToint.Chapter06.BTRRun`, with iterates $x_k$, steps $s_k$,
+  radii $\Delta_k$ and models $m_k$. The Cauchy decrease AA.1 is
+  `ConnGouldToint.Chapter06.HasSufficientModelDecrease`, and $\eta_2$ is the threshold for a very
+  successful iteration.
+* The model gradients $g_k$ and the curvatures $\varphi_k$ are given as sequences, and the gradient
+  of $f$ is given as a map `df : E → E` where the statement does not need its relation to $f$.
+
+## Implementation notes
+
+* The running curvature (8.4.9) uses a supremum, which also covers bounded Hessians on model regions
+  where a maximum is not attained. If the Hessian norms are unbounded, the Lean supremum is $0$;
+  `ConnGouldToint.Chapter08.runningModelCurvature_spec` assumes boundedness.
+
+## Deviations from the source
+
+* **Theorem 8.4.8** (correction). Eventual model convexity is required on every trial segment from
+  iterates in a neighborhood of the limit point, not only along the convergent subsequence. See
+  `ConnGouldToint.Chapter08.theorem_8_4_8`.
+-/
 
 open Filter Topology
 open ConnGouldToint.Chapter06
@@ -14,21 +87,32 @@ namespace ConnGouldToint.Chapter08
 
 variable {E : Type*} [NormedAddCommGroup E]
 
+/-! ### The running model curvature -/
+
 section CurvatureEnvelope
 
 variable [NormedSpace ℝ E]
 
-/-- Hessian norm values on the model regions through iteration `k`. -/
+/-- **Equation (8.4.9)** of [conn2000trust], model Hessian values. For models $m_j$ and sets
+$R_j \subseteq E$, this is the set of the norms $\|\nabla^2 m_j(z)\|$ with $j \le k$ and
+$z \in R_j$. -/
 def modelHessianNormsThrough (m : ℕ → E → ℝ) (R : ℕ → Set E) (k : ℕ) : Set ℝ :=
   {a | ∃ j ≤ k, ∃ z ∈ R j, a = ‖fderiv ℝ (fderiv ℝ (m j)) z‖}
 
-/-- The running model curvature (8.4.9). Taking a supremum also
-covers bounded Hessians on regions where a maximum is not attained. -/
+/-- **Equation (8.4.9)** of [conn2000trust]. For models $m_j$ and model regions $R_j$, the **running
+model curvature** is
+$$\varphi_k = 1 + \sup\{\|\nabla^2 m_j(z)\| : j \le k, \ z \in R_j\}.$$
+
+The supremum also covers bounded Hessians on regions where the maximum of the source is not
+attained. If the set of norms is unbounded, the Lean supremum is $0$ and $\varphi_k = 1$. -/
 noncomputable def runningModelCurvature (m : ℕ → E → ℝ) (R : ℕ → Set E) (k : ℕ) : ℝ :=
   1 + sSup (modelHessianNormsThrough m R k)
 
-/-- The running curvature is nondecreasing, at least one, and bounds
-all Hessian norms used up to the current iteration. -/
+/-- **Equation (8.4.9)** of [conn2000trust], monotonicity and upper bound. Let $R_0$ be nonempty,
+and let the set of the Hessian norms through iteration $k$ be bounded above for every $k$. Then
+$\varphi_k$ is nondecreasing in $k$, $\varphi_k \ge 1$ for every $k$, and
+$$\|\nabla^2 m_j(z)\| \le \varphi_k \qquad \text{for all } j \le k \text{ and } z \in R_j.$$
+-/
 theorem runningModelCurvature_spec (m : ℕ → E → ℝ) (R : ℕ → Set E)
     (hne : (R 0).Nonempty) (hb : ∀ k, BddAbove (modelHessianNormsThrough m R k)) :
     Monotone (runningModelCurvature m R) ∧
@@ -53,9 +137,11 @@ theorem runningModelCurvature_spec (m : ℕ → E → ℝ) (R : ℕ → Set E)
 
 end CurvatureEnvelope
 
-/-- Lemma 8.4.1. Relative error smaller than one makes convergence of either
-gradient sequence to zero equivalent to convergence of the other. The index
-set may already be restricted to a subsequence. -/
+/-- **Lemma 8.4.1** of [conn2000trust]. Let $(g_k)$ and $(d_k)$ be sequences in a normed space, let
+$\kappa < 1$, and let $\|d_k - g_k\| \le \kappa \|g_k\|$ for every $k$. Then $g_k \to 0$ if and
+only if $d_k \to 0$.
+
+The index set may already be restricted to a subsequence. -/
 theorem lemma_8_4_1 {g df : ℕ → E} {κ : ℝ} (hκ₁ : κ < 1)
     (herr : ∀ k, ‖df k - g k‖ ≤ κ * ‖g k‖) :
     Tendsto g atTop (𝓝 0) ↔ Tendsto df atTop (𝓝 0) := by
@@ -83,9 +169,19 @@ section ModelAccuracy
 
 variable [NormedSpace ℝ E]
 
-/-- Theorem 8.4.2. The gradient mismatch contributes linearly in the radius,
-while the objective and model curvature contribute quadratically. The bound
-on the derivative mismatch is in the operator norm. -/
+/-! ### Model accuracy and global convergence -/
+
+/-- **Theorem 8.4.2** of [conn2000trust], linear gradient error and quadratic curvature error. Let
+$p$ be a seminorm on $E$, let $\Delta \ge 0$, $\varphi \ge 1$, $\kappa_f, \kappa_g, K, a \ge 0$,
+and let $s$ satisfy $p(s) \le \Delta$ and $\|s\| \le K p(s)$. Let $f$ be $C^2$ with
+$\|\nabla^2 f(z)\| \le \kappa_f$ for every $z$, and let $m$ be twice differentiable with
+$\|\nabla^2 m(z)\| \le \varphi$ at every $z$ with $p(z - x) \le \Delta$. If $m(x) = f(x)$ and
+$\|\nabla f(x) - \nabla m(x)\| \le \kappa_g a$, then
+$$|f(x + s) - m(x + s)| \le \kappa_g K a \Delta + \frac{\kappa_f + 1}{2} K^2 \varphi \Delta^2.$$
+
+The gradient mismatch contributes linearly in the radius, and the curvatures of the objective
+and the model contribute quadratically. The derivative mismatch is measured in the operator
+norm. -/
 theorem theorem_8_4_2 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
     {Δ κf φ κg K a : ℝ} (hΔ : 0 ≤ Δ) (hφ : 1 ≤ φ) (hκf : 0 ≤ κf)
     (hκg : 0 ≤ κg) (hK : 0 ≤ K) (ha : 0 ≤ a)
@@ -129,8 +225,19 @@ theorem theorem_8_4_2 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
 
 end ModelAccuracy
 
-/-- Theorem 8.4.3. Small radius relative to the model gradient and curvature
-forces a very successful iteration under the inexact model error bound. -/
+/-- **Theorem 8.4.3** of [conn2000trust]. Let $\varphi > 0$, $C \ge 1$, $e \ge 0$, $\Delta > 0$ and
+$g \neq 0$, and let $f(x) = m(x)$. Let $s$ satisfy the Cauchy decrease AA.1, $\kappa \in (0, 1)$
+and $\kappa \|g\| \min\{\|g\| / \varphi, \Delta\} \le m(x) - m(x + s)$, and the model error
+bound
+$$|f(x + s) - m(x + s)| \le e \|g\| \Delta + C \varphi \Delta^2.$$
+If
+$$\Delta \le \frac{\kappa \|g\|}{C \varphi} \Big(1 - \eta_2 - \frac{e}{\kappa}\Big)$$
+and $\Delta'$ follows from $\Delta$ by the radius update (6.1.5), then the ratio
+$\rho = (f(x) - f(x + s)) / (m(x) - m(x + s))$ satisfies $\rho \ge \eta_2$, and
+$\Delta' \ge \Delta$.
+
+The ratio is `ConnGouldToint.Chapter06.btrRatio`, and the radius update is
+`ConnGouldToint.Chapter06.BTRRadiusUpdate`. -/
 theorem theorem_8_4_3 {P : BTRParams} {f m : E → ℝ} {x s g : E}
     {φ Δ Δ' κ C e : ℝ} (hφ : 0 < φ) (hC : 1 ≤ C) (he : 0 ≤ e)
     (hΔ : 0 < Δ) (hg : g ≠ 0) (hval : f x = m x)
@@ -171,9 +278,15 @@ theorem theorem_8_4_3 {P : BTRParams} {f m : E → ℝ} {x s g : E}
     simpa only [btrRatio, sub_sub_cancel] using Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
   exact ⟨hρ, hupdate.very_successful hρ⟩
 
-/-- Theorem 8.4.4. A uniform positive lower bound on the model gradient
-prevents the radius from vanishing faster than the inverse running curvature.
-The explicit constant accounts for a possibly smaller initial radius. -/
+/-- **Theorem 8.4.4** of [conn2000trust]. Let a run of Algorithm 6.1.1 for $f$ have models with
+$f(x_k) = m_k(x_k)$, model gradients $g_k$ with $\|g_k\| \ge a > 0$, and a nondecreasing
+sequence $\varphi_k > 0$. Let $C \ge 1$, $e \ge 0$ and $1 - \eta_2 - e / \kappa > 0$. Assume
+that every step satisfies AA.1 with $g_k$, $\varphi_k$, $\Delta_k$ and $\kappa$, and that
+$$|f(x_k + s_k) - m_k(x_k + s_k)| \le e \|g_k\| \Delta_k + C \varphi_k \Delta_k^2.$$
+Then there is $r > 0$ with $\Delta_k \ge r / \varphi_k$ for every $k$.
+
+The constant $r$ in the proof also accounts for an initial radius that is smaller than the
+threshold of Theorem 8.4.3. -/
 theorem theorem_8_4_4 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (φ : ℕ → ℝ) {κ C e a : ℝ} (hC : 1 ≤ C) (he : 0 ≤ e)
@@ -344,8 +457,11 @@ private theorem summable_of_successful_summable {w Δ : ℕ → ℝ} {S : Set �
   funext k
   by_cases hk : k ∈ D <;> simp [hk]
 
-/-- Under the inexact gradient and running-curvature bounds, every positive
-model-gradient threshold is crossed arbitrarily late. -/
+/-- **Theorem 8.4.5** of [conn2000trust], weak convergence under AM.4d and AA.4. Let a run of
+Algorithm 6.1.1 satisfy the hypotheses of `ConnGouldToint.Chapter08.theorem_8_4_4` without the
+lower bound on $\|g_k\|$, let $f$ be bounded below, let $\sum_k 1 / \varphi_k = \infty$, and let
+$\Gamma \ge 1$ satisfy $\Delta_{k+1} \le \Gamma \Delta_k$ on every very successful iteration.
+Then for every $\varepsilon > 0$, $\|g_k\| < \varepsilon$ for infinitely many $k$. -/
 theorem frequently_model_gradient_norm_lt [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (φ : ℕ → ℝ) {κ C e Γ : ℝ} (hC : 1 ≤ C) (he : 0 ≤ e)
@@ -426,7 +542,10 @@ theorem frequently_model_gradient_norm_lt [NormedSpace ℝ E] {P : BTRParams} {f
   · rw [ite_eq_right hk]
     exact (hup.unsuccessful (lt_of_not_ge hk)).2
 
-/-- Theorem 8.4.5. The model gradient norms have zero lower limit. -/
+/-- **Theorem 8.4.5** of [conn2000trust]. Under the hypotheses of
+`ConnGouldToint.Chapter08.frequently_model_gradient_norm_lt`,
+$$\liminf_{k \to \infty} \|g_k\| = 0.$$
+-/
 theorem theorem_8_4_5 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (φ : ℕ → ℝ) {κ C e Γ : ℝ} (hC : 1 ≤ C) (he : 0 ≤ e)
@@ -453,9 +572,13 @@ theorem theorem_8_4_5 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
   have hlim := liminf_le_of_frequently_le ((hfreq _ (half_pos hp)).mono fun _ h ↦ h.le) hb
   linarith
 
-/-- Theorem 8.4.6. With finitely many successes, the run is stationary at a
-first-order critical point. The small model gradients supplied by Theorem
-8.4.5 transfer to the true gradient via AM.3b. -/
+/-- **Theorem 8.4.6** of [conn2000trust]. Let a run of Algorithm 6.1.1 have only finitely many
+successful iterations, let $\kappa \ge 0$, and let the model gradients $g_k$ and a map
+$\nabla f$ satisfy $\|\nabla f(x_k) - g_k\| \le \kappa \|g_k\|$ for every $k$ (AM.3b). If for
+every $\varepsilon > 0$ infinitely many $k$ have $\|g_k\| < \varepsilon$, then there is $x$ such
+that $x_k = x$ for all large $k$ and $\nabla f(x) = 0$.
+
+The small model gradients come from Theorem 8.4.5. -/
 theorem theorem_8_4_6 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (df : E → E) {κ : ℝ} (hκ : 0 ≤ κ)
@@ -486,9 +609,21 @@ theorem theorem_8_4_6 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
   have hlt := (lt_div_iff₀ hκ').mp hk
   nlinarith only [hbound, hrel, hlt]
 
-/-- Theorem 8.4.7. Once the scaled objective drops tend to zero on successful
-iterations, every excursion with gradient bounded away from zero is too short
-to reach the next small gradient. The weak convergence input is Theorem 8.4.5. -/
+/-- **Theorem 8.4.7** of [conn2000trust], convergence under AM.4f. Let a run of Algorithm 6.1.1 for
+$f$ have model gradients $g_k$ and $\varphi_k > 0$, and let $0 \le e < 1$ and $K, L \ge 0$.
+Assume:
+* every step satisfies AA.1 with $g_k$, $\varphi_k$, $\Delta_k$ and $\kappa$, and
+  $\|s_k\| \le K \Delta_k$;
+* $\|\nabla f(x_k) - g_k\| \le e \|g_k\|$ for every $k$, and $\nabla f$ is $L$-Lipschitz;
+* for every $\varepsilon > 0$, $\|g_k\| < \varepsilon$ for infinitely many $k$;
+* $\varphi_k (f(x_k) - f(x_{k+1})) \to 0$ along the successful iterations, and $f$ is bounded
+  below.
+
+Then $\|g_k\| \to 0$ and $\|\nabla f(x_k)\| \to 0$.
+
+Once the scaled objective decreases are small, every excursion with gradient bounded away from
+zero is too short to reach the next small gradient. The weak convergence input is Theorem 8.4.5.
+The gradient is given as a map `df : E → E`. -/
 theorem theorem_8_4_7 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (df : E → E) (φ : ℕ → ℝ) {κ e K L : ℝ}
@@ -617,15 +752,30 @@ theorem theorem_8_4_7 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
   have hgzero := (lemma_8_4_1 he₁ herr).mpr hfzero
   simpa only [sub_zero] using tendsto_iff_norm_sub_tendsto_zero.mp hgzero
 
-/-- The local Hessian variation tolerance (8.4.33). -/
+/-! ### Local convergence -/
+
+/-- **Equation (8.4.33)** of [conn2000trust]. For $\sigma, \kappa \in \mathbb{R}$, the **local
+Hessian tolerance** is
+$$\tau = \frac{\min\{1, \sigma, \kappa\}}{4}.$$
+-/
 noncomputable def localHessianTolerance (σ κ : ℝ) : ℝ := min 1 (min σ κ) / 4
 
-/-- The smaller entry radius (8.4.35) used in the local convergence proof. -/
+/-- **Equation (8.4.35)** of [conn2000trust]. For $\sigma, \kappa, \delta \in \mathbb{R}$, the
+**entry radius** is
+$$\frac{\kappa \delta}{4 \tau + \kappa},$$
+where $\tau$ is the local Hessian tolerance (8.4.33). -/
 noncomputable def localEntryRadius (σ κ δ : ℝ) : ℝ :=
   κ * δ / (4 * localHessianTolerance σ κ + κ)
 
-/-- Continuity and subsequence convergence give the objective Hessian,
-iterate and gradient bounds used to enter the local regime. -/
+/-- **Equations (8.4.33), (8.4.35) and (8.4.36)** of [conn2000trust]. Let $H : E \to F$ be
+continuous at $x$, let $y_i \to x$ and $g_i \to 0$, and let $\sigma, \kappa > 0$. Let $\tau$ be
+the tolerance (8.4.33) and $r(\delta)$ the entry radius (8.4.35). Then there is $\delta > 0$
+such that $\|H(z) - H(x)\| \le \tau$ whenever $\|z - x\| \le \delta$, $r(\delta) > 0$,
+$\tau \, r(\delta) < \delta$, and eventually
+$$\|y_i - x\| \le r(\delta) \qquad \text{and} \qquad \|g_i\| \le \tau \, r(\delta).$$
+
+With $H = \nabla^2 f$, these are the bounds on the objective Hessian, the iterates and the
+gradients that start the local regime. -/
 theorem exists_localHessianEntryBounds {F : Type*} [NormedAddCommGroup F]
     {H : E → F} {x : E} {y g : ℕ → E} {σ κ : ℝ}
     (hH : ContinuousAt H x) (hy : Tendsto y atTop (𝓝 x)) (hg : Tendsto g atTop (𝓝 0))
@@ -655,10 +805,25 @@ theorem exists_localHessianEntryBounds {F : Type*} [NormedAddCommGroup F]
     have h₂ := (Metric.tendsto_nhds.mp hg (a * b) (mul_pos ha hb)).mono fun i hi ↦ hi.le
     simpa only [dist_eq_norm, sub_zero] using h₁.and h₂
 
-/-- Corrected Theorem 8.4.8. Near the nondegenerate limit point, eventual model
-convexity must control every trial segment used in the neighborhood trapping
-argument. Convexity only along the convergent subsequence supplies no such
-control at the intervening iterates. The gradient convergence is Theorem 8.4.7. -/
+/-- **Theorem 8.4.8** of [conn2000trust], corrected. Let a run of Algorithm 6.1.1 for a $C^2$
+function $f$ have $x_{j(i)} \to x_0$ along an index sequence $j(i) \to \infty$, with
+$\nabla f(x_0) = 0$ and $\|\nabla f(x_k)\| \to 0$. Let $\sigma, R, \mu > 0$ and $e \ge 0$, and
+assume:
+* $\|\nabla^2 f(x_0) v\| \ge \sigma \|v\|$ for every $v$;
+* each model $m_k$ is twice differentiable on the segment $[x_k, x_k + s_k]$, and $\|\nabla
+  m_k(x_k) - \nabla f(x_k)\| \le e \|\nabla f(x_k)\|$;
+* eventually, if $\|x_k - x_0\| < R$, then $\nabla^2 m_k(z)(s_k, s_k) \ge \mu \|s_k\|^2$ for
+  every $z \in [x_k, x_k + s_k]$.
+
+Then $x_k \to x_0$.
+
+**Correction.** The source assumes eventual model convexity only along the convergent
+subsequence. The neighborhood trapping argument needs control of every trial segment from an
+iterate near $x_0$, and convexity along the subsequence gives no such control at the
+intermediate iterates. The statement requires the curvature bound on all trial segments from
+iterates in the ball $\|x_k - x_0\| < R$.
+
+The gradient convergence $\|\nabla f(x_k)\| \to 0$ comes from Theorem 8.4.7. -/
 theorem theorem_8_4_8 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     {x₀ : E} {j : ℕ → ℕ} (hj : Tendsto j atTop atTop)

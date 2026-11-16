@@ -4,22 +4,86 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.ConnGouldToint.Chapter13.Section06
 
-/-! # Affine slices of the positive orthant -/
+/-!
+# Conn, Gould and Toint, Section 13.10: Affine slices of the positive orthant
+
+This module formalizes the barrier trial test and the distance comparisons of [conn2000trust],
+Section 13.10, for a feasible set that is the intersection of the positive orthant with an affine
+subspace. Algorithm 13.10.1 keeps the step in the nullspace of the equality constraints and applies
+a fraction-to-boundary test. The analysis compares two distances of a point $x$ to the boundary: the
+ambient distance $\min_i x_i$ to the boundary of the orthant, and the relative distance to the
+boundary of the affine slice.
+
+The slice is described in orthonormal coordinates on the slice. For each bound $x_i \ge 0$, the
+weight $w_i \in [0, 1]$ is the length of the projection of the coordinate normal $e_i$ onto the
+equality nullspace. A coordinate with $w_i \le 0$ is constant on the slice, $x_i = c_i$ with
+$c_i > 0$, and gives no boundary hyperplane. For the other coordinates the distance in the slice to
+the hyperplane $x_i = 0$ is $x_i / w_i$, by (13.10.13), and the relative distance is the minimum of
+these quotients. Lemma 13.10.1 shows that the two distances are comparable on the whole slice, and
+Theorem 13.10.2 transfers an ambient fraction-to-boundary test to the relative distance.
+
+## Main definitions
+
+* Algorithm 13.10.1, `ConnGouldToint.Chapter13.AffineOrthantBarrierTrial`: the trial test, with the
+  step in the equality nullspace and a strictly feasible trial point.
+* Equation (13.10.8), `ConnGouldToint.Chapter13.affineBarrierAmbientDistance`: the ambient distance
+  $\min_i x_i$.
+* Equations (13.10.8) and (13.10.10), `ConnGouldToint.Chapter13.affineBarrierSliceDistance`: the
+  relative distance $\min_{w_i > 0} x_i / w_i$.
+* Equation (13.10.15), `ConnGouldToint.Chapter13.affineBarrierNormalFactor`: the least positive
+  weight.
+
+## Main results
+
+* Equations (13.10.10)–(13.10.13), `ConnGouldToint.Chapter13.affineBarrier_hyperplane_distance`: the
+  distance to a hyperplane is the slack divided by the length of the normal.
+* Equation (13.10.15), `ConnGouldToint.Chapter13.affineBarrier_normalFactor_mul_sliceDistance_le`:
+  the least positive weight times the relative distance is at most the ambient distance, when a
+  movable bound attains the ambient distance.
+* Lemma 13.10.1, `ConnGouldToint.Chapter13.lemma_13_10_1`: the ambient distance is at most the
+  relative distance, and at least a fixed multiple of $\min\{1, \text{relative distance}\}$.
+* Theorem 13.10.2, `ConnGouldToint.Chapter13.theorem_13_10_2`: an ambient fraction-to-boundary test
+  implies a relative one when the relative distance is at most one.
+
+## Implementation notes
+
+* Points of the slice are vectors $x \in \mathbb{R}^\iota$ of bound slacks, with the coordinates
+  $w_i \le 0$ fixed to $c_i$. The weights are hypotheses $w_i \le 1$, not projections of a given
+  matrix.
+
+## Deviations from the source
+
+* **Algorithm 13.10.1** (correction). The printed test compares unsigned distances to the boundary,
+  which a point outside the feasible set can pass. The trial point must also be strictly feasible.
+  See `ConnGouldToint.Chapter13.AffineOrthantBarrierTrial`.
+-/
 
 open Metric Set
 
 namespace ConnGouldToint.Chapter13
 
-/-- Algorithm 13.10.1 restricts the step to the equality nullspace and checks
-the orthant clearance. Feasibility is explicit because the unsigned distance
-also measures distances of exterior points. -/
+/-- **Algorithm 13.10.1** of [conn2000trust], trial test. Let $A : E \to F$ be linear, let
+$C \subseteq E$ be the feasible set, and let $\sigma$, $\Delta$, $x$ and $s$ be the
+fraction-to-boundary parameter, the radius, the iterate and the step. The step $s$ is an
+**admissible trial** if $\|s\| \le \Delta$, $As = 0$, $x + s$ lies in the interior of $C$,
+$$\sigma \operatorname{dist}(x, \partial C) \le \operatorname{dist}(x + s, \partial C),$$
+and $s$ satisfies the given sufficient decrease condition.
+
+**Correction.** The source tests only the distance inequality. The distance to the boundary is
+unsigned, so a point outside $C$ can also satisfy it. The definition therefore requires that
+$x + s$ lies in the interior of $C$.
+
+The interiority and distance conditions are `ConnGouldToint.Chapter13.BarrierAdmissibleTrial`. -/
 def AffineOrthantBarrierTrial {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [AddCommGroup F] [Module ℝ F] (A : E →ₗ[ℝ] F) (C : Set E) (σ Δ : ℝ)
     (x s : E) (sufficient : E → Prop) : Prop :=
   ‖s‖ ≤ Δ ∧ A s = 0 ∧ BarrierAdmissibleTrial C σ x (x + s) ∧ sufficient s
 
-/-- The distance to an affine hyperplane of nonzero normal `n` is the
-positive slack divided by the normal length, as in (13.10.13). -/
+/-- **Equations (13.10.10)–(13.10.13)** of [conn2000trust]. Let $E$ be a real inner product space,
+$n \in E$ nonzero, $b \in \mathbb{R}$, and let $x \in E$ satisfy $b + \langle n, x \rangle > 0$.
+Then the distance from $x$ to the hyperplane $\{y : b + \langle n, y \rangle = 0\}$ is
+$$\frac{b + \langle n, x \rangle}{\|n\|}.$$
+-/
 theorem affineBarrier_hyperplane_distance {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {n x : E} {b : ℝ}
     (hn : n ≠ 0) (hx : 0 < b + inner ℝ n x) :
@@ -51,7 +115,11 @@ theorem affineBarrier_hyperplane_distance {E : Type*} [NormedAddCommGroup E]
 
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
 
-/-- The ambient Euclidean distance to the orthant boundary in positive coordinates. -/
+/-- **Equation (13.10.8)** of [conn2000trust], ambient distance. For $x \in \mathbb{R}^\iota$ with
+$\iota$ nonempty, the **ambient distance** is $\min_i x_i$.
+
+For $x > 0$ this is the Euclidean distance from $x$ to the boundary of the positive orthant. The
+definition is the minimum itself. -/
 noncomputable def affineBarrierAmbientDistance (x : ι → ℝ) : ℝ :=
   Finset.univ.inf' Finset.univ_nonempty x
 
@@ -65,18 +133,29 @@ private theorem movableBounds_nonempty (w : ι → ℝ) (hw : ∃ i, 0 < w i) :
   obtain ⟨i, hi⟩ := hw
   exact ⟨i, by simp [movableBounds, hi]⟩
 
-/-- The minimum in (13.10.10), after evaluating each hyperplane distance
-as in (13.10.13). Constant coordinates give no hyperplane in the slice. -/
+/-- **Equations (13.10.8) and (13.10.10)** of [conn2000trust], relative distance. Let
+$w \in \mathbb{R}^\iota$ have at least one positive entry. The **relative distance** of $x$ to
+the boundary of the slice is
+$$\min_{i : w_i > 0} \frac{x_i}{w_i},$$
+the minimum in (13.10.10) after each hyperplane distance is evaluated by (13.10.13).
+
+A coordinate with $w_i \le 0$ is constant on the slice and gives no hyperplane, so it does not
+enter the minimum. -/
 noncomputable def affineBarrierSliceDistance (w x : ι → ℝ) (hw : ∃ i, 0 < w i) : ℝ :=
   (movableBounds w).inf' (movableBounds_nonempty w hw) fun i ↦ x i / w i
 
-/-- The geometric factor in (13.10.15) is the least positive length of a
-coordinate normal projected onto the equality nullspace. -/
+/-- **Equation (13.10.15)** of [conn2000trust], the geometric factor. Let $w \in \mathbb{R}^\iota$
+have at least one positive entry. The **normal factor** is $\omega = \min_{i : w_i > 0} w_i$,
+the least positive length of a coordinate normal projected onto the equality nullspace. -/
 noncomputable def affineBarrierNormalFactor (w : ι → ℝ) (hw : ∃ i, 0 < w i) : ℝ :=
   (movableBounds w).inf' (movableBounds_nonempty w hw) w
 
-/-- If a movable bound attains the ambient distance, (13.10.15) gives the
-linear lower comparison with the relative distance. -/
+/-- **Equation (13.10.15)** of [conn2000trust]. Let $w, x \in \mathbb{R}^\iota$ with $x > 0$,
+$w_i \le 1$ for all $i$ and $w_i > 0$ for some $i$. Suppose that some $i$ with $w_i > 0$ attains
+the ambient distance, $\min_j x_j = x_i$. Then the normal factor satisfies $0 < \omega \le 1$
+and
+$$\omega \min_{j : w_j > 0} \frac{x_j}{w_j} \le \min_j x_j.$$
+-/
 theorem affineBarrier_normalFactor_mul_sliceDistance_le (w x : ι → ℝ) (hw : ∃ i, 0 < w i)
     (hx : ∀ i, 0 < x i) (hunit : ∀ i, w i ≤ 1)
     (hmovable : ∃ i, 0 < w i ∧ affineBarrierAmbientDistance x = x i) :
@@ -101,10 +180,15 @@ theorem affineBarrier_normalFactor_mul_sliceDistance_le (w x : ι → ℝ) (hw :
     _ = x i := mul_div_cancel₀ _ hi.ne'
     _ = _ := hdist.symm
 
-/-- Lemma 13.10.1 in orthonormal slice coordinates. The weights are the
-projected normal lengths, so they are at most one. The distance comparison
-is uniform over the entire positive slice. At least one bound must have a
-nonzero projected normal for the relative boundary to be nonempty. -/
+/-- **Lemma 13.10.1** of [conn2000trust]. Let $w, c \in \mathbb{R}^\iota$ with $w_i \le 1$ for all
+$i$, $w_i > 0$ for some $i$, and $c_i > 0$ whenever $w_i \le 0$. Write $d_A(x) = \min_i x_i$ and
+$d_S(x) = \min_{w_i > 0} x_i / w_i$. There is $\sigma \in (0, 1)$ such that every $x > 0$ with
+$x_i = c_i$ whenever $w_i \le 0$ satisfies
+$$d_A(x) \le d_S(x) \quad\text{and}\quad \sigma \min\{1, d_S(x)\} \le d_A(x).$$
+
+The lemma is stated in orthonormal coordinates on the slice. The weights $w_i$ are the lengths
+of the projected normals, so they are at most one. The comparison is uniform over the whole
+positive slice. A positive weight is needed for the boundary of the slice to be nonempty. -/
 theorem lemma_13_10_1 (w c : ι → ℝ) (hw : ∃ i, 0 < w i)
     (hunit : ∀ i, w i ≤ 1) (hc : ∀ i, w i ≤ 0 → 0 < c i) :
     ∃ σ ∈ Ioo (0 : ℝ) 1, ∀ x : ι → ℝ, (∀ i, 0 < x i) →
@@ -148,9 +232,13 @@ theorem lemma_13_10_1 (w c : ι → ℝ) (hw : ∃ i, 0 < w i)
       exact ((mul_le_mul_of_nonneg_left (min_le_left _ _) hσ.1.le).trans_eq
         (mul_one _)).trans (hσc.trans_eq (hconst i (le_of_not_gt hp)).symm)
 
-/-- Theorem 13.10.2. An ambient fraction-to-boundary test implies a
-relative fraction-to-boundary test whenever the current relative distance
-is at most one. -/
+/-- **Theorem 13.10.2** of [conn2000trust]. Let $w$, $c$, $d_A$ and $d_S$ be as in Lemma 13.10.1,
+and let $\sigma \in (0, 1)$. There is $\theta \in (0, 1)$ with the following property. Let
+$x, y > 0$ satisfy $x_i = y_i = c_i$ whenever $w_i \le 0$. If $\sigma d_A(x) \le d_A(y)$ and
+$d_S(x) \le 1$, then
+$$\theta\, d_S(x) \le d_S(y).$$
+So an ambient fraction-to-boundary test implies a relative one whenever the current relative
+distance is at most one. -/
 theorem theorem_13_10_2 (w c : ι → ℝ) (hw : ∃ i, 0 < w i)
     (hunit : ∀ i, w i ≤ 1) (hc : ∀ i, w i ≤ 0 → 0 < c i)
     {σ : ℝ} (hσ : σ ∈ Ioo (0 : ℝ) 1) :

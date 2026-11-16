@@ -5,13 +5,56 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter15.Section03
 import NumlibSurface.ConnGouldToint.Chapter15.Section04
 
-/-! # Full and partial SQP corrections
+/-!
+# Conn, Gould and Toint, Section 15.4: Full and partial second-order corrections
 
-The small-step estimates expose the Taylor remainders and uniform
-bounds used in the proof. The fast rate is stated for a trapped run
-whose multiplier estimates converge. The second-order result requires
-that the run eventually remain in every neighborhood of its finite
-cluster set, as follows for a relatively compact run.
+This module formalizes the local estimates of Section 15.4 of [conn2000trust] for SQP iterations
+with second-order corrections. A full correction or a partial correction is added to an SQP trial
+step $s_k$ when the trial alone fails the merit test. Lemmas 15.4.13 and 15.4.14 show that the merit
+value at the corrected trial agrees with the model value up to $o(\|s_k\|^2)$, for the full and for
+the partial correction. Theorem 15.4.15 shows that a run whose accepted step is eventually the SQP
+trial or its full correction, and whose multiplier estimates converge, converges Q-superlinearly,
+and Q-quadratically when the multiplier error is of the order of the primal error. A last result
+supplies the tail hypothesis of Theorem 15.4.16 for a run that eventually stays in a compact set.
+The estimates take the Taylor and residual bounds of the proofs as hypotheses, in the quantitative
+form of `NumlibSurface.ConnGouldToint.Chapter15.Section03`.
+
+## Main results
+
+* Lemma 15.4.13, `ConnGouldToint.Chapter15.lemma_15_4_13`: a merit error of order (primal
+  error)$^2 \times$ (joint error) is $o(\|s_k\|^2)$ when the joint error tends to zero and the
+  primal error is $O(\|s_k\|)$.
+* Lemma 15.4.14, `ConnGouldToint.Chapter15.lemma_15_4_14`: the merit error at a partial correction
+  is at most $(L + T + B\|y - y^{PC}\| + \sigma R) r^2$.
+* Lemma 15.4.14 and equation (15.4.84),
+  `ConnGouldToint.Chapter15.sqp_partialCorrection_eventually_small_error`: a bound $c_k \|s_k\|^2$
+  with $c_k \to 0$ is $o(\|s_k\|^2)$.
+* Theorem 15.4.15, `ConnGouldToint.Chapter15.theorem_15_4_15`: Q-superlinear convergence, and
+  Q-quadratic convergence when the multiplier error is $O(\|x_k - x_*\|)$.
+* Proof of Theorem 15.4.16, `ConnGouldToint.Chapter15.sqp_curvature_tail_of_compact`: a function
+  that is continuous at the cluster points and below $a$ there is eventually at most $a$ along a run
+  that eventually stays in a compact set.
+
+## Implementation notes
+
+* The sequences of merit values, model values and errors are real sequences indexed by `ℕ`. Their
+  relation to an algorithm run is not part of the statements. The convergence rates are
+  `ConnGouldToint.Chapter03.ConvergesQSuperlinearly` and
+  `ConnGouldToint.Chapter03.ConvergesQQuadratically`.
+* `ConnGouldToint.Chapter15.sqp_curvature_tail_of_compact` gives the hypothesis of
+  `ConnGouldToint.Chapter15.theorem_15_4_16` that the run is eventually controlled by its cluster
+  set. Only continuity of the curvature at the cluster points is needed.
+
+## Deviations from the source
+
+* **Lemma 15.4.13** (reading). The bound of Lemma 15.3.6 and the comparison of the primal error with
+  the step length are explicit hypotheses. See `ConnGouldToint.Chapter15.lemma_15_4_13`.
+* **Lemma 15.4.14** (reading). The two Taylor remainders, the residual bounds and the two correction
+  systems are explicit hypotheses. See `ConnGouldToint.Chapter15.lemma_15_4_14`.
+* **Theorem 15.4.15** (reading). The theorem is stated for a run that enters a small neighborhood
+  late enough, whose accepted step there is the SQP trial or its full correction with explicit
+  standard-step estimates, and whose multiplier estimates converge. See
+  `ConnGouldToint.Chapter15.theorem_15_4_15`.
 -/
 
 open Filter Topology Asymptotics
@@ -23,9 +66,21 @@ variable {E Z : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [NormedAddCommGroup Z] [InnerProductSpace ℝ Z]
 
 omit [InnerProductSpace ℝ E] in
-/-- Lemma 15.4.13. The full-correction estimate from Lemma 15.3.6
-is little-o in the squared step length when the joint error vanishes
-and the primal error is comparable to the standard step length. -/
+/-- **Lemma 15.4.13** of [conn2000trust]. Let $(s_k)$ be a sequence in a normed group $E$, and let
+$(\varphi_k)$, $(m_k)$, $(e_k)$ and $(e^x_k)$ be real sequences with $e_k \ge 0$, $e^x_k \ge 0$
+and $e_k \to 0$. Let $C \ge 0$ and $K$ be real numbers. Suppose that for all sufficiently large
+$k$,
+$$e^x_k \le K \|s_k\| \quad \text{and} \quad |\varphi_k - m_k| \le C (e^x_k)^2 e_k.$$
+Then for every $\varepsilon > 0$ and all sufficiently large $k$,
+$|\varphi_k - m_k| \le \varepsilon \|s_k\|^2$.
+
+**Reading.** The statement isolates the asymptotic step of the source. The full-correction
+estimate of Lemma 15.3.6 and the comparison of the primal error with the step length enter as
+hypotheses.
+
+In the application, $\varphi_k$ is the merit value at the fully corrected trial, $m_k$ the model
+value, $e^x_k$ the primal error and $e_k$ the joint primal-dual error. The second bound is the
+conclusion of `ConnGouldToint.Chapter15.lemma_15_3_6`. -/
 theorem lemma_15_4_13 (m φ e ex : ℕ → ℝ) (s : ℕ → E) {C K : ℝ}
     (hC : 0 ≤ C) (hex : ∀ k, 0 ≤ ex k) (he : ∀ k, 0 ≤ e k)
     (hlim : Tendsto e atTop (𝓝 0))
@@ -46,11 +101,28 @@ theorem lemma_15_4_13 (m φ e ex : ℕ → ℝ) (s : ℕ → E) {C K : ℝ}
     _ = (C * K ^ 2 * e k) * ‖s k‖ ^ 2 := by ring
     _ ≤ _ := mul_le_mul_of_nonneg_right hsmall.le (sq_nonneg _)
 
-/-- Lemma 15.4.14. The two partial-correction KKT systems cancel
-the leading linear objective term. The remaining error comes from
-the two Taylor remainders, the multiplier mismatch, and the corrected
-constraint residual. This bound is little-o in the squared step
-length when the respective coefficients tend to zero. -/
+/-- **Lemma 15.4.14** of [conn2000trust]. Let $E$ and $Z$ be real inner product spaces, let
+$H : E \to E$ be a symmetric continuous linear map and $A : E \to Z$ a continuous linear map.
+Let $g, u, v \in E$, $c_s, c_z, y, y^{PC} \in Z$, and let $m, f_1, f_2, \sigma, r, B, L, T, R$
+be real numbers with $\sigma \ge 0$. Suppose that $u$ solves the partial-correction system and
+$v$ solves the composite system:
+$$Hu = A^* \ell, \quad Au = -c_s \quad \text{for some } \ell \in Z, \qquad g + Hv = A^* y^{PC},
+  \quad Av = 0.$$
+Suppose also that
+$$\|c_s\| \le B r^2, \quad \|c_z\| \le R r^2, \quad |f_1 - \langle y, c_s\rangle - m| \le L r^2,
+  \quad |f_2 - f_1 - \langle g, u\rangle| \le T r^2.$$
+Then
+$$|f_2 + \sigma \|c_z\| - m| \le (L + T + B \|y - y^{PC}\| + \sigma R)\, r^2.$$
+
+**Reading.** The two Taylor remainders, the residual bounds and the two correction systems of
+the proof are explicit hypotheses.
+
+The two systems cancel the linear term $\langle g, u\rangle$ up to the multiplier mismatch
+$\|y - y^{PC}\|$. In the application, $f_2 + \sigma\|c_z\|$ is the merit value at the partially
+corrected trial, $m$ is the model value and $r$ is the step length, so the bound is $o(r^2)$
+when the coefficients tend to zero. The adjoint equations are stated weakly:
+$\langle Hu, w\rangle = \langle \ell, Aw\rangle$ and $\langle g + Hv, w\rangle = \langle y^{PC},
+Aw\rangle$ for all $w \in E$. -/
 theorem lemma_15_4_14 (g u v : E) (H : E →L[ℝ] E) (A : E →L[ℝ] Z)
     (cs cz y yPC : Z) (m f₁ f₂ : ℝ) {σ r B L T R : ℝ}
     (hσ : 0 ≤ σ) (hH : H.toLinearMap.IsSymmetric)
@@ -80,11 +152,28 @@ theorem lemma_15_4_14 (g u v : E) (H : E →L[ℝ] E) (A : E →L[ℝ] Z)
       ((abs_add_le _ _).trans (add_le_add hmodel hTaylor)) hinner)) hp)).trans_eq (by ring)
 
 omit [InnerProductSpace ℝ E] in
-/-- Theorem 15.4.15, local rate for the full-correction algorithm.
-The standard-step estimates apply when a sufficiently late iterate
-lies in the local neighborhood. The accepted successor is the SQP
-trial or its full correction. A late entry into the neighborhood
-and convergence of the multiplier estimates suffice to trap the tail. -/
+/-- **Theorem 15.4.15** of [conn2000trust]. Let $(x_k)$, $(s_k)$ and $(u_k)$ be sequences in a
+normed group $E$, let $x_* \in E$, and let $(e^y_k)$ be a sequence of nonnegative reals with
+$e^y_k \to 0$. Let $M, D \ge 0$ and $r > 0$ satisfy $2r(M + D) \le 1/2$. Suppose that
+$\|x_k - x_*\| < r$ for infinitely many $k$, and that for all sufficiently large $k$ with
+$\|x_k - x_*\| < r$:
+
+* $x_{k+1} = x_k + s_k$ or $x_{k+1} = x_k + s_k + u_k$;
+* $\|x_k + s_k - x_*\| \le M (\|x_k - x_*\| + e^y_k) \|x_k - x_*\|$;
+* $\|u_k\| \le D (\|x_k - x_*\| + e^y_k) \|x_k - x_*\|$.
+
+Then $x_k \to x_*$ Q-superlinearly. If moreover there is $C \ge 0$ with
+$e^y_k \le C \|x_k - x_*\|$ for all sufficiently large $k$, then $x_k \to x_*$ Q-quadratically.
+
+**Reading.** The source states the local rate for the algorithm with full corrections. Here the
+standing local assumptions are explicit: the run enters the neighborhood late enough, the
+accepted step there is the SQP trial or its full correction, the trial and the correction
+satisfy the standard-step estimates, and the multiplier errors converge. These conditions trap
+the tail of the run in the neighborhood.
+
+The sequence $s_k$ is the SQP trial step, $u_k$ the full correction and $e^y_k$ the multiplier
+error. The rates are `ConnGouldToint.Chapter03.ConvergesQSuperlinearly` and
+`ConnGouldToint.Chapter03.ConvergesQQuadratically`. -/
 theorem theorem_15_4_15 (x s u : ℕ → E) (xstar : E) (ey : ℕ → ℝ)
     {M D r : ℝ} (hM : 0 ≤ M) (hD : 0 ≤ D) (hr : 0 < r)
     (hey : ∀ k, 0 ≤ ey k) (hylim : Tendsto ey atTop (𝓝 0))
@@ -165,9 +254,15 @@ theorem theorem_15_4_15 (x s u : ℕ → E) (xstar : E) (ey : ℕ → ℝ)
       _ = (M + D) * (1 + C) * e k ^ 2 := by ring
 
 
-/-- Relative compactness supplies the cluster-set coverage needed by
-Theorem 15.4.16. Only continuity of the reduced curvature at the
-cluster points is needed. -/
+/-- A compactness lemma for the proof of Theorem 15.4.16 of [conn2000trust]. Let $X$ be a
+topological space, $(z_k)$ a sequence in $X$, $(z^*_i)_{i \in \iota}$ a family of points of $X$
+and $\kappa : X \to \mathbb{R}$. Suppose that $z_k$ lies in a compact set $U$ for all
+sufficiently large $k$, that every cluster point of $(z_k)$ in $U$ is one of the points $z^*_i$,
+that $\kappa$ is continuous at each $z^*_i$, and that $\kappa(z^*_i) < a$ for all $i$. Then
+$\kappa(z_k) \le a$ for all sufficiently large $k$.
+
+This gives the tail hypothesis of `ConnGouldToint.Chapter15.theorem_15_4_16` for a relatively
+compact run. Only continuity of the reduced curvature at the cluster points is needed. -/
 theorem sqp_curvature_tail_of_compact {X ι : Type*} [TopologicalSpace X]
     (z : ℕ → X) (zstar : ι → X) (curvature : X → ℝ) {U : Set X}
     (hU : IsCompact U) (hmem : ∀ᶠ k in atTop, z k ∈ U)
@@ -183,9 +278,14 @@ theorem sqp_curvature_tail_of_compact {X ι : Type*} [TopologicalSpace X]
   exact (ht.eventually hn).mono (fun _ h => h.le)
 
 omit [InnerProductSpace ℝ E] in
-/-- If the coefficient in the partial-correction bound tends to zero,
-the accepted corrected merit agrees with the model to little-o of
-the squared step length, as in (15.4.84). -/
+/-- **Lemma 15.4.14** of [conn2000trust], asymptotic form, as in (15.4.84). Let $(s_k)$ be a
+sequence in a normed group $E$, and let $(\varphi_k)$, $(m_k)$ and $(c_k)$ be real sequences
+with $c_k \to 0$. If $|\varphi_k - m_k| \le c_k \|s_k\|^2$ for all sufficiently large $k$, then
+for every $\varepsilon > 0$ and all sufficiently large $k$,
+$|\varphi_k - m_k| \le \varepsilon \|s_k\|^2$.
+
+In the application, $\varphi_k$ is the merit value at the accepted partially corrected trial,
+$m_k$ the model value, and $c_k$ the coefficient of `ConnGouldToint.Chapter15.lemma_15_4_14`. -/
 theorem sqp_partialCorrection_eventually_small_error (φ m coeff : ℕ → ℝ) (s : ℕ → E)
     (hcoeff : Tendsto coeff atTop (𝓝 0))
     (herr : ∀ᶠ k in atTop, |φ k - m k| ≤ coeff k * ‖s k‖ ^ 2) :

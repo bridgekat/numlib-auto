@@ -5,44 +5,131 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
 import NumlibSurface.ConnGouldToint.Chapter09.Section02
 
-/-! # Trust-region iterations with an objective-improving correction -/
+/-!
+# Conn, Gould and Toint, Section 10.4: Iterations with an objective-improving correction
+
+This module formalizes two variants of the reduction ratio from Section 10.4 of [conn2000trust]. In
+the first variant (Algorithm 10.4.1), a trust-region step $s_k$ from $x_k$ is followed by a
+correction $c_k$ that does not increase the objective, $f(x_k + s_k + c_k) \le f(x_k + s_k)$. The
+predicted decrease is augmented by the exact improvement of the correction,
+$$\delta_k = m_k(x_k) - m_k(x_k + s_k) + f(x_k + s_k) - f(x_k + s_k + c_k),$$
+and the ratio is $\rho_k = (f(x_k) - f(x_k + s_k + c_k)) / \delta_k$. The improvement of the
+correction then cancels from the ratio error, so that the usual radius argument of Chapter 6 gives
+very successful iterations at small radii (Theorem 10.4.1), a small gradient infinitely often
+(Theorem 10.4.2), and convergence of the gradients to zero (Theorem 10.4.3). In the second variant,
+a quadratic term $\frac12 \langle y - x, M (y - x) \rangle$ is added to the model and subtracted
+from the actual reduction, and it cancels from the ratio error (10.4.16).
+
+The proofs use the parameters and the radius update (6.1.5) of
+`NumlibSurface.ConnGouldToint.Chapter06.Section01`.
+
+## Main definitions
+
+* Equations (10.4.1)–(10.4.4), `ConnGouldToint.Chapter10.magicalStepDecrease`: the augmented
+  predicted decrease $\delta_k$.
+* Equation (10.4.2), `ConnGouldToint.Chapter10.magicalStepRatio`: the reduction ratio $\rho_k$ of
+  the corrected step.
+* Algorithm 10.4.1, `ConnGouldToint.Chapter10.MagicalStepRun`: an infinite run of the trust-region
+  method with corrections.
+* Equation (10.4.12), `ConnGouldToint.Chapter10.quadraticAugmentedModel`: the model with an added
+  quadratic term.
+* Equation (10.4.15), `ConnGouldToint.Chapter10.quadraticAugmentedRatio`: the compensated reduction
+  ratio.
+* Equation (10.4.17), `ConnGouldToint.Chapter10.quadraticAugmentedError`: the difference between the
+  actual and the predicted reduction of the base model.
+
+## Main results
+
+* Equations (10.4.3)–(10.4.5), `ConnGouldToint.Chapter10.magicalStepRatio_sub_one`: $|\rho_k - 1| =
+  |m_k(x_k + s_k) - f(x_k + s_k)| / \delta_k$.
+* Theorem 10.4.1, `ConnGouldToint.Chapter10.theorem_10_4_1`: a sufficiently small radius gives a
+  very successful iteration, and the radius does not decrease.
+* Theorem 10.4.2, `ConnGouldToint.Chapter10.theorem_10_4_2`: the gradient norm is smaller than any
+  $\varepsilon > 0$ infinitely often.
+* Theorem 10.4.3, `ConnGouldToint.Chapter10.theorem_10_4_3`: if the steps and corrections are
+  bounded by multiples of the radius, then $\|\nabla f(x_k)\| \to 0$.
+* Equation (10.4.16), `ConnGouldToint.Chapter10.quadraticAugmentedRatio_sub_one`: the error of the
+  compensated ratio is the error (10.4.17) divided by the decrease of the augmented model.
+* Equation (10.4.17), `ConnGouldToint.Chapter10.quadraticAugmentedError_eq_trial_error`: under
+  agreement at the center, the error (10.4.17) is the model error at the trial point.
+
+## Deviations from the source
+
+* **Theorem 10.4.1** (correction). The lower bound (10.4.6) is assumed for the augmented decrease
+  $\delta_k$, not for the decrease of the original model. See
+  `ConnGouldToint.Chapter10.theorem_10_4_1`.
+* **Equation (10.4.12)** (reading). The quadratic term uses the displacement of the argument from
+  the center, as in (10.4.15), so it cancels from the ratio error (10.4.16). See
+  `ConnGouldToint.Chapter10.quadraticAugmentedModel`.
+-/
 
 open Filter Topology
 open ConnGouldToint.Chapter06
 
 namespace ConnGouldToint.Chapter10
 
+/-! ### Corrected steps -/
+
 section MagicalSteps
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- The predicted decrease augmented by the exact improvement from the correction. -/
+/-- **Equations (10.4.1)–(10.4.4)** of [conn2000trust]. For an objective $f$, a model $m$, a point
+$x$, a step $s$ and a correction $c$, the **augmented predicted decrease** is
+$$\delta(x, s, c) = m(x) - m(x + s) + \bigl(f(x + s) - f(x + s + c)\bigr),$$
+the decrease of the model along $s$ plus the exact improvement of the objective from the
+correction. -/
 def magicalStepDecrease (f m : E → ℝ) (x s c : E) : ℝ :=
   m x - m (x + s) + (f (x + s) - f (x + s + c))
 
-/-- The acceptance ratio (10.4.2) for the composite step. -/
+/-- **Equation (10.4.2)** of [conn2000trust]. The **reduction ratio of the corrected step** is
+$$\rho(x, s, c) = \frac{f(x) - f(x + s + c)}{\delta(x, s, c)},$$
+with $\delta$ the augmented predicted decrease `ConnGouldToint.Chapter10.magicalStepDecrease`.
+
+Division is the Lean division, so the ratio is $0$ when $\delta(x, s, c) = 0$. -/
 noncomputable def magicalStepRatio (f m : E → ℝ) (x s c : E) : ℝ :=
   (f x - f (x + s + c)) / magicalStepDecrease f m x s c
 
-/-- An infinite run of Algorithm 10.4.1. The norm bound on the original
-trial and the model decrease requirement are supplied separately. -/
+/-- **Algorithm 10.4.1** of [conn2000trust]. An infinite run of the trust-region method with
+corrections, for parameters $P$ of (6.1.3) and an objective $f$, consists of iterates $x_k$,
+steps $s_k$, corrections $c_k$, models $m_k$ and radii $\Delta_k$ with $\Delta_0 > 0$. Each step
+decreases its model, each correction does not increase $f$, the next iterate is
+$x_k + s_k + c_k$ if $\rho_k \ge \eta_1$ and $x_k$ otherwise, and the radius is updated by the
+rule (6.1.5) with the ratio $\rho_k$ of the corrected step.
+
+The structure contains neither the norm bound on the step $s_k$ nor the sufficient-decrease
+bound on the augmented decrease $\delta_k$; it requires only $m_k(x_k) - m_k(x_k + s_k) > 0$.
+The theorems that need these bounds take them as hypotheses. -/
 structure MagicalStepRun (P : BTRParams) (f : E → ℝ) where
+  /-- The iterates $x_k$. -/
   x : ℕ → E
+  /-- The trust-region steps $s_k$. -/
   s : ℕ → E
+  /-- The corrections $c_k$, applied after the steps. -/
   correction : ℕ → E
+  /-- The models $m_k$. -/
   model : ℕ → E → ℝ
+  /-- The trust-region radii $\Delta_k$. -/
   radius : ℕ → ℝ
+  /-- The initial radius is positive: $\Delta_0 > 0$. -/
   initial_pos : 0 < radius 0
+  /-- Each step decreases its model: $m_k(x_k) - m_k(x_k + s_k) > 0$. -/
   base_decrease : ∀ k, 0 < model k (x k) - model k (x k + s k)
+  /-- Each correction does not increase the objective: $f(x_k + s_k + c_k) \le f(x_k + s_k)$. -/
   correction_improves : ∀ k, f (x k + s k + correction k) ≤ f (x k + s k)
+  /-- The next iterate is $x_k + s_k + c_k$ if $\rho_k \ge \eta_1$, and $x_k$ otherwise. -/
   iterate_update : ∀ k, x (k + 1) =
     if P.η₁ ≤ magicalStepRatio f (model k) (x k) (s k) (correction k) then
       x k + s k + correction k else x k
+  /-- The radius is updated by the rule (6.1.5) with the ratio $\rho_k$ of the corrected step. -/
   radius_update : ∀ k, BTRRadiusUpdate P
     (magicalStepRatio f (model k) (x k) (s k) (correction k)) (radius k) (radius (k + 1))
 
-/-- In (10.4.3) the correction improvement cancels from the ratio error.
-The error in the original trial model is divided by the augmented decrease. -/
+/-- **Equations (10.4.3)–(10.4.5)** of [conn2000trust]. Let $f$ and $m$ satisfy $f(x) = m(x)$, and
+let $\delta(x, s, c) > 0$. Then the ratio of the corrected step satisfies
+$$|\rho(x, s, c) - 1| = \frac{|m(x + s) - f(x + s)|}{\delta(x, s, c)}.$$
+The improvement from the correction cancels, and the error of the model at the original trial
+point $x + s$ is divided by the augmented decrease. -/
 theorem magicalStepRatio_sub_one {f m : E → ℝ} {x s c : E}
     (hval : f x = m x) (hpred : 0 < magicalStepDecrease f m x s c) :
     |magicalStepRatio f m x s c - 1| =
@@ -52,9 +139,19 @@ theorem magicalStepRatio_sub_one {f m : E → ℝ} {x s c : E}
       field_simp [hpred.ne']; unfold magicalStepDecrease; rw [hval]; ring,
     abs_div, abs_of_pos hpred]
 
-/-- Corrected Theorem 10.4.1. The lower bound from (10.4.6) applies to the
-augmented denominator. Nonnegativity of the correction improvement does
-not imply the printed lower bound for the original model decrease. -/
+/-- **Theorem 10.4.1** of [conn2000trust]. Let $P$ be parameters of (6.1.3), let $0 < \kappa \le 1$
+and $a, C, \Delta > 0$, and let $f(x) = m(x)$. Assume
+$$\kappa a \min\{a / C, \Delta\} \le \delta(x, s, c), \qquad |m(x + s) - f(x + s)| \le C
+  \Delta^2, \qquad \Delta \le \frac{\kappa a (1 - \eta_2)}{C},$$
+and let $\Delta'$ be obtained from $\Delta$ by the update (6.1.5) with the ratio
+$\rho(x, s, c)$. Then $\rho(x, s, c) \ge \eta_2$ and $\Delta \le \Delta'$.
+
+**Correction.** The source assumes the lower bound (10.4.6) for the decrease $m(x) - m(x + s)$
+of the original model. The statement here assumes it for the augmented decrease
+$\delta(x, s, c)$, which is the denominator of the ratio. The nonnegativity of the improvement
+from the correction does not give the printed lower bound for the original model decrease.
+
+The number $a$ plays the role of the gradient norm at $x$. -/
 theorem theorem_10_4_1 {P : BTRParams} {f m : E → ℝ} {x s c : E}
     {κ a C Δ Δ' : ℝ} (hκ : 0 < κ) (hκ' : κ ≤ 1) (ha : 0 < a)
     (hC : 0 < C) (hΔ : 0 < Δ) (hval : f x = m x)
@@ -123,8 +220,15 @@ private theorem MagicalStepRun.objective_antitone {P : BTRParams} {f : E → ℝ
 
 variable [NormedSpace ℝ E]
 
-/-- Theorem 10.4.2 in its frequently-small-gradient form. The result uses
-only the agreement and decrease estimates of the magical-step run. -/
+/-- **Theorem 10.4.2** of [conn2000trust]. Let $f$ be bounded below, and consider a run of Algorithm
+10.4.1 with constants $0 < \kappa \le 1$ and $C > 0$ such that, for all $k$,
+$f(x_k) = m_k(x_k)$,
+$$\kappa \|Df(x_k)\| \min\left\{\frac{\|Df(x_k)\|}{C}, \Delta_k\right\} \le \delta_k, \qquad
+  |m_k(x_k + s_k) - f(x_k + s_k)| \le C \Delta_k^2.$$
+Then for every $\varepsilon > 0$ there are infinitely many $k$ with $\|Df(x_k)\| < \varepsilon$.
+
+The proof uses only these agreement and decrease estimates. Here $Df$ is `fderiv ℝ f`, which is
+$0$ at a point where $f$ is not differentiable. -/
 theorem theorem_10_4_2 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f)
     {κ C : ℝ} (hκ : 0 < κ) (hκ' : κ ≤ 1) (hC : 0 < C)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -199,8 +303,9 @@ theorem theorem_10_4_2 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f
   obtain ⟨j, hj⟩ := (hlim.eventually_lt_const hr).exists
   exact hj.not_ge ((hrad _ ((le_max_left N M).trans (Nat.le_add_right L j))).trans (hpow j))
 
-/-- Theorem 10.4.3. If both the original and corrective steps are bounded
-by multiples of the radius, the whole derivative norm sequence tends to zero. -/
+/-- **Theorem 10.4.3** of [conn2000trust]. Under the hypotheses of Theorem 10.4.2, assume in
+addition that $Df$ is Lipschitz with constant $L \ge 0$, and that $\|s_k\| \le K \Delta_k$ and
+$\|c_k\| \le M \Delta_k$ for constants $K, M \ge 0$. Then $\|Df(x_k)\| \to 0$. -/
 theorem theorem_10_4_3 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f)
     {κ C K M L : ℝ} (hκ : 0 < κ) (hκ' : κ ≤ 1) (hC : 0 < C)
     (hK : 0 ≤ K) (hM : 0 ≤ M) (hL : 0 ≤ L)
@@ -229,18 +334,24 @@ theorem theorem_10_4_3 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f
 
 end MagicalSteps
 
+/-! ### Quadratic augmentation of the model -/
+
 section ModifiedModel
 
 open scoped RealInnerProductSpace
 
 variable {E : Type*} [NormedAddCommGroup E]
 
-/-- The reduction error (10.4.17) computed with the base model. -/
+/-- **Equation (10.4.17)** of [conn2000trust]. The **reduction error** of the step $s$ for the base
+model $m$ is the actual reduction minus the predicted reduction,
+$$e(x, s) = f(x) - f(x + s) - \bigl(m(x) - m(x + s)\bigr).$$
+-/
 def quadraticAugmentedError (f m : E → ℝ) (x s : E) : ℝ :=
   f x - f (x + s) - m x + m (x + s)
 
-/-- Center agreement turns the reduction error into the model value
-error at the trial point. -/
+/-- **Equation (10.4.17)** of [conn2000trust], under agreement at the center (AM.2). If
+$f(x) = m(x)$, then the reduction error is the model error at the trial point:
+$e(x, s) = m(x + s) - f(x + s)$. -/
 theorem quadraticAugmentedError_eq_trial_error {f m : E → ℝ} {x s : E}
     (hval : f x = m x) : quadraticAugmentedError f m x s = m (x + s) - f (x + s) := by
   unfold quadraticAugmentedError
@@ -249,20 +360,32 @@ theorem quadraticAugmentedError_eq_trial_error {f m : E → ℝ} {x s : E}
 
 variable [InnerProductSpace ℝ E]
 
-/-- The quadratic augmentation (10.4.12). The quadratic term uses the
-argument's displacement from the center, as in (10.4.15). -/
+/-- **Equation (10.4.12)** of [conn2000trust]. For a model $m$, a center $x$ and a linear map
+$M : E \to E$, the **quadratically augmented model** is
+$$\hat m(y) = m(y) + \frac12 \langle y - x, M (y - x) \rangle.$$
+
+**Reading.** The quadratic term uses the displacement $y - x$ of the argument from the center,
+as in (10.4.15), and not a fixed trial step. With this choice the quadratic term cancels from
+the ratio error (10.4.16). -/
 noncomputable def quadraticAugmentedModel (m : E → ℝ) (x : E) (M : E →ₗ[ℝ] E) (y : E) : ℝ :=
   m y + (1 / 2) * ⟪y - x, M (y - x)⟫
 
-/-- The compensated ratio (10.4.15) uses the same quadratic term in
-the actual and predicted reductions. -/
+/-- **Equation (10.4.15)** of [conn2000trust]. The **compensated reduction ratio** of the step $s$
+subtracts the same quadratic term from the actual reduction as the augmented model adds to the
+predicted reduction:
+$$\hat\rho(x, s) = \frac{f(x) - f(x + s) - \frac12 \langle s, M s \rangle}{\hat m(x) - \hat
+  m(x + s)}.$$
+-/
 noncomputable def quadraticAugmentedRatio (f m : E → ℝ) (x s : E)
     (M : E →ₗ[ℝ] E) : ℝ :=
   (f x - f (x + s) - (1 / 2) * ⟪s, M s⟫) /
     (quadraticAugmentedModel m x M x - quadraticAugmentedModel m x M (x + s))
 
-/-- The quadratic term cancels from the numerator of the ratio error
-in (10.4.16). The denominator is the augmented model decrease. -/
+/-- **Equation (10.4.16)** of [conn2000trust]. If the augmented model decreases,
+$\hat m(x) - \hat m(x + s) > 0$, then
+$$|\hat\rho(x, s) - 1| = \frac{|e(x, s)|}{\hat m(x) - \hat m(x + s)},$$
+with $e$ the reduction error (10.4.17) of the base model. The quadratic term cancels from the
+numerator. -/
 theorem quadraticAugmentedRatio_sub_one {f m : E → ℝ} {x s : E} {M : E →ₗ[ℝ] E}
     (hpred : 0 < quadraticAugmentedModel m x M x - quadraticAugmentedModel m x M (x + s)) :
     |quadraticAugmentedRatio f m x s M - 1| =

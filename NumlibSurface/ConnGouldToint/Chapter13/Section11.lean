@@ -5,7 +5,46 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import NumlibSurface.ConnGouldToint.Chapter06.Section04
 
-/-! # Affine scaling for nonnegative bounds -/
+/-!
+# Conn, Gould and Toint, Section 13.11: Affine scaling for nonnegative bounds
+
+This module formalizes the affine-scaling trust-region method of [conn2000trust], Section 13.11, for
+minimizing $f$ over the nonnegative orthant of $\mathbb{R}^\iota$. At a strictly positive iterate
+$x$, the trust region is the Dikin ellipsoid $\|s\|_x = (\sum_i (s_i / x_i)^2)^{1/2} \le \Delta$,
+and criticality is measured by the dual norm $\pi(x) = \|X \nabla f(x)\| = (\sum_i (x_i\, \partial_i
+f(x))^2)^{1/2}$ of the gradient, where $X = \operatorname{diag}(x)$. Algorithm 13.11.1 is the basic
+trust-region algorithm of Chapter 6 with these norms, quadratic models and a radius cap
+$\Delta_{\max} < 1$. The cap keeps every trial point strictly feasible. Theorem 13.11.1 states that
+$\pi(x_k) \to 0$ for bounded iterates under uniform curvature bounds.
+
+## Main definitions
+
+* Algorithm 13.11.1, `ConnGouldToint.Chapter13.affineScalingPrimalNorm`: the Dikin norm $\|s\|_x$.
+* Equation (13.11.3), `ConnGouldToint.Chapter13.affineScalingGradientNorm`: the scaled gradient norm
+  $\|X g\|$.
+* Algorithm 13.11.1, `ConnGouldToint.Chapter13.AffineScalingRun`: a run of the affine-scaling
+  method.
+
+## Main results
+
+* Algorithm 13.11.1, `ConnGouldToint.Chapter13.affineScaling_trial_positive`: a step of Dikin norm
+  less than one keeps the point strictly positive.
+* Algorithm 13.11.1, `ConnGouldToint.Chapter13.AffineScalingRun.iterate_positive`: every iterate of
+  a run is strictly positive.
+* Theorem 13.11.1, `ConnGouldToint.Chapter13.theorem_13_11_1_of_uniform_estimates`: the scaled
+  gradient norm tends to zero under a uniform model error bound and a bound on its variation between
+  successive iterates.
+* Theorem 13.11.1, `ConnGouldToint.Chapter13.theorem_13_11_1`: the scaled gradient norm tends to
+  zero for bounded iterates with bounded objective and model Hessians.
+
+## Implementation notes
+
+* The points are elements of `EuclideanSpace ℝ ι`. The run is a `ConnGouldToint.Chapter06.BTRRun`
+  whose sufficient decrease predicate is trivial; the affine-scaling decrease test is a separate
+  field.
+* The uniform bound on the curvature constants $\beta_k$ (assumption AM.4b) is a hypothesis of
+  Theorem 13.11.1.
+-/
 
 open Filter Set
 open scoped Topology
@@ -16,40 +55,81 @@ open Chapter06
 
 variable {ι : Type*} [Fintype ι]
 
-/-- The norm of a step in the Dikin ellipsoid centered at `x`. -/
+/-- **Algorithm 13.11.1** of [conn2000trust], trust-region norm. The **Dikin norm** of a step $s$ at
+a point $x$ is
+$$\|s\|_x = \Big(\sum_i \Big(\frac{s_i}{x_i}\Big)^2\Big)^{1/2},$$
+the norm whose unit ball is the Dikin ellipsoid centered at $x$.
+
+At a coordinate with $x_i = 0$, Lean's division gives $s_i / x_i = 0$. -/
 noncomputable def affineScalingPrimalNorm (x s : EuclideanSpace ℝ ι) : ℝ :=
   Real.sqrt (∑ i, (s i / x i) ^ 2)
 
-/-- The dual norm of the gradient in (13.11.3). -/
+/-- **Equation (13.11.3)** of [conn2000trust]. The **scaled gradient norm** of $g$ at $x$ is
+$$\|X g\| = \Big(\sum_i (x_i g_i)^2\Big)^{1/2},$$
+the dual norm of $g$ for the Dikin norm at $x > 0$. -/
 noncomputable def affineScalingGradientNorm (x g : EuclideanSpace ℝ ι) : ℝ :=
   Real.sqrt (∑ i, (x i * g i) ^ 2)
 
-/-- Algorithm 13.11.1 as a BTR run with Dikin norms, quadratic models,
-the second-order decrease test, and an upper radius cap below one. -/
+/-- **Algorithm 13.11.1** of [conn2000trust]. A run of the affine-scaling trust-region method for
+$f$ on $\mathbb{R}^\iota$. It is a run of the basic trust-region algorithm whose trust-region
+norm at $x_k$ is the Dikin norm $\|\cdot\|_{x_k}$, with a strictly positive starting point,
+initial radius $\Delta_0 = \Delta_{\max} < 1$ and radii $\Delta_k \le \Delta_{\max}$. Each model
+is a quadratic $m_k(x_k + s) = f(x_k) + \langle \nabla f(x_k), s \rangle + \frac12 \langle s,
+H_k s \rangle$ with $H_k$ symmetric. With constants $\beta_k > 0$, $\tau_k \le 0$ and
+$\kappa \in (0, 1)$, each step satisfies the second-order sufficient decrease test
+$$\kappa \max\Big\{ \pi_k \min\Big\{\frac{\pi_k}{\beta_k}, \Delta_k\Big\},\ -\tau_k
+  \min\{\tau_k^2, \Delta_k^2\} \Big\} \le m_k(x_k) - m_k(x_k + s_k),$$
+where $\pi_k = \|X_k \nabla f(x_k)\|$ is the scaled gradient norm.
+
+The constants $\beta_k$ and $\tau_k$ are data of the run. The structure does not tie them to the
+curvature of the model. -/
 structure AffineScalingRun (f : EuclideanSpace ℝ ι → ℝ) (P : BTRParams) where
+  /-- The underlying run of the basic trust-region algorithm, with a trivial sufficient decrease
+  predicate. -/
   run : BTRRun f P (fun _ _ _ _ ↦ True)
+  /-- The radius cap $\Delta_{\max}$. -/
   Δmax : ℝ
+  /-- The curvature constants $\beta_k$ of the decrease test. -/
   β : ℕ → ℝ
+  /-- The nonpositive curvature constants $\tau_k$ of the decrease test. -/
   τ : ℕ → ℝ
+  /-- The constant $\kappa$ of the decrease test. -/
   κ : ℝ
+  /-- The starting point is strictly positive. -/
   initial_positive : ∀ i, 0 < run.x 0 i
+  /-- The initial radius is the cap: $\Delta_0 = \Delta_{\max}$. -/
   initial_at_cap : run.Δ 0 = Δmax
+  /-- The cap is less than one. -/
   cap_lt_one : Δmax < 1
+  /-- Every radius is at most the cap. -/
   radius_le_cap : ∀ k, run.Δ k ≤ Δmax
+  /-- The trust-region norm at $x_k$ is the Dikin norm $\|\cdot\|_{x_k}$. -/
   primal_norm : ∀ k s, run.p k s = affineScalingPrimalNorm (run.x k) s
+  /-- Each model is the quadratic $f(x_k) + \langle \nabla f(x_k), s \rangle + \frac12 \langle s,
+  H_k s \rangle$ for a symmetric linear map $H_k$. -/
   quadratic_model : ∀ k, ∃ H : EuclideanSpace ℝ ι →ₗ[ℝ] EuclideanSpace ℝ ι,
     (∀ u v, inner ℝ u (H v) = inner ℝ (H u) v) ∧
     ∀ s, run.model k (run.x k + s) =
       quadraticModel (f (run.x k)) (gradient f (run.x k)) H s
+  /-- Each curvature constant $\beta_k$ is positive. -/
   curvature_pos : ∀ k, 0 < β k
+  /-- Each curvature constant $\tau_k$ is nonpositive. -/
   curvature_nonpositive : ∀ k, τ k ≤ 0
+  /-- The decrease constant satisfies $0 < \kappa < 1$. -/
   decrease_constant : κ ∈ Ioo (0 : ℝ) 1
+  /-- Each step satisfies $\kappa \max\{\pi_k \min\{\pi_k / \beta_k, \Delta_k\}, -\tau_k
+  \min\{\tau_k^2, \Delta_k^2\}\} \le m_k(x_k) - m_k(x_k + s_k)$, where $\pi_k$ is the scaled
+  gradient norm at $x_k$. -/
   sufficient_decrease : ∀ k,
     let π := affineScalingGradientNorm (run.x k) (gradient f (run.x k))
     κ * max (π * min (π / β k) (run.Δ k)) (-τ k * min (τ k ^ 2) (run.Δ k ^ 2)) ≤
       run.model k (run.x k) - run.model k (run.x k + run.s k)
 
-/-- The cap below one makes every point in a Dikin ellipsoid strictly feasible. -/
+/-- **Algorithm 13.11.1** of [conn2000trust], feasibility of the trial points. Let
+$x \in \mathbb{R}^\iota$ with $x_i > 0$ for all $i$, and let $\|s\|_x < 1$. Then $(x + s)_i > 0$
+for all $i$.
+
+Since the radius cap is below one, this applies to every trial point of the method. -/
 theorem affineScaling_trial_positive {x s : EuclideanSpace ℝ ι}
     (hx : ∀ i, 0 < x i) (hs : affineScalingPrimalNorm x s < 1) :
     ∀ i, 0 < (x + s) i := by
@@ -69,7 +149,8 @@ theorem affineScaling_trial_positive {x s : EuclideanSpace ℝ ι}
   change 0 < x i + s i
   linarith
 
-/-- The radius cap preserves strict feasibility of every accepted iterate. -/
+/-- **Algorithm 13.11.1** of [conn2000trust], strict feasibility. Every iterate $x_k$ of an
+affine-scaling run satisfies $(x_k)_i > 0$ for all $i$. -/
 theorem AffineScalingRun.iterate_positive {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     (r : AffineScalingRun f P) (k : ℕ) : ∀ i, 0 < r.run.x k i := by
   induction k with
@@ -111,9 +192,13 @@ private theorem affineScalingGradientNorm_eq (x g : EuclideanSpace ℝ ι) :
   simp only [affineScalingGradientNorm, affineScalingGradientVector, WithLp.ofLp_toLp,
     Real.norm_eq_abs, sq_abs]
 
-/-- The affine-scaling convergence conclusion (13.11.3) from the uniform
-model-error and criticality-variation estimates used in Theorem 13.11.1.
-The variation estimate is required only between successive iterates. -/
+/-- **Theorem 13.11.1** of [conn2000trust], from uniform estimates. Let $(x_k)$ be an affine-scaling
+run for $f$, and let $\pi_k = \|X_k \nabla f(x_k)\|$. Let $C$ and $L \ge 0$ be constants such
+that $\beta_k \le C$ for all $k$,
+$$|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2, \qquad \pi_k - \pi_{k+1} \le L \Delta_k$$
+for all $k$, and $\{f(x_k)\}$ is bounded below. Then $\pi_k \to 0$.
+
+The variation bound is needed only between successive iterates. -/
 theorem theorem_13_11_1_of_uniform_estimates {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     (r : AffineScalingRun f P) {C L : ℝ}
     (hC : ∀ k, r.β k ≤ C) (hL : 0 ≤ L)
@@ -258,10 +343,17 @@ theorem theorem_13_11_1_of_uniform_estimates {f : EuclideanSpace ℝ ι → ℝ}
       rwa [mul_comm]
   exact hlast.not_ge ((mul_le_mul_of_nonneg_left hgap.le hc.le).trans (htel j hj.1 le_rfl))
 
-/-- Theorem 13.11.1. Bounded affine-scaling iterates and the uniform
-objective and quadratic-model curvature bounds imply convergence of the
-scaled gradient. The scaled curvature constants are uniformly bounded,
-as in AM.4b. -/
+/-- **Theorem 13.11.1** of [conn2000trust]. Let $f$ be twice continuously differentiable on
+$\mathbb{R}^\iota$ with $\|\nabla^2 f(x)\| \le L$ for all $x$, and let $(x_k)$ be an
+affine-scaling run for $f$ with $\|x_k\| \le R$ for all $k$. Suppose that each model is
+$m_k(x_k + s) = f(x_k) + \langle \nabla f(x_k), s \rangle + \frac12 \langle s, H_k s \rangle$
+with $\|H_k\| \le B$, that $\beta_k \le C_\beta$ for all $k$, and that $\{f(x_k)\}$ is bounded
+below, where $R, L, B \ge 0$. Then
+$$\|X_k \nabla f(x_k)\| \to 0.$$
+
+The uniform bound on the curvature constants $\beta_k$ is assumption AM.4b. The proof derives
+the estimates of `ConnGouldToint.Chapter13.theorem_13_11_1_of_uniform_estimates` from the bounds
+on $x_k$, $\nabla^2 f$ and $H_k$. -/
 theorem theorem_13_11_1 {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     (r : AffineScalingRun f P) (hf : ContDiff ℝ 2 f) {R L B Cβ : ℝ}
     (hR : 0 ≤ R) (hL : 0 ≤ L) (hB : 0 ≤ B)

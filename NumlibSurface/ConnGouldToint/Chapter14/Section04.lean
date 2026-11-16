@@ -5,7 +5,66 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter14.Section03
 import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
 
-/-! # Augmented Lagrangian methods -/
+/-!
+# Conn, Gould and Toint, Section 14.4: Augmented Lagrangian methods
+
+This module formalizes the augmented Lagrangian methods of [conn2000trust], Section 14.4, for the
+problem of minimizing $f(x)$ subject to $c(x) = 0$. Each outer iteration approximately minimizes the
+augmented Lagrangian $\Phi(x, y_k, \mu_k)$, up to $\|\nabla_x \Phi(x_k, y_k, \mu_k)\| \le \omega_k$.
+If $\|c(x_k)\| \le \eta_k$ (Step 2), the penalty parameter is kept or reduced; otherwise (Step 3),
+it is reduced at least by a factor $\tau < 1$. Algorithm 14.4.1 updates the multiplier to the
+first-order estimate $y_k - c(x_k) / \mu_k$ on Step 2 and keeps it on Step 3. Algorithm 14.4.3
+accepts, on either step, any proposed estimate that satisfies a safeguard. Algorithm 14.4.2 gives
+tolerance updates.
+
+Lemmas 14.4.1 and 14.4.4 show that $\mu_k \|y_k\| \to 0$ when the penalty parameter tends to zero.
+Theorems 14.4.2 and 14.4.5 deduce that every limit point with a surjective constraint derivative is
+a KKT point, and that both multiplier estimates converge to the least-squares multiplier. Theorems
+14.4.3 and 14.4.7 show that, near a nonsingular KKT point and with suitable tolerance exponents, the
+penalty parameter stays bounded away from zero. The proofs use the estimates of Lemma 14.2.2.
+
+## Main definitions
+
+* Algorithms 14.4.1 and 14.4.3, `ConnGouldToint.Chapter14.AugmentedLagrangianRun`: the data and
+  tests shared by both algorithms, (14.4.4)–(14.4.6).
+* Algorithm 14.4.1, `ConnGouldToint.Chapter14.AugmentedLagrangianRun.IsBasic`: the multiplier update
+  (14.4.7)–(14.4.9).
+* Algorithm 14.4.2, `ConnGouldToint.Chapter14.AugmentedLagrangianRun.HasToleranceUpdates`: the
+  tolerance updates.
+* Algorithm 14.4.3, `ConnGouldToint.Chapter14.AugmentedLagrangianRun.IsAlternative`: the safeguarded
+  multiplier update (14.4.28)–(14.4.29).
+* Assumption AA.9, `ConnGouldToint.Chapter14.AugmentedLagrangianRun.HasReductionBudget`: the
+  tolerance budget between penalty reductions.
+* Assumption AA.10, `ConnGouldToint.Chapter14.AugmentedLagrangianRun.EventuallyKeepsPenalty`: late
+  Step 2 iterations keep the penalty parameter.
+
+## Main results
+
+* Lemma 14.4.1, `ConnGouldToint.Chapter14.lemma_14_4_1`: under AA.9, $\mu_k \|y_k\| \to 0$ for
+  Algorithm 14.4.1.
+* Theorem 14.4.2, `ConnGouldToint.Chapter14.theorem_14_4_2`: limit points of Algorithm 14.4.1 are
+  KKT points, and the multiplier estimates converge.
+* Theorem 14.4.3, `ConnGouldToint.Chapter14.theorem_14_4_3`: the penalty parameters of Algorithm
+  14.4.1 are bounded away from zero.
+* Lemma 14.4.4, `ConnGouldToint.Chapter14.lemma_14_4_4`: $\mu_k \|y_k\| \to 0$ for Algorithm 14.4.3
+  when $\mu_k \to 0$.
+* Theorem 14.4.5, `ConnGouldToint.Chapter14.theorem_14_4_5`: limit points of Algorithm 14.4.3 are
+  KKT points, and the multiplier estimates converge.
+* Corollary 14.4.6, `ConnGouldToint.Chapter14.corollary_14_4_6`: proposed estimates with the error
+  bound (14.4.32) satisfy the estimates (14.4.33).
+* Theorem 14.4.7, `ConnGouldToint.Chapter14.theorem_14_4_7`: the penalty parameters of Algorithm
+  14.4.3 are bounded away from zero.
+
+## Deviations from the source
+
+* **Equation (14.4.10)** (typo). The first-order multiplier update subtracts the constraint term,
+  $y_k - c(x_k) / \mu_k$, as in (14.2.5). See `ConnGouldToint.Chapter14.lemma_14_4_1`.
+* **Lemma 14.4.1** (generalization). Between the reductions of the penalty parameter, any
+  nonincreasing update of the penalty parameter is allowed. See
+  `ConnGouldToint.Chapter14.lemma_14_4_1`.
+* **Theorem 14.4.2** (reading). The proof of the source uses AA.9 when the penalty parameter tends
+  to zero; the statement assumes it. See `ConnGouldToint.Chapter14.theorem_14_4_2`.
+-/
 
 open Filter Topology
 
@@ -15,28 +74,54 @@ variable {G F : Type*}
 variable [NormedAddCommGroup G] [InnerProductSpace ℝ G]
 variable [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- The shared data and stopping tests of Algorithms 14.4.1 and 14.4.3.
-Starting points and the approximately minimized iterates are supplied by the run. -/
+/-- **Algorithms 14.4.1 and 14.4.3** of [conn2000trust], shared data and (14.4.4)–(14.4.6). A run of
+an augmented Lagrangian method consists of starting points for the inner solves, iterates $x_k$,
+multipliers $y_k$, penalty parameters $\mu_k$, optimality tolerances $\omega_k$, feasibility
+tolerances $\eta_k$ and a reduction factor $\tau \in (0, 1)$. They satisfy $\mu_k > 0$,
+$\mu_0 < 1$, $\omega_k, \eta_k > 0$ with $\omega_k \to 0$ and $\eta_k \to 0$, and for all $k$
+$$\|\nabla_x \Phi(x_k, y_k, \mu_k)\| \le \omega_k, \qquad \mu_{k+1} \le \mu_k, \qquad
+  \|c(x_k)\| > \eta_k \implies \mu_{k+1} \le \tau \mu_k.$$
+
+The run supplies the starting points and the approximate minimizers; it does not model the inner
+solver. The multiplier update is a separate predicate for each algorithm. -/
 structure AugmentedLagrangianRun (f : G → ℝ) (c : G → F) where
+  /-- The starting points of the inner solves. -/
   start : ℕ → G
+  /-- The iterates $x_k$, the approximate minimizers of the inner solves. -/
   iterate : ℕ → G
+  /-- The multipliers $y_k$. -/
   multiplier : ℕ → F
+  /-- The penalty parameters $\mu_k$. -/
   parameter : ℕ → ℝ
+  /-- The optimality tolerances $\omega_k$. -/
   optimalityTolerance : ℕ → ℝ
+  /-- The feasibility tolerances $\eta_k$. -/
   feasibilityTolerance : ℕ → ℝ
+  /-- The reduction factor $\tau$ of the penalty parameter on Step 3. -/
   reduction : ℝ
+  /-- The reduction factor is positive. -/
   reduction_pos : 0 < reduction
+  /-- The reduction factor is less than one. -/
   reduction_lt_one : reduction < 1
+  /-- Every penalty parameter is positive. -/
   parameter_pos : ∀ k, 0 < parameter k
+  /-- The initial penalty parameter is less than one. -/
   parameter_zero_lt_one : parameter 0 < 1
+  /-- Every optimality tolerance is positive. -/
   optimalityTolerance_pos : ∀ k, 0 < optimalityTolerance k
+  /-- Every feasibility tolerance is positive. -/
   feasibilityTolerance_pos : ∀ k, 0 < feasibilityTolerance k
+  /-- The optimality tolerances tend to zero. -/
   optimalityTolerance_tendsto : Tendsto optimalityTolerance atTop (𝓝 0)
+  /-- The feasibility tolerances tend to zero. -/
   feasibilityTolerance_tendsto : Tendsto feasibilityTolerance atTop (𝓝 0)
+  /-- Each iterate satisfies $\|\nabla_x \Phi(x_k, y_k, \mu_k)\| \le \omega_k$. -/
   residual_le : ∀ k,
     ‖fderiv ℝ (augmentedLagrangian f c (multiplier k) (parameter k)) (iterate k)‖ ≤
       optimalityTolerance k
+  /-- The penalty parameters are nonincreasing. -/
   parameter_le : ∀ k, parameter (k + 1) ≤ parameter k
+  /-- If the feasibility test fails, $\|c(x_k)\| > \eta_k$, then $\mu_{k+1} \le \tau \mu_k$. -/
   parameter_reduce : ∀ k, feasibilityTolerance k < ‖c (iterate k)‖ →
     parameter (k + 1) ≤ reduction * parameter k
 
@@ -44,17 +129,25 @@ namespace AugmentedLagrangianRun
 
 variable {f : G → ℝ} {c : G → F} (run : AugmentedLagrangianRun f c)
 
-/-- Algorithm 14.4.1 uses the first-order estimate on Step 2 and keeps
-its current multiplier on Step 3. -/
+/-- **Algorithm 14.4.1** of [conn2000trust], (14.4.7)–(14.4.9). The multiplier update of the basic
+method:
+$$y_{k+1} = \begin{cases} y_k - c(x_k) / \mu_k & \text{if } \|c(x_k)\| \le \eta_k \text{ (Step
+  2)}, \\ y_k & \text{otherwise (Step 3)}. \end{cases}$$
+-/
 def IsBasic : Prop :=
   ∀ k, run.multiplier (k + 1) =
     if ‖c (run.iterate k)‖ ≤ run.feasibilityTolerance k then
       firstOrderMultiplier c (run.multiplier k) (run.parameter k) (run.iterate k)
     else run.multiplier k
 
-/-- Algorithm 14.4.3 accepts any proposed multiplier satisfying the
-safeguard, on either branch. The candidate for iteration `k+1` is indexed
-by `k` in the supplied proposal sequence. -/
+/-- **Algorithm 14.4.3** of [conn2000trust], (14.4.28)–(14.4.29). The safeguarded multiplier update
+with proposals $p_k$, constants $\nu > 0$ and $\gamma \in (0, 1)$, and $\theta_k \ge 0$ with
+$\theta_k \to 0$:
+$$y_{k+1} = \begin{cases} p_k & \text{if } \|p_k\| \le \nu \mu_{k+1}^{-\gamma} + \theta_{k+1},
+  \\ y_k & \text{otherwise}. \end{cases}$$
+
+The safeguard applies on both Step 2 and Step 3. The proposal for iteration $k + 1$ has index
+$k$ in the sequence $p$. -/
 def IsAlternative (proposal : ℕ → F) (ν γ : ℝ) (θ : ℕ → ℝ) : Prop :=
   0 < ν ∧ 0 < γ ∧ γ < 1 ∧ (∀ k, 0 ≤ θ k) ∧ Tendsto θ atTop (𝓝 0) ∧
     ∀ k, run.multiplier (k + 1) =
@@ -62,7 +155,14 @@ def IsAlternative (proposal : ℕ → F) (ν γ : ℝ) (θ : ℕ → ℝ) : Prop
         proposal k
       else run.multiplier k
 
-/-- The reset and multiplicative tolerance updates of Algorithm 14.4.2. -/
+/-- **Algorithm 14.4.2** of [conn2000trust]. The tolerance updates with positive constants $\omega$,
+$\eta$, $\alpha_\omega$, $\alpha_\eta$, $\beta_\omega$, $\beta_\eta$: initially
+$\omega_0 = \omega \mu_0^{\alpha_\omega}$ and $\eta_0 = \eta \mu_0^{\alpha_\eta}$, and for every
+$k$
+$$(\omega_{k+1}, \eta_{k+1}) = \begin{cases} (\omega_k \mu_{k+1}^{\beta_\omega},\ \eta_k
+  \mu_{k+1}^{\beta_\eta}) & \text{if } \|c(x_k)\| \le \eta_k, \\ (\omega
+  \mu_{k+1}^{\alpha_\omega},\ \eta \mu_{k+1}^{\alpha_\eta}) & \text{otherwise}. \end{cases}$$
+-/
 def HasToleranceUpdates (ω η αω αη βω βη : ℝ) : Prop :=
   0 < ω ∧ 0 < η ∧ 0 < αω ∧ 0 < αη ∧ 0 < βω ∧ 0 < βη ∧
     run.optimalityTolerance 0 = ω * run.parameter 0 ^ αω ∧
@@ -77,8 +177,13 @@ def HasToleranceUpdates (ω η αω αη βω βη : ℝ) : Prop :=
         run.optimalityTolerance (k + 1) = ω * run.parameter (k + 1) ^ αω ∧
         run.feasibilityTolerance (k + 1) = η * run.parameter (k + 1) ^ αη
 
-/-- The AA.9 budget between consecutive Step 3 indices. The final failed
-test is included in the tolerance sum, as in the source. -/
+/-- **Assumption AA.9** of [conn2000trust]. The run has a tolerance budget with constants
+$\kappa, \alpha > 0$ along a strictly increasing sequence $r_i$ if the feasibility test fails at
+every $r_i$, it holds at every $k$ with $r_i < k < r_{i+1}$, and
+$$\sum_{r_i < k \le r_{i+1}} \eta_k \le \kappa \mu_{r_i + 1}^\alpha$$
+for all $i$.
+
+The sum includes the tolerance of the final failed test at $r_{i+1}$, as in the source. -/
 def HasReductionBudget (r : ℕ → ℕ) (κ α : ℝ) : Prop :=
   StrictMono r ∧ 0 < κ ∧ 0 < α ∧
     (∀ i, run.feasibilityTolerance (r i) < ‖c (run.iterate (r i))‖) ∧
@@ -86,7 +191,8 @@ def HasReductionBudget (r : ℕ → ℕ) (κ α : ℝ) : Prop :=
     ∀ i, ∑ k ∈ Finset.Ioc (r i) (r (i + 1)), run.feasibilityTolerance k ≤
       κ * run.parameter (r i + 1) ^ α
 
-/-- AA.10 requires that sufficiently late Step 2 iterations keep the penalty fixed. -/
+/-- **Assumption AA.10** of [conn2000trust]. For all large $k$, if $\|c(x_k)\| \le \eta_k$ (Step 2),
+then $\mu_{k+1} = \mu_k$. -/
 def EventuallyKeepsPenalty : Prop :=
   ∀ᶠ k in atTop, ‖c (run.iterate k)‖ ≤ run.feasibilityTolerance k →
     run.parameter (k + 1) = run.parameter k
@@ -95,8 +201,10 @@ end AugmentedLagrangianRun
 
 variable {f : G → ℝ} {c : G → F}
 
-/-- Lemma 14.4.4. The safeguarded multiplier times the penalty parameter
-tends to zero, whether or not the proposed estimates are accepted infinitely often. -/
+/-- **Lemma 14.4.4** of [conn2000trust]. Let a run satisfy the safeguarded update of Algorithm
+14.4.3, and let $\mu_k \to 0$. Then
+$$\mu_k \|y_k\| \to 0,$$
+whether or not the proposals are accepted infinitely often. -/
 theorem lemma_14_4_4 (run : AugmentedLagrangianRun f c) {proposal : ℕ → F}
     {ν γ : ℝ} {θ : ℕ → ℝ} (h : run.IsAlternative proposal ν γ θ)
     (hμ : Tendsto run.parameter atTop (𝓝 0)) :
@@ -163,10 +271,15 @@ private theorem AugmentedLagrangianRun.parameter_tendsto_of_budget
   rw [Real.dist_eq, sub_zero, abs_of_pos (run.parameter_pos _)]
   exact (ha hk).trans_lt hε'
 
-/-- Lemma 14.4.1. The cumulative tolerance budget between successive
-penalty reductions controls the scaled multiplier. This also allows
-nonincreasing penalty parameters between the designated reductions.
-The multiplier update subtracts the constraint term in the printed (14.4.10). -/
+/-- **Lemma 14.4.1** of [conn2000trust]. Let a run satisfy the update of Algorithm 14.4.1 and have a
+tolerance budget AA.9. Then
+$$\mu_k \|y_k\| \to 0.$$
+
+**Typo.** The multiplier update subtracts the constraint term, $y_{k+1} = y_k - c(x_k) / \mu_k$,
+as in (14.2.5); the printed (14.4.10) has the opposite sign.
+
+**Generalization.** Between the reductions at the indices $r_i$, the penalty parameter may
+follow any nonincreasing update. -/
 theorem lemma_14_4_1 (run : AugmentedLagrangianRun f c) (hbasic : run.IsBasic)
     {r : ℕ → ℕ} {κ α : ℝ} (h : run.HasReductionBudget r κ α) :
     Tendsto (fun k ↦ run.parameter k * ‖run.multiplier k‖) atTop (𝓝 0) := by
@@ -337,9 +450,17 @@ private theorem feasible_of_augmented_run [FiniteDimensional ℝ F]
         K₂ * ‖run.iterate (r k) - xstar‖) at hk
     linarith only [hk, hprod]
 
-/-- Theorem 14.4.2. In the vanishing-penalty branch the proof uses the
-AA.9 budget on the successive reductions. Each full-row-rank subsequential
-limit is feasible and stationary, and both multiplier estimates converge. -/
+/-- **Theorem 14.4.2** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be twice
+continuously differentiable, and let a run satisfy the update of Algorithm 14.4.1. Suppose that,
+if the feasibility test fails infinitely often, the run has a tolerance budget AA.9. Let
+$x_{r(k)} \to x_*$ along indices $r(k) \to \infty$, with $c'(x_*)$ surjective, and let
+$y_* = y^{LS}(x_*)$. Then $(x_*, y_*)$ satisfies the first-order conditions (14.2.3), and along
+$r$
+$$y_{r(k)} - \frac{c(x_{r(k)})}{\mu_{r(k)}} \to y_* \quad\text{and}\quad y^{LS}(x_{r(k)}) \to
+  y_*.$$
+
+**Reading.** The source uses AA.9 in the proof, in the case where the penalty parameter tends to
+zero. The statement here assumes it. -/
 theorem theorem_14_4_2 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f c)
     (h : run.IsBasic)
     (hbudget : (¬ ∀ᶠ k in atTop, ‖c (run.iterate k)‖ ≤ run.feasibilityTolerance k) →
@@ -361,8 +482,14 @@ theorem theorem_14_4_2 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f
     (fun k ↦ run.residual_le (r k)) (run.optimalityTolerance_tendsto.comp hr)
   exact ⟨hkkt hfeas, hy, hls⟩
 
-/-- Theorem 14.4.5. Every subsequential limit with a surjective constraint
-Jacobian is feasible and stationary. Both multiplier estimates converge. -/
+/-- **Theorem 14.4.5** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be twice
+continuously differentiable, and let a run satisfy the safeguarded update of Algorithm 14.4.3.
+Let $x_{r(k)} \to x_*$ along indices $r(k) \to \infty$, with $c'(x_*)$ surjective, and let
+$y_* = y^{LS}(x_*)$. Then $(x_*, y_*)$ satisfies the first-order conditions (14.2.3), and along
+$r$
+$$y_{r(k)} - \frac{c(x_{r(k)})}{\mu_{r(k)}} \to y_* \quad\text{and}\quad y^{LS}(x_{r(k)}) \to
+  y_*.$$
+-/
 theorem theorem_14_4_5 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f c)
     {proposal : ℕ → F} {ν γ : ℝ} {θ : ℕ → ℝ} (h : run.IsAlternative proposal ν γ θ)
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
@@ -380,8 +507,19 @@ theorem theorem_14_4_5 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f
     (fun k ↦ run.residual_le (r k)) (run.optimalityTolerance_tendsto.comp hr)
   exact ⟨hkkt hfeas, hy, hls⟩
 
-/-- Corollary 14.4.6. Any proposed estimate with the error bound (14.4.32)
-inherits the small-parameter bounds in Lemma 14.2.2(iii). -/
+/-- **Corollary 14.4.6** of [conn2000trust], (14.4.32)–(14.4.33). Let $F$ be finite-dimensional, let
+$f$ and $c$ be twice continuously differentiable, let $c(x_*) = 0$, $x_k \to x_*$, $\mu_k > 0$,
+and $\|\nabla_x \Phi(x_k, y_k, \mu_k)\| \le \omega_k$ with $\omega_k \to 0$. Let the KKT
+operator $K(x_*, y_*)$ be invertible, where $y_* = y^{LS}(x_*)$. Suppose that the proposals
+$p_k$ satisfy, for all large $k$, the error bound (14.4.32)
+$$\|p_k - y_*\| \le K_{13} \|x_k - x_*\| + K_{14} \omega_k$$
+with $K_{13}, K_{14} > 0$. Then there are $\mu_{\max} > 0$ and $K_3, \dots, K_6 > 0$ such that,
+for all large $k$ with $\mu_k \le \mu_{\max}$,
+$$\|x_k - x_*\| \le K_3 \omega_k + K_4 \mu_k \|y_k - y_*\|, \qquad \|p_k - y_*\| \le K_5
+  \omega_k + K_6 \mu_k \|y_k - y_*\|,$$
+$$\|c(x_k)\| \le K_5 \mu_k \omega_k + (\mu_k + K_6 \mu_k^2) \|y_k - y_*\|.$$
+
+The bounds come from Lemma 14.2.2(iii). -/
 theorem corollary_14_4_6 [FiniteDimensional ℝ F]
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c) {xstar : G}
     (hfeas : c xstar = 0) {x : ℕ → G} (hx : Tendsto x atTop (𝓝 xstar))
@@ -614,9 +752,13 @@ private theorem multiplier_error_bounded {y proposal : ℕ → F} {ystar : F}
     · rw [he]
       exact (hN k hk).le.trans (le_max_right _ _)
 
-/-- Theorem 14.4.3. With the specified tolerance exponents and eventually
-constant penalties on Step 2, the basic augmented-Lagrangian penalty
-sequence stays bounded away from zero. -/
+/-- **Theorem 14.4.3** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be twice
+continuously differentiable, and let a run satisfy the update of Algorithm 14.4.1, the tolerance
+updates of Algorithm 14.4.2 and AA.10, with the exponent bounds (14.4.18)–(14.4.19)
+$$\alpha_\eta < \min\{1, \alpha_\omega\} \quad\text{and}\quad \beta_\eta < \min\{1,
+  \beta_\omega\}.$$
+Let $x_k \to x_*$, and let the KKT operator $K(x_*, y_*)$ be invertible, where
+$y_* = y^{LS}(x_*)$. Then there is $\mu_* > 0$ with $\mu_k \ge \mu_*$ for all $k$. -/
 theorem theorem_14_4_3 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f c)
     (hbasic : run.IsBasic) {ω η αω αη βω βη : ℝ}
     (ht : run.HasToleranceUpdates ω η αω αη βω βη) (hkeep : run.EventuallyKeepsPenalty)
@@ -675,8 +817,14 @@ theorem theorem_14_4_3 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f
       (mul_le_mul_of_nonneg_right (add_le_add le_rfl
         (mul_le_mul_of_nonneg_right (le_max_right _ _) (sq_nonneg _))) (norm_nonneg _)))
 
-/-- Theorem 14.4.7. The alternative algorithm also keeps a positive
-penalty lower bound when the proposed estimates satisfy (14.4.32). -/
+/-- **Theorem 14.4.7** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be twice
+continuously differentiable, and let a run satisfy the safeguarded update of Algorithm 14.4.3,
+the tolerance updates of Algorithm 14.4.2 and AA.10, with
+$\alpha_\eta < \min\{1, \alpha_\omega\}$ and $\beta_\eta < \min\{1, \beta_\omega\}$ as in
+(14.4.18)–(14.4.19). Let $x_k \to x_*$, let the KKT operator $K(x_*, y_*)$ be invertible, where
+$y_* = y^{LS}(x_*)$, and let the proposals satisfy (14.4.32) for all large $k$:
+$$\|p_k - y_*\| \le K_{13} \|x_k - x_*\| + K_{14} \omega_k$$
+with $K_{13}, K_{14} > 0$. Then there is $\mu_* > 0$ with $\mu_k \ge \mu_*$ for all $k$. -/
 theorem theorem_14_4_7 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f c)
     {proposal : ℕ → F} {ν γ : ℝ} {θ : ℕ → ℝ} (halt : run.IsAlternative proposal ν γ θ)
     {ω η αω αη βω βη : ℝ} (ht : run.HasToleranceUpdates ω η αω αη βω βη)

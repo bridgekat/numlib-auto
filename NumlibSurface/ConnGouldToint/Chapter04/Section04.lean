@@ -8,13 +8,94 @@ import Numlib.LinearAlgebra.Matrix.NonsingularInverse
 import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Numlib.Analysis.InnerProductSpace.Energy
 
-/-! # Least-squares problems and projections
+/-!
+# Conn, Gould and Toint, Section 4.4: Least-squares problems and projections
 
-Least-squares and projection systems in Section 4.4 of [conn2000trust].
-In (4.4.10) the range-space component lies in the range of `Aᵀ`, which is
-the orthogonal complement of the null space of `A`.
-After (4.4.14), semidefinite reduced curvature proves global optimality of
-a stationary feasible point. Positive definite reduced curvature gives uniqueness.
+This module formalizes Section 4.4 of [conn2000trust]. For $A \in \mathbb{R}^{m \times n}$ and
+$g \in \mathbb{R}^n$, a least-squares multiplier $y$ minimizes $\|A^T y - g\|_2$ (4.4.1). It is
+characterized by the normal equations $AA^T y = Ag$ (4.4.3) and by the augmented system with the
+matrix $\begin{bmatrix} I & A^T \\ A & 0 \end{bmatrix}$ (4.4.4)–(4.4.5). The section then treats the
+equality-constrained quadratic problem
+$$\min_x \ \tfrac{1}{2} x^T H x - g^T x \quad \text{subject to} \quad Ax = b$$
+of (4.4.14) and the weighted projection (4.4.7), the point of $\{x : Ax = b\}$ nearest to $x_0$ in
+the $H$-norm. Both lead to the augmented system $\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix}
+\begin{bmatrix} x \\ -y \end{bmatrix} = \begin{bmatrix} g \\ b \end{bmatrix}$ of (4.4.8), which the
+range-space method (4.4.9) and the null-space method (4.4.10)–(4.4.13) reduce to smaller systems.
+
+The proofs use the backbone modules `Numlib.LinearAlgebra.Matrix.LeastSquares`,
+`Numlib.LinearAlgebra.Matrix.CompleteOrthogonal`, `Numlib.LinearAlgebra.Matrix.SchurComplement` and
+`Numlib.Analysis.InnerProductSpace.Energy`.
+
+## Main definitions
+
+* Equation (4.4.1), `ConnGouldToint.Chapter04.IsLeastSquaresMultiplier`: $y$ minimizes
+  $\|A^T y - g\|_2$.
+* Equation (4.4.5), `ConnGouldToint.Chapter04.leastSquaresMatrix`: the matrix
+  $\begin{bmatrix} I & A^T \\ A & 0 \end{bmatrix}$.
+* Equation (4.4.7), `ConnGouldToint.Chapter04.IsWeightedProjection`: $x$ minimizes
+  $\frac{1}{2} \|x_0 - z\|_H^2$ over $Az = b$.
+* Equation (4.4.14), `ConnGouldToint.Chapter04.IsEqualityQuadraticMin`: $x$ minimizes
+  $\frac{1}{2} z^T H z - z^T g$ over $Az = b$.
+
+## Main results
+
+* Equation (4.4.2), `ConnGouldToint.Chapter04.least_squares_square_4_4_2`: the expansion of
+  $\|A^T y - g\|_2^2$ as a quadratic in $y$.
+* Equation (4.4.3), `ConnGouldToint.Chapter04.normal_equations_4_4_3`: the least-squares multipliers
+  are the solutions of $AA^T y = Ag$.
+* Equation (4.4.3), `ConnGouldToint.Chapter04.normal_equations_consistent_4_4_3`: the normal
+  equations always have a solution.
+* Equation (4.4.3), `ConnGouldToint.Chapter04.normal_equations_unique_4_4_3`: the solution is unique
+  if and only if the rows of $A$ are linearly independent.
+* Equation (4.4.4), `ConnGouldToint.Chapter04.augmented_least_squares_4_4_4`: the least-squares
+  multipliers are the second components of the solutions of the augmented system.
+* Equation (4.4.5), `ConnGouldToint.Chapter04.isUnit_leastSquaresMatrix`: the augmented matrix is
+  nonsingular if and only if the rows of $A$ are linearly independent.
+* Equation (4.4.6), `ConnGouldToint.Chapter04.complete_orthogonal_4_4_6`: $A$ has a complete
+  orthogonal decomposition with a lower triangular leading block of order $\operatorname{rank} A$.
+* Equations (4.4.7)–(4.4.8), `ConnGouldToint.Chapter04.weighted_projection_of_system_4_4_8`: a
+  solution of the augmented system gives the weighted projection.
+* Equations (4.4.7)–(4.4.8), `ConnGouldToint.Chapter04.weighted_projection_4_4_8_iff`: the weighted
+  projections are the first components of the solutions of the augmented system.
+* Equations (4.4.8)–(4.4.9), `ConnGouldToint.Chapter04.projection_system_4_4_8`: the augmented
+  system is equivalent to stationarity and feasibility.
+* Equations (4.4.8)–(4.4.9), `ConnGouldToint.Chapter04.projection_range_system_4_4_9`: for
+  invertible $H$, the range-space system for $y$.
+* Equation (4.4.10), `ConnGouldToint.Chapter04.range_null_decomposition_4_4_10`: every vector is the
+  sum of a vector in the range of $A^T$ and a vector in the null space of $A$.
+* Equation (4.4.11), `ConnGouldToint.Chapter04.feasible_null_decomposition_4_4_11`: every feasible
+  point is a particular feasible point plus a null-space displacement.
+* Equation (4.4.12), `ConnGouldToint.Chapter04.reduced_system_4_4_12`: the reduced system
+  $N^T H N u = N^T g - N^T H x_F$.
+* Equation (4.4.13), `ConnGouldToint.Chapter04.null_basis_4_4_13`: the null basis
+  $\begin{bmatrix} -R^{-1} C \\ I \end{bmatrix}$ for $A = \begin{bmatrix} R & C \end{bmatrix}$ up to
+  a column permutation.
+* Equation (4.4.14), `ConnGouldToint.Chapter04.quadratic_minimum_4_4_14`: a stationary feasible
+  point with positive semidefinite reduced Hessian is a global minimizer, and it is unique if the
+  reduced Hessian is positive definite.
+* Equation (4.4.14), `ConnGouldToint.Chapter04.quadratic_minimum_4_4_14_iff`: the minimizers are the
+  feasible stationary points with positive semidefinite reduced Hessian.
+* After (4.4.14), `ConnGouldToint.Chapter04.semidefinite_reduced_quadratic_not_unique`: with a
+  positive semidefinite reduced Hessian the minimizer need not be unique.
+
+## Conventions
+
+* Vectors in norms and inner products are `EuclideanSpace ℝ (Fin n)`; vectors in matrix-vector
+  products are `Fin n → ℝ`. The coercion between them is `WithLp.ofLp`.
+* "The rows of $A$ are linearly independent" is `LinearIndependent ℝ A`, since a matrix is the
+  family of its rows.
+* The block vector $(x, y)$ is `Sum.elim x y`, and the block matrix
+  $\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix}$ is `Matrix.saddleMatrix H Aᵀ 0`.
+
+## Deviations from the source
+
+* **Equation (4.4.10)** (reading). The range-space component of the decomposition lies in the range
+  of $A^T$, which is the orthogonal complement of the null space of $A$. See
+  `ConnGouldToint.Chapter04.range_null_decomposition_4_4_10`.
+* **After (4.4.14)** (correction). Positive semidefinite reduced curvature makes a stationary
+  feasible point a global minimizer but does not make it unique; uniqueness needs positive definite
+  reduced curvature. See `ConnGouldToint.Chapter04.quadratic_minimum_4_4_14` and
+  `ConnGouldToint.Chapter04.semidefinite_reduced_quadratic_not_unique`.
 -/
 
 open Matrix
@@ -24,11 +105,19 @@ namespace ConnGouldToint.Chapter04
 
 variable {m n : ℕ}
 
-/-- **(4.4.1)** A least-squares multiplier minimizes the residual of the transposed system. -/
+/-- **Equation (4.4.1)** of [conn2000trust]. Let $A \in \mathbb{R}^{m \times n}$ and
+$g \in \mathbb{R}^n$. A vector $y \in \mathbb{R}^m$ is a **least-squares multiplier** if it
+minimizes the residual of the transposed system:
+$$\|A^T y - g\|_2 \le \|A^T w - g\|_2 \quad \text{for all } w \in \mathbb{R}^m.$$
+
+It is `Matrix.IsLeastSquaresSolution Aᵀ g y`. -/
 abbrev IsLeastSquaresMultiplier (A : Matrix (Fin m) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n))
     (y : EuclideanSpace ℝ (Fin m)) : Prop := Matrix.IsLeastSquaresSolution Aᵀ g y
 
-/-- **(4.4.2)** The squared residual equals the quadratic objective. -/
+/-- **Equation (4.4.2)** of [conn2000trust]. Let $A \in \mathbb{R}^{m \times n}$,
+$g \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$. Then
+$$\|A^T y - g\|_2^2 = y^T A A^T y - 2 y^T A g + g^T g.$$
+-/
 theorem least_squares_square_4_4_2 (A : Matrix (Fin m) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (y : EuclideanSpace ℝ (Fin m)) :
     ‖Aᵀ.toEuclideanLin y - g‖ ^ 2 =
@@ -38,7 +127,11 @@ theorem least_squares_square_4_4_2 (A : Matrix (Fin m) (Fin n) ℝ)
     Matrix.toEuclideanLin_transpose_inner_left A (Aᵀ.toEuclideanLin y) y,
     Matrix.toEuclideanLin_transpose_inner_left A g y]
 
-/-- **(4.4.3)** The normal equations characterize the least-squares multipliers. -/
+/-- **Equation (4.4.3)** of [conn2000trust]. Let $A \in \mathbb{R}^{m \times n}$ and
+$g \in \mathbb{R}^n$. A vector $y \in \mathbb{R}^m$ is a least-squares multiplier if and only if
+it solves the normal equations
+$$A A^T y = A g.$$
+-/
 theorem normal_equations_4_4_3 {A : Matrix (Fin m) (Fin n) ℝ}
     {g : EuclideanSpace ℝ (Fin n)} {y : EuclideanSpace ℝ (Fin m)} :
     IsLeastSquaresMultiplier A g y ↔ (A * Aᵀ).toEuclideanLin y = A.toEuclideanLin g := by
@@ -46,15 +139,17 @@ theorem normal_equations_4_4_3 {A : Matrix (Fin m) (Fin n) ℝ}
     (Matrix.isLeastSquaresSolution_iff_normalEquations (A := Aᵀ) (b := g) (x := y))
 
 
-/-- **(4.4.3)** The normal equations are consistent for every right-hand side
-of the original least-squares problem. -/
+/-- **Equation (4.4.3)** of [conn2000trust], consistency. Let $A \in \mathbb{R}^{m \times n}$ and
+$g \in \mathbb{R}^n$. Then the normal equations $AA^T y = Ag$ have a solution
+$y \in \mathbb{R}^m$. -/
 theorem normal_equations_consistent_4_4_3 (A : Matrix (Fin m) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) :
     ∃ y : EuclideanSpace ℝ (Fin m), (A * Aᵀ).toEuclideanLin y = A.toEuclideanLin g :=
   ⟨_, normal_equations_4_4_3.mp (Matrix.isLeastSquaresSolution_pinv Aᵀ g)⟩
 
-/-- **(4.4.3)** The normal-equation solution is unique exactly when the rows
-of the original matrix are independent. -/
+/-- **Equation (4.4.3)** of [conn2000trust], uniqueness. Let $A \in \mathbb{R}^{m \times n}$ and
+$g \in \mathbb{R}^n$. The normal equations $AA^T y = Ag$ have exactly one solution if and only
+if the rows of $A$ are linearly independent. -/
 theorem normal_equations_unique_4_4_3 (A : Matrix (Fin m) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) :
     (∃! y : EuclideanSpace ℝ (Fin m), (A * Aᵀ).toEuclideanLin y = A.toEuclideanLin g) ↔
@@ -77,19 +172,28 @@ theorem normal_equations_unique_4_4_3 (A : Matrix (Fin m) (Fin n) ℝ)
       (Matrix.existsUnique_isLeastSquaresSolution (A := Aᵀ)
         (by simpa only [transpose_transpose] using h) g)
 
-/-- **(4.4.5)** The coefficient matrix of the augmented least-squares system. -/
+/-- **Equation (4.4.5)** of [conn2000trust]. For $A \in \mathbb{R}^{m \times n}$, the coefficient
+matrix of the augmented least-squares system is
+$$\begin{bmatrix} I & A^T \\ A & 0 \end{bmatrix} \in \mathbb{R}^{(n + m) \times (n + m)}.$$
+-/
 abbrev leastSquaresMatrix (A : Matrix (Fin m) (Fin n) ℝ) :
     Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) ℝ := Matrix.fromBlocks 1 Aᵀ A 0
 
-/-- The augmented matrix (4.4.5) is nonsingular exactly when the rows of `A`
-are linearly independent. -/
+/-- **Equation (4.4.5)** of [conn2000trust], nonsingularity. For $A \in \mathbb{R}^{m \times n}$,
+the matrix $\begin{bmatrix} I & A^T \\ A & 0 \end{bmatrix}$ is nonsingular if and only if the
+rows of $A$ are linearly independent. -/
 theorem isUnit_leastSquaresMatrix (A : Matrix (Fin m) (Fin n) ℝ) :
     IsUnit (leastSquaresMatrix A) ↔ LinearIndependent ℝ A := by
   simpa only [leastSquaresMatrix, conjTranspose_eq_transpose_of_trivial, transpose_transpose] using
     (Matrix.isUnit_augmented_iff Aᵀ)
 
-/-- **(4.4.4)** The least-squares multipliers are exactly the second components of the
-solutions of the augmented system, with the residual as the first component. -/
+/-- **Equation (4.4.4)** of [conn2000trust]. Let $A \in \mathbb{R}^{m \times n}$,
+$g \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$. Then $y$ is a least-squares multiplier if and
+only if there is $r \in \mathbb{R}^n$ with
+$$\begin{bmatrix} I & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} r \\ y \end{bmatrix} =
+  \begin{bmatrix} g \\ 0 \end{bmatrix}.$$
+
+The first component is then the residual $r = g - A^T y$. -/
 theorem augmented_least_squares_4_4_4 (A : Matrix (Fin m) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (y : EuclideanSpace ℝ (Fin m)) :
     IsLeastSquaresMultiplier A g y ↔
@@ -117,8 +221,14 @@ theorem augmented_least_squares_4_4_4 (A : Matrix (Fin m) (Fin n) ℝ)
     obtain ⟨he, hz⟩ := (hblock r).1 hr
     rw [← he, Matrix.mulVec_add, hz, zero_add]
 
-/-- **(4.4.6)** A complete orthogonal decomposition with leading block of order
-`rank A`. An SVD gives a diagonal leading block, in particular a lower triangular one. -/
+/-- **Equation (4.4.6)** of [conn2000trust] (complete orthogonal decomposition). Let
+$A \in \mathbb{R}^{m \times n}$ have rank $r$. Then there are orthogonal matrices
+$U \in \mathbb{R}^{m \times m}$ and $V \in \mathbb{R}^{n \times n}$ such that
+$$U^T A V = \begin{bmatrix} T & 0 \\ 0 & 0 \end{bmatrix}$$
+with $T \in \mathbb{R}^{r \times r}$ nonsingular and lower triangular.
+
+The decomposition is `Matrix.IsCompleteOrthogonal A U V A.rank`. The proof takes a singular
+value decomposition, whose leading block is diagonal. -/
 theorem complete_orthogonal_4_4_6 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U V, ∃ h : Matrix.IsCompleteOrthogonal A U V A.rank,
       ((Uᵀ * A * V).submatrix (Fin.castLE h.le_rows) (Fin.castLE h.le_cols)).IsLowerTriangular := by
@@ -131,8 +241,15 @@ theorem complete_orthogonal_4_4_6 (A : Matrix (Fin m) (Fin n) ℝ) :
   have hne : (i : ℕ) ≠ (j : ℕ) := fun h => (ne_of_lt hij) (Fin.ext h.symm)
   simp [Matrix.rectDiagonal_apply, hne]
 
-/-- **(4.4.7)** A weighted projection minimizes half the squared energy distance
-over the affine constraint set. -/
+/-- **Equation (4.4.7)** of [conn2000trust]. Let $H \in \mathbb{R}^{n \times n}$ be symmetric
+positive definite, $A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$ and
+$x_0 \in \mathbb{R}^n$. A point $x$ is the **weighted projection** of $x_0$ onto
+$\{z : Az = b\}$ if $Ax = b$ and $x$ minimizes
+$$\tfrac{1}{2} \|x_0 - z\|_H^2$$
+over all $z$ with $Az = b$.
+
+The $H$-norm is `energyNorm` of `Matrix.toEuclideanLin H`. The positive definiteness is an
+argument that the definition does not use. -/
 def IsWeightedProjection (H : Matrix (Fin n) (Fin n) ℝ) (_ : H.PosDef)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m))
     (x₀ x : EuclideanSpace ℝ (Fin n)) : Prop :=
@@ -140,8 +257,12 @@ def IsWeightedProjection (H : Matrix (Fin n) (Fin n) ℝ) (_ : H.PosDef)
     IsMinOn (fun z => (1 / 2 : ℝ) * energyNorm H.toEuclideanLin (x₀ - z) ^ 2)
       {z | A.toEuclideanLin z = b} x
 
-/-- **(4.4.8)–(4.4.9)** The augmented system is equivalent to the stationarity and
-feasibility equations, with the multiplier negated in the augmented unknown. -/
+/-- **Equations (4.4.8)–(4.4.9)** of [conn2000trust]. Let $H \in \mathbb{R}^{n \times n}$,
+$A \in \mathbb{R}^{m \times n}$, $x, g \in \mathbb{R}^n$ and $y, b \in \mathbb{R}^m$. Then
+$$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bmatrix} =
+  \begin{bmatrix} g \\ b \end{bmatrix} \iff Hx = g + A^T y \text{ and } Ax = b.$$
+
+The second block of the unknown is the negated multiplier $-y$. -/
 theorem projection_system_4_4_8 (H : Matrix (Fin n) (Fin n) ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) (x g : Fin n → ℝ) (y b : Fin m → ℝ) :
     Matrix.saddleMatrix H Aᵀ 0 *ᵥ Sum.elim x (-y) = Sum.elim g b ↔
@@ -149,9 +270,13 @@ theorem projection_system_4_4_8 (H : Matrix (Fin n) (Fin n) ℝ)
   rw [Matrix.saddleMatrix_mulVec_elim]
   simp [conjTranspose_eq_transpose_of_trivial, mulVec_neg, ← sub_eq_add_neg, sub_eq_iff_eq_add]
 
-/-- **(4.4.10)** Every vector decomposes into a row-space component and a null-space
-component. The row space is the range of the transpose, the space in the domain
-orthogonal to the kernel. -/
+/-- **Equation (4.4.10)** of [conn2000trust]. Let $A \in \mathbb{R}^{m \times n}$. Every
+$x \in \mathbb{R}^n$ is the sum of a range-space component and a null-space component: there are
+$r \in \mathbb{R}^m$ and $z \in \mathbb{R}^n$ with
+$$x = A^T r + z, \qquad Az = 0.$$
+
+**Reading.** The source calls the first component the row-space component. Here it is a vector
+of the range of $A^T$, which is the orthogonal complement of the null space of $A$. -/
 theorem range_null_decomposition_4_4_10 (A : Matrix (Fin m) (Fin n) ℝ)
     (x : EuclideanSpace ℝ (Fin n)) :
     ∃ r : EuclideanSpace ℝ (Fin m), ∃ z : EuclideanSpace ℝ (Fin n),
@@ -161,7 +286,10 @@ theorem range_null_decomposition_4_4_10 (A : Matrix (Fin m) (Fin n) ℝ)
   obtain ⟨r, hr⟩ := hw
   exact ⟨r, z, hz, by rw [hr, add_comm]; exact hx⟩
 
-/-- **(4.4.11)** The difference of two feasible points is a null-space displacement. -/
+/-- **Equation (4.4.11)** of [conn2000trust]. Let $A \in \mathbb{R}^{m \times n}$, and let the
+columns of $N \in \mathbb{R}^{n \times k}$ span the null space of $A$, that is, every $z$ with
+$Az = 0$ is $Nu$ for some $u$. If $Ax = b$ and $Ax_F = b$, then $x = x_F + Nu$ for some
+$u \in \mathbb{R}^k$. -/
 theorem feasible_null_decomposition_4_4_11 {k : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
     (N : Matrix (Fin n) (Fin k) ℝ) (x xF : Fin n → ℝ) (b : Fin m → ℝ)
     (hx : A *ᵥ x = b) (hF : A *ᵥ xF = b)
@@ -170,8 +298,13 @@ theorem feasible_null_decomposition_4_4_11 {k : ℕ} (A : Matrix (Fin m) (Fin n)
   obtain ⟨u, hu⟩ := hN (x - xF) (by rw [Matrix.mulVec_sub, hx, hF, sub_self])
   exact ⟨u, by rw [hu]; abel⟩
 
-/-- **(4.4.12)** Premultiplying stationarity by the transpose of the null basis
-gives the reduced system for the null-space coordinates. -/
+/-- **Equation (4.4.12)** of [conn2000trust]. Let $H \in \mathbb{R}^{n \times n}$,
+$A \in \mathbb{R}^{m \times n}$ and $N \in \mathbb{R}^{n \times k}$ with $AN = 0$. Let
+$x_F, g \in \mathbb{R}^n$, $y \in \mathbb{R}^m$ and $u \in \mathbb{R}^k$ satisfy the
+stationarity condition $H(x_F + Nu) = g + A^T y$. Then the null-space coordinates $u$ solve the
+reduced system
+$$N^T H N u = N^T g - N^T H x_F.$$
+-/
 theorem reduced_system_4_4_12 {k : ℕ} (H : Matrix (Fin n) (Fin n) ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) (N : Matrix (Fin n) (Fin k) ℝ)
     (xF g : Fin n → ℝ) (y : Fin m → ℝ) (u : Fin k → ℝ)
@@ -183,9 +316,15 @@ theorem reduced_system_4_4_12 {k : ℕ} (H : Matrix (Fin n) (Fin n) ℝ)
   rw [mulVec_mulVec]
   exact eq_sub_of_add_eq (by simpa [add_comm, Matrix.mul_assoc] using h)
 
-/-- **(4.4.13)** In pivot/free coordinates, the null basis has blocks
-`[-R⁻¹ C; I]`. Reindexing these coordinates by the column permutation preserves
-the kernel representation and the uniqueness of the free coefficients. -/
+/-- **Equation (4.4.13)** of [conn2000trust]. Let $R \in \mathbb{R}^{m \times m}$ be nonsingular and
+$C \in \mathbb{R}^{m \times k}$, and let $A = \begin{bmatrix} R & C \end{bmatrix}$ with its
+columns permuted, and
+$$N = \begin{bmatrix} -R^{-1} C \\ I \end{bmatrix}$$
+with its rows permuted in the same way. Then $u \mapsto Nu$ is injective, and $Az = 0$ if and
+only if $z = Nu$ for some $u \in \mathbb{R}^k$.
+
+The permutation is a bijection `e : Fin (m + k) ≃ Fin m ⊕ Fin k` that sends each column index of
+$A$ to a pivot or a free coordinate. -/
 theorem null_basis_4_4_13 {k : ℕ} (R : Matrix (Fin m) (Fin m) ℝ) (C : Matrix (Fin m) (Fin k) ℝ)
     (hR : IsUnit R) (e : Fin (m + k) ≃ (Fin m ⊕ Fin k)) :
     let A := (Matrix.fromCols R C).submatrix id e
@@ -227,15 +366,28 @@ theorem null_basis_4_4_13 {k : ℕ} (R : Matrix (Fin m) (Fin m) ℝ) (C : Matrix
         simp
       rw [h₁, h₂, Matrix.mulVec_neg, Matrix.mulVec_nonsing_inv_mulVec hR, neg_add_cancel]
 
-/-- **(4.4.14)** A minimizer of the equality-constrained quadratic objective. -/
+/-- **Equation (4.4.14)** of [conn2000trust]. Let $H \in \mathbb{R}^{n \times n}$,
+$A \in \mathbb{R}^{m \times n}$, $g \in \mathbb{R}^n$ and $b \in \mathbb{R}^m$. A point $x$ is a
+**minimizer of the equality-constrained quadratic** if $Ax = b$ and $x$ minimizes
+$$\tfrac{1}{2} z^T H z - z^T g$$
+over all $z$ with $Az = b$. -/
 def IsEqualityQuadraticMin (H : Matrix (Fin n) (Fin n) ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) (g x : Fin n → ℝ) (b : Fin m → ℝ) : Prop :=
   A *ᵥ x = b ∧ IsMinOn (fun z => (1 / 2 : ℝ) * (z ⬝ᵥ (H *ᵥ z)) - z ⬝ᵥ g)
     {z | A *ᵥ z = b} x
 
-/-- **(4.4.14)** A stationary feasible point globally minimizes the quadratic if the
-reduced Hessian is positive semidefinite. If it is positive definite, this global
-minimizer is unique. -/
+/-- **Equation (4.4.14)** of [conn2000trust], sufficiency and uniqueness. Let
+$H \in \mathbb{R}^{n \times n}$ be symmetric, $A \in \mathbb{R}^{m \times n}$,
+$g \in \mathbb{R}^n$ and $b \in \mathbb{R}^m$. Let $x$ be feasible, $Ax = b$, and stationary,
+$Hx = g + A^T y$ for some $y \in \mathbb{R}^m$, and suppose $d^T H d \ge 0$ for every $d$ with
+$Ad = 0$. Then
+
+* $x$ is a global minimizer of $\frac{1}{2} z^T H z - z^T g$ subject to $Az = b$, and
+* if moreover $d^T H d > 0$ for every nonzero $d$ with $Ad = 0$, then $x$ is the only minimizer.
+
+**Correction.** The source draws uniqueness from positive semidefinite reduced curvature.
+Semidefinite curvature gives only global optimality, and uniqueness needs positive definite
+reduced curvature; see `ConnGouldToint.Chapter04.semidefinite_reduced_quadratic_not_unique`. -/
 theorem quadratic_minimum_4_4_14 {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm)
     (A : Matrix (Fin m) (Fin n) ℝ) {x g : Fin n → ℝ} {y b : Fin m → ℝ}
     (hx : A *ᵥ x = b) (hstat : H *ᵥ x = g + Aᵀ *ᵥ y)
@@ -271,9 +423,15 @@ theorem quadratic_minimum_4_4_14 {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm
   linarith [hdiff z hz.1]
 
 
-/-- **(4.4.14)** An equality-constrained quadratic minimizer is characterized
-by feasibility, stationarity, and nonnegative curvature in the null space.
-The multiplier exists even when the equality rows are dependent. -/
+/-- **Equation (4.4.14)** of [conn2000trust], characterization. Let $H \in \mathbb{R}^{n \times n}$
+be symmetric, $A \in \mathbb{R}^{m \times n}$, $g, x \in \mathbb{R}^n$ and $b \in \mathbb{R}^m$.
+Then $x$ minimizes $\frac{1}{2} z^T H z - z^T g$ subject to $Az = b$ if and only if
+
+* $Ax = b$,
+* $Hx = g + A^T y$ for some $y \in \mathbb{R}^m$, and
+* $d^T H d \ge 0$ for every $d$ with $Ad = 0$.
+
+The multiplier $y$ exists also when the rows of $A$ are linearly dependent. -/
 theorem quadratic_minimum_4_4_14_iff {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm)
     (A : Matrix (Fin m) (Fin n) ℝ) (g x : Fin n → ℝ) (b : Fin m → ℝ) :
     IsEqualityQuadraticMin H A g x b ↔
@@ -350,8 +508,12 @@ private theorem weighted_projection_objective {H : Matrix (Fin n) (Fin n) ℝ} (
   simp only [WithLp.ofLp_sub, mulVec_sub, dotProduct_sub, sub_dotProduct, hcross]
   ring
 
-/-- **(4.4.7)–(4.4.8)** A solution of the augmented system for a positive-definite
-weight gives the weighted projection onto the affine constraint set. -/
+/-- **Equations (4.4.7)–(4.4.8)** of [conn2000trust]. Let $H \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite, $A \in \mathbb{R}^{m \times n}$, $x_0, x \in \mathbb{R}^n$,
+$y \in \mathbb{R}^m$ and $b \in \mathbb{R}^m$. If
+$$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bmatrix} =
+  \begin{bmatrix} H x_0 \\ b \end{bmatrix},$$
+then $x$ is the weighted projection of $x_0$ onto $\{z : Az = b\}$. -/
 theorem weighted_projection_of_system_4_4_8 {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef)
     (A : Matrix (Fin m) (Fin n) ℝ) (x₀ x : EuclideanSpace ℝ (Fin n))
     (y : Fin m → ℝ) (b : EuclideanSpace ℝ (Fin m))
@@ -375,8 +537,13 @@ theorem weighted_projection_of_system_4_4_8 {H : Matrix (Fin n) (Fin n) ℝ} (hH
     exact add_le_add_left (isMinOn_iff.mp hmin _ hz') _
 
 
-/-- **(4.4.7)–(4.4.8)** A point is the weighted projection exactly when it
-is the primal component of an augmented-system solution. -/
+/-- **Equations (4.4.7)–(4.4.8)** of [conn2000trust], characterization. Let
+$H \in \mathbb{R}^{n \times n}$ be symmetric positive definite, $A \in \mathbb{R}^{m \times n}$,
+$x_0, x \in \mathbb{R}^n$ and $b \in \mathbb{R}^m$. Then $x$ is the weighted projection of $x_0$
+onto $\{z : Az = b\}$ if and only if there is $y \in \mathbb{R}^m$ with
+$$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bmatrix} =
+  \begin{bmatrix} H x_0 \\ b \end{bmatrix}.$$
+-/
 theorem weighted_projection_4_4_8_iff {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.PosDef)
     (A : Matrix (Fin m) (Fin n) ℝ) (x₀ x : EuclideanSpace ℝ (Fin n))
     (b : EuclideanSpace ℝ (Fin m)) :
@@ -405,8 +572,14 @@ theorem weighted_projection_4_4_8_iff {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.P
   · rintro ⟨y, hy⟩
     exact weighted_projection_of_system_4_4_8 hH A x₀ x y b hy
 
-/-- **(4.4.8)–(4.4.9)** Eliminating the primal block gives the range-space
-system and recovers the primal point from its multiplier. -/
+/-- **Equations (4.4.8)–(4.4.9)** of [conn2000trust], range-space method. Let
+$H \in \mathbb{R}^{n \times n}$ be invertible, $A \in \mathbb{R}^{m \times n}$,
+$x, g \in \mathbb{R}^n$ and $y, b \in \mathbb{R}^m$. Then
+$$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bmatrix} =
+  \begin{bmatrix} g \\ b \end{bmatrix}$$
+if and only if
+$$x = H^{-1}(g + A^T y) \quad \text{and} \quad A H^{-1} A^T y = b - A H^{-1} g.$$
+-/
 theorem projection_range_system_4_4_9 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsUnit H)
     (A : Matrix (Fin m) (Fin n) ℝ) (x g : Fin n → ℝ) (y b : Fin m → ℝ) :
     Matrix.saddleMatrix H Aᵀ 0 *ᵥ Sum.elim x (-y) = Sum.elim g b ↔
@@ -428,8 +601,11 @@ theorem projection_range_system_4_4_9 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsU
   exact ⟨fun h ↦ eq_sub_of_add_eq (by simpa [add_comm] using h),
     fun h ↦ by rw [h]; abel⟩
 
-/-- A zero quadratic on an unconstrained line has semidefinite reduced curvature
-and distinct global minimizers. -/
+/-- **Section 4.4** of [conn2000trust], counterexample to uniqueness after (4.4.14). Let $n = 1$,
+$m = 0$, $H = 0$ and $g = 0$, so that there are no constraints. Then $d^T H d \ge 0$ for all
+$d$, and there are two distinct minimizers of $\frac{1}{2} z^T H z - z^T g$.
+
+The witnesses are $x = 0$ and $z = 1$. -/
 theorem semidefinite_reduced_quadratic_not_unique :
     let H : Matrix (Fin 1) (Fin 1) ℝ := 0
     let A : Matrix (Fin 0) (Fin 1) ℝ := 0

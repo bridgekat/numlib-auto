@@ -12,7 +12,76 @@ import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.Analysis.Normed.Operator.Banach
 import Mathlib.Tactic.Abel
 
-/-! # The quadratic penalty and augmented Lagrangian -/
+/-!
+# Conn, Gould and Toint, Section 14.2: The quadratic penalty and augmented Lagrangian
+
+This module formalizes the penalty functions and multiplier estimates of [conn2000trust], Section
+14.2, for the problem of minimizing $f(x)$ subject to $c(x) = 0$, with $f : E \to \mathbb{R}$ and
+$c : E \to F$. For a penalty parameter $\mu > 0$ and a multiplier estimate $y$, the quadratic
+penalty function is $f(x) + \|c(x)\|^2 / (2\mu)$ and the augmented Lagrangian is $\Phi(x, y, \mu) =
+f(x) - \langle y, c(x) \rangle + \|c(x)\|^2 / (2\mu)$. The first-order multiplier estimate is
+$y^F(x) = y - c(x) / \mu$, and the least-squares multiplier estimate is
+$y^{LS}(x) = (A A^*)^{-1} A \nabla f(x)$ with $A = c'(x)$.
+
+Lemma 14.2.1 gives the derivative of the least-squares estimate. Lemma 14.2.2 considers points
+$x_k \to x_*$ with $\|\nabla_x \Phi(x_k, y_k, \mu_k)\| \le \omega_k$. It bounds the errors of both
+multiplier estimates and the constraint violation (part (i)), shows that both estimates converge to
+$y_* = y^{LS}(x_*)$ and that a feasible limit is a KKT point (part (ii)), and gives sharper local
+estimates at a nonsingular KKT point (parts (iii) and (iv)). The KKT system is the signed operator
+`ConnGouldToint.Chapter15.sqpKKT` of Chapter 15.
+
+## Main definitions
+
+* Equation (14.2.1), `ConnGouldToint.Chapter14.quadraticPenalty`: the quadratic penalty function.
+* Equation (14.2.2), `ConnGouldToint.Chapter14.augmentedLagrangian`: the augmented Lagrangian.
+* Equation (14.2.3), `ConnGouldToint.Chapter14.IsEqualityKKT`: the first-order conditions of the
+  equality-constrained problem.
+* Equation (14.2.5), `ConnGouldToint.Chapter14.firstOrderMultiplier`: the first-order multiplier
+  estimate.
+* Equation (14.2.8), `ConnGouldToint.Chapter14.leastSquaresMultiplier`: the least-squares multiplier
+  estimate.
+* Equation (14.2.28), `ConnGouldToint.Chapter14.penaltyKKTJacobian`: the KKT operator of the
+  equality-constrained problem.
+
+## Main results
+
+* Equation (14.2.4),
+  `ConnGouldToint.Chapter14.fderiv_lagrangian_eq_zero_of_augmentedLagrangian_min`: at a local
+  minimizer of the augmented Lagrangian, $f'(x) = \langle y^F(x), c'(x) \cdot \rangle$.
+* Equation (14.2.6), `ConnGouldToint.Chapter14.constraint_eq_multiplier_difference`:
+  $c(x) = \mu (y - y^F(x))$.
+* Equation (14.2.7), `ConnGouldToint.Chapter14.fderiv_augmentedLagrangian_eq`: the derivative of the
+  augmented Lagrangian is the derivative of the Lagrangian at $y^F(x)$.
+* Equation (14.2.10), `ConnGouldToint.Chapter14.leastSquaresMultiplier_normal`: the normal equations
+  of the least-squares estimate.
+* Lemma 14.2.1, `ConnGouldToint.Chapter14.lemma_14_2_1`: the derivative (14.2.9) of the
+  least-squares estimate.
+* Lemma 14.2.2(i), `ConnGouldToint.Chapter14.lemma_14_2_2_i`: error bounds for the multiplier
+  estimates and the constraint violation.
+* Lemma 14.2.2(ii), `ConnGouldToint.Chapter14.lemma_14_2_2_ii`: convergence of both estimates, and
+  the KKT conditions at a feasible limit.
+* Equation (14.2.30), `ConnGouldToint.Chapter14.penaltyKKT_error_bound`: the local error bound at a
+  nonsingular KKT point.
+* Lemma 14.2.2(iii), `ConnGouldToint.Chapter14.lemma_14_2_2_iii`: the local estimates for small
+  penalty parameters.
+* Lemma 14.2.2(iv), `ConnGouldToint.Chapter14.lemma_14_2_2_iv`: a common bound for all errors
+  proportional to the larger tolerance.
+
+## Implementation notes
+
+* The least-squares part works with a complete real inner product space $G$ for the variables and a
+  complete space $F$ for the constraints. The adjoint $A^*$ of $A = c'(x)$ stands for $A^T$, and the
+  inverse is `Ring.inverse`, which is $0$ at a noninvertible operator.
+* The KKT operator acts on a primal increment and the increment of the multiplier itself. The source
+  puts the negated multiplier increment in its input vector instead; the two forms are equivalent.
+
+## Deviations from the source
+
+* **Equation (14.2.3)** (typo). Both derivatives in the stationarity condition are evaluated at the
+  feasible point $x$. See `ConnGouldToint.Chapter14.IsEqualityKKT`.
+* **Equation (14.2.26)** (typo). Both multiplier differences on the right side have the sign of the
+  identity (14.2.6). See `ConnGouldToint.Chapter14.lemma_14_2_2_i`.
+-/
 
 open scoped RealInnerProductSpace
 
@@ -22,26 +91,42 @@ variable {E F : Type*}
 variable [NormedAddCommGroup E] [NormedSpace ℝ E]
 variable [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
-/-- The quadratic penalty function (14.2.1). -/
+/-- **Equation (14.2.1)** of [conn2000trust]. The **quadratic penalty function** is
+$$f(x) + \frac{1}{2\mu} \|c(x)\|^2.$$
+
+At $\mu = 0$, Lean's inverse gives $(2\mu)^{-1} = 0$, and the function is $f$. -/
 noncomputable def quadraticPenalty (f : E → ℝ) (c : E → F) (μ : ℝ) (x : E) : ℝ :=
   f x + (2 * μ)⁻¹ * ‖c x‖ ^ 2
 
-/-- The augmented Lagrangian (14.2.2). -/
+/-- **Equation (14.2.2)** of [conn2000trust]. The **augmented Lagrangian** is
+$$\Phi(x, y, \mu) = f(x) - \langle y, c(x) \rangle + \frac{1}{2\mu} \|c(x)\|^2.$$
+
+At $\mu = 0$, Lean's inverse gives $(2\mu)^{-1} = 0$, and the function is the Lagrangian. -/
 noncomputable def augmentedLagrangian (f : E → ℝ) (c : E → F) (y : F) (μ : ℝ) (x : E) : ℝ :=
   lagrangian f c y x + (2 * μ)⁻¹ * ‖c x‖ ^ 2
 
-/-- The first-order multiplier estimate (14.2.5). -/
+/-- **Equation (14.2.5)** of [conn2000trust]. The **first-order multiplier estimate** is
+$$y^F(x) = y - \frac{c(x)}{\mu}.$$
+
+At $\mu = 0$, Lean's inverse gives $y^F(x) = y$. -/
 noncomputable def firstOrderMultiplier (c : E → F) (y : F) (μ : ℝ) (x : E) : F :=
   y - μ⁻¹ • c x
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
-/-- The constraint violation is a scaled multiplier difference, as in (14.2.6). -/
+/-- **Equation (14.2.6)** of [conn2000trust]. If $\mu \neq 0$, the constraint value is a scaled
+multiplier difference:
+$$c(x) = \mu \big(y - y^F(x)\big).$$
+-/
 theorem constraint_eq_multiplier_difference (c : E → F) (y : F) {μ : ℝ} (hμ : μ ≠ 0) (x : E) :
     c x = μ • (y - firstOrderMultiplier c y μ x) := by
   rw [firstOrderMultiplier, sub_sub_cancel, smul_smul, mul_inv_cancel₀ hμ, one_smul]
 
-/-- The equality-constrained stationarity and feasibility conditions (14.2.3).
-Both derivatives are evaluated at the same point `x`. -/
+/-- **Equation (14.2.3)** of [conn2000trust]. The pair $(x, y)$ satisfies the **first-order
+conditions** of the equality-constrained problem if
+$$c(x) = 0 \quad\text{and}\quad f'(x) = \langle y, c'(x)\, \cdot \rangle.$$
+
+**Typo.** In the printed stationarity condition the two derivatives are not both evaluated at
+$x$. Here both are evaluated at the feasible point $x$. -/
 def IsEqualityKKT (f : E → ℝ) (c : E → F) (x : E) (y : F) : Prop :=
   c x = 0 ∧ fderiv ℝ f x = (innerSL ℝ y).comp (fderiv ℝ c x)
 
@@ -51,8 +136,9 @@ private theorem hasFDerivAt_lagrangian {f : E → ℝ} {c : E → F} {x : E}
       (fderiv ℝ f x - (innerSL ℝ y).comp (fderiv ℝ c x)) x :=
   hf.hasFDerivAt.sub ((innerSL ℝ y).hasFDerivAt.comp x hc.hasFDerivAt)
 
-/-- The derivative identity (14.2.7). The estimated multiplier is held fixed when
-differentiating the Lagrangian. -/
+/-- **Equation (14.2.7)** of [conn2000trust]. If $f$ and $c$ are differentiable at $x$, then
+$$\nabla_x \Phi(x, y, \mu) = \nabla_x \ell\big(x, y^F(x)\big),$$
+where the multiplier $y^F(x)$ is held fixed when the Lagrangian is differentiated. -/
 theorem fderiv_augmentedLagrangian_eq {f : E → ℝ} {c : E → F} {x : E}
     (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x) (y : F) (μ : ℝ) :
     fderiv ℝ (augmentedLagrangian f c y μ) x =
@@ -65,8 +151,10 @@ theorem fderiv_augmentedLagrangian_eq {f : E → ℝ} {c : E → F} {x : E}
   simp [firstOrderMultiplier, mul_inv_rev]
   ring
 
-/-- Equation (14.2.4). At a local minimum of the augmented Lagrangian, the objective
-derivative equals the constraint derivative paired with the first-order multiplier estimate. -/
+/-- **Equation (14.2.4)** of [conn2000trust]. Let $f$ and $c$ be differentiable at $x$. If $x$ is a
+local minimizer of $\Phi(\cdot, y, \mu)$, then
+$$f'(x) = \langle y^F(x), c'(x)\, \cdot \rangle.$$
+-/
 theorem fderiv_lagrangian_eq_zero_of_augmentedLagrangian_min
     {f : E → ℝ} {c : E → F} {x : E} (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) {y : F} {μ : ℝ} (hmin : IsLocalMin
@@ -90,14 +178,22 @@ variable [CompleteSpace G] [CompleteSpace F]
 private noncomputable def adjointCLM : (G →L[ℝ] F) →L[ℝ] (F →L[ℝ] G) :=
   (ContinuousLinearMap.adjoint (𝕜 := ℝ)).toContinuousLinearEquiv.toContinuousLinearMap
 
-/-- The constraint-space Gram operator in the normal equations (14.2.10). -/
+/-- **Equations (14.2.8)–(14.2.10)** of [conn2000trust], the normal-equation operator. For a bounded
+linear map $A : G \to F$, the **Gram operator** is $A A^* : F \to F$. -/
 noncomputable def multiplierGram (A : G →L[ℝ] F) : F →L[ℝ] F := A.comp A.adjoint
 
-/-- The formula (14.2.8) on the locus where the constraint-space Gram operator is invertible. -/
+/-- **Equation (14.2.8)** of [conn2000trust]. For $A : G \to F$ and $g \in G$, the **least-squares
+multiplier estimate** is
+$$y^{LS} = (A A^*)^{-1} A g.$$
+
+The formula is meaningful where $A A^*$ is invertible. Elsewhere Lean's `Ring.inverse` gives
+$y^{LS} = 0$. -/
 noncomputable def leastSquaresMultiplier (A : G →L[ℝ] F) (g : G) : F :=
   Ring.inverse (multiplierGram A) (A g)
 
-/-- In finite dimensions the full-row-rank condition gives an invertible Gram operator. -/
+/-- Full row rank, as in assumption AO.1c of [conn2000trust], gives the nonsingularity condition of
+Lemma 14.2.1. If $F$ is finite-dimensional and $A : G \to F$ is surjective, then $A A^*$ is
+invertible. -/
 theorem multiplierGram_isUnit_of_surjective [FiniteDimensional ℝ F] {A : G →L[ℝ] F}
     (hA : Function.Surjective A) : IsUnit (multiplierGram A) := by
   have hi : Function.Injective A.adjoint := by
@@ -110,14 +206,18 @@ theorem multiplierGram_isUnit_of_surjective [FiniteDimensional ℝ F] {A : G →
   exact ContinuousLinearMap.isUnit_iff_bijective.mpr
     ⟨hG, (LinearMap.injective_iff_surjective (f := (multiplierGram A).toLinearMap)).mp hG⟩
 
-/-- The residual of the least-squares multiplier satisfies the normal equation (14.2.10). -/
+/-- **Equation (14.2.10)** of [conn2000trust]. If $A A^*$ is invertible, the residual of the
+least-squares estimate satisfies the normal equation
+$$A \big(g - A^* y^{LS}\big) = 0.$$
+-/
 theorem leastSquaresMultiplier_normal {A : G →L[ℝ] F} (hA : IsUnit (multiplierGram A)) (g : G) :
     A (g - A.adjoint (leastSquaresMultiplier A g)) = 0 := by
   rw [map_sub, sub_eq_zero]
   have h := DFunLike.congr_fun (Ring.mul_inverse_cancel _ hA) (A g)
   exact h.symm
 
-/-- The multiplier formula minimizes the residual norm on the full-row-rank locus. -/
+/-- **Equation (14.2.8)** of [conn2000trust], least-squares property. If $A A^*$ is invertible, then
+$y^{LS}$ minimizes $y \mapsto \|g - A^* y\|$ over all $y \in F$. -/
 theorem leastSquaresMultiplier_isMinOn {A : G →L[ℝ] F}
     (hA : IsUnit (multiplierGram A)) (g : G) :
     IsMinOn (fun y ↦ ‖g - A.adjoint y‖) Set.univ (leastSquaresMultiplier A g) := by
@@ -133,8 +233,11 @@ theorem leastSquaresMultiplier_isMinOn {A : G →L[ℝ] F}
   rw [norm_add_sq_real, horth, mul_zero, add_zero]
   exact le_add_of_nonneg_right (sq_nonneg _)
 
-/-- The least-squares multiplier is continuously differentiable near a point
-where the constraint Gram operator is invertible, to the order of the input data. -/
+/-- **Equation (14.2.8)** of [conn2000trust], differentiability. Let $A : G \to (G \to F)$ and
+$g : G \to G$ be $C^n$ at $x$, and let $A(x) A(x)^*$ be invertible. Then
+$z \mapsto (A(z) A(z)^*)^{-1} A(z) g(z)$ is $C^n$ at $x$.
+
+Under AW.1, this applies with $A = c'$ and $g = \nabla f$. -/
 theorem leastSquaresMultiplier_contDiffAt {n} {A : G → G →L[ℝ] F} {g : G → G} {x : G}
     (hA : ContDiffAt ℝ n A x) (hg : ContDiffAt ℝ n g x)
     (hu : IsUnit (multiplierGram (A x))) :
@@ -177,7 +280,9 @@ private theorem leastSquaresMultiplier_fderiv_apply {A : G → G →L[ℝ] F}
   simp only [map_add, map_sub]
   abel
 
-/-- The gradient of the Lagrangian with its multiplier fixed. -/
+/-- The gradient of the Lagrangian with the multiplier $y$ fixed is
+$$\nabla_x \ell(x, y) = \nabla f(x) - c'(x)^* y,$$
+when $f$ and $c$ are differentiable at $x$. -/
 theorem gradient_lagrangian_eq {f : G → ℝ} {c : G → F} {x : G}
     (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x) (y : F) :
     gradient (lagrangian f c y) x = gradient f x - (fderiv ℝ c x).adjoint y := by
@@ -187,9 +292,16 @@ theorem gradient_lagrangian_eq {f : G → ℝ} {c : G → F} {x : G}
     inner_gradient_left, ContinuousLinearMap.adjoint_inner_left]
   rfl
 
-/-- Lemma 14.2.1. In (14.2.9), the derivative of the constraint Jacobian
-acting on the residual supplies the correction term. The Lagrangian
-multiplier is held fixed when taking the Hessian. -/
+/-- **Lemma 14.2.1** of [conn2000trust]. Let $f$ and $c$ be twice continuously differentiable, let
+$A(z) = c'(z)$ and $g(z) = \nabla f(z)$, and let $A(x) A(x)^*$ be invertible. Then the
+least-squares estimate $y^{LS}(z) = (A(z) A(z)^*)^{-1} A(z) g(z)$ is differentiable at $x$, and
+for every direction $d$, as in (14.2.9),
+$$(y^{LS})'(x)\, d = (A(x) A(x)^*)^{-1} \Big( A(x) \nabla_{xx} \ell\big(x, y^{LS}(x)\big) d +
+  \big(A'(x) d\big) \big(g(x) - A(x)^* y^{LS}(x)\big) \Big).$$
+
+The multiplier $y^{LS}(x)$ is held fixed in the Hessian of the Lagrangian. The second term, the
+derivative of the constraint Jacobian applied to the least-squares residual, is the correction
+term of (14.2.9). -/
 theorem lemma_14_2_1 {f : G → ℝ} {c : G → F} {x : G}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     (hu : IsUnit (multiplierGram (fderiv ℝ c x))) :
@@ -230,8 +342,10 @@ theorem lemma_14_2_1 {f : G → ℝ} {c : G → F} {x : G}
   exact leastSquaresMultiplier_fderiv_apply
     (hA.differentiableAt one_ne_zero).hasFDerivAt (hg.differentiableAt one_ne_zero).hasFDerivAt hu d
 
-/-- Applying the normal-equation inverse to any stationarity residual
-gives the difference from the least-squares multiplier. -/
+/-- **Equation (14.2.21)** of [conn2000trust], the underlying identity. If $A A^*$ is invertible,
+then for every $y$
+$$y^{LS} - y = (A A^*)^{-1} A \big(g - A^* y\big).$$
+-/
 theorem leastSquaresMultiplier_sub_eq {A : G →L[ℝ] F} (hu : IsUnit (multiplierGram A))
     (g : G) (y : F) :
     leastSquaresMultiplier A g - y =
@@ -254,11 +368,21 @@ private theorem contDiff_gradient' {f : G → ℝ} (hf : ContDiff ℝ 2 f) :
   (InnerProductSpace.toDual ℝ G).symm.toContinuousLinearEquiv.contDiff.comp
     (hf.fderiv_right (by norm_num))
 
-/-- Lemma 14.2.2(i). A uniform inverse bound controls the first-order
-multiplier error, and the least-squares multiplier is locally Lipschitz.
-The feasibility bound follows from the signed identity (14.2.6).
-The two multiplier differences on the right of the printed (14.2.26)
-must both be reversed to agree with that identity. -/
+/-- **Lemma 14.2.2(i)** of [conn2000trust]. Let $f$ and $c$ be twice continuously differentiable,
+let $x_k \to x_*$, and let $c'(x_*) c'(x_*)^*$ be invertible. Let $\mu_k > 0$ and $\|\nabla_x
+\Phi(x_k, y_k, \mu_k)\| \le \omega_k$ for all $k$, and let $y_* = y^{LS}(x_*)$. Then there are
+$K_1, K_2 > 0$ such that, for all large $k$,
+$$\|y^F_k - y_*\| \le K_1 \omega_k + K_2 \|x_k - x_*\|, \qquad \|y^{LS}(x_k) - y_*\| \le K_2
+  \|x_k - x_*\|,$$
+$$\|c(x_k)\| \le \mu_k \big(K_1 \omega_k + \|y_k - y_*\| + K_2 \|x_k - x_*\|\big),$$
+where $y^F_k = y_k - c(x_k) / \mu_k$.
+
+**Typo.** The two multiplier differences on the right side of the printed (14.2.26) have the
+wrong sign. Here they are reversed to agree with the identity (14.2.6), from which the
+feasibility bound follows.
+
+The first two bounds also give (14.2.12)–(14.2.14): a uniform bound on the inverse controls the
+error of the first-order estimate, and the least-squares estimate is locally Lipschitz. -/
 theorem lemma_14_2_2_i {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f)
     (hc : ContDiff ℝ 2 c) {xstar : G} (hu : IsUnit (multiplierGram (fderiv ℝ c xstar)))
     {x : ℕ → G} (hx : Tendsto x atTop (𝓝 xstar))
@@ -329,9 +453,10 @@ theorem lemma_14_2_2_i {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f)
       simpa only [sub_add_sub_cancel] using norm_add_le (y k - ls xstar) (ls xstar - yF)
     _ ≤ _ := by linarith
 
-/-- Lemma 14.2.2(ii). The first-order and least-squares estimates converge
-to the same multiplier. If the limiting point is feasible, the pair
-satisfies the equality-constrained KKT conditions. -/
+/-- **Lemma 14.2.2(ii)** of [conn2000trust]. Under the hypotheses of Lemma 14.2.2(i), suppose also
+that $\omega_k \to 0$. Then
+$$y^F_k \to y_* \quad\text{and}\quad y^{LS}(x_k) \to y_*,$$
+and if $c(x_*) = 0$, then $(x_*, y_*)$ satisfies the first-order conditions (14.2.3). -/
 theorem lemma_14_2_2_ii {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f)
     (hc : ContDiff ℝ 2 c) {xstar : G} (hu : IsUnit (multiplierGram (fderiv ℝ c xstar)))
     {x : ℕ → G} (hx : Tendsto x atTop (𝓝 xstar))
@@ -388,9 +513,12 @@ theorem lemma_14_2_2_ii {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f)
   rw [← inner_gradient_left, show gradient f xstar = (A xstar).adjoint ystar from hs,
     ContinuousLinearMap.adjoint_inner_left]
 
-/-- The signed equality KKT Jacobian in (14.2.28), acting on a primal
-increment and an actual multiplier increment. The textbook instead
-puts the negated multiplier increment in its input vector. -/
+/-- **Equation (14.2.28)** of [conn2000trust]. The **KKT operator** at $z = (x, y)$ is
+$$K(x, y) = \begin{bmatrix} \nabla_{xx} \ell(x, y) & -c'(x)^* \\ c'(x) & 0 \end{bmatrix},$$
+acting on a primal increment and a multiplier increment.
+
+The source puts the negated multiplier increment in its input vector; here the operator acts on
+the multiplier increment itself. The operator is `ConnGouldToint.Chapter15.sqpKKT`. -/
 noncomputable def penaltyKKTJacobian (f : G → ℝ) (c : G → F) (z : G × F) :
     G × F →L[ℝ] G × F :=
   Chapter15.sqpKKT (fun w ↦ fderiv ℝ (gradient (lagrangian f c w.2)) w.1)
@@ -412,7 +540,8 @@ private theorem hasFDerivAt_penaltyKKTResidual {f : G → ℝ} {c : G → F}
       (hc.differentiable (by norm_num) x) y
   simpa only [penaltyKKTJacobian, hg] using hh
 
-/-- A nonsingular equality KKT Jacobian has a surjective constraint block. -/
+/-- Assumption AO.3b for the constraint block of (14.2.28) in [conn2000trust]. If the KKT operator
+$K(x, y)$ is invertible, then $c'(x)$ is surjective. -/
 theorem surjective_of_penaltyKKTJacobian_isUnit {f : G → ℝ} {c : G → F}
     {z : G × F} (hK : IsUnit (penaltyKKTJacobian f c z)) :
     Function.Surjective (fderiv ℝ c z.1) := by
@@ -429,9 +558,14 @@ private theorem penaltyKKTResidual_eq_zero {f : G → ℝ} {c : G → F} {z : G 
   rw [inner_gradient_left, ContinuousLinearMap.adjoint_inner_left]
   exact DFunLike.congr_fun hz.2 d
 
-/-- The local KKT inverse estimate (14.2.30). At a nonsingular root,
-the derivative already gives an eventual bound of the primal and dual
-errors by the two residual norms. -/
+/-- **Equation (14.2.30)** of [conn2000trust]. Let $f$ and $c$ be twice continuously differentiable,
+let $(x_*, y_*)$ satisfy the first-order conditions (14.2.3), and let $K(x_*, y_*)$ be
+invertible. If $x_k \to x_*$ and $v_k \to y_*$, then there is $D > 0$ such that, for all large
+$k$,
+$$\max\{\|x_k - x_*\|, \|v_k - y_*\|\} \le D \big(\|\nabla f(x_k) - c'(x_k)^* v_k\| +
+  \|c(x_k)\|\big).$$
+
+The bound follows from the derivative of the KKT residual at its nonsingular root. -/
 theorem penaltyKKT_error_bound {f : G → ℝ} {c : G → F}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {xstar : G} {ystar : F} (hstar : IsEqualityKKT f c xstar ystar)
@@ -484,8 +618,18 @@ private theorem penaltyKKT_firstOrder_bound {f : G → ℝ} {c : G → F}
     (hf.differentiable (by norm_num) (x k)) (hc.differentiable (by norm_num) (x k))]
   exact hres k
 
-/-- Lemma 14.2.2(iii). A nonsingular KKT root supplies the stronger local
-primal, multiplier, and feasibility estimates for small penalties. -/
+/-- **Lemma 14.2.2(iii)** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be
+twice continuously differentiable, let $c(x_*) = 0$, $x_k \to x_*$, $\mu_k > 0$, $\|\nabla_x
+\Phi(x_k, y_k, \mu_k)\| \le \omega_k$ with $\omega_k \to 0$, and let $K(x_*, y_*)$ be
+invertible, where $y_* = y^{LS}(x_*)$. Then there are $\mu_{\max} > 0$ and $K_3, \dots, K_7 > 0$
+such that, for all large $k$ with $\mu_k \le \mu_{\max}$,
+$$\|x_k - x_*\| \le K_3 \omega_k + K_4 \mu_k \|y_k - y_*\|,$$
+$$\|y^F_k - y_*\| \le K_5 \omega_k + K_6 \mu_k \|y_k - y_*\|, \qquad \|y^{LS}(x_k) - y_*\| \le
+  K_7 \omega_k + K_6 \mu_k \|y_k - y_*\|,$$
+$$\|c(x_k)\| \le K_5 \mu_k \omega_k + (\mu_k + K_6 \mu_k^2) \|y_k - y_*\|.$$
+
+These are the estimates (14.2.16)–(14.2.18), with the small-penalty cutoff $\mu_{\max}$ of
+(14.2.32). -/
 theorem lemma_14_2_2_iii [FiniteDimensional ℝ F] {f : G → ℝ} {c : G → F}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c) {xstar : G}
     (hfeas : c xstar = 0) {x : ℕ → G} (hx : Tendsto x atTop (𝓝 xstar))
@@ -560,10 +704,14 @@ theorem lemma_14_2_2_iii [FiniteDimensional ℝ F] {f : G → ℝ} {c : G → F}
   ring_nf
   exact le_rfl
 
-/-- Lemma 14.2.2(iv) in quantitative form. The primal and both multiplier
-errors have a common majorant proportional to the larger tolerance.
-In particular this majorant transfers any common Q-order of the
-tolerances to an R-order of all three errors. -/
+/-- **Lemma 14.2.2(iv)** of [conn2000trust], quantitative form. Under the hypotheses of Lemma
+14.2.2(iii), let also $\|c(x_k)\| \le \eta_k$ for all $k$. Then there is $C > 0$ such that, for
+all large $k$,
+$$\max\{\|x_k - x_*\|, \|y^F_k - y_*\|, \|y^{LS}(x_k) - y_*\|\} \le C \max\{\omega_k,
+  \eta_k\}.$$
+
+In particular, if the tolerances $\omega_k$ and $\eta_k$ converge to zero with a common Q-order,
+the three errors converge with the same R-order. -/
 theorem lemma_14_2_2_iv [FiniteDimensional ℝ F] {f : G → ℝ} {c : G → F}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c) {xstar : G}
     (hfeas : c xstar = 0) {x : ℕ → G} (hx : Tendsto x atTop (𝓝 xstar))

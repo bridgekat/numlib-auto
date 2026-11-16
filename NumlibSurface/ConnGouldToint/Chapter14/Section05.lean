@@ -6,7 +6,52 @@ import NumlibSurface.ConnGouldToint.Chapter14.Section02
 import NumlibSurface.ConnGouldToint.Chapter15.Section03
 import Mathlib.Analysis.Calculus.Deriv.Slope
 
-/-! # Nonsmooth exact penalties -/
+/-!
+# Conn, Gould and Toint, Section 14.5: Nonsmooth exact penalties
+
+This module formalizes the nonsmooth exact penalty function of [conn2000trust], Section 14.5. The
+constraints are $c(x) \in C$ for a set $C$ of feasible residuals in a normed space $Z$, which can
+encode both equalities and inequalities. The penalty function is $\phi(x, \sigma) = f(x) + \sigma
+\operatorname{dist}(c(x), C)$. Theorem 14.5.1 shows that, for a penalty weight $\sigma$ strictly
+larger than the norm of the multiplier, the second-order sufficient conditions of the constrained
+problem and of the penalty function agree. Theorem 14.5.2 shows that a weight below the norm of the
+multiplier fails to make a KKT point a local minimizer of the penalty function, when the constraint
+derivative is surjective. Counterexamples show that both hypotheses are needed.
+
+## Main definitions
+
+* Equation (14.5.1), `ConnGouldToint.Chapter14.nonsmoothExactPenalty`: the penalty function
+  $f(x) + \sigma \operatorname{dist}(c(x), C)$.
+
+## Main results
+
+* Theorem 14.5.1, `ConnGouldToint.Chapter14.theorem_14_5_1`: equivalence of the second-order tests
+  for $\sigma > \|\ell\|$.
+* Theorem 14.5.1, `ConnGouldToint.Chapter14.theorem_14_5_1_threshold_counterexample`: the
+  equivalence fails at the threshold $\sigma = \|\ell\|$.
+* Theorem 14.5.2, `ConnGouldToint.Chapter14.theorem_14_5_2`: for $\sigma < \|\ell\|$ and a
+  surjective constraint derivative, a stationary point is not a local minimizer of the penalty
+  function.
+* Theorem 14.5.2, `ConnGouldToint.Chapter14.theorem_14_5_2_redundant_constraint_counterexample`:
+  without surjectivity, the conclusion fails.
+
+## Conventions
+
+* Stationarity is written $g + \ell \circ A = 0$, with a multiplier functional $\ell$ on $Z$; for
+  equality constraints, $\ell = -\langle y, \cdot \rangle$ in terms of the multiplier $y$ of
+  (14.2.3).
+
+## Deviations from the source
+
+* **Theorem 14.5.1** (correction). The penalty weight must be strictly larger than the threshold
+  (14.5.2). At the nonstrict threshold the equivalence fails. See
+  `ConnGouldToint.Chapter14.theorem_14_5_1` and
+  `ConnGouldToint.Chapter14.theorem_14_5_1_threshold_counterexample`.
+* **Theorem 14.5.2** (correction). The constraint derivative must be surjective. With a redundant
+  constraint, a multiplier can exceed the penalty weight at a minimizer of the penalty function. See
+  `ConnGouldToint.Chapter14.theorem_14_5_2` and
+  `ConnGouldToint.Chapter14.theorem_14_5_2_redundant_constraint_counterexample`.
+-/
 
 open Filter Topology Set
 open scoped RealInnerProductSpace
@@ -16,17 +61,32 @@ namespace ConnGouldToint.Chapter14
 variable {E Z : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 variable [NormedAddCommGroup Z] [NormedSpace ℝ Z]
 
-/-- The nonsmooth penalty (14.5.1) in distance form. The residual set
-encodes equalities and inequalities. For a monotonic norm and the
-coordinate feasible orthant the distance is the norm of the clipped residual. -/
+/-- **Equation (14.5.1)** of [conn2000trust]. Let $C \subseteq Z$ be the set of feasible residuals
+and $\sigma \in \mathbb{R}$ the penalty weight. The **nonsmooth exact penalty function** is
+$$\phi(x, \sigma) = f(x) + \sigma \operatorname{dist}(c(x), C).$$
+
+The set $C$ encodes equalities and inequalities. For a monotonic norm and the orthant of
+feasible coordinate residuals, the distance is the norm of the clipped residual. -/
 noncomputable def nonsmoothExactPenalty
     (f : E → ℝ) (c : E → Z) (C : Set Z) (σ : ℝ) (x : E) : ℝ :=
   f x + σ * Metric.infDist (c x) C
 
-/-- Corrected Theorem 14.5.1. With a strictly larger weight, the
-constrained and penalized second-order tests agree. The Hessian is that
-of the Lagrangian and the directions are described by the tangent cone
-to the residual set. -/
+/-- **Theorem 14.5.1** of [conn2000trust]. Let $K \subseteq Z$ be closed with $0 \in K$, let
+$A : E \to Z$, $g : E \to \mathbb{R}$, $H : E \to E$ and $\ell : Z \to \mathbb{R}$ be bounded
+linear maps, with $\ell(z) \le 0$ for all $z \in K$ and $g + \ell \circ A = 0$. Let
+$\sigma > \|\ell\|$. Then the following are equivalent:
+
+* $\langle d, H d \rangle > 0$ for every $d \neq 0$ with $A d \in K$ and $g(d) = 0$;
+* $g(d) + \sigma \operatorname{dist}(A d, K) \ge 0$ for every $d$, and
+  $\langle d, H d \rangle > 0$ for every $d \neq 0$ with
+  $g(d) + \sigma \operatorname{dist}(A d, K) = 0$.
+
+**Correction.** The source allows the weight at the threshold (14.5.2). There the equivalence
+fails; see `ConnGouldToint.Chapter14.theorem_14_5_1_threshold_counterexample`. Here the weight
+is strictly larger than $\|\ell\|$.
+
+Here $H$ stands for the Hessian of the Lagrangian, $K$ for the tangent cone to the residual set
+at $c(x)$, $g$ for $f'(x)$ and $A$ for $c'(x)$. -/
 theorem theorem_14_5_1 {K : Set Z} (hK : IsClosed K) (h0 : (0 : Z) ∈ K)
     (A : E →L[ℝ] Z) (g : E →L[ℝ] ℝ) (H : E →L[ℝ] E) (ell : Z →L[ℝ] ℝ)
     {σ : ℝ} (hσ : ‖ell‖ < σ) (hnormal : ∀ z ∈ K, ell z ≤ 0)
@@ -46,10 +106,11 @@ theorem theorem_14_5_1 {K : Set Z} (hK : IsClosed K) (h0 : (0 : Z) ∈ K)
   have hiff := Chapter15.theorem_15_3_2_second_order hK h0 A g H ell hσ hnormal hstat
   exact ⟨fun h ↦ ⟨hfirst, hiff.mp h⟩, fun h ↦ hiff.mpr h.2⟩
 
-/-- At the nonstrict threshold in (14.5.2), the equality-constrained
-problem with objective `x - x²` and constraint `x = 0` satisfies KKT
-and has no nonzero critical direction. Its exact penalty is negative
-at every negative point and hence has no local minimum at zero. -/
+/-- Counterexample to Theorem 14.5.1 of [conn2000trust] at the nonstrict threshold (14.5.2). For the
+problem of minimizing $x - x^2$ subject to $x = 0$ on $\mathbb{R}$, the point $0$ with
+multiplier $1$ satisfies the first-order conditions (14.2.3), and there is no nonzero critical
+direction $d$ with $c'(0) d = 0$. But $0$ is not a local minimizer of the penalty function
+$x - x^2 + |x|$ with weight $1$, which equals $-x^2 < 0$ for every $x < 0$. -/
 theorem theorem_14_5_1_threshold_counterexample :
     IsEqualityKKT (fun x : ℝ ↦ x - x ^ 2) id 0 (1 : ℝ) ∧
       (∀ d : ℝ, d ≠ 0 → fderiv ℝ (id : ℝ → ℝ) 0 d = 0 → False) ∧
@@ -79,8 +140,10 @@ theorem theorem_14_5_1_threshold_counterexample :
     rw [abs_of_neg (show t < 0 from ht)] at hle
     nlinarith only [hle, sq_pos_of_ne_zero (ne_of_lt ht)]
 
-/-- A redundant zero equality admits an arbitrarily large multiplier,
-while the penalty is still minimized by the feasible objective minimizer. -/
+/-- Counterexample to the printed Theorem 14.5.2 of [conn2000trust] with a nonunique multiplier. For
+the problem of minimizing $x^2$ subject to the redundant constraint $0 = 0$ on $\mathbb{R}$, the
+point $0$ with multiplier $2$ satisfies the first-order conditions (14.2.3), and $1 < |2|$. But
+$0$ is a local minimizer of the penalty function with weight $1$, which is $x^2$. -/
 theorem theorem_14_5_2_redundant_constraint_counterexample :
     IsEqualityKKT (fun x : ℝ ↦ x ^ 2) (fun _ ↦ 0) 0 (2 : ℝ) ∧
       (1 : ℝ) < ‖(2 : ℝ)‖ ∧
@@ -99,8 +162,18 @@ theorem theorem_14_5_2_redundant_constraint_counterexample :
     simpa [nonsmoothExactPenalty, Metric.infDist_singleton] using sq_nonneg x
 
 omit [InnerProductSpace ℝ E] in
-/-- Corrected Theorem 14.5.2. A surjective constraint derivative makes
-a multiplier exceeding the penalty weight certify a descent direction. -/
+/-- **Theorem 14.5.2** of [conn2000trust]. Let $E$ and $Z$ be real normed spaces, let $c(x) \in C$,
+let $f$ have the derivative $g$ and $c$ the derivative $A$ at $x$, with $A$ surjective, and let
+$g + \ell \circ A = 0$ for a bounded linear functional $\ell$ on $Z$. If
+$0 \le \sigma < \|\ell\|$, then $x$ is not a local minimizer of the penalty function
+$f + \sigma \operatorname{dist}(c(\cdot), C)$.
+
+**Correction.** The source does not assume that $A$ is surjective. With a redundant constraint,
+the multiplier is not unique and can be arbitrarily large; see
+`ConnGouldToint.Chapter14.theorem_14_5_2_redundant_constraint_counterexample`.
+
+If $A$ is surjective, a direction $d$ with $\ell(A d)$ close to $\|\ell\| \|A d\|$ is a descent
+direction of the penalty function. -/
 theorem theorem_14_5_2 [NormedSpace ℝ E] {f : E → ℝ} {c : E → Z} {C : Set Z} {x : E}
     (hx : c x ∈ C) {g : E →L[ℝ] ℝ} {A : E →L[ℝ] Z}
     (hf : HasFDerivAt f g x) (hc : HasFDerivAt c A x) (hA : Function.Surjective A)

@@ -11,10 +11,64 @@ import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.IntervalCases
 
 /-!
-# An incomplete quadratic interpolation counterexample
+# Conn, Gould and Toint, Section 9.4: Incomplete quadratic blocks in Theorem 9.4.4
 
-For an incomplete degree-two block, the bounds on adjacent blocks and
-on the last block in Theorem 9.4.4 do not control the model error.
+Theorem 9.4.4 of [conn2000trust] bounds the error of a Newton interpolation model (9.4.9) by bounds
+on the Newton fundamental polynomials at the points of the next block and on the last block. This
+module shows that these bounds do not control the model error when the quadratic block is
+incomplete. On $\mathbb{R}^3$, the objective $f(x) = \cos(x_0 - x_1) - \cos(x_0 + x_1) = 2 \sin x_0
+\sin x_1$ has globally bounded first and second derivatives. For each radius $\delta \in (0, 1/2]$,
+five interpolation points in the ball of radius $\delta$ form a complete affine block and a
+quadratic block with a single point. The data are poised and satisfy the Newton conditions (9.4.4)
+and the bounds (9.4.18)–(9.4.20) with the constant $3$. For every proposed constant $C > 0$ there is
+such a radius $\delta$ at which the model error at the point $(0, 0, \delta)$ exceeds
+$C \max\{\delta^2, \delta^3\}$. The corrected error estimate, with affine reproduction and uniform
+bounds on all Newton blocks on the ball, is
+`ConnGouldToint.Chapter09.theorem_9_4_4_of_uniform_newton_bound`.
+
+## Main definitions
+
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticObjective`: the objective
+  $f(x) = \cos(x_0 - x_1) - \cos(x_0 + x_1)$.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticBlockSize`: the block sizes $1$, $3$
+  and $1$.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticPoints`: the interpolation points for
+  the radius $\delta$.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticNewton`: the Newton fundamental
+  polynomials of degrees $0$, $1$ and $2$.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticFlatPoints`: the five points in block
+  order.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticFlatNewton`: the five Newton
+  polynomials in block order.
+
+## Main results
+
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticObjective_bounds`: $f$ is $C^2$,
+  bounded below by $-2$, and has uniformly bounded first and second derivatives.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticNewton_isPolynomial`: each Newton
+  function of block $l \le 2$ is a polynomial of degree at most $l$.
+* Equation (9.4.4), `ConnGouldToint.Chapter09.incompleteQuadraticFundamental`: the points and
+  polynomials satisfy the Newton conditions.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.incompleteQuadraticPoised`: the five points are poised
+  for the five polynomials.
+* Equations (9.4.18)–(9.4.20), `ConnGouldToint.Chapter09.incompleteQuadraticPrintedBounds`: the
+  points lie in the ball, and the adjacent-block and last-block bounds hold with the constant $3$.
+* Theorem 9.4.4, `ConnGouldToint.Chapter09.theorem_9_4_4_incompleteQuadratic_counterexample`: for
+  every $C > 0$ some radius violates the error bound (9.4.21).
+
+## Conventions
+
+* Points of $\mathbb{R}^3$ are elements of `EuclideanSpace ℝ (Fin 3)`, with coordinates
+  $x_0, x_1, x_2$.
+* The interpolation data are indexed by blocks: `incompleteQuadraticPoints δ l i` is the $i$-th
+  point of block $l$, and `incompleteQuadraticNewton δ l i` is the matching Newton polynomial. The
+  model is `ConnGouldToint.Chapter09.newtonInterpolationModel` of degree $2$.
+
+## Deviations from the source
+
+* **Theorem 9.4.4** (correction). For an incomplete quadratic block, the printed adjacent-block and
+  last-block bounds do not imply the error bound (9.4.21). See
+  `ConnGouldToint.Chapter09.theorem_9_4_4_incompleteQuadratic_counterexample`.
 -/
 
 namespace ConnGouldToint.Chapter09
@@ -30,8 +84,10 @@ private noncomputable def xyz (x y z : ℝ) : V := WithLp.toLp 2 ![x, y, z]
 private noncomputable def coord (i : Fin 3) : V →L[ℝ] ℝ :=
   PiLp.proj 2 (fun _ : Fin 3 ↦ ℝ) i
 
-/-- The fixed smooth objective for the counterexample. It equals twice the
-product of the sines of the first two coordinates. -/
+/-- **Theorem 9.4.4** of [conn2000trust], objective of the counterexample. On $\mathbb{R}^3$, the
+objective is
+$$f(x) = \cos(x_0 - x_1) - \cos(x_0 + x_1) = 2 \sin x_0 \sin x_1.$$
+-/
 noncomputable def incompleteQuadraticObjective (x : V) : ℝ :=
   Real.cos ((coord 0 - coord 1) x) - Real.cos ((coord 0 + coord 1) x)
 
@@ -73,8 +129,12 @@ private theorem norm_fderiv_fderiv_cos_clm (L : V →L[ℝ] ℝ) (x : V) :
     _ ≤ (‖L‖ * ‖y‖) * (‖L‖ * ‖z‖) := mul_le_mul hy hz (abs_nonneg _) (by positivity)
     _ = _ := by ring
 
-/-- AF.1, AF.3, and AF.5 hold globally, with constants independent of the
-radius and interpolation set. The objective is also bounded below. -/
+/-- **Theorem 9.4.4** of [conn2000trust], AF.1, AF.3 and AF.5 for the counterexample. The objective
+$f$ is $C^2$, satisfies $f(x) \ge -2$ for every $x$, and there is $B > 0$ with
+$$\|\nabla f(x)\| \le B \qquad \text{and} \qquad \|\nabla^2 f(x)\| \le B \qquad \text{for every
+  } x \in \mathbb{R}^3.$$
+
+The constants are independent of the radius and of the interpolation set. -/
 theorem incompleteQuadraticObjective_bounds :
     ContDiff ℝ 2 incompleteQuadraticObjective ∧
     (∀ x, -2 ≤ incompleteQuadraticObjective x) ∧
@@ -112,15 +172,23 @@ theorem incompleteQuadraticObjective_bounds :
     exact ⟨by linarith [sq_nonneg ‖Lminus‖, sq_nonneg ‖Lplus‖],
       by linarith [norm_nonneg Lminus, norm_nonneg Lplus]⟩
 
-/-- The affine blocks are complete and the quadratic block has a single point. -/
+/-- **Theorem 9.4.4** of [conn2000trust], block sizes of the counterexample. Block $0$ has one
+point, block $1$ has three points, block $2$ has one point, and all later blocks are empty.
+
+The affine blocks are complete, and the quadratic block has a single point. -/
 abbrev incompleteQuadraticBlockSize : ℕ → ℕ
   | 0 => 1
   | 1 => 3
   | 2 => 1
   | _ => 0
 
-/-- Interpolation points for radius `δ`. The third linear point is only
-`δ²` away from the plane through the first three points. -/
+/-- **Theorem 9.4.4** of [conn2000trust], interpolation points of the counterexample. For the radius
+$\delta$, block $0$ is the point $0$, block $1$ consists of
+$$(\delta/2, 0, 0), \qquad (0, \delta/2, 0), \qquad (\delta/2, \delta/2, \delta^2),$$
+and block $2$ is the point $(-\delta/2, 0, 0)$.
+
+The third point of block $1$ lies only $\delta^2$ away from the plane through the first three
+points. -/
 noncomputable def incompleteQuadraticPoints (δ : ℝ) :
     (l : ℕ) → Fin (incompleteQuadraticBlockSize l) → V
   | 0, _ => 0
@@ -128,7 +196,13 @@ noncomputable def incompleteQuadraticPoints (δ : ℝ) :
   | 2, _ => xyz (-(δ / 2)) 0 0
   | _ + 3, i => Fin.elim0 i
 
-/-- The Newton polynomials of degrees zero, one and two evaluated at a point. -/
+/-- **Theorem 9.4.4** of [conn2000trust], Newton polynomials of the counterexample. For the radius
+$\delta$, block $0$ is the constant $1$, block $1$ consists of
+$$\frac{x_0}{\delta/2} - \frac{x_2}{\delta^2}, \qquad \frac{x_1}{\delta/2} -
+  \frac{x_2}{\delta^2}, \qquad \frac{x_2}{\delta^2},$$
+and block $2$ is
+$$\frac{1}{2} \cdot \frac{x_0}{\delta/2} \Big(\frac{x_0}{\delta/2} - 1\Big).$$
+-/
 noncomputable def incompleteQuadraticNewton (δ : ℝ) :
     (l : ℕ) → Fin (incompleteQuadraticBlockSize l) → V → ℝ
   | 0, _ => fun _ ↦ 1
@@ -150,8 +224,9 @@ private theorem totalDegree_scaledCoordinatePolynomial (i : Fin 3) (a : ℝ) :
   apply (MvPolynomial.totalDegree_mul _ _).trans
   simp
 
-/-- Every Newton function in the example is the evaluation of a polynomial
-of degree at most its block index. -/
+/-- **Theorem 9.4.4** of [conn2000trust], polynomial degrees in the counterexample. For every
+$\delta$, every block $l \le 2$ and every index $i$ in it, the Newton function $N_{l,i}$ is the
+evaluation of a polynomial in $x_0, x_1, x_2$ of total degree at most $l$. -/
 theorem incompleteQuadraticNewton_isPolynomial (δ : ℝ) (l : ℕ) (hl : l ≤ 2)
     (i : Fin (incompleteQuadraticBlockSize l)) :
     ∃ q : MvPolynomial (Fin 3) ℝ, q.totalDegree ≤ l ∧
@@ -179,7 +254,10 @@ theorem incompleteQuadraticNewton_isPolynomial (δ : ℝ) (l : ℕ) (hl : l ≤ 
       exact (MvPolynomial.totalDegree_mul _ _).trans (by simpa using hprod)
     · simp [X, eval_scaledCoordinatePolynomial, incompleteQuadraticNewton, div_eq_mul_inv]
 
-/-- The degree-graded Newton conditions (9.4.4) hold for the five points. -/
+/-- **Equation (9.4.4)** of [conn2000trust], in the counterexample. For $\delta > 0$, the five
+points and the Newton polynomials satisfy the Newton conditions up to degree $2$:
+$N_{l,i}(y_{l,j}) = 1$ if $i = j$ and $0$ otherwise, and $N_{l,i}(y_{j,k}) = 0$ for every
+earlier block $j < l$. -/
 theorem incompleteQuadraticFundamental {δ : ℝ} (hδ : 0 < δ) :
     IsNewtonFundamentalFamily (incompleteQuadraticPoints δ) (incompleteQuadraticNewton δ) 2 := by
   have hh : δ / 2 ≠ 0 := (half_pos hδ).ne'
@@ -194,20 +272,25 @@ theorem incompleteQuadraticFundamental {δ : ℝ} (hδ : 0 < δ) :
       norm_num [incompleteQuadraticPoints, incompleteQuadraticNewton,
         Matrix.cons_val_zero', Matrix.cons_val_succ', hh, hd]
 
-/-- The five points in the order of their Newton blocks. -/
+/-- **Theorem 9.4.4** of [conn2000trust], the five points of the counterexample in block order:
+$y_{0,0}$, $y_{1,0}$, $y_{1,1}$, $y_{1,2}$ and $y_{2,0}$. -/
 noncomputable def incompleteQuadraticFlatPoints (δ : ℝ) : Fin 5 → V :=
   ![incompleteQuadraticPoints δ 0 0, incompleteQuadraticPoints δ 1 0,
     incompleteQuadraticPoints δ 1 1, incompleteQuadraticPoints δ 1 2,
     incompleteQuadraticPoints δ 2 0]
 
-/-- The five Newton basis functions in the order of their blocks. -/
+/-- **Theorem 9.4.4** of [conn2000trust], the five Newton polynomials of the counterexample in block
+order: $N_{0,0}$, $N_{1,0}$, $N_{1,1}$, $N_{1,2}$ and $N_{2,0}$. -/
 noncomputable def incompleteQuadraticFlatNewton (δ : ℝ) : Fin 5 → V → ℝ :=
   ![incompleteQuadraticNewton δ 0 0, incompleteQuadraticNewton δ 1 0,
     incompleteQuadraticNewton δ 1 1, incompleteQuadraticNewton δ 1 2,
     incompleteQuadraticNewton δ 2 0]
 
-/-- The evaluation matrix is invertible in the incomplete quadratic space.
-It is lower triangular with unit diagonal in the graded Newton basis. -/
+/-- **Theorem 9.4.4** of [conn2000trust], poised data in the counterexample. For $\delta > 0$, the
+$5 \times 5$ evaluation matrix $\big(N_j(y_i)\big)$ of the five polynomials at the five points
+in block order is invertible.
+
+In the graded Newton basis this matrix is lower triangular with unit diagonal. -/
 theorem incompleteQuadraticPoised {δ : ℝ} (hδ : 0 < δ) :
     IsPoised (incompleteQuadraticFlatPoints δ) (incompleteQuadraticFlatNewton δ) := by
   let A := interpolationMatrix (incompleteQuadraticFlatPoints δ) (incompleteQuadraticFlatNewton δ)
@@ -253,8 +336,13 @@ private theorem point_mem_closedBall {δ : ℝ} (hδ : 0 < δ) (hδ' : δ ≤ 1 
     norm_num
     nlinarith only [sq_nonneg δ]
 
-/-- All points lie in the trust region. Adjacent-block and final-block bounds
-(9.4.19)–(9.4.20) hold with the same constant three for every radius. -/
+/-- **Equations (9.4.18)–(9.4.20)** of [conn2000trust], in the counterexample. Let
+$0 < \delta \le 1/2$. Then every interpolation point lies in the closed ball of radius $\delta$
+about $0$, the Newton polynomials of blocks $l < 2$ satisfy $|N_{l,i}(y_{l+1,j})| \le 3$ at the
+points of the next block, and the polynomial of block $2$ satisfies $|N_{2,i}(x)| \le 3$ on the
+ball.
+
+The adjacent-block and last-block bounds hold with the same constant $3$ for every radius. -/
 theorem incompleteQuadraticPrintedBounds {δ : ℝ} (hδ : 0 < δ) (hδ' : δ ≤ 1 / 2) :
     (∀ l ≤ 2, ∀ i, incompleteQuadraticPoints δ l i ∈ Metric.closedBall (0 : V) δ) ∧
     (∀ l < 2, ∀ i j, |incompleteQuadraticNewton δ l i
@@ -319,10 +407,20 @@ private theorem cos_deficit_ge {δ : ℝ} (hδ : 0 < δ) (hδ' : δ ≤ 1 / 2) :
   have h := mul_le_mul_of_nonneg_right hcoef (sq_nonneg δ)
   linarith only [hcos, h]
 
-/-- For every proposed uniform constant in (9.4.21), these data satisfy
-the printed geometric bounds for an incomplete quadratic block and violate
-the error bound. There are five nodes in dimension three, including a
-complete affine block. The objective and geometric constants are fixed. -/
+/-- **Theorem 9.4.4** of [conn2000trust], counterexample for an incomplete quadratic block. For
+every $C > 0$ there is $\delta$ with $0 < \delta \le 1/2$ such that the five points and
+polynomials of radius $\delta$ satisfy the Newton conditions (9.4.4), are poised, and satisfy
+the bounds (9.4.18)–(9.4.20) with the constant $3$, and there is $x$ with $\|x\| \le \delta$ and
+$$C \max\{\delta^2, \delta^3\} < |f(x) - m(x)|,$$
+where $m$ is the Newton interpolation model (9.4.9) of $f$ of degree $2$.
+
+**Correction.** The printed theorem bounds the model error by a uniform constant times this
+quantity under the adjacent-block and last-block bounds. The example, with five points in
+dimension three, a complete affine block and fixed constants for the objective and the geometry,
+shows that these bounds are not enough when the quadratic block is incomplete.
+
+At $x = (0, 0, \delta)$ the objective vanishes and the model equals
+$(1 - \cos \delta) / \delta \ge \delta / 8$. -/
 theorem theorem_9_4_4_incompleteQuadratic_counterexample {C : ℝ} (hC : 0 < C) :
     ∃ δ : ℝ, 0 < δ ∧ δ ≤ 1 / 2 ∧
       IsNewtonFundamentalFamily (incompleteQuadraticPoints δ) (incompleteQuadraticNewton δ) 2 ∧

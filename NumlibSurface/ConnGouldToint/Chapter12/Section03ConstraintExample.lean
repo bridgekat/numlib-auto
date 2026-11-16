@@ -6,11 +6,48 @@ import Mathlib.Analysis.SpecialFunctions.SmoothTransition
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import NumlibSurface.ConnGouldToint.Chapter12.Section03
 
-/-! # Smooth constraints with a degenerate remote active set
+/-!
+# Conn, Gould and Toint, Section 12.3: smooth constraints with a degenerate remote active set
 
-The nonnegative orthant in the first two coordinates admits smooth inequalities
-that agree with the coordinate inequalities near the origin and have just one
-active constraint at a remote point of their common boundary.
+This module builds the constraints that the counterexample
+`ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample` to Lemma 12.3.7 and
+Theorem 12.3.8 of [conn2000trust] uses. In $\mathbb{R}^3$ with coordinates $z = (z_0, z_1, z_2)$,
+the feasible set is the product $Q = \{z : z_0 \ge 0, z_1 \ge 0\}$ of a quadrant with the real line.
+The module gives two infinitely differentiable inequalities $c_0(z) \ge 0$ and $c_1(z) \ge 0$ whose
+feasible set is exactly $Q$. For $z_2 \ge -1/4$ they are the coordinate inequalities $z_0 \ge 0$ and
+$z_1 \ge 0$, so at the origin both constraints are active and their gradients are independent. At
+the remote boundary point $(0, 0, -1)$ only $c_0$ is active, and its gradient there is zero.
+
+## Main definitions
+
+* `ConnGouldToint.Chapter12.ConstraintExample.constraints`: the two smooth inequalities $c_0$ and
+  $c_1$.
+
+## Main results
+
+* `ConnGouldToint.Chapter12.ConstraintExample.feasible_iff`: $c_0(z) \ge 0$ and $c_1(z) \ge 0$ if
+  and only if $z_0 \ge 0$ and $z_1 \ge 0$.
+* `ConnGouldToint.Chapter12.ConstraintExample.contDiff_constraints`: both constraints are infinitely
+  differentiable.
+* `ConnGouldToint.Chapter12.ConstraintExample.independent_active_at_zero`: both constraints are
+  active at the origin, with linearly independent gradients.
+* `ConnGouldToint.Chapter12.ConstraintExample.ao4b_at_zero`: at the origin, $-(1, 1, 0)$ lies in the
+  relative interior of the normal cone of $Q$.
+* `ConnGouldToint.Chapter12.ConstraintExample.active_at_remote`: at $(0, 0, -1)$ only $c_0$ is
+  active.
+* `ConnGouldToint.Chapter12.ConstraintExample.fderiv_active_constraint_at_remote`: the derivative of
+  $c_0$ at $(0, 0, -1)$ is zero.
+
+## Implementation notes
+
+* Let $\theta$ be the smooth transition function `Real.smoothTransition`, which is $0$ on
+  $(-\infty, 0]$ and $1$ on $[1, \infty)$, and let $\psi$ be `expNegInvGlue`, with
+  $\psi(t) = e^{-1/t}$ for $t > 0$ and $\psi(t) = 0$ for $t \le 0$. With the cut-offs
+  $\theta_1(z) = \theta(-4 z_2 - 1)$ and $\theta_2(z) = \theta(-4 z_2 - 2)$ and the penalty
+  $p(z) = \psi(-z_0) + \psi(-z_1)$, the constraints are $c_0 = (1 - \theta_1) z_0 - \theta_1 p$ and
+  $c_1 = (1 - \theta_2) z_1 + \theta_2$.
+* The cut-off $\theta_1$ equals $1$ for $z_2 \le -1/2$, where $c_1$ is still the coordinate $z_1$.
+  Hence $c_0$ enforces both sign conditions before $c_1$ becomes positive on the quadrant.
 -/
 
 open Set Filter Topology
@@ -18,10 +55,13 @@ open scoped ContDiff RealInnerProductSpace
 
 namespace ConnGouldToint.Chapter12.ConstraintExample
 
-/-- The two constrained coordinates and one free coordinate. -/
+/-- The space $\mathbb{R}^3$ with the Euclidean inner product, in which the first two coordinates
+are constrained and the third is free. This is the space of the counterexample to Theorem 12.3.8
+of [conn2000trust]. -/
 abbrev Space := EuclideanSpace ℝ (Fin 3)
 
-/-- Continuous coordinate projections. -/
+/-- The coordinate projection $z \mapsto z_i$ on $\mathbb{R}^3$, as a continuous linear functional,
+for $i \in \{0, 1, 2\}$. -/
 def coordinate (i : Fin 3) : Space →L[ℝ] ℝ := PiLp.proj 2 (fun _ : Fin 3 ↦ ℝ) i
 
 private noncomputable def firstCut (z : Space) : ℝ := Real.smoothTransition (-4 * z 2 - 1)
@@ -30,9 +70,17 @@ private noncomputable def secondCut (z : Space) : ℝ := Real.smoothTransition (
 
 private noncomputable def penalty (z : Space) : ℝ := expNegInvGlue (-z 0) + expNegInvGlue (-z 1)
 
-/-- Two inequalities whose feasible set is the product of a quadrant with the
-real line. The first inequality takes over enforcement of both signs before
-the second inequality becomes strictly positive on the quadrant. -/
+/-- The two inequality constraints of the counterexample to Theorem 12.3.8 of [conn2000trust]. With
+the cut-offs $\theta_1(z) = \theta(-4 z_2 - 1)$ and $\theta_2(z) = \theta(-4 z_2 - 2)$ built
+from the smooth transition function $\theta$, and the penalty $p(z) = \psi(-z_0) + \psi(-z_1)$
+built from $\psi(t) = e^{-1/t}$ for $t > 0$, $\psi(t) = 0$ for $t \le 0$,
+$$c_0(z) = (1 - \theta_1(z))\, z_0 - \theta_1(z)\, p(z), \qquad c_1(z) = (1 - \theta_2(z))\,
+  z_1 + \theta_2(z).$$
+
+The functions $\theta$ and $\psi$ are `Real.smoothTransition` and `expNegInvGlue`. The penalty
+$p$ vanishes exactly on the quadrant $z_0, z_1 \ge 0$. The constraint $c_0$ takes over both sign
+conditions (for $z_2 \le -1/2$) before $c_1$ becomes strictly positive on the quadrant (for
+$z_2 < -1/2$). -/
 noncomputable def constraints (i : Fin 2) (z : Space) : ℝ :=
   if i = 0 then (1 - firstCut z) * z 0 - firstCut z * penalty z
   else (1 - secondCut z) * z 1 + secondCut z
@@ -45,7 +93,10 @@ private theorem penalty_eq_zero (z : Space) : penalty z = 0 ↔ 0 ≤ z 0 ∧ 0 
     (expNegInvGlue.nonneg _), expNegInvGlue.zero_iff_nonpos,
     expNegInvGlue.zero_iff_nonpos, neg_nonpos, neg_nonpos]
 
-/-- The feasible set is exactly the quadrant in the first two coordinates. -/
+/-- The feasible set of the constraints `ConnGouldToint.Chapter12.ConstraintExample.constraints` is
+the quadrant in the first two coordinates: for $z \in \mathbb{R}^3$,
+$$c_0(z) \ge 0 \text{ and } c_1(z) \ge 0 \iff z_0 \ge 0 \text{ and } z_1 \ge 0.$$
+This supports the counterexample to Theorem 12.3.8 of [conn2000trust]. -/
 theorem feasible_iff (z : Space) : (∀ i, 0 ≤ constraints i z) ↔ 0 ≤ z 0 ∧ 0 ≤ z 1 := by
   have hA : 0 ≤ firstCut z := Real.smoothTransition.nonneg _
   have hA' : 0 ≤ 1 - firstCut z := sub_nonneg.mpr (Real.smoothTransition.le_one _)
@@ -81,15 +132,17 @@ theorem feasible_iff (z : Space) : (∀ i, 0 ≤ constraints i z) ↔ 0 ≤ z 0 
     · simpa [constraints, (penalty_eq_zero z).mpr hz] using mul_nonneg hA' hz.1
     · simpa [constraints] using add_nonneg (mul_nonneg hB' hz.2) hB
 
-/-- Near and above height zero, the inequalities are the two coordinates. -/
+/-- If $z_2 \ge -1/4$, then the constraints of the counterexample to Theorem 12.3.8 of
+[conn2000trust] are the coordinates: $c_0(z) = z_0$ and $c_1(z) = z_1$. -/
 theorem constraints_of_height_ge (z : Space) (hz : -(1 / 4 : ℝ) ≤ z 2) :
     constraints 0 z = z 0 ∧ constraints 1 z = z 1 := by
   have ha : firstCut z = 0 := Real.smoothTransition.zero_of_nonpos (by linarith)
   have hb : secondCut z = 0 := Real.smoothTransition.zero_of_nonpos (by linarith)
   norm_num [constraints, ha, hb]
 
-/-- At the remote boundary point of height minus one, only the first
-inequality is active. -/
+/-- At the remote boundary point $(0, 0, -1)$, the constraints of the counterexample to Theorem
+12.3.8 of [conn2000trust] take the values $c_0 = 0$ and $c_1 = 1$. So only the first inequality
+is active there. -/
 theorem constraints_at_remote :
     constraints 0 (WithLp.toLp 2 ![0, 0, -1]) = 0 ∧
     constraints 1 (WithLp.toLp 2 ![0, 0, -1]) = 1 := by
@@ -99,7 +152,8 @@ theorem constraints_at_remote :
   change constraints 0 w = 0 ∧ constraints 1 w = 1
   norm_num [constraints, ha, hb, penalty, w, expNegInvGlue.zero]
 
-/-- Both inequalities are infinitely differentiable. -/
+/-- Both constraints $c_0$ and $c_1$ of the counterexample to Theorem 12.3.8 of [conn2000trust] are
+infinitely differentiable on $\mathbb{R}^3$. -/
 theorem contDiff_constraints (i : Fin 2) : ContDiff ℝ ∞ (constraints i) := by
   have hcoord (j : Fin 3) : ContDiff ℝ ∞ (fun z : Space ↦ z j) := (coordinate j).contDiff
   have ha : ContDiff ℝ ∞ firstCut := Real.smoothTransition.contDiff.comp
@@ -120,8 +174,9 @@ theorem contDiff_constraints (i : Fin 2) : ContDiff ℝ ∞ (constraints i) := b
     rw [he]
     exact ((hone.sub hb).mul (hcoord 1)).add hb
 
-/-- At the origin, the two constraint gradients are the first two coordinate
-covectors. -/
+/-- At the origin, the derivatives of the constraints of the counterexample to Theorem 12.3.8 of
+[conn2000trust] are the first two coordinate functionals: $Dc_0(0) = (z \mapsto z_0)$ and
+$Dc_1(0) = (z \mapsto z_1)$. -/
 theorem fderiv_constraints_zero :
     fderiv ℝ (constraints 0) 0 = coordinate 0 ∧
     fderiv ℝ (constraints 1) 0 = coordinate 1 := by
@@ -136,19 +191,23 @@ theorem fderiv_constraints_zero :
     h1.fderiv_eq.trans (coordinate 1).hasFDerivAt.fderiv⟩
 
 
-/-- Both inequalities are active at the origin. -/
+/-- Both constraints of the counterexample to Theorem 12.3.8 of [conn2000trust] are active at the
+origin: the active set $\{i : c_i(0) = 0\}$ is $\{0, 1\}$. -/
 theorem active_at_zero : activeConstraintSet constraints (0 : Space) = univ := by
   have h := constraints_of_height_ge (0 : Space) (by norm_num [PiLp.zero_apply])
   ext i
   fin_cases i <;> simp [activeConstraintSet, h.1, h.2, PiLp.zero_apply]
 
-/-- Only index zero is active at the remote point. -/
+/-- At the remote point $(0, 0, -1)$, the active set of the constraints of the counterexample to
+Theorem 12.3.8 of [conn2000trust] is $\{0\}$. -/
 theorem active_at_remote :
     activeConstraintSet constraints (WithLp.toLp 2 ![0, 0, -1]) = {0} := by
   ext i
   fin_cases i <;> simp [activeConstraintSet, constraints_at_remote.1, constraints_at_remote.2]
 
-/-- The sole remote active constraint has zero derivative. -/
+/-- At the remote point $(0, 0, -1)$, the derivative of the only active constraint $c_0$ of the
+counterexample to Theorem 12.3.8 of [conn2000trust] is zero. So the active gradient there is
+degenerate. -/
 theorem fderiv_active_constraint_at_remote :
     fderiv ℝ (constraints 0) (WithLp.toLp 2 ![0, 0, -1]) = 0 := by
   let w : Space := WithLp.toLp 2 ![0, 0, -1]
@@ -167,7 +226,9 @@ theorem fderiv_active_constraint_at_remote :
   exact hmax.hasFDerivAt_eq_zero
     ((contDiff_constraints 0).differentiable (by simp) w).hasFDerivAt
 
-/-- The inward normals at the origin are the first two standard basis vectors. -/
+/-- At the origin, the gradients of the constraints of the counterexample to Theorem 12.3.8 of
+[conn2000trust] are the first two standard basis vectors: $\nabla c_0(0) = e_0$ and
+$\nabla c_1(0) = e_1$. These are the inward normals of the quadrant. -/
 theorem gradient_constraints_zero (i : Fin 2) :
     gradient (constraints i) 0 = EuclideanSpace.single (Fin.castLE (by decide : 2 ≤ 3) i) 1 := by
   have hf (j : Fin 2) : fderiv ℝ (constraints j) 0 = coordinate (Fin.castLE (by decide : 2 ≤ 3) j) := by
@@ -179,7 +240,8 @@ theorem gradient_constraints_zero (i : Fin 2) :
   rw [inner_gradient_left, hf, EuclideanSpace.inner_single_left]
   simp [coordinate]
 
-/-- The active normals at the origin are linearly independent. -/
+/-- At the origin, the gradients of the active constraints of the counterexample to Theorem 12.3.8
+of [conn2000trust] are linearly independent. -/
 theorem independent_active_at_zero :
     LinearIndependent ℝ (fun i : activeConstraintSet constraints (0 : Space) ↦
       gradient (constraints i) 0) := by
@@ -189,7 +251,10 @@ theorem independent_active_at_zero :
   apply Subtype.ext
   exact Fin.ext (congrArg (fun v : Fin 3 ↦ v.val) h)
 
-/-- The inward normal sum with both multipliers equal to one is (1,1,0). -/
+/-- At the origin, the vector $g = (1, 1, 0)$ has strictly positive multipliers on the active
+constraints of the counterexample to Theorem 12.3.8 of [conn2000trust]: $g = 1 \cdot \nabla
+c_0(0) + 1 \cdot \nabla c_1(0)$, in the sense of
+`ConnGouldToint.Chapter12.HasStrictActiveMultipliers` for the constant field $g$. -/
 theorem strict_multipliers_at_zero :
     HasStrictActiveMultipliers constraints (fun i ↦ gradient (constraints i))
       (fun _ ↦ (WithLp.toLp 2 ![1, 1, 0] : Space)) 0 := by
@@ -200,8 +265,13 @@ theorem strict_multipliers_at_zero :
   · simp [active_at_zero]
 
 open Optimization in
-/-- The orthant satisfies the geometric strict-complementarity condition at
-the origin for gradient (1,1,0). -/
+/-- The quadrant $Q = \{v \in \mathbb{R}^3 : v_0 \ge 0, v_1 \ge 0\}$ satisfies the geometric strict
+complementarity condition AO.4b of [conn2000trust] at the origin for the gradient $(1, 1, 0)$:
+the vector $-(1, 1, 0)$ lies in the relative interior of the normal cone of $Q$ at $0$. This
+supports the counterexample to Theorem 12.3.8.
+
+The normal cone is `Optimization.normalDirections` and the relative interior is
+`intrinsicInterior ℝ`. -/
 theorem ao4b_at_zero :
     -(WithLp.toLp 2 ![1, 1, 0] : Space) ∈ intrinsicInterior ℝ
       (normalDirections {v : Space | 0 ≤ v 0 ∧ 0 ≤ v 1} (0 : Space)) := by

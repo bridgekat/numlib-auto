@@ -7,11 +7,53 @@ import Numlib.LinearAlgebra.Matrix.SymmetricIndefinite
 import Numlib.Analysis.Normed.Ring.Inverse
 import Numlib.Analysis.Normed.Ring.CondNumber
 
-/-! # Direct methods for solving linear systems
+/-!
+# Conn, Gould and Toint, Section 4.3: Direct methods for solving linear systems
 
-The Cholesky and symmetric indefinite factorizations in Section 4.3 of [conn2000trust].
-The conversion from an `LDLᵀ` factorization to Cholesky scales the columns of
-the lower triangular factor by the square roots of the diagonal entries.
+This module formalizes Section 4.3 of [conn2000trust]. It first bounds the effect of perturbations
+on a linear system $Ax = b$: if $\|A^{-1} \Delta A\| < 1$, a Neumann series argument (4.3.2)–(4.3.3)
+bounds the solution error by the condition number $\kappa(A) = \|A\| \|A^{-1}\|$ times the relative
+data errors (4.3.4). It then treats factorizations of real symmetric matrices. A positive-definite
+matrix has a Cholesky factorization $A = LL^T$ with $L$ lower triangular (4.3.5), unique up to the
+signs of the columns of $L$, and computed column by column (4.3.6)–(4.3.7) or row by row (4.3.8). A
+symmetric indefinite matrix has, after a symmetric permutation, a factorization $LBL^T$ with $L$
+unit lower triangular and $B$ block diagonal with blocks of order one and two (4.3.9).
+
+The proofs use the backbone modules `Numlib.LinearAlgebra.Matrix.Cholesky`,
+`Numlib.LinearAlgebra.Matrix.SymmetricIndefinite`, `Numlib.Analysis.Normed.Ring.Inverse` and
+`Numlib.Analysis.Normed.Ring.CondNumber`.
+
+## Main results
+
+* Equation (4.3.1), `ConnGouldToint.Chapter04.perturbed_solution_4_3_1`: the solution error is
+  $\Delta x = (I + A^{-1} \Delta A)^{-1} A^{-1} (\Delta b - \Delta A\, x)$.
+* Equations (4.3.2)–(4.3.3), `ConnGouldToint.Chapter04.neumann_bound_4_3_3`: if $\|T\| < 1$, then
+  $I + T$ is invertible and $\|(I + T)^{-1}\| \le 1 / (1 - \|T\|)$.
+* Equation (4.3.4), `ConnGouldToint.Chapter04.relative_solution_error_4_3_4`: the bound on the
+  relative solution error by the condition number and the relative data errors.
+* Equation (4.3.5), `ConnGouldToint.Chapter04.cholesky_4_3_5`: a symmetric positive-definite matrix
+  is $LL^T$ with $L$ lower triangular.
+* Equation (4.3.5), `ConnGouldToint.Chapter04.cholesky_unique_up_to_column_signs_4_3_5`: every lower
+  triangular factor is the positive-diagonal factor with some columns negated.
+* After (4.3.5), `ConnGouldToint.Chapter04.cholesky_of_ldl`: if $A = L D L^T$ with $D \ge 0$
+  diagonal, then $A = (L D^{1/2})(L D^{1/2})^T$.
+* Equations (4.3.6)–(4.3.7), `ConnGouldToint.Chapter04.cholesky_first_column_4_3_7`: the first
+  column of a Cholesky factor and the trailing Schur complement.
+* Equation (4.3.8), `ConnGouldToint.Chapter04.cholesky_next_row_4_3_8`: the new row of a bordered
+  Cholesky factor.
+* Equation (4.3.9), `ConnGouldToint.Chapter04.indefinite_factorization_4_3_9`: a symmetric matrix
+  has a permuted block $LBL^T$ factorization with pivots of order one and two.
+
+## Implementation notes
+
+* The perturbation results hold for bounded operators on a real Banach space $E$. The inverse is
+  `Ring.inverse`, and the condition number is `NormedRing.condNumber`.
+
+## Deviations from the source
+
+* **Conversion after (4.3.5)** (correction). The diagonal square root multiplies the unit lower
+  triangular factor on the right, $L_C = L_L D^{1/2}$, not on the left as printed. See
+  `ConnGouldToint.Chapter04.cholesky_of_ldl`.
 -/
 
 open Matrix
@@ -23,8 +65,11 @@ section Perturbation
 
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
 
-/-- **(4.3.2)–(4.3.3)** A scaled perturbation with norm below one has a Neumann
-inverse with the stated norm bound. -/
+/-- **Equations (4.3.2)–(4.3.3)** of [conn2000trust]. Let $E$ be a real Banach space, and let $T$ be
+a bounded linear operator on $E$ with $\|T\| < 1$. Then $I + T$ is invertible and
+$$\|(I + T)^{-1}\| \le \frac{1}{1 - \|T\|}.$$
+
+In the application, $T = A^{-1} \Delta A$ is the scaled perturbation. -/
 theorem neumann_bound_4_3_3 {T : E →L[ℝ] E} (hT : ‖T‖ < 1) :
     IsUnit (1 + T) ∧ ‖Ring.inverse (1 + T)‖ ≤ 1 / (1 - ‖T‖) := by
   have hn : ‖-T‖ < 1 := by simpa using hT
@@ -33,8 +78,12 @@ theorem neumann_bound_4_3_3 {T : E →L[ℝ] E} (hT : ‖T‖ < 1) :
   · have h₁ : ‖(1 : E →L[ℝ] E)‖ ≤ 1 := ContinuousLinearMap.norm_id_le
     simpa using NormedRing.norm_inverse_one_sub_le_of_norm_one_le h₁ hn
 
-/-- **(4.3.1)** Subtracting the exact and perturbed equations expresses the solution
-error through the inverse of the scaled perturbation. -/
+/-- **Equation (4.3.1)** of [conn2000trust]. Let $E$ be a real Banach space, and let $A$ and
+$\Delta A$ be bounded linear operators on $E$ with $A$ invertible and $\|A^{-1} \Delta A\| < 1$.
+If $Ax = b$ and $(A + \Delta A)(x + \Delta x) = b + \Delta b$, then
+$$\Delta x = (I + A^{-1} \Delta A)^{-1} A^{-1} (\Delta b - \Delta A\, x).$$
+
+The formula follows by subtracting the two equations. -/
 theorem perturbed_solution_4_3_1 {A dA : E →L[ℝ] E} (hA : IsUnit A)
     {x dx b db : E} (hx : A x = b) (hxd : (A + dA) (x + dx) = b + db)
     (hsmall : ‖Ring.inverse A * dA‖ < 1) :
@@ -58,9 +107,13 @@ theorem perturbed_solution_4_3_1 {A dA : E →L[ℝ] E} (hA : IsUnit A)
       change Ring.inverse B (Ring.inverse A ((A + dA) dx)) = _
       rw [he]
 
-/-- **(4.3.4)** The relative solution error is bounded by the condition number times
-the relative data errors, scaled by the Neumann denominator. The exact right-hand
-side is assumed nonzero for the relative errors to be defined. -/
+/-- **Equation (4.3.4)** of [conn2000trust]. Let $E$ be a real Banach space, and let $A$ and
+$\Delta A$ be bounded linear operators on $E$ with $A$ invertible and $\|A^{-1} \Delta A\| < 1$.
+If $Ax = b$ with $b \neq 0$ and $(A + \Delta A)(x + \Delta x) = b + \Delta b$, then
+$$\frac{\|\Delta x\|}{\|x\|} \le \frac{\kappa(A)}{1 - \|A^{-1} \Delta A\|} \left( \frac{\|\Delta
+  A\|}{\|A\|} + \frac{\|\Delta b\|}{\|b\|} \right), \qquad \kappa(A) = \|A\| \|A^{-1}\|.$$
+
+The hypothesis $b \neq 0$ makes the relative errors defined; it gives $x \neq 0$ and $A \neq 0$. -/
 theorem relative_solution_error_4_3_4 {A dA : E →L[ℝ] E} (hA : IsUnit A)
     {x dx b db : E} (hx : A x = b) (hxd : (A + dA) (x + dx) = b + db)
     (hb : b ≠ 0) (hsmall : ‖Ring.inverse A * dA‖ < 1) :
@@ -106,8 +159,9 @@ end Perturbation
 
 variable {n : ℕ}
 
-/-- **(4.3.5)** A real symmetric positive-definite matrix is the product of a
-lower triangular factor and its transpose. -/
+/-- **Equation (4.3.5)** of [conn2000trust] (Cholesky factorization). Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric positive definite. Then there is a lower triangular
+$L \in \mathbb{R}^{n \times n}$ with $A = LL^T$. -/
 theorem cholesky_4_3_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     ∃ L : Matrix (Fin n) (Fin n) ℝ, L.IsLowerTriangular ∧ A = L * Lᵀ := by
   refine ⟨Matrix.cholesky A, Matrix.isLowerTriangular_cholesky A, ?_⟩
@@ -115,8 +169,13 @@ theorem cholesky_4_3_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     (Matrix.isCholesky_cholesky hA).conjTranspose_mul_self.symm
 
 
-/-- **(4.3.5)** Every lower triangular Cholesky factor is obtained from the
-positive-diagonal factor by changing the signs of its columns. -/
+/-- **Equation (4.3.5)** of [conn2000trust], uniqueness. Let $A \in \mathbb{R}^{n \times n}$ be
+symmetric positive definite, and let $L \in \mathbb{R}^{n \times n}$ be lower triangular with
+$LL^T = A$. Then there are signs $s_i \in \{1, -1\}$ with
+$$L = L_A \operatorname{diag}(s_1, \dots, s_n),$$
+where $L_A$ is the Cholesky factor of $A$ with positive diagonal.
+
+The factor $L_A$ is `Matrix.cholesky A`. -/
 theorem cholesky_unique_up_to_column_signs_4_3_5 {A L : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.PosDef) (hL : L.IsLowerTriangular) (he : L * Lᵀ = A) :
     ∃ s : Fin n → ℝ, (∀ i, s i = 1 ∨ s i = -1) ∧
@@ -161,8 +220,17 @@ theorem cholesky_unique_up_to_column_signs_4_3_5 {A L : Matrix (Fin n) (Fin n) �
   · change L = Matrix.cholesky A * S
     rw [← heq, Matrix.mul_assoc, hS, mul_one]
 
-/-- In the conversion after (4.3.5), the diagonal square root multiplies the unit
-lower triangular factor on the right, giving `Lᴄ = Lᴸ D^(1/2)`. -/
+/-- **Section 4.3** of [conn2000trust], the conversion after (4.3.5). Let
+$L \in \mathbb{R}^{n \times n}$, let $d \in \mathbb{R}^n$ with $d_i \ge 0$ for all $i$, and let
+$D = \operatorname{diag}(d)$. Then
+$$(L D^{1/2})(L D^{1/2})^T = L D L^T,$$
+so an $LDL^T$ factorization with unit lower triangular $L$ gives the Cholesky factor
+$L_C = L D^{1/2}$.
+
+**Correction.** The source multiplies the diagonal square root on the left of the unit lower
+triangular factor. The factor order that gives $LDL^T$ is $L D^{1/2}$.
+
+The identity holds for every square $L$; triangularity is not needed. -/
 theorem cholesky_of_ldl (L : Matrix (Fin n) (Fin n) ℝ) (d : Fin n → ℝ)
     (hd : ∀ i, 0 ≤ d i) :
     let R := Matrix.diagonal (fun i => √(d i))
@@ -172,8 +240,13 @@ theorem cholesky_of_ldl (L : Matrix (Fin n) (Fin n) ℝ) (d : Fin n → ℝ)
     ← Matrix.mul_assoc (Matrix.diagonal _), Matrix.diagonal_mul_diagonal]
   simp only [Real.mul_self_sqrt (hd _), ← Matrix.mul_assoc]
 
-/-- **(4.3.6)–(4.3.7)** Comparing the blocks of a first-column Cholesky partition
-gives the pivot, column entries, and trailing Schur complement. -/
+/-- **Equations (4.3.6)–(4.3.7)** of [conn2000trust]. Let $a_{11}, l_{11} \in \mathbb{R}$ with
+$l_{11} > 0$, let $a, l \in \mathbb{R}^n$, and let $A, L \in \mathbb{R}^{n \times n}$. If
+$$\begin{bmatrix} a_{11} & a^T \\ a & A \end{bmatrix} = \begin{bmatrix} l_{11} & 0 \\ l & L
+  \end{bmatrix} \begin{bmatrix} l_{11} & 0 \\ l & L \end{bmatrix}^T,$$
+then
+$$l_{11} = \sqrt{a_{11}}, \qquad l = a / l_{11}, \qquad LL^T = A - l l^T.$$
+-/
 theorem cholesky_first_column_4_3_7 (a₁₁ l₁₁ : ℝ) (a l : Fin n → ℝ)
     (A L : Matrix (Fin n) (Fin n) ℝ) (hl : 0 < l₁₁)
     (h : Matrix.fromBlocks (Matrix.of fun _ _ : Unit => a₁₁)
@@ -194,8 +267,11 @@ theorem cholesky_first_column_4_3_7 (a₁₁ l₁₁ : ℝ) (a l : Fin n → ℝ
     simp [Matrix.mul_apply, Matrix.vecMulVec] at he ⊢
     linarith
 
-/-- **(4.3.8)** Bordering a Cholesky factor gives a triangular solve for the new
-row and the square root formula for its diagonal entry. -/
+/-- **Equation (4.3.8)** of [conn2000trust]. Let $L, A \in \mathbb{R}^{n \times n}$,
+$a, l \in \mathbb{R}^n$, and $\alpha, \ell \in \mathbb{R}$ with $\ell \ge 0$. If
+$$\begin{bmatrix} A & a \\ a^T & \alpha \end{bmatrix} = \begin{bmatrix} L & 0 \\ l^T & \ell
+  \end{bmatrix} \begin{bmatrix} L & 0 \\ l^T & \ell \end{bmatrix}^T,$$
+then the new row solves the triangular system $Ll = a$, and $\ell = \sqrt{\alpha - l^T l}$. -/
 theorem cholesky_next_row_4_3_8 (L A : Matrix (Fin n) (Fin n) ℝ)
     (a l : Fin n → ℝ) (α ℓ : ℝ) (hℓ : 0 ≤ ℓ)
     (h : Matrix.fromBlocks A (Matrix.of fun i _ => a i)
@@ -212,9 +288,14 @@ theorem cholesky_next_row_4_3_8 (L A : Matrix (Fin n) (Fin n) ℝ)
       simpa [Matrix.mul_apply, dotProduct] using congrFun (congrFun h22 ()) ()
     rw [he, add_comm, add_sub_cancel_right, Real.sqrt_mul_self hℓ]
 
-/-- **(4.3.9)** After the same permutation of rows and columns, a real symmetric
-matrix has a unit lower triangular block `LDLᵀ` factorization with pivots of size
-at most two. -/
+/-- **Equation (4.3.9)** of [conn2000trust]. Let $A \in \mathbb{R}^{n \times n}$ be symmetric. Then
+there are a permutation $\sigma$ of $\{1, \dots, n\}$ and matrices
+$L, B \in \mathbb{R}^{n \times n}$ such that the permuted matrix
+$P^T A P = (a_{\sigma(i) \sigma(j)})$ equals $L B L^T$, where $L$ is unit lower triangular, $B$
+is block diagonal with diagonal blocks of order one and two, and $L$ is the identity on each
+diagonal block of order two.
+
+The factorization is `Matrix.IsBlockLDL (A.submatrix σ σ) L B`. -/
 theorem indefinite_factorization_4_3_9 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ (σ : Equiv.Perm (Fin n)) (L B : Matrix (Fin n) (Fin n) ℝ),
       Matrix.IsBlockLDL (A.submatrix σ σ) L B :=

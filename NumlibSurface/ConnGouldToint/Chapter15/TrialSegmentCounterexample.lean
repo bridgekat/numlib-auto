@@ -5,11 +5,29 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Analysis.SpecificLimits.Basic
 import NumlibSurface.ConnGouldToint.Chapter15.Section04
 
-/-! # A trial-segment counterexample for the composite SQP analysis
+/-!
+# Conn, Gould and Toint, Section 15.4: A trial-segment counterexample for the composite SQP analysis
 
-The constraint map is the zero map into the zero vector space. The normal
-step is zero, the null-space basis is the identity, and the tangential model
-is linear. Thus the iteration is the basic trust-region update.
+The analysis of the composite-step SQP method in Section 15.4 of [conn2000trust] (Lemma 15.4.3 and
+Theorems 15.4.10–15.4.11) needs control of the objective along the whole trial segments, not only
+near the iterates. This module gives a counterexample without constraints. The constraint map is the
+zero map into the zero vector space, so the normal step is zero, the null-space basis is the
+identity, and the composite-step iteration is the basic trust-region iteration of
+`NumlibSurface.ConnGouldToint.Chapter06.Section01`. The objective is $f(x) = -x$ for $x < 0$ and
+$f(x) = 1$ for $x \ge 0$, and the model is $m(z) = -z$. The accepted steps approach the boundary $0$
+of the domain where $f$ is differentiable, and they alternate with rejected steps that cross it.
+
+## Main results
+
+* `ConnGouldToint.Chapter15.sqp_trialSegment_counterexample`: a run with exact first-order models at
+  the iterates whose model error on the trial steps has no uniform bound of order $\Delta^2$.
+
+## Deviations from the source
+
+* **Lemma 15.4.3 and Theorems 15.4.10–15.4.11** (correction). Lipschitz continuity of the objective
+  derivative near the iterates does not control the rejected trial segments. The corrected results
+  assume uniform control along the trial segments. See
+  `ConnGouldToint.Chapter15.sqp_trialSegment_counterexample`.
 -/
 
 namespace ConnGouldToint.Chapter15
@@ -166,11 +184,25 @@ private noncomputable def segmentRun :
       · norm_num [segmentParams] at h
       · norm_num [segmentParams] at h
 
-/-- Lipschitz objective derivatives near all iterates do not control rejected
-trial segments. A linear model produces accepted steps approaching the
-boundary of the differentiability domain, alternating with rejected steps
-that cross the boundary. The gradient norm stays one and the model error
-does not have a uniform quadratic bound. -/
+/-- Lipschitz continuity of the objective derivative near all iterates does not control the rejected
+trial segments, which shows why Lemma 15.4.3 and Theorems 15.4.10–15.4.11 of [conn2000trust]
+need control along the trial segments. There are an objective $f : \mathbb{R} \to \mathbb{R}$,
+trust-region parameters, and a run of the basic trust-region algorithm whose steps satisfy
+assumption AA.1 with gradient $-1$, $\beta = 1$ and $\kappa = 1/2$, such that:
+
+* $f \ge 0$, every iterate satisfies $x_k < 0$, and $f$ is differentiable on $(-\infty, 0)$ with
+  derivative Lipschitz with constant $0$ there;
+* $|\nabla f(z)| \le 1$ for all $z \neq 0$;
+* for every $k$, $\Delta_k = |s_k|$, the model is $m_k(z) = -z$, $m_k(x_k) = f(x_k)$,
+  $m_k'(x_k) = f'(x_k)$ and $|\nabla f(x_k)| = 1$;
+* for every $C \ge 0$ there is $k$ with
+$$C \Delta_k^2 < |f(x_k + s_k) - m_k(x_k + s_k)|.$$
+
+The objective is $f(x) = -x$ for $x < 0$ and $f(x) = 1$ for $x \ge 0$. The iterates are
+$x_{2j} = x_{2j+1} = -2^{-j}$, with radius $2 \cdot 2^{-j}$ at even and $2^{-j} / 2$ at odd
+indices. The even steps cross $0$ and are rejected, and the odd steps are accepted. The run is a
+`ConnGouldToint.Chapter06.BTRRun`, and AA.1 is
+`ConnGouldToint.Chapter06.HasSufficientModelDecrease`. -/
 theorem sqp_trialSegment_counterexample :
     ∃ (f : ℝ → ℝ) (P : BTRParams) (run : BTRRun f P
       (fun _ m x s => HasSufficientModelDecrease m x s (-1 : ℝ) 1 ‖s‖ (1 / 2))),

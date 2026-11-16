@@ -6,7 +6,97 @@ import Mathlib.Analysis.InnerProductSpace.PiL2
 import NumlibSurface.ConnGouldToint.Chapter13.Section03
 import NumlibSurface.ConnGouldToint.Chapter13.Section04
 
-/-! # Primal-dual barrier methods -/
+/-!
+# Conn, Gould and Toint, Section 13.6: Primal-dual barrier methods
+
+This module formalizes the primal-dual barrier methods of Section 13.6 of [conn2000trust] for the
+bound constraints $x \ge 0$ in $\mathbb{R}^n$. Besides the primal iterate $x > 0$, the method keeps
+dual variables $z > 0$ that estimate the barrier multipliers $\mu / x_i$. The barrier model (13.6.3)
+replaces the primal curvature $\mu / x_i^2$ by $z_i / x_i$:
+$$m^b(x, z, s) = -\mu \sum_i \log x_i - \mu \sum_i \frac{s_i}{x_i} + \frac12 \sum_i \frac{z_i}{x_i}
+  s_i^2.$$
+Lemma 13.6.1 checks the model assumptions for this model. The inner algorithm, Algorithm 13.6.1,
+stops at a point that passes the primal-dual tests (13.6.5)–(13.6.8), and Algorithm 13.6.2 drives
+the barrier parameter to zero. Theorem 13.6.3 gives first-order and weak second-order criticality in
+the limit, and Theorem 13.6.4 studies the safeguarded dual update (13.6.17)–(13.6.19), which keeps
+the duals bounded (AA.7) and consistent with $\mu / x$ (AA.8).
+
+The finite stopping of Theorem 13.6.2 and the dual consistency of Theorem 13.6.4 are proved under
+corrected hypotheses, and scalar counterexamples show why the printed hypotheses do not suffice. The
+proofs build on `NumlibSurface.ConnGouldToint.Chapter13.Section03` and
+`NumlibSurface.ConnGouldToint.Chapter13.Section04`.
+
+## Main definitions
+
+* Equation (13.6.3), `ConnGouldToint.Chapter13.primalDualBarrierModel`: the primal-dual barrier
+  model with the corrected positive quadratic term.
+* Equations (13.6.5)–(13.6.8), `ConnGouldToint.Chapter13.PrimalDualBarrierStop`: the positivity,
+  dual residual, complementarity and Hessian stopping tests.
+* Algorithm 13.6.1, `ConnGouldToint.Chapter13.PrimalDualBarrierInnerRun`: a run of the primal-dual
+  inner algorithm for a fixed barrier parameter.
+* Algorithm 13.6.2, `ConnGouldToint.Chapter13.PrimalDualBarrierOuterRun`: the primal-dual barrier
+  method.
+* Equation (13.6.16), `ConnGouldToint.Chapter13.primalDualPredictedMultiplier`: one coordinate of
+  the predicted multiplier.
+* Equations (13.6.17)–(13.6.19), `ConnGouldToint.Chapter13.primalDualSafeguard`: the projection of
+  the predicted multiplier onto the safeguard interval.
+
+## Main results
+
+* Lemma 13.6.1, `ConnGouldToint.Chapter13.primalDualBarrierModel_center`,
+  `ConnGouldToint.Chapter13.primalDualBarrierModel_hessian`,
+  `ConnGouldToint.Chapter13.primalDualBarrierModel_hessian_bounded` and
+  `ConnGouldToint.Chapter13.primalDualBarrierModel_hessian_consistent`: the model satisfies
+  AM.1–AM.3, AC.6b, AM.4h and AM.5c.
+* Theorem 13.6.2, `ConnGouldToint.Chapter13.PrimalDualBarrierInnerRun.frequently_stop_of_extension`:
+  a bounded run of Algorithm 13.6.1 with a smooth extension of the objective, uniform model
+  estimates and AA.8 passes the stopping tests infinitely often.
+* Theorem 13.6.2, `ConnGouldToint.Chapter13.theorem_13_6_2_unbounded_run_counterexample`: without
+  bounded primal coordinates, a run never passes the complementarity test.
+* Theorem 13.6.3, `ConnGouldToint.Chapter13.theorem_13_6_3`: points that pass the primal-dual
+  stopping tests with vanishing parameter and tolerances have nonnegative limiting gradients, zero
+  limiting gradients on inactive coordinates, and nonnegative limiting curvature on inactive
+  directions.
+* Theorem 13.6.4, `ConnGouldToint.Chapter13.theorem_13_6_4`: the safeguarded duals stay positive and
+  bounded (AA.7).
+* Theorem 13.6.4, `ConnGouldToint.Chapter13.theorem_13_6_4_aa8_of_frequently_successful` and
+  `ConnGouldToint.Chapter13.theorem_13_6_4_aa8_of_reset_rejected`: AA.8 holds with infinitely many
+  successful iterations, or with the reset of the dual after a rejection.
+* Theorem 13.6.4, `ConnGouldToint.Chapter13.theorem_13_6_4_all_rejected_counterexample`: AA.8 fails
+  for a bounded run whose trials are all rejected.
+
+## Implementation notes
+
+* Vectors are functions `ι → ℝ` on a finite index type `ι`. The inner runs work in
+  `EuclideanSpace ℝ ι`, so that the trust region and the distance to the boundary are Euclidean.
+* In the stopping tests the complementarity matrix is diagonal, so its operator norm is the largest
+  coordinate residual $|x_i z_i - \mu|$. The least-eigenvalue test is written as a bound on all
+  quadratic forms.
+* The dual update (13.6.17)–(13.6.19) is not part of
+  `ConnGouldToint.Chapter13.PrimalDualBarrierInnerRun`; the theorems that need it take it as a
+  hypothesis.
+* The lower limits in Theorem 13.6.3 are written in eventual form: each negative tolerance $-\eta$
+  is eventually a lower bound.
+
+## Deviations from the source
+
+* **Equation (13.6.3)** (correction). The printed quadratic term of the barrier model has a negative
+  sign; the model uses the positive sign. See
+  `ConnGouldToint.Chapter13.primalDualBarrierModel_printed_sign_counterexample`.
+* **Algorithm 13.6.1, Step 2** (correction). The printed distance test also admits infeasible
+  points; the trial must also be strictly feasible. See
+  `ConnGouldToint.Chapter13.primalDual_distance_test_infeasible_counterexample`.
+* **Theorem 13.6.2** (correction). Finite stopping needs bounded primal coordinates. A scalar
+  all-successful run with unbounded primal coordinates never passes the complementarity test. See
+  `ConnGouldToint.Chapter13.theorem_13_6_2_unbounded_run_counterexample` and
+  `ConnGouldToint.Chapter13.PrimalDualBarrierInnerRun.frequently_stop_of_extension`.
+* **Theorem 13.6.4** (correction). AA.8 needs infinitely many successful iterations; a bounded run
+  with all trials rejected violates it. Resetting the dual to $\mu / x$ after a rejection gives AA.8
+  when the accepted displacements tend to zero. See
+  `ConnGouldToint.Chapter13.theorem_13_6_4_aa8_of_frequently_successful`,
+  `ConnGouldToint.Chapter13.theorem_13_6_4_all_rejected_counterexample` and
+  `ConnGouldToint.Chapter13.theorem_13_6_4_aa8_of_reset_rejected`.
+-/
 
 open Filter Set
 open scoped Topology
@@ -15,13 +105,22 @@ namespace ConnGouldToint.Chapter13
 
 variable {ι : Type*} [Fintype ι]
 
-/-- The corrected barrier contribution in (13.6.3). The quadratic term has a
-positive sign, as in Section 13.6.2 and the elimination of the dual Newton step. -/
+/-- **Equation (13.6.3)** of [conn2000trust]. For a primal point $x > 0$, a dual point $z$, a
+displacement $s$ and a barrier parameter $\mu$, the **primal-dual barrier model** is
+$$m^b(x, z, s) = -\mu \sum_i \log x_i - \mu \sum_i \frac{s_i}{x_i} + \frac12 \sum_i
+  \frac{z_i}{x_i} s_i^2.$$
+
+**Correction.** The source prints the quadratic term with a negative sign. The model uses the
+positive sign, as in Section 13.6.2 and in the elimination of the dual Newton step. With the
+printed sign the model differs from the primal Taylor model even for the exact dual values; see
+`ConnGouldToint.Chapter13.primalDualBarrierModel_printed_sign_counterexample`. -/
 noncomputable def primalDualBarrierModel (x z s : ι → ℝ) (μ : ℝ) : ℝ :=
   logBarrier x μ - μ * (∑ i, (x i)⁻¹ * s i) +
     (1 / 2 : ℝ) * ∑ i, (z i / x i) * (s i) ^ 2
 
-/-- With exact dual values the corrected model is the primal Taylor model. -/
+/-- With the exact dual values $z_i = \mu / x_i$, the primal-dual barrier model (13.6.3) of
+[conn2000trust] is the primal Taylor model (13.4.2): $m^b(x, \mu / x, s) = m^b(x, s)$ for all
+$x$, $s$ and $\mu$. -/
 theorem primalDualBarrierModel_eq_primal (x s : ι → ℝ) (μ : ℝ) :
     primalDualBarrierModel x (fun i ↦ μ / x i) s μ = logBarrierModel x s μ := by
   unfold primalDualBarrierModel logBarrierModel
@@ -31,8 +130,13 @@ theorem primalDualBarrierModel_eq_primal (x s : ι → ℝ) (μ : ℝ) :
     simp only [div_eq_mul_inv, ← inv_pow]
     ring
 
-/-- In one dimension at `x = z = μ = 1`, the printed negative quadratic
-term differs from the primal Taylor model, even for the exact dual value. -/
+/-- A counterexample to the printed sign in (13.6.3) of [conn2000trust]. In one dimension, at
+$x = z = \mu = s = 1$, the primal Taylor model (13.4.2) differs from the value
+$-\log 1 - 1 - \frac12$ of the model with the printed negative quadratic term:
+$$m^b(1, 1) \ne -\log 1 - 1 - \tfrac12.$$
+
+The exact dual value is $z = \mu / x = 1$ here, so the printed model differs from the primal
+Taylor model even for the exact dual value. -/
 theorem primalDualBarrierModel_printed_sign_counterexample :
     logBarrierModel (ι := Unit) (fun _ ↦ 1) (fun _ ↦ 1) 1 ≠
       logBarrier (ι := Unit) (fun _ ↦ 1) 1 - 1 - 1 / 2 := by
@@ -43,12 +147,13 @@ private noncomputable def barrierCoordinateBilinear (i : ι) :
     (ι → ℝ) →L[ℝ] (ι → ℝ) →L[ℝ] ℝ :=
   (ContinuousLinearMap.proj i).smulRight (ContinuousLinearMap.proj i)
 
-/-- The continuous bilinear form represented by a real diagonal. -/
+/-- The **diagonal bilinear form** of a vector $a \in \mathbb{R}^n$ is
+$(d, e) \mapsto \sum_i a_i d_i e_i$, as a continuous bilinear form on $\mathbb{R}^n$. -/
 noncomputable def primalDualBarrierDiagonal (a : ι → ℝ) :
     (ι → ℝ) →L[ℝ] (ι → ℝ) →L[ℝ] ℝ :=
   ∑ i, a i • barrierCoordinateBilinear i
 
-/-- Evaluation of the bilinear form represented by a real diagonal. -/
+/-- The diagonal bilinear form of $a$ takes the value $\sum_i a_i d_i e_i$ at $(d, e)$. -/
 theorem primalDualBarrierDiagonal_apply (a d e : ι → ℝ) :
     primalDualBarrierDiagonal a d e = ∑ i, a i * d i * e i := by
   simp [primalDualBarrierDiagonal, barrierCoordinateBilinear, mul_assoc]
@@ -81,8 +186,10 @@ private theorem primalDualBarrierModel_fderiv {x : ι → ℝ} (hx : ∀ i, 0 < 
   simp only [primalDualBarrierDiagonal_apply]
   exact Finset.sum_congr rfl fun i _ ↦ by ring
 
-/-- AM.1–AM.3 in Lemma 13.6.1. The model is smooth and matches the value and
-derivative of the barrier at the current point. -/
+/-- **Lemma 13.6.1** of [conn2000trust], AM.1–AM.3. For $x > 0$, every $z$ and every $\mu$, the
+primal-dual barrier model $s \mapsto m^b(x, z, s)$ is twice continuously differentiable,
+$m^b(x, z, 0) = b_\mu(x)$, and its derivative at $s = 0$ is the derivative $D b_\mu(x)$ of the
+barrier $b_\mu(x) = -\mu \sum_i \log x_i$. -/
 theorem primalDualBarrierModel_center {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     (z : ι → ℝ) (μ : ℝ) :
     ContDiff ℝ 2 (fun s ↦ primalDualBarrierModel x z s μ) ∧
@@ -93,8 +200,10 @@ theorem primalDualBarrierModel_center {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     fun_prop
   · rw [primalDualBarrierModel_fderiv hx, map_zero, add_zero]
 
-/-- The Hessian in Lemma 13.6.1 is independent of the displacement, which
-gives AC.6b with zero variation. -/
+/-- **Lemma 13.6.1** of [conn2000trust], AC.6b. For $x > 0$, every $z$, $\mu$ and $s$, the Hessian
+of $s \mapsto m^b(x, z, s)$ at $s$ is the diagonal bilinear form of $(z_i / x_i)_i$.
+
+The Hessian does not depend on the displacement, so AC.6b holds with zero variation. -/
 theorem primalDualBarrierModel_hessian {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     (z : ι → ℝ) (μ : ℝ) (s : ι → ℝ) :
     fderiv ℝ (fderiv ℝ (fun d ↦ primalDualBarrierModel x z d μ)) s =
@@ -102,8 +211,13 @@ theorem primalDualBarrierModel_hessian {x : ι → ℝ} (hx : ∀ i, 0 < x i)
   rw [funext (primalDualBarrierModel_fderiv hx z μ)]
   exact ((primalDualBarrierDiagonal _).hasFDerivAt.const_add _).fderiv
 
-/-- AM.4h in Lemma 13.6.1 on a layer bounded away from the boundary.
-The dual bound is AA.7. -/
+/-- **Lemma 13.6.1** of [conn2000trust], AM.4h. Let $\varepsilon > 0$, $K > 0$ and
+$\mu \in \mathbb{R}$. There is $C \ge 1$ such that $\|\nabla^2_s m^b(x, z, s)\| \le C$ for all
+$x$, $z$ and $s$ with $x_i \ge \varepsilon$ and $0 \le z_i \le K \max\{x_i^{-1}, 1\}$ for all
+$i$.
+
+The layer $x_i \ge \varepsilon$ is bounded away from the boundary, and the bound on the duals is
+AA.7. -/
 theorem primalDualBarrierModel_hessian_bounded {ε K : ℝ} (hε : 0 < ε) (hK : 0 < K)
     (μ : ℝ) :
     ∃ C ≥ (1 : ℝ), ∀ x z s : ι → ℝ, (∀ i, ε ≤ x i) →
@@ -125,8 +239,13 @@ theorem primalDualBarrierModel_hessian_bounded {ε K : ℝ} (hε : 0 < ε) (hK :
       exact (hz i).2.trans (mul_le_mul_of_nonneg_left
         (max_le_max (inv_anti₀ hε (hx i)) le_rfl) hK.le)
 
-/-- AM.5c in Lemma 13.6.1. When AA.8 makes the dual error vanish, a uniformly
-positive primal layer makes the barrier model Hessian asymptotically exact. -/
+/-- **Lemma 13.6.1** of [conn2000trust], AM.5c. Let $l$ be a filter, $\varepsilon > 0$ and
+$\mu \in \mathbb{R}$, and let $x_j$, $z_j$ and $s_j$ be vectors with $x_{j,i} \ge \varepsilon$
+for all $j$ and $i$. If $z_{j,i} - \mu / x_{j,i} \to 0$ along $l$ for every $i$ (AA.8), then
+$$\|\nabla^2_s m^b(x_j, z_j, s_j) - \nabla^2 b_\mu(x_j)\| \to 0.$$
+
+On a uniformly positive primal layer, AA.8 makes the Hessian of the barrier model asymptotically
+exact. -/
 theorem primalDualBarrierModel_hessian_consistent {α : Type*} {l : Filter α}
     {x z s : α → ι → ℝ} {ε μ : ℝ} (hε : 0 < ε) (hx : ∀ j i, ε ≤ x j i)
     (hdual : ∀ i, Tendsto (fun j ↦ z j i - μ / x j i) l (𝓝 0)) :
@@ -164,9 +283,19 @@ theorem primalDualBarrierModel_hessian_consistent {α : Type*} {l : Filter α}
 
 variable [DecidableEq ι]
 
-/-- The stopping tests (13.6.5)–(13.6.8). The complementarity matrix is
-diagonal, so its operator norm is the maximum coordinate residual. The
-minimum-eigenvalue test is expressed as a bound on all quadratic forms. -/
+/-! ### Stopping tests and Algorithms 13.6.1 and 13.6.2 -/
+
+/-- **Equations (13.6.5)–(13.6.8)** of [conn2000trust]. A primal-dual pair $(x, z)$ passes the
+**primal-dual stopping tests** for the objective $f$, the barrier parameter $\mu$ and the
+tolerances $\varepsilon^D$, $\varepsilon^C$, $\varepsilon^E$ if $x > 0$, $z > 0$, and
+$$\sum_i (\partial_i f(x) - z_i)^2 \le (\varepsilon^D)^2, \qquad |x_i z_i - \mu| \le
+  \varepsilon^C \text{ for all } i,$$
+$$\nabla^2 f(x)[d, d] + \sum_i \frac{z_i}{x_i} d_i^2 \ge -\varepsilon^E \|d\|^2 \text{ for all }
+  d,$$
+where $\|d\|$ is the Euclidean norm.
+
+The complementarity matrix is diagonal, so its operator norm is the largest coordinate residual.
+The least-eigenvalue test is written as a bound on all quadratic forms. -/
 def PrimalDualBarrierStop (f : (ι → ℝ) → ℝ) (x z : ι → ℝ) (μ εD εC εE : ℝ) : Prop :=
   (∀ i, 0 < x i) ∧ (∀ i, 0 < z i) ∧
   (∑ i, (barrierCoordinateGradient f x i - z i) ^ 2) ≤ εD ^ 2 ∧
@@ -174,9 +303,13 @@ def PrimalDualBarrierStop (f : (ι → ℝ) → ℝ) (x z : ι → ℝ) (μ εD 
   ∀ d : ι → ℝ, -εE * (∑ i, (d i) ^ 2) ≤
     fderiv ℝ (fderiv ℝ f) x d d + ∑ i, (z i / x i) * d i * d i
 
-/-- The distance test in Step 2 of Algorithm 13.6.1 also admits exterior
-points. From `1`, the point `-1` satisfies the printed distance test in a
-radius-two ball around the current iterate, although it is infeasible. -/
+/-- A counterexample to the printed distance test in Step 2 of Algorithm 13.6.1 of [conn2000trust].
+There are $x > 0$ and $y < 0$ with $|y - x| \le 2$ and
+$$\tfrac12 \operatorname{dist}(x, \partial [0, \infty)) \le \operatorname{dist}(y, \partial [0,
+  \infty)).$$
+
+The test with fraction $\frac12$ admits the infeasible point $y$. The proof takes $x = 1$ and
+$y = -1$. -/
 theorem primalDual_distance_test_infeasible_counterexample :
     ∃ x y : ℝ, x ∈ interior (Ici (0 : ℝ)) ∧ y ∈ Metric.closedBall x 2 ∧
       (1 / 2 : ℝ) * Metric.infDist x (frontier (Ici (0 : ℝ))) ≤
@@ -188,58 +321,121 @@ theorem primalDual_distance_test_infeasible_counterexample :
 private def euclideanOrthant : Set (EuclideanSpace ℝ ι) :=
   WithLp.ofLp ⁻¹' Optimization.nonnegativeOrthant ι
 
-/-- Algorithm 13.6.1 in Euclidean coordinates. Step 2 explicitly keeps the
-trial feasible, and Step 1 uses the corrected positive quadratic sign. -/
+/-- **Algorithm 13.6.1** of [conn2000trust]. Let $f : \mathbb{R}^n \to \mathbb{R}$,
+$\sigma \in \mathbb{R}$ and $\mu > 0$. A **run of the primal-dual inner algorithm** is a run of
+Algorithm 13.3.1 (`ConnGouldToint.Chapter13.SecondPrimalBarrierInnerRun`) on the nonnegative
+orthant of the Euclidean space $\mathbb{R}^n$ for the barrier objective $f + b_\mu$, together
+with dual points $z_j > 0$, such that for all $j$:
+* the barrier model is the primal-dual model (13.6.3), $m^b_j(y) = m^b(x_j, z_j, y - x_j)$;
+* the objective model $m^f_j$ and its derivative are differentiable on the ball
+  $\|y - x_j\| \le \Delta_j$, with $m^f_j(x_j) = f(x_j)$ and $D m^f_j(x_j) = D f(x_j)$;
+* the Hessians $\nabla^2 m^f_j$ are bounded on the positive points of these balls, uniformly in
+  $j$.
+
+**Correction.** Step 1 uses the positive quadratic sign of the corrected model (13.6.3). Step 2
+keeps the trial strictly feasible: every trial passes the interior and fraction-to-boundary test
+of Algorithm 13.3.1, which the printed distance test alone does not ensure.
+
+The dual update is not part of the run. -/
 structure PrimalDualBarrierInnerRun (P : Chapter06.BTRParams) (f : (ι → ℝ) → ℝ) (σ μ : ℝ)
     extends SecondPrimalBarrierInnerRun P (euclideanOrthant (ι := ι)) σ
       (fun x ↦ logBarrierObjective f x.ofLp μ) where
+  /-- The barrier parameter $\mu$ is positive. -/
   barrier_parameter_pos : 0 < μ
+  /-- The dual points $z_j$. -/
   z : ℕ → ι → ℝ
+  /-- The dual points are positive. -/
   dual_pos : ∀ j i, 0 < z j i
+  /-- The barrier model is the primal-dual model (13.6.3) at $(x_j, z_j)$. -/
   barrier_model : ∀ j y, barrierModel j y =
     primalDualBarrierModel (x j).ofLp (z j) (y - x j).ofLp μ
+  /-- Each objective model and its derivative are differentiable on the trust region. -/
   objective_model_twice_diff : ∀ j,
     DifferentiableOn ℝ (objectiveModel j) (Metric.closedBall (x j) (Δ j)) ∧
     DifferentiableOn ℝ (fderiv ℝ (objectiveModel j)) (Metric.closedBall (x j) (Δ j))
+  /-- Each objective model agrees with $f$ at the center. -/
   objective_model_value : ∀ j, objectiveModel j (x j) = f (x j).ofLp
+  /-- Each objective model has the derivative of $f$ at the center. -/
   objective_model_derivative : ∀ j, fderiv ℝ (objectiveModel j) (x j) =
     fderiv ℝ (fun y : EuclideanSpace ℝ ι ↦ f y.ofLp) (x j)
+  /-- The Hessians of the objective models are bounded on the positive points of the trust regions,
+  uniformly in $j$. -/
   objective_model_hessian_bound : ∃ K : ℝ, ∀ j y,
     y ∈ Metric.closedBall (x j) (Δ j) → y ∈ interior (euclideanOrthant (ι := ι)) →
       ‖fderiv ℝ (fderiv ℝ (objectiveModel j)) y‖ ≤ K
 
-/-- Algorithm 13.6.2 joins fixed-parameter inner runs at the first
-qualifying stopping index and drives the positive barrier parameter to zero.
-The positive forcing tolerances tend to zero at positive arguments. -/
+/-- **Algorithm 13.6.2** of [conn2000trust]. Let $f : \mathbb{R}^n \to \mathbb{R}$. A **run of the
+primal-dual barrier method** consists of outer iterates $(x_k, z_k)$, barrier parameters
+$\mu_k$, fractions $\sigma_k$, forcing functions $\varepsilon^D$, $\varepsilon^C$,
+$\varepsilon^E$, runs of Algorithm 13.6.1 and stopping indices $J_k$, such that:
+* $x_0 > 0$, $z_0 > 0$ and $\mu_k \to 0$;
+* $\varepsilon^D(\mu)$, $\varepsilon^C(\mu)$ and $\varepsilon^E(\mu)$ are positive for $\mu > 0$
+  and tend to $0$ as $\mu \to 0^+$;
+* the $k$-th inner run, with $\sigma_k$ and $\mu_k$, starts at $(x_k, z_k)$ and reaches
+  $(x_{k+1}, z_{k+1})$ at the index $J_k$;
+* $(x_{k+1}, z_{k+1})$ passes the stopping tests (13.6.5)–(13.6.8) with $\mu_k$,
+  $\varepsilon^D(\mu_k)$, $\varepsilon^C(\mu_k)$ and $\varepsilon^E(\mu_k)$, and no earlier
+  inner iterate passes them.
+
+The barrier parameters are positive because each inner run requires it. The method joins the
+fixed-parameter inner runs at their first stopping indices. -/
 structure PrimalDualBarrierOuterRun (P : Chapter06.BTRParams) (f : (ι → ℝ) → ℝ) where
+  /-- The primal outer iterates $x_k$. -/
   x : ℕ → ι → ℝ
+  /-- The dual outer iterates $z_k$. -/
   z : ℕ → ι → ℝ
+  /-- The barrier parameters $\mu_k$. -/
   μ : ℕ → ℝ
+  /-- The fractions $\sigma_k$ of the fraction-to-boundary tests. -/
   σ : ℕ → ℝ
+  /-- The forcing function $\varepsilon^D$ of the dual residual test. -/
   εD : ℝ → ℝ
+  /-- The forcing function $\varepsilon^C$ of the complementarity test. -/
   εC : ℝ → ℝ
+  /-- The forcing function $\varepsilon^E$ of the Hessian test. -/
   εE : ℝ → ℝ
+  /-- The initial primal iterate is positive. -/
   initial_primal_pos : ∀ i, 0 < x 0 i
+  /-- The initial dual iterate is positive. -/
   initial_dual_pos : ∀ i, 0 < z 0 i
+  /-- The forcing functions are positive at every positive barrier parameter. -/
   forcing_pos : ∀ μ > 0, 0 < εD μ ∧ 0 < εC μ ∧ 0 < εE μ
+  /-- The forcing functions tend to $0$ as the barrier parameter tends to $0$ from above. -/
   forcing_limit : Tendsto εD (𝓝[>] 0) (𝓝 0) ∧ Tendsto εC (𝓝[>] 0) (𝓝 0) ∧
     Tendsto εE (𝓝[>] 0) (𝓝 0)
+  /-- The barrier parameters tend to $0$. -/
   parameter_limit : Tendsto μ atTop (𝓝 0)
+  /-- The inner runs of Algorithm 13.6.1, the $k$-th with the fraction $\sigma_k$ and the parameter
+  $\mu_k$. -/
   inner : ∀ k, PrimalDualBarrierInnerRun P f (σ k) (μ k)
+  /-- The stopping indices $J_k$ of the inner runs. -/
   stopIndex : ℕ → ℕ
+  /-- The $k$-th inner run starts at $(x_k, z_k)$. -/
   start_inner : ∀ k, ((inner k).x 0).ofLp = x k ∧ (inner k).z 0 = z k
+  /-- The $k$-th inner run reaches $(x_{k+1}, z_{k+1})$ at its stopping index. -/
   finish_inner : ∀ k, ((inner k).x (stopIndex k)).ofLp = x (k + 1) ∧
     (inner k).z (stopIndex k) = z (k + 1)
+  /-- The next outer iterate passes the stopping tests (13.6.5)–(13.6.8). -/
   stopping_test : ∀ k, PrimalDualBarrierStop f (x (k + 1)) (z (k + 1)) (μ k)
     (εD (μ k)) (εC (μ k)) (εE (μ k))
+  /-- No earlier inner iterate passes the stopping tests. -/
   first_stop : ∀ k j, j < stopIndex k →
     ¬ PrimalDualBarrierStop f ((inner k).x j).ofLp ((inner k).z j) (μ k)
       (εD (μ k)) (εC (μ k)) (εE (μ k))
 
-/-- Finite stopping in Theorem 13.6.2 from the inner limits. An upper
-bound on the primal coordinates is needed to pass from AA.8 to the unscaled
-complementarity test. The curvature lower bound is that of the primal-dual
-model used in the stopping test. -/
+/-- Finite stopping in Theorem 13.6.2 of [conn2000trust] from the inner limits. Let
+$f : \mathbb{R}^n \to \mathbb{R}$, $\mu \in \mathbb{R}$, $\varepsilon^D, \varepsilon^C,
+\varepsilon^E, M > 0$, and let $x_j > 0$ and $z_j > 0$ with $x_{j,i} \le M$ for all $j$ and $i$.
+Assume that for every $i$
+$$\partial_i f(x_j) - \frac{\mu}{x_{j,i}} \to 0 \qquad \text{and} \qquad z_{j,i} -
+  \frac{\mu}{x_{j,i}} \to 0.$$
+Let $(\lambda_j)$ be real numbers that are cobounded from below with $\limsup_j \lambda_j \ge 0$
+and $\lambda_j \|d\|^2 \le \nabla^2 f(x_j)[d, d] + \sum_i (z_{j,i} / x_{j,i}) d_i^2$ for all $j$
+and $d$. Then infinitely many $(x_j, z_j)$ pass the stopping tests (13.6.5)–(13.6.8).
+
+The upper bound $M$ on the primal coordinates is needed to pass from AA.8 to the unscaled
+complementarity test. The curvature bound is that of the primal-dual model used in the stopping
+test. -/
 theorem theorem_13_6_2_of_inner_limits {f : (ι → ℝ) → ℝ} {x z : ℕ → ι → ℝ}
     {μ εD εC εE M : ℝ} (hD : 0 < εD) (hC : 0 < εC) (hE : 0 < εE) (hM : 0 < M)
     (hx : ∀ j i, 0 < x j i) (hz : ∀ j i, 0 < z j i) (hxM : ∀ j i, x j i ≤ M)
@@ -278,11 +474,16 @@ theorem theorem_13_6_2_of_inner_limits {f : (ι → ℝ) → ℝ} {x z : ℕ →
     (mul_le_mul_of_nonneg_right hj.1.le (Finset.sum_nonneg fun i _ ↦ sq_nonneg (d i))).trans
       (hmin j d)⟩
 
-/-- Under AA.8 and two-sided primal bounds, arbitrarily late tighter
-primal stopping tests give arbitrarily late primal-dual stopping tests.
-The lower primal bound transfers the true barrier Hessian test to the
-primal-dual Hessian, while the upper bound transfers dual consistency
-to unscaled complementarity. -/
+/-- Primal stopping implies primal-dual stopping in Theorem 13.6.2 of [conn2000trust]. Let
+$\varepsilon^D, \varepsilon^C, \varepsilon^E, \delta, M > 0$ and $\mu \in \mathbb{R}$, and let
+$x_j$ and $z_j > 0$ with $\delta \le x_{j,i} \le M$ for all $j$ and $i$. Assume AA.8,
+$z_{j,i} - \mu / x_{j,i} \to 0$ for every $i$. If infinitely many $x_j$ pass the primal stopping
+tests (13.4.3)–(13.4.5) with $\mu$, $\varepsilon^D / 2$ and $\varepsilon^E / 2$, then infinitely
+many $(x_j, z_j)$ pass the primal-dual stopping tests (13.6.5)–(13.6.8) with $\mu$,
+$\varepsilon^D$, $\varepsilon^C$ and $\varepsilon^E$.
+
+The lower primal bound transfers the Hessian test of the true barrier to the primal-dual
+Hessian. The upper bound transfers dual consistency to unscaled complementarity. -/
 theorem theorem_13_6_2_of_primal_stopping {f : (ι → ℝ) → ℝ} {x z : ℕ → ι → ℝ}
     {μ εD εC εE δ M : ℝ} (hD : 0 < εD) (hC : 0 < εC) (hE : 0 < εE)
     (hδ : 0 < δ) (hM : 0 < M) (hxδ : ∀ j i, δ ≤ x j i) (hxM : ∀ j i, x j i ≤ M)
@@ -345,9 +546,12 @@ theorem theorem_13_6_2_of_primal_stopping {f : (ι → ℝ) → ℝ} {x z : ℕ 
     simp only [pow_two, ← mul_assoc] at hcorr hh ⊢
     linarith only [hcorr, hh]
 
-/-- Without bounded primal iterates AA.8 alone does not imply convergence
-of the unscaled complementarity residual, even with positive primal and
-dual coordinates and a uniform lower bound on the primal coordinates. -/
+/-- A counterexample for AA.8 without bounded primal iterates in Theorem 13.6.2 of [conn2000trust].
+There are real sequences $x_j \ge 1$ and $z_j > 0$ with $z_j - 1/x_j \to 0$ and
+$x_j z_j - 1 = 1$ for all $j$.
+
+So AA.8 alone does not make the unscaled complementarity residual tend to zero, even with
+positive primal and dual coordinates and a uniform lower bound on the primal coordinates. -/
 theorem primalDual_complementarity_unbounded_counterexample :
     ∃ x z : ℕ → ℝ, (∀ j, 1 ≤ x j ∧ 0 < z j) ∧
       Tendsto (fun j ↦ z j - 1 / x j) atTop (𝓝 0) ∧
@@ -373,11 +577,19 @@ private theorem dual_coordinate_tendsto_zero {α : Type*} {l : Filter α}
       exact mul_le_mul_of_nonneg_right hk (hz k))
   · simpa using hp.div_const δ
 
-/-- Theorem 13.6.3. Positive primal-dual iterates satisfying the outer
-stopping tests have nonnegative gradient lower limits, zero gradient on
-coordinates separated from zero, and nonnegative Hessian lower limits on
-directions supported on those coordinates. Lower limits are written as
-eventual inequalities for every positive tolerance. -/
+/-- **Theorem 13.6.3** of [conn2000trust]. Let $f : \mathbb{R}^n \to \mathbb{R}$, and let
+$x_k, z_k \in \mathbb{R}^n$ and numbers $\mu_k$, $\varepsilon^D_k \ge 0$, $\varepsilon^C_k$ and
+$\varepsilon^E_k$ be indexed by $k$ in a set with a filter $l$. Assume that $\mu_k$,
+$\varepsilon^D_k$, $\varepsilon^C_k$ and $\varepsilon^E_k$ tend to $0$ along $l$ and that each
+$(x_k, z_k)$ passes the stopping tests (13.6.5)–(13.6.8) with $\mu_k$, $\varepsilon^D_k$,
+$\varepsilon^C_k$ and $\varepsilon^E_k$. Then:
+* for every $i$ and every $\eta > 0$, eventually $\partial_i f(x_k) \ge -\eta$;
+* for every $i$ such that eventually $x_{k,i} \ge \delta$ for some $\delta > 0$,
+  $\partial_i f(x_k) \to 0$;
+* for every $d$ whose nonzero coordinates $i$ all satisfy eventually $x_{k,i} \ge \delta$ for
+  some $\delta > 0$, and every $\eta > 0$, eventually $\nabla^2 f(x_k)[d, d] \ge -\eta$.
+
+The lower limits are written as eventual inequalities for every positive tolerance. -/
 theorem theorem_13_6_3 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     {x z : α → ι → ℝ} {μ εD εC εE : α → ℝ}
     (hμ : Tendsto μ l (𝓝 0)) (hD : Tendsto εD l (𝓝 0)) (hDpos : ∀ k, 0 ≤ εD k)
@@ -431,8 +643,15 @@ theorem theorem_13_6_3 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     filter_upwards [hec.eventually (gt_mem_nhds hη)] with k hk
     linarith [(hstop k).2.2.2.2 d]
 
-/-- On a consistently active subsequence, the free coordinates are exactly
-the ones to which the vanishing-gradient and second-order conclusions apply. -/
+/-- **Theorem 13.6.3** of [conn2000trust] for a consistently active family. Let $f$, $x_k$, $z_k$,
+the parameters and $l$ be as in `ConnGouldToint.Chapter13.theorem_13_6_3`, and assume moreover
+that $(x_k)$ is consistently active along $l$. Then $\partial_i f(x_k) \to 0$ for every
+coordinate $i$ that is not asymptotically active, and for every $d$ with $d_i = 0$ on the
+asymptotically active coordinates and every $\eta > 0$, eventually
+$\nabla^2 f(x_k)[d, d] \ge -\eta$.
+
+The free coordinates are exactly those to which the vanishing-gradient and second-order
+conclusions apply. -/
 theorem theorem_13_6_3_consistentlyActive {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     {x z : α → ι → ℝ} (ha : ConsistentlyActive l x) {μ εD εC εE : α → ℝ}
     (hμ : Tendsto μ l (𝓝 0)) (hD : Tendsto εD l (𝓝 0)) (hDpos : ∀ k, 0 ≤ εD k)
@@ -446,7 +665,9 @@ theorem theorem_13_6_3_consistentlyActive {α : Type*} {l : Filter α} {f : (ι 
   refine ⟨fun i hi ↦ hg i ((ha i).resolve_left hi), ?_⟩
   exact fun d hd ↦ hH d fun i hi ↦ (ha i).resolve_left fun h ↦ hi (hd i h)
 
-/-- Theorem 13.6.3 for the completed outer iterations of Algorithm 13.6.2. -/
+/-- **Theorem 13.6.3** of [conn2000trust] for the completed outer iterations of Algorithm 13.6.2.
+For a run of the primal-dual barrier method, the primal iterates $x_{k+1}$ satisfy the three
+conclusions of `ConnGouldToint.Chapter13.theorem_13_6_3` along $k \to \infty$. -/
 theorem PrimalDualBarrierOuterRun.convergence {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
     (r : PrimalDualBarrierOuterRun P f) :
     (∀ i η, 0 < η → ∀ᶠ k in atTop, -η ≤ barrierCoordinateGradient f (r.x (k + 1)) i) ∧
@@ -461,15 +682,27 @@ theorem PrimalDualBarrierOuterRun.convergence {P : Chapter06.BTRParams} {f : (ι
     (fun k ↦ (r.forcing_pos _ (hμpos k)).1.le) (r.forcing_limit.2.1.comp hμ)
     (r.forcing_limit.2.2.comp hμ) r.stopping_test
 
-/-- One coordinate of the predicted multiplier (13.6.16). -/
+/-! ### The dual safeguard -/
+
+/-- **Equation (13.6.16)** of [conn2000trust], one coordinate. For a barrier parameter $\mu$, a
+primal coordinate $x$, a dual coordinate $z$ and a step $s$, the **predicted multiplier** is
+$$\frac{\mu}{x} - \frac{z}{x} s.$$
+-/
 noncomputable def primalDualPredictedMultiplier (μ x z s : ℝ) : ℝ := μ / x - z / x * s
 
 private noncomputable def dualSafeguardLower (l μ y z : ℝ) : ℝ := l * min 1 (min z (μ / y))
 
 private noncomputable def dualSafeguardUpper (u μ y z : ℝ) : ℝ := max u (max z (max (u / μ) (u * (μ / y))))
 
-/-- The componentwise projection in (13.6.17)–(13.6.19) on a successful
-iteration. An unsuccessful iteration retains the old multiplier. -/
+/-- **Equations (13.6.17)–(13.6.19)** of [conn2000trust] on a successful iteration. For constants
+$l$ and $u$, a barrier parameter $\mu$, a primal coordinate $x$, its new value $y$, a dual
+coordinate $z$ and a step $s$, the **safeguarded multiplier** is the projection of the predicted
+multiplier (13.6.16) onto the interval $[L, U]$:
+$$\max\left\{L, \min\left\{U, \frac{\mu}{x} - \frac{z}{x} s\right\}\right\}, \qquad L = l
+  \min\left\{1, z, \frac{\mu}{y}\right\}, \quad U = \max\left\{u, z, \frac{u}{\mu}, \frac{u
+  \mu}{y}\right\}.$$
+
+An unsuccessful iteration keeps the old multiplier. -/
 noncomputable def primalDualSafeguard (l u μ x y z s : ℝ) : ℝ :=
   max (dualSafeguardLower l μ y z)
     (min (dualSafeguardUpper u μ y z) (primalDualPredictedMultiplier μ x z s))
@@ -487,8 +720,15 @@ private theorem safeguard_bounds {l u μ y z : ℝ} (hl : 0 < l) (hl' : l < 1) (
   · exact (show μ / y ≤ u * (μ / y) by nlinarith [mul_nonneg (sub_nonneg.mpr hu.le) h.le]).trans
       ((le_max_right _ _).trans ((le_max_right _ _).trans (le_max_right _ _)))
 
-/-- Positivity and AA.7 in Theorem 13.6.4, on the layer (13.6.21).
-The theorem gives the explicit uniform bound from its proof. -/
+/-- **Theorem 13.6.4** of [conn2000trust], positivity and AA.7. Let $0 < l < 1 < u$, $\mu > 0$ and
+$\varepsilon > 0$, and let $x_j$, $z_j$ and $s_j$ be real sequences with $x_j \ge \varepsilon$
+for all $j$ and $z_0 > 0$. Assume that $z_{j+1}$ is the safeguarded multiplier
+(13.6.17)–(13.6.19) for $x_j$, $x_{j+1}$, $z_j$ and $s_j$ on the successful iterations, and
+$z_{j+1} = z_j$ on the others. Then for all $j$,
+$$0 < z_j \le \max\left\{u, z_0, \frac{u}{\mu}, \frac{u \mu}{\varepsilon}\right\}.$$
+
+The layer $x_j \ge \varepsilon$ is (13.6.21). The theorem gives the explicit uniform bound from
+the proof of the source. -/
 theorem theorem_13_6_4 {x z s : ℕ → ℝ} {success : ℕ → Prop} [DecidablePred success]
     {l u μ ε : ℝ} (hl : 0 < l) (hl' : l < 1) (hu : 1 < u) (hμ : 0 < μ)
     (hε : 0 < ε) (hx : ∀ j, ε ≤ x j) (hz : 0 < z 0)
@@ -550,10 +790,19 @@ private theorem dualSafeguard_error_le {l u μ ε B x y z s : ℝ}
         exact (div_le_div_of_nonneg_right hzB hx'.le).trans
           (div_le_div_of_nonneg_left (hz.le.trans hzB) hε hx)))
 
-/-- AA.8 in Theorem 13.6.4, with arbitrarily late successful steps. The
-projection cannot increase error relative to the exact multiplier because
-the projection interval contains that multiplier. This avoids requiring
-the predictor eventually to lie strictly inside the interval. -/
+/-- **Theorem 13.6.4** of [conn2000trust], AA.8 with infinitely many successful iterations. Let
+$0 < l < 1 < u$, $\mu > 0$, $\varepsilon > 0$, and let $x_j \ge \varepsilon$, $z_j$ and $s_j$ be
+real sequences with $z_0 > 0$ and $s_j \to 0$. Assume that $x_{j+1} = x_j + s_j$ and $z_{j+1}$
+is the safeguarded multiplier (13.6.17)–(13.6.19) on the successful iterations, and
+$x_{j+1} = x_j$ and $z_{j+1} = z_j$ on the others. If infinitely many iterations are successful,
+then $z_j - \mu / x_j \to 0$.
+
+**Correction.** The statement assumes infinitely many successful iterations. Without them AA.8
+can fail; see `ConnGouldToint.Chapter13.theorem_13_6_4_all_rejected_counterexample`.
+
+The projection cannot increase the error relative to the exact multiplier $\mu / x_{j+1}$,
+because the projection interval contains it. So the predictor need not lie eventually strictly
+inside the interval. -/
 theorem theorem_13_6_4_aa8_of_frequently_successful
     {x z s : ℕ → ℝ} {success : ℕ → Prop} [DecidablePred success]
     {l u μ ε : ℝ} (hl : 0 < l) (hl' : l < 1) (hu : 1 < u) (hμ : 0 < μ)
@@ -585,10 +834,17 @@ theorem theorem_13_6_4_aa8_of_frequently_successful
     · exact hlate j (hJ.trans (Nat.le_succ J |>.trans hj)) ha
     · rwa [hprimal, hupdate, ite_eq_right ha, ite_eq_right ha]
 
-/-- Corrected safeguard update. After rejection, reset the dual coordinate
-to the exact barrier multiplier. This is the ordinary projection with
-zero effective step, so positivity, the AA.7 bound, and AA.8 hold
-without requiring arbitrarily late successful trials. -/
+/-- **Theorem 13.6.4** of [conn2000trust] with the corrected safeguard update. Let $0 < l < 1 < u$,
+$\mu > 0$, $\varepsilon > 0$, and let $x_j \ge \varepsilon$, $z_j$ and $s_j$ be real sequences
+with $z_0 > 0$ and $x_{j+1} - x_j \to 0$. Assume that $x_{j+1} = x_j + s_j$ and $z_{j+1}$ is the
+safeguarded multiplier (13.6.17)–(13.6.19) on the successful iterations, and $x_{j+1} = x_j$ and
+$z_{j+1} = \mu / x_{j+1}$ on the others. Then for all $j$
+$$0 < z_j \le \max\left\{u, z_0, \frac{u}{\mu}, \frac{u \mu}{\varepsilon}\right\},$$
+and $z_j - \mu / x_j \to 0$.
+
+**Correction.** After a rejection, the dual coordinate is reset to the exact barrier multiplier
+instead of being kept. This is the ordinary projection with zero effective step, so positivity,
+AA.7 and AA.8 hold without infinitely many successful trials. -/
 theorem theorem_13_6_4_aa8_of_reset_rejected
     {x z s : ℕ → ℝ} {success : ℕ → Prop} [DecidablePred success]
     {l u μ ε : ℝ} (hl : 0 < l) (hl' : l < 1) (hu : 1 < u) (hμ : 0 < μ)
@@ -634,16 +890,21 @@ theorem theorem_13_6_4_aa8_of_reset_rejected
     theorem_13_6_4_aa8_of_frequently_successful (success := fun _ ↦ True)
       hl hl' hu hμ hε hx hz hpr hdu ht (frequently_atTop.mpr fun N ↦ ⟨N, le_rfl, trivial⟩)⟩
 
-/-- A successful inner iteration, using the actual primal-dual model and
-the guarded barrier ratio of the inner run. -/
+/-- An iteration $j$ of a run of Algorithm 13.6.1 of [conn2000trust] is **successful** if its
+guarded ratio, computed with the actual primal-dual model, is at least $\eta_1$. -/
 def PrimalDualBarrierInnerRun.Successful {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
     (r : PrimalDualBarrierInnerRun P f σ μ) (j : ℕ) : Prop :=
   P.η₁ ≤ primalBarrierRatio (euclideanOrthant (ι := ι)) σ
     (fun x ↦ logBarrierObjective f x.ofLp μ) (r.model j) (r.x j) (r.s j)
 
 omit [DecidableEq ι] in
-/-- The corrected rejection safeguard gives coordinate AA.8 on the
-actual inner run when its accepted displacements tend to zero. -/
+/-- Coordinatewise AA.8 for a run of Algorithm 13.6.1 of [conn2000trust] with the corrected
+safeguard. Let $0 < l < 1 < u$ and $\delta > 0$, and consider a run with barrier parameter
+$\mu$, primal iterates $x_j$ and duals $z_j$ such that $x_{j,i} \ge \delta$ for all $j$ and $i$,
+and $x_{j+1} - x_j \to 0$. Assume that on each successful iteration $z_{j+1,i}$ is the
+safeguarded multiplier (13.6.17)–(13.6.19) for $x_{j,i}$, $x_{j+1,i}$, $z_{j,i}$ and $s_{j,i}$,
+and that on each unsuccessful iteration $z_{j+1,i} = \mu / x_{j+1,i}$. Then
+$z_{j,i} - \mu / x_{j,i} \to 0$ for every $i$. -/
 theorem PrimalDualBarrierInnerRun.dual_consistent_of_reset_rejected
     {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
     (r : PrimalDualBarrierInnerRun P f σ μ) {l u δ : ℝ}
@@ -678,10 +939,21 @@ theorem PrimalDualBarrierInnerRun.dual_consistent_of_reset_rejected
       · rw [ite_eq_right h]
         exact hreject j i h) hs).2
 
-/-- Corrected Theorem 13.6.2 for a bounded primal-dual inner run. The
-derivative and curvature limits can be obtained on the run's own
-acceptance ratios by applying the inner extension theorem to its second
-primal run. AA.8 then transfers both limits to the dual stopping tests. -/
+/-- **Theorem 13.6.2** of [conn2000trust], corrected, from the inner limits of an extension. Let
+$n \ge 1$, $\varepsilon^D, \varepsilon^C, \varepsilon^E, \delta, M > 0$, let
+$f : \mathbb{R}^n \to \mathbb{R}$ and $F$ on the Euclidean space $\mathbb{R}^n$ be twice
+continuously differentiable, and consider a run of Algorithm 13.6.1 with barrier parameter
+$\mu$, primal iterates $x_j$ and duals $z_j$ such that $\delta \le x_{j,i} \le M$ for all $j$
+and $i$. Assume that $F$ agrees with the barrier objective $f + b_\mu$ near each $x_j$, that
+$\|D F(x_j)\| \to 0$, that for every $\varepsilon > 0$ infinitely many $j$ have
+$\lambda(\nabla^2 F(x_j)) > -\varepsilon$, and that $\|D F(x_j)\| \to 0$ implies AA.8,
+$z_{j,i} - \mu / x_{j,i} \to 0$ for all $i$. Then infinitely many $(x_j, z_j)$ pass the stopping
+tests (13.6.5)–(13.6.8).
+
+Here $\lambda(H)$ is `ConnGouldToint.Chapter06.leastUnitCurvature`. The derivative and curvature
+limits can come from the run's own acceptance ratios through
+`ConnGouldToint.Chapter13.theorem_13_4_2_inner_of_extension`, applied to its run of Algorithm
+13.3.1. AA.8 then transfers both limits to the dual stopping tests. -/
 theorem PrimalDualBarrierInnerRun.frequently_stop_of_extension_limits [Nonempty ι]
     {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
     (r : PrimalDualBarrierInnerRun P f σ μ) {F : EuclideanSpace ℝ ι → ℝ}
@@ -702,11 +974,34 @@ theorem PrimalDualBarrierInnerRun.frequently_stop_of_extension_limits [Nonempty 
   exact theorem_13_6_2_of_primal_stopping hD hC hE hδ hM hxδ hxM r.dual_pos
     (hAA8 hgrad) hprimal
 
-/-- The corrected inner convergence theorem for Algorithm 13.6.1.
-A smooth extension preserving all iterate and trial values lets the
-capped trust-region convergence proof use the actual primal-dual ratios.
-The bounded primal layer and AA.8 transfer its two limits to all three
-primal-dual stopping inequalities. -/
+/-- **Theorem 13.6.2** of [conn2000trust], corrected inner convergence for Algorithm 13.6.1. Let
+$n \ge 1$ and $\varepsilon^D, \varepsilon^C, \varepsilon^E, \delta, M > 0$. Consider a run of
+Algorithm 13.6.1 with barrier parameter $\mu$, fraction $\sigma$, primal iterates $x_j$, duals
+$z_j$, steps $s_j$, radii $\Delta_j$, models $m_j$, gradients $g_j$, curvature bounds $\beta_j$
+and least-curvature measures $\tau_j$, with $\delta \le x_{j,i} \le M$ for all $j$ and $i$. Let
+$f$ and $F$ be twice continuously differentiable, with $F$ bounded below on the Euclidean space
+$\mathbb{R}^n$, $\|\nabla^2 F\| \le L$, $F = f + b_\mu$ near each $x_j$, and
+$F(x_j + s_j) = (f + b_\mu)(x_j + s_j)$. Let $D, G, T > 0$, and assume for all $j$:
+* $D \le (1 - \sigma) \operatorname{dist}(x_j, \partial \mathbb{R}^n_+)$;
+* $1 \le \beta_j \le K$, $\|g_j\| \le G$, $|\tau_j| \le T$ and
+  $\tau_j = \min\{0, \lambda(\nabla^2 m_j(x_j))\}$;
+* $F(x_j) = m_j(x_j)$, $D F(x_j) = D m_j(x_j)$ and $|F(x_j + s_j) - m_j(x_j + s_j)| \le K
+  \Delta_j^2$;
+* $m_j$ and $D m_j$ are differentiable on the segment $[x_j, x_j + s_j]$.
+
+Assume further the uniform Hessian variation on short segments of
+`ConnGouldToint.Chapter13.theorem_13_4_2_inner_of_extension`, AM.5 for $F$, and that
+$\|g_j\| \to 0$ implies AA.8, $z_{j,i} - \mu / x_{j,i} \to 0$ for all $i$. Then infinitely many
+$(x_j, z_j)$ pass the stopping tests (13.6.5)–(13.6.8).
+
+**Correction.** The theorem assumes bounded primal coordinates, a smooth extension that
+preserves the actual acceptance ratios, uniform model estimates and AA.8. Under the printed
+hypotheses the inner algorithm need not stop; see
+`ConnGouldToint.Chapter13.theorem_13_6_2_unbounded_run_counterexample`.
+
+The extension lets the capped trust-region convergence proof use the actual primal-dual ratios.
+The bounded primal layer and AA.8 transfer its two limits to all three primal-dual stopping
+inequalities. -/
 theorem PrimalDualBarrierInnerRun.frequently_stop_of_extension [Nonempty ι]
     {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ} {σ μ : ℝ}
     (r : PrimalDualBarrierInnerRun P f σ μ) {F : EuclideanSpace ℝ ι → ℝ}
@@ -756,8 +1051,12 @@ theorem PrimalDualBarrierInnerRun.frequently_stop_of_extension [Nonempty ι]
     rw [LinearIsometryEquiv.norm_map, hgrad]
   simpa only [he] using h
 
-/-- Holding both iterates on a rejected step cannot transfer a limit over
-successful indices to the full sequence when all later steps are rejected. -/
+/-- A counterexample for the safeguard of Theorem 13.6.4 of [conn2000trust] when all later steps are
+rejected. There are real sequences $x_j \ge 1$, $z_j > 0$ and $s_j \to 0$ with $x_{j+1} = x_j$
+and $z_{j+1} = z_j$ for all $j$, such that $z_j - 1/x_j$ does not tend to $0$.
+
+Holding both iterates on a rejected step cannot transfer a limit over the successful indices to
+the full sequence. -/
 theorem primalDual_safeguard_stalled_counterexample :
     ∃ x z s : ℕ → ℝ, (∀ j, 1 ≤ x j ∧ 0 < z j) ∧ Tendsto s atTop (𝓝 0) ∧
       (∀ j, x (j + 1) = x j ∧ z (j + 1) = z j) ∧
@@ -769,6 +1068,8 @@ theorem primalDual_safeguard_stalled_counterexample :
     norm_num
   exact one_ne_zero (tendsto_nhds_unique tendsto_const_nhds h')
 
+/-! ### A run that never stops in Theorem 13.6.2 -/
+
 section EscapeExample
 
 open Metric
@@ -777,7 +1078,9 @@ private def escapeBump : ContDiffBump (0 : ℝ) := ⟨1, 2, by norm_num, by norm
 
 private noncomputable def escapeTail (x : ℝ) : ℝ := Real.log x + x⁻¹
 
-/-- A globally smooth extension of `log x + 1 / x` outside the radius-two ball. -/
+/-- A globally smooth objective on $\mathbb{R}$ that equals $\log x + 1/x$ for $|x| \ge 2$. It is
+$(1 - \psi(x))(\log x + 1/x)$, where $\psi$ is a smooth bump function equal to $1$ on $[-1, 1]$
+and to $0$ outside $(-2, 2)$. -/
 noncomputable def primalDualEscapeObjective (x : ℝ) : ℝ := (1 - escapeBump x) * escapeTail x
 
 private theorem escape_eq_zero {x : ℝ} (hx : |x| < 1) :
@@ -898,30 +1201,56 @@ private theorem escape_barrier_uniform_lower_bound :
       have hm := mul_nonpos_of_nonneg_of_nonpos hμ.1.le (Real.log_nonpos hx.le (le_of_not_ge hx1))
       linarith))
 
-/-- One-dimensional all-successful specialization of Algorithm 13.6.1
-with fixed unit radius, unit steps, fraction one half, and `μ = 1`.
-The objective model is its exact quadratic Taylor model at each iterate.
-The curvature in the model includes the corrected positive dual term. -/
+/-- A one-dimensional all-successful run of Algorithm 13.6.1 of [conn2000trust] with barrier
+parameter $\mu = 1$, fixed unit radius, unit steps and fraction $\frac12$. For an objective $f$
+and sequences $x_j$ and $z_j$, write $g_j = f'(x_j) - 1/x_j$ and $h_j = f''(x_j) + z_j / x_j$.
+The structure asserts that for all $j$: $x_j > 0$, $z_j > 0$, $x_{j+1} = x_j + 1$,
+$x_{j+1} \ge \frac12 x_j$, $h_j \ge 0$,
+$$\tfrac18 |g_j| \min\left\{\frac{|g_j|}{1 + |h_j|}, 1\right\} \le -g_j - \frac{h_j}{2},$$
+and $0 < -g_j - h_j / 2 \le (f(x_j) - \log x_j) - (f(x_{j+1}) - \log x_{j+1})$.
+
+The objective model is the exact quadratic Taylor model of $f$ at each iterate, and the model
+curvature $h_j$ includes the corrected positive dual term $z_j / x_j$. The predicted decrease of
+the unit step is $-g_j - h_j / 2$. -/
 structure ScalarPrimalDualEscapeRun (f : ℝ → ℝ) (x z : ℕ → ℝ) : Prop where
+  /-- The primal iterates are positive. -/
   primal_pos : ∀ j, 0 < x j
+  /-- The dual iterates are positive. -/
   dual_pos : ∀ j, 0 < z j
+  /-- Every step is the unit step $x_{j+1} = x_j + 1$. -/
   update : ∀ j, x (j + 1) = x j + 1
+  /-- Every trial passes the fraction-to-boundary test with fraction $\frac12$. -/
   fractional_clearance : ∀ j, (1 / 2 : ℝ) * x j ≤ x (j + 1)
+  /-- The model curvature $f''(x_j) + z_j / x_j$ is nonnegative. -/
   positive_curvature : ∀ j, 0 ≤ deriv (deriv f) (x j) + z j / x j
+  /-- The predicted decrease of the unit step satisfies the decrease test with constant $\frac18$
+  and unit radius. -/
   decrease : ∀ j,
     let g := deriv f (x j) - (x j)⁻¹
     let h := deriv (deriv f) (x j) + z j / x j
     (1 / 8 : ℝ) * (|g| * min (|g| / (1 + |h|)) 1) ≤ -g - h / 2
+  /-- The predicted decrease is positive and at most the actual decrease of the barrier objective,
+  so the ratio is at least $1$. -/
   very_successful : ∀ j,
     let g := deriv f (x j) - (x j)⁻¹
     let h := deriv (deriv f) (x j) + z j / x j
     0 < -g - h / 2 ∧ -g - h / 2 ≤
       (f (x j) - Real.log (x j)) - (f (x (j + 1)) - Real.log (x (j + 1)))
 
-/-- In the unbounded run the exact Taylor objective models satisfy the
-center matching and curvature conditions, AA.7 and AA.8 hold, and every
-ratio is at least one. The unit complementarity error nevertheless
-prevents finite stopping at tolerance one half. -/
+/-- A counterexample to the printed finite stopping in Theorem 13.6.2 of [conn2000trust]. Let $f$ be
+the objective `ConnGouldToint.Chapter13.primalDualEscapeObjective`. Then $f$ is twice
+continuously differentiable with bounded $f''$, the barrier objectives $f(x) - \mu \log x$ are
+bounded below on $(0, \infty)$ uniformly in $\mu \in (0, 1]$, and there are sequences $x_j$ and
+$z_j$ forming a one-dimensional all-successful run
+(`ConnGouldToint.Chapter13.ScalarPrimalDualEscapeRun`) such that:
+* $x_j \to \infty$;
+* $z_j \le 2 \max\{x_j^{-1}, 1\}$ (AA.7);
+* $f'(x_j) - 1/x_j \to 0$ and $z_j - 1/x_j \to 0$ (AA.8);
+* $|x_j z_j - 1| > \frac12$ for all $j$.
+
+The exact Taylor objective models satisfy the center matching and curvature conditions, and
+every ratio is at least $1$. The unit complementarity error prevents finite stopping with
+tolerance $\frac12$. -/
 theorem theorem_13_6_2_unbounded_run_counterexample :
     ∃ x z : ℕ → ℝ,
       ContDiff ℝ 2 primalDualEscapeObjective ∧
@@ -1001,6 +1330,8 @@ theorem theorem_13_6_2_unbounded_run_counterexample :
 
 end EscapeExample
 
+/-! ### A run with all trials rejected in Theorem 13.6.4 -/
+
 section RejectionExample
 
 open Metric Chapter06
@@ -1009,8 +1340,11 @@ private noncomputable def stalledBump : ContDiffBump (1 : ℝ) := ⟨1 / 4, 1 / 
 
 private noncomputable def stalledLocal (x : ℝ) : ℝ := Real.log x + (x - 1) ^ 2 / 4
 
-/-- A smooth objective with barrier value `(x - 1)^2 / 4` near one
-and with a positive quadratic tail. -/
+/-- A smooth objective on $\mathbb{R}$ whose barrier objective $f(x) - \log x$ equals
+$(x - 1)^2 / 4$ near $1$. It is $\psi(x)(\log x + (x - 1)^2 / 4) + (1 - \psi(x)) x^2$, where
+$\psi$ is a smooth bump function equal to $1$ on $[3/4, 5/4]$ and to $0$ outside $(1/2, 3/2)$.
+
+Outside $(1/2, 3/2)$ it is the positive quadratic $x^2$. -/
 noncomputable def primalDualStalledObjective (x : ℝ) : ℝ :=
   stalledBump x * stalledLocal x + (1 - stalledBump x) * x ^ 2
 
@@ -1104,38 +1438,66 @@ private theorem stalled_barrier_bounded (μ : ℝ) (hμ : 0 < μ) :
     exact (min_le_right _ _).trans (by
       nlinarith [mul_le_mul_of_nonneg_left hl hμ.le, sq_nonneg (x - μ / 2)])
 
-/-- A scalar rejected trial of Algorithm 13.6.1 with unit barrier
-parameter, half fraction-to-boundary, and the exact Taylor objective
-model. The safeguarded dual branch (13.6.19) retains the old multiplier. -/
+/-- A one-dimensional rejected trial of Algorithm 13.6.1 of [conn2000trust] with barrier parameter
+$1$, fraction $\frac12$ and the exact Taylor objective model. For parameters $P$, an objective
+$f$, a primal point $x$, a dual point $z$, a step $s$, a radius $\Delta$, and the next values
+$x'$, $z'$ and $\Delta'$, write $g = f'(x) - 1/x$, $h = f''(x) + z/x$, $\tau = \min\{0, h\}$,
+$\hat\Delta = \min\{\Delta, x/2\}$ and $p = -(g s + h s^2 / 2)$. The structure asserts that
+$x > 0$, $z > 0$, $x + s > 0$, $|s| \le \Delta$, $x + s \ge \frac12 x$,
+$$\tfrac14 \max\left\{|g| \min\left\{\frac{|g|}{1 + |h|}, \hat\Delta\right\}, -\tau
+  \min\{\tau^2, \hat\Delta^2\}\right\} \le p, \qquad p > 0,$$
+that the ratio $((f(x) - \log x) - (f(x + s) - \log(x + s))) / p$ is less than $\eta_1$, that
+$x' = x$ and $z' = z$, and that $\gamma_1 \Delta \le \Delta' \le \gamma_2 \Delta$.
+
+The safeguarded dual branch (13.6.19) keeps the old multiplier after the rejection. -/
 structure ScalarPrimalDualRejectedTrial (P : BTRParams) (f : ℝ → ℝ)
     (x z s Δ x' z' Δ' : ℝ) : Prop where
+  /-- The primal point is positive. -/
   primal_pos : 0 < x
+  /-- The dual point is positive. -/
   dual_pos : 0 < z
+  /-- The trial point is positive. -/
   trial_pos : 0 < x + s
+  /-- The step lies in the trust region. -/
   step_bound : |s| ≤ Δ
+  /-- The trial passes the fraction-to-boundary test with fraction $\frac12$. -/
   fractional_clearance : (1 / 2 : ℝ) * x ≤ x + s
+  /-- The predicted decrease satisfies the decrease test (13.3.2) with constant $\frac14$. -/
   model_decrease :
     let g := deriv f x - x⁻¹
     let h := deriv (deriv f) x + z / x
     let τ := min 0 h
     (1 / 4 : ℝ) * max (|g| * min (|g| / (1 + |h|)) (min Δ ((1 / 2 : ℝ) * x)))
       (-τ * min (τ ^ 2) ((min Δ ((1 / 2 : ℝ) * x)) ^ 2)) ≤ -(g * s + h * s ^ 2 / 2)
+  /-- The predicted decrease is positive. -/
   predicted_pos :
     let g := deriv f x - x⁻¹
     let h := deriv (deriv f) x + z / x
     0 < -(g * s + h * s ^ 2 / 2)
+  /-- The ratio is below $\eta_1$, so the trial is rejected. -/
   ratio_reject :
     let g := deriv f x - x⁻¹
     let h := deriv (deriv f) x + z / x
     ((f x - Real.log x) - (f (x + s) - Real.log (x + s))) /
       (-(g * s + h * s ^ 2 / 2)) < P.η₁
+  /-- The primal and dual points are kept. -/
   retain : x' = x ∧ z' = z
+  /-- The radius shrinks as for an unsuccessful iteration of (6.1.5). -/
   radius_update : P.γ₁ * Δ ≤ Δ' ∧ Δ' ≤ P.γ₂ * Δ
 
-/-- In a bounded primal-dual run with exact Taylor objective models,
-all trials can be rejected while the model gradients are zero and the
-steps tend to zero. The safeguard retains the dual coordinate at one
-quarter, so the AA.8 conclusion of Theorem 13.6.4 fails. -/
+/-- A counterexample to AA.8 in the printed Theorem 13.6.4 of [conn2000trust]. Let $f$ be the
+objective `ConnGouldToint.Chapter13.primalDualStalledObjective`. Then $f$ is twice continuously
+differentiable with bounded $f''$, and for every $\mu > 0$ the barrier objective
+$f(x) - \mu \log x$ is bounded below on $(0, \infty)$. There are radii $\Delta_j > 0$ with
+$\Delta_j \to 0$ such that, for every $j$, the step $s = \Delta_j$ from $x = 1$ with dual
+$z = \frac14$ is a rejected trial (`ConnGouldToint.Chapter13.ScalarPrimalDualRejectedTrial`) for
+the parameters (6.1.6), which keeps $x = 1$ and $z = \frac14$ and gives the next radius
+$\Delta_{j+1}$. Moreover $f'(1) - 1 = 0$, while $z - \mu / x = \frac14 - 1$ does not tend to
+$0$.
+
+All trials of this bounded run are rejected, the model gradients are zero and the steps tend to
+zero. The safeguard keeps the dual coordinate at $\frac14$, so the AA.8 conclusion of Theorem
+13.6.4 fails. -/
 theorem theorem_13_6_4_all_rejected_counterexample :
     ∃ Δ : ℕ → ℝ,
       ContDiff ℝ 2 primalDualStalledObjective ∧

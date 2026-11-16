@@ -5,11 +5,48 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Krylov.Preconditioned
 import NumlibSurface.ConnGouldToint.Chapter04.Section04
 
-/-! # Problems with linear constraints
+/-!
+# Conn, Gould and Toint, Section 5.4: Problems with linear constraints
 
-The null-space and projected preconditioned conjugate-gradient methods of
-Section 5.4 of [conn2000trust]. The backbone residual is the negative of the
-textbook gradient.
+This module formalizes Section 5.4 of [conn2000trust]. Let $E$ and $F$ be real Hilbert spaces, let
+$H : E \to E$ be linear, $c \in E$, and let the constraint $Ax = 0$ have its null space parametrized
+as the range of a bounded linear map $N : F \to E$. Then the constrained quadratic problem
+$$\min_x \ \tfrac{1}{2} \langle x, Hx \rangle + \langle c, x \rangle \quad \text{subject to} \quad
+  Ax = 0$$
+is equivalent to the unconstrained reduced problem in $F$ with the Hessian $N^* H N$ and the
+gradient $N^* c$ (5.4.1)–(5.4.2). Algorithm 5.4.1 applies preconditioned conjugate gradients to the
+reduced problem with a preconditioner $B$. Algorithm 5.4.2 runs the same method in $E$ with the
+projected preconditioner $N B N^*$, and the two algorithms agree state by state. The section also
+shows that $N B N^*$ solves the augmented system (5.4.5) and that a constrained minimizer satisfies
+the augmented system (5.4.6).
+
+The proofs specialize the PCG method of the backbone module `Numlib.Krylov.Preconditioned`.
+
+## Main definitions
+
+* Algorithm 5.4.2, `ConnGouldToint.Chapter05.projectedPCG`: preconditioned conjugate gradients in
+  $E$ with the preconditioner $N B N^*$.
+
+## Main results
+
+* Equations (5.4.1)–(5.4.2), `ConnGouldToint.Chapter05.null_space_quadratic_5_4_2`: the reduced
+  objective equals the original objective on the range of $N$, and the reduced minimizers give the
+  feasible minimizers.
+* Algorithms 5.4.1–5.4.2, `ConnGouldToint.Chapter05.algorithm_5_4_2_eq_reduced`: the projected and
+  the reduced iterations agree after mapping by $N$ and $N^*$.
+* Algorithm 5.4.2, `ConnGouldToint.Chapter05.projectedPCG_feasible`: the projected iterates,
+  directions and preconditioned residuals lie in the null space of $A$.
+* Equation (5.4.5), `ConnGouldToint.Chapter05.projected_inverse_5_4_5`: the projected preconditioned
+  residual solves the augmented system.
+* Equation (5.4.6), `ConnGouldToint.Chapter05.constrained_quadratic_system_5_4_6`: a constrained
+  minimizer satisfies the augmented system.
+* Equation (5.4.7), `ConnGouldToint.Chapter05.shifted_projected_system_5_4_7`: a shift of the
+  right-hand side by $A^* y$ shifts the multiplier by $y$.
+
+## Conventions
+
+* The backbone PCG state carries the residual $b - Hx$. For the system $Hx = -c$ this is
+  $-(Hx + c)$, the negative of the gradient $Hx + c$ that the source uses.
 -/
 
 namespace ConnGouldToint.Chapter05
@@ -20,14 +57,26 @@ open scoped RealInnerProductSpace
 variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
   [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
 
-/-- Algorithm 5.4.2 uses the projected inverse N B N* in the original space,
-where B is the inverse of the reduced preconditioner. -/
+/-- **Algorithm 5.4.2** of [conn2000trust]. Let $E$ and $F$ be real Hilbert spaces, let
+$H : E \to E$ and $B : F \to F$ be linear, let $N : F \to E$ be bounded linear, and let
+$c \in E$ and $u_0 \in F$. The **projected preconditioned conjugate gradient method** is the
+preconditioned conjugate gradient method for $Hx = -c$ from $x_0 = N u_0$, with the projected
+preconditioner $N B N^*$ in place of the inverse preconditioner. Its $k$-th state consists of
+the iterate $x_k$, the residual $-(Hx_k + c)$ and the search direction $p_k$.
+
+The state is `Krylov.PCG.iterate`. The map $B$ stands for the inverse of the reduced
+preconditioner. -/
 noncomputable abbrev projectedPCG (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B : F →ₗ[ℝ] F)
     (c : E) (u₀ : F) (k : ℕ) : PCG.State E :=
   PCG.iterate H (N.toLinearMap ∘ₗ B ∘ₗ N.adjoint.toLinearMap) (-c) (N u₀) k
 
-/-- Algorithms 5.4.1 and 5.4.2 agree after mapping the reduced iterates and
-directions by N, and mapping the full residual by N*. -/
+/-- **Algorithms 5.4.1–5.4.2** of [conn2000trust]. Let $E$, $F$, $H$, $N$, $B$, $c$ and $u_0$ be as
+in `ConnGouldToint.Chapter05.projectedPCG`. Let $(u_k, s_k, d_k)$ be the states of the reduced
+method, Algorithm 5.4.1: preconditioned conjugate gradients for $N^* H N u = -N^* c$ from $u_0$
+with the inverse preconditioner $B$. Let $(x_k, r_k, p_k)$ be the states of Algorithm 5.4.2.
+Then for every $k$
+$$x_k = N u_k, \qquad N^* r_k = s_k, \qquad p_k = N d_k.$$
+-/
 theorem algorithm_5_4_2_eq_reduced (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B : F →ₗ[ℝ] F)
     (c : E) (u₀ : F) (k : ℕ) :
     let HN := N.adjoint.toLinearMap ∘ₗ H ∘ₗ N.toLinearMap
@@ -79,9 +128,16 @@ theorem algorithm_5_4_2_eq_reduced (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B 
         N (B (S (k + 1)).r + PCG.beta HN B (S k) • (S k).p)
       rw [hp, hr', hb, hp', map_add, map_smul]
 
-/-- The projected preconditioned residual is feasible and solves the saddle
-system (5.4.5), provided the null-space map spans the kernel and the reduced
-preconditioner is inverted by B. -/
+/-- **Equation (5.4.5)** of [conn2000trust]. Let $E$, $F$ and $Y$ be real Hilbert spaces, with $E$
+and $Y$ finite-dimensional. Let $A : E \to Y$ and $N : F \to E$ be bounded linear maps with
+$\operatorname{range} N = \ker A$, and let $M : E \to E$ and $B : F \to F$ be linear with
+$N^* M N B z = z$ for all $z \in F$. Then for every $g \in E$ the vector $v = N B N^* g$
+satisfies
+$$Av = 0 \quad \text{and} \quad Mv + A^* w = g \text{ for some } w \in Y,$$
+that is, $(v, w)$ solves the augmented system with the matrix
+$\begin{bmatrix} M & A^* \\ A & 0 \end{bmatrix}$ and the right-hand side $(g, 0)$.
+
+The hypothesis on $B$ says that $B$ is a right inverse of the reduced preconditioner $N^* M N$. -/
 theorem projected_inverse_5_4_5 {Y : Type*} [NormedAddCommGroup Y] [InnerProductSpace ℝ Y]
     [CompleteSpace Y] [FiniteDimensional ℝ E] [FiniteDimensional ℝ Y]
     (A : E →L[ℝ] Y) (N : F →L[ℝ] E) (M : E →ₗ[ℝ] E) (B : F →ₗ[ℝ] F)
@@ -104,8 +160,13 @@ theorem projected_inverse_5_4_5 {Y : Type*} [NormedAddCommGroup Y] [InnerProduct
   obtain ⟨w, hw⟩ := ho
   exact ⟨w, eq_sub_iff_add_eq'.mp hw⟩
 
-/-- Shifting the right-hand side by a constraint adjoint preserves the
-primal component and shifts the multiplier as in (5.4.7). -/
+/-- **Equation (5.4.7)** of [conn2000trust]. Let $E$ and $Y$ be real Hilbert spaces, let
+$A : E \to Y$ be bounded linear and $M : E \to E$ linear, and let $g, v \in E$ and $u, y \in Y$.
+Then
+$$Av = 0 \text{ and } Mv + A^*(y + u) = g \iff Av = 0 \text{ and } Mv + A^* u = g - A^* y.$$
+
+Thus a shift of the right-hand side by $A^* y$ keeps the primal component $v$ and shifts the
+multiplier by $y$. -/
 theorem shifted_projected_system_5_4_7 {Y : Type*} [NormedAddCommGroup Y] [InnerProductSpace ℝ Y]
     [CompleteSpace Y] (A : E →L[ℝ] Y) (M : E →ₗ[ℝ] E) (g v : E) (u y : Y) :
     (A v = 0 ∧ M v + A.adjoint (y + u) = g) ↔
@@ -116,9 +177,13 @@ theorem shifted_projected_system_5_4_7 {Y : Type*} [NormedAddCommGroup Y] [Inner
   abel_nf
 
 
-/-- Equations (5.4.1)–(5.4.2). The reduced objective equals the original
-objective on the image of the null-space map. If that image is the kernel,
-the unconstrained reduced minimizers yield exactly the feasible minimizers. -/
+/-- **Equations (5.4.1)–(5.4.2)** of [conn2000trust]. Let $E$ and $F$ be real Hilbert spaces, let
+$Y$ be a real vector space, let $A : E \to Y$ and $H : E \to E$ be linear, and let $N : F \to E$
+be bounded linear with $\operatorname{range} N = \ker A$. Let $c \in E$, and let
+$$q(x) = \tfrac{1}{2} \langle x, Hx \rangle + \langle c, x \rangle, \qquad q_N(z) = \tfrac{1}{2}
+  \langle z, N^* H N z \rangle + \langle N^* c, z \rangle.$$
+Then for every $u \in F$, $q(Nu) = q_N(u)$, and $u$ minimizes $q_N$ over $F$ if and only if $Nu$
+minimizes $q$ over $\ker A$. -/
 theorem null_space_quadratic_5_4_2 {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
     (A : E →ₗ[ℝ] Y) (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (c : E)
     (hN : LinearMap.range N.toLinearMap = LinearMap.ker A) (u : F) :
@@ -144,8 +209,11 @@ theorem null_space_quadratic_5_4_2 {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
     rw [← hq, ← hq]
     exact h hz
 
-/-- The projected iterates, search directions, and preconditioned residuals
-stay in the null space of the constraint operator. -/
+/-- **Algorithm 5.4.2** of [conn2000trust], feasibility. Let $E$, $F$, $H$, $N$, $B$, $c$ and $u_0$
+be as in `ConnGouldToint.Chapter05.projectedPCG`, let $Y$ be a real vector space, and let
+$A : E \to Y$ be linear with $A N u = 0$ for all $u \in F$. Then for every $k$ the iterate
+$x_k$, the direction $p_k$ and the preconditioned residual $N B N^* r_k$ of Algorithm 5.4.2 lie
+in the null space of $A$. -/
 theorem projectedPCG_feasible {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
     (A : E →ₗ[ℝ] Y) (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B : F →ₗ[ℝ] F)
     (hN : ∀ u, A (N u) = 0) (c : E) (u₀ : F) (k : ℕ) :
@@ -157,8 +225,13 @@ theorem projectedPCG_feasible {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
 
 open scoped Matrix
 
-/-- A minimizer of the homogeneous equality-constrained quadratic satisfies
-the augmented system (5.4.6). -/
+/-- **Equation (5.4.6)** of [conn2000trust]. Let $H \in \mathbb{R}^{n \times n}$ be symmetric,
+$A \in \mathbb{R}^{m \times n}$ and $c \in \mathbb{R}^n$. If $x$ minimizes
+$\frac{1}{2} z^T H z + c^T z$ subject to $Az = 0$, then there is $y \in \mathbb{R}^m$ with
+$$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bmatrix} =
+  \begin{bmatrix} -c \\ 0 \end{bmatrix}.$$
+
+The minimizer is `ConnGouldToint.Chapter04.IsEqualityQuadraticMin H A (-c) x 0`. -/
 theorem constrained_quadratic_system_5_4_6 {m n : ℕ}
     {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm)
     (A : Matrix (Fin m) (Fin n) ℝ) (c x : Fin n → ℝ)

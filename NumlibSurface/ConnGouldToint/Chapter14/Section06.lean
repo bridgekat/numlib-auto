@@ -5,7 +5,48 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.ConnGouldToint.Chapter14.Section02
 import Mathlib.Analysis.Calculus.Deriv.Pow
 
-/-! # Smooth exact penalties -/
+/-!
+# Conn, Gould and Toint, Section 14.6: Smooth exact penalties
+
+This module formalizes the smooth exact penalty function of [conn2000trust], Section 14.6, for the
+problem of minimizing $f(x)$ subject to $c(x) = 0$. The penalty function combines the Lagrangian at
+the least-squares multiplier $y(x) = y^{LS}(x)$ of (14.2.8) with a quadratic penalty term:
+$$\phi(x, \sigma) = f(x) - \langle y(x), c(x) \rangle + \frac\sigma2 \|c(x)\|^2.$$
+The module computes its gradient (14.6.3) and Hessian (14.6.4), with $A = c'(x)$ and $D = y'(x)$. At
+a feasible point with $A$ surjective, the gradient is the gradient of the Lagrangian (14.6.6).
+Theorem 14.6.1 shows that, for all large $\sigma$, the Hessian of $\phi$ is positive definite if and
+only if the Hessian of the Lagrangian is positive definite on $\ker A$. The derivative of $y$ comes
+from Lemma 14.2.1.
+
+## Main definitions
+
+* Equation (14.6.2), `ConnGouldToint.Chapter14.smoothExactPenalty`: the smooth exact penalty
+  function.
+
+## Main results
+
+* Equation (14.6.3), `ConnGouldToint.Chapter14.gradient_smoothExactPenalty_eq`: the gradient of the
+  penalty function.
+* Equation (14.6.4), `ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq`: the Hessian
+  of the penalty function at a point where $A$ is surjective.
+* Equation (14.6.4), `ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_at_feasible`: the
+  Hessian at a feasible point.
+* Equation (14.6.4), `ConnGouldToint.Chapter14.smoothExactPenalty_printed_hessian_counterexample`:
+  the printed Hessian formula fails at an infeasible point.
+* Equation (14.6.6), `ConnGouldToint.Chapter14.fderiv_smoothExactPenalty_at_feasible`: the
+  derivative at a feasible point.
+* Theorem 14.6.1, `ConnGouldToint.Chapter14.theorem_14_6_1_quadratic_test`: the quadratic-form test
+  behind Theorem 14.6.1.
+* Theorem 14.6.1, `ConnGouldToint.Chapter14.theorem_14_6_1`: second-order equivalence at a feasible
+  point for large $\sigma$.
+
+## Deviations from the source
+
+* **Equation (14.6.4)** (correction). Away from the feasible set, the Hessian contains the
+  derivative of $z \mapsto y'(z)^* c(x)$, which the printed formula omits. A scalar cubic shows that
+  this term can be nonzero. See `ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq` and
+  `ConnGouldToint.Chapter14.smoothExactPenalty_printed_hessian_counterexample`.
+-/
 
 open Filter Topology Asymptotics
 open scoped RealInnerProductSpace Asymptotics
@@ -16,15 +57,25 @@ variable {G F : Type*}
 variable [NormedAddCommGroup G] [InnerProductSpace ℝ G] [CompleteSpace G]
 variable [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
 
-/-- The smooth exact penalty (14.6.2) uses the least-squares multiplier
-evaluated at the same point as the objective and constraints. -/
+/-- **Equation (14.6.2)** of [conn2000trust]. The **smooth exact penalty function** with parameter
+$\sigma$ is
+$$\phi(x, \sigma) = \ell\big(x, y(x)\big) + \frac\sigma2 \|c(x)\|^2 = f(x) - \langle y(x), c(x)
+  \rangle + \frac\sigma2 \|c(x)\|^2,$$
+where $y(x) = (c'(x) c'(x)^*)^{-1} c'(x) \nabla f(x)$ is the least-squares multiplier (14.2.8).
+
+The multiplier is evaluated at the same point $x$ as the objective and the constraints. -/
 noncomputable def smoothExactPenalty (f : G → ℝ) (c : G → F) (σ : ℝ) (x : G) : ℝ :=
   lagrangian f c (leastSquaresMultiplier (fderiv ℝ c x) (gradient f x)) x +
     σ / 2 * ‖c x‖ ^ 2
 
-/-- The derivative of the smooth exact penalty at a feasible point,
-(14.6.6). The derivative of the multiplier estimate is multiplied by
-the zero residual, as is the derivative of the squared-constraint term. -/
+/-- **Equation (14.6.6)** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be
+twice continuously differentiable, let $c(x) = 0$ and let $c'(x)$ be surjective. Then for every
+$\sigma$
+$$\phi'(x, \sigma) = \nabla_x \ell\big(x, y(x)\big),$$
+the derivative of the Lagrangian with the multiplier $y(x)$ held fixed.
+
+The derivative of the multiplier estimate and the derivative of the penalty term are both
+multiplied by the residual $c(x) = 0$. -/
 theorem fderiv_smoothExactPenalty_at_feasible [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hcx : c x = 0) (hA : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -46,10 +97,15 @@ theorem fderiv_smoothExactPenalty_at_feasible [FiniteDimensional ℝ F]
   simp [hcx]
 
 omit [CompleteSpace G] [CompleteSpace F] in
-/-- The quadratic test in Theorem 14.6.1. Terms in the feasible penalty
-Hessian that vanish on the constraint kernel do not change the reduced
-test. A sufficiently large squared-constraint term supplies positive
-curvature in all remaining directions. -/
+/-- **Theorem 14.6.1** of [conn2000trust], the quadratic test. Let $G$ be finite-dimensional, let
+$A : G \to F$ and $H, L : G \to G$ be bounded linear maps, and let $\langle v, H v \rangle =
+\langle v, L v \rangle$ for every $v \in \ker A$. Then there is $\sigma_{\min} \ge 0$ such that,
+for every $\sigma > \sigma_{\min}$,
+$$\langle v, H v \rangle + \sigma \|A v\|^2 > 0 \text{ for all } v \neq 0$$
+if and only if $\langle v, L v \rangle > 0$ for all nonzero $v \in \ker A$.
+
+Terms of the Hessian that vanish on $\ker A$ do not change the reduced test, and a large penalty
+term gives positive curvature in the other directions. -/
 theorem theorem_14_6_1_quadratic_test [FiniteDimensional ℝ G]
     (A : G →L[ℝ] F) (H L : G →L[ℝ] G)
     (hker : ∀ v, A v = 0 → ⟪v, H v⟫ = ⟪v, L v⟫) :
@@ -142,7 +198,10 @@ private theorem gradient_penalty_with_multiplier {f : G → ℝ} {c y : G → F}
   rw [real_inner_comm (c x) ((fderiv ℝ y x) d)]
   ring
 
-/-- The gradient formula (14.6.3) at a point with full row rank. -/
+/-- **Equation (14.6.3)** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be
+twice continuously differentiable, and let $c'(x)$ be surjective. Then
+$$\nabla_x \phi(x, \sigma) = \nabla_x \ell\big(x, y(x) - \sigma c(x)\big) - y'(x)^* c(x),$$
+where the multiplier $y(x) - \sigma c(x)$ is held fixed in the gradient of the Lagrangian. -/
 theorem gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hfull : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -158,10 +217,18 @@ theorem gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
   exact (gradient_penalty_with_multiplier hf' hc' hy σ).trans (by
     rw [gradient_lagrangian_eq hf' hc'])
 
-/-- The corrected Hessian formula (14.6.4) at an arbitrary full-rank point.
-The final term differentiates the adjoint multiplier derivative while
-holding the constraint residual fixed. This term vanishes at feasibility.
-Three continuous derivatives of the data suffice off the feasible set. -/
+/-- **Equation (14.6.4)** of [conn2000trust]. Let $F$ be finite-dimensional, let $f$ and $c$ be
+three times continuously differentiable, and let $A = c'(x)$ be surjective. Let $D = y'(x)$.
+Then
+$$\nabla_{xx} \phi(x, \sigma) = \nabla_{xx} \ell\big(x, y(x) - \sigma c(x)\big) - A^* D - D^*
+  A + \sigma A^* A - \frac{d}{dz} \Big[ y'(z)^* c(x) \Big]_{z = x},$$
+where the residual $c(x)$ is held fixed in the last term.
+
+**Correction.** The printed formula omits the last term, the derivative of the adjoint of $y'$
+applied to the fixed residual. The term vanishes at a feasible point, but not in general; see
+`ConnGouldToint.Chapter14.smoothExactPenalty_printed_hessian_counterexample`.
+
+Off the feasible set, three continuous derivatives of the data are enough. -/
 theorem fderiv_gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 3 f) (hc : ContDiff ℝ 3 c)
     {x : G} (hfull : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -215,9 +282,11 @@ theorem fderiv_gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
     Pi.sub_apply, Pi.smul_apply, A]
   abel
 
-/-- The printed Hessian formula (14.6.4) fails at the infeasible point
-(x=1) for (f(x)=x^3), (c(x)=x), even with a full-rank constraint
-derivative and a positive penalty parameter. -/
+/-- Counterexample to the printed formula (14.6.4) of [conn2000trust] at an infeasible point. Let
+$f(x) = x^3$ and $c(x) = x$ on $\mathbb{R}$, and $\sigma = 1$. At $x = 1$, where $c'(1)$ is
+surjective, the Hessian of $\phi$ differs from the printed expression
+$$\nabla_{xx} \ell\big(1, y(1) - c(1)\big) - A^* D - D^* A + A^* A.$$
+-/
 theorem smoothExactPenalty_printed_hessian_counterexample :
     let f := fun z : ℝ ↦ z ^ 3
     let c := fun z : ℝ ↦ z
@@ -305,11 +374,15 @@ private theorem hasFDerivAt_apply_of_continuous_at_zero {M : G → F →L[ℝ] G
     abel
   · simp
 
-/-- The Hessian formula (14.6.4) holds at feasible points. The
-multiplier map only needs one continuous derivative there, since the
-factor multiplying its adjoint derivative vanishes at feasibility.
-Away from feasibility, the printed expression omits the term from
-differentiating the adjoint multiplier derivative itself. -/
+/-- **Equation (14.6.4)** of [conn2000trust] at a feasible point. Let $F$ be finite-dimensional, let
+$f$ and $c$ be twice continuously differentiable, let $c(x) = 0$, and let $A = c'(x)$ be
+surjective. With $D = y'(x)$,
+$$\nabla_{xx} \phi(x, \sigma) = \nabla_{xx} \ell\big(x, y(x)\big) - A^* D - D^* A + \sigma A^*
+  A.$$
+
+The multiplier map needs only one continuous derivative here, since the factor $c(x)$ of its
+adjoint derivative vanishes. Away from the feasible set, the formula needs the extra term of
+`ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq`. -/
 theorem fderiv_gradient_smoothExactPenalty_at_feasible [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hx : c x = 0) (hfull : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -363,8 +436,14 @@ theorem fderiv_gradient_smoothExactPenalty_at_feasible [FiniteDimensional ℝ F]
     Pi.sub_apply, Pi.smul_apply, hx, smul_zero, sub_zero]
   abel
 
-/-- The smooth exact-penalty second-order equivalence of Theorem 14.6.1.
-The corresponding first-order equality is (14.6.6). -/
+/-- **Theorem 14.6.1** of [conn2000trust]. Let $G$ and $F$ be finite-dimensional, let $f$ and $c$ be
+twice continuously differentiable, let $c(x) = 0$, and let $A = c'(x)$ be surjective. Let
+$y = y^{LS}(x)$. Then there is $\sigma_{\min} \ge 0$ such that, for every
+$\sigma > \sigma_{\min}$, the Hessian $\nabla_{xx} \phi(x, \sigma)$ is positive definite if and
+only if
+$$\langle v, \nabla_{xx} \ell(x, y)\, v \rangle > 0 \quad\text{for all nonzero } v \in \ker A.$$
+
+The corresponding first-order statement is (14.6.6). -/
 theorem theorem_14_6_1 [FiniteDimensional ℝ G] [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hx : c x = 0) (hfull : Function.Surjective (fderiv ℝ c x)) :

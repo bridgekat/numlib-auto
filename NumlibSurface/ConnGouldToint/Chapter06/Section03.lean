@@ -10,29 +10,95 @@ import Mathlib.Analysis.SpecificLimits.Normed
 import NumlibSurface.ConnGouldToint.Chapter06.Section01
 
 /-!
-# The Cauchy point of a quadratic model
+# Conn, Gould and Toint, Section 6.3: The Cauchy point of a quadratic model
 
-[conn2000trust], Section 6.3. The estimate compares a minimizer on the feasible arc
-with a particular feasible step.
+This module formalizes Section 6.3 of [conn2000trust]. At an iterate with model gradient $g$, the
+Cauchy arc consists of the steps $s = -tg$ with $t \ge 0$ in the trust region $\|s\| \le \Delta$,
+and the Cauchy point minimizes the model on this arc (6.3.3). For a quadratic model with Hessian
+$H$, the Cauchy point gives the model decrease
+$$m(0) - m(s^C) \ge \tfrac{1}{2} \|g\| \min\left\{ \frac{\|g\|}{\beta}, \nu \Delta \right\}, \qquad
+  \beta = 1 + \|H\|, \quad \nu = \frac{\|g\|}{\|g\|_k},$$
+where $\|\cdot\|_k$ is the trust-region norm (Theorem 6.3.1, Corollary 6.3.2). An Armijo
+backtracking search along the arc gives a similar decrease (Theorem 6.3.3). Assumption AA.1 asks for
+a fixed fraction of such a decrease (6.3.27), and Theorems 6.3.4 and 6.3.5 derive its basic
+consequences. Each estimate compares the minimizer on the arc, or on the feasible set, with a
+particular feasible step.
+
+The module builds on the basic trust-region algorithm in
+`NumlibSurface.ConnGouldToint.Chapter06.Section01`.
+
+## Main definitions
+
+* Equation (6.3.1), `ConnGouldToint.Chapter06.quadraticCurvatureBound`: the curvature bound
+  $\beta = 1 + \|H\|$ of a quadratic model.
+* Section 6.3.1, `ConnGouldToint.Chapter06.cauchyArc`: the steps $-tg$ with $t \ge 0$ in the trust
+  region.
+* Equation (6.3.3), `ConnGouldToint.Chapter06.IsCauchyPoint`: a minimizer of the model on the Cauchy
+  arc.
+* Equation (6.3.5), `ConnGouldToint.Chapter06.cauchyNormRatio`: the ratio $\|g\| / \|g\|_k$.
+* Equation (6.3.17), `ConnGouldToint.Chapter06.approximateCauchyTime`: the trial times
+  $\theta^j \Delta / \|g\|_k$ of the backtracking search.
+* Assumption AA.1 and (6.3.27), `ConnGouldToint.Chapter06.HasSufficientModelDecrease`: the model
+  decrease is at least $\kappa \|g\| \min\{\|g\| / \beta, \Delta\}$.
+* Assumption AM.3 and (6.2.2), `ConnGouldToint.Chapter06.modelGradient`: the model gradient $g_k$ at
+  the center.
+
+## Main results
+
+* Theorem 6.3.1, `ConnGouldToint.Chapter06.theorem_6_3_1`: the decrease of a quadratic model at a
+  Cauchy point.
+* Corollary 6.3.2, `ConnGouldToint.Chapter06.corollary_6_3_2`: the same bound written as
+  $m(0) - m(s^C)$.
+* Theorem 6.3.3, `ConnGouldToint.Chapter06.theorem_6_3_3`: the Armijo backtracking search terminates
+  with a uniform model decrease.
+* Theorem 6.3.4, `ConnGouldToint.Chapter06.theorem_6_3_4`: a step that satisfies AA.1 at a
+  noncritical point is nonzero and decreases the model.
+* Theorem 6.3.5, `ConnGouldToint.Chapter06.theorem_6_3_5`: a fixed fraction of the optimal model
+  decrease satisfies AA.1 with a smaller constant.
+
+## Conventions
+
+* The model of Theorem 6.3.1 and Corollary 6.3.2 is the quadratic model
+  `ConnGouldToint.Chapter06.quadraticModel`, evaluated at the step from the current iterate. The
+  Cauchy arc is in these displacement coordinates.
+* The trust-region norm $\|\cdot\|_k$ is a seminorm `p`. The Euclidean norm $\|\cdot\|$ is the norm
+  of the inner product space.
+
+## Deviations from the source
+
+* **Theorem 6.3.3** (reading). The accepted step is taken at the first index at which the Armijo
+  test holds. A sufficient step length bound guarantees that such an index exists, and the rejected
+  predecessor gives the decrease bound. See `ConnGouldToint.Chapter06.theorem_6_3_3`.
 -/
 
 namespace ConnGouldToint.Chapter06
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The curvature bound (6.3.1) for a quadratic model with constant Hessian `H`. -/
+/-- **Equation (6.3.1)** of [conn2000trust], for quadratic models. For a quadratic model with
+Hessian $H$, the **curvature bound** is $\beta = 1 + \|H\|$. -/
 noncomputable def quadraticCurvatureBound (H : E →L[ℝ] E) : ℝ :=
   1 + ‖H‖
 
-/-- The Cauchy arc in displacement coordinates, i.e. with the current iterate as origin. -/
+/-- **Section 6.3.1** of [conn2000trust], the Cauchy arc. For a seminorm $\|\cdot\|_k$ on $E$, a
+gradient $g$ and a radius $\Delta$, the **Cauchy arc** is the set of steps
+$$\{ s = -tg : t \ge 0, \ \|s\|_k \le \Delta \}.$$
+
+The steps are displacements from the current iterate, which is the origin. -/
 def cauchyArc (p : Seminorm ℝ E) (g : E) (Δ : ℝ) : Set E :=
   {s | ∃ t : ℝ, 0 ≤ t ∧ s = (-t) • g ∧ p s ≤ Δ}
 
-/-- The Cauchy point (6.3.3) minimizes the model over the Cauchy arc. -/
+/-- **Equation (6.3.3)** of [conn2000trust]. A step $s$ is a **Cauchy point** of the model $m$ for
+the gradient $g$ and the radius $\Delta$ if $s$ lies on the Cauchy arc and minimizes $m$ over
+the Cauchy arc. -/
 def IsCauchyPoint (m : E → ℝ) (p : Seminorm ℝ E) (g : E) (Δ : ℝ) (s : E) : Prop :=
   IsMinOn m (cauchyArc p g Δ) s ∧ s ∈ cauchyArc p g Δ
 
-/-- The ratio (6.3.5) of the Euclidean norm of the gradient to its trust-region norm. -/
+/-- **Equation (6.3.5)** of [conn2000trust]. For a seminorm $\|\cdot\|_k$ and a gradient $g$, the
+**norm ratio** is
+$$\nu = \frac{\|g\|}{\|g\|_k}.$$
+
+It is $0$ when $\|g\|_k = 0$, by Lean's convention for division by zero. -/
 noncomputable def cauchyNormRatio (p : Seminorm ℝ E) (g : E) : ℝ :=
   ‖g‖ / p g
 
@@ -43,9 +109,14 @@ private theorem quadraticModel_cauchy (c : ℝ) (g : E) (H : E →L[ℝ] E) (t :
     inner_smul_right, real_inner_smul_left, real_inner_self_eq_norm_sq]
   ring
 
-/-- Theorem 6.3.1. The decrease at a Cauchy point of a quadratic model is bounded
-below by the product of half the gradient norm and the shorter of the curvature
-and trust-region lengths. -/
+/-- **Theorem 6.3.1** of [conn2000trust]. Let $c \in \mathbb{R}$, $g \in E$, let $H$ be a bounded
+linear operator on $E$, and let $\|\cdot\|_k$ be a norm on $E$. Let $\Delta \ge 0$, and let $s$
+be a Cauchy point of the quadratic model $m(s) = c + \langle g, s \rangle + \frac{1}{2} \langle
+s, Hs \rangle$. Then
+$$c - m(s) \ge \tfrac{1}{2} \|g\| \min\left\{ \frac{\|g\|}{\beta}, \nu \Delta \right\},$$
+where $\beta = 1 + \|H\|$ and $\nu = \|g\| / \|g\|_k$.
+
+The norm is a seminorm `p` with `p v = 0 → v = 0`. -/
 theorem theorem_6_3_1 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ : ℝ} (hΔ : 0 ≤ Δ) {s : E}
     (hs : IsCauchyPoint (quadraticModel c g H.toLinearMap) p g Δ s) :
@@ -90,7 +161,12 @@ theorem theorem_6_3_1 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
   rw [← hlength]
   nlinarith only [hmin, hquad]
 
-/-- Corollary 6.3.2 in displacement coordinates. -/
+/-- **Corollary 6.3.2** of [conn2000trust]. Under the hypotheses of
+`ConnGouldToint.Chapter06.theorem_6_3_1`,
+$$m(0) - m(s) \ge \tfrac{1}{2} \|g\| \min\left\{ \frac{\|g\|}{1 + \|H\|}, \nu \Delta \right\}.$$
+
+The model is written in displacement coordinates, so $m(0)$ is the model value at the current
+iterate. -/
 theorem corollary_6_3_2 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ : ℝ} (hΔ : 0 ≤ Δ) {s : E}
     (hs : IsCauchyPoint (quadraticModel c g H.toLinearMap) p g Δ s) :
@@ -98,14 +174,34 @@ theorem corollary_6_3_2 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ 
       (1 / 2) * ‖g‖ * min (‖g‖ / (1 + ‖H‖)) (cauchyNormRatio p g * Δ) := by
   simpa [quadraticModel, quadraticCurvatureBound] using theorem_6_3_1 c g H p hp hΔ hs
 
-/-- The geometric trial time in the approximate Cauchy search (6.3.17). -/
+/-- **Equation (6.3.17)** of [conn2000trust]. For $\theta, \Delta \in \mathbb{R}$, a seminorm
+$\|\cdot\|_k$ and a gradient $g$, the $j$-th **trial time** of the approximate Cauchy search is
+$$t_j = \theta^j \frac{\Delta}{\|g\|_k}.$$
+-/
 noncomputable def approximateCauchyTime (θ Δ : ℝ) (p : Seminorm ℝ E) (g : E) (j : ℕ) : ℝ :=
   θ ^ j * (Δ / p g)
 
 open Filter in
-/-- Theorem 6.3.3. The actual first Armijo acceptance terminates and yields
-uniform decrease. The quadratic upper estimate is the consequence of AM.1
-and the model Hessian bound used along the feasible ray. -/
+/-- **Theorem 6.3.3** of [conn2000trust]. Let $m : E \to \mathbb{R}$, $x, g \in E$ and a seminorm
+$\|\cdot\|_k$ with $\|g\|_k > 0$. Let $\theta \in (0, 1)$, $\sigma \in (0, \frac{1}{2})$,
+$\beta > 0$ and $\Delta > 0$, and suppose that
+$$m(x - tg) \le m(x) - t \|g\|^2 + \frac{\beta t}{2} \, t \|g\|^2 \quad \text{for all } t \in
+  [0, \Delta / \|g\|_k].$$
+Let $t_j = \theta^j \Delta / \|g\|_k$. Then there is $j \in \mathbb{N}$ such that, with
+$s = -t_j g$,
+
+* $\|s\|_k \le \Delta$,
+* $m(x + s) \le m(x) - \sigma t_j \|g\|^2$, the Armijo test, holds at $j$,
+* the Armijo test fails at every $i < j$, and
+* $m(x) - m(x + s) \ge \sigma \theta \|g\| \min\{ \|g\| / \beta, \nu \Delta \}$ with
+  $\nu = \|g\| / \|g\|_k$.
+
+**Reading.** The step is taken at the first index at which the Armijo test holds. A sufficient
+step length bound guarantees that such an index exists, and the failure of the test at the
+predecessor gives the decrease bound.
+
+The quadratic upper estimate on the model follows from AM.1 and the bound on the model Hessian
+along the feasible ray. -/
 theorem theorem_6_3_3 {m : E → ℝ} {x g : E} (p : Seminorm ℝ E)
     {θ σ β Δ : ℝ} (hθ : θ ∈ Set.Ioo (0 : ℝ) 1) (hσ : σ ∈ Set.Ioo (0 : ℝ) (1 / 2))
     (hβ : 0 < β) (hΔ : 0 < Δ) (hpg : 0 < p g)
@@ -168,19 +264,30 @@ theorem theorem_6_3_3 {m : E → ℝ} {x g : E} (p : Seminorm ℝ E)
       _ = (σ * ‖g‖ ^ 2) * (θ * min (1 / β) (Δ / p g)) := by ring
       _ ≤ _ := h.trans (by linarith only [hj])
 
-/-- AA.1. The decrease of the model is at least a prescribed positive fraction
-of the Cauchy decrease benchmark (6.3.27). -/
+/-- **Assumption AA.1** of [conn2000trust], with the benchmark (6.3.27). A step $s$ from $x$ gives
+**sufficient model decrease** for the gradient $g$, the curvature bound $\beta$, the radius
+$\Delta$ and the constant $\kappa$ if $\kappa \in (0, 1)$ and
+$$m(x) - m(x + s) \ge \kappa \|g\| \min\left\{ \frac{\|g\|}{\beta}, \Delta \right\}.$$
+-/
 def HasSufficientModelDecrease (m : E → ℝ) (x s g : E) (β Δ κ : ℝ) : Prop :=
   κ ∈ Set.Ioo (0 : ℝ) 1 ∧ κ * ‖g‖ * min (‖g‖ / β) Δ ≤ m x - m (x + s)
 
 variable [CompleteSpace E]
 
-/-- The model gradient at the current center, denoted by $g_k$ in (6.2.2).
-AM.3 requires it to equal the objective gradient there. -/
+/-- **Assumption AM.3** of [conn2000trust] and **Equation (6.2.2)**. Let $E$ be a real Hilbert
+space. The **model gradient** at the center $x$ is the gradient $g_k = \nabla m(x)$ of the model
+$m$.
+
+AM.3 requires it to equal the gradient of the objective at $x$. The gradient is Mathlib's
+`gradient`. -/
 noncomputable abbrev modelGradient (m : E → ℝ) (x : E) : E := gradient m x
 
-/-- Theorem 6.3.4. A step satisfying AA.1 strictly reduces the model and is nonzero
-at a noncritical point when the model and objective gradients agree (AM.3). -/
+/-- **Theorem 6.3.4** of [conn2000trust]. Let $E$ be a real Hilbert space, let
+$f, m : E \to \mathbb{R}$ and $x, s \in E$, and let $\beta > 0$ and $\Delta > 0$. Suppose that
+$\nabla m(x) = \nabla f(x) \neq 0$ (AM.3 at a noncritical point) and that $s$ gives sufficient
+model decrease (AA.1) for the gradient $\nabla m(x)$. Then
+$$m(x + s) < m(x) \quad \text{and} \quad s \neq 0.$$
+-/
 theorem theorem_6_3_4 {f m : E → ℝ} {x s : E} {β Δ κ : ℝ} (hβ : 0 < β) (hΔ : 0 < Δ)
     (hmatch : modelGradient m x = gradient f x) (hg : gradient f x ≠ 0)
     (hdec : HasSufficientModelDecrease m x s (modelGradient m x) β Δ κ) :
@@ -194,8 +301,14 @@ theorem theorem_6_3_4 {f m : E → ℝ} {x s : E} {β Δ κ : ℝ} (hβ : 0 < β
   exact ⟨hlt, fun hz ↦ by simp [hz] at hlt⟩
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
-/-- Theorem 6.3.5. A fixed fraction of the optimal feasible model decrease
-inherits a fixed fraction of any feasible Cauchy benchmark. -/
+/-- **Theorem 6.3.5** of [conn2000trust]. Let $E$ be a normed additive commutative group, let
+$m : E \to \mathbb{R}$, $S \subseteq E$, and $x, s, g, u, v \in E$. Suppose that
+
+* $u$ minimizes $m$ over $S$,
+* $x + v \in S$, and $v$ gives sufficient model decrease (AA.1) with the constant $\kappa$, and
+* $a \in (0, 1]$ and $a (m(x) - m(u)) \le m(x) - m(x + s)$.
+
+Then $s$ gives sufficient model decrease (AA.1) with the constant $a \kappa$. -/
 theorem theorem_6_3_5 {m : E → ℝ} {S : Set E} {x s g u v : E} {β Δ κ a : ℝ}
     (hopt : IsMinOn m S u) (hv : x + v ∈ S)
     (hdec : HasSufficientModelDecrease m x v g β Δ κ)

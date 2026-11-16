@@ -13,11 +13,137 @@ import Mathlib.Tactic.Linarith
 import Mathlib.Topology.MetricSpace.Pseudo.Lemmas
 
 /-!
-# Dual trust-region norms
+# Conn, Gould and Toint, Section 8.1: Trust-region methods in iteration-dependent norms
 
-[conn2000trust], Section 8.1.5. These definitions specialize to a trust-region norm for
-any fixed iteration. Including the zero vector in each supremum gives the usual
-zero norm on the zero-dimensional space, since division by zero has value zero.
+Section 8.1 of [conn2000trust] extends the convergence theory of the basic trust-region algorithm to
+trust-region norms $p_k$ that vary with the iteration. For a norm $p$ on a real inner product space
+$E$, the **dual norm** is $\|y\|_D = \sup_x |\langle y, x \rangle| / p(x)$, as in (8.1.11), and the
+induced operator norm from $p$ to $\|\cdot\|_D$ is (8.1.13). The module proves the Hölder inequality
+(8.1.12), the bounds of Theorem 8.1.7 and Lemma 8.1.6 on these norms, and the corrected form of
+Theorem 8.1.8. It proves model decrease along a steepest ray of $p$ (Theorem 8.1.9) and along a
+backtracking search (Theorem 8.1.10 to Theorem 8.1.12).
+
+The second part treats second-order convergence. The curvature in a direction $u$ is measured by
+$H(u, u) / p_k(u)^2$, and the cone (8.1.6) collects the directions $u$ with
+$\liminf_k \|u\| / p_k(u) \ge \varepsilon$. Lemma 8.1.1 and Theorems 8.1.2–8.1.5 transfer
+nonnegative asymptotic scaled curvature to nonnegative curvature of the objective $f$ at a limit
+point in the directions of these cones. The matrix forms state the conclusions for the least
+eigenvalue of a reduced Hessian $Z^T \nabla^2 f Z$. The proofs build on the runs of Algorithm 6.1.1
+in `NumlibSurface.ConnGouldToint.Chapter06.Section01` and the second-order results of
+`NumlibSurface.ConnGouldToint.Chapter06.Section06`.
+
+## Main definitions
+
+* Equation (8.1.11), `ConnGouldToint.Chapter08.dualNorm`: the dual norm
+  $\|y\|_D = \sup_x |\langle y, x \rangle| / p(x)$.
+* Equation (8.1.13), `ConnGouldToint.Chapter08.bidualNorm`: the operator norm
+  $\sup_x \|Hx\|_D / p(x)$.
+* Equation (8.1.22), `ConnGouldToint.Chapter08.scaledQuadraticCurvature`: the curvature constant
+  $1 + \sup_w |\langle w, H w \rangle| / p(w)^2$.
+* Equation (8.1.36), `ConnGouldToint.Chapter08.modifiedCauchyTrial`: the backtracking point
+  $x + (q^j \Delta / p(d)) d$.
+* Equation (8.1.37), `ConnGouldToint.Chapter08.ModifiedCauchyAccepted`: the Armijo test for the
+  backtracking point.
+* Equation (8.1.6), `ConnGouldToint.Chapter08.curvatureDirections`: the closed cone of directions
+  with $\liminf_k \|u\| / p_k(u) \ge \varepsilon$.
+* AA.2b, `ConnGouldToint.Chapter08.HasCappedNegativeCurvatureDecrease`: the model decrease
+  $\kappa |\tau| \min\{\tau^2, \Delta^2, c^2\}$ at negative curvature $\tau$.
+* Equation (8.1.50), `ConnGouldToint.Chapter08.modifiedCauchyNormFactor`: the ratio $\|d\| / p(d)$.
+* Section 8.1, `ConnGouldToint.Chapter08.matrixLeastEigenvalue`: the least eigenvalue of a real
+  symmetric matrix.
+
+## Main results
+
+* Equation (8.1.12), `ConnGouldToint.Chapter08.abs_inner_le_mul_dualNorm`:
+  $|\langle y, x \rangle| \le p(x) \|y\|_D$.
+* Theorem 8.1.7, `ConnGouldToint.Chapter08.theorem_8_1_7`: if $\|x\| \le \kappa p(x)$, then
+  $\|y\|_D \le \kappa \|y\|$ and the operator norm (8.1.13) of $H$ is at most $\kappa^2 \|H\|$.
+* Theorem 8.1.8, `ConnGouldToint.Chapter08.dualNorm_equivalent`: norm equivalence with constant
+  $\kappa$ passes to the dual norms.
+* Theorem 8.1.8, `ConnGouldToint.Chapter08.abs_sub_dualNorm_le_of_fixed_norm`: for a fixed norm, the
+  dual norm is $\kappa$-Lipschitz.
+* Theorem 8.1.8, `ConnGouldToint.Chapter08.dualNorm_tendsto_difference_zero`: for a fixed norm and
+  Lipschitz gradients along the iterates, the dual criticality measures of nearby iterates are
+  close.
+* Theorem 8.1.8, `ConnGouldToint.Chapter08.dualNorm_scaling_counterexample`: two uniformly
+  equivalent norms on $\mathbb{R}$ give different dual norms of the same vector.
+* Lemma 8.1.6, `ConnGouldToint.Chapter08.lemma_8_1_6`: for $p(x) = \|S^{-1} x\|$, the dual norm is
+  $\|S^* y\|$ and the operator norm (8.1.13) of $H$ is $\|S^* H S\|$.
+* Theorem 8.1.9, `ConnGouldToint.Chapter08.theorem_8_1_9`: the minimizer on a steepest ray of $p$
+  gives the decrease $\frac{1}{2} \|g\|_D \min\{\|g\|_D / \beta, \Delta\}$.
+* Theorem 8.1.10, `ConnGouldToint.Chapter08.theorem_8_1_10`: backtracking along a descent direction
+  terminates with a lower bound on the step length and a model decrease.
+* Theorem 8.1.12, `ConnGouldToint.Chapter08.theorem_8_1_12`: along a direction attaining the dual
+  pairing, the first accepted point decreases the model in terms of $\|g\|_D$.
+* Section 8.1, `ConnGouldToint.Chapter08.uniform_norm_comparison_on_curvatureDirections`: in finite
+  dimension, $p_k(w) \le C \|w\|$ for all $k$ and all $w$ in the cone (8.1.6).
+* Lemma 8.1.1, `ConnGouldToint.Chapter08.lemma_8_1_1`: nonnegative asymptotic scaled curvature gives
+  a nonnegative limit inferior of the infimum of the curvature over a set of directions.
+* Lemma 8.1.1, `ConnGouldToint.Chapter08.lemma_8_1_1_on_curvatureDirections`: the same conclusion on
+  the unit directions of the cone (8.1.6).
+* Theorem 8.1.2, `ConnGouldToint.Chapter08.theorem_8_1_2`: in a run with AA.2b, the curvature values
+  $\tau_k$ have a nonnegative limit superior.
+* Theorem 8.1.3, `ConnGouldToint.Chapter08.theorem_8_1_3`: the limit superior transfers from the
+  model curvature to the objective curvature.
+* Theorem 8.1.9, `ConnGouldToint.Chapter08.theorem_8_1_9_counterexample`: the Euclidean Cauchy ray
+  can miss the decrease of Theorem 8.1.9.
+* Equations (8.1.48)–(8.1.49), `ConnGouldToint.Chapter08.modifiedCauchyNormFactor_mul_le`: the angle
+  condition divided by $p(d)$.
+* Corollary 8.1.11, `ConnGouldToint.Chapter08.corollary_8_1_11`: a lower bound on the Euclidean step
+  parameter of the accepted backtracking point.
+* Theorem 8.1.4, `ConnGouldToint.Chapter08.theorem_8_1_4`: at an isolated limit point,
+  $\nabla^2 f(z)(u, u) \ge 0$ for every $u$ in every cone (8.1.6).
+* Theorem 8.1.5, `ConnGouldToint.Chapter08.theorem_8_1_5_directional`: with forced radius expansion,
+  the same conclusion at any limit point.
+* Theorem 8.1.5, `ConnGouldToint.Chapter08.theorem_8_1_5`: with local persistence of negative
+  curvature, also $\liminf \tau_{j(i)} \ge 0$ along the subsequence.
+* Section 8.1, `ConnGouldToint.Chapter08.matrixLeastEigenvalue_lower_of_unit_directions`: a lower
+  bound on the curvature in the directions of $U$ bounds the least eigenvalue of the reduced matrix.
+* Lemma 8.1.1, `ConnGouldToint.Chapter08.lemma_8_1_1_matrix`: Lemma 8.1.1 for the least eigenvalues
+  of reduced matrices.
+* Theorem 8.1.3, `ConnGouldToint.Chapter08.theorem_8_1_3_matrix`: Theorem 8.1.3 for the least
+  eigenvalues of reduced matrices.
+* Theorem 8.1.4, `ConnGouldToint.Chapter08.theorem_8_1_4_matrix`: the reduced matrix at the limit
+  has a nonnegative least eigenvalue.
+* Theorem 8.1.5, `ConnGouldToint.Chapter08.theorem_8_1_5_matrix`: the least eigenvalues of the
+  reduced matrices have a nonnegative limit inferior.
+
+## Conventions
+
+* A run of Algorithm 6.1.1 is `ConnGouldToint.Chapter06.BTRRun`, with iterates $x_k$, steps $s_k$,
+  radii $\Delta_k$, trust-region norms $p_k$ and models $m_k$.
+* AN.1b is the uniform comparison $\|u\| \le K p_k(u)$ for all $k$ and $u$. The small-radius
+  agreement of the model and the objective is `ConnGouldToint.Chapter06.smallRadiusModelAgreement`,
+  and the forced radius expansion AA.3 is `ConnGouldToint.Chapter06.HasForcedRadiusExpansion`.
+* Second derivatives are iterated Fréchet derivatives: $\nabla^2 f(x)(u, u)$ is
+  `fderiv ℝ (fderiv ℝ f) x u u`.
+
+## Implementation notes
+
+* A trust-region norm is a function $p : E \to \mathbb{R}$ or a `Seminorm ℝ E`. Each supremum in
+  (8.1.11), (8.1.13) and (8.1.22) runs over all $x$, including $x = 0$, where the quotient is $0$
+  because division by zero gives zero. This gives the value $0$ on the zero space.
+* In Lean, the supremum of a set of reals that is not bounded above is $0$, and the infimum of a set
+  that is not bounded below is $0$. The comparison hypotheses of the results make the relevant sets
+  bounded.
+* The limits inferior and superior are `Filter.liminf` and `Filter.limsup`. The boundedness
+  hypotheses `IsBoundedUnder` and `IsCoboundedUnder` make them agree with the usual limits.
+
+## Deviations from the source
+
+* **Theorem 8.1.4** (reading). First-order convergence of the criticality measure is taken as an
+  input, as supplied by Section 8.1.2. See `ConnGouldToint.Chapter08.theorem_8_1_4`.
+* **Theorem 8.1.5** (correction). The conclusion on the scaled model curvature along the subsequence
+  assumes local persistence of negative curvature. The conclusion on the objective curvature holds
+  without it. See `ConnGouldToint.Chapter08.theorem_8_1_5` and
+  `ConnGouldToint.Chapter08.theorem_8_1_5_directional`.
+* **Theorem 8.1.8** (correction). Uniform norm equivalence alone does not imply AN.3. The library
+  proves AN.3 for a fixed norm with Lipschitz gradients along the iterates. See
+  `ConnGouldToint.Chapter08.dualNorm_scaling_counterexample` and
+  `ConnGouldToint.Chapter08.dualNorm_tendsto_difference_zero`.
+* **Theorem 8.1.9** (correction). The decrease bound uses a steepest ray of the trust-region norm.
+  The Euclidean Cauchy ray can fail the bound. See `ConnGouldToint.Chapter08.theorem_8_1_9` and
+  `ConnGouldToint.Chapter08.theorem_8_1_9_counterexample`.
 -/
 
 open Filter
@@ -27,11 +153,21 @@ namespace ConnGouldToint.Chapter08
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
-/-- The dual norm associated with the trust-region norm `p`, as in (8.1.11). -/
+/-! ### Dual norms -/
+
+/-- **Equation (8.1.11)** of [conn2000trust]. For a trust-region norm $p$ on a real inner product
+space $E$, the **dual norm** of $y \in E$ is
+$$\|y\|_D = \sup_{x \in E} \frac{|\langle y, x \rangle|}{p(x)}.$$
+
+The term at $x = 0$ is $0$. If the quotients are unbounded, the Lean value is $0$. -/
 noncomputable def dualNorm (p : E → ℝ) (y : E) : ℝ :=
   ⨆ x : E, |inner ℝ y x| / p x
 
-/-- The operator norm from the trust-region norm to its dual, as in (8.1.13). -/
+/-- **Equation (8.1.13)** of [conn2000trust]. For a trust-region norm $p$ and a continuous linear
+operator $H$ on $E$, the **operator norm from $p$ to its dual** is
+$$\sup_{x \in E} \frac{\|Hx\|_D}{p(x)}.$$
+
+The term at $x = 0$ is $0$. If the quotients are unbounded, the Lean value is $0$. -/
 noncomputable def bidualNorm (p : E → ℝ) (H : E →L[ℝ] E) : ℝ :=
   ⨆ x : E, dualNorm p (H x) / p x
 
@@ -52,12 +188,17 @@ private theorem inner_ratio_le {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ)
     _ ≤ ‖y‖ * (κ * p x) := mul_le_mul_of_nonneg_left (hp x) (norm_nonneg y)
     _ = κ * ‖y‖ * p x := by ring
 
-/-- The upper comparison (8.1.17) for the dual norm. -/
+/-- **Equation (8.1.17)** of [conn2000trust], upper comparison. Let $\kappa \ge 0$ and let
+$\|x\| \le \kappa p(x)$ for every $x$. Then $\|y\|_D \le \kappa \|y\|$ for every $y$. -/
 theorem dualNorm_le {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ) (hp : ∀ x, ‖x‖ ≤ κ * p x)
     (y : E) : dualNorm p y ≤ κ * ‖y‖ :=
   ciSup_le fun x ↦ inner_ratio_le hκ hp x y
 
-/-- Hölder's inequality (8.1.12) for the trust-region norm and its dual under AN.1b. -/
+/-- **Equation (8.1.12)** of [conn2000trust] (Hölder's inequality). Let $\kappa \ge 0$, let
+$\|x\| \le \kappa p(x)$ for every $x$, as in AN.1b, and let $p(0) = 0$. Then for all
+$x, y \in E$,
+$$|\langle y, x \rangle| \le p(x) \, \|y\|_D.$$
+-/
 theorem abs_inner_le_mul_dualNorm {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ)
     (hp : ∀ x, ‖x‖ ≤ κ * p x) (hp0 : p 0 = 0) (x y : E) :
     |inner ℝ y x| ≤ p x * dualNorm p y := by
@@ -69,9 +210,12 @@ theorem abs_inner_le_mul_dualNorm {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ)
   have h := (div_le_iff₀ hpx).1 (le_ciSup hb x)
   simpa [dualNorm, mul_comm] using h
 
-/-- Theorem 8.1.7. AN.1b bounds the dual norm by `κ` times the Euclidean norm
-and the bidual operator norm by `κ ^ 2` times the Euclidean operator norm.
-The operator estimate holds for arbitrary continuous linear maps. -/
+/-- **Theorem 8.1.7** of [conn2000trust]. Let $\kappa \ge 0$, and let $\|x\| \le \kappa p(x)$ for
+every $x$, as in AN.1b. Then $\|x\|_D \le \kappa \|x\|$ for every $x$, and every continuous
+linear operator $H$ on $E$ satisfies
+$$\sup_{x} \frac{\|Hx\|_D}{p(x)} \le \kappa^2 \|H\|.$$
+
+The operator estimate holds for every continuous linear operator. -/
 theorem theorem_8_1_7 {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ) (hp : ∀ x, ‖x‖ ≤ κ * p x) :
     (∀ x, dualNorm p x ≤ κ * ‖x‖) ∧
       ∀ H : E →L[ℝ] E, bidualNorm p H ≤ κ ^ 2 * ‖H‖ := by
@@ -88,7 +232,11 @@ theorem theorem_8_1_7 {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ) (hp : ∀ x, �
       mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left (hp x) (norm_nonneg H)) hκ
     _ = κ ^ 2 * ‖H‖ * p x := by ring
 
-/-- The norm equivalence assertion of Theorem 8.1.8, with the same constant as AN.1. -/
+/-- **Theorem 8.1.8** of [conn2000trust], norm equivalence. Let $\kappa > 0$, and let
+$\|x\| \le \kappa p(x)$ and $p(x) \le \kappa \|x\|$ for every $x$. Then for every $y$,
+$$\frac{\|y\|}{\kappa} \le \|y\|_D \le \kappa \|y\|.$$
+
+The dual norms satisfy the equivalence with the same constant as AN.1. -/
 theorem dualNorm_equivalent {p : E → ℝ} {κ : ℝ} (hκ : 0 < κ)
     (hl : ∀ x, ‖x‖ ≤ κ * p x) (hu : ∀ x, p x ≤ κ * ‖x‖) (y : E) :
     ‖y‖ / κ ≤ dualNorm p y ∧ dualNorm p y ≤ κ * ‖y‖ := by
@@ -134,8 +282,13 @@ private theorem dualNorm_sub_le {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ)
         simpa [mul_comm] using abs_inner_le_mul_dualNorm hκ hp hp0 x z))
         (inner_ratio_le hκ hp x (y - z))
 
-/-- For a fixed trust-region norm, the dual criticality measure changes by at most `κ`
-times the change in the gradient. -/
+/-- **Theorem 8.1.8** of [conn2000trust], corrected AN.3 implication for a fixed norm. Let
+$\kappa \ge 0$, let $\|x\| \le \kappa p(x)$ for every $x$, and let $p(0) = 0$. Then for all
+$y, z \in E$,
+$$\big| \|y\|_D - \|z\|_D \big| \le \kappa \|y - z\|.$$
+
+The dual criticality measure therefore changes by at most $\kappa$ times the change in the
+gradient. -/
 theorem abs_sub_dualNorm_le_of_fixed_norm {p : E → ℝ} {κ : ℝ} (hκ : 0 ≤ κ)
     (hp : ∀ x, ‖x‖ ≤ κ * p x) (hp0 : p 0 = 0) (y z : E) :
     |dualNorm p y - dualNorm p z| ≤ κ * ‖y - z‖ := by
@@ -143,10 +296,18 @@ theorem abs_sub_dualNorm_le_of_fixed_norm {p : E → ℝ} {κ : ℝ} (hκ : 0 �
   rw [norm_sub_rev y z]
   exact dualNorm_sub_le hκ hp hp0 z y
 
-/-- A corrected form of the AN.3 implication in Theorem 8.1.8. Use a fixed trust-region
-norm and assume the gradients are Lipschitz along the iterates, as follows from a uniform
-Hessian bound. Continuous differentiability alone does not give this uniform estimate
-when the iterates are unbounded. -/
+/-- **Theorem 8.1.8** of [conn2000trust], corrected AN.3 implication. Let $p$ be a fixed
+trust-region norm with $p(0) = 0$ and $\|x\| \le \kappa p(x)$ for every $x$, where
+$\kappa \ge 0$. Let $(x_k)$ and $(g_k)$ be sequences in $E$ with
+$\|g_j - g_k\| \le L \|x_j - x_k\|$ for all $j$ and $k$. If $j(n)$ and $k(n)$ are index
+sequences with $\|x_{j(n)} - x_{k(n)}\| \to 0$, then
+$$\big| \|g_{j(n)}\|_D - \|g_{k(n)}\|_D \big| \to 0.$$
+
+**Correction.** The source derives AN.3 from uniform norm equivalence. Here the norm is fixed,
+and the gradients are Lipschitz along the iterates, as follows from a uniform bound on the
+Hessian. Continuous differentiability alone does not give this uniform estimate when the
+iterates are unbounded, and `ConnGouldToint.Chapter08.dualNorm_scaling_counterexample` shows
+that varying norms break the implication. -/
 theorem dualNorm_tendsto_difference_zero {p : E → ℝ} {κ L : ℝ} (hκ : 0 ≤ κ)
     (hp : ∀ x, ‖x‖ ≤ κ * p x) (hp0 : p 0 = 0) {x g : ℕ → E}
     (hg : ∀ j k, ‖g j - g k‖ ≤ L * ‖x j - x k‖) {j k : ℕ → ℕ}
@@ -162,10 +323,15 @@ theorem dualNorm_tendsto_difference_zero {p : E → ℝ} {κ L : ℝ} (hκ : 0 �
     _ ≤ κ * (L * ‖x (j n) - x (k n)‖) := mul_le_mul_of_nonneg_left (hg _ _) hκ
     _ = _ := (mul_assoc _ _ _).symm
 
-/-- Uniform equivalence alone permits different dual criticality measures at the same
-point, even for the exact gradient of a smooth, bounded-below quadratic.
-In Theorem 8.1.8 one must add a restriction on the variation of the norm with the
-iteration to deduce AN.3. These two norms may be used on alternating iterations. -/
+/-- **Theorem 8.1.8** of [conn2000trust], counterexample to the AN.3 assertion. On $\mathbb{R}$, the
+norms $p(x) = |x|$ and $q(x) = 2|x|$ both satisfy $|x| \le 2 r(x)$ and $r(x) \le 2|x|$ for
+$r = p$ and $r = q$, but the dual norms of $1$ differ: $\|1\|_{D,p} \neq \|1\|_{D,q}$.
+
+**Correction.** Uniform equivalence of the norms alone permits different dual criticality
+measures at the same point, even for the exact gradient of a smooth quadratic that is bounded
+below. The two norms can be used on alternating iterations. To deduce AN.3 in Theorem 8.1.8, one
+must restrict the variation of the norm with the iteration; see
+`ConnGouldToint.Chapter08.dualNorm_tendsto_difference_zero`. -/
 theorem dualNorm_scaling_counterexample :
     let p : ℝ → ℝ := fun x ↦ ‖x‖
     let q : ℝ → ℝ := fun x ↦ 2 * ‖x‖
@@ -188,9 +354,11 @@ theorem dualNorm_scaling_counterexample :
   norm_num at hp hq
   exact ne_of_gt (lt_of_le_of_lt hq (lt_of_lt_of_le (by norm_num) hp))
 
-/-- Lemma 8.1.6. A change of variables by a continuous linear equivalence
-takes the ellipsoidal dual norm to the norm of the adjoint and the bidual
-operator norm to the norm of the congruence-transformed operator. -/
+/-- **Lemma 8.1.6** of [conn2000trust], scaled dual and operator norms. Let $E$ be a real Hilbert
+space, let $S$ be a continuous linear isomorphism of $E$, and let $p(x) = \|S^{-1} x\|$. Then
+for every $y \in E$ and every continuous linear operator $H$,
+$$\|y\|_D = \|S^* y\| \qquad \text{and} \qquad \sup_x \frac{\|Hx\|_D}{p(x)} = \|S^* H S\|,$$
+where $S^*$ is the adjoint of $S$. -/
 theorem lemma_8_1_6 [CompleteSpace E] (S : E ≃L[ℝ] E) :
     (∀ y, dualNorm (fun x => ‖S.symm x‖) y =
       ‖(S : E →L[ℝ] E).adjoint y‖) ∧
@@ -244,13 +412,31 @@ theorem lemma_8_1_6 [CompleteSpace E] (S : E ≃L[ℝ] E) :
     · simp [hz]
     · exact (div_le_iff₀ (norm_pos_iff.mpr hz)).mp (htest z)
 
-/-- The scaled curvature constant (8.1.22) for a quadratic model. -/
+/-! ### Cauchy points in general norms -/
+
+/-- **Equation (8.1.22)** of [conn2000trust], constant Hessian. For a seminorm $p$ and a continuous
+linear operator $H$ on $E$, the **scaled curvature constant** is
+$$\beta = 1 + \sup_{w \in E} \frac{|\langle w, H w \rangle|}{p(w)^2}.$$
+
+The term at $w = 0$ is $0$. If the quotients are unbounded, the Lean supremum is $0$ and
+$\beta = 1$. -/
 noncomputable def scaledQuadraticCurvature (p : Seminorm ℝ E) (H : E →L[ℝ] E) : ℝ :=
   1 + ⨆ w : E, |inner ℝ w (H w)| / (p w) ^ 2
 
-/-- Corrected Theorem 8.1.9. The dual norm is the slope along a steepest ray
-for the trust-region norm, represented by a unit direction attaining the
-dual pairing. Equation (8.1.23) needs this ray for a general norm. -/
+/-- **Theorem 8.1.9** of [conn2000trust], corrected. Let $c \in \mathbb{R}$, $g, d \in E$, let $H$
+be a continuous linear operator, and let $p$ be a seminorm with $\|v\| \le K p(v)$ for all $v$,
+where $K \ge 0$. Let $\Delta \ge 0$. Assume that $d$ is a steepest direction for $p$: $p(d) = 1$
+and $\langle g, d \rangle = -\|g\|_D$. If $s$ minimizes $m(u) = c + \langle g, u \rangle +
+\frac{1}{2} \langle u, H u \rangle$ on the segment $\{t d : 0 \le t \le \Delta\}$, then
+$$c - m(s) \ge \tfrac{1}{2} \|g\|_D \min\Big\{\frac{\|g\|_D}{\beta}, \Delta\Big\},$$
+where $\beta$ is the scaled curvature constant (8.1.22).
+
+**Correction.** The source states the bound for the Cauchy point on the Euclidean
+steepest-descent ray $\{-tg\}$. For a general norm this ray can fail the bound, see
+`ConnGouldToint.Chapter08.theorem_8_1_9_counterexample`. Equation (8.1.23) needs a ray along
+which the slope is the dual norm, and the theorem uses such a ray.
+
+The model is `ConnGouldToint.Chapter06.quadraticModel c g H`. -/
 theorem theorem_8_1_9 (c : ℝ) (g d : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
     {K Δ : ℝ} (hK : 0 ≤ K) (hp : ∀ v, ‖v‖ ≤ K * p v) (hΔ : 0 ≤ Δ)
     (hd : p d = 1) (hsteep : inner ℝ g d = -dualNorm p g) {s : E}
@@ -346,19 +532,34 @@ private theorem model_le_directional_quadratic {m : E → ℝ} {x d : E} {T B : 
   simp [w] at h
   linarith
 
-/-- The point (8.1.36) at the specified backtracking index. -/
+/-- **Equation (8.1.36)** of [conn2000trust]. For a seminorm $p$, a point $x$, a direction $d$,
+$\Delta, q \in \mathbb{R}$ and $j \in \mathbb{N}$, the **backtracking point** is
+$$x + \frac{q^j \Delta}{p(d)} \, d.$$
+-/
 noncomputable def modifiedCauchyTrial (p : Seminorm ℝ E) (x d : E) (Δ q : ℝ) (j : ℕ) : E :=
   x + (q ^ j * Δ / p d) • d
 
-/-- The modified Cauchy Armijo test (8.1.37). -/
+/-- **Equation (8.1.37)** of [conn2000trust]. The backtracking point $y_j$ of (8.1.36) is
+**accepted** for the model $m$, the vector $g$ and the constant $b$ if
+$$m(y_j) \le m(x) + b \, \langle g, y_j - x \rangle.$$
+-/
 def ModifiedCauchyAccepted (m : E → ℝ) (p : Seminorm ℝ E)
     (x d g : E) (Δ q b : ℝ) (j : ℕ) : Prop :=
   m (modifiedCauchyTrial p x d Δ q j) ≤
     m x + b * inner ℝ g (modifiedCauchyTrial p x d Δ q j - x)
 
-/-- Theorem 8.1.10. Backtracking along a descent direction terminates.
-The first accepted point achieves the model decrease in (8.1.38), and
-its length also has the lower bound used in Corollary 8.1.11. -/
+/-- **Theorem 8.1.10** of [conn2000trust]. Let $p$ be a seminorm on $E$, let $x, d, g \in E$, and
+let $\Delta > 0$, $0 < q < 1$, $0 < b < 1/2$ and $\beta > 0$. Assume $p(d) > 0$,
+$\langle g, d \rangle < 0$, and $Dm(x) d = \langle g, d \rangle$. Assume that $m$ and its
+derivative are differentiable at every $z$ with $p(z - x) \le \Delta$, and that there
+$\nabla^2 m(z)(d, d) \le \beta p(d)^2$. Let $a = |\langle g, d \rangle| / p(d)$ and
+$c = \min\{2q(1 - b), 1\}$. Then there is $j$ such that the backtracking point $y_j$ is
+accepted, no $y_i$ with $i < j$ is accepted, and
+$$c \min\{a / \beta, \Delta\} \le q^j \Delta \qquad \text{and} \qquad b \, c \, a \min\{a /
+  \beta, \Delta\} \le m(x) - m(y_j).$$
+
+The second inequality is the model decrease (8.1.38). The first is the lower bound on the
+trust-region length $q^j \Delta$ of the step, used in Corollary 8.1.11. -/
 theorem theorem_8_1_10 {m : E → ℝ} (p : Seminorm ℝ E) {x d g : E}
     {Δ q b β : ℝ} (hΔ : 0 < Δ) (hq : 0 < q) (hq₁ : q < 1)
     (hb : 0 < b) (hb₁ : b < 1 / 2) (hβ : 0 < β) (hd : 0 < p d)
@@ -445,8 +646,13 @@ theorem theorem_8_1_10 {m : E → ℝ} (p : Seminorm ℝ E) {x d g : E}
   change (b * C) * a * min (a / β) Δ ≤ _
   nlinarith only [hdrop, hmul]
 
-/-- Theorem 8.1.12. If the direction attains the dual pairing, the first
-acceptable scaled Cauchy step has the dual-norm decrease. -/
+/-- **Theorem 8.1.12** of [conn2000trust]. Under the hypotheses of
+`ConnGouldToint.Chapter08.theorem_8_1_10`, assume also that $d$ attains the dual pairing:
+$|\langle g, d \rangle| / p(d) = \|g\|_D$. Then there is $j$ such that $y_j$ is accepted, no
+$y_i$ with $i < j$ is accepted, and
+$$b \min\{2q(1 - b), 1\} \, \|g\|_D \min\Big\{\frac{\|g\|_D}{\beta}, \Delta\Big\} \le m(x) -
+  m(y_j).$$
+-/
 theorem theorem_8_1_12 {m : E → ℝ} (p : Seminorm ℝ E) {x d g : E}
     {Δ q b β : ℝ} (hΔ : 0 < Δ) (hq : 0 < q) (hq₁ : q < 1)
     (hb : 0 < b) (hb₁ : b < 1 / 2) (hβ : 0 < β) (hd : 0 < p d)
@@ -463,14 +669,21 @@ theorem theorem_8_1_12 {m : E → ℝ} (p : Seminorm ℝ E) {x d g : E}
     theorem_8_1_10 p hΔ hq hq₁ hb hb₁ hβ hd hdescent hgrad hm hDm hcurv
   exact ⟨j, hj, hmin, by simpa only [hsteep] using hdec⟩
 
-/-- The closed cone of directions retaining a positive asymptotic
-Euclidean-to-trust-region norm ratio, as in (8.1.6). -/
+/-! ### Second-order convergence -/
+
+/-- **Equation (8.1.6)** of [conn2000trust]. For a sequence of seminorms $p_k$ on $E$ and
+$\varepsilon \in \mathbb{R}$, the **cone of tested directions** is the closure of
+$$\Big\{ w \in E : \varepsilon \le \liminf_{k \to \infty} \frac{\|w\|}{p_k(w)} \Big\}.$$
+-/
 def curvatureDirections (p : ℕ → Seminorm ℝ E) (ε : ℝ) : Set E :=
   closure {w | ε ≤ liminf (fun k => ‖w‖ / p k w) atTop}
 
-/-- A finite-dimensional norm comparison on the tested cone. Pointwise
-eventual bounds suffice because a finite basis of the span converts them to
-a uniform bound on that entire span. -/
+/-- **Section 8.1** of [conn2000trust], uniform norm comparison following (8.1.6). Let $E$ be
+finite-dimensional, let $p_k$ be seminorms on $E$, and let $\varepsilon > 0$. Then there is
+$C > 0$ with $p_k(w) \le C \|w\|$ for every $k$ and every $w$ in the cone (8.1.6).
+
+The eventual pointwise bounds that the cone gives become uniform, because a finite basis of the
+span of the cone converts them into a bound on the whole span. -/
 theorem uniform_norm_comparison_on_curvatureDirections [FiniteDimensional ℝ E]
     (p : ℕ → Seminorm ℝ E) {ε : ℝ} (hε : 0 < ε) :
     ∃ C > 0, ∀ k w, w ∈ curvatureDirections p ε → p k w ≤ C * ‖w‖ := by
@@ -545,10 +758,17 @@ private theorem scaled_curvature_lower {p : Seminorm ℝ E} {H : E →L[ℝ] E �
     _ ≤ τ * (p u) ^ 2 := mul_le_mul_of_nonneg_right hτ (sq_nonneg _)
     _ ≤ _ := (le_div_iff₀ (sq_pos_of_pos hp)).mp hcurv
 
-/-- Lemma 8.1.1. On the Euclidean unit directions of the tested cone, uniform
-upper comparison of the trust-region norms transfers asymptotic nonnegative
-scaled curvature to the Euclidean curvature infimum. A subsequence can be
-incorporated directly into the indexing. -/
+/-- **Lemma 8.1.1** of [conn2000trust], uniform norm comparison on the normalized directions. Let
+$U \subseteq E$ be nonempty, let $p_k$ be seminorms, let $H_k$ be continuous bilinear forms on
+$E$, let $\tau_k \in \mathbb{R}$, and let $C > 0$. Assume that eventually $0 < p_k(u) \le C$ for
+every $u \in U$, that $\tau_k \le H_k(u, u) / p_k(u)^2$ for all $k$ and $u \in U$, that
+$(\tau_k)$ is eventually bounded below, and that $\liminf_k \tau_k \ge 0$. If the sequence
+$\inf_{u \in U} H_k(u, u)$ is cobounded below, then
+$$\liminf_{k \to \infty} \inf_{u \in U} H_k(u, u) \ge 0.$$
+
+In the source, $U$ is the set of Euclidean unit directions of the cone (8.1.6), and the
+comparison $p_k(u) \le C$ is uniform on it. A subsequence can be included directly in the
+indexing. -/
 theorem lemma_8_1_1 {U : Set E} [Nonempty U] {p : ℕ → Seminorm ℝ E}
     {H : ℕ → E →L[ℝ] E →L[ℝ] ℝ} {τ : ℕ → ℝ} {C : ℝ} (hC : 0 < C)
     (hcomp : ∀ᶠ k in atTop, ∀ u ∈ U, 0 < p k u ∧ p k u ≤ C)
@@ -575,8 +795,16 @@ theorem lemma_8_1_1 {U : Set E} [Nonempty U] {p : ℕ → Seminorm ℝ E}
   rw [he] at hb
   linarith
 
-/-- The norm comparison needed by Lemma 8.1.1 follows from AN.1b and
-finite dimensionality on the unit slice of the cone in (8.1.6). -/
+/-- **Lemma 8.1.1** of [conn2000trust], on the cone (8.1.6). Let $E$ be finite-dimensional, let
+$\varepsilon > 0$ and $K \ge 0$, and let the seminorms $p_k$ satisfy $\|u\| \le K p_k(u)$ for
+all $k$ and $u$ (AN.1b). Let $H_k$ be continuous bilinear forms and $\tau_k \in \mathbb{R}$ with
+$\tau_k \le H_k(u, u) / p_k(u)^2$ for all $k$ and $u \neq 0$, let $(\tau_k)$ be eventually
+bounded below, and let $\liminf_k \tau_k \ge 0$. Let $U$ be the set of unit vectors in the cone
+(8.1.6). If $U$ is nonempty and the sequence $\inf_{u \in U} H_k(u, u)$ is cobounded below, then
+$$\liminf_{k \to \infty} \inf_{u \in U} H_k(u, u) \ge 0.$$
+
+The norm comparison that `ConnGouldToint.Chapter08.lemma_8_1_1` needs follows from AN.1b and
+finite dimension. -/
 theorem lemma_8_1_1_on_curvatureDirections [FiniteDimensional ℝ E]
     (p : ℕ → Seminorm ℝ E) {ε K : ℝ} (hε : 0 < ε) (hK : 0 ≤ K)
     (hAN : ∀ k u, ‖u‖ ≤ K * p k u)
@@ -600,7 +828,12 @@ theorem lemma_8_1_1_on_curvatureDirections [FiniteDimensional ℝ E]
   · intro k u hu
     exact hcurv k u (hneq hu.2)
 
-/-- AA.2b, including the fixed length cap on negative-curvature decrease. -/
+/-- **AA.2b** of [conn2000trust]. A step $s$ from $x$ has **capped negative-curvature decrease** for
+the model $m$, the curvature $\tau$, the radius $\Delta$, the constant $\kappa$ and the cap $c$
+if $\kappa > 0$ and, when $\tau < 0$,
+$$\kappa |\tau| \min\{\tau^2, \Delta^2, c^2\} \le m(x) - m(x + s).$$
+
+The fixed cap $c$ limits the length that enters the decrease. -/
 def HasCappedNegativeCurvatureDecrease (m : E → ℝ) (x s : E) (τ Δ κ cap : ℝ) : Prop :=
   0 < κ ∧ (τ < 0 → κ * |τ| * min (min (τ ^ 2) (Δ ^ 2)) (cap ^ 2) ≤ m x - m (x + s))
 
@@ -626,8 +859,14 @@ private theorem negativeCurvatureDecrease_clipped {m : E → ℝ} {x s : E}
   exact (mul_le_mul (mul_le_mul_of_nonneg_left hle h.1.le) hmin
     (le_min (sq_nonneg _) (sq_nonneg _)) (mul_nonneg h.1.le (abs_nonneg _))).trans (h.2 hn)
 
-/-- Theorem 8.1.2. Under the small-radius agreement estimate and AA.2b,
-the scaled model curvature cannot stay below a fixed negative threshold. -/
+/-- **Theorem 8.1.2** of [conn2000trust]. Let a run of Algorithm 6.1.1 for $f$ have models with
+$f(x_k) = m_k(x_k)$, let $f$ be bounded below, and let the models satisfy the small-radius
+agreement estimate. Let $\kappa > 0$ and $c > 0$, and let each step satisfy AA.2b with the
+curvature $\tau_k$, the radius $\Delta_k$, the constant $\kappa$ and the cap $c$. If $(\tau_k)$
+is eventually bounded above, then
+$$\limsup_{k \to \infty} \tau_k \ge 0.$$
+
+Thus the scaled model curvature cannot stay below a fixed negative threshold. -/
 theorem theorem_8_1_2 {P : ConnGouldToint.Chapter06.BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop}
     (run : ConnGouldToint.Chapter06.BTRRun f P sufficient)
@@ -652,9 +891,18 @@ theorem theorem_8_1_2 {P : ConnGouldToint.Chapter06.BTRParams} {f : E → ℝ}
   have hhalf : ε ≤ -limsup τ atTop / 2 := min_le_left _ _
   linarith
 
-/-- Theorem 8.1.3. The AM.5b scaled Hessian discrepancy and uniform norm
-comparison on the tested directions transfer the model-curvature limsup
-to the Euclidean objective-curvature limsup. -/
+/-- **Theorem 8.1.3** of [conn2000trust], normalized directional infimum. Let $U \subseteq E$ be
+nonempty, let $p_k$ be seminorms, let $F_k$ and $M_k$ be continuous bilinear forms, let
+$\tau_k, e_k \in \mathbb{R}$, and let $C > 0$. Assume that eventually $0 < p_k(u) \le C$ for
+every $u \in U$, and that for all $k$ and $u \in U$
+$$\tau_k \le \frac{M_k(u, u)}{p_k(u)^2} \qquad \text{and} \qquad \frac{|F_k(u, u) - M_k(u,
+  u)|}{p_k(u)^2} \le e_k,$$
+with $e_k \to 0$. Assume $\limsup_k \tau_k \ge 0$, that $(\tau_k)$ is cobounded above, and that
+$\inf_{u \in U} F_k(u, u)$ is eventually bounded above. Then
+$$\limsup_{k \to \infty} \inf_{u \in U} F_k(u, u) \ge 0.$$
+
+The second assumption is the scaled Hessian discrepancy AM.5b, with $F_k$ the objective Hessian
+and $M_k$ the model Hessian. -/
 theorem theorem_8_1_3 {U : Set E} [Nonempty U] {p : ℕ → Seminorm ℝ E}
     {F M : ℕ → E →L[ℝ] E →L[ℝ] ℝ} {τ e : ℕ → ℝ} {C : ℝ} (hC : 0 < C)
     (hcomp : ∀ᶠ k in atTop, ∀ u ∈ U, 0 < p k u ∧ p k u ≤ C)
@@ -693,8 +941,17 @@ theorem theorem_8_1_3 {U : Set E} [Nonempty U] {p : ℕ → Seminorm ℝ E}
   rw [hEq] at hb
   linarith
 
-/-- In an anisotropic norm, the Euclidean Cauchy ray can miss the
-dual-norm decrease bound in the printed Theorem 8.1.9, even for a linear model. -/
+/-- **Theorem 8.1.9** of [conn2000trust], counterexample for the Euclidean Cauchy ray. There are a
+seminorm $p$ on $\mathbb{R}^2$ with $\|v\| \le p(v)$ for all $v$, and $g, s \in \mathbb{R}^2$,
+such that $s$ is the Cauchy point of the linear model $m(s) = \langle g, s \rangle$ for $p$ with
+radius $1$, and
+$$-m(s) < \tfrac{1}{2} \|g\|_D \min\Big\{\frac{\|g\|_D}{\beta}, 1\Big\},$$
+where $\beta$ is the constant (8.1.22) for $H = 0$.
+
+**Correction.** In an anisotropic norm, the Euclidean Cauchy ray can miss the decrease bound of
+the printed Theorem 8.1.9, even for a linear model. The Cauchy point is
+`ConnGouldToint.Chapter06.IsCauchyPoint`, the minimizer on the ray $\{-tg : t \ge 0\}$ inside
+the trust region. -/
 theorem theorem_8_1_9_counterexample :
     ∃ (p : Seminorm ℝ (EuclideanSpace ℝ (Fin 2))) (g s : EuclideanSpace ℝ (Fin 2)),
       (∀ v, ‖v‖ ≤ p v) ∧
@@ -764,13 +1021,16 @@ theorem theorem_8_1_9_counterexample :
       exact div_le_div_of_nonneg_left zero_le_one (by norm_num) hpg
     linarith
 
-/-- The Euclidean-to-trust-region norm ratio (8.1.50) for the
-modified Cauchy direction. -/
+/-- **Equation (8.1.50)** of [conn2000trust]. For a seminorm $p$ and a direction $d$, the **norm
+factor** is the ratio $\|d\| / p(d)$ of the Euclidean norm to the trust-region norm. -/
 noncomputable def modifiedCauchyNormFactor (p : Seminorm ℝ E) (d : E) : ℝ :=
   ‖d‖ / p d
 
-/-- Dividing the gradient-angle inequality by the trust-region norm
-gives (8.1.49). -/
+/-- **Equations (8.1.48)–(8.1.49)** of [conn2000trust]. Let $p$ be a seminorm, let $g, d \in E$ with
+$p(d) > 0$, and let $\varepsilon \|g\| \|d\| \le |\langle g, d \rangle|$. Then
+$$\frac{\|d\|}{p(d)} \, \varepsilon \|g\| \le \frac{|\langle g, d \rangle|}{p(d)}.$$
+
+This is the angle condition divided by the trust-region norm of $d$. -/
 theorem modifiedCauchyNormFactor_mul_le (p : Seminorm ℝ E) {g d : E} {ε : ℝ}
     (hd : 0 < p d) (hangle : ε * ‖g‖ * ‖d‖ ≤ |inner ℝ g d|) :
     modifiedCauchyNormFactor p d * ε * ‖g‖ ≤ |inner ℝ g d| / p d := by
@@ -781,9 +1041,17 @@ theorem modifiedCauchyNormFactor_mul_le (p : Seminorm ℝ E) {g d : E} {ε : ℝ
       field_simp
     _ ≤ _ := hangle
 
-/-- Corollary 8.1.11. A gradient-related direction and uniform norm
-comparison convert the accepted trust-region length to the Euclidean
-parameter bound. The displayed constant is conservative. -/
+/-- **Corollary 8.1.11** of [conn2000trust], Euclidean parameter bound. Under the hypotheses of
+`ConnGouldToint.Chapter08.theorem_8_1_10`, let also $\beta_0 > 0$ and $K \ge 1$ satisfy
+$p(d) \le K \|d\|$ and $\beta \le K^2 \beta_0$, and let $\varepsilon \|g\| \|d\| \le |\langle g,
+d \rangle|$. Then there is $j$ such that $y_j$ is accepted, no $y_i$ with $i < j$ is accepted,
+and
+$$\frac{\min\{2q(1 - b), 1\}}{K^4} \min\Big\{\frac{\varepsilon \|g\|}{\beta_0 \|d\|},
+  \frac{\Delta}{p(d)}\Big\} \le \frac{q^j \Delta}{p(d)}.$$
+
+The right side is the parameter $t$ of the accepted point $x + t d$. A gradient-related
+direction and the uniform norm comparison convert the trust-region length of Theorem 8.1.10 into
+this bound. The constant is conservative. -/
 theorem corollary_8_1_11 {m : E → ℝ} (p : Seminorm ℝ E) {x d g : E}
     {Δ q b β β₀ K ε : ℝ} (hΔ : 0 < Δ) (hq : 0 < q) (hq₁ : q < 1)
     (hb : 0 < b) (hb₁ : b < 1 / 2) (hβ : 0 < β) (hβ₀ : 0 < β₀) (hK : 1 ≤ K)
@@ -904,9 +1172,22 @@ private theorem btr_step_norm_le_of_comparison [NormedSpace ℝ E]
   exact (hAN k _).trans (mul_le_mul_of_nonneg_left h hK)
 
 open ConnGouldToint.Chapter06 in
-/-- Theorem 8.1.4 in directional form. An isolated limit has nonnegative
-objective Hessian on every cone from (8.1.6). The first-order convergence
-of the chosen criticality measure is the input from Section 8.1.2. -/
+/-- **Theorem 8.1.4** of [conn2000trust], directional form. Let $E$ be finite-dimensional, and let a
+run of Algorithm 6.1.1 for a $C^2$ function $f$ have models with $f(x_k) = m_k(x_k)$. Let
+$x_{j(i)} \to z$ along a strictly increasing $j$, and let $z$ be an isolated limit point: for
+some $r > 0$, every limit $y$ of a subsequence of $(x_k)$ with $\|y - z\| < r$ equals $z$. Let
+$\pi_k \to 0$. Let $\kappa, K, c > 0$, and assume:
+* $\|u\| \le K p_k(u)$ for all $k$ and $u$;
+* $\tau_k \le \nabla^2 m_k(x_k)(u, u) / p_k(u)^2$ and $|\nabla^2 f(x_k)(u, u) - \nabla^2
+  m_k(x_k)(u, u)| / p_k(u)^2 \le e_k$ for all $k$ and $u \neq 0$, with $e_k \to 0$;
+* $f$ is bounded below, the models satisfy the small-radius agreement estimate, and each step
+  satisfies AA.2b with $\tau_k$, $\Delta_k$, $\kappa$ and $c$.
+
+Then $\pi_k \to 0$, and $\nabla^2 f(z)(u, u) \ge 0$ for every $\varepsilon > 0$ and every $u$ in
+the cone (8.1.6).
+
+**Reading.** The first-order convergence $\pi_k \to 0$ of the chosen criticality measure is an
+input, which Section 8.1.2 supplies. -/
 theorem theorem_8_1_4 [FiniteDimensional ℝ E] [ProperSpace E]
     {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
     (run : BTRRun f P sufficient) {z : E}
@@ -943,8 +1224,17 @@ theorem theorem_8_1_4 [FiniteDimensional ℝ E] [ProperSpace E]
     (clipped_curvature_eventually_near hlocal)
 
 open ConnGouldToint.Chapter06 in
-/-- Objective curvature in Theorem 8.1.5. Forced expansion excludes negative
-curvature in each cone direction with persistent norm comparison. -/
+/-- **Theorem 8.1.5** of [conn2000trust], objective curvature. Let $E$ be finite-dimensional, and
+let a run of Algorithm 6.1.1 for a $C^2$ function $f$ have models with $f(x_k) = m_k(x_k)$. Let
+$x_{j(i)} \to z$ along a strictly increasing $j$. Let $\kappa, K, c > 0$, and assume the
+comparison $\|u\| \le K p_k(u)$, the curvature bounds $\tau_k$ and the discrepancy bounds
+$e_k \to 0$ of `ConnGouldToint.Chapter08.theorem_8_1_4`, that $f$ is bounded below, the
+small-radius agreement estimate, AA.2b with $\tau_k$, $\Delta_k$, $\kappa$ and $c$, and the
+forced radius expansion AA.3. Then $\nabla^2 f(z)(u, u) \ge 0$ for every $\varepsilon > 0$ and
+every $u$ in the cone (8.1.6).
+
+Forced expansion excludes negative objective curvature in every direction with persistent norm
+comparison. This conclusion needs no local persistence of negative model curvature. -/
 theorem theorem_8_1_5_directional [FiniteDimensional ℝ E]
     {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
     (run : BTRRun f P sufficient) {z : E}
@@ -983,12 +1273,19 @@ theorem theorem_8_1_5_directional [FiniteDimensional ℝ E]
 
 
 open ConnGouldToint.Chapter06 in
-/-- Corrected Theorem 8.1.5 in directional form. Forced expansion excludes
-negative objective curvature in every direction with persistent norm
-comparison. For the scaled-model liminf, local persistence supplies the
-negative-curvature bound at the intervening iterations of the expansion
-argument. A bound along the convergent subsequence alone gives no such
-bound when the trust-region norms vary. -/
+/-- **Theorem 8.1.5** of [conn2000trust], corrected. Under the hypotheses of
+`ConnGouldToint.Chapter08.theorem_8_1_5_directional`, assume also that $(\tau_{j(i)})$ is
+cobounded below and that negative curvature persists locally: for every $a > 0$, if
+$\tau_{j(i)} \le -a$ for infinitely many $i$, then there are $b > 0$ and $r > 0$ such that
+eventually $\|x_k - z\| < r$ implies $\tau_k \le -b$. Then
+$$\liminf_{i \to \infty} \tau_{j(i)} \ge 0,$$
+and $\nabla^2 f(z)(u, u) \ge 0$ for every $\varepsilon > 0$ and every $u$ in the cone (8.1.6).
+
+**Correction.** The source derives the limit inferior of the scaled model curvature without the
+persistence hypothesis. The expansion argument needs a negative-curvature bound at the
+intermediate iterations, and a bound along the convergent subsequence alone gives none when the
+trust-region norms vary. The conclusion on the objective curvature holds without the extra
+hypothesis, see `ConnGouldToint.Chapter08.theorem_8_1_5_directional`. -/
 theorem theorem_8_1_5 [FiniteDimensional ℝ E]
     {P : BTRParams} {f : E → ℝ} {sufficient : ℕ → (E → ℝ) → E → E → Prop}
     (run : BTRRun f P sufficient) {z : E}
@@ -1032,17 +1329,28 @@ theorem theorem_8_1_5 [FiniteDimensional ℝ E]
   · exact theorem_8_1_5_directional run hj hz hf hκ hK hcap hAN hcurv herror he
       hval hlower herr hsecond hexpand
 
+/-! ### Reduced Hessians in a basis -/
+
 section ReducedMatrices
 
 open Matrix
 
-/-- The least eigenvalue of a nonempty symmetric matrix. -/
+/-- **Section 8.1** of [conn2000trust], least eigenvalue of a reduced Hessian. For a real symmetric
+matrix $A$, this is the least eigenvalue $\min_i \lambda_i(A)$.
+
+For an empty index type the Lean value is $0$. -/
 noncomputable def matrixLeastEigenvalue {n : Type*} [Fintype n] [DecidableEq n]
     (A : Matrix n n ℝ) (hA : A.IsHermitian) : ℝ :=
   ⨅ i, hA.eigenvalues i
 
-/-- Rayleigh comparison in arbitrary basis coordinates. The factor from the
-basis map is needed because its columns need not be orthonormal. -/
+/-- **Section 8.1** of [conn2000trust], Rayleigh comparison for the basis-matrix forms. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 1$, let $Z : \mathbb{R}^n \to E$ be
+continuous linear, and let $U \subseteq E$ contain $Zv / \|Zv\|$ whenever $Zv \neq 0$. Let $Q$
+be a continuous bilinear form with $v^T A v = Q(Zv, Zv)$ for every $v$. If $a \ge 0$ and
+$Q(u, u) \ge -a$ for every $u \in U$, then
+$$-a \|Z\|^2 \le \lambda_{\min}(A).$$
+
+The factor $\|Z\|^2$ is needed because the columns of $Z$ need not be orthonormal. -/
 theorem matrixLeastEigenvalue_lower_of_unit_directions
     {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
     {A : Matrix n n ℝ} (hA : A.IsHermitian)
@@ -1087,8 +1395,15 @@ private theorem reduced_lower_of_infimum {n : Type*} [Fintype n] [DecidableEq n]
   matrixLeastEigenvalue_lower_of_unit_directions hA Z hZ Q hform ha
     (fun u hu => hQ.trans (ciInf_le hbound ⟨u, hu⟩))
 
-/-- Lemma 8.1.1, basis-matrix formulation. Apply the directional conclusion
-to the normalized images of the coordinates of the basis matrix. -/
+/-- **Lemma 8.1.1** of [conn2000trust], basis-matrix form. Let $A_k \in \mathbb{R}^{n \times n}$ be
+symmetric with $n \ge 1$, let $Z$ and $U$ be as in
+`ConnGouldToint.Chapter08.matrixLeastEigenvalue_lower_of_unit_directions`, and let $Q_k$ be
+continuous bilinear forms with $v^T A_k v = Q_k(Zv, Zv)$, such that $u \mapsto Q_k(u, u)$ is
+bounded below on $U$ for each $k$. Assume that $\inf_{u \in U} Q_k(u, u)$ is eventually bounded
+below with nonnegative limit inferior, and that $(\lambda_{\min}(A_k))$ is cobounded below. Then
+$$\liminf_{k \to \infty} \lambda_{\min}(A_k) \ge 0.$$
+
+The proof applies the directional conclusion to the normalized images of the coordinate vectors. -/
 theorem lemma_8_1_1_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
     {A : ℕ → Matrix n n ℝ} (hA : ∀ k, (A k).IsHermitian)
     {Z : EuclideanSpace ℝ n →L[ℝ] E} {U : Set E}
@@ -1113,8 +1428,13 @@ theorem lemma_8_1_1_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
   have hEq : (2 * a) * (‖Z‖ ^ 2 + 1) = -L := by dsimp [a]; field_simp
   nlinarith only [hL, hEq, ha, mul_nonneg ha.le (sq_nonneg ‖Z‖)]
 
-/-- Theorem 8.1.3, basis-matrix formulation. Frequent lower bounds on the
-directional infimum transfer to the least reduced eigenvalue. -/
+/-- **Theorem 8.1.3** of [conn2000trust], basis-matrix form. Let $A_k$, $Z$, $U$ and $Q_k$ be as in
+`ConnGouldToint.Chapter08.lemma_8_1_1_matrix`. Assume that $\inf_{u \in U} Q_k(u, u)$ is
+cobounded above with nonnegative limit superior, and that $(\lambda_{\min}(A_k))$ is eventually
+bounded above. Then
+$$\limsup_{k \to \infty} \lambda_{\min}(A_k) \ge 0.$$
+
+Frequent lower bounds on the directional infimum transfer to the least reduced eigenvalue. -/
 theorem theorem_8_1_3_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
     {A : ℕ → Matrix n n ℝ} (hA : ∀ k, (A k).IsHermitian)
     {Z : EuclideanSpace ℝ n →L[ℝ] E} {U : Set E}
@@ -1141,8 +1461,14 @@ theorem theorem_8_1_3_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n
   have hEq : (2 * a) * (‖Z‖ ^ 2 + 1) = -L := by dsimp [a]; field_simp
   nlinarith only [hL, hEq, ha, mul_nonneg ha.le (sq_nonneg ‖Z‖)]
 
-/-- The matrix conclusion of Theorem 8.1.4 follows from directional
-nonnegativity at the isolated limit. -/
+/-- **Theorem 8.1.4** of [conn2000trust], least eigenvalue at the isolated limit. Let
+$A \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 1$, let $Z$ and $U$ be as in
+`ConnGouldToint.Chapter08.matrixLeastEigenvalue_lower_of_unit_directions`, and let $Q$ be a
+continuous bilinear form with $v^T A v = Q(Zv, Zv)$ for every $v$. If $Q(u, u) \ge 0$ for every
+$u \in U$, then $\lambda_{\min}(A) \ge 0$.
+
+With $Q = \nabla^2 f(z)$, the hypothesis is the directional conclusion of
+`ConnGouldToint.Chapter08.theorem_8_1_4`. -/
 theorem theorem_8_1_4_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
     {A : Matrix n n ℝ} (hA : A.IsHermitian) (Z : EuclideanSpace ℝ n →L[ℝ] E)
     {U : Set E} (hZ : ∀ v, Z v ≠ 0 → ‖Z v‖⁻¹ • Z v ∈ U)
@@ -1155,9 +1481,16 @@ theorem theorem_8_1_4_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n
     matrixLeastEigenvalue_lower_of_unit_directions hA Z hZ Q hform (a := 0) le_rfl
       (fun u hu => by simpa only [neg_zero] using hQ u hu)
 
-/-- The matrix liminf conclusion of Theorem 8.1.5. Continuity of the
-objective Hessian along the convergent subsequence gives uniform convergence
-of its quadratic form on the unit directions in the cone. -/
+/-- **Theorem 8.1.5** of [conn2000trust], least eigenvalue along the subsequence. Let
+$A_k \in \mathbb{R}^{n \times n}$ be symmetric with $n \ge 1$, let $Z$ and $U$ be as in
+`ConnGouldToint.Chapter08.matrixLeastEigenvalue_lower_of_unit_directions` with $\|u\| = 1$ for
+every $u \in U$, and let $Q_k \to Q_0$ be continuous bilinear forms with $Q_0(u, u) \ge 0$ for
+every $u \in U$ and $v^T A_k v = Q_k(Zv, Zv)$ for all $k$ and $v$. If $(\lambda_{\min}(A_k))$ is
+cobounded below, then
+$$\liminf_{k \to \infty} \lambda_{\min}(A_k) \ge 0.$$
+
+Convergence of the objective Hessians along the subsequence gives uniform convergence of their
+quadratic forms on the unit directions of $U$. -/
 theorem theorem_8_1_5_matrix {n : Type*} [Fintype n] [DecidableEq n] [Nonempty n]
     {A : ℕ → Matrix n n ℝ} (hA : ∀ k, (A k).IsHermitian)
     {Z : EuclideanSpace ℝ n →L[ℝ] E} {U : Set E}
