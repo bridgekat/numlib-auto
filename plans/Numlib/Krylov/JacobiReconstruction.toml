@@ -1,0 +1,50 @@
+[[node]]
+id = "Krylov.grade_toEuclideanLin_diagonal"
+
+[[node]]
+id = "Lanczos.isJacobiMatrix_tridiag_of_le_grade"
+
+[[node]]
+id = "Lanczos.tridiag_diagonal_spectralData"
+
+[[node]]
+id = "Lanczos.eq_tridiag_diagonal_of_jacobiMatrix"
+
+[[node]]
+id = "Lanczos.tridiag_diagonal_eq_of_sq_eq"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.exists_symmTridiagonalOf"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.grade_basisFun"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.lanczos_tridiag_basisFun"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.leadingBlock_charpoly_eq_C_mul_lanczosPoly"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.eigenvector_apply_eq_first_mul_eval_lanczosPoly"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.last_ne_zero"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.leadingBlock_aeval_apply_first"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.exists_eigenvalue_between_leading"
+
+[[node]]
+id = "OrthogonalPolynomial.degree_orthonormalFamily_of_normSq_pos"
+
+[[node]]
+id = "OrthogonalPolynomial.isJacobiMatrix_jacobiMatrix"
+
+[[node]]
+id = "OrthogonalPolynomial.jacobiMatrix_apply_eq_integral"
+
+[[node]]
+id = "OrthogonalPolynomial.integral_orthonormalFamily_mul_of_normSq_pos"

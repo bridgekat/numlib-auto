@@ -1,0 +1,26 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "computedArnoldiDefect"
+source = "Liesen and Strakoš, §5.10.1"
+
+[[node]]
+id = "computedOrthogonalityDefect"
+source = "Liesen and Strakoš, §5.10.2"
+
+[[node]]
+id = "simplerGMRES_trial_span"
+source = "Liesen and Strakoš, (5.10.2)"
+
+[[node]]
+id = "simplerGMRES_rhs_eq"
+source = "Liesen and Strakoš, (5.10.6)"
+
+[[node]]
+id = "simplerGMRES_conditionNumber"
+kind = "theorem"
+desc = '''For unit initial residual direction and an orthonormal basis of the previous image
+Krylov space, the Gram matrix of the augmented basis has extreme eigenvalues
+1 ± sqrt(1 − δ²), where δ is the relative residual norm at the preceding step. For δ > 0,
+the spectral condition number is (1 + sqrt(1 − δ²))/δ.'''
+source = "Liesen and Strakoš, (5.10.7)"

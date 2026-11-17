@@ -1,0 +1,29 @@
+[[node]]
+id = "Matrix.companionLastColumn"
+
+[[node]]
+id = "Matrix.companionLastColumn_castSucc"
+
+[[node]]
+id = "Matrix.companionLastColumn_last"
+
+[[node]]
+id = "Matrix.charpoly_companionLastColumn"
+
+[[node]]
+id = "Krylov.norm_sq_sub_coordinate_prefix"
+
+[[node]]
+id = "Krylov.gmresCurveCoordinates"
+
+[[node]]
+id = "Krylov.gmresCurveCoordinates_castSucc"
+
+[[node]]
+id = "Krylov.gmresCurveCoordinates_last"
+
+[[node]]
+id = "Krylov.sum_norm_sq_gmresCurveCoordinates"
+
+[[node]]
+id = "Krylov.exists_gmres_curve_and_charpoly"

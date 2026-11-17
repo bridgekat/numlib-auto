@@ -1,0 +1,41 @@
+namespace = "Matrix"
+
+[[node]]
+id = "similarityAlgEquiv"
+
+[[node]]
+id = "similarityAlgEquiv_apply"
+
+[[node]]
+id = "similarityAlgEquiv_symm_apply"
+
+[[node]]
+id = "similarityAlgEquiv_apply_eq_iff"
+
+[[node]]
+id = "weightedAdjoint"
+source = "Liesen and Strakoš, §4.6, p. 204"
+
+[[node]]
+id = "conjTranspose_mul_eq_inv_of_conj_eq_one"
+
+[[node]]
+id = "inv_eq_mul_conjTranspose_of_conj_eq_one"
+
+[[node]]
+id = "similarityAlgEquiv_weightedAdjoint"
+
+[[node]]
+id = "exists_diagonal_similarity_of_commute_weightedAdjoint"
+
+[[node]]
+id = "mul_invMetric_mul_conjTranspose"
+
+[[node]]
+id = "similarityAlgEquiv_weightedAdjoint_mul"
+
+[[node]]
+id = "commute_diagonal_conjTranspose_of_block"
+
+[[node]]
+id = "similarityAlgEquiv_weightedAdjoint_of_block"

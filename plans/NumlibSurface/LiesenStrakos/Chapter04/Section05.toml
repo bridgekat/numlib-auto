@@ -1,0 +1,17 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "theorem_4_5_1"
+source = "Liesen and Strakoš, Theorem 4.5.1"
+
+[[node]]
+id = "lemma_4_5_2"
+source = "Liesen and Strakoš, Lemma 4.5.2"
+
+[[node]]
+id = "lemma_4_5_3"
+source = "Liesen and Strakoš, Lemma 4.5.3"
+
+[[node]]
+id = "theorem_4_5_4"
+source = "Liesen and Strakoš, Theorem 4.5.4"

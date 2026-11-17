@@ -1,0 +1,21 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "krylovVectorMinimalPolynomial"
+source = "Liesen and Strakoš, §2.2"
+
+[[node]]
+id = "grade"
+source = "Liesen and Strakoš, §2.2"
+
+[[node]]
+id = "krylovSubspace"
+source = "Liesen and Strakoš, (2.2.2)"
+
+[[node]]
+id = "lemma_2_2_2"
+source = "Liesen and Strakoš, Lemma 2.2.2"
+
+[[node]]
+id = "theorem_2_2_3"
+source = "Liesen and Strakoš, Theorem 2.2.3"

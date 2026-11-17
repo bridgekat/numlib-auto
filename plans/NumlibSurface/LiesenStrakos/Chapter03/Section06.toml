@@ -1,0 +1,13 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "hankelMomentMatrix"
+source = "Liesen and Strakoš, (3.6.1)"
+
+[[node]]
+id = "shiftedHankelMomentMatrix"
+source = "Liesen and Strakoš, (3.6.2)"
+
+[[node]]
+id = "theorem_3_6_1"
+source = "Liesen and Strakoš, Theorem 3.6.1"

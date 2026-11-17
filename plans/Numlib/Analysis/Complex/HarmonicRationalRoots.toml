@@ -1,0 +1,10 @@
+desc = "Bound the number of distinct zeros of a harmonic rational function of the form r(z) − conj(z)."
+
+[[node]]
+id = "Polynomial.ncard_setOf_div_eval_eq_conj_le_five_mul_sub_five"
+kind = "theorem"
+desc = '''For coprime complex polynomials p and q, with q nonzero and
+d = max (natDegree p) (natDegree q) > 1, the set of z for which
+q(z) ≠ 0 and p(z)/q(z) = conj(z) has at most 5d − 5 distinct points.
+This is the Khavinson–Neumann bound used in the McMillan degree estimate.'''
+source = "Liesen and Strakoš, §4.8.2, [382]"

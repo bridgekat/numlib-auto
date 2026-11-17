@@ -1,0 +1,25 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "normalizedSpectralMeasure"
+source = "Liesen and Strakoš, (3.5.3)"
+
+[[node]]
+id = "integral_normalizedSpectralMeasure"
+source = "Liesen and Strakoš, (3.5.3)"
+
+[[node]]
+id = "lanczosGaussRule"
+source = "Liesen and Strakoš, (3.5.5)"
+
+[[node]]
+id = "lanczos_moment_matching"
+source = "Liesen and Strakoš, (3.5.6)"
+
+[[node]]
+id = "remark_3_5_1"
+source = "Liesen and Strakoš, Remark 3.5.1"
+
+[[node]]
+id = "theorem_3_5_2"
+source = "Liesen and Strakoš, Theorem 3.5.2"

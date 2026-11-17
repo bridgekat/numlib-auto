@@ -1,0 +1,14 @@
+[[node]]
+id = "Krylov.compressionBy_pow_apply"
+
+[[node]]
+id = "Krylov.compressionBy_pow_apply_projected"
+
+[[node]]
+id = "Krylov.inner_compressionBy_pow_apply"
+
+[[node]]
+id = "Krylov.inner_compression_pow_apply_of_isSymmetric"
+
+[[node]]
+id = "BiLanczos.moment_eq_hessenbergSqOf"

@@ -1,0 +1,17 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "IsNormalOfDegree"
+source = "Liesen and Strakoš, Definition 4.4.1"
+
+[[node]]
+id = "lemma_4_4_2"
+source = "Liesen and Strakoš, Lemma 4.4.2"
+
+[[node]]
+id = "theorem_4_4_3"
+source = "Liesen and Strakoš, Theorem 4.4.3"
+
+[[node]]
+id = "theorem_4_4_3_admits"
+source = "Liesen and Strakoš, Theorem 4.4.3"

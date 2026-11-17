@@ -1,0 +1,10 @@
+namespace = "LinearMap"
+
+[[node]]
+id = "minpolyOn"
+
+[[node]]
+id = "minpolyOn_dvd_iff"
+
+[[node]]
+id = "minpolyOn_fullKrylovSubspace"

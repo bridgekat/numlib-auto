@@ -1,0 +1,17 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "IsBandHessenberg"
+source = "Liesen and Strakoš, Definition 4.3.1"
+
+[[node]]
+id = "AdmitsOptimalRecurrenceFor"
+source = "Liesen and Strakoš, Definition 4.3.3 (1)"
+
+[[node]]
+id = "AdmitsOptimalRecurrence"
+source = "Liesen and Strakoš, Definition 4.3.3 (2)"
+
+[[node]]
+id = "remark_4_3_2"
+source = "Liesen and Strakoš, Remark 4.3.2"

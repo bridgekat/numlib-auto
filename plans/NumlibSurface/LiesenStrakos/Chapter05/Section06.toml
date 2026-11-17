@@ -1,0 +1,73 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "cgIterationPolynomial"
+source = "Liesen and Strakoš, Equation (5.6.3)"
+
+[[node]]
+id = "theorem_5_6_1"
+source = "Liesen and Strakoš, Theorem 5.6.1"
+
+[[node]]
+id = "theorem_5_6_1_one_step"
+source = "Liesen and Strakoš, Theorem 5.6.1"
+
+[[node]]
+id = "corollary_5_6_2"
+source = "Liesen and Strakoš, Corollary 5.6.2"
+
+[[node]]
+id = "theorem_5_6_3"
+source = "Liesen and Strakoš, Theorem 5.6.3"
+
+[[node]]
+id = "lemma_5_6_4_i"
+source = "Liesen and Strakoš, Lemma 5.6.4(1)"
+
+[[node]]
+id = "lemma_5_6_4_ii"
+source = "Liesen and Strakoš, Lemma 5.6.4(2)"
+
+[[node]]
+id = "lemma_5_6_4_iii"
+source = "Liesen and Strakoš, Lemma 5.6.4(3)"
+
+[[node]]
+id = "lemma_5_6_4_iv"
+source = "Liesen and Strakoš, Lemma 5.6.4(4)"
+
+[[node]]
+id = "lemma_5_6_4_v"
+source = "Liesen and Strakoš, Lemma 5.6.4(5)"
+
+[[node]]
+id = "theorem_5_6_5"
+source = "Liesen and Strakoš, Theorem 5.6.5"
+
+[[node]]
+id = "theorem_5_6_5_strict"
+source = "Liesen and Strakoš, Theorem 5.6.5"
+
+[[node]]
+id = "theorem_5_6_6"
+source = "Liesen and Strakoš, Theorem 5.6.6"
+
+[[node]]
+id = "theorem_5_6_6_sharp"
+source = "Liesen and Strakoš, Theorem 5.6.6"
+
+[[node]]
+id = "corollary_5_6_7"
+source = "Liesen and Strakoš, Corollary 5.6.7"
+
+[[node]]
+id = "theorem_5_6_9"
+source = "Liesen and Strakoš, Theorem 5.6.9"
+
+[[node]]
+id = "theorem_5_6_10"
+source = "Liesen and Strakoš, Theorem 5.6.10"
+
+[[node]]
+id = "corollary_5_6_2_spectral"
+source = "Liesen and Strakoš, Corollary 5.6.2, equation (5.6.14)"

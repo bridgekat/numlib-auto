@@ -1,0 +1,5 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "theorem_3_3_4"
+source = "Liesen and Strakoš, Theorem 3.3.4"

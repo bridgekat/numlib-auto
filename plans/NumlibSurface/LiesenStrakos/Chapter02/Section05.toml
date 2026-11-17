@@ -1,0 +1,37 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "cgIterate"
+source = "Liesen and Strakoš, Algorithm 2.5.1"
+
+[[node]]
+id = "theorem_2_5_1"
+source = "Liesen and Strakoš, Theorem 2.5.1"
+
+[[node]]
+id = "theorem_2_5_2"
+source = "Liesen and Strakoš, Theorem 2.5.2"
+
+[[node]]
+id = "theorem_2_5_3"
+source = "Liesen and Strakoš, Theorem 2.5.3"
+
+[[node]]
+id = "quadraticFunctional"
+source = "Liesen and Strakoš, (2.5.31)"
+
+[[node]]
+id = "IsFOMIterate"
+source = "Liesen and Strakoš, §2.5.4"
+
+[[node]]
+id = "IsGMRESIterate"
+source = "Liesen and Strakoš, §2.5.5"
+
+[[node]]
+id = "IsMINRESIterate"
+source = "Liesen and Strakoš, §2.5.5"
+
+[[node]]
+id = "gmres_triangular_system"
+source = "Liesen and Strakoš, (2.5.62)–(2.5.63), Algorithm 2.5.2"

@@ -1,0 +1,65 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "vectorMinimalPolynomial"
+source = "Liesen and Strakoš, Definition 4.2.1"
+
+[[node]]
+id = "vectorGrade"
+source = "Liesen and Strakoš, Definition 4.2.1"
+
+[[node]]
+id = "theorem_4_2_2"
+source = "Liesen and Strakoš, Theorem 4.2.2"
+
+[[node]]
+id = "lemma_4_2_3"
+source = "Liesen and Strakoš, Lemma 4.2.3"
+
+[[node]]
+id = "subspaceMinimalPolynomial"
+source = "Liesen and Strakoš, Definition 4.2.5"
+
+[[node]]
+id = "operatorMinimalPolynomial"
+source = "Liesen and Strakoš, Definition 4.2.5"
+
+[[node]]
+id = "operatorMinimalDegree"
+source = "Liesen and Strakoš, Definition 4.2.5"
+
+[[node]]
+id = "lemma_4_2_4"
+source = "Liesen and Strakoš, Lemma 4.2.4"
+
+[[node]]
+id = "lemma_4_2_6"
+source = "Liesen and Strakoš, Lemma 4.2.6"
+
+[[node]]
+id = "lemma_4_2_7"
+source = "Liesen and Strakoš, Lemma 4.2.7"
+
+[[node]]
+id = "theorem_4_2_8"
+source = "Liesen and Strakoš, Theorem 4.2.8"
+
+[[node]]
+id = "lemma_4_2_9"
+source = "Liesen and Strakoš, Lemma 4.2.9"
+
+[[node]]
+id = "corollary_4_2_10"
+source = "Liesen and Strakoš, Corollary 4.2.10"
+
+[[node]]
+id = "lemma_4_2_11"
+source = "Liesen and Strakoš, Lemma 4.2.11"
+
+[[node]]
+id = "remark_4_2_12"
+source = "Liesen and Strakoš, Remark 4.2.12"
+
+[[node]]
+id = "theorem_4_2_13"
+source = "Liesen and Strakoš, Theorem 4.2.13"

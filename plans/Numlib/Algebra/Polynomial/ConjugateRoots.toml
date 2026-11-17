@@ -1,0 +1,8 @@
+[[node]]
+id = "Polynomial.finite_setOf_eval_eq_star_and_ncard_le_sq"
+
+[[node]]
+id = "Polynomial.ncard_setOf_eval_eq_conj_le_three_mul_sub_two"
+kind = "theorem"
+desc = '''For a complex polynomial of degree s>1, the equation p(z)=conj(z) has at most 3s-2 distinct roots. This is the Khavinson–Świątek bound cited in the book.'''
+source = "Liesen and Strakoš, §4.7, [383, Theorem 1]"

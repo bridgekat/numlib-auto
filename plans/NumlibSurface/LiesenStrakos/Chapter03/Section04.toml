@@ -1,0 +1,94 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "theorem_3_4_1"
+source = "Liesen and Strakoš, Theorem 3.4.1"
+
+[[node]]
+id = "corollary_3_4_2"
+source = "Liesen and Strakoš, Corollary 3.4.2"
+
+[[node]]
+id = "theorem_3_4_3"
+source = "Liesen and Strakoš, Theorem 3.4.3"
+
+[[node]]
+id = "remark_3_4_4_consecutive"
+source = "Liesen and Strakoš, Remark 3.4.4"
+
+[[node]]
+id = "remark_3_4_4_interior"
+source = "Liesen and Strakoš, Remark 3.4.4"
+
+[[node]]
+id = "remark_3_4_4_exterior"
+source = "Liesen and Strakoš, Remark 3.4.4"
+
+[[node]]
+id = "remark_3_4_4_charpoly"
+source = "Liesen and Strakoš, Remark 3.4.4"
+
+[[node]]
+id = "remark_3_4_4_eigenvector"
+source = "Liesen and Strakoš, Remark 3.4.4"
+
+[[node]]
+id = "HasJacobiSpectralData"
+source = "Liesen and Strakoš, Proposition 3.4.5"
+
+[[node]]
+id = "proposition_3_4_5_lanczos"
+source = "Liesen and Strakoš, Proposition 3.4.5"
+
+[[node]]
+id = "proposition_3_4_5"
+source = "Liesen and Strakoš, Proposition 3.4.5"
+
+[[node]]
+id = "proposition_3_4_5_sign"
+source = "Liesen and Strakoš, Proposition 3.4.5"
+
+[[node]]
+id = "theorem_3_4_6_irrational_offDiagonal"
+source = "Liesen and Strakoš, Theorem 3.4.6 (counterexample to the literal arithmetic claim)"
+
+[[node]]
+id = "theorem_3_4_6_gauss_counterexample"
+source = "Liesen and Strakoš, Theorem 3.4.6 (counterexample with Gauss quadrature data)"
+
+[[node]]
+id = "theorem_3_4_6"
+kind = "theorem"
+desc = '''Construct the inverse Jacobi algorithm using positive arithmetic on weights and consecutive
+gaps to compute shifted diagonal entries and squared off-diagonal entries in (9/2)n²+O(n)
+operations. Recover the off-diagonal entries by taking positive square roots. Prove the
+componentwise rounding and relative input sensitivity bounds.'''
+source = "Liesen and Strakoš, Theorem 3.4.6"
+
+[[node]]
+id = "proposition_3_4_7"
+source = "Liesen and Strakoš, Proposition 3.4.7"
+
+[[node]]
+id = "proposition_3_4_8"
+source = "Liesen and Strakoš, Proposition 3.4.8"
+
+[[node]]
+id = "theorem_3_4_9"
+source = "Liesen and Strakoš, Theorem 3.4.9"
+
+[[node]]
+id = "IsStabilisedJacobiEigenvalue"
+source = "Liesen and Strakoš, Definition 3.4.10"
+
+[[node]]
+id = "theorem_3_4_11"
+source = "Liesen and Strakoš, Theorem 3.4.11"
+
+[[node]]
+id = "theorem_3_4_12"
+source = "Liesen and Strakoš, Theorem 3.4.12"
+
+[[node]]
+id = "minimalJacobiGap"
+source = "Liesen and Strakoš, Theorem 3.4.12"

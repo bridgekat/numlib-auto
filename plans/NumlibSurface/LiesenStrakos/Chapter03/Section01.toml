@@ -1,0 +1,37 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "stieltjesMoment"
+source = "Liesen and Strakoš, StieltjesMoment undefined.undefined.undefined"
+
+[[node]]
+id = "IsStieltjesMomentSolution"
+source = "Liesen and Strakoš, IsStieltjesMomentSolution undefined.undefined.undefined"
+
+[[node]]
+id = "atomicDistribution"
+source = "Liesen and Strakoš, AtomicDistribution undefined.undefined.undefined"
+
+[[node]]
+id = "mechanicalQuadrature"
+source = "Liesen and Strakoš, MechanicalQuadrature undefined.undefined.undefined"
+
+[[node]]
+id = "quadratureError"
+source = "Liesen and Strakoš, QuadratureError undefined.undefined.undefined"
+
+[[node]]
+id = "HasQuadratureDegree"
+source = "Liesen and Strakoš, HasQuadratureDegree undefined.undefined.undefined"
+
+[[node]]
+id = "SolvesStieltjesProblem"
+source = "Liesen and Strakoš, Problem 3.1.1"
+
+[[node]]
+id = "solvesStieltjesProblem_iff"
+source = "Liesen and Strakoš, §3.1 and (3.1.9)"
+
+[[node]]
+id = "isExactOnMeasure_iff_moments"
+source = "Liesen and Strakoš, (3.1.9)"

@@ -1,0 +1,9 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "meetsTolerance"
+source = "Liesen and Strakoš, §5.4"
+
+[[node]]
+id = "isStronglyOptimalIteration"
+source = "Liesen and Strakoš, §5.4"

@@ -1,0 +1,41 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "IsProjectionIterate"
+source = "Liesen and Strakoš, (2.1.1)–(2.1.4)"
+
+[[node]]
+id = "ProjectionWellDefined"
+source = "Liesen and Strakoš, (2.1.6)"
+
+[[node]]
+id = "projectedMatrix"
+source = "Liesen and Strakoš, (2.1.9)"
+
+[[node]]
+id = "theorem_2_1_2"
+source = "Liesen and Strakoš, Theorem 2.1.2"
+
+[[node]]
+id = "IsOrthogonalProjectionProcess"
+source = "Liesen and Strakoš, Definition 2.1.3"
+
+[[node]]
+id = "IsObliqueProjectionProcess"
+source = "Liesen and Strakoš, Definition 2.1.3"
+
+[[node]]
+id = "theorem_2_1_6"
+source = "Liesen and Strakoš, Theorem 2.1.6"
+
+[[node]]
+id = "lemma_2_1_7"
+source = "Liesen and Strakoš, Lemma 2.1.7"
+
+[[node]]
+id = "projectedIterate"
+source = "Liesen and Strakoš, (2.1.10)"
+
+[[node]]
+id = "isProjectionIterate_projectedIterate"
+source = "Liesen and Strakoš, (2.1.10)"

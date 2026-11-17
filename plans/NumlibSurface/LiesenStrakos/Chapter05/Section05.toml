@@ -1,0 +1,25 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "stationaryErrorReductionFactor"
+source = "Liesen and Strakoš, Equation (5.5.1)"
+
+[[node]]
+id = "stationaryAverageConvergenceRate"
+source = "Liesen and Strakoš, §5.5.1"
+
+[[node]]
+id = "stationaryAsymptoticConvergenceRate"
+source = "Liesen and Strakoš, §5.5.1"
+
+[[node]]
+id = "stationaryRichardson"
+source = "Liesen and Strakoš, §5.5.2"
+
+[[node]]
+id = "chebyshevSemiIterate"
+source = "Liesen and Strakoš, §5.5.2"
+
+[[node]]
+id = "theorem_5_5_1"
+source = "Liesen and Strakoš, Theorem 5.5.1"

@@ -1,0 +1,9 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "theorem_3_8_1"
+source = "Liesen and Strakoš, Theorem 3.8.1"
+
+[[node]]
+id = "remark_3_8_2"
+source = "Liesen and Strakoš, Remark 3.8.2"

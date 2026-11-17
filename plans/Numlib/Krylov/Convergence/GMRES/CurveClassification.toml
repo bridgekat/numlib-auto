@@ -1,0 +1,17 @@
+[[node]]
+id = "Krylov.companion_of_gmres_curve"
+
+[[node]]
+id = "Krylov.gmres_curve_of_companion"
+
+[[node]]
+id = "Krylov.gmresCompanionCoefficients"
+
+[[node]]
+id = "Krylov.companionLastColumn_mul_gmresCompanionCoefficients"
+
+[[node]]
+id = "Krylov.isUnit_companionLastColumn"
+
+[[node]]
+id = "Krylov.gmres_curve_iff_companion"

@@ -1,0 +1,33 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "transferFunction"
+source = "Liesen and Strakoš, (3.9.2)"
+
+[[node]]
+id = "markovParameter"
+source = "Liesen and Strakoš, (3.9.6)"
+
+[[node]]
+id = "inverseMoment"
+source = "Liesen and Strakoš, (3.9.7)"
+
+[[node]]
+id = "IsPartialRealization"
+source = "Liesen and Strakoš, (3.9.4)–(3.9.5)"
+
+[[node]]
+id = "IsMinimalPartialRealization"
+source = "Liesen and Strakoš, §3.9.1"
+
+[[node]]
+id = "transferFunction_hasSum_at_infinity"
+source = "Liesen and Strakoš, (3.9.4)"
+
+[[node]]
+id = "remark_3_9_1"
+source = "Liesen and Strakoš, Remark 3.9.1"
+
+[[node]]
+id = "cg_scatteringAmplitude_eq"
+source = "Liesen and Strakoš, (3.9.10)"

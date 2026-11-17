@@ -1,0 +1,22 @@
+namespace = "Arnoldi"
+
+[[node]]
+id = "HasUpperBandwidth"
+
+[[node]]
+id = "hasUpperBandwidth_of_adjoint_eq_aeval"
+
+[[node]]
+id = "coeff_ne_zero_of_adjoint_eq_aeval"
+
+[[node]]
+id = "continuousAt_vec"
+
+[[node]]
+id = "orthogonalVec"
+
+[[node]]
+id = "continuousAt_orthogonalVec"
+
+[[node]]
+id = "coeff_zero_of_uniform_hasUpperBandwidth"

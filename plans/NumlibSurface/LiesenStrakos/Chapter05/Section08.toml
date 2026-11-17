@@ -1,0 +1,17 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "relativeNormwiseBackwardError"
+source = "Liesen and Strakoš, §5.8.3"
+
+[[node]]
+id = "relativeNormwiseBackwardError_isLeast"
+source = "Liesen and Strakoš, Equation (5.8.17)"
+
+[[node]]
+id = "relativeError_le_cond_mul_relativeResidual"
+source = "Liesen and Strakoš, Equation (5.8.15)"
+
+[[node]]
+id = "hegedusScale"
+source = "Liesen and Strakoš, Equation (5.8.16)"

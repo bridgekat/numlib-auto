@@ -1,0 +1,17 @@
+[[node]]
+id = "CG.energyNorm_error_sq_sub_eq_sum_Ico"
+
+[[node]]
+id = "CG.direction_eq_sum_residual"
+
+[[node]]
+id = "CG.norm_direction_sq_eq_sum"
+
+[[node]]
+id = "CG.inner_direction_eq_scale"
+
+[[node]]
+id = "CG.norm_error_sq_sub_div_eq"
+
+[[node]]
+id = "CG.norm_error_strictAntiOn"

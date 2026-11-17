@@ -1,0 +1,48 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "IsBNormalOfDegree"
+source = "Liesen and Strakoš, Definition 4.6.1"
+
+[[node]]
+id = "AdmitsOptimalWeightedRecurrence"
+source = "Liesen and Strakoš, Theorem 4.6.2"
+
+[[node]]
+id = "theorem_4_6_2"
+source = "Liesen and Strakoš, Theorem 4.6.2"
+
+[[node]]
+id = "theorem_4_6_2_sufficient"
+source = "Liesen and Strakoš, Theorem 4.6.2, sufficiency"
+
+[[node]]
+id = "theorem_4_6_2_necessary_real"
+kind = "theorem"
+desc = "For a real matrix and real positive definite weight, optimal (s+2)-term recurrence on real starts forces B-normality of degree s when s+2 < d_min(A)."
+deps = ["AdmitsOptimalWeightedRecurrence", "IsBNormalOfDegree"]
+source = "Liesen and Strakoš, Theorem 4.6.2, real necessity"
+
+[[node]]
+id = "theorem_4_6_3"
+source = "Liesen and Strakoš, Theorem 4.6.3"
+
+[[node]]
+id = "AdmissibleEigenbasisMetric"
+source = "Liesen and Strakoš, equation (4.6.2)"
+
+[[node]]
+id = "corollary_4_6_4"
+source = "Liesen and Strakoš, Corollary 4.6.4"
+
+[[node]]
+id = "IsBNormalOfDegree.eigenbasis"
+source = "Liesen and Strakoš, Theorem 4.6.3 and Corollary 4.6.4"
+
+[[node]]
+id = "theorem_4_6_5_zero"
+source = "Liesen and Strakoš, Theorem 4.6.5 (1)"
+
+[[node]]
+id = "theorem_4_6_5_one"
+source = "Liesen and Strakoš, Theorem 4.6.5 (2)"

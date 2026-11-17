@@ -102,7 +102,7 @@ private theorem sSup_abs_eval_shifted_zero (m : ℕ) :
 Chebyshev polynomial over $[\lambda_{\min}, \lambda_{\max}]$ is at most
 $2((\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1))^m$ with $\kappa = \lambda_{\max} / \lambda_{\min}$,
 as in (6.128) of [saad2003iterative]. -/
-private theorem sSup_abs_eval_shifted_le (m : ℕ) :
+theorem sSup_abs_eval_shifted_le (m : ℕ) :
     sSup ((fun t => |(shifted m lmin lmax 0).eval t|) '' Set.Icc lmin lmax) ≤
       2 * ((Real.sqrt (lmax / lmin) - 1) / (Real.sqrt (lmax / lmin) + 1)) ^ m := by
   rw [sSup_abs_eval_shifted_zero hl hll]

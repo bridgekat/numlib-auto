@@ -1,6 +1,22 @@
 namespace = "Quadrature"
 
 [[node]]
+id = "exists_gauss_of_measure_compl_ne_zero"
+source = "Liesen and Strakoš, Theorem 3.2.8"
+
+[[node]]
+id = "isExactOnMeasure_add_iff_of_integrable"
+source = "Liesen and Strakoš, Lemma 3.2.5"
+
+[[node]]
+id = "isExactOnMeasure_two_mul_add_one_iff_of_card_lt"
+source = "Liesen and Strakoš, Lemma 3.2.5"
+
+[[node]]
+id = "not_isExactOnMeasure_two_mul_add_two_of_card_le"
+source = "Liesen and Strakoš, Lemma 3.2.5"
+
+[[node]]
 id = "functional"
 source = "Atkinson–Han, Theoretical Numerical Analysis, (2.4.3)"
 
@@ -79,6 +95,9 @@ source = "Quarteroni–Sacco–Saleri, Numerical Mathematics, (10.14)"
 
 [[node]]
 id = "isInterpolatoryMeasure_iff_isExactOnMeasure"
+
+[[node]]
+id = "isInterpolatoryMeasure_iff_isExactOnMeasure_of_integrable_basis"
 
 [[node]]
 id = "isExactOnMeasure_add_iff"

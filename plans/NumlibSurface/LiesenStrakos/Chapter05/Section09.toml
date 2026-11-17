@@ -1,0 +1,17 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "effectiveConditionNumber"
+source = "Liesen and Strakoš, Equation (5.9.1)"
+
+[[node]]
+id = "theorem_5_9_1"
+source = "Liesen and Strakoš, Theorem 5.9.1"
+
+[[node]]
+id = "recursiveResidualGap"
+source = "Liesen and Strakoš, §5.9.3"
+
+[[node]]
+id = "cg_error_spectral_components"
+source = "Liesen and Strakoš, (5.9.4)–(5.9.6)"

@@ -1,0 +1,33 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "vorobyevReduction"
+source = "Liesen and Strakoš, (3.7.2)–(3.7.3)"
+
+[[node]]
+id = "theorem_3_7_1"
+source = "Liesen and Strakoš, Theorem 3.7.1"
+
+[[node]]
+id = "theorem_3_7_2"
+source = "Liesen and Strakoš, Theorem 3.7.2"
+
+[[node]]
+id = "theorem_3_7_4"
+source = "Liesen and Strakoš, Theorem 3.7.4"
+
+[[node]]
+id = "bilanczos_quadrature"
+source = "Liesen and Strakoš, §3.7.4"
+
+[[node]]
+id = "theorem_3_7_1_lanczos"
+source = "Liesen and Strakoš, Theorem 3.7.1, equation (3.7.5)"
+
+[[node]]
+id = "theorem_3_7_4_arnoldi"
+source = "Liesen and Strakoš, Theorem 3.7.4, equation (3.7.17)"
+
+[[node]]
+id = "theorem_3_7_4_arnoldi_self"
+source = "Liesen and Strakoš, Theorem 3.7.4"

@@ -216,6 +216,38 @@ structure IsWeight (μ : Measure ℝ) : Prop where
   $\mu(\mathbb{R} \setminus s) \neq 0$. -/
   measure_compl_ne_zero {s : Set ℝ} (hs : s.Finite) : μ sᶜ ≠ 0
 
+/-- Every polynomial is integrable for a finite measure carried by a bounded interval. -/
+theorem integrable_eval_of_measure_compl_Icc_eq_zero [IsFiniteMeasure μ] {a b : ℝ}
+    (hμ : μ (Set.Icc a b)ᶜ = 0) (p : ℝ[X]) : Integrable (fun x => p.eval x) μ := by
+  have h : IntegrableOn (fun x => p.eval x) (Set.Icc a b) μ :=
+    p.continuous.continuousOn.integrableOn_Icc
+  rwa [IntegrableOn, Measure.restrict_eq_self_of_ae_mem (MeasureTheory.ae_iff.2 hμ)] at h
+
+/-- The squared norm of a polynomial is positive when the measure has positive mass off its
+roots and the square is integrable. -/
+theorem integral_eval_sq_pos_of_measure_compl_ne_zero {p : ℝ[X]} (hp : p ≠ 0)
+    (hint : Integrable (fun x => p.eval x ^ 2) μ)
+    (hm : μ (↑p.roots.toFinset : Set ℝ)ᶜ ≠ 0) :
+    0 < ∫ x, p.eval x ^ 2 ∂μ := by
+  rw [integral_pos_iff_support_of_nonneg (fun x => sq_nonneg _) hint]
+  refine pos_iff_ne_zero.2 fun hzero => hm (measure_mono_null (fun x hx => ?_) hzero)
+  simp only [Set.mem_compl_iff, Finset.mem_coe, Multiset.mem_toFinset] at hx
+  exact pow_ne_zero 2 fun he => hx ((mem_roots hp).2 he)
+
+/-- If a measure is carried by no set of at most $n$ points, integration gives a positive norm
+for every nonzero polynomial of degree at most $n$. -/
+theorem integral_eval_sq_pos_of_degree_le
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0)
+    {p : ℝ[X]} (hp : p ≠ 0) (hd : p.degree ≤ n) :
+    0 < ∫ x, p.eval x ^ 2 ∂μ := by
+  refine integral_eval_sq_pos_of_measure_compl_ne_zero hp ?_ (hm _ ?_)
+  · convert hint (p ^ 2) using 1
+    funext x
+    rw [eval_pow]
+  · exact (Multiset.toFinset_card_le p.roots).trans
+      ((card_roots' p).trans (natDegree_le_iff_degree_le.2 hd))
+
 namespace IsWeight
 
 /-- A weight is a finite measure, because its moment of order zero is finite. -/
@@ -248,18 +280,9 @@ theorem integrable_eval_sq (hw : IsWeight μ) (p : ℝ[X]) :
 $$\int p^2 \, d\mu > 0.$$
 This is where the condition that $\mu$ is not carried by a finite set is used. -/
 theorem integral_eval_sq_pos (hw : IsWeight μ) {p : ℝ[X]} (hp : p ≠ 0) :
-    0 < ∫ x, p.eval x ^ 2 ∂μ := by
-  refine lt_of_le_of_ne (integral_nonneg fun x => sq_nonneg _) fun h => ?_
-  have hae : (fun x => p.eval x ^ 2) =ᵐ[μ] 0 :=
-    (integral_eq_zero_iff_of_nonneg (fun x => sq_nonneg _) (hw.integrable_eval_sq p)).1 h.symm
-  have hsub : (↑p.roots.toFinset : Set ℝ)ᶜ ⊆ {x | p.eval x ^ 2 ≠ 0} := by
-    intro x hx
-    simp only [Set.mem_compl_iff, Multiset.mem_toFinset, Finset.mem_coe] at hx
-    have : p.eval x ≠ 0 := fun h0 => hx ((mem_roots hp).2 (by simpa [IsRoot] using h0))
-    simpa using pow_ne_zero 2 this
-  refine hw.measure_compl_ne_zero p.roots.toFinset.finite_toSet ?_
-  refine measure_mono_null hsub ?_
-  simpa [Filter.EventuallyEq, ae_iff] using hae
+    0 < ∫ x, p.eval x ^ 2 ∂μ :=
+  integral_eval_sq_pos_of_measure_compl_ne_zero hp (hw.integrable_eval_sq p)
+    (hw.measure_compl_ne_zero p.roots.toFinset.finite_toSet)
 
 /-- Let $\mu$ be a weight, and let $p \neq 0$ be a polynomial with $p(x) \ge 0$ for all $x$. Then
 $\int p \, d\mu > 0$. -/
@@ -440,17 +463,30 @@ $\langle u, p_n \rangle / \|p_n\|^2$ are well defined. -/
 theorem normSq_ne_zero (hw : IsWeight μ) (n : ℕ) : normSq μ n ≠ 0 :=
   (normSq_pos hw n).ne'
 
+/-- Norms below degree $n$ are nonzero for a measure carried by no set with fewer than $n$
+points. -/
+theorem normSq_ne_zero_of_card_lt
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hm : ∀ s : Finset ℝ, s.card < n → μ (↑s : Set ℝ)ᶜ ≠ 0) {j : ℕ} (hj : j < n) :
+    normSq μ j ≠ 0 :=
+  (integral_eval_sq_pos_of_degree_le hint (fun s hs => hm s (hs.trans_lt hj))
+    (family_ne_zero μ j) (degree_family μ j).le).ne'
+
 /-! ### Orthogonality -/
 
-private theorem integral_family_mul_family_of_lt (hw : IsWeight μ) :
-    ∀ n : ℕ, ∀ j < n, ∫ x, (family μ n).eval x * (family μ j).eval x ∂μ = 0 := by
+private theorem integral_family_mul_family_of_lt
+    (hintegrable : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) :
+    ∀ n : ℕ, (∀ k < n, normSq μ k ≠ 0) →
+      ∀ j < n, ∫ x, (family μ n).eval x * (family μ j).eval x ∂μ = 0 := by
+  have hint_mul (p q : ℝ[X]) : Integrable (fun x => p.eval x * q.eval x) μ := by
+    simpa only [eval_mul] using hintegrable (p * q)
   intro n
   induction n using Nat.strong_induction_on with
   | _ n ih =>
-    intro j hj
+    intro hnorm j hj
     have hint : ∀ k, Integrable
         (fun x => (family μ k).eval x * (family μ j).eval x) μ :=
-      fun k => hw.integrable_eval_mul _ _
+      fun k => hint_mul _ _
     have hsplit : ∀ x : ℝ, (family μ n).eval x * (family μ j).eval x =
         x ^ n * (family μ j).eval x - ∑ k ∈ Finset.range n,
           ((∫ x, x ^ n * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ) *
@@ -460,12 +496,12 @@ private theorem integral_family_mul_family_of_lt (hw : IsWeight μ) :
       simp only [eval_sub, eval_pow, eval_X, eval_finsetSum, eval_mul, eval_C, sub_mul,
         Finset.sum_mul, mul_assoc]
     simp only [hsplit]
-    rw [integral_sub (by simpa using hw.integrable_eval_mul (X ^ n) (family μ j))
+    rw [integral_sub (by simpa using hint_mul (X ^ n) (family μ j))
       (integrable_finsetSum _ fun k _ => (hint k).const_mul _),
       integral_finsetSum _ fun k _ => (hint k).const_mul _]
     simp only [integral_const_mul]
     rw [Finset.sum_eq_single j]
-    · have hnz : (∫ x, (family μ j).eval x ^ 2 ∂μ) ≠ 0 := normSq_ne_zero hw j
+    · have hnz : (∫ x, (family μ j).eval x ^ 2 ∂μ) ≠ 0 := hnorm j hj
       have : (∫ x, (family μ j).eval x * (family μ j).eval x ∂μ) =
           ∫ x, (family μ j).eval x ^ 2 ∂μ := by simp [sq]
       rw [this, div_mul_cancel₀ _ hnz]
@@ -473,11 +509,11 @@ private theorem integral_family_mul_family_of_lt (hw : IsWeight μ) :
     · intro k hk hkj
       have hkn : k < n := Finset.mem_range.mp hk
       rcases lt_or_gt_of_ne hkj with h | h
-      · have := ih j hj k h
+      · have := ih j hj (fun i hi => hnorm i (hi.trans hj)) k h
         rw [show (∫ x, (family μ k).eval x * (family μ j).eval x ∂μ) =
           ∫ x, (family μ j).eval x * (family μ k).eval x ∂μ from
           integral_congr_ae (Filter.Eventually.of_forall fun x => mul_comm _ _), this, mul_zero]
-      · rw [ih k hkn j h, mul_zero]
+      · rw [ih k hkn (fun i hi => hnorm i (hi.trans hkn)) j h, mul_zero]
     · intro hj'
       exact absurd (Finset.mem_range.mpr hj) hj'
 
@@ -490,8 +526,18 @@ theorem integral_family_mul_family (hw : IsWeight μ) {m n : ℕ} (hmn : m ≠ n
   · rw [show (∫ x, (family μ m).eval x * (family μ n).eval x ∂μ) =
       ∫ x, (family μ n).eval x * (family μ m).eval x ∂μ from
       integral_congr_ae (Filter.Eventually.of_forall fun x => mul_comm _ _)]
-    exact integral_family_mul_family_of_lt hw n m h
-  · exact integral_family_mul_family_of_lt hw m n h
+    exact integral_family_mul_family_of_lt hw.integrable_eval n (fun i _ => normSq_ne_zero hw i) m h
+  · exact integral_family_mul_family_of_lt hw.integrable_eval m (fun i _ => normSq_ne_zero hw i) n h
+
+private theorem integral_family_mul_family_of_ne_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n, normSq μ j ≠ 0) {i j : ℕ} (hi : i ≤ n) (hj : j ≤ n)
+    (hne : i ≠ j) : ∫ x, (family μ i).eval x * (family μ j).eval x ∂μ = 0 := by
+  rcases lt_or_gt_of_ne hne with h | h
+  · rw [integral_congr_ae (Filter.Eventually.of_forall fun x =>
+      mul_comm ((family μ i).eval x) ((family μ j).eval x))]
+    exact integral_family_mul_family_of_lt hint j (fun k hk => hnorm k (hk.trans_le hj)) i h
+  · exact integral_family_mul_family_of_lt hint i (fun k hk => hnorm k (hk.trans_le hi)) j h
 
 /-- For every measure $\mu$, every polynomial $q$ of degree less than $n$ is a linear combination
 $q = \sum_{k < n} c_k p_k$ of $p_0, \dots, p_{n-1}$. -/
@@ -504,6 +550,25 @@ theorem exists_eq_sum_family (μ : Measure ℝ) {n : ℕ} {q : ℝ[X]} (hq : q.d
     Submodule.mem_span_image_finset_iff_exists_fun'] at hmem
   obtain ⟨c, hc⟩ := hmem
   exact ⟨c, by simpa using hc.symm⟩
+
+/-- Orthogonality of the $n$th monic orthogonal polynomial uses only integrability of
+polynomials and nonzero norms below degree $n$. This includes finite distributions with at
+least $n$ support points, even if the $n$th polynomial itself has zero norm. -/
+theorem integral_family_mul_of_degree_lt_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n, normSq μ j ≠ 0) {q : ℝ[X]} (hq : q.degree < n) :
+    ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 := by
+  obtain ⟨c, hc⟩ := exists_eq_sum_family μ hq
+  have hev (x : ℝ) : (family μ n).eval x * q.eval x =
+      ∑ k ∈ Finset.range n, c k * ((family μ n).eval x * (family μ k).eval x) := by
+    rw [hc]
+    simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.mul_sum, mul_left_comm]
+  simp only [hev]
+  rw [integral_finsetSum _ (fun k _ => by
+    simpa only [eval_mul] using (hint (family μ n * family μ k)).const_mul (c k))]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  rw [integral_const_mul,
+    integral_family_mul_family_of_lt hint n hnorm k (Finset.mem_range.1 hk), mul_zero]
 
 /-- Let $\mu$ be a weight, and let $(q_n)$ be polynomials with $\deg q_n = n$ and
 $\int q_n q_m \, d\mu = 0$ for all $m < n$. Then $q_n$ is orthogonal to every polynomial $p$ of
@@ -542,14 +607,16 @@ This is the form in which orthogonality is used: in the arguments for Gauss quad
 approximation, the second factor is an arbitrary polynomial, not another member of the family. -/
 theorem integral_family_mul_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]}
     (hq : q.degree < n) : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 :=
-  integral_mul_of_degree_lt_of_orthogonal hw (degree_family μ)
-    (fun _ _ hmn => integral_family_mul_family hw (Nat.ne_of_gt hmn)) hq
+  integral_family_mul_of_degree_lt_of_integrable hw.integrable_eval
+    (fun j _ => normSq_ne_zero hw j) hq
 
-/-- Let $\mu$ be a weight. Every polynomial $q$ of degree less than $n$ is the sum of its expansion
-in $p_0, \dots, p_{n-1}$:
+/-- For integrable polynomials with nonzero norms below degree $n$, the coefficients of the
+expansion of $q$ of degree less than $n$ in $p_0, \dots, p_{n-1}$ are given by
 $$q = \sum_{k < n} \frac{\int q p_k \, d\mu}{\|p_k\|^2} \, p_k.$$
 -/
-theorem eq_sum_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n) :
+theorem eq_sum_family_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n, normSq μ j ≠ 0) {q : ℝ[X]} (hq : q.degree < n) :
     q = ∑ k ∈ Finset.range n,
       ((∫ x, q.eval x * (family μ k).eval x ∂μ) / normSq μ k) • family μ k := by
   obtain ⟨c, rfl⟩ := exists_eq_sum_family μ hq
@@ -562,29 +629,58 @@ theorem eq_sum_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree <
       intro x
       simp only [eval_finsetSum, eval_smul, smul_eq_mul, Finset.sum_mul, mul_assoc]
     simp only [hev]
-    rw [integral_finsetSum _ fun k _ => ((hw.integrable_eval_mul _ _).const_mul _)]
+    rw [integral_finsetSum _ fun k _ => by
+      simpa only [eval_mul] using (hint (family μ k * family μ j)).const_mul (c k)]
     rw [Finset.sum_eq_single j]
     · rw [integral_const_mul, normSq]
       congr 1
       exact integral_congr_ae (Filter.Eventually.of_forall fun x => (sq _).symm)
-    · intro k _ hkj
-      rw [integral_const_mul, integral_family_mul_family hw hkj, mul_zero]
+    · intro k hk hkj
+      rw [integral_const_mul, integral_family_mul_family_of_ne_of_integrable hint hnorm
+        (Finset.mem_range.1 hk).le (Finset.mem_range.1 hj).le hkj, mul_zero]
     · intro hj'; exact absurd hj hj'
   refine Finset.sum_congr rfl fun j hj => ?_
-  rw [hcoeff j hj, mul_div_assoc, div_self (normSq_ne_zero hw j), mul_one]
+  rw [hcoeff j hj, mul_div_assoc, div_self (hnorm j (Finset.mem_range.1 hj)), mul_one]
+
+/-- For a weight, each polynomial of degree less than $n$ is the sum of its orthogonal
+expansion in $p_0, \dots, p_{n-1}$. -/
+theorem eq_sum_family (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n) :
+    q = ∑ k ∈ Finset.range n,
+      ((∫ x, q.eval x * (family μ k).eval x ∂μ) / normSq μ k) • family μ k :=
+  eq_sum_family_of_integrable hw.integrable_eval (fun j _ => normSq_ne_zero hw j) hq
+
+/-- If polynomial evaluations are integrable and the first $n$ norms are nonzero, a polynomial
+of degree less than $n$ orthogonal to the first $n$ members of the monic family vanishes. -/
+theorem eq_zero_of_degree_lt_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n, normSq μ j ≠ 0) {q : ℝ[X]} (hq : q.degree < n)
+    (h : ∀ k < n, ∫ x, q.eval x * (family μ k).eval x ∂μ = 0) : q = 0 := by
+  rw [eq_sum_family_of_integrable hint hnorm hq]
+  refine Finset.sum_eq_zero fun k hk => ?_
+  rw [h k (Finset.mem_range.mp hk), zero_div, zero_smul]
 
 /-- Let $\mu$ be a weight, and let $q$ be a polynomial of degree less than $n$ with
 $\int q p_k \, d\mu = 0$ for all $k < n$. Then $q = 0$. -/
 theorem eq_zero_of_degree_lt (hw : IsWeight μ) {n : ℕ} {q : ℝ[X]} (hq : q.degree < n)
-    (h : ∀ k < n, ∫ x, q.eval x * (family μ k).eval x ∂μ = 0) : q = 0 := by
-  rw [eq_sum_family hw hq]
-  refine Finset.sum_eq_zero fun k hk => ?_
-  rw [h k (Finset.mem_range.mp hk), zero_div, zero_smul]
+    (h : ∀ k < n, ∫ x, q.eval x * (family μ k).eval x ∂μ = 0) : q = 0 :=
+  eq_zero_of_degree_lt_of_integrable hw.integrable_eval (fun j _ => normSq_ne_zero hw j) hq h
 
 /-! ### The zeros of the orthogonal polynomials -/
 
-/-- For a weight $\mu$, the polynomial $p_n$ has at least $n$ distinct roots of odd multiplicity. -/
-private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
+private theorem measure_support_ne_zero_of_eval {p : ℝ[X]} (hp : p ≠ 0)
+    (hm : μ (↑p.roots.toFinset : Set ℝ)ᶜ ≠ 0) {f : ℝ → ℝ}
+    (hf : ∀ x, p.eval x ≠ 0 → f x ≠ 0) : μ (Function.support f) ≠ 0 := by
+  intro hzero
+  apply hm (measure_mono_null (fun x hx => ?_) hzero)
+  apply hf
+  intro h
+  exact hx (Multiset.mem_toFinset.2 ((mem_roots hp).2 h))
+
+/-- The polynomial $p_n$ has at least $n$ distinct roots of odd multiplicity when the
+measure cannot be carried by its roots. -/
+private theorem le_card_odd_rootMultiplicity
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) (n : ℕ)
+    (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0) :
     n ≤ ((family μ n).roots.toFinset.filter
       fun r => Odd ((family μ n).rootMultiplicity r)).card := by
   classical
@@ -601,7 +697,8 @@ private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
     rw [degree_eq_natDegree hqmonic.ne_zero, hqnat]
     exact_mod_cast hlt
   have hzero : ∫ x, (family μ n).eval x * q.eval x ∂μ = 0 :=
-    integral_family_mul_of_degree_lt hw hqdeg
+    integral_family_mul_of_degree_lt_of_integrable hint
+      (fun _ hj => normSq_ne_zero_of_card_lt hint (fun s hs => hm s hs.le) hj) hqdeg
   have hf0 : family μ n * q ≠ 0 := mul_ne_zero (family_ne_zero μ n) hqmonic.ne_zero
   -- the multiplicities of the auxiliary factor
   have hqroots : q.roots = S.val := by
@@ -637,17 +734,25 @@ private theorem le_card_odd_rootMultiplicity (hw : IsWeight μ) (n : ℕ) :
   have hcongr : ∫ x, (family μ n * q).eval x ∂μ = 0 := by
     rw [← hzero]
     exact integral_congr_ae (Filter.Eventually.of_forall fun x => eval_mul)
+  have hfmeasure : μ (Function.support ((family μ n * q).eval)) ≠ 0 := by
+    refine measure_support_ne_zero_of_eval (family_ne_zero μ n) (hm _ ?_) (fun x hx => ?_)
+    · exact (Multiset.toFinset_card_le _).trans ((card_roots' _).trans
+        (natDegree_eq_of_degree_eq_some (degree_family μ n)).le)
+    · rw [eval_mul, mul_ne_zero_iff]
+      refine ⟨hx, fun h => ?_⟩
+      have hxS : x ∈ S.val := hqroots ▸ (mem_roots hqmonic.ne_zero).2 h
+      exact hx ((mem_roots (family_ne_zero μ n)).1 (Multiset.mem_toFinset.1
+        ((Finset.mem_filter.1 hxS).1)))
   rcases Polynomial.forall_nonneg_or_forall_nonpos_of_even_rootMultiplicity hf0 heven with
     hsign | hsign
-  · exact absurd hcongr (hw.integral_eval_pos hf0 hsign).ne'
-  · have hneg : 0 < ∫ x, (-(family μ n * q)).eval x ∂μ :=
-      hw.integral_eval_pos (neg_ne_zero.mpr hf0) fun x => by
-        rw [eval_neg]; exact neg_nonneg.mpr (hsign x)
-    have hflip : (∫ x, (-(family μ n * q)).eval x ∂μ) = -∫ x, (family μ n * q).eval x ∂μ := by
-      rw [← integral_neg]
-      exact integral_congr_ae (Filter.Eventually.of_forall fun x => eval_neg _ _)
-    rw [hflip, hcongr] at hneg
-    norm_num at hneg
+  · have hpos := (integral_pos_iff_support_of_nonneg hsign (hint (family μ n * q))).2
+      (pos_iff_ne_zero.2 hfmeasure)
+    exact hpos.ne' hcongr
+  · have hg : 0 ≤ fun x => -(family μ n * q).eval x := fun x => neg_nonneg.2 (hsign x)
+    have hgpos := (integral_pos_iff_support_of_nonneg hg (hint (family μ n * q)).neg).2
+      (pos_iff_ne_zero.2 (by simpa using hfmeasure))
+    rw [integral_neg, hcongr, neg_zero] at hgpos
+    exact (lt_irrefl _ hgpos).elim
 
 /-- Let $\mu$ be a weight. Then $p_n$ **has $n$ distinct real zeros**: there are pairwise distinct
 $x_1, \dots, x_n \in \mathbb{R}$ with
@@ -656,7 +761,9 @@ These zeros are the nodes of the $n$-point Gauss quadrature rule of $\mu$. This 
 [kress1998numerical], §9.3, and [han2009theoretical], §3.5.
 
 The nodes are indexed by `Fin n`. -/
-theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
+theorem exists_injective_family_eq_prod_of_measure_compl_ne_zero
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) (n : ℕ)
+    (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0) :
     ∃ x : Fin n → ℝ, Function.Injective x ∧ family μ n = ∏ i, (X - C (x i)) := by
   classical
   have hp0 : family μ n ≠ 0 := family_ne_zero μ n
@@ -666,7 +773,7 @@ theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
       fun r => Odd ((family μ n).rootMultiplicity r)) ⊆ (family μ n).roots.toFinset :=
     Finset.filter_subset _ _
   have hcard : (family μ n).roots.toFinset.card = n := by
-    have h1 := le_card_odd_rootMultiplicity hw n
+    have h1 := le_card_odd_rootMultiplicity hint n hm
     have h2 := Finset.card_le_card hsub
     have h3 := Multiset.toFinset_card_le (family μ n).roots
     have h4 := card_roots' (family μ n)
@@ -708,11 +815,19 @@ theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
         Finset.prod_image fun i _ j _ h =>
           (((family μ n).roots.toFinset).orderEmbOfFin hcard).strictMono.injective h
 
+/-- A weight's $n$th monic orthogonal polynomial has $n$ distinct real roots. -/
+theorem exists_injective_family_eq_prod (hw : IsWeight μ) (n : ℕ) :
+    ∃ x : Fin n → ℝ, Function.Injective x ∧ family μ n = ∏ i, (X - C (x i)) :=
+  exists_injective_family_eq_prod_of_measure_compl_ne_zero hw.integrable_eval n
+    (fun s _ => hw.measure_compl_ne_zero s.finite_toSet)
+
 /-- For a weight $\mu$ and a zero $x_0$ of $p_n$, there is a polynomial $q \neq 0$ with
 $\int (t - x_0) q(t)^2 \, d\mu(t) = 0$. -/
-private theorem exists_integral_X_sub_C_mul_sq_eq_zero (hw : IsWeight μ) {n : ℕ} {x₀ : ℝ}
-    (hx₀ : (family μ n).eval x₀ = 0) :
-    ∃ q : ℝ[X], q ≠ 0 ∧ ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
+private theorem exists_integral_X_sub_C_mul_sq_eq_zero
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n, normSq μ j ≠ 0) {x₀ : ℝ} (hx₀ : (family μ n).eval x₀ = 0) :
+    ∃ q : ℝ[X], q ≠ 0 ∧ family μ n = (X - C x₀) * q ∧
+      ∫ t, ((X - C x₀) * q ^ 2).eval t ∂μ = 0 := by
   obtain ⟨q, hq⟩ : ∃ q : ℝ[X], family μ n = (X - C x₀) * q :=
     ⟨_, (mul_divByMonic_eq_iff_isRoot.mpr hx₀).symm⟩
   have hq0 : q ≠ 0 := fun h => family_ne_zero μ n (by rw [hq, h, mul_zero])
@@ -720,8 +835,8 @@ private theorem exists_integral_X_sub_C_mul_sq_eq_zero (hw : IsWeight μ) {n : �
     have hnat : (family μ n).natDegree = n := natDegree_eq_of_degree_eq_some (degree_family μ n)
     rw [hq, natDegree_mul (X_sub_C_ne_zero _) hq0, natDegree_X_sub_C] at hnat
     exact (natDegree_lt_iff_degree_lt hq0).mp (by omega)
-  refine ⟨q, hq0, ?_⟩
-  rw [← integral_family_mul_of_degree_lt hw hqdeg]
+  refine ⟨q, hq0, hq, ?_⟩
+  rw [← integral_family_mul_of_degree_lt_of_integrable hint hnorm hqdeg]
   refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
   rw [hq]
   simp only [eval_mul, eval_sub, eval_X, eval_C, eval_pow]
@@ -739,7 +854,8 @@ the Laguerre weight on $(0, \infty)$; `OrthogonalPolynomial.root_family_mem_Ioo`
 two-sided form. -/
 theorem lt_root_family (hw : IsWeight μ) {a : ℝ} (hae : ∀ᵐ t ∂μ, a ≤ t) {n : ℕ} {x₀ : ℝ}
     (hx₀ : (family μ n).eval x₀ = 0) : a < x₀ := by
-  obtain ⟨q, hq0, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hw hx₀
+  obtain ⟨q, hq0, _, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hw.integrable_eval
+    (fun j _ => normSq_ne_zero hw j) hx₀
   have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
   by_contra h
   push Not at h
@@ -754,7 +870,8 @@ to the left of $b$**: if $p_n(x_0) = 0$, then $x_0 < b$. This is the mirror imag
 [kress1998numerical], §9.3. -/
 theorem root_family_lt (hw : IsWeight μ) {b : ℝ} (hae : ∀ᵐ t ∂μ, t ≤ b) {n : ℕ} {x₀ : ℝ}
     (hx₀ : (family μ n).eval x₀ = 0) : x₀ < b := by
-  obtain ⟨q, hq0, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hw hx₀
+  obtain ⟨q, hq0, _, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hw.integrable_eval
+    (fun j _ => normSq_ne_zero hw j) hx₀
   have hne : (X - C x₀) * q ^ 2 ≠ 0 := mul_ne_zero (X_sub_C_ne_zero _) (pow_ne_zero 2 hq0)
   by_contra h
   push Not at h
@@ -780,6 +897,42 @@ theorem root_family_mem_Ioo (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc 
     exact hsupp
   exact ⟨lt_root_family hw (hae.mono fun _ ht => ht.1) hx₀,
     root_family_lt hw (hae.mono fun _ ht => ht.2) hx₀⟩
+
+/-- Every root of $p_n$ lies in the interior of a bounded interval carrying the measure if
+the measure is carried by no set of at most $n$ points. -/
+theorem root_family_mem_Ioo_of_measure_compl_ne_zero [IsFiniteMeasure μ] {a b : ℝ}
+    (hsupp : μ (Set.Icc a b)ᶜ = 0) {n : ℕ}
+    (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0) {x₀ : ℝ}
+    (hx₀ : (family μ n).eval x₀ = 0) : x₀ ∈ Set.Ioo a b := by
+  let hint := integrable_eval_of_measure_compl_Icc_eq_zero hsupp
+  obtain ⟨q, _, hq, hzero⟩ := exists_integral_X_sub_C_mul_sq_eq_zero hint
+    (fun _ hj => normSq_ne_zero_of_card_lt hint (fun s hs => hm s hs.le) hj) hx₀
+  let g (t : ℝ) := ((X - C x₀) * q ^ 2).eval t
+  have hg (t : ℝ) : g t = (t - x₀) * (q.eval t) ^ 2 := by simp [g, eval_mul, eval_pow]
+  have hgsupp : μ (Function.support g) ≠ 0 := by
+    refine measure_support_ne_zero_of_eval (family_ne_zero μ n) (hm _ ?_) (fun t ht => ?_)
+    · exact (Multiset.toFinset_card_le _).trans ((card_roots' _).trans
+        (natDegree_eq_of_degree_eq_some (degree_family μ n)).le)
+    · rw [hq, eval_mul, eval_sub, eval_X, eval_C, mul_ne_zero_iff] at ht
+      rw [hg]
+      exact mul_ne_zero ht.1 (pow_ne_zero 2 ht.2)
+  have hmem : ∀ᵐ t ∂μ, t ∈ Set.Icc a b := MeasureTheory.ae_iff.2 hsupp
+  constructor
+  · by_contra! h
+    have hpos : 0 ≤ᵐ[μ] g := hmem.mono fun t ht => by
+      exact (hg t).symm ▸ mul_nonneg (sub_nonneg.2 (h.trans ht.1)) (sq_nonneg _)
+    have h := (integral_pos_iff_support_of_nonneg_ae hpos (hint _)).2 (pos_iff_ne_zero.2 hgsupp)
+    exact h.ne' hzero
+  · by_contra! h
+    have hpos : 0 ≤ᵐ[μ] fun t => -g t := hmem.mono fun t ht => by
+      change 0 ≤ -g t
+      rw [hg]
+      exact neg_nonneg.2 (mul_nonpos_of_nonpos_of_nonneg
+        (sub_nonpos.2 (ht.2.trans h)) (sq_nonneg _))
+    have h := (integral_pos_iff_support_of_nonneg_ae hpos (hint _).neg).2
+      (pos_iff_ne_zero.2 (by simpa using hgsupp))
+    rw [integral_neg, hzero, neg_zero] at h
+    exact lt_irrefl _ h
 
 /-! ### The three-term recurrence -/
 
@@ -808,8 +961,11 @@ private theorem degree_X_mul_family_sub_lt (μ : Measure ℝ) (n : ℕ) :
       (monic_family μ (n + 1)).leadingCoeff, one_mul]
   simpa [h1] using degree_sub_lt_left (h1.trans h2.symm) hne hlc
 
-/-- For a weight $\mu$, $\int x \, p_{n+1} p_n \, d\mu = \|p_{n+1}\|^2$. -/
-private theorem integral_X_mul_family_succ_mul_family (hw : IsWeight μ) (n : ℕ) :
+/-- If polynomial evaluations are integrable and the norms below degree $n+1$ are nonzero,
+then $\int x \, p_{n+1} p_n \, d\mu = \|p_{n+1}\|^2$. -/
+theorem integral_X_mul_family_succ_mul_family_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n + 1, normSq μ j ≠ 0) :
     ∫ x, x * (family μ (n + 1)).eval x * (family μ n).eval x ∂μ = normSq μ (n + 1) := by
   have hsplit : ∀ x : ℝ, x * (family μ (n + 1)).eval x * (family μ n).eval x =
       (family μ (n + 1)).eval x ^ 2 +
@@ -818,9 +974,21 @@ private theorem integral_X_mul_family_succ_mul_family (hw : IsWeight μ) (n : �
     simp only [eval_sub, eval_mul, eval_X]
     ring
   simp only [hsplit]
-  rw [integral_add (hw.integrable_eval_sq _) (hw.integrable_eval_mul _ _),
-    integral_family_mul_of_degree_lt hw (degree_X_mul_family_sub_lt μ n), add_zero]
+  have hsq := hint (family μ (n + 1) ^ 2)
+  have hprod := hint (family μ (n + 1) * (X * family μ n - family μ (n + 1)))
+  simp only [eval_pow] at hsq
+  simp only [eval_mul] at hprod
+  have hprod' : Integrable (fun x => (family μ (n + 1)).eval x *
+      (X * family μ n - family μ (n + 1)).eval x) μ := hprod
+  rw [integral_add hsq hprod', integral_family_mul_of_degree_lt_of_integrable hint hnorm
+    (degree_X_mul_family_sub_lt μ n), add_zero]
   rfl
+
+/-- For a weight $\mu$, $\int x \, p_{n+1} p_n \, d\mu = \|p_{n+1}\|^2$. -/
+theorem integral_X_mul_family_succ_mul_family (hw : IsWeight μ) (n : ℕ) :
+    ∫ x, x * (family μ (n + 1)).eval x * (family μ n).eval x ∂μ = normSq μ (n + 1) :=
+  integral_X_mul_family_succ_mul_family_of_integrable hw.integrable_eval
+    (fun j _ => normSq_ne_zero hw j)
 
 /-- For every measure $\mu$, the first monic orthogonal polynomial is $p_1 = x - \alpha_0$. This is
 the first Gram–Schmidt step, so no orthogonality is needed. -/
@@ -845,17 +1013,21 @@ private theorem integral_X_mul_family_mul_self (μ : Measure ℝ) (m : ℕ) :
       = ∫ x, x * (family μ m).eval x ^ 2 ∂μ :=
   integral_congr_ae (Filter.Eventually.of_forall fun x => by ring)
 
-/-- The **three-term recurrence** of the monic orthogonal polynomials. Let $\mu$ be a weight. Then
-for every $n$,
+/-- The three-term recurrence of the monic orthogonal polynomials at degree $n+2$ needs
+integrable polynomial evaluations and nonzero norms only through degree $n+1$:
 $$p_{n+2} = (x - \alpha_{n+1}) \, p_{n+1} - \beta_n \, p_n.$$
-This is the content of Exercises 3.5.5–3.5.6 of [han2009theoretical].
-
-With `OrthogonalPolynomial.family_one`, $p_1 = x - \alpha_0$, the recurrence determines the
-whole family from $p_0 = 1$. -/
-theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
+This includes the first vanishing-norm polynomial for a finite distribution. -/
+theorem three_term_recurrence_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun x => p.eval x) μ) {n : ℕ}
+    (hnorm : ∀ j < n + 2, normSq μ j ≠ 0) :
     family μ (n + 2) =
       (X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n := by
-  refine sub_eq_zero.mp (eq_zero_of_degree_lt hw (n := n + 2) ?_ ?_)
+  have hort {i j : ℕ} (hi : i ≤ n + 2) (hj : j ≤ n + 2) (hne : i ≠ j) :
+      ∫ x, (family μ i).eval x * (family μ j).eval x ∂μ = 0 :=
+    integral_family_mul_family_of_ne_of_integrable hint hnorm hi hj hne
+  have hint_mul (p q : ℝ[X]) : Integrable (fun x => p.eval x * q.eval x) μ := by
+    simpa only [eval_mul] using hint (p * q)
+  refine sub_eq_zero.mp (eq_zero_of_degree_lt_of_integrable hint hnorm ?_ ?_)
   · have hrw : family μ (n + 2) -
         ((X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n) =
         -(X * family μ (n + 1) - family μ (n + 2)) +
@@ -869,17 +1041,17 @@ theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
       · exact degree_C_mul_family_lt μ _ (by omega)
   · intro k hk
     have hi1 : Integrable (fun x => (family μ (n + 2)).eval x * (family μ k).eval x) μ :=
-      hw.integrable_eval_mul _ _
+      hint_mul _ _
     have hi2 : Integrable
         (fun x => x * (family μ (n + 1)).eval x * (family μ k).eval x) μ :=
-      (hw.integrable_eval (X * family μ (n + 1) * family μ k)).congr
+      (hint (X * family μ (n + 1) * family μ k)).congr
         (Filter.Eventually.of_forall fun x => by simp [mul_assoc])
     have hi3 : Integrable (fun x => alpha μ (n + 1) *
         ((family μ (n + 1)).eval x * (family μ k).eval x)) μ :=
-      (hw.integrable_eval_mul _ _).const_mul _
+      (hint_mul _ _).const_mul _
     have hi4 : Integrable (fun x => beta μ n *
         ((family μ n).eval x * (family μ k).eval x)) μ :=
-      (hw.integrable_eval_mul _ _).const_mul _
+      (hint_mul _ _).const_mul _
     have hi12 : Integrable (fun x => (family μ (n + 2)).eval x * (family μ k).eval x -
         x * (family μ (n + 1)).eval x * (family μ k).eval x) μ := hi1.sub hi2
     have hi123 : Integrable (fun x => (family μ (n + 2)).eval x * (family μ k).eval x -
@@ -899,24 +1071,36 @@ theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
     simp only [hev]
     rw [integral_add hi123 hi4, integral_add hi12 hi3, integral_sub hi1 hi2,
       integral_const_mul, integral_const_mul,
-      integral_family_mul_family hw (by omega : n + 2 ≠ k),
+      hort (i := n + 2) (j := k) le_rfl hk.le (by omega),
       integral_X_mul_family_mul_family]
     rcases lt_trichotomy k n with hkn | hkn | hkn
-    · rw [integral_family_mul_of_degree_lt hw (degree_X_mul_family_lt μ (by omega)),
-        integral_family_mul_family hw (by omega : n + 1 ≠ k),
-        integral_family_mul_family hw (by omega : n ≠ k)]
+    · rw [integral_family_mul_of_degree_lt_of_integrable hint
+        (fun j hj => hnorm j (by omega : j < n + 2)) (degree_X_mul_family_lt μ (by omega)),
+        hort (i := n + 1) (j := k) (by omega) hk.le (by omega),
+        hort (i := n) (j := k) (by omega) hk.le (by omega)]
       ring
-    · rw [hkn, ← integral_X_mul_family_mul_family, integral_X_mul_family_succ_mul_family hw,
-        integral_family_mul_family hw (by omega : n + 1 ≠ n), integral_family_mul_self]
+    · rw [hkn, ← integral_X_mul_family_mul_family,
+        integral_X_mul_family_succ_mul_family_of_integrable hint (n := n)
+          (fun j hj => hnorm j (by omega)),
+        hort (i := n + 1) (j := n) (by omega) (by omega) (by omega), integral_family_mul_self]
       simp only [beta]
-      rw [div_mul_cancel₀ _ (normSq_ne_zero hw n)]
+      rw [div_mul_cancel₀ _ (hnorm n (by omega))]
       ring
     · rw [show k = n + 1 by omega, ← integral_X_mul_family_mul_family,
         integral_X_mul_family_mul_self, integral_family_mul_self,
-        integral_family_mul_family hw (by omega : n ≠ n + 1)]
+        hort (i := n) (j := n + 1) (by omega) (by omega) (by omega)]
       simp only [alpha]
-      rw [div_mul_cancel₀ _ (normSq_ne_zero hw (n + 1))]
+      rw [div_mul_cancel₀ _ (hnorm (n + 1) (by omega))]
       ring
+
+/-- The **three-term recurrence** of the monic orthogonal polynomials for a weight is
+$$p_{n+2} = (x - \alpha_{n+1}) \, p_{n+1} - \beta_n \, p_n.$$
+Together with `OrthogonalPolynomial.family_one`, it determines the whole family from $p_0=1$.
+This is the content of Exercises 3.5.5–3.5.6 of [han2009theoretical]. -/
+theorem three_term_recurrence (hw : IsWeight μ) (n : ℕ) :
+    family μ (n + 2) =
+      (X - C (alpha μ (n + 1))) * family μ (n + 1) - C (beta μ n) * family μ n :=
+  three_term_recurrence_of_integrable hw.integrable_eval (fun j _ => normSq_ne_zero hw j)
 
 /-! ### Reading the recurrence coefficients off a recurrence -/
 
@@ -1332,13 +1516,16 @@ gives $D_{n+2} = (x - \alpha_{n+1}) D_{n+1} - \beta_n D_n$, because the square o
 off-diagonal entry $\sqrt{\beta_n}$ is $\beta_n \ge 0$. This is
 `OrthogonalPolynomial.three_term_recurrence`, with the same initial values $1$ and
 $x - \alpha_0$. -/
-theorem charpoly_jacobiMatrix (hw : IsWeight μ) (n : ℕ) :
+theorem charpoly_jacobiMatrix_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) (n : ℕ)
+    (hnorm : ∀ j < n, normSq μ j ≠ 0) :
     (jacobiMatrix μ n).charpoly = family μ n := by
   have hrec : ∀ m, (jacobiMatrix μ (m + 2)).charpoly =
       (X - C (alpha μ (m + 1))) * (jacobiMatrix μ (m + 1)).charpoly -
         C (beta μ m) * (jacobiMatrix μ m).charpoly := by
     intro m
-    have hβ : 0 ≤ beta μ m := (div_pos (normSq_pos hw _) (normSq_pos hw _)).le
+    have hn (k : ℕ) : 0 ≤ normSq μ k := integral_nonneg (fun t => sq_nonneg _)
+    have hβ : 0 ≤ beta μ m := div_nonneg (hn _) (hn _)
     have hdet : ∀ k, (jacobiMatrix μ k).charpoly = (Matrix.charmatrix (jacobiMatrix μ k)).det :=
       fun k => rfl
     rw [hdet, hdet, hdet, Matrix.det_succ_succ_of_last_row_col]
@@ -1378,12 +1565,20 @@ theorem charpoly_jacobiMatrix (hw : IsWeight μ) (n : ℕ) :
   have h1 : (jacobiMatrix μ 1).charpoly = family μ 1 := by
     rw [family_one, Matrix.charpoly, Matrix.det_fin_one]
     simp [Matrix.charmatrix_apply_eq, jacobiMatrix_apply]
-  suffices h : ∀ m, (jacobiMatrix μ m).charpoly = family μ m ∧
-      (jacobiMatrix μ (m + 1)).charpoly = family μ (m + 1) from (h n).1
-  intro m
-  induction m with
-  | zero => exact ⟨h0, h1⟩
-  | succ m ih => exact ⟨ih.2, by rw [hrec, ih.1, ih.2, three_term_recurrence hw]⟩
+  revert hnorm
+  induction n using Nat.twoStepInduction with
+  | zero => exact fun _ => h0
+  | one => exact fun _ => h1
+  | more m ih₀ ih₁ =>
+    intro hnorm
+    rw [hrec, ih₀ (fun j hj => hnorm j (by omega)), ih₁ (fun j hj => hnorm j (by omega)),
+      three_term_recurrence_of_integrable hint hnorm]
+
+/-- The Jacobi matrix of a weight has the monic orthogonal polynomial as its characteristic
+polynomial. -/
+theorem charpoly_jacobiMatrix (hw : IsWeight μ) (n : ℕ) :
+    (jacobiMatrix μ n).charpoly = family μ n :=
+  charpoly_jacobiMatrix_of_integrable hw.integrable_eval n (fun j _ => normSq_ne_zero hw j)
 
 /-! ### The truncated expansion as a best approximation -/
 

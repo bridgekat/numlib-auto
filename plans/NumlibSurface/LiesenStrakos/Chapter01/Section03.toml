@@ -1,0 +1,17 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "energyInnerProduct"
+source = "Liesen and Strakoš, §1.3"
+
+[[node]]
+id = "energyVectorNorm"
+source = "Liesen and Strakoš, §1.3"
+
+[[node]]
+id = "energyOperatorNorm"
+source = "Liesen and Strakoš, §1.3"
+
+[[node]]
+id = "EnergyOrthogonal"
+source = "Liesen and Strakoš, §1.3"

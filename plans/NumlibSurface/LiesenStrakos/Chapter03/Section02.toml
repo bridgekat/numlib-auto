@@ -1,0 +1,53 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "interpolatoryWeight"
+source = "Liesen and Strakoš, (3.2.5)"
+
+[[node]]
+id = "polynomialInner"
+source = "Liesen and Strakoš, (3.2.8)"
+
+[[node]]
+id = "monicOrthogonalPolynomial"
+source = "Liesen and Strakoš, (3.2.7)"
+
+[[node]]
+id = "lemma_3_2_1"
+source = "Liesen and Strakoš, Lemma 3.2.1"
+
+[[node]]
+id = "lemma_3_2_2"
+source = "Liesen and Strakoš, Lemma 3.2.2"
+
+[[node]]
+id = "remark_3_2_3"
+source = "Liesen and Strakoš, Remark 3.2.3"
+
+[[node]]
+id = "lemma_3_2_4"
+source = "Liesen and Strakoš, Lemma 3.2.4"
+
+[[node]]
+id = "lemma_3_2_4_terminal"
+source = "Liesen and Strakoš, Lemma 3.2.4"
+
+[[node]]
+id = "lemma_3_2_5"
+source = "Liesen and Strakoš, Lemma 3.2.5"
+
+[[node]]
+id = "IsGaussChristoffel"
+source = "Liesen and Strakoš, Definition 3.2.6"
+
+[[node]]
+id = "theorem_3_2_7"
+source = "Liesen and Strakoš, Theorem 3.2.7"
+
+[[node]]
+id = "theorem_3_2_8"
+source = "Liesen and Strakoš, Theorem 3.2.8"
+
+[[node]]
+id = "gaussChristoffel_tendsto_integral"
+source = "Liesen and Strakoš, §3.2.2 and Remark 3.2.9"

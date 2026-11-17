@@ -991,7 +991,7 @@ private theorem snd_eq_of_sigma_mk_eq {i : ι} {a b : Fin (e i)}
 
 /-- The column $(i, 0)$ of a Jordan form, for $e_i > 0$, is $\mu_i$ times the unit vector
 $e_{(i, 0)}$. -/
-private theorem jordanForm_transpose_zero (i : ι) (h0 : 0 < e i) :
+theorem jordanForm_transpose_zero (i : ι) (h0 : 0 < e i) :
     (jordanForm e μ)ᵀ ⟨i, ⟨0, h0⟩⟩ = μ i • Pi.single (⟨i, ⟨0, h0⟩⟩ : (i : ι) × Fin (e i)) 1 := by
   funext ⟨i', j'⟩
   rw [transpose_apply, jordanForm_def, Pi.smul_apply, smul_eq_mul]
@@ -1007,7 +1007,7 @@ private theorem jordanForm_transpose_zero (i : ι) (h0 : 0 < e i) :
 
 /-- The column $(i, j + 1)$ of a Jordan form, for $j + 1 < e_i$, is
 $\mu_i e_{(i, j+1)} + e_{(i, j)}$. -/
-private theorem jordanForm_transpose_succ (i : ι) (j : ℕ) (hj : j + 1 < e i) :
+theorem jordanForm_transpose_succ (i : ι) (j : ℕ) (hj : j + 1 < e i) :
     (jordanForm e μ)ᵀ ⟨i, ⟨j + 1, hj⟩⟩
       = μ i • Pi.single (⟨i, ⟨j + 1, hj⟩⟩ : (i : ι) × Fin (e i)) 1
         + Pi.single (⟨i, ⟨j, by omega⟩⟩ : (i : ι) × Fin (e i)) 1 := by

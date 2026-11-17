@@ -302,6 +302,7 @@ import NumlibSurface.GolubVanLoan.Chapter12.Section02
 import NumlibSurface.GolubVanLoan.Chapter12.Section03
 import NumlibSurface.GolubVanLoan.Chapter12.Section04
 import NumlibSurface.GolubVanLoan.Chapter12.Section05
+import NumlibSurface.LiesenStrakos
 import NumlibSurface.QuarteroniSaccoSaleri
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Basics
 import NumlibSurface.QuarteroniSaccoSaleri.Chapter01.Section07
@@ -536,7 +537,7 @@ import NumlibSurface.SaadSparse.Common
 # NumlibSurface
 
 `NumlibSurface` is the surface layer of a Lean library of numerical analysis. It has one library for
-each of ten source texts, and each library restates the numbered results of its source in the
+each source text, and each library restates the numbered results of its source in the
 wording, notation and numbering of that source. Each formalized theorem, lemma, algorithm or
 displayed equation of the source has a declaration whose name gives its kind and number. The general
 definitions and the proofs are in the backbone `Numlib`, which is organized by subject. A surface
@@ -545,7 +546,7 @@ library tests the backbone against a published account of its subject.
 
 The backbone and the surface are two separate Lake libraries. A surface library imports the
 backbone, and the backbone imports no surface module. Within a surface library, later chapters use
-the restatements of earlier chapters. This module imports all modules of the ten libraries and adds
+the restatements of earlier chapters. This module imports all modules of the surface libraries and adds
 no declaration.
 
 ## Contents
@@ -559,6 +560,7 @@ no declaration.
 | Conn, Gould and Toint, *Trust-Region Methods* [conn2000trust] | `ConnGouldToint` | trust-region methods; Chapters 2–17 |
 | Fong and Saunders, *CG versus MINRES: an empirical comparison* [fong2012cg] | `FongSaunders` | CG and MINRES on symmetric positive definite systems; all six theorems |
 | Golub and Van Loan, *Matrix Computations* [golub2013matrix] | `GolubVanLoan` | numerical linear algebra; all twelve chapters |
+| Liesen and Strakoš, *Krylov Subspace Methods: Principles and Analysis* [liesen2013krylov] | `LiesenStrakos` | Krylov projection, recurrence, and convergence theory |
 | Quarteroni, Sacco and Saleri, *Numerical Mathematics* [quarteroni2000numerical] | `QuarteroniSaccoSaleri` | numerical analysis; all thirteen chapters |
 | Rockafellar, *Convex Analysis* [rockafellar1970convex] | `Rockafellar` | convex sets and functions in $\mathbb{R}^n$; 466 of the 471 numbered results |
 | Saad, *Iterative Methods for Sparse Linear Systems* [saad2003iterative] | `SaadSparse` | iterative methods and preconditioning; every chapter with a numbered result |

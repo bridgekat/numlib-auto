@@ -13,6 +13,56 @@ id = "integral_family_mul_family"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Section 3.5"
 
 [[node]]
+id = "integrable_eval_of_measure_compl_Icc_eq_zero"
+source = "Liesen and Strakoš, §3.2"
+
+[[node]]
+id = "integral_eval_sq_pos_of_measure_compl_ne_zero"
+source = "Liesen and Strakoš, §3.2"
+
+[[node]]
+id = "integral_family_mul_of_degree_lt_of_integrable"
+source = "Liesen and Strakoš, Lemma 3.2.2"
+
+[[node]]
+id = "integral_eval_sq_pos_of_degree_le"
+source = "Liesen and Strakoš, §3.2"
+
+[[node]]
+id = "normSq_ne_zero_of_card_lt"
+source = "Liesen and Strakoš, §3.2"
+
+[[node]]
+id = "exists_injective_family_eq_prod_of_measure_compl_ne_zero"
+source = "Liesen and Strakoš, Lemma 3.2.4"
+
+[[node]]
+id = "root_family_mem_Ioo_of_measure_compl_ne_zero"
+source = "Liesen and Strakoš, Lemma 3.2.4"
+
+[[node]]
+id = "integral_X_mul_family_succ_mul_family"
+source = "Liesen and Strakoš, Theorem 3.4.1"
+
+[[node]]
+id = "charpoly_jacobiMatrix_of_integrable"
+source = "Liesen and Strakoš, Theorem 3.4.1"
+
+[[node]]
+id = "integral_X_mul_family_succ_mul_family_of_integrable"
+source = "Liesen and Strakoš, Theorem 3.4.1"
+
+[[node]]
+id = "eq_sum_family_of_integrable"
+
+[[node]]
+id = "eq_zero_of_degree_lt_of_integrable"
+
+[[node]]
+id = "three_term_recurrence_of_integrable"
+source = "Liesen and Strakoš, §3.3"
+
+[[node]]
 id = "three_term_recurrence"
 source = "Atkinson–Han, Theoretical Numerical Analysis, Exercises 3.5.5–3.5.6, Theorem 3.7.3"
 

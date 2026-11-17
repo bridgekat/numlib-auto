@@ -1,0 +1,17 @@
+[[node]]
+id = "Krylov.inverseCompressionResidualPoly"
+
+[[node]]
+id = "Krylov.inverseCompressionResidualPoly_eval_zero"
+
+[[node]]
+id = "Krylov.inverseCompressionResidualPoly_degree_le"
+
+[[node]]
+id = "Krylov.IsMinResidualIterate.residual_eq_aeval_inverseCompressionResidualPoly"
+
+[[node]]
+id = "Krylov.IsMinResidualIterate.residualPoly_eq_inverseCompressionResidualPoly"
+
+[[node]]
+id = "Krylov.isRoot_inverseCompressionResidualPoly_iff"

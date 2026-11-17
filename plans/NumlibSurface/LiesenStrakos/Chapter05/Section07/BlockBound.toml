@@ -1,0 +1,5 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "theorem_5_7_4"
+source = "Liesen and Strakoš, Theorem 5.7.4"

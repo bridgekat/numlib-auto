@@ -1,0 +1,25 @@
+[[node]]
+id = "Krylov.IsGalerkinIterate.residual_eq_aeval_normalized_charpoly"
+
+[[node]]
+id = "Krylov.IsGalerkinIterate.squared_norms_eq_sum_eigenvalues"
+
+[[node]]
+id = "CG.energyNorm_error_le_spectralMinimax"
+
+[[node]]
+id = "CG.exists_eq_spectralMinimax"
+kind = "theorem"
+desc = '''Produce an attaining initial error using an extremal minimax certificate for the real spectrum.'''
+
+[[node]]
+id = "CG.energyNorm_error_le_truncated"
+
+[[node]]
+id = "CG.exists_energyNorm_error_eq_monicRitzProduct"
+
+[[node]]
+id = "Lanczos.normalizedCharpoly"
+
+[[node]]
+id = "Lanczos.eval_normalizedCharpoly_eq_prod"

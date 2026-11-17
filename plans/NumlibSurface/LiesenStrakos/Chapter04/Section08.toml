@@ -1,0 +1,28 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "IsIsometricArnoldi"
+source = "Liesen and Strakoš, Algorithm 4.8.1"
+
+[[node]]
+id = "mcmillanDegree"
+source = "Liesen and Strakoš, §4.8.2, definition preceding Theorem 4.8.1"
+
+[[node]]
+id = "theorem_4_8_1_one"
+source = "Liesen and Strakoš, Theorem 4.8.1 (1)"
+
+[[node]]
+id = "theorem_4_8_1_two"
+kind = "theorem"
+desc = '''For a diagonalizable matrix with at least four distinct eigenvalues that are neither collinear nor concyclic, the McMillan degree is at least floor(n/5+1).'''
+deps = ["mcmillanDegree", "Polynomial.ncard_setOf_div_eval_eq_conj_le_five_mul_sub_five"]
+source = "Liesen and Strakoš, Theorem 4.8.1 (2)"
+
+[[node]]
+id = "IsGeneralizedLanczos"
+source = "Liesen and Strakoš, Algorithm 4.8.2"
+
+[[node]]
+id = "generalizedKrylovSubspace"
+source = "Liesen and Strakoš, §4.8.3"

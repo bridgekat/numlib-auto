@@ -1,0 +1,13 @@
+namespace = "LiesenStrakos.Chapter05"
+
+[[node]]
+id = "poisson_error_sq_eq"
+source = "Liesen and Strakoš, §5.1"
+
+[[node]]
+id = "poisson_normwise_backward_error"
+source = "Liesen and Strakoš, Equation (5.1.6)"
+
+[[node]]
+id = "poisson_componentwise_backward_error"
+source = "Liesen and Strakoš, Remark 5.1.2"

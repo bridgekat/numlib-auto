@@ -1,0 +1,11 @@
+[[node]]
+id = "Path.IsPiecewiseC1"
+
+[[node]]
+id = "complexLineIntegral"
+
+[[node]]
+id = "complexPathIndex"
+
+[[node]]
+id = "complexLineIntegral_resolvent"

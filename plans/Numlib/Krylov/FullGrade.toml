@@ -1,0 +1,10 @@
+namespace = "Krylov"
+
+[[node]]
+id = "minpolyVec_eq_minpoly_iff_cofactors"
+
+[[node]]
+id = "dense_fullGrade"
+
+[[node]]
+id = "exists_minpolyVec_eq_of_monic_dvd"

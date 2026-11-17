@@ -1,0 +1,37 @@
+namespace = "LiesenStrakos.Chapter03"
+
+[[node]]
+id = "theorem_3_3_1"
+source = "Liesen and Strakoš, Theorem 3.3.1"
+
+[[node]]
+id = "corollary_3_3_3"
+source = "Liesen and Strakoš, Corollary 3.3.3"
+
+[[node]]
+id = "stieltjesRationalConvergent"
+source = "Liesen and Strakoš, (3.3.17)–(3.3.18)"
+
+[[node]]
+id = "secondKindPolynomial"
+source = "Liesen and Strakoš, (3.3.20)"
+
+[[node]]
+id = "theorem_3_3_5"
+source = "Liesen and Strakoš, Theorem 3.3.5"
+
+[[node]]
+id = "secondKindPolynomial_eval"
+source = "Liesen and Strakoš, (3.3.20)"
+
+[[node]]
+id = "theorem_3_3_6"
+source = "Liesen and Strakoš, Theorem 3.3.6"
+
+[[node]]
+id = "theorem_3_3_6_eval"
+source = "Liesen and Strakoš, Theorem 3.3.6"
+
+[[node]]
+id = "gaussResolvent_tendsto"
+source = "Liesen and Strakoš, (3.2.22) and §3.3.3"

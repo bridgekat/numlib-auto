@@ -1,0 +1,13 @@
+namespace = "Module.End"
+
+[[node]]
+id = "exists_isInternal_primaryKrylov"
+
+[[node]]
+id = "exists_basis_fullGrade"
+
+[[node]]
+id = "grade_le_natDegree_minpoly"
+
+[[node]]
+id = "exists_minpolyVec_eq_minpoly"

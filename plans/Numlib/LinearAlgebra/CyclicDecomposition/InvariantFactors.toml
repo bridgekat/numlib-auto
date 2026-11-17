@@ -1,0 +1,4 @@
+namespace = "Module.End"
+
+[[node]]
+id = "exists_isInternal_invariantFactorKrylov"

@@ -1,0 +1,13 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "IsCGLikeDescent"
+source = "Liesen and Strakoš, §4.1, (4.1.1)–(4.1.2)"
+
+[[node]]
+id = "lemma_4_1_1_forward"
+source = "Liesen and Strakoš, Lemma 4.1.1 (1)"
+
+[[node]]
+id = "lemma_4_1_1_backward"
+source = "Liesen and Strakoš, Lemma 4.1.1 (2)"

@@ -1,0 +1,16 @@
+namespace = "Krylov"
+
+[[node]]
+id = "aeval_mem_fullSubspace"
+
+[[node]]
+id = "fullSubspace_le_ker_aeval_iff"
+
+[[node]]
+id = "minpolyVec_zero"
+
+[[node]]
+id = "minpolyVec_fullSubspace_add_of_isCoprime"
+
+[[node]]
+id = "minpolyVec_fullSubspace_finsetSum_of_pairwise_isCoprime"

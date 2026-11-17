@@ -730,20 +730,30 @@ end Semiconj
 
 /-! ### Naturality under linear isometries -/
 
+section LinearIsometry
+
+variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace 𝕜 F]
+variable {B : Module.End 𝕜 E} {C : Module.End 𝕜 F}
+
+/-- Arnoldi vectors are carried to Arnoldi vectors by an intertwining linear isometry. -/
+theorem vec_map_linearIsometry (e : E →ₗᵢ[𝕜] F) (he : Function.Semiconj e B C)
+    (v : E) (j : ℕ) : vec C (e v) j = e (vec B v j) := by
+  have hseq : (fun i : ℕ => (C ^ i) (e v)) = e ∘ (fun i : ℕ => (B ^ i) v) :=
+    funext fun i => (Krylov.pow_apply_of_semiconj (N := e.toLinearMap) he i v).symm
+  rw [vec, hseq, InnerProductSpace.gramSchmidtNormed_comp_linearIsometry]
+  rfl
+
+/-- Arnoldi coefficients agree through an intertwining linear isometry. -/
+theorem coeff_map_linearIsometry (e : E →ₗᵢ[𝕜] F) (he : Function.Semiconj e B C)
+    (v : E) (i j : ℕ) : coeff C (e v) i j = coeff B v i j := by
+  rw [coeff, coeff, vec_map_linearIsometry e he, vec_map_linearIsometry e he, ← he.eq]
+  exact LinearIsometry.inner_map_map e _ _
+
+end LinearIsometry
+
 section LinearIsometryEquiv
 
 variable {E' : Type*} [NormedAddCommGroup E'] [InnerProductSpace 𝕜 E'] (e : E ≃ₗᵢ[𝕜] E')
-
-/-- For a linear isometry equivalence $e$, $(e A e^{-1})^i (e x) = e (A^i x)$ for all $i$ and $x$.
--/
-private theorem pow_conj_apply (i : ℕ) (x : E) :
-    ((e.toLinearEquiv.conj A) ^ i) (e x) = e ((A ^ i) x) := by
-  induction i with
-  | zero => rfl
-  | succ i ih =>
-    rw [pow_succ', Module.End.mul_apply, ih, LinearEquiv.conj_apply_apply, pow_succ',
-      Module.End.mul_apply]
-    simp
 
 /-- **Naturality of the Arnoldi vectors under isometries.** Let $e : E \to E'$ be a linear isometry
 equivalence. Then for every $j$ the Arnoldi vectors of $e A e^{-1}$ from $e b$ are the images of
@@ -754,12 +764,9 @@ The operator $e A e^{-1}$ is `e.toLinearEquiv.conj A`. The proof uses that Gram�
 with isometries (`InnerProductSpace.gramSchmidtNormed_comp_linearIsometry`) and that
 $(e A e^{-1})^i (e b) = e (A^i b)$. -/
 theorem vec_conj_linearIsometryEquiv (j : ℕ) :
-    vec (e.toLinearEquiv.conj A) (e b) j = e (vec A b j) := by
-  have hseq : (fun i : ℕ => ((e.toLinearEquiv.conj A) ^ i) (e b)) =
-      e.toLinearIsometry ∘ fun i : ℕ => (A ^ i) b :=
-    funext fun i => pow_conj_apply A e i b
-  rw [vec, hseq, InnerProductSpace.gramSchmidtNormed_comp_linearIsometry]
-  rfl
+    vec (e.toLinearEquiv.conj A) (e b) j = e (vec A b j) :=
+  vec_map_linearIsometry e.toLinearIsometry
+    (fun x => by simp [LinearEquiv.conj_apply_apply]) b j
 
 /-- **Naturality of the Arnoldi coefficients under isometries.** Let $e : E \to E'$ be a linear
 isometry equivalence. Then $e A e^{-1}$ from $e b$ has the same Arnoldi coefficients as $A$ from
@@ -769,9 +776,8 @@ The operator $e A e^{-1}$ is `e.toLinearEquiv.conj A`. -/
 theorem coeff_conj_linearIsometryEquiv :
     coeff (e.toLinearEquiv.conj A) (e b) = coeff A b := by
   ext i j
-  rw [coeff, coeff, vec_conj_linearIsometryEquiv, vec_conj_linearIsometryEquiv,
-    LinearEquiv.conj_apply_apply]
-  simp
+  exact coeff_map_linearIsometry e.toLinearIsometry
+    (fun x => by simp [LinearEquiv.conj_apply_apply]) b i j
 
 end LinearIsometryEquiv
 

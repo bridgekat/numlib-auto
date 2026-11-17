@@ -1,0 +1,19 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "isBNormalOfDegree_complexify_iff"
+
+[[node]]
+id = "theorem_4_6_3_real"
+source = "Liesen and Strakoš, Theorem 4.6.3, real case"
+
+[[node]]
+id = "corollary_4_6_4_real"
+source = "Liesen and Strakoš, Corollary 4.6.4, real case"
+
+[[node]]
+id = "exists_isBNormalOfDegree_complexify_iff"
+
+[[node]]
+id = "theorem_4_6_5_one_real"
+source = "Liesen and Strakoš, Theorem 4.6.5 (2), real case"

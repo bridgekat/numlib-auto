@@ -1,6 +1,12 @@
 namespace = "Arnoldi"
 
 [[node]]
+id = "vec_map_linearIsometry"
+
+[[node]]
+id = "coeff_map_linearIsometry"
+
+[[node]]
 id = "apply_sum"
 
 [[node]]

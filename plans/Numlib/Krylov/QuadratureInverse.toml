@@ -1,0 +1,4 @@
+namespace = "Krylov"
+
+[[node]]
+id = "integral_inv_spectralMeasure_of_apply_eq"

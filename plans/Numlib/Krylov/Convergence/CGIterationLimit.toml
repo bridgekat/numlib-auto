@@ -1,0 +1,8 @@
+[[node]]
+id = "CG.energyNorm_error_le_effectiveCondition"
+
+[[node]]
+id = "CG.energyNorm_error_le_of_iteration_limit"
+
+[[node]]
+id = "CG.exists_deflationPolynomial"

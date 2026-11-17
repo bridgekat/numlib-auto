@@ -1,0 +1,22 @@
+namespace = "Matrix"
+
+[[node]]
+id = "complexify_aeval"
+
+[[node]]
+id = "exists_real_aeval_of_complexify"
+
+[[node]]
+id = "isMinDegreeRepresentation_complexify_iff"
+
+[[node]]
+id = "complexify_weightedAdjoint"
+
+[[node]]
+id = "star_map_aeval"
+
+[[node]]
+id = "star_map_complexify"
+
+[[node]]
+id = "minpoly_complexify"

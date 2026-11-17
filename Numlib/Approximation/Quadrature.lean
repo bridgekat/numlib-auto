@@ -447,12 +447,14 @@ than $n$, so its product with the orthogonal polynomial has integral $0$, and th
 vanishes at the nodes. The weights are positive by exactness at the square of a Lagrange basis
 polynomial. `Quadrature.not_forall_eq_integral_of_degree_le` is the converse: no $n$-point rule
 is exact to degree $2n$. -/
-theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
+theorem exists_gauss_of_measure_compl_ne_zero
+    (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) (n : ℕ)
+    (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
         ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ := by
   classical
-  obtain ⟨x, hxinj, hprod⟩ := exists_injective_family_eq_prod hw n
+  obtain ⟨x, hxinj, hprod⟩ := exists_injective_family_eq_prod_of_measure_compl_ne_zero hint n hm
   obtain ⟨w, hwval⟩ : ∃ w : Fin n → ℝ,
       ∀ i, w i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ := ⟨_, fun _ => rfl⟩
   have hxroot : ∀ i, (family μ n).eval (x i) = 0 := by
@@ -473,7 +475,7 @@ theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
       rw [Lagrange.interpolate_apply, eval_finsetSum]
       exact Finset.sum_congr rfl fun i _ => by rw [eval_mul, eval_C]
     rw [integral_congr_ae (Filter.Eventually.of_forall hev),
-      integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
+      integral_finsetSum _ fun i _ => (hint _).const_mul _]
     refine (Finset.sum_congr rfl fun i _ => ?_).symm
     rw [integral_const_mul, hwval i]
     ring
@@ -505,13 +507,16 @@ theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
       intro t
       conv_lhs => rw [← hdiv]
       rw [eval_add, eval_mul]
-    have hint : ∫ t, p.eval t ∂μ = ∫ t, r.eval t ∂μ := by
+    have hint_mul : Integrable (fun t => (family μ n).eval t * q.eval t) μ := by
+      simpa only [eval_mul] using hint (family μ n * q)
+    have horth := integral_family_mul_of_degree_lt_of_integrable hint
+      (fun _ hj => normSq_ne_zero_of_card_lt hint (fun s hs => hm s hs.le) hj) hqdeg
+    have hint_eq : ∫ t, p.eval t ∂μ = ∫ t, r.eval t ∂μ := by
       rw [integral_congr_ae (Filter.Eventually.of_forall hsplit),
-        integral_add (hw.integrable_eval r) (hw.integrable_eval_mul _ _),
-        integral_family_mul_of_degree_lt hw hqdeg, add_zero]
+        integral_add (hint r) hint_mul, horth, add_zero]
     have hsum : ∑ i, w i * p.eval (x i) = ∑ i, w i * r.eval (x i) :=
       Finset.sum_congr rfl fun i _ => by rw [hsplit (x i), hxroot i]; ring
-    rw [hsum, hlow r hrdeg, hint]
+    rw [hsum, hlow r hrdeg, hint_eq]
   refine ⟨x, w, hxinj, fun i => ?_, hexact⟩
   -- the weights are positive: apply exactness to the square of a Lagrange basis function
   have hne : Lagrange.basis Finset.univ x i ≠ 0 :=
@@ -535,7 +540,17 @@ theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
       exact absurd (Finset.mem_univ i) h
   rw [hlhs] at h1
   rw [h1]
-  exact hw.integral_eval_pos (pow_ne_zero 2 hne) fun t => by rw [eval_pow]; positivity
+  simp only [eval_pow]
+  exact integral_eval_sq_pos_of_degree_le hint hm hne
+    (natDegree_le_iff_degree_le.1 (hbnat.le.trans (Nat.sub_le _ _)))
+
+/-- Every weight admits a positive $n$-node Gauss rule, exact through degree $2n-1$. -/
+theorem exists_gauss (hw : IsWeight μ) (n : ℕ) :
+    ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
+      ∀ p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) →
+        ∑ i, w i * p.eval (x i) = ∫ t, p.eval t ∂μ :=
+  exists_gauss_of_measure_compl_ne_zero hw.integrable_eval n
+    (fun s _ => hw.measure_compl_ne_zero s.finite_toSet)
 
 /-- Let $\mu$ be a weight on $\mathbb{R}$. No rule with $n$ nodes $x_i$ and weights $w_i$ satisfies
 $\sum_i w_i\, p(x_i) = \int p\,d\mu$ for every real polynomial $p$ of degree at most $2n$. So
@@ -634,14 +649,17 @@ private theorem sum_mul_eval_basis {w x : Fin (n + 1) → ℝ} (hx : Function.In
   · intro h
     exact absurd (Finset.mem_univ i) h
 
-/-- Let $\mu$ be a weight on $\mathbb{R}$ and let $x_0, \dots, x_n$ be distinct. A rule with these
-nodes is interpolatory for $\mu$ if and only if it is exact to degree $n$ for $\mu$. See
+/-- Let $x_0, \dots, x_n$ be distinct and assume that their Lagrange basis polynomials are
+integrable against $\mu$. A rule with these nodes is interpolatory for $\mu$ if and only if it is
+exact to degree $n$. See
 [quarteroni2000numerical], §10.2, (10.14), and [kress1998numerical], §9.1.
 
 Exactness at a Lagrange basis polynomial gives the weight. Conversely, every polynomial of
 degree at most $n$ is its own Lagrange interpolant. -/
-theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fin (n + 1) → ℝ}
-    (hx : Function.Injective x) : IsInterpolatoryMeasure μ w x ↔ IsExactOnMeasure μ w x n := by
+theorem isInterpolatoryMeasure_iff_isExactOnMeasure_of_integrable_basis {w x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x)
+    (hint : ∀ i, Integrable (fun t => (Lagrange.basis Finset.univ x i).eval t) μ) :
+    IsInterpolatoryMeasure μ w x ↔ IsExactOnMeasure μ w x n := by
   have hcard : (Finset.univ : Finset (Fin (n + 1))).card = n + 1 := by simp
   constructor
   · intro h p hp
@@ -654,7 +672,7 @@ theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fi
       rw [Lagrange.interpolate_apply, eval_finsetSum]
       exact Finset.sum_congr rfl fun i _ => by rw [eval_mul, eval_C]
     rw [integral_congr_ae (Filter.Eventually.of_forall hev),
-      integral_finsetSum _ fun i _ => (hw.integrable_eval _).const_mul _]
+      integral_finsetSum _ fun i _ => (hint i).const_mul _]
     refine (Finset.sum_congr rfl fun i _ => ?_).symm
     rw [integral_const_mul, h i]
     ring
@@ -663,6 +681,13 @@ theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fi
       rw [Lagrange.degree_basis hx.injOn (Finset.mem_univ i), hcard]
       simp
     rw [← h _ hdeg, sum_mul_eval_basis hx]
+
+/-- A quadrature rule on $n+1$ distinct nodes for a weight is interpolatory if and only if it
+integrates every polynomial of degree at most $n$ exactly. -/
+theorem isInterpolatoryMeasure_iff_isExactOnMeasure (hw : IsWeight μ) {w x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) : IsInterpolatoryMeasure μ w x ↔ IsExactOnMeasure μ w x n :=
+  isInterpolatoryMeasure_iff_isExactOnMeasure_of_integrable_basis hx
+    (fun i => hw.integrable_eval (Lagrange.basis Finset.univ x i))
 
 /-- Let $\omega$ be the nodal polynomial of $n + 1$ nodes and let $m \ge 1$. Every polynomial of
 degree at most $n + m$ is $\omega q + r$ with $\deg q \le m - 1$ and $\deg r \le n$. -/
@@ -700,7 +725,8 @@ $n + m \ge n$ makes the rule interpolatory, and for $p \in \mathbb{P}_{m-1}$ the
 $\omega p \in \mathbb{P}_{n+m}$ vanishes at the nodes, so its integral is $0$.
 
 The nodal polynomial is `Lagrange.nodal Finset.univ x`. -/
-theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
+theorem isExactOnMeasure_add_iff_of_integrable
+    (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {m : ℕ} (hm : 1 ≤ m)
     {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ w x (n + m) ↔
       IsInterpolatoryMeasure μ w x ∧ ∀ p : ℝ[X], p.degree ≤ ((m - 1 : ℕ) : WithBot ℕ) →
@@ -709,9 +735,11 @@ theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
     Lagrange.eval_nodal_at_node (Finset.mem_univ i)
   have hnodaldeg : (Lagrange.nodal Finset.univ x).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
     rw [Lagrange.degree_nodal]; simp
+  have hInterp := isInterpolatoryMeasure_iff_isExactOnMeasure_of_integrable_basis (μ := μ) hx
+    (w := w) (fun i => hint (Lagrange.basis Finset.univ x i))
   constructor
   · intro h
-    refine ⟨(isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mpr (h.mono (by omega)),
+    refine ⟨hInterp.mpr (h.mono (by omega)),
       fun p hp => ?_⟩
     have hdeg : (Lagrange.nodal Finset.univ x * p).degree ≤ ((n + m : ℕ) : WithBot ℕ) := by
       refine (degree_mul_le _ _).trans ?_
@@ -727,7 +755,7 @@ theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
         = ∫ t, (Lagrange.nodal Finset.univ x * p).eval t ∂μ :=
           integral_congr_ae (Filter.Eventually.of_forall fun t => (eval_mul).symm)
       _ = 0 := (h _ hdeg).symm.trans h2
-  · rintro ⟨hint, horth⟩ p hp
+  · rintro ⟨hi, horth⟩ p hp
     obtain ⟨q, r, rfl, hq, hr⟩ := exists_nodal_mul_add (x := x) hm hp
     have hsum : ∑ i, w i * (Lagrange.nodal Finset.univ x * q + r).eval (x i) =
         ∑ i, w i * r.eval (x i) :=
@@ -735,9 +763,39 @@ theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
     have hev : ∀ t : ℝ, (Lagrange.nodal Finset.univ x * q + r).eval t =
         (Lagrange.nodal Finset.univ x).eval t * q.eval t + r.eval t := fun t => by
       rw [eval_add, eval_mul]
+    have hint_mul : Integrable (fun t => (Lagrange.nodal Finset.univ x).eval t * q.eval t) μ :=
+      by simpa only [eval_mul] using hint (Lagrange.nodal Finset.univ x * q)
     rw [hsum, integral_congr_ae (Filter.Eventually.of_forall hev),
-      integral_add (hw.integrable_eval_mul _ _) (hw.integrable_eval r), horth q hq, zero_add]
-    exact (isInterpolatoryMeasure_iff_isExactOnMeasure hw hx).mp hint r hr
+      integral_add hint_mul (hint r), horth q hq, zero_add]
+    exact hInterp.mp hi r hr
+
+/-- For a weight, Jacobi's theorem identifies exactness with interpolation and orthogonality
+of the nodal polynomial. -/
+theorem isExactOnMeasure_add_iff (hw : IsWeight μ) {m : ℕ} (hm : 1 ≤ m)
+    {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
+    IsExactOnMeasure μ w x (n + m) ↔
+      IsInterpolatoryMeasure μ w x ∧ ∀ p : ℝ[X], p.degree ≤ ((m - 1 : ℕ) : WithBot ℕ) →
+        ∫ t, (Lagrange.nodal Finset.univ x).eval t * p.eval t ∂μ = 0 :=
+  isExactOnMeasure_add_iff_of_integrable hw.integrable_eval hm hx w
+
+/-- No rule with $n+1$ nodes integrates through degree $2n+2$ if the support has more
+than $n+1$ points. Test exactness on the squared nodal polynomial. -/
+theorem not_isExactOnMeasure_two_mul_add_two_of_card_le
+    (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ)
+    (hm : ∀ s : Finset ℝ, s.card ≤ n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0)
+    (w x : Fin (n + 1) → ℝ) : ¬ IsExactOnMeasure μ w x (2 * n + 2) := by
+  intro h
+  let q := Lagrange.nodal Finset.univ x
+  have hd : q.degree = ↑(n + 1) := by change (Lagrange.nodal Finset.univ x).degree = _; simp
+  have hdeg : (q ^ 2).degree ≤ ↑(2 * n + 2) := by
+    rw [degree_pow, hd, two_nsmul, ← Nat.cast_add]
+    exact_mod_cast (by omega : n + 1 + (n + 1) ≤ 2 * n + 2)
+  have hzero := h (q ^ 2) hdeg
+  have hroot (i : Fin (n + 1)) : q.eval (x i) = 0 :=
+    Lagrange.eval_nodal_at_node (Finset.mem_univ i)
+  simp only [eval_pow, hroot, zero_pow (by decide : (2 : ℕ) ≠ 0), mul_zero, Finset.sum_const_zero]
+    at hzero
+  exact (integral_eval_sq_pos_of_degree_le hint hm Lagrange.nodal_ne_zero hd.le).ne' hzero.symm
 
 /-- Let $\mu$ be a weight on $\mathbb{R}$. No rule with $n + 1$ nodes is exact to degree $2n + 2$
 for $\mu$, so the degree $2n + 1$ of the Gauss rule is the maximum. This is Corollary 10.1 of
@@ -759,32 +817,50 @@ polynomial of degree $n + 1$ that is orthogonal to every polynomial of degree at
 differs from $p_{n+1}$ by a polynomial of degree at most $n$ that is orthogonal to
 $\mathbb{P}_n$, so it equals $p_{n+1}$. The polynomial $p_{n+1}$ is
 `OrthogonalPolynomial.family μ (n + 1)`. -/
-theorem isExactOnMeasure_two_mul_add_one_iff (hw : IsWeight μ) {x : Fin (n + 1) → ℝ}
+theorem isExactOnMeasure_two_mul_add_one_iff_of_card_lt
+    (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ)
+    (hm : ∀ s : Finset ℝ, s.card < n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ w x (2 * n + 1) ↔
       Lagrange.nodal Finset.univ x = family μ (n + 1) ∧ IsInterpolatoryMeasure μ w x := by
   have hnodaldeg : (Lagrange.nodal Finset.univ x).degree = ((n + 1 : ℕ) : WithBot ℕ) := by
     rw [Lagrange.degree_nodal]; simp
   have h2 : 2 * n + 1 = n + (n + 1) := by omega
-  rw [h2, isExactOnMeasure_add_iff hw (by omega) hx w, Nat.add_sub_cancel, and_comm]
+  have horth {p : ℝ[X]} (hp : p.degree < ↑(n + 1)) :
+      ∫ t, (family μ (n + 1)).eval t * p.eval t ∂μ = 0 :=
+    integral_family_mul_of_degree_lt_of_integrable hint
+      (fun _ hj => normSq_ne_zero_of_card_lt hint hm hj) hp
+  rw [h2, isExactOnMeasure_add_iff_of_integrable hint (by omega) hx w, Nat.add_sub_cancel,
+    and_comm]
   refine and_congr_left fun _ => ⟨fun h => ?_, fun h p hp => ?_⟩
-  · refine sub_eq_zero.mp (eq_zero_of_degree_lt hw (n := n + 1) ?_ ?_)
-    · have := degree_sub_lt_left (p := Lagrange.nodal Finset.univ x) (q := family μ (n + 1))
+  · let q := Lagrange.nodal Finset.univ x - family μ (n + 1)
+    have hqd : q.degree < ↑(n + 1) := by
+      have hd := degree_sub_lt_left (p := Lagrange.nodal Finset.univ x) (q := family μ (n + 1))
         (by rw [hnodaldeg, degree_family]) Lagrange.nodal_ne_zero
         (by rw [Lagrange.nodal_monic.leadingCoeff, (monic_family μ (n + 1)).leadingCoeff])
-      rwa [hnodaldeg] at this
-    · intro k hk
-      have hkdeg : (family μ k).degree ≤ n := by
-        rw [degree_family]; exact_mod_cast Nat.lt_succ_iff.mp hk
-      have hev : ∀ t : ℝ, (Lagrange.nodal Finset.univ x - family μ (n + 1)).eval t *
-          (family μ k).eval t = (Lagrange.nodal Finset.univ x).eval t * (family μ k).eval t -
-            (family μ (n + 1)).eval t * (family μ k).eval t := fun t => by
-        rw [eval_sub, sub_mul]
-      rw [integral_congr_ae (Filter.Eventually.of_forall hev),
-        integral_sub (hw.integrable_eval_mul _ _) (hw.integrable_eval_mul _ _), h _ hkdeg,
-        integral_family_mul_family hw (by omega), sub_zero]
+      rwa [hnodaldeg] at hd
+    apply sub_eq_zero.1
+    by_contra hq
+    have hintmul (p : ℝ[X]) : Integrable (fun t => p.eval t * q.eval t) μ := by
+      simpa only [eval_mul] using hint (p * q)
+    have hev (t : ℝ) : q.eval t ^ 2 = (Lagrange.nodal Finset.univ x).eval t * q.eval t -
+        (family μ (n + 1)).eval t * q.eval t := by
+      rw [sq, ← sub_mul, show q.eval t = _ from eval_sub _ _ _]
+    have hzero : ∫ t, q.eval t ^ 2 ∂μ = 0 := by
+      rw [integral_congr_ae (Filter.Eventually.of_forall hev), integral_sub (hintmul _) (hintmul _),
+        h q (degree_lt_succ_iff.1 hqd), horth hqd, sub_zero]
+    exact (integral_eval_sq_pos_of_degree_le hint
+      (fun s hs => hm s (Nat.lt_succ_of_le hs)) hq (degree_lt_succ_iff.1 hqd)).ne' hzero
   · rw [h]
-    exact integral_family_mul_of_degree_lt hw (degree_lt_succ_iff.mpr hp)
+    exact horth (degree_lt_succ_iff.mpr hp)
+
+/-- The nodes of a Gauss rule for a weight are the roots of its monic orthogonal polynomial. -/
+theorem isExactOnMeasure_two_mul_add_one_iff (hw : IsWeight μ) {x : Fin (n + 1) → ℝ}
+    (hx : Function.Injective x) (w : Fin (n + 1) → ℝ) :
+    IsExactOnMeasure μ w x (2 * n + 1) ↔
+      Lagrange.nodal Finset.univ x = family μ (n + 1) ∧ IsInterpolatoryMeasure μ w x :=
+  isExactOnMeasure_two_mul_add_one_iff_of_card_lt hw.integrable_eval
+    (fun s _ => hw.measure_compl_ne_zero s.finite_toSet) hx w
 
 /-- Let $\mu$ be a measure on $\mathbb{R}$ with $\mu(\mathbb{R} \setminus [a, b]) = 0$, and let $L$
 be a bounded linear functional on $C([a, b])$ with $L(f) = \int f\,d\mu$ for every $f$, where

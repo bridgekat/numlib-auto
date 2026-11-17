@@ -1,0 +1,30 @@
+[[node]]
+id = "Matrix.IsJacobiMatrix"
+source = "Liesen and Strakoš, Definition 2.4.1"
+
+[[node]]
+id = "Matrix.leadingZeroPad"
+
+[[node]]
+id = "Matrix.norm_leadingZeroPad"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.first_ne_zero"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.eigenvalues_injective"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.leadingBlock"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.leadingBlock_persistence"
+
+[[node]]
+id = "Matrix.IsJacobiMatrix.leadingBlock_residual_norm"
+
+[[node]]
+id = "Arnoldi.vec_eq_col_of_mul_eq_mul"
+
+[[node]]
+id = "Arnoldi.vec_toEuclideanLin_map_of_positive_tridiagonal"

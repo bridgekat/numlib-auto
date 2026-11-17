@@ -1,0 +1,13 @@
+namespace = "Polynomial"
+
+[[node]]
+id = "IsMinDegreeRepresentation"
+
+[[node]]
+id = "IsMinDegreeRepresentation.degree_lt_minpoly"
+
+[[node]]
+id = "isMinDegreeRepresentation_algEquiv_iff"
+
+[[node]]
+id = "IsMinDegreeRepresentation.existsUnique"

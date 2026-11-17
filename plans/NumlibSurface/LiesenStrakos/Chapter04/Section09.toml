@@ -1,0 +1,13 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "rieszProjection"
+source = "Liesen and Strakoš, §4.9, (4.9.2)"
+
+[[node]]
+id = "theorem_4_9_1"
+source = "Liesen and Strakoš, Theorem 4.9.1"
+
+[[node]]
+id = "spectral_idempotents_4_9_7"
+source = "Liesen and Strakoš, (4.9.7)"

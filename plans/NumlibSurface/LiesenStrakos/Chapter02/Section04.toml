@@ -1,0 +1,41 @@
+namespace = "LiesenStrakos"
+
+[[node]]
+id = "arnoldiVector"
+source = "Liesen and Strakoš, Algorithm 2.4.1"
+
+[[node]]
+id = "arnoldiHessenberg"
+source = "Liesen and Strakoš, (2.4.3)"
+
+[[node]]
+id = "lanczosTridiagonal"
+source = "Liesen and Strakoš, (2.4.6)"
+
+[[node]]
+id = "IsJacobiMatrix"
+source = "Liesen and Strakoš, Definition 2.4.1"
+
+[[node]]
+id = "arnoldi_basis"
+source = "Liesen and Strakoš, §2.4.1"
+
+[[node]]
+id = "lanczos_isJacobiMatrix"
+source = "Liesen and Strakoš, §2.4.1"
+
+[[node]]
+id = "biLanczosVector"
+source = "Liesen and Strakoš, Algorithm 2.4.4"
+
+[[node]]
+id = "arnoldiMGSVector"
+source = "Liesen and Strakoš, Algorithm 2.4.2"
+
+[[node]]
+id = "arnoldiMGSVector_eq"
+source = "Liesen and Strakoš, §2.4.1"
+
+[[node]]
+id = "arnoldiHessenberg_eq_lanczosTridiagonal"
+source = "Liesen and Strakoš, §2.4.1"
