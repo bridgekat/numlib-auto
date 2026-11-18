@@ -274,7 +274,9 @@ theorem lemma_5_2 (L M : Submodule ℂ (EuclideanSpace ℂ n)) :
     exact congrArg (fun T : Submodule ℂ (EuclideanSpace ℂ n) => T.starProjection.toLinearMap)
       ((congrArg (fun A : Matrix n n ℂ => (toEuclideanLin A).range) hSym.eq).trans hRange).symm
 
-private theorem orthogonalProjector_mul_of_le {L M : Submodule ℂ (EuclideanSpace ℂ n)}
+/-- Orthogonal projectors onto nested subspaces compose to the smaller
+projector in either order. -/
+theorem orthogonalProjector_mul_of_le {L M : Submodule ℂ (EuclideanSpace ℂ n)}
     (h : L ≤ M) :
     orthogonalProjector L * orthogonalProjector M = orthogonalProjector L ∧
       orthogonalProjector M * orthogonalProjector L = orthogonalProjector L := by

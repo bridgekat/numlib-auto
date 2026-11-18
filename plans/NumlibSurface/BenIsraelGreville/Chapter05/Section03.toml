@@ -25,6 +25,10 @@ id = "lemma_5_2"
 source = "Ben-Israel and Greville, Chapter 5, Lemma 2, Equation (50)"
 
 [[node]]
+id = "orthogonalProjector_mul_of_le"
+source = "Ben-Israel and Greville, Chapter 5, Equations (52) and (66)"
+
+[[node]]
 id = "theorem_5_3"
 source = "Ben-Israel and Greville, Chapter 5, Theorem 3, Equation (51)"
 
