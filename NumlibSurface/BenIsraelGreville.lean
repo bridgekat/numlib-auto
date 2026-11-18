@@ -43,6 +43,7 @@ import NumlibSurface.BenIsraelGreville.Chapter05.Section05
 import NumlibSurface.BenIsraelGreville.Chapter06.Section01
 import NumlibSurface.BenIsraelGreville.Chapter06.Section02
 import NumlibSurface.BenIsraelGreville.Chapter06.Section03
+import NumlibSurface.BenIsraelGreville.Chapter06.Section04
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -104,6 +105,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §6.1 | `Chapter06.Section01` | Singular values, extrema, and conditioning |
 | §6.2 | `Chapter06.Section02` | SVD, pseudoinverse, and finite expansions |
 | §6.3 | `Chapter06.Section03` | Low-rank approximation, uniqueness, and total least squares |
+| §6.4 | `Chapter06.Section04` | Partial isometries and canonical polar factors |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions

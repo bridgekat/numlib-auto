@@ -1,34 +1,260 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Develop partial isometries through their adjoint identity and orthogonal initial and final projections.
-'''
 
 [[node]]
 id = "IsPartialIsometry"
-kind = "definition"
-desc = '''The map preserves Euclidean norm on the orthogonal complement of its kernel.'''
 source = 'Ben-Israel and Greville, Chapter 6, §4, equation (72)'
 
 [[node]]
+id = "isPartialIsometry_iff_dist"
+source = 'Ben-Israel and Greville, Chapter 6, §4, equation (72), distance form'
+
+[[node]]
+id = "isPartialIsometry_iff_initial_gram"
+source = 'Ben-Israel and Greville, Chapter 6, equation (73)'
+
+[[node]]
+id = "isPartialIsometry_iff_adjoint_eq_pinv"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 5(a,c,d)'
+
+[[node]]
 id = "theorem_6_5"
-kind = "theorem"
-desc = '''Partial isometry of U, Uᴴ, or U†, orthogonal projection of either Gram product, the two reflexivity identities, and Uᴴ = U† are equivalent.'''
 source = 'Ben-Israel and Greville, Chapter 6, Theorem 5'
 
 [[node]]
 id = "theorem_6_6"
-kind = "theorem"
-desc = '''The truncated unitary factors and their cross product are partial isometries, with the stated initial and final projections onto the ranges of A and Aᴴ.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 6'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 6, equations (75)–(78)'
+
+[[node]]
+id = "IsCanonicalPolarDecomposition"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 7, equations (79)–(80)'
 
 [[node]]
 id = "theorem_6_7"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 7, equations (77), (79)–(83)'
+
+[[node]]
+id = "IsCanonicalPolarDecomposition.gram_and_recover"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 7, equations (81), (84)'
+
+[[node]]
+id = "IsCanonicalPolarDecomposition.unique"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 7, uniqueness'
+
+[[node]]
+id = "existsUnique_canonicalPolarDecomposition"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 7, existence and uniqueness'
+
+[[node]]
+id = "polar_factors_of_larger_truncation"
 kind = "theorem"
-desc = '''Every matrix has a polar decomposition A = GE = EH by a partial isometry E and positive semidefinite G and H. Under matching range conditions the factors are unique, with G² = AAᴴ and H² = AᴴA.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 7'
+desc = '''Every truncation at least the rank gives a polar decomposition by a partial isometry, and the larger truncation construction yields nonuniqueness without range matching.'''
+deps = ["theorem_6_7"]
+source = 'Ben-Israel and Greville, Chapter 6, equations (82)–(83)'
+
+[[node]]
+id = "polar_left_factor_pinv"
+kind = "theorem"
+desc = '''The pseudoinverse of the supported left polar factor conjugates the inverse leading singular diagonal by the leading left singular vectors.'''
+deps = ["theorem_6_7"]
+source = 'Ben-Israel and Greville, Chapter 6, equation (85)'
 
 [[node]]
 id = "corollary_6_2"
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 2, equations (86)–(87), fixed UDV factors'
+
+[[node]]
+id = "normal_polar_factors_range_nonunique"
 kind = "theorem"
-desc = '''For prescribed phases of the singular values, transport those phases into the normal left and right polar factors, retaining GGᴴ = AAᴴ and HᴴH = AᴴA. Uniqueness must retain the phase assignment or a fixed decomposition when singular values repeat.'''
-source = 'Ben-Israel and Greville, Chapter 6, Corollary 2'
+desc = '''The range constraints alone are insufficient for uniqueness when the polar factors are normal. Produce two sets of supported normal factors for one matrix.'''
+deps = ["corollary_6_2"]
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 2, corrected uniqueness scope'
+
+[[node]]
+id = "polar_complex_scalar"
+kind = "theorem"
+desc = '''A nonzero complex number is its modulus times its unit complex phase. Use the complex argument to choose the correct quadrant.'''
+source = 'Ben-Israel and Greville, Chapter 6, equation (88)'
+
+[[node]]
+id = "exercise_6_37"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 37, equation (89)'
+
+[[node]]
+id = "exercise_6_38"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 38, with surjectivity'
+
+[[node]]
+id = "exercise_6_38_counterexample"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 38, counterexample without surjectivity'
+
+[[node]]
+id = "exercise_6_39_columns"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 39, forward direction'
+
+[[node]]
+id = "exercise_6_39_completion"
+kind = "theorem"
+desc = '''Complete a full-column-rank partial isometry by orthogonal columns to a unitary matrix.'''
+deps = ["theorem_6_5"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 39, converse direction'
+
+[[node]]
+id = "exercise_6_40"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 40'
+
+[[node]]
+id = "exercise_6_41"
+kind = "theorem"
+desc = '''A matrix is a partial isometry exactly when all its positive singular values are one. All the nonzero entries of any corresponding complex diagonal then have unit modulus.'''
+deps = ["theorem_6_5"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 41'
+
+[[node]]
+id = "exercise_6_42"
+kind = "theorem"
+desc = '''Partial isometries carry an orthonormal basis of the initial space to an orthonormal basis of the final space, and the existence of such bases characterizes them.'''
+deps = ["IsPartialIsometry"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 42'
+
+[[node]]
+id = "IsContraction"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 43, equation (90)'
+
+[[node]]
+id = "exercise_6_43_adjoint"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 43(a,b)'
+
+[[node]]
+id = "exercise_6_43_projector"
+kind = "theorem"
+desc = '''A matrix is a contraction exactly when the orthogonal projector onto every subspace containing its range dominates the final Gram matrix.'''
+deps = ["IsContraction"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 43(c)'
+
+[[node]]
+id = "exercise_6_44"
+kind = "theorem"
+desc = '''Adjoin the positive square root of the Gram defect to a contraction and a lower zero block to obtain a square partial isometry.'''
+deps = ["exercise_6_43_projector", "exercise_6_37"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 44'
+
+[[node]]
+id = "exercise_6_45"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 45'
+
+[[node]]
+id = "exercise_6_46"
+kind = "theorem"
+desc = '''Verify the displayed partial isometry, its interior eigenvalue and its corresponding eigenvector outside the kernel.'''
+deps = ["theorem_6_5"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 46'
+
+[[node]]
+id = "exercise_6_47"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 47'
+
+[[node]]
+id = "exercise_6_48"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 48'
+
+[[node]]
+id = "exercise_6_49"
+kind = "theorem"
+desc = '''The two-by-two nilpotent shift is a nonnormal partial isometry with only zero eigenvalues.'''
+deps = ["theorem_6_5"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 49'
+
+[[node]]
+id = "exercise_6_50"
+kind = "theorem"
+desc = '''A contraction is a normal partial isometry exactly when its eigenvalue moduli are zero or one and taking the square preserves its rank.'''
+deps = ["exercise_6_47", "IsContraction"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 50'
+
+[[node]]
+id = "exercise_6_51"
+kind = "theorem"
+desc = '''A normal partial isometry is exactly a unitary conjugate of a unitary block direct summed with a zero block.'''
+deps = ["exercise_6_47"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 51'
+
+[[node]]
+id = "exercise_6_52"
+kind = "theorem"
+desc = '''A square matrix is normal exactly when its supported polar factors commute, in which case the partial isometry is also normal.'''
+deps = ["IsCanonicalPolarDecomposition"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 52'
+
+[[node]]
+id = "exercise_6_53"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 53, equation (91)'
+
+[[node]]
+id = "exercise_6_54"
+kind = "theorem"
+desc = '''Positive singular values are exactly the generalized eigenvalues of the two supported polar equations with nonzero vectors in the initial or final space.'''
+deps = ["IsCanonicalPolarDecomposition.gram_and_recover"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 54, equations (92)–(93)'
+
+[[node]]
+id = "exercise_6_55"
+kind = "theorem"
+desc = '''Prove the nearest and farthest unitary polar-factor inequalities for unitarily invariant norms and their appropriate rectangular analogues.'''
+deps = ["theorem_6_7"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 55'
+
+[[node]]
+id = "exercise_6_56"
+kind = "theorem"
+desc = '''The generalized Cayley transforms are inverse bijections between supported Hermitian matrices and normal partial isometries on the support excluding eigenvalue minus one.'''
+deps = ["exercise_6_47"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 56, equations (94)–(97)'
+
+[[node]]
+id = "exercise_6_57"
+kind = "theorem"
+desc = '''Increasing the supporting subspace extends the partial Cayley transform, and its restriction to the original support is unchanged.'''
+deps = ["exercise_6_56"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 57'
+
+[[node]]
+id = "exercise_6_58"
+kind = "theorem"
+desc = '''On a fixed common range, the Cayley transform is 2-Lipschitz in each unitarily invariant norm.'''
+deps = ["exercise_6_56"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 58'
+
+[[node]]
+id = "exercise_6_59"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 59, equations (98)–(99)'
+
+[[node]]
+id = "exercise_6_60"
+kind = "theorem"
+desc = '''Over maximal-rank partial isometries of the transposed dimension, the real trace of the product with a matrix attains the sum of its singular values. The maximizing product can be positive semidefinite.'''
+deps = ["theorem_6_7", "exercise_6_59"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 60, equations (100)–(101)'
+
+[[node]]
+id = "exercise_6_61_upper"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 61, upper bound'
+
+[[node]]
+id = "exercise_6_61"
+kind = "theorem"
+desc = '''The maximum of the real trace of AXBW over unitary X and W equals the sum of pairwise products of matching singular values and is attained.'''
+deps = ["exercise_6_61_upper"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 61, attainment'
+
+[[node]]
+id = "exercise_6_62"
+kind = "theorem"
+desc = '''Symmetric gauge functions and unitarily invariant matrix norms correspond through the singular-value vector, including the dual norm and the triangle inequality.'''
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, equations (102)–(103)'
+
+[[node]]
+id = "exercise_6_63"
+kind = "theorem"
+desc = '''For every symmetric gauge function, its values on the ordered singular-value vectors satisfy a triangle inequality under matrix addition.'''
+deps = ["exercise_6_62"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 63, equation (104)'
