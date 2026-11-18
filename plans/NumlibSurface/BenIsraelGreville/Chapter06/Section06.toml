@@ -1,46 +1,155 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Use the pseudoinverse projection identities and norm perturbation tools in Numlib.Analysis.Matrix.SingularValues.
-'''
 
 [[node]]
 id = "pinv_converges_iff_eventually_rank_eq"
-kind = "theorem"
-desc = '''For a sequence of matrices converging to A, the Moore–Penrose inverses converge to A† exactly when the ranks eventually equal rank A.'''
 source = 'Ben-Israel and Greville, Chapter 6, §6, continuity at fixed rank'
 
 [[node]]
+id = "l2_opNorm_pinv_eq_inv_smallest_positive"
+source = 'Ben-Israel and Greville, Chapter 6, §6, reciprocal smallest positive singular value'
+
+[[node]]
+id = "pinv_rankJump_example"
+source = 'Ben-Israel and Greville, Chapter 6, equation (128)'
+
+[[node]]
 id = "IsAcutePerturbation"
-kind = "definition"
-desc = '''The gaps between the two column ranges and the two row ranges are both strictly less than one.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 5'
+source = 'Ben-Israel and Greville, Chapter 6, Definition 5, equation (130)'
 
 [[node]]
 id = "theorem_6_13"
-kind = "theorem"
-desc = '''The column range gap is less than one exactly when both opposite orthogonal intersections vanish, equivalently when the column ranks and the rank of the projected perturbed matrix agree. The same holds for row ranges.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 13'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 13, column spaces'
+
+[[node]]
+id = "theorem_6_13_rows"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 13, row spaces'
 
 [[node]]
 id = "theorem_6_14"
-kind = "theorem"
-desc = '''In rank-adapted orthonormal coordinates, acuteness is equivalent to the leading block being nonsingular with zero trailing Schur complement, giving the full rank factorization and its inverse formula. The left off-diagonal factor uses E₂₁ and the right one uses E₁₂.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 14'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 14, equation (131)'
+
+[[node]]
+id = "acute_block_factorization"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 14, equations (132)–(134)'
+
+[[node]]
+id = "eventually_isAcutePerturbation_iff_eventually_rank_eq"
+source = 'Ben-Israel and Greville, Chapter 6, §6, eventual acuteness'
+
+[[node]]
+id = "continuousOn_pinv_rank_eq"
+source = 'Ben-Israel and Greville, Chapter 6, §6, continuity on each fixed-rank stratum'
 
 [[node]]
 id = "theorem_6_15"
-kind = "theorem"
-desc = '''For nonacute A and B, the norm of B† − A† is at least the reciprocal of the perturbation norm. A bound for B† alone requires restricting to the direction whose subspace intersection is nontrivial.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 15'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 15, equation (135a)'
+
+[[node]]
+id = "theorem_6_15_of_column_direction"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 15, equation (135b), corrected directional bound'
 
 [[node]]
 id = "theorem_6_16"
-kind = "theorem"
-desc = '''Expand B† − A† as the linear perturbation term and two cross-projection corrections, and obtain the equivalent rewritten forms using the adjoint of the perturbation and Gram pseudoinverses. The printed simplification (136d) requires stationary row and column spaces, as acuteness alone allows rotations.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 16'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136a)'
+
+[[node]]
+id = "pinv_sub_pinv_eq_with_range_projections"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136b)'
+
+[[node]]
+id = "pinv_columnGram"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, column Gram pseudoinverse'
+
+[[node]]
+id = "pinv_sub_pinv_eq_wedin"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136c), with inverse products'
+
+[[node]]
+id = "pinv_sub_pinv_eq_gram"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136c), corrected sign'
+
+[[node]]
+id = "pinv_sub_pinv_eq_of_same_ranges"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136d), stationary ranges'
 
 [[node]]
 id = "theorem_6_17"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, equation (137), spectral norm'
+
+[[node]]
+id = "theorem_6_17_frobenius"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, equation (137), Frobenius bound'
+
+[[node]]
+id = "exercise_6_77"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 77, equations (127), (138), spectral norm'
+
+[[node]]
+id = "exercise_6_78"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 78, equation (139)'
+
+[[node]]
+id = "exercise_6_79"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 79'
+
+[[node]]
+id = "exercise_6_80"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 80, equations (140)–(143), spectral norm'
+
+[[node]]
+id = "exercise_6_81"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 81, equations (146)–(148), spectral norm'
+
+[[node]]
+id = "isOpen_nonsingular"
+source = 'Ben-Israel and Greville, Chapter 6, §6, openness of the nonsingular set'
+
+[[node]]
+id = "rankAdaptedOrthonormalCoordinates"
 kind = "theorem"
-desc = '''For a family of unitarily invariant matrix norms with the required mixed-product bounds, the norm of the change in pseudoinverse is bounded by three times the larger squared pseudoinverse norm times the norm of the perturbation.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 17'
+desc = '''There are orthonormal block coordinates in which the original matrix has only a nonsingular leading block, and the perturbation is added to its four blocks.'''
+deps = ["theorem_6_14"]
+source = 'Ben-Israel and Greville, Chapter 6, equations (129a)–(129c)'
+
+[[node]]
+id = "theorem_6_15_row_direction"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 15, equation (135b), row direction'
+
+[[node]]
+id = "nonacute_individual_inverse_bound_counterexample"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 15, equation (135b), counterexample'
+
+[[node]]
+id = "acute_inverse_difference_counterexample"
+kind = "theorem"
+desc = '''An acute rotation of a one-dimensional column space can have a nonzero projection correction.'''
+deps = ["pinv_sub_pinv_eq_of_same_ranges"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136d), counterexample'
+
+[[node]]
+id = "theorem_6_17_unitarilyInvariant"
+kind = "theorem"
+desc = '''Derive the factor-three bound for the applicable unitarily invariant matrix norm families with mixed multiplication estimates.'''
+deps = ["pinv_sub_pinv_eq_gram"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, equation (137), general norm'
+
+[[node]]
+id = "exercise_6_77_multiplicative"
+kind = "theorem"
+desc = '''The perturbation radius and Neumann expansion hold for a general compatible submultiplicative matrix norm.'''
+deps = ["exercise_6_77"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 77, general multiplicative norm'
+
+[[node]]
+id = "exercise_6_80_multiplicative"
+kind = "theorem"
+desc = '''Extend the supported perturbation formula to every compatible multiplicative matrix norm and characterize the two support inclusions by the reverse order conditions on this block.'''
+deps = ["exercise_6_80"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 80, general multiplicative norm'
+
+[[node]]
+id = "exercise_6_81_multiplicative"
+kind = "theorem"
+desc = '''Extend both error bounds and the stated stronger sufficient hypothesis to a compatible multiplicative matrix norm family.'''
+deps = ["exercise_6_80_multiplicative","exercise_6_81"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 81, general multiplicative norm'
