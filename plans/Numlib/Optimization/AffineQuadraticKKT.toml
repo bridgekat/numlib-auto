@@ -1,0 +1,10 @@
+namespace = 'LinearMap'
+
+[[node]]
+id = 'quadraticEnergy'
+
+[[node]]
+id = 'isMinOn_quadraticEnergy_iff_kernel'
+
+[[node]]
+id = 'isMinOn_quadraticEnergy_iff_exists_dual'

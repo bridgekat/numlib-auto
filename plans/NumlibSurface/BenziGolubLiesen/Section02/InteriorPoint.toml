@@ -1,0 +1,37 @@
+namespace = 'BenziGolubLiesen'
+
+[[node]]
+id = 'inequalities_iff_exists_slack'
+source = 'Benzi–Golub–Liesen, §2.3, (2.25)–(2.28)'
+
+[[node]]
+id = 'barrierFeasibleSet'
+source = 'Benzi–Golub–Liesen, §2.3, (2.27)–(2.28)'
+
+[[node]]
+id = 'barrierObjective'
+source = 'Benzi–Golub–Liesen, §2.3, (2.27)'
+
+[[node]]
+id = 'barrierLagrangian_slackStationary_iff'
+source = 'Benzi–Golub–Liesen, §2.3, (2.31)'
+
+[[node]]
+id = 'barrierStationarity_iff_complementarity'
+source = 'Benzi–Golub–Liesen, §2.3, (2.29)–(2.35)'
+
+[[node]]
+id = 'barrierNewton_iff_reduced'
+source = 'Benzi–Golub–Liesen, §2.3, (2.36)–(2.37)'
+
+[[node]]
+id = 'lagrangianHessian_posSemidef_of_convex'
+source = 'Benzi–Golub–Liesen, §2.3, paragraph after (2.37)'
+
+[[node]]
+id = 'barrierReducedDiagonal_posSemidef'
+source = 'Benzi–Golub–Liesen, §2.3, paragraph after (2.37)'
+
+[[node]]
+id = 'strictConvex_hessian_not_posDef_example'
+source = 'Benzi–Golub–Liesen, §2.3, paragraph after (2.37)'

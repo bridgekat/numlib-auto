@@ -29,6 +29,7 @@ and `Numlib.LinearAlgebra.Matrix.SaddlePoint.ScalarDiagonal`.
 
 * Equation (3.10), `BenziGolubLiesen.signFlippedSaddlePointMatrix`: the matrix with blocks $A$,
   $B^T$, $-B$ and $C$.
+* Equation (3.11), `BenziGolubLiesen.saddleSignature`: the signature matrix $J$.
 * Equation (3.13), `BenziGolubLiesen.scaledSaddlePointMatrix`: the matrix with blocks $\eta I$,
   $B^T$, $\varepsilon B$ and $0$, where $\varepsilon = \pm 1$.
 
@@ -81,6 +82,50 @@ The matrix is `Matrix.fromBlocks A Bᵀ (-B) C`, indexed by `n ⊕ m`. -/
 abbrev signFlippedSaddlePointMatrix (A : Matrix n n ℝ) (B : Matrix m n ℝ) (C : Matrix m m ℝ) :
     Matrix (n ⊕ m) (n ⊕ m) ℝ :=
   fromBlocks A Bᵀ (-B) C
+
+/-- **Equation (3.11)** of [benzi2005numerical]. The signature matrix $J$ has diagonal
+blocks $I_n$ and $-I_m$. -/
+abbrev saddleSignature : Matrix (n ⊕ m) (n ⊕ m) ℝ :=
+  fromBlocks 1 0 0 (-1)
+
+/-- **Section 3.4** of [benzi2005numerical]. Changing the sign of the second block row
+twice restores the original matrix. -/
+theorem saddleSignature_sq : saddleSignature * saddleSignature =
+    (1 : Matrix (n ⊕ m) (n ⊕ m) ℝ) := by
+  simp [saddleSignature, fromBlocks_multiply, fromBlocks_one]
+
+/-- **Equations (3.10)–(3.11)** of [benzi2005numerical]. Left multiplication by $J$ gives the
+sign-flipped saddle-point matrix. -/
+theorem signFlippedSaddlePointMatrix_eq_signature_mul (A : Matrix n n ℝ) (B : Matrix m n ℝ)
+    (C : Matrix m m ℝ) :
+    signFlippedSaddlePointMatrix A B C = saddleSignature * saddlePointMatrix A B B C := by
+  simp [saddleSignature, saddlePointMatrix, signFlippedSaddlePointMatrix, fromBlocks_multiply]
+
+omit [DecidableEq n] [DecidableEq m] in
+/-- **Equation (3.10)** of [benzi2005numerical]. Changing the sign of the second block row
+and of the second right-hand side component preserves the solution set. -/
+theorem signFlippedSaddlePointMatrix_mulVec_iff (A : Matrix n n ℝ) (B : Matrix m n ℝ)
+    (C : Matrix m m ℝ) (x f : n → ℝ) (y g : m → ℝ) :
+    signFlippedSaddlePointMatrix A B C *ᵥ Sum.elim x y = Sum.elim f (-g) ↔
+      saddlePointMatrix A B B C *ᵥ Sum.elim x y = Sum.elim f g := by
+  classical
+  have h (z : n → ℝ) (w : m → ℝ) : saddleSignature *ᵥ Sum.elim z w = Sum.elim z (-w) := by
+    simp [saddleSignature, fromBlocks_mulVec, neg_mulVec]
+  rw [signFlippedSaddlePointMatrix_eq_signature_mul, ← mulVec_mulVec, ← h]
+  have hleft : Function.LeftInverse
+      (saddleSignature : Matrix (n ⊕ m) (n ⊕ m) ℝ).mulVec saddleSignature.mulVec := by
+    intro z
+    rw [mulVec_mulVec, saddleSignature_sq, one_mulVec]
+  exact hleft.injective.eq_iff
+
+/-- **Equation (3.12)** of [benzi2005numerical]. The sign-flipped matrix is $J$-symmetric
+when $A$ and $C$ are symmetric. -/
+theorem saddleSignature_mul_signFlipped_eq {A : Matrix n n ℝ} {C : Matrix m m ℝ}
+    (hA : A.IsSymm) (hC : C.IsSymm) (B : Matrix m n ℝ) :
+    saddleSignature * signFlippedSaddlePointMatrix A B C =
+      (signFlippedSaddlePointMatrix A B C)ᵀ * saddleSignature := by
+  simp [saddleSignature, signFlippedSaddlePointMatrix, fromBlocks_multiply, fromBlocks_transpose,
+    hA.eq, hC.eq]
 
 omit [DecidableEq n] [DecidableEq m] in
 private theorem fullRowRank_mulVec_transpose_injective {B : Matrix m n ℝ}

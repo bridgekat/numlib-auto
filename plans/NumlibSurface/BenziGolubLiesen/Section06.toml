@@ -1,0 +1,53 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "IsNullBasis"
+source = 'Benzi, Golub and Liesen, §6'
+
+[[node]]
+id = "nullSpace_feasible_iff"
+source = 'Benzi, Golub and Liesen, §6'
+
+[[node]]
+id = "nullSpace_reduced_system_iff"
+source = 'Benzi, Golub and Liesen, (6.1)–(6.2)'
+
+[[node]]
+id = "isUnit_reducedHessian"
+source = 'Benzi, Golub and Liesen, (6.1)'
+
+[[node]]
+id = "posDef_reducedHessian"
+source = 'Benzi, Golub and Liesen, (6.1)'
+
+[[node]]
+id = "posDef_multiplierGram"
+source = 'Benzi, Golub and Liesen, (6.2)'
+
+[[node]]
+id = "multiplier_normalEquation_iff_isLeastSquares"
+source = 'Benzi, Golub and Liesen, (6.2)'
+
+[[node]]
+id = "dual_saddlePoint_schurReduction"
+source = 'Benzi, Golub and Liesen, §6'
+
+[[node]]
+id = "fundamentalNullBasis"
+source = 'Benzi, Golub and Liesen, (6.3)'
+
+[[node]]
+id = "isNullBasis_fundamentalNullBasis"
+source = 'Benzi, Golub and Liesen, (6.3)'
+
+[[node]]
+id = "isNullBasis_of_split_qr"
+source = 'Benzi, Golub and Liesen, §6'
+
+[[node]]
+id = "reducedHessian_add_smul_one"
+source = 'Benzi, Golub and Liesen, (6.4)'
+
+[[node]]
+id = "reducedHessian_add_smul_one_eq_spectral"
+source = 'Benzi, Golub and Liesen, (6.4)'

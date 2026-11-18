@@ -1,0 +1,33 @@
+namespace = 'BenziGolubLiesen'
+
+[[node]]
+id = 'stokesEnergy'
+source = 'Benzi–Golub–Liesen, §2.1, (2.13)–(2.14)'
+
+[[node]]
+id = 'stokes_minimizer_iff_weak_equations'
+source = 'Benzi–Golub–Liesen, §2.1, paragraph surrounding (2.13)–(2.14)'
+
+[[node]]
+id = 'stokes_minimizer_iff_discrete_pressure'
+source = 'Benzi–Golub–Liesen, §2.1, paragraph after (2.14)'
+
+[[node]]
+id = 'curlOfJacobian'
+source = 'Benzi–Golub–Liesen, §2.1, before Figure 2.1'
+
+[[node]]
+id = 'convective_eq_gradient_sub_cross'
+source = 'Benzi–Golub–Liesen, §2.1, before Figure 2.1'
+
+[[node]]
+id = 'rotationBlock₂'
+source = 'Benzi–Golub–Liesen, §2.1, after (2.15)–(2.17)'
+
+[[node]]
+id = 'rotationBlock₂_energy_zero'
+source = 'Benzi–Golub–Liesen, §2.1, after (2.15)–(2.17)'
+
+[[node]]
+id = 'rotationBlock₂_zero'
+source = 'Benzi–Golub–Liesen, §2.1, after (2.17)'

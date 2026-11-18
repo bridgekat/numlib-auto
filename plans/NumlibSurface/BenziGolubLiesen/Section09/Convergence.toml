@@ -1,0 +1,57 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "minResidual_finiteTermination"
+source = "§9.2, finite termination at the dimension of the terminal Krylov space"
+
+[[node]]
+id = "galerkin_finiteTermination"
+source = "§9.2, finite termination at the dimension of the terminal Krylov space"
+
+[[node]]
+id = "symmlq_finiteTermination"
+source = "§9.2, finite termination of the iterate (9.4)"
+
+[[node]]
+id = "minResidual_residualPolynomial"
+source = "§9.2, residual minimization over polynomials, (9.9)"
+
+[[node]]
+id = "minResidual_norm_le_of_diagonalizable"
+source = "§9.2, eigenvector conditioning bound (9.9)"
+
+[[node]]
+id = "minResidual_equalLengthIntervals_bound"
+source = "§9.2, equal-length two-interval bound (9.11)"
+
+[[node]]
+id = "residualMinimax"
+source = "§9.2, the polynomial minimax value (9.10)"
+
+[[node]]
+id = "submultiplicative_residualMinimax"
+source = "§9.2, product bound for the minimax values in (9.10) and (9.13)"
+
+[[node]]
+id = "residualMinimax_le_of_equalLengthIntervals"
+source = "§9.2, equal-length two-interval polynomial bound (9.11)"
+
+[[node]]
+id = "residualMinimax_le_of_symmetricIntervals"
+source = "§9.2, the symmetric two-interval bound (9.12)"
+
+[[node]]
+id = "asymptoticResidualFactor"
+source = "§9.2, asymptotic convergence factor (9.13)"
+
+[[node]]
+id = "tendsto_asymptoticResidualFactor"
+source = "§9.2, existence of the asymptotic limit in (9.13)"
+
+[[node]]
+id = "galerkin_chebyshev_bound"
+source = "§9.2, positive definite Chebyshev estimate (9.8)"
+
+[[node]]
+id = "exists_minResidual_curve_and_charpoly"
+source = "§9.2, Greenbaum–Pták–Strakoš convergence-curve result"

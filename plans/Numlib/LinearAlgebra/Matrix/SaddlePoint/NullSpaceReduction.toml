@@ -1,0 +1,34 @@
+namespace = "Matrix"
+
+[[node]]
+id = "IsNullBasis"
+
+[[node]]
+id = "IsNullBasis.mul_eq_zero"
+
+[[node]]
+id = "IsNullBasis.mulVec_eq_iff_existsUnique"
+
+[[node]]
+id = "IsNullBasis.finrank"
+
+[[node]]
+id = "IsNullBasis.isUnit_compress_of_hermitianPart"
+
+[[node]]
+id = "IsNullBasis.posDef_compress"
+
+[[node]]
+id = "fromBlocks_transpose_zero_mulVec_eq_iff_nullSpace"
+
+[[node]]
+id = "isNullBasis_fundamental"
+
+[[node]]
+id = "IsNullBasis.reindex"
+
+[[node]]
+id = "isNullBasis_of_split_qr"
+
+[[node]]
+id = "inv_fromBlocks_transpose_zero_of_nullBasis"

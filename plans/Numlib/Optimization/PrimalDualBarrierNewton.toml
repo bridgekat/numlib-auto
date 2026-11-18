@@ -1,0 +1,34 @@
+namespace = 'Optimization'
+
+[[node]]
+id = 'exists_nonneg_slack_iff'
+
+[[node]]
+id = 'logBarrierLagrangian'
+
+[[node]]
+id = 'hasDerivAt_logBarrierLagrangian_slack'
+
+[[node]]
+id = 'barrier_slackStationary_iff'
+
+[[node]]
+id = 'barrierNewton_eq_iff_reduced'
+
+[[node]]
+id = 'barrierSchurDiagonal_posSemidef'
+
+[[node]]
+id = 'hasDerivAt_logBarrierLagrangian_primal'
+
+[[node]]
+id = 'hasDerivAt_perturbedComplementarity'
+
+[[node]]
+id = 'posSemidef_of_convex_lineCurvature'
+
+[[node]]
+id = 'lagrangianHessian_posSemidef'
+
+[[node]]
+id = 'lagrangianHessian_posDef'

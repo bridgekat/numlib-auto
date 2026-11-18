@@ -473,6 +473,7 @@ import Numlib.Direct.Substitution
 import Numlib.Direct.SymmetricIndefinite
 import Numlib.Direct.Updating
 import Numlib.Direct.Vandermonde
+import Numlib.DomainDecomposition.LocalResidual
 import Numlib.DomainDecomposition.Schur
 import Numlib.DomainDecomposition.Schwarz
 import Numlib.Eigen.Deflation
@@ -622,6 +623,7 @@ import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Constrained
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
+import Numlib.LinearAlgebra.Matrix.LeastSquares.ResidualKKT
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Total
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted
 import Numlib.LinearAlgebra.Matrix.MMatrix
@@ -641,6 +643,10 @@ import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.SaddlePoint
+import Numlib.LinearAlgebra.Matrix.SaddlePoint.BlockSolve
+import Numlib.LinearAlgebra.Matrix.SaddlePoint.DirectFactorization
+import Numlib.LinearAlgebra.Matrix.SaddlePoint.NullSpaceReduction
+import Numlib.LinearAlgebra.Matrix.SaddlePoint.Penalty
 import Numlib.LinearAlgebra.Matrix.SaddlePoint.ScalarDiagonal
 import Numlib.LinearAlgebra.Matrix.SaddlePoint.Spectrum
 import Numlib.LinearAlgebra.Matrix.Schur
@@ -694,6 +700,7 @@ import Numlib.MeasureTheory.Measure.Haar.InnerProductSpace
 import Numlib.Multigrid.Basic
 import Numlib.Multigrid.FullMultigrid
 import Numlib.Multigrid.ModelProblem
+import Numlib.Multigrid.ResidualCycle
 import Numlib.Multigrid.TwoGrid
 import Numlib.Nonlinear.Bisection
 import Numlib.Nonlinear.CompletelyContinuous
@@ -710,6 +717,7 @@ import Numlib.Nonlinear.Secant
 import Numlib.ODE.Multistep
 import Numlib.ODE.OneStep
 import Numlib.ODE.RungeKutta
+import Numlib.Optimization.AffineQuadraticKKT
 import Numlib.Optimization.Complexity.Basic
 import Numlib.Optimization.Complexity.CarmonChain
 import Numlib.Optimization.Complexity.DynamicAccuracy
@@ -810,6 +818,7 @@ import Numlib.Optimization.Optimality.HighOrder
 import Numlib.Optimization.Optimality.TaylorStability
 import Numlib.Optimization.Optimality.Clarke
 import Numlib.Optimization.Optimality.Unconstrained
+import Numlib.Optimization.PrimalDualBarrierNewton
 import Numlib.Optimization.QuasiNewton
 import Numlib.Optimization.EpigraphPenalty
 import Numlib.Optimization.FischerBurmeister
@@ -833,9 +842,11 @@ import Numlib.Optimization.Subproblem.TrustRegion
 import Numlib.Order.EReal
 import Numlib.Order.GaloisConnection
 import Numlib.Preconditioner.ApproximateInverse
+import Numlib.Preconditioner.BlockSaddle
 import Numlib.Preconditioner.Chebyshev
 import Numlib.Preconditioner.Constraint
 import Numlib.Preconditioner.ConstraintPencil
+import Numlib.Preconditioner.HermitianSkewSplitting
 import Numlib.Preconditioner.ILU
 import Numlib.Preconditioner.LevelOfFill
 import Numlib.Preconditioner.Polynomial
@@ -863,6 +874,7 @@ import Numlib.Stationary.ConsistentlyOrdered
 import Numlib.Stationary.DiagDominant
 import Numlib.Stationary.RegularSplitting
 import Numlib.Stationary.Richardson
+import Numlib.Stationary.SaddleUzawa
 import Numlib.Stationary.SPD
 import Numlib.Stationary.Splitting
 import Numlib.Stationary.Sweep

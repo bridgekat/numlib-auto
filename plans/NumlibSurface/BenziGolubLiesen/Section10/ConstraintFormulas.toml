@@ -1,0 +1,55 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "constraintPreconditioner"
+source = 'Benzi, Golub and Liesen, (10.15), (10.20)'
+
+[[node]]
+id = "inv_constraintPreconditioner_zero"
+source = 'Benzi, Golub and Liesen, (10.16)'
+
+[[node]]
+id = "constraintProjector"
+
+[[node]]
+id = "constraintProjector_mul_self"
+
+[[node]]
+id = "constraintPreconditioned_blocks"
+source = 'Benzi, Golub and Liesen, (10.17)'
+
+[[node]]
+id = "constraintPreconditioned_preserves"
+
+[[node]]
+id = "constraintPreconditioned_square_case"
+
+[[node]]
+id = "constraintPencil_shift"
+source = 'Benzi, Golub and Liesen, §10.2 preceding (10.22)'
+
+[[node]]
+id = "regularizedConstraintPreconditioned_eq"
+
+[[node]]
+id = "regularizedConstraintPreconditioned_charpoly"
+
+[[node]]
+id = "constraintPencil_normalize"
+source = 'Benzi, Golub and Liesen, (10.22)'
+
+[[node]]
+id = "regularizedConstraintPreconditioned_spectrum"
+source = 'Benzi, Golub and Liesen, §10.2'
+
+[[node]]
+id = "constraintPreconditioned_krylovGrade"
+kind = "theorem"
+desc = 'Use the range of the squared difference from the identity and Cayley–Hamilton on the reduced block to obtain the n-m+2 grade bound.'
+source = 'Benzi, Golub and Liesen, §10.2 after Theorem 10.1'
+
+[[node]]
+id = "regularizedConstraintPreconditioned_sharpLowerBound"
+kind = "theorem"
+desc = 'Use the SPD Schur block to diagonalize the regularization pencil, obtain the closed lower endpoint 1/(1+λmax), and compute multiplicity n+nullity(C) at 1. The printed open lower endpoint is generally attained.'
+source = 'Benzi, Golub and Liesen, §10.2'

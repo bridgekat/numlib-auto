@@ -1,0 +1,29 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "exists_pivoted_blockLDL"
+source = 'Benzi, Golub and Liesen, (7.1)'
+
+[[node]]
+id = "zeroDiagonalPivotExample"
+source = 'Benzi, Golub and Liesen, §7'
+
+[[node]]
+id = "zeroDiagonalPivotExample_no_scalar_ldl"
+source = 'Benzi, Golub and Liesen, §7'
+
+[[node]]
+id = "saddlePointMatrix_eq_block_ldl"
+source = 'Benzi, Golub and Liesen, (7.2)'
+
+[[node]]
+id = "exists_saddlePointMatrix_block_ldl"
+source = 'Benzi, Golub and Liesen, (7.2)'
+
+[[node]]
+id = "swappedSaddlePoint_no_scalar_ldl_example"
+source = 'Benzi, Golub and Liesen, §7, dependence on ordering after (7.2)'
+
+[[node]]
+id = "exists_quasidefinite_ldl"
+source = 'Benzi, Golub and Liesen, §7'

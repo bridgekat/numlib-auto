@@ -1,6 +1,26 @@
 namespace = "BenziGolubLiesen"
 
 [[node]]
+id = "saddleSignature"
+source = "§3.4, (3.11)"
+
+[[node]]
+id = "saddleSignature_sq"
+source = "§3.4, involutory row-sign transformation (3.10)–(3.11)"
+
+[[node]]
+id = "signFlippedSaddlePointMatrix_eq_signature_mul"
+source = "§3.4, relation between (1.1) and (3.10)"
+
+[[node]]
+id = "signFlippedSaddlePointMatrix_mulVec_iff"
+source = "§3.4, equivalent system (3.10)"
+
+[[node]]
+id = "saddleSignature_mul_signFlipped_eq"
+source = "§3.4, J-symmetry (3.12)"
+
+[[node]]
 id = "signFlippedSaddlePointMatrix"
 source = 'Benzi–Golub–Liesen, equation (3.10)'
 

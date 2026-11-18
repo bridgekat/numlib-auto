@@ -1,0 +1,21 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "negativeSchurComplement"
+source = 'Benzi, Golub and Liesen, §5'
+
+[[node]]
+id = "isUnit_negativeSchurComplement"
+source = 'Benzi, Golub and Liesen, §5'
+
+[[node]]
+id = "saddlePointMatrix_mulVec_iff_schurReduction"
+source = 'Benzi, Golub and Liesen, (5.1)–(5.2)'
+
+[[node]]
+id = "saddlePointMatrix_schur_elimination"
+source = 'Benzi, Golub and Liesen, §5'
+
+[[node]]
+id = "negativeSchurComplement_mulVec"
+source = 'Benzi, Golub and Liesen, §5'

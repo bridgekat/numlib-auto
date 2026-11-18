@@ -1,0 +1,22 @@
+namespace = "Matrix"
+
+[[node]]
+id = "hssIterationMatrix"
+
+[[node]]
+id = "hssPreconditioner"
+
+[[node]]
+id = "hssIterationMatrix_eq"
+
+[[node]]
+id = "hssStep_eq"
+
+[[node]]
+id = "isUnit_add_shift_of_skewHermitian"
+
+[[node]]
+id = "norm_sub_one_lt_one_of_hss"
+
+[[node]]
+id = "inv_hssPreconditioner"

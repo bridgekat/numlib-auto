@@ -1,0 +1,27 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "absolutePivotPreconditioner"
+
+[[node]]
+id = "repartitionedDiagonalPreconditioner"
+source = 'Benzi, Golub and Liesen, §10.4 following (10.33)'
+
+[[node]]
+id = "schilders_factorization"
+source = 'Benzi, Golub and Liesen, (10.34)'
+
+[[node]]
+id = "saunders_factorization"
+source = 'Benzi, Golub and Liesen, (10.35)'
+
+[[node]]
+id = "signedCholesky_factorization"
+source = 'Benzi, Golub and Liesen, (10.36)'
+
+[[node]]
+id = "signedCholesky_split"
+
+[[node]]
+id = "exists_signedCholesky"
+source = 'Benzi, Golub and Liesen, §10.4 following (10.36)'

@@ -1,0 +1,22 @@
+namespace = "DomainDecomposition"
+
+[[node]]
+id = "coordinateRestriction"
+
+[[node]]
+id = "coordinateRestriction_mul_mul_transpose"
+
+[[node]]
+id = "exactLocalResponse"
+
+[[node]]
+id = "restricted_residual_exactLocalResponse"
+
+[[node]]
+id = "additiveResponse"
+
+[[node]]
+id = "multiplicativeSweep"
+
+[[node]]
+id = "multiplicativeSweep_error"

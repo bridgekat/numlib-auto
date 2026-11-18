@@ -1,0 +1,13 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "saddlePointMatrix_inv_mulVec_zero_right"
+source = "§3.5, effect of a zero trailing right-hand side block"
+
+[[node]]
+id = "augmentedSaddlePointSystem_iff"
+source = "§3.5 and §5, (3.14)"
+
+[[node]]
+id = "posDef_augmentedTopBlock"
+source = "§3.5 and §5, positive definiteness with W = γI after (3.14)"

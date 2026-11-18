@@ -1,0 +1,16 @@
+namespace = "Matrix"
+
+[[node]]
+id = "lower_elimination_mul_fromBlocks"
+
+[[node]]
+id = "fromBlocks_mulVec_eq_iff_schur"
+
+[[node]]
+id = "saddleEquations_augment_iff"
+
+[[node]]
+id = "fromBlocks_transpose_zero_augment_iff"
+
+[[node]]
+id = "posDef_add_scaled_gram_of_ker_inf_eq_bot"

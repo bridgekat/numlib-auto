@@ -1,0 +1,173 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "uzawaStep"
+source = "Benzi, Golub and Liesen, Eq. (8.1)"
+
+[[node]]
+id = "uzawaStep_eq_iff"
+source = "Benzi, Golub and Liesen, Eq. (8.1)"
+
+[[node]]
+id = "uzawaSplitting"
+source = "Benzi, Golub and Liesen, Eq. (8.2)"
+
+[[node]]
+id = "uzawaSplitting_n"
+source = "Benzi, Golub and Liesen, Eq. (8.2)"
+
+[[node]]
+id = "uzawa_iterationOperator"
+source = "Benzi, Golub and Liesen, Eq. (8.2)"
+
+[[node]]
+id = "uzawa_splitting_step"
+source = "Benzi, Golub and Liesen, Eq. (8.2)"
+
+[[node]]
+id = "uzawa_iterationCharpoly"
+source = "Benzi, Golub and Liesen, Eq. (8.2)"
+
+[[node]]
+id = "uzawa_mem_iterationSpectrum_iff"
+source = "Benzi, Golub and Liesen, §8.1, spectrum of Uzawa"
+
+[[node]]
+id = "uzawa_iterationSpectrum_real"
+source = "Benzi, Golub and Liesen, §8.1, spectrum of Uzawa"
+
+[[node]]
+id = "uzawa_reduced_step"
+source = "Benzi, Golub and Liesen, Eq. (8.3)"
+
+[[node]]
+id = "uzawa_reduced_system"
+source = "Benzi, Golub and Liesen, Eq. (8.4)"
+
+[[node]]
+id = "uzawa_schur_posDef"
+source = "Benzi, Golub and Liesen, Eq. (8.4)"
+
+[[node]]
+id = "uzawa_convergenceCriterion"
+source = "Benzi, Golub and Liesen, Eq. (8.4)"
+
+[[node]]
+id = "uzawa_optimalRelaxation"
+source = "Benzi, Golub and Liesen, Eq. (8.4)"
+
+[[node]]
+id = "uzawa_tendsto_of_spectralRadius_lt_one"
+source = "Benzi, Golub and Liesen, §8.1, convergence of Uzawa"
+
+[[node]]
+id = "arrowHurwiczStep"
+source = "Benzi, Golub and Liesen, Eq. (8.5)"
+
+[[node]]
+id = "arrowHurwiczSplitting"
+source = "Benzi, Golub and Liesen, Eq. (8.6)"
+
+[[node]]
+id = "arrowHurwiczSplitting_n"
+source = "Benzi, Golub and Liesen, Eq. (8.6)"
+
+[[node]]
+id = "arrowHurwicz_splitting_step"
+source = "Benzi, Golub and Liesen, Eq. (8.6)"
+
+[[node]]
+id = "preconditionedArrowHurwiczStep"
+source = "Benzi, Golub and Liesen, Eq. (8.7)"
+
+[[node]]
+id = "inexactUzawaStep"
+source = "Benzi, Golub and Liesen, §8.1, inexact primal solves"
+
+[[node]]
+id = "inexactUzawaStep_eq_arrowHurwiczStep"
+source = "Benzi, Golub and Liesen, §8.1, inexact primal solves"
+
+[[node]]
+id = "inexactUzawa_error"
+source = "Benzi, Golub and Liesen, Eq. (8.1)"
+
+[[node]]
+id = "saddleObjective"
+source = "Benzi, Golub and Liesen, Eq. (8.8)"
+
+[[node]]
+id = "uzawa_primal_lt"
+source = "Benzi, Golub and Liesen, §8.1, quadratic minimized by Uzawa"
+
+[[node]]
+id = "IsFeasible"
+source = "Benzi, Golub and Liesen, Eq. (8.9)"
+
+[[node]]
+id = "saddleObjective_lt_of_feasible"
+source = "Benzi, Golub and Liesen, Eqs. (8.8) and (8.9)"
+
+[[node]]
+id = "penaltyObjective"
+source = "Benzi, Golub and Liesen, Eq. (8.10)"
+
+[[node]]
+id = "penaltyStep"
+source = "Benzi, Golub and Liesen, Eq. (8.10)"
+
+[[node]]
+id = "penalty_regularized_iff"
+source = "Benzi, Golub and Liesen, Eq. (8.11)"
+
+[[node]]
+id = "penaltyStep_regularized"
+source = "Benzi, Golub and Liesen, Eq. (8.11)"
+
+[[node]]
+id = "existsUnique_penalty_regularized"
+source = "Benzi, Golub and Liesen, §8.2, uniqueness for (8.11)"
+
+[[node]]
+id = "penalty_error"
+source = "Benzi, Golub and Liesen, Eq. (8.11)"
+
+[[node]]
+id = "penalty_tendsto"
+source = "Benzi, Golub and Liesen, §8.2, penalty limit"
+
+[[node]]
+id = "augmentedLagrangian"
+source = "Benzi, Golub and Liesen, Eq. (8.12)"
+
+[[node]]
+id = "augmentedLagrangian_minimizer"
+source = "Benzi, Golub and Liesen, Eq. (8.13)"
+
+[[node]]
+id = "penaltyObjective_minimizer"
+source = "Benzi, Golub and Liesen, Eq. (8.10)"
+
+[[node]]
+id = "multiplierStep"
+source = "Benzi, Golub and Liesen, Eq. (8.13)"
+
+[[node]]
+id = "multiplier_system_iff"
+source = "Benzi, Golub and Liesen, Eq. (8.14)"
+
+[[node]]
+id = "multiplier_convergence"
+source = "Benzi, Golub and Liesen, Eq. (8.14)"
+
+[[node]]
+id = "multiplier_tendsto"
+source = "Benzi, Golub and Liesen, §8.2, multiplier convergence"
+
+[[node]]
+id = "multiplier_iterationMatrix_tendsto_zero"
+source = "Benzi, Golub and Liesen, §8.2, large-penalty limit"
+
+[[node]]
+id = "multiplier_spectralRadius_tendsto_zero"
+source = "Benzi, Golub and Liesen, §8.2, large-penalty limit"

@@ -1,0 +1,13 @@
+namespace = "Matrix"
+
+[[node]]
+id = "fromBlocks_transpose_neg_eq_block_ldl"
+
+[[node]]
+id = "posDef_add_mul_inv_mul_transpose"
+
+[[node]]
+id = "isUnit_submatrix_fromBlocks_transpose_neg_of_posDef"
+
+[[node]]
+id = "exists_isLDM_submatrix_fromBlocks_transpose_neg_of_posDef"

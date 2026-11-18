@@ -1,0 +1,46 @@
+namespace = "Multigrid"
+
+[[node]]
+id = "TransferPair"
+
+[[node]]
+id = "TransferPair.petrovGalerkinCoarse"
+
+[[node]]
+id = "TransferPair.restricted_residual_eq_zero"
+
+[[node]]
+id = "TransferPair.coarseResponse"
+
+[[node]]
+id = "residualCorrection"
+
+[[node]]
+id = "residualError"
+
+[[node]]
+id = "residualCorrection_error"
+
+[[node]]
+id = "residualCorrection_fixed_iff"
+
+[[node]]
+id = "combineResponses"
+
+[[node]]
+id = "residualCorrection_combineResponses"
+
+[[node]]
+id = "repeatResponse"
+
+[[node]]
+id = "twoGridStep"
+
+[[node]]
+id = "twoGridStep_error"
+
+[[node]]
+id = "vCycleResponse"
+
+[[node]]
+id = "residualCorrection_vCycleResponse_succ"

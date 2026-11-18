@@ -1,0 +1,17 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "symmetricPreconditionedSystem_iff"
+source = "§9.3, equivalence with the split SPD-preconditioned system"
+
+[[node]]
+id = "isHermitian_symmetricPreconditionedMatrix"
+source = "§9.3, symmetry of the split preconditioned matrix"
+
+[[node]]
+id = "posDef_symmetricPreconditionedMatrix"
+source = "§9.3, positive definiteness of the split preconditioned matrix"
+
+[[node]]
+id = "exists_symmetricPreconditionedSystem_of_posDef"
+source = "§9.3, Cholesky splitting of a positive definite preconditioner"

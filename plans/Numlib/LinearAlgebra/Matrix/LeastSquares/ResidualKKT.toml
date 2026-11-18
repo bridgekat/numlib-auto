@@ -1,0 +1,13 @@
+namespace = 'Matrix'
+
+[[node]]
+id = 'isLSESolution_iff_exists_residual_kkt'
+
+[[node]]
+id = 'weightedRegularizedResidualSq'
+
+[[node]]
+id = 'isMinOn_weightedRegularizedResidualSq_iff'
+
+[[node]]
+id = 'isGeneralizedLeastSquaresSolution_iff_exists_residual_kkt'

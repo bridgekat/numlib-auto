@@ -1,0 +1,41 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "saddleObliqueProjector"
+source = "§3.3, projector after (3.5)"
+
+[[node]]
+id = "saddleObliqueProjector_spec"
+source = "§3.3, idempotence, range and kernel of the projector after (3.5)"
+
+[[node]]
+id = "saddlePointSolution_zero_constraint"
+source = "§3.3, (3.5), with the multiplier sign from (3.4)"
+
+[[node]]
+id = "saddlePointSolution_A_orthogonal"
+source = "§3.2, A-orthogonal projection onto the affine constraint set"
+
+[[node]]
+id = "saddlePointSolution_weightedNormalEquation"
+source = "§3.3, (3.6)"
+
+[[node]]
+id = "saddlePointSolution_minWeightedResidual"
+source = "§3.3, (3.7)"
+
+[[node]]
+id = "saddlePointMatrix_inv_eq_of_nullBasis"
+source = "§3.3, null-space inverse (3.8)"
+
+[[node]]
+id = "IsQuasidefinite"
+source = "§3.3, definition of symmetric quasidefiniteness"
+
+[[node]]
+id = "IsQuasidefinite.isUnit"
+source = "§3.3, nonsingularity of symmetric quasidefinite matrices"
+
+[[node]]
+id = "IsQuasidefinite.inv"
+source = "§3.3, inverse of a symmetric quasidefinite matrix"

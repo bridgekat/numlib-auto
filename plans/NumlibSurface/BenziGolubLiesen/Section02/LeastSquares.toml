@@ -1,0 +1,21 @@
+namespace = 'BenziGolubLiesen'
+
+[[node]]
+id = 'equalityLeastSquaresAugmentedMatrix'
+source = 'Benzi–Golub–Liesen, §2.2, (2.23)'
+
+[[node]]
+id = 'equalityLeastSquares_iff_augmented'
+source = 'Benzi–Golub–Liesen, §2.2, (2.21)–(2.23)'
+
+[[node]]
+id = 'weightedLeastSquares_iff_augmented'
+source = 'Benzi–Golub–Liesen, §2.2, paragraph after (2.24)'
+
+[[node]]
+id = 'regularizedLeastSquares_iff_augmented'
+source = 'Benzi–Golub–Liesen, §2.2, final paragraph'
+
+[[node]]
+id = 'generalizedLeastSquares_iff_augmented'
+source = 'Benzi–Golub–Liesen, §2.2, paragraph after (2.24)'

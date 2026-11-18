@@ -1,0 +1,29 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "saddleSchurComplement"
+source = "§3.1, Schur complement following (3.1)"
+
+[[node]]
+id = "saddleSchurComplement_eq"
+source = "§3.1, Schur complement following (3.1)"
+
+[[node]]
+id = "saddlePointMatrix_ldu"
+source = "§3.1, (3.1)"
+
+[[node]]
+id = "saddlePointMatrix_lower_upper"
+source = "§3.1, (3.2)"
+
+[[node]]
+id = "saddlePointMatrix_unitLower_upper"
+source = "§3.1, (3.3)"
+
+[[node]]
+id = "isUnit_saddlePointMatrix_iff_isUnit_schurComplement"
+source = "§3.2, nonsingularity criterion following (3.4)"
+
+[[node]]
+id = "saddlePointMatrix_inv_eq"
+source = "§3.2, (3.4)"

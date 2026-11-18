@@ -1,0 +1,49 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "hss_saddle_split"
+source = 'Benzi, Golub and Liesen, (10.23)'
+
+[[node]]
+id = "hss_saddle_step"
+source = 'Benzi, Golub and Liesen, (10.24)–(10.26)'
+
+[[node]]
+id = "hss_saddle_apply"
+source = 'Benzi, Golub and Liesen, (10.27)–(10.28)'
+
+[[node]]
+id = "hss_skew_schur"
+source = 'Benzi, Golub and Liesen, (10.29)–(10.30)'
+
+[[node]]
+id = "hss_skew_schur_zero"
+source = 'Benzi, Golub and Liesen, (10.31)'
+
+[[node]]
+id = "hssSymmetricBlock"
+source = 'Benzi, Golub and Liesen, (10.23)'
+
+[[node]]
+id = "hssSkewBlock"
+source = 'Benzi, Golub and Liesen, (10.23)'
+
+[[node]]
+id = "hss_saddle_spectrum_disk"
+source = 'Benzi, Golub and Liesen, §10.3'
+
+[[node]]
+id = "hss_skew_schur_zero_posDef"
+source = 'Benzi, Golub and Liesen, §10.3 following (10.31)'
+
+[[node]]
+id = "hss_optimal_shift"
+kind = "theorem"
+desc = 'Prove the spectral radius bound for positive definite H and optimize the scalar Cayley factor over the extreme eigenvalues.'
+source = 'Benzi, Golub and Liesen, §10.3'
+
+[[node]]
+id = "hss_rotation_schur_inverse"
+kind = "theorem"
+desc = 'Formalize the three-block rotation form and explicit inverse of the shifted skew block when D is diagonal.'
+source = 'Benzi, Golub and Liesen, (10.32)'

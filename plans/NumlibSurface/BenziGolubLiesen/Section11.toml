@@ -1,0 +1,117 @@
+namespace = "BenziGolubLiesen"
+
+[[node]]
+id = "blockRestriction"
+source = "Benzi, Golub and Liesen, §11.1, pp. 98–99"
+
+[[node]]
+id = "galerkinCoarseMatrix"
+source = "Benzi, Golub and Liesen, §11.1, p. 98"
+
+[[node]]
+id = "galerkinCoarseMatrix_isSymm"
+source = "Benzi, Golub and Liesen, §11.1, p. 98"
+
+[[node]]
+id = "galerkinCoarseMatrix_saddlePoint"
+source = "Benzi, Golub and Liesen, §11.1, p. 99"
+
+[[node]]
+id = "galerkinCoarse_residual_eq_zero"
+source = "Benzi, Golub and Liesen, §11.1, p. 98, coarse correction with GCGA"
+
+[[node]]
+id = "twoGridCycle"
+source = "Benzi, Golub and Liesen, §11.1, p. 98, steps (i)–(vi)"
+
+[[node]]
+id = "twoGridCycle_error"
+source = "Benzi, Golub and Liesen, §11.1, p. 98, steps (i)–(vi)"
+
+[[node]]
+id = "twoGridCycle_matrix_error"
+source = "Benzi, Golub and Liesen, §11.1, p. 98, steps (i)–(vi)"
+
+[[node]]
+id = "pairedSmootherCycleMatrix"
+source = "Benzi, Golub and Liesen, §11.1, p. 98"
+
+[[node]]
+id = "pairedSmootherCycleMatrix_isSymm"
+source = "Benzi, Golub and Liesen, §11.1, p. 98"
+
+[[node]]
+id = "twoGridCycle_eq_vCycle"
+source = "Benzi, Golub and Liesen, §11.1, p. 98"
+
+[[node]]
+id = "distributiveRelaxation"
+source = "Benzi, Golub and Liesen, equation (11.1)"
+
+[[node]]
+id = "distributiveSplitting"
+source = "Benzi, Golub and Liesen, §11.1, p. 100"
+
+[[node]]
+id = "distributiveRelaxation_eq_splitting"
+source = "Benzi, Golub and Liesen, p. 100, equation (11.1)"
+
+[[node]]
+id = "distributiveRelaxation_limit_solves"
+source = "Benzi, Golub and Liesen, §11.1, paragraph following (11.1)"
+
+[[node]]
+id = "distributiveRelaxation_limit_eq"
+source = "Benzi, Golub and Liesen, §11.1, p. 100"
+
+[[node]]
+id = "distributiveTransform_mul"
+source = "Benzi, Golub and Liesen, §11.1, p. 100"
+
+[[node]]
+id = "simpleSmoother"
+source = "Benzi, Golub and Liesen, §11.1, pp. 100–101"
+
+[[node]]
+id = "braessSarazinStep"
+source = "Benzi, Golub and Liesen, §11.1, p. 101 and equation (10.18)"
+
+[[node]]
+id = "braessSarazinStep_eq_eq10_18"
+source = "Benzi, Golub and Liesen, §11.1, p. 101 and equation (10.18)"
+
+[[node]]
+id = "braessSarazinStep_constraint"
+source = "Benzi, Golub and Liesen, §11.1, p. 101 and equation (10.18)"
+
+[[node]]
+id = "vankaPatchResponse"
+source = "Benzi, Golub and Liesen, §11.1, pp. 101–102"
+
+[[node]]
+id = "vankaPatch_residual_eq_zero"
+source = "Benzi, Golub and Liesen, §11.1, pp. 101–102"
+
+[[node]]
+id = "additiveVanka"
+source = "Benzi, Golub and Liesen, §11.1, pp. 101–102 and §11.2, p. 105"
+
+[[node]]
+id = "multiplicativeVanka"
+source = "Benzi, Golub and Liesen, §11.1, pp. 101–102"
+
+[[node]]
+id = "multiplicativeVanka_error"
+source = "Benzi, Golub and Liesen, §11.1, pp. 101–102"
+
+[[node]]
+id = "twoLevelAdditiveSchwarz"
+source = "Benzi, Golub and Liesen, §11.2, pp. 102–103"
+
+[[node]]
+id = "twoLevelHybridSchwarz"
+source = "Benzi, Golub and Liesen, §11.2, p. 104"
+
+[[node]]
+id = "twoLevelHybridSchwarz_error"
+source = "Benzi, Golub and Liesen, §11.2, p. 104"

@@ -554,7 +554,7 @@ no declaration.
 | Source | Module | Subject and coverage |
 |---|---|---|
 | Atkinson and Han, *Theoretical Numerical Analysis* [han2009theoretical] | `AtkinsonHan` | functional analysis; Chapters 1–14 |
-| Benzi, Golub and Liesen, *Numerical solution of saddle point problems* [benzi2005numerical] | `BenziGolubLiesen` | saddle-point linear systems; all 13 numbered results |
+| Benzi, Golub and Liesen, *Numerical solution of saddle point problems* [benzi2005numerical] | `BenziGolubLiesen` | saddle-point systems; applications, solvers, and preconditioners |
 | Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations* [brezis2011functional] | `Brezis` | functional analysis, Sobolev spaces, PDE; Chapters 1–11 |
 | Cartis, Gould and Toint, *Evaluation Complexity of Algorithms for Nonconvex Optimization* [cartis2022evaluation] | `CartisGouldToint` | evaluation complexity of nonconvex optimization; Chapters 1–14, Appendices A–B |
 | Conn, Gould and Toint, *Trust-Region Methods* [conn2000trust] | `ConnGouldToint` | trust-region methods; Chapters 2–17 |

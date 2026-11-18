@@ -1,0 +1,52 @@
+namespace = "Matrix"
+
+[[node]]
+id = "saddleAugmentedPrimal"
+
+[[node]]
+id = "saddleAugmentedRhs"
+
+[[node]]
+id = "posDef_saddleAugmentedPrimal"
+
+[[node]]
+id = "mul_le_one_of_saddleAugmentedSchur_eigenvector"
+
+[[node]]
+id = "saddleAugmented_equations_iff"
+
+[[node]]
+id = "saddlePenaltyMultiplier"
+
+[[node]]
+id = "saddlePenalty_equations_iff"
+
+[[node]]
+id = "saddlePenalty_error_mulVec"
+
+[[node]]
+id = "saddleQuadratic"
+
+[[node]]
+id = "saddleQuadratic_add_sub"
+
+[[node]]
+id = "saddleAugmentedLagrangian"
+
+[[node]]
+id = "saddleAugmentedLagrangian_eq_saddleQuadratic"
+
+[[node]]
+id = "saddleQuadratic_lt_of_mulVec_eq"
+
+[[node]]
+id = "saddleQuadratic_lt_of_saddle_solution"
+
+[[node]]
+id = "isLeast_saddleAugmentedLagrangian_iff"
+
+[[node]]
+id = "tendsto_smul_error_of_affine_matrix_perturbation"
+
+[[node]]
+id = "isBigO_saddlePenalty_error"
