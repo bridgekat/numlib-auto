@@ -7,7 +7,10 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Analysis.Analytic.Basic
 import Mathlib.Analysis.Calculus.Deriv.Basic
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy
 import Numlib.LinearAlgebra.Eigenspace.Spectral
+import Numlib.LinearAlgebra.Matrix.Drazin
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 
 /-!
@@ -149,13 +152,95 @@ generalized eigenspace reaches its maximal value. -/
 noncomputable def primaryIndex (A : Matrix n n ℂ) (z : ℂ) : ℕ :=
   (matrixEnd A).maxGenEigenspaceIndex z
 
+private theorem genEigenspace_eq_ker_shift (A : Matrix n n ℂ) (z : ℂ) (k : ℕ) :
+    (matrixEnd A).genEigenspace z k = ((A - z • 1) ^ k).mulVecLin.ker := by
+  rw [Module.End.genEigenspace_nat, ← toLin'_apply', toLin'_pow, map_sub, map_smul, toLin'_one]
+  rfl
+
 private theorem maxGenEigenspace_eq_ker_shift (A : Matrix n n ℂ) (z : ℂ)
     {k : ℕ} (hk : primaryIndex A z ≤ k) :
     (matrixEnd A).maxGenEigenspace z = ((A - z • 1) ^ k).mulVecLin.ker := by
   rw [Module.End.maxGenEigenspace_eq,
     ← Module.End.genEigenspace_eq_genEigenspace_maxUnifEigenspaceIndex_of_le (matrixEnd A) z hk,
-    Module.End.genEigenspace_nat, ← toLin'_apply', toLin'_pow, map_sub, map_smul, toLin'_one]
-  rfl
+    genEigenspace_eq_ker_shift]
+
+omit [DecidableEq n] in
+private theorem primaryIndex_le_of_genEigenspace_eq (A : Matrix n n ℂ) (z : ℂ) {k : ℕ}
+    (h : (matrixEnd A).maxGenEigenspace z = (matrixEnd A).genEigenspace z k) :
+    primaryIndex A z ≤ k := by
+  change monotonicSequenceLimitIndex
+    (((matrixEnd A).genEigenspace z).comp WithTop.coeOrderHom.toOrderHom) ≤ k
+  unfold monotonicSequenceLimitIndex
+  apply Nat.sInf_le
+  intro j hj
+  change (matrixEnd A).genEigenspace z k = (matrixEnd A).genEigenspace z j
+  exact le_antisymm ((Module.End.genEigenspace _ _).monotone (by exact_mod_cast hj))
+    ((Module.End.genEigenspace_le_maximal _ _ j).trans_eq h)
+
+/-- The primary index at a scalar equals its multiplicity in the minimal polynomial. -/
+theorem primaryIndex_eq_rootMultiplicity (A : Matrix n n ℂ) (z : ℂ) :
+    primaryIndex A z = (minpoly ℂ A).rootMultiplicity z := by
+  by_cases hz : z ∈ spectralValues A
+  · let S : Matrix n n ℂ := A - z • 1
+    let k := S.rankStabilizationIndex
+    let l := primaryIndex A z
+    have hNZ : ¬ IsUnit S := by
+      intro h
+      have hS := spectrum.mem_iff.mp ((mem_spectralValues_iff A z).mp hz)
+      exact hS (by simpa only [S, neg_sub, Algebra.algebraMap_eq_smul_one] using h.neg)
+    have hMin : minpoly ℂ S = (minpoly ℂ A).comp (X + C z) := by
+      have hMA := minpoly.monic (Algebra.IsIntegral.isIntegral (R := ℂ) A)
+      have hMonic := hMA.comp_X_add_C z
+      refine (minpoly.unique ℂ S hMonic ?_ ?_).symm
+      · rw [aeval_comp, map_add, aeval_X, aeval_C, Algebra.algebraMap_eq_smul_one,
+          show S = A - z • 1 from rfl, sub_add_cancel]
+        exact minpoly.aeval ℂ A
+      · intro p hp hAnn
+        have hComp : aeval A (p.comp (X - C z)) = 0 := by
+          rw [aeval_comp, map_sub, aeval_X, aeval_C, Algebra.algebraMap_eq_smul_one]
+          exact hAnn
+        have hCompMonic := hp.comp_X_sub_C z
+        have hDegree := minpoly.min ℂ A hCompMonic hComp
+        rw [degree_eq_natDegree hMA.ne_zero, degree_eq_natDegree hCompMonic.ne_zero,
+          natDegree_comp, natDegree_X_sub_C, mul_one] at hDegree
+        simpa only [degree_eq_natDegree hMonic.ne_zero, degree_eq_natDegree hp.ne_zero,
+          natDegree_comp, natDegree_X_add_C, mul_one] using hDegree
+    have hk : k = (minpoly ℂ A).rootMultiplicity z := calc
+      k = (minpoly ℂ S).rootMultiplicity 0 :=
+        S.rankStabilizationIndex_eq_rootMultiplicity_minpoly hNZ
+      _ = _ := by rw [hMin, ← rootMultiplicity_eq_rootMultiplicity]
+    have hle : l ≤ k := by
+      apply primaryIndex_le_of_genEigenspace_eq
+      rw [← Module.End.iSup_genEigenspace_eq (matrixEnd A) z]
+      apply le_antisymm ?_ (le_iSup (fun j : ℕ => (matrixEnd A).genEigenspace z j) k)
+      refine iSup_le fun j => ?_
+      rw [genEigenspace_eq_ker_shift, genEigenspace_eq_ker_shift]
+      rcases le_total j k with hj | hj
+      · exact S.monotone_ker_mulVecLin_pow hj
+      · exact ((S.rank_pow_eq_iff_ker_eq hj).mp
+          (S.rank_pow_eq_of_eq_succ S.rankStabilizationIndex_spec.2 hj)).ge
+    have hpos : 0 < l := by
+      by_contra! h
+      have hl : l = 0 := Nat.eq_zero_of_le_zero h
+      have h0 := Module.End.maxGenEigenspace_eq (matrixEnd A) z
+      change _ = (matrixEnd A).genEigenspace z l at h0
+      rw [hl, Nat.cast_zero, Module.End.genEigenspace_zero] at h0
+      exact (Module.End.hasEigenvalue_iff.mp ((mem_spectralValues A z).mp hz))
+        (le_bot_iff.mp (Module.End.eigenspace_le_maxGenEigenspace.trans_eq h0))
+    have hge : k ≤ l := by
+      apply (S.rank_pow_eq_succ_iff hpos).mp
+      apply (S.rank_pow_eq_iff_ker_eq (Nat.le_succ l)).mpr
+      exact (maxGenEigenspace_eq_ker_shift A z (k := l) le_rfl).symm.trans
+        (maxGenEigenspace_eq_ker_shift A z (k := l + 1) (Nat.le_succ l))
+    exact (le_antisymm hle hge).trans hk
+  · have h0 : primaryIndex A z = 0 := by
+      apply Nat.eq_zero_of_le_zero
+      apply primaryIndex_le_of_genEigenspace_eq
+      rw [maxGenEigenspace_eq_bot_of_notMem A z hz, Nat.cast_zero, Module.End.genEigenspace_zero]
+    rw [h0]
+    exact (rootMultiplicity_eq_zero (fun h =>
+      hz ((mem_spectralValues_iff A z).mpr
+        ((spectrum.mem_iff_isRoot_minpoly (Algebra.IsIntegral.isIntegral A)).mpr h)))).symm
 
 private theorem commute_shift {A E : Matrix n n ℂ} (h : Commute A E) (z : ℂ) :
     Commute (A - z • 1) E :=
@@ -241,17 +326,90 @@ theorem theorem_10 (A : Matrix n n ℂ) :
       LinearMap.mem_ker, ← LinearMap.comp_apply, ← mulVecLin_mul, h0]
     simp
 
-private theorem coeff_taylor_eq_derivative_div_factorial (p : ℂ[X]) (z : ℂ) (j : ℕ) :
-    (taylor z p).coeff j = ((derivative^[j]) p).eval z / (j.factorial : ℂ) := by
-  have h := congrFun (Polynomial.factorial_smul_hasseDeriv (R := ℂ) (k := j)) p
-  have he : (j.factorial : ℂ) * (hasseDeriv j p).eval z = ((derivative^[j]) p).eval z := calc
-    _ = (j.factorial • hasseDeriv j p).eval z := by
-      change _ = Polynomial.leval z (j.factorial • hasseDeriv j p)
-      rw [map_nsmul, nsmul_eq_mul]
-      rfl
-    _ = _ := congrArg (Polynomial.eval z) h
-  rw [taylor_coeff, ← he, mul_comm,
-    mul_div_cancel_right₀ _ (Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero j))]
+/-- The distinct roots of the minimal polynomial are the spectral values. -/
+theorem spectralValues_eq_minpoly_roots (A : Matrix n n ℂ) :
+    spectralValues A = (minpoly ℂ A).roots.toFinset := by
+  ext z
+  rw [mem_spectralValues_iff, Multiset.mem_toFinset,
+    spectrum.mem_iff_mem_roots_minpoly (Algebra.IsIntegral.isIntegral A)]
+
+/-- The factors of the minimal polynomial have exponents equal to the primary indices. -/
+theorem minpoly_eq_prod_primary (A : Matrix n n ℂ) :
+    minpoly ℂ A = ∏ z ∈ spectralValues A, (X - C z) ^ primaryIndex A z := by
+  have hm : (minpoly ℂ A).Monic := minpoly.monic (Algebra.IsIntegral.isIntegral A)
+  calc
+    minpoly ℂ A = Hermite.nodalMultiset (minpoly ℂ A).roots :=
+      Hermite.eq_nodalMultiset_roots hm (IsAlgClosed.splits _)
+    _ = _ := by
+      simp only [Hermite.nodalMultiset_eq_prod_count, spectralValues_eq_minpoly_roots,
+        primaryIndex_eq_rootMultiplicity, count_roots]
+
+/-- The projector description of a principal idempotent agrees with its
+polynomial construction by Hermite interpolation. -/
+theorem principalIdempotent_eq_spectralIdempotent (A : Matrix n n ℂ) (z : ℂ) :
+    principalIdempotent A z = spectralIdempotent A z := by
+  have hA : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral A
+  have hs : (minpoly ℂ A).Splits := IsAlgClosed.splits _
+  have hEq : spectralIdempotent A = principalIdempotent A := by
+    apply eq_principalIdempotent_of_range_and_sum
+    · intro w hw
+      apply spectralIdempotent_eq_zero_of_notMem
+      rwa [spectralValues_eq_minpoly_roots, Multiset.mem_toFinset] at hw
+    · rw [spectralValues_eq_minpoly_roots]
+      exact sum_spectralIdempotent hA hs
+    · rintro w _ ⟨x, rfl⟩
+      have h := pow_mul_spectralIdempotent hA hs w
+      have hk : primaryIndex A w ≤ (minpoly ℂ A).rootMultiplicity w :=
+        (primaryIndex_eq_rootMultiplicity A w).le
+      rw [Algebra.algebraMap_eq_smul_one] at h
+      rw [maxGenEigenspace_eq_ker_shift A w hk, LinearMap.mem_ker, ← LinearMap.comp_apply,
+        ← mulVecLin_mul, h]
+      simp
+  exact congrFun hEq.symm z
+
+/-- **Exercise 29** of [benIsrael2003generalized], Chapter 2, polynomial representation.
+A principal idempotent is the evaluation of a scalar polynomial at $A$. -/
+theorem exercise_29_polynomial (A : Matrix n n ℂ) (z : ℂ) :
+    ∃ p : ℂ[X], principalIdempotent A z = aeval A p := by
+  rw [principalIdempotent_eq_spectralIdempotent, spectralIdempotent]
+  exact ⟨_, rfl⟩
+
+/-- **Exercise 29** of [benIsrael2003generalized], Chapter 2. Clearing the
+denominators of the partial fractions of $1/m$ gives polynomials whose values
+at $A$ are the principal idempotents. -/
+theorem exercise_29 (A : Matrix n n ℂ) (h : ℂ → ℂ[X])
+    (hh : (∑ w ∈ spectralValues A,
+      h w * ∏ z ∈ (spectralValues A).erase w, (X - C z) ^ primaryIndex A z) = 1)
+    (w : ℂ) (hw : w ∈ spectralValues A) :
+    principalIdempotent A w = aeval A
+      (h w * ∏ z ∈ (spectralValues A).erase w, (X - C z) ^ primaryIndex A z) := by
+  let F (z : ℂ) := (X - C z) ^ primaryIndex A z
+  let p (z : ℂ) := h z * ∏ t ∈ (spectralValues A).erase z, F t
+  let E (z : ℂ) := if z ∈ spectralValues A then aeval A (p z) else 0
+  have hSum : ∑ z ∈ spectralValues A, E z = 1 := calc
+    _ = ∑ z ∈ spectralValues A, aeval A (p z) := by
+      exact Finset.sum_congr rfl fun z hz => by simp [E, hz]
+    _ = aeval A (∑ z ∈ spectralValues A, p z) := (map_sum _ _ _).symm
+    _ = 1 := by rw [show ∑ z ∈ spectralValues A, p z = 1 from hh, map_one]
+  have hE : E = principalIdempotent A := by
+    apply eq_principalIdempotent_of_range_and_sum A E (fun z hz => by simp [E, hz]) hSum
+    rintro z _ ⟨x, rfl⟩
+    by_cases hz : z ∈ spectralValues A
+    · have hp : F z * p z = h z * minpoly ℂ A := calc
+        F z * p z = h z * (F z * ∏ t ∈ (spectralValues A).erase z, F t) := mul_left_comm ..
+        _ = h z * (∏ t ∈ spectralValues A, F t) := by
+          rw [Finset.mul_prod_erase _ _ hz]
+        _ = _ := congrArg (h z * ·) (minpoly_eq_prod_primary A).symm
+      have hKill : (A - z • 1) ^ primaryIndex A z * E z = 0 := calc
+        _ = aeval A (F z * p z) := by
+          simp only [E, ite_eq_left hz, F, map_mul, map_pow, map_sub, aeval_X, aeval_C,
+            Algebra.algebraMap_eq_smul_one]
+        _ = 0 := by rw [hp, map_mul, minpoly.aeval, mul_zero]
+      rw [maxGenEigenspace_eq_ker_shift A z (k := primaryIndex A z) le_rfl,
+        LinearMap.mem_ker, ← LinearMap.comp_apply, ← mulVecLin_mul, hKill]
+      simp
+    · simp [E, hz]
+  simpa [E, p, F, hw] using congrFun hE.symm w
 
 /-- **Corollary 8** of [benIsrael2003generalized], Chapter 2. Polynomial evaluation at
 a matrix is the sum of the Taylor expansions truncated on its primary components. -/
@@ -273,7 +431,7 @@ theorem corollary_8 (A : Matrix n n ℂ) (p : ℂ[X]) :
         rw [show q = p.comp (X + C z) from taylor_apply _ _, aeval_comp, map_add, aeval_X,
           aeval_C, Algebra.algebraMap_eq_smul_one, show S = A - z • 1 from rfl, sub_add_cancel]
       have hDeg : q.natDegree < r := Nat.lt_of_succ_le (le_max_left _ _)
-      simp only [← coeff_taylor_eq_derivative_div_factorial]
+      simp only [← Hermite.coeff_taylor_eq_eval_iterate_derivative_div]
       rw [← hTaylor, aeval_eq_sum_range' hDeg, Finset.mul_sum, Finset.mul_sum]
       symm
       apply Finset.sum_subset (Finset.range_mono (le_max_right _ _))
@@ -293,6 +451,21 @@ noncomputable def matrixFunction (A : Matrix n n ℂ) (f : analyticFunctions A) 
     (∑ j ∈ Finset.range (primaryIndex A z),
       (((deriv^[j]) (f : ℂ → ℂ)) z / (j.factorial : ℂ)) • (A - z • 1) ^ j)
 
+/-- The truncated series evaluation is the primary functional calculus of the matrix. -/
+theorem matrixFunction_eq_pfc (A : Matrix n n ℂ) (f : analyticFunctions A) :
+    matrixFunction A f = pfc (f : ℂ → ℂ) A := by
+  have h : IsIntegral ℂ A := Algebra.IsIntegral.isIntegral A
+  rw [matrixFunction, pfc_eq_sum_spectralIdempotent h (IsAlgClosed.splits _),
+    ← spectralValues_eq_minpoly_roots A]
+  apply Finset.sum_congr rfl
+  intro z _
+  rw [primaryIndex_eq_rootMultiplicity, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j _
+  have hComm := (commute_shift (commute_principalIdempotent A z) z).pow_left j
+  rw [Hermite.taylorJet, iteratedDeriv_eq_iterate, Algebra.algebraMap_eq_smul_one,
+    Matrix.mul_smul, ← hComm.eq, principalIdempotent_eq_spectralIdempotent]
+
 /-- **Equations (51a)–(51b)** of [benIsrael2003generalized], Chapter 2. A polynomial
 whose derivatives match those of the function through the required orders gives
 the same matrix value. -/
@@ -307,5 +480,58 @@ theorem matrixFunction_eq_aeval_of_deriv_eq (A : Matrix n n ℂ) (f : analyticFu
   apply Finset.sum_congr rfl
   intro j hj
   rw [hp z hz j (Finset.mem_range.mp hj)]
+
+/-- The spectral Hermite interpolation conditions determine exactly one polynomial
+of degree less than the degree of the minimal polynomial. -/
+theorem existsUnique_spectralInterpolant (A : Matrix n n ℂ) (f : analyticFunctions A) :
+    ∃! p : ℂ[X], p.degree < (minpoly ℂ A).degree ∧
+      ∀ z ∈ spectralValues A, ∀ j < primaryIndex A z,
+        ((derivative^[j]) p).eval z = ((deriv^[j]) (f : ℂ → ℂ)) z := by
+  let m := minpoly ℂ A
+  have hs : m.Splits := IsAlgClosed.splits _
+  have hm : m ≠ 0 := minpoly.ne_zero_of_finite ℂ A
+  have hEquiv (p : ℂ[X]) :
+      Hermite.IsJetInterpolant m.roots (Hermite.taylorJet (f : ℂ → ℂ)) p ↔
+        ∀ z ∈ spectralValues A, ∀ j < primaryIndex A z,
+          ((derivative^[j]) p).eval z = ((deriv^[j]) (f : ℂ → ℂ)) z := by
+    rw [Hermite.isJetInterpolant_iff_coeff_taylor, spectralValues_eq_minpoly_roots]
+    simp only [m, Multiset.mem_toFinset, primaryIndex_eq_rootMultiplicity, count_roots,
+      Hermite.coeff_taylor_eq_eval_iterate_derivative_div, Hermite.taylorJet,
+      iteratedDeriv_eq_iterate]
+    constructor
+    · intro h z hz j hj
+      have hn : (j.factorial : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr j.factorial_ne_zero
+      have he := congrArg (fun u : ℂ => u * (j.factorial : ℂ)) (h z hz j hj)
+      simpa only [div_mul_cancel₀ _ hn] using he
+    · intro h z hz j hj
+      rw [h z hz j hj]
+  have h := Hermite.existsUnique_isJetInterpolant m.roots (Hermite.taylorJet (f : ℂ → ℂ))
+  simpa only [← hs.degree_eq_card_roots hm, hEquiv] using h
+
+/-- **Equation (57)** of [benIsrael2003generalized], Chapter 2. Outside the spectrum,
+the resolvent is the sum of the finite Laurent principal parts at the eigenvalues. -/
+theorem resolvent_eq_sum_primary (A : Matrix n n ℂ) (z : ℂ) (hz : z ∉ spectralValues A) :
+    (z • 1 - A)⁻¹ = ∑ w ∈ spectralValues A, ∑ j ∈ Finset.range (primaryIndex A w),
+      ((z - w) ^ (j + 1))⁻¹ • ((A - w • 1) ^ j * principalIdempotent A w) := by
+  have hz' : z ∉ (minpoly ℂ A).roots := by
+    rwa [spectralValues_eq_minpoly_roots, Multiset.mem_toFinset] at hz
+  have h := inverse_sub_eq_sum_spectralIdempotent (Algebra.IsIntegral.isIntegral A)
+    (IsAlgClosed.splits (minpoly ℂ A)) hz'
+  simpa only [Algebra.algebraMap_eq_smul_one, Matrix.nonsing_inv_eq_ringInverse,
+    spectralValues_eq_minpoly_roots, primaryIndex_eq_rootMultiplicity,
+    principalIdempotent_eq_spectralIdempotent] using h
+
+open scoped Matrix.Norms.L2Operator Real in
+/-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, circular contour.
+The Cauchy integral of $f$ times the resolvent around a circle enclosing the
+spectrum is $f(A)$ after division by $2\pi i$. -/
+theorem theorem_11_circle (A : Matrix n n ℂ) (f : analyticFunctions A) (c : ℂ) (r : ℝ)
+    (hf : DifferentiableOn ℂ (f : ℂ → ℂ) (Metric.closedBall c r))
+    (hσ : spectrum ℂ A ⊆ Metric.ball c r) :
+    matrixFunction A f = (2 * π * Complex.I)⁻¹ •
+      ∮ z in C(c, r), (f : ℂ → ℂ) z • (z • 1 - A)⁻¹ := by
+  rw [matrixFunction_eq_pfc]
+  simpa only [Algebra.algebraMap_eq_smul_one, Matrix.nonsing_inv_eq_ringInverse] using
+    pfc_eq_circleIntegral (Algebra.IsIntegral.isIntegral A) hf hσ
 
 end BenIsraelGreville.Chapter02

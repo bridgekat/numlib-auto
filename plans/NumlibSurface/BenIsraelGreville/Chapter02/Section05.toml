@@ -17,6 +17,10 @@ id = 'primaryIndex'
 source = 'Ben-Israel and Greville, Ch. 2, §5, index of a spectral value'
 
 [[node]]
+id = 'primaryIndex_eq_rootMultiplicity'
+source = 'Ben-Israel and Greville, Ch. 2, §5, index of a spectral value'
+
+[[node]]
 id = 'IsPrimaryDecomposition'
 source = 'Ben-Israel and Greville, Ch. 2, equations (29a), (29b), (46), (47), and (48)'
 
@@ -51,6 +55,42 @@ source = 'Ben-Israel and Greville, Ch. 2, §5, equation (50)'
 [[node]]
 id = 'matrixFunction_eq_aeval_of_deriv_eq'
 source = 'Ben-Israel and Greville, Ch. 2, §5, equations (51a) and (51b)'
+
+[[node]]
+id = 'existsUnique_spectralInterpolant'
+source = 'Ben-Israel and Greville, Ch. 2, §5, paragraph following equation (51b)'
+
+[[node]]
+id = 'spectralValues_eq_minpoly_roots'
+source = 'Ben-Israel and Greville, Ch. 2, §5, roots of the minimal polynomial'
+
+[[node]]
+id = 'minpoly_eq_prod_primary'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 29, factorization of the minimal polynomial'
+
+[[node]]
+id = 'principalIdempotent_eq_spectralIdempotent'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 29, polynomial construction'
+
+[[node]]
+id = 'exercise_29_polynomial'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 29, polynomial representation'
+
+[[node]]
+id = 'exercise_29'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 29, partial fraction formula'
+
+[[node]]
+id = 'matrixFunction_eq_pfc'
+source = 'Ben-Israel and Greville, Ch. 2, §5, equations (50)–(51)'
+
+[[node]]
+id = 'resolvent_eq_sum_primary'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 34, equation (57)'
+
+[[node]]
+id = 'theorem_11_circle'
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, circular contour'
 
 [[node]]
 id = 'theorem_11'

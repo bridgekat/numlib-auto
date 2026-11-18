@@ -10,11 +10,28 @@ source = 'Ben-Israel and Greville, Ch. 2, Lemma 3'
 
 [[node]]
 id = 'theorem_15'
-kind = 'theorem'
-desc = '''A square complex matrix is normal iff it is a weighted sum of pairwise annihilating orthogonal projectors summing to I with weights its distinct eigenvalues. The projectors are the orthogonal eigenspace projections.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 15'
-deps = ['lemma_3']
+
+[[node]]
+id = 'theorem_15_eigenspaces'
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 15, projectors onto the eigenspaces'
+
+[[node]]
+id = 'isHermitian_orthogonalProjector'
+source = 'Ben-Israel and Greville, Ch. 2, §7, orthogonal projectors are Hermitian'
 
 [[node]]
 id = "orthogonalProjector_apply_eq_sum"
 source = "Ben-Israel and Greville, Ch. 2, Equation (65)"
+
+[[node]]
+id = 'exercise_54'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 54'
+
+[[node]]
+id = 'exercise_55'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 55'
+
+[[node]]
+id = 'exercise_56'
+source = 'Ben-Israel and Greville, Ch. 2, Exercise 56'
