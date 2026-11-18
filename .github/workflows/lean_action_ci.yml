@@ -50,6 +50,7 @@ jobs:
           # hold wherever the site is served from.
           TRACKER_GRAPH: ${{ github.workspace }}/numlib.json
           TRACKER_DOCS: docs
+          TRACKER_REFERENCES: ${{ github.workspace }}/references/references.bib
         run: |
           lake exe tracker check
           lake exe tracker graph --all --metrics > numlib.json
