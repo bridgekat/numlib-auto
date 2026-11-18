@@ -10,6 +10,7 @@ import NumlibSurface.BenIsraelGreville.Chapter00.Section04
 import NumlibSurface.BenIsraelGreville.Chapter00.Section05
 import NumlibSurface.BenIsraelGreville.Chapter00.Section06
 import NumlibSurface.BenIsraelGreville.Chapter00.Section07
+import NumlibSurface.BenIsraelGreville.Chapter00.Section08
 import NumlibSurface.BenIsraelGreville.Chapter00.Section09
 import NumlibSurface.BenIsraelGreville.Chapter01.Section01
 import NumlibSurface.BenIsraelGreville.Chapter01.Section02
@@ -63,6 +64,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §0.5 | `Chapter00.Section05` | Determinants, Gram matrices, Schur complements, and volume |
 | §0.6 | `Chapter00.Section06` | Exterior powers, compound matrices, and compound volumes |
 | §0.7 | `Chapter00.Section07` | Jordan form, principal vectors, and polynomial formulas |
+| §0.8 | `Chapter00.Section08` | Integral equivalence and Smith normal form |
 | §0.9 | `Chapter00.Section09` | Block reducibility and the Perron–Frobenius theorem |
 | §1.1 | `Chapter01.Section01` | Penrose equations |
 | §1.2 | `Chapter01.Section02` | Inner inverse construction from Hermite form |
@@ -105,6 +107,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 * **Chapter 0, Equation (30)** (typo). The spectrum of $AA^H$ is indexed by the rows of $A$.
 * **Chapter 0, Equation (87)** (typo). Cauchy–Binet selects columns of the left factor
   and rows of the right factor.
+* **Chapter 0, Exercise 83** (correction). Integral equivalence can change the sign of a
+  single entry in size $1\times 1$. The printed elementary operations preserve it.
 * **Chapter 0, Theorem 5(a)** (correction). The spectral radius is positive for nonzero
   irreducible nonnegative matrices. The size-one zero matrix has spectral radius zero.
 * **Chapter 1, Exercise 9** (typo). The kernel equality concerns $XA$ and $A$.
