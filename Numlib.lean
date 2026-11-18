@@ -607,6 +607,7 @@ import Numlib.LinearAlgebra.Matrix.DotProduct
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier
 import Numlib.LinearAlgebra.Matrix.GSVD
+import Numlib.LinearAlgebra.Matrix.Drazin
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 import Numlib.LinearAlgebra.Matrix.GeneralizedSchur
 import Numlib.LinearAlgebra.Matrix.Hamiltonian
@@ -643,6 +644,7 @@ import Numlib.LinearAlgebra.Matrix.Products
 import Numlib.LinearAlgebra.Matrix.QR
 import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.RankRevealing
+import Numlib.LinearAlgebra.Matrix.RankStabilization
 import Numlib.LinearAlgebra.Matrix.RealSchur
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.SaddlePoint

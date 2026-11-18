@@ -1,0 +1,19 @@
+namespace = "Matrix"
+
+[[node]]
+id = "rank_pow_eq_iff_range_eq"
+
+[[node]]
+id = "rank_pow_eq_iff_ker_eq"
+
+[[node]]
+id = "rank_pow_eq_of_eq_succ"
+
+[[node]]
+id = "rankStabilizationIndex"
+
+[[node]]
+id = "rankStabilizationIndex_spec"
+
+[[node]]
+id = "rank_pow_eq_succ_iff"

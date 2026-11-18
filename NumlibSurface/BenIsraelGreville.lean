@@ -16,6 +16,10 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
+import NumlibSurface.BenIsraelGreville.Chapter04.Section01
+import NumlibSurface.BenIsraelGreville.Chapter04.Section02
+import NumlibSurface.BenIsraelGreville.Chapter04.Section04
+import NumlibSurface.BenIsraelGreville.Chapter04.Section06
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -29,7 +33,7 @@ solving linear systems and least-squares problems.
 
 The formalized material includes the algebra of the Penrose inverse classes, the ordinary
 inverse and consistent linear systems, scalar and vector preliminaries, minimum-norm and
-regularized least-squares solutions, and reduced normal equations.
+regularized least-squares solutions, group and Drazin inverses, and reduced normal equations.
 
 ## Contents
 
@@ -49,6 +53,10 @@ regularized least-squares solutions, and reduced normal equations.
 | §3.1 | `Chapter03.Section01` | Least-squares solutions |
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
+| §4.1 | `Chapter04.Section01` | Spectral inverse equations |
+| §4.2 | `Chapter04.Section02` | Matrix index and rank stabilization |
+| §4.4 | `Chapter04.Section04` | Group inverse |
+| §4.6 | `Chapter04.Section06` | Drazin inverse |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions
@@ -62,6 +70,9 @@ regularized least-squares solutions, and reduced normal equations.
 ## Deviations from the source
 
 * **Chapter 1, Corollary 2** (typo). The kernel of $AA^H$ equals the kernel of $A^H$.
+* **Chapter 4, Lemma 1(d)** (reading). The earlier exponents in the comparison are positive.
+* **Chapter 4, Theorem 8** (generalization). The block formula applies to any nonsingular
+  and nilpotent diagonal blocks in a similarity decomposition.
 * **Chapter 7, Equation (65)** (correction). The equation in the full unitary coordinates
   also imposes consistency. The leading rows in Equation (66) give the criterion for
   least-squares solutions for every right-hand side.
@@ -69,6 +80,7 @@ regularized least-squares solutions, and reduced normal equations.
 ## Not formalized
 
 * The remaining results include prescribed-rank constructions, projector characterizations,
-  extremal properties, spectral inverses, partitioned matrices, rectangular spectral theory,
+  weighted and other extremal properties, further spectral results, partitioned matrices,
+  rectangular spectral theory,
   computational methods, applications, and generalized inverses on Hilbert spaces.
 -/

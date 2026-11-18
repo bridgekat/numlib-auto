@@ -1,30 +1,19 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Prove the Drazin equations and their stability under increasing exponent in the backbone.
-'''
 
 [[node]]
 id = "drazinInverse"
-kind = "definition"
-desc = '''The Drazin inverse acts as the inverse of A on the stable range and as zero on the stable kernel.'''
 source = 'Ben-Israel and Greville, Chapter 4, §6, equation (41)'
 
 [[node]]
 id = "lemma_4_5"
-kind = "theorem"
-desc = '''Given A^(ℓ+1)Y = A^ℓ and AY = YA, the matrix A^ℓ Y^(ℓ+1) also satisfies the outer-inverse equation, with the same commutation and power equation.'''
 source = 'Ben-Israel and Greville, Chapter 4, Lemma 5'
 
 [[node]]
 id = "theorem_4_7"
-kind = "theorem"
-desc = '''There is a unique Drazin inverse at the index or any larger exponent, and it is a polynomial in A.'''
 source = 'Ben-Israel and Greville, Chapter 4, Theorem 7'
 
 [[node]]
 id = "theorem_4_8"
-kind = "theorem"
-desc = '''In a Jordan basis the Drazin inverse inverts the nonzero-eigenvalue blocks and is zero on the zero-eigenvalue blocks.'''
 source = 'Ben-Israel and Greville, Chapter 4, Theorem 8'
 
 [[node]]
@@ -41,6 +30,8 @@ source = 'Ben-Israel and Greville, Chapter 4, Corollary 2'
 
 [[node]]
 id = "corollary_4_3"
-kind = "theorem"
-desc = '''The Moore–Penrose inverse is a polynomial in A exactly when A is range-Hermitian.'''
 source = 'Ben-Israel and Greville, Chapter 4, Corollary 3'
+
+[[node]]
+id = "corollary_4_2_polynomial"
+source = "Ben-Israel and Greville, Chapter 4, Corollary 2, existence and uniqueness"

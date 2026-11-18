@@ -3,6 +3,7 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.Algebra.Group.Commute.Hom
+import Mathlib.Algebra.Group.Units.Basic
 
 /-!
 # Drazin and group inverses in monoids
@@ -117,6 +118,19 @@ theorem map {N : Type*} [Monoid N] (h : IsDrazinInverseAt k a x) (f : M →* N) 
   refine ⟨h.commute.map f, ?_, ?_⟩
   · simpa only [map_mul] using congrArg f h.outer
   · simpa only [map_mul, map_pow] using congrArg f h.stable
+
+/-- Conjugation by a unit carries Drazin inverses to Drazin inverses at the same exponent. -/
+theorem conj (h : IsDrazinInverseAt k a x) (u : Mˣ) :
+    IsDrazinInverseAt k ((u : M) * a * ↑u⁻¹) ((u : M) * x * ↑u⁻¹) := by
+  let f : M →* M :=
+    { toFun := fun b => (u : M) * b * ↑u⁻¹
+      map_one' := by rw [mul_one, Units.mul_inv]
+      map_mul' := fun b c => by
+        calc
+          (u : M) * (b * c) * ↑u⁻¹ = (u : M) * b * (↑u⁻¹ * u) * c * ↑u⁻¹ := by
+            rw [Units.inv_mul, mul_one, mul_assoc (u : M) b c]
+          _ = ((u : M) * b * ↑u⁻¹) * ((u : M) * c * ↑u⁻¹) := by simp only [mul_assoc] }
+  exact h.map f
 
 end IsDrazinInverseAt
 

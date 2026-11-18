@@ -1,0 +1,7 @@
+namespace = "Matrix"
+
+[[node]]
+id = "exists_aeval_mul_pow_eq"
+
+[[node]]
+id = "existsUnique_isDrazinInverseAt"
