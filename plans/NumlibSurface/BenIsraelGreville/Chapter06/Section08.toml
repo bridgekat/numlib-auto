@@ -1,0 +1,34 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Use the matrix pencil and weighted inner products to express generalized singular values.
+'''
+
+[[node]]
+id = "bSingularValues"
+kind = "definition"
+desc = '''The set of nonnegative μ for which det(AᴴA − μ² BᴴB) = 0.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 7'
+
+[[node]]
+id = "theorem_6_21"
+kind = "theorem"
+desc = '''For A with at least as many rows as columns, simultaneous right nonsingular and left unitary transformations put A and B into rectangular diagonal form. The roots of the pencil are the ratios of diagonal entries unless the two matrices have a common kernel, in which case every nonnegative scalar is a root.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 21'
+
+[[node]]
+id = "weightedSingularValues"
+kind = "definition"
+desc = '''The nonnegative stationary values of the norm quotient ‖Ax‖_W/‖x‖_Q. Account for zero singular values by considering stationarity of the squared quotient.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 8'
+
+[[node]]
+id = "IsWeightOrthogonal"
+kind = "definition"
+desc = '''A square matrix V is Q-orthogonal if Vᴴ Q V = I.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 9'
+
+[[node]]
+id = "theorem_6_22"
+kind = "theorem"
+desc = '''With positive definite weights W and Q, weighted-orthogonal transformations U and V make U⁻¹ A V rectangular diagonal with the weighted singular values on the diagonal.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 22'

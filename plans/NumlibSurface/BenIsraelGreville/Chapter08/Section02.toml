@@ -1,0 +1,82 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Use Matrix.pinv for the Anderson–Duffin and Rao–Mitra constructions. The two constructions need separate names and can differ even for PSD matrices. Develop the variational formula and projection formula in a matrix backbone module. Reuse a convex-analysis conjugacy API where applicable.'''
+
+[[node]]
+id = "parallelSum"
+kind = "definition"
+desc = '''The Anderson–Duffin parallel sum of conformable rectangular matrices is A(A+B)†B.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (2), Anderson–Duffin definition"
+
+[[node]]
+id = "reciprocalParallelSum"
+kind = "definition"
+desc = '''The Rao–Mitra parallel sum of conformable rectangular matrices is (A†+B†)†.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (3), Rao–Mitra definition"
+
+[[node]]
+id = "parallelSum_quadraticForm"
+kind = "theorem"
+desc = '''For PSD A and B, the real quadratic form of A:B at x equals the infimum of yᴴAy + zᴴBz over y+z=x. Work with the real part in a complex Hilbert space.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (4), Morley formula"
+deps = ["parallelSum"]
+
+[[node]]
+id = "projection_inf_eq_parallelSum"
+kind = "theorem"
+desc = '''For finite-dimensional subspaces L and M, twice the Anderson–Duffin parallel sum of their orthogonal projectors is the projector onto L ∩ M, in either order. Its half quadratic form is the infimal sum of the two projector quadratic forms.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (5.51), (5)"
+deps = ["parallelSum_quadraticForm"]
+
+[[node]]
+id = "tendsto_projection_inf"
+kind = "theorem"
+desc = '''The powers of EFE converge to the projector onto the intersection of the ranges of orthogonal projectors E and F. The finite-dimensional statement permits operator-norm convergence. Use the spectral characterization of the fixed subspace.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (1), alternating orthogonal projections"
+
+[[node]]
+id = "parallelSum_scalar"
+kind = "theorem"
+desc = '''For positive resistances a and b, their parallel sum is ab/(a+b) = (1/a+1/b)⁻¹.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, scalar specialization following (4)"
+deps = ["parallelSum", "reciprocalParallelSum"]
+
+[[node]]
+id = "convexConjugate"
+kind = "definition"
+desc = '''The Fenchel conjugate is the extended-real supremum of ⟨ξ,x⟩−f(x), allowing +∞. Identify it with an existing backbone construction if applicable.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (6), convex conjugacy"
+
+[[node]]
+id = "convexConjugate_biconjugate"
+kind = "theorem"
+desc = '''Conjugates are convex, and a proper extended-real function is its biconjugate iff it is lower semicontinuous and convex. Reuse the general Fenchel–Moreau theorem.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, Fenchel–Moreau following (6)"
+deps = ["convexConjugate"]
+
+[[node]]
+id = "convexConjugate_quadraticForm"
+kind = "theorem"
+desc = '''The conjugate of x ↦ ⟨x,Ax⟩/2 for a real PSD matrix is ⟨ξ,A†ξ⟩/2 on range A and +∞ elsewhere.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (7)"
+deps = ["convexConjugate"]
+
+[[node]]
+id = "infimalConvolution"
+kind = "definition"
+desc = '''The infimal convolution at x is the infimum over y of f(y)+g(x−y), with extended-real values.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (8)"
+
+[[node]]
+id = "convexConjugate_infimalConvolution"
+kind = "theorem"
+desc = '''Infimal convolution of convex functions is convex, and its conjugate equals the sum of the conjugates, using the extended-real convention for proper functions with nonempty effective domains.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, (9)"
+deps = ["convexConjugate", "infimalConvolution"]
+
+[[node]]
+id = "parallelSum_ne_reciprocalParallelSum"
+kind = "theorem"
+desc = '''The asserted equivalence of (3) and (4) for PSD matrices needs extra hypotheses. For A = diag(1,0) and B = diag(0,1), the variational and Anderson–Duffin sums are zero, but (A†+B†)† is I. The effective domain of the sum of the two conjugates is the intersection of the ranges.'''
+source = "Ben-Israel and Greville, Ch. 8, §2, following (9), correction to equivalence of (3) and (4)"
+deps = ["parallelSum_quadraticForm", "reciprocalParallelSum"]

@@ -1,0 +1,29 @@
+namespace = 'BenIsraelGreville.Chapter03'
+desc = 'Basic solutions and convex combinations.'
+
+[[node]]
+id = 'basicSolution'
+kind = 'definition'
+desc = '''Index by maximal nonsingular minors. A basic candidate for b uses the inverse of the selected square minor on the selected components of b, extended by zero.'''
+source = 'Ben-Israel and Greville, Ch. 3, §5, (75)–(82)'
+
+[[node]]
+id = 'lemma_2'
+kind = 'theorem'
+desc = '''For full-column or full-row rank, the minimum-norm least-squares solution is a convex combination of basic candidates with weights proportional to squared maximal minors.'''
+source = 'Ben-Israel and Greville, Ch. 3, Lemma 2(a)–(b)'
+deps = ['basicSolution']
+
+[[node]]
+id = 'theorem_6'
+kind = 'theorem'
+desc = '''For a real rank-r matrix and arbitrary b, A†b is the convex combination of basic candidates weighted by det(A[I,J])² / vol(A)².'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 6'
+deps = ['lemma_2']
+
+[[node]]
+id = 'theorem_7'
+kind = 'theorem'
+desc = '''For a positive diagonal weighting D, give the weighted normal equations and the corresponding convex average of basic candidates with weights proportional to det(A[I,J])² times the product of selected row weights.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 7'
+deps = ['theorem_6']

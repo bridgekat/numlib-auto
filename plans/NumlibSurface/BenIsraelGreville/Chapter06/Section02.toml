@@ -1,0 +1,28 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Specialize the existing SVD backbone to complex matrices and reuse its truncations.
+'''
+
+[[node]]
+id = "theorem_6_1"
+kind = "theorem"
+desc = '''For an orthonormal eigenfamily uᵢ of A Aᴴ with positive eigenvalues σᵢ², vᵢ = Aᴴuᵢ/σᵢ are orthonormal eigenvectors of AᴴA, with Avᵢ = σᵢuᵢ. Include the corresponding adjoint statement.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 1'
+
+[[node]]
+id = "theorem_6_2"
+kind = "theorem"
+desc = '''A complex matrix has an SVD with unitary factors and its positive singular values on the rectangular diagonal.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 2'
+
+[[node]]
+id = "corollary_6_1"
+kind = "theorem"
+desc = '''In an SVD, A† = V Σ† Uᴴ, where the rectangular diagonal of Σ† consists of the reciprocals of the positive singular values and zeros.'''
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 1'
+
+[[node]]
+id = "svd_truncation_expansion"
+kind = "theorem"
+desc = '''The rank-k SVD truncation is the product of the first k columns of U, the first k singular values as a diagonal, and the adjoint of the first k columns of V. In particular, the rank-r truncation is A.'''
+source = 'Ben-Israel and Greville, Chapter 6, §2, equations (29)–(30)'

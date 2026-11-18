@@ -1,0 +1,34 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Develop partial isometries through their adjoint identity and orthogonal initial and final projections.
+'''
+
+[[node]]
+id = "IsPartialIsometry"
+kind = "definition"
+desc = '''The map preserves Euclidean norm on the orthogonal complement of its kernel.'''
+source = 'Ben-Israel and Greville, Chapter 6, §4, equation (72)'
+
+[[node]]
+id = "theorem_6_5"
+kind = "theorem"
+desc = '''Partial isometry of U, Uᴴ, or U†, orthogonal projection of either Gram product, the two reflexivity identities, and Uᴴ = U† are equivalent.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 5'
+
+[[node]]
+id = "theorem_6_6"
+kind = "theorem"
+desc = '''The truncated unitary factors and their cross product are partial isometries, with the stated initial and final projections onto the ranges of A and Aᴴ.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 6'
+
+[[node]]
+id = "theorem_6_7"
+kind = "theorem"
+desc = '''Every matrix has a polar decomposition A = GE = EH by a partial isometry E and positive semidefinite G and H. Under matching range conditions the factors are unique, with G² = AAᴴ and H² = AᴴA.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 7'
+
+[[node]]
+id = "corollary_6_2"
+kind = "theorem"
+desc = '''For prescribed phases of the singular values, transport those phases into the normal left and right polar factors, retaining GGᴴ = AAᴴ and HᴴH = AᴴA. Uniqueness must retain the phase assignment or a fixed decomposition when singular values repeat.'''
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 2'

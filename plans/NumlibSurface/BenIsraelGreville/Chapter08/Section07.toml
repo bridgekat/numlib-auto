@@ -1,0 +1,125 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Finite homogeneous Markov chains via row-stochastic matrices and first-passage distributions. Reuse matrix nonnegativity and Chapter 4 group inverses. The group inverse exists because boundedness of P^n rules out a nontrivial generalized eigenvector at 1. For closed classes require communication and no outgoing transitions. Communication alone is insufficient and would, for example, classify transient states with a self-loop as absorbing.'''
+
+[[node]]
+id = "IsFiniteMarkovChain"
+kind = "definition"
+desc = '''A finite time-homogeneous Markov chain has one-step conditional distributions given its full past depending only on the current state and described by a fixed transition matrix.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, (85)"
+
+[[node]]
+id = "IsStochasticMatrix"
+kind = "definition"
+desc = '''A row-stochastic matrix has nonnegative entries and every row sums to one, equivalently P·1=1 together with entrywise nonnegativity.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, (86a)–(87)"
+
+[[node]]
+id = "transitionProbability"
+kind = "definition"
+desc = '''The n-step transition probability from i to j is (P^n)ᵢⱼ with probability one for the zero-step return and zero for other zero-step transitions.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, (88)–(89)"
+
+[[node]]
+id = "chapmanKolmogorov"
+kind = "theorem"
+desc = '''The transition probability at m+n equals the sum over intermediate states of the products of the m-step and n-step transition probabilities.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, (89)"
+deps = ["transitionProbability"]
+
+[[node]]
+id = "LeadsTo"
+kind = "definition"
+desc = '''State i leads to j if (P^n)ᵢⱼ > 0 for some positive n.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, reachability following (89)"
+deps = ["transitionProbability"]
+
+[[node]]
+id = "Communicates"
+kind = "definition"
+desc = '''Two states communicate if each leads to the other.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, communication following (89)"
+deps = ["LeadsTo"]
+
+[[node]]
+id = "IsClosedCommunicatingClass"
+kind = "definition"
+desc = '''A nonempty closed communicating class consists of mutually communicating states and has no outgoing transitions. Irreducibility means all pairs communicate. Clarify that a communicating subset need not be closed.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, closed sets and reducibility following (89)"
+deps = ["Communicates"]
+
+[[node]]
+id = "IsAbsorbingChain"
+kind = "definition"
+desc = '''A state is absorbing iff pᵢᵢ = 1. An absorbing chain is one whose closed classes are singletons, so every state can reach an absorbing state.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, absorbing states and chains following (89)"
+deps = ["IsClosedCommunicatingClass"]
+
+[[node]]
+id = "IsRegularChain"
+kind = "definition"
+desc = '''A chain is regular if some positive power of P has all entries positive.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, regularity following (89)"
+deps = ["IsStochasticMatrix"]
+
+[[node]]
+id = "statePeriod"
+kind = "definition"
+desc = '''The period of state i is the gcd of positive return times with (P^n)ᵢᵢ > 0. Period one is aperiodicity.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, period and aperiodicity following (89)"
+deps = ["transitionProbability"]
+
+[[node]]
+id = "firstPassageProbability"
+kind = "definition"
+desc = '''The probability of a first hit of j at positive time n from i is the sum of path weights over paths avoiding j at intermediate times. Its sum gives eventual passage probability, and the time-weighted sum is the extended mean passage time.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, first passage preceding (90)"
+
+[[node]]
+id = "IsRecurrentState"
+kind = "definition"
+desc = '''A state is recurrent if its eventual positive-time return probability is one, transient otherwise, and null recurrent if its mean return time is infinite. An ergodic chain is irreducible and aperiodic.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, recurrence, transience and null states preceding (90)"
+deps = ["firstPassageProbability", "statePeriod", "IsClosedCommunicatingClass"]
+
+[[node]]
+id = "theorem_7"
+kind = "theorem"
+desc = '''For irreducible recurrent chains the Cesàro mean of (P^k)ᵢⱼ tends to 1/μⱼⱼ where μⱼⱼ is the mean positive return time. Use the finite renewal equation or regeneration at j.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 7, (90)"
+deps = ["IsRecurrentState", "transitionProbability"]
+
+[[node]]
+id = "IsStationaryDistribution"
+kind = "definition"
+desc = '''A nonnegative vector π of total mass one is stationary if Pᵀπ=π. An initial distribution evolves at step t by (Pᵀ)^t.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, (93)–(97)"
+deps = ["IsStochasticMatrix"]
+
+[[node]]
+id = "theorem_8"
+kind = "theorem"
+desc = '''In an ergodic chain every row of P^n converges to the same strictly positive stationary distribution π, unique among probability vectors, and πⱼ = 1/μⱼⱼ.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 8, (98)–(103)"
+deps = ["theorem_7", "IsStationaryDistribution"]
+
+[[node]]
+id = "theorem_9"
+kind = "theorem"
+desc = '''For row-stochastic P, I−P has a group inverse. Use sup-norm bounded powers to show ker(I−P)² = ker(I−P).'''
+source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 9"
+deps = ["IsStochasticMatrix"]
+
+[[node]]
+id = "theorem_10"
+kind = "theorem"
+desc = '''For Q=I−P, I−QQ# is the limit of the Cesàro means of P^n and of powers of αI+(1−α)P for 0<α<1. It also equals the limit of P^n for regular or absorbing chains. The strict spectral radius bound for the lazy chain is on its complementary invariant subspace, since the full chain has eigenvalue one.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 10, (104)–(107)"
+deps = ["theorem_9", "IsRegularChain", "IsAbsorbingChain"]
+
+[[node]]
+id = "stationaryDistribution_eq_groupInverse"
+kind = "theorem"
+desc = '''For an ergodic chain every row of I−(I−P)(I−P)# equals the stationary distribution.'''
+source = "Ben-Israel and Greville, Ch. 8, §7, formula following Theorem 10"
+deps = ["theorem_8", "theorem_10"]

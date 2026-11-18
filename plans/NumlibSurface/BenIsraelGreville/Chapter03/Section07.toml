@@ -1,0 +1,64 @@
+namespace = 'BenIsraelGreville.Chapter03'
+desc = 'Essentially strictly convex norms and nonlinear inverses.'
+
+[[node]]
+id = 'essentiallyStrictlyConvex'
+kind = 'definition'
+desc = '''Model essential strict convexity of a complex norm, using the equality condition and the source real scalar interval.'''
+source = 'Ben-Israel and Greville, Ch. 3, §7, (117)–(119)'
+
+[[node]]
+id = 'lemma_3'
+kind = 'theorem'
+desc = '''For an essentially strictly convex norm each point has a unique closest point in any finite-dimensional subspace.'''
+source = 'Ben-Israel and Greville, Ch. 3, Lemma 3'
+deps = ['essentiallyStrictlyConvex']
+
+[[node]]
+id = 'definition_1'
+kind = 'definition'
+desc = '''The metric projector is the map assigning the unique closest point in a subspace under the given norm.'''
+source = 'Ben-Israel and Greville, Ch. 3, Definition 1'
+deps = ['lemma_3']
+
+[[node]]
+id = 'theorem_11'
+kind = 'theorem'
+desc = '''The metric projector has fixed set L, is idempotent and homogeneous, equivariant under translations by L, kills its residual, has 1-Lipschitz residual norm and the stated norm bounds, and is continuous.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 11(a)–(i)'
+deps = ['definition_1']
+
+[[node]]
+id = 'corollary_5'
+kind = 'theorem'
+desc = '''Additivity of the metric projector is equivalent to its zero fiber being a subspace, and to all fibers over L being affine subspaces.'''
+source = 'Ben-Israel and Greville, Ch. 3, Corollary 5'
+deps = ['theorem_11']
+
+[[node]]
+id = 'corollary_6'
+kind = 'theorem'
+desc = '''The metric projector onto a hyperplane is additive.'''
+source = 'Ben-Israel and Greville, Ch. 3, Corollary 6'
+deps = ['corollary_5']
+
+[[node]]
+id = 'corollary_7'
+kind = 'theorem'
+desc = '''If metric projectors onto every r-dimensional subspace are additive, so are those onto every higher-dimensional subspace.'''
+source = 'Ben-Israel and Greville, Ch. 3, Corollary 7'
+deps = ['corollary_5']
+
+[[node]]
+id = 'definition_2'
+kind = 'definition'
+desc = '''The α–β inverse is (I−P(ker A,β)) U P(range A,α) for an inner inverse U. Prove independence of U.'''
+source = 'Ben-Israel and Greville, Ch. 3, Definition 2'
+deps = ['definition_1']
+
+[[node]]
+id = 'theorem_12'
+kind = 'theorem'
+desc = '''The α–β inverse is homogeneous, is additive under the stated projection hypotheses, has the described range and zero fiber, satisfies both reflexive identities, and gives the unique β-minimum among α-approximate solutions.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 12(a)–(j)'
+deps = ['definition_2']

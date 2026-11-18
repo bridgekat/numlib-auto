@@ -1,0 +1,10 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Use Matrix.IsSVD and zero-based singular value indexing.
+'''
+
+[[node]]
+id = "IsSingularValueDecomposition"
+kind = "definition"
+desc = '''The equality A = U Σ Vᴴ with unitary U and V and Σ diagonal with the sorted nonnegative singular values, padded with zeros.'''
+source = 'Ben-Israel and Greville, Chapter 6, §1, equation (4)'

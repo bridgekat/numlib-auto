@@ -1,0 +1,22 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'Integral solutions of linear equations.'
+
+[[node]]
+id = 'corollary_13'
+kind = 'theorem'
+desc = '''For an integer matrix A use its Smith form to construct a rational reflexive inverse X for which AX and XA are integral.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 13'
+
+[[node]]
+id = 'corollary_14'
+kind = 'theorem'
+desc = '''For integer matrices A,B,D, characterize solvability of AXB=D over the integers by integrality and consistency of the canonical Smith-form inverse expression.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 14'
+deps = ['corollary_13']
+
+[[node]]
+id = 'corollary_15'
+kind = 'theorem'
+desc = '''For integer A,b, specialize the Smith-form inverse criterion and solution parameterization to Ax=b.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 15'
+deps = ['corollary_14']

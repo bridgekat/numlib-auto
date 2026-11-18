@@ -1,0 +1,57 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Hilbert–Schmidt kernels on a bounded real interval. Build their bounded integral maps by Cauchy–Schwarz and Fubini, relate the adjoint kernel to coordinate swap and conjugation, then obtain the Fredholm alternative from the compact-operator backbone.'''
+
+[[node]]
+id = "fredholmIntegralOperator"
+kind = "definition"
+desc = '''A square-integrable kernel K acts on L² by the integral against the second variable, and the second-kind operator is I−λK. Make the integral and membership assertions almost everywhere.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, (30), Exercise 8"
+
+[[node]]
+id = "fredholmIntegralOperator_adjoint"
+kind = "theorem"
+desc = '''The adjoint kernel is conjugate-transpose K*(s,t)=conj K(t,s), and the adjoint of I−λK is I−conj λ K*.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, Fredholm property (b)"
+deps = ["fredholmIntegralOperator"]
+
+[[node]]
+id = "fredholm_nullity_range"
+kind = "theorem"
+desc = '''Both Fredholm null spaces have the same finite dimension, both ranges are closed and each range is the orthogonal complement of the other null space.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, (31), (33)"
+deps = ["fredholmIntegralOperator_adjoint"]
+
+[[node]]
+id = "IsFredholmRegularValue"
+kind = "definition"
+desc = '''A regular parameter λ has zero nullity for I−λK. Other λ are characteristic values, with nonzero solutions of (I−λK)x=0 called eigenfunctions; λ reciprocal is the eigenvalue of the kernel operator in Mathlib convention.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, Fredholm properties (d)–(e)"
+deps = ["fredholmIntegralOperator"]
+
+[[node]]
+id = "IsFredholmResolvent"
+kind = "definition"
+desc = '''A resolvent kernel R for a regular λ represents the bounded inverse by I+λR.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, (32), (34)"
+
+[[node]]
+id = "fredholm_resolvent_exists"
+kind = "theorem"
+desc = '''For a regular λ the Fredholm equation has a unique solution for every right-hand side via an L² resolvent kernel. Construct R via the Hilbert–Schmidt ideal property and the inverse identity.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, (32), (34)"
+deps = ["IsFredholmRegularValue", "IsFredholmResolvent", "fredholm_nullity_range"]
+
+[[node]]
+id = "fredholm_alternative"
+kind = "theorem"
+desc = '''At a characteristic λ the equation is consistent exactly for right-hand sides orthogonal to the adjoint null space. Every solution is obtained by adding a linear combination of a null-space basis to a particular one.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, (33), (35)"
+deps = ["fredholm_nullity_range"]
+
+[[node]]
+id = "IsFredholmPseudoresolvent"
+kind = "definition"
+desc = '''An L² kernel R is a pseudoresolvent if I+λR maps a right-hand side in the Fredholm range to a solution. This is precisely the inner-inverse equation on operators.'''
+source = "Ben-Israel and Greville, Ch. 9, §4, Exercise 18, (34)"
+deps = ["fredholmIntegralOperator"]

@@ -1,0 +1,43 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Frame synthesis and analysis on the Mathlib lp space. Establish the equivalence via the adjoint lower bound of a surjective synthesis operator, reusing the closed-range maximal inverse construction. Use the inner product linear in its analysis-vector argument.'''
+
+[[node]]
+id = "IsFrame"
+kind = "definition"
+desc = '''The sum of squared coefficient norms is bounded above and below by positive multiples of the squared vector norm for every vector, with summability included to avoid the totalized tsum convention.'''
+source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6(a), (104)"
+
+[[node]]
+id = "IsBesselSequence"
+kind = "definition"
+desc = '''The squared coefficient series is summable and obeys a uniform upper bound by B times the squared norm, with B positive.'''
+source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6(b), (104)"
+
+[[node]]
+id = "bessel_iff_synthesis"
+kind = "theorem"
+desc = '''The Bessel property is equivalent to the series ∑ cₙfₙ converging for every square-summable coefficient sequence. The synthesis map is bounded with adjoint equal to the analysis coefficient map.'''
+source = "Ben-Israel and Greville, Ch. 9, §8, (105)–(106)"
+deps = ["IsBesselSequence"]
+
+[[node]]
+id = "frameOperator"
+kind = "definition"
+desc = '''For a Bessel sequence with synthesis T, the frame operator S is TT* and acts by unconditional synthesis of the analysis coefficients.'''
+source = "Ben-Israel and Greville, Ch. 9, §8, (107)"
+deps = ["bessel_iff_synthesis"]
+
+[[node]]
+id = "frame_reconstruction"
+kind = "theorem"
+desc = '''For a frame, its frame operator is a bounded positive isomorphism and each f is the unconditional sum of the frame vectors times the analysis coefficients against S⁻¹fₙ.'''
+source = "Ben-Israel and Greville, Ch. 9, §8, (108)"
+deps = ["IsFrame", "frameOperator"]
+
+[[node]]
+id = "theorem_12"
+kind = "theorem"
+desc = '''A sequence is a frame iff synthesis series define a surjective map from ℓ². A lower frame bound for a nontrivial Hilbert space is 1/‖T†‖²=1/‖S⁻¹‖, which is optimal. In the trivial Hilbert space any positive bound works.'''
+source = "Ben-Israel and Greville, Ch. 9, §8, Theorem 12, (105), (109)–(110)"
+deps = ["IsFrame", "bessel_iff_synthesis", "frameOperator", "maximalTsengInverse"]

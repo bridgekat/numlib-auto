@@ -1,0 +1,46 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Use the pseudoinverse projection identities and norm perturbation tools in Numlib.Analysis.Matrix.SingularValues.
+'''
+
+[[node]]
+id = "pinv_converges_iff_eventually_rank_eq"
+kind = "theorem"
+desc = '''For a sequence of matrices converging to A, the Moore–Penrose inverses converge to A† exactly when the ranks eventually equal rank A.'''
+source = 'Ben-Israel and Greville, Chapter 6, §6, continuity at fixed rank'
+
+[[node]]
+id = "IsAcutePerturbation"
+kind = "definition"
+desc = '''The gaps between the two column ranges and the two row ranges are both strictly less than one.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 5'
+
+[[node]]
+id = "theorem_6_13"
+kind = "theorem"
+desc = '''The column range gap is less than one exactly when both opposite orthogonal intersections vanish, equivalently when the column ranks and the rank of the projected perturbed matrix agree. The same holds for row ranges.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 13'
+
+[[node]]
+id = "theorem_6_14"
+kind = "theorem"
+desc = '''In rank-adapted orthonormal coordinates, acuteness is equivalent to the leading block being nonsingular with zero trailing Schur complement, giving the full rank factorization and its inverse formula. The left off-diagonal factor uses E₂₁ and the right one uses E₁₂.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 14'
+
+[[node]]
+id = "theorem_6_15"
+kind = "theorem"
+desc = '''For nonacute A and B, the norm of B† − A† is at least the reciprocal of the perturbation norm. A bound for B† alone requires restricting to the direction whose subspace intersection is nontrivial.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 15'
+
+[[node]]
+id = "theorem_6_16"
+kind = "theorem"
+desc = '''Expand B† − A† as the linear perturbation term and two cross-projection corrections, and obtain the equivalent rewritten forms using the adjoint of the perturbation and Gram pseudoinverses. The printed simplification (136d) requires stationary row and column spaces, as acuteness alone allows rotations.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 16'
+
+[[node]]
+id = "theorem_6_17"
+kind = "theorem"
+desc = '''For a family of unitarily invariant matrix norms with the required mixed-product bounds, the norm of the change in pseudoinverse is bounded by three times the larger squared pseudoinverse norm times the norm of the perturbation.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17'

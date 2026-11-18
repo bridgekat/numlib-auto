@@ -1,0 +1,113 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Hilbert-space preliminaries with genuinely partial domains. Reuse Mathlib LinearPMap, its graph/order/closure/adjoint API, and Submodule orthogonal projection. Use the L² product norm for coordinate isometries. Distinguish a bounded operator on a partial domain from its bounded extension.'''
+
+[[node]]
+id = "orthogonalComplement_closure"
+kind = "theorem"
+desc = '''Orthogonal complements are closed and unchanged by taking the closure. The orthogonal sum of two closed subspaces is closed.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (A)"
+
+[[node]]
+id = "IsDecomposable"
+kind = "definition"
+desc = '''L is decomposable with respect to M if M≤L and every vector in L splits into a summand in M and one in L ∩ M⊥. This always holds for closed M≤L, and is equivalent to the closed-M-closure projection carrying L into M.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (A), (1)"
+
+[[node]]
+id = "hilbertProductInclusions"
+kind = "definition"
+desc = '''J₁ and J₂ are the coordinate linear isometries with ranges the two respective axes of the L² Hilbert product.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (B)"
+
+[[node]]
+id = "carrier"
+kind = "definition"
+desc = '''The carrier of a partial linear map T is D(T) ∩ ker(T)⊥, with the kernel a submodule of the ambient source.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (C), (2)"
+
+[[node]]
+id = "graph_iff_disjoint_vertical"
+kind = "theorem"
+desc = '''A linear subspace of H₁×H₂ is the graph of a unique partial operator iff it intersects the vertical axis trivially; the domain is its first coordinate projection. The inverse-graph version interchanges axes.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (C)"
+
+[[node]]
+id = "isClosed_iff_graphLimit"
+kind = "theorem"
+desc = '''A partial operator is closed iff convergence of graph pairs has its limit in the graph; a closed operator has closed kernel. Use the LinearPMap graph and ambient kernel.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (D)"
+
+[[node]]
+id = "isClosed_iff_isClosed_domain_of_bounded"
+kind = "theorem"
+desc = '''A bounded partial operator is closed iff its domain is closed. A closed operator on the entire Hilbert space is bounded by the closed graph theorem.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (E)"
+
+[[node]]
+id = "restrictCarrier_inverse"
+kind = "theorem"
+desc = '''Restriction to the carrier is a partial linear bijection onto its range, with inverse graph obtained by swapping coordinates, so the inverse is closed iff the restriction is closed.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (F)"
+deps = ["carrier", "graph_iff_disjoint_vertical"]
+
+[[node]]
+id = "isDense_iff_graph_orthogonal_disjoint"
+kind = "theorem"
+desc = '''Dense domain is equivalent to trivial intersection of the orthogonal graph complement with the horizontal axis. The complement is the inverse graph of minus the adjoint, whose defining inner-product identity determines it uniquely.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (G)"
+deps = ["graph_iff_disjoint_vertical"]
+
+[[node]]
+id = "ker_adjoint_eq_orthogonal_range"
+kind = "theorem"
+desc = '''For a densely defined operator, the adjoint kernel is the orthogonal complement of the range. The dual orthogonal identity concerns ker of the closure when the operator is closable, and the printed closure-of-kernel equality needs justification beyond mere dense definition. Use double adjoints to record the correct hypotheses.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (H), (3)"
+deps = ["isDense_iff_graph_orthogonal_disjoint"]
+
+[[node]]
+id = "adjoint_inverse"
+kind = "theorem"
+desc = '''When the required inverses and dense domains exist, the adjoint of the partial inverse is the inverse of the adjoint. Characterize bounded invertibility by the surjectivity of the other adjoint with the needed closedness and injectivity hypotheses.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (I), inverse and adjoint"
+deps = ["ker_adjoint_eq_orthogonal_range"]
+
+[[node]]
+id = "closure_eq_adjoint_adjoint"
+kind = "theorem"
+desc = '''Closability means the graph closure meets the vertical axis trivially, and the resulting closure is the least closed extension. For densely defined closable T it equals T**; equality T=T** characterizes closedness.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (J)"
+deps = ["isDense_iff_graph_orthogonal_disjoint", "graph_iff_disjoint_vertical"]
+
+[[node]]
+id = "IsNonnegativeOperator"
+kind = "definition"
+desc = '''A densely defined operator is symmetric if T≤T*, self-adjoint if T=T*, and nonnegative if self-adjoint and its quadratic form is nonnegative on the domain.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (K)"
+
+[[node]]
+id = "gramOperators_nonnegative"
+kind = "theorem"
+desc = '''For closed densely defined T, the partial products T*T and TT* are self-adjoint nonnegative and their shifts by the identity have bounded, everywhere-defined inverses.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), von Neumann"
+deps = ["IsNonnegativeOperator"]
+
+[[node]]
+id = "orthogonalProjector_iff"
+kind = "theorem"
+desc = '''A bounded self-adjoint idempotent has closed range and orthogonal range/kernel decomposition. Conversely, every closed subspace has the unique orthogonal projector with that range and the corresponding orthogonal kernel.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (L)"
+
+[[node]]
+id = "reducedMinimumModulus"
+kind = "definition"
+desc = '''The reduced minimum modulus is the infimum of ‖Tx‖/‖x‖ over nonzero carrier vectors. Use an extended nonnegative real to assign +∞ when the carrier is trivial.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (M), (4)"
+deps = ["carrier"]
+
+[[node]]
+id = "isNormallySolvable_iff"
+kind = "theorem"
+desc = '''A closed operator has closed range iff its carrier restriction has bounded inverse iff reduced minimum modulus is positive. For dense domain, normal solvability is equivalent to consistency exactly for right-hand sides orthogonal to the adjoint kernel.'''
+source = "Ben-Israel and Greville, Ch. 9, §2, (M), (4)"
+deps = ["reducedMinimumModulus", "restrictCarrier_inverse", "ker_adjoint_eq_orthogonal_range"]

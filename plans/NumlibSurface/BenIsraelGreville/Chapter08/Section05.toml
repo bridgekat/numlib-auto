@@ -1,0 +1,30 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Newton iteration with an outer inverse. Express Jacobians using Fréchet derivatives and matrix norm hypotheses using operator norms, allowing arbitrary finite-dimensional normed spaces in the reusable convergence lemmas.'''
+
+[[node]]
+id = "newtonIterate"
+kind = "definition"
+desc = '''Starting at x₀, the outer-inverse Newton update sends x to x−T(x)f(x), with T(x)J(x)T(x)=T(x). Scalar Newton uses the inverse derivative and modified Newton fixes T at the initial point.'''
+source = "Ben-Israel and Greville, Ch. 8, §5, (58)–(62), (65)"
+
+[[node]]
+id = "theorem_4"
+kind = "theorem"
+desc = '''Suppose J is M-Lipschitz, T consists of outer inverses, the initial step is bounded by α, ‖(T(u)−T(v))f(v)‖ ≤ N‖u−v‖² and M‖T(u)‖/2+N ≤ K < 1 on the ball, with h=αK<1 and radius exceeding α/(1−h). The iterates stay in the ball, converge to x∞ satisfying T(x∞)f(x∞)=0, and have error at most αh^(2^k−1)/(1−h^(2^k)). Derive convergence of T(x)f(x) on the ball from the given estimates, without assuming continuity of T itself.'''
+source = "Ben-Israel and Greville, Ch. 8, §5, Theorem 4, (63)–(69)"
+deps = ["newtonIterate"]
+
+[[node]]
+id = "corollary_3"
+kind = "theorem"
+desc = '''Under the hypotheses of Theorem 4 with T(x)=J(x)† in Euclidean norms, the limit is a stationary point of ‖f(x)‖². Use ker J†=ker Jᴴ to obtain vanishing derivative.'''
+source = "Ben-Israel and Greville, Ch. 8, §5, Corollary 3, (70)–(71)"
+deps = ["theorem_4"]
+
+[[node]]
+id = "theorem_5"
+kind = "theorem"
+desc = '''If TAT=T, δ=ε‖T‖<1, ‖T‖‖f(x₀)‖<(1−δ)r, and ‖f(u)−f(v)−A(u−v)‖≤ε‖u−v‖ on the ball, fixed-T Newton iterates stay in the ball and converge to a zero of Tf in the affine subspace x₀+range T. Prove geometric bounds on successive increments.'''
+source = "Ben-Israel and Greville, Ch. 8, §5, Theorem 5, (72)–(77)"
+deps = ["newtonIterate"]

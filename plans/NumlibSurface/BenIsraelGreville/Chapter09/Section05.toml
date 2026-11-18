@@ -1,0 +1,35 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Green kernels for closed partial differential operators. Define a Green kernel by the integral right-inverse relation on the actual operator domain, allowing vector-valued equations. Use the preceding Hilbert-space inverse theory to normalize generalized Green kernels.'''
+
+[[node]]
+id = "differentialExpression"
+kind = "definition"
+desc = '''The operator acts by the indicated differential expression, for example x↦A₁x′+A₀x, on functions satisfying differentiability, codomain integrability or continuity, and the specified initial or boundary conditions.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, (45)–(47)"
+
+[[node]]
+id = "IsGreenKernel"
+kind = "definition"
+desc = '''A Green kernel gives the unique solution of Lx=y by integrating the kernel against y, for y in range L and injective L.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), Green function"
+
+[[node]]
+id = "IsGeneralizedGreenKernel"
+kind = "definition"
+desc = '''A generalized Green kernel gives a particular solution for each y in range L, with its integral operator mapping that range into D(L).'''
+source = "Ben-Israel and Greville, Ch. 9, §5, after (48), generalized Green function"
+
+[[node]]
+id = "isGeneralizedGreenKernel_iff_innerInverse"
+kind = "theorem"
+desc = '''The integral operator represented by a generalized Green kernel is an inner inverse of L on D(L), and conversely a kernel representing an inner inverse gives such a particular solution.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, generalized inverse characterization after (48)"
+deps = ["IsGeneralizedGreenKernel"]
+
+[[node]]
+id = "maximalInverse_eq_project_greenKernel"
+kind = "theorem"
+desc = '''For normally solvable closed dense L with generalized Green operator G, its maximal inverse is (I−P_ker(L)) G (I−P_ker(L*)), which gives the corresponding kernel by composing with the orthogonal projection kernels.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, Loud construction"
+deps = ["IsGeneralizedGreenKernel", "theorem_2_projections"]

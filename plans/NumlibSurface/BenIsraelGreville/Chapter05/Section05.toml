@@ -1,0 +1,24 @@
+namespace = "BenIsraelGreville.Chapter05"
+desc = '''
+Border a rectangular matrix by bases of its two orthogonal deficiencies. Encode the two equal block sums by an explicit index equivalence or a rectangular two-sided inverse.
+'''
+
+[[node]]
+id = "theorem_5_7"
+kind = "theorem"
+desc = '''If the columns of U and V are bases of ker Aᴴ and ker A respectively, then the square bordered matrix [A U; Vᴴ 0] is nonsingular and its inverse is [A† (Vᴴ)†; U† 0]. The hypothesis on the basis of ker A names V, as required by the formula.'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 7'
+
+[[node]]
+id = "corollary_5_5"
+kind = "theorem"
+desc = '''For b in the target space of A, the bordered solve with right side [b; 0] yields x = A† b and U y = P_ker(Aᴴ)b. The first component is the minimum-norm least-squares solution and the second gives its residual.'''
+source = 'Ben-Israel and Greville, Chapter 5, Corollary 5'
+deps = ["theorem_5_7"]
+
+[[node]]
+id = "corollary_5_6"
+kind = "theorem"
+desc = '''Cramer’s rule on the bordered solve gives each coordinate of A† b as the determinant ratio with column j of [A U; Vᴴ 0] replaced by [b; 0].'''
+source = 'Ben-Israel and Greville, Chapter 5, Corollary 6'
+deps = ["corollary_5_5"]

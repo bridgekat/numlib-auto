@@ -1,0 +1,64 @@
+namespace = "BenIsraelGreville.Chapter05"
+desc = '''
+Intersections of affine subspaces. First prove the generic identities for orthogonal projections of finite-dimensional inner product spaces, then specialize the translate formulas to complex coordinates.
+'''
+
+[[node]]
+id = "affineManifold"
+kind = "definition"
+desc = '''The translate f + L consists of vectors x such that x − f lies in L. Use Mathlib affine subspaces where applicable.'''
+source = 'Ben-Israel and Greville, Chapter 5, §3, equation (44)'
+
+[[node]]
+id = "orthogonalRepresentation"
+kind = "definition"
+desc = '''An orthogonal representation f + L has base point f perpendicular to L. Every translate is represented this way using the projection of f onto Lᗮ.'''
+source = 'Ben-Israel and Greville, Chapter 5, §3, equation (45)'
+deps = ["affineManifold"]
+
+[[node]]
+id = "isLeastNorm_orthogonalRepresentation"
+kind = "theorem"
+desc = '''The orthogonal base point of f + L is its unique vector with least Euclidean norm.'''
+source = 'Ben-Israel and Greville, Chapter 5, §3, least norm representative'
+deps = ["orthogonalRepresentation"]
+
+[[node]]
+id = "lemma_5_2"
+kind = "theorem"
+desc = '''The orthogonal projection onto L + M equals (P_L + P_M)(P_L + P_M)†.'''
+source = 'Ben-Israel and Greville, Chapter 5, Lemma 2'
+
+[[node]]
+id = "theorem_5_3"
+kind = "theorem"
+desc = '''The orthogonal projection onto L ∩ M is twice the parallel sum P_L(P_L + P_M)†P_M, also given by interchanging L and M.'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 3'
+deps = ["lemma_5_2"]
+
+[[node]]
+id = "theorem_5_4"
+kind = "theorem"
+desc = '''The common subspace L ∩ M is the image of ker[P_L −P_M] under either block projection [P_L 0] or [0 P_M], and is each of ker(P_Lᗮ + P_Mᗮ), ker(I − P_L P_M), and ker(I − P_M P_L).'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 4'
+
+[[node]]
+id = "theorem_5_5"
+kind = "theorem"
+desc = '''Two translates f + L and g + M intersect iff d = g − f is in L + M. If so, their intersection is a translate of L ∩ M whose base point can be any of f + P_L(P_L + P_M)†d, f + (P_Lᗮ + P_Mᗮ)†P_Mᗮ d, or f + (I − P_M P_L)†P_Mᗮ d, and their counterparts interchanging f, L with g, M.'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 5'
+deps = ["affineManifold", "lemma_5_2", "theorem_5_4"]
+
+[[node]]
+id = "corollary_5_1"
+kind = "theorem"
+desc = '''If the two translates are represented orthogonally and intersect, then the first two base-point formulas of Theorem 5 and their interchanged versions are orthogonal representatives of the intersection.'''
+source = 'Ben-Israel and Greville, Chapter 5, Corollary 1'
+deps = ["theorem_5_5", "orthogonalRepresentation"]
+
+[[node]]
+id = "corollary_5_2"
+kind = "theorem"
+desc = '''All translates f + L and g + M intersect precisely when Lᗮ ∩ Mᗮ = {0}.'''
+source = 'Ben-Israel and Greville, Chapter 5, Corollary 2'
+deps = ["theorem_5_5"]

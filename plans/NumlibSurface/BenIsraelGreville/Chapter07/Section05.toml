@@ -1,0 +1,30 @@
+namespace = "BenIsraelGreville.Chapter07"
+
+desc = '''Greville column updates, their conjugate-transpose dual, and the minimum-norm update for new observations. Put the two Penrose-equation verifications for arbitrary old/new columns in a matrix backbone module and specialize here.'''
+
+[[node]]
+id = "grevilleColumnCoefficient"
+kind = "definition"
+desc = '''For a column a appended to A, put d = A†a and c = a − Ad. The new inverse row is c† if c is nonzero, and (1 + dᴴd)⁻¹dᴴA† otherwise.'''
+source = "Ben-Israel and Greville, Ch. 7, §5, (21)–(22), (24a)–(24b)"
+
+[[node]]
+id = "theorem_2"
+kind = "theorem"
+desc = '''The Moore–Penrose inverse of [A a] is [A† − db; b], where b is the Greville row coefficient and d = A†a. Prove the two cases by verifying the four Penrose identities.'''
+source = "Ben-Israel and Greville, Ch. 7, §5, Theorem 2, (23), (24a)–(24b)"
+deps = ["grevilleColumnCoefficient"]
+
+[[node]]
+id = "corollary_1"
+kind = "theorem"
+desc = '''For a row aᴴ appended to A, let dᴴ = aᴴA† and cᴴ = aᴴ − dᴴA. The new inverse is [A†−bdᴴ b], with b = (cᴴ)† in the nonzero case and b = (1+dᴴd)⁻¹A†d otherwise.'''
+source = "Ben-Israel and Greville, Ch. 7, §5, Corollary 1, (55)–(57)"
+deps = ["theorem_2"]
+
+[[node]]
+id = "corollary_2"
+kind = "theorem"
+desc = '''With rows and right-hand sides partitioned compatibly, appending row aᴴ and observation yₖ changes the minimum-norm least-squares estimate x to x + (yₖ−aᴴx)b using the row update coefficient.'''
+source = "Ben-Israel and Greville, Ch. 7, §5, Corollary 2, (58)–(60)"
+deps = ["corollary_1"]

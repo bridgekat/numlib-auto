@@ -1,0 +1,20 @@
+namespace = 'BenIsraelGreville.Chapter01'
+desc = "The Penrose equations and the Moore–Penrose inverse."
+
+[[node]]
+id = 'definition_1'
+kind = 'definition'
+desc = '''For a complex matrix A and a subset S of the four Penrose equations, the set A{S} consists of the matrices X that satisfy every equation in S.'''
+source = 'Ben-Israel–Greville, Chapter 1, Definition 1'
+
+[[node]]
+id = 'existsUnique_penrose'
+kind = 'theorem'
+desc = '''For every complex matrix A there exists a unique matrix X satisfying all four Penrose equations, namely Matrix.pinv A.'''
+source = 'Ben-Israel–Greville, Chapter 1, §1, equations (1)–(4)'
+
+[[node]]
+id = 'pinv_eq_inv'
+kind = 'theorem'
+desc = '''For an invertible square complex matrix, the Moore–Penrose inverse is its ordinary inverse.'''
+source = 'Ben-Israel–Greville, Chapter 1, §1'

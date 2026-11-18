@@ -1,0 +1,28 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Use Jordan form to express strong spectral invertibility and its relation to the group inverse.
+'''
+
+[[node]]
+id = "AreStrongSpectralInverses"
+kind = "definition"
+desc = '''A and X admit one similarity coordinate change under which A is in Jordan form and X is the Moore–Penrose inverse of that Jordan form.'''
+source = 'Ben-Israel and Greville, Chapter 4, §10, strong spectral inverses'
+
+[[node]]
+id = "strongSpectralInverse_unique_of_index_one"
+kind = "theorem"
+desc = '''At index one, the group inverse is the unique strong spectral inverse.'''
+source = 'Ben-Israel and Greville, Chapter 4, §10, index-one case'
+
+[[node]]
+id = "quasiCommuting_of_strongSpectralInverse"
+kind = "theorem"
+desc = '''Strong spectral inverses are quasi-commuting.'''
+source = 'Ben-Israel and Greville, Chapter 4, §10, quasi-commutation'
+
+[[node]]
+id = "exists_leastSquaresInverse_same_range"
+kind = "theorem"
+desc = '''An index-one matrix has a {1,2,3}-inverse whose range equals the range of the original matrix.'''
+source = 'Ben-Israel and Greville, Chapter 4, §10, least-squares spectral inverse'

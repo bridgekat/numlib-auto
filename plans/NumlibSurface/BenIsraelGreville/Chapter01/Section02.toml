@@ -1,0 +1,26 @@
+namespace = 'BenIsraelGreville.Chapter01'
+desc = "Constructing inner inverses from Hermite form."
+
+[[node]]
+id = 'theorem_1'
+kind = 'theorem'
+desc = '''If E and P are invertible and EAP has blocks [I,K;0,0], then P[I,0;0,L]E is a {1}-inverse of A for each block L.'''
+source = 'Ben-Israel–Greville, Chapter 1, Theorem 1'
+
+[[node]]
+id = 'rank_hermiteInverse'
+kind = 'theorem'
+desc = '''Under the same change of bases, the proposed inverse has rank card(I) + rank L.'''
+source = 'Ben-Israel–Greville, Chapter 1, Equation (6)'
+
+[[node]]
+id = 'exists_innerInverse_rank'
+kind = 'theorem'
+desc = '''For each s between rank A and the smaller dimension of a complex matrix A there is a {1}-inverse of rank s.'''
+source = 'Ben-Israel–Greville, Chapter 1, §2, after (6)'
+
+[[node]]
+id = 'exists_innerInverse'
+kind = 'theorem'
+desc = '''Every complex matrix has a {1}-inverse.'''
+source = 'Ben-Israel–Greville, Chapter 1, §2, conclusion'

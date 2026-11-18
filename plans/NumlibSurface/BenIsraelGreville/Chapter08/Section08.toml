@@ -1,0 +1,43 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Singular difference equations with fixed initial vector and infinite future. Use the Chapter 4 Drazin theory and the regular-pencil reduction. Tractability is uniqueness only for consistent initial data, with time indexed by ℕ.'''
+
+[[node]]
+id = "IsConsistentInitialVector"
+kind = "definition"
+desc = '''c is consistent for A x_{t+1}=B x_t+f_t if some solution sequence on all natural times has x₀=c.'''
+source = "Ben-Israel and Greville, Ch. 8, §8, Definition 1(a), (111)"
+
+[[node]]
+id = "IsTractableDifferenceEquation"
+kind = "definition"
+desc = '''The equation is tractable if every consistent initial vector admits exactly one full solution.'''
+source = "Ben-Israel and Greville, Ch. 8, §8, Definition 1(b)"
+deps = ["IsConsistentInitialVector"]
+
+[[node]]
+id = "differenceSolution_iff_drazin"
+kind = "theorem"
+desc = '''A x_{t+1}=x_t at all times iff all x_t belong to the stabilized range of A and x_{t+1}=Aᴰx_t.'''
+source = "Ben-Israel and Greville, Ch. 8, §8, Example 1, (109)–(110)"
+
+[[node]]
+id = "theorem_11"
+kind = "theorem"
+desc = '''The homogeneous equation is tractable iff some λ in ℂ makes λA−B invertible. For necessity use independent exponential sequences with distinct λ; for sufficiency use a nilpotent/invertible decomposition of the normalized pencil.'''
+source = "Ben-Israel and Greville, Ch. 8, §8, Theorem 11, (112)–(114)"
+deps = ["IsTractableDifferenceEquation"]
+
+[[node]]
+id = "theorem_12"
+kind = "theorem"
+desc = '''For a tractable homogeneous equation normalize with an invertible λA−B, obtaining Â and B̂. Solutions start at ÂÂᴰy and have x_t=(ÂᴰB̂)^t y for t≥1. Initial consistency is membership in range Â^k for k=ind Â, and the solution for consistent c is (ÂᴰB̂)^t c at all times.'''
+source = "Ben-Israel and Greville, Ch. 8, §8, Theorem 12, (115)–(118)"
+deps = ["theorem_11"]
+
+[[node]]
+id = "theorem_13"
+kind = "theorem"
+desc = '''For the tractable inhomogeneous equation, decompose solutions into homogeneous propagation, the causal stable-range convolution with Âᴰ, and the finite future sum −(I−ÂÂᴰ)∑_{i<k}(ÂB̂ᴰ)^i B̂ᴰ f̂_{t+i}. The result is independent of valid λ. Consistency tests c after adding the future sum evaluated at time zero, resolving the free t in (120).'''
+source = "Ben-Israel and Greville, Ch. 8, §8, Theorem 13, (119)–(120)"
+deps = ["theorem_11", "theorem_12"]

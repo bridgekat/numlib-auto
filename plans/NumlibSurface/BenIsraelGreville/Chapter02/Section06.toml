@@ -1,0 +1,35 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'Inverses with prescribed range and null space.'
+
+[[node]]
+id = 'theorem_12'
+kind = 'theorem'
+desc = '''For complementary pairs (range A,S) and (T,ker A), the prescribed inner inverses solve AX=P(range A,S) and XA=P(T,ker A). Parametrize all solutions by the fixed solution P(T,ker A)UP(range A,S) plus (I−UA)Y(I−AU). The fixed solution alone is the reflexive inverse with range T and kernel S.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 12(a)–(c)'
+
+[[node]]
+id = 'corollary_9'
+kind = 'theorem'
+desc = '''Using a fixed member X₀ of the prescribed inner inverse class, its members are exactly X₀+(I−X₀A)Y(I−AX₀).'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 9'
+deps = ['theorem_12']
+
+[[node]]
+id = 'theorem_13'
+kind = 'theorem'
+desc = '''For X=U(VAU)⁽¹⁾V, X is inner iff rank VAU=rank A; it is outer with range U iff rank VAU=rank U, and outer with kernel V iff rank VAU=rank V. It is the specified reflexive inverse iff all three ranks equal rank A.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 13(a)–(d)'
+
+[[node]]
+id = 'theorem_14'
+kind = 'theorem'
+desc = '''For dim T=s≤rank A and codim S=s, a unique outer inverse with range T and kernel S exists iff A(T) and S are complementary.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 14'
+deps = ['theorem_13']
+
+[[node]]
+id = 'corollary_10'
+kind = 'theorem'
+desc = '''For s=rank A, complementarity of A(T) and S is equivalent to complementarity of range A and S and of ker A and T, and to existence of a reflexive inverse with range T and kernel S.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 10'
+deps = ['theorem_14']

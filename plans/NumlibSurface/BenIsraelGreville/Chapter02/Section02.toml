@@ -1,0 +1,29 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'Classes of inverses with one Hermitian product.'
+
+[[node]]
+id = 'theorem_3'
+kind = 'theorem'
+desc = '''For Z in A{1,3}, membership X in A{1,3} is equivalent to AX=AZ.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 3'
+
+[[node]]
+id = 'corollary_3'
+kind = 'theorem'
+desc = '''For Z in A{1,3}, all such inverses are Z+(I−ZA)Y.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 3'
+deps = ['theorem_3']
+
+[[node]]
+id = 'theorem_4'
+kind = 'theorem'
+desc = '''For Z in A{1,4}, membership X in A{1,4} is equivalent to XA=ZA. Use adjoint duality.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 4'
+deps = ['theorem_3']
+
+[[node]]
+id = 'corollary_4'
+kind = 'theorem'
+desc = '''For Z in A{1,4}, all such inverses are Z+Y(I−AZ).'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 4'
+deps = ['theorem_4']

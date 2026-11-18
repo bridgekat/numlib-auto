@@ -1,0 +1,22 @@
+namespace = 'BenIsraelGreville.Chapter03'
+desc = 'Tikhonov regularization.'
+
+[[node]]
+id = 'tikhonovObjective'
+kind = 'definition'
+desc = '''The Tikhonov objective is the sum of squared residual norm and α² times squared solution norm for positive α. Reuse the ridge objective in Numlib.'''
+source = 'Ben-Israel and Greville, Ch. 3, §3, (29)–(31)'
+
+[[node]]
+id = 'theorem_3'
+kind = 'theorem'
+desc = '''For positive α the unique minimizer is (A*A+α²I)⁻¹A*b, equivalently A*(AA*+α²I)⁻¹b.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 3'
+deps = ['tikhonovObjective']
+
+[[node]]
+id = 'tendsto_tikhonov'
+kind = 'theorem'
+desc = '''As α tends to zero from the right, the regularized minimizer converges to A†b.'''
+source = 'Ben-Israel and Greville, Ch. 3, §3, limit of the regularized solutions'
+deps = ['theorem_3']

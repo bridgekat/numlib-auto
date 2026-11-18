@@ -1,0 +1,376 @@
+namespace = "BenIsraelGreville.Chapter00"
+desc = '''Use Matrix.submatrix, Matrix.mulVecLin, Matrix.toEuclideanLin, Mathlib spectral theory for Hermitian matrices, the Rayleigh quotient API, and the backbone SVD. Keep the dimension of each Gram matrix and its zero-padded spectrum distinct.'''
+
+[[node]]
+id = "IndexSequence"
+kind = "definition"
+desc = '''Q_{k,n} is the type of increasing length-k sequences from the n-element index set.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "submatrix"
+kind = "definition"
+desc = '''The matrix on the selected rows and columns is obtained by restricting its two index maps.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "IsRectDiagonal"
+kind = "definition"
+desc = '''An entry of a rectangular diagonal matrix vanishes whenever its row and column indices differ.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "IsRectUpperTriangular"
+kind = "definition"
+desc = '''An entry of a rectangular upper triangular matrix vanishes below its main diagonal.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "IsRectLowerTriangular"
+kind = "definition"
+desc = '''An entry of a rectangular lower triangular matrix vanishes above its main diagonal.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "transpose_apply"
+kind = "theorem"
+desc = '''Transposing a matrix exchanges the row and column indices.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "conjTranspose_apply"
+kind = "theorem"
+desc = '''Conjugate-transposing a matrix exchanges the indices and conjugates the entry.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "isHermitian_iff"
+kind = "theorem"
+desc = '''A square complex matrix is Hermitian precisely when it equals its conjugate transpose.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "isSymm_iff"
+kind = "theorem"
+desc = '''A square real matrix is symmetric precisely when it equals its transpose.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "isStarNormal_iff"
+kind = "theorem"
+desc = '''A square complex matrix is normal precisely when it commutes with its conjugate transpose.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "mem_unitary_iff"
+kind = "theorem"
+desc = '''A square complex matrix is unitary precisely when it is invertible and its conjugate transpose is its inverse.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "orthogonal_iff"
+kind = "theorem"
+desc = '''A square real matrix is orthogonal precisely when it is invertible and its transpose is its inverse.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.1"
+
+[[node]]
+id = "IsLinear"
+kind = "definition"
+desc = '''A map is linear if it preserves scalar multiples plus an addend in one identity.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.2"
+
+[[node]]
+id = "isLinear_iff_exists_linearMap"
+kind = "theorem"
+desc = '''A map is linear in the sense of the source precisely when it underlies a Lean linear map.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.2"
+deps = ["IsLinear"]
+
+[[node]]
+id = "linearMap_arithmetic"
+kind = "theorem"
+desc = '''The sum and scalar multiple of linear maps act pointwise, the zero map sends every vector to zero, and the identity fixes each vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.2"
+
+[[node]]
+id = "mem_range_iff_exists"
+kind = "theorem"
+desc = '''A vector is in the range of a linear map exactly when it is the image of some vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.3"
+
+[[node]]
+id = "mem_fiber_iff"
+kind = "theorem"
+desc = '''A vector is in the inverse image of v precisely if its image is v.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.3"
+
+[[node]]
+id = "mem_ker_iff"
+kind = "theorem"
+desc = '''The null space is the inverse image of zero.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.3"
+
+[[node]]
+id = "injective_iff_unique_preimage"
+kind = "theorem"
+desc = '''A linear map is injective exactly when every vector in its range has a unique preimage.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.4"
+
+[[node]]
+id = "surjective_iff_range_eq_top"
+kind = "theorem"
+desc = '''A linear map is onto precisely if its range is the whole codomain.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.4"
+
+[[node]]
+id = "bijective_iff_exists_inverse"
+kind = "theorem"
+desc = '''A linear map is bijective exactly when it has a two-sided linear inverse.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.4, Equations (17a)–(17b)"
+
+[[node]]
+id = "existsUnique_matrix_representation"
+kind = "theorem"
+desc = '''For given bases of the domain and codomain, a linear map has a unique representing matrix whose jth column gives the coordinates of the image of the jth domain basis vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.5, Equations (18)–(19)"
+
+[[node]]
+id = "mem_matrixRange_iff"
+kind = "theorem"
+desc = '''The range of a matrix comprises vectors of the form Ax.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.5, Equation (20a)"
+
+[[node]]
+id = "mem_matrixNullSpace_iff"
+kind = "theorem"
+desc = '''The null space of a matrix comprises vectors sent to zero by A.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.5, Equation (20b)"
+
+[[node]]
+id = "inner_mulVec_eq"
+kind = "theorem"
+desc = '''Moving a matrix from one slot in the standard inner product to the other replaces it by its conjugate transpose.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.6, Equation (21)"
+
+[[node]]
+id = "isHermitian_iff_inner"
+kind = "theorem"
+desc = '''A square complex matrix is Hermitian exactly when it is self-adjoint for the standard inner product.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.6, Equation (22)"
+deps = ["inner_mulVec_eq"]
+
+[[node]]
+id = "isHermitian_iff_inner_diag"
+kind = "theorem"
+desc = '''Over the complex field, equality of the two inner products for all pairs (x,x) implies that the matrix is Hermitian. The printed counterexample has this diagonal equality only on real vectors.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.6 after Equation (22)"
+deps = ["isHermitian_iff_inner"]
+
+[[node]]
+id = "adjoint_unique"
+kind = "theorem"
+desc = '''Between finite-dimensional complex inner product spaces, the adjoint is the unique linear map permitting a change of slot in the inner product.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.7, Equation (23)"
+
+[[node]]
+id = "mem_orthogonal_iff"
+kind = "theorem"
+desc = '''The orthogonal complement of L consists of the vectors orthogonal to each vector of L.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.8, Equation (24)"
+
+[[node]]
+id = "isCompl_orthogonal"
+kind = "theorem"
+desc = '''Every complex coordinate subspace and its orthogonal complement are complementary.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.8, Equation (25)"
+
+[[node]]
+id = "isCompl_of_le_orthogonal_of_sup_eq_top"
+kind = "theorem"
+desc = '''A subspace contained in the orthogonal complement of L has direct sum with L, and the sum is complementary if it spans the ambient space.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.8"
+
+[[node]]
+id = "theorem_1"
+kind = "theorem"
+desc = '''The null space of a matrix and of its adjoint are the orthogonal complements of the ranges of its adjoint and of the original matrix, respectively.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.8, Theorem 1, Equations (26)–(27)"
+deps = ["inner_mulVec_eq"]
+
+[[node]]
+id = "IsMatrixNorm"
+kind = "definition"
+desc = '''A matrix norm is a vector norm on the vector space of matrices.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.9, Conditions (M1)–(M3)"
+deps = ["IsVectorNorm"]
+
+[[node]]
+id = "IsMultiplicativeMatrixNorm"
+kind = "definition"
+desc = '''A family of matrix norms is multiplicative if the norm of every compatible matrix product is at most the product of the two norms.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.9, Condition (M4)"
+deps = ["IsMatrixNorm"]
+
+[[node]]
+id = "hasEigenvector_iff_mulVec_eq"
+kind = "theorem"
+desc = '''A nonzero vector is an eigenvector for λ precisely when Ax = λx.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.10, Equation (28)"
+
+[[node]]
+id = "spectrum_eq_setOf_hasEigenvalue"
+kind = "theorem"
+desc = '''The spectrum of a square complex matrix is the set of scalars admitting a nonzero eigenvector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.10"
+
+[[node]]
+id = "mem_eigenspace_iff_mulVec_eq"
+kind = "theorem"
+desc = '''The eigenspace at λ consists of all vectors satisfying Ax = λx.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.10, Equation (29)"
+
+[[node]]
+id = "geometricMultiplicity"
+kind = "definition"
+desc = '''The geometric multiplicity of an eigenvalue is the dimension of its eigenspace.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.10"
+
+[[node]]
+id = "hermitian_eigenvalue_real"
+kind = "theorem"
+desc = '''Every complex eigenvalue of a Hermitian matrix is real.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.11(a)"
+
+[[node]]
+id = "hermitian_eigenvectors_orthogonal"
+kind = "theorem"
+desc = '''Eigenvectors of a Hermitian matrix for distinct eigenvalues are orthogonal.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.11(b)"
+
+[[node]]
+id = "hermitian_exists_orthonormal_eigenbasis"
+kind = "theorem"
+desc = '''Every Hermitian matrix has an orthonormal basis of eigenvectors.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.11(c)"
+
+[[node]]
+id = "hermitian_rayleigh_recursion"
+kind = "theorem"
+desc = '''For an orthonormal eigenbasis ordered by decreasing eigenvalues, the jth eigenvalue is the maximum of the quadratic form on unit vectors orthogonal to the earlier basis vectors, attained by the jth vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.11(d)"
+
+[[node]]
+id = "posSemidef_iff_inner"
+kind = "theorem"
+desc = '''A Hermitian matrix is positive semidefinite exactly when its quadratic form is nonnegative on every vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.12"
+
+[[node]]
+id = "posSemidef_iff_eigenvalues_nonneg"
+kind = "theorem"
+desc = '''A Hermitian matrix is positive semidefinite exactly when all its eigenvalues are nonnegative.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.12"
+
+[[node]]
+id = "posDef_iff_inner"
+kind = "theorem"
+desc = '''A Hermitian matrix is positive definite exactly when its quadratic form is positive on every nonzero vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.12"
+
+[[node]]
+id = "posDef_iff_eigenvalues_pos"
+kind = "theorem"
+desc = '''A Hermitian matrix is positive definite exactly when all its eigenvalues are positive.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.12"
+
+[[node]]
+id = "singularValues"
+kind = "definition"
+desc = '''The r positive singular values are the square roots of the positive eigenvalues of AAᴴ, indexed with multiplicity in descending order.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.13, Equations (30)–(32)"
+
+[[node]]
+id = "singularValues_eq_sqrt_eigenvalues_gram"
+kind = "theorem"
+desc = '''The positive singular values are equally the descending positive square roots of the eigenvalues of AᴴA.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.13, Equation (31b)"
+deps = ["singularValues"]
+
+[[node]]
+id = "singularValues_antitone_pos"
+kind = "theorem"
+desc = '''The r positive singular values decrease weakly and are all strictly positive.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.13, Equation (32)"
+deps = ["singularValues"]
+
+[[node]]
+id = "gram_eigenbasis_of_adjoint_gram"
+kind = "theorem"
+desc = '''Taking vᵢ = σᵢ⁻¹ Aᴴuᵢ from an orthonormal eigenbasis u of AAᴴ and adjoining an orthonormal complement yields an eigenbasis of AᴴA with matching positive eigenvalues and all remaining eigenvalues zero.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.14, Equations (33)–(35)"
+deps = ["singularValues"]
+
+[[node]]
+id = "adjoint_gram_eigenbasis_of_gram"
+kind = "theorem"
+desc = '''Taking uᵢ = σᵢ⁻¹Avᵢ from an orthonormal eigenbasis v of AᴴA and adjoining an orthonormal complement yields an eigenbasis of AAᴴ.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.14, Equation (36)"
+deps = ["singularValues"]
+
+[[node]]
+id = "isSVD"
+kind = "definition"
+desc = '''A singular value decomposition consists of unitary U,V and the rectangular diagonal matrix of singular values Σ such that A=UΣVᴴ.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.15, Equations (37)–(38)"
+deps = ["singularValues"]
+
+[[node]]
+id = "mul_right_eq_left_mul_diagonal_iff_svd"
+kind = "theorem"
+desc = '''For unitary U and V, A=UΣVᴴ is equivalent to AV=UΣ.'''
+source = "Ben-Israel and Greville, Chapter 0 §2.15, Equations (37)–(38)"
+
+[[node]]
+id = "isSimilar_iff"
+kind = "theorem"
+desc = '''Two square matrices are similar if one is the conjugate of the other by an invertible matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 19"
+
+[[node]]
+id = "equivalentMatrices"
+kind = "definition"
+desc = '''Rectangular matrices of the same size are equivalent if an invertible matrix acts on each side to carry one to the other.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 25"
+
+[[node]]
+id = "areConsistentNorms"
+kind = "definition"
+desc = '''A vector norm and a matrix norm are consistent if the norm of Ax never exceeds the product of the matrix norm of A and the vector norm of x.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 35"
+deps = ["IsMatrixNorm"]
+
+[[node]]
+id = "isUnitarilyInvariantNorm"
+kind = "definition"
+desc = '''A matrix norm is unitary invariant if multiplying on the left and right by unitary matrices leaves its value fixed.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 40"
+deps = ["IsMatrixNorm"]
+
+[[node]]
+id = "spectralRadius"
+kind = "definition"
+desc = '''The matrix spectral radius is the largest modulus of a complex eigenvalue.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 41"
+
+[[node]]
+id = "isConvergent"
+kind = "definition"
+desc = '''A square matrix is convergent when its powers tend to zero.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 45"
+
+[[node]]
+id = "isConvergent_iff_spectralRadius_lt_one"
+kind = "theorem"
+desc = '''The powers tend to zero precisely if the spectral radius is less than one.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 45"
+deps = ["isConvergent", "spectralRadius"]

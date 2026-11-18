@@ -1,0 +1,28 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Use Mathlib generalized eigenspaces and exact grades, carrying the previous definition of principal vectors.
+'''
+
+[[node]]
+id = "lemma_4_3"
+kind = "theorem"
+desc = '''A generalized λ-eigenvector for nonzero λ is in the range of every positive power of A.'''
+source = 'Ben-Israel and Greville, Chapter 4, Lemma 3'
+
+[[node]]
+id = "lemma_4_4"
+kind = "theorem"
+desc = '''If X A^(ℓ+1) = A^ℓ then every generalized λ-eigenvector of A for nonzero λ, of grade p, is a generalized λ⁻¹-eigenvector of X of grade p.'''
+source = 'Ben-Israel and Greville, Chapter 4, Lemma 4'
+
+[[node]]
+id = "IsSInverse"
+kind = "definition"
+desc = '''For each λ and each grade p, the vectors of grade p for A at λ and X at the scalar Penrose inverse λ⁻¹ coincide, with 0⁻¹ = 0.'''
+source = 'Ben-Israel and Greville, Chapter 4, Definition 2'
+
+[[node]]
+id = "theorem_4_6"
+kind = "theorem"
+desc = '''For A of index one, its group inverse is its unique S-inverse among inner or outer inverses. For diagonalizable A, it is the unique S-inverse.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 6'

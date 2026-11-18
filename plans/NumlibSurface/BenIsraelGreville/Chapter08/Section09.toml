@@ -1,0 +1,58 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Area formula for smooth embeddings with Hausdorff surface measure. Work from Mathlib's equal-dimensional Jacobian theorem for the classical case, and use Gram determinants for the immersion Jacobian. Use injective charts or multiplicity for area formula, with parameter dimension at most ambient dimension.'''
+
+[[node]]
+id = "jacobian"
+kind = "definition"
+desc = '''The Jacobian is the coordinate matrix of the Fréchet derivative in the Euclidean coordinate bases.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, (123)"
+
+[[node]]
+id = "integral_changeVariables"
+kind = "theorem"
+desc = '''For injective differentiable equal-dimensional changes of variables, integrate the pullback against the absolute determinant of the Jacobian. Use the Mathlib Jacobian theorem with measurable domain and adequate differentiability.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, (122)"
+deps = ["jacobian"]
+
+[[node]]
+id = "matrixVolume_eq_sqrt_gramDet"
+kind = "theorem"
+desc = '''The volume defined by maximal minors of a real matrix with full column rank is √det(AᵀA). If square and full rank this is |det A|.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, (0.89), (125)"
+deps = ["jacobian"]
+
+[[node]]
+id = "integral_areaFormula"
+kind = "theorem"
+desc = '''An injective smooth full-column-rank chart pulls back surface measure to the volume of the rectangular Jacobian times parameter Lebesgue measure. The parameter dimension is at most the ambient dimension, correcting the reversed printed inequality if confirmed in the PDF.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, (124)"
+deps = ["matrixVolume_eq_sqrt_gramDet"]
+
+[[node]]
+id = "integral_graph"
+kind = "theorem"
+desc = '''A smooth scalar graph chart has Jacobian volume √(1+‖∇g‖²), yielding its weighted surface integral and its area when the integrand is one.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, (126)–(134), Example 2"
+deps = ["integral_areaFormula"]
+
+[[node]]
+id = "radonTransform"
+kind = "definition"
+desc = '''The Radon transform at (ξ,p) integrates over the hyperplane ξ·x=p. For ξₙ≠0 use the graph formula with constant volume multiplier ‖ξ‖/|ξₙ|.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, Example 3, (135)–(139)"
+deps = ["integral_graph"]
+
+[[node]]
+id = "integral_eq_integral_radonTransform"
+kind = "theorem"
+desc = '''For integrable f and nonzero ξ, ∫ f = (1/‖ξ‖)∫ (Rf)(ξ,p) dp, by affine change of variables and Fubini.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, Example 4, (140)–(143)"
+deps = ["radonTransform", "integral_changeVariables"]
+
+[[node]]
+id = "fourierTransform_eq_radonTransform"
+kind = "theorem"
+desc = '''The symmetrically normalized Fourier transform of f at ξ≠0 equals (2π)^(−n/2)/‖ξ‖ times the one-dimensional integral of exp(−ip)(Rf)(ξ,p). State the inverse sign and normalization with the usual Fourier inversion hypotheses.'''
+source = "Ben-Israel and Greville, Ch. 8, §9, Example 5, (144)–(146)"
+deps = ["integral_eq_integral_radonTransform"]

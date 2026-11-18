@@ -1,0 +1,91 @@
+namespace = "BenIsraelGreville.Chapter00"
+desc = '''Use Mathlib determinant and transvection induction for the characterization, then use the backbone Cauchy–Binet theorem and ordered minors. The determinant characterization needs a nonempty index type because the written axioms admit the zero function in size zero.'''
+
+[[node]]
+id = "det_eq_sum_perm"
+kind = "theorem"
+desc = '''The determinant is the sum over permutations of the signed products of selected entries.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.1, Equation (86)"
+
+[[node]]
+id = "IsDeterminant"
+kind = "definition"
+desc = '''The determinant axioms are multiplicativity and the value α on an elementary scaling matrix Eⁱ(α).'''
+source = "Ben-Israel and Greville, Chapter 0 §5.1, Definition 2"
+deps = ["scaleRowMatrix"]
+
+[[node]]
+id = "isDeterminant_iff_eq_det"
+kind = "theorem"
+desc = '''For positive size over ℂ, the determinant is uniquely characterized by the elementary scaling values and multiplicativity.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.1, Definition 2 and Equation (86)"
+deps = ["IsDeterminant", "det_eq_sum_perm"]
+
+[[node]]
+id = "det_mul_eq_sum_minors"
+kind = "theorem"
+desc = '''Cauchy–Binet expresses det(AB) as the sum of products of matching maximal minors of A and B.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.1, Equation (87)"
+deps = ["IndexSequence", "submatrix"]
+
+[[node]]
+id = "gramMatrix"
+kind = "definition"
+desc = '''The Gram matrix of a finite family consists of its pairwise inner products, with the source convention of first-slot linearity.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.2, Equation (88)"
+
+[[node]]
+id = "gramian"
+kind = "definition"
+desc = '''The Gramian of a family is the determinant of its Gram matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.2"
+deps = ["gramMatrix"]
+
+[[node]]
+id = "gramian_eq_sum_sq_minors"
+kind = "theorem"
+desc = '''The Gramian of the columns of X equals det(XᴴX) and the sum of squared moduli of the maximal minors of X.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.2"
+deps = ["gramian", "det_mul_eq_sum_minors"]
+
+[[node]]
+id = "fullRankRowIndices"
+kind = "definition"
+desc = '''The maximal row index sets select r rows giving a submatrix of rank r, where r is the rank of the original matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.3"
+deps = ["IndexSequence"]
+
+[[node]]
+id = "fullRankColumnIndices"
+kind = "definition"
+desc = '''The maximal column index sets select r columns giving a submatrix of rank r.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.3"
+deps = ["IndexSequence"]
+
+[[node]]
+id = "nonsingularMinorIndices"
+kind = "definition"
+desc = '''The index pairs of maximal nonsingular submatrices select r rows and r columns whose common submatrix is invertible.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.3"
+deps = ["IndexSequence"]
+
+[[node]]
+id = "matrixVolume"
+kind = "definition"
+desc = '''The volume of a positive-rank real matrix is the square root of the sum of the squares of the maximal nonsingular minors. At rank zero its volume is zero.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.3, Equation (89)"
+deps = ["nonsingularMinorIndices"]
+
+[[node]]
+id = "nonsingularMinorIndices_eq"
+kind = "theorem"
+desc = '''The pairs of maximal nonsingular minor indices comprise the product of the full-rank row and column index sets.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.3, Ex. 64"
+deps = ["nonsingularMinorIndices", "fullRankRowIndices", "fullRankColumnIndices"]
+
+[[node]]
+id = "matrixVolume_mul_of_rankFactorization"
+kind = "theorem"
+desc = '''The volume of a matrix is the product of the volumes of its rank factors.'''
+source = "Ben-Israel and Greville, Chapter 0 §5.3, Ex. 66"
+deps = ["matrixVolume", "IsRankFactorization"]

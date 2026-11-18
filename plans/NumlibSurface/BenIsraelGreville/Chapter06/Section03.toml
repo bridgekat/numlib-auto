@@ -1,0 +1,22 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Reuse Frobenius Eckart–Young, rank of SVD truncation, and total least squares.
+'''
+
+[[node]]
+id = "IsBestRankApproximation"
+kind = "definition"
+desc = '''A matrix X of rank k minimizes the Frobenius norm of A − X over rank-k matrices.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 1'
+
+[[node]]
+id = "theorem_6_3"
+kind = "theorem"
+desc = '''The rank-k SVD truncation is a best rank-k approximation. Its Frobenius error is the square root of the sum of squares of the omitted singular values. Uniqueness holds exactly when the k-th singular value exceeds the (k+1)-st, with zero padding.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 3'
+
+[[node]]
+id = "theorem_6_4"
+kind = "theorem"
+desc = '''The claimed total least-squares rank-one correction uses the least singular value with an associated right singular vector having a nonzero last entry. The infimum need not be attained if the least singular subspace has zero last coordinates. Require the actual least singular subspace to have a vector with nonzero last coordinate.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 4'

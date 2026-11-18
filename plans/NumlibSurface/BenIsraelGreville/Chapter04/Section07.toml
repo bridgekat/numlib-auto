@@ -1,0 +1,22 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Distinguish equality of grades for nonzero eigenvalues from equality of zero-primary spaces.
+'''
+
+[[node]]
+id = "theorem_4_9"
+kind = "theorem"
+desc = '''If X is an S-inverse and either an inner or outer inverse of A, then both A and X have index one.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 9'
+
+[[node]]
+id = "IsSPrimeInverse"
+kind = "definition"
+desc = '''The nonzero generalized eigenvectors correspond at reciprocal eigenvalues with the same grades, and the generalized zero-eigenspaces coincide without regard to grades.'''
+source = 'Ben-Israel and Greville, Chapter 4, Definition 3'
+
+[[node]]
+id = "theorem_4_10"
+kind = "theorem"
+desc = '''A and its Drazin inverse are S-prime inverses.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 10'

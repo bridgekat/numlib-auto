@@ -1,0 +1,92 @@
+namespace = "BenIsraelGreville.Chapter00"
+desc = '''Use the coordinate form of exterior powers on increasing index sequences. Define compounds by minors, then identify this representation with the induced exterior-power map. Mathlib supplies alternating maps and wedge products, while Cauchy–Binet gives multiplicativity of compounds.'''
+
+[[node]]
+id = "exteriorPower"
+kind = "definition"
+desc = '''The kth exterior power is the space spanned by alternating wedge products of k vectors.'''
+source = "Ben-Israel and Greville, Chapter 0 §6 before Equation (108)"
+
+[[node]]
+id = "compound"
+kind = "definition"
+desc = '''The kth compound of a matrix is the induced linear map on the kth exterior power, represented by the kth minors.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Equation (108)"
+deps = ["exteriorPower", "IndexSequence"]
+
+[[node]]
+id = "compound_map_wedge"
+kind = "theorem"
+desc = '''Applying the kth compound to a wedge of k vectors is the wedge of their images.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Equation (108)"
+deps = ["compound"]
+
+[[node]]
+id = "compound_rank"
+kind = "theorem"
+desc = '''The kth compound matrix has dimensions choose(m,k) by choose(n,k) and rank choose(rank A,k).'''
+source = "Ben-Israel and Greville, Chapter 0 §6 and Ex. 6.22"
+deps = ["compound", "IsRankFactorization"]
+
+[[node]]
+id = "topExteriorLine"
+kind = "definition"
+desc = '''The top exterior line of an r-dimensional subspace is the one-dimensional span of the wedge of a basis, independent of choice of basis.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Equation (109)"
+deps = ["exteriorPower"]
+
+[[node]]
+id = "pluckerCoordinates"
+kind = "definition"
+desc = '''The Plücker coordinates of an r-dimensional subspace are the coordinates of a generator of its top exterior line, defined up to a common nonzero scalar.'''
+source = "Ben-Israel and Greville, Chapter 0 §6 after Equation (109)"
+deps = ["topExteriorLine"]
+
+[[node]]
+id = "kVolume"
+kind = "definition"
+desc = '''The kth volume is the Frobenius norm of the kth compound for k positive and at most rank A, and zero for k=0 or k greater than the rank.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Ex. 69, Equations (114a), (114c)"
+deps = ["compound"]
+
+[[node]]
+id = "kVolume_eq_sqrt_sum_singularValues"
+kind = "theorem"
+desc = '''For 0 < k ≤ rank A, the kth volume is the square root of the kth elementary symmetric polynomial in the squared positive singular values.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Ex. 69, Equation (114b)"
+deps = ["kVolume", "singularValues"]
+
+[[node]]
+id = "lemma_2_a"
+kind = "theorem"
+desc = '''For a full row rank R, its top compound sends the wedge of rows to the square of its volume.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Lemma 2, Equation (110a)"
+deps = ["compound_map_wedge", "matrixVolume"]
+
+[[node]]
+id = "lemma_2_b"
+kind = "theorem"
+desc = '''For a full column rank C, the top compound of Cᵀ sends the wedge of columns to the square of its volume.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Lemma 2, Equation (110b)"
+deps = ["compound_map_wedge", "matrixVolume"]
+
+[[node]]
+id = "lemma_2_c"
+kind = "theorem"
+desc = '''The top compound of the product in a full-rank factorization A=CR is the rank-one outer product of the wedge of C columns and the wedge of R rows.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Lemma 2, Equation (110c)"
+deps = ["compound", "IsRankFactorization"]
+
+[[node]]
+id = "lemma_2_inner"
+kind = "theorem"
+desc = '''The inner product of the wedge of C columns with the wedge of the A-images of the R rows equals the squared volume of A.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Lemma 2, Equation (111)"
+deps = ["lemma_2_c", "matrixVolume"]
+
+[[node]]
+id = "lemma_2_volume"
+kind = "theorem"
+desc = '''The squared top-dimensional volume of A equals the squared one-dimensional volume of its top compound and factors into the corresponding quantities for C and R.'''
+source = "Ben-Israel and Greville, Chapter 0 §6, Lemma 2, Equation (112)"
+deps = ["lemma_2_c", "matrixVolume", "kVolume"]

@@ -1,0 +1,41 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Ridge estimation and mean squared error. Reuse matrix Tikhonov regularization, the SVD backbone, and the preceding linear model. The proof of strict improvement only uses the noise moments and requires positive variance and a nonempty parameter space.'''
+
+[[node]]
+id = "ridgeEstimator"
+kind = "definition"
+desc = '''The ridge estimator for parameter k > 0 is (XᵀX+kI)⁻¹Xᵀy and at k=0 agrees with the BLUE for full column rank X.'''
+source = "Ben-Israel and Greville, Ch. 8, §4, (48)–(49)"
+
+[[node]]
+id = "ridgeShrinkageFactor"
+kind = "definition"
+desc = '''The singular-coordinate shrinkage factor is λ/(λ²+k).'''
+source = "Ben-Israel and Greville, Ch. 8, §4, (49.i), (50)"
+
+[[node]]
+id = "estimatorBias"
+kind = "definition"
+desc = '''The bias of an estimator Z of β is its expectation minus β.'''
+source = "Ben-Israel and Greville, Ch. 8, §4, definition before (51)"
+
+[[node]]
+id = "estimatorMeanSquaredError"
+kind = "definition"
+desc = '''The scalar mean squared error is the expectation of the squared Euclidean distance to the parameter, equal to total variance plus squared bias.'''
+source = "Ben-Israel and Greville, Ch. 8, §4, definition before (51)"
+
+[[node]]
+id = "ridgeEstimator_moments"
+kind = "theorem"
+desc = '''Orthogonal SVD coordinates preserve centered isotropic Gaussian noise, and each ridge coordinate has bias −kγᵢ/(λᵢ²+k) and variance λᵢ²σ²/(λᵢ²+k)². The total mean squared error is the sum of (λᵢ²σ²+k²γᵢ²)/(λᵢ²+k)².'''
+source = "Ben-Israel and Greville, Ch. 8, §4, (43)–(47b), (49.i)–(53)"
+deps = ["ridgeEstimator", "ridgeShrinkageFactor", "estimatorBias", "estimatorMeanSquaredError"]
+
+[[node]]
+id = "theorem_3"
+kind = "theorem"
+desc = '''For full column rank and strictly positive error variance with at least one parameter, some positive ridge parameter yields strictly smaller MSE than k=0. The derivative of the MSE at zero is strictly negative. With zero variance or an empty parameter space strict improvement is impossible.'''
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, (53)–(54)"
+deps = ["ridgeEstimator_moments"]

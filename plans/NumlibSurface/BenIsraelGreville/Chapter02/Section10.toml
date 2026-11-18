@@ -1,0 +1,22 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'The Bott–Duffin inverse.'
+
+[[node]]
+id = 'definition_3'
+kind = 'definition'
+desc = '''For the orthogonal projector P onto L, when AP+(I−P) is invertible, the Bott–Duffin inverse is P(AP+I−P)⁻¹.'''
+source = 'Ben-Israel and Greville, Ch. 2, Definition 3'
+
+[[node]]
+id = 'theorem_16'
+kind = 'theorem'
+desc = '''Under the invertibility hypothesis of Definition 3, solve Ax+y=b with x in L and y orthogonal to L uniquely. Give the formulas for both components and the inverse of the decomposition map.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 16'
+deps = ['definition_3']
+
+[[node]]
+id = 'corollary_12'
+kind = 'theorem'
+desc = '''The Bott–Duffin inverse is the reflexive inverse of each of AP, PA and PAP with range L and kernel L perpendicular. Applying the Bott–Duffin construction twice gives PAP.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 12'
+deps = ['theorem_16']

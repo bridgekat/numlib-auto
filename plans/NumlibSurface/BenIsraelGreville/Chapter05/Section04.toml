@@ -1,0 +1,25 @@
+namespace = "BenIsraelGreville.Chapter05"
+desc = '''
+Common solutions of row-partitioned linear systems and the dual formulas for column-partitioned matrices. Use block rows and columns indexed by sum types.
+'''
+
+[[node]]
+id = "corollary_5_3"
+kind = "theorem"
+desc = '''For individually consistent systems A x = a and B x = b, common solutions exist iff d = B†b − A†a belongs to ker A + ker B. When they exist, their set is a translate of ker A ∩ ker B by any of A†a + P_kerA(P_kerA + P_kerB)†d, B†b − P_kerB(P_kerA + P_kerB)†d, and (A†A + B†B)†(A†a + B†b).'''
+source = 'Ben-Israel and Greville, Chapter 5, Corollary 3'
+deps = ["theorem_5_5"]
+
+[[node]]
+id = "theorem_5_6"
+kind = "theorem"
+desc = '''For C = [A; B], the three block rows [A† 0] + P_kerA(P_kerA + P_kerB)†[−A† B†], [0 B†] − P_kerB(P_kerA + P_kerB)†[−A† B†], and (A†A + B†B)†[A† B†] satisfy equations (1), (2), and (4) for C. Each equals C† if the ranges of Aᴴ and Bᴴ intersect trivially.'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 6'
+deps = ["corollary_5_3", "theorem_5_3"]
+
+[[node]]
+id = "corollary_5_4"
+kind = "theorem"
+desc = '''Adjoint the three formulas of Theorem 6 to obtain {1,2,3}-inverses for a horizontal concatenation [A B]. Each is its Moore–Penrose inverse if the ranges of A and B intersect trivially.'''
+source = 'Ben-Israel and Greville, Chapter 5, Corollary 4'
+deps = ["theorem_5_6"]

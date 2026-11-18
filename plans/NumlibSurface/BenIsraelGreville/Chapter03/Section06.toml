@@ -1,0 +1,22 @@
+namespace = 'BenIsraelGreville.Chapter03'
+desc = 'Minors of the pseudoinverse.'
+
+[[node]]
+id = 'theorem_8'
+kind = 'theorem'
+desc = '''For k between 1 and r, the (β,α) minor of A† is zero if no maximal nonsingular minor contains (α,β), otherwise it is the sum of det(A[I,J]) times the complementary signed minor of A[I,J] divided by vol(A)².'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 8'
+
+[[node]]
+id = 'theorem_9'
+kind = 'theorem'
+desc = '''Each k-minor of A† is the average of the corresponding minors of the zero-extended basic inverse matrices, with the same weights as the matrix formula.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 9'
+deps = ['theorem_8']
+
+[[node]]
+id = 'theorem_10'
+kind = 'theorem'
+desc = '''The real rank-r matrix A for r>0 has a convex decomposition into matrices supported on its maximal nonsingular minors, and the same decomposition weights average each k-minor for 1≤k≤r.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 10'
+deps = ['theorem_9']

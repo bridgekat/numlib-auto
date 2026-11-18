@@ -1,0 +1,64 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Keep the chosen phased singular representation explicit in the rectangular functional calculus.
+'''
+
+[[node]]
+id = "theorem_6_18"
+kind = "theorem"
+desc = '''Prescribed phases for the positive singular values yield a rank-one orthogonal partial-isometry expansion, with commutation through the aggregate adjoint and uniqueness of each coefficient-weighted component at a simple singular value.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18'
+
+[[node]]
+id = "corollary_6_3"
+kind = "theorem"
+desc = '''The pseudoinverse is the sum of reciprocals of the spectral coefficients times the adjoints of the corresponding partial isometries. The adjoint is necessary for rectangular types.'''
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 3'
+
+[[node]]
+id = "rectangularMatrixFunction"
+kind = "definition"
+desc = '''For a fixed spectral representation, apply f to each nonzero coefficient and multiply by its partial isometry before summing.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 6'
+
+[[node]]
+id = "theorem_6_19"
+kind = "theorem"
+desc = '''The rectangular calculus respects addition, multiplication twisted by the aggregate partial isometry, and composition with compatible choices of phases and support.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 19'
+
+[[node]]
+id = "lemma_6_5"
+kind = "theorem"
+desc = '''Group the terms with equal spectral coefficients into partial isometries. Cauchy integrals of the generalized resolvent recover the adjoint grouped isometries and the functional calculus after multiplication by the aggregate partial isometry.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5'
+
+[[node]]
+id = "corollary_6_4"
+kind = "theorem"
+desc = '''Multiplying the contour integral of f times the generalized resolvent on both sides by the aggregate partial isometry gives the rectangular matrix function.'''
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 4'
+
+[[node]]
+id = "generalizedResolvent"
+kind = "definition"
+desc = '''The pseudoinverse of zE − A for the aggregate partial isometry E.'''
+source = 'Ben-Israel and Greville, Chapter 6, §7, equation (164)'
+
+[[node]]
+id = "lemma_6_6"
+kind = "theorem"
+desc = '''The first resolvent identity with the aggregate partial isometry between the two resolvents, as required by the rectangular types.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 6'
+
+[[node]]
+id = "lemma_6_7"
+kind = "theorem"
+desc = '''The product of two rectangular contour functional calculi, with the aggregate partial isometry inserted, equals the contour functional calculus of the product of the scalar functions.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 7'
+
+[[node]]
+id = "theorem_6_20"
+kind = "theorem"
+desc = '''A consistent A X B = D has a solution given by the iterated contour integral of the two rectangular resolvents and D, with factors 1/λ and 1/μ on contours enclosing the nonzero coefficients and excluding zero.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 20'

@@ -1,0 +1,35 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'Matrix functions and the primary decomposition.'
+
+[[node]]
+id = 'theorem_10'
+kind = 'theorem'
+desc = '''For a complex square matrix the primary projectors onto generalized eigenspaces along the other generalized eigenspaces are unique, pairwise annihilating, sum to I, commute with A and annihilate the indicated powers of A−λI.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 10'
+
+[[node]]
+id = 'corollary_8'
+kind = 'theorem'
+desc = '''For any polynomial p, p(A) is the sum over primary components of the Taylor polynomial in (A−λI) truncated at the primary exponent and multiplied by its projector.'''
+source = 'Ben-Israel and Greville, Ch. 2, Corollary 8'
+deps = ['theorem_10']
+
+[[node]]
+id = 'definition_1'
+kind = 'definition'
+desc = '''The class of functions analytic on a neighborhood of the spectrum of A.'''
+source = 'Ben-Israel and Greville, Ch. 2, Definition 1'
+
+[[node]]
+id = 'matrixFunction'
+kind = 'definition'
+desc = '''Evaluate an analytic function at A by the truncated Taylor expansion on each primary component.'''
+source = 'Ben-Israel and Greville, Ch. 2, §5, (49)'
+deps = ['theorem_10', 'definition_1']
+
+[[node]]
+id = 'theorem_11'
+kind = 'theorem'
+desc = '''For analytic f on a domain containing the closure of an open spectral neighborhood with suitable boundary, evaluation at A is the contour integral of f(z)(zI−A)⁻¹ divided by 2πi.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 11'
+deps = ['matrixFunction']

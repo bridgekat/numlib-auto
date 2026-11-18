@@ -1,0 +1,38 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Image densities via graph parametrization and Fubini. Use Measure.map and withDensity to specify a density and state density identities up to almost-everywhere equality. Handle both sphere charts explicitly and exclude radius zero in the displayed sphere formula.'''
+
+[[node]]
+id = "imageDensity_graph"
+kind = "theorem"
+desc = '''If a smooth coordinate change (u,xₙ) ↦ (u,h(u,xₙ)) is invertible with inverse (u,g(u,y)), the density of h(X) is the integral of the joint density on the graph weighted by |∂g/∂y|.'''
+source = "Ben-Israel and Greville, Ch. 8, §10, (178)–(183)"
+deps = ["integral_changeVariables"]
+
+[[node]]
+id = "theorem_14"
+kind = "theorem"
+desc = '''If (∂g/∂y)/√(1+‖∇ᵤg‖²) depends only on y, the density of h(X) is its absolute value times the surface integral of the joint density over h⁻¹(y).'''
+source = "Ben-Israel and Greville, Ch. 8, §10, Theorem 14, (184)–(185)"
+deps = ["imageDensity_graph", "integral_graph"]
+
+[[node]]
+id = "corollary_4"
+kind = "theorem"
+desc = '''For nonzero ξ the scalar variable ξ·X has density y ↦ (Rf_X)(ξ,y)/‖ξ‖.'''
+source = "Ben-Israel and Greville, Ch. 8, §10, Corollary 4, (186)–(190)"
+deps = ["theorem_14", "radonTransform"]
+
+[[node]]
+id = "corollary_5"
+kind = "theorem"
+desc = '''For y>0 the density of ‖X‖² is the sphere integral at radius √y divided by 2√y, with a zero density representative for y<0. Sum the upper and lower hemisphere graph integrals.'''
+source = "Ben-Israel and Greville, Ch. 8, §10, Corollary 5, (191)–(195)"
+deps = ["theorem_14"]
+
+[[node]]
+id = "density_normSq_of_spherical"
+kind = "theorem"
+desc = '''When the joint density is rotationally symmetric, the sphere integral for the squared radius factors into the surface area times the density at any point on the sphere.'''
+source = "Ben-Israel and Greville, Ch. 8, §10, Example 6, spherical distribution"
+deps = ["corollary_5"]

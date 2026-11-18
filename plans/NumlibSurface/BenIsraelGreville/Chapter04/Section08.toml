@@ -1,0 +1,22 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Derive the nilpotent and group-invertible splitting from the Drazin equations.
+'''
+
+[[node]]
+id = "nilpotentPart"
+kind = "definition"
+desc = '''Subtract the group inverse of the Drazin inverse from the original matrix.'''
+source = 'Ben-Israel and Greville, Chapter 4, §8, equation (56)'
+
+[[node]]
+id = "theorem_4_11"
+kind = "theorem"
+desc = '''A = B + N has a unique splitting with B of index one, N nilpotent, and BN = NB = 0. Its index-one part B is the group inverse of Aᴰ.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 11'
+
+[[node]]
+id = "theorem_4_12"
+kind = "theorem"
+desc = '''The stated Drazin identities imply that A and X are S-prime inverses. Conversely, for S-prime inverses with X an inner or outer inverse, their Drazin inverses are each other’s group-invertible parts.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 12'

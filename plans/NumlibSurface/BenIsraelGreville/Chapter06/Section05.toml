@@ -1,0 +1,130 @@
+namespace = "BenIsraelGreville.Chapter06"
+desc = '''
+Use the principal-angle API for finite-dimensional subspaces and determinant identities for volume.
+'''
+
+[[node]]
+id = "Inclined"
+kind = "definition"
+desc = '''Two subspaces are inclined if their orthogonal projections have nonzero product.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(a,b)'
+
+[[node]]
+id = "OrthogonallyIncident"
+kind = "definition"
+desc = '''The relative orthogonal complements of the intersection in the two subspaces are orthogonal.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(c)'
+
+[[node]]
+id = "CompletelyInclined"
+kind = "definition"
+desc = '''The first subspace meets the orthogonal complement of the second trivially.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(d)'
+
+[[node]]
+id = "TotallyInclined"
+kind = "definition"
+desc = '''Each subspace is completely inclined to the other.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(e)'
+
+[[node]]
+id = "inclinationDimension"
+kind = "definition"
+desc = '''The rank of the product of the two orthogonal projections.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(f)'
+
+[[node]]
+id = "inclinationCoefficient"
+kind = "definition"
+desc = '''The trace of the product of the two orthogonal projections.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(g)'
+
+[[node]]
+id = "AreReciprocalSubspaces"
+kind = "definition"
+desc = '''The projection of each subspace onto the opposite ambient subspace equals the other member of the pair.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(h)'
+
+[[node]]
+id = "AreReciprocalVectors"
+kind = "definition"
+desc = '''Two vectors span reciprocal lines.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(i)'
+
+[[node]]
+id = "lemma_6_1"
+kind = "theorem"
+desc = '''The orthogonal projection product has real spectrum in [0,1], its one-eigenspace is the intersection, its kernel has the stated orthogonal splitting, and its nonzero eigenvalues are the squared singular values of the product of the two basis matrices.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1'
+
+[[node]]
+id = "theorem_6_8"
+kind = "theorem"
+desc = '''Reciprocal vectors give eigenvectors of the two projection products at their inclination coefficient. Conversely a nonzero-eigenvalue vector gives a reciprocal partner by projection.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 8'
+
+[[node]]
+id = "theorem_6_9"
+kind = "theorem"
+desc = '''The four pairwise orthogonality conditions for two reciprocal pairs with nonzero inclination coefficients are equivalent and hold for unequal coefficients.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 9'
+
+[[node]]
+id = "principalAngle"
+kind = "definition"
+desc = '''The ordered acute angles between the reciprocal pairs, with positive inclinations.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 3'
+
+[[node]]
+id = "theorem_6_10"
+kind = "theorem"
+desc = '''Each principal cosine maximizes the normalized inner product of admissible pairs orthogonal to the preceding principal vectors on their respective sides.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 10'
+
+[[node]]
+id = "lemma_6_2"
+kind = "theorem"
+desc = '''The principal cosines are the positive singular values of the cross Gram matrix, and the multiplicity of one is the dimension of the intersection.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 2'
+
+[[node]]
+id = "subspaceDistance"
+kind = "definition"
+desc = '''The operator norm of the difference of the orthogonal projections.'''
+source = 'Ben-Israel and Greville, Chapter 6, Definition 4'
+
+[[node]]
+id = "lemma_6_3"
+kind = "theorem"
+desc = '''The projection distance is the sine of the largest principal angle, using π/2 for unequal dimensions and handling coincident subspaces as distance zero. The printed maximum over arbitrary vectors is not the largest principal angle.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 3'
+
+[[node]]
+id = "principalSineProduct"
+kind = "definition"
+desc = '''Product of the principal sines between two subspaces, including common directions and the zero-cosine padding as applicable.'''
+source = 'Ben-Israel and Greville, Chapter 6, §5, equation (115a)'
+
+[[node]]
+id = "principalCosineProduct"
+kind = "definition"
+desc = '''Product of the principal cosines between two subspaces, including zero cosines up to the dimension of the smaller subspace.'''
+source = 'Ben-Israel and Greville, Chapter 6, §5, equation (115b)'
+
+[[node]]
+id = "lemma_6_4"
+kind = "theorem"
+desc = '''The full-dimensional volume of a column concatenation of full-column-rank matrices is the product of the two volumes and the product of their principal sines.'''
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 4'
+
+[[node]]
+id = "theorem_6_11"
+kind = "theorem"
+desc = '''If the ranges of two column blocks form a direct sum, the rank-dimensional volume of the column concatenation is the product of the two block volumes and the product of their principal sines.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 11'
+
+[[node]]
+id = "theorem_6_12"
+kind = "theorem"
+desc = '''The absolute determinant of BᵀC for full-column-rank B and C is the product of their volumes and the product of the principal cosines between their ranges.'''
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 12'

@@ -1,0 +1,46 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Use the stabilized endomorphism inverse for the special case of index one.
+'''
+
+[[node]]
+id = "IsGroupInverse"
+kind = "definition"
+desc = '''An inverse satisfying A X A = A, X A X = X, and A X = X A.'''
+source = 'Ben-Israel and Greville, Chapter 4, §4, definition of the group inverse'
+
+[[node]]
+id = "IsRangeHermitian"
+kind = "definition"
+desc = '''A square matrix A with equal column ranges for A and Aᴴ.'''
+source = 'Ben-Israel and Greville, Chapter 4, §4, definition of a range-Hermitian matrix'
+
+[[node]]
+id = "theorem_4_2"
+kind = "theorem"
+desc = '''The group inverse exists precisely at index one and is then unique.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 2'
+
+[[node]]
+id = "theorem_4_3"
+kind = "theorem"
+desc = '''For a full rank factorization A = F G, the group inverse exists iff G F is nonsingular, in which case A# = F (G F)⁻² G.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 3'
+
+[[node]]
+id = "theorem_4_4"
+kind = "theorem"
+desc = '''At index one, the group inverse equals the Moore–Penrose inverse exactly when A is range-Hermitian.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 4'
+
+[[node]]
+id = "lemma_4_2"
+kind = "theorem"
+desc = '''A matrix in Jordan form is range-Hermitian exactly when its index is one.'''
+source = 'Ben-Israel and Greville, Chapter 4, Lemma 2'
+
+[[node]]
+id = "theorem_4_5"
+kind = "theorem"
+desc = '''If an index-one A is similar to Jordan form J by P, then A# = P J† P⁻¹.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 5'

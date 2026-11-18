@@ -1,0 +1,26 @@
+namespace = 'BenIsraelGreville.Chapter01'
+desc = "Constructing outer inverses of prescribed rank."
+
+[[node]]
+id = 'outerInverse_rank_le'
+kind = 'theorem'
+desc = '''A {2}-inverse X has rank at most that of A.'''
+source = 'Ben-Israel–Greville, Chapter 1, §7'
+
+[[node]]
+id = 'outerInverse_rank_zero'
+kind = 'theorem'
+desc = '''The zero matrix is a {2}-inverse of rank zero.'''
+source = 'Ben-Israel–Greville, Chapter 1, §7'
+
+[[node]]
+id = 'rankFactorization_outerInverse'
+kind = 'theorem'
+desc = '''For a rank factorization X=YZ, X is a {2}-inverse of A if and only if ZAY=I.'''
+source = 'Ben-Israel–Greville, Chapter 1, Equation (21)'
+
+[[node]]
+id = 'exists_outerInverse_rank'
+kind = 'theorem'
+desc = '''For every s at most rank A, a {2}-inverse of rank s exists. Truncate both factors of a rank factorization of a reflexive inverse to s intermediate coordinates.'''
+source = 'Ben-Israel–Greville, Chapter 1, §7, equations (21)–(22)'

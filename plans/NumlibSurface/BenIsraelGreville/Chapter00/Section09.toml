@@ -1,0 +1,43 @@
+namespace = "BenIsraelGreville.Chapter00"
+desc = '''Use the matrix Perron–Frobenius API. The zero matrix of size one is irreducible under the stated block-reducibility definition, so positivity requires either size at least two or nonzero matrix. State simplicity and existence of a strictly positive eigenvector for size at least one.'''
+
+[[node]]
+id = "isNonnegative"
+kind = "definition"
+desc = '''A real square matrix is nonnegative if every entry is nonnegative.'''
+source = "Ben-Israel and Greville, Chapter 0 §9(a)"
+
+[[node]]
+id = "isReducible"
+kind = "definition"
+desc = '''A real square matrix is reducible if a simultaneous permutation of rows and columns puts it in block upper triangular form with two nonempty square diagonal blocks.'''
+source = "Ben-Israel and Greville, Chapter 0 §9(b), Equation (135)"
+deps = ["permutationMatrix"]
+
+[[node]]
+id = "isIrreducible_iff"
+kind = "theorem"
+desc = '''For nonnegative matrices, failure of permutation block reducibility is equivalent to irreducibility in the backbone sense.'''
+source = "Ben-Israel and Greville, Chapter 0 §9(b), Equation (135)"
+deps = ["isNonnegative", "isReducible"]
+
+[[node]]
+id = "theorem_5_a"
+kind = "theorem"
+desc = '''For a nonnegative irreducible matrix of size at least two, the spectral radius is positive and is an eigenvalue.'''
+source = "Ben-Israel and Greville, Chapter 0 §9, Theorem 5(a)"
+deps = ["isIrreducible_iff", "spectralRadius"]
+
+[[node]]
+id = "theorem_5_b"
+kind = "theorem"
+desc = '''For a nonnegative irreducible square matrix of positive size, the spectral radius has algebraic multiplicity one.'''
+source = "Ben-Israel and Greville, Chapter 0 §9, Theorem 5(b)"
+deps = ["isIrreducible_iff", "algebraicMultiplicity", "spectralRadius"]
+
+[[node]]
+id = "theorem_5_c"
+kind = "theorem"
+desc = '''A nonnegative irreducible square matrix of positive size has a strictly positive eigenvector for its spectral radius.'''
+source = "Ben-Israel and Greville, Chapter 0 §9, Theorem 5(c)"
+deps = ["isIrreducible_iff", "spectralRadius"]

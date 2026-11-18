@@ -1,0 +1,44 @@
+namespace = "BenIsraelGreville.Chapter05"
+desc = '''
+Partition a matrix along a nonsingular maximal minor. Encode row and column permutations with index equivalences, then use Matrix.fromBlocks and the associated linear maps for the two multipliers.
+'''
+
+[[node]]
+id = "columnMultiplier"
+kind = "definition"
+desc = '''For a leading nonsingular block A₁₁, the column multiplier is T = A₁₁⁻¹ A₁₂.'''
+source = 'Ben-Israel and Greville, Chapter 5, §2, equations (7) and (21)'
+
+[[node]]
+id = "rowMultiplier"
+kind = "definition"
+desc = '''For a leading nonsingular block A₁₁, the row multiplier is S = A₂₁ A₁₁⁻¹.'''
+source = 'Ben-Israel and Greville, Chapter 5, §2, equations (13) and (21)'
+
+[[node]]
+id = "eq_rank_factorization_of_isUnit_block"
+kind = "theorem"
+desc = '''If a reindexed matrix of rank r has nonsingular leading block A₁₁ of order r, then A₂₂ = S A₁₁ T. In the original coordinates A = Pᵀ [I; S] A₁₁ [I T] Qᵀ. The two factors having an identity block have full column and full row rank.'''
+source = 'Ben-Israel and Greville, Chapter 5, §2, equation (22)'
+deps = ["rowMultiplier", "columnMultiplier"]
+
+[[node]]
+id = "lemma_5_1"
+kind = "theorem"
+desc = '''The columns of Q [−T; I] form a basis of the kernel, and those of Pᵀ [I; S] form a basis of the range.'''
+source = 'Ben-Israel and Greville, Chapter 5, Lemma 1'
+deps = ["eq_rank_factorization_of_isUnit_block"]
+
+[[node]]
+id = "theorem_5_1"
+kind = "theorem"
+desc = '''Let b₁ and b₂ be the two blocks of P b. The system is consistent iff b₂ = S b₁. In that case its solution set consists of Q [A₁₁⁻¹ b₁; 0] + Q [−T; I] y for arbitrary y.'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 1'
+deps = ["lemma_5_1"]
+
+[[node]]
+id = "theorem_5_2"
+kind = "theorem"
+desc = '''For the rank-adapted partition (22), write F = [I; S] and G = [I T] in the permuted coordinates. Multiplying by Q on the left and P on the right gives the respective {1,2}-, {1,2,3}-, {1,2,4}-, and Moore–Penrose inverses from [A₁₁⁻¹ 0; 0 0], [A₁₁⁻¹; 0](I + SᴴS)⁻¹Fᴴ, Gᴴ(I + TTᴴ)⁻¹[A₁₁⁻¹ 0], and Gᴴ(I + TTᴴ)⁻¹ A₁₁⁻¹(I + SᴴS)⁻¹Fᴴ.'''
+source = 'Ben-Israel and Greville, Chapter 5, Theorem 2'
+deps = ["eq_rank_factorization_of_isUnit_block"]

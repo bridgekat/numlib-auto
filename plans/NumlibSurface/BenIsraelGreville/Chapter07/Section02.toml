@@ -1,0 +1,21 @@
+namespace = "BenIsraelGreville.Chapter07"
+
+desc = '''Construct inner and reflexive inverses by block elimination. Use sum types for the pivot and the complementary row or column indices, so that full-rank boundary cases need no dimension casts.'''
+
+[[node]]
+id = "isReflexiveInverse_of_maximal_nonsingular_submatrix"
+kind = "theorem"
+desc = '''If a rank-r matrix is permuted so that its nonsingular r-by-r pivot is in the upper left, its Schur complement at that pivot is zero and the reverse-permuted matrix with the inverse pivot and other blocks zero satisfies equations (1) and (2).'''
+source = "Ben-Israel and Greville, Ch. 7, §2, (5.25), (5.39)"
+
+[[node]]
+id = "isUnit_innerInverse_of_hermite"
+kind = "theorem"
+desc = '''For a square matrix with EAP = [I K; 0 0], PE is an invertible inner inverse, with E invertible and P a permutation.'''
+source = "Ben-Israel and Greville, Ch. 7, §2, nonsingular specialization of (1.5)"
+
+[[node]]
+id = "theorem_1"
+kind = "theorem"
+desc = '''With EAP = [I K; 0 0] and Eb = [bhat; z], Ax = b has a solution iff z = 0, and P[bhat; 0] is then a particular solution equal to the canonical elimination-based reflexive inverse applied to b. The appended zero block makes the embedding of the shorter vector bhat explicit.'''
+source = "Ben-Israel and Greville, Ch. 7, §2, Theorem 1, (1)–(3)"

@@ -1,0 +1,58 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Least-residual and least-norm solutions for partial operators. Formalize the range projection argument for an arbitrary dense subspace of its closure. For the extremal inverse use a linear relation graph and the inverse of the carrier map as in §9.3.'''
+
+[[node]]
+id = "IsExtremalSolution"
+kind = "definition"
+desc = '''An extremal solution is a point in the partial domain minimizing the norm of Tx−y there.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 4, (70)–(71)"
+
+[[node]]
+id = "IsLeastExtremalSolution"
+kind = "definition"
+desc = '''A least extremal solution is an extremal solution of strictly smaller norm than every distinct extremal solution.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 4"
+deps = ["IsExtremalSolution"]
+
+[[node]]
+id = "theorem_5"
+kind = "theorem"
+desc = '''Extremal solutions exist iff the projection of y onto closure(range T) lies in range T, and they are precisely the points mapped to that projection. The scalar infimum of the residual norm is the norm of the orthogonal residual, correcting the vector-valued right-hand side of (74).'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 5, (72)–(74)"
+deps = ["IsExtremalSolution"]
+
+[[node]]
+id = "lemma_4"
+kind = "theorem"
+desc = '''For two extremal solutions, the projections onto (ker T)⊥ coincide. Their respective projections onto closure(ker T) belong to ker T simultaneously, since the difference is in ker T.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Lemma 4(a)–(b), (75)"
+deps = ["theorem_5"]
+
+[[node]]
+id = "theorem_6"
+kind = "theorem"
+desc = '''Given an extremal solution x, a least extremal solution exists iff the projection of x onto closure(ker T) lies in ker T. The least extremal solution is the orthogonal complement projection of x. For necessity use density of the kernel in its closure to identify the norm infimum.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 6, (76)–(78)"
+deps = ["IsLeastExtremalSolution", "lemma_4"]
+
+[[node]]
+id = "extremalInverse"
+kind = "definition"
+desc = '''The inverse graph is the sum of the graph on the carrier and the vertical copy of (range T)⊥. It consists of (x,Tx+z) for carrier x and z orthogonal to range T.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 5, (79)–(80)"
+deps = ["carrier", "graph_iff_disjoint_vertical"]
+
+[[node]]
+id = "theorem_7"
+kind = "theorem"
+desc = '''The extremal inverse has domain T(carrier T) ⊕ (range T)⊥, range carrier T, and kernel (range T)⊥. Its product with T in each direction acts as the indicated orthogonal projection on the stated partial domain.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(a)–(e)"
+deps = ["extremalInverse"]
+
+[[node]]
+id = "theorem_8"
+kind = "theorem"
+desc = '''The least extremal solution exists iff y is in the domain of the extremal inverse and is then given by that inverse. For closed kernel the extremal and maximal Tseng inverses agree.'''
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 8, (81)–(82)"
+deps = ["theorem_6", "theorem_7", "maximalTsengInverse"]

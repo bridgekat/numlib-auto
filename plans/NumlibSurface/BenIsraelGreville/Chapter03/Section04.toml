@@ -1,0 +1,29 @@
+namespace = 'BenIsraelGreville.Chapter03'
+desc = 'Weighted inverse classes.'
+
+[[node]]
+id = 'weightedNorm'
+kind = 'definition'
+desc = '''For positive definite W the weighted norm is sqrt(x*Wx). Reuse Numlib weighted least squares.'''
+source = 'Ben-Israel and Greville, Ch. 3, §4, (50)'
+
+[[node]]
+id = 'theorem_4'
+kind = 'theorem'
+desc = '''X produces a W-least-squares solution for every b iff AXA=A and WAX is Hermitian.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 4'
+deps = ['weightedNorm']
+
+[[node]]
+id = 'theorem_5'
+kind = 'theorem'
+desc = '''X produces the unique minimum-Q-norm solution for each consistent b iff AXA=A and QXA is Hermitian.'''
+source = 'Ben-Israel and Greville, Ch. 3, Theorem 5'
+deps = ['weightedNorm']
+
+[[node]]
+id = 'corollary_4'
+kind = 'theorem'
+desc = '''The unique inverse satisfying the weighted four Penrose equations produces the unique minimum-Q-norm W-least-squares solution. Express it by the pseudoinverse of W^(1/2) A Q^(−1/2).'''
+source = 'Ben-Israel and Greville, Ch. 3, Corollary 4'
+deps = ['theorem_4', 'theorem_5']

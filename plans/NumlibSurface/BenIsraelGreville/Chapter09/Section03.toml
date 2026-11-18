@@ -1,0 +1,114 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Tseng inverses are partial linear maps. Define the common construction from the inverse of T on its carrier and extend by zero on an orthogonal subspace, using Mathlib LinearPMap and the closed-projection API. For bounded operators with closed range, bundle the maximal inverse as a continuous linear map.'''
+
+[[node]]
+id = "IsTsengInverse"
+kind = "definition"
+desc = '''The range of each partial operator is contained in the domain of the other, and each product acts as the orthogonal projector onto the closure of the corresponding range on the required domain. The definition is symmetric.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Definition 1, (5)–(8)"
+
+[[node]]
+id = "lemma_1"
+kind = "theorem"
+desc = '''If S is a Tseng inverse of T, D(T) is decomposable with respect to range S by using ST as the projection.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Lemma 1"
+deps = ["IsTsengInverse", "BenIsraelGreville.Chapter09.IsDecomposable"]
+
+[[node]]
+id = "lemma_2"
+kind = "theorem"
+desc = '''If S is a Tseng inverse of T, T restricted to range S is a bijection onto range T with inverse the restriction of S.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Lemma 2"
+deps = ["IsTsengInverse"]
+
+[[node]]
+id = "lemma_3"
+kind = "theorem"
+desc = '''If S is a Tseng inverse of T, ker T=D(T)∩(range S)⊥ and the carrier of T equals range S.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Lemma 3, (10)–(11)"
+deps = ["lemma_1", "lemma_2", "carrier"]
+
+[[node]]
+id = "theorem_1"
+kind = "theorem"
+desc = '''T has a Tseng inverse iff its domain decomposes orthogonally into its kernel and carrier. Then for each subspace L ≤ (range T)⊥ there is a Tseng inverse with domain range T ⊕ L and kernel L.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 1, (9), (14)–(17)"
+deps = ["lemma_3"]
+
+[[node]]
+id = "maximalTsengInverse"
+kind = "definition"
+desc = '''For an operator with decomposable domain, extend the inverse on the carrier by zero on (range T)⊥ to obtain the maximal Tseng inverse. It is dense and has closed kernel and every Tseng inverse is its restriction.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Definition 2, (18)–(19)"
+deps = ["theorem_1"]
+
+[[node]]
+id = "theorem_2_closed_domain_ker"
+kind = "theorem"
+desc = '''For densely defined closed T, T† is closed, has domain range T ⊕ ker T*, kernel ker T* and range equal to the carrier. Its inverse graph is the orthogonal sum of the carrier graph and the vertical copy of ker T*.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 2(a)–(c), (20)–(25b)"
+deps = ["maximalTsengInverse", "ker_adjoint_eq_orthogonal_range"]
+
+[[node]]
+id = "theorem_2_projections"
+kind = "theorem"
+desc = '''The products T†T and TT† on the two partial domains equal the closed range projections of T† and T, respectively.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 2(d)–(e)"
+deps = ["maximalTsengInverse"]
+
+[[node]]
+id = "theorem_2_involution_adjoint"
+kind = "theorem"
+desc = '''For densely defined closed T, (T†)†=T, (T*)†=(T†)*, and the kernel of (T*)† equals ker T.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 2(f)–(h)"
+deps = ["theorem_2_closed_domain_ker", "theorem_2_projections"]
+
+[[node]]
+id = "theorem_2_gramOperators"
+kind = "theorem"
+desc = '''For densely defined closed T, T*T and TT* are nonnegative with kernels ker T and ker T*, and their maximal inverses are T†(T*)† and (T*)†T†, also nonnegative. The products must agree as partial maps including domains.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 2(i)–(j)"
+deps = ["theorem_2_involution_adjoint", "gramOperators_nonnegative"]
+
+[[node]]
+id = "theorem_3"
+kind = "theorem"
+desc = '''For bounded T with closed range, its bounded maximal inverse is the unique solution to each displayed system: Penrose equations; range projection TX with ker X*=ker T; both range projections and XTX=X; XTT*=T* and XX*T*=X; XT identity on range T* and X zero on ker T*; XT=P_range(T*) and ker X=ker T*; or TX=P_range(T) and XT=P_range(X).'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 3(a)–(f), final displayed characterization"
+deps = ["theorem_2_projections", "orthogonalProjector_iff"]
+
+[[node]]
+id = "erdelyiInverse"
+kind = "definition"
+desc = '''Restrict T to ker T ⊕ carrier T and take the maximal Tseng inverse of the restriction. Its inverse graph consists of (x,Tx+z) with x in the carrier and z perpendicular to the image of the carrier. The graph symbol G⁻¹(Tᵣ) in (27) denotes the inverse graph of the inverse Tᵣ†.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Definition 3, (26)–(27)"
+deps = ["maximalTsengInverse", "carrier"]
+
+[[node]]
+id = "theorem_4_range_domain"
+kind = "theorem"
+desc = '''The Erdélyi inverse agrees with T† when the latter exists, has domain T(carrier T) ⊕ T(carrier T)⊥, and has range carrier T. Its domain need not contain range T, and the closure of its range need not equal (ker T)⊥ without extra hypotheses; the trivial-carrier example in §9.2 is a counterexample to that equality.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 4(a)–(c)"
+deps = ["erdelyiInverse"]
+
+[[node]]
+id = "theorem_4_projections"
+kind = "theorem"
+desc = '''On the restricted domain, the inverse followed after T is projection onto closure of the carrier. In the opposite order, the product is projection onto the closure of T(carrier T); the printed projection onto closure of range T requires equality of the two closures.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 4(d)–(e)"
+deps = ["erdelyiInverse", "theorem_2_projections"]
+
+[[node]]
+id = "theorem_4_iterated"
+kind = "theorem"
+desc = '''The iterated Erdélyi inverse has domain carrier T ⊕ (carrier T)⊥, range T(carrier T), and kernel (carrier T)⊥. It extends T when T has decomposable domain. Equality holds when D(T)=carrier T ⊕ (carrier T)⊥ with ker T=(carrier T)⊥, in particular for dense T with closed kernel. State the printed closure-of-kernel version under the appropriate density and decomposition hypotheses.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 4(f)–(j)"
+deps = ["erdelyiInverse", "theorem_4_range_domain"]
+
+[[node]]
+id = "theorem_4_adjoint"
+kind = "theorem"
+desc = '''Compare the adjoint of the Erdélyi inverse of T with the Erdélyi inverse of T* for dense closable T, checking which assumptions ensure the stated graph inclusion.'''
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 4(k)"
+deps = ["erdelyiInverse", "closure_eq_adjoint_adjoint"]

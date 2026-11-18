@@ -1,0 +1,28 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Develop stabilization for powers of a linear endomorphism before specializing to complex matrices.
+'''
+
+[[node]]
+id = "drazin_equations_iff"
+kind = "theorem"
+desc = '''Under AX = XA, the two equations A^k X A = A^k and X A X = X are equivalent to A^(k+1) X = A^k and A X² = X.'''
+source = 'Ben-Israel and Greville, Chapter 4, §2, equations (5), (7) and (8)'
+
+[[node]]
+id = "matrixIndex"
+kind = "definition"
+desc = '''The least positive k at which rank(A^k) = rank(A^(k+1)).'''
+source = 'Ben-Israel and Greville, Chapter 4, Definition 1'
+
+[[node]]
+id = "lemma_4_1"
+kind = "theorem"
+desc = '''At and after the index, rank, range and kernel stabilize for A, its transpose, and its adjoint. For positive exponents below the index, the range and kernel differ from those at every larger exponent.'''
+source = 'Ben-Israel and Greville, Chapter 4, Lemma 1'
+
+[[node]]
+id = "theorem_4_1"
+kind = "theorem"
+desc = '''The index is the least positive k admitting a solution to A^(k+1) X = A^k. For singular A it also equals the multiplicity of zero in the minimal polynomial and the greatest grade of a generalized zero-eigenvector.'''
+source = 'Ben-Israel and Greville, Chapter 4, Theorem 1'

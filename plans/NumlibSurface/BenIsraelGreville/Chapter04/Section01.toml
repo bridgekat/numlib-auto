@@ -1,0 +1,28 @@
+namespace = "BenIsraelGreville.Chapter04"
+desc = '''
+Use the algebra of powers and generalized eigenspaces for the spectral inverse equations.
+'''
+
+[[node]]
+id = "SatisfiesFirstPowerEquation"
+kind = "definition"
+desc = '''The equation A^k X A = A^k for a square matrix A and prescribed positive exponent k.'''
+source = 'Ben-Israel and Greville, Chapter 4, §1, equation (1^k)'
+
+[[node]]
+id = "SatisfiesFifthPowerEquation"
+kind = "definition"
+desc = '''The equation A^k X = X A^k.'''
+source = 'Ben-Israel and Greville, Chapter 4, §1, equation (5^k)'
+
+[[node]]
+id = "SatisfiesSixthPowerEquation"
+kind = "definition"
+desc = '''The equation A X^k = X^k A.'''
+source = 'Ben-Israel and Greville, Chapter 4, §1, equation (6^k)'
+
+[[node]]
+id = "inverse_reciprocal_principal_grade"
+kind = "theorem"
+desc = '''For nonsingular A, generalized eigenvectors of grade p at λ correspond to generalized eigenvectors of A⁻¹ of grade p at λ⁻¹.'''
+source = 'Ben-Israel and Greville, Chapter 4, §1, spectral property of the ordinary inverse'

@@ -1,0 +1,16 @@
+namespace = "BenIsraelGreville.Chapter08"
+
+desc = '''Polynomial-matrix differential systems. The algebraic range criterion should specialize Chapter 2. The time-domain statement needs a transform class that supports initial data at 0−, inverse transforms of arbitrary rational functions, and possible impulses.'''
+
+[[node]]
+id = "differentialMatrixPolynomial"
+kind = "definition"
+desc = '''The homogeneous matrix differential equation uses A(D) = ∑ᵢ AᵢDⁱ. Define the polynomial matrix A(s) and the forcing polynomial assembled from the initial derivatives at 0− as in (82).'''
+source = "Ben-Israel and Greville, Ch. 8, §6, (80)–(82)"
+
+[[node]]
+id = "theorem_6"
+kind = "theorem"
+desc = '''For the specified initial derivatives, consistency is A(s)A(s)† b̂(s)=b̂(s). The full family of time-domain solutions is the inverse Laplace transform of A(s)†b̂(s)+(I−A(s)†A(s))y(s) with arbitrary rational y(s). Treat the generalized inverse over the rational-function field and make the signal class explicit to account for polynomial terms and impulses.'''
+source = "Ben-Israel and Greville, Ch. 8, §6, Theorem 6, (83)–(84)"
+deps = ["differentialMatrixPolynomial"]

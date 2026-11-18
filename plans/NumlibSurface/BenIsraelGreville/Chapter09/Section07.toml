@@ -1,0 +1,55 @@
+namespace = "BenIsraelGreville.Chapter09"
+
+desc = '''Strong representations of the potentially unbounded maximal inverse of a bounded operator. Use a bounded self-adjoint spectral calculus for the semigroup and iteration residuals. When convergence is uniform require closed range.'''
+
+[[node]]
+id = "leastSquaresGradientFlow"
+kind = "definition"
+desc = '''The gradient iteration in continuous time solves x′=−A*(Ax−y), x(0)=0. Its least-squares objective has derivative −2‖A*(Ax−y)‖², which is nonpositive and may vanish.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, (83)–(90)"
+
+[[node]]
+id = "pinvApproximationDomainClass"
+kind = "definition"
+desc = '''Split right-hand sides by whether their projection onto closure(range A) lies in range AA*, in range A but outside range AA*, or outside range A.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, (93)"
+
+[[node]]
+id = "pinvSemigroupApproximation"
+kind = "definition"
+desc = '''Define L₁(t)=∫₀ᵗ exp(−(t−s)A*A) ds and L₂(t)=∫₀ᵗ exp(−(t−s)AA*) ds. The approximation B(t) satisfies B=L₁A*=A*L₂.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, (94)"
+
+[[node]]
+id = "theorem_9"
+kind = "theorem"
+desc = '''For B(t), let x=A†y and z=(AA*)†y where defined. In class I the squared inverse error is bounded by ‖x‖²‖z‖²/(‖z‖²+2t‖x‖²); in class II it decreases to zero. In classes I–II the squared range residual is bounded by ‖y‖²‖x‖²/(‖x‖²+2t‖y‖²). In class III the range residual still decreases to zero.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(a)–(c)"
+deps = ["pinvApproximationDomainClass", "pinvSemigroupApproximation", "maximalTsengInverse"]
+
+[[node]]
+id = "pinvNeumannApproximation"
+kind = "definition"
+desc = '''With α=c/‖A‖² and 0<c<2 for nonzero A, B_N=∑_{k≤N}(I−αA*A)^k αA*. Keep the zero operator as a separate trivial boundary case.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, (91)–(92), (95)"
+
+[[node]]
+id = "theorem_10"
+kind = "theorem"
+desc = '''For B_N the bounds of Theorem 9 replace 2t by N(2−c)c/‖A‖². In the other cases the errors decrease to zero and agree with the corresponding projected recurrences. When aligning indices, B_N contains N+1 terms, and the range recurrence starts from the projection of y, not from the orthogonal component.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(a)–(d), (95)"
+deps = ["pinvNeumannApproximation", "pinvApproximationDomainClass", "maximalTsengInverse"]
+
+[[node]]
+id = "pinvNeumann_tendsto_of_closedRange"
+kind = "theorem"
+desc = '''If range A is closed the same B_N converges to A† in operator norm by a spectral gap on the orthogonal complement of the kernel.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, Petryshyn convergence following Theorem 10"
+deps = ["theorem_10"]
+
+[[node]]
+id = "theorem_11"
+kind = "theorem"
+desc = '''The order-p updates C and D starting at αA* equal B_{p^N−1} after N steps, and inherit the improved rate by replacing N with p^N−1. The binomial polynomial for D is summed over 1≤k≤p, omitting the impossible exponent −1 in the printed k=0 term.'''
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 11, (96)–(98)"
+deps = ["theorem_10"]

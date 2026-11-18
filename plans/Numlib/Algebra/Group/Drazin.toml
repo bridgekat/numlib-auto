@@ -1,0 +1,41 @@
+desc = '''
+Define Drazin and group-inverse relations in monoids. The stable power identities make uniqueness and similarity invariance purely multiplicative.
+'''
+
+[[node]]
+id = "IsDrazinInverseAt"
+kind = "definition"
+desc = '''The elements a and x commute, x a x = x, and a^(k+1) x = a^k.'''
+
+[[node]]
+id = "IsGroupInverse"
+kind = "definition"
+desc = '''The Drazin relation at exponent one.'''
+
+[[node]]
+id = "IsDrazinInverseAt.unique"
+kind = "theorem"
+desc = '''Any two Drazin inverses at a fixed exponent agree.'''
+
+[[node]]
+id = "IsDrazinInverseAt.mono"
+kind = "theorem"
+desc = '''A Drazin inverse at exponent k also satisfies the relation at every exponent at least k.'''
+
+[[node]]
+id = "IsDrazinInverseAt.of_commute_pow"
+kind = "theorem"
+desc = 'If a commutes with y and a^(k+1)y = a^k, then x = a^k y^(k+1) is a Drazin inverse at exponent k.'
+deps = ["IsDrazinInverseAt"]
+
+[[node]]
+id = "IsDrazinInverseAt.isGroupInverse_square_mul"
+kind = "theorem"
+desc = 'If x is a Drazin inverse of a, the element a²x is the group inverse of x.'
+deps = ["IsDrazinInverseAt", "IsGroupInverse"]
+
+[[node]]
+id = "IsDrazinInverseAt.map"
+kind = "theorem"
+desc = 'A monoid homomorphism carries a Drazin inverse at exponent k to a Drazin inverse at exponent k.'
+deps = ["IsDrazinInverseAt"]

@@ -1,0 +1,15 @@
+namespace = "BenIsraelGreville.Chapter07"
+
+desc = '''The three computational objectives. Reuse the outer-inverse range and kernel characterization from Chapters 2 and 4.'''
+
+[[node]]
+id = "pinv_unique_outerInverse_range_ker"
+kind = "theorem"
+desc = '''For a complex rectangular A, the Moore–Penrose inverse is the unique X with XAX = X, range X = range Aᴴ and ker X = ker Aᴴ.'''
+source = "Ben-Israel and Greville, Ch. 7, §1, Introduction, characterization of the Moore–Penrose inverse"
+
+[[node]]
+id = "drazin_unique_outerInverse_range_ker"
+kind = "theorem"
+desc = '''For square A and l at least its index, the Drazin inverse is the unique outer inverse with range and kernel equal to those of A^l. At l = 1 it is the group inverse.'''
+source = "Ben-Israel and Greville, Ch. 7, §1, Introduction, characterization of the Drazin and group inverses"

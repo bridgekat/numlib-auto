@@ -1,0 +1,61 @@
+namespace = "BenIsraelGreville.Chapter07"
+
+desc = '''Residual polynomials for first-order and higher-order matrix iterations. Prove identities by geometric sums and left/right support on AA† and A†A. Apply the existing complex normed-algebra spectral-radius theorem via Matrix.toEuclideanCLM with the L2 operator norm. Algebraic identities can live in the bounded-operator backbone and be reused in Chapter 9.'''
+
+[[node]]
+id = "pinvIterationResidual"
+kind = "definition"
+desc = '''The range residual of an approximate inverse X is AA† − AX.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, (67)"
+
+[[node]]
+id = "IsPinvIterationOrder"
+kind = "definition"
+desc = '''In a fixed submultiplicative matrix norm, order p means the range residuals obey ‖Rₖ₊₁‖ ≤ c‖Rₖ‖^p for some positive c independent of k.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, (68)"
+
+[[node]]
+id = "pinvCorrection_eq"
+kind = "theorem"
+desc = '''If C = C(AA†), then C(AA†−AX) = C(I−AX), with the conjugate-transpose dual on the left when C' = (A†A)C'.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, (69)–(73) and dual formulas"
+
+[[node]]
+id = "pinvFirstOrderIterate"
+kind = "definition"
+desc = '''The first-order iteration starts at X₀ and sends X to X + X₀(I−AX).'''
+source = "Ben-Israel and Greville, Ch. 7, §7, (77)"
+
+[[node]]
+id = "pinvHigherOrderIterate"
+kind = "definition"
+desc = '''Starting at X₀, the order-p iteration sends X to X ∑_{j<p}(I−AX)^j.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, (84)"
+
+[[node]]
+id = "theorem_3"
+kind = "theorem"
+desc = '''If A is nonzero, X₀ = AᴴBAᴴ and the initial range residual R₀ has spectral radius less than one, the first-order sequence converges to A† and ‖Rₖ₊₁‖ ≤ ‖R₀‖‖Rₖ‖ in every submultiplicative norm, from the exact identity Rₖ = R₀^(k+1).'''
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 3, (75)–(83)"
+deps = ["pinvFirstOrderIterate", "pinvIterationResidual"]
+
+[[node]]
+id = "theorem_4"
+kind = "theorem"
+desc = '''Under the same support and radius conditions, the p-th order sequence for p ≥ 2 converges to A† and ‖Rₖ₊₁‖ ≤ ‖Rₖ‖^p in every submultiplicative norm, from Rₖ₊₁ = Rₖ^p.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 4, (84)–(89)"
+deps = ["pinvHigherOrderIterate", "pinvIterationResidual"]
+
+[[node]]
+id = "theorem_5"
+kind = "theorem"
+desc = '''The j-th order-p iterate equals the (p^j−1)-th first-order iterate with the same initial value. Compare residual powers and use support X = A†AX to recover X from AX.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 5, (90)"
+deps = ["theorem_3", "theorem_4"]
+
+[[node]]
+id = "spectralRadius_scaled_adjoint_start"
+kind = "theorem"
+desc = '''For nonzero A and X₀ = βAᴴ the range residual has spectral radius less than one iff 0 < β < 2/λmax(AAᴴ). The spectral-norm residual powers are minimized by β = 2/(λmax+λmin⁺) and have norm ((λmax−λmin⁺)/(λmax+λmin⁺)) raised to the residual exponent k+1 or p^k.'''
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercises 19–21, (93)–(100)"
+deps = ["theorem_3", "theorem_4"]

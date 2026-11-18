@@ -1,0 +1,15 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'Electrical networks.'
+
+[[node]]
+id = 'networkEquations'
+kind = 'theorem'
+desc = '''For positive branch conductances and an incidence matrix, Ohm and Kirchhoff laws determine unique branch voltages in the row space and currents in the kernel. Express them by the Bott–Duffin inverse.'''
+source = 'Ben-Israel and Greville, Ch. 2, §13, (149)–(151)'
+
+[[node]]
+id = 'dualNetworkEquations'
+kind = 'theorem'
+desc = '''Use reciprocal conductances and exchange the roles of the incidence kernel and its orthogonal complement to obtain the dual current and voltage formulas.'''
+source = 'Ben-Israel and Greville, Ch. 2, §13, (152)–(153)'
+deps = ['networkEquations']

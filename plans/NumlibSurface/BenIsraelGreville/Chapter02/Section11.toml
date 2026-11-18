@@ -1,0 +1,22 @@
+namespace = 'BenIsraelGreville.Chapter02'
+desc = 'Interval linear programming.'
+
+[[node]]
+id = 'intervalProgram'
+kind = 'definition'
+desc = '''The interval linear program maximizes cᵀx subject to componentwise lower and upper bounds on Ax. Define the compatible bounded formulation in the image coordinates.'''
+source = 'Ben-Israel and Greville, Ch. 2, §11, (131)–(133)'
+
+[[node]]
+id = 'lemma_5'
+kind = 'theorem'
+desc = '''For a consistent interval program, finiteness of the optimal value is equivalent to c lying in the row space of A.'''
+source = 'Ben-Israel and Greville, Ch. 2, Lemma 5'
+deps = ['intervalProgram']
+
+[[node]]
+id = 'theorem_17'
+kind = 'theorem'
+desc = '''For a consistent bounded interval program reduce the optimization to the box in image coordinates intersected with range A, with objective cᵀUb for an inner inverse U and lift optimal coordinates back to solutions.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 17'
+deps = ['lemma_5']
