@@ -1,58 +1,334 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Area formula for smooth embeddings with Hausdorff surface measure. Work from Mathlib's equal-dimensional Jacobian theorem for the classical case, and use Gram determinants for the immersion Jacobian. Use injective charts or multiplicity for area formula, with parameter dimension at most ambient dimension.'''
-
 [[node]]
 id = "jacobian"
-kind = "definition"
-desc = '''The Jacobian is the coordinate matrix of the Fréchet derivative in the Euclidean coordinate bases.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, (123)"
+source = "Ben-Israel and Greville, Chapter 8, §9, (123)"
 
 [[node]]
 id = "integral_changeVariables"
-kind = "theorem"
-desc = '''For injective differentiable equal-dimensional changes of variables, integrate the pullback against the absolute determinant of the Jacobian. Use the Mathlib Jacobian theorem with measurable domain and adequate differentiability.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, (122)"
-deps = ["jacobian"]
+source = "Ben-Israel and Greville, Chapter 8, §9, (122)"
 
 [[node]]
 id = "matrixVolume_eq_sqrt_gramDet"
-kind = "theorem"
-desc = '''The volume defined by maximal minors of a real matrix with full column rank is √det(AᵀA). If square and full rank this is |det A|.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, (0.89), (125)"
-deps = ["jacobian"]
+source = "Ben-Israel and Greville, Chapter 8, §9, (0.89), (125)"
+
+[[node]]
+id = "matrixVolume_eq_abs_det"
+source = "Ben-Israel and Greville, Chapter 8, §9, (125), square specialization"
+
+[[node]]
+id = "gram_fderiv_eq_matrixVolume_jacobian"
+source = "Ben-Israel and Greville, Chapter 8, §9, (124)–(125), Gram Jacobian"
+
+[[node]]
+id = "euclideanHausdorffMeasure"
+source = "Ben-Israel and Greville, Chapter 8, §9, (124), normalization of Hausdorff measure"
+
+[[node]]
+id = "euclideanHausdorffMeasure_self"
+source = "Ben-Israel and Greville, Chapter 8, §9, (124), normalization in the parameter dimension"
+
+[[node]]
+id = "gram_jacobian_graph"
+source = "Ben-Israel and Greville, Chapter 8, §9, (129), (132), graph examples through Example 2"
+
+[[node]]
+id = "integral_graph"
+source = "Ben-Israel and Greville, Chapter 8, §9, (130), (133), weighted local graph measure"
+
+[[node]]
+id = "graph_area"
+source = "Ben-Israel and Greville, Chapter 8, §9, (134), area for the local graph measure"
+
+[[node]]
+id = "graphMeasure_eq_of_range_eq"
+source = "Ben-Israel and Greville, Chapter 8, §9, (133), chart independence of the local graph measure"
+
+[[node]]
+id = "radonHeight"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (136)"
+
+[[node]]
+id = "radonChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (136)"
+
+[[node]]
+id = "inner_radonChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (135)–(136)"
+
+[[node]]
+id = "range_radonChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (135)–(136)"
+
+[[node]]
+id = "graphDensity_radonHeight"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (137)"
+
+[[node]]
+id = "radonTransform"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (139)"
+
+[[node]]
+id = "radonTransform_eq_graphIntegral"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 3, (138)–(139)"
+
+[[node]]
+id = "integral_eq_integral_radonChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, (143)"
+
+[[node]]
+id = "integral_eq_integral_radonTransform"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, (142), nonvertical coordinates"
+
+[[node]]
+id = "radonFrame"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, orthogonal coordinates for (141)"
+
+[[node]]
+id = "radonFrame_normal"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, axis alignment for (141)"
+
+[[node]]
+id = "radonNormalChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, all slices in (141)"
+
+[[node]]
+id = "inner_radonNormalChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, slice equation (141)"
+
+[[node]]
+id = "range_radonNormalChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, slice equation (141)"
+
+[[node]]
+id = "isometry_radonNormalChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, orthogonal coordinates on the slice"
+
+[[node]]
+id = "radonTransformAll"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, Radon transform for every nonzero normal"
+
+[[node]]
+id = "radonTransformAll_eq_graphIntegral"
+source = "Ben-Israel and Greville, Chapter 8, §9, Examples 3–4, (138), orthogonal chart"
+
+[[node]]
+id = "radonTransformAll_eq_integral_hausdorff"
+source = "Ben-Israel and Greville, Chapter 8, §9, Examples 3–4, (138), normalized Hausdorff measure"
+
+[[node]]
+id = "radonTransformAll_eq_radonTransform"
+source = "Ben-Israel and Greville, Chapter 8, §9, Examples 3–4, (138)–(143), agreement of the two charts"
+
+[[node]]
+id = "integral_eq_integral_radonTransformAll"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, (140)–(142)"
+
+[[node]]
+id = "symmetricFourier"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 5, (144)"
+
+[[node]]
+id = "symmetricFourierInv"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 5, (146)"
+
+[[node]]
+id = "fourierTransform_eq_radonTransform"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 5, (145)"
+
+[[node]]
+id = "fourierInv_eq_radonTransform"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 5, (146), slice integral"
+
+[[node]]
+id = "symmetricFourierInv_fourier"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 5, (146), inversion with integrability and continuity"
+
+[[node]]
+id = "exercise_32"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 32, (147), first fundamental-form coefficients"
+
+[[node]]
+id = "exercise_33_jacobian_volume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 33, (148)–(150), speed factor"
+
+[[node]]
+id = "exercise_34_jacobian_volume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 34, (153)–(154), cylindrical density"
+
+[[node]]
+id = "exercise_35_jacobian_volume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 35, (156), axially symmetric cylindrical density"
+
+[[node]]
+id = "sphericalJacobian"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 36, (157)–(158), derivative columns"
+
+[[node]]
+id = "exercise_36_jacobian_volume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 36, (159a), axially symmetric spherical density"
+
+[[node]]
+id = "exercise_37_projected_volumes"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, (162), codimension-one projected volume identity"
+
+[[node]]
+id = "exercise_39_gamma_integral"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 39, (164)"
+
+[[node]]
+id = "exercise_39_gamma_values"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 39, (165a)–(165c)"
+
+[[node]]
+id = "realBeta"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 39, (166)"
+
+[[node]]
+id = "exercise_39_beta_eq_gamma"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 39, (167a)"
+
+[[node]]
+id = "exercise_39_beta_succ_right"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 39, (167b)"
+
+[[node]]
+id = "exercise_39_beta_succ_left"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 39, (167c)"
+
+[[node]]
+id = "euclideanBallVolume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, Euclidean ball volume"
+
+[[node]]
+id = "euclideanUnitSphereArea"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, angular measure of the Euclidean unit sphere"
+
+[[node]]
+id = "exercise_40_ballVolume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, (168), ball scaling"
+
+[[node]]
+id = "exercise_40_hasDerivAt_ballVolume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, (168), radial derivative"
+
+[[node]]
+id = "exercise_40_unitSphereArea"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, (169), polar surface measure"
+
+[[node]]
+id = "exercise_40_sphere_scaling"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, (168), Hausdorff sphere scaling"
+
+[[node]]
+id = "exercise_41_hemisphere_density"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, (170), hemisphere Gram Jacobian"
+
+[[node]]
+id = "exercise_41_unitSphereArea"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, (171), closed form for polar surface measure"
+
+[[node]]
+id = "exercise_42_unitBallVolume"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 42, (172)"
+
+[[node]]
+id = "exercise_42_cylinder_integral"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 42, (173)"
+
+[[node]]
+id = "exercise_43_radon_normalize"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 43, normalization of the normal and offset"
+
+[[node]]
+id = "integral_mul_radonTransformAll"
+source = "Ben-Israel and Greville, Chapter 8, §9, Example 4, weighted linear slice formula used in Exercise 43"
+
+[[node]]
+id = "exercise_43_dirac"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 43, (174), weak Dirac formula"
+
+[[node]]
+id = "exercise_44_gaussian"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 44, planar Gaussian for every nonzero normal, including vertical lines"
 
 [[node]]
 id = "integral_areaFormula"
 kind = "theorem"
-desc = '''An injective smooth full-column-rank chart pulls back surface measure to the volume of the rectangular Jacobian times parameter Lebesgue measure. The parameter dimension is at most the ambient dimension, correcting the reversed printed inequality if confirmed in the PDF.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, (124)"
-deps = ["matrixVolume_eq_sqrt_gramDet"]
+desc = '''Prove the area formula for a smooth injective immersion on a measurable parameter domain, with n ≤ m and normalized n-dimensional Hausdorff measure on the image. A construction of a pullback weighted measure alone does not identify it with Hausdorff measure.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, (124)"
+deps = ["gram_fderiv_eq_matrixVolume_jacobian"]
 
 [[node]]
-id = "integral_graph"
+id = "graphMeasure_eq_hausdorff"
 kind = "theorem"
-desc = '''A smooth scalar graph chart has Jacobian volume √(1+‖∇g‖²), yielding its weighted surface integral and its area when the integrand is one.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, (126)–(134), Example 2"
-deps = ["integral_areaFormula"]
+desc = '''Identify the graph measure with normalized Hausdorff measure restricted to the graph piece, and obtain the corresponding geometric surface area and integrals.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, (130), (133)–(134), Example 2"
+deps = ["integral_areaFormula", "integral_graph"]
 
 [[node]]
-id = "radonTransform"
-kind = "definition"
-desc = '''The Radon transform at (ξ,p) integrates over the hyperplane ξ·x=p. For ξₙ≠0 use the graph formula with constant volume multiplier ‖ξ‖/|ξₙ|.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, Example 3, (135)–(139)"
-deps = ["integral_graph"]
-
-[[node]]
-id = "integral_eq_integral_radonTransform"
+id = "exercise_32_angle_area"
 kind = "theorem"
-desc = '''For integrable f and nonzero ξ, ∫ f = (1/‖ξ‖)∫ (Rf)(ξ,p) dp, by affine change of variables and Fubini.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, Example 4, (140)–(143)"
-deps = ["radonTransform", "integral_changeVariables"]
+desc = '''Derive the parallelogram area as the product of the column norms times the absolute sine of their angle. Characterize orthogonality of the images of coordinate directions and isotropic scaling when the column norms also agree.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 32, geometric interpretation of (147)"
+deps = ["exercise_32"]
 
 [[node]]
-id = "fourierTransform_eq_radonTransform"
+id = "exercise_33_line_integral"
 kind = "theorem"
-desc = '''The symmetrically normalized Fourier transform of f at ξ≠0 equals (2π)^(−n/2)/‖ξ‖ times the one-dimensional integral of exp(−ip)(Rf)(ξ,p). State the inverse sign and normalization with the usual Fourier inversion hypotheses.'''
-source = "Ben-Israel and Greville, Ch. 8, §9, Example 5, (144)–(146)"
-deps = ["integral_eq_integral_radonTransform"]
+desc = '''Prove the weighted speed formula for line integrals on a parametrized arc, its arc length, and the graph specialization parametrized by the first coordinate. For image-based measure assume an injective chart or include multiplicity.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 33, (149)–(150)"
+deps = ["exercise_33_jacobian_volume", "integral_areaFormula"]
+
+[[node]]
+id = "exercise_34_surface_integral"
+kind = "theorem"
+desc = '''Differentiate the cylindrical chart for a continuously differentiable height and derive its geometric surface integral, using a nonnegative radius and an injective angle chart.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 34, (151)–(155)"
+deps = ["exercise_34_jacobian_volume", "integral_areaFormula"]
+
+[[node]]
+id = "exercise_35_surface_integral"
+kind = "theorem"
+desc = '''Specialize the cylindrical surface integral to a height depending only on radius.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 35, (156) and the following integral"
+deps = ["exercise_34_surface_integral", "exercise_35_jacobian_volume"]
+
+[[node]]
+id = "exercise_36_surface_integral"
+kind = "theorem"
+desc = '''Differentiate and integrate the stated radially symmetric spherical chart, with nonnegative radius and physical angle range. Remove the spurious extra radius in the printed definition of the pulled-back integrand in (159b).'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 36, (157)–(159)"
+deps = ["exercise_36_jacobian_volume", "integral_areaFormula"]
+
+[[node]]
+id = "exercise_37_simplex_facet_areas"
+kind = "theorem"
+desc = '''Identify the hypotenuse simplex facet’s coordinate projections with the orthogonal simplex facets, and prove the ratio of their geometric areas and the resulting Pythagorean sum. The matrix-level projected-volume identity is proved separately.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, (160)–(163)"
+deps = ["exercise_37_projected_volumes", "integral_areaFormula"]
+
+[[node]]
+id = "exercise_38_regular_simplex"
+kind = "theorem"
+desc = '''Prove that the coordinate faces have area 1/(n−1)! and the upper face has area √n/(n−1)! for the unit-intercept simplex.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 38"
+deps = ["exercise_37_simplex_facet_areas"]
+
+[[node]]
+id = "exercise_40_polar_area_eq_hausdorff"
+kind = "theorem"
+desc = '''Identify the angular measure in the polar decomposition with normalized Hausdorff measure on the Euclidean sphere, so the radial derivative, Hausdorff scaling, and unit area theorems refer to the same surface measure.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, (168)–(169)"
+deps = ["graphMeasure_eq_hausdorff", "exercise_40_sphere_scaling", "exercise_40_unitSphereArea"]
+
+[[node]]
+id = "exercise_41_hemisphere_integral"
+kind = "theorem"
+desc = '''Prove the hemisphere integral for geometric sphere area, justify omitting the equator where the graph derivative is singular, and establish the stated Beta-function recurrence by the radial substitution.'''
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, (170)–(171)"
+deps = ["exercise_41_hemisphere_density", "exercise_40_polar_area_eq_hausdorff", "exercise_39_beta_eq_gamma"]
+
+[[node]]
+id = "hausdorffMeasure_image_linear"
+source = "Ben-Israel and Greville, Chapter 8, §9, Equation (124), injective linear charts"

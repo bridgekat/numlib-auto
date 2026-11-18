@@ -1,38 +1,188 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Image densities via graph parametrization and Fubini. Use Measure.map and withDensity to specify a density and state density identities up to almost-everywhere equality. Handle both sphere charts explicitly and exclude radius zero in the displayed sphere formula.'''
+[[node]]
+id = "IsLebesgueProbabilityDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, joint and image densities preceding Equation (175)"
+
+[[node]]
+id = "IsLebesgueProbabilityDensity.measurable"
+source = "Ben-Israel and Greville, Chapter 8, §10, joint and image densities preceding Equation (175)"
+
+[[node]]
+id = "IsLebesgueProbabilityDensity.eq_withDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, joint and image densities preceding Equation (175)"
+
+[[node]]
+id = "IsLebesgueProbabilityDensity.isProbabilityMeasure"
+source = "Ben-Israel and Greville, Chapter 8, §10, joint and image densities preceding Equation (175)"
+
+[[node]]
+id = "IsLebesgueProbabilityDensity.ae_ne_top"
+source = "Ben-Israel and Greville, Chapter 8, §10, joint and image densities preceding Equation (175)"
+
+[[node]]
+id = "IsLebesgueProbabilityDensity.map_measurePreserving"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (180), transporting densities through volume-preserving coordinates"
+
+[[node]]
+id = "IsLebesgueProbabilityDensity.ofReal_toReal"
+source = "Ben-Israel and Greville, Chapter 8, §10, density representatives preceding Equation (175)"
+
+[[node]]
+id = "ImageGraphChart"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(180), inversion in the last coordinate"
+
+[[node]]
+id = "ImageGraphChart.range_height"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (182), exact fibre of the graph chart"
+
+[[node]]
+id = "graphImageDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (181), density from the inverse-level derivative"
 
 [[node]]
 id = "imageDensity_graph"
-kind = "theorem"
-desc = '''If a smooth coordinate change (u,xₙ) ↦ (u,h(u,xₙ)) is invertible with inverse (u,g(u,y)), the density of h(X) is the integral of the joint density on the graph weighted by |∂g/∂y|.'''
-source = "Ben-Israel and Greville, Ch. 8, §10, (178)–(183)"
-deps = ["integral_changeVariables"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(183), graph change of variables and marginalization"
 
 [[node]]
 id = "theorem_14"
-kind = "theorem"
-desc = '''If (∂g/∂y)/√(1+‖∇ᵤg‖²) depends only on y, the density of h(X) is its absolute value times the surface integral of the joint density over h⁻¹(y).'''
-source = "Ben-Israel and Greville, Ch. 8, §10, Theorem 14, (184)–(185)"
-deps = ["imageDensity_graph", "integral_graph"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Theorem 14, Equations (184)–(185), surface integral for the image law"
+
+[[node]]
+id = "linearImageGraphChart"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (186)–(188), nonvertical inverse height and derivative"
+
+[[node]]
+id = "radonLIntegral"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (190), nonnegative Radon transform"
+
+[[node]]
+id = "radonLIntegral_eq_graphMeasure"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (190), integration against the induced hyperplane measure"
+
+[[node]]
+id = "radonLIntegral_nonvertical"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (188b), surface area factor in the nonvertical chart"
+
+[[node]]
+id = "corollary_4_nonvertical"
+source = "Ben-Israel and Greville, Chapter 8, §10, Corollary 4, Equations (186)–(190), nonvertical linear images"
 
 [[node]]
 id = "corollary_4"
-kind = "theorem"
-desc = '''For nonzero ξ the scalar variable ξ·X has density y ↦ (Rf_X)(ξ,y)/‖ξ‖.'''
-source = "Ben-Israel and Greville, Ch. 8, §10, Corollary 4, (186)–(190)"
-deps = ["theorem_14", "radonTransform"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Corollary 4, Equations (189)–(190), arbitrary nonzero linear images"
+
+[[node]]
+id = "corollary_4_radonTransformAll"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (190) with the real Radon transform from Section 8.9"
+
+[[node]]
+id = "sphereSurfaceMeasure"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), surface measure at a fixed radius"
+
+[[node]]
+id = "sphereLIntegral"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), integrated density on the sphere"
+
+[[node]]
+id = "sphereLIntegral_eq"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), angular pullback of the spherical integral"
+
+[[node]]
+id = "lintegral_eq_lintegral_sphereLIntegral"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), radial decomposition of Lebesgue integration"
+
+[[node]]
+id = "normSqImageDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), spherical image-density formula"
 
 [[node]]
 id = "corollary_5"
-kind = "theorem"
-desc = '''For y>0 the density of ‖X‖² is the sphere integral at radius √y divided by 2√y, with a zero density representative for y<0. Sum the upper and lower hemisphere graph integrals.'''
-source = "Ben-Israel and Greville, Ch. 8, §10, Corollary 5, (191)–(195)"
-deps = ["theorem_14"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Corollary 5, Equations (191)–(195), density of the squared radius"
+
+[[node]]
+id = "normSqImage_eq_sum_sq"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (191) and (194), squared radius equals the sum of coordinate squares"
+
+[[node]]
+id = "hemisphereHeight"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (192), the two hemisphere charts"
+
+[[node]]
+id = "normSq_snocLast_hemisphereHeight"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (192), each hemisphere chart solves the level constraint"
+
+[[node]]
+id = "hasDerivAt_hemisphereHeight"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (193a), derivative with respect to the squared radius"
+
+[[node]]
+id = "graphDensity_hemisphereHeight"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (193b), hemisphere graph area factor"
 
 [[node]]
 id = "density_normSq_of_spherical"
+source = "Ben-Israel and Greville, Chapter 8, §10, Example 6, Equations (196)–(197), spherical density and explicit Gamma factor"
+
+[[node]]
+id = "hemisphereLIntegral"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), hemisphere integral via its open graph chart"
+
+[[node]]
+id = "normSqHemisphereDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), density computed from both hemisphere integrals"
+
+[[node]]
+id = "corollary_5_hemispheres"
+source = "Ben-Israel and Greville, Chapter 8, §10, Corollary 5, Equation (195), two-hemisphere density"
+
+[[node]]
+id = "normSqImageDensity_ae_eq_hemisphereDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), the angular and graph formulas represent the same density"
+
+[[node]]
+id = "independentStandardNormalLaw"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 48, joint law of independent standard normal coordinates"
+
+[[node]]
+id = "independentStandardNormalLaw_density"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 48, spherical joint density of independent standard normal coordinates"
+
+[[node]]
+id = "exercise_8_48"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 48, Equation (202), chi-squared density"
+
+[[node]]
+id = "imageDensity_graph_restricted"
 kind = "theorem"
-desc = '''When the joint density is rotationally symmetric, the sphere integral for the squared radius factors into the surface area times the density at any point on the sphere.'''
-source = "Ben-Israel and Greville, Ch. 8, §10, Example 6, spherical distribution"
-deps = ["corollary_5"]
+desc = "Extend the single-graph change of variables and Theorem 14 to a coordinate inverse defined only on attainable levels, with the fiber integration domains restricted accordingly. The global graph chart and the two restricted sphere branches are proved."
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), chart restricted to attainable levels"
+deps = ["imageDensity_graph", "theorem_14"]
+
+[[node]]
+id = "sphereLIntegral_eq_hemispheres"
+kind = "theorem"
+desc = '''For every positive radius and nonnegative measurable integrand, identify the angular sphere integral with the sum of the two hemisphere surface integrals at that radius. The two law-density statements and their almost-everywhere equality for probability densities are proved.'''
+source = "Ben-Israel and Greville, Chapter 8, §10, Corollary 5, Equation (195), pointwise chart evaluation of the spherical integral"
+deps = ["sphereLIntegral", "hemisphereLIntegral", "normSqImageDensity_ae_eq_hemisphereDensity"]
+
+[[node]]
+id = "exercise_8_45"
+kind = "theorem"
+desc = '''For λ>0 and n>0, show the mean of n independent rate-λ exponential variables has density (λn)^n y^(n−1) exp(−λny)/(n−1)! on the nonnegative ray. Identify the positive hyperplane slice as the simplex face in Equation (198) and compute its area factor.'''
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, Equation (198), mean of independent exponential variables"
+deps = ["corollary_4"]
+
+[[node]]
+id = "exercise_8_46"
+kind = "theorem"
+desc = '''For |ρ|<1 and (a,b)≠(0,0), use the explicit centered bivariate Gaussian density with unit variances and correlation ρ to prove that aX₁+bX₂ has zero mean and variance a²+2abρ+b² and the univariate Gaussian density in Equation (200). Specialize to sums and differences.'''
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equations (199)–(200), correlated bivariate normal"
+deps = ["corollary_4_radonTransformAll"]
+
+[[node]]
+id = "exercise_8_47"
+kind = "theorem"
+desc = '''For independent U([0,1]) coordinates and nonzero a and b, compute the linear-image density as the four absolute-value terms in Equation (201) divided by 2ab. Derive the triangular density for a=b=1. A zero coefficient needs the corresponding one-dimensional result because the displayed quotient requires ab≠0.'''
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, Equation (201), linear projection of the uniform square"
+deps = ["corollary_4_nonvertical"]

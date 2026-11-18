@@ -62,6 +62,8 @@ import NumlibSurface.BenIsraelGreville.Chapter08.Section05
 import NumlibSurface.BenIsraelGreville.Chapter08.Section06
 import NumlibSurface.BenIsraelGreville.Chapter08.Section07
 import NumlibSurface.BenIsraelGreville.Chapter08.Section08
+import NumlibSurface.BenIsraelGreville.Chapter08.Section09
+import NumlibSurface.BenIsraelGreville.Chapter08.Section10
 
 /-!
 # Ben-Israel and Greville, *Generalized Inverses: Theory and Applications*
@@ -141,6 +143,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §8.6 | `Chapter08.Section06` | Differential systems in real-rational Laplace coordinates |
 | §8.7 | `Chapter08.Section07` | Markov chains, first passage, and the stationary projection |
 | §8.8 | `Chapter08.Section08` | Singular difference equations and regular pencils |
+| §8.9 | `Chapter08.Section09` | Matrix volume, graph measure, Radon and Fourier transforms |
+| §8.10 | `Chapter08.Section10` | Image densities, spherical coordinates, and Gaussian examples |
 
 ## Conventions
 
