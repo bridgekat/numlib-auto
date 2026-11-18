@@ -206,7 +206,7 @@ theorem linpackCurvature_bound {n : ℕ} (hn : 0 < n)
       intro h
       have hzero : w = 0 := by simpa [h] using hy.symm
       have := hs i
-      simp [hzero] at this
+      simp only [hzero, Pi.zero_apply, abs_zero, mul_zero] at this
       exact (not_le_of_gt zero_lt_one) this
     obtain ⟨j, hj⟩ : ∃ j, y j ≠ 0 := by
       by_contra! hall

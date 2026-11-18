@@ -333,9 +333,9 @@ theorem equation_13_14 (φ : Module.Basis ι ℝ V) (a : SesqForm ℝ V) (F : �
         (fun t i => F t (φ i)) (φ.equivFun u₀) T (fun t => φ.equivFun (u t)) :=
   FiniteDifference.isSemidiscreteGalerkin_iff_isSemidiscrete φ a F u₀ T u
 
-omit [FiniteDimensional ℝ V] in
 -- the linter does not see the `Fintype` inside `Matrix.PosDef`
 set_option linter.unusedFintypeInType false in
+omit [FiniteDimensional ℝ V] in
 /-- **Section 13.3** of [quarteroni2000numerical], the mass matrix is nonsingular. For a basis
 $(\varphi_i)$ of $V$, the Gram matrix $M_{ij} = (\varphi_j, \varphi_i)$ of the inner product is
 symmetric positive definite. -/

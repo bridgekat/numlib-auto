@@ -598,7 +598,7 @@ theorem gaussSeidel_spectralRadius_lt_one (A : Matrix n n ℂ) (hA : A.IsStrictD
   have hle : ∀ j, ‖v j‖ ≤ ‖v i‖ := fun j =>
     hi ▸ Finset.le_sup' (fun j => ‖v j‖) (Finset.mem_univ j)
   have hvi : v i ≠ 0 := by
-    contrapose! hvne
+    contrapose hvne
     ext j
     rw [Pi.zero_apply, ← norm_le_zero_iff]
     exact (hle j).trans (norm_le_zero_iff.mpr hvne)
@@ -713,7 +713,7 @@ theorem sorSplitting_spectralRadius_lt_one_of_le_one (A : Matrix n n ℂ)
   have hle : ∀ j, ‖v j‖ ≤ ‖v i‖ := fun j =>
     hi ▸ Finset.le_sup' (fun j => ‖v j‖) (Finset.mem_univ j)
   have hvi : v i ≠ 0 := by
-    contrapose! hvne
+    contrapose hvne
     ext j
     rw [Pi.zero_apply, ← norm_le_zero_iff]
     exact (hle j).trans (norm_le_zero_iff.mpr hvne)

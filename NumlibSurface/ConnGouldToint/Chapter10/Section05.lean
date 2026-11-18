@@ -8,6 +8,7 @@ import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Analysis.Calculus.Deriv.Pow
 import Mathlib.Analysis.Normed.Module.Seminorm.Norm
 
+set_option linter.style.longLine false in
 /-!
 # Conn, Gould and Toint, Section 10.5: Alternative trust-region management
 

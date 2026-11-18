@@ -202,7 +202,8 @@ theorem theorem_14_5_2 [NormedSpace ℝ E] {f : E → ℝ} {c : E → Z} {C : Se
   have hl := hfRay.tendsto_slope_zero_right.add (hcRay.tendsto_slope_zero_right.norm.const_mul σ)
   intro hmin
   have hr := hray.continuousAt.tendsto
-  have hminRay := ((show Tendsto ray (𝓝 0) (𝓝 x) by simpa [ray] using hr).eventually hmin).filter_mono
+  have hminRay :=
+    ((show Tendsto ray (𝓝 0) (𝓝 x) by simpa [ray] using hr).eventually hmin).filter_mono
     (nhdsWithin_le_nhds : 𝓝[>] (0 : ℝ) ≤ 𝓝 0)
   have hupper : ∀ᶠ t : ℝ in 𝓝[>] (0 : ℝ),
       0 ≤ slope (f ∘ ray) 0 t + σ * ‖slope (c ∘ ray) 0 t‖ := by

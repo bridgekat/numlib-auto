@@ -147,8 +147,8 @@ theorem theorem_3_7_4_arnoldi (hv : ‖v‖ = 1) (hn : 0 < n) (hg : n ≤ Krylov
   simp only [Submodule.coe_sum, SetLike.val_smul] at hy
   rw [← hy, inner_sum]
   refine Finset.sum_congr rfl fun i _ => ?_
-  rw [inner_smul_right, mul_comm, hessenbergSq_pow_entry hv hn hg, ← Arnoldi.coe_orthonormalBasis_apply
-    A v hg, ← Submodule.coe_inner, ← V.repr_apply_apply]
+  rw [inner_smul_right, mul_comm, hessenbergSq_pow_entry hv hn hg,
+    ← Arnoldi.coe_orthonormalBasis_apply A v hg, ← Submodule.coe_inner, ← V.repr_apply_apply]
 
 /-- **Theorem 3.7.4, final case** of [liesen2013krylov]. For the unit starting vector as test
 vector the moment of order $n$ is also matched, at the first diagonal entry of $H_n^n$. -/
@@ -184,7 +184,8 @@ polynomials of degree less than $2(m+1)$ when two-sided Lanczos runs without bre
 through step $m+1$. -/
 theorem bilanczos_quadrature {B : E →ₗ[𝕜] E} {w : E} {m : ℕ}
     (h : BiLanczos.NoBreakdown A B v w (m + 1)) {p : 𝕜[X]} (hp : p.natDegree < 2 * (m + 1)) :
-    BiLanczos.moment A v w p = aeval (Krylov.hessenbergSqOf (BiLanczos.coeff A B v w) (m + 1)) p 0 0 := by
+    BiLanczos.moment A v w p =
+      aeval (Krylov.hessenbergSqOf (BiLanczos.coeff A B v w) (m + 1)) p 0 0 := by
   unfold BiLanczos.moment
   rw [aeval_eq_sum_range, aeval_eq_sum_range, LinearMap.sum_apply, inner_sum, Matrix.sum_apply]
   refine Finset.sum_congr rfl fun j hj => ?_

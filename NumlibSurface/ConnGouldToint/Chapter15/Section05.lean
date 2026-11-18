@@ -618,7 +618,8 @@ theorem lemma_15_5_4 (f₀ : ℝ) (g n s : E) (H : E →L[ℝ] E)
     (hn : ‖n‖ ≤ K * Δ ^ (1 + μ))
     (hsmall : (G + (1 / 2) * B * (K * Δ ^ (1 + μ))) * K * Δ ^ μ ≤ κ * ε / 2)
     (hTang : κ * χ * min (χ / (B + 1)) Δ ≤
-      Chapter06.quadraticModel f₀ g H.toLinearMap n - Chapter06.quadraticModel f₀ g H.toLinearMap s) :
+      Chapter06.quadraticModel f₀ g H.toLinearMap n -
+        Chapter06.quadraticModel f₀ g H.toLinearMap s) :
     κ * ε / 2 * Δ ≤ f₀ - Chapter06.quadraticModel f₀ g H.toLinearMap s := by
   let a := K * Δ ^ (1 + μ)
   have ha : 0 ≤ a := mul_nonneg hK (Real.rpow_nonneg hΔ.le _)
@@ -884,7 +885,8 @@ theorem lemma_15_5_10 (θ f n : ℕ → ℝ) (S : Set ℕ) {η κ U l : ℝ}
     apply Metric.tendsto_atTop.mpr
     intro ε hε
     obtain ⟨N, hN⟩ := eventually_atTop.mp
-      ((hdrop.and hstay).and (hdiff.eventually_lt_const (mul_pos (mul_pos hη hκ) (sq_pos_of_pos hε))))
+      ((hdrop.and hstay).and
+        (hdiff.eventually_lt_const (mul_pos (mul_pos hη hκ) (sq_pos_of_pos hε))))
     refine ⟨N, fun k hk => ?_⟩
     have hfind : ∃ j, k ≤ j ∧ j ∈ S := frequently_atTop.mp hS k
     let j := Nat.find hfind
@@ -903,7 +905,8 @@ theorem lemma_15_5_10 (θ f n : ℕ → ℝ) (S : Set ℕ) {η κ U l : ℝ}
     have hh := mul_le_mul_of_nonneg_left (pow_le_pow_left₀ hε.le h 2) (mul_nonneg hη.le hκ.le)
     exact (not_le_of_gt hjN.2) (hh.trans (hjN.1.1 hj.2))
   refine ⟨ht, hnormal ht, ?_⟩
-  have hlim' : Tendsto (fun k => U * θ k) atTop (𝓝 0) := by simpa only [mul_zero] using ht.const_mul U
+  have hlim' : Tendsto (fun k => U * θ k) atTop (𝓝 0) := by
+    simpa only [mul_zero] using ht.const_mul U
   exact squeeze_zero' ((hnormal ht).mono (fun k hk => (mul_nonneg hl.le (hθ k)).trans hk.1))
     ((hnormal ht).mono (fun _ hk => hk.2)) hlim'
 
@@ -982,7 +985,8 @@ theorem lemma_15_5_12 (χ f Δ d normalCost : ℕ → ℝ) (S : Set ℕ)
   have hlim := tendsto_atTop_ciInf hmono hbelow
   have hdiff : Tendsto (fun k => (f k - f (k + 1)) / η + normalCost k) atTop (𝓝 0) := by
     have hh : Tendsto (fun k => f k - f (k + 1)) atTop (𝓝 0) := by
-      simpa only [Function.comp_apply, sub_self] using hlim.sub (hlim.comp (tendsto_add_atTop_nat 1))
+      simpa only [Function.comp_apply, sub_self] using
+        hlim.sub (hlim.comp (tendsto_add_atTop_nat 1))
     simpa only [zero_div, zero_add] using (hh.div_const η).add hcost
   have hfreq (ε : ℝ) (hε : 0 < ε) : ∃ᶠ k in atTop, χ k < ε := by
     by_contra! h
@@ -991,7 +995,8 @@ theorem lemma_15_5_12 (χ f Δ d normalCost : ℕ → ℝ) (S : Set ℕ)
     let a := κ * ε * min (ε / β) b
     have ha : 0 < a := mul_pos (mul_pos hκ hε) (lt_min (div_pos hε hβ) hb)
     have hbad : ∀ᶠ k in atTop, k ∉ S := by
-      filter_upwards [he, hB, hTang, hdrop, hdiff.eventually_lt_const ha] with k hk hbk hTk hdk hdiffk
+      filter_upwards [he, hB, hTang, hdrop, hdiff.eventually_lt_const ha]
+        with k hk hbk hTk hdk hdiffk
       intro hSk
       have hd := (le_div_iff₀ hη).mpr (by simpa only [mul_comm η] using hdk hSk)
       have hmin := min_le_min (div_le_div_of_nonneg_right hk hβ.le) hbk

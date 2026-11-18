@@ -111,7 +111,8 @@ theorem linpackEuclideanDirection_spec {n : ℕ} (hn : 0 < n)
     rfl
   have hnorm : ‖linpackEuclideanDirection y‖ = 1 := by
     unfold linpackEuclideanDirection
-    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (inv_nonneg.mpr hpos.le), inv_mul_cancel₀ hpos.ne']
+    rw [norm_smul, Real.norm_eq_abs, abs_of_nonneg (inv_nonneg.mpr hpos.le),
+      inv_mul_cancel₀ hpos.ne']
   have hunit : (c • y) ⬝ᵥ (c • y) = 1 := by
     rw [← EuclideanSpace.inner_toLp_toLp_real, ← hdir, real_inner_self_eq_norm_sq, hnorm, one_pow]
   refine ⟨hnorm, ?_⟩
@@ -170,7 +171,8 @@ theorem linpackEuclideanCurvature_tendsto {n : ℕ} (hn : 0 < n)
       L k *ᵥ w k = v k ∧ (L k)ᵀ *ᵥ y k = w k ∧
       ∀ i, v k i = linpackSign (v k i - L k i i * w k i)) :
     Tendsto (fun k => ⟪linpackEuclideanDirection (y k),
-      (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M + x k • 1) (linpackEuclideanDirection (y k))⟫) f (𝓝 0) := by
+      (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M + x k • 1) (linpackEuclideanDirection (y k))⟫) f
+        (𝓝 0) := by
   have hcont : Continuous (fun t : ℝ => (M + t • (1 : Matrix (Fin n) (Fin n) ℝ)).det) := by
     fun_prop
   have hlim := hcont.continuousAt.tendsto.comp hx
@@ -277,9 +279,11 @@ theorem moreSorensen_hard_matrix_run {n : ℕ} (hn : 0 < n)
           (∀ (l : ℕ → ℕ) (z : EuclideanSpace ℝ (Fin n)), Tendsto l atTop atTop →
             Tendsto (s ∘ l) atTop (𝓝 z) →
             z ∈ Metric.closedBall 0 Δ ∧
-              IsMinOn (quadModel g (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M)) (Metric.closedBall 0 Δ) z) ∧
+              IsMinOn (quadModel g (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M))
+                (Metric.closedBall 0 Δ) z) ∧
           ((∀ z ∈ Metric.closedBall 0 Δ,
-            IsMinOn (quadModel g (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M)) (Metric.closedBall 0 Δ) z → z = sM) →
+            IsMinOn (quadModel g (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M))
+              (Metric.closedBall 0 Δ) z → z = sM) →
             Tendsto s atTop (𝓝 sM)) := by
   have hb (k : ℕ) : b k ≤ -leftmost hM := by
     rcases le_or_gt (x k) (-leftmost hM) with hk | hk

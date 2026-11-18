@@ -106,7 +106,8 @@ conditions for each iteration $j$:
 Since every trial passes the fraction-to-boundary test, the ratio and the radius rules agree
 with those of Algorithm 13.2.1. The supremum and the infimum are `sSup` and `sInf` on
 $\mathbb{R}$, so they are $0$ for an unbounded or an empty set. -/
-structure SecondPrimalBarrierInnerRun [CompleteSpace E] (P : BTRParams) (C : Set E) (σ : ℝ) (φ : E → ℝ)
+structure SecondPrimalBarrierInnerRun [CompleteSpace E] (P : BTRParams) (C : Set E) (σ : ℝ)
+    (φ : E → ℝ)
     extends PrimalBarrierInnerRun P C σ φ where
   /-- The fraction $\sigma$ of the fraction-to-boundary test lies in $(0, 1)$. -/
   fraction : σ ∈ Ioo (0 : ℝ) 1

@@ -275,7 +275,8 @@ theorem theorem_8_4_3 {P : BTRParams} {f m : E → ℝ} {x s g : E}
     exact herr.trans (by nlinarith only [mul_le_mul_of_nonneg_right hbudget hΔ.le,
       mul_le_mul_of_nonneg_left hpredLower hη])
   have hρ : P.η₂ ≤ btrRatio f m x s := by
-    simpa only [btrRatio, sub_sub_cancel] using Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
+    simpa only [btrRatio, sub_sub_cancel] using
+      Optimization.le_reductionRatio_of_abs_sub_le hpred herr'
   exact ⟨hρ, hupdate.very_successful hρ⟩
 
 /-- **Theorem 8.4.4** of [conn2000trust]. Let a run of Algorithm 6.1.1 for $f$ have models with
@@ -342,7 +343,8 @@ theorem theorem_8_4_4 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
         _ ≤ P.γ₁ * run.Δ k := mul_le_mul_of_nonneg_left hrad.le P.gamma₁_pos.le
         _ ≤ _ := hstep
 
-private theorem summable_of_successful_summable {w Δ : ℕ → ℝ} {S : Set ℕ} [DecidablePred (· ∈ S)] {γ Γ r : ℝ}
+private theorem summable_of_successful_summable {w Δ : ℕ → ℝ} {S : Set ℕ}
+    [DecidablePred (· ∈ S)] {γ Γ r : ℝ}
     (hw : ∀ k, 0 ≤ w k) (hwmono : Antitone w)
     (hΔ : ∀ k, 0 < Δ k) (hγ : 0 < γ) (hγ₁ : γ < 1) (hΓ : 1 ≤ Γ) (hr : 0 < r)
     (hrad : ∀ k, r * w k ≤ Δ k) (hup : ∀ k, Δ (k + 1) ≤ (if k ∈ S then Γ else γ) * Δ k)
@@ -696,7 +698,8 @@ theorem theorem_8_4_7 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
                 (mul_nonneg (hdec k).1.1.le (norm_nonneg _))).trans hmd
             have hdrop : c * min (δ / φ k) (run.Δ k) ≤ F k - F (k + 1) := by
               simpa only [c, mul_assoc] using
-                (mul_le_mul_of_nonneg_left hm P.eta₁_pos.le).trans (run.objective_drop_of_successful hk)
+                (mul_le_mul_of_nonneg_left hm P.eta₁_pos.le).trans
+                  (run.objective_drop_of_successful hk)
             have hrad : run.Δ k ≤ δ / φ k := by
               by_contra! hn'
               rw [min_eq_left hn'.le] at hdrop

@@ -336,7 +336,7 @@ theorem lemma_14_4_1 (run : AugmentedLagrangianRun f c) (hbasic : run.IsBasic)
     obtain ⟨N, hN⟩ := eventually_atTop.mp (hbLim.eventually (gt_mem_nhds hd))
     have hgeo (j : ℕ) : a (r (N + j)) ≤ run.reduction ^ j * a (r N) + ε / 2 := by
       induction j with
-      | zero => simp; positivity
+      | zero => simp only [add_zero, pow_zero, one_mul, le_add_iff_nonneg_right]; positivity
       | succ j ih =>
         have h₁ := hrec (N + j)
         have h₂ := mul_le_mul_of_nonneg_left ih run.reduction_pos.le
@@ -356,7 +356,8 @@ theorem lemma_14_4_1 (run : AugmentedLagrangianRun f c) (hbasic : run.IsBasic)
     obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le (show N ≤ k by omega)
     linarith only [hgeo j, hJ j (by omega)]
   have hmajor : Tendsto (fun i ↦ run.reduction * a (r i) + b i) atTop (𝓝 0) := by
-    simpa only [mul_zero, zero_add, Function.comp_apply] using (hsub.const_mul run.reduction).add hbLim
+    simpa only [mul_zero, zero_add, Function.comp_apply] using
+      (hsub.const_mul run.reduction).add hbLim
   refine Metric.tendsto_atTop.2 fun ε hε ↦ ?_
   obtain ⟨N, hN⟩ := eventually_atTop.mp (hmajor.eventually (gt_mem_nhds hε))
   refine ⟨r N + 1, fun k hk ↦ ?_⟩
@@ -414,7 +415,8 @@ private theorem feasible_of_augmented_run [FiniteDimensional ℝ F]
     (hx : Tendsto (run.iterate ∘ r) atTop (𝓝 xstar))
     (hA : Function.Surjective (fderiv ℝ c xstar))
     (hscaled : (¬ ∀ᶠ k in atTop, ‖c (run.iterate k)‖ ≤ run.feasibilityTolerance k) →
-      Tendsto run.parameter atTop (𝓝 0) → Tendsto (fun k ↦ run.parameter k * ‖run.multiplier k‖) atTop (𝓝 0)) :
+      Tendsto run.parameter atTop (𝓝 0) →
+        Tendsto (fun k ↦ run.parameter k * ‖run.multiplier k‖) atTop (𝓝 0)) :
     c xstar = 0 := by
   have hω := run.optimalityTolerance_tendsto.comp hr
   have hη := run.feasibilityTolerance_tendsto.comp hr
@@ -769,7 +771,8 @@ theorem theorem_14_4_3 [FiniteDimensional ℝ F] (run : AugmentedLagrangianRun f
       (xstar, leastSquaresMultiplier (fderiv ℝ c xstar) (gradient f xstar)))) :
     ∃ μstar > 0, ∀ k, μstar ≤ run.parameter k := by
   let ystar := leastSquaresMultiplier (fderiv ℝ c xstar) (gradient f xstar)
-  let proposal := fun k ↦ firstOrderMultiplier c (run.multiplier k) (run.parameter k) (run.iterate k)
+  let proposal := fun k ↦
+    firstOrderMultiplier c (run.multiplier k) (run.parameter k) (run.iterate k)
   have hA := surjective_of_penaltyKKTJacobian_isUnit hK
   have hprop : Tendsto proposal atTop (𝓝 ystar) :=
     (lemma_14_2_2_ii hf hc (multiplierGram_isUnit_of_surjective hA) hx

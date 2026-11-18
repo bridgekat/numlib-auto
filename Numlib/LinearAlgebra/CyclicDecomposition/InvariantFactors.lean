@@ -33,7 +33,8 @@ private theorem exists_sorted_primaryKrylov [IsAlgClosed K] (A : End K V) :
       (v : ∀ i, Fin (d i) → V),
       Function.Injective μ ∧ (∀ i, Antitone (e i)) ∧ (∀ i j, 0 < e i j) ∧
       (∀ i j, Krylov.minpolyVec A (v i j) = (X - C (μ i)) ^ e i j) ∧
-      DirectSum.IsInternal (fun p : (i : Fin q) × Fin (d i) => Krylov.fullSubspace A (v p.1 p.2)) := by
+      DirectSum.IsInternal
+        (fun p : (i : Fin q) × Fin (d i) => Krylov.fullSubspace A (v p.1 p.2)) := by
   classical
   obtain ⟨q, μ, d, e, b, hinj, -, he, hb⟩ := A.exists_basis_toMatrix_eq_blockDiagonal'_jordanForm
   let τ := Equiv.sigmaAssoc fun (i : Fin q) (j : Fin (d i)) => Fin (e i j)

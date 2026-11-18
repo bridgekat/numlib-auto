@@ -120,7 +120,8 @@ theorem second_fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F}
     rw [fderiv_compositeObjective (hf' _) (hu' _)]
     rfl
   have hc : HasFDerivAt c
-      ((fderiv ℝ (fderiv ℝ f₀) (x, u x)).comp ((ContinuousLinearMap.id ℝ E).prod (fderiv ℝ u x))) x :=
+      ((fderiv ℝ (fderiv ℝ f₀) (x, u x)).comp
+        ((ContinuousLinearMap.id ℝ E).prod (fderiv ℝ u x))) x :=
     (hdF _).hasFDerivAt.comp x ((hasFDerivAt_id x).prodMk (hu' x).hasFDerivAt)
   have hd : HasFDerivAt d
       ((0 : E →L[ℝ] E).prod
@@ -250,7 +251,8 @@ theorem theorem_8_5_2_hessian_agreement {f₀ : E × F → ℝ} {u : E → F}
   let Q := fderiv ℝ (fderiv ℝ u) (x k) - fderiv ℝ (fderiv ℝ (m k)) (x k)
   apply ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg hD (norm_nonneg Q))
   intro v
-  apply ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg (mul_nonneg hD (norm_nonneg Q)) (norm_nonneg _))
+  apply ContinuousLinearMap.opNorm_le_bound _
+    (mul_nonneg (mul_nonneg hD (norm_nonneg Q)) (norm_nonneg _))
   intro w
   simp only [sub_apply, second_fderiv_compositeObjective hf hu,
     second_fderiv_compositeObjective hf (hm k), hval k, hderiv k]
@@ -425,7 +427,8 @@ theorem theorem_8_5_2_lipschitz {f₀ : E × F → ℝ} {u : E → F}
   change _ ≤ K * d
   apply ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg hK (norm_nonneg _))
   intro v
-  apply ContinuousLinearMap.opNorm_le_bound _ (mul_nonneg (mul_nonneg hK (norm_nonneg _)) (norm_nonneg _))
+  apply ContinuousLinearMap.opNorm_le_bound _
+    (mul_nonneg (mul_nonneg hK (norm_nonneg _)) (norm_nonneg _))
   intro w
   let Vx := (v, fderiv ℝ u x v)
   let Vy := (v, fderiv ℝ u y v)

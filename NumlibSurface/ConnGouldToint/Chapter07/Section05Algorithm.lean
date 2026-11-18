@@ -165,7 +165,8 @@ $k$-th trial satisfies $\|s\|_M \le \Delta$.
 
 The dimension is `Krylov.grade` of `hM.energyEnd (Minv ∘ₗ H)` and `hM.toEnergy (Minv g)`, so the
 condition says that trial $k$ comes no later than the first invariant Krylov subspace. -/
-theorem algorithm_7_5_2_feasible [FiniteDimensional ℝ E] {H M Minv : E →ₗ[ℝ] E} (hM : IsPreconditioner M Minv)
+theorem algorithm_7_5_2_feasible [FiniteDimensional ℝ E] {H M Minv : E →ₗ[ℝ] E}
+    (hM : IsPreconditioner M Minv)
     (g : E) (Δ : ℝ) (hΔ : 0 ≤ Δ) (k : ℕ)
     (hk : k + 1 ≤ grade (hM.energyEnd (Minv ∘ₗ H)) (hM.toEnergy (Minv g))) :
     energyNorm M (algorithm_7_5_2 hM (H := H) g Δ hΔ k).1 ≤ Δ := by
@@ -244,7 +245,8 @@ theorem algorithm_7_5_2_reduced_residual [FiniteDimensional ℝ E] {H M Minv : E
     rw [hs] at ha
     exact congrArg (fun w => b + w + μ • z) ha.symm
   simp only [algorithm_7_5_2, ite_eq_right hflag]
-  change ∃ μ : ℝ, 0 ≤ μ ∧ energyNorm Minv (g + H s + μ • M s) = Lanczos.beta A b k * |y (Fin.last k)|
+  change ∃ μ : ℝ, 0 ≤ μ ∧
+    energyNorm Minv (g + H s + μ • M s) = Lanczos.beta A b k * |y (Fin.last k)|
   refine ⟨μ, hμ.nonneg, ?_⟩
   unfold energyNorm
   rw [real_inner_comm, ← hM.norm_toEnergy_inv_sq, Real.sqrt_sq (norm_nonneg _), hres, hr]

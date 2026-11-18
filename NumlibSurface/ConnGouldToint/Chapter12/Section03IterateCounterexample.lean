@@ -177,7 +177,10 @@ private theorem remote_projection (k : ℕ) :
   refine ⟨remote_mem, fun v hv ↦ ?_⟩
   change 0 ≤ v 0 ∧ 0 ≤ v 1 at hv
   change ⟪center k + τ • (-objectiveGradient (center k)) - remote, v - remote⟫ ≤ 0
-  simp [example_inner, center, objectiveGradient, remote, ← show a = amplitude k from rfl]
+  simp only [center, ← show a = amplitude k from rfl, objectiveGradient, Fin.isValue, point_zero,
+    mul_zero, add_zero, point_one, point_two, smul_neg, remote, example_inner, PiLp.sub_apply,
+    PiLp.add_apply, PiLp.neg_apply, PiLp.smul_apply, smul_eq_mul, mul_one, zero_add, sub_zero,
+    neg_mul, sub_neg_eq_add]
   have h₀ : -τ ≤ 0 := by linarith
   have h₁ : a + τ * -(1 + 2 * a) ≤ 0 := by
     nlinarith [mul_nonneg (sub_nonneg.mpr hτ) (show 0 ≤ 1 + 2 * a by dsimp [a]; positivity)]
@@ -573,7 +576,8 @@ theorem theorem_12_3_8_iterate_identification_counterexample :
     2 * ‖(coord 2).smulRight (coord 2)‖, remote, exampleRun,
     ⟨⟨remote, remote_mem⟩, orthant_closed, orthant_convex⟩, hset,
     fun i ↦ (ConstraintExample.contDiff_constraints i).of_le (by simp),
-    objective_contDiff, objective_bddBelow, fun v ↦ ?_, center_tendsto, center_tendsto.isCompact_insert_range,
+    objective_contDiff, objective_bddBelow, fun v ↦ ?_, center_tendsto,
+    center_tendsto.isCompact_insert_range,
     ConstraintExample.independent_active_at_zero, hao, exampleDecreaseConstant_mem,
     remote_mem, ?_, ?_⟩
   · rw [objective_hessian_constant v, objective_hessian_constant (0 : ExampleSpace)]

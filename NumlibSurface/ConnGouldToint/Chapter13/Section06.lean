@@ -165,7 +165,8 @@ private theorem norm_primalDualBarrierDiagonal_le (a : ι → ℝ) :
   refine (norm_sum_le Finset.univ (fun i ↦ a i • barrierCoordinateBilinear i)).trans ?_
   apply Finset.sum_le_sum
   intro i _
-  simpa only [Real.norm_eq_abs] using ContinuousLinearMap.opNorm_smul_le (a i) (barrierCoordinateBilinear i)
+  simpa only [Real.norm_eq_abs] using
+    ContinuousLinearMap.opNorm_smul_le (a i) (barrierCoordinateBilinear i)
 
 private theorem primalDualBarrierModel_eq_quadratic {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     (z : ι → ℝ) (μ : ℝ) (s : ι → ℝ) :
@@ -194,7 +195,8 @@ theorem primalDualBarrierModel_center {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     (z : ι → ℝ) (μ : ℝ) :
     ContDiff ℝ 2 (fun s ↦ primalDualBarrierModel x z s μ) ∧
     primalDualBarrierModel x z 0 μ = logBarrier x μ ∧
-    fderiv ℝ (fun s ↦ primalDualBarrierModel x z s μ) 0 = fderiv ℝ (Optimization.logBarrier μ) x := by
+    fderiv ℝ (fun s ↦ primalDualBarrierModel x z s μ) 0 =
+      fderiv ℝ (Optimization.logBarrier μ) x := by
   refine ⟨?_, by simp [primalDualBarrierModel], ?_⟩
   · simp only [primalDualBarrierModel_eq_quadratic hx]
     fun_prop
@@ -619,7 +621,8 @@ theorem theorem_13_6_3 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     linarith [(abs_le.mp (hres k i)).1, (hstop k).2.1 i]
   · intro i ⟨δ, hδ, hxi⟩
     have he : Tendsto (fun k ↦ barrierCoordinateGradient f (x k) i - z k i) l (𝓝 0) :=
-      squeeze_zero_norm' (Eventually.of_forall fun k ↦ by simpa [Real.norm_eq_abs] using hres k i) hD
+      squeeze_zero_norm'
+        (Eventually.of_forall fun k ↦ by simpa [Real.norm_eq_abs] using hres k i) hD
     simpa only [sub_add_cancel, add_zero] using he.add (hdual i hδ hxi)
   · intro d hd η hη
     have hc : Tendsto (fun k ↦ ∑ i, (z k i / x k i) * d i * d i) l (𝓝 0) := by
@@ -692,7 +695,8 @@ noncomputable def primalDualPredictedMultiplier (μ x z s : ℝ) : ℝ := μ / x
 
 private noncomputable def dualSafeguardLower (l μ y z : ℝ) : ℝ := l * min 1 (min z (μ / y))
 
-private noncomputable def dualSafeguardUpper (u μ y z : ℝ) : ℝ := max u (max z (max (u / μ) (u * (μ / y))))
+private noncomputable def dualSafeguardUpper (u μ y z : ℝ) : ℝ :=
+  max u (max z (max (u / μ) (u * (μ / y))))
 
 /-- **Equations (13.6.17)–(13.6.19)** of [conn2000trust] on a successful iteration. For constants
 $l$ and $u$, a barrier parameter $\mu$, a primal coordinate $x$, its new value $y$, a dual
@@ -1315,12 +1319,14 @@ theorem theorem_13_6_2_unbounded_run_counterexample :
   · have ht : Tendsto (fun j ↦ (x j)⁻¹) atTop (𝓝 0) := by
       have ht := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).comp
         (tendsto_add_atTop_nat 2)
-      simpa [x, Function.comp_def, Nat.cast_add, add_assoc, one_div, show (2 : ℝ) + 1 = 3 by norm_num] using ht
+      simpa [x, Function.comp_def, Nat.cast_add, add_assoc, one_div,
+        show (2 : ℝ) + 1 = 3 by norm_num] using ht
     simpa only [hg, ← inv_pow, zero_pow (by decide : (2 : ℕ) ≠ 0), neg_zero] using (ht.pow 2).neg
   · have ht : Tendsto (fun j ↦ (x j)⁻¹) atTop (𝓝 0) := by
       have ht := (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ)).comp
         (tendsto_add_atTop_nat 2)
-      simpa [x, Function.comp_def, Nat.cast_add, add_assoc, one_div, show (2 : ℝ) + 1 = 3 by norm_num] using ht
+      simpa [x, Function.comp_def, Nat.cast_add, add_assoc, one_div,
+        show (2 : ℝ) + 1 = 3 by norm_num] using ht
     have he (j : ℕ) : z j - (x j)⁻¹ = (x j)⁻¹ := by unfold z; rw [div_eq_mul_inv]; ring
     simpa only [he] using ht
   · intro j
@@ -1336,7 +1342,8 @@ section RejectionExample
 
 open Metric Chapter06
 
-private noncomputable def stalledBump : ContDiffBump (1 : ℝ) := ⟨1 / 4, 1 / 2, by norm_num, by norm_num⟩
+private noncomputable def stalledBump : ContDiffBump (1 : ℝ) :=
+  ⟨1 / 4, 1 / 2, by norm_num, by norm_num⟩
 
 private noncomputable def stalledLocal (x : ℝ) : ℝ := Real.log x + (x - 1) ^ 2 / 4
 
@@ -1405,7 +1412,8 @@ private theorem stalled_hessian_bounded :
     ∃ B : ℝ, ∀ x, |deriv (deriv primalDualStalledObjective) x| ≤ B := by
   have hc : Continuous (deriv (deriv primalDualStalledObjective)) :=
     ((stalled_contDiff.deriv' (n := 1)).deriv' (n := 0)).continuous
-  obtain ⟨B, hB⟩ := (isCompact_closedBall (1 : ℝ) (1 / 2)).exists_bound_of_continuousOn hc.continuousOn
+  obtain ⟨B, hB⟩ :=
+    (isCompact_closedBall (1 : ℝ) (1 / 2)).exists_bound_of_continuousOn hc.continuousOn
   refine ⟨max B 2, fun x ↦ ?_⟩
   by_cases hx : x ∈ closedBall (1 : ℝ) (1 / 2)
   · exact (by simpa only [Real.norm_eq_abs] using hB x hx : _ ≤ B).trans (le_max_left _ _)
@@ -1429,7 +1437,8 @@ private theorem stalled_barrier_bounded (μ : ℝ) (hμ : 0 < μ) :
   have hl := Real.log_le_self hp.le
   by_cases hb : x ∈ closedBall (1 : ℝ) (1 / 2)
   · have hxb : x ≤ 2 := by
-      have h := abs_le.mp (show |x - 1| ≤ (1 / 2 : ℝ) by simpa [mem_closedBall, Real.dist_eq] using hb)
+      have h := abs_le.mp
+        (show |x - 1| ≤ (1 / 2 : ℝ) by simpa [mem_closedBall, Real.dist_eq] using hb)
       linarith [h.2]
     have ha : A ≤ primalDualStalledObjective x := hA ⟨x, hb, rfl⟩
     exact (min_le_left _ _).trans (by linarith [mul_le_mul_of_nonneg_left (hl.trans hxb) hμ.le])
@@ -1564,7 +1573,8 @@ theorem theorem_13_6_4_all_rejected_counterexample :
         (by norm_num : (1 / 2 : ℝ) < 1)).mul_const (1 / 8 : ℝ)
   · intro h
     have he := tendsto_nhds_unique
-      (tendsto_const_nhds : Tendsto (fun _ : ℕ ↦ (1 / 4 : ℝ) - 1 / 1) atTop (𝓝 ((1 / 4 : ℝ) - 1 / 1))) h
+      (tendsto_const_nhds :
+        Tendsto (fun _ : ℕ ↦ (1 / 4 : ℝ) - 1 / 1) atTop (𝓝 ((1 / 4 : ℝ) - 1 / 1))) h
     norm_num at he
 
 end RejectionExample

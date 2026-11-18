@@ -242,7 +242,8 @@ is $\min\{f_{\min}, f(x')\}$. -/
 theorem ReferenceBuffer.step_preserves_bounds {E : Type*} (b : ReferenceBuffer)
     {η : ℝ} (window : ℕ) (f : E → ℝ) (current trial : E) {decrease : ℝ}
     (hη : 0 < η) (hd : 0 < decrease) (hr : f current ≤ b.referenceValue)
-    (hc : f current ≤ b.candidateValue) (hb : b.bestValue ≤ f current) (hsr : 0 ≤ b.referenceDecrease)
+    (hc : f current ≤ b.candidateValue) (hb : b.bestValue ≤ f current)
+    (hsr : 0 ≤ b.referenceDecrease)
     (hsc : 0 ≤ b.candidateDecrease) :
     let next := b.step η window f current trial decrease
     f next.1 ≤ next.2.referenceValue ∧ f next.1 ≤ next.2.candidateValue ∧

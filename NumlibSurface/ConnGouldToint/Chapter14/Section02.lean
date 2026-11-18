@@ -490,7 +490,8 @@ theorem lemma_14_2_2_ii {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f)
   refine ⟨hF, hLS, fun hfeas ↦ ⟨hfeas, ?_⟩⟩
   have hA : ContDiff ℝ 1 A := hc.fderiv_right (by norm_num)
   have hAT : Tendsto (fun k ↦ (A (x k)).adjoint) atTop (𝓝 (A xstar).adjoint) :=
-    ((adjointCLM (G := G) (F := F)).continuous.continuousAt.tendsto.comp hA.continuous.continuousAt.tendsto).comp hx
+    ((adjointCLM (G := G) (F := F)).continuous.continuousAt.tendsto.comp
+      hA.continuous.continuousAt.tendsto).comp hx
   have hg : Tendsto (fun k ↦ g (x k)) atTop (𝓝 (g xstar)) :=
     (contDiff_gradient' hf).continuous.continuousAt.tendsto.comp hx
   have hzero : Tendsto (fun k ↦ g (x k) - (A (x k)).adjoint (yF k)) atTop (𝓝 0) := by

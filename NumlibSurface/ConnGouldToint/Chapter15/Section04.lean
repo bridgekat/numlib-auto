@@ -378,8 +378,10 @@ theorem lemma_15_4_3 [CompleteSpace E] {f : E → ℝ} {c : E → F} {x s : E}
           σ * (‖c (x + s)‖ - sqpNormalModel (c x) (fderiv ℝ c x) s) by ring]
     refine (abs_add_le _ _).trans ?_
     rw [abs_mul, abs_of_nonneg hσ]
-    have h₁ := hobj.trans (mul_le_mul_of_nonneg_right (le_max_left ((Lf + B) / 2) (Lc / 2)) (sq_nonneg ‖s‖))
-    have h₂ := hcon.trans (mul_le_mul_of_nonneg_right (le_max_right ((Lf + B) / 2) (Lc / 2)) (sq_nonneg ‖s‖))
+    have h₁ := hobj.trans
+      (mul_le_mul_of_nonneg_right (le_max_left ((Lf + B) / 2) (Lc / 2)) (sq_nonneg ‖s‖))
+    have h₂ := hcon.trans
+      (mul_le_mul_of_nonneg_right (le_max_right ((Lf + B) / 2) (Lc / 2)) (sq_nonneg ‖s‖))
     nlinarith only [h₁, mul_le_mul_of_nonneg_left h₂ hσ]
   refine ⟨herr, herr.trans ?_⟩
   calc
@@ -838,8 +840,9 @@ private theorem relaxed_progress_frequently_small {u v Δ : ℕ → ℝ} {S : Se
     have hkN := (le_max_right _ _).trans hk
     have hlow : a * min e (b * d) ≤ a * min e (b * Δ k) := mul_le_mul_of_nonneg_left
       (min_le_min le_rfl (mul_le_mul_of_nonneg_left (hfloor k hkN) hb.le)) ha.le
-    exact (not_le_of_gt (hJ k ((le_max_left _ _).trans hk))) (hlow.trans ((hcontrol k ((le_max_left _ _).trans hkN)
-      (hfail k ((le_max_right _ _).trans hkN))).2 h))
+    exact (not_le_of_gt (hJ k ((le_max_left _ _).trans hk)))
+      (hlow.trans ((hcontrol k ((le_max_left _ _).trans hkN)
+        (hfail k ((le_max_right _ _).trans hkN))).2 h))
   have hpow (j : ℕ) : Δ (M + j) ≤ γ₂ ^ j * Δ M := by
     induction j with
     | zero => simp
@@ -928,7 +931,8 @@ private theorem tendsto_zero_of_relaxed_steps {u v Δ : ℕ → ℝ} {S : Set �
   exact (not_lt_of_ge (htel j hj.1 le_rfl)) (hupper.trans hlow)
 
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
-private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ u : ℕ → ℝ)
+private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F) (x s : ℕ → E)
+    (σ d Δ u : ℕ → ℝ)
     (S : Set ℕ) {fmin σmin η η₂ C L γ γ₂ : ℝ}
     (hη : 0 < η) (hη₂' : η₂ < 1) (hC : 0 ≤ C)
     (hL : 0 ≤ L) (hσmin : 0 < σmin) (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
@@ -1009,7 +1013,8 @@ private theorem sqp_tendsto_zero_of_normal_decrease (f : E → ℝ) (c : E → F
       rw [mul_assoc]
       exact (mul_le_mul_of_nonneg_left hd hη.le).trans (hdrop k hS)
   refine tendsto_zero_of_relaxed_steps hγ hγ₂ hγ₂'
-    hu ?_ hΔ hmono hnext (fun k hk => ⟨(hrej k hk).2, hstay k hk⟩) (fun _ _ => ⟨L, hL, 0, fun k _ _ hk => hmove k hk⟩) hcontrol
+    hu ?_ hΔ hmono hnext (fun k hk => ⟨(hrej k hk).2, hstay k hk⟩)
+    (fun _ _ => ⟨L, hL, 0, fun k _ _ hk => hmove k hk⟩) hcontrol
   intro k
   rw [show v k = sqpNormalizedMerit f c fmin (σ k) (x k) from rfl,
     hexpand _ (hσpos k).ne']
@@ -1491,7 +1496,8 @@ theorem lemma_15_4_17 [CompleteSpace E]
   have hdec := isMinOn_iff.mp hC.1 0 hzero
   simp only [sqpNormalModel, map_zero, add_zero] at hdec ⊢
   by_cases hc : c = 0
-  · simp [hc] at hdec ⊢
+  · simp only [hc, zero_add, norm_zero, norm_le_zero_iff, one_div, map_zero, div_zero, mul_zero,
+      zero_div, zero_mul, zero_sub, Left.nonneg_neg_iff] at hdec ⊢
     exact hdec
   have hcp : 0 < ‖c‖ := norm_pos_iff.mpr hc
   by_cases hg : g = 0
@@ -1623,7 +1629,8 @@ theorem sqp_normal_criticality_of_accepted_decrease (f : E → ℝ) (c : E → F
         (div_le_div_of_nonneg_right hk hcmax.le) (div_nonneg hε.le hcmax.le) (by positivity)
     rw [min_comm (ε / β)]
     exact (mul_le_mul hcoeff (min_le_min_left _ (div_le_div_of_nonneg_right hk hβ.le))
-      (le_min (mul_nonneg hξ.le (hΔ k).le) (div_nonneg hε.le hβ.le)) (by positivity)).trans (hpred k)
+      (le_min (mul_nonneg hξ.le (hΔ k).le) (div_nonneg hε.le hβ.le)) (by positivity)).trans
+      (hpred k)
   · intro k hk
     rw [(hrej k hk).1]
 
@@ -1985,7 +1992,8 @@ theorem sqp_secondOrder_correction_progress {P : BTRParams}
     by_cases hn : k ∈ normal
     · have hmin : min (r ^ 2) (Δ k ^ 2) ≤ Δ k := by
         by_cases hd : Δ k ≤ 1
-        · exact (min_le_right _ _).trans (by nlinarith only [mul_nonneg (hΔ k).le (sub_nonneg.mpr hd)])
+        · exact (min_le_right _ _).trans
+            (by nlinarith only [mul_nonneg (hΔ k).le (sub_nonneg.mpr hd)])
         · have hr₁ : r ≤ 1 := (min_le_right _ _).trans (min_le_left _ _)
           have hlarge : 1 ≤ Δ k := le_of_not_ge hd
           have hsq : r ^ 2 ≤ r := by nlinarith only [mul_nonneg hr.le (sub_nonneg.mpr hr₁)]
@@ -2013,7 +2021,7 @@ second-order test, the maximum cluster curvature gives a uniform negative margin
 
 The decrease hypotheses are the small-radius and accepted-step consequences of the two
 correction cases of the algorithm. -/
-theorem theorem_15_4_16 {ι : Type*} [Fintype ι] [Nonempty ι]
+theorem theorem_15_4_16 {ι : Type*} [Finite ι] [Nonempty ι]
     (firstOrder : ι → Prop) (curvLimit : ι → ℝ) (μ v Δ : ℕ → ℝ) (S : Set ℕ)
     {γ γ₂ : ℝ} (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)
     (hfirst : ∀ i, firstOrder i)
@@ -2026,6 +2034,7 @@ theorem theorem_15_4_16 {ι : Type*} [Fintype ι] [Nonempty ι]
       (k ∈ S → a * min (r ^ 2) (Δ k ^ 2) ≤ v k - v (k + 1))) :
     ∃ i, firstOrder i ∧ 0 ≤ curvLimit i := by
   classical
+  have := Fintype.ofFinite ι
   by_contra! hn
   obtain ⟨i, hi, hmax⟩ := Finset.exists_max_image Finset.univ curvLimit Finset.univ_nonempty
   let δ := -(curvLimit i) / 2

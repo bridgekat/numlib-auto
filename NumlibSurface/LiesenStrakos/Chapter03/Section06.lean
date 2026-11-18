@@ -76,7 +76,8 @@ theorem theorem_3_6_1 {μ : Measure ℝ}
     rw [Fin.sum_univ_eq_sum_range (fun j => (orthonormalFamily μ i).coeff j * t ^ j) (n + 1)]
     exact eval_eq_sum_range' (by rw [hdegree]; exact i.isLt) t
   have hInt (i j : Fin (n + 1)) :
-      (B * M * Bᵀ) i j = ∫ t, (orthonormalFamily μ i).eval t * (orthonormalFamily μ j).eval t ∂μ := by
+      (B * M * Bᵀ) i j =
+        ∫ t, (orthonormalFamily μ i).eval t * (orthonormalFamily μ j).eval t ∂μ := by
     have hprod (t : ℝ) :
         (orthonormalFamily μ i).eval t * (orthonormalFamily μ j).eval t =
           ∑ k : Fin (n + 1), ∑ l : Fin (n + 1),

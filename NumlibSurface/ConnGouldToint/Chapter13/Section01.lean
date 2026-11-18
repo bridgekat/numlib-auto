@@ -102,7 +102,8 @@ on the set $C$, every outer iterate $x_k$ lies in the relative interior of $C$.
 
 The case $k = 0$ is a field of the run, and the case $k + 1$ follows from the update
 $x_{k+1} = y_{k,N_k}$. -/
-theorem BarrierOuterRun.interior_iterate {E : Type*} [TopologicalSpace E] [AddCommGroup E] [Module ℝ E]
+theorem BarrierOuterRun.interior_iterate {E : Type*} [TopologicalSpace E] [AddCommGroup E]
+    [Module ℝ E]
     {C : Set E} {φ : E → ℝ → ℝ} {solves : ℝ → (E → ℝ) → (ℕ → E) → ℕ → Prop}
     (r : BarrierOuterRun C φ solves) (k : ℕ) : r.x k ∈ intrinsicInterior ℝ C := by
   cases k with

@@ -680,10 +680,9 @@ private theorem stage_step {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (st : Semis
   simp only [stage, of_apply, Function.update_apply, Fin.ext_iff, Fin.le_def, Fin.lt_def,
     Fin.val_castSucc, Fin.val_succ, Matrix.cons_val', Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.empty_val', Matrix.cons_val_fin_one, Matrix.of_apply]
-  split_ifs <;> first
+  split_ifs <;> try first
     | (exfalso; omega)
     | ring1
-    | skip
   · have hj : j = a.castSucc := Fin.ext (by assumption)
     subst hj
     have hs : s ≠ 0 := left_ne_zero_of_mul hft

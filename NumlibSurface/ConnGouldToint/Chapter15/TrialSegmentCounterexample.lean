@@ -218,7 +218,8 @@ theorem sqp_trialSegment_counterexample :
         |f (run.x k + run.s k) - run.model k (run.x k + run.s k)| := by
   have hd (x : ℝ) (hx : x < 0) : HasFDerivAt segmentObjective
       (-(ContinuousLinearMap.id ℝ ℝ)) x := by
-    refine (ContinuousLinearMap.hasFDerivAt (-(ContinuousLinearMap.id ℝ ℝ))).congr_of_eventuallyEq ?_
+    refine (ContinuousLinearMap.hasFDerivAt (-(ContinuousLinearMap.id ℝ ℝ))).congr_of_eventuallyEq
+      ?_
     filter_upwards [gt_mem_nhds hx] with z hz
     simp [segmentObjective, hz]
   refine ⟨segmentObjective, segmentParams, segmentRun, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩

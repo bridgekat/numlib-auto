@@ -148,7 +148,8 @@ private theorem abs_fischerBurmeister_le (a b : ℝ) :
     |fischerBurmeister a b| ≤ 2 * (|a| + |b|) := by
   have hs : √(a ^ 2 + b ^ 2) ≤ |a| + |b| := by
     apply (Real.sqrt_le_iff).2
-    exact ⟨by positivity, by nlinarith [sq_abs a, sq_abs b, mul_nonneg (abs_nonneg a) (abs_nonneg b)]⟩
+    exact ⟨by positivity,
+      by nlinarith [sq_abs a, sq_abs b, mul_nonneg (abs_nonneg a) (abs_nonneg b)]⟩
   calc
     _ ≤ |√(a ^ 2 + b ^ 2) - a| + |b| := abs_sub _ _
     _ ≤ (√(a ^ 2 + b ^ 2) + |a|) + |b| := by
@@ -196,13 +197,14 @@ noncomputable def complementarityLinearization {ι : Type*} (a b : E → ι → 
 $a, b : E \to \mathbb{R}^\iota$ have differentiable components at $x$, and suppose that
 $(a_i(x), b_i(x)) \neq (0, 0)$ for every $i$. Then the linearization is the derivative of
 $y \mapsto \Phi(a(y), b(y))$ at $x$. -/
-theorem hasFDerivAt_complementarityResidual {ι : Type*} [Fintype ι]
+theorem hasFDerivAt_complementarityResidual {ι : Type*} [Finite ι]
     {a b : E → ι → ℝ} {x : E}
     (ha : ∀ i, DifferentiableAt ℝ (a · i) x) (hb : ∀ i, DifferentiableAt ℝ (b · i) x)
     (h : ∀ i, a x i ≠ 0 ∨ b x i ≠ 0) :
     HasFDerivAt (fun y ↦ complementarityResidual (a y) (b y))
-      (complementarityLinearization a b x) x :=
-  hasFDerivAt_pi.2 fun i ↦
+      (complementarityLinearization a b x) x := by
+  have := Fintype.ofFinite ι
+  exact hasFDerivAt_pi.2 fun i ↦
     hasFDerivAt_fischerBurmeister_of_ne_zero (ha i).hasFDerivAt (hb i).hasFDerivAt (h i)
 
 private theorem hasFDerivAt_half_fischerBurmeister_sq {a b : E → ℝ} {x : E}

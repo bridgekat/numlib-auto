@@ -402,7 +402,8 @@ theorem lemma_15_3_6 (φ f₀ fz : ℝ) (g s u : E) (H : E →L[ℝ] E)
           (mul_le_mul hJac hstep (norm_nonneg _) (mul_nonneg hJ hex))
       _ = _ := by ring
   exact h.trans (by
-    have hp := mul_le_mul_of_nonneg_left hcz (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) ((norm_nonneg y).trans hσ))
+    have hp := mul_le_mul_of_nonneg_left hcz
+      (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) ((norm_nonneg y).trans hσ))
     linarith only [sqp_curvature_error he hstep hB, hp,
       show (T + (1 / 2) * B * D ^ 2 + 2 * σ * (R + J * D)) * (ex ^ 2 * e) =
         T * (ex ^ 2 * e) + (1 / 2) * B * D ^ 2 * (ex ^ 2 * e) +
@@ -636,7 +637,8 @@ theorem theorem_15_3_2_second_order {K : Set Z} (hK : IsClosed K) (h0 : (0 : Z) 
         have hp := lt_of_le_of_ne Metric.infDist_nonneg (Ne.symm hne)
         have hlt := mul_lt_mul_of_pos_right hσ hp
         linarith only [hs, h, hd, hlt]
-      exact ⟨(hK.mem_iff_infDist_zero ⟨0, h0⟩).mpr he, by simpa only [he, mul_zero, add_zero] using hd⟩
+      exact ⟨(hK.mem_iff_infDist_zero ⟨0, h0⟩).mpr he,
+        by simpa only [he, mul_zero, add_zero] using hd⟩
     · rintro ⟨hK', hg⟩
       rw [hg, Metric.infDist_zero_of_mem hK', mul_zero, add_zero]
   constructor

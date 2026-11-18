@@ -454,8 +454,6 @@ theorem algorithm_5_2_1_run_nonempty {fp : RoundingModel ℝ} (hfp : fp.IsTotal)
     simp only [houseOn]
     all_goals repeat' first
       | exact ⟨_, rfl⟩
-      | exact hround _
-      | exact dotAccum_run_nonempty hfp _ _ _ _
       | (apply SetM.run_foldlM_nonempty; intros)
       | (apply SetM.run_bind_nonempty <;> intros)
   | cons p t =>

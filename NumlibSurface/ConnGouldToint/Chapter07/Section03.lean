@@ -794,8 +794,8 @@ theorem moreSorensen_zero_gradient_run {pole Δ θ : ℝ} {lo hi x b : ℕ → �
   have hleft (k : ℕ) (hx : x k ≤ pole) :
       lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
       x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k) := by
-    simpa only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_right (not_lt.mpr hx),
-      Prod.mk.injEq] using hrec k
+    simpa only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy,
+      ite_eq_right (not_lt.mpr hx), Prod.mk.injEq] using hrec k
   have hright (k : ℕ) (hx : pole < x k) :
       lo (k + 1) = max (lo k) (b k) ∧ hi (k + 1) = x k ∧
       x (k + 1) = moreSorensenTrial θ (max (lo k) (b k)) (x k) := by
@@ -831,8 +831,8 @@ theorem moreSorensen_nonzero_bracket_run (hg : g ≠ 0)
   have hleft (k : ℕ) (hx : x k ≤ -leftmost hH) :
       lo (k + 1) = max (max (lo k) (x k)) (b k) ∧ hi (k + 1) = hi k ∧
       x (k + 1) = moreSorensenTrial θ (max (max (lo k) (x k)) (b k)) (hi k) := by
-    simpa only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_right (not_lt.mpr hx),
-      Prod.mk.injEq] using hrec k
+    simpa only [moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy,
+      ite_eq_right (not_lt.mpr hx), Prod.mk.injEq] using hrec k
   let N := moreSorensenNewtonStep g H Δ
   have hfail (k : ℕ) (hx : r < x k) : N (x k) ≤ -leftmost hH := by
     by_contra! hsuccess
@@ -841,14 +841,16 @@ theorem moreSorensen_nonzero_bracket_run (hg : g ≠ 0)
     have hn : x (k + 1) = N (x k) := by
       have he := congrArg (fun t : ℝ × ℝ × ℝ => t.2.2) (hrec k)
       simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left hx',
-        ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx), ite_eq_left hsuccess] using he
+        ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx), ite_eq_left hsuccess]
+        using he
     exact hnever (k + 1) ⟨hn ▸ hsuccess, hn ▸ hc⟩
   have hright (k : ℕ) (hx : r < x k) :
       lo (k + 1) = max (lo k) (max (b k) (N (x k))) ∧ hi (k + 1) = x k ∧
       x (k + 1) = moreSorensenTrial θ (max (lo k) (max (b k) (N (x k)))) (x k) := by
-    simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left (hpr.trans_lt hx),
-      ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_left (hpos _ hx),
-      ite_eq_right (not_lt.mpr (hfail k hx)), Prod.mk.injEq, max_assoc] using hrec k
+    simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy,
+      ite_eq_left (hpr.trans_lt hx), ite_eq_right (norm_ne_zero_iff.mpr hg),
+      ite_eq_left (hpos _ hx), ite_eq_right (not_lt.mpr (hfail k hx)), Prod.mk.injEq, max_assoc]
+      using hrec k
   exact ⟨isBracketRun_of_safeguarded_updates hθ hlo hlr hrh hx0 hpr hb
     (fun k hk => max_le (hb k) (hfail k hk)) hnever hleft hright, hfail⟩
 
@@ -1008,8 +1010,9 @@ theorem moreSorensen_easy_safeguarded_run (hg : g ≠ 0)
       have hs := congrArg (fun t : ℝ × ℝ × ℝ => t.2.2) (hrec (j + k))
       rw [ih] at hs
       have hup : x (j + k + 1) = N (y j) := by
-        simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy, ite_eq_left (hy.1 j).1,
-          ite_eq_right (norm_ne_zero_iff.mpr hg), ite_eq_right (not_lt.mpr (hy.1 j).2)] using hs
+        simpa only [N, moreSorensenSafeguardedStep, moreSorensenSafeguardedStepBy,
+          ite_eq_left (hy.1 j).1, ite_eq_right (norm_ne_zero_iff.mpr hg),
+          ite_eq_right (not_lt.mpr (hy.1 j).2)] using hs
       rw [show j + 1 + k = j + k + 1 by omega, hup]
       exact (Function.iterate_succ_apply' N j (x k)).symm
   have hxlim : Tendsto x atTop (𝓝 r) :=
@@ -1396,7 +1399,8 @@ theorem moreSorensen_boundary_correction_tie {Δ μ : ℝ} {s u : E}
     ∃ α : ℝ, 0 < α ∧ ‖s + α • u‖ = Δ ∧ ‖s - α • u‖ = Δ ∧
       s + α • u ≠ s - α • u ∧ quadModel g H (s + α • u) = quadModel g H (s - α • u) := by
   let α := √(Δ ^ 2 - ‖s‖ ^ 2)
-  have hα : 0 < α := Real.sqrt_pos.2 (sub_pos.mpr (pow_lt_pow_left₀ hraw (norm_nonneg s) two_ne_zero))
+  have hα : 0 < α :=
+    Real.sqrt_pos.2 (sub_pos.mpr (pow_lt_pow_left₀ hraw (norm_nonneg s) two_ne_zero))
   have hp : ‖s + α • u‖ = Δ := by
     simpa [moreSorensenBoundaryCoefficient, hortho, α] using norm_add_boundaryCorrection hraw.le hu
   have hm : ‖s - α • u‖ = Δ := by

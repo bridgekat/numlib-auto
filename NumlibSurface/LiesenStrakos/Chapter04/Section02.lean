@@ -45,7 +45,8 @@ basis comes from `Numlib.LinearAlgebra.Matrix.Jordan`.
   adds grades, multiplies the minimal polynomials, and gives the direct sum of the cyclic spaces.
 * Corollary 4.2.10, `LiesenStrakos.corollary_4_2_10`: the cyclic generators can be ordered by
   reverse divisibility of their minimal polynomials.
-* Lemma 4.2.11, `LiesenStrakos.lemma_4_2_11`: a basis can be chosen entirely from full-grade vectors.
+* Lemma 4.2.11, `LiesenStrakos.lemma_4_2_11`: a basis can be chosen entirely from full-grade
+  vectors.
 * Remark 4.2.12, `LiesenStrakos.remark_4_2_12`: the determinant formula for a full-grade vector.
 * Theorem 4.2.13, `LiesenStrakos.theorem_4_2_13`: the Jordan blocks can be ordered by
   decreasing size.

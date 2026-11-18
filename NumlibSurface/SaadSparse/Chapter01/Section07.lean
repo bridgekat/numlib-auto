@@ -112,7 +112,7 @@ well-ordered index type; the statements of the book below are their instances at
 
 section Aux
 
-variable {ι E : Type*} [LinearOrder ι] [LocallyFiniteOrderBot ι] [WellFoundedLT ι]
+variable {ι E : Type*} [LinearOrder ι] [LocallyFiniteOrderBot ι]
   [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 private theorem inner_gramSchmidt_self (x : ι → E) (j : ι) :

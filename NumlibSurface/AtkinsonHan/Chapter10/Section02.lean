@@ -174,6 +174,7 @@ noncomputable def quadraticShape : Fin 6 → ℝ × ℝ → ℝ :=
     fun p => 4 * refBary 0 p * refBary 2 p,
     fun p => 4 * refBary 1 p * refBary 2 p]
 
+set_option linter.unusedTactic false in
 /-- **Equation (10.2.23)** of [han2009theoretical], the two observations from which the source
 derives (10.2.23). The function $\hat\lambda_i (2 \hat\lambda_i - 1)$ is $1$ at $\hat a_i$ and
 $0$ at the other vertices and at every side mid-point. The function
@@ -242,6 +243,7 @@ noncomputable def cubicShape : Fin 10 → ℝ × ℝ → ℝ :=
 
 set_option maxHeartbeats 1000000 in
 -- the duality is a hundred numeric evaluations, one for each ordered pair of the ten nodes
+set_option linter.unusedTactic false in
 /-- **Exercise 10.2.1** of [han2009theoretical]. The ten cubic shape functions are dual to the ten
 points of $\hat N_3$: $\hat\phi_i(\hat x_j) = \delta_{ij}$. -/
 theorem cubicShape_isNodalBasis : Approximation.IsNodalBasis cubicNode cubicShape where

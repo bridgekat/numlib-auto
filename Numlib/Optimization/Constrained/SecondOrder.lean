@@ -286,6 +286,7 @@ theorem secondOrder_necessary_of_isKKTPoint_of_tangent {f : E → ℝ}
     (hge.mono fun _ hn ↦ div_nonneg (sub_nonneg.mpr hn) (sq_nonneg _))
   linarith
 
+omit [Fintype ι] [Fintype κ] in
 /-- **LICQ implies the tangent qualification.** Let $E$ be finite-dimensional, and let $x$ be a
 regular point of the mixed constraints at which all $h_i$ and $g_j$ are strictly differentiable.
 Let $\mu_j \ge 0$ for all $j$, and let every $j$ with $\mu_j > 0$ be active at $x$. Then the
@@ -295,7 +296,7 @@ $x$.
 The directions are velocities of the feasible arcs of
 `Constrained.exists_contDiff_feasible_arc`. -/
 theorem criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq
-    [FiniteDimensional ℝ E] {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
+    [FiniteDimensional ℝ E] [Finite ι] [Finite κ] {h : ι → E → ℝ} {h' : ι → E → E →L[ℝ] ℝ}
     {g : κ → E → ℝ} {g' : κ → E → E →L[ℝ] ℝ} {x : E} {μ : κ → ℝ}
     (hx : IsRegularPointIneq h h' g g' x)
     (hh : ∀ i, HasStrictFDerivAt (h i) (h' i x) x)
@@ -303,6 +304,8 @@ theorem criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq
     (hμ : ∀ j, 0 ≤ μ j)
     (hactive : ∀ j, 0 < μ j → j ∈ activeSet g x) :
     criticalCone h' g g' x μ ⊆ posTangentConeAt (stronglyActiveFeasible h g μ) x := by
+  have := Fintype.ofFinite ι
+  have := Fintype.ofFinite κ
   intro d hd
   obtain ⟨γ, hγ0, hγ, -, hfeas⟩ := exists_contDiff_feasible_arc hx hh hg hd.1 fun j hj ↦ by
     rcases (hμ j).eq_or_lt with h0 | hp

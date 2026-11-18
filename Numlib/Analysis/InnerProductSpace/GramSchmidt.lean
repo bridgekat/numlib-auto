@@ -78,6 +78,7 @@ open scoped ComplexOrder
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 variable {ι : Type*} [LinearOrder ι] [LocallyFiniteOrderBot ι] [WellFoundedLT ι]
 
+omit [WellFoundedLT ι] in
 /-- Let $(f_i)_{i \in \iota}$ be a family in $E$ and let $J \subseteq \iota$ be a lower set: if
 $j \in J$ and $i \le j$, then $i \in J$. Then the Gram–Schmidt vectors with indices in $J$ span
 the same subspace as the vectors $f_i$ with indices in $J$:
@@ -95,6 +96,7 @@ theorem span_gramSchmidt_of_isLowerSet (f : ι → E) {J : Set ι} (hJ : IsLower
     Submodule.span_iUnion₂]
   exact iSup_congr fun i => iSup_congr fun _ => span_gramSchmidt_Iic 𝕜 f i
 
+omit [WellFoundedLT ι] in
 /-- For every index $j$, the difference $f_j - g_j$ lies in $\operatorname{span}\{f_i : i < j\}$:
 the Gram–Schmidt vector $g_j$ is $f_j$ minus a vector in the span of the earlier vectors. -/
 theorem sub_gramSchmidt_mem_span (f : ι → E) (j : ι) :
@@ -106,6 +108,7 @@ theorem sub_gramSchmidt_mem_span (f : ι → E) (j : ι) :
     exact Submodule.subset_span ⟨i, Finset.mem_Iio.1 hi, rfl⟩
   exact hle (Submodule.starProjection_apply_mem _ (f j))
 
+omit [WellFoundedLT ι] in
 /-- For every index $j$, the Gram–Schmidt vector $g_j$ is orthogonal to
 $\operatorname{span}\{f_i : i < j\}$. -/
 theorem gramSchmidt_mem_orthogonal (f : ι → E) (j : ι) :
@@ -119,6 +122,7 @@ theorem gramSchmidt_mem_orthogonal (f : ι → E) (j : ι) :
     exact gramSchmidt_inv_triangular 𝕜 f hi
   exact hle hu
 
+omit [WellFoundedLT ι] in
 /-- For every index $j$, $\langle g_j, f_j \rangle = \|g_j\|^2$, because $g_j$ is the component of
 $f_j$ orthogonal to the earlier vectors. -/
 theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
@@ -129,6 +133,7 @@ theorem inner_gramSchmidt_self (f : ι → E) (j : ι) :
   refine Finset.sum_eq_zero fun i hi => ?_
   rw [inner_smul_right, gramSchmidt_orthogonal 𝕜 f (Finset.mem_Iio.1 hi).ne', mul_zero]
 
+omit [WellFoundedLT ι] in
 /-- For every index $j$, $\langle e_j, f_j \rangle = \|g_j\|$. In particular this inner product is a
 nonnegative real number. -/
 theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
@@ -139,6 +144,7 @@ theorem inner_gramSchmidtNormed_self (f : ι → E) (j : ι) :
   · simp [h]
   · rw [sq, ← mul_assoc, inv_mul_cancel₀ h, one_mul]
 
+omit [WellFoundedLT ι] in
 /-- Let $(f_j)_{j \in \iota}$ and $(u_j)_{j \in \iota}$ be families in $E$. Suppose that $(u_j)$ is
 orthonormal and that
 $$\operatorname{span}\{u_i : i \le j\} = \operatorname{span}\{f_i : i \le j\} \quad \text{for
@@ -214,6 +220,7 @@ private theorem eq_one_of_norm_eq_one_of_mul_ofReal_pos {w : 𝕜} (hw : ‖w‖
   · rw [RCLike.one_re]; nlinarith
   · rw [RCLike.one_im, him]
 
+omit [WellFoundedLT ι] in
 /-- Let $(f_j)$ and $(u_j)$ be families in $E$ indexed by $\iota$. Suppose that $(u_j)$ is
 orthonormal and that $\operatorname{span}\{u_i : i \le j\} = \operatorname{span}\{f_i : i \le
 j\}$ for every $j$. If $\langle u_j, f_j \rangle > 0$ for an index $j$, then $u_j = e_j$, the
@@ -246,6 +253,7 @@ that vanish contribute nothing.
 
 section Breakdown
 
+omit [WellFoundedLT ι] in
 /-- For all indices $i \ne j$, the normalized Gram–Schmidt vectors satisfy
 $\langle e_i, e_j \rangle = 0$. No hypothesis on $(f_j)$ is needed: a vector $e_i$ that vanishes
 is orthogonal to every vector. -/
@@ -409,6 +417,7 @@ theorem inner_modifiedGramSchmidtSweep_self {q : ℕ → E}
   refine sub_eq_self.2 (Finset.sum_eq_zero fun j hj => ?_)
   rw [inner_smul_right, hq (Finset.mem_range.1 hj).ne', mul_zero]
 
+omit [WellFoundedLT ι] in
 /-- For every index $i$ and every $x \in E$,
 $$\langle e_i, x \rangle e_i = \frac{\langle g_i, x \rangle}{\|g_i\|^2} g_i,$$
 the orthogonal projection of $x$ onto the line spanned by $g_i$. If $g_i = 0$, both sides are

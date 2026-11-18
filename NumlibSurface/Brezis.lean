@@ -59,6 +59,7 @@ import NumlibSurface.Brezis.Chapter11.Section02
 import NumlibSurface.Brezis.Chapter11.Section03
 import NumlibSurface.Brezis.Chapter11.Section04
 
+set_option linter.style.longLine false in
 /-!
 # Brezis, *Functional Analysis, Sobolev Spaces and Partial Differential Equations*
 

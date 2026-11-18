@@ -198,7 +198,8 @@ theorem theorem_4_6_3 [IsAlgClosed 𝕜] (A B : Matrix n n 𝕜) (hB : B.PosDef)
   · intro h
     obtain ⟨p, -, hp, -⟩ := h.2
     have hcomm : Commute (A.weightedAdjoint B) A := hp ▸ (Commute.refl A).aeval_left p
-    obtain ⟨Y, hY, d, he, -⟩ := Matrix.exists_diagonal_similarity_of_commute_weightedAdjoint hB hcomm
+    obtain ⟨Y, hY, d, he, -⟩ :=
+      Matrix.exists_diagonal_similarity_of_commute_weightedAdjoint hB hcomm
     have hdiag := (Matrix.similarityAlgEquiv_apply_eq_iff Y hY A _).1 he
     obtain ⟨hmetric, -, hmin⟩ := h.eigenbasis hY hdiag
     exact ⟨Y, d, hY, hdiag, hmetric, hmin.existsUnique (IsIntegral.of_finite 𝕜 _)⟩
@@ -358,7 +359,8 @@ theorem theorem_4_6_5_one [IsAlgClosed 𝕜] (A : Matrix n n 𝕜) :
     have he := (Matrix.similarityAlgEquiv_apply_eq_iff Y hY A _).2 hdiag
     have hmin : minpoly 𝕜 (Matrix.diagonal d) = minpoly 𝕜 A := by
       rw [← he, minpoly.algEquiv_eq]
-    have hvals : ∃ i j, d i ≠ d j := exists_ne_of_two_le_minpoly_diagonal (by simpa [hmin] using hdeg)
+    have hvals : ∃ i j, d i ≠ d j :=
+      exists_ne_of_two_le_minpoly_diagonal (by simpa [hmin] using hdeg)
     let B := (Y * Yᴴ)⁻¹
     have hYpos : (Y * Yᴴ).PosDef :=
       Matrix.PosDef.mul_conjTranspose_self Y (Matrix.vecMul_injective_iff_isUnit.mpr hY)

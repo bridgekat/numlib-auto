@@ -460,7 +460,7 @@ relative compactness of the iterates supplies it.
 
 The branch with a large normal step and the branch with negative curvature give the sufficient
 decrease. The original or the corrected acceptance ratio decides which trial is accepted. -/
-theorem theorem_15_4_25 {X ι : Type*} [TopologicalSpace X] [Fintype ι] [Nonempty ι]
+theorem theorem_15_4_25 {X ι : Type*} [TopologicalSpace X] [Finite ι] [Nonempty ι]
     {P : BTRParams} (z : ℕ → X) (zstar : ι → X) (curvature : X → ℝ)
     (firstOrder : ι → Prop) (v Δ d dN dT nNorm original corrected : ℕ → ℝ)
     (S normal : Set ℕ) {U : Set X}
@@ -486,11 +486,13 @@ theorem theorem_15_4_25 {X ι : Type*} [TopologicalSpace X] [Fintype ι] [Nonemp
     (hcor : ∀ k ∉ normal, original k / d k < P.η₁ →
       P.η₂ ≤ corrected k / d k → k ∈ S ∧ Δ k ≤ Δ (k + 1)) :
     ∃ i, firstOrder i ∧ 0 ≤ curvature (zstar i) := by
+  have := Fintype.ofFinite ι
   refine theorem_15_4_16 firstOrder (curvature ∘ zstar) (curvature ∘ z) v Δ S
     P.gamma₁_pos (P.gamma₁_pos.le.trans P.gamma₁_le_gamma₂) P.gamma₂_lt_one
     hfirst (sqp_curvature_tail_of_compact z zstar curvature hU hmem hcluster hcont)
     hv hmono hΔ hnext hrej ?_
-  refine sqp_secondOrder_correction_progress (P := P) (curvature ∘ z) v Δ d original corrected S normal
+  refine sqp_secondOrder_correction_progress (P := P) (curvature ∘ z) v Δ d original corrected S
+    normal
     (mul_pos (mul_pos hκ hb) ha) (mul_pos hκ hβ) hC hΔ ?_ ?_
     herror hcorrected hmerit hvery haccepted hcor
   · intro k hk

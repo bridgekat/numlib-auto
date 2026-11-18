@@ -97,8 +97,8 @@ using the normalized initial residual weights for $A$ and the first-coordinate w
 
 **Generalization.** The formula holds through the grade of $r_0$, which may be smaller than the
 ambient dimension. -/
-theorem corollary_5_6_2_spectral [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive)
-    {b x₀ x : E} (hx : A x = b) (hr : b - A x₀ ≠ 0) {N n : ℕ}
+theorem corollary_5_6_2_spectral [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E}
+    (hA : A.IsSymmetricCoercive) {b x₀ x : E} (hx : A x = b) (hr : b - A x₀ ≠ 0) {N n : ℕ}
     (hN : Module.finrank 𝕜 E = N) (hpos : 0 < n) (hn : n ≤ Krylov.grade A (b - A x₀)) :
     let r := b - A x₀
     let ω (i : Fin N) := ‖inner 𝕜 (hA.isSymmetric.eigenvectorBasis hN i) r‖ ^ 2 / ‖r‖ ^ 2

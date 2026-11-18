@@ -12,6 +12,7 @@ import Numlib.Analysis.Normed.Operator.BanachSteinhaus
 import Numlib.Analysis.Normed.Operator.Unbounded.Adjoint
 import Numlib.Analysis.Normed.Operator.Unbounded.Basic
 
+set_option linter.style.longLine false in
 /-!
 # The closed range theorem and the characterization of surjective operators
 

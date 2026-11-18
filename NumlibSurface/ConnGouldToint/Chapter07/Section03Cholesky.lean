@@ -375,7 +375,8 @@ theorem moreSorensenBestBoundaryCoefficient_spec (g : E) (H : E →L[ℝ] E)
     let c := ⟪s, u⟫
     let d := √(Δ ^ 2 - ‖s‖ ^ 2 + c ^ 2)
     have hd : d ^ 2 = Δ ^ 2 - ‖s‖ ^ 2 + c ^ 2 :=
-      Real.sq_sqrt (add_nonneg (sub_nonneg.mpr (pow_le_pow_left₀ (norm_nonneg s) hs 2)) (sq_nonneg _))
+      Real.sq_sqrt
+        (add_nonneg (sub_nonneg.mpr (pow_le_pow_left₀ (norm_nonneg s) hs 2)) (sq_nonneg _))
     have hsq := norm_add_sq_real s (t • u)
     rw [ht, real_inner_smul_right, norm_smul, hu, mul_one, Real.norm_eq_abs, sq_abs] at hsq
     change Δ ^ 2 = ‖s‖ ^ 2 + 2 * (t * c) + t ^ 2 at hsq

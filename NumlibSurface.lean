@@ -533,6 +533,7 @@ import NumlibSurface.SaadSparse.Chapter14.Section05
 import NumlibSurface.SaadSparse.Chapter14.Section06
 import NumlibSurface.SaadSparse.Common
 
+set_option linter.style.longLine false in
 /-!
 # NumlibSurface
 
@@ -546,8 +547,8 @@ library tests the backbone against a published account of its subject.
 
 The backbone and the surface are two separate Lake libraries. A surface library imports the
 backbone, and the backbone imports no surface module. Within a surface library, later chapters use
-the restatements of earlier chapters. This module imports all modules of the surface libraries and adds
-no declaration.
+the restatements of earlier chapters. This module imports all modules of the surface libraries and
+adds no declaration.
 
 ## Contents
 

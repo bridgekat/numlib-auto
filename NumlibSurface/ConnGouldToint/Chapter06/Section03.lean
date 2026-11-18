@@ -240,12 +240,12 @@ theorem theorem_6_3_3 {m : E → ℝ} {x g : E} (p : Seminorm ℝ E)
   have hlow : θ * min (1 / β) (Δ / p g) ≤ t j := by
     cases hji : j with
     | zero =>
-      change _ ≤ t 0
       simp only [t, approximateCauchyTime, pow_zero, one_mul]
       exact (mul_le_mul_of_nonneg_left (min_le_right _ _) hθ.1.le).trans
         (mul_le_of_le_one_left (div_nonneg hΔ.le hpg.le) hθ.2.le)
     | succ i =>
-      have hi : 1 / β < t i := lt_of_not_ge (fun h ↦ hfailed i (hji ▸ Nat.lt_succ_self i) (htcrit i h))
+      have hi : 1 / β < t i :=
+        lt_of_not_ge (fun h ↦ hfailed i (hji ▸ Nat.lt_succ_self i) (htcrit i h))
       rw [show t (i + 1) = θ * t i by simp [t, approximateCauchyTime, pow_succ]; ring]
       exact mul_le_mul_of_nonneg_left ((min_le_left _ _).trans hi.le) hθ.1.le
   have hlength : ‖g‖ * min (1 / β) (Δ / p g) =

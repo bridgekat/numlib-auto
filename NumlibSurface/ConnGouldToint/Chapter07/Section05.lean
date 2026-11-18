@@ -953,7 +953,8 @@ theorem lemma_7_5_7 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ)
   have hc : Continuous F := (continuous_const.inner (continuous_cgPath H g k)).neg
   obtain ⟨t, ht, hmatch⟩ := intermediate_value_Icc hK.le hc.continuousOn
     (show G K ∈ Set.Icc (F 0) (F K) from ⟨by linarith, htop.le⟩)
-  have htK : t < K := lt_of_le_of_ne ht.2 fun he => htop.ne (by rw [he] at hmatch; exact hmatch.symm)
+  have htK : t < K :=
+    lt_of_le_of_ne ht.2 fun he => htop.ne (by rw [he] at hmatch; exact hmatch.symm)
   refine ⟨t, ⟨ht.1, htK⟩, ?_, ?_⟩
   · change -⟪g, (CG.iterate A (-g) 0 (k + 1)).x⟫ = F t
     rw [hmatch]
@@ -1358,7 +1359,6 @@ private theorem cgHessenbergPosDef [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] 
       _ = ⟪H (∑ i : Fin m, y i • Arnoldi.vec H b i), ∑ i : Fin m, x i • Arnoldi.vec H b i⟫ := by
         rw [hH.isSymmetric, real_inner_comm]
       _ = _ := (hinner y x).symm.trans (real_inner_comm _ _)
-
   rw [LinearMap.isCoercive_iff_forall_pos]
   intro x hx
   rw [RCLike.re_to_real, hinner]

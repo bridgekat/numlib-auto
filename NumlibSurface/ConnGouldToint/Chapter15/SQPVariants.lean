@@ -243,7 +243,8 @@ noncomputable def SQPCompositeTrial.penalty (tr : SQPCompositeTrial E F) (P : SQ
   let normal := ‖c tr.x‖ - sqpNormalModel (c tr.x) tr.A tr.n
   let tangential := sqpTangentialModel tr.g tr.H tr.n 0 - sqpTangentialModel tr.g tr.H tr.n tr.t
   let dq := f tr.x - quadraticModel (f tr.x) tr.g tr.H.toLinearMap tr.n
-  let required := if 0 < normal then max tr.penaltyBase (sqpPenaltyThreshold P.ν normal tangential dq)
+  let required := if 0 < normal then
+      max tr.penaltyBase (sqpPenaltyThreshold P.ν normal tangential dq)
     else tr.penaltyBase
   sqpPenaltyUpdate P.τ₁ P.τ₂ required tr.previousPenalty
 

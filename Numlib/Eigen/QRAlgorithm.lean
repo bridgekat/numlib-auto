@@ -170,6 +170,7 @@ vectors, $q^{(k)}_i = 0$. -/
 noncomputable def orthogonalIterate (A : E →ₗ[𝕜] E) (q : ι → E) (k : ℕ) : ι → E :=
   gramSchmidtNormed 𝕜 fun i => (A ^ k) (q i)
 
+omit [WellFoundedLT ι] in
 /-- The orthogonal iterates span the iterated subspaces. Let $A$ be a linear operator on $E$, let
 $(q_i)_{i \in \iota}$ be a family in $E$, and let $k \in \mathbb{N}$ and $m \in \iota$. Then
 $$\operatorname{span}\{q^{(k)}_i : i \le m\} = A^k \operatorname{span}\{q_i : i \le m\},$$
@@ -181,6 +182,7 @@ theorem span_orthogonalIterate (A : E →ₗ[𝕜] E) (q : ι → E) (k : ℕ) (
   simp only [orthogonalIterate, subspaceIterate]
   rw [span_gramSchmidtNormed, span_gramSchmidt_Iic, ← Submodule.span_image, Set.image_image]
 
+omit [WellFoundedLT ι] in
 /-- Let $A$ be a linear operator on $E$, let $(q_i)_{i \in \iota}$ be a family in $E$, and let
 $J \subseteq \iota$ be a lower set. Then for every $k$
 $$\operatorname{span}\{q^{(k)}_i : i \in J\} = A^k \operatorname{span}\{q_i : i \in J\}.$$
@@ -193,6 +195,7 @@ theorem span_orthogonalIterate_of_isLowerSet (A : E →ₗ[𝕜] E) (q : ι → 
   rw [span_gramSchmidtNormed, span_gramSchmidt_of_isLowerSet _ hJ, ← Submodule.span_image,
     Set.image_image]
 
+omit [WellFoundedLT ι] in
 /-- Let $A$ be a linear operator on $E$ and $(q_i)_{i \in \iota}$ a family in $E$. If the family
 $(A^k q_i)_i$ is linearly independent, then the orthogonal iterates $(q^{(k)}_i)_i$ form an
 orthonormal family. -/
@@ -200,6 +203,7 @@ theorem orthonormal_orthogonalIterate {A : E →ₗ[𝕜] E} {q : ι → E} {k :
     (h : LinearIndependent 𝕜 fun i => (A ^ k) (q i)) : Orthonormal 𝕜 (orthogonalIterate A q k) :=
   gramSchmidtNormed_orthonormal h
 
+omit [WellFoundedLT ι] in
 /-- If the family $q$ is orthonormal, then its orthogonal iterate at step $0$ is $q$ itself. -/
 theorem orthogonalIterate_zero {A : E →ₗ[𝕜] E} {q : ι → E} (hq : Orthonormal 𝕜 q) :
     orthogonalIterate A q 0 = q := by

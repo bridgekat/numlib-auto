@@ -247,7 +247,7 @@ $$h(u, v) = \frac{1}{2} \bigl[a (u + v) - |a| (v - u)\bigr].$$
 This is in §13.7.1 of [quarteroni2000numerical]. -/
 theorem upwind_eq_ofFlux (a lam : ℝ) :
     upwind a lam = Stencil.ofFlux lam ((a + |a|) / 2) ((a - |a|) / 2) :=
-  threePoint_congr (by rw [max_zero_eq]; try ring) (by ring)
+  threePoint_congr (by rw [max_zero_eq]) (by ring)
     (by rw [max_neg_zero_eq]; try ring)
 
 /-- Let $\Delta x \neq 0$. The Lax–Friedrichs scheme is the forward Euler/centred scheme with the
@@ -262,7 +262,7 @@ Table 13.1 of [quarteroni2000numerical]. -/
 theorem laxWendroff_eq_artificialViscosity {Δt Δx lam : ℝ} (hΔx : Δx ≠ 0) (hlam : lam = Δt / Δx)
     (a : ℝ) : laxWendroff a lam = artificialViscosity a lam Δx (a ^ 2 * Δt ^ 2) := by
   subst hlam
-  exact threePoint_congr (by field_simp; try ring) (by field_simp; try ring)
+  exact threePoint_congr (by field_simp) (by field_simp)
     (by field_simp; try ring)
 
 /-- Let $\Delta x \neq 0$ and $\lambda = \Delta t / \Delta x$. The upwind scheme is the forward
@@ -271,7 +271,7 @@ Euler/centred scheme with the artificial viscosity $k = |a| \Delta x \Delta t$. 
 theorem upwind_eq_artificialViscosity {Δt Δx lam : ℝ} (hΔx : Δx ≠ 0) (hlam : lam = Δt / Δx)
     (a : ℝ) : upwind a lam = artificialViscosity a lam Δx (|a| * Δx * Δt) := by
   subst hlam
-  exact threePoint_congr (by rw [max_zero_eq]; field_simp; try ring) (by field_simp; try ring)
+  exact threePoint_congr (by rw [max_zero_eq]; field_simp) (by field_simp)
     (by rw [max_neg_zero_eq]; field_simp; try ring)
 
 /-! ### Monotone schemes and the discrete maximum principle -/
@@ -607,7 +607,7 @@ theorem abs_truncationError_upwind_le (hu : ContDiff ℝ 2 u₀)
           rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * |a| by
             rw [abs_mul, abs_div, abs_of_pos hΔt, abs_of_pos hΔx]]
           gcongr
-      _ = (a ^ 2 / 2 * M₂ * Δt + |a| / 2 * M₂ * Δx) * Δt := by field_simp; try ring
+      _ = (a ^ 2 / 2 * M₂ * Δt + |a| / 2 * M₂ * Δx) * Δt := by field_simp
   · subst ha
     have hid : truncationError (upwind 0 (Δt / Δx)) 0 Δt Δx u₀ ξ = 0 := by
       rw [upwind, truncationError_threePoint]
@@ -630,7 +630,7 @@ theorem abs_truncationError_upwind_le (hu : ContDiff ℝ 2 u₀)
           rw [abs_mul, show |Δt / Δx * a| = Δt / Δx * |a| by
             rw [abs_mul, abs_div, abs_of_pos hΔt, abs_of_pos hΔx]]
           gcongr
-      _ = (a ^ 2 / 2 * M₂ * Δt + |a| / 2 * M₂ * Δx) * Δt := by field_simp; try ring
+      _ = (a ^ 2 / 2 * M₂ * Δt + |a| / 2 * M₂ * Δx) * Δt := by field_simp
 
 /-- The **truncation error of the Lax–Wendroff scheme** is $O(\Delta t^2 + \Delta x^2)$; it is the
 only second-order scheme of §13.7 of [quarteroni2000numerical]. Let $u_0$ be $C^4$ with
@@ -1499,7 +1499,6 @@ theorem exactAmplification_eq_phaseAngle {Δt Δx lam : ℝ} (hΔx : Δx ≠ 0) 
   subst hlam
   have hx : (a * (Δt / Δx) * ((k : ℝ) * Δx) : ℝ) = a * (k : ℝ) * Δt := by
     field_simp
-    try ring
   rw [exactAmplification, phaseAngle, hx]
   congr 1
   push_cast

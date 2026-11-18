@@ -1849,7 +1849,7 @@ theorem blockTridiagonal_cholesky (Ad E Gd : Fin p → Matrix (Fin q) (Fin q) �
       (fun a => ext' Gd a) 0 := by
     ext ⟨k, a⟩ ⟨l, c⟩
     simp only [blockLowerBidiag, blockTridiagonal_apply, tridiagonalOf, of_apply, Fin.ext_iff]
-    split_ifs <;> first | (exfalso; omega) | rfl | rw [transpose_apply, hext] | rw [hext]
+    split_ifs <;> first | (exfalso; omega) | rfl | rw [hext]
   rw [hA, hL]
   refine blockTridiagonal_eq_mul_transpose _ _ _ _ (fun i hi => ?_) ?_ (fun i hi => ?_)
   · rw [hext' _ i (by omega), hext' _ i (by omega), hext' _ i (by omega), hF, Matrix.mul_assoc,

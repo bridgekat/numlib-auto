@@ -161,7 +161,8 @@ theorem AffineScalingRun.iterate_positive {f : EuclideanSpace ℝ ι → ℝ} {P
         simpa [trustRegion] using r.run.feasible k
       rw [r.primal_norm] at hstep
       rw [r.run.iterate_update, Optimization.acceptStep_of_le hs]
-      exact affineScaling_trial_positive ih ((hstep.trans (r.radius_le_cap k)).trans_lt r.cap_lt_one)
+      exact affineScaling_trial_positive ih
+        ((hstep.trans (r.radius_le_cap k)).trans_lt r.cap_lt_one)
     · rw [r.run.iterate_eq_of_unsuccessful hs]
       exact ih
 
@@ -286,7 +287,8 @@ theorem theorem_13_11_1_of_uniform_estimates {f : EuclideanSpace ℝ ι → ℝ}
       simpa only [zero_mul] using
         (tendsto_pow_atTop_nhds_zero_of_lt_one hγ.le P.gamma₂_lt_one).mul_const (run.Δ I)
     obtain ⟨j, hj⟩ := (hlim.eventually (gt_mem_nhds ha)).exists
-    exact hj.not_ge ((hrad (I + j) ((le_max_left _ _).trans (Nat.le_add_right _ _))).trans (hshrink j))
+    exact hj.not_ge
+      ((hrad (I + j) ((le_max_left _ _).trans (Nat.le_add_right _ _))).trans (hshrink j))
   rw [Metric.tendsto_atTop]
   intro ε hε
   let e := ε / 2
@@ -458,13 +460,15 @@ theorem theorem_13_11_1 {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     have hw : ‖w‖ ≤ G * ‖x - y‖ := euclidean_norm_le_scaled hG fun i ↦ by
       change |(x - y) i * g y i| ≤ _
       rw [mul_comm, abs_mul]
-      exact mul_le_mul_of_nonneg_right ((euclidean_abs_coordinate_le_norm (g y) i).trans (hgB (k + 1)))
+      exact mul_le_mul_of_nonneg_right
+        ((euclidean_abs_coordinate_le_norm (g y) i).trans (hgB (k + 1)))
         (abs_nonneg _)
     simp only [affineScalingGradientNorm_eq]
     calc
       _ ≤ ‖affineScalingGradientVector x (g x) - affineScalingGradientVector y (g y)‖ :=
         norm_sub_norm_le _ _
-      _ ≤ R * ‖g x - g y‖ + G * ‖x - y‖ := by rw [hsub]; exact (norm_add_le _ _).trans (add_le_add hv hw)
+      _ ≤ R * ‖g x - g y‖ + G * ‖x - y‖ := by
+        rw [hsub]; exact (norm_add_le _ _).trans (add_le_add hv hw)
       _ ≤ (R * L + G) * ‖x - y‖ := by
         have hh := mul_le_mul_of_nonneg_left (hg x y) hR
         nlinarith only [hh]

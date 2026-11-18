@@ -6,6 +6,7 @@ import Mathlib.Basic.Real.ENatENNReal
 import Numlib.Optimization.Complexity.CarmonChain
 import NumlibSurface.CartisGouldToint.Chapter04.Section01
 
+set_option linter.style.longLine false in
 /-!
 # Cartis, Gould and Toint, Section 4.2: A lower complexity bound for finding first-order stationary points
 

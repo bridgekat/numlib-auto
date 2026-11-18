@@ -194,7 +194,9 @@ private theorem gradient_penalty_with_multiplier {f : G → ℝ} {c y : G → F}
   intro d
   rw [inner_gradient_left, hp.fderiv, inner_sub_left, inner_sub_left, inner_gradient_left,
     ContinuousLinearMap.adjoint_inner_left, ContinuousLinearMap.adjoint_inner_left]
-  simp [inner_sub_left, real_inner_smul_left]
+  simp only [add_apply, sub_apply, ContinuousLinearMap.comp_apply, ContinuousLinearMap.prod_apply,
+    fderivInnerCLM_apply, smul_apply, coe_innerSL_apply, nsmul_eq_mul, Nat.cast_ofNat, smul_eq_mul,
+    inner_sub_left, real_inner_smul_left]
   rw [real_inner_comm (c x) ((fderiv ℝ y x) d)]
   ring
 
@@ -258,7 +260,8 @@ theorem fderiv_gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
   have hc' := hc.differentiable (by norm_num)
   have hy' := (hy.differentiableAt (by norm_num)).hasFDerivAt
   have hD : DifferentiableAt ℝ (fun z ↦ (fderiv ℝ y z).adjoint) x :=
-    Adj.differentiableAt.comp x ((hy.fderiv_right (m := 1) (by norm_num)).differentiableAt one_ne_zero)
+    Adj.differentiableAt.comp x
+      ((hy.fderiv_right (m := 1) (by norm_num)).differentiableAt one_ne_zero)
   have heq : gradient (smoothExactPenalty f c σ) =ᶠ[𝓝 x] fun z ↦
       gradient f z - (A z).adjoint (y z - σ • c z) - (fderiv ℝ y z).adjoint (c z) := by
     filter_upwards [hy.eventually (by simp)] with z hz
@@ -349,7 +352,8 @@ theorem smoothExactPenalty_printed_hessian_counterexample :
   linarith
 
 omit [CompleteSpace G] [CompleteSpace F] in
-private theorem hasFDerivAt_apply_of_continuous_at_zero {M : G → F →L[ℝ] G} {c : G → F} {x : G} {A : G →L[ℝ] F}
+private theorem hasFDerivAt_apply_of_continuous_at_zero {M : G → F →L[ℝ] G} {c : G → F} {x : G}
+    {A : G →L[ℝ] F}
     (hM : ContinuousAt M x) (hc : HasFDerivAt c A x) (hx : c x = 0) :
     HasFDerivAt (fun z ↦ M z (c z)) ((M x).comp A) x := by
   have hm : Tendsto (fun z ↦ ‖M z - M x‖) (𝓝 x) (𝓝 0) :=
@@ -364,7 +368,8 @@ private theorem hasFDerivAt_apply_of_continuous_at_zero {M : G → F →L[ℝ] G
     filter_upwards [hp.bound hε] with z hz
     exact ((M z - M x).le_opNorm (c z)).trans (by
       simpa only [Pi.mul_apply, Pi.one_apply, one_mul, Real.norm_eq_abs,
-        abs_of_nonneg (norm_nonneg (z - x)), abs_of_nonneg (mul_nonneg (norm_nonneg _) (norm_nonneg _))] using hz)
+        abs_of_nonneg (norm_nonneg (z - x)),
+        abs_of_nonneg (mul_nonneg (norm_nonneg _) (norm_nonneg _))] using hz)
   have hd : HasFDerivAt (fun z ↦ (M z - M x) (c z)) (0 : G →L[ℝ] G) x := by
     apply hasFDerivAt_iff_isLittleO.mpr
     simpa only [sub_self, zero_apply, sub_zero] using he

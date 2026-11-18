@@ -211,7 +211,6 @@ theorem equation_13_63 (a mu nu : ℝ) (k : ℤ) :
     have him : ((k : ℂ) ^ 2).im = 0 := by
       rw [show ((k : ℂ) ^ 2) = ((k ^ 2 : ℤ) : ℂ) from by push_cast; ring, Complex.intCast_im]
     simp [Complex.add_re, Complex.mul_re, Complex.mul_im, hre, him]
-    try ring
 
 /-- **Equations (13.57)–(13.58)** of [quarteroni2000numerical]. Let $a > 0$, $\Delta t > 0$,
 $\Delta x > 0$ and $\lambda = \Delta t / \Delta x$. Let $v = v(x, t)$ have partial derivatives

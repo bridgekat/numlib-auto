@@ -262,6 +262,7 @@ theorem memLp_swapKernel (hk : MemLp k 2 (μ.prod μ)) :
     MemLp (fun p : X × X => k (p.2, p.1)) 2 (μ.prod μ) :=
   hk.comp_measurePreserving Measure.measurePreserving_swap
 
+omit [SFinite μ] in
 /-- If $k \in L^2(\mu \otimes \mu)$ and $v, w \in L^2(\mu)$, then the function
 $(x, y) \mapsto k(x, y) v(y) w(x)$ is integrable for $\mu \otimes \mu$. This makes the Fubini
 step in `IntegralOperator.adjoint_l2KernelCLM` valid. -/

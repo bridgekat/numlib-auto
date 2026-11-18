@@ -218,7 +218,8 @@ theorem exists_energyNorm_error_eq_monicRitzProduct {a c : ℝ}
     let r := b - A x₀
     let μ := (hA.isSymmetricCoercive ha).isSymmetric.eigenvalues hN
     let θ := (Lanczos.tridiag_isHermitian A r n).eigenvalues
-    let w (i : Fin N) := ‖((hA.isSymmetricCoercive ha).isSymmetric.eigenvectorBasis hN).repr r i‖ ^ 2
+    let w (i : Fin N) :=
+      ‖((hA.isSymmetricCoercive ha).isSymmetric.eigenvectorBasis hN).repr r i‖ ^ 2
     ∃ ξ ∈ Set.Icc a c,
       energyNorm A (x - (iterate A b x₀ n).x) ^ 2 =
         (∑ i, (∏ j, (μ i - θ j) ^ 2) * w i) / ξ ^ (2 * n + 1) := by
