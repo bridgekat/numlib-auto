@@ -39,6 +39,7 @@ import NumlibSurface.BenIsraelGreville.Chapter04.Section06
 import NumlibSurface.BenIsraelGreville.Chapter05.Section02
 import NumlibSurface.BenIsraelGreville.Chapter05.Section03
 import NumlibSurface.BenIsraelGreville.Chapter05.Section04
+import NumlibSurface.BenIsraelGreville.Chapter05.Section05
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -96,6 +97,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §5.2 | `Chapter05.Section02` | Rank-adapted partitions, block solves, and block inverses |
 | §5.3 | `Chapter05.Section03` | Affine intersections and their orthogonal representatives |
 | §5.4 | `Chapter05.Section04` | Common solutions and inverses of stacked matrices |
+| §5.5 | `Chapter05.Section05` | Bordered inverses and least-squares determinants |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions
@@ -124,6 +126,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 * **Chapter 4, Theorem 8** (generalization). The block formula applies to any nonsingular
   and nilpotent diagonal blocks in a similarity decomposition.
 * **Chapter 5, Exercise 6** (typo). The nonsingularity criterion uses $I_r+TS$.
+* **Chapter 5, Theorem 7(b) and Corollary 5** (typos). The kernel basis is given by
+  $V$. The right-hand side is indexed by the rows of $A$.
 * **Chapter 7, Equation (65)** (correction). The equation in the full unitary coordinates
   also imposes consistency. The leading rows in Equation (66) give the criterion for
   least-squares solutions for every right-hand side.
