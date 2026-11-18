@@ -22,344 +22,490 @@ source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "transpose_apply"
-kind = "theorem"
-desc = '''Transposing a matrix exchanges the row and column indices.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "conjTranspose_apply"
-kind = "theorem"
-desc = '''Conjugate-transposing a matrix exchanges the indices and conjugates the entry.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "isHermitian_iff"
-kind = "theorem"
-desc = '''A square complex matrix is Hermitian precisely when it equals its conjugate transpose.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "isSymm_iff"
-kind = "theorem"
-desc = '''A square real matrix is symmetric precisely when it equals its transpose.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "isStarNormal_iff"
-kind = "theorem"
-desc = '''A square complex matrix is normal precisely when it commutes with its conjugate transpose.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "mem_unitary_iff"
-kind = "theorem"
-desc = '''A square complex matrix is unitary precisely when it is invertible and its conjugate transpose is its inverse.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "orthogonal_iff"
-kind = "theorem"
-desc = '''A square real matrix is orthogonal precisely when it is invertible and its transpose is its inverse.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "IsLinear"
-kind = "definition"
-desc = '''A map is linear if it preserves scalar multiples plus an addend in one identity.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.2"
 
 [[node]]
 id = "isLinear_iff_exists_linearMap"
-kind = "theorem"
-desc = '''A map is linear in the sense of the source precisely when it underlies a Lean linear map.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.2"
-deps = ["IsLinear"]
 
 [[node]]
 id = "linearMap_arithmetic"
-kind = "theorem"
-desc = '''The sum and scalar multiple of linear maps act pointwise, the zero map sends every vector to zero, and the identity fixes each vector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.2"
 
 [[node]]
 id = "mem_range_iff_exists"
-kind = "theorem"
-desc = '''A vector is in the range of a linear map exactly when it is the image of some vector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.3"
 
 [[node]]
 id = "mem_fiber_iff"
-kind = "theorem"
-desc = '''A vector is in the inverse image of v precisely if its image is v.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.3"
 
 [[node]]
 id = "mem_ker_iff"
-kind = "theorem"
-desc = '''The null space is the inverse image of zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.3"
 
 [[node]]
 id = "injective_iff_unique_preimage"
-kind = "theorem"
-desc = '''A linear map is injective exactly when every vector in its range has a unique preimage.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.4"
 
 [[node]]
 id = "surjective_iff_range_eq_top"
-kind = "theorem"
-desc = '''A linear map is onto precisely if its range is the whole codomain.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.4"
 
 [[node]]
 id = "bijective_iff_exists_inverse"
-kind = "theorem"
-desc = '''A linear map is bijective exactly when it has a two-sided linear inverse.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.4, Equations (17a)–(17b)"
 
 [[node]]
 id = "existsUnique_matrix_representation"
-kind = "theorem"
-desc = '''For given bases of the domain and codomain, a linear map has a unique representing matrix whose jth column gives the coordinates of the image of the jth domain basis vector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.5, Equations (18)–(19)"
 
 [[node]]
 id = "mem_matrixRange_iff"
-kind = "theorem"
-desc = '''The range of a matrix comprises vectors of the form Ax.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.5, Equation (20a)"
 
 [[node]]
 id = "mem_matrixNullSpace_iff"
-kind = "theorem"
-desc = '''The null space of a matrix comprises vectors sent to zero by A.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.5, Equation (20b)"
 
 [[node]]
 id = "inner_mulVec_eq"
-kind = "theorem"
-desc = '''Moving a matrix from one slot in the standard inner product to the other replaces it by its conjugate transpose.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.6, Equation (21)"
 
 [[node]]
 id = "isHermitian_iff_inner"
-kind = "theorem"
-desc = '''A square complex matrix is Hermitian exactly when it is self-adjoint for the standard inner product.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.6, Equation (22)"
-deps = ["inner_mulVec_eq"]
 
 [[node]]
 id = "isHermitian_iff_inner_diag"
-kind = "theorem"
-desc = '''Over the complex field, equality of the two inner products for all pairs (x,x) implies that the matrix is Hermitian. The printed counterexample has this diagonal equality only on real vectors.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.6 after Equation (22)"
-deps = ["isHermitian_iff_inner"]
 
 [[node]]
 id = "adjoint_unique"
-kind = "theorem"
-desc = '''Between finite-dimensional complex inner product spaces, the adjoint is the unique linear map permitting a change of slot in the inner product.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.7, Equation (23)"
 
 [[node]]
 id = "mem_orthogonal_iff"
-kind = "theorem"
-desc = '''The orthogonal complement of L consists of the vectors orthogonal to each vector of L.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.8, Equation (24)"
 
 [[node]]
 id = "isCompl_orthogonal"
-kind = "theorem"
-desc = '''Every complex coordinate subspace and its orthogonal complement are complementary.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.8, Equation (25)"
 
 [[node]]
 id = "isCompl_of_le_orthogonal_of_sup_eq_top"
-kind = "theorem"
-desc = '''A subspace contained in the orthogonal complement of L has direct sum with L, and the sum is complementary if it spans the ambient space.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.8"
 
 [[node]]
 id = "theorem_1"
-kind = "theorem"
-desc = '''The null space of a matrix and of its adjoint are the orthogonal complements of the ranges of its adjoint and of the original matrix, respectively.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.8, Theorem 1, Equations (26)–(27)"
-deps = ["inner_mulVec_eq"]
 
 [[node]]
 id = "IsMatrixNorm"
-kind = "definition"
-desc = '''A matrix norm is a vector norm on the vector space of matrices.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.9, Conditions (M1)–(M3)"
-deps = ["IsVectorNorm"]
 
 [[node]]
 id = "IsMultiplicativeMatrixNorm"
-kind = "definition"
-desc = '''A family of matrix norms is multiplicative if the norm of every compatible matrix product is at most the product of the two norms.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.9, Condition (M4)"
-deps = ["IsMatrixNorm"]
 
 [[node]]
 id = "hasEigenvector_iff_mulVec_eq"
-kind = "theorem"
-desc = '''A nonzero vector is an eigenvector for λ precisely when Ax = λx.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.10, Equation (28)"
 
 [[node]]
 id = "spectrum_eq_setOf_hasEigenvalue"
-kind = "theorem"
-desc = '''The spectrum of a square complex matrix is the set of scalars admitting a nonzero eigenvector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.10"
 
 [[node]]
 id = "mem_eigenspace_iff_mulVec_eq"
-kind = "theorem"
-desc = '''The eigenspace at λ consists of all vectors satisfying Ax = λx.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.10, Equation (29)"
 
 [[node]]
 id = "geometricMultiplicity"
-kind = "definition"
-desc = '''The geometric multiplicity of an eigenvalue is the dimension of its eigenspace.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.10"
 
 [[node]]
 id = "hermitian_eigenvalue_real"
-kind = "theorem"
-desc = '''Every complex eigenvalue of a Hermitian matrix is real.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.11(a)"
 
 [[node]]
 id = "hermitian_eigenvectors_orthogonal"
-kind = "theorem"
-desc = '''Eigenvectors of a Hermitian matrix for distinct eigenvalues are orthogonal.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.11(b)"
 
 [[node]]
 id = "hermitian_exists_orthonormal_eigenbasis"
-kind = "theorem"
-desc = '''Every Hermitian matrix has an orthonormal basis of eigenvectors.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.11(c)"
 
 [[node]]
 id = "hermitian_rayleigh_recursion"
-kind = "theorem"
-desc = '''For an orthonormal eigenbasis ordered by decreasing eigenvalues, the jth eigenvalue is the maximum of the quadratic form on unit vectors orthogonal to the earlier basis vectors, attained by the jth vector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.11(d)"
 
 [[node]]
 id = "posSemidef_iff_inner"
-kind = "theorem"
-desc = '''A Hermitian matrix is positive semidefinite exactly when its quadratic form is nonnegative on every vector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.12"
 
 [[node]]
 id = "posSemidef_iff_eigenvalues_nonneg"
-kind = "theorem"
-desc = '''A Hermitian matrix is positive semidefinite exactly when all its eigenvalues are nonnegative.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.12"
 
 [[node]]
 id = "posDef_iff_inner"
-kind = "theorem"
-desc = '''A Hermitian matrix is positive definite exactly when its quadratic form is positive on every nonzero vector.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.12"
 
 [[node]]
 id = "posDef_iff_eigenvalues_pos"
-kind = "theorem"
-desc = '''A Hermitian matrix is positive definite exactly when all its eigenvalues are positive.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.12"
 
 [[node]]
 id = "singularValues"
-kind = "definition"
-desc = '''The r positive singular values are the square roots of the positive eigenvalues of AAᴴ, indexed with multiplicity in descending order.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.13, Equations (30)–(32)"
 
 [[node]]
 id = "singularValues_eq_sqrt_eigenvalues_gram"
-kind = "theorem"
-desc = '''The positive singular values are equally the descending positive square roots of the eigenvalues of AᴴA.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.13, Equation (31b)"
-deps = ["singularValues"]
 
 [[node]]
 id = "singularValues_antitone_pos"
-kind = "theorem"
-desc = '''The r positive singular values decrease weakly and are all strictly positive.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.13, Equation (32)"
-deps = ["singularValues"]
 
 [[node]]
 id = "gram_eigenbasis_of_adjoint_gram"
-kind = "theorem"
-desc = '''Taking vᵢ = σᵢ⁻¹ Aᴴuᵢ from an orthonormal eigenbasis u of AAᴴ and adjoining an orthonormal complement yields an eigenbasis of AᴴA with matching positive eigenvalues and all remaining eigenvalues zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.14, Equations (33)–(35)"
-deps = ["singularValues"]
 
 [[node]]
 id = "adjoint_gram_eigenbasis_of_gram"
-kind = "theorem"
-desc = '''Taking uᵢ = σᵢ⁻¹Avᵢ from an orthonormal eigenbasis v of AᴴA and adjoining an orthonormal complement yields an eigenbasis of AAᴴ.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.14, Equation (36)"
-deps = ["singularValues"]
 
 [[node]]
 id = "isSVD"
-kind = "definition"
-desc = '''A singular value decomposition consists of unitary U,V and the rectangular diagonal matrix of singular values Σ such that A=UΣVᴴ.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.15, Equations (37)–(38)"
-deps = ["singularValues"]
 
 [[node]]
 id = "mul_right_eq_left_mul_diagonal_iff_svd"
-kind = "theorem"
-desc = '''For unitary U and V, A=UΣVᴴ is equivalent to AV=UΣ.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.15, Equations (37)–(38)"
 
 [[node]]
 id = "isSimilar_iff"
-kind = "theorem"
-desc = '''Two square matrices are similar if one is the conjugate of the other by an invertible matrix.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 19"
 
 [[node]]
 id = "equivalentMatrices"
-kind = "definition"
-desc = '''Rectangular matrices of the same size are equivalent if an invertible matrix acts on each side to carry one to the other.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 25"
 
 [[node]]
 id = "areConsistentNorms"
-kind = "definition"
-desc = '''A vector norm and a matrix norm are consistent if the norm of Ax never exceeds the product of the matrix norm of A and the vector norm of x.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 35"
-deps = ["IsMatrixNorm"]
 
 [[node]]
 id = "isUnitarilyInvariantNorm"
-kind = "definition"
-desc = '''A matrix norm is unitary invariant if multiplying on the left and right by unitary matrices leaves its value fixed.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 40"
-deps = ["IsMatrixNorm"]
 
 [[node]]
 id = "spectralRadius"
-kind = "definition"
-desc = '''The matrix spectral radius is the largest modulus of a complex eigenvalue.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 41"
 
 [[node]]
 id = "isConvergent"
-kind = "definition"
-desc = '''A square matrix is convergent when its powers tend to zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 45"
 
 [[node]]
 id = "isConvergent_iff_spectralRadius_lt_one"
-kind = "theorem"
-desc = '''The powers tend to zero precisely if the spectral radius is less than one.'''
 source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 45"
-deps = ["isConvergent", "spectralRadius"]
+
+[[node]]
+id = "adjoint_gram_eigenvalues_ordered"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (30)"
+
+[[node]]
+id = "singularValues_eq_sqrt_eigenvalues_adjoint_gram"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (31a)"
+
+[[node]]
+id = "exists_singularValueDecomposition"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equations (37)–(38)"
+
+[[node]]
+id = "inf_orthogonal_ne_bot_of_finrank_lt"
+kind = "theorem"
+desc = '''If the dimension of L strictly exceeds that of M, then L intersects the orthogonal complement of M nontrivially.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 12"
+
+[[node]]
+id = "exists_thin_qr_factorization_of_gramSchmidt"
+kind = "theorem"
+desc = '''The Gram–Schmidt basis that retains the nonzero residuals gives a thin QR factorization with full-row-rank upper trapezoidal R. Complete the orthonormal basis with vectors spanning the adjoint kernel.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 13, Equation (39)"
+
+[[node]]
+id = "exists_qr_factorization"
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 13, Equation (40)"
+
+[[node]]
+id = "range_ker_submodule"
+kind = "theorem"
+desc = '''The range and null space of a linear transformation are vector subspaces. Record how the bundled objects realize the unbundled sets.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 14"
+
+[[node]]
+id = "polynomialDegreeSpace_basis"
+kind = "theorem"
+desc = '''The space of real polynomials of degree at most n has basis 1, X, …, X^n and dimension n+1.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 15(a)–(b), Equation (41)"
+
+[[node]]
+id = "polynomialDerivative_toMatrix"
+kind = "theorem"
+desc = '''The derivative maps degree at most n+1 onto degree at most n, has kernel the constant polynomials, and has superdiagonal 1,…,n+1 in monomial bases.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 15(b)"
+
+[[node]]
+id = "polynomialIntegral_toMatrix"
+kind = "theorem"
+desc = '''Integration with zero constant maps degree at most n injectively to degree at most n+1 with image the polynomials with zero constant. Its subdiagonal coefficients are the reciprocals of 1,…,n+1.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 15(c)"
+
+[[node]]
+id = "polynomialDerivative_integral_compositions"
+kind = "theorem"
+desc = '''In monomial coordinates the derivative after integration is the identity, and integration after the derivative removes the constant coefficient.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 15(d)"
+
+[[node]]
+id = "toMatrix_orthonormalBasis_apply"
+kind = "theorem"
+desc = '''A matrix entry in orthonormal coordinates is the inner product of the corresponding output basis vector and transformed input basis vector.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 16(a)"
+
+[[node]]
+id = "adjoint_toMatrix_orthonormalBasis"
+kind = "theorem"
+desc = '''The adjoint in reversed orthonormal bases is represented by the conjugate transpose.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 16(b)"
+
+[[node]]
+id = "exists_orthonormalBasis_toMatrix_rectDiagonal"
+kind = "theorem"
+desc = '''A linear map has orthonormal bases in which its matrix is rectangular real diagonal with the positive singular values followed by zeros. The printed matrix shape reverses rows and columns.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 17, Equation (42)"
+
+[[node]]
+id = "existsUnique_changeOfBasis"
+kind = "theorem"
+desc = '''There is a unique invertible coordinate matrix expressing one basis in another, and its inverse expresses the reverse change.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 18, Equations (43)–(45)"
+
+[[node]]
+id = "isSimilar_iff_toMatrix"
+kind = "theorem"
+desc = '''Two complex matrices are similar precisely when they represent the same endomorphism in suitable bases. Unitary similarity is the specialization to a unitary change matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 19, Equation (46)"
+
+[[node]]
+id = "exists_unitary_upperTriangular"
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 20"
+
+[[node]]
+id = "exists_similar_upperTriangular_sum_norm_offDiag_le"
+kind = "theorem"
+desc = '''By scaling a triangular Schur form diagonally, make the sum of absolute off-diagonal entries arbitrarily small.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 21"
+
+[[node]]
+id = "isStarNormal_iff_unitary_diagonal"
+kind = "theorem"
+desc = '''A complex matrix is normal precisely when it is unitarily similar to a diagonal matrix. Reuse Chapter 2 §7 for the forward direction.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 22(a)"
+
+[[node]]
+id = "isHermitian_iff_unitary_real_diagonal"
+kind = "theorem"
+desc = '''A complex matrix is Hermitian precisely when it is unitarily similar to a real diagonal matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 22(b)"
+
+[[node]]
+id = "exists_not_realTriangularizable"
+kind = "theorem"
+desc = '''For every size at least two a real matrix with a planar rotation block is not similar over ℝ to a triangular matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 23"
+
+[[node]]
+id = "toMatrix_changeOfBases"
+kind = "theorem"
+desc = '''Input and output changes of bases give the representing matrix S⁻¹AT.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 24, Equation (48)"
+
+[[node]]
+id = "equivalentMatrices_iff_toMatrix"
+kind = "theorem"
+desc = '''Two rectangular matrices are equivalent precisely when they represent the same linear map in suitable pairs of bases. The unitary specialization describes equivalence in orthonormal bases.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 25, Equation (49)"
+
+[[node]]
+id = "toMatrix_comp"
+kind = "theorem"
+desc = '''Composition of linear maps gives multiplication of matrices in matching bases.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 26"
+
+[[node]]
+id = "toMatrix_id"
+kind = "theorem"
+desc = '''The identity transformation in the same input and output basis is represented by the identity matrix.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 27"
+
+[[node]]
+id = "toMatrix_inverse"
+kind = "theorem"
+desc = '''The matrix of a linear equivalence in two bases is inverse to the matrix of its inverse map with those bases swapped.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 28"
+
+[[node]]
+id = "rotation_geometricMultiplicity"
+kind = "theorem"
+desc = '''The displayed 2 by 2 rotation has eigenvalue i and a one-dimensional eigenspace over ℂ, spanned by (1,i). It has no nonzero real eigenvector. Correct the printed multiplicity.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 29"
+
+[[node]]
+id = "intrinsic_matrixProperties"
+kind = "theorem"
+desc = '''Prove invariance of eigenvalues, geometric multiplicities, and rank under the appropriate basis changes. Relate transported eigenspaces and kernels and give a basis change that alters the sum of squared absolute entries.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 30"
+
+[[node]]
+id = "polynomial_partialSum_basis"
+kind = "theorem"
+desc = '''Build the partial sums of monomials as a basis by a triangular change of coordinates and apply the change-of-basis formula to differentiation and integration. Include the constant polynomial as the first partial sum.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 31"
+
+[[node]]
+id = "projection_isLinear"
+kind = "theorem"
+desc = '''Projection to a subspace along a complementary subspace is linear, with the decomposition obtained from the direct sum.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 32"
+
+[[node]]
+id = "projection_idempotent"
+kind = "theorem"
+desc = '''Projection to a subspace fixes every vector in that subspace and is idempotent.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 33"
+
+[[node]]
+id = "frobenius_norm_eq_sqrt_trace"
+kind = "theorem"
+desc = '''The Frobenius norm is the square root of trace AᴴA and is submultiplicative.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 34, Equation (50)"
+
+[[node]]
+id = "entryMaxNorm"
+kind = "definition"
+desc = '''The largest absolute entry defines a matrix norm and fails submultiplicativity in general.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 34, Equation (51)"
+
+[[node]]
+id = "inducedMatrixNorm"
+kind = "definition"
+desc = '''For an arbitrary vector norm the supremum of the norm ratio defines a submultiplicative matrix norm and is the least consistent norm.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 35, Equations (53)–(54)"
+
+[[node]]
+id = "inducedMatrixNorm_eq_max"
+kind = "theorem"
+desc = '''The unit ball and unit sphere yield the same attained maximum of the image norm. Omit the printed denominator on the unit ball, where the printed quotient is undefined at zero.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 36, Equation (55)"
+
+[[node]]
+id = "exists_consistentVectorNorm"
+kind = "theorem"
+desc = '''A submultiplicative matrix norm admits a consistent vector norm by applying it to matrices with one fixed nonzero column.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 37"
+
+[[node]]
+id = "inducedLpMatrixNorm"
+kind = "theorem"
+desc = '''The induced p-norm is the maximal image norm on the p-unit sphere. Specialize at 1, ∞, and 2 to largest column sum, largest row sum, and largest singular value.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 38, Equations (56)–(56.2)"
+
+[[node]]
+id = "consistentMatrixNorm_one"
+kind = "theorem"
+desc = '''Any consistent matrix norm assigns the identity at least one, and an induced norm gives exactly one in positive dimension.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 39, Equation (57)"
+
+[[node]]
+id = "frobenius_opNorm_unitarilyInvariant"
+kind = "theorem"
+desc = '''The Frobenius norm and the operator 2-norm are unitarily invariant.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 40"
+
+[[node]]
+id = "spectralRadius_eq_max"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (58)"
+
+[[node]]
+id = "spectralRadius_le_matrixNorm"
+kind = "theorem"
+desc = '''Every submultiplicative matrix norm bounds the spectral radius.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (59)"
+
+[[node]]
+id = "exists_matrixNorm_le_spectralRadius_add"
+kind = "theorem"
+desc = '''Conjugating by the diagonal rescaling in the approximate triangular diagonalization yields a submultiplicative matrix norm arbitrarily close to the spectral radius.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 42"
+
+[[node]]
+id = "spectralRadius_pow"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (60)"
+
+[[node]]
+id = "opNorm_eq_sqrt_gram_spectralRadius"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (61)"
+
+[[node]]
+id = "opNorm_eq_spectralRadius_of_isHermitian"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (62)"
+
+[[node]]
+id = "summable_pow_iff_isConvergent"
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 46, Equation (65)"
+
+[[node]]
+id = "hasSum_pow_inv_one_sub"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (65)"
+
+[[node]]
+id = "hasSum_alternating_pow_inv_one_add"
+source = "Ben-Israel and Greville, Chapter 0 §2, Equation (66)"
+
+[[node]]
+id = "isConvergent_iff_exists_stein_posDef"
+kind = "theorem"
+desc = '''The powers of A tend to zero precisely when there is a positive definite H for which H-AᴴHA is positive definite. Construct H by the convergent sum of adjoint powers times powers.'''
+source = "Ben-Israel and Greville, Chapter 0 §2, Ex. 48"

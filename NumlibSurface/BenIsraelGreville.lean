@@ -54,7 +54,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 |---|---|---|
 | Introduction | `Introduction` | Ordinary and generalized inverses, solution of linear systems |
 | §0.1 | `Chapter00.Section01` | Scalars and vectors |
-| §0.2 | `Chapter00.Section02` | Ordered submatrices and rectangular triangularity |
+| §0.2 | `Chapter00.Section02` | Matrix representations, adjoints, spectra, and singular values |
 | §0.3 | `Chapter00.Section03` | Elementary operations and permutations |
 | §0.4 | `Chapter00.Section04` | Hermite blocks, bases, and full-rank factorization |
 | §0.5 | `Chapter00.Section05` | Determinants, Gram matrices, Schur complements, and volume |
@@ -94,6 +94,9 @@ solutions, group and Drazin inverses, and reduced normal equations.
 
 ## Deviations from the source
 
+* **Chapter 0, §2.6** (correction). The diagonal inner product identity for all complex
+  vectors implies that the matrix is Hermitian.
+* **Chapter 0, Equation (30)** (typo). The spectrum of $AA^H$ is indexed by the rows of $A$.
 * **Chapter 0, Equation (87)** (typo). Cauchy–Binet selects columns of the left factor
   and rows of the right factor.
 * **Chapter 1, Exercise 9** (typo). The kernel equality concerns $XA$ and $A$.
