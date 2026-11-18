@@ -66,6 +66,7 @@ import NumlibSurface.BenIsraelGreville.Chapter08.Section09
 import NumlibSurface.BenIsraelGreville.Chapter08.Section10
 import NumlibSurface.BenIsraelGreville.Chapter09.Section02
 import NumlibSurface.BenIsraelGreville.Chapter09.Section03
+import NumlibSurface.BenIsraelGreville.Chapter09.Section08
 
 /-!
 # Ben-Israel and Greville, *Generalized Inverses: Theory and Applications*
@@ -149,6 +150,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §8.10 | `Chapter08.Section10` | Image densities, spherical coordinates, and Gaussian examples |
 | §9.2 | `Chapter09.Section02` | Partial Hilbert-space operators, adjoints, and closed range |
 | §9.3 | `Chapter09.Section03` | Tseng, Moore–Penrose, and Erdélyi inverses of Hilbert operators |
+| §9.8 | `Chapter09.Section08` | Frames, synthesis, reconstruction, and optimal bounds |
 
 ## Conventions
 

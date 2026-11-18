@@ -1,43 +1,105 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-desc = '''Frame synthesis and analysis on the Mathlib lp space. Establish the equivalence via the adjoint lower bound of a surjective synthesis operator, reusing the closed-range maximal inverse construction. Use the inner product linear in its analysis-vector argument.'''
+[[node]]
+id = "IsSequenceBasis"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (103), coordinate expansions"
 
 [[node]]
-id = "IsFrame"
-kind = "definition"
-desc = '''The sum of squared coefficient norms is bounded above and below by positive multiples of the squared vector norm for every vector, with summability included to avoid the totalized tsum convention.'''
-source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6(a), (104)"
+id = "IsUnconditionalSequenceBasis"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (103), unconditional basis"
+
+[[node]]
+id = "frameCoefficient"
+source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6, analysis coefficient"
+
+[[node]]
+id = "frameCoefficientEnergy"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (104), coefficient energy"
 
 [[node]]
 id = "IsBesselSequence"
-kind = "definition"
-desc = '''The squared coefficient series is summable and obeys a uniform upper bound by B times the squared norm, with B positive.'''
-source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6(b), (104)"
+source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6(b), Equation (104)"
+
+[[node]]
+id = "IsFrame"
+source = "Ben-Israel and Greville, Ch. 9, §8, Definition 6(a), Equation (104)"
+
+[[node]]
+id = "frameAnalysis"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (106), analysis operator"
+
+[[node]]
+id = "frameAnalysis_apply"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (106), analysis coordinates"
+
+[[node]]
+id = "norm_sq_frameAnalysis"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equations (104) and (106), analysis norm"
+
+[[node]]
+id = "frameSynthesis"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (105), synthesis operator"
+
+[[node]]
+id = "frameSynthesis_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (106), adjoint of synthesis"
+
+[[node]]
+id = "hasSum_frameSynthesis"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (105), unconditional synthesis series"
 
 [[node]]
 id = "bessel_iff_synthesis"
-kind = "theorem"
-desc = '''The Bessel property is equivalent to the series ∑ cₙfₙ converging for every square-summable coefficient sequence. The synthesis map is bounded with adjoint equal to the analysis coefficient map.'''
-source = "Ben-Israel and Greville, Ch. 9, §8, (105)–(106)"
-deps = ["IsBesselSequence"]
+source = "Ben-Israel and Greville, Ch. 9, §8, Equations (105)–(106), Bessel characterization"
 
 [[node]]
 id = "frameOperator"
-kind = "definition"
-desc = '''For a Bessel sequence with synthesis T, the frame operator S is TT* and acts by unconditional synthesis of the analysis coefficients.'''
-source = "Ben-Israel and Greville, Ch. 9, §8, (107)"
-deps = ["bessel_iff_synthesis"]
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (107), frame operator"
+
+[[node]]
+id = "hasSum_frameOperator"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (107), frame operator series"
+
+[[node]]
+id = "frameOperator_re_inner"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equations (104) and (107), quadratic form"
+
+[[node]]
+id = "frameOperator_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (107), self-adjointness"
+
+[[node]]
+id = "exists_frameOperator_equiv"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equations (107)–(108), frame operator isomorphism"
 
 [[node]]
 id = "frame_reconstruction"
-kind = "theorem"
-desc = '''For a frame, its frame operator is a bounded positive isomorphism and each f is the unconditional sum of the frame vectors times the analysis coefficients against S⁻¹fₙ.'''
-source = "Ben-Israel and Greville, Ch. 9, §8, (108)"
-deps = ["IsFrame", "frameOperator"]
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (108), dual-frame expansion"
 
 [[node]]
 id = "theorem_12"
-kind = "theorem"
-desc = '''A sequence is a frame iff synthesis series define a surjective map from ℓ². A lower frame bound for a nontrivial Hilbert space is 1/‖T†‖²=1/‖S⁻¹‖, which is optimal. In the trivial Hilbert space any positive bound works.'''
-source = "Ben-Israel and Greville, Ch. 9, §8, Theorem 12, (105), (109)–(110)"
-deps = ["IsFrame", "bessel_iff_synthesis", "frameOperator", "maximalTsengInverse"]
+source = "Ben-Israel and Greville, Ch. 9, §8, Theorem 12, surjective synthesis"
+
+[[node]]
+id = "frameSynthesis_surjective"
+source = "Ben-Israel and Greville, Ch. 9, §8, Theorem 12, synthesis surjectivity"
+
+[[node]]
+id = "frame_coefficients_unique_iff"
+source = "Ben-Israel and Greville, Ch. 9, §8, Following Equation (108), uniqueness of coefficients"
+
+[[node]]
+id = "frameSynthesisInverse"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (109), bounded Moore–Penrose synthesis inverse"
+
+[[node]]
+id = "frame_reconstruction_pinv"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (109), Moore–Penrose reconstruction"
+
+[[node]]
+id = "frameOperator_inverse_norm"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (110), equality of inverse norms"
+
+[[node]]
+id = "frame_optimal_lower_bound"
+source = "Ben-Israel and Greville, Ch. 9, §8, Equation (110), optimal positive lower bound on a nontrivial space"
