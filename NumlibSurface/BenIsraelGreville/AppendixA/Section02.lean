@@ -2,6 +2,9 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import NumlibSurface.BenIsraelGreville.Chapter01.Section06
+import NumlibSurface.BenIsraelGreville.Chapter03.Section05
+import Mathlib.Order.Hom.PowersetCard
 import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 
@@ -129,15 +132,8 @@ def mooreReciprocal_range_equiv : columnSpace Aᴴ ≃ₗ[ℂ] columnSpace A whe
 
 /-- The reciprocal commutes with transposition, so the same correspondence
 can be written using row vectors without changing scalars. -/
-theorem pinv_transpose : Aᵀ.pinv = A.pinvᵀ := by
-  symm
-  apply Aᵀ.pinv_unique
-  · rw [← transpose_mul, ← transpose_mul, ← Matrix.mul_assoc, A.mul_pinv_mul_self]
-  · rw [← transpose_mul, ← transpose_mul, ← Matrix.mul_assoc, A.pinv_mul_self_mul_pinv]
-  · rw [← transpose_mul, IsHermitian,
-      conjTranspose_transpose_eq_transpose_conjTranspose, A.isHermitian_pinv_mul.eq]
-  · rw [← transpose_mul, IsHermitian,
-      conjTranspose_transpose_eq_transpose_conjTranspose, A.isHermitian_mul_pinv.eq]
+theorem pinv_transpose : Aᵀ.pinv = A.pinvᵀ :=
+  Chapter01.pinv_transpose A
 
 /-- In row coordinates Moore's correspondence is right multiplication by
 the matrix, with right multiplication by the reciprocal as its inverse. -/
@@ -265,5 +261,237 @@ theorem mooreReciprocal_minorSums_square {d : ℕ} (B : Matrix (Fin (d + 1)) (Fi
   rw [pinv_eq_inv hB, Matrix.inv_def, Ring.inverse_eq_inv', Matrix.smul_apply, smul_eq_mul,
     Matrix.adjugate_fin_succ_eq_det_submatrix, hdet, star_mul, star_pow, star_neg, star_one]
   field_simp
+
+end BenIsraelGreville.AppendixA
+
+namespace BenIsraelGreville.AppendixA
+
+section OrderedComplement
+
+open Matrix Chapter03
+
+variable {d : ℕ} {s : Type*} [Fintype s] [LinearOrder s]
+
+private def eraseSelectedIndex (i : s) (I : {I : Fin (d + 1) ↪o s // i ∈ Set.range I}) :
+    Fin d ↪o s :=
+  (Fin.succAboveOrderEmb I.prop.choose).trans I.val
+
+omit [Fintype s] in
+private theorem range_eraseSelectedIndex (i : s)
+    (I : {I : Fin (d + 1) ↪o s // i ∈ Set.range I}) :
+    Set.range (eraseSelectedIndex i I) = Set.range I.val \ {i} := by
+  ext x
+  constructor
+  · rintro ⟨a, rfl⟩
+    refine ⟨⟨I.prop.choose.succAbove a, rfl⟩, ?_⟩
+    intro h
+    have he : I.val (I.prop.choose.succAbove a) = i := h
+    exact I.prop.choose.succAbove_ne a (I.val.injective (he.trans I.prop.choose_spec.symm))
+  · rintro ⟨⟨a, rfl⟩, h⟩
+    have hne : a ≠ I.prop.choose := by
+      intro he
+      exact h ((congrArg I.val he).trans I.prop.choose_spec)
+    obtain ⟨b, hb⟩ := Fin.exists_succAbove_eq hne
+    exact ⟨b, congrArg I.val hb⟩
+
+omit [Fintype s] in
+private theorem orderEmbedding_eq_of_range_eq {q : ℕ} {I J : Fin q ↪o s}
+    (h : Set.range I = Set.range J) : I = J := by
+  apply Set.powersetCard.ofFinEmbEquiv.injective
+  ext x
+  change x ∈ Set.powersetCard.ofFinEmbEquiv I ↔ x ∈ Set.powersetCard.ofFinEmbEquiv J
+  simp only [Set.powersetCard.mem_ofFinEmbEquiv_iff_mem_range, h]
+
+private def eraseSelectedIndexEquiv (i : s) :
+    {I : Fin (d + 1) ↪o s // i ∈ Set.range I} ≃ {I : Fin d ↪o s // i ∉ Set.range I} :=
+  Equiv.ofBijective
+    (fun I => ⟨eraseSelectedIndex i I, by rw [range_eraseSelectedIndex]; simp⟩) (by
+      constructor
+      · intro I J h
+        apply Subtype.ext
+        apply orderEmbedding_eq_of_range_eq
+        have he := congrArg (fun K : {K : Fin d ↪o s // i ∉ Set.range K} => Set.range K.val) h
+        change Set.range (eraseSelectedIndex i I) = Set.range (eraseSelectedIndex i J) at he
+        rw [range_eraseSelectedIndex, range_eraseSelectedIndex] at he
+        ext x
+        by_cases hi : x = i
+        · subst x
+          exact iff_of_true I.prop J.prop
+        · have hp : x ∉ ({i} : Set s) := hi
+          have hx := Set.ext_iff.mp he x
+          simpa only [Set.mem_sdiff, hp, not_false_eq_true, and_true] using hx
+      · intro I
+        let S := Finset.univ.image I.val
+        have hnot : i ∉ S := by
+          intro hi
+          obtain ⟨j, _, hj⟩ := Finset.mem_image.mp hi
+          exact I.prop ⟨j, hj⟩
+        have hcard : (insert i S).card = d + 1 := by
+          rw [Finset.card_insert_of_notMem hnot, Finset.card_image_of_injective _ I.val.injective,
+            Finset.card_univ, Fintype.card_fin]
+        let J := (insert i S).orderEmbOfFin hcard
+        have hJ : Set.range J = ↑(insert i S) := Finset.range_orderEmbOfFin _ _
+        have hmem : i ∈ Set.range J := by
+          rw [hJ]
+          exact Finset.mem_insert_self _ _
+        refine ⟨⟨J, hmem⟩, Subtype.ext (orderEmbedding_eq_of_range_eq ?_)⟩
+        rw [range_eraseSelectedIndex, hJ]
+        ext x
+        simp only [Finset.coe_insert, Set.mem_sdiff, Set.mem_insert_iff, Set.mem_singleton_iff]
+        have hx : x ∈ (S : Set s) ↔ x ∈ Set.range I.val := by
+          simp [S, Set.mem_range]
+        rw [hx]
+        constructor
+        · exact fun h => h.1.resolve_left h.2
+        · intro h
+          exact ⟨Or.inr h, fun he => I.prop (he ▸ h)⟩)
+
+omit [Fintype s] in
+private theorem cons_eraseSelectedIndex (i : s)
+    (I : {I : Fin (d + 1) ↪o s // i ∈ Set.range I}) :
+    Fin.cons i (eraseSelectedIndex i I) = I.val ∘ I.prop.choose.cycleRange.symm := by
+  funext j
+  refine Fin.cases ?_ (fun k => ?_) j
+  · simp only [Fin.cons_zero, Function.comp_apply, Fin.cycleRange_symm_zero]
+    exact I.prop.choose_spec.symm
+  · simp only [Fin.cons_succ, Function.comp_apply, Fin.cycleRange_symm_succ]
+    rfl
+
+private theorem sum_over_subtype_of_zero {ι : Type*} [Fintype ι] {R : Type*} [AddCommMonoid R]
+    (P : ι → Prop) [DecidablePred P] (f : ι → R) (h : ∀ i, ¬ P i → f i = 0) :
+    ∑ i, f i = ∑ i : {i // P i}, f i := by
+  rw [← Fintype.sum_subtype_add_sum_subtype P f,
+    (Finset.sum_eq_zero fun i _ => h i.val i.prop : (∑ i : {i // ¬ P i}, f i) = 0), add_zero]
+
+private theorem doubleSum_over_subtypes_of_zero
+    {ι κ R : Type*} [Fintype ι] [Fintype κ] [AddCommMonoid R]
+    (P : ι → Prop) [DecidablePred P] (Q : κ → Prop) [DecidablePred Q]
+    (f : ι → κ → R) (h : ∀ i j, ¬ P i ∨ ¬ Q j → f i j = 0) :
+    (∑ i, ∑ j, f i j) = ∑ i : {i // P i}, ∑ j : {j // Q j}, f i j := by
+  rw [sum_over_subtype_of_zero P (fun i => ∑ j, f i j)
+    (fun i hi => Finset.sum_eq_zero fun j _ => h i j (Or.inl hi))]
+  exact Finset.sum_congr rfl fun i _ =>
+    sum_over_subtype_of_zero Q (f i) (fun j hj => h i j (Or.inr hj))
+
+variable {m n : Type*} [Fintype m] [Fintype n] [LinearOrder m] [LinearOrder n]
+
+omit [Fintype m] [Fintype n] in
+private theorem prepended_minor_eq_signed_det
+    (A : Matrix m n ℂ) (i : m) (j : n)
+    (I : {I : Fin (d + 1) ↪o m // i ∈ Set.range I})
+    (J : {J : Fin (d + 1) ↪o n // j ∈ Set.range J}) :
+    (A.submatrix (Fin.cons i (eraseSelectedIndex i I)) (Fin.cons j (eraseSelectedIndex j J))).det =
+      (-1 : ℂ) ^ (I.prop.choose.val + J.prop.choose.val) * (A.submatrix I.val J.val).det := by
+  let M := A.submatrix I.val J.val
+  let p := I.prop.choose
+  let q := J.prop.choose
+  rw [cons_eraseSelectedIndex, cons_eraseSelectedIndex]
+  change (M.submatrix p.cycleRange.symm q.cycleRange.symm).det = _
+  rw [← show (M.submatrix p.cycleRange.symm id).submatrix id q.cycleRange.symm =
+      M.submatrix p.cycleRange.symm q.cycleRange.symm by simp only [submatrix_submatrix,
+        Function.id_comp, Function.comp_id], det_permute', det_permute]
+  simp [p, q, M, Fin.sign_cycleRange, pow_add, mul_left_comm, mul_assoc]
+
+omit [Fintype m] [Fintype n] in
+private theorem padded_inv_weight_eq_complement_term
+    (A : Matrix m n ℂ) (i : m) (j : n)
+    (I : {I : Fin (d + 1) ↪o m // i ∈ Set.range I})
+    (J : {J : Fin (d + 1) ↪o n // j ∈ Set.range J}) :
+    ((‖(A.submatrix I.val J.val).det‖ ^ 2 : ℝ) : ℂ) * basicInverse A I.val J.val j i =
+      (A.submatrix (eraseSelectedIndex i I) (eraseSelectedIndex j J)).det *
+        star (A.submatrix (Fin.cons i (eraseSelectedIndex i I))
+          (Fin.cons j (eraseSelectedIndex j J))).det := by
+  let M := A.submatrix I.val J.val
+  let p := I.prop.choose
+  let q := J.prop.choose
+  have hb : basicInverse A I.val J.val j i = M⁻¹ q p := calc
+    basicInverse A I.val J.val j i = basicInverse A I.val J.val (J.val q) (I.val p) :=
+      congrArg₂ (basicInverse A I.val J.val) J.prop.choose_spec.symm I.prop.choose_spec.symm
+    _ = _ := basicInverse_apply_selected A I.val.toEmbedding J.val.toEmbedding p q
+  have hcomp : A.submatrix (eraseSelectedIndex i I) (eraseSelectedIndex j J) =
+      M.submatrix p.succAbove q.succAbove := rfl
+  have hcast (z : ℂ) : ((‖z‖ ^ 2 : ℝ) : ℂ) = star z * z := by
+    rw [← Complex.normSq_eq_norm_sq, Complex.normSq_eq_conj_mul_self]
+    rfl
+  rw [hb, hcomp, prepended_minor_eq_signed_det, hcast]
+  change star M.det * M.det * M⁻¹ q p = _ * star ((-1 : ℂ) ^ (p.val + q.val) * M.det)
+  simp only [star_mul, star_pow, star_neg, star_one]
+  by_cases hM : M.det = 0
+  · simp [hM]
+  rw [Matrix.inv_def, Ring.inverse_eq_inv', Matrix.smul_apply, smul_eq_mul,
+    Matrix.adjugate_fin_succ_eq_det_submatrix]
+  field_simp
+
+/-- The general maximal-minor formula of [benIsrael2003generalized],
+Appendix A, §2. The rows and columns in the smaller minor are increasing.
+The indicated row and column are prepended in the conjugated determinant. -/
+theorem mooreReciprocal_eq_minorSums (A : Matrix m n ℂ) (hr : A.rank = d + 1)
+    (i : m) (j : n) :
+    A.pinv j i =
+      (∑ I : Fin d ↪o m, ∑ J : Fin d ↪o n, (A.submatrix I J).det *
+        star (A.submatrix (Fin.cons i I) (Fin.cons j J)).det) /
+        (minorWeightSum A (d + 1) : ℂ) := by
+  classical
+  let w := minorWeightSum A (d + 1)
+  have hw : w ≠ 0 := by
+    intro hz
+    have h := (maximalMinorWeight_convex A hr).2
+    simp [maximalMinorWeight, show minorWeightSum A (d + 1) = 0 from hz] at h
+  have hw' : (w : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hw
+  let f (I : Fin (d + 1) ↪o m) (J : Fin (d + 1) ↪o n) :=
+    ((‖(A.submatrix I J).det‖ ^ 2 : ℝ) : ℂ) * basicInverse A I J j i
+  let g (I : Fin d ↪o m) (J : Fin d ↪o n) :=
+    (A.submatrix I J).det * star (A.submatrix (Fin.cons i I) (Fin.cons j J)).det
+  apply (eq_div_iff hw').mpr
+  have h := congrArg (fun X : Matrix n m ℂ => X j i) (pinv_eq_sum_basicInverses A hr)
+  simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul] at h
+  calc
+    A.pinv j i * (w : ℂ) = ∑ I, ∑ J, f I J := by
+      rw [h, Finset.sum_mul]
+      apply Finset.sum_congr rfl
+      intro I _
+      rw [Finset.sum_mul]
+      apply Finset.sum_congr rfl
+      intro J _
+      let t := ((‖(A.submatrix I J).det‖ ^ 2 : ℝ) : ℂ)
+      have hc : (RCLike.ofReal (maximalMinorWeight A I J) : ℂ) = t / (w : ℂ) := by
+        rw [RCLike.ofReal_eq_complex_ofReal]
+        exact Complex.ofReal_div _ _
+      calc
+        _ = (t / (w : ℂ)) * basicInverse A I J j i * (w : ℂ) :=
+          congrArg (fun a : ℂ => a * basicInverse A I J j i * (w : ℂ)) hc
+        _ = f I J := by
+          change (t / (w : ℂ)) * basicInverse A I J j i * (w : ℂ) =
+            t * basicInverse A I J j i
+          field_simp
+    _ = ∑ I : {I : Fin (d + 1) ↪o m // i ∈ Set.range I},
+          ∑ J : {J : Fin (d + 1) ↪o n // j ∈ Set.range J}, f I J := by
+      apply doubleSum_over_subtypes_of_zero
+      intro I J hmiss
+      simp only [f, basicInverse_apply_eq_zero A I J i j hmiss, mul_zero]
+    _ = ∑ I : {I : Fin d ↪o m // i ∉ Set.range I},
+          ∑ J : {J : Fin d ↪o n // j ∉ Set.range J}, g I J := by
+      rw [← (eraseSelectedIndexEquiv i).sum_comp]
+      apply Finset.sum_congr rfl
+      intro I _
+      rw [← (eraseSelectedIndexEquiv j).sum_comp]
+      exact Finset.sum_congr rfl fun J _ => padded_inv_weight_eq_complement_term A i j I J
+    _ = ∑ I, ∑ J, g I J := by
+      symm
+      apply doubleSum_over_subtypes_of_zero
+      intro I J hmiss
+      have hz : (A.submatrix (Fin.cons i I) (Fin.cons j J)).det = 0 := by
+        rcases hmiss with hI | hJ
+        · obtain ⟨a, ha⟩ := not_not.mp hI
+          apply Matrix.det_zero_of_row_eq (Fin.succ_ne_zero a)
+          funext q
+          simp [ha]
+        · obtain ⟨b, hb⟩ := not_not.mp hJ
+          apply Matrix.det_zero_of_column_eq (Fin.succ_ne_zero b)
+          intro p
+          simp [hb]
+      simp [g, hz]
+
+end OrderedComplement
 
 end BenIsraelGreville.AppendixA

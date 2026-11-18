@@ -1,22 +1,56 @@
-namespace = 'BenIsraelGreville.Chapter03'
-desc = 'Minors of the pseudoinverse.'
+namespace = "BenIsraelGreville.Chapter03"
 
 [[node]]
-id = 'theorem_8'
-kind = 'theorem'
-desc = '''For k between 1 and r, the (β,α) minor of A† is zero if no maximal nonsingular minor contains (α,β), otherwise it is the sum of det(A[I,J]) times the complementary signed minor of A[I,J] divided by vol(A)².'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 8'
+id = "replaceSelectedColumns"
+source = "Ben-Israel and Greville, Ch. 3, §6, (109), selected standard columns"
 
 [[node]]
-id = 'theorem_9'
-kind = 'theorem'
-desc = '''Each k-minor of A† is the average of the corresponding minors of the zero-extended basic inverse matrices, with the same weights as the matrix formula.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 9'
-deps = ['theorem_8']
+id = "det_replaceSelectedColumns"
+source = "Ben-Israel and Greville, Ch. 3, §6, (110a), column-replacement determinant form of the Jacobi identity"
 
 [[node]]
-id = 'theorem_10'
-kind = 'theorem'
-desc = '''The real rank-r matrix A for r>0 has a convex decomposition into matrices supported on its maximal nonsingular minors, and the same decomposition weights average each k-minor for 1≤k≤r.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 10'
-deps = ['theorem_9']
+id = "pivotComplementaryDet"
+source = "Ben-Israel and Greville, Ch. 3, §6, (109), complementary determinant in a maximal pivot"
+
+[[node]]
+id = "basicInverse_submatrix_det_eq_zero_of_not_subset"
+source = "Ben-Israel and Greville, Ch. 3, §6, (112), support of a basic inverse minor"
+
+[[node]]
+id = "theorem_8"
+source = "Ben-Israel and Greville, Ch. 3, §6, Theorem 8 and (111), cofactor formula and zero case"
+
+[[node]]
+id = "theorem_9"
+source = "Ben-Israel and Greville, Ch. 3, §6, Theorem 9 and (112), weighted average of each minor"
+
+[[node]]
+id = "maximalMinorWeight_pinv"
+source = "Ben-Israel and Greville, Ch. 3, §6, (113), reciprocal invariance of the weights"
+
+[[node]]
+id = "theorem_10"
+source = "Ben-Israel and Greville, Ch. 3, §6, Theorem 10 and (114)–(115), common convex decomposition"
+
+[[node]]
+id = "exercise_3_47"
+source = "Ben-Israel and Greville, Ch. 3, §6, Exercise 47, the two marginal representations"
+
+[[node]]
+id = "exercise_3_47_restricted"
+source = "Ben-Israel and Greville, Ch. 3, §6, Exercise 47, restrict each marginal sum to containing selections"
+
+[[node]]
+id = "exercise_3_47_zero"
+source = "Ben-Israel and Greville, Ch. 3, §6, Exercise 47, vanishing when a supporting selection is absent"
+
+[[node]]
+id = "jacobi_complementary_sign"
+kind = "theorem"
+desc = '''For increasing index selections α and β of equal size in a square matrix, identify det A[β ← Iα] with the deleted-row-and-column determinant multiplied by (−1) raised to the sum of the selected indices. The equivalent column-replacement ratio (110a) and its use in Theorem 8 are formalized.'''
+source = "Ben-Israel and Greville, Ch. 3, §6, (107)–(109), explicit complementary sign"
+deps = ["replaceSelectedColumns"]
+
+[[node]]
+id = "det_replaceSelectedColumns_gram"
+source = "Ben-Israel and Greville, Ch. 3, §6, (110b), Gram-normalized Jacobi formula"

@@ -1,6 +1,5 @@
 namespace = "BenIsraelGreville.AppendixA"
 
-
 [[node]]
 id = "IsMooreReciprocal"
 source = "Ben-Israel and Greville, Appendix A, §2, conditions (1)–(3), historical definition"
@@ -31,10 +30,7 @@ source = "Ben-Israel and Greville, Appendix A, §2, maximal-minor formula specia
 
 [[node]]
 id = "mooreReciprocal_eq_minorSums"
-kind = "theorem"
-desc = '''For A of rank r ≥ 2, prove the stated entry formula for an arbitrary complex m × n matrix, including rectangular and rank-deficient square matrices. The denominator sums the squared moduli of all r × r minors over increasing row and column selections. The numerator sums each complementary (r−1) × (r−1) minor times the conjugate determinant of the r × r minor with row i and column j prepended. Repeated indices in a prepended selection contribute zero. The rank-zero, rank-one, and nonsingular square cases are formalized.'''
-source = "Ben-Israel and Greville, Appendix A, §2, general maximal-minor formula for rank at least two"
-deps = ["existsUnique_mooreReciprocal"]
+source = "Ben-Israel and Greville, Appendix A, §2, general maximal-minor formula for positive rank"
 
 [[node]]
 id = "mooreReciprocal_range_equiv"

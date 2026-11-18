@@ -36,6 +36,8 @@ import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
 import NumlibSurface.BenIsraelGreville.Chapter03.Section04
+import NumlibSurface.BenIsraelGreville.Chapter03.Section05
+import NumlibSurface.BenIsraelGreville.Chapter03.Section06
 import NumlibSurface.BenIsraelGreville.Chapter03.Section07
 import NumlibSurface.BenIsraelGreville.Chapter03.Section08
 import NumlibSurface.BenIsraelGreville.Chapter04.Section01
@@ -133,6 +135,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
 | §3.4 | `Chapter03.Section04` | Weighted generalized inverses |
+| §3.5 | `Chapter03.Section05` | Basic solutions and determinant weights |
+| §3.6 | `Chapter03.Section06` | Minors of the Moore–Penrose inverse |
 | §3.7 | `Chapter03.Section07` | Metric projections and two-norm inverses |
 | §3.8 | `Chapter03.Section08` | Bott–Duffin variational principles |
 | §4.1 | `Chapter04.Section01` | Spectral inverse equations |

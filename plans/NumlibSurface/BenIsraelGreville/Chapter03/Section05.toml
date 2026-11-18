@@ -1,29 +1,89 @@
-namespace = 'BenIsraelGreville.Chapter03'
-desc = 'Basic solutions and convex combinations.'
+namespace = "BenIsraelGreville.Chapter03"
 
 [[node]]
-id = 'basicSolution'
-kind = 'definition'
-desc = '''Index by maximal nonsingular minors. A basic candidate for b uses the inverse of the selected square minor on the selected components of b, extended by zero.'''
-source = 'Ben-Israel and Greville, Ch. 3, §5, (75)–(82)'
+id = "basicInverse"
+source = "Ben-Israel and Greville, Ch. 3, §5, (75), the zero-extended pivot inverse"
 
 [[node]]
-id = 'lemma_2'
-kind = 'theorem'
-desc = '''For full-column or full-row rank, the minimum-norm least-squares solution is a convex combination of basic candidates with weights proportional to squared maximal minors.'''
-source = 'Ben-Israel and Greville, Ch. 3, Lemma 2(a)–(b)'
-deps = ['basicSolution']
+id = "basicSolution"
+source = "Ben-Israel and Greville, Ch. 3, §5, (76)–(82), basic solutions"
 
 [[node]]
-id = 'theorem_6'
-kind = 'theorem'
-desc = '''For a real rank-r matrix and arbitrary b, A†b is the convex combination of basic candidates weighted by det(A[I,J])² / vol(A)².'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 6'
-deps = ['lemma_2']
+id = "basicInverse_apply_selected"
+source = "Ben-Israel and Greville, Ch. 3, §5, (75), entries on the pivot"
 
 [[node]]
-id = 'theorem_7'
-kind = 'theorem'
-desc = '''For a positive diagonal weighting D, give the weighted normal equations and the corresponding convex average of basic candidates with weights proportional to det(A[I,J])² times the product of selected row weights.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 7'
-deps = ['theorem_6']
+id = "basicInverse_apply_eq_zero"
+source = "Ben-Israel and Greville, Ch. 3, §5, (75), zero entries outside the pivot"
+
+[[node]]
+id = "minorWeightSum"
+source = "Ben-Israel and Greville, Ch. 3, §5, (77), total squared determinant weight"
+
+[[node]]
+id = "maximalMinorWeight"
+source = "Ben-Israel and Greville, Ch. 3, §5, (77), normalized weights"
+
+[[node]]
+id = "maximalMinorWeight_convex"
+source = "Ben-Israel and Greville, Ch. 3, §5, (77), nonnegativity and sum one"
+
+[[node]]
+id = "minorWeightSum_eq_matrixVolume_sq"
+source = "Ben-Israel and Greville, Ch. 3, §5, (77), denominator equals squared volume"
+
+[[node]]
+id = "lemma_2"
+source = "Ben-Israel and Greville, Ch. 3, §5, Lemma 2(a)–(b), full-column and full-row rank"
+
+[[node]]
+id = "pinv_eq_sum_basicInverses"
+source = "Ben-Israel and Greville, Ch. 3, §5, (75), matrix form of Berg’s decomposition"
+
+[[node]]
+id = "theorem_6"
+source = "Ben-Israel and Greville, Ch. 3, §5, Theorem 6 and (89), solution form of Berg’s decomposition"
+
+[[node]]
+id = "weightedBasicWeight"
+source = "Ben-Israel and Greville, Ch. 3, §5, (94), diagonal weighting"
+
+[[node]]
+id = "theorem_7"
+source = "Ben-Israel and Greville, Ch. 3, §5, Theorem 7 and (90)–(94), normal equations and weighted basic average"
+
+[[node]]
+id = "example_3_1_weighted_nondiagonal"
+source = "Ben-Israel and Greville, Ch. 3, §5, Example 1, explicit positive definite nondiagonal weights"
+
+[[node]]
+id = "columnSliceInverse"
+source = "Ben-Israel and Greville, Ch. 3, §5, (100), padded column reciprocal"
+
+[[node]]
+id = "columnSliceWeight"
+source = "Ben-Israel and Greville, Ch. 3, §5, (101), column marginal weights"
+
+[[node]]
+id = "rowSliceInverse"
+source = "Ben-Israel and Greville, Ch. 3, §5, (102), padded row reciprocal"
+
+[[node]]
+id = "rowSliceWeight"
+source = "Ben-Israel and Greville, Ch. 3, §5, (103), row marginal weights"
+
+[[node]]
+id = "exercise_3_44"
+source = "Ben-Israel and Greville, Ch. 3, §5, Exercise 44, both marginal representations"
+
+[[node]]
+id = "exercise_3_45"
+source = "Ben-Israel and Greville, Ch. 3, §5, Exercise 45, Tikhonov minimizers and limit"
+
+[[node]]
+id = "correspondingMaximalMinors"
+source = "Ben-Israel and Greville, Ch. 3, §5, Exercise 46 and (104), proportional maximal determinants"
+
+[[node]]
+id = "weightedBasicOperator_uniformly_bounded"
+source = "Ben-Israel and Greville, Ch. 3, §5, after Theorem 7, (98)–(99), uniform boundedness"
