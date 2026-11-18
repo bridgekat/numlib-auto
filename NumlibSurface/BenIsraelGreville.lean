@@ -49,6 +49,8 @@ import NumlibSurface.BenIsraelGreville.Chapter06.Section06
 import NumlibSurface.BenIsraelGreville.Chapter06.Section07
 import NumlibSurface.BenIsraelGreville.Chapter06.Section08
 import NumlibSurface.BenIsraelGreville.Chapter07.Section01
+import NumlibSurface.BenIsraelGreville.Chapter07.Section02
+import NumlibSurface.BenIsraelGreville.Chapter07.Section03
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -116,6 +118,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §6.7 | `Chapter06.Section07` | Rectangular spectral calculus and resolvents |
 | §6.8 | `Chapter06.Section08` | Generalized and weighted singular value decompositions |
 | §7.1 | `Chapter07.Section01` | Outer inverses with prescribed ranges and kernels |
+| §7.2 | `Chapter07.Section02` | Inner and reflexive inverses by elimination and column updates |
+| §7.3 | `Chapter07.Section03` | Inverses from rank factorizations and thin QR |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions

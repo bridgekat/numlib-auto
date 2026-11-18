@@ -1,29 +1,33 @@
 namespace = "BenIsraelGreville.Chapter07"
 
-desc = '''Unrestricted {1,3}-inverses from rank factorizations and thin QR. Products of one-sided inverses should specialize the Chapter 1 theory. Upper-triangular inversion and back substitution already belong to the matrix-solver backbone.'''
-
 [[node]]
 id = "isPenrose123_of_fullRankFactorization"
-kind = "theorem"
-desc = '''If A = FG with F of full column rank and G of full row rank, every inner inverse Y of G gives a {1,2,3}-inverse Y F† of A.'''
-source = "Ben-Israel and Greville, Ch. 7, §3, (9)–(10)"
+source = "Ben-Israel and Greville, Ch. 7, §3, Equations (9)–(10)"
 
 [[node]]
 id = "isPenrose123_of_thinQR"
-kind = "theorem"
-desc = '''In a thin QR rank factorization A = QR with QᴴQ = I and R full row rank, Q† = Qᴴ and every inner inverse Y of R yields the {1,2,3}-inverse YQᴴ of A.'''
-source = "Ben-Israel and Greville, Ch. 7, §3, (11)–(12)"
-deps = ["isPenrose123_of_fullRankFactorization"]
+source = "Ben-Israel and Greville, Ch. 7, §3, Equations (11)–(12)"
+
+[[node]]
+id = "exists_thinQR_with_pivot"
+source = "Ben-Israel and Greville, Ch. 7, §3, pivot partition preceding Equation (13)"
 
 [[node]]
 id = "isRightInverse_of_pivot_triangle"
-kind = "theorem"
-desc = '''If a column permutation P gives RP = [T K] with T invertible upper triangular, then P[T⁻¹;0] is a right inverse of R, and T⁻¹ is upper triangular.'''
-source = "Ben-Israel and Greville, Ch. 7, §3, (13)"
+source = "Ben-Israel and Greville, Ch. 7, §3, Equation (13)"
+
+[[node]]
+id = "pivot_inverse_col_eq_backSubst"
+source = "Ben-Israel and Greville, Ch. 7, §3, back substitution after Equation (13)"
 
 [[node]]
 id = "isPenrose123_of_basic_columns"
-kind = "theorem"
-desc = '''If P₁ selects a basis F = AP₁ of the column space coming from a Hermite pivot permutation, P₁(FᴴF)⁻¹Fᴴ is a {1,2,3}-inverse of A and its nonpivot rows are zero.'''
-source = "Ben-Israel and Greville, Ch. 7, §3, Exercise 4, (14)–(16)"
-deps = ["isPenrose123_of_fullRankFactorization"]
+source = "Ben-Israel and Greville, Ch. 7, §3, Exercise 4, Equations (14)–(16)"
+
+[[node]]
+id = "exercise_7_5_matrix"
+source = "Ben-Israel and Greville, Ch. 7, §3, Exercise 5, displayed matrix"
+
+[[node]]
+id = "exercise_7_5"
+source = "Ben-Israel and Greville, Ch. 7, §3, Exercise 5(a–b)"
