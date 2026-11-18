@@ -6,9 +6,12 @@ import NumlibSurface.BenIsraelGreville.Chapter00.Section02
 import NumlibSurface.BenIsraelGreville.Chapter00.Section03
 import NumlibSurface.BenIsraelGreville.Chapter00.Section04
 import Numlib.LinearAlgebra.Matrix.CauchyBinet
+import Numlib.LinearAlgebra.Matrix.PosDef
 import Numlib.LinearAlgebra.Matrix.QR
+import Numlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.Analysis.InnerProductSpace.GramMatrix
 import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
 
 /-!
@@ -26,6 +29,8 @@ defines the volume of a real matrix using its maximal nonsingular minors.
   the selected rows belong to the right factor.
 * **Exercise 58(a)–(b)** (reading). The two indices of the elementary row
   operations are distinct.
+* **Exercise 67** (correction). Both blocks must have positive rank when
+  the volume at rank zero is zero as in Equation (89).
 -/
 
 namespace BenIsraelGreville.Chapter00
@@ -495,6 +500,15 @@ noncomputable def matrixVolume {m d : ℕ} (A : Matrix (Fin m) (Fin d) ℝ) : �
   exact if A.rank = 0 then 0 else
     Real.sqrt (∑ s : nonsingularMinorIndices A, (A.submatrix s.1.1 s.1.2).det ^ 2)
 
+/-- Matrix volume is nonnegative, including at rank zero. -/
+theorem matrixVolume_nonneg {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
+    0 ≤ matrixVolume A := by
+  classical
+  unfold matrixVolume
+  split
+  · exact le_rfl
+  · exact Real.sqrt_nonneg _
+
 /-- The volume may be computed over all choices of maximal minors, since
 singular minors contribute zero. -/
 theorem matrixVolume_eq_sqrt_sum_minors {m d r : ℕ} (A : Matrix (Fin m) (Fin d) ℝ)
@@ -745,5 +759,242 @@ theorem det_norm_le_prod_col_norm [LinearOrder n] (A : Matrix n n ℂ) :
       intro j _
       rw [hentry, Complex.norm_real, Real.norm_of_nonneg (Finset.sum_nonneg fun i _ => sq_nonneg _)]
       exact (Real.sq_sqrt (Finset.sum_nonneg fun i _ => sq_nonneg _)).symm
+
+private theorem det_le_one_of_posDef_of_one_sub_posSemidef {n : Type*}
+    [Fintype n] [DecidableEq n] {A : Matrix n n ℝ} (hA : A.PosDef)
+    (h₀ : (1 - A).PosSemidef) : A.det ≤ 1 ∧ (A.det = 1 ↔ A = 1) := by
+  let evs := hA.isHermitian.eigenvalues
+  let U := (hA.isHermitian.eigenvectorUnitary : Matrix n n ℝ)
+  have hU : U ∈ Matrix.unitaryGroup n ℝ := SetLike.coe_mem hA.isHermitian.eigenvectorUnitary
+  have hU₁ : Uᴴ * U = 1 := Unitary.star_mul_self_of_mem hU
+  have hU₂ : U * Uᴴ = 1 := Unitary.mul_star_self_of_mem hU
+  have hdiag : Uᴴ * A * U = diagonal evs := by
+    simpa only [RCLike.ofReal_real_eq_id, Function.id_comp, star_eq_conjTranspose] using
+      hA.isHermitian.star_eigenvectorUnitary_mul_mul
+  have hdiag' : (diagonal (fun i => 1 - evs i)).PosSemidef := by
+    have h := h₀.conjTranspose_mul_mul_same U
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_one, hU₁, hdiag,
+      ← diagonal_one, diagonal_sub] at h
+    exact h
+  have hpos (i : n) : 0 < evs i := hA.eigenvalues_pos i
+  have hle (i : n) : evs i ≤ 1 := sub_nonneg.mp ((posSemidef_diagonal_iff.mp hdiag') i)
+  have hd : A.det = ∏ i, evs i := by
+    simpa only [RCLike.ofReal_real_eq_id, id_eq] using hA.isHermitian.det_eq_prod_eigenvalues
+  refine ⟨hd.trans_le (Finset.prod_le_one₀ (fun i _ => (hpos i).le) (fun i _ => hle i)), ?_⟩
+  constructor
+  · intro h
+    have he : ∀ i, evs i = 1 := by
+      intro i
+      refine le_antisymm (hle i) ?_
+      by_contra! hi
+      have hs := Finset.prod_lt_prod₀ (f := evs) (g := fun _ => (1 : ℝ))
+        (fun j _ => hpos j) (fun j _ => hle j) ⟨i, Finset.mem_univ i, hi⟩
+      rw [← hd, h, Finset.prod_const_one] at hs
+      exact (lt_irrefl _ hs)
+    have hdiag₁ : Uᴴ * A * U = 1 := by
+      rw [hdiag, show evs = fun _ => 1 from funext he, diagonal_one]
+    calc
+      A = (U * Uᴴ) * A * (U * Uᴴ) := by rw [hU₂, Matrix.one_mul, Matrix.mul_one]
+      _ = U * (Uᴴ * A * U) * Uᴴ := by simp only [Matrix.mul_assoc]
+      _ = 1 := by rw [hdiag₁, Matrix.mul_one, hU₂]
+  · rintro rfl
+    exact det_one
+
+private theorem det_le_of_posDef_of_sub_posSemidef {n : Type*} [Fintype n] [DecidableEq n]
+    {A D : Matrix n n ℝ} (hA : A.PosDef) (hD : D.PosDef) (h : (D - A).PosSemidef) :
+    A.det ≤ D.det ∧ (A.det = D.det ↔ A = D) := by
+  obtain ⟨W, hW, hw⟩ := hD.exists_isUnit_conj_eq_one
+  change Wᴴ * D * W = 1 at hw
+  let X := Wᴴ * A * W
+  have hX : X.PosDef := hA.conjTranspose_mul_mul_same (mulVec_injective_iff_isUnit.mpr hW)
+  have hs : (1 - X).PosSemidef := by
+    rw [← hw]
+    change (Wᴴ * D * W - Wᴴ * A * W).PosSemidef
+    rw [← Matrix.sub_mul, ← Matrix.mul_sub]
+    exact h.conjTranspose_mul_mul_same W
+  have hWdet : IsUnit W.det := (isUnit_iff_isUnit_det _).mp hW
+  have hWpos : 0 < W.det ^ 2 := sq_pos_of_ne_zero hWdet.ne_zero
+  have hd (M : Matrix n n ℝ) : (Wᴴ * M * W).det = M.det * W.det ^ 2 := by
+    rw [Matrix.det_mul, Matrix.det_mul, det_conjTranspose, star_trivial]
+    ring
+  have hDdet : D.det * W.det ^ 2 = 1 := by rw [← hd, hw, det_one]
+  have hXdet : X.det = A.det * W.det ^ 2 := hd A
+  obtain ⟨hle, he⟩ := det_le_one_of_posDef_of_one_sub_posSemidef hX hs
+  refine ⟨le_of_mul_le_mul_right (hXdet ▸ hDdet ▸ hle) hWpos, ?_⟩
+  constructor
+  · intro hDet
+    have hx : X = 1 := he.mp (by rw [hXdet, hDet, hDdet])
+    have hC : Wᴴ * (D - A) * W = 0 := by
+      rw [Matrix.mul_sub, Matrix.sub_mul, hw, show Wᴴ * A * W = X from rfl, hx, sub_self]
+    have hh := congrArg (fun M => (Wᴴ)⁻¹ * M * W⁻¹) hC
+    rw [Matrix.mul_zero, Matrix.zero_mul, ← Matrix.mul_assoc (Wᴴ)⁻¹,
+      nonsing_inv_mul_cancel_left _ _ ((isUnit_iff_isUnit_det _).mp
+        (by simpa only [← star_eq_conjTranspose] using hW.star)),
+      mul_nonsing_inv_cancel_right _ _ hWdet] at hh
+    exact (sub_eq_zero.mp hh).symm
+  · rintro rfl
+    rfl
+
+private theorem gram_det_le_of_fromCols {m p q : Type*}
+    [Fintype m] [Fintype p] [Fintype q] [DecidableEq p] [DecidableEq q]
+    (B : Matrix m p ℝ) (C : Matrix m q ℝ)
+    (hR : (fromCols B C).rank = Fintype.card p + Fintype.card q) :
+    let U := fromCols B C
+    (Uᵀ * U).det ≤ (Bᵀ * B).det * (Cᵀ * C).det ∧
+      ((Uᵀ * U).det = (Bᵀ * B).det * (Cᵀ * C).det ↔ Bᵀ * C = 0) := by
+  intro U
+  let G := Uᵀ * U
+  have hG : G.PosDef := by
+    have hi : Function.Injective U.mulVec := mulVec_injective_iff_rank_eq_card.mpr
+      (hR.trans Fintype.card_sum.symm)
+    rw [show G = Uᴴ * U by rw [conjTranspose_eq_transpose_of_trivial]]
+    exact PosDef.conjTranspose_mul_self U hi
+  let E := G.toBlocks₁₁
+  let F := G.toBlocks₁₂
+  let D := G.toBlocks₂₂
+  let S := G.schurComplement
+  have hE : E.PosDef := hG.submatrix Sum.inl_injective
+  have hD : D.PosDef := hG.submatrix Sum.inr_injective
+  have hS : S.PosDef := hG.schurComplement
+  have hB : E = Bᵀ * B := by
+    simp only [E, G, U, transpose_fromCols, fromRows_mul_fromCols]
+    rfl
+  have hC : D = Cᵀ * C := by
+    simp only [D, G, U, transpose_fromCols, fromRows_mul_fromCols]
+    rfl
+  have hBC : F = Bᵀ * C := by
+    simp only [F, G, U, transpose_fromCols, fromRows_mul_fromCols]
+    rfl
+  have hDet : G.det = E.det * S.det := calc
+    _ = (fromBlocks E F G.toBlocks₂₁ D).det :=
+      congrArg Matrix.det (fromBlocks_toBlocks G).symm
+    _ = _ := det_fromBlocks_eq_det_mul_schurComplement E F G.toBlocks₂₁ D hE.isUnit
+  obtain ⟨hle, he⟩ := det_le_of_posDef_of_sub_posSemidef hS hD hG.schurComplement_loewner_le
+  have hGF : G.toBlocks₂₁ = Fᴴ := by
+    rw [show F = G.toBlocks₁₂ from rfl, hG.isHermitian.toBlocks₁₂_eq_conjTranspose,
+      conjTranspose_conjTranspose]
+  have hSD : S = D ↔ F = 0 := by
+    change D - G.toBlocks₂₁ * E⁻¹ * F = D ↔ F = 0
+    rw [hGF, sub_eq_self]
+    constructor
+    · intro hzero
+      apply Matrix.ext_iff_mulVec.mpr
+      intro x
+      rw [zero_mulVec]
+      by_contra hx
+      have hh := hE.inv.dotProduct_mulVec_pos hx
+      have hrew : star x ⬝ᵥ ((Fᴴ * E⁻¹ * F) *ᵥ x) =
+          star (F *ᵥ x) ⬝ᵥ (E⁻¹ *ᵥ (F *ᵥ x)) := by
+        simp only [star_mulVec, dotProduct_mulVec, vecMul_vecMul]
+      rw [← hrew, hzero, zero_mulVec, dotProduct_zero] at hh
+      exact (lt_irrefl _ hh)
+    · intro hF
+      simp [hF]
+  change G.det ≤ (Bᵀ * B).det * (Cᵀ * C).det ∧
+    (G.det = (Bᵀ * B).det * (Cᵀ * C).det ↔ Bᵀ * C = 0)
+  rw [← hB, ← hC, hDet, ← hBC]
+  exact ⟨mul_le_mul_of_nonneg_left hle hE.det_pos.le,
+    (mul_right_inj' hE.det_pos.ne').trans (he.trans hSD)⟩
+
+/-- **Exercise 67**, Equation (107) of [benIsrael2003generalized]. When the two
+column blocks have positive ranks summing to the total rank, their volumes bound
+the volume of the concatenation. Equality holds exactly when the columns of one
+block are orthogonal to the columns of the other. The rank-zero convention in
+Equation (89) requires the positive block ranks. -/
+theorem matrixVolume_fromCols_le {m p q : ℕ} (A : Matrix (Fin m) (Fin p) ℝ)
+    (B : Matrix (Fin m) (Fin q) ℝ) (ha : A.rank ≠ 0) (hb : B.rank ≠ 0)
+    (hr : (fromCols A B).rank = A.rank + B.rank) :
+    let C := (fromCols A B).reindex (Equiv.refl (Fin m)) finSumFinEquiv
+    matrixVolume C ≤ matrixVolume A * matrixVolume B ∧
+      (matrixVolume C = matrixVolume A * matrixVolume B ↔ Aᵀ * B = 0) := by
+  classical
+  intro C
+  obtain ⟨F₁, G₁, hA⟩ := lemma_1 A
+  obtain ⟨F₂, G₂, hB⟩ := lemma_1 B
+  let U := fromCols F₁ F₂
+  let V := fromBlocks G₁ 0 0 G₂
+  let e : Fin A.rank ⊕ Fin B.rank ≃ Fin (A.rank + B.rank) := finSumFinEquiv
+  let f : Fin p ⊕ Fin q ≃ Fin (p + q) := finSumFinEquiv
+  let F := U.reindex (Equiv.refl _) e
+  let G := V.reindex e f
+  have huv : U * V = fromCols A B := by
+    simp only [U, V, fromCols_mul_fromBlocks, Matrix.mul_zero, add_zero,
+      zero_add, ← hA.eq_mul, ← hB.eq_mul]
+  have hrU : U.rank = A.rank + B.rank := by
+    have hl := rank_mul_le_left U V
+    rw [huv, hr] at hl
+    have hu := U.rank_le_card_width
+    rw [Fintype.card_sum, Fintype.card_fin, Fintype.card_fin] at hu
+    exact le_antisymm hu hl
+  have hrV : V.rank = A.rank + B.rank := by
+    rw [show V = fromBlocks G₁ 0 0 G₂ from rfl, rank_fromBlocks_diagonal, hA.rank_right, hB.rank_right, Fintype.card_fin,
+      Fintype.card_fin]
+  have hrF : F.rank = A.rank + B.rank := (rank_reindex _ _ U).trans hrU
+  have hrG : G.rank = A.rank + B.rank := (rank_reindex _ _ V).trans hrV
+  have hC : IsRankFactorization C F G := by
+    refine ⟨?_, ?_, hrF.trans (Fintype.card_fin _).symm, hrG.trans (Fintype.card_fin _).symm⟩
+    · change _ = U.submatrix (Equiv.refl _) e.symm * V.submatrix e.symm f.symm
+      rw [submatrix_mul_equiv, huv]
+      rfl
+    · exact (rank_reindex _ _ _).trans (hr.trans (Fintype.card_fin _).symm)
+  have keyF : (Fᵀ * F).det = (Uᵀ * U).det := by
+    change ((U.submatrix (Equiv.refl _) e.symm)ᵀ * U.submatrix (Equiv.refl _) e.symm).det = _
+    rw [transpose_submatrix, submatrix_mul_equiv]
+    exact det_reindex_self e (Uᵀ * U)
+  have keyG : (G * Gᵀ).det = (G₁ * G₁ᵀ).det * (G₂ * G₂ᵀ).det := by
+    change (V.submatrix e.symm f.symm * (V.submatrix e.symm f.symm)ᵀ).det = _
+    rw [transpose_submatrix, submatrix_mul_equiv]
+    change (reindex e e (V * Vᵀ)).det = _
+    rw [det_reindex_self]
+    simp only [V, fromBlocks_transpose, transpose_zero, fromBlocks_multiply,
+      Matrix.zero_mul, Matrix.mul_zero, add_zero, zero_add,
+      det_fromBlocks_zero₂₁]
+  have haF := matrixVolume_sq_eq_det_transpose_mul F₁ (hA.rank_left.trans (Fintype.card_fin _)) ha
+  have hbF := matrixVolume_sq_eq_det_transpose_mul F₂ (hB.rank_left.trans (Fintype.card_fin _)) hb
+  have haG := matrixVolume_sq_eq_det_mul_transpose G₁ (hA.rank_right.trans (Fintype.card_fin _)) ha
+  have hbG := matrixVolume_sq_eq_det_mul_transpose G₂ (hB.rank_right.trans (Fintype.card_fin _)) hb
+  have hr₀ : A.rank + B.rank ≠ 0 := by omega
+  have hGF : matrixVolume G = matrixVolume G₁ * matrixVolume G₂ := by
+    apply (sq_eq_sq₀ (matrixVolume_nonneg _) (mul_nonneg (matrixVolume_nonneg _)
+      (matrixVolume_nonneg _))).mp
+    rw [matrixVolume_sq_eq_det_mul_transpose G hrG hr₀, keyG, mul_pow, haG, hbG]
+  obtain ⟨hLe, hEq⟩ := gram_det_le_of_fromCols F₁ F₂
+    (hrU.trans (by simp only [Fintype.card_fin]))
+  rw [← keyF, ← haF, ← hbF, ← mul_pow,
+    ← matrixVolume_sq_eq_det_transpose_mul F hrF hr₀] at hLe hEq
+  have hFnonneg := matrixVolume_nonneg F
+  have hProdNonneg := mul_nonneg (matrixVolume_nonneg F₁) (matrixVolume_nonneg F₂)
+  have hle := (sq_le_sq₀ hFnonneg hProdNonneg).mp hLe
+  have heq := (sq_eq_sq₀ hFnonneg hProdNonneg).symm.trans hEq
+  have hGpos : 0 < matrixVolume G := by
+    have hi : Function.Injective Gᵀ.mulVec := mulVec_injective_iff_rank_eq_card.mpr
+      ((rank_transpose G).trans (hrG.trans (Fintype.card_fin _).symm))
+    have hp := (PosDef.conjTranspose_mul_self Gᵀ hi).det_pos
+    rw [conjTranspose_eq_transpose_of_trivial, transpose_transpose,
+      ← matrixVolume_sq_eq_det_mul_transpose G hrG hr₀] at hp
+    exact lt_of_le_of_ne (matrixVolume_nonneg _) (by intro h; simp [← h] at hp)
+  have hOrth : F₁ᵀ * F₂ = 0 ↔ Aᵀ * B = 0 := by
+    have hAB : Aᵀ * B = G₁ᵀ * (F₁ᵀ * F₂) * G₂ := by
+      calc
+        _ = (F₁ * G₁)ᵀ * (F₂ * G₂) := congrArg₂ (fun X Y => Xᵀ * Y) hA.eq_mul hB.eq_mul
+        _ = _ := by simp only [transpose_mul, Matrix.mul_assoc]
+    rw [hAB]
+    refine ⟨fun h => by simp [h], ?_⟩
+    intro hz
+    have hi : Function.Injective G₁ᵀ.mulVec :=
+      mulVec_injective_iff_rank_eq_card.mpr ((rank_transpose G₁).trans hA.rank_right)
+    have hs : Function.Surjective G₂.mulVec := mulVec_surjective_iff_rank_eq_card.mpr hB.rank_right
+    apply Matrix.ext_iff_mulVec.mpr
+    intro x
+    obtain ⟨y, rfl⟩ := hs x
+    rw [zero_mulVec]
+    apply hi
+    rw [mulVec_zero, mulVec_mulVec, mulVec_mulVec, hz, zero_mulVec]
+  rw [matrixVolume_mul_of_rankFactorization hC, matrixVolume_mul_of_rankFactorization hA,
+    matrixVolume_mul_of_rankFactorization hB,
+    show (matrixVolume F₁ * matrixVolume G₁) * (matrixVolume F₂ * matrixVolume G₂) =
+      (matrixVolume F₁ * matrixVolume F₂) * matrixVolume G by rw [hGF]; ring]
+  exact ⟨mul_le_mul_of_nonneg_right hle hGpos.le,
+    (mul_left_inj' hGpos.ne').trans (heq.trans hOrth)⟩
 
 end BenIsraelGreville.Chapter00

@@ -794,13 +794,6 @@ private theorem rankFactor_left_range {m n p : ℕ} {A : Matrix (Fin m) (Fin n) 
     exact LinearMap.range_comp_le_range _ _
   · rw [finrank_range_toEuclideanLin, finrank_range_toEuclideanLin, h.rank_eq, h.rank_left]
 
-private theorem matrixVolume_nonneg {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
-    0 ≤ matrixVolume A := by
-  unfold matrixVolume
-  split_ifs
-  · exact le_rfl
-  · exact Real.sqrt_nonneg _
-
 /-- **Theorem 11** of [benIsrael2003generalized], Chapter 6, Equation (118).
 If the two positive-rank column spaces form a direct sum, the concatenated
 volume is the product of the block volumes and their principal sines. -/

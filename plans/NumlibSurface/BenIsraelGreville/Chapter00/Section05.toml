@@ -118,7 +118,4 @@ source = "Ben-Israel and Greville, Chapter 0 §5, Equations (106a)–(106b)"
 
 [[node]]
 id = "matrixVolume_fromCols_le"
-kind = "theorem"
-desc = '''If the two column blocks have positive ranks adding to the total rank, the volume is bounded by the product of their volumes, with equality precisely for orthogonal column ranges. The rank-zero convention in (89) requires the positive block ranks.'''
 source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 67, Equation (107)"
-deps = ["matrixVolume", "det_norm_le_prod_col_norm"]
