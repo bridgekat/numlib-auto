@@ -7,6 +7,9 @@ import Numlib.Eigen.Normal
 import Mathlib.Data.Fin.Tuple.Sort
 import Mathlib.LinearAlgebra.Matrix.Permutation
 import NumlibSurface.BenIsraelGreville.Chapter00.Section02
+import Numlib.LinearAlgebra.Matrix.Procrustes
+import Numlib.Eigen.MinMax
+import Mathlib.Analysis.SpecialFunctions.Sqrt
 
 /-!
 # Singular values and unitary equivalence
@@ -384,5 +387,181 @@ theorem exercise_9 {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ} (A : Matrix (Fin m) 
     ‖A‖ * ‖A.pinv‖ = A.sortedSingularValues 0 / A.sortedSingularValues (A.rank - 1) := by
   rw [← A.sortedSingularValues_zero_eq_l2_opNorm, ← A.pinv.sortedSingularValues_zero_eq_l2_opNorm,
     exercise_7, ite_eq_left hA, Nat.sub_zero, div_eq_mul_inv]
+
+open Matrix Polynomial
+
+private theorem norm_det_eq_prod_colSingularValues {k : ℕ} (B : Matrix (Fin k) (Fin k) ℂ) :
+    ‖B.det‖ = ∏ i : Fin k, B.colSingularValues i := by
+  have hd : (Bᴴ * B).det = ∏ i : Fin k, ((B.colSingularValues i ^ 2 : ℝ) : ℂ) := by
+    have h := (isHermitian_conjTranspose_mul_self B).det_eq_prod_eigenvalues
+    change (Bᴴ * B).det = ∏ i : Fin k,
+      (((isHermitian_conjTranspose_mul_self B).eigenvalues i : ℝ) : ℂ) at h
+    simp_rw [← B.sq_colSingularValues] at h
+    exact h
+  have hh := congrArg norm hd
+  rw [det_mul, det_conjTranspose, norm_mul, norm_star, ← pow_two, norm_prod] at hh
+  have habs (i : Fin k) := abs_of_nonneg (sq_nonneg (B.colSingularValues i))
+  simp only [Complex.norm_real, Real.norm_eq_abs, habs, Finset.prod_pow] at hh
+  exact (sq_eq_sq₀ (norm_nonneg _) (Finset.prod_nonneg fun i _ => B.colSingularValues_nonneg i)).mp hh
+
+private theorem sum_diag_norm_le_sum_colSingularValues {k : ℕ} (B : Matrix (Fin k) (Fin k) ℂ) :
+    (∑ i : Fin k, ‖B i i‖) ≤ ∑ i : Fin k, B.colSingularValues i := by
+  let p (i : Fin k) : ℂ := if B i i = 0 then 1 else (‖B i i‖ : ℂ) / B i i
+  have hp (i : Fin k) : ‖p i‖ = 1 := by
+    by_cases h : B i i = 0
+    · simp [p, h]
+    · simp [p, h]
+  have hpB (i : Fin k) : p i * B i i = (‖B i i‖ : ℂ) := by
+    by_cases h : B i i = 0
+    · simp [p, h]
+    · simp [p, h, div_mul_cancel₀ _ h]
+  have hU : diagonal p ∈ unitaryGroup (Fin k) ℂ := by
+    apply Matrix.mem_unitaryGroup_iff'.mpr
+    change (diagonal p)ᴴ * diagonal p = 1
+    rw [diagonal_conjTranspose, diagonal_mul_diagonal, ← diagonal_one]
+    apply congrArg diagonal
+    funext i
+    change star (p i) * p i = 1
+    have hh := Complex.mul_conj' (p i)
+    rw [hp] at hh
+    simpa [mul_comm] using hh
+  have htrace : RCLike.re (trace (diagonal p * B)) = ∑ i : Fin k, ‖B i i‖ := by
+    rw [Matrix.trace, map_sum]
+    apply Finset.sum_congr rfl
+    intro i _
+    change RCLike.re ((diagonal p * B) i i) = _
+    rw [diagonal_mul, hpB]
+    rfl
+  rw [← htrace]
+  exact re_trace_mul_le_sum_colSingularValues B hU
+
+/-- **Exercise 12**, Equations (17)–(18), of [benIsrael2003generalized].
+For the eigenvalues in any prescribed enumeration with algebraic
+multiplicity, the initial sums and products of their moduli are bounded
+by the corresponding sums and products of the largest singular values. -/
+theorem exercise_12 {n k : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (μ : Fin n → ℂ)
+    (hμ : A.charpoly = ∏ i, (X - C (μ i))) (hk : k ≤ n) :
+    (∑ i : Fin k, ‖μ (Fin.castLE hk i)‖) ≤ ∑ i : Fin k, A.sortedSingularValues i ∧
+    (∏ i : Fin k, ‖μ (Fin.castLE hk i)‖) ≤ ∏ i : Fin k, A.sortedSingularValues i := by
+  obtain ⟨U, hU, hTri, hDiag⟩ := exists_unitary_conj_upperTriangular_diag_eq A μ hμ
+  let T := Uᴴ * A * U
+  let e := Fin.castLE hk
+  let B := T.submatrix e e
+  have hd (i : Fin k) : B i i = μ (e i) := hDiag (e i)
+  have hB : B.IsUpperTriangular := by
+    intro i j hij
+    exact hTri (show e j < e i from hij)
+  have hbound (i : ℕ) : B.sortedSingularValues i ≤ A.sortedSingularValues i := by
+    have h := congrFun (A.sortedSingularValues_unitary_mul_mul (Unitary.star_mem hU) hU) i
+    exact (T.sortedSingularValues_submatrix_le (Fin.castLE_injective hk)
+      (Fin.castLE_injective hk) i).trans_eq h
+  obtain ⟨f, hf⟩ := B.exists_equiv_colSingularValues_eq_sortedSingularValues
+  have hs : (∑ i : Fin k, B.colSingularValues i) = ∑ i : Fin k, B.sortedSingularValues i := by
+    rw [← Equiv.sum_comp f]
+    simp only [hf, Fin.sum_univ_eq_sum_range, Fintype.card_fin]
+  have hp : (∏ i : Fin k, B.colSingularValues i) = ∏ i : Fin k, B.sortedSingularValues i := by
+    rw [← Equiv.prod_comp f]
+    simp only [hf, Fin.prod_univ_eq_prod_range, Fintype.card_fin]
+  constructor
+  · calc
+      _ = ∑ i : Fin k, ‖B i i‖ := by simp only [hd, e]
+      _ ≤ ∑ i : Fin k, B.colSingularValues i := sum_diag_norm_le_sum_colSingularValues B
+      _ = ∑ i : Fin k, B.sortedSingularValues i := hs
+      _ ≤ _ := Finset.sum_le_sum fun i _ => hbound (i : Fin k)
+  · have hdet : ‖B.det‖ = ∏ i : Fin k, ‖μ (e i)‖ := by
+      rw [det_of_isUpperTriangular hB, norm_prod]
+      exact Finset.prod_congr rfl fun i _ => congrArg norm (hd i)
+    rw [← hdet, norm_det_eq_prod_colSingularValues, hp]
+    exact Finset.prod_le_prod₀ (fun i _ => B.sortedSingularValues_nonneg (i : Fin k))
+      (fun i _ => hbound (i : Fin k))
+
+open Matrix
+open scoped InnerProductSpace
+
+section StationaryStretch
+
+variable {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n]
+
+/-- **Equation (6)** of [benIsrael2003generalized]. The stretch is the ratio
+of the norm of the image to the original vector's norm. -/
+noncomputable def singularStretch (A : Matrix m n ℂ) (x : EuclideanSpace ℂ n) : ℝ :=
+  ‖toEuclideanLin A x‖ / ‖x‖
+
+/-- The squared stretch is the Rayleigh quotient of the column Gram matrix.
+Its stationary points away from zero are exactly the Gram eigenvectors. -/
+theorem exercise_5_squared (A : Matrix m n ℂ) {x : EuclideanSpace ℂ n} (hx : x ≠ 0) :
+    HasFDerivAt (𝕜 := ℝ) (fun y => singularStretch A y ^ 2) 0 x ↔
+      toEuclideanLin (Aᴴ * A) x = singularStretch A x ^ 2 • x := by
+  classical
+  let : InnerProductSpace ℝ (EuclideanSpace ℂ n) := InnerProductSpace.complexToReal
+  let T := (toEuclideanLin (Aᴴ * A)).restrictScalars ℝ
+  have hT : T.IsSymmetric :=
+    (isSymmetric_toEuclideanLin_iff.mpr (isHermitian_conjTranspose_mul_self A)).restrictScalars
+  have hRay : T.rayleighQuotient = fun y => singularStretch A y ^ 2 := by
+    funext y
+    have hi : ⟪toEuclideanLin (Aᴴ * A) y, y⟫_ℂ =
+        ⟪toEuclideanLin A y, toEuclideanLin A y⟫_ℂ := by
+      rw [toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_eq_adjoint]
+      exact LinearMap.adjoint_inner_left (toEuclideanLin A) y (toEuclideanLin A y)
+    change RCLike.re ⟪toEuclideanLin (Aᴴ * A) y, y⟫_ℂ / ‖y‖ ^ 2 = _
+    rw [hi, inner_self_eq_norm_sq, singularStretch, div_pow]
+  have hGrad := ContinuousLinearMap.hasGradientAt_rayleighQuotient
+    (T := T.toContinuousLinearMap) hT hx
+  have hDer := hasGradientAt_iff_hasFDerivAt.mp hGrad
+  rw [← hRay, ← congrFun hRay x]
+  change HasFDerivAt T.rayleighQuotient 0 x ↔ T x = T.rayleighQuotient x • x
+  constructor
+  · intro h
+    exact (hT.hasFDerivAt_rayleighQuotient_eq_zero_iff hx h).mp rfl
+  · intro h
+    have hf := (hT.hasFDerivAt_rayleighQuotient_eq_zero_iff hx hDer).mpr h
+    rw [hf] at hDer
+    exact hDer
+
+private theorem singularStretch_stationary_iff_squared (A : Matrix m n ℂ)
+    {x : EuclideanSpace ℂ n} (hx : 0 < singularStretch A x) :
+    HasFDerivAt (𝕜 := ℝ) (singularStretch A) 0 x ↔
+      HasFDerivAt (𝕜 := ℝ) (fun y => singularStretch A y ^ 2) 0 x := by
+  constructor
+  · intro h
+    simpa using h.pow 2
+  · intro h
+    have hsq := Real.hasDerivAt_sqrt (pow_ne_zero 2 hx.ne')
+    have hc := hsq.comp_hasFDerivAt x h
+    have he : Real.sqrt ∘ (fun y => singularStretch A y ^ 2) = singularStretch A := by
+      funext y
+      exact Real.sqrt_sq (div_nonneg (norm_nonneg _) (norm_nonneg _))
+    rwa [he, smul_zero] at hc
+
+/-- **Exercise 5** of [benIsrael2003generalized]. The positive stationary
+values of the norm ratio are exactly the positive singular values. -/
+theorem exercise_5 (A : Matrix m n ℂ) {σ : ℝ} (hσ : 0 < σ) :
+    (∃ x : EuclideanSpace ℂ n, x ≠ 0 ∧ singularStretch A x = σ ∧
+      HasFDerivAt (𝕜 := ℝ) (singularStretch A) 0 x) ↔ ∃ i, A.colSingularValues i = σ := by
+  constructor
+  · rintro ⟨x, hx, hv, h⟩
+    have he := (exercise_5_squared A hx).mp
+      ((singularStretch_stationary_iff_squared A (hv.symm ▸ hσ)).mp h)
+    rw [hv] at he
+    have hx' : x.ofLp ≠ 0 := fun hz => hx ((WithLp.equiv 2 _).injective hz)
+    apply A.exists_colSingularValues_eq_of_mulVec hx' hσ.le
+    funext j
+    have hj := congrArg (fun y : EuclideanSpace ℂ n => y.ofLp j) he
+    change ((Aᴴ * A) *ᵥ x.ofLp) j = (σ ^ 2) • x.ofLp j at hj
+    change ((Aᴴ * A) *ᵥ x.ofLp) j = ((σ : ℂ) ^ 2) * x.ofLp j
+    rw [Complex.real_smul, Complex.ofReal_pow] at hj
+    exact hj
+  · rintro ⟨i, hi⟩
+    let x := A.rightSingularBasis i
+    have hx : x ≠ 0 := A.rightSingularBasis.orthonormal.ne_zero i
+    have hv : singularStretch A x = σ := by
+      rw [singularStretch, show ‖x‖ = 1 from A.rightSingularBasis.norm_eq_one i,
+        div_one, A.norm_toEuclideanLin_rightSingularBasis, hi]
+    refine ⟨x, hx, hv, (singularStretch_stationary_iff_squared A (hv.symm ▸ hσ)).mpr ?_⟩
+    apply (exercise_5_squared A hx).mpr
+    rw [hv, ← hi, RCLike.real_smul_eq_coe_smul (K := ℂ)]
+    exact A.toEuclideanLin_conjTranspose_mul_self_rightSingularBasis i
+
+end StationaryStretch
 
 end BenIsraelGreville.Chapter06

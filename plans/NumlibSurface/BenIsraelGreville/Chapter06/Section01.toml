@@ -34,8 +34,6 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 4, adjoint formula"
 
 [[node]]
 id = "exercise_5"
-kind = "theorem"
-desc = '''The positive stationary values of the norm quotient are the positive singular values. For the squared quotient, include stationary points of value zero in the kernel.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 5, Equation (6)"
 
 [[node]]
@@ -72,6 +70,12 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 11"
 
 [[node]]
 id = "exercise_12"
-kind = "theorem"
-desc = '''The leading partial sums and products of the sorted eigenvalue moduli are bounded by those of the singular values.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 12, Equations (17)–(18)"
+
+[[node]]
+id = "singularStretch"
+source = "Ben-Israel and Greville, Chapter 6 §1, Exercise 5, Equation (6)"
+
+[[node]]
+id = "exercise_5_squared"
+source = "Ben-Israel and Greville, Chapter 6 §1, Exercise 5, squared quotient stationary points"
