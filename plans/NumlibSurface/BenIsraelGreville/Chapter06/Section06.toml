@@ -106,9 +106,6 @@ source = 'Ben-Israel and Greville, Chapter 6, §6, openness of the nonsingular s
 
 [[node]]
 id = "rankAdaptedOrthonormalCoordinates"
-kind = "theorem"
-desc = '''There are orthonormal block coordinates in which the original matrix has only a nonsingular leading block, and the perturbation is added to its four blocks.'''
-deps = ["theorem_6_14"]
 source = 'Ben-Israel and Greville, Chapter 6, equations (129a)–(129c)'
 
 [[node]]
@@ -121,35 +118,39 @@ source = 'Ben-Israel and Greville, Chapter 6, Theorem 15, equation (135b), count
 
 [[node]]
 id = "acute_inverse_difference_counterexample"
-kind = "theorem"
-desc = '''An acute rotation of a one-dimensional column space can have a nonzero projection correction.'''
-deps = ["pinv_sub_pinv_eq_of_same_ranges"]
 source = 'Ben-Israel and Greville, Chapter 6, Theorem 16, equation (136d), counterexample'
 
 [[node]]
 id = "theorem_6_17_unitarilyInvariant"
-kind = "theorem"
-desc = '''Derive the factor-three bound for the applicable unitarily invariant matrix norm families with mixed multiplication estimates.'''
-deps = ["pinv_sub_pinv_eq_gram"]
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, equation (137), general norm'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, equation (137), compatible seminorms with mixed multiplication estimates'
 
 [[node]]
 id = "exercise_6_77_multiplicative"
-kind = "theorem"
-desc = '''The perturbation radius and Neumann expansion hold for a general compatible submultiplicative matrix norm.'''
-deps = ["exercise_6_77"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 77, general multiplicative norm'
 
 [[node]]
 id = "exercise_6_80_multiplicative"
-kind = "theorem"
-desc = '''Extend the supported perturbation formula to every compatible multiplicative matrix norm and characterize the two support inclusions by the reverse order conditions on this block.'''
-deps = ["exercise_6_80"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 80, general multiplicative norm'
 
 [[node]]
 id = "exercise_6_81_multiplicative"
-kind = "theorem"
-desc = '''Extend both error bounds and the stated stronger sufficient hypothesis to a compatible multiplicative matrix norm family.'''
-deps = ["exercise_6_80_multiplicative","exercise_6_81"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 81, general multiplicative norm'
+
+[[node]]
+id = "exercise_6_80_support_iff"
+source = 'Ben-Israel and Greville, Chapter 6, §6, Exercise 80, support inclusions equivalent to factoring and reversing the supported product'
+
+[[node]]
+id = "theorem_6_17_unsquared_counterexample"
+source = 'Ben-Israel and Greville, Chapter 6, §6, Theorem 17, counterexample to the unsquared printed formula in (137)'
+
+[[node]]
+id = "exercise_6_81_smallness_counterexample"
+source = 'Ben-Israel and Greville, Chapter 6, §6, Exercise 81, acuteness with support does not imply (142)'
+
+[[node]]
+id = "theorem_6_17_mixed_estimates_of_unitary_invariance"
+kind = "theorem"
+desc = '''Derive the mixed multiplication estimates across rectangular shapes from unitarily invariant norms induced by a common symmetric gauge. The factor-three perturbation bound with the mixed estimates as hypotheses is proved.'''
+deps = ["theorem_6_17_unitarilyInvariant"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, general norm-family justification'

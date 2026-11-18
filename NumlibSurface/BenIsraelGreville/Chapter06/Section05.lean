@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Analysis.InnerProductSpace.PrincipalAngles
 import Numlib.LinearAlgebra.Matrix.QR
 import NumlibSurface.BenIsraelGreville.Chapter00.Section06
+import NumlibSurface.BenIsraelGreville.Chapter03.Section06
 
 /-!
 # Principal angles between subspaces
@@ -1421,5 +1422,432 @@ theorem exercise_6_70 {p q : ℕ} (B : Matrix (Fin (p + q)) (Fin p) ℝ)
       by_contra hz
       exact hB (hBlock ((isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hz))).1
     simp [kVolume, hDef, hz]
+
+private theorem subspace_has_fullColumn_coordinates {m r : ℕ}
+    (L : Submodule ℝ (EuclideanSpace ℝ (Fin m))) (hL : finrank ℝ L = r) :
+    ∃ B : Matrix (Fin m) (Fin r) ℝ, B.rank = r ∧ (toEuclideanLin B).range = L := by
+  let b := (stdOrthonormalBasis ℝ L).reindex (finCongr hL)
+  let B : Matrix (Fin m) (Fin r) ℝ := Matrix.of fun i j => (b j : EuclideanSpace ℝ (Fin m)) i
+  have hR : (toEuclideanLin B).range = L := by
+    rw [range_toEuclideanLin_eq_span_col]
+    change Submodule.span ℝ (Set.range fun j => (b j : EuclideanSpace ℝ (Fin m))) = L
+    have hspan := b.toBasis.span_eq
+    have hre := congrArg (fun S : Submodule ℝ L => S.map L.subtype) hspan
+    rw [Submodule.map_span, ← Set.range_comp, Submodule.map_top, Submodule.range_subtype] at hre
+    exact hre
+  exact ⟨B, by rw [← finrank_range_toEuclideanLin, hR, hL], hR⟩
+
+/-- **Exercise 73** of [benIsrael2003generalized], Chapter 6.
+The sum of squared cosine products between a subspace and all coordinate
+subspaces of the same dimension is one. -/
+theorem exercise_6_73 {m : ℕ} (L : Submodule ℝ (EuclideanSpace ℝ (Fin m))) :
+    (∑ I : IndexSequence (finrank ℝ L) m,
+      principalCosineProduct L (coordinateSubspace (Set.range I)) ^ 2) = 1 := by
+  classical
+  by_cases h0 : finrank ℝ L = 0
+  · simp [principalCosineProduct, h0, card_indexSequence]
+  · obtain ⟨B, hB, hR⟩ := subspace_has_fullColumn_coordinates L rfl
+    simpa only [hR] using exercise_6_73_basis B hB h0
+
+/-- **Exercise 72** of [benIsrael2003generalized], Chapter 6.
+The given rank-two matrix has principal cosine product $1/\sqrt 6$
+with the plane of the first two coordinates. -/
+theorem exercise_6_72 :
+    let A : Matrix (Fin 3) (Fin 3) ℝ := !![1, 2, 3; 4, 5, 6; 7, 8, 9]
+    let I : IndexSequence 2 3 := Fin.castLEOrderEmb (by decide)
+    A.rank = 2 ∧
+      principalCosineProduct (toEuclideanLin A).range (coordinateSubspace (Set.range I)) =
+        (Real.sqrt 6)⁻¹ := by
+  let A : Matrix (Fin 3) (Fin 3) ℝ := !![1, 2, 3; 4, 5, 6; 7, 8, 9]
+  let I : IndexSequence 2 3 := Fin.castLEOrderEmb (by decide)
+  let B := A.submatrix id I
+  have hMinor : (A.submatrix I I).det = -3 := by
+    norm_num [A, I, Matrix.det_fin_two]
+  have hAdet : A.det = 0 := by
+    norm_num [A, Matrix.det_fin_three]
+  have hMinorRank : (A.submatrix I I).rank = 2 := by
+    have hu : IsUnit (A.submatrix I I) :=
+      (isUnit_iff_isUnit_det _).mpr (by rw [hMinor]; exact isUnit_iff_ne_zero.mpr (by norm_num))
+    simpa using rank_of_isUnit _ hu
+  have hB : B.rank = 2 := by
+    apply le_antisymm B.rank_le_width
+    simpa [B, submatrix_submatrix, hMinorRank] using rank_submatrix_le B I id
+  have hA : A.rank = 2 := by
+    have hA2 : 2 ≤ A.rank := hB ▸ rank_submatrix_le A id I
+    have hA3 : A.rank < 3 := lt_of_le_of_ne A.rank_le_width fun h =>
+      (by
+        have hu : IsUnit A := isUnit_of_rank_eq_card (by simpa using h)
+        have hn := isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det A).mp hu)
+        exact hn hAdet)
+    omega
+  have hvol : matrixVolume B = 3 * Real.sqrt 6 := by
+    apply (pow_left_inj₀ (matrixVolume_nonneg _) (by positivity) two_ne_zero).mp
+    rw [matrixVolume_sq_eq_det_transpose_mul B hB (by decide), mul_pow,
+      Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 6)]
+    norm_num [B, A, I, det_fin_two, Matrix.mul_apply, Fin.sum_univ_three]
+  refine ⟨hA, ?_⟩
+  rw [exercise_6_71 A hA (by decide) I I hB, hMinor, hvol]
+  rw [abs_neg, abs_of_nonneg (by norm_num : (0 : ℝ) ≤ 3), div_eq_mul_inv, _root_.mul_inv_rev]
+  ring_nf
+
+private theorem abs_sum_eq_sum_abs_iff_sign {ι : Type*} [Fintype ι] (x : ι → ℝ) :
+    |∑ i, x i| = ∑ i, |x i| ↔ (∀ i, 0 ≤ x i) ∨ (∀ i, x i ≤ 0) := by
+  have hpos (v : ι → ℝ) (h : ∑ i, |v i| = ∑ i, v i) (i : ι) : 0 ≤ v i := by
+    have hz : (∑ i, (|v i| - v i)) = 0 := by rw [Finset.sum_sub_distrib, h, sub_self]
+    have he := (Finset.sum_eq_zero_iff_of_nonneg
+      (fun j _ => sub_nonneg.mpr (le_abs_self (v j)))).mp hz i (Finset.mem_univ _)
+    exact abs_eq_self.mp (sub_eq_zero.mp he)
+  constructor
+  · intro h
+    by_cases hs : 0 ≤ ∑ i, x i
+    · exact Or.inl (hpos x (h.symm.trans (abs_of_nonneg hs)))
+    · have hv : (∑ i, |-x i|) = ∑ i, -x i := by
+        simpa only [abs_neg, Finset.sum_neg_distrib, abs_of_nonpos (le_of_not_ge hs)] using h.symm
+      exact Or.inr fun i => neg_nonneg.mp (hpos (fun i => -x i) hv i)
+  · rintro (h | h)
+    · rw [abs_of_nonneg (Finset.sum_nonneg fun i _ => h i)]
+      simp only [abs_of_nonneg (h _)]
+    · rw [abs_of_nonpos (Finset.sum_nonpos fun i _ => h i), ← Finset.sum_neg_distrib]
+      simp only [abs_of_nonpos (h _)]
+
+private theorem cross_det_eq_sum_selected_det {m r : ℕ} (B C : Matrix (Fin m) (Fin r) ℝ) :
+    (Bᵀ * C).det = ∑ I : IndexSequence r m,
+      (B.submatrix I id).det * (C.submatrix I id).det := by
+  classical
+  let i₀ : IndexSequence r r := (OrderIso.refl (Fin r)).toOrderEmbedding
+  have he := congrArg (fun X : Matrix (IndexSequence r r) (IndexSequence r r) ℝ => X i₀ i₀)
+    (compound_mul r Bᵀ C)
+  change (Bᵀ * C).det =
+    ∑ i : IndexSequence r m, ((Bᵀ).submatrix id i).det * (C.submatrix i id).det at he
+  simpa only [← transpose_submatrix, det_transpose] using he
+
+/-- **Exercise 74** of [benIsrael2003generalized], Chapter 6.
+The coordinate cosine products bound the cosine product of the two
+subspaces. For any chosen bases, equality holds precisely when all
+nonzero products of corresponding signed maximal minors have the same sign. -/
+theorem exercise_6_74_basis {m r : ℕ} (B C : Matrix (Fin m) (Fin r) ℝ)
+    (hB : B.rank = r) (hC : C.rank = r) (hr : r ≠ 0) :
+    let L := (toEuclideanLin B).range
+    let M := (toEuclideanLin C).range
+    let S := ∑ I : IndexSequence r m,
+      principalCosineProduct L (coordinateSubspace (Set.range I)) *
+        principalCosineProduct M (coordinateSubspace (Set.range I))
+    let p := fun I : IndexSequence r m => (B.submatrix I id).det * (C.submatrix I id).det
+    principalCosineProduct L M ≤ S ∧
+      (principalCosineProduct L M = S ↔ (∀ I, 0 ≤ p I) ∨ (∀ I, p I ≤ 0)) := by
+  let L := (toEuclideanLin B).range
+  let M := (toEuclideanLin C).range
+  let S := ∑ I : IndexSequence r m,
+    principalCosineProduct L (coordinateSubspace (Set.range I)) *
+      principalCosineProduct M (coordinateSubspace (Set.range I))
+  let p := fun I : IndexSequence r m => (B.submatrix I id).det * (C.submatrix I id).det
+  let v := matrixVolume B * matrixVolume C
+  have hv : 0 < v := mul_pos (matrixVolume_pos_of_fullColumn hB hr) (matrixVolume_pos_of_fullColumn hC hr)
+  have hL : principalCosineProduct L M = |∑ I, p I| / v := by
+    apply (eq_div_iff hv.ne').mpr
+    have hd := theorem_6_12 B C hB hC hr
+    rw [cross_det_eq_sum_selected_det] at hd
+    exact (mul_comm _ _).trans hd.symm
+  have hS : S = (∑ I, |p I|) / v := by
+    unfold S
+    simp only [L, M, exercise_6_71_basis B hB hr, exercise_6_71_basis C hC hr,
+      div_mul_div_comm, p, abs_mul, ← Finset.sum_div, v]
+  change principalCosineProduct L M ≤ S ∧
+    (principalCosineProduct L M = S ↔ (∀ I, 0 ≤ p I) ∨ (∀ I, p I ≤ 0))
+  rw [hL, hS]
+  exact ⟨div_le_div_of_nonneg_right (Finset.abs_sum_le_sum_abs _ _) hv.le,
+    (div_left_inj' hv.ne').trans (abs_sum_eq_sum_abs_iff_sign p)⟩
+
+/-- **Exercise 74** of [benIsrael2003generalized], Chapter 6.
+The bound applies to all subspaces of the same dimension. -/
+theorem exercise_6_74 {m : ℕ} (L M : Submodule ℝ (EuclideanSpace ℝ (Fin m)))
+    (h : finrank ℝ L = finrank ℝ M) :
+    principalCosineProduct L M ≤ ∑ I : IndexSequence (finrank ℝ L) m,
+      principalCosineProduct L (coordinateSubspace (Set.range I)) *
+        principalCosineProduct M (coordinateSubspace (Set.range I)) := by
+  classical
+  by_cases h0 : finrank ℝ L = 0
+  · have h1 := h.symm.trans h0
+    simp [principalCosineProduct, h0, h1, card_indexSequence]
+  · obtain ⟨B, hB, hBR⟩ := subspace_has_fullColumn_coordinates L rfl
+    obtain ⟨C, hC, hCR⟩ := subspace_has_fullColumn_coordinates M h.symm
+    simpa only [hBR, hCR] using (exercise_6_74_basis B C hB hC h0).1
+
+private theorem minorWeightSum_eq_matrixVolume_sq {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
+    (hA : A.rank = r) (hr : r ≠ 0) :
+    Chapter03.minorWeightSum A r = matrixVolume A ^ 2 := by
+  rw [matrixVolume_eq_sqrt_sum_minors A hA hr,
+    Real.sq_sqrt (Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+  simp only [Chapter03.minorWeightSum, Real.norm_eq_abs, sq_abs]
+
+private theorem maximalMinorWeight_eq_minor_div_volume_sq {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
+    (hA : A.rank = r) (hr : r ≠ 0) (I : IndexSequence r m) (J : IndexSequence r n) :
+    Chapter03.maximalMinorWeight A I J = (A.submatrix I J).det ^ 2 / matrixVolume A ^ 2 := by
+  rw [Chapter03.maximalMinorWeight, minorWeightSum_eq_matrixVolume_sq A hA hr,
+    Real.norm_eq_abs, sq_abs]
+
+/-- **Exercise 75**, Equation (124), of [benIsrael2003generalized], Chapter 6.
+The original matrix is the convex average of the zero-extended inverses
+of the corresponding maximal minors of its Moore–Penrose inverse. -/
+theorem exercise_6_75 {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
+    (hA : A.rank = r) (hr : r ≠ 0) :
+    let w := fun (I : IndexSequence r m) (J : IndexSequence r n) =>
+      (A.submatrix I J).det ^ 2 / matrixVolume A ^ 2
+    (∀ I J, 0 ≤ w I J) ∧ (∑ I, ∑ J, w I J) = 1 ∧
+      A = ∑ I, ∑ J, w I J • Chapter03.basicInverse A.pinv J I := by
+  have hrank : A.pinv.rank = r :=
+    ((Matrix.IsInnerInverse.isOuterInverse_iff_rank_eq A.mul_pinv_mul_self).mp
+      A.pinv_mul_self_mul_pinv).trans hA
+  have hinvol : A.pinv.pinv = A := by
+    symm
+    exact A.pinv.pinv_unique A.pinv_mul_self_mul_pinv A.mul_pinv_mul_self
+      A.isHermitian_pinv_mul A.isHermitian_mul_pinv
+  have hweights := Chapter03.maximalMinorWeight_convex A hA
+  have hs := Chapter03.pinv_eq_sum_basicInverses A.pinv hrank
+  rw [hinvol, Finset.sum_comm] at hs
+  simp only [RCLike.ofReal_real_eq_id, id_eq, Chapter03.maximalMinorWeight_pinv A hA] at hs
+  simp only [maximalMinorWeight_eq_minor_div_volume_sq A hA hr] at hweights hs
+  exact ⟨hweights.1, hweights.2, hs⟩
+
+private theorem volume_transpose_of_fullRow {n r : ℕ} {G : Matrix (Fin r) (Fin n) ℝ}
+    (hG : G.rank = r) (hr : r ≠ 0) :
+    matrixVolume Gᵀ = matrixVolume G := by
+  have hG' : Gᵀ.rank = r := by simpa only [rank_transpose] using hG
+  apply (pow_left_inj₀ (matrixVolume_nonneg _) (matrixVolume_nonneg _) two_ne_zero).mp
+  rw [matrixVolume_sq_eq_det_transpose_mul Gᵀ hG' hr, transpose_transpose,
+    matrixVolume_sq_eq_det_mul_transpose G hG hr]
+
+/-- The normalized squared rank-sized minor splits into the two squared
+principal cosine products for the column and row spaces. -/
+theorem maximalMinorWeight_eq_principalCosineProducts {m n r : ℕ}
+    (A : Matrix (Fin m) (Fin n) ℝ) (hA : A.rank = r) (hr : r ≠ 0)
+    (I : IndexSequence r m) (J : IndexSequence r n) :
+    (A.submatrix I J).det ^ 2 / matrixVolume A ^ 2 =
+      principalCosineProduct (toEuclideanLin A).range (coordinateSubspace (Set.range I)) ^ 2 *
+      principalCosineProduct (toEuclideanLin Aᵀ).range (coordinateSubspace (Set.range J)) ^ 2 := by
+  obtain ⟨F, G, h⟩ : ∃ (F : Matrix (Fin m) (Fin r) ℝ) (G : Matrix (Fin r) (Fin n) ℝ),
+      IsRankFactorization A F G := by
+    rw [← hA]
+    exact Chapter00.lemma_1 A
+  have hF : F.rank = r := h.rank_left.trans (Fintype.card_fin r)
+  have hG : G.rank = r := h.rank_right.trans (Fintype.card_fin r)
+  have hG' : Gᵀ.rank = r := by simpa only [rank_transpose] using hG
+  have hAij : (A.submatrix I J).det =
+      (F.submatrix I id).det * ((Gᵀ).submatrix J id).det := by
+    have hg : G.submatrix id J = ((Gᵀ).submatrix J id)ᵀ := by
+      rw [transpose_submatrix, transpose_transpose]
+    rw [h.eq_mul, submatrix_mul F G I id J Function.bijective_id, hg, det_mul, det_transpose]
+  rw [rankFactor_left_range h, rankFactor_left_range h.transpose,
+    exercise_6_71_basis F hF hr I, exercise_6_71_basis Gᵀ hG' hr J,
+    hAij, matrixVolume_mul_of_rankFactorization h, volume_transpose_of_fullRow hG hr]
+  simp only [div_pow, sq_abs, ← div_mul_div_comm, mul_pow]
+
+private theorem basicInverse_coordinate_range_ker {m n r : ℕ}
+    {A : Matrix (Fin m) (Fin n) ℝ} {I : IndexSequence r m} {J : IndexSequence r n}
+    (hIJ : IsUnit (A.pinv.submatrix J I)) :
+    let B := toEuclideanLin (Chapter03.basicInverse A.pinv J I)
+    LinearMap.range B = coordinateSubspace (Set.range I) ∧
+      LinearMap.ker B = (coordinateSubspace (Set.range J))ᗮ := by
+  let Q := coordinateColumns I
+  let Z := coordinateColumns J
+  let H := (A.pinv.submatrix J I)⁻¹
+  have hH : IsUnit H := isUnit_nonsing_inv_iff.mpr hIJ
+  have hQ : Chapter03.minorColumnSelector (𝕜 := ℝ) I = Q := by
+    ext i j
+    simp [Q, coordinateColumns, Chapter03.minorColumnSelector, Matrix.one_apply]
+  have hZ : Chapter03.minorRowSelector (𝕜 := ℝ) J = Zᵀ := by
+    ext j i
+    simp [Z, coordinateColumns, Chapter03.minorRowSelector, Matrix.one_apply, eq_comm]
+  have hB : Chapter03.basicInverse A.pinv J I = Q * H * Zᵀ := by
+    rw [Chapter03.basicInverse, hQ, hZ]
+  have hZsurj : Function.Surjective (toEuclideanLin Zᵀ) := by
+    intro x
+    refine ⟨toEuclideanLin Z x, ?_⟩
+    rw [← toEuclideanLin_mul_apply, coordinateColumns_gram, toEuclideanLin_one_apply]
+  have hHsurj : Function.Surjective (toEuclideanLin H) := by
+    intro x
+    refine ⟨toEuclideanLin H⁻¹ x, ?_⟩
+    rw [← toEuclideanLin_mul_apply, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hH),
+      toEuclideanLin_one_apply]
+  have hQHinj : Function.Injective (toEuclideanLin (Q * H)) := by
+    have hEqu : (H⁻¹ * Qᵀ) * (Q * H) = 1 := by
+      rw [Matrix.mul_assoc, ← Matrix.mul_assoc Qᵀ Q, coordinateColumns_gram, Matrix.one_mul,
+        nonsing_inv_mul _ ((isUnit_iff_isUnit_det _).mp hH)]
+    exact (show Function.LeftInverse (toEuclideanLin (H⁻¹ * Qᵀ)) (toEuclideanLin (Q * H))
+      from fun x => by rw [← toEuclideanLin_mul_apply, hEqu, toEuclideanLin_one_apply]).injective
+  have hK : (toEuclideanLin (Q * H * Zᵀ)).ker = (toEuclideanLin Zᵀ).ker := by
+    ext x
+    simp only [LinearMap.mem_ker, toEuclideanLin_mul_apply]
+    constructor
+    · intro hx
+      apply hQHinj
+      rw [toEuclideanLin_mul_apply, map_zero]
+      exact hx
+    · intro hx
+      rw [hx, map_zero, map_zero]
+  constructor
+  · rw [hB, toEuclideanLin_mul, toEuclideanLin_mul, LinearMap.comp_assoc, LinearMap.range_comp,
+      LinearMap.range_comp, LinearMap.range_eq_top.mpr hZsurj, Submodule.map_top,
+      LinearMap.range_eq_top.mpr hHsurj, Submodule.map_top, coordinateColumns_range]
+  · rw [hB, hK, ← conjTranspose_eq_transpose_of_trivial, toEuclideanLin_conjTranspose_eq_adjoint,
+      ← LinearMap.orthogonal_range, coordinateColumns_range]
+
+/-- **Exercise 76**, Equation (125), of [benIsrael2003generalized], Chapter 6.
+The coordinate operators in the convex average have coordinate ranges
+and orthogonal coordinate kernels. Their weights are products of the
+squared principal cosines for the two coordinate subspaces. -/
+theorem exercise_6_76 {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
+    (hA : A.rank = r) (hr : r ≠ 0) :
+    let B := fun (I : IndexSequence r m) (J : IndexSequence r n) => Chapter03.basicInverse A.pinv J I
+    (∀ (I : IndexSequence r m) (J : IndexSequence r n), IsUnit (A.submatrix I J) →
+      (toEuclideanLin (B I J)).range = coordinateSubspace (Set.range I) ∧
+        (toEuclideanLin (B I J)).ker = (coordinateSubspace (Set.range J))ᗮ) ∧
+      A = ∑ I : IndexSequence r m, ∑ J : IndexSequence r n,
+        (principalCosineProduct (toEuclideanLin A).range (coordinateSubspace (Set.range I)) ^ 2 *
+          principalCosineProduct (toEuclideanLin Aᵀ).range (coordinateSubspace (Set.range J)) ^ 2) •
+            B I J := by
+  constructor
+  · intro I J hIJ
+    have hw : Chapter03.minorWeightSum A r ≠ 0 := by
+      intro hz
+      have hs := (Chapter03.maximalMinorWeight_convex A hA).2
+      simp [Chapter03.maximalMinorWeight, hz] at hs
+    have hIJn : (A.submatrix I J).det ≠ 0 :=
+      isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det _).mp hIJ)
+    have hP : IsUnit (A.pinv.submatrix J I) := by
+      apply (isUnit_iff_isUnit_det _).mpr
+      apply isUnit_iff_ne_zero.mpr
+      rw [Chapter03.correspondingMaximalMinors A hA I J]
+      simpa only [RCLike.ofReal_real_eq_id, id_eq, star_trivial] using div_ne_zero hIJn hw
+    exact basicInverse_coordinate_range_ker hP
+  · have he := (exercise_6_75 A hA hr).2.2
+    simp only [maximalMinorWeight_eq_principalCosineProducts A hA hr] at he
+    exact he
+
+/-- For every nonsingular rank-sized minor, the corresponding operator
+in Exercise 76 restricts to an isomorphism between the two coordinate subspaces. -/
+theorem exercise_6_76_coordinate_equiv {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
+    (hA : A.rank = r) (hr : r ≠ 0) (I : IndexSequence r m) (J : IndexSequence r n)
+    (hIJ : IsUnit (A.submatrix I J)) :
+    ∃ e : coordinateSubspace (Set.range J) ≃ₗ[ℝ] coordinateSubspace (Set.range I),
+      ∀ x : coordinateSubspace (Set.range J),
+        ((e x : coordinateSubspace (Set.range I)) : EuclideanSpace ℝ (Fin m)) =
+          toEuclideanLin (Chapter03.basicInverse A.pinv J I) (x : EuclideanSpace ℝ (Fin n)) := by
+  let K := coordinateSubspace (Set.range J)
+  let L := coordinateSubspace (Set.range I)
+  let T := toEuclideanLin (Chapter03.basicInverse A.pinv J I)
+  obtain ⟨hR, hK⟩ := (exercise_6_76 A hA hr).1 I J hIJ
+  change T.range = L at hR
+  change T.ker = Kᗮ at hK
+  let F : K →ₗ[ℝ] L := LinearMap.codRestrict L (T ∘ₗ K.subtype) (fun x => by
+    change T (x : EuclideanSpace ℝ (Fin n)) ∈ L
+    rw [← hR]
+    exact LinearMap.mem_range_self T _)
+  have hInj : Function.Injective F := by
+    intro x y he
+    have hex : T (x : EuclideanSpace ℝ (Fin n)) = T (y : EuclideanSpace ℝ (Fin n)) :=
+      congrArg Subtype.val he
+    have hOrth : (x : EuclideanSpace ℝ (Fin n)) - (y : EuclideanSpace ℝ (Fin n)) ∈ Kᗮ := by
+      rw [← hK, LinearMap.mem_ker, map_sub, hex, sub_self]
+    apply Subtype.ext
+    apply sub_eq_zero.mp
+    have hh : (x : EuclideanSpace ℝ (Fin n)) - (y : EuclideanSpace ℝ (Fin n)) ∈ K ⊓ Kᗮ :=
+      ⟨K.sub_mem x.property y.property, hOrth⟩
+    simpa only [K.inf_orthogonal_eq_bot, Submodule.mem_bot] using hh
+  have hSurj : Function.Surjective F := by
+    intro y
+    obtain ⟨v, hv⟩ : (y : EuclideanSpace ℝ (Fin m)) ∈ T.range := hR.symm ▸ y.property
+    refine ⟨K.orthogonalProjectionOnto v, Subtype.ext ?_⟩
+    have hOrth := K.sub_starProjection_mem_orthogonal v
+    rw [← hK, LinearMap.mem_ker, map_sub, sub_eq_zero] at hOrth
+    exact hOrth.symm.trans hv
+  exact ⟨LinearEquiv.ofBijective F ⟨hInj, hSurj⟩, fun _ => rfl⟩
+
+/-- **Exercise 76**, Equation (126), of [benIsrael2003generalized], Chapter 6.
+A full-rank factorization expands into the product of the weighted
+basic-inverse expansions of its column and row factors. -/
+theorem exercise_6_76_factorization {m n r : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {F : Matrix (Fin m) (Fin r) ℝ} {G : Matrix (Fin r) (Fin n) ℝ}
+    (h : IsRankFactorization A F G) (hr : r ≠ 0) :
+    let i₀ := (OrderIso.refl (Fin r)).toOrderEmbedding
+    A =
+      (∑ I : IndexSequence r m, ((F.submatrix I id).det ^ 2 / matrixVolume F ^ 2) •
+        Chapter03.basicInverse F.pinv i₀ I) *
+      (∑ J : IndexSequence r n, ((G.submatrix id J).det ^ 2 / matrixVolume G ^ 2) •
+        Chapter03.basicInverse G.pinv J i₀) := by
+  let : Unique (IndexSequence r r) :=
+    ⟨⟨(OrderIso.refl (Fin r)).toOrderEmbedding⟩, indexSequence_self_unique⟩
+  have hF := (exercise_6_75 F (h.rank_left.trans (Fintype.card_fin r)) hr).2.2
+  have hG := (exercise_6_75 G (h.rank_right.trans (Fintype.card_fin r)) hr).2.2
+  simp only [Fintype.sum_unique] at hF hG
+  exact h.eq_mul.trans (congrArg₂ (· * ·) hF hG)
+
+/-- **Equation (116)** of [benIsrael2003generalized], Chapter 6, for
+a positive-rank spanning list that may contain dependent columns. -/
+theorem volume_adjoin_vector_principalAngle_of_positiveRank {m n : ℕ}
+    (B : Matrix (Fin m) (Fin n) ℝ) (hB : B.rank ≠ 0)
+    (x : EuclideanSpace ℝ (Fin m)) (hx : x ≠ 0) :
+    let X := replicateCol (Fin 1) (WithLp.ofLp x)
+    let L := (toEuclideanLin B).range
+    kVolume (B.rank + 1) ((fromCols B X).submatrix id finSumFinEquiv.symm) =
+      matrixVolume B * ‖x‖ * Real.sin (L.angle x) := by
+  let X := replicateCol (Fin 1) (WithLp.ofLp x)
+  let A := (fromCols B X).submatrix id finSumFinEquiv.symm
+  let L := (toEuclideanLin B).range
+  have hXR : (toEuclideanLin X).range = ℝ ∙ x :=
+    range_toEuclideanLin_replicateCol (WithLp.ofLp x)
+  have hX : X.rank = 1 := by
+    rw [← finrank_range_toEuclideanLin, hXR, finrank_span_singleton hx]
+  have hR : (toEuclideanLin A).range = L ⊔ ℝ ∙ x := by
+    rw [range_toEuclideanLin_eq_span_col, show L = (toEuclideanLin B).range from rfl,
+      range_toEuclideanLin_eq_span_col, ← Submodule.span_union]
+    apply congrArg (Submodule.span ℝ)
+    ext y
+    constructor
+    · rintro ⟨i, rfl⟩
+      let e : Fin (n + 1) ≃ Fin n ⊕ Fin 1 := finSumFinEquiv.symm
+      rcases he : e i with j | j
+      · exact Or.inl ⟨j, by
+          apply WithLp.ofLp_injective
+          funext k
+          simp [A, col_apply, show finSumFinEquiv.symm i = Sum.inl j from he]⟩
+      · exact Or.inr (by
+          change WithLp.toLp 2 (A.col i) = x
+          apply WithLp.ofLp_injective
+          funext k
+          simp [A, X, col_apply, show finSumFinEquiv.symm i = Sum.inr j from he])
+    · rintro (⟨j, rfl⟩ | rfl)
+      · refine ⟨finSumFinEquiv (Sum.inl j), ?_⟩
+        apply WithLp.ofLp_injective
+        funext k
+        simp [A, col_apply]
+      · refine ⟨finSumFinEquiv (Sum.inr 0), ?_⟩
+        apply WithLp.ofLp_injective
+        funext k
+        simp [A, X, col_apply]
+  change kVolume (B.rank + 1) A = matrixVolume B * ‖x‖ * Real.sin (L.angle x)
+  by_cases hxL : x ∈ L
+  · have hr : A.rank = B.rank := by
+      rw [← finrank_range_toEuclideanLin, hR, sup_eq_left.mpr ((Submodule.span_singleton_le_iff_mem x L).mpr hxL)]
+      exact finrank_range_toEuclideanLin B
+    simp [kVolume, hr, L.angle_of_mem hx hxL]
+  · have hr : A.rank = B.rank + 1 := by
+      have hspan := Submodule.finrank_sup_add_finrank_inf_eq L (ℝ ∙ x)
+      rw [(Submodule.disjoint_span_singleton_of_notMem (K := ℝ) hxL).eq_bot,
+        finrank_bot, add_zero, finrank_span_singleton hx,
+        show finrank ℝ L = B.rank from finrank_range_toEuclideanLin B,
+        ← hR, finrank_range_toEuclideanLin] at hspan
+      exact hspan
+    have hvol : matrixVolume X = ‖x‖ := by
+      apply (pow_left_inj₀ (matrixVolume_nonneg X) (norm_nonneg _) two_ne_zero).mp
+      rw [matrixVolume_sq_eq_det_transpose_mul X hX one_ne_zero, det_unique, EuclideanSpace.norm_sq_eq]
+      simp only [X, Matrix.mul_apply, Matrix.transpose_apply, replicateCol_apply, pow_two,
+        Real.norm_eq_abs, abs_mul_abs_self]
+    have hAngle : principalSineProduct L (toEuclideanLin X).range = Real.sin (L.angle x) := by
+      unfold principalSineProduct
+      rw [show finrank ℝ L = B.rank from finrank_range_toEuclideanLin B,
+        finrank_range_toEuclideanLin, hX, min_eq_right (Nat.pos_of_ne_zero hB), Finset.prod_range_one,
+        principalAngle, hXR, L.principalAngle_span_singleton_zero hx]
+    rw [kVolume_eq_matrixVolume A hr (by omega), theorem_6_11 B X rfl hX hB one_ne_zero hr, hvol, hAngle]
 
 end BenIsraelGreville.Chapter06

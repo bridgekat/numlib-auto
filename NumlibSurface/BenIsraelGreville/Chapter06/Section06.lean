@@ -3,11 +3,12 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Chapter06.Section05
-import NumlibSurface.BenIsraelGreville.Chapter06.Section02
+import NumlibSurface.BenIsraelGreville.Chapter06.Section04
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
 import NumlibSurface.BenIsraelGreville.Chapter05.Section02
 import Numlib.Analysis.Matrix.SingularValues
 import Numlib.Analysis.Normed.Ring.Inverse
+import Numlib.Analysis.Normed.Algebra.SpectralRadius
 import Mathlib.Analysis.Calculus.FDeriv.Mul
 
 /-!
@@ -29,8 +30,13 @@ Moore–Penrose inverse to the gaps between row and column ranges.
 * **Theorem 16**, Equation (136d) (correction). The simplified inverse
   difference holds when the row and column spaces agree. Acuteness allows
   the spaces to rotate, so the two projection corrections can be nonzero.
+* **Theorem 17**, Equation (137) (correction). The two inverse norms in the
+  maximum are squared to match the quadratic inverse factor in the bound.
 * **Exercise 78** (correction). The derivative is negative as in (139).
   The first-order residual therefore adds the positive product term.
+* **Exercise 81** (scope). Acuteness and vanishing off-diagonal perturbation
+  blocks do not imply the smallness hypothesis (142). That hypothesis is
+  required for the displayed estimates.
 -/
 
 namespace BenIsraelGreville.Chapter06
@@ -82,6 +88,97 @@ theorem theorem_6_13_rows (A B : Matrix m n ℂ) :
   have h := theorem_6_13 Aᴴ Bᴴ
   dsimp only at h
   rwa [rank_conjTranspose A, rank_conjTranspose B] at h
+
+private theorem range_eq_of_partialIsometry_final_projector
+    {p q : Type*} [Fintype p] [Fintype q] [DecidableEq p] [DecidableEq q]
+    {W : Matrix p q ℂ} {L : Submodule ℂ (EuclideanSpace ℂ p)}
+    (hW : IsPartialIsometry W) (hL : W * Wᴴ = orthogonalProjector L) :
+    (toEuclideanLin W).range = L := by
+  have hp := W.mul_pinv_eq_starProjection
+  rw [← (isPartialIsometry_iff_adjoint_eq_pinv W).mp hW, hL, toEuclideanLin_orthogonalProjector] at hp
+  apply_fun (fun T : EuclideanSpace ℂ p →ₗ[ℂ] EuclideanSpace ℂ p => T.range) at hp
+  simpa only [Submodule.range_starProjection] using hp.symm
+
+/-- **Equations (129a)–(129c)** of [benIsrael2003generalized], Chapter 6.
+Orthonormal bases adapted to the column and row ranges put a matrix
+in a single nonsingular leading block. The same bases express the
+perturbation and its sum with the original matrix in four blocks. -/
+theorem rankAdaptedOrthonormalCoordinates {p q : ℕ} (A E : Matrix (Fin p) (Fin q) ℂ) :
+    let r := A.rank
+    let hm : r ≤ p := A.rank_le_height
+    let hn : r ≤ q := A.rank_le_width
+    let eₘ : Fin p ≃ Fin r ⊕ Fin (p - r) :=
+      (finCongr (Nat.add_sub_of_le hm).symm).trans finSumFinEquiv.symm
+    let eₙ : Fin q ≃ Fin r ⊕ Fin (q - r) :=
+      (finCongr (Nat.add_sub_of_le hn).symm).trans finSumFinEquiv.symm
+    ∃ (U : Matrix (Fin p) (Fin p) ℂ) (V : Matrix (Fin q) (Fin q) ℂ)
+        (D F : Matrix (Fin r) (Fin r) ℂ) (R : Matrix (Fin r) (Fin (q - r)) ℂ)
+        (S : Matrix (Fin (p - r)) (Fin r) ℂ) (T : Matrix (Fin (p - r)) (Fin (q - r)) ℂ),
+      U ∈ unitaryGroup (Fin p) ℂ ∧ V ∈ unitaryGroup (Fin q) ℂ ∧ IsUnit D ∧
+        (toEuclideanLin (U.submatrix id (Fin.castLE hm))).range = (toEuclideanLin A).range ∧
+        (toEuclideanLin (V.submatrix id (Fin.castLE hn))).range = (toEuclideanLin Aᴴ).range ∧
+        Matrix.reindex eₘ eₙ (Uᴴ * A * V) = fromBlocks D 0 0 0 ∧
+        Matrix.reindex eₘ eₙ (Uᴴ * E * V) = fromBlocks F R S T ∧
+        Matrix.reindex eₘ eₙ (Uᴴ * (A + E) * V) = fromBlocks (D + F) R S T := by
+  let r := A.rank
+  let hm : r ≤ p := A.rank_le_height
+  let hn : r ≤ q := A.rank_le_width
+  let eₘ : Fin p ≃ Fin r ⊕ Fin (p - r) :=
+    (finCongr (Nat.add_sub_of_le hm).symm).trans finSumFinEquiv.symm
+  let eₙ : Fin q ≃ Fin r ⊕ Fin (q - r) :=
+    (finCongr (Nat.add_sub_of_le hn).symm).trans finSumFinEquiv.symm
+  obtain ⟨U, V, h⟩ := theorem_6_2 A
+  let σ := A.sortedSingularValues
+  let D : Matrix (Fin r) (Fin r) ℂ := diagonal (fun i => (σ i : ℂ))
+  let B := Matrix.reindex eₘ eₙ (Uᴴ * E * V)
+  have hD : IsUnit D := by
+    rw [isUnit_iff_isUnit_det, det_diagonal, isUnit_iff_ne_zero]
+    refine Finset.prod_ne_zero_iff.mpr (fun i _ => Complex.ofReal_ne_zero.mpr ?_)
+    change ¬ A.sortedSingularValues i = 0
+    rw [A.sortedSingularValues_eq_zero_iff_rank_le]
+    exact not_le_of_gt i.isLt
+  obtain ⟨hUr, hVr, -, -, -, hPr, hQr, -⟩ := theorem_6_6 h
+  have hU'range := range_eq_of_partialIsometry_final_projector hUr hPr
+  have hV'range := range_eq_of_partialIsometry_final_projector hVr hQr
+  have hₘL (i : Fin r) : (eₘ.symm (Sum.inl i) : ℕ) = i := by
+    simp [eₘ, finSumFinEquiv_apply_left]
+  have hₙL (j : Fin r) : (eₙ.symm (Sum.inl j) : ℕ) = j := by
+    simp [eₙ, finSumFinEquiv_apply_left]
+  have hₘR (i : Fin (p - r)) : (eₘ.symm (Sum.inr i) : ℕ) = r + i := by
+    simp [eₘ, finSumFinEquiv_apply_right]
+  have hₙR (j : Fin (q - r)) : (eₙ.symm (Sum.inr j) : ℕ) = r + j := by
+    simp [eₙ, finSumFinEquiv_apply_right]
+  have hMain : Matrix.reindex eₘ eₙ (Uᴴ * A * V) = fromBlocks D 0 0 0 := by
+    have hs : Uᴴ * A * V = rectDiagonal (fun i => (σ i : ℂ)) := h.1.star_mul_mul
+    rw [hs]
+    ext i j
+    rcases i with i | i <;> rcases j with j | j
+    · simp only [reindex_apply, submatrix_apply, rectDiagonal_apply, hₘL, hₙL,
+        fromBlocks_apply₁₁, D, diagonal_apply, Fin.ext_iff]
+    · rw [reindex_apply, submatrix_apply, rectDiagonal_apply, hₘL, hₙR,
+        fromBlocks_apply₁₂, Matrix.zero_apply, ite_eq_right]
+      have hi := i.isLt
+      omega
+    · rw [reindex_apply, submatrix_apply, rectDiagonal_apply, hₘR, hₙL,
+        fromBlocks_apply₂₁, Matrix.zero_apply, ite_eq_right]
+      have hj := j.isLt
+      omega
+    · rw [reindex_apply, submatrix_apply, rectDiagonal_apply, hₘR, hₙR,
+        fromBlocks_apply₂₂, Matrix.zero_apply]
+      rw [show σ (r + (i : ℕ)) = 0 from h.2 _ (Nat.le_add_right _ _), Complex.ofReal_zero, ite_self]
+  have hE : B = fromBlocks B.toBlocks₁₁ B.toBlocks₁₂ B.toBlocks₂₁ B.toBlocks₂₂ :=
+    (fromBlocks_toBlocks B).symm
+  refine ⟨U, V, D, B.toBlocks₁₁, B.toBlocks₁₂, B.toBlocks₂₁, B.toBlocks₂₂,
+    h.1.mem_unitaryGroup_left, h.1.mem_unitaryGroup_right, hD,
+    hU'range, hV'range, hMain, hE, ?_⟩
+  change Matrix.reindex eₘ eₙ (Uᴴ * (A + E) * V) =
+    fromBlocks (D + B.toBlocks₁₁) B.toBlocks₁₂ B.toBlocks₂₁ B.toBlocks₂₂
+  rw [Matrix.mul_add, Matrix.add_mul, ← coe_reindexAddEquiv, map_add]
+  change Matrix.reindex eₘ eₙ (Uᴴ * A * V) + B = _
+  calc
+    _ = fromBlocks D 0 0 0 + fromBlocks B.toBlocks₁₁ B.toBlocks₁₂ B.toBlocks₂₁ B.toBlocks₂₂ :=
+      congrArg₂ (· + ·) hMain hE
+    _ = _ := by rw [fromBlocks_add, zero_add, zero_add, zero_add]
 
 section Compression
 
@@ -510,6 +607,78 @@ theorem pinv_sub_pinv_eq_of_same_ranges (A B : Matrix m n ℂ)
     rw [hB, Matrix.sub_mul, Matrix.one_mul, A.pinv_mul_self_mul_pinv, sub_self]
   rw [theorem_6_16, h1, h2, add_zero, sub_zero]
 
+/-- **Equation (136d)** of [benIsrael2003generalized], Chapter 6.
+A rank-one perturbation can be acute and still have a nonzero
+projection correction in the pseudoinverse difference. -/
+theorem acute_inverse_difference_counterexample :
+    ∃ A B : Matrix (Fin 2) (Fin 1) ℂ,
+      IsAcutePerturbation A B ∧ B.pinv - A.pinv ≠ -(B.pinv * (B - A) * A.pinv) := by
+  let A : Matrix (Fin 2) (Fin 1) ℂ := !![1; 0]
+  let B : Matrix (Fin 2) (Fin 1) ℂ := !![1; 1]
+  let P : Matrix (Fin 1) (Fin 2) ℂ := !![1, 0]
+  let Q : Matrix (Fin 1) (Fin 2) ℂ := !![1 / 2, 1 / 2]
+  have hPA : P * A = 1 := by
+    ext i j
+    fin_cases i; fin_cases j; norm_num [A, P, Matrix.mul_apply, Fin.sum_univ_two]
+  have hQB : Q * B = 1 := by
+    ext i j
+    fin_cases i; fin_cases j; norm_num [B, Q, Matrix.mul_apply, Fin.sum_univ_two]
+  have hPA' : A.pinv = P := by
+    symm
+    apply A.pinv_unique
+    · rw [Matrix.mul_assoc, hPA, Matrix.mul_one]
+    · rw [hPA, Matrix.one_mul]
+    · have he : P = Aᴴ := by
+        ext i j
+        fin_cases i
+        fin_cases j <;> norm_num [A, P]
+      rw [he]
+      exact isHermitian_mul_conjTranspose_self A
+    · rw [hPA]
+      exact isHermitian_one
+  have hQB' : B.pinv = Q := by
+    symm
+    apply B.pinv_unique
+    · rw [Matrix.mul_assoc, hQB, Matrix.mul_one]
+    · rw [hQB, Matrix.one_mul]
+    · ext i j
+      fin_cases i <;> fin_cases j <;>
+        norm_num [B, Q, Matrix.mul_apply, Matrix.conjTranspose_apply, map_ofNat]
+    · rw [hQB]
+      exact isHermitian_one
+  have hA : A.rank = 1 := by
+    apply le_antisymm (by simpa using rank_le_card_width A)
+    have h := rank_mul_le_right P A
+    simpa only [hPA, rank_one, Fintype.card_fin] using h
+  have hB : B.rank = 1 := by
+    apply le_antisymm (by simpa using rank_le_card_width B)
+    have h := rank_mul_le_right Q B
+    simpa only [hQB, rank_one, Fintype.card_fin] using h
+  have hProjA : orthogonalProjector (toEuclideanLin A).range = A * P := by
+    apply toEuclideanLin.injective
+    rw [toEuclideanLin_orthogonalProjector, ← hPA', A.mul_pinv_eq_starProjection]
+  have hProjA' : orthogonalProjector (toEuclideanLin Aᴴ).range = 1 := by
+    apply toEuclideanLin.injective
+    rw [toEuclideanLin_orthogonalProjector, ← A.pinv_mul_eq_starProjection, hPA', hPA]
+  have hFit : (A * P) * B = A := by
+    have hPB : P * B = 1 := by
+      ext i j
+      fin_cases i; fin_cases j; norm_num [B, P, Matrix.mul_apply, Fin.sum_univ_two]
+    rw [Matrix.mul_assoc, hPB, Matrix.mul_one]
+  refine ⟨A, B, ⟨?_, ?_⟩, ?_⟩
+  · apply (theorem_6_13 A B).1.mpr
+    apply (theorem_6_13 A B).2.mpr
+    rw [hProjA, hFit, hA, hB]
+    exact ⟨rfl, rfl⟩
+  · apply (theorem_6_13_rows A B).1.mpr
+    apply (theorem_6_13_rows A B).2.mpr
+    rw [hProjA', Matrix.one_mul, rank_conjTranspose, hA, hB]
+    exact ⟨rfl, rfl⟩
+  · intro h
+    rw [hPA', hQB'] at h
+    have hz := congrArg (fun M : Matrix (Fin 1) (Fin 2) ℂ => M 0 1) h
+    norm_num [A, B, P, Q, Matrix.mul_apply, Fin.sum_univ_two] at hz
+
 open scoped Matrix.Norms.L2Operator in
 /-- **Theorem 17** of [benIsrael2003generalized], Chapter 6, Equation
 (137), in spectral norm. The change in the pseudoinverse is at most
@@ -555,6 +724,68 @@ theorem theorem_6_17 (A B : Matrix m n ℂ) :
   nlinarith [mul_le_mul_of_nonneg_right hp (norm_nonneg E),
     mul_le_mul_of_nonneg_right hq (norm_nonneg E),
     mul_le_mul_of_nonneg_right hpq (norm_nonneg E)]
+
+open scoped Matrix.Norms.L2Operator in
+/-- **Theorem 17** of [benIsrael2003generalized], Chapter 6. The
+factor-three perturbation bound holds for a compatible pair of
+matrix seminorms under adjoints and multiplication by spectral
+norm factors. The squared inverse norms give the scaling in (137). -/
+theorem theorem_6_17_unitarilyInvariant
+    (μ : Seminorm ℂ (Matrix m n ℂ)) (ν : Seminorm ℂ (Matrix n m ℂ))
+    (hAdj : ∀ X : Matrix m n ℂ, ν Xᴴ = μ X)
+    (hLeft : ∀ (L : Matrix n n ℂ) (X : Matrix n m ℂ), ν (L * X) ≤ ‖L‖ * ν X)
+    (hRight : ∀ (X : Matrix n m ℂ) (R : Matrix m m ℂ), ν (X * R) ≤ ν X * ‖R‖)
+    (hBoth : ∀ (L R : Matrix n m ℂ) (X : Matrix m n ℂ),
+      ν (L * X * R) ≤ ‖L‖ * μ X * ‖R‖)
+    (A B : Matrix m n ℂ) :
+    ν (B.pinv - A.pinv) ≤ 3 * max (‖A.pinv‖ ^ 2) (‖B.pinv‖ ^ 2) * μ (B - A) := by
+  let P := A.pinv
+  let Q := B.pinv
+  let E := B - A
+  let X := 1 - A * P
+  let Y := 1 - Q * B
+  let C := max (‖P‖ ^ 2) (‖Q‖ ^ 2)
+  have hX : ‖X‖ ≤ 1 := l2_opNorm_one_sub_mul_pinv_le_one A
+  have hY : ‖Y‖ ≤ 1 := l2_opNorm_one_sub_pinv_mul_le_one B
+  have hp : ‖P‖ ^ 2 ≤ C := le_max_left _ _
+  have hq : ‖Q‖ ^ 2 ≤ C := le_max_right _ _
+  have hpq : ‖Q‖ * ‖P‖ ≤ C := by nlinarith [sq_nonneg (‖Q‖ - ‖P‖)]
+  have hPGram : ‖Pᴴ * P‖ ≤ ‖P‖ ^ 2 := by
+    simpa only [l2_opNorm_conjTranspose, pow_two] using l2_opNorm_mul Pᴴ P
+  have hQGram : ‖Q * Qᴴ‖ ≤ ‖Q‖ ^ 2 := by
+    simpa only [l2_opNorm_conjTranspose, pow_two] using l2_opNorm_mul Q Qᴴ
+  have h₁ : ν (-(Q * E * P)) ≤ ‖Q‖ * μ E * ‖P‖ := by
+    rw [map_neg_eq_map]
+    exact hBoth Q P E
+  have h₂ : ν ((Q * Qᴴ) * Eᴴ * X) ≤ ‖Q‖ ^ 2 * μ E := by
+    calc
+      _ = ν ((Q * Qᴴ) * (Eᴴ * X)) := by rw [Matrix.mul_assoc (Q * Qᴴ) Eᴴ X]
+      _ ≤ ‖Q * Qᴴ‖ * ν (Eᴴ * X) := hLeft _ _
+      _ ≤ ‖Q‖ ^ 2 * (ν Eᴴ * ‖X‖) :=
+        mul_le_mul hQGram (hRight Eᴴ X) (apply_nonneg ν _) (sq_nonneg _)
+      _ ≤ ‖Q‖ ^ 2 * (μ E * 1) := by
+        rw [hAdj E]
+        exact mul_le_mul_of_nonneg_left
+          (mul_le_mul_of_nonneg_left hX (apply_nonneg μ _)) (sq_nonneg _)
+      _ = _ := by rw [mul_one]
+  have h₃ : ν (Y * Eᴴ * (Pᴴ * P)) ≤ μ E * ‖P‖ ^ 2 := by
+    calc
+      _ ≤ ν (Y * Eᴴ) * ‖Pᴴ * P‖ := hRight _ _
+      _ ≤ (‖Y‖ * ν Eᴴ) * ‖P‖ ^ 2 :=
+        mul_le_mul (hLeft Y Eᴴ) hPGram (norm_nonneg _) (by positivity)
+      _ ≤ (1 * μ E) * ‖P‖ ^ 2 := by
+        rw [hAdj E]
+        exact mul_le_mul_of_nonneg_right
+          (mul_le_mul_of_nonneg_right hY (apply_nonneg μ _)) (sq_nonneg _)
+      _ = _ := by rw [one_mul]
+  change ν (B.pinv - A.pinv) ≤ 3 * C * μ E
+  rw [pinv_sub_pinv_eq_wedin]
+  change ν (-(Q * E * P) + (Q * Qᴴ) * Eᴴ * X + Y * Eᴴ * (Pᴴ * P)) ≤ _
+  refine (map_add_le_add ν _ _).trans ?_
+  have h12 := map_add_le_add ν (-(Q * E * P)) ((Q * Qᴴ) * Eᴴ * X)
+  nlinarith [mul_le_mul_of_nonneg_right hp (apply_nonneg μ E),
+    mul_le_mul_of_nonneg_right hq (apply_nonneg μ E),
+    mul_le_mul_of_nonneg_right hpq (apply_nonneg μ E)]
 
 open scoped Matrix.Norms.Frobenius in
 /-- **Theorem 17** of [benIsrael2003generalized], Chapter 6, Equation
@@ -747,6 +978,34 @@ theorem exercise_6_77 (A E : Matrix n n ℂ) (hA : IsUnit A)
   rfl
 
 open scoped Matrix.Norms.L2Operator in
+/-- **Exercise 77** of [benIsrael2003generalized], Chapter 6. Any
+submultiplicative algebra norm can certify the Neumann expansion.
+The matrices in the series use their finite-dimensional topology. -/
+theorem exercise_6_77_multiplicative (N : AlgebraNorm ℂ (Matrix n n ℂ))
+    (A E : Matrix n n ℂ) (hA : IsUnit A) (hE : N A⁻¹ * N E < 1) :
+    IsUnit (A + E) ∧ (A + E)⁻¹ = (∑' i : ℕ, (-(A⁻¹ * E)) ^ i) * A⁻¹ := by
+  let W := -(A⁻¹ * E)
+  have hW : N W < 1 := by
+    change N (-(A⁻¹ * E)) < 1
+    rw [map_neg_eq_map]
+    exact (map_mul_le_mul N _ _).trans_lt hE
+  have hQ : IsUnit (1 - W) := isUnit_one_sub_of_algebraNorm_lt_one N hW
+  have hEq : A + E = A * (1 - W) := by
+    change A + E = A * (1 - -(A⁻¹ * E))
+    rw [sub_neg_eq_add, Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc,
+      mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hA), Matrix.one_mul]
+  refine ⟨hEq.symm ▸ hA.mul hQ, ?_⟩
+  rcases isEmpty_or_nonempty n with hn | hn
+  · let _ := hn
+    exact Subsingleton.elim _ _
+  · let _ := hn
+    have hs : spectralRadius ℂ W < 1 := (spectralRadius_le_algebraNorm N W).trans_lt
+      (ENNReal.ofReal_lt_one.mpr hW)
+    change (A + E)⁻¹ = (∑' i : ℕ, W ^ i) * A⁻¹
+    rw [hEq, Introduction.inv_mul hA hQ, nonsing_inv_eq_ringInverse (1 - W),
+      (hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one hs).tsum_eq]
+
+open scoped Matrix.Norms.L2Operator in
 /-- **Exercise 78** of [benIsrael2003generalized], Chapter 6, Equation
 (139). The Fréchet derivative of matrix inversion at an invertible
 matrix acts by multiplication by the two inverse factors and a minus sign. -/
@@ -796,28 +1055,21 @@ private theorem mul_pinv_mul_eq_of_range_le (A E : Matrix m n ℂ)
   rw [LinearMap.comp_apply, ContinuousLinearMap.coe_coe]
   exact Submodule.starProjection_eq_self_iff.mpr (h (LinearMap.mem_range_self _ _))
 
-open scoped Matrix.Norms.L2Operator in
-/-- **Exercise 80** of [benIsrael2003generalized], Chapter 6, Equations
-(140)–(143), in spectral norm. A perturbation supported in the original
-row and column spaces has the stated inverse formula. -/
-theorem exercise_6_80 (A E : Matrix m n ℂ)
+private theorem supported_pinv_eq_inv_mul (A E : Matrix m n ℂ)
     (hL : (toEuclideanLin E).range ≤ (toEuclideanLin A).range)
     (hR : (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Aᴴ).range)
-    (hSmall : ‖A.pinv * E‖ < 1) :
+    (hQ : IsUnit (1 + A.pinv * E)) :
     (A + E).pinv = (1 + A.pinv * E)⁻¹ * A.pinv := by
   let P := A.pinv
   let Q := 1 + P * E
   let B := A + E
   let X := Q⁻¹ * P
+  change IsUnit Q at hQ
   have heL : A * P * E = E := mul_pinv_mul_eq_of_range_le A E hL
   have heR : E * P * A = E := by
     have he := congrArg Matrix.conjTranspose (mul_pinv_mul_eq_of_range_le Aᴴ Eᴴ hR)
     simpa only [conjTranspose_mul, pinv_conjTranspose, conjTranspose_conjTranspose,
       Matrix.mul_assoc] using he
-  have hQ : IsUnit Q := by
-    change IsUnit (1 + P * E)
-    rw [← sub_neg_eq_add]
-    exact isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg])
   have hInvR := mul_nonsing_inv Q ((isUnit_iff_isUnit_det Q).mp hQ)
   have hInvL := nonsing_inv_mul Q ((isUnit_iff_isUnit_det Q).mp hQ)
   have hB : B = A * Q := by
@@ -853,6 +1105,189 @@ theorem exercise_6_80 (A E : Matrix m n ℂ)
     rw [Matrix.mul_assoc Q⁻¹, ← Matrix.mul_assoc P A P, A.pinv_mul_self_mul_pinv]
 
 open scoped Matrix.Norms.L2Operator in
+/-- **Exercise 80** of [benIsrael2003generalized], Chapter 6, Equations
+(140)–(143), in spectral norm. A perturbation supported in the original
+row and column spaces has the stated inverse formula. -/
+theorem exercise_6_80 (A E : Matrix m n ℂ)
+    (hL : (toEuclideanLin E).range ≤ (toEuclideanLin A).range)
+    (hR : (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Aᴴ).range)
+    (hSmall : ‖A.pinv * E‖ < 1) :
+    (A + E).pinv = (1 + A.pinv * E)⁻¹ * A.pinv := by
+  apply supported_pinv_eq_inv_mul A E hL hR
+  rw [← sub_neg_eq_add]
+  exact isUnit_one_sub_of_norm_lt_one (by rwa [norm_neg])
+
+/-- **Exercise 80** of [benIsrael2003generalized], Chapter 6. The
+supported perturbation formula holds under the smallness condition
+measured in any submultiplicative algebra norm on the square factor. -/
+theorem exercise_6_80_multiplicative (N : AlgebraNorm ℂ (Matrix n n ℂ))
+    (A E : Matrix m n ℂ)
+    (hL : (toEuclideanLin E).range ≤ (toEuclideanLin A).range)
+    (hR : (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Aᴴ).range)
+    (hSmall : N (A.pinv * E) < 1) :
+    (A + E).pinv = (1 + A.pinv * E)⁻¹ * A.pinv := by
+  apply supported_pinv_eq_inv_mul A E hL hR
+  rw [← sub_neg_eq_add]
+  exact isUnit_one_sub_of_algebraNorm_lt_one N (by rwa [map_neg_eq_map])
+
+omit [DecidableEq m] in
+private theorem range_le_of_mul_pinv_mul_eq (A E : Matrix m n ℂ)
+    (h : A * A.pinv * E = E) : (toEuclideanLin E).range ≤ (toEuclideanLin A).range := by
+  have he := h
+  rw [Matrix.mul_assoc] at he
+  conv_lhs => rw [← he, toEuclideanLin_mul]
+  exact LinearMap.range_comp_le_range _ _
+
+/-- **Exercise 80** of [benIsrael2003generalized], Chapter 6. For the
+invertible square factor used in (143), the forward factorization
+and the Moore–Penrose reverse-order formula together characterize
+the two range inclusions. -/
+theorem exercise_6_80_support_iff (A E : Matrix m n ℂ)
+    (hW : IsUnit (1 + A.pinv * E)) :
+    let W := 1 + A.pinv * E
+    ((A + E = A * W) ∧ (A + E).pinv = W⁻¹ * A.pinv) ↔
+      (toEuclideanLin E).range ≤ (toEuclideanLin A).range ∧
+        (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Aᴴ).range := by
+  let P := A.pinv
+  let K := P * E
+  let W := 1 + K
+  let D := P * A
+  let J := 1 - D
+  have hW₀ : IsUnit W := hW
+  have hInv := mul_nonsing_inv W ((isUnit_iff_isUnit_det _).mp hW₀)
+  have hInvAdj : (W⁻¹)ᴴ * Wᴴ = 1 := by
+    simpa only [conjTranspose_mul, conjTranspose_one] using congrArg Matrix.conjTranspose hInv
+  have hWD : A * W = A + A * P * E := by
+    change A * (1 + P * E) = _
+    rw [Matrix.mul_add, Matrix.mul_one, Matrix.mul_assoc A P E]
+  change (A + E = A * W ∧ (A + E).pinv = W⁻¹ * P) ↔ _
+  constructor
+  · rintro ⟨hFac, hPinv⟩
+    have he : A * P * E = E := (add_left_cancel (hFac.trans hWD)).symm
+    refine ⟨range_le_of_mul_pinv_mul_eq A E he, ?_⟩
+    have hD : D.IsHermitian := A.isHermitian_pinv_mul
+    have hDD : D * D = D := by
+      change (P * A) * (P * A) = P * A
+      rw [← Matrix.mul_assoc (P * A) P A, A.pinv_mul_self_mul_pinv]
+    have hJ : J.IsHermitian := isHermitian_one.sub hD
+    have hDJ : D * J = 0 := by
+      change D * (1 - D) = 0
+      rw [Matrix.mul_sub, Matrix.mul_one, hDD, sub_self]
+    have hJP : J * P = 0 := by
+      change (1 - P * A) * P = 0
+      rw [Matrix.sub_mul, Matrix.one_mul, A.pinv_mul_self_mul_pinv, sub_self]
+    have hJW : J * W = J := by
+      change J * (1 + P * E) = J
+      rw [Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc, hJP, Matrix.zero_mul, add_zero]
+    have hWJ : Wᴴ * J = J := by
+      simpa only [conjTranspose_mul, hJ.eq] using congrArg Matrix.conjTranspose hJW
+    have hHerm : (W⁻¹ * D * W).IsHermitian := by
+      have hp := (A + E).isHermitian_pinv_mul
+      rw [hPinv, hFac] at hp
+      simpa only [D, Matrix.mul_assoc] using hp
+    have hC : D * W * Wᴴ = W * Wᴴ * D := by
+      calc
+        _ = W * (W⁻¹ * (D * W)) * Wᴴ := by rw [← Matrix.mul_assoc, hInv, Matrix.one_mul]
+        _ = W * (W⁻¹ * D * W)ᴴ * Wᴴ := by rw [hHerm.eq, Matrix.mul_assoc W⁻¹ D W]
+        _ = (W * Wᴴ) * D * ((W⁻¹)ᴴ * Wᴴ) := by
+          rw [conjTranspose_mul, conjTranspose_mul, hD.eq]
+          simp only [Matrix.mul_assoc]
+        _ = _ := by rw [hInvAdj, Matrix.mul_one]
+    have hDZ : D * W * J = 0 := by
+      calc
+        _ = (D * W * Wᴴ) * J := by rw [Matrix.mul_assoc (D * W) Wᴴ J, hWJ]
+        _ = (W * Wᴴ) * (D * J) := by rw [hC, Matrix.mul_assoc (W * Wᴴ) D J]
+        _ = _ := by rw [hDJ, Matrix.mul_zero]
+    have hDK : D * W = D + K := by
+      change (P * A) * (1 + P * E) = (P * A) + (P * E)
+      rw [Matrix.mul_add, Matrix.mul_one, ← Matrix.mul_assoc (P * A) P E,
+        A.pinv_mul_self_mul_pinv]
+    have hKD : K * D = K := by
+      rw [hDK, Matrix.add_mul, hDJ, zero_add] at hDZ
+      change K * (1 - D) = 0 at hDZ
+      rw [Matrix.mul_sub, Matrix.mul_one, sub_eq_zero] at hDZ
+      exact hDZ.symm
+    have hAK : A * K = E := by
+      change A * (P * E) = E
+      rw [← Matrix.mul_assoc, he]
+    have hED : E * D = E := by
+      calc
+        _ = (A * K) * D := by rw [hAK]
+        _ = A * K := by rw [Matrix.mul_assoc, hKD]
+        _ = _ := hAK
+    apply range_le_of_mul_pinv_mul_eq Aᴴ Eᴴ
+    have hAdj := congrArg Matrix.conjTranspose hED
+    simpa only [conjTranspose_mul, D, P, pinv_conjTranspose] using hAdj
+  · rintro ⟨hL, hR⟩
+    exact ⟨by rw [hWD, mul_pinv_mul_eq_of_range_le A E hL],
+      supported_pinv_eq_inv_mul A E hL hR hW⟩
+
+private theorem algebraNorm_inverse_one_add_sub_one_le
+    (N : AlgebraNorm ℂ (Matrix n n ℂ)) (C : Matrix n n ℂ) (hC : N C < 1) :
+    N ((1 + C)⁻¹ - 1) ≤ N C / (1 - N C) := by
+  have hQ : IsUnit (1 + C) := by
+    rw [← sub_neg_eq_add]
+    exact isUnit_one_sub_of_algebraNorm_lt_one N (by rwa [map_neg_eq_map])
+  let Z := (1 + C)⁻¹ - 1
+  have hi : (1 + C)⁻¹ + C * (1 + C)⁻¹ = 1 := by
+    have h := mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hQ)
+    simpa only [Matrix.add_mul, Matrix.one_mul] using h
+  have hcZ : C + C * Z = C * (1 + C)⁻¹ := by
+    dsimp [Z]
+    rw [Matrix.mul_sub, Matrix.mul_one]
+    abel
+  have hZ : Z = -(C + C * Z) := by
+    rw [hcZ]
+    calc
+      _ = (1 + C)⁻¹ - ((1 + C)⁻¹ + C * (1 + C)⁻¹) :=
+        congrArg ((1 + C)⁻¹ - ·) hi.symm
+      _ = _ := by abel
+  have hb : N Z ≤ N C + N C * N Z := by
+    calc
+      _ = N (C + C * Z) := (congrArg N hZ).trans (map_neg_eq_map N _)
+      _ ≤ N C + N (C * Z) := map_add_le_add N _ _
+      _ ≤ _ := add_le_add_right (map_mul_le_mul N _ _) _
+  change N Z ≤ _
+  apply (le_div_iff₀ (sub_pos.mpr hC)).mpr
+  nlinarith
+
+/-- **Exercise 81** of [benIsrael2003generalized], Chapter 6. Both
+supported perturbation bounds hold for compatible matrix norms.
+The second condition implies the smallness condition for the first
+bound by submultiplicativity. -/
+theorem exercise_6_81_multiplicative (N : AlgebraNorm ℂ (Matrix n n ℂ))
+    (μ : Seminorm ℂ (Matrix m n ℂ)) (ν : Seminorm ℂ (Matrix n m ℂ))
+    (hRect : ∀ (P : Matrix n m ℂ) (E : Matrix m n ℂ), N (P * E) ≤ ν P * μ E)
+    (hSquare : ∀ (Q : Matrix n n ℂ) (P : Matrix n m ℂ), ν (Q * P) ≤ N Q * ν P)
+    (A E : Matrix m n ℂ)
+    (hL : (toEuclideanLin E).range ≤ (toEuclideanLin A).range)
+    (hR : (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Aᴴ).range) :
+    (N (A.pinv * E) < 1 →
+      ν ((A + E).pinv - A.pinv) ≤ N (A.pinv * E) * ν A.pinv / (1 - N (A.pinv * E))) ∧
+    (ν A.pinv * μ E < 1 →
+      ν ((A + E).pinv - A.pinv) ≤ ν A.pinv ^ 2 * μ E / (1 - N (A.pinv * E))) := by
+  let P := A.pinv
+  let C := P * E
+  have h₁ (hSmall : N C < 1) :
+      ν ((A + E).pinv - P) ≤ N C * ν P / (1 - N C) := by
+    have hf := exercise_6_80_multiplicative N A E hL hR hSmall
+    change (A + E).pinv = (1 + C)⁻¹ * P at hf
+    have he : (A + E).pinv - P = ((1 + C)⁻¹ - 1) * P := by
+      rw [hf, Matrix.sub_mul, Matrix.one_mul]
+    rw [he]
+    refine (hSquare _ _).trans ?_
+    rw [← div_mul_eq_mul_div]
+    exact mul_le_mul_of_nonneg_right (algebraNorm_inverse_one_add_sub_one_le N C hSmall)
+      (apply_nonneg ν P)
+  refine ⟨h₁, fun hStrong => ?_⟩
+  have hc : N C ≤ ν P * μ E := hRect _ _
+  have hSmall := hc.trans_lt hStrong
+  refine (h₁ hSmall).trans (div_le_div_of_nonneg_right ?_ (sub_nonneg.mpr hSmall.le))
+  calc
+    N C * ν P ≤ (ν P * μ E) * ν P := mul_le_mul_of_nonneg_right hc (apply_nonneg ν P)
+    _ = _ := by ring
+
+open scoped Matrix.Norms.L2Operator in
 /-- **Exercise 81** of [benIsrael2003generalized], Chapter 6, Equations
 (146)–(148), in spectral norm. The supported perturbation error uses
 the geometric-series bound with denominator $1-\|A^\dagger E\|_2$. -/
@@ -881,6 +1316,94 @@ theorem exercise_6_81 (A E : Matrix m n ℂ)
     ‖P * E‖ * ‖P‖ ≤ (‖P‖ * ‖E‖) * ‖P‖ :=
       mul_le_mul_of_nonneg_right (l2_opNorm_mul _ _) (norm_nonneg _)
     _ = ‖P‖ ^ 2 * ‖E‖ := by ring
+
+private theorem pinv_smul_one_fin_one {z : ℂ} (hz : z ≠ 0) :
+    ((z • (1 : Matrix (Fin 1) (Fin 1) ℂ))).pinv =
+      z⁻¹ • (1 : Matrix (Fin 1) (Fin 1) ℂ) := by
+  let I : Matrix (Fin 1) (Fin 1) ℂ := 1
+  have h₁ : (z • I) * (z⁻¹ • I) = 1 := by
+    rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul, mul_inv_cancel₀ hz, one_smul]
+    exact Matrix.one_mul _
+  have h₂ : (z⁻¹ • I) * (z • I) = 1 := by
+    rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul, inv_mul_cancel₀ hz, one_smul]
+    exact Matrix.one_mul _
+  symm
+  refine (z • I).pinv_unique ?_ ?_ ?_ ?_
+  · rw [h₁, Matrix.one_mul]
+  · rw [h₂, Matrix.one_mul]
+  · rw [h₁]
+    exact isHermitian_one
+  · rw [h₂]
+    exact isHermitian_one
+
+open scoped Matrix.Norms.L2Operator in
+/-- The unsquared version of **Equation (137)** in
+[benIsrael2003generalized], Chapter 6, already fails for scalar matrices. -/
+theorem theorem_6_17_unsquared_counterexample :
+    ∃ A B : Matrix (Fin 1) (Fin 1) ℂ,
+      3 * max ‖A.pinv‖ ‖B.pinv‖ * ‖B - A‖ < ‖B.pinv - A.pinv‖ := by
+  let I : Matrix (Fin 1) (Fin 1) ℂ := 1
+  let A := (1 / 8 : ℂ) • I
+  let B := (1 / 4 : ℂ) • I
+  have ha : A.pinv = (8 : ℂ) • I := by
+    change ((1 / 8 : ℂ) • (1 : Matrix (Fin 1) (Fin 1) ℂ)).pinv = _
+    rw [pinv_smul_one_fin_one (by norm_num)]
+    norm_num [I]
+  have hb : B.pinv = (4 : ℂ) • I := by
+    change ((1 / 4 : ℂ) • (1 : Matrix (Fin 1) (Fin 1) ℂ)).pinv = _
+    rw [pinv_smul_one_fin_one (by norm_num)]
+    norm_num [I]
+  have he : B - A = (1 / 8 : ℂ) • I := by
+    change (1 / 4 : ℂ) • I - (1 / 8 : ℂ) • I = _
+    rw [← sub_smul, show (1 / 4 - 1 / 8 : ℂ) = 1 / 8 by norm_num]
+  have hd : B.pinv - A.pinv = (-4 : ℂ) • I := by
+    rw [ha, hb, ← sub_smul]
+    norm_num
+  refine ⟨A, B, ?_⟩
+  rw [hd, ha, hb, he]
+  norm_num [norm_smul, I, norm_div, max_eq_left]
+
+open scoped Matrix.Norms.L2Operator in
+/-- In **Exercise 81** of [benIsrael2003generalized], Chapter 6, an acute
+perturbation supported in both original ranges can still violate the
+smallness hypothesis (142). -/
+theorem exercise_6_81_smallness_counterexample :
+    let A : Matrix (Fin 1) (Fin 1) ℂ := 1
+    let E : Matrix (Fin 1) (Fin 1) ℂ := (2 : ℂ) • 1
+    IsAcutePerturbation A (A + E) ∧
+      (toEuclideanLin E).range ≤ (toEuclideanLin A).range ∧
+      (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Aᴴ).range ∧ 1 ≤ ‖A.pinv * E‖ := by
+  let I : Matrix (Fin 1) (Fin 1) ℂ := 1
+  let E := (2 : ℂ) • I
+  have hB : I + E = (3 : ℂ) • I := by
+    change I + (2 : ℂ) • I = _
+    calc
+      _ = (1 : ℂ) • I + (2 : ℂ) • I :=
+        congrArg (fun T => T + (2 : ℂ) • I) (one_smul ℂ I).symm
+      _ = _ := by rw [← add_smul, show (1 + 2 : ℂ) = 3 by norm_num]
+  have hU : IsUnit (I + E) := by
+    rw [hB]
+    apply (isUnit_iff_isUnit_det _).mpr
+    apply isUnit_det_of_right_inverse (B := (3 : ℂ)⁻¹ • I)
+    rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul, mul_inv_cancel₀ (by norm_num), one_smul]
+    exact Matrix.one_mul _
+  have hU' : IsUnit (I + E)ᴴ := hU.star
+  have hTop : (toEuclideanLin I).range = ⊤ := range_toEuclideanLin_eq_top_of_isUnit isUnit_one
+  have hTop' : (toEuclideanLin Iᴴ).range = ⊤ := by simp [I]
+  have hRec : I.pinv = I := by
+    have h := pinv_smul_one_fin_one (z := 1) one_ne_zero
+    simpa [I] using h
+  change IsAcutePerturbation I (I + E) ∧
+    (toEuclideanLin E).range ≤ (toEuclideanLin I).range ∧
+    (toEuclideanLin Eᴴ).range ≤ (toEuclideanLin Iᴴ).range ∧ 1 ≤ ‖I.pinv * E‖
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [IsAcutePerturbation, hTop, hTop', range_toEuclideanLin_eq_top_of_isUnit hU,
+      range_toEuclideanLin_eq_top_of_isUnit hU']
+    simp [subspaceDistance]
+  · rw [hTop]; exact le_top
+  · rw [hTop']; exact le_top
+  · rw [hRec, show I = 1 from rfl, Matrix.one_mul]
+    norm_num [E, I, norm_smul]
 
 end Exercises
 

@@ -210,37 +210,22 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 71, equation (123)'
 
 [[node]]
 id = "exercise_6_72"
-kind = "theorem"
-desc = '''The specified matrix has rank two and its principal cosine product with the first coordinate plane is one over the square root of six.'''
-deps = ["exercise_6_71"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 72'
 
 [[node]]
 id = "exercise_6_73"
-kind = "theorem"
-desc = '''The squared products of principal cosines to all coordinate subspaces of the same dimension sum to one.'''
-deps = ["exercise_6_71"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 73'
 
 [[node]]
 id = "exercise_6_74"
-kind = "theorem"
-desc = '''The cosine product of a pair of subspaces is bounded by the sum of the corresponding coordinate cosine products. Equality requires coherent signs up to an overall orientation.'''
-deps = ["exercise_6_71"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 74'
 
 [[node]]
 id = "exercise_6_75"
-kind = "theorem"
-desc = '''The matrix is reconstructed as a convex combination of embedded basic inverses of its pseudoinverse.'''
-deps = ["exercise_6_71"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 75, equation (124)'
 
 [[node]]
 id = "exercise_6_76"
-kind = "theorem"
-desc = '''The matrix is reconstructed from operators between coordinate subspaces with weights given by squared products of the two principal cosine products.'''
-deps = ["exercise_6_75"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 76, equations (125)–(126)'
 
 [[node]]
@@ -254,3 +239,23 @@ source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 73, full-column-rank 
 [[node]]
 id = "projectionProduct_hasEigenvalue_iff_square_cosine"
 source = "Ben-Israel and Greville, Chapter 6 §5, Lemma 1(e), nonzero eigenvalues as squared positive cosines"
+
+[[node]]
+id = "exercise_6_74_basis"
+source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 74, signed-minor equality condition for a specified pair of bases"
+
+[[node]]
+id = "maximalMinorWeight_eq_principalCosineProducts"
+source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 76, normalized minor weights in equation (125)"
+
+[[node]]
+id = "exercise_6_76_coordinate_equiv"
+source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 76, isomorphism between the selected coordinate subspaces"
+
+[[node]]
+id = "exercise_6_76_factorization"
+source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 76, equation (126)"
+
+[[node]]
+id = "volume_adjoin_vector_principalAngle_of_positiveRank"
+source = "Ben-Israel and Greville, Chapter 6 §5, equation (116), possibly dependent spanning list"
