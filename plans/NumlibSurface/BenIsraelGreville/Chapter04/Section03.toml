@@ -2,4 +2,12 @@ namespace = "BenIsraelGreville.Chapter04"
 
 [[node]]
 id = "diagonalizable_spectral_inverse"
-source = 'Ben-Israel and Greville, Chapter 4, §3, equation (19)'
+source = "Ben-Israel and Greville, Ch. 4, §3, Equation (19)"
+
+[[node]]
+id = "diagonalizable_spectral_inverse_of_columns"
+source = "Ben-Israel and Greville, Ch. 4, §3, Equations (18)–(19)"
+
+[[node]]
+id = "diagonalizable_spectral_inverse_pinv"
+source = "Ben-Israel and Greville, Ch. 4, §3, Equation (19), Moore–Penrose inverse in diagonal coordinates"

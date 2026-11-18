@@ -2,18 +2,28 @@ namespace = "BenIsraelGreville.Chapter04"
 
 [[node]]
 id = "SatisfiesFirstPowerEquation"
-source = 'Ben-Israel and Greville, Chapter 4, §1, equation (1^k)'
+source = "Ben-Israel and Greville, Ch. 4, §1, Equation (1^k)"
 
 [[node]]
 id = "SatisfiesFifthPowerEquation"
-source = 'Ben-Israel and Greville, Chapter 4, §1, equation (5^k)'
+source = "Ben-Israel and Greville, Ch. 4, §1, Equation (5^k)"
 
 [[node]]
 id = "SatisfiesSixthPowerEquation"
-source = 'Ben-Israel and Greville, Chapter 4, §1, equation (6^k)'
+source = "Ben-Israel and Greville, Ch. 4, §1, Equation (6^k)"
 
 [[node]]
 id = "inverse_reciprocal_principal_grade"
-kind = "theorem"
-desc = '''For nonsingular A, generalized eigenvectors of grade p at λ correspond to generalized eigenvectors of A⁻¹ of grade p at λ⁻¹.'''
-source = 'Ben-Israel and Greville, Chapter 4, §1, spectral property of the ordinary inverse'
+source = "Ben-Israel and Greville, Ch. 4, §1, Exercise 2"
+
+[[node]]
+id = "exercise_4_1"
+source = "Ben-Israel and Greville, Ch. 4, §1, Exercise 1"
+
+[[node]]
+id = "exercise_4_3"
+source = "Ben-Israel and Greville, Ch. 4, §1, Exercise 3"
+
+[[node]]
+id = "exercise_4_4"
+source = "Ben-Israel and Greville, Ch. 4, §1, Exercise 4"

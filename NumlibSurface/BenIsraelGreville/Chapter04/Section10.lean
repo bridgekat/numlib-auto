@@ -103,39 +103,6 @@ private theorem jordanBlock_pow_commute_pinv (k l : ℕ) (h : k ≤ l) (μ : ℂ
       rw [pinv_eq_inv hB, Matrix.mul_nonsing_inv _ hdet, Matrix.nonsing_inv_mul _ hdet]
     exact ⟨hc.pow_left l, hc.pow_right l⟩
 
-private theorem pinv_blockDiagonal_jordan {k : ℕ} (e : Fin k → ℕ) (μ : Fin k → ℂ) :
-    (jordanForm e μ).pinv = blockDiagonal' (fun i => (jordanBlock (e i) (μ i)).pinv) := by
-  let B (i : Fin k) := jordanBlock (e i) (μ i)
-  rw [jordanForm_def]
-  change (blockDiagonal' B).pinv = _
-  symm
-  apply (blockDiagonal' B).pinv_unique
-  · simp only [← blockDiagonal'_mul]
-    exact congrArg blockDiagonal' (funext fun i => (B i).mul_pinv_mul_self)
-  · simp only [← blockDiagonal'_mul]
-    exact congrArg blockDiagonal' (funext fun i => (B i).pinv_mul_self_mul_pinv)
-  · rw [← blockDiagonal'_mul, isHermitian_blockDiagonal'_iff]
-    exact fun i => (B i).isHermitian_mul_pinv
-  · rw [← blockDiagonal'_mul, isHermitian_blockDiagonal'_iff]
-    exact fun i => (B i).isHermitian_pinv_mul
-
-private theorem pinv_reindex_same {m : Type*} [Fintype m] [DecidableEq m]
-    (r : m ≃ n) (B : Matrix m m ℂ) :
-    (B.reindex r r).pinv = B.pinv.reindex r r := by
-  let f := reindexAlgEquiv ℂ ℂ r
-  have hH {X : Matrix m m ℂ} (hX : X.IsHermitian) : (f X).IsHermitian := by
-    change (X.reindex r r)ᴴ = X.reindex r r
-    rw [conjTranspose_reindex, hX]
-  change (f B).pinv = f B.pinv
-  symm
-  apply (f B).pinv_unique
-  · rw [← map_mul, ← map_mul, B.mul_pinv_mul_self]
-  · rw [← map_mul, ← map_mul, B.pinv_mul_self_mul_pinv]
-  · rw [← map_mul]
-    exact hH B.isHermitian_mul_pinv
-  · rw [← map_mul]
-    exact hH B.isHermitian_pinv_mul
-
 private theorem quasiCommuting_map {m : Type*} [Fintype m] [DecidableEq m]
     (f : Matrix n n ℂ →* Matrix m m ℂ) {A X : Matrix n n ℂ}
     (h : AreQuasiCommutingInverses A X) : AreQuasiCommutingInverses (f A) (f X) := by
@@ -168,7 +135,7 @@ private theorem quasiCommuting_jordanForm {k : ℕ} (e : Fin k → ℕ) (μ : Fi
   refine ⟨J.mul_pinv_mul_self, J.pinv_mul_self_mul_pinv, l, Nat.succ_pos _, ?_, ?_⟩
   · change (jordanForm e μ ^ l) * (jordanForm e μ).pinv =
       (jordanForm e μ).pinv * (jordanForm e μ ^ l)
-    rw [pinv_blockDiagonal_jordan, jordanForm_def, ← blockDiagonal'_pow,
+    rw [jordanForm_pinv_eq_blockDiagonal, jordanForm_def, ← blockDiagonal'_pow,
       ← blockDiagonal'_mul, ← blockDiagonal'_mul]
     congr 1
     funext i
@@ -176,7 +143,7 @@ private theorem quasiCommuting_jordanForm {k : ℕ} (e : Fin k → ℕ) (μ : Fi
     exact (jordanBlock_pow_commute_pinv (e i) l hle (μ i)).1.eq
   · change jordanForm e μ * ((jordanForm e μ).pinv ^ l) =
       ((jordanForm e μ).pinv ^ l) * jordanForm e μ
-    rw [pinv_blockDiagonal_jordan, jordanForm_def, ← blockDiagonal'_pow,
+    rw [jordanForm_pinv_eq_blockDiagonal, jordanForm_def, ← blockDiagonal'_pow,
       ← blockDiagonal'_mul, ← blockDiagonal'_mul]
     congr 1
     funext i
@@ -189,7 +156,7 @@ theorem quasiCommuting_of_strongSpectralInverse {A X : Matrix n n ℂ}
   obtain ⟨k, e, c, r, P, _, rfl, rfl⟩ := h
   let J := jordanForm e c
   let f := reindexAlgEquiv ℂ ℂ r
-  have hej : (f J).pinv = f J.pinv := pinv_reindex_same r J
+  have hej : (f J).pinv = f J.pinv := pinv_reindex_square r J
   have hJ : AreQuasiCommutingInverses (f J) (f J).pinv := by
     rw [hej]
     exact quasiCommuting_map f.toMonoidHom (quasiCommuting_jordanForm e c)
@@ -755,14 +722,14 @@ theorem strongSpectralInverse_pow_eq_zero_iff {A X : Matrix n n ℂ}
     have : Nonempty (Fin (e i)) := ⟨⟨0, he i⟩⟩
     rw [hj' i] at hb
     exact not_isUnit_zero hb
-  rw [pinv_reindex_same r J]
+  rw [pinv_reindex_square r J]
   change (f J) ^ l = 0 ↔ (f J.pinv) ^ l = 0
   have hf' (B : Matrix ((i : Fin k) × Fin (e i)) ((i : Fin k) × Fin (e i)) ℂ) :
       (f B) ^ l = 0 ↔ B ^ l = 0 := by
     rw [← map_pow, ← map_zero f, hf.eq_iff]
   rw [hf', hf']
   change jordanForm e μ ^ l = 0 ↔ (jordanForm e μ).pinv ^ l = 0
-  rw [pinv_blockDiagonal_jordan, jordanForm_def,
+  rw [jordanForm_pinv_eq_blockDiagonal, jordanForm_def,
     blockDiagonal_pow_eq_zero_iff, blockDiagonal_pow_eq_zero_iff]
   have hblock (i : Fin k) :
       jordanBlock (e i) (μ i) ^ l = 0 ↔ (jordanBlock (e i) (μ i)).pinv ^ l = 0 := by
@@ -1058,16 +1025,16 @@ theorem AreStrongSpectralInverses.symm {A X : Matrix n n ℂ}
   let J' := jordanForm e ν
   refine ⟨k, e, ν, r, P * Q, he, ?_, ?_⟩
   · change matrixUnitConj P (F J).pinv = matrixUnitConj (P * Q) (F J')
-    rw [show (F J).pinv = F J.pinv from pinv_reindex_same r J]
+    rw [show (F J).pinv = F J.pinv from pinv_reindex_square r J]
     change matrixUnitConj P (F (jordanForm e μ).pinv) =
       matrixUnitConj (P * Q) (F (jordanForm e ν))
-    rw [pinv_blockDiagonal_jordan, jordanForm_def, htransport]
+    rw [jordanForm_pinv_eq_blockDiagonal, jordanForm_def, htransport]
     exact congrArg (fun B => matrixUnitConj P (F (blockDiagonal' B))) (funext h₁)
   · change matrixUnitConj P (F J) = matrixUnitConj (P * Q) (F J').pinv
-    rw [show (F J').pinv = F J'.pinv from pinv_reindex_same r J']
+    rw [show (F J').pinv = F J'.pinv from pinv_reindex_square r J']
     change matrixUnitConj P (F (jordanForm e μ)) =
       matrixUnitConj (P * Q) (F (jordanForm e ν).pinv)
-    rw [pinv_blockDiagonal_jordan, jordanForm_def, htransport]
+    rw [jordanForm_pinv_eq_blockDiagonal, jordanForm_def, htransport]
     exact congrArg (fun B => matrixUnitConj P (F (blockDiagonal' B))) (funext h₂)
 
 end BenIsraelGreville.Chapter04

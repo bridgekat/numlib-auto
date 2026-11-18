@@ -2,32 +2,141 @@ namespace = "BenIsraelGreville.Chapter04"
 
 [[node]]
 id = "IsGroupInverse"
-source = 'Ben-Israel and Greville, Chapter 4, §4, definition of the group inverse'
+source = "Ben-Israel and Greville, Ch. 4, §4, definition of group inverse"
 
 [[node]]
 id = "IsRangeHermitian"
-source = 'Ben-Israel and Greville, Chapter 4, §4, definition of a range-Hermitian matrix'
+source = "Ben-Israel and Greville, Ch. 4, §4, Equations (23)–(24)"
 
 [[node]]
 id = "theorem_4_2"
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 2'
+source = "Ben-Israel and Greville, Ch. 4, §4, Theorem 2"
 
 [[node]]
 id = "theorem_4_3"
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 3'
+source = "Ben-Israel and Greville, Ch. 4, §4, Theorem 3"
+
+[[node]]
+id = "rangeHermitian_iff_commute_pinv"
+source = "Ben-Israel and Greville, Ch. 4, §4, Theorem 4 and Exercise 16"
 
 [[node]]
 id = "theorem_4_4"
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 4'
+source = "Ben-Israel and Greville, Ch. 4, §4, Theorem 4"
+
+[[node]]
+id = "exercise_4_12"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 12"
+
+[[node]]
+id = "jordanForm_pinv_eq_blockDiagonal"
+source = "Ben-Israel and Greville, Ch. 4, §4, Lemma 2, individual Jordan blocks"
+
+[[node]]
+id = "pinv_reindex_square"
+source = "Ben-Israel and Greville, Ch. 4, §4, Lemma 2, relabeling Jordan coordinates"
 
 [[node]]
 id = "lemma_4_2"
-kind = "theorem"
-desc = '''A matrix in Jordan form is range-Hermitian exactly when its index is one.'''
-source = 'Ben-Israel and Greville, Chapter 4, Lemma 2'
+source = "Ben-Israel and Greville, Ch. 4, §4, Lemma 2"
 
 [[node]]
 id = "theorem_4_5"
+source = "Ben-Israel and Greville, Ch. 4, §4, Theorem 5"
+
+[[node]]
+id = "exercise_4_8"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 8"
+
+[[node]]
+id = "exercise_4_9_a"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 9(a)"
+
+[[node]]
+id = "exercise_4_9_b"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 9(b)"
+
+[[node]]
+id = "exercise_4_9_c"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 9(c)"
+
+[[node]]
+id = "exercise_4_9_d"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 9(d)"
+
+[[node]]
+id = "exercise_4_9_e"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 9(e)"
+
+[[node]]
+id = "exercise_4_10"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 10"
+
+[[node]]
+id = "exercise_4_11"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 11, (29)"
+
+[[node]]
+id = "exercise_4_13"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 13, (30a)–(30b)"
+
+[[node]]
+id = "exercise_4_14"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 14"
+
+[[node]]
+id = "exercise_4_16"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 16"
+
+[[node]]
+id = "exercise_4_17"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 17"
+
+[[node]]
+id = "exercise_4_15"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 15"
+
+[[node]]
+id = "exercise_4_18_counterexample"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 18, counterexample to ordinary similarity"
+
+[[node]]
+id = "resolvent_mul_original_tendsto_groupProjector"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 19, value of the limit"
+
+[[node]]
+id = "exercise_4_19"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 19, existence of the limit"
+
+[[node]]
+id = "exercise_4_20"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 20"
+
+[[node]]
+id = "exercise_4_21"
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 21, (3.43)"
+
+[[node]]
+id = "exercise_4_18"
 kind = "theorem"
-desc = '''If an index-one A is similar to Jordan form J by P, then A# = P J† P⁻¹.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 5'
+desc = 'A range-Hermitian matrix is characterized by similarity to a nonsingular block and zero.'
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 18, as printed"
+wrong = 'The reverse implication is false under ordinary similarity. The proved two-dimensional counterexample is given in exercise_4_18_counterexample.'
+
+[[node]]
+id = "exercise_4_18_unitary_similarity"
+kind = "theorem"
+desc = 'A range-Hermitian matrix is characterized by unitary similarity to the orthogonal sum of a nonsingular block and a zero block.'
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 18, corrected converse"
+
+[[node]]
+id = "exercise_4_22"
+kind = "theorem"
+desc = 'The Moore–Penrose reverse-order relation (AB)† = B†A† holds exactly when range(AᴴAB) is contained in range(B) and range(BBᴴAᴴ) is contained in range(Aᴴ).'
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 22, (31)–(37)"
+
+[[node]]
+id = "exercise_4_23"
+kind = "theorem"
+desc = 'The reverse-order relation (AB)† = B†A† holds exactly when AᴴABBᴴ is range-Hermitian.'
+source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 23"
