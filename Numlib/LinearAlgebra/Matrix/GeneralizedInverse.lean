@@ -107,6 +107,31 @@ theorem IsInnerInverse.rank_mul_rev (h : A.IsInnerInverse X) : (X * A).rank = A.
   refine le_antisymm (rank_mul_le_right ..) ?_
   simpa only [← Matrix.mul_assoc, isInnerInverse_iff.mp h] using rank_mul_le_right A (X * A)
 
+/-- An inner inverse makes $AX$ a projection onto the range of $A$. -/
+theorem IsInnerInverse.range_mul (h : A.IsInnerInverse X) :
+    LinearMap.range (A * X).mulVecLin = LinearMap.range A.mulVecLin := by
+  refine le_antisymm ?_ ?_
+  · rw [mulVecLin_mul]
+    exact LinearMap.range_comp_le_range _ _
+  · rintro _ ⟨v, rfl⟩
+    refine ⟨A.mulVecLin v, ?_⟩
+    rw [← LinearMap.comp_apply, ← mulVecLin_mul, isInnerInverse_iff.mp h]
+
+/-- An inner inverse makes $XA$ a projection with the same kernel as $A$. -/
+theorem IsInnerInverse.ker_mul_rev (h : A.IsInnerInverse X) :
+    LinearMap.ker (X * A).mulVecLin = LinearMap.ker A.mulVecLin := by
+  ext v
+  simp only [LinearMap.mem_ker, mulVecLin_mul, LinearMap.comp_apply]
+  constructor
+  · intro hv
+    calc
+      A.mulVecLin v = (A * X * A).mulVecLin v := by rw [isInnerInverse_iff.mp h]
+      _ = A.mulVecLin (X.mulVecLin (A.mulVecLin v)) := by
+        simp only [mulVecLin_mul, LinearMap.comp_apply]
+      _ = 0 := by rw [hv, map_zero]
+  · intro hv
+    rw [hv, map_zero]
+
 /-- An inner inverse is an outer inverse if and only if it has the same rank as the matrix. -/
 theorem IsInnerInverse.isOuterInverse_iff_rank_eq (h : A.IsInnerInverse X) :
     A.IsOuterInverse X ↔ X.rank = A.rank := by

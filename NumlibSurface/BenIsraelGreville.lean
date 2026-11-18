@@ -13,6 +13,8 @@ import NumlibSurface.BenIsraelGreville.Chapter01.Section06
 import NumlibSurface.BenIsraelGreville.Chapter01.Section07
 import NumlibSurface.BenIsraelGreville.Chapter02.Section01
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
+import NumlibSurface.BenIsraelGreville.Chapter02.Section03
+import NumlibSurface.BenIsraelGreville.Chapter02.Section04
 import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
@@ -50,6 +52,8 @@ regularized least-squares solutions, group and Drazin inverses, and reduced norm
 | §1.7 | `Chapter01.Section07` | Outer inverses with prescribed rank |
 | §2.1 | `Chapter02.Section01` | Consistency and solutions of two-sided matrix equations |
 | §2.2 | `Chapter02.Section02` | Characterizations by one Hermitian product |
+| §2.3 | `Chapter02.Section03` | Outer inverses of fixed rank |
+| §2.4 | `Chapter02.Section04` | Idempotents and oblique projectors |
 | §3.1 | `Chapter03.Section01` | Least-squares solutions |
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
@@ -69,7 +73,9 @@ regularized least-squares solutions, group and Drazin inverses, and reduced norm
 
 ## Deviations from the source
 
+* **Chapter 1, Exercise 9** (typo). The kernel equality concerns $XA$ and $A$.
 * **Chapter 1, Corollary 2** (typo). The kernel of $AA^H$ equals the kernel of $A^H$.
+* **Chapter 2, Lemma 1(b)** (reading). The spectrum is contained in $\{0,1\}$.
 * **Chapter 4, Lemma 1(d)** (reading). The earlier exponents in the comparison are positive.
 * **Chapter 4, Theorem 8** (generalization). The block formula applies to any nonsingular
   and nilpotent diagonal blocks in a similarity decomposition.
@@ -81,6 +87,6 @@ regularized least-squares solutions, group and Drazin inverses, and reduced norm
 
 * The remaining results include prescribed-rank constructions, projector characterizations,
   weighted and other extremal properties, further spectral results, partitioned matrices,
-  rectangular spectral theory,
-  computational methods, applications, and generalized inverses on Hilbert spaces.
+  rectangular spectral theory, computational methods, applications, and generalized inverses
+  on Hilbert spaces.
 -/

@@ -1,47 +1,35 @@
 namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Idempotents and algebraic projections.'
 
 [[node]]
 id = 'projector'
-kind = 'definition'
-desc = '''The projector onto a subspace L along a complement M sends the unique sum l+m to l. Use Submodule projection along IsCompl.'''
 source = 'Ben-Israel and Greville, Ch. 2, §4, (23)'
 
 [[node]]
-id = 'lemma_1'
-kind = 'theorem'
-desc = '''The transpose, adjoint and complement of an idempotent are idempotent, as are its positive powers. Record its range, kernel, fixed-point and complementary projector identities.'''
-source = 'Ben-Israel and Greville, Ch. 2, Lemma 1'
+id = 'lemma_1_projection'
+source = 'Ben-Israel and Greville, Ch. 2, Lemma 1(a), (d)–(g)'
 
 [[node]]
 id = 'lemma_2'
-kind = 'theorem'
-desc = '''For a full-rank factorization E=FG of a square matrix, idempotence of E is equivalent to GF=I.'''
 source = 'Ben-Israel and Greville, Ch. 2, Lemma 2'
 
 [[node]]
 id = 'theorem_8'
-kind = 'theorem'
-desc = '''The range and kernel of an idempotent are complementary and it is their projection. Conversely, projection onto L along a complement M has range L and kernel M.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 8'
-deps = ['projector']
 
 [[node]]
 id = 'corollary_6'
-kind = 'theorem'
-desc = '''The unique decomposition along complementary subspaces L,M has components P(L,M)x and P(M,L)x.'''
 source = 'Ben-Israel and Greville, Ch. 2, Corollary 6'
-deps = ['theorem_8']
 
 [[node]]
 id = 'corollary_7'
-kind = 'theorem'
-desc = '''For mutual reflexive inverses A,X, AX projects onto range A along ker X and XA onto range X along ker A.'''
 source = 'Ben-Israel and Greville, Ch. 2, Corollary 7'
-deps = ['theorem_8']
 
 [[node]]
 id = 'theorem_9'
 kind = 'theorem'
 desc = '''A matrix with listed distinct eigenvalues is diagonalizable iff it is their weighted sum of mutually annihilating idempotents summing to I. The projectors are unique and project onto eigenspaces along the other eigenspaces.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 9'
+
+[[node]]
+id = 'lemma_1_spectral'
+source = 'Ben-Israel and Greville, Ch. 2, Lemma 1(b)–(c)'

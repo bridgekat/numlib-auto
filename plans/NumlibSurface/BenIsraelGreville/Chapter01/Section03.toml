@@ -42,12 +42,8 @@ source = 'Ben-Israel–Greville, Chapter 1, Exercise 7'
 
 [[node]]
 id = 'exercise_9'
-kind = 'theorem'
-desc = '''For a {1}-inverse X, the range of AX is the range of A, the kernel of XA is the kernel of A, and the range of (XA)* is the range of A*.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 9'
 
 [[node]]
 id = 'exercise_10'
-kind = 'theorem'
-desc = '''The range of AB equals that of A exactly when their ranks agree. The kernel of AB equals that of B exactly when their ranks agree.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 10'

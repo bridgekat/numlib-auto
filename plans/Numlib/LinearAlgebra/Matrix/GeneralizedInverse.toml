@@ -35,3 +35,9 @@ id = 'IsInnerInverse.isOuterInverse_mul'
 
 [[node]]
 id = 'pinv_eq_of_innerInverse_mul'
+
+[[node]]
+id = "IsInnerInverse.range_mul"
+
+[[node]]
+id = "IsInnerInverse.ker_mul_rev"

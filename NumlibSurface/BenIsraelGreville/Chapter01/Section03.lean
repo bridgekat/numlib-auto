@@ -10,6 +10,10 @@ import NumlibSurface.BenIsraelGreville.Chapter01.Section01
 
 Section 1.3 of [benIsrael2003generalized] relates the inner inverse equation to rank,
 idempotency, scalar multiplication and changes of coordinates.
+
+## Deviations from the source
+
+* **Exercise 9** (typo). The kernel equality concerns $XA$ and $A$.
 -/
 
 namespace BenIsraelGreville.Chapter01
@@ -112,5 +116,48 @@ theorem exercise_7 [Finite m] [Fintype k] [Fintype l] (F : Matrix m k ℂ) (H : 
   calc
     H.rank = (F.pinv * (F * H * G) * G.pinv).rank := congrArg rank hBack.symm
     _ ≤ (F * H * G).rank := (rank_mul_le_left ..).trans (rank_mul_le_right ..)
+
+/-- **Exercise 9** of [benIsrael2003generalized], Chapter 1. For an inner inverse $X$,
+$AX$ has the range of $A$, $XA$ has the kernel of $A$, and $(XA)^H$ has the range of $A^H$.
+
+**Typo.** The exercise statement prints $N(AX)$. Its proof and Chapter 2, Equation (28),
+both give $N(XA)=N(A)$, which is the equality of subspaces of the domain of $A$. -/
+theorem exercise_9 (h : X ∈ definition_1 A {.inner}) :
+    LinearMap.range (A * X).mulVecLin = LinearMap.range A.mulVecLin ∧
+      LinearMap.ker (X * A).mulVecLin = LinearMap.ker A.mulVecLin ∧
+      LinearMap.range (X * A)ᴴ.mulVecLin = LinearMap.range Aᴴ.mulVecLin := by
+  have hi := mem_one_iff.mp h
+  refine ⟨hi.range_mul, hi.ker_mul_rev, ?_⟩
+  rw [conjTranspose_mul]
+  exact (mem_one_iff.mp (lemma_1_a h)).range_mul
+
+omit [Fintype m] in
+/-- **Exercise 10** of [benIsrael2003generalized], Chapter 1. The range of $AB$ equals
+the range of $A$ exactly when their ranks agree. The kernel of $AB$ equals the kernel
+of $B$ exactly when their ranks agree. -/
+theorem exercise_10 [Fintype k] (A : Matrix m n ℂ) (B : Matrix n k ℂ) :
+    (LinearMap.range (A * B).mulVecLin = LinearMap.range A.mulVecLin ↔
+      (A * B).rank = A.rank) ∧
+    (LinearMap.ker (A * B).mulVecLin = LinearMap.ker B.mulVecLin ↔
+      (A * B).rank = B.rank) := by
+  have hR : LinearMap.range (A * B).mulVecLin ≤ LinearMap.range A.mulVecLin := by
+    rw [mulVecLin_mul]
+    exact LinearMap.range_comp_le_range _ _
+  have hK : LinearMap.ker B.mulVecLin ≤ LinearMap.ker (A * B).mulVecLin := by
+    rw [mulVecLin_mul]
+    exact LinearMap.ker_le_ker_comp B.mulVecLin A.mulVecLin
+  have h₁ := LinearMap.finrank_range_add_finrank_ker (A * B).mulVecLin
+  have h₂ := LinearMap.finrank_range_add_finrank_ker B.mulVecLin
+  change (A * B).rank + Module.finrank ℂ (LinearMap.ker (A * B).mulVecLin) = _ at h₁
+  change B.rank + Module.finrank ℂ (LinearMap.ker B.mulVecLin) = _ at h₂
+  constructor
+  · exact ⟨fun hr => congrArg (fun L : Submodule ℂ (m → ℂ) => Module.finrank ℂ L) hr,
+      Submodule.eq_of_le_of_finrank_eq hR⟩
+  · constructor
+    · intro hk
+      rw [hk] at h₁
+      omega
+    · intro h
+      exact (Submodule.eq_of_le_of_finrank_eq hK (by omega)).symm
 
 end BenIsraelGreville.Chapter01
