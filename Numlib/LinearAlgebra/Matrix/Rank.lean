@@ -142,6 +142,26 @@ theorem ker_mulVecLin_pow_le_succ (A : Matrix n n K) (k : ℕ) :
 
 end Square
 
+/-- The rank of a block diagonal matrix is the sum of the ranks of its diagonal blocks. -/
+theorem rank_fromBlocks_diagonal {u v w z : Type*}
+    [Finite u] [Fintype v] [Finite w] [Fintype z]
+    (D : Matrix u v K) (L : Matrix w z K) :
+    (fromBlocks D 0 0 L).rank = D.rank + L.rank := by
+  let := Fintype.ofFinite u
+  let := Fintype.ofFinite w
+  let e := LinearEquiv.sumPiEquivProdPi K u w (fun _ => K)
+  let f := LinearEquiv.sumPiEquivProdPi K v z (fun _ => K)
+  have hMap : e.toLinearMap.comp (fromBlocks D 0 0 L).mulVecLin =
+      (D.mulVecLin.prodMap L.mulVecLin).comp f.toLinearMap := by
+    ext x : 1
+    simp only [LinearMap.comp_apply, mulVecLin_apply, LinearMap.prodMap_apply, fromBlocks_mulVec,
+      zero_mulVec, add_zero, zero_add]
+    rfl
+  have hRange := congrArg LinearMap.range hMap
+  rw [LinearMap.range_comp, f.range_comp, LinearMap.range_prodMap] at hRange
+  rw [Matrix.rank, ← e.finrank_map_eq, hRange,
+    (Submodule.prodEquiv _ _).finrank_eq, Module.finrank_prod, ← Matrix.rank, ← Matrix.rank]
+
 section BlockDiagonal
 
 variable [Fintype ι] [DecidableEq ι] [∀ i, Fintype (m i)]

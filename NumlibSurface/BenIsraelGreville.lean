@@ -36,6 +36,7 @@ import NumlibSurface.BenIsraelGreville.Chapter04.Section02
 import NumlibSurface.BenIsraelGreville.Chapter04.Section03
 import NumlibSurface.BenIsraelGreville.Chapter04.Section04
 import NumlibSurface.BenIsraelGreville.Chapter04.Section06
+import NumlibSurface.BenIsraelGreville.Chapter05.Section02
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -90,6 +91,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §4.3 | `Chapter04.Section03` | Spectral inverse of a diagonalizable matrix |
 | §4.4 | `Chapter04.Section04` | Group inverse |
 | §4.6 | `Chapter04.Section06` | Drazin inverse |
+| §5.2 | `Chapter05.Section02` | Rank-adapted partitions, block solves, and block inverses |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions
@@ -117,14 +119,15 @@ solutions, group and Drazin inverses, and reduced normal equations.
 * **Chapter 4, Lemma 1(d)** (reading). The earlier exponents in the comparison are positive.
 * **Chapter 4, Theorem 8** (generalization). The block formula applies to any nonsingular
   and nilpotent diagonal blocks in a similarity decomposition.
+* **Chapter 5, Exercise 6** (typo). The nonsingularity criterion uses $I_r+TS$.
 * **Chapter 7, Equation (65)** (correction). The equation in the full unitary coordinates
   also imposes consistency. The leading rows in Equation (66) give the criterion for
   least-squares solutions for every right-hand side.
 
 ## Not formalized
 
-* The remaining results include prescribed-rank constructions, projector characterizations,
-  weighted and other extremal properties, further spectral results, partitioned matrices,
+* The remaining results include further prescribed-rank constructions, projector characterizations,
+  weighted and other extremal properties, further spectral and partitioned-matrix results,
   rectangular spectral theory, computational methods, applications, and generalized inverses
   on Hilbert spaces.
 -/

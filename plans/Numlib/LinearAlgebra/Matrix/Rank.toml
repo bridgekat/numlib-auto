@@ -16,6 +16,9 @@ id = "finrank_ker_mulVecLin_conj"
 id = "ker_mulVecLin_pow_le_succ"
 
 [[node]]
+id = "rank_fromBlocks_diagonal"
+
+[[node]]
 id = "kerMulVecLinBlockDiagonal'Equiv"
 
 [[node]]

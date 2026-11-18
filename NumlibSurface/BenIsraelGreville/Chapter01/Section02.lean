@@ -52,25 +52,6 @@ theorem theorem_1 [DecidableEq r] [DecidableEq m] [DecidableEq n]
     _ = E⁻¹ * (E * A * P) * P⁻¹ := by rw [h, hR]
     _ = A := hcancel _
 
-private theorem rank_blockDiagonal {u v w z : Type*}
-    [Finite u] [Fintype v] [Finite w] [Fintype z]
-    (D : Matrix u v ℂ) (L : Matrix w z ℂ) :
-    (fromBlocks D 0 0 L).rank = D.rank + L.rank := by
-  let := Fintype.ofFinite u
-  let := Fintype.ofFinite w
-  let e := LinearEquiv.sumPiEquivProdPi ℂ u w (fun _ => ℂ)
-  let f := LinearEquiv.sumPiEquivProdPi ℂ v z (fun _ => ℂ)
-  have hMap : e.toLinearMap.comp (fromBlocks D 0 0 L).mulVecLin =
-      (D.mulVecLin.prodMap L.mulVecLin).comp f.toLinearMap := by
-    ext x : 1
-    simp only [LinearMap.comp_apply, mulVecLin_apply, LinearMap.prodMap_apply, fromBlocks_mulVec,
-      zero_mulVec, add_zero, zero_add]
-    rfl
-  have hRange := congrArg LinearMap.range hMap
-  rw [LinearMap.range_comp, f.range_comp, LinearMap.range_prodMap] at hRange
-  rw [Matrix.rank, ← e.finrank_map_eq, hRange,
-    (Submodule.prodEquiv _ _).finrank_eq, Module.finrank_prod, ← Matrix.rank, ← Matrix.rank]
-
 /-- **Equation (6)** of [benIsrael2003generalized], Chapter 1. The Hermite
 formula yields an inner inverse of rank equal to the size of the leading
 identity plus the rank of the freely chosen lower block. -/
@@ -80,7 +61,7 @@ theorem rank_hermiteInverse [DecidableEq r] [DecidableEq m] [DecidableEq n]
     (P * fromBlocks (1 : Matrix r r ℂ) 0 0 L * E).rank = Fintype.card r + L.rank := by
   rw [rank_mul_eq_left_of_isUnit_det E _ ((isUnit_iff_isUnit_det E).mp hE),
     rank_mul_eq_right_of_isUnit_det P _ ((isUnit_iff_isUnit_det P).mp hP),
-    rank_blockDiagonal, rank_one]
+    rank_fromBlocks_diagonal, rank_one]
 
 private theorem exists_matrix_rank {s : ℕ} (hm : s ≤ Fintype.card m) (hn : s ≤ Fintype.card n) :
     ∃ L : Matrix n m ℂ, L.rank = s := by
