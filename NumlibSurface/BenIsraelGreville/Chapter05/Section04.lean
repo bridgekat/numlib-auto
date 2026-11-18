@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Chapter05.Section03
 import Mathlib.Analysis.SpecificLimits.Normed
+import Mathlib.Data.List.Infix
+import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
 
 /-!
 # Common solutions of partitioned linear systems
@@ -17,6 +19,8 @@ formulas give generalized inverses of vertically stacked matrices.
 * **Exercise 19** (correction). The concatenated reciprocals have numerator
   $[5,2;5,4]$ over ten. The printed intermediate multiplication repeats
   the numerator of the Gram sum.
+* **Exercise 23** (correction). Independence is preserved exactly when
+  the new residual is nonzero.
 -/
 
 namespace BenIsraelGreville.Chapter05
@@ -956,6 +960,341 @@ theorem exercise_22 (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) :
   · intro hc X
     exact (he X).trans (and_iff_right hc)
 
+set_option maxHeartbeats 800000 in
+private theorem commonSolution_projection_step (A : Matrix p q ℂ)
+    (L : Submodule ℂ (EuclideanSpace ℂ q)) :
+    let F := orthogonalProjector L
+    let C := A * F
+    F * (1 - C.pinv * C) = orthogonalProjector (L ⊓ (toEuclideanLin A).ker) := by
+  intro F C
+  let P := C.pinv * C
+  let R := 1 - P
+  let H := L ⊓ (toEuclideanLin A).ker
+  have hF : F.IsHermitian := isHermitian_orthogonalProjector L
+  have hFi : F * F = F := (isIdempotentElem_orthogonalProjector L).eq
+  have hC : C * F = C := by
+    dsimp only [C]
+    rw [Matrix.mul_assoc, hFi]
+  have hPF : P * F = P := by
+    dsimp only [P]
+    rw [Matrix.mul_assoc, hC]
+  have hFP : F * P = P := by
+    have hPh : Pᴴ = P := C.isHermitian_pinv_mul.eq
+    have he := congrArg Matrix.conjTranspose hPF
+    rw [conjTranspose_mul, hF.eq, hPh] at he
+    exact he
+  have hFR : F * R = F - P := by
+    change F * (1 - P) = _
+    rw [Matrix.mul_sub, Matrix.mul_one, hFP]
+  have hsym : (F * R).IsHermitian := by
+    rw [hFR]
+    exact hF.sub C.isHermitian_pinv_mul
+  have hAz : A * (F * R) = 0 := by
+    change A * (F * (1 - C.pinv * C)) = 0
+    rw [← Matrix.mul_assoc, show A * F = C from rfl, Matrix.mul_sub,
+      Matrix.mul_one, ← Matrix.mul_assoc, C.mul_pinv_mul_self, sub_self]
+  have hFix (x : EuclideanSpace ℂ q) (hx : x ∈ H) : toEuclideanLin (F * R) x = x := by
+    have hFx : toEuclideanLin F x = x := by
+      change toEuclideanLin (orthogonalProjector L) x = _
+      rw [toEuclideanLin_orthogonalProjector]
+      exact L.starProjection_eq_self_iff.mpr hx.1
+    have hAx : toEuclideanLin A x = 0 := hx.2
+    have hCx : toEuclideanLin C x = 0 := by
+      change toEuclideanLin (A * F) x = 0
+      rw [toEuclideanLin_mul_apply, hFx, hAx]
+    have hPx : toEuclideanLin P x = 0 := by
+      classical
+      change toEuclideanLin (C.pinv * C) x = 0
+      rw [toEuclideanLin_mul_apply, hCx, map_zero]
+    rw [hFR, map_sub, LinearMap.sub_apply, hFx, hPx, sub_zero]
+  have hRange : (toEuclideanLin (F * R)).range = H := by
+    refine le_antisymm ?_ ?_
+    · rintro _ ⟨x, rfl⟩
+      constructor
+      · rw [toEuclideanLin_mul_apply]
+        change toEuclideanLin (orthogonalProjector L) _ ∈ L
+        rw [toEuclideanLin_orthogonalProjector]
+        exact L.starProjection_apply_mem _
+      · change toEuclideanLin A (toEuclideanLin (F * R) x) = 0
+        rw [← toEuclideanLin_mul_apply, hAz, map_zero, LinearMap.zero_apply]
+    · intro x hx
+      exact ⟨x, hFix x hx⟩
+  have hid : IsIdempotentElem (toEuclideanLin (F * R)) := by
+    change (toEuclideanLin (F * R)).comp (toEuclideanLin (F * R)) = _
+    apply LinearMap.ext
+    intro x
+    change toEuclideanLin (F * R) (toEuclideanLin (F * R) x) = _
+    exact hFix _ (hRange ▸ (show toEuclideanLin (F * R) x ∈ (toEuclideanLin (F * R)).range from
+      ⟨x, rfl⟩))
+  have hProj := (LinearMap.isSymmetricProjection_iff_eq_coe_starProjection_range.mp
+    ⟨hid, isSymmetric_toEuclideanLin_iff.mpr hsym⟩).2
+  apply toEuclideanLin.injective
+  change toEuclideanLin (F * R) = toEuclideanLin (orthogonalProjector H)
+  rw [toEuclideanLin_orthogonalProjector]
+  exact hProj.trans (congrArg (fun L : Submodule ℂ (EuclideanSpace ℂ q) =>
+    L.starProjection.toLinearMap) hRange)
+
+/-- The simultaneous kernel of a finite list of matrix equations. -/
+def simultaneousKernel (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) :
+    Submodule ℂ (EuclideanSpace ℂ q) :=
+  sInf {L | ∃ pair ∈ eqs, L = (toEuclideanLin pair.1).ker}
+
+omit [Fintype p] in
+/-- Membership in the simultaneous kernel is the list of homogeneous equations. -/
+theorem mem_simultaneousKernel_iff
+    (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) (x : EuclideanSpace ℂ q) :
+    x ∈ simultaneousKernel eqs ↔ ∀ pair ∈ eqs, toEuclideanLin pair.1 x = 0 := by
+  rw [simultaneousKernel, Submodule.mem_sInf]
+  constructor
+  · intro hx pair hm
+    exact hx _ ⟨pair, hm, rfl⟩
+  · intro hx L h
+    obtain ⟨pair, hm, rfl⟩ := h
+    exact hx pair hm
+
+private theorem commonSolutionRecurrenceFrom_projector
+    (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) (E : Matrix q r ℂ)
+    (L : Submodule ℂ (EuclideanSpace ℂ q)) :
+    (commonSolutionRecurrenceFrom E (orthogonalProjector L) eqs).homogeneous =
+      orthogonalProjector (L ⊓ simultaneousKernel eqs) := by
+  induction eqs generalizing E L with
+  | nil =>
+    have hs : simultaneousKernel ([] : List (Matrix p q ℂ × Matrix p r ℂ)) = ⊤ := by
+      ext x
+      simp [mem_simultaneousKernel_iff]
+    simp [commonSolutionRecurrenceFrom, hs]
+  | cons head eqs ih =>
+    obtain ⟨A, B⟩ := head
+    have hs : L ⊓ simultaneousKernel ((A, B) :: eqs) =
+        (L ⊓ (toEuclideanLin A).ker) ⊓ simultaneousKernel eqs := by
+      ext x
+      simp [mem_simultaneousKernel_iff, and_assoc]
+    simp only [commonSolutionRecurrenceFrom, commonSolution_projection_step]
+    rw [ih, ← hs]
+
+/-- The homogeneous map in (105) is the orthogonal projector onto the
+common kernel, even when the inhomogeneous equations are inconsistent. -/
+theorem commonSolutionRecurrence_homogeneous
+    (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) :
+    (commonSolutionRecurrence eqs).homogeneous = orthogonalProjector (simultaneousKernel eqs) := by
+  have ht : orthogonalProjector (⊤ : Submodule ℂ (EuclideanSpace ℂ q)) = 1 := by
+    apply toEuclideanLin.injective
+    rw [toEuclideanLin_orthogonalProjector, toEuclideanLin_one]
+    apply LinearMap.ext
+    intro x
+    exact Submodule.starProjection_eq_self_iff.mpr (Submodule.mem_top : x ∈ _)
+  rw [commonSolutionRecurrence, ← ht, commonSolutionRecurrenceFrom_projector, top_inf_eq]
+
 end FiniteCommonSolutions
+
+section ResidualRows
+
+open scoped InnerProductSpace
+
+variable {q : Type*} [Fintype q] [DecidableEq q]
+
+/-- The adjoint coordinate vector of a one-row matrix, for the standard
+Hermitian inner product. -/
+def rowAdjointVector (A : Matrix (Fin 1) q ℂ) : EuclideanSpace ℂ q :=
+  WithLp.toLp 2 fun j => star (A 0 j)
+
+omit [Fintype q] [DecidableEq q] in
+private theorem rowAdjointVector_eq_zero_iff (A : Matrix (Fin 1) q ℂ) :
+    rowAdjointVector A = 0 ↔ A = 0 := by
+  constructor
+  · intro he
+    ext i j
+    have hi : i = 0 := Subsingleton.elim _ _
+    subst i
+    have hz := congrArg (fun x : EuclideanSpace ℂ q => x.ofLp j) he
+    exact star_eq_zero.mp hz
+  · rintro rfl
+    apply WithLp.ofLp_injective 2
+    funext j
+    simp [rowAdjointVector]
+
+private theorem rowAdjointVector_inner (A : Matrix (Fin 1) q ℂ) (x : EuclideanSpace ℂ q) :
+    ⟪rowAdjointVector A, x⟫_ℂ = WithLp.ofLp (toEuclideanLin A x) 0 := by
+  rw [EuclideanSpace.inner_eq_star_dotProduct, ofLp_toEuclideanLin]
+  simp [rowAdjointVector, Matrix.mulVec, dotProduct, mul_comm]
+
+private theorem rowAdjointVector_mul_of_hermitian
+    (A : Matrix (Fin 1) q ℂ) (F : Matrix q q ℂ) (hF : F.IsHermitian) :
+    rowAdjointVector (A * F) = toEuclideanLin F (rowAdjointVector A) := by
+  have hV (B : Matrix (Fin 1) q ℂ) : Bᴴ *ᵥ 1 = WithLp.ofLp (rowAdjointVector B) := by
+    funext i
+    simp [Matrix.mulVec, dotProduct, rowAdjointVector]
+  apply WithLp.ofLp_injective 2
+  rw [← hV, conjTranspose_mul, hF.eq, ← mulVec_mulVec, hV, ofLp_toEuclideanLin]
+
+/-- The span of the adjoint coordinate vectors of a finite family of rows. -/
+def rowAdjointSpan (rows : List (Matrix (Fin 1) q ℂ)) :
+    Submodule ℂ (EuclideanSpace ℂ q) :=
+  Submodule.span ℂ (rowAdjointVector '' {A | A ∈ rows})
+
+omit [Fintype q] [DecidableEq q] in
+private theorem rowAdjointSpan_eq_span_range (rows : List (Matrix (Fin 1) q ℂ)) :
+    rowAdjointSpan rows = Submodule.span ℂ
+      (Set.range fun i : Fin rows.length => rowAdjointVector (rows.get i)) := by
+  unfold rowAdjointSpan
+  congr 1
+  ext x
+  constructor
+  · rintro ⟨A, hA, rfl⟩
+    obtain ⟨i, rfl⟩ := List.mem_iff_get.mp hA
+    exact ⟨i, rfl⟩
+  · rintro ⟨i, rfl⟩
+    exact ⟨rows.get i, List.get_mem _ _, rfl⟩
+
+set_option maxHeartbeats 800000 in
+private theorem simultaneousKernel_rows
+    (rows : List (Matrix (Fin 1) q ℂ)) :
+    simultaneousKernel (rows.map (fun A => (A, (0 : Matrix (Fin 1) (Fin 1) ℂ)))) =
+      (rowAdjointSpan rows)ᗮ := by
+  ext x
+  rw [mem_simultaneousKernel_iff, (rowAdjointSpan rows).mem_orthogonal x]
+  have hzero (A : Matrix (Fin 1) q ℂ) :
+      toEuclideanLin A x = 0 ↔ ⟪rowAdjointVector A, x⟫_ℂ = 0 := by
+    rw [rowAdjointVector_inner]
+    constructor
+    · intro h
+      rw [h, WithLp.ofLp_zero]
+      rfl
+    · intro h
+      apply WithLp.ofLp_injective 2
+      funext i
+      have hi : i = 0 := Subsingleton.elim _ _
+      simpa only [hi, WithLp.ofLp_zero, Pi.zero_apply] using h
+  constructor
+  · intro hz y hy
+    have hg (z : EuclideanSpace ℂ q) (h : z ∈
+        rowAdjointVector '' {A : Matrix (Fin 1) q ℂ | A ∈ rows}) : ⟪z, x⟫_ℂ = 0 := by
+      obtain ⟨A, hA, rfl⟩ := h
+      have hm : (A, (0 : Matrix (Fin 1) (Fin 1) ℂ)) ∈
+          rows.map (fun A => (A, (0 : Matrix (Fin 1) (Fin 1) ℂ))) :=
+        List.mem_map.mpr ⟨A, hA, rfl⟩
+      exact (hzero A).mp (hz _ hm)
+    exact Submodule.span_induction (p := fun z _ => ⟪z, x⟫_ℂ = 0) hg (by simp)
+      (fun u v _ _ hu hv => by simp [inner_add_left, hu, hv])
+      (fun c v _ h => by simp [inner_smul_left, h]) hy
+  · intro hz pair hp
+    obtain ⟨A, hA, rfl⟩ := List.mem_map.mp hp
+    exact (hzero A).mpr (hz _ (Submodule.subset_span ⟨A, hA, rfl⟩))
+
+/-- The next residual row $C_k=A_kF_{k-1}$ in Equation (105). -/
+noncomputable def residualRow
+    (previous : List (Matrix (Fin 1) q ℂ)) (A : Matrix (Fin 1) q ℂ) : Matrix (Fin 1) q ℂ :=
+  A * (commonSolutionRecurrence
+    (previous.map (fun B => (B, (0 : Matrix (Fin 1) (Fin 1) ℂ))))).homogeneous
+
+/-- The residual's adjoint vector is the orthogonal component of the next
+row off the span of the preceding rows. -/
+theorem rowAdjointVector_residualRow
+    (previous : List (Matrix (Fin 1) q ℂ)) (A : Matrix (Fin 1) q ℂ) :
+    rowAdjointVector (residualRow previous A) =
+      (rowAdjointSpan previous)ᗮ.starProjection (rowAdjointVector A) := by
+  rw [residualRow, commonSolutionRecurrence_homogeneous, simultaneousKernel_rows,
+    rowAdjointVector_mul_of_hermitian _ _ (isHermitian_orthogonalProjector _),
+    toEuclideanLin_orthogonalProjector]
+  rfl
+
+/-- **Exercise 23** of [benIsrael2003generalized], Chapter 5.
+An independent list of rows remains independent upon adjoining the next
+row exactly when its residual is nonzero. -/
+theorem exercise_23 (previous : List (Matrix (Fin 1) q ℂ)) (A : Matrix (Fin 1) q ℂ)
+    (h : LinearIndependent ℂ (fun i : Fin previous.length => rowAdjointVector (previous.get i))) :
+    LinearIndependent ℂ
+      (Fin.snoc (fun i : Fin previous.length => rowAdjointVector (previous.get i))
+        (rowAdjointVector A)) ↔ residualRow previous A ≠ 0 := by
+  have hZero : residualRow previous A = 0 ↔ rowAdjointVector A ∈ rowAdjointSpan previous := by
+    rw [← rowAdjointVector_eq_zero_iff, rowAdjointVector_residualRow,
+      Submodule.starProjection_apply_eq_zero_iff, Submodule.orthogonal_orthogonal]
+  rw [linearIndependent_finSnoc, and_iff_right h, ← rowAdjointSpan_eq_span_range]
+  exact hZero.not.symm
+
+private noncomputable def rowResidualVectorsFrom
+    (previous : List (Matrix (Fin 1) q ℂ)) : List (Matrix (Fin 1) q ℂ) →
+      List (EuclideanSpace ℂ q)
+  | [] => []
+  | A :: rows => rowAdjointVector (residualRow previous A) ::
+      rowResidualVectorsFrom (previous ++ [A]) rows
+
+/-- The adjoint vectors of the successive residual rows in Equation (105). -/
+noncomputable def rowResidualVectors (rows : List (Matrix (Fin 1) q ℂ)) :
+    List (EuclideanSpace ℂ q) :=
+  rowResidualVectorsFrom [] rows
+
+private theorem rowResidualVectorsFrom_append_singleton
+    (previous rows : List (Matrix (Fin 1) q ℂ)) (A : Matrix (Fin 1) q ℂ) :
+    rowResidualVectorsFrom previous (rows ++ [A]) =
+      rowResidualVectorsFrom previous rows ++
+        [rowAdjointVector (residualRow (previous ++ rows) A)] := by
+  induction rows generalizing previous with
+  | nil => simp [rowResidualVectorsFrom]
+  | cons B rows ih =>
+    simp [rowResidualVectorsFrom, ih, List.append_assoc]
+
+omit [Fintype q] [DecidableEq q] in
+private theorem rowAdjointSpan_append_singleton
+    (previous : List (Matrix (Fin 1) q ℂ)) (A : Matrix (Fin 1) q ℂ) :
+    rowAdjointSpan (previous ++ [A]) = rowAdjointSpan previous ⊔ ℂ ∙ rowAdjointVector A := by
+  unfold rowAdjointSpan
+  rw [show {B | B ∈ previous ++ [A]} = {B | B ∈ previous} ∪ {A} by ext B; simp [or_comm],
+    Set.image_union, Set.image_singleton, Submodule.span_union]
+
+private theorem rowAdjointSpan_eq_sup_residual
+    (previous : List (Matrix (Fin 1) q ℂ)) (A : Matrix (Fin 1) q ℂ) :
+    rowAdjointSpan (previous ++ [A]) =
+      rowAdjointSpan previous ⊔ ℂ ∙ rowAdjointVector (residualRow previous A) := by
+  let L := rowAdjointSpan previous
+  let x := rowAdjointVector A
+  let e := rowAdjointVector (residualRow previous A)
+  have hAdd : L.starProjection x + e = x := by
+    rw [show e = Lᗮ.starProjection x from rowAdjointVector_residualRow previous A]
+    exact L.starProjection_add_starProjection_orthogonal x
+  have hLmem : L.starProjection x ∈ L := L.starProjection_apply_mem x
+  rw [rowAdjointSpan_append_singleton]
+  change L ⊔ ℂ ∙ x = L ⊔ ℂ ∙ e
+  apply le_antisymm
+  · apply sup_le le_sup_left
+    rw [Submodule.span_singleton_le_iff_mem, ← hAdd]
+    exact Submodule.add_mem _ (Submodule.mem_sup_left hLmem)
+      (Submodule.mem_sup_right (Submodule.mem_span_singleton_self _))
+  · apply sup_le le_sup_left
+    have he : e = x - L.starProjection x := eq_sub_of_add_eq' hAdd
+    rw [Submodule.span_singleton_le_iff_mem, he]
+    exact Submodule.sub_mem _ (Submodule.mem_sup_right (Submodule.mem_span_singleton_self _))
+      (Submodule.mem_sup_left hLmem)
+
+/-- **Exercise 24** of [benIsrael2003generalized], Chapter 5.
+The successive residual rows are pairwise orthogonal and span the same
+subspace as the original rows. -/
+theorem exercise_24 (rows : List (Matrix (Fin 1) q ℂ)) :
+    (rowResidualVectors rows).Pairwise (fun x y => ⟪x, y⟫_ℂ = 0) ∧
+      Submodule.span ℂ {x | x ∈ rowResidualVectors rows} = rowAdjointSpan rows := by
+  induction rows using List.reverseRecOn with
+  | nil => simp [rowResidualVectors, rowResidualVectorsFrom, rowAdjointSpan]
+  | append_singleton previous A ih =>
+    let e := rowAdjointVector (residualRow previous A)
+    have hApp : rowResidualVectors (previous ++ [A]) = rowResidualVectors previous ++ [e] := by
+      unfold rowResidualVectors
+      simpa only [List.nil_append] using rowResidualVectorsFrom_append_singleton [] previous A
+    rw [hApp]
+    constructor
+    · refine List.pairwise_append.mpr ⟨ih.1, by simp, ?_⟩
+      intro x hx y hy
+      have he : y = e := List.mem_singleton.mp hy
+      subst y
+      have hmem : x ∈ rowAdjointSpan previous := ih.2 ▸ Submodule.subset_span hx
+      have heMem : e ∈ (rowAdjointSpan previous)ᗮ := by
+        rw [show e = (rowAdjointSpan previous)ᗮ.starProjection (rowAdjointVector A) from
+          rowAdjointVector_residualRow previous A]
+        exact Submodule.starProjection_apply_mem _ _
+      exact ((rowAdjointSpan previous).mem_orthogonal e).mp heMem x hmem
+    · rw [show {x | x ∈ rowResidualVectors previous ++ [e]} =
+        {x | x ∈ rowResidualVectors previous} ∪ {e} by ext x; simp [or_comm],
+        Submodule.span_union, ih.2, rowAdjointSpan_eq_sup_residual]
+
+end ResidualRows
 
 end BenIsraelGreville.Chapter05

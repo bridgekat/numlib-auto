@@ -65,15 +65,37 @@ id = "exercise_22"
 source = "Ben-Israel and Greville, Chapter 5, Exercise 22, Equations (104)–(107)"
 
 [[node]]
+id = "simultaneousKernel"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 22, Equation (105), common homogeneous kernel"
+
+[[node]]
+id = "commonSolutionRecurrence_homogeneous"
+source = "Ben-Israel and Greville, Chapter 5, Exercises 22–24, the common-kernel projector in Equation (105)"
+
+[[node]]
+id = "rowAdjointVector"
+source = "Ben-Israel and Greville, Chapter 5, Exercises 23–24, Hermitian row coordinates"
+
+[[node]]
+id = "rowAdjointSpan"
+source = "Ben-Israel and Greville, Chapter 5, Exercises 23–24, the span of the rows"
+
+[[node]]
+id = "residualRow"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 23, Equation (105), next residual row"
+
+[[node]]
+id = "rowAdjointVector_residualRow"
+source = "Ben-Israel and Greville, Chapter 5, Exercises 23–24, the orthogonal component of the next row"
+
+[[node]]
 id = "exercise_23"
-kind = "theorem"
-desc = '''For one-row inputs with independent first k rows, the enlarged family is independent iff Cₖ₊₁ is nonzero. The source has the opposite zero test.'''
-source = "Ben-Israel and Greville, Chapter 5, Exercise 23"
-deps = ["commonSolutionRecurrence"]
+source = "Ben-Israel and Greville, Chapter 5, Exercise 23, corrected nonzero residual criterion"
+
+[[node]]
+id = "rowResidualVectors"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 24, successive residual rows"
 
 [[node]]
 id = "exercise_24"
-kind = "theorem"
-desc = '''The residual rows C₁,…,Cₖ are pairwise orthogonal and span the same subspace as the first k input rows.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 24"
-deps = ["commonSolutionRecurrence"]
