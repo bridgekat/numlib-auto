@@ -6,30 +6,19 @@ source = "Ben-Israel and Greville, Chapter 0 §4.4, Exercise 51, Equation (80)"
 
 [[node]]
 id = "IsHermiteNormalForm"
-kind = "definition"
-desc = '''The rank-many top rows have increasing pivot indices, each pivot is the first nonzero in its row, its column vanishes off the pivot, and all lower rows vanish.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.1, Definition 1"
 
 [[node]]
 id = "IsReducedRowEchelon_iff_isHermiteNormalForm"
-kind = "theorem"
-desc = '''Reduced row-echelon form is Hermite normal form with each pivot normalized to one.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.1, Definition 1 and Equation (71)"
-deps = ["IsHermiteNormalForm"]
 
 [[node]]
 id = "exists_permutationMatrix_mul_eq_hermiteBlock"
-kind = "theorem"
-desc = '''For a matrix in normalized Hermite form, its pivot columns can be moved to the front in order by a permutation, giving the block form [I K; 0 0].'''
 source = "Ben-Israel and Greville, Chapter 0 §4.1, Equation (71)"
-deps = ["IsHermiteNormalForm", "permutationMatrix"]
 
 [[node]]
 id = "GaussianElimination"
-kind = "definition"
-desc = '''Gaussian elimination is a finite sequence of elementary row operations.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.2"
-deps = ["scaleRowMatrix", "addRowMatrix", "swapRowMatrix"]
 
 [[node]]
 id = "exists_isUnit_mul_isReducedRowEchelon"
@@ -40,58 +29,44 @@ deps = ["GaussianElimination"]
 
 [[node]]
 id = "eq_inv_mul_hermiteBlock_mul_inv"
-kind = "theorem"
-desc = '''For invertible E and P, a transformed block identity EAP = R gives A = E⁻¹RP⁻¹.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.2, Equation (74)"
 
 [[node]]
 id = "pivots_columns_basis_range"
-kind = "theorem"
-desc = '''The pivot columns of the original matrix are a basis of its range.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.3, Equation (75)"
 
 [[node]]
 id = "hermite_nullSpace_basis"
-kind = "theorem"
-desc = '''With EAP = [I K; 0 0], the columns of P[-K; I] form a basis of the null space of A.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.3, Equation (76)"
 
 [[node]]
 id = "hermite_adjoint_range_basis"
-kind = "theorem"
-desc = '''With EA = [G; 0], the columns of Gᴴ, written as P[I; Kᴴ] when EAP = [I K; 0 0], are a basis of the adjoint range.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.3, Equation (77)"
 
 [[node]]
 id = "IsRankFactorization"
-kind = "definition"
-desc = '''A rank factorization writes A as FG, with F full column rank and G full row rank, both equal to the rank of A.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.4"
 
 [[node]]
 id = "lemma_1"
-kind = "theorem"
-desc = '''Every positive-rank complex matrix A has a full-rank factorization through a coordinate space of dimension rank A.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.4, Lemma 1, Equation (78)"
-deps = ["IsRankFactorization"]
 
 [[node]]
 id = "existsUnique_rankFactorization_right"
-kind = "theorem"
-desc = '''Choosing the columns of F to be a basis of the range of A uniquely determines the other factor G.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.4, proof of Lemma 1"
-deps = ["IsRankFactorization"]
 
 [[node]]
 id = "existsUnique_rankFactorization_left"
-kind = "theorem"
-desc = '''Choosing the rows of G to be a basis of the row space of A uniquely determines the other factor F.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.4, proof of Lemma 1"
-deps = ["IsRankFactorization"]
 
 [[node]]
 id = "hermite_rankFactorization"
-kind = "theorem"
-desc = '''In the Hermite form construction, the pivot columns AP₁ and the top rows G of EA give the rank factorization A=(AP₁)G.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.4, Equation (79)"
-deps = ["IsRankFactorization"]
+
+[[node]]
+id = "gaussianElimination_iff_exists_isUnit_mul"
+source = "Ben-Israel and Greville, Chapter 0 §4.2, Equation (73)"
+
+[[node]]
+id = "IsRankFactorization.transpose"
+source = "Ben-Israel and Greville, Chapter 0 §4.4, transposing the rank factorization"

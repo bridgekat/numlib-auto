@@ -1,73 +1,81 @@
 namespace = "BenIsraelGreville.Chapter00"
-desc = '''Use Mathlib transvections, permutation matrices and signs. Encode column operations by transposing row operations. Under conventional function composition the matrix with entries δ_{π(i),j} reverses the order of composition.'''
 
 [[node]]
 id = "scaleRowMatrix"
-kind = "definition"
-desc = '''Scaling row i of the identity by α gives the elementary scaling matrix Eⁱ(α).'''
 source = "Ben-Israel and Greville, Chapter 0 §3.1, operation (1)"
 
 [[node]]
 id = "addRowMatrix"
-kind = "definition"
-desc = '''Adding β times row j to row i of the identity gives the elementary transvection Eⁱʲ(β).'''
 source = "Ben-Israel and Greville, Chapter 0 §3.1, operation (2)"
 
 [[node]]
 id = "swapRowMatrix"
-kind = "definition"
-desc = '''Swapping rows i and j of the identity gives the elementary swap matrix.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.1, operation (3)"
 
 [[node]]
 id = "elementaryRowMatrices_mul"
-kind = "theorem"
-desc = '''Left multiplication by the three elementary matrices has the corresponding effect on rows.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.1"
-deps = ["scaleRowMatrix", "addRowMatrix", "swapRowMatrix"]
 
 [[node]]
 id = "elementaryColumnMatrices_mul"
-kind = "theorem"
-desc = '''Right multiplication by the column analogues of the three elementary matrices has the corresponding effect on columns.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.1"
-deps = ["elementaryRowMatrices_mul"]
 
 [[node]]
 id = "permutationMatrix"
-kind = "definition"
-desc = '''The permutation matrix Pπ has entries δ_{π(i),j} and acts by row permutation on the left.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.2"
 
 [[node]]
 id = "permutationMatrix_injective"
-kind = "theorem"
-desc = '''Distinct permutations have distinct permutation matrices.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.2"
-deps = ["permutationMatrix"]
 
 [[node]]
 id = "permutationMatrix_mul"
-kind = "theorem"
-desc = '''The product Pπ₁ Pπ₂ is P(π₂ ∘ π₁). The reversal follows from the displayed entry convention in the source.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.2"
-deps = ["permutationMatrix"]
 
 [[node]]
 id = "permutationMatrix_mul_eq_submatrix"
-kind = "theorem"
-desc = '''Left multiplication by Pπ reindexes rows by π, and right multiplication by Pπ reindexes columns by π⁻¹.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.2"
-deps = ["permutationMatrix"]
 
 [[node]]
 id = "perm_exists_list_swaps"
-kind = "theorem"
-desc = '''Every permutation is a finite product of transpositions.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.2"
 
 [[node]]
 id = "sign_eq_neg_one_pow_length_swaps"
-kind = "theorem"
-desc = '''For any transposition decomposition the sign of the permutation is minus one raised to the number of factors.'''
 source = "Ben-Israel and Greville, Chapter 0 §3.2"
+
+[[node]]
+id = "exercise_49_a"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 49(a), Equation (67)"
+
+[[node]]
+id = "exercise_49_b"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 49(b), Equation (68)"
+
+[[node]]
+id = "IsScaleOrAddRowMatrix"
+source = "Ben-Israel and Greville, Chapter 0 §3.1, operations (1)–(2)"
+
+[[node]]
+id = "exercise_49_c"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 49(c)"
+
+[[node]]
+id = "diagonal_insert_eq_scale_mul"
+source = "Ben-Israel and Greville, Chapter 0 §3.1, operation (1)"
+
+[[node]]
+id = "exists_list_scaleOrAdd_of_isUnit"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 49(c), generation by operations (1)–(2)"
+
+[[node]]
+id = "insertLastPermutation"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 50, insertion in a gap"
+
+[[node]]
+id = "exercise_50"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 50"
+
+[[node]]
+id = "exercise_50_apply"
+source = "Ben-Israel and Greville, Chapter 0 §3, Exercise 50"
