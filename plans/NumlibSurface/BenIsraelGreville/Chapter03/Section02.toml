@@ -1,29 +1,21 @@
 namespace = 'BenIsraelGreville.Chapter03'
-desc = 'Minimum-norm solutions.'
 
 [[node]]
 id = 'lemma_1'
-kind = 'theorem'
-desc = '''A maps range A* bijectively onto range A.'''
 source = 'Ben-Israel and Greville, Ch. 3, Lemma 1'
 
 [[node]]
 id = 'corollary_2'
-kind = 'theorem'
-desc = '''For b in range A, the unique solution of Ax=b in range A* is the unique minimum-norm solution.'''
 source = 'Ben-Israel and Greville, Ch. 3, Corollary 2'
-deps = ['lemma_1']
 
 [[node]]
 id = 'theorem_2'
-kind = 'theorem'
-desc = '''For a consistent system the unique minimum-norm solution is Xb for X in A{1,4}. Conversely, a map producing such solutions for every consistent b lies in that class.'''
 source = 'Ben-Israel and Greville, Ch. 3, Theorem 2'
-deps = ['corollary_2']
 
 [[node]]
 id = 'corollary_3'
-kind = 'theorem'
-desc = '''For every b the Moore–Penrose inverse gives the unique minimum-norm least-squares solution. A matrix doing this for every b is the Moore–Penrose inverse.'''
 source = 'Ben-Israel and Greville, Ch. 3, Corollary 3'
-deps = ['theorem_2']
+
+[[node]]
+id = 'IsMinNormSolution'
+source = 'Ben-Israel and Greville, Ch. 3, §2'

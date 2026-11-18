@@ -13,6 +13,9 @@ import NumlibSurface.BenIsraelGreville.Chapter01.Section06
 import NumlibSurface.BenIsraelGreville.Chapter01.Section07
 import NumlibSurface.BenIsraelGreville.Chapter02.Section01
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
+import NumlibSurface.BenIsraelGreville.Chapter03.Section01
+import NumlibSurface.BenIsraelGreville.Chapter03.Section02
+import NumlibSurface.BenIsraelGreville.Chapter03.Section03
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -25,8 +28,8 @@ solving linear systems and least-squares problems.
 ## Coverage
 
 The formalized material includes the algebra of the Penrose inverse classes, the ordinary
-inverse and consistent linear systems, scalar and vector preliminaries, and reduced
-least-squares equations.
+inverse and consistent linear systems, scalar and vector preliminaries, minimum-norm and
+regularized least-squares solutions, and reduced normal equations.
 
 ## Contents
 
@@ -43,6 +46,9 @@ least-squares equations.
 | §1.7 | `Chapter01.Section07` | Outer inverses with prescribed rank |
 | §2.1 | `Chapter02.Section01` | Consistency and solutions of two-sided matrix equations |
 | §2.2 | `Chapter02.Section02` | Characterizations by one Hermitian product |
+| §3.1 | `Chapter03.Section01` | Least-squares solutions |
+| §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
+| §3.3 | `Chapter03.Section03` | Tikhonov regularization |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions
