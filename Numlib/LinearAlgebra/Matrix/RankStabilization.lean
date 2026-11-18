@@ -64,16 +64,21 @@ theorem rank_pow_eq_of_eq_succ {k l : ℕ} (hk : (A ^ k).rank = (A ^ (k + 1)).ra
   obtain ⟨d, rfl⟩ := Nat.exists_eq_add_of_le hkl
   simpa only [A.mulVecLin_pow_eq] using End.ker_pow_constant hker' d
 
+/-- Successive powers of a matrix have equal rank at every exponent at least its size. -/
+theorem rank_pow_eq_succ_of_card_le {k : ℕ} (hk : Fintype.card n ≤ k) :
+    (A ^ k).rank = (A ^ (k + 1)).rank := by
+  rw [← finrank_fintype_fun_eq_card K] at hk
+  have h₁ := End.ker_pow_eq_ker_pow_finrank_of_le (f := A.mulVecLin)
+    hk
+  have h₂ := End.ker_pow_eq_ker_pow_finrank_of_le (f := A.mulVecLin)
+    (hk.trans (Nat.le_succ k))
+  apply (A.rank_pow_eq_iff_ker_eq (Nat.le_succ k)).mpr
+  simpa only [A.mulVecLin_pow_eq] using h₁.trans h₂.symm
+
 /-- The ranks of two successive positive powers of a square matrix eventually agree. -/
 theorem exists_pos_rank_pow_eq_succ :
-    ∃ k : ℕ, 0 < k ∧ (A ^ k).rank = (A ^ (k + 1)).rank := by
-  let k := finrank K (n → K) + 1
-  have h₁ := End.ker_pow_eq_ker_pow_finrank_of_le (f := A.mulVecLin)
-    (show finrank K (n → K) ≤ k by omega)
-  have h₂ := End.ker_pow_eq_ker_pow_finrank_of_le (f := A.mulVecLin)
-    (show finrank K (n → K) ≤ k + 1 by omega)
-  refine ⟨k, by omega, (A.rank_pow_eq_iff_ker_eq (Nat.le_succ k)).mpr ?_⟩
-  simpa only [A.mulVecLin_pow_eq] using h₁.trans h₂.symm
+    ∃ k : ℕ, 0 < k ∧ (A ^ k).rank = (A ^ (k + 1)).rank :=
+  ⟨Fintype.card n + 1, Nat.succ_pos _, A.rank_pow_eq_succ_of_card_le (Nat.le_succ _)⟩
 
 /-- The least positive exponent $k$ for which $A^k$ and $A^{k+1}$ have the same rank. -/
 noncomputable def rankStabilizationIndex : ℕ :=
@@ -91,5 +96,31 @@ theorem rank_pow_eq_succ_iff {k : ℕ} (hk : 0 < k) :
   refine ⟨fun h => Nat.find_min' A.exists_pos_rank_pow_eq_succ ⟨hk, h⟩, fun h => ?_⟩
   exact (A.rank_pow_eq_of_eq_succ A.rankStabilizationIndex_spec.2 h).symm.trans
     (A.rank_pow_eq_of_eq_succ A.rankStabilizationIndex_spec.2 (h.trans (Nat.le_succ k)))
+
+/-- The range and kernel of a positive matrix power are complementary exactly when
+the exponent is at least the stabilization index. -/
+theorem isCompl_range_ker_pow_iff {k : ℕ} (hk : 0 < k) :
+    IsCompl (LinearMap.range (A ^ k).mulVecLin) (LinearMap.ker (A ^ k).mulVecLin) ↔
+      A.rankStabilizationIndex ≤ k := by
+  rw [Submodule.isCompl_iff_disjoint _ _ ?_, Submodule.disjoint_def,
+    ← A.rank_pow_eq_succ_iff hk, A.rank_pow_eq_iff_ker_eq (Nat.le_succ k)]
+  · constructor
+    · intro h
+      apply le_antisymm (A.monotone_ker_mulVecLin_pow (Nat.le_succ k))
+      intro x hx
+      apply h _ ⟨x, rfl⟩
+      apply A.monotone_ker_mulVecLin_pow hk
+      change (A ^ k).mulVecLin x ∈ LinearMap.ker (A ^ 1).mulVecLin
+      rw [pow_one, LinearMap.mem_ker, ← LinearMap.comp_apply, ← mulVecLin_mul, ← pow_succ']
+      exact hx
+    · intro h y hy hy'
+      obtain ⟨x, rfl⟩ := hy
+      have hkk : k ≤ k + k := Nat.le_add_right k k
+      have hker := (A.rank_pow_eq_iff_ker_eq hkk).mp
+        (A.rank_pow_eq_of_eq_succ ((A.rank_pow_eq_iff_ker_eq (Nat.le_succ k)).mpr h) hkk)
+      change x ∈ LinearMap.ker (A ^ k).mulVecLin
+      rwa [hker, LinearMap.mem_ker, pow_add, mulVecLin_mul, LinearMap.comp_apply]
+  · rw [finrank_fintype_fun_eq_card]
+    exact (rank_add_finrank_ker_mulVecLin (A ^ k)).ge
 
 end Matrix

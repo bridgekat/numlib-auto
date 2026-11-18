@@ -14,10 +14,32 @@ source = 'Ben-Israel and Greville, Chapter 4, Lemma 1'
 
 [[node]]
 id = "theorem_4_1"
-kind = "theorem"
-desc = '''The index is the least positive k admitting a solution to A^(k+1) X = A^k. For singular A it also equals the multiplicity of zero in the minimal polynomial and the greatest grade of a generalized zero-eigenvector.'''
 source = 'Ben-Israel and Greville, Chapter 4, Theorem 1'
 
 [[node]]
 id = "theorem_4_1_solvable"
 source = "Ben-Israel and Greville, Chapter 4, Theorem 1, solvability criterion"
+
+[[node]]
+id = "IsZeroVectorOfGrade"
+source = "Ben-Israel and Greville, Chapter 4, §2, definition preceding Theorem 1"
+
+[[node]]
+id = "equation_13"
+source = "Ben-Israel and Greville, Chapter 4, §2, equation (13)"
+
+[[node]]
+id = "equation_14"
+source = "Ben-Israel and Greville, Chapter 4, §2, equation (14)"
+
+[[node]]
+id = "exercise_4_5"
+source = "Ben-Israel and Greville, Chapter 4, Exercise 5"
+
+[[node]]
+id = "exercise_4_6"
+source = "Ben-Israel and Greville, Chapter 4, Exercise 6"
+
+[[node]]
+id = "exercise_4_7"
+source = "Ben-Israel and Greville, Chapter 4, Exercise 7"

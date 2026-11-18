@@ -23,6 +23,7 @@ import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
 import NumlibSurface.BenIsraelGreville.Chapter04.Section01
 import NumlibSurface.BenIsraelGreville.Chapter04.Section02
+import NumlibSurface.BenIsraelGreville.Chapter04.Section03
 import NumlibSurface.BenIsraelGreville.Chapter04.Section04
 import NumlibSurface.BenIsraelGreville.Chapter04.Section06
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
@@ -66,6 +67,7 @@ reduced normal equations.
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
 | §4.1 | `Chapter04.Section01` | Spectral inverse equations |
 | §4.2 | `Chapter04.Section02` | Matrix index and rank stabilization |
+| §4.3 | `Chapter04.Section03` | Spectral inverse of a diagonalizable matrix |
 | §4.4 | `Chapter04.Section04` | Group inverse |
 | §4.6 | `Chapter04.Section06` | Drazin inverse |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |

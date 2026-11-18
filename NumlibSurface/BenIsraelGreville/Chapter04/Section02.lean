@@ -3,6 +3,7 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Numlib.LinearAlgebra.Matrix.RankStabilization
+import Numlib.LinearAlgebra.Matrix.Drazin
 import NumlibSurface.BenIsraelGreville.Chapter04.Section01
 
 /-!
@@ -19,7 +20,7 @@ of successive ranks. From the index onward the range and kernel of the powers ar
 
 namespace BenIsraelGreville.Chapter04
 
-open Matrix
+open Matrix Polynomial
 open scoped ComplexOrder
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
@@ -126,5 +127,108 @@ theorem theorem_4_1_solvable (A : Matrix n n ℂ) {k : ℕ} (hk : 0 < k) :
     rw [mulVecLin_mul, LinearMap.comp_apply, mulVecLin_mul, LinearMap.comp_apply, ← hy,
       ← LinearMap.comp_apply, ← mulVecLin_mul, ← LinearMap.comp_apply, ← mulVecLin_mul,
       mul_pinv_mul_self]
+
+/-- A generalized zero-eigenvector has grade $k$ when $k$ is the first exponent
+at which the vector is annihilated. -/
+def IsZeroVectorOfGrade (A : Matrix n n ℂ) (v : n → ℂ) (k : ℕ) : Prop :=
+  0 < k ∧ (A ^ k) *ᵥ v = 0 ∧ (A ^ (k - 1)) *ᵥ v ≠ 0
+
+private theorem index_isGreatest_grade {A : Matrix n n ℂ} (hA : ¬ IsUnit A) :
+    IsGreatest {k : ℕ | ∃ v, IsZeroVectorOfGrade A v k} (matrixIndex A) := by
+  let r := matrixIndex A
+  have hpos : 0 < r := A.rankStabilizationIndex_spec.1
+  have hpred : r - 1 + 1 = r := by omega
+  have hK (j : ℕ) (hj : r ≤ j) :
+      LinearMap.ker (A ^ r).mulVecLin = LinearMap.ker (A ^ j).mulVecLin :=
+    (A.rank_pow_eq_iff_ker_eq hj).mp
+      (A.rank_pow_eq_of_eq_succ A.rankStabilizationIndex_spec.2 hj)
+  have hProper : ¬ LinearMap.ker (A ^ r).mulVecLin ≤
+      LinearMap.ker (A ^ (r - 1)).mulVecLin := by
+    intro hle
+    have he := le_antisymm (A.monotone_ker_mulVecLin_pow (Nat.sub_le r 1)) hle
+    by_cases h : 0 < r - 1
+    · have hr := (A.rank_pow_eq_iff_ker_eq (Nat.sub_le r 1)).mpr he
+      have hs : (A ^ (r - 1)).rank = (A ^ (r - 1 + 1)).rank := by rwa [hpred]
+      have hh : r ≤ r - 1 := (A.rank_pow_eq_succ_iff h).mp hs
+      omega
+    · have hr : r = 1 := by omega
+      have hid : (1 : Matrix n n ℂ).mulVecLin = LinearMap.id := by
+        rw [← toLin'_apply', toLin'_one]
+      have hk : LinearMap.ker A.mulVecLin = ⊥ := by
+        simpa only [hr, Nat.sub_self, pow_zero, pow_one, hid, LinearMap.ker_id] using he.symm
+      exact hA (mulVec_injective_iff_isUnit.mp (LinearMap.ker_eq_bot.mp hk))
+  refine ⟨?_, ?_⟩
+  · obtain ⟨v, hv, hv'⟩ : ∃ v, v ∈ LinearMap.ker (A ^ r).mulVecLin ∧
+        v ∉ LinearMap.ker (A ^ (r - 1)).mulVecLin := by
+      by_contra! h
+      exact hProper h
+    exact ⟨v, hpos, hv, hv'⟩
+  · intro j hj
+    obtain ⟨v, hj, hv, hn⟩ := hj
+    by_contra! h
+    have hv' : v ∈ LinearMap.ker (A ^ (j - 1)).mulVecLin := by
+      rw [← hK (j - 1) (by omega), hK j h.le]
+      exact hv
+    exact hn hv'
+
+/-- **Theorem 1** of [benIsrael2003generalized], Chapter 4. The matrix index is the least
+positive exponent permitting a solution of $A^{k+1}X=A^k$. When $A$ is singular,
+the index is also the multiplicity of zero in the minimal polynomial and the greatest
+grade of a generalized zero-eigenvector. -/
+theorem theorem_4_1 (A : Matrix n n ℂ) (k : ℕ) :
+    (matrixIndex A = k ↔
+      IsLeast {j : ℕ | 0 < j ∧ ∃ X : Matrix n n ℂ, A ^ (j + 1) * X = A ^ j} k) ∧
+    (¬ IsUnit A →
+      (matrixIndex A = k ↔ (minpoly ℂ A).rootMultiplicity 0 = k) ∧
+      (matrixIndex A = k ↔ IsGreatest {j : ℕ | ∃ v, IsZeroVectorOfGrade A v j} k)) := by
+  have hpos := A.rankStabilizationIndex_spec.1
+  have hLeast : IsLeast {j : ℕ | 0 < j ∧ ∃ X : Matrix n n ℂ, A ^ (j + 1) * X = A ^ j}
+      (matrixIndex A) :=
+    ⟨⟨hpos, (theorem_4_1_solvable A hpos).mpr le_rfl⟩,
+      fun _ hj => (theorem_4_1_solvable A hj.1).mp hj.2⟩
+  refine ⟨⟨fun h => h ▸ hLeast, fun h => hLeast.unique h⟩, ?_⟩
+  intro hA
+  have hIndex := A.rankStabilizationIndex_eq_rootMultiplicity_minpoly hA
+  have hGrade := index_isGreatest_grade hA
+  exact ⟨⟨fun h => hIndex.symm.trans h, fun h => hIndex.trans h⟩,
+    ⟨fun h => h ▸ hGrade, fun h => hGrade.unique h⟩⟩
+
+/-- **Equation (13)** of [benIsrael2003generalized], Chapter 4. If $\ell$ is the
+multiplicity of zero in the minimal polynomial, the polynomial has the form
+$cX^\ell(1-Xq)$ for a nonzero scalar $c$. -/
+theorem equation_13 (A : Matrix n n ℂ) :
+    ∃ (c : ℂ) (q : ℂ[X]), c ≠ 0 ∧
+      minpoly ℂ A = C c * X ^ (minpoly ℂ A).rootMultiplicity 0 * (1 - X * q) :=
+  A.exists_minpoly_factorization_at_zero
+
+/-- **Equation (14)** of [benIsrael2003generalized], Chapter 4. The polynomial $q$ in
+the factorization of the minimal polynomial satisfies the power equation at $\ell$. -/
+theorem equation_14 (A : Matrix n n ℂ) {c : ℂ} {l : ℕ} {q : ℂ[X]} (hc : c ≠ 0)
+    (h : minpoly ℂ A = C c * X ^ l * (1 - X * q)) :
+    A ^ (l + 1) * aeval A q = A ^ l :=
+  A.pow_succ_mul_aeval_eq_of_minpoly_factorization hc h
+
+/-- **Exercise 5** of [benIsrael2003generalized], Chapter 4. The range and kernel of
+$A^l$ are complementary precisely when the positive exponent $l$ is at least the index. -/
+theorem exercise_4_5 (A : Matrix n n ℂ) {l : ℕ} (hl : 0 < l) :
+    IsCompl (LinearMap.range (A ^ l).mulVecLin) (LinearMap.ker (A ^ l).mulVecLin) ↔
+      matrixIndex A ≤ l :=
+  A.isCompl_range_ker_pow_iff hl
+
+/-- **Exercise 6** of [benIsrael2003generalized], Chapter 4. When two consecutive
+powers have the same range, the ranges of all subsequent powers agree. -/
+theorem exercise_4_6 (A : Matrix n n ℂ) {k l : ℕ} (hkl : k ≤ l)
+    (h : LinearMap.range (A ^ (k + 1)).mulVecLin = LinearMap.range (A ^ k).mulVecLin) :
+    LinearMap.range (A ^ (l + 1)).mulVecLin = LinearMap.range (A ^ l).mulVecLin := by
+  have hr := (A.rank_pow_eq_iff_range_eq (Nat.le_succ k)).mpr h.symm
+  have hl := A.rank_pow_eq_of_eq_succ hr hkl
+  have hls := A.rank_pow_eq_of_eq_succ hr (hkl.trans (Nat.le_succ l))
+  exact ((A.rank_pow_eq_iff_range_eq (Nat.le_succ l)).mp (hl.symm.trans hls)).symm
+
+/-- **Exercise 7** of [benIsrael2003generalized], Chapter 4. For a square matrix of
+positive size, stabilization occurs at a positive exponent at most its size. -/
+theorem exercise_4_7 [Nonempty n] (A : Matrix n n ℂ) :
+    ∃ k : ℕ, 0 < k ∧ k ≤ Fintype.card n ∧ (A ^ k).rank = (A ^ (k + 1)).rank :=
+  ⟨Fintype.card n, Fintype.card_pos, le_rfl, A.rank_pow_eq_succ_of_card_le le_rfl⟩
 
 end BenIsraelGreville.Chapter04

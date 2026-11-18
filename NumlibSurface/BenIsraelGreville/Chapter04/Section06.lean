@@ -152,6 +152,32 @@ theorem corollary_4_2_polynomial (A : Matrix n n ℂ) :
     rintro Y ⟨hYi, hYo, p, rfl⟩
     exact (isGroupInverse_iff.mpr ⟨(Commute.refl A).aeval_right p, hYi, hYo⟩).unique hX
 
+/-- **Corollary 2** of [benIsrael2003generalized], Chapter 4. A polynomial reflexive
+inverse exists precisely at index one. There it is the group inverse $Aq(A)^2$ for
+$q$ in the normalized factorization of the minimal polynomial. -/
+theorem corollary_4_2 (A : Matrix n n ℂ) {c : ℂ} {q : ℂ[X]} (hc : c ≠ 0)
+    (h : minpoly ℂ A = C c * X ^ (minpoly ℂ A).rootMultiplicity 0 * (1 - X * q)) :
+    ((∃! X : Matrix n n ℂ, A.IsInnerInverse X ∧ A.IsOuterInverse X ∧
+      ∃ p : ℂ[X], X = aeval A p) ↔ matrixIndex A = 1) ∧
+    (matrixIndex A = 1 →
+      IsGroupInverse A (A * aeval A q ^ 2) ∧
+        ∀ X, IsGroupInverse A X → X = A * aeval A q ^ 2) := by
+  refine ⟨corollary_4_2_polynomial A, fun hidx => ?_⟩
+  let l := (minpoly ℂ A).rootMultiplicity 0
+  have hl : A ^ (l + 1) * aeval A q = A ^ l := equation_14 A hc h
+  have hone : A ^ (1 + 1) * aeval A q = A ^ 1 := by
+    by_cases ha : IsUnit A
+    · have hinv : A * aeval A q = 1 := by
+        apply (ha.pow l).mul_left_cancel
+        rwa [← Matrix.mul_assoc, ← pow_succ, Matrix.mul_one]
+      rw [pow_succ, Matrix.mul_assoc, hinv, Matrix.mul_one]
+    · have he : l = 1 := (A.rankStabilizationIndex_eq_rootMultiplicity_minpoly ha).symm.trans hidx
+      rwa [he] at hl
+  have hp : IsGroupInverse A (A * aeval A q ^ 2) := by
+    simpa only [pow_one] using IsDrazinInverseAt.of_commute_pow
+      ((Commute.refl A).aeval_right q) hone
+  exact ⟨hp, fun _ hX => hX.unique hp⟩
+
 /-- **Corollary 3** of [benIsrael2003generalized], Chapter 4. The Moore–Penrose inverse is
 a polynomial in $A$ exactly when $A$ is range-Hermitian. -/
 theorem corollary_4_3 (A : Matrix n n ℂ) :

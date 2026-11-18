@@ -5,3 +5,12 @@ id = "exists_aeval_mul_pow_eq"
 
 [[node]]
 id = "existsUnique_isDrazinInverseAt"
+
+[[node]]
+id = "exists_minpoly_factorization_at_zero"
+
+[[node]]
+id = "pow_succ_mul_aeval_eq_of_minpoly_factorization"
+
+[[node]]
+id = "rankStabilizationIndex_eq_rootMultiplicity_minpoly"

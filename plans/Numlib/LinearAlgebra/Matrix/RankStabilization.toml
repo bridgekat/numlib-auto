@@ -17,3 +17,9 @@ id = "rankStabilizationIndex_spec"
 
 [[node]]
 id = "rank_pow_eq_succ_iff"
+
+[[node]]
+id = "rank_pow_eq_succ_of_card_le"
+
+[[node]]
+id = "isCompl_range_ker_pow_iff"

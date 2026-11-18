@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Numlib.Algebra.Group.Drazin
 import Numlib.Algebra.Polynomial.Commute
 import Numlib.LinearAlgebra.Matrix.RankStabilization
+import Mathlib.FieldTheory.Minpoly.Field
+import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.RingTheory.Adjoin.Polynomial.Basic
 
 /-!
@@ -85,5 +87,89 @@ theorem existsUnique_isDrazinInverseAt (A : Matrix n n K) {k : ℕ}
   refine ⟨A ^ k * aeval A p ^ (k + 1), ⟨hx, ?_⟩, fun _ hy => hy.1.unique hx⟩
   refine ⟨X ^ k * p ^ (k + 1), ?_⟩
   simp only [map_mul, map_pow, aeval_X]
+
+/-- If $l$ is the multiplicity of zero in the minimal polynomial, that polynomial admits
+a factorization $c X^l(1-Xq)$ with $c\ne 0$. -/
+theorem exists_minpoly_factorization_at_zero (A : Matrix n n K) :
+    ∃ (c : K) (q : K[X]), c ≠ 0 ∧
+      minpoly K A = C c * X ^ (minpoly K A).rootMultiplicity 0 * (1 - X * q) := by
+  obtain ⟨r, hr, hd⟩ :=
+    exists_eq_pow_rootMultiplicity_mul_and_not_dvd (minpoly K A) (minpoly.ne_zero_of_finite K A) 0
+  simp only [map_zero, sub_zero] at hr hd
+  let c := r.coeff 0
+  have hc : c ≠ 0 := fun hc => hd (X_dvd_iff.mpr hc)
+  obtain ⟨q, hq⟩ : X ∣ (1 - C c⁻¹ * r) := by
+    rw [X_dvd_iff, coeff_sub, coeff_one_zero, coeff_C_mul]
+    change 1 - c⁻¹ * c = 0
+    rw [inv_mul_cancel₀ hc, sub_self]
+  have hNorm : r = C c * (1 - X * q) := calc
+    r = C c * (C c⁻¹ * r) := by
+      rw [← mul_assoc, ← map_mul, mul_inv_cancel₀ hc, map_one, one_mul]
+    _ = C c * (1 - X * q) := by rw [← hq, sub_sub_cancel]
+  refine ⟨c, q, hc, ?_⟩
+  calc
+    minpoly K A = X ^ (minpoly K A).rootMultiplicity 0 * r := hr
+    _ = _ := by rw [hNorm, mul_left_comm, mul_assoc]
+
+/-- A factorization of the minimal polynomial as $c X^l(1-Xq)$ with $c\ne 0$ gives
+the power equation $A^{l+1}q(A)=A^l$. -/
+theorem pow_succ_mul_aeval_eq_of_minpoly_factorization (A : Matrix n n K)
+    {c : K} {l : ℕ} {q : K[X]} (hc : c ≠ 0)
+    (h : minpoly K A = C c * X ^ l * (1 - X * q)) :
+    A ^ (l + 1) * aeval A q = A ^ l := by
+  have hu : IsUnit (algebraMap K (Matrix n n K) c) :=
+    (IsUnit.mk0 c hc).map (algebraMap K (Matrix n n K))
+  have hzero : algebraMap K (Matrix n n K) c * (A ^ l * (1 - A * aeval A q)) = 0 := calc
+    algebraMap K (Matrix n n K) c * (A ^ l * (1 - A * aeval A q)) =
+        aeval A (C c * X ^ l * (1 - X * q)) := by
+      simp only [map_mul, map_sub, map_one, map_pow, aeval_C, aeval_X, Matrix.mul_assoc]
+    _ = aeval A (minpoly K A) := congrArg (aeval A) h.symm
+    _ = _ := minpoly.aeval K A
+  have hCancel : A ^ l * (1 - A * aeval A q) = 0 :=
+    hu.mul_left_cancel (hzero.trans (mul_zero _).symm)
+  rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, ← pow_succ, sub_eq_zero] at hCancel
+  exact hCancel.symm
+
+/-- For a singular square matrix, the positive rank-stabilization index is the multiplicity
+of zero in its minimal polynomial. -/
+theorem rankStabilizationIndex_eq_rootMultiplicity_minpoly {A : Matrix n n K}
+    (hA : ¬ IsUnit A) :
+    A.rankStabilizationIndex = (minpoly K A).rootMultiplicity 0 := by
+  let k := A.rankStabilizationIndex
+  let l := (minpoly K A).rootMultiplicity 0
+  obtain ⟨p, hp⟩ := A.exists_aeval_mul_pow_eq A.rankStabilizationIndex_spec.2
+  change A ^ (k + 1) * aeval A p = A ^ k at hp
+  have hqEval : (1 - X * p : K[X]).eval 0 = 1 := by simp
+  have hq0 : (1 - X * p : K[X]) ≠ 0 := by
+    intro h
+    rw [h, eval_zero] at hqEval
+    exact zero_ne_one hqEval
+  have hqRoot : ¬ IsRoot (1 - X * p : K[X]) 0 := by
+    intro h
+    exact one_ne_zero (hqEval.symm.trans h.eq_zero)
+  have hAnn : aeval A (X ^ k * (1 - X * p)) = 0 := by
+    simp only [map_mul, map_sub, map_pow, map_one, aeval_X]
+    rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, ← pow_succ, hp, sub_self]
+  have hmult : (X ^ k * (1 - X * p) : K[X]).rootMultiplicity 0 = k := by
+    rw [mul_comm]
+    simpa only [map_zero, sub_zero, rootMultiplicity_eq_zero hqRoot, zero_add] using
+      rootMultiplicity_mul_X_sub_C_pow (a := (0 : K)) (n := k) hq0
+  have hlk : l ≤ k :=
+    (rootMultiplicity_le_rootMultiplicity_of_dvd
+      (mul_ne_zero (pow_ne_zero _ X_ne_zero) hq0) (minpoly.dvd K A hAnn) 0).trans_eq hmult
+  obtain ⟨c, q, hc, hf⟩ := A.exists_minpoly_factorization_at_zero
+  have hSolve : A ^ (l + 1) * aeval A q = A ^ l :=
+    A.pow_succ_mul_aeval_eq_of_minpoly_factorization hc hf
+  have hpos : 0 < l := by
+    by_contra! h
+    have hz : l = 0 := Nat.eq_zero_of_le_zero h
+    rw [hz, zero_add, pow_zero, pow_one] at hSolve
+    exact hA (isUnit_iff_exists_inv.mpr ⟨aeval A q, hSolve⟩)
+  have hEqual : (A ^ l).rank = (A ^ (l + 1)).rank := by
+    refine le_antisymm ?_ ?_
+    · exact (congrArg rank hSolve).symm.le.trans (rank_mul_le_left _ _)
+    · rw [pow_succ]
+      exact rank_mul_le_left _ _
+  exact le_antisymm ((A.rank_pow_eq_succ_iff hpos).mp hEqual) hlk
 
 end Matrix

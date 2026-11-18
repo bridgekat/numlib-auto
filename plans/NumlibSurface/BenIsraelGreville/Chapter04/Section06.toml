@@ -24,8 +24,6 @@ source = 'Ben-Israel and Greville, Chapter 4, Corollary 1'
 
 [[node]]
 id = "corollary_4_2"
-kind = "theorem"
-desc = '''A polynomial in A can be a reflexive generalized inverse of A precisely at index one, where it is the group inverse and satisfies the truncated spectral formula.'''
 source = 'Ben-Israel and Greville, Chapter 4, Corollary 2'
 
 [[node]]

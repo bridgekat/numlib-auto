@@ -1,10 +1,5 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Construct the reciprocal-eigenvalue inverse of a diagonalizable matrix.
-'''
 
 [[node]]
 id = "diagonalizable_spectral_inverse"
-kind = "theorem"
-desc = '''If A = P diag(λ) P⁻¹ for a unit P, then X = P diag(λ⁻¹) P⁻¹ satisfies A X A = A, X A X = X, and A X = X A.'''
 source = 'Ben-Israel and Greville, Chapter 4, §3, equation (19)'
