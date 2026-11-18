@@ -44,6 +44,7 @@ import NumlibSurface.BenIsraelGreville.Chapter06.Section01
 import NumlibSurface.BenIsraelGreville.Chapter06.Section02
 import NumlibSurface.BenIsraelGreville.Chapter06.Section03
 import NumlibSurface.BenIsraelGreville.Chapter06.Section04
+import NumlibSurface.BenIsraelGreville.Chapter06.Section05
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -106,6 +107,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §6.2 | `Chapter06.Section02` | SVD, pseudoinverse, and finite expansions |
 | §6.3 | `Chapter06.Section03` | Low-rank approximation, uniqueness, and total least squares |
 | §6.4 | `Chapter06.Section04` | Partial isometries and canonical polar factors |
+| §6.5 | `Chapter06.Section05` | Reciprocal subspaces, principal angles, and volume |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions

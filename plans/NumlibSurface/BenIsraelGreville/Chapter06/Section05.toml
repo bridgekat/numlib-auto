@@ -1,130 +1,276 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Use the principal-angle API for finite-dimensional subspaces and determinant identities for volume.
-'''
+
+[[node]]
+id = "projectionProduct_eq_zero_iff_orthogonal"
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(a)'
 
 [[node]]
 id = "Inclined"
-kind = "definition"
-desc = '''Two subspaces are inclined if their orthogonal projections have nonzero product.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 2(a,b)'
+source = 'Ben-Israel and Greville, Chapter 6, Definition 2(b)'
 
 [[node]]
 id = "OrthogonallyIncident"
-kind = "definition"
-desc = '''The relative orthogonal complements of the intersection in the two subspaces are orthogonal.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(c)'
 
 [[node]]
 id = "CompletelyInclined"
-kind = "definition"
-desc = '''The first subspace meets the orthogonal complement of the second trivially.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(d)'
 
 [[node]]
 id = "TotallyInclined"
-kind = "definition"
-desc = '''Each subspace is completely inclined to the other.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(e)'
 
 [[node]]
 id = "inclinationDimension"
-kind = "definition"
-desc = '''The rank of the product of the two orthogonal projections.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(f)'
 
 [[node]]
 id = "inclinationCoefficient"
-kind = "definition"
-desc = '''The trace of the product of the two orthogonal projections.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(g)'
 
 [[node]]
 id = "AreReciprocalSubspaces"
-kind = "definition"
-desc = '''The projection of each subspace onto the opposite ambient subspace equals the other member of the pair.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(h)'
 
 [[node]]
 id = "AreReciprocalVectors"
-kind = "definition"
-desc = '''Two vectors span reciprocal lines.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 2(i)'
 
 [[node]]
-id = "lemma_6_1"
-kind = "theorem"
-desc = '''The orthogonal projection product has real spectrum in [0,1], its one-eigenspace is the intersection, its kernel has the stated orthogonal splitting, and its nonzero eigenvalues are the squared singular values of the product of the two basis matrices.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 1'
+id = "inclinationCoefficient_span_singleton"
+source = 'Ben-Israel and Greville, Chapter 6, equation (105)'
 
 [[node]]
-id = "theorem_6_8"
-kind = "theorem"
-desc = '''Reciprocal vectors give eigenvectors of the two projection products at their inclination coefficient. Conversely a nonzero-eigenvalue vector gives a reciprocal partner by projection.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 8'
+id = "lemma_6_1_spectrum"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(a)'
+
+[[node]]
+id = "lemma_6_1_orthogonal"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(b), distinct nonzero eigenvalues'
+
+[[node]]
+id = "lemma_6_1_fixed"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(c)'
+
+[[node]]
+id = "lemma_6_1_kernel"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(d)'
+
+[[node]]
+id = "theorem_6_8_of_reciprocal"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 8(a)'
+
+[[node]]
+id = "theorem_6_8_of_eigenvector"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 8(b), nonzero eigenvalues'
 
 [[node]]
 id = "theorem_6_9"
-kind = "theorem"
-desc = '''The four pairwise orthogonality conditions for two reciprocal pairs with nonzero inclination coefficients are equivalent and hold for unequal coefficients.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 9'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 9, equation (106)'
+
+[[node]]
+id = "projectedSubspaces_finrank"
+source = 'Ben-Israel and Greville, Chapter 6, equation (107), Exercise 66(d)'
+
+[[node]]
+id = "projectedSubspaces_reciprocal"
+source = 'Ben-Israel and Greville, Chapter 6, §5, reciprocal images'
+
+[[node]]
+id = "projectedSubspaces_projectionProduct"
+source = 'Ben-Israel and Greville, Chapter 6, equation (108), projection product'
+
+[[node]]
+id = "projectedSubspaces_inclinationCoefficient"
+source = 'Ben-Israel and Greville, Chapter 6, equation (108), trace'
 
 [[node]]
 id = "principalAngle"
-kind = "definition"
-desc = '''The ordered acute angles between the reciprocal pairs, with positive inclinations.'''
 source = 'Ben-Israel and Greville, Chapter 6, Definition 3'
 
 [[node]]
+id = "principalAngle_order"
+source = 'Ben-Israel and Greville, Chapter 6, equation (109)'
+
+[[node]]
 id = "theorem_6_10"
-kind = "theorem"
-desc = '''Each principal cosine maximizes the normalized inner product of admissible pairs orthogonal to the preceding principal vectors on their respective sides.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 10'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 10, equations (110a)–(110b)'
 
 [[node]]
 id = "lemma_6_2"
-kind = "theorem"
-desc = '''The principal cosines are the positive singular values of the cross Gram matrix, and the multiplicity of one is the dimension of the intersection.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 2'
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 2, equation (111)'
+
+[[node]]
+id = "lemma_6_2_intersection"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 2, intersection multiplicity'
 
 [[node]]
 id = "subspaceDistance"
-kind = "definition"
-desc = '''The operator norm of the difference of the orthogonal projections.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 4'
+source = 'Ben-Israel and Greville, Chapter 6, Definition 4, equation (112a)'
 
 [[node]]
 id = "lemma_6_3"
-kind = "theorem"
-desc = '''The projection distance is the sine of the largest principal angle, using π/2 for unequal dimensions and handling coincident subspaces as distance zero. The printed maximum over arbitrary vectors is not the largest principal angle.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 3'
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 3, equation (113), equal positive dimensions'
+
+[[node]]
+id = "subspaceDistance_eq_one_of_finrank_ne"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 3, unequal dimensions'
 
 [[node]]
 id = "principalSineProduct"
-kind = "definition"
-desc = '''Product of the principal sines between two subspaces, including common directions and the zero-cosine padding as applicable.'''
-source = 'Ben-Israel and Greville, Chapter 6, §5, equation (115a)'
+source = 'Ben-Israel and Greville, Chapter 6, equation (115a)'
 
 [[node]]
 id = "principalCosineProduct"
-kind = "definition"
-desc = '''Product of the principal cosines between two subspaces, including zero cosines up to the dimension of the smaller subspace.'''
-source = 'Ben-Israel and Greville, Chapter 6, §5, equation (115b)'
+source = 'Ben-Israel and Greville, Chapter 6, equation (115b)'
 
 [[node]]
 id = "lemma_6_4"
-kind = "theorem"
-desc = '''The full-dimensional volume of a column concatenation of full-column-rank matrices is the product of the two volumes and the product of their principal sines.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 4'
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 4, equation (117)'
 
 [[node]]
 id = "theorem_6_11"
-kind = "theorem"
-desc = '''If the ranges of two column blocks form a direct sum, the rank-dimensional volume of the column concatenation is the product of the two block volumes and the product of their principal sines.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 11'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 11, equation (118)'
 
 [[node]]
 id = "theorem_6_12"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 12, equation (119)'
+
+[[node]]
+id = "exercise_6_64"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 64, equation (120)'
+
+[[node]]
+id = "exercise_6_65"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 65 and Exercise 66(c)'
+
+[[node]]
+id = "exercise_6_66_split"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 66(a,b)'
+
+[[node]]
+id = "exercise_6_66_orthogonal"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 66(e–g)'
+
+[[node]]
+id = "exercise_6_67"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 67'
+
+[[node]]
+id = "exercise_6_68"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 68'
+
+[[node]]
+id = "exercise_6_69"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 69'
+
+[[node]]
+id = "lemma_6_1_orthogonality_counterexample"
 kind = "theorem"
-desc = '''The absolute determinant of BᵀC for full-column-rank B and C is the product of their volumes and the product of the principal cosines between their ranges.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 12'
+desc = '''A zero eigenvector of the projection product can fail to be orthogonal to its nonzero eigenvector.'''
+deps = ["lemma_6_1_orthogonal"]
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(b), counterexample at zero'
+
+[[node]]
+id = "lemma_6_1_nonzero_eigenvalues"
+kind = "theorem"
+desc = '''The nonzero eigenvalues of the product are the squared positive singular values of the cross Gram matrix. Zero eigenvalue multiplicities depend on the ambient dimension.'''
+deps = ["lemma_6_1_spectrum","lemma_6_2"]
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(e)'
+
+[[node]]
+id = "reciprocal_coefficient_of_eigenvector"
+kind = "theorem"
+desc = '''The reciprocal partner of an eigenvector at a nonzero eigenvalue has inclination coefficient equal to that eigenvalue.'''
+deps = ["theorem_6_8_of_reciprocal","theorem_6_8_of_eigenvector"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 8(b), eigenvalue identification'
+
+[[node]]
+id = "projectedSubspaces_reciprocal_basis"
+kind = "theorem"
+desc = '''The projected images have bases of reciprocal eigenvector pairs at the positive squared cosines.'''
+deps = ["theorem_6_8_of_eigenvector","projectedSubspaces_finrank","lemma_6_1_nonzero_eigenvalues"]
+source = 'Ben-Israel and Greville, Chapter 6, §5, after equation (108)'
+
+[[node]]
+id = "subspaceDistance_eq_sup_norm_div"
+kind = "theorem"
+desc = '''The projection distance is the supremum of the ratio of the image norm to the original norm over nonzero vectors.'''
+deps = ["subspaceDistance"]
+source = 'Ben-Israel and Greville, Chapter 6, equation (112b)'
+
+[[node]]
+id = "subspaceDistance_eq_one_sided"
+kind = "theorem"
+desc = '''For totally inclined subspaces the distance is the supremum of relative orthogonal residuals on the first subspace.'''
+deps = ["exercise_6_68","subspaceDistance_eq_sup_norm_div"]
+source = 'Ben-Israel and Greville, Chapter 6, equation (114)'
+
+[[node]]
+id = "principal_products_sq_add_le_one"
+kind = "theorem"
+desc = '''For a nonempty principal-angle list the squares of the two products sum to at most one.'''
+deps = ["principalSineProduct","principalCosineProduct"]
+source = 'Ben-Israel and Greville, Chapter 6, §5, after equations (115a)–(115b)'
+
+[[node]]
+id = "volume_adjoin_vector_principalAngle"
+kind = "theorem"
+desc = '''Adjoining a nonzero vector multiplies the volume by its norm and the sine of its angle to the span.'''
+deps = ["lemma_6_4"]
+source = 'Ben-Israel and Greville, Chapter 6, equation (116)'
+
+[[node]]
+id = "exercise_6_70"
+kind = "theorem"
+desc = '''The absolute determinant of a square column concatenation equals the product of the full-column-degree block volumes and their principal sines.'''
+deps = ["lemma_6_4"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 70'
+
+[[node]]
+id = "coordinateSubspace"
+kind = "definition"
+desc = '''The coordinate subspace for an index set contains exactly the vectors that vanish outside that set.'''
+source = 'Ben-Israel and Greville, Chapter 6, equations (121)–(122)'
+
+[[node]]
+id = "exercise_6_71"
+kind = "theorem"
+desc = '''The product of the cosines to a coordinate subspace is the absolute minor divided by the selected column volume, independently of the chosen column basis.'''
+deps = ["coordinateSubspace","theorem_6_12"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 71, equation (123)'
+
+[[node]]
+id = "exercise_6_72"
+kind = "theorem"
+desc = '''The specified matrix has rank two and its principal cosine product with the first coordinate plane is one over the square root of six.'''
+deps = ["exercise_6_71"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 72'
+
+[[node]]
+id = "exercise_6_73"
+kind = "theorem"
+desc = '''The squared products of principal cosines to all coordinate subspaces of the same dimension sum to one.'''
+deps = ["exercise_6_71"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 73'
+
+[[node]]
+id = "exercise_6_74"
+kind = "theorem"
+desc = '''The cosine product of a pair of subspaces is bounded by the sum of the corresponding coordinate cosine products. Equality requires coherent signs up to an overall orientation.'''
+deps = ["exercise_6_71"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 74'
+
+[[node]]
+id = "exercise_6_75"
+kind = "theorem"
+desc = '''The matrix is reconstructed as a convex combination of embedded basic inverses of its pseudoinverse.'''
+deps = ["exercise_6_71"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 75, equation (124)'
+
+[[node]]
+id = "exercise_6_76"
+kind = "theorem"
+desc = '''The matrix is reconstructed from operators between coordinate subspaces with weights given by squared products of the two principal cosine products.'''
+deps = ["exercise_6_75"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 76, equations (125)–(126)'
