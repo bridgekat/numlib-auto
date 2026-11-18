@@ -1,30 +1,133 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Newton iteration with an outer inverse. Express Jacobians using Fréchet derivatives and matrix norm hypotheses using operator norms, allowing arbitrary finite-dimensional normed spaces in the reusable convergence lemmas.'''
+[[node]]
+id = "scalarNewtonInverse"
+source = "Ben-Israel and Greville, Chapter 8, §5, equations (58)–(59), scalar correction map"
+
+[[node]]
+id = "scalarNewtonInverse_apply"
+source = "Ben-Israel and Greville, Chapter 8, §5, equations (58)–(59), scalar division"
+
+[[node]]
+id = "scalarNewtonIterate_succ"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (58), ordinary scalar Newton"
+
+[[node]]
+id = "scalarModifiedNewtonIterate_succ"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (59), modified scalar Newton"
+
+[[node]]
+id = "residual_eq_zero_iff_components"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (60), system of equations"
+
+[[node]]
+id = "newtonIterate_eq_classical"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (61), ordinary Newton"
+
+[[node]]
+id = "newtonIterate_eq_chord"
+source = "Ben-Israel and Greville, Chapter 8, §5, equations (59), (73), invertible fixed derivative"
+
+[[node]]
+id = "jacobianMatrix"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (62), coordinate Jacobian"
+
+[[node]]
+id = "jacobianMatrix_operator"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (62), Fréchet derivative representation"
+
+[[node]]
+id = "jacobianMatrix_apply_eq_partial"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (62), coordinate partial derivatives"
+
+[[node]]
+id = "IsNewtonOuterInverse"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (64a), continuous linear outer inverse"
+
+[[node]]
+id = "isNewtonOuterInverse_iff"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (64a), pointwise criterion"
 
 [[node]]
 id = "newtonIterate"
-kind = "definition"
-desc = '''Starting at x₀, the outer-inverse Newton update sends x to x−T(x)f(x), with T(x)J(x)T(x)=T(x). Scalar Newton uses the inverse derivative and modified Newton fixes T at the initial point.'''
-source = "Ben-Israel and Greville, Ch. 8, §5, (58)–(62), (65)"
+source = "Ben-Israel and Greville, Chapter 8, §5, equations (65), (70), and (73), Newton iteration"
+
+[[node]]
+id = "newtonIterate_zero"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (65), starting point"
+
+[[node]]
+id = "newtonIterate_succ"
+source = "Ben-Israel and Greville, Chapter 8, §5, equation (65), step recurrence"
+
+[[node]]
+id = "newtonDisplacement_eq"
+source = "Ben-Israel and Greville, Chapter 8, §5, equations (68), (77), displacement decomposition"
 
 [[node]]
 id = "theorem_4"
-kind = "theorem"
-desc = '''Suppose J is M-Lipschitz, T consists of outer inverses, the initial step is bounded by α, ‖(T(u)−T(v))f(v)‖ ≤ N‖u−v‖² and M‖T(u)‖/2+N ≤ K < 1 on the ball, with h=αK<1 and radius exceeding α/(1−h). The iterates stay in the ball, converge to x∞ satisfying T(x∞)f(x∞)=0, and have error at most αh^(2^k−1)/(1−h^(2^k)). Derive convergence of T(x)f(x) on the ball from the given estimates, without assuming continuity of T itself.'''
-source = "Ben-Israel and Greville, Ch. 8, §5, Theorem 4, (63)–(69)"
-deps = ["newtonIterate"]
+source = "Ben-Israel and Greville, Chapter 8, §5, Theorem 4, equations (63)–(69), local convergence and dyadic error bound"
+
+[[node]]
+id = "eventually_error_le_sq_of_quadratic_increments"
+source = "Ben-Israel and Greville, Chapter 8, §5, Theorem 4, quadratic error convergence from equation (68)"
+
+[[node]]
+id = "zero_correction_iff_root"
+source = "Ben-Israel and Greville, Chapter 8, §5, discussion after Theorem 4, injective inverse case"
+
+[[node]]
+id = "newtonIterate_zero_inverse"
+source = "Ben-Israel and Greville, Chapter 8, §5, discussion after Theorem 4, trivial outer inverse"
+
+[[node]]
+id = "outerNewton_nonroot_example"
+source = "Ben-Israel and Greville, Chapter 8, §5, discussion after Theorem 4, a zero correction in an inconsistent system"
+
+[[node]]
+id = "isNewtonOuterInverse_pinv"
+source = "Ben-Israel and Greville, Chapter 8, §5, Corollary 3, Moore–Penrose outer inverse"
+
+[[node]]
+id = "hasGradientAt_norm_sq_of_jacobian"
+source = "Ben-Israel and Greville, Chapter 8, §5, Corollary 3, equation (71), gradient formula"
 
 [[node]]
 id = "corollary_3"
-kind = "theorem"
-desc = '''Under the hypotheses of Theorem 4 with T(x)=J(x)† in Euclidean norms, the limit is a stationary point of ‖f(x)‖². Use ker J†=ker Jᴴ to obtain vanishing derivative.'''
-source = "Ben-Israel and Greville, Ch. 8, §5, Corollary 3, (70)–(71)"
-deps = ["theorem_4"]
+source = "Ben-Israel and Greville, Chapter 8, §5, Corollary 3, equations (70)–(71), stationary point"
+
+[[node]]
+id = "initialResidual_norm_lt"
+source = "Ben-Israel and Greville, Chapter 8, §5, Remark 1(a), initial residual bound"
+
+[[node]]
+id = "jacobian_norm_lower_of_outerInverse"
+source = "Ben-Israel and Greville, Chapter 8, §5, Remark 1(b), lower Jacobian bound for nonzero outer inverse"
+
+[[node]]
+id = "secondDerivative_norm_le_of_jacobian_lipschitz"
+source = "Ben-Israel and Greville, Chapter 8, §5, Remark 1(c), second derivative bound when defined"
 
 [[node]]
 id = "theorem_5"
-kind = "theorem"
-desc = '''If TAT=T, δ=ε‖T‖<1, ‖T‖‖f(x₀)‖<(1−δ)r, and ‖f(u)−f(v)−A(u−v)‖≤ε‖u−v‖ on the ball, fixed-T Newton iterates stay in the ball and converge to a zero of Tf in the affine subspace x₀+range T. Prove geometric bounds on successive increments.'''
-source = "Ben-Israel and Greville, Ch. 8, §5, Theorem 5, (72)–(77)"
-deps = ["newtonIterate"]
+source = "Ben-Israel and Greville, Chapter 8, §5, Theorem 5, equations (72)–(77) and Remark 3, fixed outer inverse"
+
+[[node]]
+id = "exists_ball_approxDerivative_of_continuousAt"
+source = "Ben-Israel and Greville, Chapter 8, §5, Remark 2, approximate derivative on a smaller ball"
+
+[[node]]
+id = "IsNewtonOuterInverse.isClosed_range"
+source = "Ben-Israel and Greville, Chapter 8, §5, Remark 3, closedness of the affine iteration direction"
+
+[[node]]
+id = "exercise_8_13"
+source = "Ben-Israel and Greville, Chapter 8, §5, Exercise 13, first-order Taylor remainder"
+
+[[node]]
+id = "exercise_8_13_within"
+source = "Ben-Israel and Greville, Chapter 8, §5, Exercise 13, derivatives within a convex domain"
+
+[[node]]
+id = "exercise_8_14"
+source = "Ben-Israel and Greville, Chapter 8, §5, Exercise 14, equations (78)–(79), approximate derivative iteration"

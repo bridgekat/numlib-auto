@@ -1,78 +1,258 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Finite-dimensional L² regression. Use a probability measure, finite vectors in MemLp 2, coordinate expectations and covariance, and AlmostEverywhereEq for estimator uniqueness. Separate the covariance comparisons from the probability moments in the backbone.'''
+
+[[node]]
+id = "expectationVector"
+source = "Ben-Israel and Greville, Ch. 8, §3, coordinate expectation before Equation (10)"
 
 [[node]]
 id = "covarianceMatrix"
-kind = "definition"
-desc = '''Entry (i,j) is the expected product of the centered coordinates i and j.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, covariance definition before (10)"
+source = "Ben-Israel and Greville, Ch. 8, §3, covariance definition before Equation (10)"
+
+[[node]]
+id = "covarianceMatrix_apply"
+source = "Ben-Israel and Greville, Ch. 8, §3, coordinate covariance definition before Equation (10)"
 
 [[node]]
 id = "IsLinearStatisticalModel"
-kind = "definition"
-desc = '''The square-integrable observation family has mean Xβ for every parameter β and covariance V² with V symmetric PSD, equivalently it is Xβ plus centered error of that covariance. A parameterized observation family keeps the universal unbiasedness condition meaningful.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, (10)–(13)"
-deps = ["covarianceMatrix"]
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (10)–(13)"
+
+[[node]]
+id = "expectationVector_mulVec"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (15)–(17) and Exercise 1"
+
+[[node]]
+id = "covarianceMatrix_mulVec"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 1, covariance formula"
+
+[[node]]
+id = "moments_add_const"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (10)–(13) and Exercise 1"
+
+[[node]]
+id = "exercise_8_1"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 1"
+
+[[node]]
+id = "isLinearStatisticalModel_iff_centered_error"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (10)–(13)"
+
+[[node]]
+id = "ae_eq_expectationVector_of_covarianceMatrix_eq_zero"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (29)–(31), Exercise 7"
 
 [[node]]
 id = "IsLinearUnbiasedEstimator"
-kind = "definition"
-desc = '''The estimator A maps the observation to Ay and is unbiased for Bβ for every β, equivalently AX = B.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, (14)–(17)"
-deps = ["IsLinearStatisticalModel"]
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (14)–(17)"
 
 [[node]]
 id = "IsEstimable"
-kind = "definition"
-desc = '''A linear function Bβ is estimable if there is an unbiased linear estimator, equivalently all rows of B belong to the row space of X.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, (16)–(17)"
-deps = ["IsLinearUnbiasedEstimator"]
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (16)–(17)"
 
 [[node]]
 id = "IsBestLinearUnbiasedEstimator"
-kind = "definition"
-desc = '''An unbiased estimator whose covariance is minimal in Loewner order among unbiased linear estimators. In the scalar case this is minimum variance.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, definition after (16) and (19)"
-deps = ["IsLinearUnbiasedEstimator"]
+source = "Ben-Israel and Greville, Ch. 8, §3, BLUE definition and Equation (19)"
 
 [[node]]
 id = "estimatorClass"
-kind = "definition"
-desc = '''The estimator class E(X) consists of coefficients A of the form KXᵀ, whose rows lie in the column space of X.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, (20)"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (20)"
 
 [[node]]
-id = "theorem_1"
-kind = "theorem"
-desc = '''For full-column-rank X and covariance σ²I, every Bβ is estimable, BX†y is BLUE, and its coefficient lies in E(X). Every LUE in E(X) gives the same estimator almost surely. Use the PSD covariance difference σ²A(I−XX†)Aᵀ.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 1, (18)–(22)"
-deps = ["IsEstimable", "IsBestLinearUnbiasedEstimator", "estimatorClass"]
+id = "isEstimable_iff_row_space"
+source = "Ben-Israel and Greville, Ch. 8, §3, estimability criterion following Equation (17)"
 
 [[node]]
-id = "corollary_1"
-kind = "theorem"
-desc = '''Specialize Gauss–Markov to the scalar functional ⟨b,β⟩, obtaining minimum variance of ⟨b,X†y⟩ and almost-sure equality with every unbiased scalar estimator whose coefficient lies in range X. The extraneous B printed in the scalar expression has no role.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, Corollary 1"
-deps = ["theorem_1"]
+id = "isEstimable_iff_pinv_mul"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (17), projected row-space criterion"
+
+[[node]]
+id = "observationResidualProjector"
+source = "Ben-Israel and Greville, Ch. 8, §3, projection in Equations (23), (26)"
+
+[[node]]
+id = "pinv_eq_normalEquations_coefficient"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (18)"
+
+[[node]]
+id = "isLinearUnbiasedEstimator_iff_residualProjector"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (25)–(26)"
+
+[[node]]
+id = "estimatorClass_unbiased_eq"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (20)–(21)"
+
+[[node]]
+id = "gaussMarkov_covariance_difference"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (22)"
+
+[[node]]
+id = "gaussMarkov_coefficients"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 1, coefficient formulation"
+
+[[node]]
+id = "isEstimable_of_full_column_rank"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 1(a)"
+
+[[node]]
+id = "mem_estimatorClass_iff_mul_residual_eq_zero"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (20), (22)"
+
+[[node]]
+id = "gaussMarkov_covariance_difference_ne_zero"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 1, observation following Equation (22)"
+
+[[node]]
+id = "leastSquares_coefficient_min_frobenius_sq"
+source = "Ben-Israel and Greville, Ch. 8, §3, minimum-norm coefficient at Equation (18)"
 
 [[node]]
 id = "generalizedBLUE"
-kind = "definition"
-desc = '''Set Q = I−XX† and define the estimator of the projected parameter by X†(I−(VQ)†V)ᵀ applied to the observation.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, (23)"
-deps = ["IsLinearStatisticalModel"]
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (23)"
+
+[[node]]
+id = "generalizedBLUE_eq_transpose"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (23), (32)"
+
+[[node]]
+id = "generalizedBLUE_mul_design"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2(b), projected parameter"
+
+[[node]]
+id = "generalizedBLUE_covariance_difference"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2, Equations (24), (31)"
+
+[[node]]
+id = "generalizedGaussMarkov_coefficients"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2, coefficient formulation"
+
+[[node]]
+id = "isBestLinearUnbiasedEstimator_iff_difference"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (27), (29)–(31)"
+
+[[node]]
+id = "generalizedBLUE_mulVec_mem_transpose_range"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2(b), row-space membership"
+
+[[node]]
+id = "isLinearUnbiasedEstimator_iff_expectation"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (16)–(17)"
+
+[[node]]
+id = "covarianceMatrix_le_of_bestLinearUnbiasedEstimator"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (19), (24)"
+
+[[node]]
+id = "ae_zero_mulVec_of_annihilates_design_covariance"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (30)–(31)"
+
+[[node]]
+id = "theorem_1"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 1, Equations (18)–(22)"
+
+[[node]]
+id = "ae_eq_generalizedBLUE_of_bestLinearUnbiasedEstimator"
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2(a), Equations (29)–(31)"
 
 [[node]]
 id = "theorem_2"
-kind = "theorem"
-desc = '''With arbitrary X and covariance V², each estimable scalar functional has a BLUE obtained by applying the functional to the generalized BLUE vector, unique up to almost-sure equality. The vector estimator lies in range Xᵀ and has covariance at most that of each estimator in that range unbiased for the projected parameter X†Xβ. Clarify the estimand in part (b) when X is rank deficient.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2, (23)–(32)"
-deps = ["generalizedBLUE", "IsBestLinearUnbiasedEstimator", "IsEstimable"]
+source = "Ben-Israel and Greville, Ch. 8, §3, Theorem 2, Equations (23)–(32)"
+
+[[node]]
+id = "generalizedBLUE_eq_covariance"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (33)"
+
+[[node]]
+id = "exercise_8_9"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 9, Equation (42)"
+
+[[node]]
+id = "generalizedBLUE_eq_whitened"
+source = "Ben-Israel and Greville, Ch. 8, §3, Corollary 2, whitening step before Equation (34)"
+
+[[node]]
+id = "generalizedBLUE_eq_weighted_normalEquations"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (34)"
+
+[[node]]
+id = "generalizedBLUE_scalar_covariance"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (35)"
 
 [[node]]
 id = "corollary_2"
-kind = "theorem"
-desc = '''The generalized BLUE equals X†(I−(QV²Q)†QV²)ᵀy, and if V² is invertible it equals (Xᵀ(V²)⁻¹X)†Xᵀ(V²)⁻¹y. With scalar covariance the estimator reduces to X†y.'''
-source = "Ben-Israel and Greville, Ch. 8, §3, Corollary 2, (33)–(35)"
-deps = ["theorem_2"]
+source = "Ben-Israel and Greville, Ch. 8, §3, Corollary 2, Equations (33)–(35)"
+
+[[node]]
+id = "corollary_1"
+source = "Ben-Israel and Greville, Ch. 8, §3, Corollary 1"
+
+[[node]]
+id = "exercise_8_2a"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 2(a)"
+
+[[node]]
+id = "exercise_8_2b"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 2(b)"
+
+[[node]]
+id = "exercise_8_7"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 7, deterministic part"
+
+[[node]]
+id = "isBestLinearUnbiasedEstimator_iff_affine_family"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (27)–(28)"
+
+[[node]]
+id = "generalizedBLUE_eq_naive_iff_equation_41"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (41)"
+
+[[node]]
+id = "exercise_8_8"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 8"
+
+[[node]]
+id = "exercise_8_4"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 4, Equations (37)–(38)"
+
+[[node]]
+id = "exercise_8_3"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 3, Equation (36)"
+
+[[node]]
+id = "covarianceMatrix_posSemidef"
+source = "Ben-Israel and Greville, Ch. 8, §3, positivity of covariance following Equation (17)"
+
+[[node]]
+id = "covariance_whitening_factor"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 6, spectral whitening"
+
+[[node]]
+id = "exercise_8_6"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 6, Equation (40)"
+
+[[node]]
+id = "exercise_8_7_spectral"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 7, Equation (40b)"
+
+[[node]]
+id = "exercise_8_7_spectral_error_blocks"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 7, Equations (40a)–(40b)"
+
+[[node]]
+id = "exercise_8_7_spectral_kernel_basis"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 7, basis of the covariance kernel"
+
+[[node]]
+id = "isLinearStatisticalModel_add_shared_error"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equations (10)–(13), shared error model"
+
+[[node]]
+id = "weightedSquaredResidual"
+source = "Ben-Israel and Greville, Ch. 8, §3, Equation (39)"
+
+[[node]]
+id = "exercise_8_5"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 5, Equation (39)"
+
+[[node]]
+id = "exercise_8_5_factored"
+source = "Ben-Israel and Greville, Ch. 8, §3, Exercise 5, covariance-factor formulation"

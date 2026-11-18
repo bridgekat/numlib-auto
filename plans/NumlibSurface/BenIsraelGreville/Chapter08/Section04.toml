@@ -1,41 +1,222 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Ridge estimation and mean squared error. Reuse matrix Tikhonov regularization, the SVD backbone, and the preceding linear model. The proof of strict improvement only uses the noise moments and requires positive variance and a nonempty parameter space.'''
 
 [[node]]
 id = "ridgeEstimator"
-kind = "definition"
-desc = '''The ridge estimator for parameter k > 0 is (XᵀX+kI)⁻¹Xᵀy and at k=0 agrees with the BLUE for full column rank X.'''
-source = "Ben-Israel and Greville, Ch. 8, §4, (48)–(49)"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (48), estimator via Tikhonov regularization"
+
+[[node]]
+id = "ridgeEstimator_eq"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (48), explicit normal-equation coefficient"
+
+[[node]]
+id = "ridgeEstimator_zero"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (18) and (48), least-squares endpoint"
 
 [[node]]
 id = "ridgeShrinkageFactor"
-kind = "definition"
-desc = '''The singular-coordinate shrinkage factor is λ/(λ²+k).'''
-source = "Ben-Israel and Greville, Ch. 8, §4, (49.i), (50)"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (50)"
+
+[[node]]
+id = "ridgeShrinkageFactor_zero"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (47a) and (50), zero-penalty coefficient"
+
+[[node]]
+id = "positive_singularValues_of_full_column_rank"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (43), positivity in the parameter directions"
+
+[[node]]
+id = "ridgeCoefficient_svd"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (48)–(50), coefficient matrix in the singular bases"
+
+[[node]]
+id = "ridgeEstimator_svd"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (44), (49.i), and (50), component formula"
+
+[[node]]
+id = "ridgeBLUE_coordinate"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (47a)"
+
+[[node]]
+id = "ridgeCoordinateRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (53), individual summand"
+
+[[node]]
+id = "ridgeRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (53), total risk"
+
+[[node]]
+id = "hasDerivAt_ridgeCoordinateRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (54), derivative of a summand"
+
+[[node]]
+id = "hasDerivAt_ridgeRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (54), derivative of the sum"
+
+[[node]]
+id = "deriv_ridgeRisk_zero_neg"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3 and Equation (54), derivative at zero"
+
+[[node]]
+id = "ridgeCoordinateRisk_lt_zeroPenalty"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, sufficient bound for strict improvement in one coordinate"
+
+[[node]]
+id = "exists_positive_ridgeRisk_lt_zeroPenalty"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, one positive penalty improving all coordinates"
 
 [[node]]
 id = "estimatorBias"
-kind = "definition"
-desc = '''The bias of an estimator Z of β is its expectation minus β.'''
-source = "Ben-Israel and Greville, Ch. 8, §4, definition before (51)"
+source = "Ben-Israel and Greville, Ch. 8, §4, Definition of bias before Equation (51)"
 
 [[node]]
 id = "estimatorMeanSquaredError"
-kind = "definition"
-desc = '''The scalar mean squared error is the expectation of the squared Euclidean distance to the parameter, equal to total variance plus squared bias.'''
-source = "Ben-Israel and Greville, Ch. 8, §4, definition before (51)"
+source = "Ben-Israel and Greville, Ch. 8, §4, Definition of mean squared error before Equation (51)"
+
+[[node]]
+id = "estimatorMeanSquaredError_eq_integral_norm_sq"
+source = "Ben-Israel and Greville, Ch. 8, §4, Definition of mean squared error as expected squared Euclidean loss"
+
+[[node]]
+id = "estimatorMeanSquaredError_nonneg"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, nonnegative squared loss"
+
+[[node]]
+id = "estimatorMeanSquaredError_orthogonal"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (53) and Theorem 3, basis independence of squared loss"
+
+[[node]]
+id = "exercise_8_10"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 10, trace covariance plus squared bias"
+
+[[node]]
+id = "ridge_svd_model_equation"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (44)–(45)"
+
+[[node]]
+id = "ridge_svd_model_moments"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (44)–(46), transformed expectation and covariance"
 
 [[node]]
 id = "ridgeEstimator_moments"
-kind = "theorem"
-desc = '''Orthogonal SVD coordinates preserve centered isotropic Gaussian noise, and each ridge coordinate has bias −kγᵢ/(λᵢ²+k) and variance λᵢ²σ²/(λᵢ²+k)². The total mean squared error is the sum of (λᵢ²σ²+k²γᵢ²)/(λᵢ²+k)².'''
-source = "Ben-Israel and Greville, Ch. 8, §4, (43)–(47b), (49.i)–(53)"
-deps = ["ridgeEstimator", "ridgeShrinkageFactor", "estimatorBias", "estimatorMeanSquaredError"]
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (51.i)–(53), bias, variance, and mean squared error"
+
+[[node]]
+id = "ridgeEstimator_meanSquaredError_eq"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (53), mean squared error in original parameter coordinates"
 
 [[node]]
 id = "theorem_3"
-kind = "theorem"
-desc = '''For full column rank and strictly positive error variance with at least one parameter, some positive ridge parameter yields strictly smaller MSE than k=0. The derivative of the MSE at zero is strictly negative. With zero variance or an empty parameter space strict improvement is impossible.'''
-source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, (53)–(54)"
-deps = ["ridgeEstimator_moments"]
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, strict mean squared error improvement in the finite isotropic model"
+
+[[node]]
+id = "ridgeEstimator_canonical"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (49), rotated estimator is the canonical ridge estimator"
+
+[[node]]
+id = "ridgeBLUE_coordinate_moments"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (47a)–(47b), unbiasedness, variance, and squared error"
+
+[[node]]
+id = "ridgeEstimator_bias_vector"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (51), vector bias formula"
+
+[[node]]
+id = "ridgeEstimator_meanSquaredError_right_deriv_neg"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3 and Equation (54), right derivative of the estimator mean squared error"
+
+[[node]]
+id = "ridgeEstimator_no_improvement_of_zero_variance"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, boundary case at zero variance"
+
+[[node]]
+id = "ridgeEstimator_meanSquaredError_empty"
+source = "Ben-Israel and Greville, Ch. 8, §4, Theorem 3, boundary case of empty parameter space"
+
+[[node]]
+id = "ridgeGaussian_rotated_error"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (44)–(46), rotated centered Gaussian and isotropic moments"
+
+[[node]]
+id = "ridgeGaussian_coordinate_law"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (46a)–(46b), Gaussian marginal laws on supported and remaining directions"
+
+[[node]]
+id = "shrinkageEstimator"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 12, Equation (56)"
+
+[[node]]
+id = "shrinkageCoordinateRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 12, scalar shrinkage mean squared error"
+
+[[node]]
+id = "IsShrinkageFamily"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 12, conditions on the shrinkage family"
+
+[[node]]
+id = "isShrinkageFamily_ridge"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 12 and Equation (50), ridge coefficients form a shrinkage family"
+
+[[node]]
+id = "exists_positive_shrinkageCoordinateRisk_lt"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 12, simultaneous strict improvement of coordinate risks"
+
+[[node]]
+id = "exercise_8_12"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 12, strict improvement of actual coordinate estimation errors"
+
+[[node]]
+id = "diagonalRidgeEstimator"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, Equation (55), generalized estimator"
+
+[[node]]
+id = "diagonalRidgeRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, risk with separate penalties"
+
+[[node]]
+id = "diagonalRidgeEstimator_rectDiagonal"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, the separate coordinate coefficients in the right singular basis"
+
+[[node]]
+id = "diagonalRidgeEstimator_rotated_penalty"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, corrected change of basis for the diagonal penalty"
+
+[[node]]
+id = "exercise_8_11_risk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, exact mean squared error in singular coordinates"
+
+[[node]]
+id = "hasFDerivAt_diagonalRidgeRisk"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, gradient formula"
+
+[[node]]
+id = "ridgeCoordinateRisk_optimal"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, unique finite optimal penalty in one direction"
+
+[[node]]
+id = "exercise_8_11_optimal"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, coordinatewise optimal penalty vector"
+
+[[node]]
+id = "ridgeGaussian_rotated_error_law"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (44)–(46), exact multivariate normal law"
+
+[[node]]
+id = "IsOptimalRidgeParameter"
+source = "Ben-Israel and Greville, Ch. 8, §4, Definition of an optimal ridge regression estimator after Theorem 3"
+
+[[node]]
+id = "optimalRidgeParameter_stationary"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equation (54), stationary equation for a positive optimum"
+
+[[node]]
+id = "ridgeCoordinateRisk_zero_signal_strictAntiOn"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, risk decreases without a finite optimum when the signal is zero"
+
+[[node]]
+id = "diagonalRidgeRisk_no_minimum_of_zero_signal"
+source = "Ben-Israel and Greville, Ch. 8, §4, Exercise 11, lack of a finite minimizing vector when a signal coordinate is zero"
+
+[[node]]
+id = "ridgeEstimator_zero_isBLUE"
+source = "Ben-Israel and Greville, Ch. 8, §4, Equations (18) and (48), optimal unbiased coefficient at zero penalty"
