@@ -862,23 +862,9 @@ def IsInnerInverseProductInvariant (A : Matrix m n ℂ) (B : Matrix p n ℂ)
     (C : Matrix m q ℂ) : Prop :=
   ∀ U V : Matrix n m ℂ, A.IsInnerInverse U → A.IsInnerInverse V → B * U * C = B * V * C
 
-private theorem range_le_iff_pinv_projection_mul {l : Type*} [Fintype l] [DecidableEq l]
-    (A : Matrix m n ℂ) (C : Matrix m l ℂ) :
-    (toEuclideanLin C).range ≤ (toEuclideanLin A).range ↔ A * A.pinv * C = C := by
-  constructor
-  · intro h
-    apply toEuclideanLin.injective
-    ext1 z
-    rw [toEuclideanLin_mul_apply, A.mul_pinv_eq_starProjection]
-    exact Submodule.starProjection_eq_self_iff.mpr (h ⟨z, rfl⟩)
-  · rintro h x ⟨z, rfl⟩
-    have f := congrArg (fun M => toEuclideanLin M z) h
-    rw [toEuclideanLin_mul_apply, A.mul_pinv_eq_starProjection] at f
-    exact Submodule.starProjection_eq_self_iff.mp f
-
 private theorem adjoint_range_le_iff_mul_pinv_projection (A : Matrix m n ℂ) (B : Matrix p n ℂ) :
     (toEuclideanLin Bᴴ).range ≤ (toEuclideanLin Aᴴ).range ↔ B * (A.pinv * A) = B := by
-  rw [range_le_iff_pinv_projection_mul Aᴴ Bᴴ, A.pinv_conjTranspose, ← conjTranspose_mul,
+  rw [range_toEuclideanLin_le_iff_mul_pinv_mul_eq Aᴴ Bᴴ, A.pinv_conjTranspose, ← conjTranspose_mul,
     A.isHermitian_pinv_mul.eq, ← conjTranspose_inj]
   rw [conjTranspose_mul, conjTranspose_conjTranspose, A.isHermitian_pinv_mul.eq]
 
@@ -957,12 +943,12 @@ theorem exercise_3_16 (A : Matrix m n ℂ) (B : Matrix p n ℂ) (C : Matrix m q 
     have hc := (sandwich_zero_for_all _ _ hcZ).resolve_left hB
     rw [Matrix.mul_sub, Matrix.mul_one, sub_eq_zero] at hb
     rw [Matrix.sub_mul, Matrix.one_mul, sub_eq_zero] at hc
-    exact Or.inr (Or.inr ⟨(range_le_iff_pinv_projection_mul A C).mpr hc.symm,
+    exact Or.inr (Or.inr ⟨(range_toEuclideanLin_le_iff_mul_pinv_mul_eq A C).mpr hc.symm,
       (adjoint_range_le_iff_mul_pinv_projection A B).mpr hb.symm⟩)
   · rintro (hB | hC | ⟨hC, hB⟩) Z hZ
     · simp [hB]
     · simp [hC]
-    · rw [range_le_iff_pinv_projection_mul A C] at hC
+    · rw [range_toEuclideanLin_le_iff_mul_pinv_mul_eq A C] at hC
       rw [adjoint_range_le_iff_mul_pinv_projection A B] at hB
       calc
         B * Z * C = (B * (A.pinv * A)) * Z * (A * A.pinv * C) := by rw [hB, hC]

@@ -117,26 +117,13 @@ id = "exercise_4_21"
 source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 21, (3.43)"
 
 [[node]]
-id = "exercise_4_18"
-kind = "theorem"
-desc = 'A range-Hermitian matrix is characterized by similarity to a nonsingular block and zero.'
-source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 18, as printed"
-wrong = 'The reverse implication is false under ordinary similarity. The proved two-dimensional counterexample is given in exercise_4_18_counterexample.'
-
-[[node]]
 id = "exercise_4_18_unitary_similarity"
-kind = "theorem"
-desc = 'A range-Hermitian matrix is characterized by unitary similarity to the orthogonal sum of a nonsingular block and a zero block.'
 source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 18, corrected converse"
 
 [[node]]
 id = "exercise_4_22"
-kind = "theorem"
-desc = 'The Moore–Penrose reverse-order relation (AB)† = B†A† holds exactly when range(AᴴAB) is contained in range(B) and range(BBᴴAᴴ) is contained in range(Aᴴ).'
 source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 22, (31)–(37)"
 
 [[node]]
 id = "exercise_4_23"
-kind = "theorem"
-desc = 'The reverse-order relation (AB)† = B†A† holds exactly when AᴴABBᴴ is range-Hermitian.'
 source = "Ben-Israel and Greville, Ch. 4, §4, Exercise 23"

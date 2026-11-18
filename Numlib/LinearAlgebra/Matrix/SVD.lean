@@ -732,6 +732,24 @@ theorem mul_pinv_eq_starProjection :
       ← toEuclideanLin_mul_apply, conjTranspose_mul_mul_pinv, sub_self, inner_zero_right,
       map_zero]
 
+omit [DecidableEq m] in
+/-- The orthogonal range projector of $A$ fixes $C$ exactly when every column of $C$
+lies in the range of $A$. -/
+theorem range_toEuclideanLin_le_iff_mul_pinv_mul_eq {p : Type*} [Fintype p] [DecidableEq p]
+    (C : Matrix m p 𝕜) :
+    (toEuclideanLin C).range ≤ (toEuclideanLin A).range ↔ A * A.pinv * C = C := by
+  classical
+  constructor
+  · intro h
+    apply toEuclideanLin.injective
+    ext1 z
+    rw [toEuclideanLin_mul_apply, A.mul_pinv_eq_starProjection]
+    exact Submodule.starProjection_eq_self_iff.mpr (h ⟨z, rfl⟩)
+  · rintro h x ⟨z, rfl⟩
+    have f := congrArg (fun M => toEuclideanLin M z) h
+    rw [toEuclideanLin_mul_apply, A.mul_pinv_eq_starProjection] at f
+    exact Submodule.starProjection_eq_self_iff.mp f
+
 /-- **$A^+ A$ is the orthogonal projection onto the range of $A^H$.** Let
 $A \in \mathbb{K}^{m \times n}$. The linear map $x \mapsto A^+ A x$ on $\mathbb{K}^n$ is the
 orthogonal projection onto the range of $y \mapsto A^H y$. This is [golub2013matrix], §5.5.2,

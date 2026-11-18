@@ -18,8 +18,8 @@ the inverse of the square product of the factors in reverse order.
 ## Deviations from the source
 
 * The printed converse of Exercise 18 fails for ordinary similarity.
-  The explicit two-dimensional counterexample separates it from the
-  unitary-similarity formulation.
+  The range-Hermitian characterization holds for unitary similarity. An
+  explicit two-dimensional example refutes the converse for ordinary similarity.
 * The limits in Exercises 19–21 are taken in a punctured complex
   neighborhood. The shifted inverses are eventually defined there.
 -/
@@ -730,5 +730,458 @@ theorem exercise_4_21 {m : Type*} [Fintype m] (A : Matrix m n ℂ) :
   exact h.congr' (Eventually.of_forall he)
 
 end Resolvent
+
+section UnitarySimilarity
+
+private theorem unitaryConjugate_mul {U : Matrix n n ℂ} (h : U * Uᴴ = 1)
+    (A B : Matrix n n ℂ) : (Uᴴ * A * U) * (Uᴴ * B * U) = Uᴴ * (A * B) * U := calc
+  _ = Uᴴ * (A * (U * Uᴴ) * B) * U := by simp only [Matrix.mul_assoc]
+  _ = _ := by rw [h, Matrix.mul_one]
+
+private theorem unitaryConjugate_injective {U : Matrix n n ℂ} (h : U * Uᴴ = 1) :
+    Function.Injective (fun A : Matrix n n ℂ => Uᴴ * A * U) := by
+  intro A B hAB
+  have hc (X : Matrix n n ℂ) : U * (Uᴴ * X * U) * Uᴴ = X := calc
+    _ = (U * Uᴴ) * X * (U * Uᴴ) := by simp only [Matrix.mul_assoc]
+    _ = _ := by rw [h, Matrix.one_mul, Matrix.mul_one]
+  simpa only [hc] using congrArg (fun X => U * X * Uᴴ) hAB
+
+private theorem rangeHermitian_unitaryConjugate_iff (A : Matrix n n ℂ) {U : Matrix n n ℂ}
+    (hU : U ∈ unitaryGroup n ℂ) : IsRangeHermitian (Uᴴ * A * U) ↔ IsRangeHermitian A := by
+  have h : U * Uᴴ = 1 := Unitary.mul_star_self_of_mem hU
+  have hU' : Uᴴ ∈ unitaryGroup n ℂ := Unitary.star_mem hU
+  have hp : (Uᴴ * A * U).pinv = Uᴴ * A.pinv * U := by
+    rw [Chapter01.pinv_unitary_mul A Uᴴ U hU' hU, conjTranspose_conjTranspose]
+  rw [rangeHermitian_iff_commute_pinv, rangeHermitian_iff_commute_pinv, hp]
+  change (Uᴴ * A * U) * (Uᴴ * A.pinv * U) = (Uᴴ * A.pinv * U) * (Uᴴ * A * U) ↔
+    A * A.pinv = A.pinv * A
+  rw [unitaryConjugate_mul h, unitaryConjugate_mul h]
+  exact (unitaryConjugate_injective h).eq_iff
+
+private theorem rangeHermitian_fromBlocks_zero {a b : Type*} [Fintype a] [Fintype b]
+    [DecidableEq a] [DecidableEq b] {D : Matrix a a ℂ} (hD : IsUnit D) :
+    IsRangeHermitian (fromBlocks D 0 0 (0 : Matrix b b ℂ)) := by
+  let A := fromBlocks D 0 0 (0 : Matrix b b ℂ)
+  let X := fromBlocks D⁻¹ 0 0 (0 : Matrix b b ℂ)
+  let P := fromBlocks (1 : Matrix a a ℂ) 0 0 (0 : Matrix b b ℂ)
+  have hdet := (isUnit_iff_isUnit_det D).mp hD
+  have hAX : A * X = P := by
+    simp only [A, X, P, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul,
+      add_zero, mul_nonsing_inv _ hdet]
+  have hXA : X * A = P := by
+    simp only [A, X, P, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul,
+      add_zero, nonsing_inv_mul _ hdet]
+  have hH : P.IsHermitian := by
+    change Pᴴ = P
+    simp only [P, fromBlocks_conjTranspose, conjTranspose_one, conjTranspose_zero]
+  have ha : A.pinv = X := by
+    symm
+    apply A.pinv_unique
+    · rw [hAX]
+      simp only [P, A, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul, Matrix.one_mul,
+        add_zero]
+    · rw [hXA]
+      simp only [P, X, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul, Matrix.one_mul,
+        add_zero]
+    · rw [hAX]
+      exact hH
+    · rw [hXA]
+      exact hH
+  apply (rangeHermitian_iff_commute_pinv A).mpr
+  change A * A.pinv = A.pinv * A
+  rw [ha, hAX, hXA]
+
+private theorem rangeHermitian_reindex_iff {m : Type*} [Fintype m] [DecidableEq m]
+    (e : m ≃ n) (A : Matrix m m ℂ) : IsRangeHermitian (A.reindex e e) ↔ IsRangeHermitian A := by
+  let f := reindexAlgEquiv ℂ ℂ e
+  rw [rangeHermitian_iff_commute_pinv, rangeHermitian_iff_commute_pinv, pinv_reindex_square]
+  change f A * f A.pinv = f A.pinv * f A ↔ A * A.pinv = A.pinv * A
+  rw [← map_mul, ← map_mul]
+  exact f.injective.eq_iff
+
+set_option maxHeartbeats 600000 in
+/-- **Exercise 18** of [benIsrael2003generalized], Chapter 4, with unitary
+similarity. A range-Hermitian matrix is an orthogonal direct sum of a
+nonsingular block and a zero block. The finite set selects the first block. -/
+theorem exercise_4_18_unitary_similarity (A : Matrix n n ℂ) :
+    IsRangeHermitian A ↔
+      ∃ (s : Finset n) (U : Matrix n n ℂ) (D : Matrix {i // i ∈ s} {i // i ∈ s} ℂ),
+        let e := Equiv.sumCompl (fun i => i ∈ s)
+        U ∈ unitaryGroup n ℂ ∧ IsUnit D ∧
+          (Uᴴ * A * U).reindex e.symm e.symm =
+            fromBlocks D 0 0 (0 : Matrix {i // i ∉ s} {i // i ∉ s} ℂ) := by
+  classical
+  constructor
+  · intro hA
+    have hcomm := (rangeHermitian_iff_commute_pinv A).mp hA
+    let P := A * A.pinv
+    have hP : P.IsHermitian := A.isHermitian_mul_pinv
+    let U := (hP.eigenvectorUnitary : Matrix n n ℂ)
+    let d (i : n) : ℂ := hP.eigenvalues i
+    have hU : U ∈ unitaryGroup n ℂ := SetLike.coe_mem hP.eigenvectorUnitary
+    have hU₁ : U * Uᴴ = 1 := Unitary.mul_star_self_of_mem hU
+    have hd : Uᴴ * P * U = diagonal d := hP.star_eigenvectorUnitary_mul_mul
+    have hPP : P * P = P := by rw [show P = A * A.pinv from rfl, ← Matrix.mul_assoc,
+      A.mul_pinv_mul_self]
+    have hd₂ : diagonal d * diagonal d = diagonal d := by
+      rw [← hd, unitaryConjugate_mul hU₁, hPP]
+    have hd01 (i : n) : d i = 0 ∨ d i = 1 := by
+      have hi : d i * d i = d i := by
+        rw [diagonal_mul_diagonal] at hd₂
+        simpa only [diagonal_apply_eq] using congrFun (congrFun hd₂ i) i
+      have hz : d i * (d i - 1) = 0 := by rw [mul_sub, mul_one, hi, sub_self]
+      exact (mul_eq_zero.mp hz).imp id sub_eq_zero.mp
+    let T := Uᴴ * A * U
+    let X := Uᴴ * A.pinv * U
+    have hPT : diagonal d * T = T := by
+      rw [← hd, show T = Uᴴ * A * U from rfl, unitaryConjugate_mul hU₁,
+        show P * A = A from A.mul_pinv_mul_self]
+    have hTP : T * diagonal d = T := by
+      rw [← hd, show T = Uᴴ * A * U from rfl, unitaryConjugate_mul hU₁,
+        show A * P = A by rw [show P = A.pinv * A from hcomm.eq, ← Matrix.mul_assoc,
+          A.mul_pinv_mul_self]]
+    have hTX : T * X = diagonal d := by
+      change (Uᴴ * A * U) * (Uᴴ * A.pinv * U) = _
+      rw [unitaryConjugate_mul hU₁]
+      exact hd
+    have hrow (i j : n) (hi : d i ≠ 1) : T i j = 0 := by
+      have h0 := (hd01 i).resolve_right hi
+      have he : (diagonal d * T) i j = T i j := congrFun (congrFun hPT i) j
+      simpa only [diagonal_mul, h0, zero_mul, eq_comm] using he
+    have hcol (i j : n) (hj : d j ≠ 1) : T i j = 0 := by
+      have h0 := (hd01 j).resolve_right hj
+      have he : (T * diagonal d) i j = T i j := congrFun (congrFun hTP i) j
+      simpa only [mul_diagonal, h0, mul_zero, eq_comm] using he
+    let s : Finset n := Finset.univ.filter fun i => d i = 1
+    have hs (i : n) : i ∈ s ↔ d i = 1 := by simp [s]
+    let e := Equiv.sumCompl (fun i => i ∈ s)
+    let f := reindexAlgEquiv ℂ ℂ e.symm
+    let D := (T.reindex e.symm e.symm).toBlocks₁₁
+    have hT : T.reindex e.symm e.symm =
+        fromBlocks D 0 0 (0 : Matrix {i // i ∉ s} {i // i ∉ s} ℂ) := by
+      ext (i | i) (j | j)
+      · rfl
+      · exact hcol i j fun h => j.property ((hs j).mpr h)
+      · exact hrow i j fun h => i.property ((hs i).mpr h)
+      · exact hrow i j fun h => i.property ((hs i).mpr h)
+    have hDsub : ((diagonal d).reindex e.symm e.symm).toBlocks₁₁ = 1 := by
+      ext i j
+      change diagonal d (i : n) (j : n) = (1 : Matrix {i // i ∈ s} {i // i ∈ s} ℂ) i j
+      by_cases h : i = j
+      · subst j
+        simp only [diagonal_apply_eq, one_apply_eq, (hs i).mp i.property]
+      · rw [diagonal_apply_ne _ (fun h' => h (Subtype.ext h')), one_apply_ne h]
+    have hblock := congrArg Matrix.toBlocks₁₁ (show f T * f X = f (diagonal d) by
+      rw [← map_mul, hTX])
+    change ((T.reindex e.symm e.symm) * (X.reindex e.symm e.symm)).toBlocks₁₁ =
+      ((diagonal d).reindex e.symm e.symm).toBlocks₁₁ at hblock
+    rw [hDsub, hT, ← fromBlocks_toBlocks (X.reindex e.symm e.symm), fromBlocks_multiply] at hblock
+    change D * (X.reindex e.symm e.symm).toBlocks₁₁ +
+      (0 : Matrix {i // i ∈ s} {i // i ∉ s} ℂ) * (X.reindex e.symm e.symm).toBlocks₂₁ = 1
+      at hblock
+    rw [Matrix.zero_mul, add_zero] at hblock
+    exact ⟨s, U, D, hU, isUnit_iff_exists_inv.mpr ⟨_, hblock⟩, hT⟩
+  · rintro ⟨s, U, D, hU, hD, h⟩
+    exact (rangeHermitian_unitaryConjugate_iff A hU).mp
+      ((rangeHermitian_reindex_iff _ _).mp (h.symm ▸ rangeHermitian_fromBlocks_zero hD))
+
+end UnitarySimilarity
+
+section ReverseOrder
+
+open scoped ComplexOrder
+
+variable {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
+  [DecidableEq m] [DecidableEq n] [DecidableEq p]
+
+omit [DecidableEq m] in
+private theorem pinv_mul_conjTranspose (A : Matrix m n ℂ) : Aᴴ * A.pinvᴴ = A.pinv * A := by
+  rw [← conjTranspose_mul, A.isHermitian_pinv_mul.eq]
+
+omit [Fintype m] [DecidableEq m] [DecidableEq n] in
+private theorem pinv_fixed_of_two_projections {P Q : Matrix n n ℂ} (hP : P.IsHermitian)
+    (hPP : IsIdempotentElem P) (hQ : Q.IsHermitian) {T : Matrix n m ℂ}
+    (hQT : Q * T = T) (h : Q * P * T = T) : P * T = T := by
+  have hQH : Tᴴ * Q = Tᴴ := by
+    simpa only [conjTranspose_mul, hQ.eq] using congrArg conjTranspose hQT
+  have hTPT : Tᴴ * (P * T) = Tᴴ * T := calc
+    _ = Tᴴ * (Q * P * T) := by simp only [← Matrix.mul_assoc, hQH]
+    _ = _ := by rw [h]
+  have hGram : (T - P * T)ᴴ * (T - P * T) = 0 := by
+    rw [conjTranspose_sub, conjTranspose_mul, hP.eq, Matrix.sub_mul, Matrix.mul_sub,
+      Matrix.mul_sub, Matrix.mul_assoc Tᴴ P T, Matrix.mul_assoc Tᴴ P (P * T),
+      ← Matrix.mul_assoc P P T, hPP.eq, hTPT, sub_self]
+  exact (sub_eq_zero.mp (conjTranspose_mul_self_eq_zero.mp hGram)).symm
+
+omit [DecidableEq m] in
+private theorem reverseOrder_rowProjection {A : Matrix m n ℂ} {B : Matrix n p ℂ}
+    (h : (A * B).pinv = B.pinv * A.pinv) :
+    (A.pinv * A) * (B * Bᴴ * Aᴴ) = B * Bᴴ * Aᴴ := by
+  let P := A.pinv * A
+  let Q := B * B.pinv
+  let T := B * Bᴴ * Aᴴ
+  have hQT : Q * T = T := by
+    simp only [Q, T, ← Matrix.mul_assoc, B.mul_pinv_mul_self]
+  have hzero := (A * B).pinv_mul_self_mul_conjTranspose
+  have hM : B.pinv * (P * T) = (A * B)ᴴ := by
+    rw [h, conjTranspose_mul] at hzero
+    simpa only [P, T, conjTranspose_mul, Matrix.mul_assoc] using hzero
+  have hQP : Q * P * T = T := by
+    simpa only [Q, T, conjTranspose_mul, Matrix.mul_assoc] using
+      congrArg (fun M => B * M) hM
+  exact pinv_fixed_of_two_projections A.isHermitian_pinv_mul
+    (by rw [IsIdempotentElem]; change (A.pinv * A) * (A.pinv * A) = A.pinv * A
+        simp only [← Matrix.mul_assoc, A.pinv_mul_self_mul_pinv])
+    B.isHermitian_mul_pinv hQT hQP
+
+private theorem reverseOrder_colProjection {A : Matrix m n ℂ} {B : Matrix n p ℂ}
+    (h : (A * B).pinv = B.pinv * A.pinv) :
+    (B * B.pinv) * (Aᴴ * A * B) = Aᴴ * A * B := by
+  have h' : (Bᴴ * Aᴴ).pinv = Aᴴ.pinv * Bᴴ.pinv := by
+    simp only [← conjTranspose_mul, pinv_conjTranspose, h]
+  have hh := reverseOrder_rowProjection h'
+  rw [pinv_conjTranspose, ← conjTranspose_mul, B.isHermitian_mul_pinv.eq,
+    conjTranspose_conjTranspose, conjTranspose_conjTranspose] at hh
+  exact hh
+
+omit [DecidableEq n] in
+private theorem commute_of_projected_mul (A : Matrix n m ℂ) {S : Matrix n n ℂ}
+    (hS : S.IsHermitian) (h : (A * A.pinv) * (S * A) = S * A) :
+    Commute (A * A.pinv) S := by
+  let Q := A * A.pinv
+  have hQS : Q * S * Q = S * Q := by
+    simpa only [Q, Matrix.mul_assoc] using congrArg (fun T => T * A.pinv) h
+  have hQ : Qᴴ = Q := A.isHermitian_mul_pinv.eq
+  have hSQ : Q * S * Q = Q * S := by
+    have hAdj := congrArg conjTranspose hQS
+    change (Q * S * Q)ᴴ = (S * Q)ᴴ at hAdj
+    simpa only [conjTranspose_mul, hQ, hS.eq, Matrix.mul_assoc] using hAdj
+  exact hSQ.symm.trans hQS
+
+private theorem isHermitian_pinv_of_isHermitian {S : Matrix n n ℂ} (hS : S.IsHermitian) :
+    S.pinv.IsHermitian := by
+  change S.pinvᴴ = S.pinv
+  rw [← pinv_conjTranspose, hS.eq]
+
+private theorem hermitian_mul_pinv_commutes {G : Matrix n n ℂ} (hG : G.IsHermitian) :
+    G * G.pinv = G.pinv * G := by
+  calc
+    _ = (G.pinv * G)ᴴ := by rw [conjTranspose_mul, hG.eq,
+      (isHermitian_pinv_of_isHermitian hG).eq]
+    _ = _ := G.isHermitian_pinv_mul.eq
+
+private theorem commute_hermitian_pinv_of_commute {S G : Matrix n n ℂ}
+    (hS : S.IsHermitian) (hG : G.IsHermitian) (h : Commute S G) : Commute S G.pinv := by
+  have hP : Commute (G * G.pinv) S := by
+    apply commute_of_projected_mul G hS
+    rw [h.eq, ← Matrix.mul_assoc, G.mul_pinv_mul_self]
+  have hGP := hermitian_mul_pinv_commutes hG
+  have hP' := hP
+  rw [hGP] at hP'
+  show S * G.pinv = G.pinv * S
+  calc
+    _ = S * ((G.pinv * G) * G.pinv) := by rw [G.pinv_mul_self_mul_pinv]
+    _ = ((G.pinv * G) * S) * G.pinv := by rw [← Matrix.mul_assoc, ← hP'.eq]
+    _ = G.pinv * ((G * S) * G.pinv) := by simp only [Matrix.mul_assoc]
+    _ = G.pinv * (S * (G * G.pinv)) := by rw [← h.eq, Matrix.mul_assoc S G G.pinv]
+    _ = _ := by rw [← hP.eq, ← Matrix.mul_assoc, ← Matrix.mul_assoc G.pinv G G.pinv,
+        G.pinv_mul_self_mul_pinv]
+
+omit [DecidableEq n] in
+private theorem isHermitian_mul_of_commute {S T : Matrix n n ℂ}
+    (hS : S.IsHermitian) (hT : T.IsHermitian) (h : Commute S T) : (S * T).IsHermitian := by
+  change (S * T)ᴴ = S * T
+  rw [conjTranspose_mul, hS.eq, hT.eq, h.eq]
+
+private theorem projectedGrams_commute {A : Matrix m n ℂ} {B : Matrix n p ℂ}
+    (hc : (B * B.pinv) * (Aᴴ * A * B) = Aᴴ * A * B)
+    (hr : (A.pinv * A) * (B * Bᴴ * Aᴴ) = B * Bᴴ * Aᴴ) :
+    Commute (B * B.pinv) (Aᴴ * A) ∧ Commute (A.pinv * A) (B * Bᴴ) := by
+  refine ⟨commute_of_projected_mul B (isHermitian_conjTranspose_mul_self A) hc, ?_⟩
+  have hP : Aᴴ * Aᴴ.pinv = A.pinv * A := by rw [pinv_conjTranspose, pinv_mul_conjTranspose]
+  rw [← hP] at hr ⊢
+  exact commute_of_projected_mul Aᴴ (isHermitian_mul_conjTranspose_self B) hr
+
+set_option maxHeartbeats 600000 in
+private theorem reverseOrder_of_projectedGrams {A : Matrix m n ℂ} {B : Matrix n p ℂ}
+    (hc : (B * B.pinv) * (Aᴴ * A * B) = Aᴴ * A * B)
+    (hr : (A.pinv * A) * (B * Bᴴ * Aᴴ) = B * Bᴴ * Aᴴ) :
+    (A * B).pinv = B.pinv * A.pinv := by
+  let P := A.pinv * A
+  let Q := B * B.pinv
+  let G := Aᴴ * A
+  let H := B * Bᴴ
+  have hG : G.IsHermitian := isHermitian_conjTranspose_mul_self A
+  have hH : H.IsHermitian := isHermitian_mul_conjTranspose_self B
+  obtain ⟨hQG, hPH⟩ := projectedGrams_commute hc hr
+  have hQG' : Commute Q G.pinv := commute_hermitian_pinv_of_commute B.isHermitian_mul_pinv hG hQG
+  have hPH' : Commute P H.pinv := commute_hermitian_pinv_of_commute A.isHermitian_pinv_mul hH hPH
+  have ha : A.pinv = G.pinv * Aᴴ := (Chapter01.pinv_gram A).1
+  have hb : B.pinv = Bᴴ * H.pinv := (Chapter01.pinv_gram B).2
+  have hP : P = G.pinv * G := by
+    change A.pinv * A = G.pinv * (Aᴴ * A)
+    exact (congrArg (· * A) ha).trans (Matrix.mul_assoc _ _ _)
+  have hQP : Commute Q P := by
+    rw [hP]
+    exact hQG'.mul_right hQG
+  have hpA : A * P = A := by rw [← Matrix.mul_assoc, A.mul_pinv_mul_self]
+  have hqB : Q * B = B := B.mul_pinv_mul_self
+  have hpA' : P * A.pinv = A.pinv := A.pinv_mul_self_mul_pinv
+  have hqB' : B.pinv * Q = B.pinv := by rw [← Matrix.mul_assoc, B.pinv_mul_self_mul_pinv]
+  symm
+  apply (A * B).pinv_unique
+  · calc
+      _ = A * (Q * P) * B := by simp only [P, Q, Matrix.mul_assoc]
+      _ = A * (P * Q) * B := by rw [hQP.eq]
+      _ = (A * P) * (Q * B) := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [hpA, hqB]
+  · calc
+      _ = B.pinv * (P * Q) * A.pinv := by simp only [P, Q, Matrix.mul_assoc]
+      _ = B.pinv * (Q * P) * A.pinv := by rw [hQP.eq]
+      _ = (B.pinv * Q) * (P * A.pinv) := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [hqB', hpA']
+  · have hq : (Q * G.pinv).IsHermitian := isHermitian_mul_of_commute
+        B.isHermitian_mul_pinv (isHermitian_pinv_of_isHermitian hG) hQG'
+    have he : (A * B) * (B.pinv * A.pinv) = A * (Q * G.pinv) * Aᴴ := by
+      calc
+        _ = A * Q * A.pinv := by simp only [Q, Matrix.mul_assoc]
+        _ = _ := by
+          rw [ha]
+          simp only [Matrix.mul_assoc]
+    rw [he]
+    simpa only [conjTranspose_conjTranspose] using isHermitian_conjTranspose_mul_mul Aᴴ hq
+  · have hp : (H.pinv * P).IsHermitian := isHermitian_mul_of_commute
+        (isHermitian_pinv_of_isHermitian hH) A.isHermitian_pinv_mul hPH'.symm
+    have he : (B.pinv * A.pinv) * (A * B) = Bᴴ * (H.pinv * P) * B := by
+      calc
+        _ = B.pinv * P * B := by simp only [P, Matrix.mul_assoc]
+        _ = _ := by
+          rw [hb]
+          simp only [Matrix.mul_assoc]
+    rw [he]
+    exact isHermitian_conjTranspose_mul_mul B hp
+
+/-- **Exercise 22** of [benIsrael2003generalized], Chapter 4. The
+Moore–Penrose inverse reverses the two factors exactly when the two Gram
+products satisfy the range inclusions in Equation (32). -/
+theorem exercise_4_22 (A : Matrix m n ℂ) (B : Matrix n p ℂ) :
+    (A * B).pinv = B.pinv * A.pinv ↔
+      (toEuclideanLin (Aᴴ * A * B)).range ≤ (toEuclideanLin B).range ∧
+      (toEuclideanLin (B * Bᴴ * Aᴴ)).range ≤ (toEuclideanLin Aᴴ).range := by
+  rw [range_toEuclideanLin_le_iff_mul_pinv_mul_eq B, range_toEuclideanLin_le_iff_mul_pinv_mul_eq Aᴴ,
+    pinv_conjTranspose, pinv_mul_conjTranspose]
+  exact ⟨fun h => ⟨reverseOrder_colProjection h, reverseOrder_rowProjection h⟩,
+    fun h => reverseOrder_of_projectedGrams h.1 h.2⟩
+
+omit [Fintype m] [DecidableEq m] in
+private theorem mul_range_le_left (A : Matrix m n ℂ) (B : Matrix n p ℂ) :
+    (toEuclideanLin (A * B)).range ≤ (toEuclideanLin A).range := by
+  rw [toEuclideanLin_mul]
+  exact LinearMap.range_comp_le_range _ _
+
+set_option maxHeartbeats 800000 in
+/-- **Exercise 23** of [benIsrael2003generalized], Chapter 4. The
+Moore–Penrose inverse reverses the factors exactly when their two Gram
+matrices have a range-Hermitian product. -/
+theorem exercise_4_23 (A : Matrix m n ℂ) (B : Matrix n p ℂ) :
+    (A * B).pinv = B.pinv * A.pinv ↔ IsRangeHermitian (Aᴴ * A * (B * Bᴴ)) := by
+  let G := Aᴴ * A
+  let H := B * Bᴴ
+  let P := A.pinv * A
+  let Q := B * B.pinv
+  have hG : G.IsHermitian := isHermitian_conjTranspose_mul_self A
+  have hH : H.IsHermitian := isHermitian_mul_conjTranspose_self B
+  have hAdj : (G * H)ᴴ = H * G := by rw [conjTranspose_mul, hG.eq, hH.eq]
+  change _ ↔ (toEuclideanLin (G * H)).range = (toEuclideanLin (G * H)ᴴ).range
+  rw [hAdj]
+  have hGB : (toEuclideanLin (G * B)).range = (toEuclideanLin (G * H)).range := by
+    have h : G * B = (G * H) * Bᴴ.pinv := by
+      calc
+        _ = G * ((B * B.pinv) * B) := by rw [B.mul_pinv_mul_self]
+        _ = G * (B * (Bᴴ * Bᴴ.pinv)) := by
+          rw [Matrix.mul_assoc B, pinv_conjTranspose, pinv_mul_conjTranspose B]
+        _ = _ := by simp only [H, Matrix.mul_assoc]
+    apply le_antisymm
+    · rw [h]
+      exact mul_range_le_left _ _
+    · simpa only [H, Matrix.mul_assoc] using mul_range_le_left (G * B) Bᴴ
+  have hHA : (toEuclideanLin (H * Aᴴ)).range = (toEuclideanLin (H * G)).range := by
+    have h : H * Aᴴ = (H * G) * A.pinv := by
+      rw [Matrix.mul_assoc H G, show G = Aᴴ * A from rfl, Matrix.mul_assoc Aᴴ,
+        A.conjTranspose_mul_mul_pinv]
+    apply le_antisymm
+    · rw [h]
+      exact mul_range_le_left _ _
+    · simpa only [G, Matrix.mul_assoc] using mul_range_le_left (H * Aᴴ) A
+  constructor
+  · intro h
+    obtain ⟨hQG, hPH⟩ := projectedGrams_commute (reverseOrder_colProjection h)
+      (reverseOrder_rowProjection h)
+    change Commute Q G at hQG
+    change Commute P H at hPH
+    have hQG' : Commute Q G.pinv :=
+      commute_hermitian_pinv_of_commute B.isHermitian_mul_pinv hG hQG
+    have hPH' : Commute P H.pinv :=
+      commute_hermitian_pinv_of_commute A.isHermitian_pinv_mul hH hPH
+    have hP : P = G * G.pinv := by
+      rw [hermitian_mul_pinv_commutes hG]
+      exact (congrArg (· * A) (Chapter01.pinv_gram A).1).trans (Matrix.mul_assoc _ _ _)
+    have hQ : Q = H * H.pinv :=
+      (congrArg (B * ·) (Chapter01.pinv_gram B).2).trans (Matrix.mul_assoc _ _ _).symm
+    have hPQ : Commute P Q := by
+      rw [hP]
+      exact (hQG.mul_right hQG').symm
+    have hPG : P * G = G := by rw [hP, G.mul_pinv_mul_self]
+    have hQH : Q * H = H := by rw [hQ, H.mul_pinv_mul_self]
+    have hg₁ : G * H = (P * Q) * (G * H) := by
+      symm
+      calc
+        _ = P * (Q * G) * H := by simp only [Matrix.mul_assoc]
+        _ = (P * G) * (Q * H) := by
+          rw [hQG.eq]
+          simp only [Matrix.mul_assoc]
+        _ = _ := by rw [hPG, hQH]
+    have hg₂ : P * Q = (G * H) * (H.pinv * G.pinv) := by
+      calc
+        _ = G * (G.pinv * Q) := by rw [hP, Matrix.mul_assoc]
+        _ = G * (Q * G.pinv) := by rw [← hQG'.eq]
+        _ = _ := by
+          rw [hQ]
+          simp only [Matrix.mul_assoc]
+    have hh₁ : H * G = (P * Q) * (H * G) := by
+      symm
+      calc
+        _ = (Q * P) * (H * G) := by rw [hPQ.eq]
+        _ = Q * (P * H) * G := by simp only [Matrix.mul_assoc]
+        _ = (Q * H) * (P * G) := by
+          rw [hPH.eq]
+          simp only [Matrix.mul_assoc]
+        _ = _ := by rw [hPG, hQH]
+    have hh₂ : P * Q = (H * G) * (G.pinv * H.pinv) := by
+      calc
+        _ = Q * P := hPQ.eq
+        _ = H * (H.pinv * P) := by rw [hQ, Matrix.mul_assoc]
+        _ = H * (P * H.pinv) := by rw [← hPH'.eq]
+        _ = _ := by
+          rw [hP]
+          simp only [Matrix.mul_assoc]
+    have hg : (toEuclideanLin (G * H)).range = (toEuclideanLin (P * Q)).range :=
+      le_antisymm (hg₁ ▸ mul_range_le_left (P * Q) (G * H))
+        (hg₂ ▸ mul_range_le_left (G * H) (H.pinv * G.pinv))
+    have hh : (toEuclideanLin (H * G)).range = (toEuclideanLin (P * Q)).range :=
+      le_antisymm (hh₁ ▸ mul_range_le_left (P * Q) (H * G))
+        (hh₂ ▸ mul_range_le_left (H * G) (G.pinv * H.pinv))
+    exact hg.trans hh.symm
+  · intro hr
+    apply (exercise_4_22 A B).mpr
+    change (toEuclideanLin (G * B)).range ≤ (toEuclideanLin B).range ∧
+      (toEuclideanLin (H * Aᴴ)).range ≤ (toEuclideanLin Aᴴ).range
+    constructor
+    · rw [hGB, hr]
+      exact (mul_range_le_left H G).trans (mul_range_le_left B Bᴴ)
+    · rw [hHA, ← hr]
+      exact (mul_range_le_left G H).trans (mul_range_le_left Aᴴ A)
+
+end ReverseOrder
 
 end BenIsraelGreville.Chapter04
