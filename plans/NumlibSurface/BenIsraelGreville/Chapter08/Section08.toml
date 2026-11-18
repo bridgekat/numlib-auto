@@ -1,43 +1,112 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Singular difference equations with fixed initial vector and infinite future. Use the Chapter 4 Drazin theory and the regular-pencil reduction. Tractability is uniqueness only for consistent initial data, with time indexed by ℕ.'''
+[[node]]
+id = "IsDifferenceSolution"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (111)"
 
 [[node]]
 id = "IsConsistentInitialVector"
-kind = "definition"
-desc = '''c is consistent for A x_{t+1}=B x_t+f_t if some solution sequence on all natural times has x₀=c.'''
-source = "Ben-Israel and Greville, Ch. 8, §8, Definition 1(a), (111)"
+source = "Ben-Israel and Greville, Chapter 8, §8, Definition 1(a)"
 
 [[node]]
 id = "IsTractableDifferenceEquation"
-kind = "definition"
-desc = '''The equation is tractable if every consistent initial vector admits exactly one full solution.'''
-source = "Ben-Israel and Greville, Ch. 8, §8, Definition 1(b)"
-deps = ["IsConsistentInitialVector"]
+source = "Ben-Israel and Greville, Chapter 8, §8, Definition 1(b)"
 
 [[node]]
 id = "differenceSolution_iff_drazin"
-kind = "theorem"
-desc = '''A x_{t+1}=x_t at all times iff all x_t belong to the stabilized range of A and x_{t+1}=Aᴰx_t.'''
-source = "Ben-Israel and Greville, Ch. 8, §8, Example 1, (109)–(110)"
+source = "Ben-Israel and Greville, Chapter 8, §8, Example 1, Equations (109)–(110)"
+
+[[node]]
+id = "normalizedDifferenceA"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (113), first normalized coefficient"
+
+[[node]]
+id = "normalizedDifferenceB"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (113), second normalized coefficient"
+
+[[node]]
+id = "isDifferenceSolution_normalized_iff"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (113), normalization of the equation"
 
 [[node]]
 id = "theorem_11"
-kind = "theorem"
-desc = '''The homogeneous equation is tractable iff some λ in ℂ makes λA−B invertible. For necessity use independent exponential sequences with distinct λ; for sufficiency use a nilpotent/invertible decomposition of the normalized pencil.'''
-source = "Ben-Israel and Greville, Ch. 8, §8, Theorem 11, (112)–(114)"
-deps = ["IsTractableDifferenceEquation"]
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 11, regular pencil criterion"
 
 [[node]]
 id = "theorem_12"
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 12, Equation (116), stable range and propagation"
+
+[[node]]
+id = "homogeneousInitialVector_consistent_iff"
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 12, initial consistency"
+
+[[node]]
+id = "homogeneousSolution_iff_exists_projectedStart"
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 12, Equation (115)"
+
+[[node]]
+id = "homogeneousSolution_nilpotent_block"
 kind = "theorem"
-desc = '''For a tractable homogeneous equation normalize with an invertible λA−B, obtaining Â and B̂. Solutions start at ÂÂᴰy and have x_t=(ÂᴰB̂)^t y for t≥1. Initial consistency is membership in range Â^k for k=ind Â, and the solution for consistent c is (ÂᴰB̂)^t c at all times.'''
-source = "Ben-Israel and Greville, Ch. 8, §8, Theorem 12, (115)–(118)"
-deps = ["theorem_11"]
+desc = '''In the invertible and nilpotent coordinates of (117), prove the explicit zero nilpotent component and the invertible-block solution in (118). The last factor in the second formula is the initial invertible component.'''
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 12 proof, Equations (117)–(118)"
+deps = ["theorem_12"]
+
+[[node]]
+id = "differencePastSum"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (119), past forcing sum"
+
+[[node]]
+id = "differenceFutureSum"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (119), future forcing sum"
+
+[[node]]
+id = "differenceParticularResponse"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (119), particular solution"
+
+[[node]]
+id = "differenceParticularResponse_solves"
+source = "Ben-Israel and Greville, Chapter 8, §8, Exercise 30, verification of the forcing response"
+
+[[node]]
+id = "differenceParticularResponse_eq_past_sub_future"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (119), placing the second Drazin inverse on each forcing vector"
+
+[[node]]
+id = "differenceRegularSolution"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (119), general solution parameterization"
 
 [[node]]
 id = "theorem_13"
-kind = "theorem"
-desc = '''For the tractable inhomogeneous equation, decompose solutions into homogeneous propagation, the causal stable-range convolution with Âᴰ, and the finite future sum −(I−ÂÂᴰ)∑_{i<k}(ÂB̂ᴰ)^i B̂ᴰ f̂_{t+i}. The result is independent of valid λ. Consistency tests c after adding the future sum evaluated at time zero, resolving the free t in (120).'''
-source = "Ben-Israel and Greville, Ch. 8, §8, Theorem 13, (119)–(120)"
-deps = ["theorem_11", "theorem_12"]
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 13, Equation (119), all solutions"
+
+[[node]]
+id = "forcedInitialVector_consistent_iff"
+source = "Ben-Israel and Greville, Chapter 8, §8, Equation (120), future term at time zero"
+
+[[node]]
+id = "differenceRegularSolution_range_eq"
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 13 and Exercise 30, independence of the family"
+
+[[node]]
+id = "differenceRegularSolution_eq"
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 13 and Exercise 30, pointwise independence"
+
+[[node]]
+id = "forced_exists_and_tractable_iff_regular"
+source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 13, corrected regularity hypothesis"
+
+[[node]]
+id = "exercise_8_28"
+source = "Ben-Israel and Greville, Chapter 8, §8, Exercise 28, Equation (121)"
+
+[[node]]
+id = "exercise_8_29"
+source = "Ben-Israel and Greville, Chapter 8, §8, Exercise 29(a–e), normalization invariants"
+
+[[node]]
+id = "exercise_8_31"
+source = "Ben-Israel and Greville, Chapter 8, §8, Exercise 31, sign of the coefficients at zero"
+
+[[node]]
+id = "exercise_8_31_homogeneous"
+source = "Ben-Israel and Greville, Chapter 8, §8, Exercise 31, reduction to Example 1"

@@ -56,6 +56,8 @@ import NumlibSurface.BenIsraelGreville.Chapter07.Section05
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 import NumlibSurface.BenIsraelGreville.Chapter07.Section07
 import NumlibSurface.BenIsraelGreville.Chapter08.Section02
+import NumlibSurface.BenIsraelGreville.Chapter08.Section06
+import NumlibSurface.BenIsraelGreville.Chapter08.Section08
 
 /-!
 # Ben-Israel and Greville, *Generalized Inverses: Theory and Applications*
@@ -129,6 +131,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 | §7.7 | `Chapter07.Section07` | Iterations for the pseudoinverse and its projections |
 | §8.2 | `Chapter08.Section02` | Parallel sums, intersection projectors, and convex conjugacy |
+| §8.6 | `Chapter08.Section06` | Differential systems in real-rational Laplace coordinates |
+| §8.8 | `Chapter08.Section08` | Singular difference equations and regular pencils |
 
 ## Conventions
 
