@@ -1,10 +1,84 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Use Matrix.IsSVD and zero-based singular value indexing.
-'''
 
 [[node]]
 id = "IsSingularValueDecomposition"
-kind = "definition"
-desc = '''The equality A = U Σ Vᴴ with unitary U and V and Σ diagonal with the sorted nonnegative singular values, padded with zeros.'''
-source = 'Ben-Israel and Greville, Chapter 6, §1, equation (4)'
+source = "Ben-Israel and Greville, Chapter 6, §1, Equation (4)"
+
+[[node]]
+id = "IsSingularValueDecomposition.eq_sortedSingularValues"
+source = "Ben-Israel and Greville, Chapter 6, §1, Equations (1)–(4)"
+
+[[node]]
+id = "IsSingularValueDecomposition.mulVec_col"
+source = "Ben-Israel and Greville, Chapter 6, §1, Equation (3)"
+
+[[node]]
+id = "exercise_1"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 1"
+
+[[node]]
+id = "exercise_2"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 2"
+
+[[node]]
+id = "exercise_3"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 3"
+
+[[node]]
+id = "exercise_4"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 4, Equation (5)"
+
+[[node]]
+id = "exercise_4_adjoint"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 4, adjoint formula"
+
+[[node]]
+id = "exercise_5"
+kind = "theorem"
+desc = '''The positive stationary values of the norm quotient are the positive singular values. For the squared quotient, include stationary points of value zero in the kernel.'''
+source = "Ben-Israel and Greville, Chapter 6, Exercise 5, Equation (6)"
+
+[[node]]
+id = "exercise_6"
+kind = "theorem"
+desc = '''For a normal matrix, the singular values are the moduli of the eigenvalues ordered by descending modulus.'''
+source = "Ben-Israel and Greville, Chapter 6, Exercise 6"
+
+[[node]]
+id = "exercise_7"
+kind = "theorem"
+desc = '''The positive singular values of A† are the reciprocals of the positive singular values of A, in reverse order.'''
+source = "Ben-Israel and Greville, Chapter 6, Exercise 7, Equation (7)"
+
+[[node]]
+id = "exercise_8"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 8, Equation (8)"
+
+[[node]]
+id = "exercise_9"
+kind = "theorem"
+desc = '''For a positive-rank matrix, the product of the spectral norms of A and A† is the ratio of the largest and smallest positive singular values of A.'''
+source = "Ben-Israel and Greville, Chapter 6, Exercise 9, Equation (9)"
+deps = ["exercise_7"]
+
+[[node]]
+id = "conditionNumber"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 10, Equation (11)"
+
+[[node]]
+id = "exercise_10"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 10, Equations (12)–(15)"
+
+[[node]]
+id = "spectralConditionNumber_eq_ratio"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 11, Equation (16)"
+
+[[node]]
+id = "exercise_11"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 11"
+
+[[node]]
+id = "exercise_12"
+kind = "theorem"
+desc = '''The leading partial sums and products of the sorted eigenvalue moduli are bounded by those of the singular values.'''
+source = "Ben-Israel and Greville, Chapter 6, Exercise 12, Equations (17)–(18)"

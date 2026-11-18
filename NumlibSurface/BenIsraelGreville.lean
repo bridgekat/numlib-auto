@@ -40,6 +40,8 @@ import NumlibSurface.BenIsraelGreville.Chapter05.Section02
 import NumlibSurface.BenIsraelGreville.Chapter05.Section03
 import NumlibSurface.BenIsraelGreville.Chapter05.Section04
 import NumlibSurface.BenIsraelGreville.Chapter05.Section05
+import NumlibSurface.BenIsraelGreville.Chapter06.Section01
+import NumlibSurface.BenIsraelGreville.Chapter06.Section02
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -98,6 +100,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §5.3 | `Chapter05.Section03` | Affine intersections and their orthogonal representatives |
 | §5.4 | `Chapter05.Section04` | Common solutions and inverses of stacked matrices |
 | §5.5 | `Chapter05.Section05` | Bordered inverses and least-squares determinants |
+| §6.1 | `Chapter06.Section01` | Singular values, extrema, and conditioning |
+| §6.2 | `Chapter06.Section02` | SVD, pseudoinverse, and finite expansions |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions
