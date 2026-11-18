@@ -1,34 +1,127 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Use the matrix pencil and weighted inner products to express generalized singular values.
-'''
 
 [[node]]
 id = "bSingularValues"
-kind = "definition"
-desc = '''The set of nonnegative μ for which det(AᴴA − μ² BᴴB) = 0.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 7'
+source = "Ben-Israel and Greville, Chapter 6, Definition 7, Equation (181)"
+
+[[node]]
+id = "det_gramPencil_of_congruence"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 21, determinant calculation after Equation (188), corrected complex factor"
+
+[[node]]
+id = "mem_bSingularValues_iff_of_congruence"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 21, Equation (183) in arbitrary diagonal order"
+
+[[node]]
+id = "bSingularValues_eq_of_isGSVD"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 21, Equation (183) in GSVD coordinates"
 
 [[node]]
 id = "theorem_6_21"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 21, Equations (182a–c) and (183)"
+
+[[node]]
+id = "secondDiagonal_pos_iff_lt_rank"
+source = "Ben-Israel and Greville, Chapter 6, Equation (182c), positive coefficients counted by the rank"
+
+[[node]]
+id = "bSingularValues_eq_mul_inv"
+source = "Ben-Israel and Greville, Chapter 6, Remark 1(a), corrected nonsingular reduction"
+
+[[node]]
+id = "remark_6_1b"
+source = "Ben-Israel and Greville, Chapter 6, Remark 1(b), wide counterexample"
+
+[[node]]
+id = "rank_fromRows_lt_iff_ker_inf_ne_bot"
+source = "Ben-Israel and Greville, Chapter 6, Remark 1(d), rank and common-kernel classification"
+
+[[node]]
+id = "bSvd_orthonormal_kernel_columns"
 kind = "theorem"
-desc = '''For A with at least as many rows as columns, simultaneous right nonsingular and left unitary transformations put A and B into rectangular diagonal form. The roots of the pencil are the ratios of diagonal entries unless the two matrices have a common kernel, in which case every nonnegative scalar is a root.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 21'
+desc = '''
+Refine the simultaneous factorization so that the columns for the common zero pairs
+form an orthonormal basis for the common kernel, and the remaining columns span its
+orthogonal complement. The block construction in the proof uses the stacked SVD and
+a unitary change within its positive singular subspace.
+'''
+source = "Ben-Israel and Greville, Chapter 6, Equations (184–188) and Remark 1(c–d), adapted coordinate construction"
+deps = ["theorem_6_21", "rank_fromRows_lt_iff_ker_inf_ne_bot"]
+
+[[node]]
+id = "bSingularValues_ne_ratios_of_separately_sorted_values"
+kind = "theorem"
+desc = '''
+For A = diag(1,2) and B = diag(2,1), both ordinary sorted singular sequences
+are the same while the B-singular values of A are 1/2 and 2. This records the
+failure of the ratio of separately sorted singular values in Remark 1(a).
+'''
+source = "Ben-Israel and Greville, Chapter 6, Remark 1(a), counterexample to separate ordering"
+deps = ["bSingularValues_eq_mul_inv"]
+
+[[node]]
+id = "example_6_8_1"
+kind = "theorem"
+desc = '''
+The minimum-norm solution of the stacked weighted least-squares problem has the
+coordinate coefficients in (192) in orthogonally split GSVD coordinates. The
+equality of objectives in (191) includes constant squares from any extra
+rows of either diagonally transformed matrix.
+'''
+source = "Ben-Israel and Greville, Chapter 6, Section 8.1, Example 1, Equations (189–192)"
+deps = ["bSvd_orthonormal_kernel_columns"]
+
+[[node]]
+id = "weightedSquaredQuotient"
+source = "Ben-Israel and Greville, Chapter 6, Equation (193), squared weighted norm quotient"
+
+[[node]]
+id = "weightedSquaredQuotient_eq_norm_sq"
+source = "Ben-Israel and Greville, Chapter 6, Equation (193), square-root representation of both weights"
 
 [[node]]
 id = "weightedSingularValues"
-kind = "definition"
-desc = '''The nonnegative stationary values of the norm quotient ‖Ax‖_W/‖x‖_Q. Account for zero singular values by considering stationarity of the squared quotient.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 8'
+source = "Ben-Israel and Greville, Chapter 6, Definition 8, Equation (193), squared quotient at zero singular values"
 
 [[node]]
 id = "IsWeightOrthogonal"
-kind = "definition"
-desc = '''A square matrix V is Q-orthogonal if Vᴴ Q V = I.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 9'
+source = "Ben-Israel and Greville, Chapter 6, Definition 9"
+
+[[node]]
+id = "IsWeightOrthogonal.isUnit"
+source = "Ben-Israel and Greville, Chapter 6, Definition 9 and Equation (194), invertibility"
+
+[[node]]
+id = "mem_weightedSingularValues_iff_det"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 22, stationary-point characterization in the proof"
+
+[[node]]
+id = "isWeightOrthogonal_inv_sqrt_mul"
+source = "Ben-Israel and Greville, Chapter 6, Equation (196)"
+
+[[node]]
+id = "det_weightedPencil_eq"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 22, weighted pencil determinant reduction"
 
 [[node]]
 id = "theorem_6_22"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 22, Equations (194–196) and determinant product"
+
+[[node]]
+id = "exercise_6_92"
 kind = "theorem"
-desc = '''With positive definite weights W and Q, weighted-orthogonal transformations U and V make U⁻¹ A V rectangular diagonal with the weighted singular values on the diagonal.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 22'
+desc = '''
+For consistent constraints, prove the minimum-norm solution with coordinates
+(199) and transfer it using the orthogonal split for the common kernel.
+The same transformed formula should include rank-deficient constraints.
+'''
+source = "Ben-Israel and Greville, Chapter 6, Exercise 92, Equations (197–199)"
+deps = ["bSvd_orthonormal_kernel_columns"]
+
+[[node]]
+id = "exercise_6_93_operator"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 93, Equation (201), square-root operator identity"
+
+[[node]]
+id = "exercise_6_93"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 93, Equations (200–201), least-squares minimization and uniqueness"

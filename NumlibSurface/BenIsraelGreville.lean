@@ -47,6 +47,7 @@ import NumlibSurface.BenIsraelGreville.Chapter06.Section04
 import NumlibSurface.BenIsraelGreville.Chapter06.Section05
 import NumlibSurface.BenIsraelGreville.Chapter06.Section06
 import NumlibSurface.BenIsraelGreville.Chapter06.Section07
+import NumlibSurface.BenIsraelGreville.Chapter06.Section08
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -112,6 +113,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §6.5 | `Chapter06.Section05` | Reciprocal subspaces, principal angles, and volume |
 | §6.6 | `Chapter06.Section06` | Acute perturbations and pseudoinverse continuity |
 | §6.7 | `Chapter06.Section07` | Rectangular spectral calculus and resolvents |
+| §6.8 | `Chapter06.Section08` | Generalized and weighted singular value decompositions |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions
