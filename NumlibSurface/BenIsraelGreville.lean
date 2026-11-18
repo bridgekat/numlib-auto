@@ -9,6 +9,7 @@ import NumlibSurface.BenIsraelGreville.Chapter00.Section03
 import NumlibSurface.BenIsraelGreville.Chapter00.Section04
 import NumlibSurface.BenIsraelGreville.Chapter00.Section05
 import NumlibSurface.BenIsraelGreville.Chapter00.Section06
+import NumlibSurface.BenIsraelGreville.Chapter00.Section07
 import NumlibSurface.BenIsraelGreville.Chapter01.Section01
 import NumlibSurface.BenIsraelGreville.Chapter01.Section02
 import NumlibSurface.BenIsraelGreville.Chapter01.Section03
@@ -60,6 +61,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §0.4 | `Chapter00.Section04` | Hermite blocks, bases, and full-rank factorization |
 | §0.5 | `Chapter00.Section05` | Determinants, Gram matrices, Schur complements, and volume |
 | §0.6 | `Chapter00.Section06` | Exterior powers, compound matrices, and compound volumes |
+| §0.7 | `Chapter00.Section07` | Jordan form, principal vectors, and polynomial formulas |
 | §1.1 | `Chapter01.Section01` | Penrose equations |
 | §1.2 | `Chapter01.Section02` | Inner inverse construction from Hermite form |
 | §1.3 | `Chapter01.Section03` | Properties of inner inverses |

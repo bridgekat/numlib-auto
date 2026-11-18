@@ -152,21 +152,27 @@ generalized eigenspace reaches its maximal value. -/
 noncomputable def primaryIndex (A : Matrix n n ℂ) (z : ℂ) : ℕ :=
   (matrixEnd A).maxGenEigenspaceIndex z
 
-private theorem genEigenspace_eq_ker_shift (A : Matrix n n ℂ) (z : ℂ) (k : ℕ) :
-    (matrixEnd A).genEigenspace z k = ((A - z • 1) ^ k).mulVecLin.ker := by
+/-- The $k$th generalized eigenspace is the kernel of the $k$th shifted power. -/
+theorem genEigenspace_eq_ker_shift (A : Matrix n n ℂ) (z : ℂ) (k : ℕ) :
+    Module.End.genEigenspace A.mulVecLin z k = ((A - z • 1) ^ k).mulVecLin.ker := by
+  change (matrixEnd A).genEigenspace z k = _
   rw [Module.End.genEigenspace_nat, ← toLin'_apply', toLin'_pow, map_sub, map_smul, toLin'_one]
   rfl
 
-private theorem maxGenEigenspace_eq_ker_shift (A : Matrix n n ℂ) (z : ℂ)
+/-- From the primary index onward, each shifted power has the maximal
+generalized eigenspace as its kernel. -/
+theorem maxGenEigenspace_eq_ker_shift (A : Matrix n n ℂ) (z : ℂ)
     {k : ℕ} (hk : primaryIndex A z ≤ k) :
-    (matrixEnd A).maxGenEigenspace z = ((A - z • 1) ^ k).mulVecLin.ker := by
+    Module.End.maxGenEigenspace A.mulVecLin z = ((A - z • 1) ^ k).mulVecLin.ker := by
   rw [Module.End.maxGenEigenspace_eq,
     ← Module.End.genEigenspace_eq_genEigenspace_maxUnifEigenspaceIndex_of_le (matrixEnd A) z hk,
     genEigenspace_eq_ker_shift]
 
 omit [DecidableEq n] in
-private theorem primaryIndex_le_of_genEigenspace_eq (A : Matrix n n ℂ) (z : ℂ) {k : ℕ}
-    (h : (matrixEnd A).maxGenEigenspace z = (matrixEnd A).genEigenspace z k) :
+/-- An exponent which gives the maximal generalized eigenspace is at least the
+primary index. -/
+theorem primaryIndex_le_of_genEigenspace_eq (A : Matrix n n ℂ) (z : ℂ) {k : ℕ}
+    (h : Module.End.maxGenEigenspace A.mulVecLin z = Module.End.genEigenspace A.mulVecLin z k) :
     primaryIndex A z ≤ k := by
   change monotonicSequenceLimitIndex
     (((matrixEnd A).genEigenspace z).comp WithTop.coeOrderHom.toOrderHom) ≤ k

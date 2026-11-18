@@ -1130,7 +1130,7 @@ theorem card_filter_le_jordanBlocks_eq (e : ι → ℕ) (μ : ι → K) (c : K) 
 omit [DecidableEq K] in
 /-- If $A$ is similar to $J$ reindexed by a bijection, then
 $\dim \ker (A - cI)^k = \dim \ker (J - cI)^k$ for every $c$ and $k$. -/
-private theorem finrank_ker_pow_eq_of_isSimilar_reindex {n m : Type*} [Fintype n] [DecidableEq n]
+theorem finrank_ker_pow_eq_of_isSimilar_reindex {n m : Type*} [Fintype n] [DecidableEq n]
     [Fintype m] [DecidableEq m] {A : Matrix n n K} {J : Matrix m m K} (σ : m ≃ n)
     (h : IsSimilar A (J.reindex σ σ)) (c : K) (k : ℕ) :
     Module.finrank K (LinearMap.ker (((A - c • 1) ^ k).mulVecLin)) =

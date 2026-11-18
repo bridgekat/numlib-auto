@@ -1,115 +1,148 @@
 namespace = "BenIsraelGreville.Chapter00"
-desc = '''Specialize the existing Jordan-form and characteristic polynomial backbone. Express uniqueness via equality of the counts of blocks of each eigenvalue and positive size.'''
 
 [[node]]
 id = "jordanBlock"
-kind = "definition"
-desc = '''A Jordan block has λ on its diagonal, ones directly above and zeros elsewhere.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Equation (116)"
 
 [[node]]
 id = "IsPrincipalVector"
-kind = "definition"
-desc = '''A principal vector of positive grade j is annihilated by (A−λI)ʲ and survives the preceding power.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Equation (119)"
 
 [[node]]
 id = "principalVector_of_jordanChain"
-kind = "theorem"
-desc = '''The jth column in a full-column-rank intertwiner AX=XJ is a principal vector of grade j, and its preceding power is the first column.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Equations (117)–(119)"
-deps = ["jordanBlock", "IsPrincipalVector"]
 
 [[node]]
 id = "principalVector_grade_one_iff"
-kind = "theorem"
-desc = '''Principal vectors of grade one are exactly nonzero eigenvectors.'''
 source = "Ben-Israel and Greville, Chapter 0 §7 after Equation (119)"
-deps = ["IsPrincipalVector"]
 
 [[node]]
 id = "theorem_2"
-kind = "theorem"
-desc = '''Every complex square matrix is similar to a block diagonal family of Jordan blocks.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Theorem 2, Equation (120)"
-deps = ["jordanBlock"]
 
 [[node]]
 id = "theorem_2_unique"
-kind = "theorem"
-desc = '''Two Jordan forms of the same matrix have equal numbers of blocks of each positive size and each eigenvalue.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Theorem 2"
-deps = ["theorem_2"]
 
 [[node]]
 id = "eigenvalue_iff_mem_jordanBlocks"
-kind = "theorem"
-desc = '''The eigenvalues of the matrix are precisely the entries used as eigenvalues of its positive-size Jordan blocks.'''
 source = "Ben-Israel and Greville, Chapter 0 §7 after Theorem 2"
-deps = ["theorem_2"]
 
 [[node]]
 id = "pow_eq_conj_of_jordanForm"
-kind = "theorem"
-desc = '''A power of A=XJX⁻¹ is XJˢX⁻¹ for any natural s.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Equations (121)–(122)"
 
 [[node]]
 id = "aeval_eq_conj_of_jordanForm"
-kind = "theorem"
-desc = '''Evaluating a polynomial at A=XJX⁻¹ gives X p(J) X⁻¹.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Equation (123)"
 
 [[node]]
 id = "theorem_3"
-kind = "theorem"
-desc = '''The product of the powers (A−λᵢI)^{kᵢ}, with one factor per Jordan block, is zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Theorem 3, Equation (124)"
-deps = ["theorem_2"]
 
 [[node]]
 id = "charpoly_eq_jordanFactorization"
-kind = "theorem"
-desc = '''The characteristic polynomial is the product of one factor (X−λᵢ)^{kᵢ} for each Jordan block.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Equation (125)"
-deps = ["theorem_2"]
 
 [[node]]
 id = "algebraicMultiplicity"
-kind = "definition"
-desc = '''The algebraic multiplicity of λ is its multiplicity as a root of the characteristic polynomial.'''
 source = "Ben-Israel and Greville, Chapter 0 §7 after Equation (125)"
 
 [[node]]
 id = "algebraicMultiplicity_eq_sum_jordanSizes"
-kind = "theorem"
-desc = '''The algebraic multiplicity of λ equals the sum of sizes of its Jordan blocks.'''
 source = "Ben-Israel and Greville, Chapter 0 §7 after Equation (125)"
-deps = ["algebraicMultiplicity", "charpoly_eq_jordanFactorization"]
 
 [[node]]
 id = "eigenvalueIndex_eq_largest_jordanSize"
-kind = "theorem"
-desc = '''The index of an eigenvalue is its largest Jordan block size, equivalently the maximal grade of a principal vector for that eigenvalue.'''
 source = "Ben-Israel and Greville, Chapter 0 §7 and Ex. 82"
-deps = ["theorem_2", "IsPrincipalVector"]
 
 [[node]]
 id = "minpoly_eq_prod_of_eigenvalueIndices"
-kind = "theorem"
-desc = '''The minimal polynomial is the product over distinct eigenvalues of (X−λ) raised to the index of λ.'''
 source = "Ben-Israel and Greville, Chapter 0 §7 before the exercises"
-deps = ["eigenvalueIndex_eq_largest_jordanSize"]
 
 [[node]]
 id = "nilpotencyIndex"
-kind = "definition"
-desc = '''The nilpotency index of a nilpotent matrix is the least natural power at which the matrix vanishes.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 75"
 
 [[node]]
 id = "nilpotencyIndex_jordanBlock_zero"
-kind = "theorem"
-desc = '''A nilpotent Jordan block of positive size k has nilpotency index k.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 75, Equation (127)"
-deps = ["jordanBlock", "nilpotencyIndex"]
+
+[[node]]
+id = "jordanChain_col_eq"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equations (117)–(118)"
+
+[[node]]
+id = "geometricMultiplicity_eq_card_jordanBlocks"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 74"
+
+[[node]]
+id = "eigenvalueIndex"
+source = "Ben-Israel and Greville, Chapter 0 §7, after Equation (125)"
+
+[[node]]
+id = "principalVector_max_grade"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 82"
+
+[[node]]
+id = "isUnit_jordanForm_iff"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 71"
+
+[[node]]
+id = "inv_eq_conj_of_jordanForm"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equation (126)"
+
+[[node]]
+id = "inv_pow_eq_conj_of_jordanForm"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 71, Equation (122) for negative powers"
+
+[[node]]
+id = "eval_charpoly_eq_sign_mul_det"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 72"
+
+[[node]]
+id = "mem_spectrum_conjTranspose_iff"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 73"
+
+[[node]]
+id = "exercise_74"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 74"
+
+[[node]]
+id = "jordanBlock_sub_smul_pow_apply"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equation (127)"
+
+[[node]]
+id = "jordanBlock_pow_apply"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equation (128a)"
+
+[[node]]
+id = "jordanBlock_pow_eq_sum"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equations (128b)–(128c)"
+
+[[node]]
+id = "aeval_jordanBlock_eq_taylor_sum"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equation (129)"
+
+[[node]]
+id = "aeval_jordanBlock_apply"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equation (129)"
+
+[[node]]
+id = "inv_eq_charpoly_divX"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 79"
+
+[[node]]
+id = "exists_minpoly_eq_C_mul_one_sub_X_mul"
+source = "Ben-Israel and Greville, Chapter 0 §7, Equations (130)–(131)"
+
+[[node]]
+id = "inv_eq_neg_of_mem_spectrum_I_neg_I"
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 81"
+
+[[node]]
+id = "polynomialDerivative_eigenvalue_multiplicities"
+kind = "theorem"
+desc = '''Differentiation of real polynomials of degree at most n has spectrum {0}, with algebraic multiplicity n+1 and geometric multiplicity one. Use the monomial coordinates from Ex. 15 to read the triangular derivative matrix and its one-dimensional kernel.'''
+source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 78"
+deps = ["polynomialDerivative_toMatrix"]
