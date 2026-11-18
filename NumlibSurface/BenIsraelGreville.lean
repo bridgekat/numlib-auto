@@ -37,6 +37,7 @@ import NumlibSurface.BenIsraelGreville.Chapter04.Section03
 import NumlibSurface.BenIsraelGreville.Chapter04.Section04
 import NumlibSurface.BenIsraelGreville.Chapter04.Section06
 import NumlibSurface.BenIsraelGreville.Chapter05.Section02
+import NumlibSurface.BenIsraelGreville.Chapter05.Section03
 import NumlibSurface.BenIsraelGreville.Chapter07.Section06
 
 /-!
@@ -92,6 +93,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §4.4 | `Chapter04.Section04` | Group inverse |
 | §4.6 | `Chapter04.Section06` | Drazin inverse |
 | §5.2 | `Chapter05.Section02` | Rank-adapted partitions, block solves, and block inverses |
+| §5.3 | `Chapter05.Section03` | Affine intersections and their orthogonal representatives |
 | §7.6 | `Chapter07.Section06` | Reduced normal equations and thin QR |
 
 ## Conventions

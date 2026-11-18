@@ -104,7 +104,7 @@ end Pivot
 
 section RankAdapted
 
-variable {K r m n : Type*} [Field K] [Fintype r] [Fintype m] [Fintype n] [DecidableEq r]
+variable {K r m n : Type*} [Field K] [Fintype r] [Finite m] [Fintype n] [DecidableEq r]
 
 /-- **Equation (19)** of [benIsrael2003generalized], Chapter 5. Reordering
 the rows and columns puts a maximal nonsingular minor in the leading block. -/
@@ -131,6 +131,7 @@ theorem rank_fromBlocks_eq_add_rank_schurComplement {A : Matrix r r K}
     (B : Matrix r n K) (C : Matrix m r K) (D : Matrix m n K) (hA : IsUnit A) :
     (fromBlocks A B C D).rank = A.rank + (Chapter00.schurComplement A B C D).rank := by
   classical
+  let := Fintype.ofFinite m
   let L := fromBlocks (1 : Matrix r r K) 0 (-rowMultiplier A C) (1 : Matrix m m K)
   let R := fromBlocks (1 : Matrix r r K) (-columnMultiplier A B) 0 (1 : Matrix n n K)
   have hL : IsUnit L := isUnit_fromBlocks_zero₁₂.mpr ⟨isUnit_one, isUnit_one⟩
@@ -172,7 +173,7 @@ theorem eq_rank_factorization_of_isUnit_block {A : Matrix r r K}
     mul_nonsing_inv_cancel_left A B hd]
   rw [sub_eq_zero.mp hSchur, Matrix.mul_assoc]
 
-omit [Fintype m] in
+omit [Finite m] in
 private theorem fromRows_one_injective (S : Matrix m r K) :
     Function.Injective (fromRows (1 : Matrix r r K) S).mulVec := by
   intro x y h
@@ -185,7 +186,7 @@ private theorem fromCols_one_surjective (T : Matrix r n K) :
   refine ⟨Sum.elim x 0, ?_⟩
   simp
 
-omit [Fintype m] in
+omit [Finite m] in
 /-- **Lemma 1** of [benIsrael2003generalized], Chapter 5. In block coordinates
 the columns of $[-T;I]$ form a basis of the kernel and the columns of $[I;S]$
 form a basis of the range. -/
@@ -286,7 +287,7 @@ private theorem factorized_inverse {A : Matrix r r ℂ} (hA : IsUnit A)
 /-- **Theorem 2** of [benIsrael2003generalized], Chapter 5, Equations (25)–(28).
 The leading block and its row and column multipliers determine reflexive,
 least-squares, minimum-norm, and Moore–Penrose inverses in block coordinates. -/
-theorem theorem_5_2 [DecidableEq m] [DecidableEq n] {A : Matrix r r ℂ}
+theorem theorem_5_2 [DecidableEq n] {A : Matrix r r ℂ}
     (B : Matrix r n ℂ) (C : Matrix m r ℂ) (D : Matrix m n ℂ)
     (hA : IsUnit A) (hr : (fromBlocks A B C D).rank = A.rank) :
     let M := fromBlocks A B C D
@@ -302,6 +303,7 @@ theorem theorem_5_2 [DecidableEq m] [DecidableEq n] {A : Matrix r r ℂ}
       V₀ * A⁻¹ * U ∈ Chapter01.definition_1 M {.inner, .outer, .hermitianMul} ∧
       V * A⁻¹ * U₀ ∈ Chapter01.definition_1 M {.inner, .outer, .hermitianMulRev} ∧
       M.pinv = V * A⁻¹ * U := by
+  classical
   dsimp only
   let M := fromBlocks A B C D
   let S := rowMultiplier A C
