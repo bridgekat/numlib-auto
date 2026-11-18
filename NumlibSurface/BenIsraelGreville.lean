@@ -60,14 +60,14 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §0.1 | `Chapter00.Section01` | Scalars and vectors |
 | §0.2 | `Chapter00.Section02` | Matrix representations, adjoints, spectra, and singular values |
 | §0.3 | `Chapter00.Section03` | Elementary operations and permutations |
-| §0.4 | `Chapter00.Section04` | Hermite blocks, bases, and full-rank factorization |
+| §0.4 | `Chapter00.Section04` | Reduced row-echelon form and rank factorization |
 | §0.5 | `Chapter00.Section05` | Determinants, Gram matrices, Schur complements, and volume |
 | §0.6 | `Chapter00.Section06` | Exterior powers, compound matrices, and compound volumes |
 | §0.7 | `Chapter00.Section07` | Jordan form, principal vectors, and polynomial formulas |
 | §0.8 | `Chapter00.Section08` | Integral equivalence and Smith normal form |
 | §0.9 | `Chapter00.Section09` | Block reducibility and the Perron–Frobenius theorem |
 | §1.1 | `Chapter01.Section01` | Penrose equations |
-| §1.2 | `Chapter01.Section02` | Inner inverse construction from Hermite form |
+| §1.2 | `Chapter01.Section02` | Inner inverses of prescribed rank from Hermite form |
 | §1.3 | `Chapter01.Section03` | Properties of inner inverses |
 | §1.4 | `Chapter01.Section04` | Reflexive inverses and the rank criterion |
 | §1.5 | `Chapter01.Section05` | Gram matrices and Urquhart’s constructions |

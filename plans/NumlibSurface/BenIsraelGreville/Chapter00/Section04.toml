@@ -17,15 +17,24 @@ id = "exists_permutationMatrix_mul_eq_hermiteBlock"
 source = "Ben-Israel and Greville, Chapter 0 §4.1, Equation (71)"
 
 [[node]]
+id = "exists_reindex_eq_hermiteBlock"
+source = "Ben-Israel and Greville, Chapter 0 §4.1, Equation (71)"
+
+[[node]]
+id = "rank_hermiteBlock"
+source = "Ben-Israel and Greville, Chapter 0 §4.1, Equation (71)"
+
+[[node]]
 id = "GaussianElimination"
 source = "Ben-Israel and Greville, Chapter 0 §4.2"
 
 [[node]]
 id = "exists_isUnit_mul_isReducedRowEchelon"
-kind = "theorem"
-desc = '''A finite complex matrix can be transformed to reduced row-echelon form by multiplication by a product of elementary matrices.'''
 source = "Ben-Israel and Greville, Chapter 0 §4.2, Equations (72)–(73)"
-deps = ["GaussianElimination"]
+
+[[node]]
+id = "exists_gaussianElimination_isReducedRowEchelon"
+source = "Ben-Israel and Greville, Chapter 0 §4.2, Equations (72)–(73)"
 
 [[node]]
 id = "eq_inv_mul_hermiteBlock_mul_inv"

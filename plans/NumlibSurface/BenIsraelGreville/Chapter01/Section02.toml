@@ -6,14 +6,10 @@ source = 'Ben-Israel–Greville, Chapter 1, Theorem 1'
 
 [[node]]
 id = 'rank_hermiteInverse'
-kind = 'theorem'
-desc = '''Under the same change of bases, the proposed inverse has rank card(I) + rank L.'''
 source = 'Ben-Israel–Greville, Chapter 1, Equation (6)'
 
 [[node]]
 id = 'exists_innerInverse_rank'
-kind = 'theorem'
-desc = '''For each s between rank A and the smaller dimension of a complex matrix A there is a {1}-inverse of rank s.'''
 source = 'Ben-Israel–Greville, Chapter 1, §2, after (6)'
 
 [[node]]

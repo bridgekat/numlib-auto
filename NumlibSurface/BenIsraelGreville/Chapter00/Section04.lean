@@ -7,6 +7,7 @@ import Mathlib.Data.Matrix.ColumnRowPartitioned
 import Mathlib.LinearAlgebra.Matrix.Echelon.Basic
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Numlib.LinearAlgebra.Matrix.Rank
+import Numlib.LinearAlgebra.Matrix.ReducedRowEchelon
 import Numlib.LinearAlgebra.Matrix.SaddlePoint
 import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 import NumlibSurface.BenIsraelGreville.Chapter00.Section03
@@ -92,6 +93,57 @@ theorem exists_permutationMatrix_mul_eq_hermiteBlock [Fintype n] [DecidableEq n]
   · exact hz _ _
   · exact hz _ _
 
+/-- **Equation (71)** of [benIsrael2003generalized], Chapter 0. A normalized
+Hermite form has a block presentation with its nonzero rows first and their
+pivot columns first. -/
+theorem exists_reindex_eq_hermiteBlock [LinearOrder m] [LinearOrder n] [WellFoundedLT n]
+    (A : Matrix m n K) (hA : A.IsReducedRowEchelon) :
+    let I := {i : m // A i ≠ 0}
+    let I₀ := {i : m // A i = 0}
+    ∃ p : I ↪ n, ∃ e : I ⊕ I₀ ≃ m,
+      ∃ f : I ⊕ {j : n // j ∉ Set.range p} ≃ n,
+        ∃ B : Matrix I {j : n // j ∉ Set.range p} K,
+          A.submatrix e f = fromBlocks 1 B 0 0 := by
+  classical
+  dsimp only
+  let I := {i : m // A i ≠ 0}
+  have hLead (i : I) : ∃ j, A.IsLeadingEntry i.val j :=
+    row_ne_zero_iff_exists_isLeadingEntry.mp i.property
+  let p : I ↪ n := ⟨fun i => (hLead i).choose, by
+    intro i j hij
+    by_contra! h
+    have hi := (hLead i).choose_spec
+    have hj := (hLead j).choose_spec
+    have hne : i.val ≠ j.val := fun he => h (Subtype.ext he)
+    have hz := hA.eq_zero_of_ne_of_isLeadingEntry hne hj
+    apply hi.2
+    change (hLead i).choose = (hLead j).choose at hij
+    rwa [hij]⟩
+  let e : I ⊕ {i : m // A i = 0} ≃ m :=
+    (Equiv.sumCongr (Equiv.refl I)
+      (Equiv.subtypeEquivRight (fun _ => not_not.symm))).trans
+      (Equiv.sumCompl fun i => A i ≠ 0)
+  let f := (Equiv.sumCongr (Equiv.ofInjective p p.injective) (Equiv.refl _)).trans
+    (Equiv.Set.sumCompl (Set.range p))
+  refine ⟨p, e, f, fun i j => A i.val j.val, ?_⟩
+  ext i j
+  cases i with
+  | inl i =>
+    cases j with
+    | inl j =>
+      change A i.val (p j) = (1 : Matrix I I K) i j
+      by_cases h : i = j
+      · subst j
+        rw [Matrix.one_apply_eq]
+        exact hA.eq_one (hLead i).choose_spec
+      · rw [Matrix.one_apply_ne h]
+        exact hA.eq_zero_of_ne_of_isLeadingEntry (fun he => h (Subtype.ext he))
+          (hLead j).choose_spec
+    | inr j => rfl
+  | inr i =>
+    have hz (j : n) : A i.val j = 0 := congrFun i.property j
+    cases j <;> exact hz _
+
 /-- **Section 0.4.2** of [benIsrael2003generalized]. Gaussian elimination
 represents the row operations by their elementary matrices in multiplication order. -/
 def GaussianElimination [Fintype m] [DecidableEq m] (A B : Matrix m n K) : Prop :=
@@ -124,6 +176,22 @@ theorem gaussianElimination_iff_exists_isUnit_mul [Fintype m] [DecidableEq m]
   · rintro ⟨E, hE, heq⟩
     obtain ⟨l, rfl, h⟩ := exists_list_scaleOrAdd_of_isUnit E hE
     exact ⟨l, heq, fun T hT => Or.inl (h T hT)⟩
+
+/-- **Section 0.4.2** of [benIsrael2003generalized]. Every finite rectangular
+matrix has a normalized Hermite form obtained by an invertible row transformation. -/
+theorem exists_isUnit_mul_isReducedRowEchelon {a b : ℕ}
+    (A : Matrix (Fin a) (Fin b) K) :
+    ∃ E : Matrix (Fin a) (Fin a) K, IsUnit E ∧ (E * A).IsReducedRowEchelon :=
+  Matrix.exists_isUnit_mul_isReducedRowEchelon A
+
+/-- **Section 0.4.2** of [benIsrael2003generalized], Equations (72)–(73).
+Elementary row operations put every finite rectangular matrix into normalized
+Hermite form. -/
+theorem exists_gaussianElimination_isReducedRowEchelon {a b : ℕ}
+    (A : Matrix (Fin a) (Fin b) K) :
+    ∃ B, GaussianElimination A B ∧ B.IsReducedRowEchelon := by
+  obtain ⟨E, hE, h⟩ := exists_isUnit_mul_isReducedRowEchelon A
+  exact ⟨E * A, (gaussianElimination_iff_exists_isUnit_mul A _).mpr ⟨E, hE, rfl⟩, h⟩
 
 /-- **Equation (74)** of [benIsrael2003generalized], Chapter 0. Invertible
 left and right factors can be removed from the transformed matrix. -/
@@ -224,7 +292,8 @@ private theorem rank_eq_of_identity_rows {j : Type*} (M : Matrix j k K) (e : k �
   rwa [he, rank_one] at h
 
 omit [Fintype m] [DecidableEq m] [DecidableEq n] in
-private theorem rank_hermiteBlock (B : Matrix k n K) :
+/-- The rank of a Hermite block matrix is the size of its leading identity. -/
+theorem rank_hermiteBlock (B : Matrix k n K) :
     (fromBlocks (1 : Matrix k k K) B (0 : Matrix m k K) 0).rank = Fintype.card k := by
   let C := fromBlocks (1 : Matrix k k K) B (0 : Matrix m k K) 0
   refine le_antisymm ?_ ?_

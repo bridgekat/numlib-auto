@@ -648,6 +648,7 @@ import Numlib.LinearAlgebra.Matrix.Rank
 import Numlib.LinearAlgebra.Matrix.RankRevealing
 import Numlib.LinearAlgebra.Matrix.RankStabilization
 import Numlib.LinearAlgebra.Matrix.RealSchur
+import Numlib.LinearAlgebra.Matrix.ReducedRowEchelon
 import Numlib.LinearAlgebra.Matrix.SVD
 import Numlib.LinearAlgebra.Matrix.SaddlePoint
 import Numlib.LinearAlgebra.Matrix.SaddlePoint.BlockSolve
