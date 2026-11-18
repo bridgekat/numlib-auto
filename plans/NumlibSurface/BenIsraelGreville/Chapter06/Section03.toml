@@ -1,22 +1,113 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Reuse Frobenius Eckart–Young, rank of SVD truncation, and total least squares.
-'''
 
 [[node]]
 id = "IsBestRankApproximation"
-kind = "definition"
-desc = '''A matrix X of rank k minimizes the Frobenius norm of A − X over rank-k matrices.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 1'
+source = 'Ben-Israel and Greville, Chapter 6, Definition 1, equation (51)'
 
 [[node]]
 id = "theorem_6_3"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 3, equations (30c), (50)'
+
+[[node]]
+id = "bestRankApproximation_unique_iff_gap"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 3, equation (52)'
+
+[[node]]
+id = "tlsFeasibleAugmented_iff"
 kind = "theorem"
-desc = '''The rank-k SVD truncation is a best rank-k approximation. Its Frobenius error is the square root of the sum of squares of the omitted singular values. Uniqueness holds exactly when the k-th singular value exceeds the (k+1)-st, with zero padding.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 3'
+desc = '''The perturbed linear system is consistent exactly when its augmented kernel contains a vector with final coordinate −1.'''
+source = 'Ben-Israel and Greville, Chapter 6, equations (53)–(58)'
 
 [[node]]
 id = "theorem_6_4"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 4, equations (59)–(61)'
+
+[[node]]
+id = "no_totalLeastSquaresSolution_of_minimizers_last_eq_zero"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 4, corrected nonattainment case'
+
+[[node]]
+id = "theorem_6_4_unique_iff_gap"
 kind = "theorem"
-desc = '''The claimed total least-squares rank-one correction uses the least singular value with an associated right singular vector having a nonzero last entry. The infimum need not be attained if the least singular subspace has zero last coordinates. Require the actual least singular subspace to have a vector with nonzero last coordinate.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 4'
+desc = '''For a full-column-rank augmented matrix with an admissible least-stretch vector, the optimal perturbation is unique exactly when the least singular value is simple.'''
+deps = ["theorem_6_4", "bestRankApproximation_unique_iff_gap"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 4, uniqueness'
+
+[[node]]
+id = "tls_nonzeroLastIndices_nonempty"
+kind = "theorem"
+desc = '''At least one vector in a full orthonormal right singular basis has a nonzero last component.'''
+source = 'Ben-Israel and Greville, Chapter 6, equation (62)'
+
+[[node]]
+id = "tlsAugmentedError_svd_coordinates"
+kind = "theorem"
+desc = '''In singular-vector coordinates, the restricted perturbation formula gives a weighted sum of squared entries and the kernel equation becomes a fixed-point equation in the rescaled coordinates.'''
+source = 'Ben-Israel and Greville, Chapter 6, equations (63)–(66)'
+
+[[node]]
+id = "exercise_6_26"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 26, equation (67)'
+
+[[node]]
+id = "exercise_6_27"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 27, equation (68)'
+
+[[node]]
+id = "exercise_6_28"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 28, equation (69)'
+
+[[node]]
+id = "exercise_6_29"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 29, equation (70)'
+
+[[node]]
+id = "exercise_6_30_frobenius"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 30, equation (71), Frobenius norm'
+
+[[node]]
+id = "exercise_6_30_spectral"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 30, equation (71), spectral norm'
+
+[[node]]
+id = "exercise_6_30a_frobenius"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 30(a), Frobenius norm'
+
+[[node]]
+id = "exercise_6_30a_spectral"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 30(a), spectral norm'
+
+[[node]]
+id = "exercise_6_30b"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 30(b)'
+
+[[node]]
+id = "exercise_6_31"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 31'
+
+[[node]]
+id = "exercise_6_32"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 32, minimizer'
+
+[[node]]
+id = "exercise_6_32_error"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 32, minimum error'
+
+[[node]]
+id = "exercise_6_33"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 33'
+
+[[node]]
+id = "exercise_6_34"
+kind = "theorem"
+desc = '''The adjoint of the truncation and its two Gram matrices are best approximations to the corresponding adjoint and Gram matrices of A. If A is normal, powers of an eigenbasis-aligned truncation approximate powers of A.'''
+deps = ["theorem_6_3"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 34'
+
+[[node]]
+id = "exercise_6_35"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 35'
+
+[[node]]
+id = "exercise_6_36"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 36'
