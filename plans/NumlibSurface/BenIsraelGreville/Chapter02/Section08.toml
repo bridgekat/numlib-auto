@@ -1,20 +1,77 @@
-namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Nonredundant parameterizations.'
+namespace = "BenIsraelGreville.Chapter02"
 
 [[node]]
-id = 'innerInverse_parameters'
-kind = 'theorem'
-desc = '''Using F spanning ker A, K* spanning ker A*, and B spanning range UA for an inner inverse U, every inner inverse has a unique representation U+FY+BZK. There are mn−r² free scalars.'''
-source = 'Ben-Israel and Greville, Ch. 2, §8, (105)–(109)'
+id = "InnerInverseCoordinates"
+source = "Ben-Israel and Greville, Ch. 2, §8, (106)–(108), fixed coordinate matrices"
 
 [[node]]
-id = 'hermitianInnerInverse_parameters'
-kind = 'theorem'
-desc = '''For the {1,3} class vary FY over the right null space and for the {1,4} class vary ZK over the left null space, with unique coordinates for fixed bases.'''
-source = 'Ben-Israel and Greville, Ch. 2, §8, (110)–(111)'
+id = "exists_innerInverseCoordinates"
+source = "Ben-Israel and Greville, Ch. 2, §8, (106)–(108), construction from the indicated bases"
 
 [[node]]
-id = 'reflexiveInverse_parameters'
-kind = 'theorem'
-desc = '''Parameterize reflexive inverses by complementary range and kernel using fixed bases and the prescribed projector construction, with r(m+n−2r) free scalars.'''
-source = 'Ben-Israel and Greville, Ch. 2, §8, (112)–(115)'
+id = "innerInverse_parameters"
+source = "Ben-Israel and Greville, Ch. 2, §8, (105), (109), unique inner-inverse coordinates and recovery"
+
+[[node]]
+id = "hermitianInnerInverse_left_parameters"
+source = "Ben-Israel and Greville, Ch. 2, §8, (110), unique right null space coordinates"
+
+[[node]]
+id = "hermitianInnerInverse_right_parameters"
+source = "Ben-Israel and Greville, Ch. 2, §8, (111), unique left null space coordinates"
+
+[[node]]
+id = "reflexiveInverse_middle_identity"
+source = "Ben-Israel and Greville, Ch. 2, §8, (112)–(113), identity of the middle factor"
+
+[[node]]
+id = "exists_reflexiveInverseCoordinates"
+source = "Ben-Israel and Greville, Ch. 2, §8, (112)–(113), coordinates from a full-rank factorization"
+
+[[node]]
+id = "reflexiveInverse_parameters"
+source = "Ben-Israel and Greville, Ch. 2, §8, (112)–(113), unique reflexive inverse coordinates and recovery"
+
+[[node]]
+id = "efficientInverse_parameterCounts"
+source = "Ben-Israel and Greville, Ch. 2, §8, dimensions of the four parameter spaces"
+
+[[node]]
+id = "exercise_80"
+source = "Ben-Israel and Greville, Ch. 2, §8, Exercise 80"
+
+[[node]]
+id = "exercise_83"
+source = "Ben-Israel and Greville, Ch. 2, §8, (114), Exercises 82–83, efficient prescribed-projector formula"
+
+[[node]]
+id = "exercise_82_rank"
+source = "Ben-Israel and Greville, Ch. 2, §8, (115), Exercise 82, rank of the prescribed perturbation"
+
+[[node]]
+id = "exercise_81"
+kind = "theorem"
+desc = "For the exact complex matrix of (0.80), verify the printed matrices F and K as null-space bases, compute the zero-parameter reflexive inverse of Exercise 1.6, and specialize the redundant and nonredundant inner-inverse formulas to the matrix."
+source = "Ben-Israel and Greville, Ch. 2, §8, Exercise 81"
+deps = ["innerInverse_parameters"]
+
+[[node]]
+id = "exercise_84"
+kind = "theorem"
+desc = "Use the prescribed-projector coordinate formula and a coordinate matrix of each integer rank from zero through min(m−r,n−r) to obtain all ranks from r through min(m,n). The rank identity for an arbitrary prescribed perturbation is proved."
+source = "Ben-Israel and Greville, Ch. 2, §8, Exercise 84"
+deps = ["exercise_83", "exercise_82_rank"]
+
+[[node]]
+id = "exercise_85"
+kind = "theorem"
+desc = "For an arbitrary full-rank factorization A=ST and the indicated inner inverses Y₀,Z₀, give the six exact displayed affine families including both products AA{1}, A{1}A, and prove uniqueness of every displayed parameter matrix."
+source = "Ben-Israel and Greville, Ch. 2, §8, Exercise 85"
+deps = ["innerInverse_parameters", "reflexiveInverse_parameters"]
+
+[[node]]
+id = "exercise_86"
+kind = "theorem"
+desc = "Specialize all six families of Exercise 85 to the matrix of (0.80) using the factorization of (0.85) and the exact stated Z₀."
+source = "Ben-Israel and Greville, Ch. 2, §8, Exercise 86"
+deps = ["exercise_81", "exercise_85"]

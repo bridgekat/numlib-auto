@@ -1,15 +1,108 @@
-namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Electrical networks.'
+namespace = "BenIsraelGreville.Chapter02"
 
 [[node]]
-id = 'networkEquations'
-kind = 'theorem'
-desc = '''For positive branch conductances and an incidence matrix, Ohm and Kirchhoff laws determine unique branch voltages in the row space and currents in the kernel. Express them by the Bott–Duffin inverse.'''
-source = 'Ben-Israel and Greville, Ch. 2, §13, (149)–(151)'
+id = "incidenceMatrix"
+source = "Ben-Israel and Greville, Ch. 2, §13, node–branch incidence matrix"
 
 [[node]]
-id = 'dualNetworkEquations'
-kind = 'theorem'
-desc = '''Use reciprocal conductances and exchange the roles of the incidence kernel and its orthogonal complement to obtain the dual current and voltage formulas.'''
-source = 'Ben-Israel and Greville, Ch. 2, §13, (152)–(153)'
-deps = ['networkEquations']
+id = "incidenceMatrix_transpose_mulVec"
+source = "Ben-Israel and Greville, Ch. 2, §13, (147), oriented potential drop"
+
+[[node]]
+id = "networkVoltageSpace"
+source = "Ben-Israel and Greville, Ch. 2, §13, (147), Kirchhoff voltage subspace"
+
+[[node]]
+id = "networkCurrentSpace"
+source = "Ben-Israel and Greville, Ch. 2, §13, (148), Kirchhoff current subspace"
+
+[[node]]
+id = "networkVoltageSpace_eq_orthogonal"
+source = "Ben-Israel and Greville, Ch. 2, §13, (147)–(148), complementary orthogonal spaces"
+
+[[node]]
+id = "network_ohm_iff"
+source = "Ben-Israel and Greville, Ch. 2, §13, (149)–(150), branchwise Ohm equations"
+
+[[node]]
+id = "networkTransferMatrix"
+source = "Ben-Israel and Greville, Ch. 2, §13, (151a), transfer matrix"
+
+[[node]]
+id = "networkEquations"
+source = "Ben-Israel and Greville, Ch. 2, §13, (150)–(151), primal network solutions"
+
+[[node]]
+id = "networkDualTransferMatrix"
+source = "Ben-Israel and Greville, Ch. 2, §13, (153a), dual transfer matrix"
+
+[[node]]
+id = "network_equations_equivalent"
+source = "Ben-Israel and Greville, Ch. 2, §13, (152), equivalence of the two systems"
+
+[[node]]
+id = "dualNetworkEquations"
+source = "Ben-Israel and Greville, Ch. 2, §13, (152)–(153), dual network solutions"
+
+[[node]]
+id = "networkTransferMatrix_duality"
+source = "Ben-Israel and Greville, Ch. 2, §13, (154), transfer matrix identity"
+
+[[node]]
+id = "exercise_107"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 107, nonsingularity from the quadratic form"
+
+[[node]]
+id = "exercise_108"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 108, complex admittance equations with coupling"
+
+[[node]]
+id = "NetworkConnected"
+source = "Ben-Israel and Greville, Ch. 2, §13, definition of connected network"
+
+[[node]]
+id = "exercise_109"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 109, connected incidence projector"
+
+[[node]]
+id = "exercise_110"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 110, rank of connected incidence matrix"
+
+[[node]]
+id = "section13_figure1"
+kind = "theorem"
+desc = "Specialize the incidence matrix formula to Figure 1 and verify all six columns in the listed branch order."
+source = "Ben-Israel and Greville, Ch. 2, §13, Figure 1 and the displayed incidence matrix"
+deps = ["incidenceMatrix"]
+
+[[node]]
+id = "exercise_111"
+kind = "theorem"
+desc = "Define the two set-inclusion and set-intersection incidence matrices for r-element and c-element subsets of an n-element set. Prove the stated alternating sum for the Moore–Penrose inverse of the inclusion matrix for 0 ≤ r ≤ c ≤ n−r."
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111"
+
+[[node]]
+id = "exercise_112"
+kind = "theorem"
+desc = "Characterize the spanning tree selected by m−1 independent columns, show every remaining incidence column has its unique signed tree-path decomposition, and derive a unique fundamental cycle for each extra branch."
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112"
+deps = ["exercise_110"]
+
+[[node]]
+id = "exercise_113"
+kind = "theorem"
+desc = "For a connected network, express det(A P_R(Mᵀ) + P_ker M) as the sum of products of branch weights over all spanning trees divided by the number of unweighted spanning trees. The printed formula omits this normalization. At A = I the determinant is one, while the unnormalized sum counts spanning trees."
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113"
+deps = ["networkVoltageSpace_eq_orthogonal", "exercise_112"]
+
+[[node]]
+id = "IsACNetworkState"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 108, complex incidence and admittance equations"
+
+[[node]]
+id = "exercise_108_uncoupled"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 108, uncoupled complex branch laws"
+
+[[node]]
+id = "exercise_108_coupled"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 108, symmetric admittance and mutual coupling"

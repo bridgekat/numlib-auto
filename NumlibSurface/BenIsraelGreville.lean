@@ -26,10 +26,12 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section04
 import NumlibSurface.BenIsraelGreville.Chapter02.Section05
 import NumlibSurface.BenIsraelGreville.Chapter02.Section06
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
+import NumlibSurface.BenIsraelGreville.Chapter02.Section08
 import NumlibSurface.BenIsraelGreville.Chapter02.Section09
 import NumlibSurface.BenIsraelGreville.Chapter02.Section10
 import NumlibSurface.BenIsraelGreville.Chapter02.Section11
 import NumlibSurface.BenIsraelGreville.Chapter02.Section12
+import NumlibSurface.BenIsraelGreville.Chapter02.Section13
 import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
@@ -118,10 +120,12 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §2.5 | `Chapter02.Section05` | Primary decomposition and matrix functions |
 | §2.6 | `Chapter02.Section06` | Prescribed range and null space |
 | §2.7 | `Chapter02.Section07` | Orthogonal projectors |
+| §2.8 | `Chapter02.Section08` | Efficient inverse parametrizations |
 | §2.9 | `Chapter02.Section09` | Restricted inverses |
 | §2.10 | `Chapter02.Section10` | Bott–Duffin inverse |
 | §2.11 | `Chapter02.Section11` | Interval linear programming |
 | §2.12 | `Chapter02.Section12` | Smith inverses and integral linear systems |
+| §2.13 | `Chapter02.Section13` | Primal and dual electrical network equations |
 | §3.1 | `Chapter03.Section01` | Least-squares solutions |
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
