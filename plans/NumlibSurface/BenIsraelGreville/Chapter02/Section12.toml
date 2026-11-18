@@ -1,22 +1,67 @@
-namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Integral solutions of linear equations.'
+namespace = "BenIsraelGreville.Chapter02"
 
 [[node]]
-id = 'corollary_13'
-kind = 'theorem'
-desc = '''For an integer matrix A use its Smith form to construct a rational reflexive inverse X for which AX and XA are integral.'''
-source = 'Ben-Israel and Greville, Ch. 2, Corollary 13'
+id = "IsIntegralMatrix"
+source = "Ben-Israel and Greville, Ch. 2, §12, definition of integral matrix"
 
 [[node]]
-id = 'corollary_14'
-kind = 'theorem'
-desc = '''For integer matrices A,B,D, characterize solvability of AXB=D over the integers by integrality and consistency of the canonical Smith-form inverse expression.'''
-source = 'Ben-Israel and Greville, Ch. 2, Corollary 14'
-deps = ['corollary_13']
+id = "IsIntegralVector"
+source = "Ben-Israel and Greville, Ch. 2, §12, definition of integral vector"
 
 [[node]]
-id = 'corollary_15'
-kind = 'theorem'
-desc = '''For integer A,b, specialize the Smith-form inverse criterion and solution parameterization to Ax=b.'''
-source = 'Ben-Israel and Greville, Ch. 2, Corollary 15'
-deps = ['corollary_14']
+id = "IsIntegralReflexiveInverse"
+source = "Ben-Israel and Greville, Ch. 2, §12, (145), integral products of a reflexive inverse"
+
+[[node]]
+id = "reciprocalSmithDiagonal"
+source = "Ben-Israel and Greville, Ch. 2, §12, (146), reciprocal Smith diagonal"
+
+[[node]]
+id = "smithReflexiveInverse"
+source = "Ben-Israel and Greville, Ch. 2, §12, (146), Smith inverse formula"
+
+[[node]]
+id = "smithReflexiveInverse_spec"
+source = "Ben-Israel and Greville, Ch. 2, §12, (145)–(146), properties of the Smith inverse"
+
+[[node]]
+id = "corollary_13"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 13"
+
+[[node]]
+id = "corollary_14"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 14, integral matrix solvability"
+
+[[node]]
+id = "corollary_14_solutions"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 14, all integral solutions by affine formula"
+
+[[node]]
+id = "corollary_14_integral_parameters"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 14, integrality for every integral parameter"
+
+[[node]]
+id = "corollary_15"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 15, integral vector solvability"
+
+[[node]]
+id = "corollary_15_solutions"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 15, all integral solutions by affine formula"
+
+[[node]]
+id = "corollary_15_integral_parameters"
+source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 15, integrality for every integral parameter"
+
+[[node]]
+id = "exercise_105"
+kind = "theorem"
+desc = "For an interval program with integral data and bounds on Ax, use the Smith inverse criterion to select attainable integer points of the bounded image box, optimize the induced objective over those points when bounded, and lift all optimal images to all integer solutions. The source omits A from the displayed constraint despite listing it among the input data."
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105"
+deps = ["corollary_15", "corollary_15_solutions"]
+
+[[node]]
+id = "exercise_106"
+kind = "theorem"
+desc = "Establish the analogue of Corollaries 13 and 15 over the real and complex polynomial rings, with the reflexive inverse over the appropriate rational function field and both products over the polynomial ring. Use the Smith form over a polynomial principal ideal domain and exhibit the same affine family."
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106"
+deps = ["corollary_13", "corollary_15"]

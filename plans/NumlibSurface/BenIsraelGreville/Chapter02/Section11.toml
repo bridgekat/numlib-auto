@@ -1,22 +1,61 @@
-namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Interval linear programming.'
+namespace = "BenIsraelGreville.Chapter02"
 
 [[node]]
-id = 'intervalProgram'
-kind = 'definition'
-desc = '''The interval linear program maximizes cᵀx subject to componentwise lower and upper bounds on Ax. Define the compatible bounded formulation in the image coordinates.'''
-source = 'Ben-Israel and Greville, Ch. 2, §11, (131)–(133)'
+id = "coordinateIntervalSelector"
+source = "Ben-Israel and Greville, Ch. 2, §11, (140), coordinate selector for arbitrary endpoints"
 
 [[node]]
-id = 'lemma_5'
-kind = 'theorem'
-desc = '''For a consistent interval program, finiteness of the optimal value is equivalent to c lying in the row space of A.'''
-source = 'Ben-Israel and Greville, Ch. 2, Lemma 5'
-deps = ['intervalProgram']
+id = "intervalSelector_eq_coordinateIntervalSelector"
+source = "Ben-Israel and Greville, Ch. 2, §11, (140), identification on an ordered box"
 
 [[node]]
-id = 'theorem_17'
-kind = 'theorem'
-desc = '''For a consistent bounded interval program reduce the optimization to the box in image coordinates intersected with range A, with objective cᵀUb for an inner inverse U and lift optimal coordinates back to solutions.'''
-source = 'Ben-Israel and Greville, Ch. 2, Theorem 17'
-deps = ['lemma_5']
+id = "intervalProgram"
+source = "Ben-Israel and Greville, Ch. 2, §11, (137)–(138), feasible points"
+
+[[node]]
+id = "intervalImageProgram"
+source = "Ben-Israel and Greville, Ch. 2, §11, (142)–(143), feasible image coordinates"
+
+[[node]]
+id = "IsIntervalProgramOptimum"
+source = "Ben-Israel and Greville, Ch. 2, §11, definition of optimality"
+
+[[node]]
+id = "interval_rowSpace_iff"
+source = "Ben-Israel and Greville, Ch. 2, §11, (139), row space as annihilator"
+
+[[node]]
+id = "lemma_5"
+source = "Ben-Israel and Greville, Ch. 2, §11, Lemma 5"
+
+[[node]]
+id = "intervalSelector"
+source = "Ben-Israel and Greville, Ch. 2, §11, (140), set-valued sign selector"
+
+[[node]]
+id = "mem_intervalSelector_iff"
+source = "Ben-Israel and Greville, Ch. 2, §11, (140), all box maximizers"
+
+[[node]]
+id = "intervalProgram_fiber"
+source = "Ben-Israel and Greville, Ch. 2, §11, (142)–(143), fibers of the coefficient matrix"
+
+[[node]]
+id = "intervalProgram_optimum_image"
+source = "Ben-Israel and Greville, Ch. 2, §11, Theorem 17, optimization in attainable image coordinates"
+
+[[node]]
+id = "exists_intervalProgramOptimum"
+source = "Ben-Israel and Greville, Ch. 2, §11, Lemma 5 and Theorem 17, attainment of a bounded maximum"
+
+[[node]]
+id = "theorem_17"
+source = "Ben-Israel and Greville, Ch. 2, §11, Theorem 17, (141), all optimal solutions under full row rank"
+
+[[node]]
+id = "exercise_103"
+source = "Ben-Israel and Greville, Ch. 2, §11, Exercise 103"
+
+[[node]]
+id = "exercise_104"
+source = "Ben-Israel and Greville, Ch. 2, §11, Exercise 104, with negative projected cost for minimization"

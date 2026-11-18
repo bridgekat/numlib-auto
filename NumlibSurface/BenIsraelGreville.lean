@@ -28,6 +28,8 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section06
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
 import NumlibSurface.BenIsraelGreville.Chapter02.Section09
 import NumlibSurface.BenIsraelGreville.Chapter02.Section10
+import NumlibSurface.BenIsraelGreville.Chapter02.Section11
+import NumlibSurface.BenIsraelGreville.Chapter02.Section12
 import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
@@ -118,6 +120,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §2.7 | `Chapter02.Section07` | Orthogonal projectors |
 | §2.9 | `Chapter02.Section09` | Restricted inverses |
 | §2.10 | `Chapter02.Section10` | Bott–Duffin inverse |
+| §2.11 | `Chapter02.Section11` | Interval linear programming |
+| §2.12 | `Chapter02.Section12` | Smith inverses and integral linear systems |
 | §3.1 | `Chapter03.Section01` | Least-squares solutions |
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
