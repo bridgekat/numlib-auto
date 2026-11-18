@@ -2,7 +2,9 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Numlib.LinearAlgebra.Matrix.Similar
 import NumlibSurface.BenIsraelGreville.Chapter01.Section03
+import NumlibSurface.BenIsraelGreville.Chapter02.Section05
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Eigs
 import Mathlib.LinearAlgebra.Projection
@@ -184,5 +186,85 @@ theorem corollary_7 [Fintype m]
     rwa [hi.range_mul, hi'.ker_mul_rev] at h
   · have h := theorem_8.1 (X * A) hi.isIdempotentElem_mul_rev
     rwa [hi'.range_mul, hi.ker_mul_rev] at h
+
+/-- The spectral decomposition equations for a diagonalizable matrix, with the
+projectors extended by zero outside the spectrum. -/
+structure IsDiagonalSpectralDecomposition [DecidableEq n] (A : Matrix n n ℂ)
+    (E : ℂ → Matrix n n ℂ) : Prop where
+  supported : ∀ z ∉ spectralValues A, E z = 0
+  mul : ∀ z w, E z * E w = if z = w then E z else 0
+  sum : ∑ z ∈ spectralValues A, E z = 1
+  weightedSum : A = ∑ z ∈ spectralValues A, z • E z
+
+private theorem range_le_eigenspace_iff_mul_eq_smul (A E : Matrix n n ℂ) (z : ℂ) :
+    E.mulVecLin.range ≤ Module.End.eigenspace A.mulVecLin z ↔ A * E = z • E := by
+  classical
+  rw [ext_iff_mulVec]
+  have hEval (x : n → ℂ) : (A * E) *ᵥ x = (z • E) *ᵥ x ↔
+      E.mulVecLin x ∈ Module.End.eigenspace A.mulVecLin z := by
+    change (A * E).mulVecLin x = (z • E).mulVecLin x ↔ _
+    rw [mulVecLin_mul, LinearMap.comp_apply, ← toLin'_apply' (z • E), map_smul,
+      LinearMap.smul_apply, toLin'_apply', Module.End.mem_eigenspace_iff]
+  refine ⟨fun h x => (hEval x).mpr (h (LinearMap.mem_range_self E.mulVecLin x)), ?_⟩
+  rintro h _ ⟨x, rfl⟩
+  exact (hEval x).mp (h x)
+
+/-- For a diagonalizable matrix, the principal idempotent at $z$ projects onto
+the eigenspace at $z$ along the sum of the other eigenspaces. -/
+theorem principalIdempotent_range_ker_of_diagonalizable [DecidableEq n] {A : Matrix n n ℂ}
+    (hA : ∃ d : n → ℂ, IsSimilar A (diagonal d)) (z : ℂ) :
+    (principalIdempotent A z).mulVecLin.range = Module.End.eigenspace A.mulVecLin z ∧
+    (principalIdempotent A z).mulVecLin.ker =
+      ⨆ w : ℂ, ⨆ _ : w ≠ z, Module.End.eigenspace A.mulVecLin w := by
+  have h := (isSimilar_diagonal_iff_iSup_eigenspace_eq_top A).mp hA
+  have he := Module.End.maxGenEigenspace_eq_eigenspace_of_iSup_eigenspace_eq_top h
+  simp only [range_principalIdempotent, ker_principalIdempotent, he, and_self]
+
+private theorem range_le_eigenspace_of_diagonal_decomposition [DecidableEq n]
+    {A : Matrix n n ℂ} {E : ℂ → Matrix n n ℂ} (hE : IsDiagonalSpectralDecomposition A E)
+    (z : ℂ) : (E z).mulVecLin.range ≤ Module.End.eigenspace A.mulVecLin z := by
+  rw [range_le_eigenspace_iff_mul_eq_smul]
+  by_cases hz : z ∈ spectralValues A
+  · rw [hE.weightedSum, Finset.sum_mul, Finset.sum_eq_single_of_mem z hz]
+    · simp [hE.mul]
+    · intro w _ hw
+      rw [Matrix.smul_mul, hE.mul, ite_eq_right hw, smul_zero]
+  · rw [hE.supported z hz, Matrix.mul_zero, smul_zero]
+
+/-- **Theorem 9** of [benIsrael2003generalized], Chapter 2. A matrix is
+diagonalizable precisely when it has a spectral decomposition into a family
+of pairwise annihilating idempotents that sum to the identity. The family is unique. -/
+theorem theorem_9 [DecidableEq n] (A : Matrix n n ℂ) :
+    (∃ d : n → ℂ, IsSimilar A (diagonal d)) ↔ ∃! E, IsDiagonalSpectralDecomposition A E := by
+  constructor
+  · intro hA
+    let E := principalIdempotent A
+    have hE := (theorem_10 A).1
+    refine ⟨E, ⟨hE.supported, hE.mul, hE.sum, ?_⟩,
+      fun F hF => eq_principalIdempotent_of_range_and_sum A F hF.supported hF.sum
+        fun z => (range_le_eigenspace_of_diagonal_decomposition hF z).trans
+          Module.End.eigenspace_le_maxGenEigenspace⟩
+    calc
+      A = A * ∑ z ∈ spectralValues A, E z := by
+        change A = A * ∑ z ∈ spectralValues A, principalIdempotent A z
+        rw [hE.sum, Matrix.mul_one]
+      _ = ∑ z ∈ spectralValues A, A * E z := Finset.mul_sum _ _ _
+      _ = _ := by
+        apply Finset.sum_congr rfl
+        intro z _
+        exact (range_le_eigenspace_iff_mul_eq_smul A (E z) z).mp
+          (principalIdempotent_range_ker_of_diagonalizable hA z).1.le
+  · rintro ⟨E, hE, _⟩
+    rw [isSimilar_diagonal_iff_iSup_eigenspace_eq_top]
+    apply top_unique
+    intro x _
+    have h : x = ∑ z ∈ spectralValues A, (E z).mulVecLin x := by
+      have hSum := congrArg (fun B : Matrix n n ℂ => B.toLin' x) hE.sum
+      change toLin' (∑ z ∈ spectralValues A, E z) x = toLin' (1 : Matrix n n ℂ) x at hSum
+      rw [toLin'_one, LinearMap.id_apply, map_sum, LinearMap.sum_apply] at hSum
+      exact hSum.symm
+    rw [h]
+    exact Submodule.sum_mem _ fun z _ => le_iSup (Module.End.eigenspace A.mulVecLin) z
+      (range_le_eigenspace_of_diagonal_decomposition hE z (LinearMap.mem_range_self _ x))
 
 end BenIsraelGreville.Chapter02

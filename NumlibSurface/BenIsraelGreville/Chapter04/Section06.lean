@@ -3,7 +3,9 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Numlib.LinearAlgebra.Matrix.Drazin
+import NumlibSurface.BenIsraelGreville.Chapter02.Section05
 import NumlibSurface.BenIsraelGreville.Chapter04.Section04
+import Mathlib.Algebra.Ring.GeomSum
 import Mathlib.Data.Matrix.Block
 
 /-!
@@ -22,6 +24,7 @@ and at every larger exponent.
 namespace BenIsraelGreville.Chapter04
 
 open Matrix Polynomial
+open BenIsraelGreville.Chapter02 (spectralValues principalIdempotent primaryIndex)
 
 variable {n : Type*} [Fintype n] [DecidableEq n]
 
@@ -132,6 +135,87 @@ theorem theorem_4_8 {i j : Type*} [Fintype i] [Fintype j] [DecidableEq i] [Decid
   have hX := hJ.conj hP.unit
   rw [Matrix.coe_units_inv, hP.unit_spec, ← hA] at hX
   exact ((theorem_4_7 A).2 l (le_max_right _ _)).2 _ hX |>.symm
+
+/-- **Corollary 1** of [benIsrael2003generalized], Chapter 4. The Drazin inverse is
+the sum over the nonzero spectral values of the truncated inverse expansions on
+the corresponding primary components. -/
+theorem corollary_4_1 (A : Matrix n n ℂ) :
+    drazinInverse A = ∑ z ∈ (spectralValues A).erase 0,
+      principalIdempotent A z *
+        (∑ j ∈ Finset.range (primaryIndex A z),
+          (((-1 : ℂ) ^ j) / z ^ (j + 1)) • (A - z • 1) ^ j) := by
+  classical
+  let E := principalIdempotent A
+  let L := (spectralValues A).erase 0
+  let S (z : ℂ) : Matrix n n ℂ := A - z • 1
+  let T (z : ℂ) := ∑ j ∈ Finset.range (primaryIndex A z),
+    (((-1 : ℂ) ^ j) / z ^ (j + 1)) • (S z) ^ j
+  let X := ∑ z ∈ L, E z * T z
+  have hE := (Chapter02.theorem_10 A).1
+  have h₁ (z : ℂ) (hz : z ≠ 0) : A * (E z * T z) = E z := by
+    let Y := (-z⁻¹) • S z
+    have hT : T z = z⁻¹ • ∑ j ∈ Finset.range (primaryIndex A z), Y ^ j := by
+      rw [Finset.smul_sum]
+      apply Finset.sum_congr rfl
+      intro j _
+      dsimp only [Y]
+      rw [smul_pow, smul_smul, ← neg_one_mul (z⁻¹), mul_pow]
+      congr 1
+      rw [div_eq_mul_inv, inv_pow, pow_succ]
+      ring
+    have hY : z⁻¹ • A = 1 - Y := by
+      dsimp only [Y, S]
+      rw [neg_smul, sub_neg_eq_add, smul_sub, smul_smul, inv_mul_cancel₀ hz, one_smul]
+      abel
+    calc
+      A * (E z * T z) = E z * (A * T z) := by
+        rw [← Matrix.mul_assoc, (hE.commute z).eq, Matrix.mul_assoc]
+      _ = E z * ((1 - Y) * ∑ j ∈ Finset.range (primaryIndex A z), Y ^ j) := by
+        rw [hT, Matrix.mul_smul, ← Matrix.smul_mul, hY]
+      _ = E z := by
+        rw [mul_neg_geom_sum, Matrix.mul_sub, Matrix.mul_one]
+        dsimp only [Y]
+        rw [smul_pow, Matrix.mul_smul, hE.annihilate z _ le_rfl, smul_zero, sub_zero]
+  have hX : Commute A X := by
+    apply Commute.sum_right
+    intro z _
+    apply (hE.commute z).mul_right
+    apply Commute.sum_right
+    intro j _
+    have hS : Commute A (S z) := (Commute.refl A).sub_right ((Commute.one_right A).smul_right z)
+    exact (hS.pow_right j).smul_right _
+  have hAX : A * X = 1 - E 0 := by
+    have hSum : (∑ z ∈ L, E z) + E 0 = 1 := by
+      by_cases hz : 0 ∈ spectralValues A
+      · calc
+          (∑ z ∈ L, E z) + E 0 = ∑ z ∈ spectralValues A, E z := by
+            rw [add_comm]
+            exact Finset.add_sum_erase (spectralValues A) E hz
+          _ = 1 := hE.sum
+      · change (∑ z ∈ (spectralValues A).erase 0, E z) + E 0 = 1
+        have h₀ : E 0 = 0 := hE.supported 0 hz
+        rw [Finset.erase_eq_of_notMem hz, hE.sum, h₀, add_zero]
+    calc
+      A * X = ∑ z ∈ L, A * (E z * T z) := Finset.mul_sum _ _ _
+      _ = ∑ z ∈ L, E z := Finset.sum_congr rfl fun z hz => h₁ z (Finset.mem_erase.mp hz).1
+      _ = 1 - E 0 := eq_sub_of_add_eq hSum
+  have hZero : E 0 * X = 0 := by
+    change E 0 * (∑ z ∈ L, E z * T z) = 0
+    rw [Finset.mul_sum]
+    apply Finset.sum_eq_zero
+    intro z hz
+    have hz₀ := (Finset.mem_erase.mp hz).1
+    rw [← Matrix.mul_assoc, hE.mul, ite_eq_right (Ne.symm hz₀), Matrix.zero_mul]
+  let k := max (matrixIndex A) (primaryIndex A 0)
+  have hNil : A ^ k * E 0 = 0 := by
+    have h := hE.annihilate 0 k (le_max_right _ _)
+    rw [zero_smul, sub_zero] at h
+    exact ((hE.commute 0).pow_left k).eq.trans h
+  have hD : IsDrazinInverseAt k A X := by
+    refine ⟨hX, ?_, ?_⟩
+    · rw [← hX.eq, hAX, Matrix.sub_mul, Matrix.one_mul, hZero, sub_zero]
+    · rw [pow_succ, Matrix.mul_assoc, hAX, Matrix.mul_sub, Matrix.mul_one, hNil, sub_zero]
+  exact ((theorem_4_7 A).2 k (le_max_left _ _)).2 X hD |>.symm
 
 /-- **Corollary 2, existence and uniqueness** of [benIsrael2003generalized], Chapter 4.
 The reflexive inverses expressible as polynomials in $A$ exist exactly at index one.

@@ -16,6 +16,7 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section01
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
 import NumlibSurface.BenIsraelGreville.Chapter02.Section03
 import NumlibSurface.BenIsraelGreville.Chapter02.Section04
+import NumlibSurface.BenIsraelGreville.Chapter02.Section05
 import NumlibSurface.BenIsraelGreville.Chapter02.Section06
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
 import NumlibSurface.BenIsraelGreville.Chapter02.Section09
@@ -62,6 +63,7 @@ reduced normal equations.
 | §2.2 | `Chapter02.Section02` | Characterizations by one Hermitian product |
 | §2.3 | `Chapter02.Section03` | Outer inverses of fixed rank |
 | §2.4 | `Chapter02.Section04` | Idempotents and oblique projectors |
+| §2.5 | `Chapter02.Section05` | Primary decomposition and matrix functions |
 | §2.6 | `Chapter02.Section06` | Prescribed range and null space |
 | §2.7 | `Chapter02.Section07` | Orthogonal projectors |
 | §2.9 | `Chapter02.Section09` | Restricted inverses |

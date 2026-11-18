@@ -26,9 +26,15 @@ source = 'Ben-Israel and Greville, Ch. 2, Corollary 7'
 
 [[node]]
 id = 'theorem_9'
-kind = 'theorem'
-desc = '''A matrix with listed distinct eigenvalues is diagonalizable iff it is their weighted sum of mutually annihilating idempotents summing to I. The projectors are unique and project onto eigenspaces along the other eigenspaces.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 9'
+
+[[node]]
+id = 'IsDiagonalSpectralDecomposition'
+source = 'Ben-Israel and Greville, Ch. 2, equations (29a)–(29c)'
+
+[[node]]
+id = 'principalIdempotent_range_ker_of_diagonalizable'
+source = 'Ben-Israel and Greville, Ch. 2, description following Theorem 9'
 
 [[node]]
 id = 'lemma_1_spectral'

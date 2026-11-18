@@ -1,31 +1,56 @@
 namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Matrix functions and the primary decomposition.'
+
+[[node]]
+id = 'spectralValues'
+source = 'Ben-Israel and Greville, Ch. 2, §5, distinct spectral values'
+
+[[node]]
+id = 'mem_spectralValues_iff'
+source = 'Ben-Israel and Greville, Ch. 2, §5, distinct spectral values'
+
+[[node]]
+id = 'principalIdempotent'
+source = 'Ben-Israel and Greville, Ch. 2, §5, equation (45)'
+
+[[node]]
+id = 'primaryIndex'
+source = 'Ben-Israel and Greville, Ch. 2, §5, index of a spectral value'
+
+[[node]]
+id = 'IsPrimaryDecomposition'
+source = 'Ben-Israel and Greville, Ch. 2, equations (29a), (29b), (46), (47), and (48)'
+
+[[node]]
+id = 'range_principalIdempotent'
+source = 'Ben-Israel and Greville, Ch. 2, §5, equation (45)'
+
+[[node]]
+id = 'ker_principalIdempotent'
+source = 'Ben-Israel and Greville, Ch. 2, §5, equation (45)'
+
+[[node]]
+id = 'eq_principalIdempotent_of_range_and_sum'
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 10, uniqueness criterion'
 
 [[node]]
 id = 'theorem_10'
-kind = 'theorem'
-desc = '''For a complex square matrix the primary projectors onto generalized eigenspaces along the other generalized eigenspaces are unique, pairwise annihilating, sum to I, commute with A and annihilate the indicated powers of A−λI.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 10'
 
 [[node]]
 id = 'corollary_8'
-kind = 'theorem'
-desc = '''For any polynomial p, p(A) is the sum over primary components of the Taylor polynomial in (A−λI) truncated at the primary exponent and multiplied by its projector.'''
 source = 'Ben-Israel and Greville, Ch. 2, Corollary 8'
-deps = ['theorem_10']
 
 [[node]]
-id = 'definition_1'
-kind = 'definition'
-desc = '''The class of functions analytic on a neighborhood of the spectrum of A.'''
+id = 'analyticFunctions'
 source = 'Ben-Israel and Greville, Ch. 2, Definition 1'
 
 [[node]]
 id = 'matrixFunction'
-kind = 'definition'
-desc = '''Evaluate an analytic function at A by the truncated Taylor expansion on each primary component.'''
-source = 'Ben-Israel and Greville, Ch. 2, §5, (49)'
-deps = ['theorem_10', 'definition_1']
+source = 'Ben-Israel and Greville, Ch. 2, §5, equation (50)'
+
+[[node]]
+id = 'matrixFunction_eq_aeval_of_deriv_eq'
+source = 'Ben-Israel and Greville, Ch. 2, §5, equations (51a) and (51b)'
 
 [[node]]
 id = 'theorem_11'

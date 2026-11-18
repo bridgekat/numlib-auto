@@ -18,8 +18,6 @@ source = 'Ben-Israel and Greville, Chapter 4, Theorem 8'
 
 [[node]]
 id = "corollary_4_1"
-kind = "theorem"
-desc = '''The Drazin inverse is the sum over nonzero spectral values λ of the λ-spectral projector times the finite geometric expansion of the inverse at λ.'''
 source = 'Ben-Israel and Greville, Chapter 4, Corollary 1'
 
 [[node]]
