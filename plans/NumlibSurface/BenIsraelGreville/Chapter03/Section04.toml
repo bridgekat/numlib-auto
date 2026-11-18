@@ -1,29 +1,133 @@
-namespace = 'BenIsraelGreville.Chapter03'
-desc = 'Weighted inverse classes.'
+namespace = "BenIsraelGreville.Chapter03"
 
 [[node]]
-id = 'weightedNorm'
-kind = 'definition'
-desc = '''For positive definite W the weighted norm is sqrt(x*Wx). Reuse Numlib weighted least squares.'''
-source = 'Ben-Israel and Greville, Ch. 3, §4, (50)'
+id = "weightedNorm"
+source = "Ben-Israel and Greville, Ch. 3, §4, (49)–(50), weighted norm"
 
 [[node]]
-id = 'theorem_4'
-kind = 'theorem'
-desc = '''X produces a W-least-squares solution for every b iff AXA=A and WAX is Hermitian.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 4'
-deps = ['weightedNorm']
+id = "weightedNorm_gram"
+source = "Ben-Israel and Greville, Ch. 3, §4, (52)–(53), Gram factor norm"
 
 [[node]]
-id = 'theorem_5'
-kind = 'theorem'
-desc = '''X produces the unique minimum-Q-norm solution for each consistent b iff AXA=A and QXA is Hermitian.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 5'
-deps = ['weightedNorm']
+id = "IsWeightedLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §4, Theorem 4, weighted least squares"
 
 [[node]]
-id = 'corollary_4'
-kind = 'theorem'
-desc = '''The unique inverse satisfying the weighted four Penrose equations produces the unique minimum-Q-norm W-least-squares solution. Express it by the pseudoinverse of W^(1/2) A Q^(−1/2).'''
-source = 'Ben-Israel and Greville, Ch. 3, Corollary 4'
-deps = ['theorem_4', 'theorem_5']
+id = "IsWeightedMinNormSolution"
+source = "Ben-Israel and Greville, Ch. 3, §4, Theorem 5, weighted minimum norm"
+
+[[node]]
+id = "IsWeightedMinNormLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §4, Corollary 4, two-weight minimization"
+
+[[node]]
+id = "weighted_coordinates"
+source = "Ben-Israel and Greville, Ch. 3, §4, (51)–(53), weighted change of coordinates"
+
+[[node]]
+id = "weighted_minNormLeastSquares_coordinates_iff"
+source = "Ben-Israel and Greville, Ch. 3, §4, (54)–(55), variational equivalence"
+
+[[node]]
+id = "theorem_4"
+source = "Ben-Israel and Greville, Ch. 3, §4, Theorem 4, (59)–(60)"
+
+[[node]]
+id = "theorem_5"
+source = "Ben-Israel and Greville, Ch. 3, §4, Theorem 5, (61)–(62)"
+
+[[node]]
+id = "IsWeightedReflexiveInverse"
+source = "Ben-Israel and Greville, Ch. 3, §4, (63), weighted Penrose equations"
+
+[[node]]
+id = "weightedInverseFromFactors"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 37, (68b)"
+
+[[node]]
+id = "weightedInverse"
+source = "Ben-Israel and Greville, Ch. 3, §4, Corollary 4 and Exercise 37, (68a)"
+
+[[node]]
+id = "weightedInverse_coordinates_iff"
+source = "Ben-Israel and Greville, Ch. 3, §4, (56)–(58), transformed equations"
+
+[[node]]
+id = "isWeightedReflexiveInverse_iff_eq_fromFactors"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercises 32 and 37, Gram-factor formula"
+
+[[node]]
+id = "isWeightedReflexiveInverse_iff_eq"
+source = "Ben-Israel and Greville, Ch. 3, §4, Corollary 4, uniqueness of the matrix"
+
+[[node]]
+id = "isWeightedMinNormLeastSquaresSolution_iff"
+source = "Ben-Israel and Greville, Ch. 3, §4, Corollary 4, uniqueness for each datum"
+
+[[node]]
+id = "corollary_4"
+source = "Ben-Israel and Greville, Ch. 3, §4, Corollary 4, equivalence of the two characterizations"
+
+[[node]]
+id = "exercise_3_37"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 37, equality of (68a) and (68b)"
+
+[[node]]
+id = "existsUnique_posDef_sq_eq"
+source = "Ben-Israel and Greville, Ch. 3, §4, positive definite square root preceding (51)"
+
+[[node]]
+id = "exercise_3_31"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 31, spectral square root"
+
+[[node]]
+id = "exercise_3_32"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 32, (64)–(65), Cholesky factors"
+
+[[node]]
+id = "exercise_3_33"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 33, weighted normal equations"
+
+[[node]]
+id = "exercise_3_34"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 34, (66), weighted saddle equations"
+
+[[node]]
+id = "exercise_3_35"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 35, (67), solution and squared weighted minimum"
+
+[[node]]
+id = "exercise_3_36"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 36, equivalent second Hermitian equation"
+
+[[node]]
+id = "exercise_3_38"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 38, Gram inner-inverse formula"
+
+[[node]]
+id = "exercise_3_39"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 39, positive weight for an idempotent"
+
+[[node]]
+id = "exercise_3_40"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 40, (70), explicit two-dimensional family"
+
+[[node]]
+id = "exercise_3_41"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 41, inverse with suitable weights"
+
+[[node]]
+id = "exercise_3_42"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 42, (71)–(72), prescribed range and kernel"
+
+[[node]]
+id = "exercise_3_42_weight_family"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 42, (73)–(74), complete family of weights"
+
+[[node]]
+id = "exercise_3_42_prescribed"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 42, prescribed inverse and projector formulas"
+
+[[node]]
+id = "exercise_3_43"
+source = "Ben-Israel and Greville, Ch. 3, §4, Exercise 43, rank-factor formula"

@@ -1,22 +1,65 @@
-namespace = 'BenIsraelGreville.Chapter03'
-desc = 'Bott–Duffin variational principles.'
+namespace = "BenIsraelGreville.Chapter03"
 
 [[node]]
-id = 'theorem_13'
-kind = 'theorem'
-desc = '''For Hermitian A and subspace L, the existence of the Bott–Duffin inverse is equivalent to existence for every v,w of a stationary point on L of the real quadratic with linear term Re(w*x). Its unique stationary point is A_(L)⁻¹(Av+w).'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 13'
+id = "bottDuffinQuadratic"
+source = "Ben-Israel and Greville, Ch. 3, §8, (155), real quadratic"
 
 [[node]]
-id = 'corollary_8'
-kind = 'theorem'
-desc = '''For positive definite A the stationary point is the unique minimizer on L.'''
-source = 'Ben-Israel and Greville, Ch. 3, Corollary 8'
-deps = ['theorem_13']
+id = "bottDuffinQuadraticGradient"
+source = "Ben-Israel and Greville, Ch. 3, §8, (157), gradient"
 
 [[node]]
-id = 'corollary_9'
-kind = 'theorem'
-desc = '''For a direct current network, branch voltages minimize the conductance energy on the row space of the incidence, and branch currents minimize the reciprocal energy on the incidence kernel. Each vector is the negative gradient of the other objective at its minimizer.'''
-source = 'Ben-Israel and Greville, Ch. 3, Corollary 9'
-deps = ['corollary_8']
+id = "IsBottDuffinStationary"
+source = "Ben-Israel and Greville, Ch. 3, §8, Theorem 13, constrained stationarity"
+
+[[node]]
+id = "bottDuffinQuadratic_line"
+source = "Ben-Israel and Greville, Ch. 3, §8, (155), expansion along a line"
+
+[[node]]
+id = "bottDuffinQuadratic_hasDerivAt"
+source = "Ben-Israel and Greville, Ch. 3, §8, (157), directional derivative"
+
+[[node]]
+id = "isBottDuffinStationary_iff"
+source = "Ben-Israel and Greville, Ch. 3, §8, (157)–(158), perpendicular gradient"
+
+[[node]]
+id = "theorem_13"
+source = "Ben-Israel and Greville, Ch. 3, §8, Theorem 13, (155)–(158)"
+
+[[node]]
+id = "isUnit_bottDuffin_matrix_of_posDef"
+source = "Ben-Israel and Greville, Ch. 3, §8, Corollary 8, existence for positive definite matrices"
+
+[[node]]
+id = "isBottDuffinStationary_iff_isMinOn"
+source = "Ben-Israel and Greville, Ch. 3, §8, Corollary 8 and Exercise 82, stationary minima"
+
+[[node]]
+id = "corollary_8"
+source = "Ben-Israel and Greville, Ch. 3, §8, Corollary 8, unique minimum"
+
+[[node]]
+id = "corollary_9"
+source = "Ben-Israel and Greville, Ch. 3, §8, Corollary 9, (159)–(164), primal and dual minima"
+
+[[node]]
+id = "IsBottDuffinSystemSolution"
+source = "Ben-Israel and Greville, Ch. 3, §8, Exercise 82, (166), subspace equation"
+
+[[node]]
+id = "exercise_3_82"
+source = "Ben-Israel and Greville, Ch. 3, §8, Exercise 82, (165)–(166), subspace minimum criterion"
+
+[[node]]
+id = "exercise_3_83"
+source = "Ben-Israel and Greville, Ch. 3, §8, Exercise 83, compatibility and lower boundedness"
+
+[[node]]
+id = "exercise_3_84"
+source = "Ben-Israel and Greville, Ch. 3, §8, Exercise 84, unique solvability for every datum"
+
+[[node]]
+id = "exercise_3_85"
+source = "Ben-Israel and Greville, Ch. 3, §8, Exercise 85, affine family of solutions"

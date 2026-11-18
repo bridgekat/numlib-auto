@@ -1,64 +1,294 @@
-namespace = 'BenIsraelGreville.Chapter03'
-desc = 'Essentially strictly convex norms and nonlinear inverses.'
+namespace = "BenIsraelGreville.Chapter03"
 
 [[node]]
-id = 'essentiallyStrictlyConvex'
-kind = 'definition'
-desc = '''Model essential strict convexity of a complex norm, using the equality condition and the source real scalar interval.'''
-source = 'Ben-Israel and Greville, Ch. 3, §7, (117)–(119)'
+id = "essentiallyStrictlyConvex"
+source = "Ben-Israel and Greville, Ch. 3, §7, Equation (119), essential strict convexity"
 
 [[node]]
-id = 'lemma_3'
-kind = 'theorem'
-desc = '''For an essentially strictly convex norm each point has a unique closest point in any finite-dimensional subspace.'''
-source = 'Ben-Israel and Greville, Ch. 3, Lemma 3'
-deps = ['essentiallyStrictlyConvex']
+id = "essentiallyStrictlyConvex_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Equation (119), equivalence with strict convexity of the normed space"
 
 [[node]]
-id = 'definition_1'
-kind = 'definition'
-desc = '''The metric projector is the map assigning the unique closest point in a subspace under the given norm.'''
-source = 'Ben-Israel and Greville, Ch. 3, Definition 1'
-deps = ['lemma_3']
+id = "essentiallyStrictlyConvex_iff_strictAwayFromRays"
+source = "Ben-Israel and Greville, Ch. 3, §7, Equation (118), strict inequality away from nonnegative rays"
 
 [[node]]
-id = 'theorem_11'
-kind = 'theorem'
-desc = '''The metric projector has fixed set L, is idempotent and homogeneous, equivariant under translations by L, kills its residual, has 1-Lipschitz residual norm and the stated norm bounds, and is continuous.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 11(a)–(i)'
-deps = ['definition_1']
+id = "lemma_3"
+source = "Ben-Israel and Greville, Ch. 3, §7, Lemma 3, Equation (117), unique closest point"
 
 [[node]]
-id = 'corollary_5'
-kind = 'theorem'
-desc = '''Additivity of the metric projector is equivalent to its zero fiber being a subspace, and to all fibers over L being affine subspaces.'''
-source = 'Ben-Israel and Greville, Ch. 3, Corollary 5'
-deps = ['theorem_11']
+id = "definition_1"
+source = "Ben-Israel and Greville, Ch. 3, §7, Definition 1, metric projector"
 
 [[node]]
-id = 'corollary_6'
-kind = 'theorem'
-desc = '''The metric projector onto a hyperplane is additive.'''
-source = 'Ben-Israel and Greville, Ch. 3, Corollary 6'
-deps = ['corollary_5']
+id = "isBestApprox_definition_1"
+source = "Ben-Israel and Greville, Ch. 3, §7, Definition 1, Equation (120), metric projector realizes the minimum"
 
 [[node]]
-id = 'corollary_7'
-kind = 'theorem'
-desc = '''If metric projectors onto every r-dimensional subspace are additive, so are those onto every higher-dimensional subspace.'''
-source = 'Ben-Israel and Greville, Ch. 3, Corollary 7'
-deps = ['corollary_5']
+id = "theorem_11"
+source = "Ben-Israel and Greville, Ch. 3, §7, Theorem 11(a)–(i)"
 
 [[node]]
-id = 'definition_2'
-kind = 'definition'
-desc = '''The α–β inverse is (I−P(ker A,β)) U P(range A,α) for an inner inverse U. Prove independence of U.'''
-source = 'Ben-Israel and Greville, Ch. 3, Definition 2'
-deps = ['definition_1']
+id = "metricProjector_fibers"
+source = "Ben-Israel and Greville, Ch. 3, §7, Equations (121)–(122), residual set and affine translates"
 
 [[node]]
-id = 'theorem_12'
-kind = 'theorem'
-desc = '''The α–β inverse is homogeneous, is additive under the stated projection hypotheses, has the described range and zero fiber, satisfies both reflexive identities, and gives the unique β-minimum among α-approximate solutions.'''
-source = 'Ben-Israel and Greville, Ch. 3, Theorem 12(a)–(j)'
-deps = ['definition_2']
+id = "corollary_5"
+source = "Ben-Israel and Greville, Ch. 3, §7, Corollary 5, additivity and fibers"
+
+[[node]]
+id = "corollary_6"
+source = "Ben-Israel and Greville, Ch. 3, §7, Corollary 6, projections onto hyperplanes"
+
+[[node]]
+id = "corollary_7"
+source = "Ben-Israel and Greville, Ch. 3, §7, Corollary 7, additivity propagates to higher dimensions"
+
+[[node]]
+id = "definition_2"
+source = "Ben-Israel and Greville, Ch. 3, §7, Definition 2, Equation (123), two-norm inverse"
+
+[[node]]
+id = "definition_2_eq_of_innerInverse"
+source = "Ben-Israel and Greville, Ch. 3, §7, Equation (124), independence of the chosen inner inverse"
+
+[[node]]
+id = "definition_2_euclidean"
+source = "Ben-Israel and Greville, Ch. 3, §7, Equation (124), Euclidean specialization to the Moore–Penrose inverse"
+
+[[node]]
+id = "theorem_12"
+source = "Ben-Israel and Greville, Ch. 3, §7, Theorem 12(a)–(j), Equations (125)–(129)"
+
+[[node]]
+id = "exercise_48"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 48, attainability in nonempty closed sets"
+
+[[node]]
+id = "exercise_49"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 49, closest segment with its corrected coordinates"
+
+[[node]]
+id = "exercise_50"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 50, real-part variational inequality"
+
+[[node]]
+id = "exercise_51"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 51, real strict hyperplane separation"
+
+[[node]]
+id = "IsPositiveGauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52, (G1)–(G4), positive gauge functions"
+
+[[node]]
+id = "IsGaugeConvexBody"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 53, convex body"
+
+[[node]]
+id = "exercise_53_gauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 53(a)–(c), Minkowski functional and sublevel sets"
+
+[[node]]
+id = "exercise_53_converse"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 53, converse and inverse gauge construction"
+
+[[node]]
+id = "exercise_54"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 54, balanced convex body and absolute homogeneity"
+
+[[node]]
+id = "dualPairing_le_norm_mul"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, Equation (132), generalized Cauchy–Schwarz bound"
+
+[[node]]
+id = "exercise_59_norming"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, attaining functional for each nonzero vector"
+
+[[node]]
+id = "exercise_62"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 62, supporting hyperplanes from unit dual pairs"
+
+[[node]]
+id = "exercise_64a"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 64(a), essential strict convexity and rotund unit balls"
+
+[[node]]
+id = "IsProjectiveNorm"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, contractivity criterion for a projective norm"
+
+[[node]]
+id = "exercise_70"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 70, zero fiber of the complementary projector"
+
+[[node]]
+id = "exercise_71"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 71, projective norms imply additive projectors"
+
+[[node]]
+id = "exercise_72"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 72, complementary idempotents"
+
+[[node]]
+id = "exercise_78"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 78, (150), uniqueness by the two projector products and rank"
+
+[[node]]
+id = "exercise_52_dual_gauge"
+kind = "theorem"
+desc = '''Define coordinate permutation and phase symmetry of gauges, prove the suprema and their attainment on both normalized spheres, transfer positivity, continuity, homogeneity and symmetry to the dual, and prove bipolarity for subadditive gauges. The (G1)–(G4) predicate is formalized.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(a)–(d), Equations (130)–(134)"
+deps = ["IsPositiveGauge", "exercise_51"]
+
+[[node]]
+id = "exercise_55"
+kind = "theorem"
+desc = '''Package the correspondence between absolutely homogeneous positive gauges and vector norm functions on finite-dimensional coordinate spaces, and identify the unit ball as the inverse assignment.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 55, Equations (135)–(137)"
+deps = ["exercise_53_gauge", "exercise_53_converse", "exercise_54"]
+
+[[node]]
+id = "exercise_56"
+kind = "theorem"
+desc = '''Prove that a unitarily invariant norm has permutation and coordinate-phase symmetry. Show that the converse fails in dimension at least two, for instance for the ℓ¹ norm.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 56, unitary invariance and symmetric gauge functions"
+deps = ["exercise_52_dual_gauge"]
+
+[[node]]
+id = "exercise_57"
+kind = "theorem"
+desc = '''Define the polar using the real part of the Hermitian pairing. Show that balanced convex bodies containing zero in their interior have balanced convex polar bodies, compute the gauge of the polar as the dual norm and prove the bipolar identities.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(a)–(d), Equations (138)–(139), polar bodies and dual norms"
+deps = ["exercise_53_gauge", "exercise_52_dual_gauge"]
+
+[[node]]
+id = "exercise_58"
+kind = "theorem"
+desc = '''Prove the dual scalar norm under the complex Hermitian pairing for finite coordinates for all conjugate exponents, including 1 and ∞. The real product dual norm in the backbone does not give this complex version directly.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 58, ℓᵖ and ℓᑫ duality"
+deps = ["exercise_57"]
+
+[[node]]
+id = "exercise_59_dual_attainment"
+kind = "theorem"
+desc = '''Prove that a nonzero functional on the finite-dimensional coordinate space attains its norm at a unit vector, with a phase chosen for equality in the real-pairing inequality. The inequality and the norming functional for each nonzero vector are formalized.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, attaining vector for each nonzero dual functional"
+deps = ["dualPairing_le_norm_mul", "exercise_59_norming"]
+
+[[node]]
+id = "exercise_60"
+kind = "theorem"
+desc = '''For full column rank and codimension one, characterize all minimizing ℓ∞ residuals via equality in the ℓ∞–ℓ¹ estimate. The displayed phase fixes the coordinates where the normal vector is nonzero. Other coordinates range freely in the attained sup-norm disk, so uniqueness of the solution needs all normal coordinates nonzero. For the residual convention r=b−Ax, the lifting formula is A†(b−r).'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, Equations (140)–(142), Chebyshev residual"
+deps = ["exercise_58"]
+
+[[node]]
+id = "exercise_61"
+kind = "theorem"
+desc = '''For a norm on the residual space, prove the optimum formula using the dual vector condition and codimension-one residual hyperplane, with the residual scaled to satisfy the complex pairing equation. Use the sign of the chosen residual convention in the lift.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 61, dual-norm Chebyshev generalization"
+deps = ["exercise_59_dual_attainment"]
+
+[[node]]
+id = "exercise_63"
+kind = "theorem"
+desc = '''Define uniqueness of supporting hyperplanes for balanced convex bodies and prove that strict convexity of a body is equivalent to smoothness of its polar.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, rotundity and smoothness of polar bodies"
+deps = ["exercise_57", "exercise_62"]
+
+[[node]]
+id = "exercise_64b"
+kind = "theorem"
+desc = '''Prove the equivalence of the two-sided real directional derivative of the norm at every nonzero point and uniqueness of supporting hyperplanes at each unit boundary point. The derivative claim must exclude the origin for a nontrivial norm.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 64(b), Gâteaux differentiability and smoothness"
+deps = ["exercise_63"]
+
+[[node]]
+id = "exercise_65"
+kind = "theorem"
+desc = '''Verify the given intersecting-parabola example, or a mathematically equivalent explicit convex body, for balance, rotundity and nonsmoothness, and obtain failure of strict convexity for its polar gauge.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 65, an essentially strictly convex norm with non-strict dual"
+deps = ["exercise_63", "exercise_64a"]
+
+[[node]]
+id = "exercise_66"
+kind = "theorem"
+desc = '''Define the mixed norm of continuous complex-homogeneous maps, prove unit-sphere attainment in nonzero finite dimensions and properties (a)–(f), with the zero-domain case interpreted separately.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(a)–(f), Equation (143), homogeneous operator norm"
+deps = ["theorem_11"]
+
+[[node]]
+id = "exercise_67"
+kind = "theorem"
+desc = '''Establish that the mixed norm of a linear map equals the mixed norm of its adjoint with the two dual norms exchanged.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 67, Equation (144), adjoint operator norm"
+deps = ["exercise_57", "exercise_59_dual_attainment", "exercise_66"]
+
+[[node]]
+id = "exercise_68"
+kind = "theorem"
+desc = '''For dimension at least two, define the supremum of metric projection norms over proper positive-dimensional subspaces, prove its attainment in each prescribed dimension, establish the sharp bound 1 ≤ Q < 2, and show that 2 is approached by essentially strictly convex norms.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(a)–(b), Equations (145)–(146), projective bound"
+deps = ["theorem_11", "exercise_66"]
+
+[[node]]
+id = "exercise_69"
+kind = "theorem"
+desc = '''Identify contractivity of all metric projectors with Q=1 for dimensions with proper positive-dimensional subspaces. Show that ellipsoidal norms are projective, prove the classification in dimension at least three, and verify the real two-dimensional piecewise ℓᵖ/ℓᑫ counterexample.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, classification of projective norms"
+deps = ["IsProjectiveNorm", "exercise_68"]
+
+[[node]]
+id = "exercise_73"
+kind = "theorem"
+desc = '''Prove projectivity from additive projections and complementary zero-fiber reciprocity in a fixed positive proper dimension using the projective-bound attainment statement.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 73, projectivity from one fixed projection dimension"
+deps = ["exercise_68", "exercise_72"]
+
+[[node]]
+id = "exercise_74"
+kind = "theorem"
+desc = '''Prove that all projections are linear in the Euclidean case, and construct a nonlinear projection onto a subspace for 1<p<∞ and p≠2 in dimensions sufficient for a counterexample. In dimension two every nontrivial proper subspace is a hyperplane.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 74, linearity of all ℓᵖ projectors"
+deps = ["corollary_6", "theorem_11"]
+
+[[node]]
+id = "exercise_75"
+kind = "theorem"
+desc = '''Characterize a nonzero zero-fiber vector by a norming dual functional vanishing on the subspace, with existence proved through the quotient norm or an equivalent Hahn–Banach argument.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 75, dual vectors for the zero fiber"
+deps = ["exercise_59_norming", "metricProjector_fibers"]
+
+[[node]]
+id = "exercise_76"
+kind = "theorem"
+desc = '''For both primal and dual norms essentially strictly convex and the primal projector additive, identify the dual zero fiber and prove that its complementary metric projector is the adjoint of the primal projector.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 76(a)–(b), dual metric projector"
+deps = ["exercise_75", "exercise_72"]
+
+[[node]]
+id = "exercise_77"
+kind = "theorem"
+desc = '''Prove equal projective bounds when both norms are essentially strictly convex, then show strict convexity and projectivity of the dual of a projective norm.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(a)–(c), projectivity and dual norms"
+deps = ["exercise_68", "exercise_76"]
+
+[[node]]
+id = "exercise_79"
+kind = "theorem"
+desc = '''Formulate a typed statement of the involution for all matrices under projectivity, and prove its converse with linearity of the inverse made explicit when the second inverse is defined for linear operators.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, Equation (151), iterated two-norm inverse"
+deps = ["exercise_71", "exercise_73", "exercise_78"]
+
+[[node]]
+id = "exercise_80"
+kind = "theorem"
+desc = '''Prove the adjoint identity for projective primal norms and their duals, as used in the source proof. An arbitrary two-norm inverse is nonlinear, so the printed essential-strict-convexity hypotheses alone do not define a matrix adjoint.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 80, Equation (152), adjoint of the two-norm inverse"
+deps = ["exercise_76", "exercise_77", "exercise_78"]
+
+[[node]]
+id = "exercise_81"
+kind = "theorem"
+desc = '''Prove the lower and upper bounds for the mixed operator norm distance to rank loss, with exact equality in the full-row-rank and projective-norm cases. In the convention of Equation (143), perturbations have input norm β and output norm α, while the inverse has input norm α and output norm β.'''
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, Equations (153)–(154), distance to rank loss"
+deps = ["theorem_12", "exercise_66", "exercise_68"]

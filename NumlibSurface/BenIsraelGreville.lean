@@ -35,6 +35,9 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section13
 import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
+import NumlibSurface.BenIsraelGreville.Chapter03.Section04
+import NumlibSurface.BenIsraelGreville.Chapter03.Section07
+import NumlibSurface.BenIsraelGreville.Chapter03.Section08
 import NumlibSurface.BenIsraelGreville.Chapter04.Section01
 import NumlibSurface.BenIsraelGreville.Chapter04.Section02
 import NumlibSurface.BenIsraelGreville.Chapter04.Section03
@@ -129,6 +132,9 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §3.1 | `Chapter03.Section01` | Least-squares solutions |
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |
+| §3.4 | `Chapter03.Section04` | Weighted generalized inverses |
+| §3.7 | `Chapter03.Section07` | Metric projections and two-norm inverses |
+| §3.8 | `Chapter03.Section08` | Bott–Duffin variational principles |
 | §4.1 | `Chapter04.Section01` | Spectral inverse equations |
 | §4.2 | `Chapter04.Section02` | Matrix index and rank stabilization |
 | §4.3 | `Chapter04.Section03` | Spectral inverse of a diagonalizable matrix |
