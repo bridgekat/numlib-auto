@@ -69,6 +69,7 @@ import NumlibSurface.BenIsraelGreville.Chapter09.Section03
 import NumlibSurface.BenIsraelGreville.Chapter09.Section04
 import NumlibSurface.BenIsraelGreville.Chapter09.Section05
 import NumlibSurface.BenIsraelGreville.Chapter09.Section06
+import NumlibSurface.BenIsraelGreville.Chapter09.Section07
 import NumlibSurface.BenIsraelGreville.Chapter09.Section08
 
 /-!
@@ -156,6 +157,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §9.4 | `Chapter09.Section04` | Fredholm integral operators and resolvent kernels |
 | §9.5 | `Chapter09.Section05` | Differential operators, Sobolev domains, and Green kernels |
 | §9.6 | `Chapter09.Section06` | Extremal inverses and weighted least-norm solutions |
+| §9.7 | `Chapter09.Section07` | Semigroup, Neumann, and splitting approximations |
 | §9.8 | `Chapter09.Section08` | Frames, synthesis, reconstruction, and optimal bounds |
 
 ## Conventions

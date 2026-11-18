@@ -1,55 +1,314 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-desc = '''Strong representations of the potentially unbounded maximal inverse of a bounded operator. Use a bounded self-adjoint spectral calculus for the semigroup and iteration residuals. When convergence is uniform require closed range.'''
 
 [[node]]
 id = "leastSquaresGradientFlow"
-kind = "definition"
-desc = '''The gradient iteration in continuous time solves x′=−A*(Ax−y), x(0)=0. Its least-squares objective has derivative −2‖A*(Ax−y)‖², which is nonpositive and may vanish.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, (83)–(90)"
+source = "Ben-Israel and Greville, Ch. 9, §7, (83), (85)"
 
 [[node]]
-id = "pinvApproximationDomainClass"
-kind = "definition"
-desc = '''Split right-hand sides by whether their projection onto closure(range A) lies in range AA*, in range A but outside range AA*, or outside range A.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, (93)"
+id = "leastSquaresResidual_hasDerivAt"
+source = "Ben-Israel and Greville, Ch. 9, §7, (83)–(84)"
+
+[[node]]
+id = "leastSquaresGradientFlow_hasDerivAt"
+source = "Ben-Israel and Greville, Ch. 9, §7, (85)–(86)"
+
+[[node]]
+id = "leastSquaresGradientFlow_deriv_neg_iff"
+source = "Ben-Israel and Greville, Ch. 9, §7, (86), corrected strictness condition"
+
+[[node]]
+id = "leastSquaresGradientFlow_antitoneOn"
+source = "Ben-Israel and Greville, Ch. 9, §7, after (86), monotonicity of the objective"
+
+[[node]]
+id = "gradientSemigroup"
+source = "Ben-Israel and Greville, Ch. 9, §7, (87), (94), exponential kernels"
+
+[[node]]
+id = "gradientSemigroup_zero"
+source = "Ben-Israel and Greville, Ch. 9, §7, (87), (94), exponential at zero"
+
+[[node]]
+id = "gradientSemigroupIntegral"
+source = "Ben-Israel and Greville, Ch. 9, §7, (94), integrated normal semigroups"
+
+[[node]]
+id = "gradientSemigroupIntegral_eq_translated"
+source = "Ben-Israel and Greville, Ch. 9, §7, (94), source time-variable convention"
 
 [[node]]
 id = "pinvSemigroupApproximation"
-kind = "definition"
-desc = '''Define L₁(t)=∫₀ᵗ exp(−(t−s)A*A) ds and L₂(t)=∫₀ᵗ exp(−(t−s)AA*) ds. The approximation B(t) satisfies B=L₁A*=A*L₂.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, (94)"
+source = "Ben-Israel and Greville, Ch. 9, §7, (87)–(89), (94)"
 
 [[node]]
-id = "theorem_9"
-kind = "theorem"
-desc = '''For B(t), let x=A†y and z=(AA*)†y where defined. In class I the squared inverse error is bounded by ‖x‖²‖z‖²/(‖z‖²+2t‖x‖²); in class II it decreases to zero. In classes I–II the squared range residual is bounded by ‖y‖²‖x‖²/(‖x‖²+2t‖y‖²). In class III the range residual still decreases to zero.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(a)–(c)"
-deps = ["pinvApproximationDomainClass", "pinvSemigroupApproximation", "maximalTsengInverse"]
+id = "pinvSemigroupApproximation_eq_right"
+source = "Ben-Israel and Greville, Ch. 9, §7, (94), B = L₁A* = A*L₂"
+
+[[node]]
+id = "pinvSemigroupApproximation_eq_integral"
+source = "Ben-Israel and Greville, Ch. 9, §7, (88), operator integral form"
+
+[[node]]
+id = "pinvSemigroupApproximation_apply_integral"
+source = "Ben-Israel and Greville, Ch. 9, §7, (87), vector integral form"
+
+[[node]]
+id = "pinvSemigroupApproximation_comp"
+source = "Ben-Israel and Greville, Ch. 9, §7, (94), left exponential residual operator"
+
+[[node]]
+id = "comp_pinvSemigroupApproximation"
+source = "Ben-Israel and Greville, Ch. 9, §7, (94), right exponential residual operator"
+
+[[node]]
+id = "leastSquaresGradientFlow_pinvSemigroupApproximation"
+source = "Ben-Israel and Greville, Ch. 9, §7, (85), (87), zero-start solution"
+
+[[node]]
+id = "normalSemigroup_norm_sq_antitoneOn"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(b), (d), semigroup energy monotonicity"
+
+[[node]]
+id = "leastSquaresGradientFlow_eqOn_pinvSemigroupApproximation"
+source = "Ben-Israel and Greville, Ch. 9, §7, (87), uniqueness of the solution"
+
+[[node]]
+id = "normalSemigroup_norm_le"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9, normal semigroup contraction"
+
+[[node]]
+id = "normalSemigroup_norm_sq_le_rational"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(a), (c), general rational decay bound"
+
+[[node]]
+id = "normalSemigroup_tendsto_zero"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(b), (d), strong decay on the adjoint-range closure"
+
+[[node]]
+id = "pinvSemigroupApproximation_error"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(a), (b), left residual identity"
+
+[[node]]
+id = "pinvSemigroupApproximation_range_error"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(c), (d), unprojected right residual identity"
+
+[[node]]
+id = "pinvSemigroupApproximation_projected_error"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(c), (d), projected right residual identity"
+
+[[node]]
+id = "comp_pinvSemigroupApproximation_tendsto"
+source = "Ben-Israel and Greville, Ch. 9, §7, after Theorem 9, strong convergence of the fitted values"
+
+[[node]]
+id = "leastSquaresGradientFlow_tendsto_iInf"
+source = "Ben-Israel and Greville, Ch. 9, §7, after (86), objective convergence to its infimum"
+
+[[node]]
+id = "maximalInverse_mem_domain_iff_projection_mem_range"
+source = "Ben-Israel and Greville, Ch. 9, §7, (93), Classes I–II characterize the inverse domain"
+
+[[node]]
+id = "maximalGramInverse_mem_domain_iff_projection_mem_range"
+source = "Ben-Israel and Greville, Ch. 9, §7, (93), Class I characterizes the Gram inverse domain"
+
+[[node]]
+id = "maximalInverse_mem_domain_of_maximalGramInverse_mem_domain"
+source = "Ben-Israel and Greville, Ch. 9, §7, (93), Class I lies in the left inverse domain"
+
+[[node]]
+id = "maximalInverse_domain_eq_top_of_isClosed_range"
+source = "Ben-Israel and Greville, Ch. 9, §7, after (93), closed range rules out Class III"
+
+[[node]]
+id = "maximalInverse_apply_eq_adjoint_maximalGramInverse"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(a), relation between the two inverse values"
+
+[[node]]
+id = "pinvSemigroupApproximation_tendsto"
+source = "Ben-Israel and Greville, Ch. 9, §7, (88)–(89), convergence on the partial inverse domain"
+
+[[node]]
+id = "pinvSemigroupApproximation_error_norm_tendsto_zero"
+source = "Ben-Israel and Greville, Ch. 9, §7, (90), norm error tends to zero"
+
+[[node]]
+id = "theorem_9_a"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(a), exact rational inverse-error bound in Class I"
+
+[[node]]
+id = "theorem_9_b"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(b), norm-square error on the whole inverse domain"
+
+[[node]]
+id = "theorem_9_c"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(c), exact rational projected-residual bound"
+
+[[node]]
+id = "theorem_9_d"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 9(d), monotone projected residual for all data"
+
+[[node]]
+id = "leftNeumannResidual"
+source = "Ben-Israel and Greville, Ch. 9, §7, (91), (95), left residual"
+
+[[node]]
+id = "rightNeumannResidual"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10, right residual"
 
 [[node]]
 id = "pinvNeumannApproximation"
-kind = "definition"
-desc = '''With α=c/‖A‖² and 0<c<2 for nonzero A, B_N=∑_{k≤N}(I−αA*A)^k αA*. Keep the zero operator as a separate trivial boundary case.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, (91)–(92), (95)"
+source = "Ben-Israel and Greville, Ch. 9, §7, (91), finite sum"
+
+[[node]]
+id = "pinvNeumannApproximation_zero"
+source = "Ben-Israel and Greville, Ch. 9, §7, (91)–(92), zero operator"
+
+[[node]]
+id = "neumannStepsize"
+source = "Ben-Israel and Greville, Ch. 9, §7, (92)"
+
+[[node]]
+id = "pinvApproximationDomainClass"
+source = "Ben-Israel and Greville, Ch. 9, §7, (93)"
+
+[[node]]
+id = "pinvApproximationDomainClass_iff"
+source = "Ben-Israel and Greville, Ch. 9, §7, (93), equivalence of the domain classes"
+
+[[node]]
+id = "neumann_intertwine_pow"
+source = "Ben-Israel and Greville, Ch. 9, §7, (91), residual interchange"
+
+[[node]]
+id = "pinvNeumannApproximation_succ"
+source = "Ben-Israel and Greville, Ch. 9, §7, (95), first-order update"
+
+[[node]]
+id = "pinvNeumannApproximation_comp"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10, left product"
+
+[[node]]
+id = "comp_pinvNeumannApproximation"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10, right product"
+
+[[node]]
+id = "pinvNeumannApproximation_error"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(a)–(b), inverse error identity"
+
+[[node]]
+id = "pinvNeumannApproximation_range_error"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(c)–(d), range error identity"
+
+[[node]]
+id = "leftNeumannResidual_norm_sq_le"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10, left residual estimate"
+
+[[node]]
+id = "rightNeumannResidual_norm_sq_le"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10, right residual estimate"
+
+[[node]]
+id = "leftNeumannResidual_pow_norm_sq_rate"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(a), left residual rate"
+
+[[node]]
+id = "rightNeumannResidual_pow_norm_sq_rate"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(c), right residual rate"
+
+[[node]]
+id = "leftNeumannResidual_pow_tendsto_zero"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(b), strong left residual limit"
+
+[[node]]
+id = "rightNeumannResidual_pow_tendsto_zero"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(d), strong right residual limit"
+
+[[node]]
+id = "pinvNeumannApproximation_projected_error"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(c)–(d), projected error identity"
+
+[[node]]
+id = "comp_pinvNeumannApproximation_tendsto"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(d), convergence of fitted values"
+
+[[node]]
+id = "pinvNeumannApproximation_tendsto"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(b), convergence on the inverse domain"
+
+[[node]]
+id = "pinvNeumannApproximation_error_bound"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(a), rate with any Gram witness"
+
+[[node]]
+id = "pinvNeumannApproximation_projected_error_bound"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(c), rate for general step size"
+
+[[node]]
+id = "pinvNeumannApproximation_error_antitone"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(b), (d), monotonicity"
 
 [[node]]
 id = "theorem_10"
-kind = "theorem"
-desc = '''For B_N the bounds of Theorem 9 replace 2t by N(2−c)c/‖A‖². In the other cases the errors decrease to zero and agree with the corresponding projected recurrences. When aligning indices, B_N contains N+1 terms, and the range recurrence starts from the projection of y, not from the orthogonal component.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(a)–(d), (95)"
-deps = ["pinvNeumannApproximation", "pinvApproximationDomainClass", "maximalTsengInverse"]
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(b), (d), normalized strong limits"
+
+[[node]]
+id = "theorem_10_a"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(a), normalized inverse error rate"
+
+[[node]]
+id = "theorem_10_c"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 10(c), normalized fitted-value error rate"
 
 [[node]]
 id = "pinvNeumann_tendsto_of_closedRange"
-kind = "theorem"
-desc = '''If range A is closed the same B_N converges to A† in operator norm by a spectral gap on the orthogonal complement of the kernel.'''
 source = "Ben-Israel and Greville, Ch. 9, §7, Petryshyn convergence following Theorem 10"
-deps = ["theorem_10"]
+
+[[node]]
+id = "neumannHyperpowerStep"
+source = "Ben-Israel and Greville, Ch. 9, §7, (96), geometric update"
+
+[[node]]
+id = "neumannBinomialStep"
+source = "Ben-Israel and Greville, Ch. 9, §7, (97), binomial update"
+
+[[node]]
+id = "neumannBinomialStep_eq_hyperpower"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 11, coincidence of the updates"
+
+[[node]]
+id = "neumannHyperpowerIterate"
+source = "Ben-Israel and Greville, Ch. 9, §7, (96), geometric iteration"
+
+[[node]]
+id = "neumannBinomialIterate"
+source = "Ben-Israel and Greville, Ch. 9, §7, (97), binomial iteration"
 
 [[node]]
 id = "theorem_11"
-kind = "theorem"
-desc = '''The order-p updates C and D starting at αA* equal B_{p^N−1} after N steps, and inherit the improved rate by replacing N with p^N−1. The binomial polynomial for D is summed over 1≤k≤p, omitting the impossible exponent −1 in the printed k=0 term.'''
-source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 11, (96)–(98)"
-deps = ["theorem_10"]
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 11, (98)"
+
+[[node]]
+id = "neumannHyperpowerIterate_error_bound"
+source = "Ben-Israel and Greville, Ch. 9, §7, Theorem 11, class-I convergence rate following (98)"
+
+[[node]]
+id = "inverseStationaryIterate"
+source = "Ben-Israel and Greville, Ch. 9, §7, (99)"
+
+[[node]]
+id = "inverseStationaryIterate_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §7, Exercise 49, equivalence with (95)"
+
+[[node]]
+id = "exercise_9_49"
+source = "Ben-Israel and Greville, Ch. 9, §7, Exercise 49, spectral-radius convergence"
+
+[[node]]
+id = "exercise_9_50"
+source = "Ben-Israel and Greville, Ch. 9, §7, Exercise 50, (100)–(101), relaxed splitting"
+
+[[node]]
+id = "exercise_9_50_unrelaxed"
+source = "Ben-Israel and Greville, Ch. 9, §7, Exercise 50, (102), unrelaxed splitting"
