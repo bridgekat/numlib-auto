@@ -386,7 +386,9 @@ theorem gramian_eq_sum_sq_minors {p q : ℕ} (X : Matrix (Fin q) (Fin p) ℂ) :
   rw [← conjTranspose_submatrix, det_conjTranspose, ← starRingEnd_apply,
     ← Complex.normSq_eq_conj_mul_self, Complex.normSq_eq_norm_sq]
 
-private theorem submatrix_mul_submatrix_eq {K : Type*} [Field K] {m d k : ℕ}
+/-- A minor submatrix of a factored matrix is the product of the selected
+rows of the first factor and the selected columns of the second factor. -/
+theorem submatrix_mul_submatrix_eq {K : Type*} [Field K] {m d k : ℕ}
     {A : Matrix (Fin m) (Fin d) K} {F : Matrix (Fin m) (Fin k) K}
     {G : Matrix (Fin k) (Fin d) K} (h : A = F * G) {a b : Type*}
     (r : a → Fin m) (c : b → Fin d) :
@@ -459,7 +461,9 @@ noncomputable def matrixVolume {m d : ℕ} (A : Matrix (Fin m) (Fin d) ℝ) : �
   exact if A.rank = 0 then 0 else
     Real.sqrt (∑ s : nonsingularMinorIndices A, (A.submatrix s.1.1 s.1.2).det ^ 2)
 
-private theorem matrixVolume_eq_sqrt_sum_minors {m d r : ℕ} (A : Matrix (Fin m) (Fin d) ℝ)
+/-- The volume may be computed over all choices of maximal minors, since
+singular minors contribute zero. -/
+theorem matrixVolume_eq_sqrt_sum_minors {m d r : ℕ} (A : Matrix (Fin m) (Fin d) ℝ)
     (hr : A.rank = r) (h0 : r ≠ 0) :
     matrixVolume A = Real.sqrt (∑ i : IndexSequence r m, ∑ j : IndexSequence r d,
       (A.submatrix i j).det ^ 2) := by
@@ -480,7 +484,8 @@ private theorem matrixVolume_eq_sqrt_sum_minors {m d r : ℕ} (A : Matrix (Fin m
   rw [← Fintype.sum_prod_type term, ← Fintype.sum_subtype_add_sum_subtype
     (fun s => s ∈ nonsingularMinorIndices A) term, hbad, add_zero]
 
-private theorem indexSequence_self_unique {r : ℕ} (s : IndexSequence r r) :
+/-- The only increasing selection of every index is the identity. -/
+theorem indexSequence_self_unique {r : ℕ} (s : IndexSequence r r) :
     s = (OrderIso.refl (Fin r)).toOrderEmbedding := by
   let h : (Finset.univ : Finset (Fin r)).card = r := by simp
   exact (Finset.orderEmbOfFin_unique' h (fun i => Finset.mem_univ (s i))).trans
