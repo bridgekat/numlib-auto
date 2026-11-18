@@ -1,125 +1,410 @@
 namespace = "BenIsraelGreville.Chapter08"
 
-desc = '''Finite homogeneous Markov chains via row-stochastic matrices and first-passage distributions. Reuse matrix nonnegativity and Chapter 4 group inverses. The group inverse exists because boundedness of P^n rules out a nontrivial generalized eigenvector at 1. For closed classes require communication and no outgoing transitions. Communication alone is insufficient and would, for example, classify transient states with a self-loop as absorbing.'''
+[[node]]
+id = "IsStochasticMatrix"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (86)–(87), stochastic matrix"
+
+[[node]]
+id = "isStochasticMatrix_iff_row_sums"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (86)–(87), equivalence of row-sum and all-ones-vector tests"
 
 [[node]]
 id = "IsFiniteMarkovChain"
-kind = "definition"
-desc = '''A finite time-homogeneous Markov chain has one-step conditional distributions given its full past depending only on the current state and described by a fixed transition matrix.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, (85)"
-
-[[node]]
-id = "IsStochasticMatrix"
-kind = "definition"
-desc = '''A row-stochastic matrix has nonnegative entries and every row sums to one, equivalently P·1=1 together with entrywise nonnegativity.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, (86a)–(87)"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (85), time-homogeneous chain given every finite history"
 
 [[node]]
 id = "transitionProbability"
-kind = "definition"
-desc = '''The n-step transition probability from i to j is (P^n)ᵢⱼ with probability one for the zero-step return and zero for other zero-step transitions.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, (88)–(89)"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (88)–(89), n-step matrix transition probability"
+
+[[node]]
+id = "transitionProbability_zero"
+source = "Ben-Israel and Greville, Chapter 8, §7, zero-step convention preceding Equation (88)"
 
 [[node]]
 id = "chapmanKolmogorov"
-kind = "theorem"
-desc = '''The transition probability at m+n equals the sum over intermediate states of the products of the m-step and n-step transition probabilities.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, (89)"
-deps = ["transitionProbability"]
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (89), Chapman–Kolmogorov identity"
+
+[[node]]
+id = "stochastic_pow"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (86) and (88), stochasticity of transition powers"
 
 [[node]]
 id = "LeadsTo"
-kind = "definition"
-desc = '''State i leads to j if (P^n)ᵢⱼ > 0 for some positive n.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, reachability following (89)"
-deps = ["transitionProbability"]
+source = "Ben-Israel and Greville, Chapter 8, §7, positive-time reachability after Equation (89)"
 
 [[node]]
 id = "Communicates"
-kind = "definition"
-desc = '''Two states communicate if each leads to the other.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, communication following (89)"
-deps = ["LeadsTo"]
+source = "Ben-Israel and Greville, Chapter 8, §7, mutual reachability after Equation (89)"
+
+[[node]]
+id = "communicates_symm"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 17(a), symmetry"
+
+[[node]]
+id = "leadsTo_trans"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 17(b), transitivity of reachability"
+
+[[node]]
+id = "communicates_trans"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 17(b), transitivity of communication"
+
+[[node]]
+id = "IsClosedStateSet"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed state sets after Equation (89), with no outgoing transitions"
 
 [[node]]
 id = "IsClosedCommunicatingClass"
-kind = "definition"
-desc = '''A nonempty closed communicating class consists of mutually communicating states and has no outgoing transitions. Irreducibility means all pairs communicate. Clarify that a communicating subset need not be closed.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, closed sets and reducibility following (89)"
-deps = ["Communicates"]
+source = "Ben-Israel and Greville, Chapter 8, §7, nonempty closed communicating classes after Equation (89)"
+
+[[node]]
+id = "IsIrreducibleChain"
+source = "Ben-Israel and Greville, Chapter 8, §7, irreducibility after Equation (89)"
+
+[[node]]
+id = "IsAbsorbingState"
+source = "Ben-Israel and Greville, Chapter 8, §7, absorbing states after Equation (89)"
 
 [[node]]
 id = "IsAbsorbingChain"
-kind = "definition"
-desc = '''A state is absorbing iff pᵢᵢ = 1. An absorbing chain is one whose closed classes are singletons, so every state can reach an absorbing state.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, absorbing states and chains following (89)"
-deps = ["IsClosedCommunicatingClass"]
+source = "Ben-Israel and Greville, Chapter 8, §7, absorbing chains after Equation (89), every state reaches an absorbing state"
 
 [[node]]
 id = "IsRegularChain"
-kind = "definition"
-desc = '''A chain is regular if some positive power of P has all entries positive.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, regularity following (89)"
-deps = ["IsStochasticMatrix"]
+source = "Ben-Israel and Greville, Chapter 8, §7, regularity after Equation (89)"
+
+[[node]]
+id = "isIrreducibleChain_of_regular"
+source = "Ben-Israel and Greville, Chapter 8, §7, regularity after Equation (89), implies irreducibility"
 
 [[node]]
 id = "statePeriod"
-kind = "definition"
-desc = '''The period of state i is the gcd of positive return times with (P^n)ᵢᵢ > 0. Period one is aperiodicity.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, period and aperiodicity following (89)"
-deps = ["transitionProbability"]
+source = "Ben-Israel and Greville, Chapter 8, §7, period as the greatest common divisor of positive return times after Equation (89)"
 
 [[node]]
-id = "firstPassageProbability"
-kind = "definition"
-desc = '''The probability of a first hit of j at positive time n from i is the sum of path weights over paths avoiding j at intermediate times. Its sum gives eventual passage probability, and the time-weighted sum is the extended mean passage time.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, first passage preceding (90)"
-
-[[node]]
-id = "IsRecurrentState"
-kind = "definition"
-desc = '''A state is recurrent if its eventual positive-time return probability is one, transient otherwise, and null recurrent if its mean return time is infinite. An ergodic chain is irreducible and aperiodic.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, recurrence, transience and null states preceding (90)"
-deps = ["firstPassageProbability", "statePeriod", "IsClosedCommunicatingClass"]
-
-[[node]]
-id = "theorem_7"
-kind = "theorem"
-desc = '''For irreducible recurrent chains the Cesàro mean of (P^k)ᵢⱼ tends to 1/μⱼⱼ where μⱼⱼ is the mean positive return time. Use the finite renewal equation or regeneration at j.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 7, (90)"
-deps = ["IsRecurrentState", "transitionProbability"]
+id = "IsErgodicChain"
+source = "Ben-Israel and Greville, Chapter 8, §7, ergodic chains preceding Theorem 7"
 
 [[node]]
 id = "IsStationaryDistribution"
-kind = "definition"
-desc = '''A nonnegative vector π of total mass one is stationary if Pᵀπ=π. An initial distribution evolves at step t by (Pᵀ)^t.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, (93)–(97)"
-deps = ["IsStochasticMatrix"]
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (93) and (100), stationary probabilities"
 
 [[node]]
-id = "theorem_8"
-kind = "theorem"
-desc = '''In an ergodic chain every row of P^n converges to the same strictly positive stationary distribution π, unique among probability vectors, and πⱼ = 1/μⱼⱼ.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 8, (98)–(103)"
-deps = ["theorem_7", "IsStationaryDistribution"]
+id = "stateDistribution"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (95)–(97), initial distribution evolved by transition powers"
+
+[[node]]
+id = "stateDistribution_succ"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (95)–(97), one-step state evolution"
+
+[[node]]
+id = "stateDistribution_of_stationary"
+source = "Ben-Israel and Greville, Chapter 8, §7, stationary initial distribution after Equation (97)"
+
+[[node]]
+id = "isStationaryDistribution_of_tendsto_stateDistribution"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (97), a convergent trajectory has a stationary limit"
 
 [[node]]
 id = "theorem_9"
-kind = "theorem"
-desc = '''For row-stochastic P, I−P has a group inverse. Use sup-norm bounded powers to show ker(I−P)² = ker(I−P).'''
-source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 9"
-deps = ["IsStochasticMatrix"]
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 9, unique group inverse of I−P"
 
 [[node]]
-id = "theorem_10"
-kind = "theorem"
-desc = '''For Q=I−P, I−QQ# is the limit of the Cesàro means of P^n and of powers of αI+(1−α)P for 0<α<1. It also equals the limit of P^n for regular or absorbing chains. The strict spectral radius bound for the lazy chain is on its complementary invariant subspace, since the full chain has eigenvalue one.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, Theorem 10, (104)–(107)"
-deps = ["theorem_9", "IsRegularChain", "IsAbsorbingChain"]
+id = "stochasticGroupInverse"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 9, chosen group inverse of I−P"
+
+[[node]]
+id = "stochasticGroupInverse_spec"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 9, group inverse equations"
+
+[[node]]
+id = "stationaryProjection"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (104) and (106), group-inverse stationary projection"
+
+[[node]]
+id = "stationaryProjection_spec"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (104) and (106), invariant idempotence"
+
+[[node]]
+id = "stationaryProjection_mulVec_of_fixed"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (106), projection fixes transition-fixed vectors"
+
+[[node]]
+id = "transitionCesaro"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (103)–(104), finite average of powers through exponent n"
+
+[[node]]
+id = "transitionCesaro_eq_projection_add"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (104)–(107), Cesàro telescoping identity"
+
+[[node]]
+id = "theorem_10_cesaro"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, Equation (104), Cesàro limit"
+
+[[node]]
+id = "transitionCesaro_stochastic"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (104), finite Cesàro averages are stochastic"
+
+[[node]]
+id = "stationaryProjection_stochastic"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (104), stationary projection is stochastic"
 
 [[node]]
 id = "stationaryDistribution_eq_groupInverse"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (91)–(93), Exercise 24 and the identity following Theorem 10"
+
+[[node]]
+id = "existsUnique_stationaryDistribution"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 8(d) and Exercise 24, uniqueness under irreducibility"
+
+[[node]]
+id = "transitionCesaro_tendsto_stationary"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equations (101) and (103), irreducible-chain Cesàro row limit"
+
+[[node]]
+id = "killedTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, first passage preceding Equation (90), omit transitions into the target"
+
+[[node]]
+id = "firstPassageProbability"
+source = "Ben-Israel and Greville, Chapter 8, §7, first passage preceding Equation (90), path mass through the killed transition"
+
+[[node]]
+id = "eventualPassageProbability"
+source = "Ben-Israel and Greville, Chapter 8, §7, eventual first passage preceding Equation (90), total first-passage mass"
+
+[[node]]
+id = "meanFirstPassageTime"
+source = "Ben-Israel and Greville, Chapter 8, §7, mean first passage preceding Equation (90), time-weighted mass"
+
+[[node]]
+id = "IsRecurrentState"
+source = "Ben-Israel and Greville, Chapter 8, §7, recurrence preceding Equation (90), eventual return has probability one"
+
+[[node]]
+id = "IsTransientState"
+source = "Ben-Israel and Greville, Chapter 8, §7, transience preceding Equation (90)"
+
+[[node]]
+id = "IsRecurrentChain"
+source = "Ben-Israel and Greville, Chapter 8, §7, recurrent chains preceding Equation (90)"
+
+[[node]]
+id = "IsNullState"
+source = "Ben-Israel and Greville, Chapter 8, §7, null recurrence preceding Equation (90)"
+
+[[node]]
+id = "IsErgodicState"
+source = "Ben-Israel and Greville, Chapter 8, §7, ergodic states preceding Equation (90)"
+
+[[node]]
+id = "firstPassageProbability_nonneg"
+source = "Ben-Israel and Greville, Chapter 8, §7, nonnegative first-passage mass preceding Equation (90)"
+
+[[node]]
+id = "exercise_8_20"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 20, first-passage renewal equation"
+
+[[node]]
+id = "survivalProbability"
+source = "Ben-Israel and Greville, Chapter 8, §7, first passage preceding Equation (90), probability of avoiding the target"
+
+[[node]]
+id = "firstPassageProbability_eq_survival_sub"
+source = "Ben-Israel and Greville, Chapter 8, §7, first passage preceding Equation (90), difference of two adjacent survival probabilities"
+
+[[node]]
+id = "sum_firstPassageProbability"
+source = "Ben-Israel and Greville, Chapter 8, §7, first passage preceding Equation (90), probability of passage by a finite horizon"
+
+[[node]]
+id = "killedTransition_complexSpectralRadius_lt_one"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 7, geometric survival bound when every state reaches the target"
+
+[[node]]
+id = "eventualPassageProbability_eq_one"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 7, certain eventual passage when every state reaches the target"
+
+[[node]]
+id = "isRecurrentChain_of_irreducible"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 7, finite irreducible chains are recurrent"
+
+[[node]]
+id = "meanFirstPassageTime_eq_killed_inverse"
+source = "Ben-Israel and Greville, Chapter 8, §7, mean passage before Equation (90), evaluation by the resolvent of the killed transition"
+
+[[node]]
+id = "meanReturnTime_eq_inverse_stationary"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (94), reciprocal mean return time"
+
+[[node]]
+id = "theorem_7"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 7, Equation (90), Cesàro renewal limit"
+
+[[node]]
+id = "exercise_8_15"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 15, spectral radius one"
+
+[[node]]
+id = "lazyTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, Equation (104), holding-probability transition"
+
+[[node]]
+id = "theorem_10_lazy"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, Equation (104), lazy-chain power limit"
+
+[[node]]
+id = "statePeriod_dvd_return"
+source = "Ben-Israel and Greville, Chapter 8, §7, periodicity after Equation (89), the period divides every positive return time"
+
+[[node]]
+id = "statePeriod_eq_of_communicates"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 23, common period of communicating states"
+
+[[node]]
+id = "isErgodicChain_of_regular"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, regularity implies irreducibility and aperiodicity"
+
+[[node]]
+id = "theorem_10_ergodic"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 8 and Equation (102), convergence of the transition powers"
+
+[[node]]
+id = "theorem_10_regular"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, Equation (104), ordinary power limit for regular chains"
+
+[[node]]
+id = "isAbsorbingState_iff_singleton_closed"
+source = "Ben-Israel and Greville, Chapter 8, §7, absorbing states and singleton closed classes after Equation (89)"
+
+[[node]]
+id = "theorem_10_absorbing"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, Equation (104), ordinary power limit for absorbing chains"
+
+[[node]]
+id = "theorem_10"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 10, Equation (104), Cesàro, lazy, regular and absorbing limits"
+
+[[node]]
+id = "theorem_8"
+source = "Ben-Israel and Greville, Chapter 8, §7, Theorem 8, Equations (98)–(100) and (93), positive unique stationary limit and return-time formula"
+
+[[node]]
+id = "stateDistribution_tendsto_of_ergodic"
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (97) and Theorem 8, convergence from every initial distribution"
+
+[[node]]
+id = "exercise_8_16"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 16, strict spectral radius decrease for an irreducible substochastic matrix"
+
+[[node]]
+id = "exercise_8_18"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 18, block upper-triangular form of reducible transition matrices"
+
+[[node]]
+id = "exercise_8_18_closed_block"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 18, the final transition block is stochastic on a closed set"
+
+[[node]]
+id = "exercise_8_17_matrix"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 17(c), the three-state transition matrix"
+
+[[node]]
+id = "exercise_8_17c"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 17(c), the absorbing and transient states and lack of self-communication"
+
+[[node]]
+id = "exercise_8_24"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 24, mean return reciprocals give the stationary probability vector"
+
+[[node]]
+id = "twoStateSwap"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercises 25–26, the two-state swap transition"
+
+[[node]]
+id = "exercise_8_25_unit"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 25, alternating coordinate vectors"
+
+[[node]]
+id = "exercise_8_25"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 25, stationarity and the failure of convergence from every other probability vector"
+
+[[node]]
+id = "exercise_8_26"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 26, explicit Cesàro limit of the two-state swap"
+
+[[node]]
+id = "finiteMarkovChain_nStep_conditional"
 kind = "theorem"
-desc = '''For an ergodic chain every row of I−(I−P)(I−P)# equals the stationary distribution.'''
-source = "Ben-Israel and Greville, Ch. 8, §7, formula following Theorem 10"
-deps = ["theorem_8", "theorem_10"]
+desc = "For a homogeneous finite Markov chain started with a positive-probability event Xₜ=i, show the joint mass of Xₜ=i and Xₜ₊ₙ=j equals the first mass times (Pⁿ)ᵢⱼ. Derive the claim from the full-history Markov condition by summing over histories."
+source = "Ben-Israel and Greville, Chapter 8, §7, Equation (88), probabilistic interpretation of matrix powers"
+deps = ["IsFiniteMarkovChain", "transitionProbability", "chapmanKolmogorov"]
+
+[[node]]
+id = "finiteMarkovChain_firstPassage_conditional"
+kind = "theorem"
+desc = "Identify the killed-transition formula with the measure of the event of avoiding the target for times 1 through n−1 and being at the target at time n, conditional on the given initial state. The algebraic transition formulas and renewal theorem are proved."
+source = "Ben-Israel and Greville, Chapter 8, §7, first-passage probabilities preceding Equation (90)"
+deps = ["IsFiniteMarkovChain", "firstPassageProbability", "finiteMarkovChain_nStep_conditional"]
+
+[[node]]
+id = "isAbsorbingChain_iff_closed_classes_singleton"
+kind = "theorem"
+desc = "Prove that positive-time reachability to an absorbing state from every state is equivalent to every minimal nonempty closed class being a singleton. This includes the all-absorbing case."
+source = "Ben-Israel and Greville, Chapter 8, §7, closed-class characterization of absorbing chains following Equation (89)"
+deps = ["IsClosedCommunicatingClass", "IsAbsorbingChain"]
+
+[[node]]
+id = "exercise_8_19"
+kind = "theorem"
+desc = "Construct a reindexing listing all the minimal closed classes as irreducible stochastic diagonal blocks and show the complementary block is upper triangular by its irreducible communication components."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 19, Equation (108), all minimal closed blocks and the remaining components"
+deps = ["IsClosedCommunicatingClass", "exercise_8_18_closed_block"]
+
+[[node]]
+id = "exercise_8_21"
+kind = "theorem"
+desc = "Show a finite stochastic chain has no null recurrent states and, when its state space is nonempty, has at least one recurrent state. The current killed-transition argument gives finite return means and recurrence when the entire chain is irreducible."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 21, no null states and existence of a recurrent state"
+deps = ["IsNullState", "isRecurrentChain_of_irreducible", "meanFirstPassageTime_eq_killed_inverse", "exercise_8_19"]
+
+[[node]]
+id = "exercise_8_22a"
+kind = "theorem"
+desc = "Prove transience of i iff the positive-time return probabilities p⁽ⁿ⁾ᵢᵢ have a finite sum. Use the first-return renewal identity."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(a), summability criterion for transience"
+deps = ["exercise_8_20", "IsTransientState"]
+
+[[node]]
+id = "exercise_8_22b"
+kind = "theorem"
+desc = "For a null state i prove divergence of the sum and p⁽ⁿ⁾ᵢᵢ→0. In finite chains both facts follow from the absence of null states."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(b), null-state limit"
+deps = ["exercise_8_21", "exercise_8_22a"]
+
+[[node]]
+id = "exercise_8_22cd"
+kind = "theorem"
+desc = "For an ergodic state i show p⁽ⁿ⁾ᵢᵢ→1/μᵢᵢ. For a nonnull recurrent state of period τ show p⁽ⁿτ⁾ᵢᵢ→τ/μᵢᵢ. Restrict to its closed communicating class and derive the cyclic decomposition for the periodic limit."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(c,d), aperiodic and periodic local renewal limits"
+deps = ["theorem_8", "statePeriod", "IsErgodicState", "exercise_8_19"]
+
+[[node]]
+id = "exercise_8_23_recurrence"
+kind = "theorem"
+desc = "Prove mutually reachable states have the same recurrence or transience type. Their periods agree by the proved period comparison."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 23, recurrence and transience of communicating states"
+deps = ["statePeriod_eq_of_communicates", "exercise_8_22a"]
+
+[[node]]
+id = "exercise_8_27abc"
+kind = "theorem"
+desc = "Choose bases of the range and kernel of the stationary projection to exhibit similarity to diag(Iₖ,K), with 1 outside the spectrum of K. For an ergodic chain express k=1. For a regular chain show Kⁿ→0."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 27(a–c), invariant block similarity for a stochastic matrix"
+deps = ["stationaryProjection_spec", "stationaryProjection_mulVec_of_fixed", "stationaryDistribution_eq_groupInverse", "theorem_10_regular"]
+
+[[node]]
+id = "exercise_8_27d"
+kind = "theorem"
+desc = "Reindex the r absorbing states first to write P as blocks (Iᵣ,0;R,K). Show ρ(K)<1 and deduce the displayed block formulas for the limit and the group inverse. The ordinary power limit for absorbing chains is independently proved."
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 27(d) and Theorem 10 proof, absorbing block form"
+deps = ["IsAbsorbingChain", "theorem_10_absorbing", "stochasticGroupInverse_spec"]

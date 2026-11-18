@@ -60,6 +60,7 @@ import NumlibSurface.BenIsraelGreville.Chapter08.Section03
 import NumlibSurface.BenIsraelGreville.Chapter08.Section04
 import NumlibSurface.BenIsraelGreville.Chapter08.Section05
 import NumlibSurface.BenIsraelGreville.Chapter08.Section06
+import NumlibSurface.BenIsraelGreville.Chapter08.Section07
 import NumlibSurface.BenIsraelGreville.Chapter08.Section08
 
 /-!
@@ -138,6 +139,7 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §8.4 | `Chapter08.Section04` | Ridge estimation and mean squared error |
 | §8.5 | `Chapter08.Section05` | Generalized Newton iterations and nonlinear least squares |
 | §8.6 | `Chapter08.Section06` | Differential systems in real-rational Laplace coordinates |
+| §8.7 | `Chapter08.Section07` | Markov chains, first passage, and the stationary projection |
 | §8.8 | `Chapter08.Section08` | Singular difference equations and regular pencils |
 
 ## Conventions
