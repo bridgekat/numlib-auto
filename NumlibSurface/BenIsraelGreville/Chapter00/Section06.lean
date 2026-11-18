@@ -337,13 +337,37 @@ theorem kVolume_mul_left (S : Matrix (Fin m) (Fin m) ℝ) (A : Matrix (Fin m) (F
         (mulVec_surjective_iff_rank_eq_card.mpr (he.trans (Fintype.card_fin m).symm))
     simp [kVolume, (rank_mul_le_left S A).trans_lt hs, hz]
 
+/-- The compound of a diagonal matrix is diagonal, with the products over its
+increasing coordinate selections on the diagonal. -/
+theorem compound_diagonal {n : ℕ} (k : ℕ) (d : Fin n → K) :
+    compound k (diagonal d) =
+      diagonal (fun s : IndexSequence k n => ∏ j : Fin k, d (s j)) := by
+  classical
+  ext s t
+  by_cases he : s = t
+  · subst t
+    rw [diagonal_apply_eq]
+    change ((diagonal d).submatrix s s).det = _
+    rw [submatrix_diagonal _ _ s.injective, det_diagonal]
+    rfl
+  · rw [diagonal_apply_ne _ he]
+    have hmissing : ∃ i : Fin k, ∀ j : Fin k, s i ≠ t j := by
+      by_contra! hall
+      let S := Finset.univ.map t.toEmbedding
+      have hc : S.card = k := by simp [S]
+      have hs : s = S.orderEmbOfFin hc := Finset.orderEmbOfFin_unique' hc (fun i => by
+        obtain ⟨j, hj⟩ := hall i
+        exact Finset.mem_map.mpr ⟨j, Finset.mem_univ _, hj.symm⟩)
+      have ht : t = S.orderEmbOfFin hc := Finset.orderEmbOfFin_unique' hc (fun j =>
+        Finset.mem_map.mpr ⟨j, Finset.mem_univ _, rfl⟩)
+      exact he (hs.trans ht.symm)
+    obtain ⟨i, hi⟩ := hmissing
+    apply det_eq_zero_of_row_eq_zero i
+    exact fun j => diagonal_apply_ne _ (hi j)
+
 private theorem trace_compound_diagonal (k : ℕ) (f : Fin n → K) :
     trace (compound k (diagonal f)) = ∑ s : IndexSequence k n, ∏ j : Fin k, f (s j) := by
-  apply Finset.sum_congr rfl
-  intro s _
-  change ((diagonal f).submatrix s s).det = ∏ j, f (s j)
-  rw [submatrix_diagonal _ _ s.injective, det_diagonal]
-  rfl
+  rw [compound_diagonal, trace_diagonal]
 
 private noncomputable def indexSequence_restrict {k r n : ℕ} (h : r ≤ n) :
     IndexSequence k r ≃ {s : IndexSequence k n // ∀ j, (s j).val < r} :=
@@ -418,6 +442,16 @@ theorem kVolume_eq_sqrt_sum_singularValues (k : ℕ) (A : Matrix (Fin m) (Fin n)
       (fun j hj => by simp [(A.sortedSingularValues_eq_zero_iff_rank_le j).mpr hj])
   rw [← hs, Real.sqrt_sq_eq_abs, abs_of_nonneg (norm_nonneg _),
     kVolume_eq_frobenius_norm k A hk hr]
+
+/-- Zero singular values can pad the elementary symmetric function for a positive $k$-volume
+out to any common index count at least the rank. -/
+theorem kVolume_eq_sqrt_sum_singularValues_padded (k : ℕ) (A : Matrix (Fin m) (Fin n) ℝ)
+    (hk : 0 < k) (hr : k ≤ A.rank) {q : ℕ} (hq : A.rank ≤ q) :
+    kVolume k A = Real.sqrt (∑ s : IndexSequence k q,
+      ∏ j : Fin k, A.sortedSingularValues (s j).val ^ 2) := by
+  rw [kVolume_eq_sqrt_sum_singularValues k A hk hr,
+    sum_indexSequence_of_zero_tail k A.rank hq (fun j => A.sortedSingularValues j ^ 2)
+      (fun j hj => by simp [(A.sortedSingularValues_eq_zero_iff_rank_le j).mpr hj])]
 
 /-- The three pairs selected from three indices, in the order $(0,1)$,
 $(0,2)$, and $(1,2)$. -/

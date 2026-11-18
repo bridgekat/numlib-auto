@@ -733,4 +733,430 @@ theorem exercise_24 {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ} {A : Matrix (Fin m)
   · rw [exercise_7, ite_eq_right hi]
     exact G.sortedSingularValues_nonneg i
 
+section ComplexVolume
+
+open scoped Matrix.Norms.Frobenius
+
+/-- The complex matrix volume is the square root of the sum of squared
+moduli of its maximal minors, with volume zero for matrices of rank zero. -/
+noncomputable def complexMatrixVolume {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) : ℝ :=
+  if A.rank = 0 then 0 else ‖Chapter00.compound A.rank A‖
+
+private theorem compound_conjTranspose {m n : ℕ} (k : ℕ) (A : Matrix (Fin m) (Fin n) ℂ) :
+    Chapter00.compound k Aᴴ = (Chapter00.compound k A)ᴴ := by
+  ext i j
+  exact det_conjTranspose (A.submatrix j i)
+
+/-- **Exercise 21**, Equation (41), of [benIsrael2003generalized], Chapter 6.
+The volume from the squared moduli of the complex maximal minors is the
+product of the positive singular values. -/
+theorem exercise_21_complex {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) (hA : A.rank ≠ 0) :
+    complexMatrixVolume A = ∏ i : Fin A.rank, A.sortedSingularValues i := by
+  classical
+  let r := A.rank
+  let σ := A.sortedSingularValues
+  let D : Matrix (Fin m) (Fin n) ℂ := rectDiagonal (fun j => (σ j : ℂ))
+  let s₀ : Chapter00.IndexSequence r n := Fin.castLEOrderEmb A.rank_le_width
+  obtain ⟨U, hU, V, hV, h⟩ := A.exists_svd
+  have hAeq : A = U * D * Vᴴ := eq_mul_mul_star_of_star_mul_mul_eq hU hV h
+  have hD : Dᴴ * D = diagonal (fun j : Fin n => ((σ j ^ 2 : ℝ) : ℂ)) := by
+    dsimp only [D]
+    rw [conjTranspose_rectDiagonal_mul_self]
+    apply congrArg diagonal
+    funext j
+    by_cases hj : j.val < m
+    · simp [hj, sq]
+    · simp [hj, σ, (A.sortedSingularValues_eq_zero_iff_rank_le j).mpr
+        (A.rank_le_height.trans (Nat.le_of_not_gt hj))]
+  have hGram : Aᴴ * A = V * (Dᴴ * D) * Vᴴ := by
+    rw [hAeq, conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose]
+    simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Uᴴ U,
+      conjTranspose_mul_self_of_mem_unitaryGroup hU, Matrix.one_mul]
+  have htrace : trace (Chapter00.compound r (Aᴴ * A)) =
+      trace (Chapter00.compound r (Dᴴ * D)) := by
+    rw [hGram, Chapter00.compound_mul, Chapter00.compound_mul, trace_mul_comm,
+      ← Matrix.mul_assoc, ← Chapter00.compound_mul, conjTranspose_mul_self_of_mem_unitaryGroup hV,
+      Chapter00.compound_one, Matrix.one_mul]
+  have hprod : trace (Chapter00.compound r (Dᴴ * D)) = ((∏ i : Fin r, σ i ^ 2 : ℝ) : ℂ) := by
+    rw [hD, Chapter00.compound_diagonal, trace_diagonal]
+    rw [Finset.sum_eq_single s₀]
+    · push_cast
+      rfl
+    · intro s _ hs
+      have hb : ∃ j, r ≤ (s j).val := by
+        by_contra! hall
+        let t : Chapter00.IndexSequence r r :=
+          OrderEmbedding.ofStrictMono (fun j => ⟨(s j).val, hall j⟩) (fun _ _ hlt => s.strictMono hlt)
+        apply hs
+        ext j
+        have hj := DFunLike.congr_fun (Chapter00.indexSequence_self_unique t) j
+        exact congrArg (fun i : Fin r => i.val) hj
+      obtain ⟨j, hj⟩ := hb
+      apply Finset.prod_eq_zero (Finset.mem_univ j)
+      change ((σ (s j) ^ 2 : ℝ) : ℂ) = 0
+      simp [σ, (A.sortedSingularValues_eq_zero_iff_rank_le _).mpr hj]
+    · simp
+  have hsq : (‖Chapter00.compound r A‖ ^ 2 : ℝ) = ∏ i : Fin r, σ i ^ 2 := by
+    apply Complex.ofReal_injective
+    rw [← hprod, ← htrace, Chapter00.compound_mul, compound_conjTranspose]
+    exact frobenius_norm_sq_eq_trace _
+  rw [complexMatrixVolume, ite_eq_right hA]
+  have hnonneg : 0 ≤ ∏ i : Fin r, σ i :=
+    Finset.prod_nonneg fun i _ => A.sortedSingularValues_nonneg i
+  exact (pow_left_inj₀ (norm_nonneg _) hnonneg two_ne_zero).mp (hsq.trans (Finset.prod_pow ..))
+
+/-- **Exercise 21**, geometric interpretation of [benIsrael2003generalized].
+The columns of $V$ are the orthonormal edges of a unit cube in the row space.
+The image edges $AV$ have complex volume equal to the volume of $A$. -/
+theorem exercise_21_complex_geometric {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
+    (V : Matrix (Fin n) (Fin r) ℂ) (hV : Vᴴ * V = 1)
+    (hR : (toEuclideanLin V).range = (toEuclideanLin Aᴴ).range) :
+    complexMatrixVolume (A * V) = complexMatrixVolume A := by
+  classical
+  have hv : V.pinv = Vᴴ := by
+    symm
+    apply V.pinv_unique
+    · rw [Matrix.mul_assoc, hV, Matrix.mul_one]
+    · rw [hV, Matrix.one_mul]
+    · exact isHermitian_mul_conjTranspose_self V
+    · rw [hV]
+      exact isHermitian_one
+  have hP : V * Vᴴ * Aᴴ = Aᴴ := by
+    rw [← hv]
+    exact (V.range_toEuclideanLin_le_iff_mul_pinv_mul_eq Aᴴ).mp hR.ge
+  have hA : (A * V) * Vᴴ = A := by
+    simpa only [conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_assoc] using
+      congrArg conjTranspose hP
+  have hRank : (A * V).rank = A.rank := by
+    refine le_antisymm (rank_mul_le_left _ _) ?_
+    calc
+      _ = ((A * V) * Vᴴ).rank := congrArg Matrix.rank hA.symm
+      _ ≤ _ := rank_mul_le_left _ _
+  by_cases h0 : A.rank = 0
+  · simp [complexMatrixVolume, hRank, h0]
+  let k := A.rank
+  let F := Chapter00.compound k V
+  let C := Chapter00.compound k (A * V)
+  have hF : Fᴴ * F = 1 := by
+    change (Chapter00.compound k V)ᴴ * Chapter00.compound k V = 1
+    rw [← compound_conjTranspose, ← Chapter00.compound_mul, hV, Chapter00.compound_one]
+  have hC : C * Fᴴ = Chapter00.compound k A := by
+    change Chapter00.compound k (A * V) * (Chapter00.compound k V)ᴴ = _
+    rw [← compound_conjTranspose, ← Chapter00.compound_mul, hA]
+  have hnorm : ‖Chapter00.compound k A‖ = ‖C‖ := calc
+    _ = ‖(C * Fᴴ)ᴴ‖ := by rw [← hC, frobenius_norm_conjTranspose]
+    _ = ‖F * Cᴴ‖ := by rw [conjTranspose_mul, conjTranspose_conjTranspose]
+    _ = _ := by rw [frobenius_norm_mul_of_conjTranspose_mul_self_eq_one hF,
+      frobenius_norm_conjTranspose]
+  unfold complexMatrixVolume
+  rw [hRank, ite_eq_right h0, ite_eq_right h0]
+  exact hnorm.symm
+
+end ComplexVolume
+
+section CompoundVolume
+
+open scoped Matrix.Norms.Frobenius
+
+private theorem rank_pinv_eq_rank {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
+    A.pinv.rank = A.rank := by
+  apply le_antisymm
+  · calc
+      A.pinv.rank = (A.pinv * A * A.pinv).rank := congrArg Matrix.rank A.pinv_mul_self_mul_pinv.symm
+      _ ≤ (A.pinv * A).rank := rank_mul_le_left _ _
+      _ ≤ A.rank := rank_mul_le_right _ _
+  · calc
+      A.rank = (A * A.pinv * A).rank := congrArg Matrix.rank A.mul_pinv_mul_self.symm
+      _ ≤ (A * A.pinv).rank := rank_mul_le_left _ _
+      _ ≤ A.pinv.rank := rank_mul_le_right _ _
+
+private theorem rank_le_of_innerInverse {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {G : Matrix (Fin n) (Fin m) ℝ} (hG : A.IsInnerInverse G) : A.rank ≤ G.rank := by
+  calc
+    A.rank = (A * G * A).rank := congrArg Matrix.rank (isInnerInverse_iff.mp hG).symm
+    _ ≤ (A * G).rank := rank_mul_le_left _ _
+    _ ≤ G.rank := rank_mul_le_right _ _
+
+/-- **Exercise 24**, Equation (45), of [benIsrael2003generalized]. The
+Moore–Penrose inverse minimizes each positive $k$-volume among the real
+inner inverses for $k$ no larger than the rank of the original matrix. -/
+theorem exercise_24_kVolume {m n k : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {G : Matrix (Fin n) (Fin m) ℝ} (hG : A.IsInnerInverse G) (hk : 0 < k) (hr : k ≤ A.rank) :
+    Chapter00.kVolume k A.pinv ≤ Chapter00.kVolume k G := by
+  have hr₁ : k ≤ A.pinv.rank := (rank_pinv_eq_rank A).symm ▸ hr
+  have hr₂ : A.pinv.rank ≤ G.rank := (rank_pinv_eq_rank A).symm ▸ rank_le_of_innerInverse hG
+  rw [Chapter00.kVolume_eq_sqrt_sum_singularValues_padded k A.pinv hk hr₁ hr₂,
+    Chapter00.kVolume_eq_sqrt_sum_singularValues k G hk (hr₁.trans hr₂)]
+  apply Real.sqrt_le_sqrt
+  apply Finset.sum_le_sum
+  intro s _
+  apply Finset.prod_le_prod₀ (fun _ _ => sq_nonneg _)
+  intro j _
+  exact (sq_le_sq₀ (A.pinv.sortedSingularValues_nonneg _) (G.sortedSingularValues_nonneg _)).mpr
+    (exercise_24 hG (s j).val)
+
+private theorem exists_indexSequence_containing {k r : ℕ} (hk : 0 < k) (hr : k ≤ r)
+    (i : Fin r) : ∃ (s : Chapter00.IndexSequence k r) (j : Fin k), s j = i := by
+  classical
+  have hcard : k - 1 ≤ ((Finset.univ : Finset (Fin r)).erase i).card := by
+    rw [Finset.card_erase_of_mem (Finset.mem_univ i), Finset.card_univ, Fintype.card_fin]
+    omega
+  obtain ⟨T, hT, hsize⟩ := Finset.exists_subset_card_eq hcard
+  have hiT : i ∉ T := fun h => Finset.notMem_erase i _ (hT h)
+  let S := insert i T
+  have hS : S.card = k := by
+    rw [show S = insert i T from rfl, Finset.card_insert_of_notMem hiT, hsize]
+    omega
+  have hi : i ∈ Set.range (S.orderEmbOfFin hS) := by
+    rw [Finset.range_orderEmbOfFin]
+    exact Finset.mem_insert_self _ _
+  obtain ⟨j, hj⟩ := hi
+  exact ⟨S.orderEmbOfFin hS, j, hj⟩
+
+private theorem singularValues_eq_of_kVolume_eq {m n k : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {G : Matrix (Fin n) (Fin m) ℝ} (hG : A.IsInnerInverse G) (hk : 0 < k) (hr : k ≤ A.rank)
+    (hVol : Chapter00.kVolume k G = Chapter00.kVolume k A.pinv) :
+    ∀ i, G.sortedSingularValues i = A.pinv.sortedSingularValues i := by
+  classical
+  have hr₁ : k ≤ A.pinv.rank := (rank_pinv_eq_rank A).symm ▸ hr
+  have hr₂ : A.pinv.rank ≤ G.rank := (rank_pinv_eq_rank A).symm ▸ rank_le_of_innerInverse hG
+  let left (s : Chapter00.IndexSequence k G.rank) :=
+    ∏ j : Fin k, A.pinv.sortedSingularValues (s j).val ^ 2
+  let right (s : Chapter00.IndexSequence k G.rank) :=
+    ∏ j : Fin k, G.sortedSingularValues (s j).val ^ 2
+  have hterm (s : Chapter00.IndexSequence k G.rank) (j : Fin k) :
+      A.pinv.sortedSingularValues (s j).val ^ 2 ≤ G.sortedSingularValues (s j).val ^ 2 :=
+    (sq_le_sq₀ (A.pinv.sortedSingularValues_nonneg _) (G.sortedSingularValues_nonneg _)).mpr
+      (exercise_24 hG (s j).val)
+  have hle (s : Chapter00.IndexSequence k G.rank) : left s ≤ right s :=
+    Finset.prod_le_prod₀ (fun _ _ => sq_nonneg _) (fun j _ => hterm s j)
+  have hsum : (∑ s, left s) = ∑ s, right s := by
+    rw [Chapter00.kVolume_eq_sqrt_sum_singularValues_padded k A.pinv hk hr₁ hr₂,
+      Chapter00.kVolume_eq_sqrt_sum_singularValues k G hk (hr₁.trans hr₂)] at hVol
+    have he := congrArg (fun x : ℝ => x ^ 2) hVol.symm
+    change Real.sqrt (∑ s, left s) ^ 2 = Real.sqrt (∑ s, right s) ^ 2 at he
+    rwa [Real.sq_sqrt (Finset.sum_nonneg fun _ _ => Finset.prod_nonneg fun _ _ => sq_nonneg _),
+      Real.sq_sqrt (Finset.sum_nonneg fun _ _ => Finset.prod_nonneg fun _ _ => sq_nonneg _)] at he
+  intro i
+  apply le_antisymm _ (exercise_24 hG i)
+  by_cases hi : i < G.rank
+  · by_contra! hlt
+    obtain ⟨s, j, hj⟩ := exists_indexSequence_containing hk (hr₁.trans hr₂) ⟨i, hi⟩
+    have hj' : (s j).val = i := congrArg Fin.val hj
+    have hprod : left s < right s := by
+      by_cases hpos : ∀ t : Fin k, 0 < A.pinv.sortedSingularValues (s t).val ^ 2
+      · refine Finset.prod_lt_prod₀ (fun t _ => hpos t) (fun t _ => hterm s t)
+          ⟨j, Finset.mem_univ _, ?_⟩
+        rw [hj']
+        exact (sq_lt_sq₀ (A.pinv.sortedSingularValues_nonneg _) (G.sortedSingularValues_nonneg _)).mpr hlt
+      · push Not at hpos
+        obtain ⟨t, ht⟩ := hpos
+        have hz : left s = 0 := Finset.prod_eq_zero (Finset.mem_univ t)
+          (le_antisymm ht (sq_nonneg _))
+        rw [hz]
+        exact Finset.prod_pos fun t _ => sq_pos_of_ne_zero fun he =>
+          (not_le_of_gt (s t).isLt) ((G.sortedSingularValues_eq_zero_iff_rank_le _).mp he)
+    have hltSum := Finset.sum_lt_sum (fun t _ => hle t) ⟨s, Finset.mem_univ _, hprod⟩
+    rw [hsum] at hltSum
+    exact (lt_irrefl _ hltSum)
+  · rw [(G.sortedSingularValues_eq_zero_iff_rank_le i).mpr (not_lt.mp hi)]
+    exact A.pinv.sortedSingularValues_nonneg _
+
+private theorem innerInverse_eq_pinv_of_frobenius_sq_eq {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {G : Matrix (Fin n) (Fin m) ℝ} (hG : A.IsInnerInverse G) (hEq : ‖G‖ ^ 2 = ‖A.pinv‖ ^ 2) :
+    G = A.pinv := by
+  let X := A.pinv
+  let D := G - X
+  let P := X * A
+  let Q := A * X
+  have hP : Pᴴ = P := A.isHermitian_pinv_mul.eq
+  have hQ : Qᴴ = Q := A.isHermitian_mul_pinv.eq
+  have hX : P * X * Q = X := by simp only [P, Q, X, ← Matrix.mul_assoc, A.pinv_mul_self_mul_pinv]
+  have hG₀ : P * G * Q = X := calc
+    _ = X * (A * G * A) * X := by simp only [P, Q, Matrix.mul_assoc]
+    _ = _ := by rw [isInnerInverse_iff.mp hG, A.pinv_mul_self_mul_pinv]
+  have hD : P * D * Q = 0 := by rw [show D = G - X from rfl, Matrix.mul_sub, Matrix.sub_mul,
+    hX, hG₀, sub_self]
+  have ht : trace (Xᴴ * D) = 0 := calc
+    _ = trace ((P * X * Q)ᴴ * D) := congrArg (fun Y => trace (Yᴴ * D)) hX.symm
+    _ = trace (Q * (Xᴴ * P * D)) := by
+      simp only [conjTranspose_mul, hP, hQ, Matrix.mul_assoc]
+    _ = trace (Xᴴ * (P * D * Q)) := by
+      rw [trace_mul_comm]
+      simp only [Matrix.mul_assoc]
+    _ = _ := by rw [hD, Matrix.mul_zero, trace_zero]
+  have hs := frobenius_norm_add_sq_of_trace_eq_zero ht
+  have hAdd : X + D = G := by
+    change X + (G - X) = G
+    abel
+  rw [hAdd, hEq] at hs
+  have hz : ‖D‖ ^ 2 = 0 := by linarith
+  exact sub_eq_zero.mp (norm_eq_zero.mp ((pow_eq_zero_iff (by decide : (2 : ℕ) ≠ 0)).mp hz))
+
+/-- **Exercise 25** of [benIsrael2003generalized]. Equality in the
+minimum positive $k$-volume inequality characterizes the Moore–Penrose inverse. -/
+theorem exercise_25 {m n k : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
+    {G : Matrix (Fin n) (Fin m) ℝ} (hG : A.IsInnerInverse G) (hk : 0 < k) (hr : k ≤ A.rank) :
+    Chapter00.kVolume k G = Chapter00.kVolume k A.pinv ↔ G = A.pinv := by
+  constructor
+  · intro h
+    have hσ := singularValues_eq_of_kVolume_eq hG hk hr h
+    apply innerInverse_eq_pinv_of_frobenius_sq_eq hG
+    simp only [frobenius_norm_sq_eq_sum_sq_sortedSingularValues, hσ]
+  · rintro rfl
+    rfl
+
+/-- **Exercise 22** of [benIsrael2003generalized]. The rank of the $k$th
+compound is the binomial coefficient of the original rank, and its singular
+values, counted with their zero terms, are the products indexed by $k$ columns. -/
+theorem exercise_22 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
+    let C := Chapter00.compound k A
+    C.rank = A.rank.choose k ∧
+      ∃ e : Chapter00.IndexSequence k n ≃ Chapter00.IndexSequence k n,
+        ∀ s, C.colSingularValues (e s) = ∏ j : Fin k, A.sortedSingularValues (s j).val := by
+  intro C
+  classical
+  refine ⟨Chapter00.compound_rank k A, ?_⟩
+  obtain ⟨U, hU, V, hV, h⟩ := A.exists_svd
+  let σ := A.sortedSingularValues
+  let D : Matrix (Fin m) (Fin n) ℝ := rectDiagonal σ
+  let W := Chapter00.compound k V
+  have hV₁ : Vᵀ * V = 1 := Matrix.mem_unitaryGroup_iff'.mp hV
+  have hW : W ∈ unitaryGroup (Chapter00.IndexSequence k n) ℝ := by
+    apply Matrix.mem_unitaryGroup_iff'.mpr
+    change Wᵀ * W = 1
+    rw [show W = Chapter00.compound k V from rfl, ← Chapter00.compound_transpose,
+      ← Chapter00.compound_mul, hV₁, Chapter00.compound_one]
+  have hA : A = U * D * Vᵀ := eq_mul_mul_star_of_star_mul_mul_eq hU hV h
+  have hU₁ : Uᵀ * U = 1 := Matrix.mem_unitaryGroup_iff'.mp hU
+  have hD : Dᵀ * D = diagonal (fun i : Fin n => σ i ^ 2) := by
+    rw [← conjTranspose_eq_transpose_of_trivial, conjTranspose_rectDiagonal_mul_self]
+    apply congrArg diagonal
+    funext j
+    by_cases hj : j.val < m
+    · simp [hj, pow_two]
+    · simp [hj, σ, (A.sortedSingularValues_eq_zero_iff_rank_le j).mpr
+        (A.rank_le_height.trans (Nat.le_of_not_gt hj))]
+  have hG : Aᵀ * A = V * (Dᵀ * D) * Vᵀ := by
+    rw [hA, transpose_mul, transpose_mul, transpose_transpose]
+    simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Uᵀ U, hU₁, Matrix.one_mul]
+  apply exists_equiv_colSingularValues_eq_of_conjTranspose_mul_self_eq hW
+    (fun s => Finset.prod_nonneg fun _ _ => A.sortedSingularValues_nonneg (s _).val)
+  rw [conjTranspose_eq_transpose_of_trivial, show C = Chapter00.compound k A from rfl,
+    ← Chapter00.compound_transpose, ← Chapter00.compound_mul, hG, hD,
+    Chapter00.compound_mul, Chapter00.compound_mul, Chapter00.compound_transpose,
+    Chapter00.compound_diagonal]
+  congr 2
+  funext s
+  simp only [RCLike.ofReal_real_eq_id, id_eq, Finset.prod_pow, σ]
+
+private theorem wedgeCoordinates_smul_each {r n : ℕ} (a : Fin r → ℝ) (v : Fin r → Fin n → ℝ) :
+    Chapter00.wedgeCoordinates r (fun j => a j • v j) =
+      (∏ j, a j) • Chapter00.wedgeCoordinates r v := by
+  simp only [Chapter00.wedgeCoordinates, AlternatingMap.map_smul_univ, map_smul, Finsupp.coe_smul]
+
+private theorem pinv_mulVec_of_positive_singular_pair {m n : ℕ}
+    (A : Matrix (Fin m) (Fin n) ℝ) {u : Fin m → ℝ} {v : Fin n → ℝ} {s : ℝ}
+    (hs : s ≠ 0) (h : A *ᵥ v = s • u) (h' : Aᵀ *ᵥ u = s • v) :
+    A.pinv *ᵥ u = s⁻¹ • v := by
+  have hV : (A.pinv * A) *ᵥ v = v := by
+    apply (smul_right_injective (Fin n → ℝ) hs)
+    have he := congrArg ((A.pinv * A) *ᵥ ·) h'.symm
+    rw [mulVec_smul, mulVec_mulVec, ← conjTranspose_eq_transpose_of_trivial,
+      A.pinv_mul_self_mul_conjTranspose, conjTranspose_eq_transpose_of_trivial, h'] at he
+    exact he
+  have hU : u = s⁻¹ • (A *ᵥ v) := by rw [h, inv_smul_smul₀ hs]
+  calc
+    _ = A.pinv *ᵥ (s⁻¹ • (A *ᵥ v)) := congrArg (A.pinv *ᵥ ·) hU
+    _ = _ := by rw [mulVec_smul, mulVec_mulVec, hV]
+
+/-- **Exercise 23**, Equations (42), of [benIsrael2003generalized]. The
+top compound and the top compound of the pseudoinverse multiply the paired
+singular basis wedges by the volume and its reciprocal. -/
+theorem exercise_23 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (hA : A.rank ≠ 0)
+    (u : Fin A.rank → Fin m → ℝ) (v : Fin A.rank → Fin n → ℝ)
+    (hAu : ∀ j, A *ᵥ v j = A.sortedSingularValues j • u j)
+    (hAv : ∀ j, Aᵀ *ᵥ u j = A.sortedSingularValues j • v j) :
+    Chapter00.compound A.rank A *ᵥ Chapter00.wedgeCoordinates A.rank v =
+      Chapter00.matrixVolume A • Chapter00.wedgeCoordinates A.rank u ∧
+    Chapter00.compound A.rank A.pinv *ᵥ Chapter00.wedgeCoordinates A.rank u =
+      (Chapter00.matrixVolume A)⁻¹ • Chapter00.wedgeCoordinates A.rank v := by
+  have hσ (j : Fin A.rank) : A.sortedSingularValues j ≠ 0 := fun h =>
+    (not_le_of_gt j.isLt) ((A.sortedSingularValues_eq_zero_iff_rank_le _).mp h)
+  constructor
+  · rw [Chapter00.compound_mulVec_wedgeCoordinates, exercise_21_real A hA]
+    simp_rw [hAu]
+    exact wedgeCoordinates_smul_each (fun j => A.sortedSingularValues j) u
+  · rw [Chapter00.compound_mulVec_wedgeCoordinates, exercise_21_real A hA, ← Finset.prod_inv_distrib]
+    simp_rw [fun j => pinv_mulVec_of_positive_singular_pair A (hσ j) (hAu j) (hAv j)]
+    exact wedgeCoordinates_smul_each (fun j => (A.sortedSingularValues j)⁻¹) v
+
+/-- The compound preserves all four Penrose equations, so the Moore–Penrose
+inverse commutes with taking compounds. This includes the top compound in
+**Exercise 23**. -/
+theorem compound_pinv {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
+    Chapter00.compound k A.pinv = (Chapter00.compound k A).pinv := by
+  classical
+  apply (Chapter00.compound k A).pinv_unique
+  · rw [← Chapter00.compound_mul, ← Chapter00.compound_mul, A.mul_pinv_mul_self]
+  · rw [← Chapter00.compound_mul, ← Chapter00.compound_mul, A.pinv_mul_self_mul_pinv]
+  · change (Chapter00.compound k A * Chapter00.compound k A.pinv)ᴴ = _
+    rw [← Chapter00.compound_mul, conjTranspose_eq_transpose_of_trivial,
+      ← Chapter00.compound_transpose, ← conjTranspose_eq_transpose_of_trivial,
+      A.isHermitian_mul_pinv.eq]
+  · change (Chapter00.compound k A.pinv * Chapter00.compound k A)ᴴ = _
+    rw [← Chapter00.compound_mul, conjTranspose_eq_transpose_of_trivial,
+      ← Chapter00.compound_transpose, ← conjTranspose_eq_transpose_of_trivial,
+      A.isHermitian_pinv_mul.eq]
+
+/-- The top compound has rank one and its sole nonzero singular value is
+the volume of the original matrix, completing **Exercise 22**. -/
+theorem exercise_22_top {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (hA : A.rank ≠ 0) :
+    let C := Chapter00.compound A.rank A
+    C.rank = 1 ∧ ∃ j, C.colSingularValues j = Chapter00.matrixVolume A ∧
+      Chapter00.matrixVolume A ≠ 0 ∧ ∀ i ≠ j, C.colSingularValues i = 0 := by
+  intro C
+  obtain ⟨hR, e, he⟩ := exercise_22 A A.rank
+  let s₀ : Chapter00.IndexSequence A.rank n := Fin.castLEOrderEmb A.rank_le_width
+  have hp (j : Fin A.rank) : A.sortedSingularValues j ≠ 0 := fun h =>
+    (not_le_of_gt j.isLt) ((A.sortedSingularValues_eq_zero_iff_rank_le _).mp h)
+  refine ⟨hR.trans (Nat.choose_self _), e s₀, ?_, ?_, ?_⟩
+  · rw [he, exercise_21_real A hA]
+    rfl
+  · rw [exercise_21_real A hA]
+    exact Finset.prod_ne_zero_iff.mpr fun i _ => hp i
+  · intro i hi
+    rw [← e.apply_symm_apply i, he]
+    have hn : e.symm i ≠ s₀ := fun h => hi ((e.apply_symm_apply i).symm.trans (congrArg e h))
+    have hb : ∃ j, A.rank ≤ (e.symm i j).val := by
+      by_contra! hj
+      let s : Chapter00.IndexSequence A.rank A.rank :=
+        OrderEmbedding.ofStrictMono (fun j => ⟨(e.symm i j).val, hj j⟩)
+          (fun _ _ h => (e.symm i).strictMono h)
+      apply hn
+      ext j
+      exact congrArg (fun a : Fin A.rank => a.val)
+        (DFunLike.congr_fun (Chapter00.indexSequence_self_unique s) j)
+    obtain ⟨j, hj⟩ := hb
+    exact Finset.prod_eq_zero (Finset.mem_univ j)
+      ((A.sortedSingularValues_eq_zero_iff_rank_le _).mpr hj)
+
+/-- The volume of the pseudoinverse of a positive-rank real matrix is the
+reciprocal of its volume, as in **Exercise 23**. -/
+theorem matrixVolume_pinv {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (hA : A.rank ≠ 0) :
+    Chapter00.matrixVolume A.pinv = (Chapter00.matrixVolume A)⁻¹ := by
+  have hR := rank_pinv_eq_rank A
+  rw [exercise_21_real A.pinv (hR.symm ▸ hA), exercise_21_real A hA, ← Finset.prod_inv_distrib, hR]
+  calc
+    _ = ∏ i : Fin A.rank, (A.sortedSingularValues (Fin.rev i))⁻¹ := by
+      apply Finset.prod_congr rfl
+      intro i _
+      rw [exercise_7 A, ite_eq_left i.isLt]
+      congr 2
+      rw [Fin.val_rev]
+      omega
+    _ = _ := (Equiv.prod_comp Fin.revPerm (fun i : Fin A.rank => (A.sortedSingularValues i)⁻¹))
+
+end CompoundVolume
+
 end BenIsraelGreville.Chapter06

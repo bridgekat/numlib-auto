@@ -78,23 +78,15 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 21, Equation (41), real c
 
 [[node]]
 id = "exercise_21_complex"
-kind = "theorem"
-desc = '''Extend the volume defined by squared moduli of maximal minors to complex matrices, and prove the product formula and the stated root-volume interpretation.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 21, Equation (41)"
 
 [[node]]
 id = "exercise_22"
-kind = "theorem"
-desc = '''The singular values of the k-th compound are the k-fold products of the singular values of A. The top compound has rank one with its singular value equal to the volume.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 22"
-deps = ["exercise_21_real"]
 
 [[node]]
 id = "exercise_23"
-kind = "theorem"
-desc = '''The top compound acts on the Plücker representatives of the paired singular bases by the volume, and the top compound of the Moore–Penrose inverse acts by its reciprocal.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 23, Equation (42)"
-deps = ["exercise_22"]
 
 [[node]]
 id = "exercise_24"
@@ -102,10 +94,7 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 24, Equations (43)–(44)
 
 [[node]]
 id = "exercise_25"
-kind = "theorem"
-desc = '''The Moore–Penrose inverse uniquely minimizes each k-volume for positive k at most the rank of A among all real inner inverses.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 25"
-deps = ["exercise_24_kVolume"]
 
 [[node]]
 id = "exercise_13_reciprocal_taylor"
@@ -125,7 +114,24 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 16, Hermitian products an
 
 [[node]]
 id = "exercise_24_kVolume"
-kind = "theorem"
-desc = "Each positive-order real k-volume of an inner inverse is at least the corresponding volume of the Moore–Penrose inverse, for k at most the rank of A."
 source = "Ben-Israel and Greville, Chapter 6, Exercise 24, Equation (45)"
-deps = ["exercise_24"]
+
+[[node]]
+id = "complexMatrixVolume"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 21, complex volume"
+
+[[node]]
+id = "exercise_21_complex_geometric"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 21, root-volume interpretation"
+
+[[node]]
+id = "exercise_22_top"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 22, sole nonzero singular value"
+
+[[node]]
+id = "compound_pinv"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 23, compound pseudoinverse"
+
+[[node]]
+id = "matrixVolume_pinv"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 23, reciprocal volume"
