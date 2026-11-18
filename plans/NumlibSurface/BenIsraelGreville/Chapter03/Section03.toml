@@ -10,4 +10,40 @@ source = 'Ben-Israel and Greville, Ch. 3, Theorem 3'
 
 [[node]]
 id = 'tendsto_tikhonov'
-source = 'Ben-Israel and Greville, Ch. 3, §3, Exercise 25'
+source = 'Ben-Israel and Greville, Ch. 3, §3, Exercise 25, positive real parameter'
+
+[[node]]
+id = "exercise_3_25_complex"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 25, full complex punctured-neighborhood limit"
+
+[[node]]
+id = "exercise_3_26"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 26, shifted Gram inverse limit on the adjoint range"
+
+[[node]]
+id = "exercise_3_27"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 27, spectral-norm convergence bound"
+
+[[node]]
+id = "exercise_3_28"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 28, Tikhonov objective evaluated on the regularized solution"
+
+[[node]]
+id = "IsBallLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercises 29–30, least squares on a closed norm ball"
+
+[[node]]
+id = "exercise_3_29"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 29, existence and uniqueness of the positive regularization parameter in the active regime"
+
+[[node]]
+id = "exercise_3_30_inactive"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 30, full constrained solution set when the reciprocal solution is feasible"
+
+[[node]]
+id = "exercise_3_30_inactive_unique"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 30, exact uniqueness criterion in the inactive regime"
+
+[[node]]
+id = "exercise_3_30_active"
+source = "Ben-Israel and Greville, Ch. 3, §3, Exercise 30, unique active minimizer"

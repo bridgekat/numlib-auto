@@ -11,3 +11,84 @@ source = 'Ben-Israel and Greville, Ch. 3, Theorem 1'
 [[node]]
 id = 'corollary_1'
 source = 'Ben-Israel and Greville, Ch. 3, Corollary 1'
+
+[[node]]
+id = "exercise_3_1"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 1, normal equation characterization"
+
+[[node]]
+id = "exercise_3_2"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 2, exact fit for consistent data"
+
+[[node]]
+id = "exercise_3_3"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 3, solutions through a Gram inner inverse"
+
+[[node]]
+id = "exercise_3_4"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 4, rank and rounding example"
+
+[[node]]
+id = "exercise_3_5"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 5, (12)–(13), reduction of the normal equation"
+
+[[node]]
+id = "exercise_3_5_reduction"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 5, (13), exact criterion for solving the top block"
+
+[[node]]
+id = "exercise_3_6"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 6, equations for an exact residual correction"
+
+[[node]]
+id = "exercise_3_7"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 7, augmented normal equation"
+
+[[node]]
+id = "exercise_3_8"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 8, simultaneous least squares"
+
+[[node]]
+id = "exercise_3_9"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 9, aggregate least squares"
+
+[[node]]
+id = "IsConstrainedLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 10, (15)–(16), constrained minimization"
+
+[[node]]
+id = "exercise_3_10"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 10, (15)–(16), full affine solution family"
+
+[[node]]
+id = "exactSolution_iff_innerParameter"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 11, (18), parametrize the feasible affine subspace"
+
+[[node]]
+id = "exercise_3_11"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 11, (17)–(19), necessary and sufficient conditions"
+
+[[node]]
+id = "exercise_3_11_residual"
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 11, elimination of the residual from (17)–(19)"
+
+[[node]]
+id = "exercise_3_4_double_then_single_rounding"
+kind = "theorem"
+desc = "Specify the machine arithmetic and prove that double-precision Gram multiplication followed by single-precision rounding maps both diagonal entries to 1 under the stated smallness condition. The rank loss and wrong-solution consequences of the entrywise rounding hypotheses are proved."
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 4, machine sensitivity"
+deps = ["exercise_3_4"]
+
+[[node]]
+id = "exercise_3_5_augmented_gauss_jordan"
+kind = "theorem"
+desc = "Formalize the displayed augmented matrix reduction by row operations, with a nonzero pivot condition wherever a division occurs. Equations (12)–(13) and the exact criterion for the top block to solve the reduced normal equation are proved."
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 5, augmented Gauss–Jordan calculation"
+deps = ["exercise_3_5", "exercise_3_5_reduction"]
+
+[[node]]
+id = "exercise_3_6_finite_precision_refinement"
+kind = "theorem"
+desc = "Model the mixed-precision residual and the reuse of the elimination factors for correction solves. The next iterate is proved exact given an exact residual solve. The printed numerical stopping suggestion has no specified error model or convergence bound."
+source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 6, finite-precision iterative refinement"
+deps = ["exercise_3_6"]

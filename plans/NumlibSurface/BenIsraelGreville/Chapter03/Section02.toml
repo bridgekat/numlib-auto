@@ -19,3 +19,91 @@ source = 'Ben-Israel and Greville, Ch. 3, Corollary 3'
 [[node]]
 id = 'IsMinNormSolution'
 source = 'Ben-Israel and Greville, Ch. 3, §2'
+
+[[node]]
+id = "exercise_3_12"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 12, full solution family, fit and residual of the Hermite example"
+
+[[node]]
+id = "exercise_3_13"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 13, reciprocal matrix of the Hermite example"
+
+[[node]]
+id = "exercise_3_14"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 14, characterize reciprocal matrices by minimizing solutions"
+
+[[node]]
+id = "matrixEuclideanVec"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 15, (36), column vectorization"
+
+[[node]]
+id = "exercise_3_15"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 15, (35)–(36), Kronecker reduction and reciprocal"
+
+[[node]]
+id = "IsInnerInverseProductInvariant"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 16, invariance under the choice of inner inverse"
+
+[[node]]
+id = "exercise_3_16"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 16, exact invariance criterion including zero factors"
+
+[[node]]
+id = "exercise_3_17"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 17, least-squares and minimum-norm matrix solutions"
+
+[[node]]
+id = "exercise_3_17_minNorm"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 17, reciprocal is the unique minimum-norm matrix solution"
+
+[[node]]
+id = "IsMatrixLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 18, Frobenius least-squares objective"
+
+[[node]]
+id = "IsMinNormMatrixLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 18, minimum Frobenius norm among least-squares solutions"
+
+[[node]]
+id = "exercise_3_18"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 18, unique minimum-norm two-sided fit"
+
+[[node]]
+id = "exercise_3_19"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 19, conjugate transpose of the reflexive inverse from an inner inverse"
+
+[[node]]
+id = "IsRestrictedLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 20, least-squares solution restricted to a subspace"
+
+[[node]]
+id = "IsRestrictedMinNormSolution"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 21, minimum-norm exact solution restricted to a subspace"
+
+[[node]]
+id = "IsRestrictedMinNormLeastSquaresSolution"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 22, minimum-norm restricted least-squares solution"
+
+[[node]]
+id = "exercise_3_20"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 20, characterization by two Penrose equations for the restricted problem"
+
+[[node]]
+id = "exercise_3_21"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 21, characterization by two Penrose equations for minimum norm"
+
+[[node]]
+id = "restrictedMinNormLeastSquaresSolution_iff"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 22, unique solution of the restricted problem"
+
+[[node]]
+id = "exercise_3_22"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 22, characterize the reciprocal of the restricted problem"
+
+[[node]]
+id = "exercise_3_23"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 23, generalized equations with projected solutions"
+
+[[node]]
+id = "exercise_3_24"
+source = "Ben-Israel and Greville, Ch. 3, §2, Exercise 24, Albert’s formula with the range projection"
