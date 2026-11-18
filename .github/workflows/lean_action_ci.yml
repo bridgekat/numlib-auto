@@ -5,16 +5,14 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read # Read access to repository contents
-  pages: write # Write access to GitHub Pages
-  id-token: write # Write access to ID tokens
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-24.04
-
     steps:
       - uses: actions/checkout@v5
         with:
@@ -27,40 +25,54 @@ jobs:
 
       - uses: leanprover/lean-action@v1
 
+      - name: Build API docs
+        if: github.event_name == 'push'
+        uses: leanprover-community/docgen-action@main
+        with:
+          api-docs: true
+          blueprint: false
+          build-page: false
+          deploy: false
+          references: references/references.bib
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22 # vite 8 wants ^20.19 || >=22.12
           cache: npm
           cache-dependency-path: .explorer/package-lock.json
 
-      # The site is `docs/`: the graph explorer is its front page and the API docs sit under
-      # it, at `docs/docs/`, where docgen-action puts them. This step has to run before that
-      # action, because the action is what uploads `docs/` -- anything written into it
-      # afterwards is built but never published, and the job still goes green.
-      #
-      # The graph is this commit's, exported here and baked into the page, so the page is
-      # pinned to it rather than waiting for a file to be dropped on it: every declaration of
-      # the project, with the planned ones marked, and with its source lines, characters and
-      # term size (`--metrics`) for the explorer's Count dropdown. The tracker reads the oleans
-      # lean-action has just built, and refreshes its cache itself; `lake exe` sets
-      # LEAN_SRC_PATH, which is how it finds the sources it counts characters in.
-      - env:
-          # An absolute path, since the npm build runs from the explorer's own checkout,
-          # and a docs root relative to where the page is published, so that the links
-          # hold wherever the site is served from.
-          TRACKER_GRAPH: ${{ github.workspace }}/numlib.json
-          TRACKER_DOCS: docs
-          TRACKER_REFERENCES: ${{ github.workspace }}/references/references.bib
+      - name: Export dependency graph
         run: |
           lake exe tracker check
           lake exe tracker graph --all --metrics > numlib.json
-          (cd .explorer && npm ci && npm run build)
-          mkdir -p docs
-          cp .explorer/dist/index.html docs/index.html
 
-      - uses: leanprover-community/docgen-action@main
+      # docgen-action puts the API docs in docs/docs/. The explorer is the site front page.
+      # On pushes, use doc-gen4's generated citation tags. Other events build with BibTeX keys.
+      - name: Build graph explorer
+        working-directory: .explorer
+        env:
+          TRACKER_GRAPH: ${{ github.workspace }}/numlib.json
+          TRACKER_DOCS: docs
+          TRACKER_REFERENCES: ${{ github.workspace }}/${{ github.event_name == 'push' && 'docbuild/.lake/build/doc-data/references.json' || 'references/references.bib' }}
+        run: |
+          npm ci
+          npm run build
+          mkdir -p ../docs
+          cp dist/index.html ../docs/index.html
+
+      - name: Upload combined site
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v5
         with:
-          api-docs: true
-          blueprint: false
-          build-page: false # `docs/` is ours, not a Jekyll site
-          references: references/references.bib
+          path: docs
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
