@@ -1,54 +1,119 @@
 namespace = "BenIsraelGreville.Chapter07"
 
-desc = '''Prescribed-range outer inverses and their specializations. Delegate to the earlier range-and-kernel theorem, the maximal-pivot formula, and the spectral inverse constructions.'''
-
 [[node]]
 id = "outerInverse_eq_of_range_ker"
-kind = "theorem"
-desc = '''If nonzero X is an outer inverse of A, range U = range X and ker V = ker X, then rank U = rank V = rank(VAU), and X = UYV for every inner inverse Y of VAU.'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (17)"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (17)"
 
 [[node]]
 id = "pinv_eq_zlobec"
-kind = "theorem"
-desc = '''For every inner inverse Y of AᴴAAᴴ one has A† = AᴴYAᴴ.'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (18), Zlobec formula"
-deps = ["outerInverse_eq_of_range_ker"]
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (18)"
+
+[[node]]
+id = "range_ker_drazinInverse_eq_pow"
+source = "Ben-Israel and Greville, Chapter 7, §4, stable range and kernel for equation (4.48)"
 
 [[node]]
 id = "drazin_eq_greville"
-kind = "theorem"
-desc = '''If l is positive and at least the matrix index, Aᴰ = A^l Y A^l for every inner inverse Y of A^(2l+1).'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (4.48), Greville formula"
-deps = ["outerInverse_eq_of_range_ker"]
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (4.48)"
 
 [[node]]
 id = "pinv_eq_noble"
-kind = "theorem"
-desc = '''With P A Q = [I; S] A₁₁ [I T] and nonsingular maximal pivot A₁₁, express A† as Q[I;Tᴴ](I+TTᴴ)⁻¹ A₁₁⁻¹ (I+SᴴS)⁻¹[I Sᴴ]P, for row and column permutations P and Q.'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (5.28), Noble formula"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (5.28), in pivot coordinates"
 
 [[node]]
 id = "pinv_eq_macDuffee"
-kind = "theorem"
-desc = '''For a full rank factorization A = FG, A† = Gᴴ(FᴴAGᴴ)⁻¹Fᴴ.'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (1.17), MacDuffee formula"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (1.17)"
 
 [[node]]
 id = "groupInverse_eq_cline"
-kind = "theorem"
-desc = '''For a full rank factorization A = FG with GF nonsingular, the group inverse is F((GF)⁻¹)^2 G.'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (4.22), Cline formula for the group inverse"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (4.22)"
+
+[[node]]
+id = "ClineRankChain"
+source = "Ben-Israel and Greville, Chapter 7, §4, equations (4.46a)–(4.46b)"
+
+[[node]]
+id = "ClineRankChain.left"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (4.46c), product of the left factors"
+
+[[node]]
+id = "ClineRankChain.right"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (4.46c), product of the right factors"
+
+[[node]]
+id = "ClineRankChain.pow_eq"
+source = "Ben-Israel and Greville, Chapter 7, §4, factorization of powers along Cline's chain"
+
+[[node]]
+id = "ClineRankChain.rank_pow_eq"
+source = "Ben-Israel and Greville, Chapter 7, §4, rank stabilization in Cline's chain"
+
+[[node]]
+id = "ClineRankChain.exists_chain"
+source = "Ben-Israel and Greville, Chapter 7, §4, construction of Cline's chain"
 
 [[node]]
 id = "drazin_eq_cline"
-kind = "theorem"
-desc = '''For positive index k, recursively factor A = B₁G₁ and GᵢBᵢ = Bᵢ₊₁Gᵢ₊₁ with full-rank factors. The last GₖBₖ is nonsingular and Aᴰ = B₁⋯Bₖ ((GₖBₖ)⁻¹)^(k+1) Gₖ⋯G₁.'''
-source = "Ben-Israel and Greville, Ch. 7, §4, (4.46a)–(4.46c), Cline method"
+source = "Ben-Israel and Greville, Chapter 7, §4, equation (4.46c)"
+
+[[node]]
+id = "exercise_6_block"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 6, equations (19)–(20), block elimination"
+
+[[node]]
+id = "exercise_6_elementary_operations"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 6, elementary-operation realization"
 
 [[node]]
 id = "pinv_eq_of_thinSVD"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 7, equations (6.30a)–(6.30b)"
+
+[[node]]
+id = "exercise_8_gramSchmidt"
 kind = "theorem"
-desc = '''For a reduced SVD A = UᵣDᵣVᵣᴴ with all singular values in Dᵣ positive, prove A† = VᵣDᵣ⁻¹ Uᵣᴴ = Vᵣ(UᵣᴴAVᵣ)⁻¹ Uᵣᴴ and obtain the second equality from (17).'''
-source = "Ben-Israel and Greville, Ch. 7, §4, Exercise 7, (6.30a)–(6.30b)"
-deps = ["outerInverse_eq_of_range_ker"]
+desc = '''Formalize the modified Gram–Schmidt process for computing the pseudoinverse, with the update of the inverse factors at each orthogonalization step.'''
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 8"
+
+[[node]]
+id = "exercise_7_5_inverse"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercises 9–10, exact inverse"
+
+[[node]]
+id = "exercise_9_zlobecInnerInverse"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 9(a), compressed inner inverse"
+
+[[node]]
+id = "exercise_9_zlobec"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 9(a)"
+
+[[node]]
+id = "exercise_9_noble"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 9(b)"
+
+[[node]]
+id = "exercise_9_macDuffee"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 9(c)"
+
+[[node]]
+id = "exercise_10_group"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 10, group inverse"
+
+[[node]]
+id = "exercise_10_cline"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 10(a)"
+
+[[node]]
+id = "exercise_10_powerInnerInverse"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 10(b), inner inverse of the third power"
+
+[[node]]
+id = "exercise_10_power"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 10(b)"
+
+[[node]]
+id = "exercise_7_5_leftFactor"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercises 9(c) and 10(a), left rank factor"
+
+[[node]]
+id = "exercise_7_5_rightFactor"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercises 9(c) and 10(a), right rank factor"

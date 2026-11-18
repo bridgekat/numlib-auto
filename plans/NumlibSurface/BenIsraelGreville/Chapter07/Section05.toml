@@ -1,30 +1,111 @@
 namespace = "BenIsraelGreville.Chapter07"
 
-desc = '''Greville column updates, their conjugate-transpose dual, and the minimum-norm update for new observations. Put the two Penrose-equation verifications for arbitrary old/new columns in a matrix backbone module and specialize here.'''
+[[node]]
+id = "grevilleColumnResidual"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (21)–(22)"
+
+[[node]]
+id = "grevilleColumnResidual_orthogonal"
+source = "Ben-Israel and Greville, Chapter 7, §5, equation (22), annihilation by the adjoint"
 
 [[node]]
 id = "grevilleColumnCoefficient"
-kind = "definition"
-desc = '''For a column a appended to A, put d = A†a and c = a − Ad. The new inverse row is c† if c is nonzero, and (1 + dᴴd)⁻¹dᴴA† otherwise.'''
-source = "Ben-Israel and Greville, Ch. 7, §5, (21)–(22), (24a)–(24b)"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (24a)–(24b)"
 
 [[node]]
 id = "theorem_2"
-kind = "theorem"
-desc = '''The Moore–Penrose inverse of [A a] is [A† − db; b], where b is the Greville row coefficient and d = A†a. Prove the two cases by verifying the four Penrose identities.'''
-source = "Ben-Israel and Greville, Ch. 7, §5, Theorem 2, (23), (24a)–(24b)"
-deps = ["grevilleColumnCoefficient"]
+source = "Ben-Israel and Greville, Chapter 7, §5, Theorem 2, equations (23)–(24)"
+
+[[node]]
+id = "grevilleColumnAction"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (39)–(40)"
+
+[[node]]
+id = "grevilleColumnAction_dependent"
+source = "Ben-Israel and Greville, Chapter 7, §5, equation (41)"
+
+[[node]]
+id = "grevilleColumnAction_independent"
+source = "Ben-Israel and Greville, Chapter 7, §5, equation (42)"
+
+[[node]]
+id = "grevilleColumnResidual_normalizer"
+source = "Ben-Israel and Greville, Chapter 7, §5, equation (43)"
+
+[[node]]
+id = "grevilleColumnCoefficientFrom"
+source = "Ben-Israel and Greville, Chapter 7, §5, scalar arithmetic in equations (21)–(24)"
+
+[[node]]
+id = "grevilleColumnCoefficientFrom_pinv"
+source = "Ben-Israel and Greville, Chapter 7, §5, correctness of the scalar arithmetic in equations (21)–(24)"
+
+[[node]]
+id = "grevilleInverse"
+source = "Ben-Israel and Greville, Chapter 7, §5, finite leading-column recursion"
+
+[[node]]
+id = "grevilleInverse_eq_pinv"
+source = "Ben-Israel and Greville, Chapter 7, §5, correctness of the finite leading-column recursion"
+
+[[node]]
+id = "polynomialEvaluationMatrix"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (44)–(47)"
+
+[[node]]
+id = "polynomialFit_iff_pinv_residual_le"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (46)–(49)"
+
+[[node]]
+id = "grevilleRowResidual"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (53)–(54)"
+
+[[node]]
+id = "grevilleRowCoefficient"
+source = "Ben-Israel and Greville, Chapter 7, §5, equations (56)–(57)"
 
 [[node]]
 id = "corollary_1"
-kind = "theorem"
-desc = '''For a row aᴴ appended to A, let dᴴ = aᴴA† and cᴴ = aᴴ − dᴴA. The new inverse is [A†−bdᴴ b], with b = (cᴴ)† in the nonzero case and b = (1+dᴴd)⁻¹A†d otherwise.'''
-source = "Ben-Israel and Greville, Ch. 7, §5, Corollary 1, (55)–(57)"
-deps = ["theorem_2"]
+source = "Ben-Israel and Greville, Chapter 7, §5, Corollary 1, equations (55)–(57)"
 
 [[node]]
 id = "corollary_2"
+source = "Ben-Israel and Greville, Chapter 7, §5, Corollary 2, equations (58)–(60)"
+
+[[node]]
+id = "corollary_2_isMinNormLeastSquaresSolution"
+source = "Ben-Israel and Greville, Chapter 7, §5, Corollary 2, minimum-norm property"
+
+[[node]]
+id = "exercise_11"
+source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 11, exact output of the finite recursion"
+
+[[node]]
+id = "exercise_11_trace"
 kind = "theorem"
-desc = '''With rows and right-hand sides partitioned compatibly, appending row aᴴ and observation yₖ changes the minimum-norm least-squares estimate x to x + (yₖ−aᴴx)b using the row update coefficient.'''
-source = "Ben-Israel and Greville, Ch. 7, §5, Corollary 2, (58)–(60)"
-deps = ["corollary_1"]
+desc = '''Evaluate the three intermediate leading-column inverses and the exact arithmetic of the final dependent update for the matrix of Exercise 5.'''
+source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 11, intermediate numerical updates"
+deps = ["exercise_11", "grevilleInverse_eq_pinv"]
+
+[[node]]
+id = "exercise_12"
+source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 12, equation (61)"
+
+[[node]]
+id = "exercise_13"
+source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 13, forward update and exact single-column inverse"
+
+[[node]]
+id = "exercise_13_deletion"
+source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 13, deletion arithmetic"
+
+[[node]]
+id = "grevilleColumnResidual_eq_orthogonalProjector"
+source = "Ben-Israel and Greville, Chapter 7, §5, Equation (22), residual projection"
+
+[[node]]
+id = "greville_action_only_recursion"
+kind = "theorem"
+desc = '''Implement the action-only recursion that carries the products of the leading inverse with the remaining columns and the right-hand sides, using the update formulas without constructing each full inverse.'''
+source = "Ben-Israel and Greville, Chapter 7, §5, Equations (39)–(44), action-only recursion"
+deps = ["grevilleColumnAction_dependent", "grevilleColumnAction_independent"]
