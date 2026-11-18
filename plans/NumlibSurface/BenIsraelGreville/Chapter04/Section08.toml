@@ -1,22 +1,81 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Derive the nilpotent and group-invertible splitting from the Drazin equations.
-'''
+
+[[node]]
+id = "groupInvertiblePart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (51), definition of the index-one part"
 
 [[node]]
 id = "nilpotentPart"
-kind = "definition"
-desc = '''Subtract the group inverse of the Drazin inverse from the original matrix.'''
-source = 'Ben-Israel and Greville, Chapter 4, §8, equation (56)'
+source = "Ben-Israel and Greville, Ch. 4, §8, (56), definition of the nilpotent part"
+
+[[node]]
+id = "isGroupInverse_groupInvertiblePart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (51), the core is the group inverse of the Drazin inverse"
+
+[[node]]
+id = "isGroupInverse_drazinInverse_groupInvertiblePart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (51), the pair of group inverses"
+
+[[node]]
+id = "groupInvertiblePart_add_nilpotentPart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (49), (56), decomposition"
+
+[[node]]
+id = "groupInvertiblePart_mul_nilpotentPart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (50), annihilation"
+
+[[node]]
+id = "pow_eq_groupInvertiblePart_add_nilpotentPart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (54), powers of the decomposition"
+
+[[node]]
+id = "groupInvertiblePart_pow_eq"
+source = "Ben-Israel and Greville, Ch. 4, §8, Theorem 11 (stable powers)"
+
+[[node]]
+id = "nilpotentPart_pow_matrixIndex"
+source = "Ben-Israel and Greville, Ch. 4, §8, Theorem 11 (vanishing power)"
+
+[[node]]
+id = "IsCoreNilpotentDecomposition"
+source = "Ben-Israel and Greville, Ch. 4, §8, (49)–(50), characterization"
 
 [[node]]
 id = "theorem_4_11"
-kind = "theorem"
-desc = '''A = B + N has a unique splitting with B of index one, N nilpotent, and BN = NB = 0. Its index-one part B is the group inverse of Aᴰ.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 11'
+source = "Ben-Israel and Greville, Ch. 4, §8, Theorem 11"
+
+[[node]]
+id = "nilpotentPart_eq_zero_of_matrixIndex_one"
+source = "Ben-Israel and Greville, Ch. 4, §8, Theorem 11 and Exercise 43"
+
+[[node]]
+id = "drazinProjector"
+source = "Ben-Israel and Greville, Ch. 4, §8, (57)–(60), the Drazin projector"
+
+[[node]]
+id = "drazinProjector_mul_self"
+source = "Ben-Israel and Greville, Ch. 4, §8, (57)–(60), projector idempotence"
+
+[[node]]
+id = "groupInvertiblePart_mul_drazinInverse"
+source = "Ben-Israel and Greville, Ch. 4, §8, (57)–(60), product yielding the projector"
+
+[[node]]
+id = "drazinInverse_mul_nilpotentPart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (57)–(60), and Exercise 48"
+
+[[node]]
+id = "groupInvertiblePart_eq_drazinInverse_of_drazinInverse_eq_groupInvertiblePart"
+source = "Ben-Israel and Greville, Ch. 4, §8, (57), exchanged Drazin inverses and cores"
+
+[[node]]
+id = "theorem_4_12_of_drazinInverse_eq_groupInvertiblePart"
+source = "Ben-Israel and Greville, Ch. 4, §8, Theorem 12, forward implication"
 
 [[node]]
 id = "theorem_4_12"
-kind = "theorem"
-desc = '''The stated Drazin identities imply that A and X are S-prime inverses. Conversely, for S-prime inverses with X an inner or outer inverse, their Drazin inverses are each other’s group-invertible parts.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 12'
+source = "Ben-Israel and Greville, Ch. 4, §8, Theorem 12, equivalence for an inner or outer inverse"
+
+[[node]]
+id = "exercise_4_42"
+source = "Ben-Israel and Greville, Ch. 4, §8, Exercise 42, (61), generalized to any invertible and nilpotent blocks"

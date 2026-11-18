@@ -1,28 +1,113 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Use Jordan form to express strong spectral invertibility and its relation to the group inverse.
-'''
 
 [[node]]
 id = "AreStrongSpectralInverses"
-kind = "definition"
-desc = '''A and X admit one similarity coordinate change under which A is in Jordan form and X is the Moore–Penrose inverse of that Jordan form.'''
-source = 'Ben-Israel and Greville, Chapter 4, §10, strong spectral inverses'
-
-[[node]]
-id = "strongSpectralInverse_unique_of_index_one"
-kind = "theorem"
-desc = '''At index one, the group inverse is the unique strong spectral inverse.'''
-source = 'Ben-Israel and Greville, Chapter 4, §10, index-one case'
+source = "Ben-Israel and Greville, Ch. 4, §10, strong spectral inverse, (19)"
 
 [[node]]
 id = "quasiCommuting_of_strongSpectralInverse"
-kind = "theorem"
-desc = '''Strong spectral inverses are quasi-commuting.'''
-source = 'Ben-Israel and Greville, Chapter 4, §10, quasi-commutation'
+source = "Ben-Israel and Greville, Ch. 4, §10, quasi-commutation of strong spectral inverses"
+
+[[node]]
+id = "strongSpectralInverse_unique_of_index_one"
+source = "Ben-Israel and Greville, Ch. 4, §10, strong spectral uniqueness at index one"
+
+[[node]]
+id = "exists_strongSpectralInverse"
+source = "Ben-Israel and Greville, Ch. 4, §10, existence from the Jordan canonical form"
+
+[[node]]
+id = "strongSpectralInverse_iff_isGroupInverse_of_index_one"
+source = "Ben-Israel and Greville, Ch. 4, §10, complete index-one characterization"
+
+[[node]]
+id = "clineSpectralInverse"
+source = "Ben-Israel and Greville, Ch. 4, §10, least-squares spectral inverse and Exercise 51"
+
+[[node]]
+id = "clineSpectralInverse_spec"
+source = "Ben-Israel and Greville, Ch. 4, §10, least-squares spectral inverse and Exercise 51"
 
 [[node]]
 id = "exists_leastSquaresInverse_same_range"
-kind = "theorem"
-desc = '''An index-one matrix has a {1,2,3}-inverse whose range equals the range of the original matrix.'''
-source = 'Ben-Israel and Greville, Chapter 4, §10, least-squares spectral inverse'
+source = "Ben-Israel and Greville, Ch. 4, §10, least-squares spectral inverse"
+
+[[node]]
+id = "exercise_4_43"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 43"
+
+[[node]]
+id = "exercise_4_44"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 44"
+
+[[node]]
+id = "exercise_4_45"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 45"
+
+[[node]]
+id = "exercise_4_46"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 46"
+
+[[node]]
+id = "exercise_4_48"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 48"
+
+[[node]]
+id = "exercise_4_50"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 50"
+
+[[node]]
+id = "exercise_4_51"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 51"
+
+[[node]]
+id = "exercise_4_47"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 47"
+
+[[node]]
+id = "exercise_4_49"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 49"
+
+[[node]]
+id = "exercise_4_52"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 52"
+
+[[node]]
+id = "retainedNilpotentSInverse"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 53, canonical candidate"
+
+[[node]]
+id = "isSInverse_retainedNilpotentSInverse"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 53, all grades"
+
+[[node]]
+id = "retainedNilpotentSInverse_involutive"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 53, involutivity"
+
+[[node]]
+id = "isGroupInverse_retainedNilpotentSInverse"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 53, index-one case"
+
+[[node]]
+id = "retainedNilpotentSInverse_not_penrose_of_index_gt_one"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 53, no inner or outer equation above index one"
+
+[[node]]
+id = "exercise_4_53"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 53"
+
+[[node]]
+id = "strongSpectralInverse_pow_eq_zero_iff"
+source = "Ben-Israel and Greville, Ch. 4, §10, strong spectral inversion preserves all nilpotence powers"
+
+[[node]]
+id = "exists_quasiCommuting_not_strongSpectral"
+source = "Ben-Israel and Greville, Ch. 4, §10, strict inclusion in general above index one"
+
+[[node]]
+id = "exercise_4_54"
+source = "Ben-Israel and Greville, Ch. 4, §10, Exercise 54"
+
+[[node]]
+id = "AreStrongSpectralInverses.symm"
+source = "Ben-Israel and Greville, Ch. 4, §10, strong spectral inverses"

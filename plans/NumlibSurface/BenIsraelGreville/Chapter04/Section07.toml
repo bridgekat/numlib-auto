@@ -1,22 +1,29 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Distinguish equality of grades for nonzero eigenvalues from equality of zero-primary spaces.
-'''
 
 [[node]]
 id = "theorem_4_9"
-kind = "theorem"
-desc = '''If X is an S-inverse and either an inner or outer inverse of A, then both A and X have index one.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 9'
+source = "Ben-Israel and Greville, Ch. 4, §7, Theorem 9"
 
 [[node]]
 id = "IsSPrimeInverse"
-kind = "definition"
-desc = '''The nonzero generalized eigenvectors correspond at reciprocal eigenvalues with the same grades, and the generalized zero-eigenspaces coincide without regard to grades.'''
-source = 'Ben-Israel and Greville, Chapter 4, Definition 3'
+source = "Ben-Israel and Greville, Ch. 4, §7, Definition 3"
+
+[[node]]
+id = "IsSPrimeInverse.symm"
+source = "Ben-Israel and Greville, Ch. 4, §7, Definition 3 (symmetry)"
+
+[[node]]
+id = "drazinInverse_range_ker_eq_stablePow"
+source = "Ben-Israel and Greville, Ch. 4, §7, Theorem 10 (Drazin inverse range and kernel)"
+
+[[node]]
+id = "matrixIndex_drazinInverse"
+source = "Ben-Israel and Greville, Ch. 4, §7, Theorem 10 (index of the Drazin inverse)"
 
 [[node]]
 id = "theorem_4_10"
-kind = "theorem"
-desc = '''A and its Drazin inverse are S-prime inverses.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 10'
+source = "Ben-Israel and Greville, Ch. 4, §7, Theorem 10"
+
+[[node]]
+id = "IsSPrimeInverse.drazinInverse_range_ker_eq"
+source = "Ben-Israel and Greville, Ch. 4, §7, Theorem 10 (same stable range and kernel)"

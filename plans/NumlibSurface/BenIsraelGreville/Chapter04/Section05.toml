@@ -1,28 +1,65 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Use Mathlib generalized eigenspaces and exact grades, carrying the previous definition of principal vectors.
-'''
+
+[[node]]
+id = "IsVectorOfGrade"
+source = "Ben-Israel and Greville, Ch. 4, §5, Definition 2 (exact generalized eigenvector grade)"
+
+[[node]]
+id = "isVectorOfGrade_zero_iff"
+source = "Ben-Israel and Greville, Ch. 4, §5, Definition 2 (specialization at zero)"
 
 [[node]]
 id = "lemma_4_3"
-kind = "theorem"
-desc = '''A generalized λ-eigenvector for nonzero λ is in the range of every positive power of A.'''
-source = 'Ben-Israel and Greville, Chapter 4, Lemma 3'
+source = "Ben-Israel and Greville, Ch. 4, §5, Lemma 3"
 
 [[node]]
 id = "lemma_4_4"
-kind = "theorem"
-desc = '''If X A^(ℓ+1) = A^ℓ then every generalized λ-eigenvector of A for nonzero λ, of grade p, is a generalized λ⁻¹-eigenvector of X of grade p.'''
-source = 'Ben-Israel and Greville, Chapter 4, Lemma 4'
+source = "Ben-Israel and Greville, Ch. 4, §5, Lemma 4"
 
 [[node]]
 id = "IsSInverse"
-kind = "definition"
-desc = '''For each λ and each grade p, the vectors of grade p for A at λ and X at the scalar Penrose inverse λ⁻¹ coincide, with 0⁻¹ = 0.'''
-source = 'Ben-Israel and Greville, Chapter 4, Definition 2'
+source = "Ben-Israel and Greville, Ch. 4, §5, Definition 2"
+
+[[node]]
+id = "IsSInverse.symm"
+source = "Ben-Israel and Greville, Ch. 4, §5, Definition 2 (symmetry)"
+
+[[node]]
+id = "mem_maxGenEigenspace_iff_exists_grade"
+source = "Ben-Israel and Greville, Ch. 4, §5, Definition 2 (finite grades and zero)"
+
+[[node]]
+id = "maxGenEigenspace_eq_of_grade_iff"
+source = "Ben-Israel and Greville, Ch. 4, §5, Definition 2 (maximal generalized eigenspaces)"
+
+[[node]]
+id = "maxGenEigenspace_zero_eq_stableKer"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorems 6 and 10 (stable kernel)"
+
+[[node]]
+id = "stableRange_eq_nonzeroSpectralSubspace"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorem 6 (stable range)"
+
+[[node]]
+id = "IsSInverse.ker_eq"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorem 6 (kernel equality)"
+
+[[node]]
+id = "matrixIndex_eq_one_of_no_grade_two"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorems 6 and 9 (recognizing index one)"
+
+[[node]]
+id = "IsSInverse.matrixIndex_eq_one"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorems 6 and 9 (index one for Penrose S-inverses)"
+
+[[node]]
+id = "isSInverse_of_isGroupInverse"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorem 6 (existence)"
 
 [[node]]
 id = "theorem_4_6"
-kind = "theorem"
-desc = '''For A of index one, its group inverse is its unique S-inverse among inner or outer inverses. For diagonalizable A, it is the unique S-inverse.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 6'
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorem 6 (group-inverse characterization)"
+
+[[node]]
+id = "theorem_4_6_diagonalizable"
+source = "Ben-Israel and Greville, Ch. 4, §5, Theorem 6 (diagonalizable case)"

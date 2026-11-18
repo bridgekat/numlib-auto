@@ -44,7 +44,12 @@ import NumlibSurface.BenIsraelGreville.Chapter04.Section01
 import NumlibSurface.BenIsraelGreville.Chapter04.Section02
 import NumlibSurface.BenIsraelGreville.Chapter04.Section03
 import NumlibSurface.BenIsraelGreville.Chapter04.Section04
+import NumlibSurface.BenIsraelGreville.Chapter04.Section05
 import NumlibSurface.BenIsraelGreville.Chapter04.Section06
+import NumlibSurface.BenIsraelGreville.Chapter04.Section07
+import NumlibSurface.BenIsraelGreville.Chapter04.Section08
+import NumlibSurface.BenIsraelGreville.Chapter04.Section09
+import NumlibSurface.BenIsraelGreville.Chapter04.Section10
 import NumlibSurface.BenIsraelGreville.Chapter05.Section02
 import NumlibSurface.BenIsraelGreville.Chapter05.Section03
 import NumlibSurface.BenIsraelGreville.Chapter05.Section04
@@ -143,7 +148,12 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §4.2 | `Chapter04.Section02` | Matrix index and rank stabilization |
 | §4.3 | `Chapter04.Section03` | Spectral inverse of a diagonalizable matrix |
 | §4.4 | `Chapter04.Section04` | Group inverse |
+| §4.5 | `Chapter04.Section05` | Spectral properties of the group inverse |
 | §4.6 | `Chapter04.Section06` | Drazin inverse |
+| §4.7 | `Chapter04.Section07` | Spectral properties of the Drazin inverse |
+| §4.8 | `Chapter04.Section08` | The group-invertible and nilpotent decomposition |
+| §4.9 | `Chapter04.Section09` | Quasi-commuting inverses |
+| §4.10 | `Chapter04.Section10` | Strong spectral and least-squares inverses |
 | §5.2 | `Chapter05.Section02` | Rank-adapted partitions, block solves, and block inverses |
 | §5.3 | `Chapter05.Section03` | Affine intersections and their orthogonal representatives |
 | §5.4 | `Chapter05.Section04` | Common solutions and inverses of stacked matrices |

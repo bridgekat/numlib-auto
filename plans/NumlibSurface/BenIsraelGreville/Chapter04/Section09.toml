@@ -1,22 +1,21 @@
 namespace = "BenIsraelGreville.Chapter04"
-desc = '''
-Relate the two-sided power commutation equations to the nilpotent splitting.
-'''
 
 [[node]]
 id = "AreQuasiCommutingInverses"
-kind = "definition"
-desc = '''Mutual inner inverses A and X that commute with one another’s k-th powers for some positive k.'''
-source = 'Ben-Israel and Greville, Chapter 4, §9, definition of quasi-commuting inverses'
+source = "Ben-Israel and Greville, Ch. 4, §9, definition of quasi-commuting inverses"
+
+[[node]]
+id = "AreQuasiCommutingInverses.symm"
+source = "Ben-Israel and Greville, Ch. 4, §9, symmetry of quasi-commuting inversion"
 
 [[node]]
 id = "theorem_4_13"
-kind = "theorem"
-desc = '''Quasi-commuting inverses are S-prime inverses.'''
-source = 'Ben-Israel and Greville, Chapter 4, Theorem 13'
+source = "Ben-Israel and Greville, Ch. 4, §9, Theorem 13"
+
+[[node]]
+id = "innerInverse_iff_nilpotentPart_of_drazinInverse_eq_groupInvertiblePart"
+source = "Ben-Israel and Greville, Ch. 4, §9, Corollary 4 and Exercise 50"
 
 [[node]]
 id = "corollary_4_4"
-kind = "theorem"
-desc = '''Quasi-commutation is equivalent to the two Drazin identities (57) and mutual inner invertibility of the nilpotent parts.'''
-source = 'Ben-Israel and Greville, Chapter 4, Corollary 4'
+source = "Ben-Israel and Greville, Ch. 4, §9, Corollary 4"
