@@ -205,6 +205,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 * **Chapter 0, §2.6** (correction). The diagonal inner product identity for all complex
   vectors implies that the matrix is Hermitian.
 * **Chapter 0, Equation (30)** (typo). The spectrum of $AA^H$ is indexed by the rows of $A$.
+* **Chapter 0, Exercise 29** (correction). The $i$-eigenspace of the quarter turn is
+  the complex line through $(1,i)$, with no nonzero real vector.
 * **Chapter 0, Equation (87)** (typo). Cauchy–Binet selects columns of the left factor
   and rows of the right factor.
 * **Chapter 0, Exercise 83** (correction). Integral equivalence can change the sign of a
