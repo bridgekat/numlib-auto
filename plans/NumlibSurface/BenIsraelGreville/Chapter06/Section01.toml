@@ -40,14 +40,10 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 5, Equation (6)"
 
 [[node]]
 id = "exercise_6"
-kind = "theorem"
-desc = '''For a normal matrix, the singular values are the moduli of the eigenvalues ordered by descending modulus.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 6"
 
 [[node]]
 id = "exercise_7"
-kind = "theorem"
-desc = '''The positive singular values of A† are the reciprocals of the positive singular values of A, in reverse order.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 7, Equation (7)"
 
 [[node]]
@@ -56,10 +52,7 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 8, Equation (8)"
 
 [[node]]
 id = "exercise_9"
-kind = "theorem"
-desc = '''For a positive-rank matrix, the product of the spectral norms of A and A† is the ratio of the largest and smallest positive singular values of A.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 9, Equation (9)"
-deps = ["exercise_7"]
 
 [[node]]
 id = "conditionNumber"

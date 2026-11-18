@@ -30,15 +30,10 @@ source = "Ben-Israel and Greville, Chapter 6, §2, Equation (30b)"
 
 [[node]]
 id = "exercise_13"
-kind = "theorem"
-desc = '''The pseudoinverse and Tikhonov solutions have the stated expansions in a paired singular basis, with coefficients βᵢ/σᵢ and σᵢβᵢ/(σᵢ²+λ). Verify the Taylor expansions of the reciprocal and damped scalars.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 13, Equations (31)–(32)"
-deps = ["svd_pinv_expansion"]
 
 [[node]]
 id = "exercise_14"
-kind = "theorem"
-desc = '''In singular-vector coordinates an inner inverse has leading block Σᵣ⁻¹. The additional Penrose equations give Z = YΣᵣX, X = 0, and Y = 0 respectively.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 14, Equation (33)"
 
 [[node]]
@@ -49,8 +44,6 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 15"
 
 [[node]]
 id = "exercise_16"
-kind = "theorem"
-desc = '''Two Hermitian matrices are simultaneously unitarily diagonalizable iff their products are Hermitian iff they commute.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 16"
 
 [[node]]
@@ -69,10 +62,7 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 18, Equations (36)–(37)
 
 [[node]]
 id = "phaseSingularVectorPair"
-kind = "theorem"
-desc = '''A UDV decomposition gives A vᵢ = dᵢ uᵢ and Aᴴ uᵢ = conjugate(dᵢ) vᵢ. In the printed Equation (20*) conjugation is required on the denominator.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 18, Equations (20*) and (22*)"
-deps = ["IsUDVDecomposition"]
 
 [[node]]
 id = "exercise_19"
@@ -125,3 +115,19 @@ kind = "theorem"
 desc = '''The Moore–Penrose inverse uniquely minimizes each k-volume for positive k at most the rank of A among all real inner inverses.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 25"
 deps = ["exercise_24"]
+
+[[node]]
+id = "exercise_13_reciprocal_taylor"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 13, reciprocal Taylor expansion"
+
+[[node]]
+id = "exercise_13_damped_taylor"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 13, damped Taylor expansion"
+
+[[node]]
+id = "exercise_13_damped_taylor_matched"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 13, damped Taylor expansion at σ²"
+
+[[node]]
+id = "exercise_16_products_iff_commute"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 16, Hermitian products and commutativity"

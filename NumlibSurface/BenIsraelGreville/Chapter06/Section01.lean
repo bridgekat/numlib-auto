@@ -3,6 +3,9 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Numlib.Analysis.Matrix.SingularValues
+import Numlib.Eigen.Normal
+import Mathlib.Data.Fin.Tuple.Sort
+import Mathlib.LinearAlgebra.Matrix.Permutation
 import NumlibSurface.BenIsraelGreville.Chapter00.Section02
 
 /-!
@@ -202,5 +205,184 @@ theorem exercise_11 [Nonempty n] (A : Matrix n n ℂ) (hA : IsUnit A) :
     conditionNumber] using Matrix.pinvCondNumberLp_two_conjTranspose_mul_self hLI
 
 end Exercises
+
+private theorem permMatrix_mem_unitaryGroup {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
+    (θ : Equiv.Perm (Fin n)) : θ.permMatrix 𝕜 ∈ unitaryGroup (Fin n) 𝕜 := by
+  rw [Matrix.mem_unitaryGroup_iff', star_eq_conjTranspose, conjTranspose_permMatrix, ← permMatrix_mul, mul_inv_cancel,
+    permMatrix_one]
+
+/-- **Exercise 6** of [benIsrael2003generalized], Chapter 6.
+A normal matrix has a unitary diagonalization whose eigenvalues, padded
+by zero, have moduli equal to its sorted singular values. -/
+theorem exercise_6 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
+    ∃ U ∈ unitaryGroup (Fin n) ℂ, ∃ d : ℕ → ℂ,
+      A = U * diagonal (fun i : Fin n => d i) * Uᴴ ∧
+      ∀ i, ‖d i‖ = A.sortedSingularValues i := by
+  obtain ⟨U, hU, a, _, hdiag, _⟩ :=
+    hA.exists_unitary_conj_diagonal_of_commute hA (Commute.refl A)
+  let θ := Tuple.sortDesc (fun i => ‖a i‖)
+  let P := θ⁻¹.permMatrix ℂ
+  let V := U * P
+  let d : ℕ → ℂ := fun i => if hi : i < n then a (θ ⟨i, hi⟩) else 0
+  have hV : V ∈ unitaryGroup (Fin n) ℂ := mul_mem hU (permMatrix_mem_unitaryGroup θ⁻¹)
+  have hperm : Pᴴ * diagonal a * P = diagonal (fun i : Fin n => d i) := by
+    rw [show Pᴴ = θ.permMatrix ℂ by simp [P]]
+    change (_ * diagonal a) * (θ⁻¹ : Equiv.Perm (Fin n)).toPEquiv.toMatrix = _
+    rw [PEquiv.toMatrix_toPEquiv_mul, PEquiv.mul_toMatrix_toPEquiv]
+    ext i j
+    change diagonal a (θ i) (θ j) = diagonal (fun i : Fin n => d i) i j
+    by_cases hij : i = j
+    · subst j
+      simp [d]
+    · simp [hij, show θ i ≠ θ j from fun he => hij (θ.injective he)]
+  have hVdiag : Vᴴ * A * V = diagonal (fun i : Fin n => d i) := by
+    calc
+      Vᴴ * A * V = Pᴴ * (Uᴴ * A * U) * P := by
+        simp only [V, conjTranspose_mul, Matrix.mul_assoc]
+      _ = _ := by rw [show Uᴴ * A * U = diagonal a from hdiag, hperm]
+  let φ : Fin n → ℂ := fun i => if d i = 0 then 1 else d i / (‖d i‖ : ℂ)
+  have hφ (i : Fin n) : ‖φ i‖ = 1 := by
+    by_cases hi : d i = 0
+    · simp [φ, hi]
+    · have hp := norm_pos_iff.mpr hi
+      simp [φ, hi, hp.ne']
+  have hφU : diagonal φ ∈ unitaryGroup (Fin n) ℂ := by
+    rw [Matrix.mem_unitaryGroup_iff', star_eq_conjTranspose, diagonal_conjTranspose, diagonal_mul_diagonal, ← diagonal_one]
+    congr 1
+    funext i
+    change starRingEnd ℂ (φ i) * φ i = 1
+    rw [mul_comm, Complex.mul_conj, ← Complex.sq_norm, hφ, one_pow, Complex.ofReal_one]
+  let W := V * (diagonal φ)ᴴ
+  have hW : W ∈ unitaryGroup (Fin n) ℂ :=
+    mul_mem hV (Unitary.star_mem hφU)
+  have hdφ (i : Fin n) : d i * star (φ i) = (‖d i‖ : ℂ) := by
+    by_cases hi : d i = 0
+    · simp [hi]
+    · have hp : (‖d i‖ : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_pos_iff.mpr hi).ne'
+      change d i * starRingEnd ℂ (φ i) = _
+      rw [show φ i = d i / (‖d i‖ : ℂ) by simp [φ, hi], map_div₀, Complex.conj_ofReal]
+      rw [← mul_div_assoc, Complex.mul_conj, ← Complex.sq_norm, Complex.ofReal_pow, sq, mul_div_cancel_right₀ _ hp]
+  have hσ : Antitone (fun i => ‖d i‖) := by
+    intro i j hij
+    by_cases hj : j < n
+    · have hi := hij.trans_lt hj
+      simpa [d, hi, hj] using
+        (Tuple.antitone_sortDesc (fun i => ‖a i‖)
+          (show (⟨i, hi⟩ : Fin n) ≤ ⟨j, hj⟩ from hij))
+    · simp [d, hj]
+  have hS : A.IsSVD V (fun i => ‖d i‖) W := by
+    refine ⟨⟨hV, hW, ?_⟩, hσ, fun i => norm_nonneg _⟩
+    change Vᴴ * A * (V * (diagonal φ)ᴴ) = _
+    rw [← Matrix.mul_assoc, hVdiag, diagonal_conjTranspose, diagonal_mul_diagonal,
+      rectDiagonal_eq_diagonal]
+    exact congrArg diagonal (funext hdφ)
+  refine ⟨V, hV, d, eq_mul_mul_star_of_star_mul_mul_eq hV hV hVdiag, fun i => ?_⟩
+  by_cases hi : i < n
+  · exact hS.singularValues_eq hi hi
+  · have hr := A.rank_le_width.trans (Nat.le_of_not_gt hi)
+    rw [(A.sortedSingularValues_eq_zero_iff_rank_le i).mpr hr]
+    simp [d, hi]
+
+private def reversePrefix {n : ℕ} (r : ℕ) (hr : r ≤ n) (i : Fin n) : Fin n :=
+  if hi : (i : ℕ) < r then ⟨r - 1 - i, by omega⟩ else i
+
+private theorem reversePrefix_involutive {n : ℕ} (r : ℕ) (hr : r ≤ n) :
+    Function.Involutive (reversePrefix r hr) := by
+  intro i
+  by_cases hi : (i : ℕ) < r
+  · have hj : r - 1 - (i : ℕ) < r := by omega
+    simp only [reversePrefix, dite_eq_left hi, dite_eq_left hj]
+    apply Fin.ext
+    dsimp
+    omega
+  · simp [reversePrefix, hi]
+
+/-- **Exercise 7**, Equation (7), of [benIsrael2003generalized], Chapter 6.
+The positive singular values of the Moore–Penrose inverse are the reciprocals
+in reverse order. The statement also gives the zero-padded tail. -/
+theorem exercise_7 {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ} (A : Matrix (Fin m) (Fin n) 𝕜) (i : ℕ) :
+    A.pinv.sortedSingularValues i =
+      if i < A.rank then (A.sortedSingularValues (A.rank - 1 - i))⁻¹ else 0 := by
+  obtain ⟨U, hU, V, hV, hA⟩ := A.exists_svd
+  let r := A.rank
+  let σ := A.sortedSingularValues
+  let τ : ℕ → ℝ := fun j => if j < r then (σ (r - 1 - j))⁻¹ else 0
+  let D : Matrix (Fin n) (Fin m) 𝕜 := rectDiagonal fun j => ((σ j : 𝕜))⁻¹
+  let ψ : Equiv.Perm (Fin n) :=
+    (reversePrefix_involutive r A.rank_le_width).toPerm (reversePrefix r A.rank_le_width)
+  let θ : Equiv.Perm (Fin m) :=
+    (reversePrefix_involutive r A.rank_le_height).toPerm (reversePrefix r A.rank_le_height)
+  let P := ψ.permMatrix 𝕜
+  let Q := θ⁻¹.permMatrix 𝕜
+  have hψ (j : Fin n) : (ψ j : ℕ) = if j.val < r then r - 1 - j.val else j.val := by
+    by_cases hj : (j : ℕ) < r <;> simp [ψ, reversePrefix, hj]
+  have hθ (j : Fin m) : (θ j : ℕ) = if j.val < r then r - 1 - j.val else j.val := by
+    by_cases hj : (j : ℕ) < r <;> simp [θ, reversePrefix, hj]
+  have hD : P * D * Q = (rectDiagonal fun j => (τ j : 𝕜) : Matrix (Fin n) (Fin m) 𝕜) := by
+    change ψ.toPEquiv.toMatrix * D * θ⁻¹.toPEquiv.toMatrix = _
+    rw [PEquiv.toMatrix_toPEquiv_mul, PEquiv.mul_toMatrix_toPEquiv]
+    ext j k
+    change D (ψ j) (θ k) = _
+    simp only [D, rectDiagonal_apply, hψ, hθ]
+    by_cases hj : (j : ℕ) < r <;> by_cases hk : (k : ℕ) < r
+    · by_cases he : j.val = k.val
+      · simp [τ, hk, he]
+      · have hne : r - 1 - j.val ≠ r - 1 - k.val := by omega
+        simp [hj, hk, he, hne]
+    · have hne : r - 1 - j.val ≠ k.val := by omega
+      have he : j.val ≠ k.val := by omega
+      simp [hj, hk, he, hne]
+    · have hne : j.val ≠ r - 1 - k.val := by omega
+      have he : j.val ≠ k.val := by omega
+      simp [hj, hk, he, hne]
+    · have hz : σ j = 0 :=
+        (A.sortedSingularValues_eq_zero_iff_rank_le j).mpr (Nat.le_of_not_gt hj)
+      simp [τ, hj, hk, hz]
+  have hτ_nonneg (j : ℕ) : 0 ≤ τ j := by
+    by_cases hj : j < r
+    · rw [show τ j = (σ (r - 1 - j))⁻¹ by simp [τ, hj]]
+      exact inv_nonneg.mpr (A.sortedSingularValues_nonneg _)
+    · simp [τ, hj]
+  have hτ_anti : Antitone τ := by
+    intro j k hjk
+    by_cases hk : k < r
+    · have hj := hjk.trans_lt hk
+      simp only [τ, ite_eq_left hj, ite_eq_left hk]
+      apply inv_anti₀
+      · exact lt_of_le_of_ne (A.sortedSingularValues_nonneg _) (Ne.symm fun hz =>
+          (not_le_of_gt (show r - 1 - j < r by omega))
+            ((A.sortedSingularValues_eq_zero_iff_rank_le _).mp hz))
+      · exact A.sortedSingularValues_antitone (by omega)
+    · simpa [τ, hk] using hτ_nonneg j
+  have hpinv : A.pinv = V * D * Uᴴ := pinv_eq_of_svd hU hV hA
+  have hHP : P ∈ unitaryGroup (Fin n) 𝕜 := permMatrix_mem_unitaryGroup ψ
+  have hHQ : Q ∈ unitaryGroup (Fin m) 𝕜 := permMatrix_mem_unitaryGroup θ⁻¹
+  have hsing := sortedSingularValues_unitary_mul_mul (A := D) hHP hHQ
+  have hDU := sortedSingularValues_unitary_mul_mul (A := D) hV (Unitary.star_mem hU)
+  have hrec : A.pinv.sortedSingularValues =
+      (rectDiagonal fun j => (τ j : 𝕜) : Matrix (Fin n) (Fin m) 𝕜).sortedSingularValues := by
+    rw [hpinv, ← hD, hsing]
+    exact hDU
+  rw [hrec]
+  change (rectDiagonal fun j => (τ j : 𝕜) : Matrix (Fin n) (Fin m) 𝕜).sortedSingularValues i = τ i
+  by_cases hi : i < min n m
+  · have hS : (rectDiagonal fun j => (τ j : 𝕜) : Matrix (Fin n) (Fin m) 𝕜).IsSVD 1 τ 1 :=
+      ⟨⟨one_mem _, one_mem _, by simp⟩, hτ_anti, hτ_nonneg⟩
+    exact (hS.singularValues_eq (hi.trans_le (min_le_left _ _))
+      (hi.trans_le (min_le_right _ _))).symm
+  · have hir : ¬ i < r := fun h => hi (h.trans_le
+      (le_min A.rank_le_width A.rank_le_height))
+    rw [sortedSingularValues_eq_zero_of_min_le _ (by simpa using Nat.le_of_not_gt hi)]
+    simp [τ, hir]
+
+open scoped Matrix.Norms.L2Operator in
+/-- **Exercise 9**, Equation (9), of [benIsrael2003generalized], Chapter 6.
+The product of the spectral norms of a positive-rank matrix and its
+Moore–Penrose inverse is the ratio of its extreme positive singular values. -/
+theorem exercise_9 {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ} (A : Matrix (Fin m) (Fin n) 𝕜)
+    (hA : 0 < A.rank) :
+    ‖A‖ * ‖A.pinv‖ = A.sortedSingularValues 0 / A.sortedSingularValues (A.rank - 1) := by
+  rw [← A.sortedSingularValues_zero_eq_l2_opNorm, ← A.pinv.sortedSingularValues_zero_eq_l2_opNorm,
+    exercise_7, ite_eq_left hA, Nat.sub_zero, div_eq_mul_inv]
 
 end BenIsraelGreville.Chapter06
