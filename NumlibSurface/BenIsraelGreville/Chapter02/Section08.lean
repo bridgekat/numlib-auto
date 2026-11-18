@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
 import NumlibSurface.BenIsraelGreville.Chapter02.Section06
 import Numlib.LinearAlgebra.Matrix.Rank
+import NumlibSurface.BenIsraelGreville.Chapter02.Section01
+import NumlibSurface.BenIsraelGreville.Chapter00.Section04
 
 /-!
 # Efficient characterizations of classes of generalized inverses
@@ -585,5 +587,587 @@ theorem efficientInverse_parameterCounts {A : Matrix m n ℂ} {F : Matrix n k �
   · rw [show Fintype.card m - A.rank = Fintype.card l by omega]
   · rw [hsum]
     ring
+
+section RankExercises
+
+open Matrix
+open scoped ComplexOrder
+open BenIsraelGreville.Chapter01 (exists_innerInverse mem_one_iff mem_one_two_iff)
+
+private theorem exists_basisMatrix_of_finrank {m r : ℕ} (V : Submodule ℂ (Fin m → ℂ))
+    (hr : Module.finrank ℂ V = r) :
+    ∃ B : Matrix (Fin m) (Fin r) ℂ, Function.Injective B.mulVecLin ∧
+      LinearMap.range B.mulVecLin = V := by
+  let e := (Module.finBasisOfFinrankEq ℂ V hr).equivFun.symm
+  let b := V.subtype.comp e.toLinearMap
+  refine ⟨LinearMap.toMatrix' b, ?_⟩
+  have hb : (LinearMap.toMatrix' b).mulVecLin = b := by
+    rw [← Matrix.toLin'_apply', Matrix.toLin'_toMatrix']
+  rw [hb]
+  refine ⟨Subtype.val_injective.comp e.injective, ?_⟩
+  rw [show b = V.subtype.comp e.toLinearMap from rfl, LinearMap.range_comp,
+    e.range, Submodule.map_top, Submodule.range_subtype]
+
+private theorem finrank_ker_matrix {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ) :
+    Module.finrank ℂ A.mulVecLin.ker = n - A.rank := by
+  have h := LinearMap.finrank_range_add_finrank_ker A.mulVecLin
+  change A.rank + Module.finrank ℂ A.mulVecLin.ker = Module.finrank ℂ (Fin n → ℂ) at h
+  rw [Module.finrank_fintype_fun_eq_card, Fintype.card_fin] at h
+  omega
+
+/-- **Exercise 84** of [benIsrael2003generalized], Chapter 2.
+An inner inverse with the prescribed projections has rank (\rho) for some
+choice of parameters exactly when the rank of (A) is at most (\rho) and
+(\rho) is at most the smaller dimension of (A). -/
+theorem exercise_84 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
+    {S : Submodule ℂ (Fin m → ℂ)} {T : Submodule ℂ (Fin n → ℂ)}
+    (hS : IsCompl A.mulVecLin.range S) (hT : IsCompl T A.mulVecLin.ker) (ρ : ℕ) :
+    (∃ X : Matrix (Fin n) (Fin m) ℂ, A.IsInnerInverse X ∧
+      (A * X).mulVecLin.ker = S ∧ (X * A).mulVecLin.range = T ∧ X.rank = ρ) ↔
+      A.rank ≤ ρ ∧ ρ ≤ min m n := by
+  constructor
+  · rintro ⟨X, hX, _, _, hρ⟩
+    exact hρ ▸ ⟨hX.rank_le, le_min X.rank_le_width X.rank_le_height⟩
+  · rintro ⟨hρ, hρ'⟩
+    obtain ⟨U, hU⟩ := exists_innerInverse A
+    have hU := mem_one_iff.mp hU
+    let U₀ := projectorMatrix hT * U * projectorMatrix hS
+    have hRef := (theorem_12 A hS hT U hU).2.2.1
+    have hU₀ := mem_one_two_iff.mp hRef.1
+    have hCenter : A.IsInnerInverse U₀ ∧
+        (A * U₀).mulVecLin.ker = S ∧ (U₀ * A).mulVecLin.range = T := by
+      have ho := isOuterInverse_iff_isInnerInverse.mp hU₀.2
+      exact ⟨hU₀.1, ho.ker_mul_rev.trans hRef.2.2, ho.range_mul.trans hRef.2.1⟩
+    obtain ⟨F, hF, hFr⟩ := exists_basisMatrix_of_finrank _ (finrank_ker_matrix A)
+    obtain ⟨K₀, hK, hKr⟩ := exists_basisMatrix_of_finrank _ (by
+      rw [finrank_ker_matrix, Matrix.rank_conjTranspose] :
+      Module.finrank ℂ Aᴴ.mulVecLin.ker = m - A.rank)
+    obtain ⟨B, hB, hBr⟩ := exists_basisMatrix_of_finrank
+      (LinearMap.range (U₀ * A).mulVecLin) rfl
+    obtain ⟨C⟩ := exists_innerInverseCoordinates hU₀.1 hF hFr hB hBr
+      (K := K₀ᴴ) (by simpa only [conjTranspose_conjTranspose] using hK)
+      (by simpa only [conjTranspose_conjTranspose] using hKr)
+    have ht₁ : ρ - A.rank ≤ n - A.rank := Nat.sub_le_sub_right (hρ'.trans (min_le_right _ _)) _
+    have ht₂ : ρ - A.rank ≤ m - A.rank := Nat.sub_le_sub_right (hρ'.trans (min_le_left _ _)) _
+    let Z : Matrix (Fin (n - A.rank)) (Fin (m - A.rank)) ℂ :=
+      rectDiagonal fun i => if i < ρ - A.rank then 1 else 0
+    have hZ : Z.rank = ρ - A.rank := by
+      dsimp only [Z]
+      rw [rank_rectDiagonal]
+      let e : {j : Fin (m - A.rank) //
+          (j : ℕ) < n - A.rank ∧ (if (j : ℕ) < ρ - A.rank then (1 : ℂ) else 0) ≠ 0} ≃
+          Fin (ρ - A.rank) :=
+        { toFun := fun j => ⟨j.val.val, by
+            have hz := j.property.2
+            by_contra! hj
+            exact hz (ite_eq_right (not_lt.mpr hj))⟩
+          invFun := fun j => ⟨Fin.castLE ht₂ j, j.isLt.trans_le ht₁, by
+            rw [Fin.val_castLE, ite_eq_left j.isLt]
+            exact one_ne_zero⟩
+          left_inv := fun j => Subtype.ext (Fin.ext rfl)
+          right_inv := fun j => Fin.ext rfl }
+      rw [Fintype.card_congr e, Fintype.card_fin]
+    let X := U₀ + F * Z * K₀ᴴ
+    have hAX : A * X = A * U₀ := by
+      change A * (U₀ + F * Z * K₀ᴴ) = A * U₀
+      simp only [Matrix.mul_add, ← Matrix.mul_assoc, C.AF, Matrix.zero_mul, add_zero]
+    have hXA : X * A = U₀ * A := by
+      change (U₀ + F * Z * K₀ᴴ) * A = U₀ * A
+      simp only [Matrix.add_mul, Matrix.mul_assoc, C.KA, Matrix.mul_zero, add_zero]
+    refine ⟨X, ?_, hAX ▸ hCenter.2.1, hXA ▸ hCenter.2.2, ?_⟩
+    · rw [isInnerInverse_iff, hAX]
+      exact hCenter.1
+    · change (U₀ + F * Z * K₀ᴴ).rank = ρ
+      rw [exercise_82_rank hU₀.1 hU₀.2 C Z, hZ, Nat.add_sub_of_le hρ]
+
+end RankExercises
+
+section FamiliesExercises
+
+open Matrix
+
+variable {m n r k l : Type*} [Fintype m] [Fintype n] [Fintype r] [Fintype k] [Fintype l]
+
+/-- The six efficient families in **Exercise 85** of [benIsrael2003generalized].
+The matrices $S$ and $T$ are the factors, $Y$ and $Z$ are their chosen one-sided
+inverses, and $F$ and $K^H$ give the two null-space bases of $ST$. -/
+structure FullRankInverseFamilies
+    (S : Matrix m r ℂ) (T : Matrix r n ℂ) (Y : Matrix n r ℂ) (Z : Matrix r m ℂ)
+    (F : Matrix n k ℂ) (K : Matrix l m ℂ) : Prop where
+  /-- All left inverses of the first factor, with unique coordinates. -/
+  first : ∀ Z' : Matrix r m ℂ, S.IsInnerInverse Z' ↔ ∃! V : Matrix r l ℂ, Z' = Z + V * K
+  /-- All right inverses of the second factor, with unique coordinates. -/
+  second : ∀ Y' : Matrix n r ℂ, T.IsInnerInverse Y' ↔ ∃! U : Matrix k r ℂ, Y' = Y + F * U
+  /-- All left products, described using either the original matrix or its first factor. -/
+  leftProducts : ∀ M : Matrix m m ℂ,
+    ((∃ X, (S * T).IsInnerInverse X ∧ (S * T) * X = M) ↔
+      (∃ Z', S.IsInnerInverse Z' ∧ S * Z' = M)) ∧
+    ((∃ Z', S.IsInnerInverse Z' ∧ S * Z' = M) ↔
+      ∃! V : Matrix r l ℂ, M = S * (Z + V * K))
+  /-- All right products, described using either the original matrix or its second factor. -/
+  rightProducts : ∀ M : Matrix n n ℂ,
+    ((∃ X, (S * T).IsInnerInverse X ∧ X * (S * T) = M) ↔
+      (∃ Y', T.IsInnerInverse Y' ∧ Y' * T = M)) ∧
+    ((∃ Y', T.IsInnerInverse Y' ∧ Y' * T = M) ↔
+      ∃! U : Matrix k r ℂ, M = (Y + F * U) * T)
+  /-- The three affine coordinate blocks of an arbitrary inner inverse. -/
+  inner : ∀ X : Matrix n m ℂ, (S * T).IsInnerInverse X ↔
+    ∃! p : Matrix k r ℂ × Matrix r l ℂ × Matrix k l ℂ,
+      X = Y * Z + Y * p.2.1 * K + F * p.1 * Z + F * p.2.2 * K
+  /-- Decomposition as a reflexive inverse and a uniquely determined null-space perturbation. -/
+  split : ∀ X : Matrix n m ℂ, (S * T).IsInnerInverse X ↔
+    ∃! p : Matrix n m ℂ × Matrix k l ℂ,
+      (S * T).IsInnerInverse p.1 ∧ (S * T).IsOuterInverse p.1 ∧ X = p.1 + F * p.2 * K
+
+variable [DecidableEq m] [DecidableEq n] [DecidableEq r] [DecidableEq k] [DecidableEq l]
+
+/-- **Exercise 85** of [benIsrael2003generalized], Chapter 2.
+For a full-rank factorization $ST$ with chosen inverses $Y,Z$ of the
+factors, the six displayed parametrizations are exact and nonredundant.
+Here $TY=I$ and $ZS=I$ express that the inverses are one-sided. -/
+theorem exercise_85 (S : Matrix m r ℂ) (T : Matrix r n ℂ) (Y : Matrix n r ℂ) (Z : Matrix r m ℂ)
+    (hY : T * Y = 1) (hZ : Z * S = 1) (F : Matrix n k ℂ) (K : Matrix l m ℂ)
+    (hF : Function.Injective F.mulVecLin)
+    (hFr : LinearMap.range F.mulVecLin = LinearMap.ker (S * T).mulVecLin)
+    (hK : Function.Injective Kᴴ.mulVecLin)
+    (hKr : LinearMap.range Kᴴ.mulVecLin = LinearMap.ker (S * T)ᴴ.mulVecLin) :
+    FullRankInverseFamilies S T Y Z F K := by
+  let A := S * T
+  have hin : A.IsInnerInverse (Y * Z) := by
+    rw [isInnerInverse_iff]
+    calc
+      A * (Y * Z) * A = S * (T * Y) * (Z * S) * T := by simp [A, Matrix.mul_assoc]
+      _ = A := by simp [A, hY, hZ]
+  have hmid : Z * A * Y = 1 := by
+    calc
+      Z * A * Y = (Z * S) * (T * Y) := by simp [A, Matrix.mul_assoc]
+      _ = 1 := by simp [hY, hZ]
+  have hout : A.IsOuterInverse (Y * Z) := by
+    rw [isOuterInverse_iff]
+    calc
+      Y * Z * A * (Y * Z) = Y * (Z * A * Y) * Z := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [hmid, Matrix.mul_one]
+  have hYinj : Function.Injective Y.mulVecLin :=
+    fun x y h => by
+      have he := congrArg (T *ᵥ ·) h
+      change T *ᵥ (Y *ᵥ x) = T *ᵥ (Y *ᵥ y) at he
+      simpa only [mulVec_mulVec, hY, one_mulVec] using he
+  have hZsurj : Function.Surjective Z.mulVecLin := fun x =>
+    ⟨S *ᵥ x, by
+      change Z *ᵥ (S *ᵥ x) = x
+      rw [mulVec_mulVec, hZ, one_mulVec]⟩
+  obtain ⟨C⟩ := exists_reflexiveInverseCoordinates Y Z hin hout hYinj hZsurj hF hFr hK hKr
+  have hKS : K * S = 0 := by
+    calc
+      _ = (K * A) * Y := by simp [A, Matrix.mul_assoc, hY]
+      _ = _ := by rw [C.KA, Matrix.zero_mul]
+  have hTF : T * F = 0 := by
+    calc
+      _ = Z * (A * F) := by simp only [A, ← Matrix.mul_assoc, hZ, Matrix.one_mul]
+      _ = _ := by rw [C.AF, Matrix.mul_zero]
+  have hSZ : A * (Y * Z) = S * Z := by
+    calc
+      _ = S * (T * Y) * Z := by simp [A, Matrix.mul_assoc]
+      _ = _ := by rw [hY, Matrix.mul_one]
+  have hYT : (Y * Z) * A = Y * T := by
+    calc
+      _ = Y * (Z * S) * T := by simp [A, Matrix.mul_assoc]
+      _ = _ := by rw [hZ, Matrix.mul_one]
+  have hHK : C.H * K = 1 - S * Z := C.HK.trans (congrArg (1 - ·) hSZ)
+  have hFG : F * C.G = 1 - Y * T := C.FG.trans (congrArg (1 - ·) hYT)
+  have hZH : Z * C.H = 0 := by
+    calc
+      _ = (Z * (C.H * K)) * C.H := by
+        simp only [Matrix.mul_assoc, C.KH, Matrix.mul_one]
+      _ = _ := by
+        rw [hHK, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, hZ, Matrix.one_mul,
+          sub_self, Matrix.zero_mul]
+  have hZSiff (Z' : Matrix r m ℂ) : S.IsInnerInverse Z' ↔ Z' * S = 1 := by
+    constructor
+    · intro hz
+      calc
+        Z' * S = Z * (S * Z' * S) := by
+          simp only [← Matrix.mul_assoc, hZ, Matrix.one_mul]
+        _ = 1 := by rw [isInnerInverse_iff.mp hz, hZ]
+    · intro hz
+      rw [isInnerInverse_iff, Matrix.mul_assoc, hz, Matrix.mul_one]
+  have hTYiff (Y' : Matrix n r ℂ) : T.IsInnerInverse Y' ↔ T * Y' = 1 := by
+    constructor
+    · intro hy
+      calc
+        T * Y' = (T * Y' * T) * Y := by simp only [Matrix.mul_assoc, hY, Matrix.mul_one]
+        _ = 1 := by rw [isInnerInverse_iff.mp hy, hY]
+    · intro hy
+      rw [isInnerInverse_iff, hy, Matrix.one_mul]
+  have hfirst (Z' : Matrix r m ℂ) :
+      S.IsInnerInverse Z' ↔ ∃! V : Matrix r l ℂ, Z' = Z + V * K := by
+    rw [hZSiff]
+    constructor
+    · intro hz
+      refine ⟨(Z' - Z) * C.H, ?_, ?_⟩
+      · change Z' = Z + ((Z' - Z) * C.H) * K
+        have hz₀ : (Z' - Z) * (S * Z) = 0 := by
+          rw [← Matrix.mul_assoc, Matrix.sub_mul, hz, hZ, sub_self, Matrix.zero_mul]
+        rw [Matrix.mul_assoc, hHK, Matrix.mul_sub, Matrix.mul_one, hz₀, sub_zero]
+        abel
+      · intro v hv
+        rw [hv, add_sub_cancel_left, Matrix.mul_assoc, C.KH, Matrix.mul_one]
+    · rintro ⟨v, rfl, _⟩
+      simp only [Matrix.add_mul, Matrix.mul_assoc, hZ, hKS, Matrix.mul_zero, add_zero]
+  have hsecond (Y' : Matrix n r ℂ) :
+      T.IsInnerInverse Y' ↔ ∃! U : Matrix k r ℂ, Y' = Y + F * U := by
+    rw [hTYiff]
+    constructor
+    · intro hy
+      refine ⟨C.G * (Y' - Y), ?_, ?_⟩
+      · change Y' = Y + F * (C.G * (Y' - Y))
+        have hy₀ : (Y * T) * (Y' - Y) = 0 := by
+          rw [Matrix.mul_assoc, Matrix.mul_sub, hy, hY, sub_self, Matrix.mul_zero]
+        rw [← Matrix.mul_assoc, hFG, Matrix.sub_mul, Matrix.one_mul, hy₀, sub_zero]
+        abel
+      · intro u hu
+        rw [hu, add_sub_cancel_left, ← Matrix.mul_assoc, C.GF, Matrix.one_mul]
+    · rintro ⟨u, rfl, _⟩
+      simp only [Matrix.mul_add, ← Matrix.mul_assoc, hY, hTF, Matrix.zero_mul, add_zero]
+  have hinner (X : Matrix n m ℂ) : A.IsInnerInverse X ↔ T * X * S = 1 := by
+    constructor
+    · intro hx
+      calc
+        T * X * S = Z * (A * X * A) * Y := by simp only [A, ← Matrix.mul_assoc, hZ,
+          Matrix.one_mul, Matrix.mul_assoc (T * X * S), hY, Matrix.mul_one]
+        _ = 1 := by rw [isInnerInverse_iff.mp hx, hmid]
+    · intro hx
+      rw [isInnerInverse_iff]
+      calc
+        A * X * A = S * (T * X * S) * T := by simp [A, Matrix.mul_assoc]
+        _ = A := by simp [A, hx]
+  refine ⟨hfirst, hsecond, ?_, ?_, ?_, ?_⟩
+  · intro M
+    constructor
+    · constructor
+      · rintro ⟨X, hx, hM⟩
+        exact ⟨T * X, (hZSiff _).mpr ((hinner X).mp hx), by simpa [A, Matrix.mul_assoc] using hM⟩
+      · rintro ⟨Z', hz, hM⟩
+        refine ⟨Y * Z', (hinner _).mpr ?_, ?_⟩
+        · rw [← Matrix.mul_assoc, hY, Matrix.one_mul, (hZSiff _).mp hz]
+        · simpa only [A, ← Matrix.mul_assoc, Matrix.mul_assoc S T Y, hY, Matrix.mul_one] using hM
+    · constructor
+      · rintro ⟨Z', hz, rfl⟩
+        obtain ⟨V, hV, huniq⟩ := (hfirst Z').mp hz
+        refine ⟨V, congrArg (S * ·) hV, fun W hW => huniq W ?_⟩
+        have he := congrArg (Z * ·) hW
+        simpa only [← Matrix.mul_assoc, hZ, Matrix.one_mul] using he
+      · rintro ⟨V, rfl, _⟩
+        exact ⟨Z + V * K, (hZSiff _).mpr (by
+          rw [Matrix.add_mul, hZ, Matrix.mul_assoc, hKS, Matrix.mul_zero, add_zero]), rfl⟩
+  · intro M
+    constructor
+    · constructor
+      · rintro ⟨X, hx, hM⟩
+        exact ⟨X * S, (hTYiff _).mpr (by simpa [Matrix.mul_assoc] using (hinner X).mp hx),
+          by simpa [A, Matrix.mul_assoc] using hM⟩
+      · rintro ⟨Y', hy, hM⟩
+        refine ⟨Y' * Z, (hinner _).mpr ?_, ?_⟩
+        · simpa only [Matrix.mul_assoc, hZ, Matrix.mul_one] using (hTYiff _).mp hy
+        · rw [Matrix.mul_assoc, ← Matrix.mul_assoc Z S T, hZ, Matrix.one_mul]
+          exact hM
+    · constructor
+      · rintro ⟨Y', hy, rfl⟩
+        obtain ⟨U, hU, huniq⟩ := (hsecond Y').mp hy
+        refine ⟨U, congrArg (· * T) hU, fun W hW => huniq W ?_⟩
+        have he := congrArg (· * Y) hW
+        simpa only [Matrix.mul_assoc, hY, Matrix.mul_one] using he
+      · rintro ⟨U, rfl, _⟩
+        exact ⟨Y + F * U, (hTYiff _).mpr (by
+          rw [Matrix.mul_add, hY, ← Matrix.mul_assoc, hTF, Matrix.zero_mul, add_zero]), rfl⟩
+  · intro X
+    change A.IsInnerInverse X ↔ _
+    let P (u : Matrix k r ℂ) (w : Matrix k l ℂ) := u * Z + w * K
+    have hrepr (p : Matrix k r ℂ × Matrix r l ℂ × Matrix k l ℂ) :
+        Y * Z + Y * p.2.1 * K + F * p.1 * Z + F * p.2.2 * K =
+          Y * Z + F * P p.1 p.2.2 + Y * p.2.1 * K := by
+      simp only [P, Matrix.mul_add, ← Matrix.mul_assoc]
+      abel
+    have hPS (u : Matrix k r ℂ) (w : Matrix k l ℂ) : P u w * S = u := by
+      simp [P, Matrix.add_mul, Matrix.mul_assoc, hKS, hZ]
+    have hPH (u : Matrix k r ℂ) (w : Matrix k l ℂ) : P u w * C.H = w := by
+      simp [P, Matrix.add_mul, Matrix.mul_assoc, hZH, C.KH]
+    have hP (p : Matrix k m ℂ) : P (p * S) (p * C.H) = p := by
+      change (p * S) * Z + (p * C.H) * K = p
+      rw [Matrix.mul_assoc _ S, Matrix.mul_assoc _ C.H, hHK, ← Matrix.mul_add]
+      rw [show S * Z + (1 - S * Z) = 1 by abel, Matrix.mul_one]
+    rw [(innerInverse_parameters hin C X).1]
+    constructor
+    · rintro ⟨⟨p, v⟩, hp, huniq⟩
+      refine ⟨(p * S, v, p * C.H), ?_, ?_⟩
+      · change X = Y * Z + Y * v * K + F * (p * S) * Z + F * (p * C.H) * K
+        rw [hrepr (p * S, v, p * C.H), hP]
+        exact hp
+      · rintro ⟨u', v', w'⟩ h'
+        change X = Y * Z + Y * v' * K + F * u' * Z + F * w' * K at h'
+        rw [hrepr (u', v', w')] at h'
+        have hq := huniq (P u' w', v') h'
+        have hq₁ : P u' w' = p := congrArg Prod.fst hq
+        exact Prod.ext (by change u' = p * S; rw [← hq₁, hPS])
+          (Prod.ext (congrArg Prod.snd hq) (by change w' = p * C.H; rw [← hq₁, hPH]))
+    · rintro ⟨⟨u, v, w⟩, h, huniq⟩
+      change X = Y * Z + Y * v * K + F * u * Z + F * w * K at h
+      rw [hrepr (u, v, w)] at h
+      refine ⟨(P u w, v), h, ?_⟩
+      rintro ⟨p', v'⟩ h'
+      have hq := huniq (p' * S, v', p' * C.H) (by
+        change X = Y * Z + Y * v' * K + F * (p' * S) * Z + F * (p' * C.H) * K
+        rw [hrepr (p' * S, v', p' * C.H), hP]
+        exact h')
+      refine Prod.ext ?_ (congrArg (fun t => t.2.1) hq)
+      have he : P (p' * S) (p' * C.H) = P u w :=
+        congrArg (fun t : Matrix k r ℂ × Matrix r l ℂ × Matrix k l ℂ => P t.1 t.2.2) hq
+      rw [hP] at he
+      exact he
+  · intro X
+    change A.IsInnerInverse X ↔ _
+    have hcancel (D : Matrix k l ℂ) : C.G * (F * D * K) * C.H = D := by
+      calc
+        _ = (C.G * F) * D * (K * C.H) := by simp only [Matrix.mul_assoc]
+        _ = D := by simp [C.GF, C.KH]
+    have hproj (R : Matrix n m ℂ) (D : Matrix k l ℂ) :
+        A * (R + F * D * K) = A * R ∧ (R + F * D * K) * A = R * A := by
+      constructor
+      · simp only [Matrix.mul_add, ← Matrix.mul_assoc, C.AF, Matrix.zero_mul, add_zero]
+      · simp only [Matrix.add_mul, Matrix.mul_assoc, C.KA, Matrix.mul_zero, add_zero]
+    constructor
+    · intro hx
+      let R := X * A * X
+      let D := C.G * (X - R) * C.H
+      have hR : A.IsInnerInverse R ∧ A.IsOuterInverse R :=
+        ⟨hx.isInnerInverse_mul hx, hx.isOuterInverse_mul hx⟩
+      have hleft : A * (X - R) = 0 := by rw [Matrix.mul_sub, hx.mul_mul_inner, sub_self]
+      have hright : (X - R) * A = 0 := by rw [Matrix.sub_mul, hx.inner_mul_mul, sub_self]
+      have he : F * D * K = X - R := by
+        calc
+          _ = (F * C.G) * (X - R) * (C.H * K) := by simp only [D, Matrix.mul_assoc]
+          _ = X - R := by
+            rw [C.FG, C.HK, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc _ A, hleft,
+              Matrix.mul_zero, sub_zero, Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc,
+              hright, Matrix.zero_mul, sub_zero]
+      have hX : X = R + F * D * K := by rw [he]; abel
+      refine ⟨(R, D), ⟨hR.1, hR.2, hX⟩, ?_⟩
+      rintro ⟨R', D'⟩ ⟨_, ho, hX'⟩
+      change X = R' + F * D' * K at hX'
+      have hRR : R = R' := by
+        change X * A * X = R'
+        nth_rw 1 [hX']
+        rw [(hproj R' D').2, hX', Matrix.mul_assoc, (hproj R' D').1, ← Matrix.mul_assoc]
+        exact ho
+      have hDD : D' = D := by
+        have he' : F * D' * K = F * D * K := add_left_cancel (hX'.symm.trans (hRR ▸ hX))
+        have h := congrArg (fun W : Matrix n m ℂ => C.G * W * C.H) he'
+        simpa only [hcancel] using h
+      exact Prod.ext hRR.symm hDD
+    · rintro ⟨⟨R, D⟩, ⟨hi, _, hX⟩, _⟩
+      change X = R + F * D * K at hX
+      rw [isInnerInverse_iff, hX, (hproj R D).1]
+      exact hi
+
+end FamiliesExercises
+
+section HermiteExample
+
+open Matrix
+open BenIsraelGreville.Chapter00 (hermiteExampleMatrix)
+open BenIsraelGreville.Chapter01 (mem_one_iff)
+
+noncomputable section
+
+/-- The first rank factor of the example matrix in Equation (0.85). -/
+def hermiteExampleFirst : Matrix (Fin 3) (Fin 2) ℂ := !![2 * Complex.I, 0; 0, -3; 2, 1]
+
+/-- The second rank factor of the example matrix in Equation (0.85). -/
+def hermiteExampleSecond : Matrix (Fin 2) (Fin 6) ℂ :=
+  !![0, 1, 1 / 2, 0, 1 - 2 * Complex.I, -(Complex.I / 2);
+    0, 0, 0, 1, 2, 1 + Complex.I]
+
+/-- The right inverse of the second rank factor selects columns two and four. -/
+def hermiteExampleY : Matrix (Fin 6) (Fin 2) ℂ :=
+  !![0, 0; 1, 0; 0, 0; 0, 1; 0, 0; 0, 0]
+
+/-- The left inverse of the first rank factor printed in Exercise 86. -/
+def hermiteExampleZ : Matrix (Fin 2) (Fin 3) ℂ := !![-(Complex.I / 2), 0, 0; 0, -1 / 3, 0]
+
+/-- The right null-space basis printed in Exercise 81. -/
+def hermiteExampleF : Matrix (Fin 6) (Fin 4) ℂ :=
+  !![1, 0, 0, 0; 0, 1, -1 + 2 * Complex.I, 0; 0, -2, 0, Complex.I;
+    0, 0, -2, -1 - Complex.I; 0, 0, 1, 0; 0, 0, 0, 1]
+
+/-- The conjugate-transposed left null-space basis printed in Exercise 81. -/
+def hermiteExampleK : Matrix (Fin 1) (Fin 3) ℂ := !![3 * Complex.I, 1, 3]
+
+private def hermiteExampleG : Matrix (Fin 4) (Fin 6) ℂ :=
+  !![1, 0, 0, 0, 0, 0; 0, 0, -1 / 2, 0, 0, Complex.I / 2;
+    0, 0, 0, 0, 1, 0; 0, 0, 0, 0, 0, 1]
+
+private def hermiteExampleH : Matrix (Fin 3) (Fin 1) ℂ := !![0; 0; 1 / 3]
+
+/-- The zero-parameter inverse of the example in Chapter 1, Exercise 6. -/
+def hermiteExampleReflexiveInverse : Matrix (Fin 6) (Fin 3) ℂ :=
+  !![0, 0, 0; -(Complex.I / 2), 0, 0; 0, 0, 0; 0, -1 / 3, 0; 0, 0, 0; 0, 0, 0]
+
+set_option maxHeartbeats 4000000 in
+/-- The concrete matrices in Exercises 81 and 86 satisfy the printed
+factorization, one-sided inverse, and kernel projection identities. -/
+private theorem hermiteExample_inverse_data :
+    hermiteExampleFirst * hermiteExampleSecond = hermiteExampleMatrix ∧
+      hermiteExampleSecond * hermiteExampleY = 1 ∧ hermiteExampleZ * hermiteExampleFirst = 1 ∧
+      hermiteExampleY * hermiteExampleZ = hermiteExampleReflexiveInverse ∧
+      hermiteExampleSecond * hermiteExampleF = 0 ∧ hermiteExampleK * hermiteExampleFirst = 0 ∧
+      hermiteExampleG * hermiteExampleF = 1 ∧ hermiteExampleK * hermiteExampleH = 1 ∧
+      hermiteExampleF * hermiteExampleG = 1 - hermiteExampleY * hermiteExampleSecond ∧
+      hermiteExampleH * hermiteExampleK = 1 - hermiteExampleFirst * hermiteExampleZ := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  all_goals
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      apply Complex.ext <;>
+      norm_num [hermiteExampleFirst, hermiteExampleSecond, hermiteExampleMatrix,
+        hermiteExampleY, hermiteExampleZ, hermiteExampleF, hermiteExampleK,
+        hermiteExampleG, hermiteExampleH, hermiteExampleReflexiveInverse,
+        Matrix.mul_apply, Matrix.one_apply, Fin.sum_univ_succ, Fin.succ]
+
+/-- The rank factorization in Equation (0.85) has the stated one-sided inverses. -/
+theorem hermiteExample_rankFactorization :
+    hermiteExampleMatrix = hermiteExampleFirst * hermiteExampleSecond ∧
+      hermiteExampleSecond * hermiteExampleY = 1 ∧ hermiteExampleZ * hermiteExampleFirst = 1 :=
+  ⟨hermiteExample_inverse_data.1.symm, hermiteExample_inverse_data.2.1,
+    hermiteExample_inverse_data.2.2.1⟩
+
+private theorem kernel_basis_of_splitting {m n k : Type*} [Fintype m] [Fintype n] [Fintype k]
+    [DecidableEq n] [DecidableEq k] {A : Matrix m n ℂ} {U : Matrix n m ℂ}
+    {F : Matrix n k ℂ} {G : Matrix k n ℂ}
+    (hAF : A * F = 0) (hGF : G * F = 1) (hFG : F * G = 1 - U * A) :
+    Function.Injective F.mulVecLin ∧ LinearMap.range F.mulVecLin = LinearMap.ker A.mulVecLin := by
+  constructor
+  · intro x y h
+    have he := congrArg (G *ᵥ ·) h
+    change G *ᵥ (F *ᵥ x) = G *ᵥ (F *ᵥ y) at he
+    simpa only [mulVec_mulVec, hGF, one_mulVec] using he
+  · ext x
+    constructor
+    · rintro ⟨y, rfl⟩
+      change A *ᵥ (F *ᵥ y) = 0
+      rw [mulVec_mulVec, hAF, zero_mulVec]
+    · intro hx
+      change A *ᵥ x = 0 at hx
+      refine ⟨G *ᵥ x, ?_⟩
+      change F *ᵥ (G *ᵥ x) = x
+      rw [mulVec_mulVec, hFG, sub_mulVec, one_mulVec, ← mulVec_mulVec, hx, mulVec_zero, sub_zero]
+
+/-- The printed columns of $F$ and $K^H$ give bases of the two kernels in Exercise 81. -/
+theorem hermiteExample_nullSpaceBases :
+    Function.Injective hermiteExampleF.mulVecLin ∧
+      LinearMap.range hermiteExampleF.mulVecLin = LinearMap.ker hermiteExampleMatrix.mulVecLin ∧
+      Function.Injective hermiteExampleKᴴ.mulVecLin ∧
+      LinearMap.range hermiteExampleKᴴ.mulVecLin =
+        LinearMap.ker hermiteExampleMatrixᴴ.mulVecLin := by
+  obtain ⟨hA, hY, hZ, hU, hTF, hKS, hGF, hKH, hFG, hHK⟩ := hermiteExample_inverse_data
+  have hAF : hermiteExampleMatrix * hermiteExampleF = 0 := by
+    simp only [← hA, Matrix.mul_assoc, hTF, Matrix.mul_zero]
+  have hKA : hermiteExampleK * hermiteExampleMatrix = 0 := by
+    simp only [← hA, ← Matrix.mul_assoc, hKS, Matrix.zero_mul]
+  have hFG' : hermiteExampleF * hermiteExampleG =
+      1 - hermiteExampleReflexiveInverse * hermiteExampleMatrix := by
+    rw [hFG, ← hU, ← hA, Matrix.mul_assoc, ← Matrix.mul_assoc hermiteExampleZ,
+      hZ, Matrix.one_mul]
+  have hHK' : hermiteExampleH * hermiteExampleK =
+      1 - hermiteExampleMatrix * hermiteExampleReflexiveInverse := by
+    rw [hHK, ← hU, ← hA, ← Matrix.mul_assoc,
+      Matrix.mul_assoc hermiteExampleFirst, hY, Matrix.mul_one]
+  obtain ⟨hF, hFr⟩ := kernel_basis_of_splitting hAF hGF hFG'
+  obtain ⟨hK, hKr⟩ := kernel_basis_of_splitting
+    (A := hermiteExampleMatrixᴴ) (U := hermiteExampleReflexiveInverseᴴ)
+    (F := hermiteExampleKᴴ) (G := hermiteExampleHᴴ)
+    (by simpa only [conjTranspose_mul, conjTranspose_zero] using congrArg conjTranspose hKA)
+    (by simpa only [conjTranspose_mul, conjTranspose_one] using congrArg conjTranspose hKH)
+    (by simpa only [conjTranspose_mul, conjTranspose_one, conjTranspose_sub] using
+      congrArg conjTranspose hHK')
+  exact ⟨hF, hFr, hK, hKr⟩
+
+/-- The inverse obtained by setting the four parameters in Equation (1.7) to zero
+satisfies the two Penrose equations. -/
+theorem hermiteExample_reflexiveInverse :
+    hermiteExampleMatrix.IsInnerInverse hermiteExampleReflexiveInverse ∧
+      hermiteExampleMatrix.IsOuterInverse hermiteExampleReflexiveInverse := by
+  obtain ⟨hA, hY, hZ, hU, _⟩ := hermiteExample_inverse_data
+  rw [← hA, ← hU]
+  constructor
+  · change (hermiteExampleFirst * hermiteExampleSecond) * (hermiteExampleY * hermiteExampleZ) *
+      (hermiteExampleFirst * hermiteExampleSecond) = hermiteExampleFirst * hermiteExampleSecond
+    calc
+      _ = hermiteExampleFirst * (hermiteExampleSecond * hermiteExampleY) *
+          (hermiteExampleZ * hermiteExampleFirst) * hermiteExampleSecond := by
+        simp only [Matrix.mul_assoc]
+      _ = _ := by simp only [hY, hZ, Matrix.mul_one]
+  · change (hermiteExampleY * hermiteExampleZ) * (hermiteExampleFirst * hermiteExampleSecond) *
+      (hermiteExampleY * hermiteExampleZ) = hermiteExampleY * hermiteExampleZ
+    calc
+      _ = hermiteExampleY * (hermiteExampleZ * hermiteExampleFirst) *
+          (hermiteExampleSecond * hermiteExampleY) * hermiteExampleZ := by
+        simp only [Matrix.mul_assoc]
+      _ = _ := by simp only [hY, hZ, Matrix.mul_one]
+
+/-- **Exercise 81** of [benIsrael2003generalized], Chapter 2.
+For the matrix of Equation (0.80), the redundant family has eighteen scalar
+parameters, and the efficient family has twelve plus two scalar parameters.
+The two affine descriptions both give exactly the inner inverses. -/
+theorem exercise_81 :
+    (∀ X : Matrix (Fin 6) (Fin 3) ℂ, hermiteExampleMatrix.IsInnerInverse X ↔
+      ∃ V : Matrix (Fin 6) (Fin 3) ℂ,
+        X = hermiteExampleReflexiveInverse + V -
+          hermiteExampleReflexiveInverse * hermiteExampleMatrix * V * hermiteExampleMatrix *
+            hermiteExampleReflexiveInverse) ∧
+    (∀ X : Matrix (Fin 6) (Fin 3) ℂ, hermiteExampleMatrix.IsInnerInverse X ↔
+      ∃! yz : Matrix (Fin 4) (Fin 3) ℂ × Matrix (Fin 2) (Fin 1) ℂ,
+        X = hermiteExampleReflexiveInverse + hermiteExampleF * yz.1 +
+          hermiteExampleY * yz.2 * hermiteExampleK) ∧
+    Fintype.card (Fin 6 × Fin 3) = 18 ∧
+      Fintype.card ((Fin 4 × Fin 3) ⊕ (Fin 2 × Fin 1)) = 14 := by
+  obtain ⟨hA, hY, hZ, hU, _⟩ := hermiteExample_inverse_data
+  obtain ⟨hF, hFr, hK, hKr⟩ := hermiteExample_nullSpaceBases
+  have hYinj : Function.Injective hermiteExampleY.mulVecLin :=
+    fun x y h => by
+      have he := congrArg (hermiteExampleSecond *ᵥ ·) h
+      change hermiteExampleSecond *ᵥ (hermiteExampleY *ᵥ x) =
+        hermiteExampleSecond *ᵥ (hermiteExampleY *ᵥ y) at he
+      simpa only [mulVec_mulVec, hY, one_mulVec] using he
+  have hZsurj : Function.Surjective hermiteExampleZ.mulVecLin := fun x =>
+    ⟨hermiteExampleFirst *ᵥ x, by
+      change hermiteExampleZ *ᵥ (hermiteExampleFirst *ᵥ x) = x
+      rw [mulVec_mulVec, hZ, one_mulVec]⟩
+  have hi := hermiteExample_reflexiveInverse.1
+  have ho := hermiteExample_reflexiveInverse.2
+  have hprod : hermiteExampleMatrix.IsInnerInverse (hermiteExampleY * hermiteExampleZ) ∧
+      hermiteExampleMatrix.IsOuterInverse (hermiteExampleY * hermiteExampleZ) :=
+    hU.symm ▸ ⟨hi, ho⟩
+  obtain ⟨C⟩ := exists_reflexiveInverseCoordinates hermiteExampleY hermiteExampleZ hprod.1 hprod.2
+    hYinj hZsurj hF hFr hK hKr
+  refine ⟨?_, ?_, by simp, by simp⟩
+  · intro X
+    simpa only [mem_one_iff] using corollary_1 (X := X) (mem_one_iff.mpr hi)
+  · intro X
+    simpa only [hU] using (innerInverse_parameters hprod.1 C X).1
+
+/-- **Exercise 86** of [benIsrael2003generalized], Chapter 2.
+The exact matrices of Equations (0.80) and (0.85), with the printed $Z_0$,
+satisfy all six efficient inverse characterizations of Exercise 85. -/
+theorem exercise_86 :
+    FullRankInverseFamilies hermiteExampleFirst hermiteExampleSecond hermiteExampleY
+      hermiteExampleZ hermiteExampleF hermiteExampleK := by
+  obtain ⟨hA, hY, hZ, _⟩ := hermiteExample_inverse_data
+  obtain ⟨hF, hFr, hK, hKr⟩ := hermiteExample_nullSpaceBases
+  exact exercise_85 hermiteExampleFirst hermiteExampleSecond hermiteExampleY hermiteExampleZ
+    hY hZ hermiteExampleF hermiteExampleK hF (hA.symm ▸ hFr) hK (hA.symm ▸ hKr)
+
+end
+
+end HermiteExample
 
 end BenIsraelGreville.Chapter02
