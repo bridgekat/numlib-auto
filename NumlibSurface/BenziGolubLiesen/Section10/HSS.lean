@@ -112,12 +112,14 @@ theorem hss_skew_schur (K : Matrix n n ℝ) (B : Matrix m n ℝ) {α : ℝ}
   rw [← hh, ← h]
   abel
 
+omit [DecidableEq n] in
 /-- Equation (10.31) of [benzi2005numerical]. With zero primal skew block, the pressure
 equation is the shifted Gram system $(BB^T+\alpha^2 I)y=Bf+\alpha g$. -/
 theorem hss_skew_schur_zero (B : Matrix m n ℝ) {α : ℝ} (hα : α ≠ 0)
     {x f : n → ℝ} {y g : m → ℝ} (hx : α • x + Bᵀ *ᵥ y = f)
     (hy : -(B *ᵥ x) + α • y = g) :
     (B * Bᵀ + α ^ 2 • 1) *ᵥ y = B *ᵥ f + α • g := by
+  classical
   simpa using hss_skew_schur (0 : Matrix n n ℝ) B hα (by simp)
     (x := x) (y := y) (f := f) (g := g) (by simpa [smul_mulVec] using hx) hy
 
@@ -171,11 +173,12 @@ theorem hss_saddle_spectrum_disk (H K : Matrix n n ℂ) (B : Matrix m n ℂ) (C 
   | inl i => exact congrFun hx i
   | inr i => exact congrFun hy i
 
-omit [DecidableEq n] in
+omit [DecidableEq n] [Fintype m] in
 /-- The shifted pressure Gram matrix in (10.31) is positive definite for any
 nonzero shift, without a rank assumption on $B$. -/
-theorem hss_skew_schur_zero_posDef (B : Matrix m n ℝ) {α : ℝ} (hα : α ≠ 0) :
+theorem hss_skew_schur_zero_posDef [Finite m] (B : Matrix m n ℝ) {α : ℝ} (hα : α ≠ 0) :
     (B * Bᵀ + α ^ 2 • 1).PosDef := by
+  let := Fintype.ofFinite m
   exact PosDef.posSemidef_add
     (by simpa [conjTranspose_eq_transpose_of_trivial] using posSemidef_self_mul_conjTranspose B)
     (PosDef.one.smul (sq_pos_of_ne_zero hα))

@@ -511,7 +511,8 @@ private theorem model_le_directional_quadratic {m : E → ℝ} {x d : E} {T B : 
     monotoneOn_of_deriv_nonneg (convex_Icc 0 T)
       (fun r hr => (hv r hr).continuousAt.continuousWithinAt)
       (fun r hr => (hv r (interior_subset hr)).differentiableAt.differentiableWithinAt)
-      (fun r hr => by rw [(hv r (interior_subset hr)).deriv]; exact sub_nonneg.mpr (hB r (interior_subset hr)))
+      (fun r hr => by
+        rw [(hv r (interior_subset hr)).deriv]; exact sub_nonneg.mpr (hB r (interior_subset hr)))
   let w (r : ℝ) := (r * fderiv ℝ m x d + (1 / 2) * B * r ^ 2) - m (x + r • d)
   have hw (r : ℝ) (hr : r ∈ Set.Icc (0 : ℝ) T) :
       HasDerivAt w (v r - v 0) r := by
@@ -872,7 +873,8 @@ theorem theorem_8_1_2 {P : ConnGouldToint.Chapter06.BTRParams} {f : E → ℝ}
     (run : ConnGouldToint.Chapter06.BTRRun f P sufficient)
     {τ : ℕ → ℝ} {κ cap : ℝ} (hκ : 0 < κ) (hcap : 0 < cap)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
-    (hlower : BddBelow (Set.range f)) (herr : ConnGouldToint.Chapter06.smallRadiusModelAgreement run)
+    (hlower : BddBelow (Set.range f))
+    (herr : ConnGouldToint.Chapter06.smallRadiusModelAgreement run)
     (hsecond : ∀ k, HasCappedNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
       (τ k) (run.Δ k) κ cap)
     (hupper : (atTop : Filter ℕ).IsBoundedUnder (· ≤ ·) τ) :

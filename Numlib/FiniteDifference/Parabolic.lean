@@ -251,9 +251,9 @@ theorem isSemidiscreteGalerkin_iff_isSemidiscrete (φ : Module.Basis ι ℝ K) (
       LinearEquiv.apply_symm_apply]
     exact h
 
-omit [FiniteDimensional ℝ K] in
 -- the linter does not see the `Fintype` inside `Matrix.PosDef`
 set_option linter.unusedFintypeInType false in
+omit [FiniteDimensional ℝ K] in
 /-- **The mass matrix is positive definite** ([quarteroni2000numerical], §13.3, after (13.14)). Let
 $K$ be a real inner product space and let $(\varphi_i)_{i \in \iota}$ be a linearly independent
 family in $K$, indexed by a finite type. Then the Gram matrix

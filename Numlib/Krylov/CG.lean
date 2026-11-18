@@ -1322,7 +1322,8 @@ theorem inner_residual_direction_eq_of_pos_prefix (hAs : A.IsSymmetric) {k : ℕ
   | succ j hij ih =>
     intro hjk
     rw [iterate_succ_p, inner_add_right, inner_smul_right, ih (by omega),
-      inner_residual_eq_zero_of_pos_prefix b x₀ hAs hpos (by omega) hjk (show i ≠ j + 1 by omega), zero_add,
+      inner_residual_eq_zero_of_pos_prefix b x₀ hAs hpos (by omega) hjk (show i ≠ j + 1 by omega),
+      zero_add,
       ← inner_self_eq_ofReal_norm_sq, ← inner_self_eq_ofReal_norm_sq, beta_mul_inner_self A b x₀ j]
 
 omit hA in

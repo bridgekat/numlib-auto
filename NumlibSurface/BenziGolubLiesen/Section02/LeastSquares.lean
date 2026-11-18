@@ -17,17 +17,22 @@ The results use `Numlib.LinearAlgebra.Matrix.LeastSquares.ResidualKKT`.
 
 ## Main results
 
-* Equations (2.21)–(2.23), `BenziGolubLiesen.equalityLeastSquares_iff_augmented`: equality constraints.
-* Equation (2.24), `BenziGolubLiesen.weightedLeastSquares_iff_augmented`: positive definite covariance.
-* After (2.24), `BenziGolubLiesen.generalizedLeastSquares_iff_augmented`: possibly singular covariance.
-* Final paragraph, `BenziGolubLiesen.regularizedLeastSquares_iff_augmented`: Tikhonov regularization.
+* Equations (2.21)–(2.23), `BenziGolubLiesen.equalityLeastSquares_iff_augmented`:
+  equality constraints.
+* Equation (2.24), `BenziGolubLiesen.weightedLeastSquares_iff_augmented`:
+  positive definite covariance.
+* After (2.24), `BenziGolubLiesen.generalizedLeastSquares_iff_augmented`:
+  possibly singular covariance.
+* Final paragraph, `BenziGolubLiesen.regularizedLeastSquares_iff_augmented`:
+  Tikhonov regularization.
 
 ## Deviations from the source
 
 * **(2.21)** (typo). The objective and the constraints depend on $y$, so minimization is over $y$.
 * **Paragraph after (2.24)** (reading). With singular covariance the objective is minimum noise
   norm subject to the factored observation equation, rather than an inverse-weighted norm.
-* **(2.21)–(2.24)** (generalization). The equivalences do not need the printed dimension inequalities.
+* **(2.21)–(2.24)** (generalization). The equivalences do not need the printed
+  dimension inequalities.
 
 ## Not formalized
 
@@ -69,7 +74,7 @@ constraint use $y$, which is the vector minimized over here.
 
 **Generalization.** The equivalence also holds when the number of rows of $E$ is not
 less than its number of columns. -/
-theorem equalityLeastSquares_iff_augmented [DecidableEq p] [DecidableEq q] [DecidableEq m]
+theorem equalityLeastSquares_iff_augmented [DecidableEq p] [DecidableEq m]
     (G : Matrix p m ℝ) (E : Matrix q m ℝ) (c : p → ℝ) (d : q → ℝ) (y : m → ℝ) :
     IsLSESolution G (WithLp.toLp 2 c) E (WithLp.toLp 2 d) (WithLp.toLp 2 y) ↔
       ∃ (r : p → ℝ) (multiplier : q → ℝ),
@@ -104,7 +109,7 @@ and $v=F^T r$.
 
 **Reading.** The source notes that the augmented system extends to singular covariance. The
 factored feasible-noise model supplies the optimization problem in that case. -/
-theorem generalizedLeastSquares_iff_augmented [DecidableEq n] [DecidableEq m] [DecidableEq k]
+theorem generalizedLeastSquares_iff_augmented [DecidableEq m] [DecidableEq k]
     (G : Matrix n m ℝ) (F : Matrix n k ℝ) (f : n → ℝ) (x : m → ℝ) (v : k → ℝ) :
     IsGeneralizedLeastSquaresSolution G F (WithLp.toLp 2 f) (WithLp.toLp 2 x) (WithLp.toLp 2 v) ↔
       ∃ r : n → ℝ, saddlePointMatrix (F * Fᵀ) Gᵀ Gᵀ 0 *ᵥ Sum.elim r x =
@@ -118,7 +123,7 @@ penalty matrix $L$ and parameter $\gamma>0$, a vector $x$ minimizes
 $\|f-Gx\|_2^2+\gamma\|Lx\|_2^2$ if and only if some residual $r$ makes $(r,x)$ a
 solution of the augmented system with primal block $I$, coupling $G^T$, dual block
 $-\gamma L^T L$, and right-hand side $(f,0)$. -/
-theorem regularizedLeastSquares_iff_augmented [DecidableEq n] [DecidableEq k] (G : Matrix n m ℝ)
+theorem regularizedLeastSquares_iff_augmented [DecidableEq n] (G : Matrix n m ℝ)
     (f : n → ℝ) (L : Matrix k m ℝ) {γ : ℝ} (hγ : 0 < γ) (x : m → ℝ) :
     IsMinOn (fun u ↦ ‖WithLp.toLp 2 (f - G *ᵥ u)‖ ^ 2 + γ * ‖WithLp.toLp 2 (L *ᵥ u)‖ ^ 2)
       Set.univ x ↔

@@ -1073,8 +1073,10 @@ theorem PrimalBarrierInnerRun.gradient_norm_tendsto_zero
   let c := P.η₁ * (κ * e)
   have hc : 0 < c := mul_pos P.eta₁_pos (mul_pos hκ he)
   have hL1 : 0 < L + 1 := by linarith
-  obtain ⟨N, hN⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos he hK))))
-  obtain ⟨J, hJ⟩ := eventually_atTop.mp (htail.eventually (gt_mem_nhds (div_pos (mul_pos hc he) hL1)))
+  obtain ⟨N, hN⟩ :=
+    eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos he hK))))
+  obtain ⟨J, hJ⟩ :=
+    eventually_atTop.mp (htail.eventually (gt_mem_nhds (div_pos (mul_pos hc he) hL1)))
   have hstep (j : ℕ) (hj : N ≤ j) (huj : e ≤ u j) :
       c * (u j - u (j + 1)) ≤ L * (v j - v (j + 1)) := by
     let ρ := primalBarrierRatio C σ φ (r.model j) (r.x j) (r.s j)

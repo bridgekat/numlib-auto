@@ -760,7 +760,8 @@ satisfies AA.2 with curvature $\tau_k$ and a constant $\kappa > 0$. Let $x_{k_i}
 strictly increasing sequence $(k_i)$, and suppose that $z$ is an isolated limit point: there is
 $r > 0$ such that every limit $y$ of a subsequence with $\|y - z\| < r$ equals $z$. Then there
 are no $a > 0$ and $r' > 0$ such that $\tau_k \le -a$ for all large $k$ with $\|x_k - z\| < r'$. -/
-theorem not_negative_curvature_near_isolated_limit [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
+theorem not_negative_curvature_near_isolated_limit [ProperSpace E] (run : BTRRun f P sufficient)
+    {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
     (hiso : ∃ r > (0 : ℝ), ∀ y, dist y z < r → ∀ i : ℕ → ℕ,
       StrictMono i → Tendsto (run.x ∘ i) atTop (𝓝 y) → y = z)
@@ -855,7 +856,8 @@ theorem theorem_6_6_7 [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
   have ha : 0 < a := div_pos (neg_pos.mpr hneg) (by norm_num)
   have haz : curv z < -(2 * a) := by dsimp [a]; linarith
   obtain ⟨r, hr, hnear⟩ := eventually_modelCurvature_negative_near run hcurv hagree ha haz
-  exact not_negative_curvature_near_isolated_limit run hj hz hiso ha hκ hK hval hlower herr hstep hsecond ⟨r, hr, hnear⟩
+  exact not_negative_curvature_near_isolated_limit run hj hz hiso ha hκ hK hval hlower herr hstep
+    hsecond ⟨r, hr, hnear⟩
 
 /-- **Assumption AA.3** of [conn2000trust], preceding Theorem 6.6.8. A run of the basic trust-region
 algorithm has **forced radius expansion** with factors $\gamma_3, \gamma_4$ and cap $\Delta_c$
@@ -1164,7 +1166,8 @@ theorem theorem_6_6_8 (run : BTRRun f P sufficient) {z : E}
   have ha : 0 < a := div_pos (neg_pos.mpr hneg) (by norm_num)
   have haz : curv z < -(2 * a) := by dsimp [a]; linarith
   obtain ⟨r, hr, hnear⟩ := eventually_modelCurvature_negative_near run hcurv hagree ha haz
-  exact not_negative_curvature_near_limit_of_forced_expansion run hj hz ha hκ hK hval hlower herr hstep hsecond hexpand ⟨r, hr, hnear⟩
+  exact not_negative_curvature_near_limit_of_forced_expansion run hj hz ha hκ hK hval hlower herr
+    hstep hsecond hexpand ⟨r, hr, hnear⟩
 
 /-- **Proof of Theorem 6.6.4** of [conn2000trust], small-radius model error from AM.6 and uniform
 continuity of the objective Hessian. Consider a run of the basic trust-region algorithm for a

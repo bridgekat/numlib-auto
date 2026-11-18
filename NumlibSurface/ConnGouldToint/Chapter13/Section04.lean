@@ -516,7 +516,8 @@ theorem theorem_13_4_2_inner_of_extension [Nontrivial E]
       _ ≤ _ := hclear j
     have hcap := barrier_fraction_mul_min_le hq.le hq1
       (div_nonneg (norm_nonneg _) (hβ j).le) (hΔ j).le hGq
-    have hmain := mul_le_mul_of_nonneg_left hcap (mul_nonneg r.decrease_constant.le (norm_nonneg (r.g j)))
+    have hmain :=
+      mul_le_mul_of_nonneg_left hcap (mul_nonneg r.decrease_constant.le (norm_nonneg (r.g j)))
     have hm : r.κ * (‖r.g j‖ * min (‖r.g j‖ / r.β j)
         (constrainedBarrierRadius (r.Δ j) σ (infDist (r.x j) (frontier C)))) ≤
         r.model j (r.x j) - r.model j (r.x j + r.s j) :=
@@ -574,7 +575,8 @@ theorem theorem_13_4_2_inner_of_extension [Nontrivial E]
       _ = (r.κ * -r.τ j) * (q₂ * min ((r.τ j) ^ 2) ((r.Δ j) ^ 2)) := by ring
       _ ≤ _ := hh.trans (by simpa only [constrainedBarrierRadius, mul_assoc, b] using hm)
   intro ε hε
-  exact (theorem_6_6_4 run (mul_pos r.decrease_constant hq₂) hval hlower hsmall ha hsecond ε hε).mono
+  exact
+    (theorem_6_6_4 run (mul_pos r.decrease_constant hq₂) hval hlower hsmall ha hsecond ε hε).mono
     (fun j hj ↦ hj.trans_le (min_le_right _ _))
 
 omit [CompleteSpace E] in
@@ -756,7 +758,8 @@ theorem PrimalBarrierInnerRun.euclidean_clearance_of_global_lower
     have hh' : (r.x j).ofLp ∈ interior O := hh
     change (r.x j).ofLp ∈ interior (Set.univ.pi (fun _ : ι ↦ Ici (0 : ℝ))) at hh'
     rw [interior_pi_set Set.finite_univ] at hh'
-    exact (by simpa only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi] using hh' :
+    exact
+      (by simpa only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi] using hh' :
       ∀ i, 0 < (r.x j).ofLp i) i
   obtain ⟨ε, hε, hbound⟩ := logBarrier_sublevel_separation_of_global_lower
     hμ hν hf hlower hH hbar hxp (fun j ↦ r.objective_antitone (Nat.zero_le j))
@@ -1579,7 +1582,8 @@ private theorem escapeQ_bounds {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1 / 2) :
 private theorem escapeA_bound {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1 / 2) :
     |escapeA u| ≤ 8 := by
   obtain ⟨hq₁, hq₂⟩ := escapeQ_bounds hu hu1
-  have hq3 : (escapeQ u) ^ 2 ≤ 1 := by nlinarith [mul_nonneg (sub_nonneg.mpr hq₂) (show 0 ≤ 1 + escapeQ u by linarith)]
+  have hq3 : (escapeQ u) ^ 2 ≤ 1 := by
+    nlinarith [mul_nonneg (sub_nonneg.mpr hq₂) (show 0 ≤ 1 + escapeQ u by linarith)]
   unfold escapeA
   apply abs_le.mpr
   constructor <;> nlinarith [mul_nonneg hu.le (show 0 ≤ 1 + escapeQ u by linarith),
@@ -1607,7 +1611,8 @@ private theorem escape_trial {u : ℝ} (hu : 0 < u) (hu1 : u ≤ 1 / 2) :
           (by nlinarith [div_pos zero_lt_one hu]))
       · exact ((mul_le_mul_of_nonneg_left (min_le_right _ _) (by norm_num)).trans
           (by unfold escapeY; nlinarith))
-    · have hyub : escapeY u ≤ 1 := by unfold escapeY; nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
+    · have hyub : escapeY u ≤ 1 := by
+        unfold escapeY; nlinarith [mul_nonneg hu.le (sub_nonneg.mpr hu1)]
       have hyt : escapeY (u / 2) ≤ escapeY u := by
         unfold escapeY
         nlinarith
@@ -2192,8 +2197,10 @@ theorem theorem_13_4_2_unbounded_primal_inner_run :
       escapeModel (u j) (escapePoint (u (j + 1))) = _
     rw [hup]
     exact escapeModel_predicted (htrial j)
-  have hr (j : ℕ) : 2 ≤ primalBarrierRatio escapeOrthant (1 / 4) escapeObjective (m j) (x j) (s j) := by
-    rw [primalBarrierRatio, ite_eq_left (ha j), Chapter06.btrRatio, Optimization.reductionRatio, hp j,
+  have hr (j : ℕ) :
+      2 ≤ primalBarrierRatio escapeOrthant (1 / 4) escapeObjective (m j) (x j) (s j) := by
+    rw [primalBarrierRatio, ite_eq_left (ha j), Chapter06.btrRatio, Optimization.reductionRatio,
+      hp j,
       hstep, escapeObjective_at_point (htrial j).parameter_pos,
       escapeObjective_at_point (htrial (j + 1)).parameter_pos]
     exact hratio j

@@ -59,13 +59,15 @@ private theorem curveIntegralFun_complexForm {a b : ℂ} (γ : Path a b) (f : �
     ContinuousLinearMap.id_apply]
 
 private theorem complexLineIntegral_eq_interval {a b : ℂ} (γ : Path a b) (f : ℂ → V) :
-    complexLineIntegral γ f = ∫ t in 0..1, derivWithin γ.extend unitInterval t • f (γ.extend t) := by
+    complexLineIntegral γ f =
+      ∫ t in 0..1, derivWithin γ.extend unitInterval t • f (γ.extend t) := by
   rw [complexLineIntegral, curveIntegral_def, curveIntegralFun_complexForm]
 
 private theorem intervalIntegrable_inversePole_of_contDiffOn {a b w : ℂ} {γ : Path a b}
     (hγ : ContDiffOn ℝ 1 γ.extend unitInterval) (hw : ∀ t ∈ unitInterval, γ.extend t ≠ w)
     (j : ℕ) (u : V) :
-    IntervalIntegrable (fun t => (derivWithin γ.extend unitInterval t * ((γ.extend t - w) ^ j)⁻¹) • u)
+    IntervalIntegrable
+      (fun t => (derivWithin γ.extend unitInterval t * ((γ.extend t - w) ^ j)⁻¹) • u)
       MeasureTheory.volume 0 1 := by
   apply ContinuousOn.intervalIntegrable_of_Icc zero_le_one
   refine ((hγ.continuousOn_derivWithin uniqueDiffOn_Icc_zero_one le_rfl).mul ?_).smul

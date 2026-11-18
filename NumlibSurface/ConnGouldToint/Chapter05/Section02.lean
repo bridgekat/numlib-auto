@@ -144,7 +144,8 @@ theorem algorithm_5_2_1 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace �
     refine ⟨by simpa using Arnoldi.vec_succ_eq H r₀ j, ?_⟩
     change Arnoldi.w H r₀ (j + 1) = H (q (j + 1)) - ⟪q (j + 1), H (q (j + 1))⟫ •
       q (j + 1) - ‖Arnoldi.w H r₀ j‖ • q j
-    simpa only [q, hd, Lanczos.beta, RCLike.ofReal_real_eq_id, id_eq] using Lanczos.w_succ_eq r₀ hH j
+    simpa only [q, hd, Lanczos.beta, RCLike.ofReal_real_eq_id, id_eq] using
+      Lanczos.w_succ_eq r₀ hH j
 
 
 section MatrixLanczos

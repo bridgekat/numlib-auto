@@ -452,8 +452,10 @@ private theorem sqp_external_convergence_within
       ((min_le_left d ρ).trans (min_le_right δ₀ (1 / (4 * (M * L + 1)))))
     nlinarith
   refine ⟨δ, hδ, min_le_right d ρ, fun x y hx₀ hy hyt hstep => ?_⟩
-  have hsub : ball xstar δ ⊆ ball xstar δ₀ := ball_subset_ball ((min_le_left d ρ).trans (min_le_left _ _))
-  have hsubY : ball ystar δ ⊆ ball ystar δ₀ := ball_subset_ball ((min_le_left d ρ).trans (min_le_left _ _))
+  have hsub : ball xstar δ ⊆ ball xstar δ₀ :=
+    ball_subset_ball ((min_le_left d ρ).trans (min_le_left _ _))
+  have hsubY : ball ystar δ ⊆ ball ystar δ₀ :=
+    ball_subset_ball ((min_le_left d ρ).trans (min_le_left _ _))
   have hrec (k : ℕ) (hx : x k ∈ ball xstar δ) :
       ‖x (k + 1) - xstar‖ ≤ ‖x k - xstar‖ / 2 := by
     have hb := (hlocal _ (hsub hx) _ (hsubY (hy k))).2
@@ -493,7 +495,8 @@ private theorem sqp_external_convergence_within
       M * (L * ‖y k - ystar‖ + L / 2 * ‖x k - xstar‖) * ‖x k - xstar‖ := by
     rw [hstep]
     exact (hlocal _ (hsub (hstay k)) _ (hsubY (hy k))).2
-  refine ⟨fun k ↦ ball_subset_ball (min_le_right d ρ) (hstay k), ⟨hxt, IsLittleO.of_bound fun ε hε => ?_⟩, fun k => ?_, fun hD => ?_⟩
+  refine ⟨fun k ↦ ball_subset_ball (min_le_right d ρ) (hstay k),
+    ⟨hxt, IsLittleO.of_bound fun ε hε => ?_⟩, fun k => ?_, fun hD => ?_⟩
   · have ht : Tendsto (fun k => M * (L * ‖y k - ystar‖ + L / 2 * ‖x k - xstar‖))
         atTop (𝓝 0) := by
       have hxerr := tendsto_iff_norm_sub_tendsto_zero.1 hxt
@@ -587,7 +590,7 @@ def mixedSQPFeasible (c : ActiveDual ι κ) (A : V →L[ℝ] ActiveDual ι κ)
     (b : ν → ℝ) (B : ν → V →L[ℝ] ℝ) : Set V :=
   feasible (mixedSQPEquality c A) (mixedSQPInequality c A b B)
 
-set_option maxHeartbeats 1000000 in
+omit [Fintype ν] in
 /-- **Theorem 15.2.2** of [conn2000trust], local solution of the mixed quadratic program. Let $H$ be
 symmetric with $\langle H d, d\rangle > 0$ for every nonzero $d$ with $A d = 0$. Suppose that
 $s$ and $y$ satisfy
@@ -596,7 +599,7 @@ that $y_j > 0$ for every active inequality $j$, and that $b_j + B_j s > 0$ for e
 inequality $j$. Then $s$ lies in the feasible set of the mixed quadratic program and is a strict
 local minimizer of $q(s) = \langle g, s\rangle + \frac12 \langle s, H s\rangle$ on it, the
 active inequalities hold with equality at $s$, and the inactive inequalities hold strictly. -/
-theorem mixedSQP_strict_minimizer_of_active_correction
+theorem mixedSQP_strict_minimizer_of_active_correction [Finite ν]
     {g : V} {H : V →L[ℝ] V} {c : ActiveDual ι κ} {A : V →L[ℝ] ActiveDual ι κ}
     {b : ν → ℝ} {B : ν → V →L[ℝ] ℝ} {s : V} {y : ActiveDual ι κ}
     (hH : (H : V →ₗ[ℝ] V).IsSymmetric)
@@ -607,6 +610,7 @@ theorem mixedSQP_strict_minimizer_of_active_correction
       Optimization.IsStrictLocalMinOn (Subproblem.quadModel g H) (mixedSQPFeasible c A b B) s ∧
       (∀ j : κ, c (.inr j) + A s (.inr j) = 0) ∧
       (∀ j : ν, 0 < b j + B j s) := by
+  have := Fintype.ofFinite ν
   let f := Subproblem.quadModel g H
   let ce := mixedSQPEquality c A
   let ci := mixedSQPInequality c A b B
@@ -709,6 +713,7 @@ private theorem mixed_sqp_kkt_invertible
   rw [heq]
   exact (theorem_3_2_7_activeKKT_invertible hA hH).comp (IsInvertible.of_inverse hF hF)
 
+omit [Fintype ν] in
 /-- **Theorem 15.2.2(iii)** of [conn2000trust], identification of the active set. Let $V$ be a
 finite-dimensional real inner product space, and let $(x_*, y_*)$ satisfy:
 
@@ -728,7 +733,7 @@ inactive inequalities hold strictly.
 
 The limits are taken along an arbitrary filter on an arbitrary index type, so the result covers
 sequences and nets. -/
-theorem theorem_15_2_2_iii
+theorem theorem_15_2_2_iii [Finite ν]
     {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
     {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
     {xStar : V} {yStar : ActiveDual ι κ}
@@ -748,6 +753,7 @@ theorem theorem_15_2_2_iii
         (s k) ∧
       (∀ j : κ, c (z k).1 (.inr j) + A (z k).1 (s k) (.inr j) = 0) ∧
       ∀ j : ν, 0 < b j (z k).1 + B j (z k).1 (s k) := by
+  have := Fintype.ofFinite ν
   have hx : Tendsto (fun k ↦ (z k).1) l (𝓝 xStar) := continuous_fst.continuousAt.tendsto.comp hz
   have hA' := hA.tendsto.comp hx
   have hH' := hH.tendsto.comp hz
@@ -773,13 +779,13 @@ theorem theorem_15_2_2_iii
   have hfeas : c (z k).1 + A (z k).1 (s k) = 0 := by rw [hk.2, add_neg_cancel]
   exact (mixedSQP_strict_minimizer_of_active_correction hks hkr.2 hstat hfeas hkm hkb).2
 
-set_option maxHeartbeats 1000000 in
+omit [Fintype ν] in
 /-- **Theorem 15.2.2** of [conn2000trust], selection of the closest local minimizer. Under the
 hypotheses of `ConnGouldToint.Chapter15.theorem_15_2_2_iii`, suppose also that $g$ is continuous
 at $x_*$ and $g(x_*) - A(x_*)^* y_* = 0$. Then eventually $s_k$ lies in the feasible set $C_k$
 of the mixed quadratic program at $x_k$, is a strict local minimizer of the model on $C_k$, and
 every local minimizer $t$ of the model on $C_k$ with $\|t\| \le \|s_k\|$ equals $s_k$. -/
-theorem theorem_15_2_2_closest
+theorem theorem_15_2_2_closest [Finite ν]
     {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
     {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
     {xStar : V} {yStar : ActiveDual ι κ}
@@ -799,6 +805,7 @@ theorem theorem_15_2_2_closest
       let f := Subproblem.quadModel (g (z k).1) (H (z k))
       s k ∈ C ∧ Optimization.IsStrictLocalMinOn f C (s k) ∧
         ∀ t ∈ C, IsLocalMinOn f C t → ‖t‖ ≤ ‖s k‖ → t = s k := by
+  have := Fintype.ofFinite ν
   let Q := (V × ActiveDual ι κ) × V
   let q₀ : Q := ((xStar, yStar), 0)
   let G (q : Q) := g q.1.1 + H q.1 q.2
@@ -830,7 +837,8 @@ theorem theorem_15_2_2_closest
     apply eventually_all.mpr
     intro j
     have ht := ((hb j).comp hx).add (((hB j).comp hx).clm_apply hTc)
-    exact ht.tendsto.eventually (Ioi_mem_nhds (show 0 < b j xStar + B j xStar 0 by simpa using hslack j))
+    exact ht.tendsto.eventually
+      (Ioi_mem_nhds (show 0 < b j xStar + B j xStar 0 by simpa using hslack j))
   have hn := hstrict.and (hinactive.and hrec)
   change ∀ᶠ q in 𝓝 ((xStar, yStar), (0 : V)), _ at hn
   rw [nhds_prod_eq] at hn
@@ -850,7 +858,8 @@ theorem theorem_15_2_2_closest
     ext t
     simp [mixedSQPFeasible, feasible, ce, ci]
   have hcoord (i : ι ⊕ κ) : c (z k).1 i + a (s k) i = 0 := by
-    have he : c (z k).1 + a (s k) = 0 := by rw [show a (s k) = -c (z k).1 from hkc.2, add_neg_cancel]
+    have he : c (z k).1 + a (s k) = 0 := by
+      rw [show a (s k) = -c (z k).1 from hkc.2, add_neg_cancel]
     exact congrArg (fun v : ActiveDual ι κ ↦ v i) he
   refine ⟨?_, hki.1, ?_⟩
   · rw [hC]
@@ -891,7 +900,8 @@ theorem theorem_15_2_2_closest
       funext j
       cases j with
       | inl j => rfl
-      | inr j => exact ((mul_eq_zero.mp (hKKT.complementary (.inr j))).resolve_right (hnneg j).ne).symm
+      | inr j =>
+        exact ((mul_eq_zero.mp (hKKT.complementary (.inr j))).resolve_right (hnneg j).ne).symm
     have hstat : G (z k, t) + (J (z k, t)).adjoint mult = 0 := by
       have h := (active_kkt_stationary_iff (f := Subproblem.quadModel (g (z k).1) (H (z k)))
         (h := ce) (g := ci) (mult := mult) hjac).mpr
@@ -936,6 +946,7 @@ theorem theorem_15_2_2_closest
     by_contra hne
     exact (hkr.2 (t - s k) hkern (sub_ne_zero.mpr hne)).ne' horth
 
+omit [Fintype ν] in
 /-- **Theorem 15.2.2** of [conn2000trust], uniform selection. Under the hypotheses of
 `ConnGouldToint.Chapter15.theorem_15_2_2_closest` at $(x_*, y_*)$, there is $\eta > 0$ with the
 following property. Let $z = (x, y)$, $s$ and $y^+$ satisfy $\|z - (x_*, y_*)\| < \eta$,
@@ -944,7 +955,7 @@ let $H(z)$ be symmetric. Then $s$ lies in the feasible set $C$ of the mixed quad
 $x$ and is a strict local minimizer of the model on $C$, the active inequalities hold with
 equality at $s$, the inactive inequalities hold strictly, and every local minimizer $t$ of the
 model on $C$ with $\|t\| \le \|s\|$ equals $s$. -/
-theorem mixedSQP_uniform_closest
+theorem mixedSQP_uniform_closest [Finite ν]
     {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
     {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
     {xStar : V} {yStar : ActiveDual ι κ}
@@ -964,6 +975,7 @@ theorem mixedSQP_uniform_closest
       (∀ j : κ, c z.1 (.inr j) + A z.1 s (.inr j) = 0) ∧
       (∀ j : ν, 0 < b j z.1 + B j z.1 s) ∧
       ∀ t ∈ C, IsLocalMinOn f C t → ‖t‖ ≤ ‖s‖ → t = s := by
+  have := Fintype.ofFinite ν
   let X := (V × ActiveDual ι κ) × V × ActiveDual ι κ
   let a : X := ((xStar, yStar), 0, yStar)
   let S : Set X := {v | IsSQPCorrection g c H A (fun x ↦ (A x).adjoint) v.1 v.2.1 v.2.2 ∧
@@ -1007,6 +1019,7 @@ private theorem sqpGradient_continuousAt {g : V → V} {c : V → ActiveDual ι 
   change g v = g v - (A v).adjoint y + (A v).adjoint y
   abel
 
+omit [Fintype ν] in
 /-- **Theorem 15.2.2(ii)** of [conn2000trust], with (iii). Let $V$ be a finite-dimensional real
 inner product space, and let $(x_*, y_*)$ be a root of the KKT residual $R$ of the equality and
 active inequality constraints, with $A^T = A^*$. Let $r > 0$ and $L \ge 0$, and suppose that on
@@ -1029,7 +1042,7 @@ its step is the unique local minimizer of the mixed program among those of no la
 exactly the active set of the solution.
 
 The continuity of $g$ at $x_*$ follows from the derivative hypothesis. -/
-theorem theorem_15_2_2_ii
+theorem theorem_15_2_2_ii [Finite ν]
     (g : V → V) (c : V → ActiveDual ι κ) (H : V × ActiveDual ι κ → V →L[ℝ] V)
     (A : V → V →L[ℝ] ActiveDual ι κ) (b : ν → V → ℝ) (B : ν → V → V →L[ℝ] ℝ)
     {xStar : V} {yStar : ActiveDual ι κ}
@@ -1060,10 +1073,12 @@ theorem theorem_15_2_2_ii
             (s k) ∧
           (∀ j : κ, c (u k).1 (.inr j) + A (u k).1 (s k) (.inr j) = 0) ∧
           (∀ j : ν, 0 < b j (u k).1 + B j (u k).1 (s k)) ∧
-          ∀ t ∈ mixedSQPFeasible (c (u k).1) (A (u k).1) (fun j ↦ b j (u k).1) (fun j ↦ B j (u k).1),
+          ∀ t ∈ mixedSQPFeasible (c (u k).1) (A (u k).1) (fun j ↦ b j (u k).1)
+              (fun j ↦ B j (u k).1),
             IsLocalMinOn (Subproblem.quadModel (g (u k).1) (H (u k)))
               (mixedSQPFeasible (c (u k).1) (A (u k).1) (fun j ↦ b j (u k).1) (fun j ↦ B j (u k).1))
               t → ‖t‖ ≤ ‖s k‖ → t = s k := by
+  have := Fintype.ofFinite ν
   obtain ⟨e, he⟩ := mixed_sqp_kkt_invertible (H := H) (A := A) (z := (xStar, yStar)) honto hpos
   have hG := sqpGradient_continuousAt hA ((hF _ (mem_ball_self hr)).continuousAt)
   have hst : g xStar - (A xStar).adjoint yStar = 0 := congrArg Prod.fst hstar
@@ -1096,6 +1111,7 @@ theorem theorem_15_2_2_ii
     (hsym _ (ball_subset_ball (min_le_left r (η / 3)) (hstay k)))
   exact h
 
+omit [Fintype ν] in
 /-- **Theorem 15.2.2(i)** of [conn2000trust], with (iii). Under the hypotheses of
 `ConnGouldToint.Chapter15.theorem_15_2_2_ii`, there is $\delta > 0$ with the following property.
 Let $(x_k)$ and $(y_k)$ be sequences with $x_0 \in B(x_*, \delta)$, $y_k \in B(y_*, \delta)$ for
@@ -1113,7 +1129,7 @@ from the first iteration; convergence alone is not enough
 
 **Reading.** The step is the Newton step for the active KKT equations, and the theorem proves
 that it solves the mixed quadratic program, as in `ConnGouldToint.Chapter15.theorem_15_2_2_ii`. -/
-theorem theorem_15_2_2_i
+theorem theorem_15_2_2_i [Finite ν]
     (g : V → V) (c : V → ActiveDual ι κ) (H : V × ActiveDual ι κ → V →L[ℝ] V)
     (A : V → V →L[ℝ] ActiveDual ι κ) (b : ν → V → ℝ) (B : ν → V → V →L[ℝ] ℝ)
     {xStar : V} {yStar : ActiveDual ι κ}
@@ -1148,6 +1164,7 @@ theorem theorem_15_2_2_i
           IsLocalMinOn (Subproblem.quadModel (g (x k)) (H (x k, y k)))
             (mixedSQPFeasible (c (x k)) (A (x k)) (fun j ↦ b j (x k)) (fun j ↦ B j (x k)))
             t → ‖t‖ ≤ ‖s‖ → t = s := by
+  have := Fintype.ofFinite ν
   obtain ⟨e, he⟩ := mixed_sqp_kkt_invertible (H := H) (A := A) (z := (xStar, yStar)) honto hpos
   let AT (v : V) := (A v).adjoint
   let K := sqpKKT H A AT
@@ -1187,7 +1204,8 @@ theorem theorem_15_2_2_i
   obtain ⟨ξ, hξ, hball⟩ := Metric.mem_nhds_iff.mp hnear
   let ρ := min ξ (min r η)
   have hρ : 0 < ρ := lt_min hξ (lt_min hr hη)
-  obtain ⟨δ, hδ, hδρ, hlocal⟩ := sqp_external_convergence_within g c H A AT hstar e he hr hL hρ hF hLip
+  obtain ⟨δ, hδ, hδρ, hlocal⟩ :=
+    sqp_external_convergence_within g c H A AT hstar e he hr hL hρ hF hLip
   refine ⟨δ, hδ, fun x y hx₀ hynear hy hstep ↦ ?_⟩
   obtain ⟨hstay, hsuper, -, hquad⟩ := hlocal x y hx₀ hynear hy hstep
   refine ⟨hsuper, hquad, fun k ↦ ?_⟩
@@ -1225,7 +1243,8 @@ theorem theorem_15_2_2_i
     change ‖yStar - d.2 - yStar‖ < η
     rw [show yStar - d.2 - yStar = -d.2 by abel, norm_neg]
     exact hd'.2
-  have h := hselect z _ mult (ball_subset_ball ((min_le_right ξ (min r η)).trans (min_le_right r η)) hz)
+  have h := hselect z _ mult
+    (ball_subset_ball ((min_le_right ξ (min r η)).trans (min_le_right r η)) hz)
     hs hm hcor (hsym z (ball_subset_ball ((min_le_right ξ (min r η)).trans (min_le_left r η)) hz))
   exact h
 

@@ -1485,10 +1485,10 @@ theorem PosSemidef.complexify [Finite n] {A : Matrix n n ℝ} (hA : A.PosSemidef
   exact add_nonneg (by simpa using hA.dotProduct_mulVec_nonneg (fun i => (z i).re))
     (by simpa using hA.dotProduct_mulVec_nonneg (fun i => (z i).im))
 
-omit [DecidableEq n] in
 -- `Matrix.PosDef` is stated with finitely supported sums and needs no `Fintype n`, but the proof
 -- goes through the `dotProduct` form `Matrix.posDef_iff_dotProduct_mulVec`, which does.
 set_option linter.unusedFintypeInType false in
+omit [DecidableEq n] in
 /-- **A real matrix is positive definite if and only if its complexification is**. Let $A$ be a real
 square matrix. Then $A_{\mathbb{C}}$ is positive definite if and only if $A$ is positive
 definite.

@@ -134,9 +134,10 @@ private theorem leastSquaresObjective_eq_sum [Fintype ι] (c : E → EuclideanSp
   rw [EuclideanSpace.norm_sq_eq, Finset.sum_div]
   simp [Real.norm_eq_abs, sq_abs]
 
-private theorem fderiv_residual_component [Fintype ι] {c : E → EuclideanSpace ℝ ι}
+private theorem fderiv_residual_component [Finite ι] {c : E → EuclideanSpace ℝ ι}
     {x : E} (hc : DifferentiableAt ℝ c x) (i : ι) :
     fderiv ℝ (fun y ↦ c y i) x = (PiLp.proj _ _ i).comp (fderiv ℝ c x) := by
+  have := Fintype.ofFinite ι
   let p : EuclideanSpace ℝ ι →L[ℝ] ℝ := PiLp.proj _ _ i
   exact (p.hasFDerivAt.comp x hc.hasFDerivAt).fderiv
 

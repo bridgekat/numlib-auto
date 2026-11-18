@@ -228,13 +228,15 @@ theorem theorem_13_7_2 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
       refine (mul_le_mul_of_nonneg_left ((Real.sqrt_le_sqrt hq).trans hs)
         (hDpos k)).trans_eq ?_
       dsimp only [B]
-      rw [Real.sqrt_div (mul_nonneg (by linarith) (hμpos k).le), Real.sqrt_mul (by linarith), Real.sqrt_sq (hρ k).le]
+      rw [Real.sqrt_div (mul_nonneg (by linarith) (hμpos k).le), Real.sqrt_mul (by linarith),
+        Real.sqrt_sq (hρ k).le]
       ring
     · simpa only [mul_zero, zero_mul, add_zero] using
         (hD.mul_const (Real.sqrt K)).add (hrate.const_mul (Real.sqrt (1 + L)))
   have hzfree (i : ι) {δ : ℝ} (hδ : 0 < δ) (hxi : ∀ᶠ k in l, δ ≤ x k i) :
       Tendsto (fun k ↦ z k i) l (𝓝 0) := by
-    apply squeeze_zero' (g := fun k ↦ (x k i * z k i) / δ) (Eventually.of_forall fun k ↦ (hz k i).le)
+    apply squeeze_zero' (g := fun k ↦ (x k i * z k i) / δ)
+      (Eventually.of_forall fun k ↦ (hz k i).le)
     · filter_upwards [hxi] with k hk
       exact (le_div_iff₀ hδ).mpr (by
         rw [mul_comm (z k i) δ]

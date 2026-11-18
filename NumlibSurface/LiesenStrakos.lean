@@ -8,6 +8,7 @@ import NumlibSurface.LiesenStrakos.Chapter03
 import NumlibSurface.LiesenStrakos.Chapter04
 import NumlibSurface.LiesenStrakos.Chapter05
 
+set_option linter.style.longLine false in
 /-!
 # Liesen and Strakoš, *Krylov Subspace Methods: Principles and Analysis*
 

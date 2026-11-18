@@ -65,7 +65,8 @@ theorem inv_constraintPreconditioner_zero (hG : IsUnit G)
       fromBlocks (1 : Matrix n n R) (-(G⁻¹ * Bᵀ)) 0 (1 : Matrix m m R) *
         fromBlocks G⁻¹ 0 0 (-(B * G⁻¹ * Bᵀ)⁻¹) *
         fromBlocks (1 : Matrix n n R) 0 (-(B * G⁻¹)) (1 : Matrix m m R) := by
-  rw [constraintPreconditioner, neg_zero, inv_fromBlocks_eq hG (by simpa [constraintPreconditioner] using hP)]
+  rw [constraintPreconditioner, neg_zero,
+    inv_fromBlocks_eq hG (by simpa [constraintPreconditioner] using hP)]
   simp [fromBlocks_multiply, Matrix.mul_assoc, nonsing_inv_neg_eq_neg]
 
 /-- For invertible $G$ and $BG^{-1}B^T$, the constraint projector is
@@ -139,7 +140,8 @@ to the eigenvalue $\lambda-1$ for the difference pencil used in (10.22). -/
 theorem constraintPencil_shift {K : Type*} [Field K] (A G : Matrix n n K) (B : Matrix m n K)
     (C : Matrix m m K) (μ : K) (v : n ⊕ m → K) :
     HasPencilEigenvector (constraintPreconditioner A B C) (constraintPreconditioner G B C) μ v ↔
-      HasPencilEigenvector (fromBlocks (A - G) 0 0 0) (constraintPreconditioner G B C) (μ - 1) v := by
+      HasPencilEigenvector (fromBlocks (A - G) 0 0 0)
+        (constraintPreconditioner G B C) (μ - 1) v := by
   have hsum : constraintPreconditioner A B C =
       fromBlocks (A - G) 0 0 0 + constraintPreconditioner G B C := by
     simp [constraintPreconditioner, fromBlocks_add]

@@ -9,6 +9,7 @@ import NumlibSurface.LiesenStrakos.Chapter04.Section07
 import NumlibSurface.LiesenStrakos.Chapter04.Section08
 import NumlibSurface.LiesenStrakos.Chapter04.Section09
 
+set_option linter.style.longLine false in
 /-!
 # Liesen and Strakoš, Chapter 4: Short recurrences for generating orthogonal Krylov subspace bases
 

@@ -231,7 +231,8 @@ theorem fderiv_active_constraint_at_remote :
 $\nabla c_1(0) = e_1$. These are the inward normals of the quadrant. -/
 theorem gradient_constraints_zero (i : Fin 2) :
     gradient (constraints i) 0 = EuclideanSpace.single (Fin.castLE (by decide : 2 ≤ 3) i) 1 := by
-  have hf (j : Fin 2) : fderiv ℝ (constraints j) 0 = coordinate (Fin.castLE (by decide : 2 ≤ 3) j) := by
+  have hf (j : Fin 2) :
+      fderiv ℝ (constraints j) 0 = coordinate (Fin.castLE (by decide : 2 ≤ 3) j) := by
     fin_cases j
     · exact fderiv_constraints_zero.1
     · exact fderiv_constraints_zero.2

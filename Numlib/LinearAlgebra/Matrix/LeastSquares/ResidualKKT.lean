@@ -22,7 +22,8 @@ criterion in `Numlib.Optimization.AffineQuadraticKKT`.
 
 * `Matrix.isLSESolution_iff_exists_residual_kkt`: augmented equations with equality constraints.
 * `Matrix.isMinOn_weightedRegularizedResidualSq_iff`: weighted and regularized augmented equations.
-* `Matrix.isGeneralizedLeastSquaresSolution_iff_exists_residual_kkt`: augmentation with a noise factor.
+* `Matrix.isGeneralizedLeastSquaresSolution_iff_exists_residual_kkt`: augmentation with
+  a noise factor.
 -/
 
 namespace Matrix
@@ -32,9 +33,11 @@ open LinearMap
 variable {n m q k : Type*} [Fintype n] [Fintype m] [Fintype q] [Fintype k]
   [DecidableEq n] [DecidableEq m] [DecidableEq q] [DecidableEq k]
 
+omit [DecidableEq n] in
 private theorem dotProduct_eq_zero_of_forall {v : n → ℝ} (h : ∀ w, v ⬝ᵥ w = 0) :
-    v = 0 :=
-  (dotProductEquiv ℝ n).injective (LinearMap.ext fun w ↦ by simpa using h w)
+    v = 0 := by
+  classical
+  exact (dotProductEquiv ℝ n).injective (LinearMap.ext fun w ↦ by simpa using h w)
 
 private noncomputable def residualCost {V : Type*} [AddCommGroup V] [Module ℝ V]
     (W : Matrix m m ℝ) (A : V →ₗ[ℝ] (m → ℝ)) (b : m → ℝ)
@@ -42,6 +45,7 @@ private noncomputable def residualCost {V : Type*} [AddCommGroup V] [Module ℝ 
   let r := b - A x
   r ⬝ᵥ (W *ᵥ r) + γ * (L x ⬝ᵥ L x)
 
+omit [DecidableEq m] [DecidableEq k] in
 private theorem isMinOn_residualCost_iff_dual {V Q : Type*}
     [AddCommGroup V] [Module ℝ V] [AddCommGroup Q] [Module ℝ Q]
     {W : Matrix m m ℝ} (hW : W.PosSemidef) (A : V →ₗ[ℝ] (m → ℝ)) (b : m → ℝ)
@@ -50,6 +54,7 @@ private theorem isMinOn_residualCost_iff_dual {V Q : Type*}
     IsMinOn (residualCost W A b L γ) {u | E u = d} x ↔
       ∃ multiplier : Module.Dual ℝ Q, ∀ v,
         (W *ᵥ (b - A x)) ⬝ᵥ A v = γ * (L x ⬝ᵥ L v) + multiplier (E v) := by
+  classical
   let a := ((dotProductEquiv ℝ m).toLinearMap.compl₁₂ (W.mulVecLin.comp A) A) +
     γ • ((dotProductEquiv ℝ k).toLinearMap.compl₁₂ L L)
   let load := (dotProductEquiv ℝ m (W *ᵥ b)).comp A
@@ -89,6 +94,7 @@ private theorem isMinOn_residualCost_iff_dual {V Q : Type*}
   rw [ha, hload, mulVec_sub, sub_dotProduct]
   constructor <;> intro h <;> linarith
 
+omit [DecidableEq m] [DecidableEq q] in
 /-- For real matrices $A,B$ with the same column index, a vector $x$ minimizes
 $\|Ax-b\|_2$ subject to $Bx=d$ if and only if there are a residual $r$ and multiplier
 $\lambda$ with $r+Ax=b$, $Bx=d$ and $A^T r+B^T\lambda=0$. -/
@@ -97,6 +103,7 @@ theorem isLSESolution_iff_exists_residual_kkt (A : Matrix m n ℝ) (B : Matrix q
     IsLSESolution A (WithLp.toLp 2 b) B (WithLp.toLp 2 d) (WithLp.toLp 2 x) ↔
       ∃ (r : m → ℝ) (multiplier : q → ℝ), r + A *ᵥ x = b ∧ B *ᵥ x = d ∧
         Aᵀ *ᵥ r + Bᵀ *ᵥ multiplier = 0 := by
+  classical
   have hcost (v : n → ℝ) :
       residualCost (1 : Matrix m m ℝ) A.mulVecLin b (0 : (n → ℝ) →ₗ[ℝ] (m → ℝ)) 0 v =
         ‖toEuclideanLin A (WithLp.toLp 2 v) - WithLp.toLp 2 b‖ ^ 2 := by
@@ -167,7 +174,7 @@ theorem weightedRegularizedResidualSq_apply (W : Matrix m m ℝ) (A : Matrix m n
   rw [weightedRegularizedResidualSq, residualCost, dotProduct_self_eq_norm_sq]
   rfl
 
-omit [DecidableEq n] in
+omit [DecidableEq n] [DecidableEq k] in
 /-- For a positive definite covariance $W$ and nonnegative penalty weight $\gamma$, the
 weighted regularized squared residual is minimal at $x$ if and only if some $r$ satisfies
 $Wr+Ax=b$ and $A^T r=\gamma(L^T L)x$. -/
@@ -207,6 +214,7 @@ theorem isMinOn_weightedRegularizedResidualSq_iff (W : Matrix m m ℝ) (A : Matr
     rwa [dotProduct_smul, ← mulVec_mulVec, dotProduct_transpose_mulVec,
       dotProduct_transpose_mulVec, smul_eq_mul] at heq
 
+omit [DecidableEq m] in
 /-- Let $A$ be a real design matrix and $F$ a real noise factor with the same number of rows.
 A feasible pair $(x,v)$ minimizes $\|v\|_2$ under $Ax+Fv=b$ if and only if some $r$
 satisfies $(FF^T)r+Ax=b$, $A^T r=0$ and $v=F^T r$. The factor can be rectangular or singular. -/

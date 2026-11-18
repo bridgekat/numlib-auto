@@ -621,10 +621,10 @@ theorem bidiag_conjTranspose_mul_bidiag (k : ℕ) :
       · rw [ite_eq_left rfl, ite_eq_right (by omega), ite_eq_left h1]
       · intro l hl
         have hl' : (l : ℕ) ≠ i := fun h => hl (Fin.ext h)
-        split_ifs <;> first | rfl | omega | ring
+        split_ifs <;> first | omega | ring
     · rw [ite_eq_right h1, ite_eq_right (by omega)]
       refine Fintype.sum_eq_zero _ fun l => ?_
-      split_ifs <;> first | rfl | omega | ring
+      split_ifs <;> first | omega | ring
   · have hij' : i = j := Fin.ext hij
     subst hij'
     rw [ite_eq_left rfl]
@@ -634,13 +634,13 @@ theorem bidiag_conjTranspose_mul_bidiag (k : ℕ) :
         simp [sq]
       · intro l hl
         have hl' : (l : ℕ) ≠ i := fun h => hl (Fin.ext h)
-        split_ifs <;> first | rfl | omega | ring
+        split_ifs <;> first | omega | ring
     · have hp : (i : ℕ) - 1 < k := by omega
       rw [Fintype.sum_eq_add i ⟨(i : ℕ) - 1, hp⟩ (fun h => by
           have := congrArg Fin.val h; simp at this; omega) (fun l hl => by
           have h1 : (l : ℕ) ≠ i := fun h => hl.1 (Fin.ext h)
           have h2 : (l : ℕ) ≠ (i : ℕ) - 1 := fun h => hl.2 (Fin.ext h)
-          split_ifs <;> first | rfl | omega | ring)]
+          split_ifs <;> first | omega | ring)]
       have hL : Lanczos.alpha (Astar ∘ₗ A) v i =
           alpha A Astar v i ^ 2 + beta A Astar v ((i : ℕ) - 1) ^ 2 := by
         obtain ⟨i', hi'⟩ : ∃ i', (i : ℕ) = i' + 1 := ⟨(i : ℕ) - 1, by omega⟩
@@ -655,10 +655,10 @@ theorem bidiag_conjTranspose_mul_bidiag (k : ℕ) :
         ring
       · intro l hl
         have hl' : (l : ℕ) ≠ j := fun h => hl (Fin.ext h)
-        split_ifs <;> first | rfl | omega | ring
+        split_ifs <;> first | omega | ring
     · rw [ite_eq_right h1]
       refine Fintype.sum_eq_zero _ fun l => ?_
-      split_ifs <;> first | rfl | omega | ring
+      split_ifs <;> first | omega | ring
 
 /-! ### The bidiagonal relation of $A^*$ as a Hessenberg relation, and the LSQR residual -/
 

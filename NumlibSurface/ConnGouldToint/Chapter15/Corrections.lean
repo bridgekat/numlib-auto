@@ -205,7 +205,8 @@ theorem theorem_15_4_15 (x s u : ℕ → E) (xstar : E) (ey : ℕ → ℝ)
   obtain ⟨J, hJ, hentry⟩ := frequently_atTop.mp hvisit N
   have hhalf (k : ℕ) (hk : J ≤ k) (hne : e k < r) : e (k + 1) ≤ (1 / 2) * e k := by
     obtain ⟨hstep, hy⟩ := hN k (hJ.trans hk)
-    have hcoef := (mul_le_mul_of_nonneg_left (add_le_add hne.le hy.le) (add_nonneg hM hD)).trans hsmall
+    have hcoef := (mul_le_mul_of_nonneg_left (add_le_add hne.le hy.le) (add_nonneg hM hD)).trans
+      hsmall
     exact (hstep hne).trans (mul_le_mul_of_nonneg_right hcoef (norm_nonneg _))
   have hstay (k : ℕ) (hk : J ≤ k) : e k < r := by
     induction k, hk using Nat.le_induction with
@@ -225,7 +226,8 @@ theorem theorem_15_4_15 (x s u : ℕ → E) (xstar : E) (ey : ℕ → ℝ)
     have hshift : Tendsto (fun j => e (J + j)) atTop (𝓝 0) := by
       refine squeeze_zero (fun _ => norm_nonneg _) hgeom ?_
       simpa only [zero_mul] using
-        (tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1 / 2 : ℝ)) (by norm_num) (by norm_num)).mul_const (e J)
+        (tendsto_pow_atTop_nhds_zero_of_lt_one (r := (1 / 2 : ℝ)) (by norm_num)
+          (by norm_num)).mul_const (e J)
     apply Metric.tendsto_atTop.mpr
     intro ε hε
     obtain ⟨I, hI⟩ := Metric.tendsto_atTop.mp hshift ε hε

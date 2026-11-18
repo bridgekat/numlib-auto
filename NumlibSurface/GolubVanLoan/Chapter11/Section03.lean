@@ -1424,7 +1424,6 @@ theorem equation_11_3_14 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x�
       | (exfalso; omega)
       | exact (hvec _ i.2).2.1
       | exact (hvec _ i.2).2.2
-      | exact (hvec _ j.2).2.2
       | (rw [show (i : ℕ) - 1 = (j : ℕ) by omega]; exact (hvec _ j.2).2.2)
   set y := Id.run (tridiagSolve pure L.k L.alpha L.beta (Krylov.firstVec (pcgBeta₀ A b x₀) L.k))
   have hy : Lanczos.tridiag T r₀ L.k *ᵥ y = Krylov.firstVec ‖r₀‖ L.k := by

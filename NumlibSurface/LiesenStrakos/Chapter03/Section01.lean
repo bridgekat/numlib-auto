@@ -88,7 +88,8 @@ theorem isExactOnMeasure_iff_moments {μ : Measure ℝ}
     simpa only [mechanicalQuadrature, stieltjesMoment, eval_pow, eval_X] using
       h ((X : ℝ[X]) ^ k) (by rw [degree_X_pow]; exact_mod_cast hk)
   · intro h p hp
-    have hlt : p.natDegree < d + 1 := lt_of_le_of_lt (natDegree_le_iff_degree_le.2 hp) d.lt_succ_self
+    have hlt : p.natDegree < d + 1 :=
+      lt_of_le_of_lt (natDegree_le_iff_degree_le.2 hp) d.lt_succ_self
     simp_rw [eval_eq_sum_range' hlt, Finset.mul_sum]
     rw [Finset.sum_comm, integral_finsetSum _ fun k _ => (hint k).const_mul _]
     refine Finset.sum_congr rfl fun k hk => ?_

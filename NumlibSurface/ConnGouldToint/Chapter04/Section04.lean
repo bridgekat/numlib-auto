@@ -160,7 +160,8 @@ theorem normal_equations_unique_4_4_3 (A : Matrix (Fin m) (Fin n) ℝ)
     intro v w hvw
     let d : EuclideanSpace ℝ (Fin m) := WithLp.toLp 2 (v - w)
     have hd : Aᵀ.toEuclideanLin d = 0 := by
-      rw [Matrix.toEuclideanLin_apply, ← Matrix.vecMul_transpose, Matrix.transpose_transpose, ← WithLp.toLp_zero 2]
+      rw [Matrix.toEuclideanLin_apply, ← Matrix.vecMul_transpose, Matrix.transpose_transpose,
+        ← WithLp.toLp_zero 2]
       congr 1
       simp only [d, Matrix.sub_vecMul, hvw, sub_self]
     have hsol : (A * Aᵀ).toEuclideanLin (u + d) = A.toEuclideanLin g := by
@@ -474,7 +475,8 @@ theorem quadratic_minimum_4_4_14_iff {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.Is
       have hd' : A *ᵥ WithLp.ofLp d = 0 := by
         simpa only [LinearMap.mem_ker, Matrix.toEuclideanLin_apply, ← WithLp.toLp_zero 2,
           (WithLp.toLp_injective 2).eq_iff] using hd
-      simpa [EuclideanSpace.inner_eq_star_dotProduct] using (dotProduct_comm r (WithLp.ofLp d)).trans (hzero (WithLp.ofLp d) hd')
+      simpa [EuclideanSpace.inner_eq_star_dotProduct] using
+        (dotProduct_comm r (WithLp.ofLp d)).trans (hzero (WithLp.ofLp d) hd')
     rw [LinearMap.orthogonal_ker, ← Matrix.toEuclideanLin_transpose_eq_adjoint] at horth
     obtain ⟨y, hy⟩ := horth
     refine ⟨hx, ⟨WithLp.ofLp y, ?_⟩, fun d hd ↦ ?_⟩

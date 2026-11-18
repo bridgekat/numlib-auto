@@ -2,6 +2,7 @@ import NumlibSurface.BenziGolubLiesen.Section02.Flow
 import NumlibSurface.BenziGolubLiesen.Section02.LeastSquares
 import NumlibSurface.BenziGolubLiesen.Section02.InteriorPoint
 
+set_option linter.style.longLine false in
 /-!
 # Benzi, Golub and Liesen, Section 2: Applications leading to saddle point problems
 

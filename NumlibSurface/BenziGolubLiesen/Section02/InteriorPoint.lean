@@ -23,7 +23,8 @@ saddle-point Newton system with a diagonal dual block. The proofs specialize
 * Equations (2.29)–(2.35), `BenziGolubLiesen.barrierStationarity_iff_complementarity`: equivalence.
 * Equations (2.36)–(2.37), `BenziGolubLiesen.barrierNewton_iff_reduced`: elimination and recovery.
 * After (2.37), `BenziGolubLiesen.lagrangianHessian_posSemidef_of_convex`: nonnegative curvature.
-* After (2.37), `BenziGolubLiesen.barrierReducedDiagonal_posSemidef`: the nonnegative diagonal block.
+* After (2.37), `BenziGolubLiesen.barrierReducedDiagonal_posSemidef`: the nonnegative
+  diagonal block.
 
 ## Deviations from the source
 
@@ -35,7 +36,8 @@ saddle-point Newton system with a diagonal dual block. The proofs specialize
 
 * **(2.29)–(2.36).** The Newton reduction takes evaluated derivative matrices as inputs, rather than
   constructing the full Fréchet derivative of a nonlinear residual on a product space.
-* **Paragraph before (2.36).** Convergence as $\mu\to0$ needs hypotheses and a path-following scheme.
+* **Paragraph before (2.36).** Convergence as $\mu\to0$ needs hypotheses and a
+  path-following scheme.
 * **Paragraph after (2.37).** The LP/QP comparison needs a specified formulation of the bounds.
 -/
 

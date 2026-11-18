@@ -23,10 +23,12 @@ For a Newton step the diagonal multiplier block eliminates the slack increment.
 
 ## Main results
 
-* `Optimization.exists_nonneg_slack_iff`: nonpositive inequalities are equivalent to slack feasibility.
+* `Optimization.exists_nonneg_slack_iff`: nonpositive inequalities are equivalent to
+  slack feasibility.
 * `Optimization.hasDerivAt_logBarrierLagrangian_slack`: the derivative in a slack coordinate.
 * `Optimization.barrier_slackStationary_iff`: reciprocal stationarity and complementarity agree.
-* `Optimization.barrierNewton_eq_iff_reduced`: slack elimination and recovery in the Newton equations.
+* `Optimization.barrierNewton_eq_iff_reduced`: slack elimination and recovery in the
+  Newton equations.
 -/
 
 namespace Optimization

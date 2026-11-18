@@ -1061,7 +1061,8 @@ theorem ColemanLiRun.objective_antitone {version : ColemanLiVersion} {P : Chapte
 
 private noncomputable def colemanLiPullback (x g : ι → ℝ) :
     EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι :=
-  (Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ)) (Matrix.diagonal fun i ↦ (Real.sqrt |scalingVector x g i|)⁻¹)
+  (Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ))
+    (Matrix.diagonal fun i ↦ (Real.sqrt |scalingVector x g i|)⁻¹)
 
 private theorem colemanLiPullback_apply (x g : ι → ℝ) (v : EuclideanSpace ℝ ι) :
     colemanLiPullback x g v = WithLp.toLp 2 (fun i ↦ v i / Real.sqrt |scalingVector x g i|) := by
@@ -1262,7 +1263,8 @@ private theorem abs_matrix_quadratic_le (A : Matrix ι ι ℝ) (v : ι → ℝ) 
   calc
     _ ≤ ‖V‖ * ‖(Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ) A) V‖ := abs_real_inner_le_norm _ _
     _ ≤ ‖V‖ * (‖A‖ * ‖V‖) := mul_le_mul_of_nonneg_left
-      (by rw [Matrix.cstar_norm_def]; exact ((Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ) A)).le_opNorm V)
+      (by rw [Matrix.cstar_norm_def];
+          exact ((Matrix.toEuclideanCLM (n := ι) (𝕜 := ℝ) A)).le_opNorm V)
       (norm_nonneg _)
     _ = _ := by ring
 
@@ -1430,7 +1432,8 @@ private theorem scalar_btr_criticality {E : Type*} [NormedAddCommGroup E] [Norme
       have hlow := (mul_le_mul (mul_le_mul_of_nonneg_left (hN k hkN) hκ.le)
         hmin (le_min (div_nonneg hε.le hβ.le) hr.le) (mul_nonneg hκ.le (ha k))).trans (hdec k)
       exact (hJ k ((le_max_right N J).trans hk)).not_ge
-        ((mul_le_mul_of_nonneg_left hlow P.eta₁_pos.le).trans (run.objective_drop_of_successful hks))
+        ((mul_le_mul_of_nonneg_left hlow P.eta₁_pos.le).trans
+          (run.objective_drop_of_successful hks))
     have hγ := P.gamma₁_pos.trans_le P.gamma₁_le_gamma₂
     have hp (j : ℕ) : run.Δ (L + j) ≤ P.γ₂ ^ j * run.Δ L := by
       induction j with
@@ -1453,7 +1456,8 @@ private theorem scalar_btr_criticality {E : Type*} [NormedAddCommGroup E] [Norme
   obtain ⟨r, hr, hnear⟩ := hcont δ hδ
   let c := P.η₁ * (κ * δ)
   have hc : 0 < c := mul_pos P.eta₁_pos (mul_pos hκ hδ)
-  obtain ⟨N, hN⟩ := eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos hδ hβ))))
+  obtain ⟨N, hN⟩ :=
+    eventually_atTop.mp (hdiff.eventually (gt_mem_nhds (mul_pos hc (div_pos hδ hβ))))
   have hKc : 0 < K / c := div_pos hK hc
   obtain ⟨M, hM⟩ := eventually_atTop.mp
     (hF.eventually (gt_mem_nhds (lt_add_of_pos_right _ (div_pos hr hKc))))
@@ -1473,7 +1477,8 @@ private theorem scalar_btr_criticality {E : Type*} [NormedAddCommGroup E] [Norme
     · have hk : δ ≤ a k := le_of_not_gt (fun h => Nat.find_min hex hkj ⟨hkn, h⟩)
       have hmin := min_le_min (div_le_div_of_nonneg_right hk hβ.le) (le_refl (run.Δ k))
       have hm := (mul_le_mul (mul_le_mul_of_nonneg_left hk hκ.le) hmin
-        (le_min (div_nonneg hδ.le hβ.le) (run.delta_pos k).le) (mul_nonneg hκ.le (ha k))).trans (hdec k)
+        (le_min (div_nonneg hδ.le hβ.le) (run.delta_pos k).le) (mul_nonneg hκ.le (ha k))).trans
+          (hdec k)
       have hdrop : c * min (δ / β) (run.Δ k) ≤ F k - F (k + 1) := by
         simpa only [c, mul_assoc] using
           (mul_le_mul_of_nonneg_left hm P.eta₁_pos.le).trans (run.objective_drop_of_successful hs)
@@ -1635,7 +1640,8 @@ theorem theorem_13_12_4 [Nonempty ι]
       PiLp.continuous_ofLp _ _
     exact continuous_norm.comp ((PiLp.continuous_toLp _ _).comp
       (continuous_scaledGradient.comp (ho.prodMk hg)))
-  have huc := Metric.uniformContinuousOn_iff.mp (hS.uniformContinuousOn_of_continuous ha.continuousOn)
+  have huc := Metric.uniformContinuousOn_iff.mp
+    (hS.uniformContinuousOn_of_continuous ha.continuousOn)
   have hz : Tendsto (a ∘ run.x) atTop (𝓝 0) :=
     scalar_btr_criticality run (fun _ => norm_nonneg _) (half_pos hα)
       (by linarith) hβ₀ (le_add_of_nonneg_right (mul_nonneg hL hB₀))
@@ -1741,7 +1747,8 @@ theorem theorem_13_12_6_version2
   have hFlim := tendsto_atTop_ciInf hmono
     (hlower.mono (show Set.range F ⊆ Set.range f from Set.range_comp_subset_range y f))
   have hdrop : Tendsto (fun k => F k - F (k + 1)) atTop (𝓝 0) := by
-    simpa only [Function.comp_apply, sub_self] using hFlim.sub (hFlim.comp (tendsto_add_atTop_nat 1))
+    simpa only [Function.comp_apply, sub_self] using
+      hFlim.sub (hFlim.comp (tendsto_add_atTop_nat 1))
   by_contra hnoncritical
   have hlocal : ∃ a > 0, ∃ r > 0, ∀ᶠ k in atTop, dist (x k) z < r → τ k ≤ -a := by
     by_contra hn

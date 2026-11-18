@@ -414,7 +414,8 @@ theorem algorithm_7_7_1_newton_converges (d : Fin (n + 1) → ℝ) (g : V)
     unfold diagonalNewtonStep
     dsimp only
     rw [← heq x]
-    have h := diagonalInverse_eq_on_support (d := d) (e := e) x (-diagonalShiftInverse d x g) fun i hi => by
+    have h := diagonalInverse_eq_on_support (d := d) (e := e) x (-diagonalShiftInverse d x g)
+      fun i hi => by
       have hg' : g i ≠ 0 := by
         intro hz
         apply hi

@@ -252,7 +252,7 @@ theorem activeCoefficients_unique [Fintype ι] {c : ι → E → ℝ} {n : ι �
   · rw [hμ i hi, hν i hi]
 
 omit [InnerProductSpace ℝ E] in
-private theorem eventually_activeConstraintSet_subset_of_tendsto [Fintype ι]
+private theorem eventually_activeConstraintSet_subset_of_tendsto [Finite ι]
     {α : Type*} {l : Filter α} {c : ι → E → ℝ} {u : α → E} {z : E}
     (hc : ∀ i, Continuous (c i)) (hu : Tendsto u l (𝓝 z)) :
     ∀ᶠ k in l, activeConstraintSet c (u k) ⊆ activeConstraintSet c z := by
@@ -372,12 +372,13 @@ are linearly independent.
 
 Near $x$ the inactive constraints stay inactive, so $\mathcal{A}(y) \subseteq \mathcal{A}(x)$,
 and the Gram matrix of the normals indexed by $\mathcal{A}(x)$ stays nonsingular. -/
-theorem eventually_activeGradient_independent [Fintype ι] {c : ι → E → ℝ}
+theorem eventually_activeGradient_independent [Finite ι] {c : ι → E → ℝ}
     {n : ι → E → E} {x : E}
     (hc : ∀ i, Continuous (c i)) (hn : ∀ i, Continuous (n i))
     (hind : LinearIndependent ℝ (fun i : activeConstraintSet c x ↦ n i x)) :
     ∀ᶠ y in 𝓝 x, LinearIndependent ℝ (fun i : activeConstraintSet c y ↦ n i y) := by
   classical
+  have := Fintype.ofFinite ι
   let J := activeConstraintSet c x
   let G (y : E) : Matrix J J ℝ := Matrix.gram ℝ (fun i : J ↦ n i y)
   have hG : Continuous G := continuous_matrix fun i j ↦ (hn i).inner (hn j)
@@ -1600,7 +1601,8 @@ private theorem eventually_rejection_then_identifiedOn [Fintype ι] [CompleteSpa
   rw [hcenter] at hpredNew hTaylorNew
   have hnewFeas := hfeas (k + 1)
   rw [hcenter] at hnewFeas
-  have hcmp := prediction_le_of_common_center hnewFeas (hwn _ (hfeas k) hsame) (hTaylor k) hTaylorNew
+  have hcmp :=
+    prediction_le_of_common_center hnewFeas (hwn _ (hfeas k) hsame) (hTaylor k) hTaylorNew
   have hdist : ‖run.s (k + 1) - run.s k‖ ≤ 2 * run.Δ k := by
     calc
       _ ≤ ‖run.s (k + 1)‖ + ‖run.s k‖ := norm_sub_le _ _
@@ -1950,7 +1952,8 @@ theorem theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero
         (l := l) (m := run.model) (s := run.s) Q P hC hset hc hn hg
         (hind z hzS) (hstat z hzS) (hxj.mono_left inf_le_left)
         (huj.mono_left inf_le_left) (hΔbad.mono_left hl)
-        (hQ.filter_mono (hl.trans inf_le_left)) hβ (.of_forall fun k ↦ ⟨hxC k, run.delta_pos k, htrial k⟩)
+        (hQ.filter_mono (hl.trans inf_le_left)) hβ
+        (.of_forall fun k ↦ ⟨hxC k, run.delta_pos k, htrial k⟩)
         (.of_forall hTaylorC) (.of_forall fun k ↦ ⟨hval k, hcmp k, herr k⟩)
       refine ⟨κ, hκ, ?_⟩
       have hh' := eventually_inf_principal.mp hh
@@ -1997,7 +2000,8 @@ theorem theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero
     have he : Tendsto run.Δ atTop (𝓝 0) :=
       hΔbad.mono_left (le_inf le_rfl (le_principal_iff.mpr hbad))
     exact (not_frequently.mpr hbad)
-      (frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero he run.delta_pos run.radius_update
+      (frequently_active_eq_at_Cauchy_trial_of_radius_tendsto_zero he run.delta_pos
+        run.radius_update
         (hmiss.mono fun _ hk h ↦ (hk h).2))
   have hkeep : ∀ᶠ k in atTop, activeConstraintSet c (run.x k) = A →
       activeConstraintSet c (u k) = A := by
@@ -2034,7 +2038,8 @@ theorem theorem_12_3_8_of_compact_run_of_Cauchy_displacements_tendsto_zero
       have hlimN : Tendsto run.x atTop (𝓝 (run.x N)) :=
         tendsto_const_nhds.congr' (eventually_atTop.mpr ⟨N, fun k hk ↦ (hconst k hk).symm⟩)
       have hAN := hA _ ((hlim _).mpr ⟨id, strictMono_id, hlimN⟩)
-      exact eventually_atTop.mpr ⟨N, fun k hk ↦ (congrArg (activeConstraintSet c) (hconst k hk)).trans hAN⟩
+      exact eventually_atTop.mpr
+        ⟨N, fun k hk ↦ (congrArg (activeConstraintSet c) (hconst k hk)).trans hAN⟩
   exact ⟨A, hA, hbase.and (hbase.mp hkeep)⟩
 
 open Optimization Chapter06 in

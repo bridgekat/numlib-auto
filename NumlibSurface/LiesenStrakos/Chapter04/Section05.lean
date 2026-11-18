@@ -485,13 +485,15 @@ private theorem local_spectralData (A : Module.End ℂ E) {s : ℕ}
     intro i j hij
     rw [minpolyVec_of_eigenvector (hv i), minpolyVec_of_eigenvector (hv j)]
     exact isCoprime_X_sub_C_of_isUnit_sub ((sub_ne_zero.mpr (fun h => hij (Subtype.ext h))).isUnit)
-  obtain ⟨hpoly, hspan⟩ := minpolyVec_fullSubspace_finsetSum_of_pairwise_isCoprime A v hcop Finset.univ
+  obtain ⟨hpoly, hspan⟩ :=
+    minpolyVec_fullSubspace_finsetSum_of_pairwise_isCoprime A v hcop Finset.univ
   have hgrade : grade A u = s + 2 := by
     rw [← natDegree_minpolyVec]
     change (minpolyVec A (∑ i : S, v i)).natDegree = _
     rw [hpoly]
     simp only [fun i : S => minpolyVec_of_eigenvector (hv i)]
-    simpa only [natDegree_finsetProd_X_sub_C_eq_card, Finset.card_univ, Fintype.card_coe] using hcard
+    simpa only [natDegree_finsetProd_X_sub_C_eq_card, Finset.card_univ, Fintype.card_coe] using
+      hcard
   have hmem (i : S) : v i ∈ W := by
     change v i ∈ fullSubspace A (∑ j : S, v j)
     rw [hspan]
@@ -543,7 +545,8 @@ private theorem interpolation_of_uniform_bandwidth (A : Module.End ℂ E) {s : �
   let S := distinctEigenvalues A
   have hle : s + 1 ≤ S.card := by change s + 1 ≤ (distinctEigenvalues A).card; rw [hcard]; omega
   obtain ⟨T, hT, hTcard⟩ := Finset.exists_subset_card_eq hle
-  have hlt : T.card < S.card := by change T.card < (distinctEigenvalues A).card; rw [hTcard, hcard]; omega
+  have hlt : T.card < S.card := by
+    change T.card < (distinctEigenvalues A).card; rw [hTcard, hcard]; omega
   obtain ⟨z₀, hz₀, hz₀T⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
   have interp (z : ℂ) (hz : z ∈ S) (hzT : z ∉ T) :
       ∃ q : ℂ[X], q.degree ≤ s ∧ ∀ w ∈ insert z T, q.eval w = star w :=
@@ -653,7 +656,8 @@ theorem theorem_4_5_4 (A : Module.End ℂ E) {s : ℕ}
     change _ = (minpoly ℂ A).natDegree
     rw [distinctEigenvalues_eq_roots_toFinset,
       (IsAlgClosed.splits (minpoly ℂ A)).natDegree_eq_card_roots]
-    exact Multiset.toFinset_card_of_nodup (nodup_roots (PerfectField.separable_iff_squarefree.2 hsquare))
+    exact Multiset.toFinset_card_of_nodup
+      (nodup_roots (PerfectField.separable_iff_squarefree.2 hsquare))
   obtain ⟨p, hpdeg, hpeval⟩ := interpolation_of_uniform_bandwidth A hmin hband hcard
   have hp := aeval_eq_adjoint_of_orthogonal_eigenspaces A hsemi.iSup_eigenspace_eq_top
     (fun {a b} hab {x y} hx hy =>
@@ -663,7 +667,8 @@ theorem theorem_4_5_4 (A : Module.End ℂ E) {s : ℕ}
   have hlocal (v : E) (_ : vectorGrade A v = operatorMinimalDegree A) :
       A.adjoint v ∈ subspace A v (s + 1) := by
     rw [← hp]
-    exact aeval_apply_mem_subspace A v (hpdeg.trans_lt (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self s)))
+    exact aeval_apply_mem_subspace A v
+      (hpdeg.trans_lt (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self s)))
   obtain ⟨t, ht, htA⟩ := lemma_4_5_2 A s (by omega) hlocal
   have hts : s ≤ t := by
     by_contra hn

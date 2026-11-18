@@ -14,13 +14,15 @@ The rotation contribution in two dimensions is skew and has zero quadratic energ
 
 ## Main definitions
 
-* Equations (2.13)–(2.14), `BenziGolubLiesen.stokesEnergy`: the energy built from the Dirichlet form.
+* Equations (2.13)–(2.14), `BenziGolubLiesen.stokesEnergy`: the energy built from the
+  Dirichlet form.
 * After (2.17), `BenziGolubLiesen.rotationBlock₂`: the two-dimensional rotation matrix.
 
 ## Main results
 
 * After (2.14), `BenziGolubLiesen.stokes_minimizer_iff_weak_equations`: pressure as multiplier.
-* After (2.14), `BenziGolubLiesen.stokes_minimizer_iff_discrete_pressure`: the finite pressure vector.
+* After (2.14), `BenziGolubLiesen.stokes_minimizer_iff_discrete_pressure`: the finite
+  pressure vector.
 * Before Figure 2.1, `BenziGolubLiesen.convective_eq_gradient_sub_cross`: the Jacobian identity.
 * After (2.17), `BenziGolubLiesen.rotationBlock₂_energy_zero`: the rotation does no work.
 
@@ -36,7 +38,8 @@ The rotation contribution in two dimensions is skew and has zero quadratic energ
 * **(2.13)–(2.14).** Strong PDE recovery and pressure solvability in the continuous pressure space
   require integration by parts with traces and an appropriate divergence inf-sup theorem.
 * **(2.15)–(2.17).** The comparison of the linearized boundary-value problems requires a
-  differentiable vector-field and boundary-condition setting; the identity is pointwise in a Jacobian.
+  differentiable vector-field and boundary-condition setting; the identity is pointwise
+  in a Jacobian.
 * **(2.18)–(2.20).** The Darcy mixed boundary problem and mesh-independent stability require
   trace and approximation results for the chosen mixed spaces and mesh family.
 * **Final paragraph.** The time-stepping applications require a concrete time and space scheme.
@@ -84,11 +87,12 @@ nonnegative discrete Dirichlet form be $a$ and let $B$ be the negative discrete 
 operator with finitely many pressure coordinates. A velocity $u$ minimizes the Stokes
 energy over $Bv=0$ if and only if $Bu=0$ and some pressure vector $p$ satisfies
 $a(u,v)+p^TBv=\ell(v)$ for every test velocity $v$. -/
-theorem stokes_minimizer_iff_discrete_pressure {m : Type*} [Fintype m] [DecidableEq m]
+theorem stokes_minimizer_iff_discrete_pressure {m : Type*} [Fintype m]
     (a : V →ₗ[ℝ] V →ₗ[ℝ] ℝ) (load : Module.Dual ℝ V) (B : V →ₗ[ℝ] (m → ℝ))
     (u : V) (hsymm : ∀ u v, a u v = a v u) (hnonneg : ∀ v, 0 ≤ a v v) :
     (B u = 0 ∧ IsMinOn (stokesEnergy a load) {v | B v = 0} u) ↔
       (B u = 0 ∧ ∃ p : m → ℝ, ∀ v, a u v + p ⬝ᵥ B v = load v) := by
+  classical
   apply and_congr_right
   intro hu
   rw [LinearMap.isMinOn_quadraticEnergy_iff_exists_dual a load B hsymm hnonneg hu]
@@ -107,7 +111,8 @@ in the value and Jacobian, and does not require a choice of domain for the field
 theorem convective_eq_gradient_sub_cross (J : Matrix (Fin 3) (Fin 3) ℝ) (u : Fin 3 → ℝ) :
     J *ᵥ u = Jᵀ *ᵥ u - crossProduct u (curlOfJacobian J) := by
   funext i
-  fin_cases i <;> simp [curlOfJacobian, cross_apply, mulVec, dotProduct, Fin.sum_univ_three] <;> ring
+  fin_cases i <;>
+    simp [curlOfJacobian, cross_apply, mulVec, dotProduct, Fin.sum_univ_three] <;> ring
 
 /-- **Section 2.1** of [benzi2005numerical], after (2.17). For a scalar vorticity $w$,
 the **two-dimensional rotation block** is $\begin{bmatrix}0&w\\-w&0\end{bmatrix}$. -/

@@ -29,9 +29,9 @@ open Finset
 
 namespace LiesenStrakos.Chapter05
 
-/-- **Equation (5.9.1)** of [liesen2013krylov]. For eigenvalues in decreasing order on $\{0,\dots,N\}$,
-the **effective condition number** after discarding the first $\ell$ entries is the eigenvalue
-at $\ell$ divided by the eigenvalue at $N$. A zero denominator gives zero. -/
+/-- **Equation (5.9.1)** of [liesen2013krylov]. For eigenvalues in decreasing order on
+$\{0,\dots,N\}$, the **effective condition number** after discarding the first $\ell$ entries is
+the eigenvalue at $\ell$ divided by the eigenvalue at $N$. A zero denominator gives zero. -/
 noncomputable def effectiveConditionNumber {N : ℕ} (μ : Fin (N + 1) → ℝ)
     (ℓ : Fin (N + 1)) : ℝ :=
   μ ℓ / μ (Fin.last N)

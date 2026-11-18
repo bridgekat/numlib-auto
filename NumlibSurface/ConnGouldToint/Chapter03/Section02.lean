@@ -430,7 +430,8 @@ theorem theorem_3_2_10_face_continuity [CompleteSpace V] [FiniteDimensional ℝ 
       ActiveLinearizedConeMatches C c z}
     let N := fun z : S ↦ normalCone (innerₗ V) C (z : V) ∩ Metric.closedBall 0 R
     let T := fun z : S ↦ posTangentConeAt C (z : V) ∩ Metric.closedBall 0 R
-    UpperHemicontinuous N ∧ LowerHemicontinuous N ∧ UpperHemicontinuous T ∧ LowerHemicontinuous T := by
+    UpperHemicontinuous N ∧ LowerHemicontinuous N ∧ UpperHemicontinuous T ∧
+      LowerHemicontinuous T := by
   classical
   intro S N T
   let N₀ (z : S) := normalCone (innerₗ V) C (z : V)
@@ -702,7 +703,9 @@ theorem clarke_composite_equality_counterexample :
     filter_upwards [self_mem_nhdsWithin] with t ht
     change 0 < t at ht
     have h1 : h ((2 * t) • e + t • d) = 2 * t := by
-      simp [h, d, e, PiLp.smul_apply, PiLp.add_apply]
+      simp only [Fin.isValue, PiLp.add_apply, PiLp.smul_apply, Matrix.cons_val_zero,
+        smul_eq_mul, mul_zero, mul_one, zero_add, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+        add_zero, h, e, d]
       rw [abs_of_nonneg (by linarith : 0 ≤ t + 2 * t),
         abs_of_nonpos (by linarith : t - 2 * t ≤ 0)]
       ring
@@ -785,16 +788,20 @@ def AO2 (h : ι → E → ℝ) (g : κ → E → ℝ) (x : E) : Prop :=
     criticalCone (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x μ ⊆
       posTangentConeAt (stronglyActiveFeasible h g μ) x
 
+omit [Fintype ι] [Fintype κ] in
 /-- **Section 3.2.2** of [conn2000trust]. Let $E$ be a finite-dimensional real normed space, let
 $h_i$ and $g_j$ be strictly differentiable at $x$, and let $x$ be a regular point: $x$ is
 feasible and the derivatives $h_i'(x)$ and $g_j'(x)$ for active $j$ are linearly independent.
 Then AO.1 and AO.2 hold at $x$. -/
-theorem ao1_ao2_of_isRegularPointIneq {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
+theorem ao1_ao2_of_isRegularPointIneq [Finite ι] [Finite κ]
+    {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
     (hreg : IsRegularPointIneq h (fun i ↦ fderiv ℝ (h i)) g (fun j ↦ fderiv ℝ (g j)) x)
     (hh : ∀ i, HasStrictFDerivAt (h i) (fderiv ℝ (h i) x) x)
     (hg : ∀ j, HasStrictFDerivAt (g j) (fderiv ℝ (g j) x) x) :
-    AO1 h g x ∧ AO2 h g x :=
-  ⟨fun _ ↦ mem_posTangentConeAt_of_isRegularPointIneq hreg hh hg,
+    AO1 h g x ∧ AO2 h g x := by
+  have := Fintype.ofFinite ι
+  have := Fintype.ofFinite κ
+  exact ⟨fun _ ↦ mem_posTangentConeAt_of_isRegularPointIneq hreg hh hg,
     fun _ ↦ criticalCone_subset_tangent_stronglyActiveFeasible_of_isRegularPointIneq hreg hh hg⟩
 
 /-- **Theorem 3.2.5** of [conn2000trust], under AO.1 and AO.2. Let $E$ be a finite-dimensional real
@@ -961,7 +968,8 @@ theorem theorem_3_2_7_activeKKT_conditions_open :
     rw [heq]
     exact ((continuous_const.clm_comp (continuous_snd.clm_comp continuous_const)).add
       (continuous_const.clm_comp
-        ((ContinuousLinearMap.adjoint.continuous.comp continuous_fst).clm_comp continuous_const))).add
+        ((ContinuousLinearMap.adjoint.continuous.comp continuous_fst).clm_comp
+          continuous_const))).add
       (continuous_const.clm_comp (continuous_fst.clm_comp continuous_const))
   rw [isOpen_iff_mem_nhds]
   intro p hp
@@ -1290,7 +1298,8 @@ theorem theorem_3_2_7_strict_minimizer_branch
     exact ((hcont.tendsto _).comp hz.continuousAt.tendsto).eventually
       (Ioi_mem_nhds (show 0 < (z p₀).2 (.inr j) by rw [hz₀]; exact hstrict j))
   have hneg : ∀ᶠ p in 𝓝 p₀, ∀ j : ν, g (.inr j) p (z p).1 < 0 :=
-    eventually_all.mpr fun j ↦ ((hgcont j).tendsto.comp hpair).eventually (Iio_mem_nhds (hinactive j))
+    eventually_all.mpr fun j ↦
+      ((hgcont j).tendsto.comp hpair).eventually (Iio_mem_nhds (hinactive j))
   let q₀ : P × V := (p₀, z₀.1)
   let lift (q : P × V) := (q.1, (q.2, z₀.2))
   have hlift : ContinuousAt lift q₀ :=
@@ -1363,7 +1372,8 @@ theorem theorem_3_2_7_strict_minimizer_branch
       cases j with
       | inl j => rw [hi, mul_zero]
       | inr j => exact zero_mul _
-  refine ⟨hpx, ?_, hppos, hpreg.1, hpreg.2, hkkt, theorem_3_2_6 (hf p _) (hh p _) (hg p _) hkkt ?_, ?_, ?_⟩
+  refine ⟨hpx, ?_, hppos, hpreg.1, hpreg.2, hkkt,
+    theorem_3_2_6 (hf p _) (hh p _) (hg p _) hkkt ?_, ?_, ?_⟩
   · intro j
     cases j with
     | inl j => simp [hi]
@@ -1377,7 +1387,6 @@ theorem theorem_3_2_7_strict_minimizer_branch
       | inr j => exact hd.2.1 (.inl j) (hi j) (hppos j)
     rw [← hH]
     exact hpreg.2 d hker hdne
-
   · intro l' μ' hkkt'
     have hin (j : ν) : μ' (.inr j) = 0 :=
       (mul_eq_zero.mp (hkkt'.complementary (.inr j))).resolve_right (hpneg j).ne
@@ -1402,7 +1411,6 @@ theorem theorem_3_2_7_strict_minimizer_branch
     constructor
     · exact funext fun i ↦ congrArg (fun mult : ActiveDual ι κ ↦ mult (.inl i)) hmult
     · rw [← hμ', hmult]
-
   · intro w hw hwfeas hwmin
     have hnearw := hrectangle (show (p, w) ∈ U' ×ˢ X₀ from ⟨hp', hXX₀ hw⟩)
     obtain ⟨hwW, hwpos, hwneg, hwonto, hwrec⟩ := hnearw
@@ -1696,9 +1704,11 @@ theorem theorem_3_2_7
     rw [hH]
     apply hpos d _ _ hne
     · intro i
-      simpa only [hrow, Sum.elim_inl, PiLp.zero_apply] using congrArg (fun m : ActiveDual ι κ ↦ m (.inl i)) hd
+      simpa only [hrow, Sum.elim_inl, PiLp.zero_apply] using
+        congrArg (fun m : ActiveDual ι κ ↦ m (.inl i)) hd
     · intro j
-      simpa only [hrow, Sum.elim_inr, PiLp.zero_apply] using congrArg (fun m : ActiveDual ι κ ↦ m (.inr j)) hd
+      simpa only [hrow, Sum.elim_inr, PiLp.zero_apply] using
+        congrArg (fun m : ActiveDual ι κ ↦ m (.inr j)) hd
   have slice {u : P → V → ℝ} (hu : ContDiff ℝ 2 (Function.uncurry u)) (p : P) (x : V) :
       ContDiffAt ℝ 2 (u p) x :=
     (hu.comp (contDiff_const.prodMk contDiff_id)).contDiffAt
@@ -1843,7 +1853,8 @@ theorem theorem_3_2_8_counterexample :
     linarith
   obtain ⟨x, ⟨hx, hxmin⟩, hxopen⟩ := hsub hεball
   have hle : (ε / 2) * x ≤ (ε / 2) * 0 := hxmin (show 0 ∈ Icc (0 : ℝ) 1 by norm_num)
-  have hpos : 0 < (ε / 2) * x := mul_pos (half_pos hε) (by linarith [show (1 / 2 : ℝ) < x from hxopen])
+  have hpos : 0 < (ε / 2) * x :=
+    mul_pos (half_pos hε) (by linarith [show (1 / 2 : ℝ) < x from hxopen])
   linarith
 
 
@@ -1993,7 +2004,8 @@ theorem theorem_3_2_11_of_normalCone_sum {ι κ : Type*} [Fintype ι] [Fintype �
     rw [show (∑ j, μ j • gradient (g j) x) = ∑ j : activeSet g x,
       a (.inr j) • gradient (g j) x from sum_extend_activeSet_smul _ _]
     rw [Fintype.sum_sum_type, Fintype.sum_sum_type] at hwa
-    simp only [l, sub_eq_add_neg, add_smul, neg_smul, Finset.sum_add_distrib, Finset.sum_neg_distrib]
+    simp only [l, sub_eq_add_neg, add_smul, neg_smul, Finset.sum_add_distrib,
+      Finset.sum_neg_distrib]
     simpa [A, smul_neg, Finset.sum_neg_distrib] using hwa
   refine ⟨l, μ, hx.1, fun j ↦ ⟨hx.2 j, ?_, ?_⟩, ?_⟩
   · by_cases hj : j ∈ activeSet g x
@@ -2450,7 +2462,8 @@ theorem theorem_3_2_15_clarke {f : V → ℝ} {c : V → W} {r : V → Z} {h : W
       linarith
     refine ⟨y, hy, u, hu, b / a, div_nonneg hb hap.le, by rw [hact, zero_mul], ?_⟩
     have hscaled := congrArg (fun z : V ↦ a⁻¹ • z) hzero
-    simpa [smul_add, smul_smul, inv_mul_cancel₀ hap.ne', div_eq_mul_inv, mul_comm a⁻¹ b] using hscaled
+    simpa [smul_add, smul_smul, inv_mul_cancel₀ hap.ne', div_eq_mul_inv, mul_comm a⁻¹ b] using
+      hscaled
 
 /-- **Theorem 3.2.15** of [conn2000trust]. Let $V$ be a real Hilbert space and $W$, $Z$
 finite-dimensional real inner product spaces. Let $f : V \to \mathbb{R}$, $c : V \to W$ and

@@ -416,7 +416,8 @@ theorem isActiveBranchCombination_iff_mem_convexHull {a : ι → ℝ}
     intro u hu v hv α β hα hβ hsum
     rcases hu with ⟨θ, hn, hs, hz, rfl⟩
     rcases hv with ⟨η, en, es, ez, rfl⟩
-    refine ⟨fun i ↦ α * θ i + β * η i, fun i ↦ add_nonneg (mul_nonneg hα (hn i)) (mul_nonneg hβ (en i)), ?_, ?_, ?_⟩
+    refine ⟨fun i ↦ α * θ i + β * η i,
+      fun i ↦ add_nonneg (mul_nonneg hα (hn i)) (mul_nonneg hβ (en i)), ?_, ?_, ?_⟩
     · simp only [Finset.sum_add_distrib, ← Finset.mul_sum, hs, es, mul_one, hsum]
     · intro i hi
       simp [hz i hi, ez i hi]
@@ -631,7 +632,8 @@ private theorem exists_uniform_firstOrder_of_contDiff {c : E → Y}
     ∃ r > 0, ∀ y ∈ Metric.ball x r, ∀ s : E, ‖s‖ ≤ r →
       ‖c (y + s) - c y - fderiv ℝ c y s‖ ≤ a * ‖s‖ := by
   obtain ⟨r, hr, hclose⟩ := Metric.continuousAt_iff.1
-    (show ContinuousAt (fderiv ℝ c) x from (hc.continuous_fderiv one_ne_zero).continuousAt) (a / 2) (half_pos ha)
+    (show ContinuousAt (fderiv ℝ c) x from (hc.continuous_fderiv one_ne_zero).continuousAt)
+    (a / 2) (half_pos ha)
   refine ⟨r / 3, by positivity, ?_⟩
   intro y hy s hs
   have hy' : y ∈ Metric.ball x r := Metric.ball_subset_ball (by linarith) hy

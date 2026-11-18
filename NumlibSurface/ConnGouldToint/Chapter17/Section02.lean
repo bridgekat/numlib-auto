@@ -331,7 +331,8 @@ private noncomputable def radiusProbePass (P : ProbeRadiusParams) (f m : E → �
     let next : RadiusProbePass E := {
       bestPoint := if fTrial < state.bestValue then trial else state.bestPoint
       bestValue := min fTrial state.bestValue
-      adequate := if pred ≠ 0 ∧ |ρ - 1| ≤ P.μ₁ then max state.adequate state.radius else state.adequate
+      adequate := if pred ≠ 0 ∧ |ρ - 1| ≤ P.μ₁ then max state.adequate state.radius
+        else state.adequate
       radius := state.radius }
     match i with
     | 0 => next

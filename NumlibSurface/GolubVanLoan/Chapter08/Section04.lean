@@ -508,6 +508,7 @@ end RankOne
 
 /-! ### §8.4.4 A divide-and-conquer framework -/
 
+set_option linter.unusedTactic false in
 /-- **Equations (8.4.5)–(8.4.6)** of [golub2013matrix], tearing. Let $T$ be the symmetric
 tridiagonal matrix of (8.4.2) of order $n = 2m$, with diagonal $\alpha_1, \dots, \alpha_n$ and
 off-diagonal $\beta_1, \dots, \beta_{n-1}$. Let $\theta, \rho \in \mathbb{R}$ with
@@ -544,7 +545,6 @@ theorem equation_8_4_6 (α β : ℕ → ℝ) (m : ℕ) {θ ρ : ℝ} (hρ : ρ *
     split_ifs <;> (try ring_nf) <;>
     first
     | omega
-    | rfl
     | (congr 1 <;> omega)
     | (rw [hρ]; congr 1)
 

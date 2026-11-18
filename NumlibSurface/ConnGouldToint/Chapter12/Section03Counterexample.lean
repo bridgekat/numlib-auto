@@ -75,7 +75,8 @@ private theorem intervalObjective_hasDerivAt (x : ℝ) :
 private theorem intervalObjective_gradient (x : ℝ) : gradient intervalObjective x = x - 1 / 2 := by
   exact (intervalObjective_hasDerivAt x).hasGradientAt.gradient
 
-private theorem intervalCenter_bounds (k : ℕ) : 1 / 2 < intervalCenter k ∧ intervalCenter k ≤ 5 / 8 := by
+private theorem intervalCenter_bounds (k : ℕ) :
+    1 / 2 < intervalCenter k ∧ intervalCenter k ≤ 5 / 8 := by
   have hp : 0 < (1 / 2 : ℝ) ^ (k / 2) := by positivity
   have hle : (1 / 2 : ℝ) ^ (k / 2) ≤ 1 := pow_le_one₀ (by norm_num) (by norm_num)
   unfold intervalCenter
@@ -93,7 +94,8 @@ private theorem intervalCenter_mem (k : ℕ) : intervalCenter k ∈ Set.Icc (0 :
 
 private theorem intervalTrial_cauchy (k : ℕ) :
     IsApproxGeneralizedCauchyPoint intervalCauchyParams (Set.Icc (0 : ℝ) 1)
-      intervalObjective (intervalModel k) (intervalCenter k) (intervalRadius k) (intervalTrial k) := by
+      intervalObjective (intervalModel k) (intervalCenter k) (intervalRadius k)
+      (intervalTrial k) := by
   let x := intervalCenter k
   let d := x - 1 / 2
   have hx₁ : 1 / 2 < x := (intervalCenter_bounds k).1
@@ -204,7 +206,8 @@ private theorem intervalCenter_succ_odd (k : ℕ) (hk : k % 2 ≠ 0) :
   rw [show (k + 1) / 2 = k / 2 + 1 by omega, pow_succ]
   ring
 
-private theorem intervalStep_bound (k : ℕ) : ‖intervalTrial k - intervalCenter k‖ ≤ intervalRadius k := by
+private theorem intervalStep_bound (k : ℕ) :
+    ‖intervalTrial k - intervalCenter k‖ ≤ intervalRadius k := by
   obtain ⟨_, _, _, h, _⟩ := intervalTrial_cauchy k
   exact h
 
@@ -353,7 +356,8 @@ theorem theorem_12_3_8_nonvanishing_radius_counterexample :
     ext i
     fin_cases i <;> norm_num [activeConstraintSet, intervalConstraint]
   have hLI : LinearIndependent ℝ
-      (fun i : activeConstraintSet intervalConstraint (1 / 2) ↦ gradient (intervalConstraint i) (1 / 2)) := by
+      (fun i : activeConstraintSet intervalConstraint (1 / 2) ↦
+        gradient (intervalConstraint i) (1 / 2)) := by
     let : IsEmpty (activeConstraintSet intervalConstraint (1 / 2)) := by
       rw [hempty]
       infer_instance
@@ -394,7 +398,8 @@ theorem theorem_12_3_8_nonvanishing_radius_counterexample :
           (intervalObjective (intervalCenter k))).deriv
       · have he : intervalModel k = intervalObjective := by funext y; simp [intervalModel, hk]
         rw [he, ite_eq_right hk]
-    have hmg : deriv (intervalModel k) (intervalCenter k) = deriv intervalObjective (intervalCenter k) := by
+    have hmg : deriv (intervalModel k) (intervalCenter k) =
+        deriv intervalObjective (intervalCenter k) := by
       rw [hderModel]
       split
       · exact (congrFun hder (intervalCenter k)).symm
@@ -410,14 +415,16 @@ theorem theorem_12_3_8_nonvanishing_radius_counterexample :
       hmg, hmH, intervalTrial_cauchy k, ?_⟩
     have h := theorem_12_2_2_of_taylor_bound Q isClosed_Icc (convex_Icc _ _)
       (intervalCenter_mem k) (lt_of_lt_of_le zero_lt_one hR) zero_lt_one
-      (intervalTrial_cauchy k) (by simpa only [one_mul] using intervalModel_Taylor k (intervalTrial k))
+      (intervalTrial_cauchy k)
+      (by simpa only [one_mul] using intervalModel_Taylor k (intervalTrial k))
     simpa only [div_one] using cappedCriticality_decrease (intervalCenter_mem k) hκ.1.le
       (le_refl (1 : ℝ)) (zero_le_one.trans hR) h.2.1
   · apply frequently_atTop.mpr
     intro N
     refine ⟨2 * N, by omega, ?_⟩
     change activeConstraintSet intervalConstraint (intervalCenter (2 * N) +
-      (intervalTrial (2 * N) - intervalCenter (2 * N))) ≠ activeConstraintSet intervalConstraint (1 / 2)
+      (intervalTrial (2 * N) - intervalCenter (2 * N))) ≠
+        activeConstraintSet intervalConstraint (1 / 2)
     rw [intervalStep_eq, hempty, show intervalTrial (2 * N) = 0 by simp [intervalTrial]]
     intro h
     have hzero : (0 : Fin 2) ∈ activeConstraintSet intervalConstraint 0 := by

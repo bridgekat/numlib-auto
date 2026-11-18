@@ -174,6 +174,7 @@ theorem equation_8_6_1 {A : Matrix (Fin m) (Fin n) ℝ} (hmn : n ≤ m) {U : Mat
     funext i
     split_ifs <;> simp [sq]
 
+set_option linter.unusedTactic false in
 /-- The constant block matrix $M = \begin{bmatrix} I & I & 0 \\ I & -I & 0 \\ 0 & 0 & \sqrt 2 I
 \end{bmatrix}$ of (8.6.3), before the scaling, satisfies $M^T M = MM^T = 2I$. -/
 private theorem jw_mul_self {n p : ℕ} :

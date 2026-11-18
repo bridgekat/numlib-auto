@@ -281,7 +281,6 @@ theorem abs_taylor_three {g : ℝ → ℝ} {M : ℝ} (hg : ContDiff ℝ 4 g)
     rw [Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_succ, Finset.sum_range_one,
       iteratedDeriv_zero, iteratedDeriv_one]
     norm_num [Nat.factorial]
-    try ring
   rw [hsum, ← sub_sub, ← sub_sub, ← sub_sub] at h1
   calc |g (ξ + h) - g ξ - h * deriv g ξ - h ^ 2 / 2 * iteratedDeriv 2 g ξ
         - h ^ 3 / 6 * iteratedDeriv 3 g ξ|
