@@ -1,61 +1,342 @@
 namespace = "BenIsraelGreville.Chapter07"
 
-desc = '''Residual polynomials for first-order and higher-order matrix iterations. Prove identities by geometric sums and left/right support on AA† and A†A. Apply the existing complex normed-algebra spectral-radius theorem via Matrix.toEuclideanCLM with the L2 operator norm. Algebraic identities can live in the bounded-operator backbone and be reused in Chapter 9.'''
 
 [[node]]
 id = "pinvIterationResidual"
-kind = "definition"
-desc = '''The range residual of an approximate inverse X is AA† − AX.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, (67)"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (67)"
 
 [[node]]
 id = "IsPinvIterationOrder"
-kind = "definition"
-desc = '''In a fixed submultiplicative matrix norm, order p means the range residuals obey ‖Rₖ₊₁‖ ≤ c‖Rₖ‖^p for some positive c independent of k.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, (68)"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (68)"
+
+[[node]]
+id = "IsPinvSupported"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (75)"
+
+[[node]]
+id = "isPinvSupported_iff"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (75)"
 
 [[node]]
 id = "pinvCorrection_eq"
-kind = "theorem"
-desc = '''If C = C(AA†), then C(AA†−AX) = C(I−AX), with the conjugate-transpose dual on the left when C' = (A†A)C'.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, (69)–(73) and dual formulas"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equations (69)–(73)"
+
+[[node]]
+id = "pinvCorrection_dual_eq"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equations (67′), (69′)–(73′)"
 
 [[node]]
 id = "pinvFirstOrderIterate"
-kind = "definition"
-desc = '''The first-order iteration starts at X₀ and sends X to X + X₀(I−AX).'''
-source = "Ben-Israel and Greville, Ch. 7, §7, (77)"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (77)"
 
 [[node]]
 id = "pinvHigherOrderIterate"
-kind = "definition"
-desc = '''Starting at X₀, the order-p iteration sends X to X ∑_{j<p}(I−AX)^j.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, (84)"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (84)"
 
 [[node]]
-id = "theorem_3"
-kind = "theorem"
-desc = '''If A is nonzero, X₀ = AᴴBAᴴ and the initial range residual R₀ has spectral radius less than one, the first-order sequence converges to A† and ‖Rₖ₊₁‖ ≤ ‖R₀‖‖Rₖ‖ in every submultiplicative norm, from the exact identity Rₖ = R₀^(k+1).'''
-source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 3, (75)–(83)"
-deps = ["pinvFirstOrderIterate", "pinvIterationResidual"]
+id = "pinvFirstOrderIterate_zero"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (77)"
 
 [[node]]
-id = "theorem_4"
-kind = "theorem"
-desc = '''Under the same support and radius conditions, the p-th order sequence for p ≥ 2 converges to A† and ‖Rₖ₊₁‖ ≤ ‖Rₖ‖^p in every submultiplicative norm, from Rₖ₊₁ = Rₖ^p.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 4, (84)–(89)"
-deps = ["pinvHigherOrderIterate", "pinvIterationResidual"]
+id = "pinvHigherOrderIterate_zero"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (84)"
+
+[[node]]
+id = "pinvFirstOrderIterate_succ_eq"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (80)"
+
+[[node]]
+id = "isPinvSupported_firstOrder"
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 3, Equations (75) and (77)"
+
+[[node]]
+id = "pinvFirstOrderIterate_residual_succ"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (81), step recurrence"
+
+[[node]]
+id = "pinvFirstOrderIterate_residual_pow"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (81), initial residual powers"
+
+[[node]]
+id = "pinvFirstOrderIterate_eq_geom"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (83)"
+
+[[node]]
+id = "pinvHigherOrderStep_residual"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (89)"
+
+[[node]]
+id = "isPinvSupported_higherOrder"
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 4, Equations (75), (84)–(86)"
+
+[[node]]
+id = "pinvHigherOrderStep_eq_residual"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (87)"
+
+[[node]]
+id = "pinvHigherOrderIterate_residual_succ"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (89), step recurrence"
+
+[[node]]
+id = "pinvHigherOrderIterate_residual_pow"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (89), initial residual powers"
 
 [[node]]
 id = "theorem_5"
-kind = "theorem"
-desc = '''The j-th order-p iterate equals the (p^j−1)-th first-order iterate with the same initial value. Compare residual powers and use support X = A†AX to recover X from AX.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 5, (90)"
-deps = ["theorem_3", "theorem_4"]
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 5, Equations (90)–(91)"
+
+[[node]]
+id = "theorem_3"
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 3, Equations (75)–(83)"
+
+[[node]]
+id = "theorem_4"
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 4, Equations (84)–(89)"
+
+[[node]]
+id = "isPinvIterationOrder_higherOrder"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (85), order definition (68)"
+
+[[node]]
+id = "exercise_7_18"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 18, Equation (92)"
+
+[[node]]
+id = "exercise_7_22"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 22, Equations (101)–(102)"
+
+[[node]]
+id = "projectionHigherOrderIterate"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 24, Equation (111)"
+
+[[node]]
+id = "projectionHigherOrderIterate_residual"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 24, Equation (109), and Exercise 25, Equation (112)"
+
+[[node]]
+id = "exercise_7_24"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 24, convergence and order bound"
+
+[[node]]
+id = "pinvProductIterate"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 27, Equations (114)–(117)"
+
+[[node]]
+id = "pinvProductIterate_eq"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 27, Equations (114)–(117)"
+
+[[node]]
+id = "exercise_7_27"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 27, product with pseudoinverse on the right"
+
+[[node]]
+id = "pinvIterate_fixed_of_residual_eq_zero"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 17, constant iterates"
+
+[[node]]
+id = "exercise_7_17"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 17, corrected constant-sequence counterexample"
+
+[[node]]
+id = "pinvFirstOrderIterate_eq_geom_computable"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 20(a), Equation (96)"
+
+[[node]]
+id = "exercise_7_23_iterationCount"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, least iteration index in (103)"
+
+[[node]]
+id = "pinvFirstOrderIterate_succ_eq_initialError"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 20(a), Equation (95)"
+
+[[node]]
+id = "exercise_7_25"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 25, monotonicity and rank limit of traces"
+
+[[node]]
+id = "exercise_7_26"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 26, Equation (113), natural ceiling variant"
+
+[[node]]
+id = "leftGramEigenvalue"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercises 19–21, ordered Gram eigenvalues"
+
+[[node]]
+id = "exists_leftGram_and_rangeProjection_diagonalizations"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 19, simultaneous Gram and projection coordinates"
+
+[[node]]
+id = "exists_scaledAdjointResidual_diagonalizations"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 19, diagonal residual formulas"
+
+[[node]]
+id = "scaledAdjointResidual_norm_pow_le_iff"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercises 20–21, bounds on the individual residual power coefficients"
 
 [[node]]
 id = "spectralRadius_scaled_adjoint_start"
-kind = "theorem"
-desc = '''For nonzero A and X₀ = βAᴴ the range residual has spectral radius less than one iff 0 < β < 2/λmax(AAᴴ). The spectral-norm residual powers are minimized by β = 2/(λmax+λmin⁺) and have norm ((λmax−λmin⁺)/(λmax+λmin⁺)) raised to the residual exponent k+1 or p^k.'''
-source = "Ben-Israel and Greville, Ch. 7, §7, Exercises 19–21, (93)–(100)"
-deps = ["theorem_3", "theorem_4"]
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 19(a,b), Equations (93)–(94)"
+
+[[node]]
+id = "spectralRadius_scaled_adjoint_computable"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 19(c), corrected nonzero-scale condition"
+
+[[node]]
+id = "scaledAdjointResidual_norm_pow_eq"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercises 20(c)–21, endpoint characterization of the spectral norms"
+
+[[node]]
+id = "exercise_7_20_optimalScale"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercises 20(c)–21, Equations (98)–(99)"
+
+[[node]]
+id = "exercise_7_20"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 20(a,b), Equations (95)–(97)"
+
+[[node]]
+id = "exercise_7_21"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 21, corrected power p^k, and convergence"
+
+[[node]]
+id = "pinvHigherOrderStep_eq_correction"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (86)"
+
+[[node]]
+id = "projectionHigherOrderIterate_eq_mul"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 24, projection sequence from the inverse sequence"
+
+[[node]]
+id = "exercise_7_23_iterationCount_log"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, ceiling logarithm in Equation (103)"
+
+[[node]]
+id = "dyadicPinvGeomProduct"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, ordered dyadic factors in Equation (105)"
+
+[[node]]
+id = "dyadicPinvGeomProduct_eq_sum"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, factorization in Equation (105)"
+
+[[node]]
+id = "dyadicPinvStepCost_lt"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, comparison of Equations (104) and (106)"
+
+[[node]]
+id = "pinvModeledStepCost"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, Equations (104), (106), and (107a,b)"
+
+[[node]]
+id = "IsOptimalPinvOrder"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, optimum order for a given target in Equation (107)"
+
+[[node]]
+id = "IsApproxOptimalPinvOrder"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, approximate optimum order in Equation (108)"
+
+[[node]]
+id = "pinvModeledEffort_lower_bound"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, lower bounds in Equations (107a′,b′)"
+
+[[node]]
+id = "projectionHigherOrderIterate_isHermitian"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 25, Hermitian preservation"
+
+[[node]]
+id = "exercise_7_26_int"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 26, Equation (113), integer ceiling"
+
+[[node]]
+id = "pinvIterationResidual_conjTranspose"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equations (67) and (67′)"
+
+[[node]]
+id = "pinvDualHigherOrderIterate"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equations (72′)–(73′), dual of Equation (84)"
+
+[[node]]
+id = "pinvDualHigherOrderIterate_succ"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (84), dual recurrence"
+
+[[node]]
+id = "pinvDualHigherOrderIterate_tendsto"
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 4, dual convergence"
+
+[[node]]
+id = "pinvDualFirstOrderIterate"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equations (72′)–(73′), dual of Equation (77)"
+
+[[node]]
+id = "pinvDualFirstOrderIterate_succ"
+source = "Ben-Israel and Greville, Ch. 7, §7, Equation (77), dual recurrence"
+
+[[node]]
+id = "pinvDualFirstOrderIterate_tendsto"
+source = "Ben-Israel and Greville, Ch. 7, §7, Theorem 3, dual convergence"
+
+[[node]]
+id = "tendsto_projection_products"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 24, convergence to both projections"
+
+[[node]]
+id = "exercise_7_20_optimalScale_unique"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 20(c), unique minimizer in Equation (100)"
+
+[[node]]
+id = "exercise_7_27_dual"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 27, product with pseudoinverse on the left"
+
+[[node]]
+id = "pinvModeledStepCost_dyadic"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, dyadic cost in Equation (106)"
+
+[[node]]
+id = "pinvModeledStepCost_nondyadic"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 23, direct cost in Equation (104)"
+
+[[node]]
+id = "projectionHigherOrderIterate_trace_im"
+source = "Ben-Israel and Greville, Ch. 7, §7, Exercise 25, traces of Hermitian iterates are real"
+
+[[node]]
+id = "pinvHigherOrderIterate_eq_geomSum"
+source = "Ben-Israel and Greville, Chapter 7, §7, Equation (91)"
+
+[[node]]
+id = "pinvFirstOrderIterate_tendsto_residual"
+source = "Ben-Israel and Greville, Chapter 7, §7, Equation (82)"
+
+[[node]]
+id = "pinvFirstOrderStepCost"
+source = "Ben-Israel and Greville, Chapter 7, §7, Exercise 23, fixed first-order step cost"
+
+[[node]]
+id = "pinvModeledStepCost_two"
+source = "Ben-Israel and Greville, Chapter 7, §7, Exercise 23, equal costs of first-order and order-two steps"
+
+[[node]]
+id = "pinvRowIterationResidual"
+source = "Ben-Israel and Greville, Chapter 7, §7, Equation (67′)"
+
+[[node]]
+id = "pinvDualHigherOrderIterate_residual_succ"
+source = "Ben-Israel and Greville, Chapter 7, §7, dual Theorem 4, residual recurrence"
+
+[[node]]
+id = "pinvDualHigherOrderIterate_residual_pow"
+source = "Ben-Israel and Greville, Chapter 7, §7, dual Equation (89)"
+
+[[node]]
+id = "pinvDualHigherOrderIterate_residual_bound"
+source = "Ben-Israel and Greville, Chapter 7, §7, dual Equation (85)"
+
+[[node]]
+id = "pinvDualFirstOrderIterate_residual_succ"
+source = "Ben-Israel and Greville, Chapter 7, §7, dual Theorem 3, residual recurrence"
+
+[[node]]
+id = "pinvDualFirstOrderIterate_residual_bound"
+source = "Ben-Israel and Greville, Chapter 7, §7, dual Equation (78)"
+
+[[node]]
+id = "projectionStart_iff_exists_mul_conjTranspose"
+source = "Ben-Israel and Greville, Chapter 7, §7, Exercise 24, Equation (110)"
