@@ -1,64 +1,262 @@
 namespace = "BenIsraelGreville.Chapter06"
-desc = '''
-Keep the chosen phased singular representation explicit in the rectangular functional calculus.
-'''
+
+[[node]]
+id = "rectangularSpectralExpansion"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, equation (151)'
+
+[[node]]
+id = "IsRectangularSpectralDecomposition"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, thin coordinates'
 
 [[node]]
 id = "theorem_6_18"
-kind = "theorem"
-desc = '''Prescribed phases for the positive singular values yield a rank-one orthogonal partial-isometry expansion, with commutation through the aggregate adjoint and uniqueness of each coefficient-weighted component at a simple singular value.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 18'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, prescribed phases'
+
+[[node]]
+id = "rectangularSpectralComponent"
+source = 'Ben-Israel and Greville, Chapter 6, equation (152), coordinate component'
+
+[[node]]
+id = "rectangularSpectralComponent_eq_vecMulVec"
+source = 'Ben-Israel and Greville, Chapter 6, equation (152), outer product'
+
+[[node]]
+id = "rectangularSpectralExpansion_eq_sum"
+source = 'Ben-Israel and Greville, Chapter 6, equations (151), (156)'
+
+[[node]]
+id = "rectangularSpectralComponents_orthogonal"
+source = 'Ben-Israel and Greville, Chapter 6, equations (149a), (150)'
+
+[[node]]
+id = "rectangularSpectralComponent_rank_one"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, rank and partial-isometry characterization'
+
+[[node]]
+id = "rectangularSpectralComponent_commutes"
+source = 'Ben-Israel and Greville, Chapter 6, equations (149b), (150)'
+
+[[node]]
+id = "IsRectangularSpectralDecomposition.rank_eq_card"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, dimension of the support'
 
 [[node]]
 id = "corollary_6_3"
-kind = "theorem"
-desc = '''The pseudoinverse is the sum of reciprocals of the spectral coefficients times the adjoints of the corresponding partial isometries. The adjoint is necessary for rectangular types.'''
-source = 'Ben-Israel and Greville, Chapter 6, Corollary 3'
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 3, thin coordinate form'
+
+[[node]]
+id = "corollary_6_3_sum"
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 3, equation (153), with adjoints'
 
 [[node]]
 id = "rectangularMatrixFunction"
-kind = "definition"
-desc = '''For a fixed spectral representation, apply f to each nonzero coefficient and multiply by its partial isometry before summing.'''
-source = 'Ben-Israel and Greville, Chapter 6, Definition 6'
+source = 'Ben-Israel and Greville, Chapter 6, Definition 6, equations (156)–(157)'
 
 [[node]]
-id = "theorem_6_19"
+id = "rectangularMatrixFunction_add"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 19(a)'
+
+[[node]]
+id = "rectangularMatrixFunction_mul"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 19(b)'
+
+[[node]]
+id = "rectangularMatrixFunction_comp"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 19(c), compatible support'
+
+[[node]]
+id = "rectangularGroupedComponent"
+source = 'Ben-Israel and Greville, Chapter 6, equation (158)'
+
+[[node]]
+id = "rectangularGroupedComponent_eq_sum"
+source = 'Ben-Israel and Greville, Chapter 6, equation (158), sum form'
+
+[[node]]
+id = "rectangularGroupedComponent_partialIsometry"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(a), partial isometries'
+
+[[node]]
+id = "rectangularCircleCalculus"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5, circular contour calculus'
+
+[[node]]
+id = "lemma_6_5_circular"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5, circular contour formula'
+
+[[node]]
+id = "lemma_6_5_circular_grouped"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(a), equation (159), circular contour'
+
+[[node]]
+id = "lemma_6_5_circle_family"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(b), equation (160), finite circular contours'
+
+[[node]]
+id = "rectangularCircleCalculus_eq_reversed"
+source = 'Ben-Israel and Greville, Chapter 6, equation (160), single enclosing circle'
+
+[[node]]
+id = "rectangularCircleCalculus_inv"
+source = 'Ben-Israel and Greville, Chapter 6, equation (161), circular contour'
+
+[[node]]
+id = "corollary_6_4_circular"
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 4, equation (163), circular contour'
+
+[[node]]
+id = "generalizedResolvent"
+source = 'Ben-Israel and Greville, Chapter 6, equation (164)'
+
+[[node]]
+id = "generalizedResolvent_eq_spectralExpansion"
+source = 'Ben-Israel and Greville, Chapter 6, equation (162)'
+
+[[node]]
+id = "lemma_6_6"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 6, equation (165), with the aggregate partial isometry'
+
+[[node]]
+id = "lemma_6_7_circular"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 7, equation (166), circular contour'
+
+[[node]]
+id = "theorem_6_20_circular"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, equation (169), factored circular integrals'
+
+[[node]]
+id = "rectangularPower"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 83, equations (171a)–(171b)'
+
+[[node]]
+id = "rectangularPower_zero"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 83, equation (172), zeroth power'
+
+[[node]]
+id = "rectangularPower_one"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 83, equation (172), first power'
+
+[[node]]
+id = "rectangularPower_add"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 83, equation (172), exponent addition'
+
+[[node]]
+id = "rectangularPower_adjoint"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 84(a)'
+
+[[node]]
+id = "rectangularPower_odd_nat"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 84(b), nonnegative Gram powers'
+
+[[node]]
+id = "rectangularPower_neg_one"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 84(c)'
+
+[[node]]
+id = "ternaryPolynomial"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 86, definition'
+
+[[node]]
+id = "ternaryPolynomial_eq_gram"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 86, Gram polynomial identities'
+
+[[node]]
+id = "rectangularMatrixFunction_polar_factors"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 91, equation (179)'
+
+[[node]]
+id = "rectangular_simple_singular_component_unique"
 kind = "theorem"
-desc = '''The rectangular calculus respects addition, multiplication twisted by the aggregate partial isometry, and composition with compatible choices of phases and support.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 19'
+desc = '''The phase-normalized rank-one component for a simple positive singular value is independent of the chosen vectors.'''
+deps = ["theorem_6_18","rectangularSpectralComponent_eq_vecMulVec"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, simple singular values'
+
+[[node]]
+id = "normal_rectangular_decomposition"
+kind = "theorem"
+desc = '''Choosing eigenvalue phases for a normal matrix allows the same left and right singular vectors and recovers spectral projectors.'''
+deps = ["theorem_6_18"]
+source = 'Ben-Israel and Greville, Chapter 6, equations (154)–(155)'
 
 [[node]]
 id = "lemma_6_5"
 kind = "theorem"
-desc = '''Group the terms with equal spectral coefficients into partial isometries. Cauchy integrals of the generalized resolvent recover the adjoint grouped isometries and the functional calculus after multiplication by the aggregate partial isometry.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 5'
+desc = '''The normalized Cauchy integrals along positively oriented Jordan contours recover the grouped adjoint components and the reversed rectangular functional calculus.'''
+deps = ["lemma_6_5_circle_family"]
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5, general contours'
 
 [[node]]
 id = "corollary_6_4"
 kind = "theorem"
-desc = '''Multiplying the contour integral of f times the generalized resolvent on both sides by the aggregate partial isometry gives the rectangular matrix function.'''
-source = 'Ben-Israel and Greville, Chapter 6, Corollary 4'
-
-[[node]]
-id = "generalizedResolvent"
-kind = "definition"
-desc = '''The pseudoinverse of zE − A for the aggregate partial isometry E.'''
-source = 'Ben-Israel and Greville, Chapter 6, §7, equation (164)'
-
-[[node]]
-id = "lemma_6_6"
-kind = "theorem"
-desc = '''The first resolvent identity with the aggregate partial isometry between the two resolvents, as required by the rectangular types.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 6'
+desc = '''Sandwich the general contour integral between aggregate partial isometries to recover the rectangular function.'''
+deps = ["lemma_6_5","corollary_6_4_circular"]
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 4, general contours'
 
 [[node]]
 id = "lemma_6_7"
 kind = "theorem"
-desc = '''The product of two rectangular contour functional calculi, with the aggregate partial isometry inserted, equals the contour functional calculus of the product of the scalar functions.'''
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 7'
+desc = '''For general admissible contours, the twisted product of normalized integrals equals the normalized integral of the product.'''
+deps = ["lemma_6_5","lemma_6_7_circular"]
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 7, general contours'
 
 [[node]]
 id = "theorem_6_20"
 kind = "theorem"
-desc = '''A consistent A X B = D has a solution given by the iterated contour integral of the two rectangular resolvents and D, with factors 1/λ and 1/μ on contours enclosing the nonzero coefficients and excluding zero.'''
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 20'
+desc = '''The displayed iterated integral on contours enclosing the coefficients and excluding zero equals the pseudoinverse product and solves the consistent matrix equation.'''
+deps = ["lemma_6_5","theorem_6_20_circular"]
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, iterated contour integral'
+
+[[node]]
+id = "exercise_6_82"
+kind = "theorem"
+desc = '''For a normal matrix the rectangular calculus with eigenvalue phases becomes the classical calculus after adding the contribution on the kernel.'''
+deps = ["normal_rectangular_decomposition"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 82, equation (170)'
+
+[[node]]
+id = "rectangularPower_odd_negative"
+kind = "theorem"
+desc = '''Use inverse powers on the Gram support to state and prove the odd-power identities for negative exponents.'''
+deps = ["rectangularPower_odd_nat","rectangularPower_neg_one"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 84(b), negative Gram powers'
+
+[[node]]
+id = "exercise_6_85"
+kind = "theorem"
+desc = '''For normal eigenvalue phases, positive generalized powers agree with ordinary powers, zero is the range projection, and negative powers are positive powers of the Moore–Penrose inverse.'''
+deps = ["normal_rectangular_decomposition","rectangularPower_add"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 85, equation (174)'
+
+[[node]]
+id = "exercise_6_87"
+kind = "theorem"
+desc = '''Recover the Moore–Penrose inverse of a Hermitian matrix from the specified factorization of a vanishing polynomial.'''
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 87, equations (175)–(176)'
+
+[[node]]
+id = "exercise_6_88"
+kind = "theorem"
+desc = '''Recover the rectangular Moore–Penrose inverse from a factorized annihilator of the column Gram matrix.'''
+deps = ["exercise_6_87"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 88, equation (177)'
+
+[[node]]
+id = "exercise_6_89"
+kind = "theorem"
+desc = '''A partial isometry is a phase exponential in a supported rectangular spectral representation, and conversely.'''
+deps = ["theorem_6_18","rectangularSpectralComponent_rank_one"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 89'
+
+[[node]]
+id = "exercise_6_90"
+kind = "theorem"
+desc = '''A square unitary matrix is the classical imaginary exponential of a Hermitian matrix, equivalently the supported exponential plus the kernel projector.'''
+deps = ["exercise_6_82"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 90, equations (178), (178′)'
+
+[[node]]
+id = "rectangularPower_polar_factors"
+kind = "theorem"
+desc = '''With fixed normal polar factors, generalized powers agree with their ordinary or supported inverse powers multiplied by the common partial isometry.'''
+deps = ["rectangularMatrixFunction_polar_factors","rectangularPower_add"]
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 91, equation (180)'
