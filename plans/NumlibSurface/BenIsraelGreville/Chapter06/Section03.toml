@@ -26,9 +26,6 @@ source = 'Ben-Israel and Greville, Chapter 6, Theorem 4, corrected nonattainment
 
 [[node]]
 id = "theorem_6_4_unique_iff_gap"
-kind = "theorem"
-desc = '''For a full-column-rank augmented matrix with an admissible least-stretch vector, the optimal perturbation is unique exactly when the least singular value is simple.'''
-deps = ["theorem_6_4", "bestRankApproximation_unique_iff_gap"]
 source = 'Ben-Israel and Greville, Chapter 6, Theorem 4, uniqueness'
 
 [[node]]
@@ -106,3 +103,7 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 36'
 [[node]]
 id = "exercise_6_34_normal_pow"
 source = "Ben-Israel and Greville, Chapter 6, Exercise 34, positive powers of the normal truncation"
+
+[[node]]
+id = "theorem_6_4_unique_of_gap"
+source = "Ben-Israel and Greville, Chapter 6, Theorem 4, uniqueness under a strict gap"

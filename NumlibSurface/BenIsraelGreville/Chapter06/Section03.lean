@@ -17,6 +17,7 @@ truncating an SVD and applies the construction to total least squares.
 * **Theorem 4** (correction). A minimizing right singular vector for the
   smallest singular value must have a nonzero last coordinate. If every
   minimizing vector has last coordinate zero, the TLS infimum is not attained.
+* **Exercise 34** (correction). The target of the adjoint approximation is $A^H$.
 -/
 
 namespace BenIsraelGreville.Chapter06
@@ -792,5 +793,246 @@ theorem exercise_6_34_normal_pow {n k p : ℕ} {A U : Matrix (Fin n) (Fin n) ℂ
   change IsBestRankApproximation (A ^ p) k (X ^ p)
   rw [← hTruncation]
   exact (theorem_6_3 hSfull hr).1
+
+/-- **Theorem 4**, uniqueness with a spectral gap, of
+[benIsrael2003generalized], Chapter 6. An admissible least-stretch vector
+gives existence. A gap at the smallest singular value makes the optimal
+perturbation unique. -/
+theorem theorem_6_4_unique_of_gap {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
+    (b : Fin m → ℂ) (w : Fin n ⊕ Unit → ℂ)
+    (hw : ‖(WithLp.toLp 2 w : EuclideanSpace ℂ (Fin n ⊕ Unit))‖ = 1)
+    (hmin : ‖(WithLp.toLp 2 (fromCols A (replicateCol Unit b) *ᵥ w) :
+      EuclideanSpace ℂ (Fin m))‖ = (fromCols A (replicateCol Unit b)).sortedSingularValues n)
+    (hα : w (Sum.inr ()) ≠ 0)
+    (hfull : (fromCols A (replicateCol Unit b)).rank = n + 1)
+    (hgap : (fromCols A (replicateCol Unit b)).sortedSingularValues n <
+      (fromCols A (replicateCol Unit b)).sortedSingularValues (n - 1)) :
+    ∃! ER : Matrix (Fin m) (Fin n) ℂ × Matrix (Fin m) Unit ℂ,
+      IsTLSPerturbation 1 1 A (replicateCol Unit b) ER.1 ER.2 := by
+  let B := replicateCol Unit b
+  let C := fromCols A B
+  let e : Fin (n + 1) ≃ Fin n ⊕ Unit := Fintype.equivOfCardEq (by simp)
+  let D := C.submatrix (Equiv.refl _) e
+  let approx (E : Matrix (Fin m) (Fin n) ℂ) (R : Matrix (Fin m) Unit ℂ) :=
+    (fromCols (A + E) (B + R)).submatrix (Equiv.refl _) e
+  have hσ : D.sortedSingularValues = C.sortedSingularValues :=
+    sortedSingularValues_submatrix_equiv C (Equiv.refl _) e
+  have hnm : n + 1 ≤ m := by
+    rw [← hfull]
+    simpa only [Fintype.card_fin] using C.rank_le_card_height
+  obtain ⟨E, R, hER, _, _, herror⟩ := theorem_6_4 A b w hw (by simpa using hmin) hα
+  obtain ⟨U, hU, V, hV, hD⟩ := D.exists_svd
+  let σ := D.sortedSingularValues
+  have hs : D.IsSVD U σ V :=
+    ⟨⟨hU, hV, hD⟩, D.sortedSingularValues_antitone, D.sortedSingularValues_nonneg⟩
+  have hApprox (E' : Matrix (Fin m) (Fin n) ℂ) (R' : Matrix (Fin m) Unit ℂ)
+      (hP : IsTLSPerturbation 1 1 A B E' R') : approx E' R' = svdTruncation U σ V n := by
+    obtain ⟨X, hX⟩ := exists_mul_eq_of_range_mulVecLin_le hP.range_le
+    have hprod : fromCols (A + E') (B + R') = (A + E') * fromCols 1 X := by
+      rw [mul_fromCols, Matrix.mul_one, hX]
+    have hRank : (approx E' R').rank ≤ n := by
+      rw [show (approx E' R').rank = (fromCols (A + E') (B + R')).rank from
+        rank_submatrix _ (Equiv.refl _) e, hprod]
+      exact (rank_mul_le_left _ _).trans ((A + E').rank_le_width)
+    have hn' := hP.norm_le E R hER.range_le
+    rw [tlsWeighted_one, tlsWeighted_one, herror] at hn'
+    have hdiff : D - approx E' R' = (-(fromCols E' R')).submatrix (Equiv.refl _) e := by
+      ext i j
+      change C i (e j) - fromCols (A + E') (B + R') i (e j) = -(fromCols E' R' i (e j))
+      rcases e j with j | j <;> simp [C]
+    apply eq_svdTruncation_of_frobenius_norm_sub_sq_le hs
+      (by simpa only [σ, hσ] using hgap) hRank
+    rw [hdiff, frobenius_norm_submatrix_equiv, norm_neg,
+      min_eq_right hnm, Nat.Ico_succ_singleton, Finset.sum_singleton, show σ n = C.sortedSingularValues n from congrFun hσ n]
+    simpa only [Fintype.card_fin] using pow_le_pow_left₀ (norm_nonneg _) hn' 2
+  refine ⟨(E, R), hER, ?_⟩
+  rintro ⟨E', R'⟩ hP
+  have heq := (hApprox E' R' hP).trans (hApprox E R hER).symm
+  have heq' : fromCols (A + E') (B + R') = fromCols (A + E) (B + R) := by
+    ext i j
+    have he := congrArg (fun M : Matrix (Fin m) (Fin (n + 1)) ℂ => M i (e.symm j)) heq
+    simpa only [approx, submatrix_apply, Equiv.refl_apply, Equiv.apply_symm_apply] using he
+  apply Prod.ext
+  · exact add_left_cancel (congrArg (fun M => toCols₁ M) heq')
+  · exact add_left_cancel (congrArg (fun M => toCols₂ M) heq')
+
+open scoped InnerProductSpace in
+private theorem least_stretch_iff_vanishes_above {m n : Type*}
+    [Fintype m] [Fintype n] [DecidableEq n]
+    (C : Matrix m n ℂ) (c : ℝ) (hc : 0 ≤ c) (hmin : ∀ i, c ≤ C.colSingularValues i)
+    (x : EuclideanSpace ℂ n) :
+    ‖toEuclideanLin C x‖ = c * ‖x‖ ↔
+      ∀ i, c < C.colSingularValues i → inner ℂ (C.rightSingularBasis i) x = 0 := by
+  have hsum :
+      (∑ i, (C.colSingularValues i ^ 2 - c ^ 2) *
+        ‖inner ℂ (C.rightSingularBasis i) x‖ ^ 2) = ‖toEuclideanLin C x‖ ^ 2 - (c * ‖x‖) ^ 2 := by
+    simp only [sub_mul, Finset.sum_sub_distrib, C.norm_sq_toEuclideanLin_apply,
+      mul_pow, ← Finset.mul_sum, C.sum_norm_inner_rightSingularBasis_sq]
+  have hnn (i : n) : 0 ≤ (C.colSingularValues i ^ 2 - c ^ 2) *
+      ‖inner ℂ (C.rightSingularBasis i) x‖ ^ 2 :=
+    mul_nonneg (sub_nonneg.mpr (pow_le_pow_left₀ hc (hmin i) 2)) (sq_nonneg _)
+  constructor
+  · intro h i hi
+    have hs := hsum.trans (by rw [h, sub_self])
+    have hz := (Finset.sum_eq_zero_iff_of_nonneg (fun i _ => hnn i)).mp hs i (Finset.mem_univ i)
+    have hp : 0 < C.colSingularValues i ^ 2 - c ^ 2 :=
+      sub_pos.mpr (pow_lt_pow_left₀ hi hc (by decide))
+    have hn := (mul_eq_zero.mp hz).resolve_left hp.ne'
+    exact norm_eq_zero.mp (sq_eq_zero_iff.mp hn)
+  · intro h
+    have hz : (∑ i, (C.colSingularValues i ^ 2 - c ^ 2) *
+        ‖inner ℂ (C.rightSingularBasis i) x‖ ^ 2) = 0 := by
+      apply Finset.sum_eq_zero
+      intro i _
+      rcases (hmin i).eq_or_lt with h' | h'
+      · simp [h']
+      · simp [h i h']
+    apply (pow_left_inj₀ (norm_nonneg _) (mul_nonneg hc (norm_nonneg _)) two_ne_zero).mp
+    exact sub_eq_zero.mp (hsum.symm.trans hz)
+
+open scoped InnerProductSpace in
+private theorem tls_not_unique_of_tie {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
+    (b : Fin m → ℂ) (w : Fin n ⊕ Unit → ℂ)
+    (hw : ‖(WithLp.toLp 2 w : EuclideanSpace ℂ (Fin n ⊕ Unit))‖ = 1)
+    (hmin : ‖(WithLp.toLp 2 (fromCols A (replicateCol Unit b) *ᵥ w) :
+      EuclideanSpace ℂ (Fin m))‖ = (fromCols A (replicateCol Unit b)).sortedSingularValues n)
+    (hα : w (Sum.inr ()) ≠ 0) (hn : 0 < n)
+    (hfull : (fromCols A (replicateCol Unit b)).rank = n + 1)
+    (htie : (fromCols A (replicateCol Unit b)).sortedSingularValues n =
+      (fromCols A (replicateCol Unit b)).sortedSingularValues (n - 1)) :
+    ¬ ∃! ER : Matrix (Fin m) (Fin n) ℂ × Matrix (Fin m) Unit ℂ,
+      IsTLSPerturbation 1 1 A (replicateCol Unit b) ER.1 ER.2 := by
+  let B := replicateCol Unit b
+  let C := fromCols A B
+  let c := C.sortedSingularValues n
+  let x : EuclideanSpace ℂ (Fin n ⊕ Unit) := WithLp.toLp 2 w
+  let last : EuclideanSpace ℂ (Fin n ⊕ Unit) →ₗ[ℂ] ℂ := PiLp.projₗ 2 (fun _ : Fin n ⊕ Unit => ℂ) (Sum.inr ())
+  have hlx : last x ≠ 0 := hα
+  have hleast : ∀ i, c ≤ C.colSingularValues i := by
+    intro i
+    have h := ciInf_le (Set.finite_range C.colSingularValues).bddBelow i
+    rw [← C.sortedSingularValues_eq_iInf_colSingularValues] at h
+    simpa [c] using h
+  have hchar (y : EuclideanSpace ℂ (Fin n ⊕ Unit)) :=
+    least_stretch_iff_vanishes_above C c (C.sortedSingularValues_nonneg n) hleast y
+  have hx : ∀ i, c < C.colSingularValues i → inner ℂ (C.rightSingularBasis i) x = 0 := by
+    apply (hchar x).mp
+    change ‖toEuclideanLin C (WithLp.toLp 2 w)‖ = c * ‖x‖
+    rw [toEuclideanLin_toLp, show ‖x‖ = 1 from hw, mul_one]
+    exact hmin
+  obtain ⟨e, he⟩ := C.exists_equiv_colSingularValues_eq_sortedSingularValues
+  have hcard : Fintype.card (Fin n ⊕ Unit) = n + 1 := by simp
+  let a := e ⟨n - 1, by omega⟩
+  let a' := e ⟨n, by omega⟩
+  have haa' : a ≠ a' := by
+    intro h
+    have hh := congrArg Fin.val (e.injective h)
+    change n - 1 = n at hh
+    omega
+  have heq : C.colSingularValues a = c := (he _).trans htie.symm
+  have heq' : C.colSingularValues a' = c := he _
+  let v := C.rightSingularBasis a
+  let v' := C.rightSingularBasis a'
+  have hbasis := orthonormal_iff_ite.mp C.rightSingularBasis.orthonormal
+  have hv (i) (hi : c < C.colSingularValues i) : inner ℂ (C.rightSingularBasis i) v = 0 := by
+    have hne : i ≠ a := by
+      rintro rfl
+      rw [heq] at hi
+      exact (lt_irrefl c) hi
+    simp [v, hbasis, hne]
+  have hv' (i) (hi : c < C.colSingularValues i) : inner ℂ (C.rightSingularBasis i) v' = 0 := by
+    have hne : i ≠ a' := by
+      rintro rfl
+      rw [heq'] at hi
+      exact (lt_irrefl c) hi
+    simp [v', hbasis, hne]
+  obtain ⟨z, hz, hlz, hzs⟩ : ∃ z : EuclideanSpace ℂ (Fin n ⊕ Unit),
+      z ≠ 0 ∧ last z = 0 ∧
+      ∀ i, c < C.colSingularValues i → inner ℂ (C.rightSingularBasis i) z = 0 := by
+    by_cases hzero : last v = 0
+    · exact ⟨v, norm_ne_zero_iff.mp (by simp [v]), hzero, hv⟩
+    · refine ⟨last v' • v - last v • v', ?_, by simp [mul_comm], ?_⟩
+      · intro H
+        have h := congrArg (inner ℂ v') H
+        simp [inner_sub_right, inner_smul_right, v, v', hbasis, Ne.symm haa'] at h
+        exact hzero h
+      · intro i hi
+        simp [inner_sub_right, inner_smul_right, hv i hi, hv' i hi]
+  let q := x + z
+  have hlq : last q = last x := by simp [q, hlz]
+  have hq : q ≠ 0 := by
+    intro h
+    exact hlx (hlq.symm.trans (h ▸ map_zero last))
+  let t : ℂ := (‖q‖ : ℂ)⁻¹
+  let y := t • q
+  let w' := WithLp.ofLp y
+  have ht : t ≠ 0 := inv_ne_zero (Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hq))
+  have hy1 : ‖y‖ = 1 := by
+    rw [show y = t • q from rfl, norm_smul]
+    simp [t, inv_mul_cancel₀ (norm_ne_zero_iff.mpr hq)]
+  have hyl : w' (Sum.inr ()) ≠ 0 := by
+    change last y ≠ 0
+    rw [show y = t • q from rfl, map_smul, hlq, smul_eq_mul]
+    exact mul_ne_zero ht hlx
+  have hym : ‖(WithLp.toLp 2 (C *ᵥ w') : EuclideanSpace ℂ (Fin m))‖ = c := by
+    have h := (hchar y).mpr (by
+      intro i hi
+      simp [y, q, inner_add_right, inner_smul_right, hx i hi, hzs i hi])
+    rwa [hy1, mul_one, ← WithLp.toLp_ofLp 2 y, toEuclideanLin_toLp] at h
+  obtain ⟨E, R, hER, _, hP, _⟩ := theorem_6_4 A b w hw (by simpa using hmin) hα
+  obtain ⟨E', R', hER', _, hP', _⟩ := theorem_6_4 A b w' hy1 (by simpa [c, C, B] using hym) hyl
+  rintro ⟨ER, _, hUnique⟩
+  have hsame : (E, R) = (E', R') := (hUnique _ hER).trans (hUnique _ hER').symm
+  have hsameP : vecMulVec (C *ᵥ w) (star w) = vecMulVec (C *ᵥ w') (star w') := by
+    apply neg_injective
+    exact hP.symm.trans ((congrArg (fun p : Matrix (Fin m) (Fin n) ℂ × Matrix (Fin m) Unit ℂ =>
+      fromCols p.1 p.2) hsame).trans hP')
+  have hproj := congrArg (fun M : Matrix (Fin m) (Fin n ⊕ Unit) ℂ => M *ᵥ w') hsameP
+  have hself : star w' ⬝ᵥ w' = 1 := by rw [star_dotProduct_self, show ‖WithLp.toLp 2 w'‖ = 1 from hy1]; simp
+  rw [vecMulVec_mulVec, vecMulVec_mulVec, hself] at hproj
+  have hproj' : (star w ⬝ᵥ w') • (C *ᵥ w) = C *ᵥ w' := by
+    funext i
+    simpa only [Pi.smul_apply, op_smul_eq_mul, smul_eq_mul, one_mul, mul_comm] using congrFun hproj i
+  have hinj : Function.Injective C.mulVec := by
+    rw [mulVec_injective_iff, linearIndependent_iff_card_eq_finrank_span,
+      Set.finrank, ← C.rank_eq_finrank_span_cols, hfull, hcard]
+  let s := star w ⬝ᵥ w'
+  have heqv : s • w = w' := hinj (by
+    rw [mulVec_smul]
+    exact hproj')
+  have heqy : s • x = y := congrArg (WithLp.toLp 2) heqv
+  have heql := congrArg last heqy
+  change last (s • x) = last (t • q) at heql
+  simp only [map_smul, hlq, smul_eq_mul] at heql
+  have hst : s = t := mul_right_cancel₀ hlx heql
+  have hsame_xq : x = q := by
+    have hwq : t • x = t • q := by
+      simpa only [hst] using (show s • x = t • q from heqy)
+    have h := congrArg (t⁻¹ • ·) hwq
+    simpa only [smul_smul, inv_mul_cancel₀ ht, one_smul] using h
+  exact hz (by simpa [q] using hsame_xq.symm)
+
+/-- **Theorem 4**, uniqueness, of [benIsrael2003generalized], Chapter 6.
+For a full-column-rank augmentation with at least two columns and an
+admissible least-stretch vector, the Frobenius-optimal perturbation is
+unique exactly when the least singular value is simple. -/
+theorem theorem_6_4_unique_iff_gap {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
+    (b : Fin m → ℂ) (w : Fin n ⊕ Unit → ℂ)
+    (hw : ‖(WithLp.toLp 2 w : EuclideanSpace ℂ (Fin n ⊕ Unit))‖ = 1)
+    (hmin : ‖(WithLp.toLp 2 (fromCols A (replicateCol Unit b) *ᵥ w) :
+      EuclideanSpace ℂ (Fin m))‖ = (fromCols A (replicateCol Unit b)).sortedSingularValues n)
+    (hα : w (Sum.inr ()) ≠ 0) (hn : 0 < n)
+    (hfull : (fromCols A (replicateCol Unit b)).rank = n + 1) :
+    (∃! ER : Matrix (Fin m) (Fin n) ℂ × Matrix (Fin m) Unit ℂ,
+        IsTLSPerturbation 1 1 A (replicateCol Unit b) ER.1 ER.2) ↔
+      (fromCols A (replicateCol Unit b)).sortedSingularValues n <
+        (fromCols A (replicateCol Unit b)).sortedSingularValues (n - 1) := by
+  refine ⟨?_, theorem_6_4_unique_of_gap A b w hw hmin hα hfull⟩
+  intro h
+  by_contra hg
+  have htie := le_antisymm
+    ((fromCols A (replicateCol Unit b)).sortedSingularValues_antitone (Nat.sub_le n 1))
+    (not_lt.mp hg)
+  exact tls_not_unique_of_tie A b w hw hmin hα hn hfull htie h
 
 end BenIsraelGreville.Chapter06

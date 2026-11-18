@@ -7,8 +7,11 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section07
 import NumlibSurface.BenIsraelGreville.Chapter01.Section06
 import Numlib.LinearAlgebra.Matrix.OrthogonalTrace
 import Numlib.LinearAlgebra.Matrix.Polar
+import Numlib.LinearAlgebra.Matrix.Schur
+import Numlib.LinearAlgebra.Matrix.RankStabilization
 import Mathlib.Analysis.Normed.Affine.MazurUlam
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+import Mathlib.Analysis.Normed.Module.Seminorm.Basic
 
 /-!
 # Partial isometries and polar decomposition
@@ -649,6 +652,82 @@ theorem polar_isometry_nonunique_of_rank_lt (h : IsSingularValueDecomposition A 
   exact Nat.ne_of_lt (Nat.lt_succ_self A.rank)
     (hr₁.symm.trans ((congrArg Matrix.rank he).trans hr₂))
 
+private theorem exists_rankOne_projector_annihilating_range {p q : ℕ}
+    (E : Matrix (Fin p) (Fin q) ℂ) (h : E.rank < p) :
+    ∃ Q : Matrix (Fin p) (Fin p) ℂ,
+      Q.PosSemidef ∧ Q.IsHermitian ∧ Q.rank = 1 ∧ Q * E = 0 := by
+  let L := (toEuclideanLin E).range
+  have hr : E.rank = Module.finrank ℂ L := by
+    rw [show L = (toEuclideanLin E).range from rfl, toEuclideanLin_eq_toLin_orthonormal]
+    exact rank_eq_finrank_range_toLin _ _ _
+  have hL : L ≠ ⊤ := by
+    intro he
+    rw [he, finrank_top, finrank_euclideanSpace, Fintype.card_fin] at hr
+    exact (ne_of_lt h) hr
+  have horth : Lᗮ ≠ ⊥ := (Submodule.orthogonal_eq_bot_iff.not).mpr hL
+  obtain ⟨v, hvL, hv⟩ := Submodule.exists_mem_ne_zero_of_ne_bot horth
+  let V : Submodule ℂ (EuclideanSpace ℂ (Fin p)) := ℂ ∙ v
+  let Q := orthogonalProjector V
+  have hQh : Q.IsHermitian := isHermitian_orthogonalProjector V
+  have hQi : Q * Q = Q := (isIdempotentElem_orthogonalProjector _).eq
+  have hQ : Q.PosSemidef := by
+    have hp := posSemidef_conjTranspose_mul_self Q
+    rwa [hQh.eq, hQi] at hp
+  have hrank : Q.rank = 1 := by
+    calc
+      Q.rank = Module.finrank ℂ (toEuclideanLin Q).range := by
+        rw [toEuclideanLin_eq_toLin_orthonormal]
+        exact rank_eq_finrank_range_toLin _ _ _
+      _ = Module.finrank ℂ V := by rw [toEuclideanLin_orthogonalProjector, Submodule.range_starProjection]
+      _ = 1 := finrank_span_singleton hv
+  refine ⟨Q, hQ, hQh, hrank, ?_⟩
+  apply toEuclideanLin.injective
+  rw [toEuclideanLin_mul, toEuclideanLin_orthogonalProjector, map_zero]
+  ext1 x
+  change V.starProjection (toEuclideanLin E x) = 0
+  apply V.starProjection_apply_eq_zero_iff.mpr
+  have hV : V ≤ Lᗮ := (Submodule.span_singleton_le_iff_mem v Lᗮ).mpr hvL
+  have hO : L ≤ Vᗮ := Submodule.le_orthogonal_iff_le_orthogonal.mp hV
+  exact hO (LinearMap.mem_range_self _ _)
+
+/-- After Equations (82)–(83) of [benIsrael2003generalized], Chapter 6.
+A polar isometry built with fewer than both ambient dimensions admits
+nonzero positive rank-one additions to both polar factors. The
+additions annihilate the corresponding range of the isometry. -/
+theorem polar_positive_factors_nonunique_without_matching_range
+    (h : IsSingularValueDecomposition A U σ V)
+    {k : ℕ} (hr : A.rank ≤ k) (hm : k < m) (hn : k < n) :
+    let Uk := U.submatrix id (Fin.castLE hm.le)
+    let Vk := V.submatrix id (Fin.castLE hn.le)
+    let Dk := diagonal (fun i : Fin k => (σ i : ℂ))
+    let E := Uk * Vkᴴ
+    let G := Uk * Dk * Ukᴴ
+    let H := Vk * Dk * Vkᴴ
+    ∃ P : Matrix (Fin m) (Fin m) ℂ, ∃ Q : Matrix (Fin n) (Fin n) ℂ,
+      P.PosSemidef ∧ Q.PosSemidef ∧ P.rank = 1 ∧ Q.rank = 1 ∧
+        (G + P).PosSemidef ∧ (H + Q).PosSemidef ∧ A = (G + P) * E ∧ A = E * (H + Q) := by
+  let Uk := U.submatrix id (Fin.castLE hm.le)
+  let Vk := V.submatrix id (Fin.castLE hn.le)
+  let Dk := diagonal (fun i : Fin k => (σ i : ℂ))
+  let E := Uk * Vkᴴ
+  let G := Uk * Dk * Ukᴴ
+  let H := Vk * Dk * Vkᴴ
+  obtain ⟨-, hE, hG, hH, hL, hR⟩ := polar_factors_of_larger_truncation h hr hm.le hn.le
+  change E.rank = k at hE
+  have hE' : Eᴴ.rank = k := (rank_conjTranspose E).trans hE
+  obtain ⟨P, hP, -, hrP, hPE⟩ := exists_rankOne_projector_annihilating_range E (hE ▸ hm)
+  obtain ⟨Q, hQ, hhQ, hrQ, hQE⟩ := exists_rankOne_projector_annihilating_range Eᴴ (hE' ▸ hn)
+  have hEQ : E * Q = 0 := by
+    simpa only [conjTranspose_mul, conjTranspose_conjTranspose, hhQ.eq, conjTranspose_zero]
+      using congrArg Matrix.conjTranspose hQE
+  refine ⟨P, Q, hP, hQ, hrP, hrQ, hG.add hP, hH.add hQ, ?_, ?_⟩
+  · change A = (G + P) * E
+    rw [Matrix.add_mul, hPE, add_zero]
+    exact hL
+  · change A = E * (H + Q)
+    rw [Matrix.mul_add, hEQ, add_zero]
+    exact hR
+
 /-- **Equation (85)** of [benIsrael2003generalized], Chapter 6.
 The Moore–Penrose inverse of the left positive polar factor reciprocates
 its nonzero singular values within the leading left singular space. -/
@@ -1263,6 +1342,318 @@ theorem exercise_6_49 :
     rw [he, map_smul, he, smul_smul, smul_eq_zero] at hzero
     exact (mul_eq_zero.mp (hzero.resolve_right hx)).elim id id
 
+private theorem isPartialIsometry_and_normal_reindex_iff {j : Type*} [Fintype j]
+    [DecidableEq j] (e : n ≃ j) (A : Matrix n n ℂ) :
+    (IsPartialIsometry (Matrix.reindex e e A) ∧ IsStarNormal (Matrix.reindex e e A)) ↔
+      IsPartialIsometry A ∧ IsStarNormal A := by
+  let F := reindexAlgEquiv ℂ ℂ e
+  have hstar (X : Matrix n n ℂ) : F Xᴴ = (F X)ᴴ :=
+    (conjTranspose_reindex e e X).symm
+  change (IsPartialIsometry (F A) ∧ IsStarNormal (F A)) ↔ _
+  rw [isPartialIsometry_iff_reflexive, isPartialIsometry_iff_reflexive A, ← hstar,
+    ← map_mul, ← map_mul, F.injective.eq_iff]
+  apply and_congr_right'
+  constructor
+  · intro h
+    refine ⟨F.injective ?_⟩
+    change F (Aᴴ * A) = F (A * Aᴴ)
+    rw [map_mul, map_mul, hstar]
+    exact h.star_comm_self
+  · intro h
+    refine ⟨?_⟩
+    change (F A)ᴴ * F A = F A * (F A)ᴴ
+    rw [← hstar, ← map_mul, ← map_mul]
+    exact congrArg F h.star_comm_self
+
+private theorem isPartialIsometry_and_normal_conj_iff (A : Matrix n n ℂ)
+    {U : Matrix n n ℂ} (hU : U ∈ unitaryGroup n ℂ) :
+    (IsPartialIsometry (Uᴴ * A * U) ∧ IsStarNormal (Uᴴ * A * U)) ↔
+      IsPartialIsometry A ∧ IsStarNormal A := by
+  have hEq : A = U * (Uᴴ * A * U) * Uᴴ := by
+    symm
+    calc
+      _ = (U * Uᴴ) * A * (U * Uᴴ) := by simp only [Matrix.mul_assoc]
+      _ = A := by rw [mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.one_mul, Matrix.mul_one]
+  refine and_congr ?_ (isStarNormal_star_mul_mul_iff hU)
+  constructor
+  · intro h
+    exact hEq.symm ▸ exercise_6_40 hU hU h
+  · intro h
+    have hU' := conjTranspose_mem_unitaryGroup hU
+    simpa only [conjTranspose_conjTranspose] using
+      (exercise_6_40 (U := Uᴴ) (V := Uᴴ) hU' hU' h)
+
+private theorem column_zero_at_other_entries_of_contraction {T : Matrix n n ℂ}
+    (hc : IsContraction T) {i j : n} (hji : j ≠ i) (hi : ‖T i i‖ = 1) : T j i = 0 := by
+  let v := EuclideanSpace.single i (1 : ℂ)
+  have hv : toEuclideanLin T v = (WithLp.toLp 2 (T.col i) : EuclideanSpace ℂ n) := by
+    apply (WithLp.ofLp_injective 2)
+    rw [ofLp_toEuclideanLin]
+    exact Matrix.mulVec_single_one T i
+  have hn := hc v
+  rw [hv] at hn
+  have hnv : ‖v‖ = (1 : ℝ) := by simp [v, PiLp.norm_single]
+  rw [hnv] at hn
+  have hsum : ∑ a, ‖T a i‖ ^ 2 ≤ 1 := by
+    have hh := (sq_le_sq₀ (norm_nonneg _) zero_le_one).mpr hn
+    rwa [EuclideanSpace.norm_sq_eq, one_pow] at hh
+  have hj : ‖T j i‖ ^ 2 ≤ ∑ a ∈ Finset.univ.erase i, ‖T a i‖ ^ 2 :=
+    Finset.single_le_sum (fun a _ => sq_nonneg ‖T a i‖)
+      (Finset.mem_erase.mpr ⟨hji, Finset.mem_univ _⟩)
+  have htotal := Finset.sum_erase_add (Finset.univ : Finset n) (fun a => ‖T a i‖ ^ 2)
+    (Finset.mem_univ i)
+  rw [hi, one_pow] at htotal
+  apply norm_eq_zero.mp
+  nlinarith [norm_nonneg (T j i)]
+
+private theorem isPartialIsometry_diagonal_of_norm (d : n → ℂ)
+    (h : ∀ i, ‖d i‖ = 0 ∨ ‖d i‖ = 1) :
+    IsPartialIsometry (diagonal d) := by
+  apply (isPartialIsometry_iff_reflexive _).mpr
+  rw [diagonal_conjTranspose, diagonal_mul_diagonal, diagonal_mul_diagonal]
+  congr 1
+  funext i
+  change (d i * (starRingEnd ℂ) (d i)) * d i = d i
+  rcases h i with h0 | h1
+  · have hz := norm_eq_zero.mp h0
+    simp [hz]
+  · rw [Complex.mul_conj', h1]
+    norm_num
+
+private theorem rankStable_contraction_schur_diagonal {n : ℕ}
+    {T : Matrix (Fin n) (Fin n) ℂ} (ht : T.IsUpperTriangular)
+    (hc : IsContraction T) (hr : T.rank = (T * T).rank)
+    (hd : ∀ i, ‖T i i‖ = 0 ∨ ‖T i i‖ = 1) :
+    T = diagonal (fun i => T i i) := by
+  let d (i : Fin n) := T i i
+  let D := diagonal d
+  let N := T - D
+  have hTD : T = D + N := by dsimp [N]; abel
+  have hNdiag (i : Fin n) : N i i = 0 := by simp [N, D, d]
+  have hNoff (i j : Fin n) (hij : i ≠ j) : N i j = T i j := by
+    simp [N, D, diagonal_apply_ne _ hij]
+  have hNT : N.IsUpperTriangular := fun _ _ hij => (hNoff _ _ hij.ne').trans (ht hij)
+  have hNchi : N.charpoly = Polynomial.X ^ n := by
+    rw [charpoly_of_isUpperTriangular N hNT]
+    simp [hNdiag]
+  have hNpow : N ^ n = 0 := by
+    have h := aeval_self_charpoly N
+    rwa [hNchi, map_pow, Polynomial.aeval_X] at h
+  have hNc : N ^ (n + 1) = 0 := by rw [pow_succ, hNpow, Matrix.zero_mul]
+  have hcol (i j : Fin n) (hji : j ≠ i) (hi : d i ≠ 0) : N j i = 0 := by
+    rw [hNoff _ _ hji]
+    exact column_zero_at_other_entries_of_contraction hc hji
+      ((hd i).resolve_left (norm_ne_zero_iff.mpr hi))
+  have hrow (i j : Fin n) (hji : j ≠ i) (hi : d i ≠ 0) : N i j = 0 := by
+    rw [hNoff _ _ hji.symm]
+    have hci : ‖Tᴴ i i‖ = 1 := by
+      rw [conjTranspose_apply, norm_star]
+      exact (hd i).resolve_left (norm_ne_zero_iff.mpr hi)
+    have hz := column_zero_at_other_entries_of_contraction ((exercise_6_43_adjoint T).2.mp hc)
+      hji hci
+    apply star_injective
+    simpa only [conjTranspose_apply, star_zero] using hz
+  have hDN : D * N = 0 := by
+    ext i j
+    rw [diagonal_mul, Matrix.zero_apply]
+    by_cases hij : i = j
+    · subst j
+      rw [hNdiag, mul_zero]
+    · by_cases hi : d i = 0
+      · rw [hi, zero_mul]
+      · rw [hrow i j (Ne.symm hij) hi, mul_zero]
+  have hND : N * D = 0 := by
+    ext i j
+    rw [mul_diagonal, Matrix.zero_apply]
+    by_cases hij : i = j
+    · subst j
+      rw [hNdiag, zero_mul]
+    · by_cases hj : d j = 0
+      · rw [hj, mul_zero]
+      · rw [hcol j i hij hj, zero_mul]
+  have hPow (k : ℕ) : T ^ (k + 1) = D ^ (k + 1) + N ^ (k + 1) := by
+    induction k with
+    | zero => simpa using hTD
+    | succ k hk =>
+      rw [pow_succ T (k + 1), hk]
+      have h₁ : D ^ (k + 1) * N = 0 := by
+        rw [pow_succ, Matrix.mul_assoc, hDN, Matrix.mul_zero]
+      have h₂ : N ^ (k + 1) * D = 0 := by
+        rw [pow_succ, Matrix.mul_assoc, hND, Matrix.mul_zero]
+      calc
+        _ = (D ^ (k + 1) + N ^ (k + 1)) * (D + N) :=
+          congrArg (fun W : Matrix (Fin n) (Fin n) ℂ => (D ^ (k + 1) + N ^ (k + 1)) * W) hTD
+        _ = _ := by rw [Matrix.add_mul, Matrix.mul_add, Matrix.mul_add, h₁, h₂, add_zero,
+          zero_add, ← pow_succ D (k + 1), ← pow_succ N (k + 1)]
+  have hrPow : (T ^ 1).rank = (T ^ (1 + 1)).rank := by simpa [pow_two] using hr
+  have hrK := T.rank_pow_eq_of_eq_succ hrPow (show 1 ≤ n + 1 by omega)
+  have hker := (T.rank_pow_eq_iff_ker_eq (show 1 ≤ n + 1 by omega)).mp hrK
+  ext i j
+  by_cases hij : i = j
+  · subst j
+    exact (diagonal_apply_eq _ _).symm
+  rw [diagonal_apply_ne _ hij]
+  by_cases hj : d j = 0
+  · let z : Fin n → ℂ := Pi.single j 1
+    have hDz : D *ᵥ z = 0 := by
+      change diagonal d *ᵥ Pi.single j (1 : ℂ) = 0
+      rw [Matrix.mulVec_single_one]
+      ext k
+      by_cases hkj : k = j
+      · subst k
+        simp [hj]
+      · simp [diagonal_apply_ne _ hkj]
+    have hzK : z ∈ (T ^ (n + 1)).mulVecLin.ker := by
+      apply LinearMap.mem_ker.mpr
+      change T ^ (n + 1) *ᵥ z = 0
+      rw [hPow n, hNc, add_zero, pow_succ, ← mulVec_mulVec, hDz, mulVec_zero]
+    rw [← hker, pow_one] at hzK
+    have hTz : T *ᵥ Pi.single j (1 : ℂ) = 0 := LinearMap.mem_ker.mp hzK
+    rw [Matrix.mulVec_single_one] at hTz
+    exact congrFun hTz i
+  · exact (hNoff i j hij).symm.trans (hcol j i hij hj)
+
+open scoped Matrix.Norms.L2Operator in
+/-- **Exercise 50** of [benIsrael2003generalized], Chapter 6.
+A contraction is a normal partial isometry exactly when its eigenvalue
+moduli are zero or one and squaring preserves its rank. -/
+theorem exercise_6_50 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (hc : IsContraction A) :
+    (IsPartialIsometry A ∧ IsStarNormal A) ↔
+      (∀ μ ∈ spectrum ℂ A, ‖μ‖ = 0 ∨ ‖μ‖ = 1) ∧ A.rank = (A * A).rank := by
+  constructor
+  · rintro ⟨hA, hn⟩
+    constructor
+    · intro μ hμ
+      have hEv : Module.End.HasEigenvalue (toEuclideanLin A) μ := by
+        rw [Module.End.hasEigenvalue_iff_isRoot_charpoly, toEuclideanLin_eq_toLin_orthonormal,
+          charpoly_toLin]
+        exact (mem_spectrum_iff_isRoot_charpoly.mp hμ)
+      obtain ⟨x, hx⟩ := hEv.exists_hasEigenvector
+      exact exercise_6_48 hA hn hx.2 hx.apply_eq_smul
+    · have he : A = (A * A) * Aᴴ := calc
+        A = (A * Aᴴ) * A := ((isPartialIsometry_iff_reflexive _).mp hA).symm
+        _ = A * (Aᴴ * A) := Matrix.mul_assoc _ _ _
+        _ = (A * A) * Aᴴ := by
+          rw [show Aᴴ * A = A * Aᴴ from hn.star_comm_self, Matrix.mul_assoc]
+      refine le_antisymm ?_ (rank_mul_le_left _ _)
+      calc
+        A.rank = ((A * A) * Aᴴ).rank := congrArg Matrix.rank he
+        _ ≤ (A * A).rank := rank_mul_le_left _ _
+  · rintro ⟨hμ, hr⟩
+    obtain ⟨U, hU, htri, hχ⟩ := exists_unitary_conj_upperTriangular A
+    let T := Uᴴ * A * U
+    have hTc : IsContraction T := by
+      rw [isContraction_iff_l2_opNorm_le_one] at hc ⊢
+      exact (l2_opNorm_unitary_mul_mul_unitary (conjTranspose_mem_unitaryGroup hU) A hU).le.trans hc
+    have hTr (B : Matrix (Fin n) (Fin n) ℂ) : (Uᴴ * B * U).rank = B.rank := by
+      rw [rank_mul_eq_left_of_isUnit_det _ _ (isUnit_det_of_mem_unitaryGroup hU),
+        rank_mul_eq_right_of_isUnit_det _ _
+          (isUnit_det_of_mem_unitaryGroup (conjTranspose_mem_unitaryGroup hU))]
+    have hTT : T * T = Uᴴ * (A * A) * U := by
+      change (Uᴴ * A * U) * (Uᴴ * A * U) = _
+      calc
+        _ = Uᴴ * A * (U * Uᴴ) * A * U := by simp only [Matrix.mul_assoc]
+        _ = _ := by rw [mul_conjTranspose_self_of_mem_unitaryGroup hU, Matrix.mul_one,
+          Matrix.mul_assoc Uᴴ A A]
+    have hTrad : T.rank = (T * T).rank := by
+      calc
+        T.rank = A.rank := hTr A
+        _ = (A * A).rank := hr
+        _ = (Uᴴ * (A * A) * U).rank := (hTr (A * A)).symm
+        _ = (T * T).rank := congrArg Matrix.rank hTT.symm
+    have hd (i : Fin n) : ‖T i i‖ = 0 ∨ ‖T i i‖ = 1 := by
+      apply hμ
+      rw [mem_spectrum_iff_isRoot_charpoly, hχ, Polynomial.IsRoot, Polynomial.eval_prod]
+      apply Finset.prod_eq_zero (Finset.mem_univ i)
+      simp [T, star_eq_conjTranspose]
+    have hD := rankStable_contraction_schur_diagonal htri hTc hTrad hd
+    apply (isPartialIsometry_and_normal_conj_iff A hU).mp
+    refine ⟨hD.symm ▸ isPartialIsometry_diagonal_of_norm _ hd, ?_⟩
+    exact (isStarNormal_iff_strictUpper_eq_zero hU htri).mpr hD |>
+      (isStarNormal_star_mul_mul_iff hU).mpr
+
+private theorem unitary_zero_block_partialIsometry {j l : Type*} [Fintype j] [Fintype l]
+    [DecidableEq j] [DecidableEq l] {W : Matrix j j ℂ} (hW : W ∈ unitaryGroup j ℂ) :
+    let B := fromBlocks W (0 : Matrix j l ℂ) (0 : Matrix l j ℂ) 0
+    IsPartialIsometry B ∧ IsStarNormal B := by
+  let B := fromBlocks W (0 : Matrix j l ℂ) (0 : Matrix l j ℂ) 0
+  let P : Matrix (j ⊕ l) (j ⊕ l) ℂ := fromBlocks (1 : Matrix j j ℂ) 0 0 0
+  have hB : Bᴴ * B = P := by
+    simp [B, P, fromBlocks_conjTranspose, fromBlocks_multiply,
+      conjTranspose_mul_self_of_mem_unitaryGroup hW]
+  have hB' : B * Bᴴ = P := by
+    simp [B, P, fromBlocks_conjTranspose, fromBlocks_multiply,
+      mul_conjTranspose_self_of_mem_unitaryGroup hW]
+  refine ⟨(isPartialIsometry_iff_reflexive B).mpr ?_, ⟨hB.trans hB'.symm⟩⟩
+  rw [hB']
+  simp [P, B, fromBlocks_multiply]
+
+/-- **Exercise 51** of [benIsrael2003generalized], Chapter 6.
+A normal partial isometry is unitarily conjugate to the direct sum of
+a unitary block and a zero block. The index equivalence records the
+two blocks of the ambient coordinate space. -/
+theorem exercise_6_51 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) :
+    IsPartialIsometry A ∧ IsStarNormal A ↔
+      ∃ (j l : ℕ) (e : Fin n ≃ Fin j ⊕ Fin l)
+        (U : Matrix (Fin n) (Fin n) ℂ) (W : Matrix (Fin j) (Fin j) ℂ),
+        U ∈ unitaryGroup (Fin n) ℂ ∧ W ∈ unitaryGroup (Fin j) ℂ ∧
+          reindex e e (Uᴴ * A * U) = fromBlocks W 0 0 0 := by
+  classical
+  constructor
+  · intro h
+    obtain ⟨U, hU, hT⟩ := exists_unitary_conj_upperTriangular A
+    let T := Uᴴ * A * U
+    let d : Fin n → ℂ := fun i => T i i
+    have hd : T = diagonal d := (isStarNormal_iff_strictUpper_eq_zero hU hT.1).mp h.2
+    have hT' := (isPartialIsometry_and_normal_conj_iff A hU).mpr h
+    change IsPartialIsometry T ∧ IsStarNormal T at hT'
+    have hunit (i : Fin n) (hi : d i ≠ 0) : ‖d i‖ = 1 := by
+      let x := EuclideanSpace.single i (1 : ℂ)
+      have hx : x ≠ 0 := by simp [x]
+      have he : toEuclideanLin T x = d i • x := by
+        apply (WithLp.ofLp_injective 2)
+        rw [ofLp_toEuclideanLin, WithLp.ofLp_smul, hd]
+        ext a
+        rw [mulVec_diagonal]
+        by_cases ha : a = i
+        · subst a
+          simp [x]
+        · simp [x, ha]
+      exact (exercise_6_48 hT'.1 hT'.2 hx he).resolve_left (norm_ne_zero_iff.mpr hi)
+    let Good := {i : Fin n // d i ≠ 0}
+    let Zero := {i : Fin n // ¬ d i ≠ 0}
+    let j := Fintype.card Good
+    let l := Fintype.card Zero
+    let eG : Good ≃ Fin j := Fintype.equivFin Good
+    let eZ : Zero ≃ Fin l := Fintype.equivFin Zero
+    let e : Fin n ≃ Fin j ⊕ Fin l :=
+      (Equiv.sumCompl fun i : Fin n => d i ≠ 0).symm.trans (Equiv.sumCongr eG eZ)
+    let f (i : Fin j) := d (eG.symm i).val
+    let W := diagonal f
+    have hW : W ∈ unitaryGroup (Fin j) ℂ := by
+      apply mem_unitaryGroup_iff.mpr
+      change diagonal f * (diagonal f)ᴴ = 1
+      rw [diagonal_conjTranspose, diagonal_mul_diagonal, ← diagonal_one]
+      congr 1
+      funext i
+      change f i * (starRingEnd ℂ) (f i) = 1
+      rw [Complex.mul_conj', hunit _ (eG.symm i).property]
+      norm_num
+    refine ⟨j, l, e, U, W, hU, hW, ?_⟩
+    change reindex e e T = fromBlocks (diagonal f) 0 0 0
+    rw [hd, reindex_apply, submatrix_diagonal_equiv, ← diagonal_zero (n := Fin l),
+      fromBlocks_diagonal]
+    congr 1
+    funext i
+    rcases i with i | i
+    · rfl
+    · exact not_not.mp (eZ.symm i).property
+  · rintro ⟨j, l, e, U, W, hU, hW, he⟩
+    apply (isPartialIsometry_and_normal_conj_iff A hU).mp
+    apply (isPartialIsometry_and_normal_reindex_iff e _).mp
+    rw [he]
+    exact unitary_zero_block_partialIsometry hW
+
 private theorem range_toEuclideanLin_eq_range_conjTranspose_of_normal {A : Matrix n n ℂ}
     (hA : IsStarNormal A) : (toEuclideanLin A).range = (toEuclideanLin Aᴴ).range := by
   let F := Matrix.toEuclideanCLM (n := n) (𝕜 := ℂ)
@@ -1376,6 +1767,113 @@ theorem exercise_6_52_commute {A E G : Matrix n n ℂ} (hE : IsPartialIsometry E
     exact rank_eq_finrank_range_toLin _ _ _
   symm
   exact Submodule.eq_of_le_of_finrank_eq hle (by rw [← hd, ← hd, rank_conjTranspose])
+
+private theorem supportedPolar_singular_right {m n : ℕ}
+    {A E : Matrix (Fin m) (Fin n) ℂ} {G : Matrix (Fin m) (Fin m) ℂ}
+    {H : Matrix (Fin n) (Fin n) ℂ} (h : IsCanonicalPolarDecomposition A E G H)
+    (s : ℝ) :
+    (∃ j < A.rank, A.sortedSingularValues j = s) ↔
+      ∃ x : EuclideanSpace ℂ (Fin n), x ≠ 0 ∧ x ∈ (toEuclideanLin Eᴴ).range ∧
+        toEuclideanLin A x = (s : ℂ) • toEuclideanLin E x := by
+  let L := (toEuclideanLin Eᴴ).range
+  have hP := (isPartialIsometry_iff_initial_gram E).mp h.partialIsometry
+  have hLE : ∀ x ∈ L, ∀ y ∈ L, toEuclideanLin E x = toEuclideanLin E y → x = y := by
+    intro x hx y hy hxy
+    apply_fun toEuclideanLin Eᴴ at hxy
+    rw [← toEuclideanLin_mul_apply, ← toEuclideanLin_mul_apply, hP,
+      toEuclideanLin_orthogonalProjector, ContinuousLinearMap.coe_coe,
+      L.starProjection_eq_self_iff.mpr hx, L.starProjection_eq_self_iff.mpr hy] at hxy
+    exact hxy
+  have hEq (x : EuclideanSpace ℂ (Fin n)) (hx : x ∈ L) :
+      toEuclideanLin A x = (s : ℂ) • toEuclideanLin E x ↔
+        toEuclideanLin H x = (s : ℂ) • x := by
+    rw [h.right_eq, toEuclideanLin_mul_apply, ← map_smul]
+    refine ⟨fun he => hLE _ ?_ _ (Submodule.smul_mem _ _ hx) he, fun he => congrArg _ he⟩
+    change toEuclideanLin H x ∈ (toEuclideanLin Eᴴ).range
+    rw [h.right_range]
+    exact LinearMap.mem_range_self _ _
+  obtain ⟨U, V, hS⟩ := theorem_6_2 A
+  let R := V.submatrix id (Fin.castLE A.rank_le_width)
+  let D := diagonal (fun i : Fin A.rank => (A.sortedSingularValues i : ℂ))
+  have hH : H = R * D * Rᴴ := (h.unique (theorem_6_7 hS)).2.2
+  have hR : Rᴴ * R = 1 :=
+    conjTranspose_submatrix_castLE_mul_self _ hS.1.mem_unitaryGroup_right
+  have hRinv : D * D⁻¹ = 1 := mul_nonsing_inv D (isUnit_det_singularDiagonal hS)
+  have hL : L = (toEuclideanLin R).range := by
+    change (toEuclideanLin Eᴴ).range = _
+    rw [h.right_range, hH, range_toEuclideanLin_mul_of_right_inverse (R * D) hR,
+      range_toEuclideanLin_mul_of_right_inverse R hRinv]
+  have hRapp (y : EuclideanSpace ℂ (Fin A.rank)) :
+      toEuclideanLin Rᴴ (toEuclideanLin R y) = y := by
+    rw [← toEuclideanLin_mul_apply, hR, toEuclideanLin_one_apply]
+  have hHR (y : EuclideanSpace ℂ (Fin A.rank)) :
+      toEuclideanLin H (toEuclideanLin R y) = toEuclideanLin R (toEuclideanLin D y) := by
+    rw [hH, toEuclideanLin_mul_apply, hRapp, toEuclideanLin_mul_apply]
+  constructor
+  · rintro ⟨j, hj, hjs⟩
+    let y := EuclideanSpace.single (⟨j, hj⟩ : Fin A.rank) (1 : ℂ)
+    have hy : y ≠ 0 := by simp [y]
+    have hDy : toEuclideanLin D y = (s : ℂ) • y := by
+      apply (WithLp.ofLp_injective 2)
+      rw [ofLp_toEuclideanLin, WithLp.ofLp_smul]
+      ext i
+      rw [mulVec_diagonal]
+      by_cases hij : i = (⟨j, hj⟩ : Fin A.rank)
+      · subst i
+        simp [y, hjs]
+      · simp [y, hij]
+    have hxL : toEuclideanLin R y ∈ L := hL.symm ▸ LinearMap.mem_range_self _ _
+    refine ⟨toEuclideanLin R y, ?_, hxL, (hEq _ hxL).mpr ?_⟩
+    · intro hz
+      have he := hRapp y
+      rw [hz, map_zero] at he
+      exact hy he.symm
+    · rw [hHR, hDy, map_smul]
+  · rintro ⟨x, hx, hxL, he⟩
+    have hEx := (hEq x hxL).mp he
+    change x ∈ L at hxL
+    rw [hL] at hxL
+    obtain ⟨y, rfl⟩ := hxL
+    have hy : y ≠ 0 := fun hz => hx (by rw [hz, map_zero])
+    have hDy : toEuclideanLin D y = (s : ℂ) • y := by
+      rw [hHR, ← map_smul] at hEx
+      apply_fun toEuclideanLin Rᴴ at hEx
+      simpa only [hRapp] using hEx
+    obtain ⟨i, hi⟩ : ∃ i, y i ≠ 0 := by
+      by_contra! hn
+      exact hy (PiLp.ext (fun i => by simpa using hn i))
+    have hcoord := congrArg (fun v : EuclideanSpace ℂ (Fin A.rank) => v i) hDy
+    change ((toEuclideanLin D y).ofLp) i = (s : ℂ) * y i at hcoord
+    rw [ofLp_toEuclideanLin, mulVec_diagonal] at hcoord
+    have hsval : (A.sortedSingularValues i : ℂ) = (s : ℂ) :=
+      mul_right_cancel₀ hi hcoord
+    exact ⟨i, i.isLt, Complex.ofReal_injective hsval⟩
+
+/-- **Exercise 54** of [benIsrael2003generalized], Chapter 6, Equations
+(92)–(93). A positive singular value is a generalized eigenvalue of
+each supported polar equation, with a nonzero vector in the designated
+initial or final space. -/
+theorem exercise_6_54 {m n : ℕ}
+    {A E : Matrix (Fin m) (Fin n) ℂ} {G : Matrix (Fin m) (Fin m) ℂ}
+    {H : Matrix (Fin n) (Fin n) ℂ} (h : IsCanonicalPolarDecomposition A E G H)
+    (s : ℝ) :
+    ((∃ j < A.rank, A.sortedSingularValues j = s) ↔
+      ∃ x : EuclideanSpace ℂ (Fin n), x ≠ 0 ∧ x ∈ (toEuclideanLin Eᴴ).range ∧
+        toEuclideanLin A x = (s : ℂ) • toEuclideanLin E x) ∧
+    ((∃ j < A.rank, A.sortedSingularValues j = s) ↔
+      ∃ y : EuclideanSpace ℂ (Fin m), y ≠ 0 ∧ y ∈ (toEuclideanLin E).range ∧
+        toEuclideanLin Aᴴ y = (s : ℂ) • toEuclideanLin Eᴴ y) := by
+  refine ⟨supportedPolar_singular_right h s, ?_⟩
+  have ha : IsCanonicalPolarDecomposition Aᴴ Eᴴ H G := by
+    refine ⟨(theorem_6_5 E).1.mp h.partialIsometry, h.right_posSemidef,
+      h.left_posSemidef, ?_, ?_, h.right_range, ?_⟩
+    · rw [h.right_eq, conjTranspose_mul, h.right_posSemidef.isHermitian.eq]
+    · rw [h.left_eq, conjTranspose_mul, h.left_posSemidef.isHermitian.eq]
+    · simpa only [conjTranspose_conjTranspose] using h.left_range
+  have hh := supportedPolar_singular_right ha s
+  rw [rank_conjTranspose A, Matrix.sortedSingularValues_conjTranspose A,
+    conjTranspose_conjTranspose E] at hh
+  exact hh
 
 /-- The scalar case of **Exercise 55** of [benIsrael2003generalized],
 Chapter 6. Distance from a complex number to a point on the unit
@@ -1513,6 +2011,665 @@ theorem exercise_6_61 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
   refine ⟨⟨⟨X, W, hX, hW, by rw [ht, Complex.ofReal_re]⟩, ?_⟩, ⟨X, W, hX, hW, ht⟩⟩
   rintro t ⟨X', W', hX', hW', rfl⟩
   simpa only [Fintype.card_fin] using exercise_6_61_upper (A := A) (B := B) hX' hW'
+
+section Cayley
+
+private theorem orthogonalProjector_mul_eq_iff (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (A : Matrix n n ℂ) :
+    orthogonalProjector L * A = A ↔ (toEuclideanLin A).range ≤ L := by
+  rw [← toEuclideanLin.injective.eq_iff, toEuclideanLin_mul, toEuclideanLin_orthogonalProjector,
+    LinearMap.ext_iff]
+  constructor
+  · rintro h _ ⟨x, rfl⟩
+    exact L.starProjection_eq_self_iff.mp (h x)
+  · intro h x
+    exact L.starProjection_eq_self_iff.mpr (h (LinearMap.mem_range_self _ _))
+
+private theorem mul_orthogonalProjector_eq_iff (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (A : Matrix n n ℂ) :
+    A * orthogonalProjector L = A ↔ (toEuclideanLin Aᴴ).range ≤ L := by
+  rw [← (orthogonalProjector_mul_eq_iff L Aᴴ), ← conjTranspose_injective.eq_iff,
+    conjTranspose_mul, (isHermitian_orthogonalProjector L).eq]
+
+private theorem pinv_products_eq_projector_of_ranges {L : Submodule ℂ (EuclideanSpace ℂ n)}
+    (A : Matrix n n ℂ) (hl : (toEuclideanLin A).range = L)
+    (hr : (toEuclideanLin Aᴴ).range = L) :
+    A * A.pinv = orthogonalProjector L ∧ A.pinv * A = orthogonalProjector L := by
+  have hl' := toEuclideanLin.injective (A.mul_pinv_eq_starProjection.trans
+    (toEuclideanLin_orthogonalProjector _).symm)
+  have hr' := toEuclideanLin.injective (A.pinv_mul_eq_starProjection.trans
+    (toEuclideanLin_orthogonalProjector _).symm)
+  exact ⟨hl'.trans (congrArg orthogonalProjector hl), hr'.trans (congrArg orthogonalProjector hr)⟩
+
+private theorem pinv_smul_of_inverse_on_support {X Y P : Matrix n n ℂ}
+    (hP : P.IsHermitian) (hXY : X * Y = P) (hYX : Y * X = P)
+    (hPX : P * X = X) (hPY : P * Y = Y) {a : ℂ} (ha : a ≠ 0) :
+    (a • X).pinv = a⁻¹ • Y := by
+  have hg : (a • X) * (a⁻¹ • Y) = P := by
+    rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul, mul_inv_cancel₀ ha, one_smul, hXY]
+  have hg' : (a⁻¹ • Y) * (a • X) = P := by
+    rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul, inv_mul_cancel₀ ha, one_smul, hYX]
+  symm
+  refine (a • X).pinv_unique ?_ ?_ ?_ ?_
+  · rw [hg, Matrix.mul_smul, hPX]
+  · rw [hg', Matrix.mul_smul, hPY]
+  · rw [hg]
+    exact hP
+  · rw [hg']
+    exact hP
+
+private theorem matrix_not_mem_spectrum_iff (A : Matrix n n ℂ) (s : ℂ) :
+    s ∉ spectrum ℂ A ↔ ∀ x, toEuclideanLin A x = s • x → x = 0 := by
+  have h : s ∈ spectrum ℂ A ↔ Module.End.HasEigenvalue (toEuclideanLin A) s := by
+    rw [mem_spectrum_iff_isRoot_charpoly, Module.End.hasEigenvalue_iff_isRoot_charpoly,
+      toEuclideanLin_eq_toLin_orthonormal, charpoly_toLin]
+  rw [h]
+  constructor
+  · intro hn x he
+    by_contra hx
+    exact hn (Module.End.hasEigenvalue_of_hasEigenvector
+      ⟨Module.End.mem_eigenspace_iff.mpr he, hx⟩)
+  · intro hk ha
+    obtain ⟨x, hx⟩ := ha.exists_hasEigenvector
+    exact hx.2 (hk x hx.apply_eq_smul)
+
+private theorem range_eq_of_ker_adjoint_eq_orthogonal (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (A : Matrix n n ℂ) (h : (toEuclideanLin Aᴴ).ker = Lᗮ) :
+    (toEuclideanLin A).range = L := by
+  rw [toEuclideanLin_conjTranspose_eq_adjoint, ← LinearMap.orthogonal_range] at h
+  have he := congrArg Submodule.orthogonal h
+  simpa only [Submodule.orthogonal_orthogonal] using he
+
+private theorem re_inner_apply_orthogonalProjector (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (x : EuclideanSpace ℂ n) :
+    (inner ℂ (toEuclideanLin (orthogonalProjector L) x) x).re = ‖L.starProjection x‖ ^ 2 := by
+  rw [toEuclideanLin_orthogonalProjector, ContinuousLinearMap.coe_coe]
+  have he := L.inner_starProjection_left_eq_right (L.starProjection x) x
+  rw [L.starProjection_eq_self_iff.mpr (L.starProjection_apply_mem x)] at he
+  rw [he, inner_self_eq_norm_sq_to_K]
+  change RCLike.re ((RCLike.ofReal ‖L.starProjection x‖ : ℂ) ^ 2) = _
+  exact RCLike.re_ofReal_pow (K := ℂ) _ 2
+
+private theorem sub_I_smul_range_and_adjoint_range {L : Submodule ℂ (EuclideanSpace ℂ n)}
+    {H : Matrix n n ℂ} (hH : H.IsHermitian) (hL : (toEuclideanLin H).range ≤ L) :
+    let P := orthogonalProjector L
+    let R := P - Complex.I • H
+    (toEuclideanLin R).range = L ∧ (toEuclideanLin Rᴴ).range = L ∧
+      Rᴴ * R = R * Rᴴ ∧
+      ∀ x, ‖toEuclideanLin R x‖ ^ 2 = ‖L.starProjection x‖ ^ 2 + ‖toEuclideanLin H x‖ ^ 2 := by
+  let P := orthogonalProjector L
+  let R := P - Complex.I • H
+  have hPH : P * H = H := (orthogonalProjector_mul_eq_iff L H).mpr hL
+  have hHP : H * P = H :=
+    (mul_orthogonalProjector_eq_iff L H).mpr (by rwa [hH.eq])
+  have hPP : P * P = P := (isIdempotentElem_orthogonalProjector L).eq
+  have hRAdj : Rᴴ = P + Complex.I • H := by
+    simp only [R, conjTranspose_sub, conjTranspose_smul, (isHermitian_orthogonalProjector L).eq,
+      hH.eq, Complex.star_def, Complex.conj_I, neg_smul, sub_neg_eq_add, P]
+  have hI : (Complex.I • H) * (Complex.I • H) = -(H * H) := by
+    rw [Matrix.smul_mul, Matrix.mul_smul, smul_smul, Complex.I_mul_I, neg_one_smul]
+  have hPI : P * (Complex.I • H) = Complex.I • H := by rw [Matrix.mul_smul, hPH]
+  have hIP : (Complex.I • H) * P = Complex.I • H := by rw [Matrix.smul_mul, hHP]
+  have hR₁ : Rᴴ * R = P + H * H := by
+    rw [hRAdj]
+    change (P + Complex.I • H) * (P - Complex.I • H) = _
+    rw [Matrix.add_mul, Matrix.mul_sub, Matrix.mul_sub, hPP, hPI, hIP, hI]
+    abel
+  have hR₂ : R * Rᴴ = P + H * H := by
+    rw [hRAdj]
+    change (P - Complex.I • H) * (P + Complex.I • H) = _
+    rw [Matrix.sub_mul, Matrix.mul_add, Matrix.mul_add, hPP, hPI, hIP, hI]
+    abel
+  have hNorm (x : EuclideanSpace ℂ n) :
+      ‖toEuclideanLin R x‖ ^ 2 = ‖L.starProjection x‖ ^ 2 + ‖toEuclideanLin H x‖ ^ 2 := by
+    have hSelf (v : EuclideanSpace ℂ n) : (inner ℂ v v).re = ‖v‖ ^ 2 := by
+      rw [inner_self_eq_norm_sq_to_K]
+      change RCLike.re ((RCLike.ofReal ‖v‖ : ℂ) ^ 2) = _
+      exact RCLike.re_ofReal_pow (K := ℂ) _ 2
+    have hHform : (inner ℂ (toEuclideanLin (H * H) x) x).re = ‖toEuclideanLin H x‖ ^ 2 := by
+      rw [show H * H = Hᴴ * H from congrArg (fun A => A * H) hH.eq.symm,
+        toEuclideanLin_mul_apply, toEuclideanLin_conjTranspose_inner_left, hSelf]
+    have he := toEuclideanLin_conjTranspose_inner_left R x (toEuclideanLin R x)
+    rw [← toEuclideanLin_mul_apply, hR₁, map_add, LinearMap.add_apply, inner_add_left] at he
+    have hh := congrArg Complex.re he
+    change ((inner ℂ (toEuclideanLin P x) x) + _).re = _ at hh
+    rw [Complex.add_re, re_inner_apply_orthogonalProjector, hHform, hSelf] at hh
+    exact hh.symm
+  have hk : (toEuclideanLin R).ker = Lᗮ := by
+    ext x
+    rw [LinearMap.mem_ker, ← L.starProjection_apply_eq_zero_iff]
+    constructor
+    · intro hx
+      have hh := hNorm x
+      rw [hx, norm_zero] at hh
+      exact norm_eq_zero.mp (by nlinarith [sq_nonneg ‖toEuclideanLin H x‖])
+    · intro hx
+      have hPx : toEuclideanLin P x = 0 := by
+        rw [toEuclideanLin_orthogonalProjector, ContinuousLinearMap.coe_coe, hx]
+      have hHx : toEuclideanLin H x = 0 := by
+        rw [← hHP, toEuclideanLin_mul_apply, hPx, map_zero]
+      change toEuclideanLin (P - Complex.I • H) x = 0
+      rw [map_sub, LinearMap.sub_apply, toEuclideanLin_smul_apply, hPx, hHx, smul_zero, sub_zero]
+  have hr : (toEuclideanLin Rᴴ).range = L :=
+    range_eq_of_ker_adjoint_eq_orthogonal L Rᴴ
+      (by simpa only [conjTranspose_conjTranspose] using hk)
+  have hN : IsStarNormal R := ⟨hR₁.trans hR₂.symm⟩
+  exact ⟨(range_toEuclideanLin_eq_range_conjTranspose_of_normal hN).trans hr, hr,
+    hR₁.trans hR₂.symm, hNorm⟩
+
+/-- **Equation (94)** of [benIsrael2003generalized], Chapter 6.
+The generalized Cayley transform uses the orthogonal projector as
+the identity on the chosen support. -/
+noncomputable def partialCayleyTransform (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (H : Matrix n n ℂ) : Matrix n n ℂ :=
+  (orthogonalProjector L + Complex.I • H) * (orthogonalProjector L - Complex.I • H).pinv
+
+/-- **Equation (95)** of [benIsrael2003generalized], Chapter 6.
+The reverse generalized Cayley transform recovers a supported
+Hermitian matrix from the corresponding partial isometry. -/
+noncomputable def partialCayleyInverse (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (U : Matrix n n ℂ) : Matrix n n ℂ :=
+  Complex.I • ((orthogonalProjector L - U) * (orthogonalProjector L + U).pinv)
+
+/-- **Equations (94)–(97)** of [benIsrael2003generalized], Chapter 6.
+A Cayley transform takes values in the normal partial isometries
+onto its support with spectrum excluding minus one. -/
+structure IsPartialCayleyValue (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (U : Matrix n n ℂ) : Prop where
+  partialIsometry : IsPartialIsometry U
+  normal : IsStarNormal U
+  range_eq : (toEuclideanLin U).range = L
+  not_mem_spectrum : (-1 : ℂ) ∉ spectrum ℂ U
+
+/-- **Exercise 56**, forward direction, of [benIsrael2003generalized],
+Chapter 6. A supported Hermitian matrix has a Cayley transform with
+the prescribed range and is recovered by the inverse formula. -/
+theorem exercise_6_56_forward (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (H : Matrix n n ℂ) (hH : H.IsHermitian) (hL : (toEuclideanLin H).range ≤ L) :
+    let U := partialCayleyTransform L H
+    IsPartialCayleyValue L U ∧ partialCayleyInverse L U = H := by
+  let P := orthogonalProjector L
+  let R := P - Complex.I • H
+  let S := P + Complex.I • H
+  let X := R.pinv
+  let U := S * X
+  have hP := isHermitian_orthogonalProjector L
+  have hPP : P * P = P := (isIdempotentElem_orthogonalProjector L).eq
+  have hPH : P * H = H := (orthogonalProjector_mul_eq_iff L H).mpr hL
+  have hHP : H * P = H :=
+    (mul_orthogonalProjector_eq_iff L H).mpr (by rwa [hH.eq])
+  have hPR : P * R = R := by simp only [R, Matrix.mul_sub, Matrix.mul_smul, hPP, hPH]
+  have hSP : S * P = S := by simp only [S, Matrix.add_mul, Matrix.smul_mul, hPP, hHP]
+  have hPS : P * S = S := by simp only [S, Matrix.mul_add, Matrix.mul_smul, hPP, hPH]
+  have hS : Rᴴ = S := by
+    simp only [R, S, P, conjTranspose_sub, conjTranspose_smul, (isHermitian_orthogonalProjector L).eq,
+      hH.eq, Complex.star_def, Complex.conj_I, neg_smul, sub_neg_eq_add]
+  have hS' : Sᴴ = R := by rw [← hS, conjTranspose_conjTranspose]
+  obtain ⟨hR, hRt, hComm, -⟩ := sub_I_smul_range_and_adjoint_range hH hL
+  change Rᴴ * R = R * Rᴴ at hComm
+  rw [hS] at hComm
+  obtain ⟨hRX, hXR⟩ := pinv_products_eq_projector_of_ranges R hR hRt
+  change R * X = P at hRX
+  change X * R = P at hXR
+  have hPX : P * X = X := by rw [← hXR]; exact R.pinv_mul_self_mul_pinv
+  have hXS : X * S = S * X := by
+    calc
+      X * S = X * S * P := by rw [Matrix.mul_assoc, hSP]
+      _ = X * (S * R) * X := by rw [← hRX]; simp only [Matrix.mul_assoc]
+      _ = P * (S * X) := by rw [hComm, ← hXR]; simp only [Matrix.mul_assoc]
+      _ = S * X := by rw [← Matrix.mul_assoc, hPS]
+  have hGram₁ : Uᴴ * U = P := by
+    change (S * X)ᴴ * (S * X) = P
+    rw [conjTranspose_mul, hS']
+    calc
+      _ = Xᴴ * (R * S) * X := by simp only [Matrix.mul_assoc]
+      _ = (R * X)ᴴ * (R * X) := by rw [← hComm, conjTranspose_mul, hS]; simp only [Matrix.mul_assoc]
+      _ = P := by rw [hRX, hP.eq, hPP]
+  have hGram₂ : U * Uᴴ = P := by
+    change (S * X) * (S * X)ᴴ = P
+    rw [← hXS, conjTranspose_mul, hS']
+    calc
+      _ = X * (S * R) * Xᴴ := by simp only [Matrix.mul_assoc]
+      _ = (X * R) * (X * R)ᴴ := by rw [hComm, conjTranspose_mul, hS]; simp only [Matrix.mul_assoc]
+      _ = P := by rw [hXR, hP.eq, hPP]
+  have hU : IsPartialIsometry U := (theorem_6_5 U).2.1.mpr
+    (hGram₁ ▸ ⟨hP, (isIdempotentElem_orthogonalProjector L)⟩)
+  have hUrange : (toEuclideanLin U).range = L := by
+    have he := (final_gram_of_partialIsometry hU).symm.trans hGram₂
+    apply_fun (fun A : Matrix n n ℂ => (toEuclideanLin A).range) at he
+    simpa only [toEuclideanLin_orthogonalProjector, Submodule.range_starProjection, P] using he
+  have hAddU : P + U = (2 : ℂ) • X := by
+    change P + S * X = _
+    rw [← hRX, ← Matrix.add_mul]
+    have he : R + S = (2 : ℂ) • P := by dsimp [R, S]; rw [two_smul]; abel
+    rw [he, Matrix.smul_mul, hPX]
+  have hSubU : P - U = ((-2 : ℂ) * Complex.I) • (H * X) := by
+    change P - S * X = _
+    rw [← hRX, ← Matrix.sub_mul]
+    have he : R - S = ((-2 : ℂ) * Complex.I) • H := by
+      dsimp [R, S]
+      rw [mul_smul, neg_smul, two_smul]
+      abel
+    rw [he, Matrix.smul_mul]
+  change IsPartialCayleyValue L U ∧ Complex.I • ((P - U) * (P + U).pinv) = H
+  constructor
+  · refine ⟨hU, ⟨hGram₁.trans hGram₂.symm⟩, hUrange, ?_⟩
+    apply (matrix_not_mem_spectrum_iff U (-1)).mpr
+    intro x hx
+    have hxL : x ∈ L := by
+      rw [← hUrange]
+      refine ⟨-x, ?_⟩
+      rw [map_neg, hx, neg_one_smul, neg_neg]
+    have hxP : toEuclideanLin P x = x := by
+      rw [show P = orthogonalProjector L from rfl, toEuclideanLin_orthogonalProjector,
+        ContinuousLinearMap.coe_coe]
+      exact L.starProjection_eq_self_iff.mpr hxL
+    have hz : toEuclideanLin (P + U) x = 0 := by
+      rw [map_add, LinearMap.add_apply, hxP, hx, neg_one_smul, add_neg_cancel]
+    rw [hAddU, toEuclideanLin_smul_apply, smul_eq_zero] at hz
+    have hz' := hz.resolve_left (by norm_num)
+    have hf := congrArg (toEuclideanLin R) hz'
+    rw [← toEuclideanLin_mul_apply, hRX, hxP, map_zero] at hf
+    exact hf
+  · have hPinv : (P + U).pinv = (2 : ℂ)⁻¹ • R := by
+      rw [hAddU]
+      exact pinv_smul_of_inverse_on_support hP hXR hRX hPX hPR (by norm_num)
+    rw [hPinv, hSubU, Matrix.smul_mul, Matrix.mul_smul, smul_smul, smul_smul, Matrix.mul_assoc,
+      hXR, hHP]
+    have he : (Complex.I * ((-2 : ℂ) * Complex.I)) * (2 : ℂ)⁻¹ = 1 := by
+      calc
+        _ = -(Complex.I * Complex.I) := by ring
+        _ = _ := by rw [Complex.I_mul_I, neg_neg]
+    rw [he, one_smul]
+
+/-- **Exercise 56**, reverse direction, of [benIsrael2003generalized],
+Chapter 6. The inverse Cayley formula is Hermitian, has range in the
+chosen subspace, and reconstructs the given partial isometry. -/
+theorem exercise_6_56_reverse (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (U : Matrix n n ℂ) (hU : IsPartialCayleyValue L U) :
+    let H := partialCayleyInverse L U
+    H.IsHermitian ∧ (toEuclideanLin H).range ≤ L ∧ partialCayleyTransform L H = U := by
+  let P := orthogonalProjector L
+  let S := P + U
+  let T := P - U
+  let X := S.pinv
+  let H := Complex.I • (T * X)
+  have hP : P.IsHermitian := isHermitian_orthogonalProjector L
+  have hPP : P * P = P := (isIdempotentElem_orthogonalProjector L).eq
+  have hUadjRange : (toEuclideanLin Uᴴ).range = L :=
+    ((exercise_6_47 hU.partialIsometry).mp hU.normal).symm.trans hU.range_eq
+  have hPU : P * U = U := (orthogonalProjector_mul_eq_iff L U).mpr hU.range_eq.le
+  have hUP : U * P = U := (mul_orthogonalProjector_eq_iff L U).mpr hUadjRange.le
+  have hPU' : P * Uᴴ = Uᴴ := by
+    simpa only [conjTranspose_mul, hP.eq] using congrArg Matrix.conjTranspose hUP
+  have hU'P : Uᴴ * P = Uᴴ := by
+    simpa only [conjTranspose_mul, hP.eq] using congrArg Matrix.conjTranspose hPU
+  have hUU' : U * Uᴴ = P := by
+    exact (final_gram_of_partialIsometry hU.partialIsometry).trans
+      (congrArg orthogonalProjector hU.range_eq)
+  have hU'U : Uᴴ * U = P := hU.normal.star_comm_self.trans hUU'
+  have hSP : S * P = S := by simp only [S, Matrix.add_mul, hPP, hUP]
+  have hPS : P * S = S := by simp only [S, Matrix.mul_add, hPP, hPU]
+  have hPT : P * T = T := by simp only [T, Matrix.mul_sub, hPP, hPU]
+  have hTP : T * P = T := by simp only [T, Matrix.sub_mul, hPP, hUP]
+  have hSAdj : Sᴴ = Uᴴ * S := by
+    simp only [S, conjTranspose_add, hP.eq, Matrix.mul_add, hU'P, hU'U, add_comm]
+  have hTAdj : Tᴴ = -(Uᴴ * T) := by
+    rw [show T = P - U from rfl, conjTranspose_sub, hP.eq, Matrix.mul_sub, hU'P, hU'U, neg_sub]
+  have hSN : IsStarNormal S := by
+    refine ⟨?_⟩
+    change Sᴴ * S = S * Sᴴ
+    simp only [S, conjTranspose_add, hP.eq, Matrix.add_mul, Matrix.mul_add,
+      hPP, hPU, hPU', hUP, hU'P, hU'U, hUU']
+    abel
+  have hSk : (toEuclideanLin S).ker = Lᗮ := by
+    ext x
+    rw [LinearMap.mem_ker, ← L.starProjection_apply_eq_zero_iff]
+    let y := toEuclideanLin P x
+    have hy : L.starProjection x = y := by
+      rw [show y = toEuclideanLin (orthogonalProjector L) x from rfl,
+        toEuclideanLin_orthogonalProjector, ContinuousLinearMap.coe_coe]
+    rw [hy]
+    have hPy : toEuclideanLin P y = y := by
+      change toEuclideanLin P (toEuclideanLin P x) = _
+      rw [← toEuclideanLin_mul_apply, hPP]
+    have hSy : toEuclideanLin S y = toEuclideanLin S x := by
+      change toEuclideanLin S (toEuclideanLin P x) = _
+      rw [← toEuclideanLin_mul_apply, hSP]
+    rw [← hSy]
+    constructor
+    · intro h
+      change toEuclideanLin (P + U) y = 0 at h
+      rw [map_add, LinearMap.add_apply, hPy, add_eq_zero_iff_neg_eq] at h
+      exact (matrix_not_mem_spectrum_iff U (-1)).mp hU.not_mem_spectrum y
+        (by simpa only [neg_one_smul] using h.symm)
+    · intro h
+      rw [h, map_zero]
+  have hSr : (toEuclideanLin Sᴴ).range = L :=
+    range_eq_of_ker_adjoint_eq_orthogonal L Sᴴ
+      (by simpa only [conjTranspose_conjTranspose] using hSk)
+  have hSl : (toEuclideanLin S).range = L :=
+    (range_toEuclideanLin_eq_range_conjTranspose_of_normal hSN).trans hSr
+  obtain ⟨hSX, hXS⟩ := pinv_products_eq_projector_of_ranges S hSl hSr
+  change S * X = P at hSX
+  change X * S = P at hXS
+  have hPX : P * X = X := by rw [← hXS]; exact S.pinv_mul_self_mul_pinv
+  have hXP : X * P = X := by rw [← hSX, ← Matrix.mul_assoc]; exact S.pinv_mul_self_mul_pinv
+  have hST : S * T = T * S := by
+    simp only [S, T, Matrix.add_mul, Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_add, hPP, hPU, hUP]
+    abel
+  have hXT : X * T = T * X := by
+    calc
+      X * T = X * T * P := by rw [Matrix.mul_assoc, hTP]
+      _ = X * (T * S) * X := by rw [← hSX]; simp only [Matrix.mul_assoc]
+      _ = P * (T * X) := by rw [← hST, ← hXS]; simp only [Matrix.mul_assoc]
+      _ = T * X := by rw [← Matrix.mul_assoc, hPT]
+  have hXAdj : Xᴴ = X * U := by
+    change S.pinvᴴ = X * U
+    rw [← pinv_conjTranspose]
+    have h₁ : Sᴴ * (X * U) = P := by
+      rw [hSAdj]
+      calc
+        _ = Uᴴ * (S * X) * U := by simp only [Matrix.mul_assoc]
+        _ = _ := by rw [hSX, hU'P, hU'U]
+    have h₂ : (X * U) * Sᴴ = P := by
+      rw [hSAdj]
+      calc
+        _ = X * (U * Uᴴ) * S := by simp only [Matrix.mul_assoc]
+        _ = _ := by rw [hUU', hXP, hXS]
+    simpa only [one_smul, inv_one] using
+      (pinv_smul_of_inverse_on_support hP h₁ h₂
+        ((orthogonalProjector_mul_eq_iff L _).mpr hSr.le)
+        (by rw [← Matrix.mul_assoc, hPX]) (a := 1) one_ne_zero)
+  have hHerm : H.IsHermitian := by
+    change (Complex.I • (T * X))ᴴ = Complex.I • (T * X)
+    rw [conjTranspose_smul, conjTranspose_mul, Complex.star_def, Complex.conj_I,
+      hXAdj, hTAdj, Matrix.mul_neg, neg_smul, smul_neg, neg_neg]
+    have hp : (X * U) * (Uᴴ * T) = X * T := by
+      calc
+        _ = X * (U * Uᴴ) * T := by simp only [Matrix.mul_assoc]
+        _ = _ := by rw [hUU', hXP]
+    rw [hp, hXT]
+  have hPH : P * H = H := by
+    change P * (Complex.I • (T * X)) = _
+    rw [Matrix.mul_smul, ← Matrix.mul_assoc, hPT]
+  have hiH : Complex.I • H = -(T * X) := by
+    change Complex.I • (Complex.I • (T * X)) = _
+    rw [smul_smul, Complex.I_mul_I, neg_one_smul]
+  have hPlus : P + Complex.I • H = (2 : ℂ) • (U * X) := by
+    rw [hiH, ← sub_eq_add_neg, ← hSX, ← Matrix.sub_mul]
+    have he : S - T = (2 : ℂ) • U := by dsimp [S, T]; rw [two_smul]; abel
+    rw [he, Matrix.smul_mul]
+  have hMinus : P - Complex.I • H = (2 : ℂ) • X := by
+    rw [hiH, sub_neg_eq_add, ← hSX, ← Matrix.add_mul]
+    have he : S + T = (2 : ℂ) • P := by dsimp [S, T]; rw [two_smul]; abel
+    rw [he, Matrix.smul_mul, hPX]
+  refine ⟨hHerm, (orthogonalProjector_mul_eq_iff L H).mp hPH, ?_⟩
+  change (P + Complex.I • H) * (P - Complex.I • H).pinv = U
+  rw [hPlus, hMinus, pinv_smul_of_inverse_on_support hP hXS hSX hPX hPS (by norm_num),
+    Matrix.smul_mul, Matrix.mul_smul, smul_smul, mul_inv_cancel₀ (by norm_num : (2 : ℂ) ≠ 0),
+    one_smul, Matrix.mul_assoc, hXS, hUP]
+
+/-- **Exercise 56** of [benIsrael2003generalized], Chapter 6. The two
+generalized Cayley formulas are inverse equivalences between the
+specified Hermitian and partial-isometry classes. -/
+noncomputable def exercise_6_56 (L : Submodule ℂ (EuclideanSpace ℂ n)) :
+    {H : Matrix n n ℂ // H.IsHermitian ∧ (toEuclideanLin H).range ≤ L} ≃
+      {U : Matrix n n ℂ // IsPartialCayleyValue L U} where
+  toFun H := ⟨partialCayleyTransform L H, (exercise_6_56_forward L H H.property.1 H.property.2).1⟩
+  invFun U := ⟨partialCayleyInverse L U, (exercise_6_56_reverse L U U.property).1,
+    (exercise_6_56_reverse L U U.property).2.1⟩
+  left_inv H := Subtype.ext (exercise_6_56_forward L H H.property.1 H.property.2).2
+  right_inv U := Subtype.ext (exercise_6_56_reverse L U U.property).2.2
+
+/-- **Exercise 57** of [benIsrael2003generalized], Chapter 6.
+On nested subspaces containing the range of the Hermitian matrix,
+the larger Cayley transform restricts to the smaller one. -/
+theorem exercise_6_57 {L₁ L₂ : Submodule ℂ (EuclideanSpace ℂ n)}
+    (h₁₂ : L₁ ≤ L₂) {H : Matrix n n ℂ} (hH : H.IsHermitian)
+    (hL₁ : (toEuclideanLin H).range ≤ L₁) :
+    partialCayleyTransform L₁ H =
+      partialCayleyTransform L₂ H * orthogonalProjector L₁ := by
+  let P₁ := orthogonalProjector L₁
+  let P₂ := orthogonalProjector L₂
+  let R₁ := P₁ - Complex.I • H
+  let R₂ := P₂ - Complex.I • H
+  let S₁ := P₁ + Complex.I • H
+  let S₂ := P₂ + Complex.I • H
+  let X₁ := R₁.pinv
+  let X₂ := R₂.pinv
+  have hP : P₂ * P₁ = P₁ := by
+    apply (orthogonalProjector_mul_eq_iff L₂ P₁).mpr
+    rw [toEuclideanLin_orthogonalProjector, Submodule.range_starProjection]
+    exact h₁₂
+  have hH₁ : H * P₁ = H :=
+    (mul_orthogonalProjector_eq_iff L₁ H).mpr (by rwa [hH.eq])
+  have hR : R₂ * P₁ = R₁ := by simp only [R₁, R₂, Matrix.sub_mul, Matrix.smul_mul, hP, hH₁]
+  have hS : S₂ * P₁ = S₁ := by simp only [S₁, S₂, Matrix.add_mul, Matrix.smul_mul, hP, hH₁]
+  obtain ⟨hR₁, hR₁', -⟩ := sub_I_smul_range_and_adjoint_range hH hL₁
+  obtain ⟨hR₂, hR₂', -⟩ := sub_I_smul_range_and_adjoint_range hH (hL₁.trans h₁₂)
+  obtain ⟨hR₁X₁, hX₁R₁⟩ := pinv_products_eq_projector_of_ranges R₁ hR₁ hR₁'
+  obtain ⟨-, hX₂R₂⟩ := pinv_products_eq_projector_of_ranges R₂ hR₂ hR₂'
+  change R₁ * X₁ = P₁ at hR₁X₁
+  change X₁ * R₁ = P₁ at hX₁R₁
+  change X₂ * R₂ = P₂ at hX₂R₂
+  have hPX₁ : P₁ * X₁ = X₁ := by rw [← hX₁R₁]; exact R₁.pinv_mul_self_mul_pinv
+  have hXP : X₂ * P₁ = X₁ := by
+    calc
+      X₂ * P₁ = X₂ * (R₁ * X₁) := by rw [hR₁X₁]
+      _ = (X₂ * R₂) * P₁ * X₁ := by rw [← hR]; simp only [Matrix.mul_assoc]
+      _ = X₁ := by rw [hX₂R₂, hP, hPX₁]
+  change S₁ * X₁ = (S₂ * X₂) * P₁
+  calc
+    S₁ * X₁ = (S₂ * P₁) * X₁ := by rw [hS]
+    _ = S₂ * X₁ := by rw [Matrix.mul_assoc, hPX₁]
+    _ = (S₂ * X₂) * P₁ := by rw [Matrix.mul_assoc, hXP]
+
+/-- **Exercise 57** of [benIsrael2003generalized], Chapter 6.
+The range of the Hermitian matrix is the smallest support for the
+generalized Cayley construction. -/
+theorem exercise_6_57_minimal {L : Submodule ℂ (EuclideanSpace ℂ n)}
+    {H : Matrix n n ℂ} (hH : H.IsHermitian) (hL : (toEuclideanLin H).range ≤ L) :
+    partialCayleyTransform (toEuclideanLin H).range H =
+      partialCayleyTransform L H * orthogonalProjector (toEuclideanLin H).range :=
+  exercise_6_57 hL hH le_rfl
+
+private theorem cayley_pinv_contraction {L : Submodule ℂ (EuclideanSpace ℂ n)}
+    {H : Matrix n n ℂ} (hH : H.IsHermitian) (hL : (toEuclideanLin H).range ≤ L) :
+    IsContraction (orthogonalProjector L - Complex.I • H).pinv := by
+  let R := orthogonalProjector L - Complex.I • H
+  obtain ⟨hl, hr, -, hNorm⟩ := sub_I_smul_range_and_adjoint_range hH hL
+  obtain ⟨hRX, hXR⟩ := pinv_products_eq_projector_of_ranges R hl hr
+  have hPX : orthogonalProjector L * R.pinv = R.pinv := by
+    rw [← hXR]
+    exact R.pinv_mul_self_mul_pinv
+  intro x
+  let y := toEuclideanLin R.pinv x
+  have hy : L.starProjection y = y := by
+    have he := LinearMap.congr_fun (congrArg toEuclideanLin hPX) x
+    rwa [toEuclideanLin_mul_apply, toEuclideanLin_orthogonalProjector,
+      ContinuousLinearMap.coe_coe] at he
+  have hRy : toEuclideanLin R y = L.starProjection x := by
+    change toEuclideanLin R (toEuclideanLin R.pinv x) = _
+    rw [← toEuclideanLin_mul_apply, hRX, toEuclideanLin_orthogonalProjector,
+      ContinuousLinearMap.coe_coe]
+  have hv := hNorm y
+  rw [hy, hRy] at hv
+  refine le_trans ((sq_le_sq₀ (norm_nonneg _) (norm_nonneg _)).mp ?_)
+    (L.norm_starProjection_apply_le x)
+  nlinarith [sq_nonneg ‖toEuclideanLin H y‖]
+
+private theorem partialCayleyTransform_eq_twice_inverse_sub
+    {L : Submodule ℂ (EuclideanSpace ℂ n)}
+    {H : Matrix n n ℂ} (hH : H.IsHermitian) (hL : (toEuclideanLin H).range ≤ L) :
+    partialCayleyTransform L H =
+      (2 : ℂ) • (orthogonalProjector L - Complex.I • H).pinv - orthogonalProjector L := by
+  let P := orthogonalProjector L
+  let R := P - Complex.I • H
+  let X := R.pinv
+  obtain ⟨hl, hr, -, -⟩ := sub_I_smul_range_and_adjoint_range hH hL
+  obtain ⟨hRX, hXR⟩ := pinv_products_eq_projector_of_ranges R hl hr
+  change R * X = P at hRX
+  change X * R = P at hXR
+  have hPX : P * X = X := by rw [← hXR]; exact R.pinv_mul_self_mul_pinv
+  change (P + Complex.I • H) * X = (2 : ℂ) • X - P
+  apply eq_sub_of_add_eq
+  have hs : P + Complex.I • H + R = (2 : ℂ) • P := by dsimp [R]; rw [two_smul]; abel
+  calc
+    _ = (P + Complex.I • H) * X + R * X := congrArg (fun B => (P + Complex.I • H) * X + B) hRX.symm
+    _ = (P + Complex.I • H + R) * X := (Matrix.add_mul _ _ _).symm
+    _ = _ := by rw [hs, Matrix.smul_mul, hPX]
+
+private theorem partialCayleyTransform_sub_eq {L : Submodule ℂ (EuclideanSpace ℂ n)}
+    {H K : Matrix n n ℂ} (hH : H.IsHermitian) (hK : K.IsHermitian)
+    (hLH : (toEuclideanLin H).range ≤ L) (hLK : (toEuclideanLin K).range ≤ L) :
+    let X := (orthogonalProjector L - Complex.I • H).pinv
+    let Y := (orthogonalProjector L - Complex.I • K).pinv
+    partialCayleyTransform L H - partialCayleyTransform L K =
+      (2 : ℂ) • (Complex.I • (X * (H - K) * Y)) := by
+  let P := orthogonalProjector L
+  let R := P - Complex.I • H
+  let S := P - Complex.I • K
+  let X := R.pinv
+  let Y := S.pinv
+  obtain ⟨hl, hr, -, -⟩ := sub_I_smul_range_and_adjoint_range hH hLH
+  obtain ⟨kl, kr, -, -⟩ := sub_I_smul_range_and_adjoint_range hK hLK
+  obtain ⟨hRX, hXR⟩ := pinv_products_eq_projector_of_ranges R hl hr
+  obtain ⟨hSY, hYS⟩ := pinv_products_eq_projector_of_ranges S kl kr
+  change R * X = P at hRX
+  change X * R = P at hXR
+  change S * Y = P at hSY
+  change Y * S = P at hYS
+  have hXP : X * P = X := by
+    rw [← hRX, ← Matrix.mul_assoc]
+    exact R.pinv_mul_self_mul_pinv
+  have hPY : P * Y = Y := by rw [← hYS]; exact S.pinv_mul_self_mul_pinv
+  have hRS : S - R = Complex.I • (H - K) := by
+    rw [smul_sub]
+    dsimp [S, R]
+    abel
+  have hXY : X - Y = X * (S - R) * Y := by
+    calc
+      _ = X * (S * Y) - (X * R) * Y := by rw [hSY, hXR, hXP, hPY]
+      _ = _ := by
+        rw [Matrix.mul_sub X S R, Matrix.sub_mul (X * S) (X * R) Y, Matrix.mul_assoc X S Y]
+  rw [partialCayleyTransform_eq_twice_inverse_sub hH hLH,
+    partialCayleyTransform_eq_twice_inverse_sub hK hLK]
+  change ((2 : ℂ) • X - P) - ((2 : ℂ) • Y - P) = _
+  rw [sub_sub_sub_cancel_right, ← smul_sub, hXY, hRS, Matrix.mul_smul, Matrix.smul_mul]
+
+private theorem unitary_diagonal_of_norm_one (z : n → ℂ) (hz : ∀ i, ‖z i‖ = 1) :
+    diagonal z ∈ unitaryGroup n ℂ := by
+  apply mem_unitaryGroup_iff.mpr
+  change diagonal z * (diagonal z)ᴴ = 1
+  rw [diagonal_conjTranspose, diagonal_mul_diagonal, ← diagonal_one]
+  congr 1
+  funext i
+  change z i * (starRingEnd ℂ) (z i) = 1
+  rw [Complex.mul_conj', hz]
+  norm_num
+
+open scoped Matrix.Norms.L2Operator in
+private theorem contraction_eq_average_unitaries {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ)
+    (hA : IsContraction A) :
+    ∃ U V : Matrix (Fin n) (Fin n) ℂ,
+      U ∈ unitaryGroup (Fin n) ℂ ∧ V ∈ unitaryGroup (Fin n) ℂ ∧
+        A = (1 / 2 : ℂ) • (U + V) := by
+  obtain ⟨L, R, h⟩ := theorem_6_2 A
+  let d (i : Fin n) := A.sortedSingularValues i
+  let z (i : Fin n) : ℂ := ⟨d i, Real.sqrt (1 - (d i) ^ 2)⟩
+  have hD : ∀ i : Fin n, 0 ≤ d i ∧ d i ≤ 1 := by
+    intro i
+    refine ⟨A.sortedSingularValues_nonneg i, ?_⟩
+    calc
+      d i ≤ A.sortedSingularValues 0 := A.sortedSingularValues_antitone (Nat.zero_le _)
+      _ = ‖A‖ := A.sortedSingularValues_zero_eq_l2_opNorm
+      _ ≤ 1 := (isContraction_iff_l2_opNorm_le_one A).mp hA
+  have hz (i : Fin n) : ‖z i‖ = 1 := by
+    apply (sq_eq_sq₀ (norm_nonneg _) zero_le_one).mp
+    have hrad : 0 ≤ 1 - (d i) ^ 2 := by
+      nlinarith [(hD i).1, (hD i).2]
+    rw [Complex.sq_norm, Complex.normSq_apply, one_pow]
+    change d i * d i + Real.sqrt (1 - (d i) ^ 2) * Real.sqrt (1 - (d i) ^ 2) = 1
+    rw [Real.mul_self_sqrt hrad]
+    ring
+  let U := L * diagonal z * Rᴴ
+  let V := L * diagonal (star ∘ z) * Rᴴ
+  have hr := conjTranspose_mem_unitaryGroup h.1.mem_unitaryGroup_right
+  have hU : U ∈ unitaryGroup (Fin n) ℂ :=
+    mul_mem (mul_mem h.1.mem_unitaryGroup_left (unitary_diagonal_of_norm_one z hz)) hr
+  have hV : V ∈ unitaryGroup (Fin n) ℂ := mul_mem
+    (mul_mem h.1.mem_unitaryGroup_left (unitary_diagonal_of_norm_one _ (by simpa using hz))) hr
+  have hAvg : (1 / 2 : ℂ) • (diagonal z + diagonal (star ∘ z)) =
+      diagonal (fun i : Fin n => (d i : ℂ)) := by
+    rw [diagonal_add, ← diagonal_smul]
+    congr 1
+    funext i
+    change (1 / 2 : ℂ) * (z i + (starRingEnd ℂ) (z i)) = (d i : ℂ)
+    apply Complex.ext <;> norm_num [z, Complex.add_re, Complex.add_im, Complex.mul_re,
+      Complex.mul_im, Complex.div_re, Complex.div_im]
+    ring
+  refine ⟨U, V, hU, hV, ?_⟩
+  calc
+    A = L * (rectDiagonal (fun i => (A.sortedSingularValues i : ℂ)) :
+        Matrix (Fin n) (Fin n) ℂ) * Rᴴ := h.1.eq_mul_mul_star
+    _ = L * ((1 / 2 : ℂ) • (diagonal z + diagonal (star ∘ z))) * Rᴴ := by
+      rw [hAvg, rectDiagonal_eq_diagonal]
+    _ = (1 / 2 : ℂ) • (U + V) := by
+      rw [Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_add, Matrix.add_mul]
+
+private theorem seminorm_mul_le_of_contractions {n : ℕ} (ν : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ))
+    (hν : ∀ U V : Matrix (Fin n) (Fin n) ℂ,
+      U ∈ unitaryGroup (Fin n) ℂ → V ∈ unitaryGroup (Fin n) ℂ → ∀ A, ν (U * A * V) = ν A)
+    {X Y : Matrix (Fin n) (Fin n) ℂ} (hX : IsContraction X) (hY : IsContraction Y)
+    (A : Matrix (Fin n) (Fin n) ℂ) : ν (X * A * Y) ≤ ν A := by
+  have hhalf : ‖(1 / 2 : ℂ)‖ = (1 / 2 : ℝ) := by norm_num [norm_div]
+  have hleft (B : Matrix (Fin n) (Fin n) ℂ) : ν (X * B) ≤ ν B := by
+    obtain ⟨U, V, hU, hV, hx⟩ := contraction_eq_average_unitaries X hX
+    rw [hx, Matrix.smul_mul, Matrix.add_mul, map_smul_eq_mul, hhalf]
+    have hu := hν U 1 hU (one_mem _) B
+    have hv := hν V 1 hV (one_mem _) B
+    rw [Matrix.mul_one] at hu hv
+    linarith [map_add_le_add ν (U * B) (V * B)]
+  have hright (B : Matrix (Fin n) (Fin n) ℂ) : ν (B * Y) ≤ ν B := by
+    obtain ⟨U, V, hU, hV, hy⟩ := contraction_eq_average_unitaries Y hY
+    rw [hy, Matrix.mul_smul, Matrix.mul_add, map_smul_eq_mul, hhalf]
+    have hu := hν 1 U (one_mem _) hU B
+    have hv := hν 1 V (one_mem _) hV B
+    rw [Matrix.one_mul] at hu hv
+    linarith [map_add_le_add ν (B * U) (B * V)]
+  exact (hright (X * A)).trans (hleft A)
+
+/-- **Exercise 58** of [benIsrael2003generalized], Chapter 6.
+On a fixed support, the generalized Cayley transform has Lipschitz
+constant two for every unitarily invariant matrix seminorm. -/
+theorem exercise_6_58 {n : ℕ} (ν : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ))
+    (hν : ∀ U V : Matrix (Fin n) (Fin n) ℂ,
+      U ∈ unitaryGroup (Fin n) ℂ → V ∈ unitaryGroup (Fin n) ℂ → ∀ A, ν (U * A * V) = ν A)
+    (L : Submodule ℂ (EuclideanSpace ℂ (Fin n))) {H K : Matrix (Fin n) (Fin n) ℂ}
+    (hH : H.IsHermitian) (hK : K.IsHermitian)
+    (hLH : (toEuclideanLin H).range ≤ L) (hLK : (toEuclideanLin K).range ≤ L) :
+    ν (partialCayleyTransform L H - partialCayleyTransform L K) ≤ 2 * ν (H - K) := by
+  rw [partialCayleyTransform_sub_eq hH hK hLH hLK, map_smul_eq_mul, map_smul_eq_mul,
+    Complex.norm_I, one_mul, show ‖(2 : ℂ)‖ = 2 by norm_num]
+  exact mul_le_mul_of_nonneg_left
+    (seminorm_mul_le_of_contractions ν hν (cayley_pinv_contraction hH hLH)
+      (cayley_pinv_contraction hK hLK) _) zero_le_two
+
+/-- The common-range form of **Exercise 58** of [benIsrael2003generalized],
+Chapter 6. The minimal Cayley transforms of two Hermitian matrices
+with the same range satisfy the bound. -/
+theorem exercise_6_58_common_range {n : ℕ} (ν : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ))
+    (hν : ∀ U V : Matrix (Fin n) (Fin n) ℂ,
+      U ∈ unitaryGroup (Fin n) ℂ → V ∈ unitaryGroup (Fin n) ℂ → ∀ A, ν (U * A * V) = ν A)
+    {H K : Matrix (Fin n) (Fin n) ℂ} (hH : H.IsHermitian) (hK : K.IsHermitian)
+    (hr : (toEuclideanLin H).range = (toEuclideanLin K).range) :
+    ν (partialCayleyTransform (toEuclideanLin H).range H -
+      partialCayleyTransform (toEuclideanLin K).range K) ≤ 2 * ν (H - K) := by
+  rw [← hr]
+  exact exercise_6_58 ν hν (toEuclideanLin H).range hH hK le_rfl hr.ge
+
+end Cayley
 
 end Exercises
 

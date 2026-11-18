@@ -134,16 +134,10 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 49'
 
 [[node]]
 id = "exercise_6_50"
-kind = "theorem"
-desc = '''A contraction is a normal partial isometry exactly when its eigenvalue moduli are zero or one and taking the square preserves its rank.'''
-deps = ["exercise_6_47", "IsContraction"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 50'
 
 [[node]]
 id = "exercise_6_51"
-kind = "theorem"
-desc = '''A normal partial isometry is exactly a unitary conjugate of a unitary block direct summed with a zero block.'''
-deps = ["exercise_6_47"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 51'
 
 [[node]]
@@ -156,9 +150,6 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 53, equation (91)'
 
 [[node]]
 id = "exercise_6_54"
-kind = "theorem"
-desc = '''Positive singular values are exactly the generalized eigenvalues of the two supported polar equations with nonzero vectors in the initial or final space.'''
-deps = ["IsCanonicalPolarDecomposition.gram_and_recover"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 54, equations (92)–(93)'
 
 [[node]]
@@ -170,23 +161,14 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 55'
 
 [[node]]
 id = "exercise_6_56"
-kind = "theorem"
-desc = '''The generalized Cayley transforms are inverse bijections between supported Hermitian matrices and normal partial isometries on the support excluding eigenvalue minus one.'''
-deps = ["exercise_6_47"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 56, equations (94)–(97)'
 
 [[node]]
 id = "exercise_6_57"
-kind = "theorem"
-desc = '''Increasing the supporting subspace extends the partial Cayley transform, and its restriction to the original support is unchanged.'''
-deps = ["exercise_6_56"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 57'
 
 [[node]]
 id = "exercise_6_58"
-kind = "theorem"
-desc = '''On a fixed common range, the Cayley transform is 2-Lipschitz in each unitarily invariant norm.'''
-deps = ["exercise_6_56"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 58'
 
 [[node]]
@@ -236,7 +218,32 @@ source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 55, both scalar pola
 
 [[node]]
 id = "polar_positive_factors_nonunique_without_matching_range"
-kind = "theorem"
-desc = '''For a rank-deficient matrix with both matrix dimensions above the rank, fix the partial isometry at the rank and vary either positive factor on the orthogonal complement of its support by adding a rank-one positive projector. The larger-truncation factorization and nonuniqueness of the partial isometry are proved separately.'''
-deps = ["theorem_6_7", "polar_factors_of_larger_truncation"]
 source = 'Ben-Israel and Greville, Chapter 6, following equations (82)–(83)'
+
+[[node]]
+id = "partialCayleyTransform"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Equation (94), forward transform'
+
+[[node]]
+id = "partialCayleyInverse"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Equation (95), inverse transform'
+
+[[node]]
+id = "IsPartialCayleyValue"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Equations (96)–(97), range and spectrum conditions'
+
+[[node]]
+id = "exercise_6_56_forward"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 56, image and left inverse'
+
+[[node]]
+id = "exercise_6_56_reverse"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 56, inverse image and right inverse'
+
+[[node]]
+id = "exercise_6_57_minimal"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 57, restriction to the smallest permitted support'
+
+[[node]]
+id = "exercise_6_58_common_range"
+source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 58, bound on the two minimal transforms on their common range'
