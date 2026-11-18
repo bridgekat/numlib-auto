@@ -1,21 +1,25 @@
 namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Restricted inverses.'
 
 [[node]]
 id = 'lemma_4'
-kind = 'theorem'
-desc = '''Given a projector P onto S, the system Ax=b with x in S is consistent iff APz=b is consistent. The solutions are the P-images of solutions of the latter system.'''
 source = 'Ben-Israel and Greville, Ch. 2, Lemma 4'
 
 [[node]]
 id = 'definition_2'
-kind = 'definition'
-desc = '''For the orthogonal projector P onto S, an S-restricted inverse is any matrix PY with Y a selected Penrose inverse of AP.'''
 source = 'Ben-Israel and Greville, Ch. 2, Definition 2'
 
 [[node]]
 id = 'corollary_11'
-kind = 'theorem'
-desc = '''Parametrize the solutions of Ax=b restricted to S using a restricted inner inverse, with the consistency condition stated using AP.'''
 source = 'Ben-Israel and Greville, Ch. 2, Corollary 11'
-deps = ['lemma_4', 'definition_2']
+
+[[node]]
+id = "restrictToSubspace"
+source = "Ben-Israel and Greville, Ch. 2, Equation (117)"
+
+[[node]]
+id = "extendFromSubspace"
+source = "Ben-Israel and Greville, Ch. 2, Equation (118)"
+
+[[node]]
+id = "extend_restrict"
+source = "Ben-Israel and Greville, Ch. 2, Equation (119)"

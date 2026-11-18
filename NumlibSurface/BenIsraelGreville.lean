@@ -15,6 +15,9 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section01
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
 import NumlibSurface.BenIsraelGreville.Chapter02.Section03
 import NumlibSurface.BenIsraelGreville.Chapter02.Section04
+import NumlibSurface.BenIsraelGreville.Chapter02.Section07
+import NumlibSurface.BenIsraelGreville.Chapter02.Section09
+import NumlibSurface.BenIsraelGreville.Chapter02.Section10
 import NumlibSurface.BenIsraelGreville.Chapter03.Section01
 import NumlibSurface.BenIsraelGreville.Chapter03.Section02
 import NumlibSurface.BenIsraelGreville.Chapter03.Section03
@@ -34,8 +37,9 @@ solving linear systems and least-squares problems.
 ## Coverage
 
 The formalized material includes the algebra of the Penrose inverse classes, the ordinary
-inverse and consistent linear systems, scalar and vector preliminaries, minimum-norm and
-regularized least-squares solutions, group and Drazin inverses, and reduced normal equations.
+inverse, scalar and vector preliminaries, projectors and constrained linear systems,
+minimum-norm and regularized least-squares solutions, group and Drazin inverses, and
+reduced normal equations.
 
 ## Contents
 
@@ -54,6 +58,9 @@ regularized least-squares solutions, group and Drazin inverses, and reduced norm
 | §2.2 | `Chapter02.Section02` | Characterizations by one Hermitian product |
 | §2.3 | `Chapter02.Section03` | Outer inverses of fixed rank |
 | §2.4 | `Chapter02.Section04` | Idempotents and oblique projectors |
+| §2.7 | `Chapter02.Section07` | Orthogonal projectors |
+| §2.9 | `Chapter02.Section09` | Restricted inverses |
+| §2.10 | `Chapter02.Section10` | Bott–Duffin inverse |
 | §3.1 | `Chapter03.Section01` | Least-squares solutions |
 | §3.2 | `Chapter03.Section02` | Minimum-norm solutions |
 | §3.3 | `Chapter03.Section03` | Tikhonov regularization |

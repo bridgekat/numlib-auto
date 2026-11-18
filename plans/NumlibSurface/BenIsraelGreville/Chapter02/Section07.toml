@@ -1,18 +1,12 @@
 namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Orthogonal projections.'
 
 [[node]]
 id = 'orthogonalProjector'
-kind = 'definition'
-desc = '''The orthogonal projector onto L is projection along L perpendicular, and equals the sum of rank-one projectors of an orthonormal basis. Use Submodule.starProjection.'''
 source = 'Ben-Israel and Greville, Ch. 2, §7, (64)–(65)'
 
 [[node]]
 id = 'lemma_3'
-kind = 'theorem'
-desc = '''For complementary L,M, P(L,M) is Hermitian iff M=L perpendicular.'''
 source = 'Ben-Israel and Greville, Ch. 2, Lemma 3'
-deps = ['orthogonalProjector']
 
 [[node]]
 id = 'theorem_15'
@@ -20,3 +14,7 @@ kind = 'theorem'
 desc = '''A square complex matrix is normal iff it is a weighted sum of pairwise annihilating orthogonal projectors summing to I with weights its distinct eigenvalues. The projectors are the orthogonal eigenspace projections.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 15'
 deps = ['lemma_3']
+
+[[node]]
+id = "orthogonalProjector_apply_eq_sum"
+source = "Ben-Israel and Greville, Ch. 2, Equation (65)"
