@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Mathlib.Analysis.InnerProductSpace.Projection.FiniteDimensional
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
 import NumlibSurface.BenIsraelGreville.Chapter01.Section05
+import NumlibSurface.BenIsraelGreville.Chapter01.Section06
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
 
 /-!
@@ -599,5 +600,336 @@ theorem exercise_12 (L M : Submodule ℂ (EuclideanSpace ℂ n)) :
       hP, hQ, hPP, hQQ]
 
 end ProjectorFormulas
+
+section PalindromicProjectors
+
+open Matrix Chapter02
+open scoped ComplexOrder Topology InnerProductSpace
+
+variable {n : Type*} [Fintype n] [DecidableEq n]
+
+/-- **Equation (71)** of [benIsrael2003generalized], Chapter 5.
+The first member of the list gives the two outer projector factors.
+The empty product is the identity and the one-projector product simplifies
+by idempotence. -/
+noncomputable def palindromicProjectorProduct :
+    List (Submodule ℂ (EuclideanSpace ℂ n)) → Matrix n n ℂ
+  | [] => 1
+  | L :: Ls => orthogonalProjector L * palindromicProjectorProduct Ls * orthogonalProjector L
+
+@[simp]
+theorem palindromicProjectorProduct_nil :
+    palindromicProjectorProduct ([] : List (Submodule ℂ (EuclideanSpace ℂ n))) = 1 := rfl
+
+@[simp]
+theorem palindromicProjectorProduct_cons
+    (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) :
+    palindromicProjectorProduct (L :: Ls) =
+      orthogonalProjector L * palindromicProjectorProduct Ls * orthogonalProjector L := rfl
+
+private theorem toEuclideanLin_palindromicProjectorProduct_cons
+    (L : Submodule ℂ (EuclideanSpace ℂ n))
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (x : EuclideanSpace ℂ n) :
+    toEuclideanLin (palindromicProjectorProduct (L :: Ls)) x =
+      L.starProjection (toEuclideanLin (palindromicProjectorProduct Ls)
+        (L.starProjection x)) := by
+  rw [palindromicProjectorProduct_cons, toEuclideanLin_mul_apply, toEuclideanLin_mul_apply,
+    toEuclideanLin_orthogonalProjector]
+  rfl
+
+/-- The palindrome is positive semidefinite by repeated projector congruence. -/
+theorem palindromicProjectorProduct_posSemidef
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) :
+    (palindromicProjectorProduct Ls).PosSemidef := by
+  induction Ls with
+  | nil => simpa only [palindromicProjectorProduct_nil] using
+      (PosSemidef.one : (1 : Matrix n n ℂ).PosSemidef)
+  | cons L Ls h =>
+    simpa only [palindromicProjectorProduct_cons, (isHermitian_orthogonalProjector L).eq] using
+      h.conjTranspose_mul_mul_same (orthogonalProjector L)
+
+/-- The palindrome is a contraction for the Euclidean norm. -/
+theorem norm_palindromicProjectorProduct_le
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (x : EuclideanSpace ℂ n) :
+    ‖toEuclideanLin (palindromicProjectorProduct Ls) x‖ ≤ ‖x‖ := by
+  induction Ls generalizing x with
+  | nil => simp
+  | cons L Ls h =>
+    rw [toEuclideanLin_palindromicProjectorProduct_cons]
+    exact (L.norm_starProjection_apply_le _).trans ((h _).trans (L.norm_starProjection_apply_le x))
+
+private theorem palindromicProjectorProduct_apply_of_mem
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (x : EuclideanSpace ℂ n)
+    (hx : ∀ L ∈ Ls, x ∈ L) :
+    toEuclideanLin (palindromicProjectorProduct Ls) x = x := by
+  induction Ls with
+  | nil => simp
+  | cons L Ls ih =>
+    have hL := L.starProjection_eq_self_iff.mpr (hx L List.mem_cons_self)
+    rw [toEuclideanLin_palindromicProjectorProduct_cons, hL,
+      ih (fun M hm => hx M (List.mem_cons_of_mem L hm)), hL]
+
+private theorem mem_of_norm_palindromicProjectorProduct_eq
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (x : EuclideanSpace ℂ n)
+    (hx : ‖toEuclideanLin (palindromicProjectorProduct Ls) x‖ = ‖x‖) :
+    ∀ L ∈ Ls, x ∈ L := by
+  induction Ls generalizing x with
+  | nil => simp
+  | cons L Ls ih =>
+    rw [toEuclideanLin_palindromicProjectorProduct_cons] at hx
+    have hP : ‖L.starProjection x‖ = ‖x‖ := le_antisymm (L.norm_starProjection_apply_le _) <|
+      hx.symm.le.trans ((L.norm_starProjection_apply_le _).trans
+        (norm_palindromicProjectorProduct_le Ls _))
+    have hL := (L.mem_iff_norm_starProjection x).mpr hP
+    rw [L.starProjection_eq_self_iff.mpr hL] at hx
+    have ht : ‖toEuclideanLin (palindromicProjectorProduct Ls) x‖ = ‖x‖ :=
+      le_antisymm (norm_palindromicProjectorProduct_le Ls _) <|
+        hx.symm.le.trans (L.norm_starProjection_apply_le _)
+    intro M hM
+    rcases List.mem_cons.mp hM with rfl | hM
+    · exact hL
+    · exact ih x ht M hM
+
+/-- The vectors fixed by the palindrome form the intersection of the given subspaces. -/
+theorem palindromicProjectorProduct_apply_eq_self_iff
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (x : EuclideanSpace ℂ n) :
+    toEuclideanLin (palindromicProjectorProduct Ls) x = x ↔
+      x ∈ sInf {L | L ∈ Ls} := by
+  rw [Submodule.mem_sInf]
+  exact ⟨fun hx => mem_of_norm_palindromicProjectorProduct_eq Ls x (congrArg norm hx),
+    palindromicProjectorProduct_apply_of_mem Ls x⟩
+
+private theorem palindromic_eigenvalues_mem_Icc
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (i : n) :
+    (palindromicProjectorProduct_posSemidef Ls).isHermitian.eigenvalues i ∈ Set.Icc 0 1 := by
+  let h := palindromicProjectorProduct_posSemidef Ls
+  let x := h.isHermitian.eigenvectorBasis i
+  let eigenvalue := h.isHermitian.eigenvalues i
+  have heigen : 0 ≤ eigenvalue := h.eigenvalues_nonneg i
+  have hEig : toEuclideanLin (palindromicProjectorProduct Ls) x = (eigenvalue : ℂ) • x := by
+    apply WithLp.ofLp_injective 2
+    simpa only [ofLp_toEuclideanLin, WithLp.ofLp_smul, RCLike.real_smul_eq_coe_smul
+      (K := ℂ), RCLike.ofReal_eq_complex_ofReal] using h.isHermitian.mulVec_eigenvectorBasis i
+  have hx : ‖x‖ = 1 := h.isHermitian.eigenvectorBasis.orthonormal.1 i
+  have he := norm_palindromicProjectorProduct_le Ls x
+  rw [hEig, norm_smul, Complex.norm_real, Real.norm_of_nonneg heigen, hx, mul_one] at he
+  exact ⟨heigen, he⟩
+
+private theorem toEuclideanLin_eigenvector_conjugate_diagonal
+    {Q : Matrix n n ℂ} (h : Q.IsHermitian) (d : n → ℂ) (i : n) :
+    toEuclideanLin (Unitary.conjStarAlgAut ℂ _ h.eigenvectorUnitary (diagonal d))
+      (h.eigenvectorBasis i) = d i • h.eigenvectorBasis i := by
+  apply WithLp.ofLp_injective 2
+  rw [ofLp_toEuclideanLin, WithLp.ofLp_smul, Unitary.conjStarAlgAut_apply,
+    ← mulVec_mulVec, ← mulVec_mulVec, h.star_eigenvectorUnitary_mulVec,
+    Matrix.diagonal_mulVec_single, show Pi.single i (d i * 1) = d i • Pi.single i 1 from
+      Pi.single_smul' i (d i) (1 : ℂ), mulVec_smul, h.eigenvectorUnitary_mulVec]
+
+private theorem palindromic_projector_eq_conjugate_diagonal
+    (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) :
+    let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+    orthogonalProjector (sInf {L | L ∈ Ls}) =
+      Unitary.conjStarAlgAut ℂ _ h.eigenvectorUnitary
+        (diagonal fun i => if h.eigenvalues i = 1 then 1 else 0) := by
+  dsimp only
+  let Q := palindromicProjectorProduct Ls
+  let H : Submodule ℂ (EuclideanSpace ℂ n) := sInf {L | L ∈ Ls}
+  let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+  let d (i : n) : ℂ := if h.eigenvalues i = 1 then 1 else 0
+  change orthogonalProjector H = Unitary.conjStarAlgAut ℂ _ h.eigenvectorUnitary (diagonal d)
+  apply toEuclideanLin.injective
+  apply h.eigenvectorBasis.toBasis.ext
+  intro i
+  change toEuclideanLin (orthogonalProjector H) (h.eigenvectorBasis i) =
+    toEuclideanLin (Unitary.conjStarAlgAut ℂ _ h.eigenvectorUnitary (diagonal d))
+      (h.eigenvectorBasis i)
+  rw [toEuclideanLin_orthogonalProjector, toEuclideanLin_eigenvector_conjugate_diagonal]
+  let x := h.eigenvectorBasis i
+  have hEig : toEuclideanLin Q x = (h.eigenvalues i : ℂ) • x := by
+    apply WithLp.ofLp_injective 2
+    simpa only [ofLp_toEuclideanLin, WithLp.ofLp_smul, RCLike.real_smul_eq_coe_smul
+      (K := ℂ), RCLike.ofReal_eq_complex_ofReal] using h.mulVec_eigenvectorBasis i
+  change H.starProjection x = d i • x
+  by_cases hi : h.eigenvalues i = 1
+  · rw [hi, Complex.ofReal_one, one_smul] at hEig
+    have hx : x ∈ H := (palindromicProjectorProduct_apply_eq_self_iff Ls x).mp hEig
+    simp [d, hi, H.starProjection_eq_self_iff.mpr hx]
+  · simp only [d, ite_eq_right hi, zero_smul]
+    apply H.starProjection_apply_eq_zero_iff.mpr
+    apply (H.mem_orthogonal x).mpr
+    intro y hy
+    have hy' := (palindromicProjectorProduct_apply_eq_self_iff Ls y).mpr hy
+    have hsym := (isSymmetric_toEuclideanLin_iff.mpr h) y x
+    change ⟪toEuclideanLin Q y, x⟫_ℂ = ⟪y, toEuclideanLin Q x⟫_ℂ at hsym
+    rw [hy', hEig, inner_smul_right] at hsym
+    have hm : ((h.eigenvalues i : ℂ) - 1) * ⟪y, x⟫_ℂ = 0 := by
+      rw [sub_mul, one_mul, ← hsym, sub_self]
+    have hne : (h.eigenvalues i : ℂ) - 1 ≠ 0 := sub_ne_zero.mpr (by exact_mod_cast hi)
+    exact (mul_eq_zero.mp hm).resolve_left hne
+
+open Filter in
+/-- **Exercise 14** of [benIsrael2003generalized], Chapter 5.
+The powers of the palindromic product tend to the orthogonal projector
+onto the common subspace. -/
+theorem exercise_14 (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) :
+    Tendsto (fun k : ℕ => palindromicProjectorProduct Ls ^ k) atTop
+      (𝓝 (orthogonalProjector (sInf {L | L ∈ Ls}))) := by
+  let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+  let f := Unitary.conjStarAlgAut ℂ (Matrix n n ℂ) h.eigenvectorUnitary
+  let z (i : n) : ℂ := h.eigenvalues i
+  let d (i : n) : ℂ := if h.eigenvalues i = 1 then 1 else 0
+  have hQ : palindromicProjectorProduct Ls = f (diagonal z) := h.spectral_theorem
+  have hf : Continuous f := by
+    exact (continuous_const.mul continuous_id).mul continuous_const
+  have hd : Tendsto (fun k : ℕ => diagonal (fun i => z i ^ k)) atTop (𝓝 (diagonal d)) := by
+    apply tendsto_pi_nhds.mpr
+    intro i
+    apply tendsto_pi_nhds.mpr
+    intro j
+    by_cases hij : i = j
+    · subst j
+      simp only [diagonal_apply_eq]
+      by_cases hi : h.eigenvalues i = 1
+      · simp [z, d, hi]
+      · have hI := palindromic_eigenvalues_mem_Icc Ls i
+        have hz : ‖z i‖ < 1 := by
+          change ‖(h.eigenvalues i : ℂ)‖ < 1
+          rw [Complex.norm_real, Real.norm_of_nonneg hI.1]
+          exact lt_of_le_of_ne hI.2 hi
+        simpa [d, hi] using tendsto_pow_atTop_nhds_zero_of_norm_lt_one hz
+    · simp [diagonal_apply_ne _ hij]
+  have hPower (k : ℕ) : palindromicProjectorProduct Ls ^ k =
+      f (diagonal fun i => z i ^ k) := by
+    rw [hQ, ← map_pow, diagonal_pow]
+    rfl
+  rw [palindromic_projector_eq_conjugate_diagonal Ls]
+  simp_rw [hPower]
+  exact hf.continuousAt.tendsto.comp hd
+
+/-- **Exercise 15** of [benIsrael2003generalized], Chapter 5.
+The eigenvalues lie in the unit interval, and the spectral projector at
+one is the orthogonal projector onto the common subspace. This subspace
+is nonzero exactly when one is an eigenvalue. -/
+theorem exercise_15 (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) :
+    let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+    (∀ i, h.eigenvalues i ∈ Set.Icc 0 1) ∧
+      ((sInf {L | L ∈ Ls} : Submodule ℂ (EuclideanSpace ℂ n)) ≠ ⊥ ↔
+        ∃ i, h.eigenvalues i = 1) ∧
+      orthogonalProjector (sInf {L | L ∈ Ls}) =
+        Unitary.conjStarAlgAut ℂ _ h.eigenvectorUnitary
+          (diagonal fun i => if h.eigenvalues i = 1 then 1 else 0) := by
+  dsimp only
+  let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+  let H : Submodule ℂ (EuclideanSpace ℂ n) := sInf {L | L ∈ Ls}
+  have hP := palindromic_projector_eq_conjugate_diagonal Ls
+  refine ⟨palindromic_eigenvalues_mem_Icc Ls, ?_, hP⟩
+  constructor
+  · intro hH
+    by_contra! hs
+    have hz : orthogonalProjector H = 0 := by
+      rw [hP]
+      simp [hs]
+    apply hH
+    rw [Submodule.eq_bot_iff]
+    intro x hx
+    have he : H.starProjection x = x := H.starProjection_eq_self_iff.mpr hx
+    rwa [← show (toEuclideanLin (orthogonalProjector H)) x = H.starProjection x from
+      DFunLike.congr_fun (toEuclideanLin_orthogonalProjector H) x,
+      hz, map_zero, LinearMap.zero_apply, eq_comm] at he
+  · rintro ⟨i, hi⟩ hH
+    have hp :
+        toEuclideanLin (orthogonalProjector H) (h.eigenvectorBasis i) = h.eigenvectorBasis i := by
+      rw [hP, toEuclideanLin_eigenvector_conjugate_diagonal, ite_eq_left hi, one_smul]
+    have hx : h.eigenvectorBasis i ∈ H := by
+      rw [toEuclideanLin_orthogonalProjector] at hp
+      exact H.starProjection_eq_self_iff.mp hp
+    have hz : h.eigenvectorBasis i ≠ 0 := (h.eigenvectorBasis.toBasis.ne_zero i)
+    change H = ⊥ at hH
+    rw [hH, Submodule.mem_bot] at hx
+    exact hz hx
+
+/-- The complex spectrum of the palindrome is contained in the real unit interval. -/
+theorem spectrum_palindromicProjectorProduct (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) :
+    spectrum ℂ (palindromicProjectorProduct Ls) ⊆ Complex.ofReal '' Set.Icc 0 1 := by
+  let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+  have he := h.spectral_theorem
+  rw [he, Unitary.conjStarAlgAut_apply, Unitary.spectrum_star_right_conjugate, spectrum_diagonal]
+  rintro z ⟨i, rfl⟩
+  exact ⟨h.eigenvalues i, palindromic_eigenvalues_mem_Icc Ls i, rfl⟩
+
+private theorem pinv_conjugate_unitary (U : unitaryGroup n ℂ) (A : Matrix n n ℂ) :
+    (Unitary.conjStarAlgAut ℂ _ U A).pinv = Unitary.conjStarAlgAut ℂ _ U A.pinv := by
+  simpa only [Unitary.conjStarAlgAut_apply, Unitary.coe_star, star_eq_conjTranspose,
+    conjTranspose_conjTranspose] using
+    Chapter01.pinv_unitary_mul A (U : Matrix n n ℂ) ((star U : unitaryGroup n ℂ) : Matrix n n ℂ)
+      U.prop (star U).prop
+
+private theorem pyle_scalar (t : ℝ) (k : ℕ) (he : 0 < k ∨ t ≠ 0) :
+    t ^ (k + 1) + ((t ^ (k + 1 + 1) - t ^ (k + 1))⁻¹ -
+      (t ^ (k + 1) - t ^ k)⁻¹)⁻¹ = if t = 1 then 1 else 0 := by
+  by_cases h1 : t = 1
+  · simp [h1]
+  by_cases h0 : t = 0
+  · obtain hk | ht := he
+    · simp [h0, Nat.ne_of_gt hk]
+    · exact (ht h0).elim
+  have hk : t ^ k ≠ 0 := pow_ne_zero _ h0
+  have ht : t - 1 ≠ 0 := sub_ne_zero.mpr h1
+  have hUpper : t ^ (k + 1 + 1) - t ^ (k + 1) = t ^ k * t * (t - 1) := by
+    rw [pow_succ, pow_succ t k]
+    ring
+  have hLower : t ^ (k + 1) - t ^ k = t ^ k * (t - 1) := by
+    rw [pow_succ]
+    ring
+  have hDiff : (t ^ k * t * (t - 1))⁻¹ - (t ^ k * (t - 1))⁻¹ = -(t ^ k * t)⁻¹ := by
+    field_simp
+    ring
+  rw [hUpper, hLower, hDiff, inv_neg, inv_inv, pow_succ, add_neg_cancel, ite_eq_right h1]
+
+/-- **Exercise 16**, Equation (72) of [benIsrael2003generalized], Chapter 5.
+Three successive powers and their Moore–Penrose inverses give the
+orthogonal projector onto the common subspace. The exponent $k+1$
+can be one when the palindromic product is invertible. -/
+theorem exercise_16 (Ls : List (Submodule ℂ (EuclideanSpace ℂ n))) (k : ℕ)
+    (hk : 0 < k ∨ IsUnit (palindromicProjectorProduct Ls)) :
+    let Q := palindromicProjectorProduct Ls
+    orthogonalProjector (sInf {L | L ∈ Ls}) =
+      Q ^ (k + 1) + ((Q ^ (k + 1 + 1) - Q ^ (k + 1)).pinv -
+        (Q ^ (k + 1) - Q ^ k).pinv).pinv := by
+  dsimp only
+  let h := (palindromicProjectorProduct_posSemidef Ls).isHermitian
+  let f := Unitary.conjStarAlgAut ℂ (Matrix n n ℂ) h.eigenvectorUnitary
+  let z (i : n) : ℂ := h.eigenvalues i
+  let d (i : n) : ℂ := if h.eigenvalues i = 1 then 1 else 0
+  have hQ : palindromicProjectorProduct Ls = f (diagonal z) := h.spectral_theorem
+  have hPower (a : ℕ) : palindromicProjectorProduct Ls ^ a =
+      f (diagonal fun i => z i ^ a) := by
+    rw [hQ, ← map_pow, diagonal_pow]
+    rfl
+  have hNz (i : n) : 0 < k ∨ h.eigenvalues i ≠ 0 := by
+    rcases hk with hk | hQunit
+    · exact Or.inl hk
+    · apply Or.inr
+      have hD : IsUnit (diagonal z) := (isUnit_map_iff f _).mp (hQ ▸ hQunit)
+      have hDet := isUnit_iff_ne_zero.mp ((isUnit_iff_isUnit_det _).mp hD)
+      rw [det_diagonal] at hDet
+      have hz := Finset.prod_ne_zero_iff.mp hDet i (Finset.mem_univ i)
+      exact fun hi => hz (by simp [z, hi])
+  rw [palindromic_projector_eq_conjugate_diagonal Ls]
+  change f (diagonal d) = _
+  rw [hPower, hPower, hPower]
+  simp only [f, ← map_sub, pinv_conjugate_unitary, ← map_add, diagonal_sub,
+    Chapter01.pinv_diagonal, diagonal_add]
+  apply congrArg (Unitary.conjStarAlgAut ℂ (Matrix n n ℂ) h.eigenvectorUnitary)
+  apply congrArg diagonal
+  funext i
+  have he := congrArg Complex.ofReal (pyle_scalar (h.eigenvalues i) k (hNz i))
+  by_cases hi : h.eigenvalues i = 1
+  · simp [z, d, hi]
+  · simpa [z, d, hi, Complex.ofReal_add, Complex.ofReal_sub, Complex.ofReal_pow,
+      Complex.ofReal_inv] using he.symm
+
+end PalindromicProjectors
 
 end BenIsraelGreville.Chapter05

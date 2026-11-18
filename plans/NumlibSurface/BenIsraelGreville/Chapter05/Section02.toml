@@ -66,10 +66,11 @@ source = "Ben-Israel and Greville, Chapter 5, Exercise 4(a)"
 
 [[node]]
 id = "exercise_5"
-kind = "theorem"
-desc = '''For a rank-adapted partition M, write F = [A₁₁; A₂₁] and G = [A₁₁ A₁₂]. Then GMᴴF is invertible and M† = Gᴴ ((GMᴴF)⁻¹)ᴴ Fᴴ.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 5"
-deps = ["eq_rank_factorization_of_isUnit_block"]
+
+[[node]]
+id = "exercise_6_isUnit_iff"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 6, equivalent nonsingularity criteria"
 
 [[node]]
 id = "exercise_6"
@@ -81,39 +82,48 @@ source = "Ben-Israel and Greville, Chapter 5, Exercise 7"
 
 [[node]]
 id = "exercise_8"
-kind = "theorem"
-desc = '''The orthogonal projectors onto the ranges of M and Mᴴ and the kernels of M and Mᴴ have the four Gram formulas for the block basis matrices [I; S], [I; Tᴴ], [−T; I], and [−Sᴴ; I].'''
-source = "Ben-Israel and Greville, Chapter 5, Exercise 8"
-deps = ["lemma_5_1"]
+source = "Ben-Israel and Greville, Chapter 5, Exercise 8(a)–(d), with the corrected adjoint in the left factor of (d)"
+
+[[node]]
+id = "exercise_8_reindex"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 8(a)–(d), row and column permutations"
 
 [[node]]
 id = "exercise_9_a"
-kind = "theorem"
-desc = '''The Hermitian block matrix is positive semidefinite iff H₁₁ is positive semidefinite, H₁₁H₁₁†H₁₂ = H₁₂, and the generalized Schur complement H₂₂ − H₁₂ᴴH₁₁†H₁₂ is positive semidefinite.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 9(a)"
 
 [[node]]
 id = "exercise_9_b"
-kind = "theorem"
-desc = '''The Hermitian block matrix is positive definite iff H₁₁ is positive definite and both ordinary Schur complements are positive definite.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 9(b)"
 
 [[node]]
+id = "rohdeSchurInverse"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 10, Equation (42)"
+
+[[node]]
 id = "exercise_10_a"
-kind = "theorem"
-desc = '''For positive semidefinite H, the generalized Schur complement formula (42) gives an inner or reflexive inverse of H from inverses of the same class for H₁₁ and the complement.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 10(a), Equation (42)"
-deps = ["exercise_9_a"]
 
 [[node]]
 id = "exercise_10_b"
-kind = "theorem"
-desc = '''If H₂₂ is nonsingular and rank H is the sum of the diagonal-block ranks, the same formula constructs {1,2,3}-inverses and the Moore–Penrose inverse from the corresponding class on the blocks.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 10(b), Equation (42)"
-deps = ["exercise_10_a"]
+
+[[node]]
+id = "exercise_10_b_pinv"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 10(b), Equation (42), Moore–Penrose inverse"
+
+[[node]]
+id = "upperBlockGroupInverseEntry"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 11, upper-right block formula"
 
 [[node]]
 id = "exercise_11"
-kind = "theorem"
-desc = '''The upper block triangular matrix has a group inverse iff both diagonal blocks have group inverses and (I − AA♯)X(I − BB♯) = 0. Give its off-diagonal block formula, including the simplification when A is nonsingular.'''
+source = "Ben-Israel and Greville, Chapter 5, Exercise 11(a)–(b), group inverse existence"
+
+[[node]]
+id = "exercise_11_formula"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 11, the full block group inverse"
+
+[[node]]
+id = "exercise_11_invertible"
 source = "Ben-Israel and Greville, Chapter 5, Exercise 11, Equation (43)"

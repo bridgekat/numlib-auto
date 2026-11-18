@@ -81,21 +81,25 @@ id = "exercise_13"
 source = "Ben-Israel and Greville, Chapter 5, Exercise 13"
 
 [[node]]
+id = "palindromicProjectorProduct"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 14, Equation (71)"
+
+[[node]]
+id = "palindromicProjectorProduct_apply_eq_self_iff"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 15, the eigenspace at one"
+
+[[node]]
 id = "exercise_14"
-kind = "theorem"
-desc = '''Let Q be the palindromic product of the orthogonal projectors given by Equation (71). The powers of Q converge to the orthogonal projector onto the intersection.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 14, Equation (71)"
 
 [[node]]
 id = "exercise_15"
-kind = "theorem"
-desc = '''The palindromic product Q has spectrum in [0,1]. Its 1-eigenspace is the common subspace, and the principal idempotent for eigenvalue one is the orthogonal projector onto it.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 15"
-deps = ["exercise_14"]
+
+[[node]]
+id = "spectrum_palindromicProjectorProduct"
+source = "Ben-Israel and Greville, Chapter 5, Exercise 15, complex spectrum in the real unit interval"
 
 [[node]]
 id = "exercise_16"
-kind = "theorem"
-desc = '''The orthogonal projector onto the intersection is the matrix expression in Equation (72), formed from three successive powers of the palindromic product Q. Include the endpoint ν = 1 when Q is nonsingular.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 16, Equation (72)"
-deps = ["exercise_15"]
