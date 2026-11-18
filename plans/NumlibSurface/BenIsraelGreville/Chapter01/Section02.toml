@@ -1,10 +1,7 @@
 namespace = 'BenIsraelGreville.Chapter01'
-desc = "Constructing inner inverses from Hermite form."
 
 [[node]]
 id = 'theorem_1'
-kind = 'theorem'
-desc = '''If E and P are invertible and EAP has blocks [I,K;0,0], then P[I,0;0,L]E is a {1}-inverse of A for each block L.'''
 source = 'Ben-Israel–Greville, Chapter 1, Theorem 1'
 
 [[node]]
@@ -21,6 +18,4 @@ source = 'Ben-Israel–Greville, Chapter 1, §2, after (6)'
 
 [[node]]
 id = 'exists_innerInverse'
-kind = 'theorem'
-desc = '''Every complex matrix has a {1}-inverse.'''
 source = 'Ben-Israel–Greville, Chapter 1, §2, conclusion'

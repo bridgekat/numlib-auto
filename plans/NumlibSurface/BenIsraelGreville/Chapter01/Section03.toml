@@ -1,64 +1,43 @@
 namespace = 'BenIsraelGreville.Chapter01'
-desc = "Algebraic properties of inner inverses."
 
 [[node]]
 id = 'scalarPseudoinverse'
-kind = 'definition'
-desc = '''The scalar pseudoinverse is the reciprocal for nonzero scalars and zero at zero, represented by total field inverse.'''
 source = 'Ben-Israel–Greville, Chapter 1, Equation (8)'
 
 [[node]]
 id = 'lemma_1_a'
-kind = 'theorem'
-desc = '''The conjugate transpose of a {1}-inverse is a {1}-inverse of the conjugate transpose.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 1(a)'
 
 [[node]]
 id = 'lemma_1_b'
-kind = 'theorem'
-desc = '''For an invertible square A, membership in A{1} is equivalent to equality with the ordinary inverse.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 1(b)'
 
 [[node]]
 id = 'lemma_1_c'
-kind = 'theorem'
-desc = '''If X is a {1}-inverse of A then lambda pseudoinverse times X is a {1}-inverse of lambda times A, also when lambda is zero.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 1(c)'
 
 [[node]]
 id = 'lemma_1_d'
-kind = 'theorem'
-desc = '''A {1}-inverse X has rank at least that of A.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 1(d)'
 
 [[node]]
 id = 'lemma_1_e'
-kind = 'theorem'
-desc = '''For invertible S and T, a {1}-inverse X of A gives T⁻¹XS⁻¹ as a {1}-inverse of SAT.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 1(e)'
 
 [[node]]
 id = 'lemma_1_f'
-kind = 'theorem'
-desc = '''For a {1}-inverse X, both AX and XA are idempotent and each has rank rank A.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 1(f)'
 
 [[node]]
 id = 'lemma_2_a'
-kind = 'theorem'
-desc = '''For a {1}-inverse X, XA is the identity if and only if A has full column rank.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 2(a)'
 
 [[node]]
 id = 'lemma_2_b'
-kind = 'theorem'
-desc = '''For a {1}-inverse X, AX is the identity if and only if A has full row rank.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 2(b)'
 
 [[node]]
 id = 'exercise_7'
-kind = 'theorem'
-desc = '''The rank of FHG equals that of H when F has full column rank and G has full row rank.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 7'
 
 [[node]]

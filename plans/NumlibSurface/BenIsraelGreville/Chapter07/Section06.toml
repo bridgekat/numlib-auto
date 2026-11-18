@@ -1,22 +1,14 @@
 namespace = "BenIsraelGreville.Chapter07"
 
-desc = '''Reduced and QR least-squares equations. Use Matrix.isLeastSquaresSolution_iff_normalEquations and the rank criterion for injectivity of the adjoint of a full-row-rank factor.'''
 
 [[node]]
 id = "leastSquaresResidual"
-kind = "definition"
-desc = '''The residual of x for Ax = b is b − Ax.'''
 source = "Ben-Israel and Greville, Ch. 7, §6, (62)"
 
 [[node]]
 id = "isLeastSquaresSolution_iff_factor_normalEquations"
-kind = "theorem"
-desc = '''If A = FG with G of full row rank, x minimizes the Euclidean residual iff FᴴAx = Fᴴb. Cancel the injective map Gᴴ in the normal equation.'''
 source = "Ben-Israel and Greville, Ch. 7, §6, (63)–(64)"
 
 [[node]]
 id = "isLeastSquaresSolution_iff_thinQR"
-kind = "theorem"
-desc = '''If A = QR with QᴴQ = I and R invertible upper triangular, x minimizes the residual iff Rx = Qᴴb. In a full unitary completion this equation uses only the leading block of Q_fullᴴb. The printed full-system equality (65) is valid only for a consistent system, as its trailing rows require the orthogonal residual to vanish.'''
 source = "Ben-Israel and Greville, Ch. 7, §6, (65)–(66)"
-deps = ["isLeastSquaresSolution_iff_factor_normalEquations"]

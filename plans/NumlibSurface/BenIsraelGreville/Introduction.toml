@@ -1,90 +1,57 @@
 namespace = "BenIsraelGreville.Introduction"
-desc = '''Interpret nonsingularity by matrix units and solve rectangular systems by the equation AXA=A. Use the ordinary nonsingular inverse API and express the general solution using mulVec.'''
 
 [[node]]
 id = "existsUnique_inverse"
-kind = "theorem"
-desc = '''A nonsingular matrix admits a unique two-sided inverse.'''
 source = "Ben-Israel and Greville, Introduction §1, Equation (1)"
 
 [[node]]
 id = "inv_inv"
-kind = "theorem"
-desc = '''Inverting a nonsingular matrix twice recovers the original matrix.'''
 source = "Ben-Israel and Greville, Introduction §1"
 
 [[node]]
 id = "inv_transpose"
-kind = "theorem"
-desc = '''Inversion commutes with transposition.'''
 source = "Ben-Israel and Greville, Introduction §1"
 
 [[node]]
 id = "inv_conjTranspose"
-kind = "theorem"
-desc = '''Inversion commutes with conjugate transposition.'''
 source = "Ben-Israel and Greville, Introduction §1"
 
 [[node]]
 id = "inv_mul"
-kind = "theorem"
-desc = '''The inverse of a product of nonsingular matrices is the reversed product of their inverses.'''
 source = "Ben-Israel and Greville, Introduction §1"
 
 [[node]]
 id = "eigenvector_inv"
-kind = "theorem"
-desc = '''An eigenvector of an invertible matrix with eigenvalue λ remains an eigenvector of the inverse, for eigenvalue λ⁻¹.'''
 source = "Ben-Israel and Greville, Introduction §1 and Ex. 1"
 
 [[node]]
 id = "isUnit_iff_linearIndependent_rows_cols"
-kind = "theorem"
-desc = '''The rows and the columns of a square matrix are linearly independent exactly when the matrix is nonsingular.'''
 source = "Ben-Israel and Greville, Introduction §2"
 
 [[node]]
 id = "IsGeneralizedInverse"
-kind = "definition"
-desc = '''The generalized inverse relation used for illustrative linear systems is the equation AXA = A.'''
 source = "Ben-Israel and Greville, Introduction §2, Equation (2)"
 
 [[node]]
 id = "generalizedInverse_eq_inv"
-kind = "theorem"
-desc = '''For an invertible matrix A, any generalized inverse satisfying AXA = A is A⁻¹.'''
 source = "Ben-Israel and Greville, Introduction §2"
-deps = ["IsGeneralizedInverse"]
 
 [[node]]
 id = "solution_iff_eq_inv_mulVec"
-kind = "theorem"
-desc = '''The unique solution of Ax = b for invertible A is A⁻¹b.'''
 source = "Ben-Israel and Greville, Introduction §3"
 
 [[node]]
 id = "solvable_iff_mem_columnSpan"
-kind = "theorem"
-desc = '''Ax = b is solvable exactly when b is in the linear span of the columns of A.'''
 source = "Ben-Israel and Greville, Introduction §3"
 
 [[node]]
 id = "solvable_iff_mul_mulVec_eq"
-kind = "theorem"
-desc = '''If AXA = A, then Ax = b is solvable exactly when AXb = b.'''
 source = "Ben-Israel and Greville, Introduction §3 and Ex. 3"
-deps = ["IsGeneralizedInverse"]
 
 [[node]]
 id = "solution_iff_exists_eq_generalSolution"
-kind = "theorem"
-desc = '''Under AXA = A and AXb = b, the solutions of Ax = b are exactly Xb + (I − XA)y for arbitrary y.'''
 source = "Ben-Israel and Greville, Introduction §3, Equation (4) and Ex. 4"
-deps = ["IsGeneralizedInverse", "solvable_iff_mul_mulVec_eq"]
 
 [[node]]
 id = "generalizedInverse_iff_solves_consistent"
-kind = "theorem"
-desc = '''AXA = A exactly when Xb solves Ax = b for every consistent right hand side b.'''
 source = "Ben-Israel and Greville, Introduction §4 and Ex. 7"
-deps = ["IsGeneralizedInverse"]

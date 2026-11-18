@@ -6,6 +6,7 @@ import Numlib.Algebra.Field.GeomSum
 import Numlib.Algebra.LinearRecurrence
 import Numlib.Algebra.Order.Archimedean
 import Numlib.Algebra.Order.BigOperators.Ring.Finset
+import Numlib.Algebra.Group.Drazin
 import Numlib.Algebra.Polynomial.AevalApply
 import Numlib.Algebra.Polynomial.Commute
 import Numlib.Algebra.Polynomial.ConjugateRoots
@@ -606,6 +607,7 @@ import Numlib.LinearAlgebra.Matrix.DotProduct
 import Numlib.LinearAlgebra.Matrix.EpsilonNorm
 import Numlib.LinearAlgebra.Matrix.FaddeevLeVerrier
 import Numlib.LinearAlgebra.Matrix.GSVD
+import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 import Numlib.LinearAlgebra.Matrix.GeneralizedSchur
 import Numlib.LinearAlgebra.Matrix.Hamiltonian
 import Numlib.LinearAlgebra.Matrix.HermitianPart
@@ -623,6 +625,7 @@ import Numlib.LinearAlgebra.Matrix.LU.Pivoting
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Constrained
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
+import Numlib.LinearAlgebra.Matrix.LeastSquares.Reduced
 import Numlib.LinearAlgebra.Matrix.LeastSquares.ResidualKKT
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Total
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Weighted

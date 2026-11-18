@@ -1,66 +1,37 @@
 namespace = 'Matrix'
-desc = '''
-Inner and outer inverses of rectangular matrices, and membership in a selected set of Penrose
-equations. Use semiring hypotheses for identities involving only multiplication. Rank arguments use
-fields. For the four equations together use the existing Moore–Penrose inverse over RCLike fields.
-'''
 
 [[node]]
 id = 'IsInnerInverse'
-kind = 'definition'
-desc = '''The equation AXA = A.'''
 
 [[node]]
 id = 'IsOuterInverse'
-kind = 'definition'
-desc = '''The equation XAX = X.'''
 
 [[node]]
 id = 'PenroseCondition'
-kind = 'definition'
-desc = '''The four named Penrose equations, with constructors for the inner inverse, outer inverse, and the two Hermitian products.'''
 
 [[node]]
 id = 'penroseInverses'
-kind = 'definition'
-desc = '''The set of matrices satisfying each Penrose condition in the given set of conditions.'''
 
 [[node]]
 id = 'mem_penroseInverses_iff'
-kind = 'theorem'
-desc = '''Membership means satisfying the respective equation for every condition in the set.'''
 
 [[node]]
 id = 'penroseInverses_univ'
-kind = 'theorem'
-desc = '''The matrices satisfying all four conditions form the singleton containing Matrix.pinv A.'''
 
 [[node]]
 id = 'IsInnerInverse.rank_mul'
-kind = 'theorem'
-desc = '''For AXA=A, the rank of AX equals that of A.'''
 
 [[node]]
 id = 'IsInnerInverse.rank_mul_rev'
-kind = 'theorem'
-desc = '''For AXA=A, the rank of XA equals that of A.'''
 
 [[node]]
 id = 'IsInnerInverse.isOuterInverse_iff_rank_eq'
-kind = 'theorem'
-desc = '''An inner inverse is an outer inverse exactly when the matrix and its inverse have equal ranks.'''
 
 [[node]]
 id = 'IsInnerInverse.isInnerInverse_mul'
-kind = 'theorem'
-desc = '''The product YAZ of two inner inverses is an inner inverse.'''
 
 [[node]]
 id = 'IsInnerInverse.isOuterInverse_mul'
-kind = 'theorem'
-desc = '''The product YAZ of two inner inverses is an outer inverse.'''
 
 [[node]]
 id = 'pinv_eq_of_innerInverse_mul'
-kind = 'theorem'
-desc = '''An inner inverse whose left product is Hermitian times A times an inner inverse whose right product is Hermitian gives the Moore–Penrose inverse, with the right-product condition on the left factor.'''

@@ -1,124 +1,77 @@
 namespace = "BenIsraelGreville.Chapter00"
-desc = '''Use Mathlib coordinate vectors and Pi.basisFun, the lattice of submodules and its IsCompl relation, and the standard complex Euclidean space. The source inner product is linear in its first argument, so exchange arguments relative to Mathlib.'''
 
 [[node]]
 id = "unitVector"
-kind = "definition"
-desc = '''The ith unit vector has its ith entry 1 and remaining entries zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.2"
 
 [[node]]
 id = "standardBasis"
-kind = "definition"
-desc = '''The standard basis of the coordinate space consists of its unit vectors.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.2"
-deps = ["unitVector"]
 
 [[node]]
 id = "mem_subspaceSum"
-kind = "theorem"
-desc = '''Membership in the sum of two subspaces is equivalent to being a sum of one vector from each subspace.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.3"
 
 [[node]]
 id = "isDirectSum"
-kind = "definition"
-desc = '''A sum of two subspaces is direct if their intersection is the zero subspace.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.3"
 
 [[node]]
 id = "areComplementary"
-kind = "definition"
-desc = '''Two subspaces are complementary if the sum is direct and is all of the ambient space.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.3, Equation (1)"
-deps = ["isDirectSum"]
 
 [[node]]
 id = "existsUnique_sum_of_complementary"
-kind = "theorem"
-desc = '''Complementary subspaces give a unique decomposition of each vector as a sum of components in the two subspaces.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.3, Equation (2) and Ex. 1"
-deps = ["areComplementary"]
 
 [[node]]
 id = "projectionAlong"
-kind = "definition"
-desc = '''Projection on L along M assigns to a vector its L-component in the unique decomposition for complementary subspaces.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.3 after Equation (2)"
-deps = ["areComplementary"]
 
 [[node]]
 id = "IsInnerProduct"
-kind = "definition"
-desc = '''An inner product is a first-slot complex-linear, Hermitian symmetric form that is positive definite. Express positivity of self-values by their real part.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.4"
 
 [[node]]
 id = "IsInnerProduct.conjLinear_right"
-kind = "theorem"
-desc = '''An inner product is conjugate homogeneous in its second variable.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.4, Note (a)"
-deps = ["IsInnerProduct"]
 
 [[node]]
 id = "IsInnerProduct.self_real"
-kind = "theorem"
-desc = '''The inner product of a vector with itself is real, by Hermitian symmetry.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.4, Note (b)"
-deps = ["IsInnerProduct"]
 
 [[node]]
 id = "IsInnerProduct.zero_left"
-kind = "theorem"
-desc = '''The inner product of zero with any vector is zero, by linearity.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.4, Note (c)"
-deps = ["IsInnerProduct"]
 
 [[node]]
 id = "standardInner_eq_sum"
-kind = "theorem"
-desc = '''The standard inner product of x with y is ∑ᵢ xᵢ conj(yᵢ).'''
 source = "Ben-Israel and Greville, Chapter 0 §1.4, Equation (3)"
 
 [[node]]
 id = "IsVectorNorm"
-kind = "definition"
-desc = '''A vector norm is a nonnegative, definite, absolutely homogeneous and subadditive real-valued function.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.5"
 
 [[node]]
 id = "IsVectorNorm.map_zero"
-kind = "theorem"
-desc = '''Absolute homogeneity implies a vector norm vanishes at zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §1.5, Note (a)"
-deps = ["IsVectorNorm"]
 
 [[node]]
 id = "norm_inner_le"
-kind = "theorem"
-desc = '''The absolute value of an inner product is at most the product of the corresponding norms.'''
 source = "Ben-Israel and Greville, Chapter 0 §1, Ex. 2"
 
 [[node]]
 id = "norm_eq_sqrt_inner_self"
-kind = "theorem"
-desc = '''The norm induced by an inner product is the square root of the real part of its self-value.'''
 source = "Ben-Israel and Greville, Chapter 0 §1, Ex. 3"
 
 [[node]]
 id = "angle_eq_arccos"
-kind = "theorem"
-desc = '''The angle of two nonzero real vectors is arccos of the inner product divided by the product of the norms.'''
 source = "Ben-Israel and Greville, Chapter 0 §1, Ex. 5"
 
 [[node]]
 id = "orthonormal_iff_inner_eq_delta"
-kind = "theorem"
-desc = '''A family is orthonormal if every inner product of two entries equals the Kronecker delta.'''
 source = "Ben-Israel and Greville, Chapter 0 §1, Ex. 6"
 
 [[node]]
 id = "lpNorm"
-kind = "definition"
-desc = '''The ℓp norm of a coordinate vector is the pth root of the sum of pth powers of the component norms, or the maximum for p = ∞.'''
 source = "Ben-Israel and Greville, Chapter 0 §1, Exs. 9–10"

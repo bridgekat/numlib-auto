@@ -1,32 +1,20 @@
 namespace = 'BenIsraelGreville.Chapter02'
-desc = 'Solutions of linear systems.'
 
 [[node]]
 id = 'theorem_1'
-kind = 'theorem'
-desc = '''For any inner inverses U of A and V of B, AXB=D is consistent iff AUDVB=D. When consistent all solutions are UDV + Y − UAYBV for arbitrary Y.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 1'
 
 [[node]]
 id = 'corollary_1'
-kind = 'theorem'
-desc = '''For an inner inverse U of A, all inner inverses are U + Z − UAZAU.'''
 source = 'Ben-Israel and Greville, Ch. 2, Corollary 1'
-deps = ['theorem_1']
 
 [[node]]
 id = 'corollary_2'
-kind = 'theorem'
-desc = '''For an inner inverse U of A, Ax=b is consistent iff AUb=b. When consistent all solutions are Ub+(I−UA)y.'''
 source = 'Ben-Israel and Greville, Ch. 2, Corollary 2'
-deps = ['theorem_1']
 
 [[node]]
 id = 'theorem_2'
-kind = 'theorem'
-desc = '''X is an inner inverse of A iff for every b in the range of A, Xb solves Ax=b.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 2'
-deps = ['corollary_2']
 
 [[node]]
 id = 'vectorization'

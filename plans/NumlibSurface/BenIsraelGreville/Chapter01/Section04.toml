@@ -1,28 +1,19 @@
 namespace = 'BenIsraelGreville.Chapter01'
-desc = "Reflexive inverses and the rank criterion."
 
 [[node]]
 id = 'lemma_3'
-kind = 'theorem'
-desc = '''If Y and Z are {1}-inverses of A, the product YAZ is a {1,2}-inverse.'''
 source = 'Ben-Israel–Greville, Chapter 1, Lemma 3'
 
 [[node]]
 id = 'mutual_reflexiveInverse'
-kind = 'theorem'
-desc = '''The {1,2}-inverse relation is symmetric.'''
 source = 'Ben-Israel–Greville, Chapter 1, §4, after Lemma 3'
 
 [[node]]
 id = 'theorem_2'
-kind = 'theorem'
-desc = '''For a {1}-inverse X of A, X is a {1,2}-inverse if and only if rank X = rank A.'''
 source = 'Ben-Israel–Greville, Chapter 1, Theorem 2'
 
 [[node]]
 id = 'corollary_1'
-kind = 'theorem'
-desc = '''Any two of the following imply the third: X satisfies equation (1), X satisfies equation (2), rank X = rank A.'''
 source = 'Ben-Israel–Greville, Chapter 1, Corollary 1'
 
 [[node]]

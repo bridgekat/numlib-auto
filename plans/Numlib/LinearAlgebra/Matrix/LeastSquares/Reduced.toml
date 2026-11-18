@@ -1,0 +1,10 @@
+namespace = "Matrix"
+
+[[node]]
+id = "isLeastSquaresSolution_iff_leftFactor_normalEquations"
+
+[[node]]
+id = "isLeastSquaresSolution_iff_fullRowRank_factor_normalEquations"
+
+[[node]]
+id = "isLeastSquaresSolution_iff_isometricFactor"
