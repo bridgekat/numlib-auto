@@ -23,10 +23,17 @@ jobs:
           repository: bridgekat/tracker-graph-explorer # its default branch; pin with `ref:`
           path: .explorer
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # vite 8 wants ^20.19 || >=22.12
+          cache: npm
+          cache-dependency-path: .explorer/package-lock.json
+
       - uses: leanprover/lean-action@v1
 
       - name: Build API docs
-        if: github.event_name == 'push'
+        id: api-docs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: leanprover-community/docgen-action@main
         with:
           api-docs: true
@@ -35,25 +42,21 @@ jobs:
           deploy: false
           references: references/references.bib
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22 # vite 8 wants ^20.19 || >=22.12
-          cache: npm
-          cache-dependency-path: .explorer/package-lock.json
-
       - name: Export dependency graph
+        if: steps.api-docs.outcome == 'success'
         run: |
           lake exe tracker check
           lake exe tracker graph --all --metrics > numlib.json
 
       # docgen-action puts the API docs in docs/docs/. The explorer is the site front page.
-      # On pushes, use doc-gen4's generated citation tags. Other events build with BibTeX keys.
+      # The build runs in .explorer. Use absolute input paths for the graph and citation JSON.
       - name: Build graph explorer
+        if: steps.api-docs.outcome == 'success'
         working-directory: .explorer
         env:
           TRACKER_GRAPH: ${{ github.workspace }}/numlib.json
           TRACKER_DOCS: docs
-          TRACKER_REFERENCES: ${{ github.workspace }}/${{ github.event_name == 'push' && 'docbuild/.lake/build/doc-data/references.json' || 'references/references.bib' }}
+          TRACKER_REFERENCES: ${{ steps.api-docs.outcome == 'success' && format('{0}/docbuild/.lake/build/doc-data/references.json', github.workspace) || '' }}
         run: |
           npm ci
           npm run build
@@ -61,13 +64,13 @@ jobs:
           cp dist/index.html ../docs/index.html
 
       - name: Upload combined site
-        if: github.event_name == 'push'
+        if: steps.api-docs.outcome == 'success'
         uses: actions/upload-pages-artifact@v5
         with:
           path: docs
 
   deploy:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-24.04
     environment:
