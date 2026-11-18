@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Introduction
 import NumlibSurface.BenIsraelGreville.Chapter00.Section01
+import NumlibSurface.BenIsraelGreville.Chapter00.Section02
 import NumlibSurface.BenIsraelGreville.Chapter00.Section03
 import NumlibSurface.BenIsraelGreville.Chapter00.Section04
+import NumlibSurface.BenIsraelGreville.Chapter00.Section05
 import NumlibSurface.BenIsraelGreville.Chapter01.Section01
 import NumlibSurface.BenIsraelGreville.Chapter01.Section02
 import NumlibSurface.BenIsraelGreville.Chapter01.Section03
@@ -41,10 +43,10 @@ solving linear systems and least-squares problems.
 
 ## Coverage
 
-The formalized material includes the algebra of the Penrose inverse classes, the ordinary
-inverse, scalar and vector preliminaries, projectors and constrained linear systems,
-minimum-norm and regularized least-squares solutions, group and Drazin inverses, and
-reduced normal equations.
+The formalized material includes scalar and vector preliminaries, elementary operations,
+determinants and matrix volume, the algebra of the Penrose inverse classes, the ordinary
+inverse, projectors and constrained linear systems, minimum-norm and regularized least-squares
+solutions, group and Drazin inverses, and reduced normal equations.
 
 ## Contents
 
@@ -52,8 +54,10 @@ reduced normal equations.
 |---|---|---|
 | Introduction | `Introduction` | Ordinary and generalized inverses, solution of linear systems |
 | §0.1 | `Chapter00.Section01` | Scalars and vectors |
+| §0.2 | `Chapter00.Section02` | Ordered submatrices and rectangular triangularity |
 | §0.3 | `Chapter00.Section03` | Elementary operations and permutations |
 | §0.4 | `Chapter00.Section04` | Hermite blocks, bases, and full-rank factorization |
+| §0.5 | `Chapter00.Section05` | Determinants, Gram matrices, Schur complements, and volume |
 | §1.1 | `Chapter01.Section01` | Penrose equations |
 | §1.2 | `Chapter01.Section02` | Inner inverse construction from Hermite form |
 | §1.3 | `Chapter01.Section03` | Properties of inner inverses |
@@ -90,6 +94,8 @@ reduced normal equations.
 
 ## Deviations from the source
 
+* **Chapter 0, Equation (87)** (typo). Cauchy–Binet selects columns of the left factor
+  and rows of the right factor.
 * **Chapter 1, Exercise 9** (typo). The kernel equality concerns $XA$ and $A$.
 * **Chapter 1, Corollary 2** (typo). The kernel of $AA^H$ equals the kernel of $A^H$.
 * **Chapter 2, Lemma 1(b)** (reading). The spectrum is contained in $\{0,1\}$.

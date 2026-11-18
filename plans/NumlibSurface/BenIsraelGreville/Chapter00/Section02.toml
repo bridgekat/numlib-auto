@@ -1,34 +1,23 @@
 namespace = "BenIsraelGreville.Chapter00"
-desc = '''Use Matrix.submatrix, Matrix.mulVecLin, Matrix.toEuclideanLin, Mathlib spectral theory for Hermitian matrices, the Rayleigh quotient API, and the backbone SVD. Keep the dimension of each Gram matrix and its zero-padded spectrum distinct.'''
 
 [[node]]
 id = "IndexSequence"
-kind = "definition"
-desc = '''Q_{k,n} is the type of increasing length-k sequences from the n-element index set.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "submatrix"
-kind = "definition"
-desc = '''The matrix on the selected rows and columns is obtained by restricting its two index maps.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "IsRectDiagonal"
-kind = "definition"
-desc = '''An entry of a rectangular diagonal matrix vanishes whenever its row and column indices differ.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "IsRectUpperTriangular"
-kind = "definition"
-desc = '''An entry of a rectangular upper triangular matrix vanishes below its main diagonal.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]
 id = "IsRectLowerTriangular"
-kind = "definition"
-desc = '''An entry of a rectangular lower triangular matrix vanishes above its main diagonal.'''
 source = "Ben-Israel and Greville, Chapter 0 §2.1"
 
 [[node]]

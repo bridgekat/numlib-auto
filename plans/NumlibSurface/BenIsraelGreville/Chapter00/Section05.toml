@@ -1,91 +1,132 @@
 namespace = "BenIsraelGreville.Chapter00"
-desc = '''Use Mathlib determinant and transvection induction for the characterization, then use the backbone Cauchy–Binet theorem and ordered minors. The determinant characterization needs a nonempty index type because the written axioms admit the zero function in size zero.'''
 
 [[node]]
 id = "det_eq_sum_perm"
-kind = "theorem"
-desc = '''The determinant is the sum over permutations of the signed products of selected entries.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.1, Equation (86)"
 
 [[node]]
 id = "IsDeterminant"
-kind = "definition"
-desc = '''The determinant axioms are multiplicativity and the value α on an elementary scaling matrix Eⁱ(α).'''
 source = "Ben-Israel and Greville, Chapter 0 §5.1, Definition 2"
-deps = ["scaleRowMatrix"]
 
 [[node]]
 id = "isDeterminant_iff_eq_det"
-kind = "theorem"
-desc = '''For positive size over ℂ, the determinant is uniquely characterized by the elementary scaling values and multiplicativity.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.1, Definition 2 and Equation (86)"
-deps = ["IsDeterminant", "det_eq_sum_perm"]
 
 [[node]]
 id = "det_mul_eq_sum_minors"
-kind = "theorem"
-desc = '''Cauchy–Binet expresses det(AB) as the sum of products of matching maximal minors of A and B.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.1, Equation (87)"
-deps = ["IndexSequence", "submatrix"]
 
 [[node]]
 id = "gramMatrix"
-kind = "definition"
-desc = '''The Gram matrix of a finite family consists of its pairwise inner products, with the source convention of first-slot linearity.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.2, Equation (88)"
 
 [[node]]
 id = "gramian"
-kind = "definition"
-desc = '''The Gramian of a family is the determinant of its Gram matrix.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.2"
-deps = ["gramMatrix"]
 
 [[node]]
 id = "gramian_eq_sum_sq_minors"
-kind = "theorem"
-desc = '''The Gramian of the columns of X equals det(XᴴX) and the sum of squared moduli of the maximal minors of X.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.2"
-deps = ["gramian", "det_mul_eq_sum_minors"]
 
 [[node]]
 id = "fullRankRowIndices"
-kind = "definition"
-desc = '''The maximal row index sets select r rows giving a submatrix of rank r, where r is the rank of the original matrix.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.3"
-deps = ["IndexSequence"]
 
 [[node]]
 id = "fullRankColumnIndices"
-kind = "definition"
-desc = '''The maximal column index sets select r columns giving a submatrix of rank r.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.3"
-deps = ["IndexSequence"]
 
 [[node]]
 id = "nonsingularMinorIndices"
-kind = "definition"
-desc = '''The index pairs of maximal nonsingular submatrices select r rows and r columns whose common submatrix is invertible.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.3"
-deps = ["IndexSequence"]
 
 [[node]]
 id = "matrixVolume"
-kind = "definition"
-desc = '''The volume of a positive-rank real matrix is the square root of the sum of the squares of the maximal nonsingular minors. At rank zero its volume is zero.'''
 source = "Ben-Israel and Greville, Chapter 0 §5.3, Equation (89)"
-deps = ["nonsingularMinorIndices"]
 
 [[node]]
 id = "nonsingularMinorIndices_eq"
-kind = "theorem"
-desc = '''The pairs of maximal nonsingular minor indices comprise the product of the full-rank row and column index sets.'''
-source = "Ben-Israel and Greville, Chapter 0 §5.3, Ex. 64"
-deps = ["nonsingularMinorIndices", "fullRankRowIndices", "fullRankColumnIndices"]
+source = "Ben-Israel and Greville, Chapter 0 §5.3, Ex. 64(c)"
 
 [[node]]
 id = "matrixVolume_mul_of_rankFactorization"
+source = "Ben-Israel and Greville, Chapter 0 §5.3, Equation (106c)"
+
+[[node]]
+id = "det_elementaryRow"
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 58(a)–(b)"
+
+[[node]]
+id = "det_listProd"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (90)"
+
+[[node]]
+id = "exercise_58_d"
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 58(d)"
+
+[[node]]
+id = "cramer_rule"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (92)"
+
+[[node]]
+id = "det_norm_le_prod_col_norm"
 kind = "theorem"
-desc = '''The volume of a matrix is the product of the volumes of its rank factors.'''
-source = "Ben-Israel and Greville, Chapter 0 §5.3, Ex. 66"
-deps = ["matrixVolume", "IsRankFactorization"]
+desc = '''Hadamard's inequality bounds the absolute determinant by the product of the Euclidean column norms, with equality precisely for pairwise orthogonal columns or a zero column.'''
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 60, Equation (94)"
+
+[[node]]
+id = "schurComplement"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (96)"
+
+[[node]]
+id = "det_fromBlocks_eq_det_mul_schurComplement"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (97)"
+
+[[node]]
+id = "schurComplement_quotient"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (99)"
+
+[[node]]
+id = "inv_fromBlocks_eq_schurComplements"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (100)"
+
+[[node]]
+id = "isUnit_gramMatrix_iff"
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 62"
+
+[[node]]
+id = "gramian_perm"
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 63"
+
+[[node]]
+id = "gramian_nonneg_eq_zero_iff"
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 63"
+
+[[node]]
+id = "rankFactorization_fullRankIndices"
+kind = "theorem"
+desc = '''Under a full-rank factorization, the full-rank row selections are those of the first factor and the full-rank column selections are those of the second factor. Use rank-preserving multiplication by the full-rank factors.'''
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 64(a)–(b)"
+deps = ["fullRankRowIndices", "fullRankColumnIndices", "IsRankFactorization"]
+
+[[node]]
+id = "matrixVolume_sq_eq_det_transpose_mul"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (104)"
+
+[[node]]
+id = "matrixVolume_sq_eq_det_mul_transpose"
+source = "Ben-Israel and Greville, Chapter 0 §5, Equation (105)"
+
+[[node]]
+id = "matrixVolume_sq_eq_sum_row_column_volumes"
+kind = "theorem"
+desc = '''In positive rank the squared volume is both the sum of squared volumes of its full-rank row selections and the sum of squared volumes of its full-rank column selections.'''
+source = "Ben-Israel and Greville, Chapter 0 §5, Equations (106a)–(106b)"
+deps = ["matrixVolume", "nonsingularMinorIndices_eq"]
+
+[[node]]
+id = "matrixVolume_fromCols_le"
+kind = "theorem"
+desc = '''If the two column blocks have positive ranks adding to the total rank, the volume is bounded by the product of their volumes, with equality precisely for orthogonal column ranges. The rank-zero convention in (89) requires the positive block ranks.'''
+source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 67, Equation (107)"
+deps = ["matrixVolume", "det_norm_le_prod_col_norm"]
