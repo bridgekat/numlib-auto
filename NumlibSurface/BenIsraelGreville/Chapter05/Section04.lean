@@ -3,6 +3,7 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Chapter05.Section03
+import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
 # Common solutions of partitioned linear systems
@@ -10,6 +11,12 @@ import NumlibSurface.BenIsraelGreville.Chapter05.Section03
 Section 5.4 of [benIsrael2003generalized] describes the common solutions of
 two systems by intersecting their affine solution spaces. The resulting
 formulas give generalized inverses of vertically stacked matrices.
+
+## Deviations from the source
+
+* **Exercise 19** (correction). The concatenated reciprocals have numerator
+  $[5,2;5,4]$ over ten. The printed intermediate multiplication repeats
+  the numerator of the Gram sum.
 -/
 
 namespace BenIsraelGreville.Chapter05
@@ -620,5 +627,335 @@ theorem exercise_18 (A : Matrix m (m ⊕ p) ℂ) (B : Matrix p (m ⊕ p) ℂ)
   rw [Matrix.pinv_eq_inv hP, Matrix.pinv_eq_inv (show IsUnit C from h)] at hX hY
   rw [Matrix.pinv_eq_inv hW, Matrix.pinv_eq_inv (show IsUnit C from h)] at hZ
   exact ⟨hP, hW, hX.symm, hY.symm, hZ.symm⟩
+
+section WorkedStackedInverse
+
+/-- **Exercise 19** of [benIsrael2003generalized], Chapter 5.
+The rows $[1,1]$ and $[1,2]$ give the indicated reciprocals, Gram sum,
+and ordinary inverse through the stacked formula. -/
+theorem exercise_19 :
+    let A : Matrix (Fin 1) (Fin 2) ℂ := !![1, 1]
+    let B : Matrix (Fin 1) (Fin 2) ℂ := !![1, 2]
+    let C : Matrix (Fin 2) (Fin 2) ℂ := !![1, 1; 1, 2]
+    let S := A.pinv * A + B.pinv * B
+    let T : Matrix (Fin 2) (Fin 2) ℂ := !![1 / 2, 1 / 5; 1 / 2, 2 / 5]
+    IsUnit C ∧ A.pinv = !![1 / 2; 1 / 2] ∧ B.pinv = !![1 / 5; 2 / 5] ∧
+      S = !![7 / 10, 9 / 10; 9 / 10, 13 / 10] ∧ S⁻¹ = !![13, -9; -9, 7] ∧
+      C⁻¹ = S⁻¹ * T ∧ C⁻¹ = !![2, -1; -1, 1] := by
+  intro A B C S T
+  let U : Matrix (Fin 2) (Fin 1) ℂ := !![1 / 2; 1 / 2]
+  let V : Matrix (Fin 2) (Fin 1) ℂ := !![1 / 5; 2 / 5]
+  have hU : A.pinv = U := by
+    symm
+    apply A.pinv_unique
+    all_goals
+      try change (A * U)ᴴ = A * U
+      try change (U * A)ᴴ = U * A
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        norm_num [A, U, Matrix.mul_apply, Fin.sum_univ_succ, conjTranspose_apply]
+  have hV : B.pinv = V := by
+    symm
+    apply B.pinv_unique
+    all_goals
+      try change (B * V)ᴴ = B * V
+      try change (V * B)ᴴ = V * B
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        norm_num [B, V, Matrix.mul_apply, Fin.sum_univ_succ, conjTranspose_apply]
+  let S₀ : Matrix (Fin 2) (Fin 2) ℂ := !![7 / 10, 9 / 10; 9 / 10, 13 / 10]
+  let Si : Matrix (Fin 2) (Fin 2) ℂ := !![13, -9; -9, 7]
+  let Ci : Matrix (Fin 2) (Fin 2) ℂ := !![2, -1; -1, 1]
+  have hS : S = S₀ := by
+    change A.pinv * A + B.pinv * B = _
+    rw [hU, hV]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      norm_num [S₀, A, B, U, V, Matrix.mul_apply, Fin.sum_univ_succ]
+  have hSi : S₀ * Si = 1 := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      norm_num [S₀, Si, Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply]
+  have hCi : C * Ci = 1 := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      norm_num [C, Ci, Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply]
+  have hI : Si * T = Ci := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      norm_num [T, Si, Ci, Matrix.mul_apply, Fin.sum_univ_two]
+  have hS' : S⁻¹ = Si := by rw [hS, inv_eq_right_inv hSi]
+  have hC' : C⁻¹ = Ci := inv_eq_right_inv hCi
+  refine ⟨isUnit_iff_exists_inv.mpr ⟨Ci, hCi⟩, hU, hV, hS, hS', ?_, hC'⟩
+  rw [hS', hC', hI]
+
+end WorkedStackedInverse
+
+section StackedNeumannSeries
+
+open scoped Matrix.Norms.L2Operator ComplexOrder
+
+variable {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
+
+omit [DecidableEq a] in
+private theorem posSemidef_of_hermitian_idempotent {X : Matrix a a ℂ}
+    (hh : X.IsHermitian) (hi : IsIdempotentElem X) : X.PosSemidef := by
+  simpa only [hh.eq, hi.eq] using posSemidef_conjTranspose_mul_self X
+
+private theorem norm_lt_one_of_posDef_one_add_sub
+    (X : Matrix a a ℂ) (hX : X.IsHermitian)
+    (hp : (1 + X).PosDef) (hm : (1 - X).PosDef) : ‖X‖ < 1 := by
+  let U := hX.eigenvectorUnitary
+  let f := Unitary.conjStarAlgAut ℂ (Matrix a a ℂ) (star U)
+  let z (i : a) : ℂ := hX.eigenvalues i
+  have hz : f X = diagonal z := hX.conjStarAlgAut_star_eigenvectorUnitary
+  have hpd (M : Matrix a a ℂ) (hM : M.PosDef) : (f M).PosDef := by
+    dsimp only [f]
+    rw [Unitary.conjStarAlgAut_star_apply]
+    exact (Unitary.isUnit_coe (U := U)).posDef_star_left_conjugate_iff.mpr hM
+  have hplus : (diagonal fun i => 1 + z i).PosDef := by
+    have h := hpd (1 + X) hp
+    rw [map_add, map_one, hz, ← diagonal_one, diagonal_add] at h
+    exact h
+  have hminus : (diagonal fun i => 1 - z i).PosDef := by
+    have h := hpd (1 - X) hm
+    rw [map_sub, map_one, hz, ← diagonal_one, diagonal_sub] at h
+    exact h
+  have hnorm : ‖X‖ = ‖f X‖ := by
+    dsimp only [f]
+    rw [Unitary.conjStarAlgAut_star_apply, ← Unitary.coe_star, CStarRing.norm_mul_coe_unitary,
+      CStarRing.norm_coe_unitary_mul]
+  rw [hnorm, hz, l2_opNorm_diagonal, pi_norm_lt_iff zero_lt_one]
+  intro i
+  have hlt := (Complex.pos_iff.mp (posDef_diagonal_iff.mp hminus i)).1
+  have hgt := (Complex.pos_iff.mp (posDef_diagonal_iff.mp hplus i)).1
+  simp only [Complex.sub_re, Complex.add_re, Complex.one_re, z, Complex.ofReal_re] at hlt hgt
+  change ‖(hX.eigenvalues i : ℂ)‖ < 1
+  rw [Complex.norm_real, Real.norm_eq_abs, abs_lt]
+  exact ⟨by linarith, by linarith⟩
+
+/-- **Exercise 20**, Equations (96)–(101), of [benIsrael2003generalized],
+Chapter 5. The two projector sums have convergent Neumann series, yielding
+the two ordinary inverse expansions for the nonsingular stacked matrix. -/
+theorem exercise_20 (A : Matrix a (a ⊕ b) ℂ) (B : Matrix b (a ⊕ b) ℂ)
+    (h : IsUnit (fromRows A B)) :
+    let C := fromRows A B
+    let S := A.pinv * A + B.pinv * B
+    let P := 1 - A.pinv * A
+    let Q := 1 - B.pinv * B
+    let K := S - 1
+    let T := fromCols A.pinv B.pinv
+    let V := fromCols (-A.pinv) B.pinv
+    K.IsHermitian ∧ ‖K‖ < 1 ∧
+      HasSum (fun j : ℕ => (-K) ^ j) S⁻¹ ∧
+      HasSum (fun j : ℕ => K ^ j) (P + Q)⁻¹ ∧
+      HasSum (fun j : ℕ => (-K) ^ j * T) C⁻¹ ∧
+      HasSum (fun j : ℕ => P * K ^ j * V) (C⁻¹ - fromCols A.pinv (0 : Matrix (a ⊕ b) b ℂ)) := by
+  intro C S P Q K T V
+  have hP : P = orthogonalProjector (toEuclideanLin A).ker :=
+    (orthogonalProjector_ker_eq_one_sub_pinv_mul A).symm
+  have hQ : Q = orthogonalProjector (toEuclideanLin B).ker :=
+    (orthogonalProjector_ker_eq_one_sub_pinv_mul B).symm
+  have hS : S.PosSemidef :=
+    (posSemidef_of_hermitian_idempotent A.isHermitian_pinv_mul
+      ((isInnerInverse_iff.mpr A.mul_pinv_mul_self).isIdempotentElem_mul_rev)).add
+    (posSemidef_of_hermitian_idempotent B.isHermitian_pinv_mul
+      ((isInnerInverse_iff.mpr B.mul_pinv_mul_self).isIdempotentElem_mul_rev))
+  have hPQ : (P + Q).PosSemidef := by
+    rw [hP, hQ]
+    exact (posSemidef_of_hermitian_idempotent (isHermitian_orthogonalProjector _)
+      (isIdempotentElem_orthogonalProjector _)).add
+      (posSemidef_of_hermitian_idempotent (isHermitian_orthogonalProjector _)
+        (isIdempotentElem_orthogonalProjector _))
+  have hK : K.IsHermitian := hS.isHermitian.sub isHermitian_one
+  have hPlus : 1 + K = S := by
+    change 1 + (S - 1) = S
+    abel
+  have hMinus : 1 - K = P + Q := by
+    change 1 - (A.pinv * A + B.pinv * B - 1) = 1 - A.pinv * A + (1 - B.pinv * B)
+    abel
+  obtain ⟨hUnitPQ, hUnitS, hInv1, _, hInv2⟩ := exercise_18 A B h
+  rw [← hP, ← hQ] at hUnitPQ hInv1
+  have hn : ‖K‖ < 1 := by
+    apply norm_lt_one_of_posDef_one_add_sub K hK
+    · rw [hPlus]
+      exact hS.posDef_iff_isUnit.mpr hUnitS
+    · rw [hMinus]
+      exact hPQ.posDef_iff_isUnit.mpr hUnitPQ
+  have hsum1 : HasSum (fun j : ℕ => (-K) ^ j) S⁻¹ := by
+    simpa only [sub_neg_eq_add, hPlus, ← Matrix.nonsing_inv_eq_ringInverse] using
+      hasSum_geom_series_inverse (-K) (by rwa [norm_neg])
+  have hsum2 : HasSum (fun j : ℕ => K ^ j) (P + Q)⁻¹ := by
+    simpa only [hMinus, ← Matrix.nonsing_inv_eq_ringInverse] using hasSum_geom_series_inverse K hn
+  refine ⟨hK, hn, hsum1, hsum2, ?_, ?_⟩
+  · rw [hInv2]
+    exact hsum1.mul_right T
+  · rw [hInv1, add_sub_cancel_left]
+    exact (hsum2.mul_left P).mul_right V
+
+/-- **Exercise 21**, Equations (102)–(103), of [benIsrael2003generalized],
+Chapter 5. Applying the two stacked inverse expansions to the right-hand
+side gives the two Neumann series for its solution. -/
+theorem exercise_21 (A : Matrix a (a ⊕ b) ℂ) (B : Matrix b (a ⊕ b) ℂ)
+    (h : IsUnit (fromRows A B)) (v : EuclideanSpace ℂ (a ⊕ b)) :
+    let C := fromRows A B
+    let K := A.pinv * A + B.pinv * B - 1
+    let P := 1 - A.pinv * A
+    let x := toEuclideanLin C⁻¹ v
+    let w := toEuclideanLin (fromCols A.pinv B.pinv) v
+    let z := toEuclideanLin (fromCols (-A.pinv) B.pinv) v
+    let y := toEuclideanLin (fromCols A.pinv (0 : Matrix (a ⊕ b) b ℂ)) v
+    toEuclideanLin C x = v ∧
+      HasSum (fun j : ℕ => toEuclideanLin ((-K) ^ j) w) x ∧
+      HasSum (fun j : ℕ => toEuclideanLin (P * K ^ j) z) (x - y) := by
+  intro C K P x w z y
+  let E : Matrix (a ⊕ b) (a ⊕ b) ℂ →ₗ[ℂ] EuclideanSpace ℂ (a ⊕ b) :=
+    ((LinearMap.applyₗ (R := ℂ) (M₂ := EuclideanSpace ℂ (a ⊕ b))) v).comp
+      toEuclideanLin.toLinearMap
+  let hE : Continuous E := E.continuous_of_finiteDimensional
+  obtain ⟨-, -, -, -, s₁, s₂⟩ := exercise_20 A B h
+  have h₁ := s₁.map E.toAddMonoidHom hE
+  have h₂ := s₂.map E.toAddMonoidHom hE
+  change HasSum (fun j : ℕ => toEuclideanLin ((-K) ^ j * fromCols A.pinv B.pinv) v) x at h₁
+  have (j : ℕ) : toEuclideanLin ((-K) ^ j * fromCols A.pinv B.pinv) v =
+      toEuclideanLin ((-K) ^ j) w := toEuclideanLin_mul_apply _ _ _
+  simp_rw [this] at h₁
+  change HasSum (fun j : ℕ => toEuclideanLin (P * K ^ j * fromCols (-A.pinv) B.pinv) v)
+    (E (C⁻¹ - fromCols A.pinv (0 : Matrix (a ⊕ b) b ℂ))) at h₂
+  rw [map_sub] at h₂
+  have he₂ (j : ℕ) : toEuclideanLin (P * K ^ j * fromCols (-A.pinv) B.pinv) v =
+      toEuclideanLin (P * K ^ j) z := toEuclideanLin_mul_apply _ _ _
+  simp_rw [he₂] at h₂
+  refine ⟨?_, h₁, h₂⟩
+  change toEuclideanLin C (toEuclideanLin C⁻¹ v) = v
+  rw [← toEuclideanLin_mul_apply, mul_nonsing_inv C ((isUnit_iff_isUnit_det C).mp h),
+    toEuclideanLin_one, LinearMap.id_apply]
+
+end StackedNeumannSeries
+
+section FiniteCommonSolutions
+
+variable {p q r : Type*} [Fintype p] [Fintype q] [DecidableEq q]
+
+/-- The representative and homogeneous map after processing a list of matrix
+equations, together with the successive consistency conditions. -/
+structure CommonSolutionState (q r : Type*) where
+  /-- The representative of the affine solution set. -/
+  representative : Matrix q r ℂ
+  /-- The linear map that acts on the free matrix parameter. -/
+  homogeneous : Matrix q q ℂ
+  /-- The residual consistency condition at each step, in source order. -/
+  conditions : List Prop
+
+private noncomputable def commonSolutionRecurrenceFrom
+    (E : Matrix q r ℂ) (F : Matrix q q ℂ) :
+    List (Matrix p q ℂ × Matrix p r ℂ) → CommonSolutionState q r
+  | [] => ⟨E, F, []⟩
+  | (A, B) :: rest =>
+    let C := A * F
+    let D := B - A * E
+    let result := commonSolutionRecurrenceFrom (E + F * C.pinv * D)
+      (F * (1 - C.pinv * C)) rest
+    ⟨result.representative, result.homogeneous, (C * C.pinv * D = D) :: result.conditions⟩
+
+/-- **Equations (104)–(106)** of [benIsrael2003generalized], Chapter 5.
+The recurrence starts at the zero representative and the identity free map,
+and records the compatibility condition from each residual equation. -/
+noncomputable def commonSolutionRecurrence :
+    List (Matrix p q ℂ × Matrix p r ℂ) → CommonSolutionState q r :=
+  commonSolutionRecurrenceFrom 0 1
+
+private theorem commonSolutionStep_iff
+    (E X : Matrix q r ℂ) (F : Matrix q q ℂ)
+    (A : Matrix p q ℂ) (B : Matrix p r ℂ) :
+    let C := A * F
+    let D := B - A * E
+    ((∃ Z : Matrix q r ℂ, X = E + F * Z) ∧ A * X = B) ↔
+      C * C.pinv * D = D ∧
+        ∃ Z : Matrix q r ℂ, X = (E + F * C.pinv * D) + F * (1 - C.pinv * C) * Z := by
+  intro C D
+  have hzero : C * (1 - C.pinv * C) = 0 := by
+    rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, C.mul_pinv_mul_self, sub_self]
+  constructor
+  · rintro ⟨⟨Z, rfl⟩, h⟩
+    have hZ : C * Z = D := by
+      rw [Matrix.mul_add, ← Matrix.mul_assoc] at h
+      exact eq_sub_of_add_eq' h
+    have hD : C * C.pinv * D = D := by
+      rw [← hZ, ← Matrix.mul_assoc, C.mul_pinv_mul_self]
+    refine ⟨hD, Z, ?_⟩
+    have hSplit : C.pinv * D + (1 - C.pinv * C) * Z = Z := by
+      rw [← hZ, Matrix.sub_mul, Matrix.one_mul, Matrix.mul_assoc C.pinv C Z]
+      abel
+    conv_lhs => rw [← hSplit]
+    simp only [Matrix.mul_add, Matrix.mul_assoc, add_assoc]
+  · rintro ⟨hD, Z, rfl⟩
+    let Y := C.pinv * D + (1 - C.pinv * C) * Z
+    have hy : C * Y = D := by
+      simp only [Y, Matrix.mul_add, ← Matrix.mul_assoc, hD, hzero, Matrix.zero_mul, add_zero]
+    have he : (E + F * C.pinv * D) + F * (1 - C.pinv * C) * Z = E + F * Y := by
+      simp only [Y, Matrix.mul_add, Matrix.mul_assoc, add_assoc]
+    rw [he]
+    refine ⟨⟨Y, rfl⟩, ?_⟩
+    have hAy : A * (E + F * Y) = A * E + C * Y := by rw [Matrix.mul_add, Matrix.mul_assoc]
+    rw [hAy, hy]
+    simp [D]
+
+private theorem commonSolutionRecurrenceFrom_iff
+    (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) (E X : Matrix q r ℂ) (F : Matrix q q ℂ) :
+    let result := commonSolutionRecurrenceFrom E F eqs
+    ((∃ Z : Matrix q r ℂ, X = E + F * Z) ∧ ∀ pair ∈ eqs, pair.1 * X = pair.2) ↔
+      (∀ condition ∈ result.conditions, condition) ∧
+        ∃ Z : Matrix q r ℂ, X = result.representative + result.homogeneous * Z := by
+  induction eqs generalizing E F with
+  | nil => simp [commonSolutionRecurrenceFrom, and_comm]
+  | cons head eqs ih =>
+    obtain ⟨A, B⟩ := head
+    let C := A * F
+    let D := B - A * E
+    let E' := E + F * C.pinv * D
+    let F' := F * (1 - C.pinv * C)
+    let result := commonSolutionRecurrenceFrom E' F' eqs
+    have hStep := commonSolutionStep_iff E X F A B
+    have hTail := ih E' F'
+    simp only [commonSolutionRecurrenceFrom, List.forall_mem_cons]
+    constructor
+    · rintro ⟨he, hh, ht⟩
+      obtain ⟨hC, he'⟩ := hStep.mp ⟨he, hh⟩
+      obtain ⟨hCond, hs⟩ := hTail.mp ⟨he', ht⟩
+      exact ⟨⟨hC, hCond⟩, hs⟩
+    · rintro ⟨⟨hC, hCond⟩, hs⟩
+      obtain ⟨he', ht⟩ := hTail.mpr ⟨hCond, hs⟩
+      obtain ⟨he, hh⟩ := hStep.mpr ⟨hC, he'⟩
+      exact ⟨he, hh, ht⟩
+
+/-- **Exercise 22**, Equations (106)–(107) of [benIsrael2003generalized],
+Chapter 5. A common solution exists exactly when every residual is
+compatible. The recurrence then gives all common solutions. -/
+theorem exercise_22 (eqs : List (Matrix p q ℂ × Matrix p r ℂ)) :
+    let result := commonSolutionRecurrence eqs
+    ((∃ X, ∀ pair ∈ eqs, pair.1 * X = pair.2) ↔
+      ∀ condition ∈ result.conditions, condition) ∧
+      ((∀ condition ∈ result.conditions, condition) →
+        ∀ X, (∀ pair ∈ eqs, pair.1 * X = pair.2) ↔
+          ∃ Z : Matrix q r ℂ, X = result.representative + result.homogeneous * Z) := by
+  intro result
+  have he (X : Matrix q r ℂ) :
+      (∀ pair ∈ eqs, pair.1 * X = pair.2) ↔
+        (∀ c ∈ result.conditions, c) ∧
+          ∃ Z : Matrix q r ℂ, X = result.representative + result.homogeneous * Z := by
+    have hr := commonSolutionRecurrenceFrom_iff eqs 0 X (1 : Matrix q q ℂ)
+    simpa [commonSolutionRecurrence, result] using hr
+  constructor
+  · constructor
+    · rintro ⟨X, hX⟩
+      exact ((he X).mp hX).1
+    · intro hc
+      exact ⟨result.representative + result.homogeneous * 0,
+        (he _).mpr ⟨hc, 0, rfl⟩⟩
+  · intro hc X
+    exact (he X).trans (and_iff_right hc)
+
+end FiniteCommonSolutions
 
 end BenIsraelGreville.Chapter05

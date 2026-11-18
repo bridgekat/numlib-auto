@@ -46,42 +46,28 @@ source = "Ben-Israel and Greville, Chapter 5, Exercise 18"
 
 [[node]]
 id = "exercise_19"
-kind = "theorem"
-desc = '''The rows [1,1] and [1,2] have Moore–Penrose inverses [1,1]ᵀ/2 and [1,2]ᵀ/5. Their Gram sum produces the ordinary inverse [2,−1;−1,1] by the preceding exercise.'''
-source = "Ben-Israel and Greville, Chapter 5, Exercise 19"
-deps = ["exercise_18"]
+source = "Ben-Israel and Greville, Chapter 5, Exercise 19, corrected concatenated reciprocal factor"
 
 [[node]]
 id = "exercise_20"
-kind = "theorem"
-desc = '''For a nonsingular stacked matrix, K = A†A + B†B − I is Hermitian with operator norm below one. Obtain both ordinary inverse expansions from the Neumann series for I + K and I − K.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 20, Equations (96)–(101)"
-deps = ["exercise_18"]
 
 [[node]]
 id = "exercise_21"
-kind = "theorem"
-desc = '''Apply the two Neumann expansions of the previous exercise to the stacked right-hand side to obtain Equations (102) and (103).'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 21, Equations (102)–(103)"
-deps = ["exercise_20"]
 
 [[node]]
 id = "commonSolutionRecurrence"
-kind = "definition"
-desc = '''Define the recursive matrices Cₖ, Dₖ, Eₖ and Fₖ for a finite list of matrix equations, with initial E₀ = 0 and F₀ = I.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 22, Equation (105)"
 
 [[node]]
 id = "exercise_22"
-kind = "theorem"
-desc = '''The equations have a common solution iff CₖCₖ†Dₖ = Dₖ for every step of the recurrence. The solution set is Eₙ + FₙZ.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 22, Equations (104)–(107)"
-deps = ["commonSolutionRecurrence"]
 
 [[node]]
 id = "exercise_23"
 kind = "theorem"
-desc = '''For one-row inputs with independent first k rows, independence fails upon adjoining the next row iff Cₖ₊₁ vanishes.'''
+desc = '''For one-row inputs with independent first k rows, the enlarged family is independent iff Cₖ₊₁ is nonzero. The source has the opposite zero test.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 23"
 deps = ["commonSolutionRecurrence"]
 

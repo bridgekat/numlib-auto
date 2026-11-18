@@ -26,17 +26,11 @@ source = "Ben-Israel and Greville, Chapter 5, Exercise 25, Equations (117)–(11
 
 [[node]]
 id = "exercise_26"
-kind = "theorem"
-desc = '''For positive rank, the minimum of ‖Ax‖ over unit vectors in the range of Aᴴ and the maximum of ‖A†y‖ over unit target vectors are attained and have product one.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 26, Equations (119)–(121)"
-deps = ["exercise_25"]
 
 [[node]]
 id = "exercise_27"
-kind = "theorem"
-desc = '''For an invertible matrix [B C; D 0], the bottom right inverse block vanishes iff B has rank m + p − n. Express the other inverse blocks as the indicated generalized inverses with prescribed ranges and kernels.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 27, Equations (122)–(124)"
-deps = ["BenIsraelGreville.Chapter02.theorem_12"]
 
 [[node]]
 id = "exercise_28_a"
@@ -48,28 +42,16 @@ source = "Ben-Israel and Greville, Chapter 5, Exercise 28(b), Equation (126)"
 
 [[node]]
 id = "exercise_29_a"
-kind = "theorem"
-desc = '''For a positive-rank real matrix, adjoining orthonormal columns spanning ker Aᵀ gives a matrix of full row rank whose volume equals the volume of A.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 29(a)"
-deps = ["exercise_28_a"]
 
 [[node]]
 id = "exercise_29_b"
-kind = "theorem"
-desc = '''For a positive-rank real matrix, adjoining the transposes of orthonormal columns spanning ker A gives a matrix of full column rank whose volume equals the volume of A.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 29(b)"
-deps = ["exercise_28_b"]
 
 [[node]]
 id = "exercise_30_a"
-kind = "theorem"
-desc = '''The squared volume of a positive-rank real matrix equals the squared determinant of its orthonormally bordered matrix and the determinants of both Gram matrices augmented by the respective null-space projectors.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 30(a), Equations (127)–(130)"
-deps = ["exercise_29_a", "exercise_29_b"]
 
 [[node]]
 id = "exercise_30_b"
-kind = "theorem"
-desc = '''For a square positive-rank real matrix, the squared volume equals det(A + U₀V₀ᵀ)² for orthonormal bases U₀ and V₀ of ker Aᵀ and ker A.'''
 source = "Ben-Israel and Greville, Chapter 5, Exercise 30(b), Equation (131)"
-deps = ["exercise_30_a"]
