@@ -894,4 +894,532 @@ theorem theorem_6_12 {m r : ℕ} (B C : Matrix (Fin m) (Fin r) ℝ)
 
 end Volume
 
+/-- **Lemma 1(b)** of [benIsrael2003generalized], Chapter 6, fails if one
+allows the zero eigenvalue. In the complex plane the projection product
+for the lines through $(1,1)$ and $(1,0)$ has nonorthogonal eigenvectors
+$(1,1)$ and $(0,1)$ with eigenvalues $1/2$ and $0$. -/
+theorem lemma_6_1_orthogonality_counterexample :
+    ∃ (L M : Submodule ℂ (EuclideanSpace ℂ (Fin 2))) (x y : EuclideanSpace ℂ (Fin 2)),
+      L.starProjection (M.starProjection x) = (2 : ℂ)⁻¹ • x ∧
+        L.starProjection (M.starProjection y) = 0 ∧ inner ℂ x y ≠ 0 := by
+  let e := EuclideanSpace.basisFun (Fin 2) ℂ
+  let x := e 0 + e 1
+  let y := e 1
+  have hb := orthonormal_iff_ite.mp e.orthonormal
+  have hxy : inner ℂ x y = 1 := by
+    simp [x, y, inner_add_left, hb]
+  have hxx : inner ℂ x x = 2 := by
+    simp only [x, inner_add_left, inner_add_right, hb]
+    norm_num
+  have hw : inner ℂ x (e 0) = 1 := by
+    simp [x, inner_add_left, hb]
+  have hW : inner ℂ (e 0) x = 1 := by
+    simp [x, inner_add_right, hb]
+  have hz : inner ℂ (e 0) y = 0 := by
+    simp [y, hb]
+  refine ⟨ℂ ∙ x, ℂ ∙ e 0, x, y, ?_, ?_, hxy.trans_ne one_ne_zero⟩
+  · rw [Submodule.starProjection_unit_singleton ℂ (e.norm_eq_one 0),
+      hW, one_smul, Submodule.starProjection_singleton, hw]
+    have hn : ‖x‖ ^ 2 = 2 := by
+      rw [← inner_self_eq_norm_sq (𝕜 := ℂ), hxx]
+      norm_num
+    rw [hn, RCLike.ofReal_ofNat, one_div]
+  · rw [Submodule.starProjection_unit_singleton ℂ (e.norm_eq_one 0), hz, zero_smul, map_zero]
+
+section BasicInclination
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [FiniteDimensional 𝕜 E]
+
+/-- **Theorem 8(b)** of [benIsrael2003generalized], Chapter 6.
+The coefficient of the two reciprocal eigenvector lines equals the
+nonzero eigenvalue of the product of the projections. -/
+theorem reciprocal_coefficient_of_eigenvector {L M : Submodule 𝕜 E} {x : E} {μ : 𝕜}
+    (hx : x ≠ 0) (hμ : μ ≠ 0) (h : L.starProjection (M.starProjection x) = μ • x) :
+    inclinationCoefficient (𝕜 ∙ x) (𝕜 ∙ M.starProjection x) = μ := by
+  rw [inclinationCoefficient_span_singleton]
+  apply smul_left_injective 𝕜 hx
+  exact (theorem_6_8_of_reciprocal (theorem_6_8_of_eigenvector hx hμ h).1).1.symm.trans h
+
+omit [FiniteDimensional 𝕜 E] in
+private theorem opNorm_eq_sSup_relative_norm {F : Type*} [NormedAddCommGroup F]
+    [NormedSpace 𝕜 F] (T : E →L[𝕜] F) :
+    ‖T‖ = sSup {r : ℝ | ∃ x : E, x ≠ 0 ∧ r = ‖T x‖ / ‖x‖} := by
+  let S := {r : ℝ | ∃ x : E, x ≠ 0 ∧ r = ‖T x‖ / ‖x‖}
+  have hb : ∀ x : E, x ≠ 0 → ‖T x‖ / ‖x‖ ≤ ‖T‖ := fun x hx =>
+    (div_le_iff₀ (norm_pos_iff.mpr hx)).mpr (T.le_opNorm x)
+  have hbd : BddAbove S := ⟨‖T‖, by rintro r ⟨x, hx, rfl⟩; exact hb x hx⟩
+  by_cases hS : S.Nonempty
+  · refine le_antisymm ?_ (csSup_le hS (by rintro r ⟨x, hx, rfl⟩; exact hb x hx))
+    obtain ⟨r, x, hx, rfl⟩ := hS
+    apply T.opNorm_le_bound ((div_nonneg (norm_nonneg _) (norm_nonneg _)).trans
+      (le_csSup hbd ⟨x, hx, rfl⟩))
+    intro y
+    by_cases hy : y = 0
+    · simp [hy]
+    · exact (div_le_iff₀ (norm_pos_iff.mpr hy)).mp (le_csSup hbd ⟨y, hy, rfl⟩)
+  · have hzero : T = 0 := by
+      ext y
+      have hy : y = 0 := by
+        by_contra hn
+        exact hS ⟨_, y, hn, rfl⟩
+      simp [hy]
+    change ‖T‖ = sSup S
+    rw [Set.not_nonempty_iff_eq_empty.mp hS, Real.sSup_empty, hzero, norm_zero]
+
+/-- **Equation (112b)** of [benIsrael2003generalized], Chapter 6.
+The projection distance is the supremum of the relative displacement
+under the difference of the two orthogonal projections. -/
+theorem subspaceDistance_eq_sup_norm_div (L M : Submodule 𝕜 E) :
+    subspaceDistance L M =
+      sSup {r : ℝ | ∃ x : E, x ≠ 0 ∧
+        r = ‖L.starProjection x - M.starProjection x‖ / ‖x‖} :=
+  opNorm_eq_sSup_relative_norm (L.starProjection - M.starProjection)
+
+/-- **Equation (114)** of [benIsrael2003generalized], Chapter 6.
+For totally inclined subspaces, the projection distance is the supremum
+of the relative residual over vectors in the first subspace. -/
+theorem subspaceDistance_eq_one_sided (L M : Submodule 𝕜 E) (h : TotallyInclined L M) :
+    subspaceDistance L M =
+      sSup {r : ℝ | ∃ x : E, x ∈ L ∧ x ≠ 0 ∧ r = ‖x - M.starProjection x‖ / ‖x‖} := by
+  obtain ⟨hl, hm⟩ := (exercise_6_68 L M).2.mp h
+  let T := Mᗮ.starProjection ∘L L.subtypeL
+  let S := Mᗮ.starProjection * L.starProjection
+  have he : ‖S‖ = ‖T‖ := by
+    refine le_antisymm ?_ ?_
+    · apply ContinuousLinearMap.opNorm_le_bound S (norm_nonneg T)
+      intro x
+      change ‖T (L.orthogonalProjectionOnto x)‖ ≤ ‖T‖ * ‖x‖
+      exact (T.le_opNorm _).trans (mul_le_mul_of_nonneg_left
+        (L.norm_orthogonalProjectionOnto_apply_le x) (norm_nonneg T))
+    · apply ContinuousLinearMap.opNorm_le_bound T (norm_nonneg S)
+      intro x
+      have hs := S.le_opNorm (x : E)
+      change ‖Mᗮ.starProjection (L.starProjection (x : E))‖ ≤ ‖S‖ * ‖(x : E)‖ at hs
+      rwa [L.starProjection_eq_self_iff.mpr x.property] at hs
+  change L.gap M = _
+  rw [L.gap_eq_norm_orthogonal_mul_of_finrank_eq M (hl.trans hm.symm), show ‖S‖ = _ from he,
+    opNorm_eq_sSup_relative_norm]
+  congr 1
+  ext r
+  constructor
+  · rintro ⟨x, hx, rfl⟩
+    refine ⟨x, x.property, fun h => hx (Subtype.ext h), ?_⟩
+    simp [T, Submodule.starProjection_orthogonal_val]
+  · rintro ⟨x, hxl, hx, rfl⟩
+    refine ⟨⟨x, hxl⟩, fun h => hx (congrArg Subtype.val h), ?_⟩
+    simp [T, Submodule.starProjection_orthogonal_val]
+
+/-- **Equations (115a)–(115b)** of [benIsrael2003generalized], Chapter 6.
+The squares of the two principal-angle products sum to at most one
+whenever the list is nonempty. -/
+theorem principal_products_sq_add_le_one (L M : Submodule 𝕜 E)
+    (h : 0 < min (finrank 𝕜 L) (finrank 𝕜 M)) :
+    principalSineProduct L M ^ 2 + principalCosineProduct L M ^ 2 ≤ 1 := by
+  let S := Finset.range (min (finrank 𝕜 L) (finrank 𝕜 M))
+  have h0 : ({0} : Finset ℕ) ⊆ S := Finset.singleton_subset_iff.mpr (Finset.mem_range.mpr h)
+  have hs (i : ℕ) : 0 ≤ Real.sin (principalAngle L M i) :=
+    Real.sin_nonneg_of_nonneg_of_le_pi (L.principalAngle_mem_Icc M i).1
+      ((L.principalAngle_mem_Icc M i).2.trans (by linarith [Real.pi_pos]))
+  have hS : principalSineProduct L M ≤ Real.sin (principalAngle L M 0) := by
+    simpa only [principalSineProduct, Finset.prod_singleton] using
+      (Finset.prod_le_prod_of_subset_of_le_one₀ (f := fun i => Real.sin (principalAngle L M i))
+        h0 (fun i _ => hs i) (fun i _ _ => Real.sin_le_one _))
+  have hC : principalCosineProduct L M ≤ L.cosPrincipalAngle M 0 := by
+    simpa only [principalCosineProduct, Finset.prod_singleton] using
+      (Finset.prod_le_prod_of_subset_of_le_one₀ (f := L.cosPrincipalAngle M)
+        h0 (fun i _ => L.cosPrincipalAngle_nonneg M i) (fun i _ _ => L.cosPrincipalAngle_le_one M i))
+  have hc : Real.cos (principalAngle L M 0) = L.cosPrincipalAngle M 0 :=
+    Real.cos_arccos (by linarith [L.cosPrincipalAngle_nonneg M 0]) (L.cosPrincipalAngle_le_one M 0)
+  have hs2 := pow_le_pow_left₀
+    (show 0 ≤ principalSineProduct L M from Finset.prod_nonneg fun i _ => hs i) hS 2
+  have hc2 := pow_le_pow_left₀
+    (show 0 ≤ principalCosineProduct L M from Finset.prod_nonneg fun i _ =>
+      L.cosPrincipalAngle_nonneg M i) hC 2
+  rw [← hc] at hc2
+  exact (add_le_add hs2 hc2).trans_eq (Real.sin_sq_add_cos_sq _)
+
+end BasicInclination
+
+open Matrix Module Chapter00
+
+/-- **Equations (121)–(122)** of [benIsrael2003generalized], Chapter 6.
+The coordinate subspace for an index set consists of the vectors
+supported on that set. -/
+def coordinateSubspace {m : ℕ} (I : Set (Fin m)) : Submodule ℝ (EuclideanSpace ℝ (Fin m)) where
+  carrier := {x | ∀ i ∉ I, x i = 0}
+  zero_mem' := fun _ _ => rfl
+  add_mem' := fun hx hy i hi => by
+    simp only [WithLp.ofLp_add, Pi.add_apply, hx i hi, hy i hi, add_zero]
+  smul_mem' := fun a _ hx i hi => by
+    simp only [WithLp.ofLp_smul, Pi.smul_apply, smul_eq_mul, hx i hi, mul_zero]
+
+private def coordinateColumns {m r : ℕ} (I : IndexSequence r m) : Matrix (Fin m) (Fin r) ℝ :=
+  Matrix.of fun i j => if i = I j then 1 else 0
+
+private theorem coordinateColumns_cross {m r q : ℕ} (I : IndexSequence r m)
+    (C : Matrix (Fin m) (Fin q) ℝ) :
+    (coordinateColumns I)ᵀ * C = C.submatrix I id := by
+  ext i j
+  rw [Matrix.mul_apply, Finset.sum_eq_single (I i)]
+  · simp [coordinateColumns]
+  · intro k _ hk
+    simp [coordinateColumns, hk]
+  · simp
+
+private theorem coordinateColumns_gram {m r : ℕ} (I : IndexSequence r m) :
+    (coordinateColumns I)ᵀ * coordinateColumns I = 1 := by
+  rw [coordinateColumns_cross]
+  ext i j
+  simp [coordinateColumns, Matrix.one_apply, I.injective.eq_iff]
+
+private theorem coordinateColumns_range {m r : ℕ} (I : IndexSequence r m) :
+    (toEuclideanLin (coordinateColumns I)).range = coordinateSubspace (Set.range I) := by
+  ext x
+  constructor
+  · rintro ⟨y, rfl⟩ i hi
+    change ((coordinateColumns I) *ᵥ WithLp.ofLp y) i = 0
+    rw [mulVec_apply_eq_sum]
+    apply Finset.sum_eq_zero
+    intro j _
+    simp [coordinateColumns, show i ≠ I j from fun he => hi ⟨j, he.symm⟩]
+  · intro hx
+    let y : EuclideanSpace ℝ (Fin r) := WithLp.toLp 2 (fun j => x (I j))
+    refine ⟨y, ?_⟩
+    ext i
+    change ((coordinateColumns I) *ᵥ fun j => x (I j)) i = x i
+    by_cases hi : i ∈ Set.range I
+    · obtain ⟨j, rfl⟩ := hi
+      rw [mulVec_apply_eq_sum, Finset.sum_eq_single j]
+      · simp [coordinateColumns]
+      · intro k _ hk
+        simp [coordinateColumns, show I j ≠ I k from fun h => hk (I.injective h).symm]
+      · simp
+    · rw [mulVec_apply_eq_sum]
+      refine (Finset.sum_eq_zero fun j _ => ?_).trans ((hx i hi).symm)
+      simp [coordinateColumns, show i ≠ I j from fun he => hi ⟨j, he.symm⟩]
+
+private theorem matrixVolume_pos_of_fullColumn {m r : ℕ} {A : Matrix (Fin m) (Fin r) ℝ}
+    (hA : A.rank = r) (hr : r ≠ 0) : 0 < matrixVolume A := by
+  have hdet : (Aᵀ * A).det ≠ 0 := by
+    apply isUnit_iff_ne_zero.mp
+    apply (isUnit_iff_isUnit_det _).mp
+    apply isUnit_of_rank_eq_card
+    rw [← conjTranspose_eq_transpose_of_trivial, rank_conjTranspose_mul_self, hA, Fintype.card_fin]
+  have hsq := matrixVolume_sq_eq_det_transpose_mul A hA hr
+  exact lt_of_le_of_ne (matrixVolume_nonneg A) (Ne.symm fun h => hdet (by simp [← hsq, h]))
+
+private theorem principalCosineProduct_comm {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
+    [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] (L M : Submodule 𝕜 E) :
+    principalCosineProduct L M = principalCosineProduct M L := by
+  rw [principalCosineProduct, principalCosineProduct, min_comm, L.cosPrincipalAngle_comm M]
+
+/-- **Exercise 71**, Equation (123), of [benIsrael2003generalized], Chapter 6.
+For any full-column-rank basis matrix the principal cosine product with
+a coordinate subspace is the absolute selected minor divided by the
+volume of the basis matrix. -/
+theorem exercise_6_71_basis {m r : ℕ} (B : Matrix (Fin m) (Fin r) ℝ)
+    (hB : B.rank = r) (hr : r ≠ 0) (I : IndexSequence r m) :
+    principalCosineProduct (toEuclideanLin B).range (coordinateSubspace (Set.range I)) =
+      |(B.submatrix I id).det| / matrixVolume B := by
+  let Q := coordinateColumns I
+  have hQ : Q.rank = r := by
+    rw [← rank_conjTranspose_mul_self (A := Q), conjTranspose_eq_transpose_of_trivial,
+      coordinateColumns_gram, rank_one, Fintype.card_fin]
+  have hQvol : matrixVolume Q = 1 := by
+    apply (pow_left_inj₀ (matrixVolume_nonneg Q) zero_le_one two_ne_zero).mp
+    rw [matrixVolume_sq_eq_det_transpose_mul Q hQ hr, coordinateColumns_gram, det_one, one_pow]
+  have h := theorem_6_12 Q B hQ hB hr
+  rw [coordinateColumns_cross, hQvol, one_mul, coordinateColumns_range, principalCosineProduct_comm] at h
+  exact (eq_div_iff (matrixVolume_pos_of_fullColumn hB hr).ne').mpr (by linarith [h])
+
+/-- **Exercise 71**, Equation (123), of [benIsrael2003generalized], Chapter 6.
+Every column selection spanning the range gives the same normalized
+minor and hence the same principal cosine product. -/
+theorem exercise_6_71 {m n r : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
+    (hA : A.rank = r) (hr : r ≠ 0) (I : IndexSequence r m) (J : IndexSequence r n)
+    (hJ : (A.submatrix id J).rank = r) :
+    principalCosineProduct (toEuclideanLin A).range (coordinateSubspace (Set.range I)) =
+      |(A.submatrix I J).det| / matrixVolume (A.submatrix id J) := by
+  let B := A.submatrix id J
+  have hR : (toEuclideanLin B).range = (toEuclideanLin A).range := by
+    apply Submodule.eq_of_le_of_finrank_le
+    · rw [range_toEuclideanLin_eq_span_col, range_toEuclideanLin_eq_span_col]
+      apply Submodule.span_mono
+      rintro _ ⟨j, rfl⟩
+      exact ⟨J j, rfl⟩
+    · rw [finrank_range_toEuclideanLin, finrank_range_toEuclideanLin, hA, hJ]
+  rw [← hR]
+  exact exercise_6_71_basis B hJ hr I
+
+/-- **Exercise 73** of [benIsrael2003generalized], Chapter 6, in full-column
+coordinates. The sum of squared principal cosine products with all
+coordinate subspaces of the same dimension equals one. -/
+theorem exercise_6_73_basis {m r : ℕ} (B : Matrix (Fin m) (Fin r) ℝ)
+    (hB : B.rank = r) (hr : r ≠ 0) :
+    (∑ I : IndexSequence r m,
+      principalCosineProduct (toEuclideanLin B).range (coordinateSubspace (Set.range I)) ^ 2) = 1 := by
+  classical
+  let : Unique (IndexSequence r r) :=
+    ⟨⟨(OrderIso.refl (Fin r)).toOrderEmbedding⟩, indexSequence_self_unique⟩
+  have hv := matrixVolume_eq_sqrt_sum_minors B hB hr
+  simp only [Fintype.sum_unique] at hv
+  change matrixVolume B = Real.sqrt (∑ I : IndexSequence r m, (B.submatrix I id).det ^ 2) at hv
+  have hs : matrixVolume B ^ 2 = ∑ I : IndexSequence r m, (B.submatrix I id).det ^ 2 := by
+    rw [hv, Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+  simp only [exercise_6_71_basis B hB hr, div_pow, sq_abs, ← Finset.sum_div, ← hs,
+    div_self (pow_ne_zero 2 (matrixVolume_pos_of_fullColumn hB hr).ne')]
+
+section ReciprocalSpectrumResults
+
+open Module Module.End LinearMap
+
+section ProjectionSpectrum
+
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+  [FiniteDimensional 𝕜 E]
+
+private theorem projectionProduct_restrict_eq_gram (L M : Submodule 𝕜 E) (x : L) :
+    (((LinearMap.adjoint (M.orthogonalProjectionRestrict L) ∘ₗ
+      M.orthogonalProjectionRestrict L) x : L) : E) =
+      L.starProjection (M.starProjection (x : E)) := by
+  rw [Submodule.orthogonalProjectionRestrict_adjoint]
+  rfl
+
+/-- **Lemma 1(e)** of [benIsrael2003generalized], Chapter 6.
+The nonzero spectrum of a projection product consists of the positive
+squared principal cosines. The ambient zero spectrum can have further
+multiplicity. -/
+theorem projectionProduct_hasEigenvalue_iff_square_cosine (L M : Submodule 𝕜 E)
+    {μ : 𝕜} (hμ : μ ≠ 0) :
+    HasEigenvalue (L.starProjection ∘L M.starProjection).toLinearMap μ ↔
+      ∃ i : ℕ, μ = ((L.cosPrincipalAngle M i ^ 2 : ℝ) : 𝕜) := by
+  let T := M.orthogonalProjectionRestrict L
+  let S := LinearMap.adjoint T ∘ₗ T
+  have hT (i : ℕ) : T.singularValues i = L.cosPrincipalAngle M i := by
+    change M.cosPrincipalAngle L i = L.cosPrincipalAngle M i
+    exact congrFun (M.cosPrincipalAngle_comm L) i
+  have hcomp (x : L) : (S x : E) = L.starProjection (M.starProjection (x : E)) :=
+    projectionProduct_restrict_eq_gram L M x
+  constructor
+  · intro h
+    obtain ⟨x, hEig, hx⟩ := h.exists_hasEigenvector
+    have hEq : L.starProjection (M.starProjection x) = μ • x :=
+      Module.End.mem_eigenspace_iff.mp hEig
+    have hL : x ∈ L := by
+      have hm : μ • x ∈ L := hEq ▸ L.starProjection_apply_mem _
+      simpa only [smul_smul, inv_mul_cancel₀ hμ, one_smul] using L.smul_mem μ⁻¹ hm
+    let y : L := ⟨x, hL⟩
+    have hSy : S y = μ • y := Subtype.ext ((hcomp y).trans hEq)
+    have hS : HasEigenvalue S μ := hasEigenvalue_of_hasEigenvector
+      (show HasEigenvector S μ y from
+        ⟨Module.End.mem_eigenspace_iff.mpr hSy, fun h0 => hx (congrArg Subtype.val h0)⟩)
+    obtain ⟨i, hi⟩ := T.isSymmetric_adjoint_comp_self.exists_eigenvalues_eq rfl hS
+    refine ⟨i, ?_⟩
+    rw [← hT, T.sq_singularValues_fin rfl i]
+    exact hi.symm
+  · rintro ⟨i, hi⟩
+    have hnz : T.singularValues i ≠ 0 := by
+      intro hz
+      apply hμ
+      rw [hi, ← hT i, hz]
+      simp
+    have hi' : i < finrank 𝕜 L := by
+      by_contra! h
+      exact hnz (T.singularValues_of_finrank_le h)
+    rw [hi, ← hT i]
+    have hS : HasEigenvalue S ((T.singularValues i ^ 2 : ℝ) : 𝕜) := by
+      simpa only [RCLike.ofReal_pow, S] using T.hasEigenvalue_adjoint_comp_self_sq_singularValues hi'
+    obtain ⟨y, hy, hy0⟩ := hS.exists_hasEigenvector
+    have hEq := (hcomp y).symm.trans
+      (congrArg Subtype.val (Module.End.mem_eigenspace_iff.mp hy))
+    exact hasEigenvalue_of_hasEigenvector
+      (show HasEigenvector (L.starProjection ∘L M.starProjection).toLinearMap
+        ((T.singularValues i ^ 2 : ℝ) : 𝕜) (y : E) from
+        ⟨Module.End.mem_eigenspace_iff.mpr hEq, fun h0 => hy0 (Subtype.ext h0)⟩)
+
+end ProjectionSpectrum
+
+open Matrix in
+/-- **Lemma 1(e)** of [benIsrael2003generalized], Chapter 6, in coordinates.
+The nonzero eigenvalues of the orthogonal projection product are the
+squares of the positive singular values of the cross Gram of the two
+orthonormal basis matrices. -/
+theorem lemma_6_1_nonzero_eigenvalues {𝕜 m p q : Type*} [RCLike 𝕜] [Fintype m]
+    [Fintype p] [DecidableEq p] [Fintype q] [DecidableEq q]
+    {Q : Matrix m p 𝕜} {Z : Matrix m q 𝕜} (hQ : Qᴴ * Q = 1) (hZ : Zᴴ * Z = 1)
+    {μ : 𝕜} (hμ : μ ≠ 0) :
+    let L := (toEuclideanLin Q).range
+    let M := (toEuclideanLin Z).range
+    HasEigenvalue (L.starProjection ∘L M.starProjection).toLinearMap μ ↔
+      ∃ i : ℕ, μ = (((Qᴴ * Z).sortedSingularValues i ^ 2 : ℝ) : 𝕜) := by
+  dsimp only
+  rw [projectionProduct_hasEigenvalue_iff_square_cosine _ _ hμ]
+  simp only [lemma_6_2 hQ hZ]
+
+/-- **Section 5**, after Equation (108), of [benIsrael2003generalized], Chapter 6.
+The two projected images have bases of reciprocal vectors, paired by
+projection, and the associated eigenvalues are the squared positive
+principal cosines. -/
+theorem projectedSubspaces_reciprocal_basis {𝕜 E : Type*}
+    [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E]
+    (L M : Submodule 𝕜 E) :
+    let r := inclinationDimension L M
+    ∃ f g : Fin r → E,
+      LinearIndependent 𝕜 f ∧ LinearIndependent 𝕜 g ∧
+      Submodule.span 𝕜 (Set.range f) = M.map L.starProjection.toLinearMap ∧
+      Submodule.span 𝕜 (Set.range g) = L.map M.starProjection.toLinearMap ∧
+      ∀ i : Fin r, let c : 𝕜 := ((L.cosPrincipalAngle M i ^ 2 : ℝ) : 𝕜)
+        c ≠ 0 ∧ g i = M.starProjection (f i) ∧ AreReciprocalVectors L M (f i) (g i) ∧
+        L.starProjection (M.starProjection (f i)) = c • f i ∧
+        M.starProjection (L.starProjection (g i)) = c • g i := by
+  let r := inclinationDimension L M
+  let T := M.orthogonalProjectionRestrict L
+  let P := M.map L.starProjection.toLinearMap
+  let Q := L.map M.starProjection.toLinearMap
+  have hmap : T.range.map M.subtype = Q := by
+    ext z
+    constructor
+    · rintro ⟨y, ⟨x, rfl⟩, rfl⟩
+      exact ⟨x, x.property, rfl⟩
+    · rintro ⟨x, hx, rfl⟩
+      exact ⟨T ⟨x, hx⟩, ⟨⟨x, hx⟩, rfl⟩, rfl⟩
+  obtain ⟨hP, hQ⟩ := projectedSubspaces_finrank L M
+  have hT : finrank 𝕜 T.range = r := by
+    rw [← Submodule.finrank_map_subtype_eq M T.range, hmap]
+    exact hQ
+  have hr : r ≤ finrank 𝕜 L := hT ▸ T.finrank_range_le
+  let ι : Fin r ↪ Fin (finrank 𝕜 L) := ⟨Fin.castLE hr, Fin.castLE_injective hr⟩
+  let b := T.isSymmetric_adjoint_comp_self.eigenvectorBasis rfl
+  let f : Fin r → E := fun i => (b (ι i) : E)
+  let g : Fin r → E := fun i => M.starProjection (f i)
+  let c : Fin r → 𝕜 := fun i => ((L.cosPrincipalAngle M i ^ 2 : ℝ) : 𝕜)
+  have hpre (i : Fin r) : T.singularValues i = L.cosPrincipalAngle M i := by
+    exact congrFun (M.cosPrincipalAngle_comm L) i
+  have hc (i : Fin r) : c i ≠ 0 := by
+    have hlt : (i : ℕ) < finrank 𝕜 T.range := by rw [hT]; exact i.isLt
+    have hpos := T.singularValues_pos_iff_lt_finrank_range.mpr hlt
+    rw [hpre i] at hpos
+    exact RCLike.ofReal_ne_zero.mpr (pow_ne_zero 2 (ne_of_gt hpos))
+  have he (i : Fin r) : L.starProjection (M.starProjection (f i)) = c i • f i := by
+    rw [← projectionProduct_restrict_eq_gram L M]
+    change (((LinearMap.adjoint T ∘ₗ T) (b (ι i)) : L) : E) = _
+    rw [T.isSymmetric_adjoint_comp_self.apply_eigenvectorBasis, ← T.sq_singularValues_fin]
+    change ((T.singularValues i ^ 2 : ℝ) : 𝕜) • f i = _
+    rw [hpre]
+  have hf : LinearIndependent 𝕜 f :=
+    ((b.orthonormal.comp ι ι.injective).comp_linearIsometry L.subtypeₗᵢ).linearIndependent
+  have hg : LinearIndependent 𝕜 g := by
+    apply LinearIndependent.of_comp L.starProjection.toLinearMap
+    convert hf.units_smul (fun i => Units.mk0 (c i) (hc i)) using 1
+    funext i
+    exact he i
+  have hfP (i : Fin r) : f i ∈ P := by
+    have hmem : c i • f i ∈ P := by
+      rw [← he i]
+      exact ⟨g i, M.starProjection_apply_mem _, rfl⟩
+    have h := P.smul_mem (c i)⁻¹ hmem
+    rwa [smul_smul, inv_mul_cancel₀ (hc i), one_smul] at h
+  have hgQ (i : Fin r) : g i ∈ Q := ⟨f i, (b (ι i)).property, rfl⟩
+  have hSpanF : Submodule.span 𝕜 (Set.range f) = P :=
+    Submodule.eq_of_le_of_finrank_le
+      (Submodule.span_le.mpr (Set.range_subset_iff.mpr hfP))
+      (by rw [finrank_span_eq_card hf, Fintype.card_fin]; exact hP.le)
+  have hSpanG : Submodule.span 𝕜 (Set.range g) = Q :=
+    Submodule.eq_of_le_of_finrank_le
+      (Submodule.span_le.mpr (Set.range_subset_iff.mpr hgQ))
+      (by rw [finrank_span_eq_card hg, Fintype.card_fin]; exact hQ.le)
+  refine ⟨f, g, hf, hg, hSpanF, hSpanG, fun i => ?_⟩
+  have hrvec := theorem_6_8_of_eigenvector (hf.ne_zero i) (hc i) (he i)
+  exact ⟨hc i, rfl, hrvec.1, he i, hrvec.2⟩
+
+end ReciprocalSpectrumResults
+
+open Module Matrix Chapter00
+
+/-- **Equation (116)** of [benIsrael2003generalized], Chapter 6.
+Adjoining a nonzero vector multiplies the full-column-degree volume by
+the vector norm and the sine of its angle to the span of the old columns. -/
+theorem volume_adjoin_vector_principalAngle {m p : ℕ} (B : Matrix (Fin m) (Fin p) ℝ)
+    (hB : B.rank = p) (hp : 0 < p) (x : EuclideanSpace ℝ (Fin m)) (hx : x ≠ 0) :
+    let X := replicateCol (Fin 1) (WithLp.ofLp x)
+    let L := (toEuclideanLin B).range
+    kVolume (p + 1) ((fromCols B X).submatrix id finSumFinEquiv.symm) =
+      matrixVolume B * ‖x‖ * Real.sin (L.angle x) := by
+  let X := replicateCol (Fin 1) (WithLp.ofLp x)
+  let L := (toEuclideanLin B).range
+  have hXR : (toEuclideanLin X).range = ℝ ∙ x :=
+    range_toEuclideanLin_replicateCol (WithLp.ofLp x)
+  have hX : X.rank = 1 := by
+    rw [← finrank_range_toEuclideanLin, hXR, finrank_span_singleton hx]
+  have hvol : matrixVolume X = ‖x‖ := by
+    apply (pow_left_inj₀ (matrixVolume_nonneg X) (norm_nonneg _) two_ne_zero).mp
+    rw [matrixVolume_sq_eq_det_transpose_mul X hX one_ne_zero, det_unique, EuclideanSpace.norm_sq_eq]
+    simp only [X, Matrix.mul_apply, Matrix.transpose_apply, replicateCol_apply, pow_two,
+      Real.norm_eq_abs, abs_mul_abs_self]
+  have hAngle : principalSineProduct L (toEuclideanLin X).range = Real.sin (L.angle x) := by
+    unfold principalSineProduct
+    rw [show finrank ℝ L = p from (finrank_range_toEuclideanLin B).trans hB,
+      finrank_range_toEuclideanLin, hX, min_eq_right hp, Finset.prod_range_one,
+      principalAngle, hXR, L.principalAngle_span_singleton_zero hx]
+  change kVolume (p + 1) ((fromCols B X).submatrix id finSumFinEquiv.symm) = _
+  rw [lemma_6_4 B X hB hX hp.ne' one_ne_zero, hvol, hAngle]
+
+private theorem kVolume_square_eq_abs_det {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (hn : n ≠ 0) :
+    kVolume n A = |A.det| := by
+  by_cases hu : IsUnit A
+  · have hRank : A.rank = n := (rank_of_isUnit A hu).trans (Fintype.card_fin n)
+    rw [kVolume_eq_matrixVolume A hRank hn]
+    apply (pow_left_inj₀ (matrixVolume_nonneg _) (abs_nonneg _) two_ne_zero).mp
+    rw [matrixVolume_sq_eq_det_transpose_mul A hRank hn, det_mul, det_transpose, sq_abs, pow_two]
+  · have hDef : A.rank < n := lt_of_le_of_ne A.rank_le_width (fun he =>
+      hu (isUnit_of_rank_eq_card (he.trans (Fintype.card_fin n).symm)))
+    have hdet : A.det = 0 := by
+      by_contra h
+      exact hu ((isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr h))
+    simp [kVolume, hDef, hdet]
+
+/-- **Exercise 70** of [benIsrael2003generalized], Chapter 6.
+The absolute determinant of a two-block square column concatenation
+equals the two block volumes times the product of their principal sines.
+Deficient blocks contribute zero in their full column degree. -/
+theorem exercise_6_70 {p q : ℕ} (B : Matrix (Fin (p + q)) (Fin p) ℝ)
+    (C : Matrix (Fin (p + q)) (Fin q) ℝ) (hp : p ≠ 0) (hq : q ≠ 0) :
+    |((fromCols B C).submatrix id finSumFinEquiv.symm).det| =
+      kVolume p B * kVolume q C *
+        principalSineProduct (toEuclideanLin B).range (toEuclideanLin C).range := by
+  let A := (fromCols B C).submatrix id finSumFinEquiv.symm
+  have hBlock (hA : IsUnit A) : B.rank = p ∧ C.rank = q := by
+    have hLI := linearIndependent_cols_of_isUnit hA
+    have hLeft := hLI.comp (fun i => finSumFinEquiv (Sum.inl i))
+      (finSumFinEquiv.injective.comp Sum.inl_injective)
+    have hRight := hLI.comp (fun i => finSumFinEquiv (Sum.inr i))
+      (finSumFinEquiv.injective.comp Sum.inr_injective)
+    have hL : LinearIndependent ℝ B.col := by
+      convert hLeft using 1
+      funext i j
+      simp [A, col_apply]
+    have hR : LinearIndependent ℝ C.col := by
+      convert hRight using 1
+      funext i j
+      simp [A, col_apply]
+    exact ⟨by rw [rank_eq_finrank_span_cols, finrank_span_eq_card hL, Fintype.card_fin],
+      by rw [rank_eq_finrank_span_cols, finrank_span_eq_card hR, Fintype.card_fin]⟩
+  change |A.det| = _
+  by_cases hB : B.rank = p
+  · by_cases hC : C.rank = q
+    · rw [← kVolume_square_eq_abs_det A (by omega), kVolume_eq_matrixVolume B hB hp,
+        kVolume_eq_matrixVolume C hC hq]
+      exact lemma_6_4 B C hB hC hp hq
+    · have hDef : C.rank < q := lt_of_le_of_ne C.rank_le_width hC
+      have hz : A.det = 0 := by
+        by_contra hz
+        exact hC (hBlock ((isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hz))).2
+      simp [kVolume, hDef, hz]
+  · have hDef : B.rank < p := lt_of_le_of_ne B.rank_le_width hB
+    have hz : A.det = 0 := by
+      by_contra hz
+      exact hB (hBlock ((isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hz))).1
+    simp [kVolume, hDef, hz]
+
 end BenIsraelGreville.Chapter06

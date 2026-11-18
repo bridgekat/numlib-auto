@@ -166,78 +166,46 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 69'
 
 [[node]]
 id = "lemma_6_1_orthogonality_counterexample"
-kind = "theorem"
-desc = '''A zero eigenvector of the projection product can fail to be orthogonal to its nonzero eigenvector.'''
-deps = ["lemma_6_1_orthogonal"]
 source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(b), counterexample at zero'
 
 [[node]]
 id = "lemma_6_1_nonzero_eigenvalues"
-kind = "theorem"
-desc = '''The nonzero eigenvalues of the product are the squared positive singular values of the cross Gram matrix. Zero eigenvalue multiplicities depend on the ambient dimension.'''
-deps = ["lemma_6_1_spectrum","lemma_6_2"]
 source = 'Ben-Israel and Greville, Chapter 6, Lemma 1(e)'
 
 [[node]]
 id = "reciprocal_coefficient_of_eigenvector"
-kind = "theorem"
-desc = '''The reciprocal partner of an eigenvector at a nonzero eigenvalue has inclination coefficient equal to that eigenvalue.'''
-deps = ["theorem_6_8_of_reciprocal","theorem_6_8_of_eigenvector"]
 source = 'Ben-Israel and Greville, Chapter 6, Theorem 8(b), eigenvalue identification'
 
 [[node]]
 id = "projectedSubspaces_reciprocal_basis"
-kind = "theorem"
-desc = '''The projected images have bases of reciprocal eigenvector pairs at the positive squared cosines.'''
-deps = ["theorem_6_8_of_eigenvector","projectedSubspaces_finrank","lemma_6_1_nonzero_eigenvalues"]
 source = 'Ben-Israel and Greville, Chapter 6, §5, after equation (108)'
 
 [[node]]
 id = "subspaceDistance_eq_sup_norm_div"
-kind = "theorem"
-desc = '''The projection distance is the supremum of the ratio of the image norm to the original norm over nonzero vectors.'''
-deps = ["subspaceDistance"]
 source = 'Ben-Israel and Greville, Chapter 6, equation (112b)'
 
 [[node]]
 id = "subspaceDistance_eq_one_sided"
-kind = "theorem"
-desc = '''For totally inclined subspaces the distance is the supremum of relative orthogonal residuals on the first subspace.'''
-deps = ["exercise_6_68","subspaceDistance_eq_sup_norm_div"]
 source = 'Ben-Israel and Greville, Chapter 6, equation (114)'
 
 [[node]]
 id = "principal_products_sq_add_le_one"
-kind = "theorem"
-desc = '''For a nonempty principal-angle list the squares of the two products sum to at most one.'''
-deps = ["principalSineProduct","principalCosineProduct"]
 source = 'Ben-Israel and Greville, Chapter 6, §5, after equations (115a)–(115b)'
 
 [[node]]
 id = "volume_adjoin_vector_principalAngle"
-kind = "theorem"
-desc = '''Adjoining a nonzero vector multiplies the volume by its norm and the sine of its angle to the span.'''
-deps = ["lemma_6_4"]
 source = 'Ben-Israel and Greville, Chapter 6, equation (116)'
 
 [[node]]
 id = "exercise_6_70"
-kind = "theorem"
-desc = '''The absolute determinant of a square column concatenation equals the product of the full-column-degree block volumes and their principal sines.'''
-deps = ["lemma_6_4"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 70'
 
 [[node]]
 id = "coordinateSubspace"
-kind = "definition"
-desc = '''The coordinate subspace for an index set contains exactly the vectors that vanish outside that set.'''
 source = 'Ben-Israel and Greville, Chapter 6, equations (121)–(122)'
 
 [[node]]
 id = "exercise_6_71"
-kind = "theorem"
-desc = '''The product of the cosines to a coordinate subspace is the absolute minor divided by the selected column volume, independently of the chosen column basis.'''
-deps = ["coordinateSubspace","theorem_6_12"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 71, equation (123)'
 
 [[node]]
@@ -274,3 +242,15 @@ kind = "theorem"
 desc = '''The matrix is reconstructed from operators between coordinate subspaces with weights given by squared products of the two principal cosine products.'''
 deps = ["exercise_6_75"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 76, equations (125)–(126)'
+
+[[node]]
+id = "exercise_6_71_basis"
+source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 71, full-column-rank basis form"
+
+[[node]]
+id = "exercise_6_73_basis"
+source = "Ben-Israel and Greville, Chapter 6 §5, Exercise 73, full-column-rank basis form"
+
+[[node]]
+id = "projectionProduct_hasEigenvalue_iff_square_cosine"
+source = "Ben-Israel and Greville, Chapter 6 §5, Lemma 1(e), nonzero eigenvalues as squared positive cosines"
