@@ -71,6 +71,8 @@ import NumlibSurface.BenIsraelGreville.Chapter09.Section05
 import NumlibSurface.BenIsraelGreville.Chapter09.Section06
 import NumlibSurface.BenIsraelGreville.Chapter09.Section07
 import NumlibSurface.BenIsraelGreville.Chapter09.Section08
+import NumlibSurface.BenIsraelGreville.AppendixA.Section02
+import NumlibSurface.BenIsraelGreville.AppendixA.Section03
 
 /-!
 # Ben-Israel and Greville, *Generalized Inverses: Theory and Applications*
@@ -159,6 +161,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §9.6 | `Chapter09.Section06` | Extremal inverses and weighted least-norm solutions |
 | §9.7 | `Chapter09.Section07` | Semigroup, Neumann, and splitting approximations |
 | §9.8 | `Chapter09.Section08` | Frames, synthesis, reconstruction, and optimal bounds |
+| Appendix A §2 | `AppendixA.Section02` | Moore’s 1920 general reciprocal |
+| Appendix A §3 | `AppendixA.Section03` | Generalized identities and maximal-pivot formulas |
 
 ## Conventions
 

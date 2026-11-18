@@ -1,93 +1,78 @@
 namespace = "BenIsraelGreville.AppendixA"
 
-desc = '''Moore’s General Analysis, Section 29. Specialize the complex matrix and Hilbert-space projection APIs and keep the historical item numbering. Use an injective index selection for the maximal nonsingular pivot.'''
 
 [[node]]
 id = "lemma_29_1_gram_posDef"
-kind = "theorem"
-desc = '''The two Gram matrices for the basis columns and rows selected by a maximal nonsingular minor are Hermitian positive definite, as are their inverses.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Lemma (29.1)(1)–(4)"
 
 [[node]]
+id = "IsMaximalNonsingularMinor"
+source = "Ben-Israel and Greville, Appendix A, §3, Lemma (29.1), the rank-sized nonsingular minor"
+
+[[node]]
+id = "exists_maximalNonsingularMinor"
+source = "Ben-Israel and Greville, Appendix A, §3, Lemma (29.1), existence of a rank-sized nonsingular minor"
+
+[[node]]
 id = "lemma_29_1_projectors"
-kind = "theorem"
-desc = '''For pivot columns F and rows G the generalized identities are F(FᴴF)⁻¹Fᴴ and Gᴴ(GGᴴ)⁻¹G, orthogonal projectors onto range A and range Aᴴ. They fix vectors and their conjugate rows in those ranges.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Lemma (29.1)(5)–(10)"
-deps = ["lemma_29_1_gram_posDef"]
 
 [[node]]
 id = "lemma_29_1_reciprocal"
-kind = "theorem"
-desc = '''If H is the maximal pivot then the reciprocal is Gᴴ(GGᴴ)⁻¹H(FᴴF)⁻¹Fᴴ, with the other two expressions given by selecting the rows or columns of the projectors. It maps range A onto range Aᴴ and satisfies AX=P_range A, XA=P_range Aᴴ. The map direction is reversed in printed (12).'''
 source = "Ben-Israel and Greville, Appendix A, §3, Lemma (29.1)(11)–(14)"
-deps = ["lemma_29_1_projectors"]
 
 [[node]]
 id = "theorem_29_2"
-kind = "theorem"
-desc = '''For a finite-dimensional subspace M there is a unique ambient orthogonal projector onto M. It is Hermitian, PSD and idempotent, splits vectors orthogonally, and is characterized by fixing M and annihilating M⊥, or fixing M with adjoint range in M. Merely fixing the vectors and rows of M does not give uniqueness without the range condition.'''
-source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.2)(1)–(6)"
-deps = ["lemma_29_1_projectors"]
+source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.2)(2)–(5), properties of the generalized identity"
+
+[[node]]
+id = "theorem_29_2_existsUnique"
+source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.2)(1), uniqueness with the range condition"
+
+[[node]]
+id = "theorem_29_2_characterization"
+source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.2)(6), the two characterizations"
 
 [[node]]
 id = "theorem_29_3"
-kind = "theorem"
-desc = '''A restricts to a bijection from range Aᴴ onto range A. Its inverse extends by zero on (range A)⊥ to give the unique matrix satisfying the two projector identities and this support condition.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.3), definition of the general reciprocal"
-deps = ["theorem_29_2"]
 
 [[node]]
 id = "theorem_29_4"
-kind = "theorem"
-desc = '''The reciprocal satisfies the two reflexive equations, has equal rank, interchanges adjoint ranges, commutes with conjugate transpose, and is involutive.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.4)(1)–(4)"
-deps = ["theorem_29_3"]
 
 [[node]]
 id = "corollary_29_45"
-kind = "theorem"
-desc = '''The reciprocal is the product of the selected columns of the domain projector, inverse of the maximal pivot, and selected rows of the codomain projector. The corresponding bilinear form on x in range Aᴴ and y in range A evaluates as x_Jᴴ A_IJ⁻¹ y_I, reconciling the swapped subscripts in (2).'''
-source = "Ben-Israel and Greville, Appendix A, §3, Corollary (29.45)(1)–(2)"
-deps = ["lemma_29_1_projectors", "lemma_29_1_reciprocal"]
+source = "Ben-Israel and Greville, Appendix A, §3, Corollary (29.45)(1), the pivot formula"
+
+[[node]]
+id = "corollary_29_45_form"
+source = "Ben-Israel and Greville, Appendix A, §3, Corollary (29.45)(2), the form on the two column spaces"
 
 [[node]]
 id = "theorem_29_5"
-kind = "theorem"
-desc = '''For X the reciprocal equality is equivalent to range X ⊆ range Aᴴ and AX=P_range A, and also to the two range inclusions with AXA=A.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.5)(a)–(c)"
-deps = ["theorem_29_3", "BenIsraelGreville.AppendixA.existsUnique_mooreReciprocal"]
 
 [[node]]
 id = "corollary_29_55"
-kind = "theorem"
-desc = '''The Moore reciprocal of a block diagonal matrix is the block diagonal of the two reciprocals.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Corollary (29.55)"
-deps = ["theorem_29_4"]
 
 [[node]]
 id = "theorem_29_6"
-kind = "theorem"
-desc = '''A Hermitian matrix has Hermitian reciprocal; a PSD matrix has PSD reciprocal. Use the self-adjoint spectral basis or PSD compression.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.6)(1)–(2)"
-deps = ["theorem_29_4"]
 
 [[node]]
 id = "theorem_29_7"
-kind = "theorem"
-desc = '''For PSD A and any principal submatrix A_II, A_II A_II† A_I*=A_I* and A_*I A_II† A_II=A_*I. Use the Gram factorization or range/ker characterization.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.7)(1)–(2)"
-deps = ["theorem_29_6"]
+
+[[node]]
+id = "principalSubmatrix_mul_pinv_mul"
+source = "Ben-Israel and Greville, Appendix A, §3, before Theorem (29.7), the inner equation for the principal submatrix"
 
 [[node]]
 id = "theorem_29_8"
-kind = "theorem"
-desc = '''For PSD A the vanishing of xᴴAx, orthogonality to range A, orthogonality to range A†, and vanishing of xᴴA†x are equivalent.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.8)(a)–(d)"
-deps = ["theorem_29_6"]
 
 [[node]]
 id = "theorem_29_9"
-kind = "theorem"
-desc = '''If b is in range A, the solution set of Ax=b is A†b plus the orthogonal complement of range Aᴴ.'''
 source = "Ben-Israel and Greville, Appendix A, §3, Theorem (29.9)"
-deps = ["theorem_29_3"]

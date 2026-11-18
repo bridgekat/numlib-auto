@@ -1,30 +1,53 @@
 namespace = "BenIsraelGreville.AppendixA"
 
-desc = '''Moore’s 1920 general reciprocal. Use the range and kernel characterization of the Moore–Penrose inverse, and share the maximal-minor expression with Chapter 3.'''
 
 [[node]]
 id = "IsMooreReciprocal"
-kind = "definition"
-desc = '''A general reciprocal X satisfies range X ⊆ range Aᴴ, range Xᴴ ⊆ range A, and AXA=A.'''
 source = "Ben-Israel and Greville, Appendix A, §2, conditions (1)–(3), historical definition"
 
 [[node]]
+id = "isMooreReciprocal_iff"
+source = "Ben-Israel and Greville, Appendix A, §2, conditions (1)–(3), equivalence with the Moore–Penrose inverse"
+
+[[node]]
 id = "existsUnique_mooreReciprocal"
-kind = "theorem"
-desc = '''Each complex matrix has a unique Moore reciprocal, equal to the Moore–Penrose inverse. The relation is mutual and both oppositely oriented range inclusions are equalities.'''
-source = "Ben-Israel and Greville, Appendix A, §2, conditions (1)–(6)"
-deps = ["IsMooreReciprocal"]
+source = "Ben-Israel and Greville, Appendix A, §2, conditions (1)–(3), existence and uniqueness"
+
+[[node]]
+id = "IsMooreReciprocal.mutual"
+source = "Ben-Israel and Greville, Appendix A, §2, conditions (4)–(6), mutuality and equality of the column spaces"
+
+[[node]]
+id = "mooreReciprocal_rank_zero"
+source = "Ben-Israel and Greville, Appendix A, §2, rank-zero formula"
+
+[[node]]
+id = "mooreReciprocal_rank_one"
+source = "Ben-Israel and Greville, Appendix A, §2, rank-one formula"
+
+[[node]]
+id = "mooreReciprocal_minorSums_square"
+source = "Ben-Israel and Greville, Appendix A, §2, maximal-minor formula specialized to nonsingular square matrices"
 
 [[node]]
 id = "mooreReciprocal_eq_minorSums"
 kind = "theorem"
-desc = '''For rank r>0, the (j,i) entry of the reciprocal is the sum of conjugate maximal minors with i,j prepended times the corresponding complementary minors, divided by the sum of squared absolute maximal minors. For r=1 the result is conj Aᵢⱼ over the squared Frobenius norm; for rank zero the reciprocal is zero.'''
-source = "Ben-Israel and Greville, Appendix A, §2, rank cases following (6)"
+desc = '''For A of rank r ≥ 2, prove the stated entry formula for an arbitrary complex m × n matrix, including rectangular and rank-deficient square matrices. The denominator sums the squared moduli of all r × r minors over increasing row and column selections. The numerator sums each complementary (r−1) × (r−1) minor times the conjugate determinant of the r × r minor with row i and column j prepended. Repeated indices in a prepended selection contribute zero. The rank-zero, rank-one, and nonsingular square cases are formalized.'''
+source = "Ben-Israel and Greville, Appendix A, §2, general maximal-minor formula for rank at least two"
 deps = ["existsUnique_mooreReciprocal"]
 
 [[node]]
 id = "mooreReciprocal_range_equiv"
-kind = "theorem"
-desc = '''A and its reciprocal give mutually inverse linear isomorphisms between range Aᴴ and range A, with a dual right-action version for conjugate row vectors.'''
-source = "Ben-Israel and Greville, Appendix A, §2, linear correspondences following the minor formula"
-deps = ["existsUnique_mooreReciprocal"]
+source = "Ben-Israel and Greville, Appendix A, §2, linear correspondence on column vectors"
+
+[[node]]
+id = "mooreReciprocal_right_range_equiv"
+source = "Ben-Israel and Greville, Appendix A, §2, dual linear correspondence on row vectors"
+
+[[node]]
+id = "mooreReciprocal_right_range_equiv_apply"
+source = "Ben-Israel and Greville, Appendix A, §2, forward right action"
+
+[[node]]
+id = "mooreReciprocal_right_range_equiv_symm_apply"
+source = "Ben-Israel and Greville, Appendix A, §2, inverse right action"
