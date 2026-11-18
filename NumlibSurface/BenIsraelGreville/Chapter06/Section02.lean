@@ -621,4 +621,116 @@ theorem exercise_14 (S : Matrix r r ℂ) (hS : IsUnit S)
 
 end InverseBlocks
 
+/-- **Exercise 19**, Equations (38)–(40), of [benIsrael2003generalized].
+For a normal matrix the complex singular diagonal consists of the sorted
+eigenvalues, and a single column basis gives both singular-vector families. -/
+theorem exercise_19 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
+    ∃ U d, IsUDVDecomposition A U d U ∧ ∀ i : Fin n,
+      A *ᵥ U.col i = d i • U.col i ∧ Aᴴ *ᵥ U.col i = star (d i) • U.col i := by
+  obtain ⟨U, hU, d, hd, hs⟩ := exercise_6 hA
+  have h : IsUDVDecomposition A U d U :=
+    ⟨hU, hU, by simpa only [rectDiagonal_eq_diagonal] using hd, hs⟩
+  exact ⟨U, d, h, fun i => phaseSingularVectorPair h i i.isLt i.isLt⟩
+
+/-- **Exercise 20** of [benIsrael2003generalized], Chapter 6.
+The common-basis complex singular decomposition of a normal matrix is
+a unitary similarity to its eigenvalue diagonal. -/
+theorem exercise_20 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
+    ∃ U d, IsUDVDecomposition A U d U ∧
+      Uᴴ * A * U = diagonal (fun i : Fin n => d i) := by
+  obtain ⟨U, d, h, _⟩ := exercise_19 hA
+  refine ⟨U, d, h, ?_⟩
+  have hU := conjTranspose_mul_self_of_mem_unitaryGroup h.1
+  rw [h.2.2.1]
+  simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Uᴴ U, hU, Matrix.one_mul,
+    Matrix.mul_one, rectDiagonal_eq_diagonal]
+
+/-- **Exercise 24**, Equation (44), of [benIsrael2003generalized].
+Every singular value of an inner inverse is at least the corresponding
+singular value of the Moore–Penrose inverse, with both sequences padded by zero. -/
+theorem exercise_24 {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ} {A : Matrix (Fin m) (Fin n) 𝕜}
+    {G : Matrix (Fin n) (Fin m) 𝕜} (hG : A.IsInnerInverse G) (i : ℕ) :
+    A.pinv.sortedSingularValues i ≤ G.sortedSingularValues i := by
+  let r := A.rank
+  by_cases hi : i < r
+  · obtain ⟨U, hU, V, hV, hS⟩ := A.exists_svd
+    let σ := A.sortedSingularValues
+    let f : ℕ → 𝕜 := fun j => (σ j : 𝕜)
+    let D : Matrix (Fin m) (Fin n) 𝕜 := rectDiagonal f
+    let C := Vᴴ * G * U
+    let S : Matrix (Fin r) (Fin r) 𝕜 := rectDiagonal f
+    have hf (j : Fin r) : f j ≠ 0 := by
+      intro hz
+      have hzr : σ j = 0 := RCLike.ofReal_eq_zero.mp hz
+      exact (not_le_of_gt j.isLt) ((A.sortedSingularValues_eq_zero_iff_rank_le j).mp hzr)
+    have hC : D * C * D = D := by
+      have h := congrArg (fun B : Matrix (Fin m) (Fin n) 𝕜 => Uᴴ * B * V) (isInnerInverse_iff.mp hG)
+      change Uᴴ * A * V = D at hS
+      change Uᴴ * (A * G * A) * V = Uᴴ * A * V at h
+      rw [← hS]
+      have hVV := mul_conjTranspose_self_of_mem_unitaryGroup hV
+      have hUU := mul_conjTranspose_self_of_mem_unitaryGroup hU
+      simp only [C, Matrix.mul_assoc]
+      rw [← Matrix.mul_assoc V Vᴴ, hVV, Matrix.one_mul,
+        ← Matrix.mul_assoc U Uᴴ, hUU, Matrix.one_mul]
+      simpa only [Matrix.mul_assoc] using h
+    have hEntry (j k : Fin r) :
+        C (Fin.castLE A.rank_le_width j) (Fin.castLE A.rank_le_height k) =
+          (rectDiagonal (fun j => (f j)⁻¹) : Matrix (Fin r) (Fin r) 𝕜) j k := by
+      have hjm := j.isLt.trans_le A.rank_le_height
+      have hkn := k.isLt.trans_le A.rank_le_width
+      have h := congrArg (fun B : Matrix (Fin m) (Fin n) 𝕜 =>
+        B ⟨j, hjm⟩ ⟨k, hkn⟩) hC
+      change ((D * C) * D) (⟨j, hjm⟩ : Fin m) ⟨k, hkn⟩ = _ at h
+      dsimp only [D] at h
+      rw [mul_rectDiagonal_apply, dite_eq_left (k.isLt.trans_le A.rank_le_height)] at h
+      have hrow := rectDiagonal_mul_apply (m := m) (n := n) f C (⟨j, hjm⟩ : Fin m)
+        (Fin.castLE A.rank_le_height k) (j.isLt.trans_le A.rank_le_width)
+      change (D * C) (⟨j, hjm⟩ : Fin m) (Fin.castLE A.rank_le_height k) * f k = _ at h
+      have h' := congrArg (fun a => a * f k) hrow
+      have h := h'.symm.trans h
+      change f j * C (Fin.castLE A.rank_le_width j) (Fin.castLE A.rank_le_height k) * f k =
+        (rectDiagonal f : Matrix (Fin m) (Fin n) 𝕜) ⟨j, hjm⟩ ⟨k, hkn⟩ at h
+      rw [rectDiagonal_apply] at h ⊢
+      by_cases hjk : j.val = k.val
+      · have hjk' : j = k := Fin.ext hjk
+        subst k
+        simp only [ite_true] at h ⊢
+        have hc : C (Fin.castLE A.rank_le_width j) (Fin.castLE A.rank_le_height j) * f j = 1 := by
+          apply mul_left_cancel₀ (hf j)
+          simpa only [← mul_assoc, mul_one] using h
+        exact eq_inv_of_mul_eq_one_left hc
+      · simp only [ite_eq_right hjk] at h ⊢
+        rcases mul_eq_zero.mp h with h' | hk
+        · exact (mul_eq_zero.mp h').resolve_left (hf j)
+        · exact False.elim (hf k hk)
+    have hSigma : S.IsSVD 1 σ 1 :=
+      ⟨⟨one_mem _, one_mem _, by simp [S, f]⟩,
+        A.sortedSingularValues_antitone, A.sortedSingularValues_nonneg⟩
+    have hSigma_rank : S.rank = r := by
+      apply le_antisymm S.rank_le_width
+      by_contra! h
+      exact hf ⟨S.rank, h⟩ (RCLike.ofReal_eq_zero.mpr (by
+        rw [hSigma.singularValues_eq h h]
+        exact (S.sortedSingularValues_eq_zero_iff_rank_le _).mpr le_rfl))
+    have hSigma_inv : S.pinv =
+        (rectDiagonal (fun j => (f j)⁻¹) : Matrix (Fin r) (Fin r) 𝕜) := by
+      simpa [f] using hSigma.pinv_eq
+    have hsub : C.submatrix (Fin.castLE A.rank_le_width) (Fin.castLE A.rank_le_height) =
+        S.pinv := by
+      rw [hSigma_inv]
+      exact Matrix.ext hEntry
+    have hcompare := sortedSingularValues_submatrix_le C
+      (Fin.castLE_injective A.rank_le_width) (Fin.castLE_injective A.rank_le_height) i
+    rw [hsub, exercise_7, hSigma_rank, ite_eq_left hi,
+      ← hSigma.singularValues_eq (show r - 1 - i < r by omega)
+        (show r - 1 - i < r by omega)] at hcompare
+    have hCσ : C.sortedSingularValues = G.sortedSingularValues :=
+      sortedSingularValues_unitary_mul_mul (A := G) (Unitary.star_mem hV) hU
+    rw [hCσ] at hcompare
+    rw [exercise_7, ite_eq_left hi]
+    exact hcompare
+  · rw [exercise_7, ite_eq_right hi]
+    exact G.sortedSingularValues_nonneg i
+
 end BenIsraelGreville.Chapter06

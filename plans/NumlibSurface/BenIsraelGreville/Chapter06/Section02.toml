@@ -66,17 +66,11 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 18, Equations (20*) and (
 
 [[node]]
 id = "exercise_19"
-kind = "theorem"
-desc = '''For a normal matrix the complex diagonal entries can be chosen to be the sorted eigenvalues. The two singular-vector families can then be chosen to coincide.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 19, Equations (38)–(40)"
-deps = ["BenIsraelGreville.Chapter06.exercise_6", "phaseSingularVectorPair"]
 
 [[node]]
 id = "exercise_20"
-kind = "theorem"
-desc = '''For a normal matrix the UDV decomposition with the eigenvalues on the diagonal is unitary similarity.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 20"
-deps = ["exercise_19"]
 
 [[node]]
 id = "exercise_21_real"
@@ -104,17 +98,14 @@ deps = ["exercise_22"]
 
 [[node]]
 id = "exercise_24"
-kind = "theorem"
-desc = '''Each of the leading rank-many singular values of an inner inverse is at least the corresponding singular value of A†. The same gives the lower bounds on k-volume.'''
-source = "Ben-Israel and Greville, Chapter 6, Exercise 24, Equations (43)–(45)"
-deps = ["exercise_14"]
+source = "Ben-Israel and Greville, Chapter 6, Exercise 24, Equations (43)–(44)"
 
 [[node]]
 id = "exercise_25"
 kind = "theorem"
 desc = '''The Moore–Penrose inverse uniquely minimizes each k-volume for positive k at most the rank of A among all real inner inverses.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 25"
-deps = ["exercise_24"]
+deps = ["exercise_24_kVolume"]
 
 [[node]]
 id = "exercise_13_reciprocal_taylor"
@@ -131,3 +122,10 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 13, damped Taylor expansi
 [[node]]
 id = "exercise_16_products_iff_commute"
 source = "Ben-Israel and Greville, Chapter 6, Exercise 16, Hermitian products and commutativity"
+
+[[node]]
+id = "exercise_24_kVolume"
+kind = "theorem"
+desc = "Each positive-order real k-volume of an inner inverse is at least the corresponding volume of the Moore–Penrose inverse, for k at most the rank of A."
+source = "Ben-Israel and Greville, Chapter 6, Exercise 24, Equation (45)"
+deps = ["exercise_24"]

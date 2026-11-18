@@ -503,4 +503,294 @@ theorem exercise_6_35 {p q : ℕ} (A : Matrix (Fin p) (Fin q) ℝ) :
 
 end Exercises
 
+/-- **Equations (53)–(58)** of [benIsrael2003generalized], Chapter 6.
+The perturbed system is consistent exactly when the augmented kernel
+has a vector whose last coordinate is $-1$. -/
+theorem tlsFeasibleAugmented_iff {𝕜 m n : Type*} [Field 𝕜] [Fintype n]
+    (A : Matrix m n 𝕜) (b : m → 𝕜) :
+    (∃ x : n → 𝕜, A *ᵥ x = b) ↔
+      ∃ w : n ⊕ Unit → 𝕜, w (Sum.inr ()) = -1 ∧
+        fromCols A (replicateCol Unit b) *ᵥ w = 0 := by
+  have hform (w : n ⊕ Unit → 𝕜) (hw : w (Sum.inr ()) = -1) :
+      fromCols A (replicateCol Unit b) *ᵥ w = A *ᵥ (w ∘ Sum.inl) - b := by
+    rw [fromCols_mulVec]
+    funext i
+    simp [mulVec, dotProduct, hw, sub_eq_add_neg]
+  constructor
+  · rintro ⟨x, hx⟩
+    exact ⟨Sum.elim x (fun _ => -1), rfl, by rw [hform _ rfl]; exact sub_eq_zero.mpr hx⟩
+  · rintro ⟨w, hw, h⟩
+    exact ⟨w ∘ Sum.inl, sub_eq_zero.mp ((hform w hw).symm.trans h)⟩
+
+/-- **Equation (62)** of [benIsrael2003generalized], Chapter 6.
+An orthonormal right singular basis has a vector with a nonzero last
+coordinate. No restriction on the augmented right-hand side is needed. -/
+theorem tls_nonzeroLastIndices_nonempty {𝕜 n : Type*} [RCLike 𝕜]
+    [Fintype n] [DecidableEq n] {V : Matrix (n ⊕ Unit) (n ⊕ Unit) 𝕜}
+    (hV : V ∈ unitaryGroup (n ⊕ Unit) 𝕜) :
+    Set.Nonempty {j | V (Sum.inr ()) j ≠ 0} := by
+  classical
+  by_contra h
+  have hz (j : n ⊕ Unit) : V (Sum.inr ()) j = 0 := by
+    by_contra hj
+    exact h ⟨j, hj⟩
+  have hV' := mul_conjTranspose_self_of_mem_unitaryGroup hV
+  have hLast := congrArg (fun W : Matrix (n ⊕ Unit) (n ⊕ Unit) 𝕜 =>
+    W (Sum.inr ()) (Sum.inr ())) hV'
+  simp [Matrix.mul_apply, hz] at hLast
+
+/-- **Equations (63)–(66)** of [benIsrael2003generalized], Chapter 6.
+In the singular coordinates of the augmented matrix, the squared error
+of a perturbation with columns in its range is a weighted sum of squares.
+The augmented kernel condition becomes a fixed-point equation for the
+right singular coordinates scaled by the singular values. -/
+theorem tlsAugmentedError_svd_coordinates {𝕜 m q : Type*} [RCLike 𝕜]
+    [Fintype m] [Fintype q] [DecidableEq q]
+    {U : Matrix m q 𝕜} {V : Matrix q q 𝕜}
+    (hU : Uᴴ * U = 1) (hV : V ∈ unitaryGroup q 𝕜) (σ : q → ℝ)
+    (Y : Matrix q q 𝕜) (z : q → 𝕜) :
+    let D : Matrix q q 𝕜 := diagonal (fun j => (σ j : 𝕜))
+    let C := U * D * Vᴴ
+    let C' := C - U * Y * D * Vᴴ
+    ‖C' - C‖ ^ 2 = ∑ i : q, ∑ j : q, σ j ^ 2 * ‖Y i j‖ ^ 2 ∧
+      (C' *ᵥ (V *ᵥ z) = 0 ↔ Y *ᵥ (D *ᵥ z) = D *ᵥ z) := by
+  let D : Matrix q q 𝕜 := diagonal (fun j => (σ j : 𝕜))
+  let C := U * D * Vᴴ
+  let C' := C - U * Y * D * Vᴴ
+  change ‖C' - C‖ ^ 2 = _ ∧ _
+  have hstar := conjTranspose_mul_self_of_mem_unitaryGroup hV
+  constructor
+  · have he : C' - C = -(U * (Y * D * Vᴴ)) := by
+      simp only [C', sub_sub_cancel_left, Matrix.mul_assoc]
+    rw [he, norm_neg, frobenius_norm_mul_of_conjTranspose_mul_self_eq_one hU,
+      show ‖Y * D * Vᴴ‖ = ‖Y * D‖ from
+        by simpa only [Matrix.one_mul, star_eq_conjTranspose] using
+          (frobenius_norm_unitary_mul_mul_unitary (A := Y * D) (one_mem _) (Unitary.star_mem hV)),
+      frobenius_norm_sq_eq_sum_sq]
+    apply Finset.sum_congr rfl
+    intro i _
+    apply Finset.sum_congr rfl
+    intro j _
+    change ‖(Y * diagonal (fun k => (σ k : 𝕜))) i j‖ ^ 2 = _
+    rw [mul_diagonal, norm_mul, RCLike.norm_ofReal, mul_pow, sq_abs, mul_comm]
+  · have he : C' *ᵥ (V *ᵥ z) = U *ᵥ (D *ᵥ z - Y *ᵥ (D *ᵥ z)) := by
+      simp only [C', C, sub_mulVec, ← mulVec_mulVec, mulVec_sub]
+      simp only [mulVec_mulVec, hstar, Matrix.mul_one]
+    rw [he]
+    constructor
+    · intro hz
+      have h := congrArg (Uᴴ *ᵥ ·) hz
+      rw [mulVec_mulVec, hU, one_mulVec, mulVec_zero] at h
+      exact (sub_eq_zero.mp h).symm
+    · intro hz
+      rw [hz, sub_self, mulVec_zero]
+
+open scoped ComplexOrder
+
+private theorem gram_of_singular_factors {m n : ℕ}
+    {U : Matrix (Fin m) (Fin m) ℂ} {V : Matrix (Fin n) (Fin n) ℂ}
+    (hU : U ∈ unitaryGroup (Fin m) ℂ) (σ : ℕ → ℝ)
+    (hσ : ∀ j, m ≤ j → σ j = 0) :
+    let D : Matrix (Fin m) (Fin n) ℂ := rectDiagonal (fun j => (σ j : ℂ))
+    let X := U * D * Vᴴ
+    Xᴴ * X = V * (rectDiagonal (fun j => ((σ j ^ 2 : ℝ) : ℂ)) :
+      Matrix (Fin n) (Fin n) ℂ) * Vᴴ := by
+  let D : Matrix (Fin m) (Fin n) ℂ := rectDiagonal (fun j => (σ j : ℂ))
+  change (U * D * Vᴴ)ᴴ * (U * D * Vᴴ) = _
+  have hcore : Dᴴ * D = (rectDiagonal (fun j => ((σ j ^ 2 : ℝ) : ℂ)) :
+      Matrix (Fin n) (Fin n) ℂ) := by
+    dsimp only [D]
+    rw [conjTranspose_rectDiagonal_mul_self, rectDiagonal_eq_diagonal]
+    apply congrArg diagonal
+    funext j
+    by_cases hj : j.val < m
+    · simp [hj, sq]
+    · simp [hj, hσ j (Nat.le_of_not_gt hj)]
+  rw [conjTranspose_mul, conjTranspose_mul, conjTranspose_conjTranspose, ← hcore]
+  simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Uᴴ U,
+    conjTranspose_mul_self_of_mem_unitaryGroup hU, Matrix.one_mul]
+
+private theorem gram_has_bestRankApproximation {m n k : ℕ} {A : Matrix (Fin m) (Fin n) ℂ}
+    {U : Matrix (Fin m) (Fin m) ℂ} {V : Matrix (Fin n) (Fin n) ℂ} {σ : ℕ → ℝ}
+    (h : IsSingularValueDecomposition A U σ V) (hk : k ≤ A.rank) :
+    IsBestRankApproximation (Aᴴ * A) k
+      ((svdTruncation U σ V k)ᴴ * svdTruncation U σ V k) := by
+  let τ : ℕ → ℝ := fun j => σ j ^ 2
+  let φ : ℕ → ℝ := fun j => if j < k then σ j else 0
+  have hτ : Antitone τ := fun _ _ hj =>
+    pow_le_pow_left₀ (h.1.nonneg _) (h.1.antitone hj) _
+  have hgram : Aᴴ * A = V * (rectDiagonal (fun j => (τ j : ℂ)) :
+      Matrix (Fin n) (Fin n) ℂ) * Vᴴ := by
+    rw [h.1.eq_mul_mul_star]
+    exact gram_of_singular_factors h.1.mem_unitaryGroup_left σ
+      (fun j hj => h.2 j (A.rank_le_height.trans hj))
+  have hX : svdTruncation U σ V k = U *
+      (rectDiagonal (fun j => (φ j : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ := by
+    change U * (rectDiagonal (fun j => if j < k then (σ j : ℂ) else 0) :
+      Matrix (Fin m) (Fin n) ℂ) * Vᴴ = _
+    have hd : (rectDiagonal (fun j => if j < k then (σ j : ℂ) else 0) :
+        Matrix (Fin m) (Fin n) ℂ) = rectDiagonal (fun j => (φ j : ℂ)) := by
+      apply congrArg rectDiagonal
+      funext j
+      by_cases hj : j < k <;> simp [φ, hj]
+    rw [hd]
+  have hgramX : (svdTruncation U σ V k)ᴴ * svdTruncation U σ V k =
+      svdTruncation V τ V k := by
+    rw [hX, gram_of_singular_factors h.1.mem_unitaryGroup_left φ
+      (fun j hj => by simp [φ, not_lt_of_ge (hk.trans (A.rank_le_height.trans hj))])]
+    change _ = V * (rectDiagonal (fun j => if j < k then (τ j : ℂ) else 0) :
+      Matrix (Fin n) (Fin n) ℂ) * Vᴴ
+    have hd : (rectDiagonal (fun j => ((φ j ^ 2 : ℝ) : ℂ)) :
+        Matrix (Fin n) (Fin n) ℂ) = rectDiagonal (fun j => if j < k then (τ j : ℂ) else 0) := by
+      apply congrArg rectDiagonal
+      funext j
+      by_cases hj : j < k <;> simp [φ, τ, hj]
+    rw [hd]
+  have hGS : (Aᴴ * A).IsSVD V τ V := by
+    refine ⟨⟨h.1.mem_unitaryGroup_right, h.1.mem_unitaryGroup_right, ?_⟩, hτ,
+      fun j => sq_nonneg (σ j)⟩
+    have hV := conjTranspose_mul_self_of_mem_unitaryGroup h.1.mem_unitaryGroup_right
+    change Vᴴ * (Aᴴ * A) * V = _
+    rw [hgram]
+    simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Vᴴ V, hV, Matrix.mul_one, Matrix.one_mul]
+    rfl
+  have hp : A.rank = (Aᴴ * A).rank := (rank_conjTranspose_mul_self A).symm
+  have hG : IsSingularValueDecomposition (Aᴴ * A) V τ V :=
+    ⟨hGS, fun j hj => by simp [τ, h.2 j (hp ▸ hj)]⟩
+  rw [hgramX]
+  exact (theorem_6_3 hG (hk.trans_eq hp)).1
+
+/-- **Exercise 34**, the adjoint and two Gram approximations, of
+[benIsrael2003generalized], Chapter 6. The adjoint of the source matrix
+is the first comparison target. -/
+theorem exercise_6_34 {m n k : ℕ} {A : Matrix (Fin m) (Fin n) ℂ}
+    {U : Matrix (Fin m) (Fin m) ℂ} {V : Matrix (Fin n) (Fin n) ℂ} {σ : ℕ → ℝ}
+    (h : IsSingularValueDecomposition A U σ V) (hk : k ≤ A.rank) :
+    let X := svdTruncation U σ V k
+    IsBestRankApproximation Aᴴ k Xᴴ ∧
+      IsBestRankApproximation (A * Aᴴ) k (X * Xᴴ) ∧
+      IsBestRankApproximation (Aᴴ * A) k (Xᴴ * X) := by
+  have hstar : IsSingularValueDecomposition Aᴴ V σ U :=
+    ⟨h.1.conjTranspose, by simpa only [rank_conjTranspose] using h.2⟩
+  have hk' : k ≤ Aᴴ.rank := by simpa only [rank_conjTranspose] using hk
+  have hX : (svdTruncation U σ V k)ᴴ = svdTruncation V σ U k := by
+    rw [svdTruncation, conjTranspose_mul, conjTranspose_mul, rectDiagonal_conjTranspose]
+    simp only [star_eq_conjTranspose, conjTranspose_conjTranspose, svdTruncation, Matrix.mul_assoc]
+    change V * ((rectDiagonal (star ∘ fun j => if j < k then (σ j : ℂ) else 0) :
+      Matrix (Fin n) (Fin m) ℂ) * Uᴴ) =
+      V * ((rectDiagonal (fun j => if j < k then (σ j : ℂ) else 0) :
+        Matrix (Fin n) (Fin m) ℂ) * Uᴴ)
+    have hd : (rectDiagonal (star ∘ fun j => if j < k then (σ j : ℂ) else 0) :
+        Matrix (Fin n) (Fin m) ℂ) = rectDiagonal (fun j => if j < k then (σ j : ℂ) else 0) := by
+      apply congrArg rectDiagonal
+      funext j
+      by_cases hj : j < k <;> simp [hj]
+    rw [hd]
+  refine ⟨by rw [hX]; exact (theorem_6_3 hstar hk').1, ?_, gram_has_bestRankApproximation h hk⟩
+  have h' := gram_has_bestRankApproximation hstar hk'
+  rw [← hX, conjTranspose_conjTranspose, conjTranspose_conjTranspose] at h'
+  exact h'
+
+/-- **Exercise 34**, the normal powers, of [benIsrael2003generalized], Chapter 6.
+For an eigenbasis-aligned truncation of a normal matrix, every positive
+integer power is a best rank-$k$ approximation to the corresponding power. -/
+theorem exercise_6_34_normal_pow {n k p : ℕ} {A U : Matrix (Fin n) (Fin n) ℂ}
+    {d : ℕ → ℂ} (h : IsUDVDecomposition A U d U) (hk : k ≤ A.rank) (hp : 0 < p) :
+    let X := U * diagonal (fun i : Fin n => if i.val < k then d i else 0) * Uᴴ
+    IsBestRankApproximation (A ^ p) k (X ^ p) := by
+  let S : unitary (Matrix (Fin n) (Fin n) ℂ) := ⟨U, h.1⟩
+  let e := Unitary.conjStarAlgAut ℂ (Matrix (Fin n) (Fin n) ℂ) S
+  let t : ℕ → ℂ := fun i => d i ^ p
+  let σ : ℕ → ℝ := fun i => ‖t i‖
+  let f : Fin n → ℂ := fun i => if t i = 0 then 1 else t i / (‖t i‖ : ℂ)
+  let V := U * (diagonal f)ᴴ
+  let X := U * diagonal (fun i : Fin n => if i.val < k then d i else 0) * Uᴴ
+  have hA : A ^ p = U * diagonal (fun i : Fin n => t i) * Uᴴ := by
+    have he : A = e (diagonal (fun i : Fin n => d i)) := by
+      simpa only [e, Unitary.conjStarAlgAut_apply, S, star_eq_conjTranspose,
+        rectDiagonal_eq_diagonal] using h.2.2.1
+    rw [he, ← map_pow, diagonal_pow]
+    rfl
+  have hX : X ^ p = U * diagonal (fun i : Fin n => if i.val < k then t i else 0) * Uᴴ := by
+    have he : X = e (diagonal (fun i : Fin n => if i.val < k then d i else 0)) := rfl
+    rw [he, ← map_pow, diagonal_pow]
+    have hf : ((fun i : Fin n => if i.val < k then d i else 0) ^ p) =
+        (fun i : Fin n => if i.val < k then t i else 0) := by
+      funext i
+      by_cases hi : i.val < k <;> simp [hi, t, hp.ne']
+    rw [hf]
+    rfl
+  have hnorm (i : Fin n) : ‖f i‖ = 1 := by
+    by_cases hi : t i = 0
+    · simp [f, hi]
+    · simp [f, hi, (norm_pos_iff.mpr hi).ne']
+  have hfU : diagonal f ∈ unitaryGroup (Fin n) ℂ := by
+    rw [Matrix.mem_unitaryGroup_iff', star_eq_conjTranspose, diagonal_conjTranspose,
+      diagonal_mul_diagonal, ← diagonal_one]
+    apply congrArg diagonal
+    funext i
+    change starRingEnd ℂ (f i) * f i = 1
+    rw [mul_comm, Complex.mul_conj, ← Complex.sq_norm, hnorm, one_pow, Complex.ofReal_one]
+  have hV : V ∈ unitaryGroup (Fin n) ℂ := mul_mem h.1 (Unitary.star_mem hfU)
+  have hphase (i : Fin n) : t i * star (f i) = (σ i : ℂ) := by
+    by_cases hi : t i = 0
+    · simp [hi, σ]
+    · have hpos : (‖t i‖ : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_pos_iff.mpr hi).ne'
+      change t i * starRingEnd ℂ (f i) = _
+      rw [show f i = t i / (‖t i‖ : ℂ) by simp [f, hi], map_div₀, Complex.conj_ofReal,
+        ← mul_div_assoc, Complex.mul_conj, ← Complex.sq_norm, Complex.ofReal_pow, sq,
+        mul_div_cancel_right₀ _ hpos]
+  have hphase' (i : Fin n) : (σ i : ℂ) * f i = t i := by
+    by_cases hi : t i = 0
+    · simp [hi, σ]
+    · have hpos : (‖t i‖ : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_pos_iff.mpr hi).ne'
+      rw [show f i = t i / (‖t i‖ : ℂ) by simp [f, hi], mul_comm]
+      exact div_mul_cancel₀ (t i) hpos
+  have hU := conjTranspose_mul_self_of_mem_unitaryGroup h.1
+  have hsort : Antitone σ := by
+    intro i j hij
+    simp only [σ, t, norm_pow, h.2.2.2]
+    exact pow_le_pow_left₀ (A.sortedSingularValues_nonneg _) (A.sortedSingularValues_antitone hij) p
+  have hS : (A ^ p).IsSVD U σ V := by
+    refine ⟨⟨h.1, hV, ?_⟩, hsort, fun j => norm_nonneg _⟩
+    change Uᴴ * A ^ p * (U * (diagonal f)ᴴ) = _
+    rw [hA]
+    have he : diagonal (fun i : Fin n => t i) * (diagonal f)ᴴ =
+        diagonal (fun i : Fin n => (σ i : ℂ)) := by
+      rw [diagonal_conjTranspose, diagonal_mul_diagonal]
+      exact congrArg diagonal (funext hphase)
+    simp only [Matrix.mul_assoc, ← Matrix.mul_assoc Uᴴ U, hU, Matrix.one_mul]
+    rw [he, rectDiagonal_eq_diagonal]
+    rfl
+  have hSfull : IsSingularValueDecomposition (A ^ p) U σ V := by
+    refine ⟨hS, fun j hj => ?_⟩
+    by_cases hn : j < n
+    · rw [hS.singularValues_eq hn hn]
+      exact ((A ^ p).sortedSingularValues_eq_zero_iff_rank_le _).mpr hj
+    · have hz := (A.sortedSingularValues_eq_zero_iff_rank_le j).mpr
+        (A.rank_le_width.trans (Nat.le_of_not_gt hn))
+      simp [σ, t, norm_pow, h.2.2.2 j, hz, hp.ne']
+  have hr : k ≤ (A ^ p).rank := by
+    by_contra! hc
+    have hn : (A ^ p).rank < n := hc.trans_le (hk.trans A.rank_le_width)
+    have hz := hSfull.2 (A ^ p).rank le_rfl
+    have hσnz : A.sortedSingularValues (A ^ p).rank ≠ 0 := fun he =>
+      (not_le_of_gt (hc.trans_le hk)) ((A.sortedSingularValues_eq_zero_iff_rank_le _).mp he)
+    exact (pow_ne_zero p hσnz) (by
+      simpa only [σ, t, norm_pow, h.2.2.2] using hz)
+  have hTruncation : svdTruncation U σ V k = X ^ p := by
+    rw [hX]
+    change U * (rectDiagonal (fun j => if j < k then (σ j : ℂ) else 0) :
+      Matrix (Fin n) (Fin n) ℂ) * (U * (diagonal f)ᴴ)ᴴ = _
+    rw [rectDiagonal_eq_diagonal, conjTranspose_mul, conjTranspose_conjTranspose, ← Matrix.mul_assoc,
+      Matrix.mul_assoc U _ (diagonal f), diagonal_mul_diagonal]
+    have he : (fun i : Fin n => (if i.val < k then (σ i : ℂ) else 0) * f i) =
+        (fun i : Fin n => if i.val < k then t i else 0) := by
+      funext i
+      by_cases hi : i.val < k <;> simp [hi, hphase']
+    rw [he]
+  change IsBestRankApproximation (A ^ p) k (X ^ p)
+  rw [← hTruncation]
+  exact (theorem_6_3 hSfull hr).1
+
 end BenIsraelGreville.Chapter06

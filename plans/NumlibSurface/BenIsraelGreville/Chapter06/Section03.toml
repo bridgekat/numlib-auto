@@ -14,8 +14,6 @@ source = 'Ben-Israel and Greville, Chapter 6, Theorem 3, equation (52)'
 
 [[node]]
 id = "tlsFeasibleAugmented_iff"
-kind = "theorem"
-desc = '''The perturbed linear system is consistent exactly when its augmented kernel contains a vector with final coordinate −1.'''
 source = 'Ben-Israel and Greville, Chapter 6, equations (53)–(58)'
 
 [[node]]
@@ -35,14 +33,10 @@ source = 'Ben-Israel and Greville, Chapter 6, Theorem 4, uniqueness'
 
 [[node]]
 id = "tls_nonzeroLastIndices_nonempty"
-kind = "theorem"
-desc = '''At least one vector in a full orthonormal right singular basis has a nonzero last component.'''
 source = 'Ben-Israel and Greville, Chapter 6, equation (62)'
 
 [[node]]
 id = "tlsAugmentedError_svd_coordinates"
-kind = "theorem"
-desc = '''In singular-vector coordinates, the restricted perturbation formula gives a weighted sum of squared entries and the kernel equation becomes a fixed-point equation in the rescaled coordinates.'''
 source = 'Ben-Israel and Greville, Chapter 6, equations (63)–(66)'
 
 [[node]]
@@ -99,9 +93,6 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 33'
 
 [[node]]
 id = "exercise_6_34"
-kind = "theorem"
-desc = '''The adjoint of the truncation and its two Gram matrices are best approximations to the corresponding adjoint and Gram matrices of A. If A is normal, powers of an eigenbasis-aligned truncation approximate powers of A.'''
-deps = ["theorem_6_3"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 34'
 
 [[node]]
@@ -111,3 +102,7 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 35'
 [[node]]
 id = "exercise_6_36"
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 36'
+
+[[node]]
+id = "exercise_6_34_normal_pow"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 34, positive powers of the normal truncation"
