@@ -6,6 +6,7 @@ import Numlib.LinearAlgebra.Matrix.Jordan
 import Numlib.Analysis.Matrix.Function.Basic
 import NumlibSurface.BenIsraelGreville.Chapter00.Section02
 import NumlibSurface.BenIsraelGreville.Chapter02.Section05
+import Mathlib.LinearAlgebra.Eigenspace.Zero
 
 /-!
 # The Jordan normal form
@@ -560,5 +561,80 @@ theorem exercise_74 {a b : ℂ} (hab : a ≠ b) {A : Matrix (Fin 12) (Fin 12) �
   · rw [geometricMultiplicity_eq_card_jordanBlocks s h he, Finset.card_filter]
     norm_num only [Fin.sum_univ_succ, Fin.sum_univ_zero, Matrix.cons_val_zero,
       Matrix.cons_val_succ, hab.symm, ite_true, ite_false]
+
+section PolynomialDerivativeSpectrum
+
+open Polynomial
+
+/-- The polynomial differentiation endomorphism on polynomials of degree at most $n$. -/
+noncomputable def polynomialDerivativeEnd (n : ℕ) : Module.End ℝ (polynomialDegreeSpace n) :=
+  (Polynomial.derivative.comp (polynomialDegreeSpace n).subtype).codRestrict
+    (polynomialDegreeSpace n) fun p => mem_polynomialDegreeSpace.mpr
+      (Polynomial.degree_derivative_le.trans (mem_polynomialDegreeSpace.mp p.property))
+
+private theorem polynomialDerivativeEnd_pow_apply (n k : ℕ) (p : polynomialDegreeSpace n) :
+    ((polynomialDerivativeEnd n ^ k) p).val = Polynomial.derivative^[k] p.val := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    rw [pow_succ', Module.End.mul_apply, Function.iterate_succ_apply', ← ih]
+    rfl
+
+private theorem polynomialDerivativeEnd_ker_dimension (n : ℕ) :
+    Module.finrank ℝ (polynomialDerivativeEnd n).ker = 1 := by
+  let D := polynomialDerivativeEnd n
+  let c : polynomialDegreeSpace n := ⟨1, mem_polynomialDegreeSpace.mpr (by simp)⟩
+  have hc : c ∈ D.ker := by
+    rw [LinearMap.mem_ker]
+    apply Subtype.ext
+    change Polynomial.derivative (1 : ℝ[X]) = 0
+    simp
+  let u : D.ker := ⟨c, hc⟩
+  have hu : u ≠ 0 := by
+    intro h
+    have he := congrArg (fun p : D.ker => p.val.val) h
+    exact one_ne_zero he
+  apply (finrank_eq_one_iff_of_ne_zero' u hu).mpr
+  intro p
+  have hp : Polynomial.derivative p.val.val = 0 :=
+    congrArg Subtype.val (LinearMap.mem_ker.mp p.property)
+  refine ⟨p.val.val.coeff 0, ?_⟩
+  apply Subtype.ext
+  apply Subtype.ext
+  change p.val.val.coeff 0 • (1 : ℝ[X]) = p.val.val
+  rw [Polynomial.smul_eq_C_mul, mul_one]
+  exact (Polynomial.eq_C_of_derivative_eq_zero hp).symm
+
+/-- **Exercise 78** of [benIsrael2003generalized], Chapter 0. The only
+polynomial differentiation eigenvalue is zero. Its algebraic multiplicity
+is the whole dimension, and its eigenspace consists of the constants. -/
+theorem polynomialDerivative_eigenvalue_multiplicities (n : ℕ) :
+    let D := polynomialDerivativeEnd n
+    spectrum ℝ D = {0} ∧ D.charpoly = X ^ (n + 1) ∧
+      D.charpoly.rootMultiplicity 0 = n + 1 ∧
+      Module.finrank ℝ (Module.End.eigenspace D 0) = 1 := by
+  intro D
+  have hNil : IsNilpotent D := by
+    refine ⟨n + 1, ?_⟩
+    apply LinearMap.ext
+    intro p
+    apply Subtype.ext
+    change ((polynomialDerivativeEnd n ^ (n + 1)) p).val = 0
+    rw [polynomialDerivativeEnd_pow_apply]
+    apply Polynomial.iterate_derivative_eq_zero_of_degree_lt
+    exact (mem_polynomialDegreeSpace.mp p.property).trans_lt (by exact_mod_cast Nat.lt_succ_self n)
+  have hChar : D.charpoly = X ^ (n + 1) := by
+    rw [hNil.charpoly_eq_X_pow_finrank, (polynomialDegreeSpace_basis n).1]
+  refine ⟨?_, hChar, ?_, ?_⟩
+  · ext a
+    rw [← Module.End.hasEigenvalue_iff_mem_spectrum, Module.End.hasEigenvalue_iff_isRoot_charpoly,
+      hChar]
+    simp [Polynomial.IsRoot]
+  · rw [hChar]
+    simpa only [Polynomial.C_0, sub_zero] using Polynomial.rootMultiplicity_X_sub_C_pow (0 : ℝ) (n + 1)
+  · rw [Module.End.eigenspace_zero]
+    exact polynomialDerivativeEnd_ker_dimension n
+
+end PolynomialDerivativeSpectrum
 
 end BenIsraelGreville.Chapter00

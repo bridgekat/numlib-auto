@@ -142,7 +142,8 @@ source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 81"
 
 [[node]]
 id = "polynomialDerivative_eigenvalue_multiplicities"
-kind = "theorem"
-desc = '''Differentiation of real polynomials of degree at most n has spectrum {0}, with algebraic multiplicity n+1 and geometric multiplicity one. Use the monomial coordinates from Ex. 15 to read the triangular derivative matrix and its one-dimensional kernel.'''
 source = "Ben-Israel and Greville, Chapter 0 §7, Ex. 78"
-deps = ["polynomialDerivative_toMatrix"]
+
+[[node]]
+id = "polynomialDerivativeEnd"
+source = "Ben-Israel and Greville, Chapter 0 §7, Exercise 78, differentiation endomorphism"
