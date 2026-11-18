@@ -1,35 +1,232 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-desc = '''Green kernels for closed partial differential operators. Define a Green kernel by the integral right-inverse relation on the actual operator domain, allowing vector-valued equations. Use the preceding Hilbert-space inverse theory to normalize generalized Green kernels.'''
 
 [[node]]
 id = "differentialExpression"
-kind = "definition"
-desc = '''The operator acts by the indicated differential expression, for example x↦A₁x′+A₀x, on functions satisfying differentiability, codomain integrability or continuity, and the specified initial or boundary conditions.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, (45)–(47)"
+source = "Ben-Israel and Greville, Ch. 9, §5, (46), differential expression"
+
+[[node]]
+id = "matrixDifferentialExpression"
+source = "Ben-Israel and Greville, Ch. 9, §5, (46), matrix differential expression"
+
+[[node]]
+id = "scalarDifferentialExpression"
+source = "Ben-Israel and Greville, Ch. 9, §5, (49), scalar differential expression"
+
+[[node]]
+id = "scalarBoundaryValues"
+source = "Ben-Israel and Greville, Ch. 9, §5, (50), scalar boundary vector"
+
+[[node]]
+id = "vectorBoundaryValues"
+source = "Ben-Israel and Greville, Ch. 9, §5, (56), vector boundary values"
 
 [[node]]
 id = "IsGreenKernel"
-kind = "definition"
-desc = '''A Green kernel gives the unique solution of Lx=y by integrating the kernel against y, for y in range L and injective L.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), Green function"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), Green kernel on L²"
+
+[[node]]
+id = "IsGreenKernel.existsUnique_solution"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), uniqueness of the solution"
 
 [[node]]
 id = "IsGeneralizedGreenKernel"
-kind = "definition"
-desc = '''A generalized Green kernel gives a particular solution for each y in range L, with its integral operator mapping that range into D(L).'''
-source = "Ben-Israel and Greville, Ch. 9, §5, after (48), generalized Green function"
+source = "Ben-Israel and Greville, Ch. 9, §5, after (48), generalized Green kernel on L²"
 
 [[node]]
 id = "isGeneralizedGreenKernel_iff_innerInverse"
-kind = "theorem"
-desc = '''The integral operator represented by a generalized Green kernel is an inner inverse of L on D(L), and conversely a kernel representing an inner inverse gives such a particular solution.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, generalized inverse characterization after (48)"
-deps = ["IsGeneralizedGreenKernel"]
+source = "Ben-Israel and Greville, Ch. 9, §5, after (48), generalized inverse characterization"
+
+[[node]]
+id = "boundaryCorrection_of_innerInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, (55), compatible boundary correction"
+
+[[node]]
+id = "dense_dirichletDerivative_domain"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(a), dense domain"
+
+[[node]]
+id = "isClosed_dirichletDerivative"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(a), closed operator"
+
+[[node]]
+id = "carrier_dirichletDerivative"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(a), carrier"
+
+[[node]]
+id = "range_dirichletDerivative_eq_ker_integral"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(a), zero-mean range"
+
+[[node]]
+id = "isNormallySolvable_dirichletDerivative"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(a), closed range"
+
+[[node]]
+id = "dirichletDerivative_adjoint_eq_neg_freeDerivative"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(b), adjoint sign and free endpoints"
+
+[[node]]
+id = "mem_dirichletDerivative_adjoint_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(b), exact adjoint Sobolev graph"
+
+[[node]]
+id = "carrier_dirichletDerivative_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(b), adjoint carrier"
+
+[[node]]
+id = "range_dirichletDerivative_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(b), full adjoint range"
+
+[[node]]
+id = "mem_dirichletSecondDerivative_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(c), Dirichlet second-derivative graph"
+
+[[node]]
+id = "mem_neumannSecondDerivative_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(d), Neumann second-derivative graph"
+
+[[node]]
+id = "ranges_intervalSecondDerivatives"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(c)–(d), ranges of the two second-derivative operators"
+
+[[node]]
+id = "exercise_9_25_maximalInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(e), maximal inverse by mean-subtracted primitive"
+
+[[node]]
+id = "exercise_9_25_greenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 25(e), equivalent Green kernel of the maximal inverse"
+
+[[node]]
+id = "exercise_9_26_adjoint_involution"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 26(a), (c)"
+
+[[node]]
+id = "exercise_9_26_products"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 26(b), exact domains of the two products"
+
+[[node]]
+id = "exercise_9_26_leftProduct_ne_maximalInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 26(b), failure of the first equality as partial operators"
+
+[[node]]
+id = "exercise_9_31"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 31, first-order companion reduction"
+
+[[node]]
+id = "exercise_9_34"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 34(a)–(d), the two reflexive identities and the two projection actions"
 
 [[node]]
 id = "maximalInverse_eq_project_greenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, (63), Loud's construction"
+
+[[node]]
+id = "exercise_9_35_projection_complements"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, (64), complementary projections"
+
+[[node]]
+id = "starProjection_span_eq_gram_sum"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, (65)–(66), finite-rank Gram projection"
+
+[[node]]
+id = "represents_gramProjectionGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, (65)–(66), integral kernel of the Gram projection"
+
+[[node]]
+id = "intervalDirichletGreenFunction_unit"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 38, the two branches of the unit-interval kernel"
+
+[[node]]
+id = "intervalDirichletGreenOperator_leftInverse"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 38, represented kernel inverts the Dirichlet second derivative"
+
+[[node]]
+id = "intervalDirichletGreenOperator_range_not_closed"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 38, the explicit Green operator has nonclosed range"
+
+[[node]]
+id = "RepresentsContinuousGreenAction"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), pointwise integral action on continuous functions"
+
+[[node]]
+id = "IsContinuousGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), ordinary Green kernel on continuous functions"
+
+[[node]]
+id = "IsContinuousGeneralizedGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), generalized Green kernel on continuous functions"
+
+[[node]]
+id = "IsContinuousGreenKernel.existsUnique_solution"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), unique pointwise solution"
+
+[[node]]
+id = "isContinuousGeneralizedGreenKernel_iff_innerInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), pointwise inner inverse characterization"
+
+[[node]]
+id = "exercise_9_27"
 kind = "theorem"
-desc = '''For normally solvable closed dense L with generalized Green operator G, its maximal inverse is (I−P_ker(L)) G (I−P_ker(L*)), which gives the corresponding kernel by composing with the orthogonal projection kernels.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, Loud construction"
-deps = ["IsGeneralizedGreenKernel", "theorem_2_projections"]
+desc = '''Define the closed densely defined gradient H¹₀([0,π]²) → L²([0,π]²)², identify its adjoint with negative weak divergence on the maximal L² divergence domain, and identify the first Gram operator with the negative Dirichlet Laplacian. Construct the double sine-series kernel and establish its derivative representation for the Moore–Penrose inverse of the gradient. Smooth vector fields lie in the adjoint domain; the printed C¹ domain is generally a proper subspace of the Hilbert adjoint domain.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(a)–(e), Dirichlet gradient on the square"
+
+[[node]]
+id = "exercise_9_28"
+kind = "theorem"
+desc = '''Construct the closed densely defined scalar expression (49) on the order-n Sobolev space with homogeneous boundary matrix constraint (50). Under the stated continuous coefficient regularity and nowhere-zero leading coefficient, prove nullity n for the unrestricted differential expression and for the maximal realization of its formal differential adjoint. Obtain the corresponding constrained nullity bounds and closed range. Apply the carrier and normally solvable inverse results to obtain (e)–(g) for this concrete operator, including the bounded inverse on the range.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a)–(g), ordinary scalar boundary problem"
+deps = ["scalarDifferentialExpression", "scalarBoundaryValues"]
+
+[[node]]
+id = "exercise_9_29"
+kind = "theorem"
+desc = '''With a fundamental basis extending an orthonormal basis of the constrained null space, prove the causal Wronskian kernel (51) gives a particular solution of the unrestricted scalar equation. For forcing in range, prove that the coefficient correction (55), followed by projection off the constrained null space and extension by zero on the orthogonal complement of the range, yields the L² kernel of the maximal inverse.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, (51)–(55), Wronskian Green kernel"
+deps = ["exercise_9_28", "boundaryCorrection_of_innerInverse", "maximalInverse_eq_project_greenKernel"]
+
+[[node]]
+id = "exercise_9_30_operator"
+kind = "theorem"
+desc = '''For continuous A₀, continuously differentiable pointwise invertible A₁, and a rank-m boundary matrix, prove closedness and density of the first-order realization, construct its adjoint, and derive the nullity bounds, index relation k + m = k* + n and closed primal and dual ranges. The adjoint expression is (57). The endpoint pairing uses A₁(t)*y(t) at t = a,b. In the matrix form use a full column basis of ker M as the test matrix.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a)–(e), (57)–(58), vector boundary problem"
+deps = ["matrixDifferentialExpression", "vectorBoundaryValues"]
+
+[[node]]
+id = "exercise_9_30_green"
+kind = "theorem"
+desc = '''For a fundamental matrix X, verify the sign kernel (59) with the factor A₁(t)⁻¹ on the right. Verify the kernel resulting from its boundary correction −X(s)(M X̂)⁽¹⁾ M applied to the actual two endpoint kernel values. With endpoint order (a,b) this amounts to adding (M X̂)⁽¹⁾ M diag(I,−I) X̂ inside the bracket in (60). The printed kernels omit the leading coefficient factor and (60) uses the opposite sign for this endpoint ordering.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f)–(g), (59)–(60), vector fundamental matrix"
+deps = ["exercise_9_30_operator", "boundaryCorrection_of_innerInverse"]
+
+[[node]]
+id = "exercise_9_32"
+kind = "theorem"
+desc = '''Under a common essentially bounded measurable kernel class, prove the almost-everywhere parametrization H−G = X₀(s)A(t)* + B(s)Y₀(t)* using bases of the primal and adjoint null spaces. The unrestricted L² notion of generalized Green kernel only controls forcing in range and therefore does not force the free coefficients to be essentially bounded.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, (61), class of generalized Green matrices"
+deps = ["exercise_9_30_operator", "IsGeneralizedGreenKernel"]
+
+[[node]]
+id = "exercise_9_33"
+kind = "theorem"
+desc = '''For essentially bounded Θ and Ψ with invertible biorthogonality matrices ∫Θ*X₀ and ∫Y₀*Ψ, prove existence and uniqueness up to a.e. equality of the normalized kernel satisfying both integral null constraints. Establish the resulting operator's kernel span Ψ and exact range D(L) ∩ (span Θ)⊥; the ambient orthogonal complement is its closure when the differential domain is dense.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, (62), biorthogonal normalization"
+deps = ["exercise_9_32"]
+
+[[node]]
+id = "exercise_9_34_adjoint_products"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 34(c)–(d), partial-map adjoints"
+
+[[node]]
+id = "exercise_9_35_kernel_expansion"
+kind = "theorem"
+desc = '''Define the two single-integral products K_N(L)G and G K_N(L*) and their iterated double-integral product under row and product integrability hypotheses, then prove by Fubini that the four-term kernel represents the maximal inverse on its full domain. The normalized operator formula (63) and the two projection kernels (65)–(66) are formalized.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, (67), expanded kernel formula"
+deps = ["maximalInverse_eq_project_greenKernel", "represents_gramProjectionGreenKernel"]
+
+[[node]]
+id = "exercise_9_36"
+kind = "theorem"
+desc = '''For Lx=x′−Bx with x(0)=x(1)=0, prove the free-endpoint adjoint, its homogeneous basis X⁻*, the Gram projection kernel with middle factor (∫X⁻¹X⁻*)⁻¹, and the projected Green formula. A positive fundamental kernel is causal (t<s), or a negative kernel is anticausal (s<t); the positive anticausal kernel printed in (69) differentiates to minus the forcing.'''
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, (68)–(69), endpoint-zero first-order system"
+deps = ["exercise_9_30_operator", "exercise_9_35_kernel_expansion"]

@@ -285,6 +285,10 @@ id = "theorem_2_signed_adjoint_graph"
 source = "Ben-Israel and Greville, Ch. 9, §3, Equation (25b), signed adjoint graph"
 
 [[node]]
+id = "mem_graph_partialComp_iff"
+source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 2(i)–(j), graph membership for partial products"
+
+[[node]]
 id = "infinitely_many_dense_or_closedKernel_tsengInverses"
 kind = "theorem"
 desc = "Construct examples with infinitely many Tseng inverses with dense domains and with infinitely many Tseng inverses with closed kernels. Use the proved parameterization by subspaces of the orthogonal complement of the range."

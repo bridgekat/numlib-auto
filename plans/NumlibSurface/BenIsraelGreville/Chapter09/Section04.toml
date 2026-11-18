@@ -1,57 +1,295 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-desc = '''Hilbert–Schmidt kernels on a bounded real interval. Build their bounded integral maps by Cauchy–Schwarz and Fubini, relate the adjoint kernel to coordinate swap and conjugation, then obtain the Fredholm alternative from the compact-operator backbone.'''
-
 [[node]]
 id = "fredholmIntegralOperator"
-kind = "definition"
-desc = '''A square-integrable kernel K acts on L² by the integral against the second variable, and the second-kind operator is I−λK. Make the integral and membership assertions almost everywhere.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, (30), Exercise 8"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), Fredholm property (a)"
+
+[[node]]
+id = "fredholmIntegralOperator_apply_ae"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), integral action"
+
+[[node]]
+id = "norm_fredholmIntegralOperator_le"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), bound by the kernel norm"
+
+[[node]]
+id = "fredholmSecondKind"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), second-kind coefficient"
+
+[[node]]
+id = "fredholmSecondKind_apply_ae"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), almost-everywhere equation"
+
+[[node]]
+id = "adjointKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (b), conjugate-transpose kernel"
+
+[[node]]
+id = "memLp_adjointKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (b), square-integrability of the adjoint kernel"
 
 [[node]]
 id = "fredholmIntegralOperator_adjoint"
-kind = "theorem"
-desc = '''The adjoint kernel is conjugate-transpose K*(s,t)=conj K(t,s), and the adjoint of I−λK is I−conj λ K*.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, Fredholm property (b)"
-deps = ["fredholmIntegralOperator"]
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (b), adjoint of the integral operator"
+
+[[node]]
+id = "fredholmSecondKind_adjoint"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (b), conjugated parameter"
+
+[[node]]
+id = "fredholmIntegralOperator_congr"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), independence of kernel representatives"
+
+[[node]]
+id = "fredholmIntegralOperator_add"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), additivity in the kernel"
+
+[[node]]
+id = "fredholmIntegralOperator_smul"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), homogeneity in the kernel"
+
+[[node]]
+id = "fredholmKernelToOperator"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), bounded map from square-integrable kernels"
+
+[[node]]
+id = "rankOneKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 18 and 22, (36) and (43), separated kernels"
+
+[[node]]
+id = "memLp_rankOneKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 18 and 22, square-integrability of separated kernels"
+
+[[node]]
+id = "fredholmIntegralOperator_rankOneKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 18 and 22, separated kernels act by rank one"
+
+[[node]]
+id = "isCompactOperator_fredholmIntegralOperator"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm properties (c)–(d), compactness of the integral operator"
+
+[[node]]
+id = "fredholmKernelLeftComposition"
+source = "Ben-Israel and Greville, Chapter 9, §4, (32), construction of a square-integrable kernel for composition"
+
+[[node]]
+id = "fredholmKernelToOperator_leftComposition"
+source = "Ben-Israel and Greville, Chapter 9, §4, (32), left ideal property for square-integrable kernels"
 
 [[node]]
 id = "fredholm_nullity_range"
-kind = "theorem"
-desc = '''Both Fredholm null spaces have the same finite dimension, both ranges are closed and each range is the orthogonal complement of the other null space.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, (31), (33)"
-deps = ["fredholmIntegralOperator_adjoint"]
+source = "Ben-Israel and Greville, Chapter 9, §4, (31), (33), finite nullities and closed ranges"
 
 [[node]]
 id = "IsFredholmRegularValue"
-kind = "definition"
-desc = '''A regular parameter λ has zero nullity for I−λK. Other λ are characteristic values, with nonzero solutions of (I−λK)x=0 called eigenfunctions; λ reciprocal is the eigenvalue of the kernel operator in Mathlib convention.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, Fredholm properties (d)–(e)"
-deps = ["fredholmIntegralOperator"]
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (d), regular parameter"
+
+[[node]]
+id = "not_isFredholmRegularValue_iff"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (e), characteristic parameter"
+
+[[node]]
+id = "not_isFredholmRegularValue_iff_reciprocal"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (e), reciprocal ordinary eigenvalue"
+
+[[node]]
+id = "exists_fredholmSolutionEquiv"
+source = "Ben-Israel and Greville, Chapter 9, §4, Fredholm property (d), bounded invertibility"
 
 [[node]]
 id = "IsFredholmResolvent"
-kind = "definition"
-desc = '''A resolvent kernel R for a regular λ represents the bounded inverse by I+λR.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, (32), (34)"
+source = "Ben-Israel and Greville, Chapter 9, §4, (32), definition of a resolvent kernel"
+
+[[node]]
+id = "isFredholmRegularValue_of_resolvent"
+source = "Ben-Israel and Greville, Chapter 9, §4, (32), two-sided resolvents imply regularity"
 
 [[node]]
 id = "fredholm_resolvent_exists"
-kind = "theorem"
-desc = '''For a regular λ the Fredholm equation has a unique solution for every right-hand side via an L² resolvent kernel. Construct R via the Hilbert–Schmidt ideal property and the inverse identity.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, (32), (34)"
-deps = ["IsFredholmRegularValue", "IsFredholmResolvent", "fredholm_nullity_range"]
+source = "Ben-Israel and Greville, Chapter 9, §4, (32), (34), existence of a square-integrable resolvent"
+
+[[node]]
+id = "fredholm_solution_resolvent"
+source = "Ben-Israel and Greville, Chapter 9, §4, (34), unique solution and its integral representative"
 
 [[node]]
 id = "fredholm_alternative"
-kind = "theorem"
-desc = '''At a characteristic λ the equation is consistent exactly for right-hand sides orthogonal to the adjoint null space. Every solution is obtained by adding a linear combination of a null-space basis to a particular one.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, (33), (35)"
-deps = ["fredholm_nullity_range"]
+source = "Ben-Israel and Greville, Chapter 9, §4, (33), (35), orthogonality and homogeneous solutions"
 
 [[node]]
 id = "IsFredholmPseudoresolvent"
-kind = "definition"
-desc = '''An L² kernel R is a pseudoresolvent if I+λR maps a right-hand side in the Fredholm range to a solution. This is precisely the inner-inverse equation on operators.'''
-source = "Ben-Israel and Greville, Ch. 9, §4, Exercise 18, (34)"
-deps = ["fredholmIntegralOperator"]
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 18, definition of a pseudoresolvent"
+
+[[node]]
+id = "isFredholmPseudoresolvent_iff"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, inner-inverse equation"
+
+[[node]]
+id = "fredholmKernelToOperator_toLp"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), agreement with a chosen representative"
+
+[[node]]
+id = "ae_eq_zero_of_fredholmIntegralOperator_eq_zero"
+source = "Ben-Israel and Greville, Chapter 9, §4, (40), the operator determines the kernel"
+
+[[node]]
+id = "fredholmKernelToOperator_injective"
+source = "Ben-Israel and Greville, Chapter 9, §4, (40), injectivity on kernel classes"
+
+[[node]]
+id = "fredholm_resolvent_ae_unique"
+source = "Ben-Israel and Greville, Chapter 9, §4, (40), uniqueness of the resolvent at nonzero regular parameters"
+
+[[node]]
+id = "rankOneKernelClass"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 18–20, kernel classes of rank-one operators"
+
+[[node]]
+id = "fredholmKernelToOperator_rankOneKernelClass"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 18–20, integral operator of a rank-one kernel class"
+
+[[node]]
+id = "fredholm_alternative_basis"
+source = "Ben-Israel and Greville, Chapter 9, §4, (35), finite basis parametrization"
+
+[[node]]
+id = "exercise_9_21"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 21, square-zero kernel and all parameters regular"
+
+[[node]]
+id = "fredholmHurwitzKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 18, (36), finite rank correction"
+
+[[node]]
+id = "exercise_9_18"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 18, regularity and pseudoresolvent identities"
+
+[[node]]
+id = "exercise_9_19_perturbation"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (37), the free-coefficient pseudoresolvents"
+
+[[node]]
+id = "exercise_9_20"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 20, (41)–(42), maximal Tseng inverse of the original operator"
+
+[[node]]
+id = "fredholmIntervalMeasure"
+source = "Ben-Israel and Greville, Chapter 9, §4, (30), Lebesgue measure on a bounded interval"
+
+[[node]]
+id = "fredholmDegenerateKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22, (43), degenerate kernels"
+
+[[node]]
+id = "exists_fredholmDegenerateKernel_near"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22, approximation by degenerate kernels"
+
+[[node]]
+id = "fredholmKernelToOperator_degenerate"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22, (43), finite rank operator sum"
+
+[[node]]
+id = "fredholmDegenerateMatrix"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(a), finite coefficient matrix"
+
+[[node]]
+id = "fredholmDegenerateMatrix_apply"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(a), entries of the coefficient matrix"
+
+[[node]]
+id = "exercise_9_22a"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(a), characteristic parameter and matrix eigenvalue"
+
+[[node]]
+id = "exercise_9_22b"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(b), spans of the kernel and adjoint eigenfunctions"
+
+[[node]]
+id = "fredholmIntervalOne"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, constant vector on the example interval"
+
+[[node]]
+id = "fredholmIntervalOne_ae"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, representative of the constant vector"
+
+[[node]]
+id = "fredholmIntervalCoordinate"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, coordinate vector on the example interval"
+
+[[node]]
+id = "fredholmIntervalCoordinate_ae"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, representative of the coordinate vector"
+
+[[node]]
+id = "fredholmPolynomialKernel"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, the polynomial kernels on the example interval"
+
+[[node]]
+id = "fredholmPolynomialKernel_ae"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, exact polynomial representatives"
+
+[[node]]
+id = "exercise_9_23_resolvent"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 23, (44), regular resolvent formula"
+
+[[node]]
+id = "exercise_9_23_characteristic"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 23, (44), consistency and all solutions at the characteristic value"
+
+[[node]]
+id = "exercise_9_23_regular_iff"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 23, (44), the sole characteristic value"
+
+[[node]]
+id = "exercise_9_24_resolvent"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, explicit Hurwitz resolvent"
+
+[[node]]
+id = "exercise_9_24_regular_iff"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, the sole characteristic value"
+
+[[node]]
+id = "exercise_9_24_nullSpaces"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, both one-dimensional null spaces"
+
+[[node]]
+id = "fredholmKernelProduct_apply_ae"
+kind = "theorem"
+desc = '''Identify the L² kernel obtained by bounded composition with the almost-everywhere formula (KR)(s,t) = ∫ K(s,u)R(u,t) du. Justify the three-variable Fubini step.'''
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (38)–(40), convolution of kernels"
+deps = ["fredholmKernelToOperator_leftComposition", "fredholmKernelToOperator_injective"]
+
+[[node]]
+id = "exercise_9_19_pseudoresolvent_characterization"
+kind = "theorem"
+desc = '''Characterize all pseudoresolvent kernels by both operator defects expanded along the two null-space bases, with their biorthogonality conditions. The general inner-inverse equivalence and the displayed coefficient perturbations are proved.'''
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (38a)–(39)"
+deps = ["isFredholmPseudoresolvent_iff", "exercise_9_19_perturbation", "fredholmKernelProduct_apply_ae"]
+
+[[node]]
+id = "exercise_9_19_resolvent_equations"
+kind = "theorem"
+desc = '''Prove the two regular convolution equations and their uniqueness. At zero the equations pick R = K even though the unscaled inverse representation does not identify its kernel.'''
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (40)"
+deps = ["fredholm_resolvent_exists", "fredholm_resolvent_ae_unique", "fredholmKernelProduct_apply_ae"]
+
+[[node]]
+id = "exercise_9_22c"
+kind = "theorem"
+desc = '''Express the resolvent of the degenerate kernel using the inverse of I−λB and then identify it with the printed bordered determinant ratio.'''
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(c), bordered determinant"
+deps = ["exercise_9_22a", "fredholmDegenerateMatrix_apply", "fredholm_resolvent_exists"]
+
+[[node]]
+id = "exercise_9_23_normalized_bases"
+kind = "theorem"
+desc = '''Normalize the constant and coordinate vectors into orthonormal bases for both null spaces at λ=1/2. Use those named bases in the abstract Hurwitz correction and prove the corrected kernel and its resolvent are zero.'''
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 23, (44), normalized bases and Hurwitz correction"
+deps = ["exercise_9_23_characteristic", "exercise_9_23_regular_iff", "exercise_9_18"]
+
+[[node]]
+id = "exercise_9_24_hurwitz_match"
+kind = "theorem"
+desc = '''Normalize the two spanning vectors of the null spaces and identify the printed modified polynomial with the abstract Hurwitz correction of the original kernel. The spectrum, null spaces, and resolvent of the displayed modification are proved.'''
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, normalized bases and the Hurwitz correction"
+deps = ["exercise_9_24_nullSpaces", "exercise_9_24_resolvent", "exercise_9_18"]

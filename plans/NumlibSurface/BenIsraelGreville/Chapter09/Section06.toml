@@ -1,58 +1,246 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-desc = '''Least-residual and least-norm solutions for partial operators. Formalize the range projection argument for an arbitrary dense subspace of its closure. For the extremal inverse use a linear relation graph and the inverse of the carrier map as in §9.3.'''
 
 [[node]]
 id = "IsExtremalSolution"
-kind = "definition"
-desc = '''An extremal solution is a point in the partial domain minimizing the norm of Tx−y there.'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Definition 4, (70)–(71)"
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 4, Equations (70)–(71)"
 
 [[node]]
 id = "IsLeastExtremalSolution"
-kind = "definition"
-desc = '''A least extremal solution is an extremal solution of strictly smaller norm than every distinct extremal solution.'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Definition 4"
-deps = ["IsExtremalSolution"]
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 4, strict least-norm criterion"
+
+[[node]]
+id = "isExtremalSolution_iff_residual_mem_orthogonal"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 5, perpendicular residual"
+
+[[node]]
+id = "isExtremalSolution_iff_apply_eq_projection"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 5, Equation (73)"
 
 [[node]]
 id = "theorem_5"
-kind = "theorem"
-desc = '''Extremal solutions exist iff the projection of y onto closure(range T) lies in range T, and they are precisely the points mapped to that projection. The scalar infimum of the residual norm is the norm of the orthogonal residual, correcting the vector-valued right-hand side of (74).'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 5, (72)–(74)"
-deps = ["IsExtremalSolution"]
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 5, Equations (72)–(74)"
+
+[[node]]
+id = "extremalSolutions_sub_mem_ker"
+source = "Ben-Israel and Greville, Ch. 9, §6, Lemma 4, Equation (75)"
 
 [[node]]
 id = "lemma_4"
-kind = "theorem"
-desc = '''For two extremal solutions, the projections onto (ker T)⊥ coincide. Their respective projections onto closure(ker T) belong to ker T simultaneously, since the difference is in ker T.'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Lemma 4(a)–(b), (75)"
-deps = ["theorem_5"]
+source = "Ben-Israel and Greville, Ch. 9, §6, Lemma 4(a)–(b)"
+
+[[node]]
+id = "isLeastExtremalSolution_iff"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 6, least-norm criterion"
 
 [[node]]
 id = "theorem_6"
-kind = "theorem"
-desc = '''Given an extremal solution x, a least extremal solution exists iff the projection of x onto closure(ker T) lies in ker T. The least extremal solution is the orthogonal complement projection of x. For necessity use density of the kernel in its closure to identify the norm infimum.'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 6, (76)–(78)"
-deps = ["IsLeastExtremalSolution", "lemma_4"]
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 6, Equations (76)–(78)"
+
+[[node]]
+id = "extremalKernelPart"
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 5, Equation (79)"
+
+[[node]]
+id = "exists_extremalDomainComplement"
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 5, Equation (80)"
 
 [[node]]
 id = "extremalInverse"
-kind = "definition"
-desc = '''The inverse graph is the sum of the graph on the carrier and the vertical copy of (range T)⊥. It consists of (x,Tx+z) for carrier x and z orthogonal to range T.'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Definition 5, (79)–(80)"
-deps = ["carrier", "graph_iff_disjoint_vertical"]
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 5, extremal inverse"
+
+[[node]]
+id = "mem_graph_extremalInverse_iff"
+source = "Ben-Israel and Greville, Ch. 9, §6, Definition 5, inverse graph"
+
+[[node]]
+id = "extremalInverse_domain"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(a), domain of the extremal inverse"
+
+[[node]]
+id = "extremalInverse_range"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(b), carrier range"
+
+[[node]]
+id = "extremalInverse_ker"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(c), kernel"
+
+[[node]]
+id = "extremalInverse_range_le_domain"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7, range containment"
+
+[[node]]
+id = "extremalInverse_apply_projection"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(d), range projection on the inverse domain"
+
+[[node]]
+id = "extremalInverse_projection_apply"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(e), carrier projection on the kernel-plus-carrier domain"
 
 [[node]]
 id = "theorem_7"
-kind = "theorem"
-desc = '''The extremal inverse has domain T(carrier T) ⊕ (range T)⊥, range carrier T, and kernel (range T)⊥. Its product with T in each direction acts as the indicated orthogonal projection on the stated partial domain.'''
 source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(a)–(e)"
-deps = ["extremalInverse"]
+
+[[node]]
+id = "isLeastExtremalSolution_iff_extremalInverse_graph"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 8, Equations (81)–(82), pointwise characterization"
 
 [[node]]
 id = "theorem_8"
-kind = "theorem"
-desc = '''The least extremal solution exists iff y is in the domain of the extremal inverse and is then given by that inverse. For closed kernel the extremal and maximal Tseng inverses agree.'''
-source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 8, (81)–(82)"
-deps = ["theorem_6", "theorem_7", "maximalTsengInverse"]
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 8, Equations (81)–(82)"
+
+[[node]]
+id = "extremalInverse_eq_maximalTsengInverse_of_isClosed_ker"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 8, closed-kernel case"
+
+[[node]]
+id = "exercise_9_37"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 37, general dense-range obstruction"
+
+[[node]]
+id = "exists_no_extremalSolution_of_nonclosed_range"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercises 37–38, nonclosed range obstruction"
+
+[[node]]
+id = "extremalInverse_le_erdelyiInverse"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(a), comparison with the Erdélyi inverse"
+
+[[node]]
+id = "theorem_7_range_not_le_domain_example"
+source = "Ben-Israel and Greville, Ch. 9, §6, Theorem 7(a), noncontainment of the original range"
+
+[[node]]
+id = "exercise_9_39_unbounded_functional"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, general unbounded-functional mechanism"
+
+[[node]]
+id = "extremalInverse_decomposable"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 40, domain decomposition"
+
+[[node]]
+id = "iteratedExtremalInverse"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 40, maximal Tseng inverse of the extremal inverse"
+
+[[node]]
+id = "mem_graph_iteratedExtremalInverse_iff"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 40(a), iterated inverse graph"
+
+[[node]]
+id = "exercise_9_40"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 40(b)–(d), domain, range, and kernel"
+
+[[node]]
+id = "extremalCoreDomain"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 41, orthogonal sum of kernel and carrier"
+
+[[node]]
+id = "exercise_9_41a"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 41(a), three summands of the domain"
+
+[[node]]
+id = "exercise_9_41b"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 41(b), agreement on the core domain"
+
+[[node]]
+id = "exercise_9_41c"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 41(c), zero-extension criterion"
+
+[[node]]
+id = "kernelRestrictedOperator"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 45, restriction to the constraint kernel"
+
+[[node]]
+id = "kernelRestrictedPseudoinverse"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 45, kernel-restricted pseudoinverse"
+
+[[node]]
+id = "IsKernelRestrictedPseudoinverse"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 45, five equations"
+
+[[node]]
+id = "exercise_9_45"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 45, uniqueness of the solution of the five equations"
+
+[[node]]
+id = "IsLeastConstrainedExtremalSolution"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 46, least extremal solution in an affine fiber"
+
+[[node]]
+id = "exercise_9_46"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 46, affine constraint formula"
+
+[[node]]
+id = "exercise_9_44"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 44, adjoint quadratic-form condition"
+
+[[node]]
+id = "weightedNormalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercises 47–48, normal operator"
+
+[[node]]
+id = "weightedNormalEquiv"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercises 47–48, invertibility of the normal operator"
+
+[[node]]
+id = "weightedNormalEquiv_apply"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercises 47–48, forward evaluation of the normal operator equivalence"
+
+[[node]]
+id = "weightedExtremalCost"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercises 47–48, weighted square objective"
+
+[[node]]
+id = "IsWeightedExtremalSolution"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercises 47–48, weighted minimizer on a solution fiber"
+
+[[node]]
+id = "exercise_9_48"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 48, shifted weighted minimization and corrected multiplier formula"
+
+[[node]]
+id = "exercise_9_47"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 47, unshifted weighted minimization and multiplier"
+
+[[node]]
+id = "exercise_9_42"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 42, exact kernel and nonzero complement"
+
+[[node]]
+id = "exercise_9_43"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 43, complement line disjoint from the iterated inverse domain"
+
+[[node]]
+id = "exercise_9_37_diagonal"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 37, harmonic-coordinate datum of Exercise 7"
+
+[[node]]
+id = "exists_no_extremalSolution_of_compact_infinite_range"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 38, compact infinite-range obstruction"
+
+[[node]]
+id = "exercise_9_38"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 38, explicit Dirichlet Green operator"
+
+[[node]]
+id = "halfLineVolume"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, measure on the half-line"
+
+[[node]]
+id = "HalfLineL2"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, square-integrable functions on the half-line"
+
+[[node]]
+id = "halfLineMomentDomain"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, absolutely integrable moment domain"
+
+[[node]]
+id = "halfLineMoment"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, partial first-moment functional"
+
+[[node]]
+id = "halfLineMoment_trial"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, printed trial sequence and exact squared norms"
+
+[[node]]
+id = "exercise_9_39"
+source = "Ben-Israel and Greville, Ch. 9, §6, Exercise 39, consistency without a least extremal solution"

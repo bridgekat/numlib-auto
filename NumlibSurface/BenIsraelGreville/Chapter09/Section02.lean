@@ -1383,13 +1383,13 @@ theorem exercise_9_3 [CompleteSpace E] (D L : Submodule 𝕜 E)
 
 omit [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] in
 /-- **Exercise 4** of [benIsrael2003generalized], Chapter 9.
-Every proper dense subspace is the domain of a nonzero bounded partial
-operator with trivial carrier. This rank-one example also has a closed
-everywhere-defined extension. -/
-theorem exercise_9_4 [CompleteSpace E] (D : Submodule 𝕜 E) (hD : Dense (D : Set E))
+For a proper dense domain, the rank-one example has the indicated kernel,
+fixes its range pointwise, and has a closed everywhere-defined extension. -/
+theorem exercise_9_4_rankOne [CompleteSpace E] (D : Submodule 𝕜 E) (hD : Dense (D : Set E))
     (v : E) (hv : v ∉ D) :
     ∃ T : E →ₗ.[𝕜] E, T.domain = D ∧ IsBoundedOperator T ∧ T.IsClosable ∧
-      T.toFun.range ≠ ⊥ ∧ carrier T = ⊥ := by
+      T.toFun.range ≠ ⊥ ∧ carrier T = ⊥ ∧ T.ker = D ⊓ (𝕜 ∙ v)ᗮ ∧
+      ∀ x : T.domain, (T x, T x) ∈ T.graph := by
   let f := innerSL 𝕜 v
   have hex : ∃ a ∈ D, f a ≠ 0 := by
     by_contra! h
@@ -1454,14 +1454,32 @@ theorem exercise_9_4 [CompleteSpace E] (D : Submodule 𝕜 E) (hD : Dense (D : S
       rw [← T.ker.orthogonal_closure, hk, hKcl]
       change Lᗮᗮ = L
       rw [Submodule.orthogonal_orthogonal_eq_closure, hL.submodule_topologicalClosure_eq]
-    rw [carrier, hker, Submodule.eq_bot_iff]
-    rintro x ⟨hx, hxL⟩
-    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hxL
-    by_cases hc : c = 0
-    · rw [hc, zero_smul]
-    · exfalso
-      apply hv
-      simpa only [smul_smul, inv_mul_cancel₀ hc, one_smul] using D.smul_mem c⁻¹ hx
+    refine ⟨?_, hk, ?_⟩
+    · rw [carrier, hker, Submodule.eq_bot_iff]
+      rintro x ⟨hx, hxL⟩
+      obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hxL
+      by_cases hc : c = 0
+      · rw [hc, zero_smul]
+      · exfalso
+        apply hv
+        simpa only [smul_smul, inv_mul_cancel₀ hc, one_smul] using D.smul_mem c⁻¹ hx
+    · intro x
+      let y : T.domain := ⟨f x • u, D.smul_mem _ hu⟩
+      refine T.mem_graph_iff.mpr ⟨y, (hTa x).symm, ?_⟩
+      rw [hTa y, hTa x]
+      change f (f x • u) • u = f x • u
+      rw [map_smul, hfu, smul_eq_mul, mul_one]
+
+omit [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] in
+/-- **Exercise 4** of [benIsrael2003generalized], Chapter 9.
+Every proper dense subspace is the domain of a nonzero bounded partial
+operator with trivial carrier and a closed everywhere-defined extension. -/
+theorem exercise_9_4 [CompleteSpace E] (D : Submodule 𝕜 E) (hD : Dense (D : Set E))
+    (v : E) (hv : v ∉ D) :
+    ∃ T : E →ₗ.[𝕜] E, T.domain = D ∧ IsBoundedOperator T ∧ T.IsClosable ∧
+      T.toFun.range ≠ ⊥ ∧ carrier T = ⊥ := by
+  obtain ⟨T, hdom, hB, hclos, hR, hC, _, _⟩ := exercise_9_4_rankOne D hD v hv
+  exact ⟨T, hdom, hB, hclos, hR, hC⟩
 
 omit [NormedAddCommGroup F] [InnerProductSpace 𝕜 F] in
 /-- **Exercise 6** of [benIsrael2003generalized], Chapter 9.

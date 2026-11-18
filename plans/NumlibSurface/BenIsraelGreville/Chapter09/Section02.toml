@@ -265,6 +265,10 @@ id = "exercise_9_4"
 source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 4"
 
 [[node]]
+id = "exercise_9_4_rankOne"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 4, exact rank-one construction"
+
+[[node]]
 id = "exercise_9_6"
 source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 6"
 

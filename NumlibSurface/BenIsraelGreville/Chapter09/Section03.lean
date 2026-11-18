@@ -1396,7 +1396,9 @@ section GramOperators
 variable [CompleteSpace E] [CompleteSpace F]
 
 omit [CompleteSpace E] [CompleteSpace F] in
-private theorem mem_graph_partialComp_iff {G : Type*} [AddCommGroup G] [Module 𝕜 G]
+/-- A graph pair in a partial composition has an intermediate value in
+the graphs of the two factors. -/
+theorem mem_graph_partialComp_iff {G : Type*} [AddCommGroup G] [Module 𝕜 G]
     (S : F →ₗ.[𝕜] G) (T : E →ₗ.[𝕜] F) {x : E} {z : G} :
     (x, z) ∈ (partialComp S T).graph ↔ ∃ y : F, (x, y) ∈ T.graph ∧ (y, z) ∈ S.graph := by
   constructor
