@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Introduction
 import NumlibSurface.BenIsraelGreville.Chapter00.Section01
+import NumlibSurface.BenIsraelGreville.Chapter00.Section04
 import NumlibSurface.BenIsraelGreville.Chapter01.Section01
 import NumlibSurface.BenIsraelGreville.Chapter01.Section02
 import NumlibSurface.BenIsraelGreville.Chapter01.Section03
@@ -15,6 +16,7 @@ import NumlibSurface.BenIsraelGreville.Chapter02.Section01
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
 import NumlibSurface.BenIsraelGreville.Chapter02.Section03
 import NumlibSurface.BenIsraelGreville.Chapter02.Section04
+import NumlibSurface.BenIsraelGreville.Chapter02.Section06
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
 import NumlibSurface.BenIsraelGreville.Chapter02.Section09
 import NumlibSurface.BenIsraelGreville.Chapter02.Section10
@@ -48,6 +50,7 @@ reduced normal equations.
 |---|---|---|
 | Introduction | `Introduction` | Ordinary and generalized inverses, solution of linear systems |
 | §0.1 | `Chapter00.Section01` | Scalars and vectors |
+| §0.4 | `Chapter00.Section04` | Gaussian elimination example |
 | §1.1 | `Chapter01.Section01` | Penrose equations |
 | §1.2 | `Chapter01.Section02` | Inner inverse construction from Hermite form |
 | §1.3 | `Chapter01.Section03` | Properties of inner inverses |
@@ -59,6 +62,7 @@ reduced normal equations.
 | §2.2 | `Chapter02.Section02` | Characterizations by one Hermitian product |
 | §2.3 | `Chapter02.Section03` | Outer inverses of fixed rank |
 | §2.4 | `Chapter02.Section04` | Idempotents and oblique projectors |
+| §2.6 | `Chapter02.Section06` | Prescribed range and null space |
 | §2.7 | `Chapter02.Section07` | Orthogonal projectors |
 | §2.9 | `Chapter02.Section09` | Restricted inverses |
 | §2.10 | `Chapter02.Section10` | Bott–Duffin inverse |

@@ -1,5 +1,8 @@
 namespace = "BenIsraelGreville.Chapter00"
-desc = '''Use Mathlib echelon predicates and elementary-matrix induction, and the existing rank factorization API. Keep normalized pivots explicit in the block theorem because the printed definition omits this requirement.'''
+
+[[node]]
+id = "hermiteExampleMatrix"
+source = "Ben-Israel and Greville, Chapter 0 §4.4, Exercise 51, Equation (80)"
 
 [[node]]
 id = "IsHermiteNormalForm"

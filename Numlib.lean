@@ -585,6 +585,7 @@ import Numlib.LinearAlgebra.CyclicDecomposition.InvariantFactors
 import Numlib.LinearAlgebra.Dimension.Constructions
 import Numlib.LinearAlgebra.Dimension.Finrank
 import Numlib.LinearAlgebra.Eigenspace.Spectral
+import Numlib.LinearAlgebra.GeneralizedInverse
 import Numlib.LinearAlgebra.Matrix.Aeval
 import Numlib.LinearAlgebra.Matrix.Assembly
 import Numlib.LinearAlgebra.Matrix.Band

@@ -1,0 +1,4 @@
+namespace = "LinearMap"
+
+[[node]]
+id = "existsUnique_outerInverse_iff"
