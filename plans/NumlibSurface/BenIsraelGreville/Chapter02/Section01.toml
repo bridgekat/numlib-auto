@@ -18,18 +18,32 @@ source = 'Ben-Israel and Greville, Ch. 2, Theorem 2'
 
 [[node]]
 id = 'vectorization'
-kind = 'definition'
-desc = '''Row vectorization turns AXB into (A ⊗ Bᵀ)vec(X); transpose and Kronecker multiplication transport inner inverses. Reuse Mathlib Matrix.kronecker.'''
 source = 'Ben-Israel and Greville, Ch. 2, Exercise 2, (8)–(13)'
 
 [[node]]
 id = 'pinv_kronecker'
-kind = 'theorem'
-desc = '''The Moore–Penrose inverse of a Kronecker product is the Kronecker product of the Moore–Penrose inverses.'''
 source = 'Ben-Israel and Greville, Ch. 2, Exercise 3'
 
 [[node]]
 id = 'commonSolution'
-kind = 'theorem'
-desc = '''AX=B and XD=E have a common solution iff each is consistent and AE=BD. Given X₀, all solutions are X₀+(I−UA)Y(I−DV) for arbitrary Y and inner inverses U,V of A,D.'''
 source = 'Ben-Israel and Greville, Ch. 2, Exercises 4–5, (14)–(15)'
+
+[[node]]
+id = 'vectorization_mul_mul'
+source = 'Ben-Israel and Greville, Ch. 2, §1, (10)–(11), the vectorized equation'
+
+[[node]]
+id = 'vectorization_injective'
+source = 'Ben-Israel and Greville, Ch. 2, §1, (11), equality in row coordinates'
+
+[[node]]
+id = 'kronecker_innerInverse'
+source = 'Ben-Israel and Greville, Ch. 2, §1, (12), product inner inverse'
+
+[[node]]
+id = 'transpose_innerInverse'
+source = 'Ben-Israel and Greville, Ch. 2, §1, (13), transposed inner inverse'
+
+[[node]]
+id = 'commonSolution_iff'
+source = 'Ben-Israel and Greville, Ch. 2, §1, Exercise 5, (15), complete affine family'

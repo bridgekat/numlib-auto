@@ -6,6 +6,7 @@ import NumlibSurface.BenIsraelGreville.Chapter00.Section02
 import NumlibSurface.BenIsraelGreville.Chapter00.Section03
 import NumlibSurface.BenIsraelGreville.Chapter00.Section04
 import Numlib.LinearAlgebra.Matrix.CauchyBinet
+import Numlib.LinearAlgebra.Matrix.QR
 import Mathlib.Analysis.InnerProductSpace.GramMatrix
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.LinearAlgebra.Matrix.SchurComplement
@@ -451,6 +452,39 @@ theorem nonsingularMinorIndices_eq (A : Matrix (Fin m) (Fin d) K) :
     exact (mulVec_surjective_iff_isUnit.mp (mulVec_surjective_iff_rank_eq_card.mpr hr')).mul
       (mulVec_surjective_iff_isUnit.mp (mulVec_surjective_iff_rank_eq_card.mpr hc'))
 
+private theorem rank_mul_eq_left_of_fullRowRank {a b c : Type*}
+    [Fintype b] [Fintype c] (F : Matrix a b K) (G : Matrix b c K)
+    (hG : G.rank = Fintype.card b) : (F * G).rank = F.rank := by
+  have hs : Function.Surjective G.mulVecLin := mulVec_surjective_iff_rank_eq_card.mpr hG
+  rw [Matrix.rank, mulVecLin_mul, LinearMap.range_comp_of_range_eq_top _
+    (LinearMap.range_eq_top.mpr hs)]
+  rfl
+
+/-- **Exercise 64(a)–(b)** of [benIsrael2003generalized]. A rank
+factorization preserves full-rank row selections in its first factor
+and full-rank column selections in its second factor. -/
+theorem rankFactorization_fullRankIndices {r : ℕ}
+    {A : Matrix (Fin m) (Fin d) K} {F : Matrix (Fin m) (Fin r) K}
+    {G : Matrix (Fin r) (Fin d) K} (h : IsRankFactorization A F G) :
+    (∀ I : IndexSequence A.rank m, I ∈ fullRankRowIndices A ↔
+      (F.submatrix I id).rank = r) ∧
+      (∀ J : IndexSequence A.rank d, J ∈ fullRankColumnIndices A ↔
+        (G.submatrix id J).rank = r) := by
+  have hr : A.rank = r := h.rank_eq.trans (Fintype.card_fin r)
+  constructor
+  · intro I
+    change (A.submatrix I id).rank = A.rank ↔ _
+    rw [submatrix_mul_submatrix_eq h.eq_mul, submatrix_id_id,
+      rank_mul_eq_left_of_fullRowRank _ _ h.rank_right]
+    exact ⟨fun he => he.trans hr, fun he => he.trans hr.symm⟩
+  · intro J
+    change (A.submatrix id J).rank = A.rank ↔ _
+    have hF : Fᵀ.rank = Fintype.card (Fin r) := F.rank_transpose.trans h.rank_left
+    have he := rank_mul_eq_left_of_fullRowRank (G.submatrix id J)ᵀ Fᵀ hF
+    rw [← transpose_mul, rank_transpose, rank_transpose] at he
+    rw [submatrix_mul_submatrix_eq h.eq_mul, submatrix_id_id, he]
+    exact ⟨fun he => he.trans hr, fun he => he.trans hr.symm⟩
+
 end MinorIndices
 
 /-- **Equation (89)** of [benIsrael2003generalized], Chapter 0. The volume of a
@@ -544,5 +578,172 @@ theorem matrixVolume_mul_of_rankFactorization {m d r : ℕ}
     (G.submatrix id j).det ^ 2)
   simp_rw [submatrix_mul_submatrix_eq h.eq_mul, det_mul, mul_pow, ← Finset.mul_sum]
   rw [← Finset.sum_mul, Real.sqrt_mul (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+
+open scoped Classical in
+/-- **Equations (106a)–(106b)** of [benIsrael2003generalized]. The
+square of the volume is the sum of the squared volumes of the
+full-rank row selections, and also of the full-rank column selections. -/
+theorem matrixVolume_sq_eq_sum_row_column_volumes {m d : ℕ} (A : Matrix (Fin m) (Fin d) ℝ)
+    (h0 : A.rank ≠ 0) :
+    matrixVolume A ^ 2 =
+      (∑ I : IndexSequence A.rank m, if I ∈ fullRankRowIndices A then
+        matrixVolume (A.submatrix I id) ^ 2 else 0) ∧
+    matrixVolume A ^ 2 =
+      (∑ J : IndexSequence A.rank d, if J ∈ fullRankColumnIndices A then
+        matrixVolume (A.submatrix id J) ^ 2 else 0) := by
+  classical
+  let r := A.rank
+  let : Unique (IndexSequence r r) :=
+    ⟨⟨(OrderIso.refl (Fin r)).toOrderEmbedding⟩, indexSequence_self_unique⟩
+  have hvol := matrixVolume_eq_sqrt_sum_minors A (r := r) rfl h0
+  rw [hvol, Real.sq_sqrt (Finset.sum_nonneg fun _ _ => Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+  constructor
+  · apply Finset.sum_congr rfl
+    intro I _
+    by_cases hI : I ∈ fullRankRowIndices A
+    · have hr : (A.submatrix I id).rank = r := hI
+      rw [ite_eq_left hI, matrixVolume_eq_sqrt_sum_minors _ hr h0]
+      simp only [Fintype.sum_unique]
+      change _ = (Real.sqrt (∑ J : IndexSequence r d,
+        (((A.submatrix I id).submatrix id J).det) ^ 2)) ^ 2
+      simp only [submatrix_submatrix, Function.comp_id, Function.id_comp]
+      rw [Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+    · rw [ite_eq_right hI]
+      apply Finset.sum_eq_zero
+      intro J _
+      have hminor : (A.submatrix I J).rank < r := by
+        have hle := rank_submatrix_le (A.submatrix I id) (id : Fin r → Fin r) J
+        change (A.submatrix I J).rank ≤ (A.submatrix I id).rank at hle
+        exact hle.trans_lt (lt_of_le_of_ne (rank_submatrix_le A I id) hI)
+      have hz : (A.submatrix I J).det = 0 := by
+        by_contra hne
+        have he := rank_of_isUnit _ ((isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hne))
+        rw [Fintype.card_fin] at he
+        exact hminor.ne he
+      simp [hz]
+  · rw [Finset.sum_comm]
+    apply Finset.sum_congr rfl
+    intro J _
+    by_cases hJ : J ∈ fullRankColumnIndices A
+    · have hr : (A.submatrix id J).rank = r := hJ
+      rw [ite_eq_left hJ, matrixVolume_eq_sqrt_sum_minors _ hr h0]
+      simp only [Fintype.sum_unique]
+      change _ = (Real.sqrt (∑ I : IndexSequence r m,
+        (((A.submatrix id J).submatrix I id).det) ^ 2)) ^ 2
+      simp only [submatrix_submatrix, Function.comp_id, Function.id_comp]
+      rw [Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)]
+    · rw [ite_eq_right hJ]
+      apply Finset.sum_eq_zero
+      intro I _
+      have hminor : (A.submatrix I J).rank < r := by
+        have hle := rank_submatrix_le (A.submatrix id J) I (id : Fin r → Fin r)
+        change (A.submatrix I J).rank ≤ (A.submatrix id J).rank at hle
+        exact hle.trans_lt (lt_of_le_of_ne (rank_submatrix_le A id J) hJ)
+      have hz : (A.submatrix I J).det = 0 := by
+        by_contra hne
+        have he := rank_of_isUnit _ ((isUnit_iff_isUnit_det _).mpr (isUnit_iff_ne_zero.mpr hne))
+        rw [Fintype.card_fin] at he
+        exact hminor.ne he
+      simp [hz]
+
+/-- **Exercise 60**, Equation (94) of [benIsrael2003generalized].
+Hadamard's determinant inequality is an equality exactly when some
+column is zero or the columns are pairwise orthogonal. -/
+theorem det_norm_le_prod_col_norm [LinearOrder n] (A : Matrix n n ℂ) :
+    let c : n → ℝ := fun j => Real.sqrt (∑ i, ‖A i j‖ ^ 2)
+    ‖A.det‖ ≤ ∏ j, c j ∧
+      (‖A.det‖ = ∏ j, c j ↔ (∃ j, ∀ i, A i j = 0) ∨
+        ∀ i j, i ≠ j → (Aᴴ * A) i j = 0) := by
+  intro c
+  refine ⟨norm_det_le_prod_sqrt_sum_norm_sq A, ?_⟩
+  constructor
+  · intro h
+    by_cases hzero : ∃ j, ∀ i, A i j = 0
+    · exact Or.inl hzero
+    right
+    have hc (j : n) : 0 < c j := by
+      obtain ⟨i, hi⟩ : ∃ i, A i j ≠ 0 := by
+        by_contra! hn
+        exact hzero ⟨j, hn⟩
+      apply Real.sqrt_pos.mpr
+      exact (sq_pos_of_pos (norm_pos_iff.mpr hi)).trans_le
+        (Finset.single_le_sum (fun i _ => sq_nonneg ‖A i j‖) (Finset.mem_univ i))
+    obtain ⟨U, hU, hT⟩ := exists_unitary_mul_isUpperTriangular A
+    let T := U * A
+    have hcol (j : n) : ∑ i, ‖T i j‖ ^ 2 = ∑ i, ‖A i j‖ ^ 2 :=
+      sum_norm_sq_mulVec_of_mem_unitaryGroup hU (A.col j)
+    have hdet : ‖A.det‖ = ∏ j, ‖T j j‖ := by
+      calc
+        _ = ‖T.det‖ := by
+          dsimp only [T]
+          rw [det_mul, norm_mul, norm_det_of_mem_unitaryGroup hU, one_mul]
+        _ = _ := by rw [det_of_isUpperTriangular hT, norm_prod]
+    have hprod : (∏ j, ‖T j j‖) = ∏ j, c j := hdet.symm.trans h
+    have hdiag (j : n) : 0 < ‖T j j‖ := by
+      by_contra! hn
+      have hz := Finset.prod_eq_zero (f := fun i : n => ‖T i i‖) (Finset.mem_univ j)
+        (le_antisymm hn (norm_nonneg _))
+      rw [hprod] at hz
+      exact (Finset.prod_pos (fun i _ => hc i)).ne' hz
+    have hle (j : n) : ‖T j j‖ ≤ c j := by
+      change ‖T j j‖ ≤ Real.sqrt _
+      rw [← hcol j, ← Real.sqrt_sq (norm_nonneg (T j j))]
+      exact Real.sqrt_le_sqrt (Finset.single_le_sum (fun i _ => sq_nonneg ‖T i j‖)
+        (Finset.mem_univ j))
+    have hd (j : n) : ‖T j j‖ = c j := by
+      refine le_antisymm (hle j) ?_
+      by_contra! hj
+      have hstrict := Finset.prod_lt_prod₀ (fun i _ => hdiag i) (fun i _ => hle i)
+        ⟨j, Finset.mem_univ j, hj⟩
+      rw [hprod] at hstrict
+      exact (lt_irrefl _ hstrict)
+    have hTzero (i j : n) (hij : i ≠ j) : T i j = 0 := by
+      have he : ∑ a, ‖T a j‖ ^ 2 = ‖T j j‖ ^ 2 := by
+        rw [hd j, hcol j]
+        exact (Real.sq_sqrt (Finset.sum_nonneg fun _ _ => sq_nonneg _)).symm
+      have hrest : ∑ a ∈ Finset.univ.erase j, ‖T a j‖ ^ 2 = 0 := by
+        have hh := Finset.sum_erase_add (s := Finset.univ) (fun a => ‖T a j‖ ^ 2)
+          (Finset.mem_univ j)
+        rw [he] at hh
+        linarith
+      have hz := (Finset.sum_eq_zero_iff_of_nonneg (fun a _ => sq_nonneg ‖T a j‖)).mp hrest i
+        (Finset.mem_erase.mpr ⟨hij, Finset.mem_univ i⟩)
+      exact norm_eq_zero.mp (mul_self_eq_zero.mp (by simpa only [pow_two] using hz))
+    have hTdiag : T = diagonal fun j => T j j := by
+      ext i j
+      by_cases hij : i = j
+      · subst j
+        rw [diagonal_apply_eq]
+      · rw [diagonal_apply_ne _ hij, hTzero i j hij]
+    have hGram : Tᴴ * T = Aᴴ * A := by
+      dsimp only [T]
+      rw [conjTranspose_mul, Matrix.mul_assoc Aᴴ, ← Matrix.mul_assoc Uᴴ,
+        show Uᴴ * U = 1 from Unitary.star_mul_self_of_mem hU, Matrix.one_mul]
+    intro i j hij
+    rw [← hGram, hTdiag, diagonal_conjTranspose, diagonal_mul_diagonal,
+      diagonal_apply_ne _ hij]
+  · rintro (⟨j, hj⟩ | hOrth)
+    · have hdet := det_eq_zero_of_column_eq_zero j hj
+      have hzero : c j = 0 := by simp [c, hj]
+      rw [hdet, norm_zero, Finset.prod_eq_zero (Finset.mem_univ j) hzero]
+    · have hGram : Aᴴ * A = diagonal fun j => (Aᴴ * A) j j := by
+        ext i j
+        by_cases hij : i = j
+        · subst j
+          rw [diagonal_apply_eq]
+        · rw [diagonal_apply_ne _ hij, hOrth i j hij]
+      have hentry (j : n) : (Aᴴ * A) j j = ((∑ i, ‖A i j‖ ^ 2 : ℝ) : ℂ) := by
+        simp only [Matrix.mul_apply, conjTranspose_apply, Complex.ofReal_sum,
+          RCLike.star_def, RCLike.conj_mul, Complex.ofReal_pow]
+        rfl
+      have hdet : ‖(Aᴴ * A).det‖ = ‖A.det‖ ^ 2 := by
+        rw [det_mul, det_conjTranspose, norm_mul, norm_star, pow_two]
+      have ht : 0 ≤ ∏ j, c j := Finset.prod_nonneg fun j _ => Real.sqrt_nonneg _
+      apply (sq_eq_sq₀ (norm_nonneg _) ht).mp
+      rw [← hdet, hGram, det_diagonal, norm_prod, ← Finset.prod_pow]
+      apply Finset.prod_congr rfl
+      intro j _
+      rw [hentry, Complex.norm_real, Real.norm_of_nonneg (Finset.sum_nonneg fun i _ => sq_nonneg _)]
+      exact (Real.sq_sqrt (Finset.sum_nonneg fun i _ => sq_nonneg _)).symm
 
 end BenIsraelGreville.Chapter00

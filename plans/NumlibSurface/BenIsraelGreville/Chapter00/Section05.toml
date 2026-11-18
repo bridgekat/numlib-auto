@@ -70,8 +70,6 @@ source = "Ben-Israel and Greville, Chapter 0 §5, Equation (92)"
 
 [[node]]
 id = "det_norm_le_prod_col_norm"
-kind = "theorem"
-desc = '''Hadamard's inequality bounds the absolute determinant by the product of the Euclidean column norms, with equality precisely for pairwise orthogonal columns or a zero column.'''
 source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 60, Equation (94)"
 
 [[node]]
@@ -104,10 +102,7 @@ source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 63"
 
 [[node]]
 id = "rankFactorization_fullRankIndices"
-kind = "theorem"
-desc = '''Under a full-rank factorization, the full-rank row selections are those of the first factor and the full-rank column selections are those of the second factor. Use rank-preserving multiplication by the full-rank factors.'''
 source = "Ben-Israel and Greville, Chapter 0 §5, Ex. 64(a)–(b)"
-deps = ["fullRankRowIndices", "fullRankColumnIndices", "IsRankFactorization"]
 
 [[node]]
 id = "matrixVolume_sq_eq_det_transpose_mul"
@@ -119,10 +114,7 @@ source = "Ben-Israel and Greville, Chapter 0 §5, Equation (105)"
 
 [[node]]
 id = "matrixVolume_sq_eq_sum_row_column_volumes"
-kind = "theorem"
-desc = '''In positive rank the squared volume is both the sum of squared volumes of its full-rank row selections and the sum of squared volumes of its full-rank column selections.'''
 source = "Ben-Israel and Greville, Chapter 0 §5, Equations (106a)–(106b)"
-deps = ["matrixVolume", "nonsingularMinorIndices_eq"]
 
 [[node]]
 id = "matrixVolume_fromCols_le"

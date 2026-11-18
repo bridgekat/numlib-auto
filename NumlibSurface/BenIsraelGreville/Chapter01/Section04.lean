@@ -3,6 +3,7 @@ Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Chapter01.Section01
+import NumlibSurface.BenIsraelGreville.Chapter01.Section02
 
 /-!
 # Reflexive inverses
@@ -53,5 +54,22 @@ theorem corollary_1 :
     have hInner : X.IsInnerInverse A := isOuterInverse_iff_isInnerInverse.mp (mem_two_iff.mp h₂)
     exact mem_one_iff.mpr (isOuterInverse_iff_isInnerInverse.mp
       (hInner.isOuterInverse_iff_rank_eq.mpr hrank.symm))
+
+/-- **Equation (11)** of [benIsrael2003generalized]. Setting the free
+lower block of the Hermite-form construction to zero gives a reflexive
+inverse. -/
+theorem reflexiveInverse_of_hermite {r : Type*} [Fintype r]
+    [DecidableEq r] [DecidableEq m] [DecidableEq n]
+    {A : Matrix (r ⊕ m) (r ⊕ n) ℂ}
+    {E : Matrix (r ⊕ m) (r ⊕ m) ℂ} {P : Matrix (r ⊕ n) (r ⊕ n) ℂ}
+    (hE : IsUnit E) (hP : IsUnit P) (K : Matrix r n ℂ)
+    (h : E * A * P = fromBlocks 1 K 0 0) :
+    P * fromBlocks 1 0 0 (0 : Matrix n m ℂ) * E ∈ definition_1 A {.inner, .outer} := by
+  apply (theorem_2 (theorem_1 hE hP K h 0)).mpr
+  have hRank : A.rank = Fintype.card r := by
+    rw [← rank_mul_eq_right_of_isUnit_det E A ((isUnit_iff_isUnit_det E).mp hE),
+      ← rank_mul_eq_left_of_isUnit_det P _ ((isUnit_iff_isUnit_det P).mp hP), h]
+    exact Chapter00.rank_hermiteBlock K
+  rw [rank_hermiteInverse hE hP, hRank, rank_zero, add_zero]
 
 end BenIsraelGreville.Chapter01

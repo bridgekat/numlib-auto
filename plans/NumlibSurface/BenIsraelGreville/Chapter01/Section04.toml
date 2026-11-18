@@ -18,6 +18,4 @@ source = 'Ben-Israel–Greville, Chapter 1, Corollary 1'
 
 [[node]]
 id = 'reflexiveInverse_of_hermite'
-kind = 'theorem'
-desc = '''The Hermite-form construction with L zero gives a {1,2}-inverse.'''
 source = 'Ben-Israel–Greville, Chapter 1, Equation (11)'

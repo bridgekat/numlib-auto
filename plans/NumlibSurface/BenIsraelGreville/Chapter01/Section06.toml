@@ -18,24 +18,16 @@ source = 'Ben-Israel–Greville, Chapter 1, Exercise 18(b)'
 
 [[node]]
 id = 'pinv_transpose'
-kind = 'theorem'
-desc = '''The Moore–Penrose inverse commutes with transpose.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 18(c)'
 
 [[node]]
 id = 'pinv_gram'
-kind = 'theorem'
-desc = '''The Moore–Penrose inverse of A is both (A*A)†A* and A*(AA*)†.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 18(d)'
 
 [[node]]
 id = 'pinv_diagonal'
-kind = 'theorem'
-desc = '''The Moore–Penrose inverse of a diagonal matrix takes the total reciprocal of each diagonal entry.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 22'
 
 [[node]]
 id = 'pinv_unitary_mul'
-kind = 'theorem'
-desc = '''For unitary U and V, the Moore–Penrose inverse of UAV is V*A†U*.'''
 source = 'Ben-Israel–Greville, Chapter 1, Exercise 25'
