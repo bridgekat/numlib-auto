@@ -64,6 +64,8 @@ import NumlibSurface.BenIsraelGreville.Chapter08.Section07
 import NumlibSurface.BenIsraelGreville.Chapter08.Section08
 import NumlibSurface.BenIsraelGreville.Chapter08.Section09
 import NumlibSurface.BenIsraelGreville.Chapter08.Section10
+import NumlibSurface.BenIsraelGreville.Chapter09.Section02
+import NumlibSurface.BenIsraelGreville.Chapter09.Section03
 
 /-!
 # Ben-Israel and Greville, *Generalized Inverses: Theory and Applications*
@@ -145,6 +147,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
 | §8.8 | `Chapter08.Section08` | Singular difference equations and regular pencils |
 | §8.9 | `Chapter08.Section09` | Matrix volume, graph measure, Radon and Fourier transforms |
 | §8.10 | `Chapter08.Section10` | Image densities, spherical coordinates, and Gaussian examples |
+| §9.2 | `Chapter09.Section02` | Partial Hilbert-space operators, adjoints, and closed range |
+| §9.3 | `Chapter09.Section03` | Tseng, Moore–Penrose, and Erdélyi inverses of Hilbert operators |
 
 ## Conventions
 

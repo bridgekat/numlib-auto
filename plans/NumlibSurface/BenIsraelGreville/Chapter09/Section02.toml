@@ -1,113 +1,307 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-desc = '''Hilbert-space preliminaries with genuinely partial domains. Reuse Mathlib LinearPMap, its graph/order/closure/adjoint API, and Submodule orthogonal projection. Use the L² product norm for coordinate isometries. Distinguish a bounded operator on a partial domain from its bounded extension.'''
-
 [[node]]
 id = "orthogonalComplement_closure"
-kind = "theorem"
-desc = '''Orthogonal complements are closed and unchanged by taking the closure. The orthogonal sum of two closed subspaces is closed.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (A)"
 
 [[node]]
 id = "IsDecomposable"
-kind = "definition"
-desc = '''L is decomposable with respect to M if M≤L and every vector in L splits into a summand in M and one in L ∩ M⊥. This always holds for closed M≤L, and is equivalent to the closed-M-closure projection carrying L into M.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (A), (1)"
 
 [[node]]
+id = "isDecomposable_iff_starProjection"
+source = "Ben-Israel and Greville, Ch. 9, §2, (A), Equation (1), Exercise 5"
+
+[[node]]
+id = "isDecomposable_of_isClosed"
+source = "Ben-Israel and Greville, Ch. 9, §2, (A), Equation (1), Exercise 5"
+
+[[node]]
+id = "orthogonal_sup_isClosed"
+source = "Ben-Israel and Greville, Ch. 9, §2, (A), orthogonal sums"
+
+[[node]]
 id = "hilbertProductInclusions"
-kind = "definition"
-desc = '''J₁ and J₂ are the coordinate linear isometries with ranges the two respective axes of the L² Hilbert product.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (B)"
 
 [[node]]
 id = "carrier"
-kind = "definition"
-desc = '''The carrier of a partial linear map T is D(T) ∩ ker(T)⊥, with the kernel a submodule of the ambient source.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (C), (2)"
 
 [[node]]
 id = "graph_iff_disjoint_vertical"
-kind = "theorem"
-desc = '''A linear subspace of H₁×H₂ is the graph of a unique partial operator iff it intersects the vertical axis trivially; the domain is its first coordinate projection. The inverse-graph version interchanges axes.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (C)"
 
 [[node]]
+id = "inverseGraph_iff_disjoint_horizontal"
+source = "Ben-Israel and Greville, Ch. 9, §2, (C), inverse graph"
+
+[[node]]
 id = "isClosed_iff_graphLimit"
-kind = "theorem"
-desc = '''A partial operator is closed iff convergence of graph pairs has its limit in the graph; a closed operator has closed kernel. Use the LinearPMap graph and ambient kernel.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (D)"
 
 [[node]]
+id = "isClosed_kernel_of_isClosed"
+source = "Ben-Israel and Greville, Ch. 9, §2, (D), closed kernel"
+
+[[node]]
+id = "IsBoundedOperator"
+source = "Ben-Israel and Greville, Ch. 9, §2, (E), bounded operators"
+
+[[node]]
+id = "partialOperatorNorm"
+source = "Ben-Israel and Greville, Ch. 9, §2, (E), norm ratios"
+
+[[node]]
+id = "isBoundedOperator_iff_partialOperatorNorm_lt_top"
+source = "Ben-Israel and Greville, Ch. 9, §2, (E), finite operator norm"
+
+[[node]]
+id = "isBoundedOperator_iff_continuous"
+source = "Ben-Israel and Greville, Ch. 9, §2, (E), boundedness on the domain"
+
+[[node]]
 id = "isClosed_iff_isClosed_domain_of_bounded"
-kind = "theorem"
-desc = '''A bounded partial operator is closed iff its domain is closed. A closed operator on the entire Hilbert space is bounded by the closed graph theorem.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (E)"
 
 [[node]]
+id = "isBoundedOperator_of_isClosed_domain"
+source = "Ben-Israel and Greville, Ch. 9, §2, (E), closed graph theorem"
+
+[[node]]
+id = "exists_bounded_extension"
+source = "Ben-Israel and Greville, Ch. 9, §2, (E), bounded extension"
+
+[[node]]
+id = "restrictCarrier"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), carrier restriction"
+
+[[node]]
+id = "restrictCarrier_domain"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), carrier restriction domain"
+
+[[node]]
+id = "restrictCarrier_le"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), extension and restriction"
+
+[[node]]
+id = "restrictCarrier_ker"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), injectivity on the carrier"
+
+[[node]]
+id = "restrictCarrier_isClosed"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), closed restriction"
+
+[[node]]
+id = "restrictCarrier_range_le"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), carrier image containment"
+
+[[node]]
+id = "restrictCarrier_range"
+source = "Ben-Israel and Greville, Ch. 9, §2, (F), range under decomposability"
+
+[[node]]
 id = "restrictCarrier_inverse"
-kind = "theorem"
-desc = '''Restriction to the carrier is a partial linear bijection onto its range, with inverse graph obtained by swapping coordinates, so the inverse is closed iff the restriction is closed.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (F)"
-deps = ["carrier", "graph_iff_disjoint_vertical"]
+
+[[node]]
+id = "partialComp"
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), partial products"
+
+[[node]]
+id = "partialComp_mem_domain"
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), domain of a partial product"
+
+[[node]]
+id = "partialComp_apply"
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), evaluation of a partial product"
+
+[[node]]
+id = "hilbertGraph"
+source = "Ben-Israel and Greville, Ch. 9, §2, (C) and (G), graph in the Hilbert product"
+
+[[node]]
+id = "mem_hilbertGraph_orthogonal_iff"
+source = "Ben-Israel and Greville, Ch. 9, §2, (G), graph orthogonality equation"
 
 [[node]]
 id = "isDense_iff_graph_orthogonal_disjoint"
-kind = "theorem"
-desc = '''Dense domain is equivalent to trivial intersection of the orthogonal graph complement with the horizontal axis. The complement is the inverse graph of minus the adjoint, whose defining inner-product identity determines it uniquely.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (G)"
-deps = ["graph_iff_disjoint_vertical"]
 
 [[node]]
-id = "ker_adjoint_eq_orthogonal_range"
-kind = "theorem"
-desc = '''For a densely defined operator, the adjoint kernel is the orthogonal complement of the range. The dual orthogonal identity concerns ker of the closure when the operator is closable, and the printed closure-of-kernel equality needs justification beyond mere dense definition. Use double adjoints to record the correct hypotheses.'''
-source = "Ben-Israel and Greville, Ch. 9, §2, (H), (3)"
-deps = ["isDense_iff_graph_orthogonal_disjoint"]
+id = "mem_adjoint_graph_iff_graph_orthogonal"
+source = "Ben-Israel and Greville, Ch. 9, §2, (G), graph of the adjoint"
 
 [[node]]
-id = "adjoint_inverse"
-kind = "theorem"
-desc = '''When the required inverses and dense domains exist, the adjoint of the partial inverse is the inverse of the adjoint. Characterize bounded invertibility by the surjectivity of the other adjoint with the needed closedness and injectivity hypotheses.'''
-source = "Ben-Israel and Greville, Ch. 9, §2, (I), inverse and adjoint"
-deps = ["ker_adjoint_eq_orthogonal_range"]
+id = "isClosable_iff_graphClosure_disjoint_vertical"
+source = "Ben-Israel and Greville, Ch. 9, §2, (J), graph-closure criterion"
+
+[[node]]
+id = "closure_le_iff"
+source = "Ben-Israel and Greville, Ch. 9, §2, (J), least closed extension"
+
+[[node]]
+id = "dense_adjoint_domain_of_isClosable"
+source = "Ben-Israel and Greville, Ch. 9, §2, (J), dense adjoint domain"
+
+[[node]]
+id = "isClosable_iff_dense_adjoint_domain"
+source = "Ben-Israel and Greville, Ch. 9, §2, (J), criterion for the double adjoint"
 
 [[node]]
 id = "closure_eq_adjoint_adjoint"
-kind = "theorem"
-desc = '''Closability means the graph closure meets the vertical axis trivially, and the resulting closure is the least closed extension. For densely defined closable T it equals T**; equality T=T** characterizes closedness.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (J)"
-deps = ["isDense_iff_graph_orthogonal_disjoint", "graph_iff_disjoint_vertical"]
+
+[[node]]
+id = "adjoint_adjoint_eq_of_isClosed"
+source = "Ben-Israel and Greville, Ch. 9, §2, (J), double adjoint for closed operators"
+
+[[node]]
+id = "ker_adjoint_eq_orthogonal_range"
+source = "Ben-Israel and Greville, Ch. 9, §2, (H), (3)"
+
+[[node]]
+id = "orthogonal_range_adjoint_eq_ker"
+source = "Ben-Israel and Greville, Ch. 9, §2, (H), Equation (3), dual kernel equality for closed operators"
+
+[[node]]
+id = "dense_range_iff_injective_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §2, (H), dense range and adjoint injectivity"
+
+[[node]]
+id = "dense_range_adjoint_iff_injective"
+source = "Ben-Israel and Greville, Ch. 9, §2, (H), dense adjoint range for closed operators"
+
+[[node]]
+id = "adjoint_inverse"
+source = "Ben-Israel and Greville, Ch. 9, §2, (I), inverse and adjoint"
+
+[[node]]
+id = "IsSymmetricOperator"
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), symmetric operators"
 
 [[node]]
 id = "IsNonnegativeOperator"
-kind = "definition"
-desc = '''A densely defined operator is symmetric if T≤T*, self-adjoint if T=T*, and nonnegative if self-adjoint and its quadratic form is nonnegative on the domain.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (K)"
 
 [[node]]
 id = "gramOperators_nonnegative"
-kind = "theorem"
-desc = '''For closed densely defined T, the partial products T*T and TT* are self-adjoint nonnegative and their shifts by the identity have bounded, everywhere-defined inverses.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (K), von Neumann"
-deps = ["IsNonnegativeOperator"]
+
+[[node]]
+id = "gramOperator_resolvent_one"
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), bounded inverse of the left Gram shift"
+
+[[node]]
+id = "adjointGramOperator_resolvent_one"
+source = "Ben-Israel and Greville, Ch. 9, §2, (K), bounded inverse of the right Gram shift"
 
 [[node]]
 id = "orthogonalProjector_iff"
-kind = "theorem"
-desc = '''A bounded self-adjoint idempotent has closed range and orthogonal range/kernel decomposition. Conversely, every closed subspace has the unique orthogonal projector with that range and the corresponding orthogonal kernel.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (L)"
 
 [[node]]
+id = "orthogonalProjector_range_ker"
+source = "Ben-Israel and Greville, Ch. 9, §2, (L), orthogonal range and kernel"
+
+[[node]]
+id = "existsUnique_orthogonalProjector"
+source = "Ben-Israel and Greville, Ch. 9, §2, (L), existence and uniqueness"
+
+[[node]]
+id = "IsNormallySolvable"
+source = "Ben-Israel and Greville, Ch. 9, §2, (M), normally solvable operators"
+
+[[node]]
 id = "reducedMinimumModulus"
-kind = "definition"
-desc = '''The reduced minimum modulus is the infimum of ‖Tx‖/‖x‖ over nonzero carrier vectors. Use an extended nonnegative real to assign +∞ when the carrier is trivial.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (M), (4)"
-deps = ["carrier"]
+
+[[node]]
+id = "reducedMinimumModulus_pos_iff"
+source = "Ben-Israel and Greville, Ch. 9, §2, (M), Equation (4), uniform lower bound"
+
+[[node]]
+id = "isBoundedOperator_inverse_iff_adjoint_range_top"
+source = "Ben-Israel and Greville, Ch. 9, §2, (I), bounded inverse and adjoint surjectivity"
 
 [[node]]
 id = "isNormallySolvable_iff"
-kind = "theorem"
-desc = '''A closed operator has closed range iff its carrier restriction has bounded inverse iff reduced minimum modulus is positive. For dense domain, normal solvability is equivalent to consistency exactly for right-hand sides orthogonal to the adjoint kernel.'''
 source = "Ben-Israel and Greville, Ch. 9, §2, (M), (4)"
-deps = ["reducedMinimumModulus", "restrictCarrier_inverse", "ker_adjoint_eq_orthogonal_range"]
+
+[[node]]
+id = "isNormallySolvable_iff_orthogonal_ker_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §2, (M), consistency condition"
+
+[[node]]
+id = "isBoundedOperator_adjoint_inverse_iff_range_top"
+source = "Ben-Israel and Greville, Ch. 9, §2, (I), bounded adjoint inverse for closed operators"
+
+[[node]]
+id = "range_adjoint_eq_orthogonal_ker_of_isNormallySolvable"
+source = "Ben-Israel and Greville, Ch. 9, §2, (H) and (M), exact adjoint range"
+
+[[node]]
+id = "exercise_9_9_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 9, adjoint closed range"
+
+[[node]]
+id = "exercise_9_9_gram"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 9, closed range of the Gram operators"
+
+[[node]]
+id = "exercise_9_1"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 1"
+
+[[node]]
+id = "exercise_9_2"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 2"
+
+[[node]]
+id = "exercise_9_3"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 3"
+
+[[node]]
+id = "exercise_9_4"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 4"
+
+[[node]]
+id = "exercise_9_6"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 6"
+
+[[node]]
+id = "exercise_9_7"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 7"
+
+[[node]]
+id = "exercise_9_8a"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 8(a), closed range of the second-kind operator"
+
+[[node]]
+id = "exercise_9_8b"
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 8(b), compact operators"
+
+[[node]]
+id = "inverse_adjoint_bounded_if_surjective"
+source = "Ben-Israel and Greville, Ch. 9, §2, (I), bounded inverse of the adjoint of a surjective operator"
+
+[[node]]
+id = "adjoint_boundedInverse_and_surjective_iff"
+source = "Ben-Israel and Greville, Ch. 9, §2, (I), surjectivity and bounded inverses for closed operators"
+
+[[node]]
+id = "exercise_9_2_weighted_integral_example"
+kind = "theorem"
+desc = "Formalize the printed weighted integral functional on its natural dense domain of square-integrable functions for which the integral is finite, and verify the approximation in the text. The integral need not converge for every square-integrable function on the whole half-line."
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 2, weighted integral example"
+
+[[node]]
+id = "exercise_9_7_harmonic_witness"
+kind = "theorem"
+desc = "Exhibit the square-summable harmonic sequence and its truncated weighted preimages. The diagonal operator and its dense nonclosed range are already proved."
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 7, explicit harmonic witness"
+
+[[node]]
+id = "exercise_9_8_integral_kernel_compact"
+kind = "theorem"
+desc = "Relate the printed integral formulas for the two operators to the compact square-integrable kernel operator and the identity minus that operator from Section 9.4."
+source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 8, square-integrable Fredholm kernel"
