@@ -172,25 +172,69 @@ theorem secondDiagonal_pos_iff_lt_rank {B : Matrix (Fin b) (Fin n) ℂ}
     rw [hz]
     exact iff_of_false (lt_irrefl 0) (not_lt.mpr (hr.trans (le_of_not_gt hi)))
 
-/-- **Theorem 21**, Equation (182) of [benIsrael2003generalized], Chapter 6.
-The two matrices have ordinary rectangular diagonals after unitary left
-transformations and a common nonsingular right transformation. The second
-diagonal is decreasing and padded with zeros. -/
-theorem theorem_6_21 (hna : n ≤ a) (A : Matrix (Fin a) (Fin n) ℂ)
-    (B : Matrix (Fin b) (Fin n) ℂ) :
-    ∃ (U : Matrix (Fin a) (Fin a) ℂ) (V : Matrix (Fin b) (Fin b) ℂ)
-      (X : Matrix (Fin n) (Fin n) ℂ) (α β : ℕ → ℝ),
-      U ∈ unitaryGroup (Fin a) ℂ ∧ V ∈ unitaryGroup (Fin b) ℂ ∧ IsUnit X ∧
+/-- **Theorem 21**, rectangular diagonal forms of [benIsrael2003generalized], Chapter 6.
+The same unshifted simultaneous diagonalization works over either real or
+complex scalars. The second coefficients are decreasing, and the common-zero
+pairs occupy the indices at or beyond the stacked rank. -/
+theorem bSvd_rectDiagonal_exists {𝕜 : Type*} [RCLike 𝕜] (hna : n ≤ a) (A : Matrix (Fin a) (Fin n) 𝕜)
+    (B : Matrix (Fin b) (Fin n) 𝕜) :
+    ∃ (U : Matrix (Fin a) (Fin a) 𝕜) (V : Matrix (Fin b) (Fin b) 𝕜)
+      (X : Matrix (Fin n) (Fin n) 𝕜) (α β : ℕ → ℝ),
+      U ∈ unitaryGroup (Fin a) 𝕜 ∧ V ∈ unitaryGroup (Fin b) 𝕜 ∧ IsUnit X ∧
       (∀ i, 0 ≤ α i ∧ 0 ≤ β i) ∧ Antitone β ∧ (∀ i, min b n ≤ i → β i = 0) ∧
-      Uᴴ * A * X = rectDiagonal (fun i => ((α i : ℝ) : ℂ)) ∧
-      Vᴴ * B * X = rectDiagonal (fun i => ((β i : ℝ) : ℂ)) ∧
-      bSingularValues A B = if (fromRows A B).rank < n then Set.Ici 0
-        else {μ | ∃ i : Fin n, β i ≠ 0 ∧ μ = α i / β i} := by
+      Uᴴ * A * X = rectDiagonal (fun i => ((α i : ℝ) : 𝕜)) ∧
+      Vᴴ * B * X = rectDiagonal (fun i => ((β i : ℝ) : 𝕜)) ∧
+      (∀ i : Fin n, (α i = 0 ∧ β i = 0) ↔ (fromRows A B).rank ≤ i.val) := by
   classical
   obtain ⟨U, V, X, α, β, h⟩ := exists_isGSVD hna A B
-  let e := Tuple.sortDesc (fun i : Fin n => β i)
-  have he : Antitone (fun i : Fin n => β (e i)) :=
-    Tuple.antitone_sortDesc (fun i : Fin n => β i)
+  let k := (fromRows A B).rank
+  have hkn : k ≤ n := by simpa [k] using (fromRows A B).rank_le_card_width
+  let score (i : Fin n) : ℝ := if i.val < k then β i else -1
+  let e := Tuple.sortDesc score
+  have heScore : Antitone (fun i : Fin n => score (e i)) := Tuple.antitone_sortDesc score
+  have hLower {i j : Fin n} (hij : i ≤ j) (hj : (e j).val < k) : (e i).val < k := by
+    by_contra! hi
+    have hs := heScore hij
+    simp only [score, ite_eq_left hj, ite_eq_right (not_lt_of_ge hi)] at hs
+    linarith [(h.nonneg (e j)).2]
+  have he : Antitone (fun i : Fin n => β (e i)) := by
+    intro i j hij
+    by_cases hj : (e j).val < k
+    · simpa only [score, ite_eq_left hj, ite_eq_left (hLower hij hj)] using heScore hij
+    · change β (e j) ≤ β (e i)
+      rw [(h.eq_zero_and_eq_zero_of_rank_le (e j) (Nat.le_of_not_gt hj)).2]
+      exact (h.nonneg (e i)).2
+  let P := {i : Fin n // (e i).val < k}
+  have hP : Fintype.card P = k := by
+    refine (Fintype.card_congr (?_ : P ≃ Fin k)).trans (Fintype.card_fin k)
+    exact
+      { toFun := fun i => ⟨(e i).val, i.property⟩
+        invFun := fun j => ⟨e.symm (Fin.castLE hkn j), by simp⟩
+        left_inv := fun i => by
+          apply Subtype.ext
+          apply e.injective
+          simp
+        right_inv := fun j => by apply Fin.ext; simp }
+  have hPres (j : Fin n) : (e j).val < k ↔ j.val < k := by
+    constructor
+    · intro hj
+      let f (i : Fin (j.val + 1)) : P :=
+        ⟨⟨i, i.isLt.trans_le j.isLt⟩, hLower (Nat.le_of_lt_succ i.isLt) hj⟩
+      have hf : Function.Injective f :=
+        fun i j h => Fin.ext (congrArg (fun t : P => t.val.val) h)
+      have hle := Fintype.card_le_of_injective f hf
+      rw [Fintype.card_fin, hP] at hle
+      omega
+    · intro hj
+      by_contra hout
+      let f (i : P) : Fin j.val := ⟨i.val.val, by
+        by_contra! hi
+        exact hout (hLower hi i.property)⟩
+      have hf : Function.Injective f := fun x y h =>
+        Subtype.ext (Fin.ext (congrArg (fun z : Fin j.val => z.val) h))
+      have hle := Fintype.card_le_of_injective f hf
+      rw [Fintype.card_fin, hP] at hle
+      omega
   let p := (fromRows A B).rank - b
   have hp {j : Fin n} (hj : β (e j) ≠ 0) : p ≤ (e j : ℕ) ∧ (e j : ℕ) < p + b := by
     have hl : p ≤ (e j : ℕ) := by
@@ -273,8 +317,8 @@ theorem theorem_6_21 (hna : n ≤ a) (A : Matrix (Fin a) (Fin n) ℂ)
     rw [submatrix_apply, rectDiagonal_apply, rectDiagonal_apply]
     by_cases hij : (i : ℕ) = (j : ℕ)
     · simp only [ite_eq_left (hmatch.mpr hij), ite_eq_left hij]
-      exact congrArg (fun k : ℕ => (α k : ℂ)) (hmatch.mpr hij) |>.trans
-        (congrArg Complex.ofReal (show α (e j) = α' i.val by rw [hij, ha' j]))
+      exact congrArg (fun k : ℕ => (α k : 𝕜)) (hmatch.mpr hij) |>.trans
+        (congrArg (RCLike.ofReal : ℝ → 𝕜) (show α (e j) = α' i.val by rw [hij, ha' j]))
     · simp only [ite_eq_right (hmatch.not.mpr hij), ite_eq_right hij]
   · have hm := submatrix_mul_equiv Vᴴ B ev (Equiv.refl _) id
     have hm' := submatrix_mul_equiv (Vᴴ * B) X ev (Equiv.refl _) e
@@ -297,19 +341,62 @@ theorem theorem_6_21 (hna : n ≤ a) (A : Matrix (Fin a) (Fin n) ℂ)
         change (e j : ℕ) = (ev i : ℕ) + p ↔ (i : ℕ) = (newRow j' : ℕ)
         rw [hE, Nat.add_right_cancel_iff, Fin.val_inj, ev.injective.eq_iff, eq_comm]
         exact Fin.val_inj.symm
-      change (if (e j : ℕ) = (ev i : ℕ) + p then (β (e j) : ℂ) else 0) = _
+      change (if (e j : ℕ) = (ev i : ℕ) + p then (β (e j) : 𝕜) else 0) = _
       by_cases hij : (i : ℕ) = (j : ℕ)
       · simp only [ite_eq_left (hmatch.mpr hij), ite_eq_left hij]
         rw [hij, hb' j]
       · simp only [ite_eq_right (hmatch.not.mpr hij), ite_eq_right hij]
-  · rw [bSingularValues_eq_of_isGSVD h hna]
-    split_ifs
-    · rfl
-    · ext μ
-      change (∃ i : Fin n, β i ≠ 0 ∧ μ = α i / β i) ↔
-        (∃ i : Fin n, β' i ≠ 0 ∧ μ = α' i / β' i)
-      simp only [ha', hb']
-      exact e.surjective.exists
+  · intro i
+    rw [ha' i, hb' i, ← not_lt, ← hPres i, not_lt]
+    constructor
+    · rintro ⟨hα, hβ⟩
+      by_contra! hi
+      by_cases hp : (e i).val < (fromRows A B).rank - b
+      · have hα' := (h.eq_one_and_eq_zero_of_lt _ hp).1
+        linarith
+      · have hs := h.sq_add_sq (e i) (Nat.le_of_not_gt hp) hi
+        simp [hα, hβ] at hs
+    · exact h.eq_zero_and_eq_zero_of_rank_le (e i)
+
+/-- **Theorem 21**, Equation (182) of [benIsrael2003generalized], Chapter 6.
+The two matrices have ordinary rectangular diagonals after unitary left
+transformations and a common nonsingular right transformation. The second
+diagonal is decreasing and padded with zeros. -/
+theorem theorem_6_21 (hna : n ≤ a) (A : Matrix (Fin a) (Fin n) ℂ)
+    (B : Matrix (Fin b) (Fin n) ℂ) :
+    ∃ (U : Matrix (Fin a) (Fin a) ℂ) (V : Matrix (Fin b) (Fin b) ℂ)
+      (X : Matrix (Fin n) (Fin n) ℂ) (α β : ℕ → ℝ),
+      U ∈ unitaryGroup (Fin a) ℂ ∧ V ∈ unitaryGroup (Fin b) ℂ ∧ IsUnit X ∧
+      (∀ i, 0 ≤ α i ∧ 0 ≤ β i) ∧ Antitone β ∧ (∀ i, min b n ≤ i → β i = 0) ∧
+      Uᴴ * A * X = rectDiagonal (fun i => ((α i : ℝ) : ℂ)) ∧
+      Vᴴ * B * X = rectDiagonal (fun i => ((β i : ℝ) : ℂ)) ∧
+      bSingularValues A B = if (fromRows A B).rank < n then Set.Ici 0
+        else {μ | ∃ i : Fin n, β i ≠ 0 ∧ μ = α i / β i} := by
+  obtain ⟨U, V, X, α, β, hU, hV, hX, hnonneg, hanti, htail, hA, hB, hPair⟩ :=
+    bSvd_rectDiagonal_exists hna A B
+  refine ⟨U, V, X, α, β, hU, hV, hX, hnonneg, hanti, htail, hA, hB, ?_⟩
+  have hAgram : Xᴴ * (Aᴴ * A) * X = diagonal (fun i : Fin n => ((α i ^ 2 : ℝ) : ℂ)) := by
+    rw [conjTranspose_mul_gram_mul_of_star_mul_mul_eq_rectDiagonal hna hU hA]
+    apply congrArg diagonal
+    funext i
+    simp [pow_two]
+  have hBgram : Xᴴ * (Bᴴ * B) * X = diagonal (fun i : Fin n => ((β i ^ 2 : ℝ) : ℂ)) := by
+    rw [conjTranspose_mul_gram_mul_eq hV, star_eq_conjTranspose, hB, conjTranspose_rectDiagonal_mul_self]
+    apply congrArg diagonal
+    funext i
+    by_cases hi : i.val < b
+    · simp [hi, pow_two]
+    · simp [hi, htail i (le_trans (min_le_left _ _) (Nat.le_of_not_gt hi))]
+  ext μ
+  rw [mem_bSingularValues_iff_of_congruence hX hAgram hBgram
+    (fun i => (hnonneg i).1) (fun i => (hnonneg i).2)]
+  split_ifs with hr
+  · exact ⟨And.left, fun hμ => ⟨hμ, ⟨⟨_, hr⟩, Or.inl ((hPair _).mpr le_rfl)⟩⟩⟩
+  · have hn (i : Fin n) : ¬ (α i = 0 ∧ β i = 0) := fun he =>
+      hr (((hPair i).mp he).trans_lt i.isLt)
+    simp only [hn, false_or, Set.mem_ofPred_eq]
+    exact ⟨And.right, fun ⟨i, hi, hμ⟩ =>
+      ⟨hμ ▸ div_nonneg (hnonneg i).1 (hnonneg i).2, ⟨i, hi, hμ⟩⟩⟩
 
 /-- **Remark 1(b)** of [benIsrael2003generalized], Chapter 6.
 The size hypothesis matters for unshifted simultaneous rectangular diagonals.
@@ -1542,5 +1629,36 @@ theorem bSingularValues_ne_ratios_of_separately_sorted_values :
   change (1 : ℝ) / 2 = A.sortedSingularValues i / B.sortedSingularValues i at hi
   rw [hσ] at hi
   by_cases hn : B.sortedSingularValues i = 0 <;> norm_num [hn] at hi
+
+/-- **Theorem 21** and **Remark 1(c–d)** of [benIsrael2003generalized],
+Chapter 6. The sorted B-SVD can be chosen with an orthonormal common-kernel
+tail over the real or complex field. -/
+theorem bSvd_orthogonal_exists {𝕜 : Type*} [RCLike 𝕜] {a b n : ℕ}
+    (hna : n ≤ a) (A : Matrix (Fin a) (Fin n) 𝕜) (B : Matrix (Fin b) (Fin n) 𝕜) :
+    ∃ (U : Matrix (Fin a) (Fin a) 𝕜) (V : Matrix (Fin b) (Fin b) 𝕜)
+      (X : Matrix (Fin n) (Fin n) 𝕜) (α β : ℕ → ℝ),
+      U ∈ unitaryGroup (Fin a) 𝕜 ∧ V ∈ unitaryGroup (Fin b) 𝕜 ∧ IsUnit X ∧
+      (∀ i, 0 ≤ α i ∧ 0 ≤ β i) ∧ Antitone β ∧ (∀ i, min b n ≤ i → β i = 0) ∧
+      Uᴴ * A * X = rectDiagonal (fun i => (α i : 𝕜)) ∧
+      Vᴴ * B * X = rectDiagonal (fun i => (β i : 𝕜)) ∧
+      (∀ i : Fin n, (α i = 0 ∧ β i = 0) ↔ (fromRows A B).rank ≤ i.val) ∧
+      IsBSVDOrthogonalSplit X α β ∧
+      (let K := A.toEuclideanLin.ker ⊓ B.toEuclideanLin.ker
+       let c (i : Fin n) : EuclideanSpace 𝕜 (Fin n) := WithLp.toLp 2 (X.col i)
+       K = Submodule.span 𝕜 (c '' {i | (fromRows A B).rank ≤ (i : ℕ)}) ∧
+         Kᗮ = Submodule.span 𝕜 (c '' {i | (i : ℕ) < (fromRows A B).rank})) := by
+  obtain ⟨U, V, X, α, β, hU, hV, hX, hnn, hsort, htail, hA, hB, hpair⟩ :=
+    bSvd_rectDiagonal_exists hna A B
+  obtain ⟨Y, hY, hSplit, hA', hB', hKernel⟩ :=
+    bSvd_orthonormal_kernel_columns hna hU hV hX
+      (fun i hi => htail i ((min_le_left _ _).trans hi)) hA hB
+  refine ⟨U, V, Y, α, β, hU, hV, hY, hnn, hsort, htail, hA', hB', hpair, hSplit, ?_⟩
+  have hp : {i : Fin n | α i = 0 ∧ β i = 0} = {i : Fin n | (fromRows A B).rank ≤ (i : ℕ)} := by
+    ext i
+    exact hpair i
+  have hq : {i : Fin n | α i ≠ 0 ∨ β i ≠ 0} = {i : Fin n | (i : ℕ) < (fromRows A B).rank} := by
+    ext i
+    exact not_and_or.symm.trans ((hpair i).not.trans not_le)
+  simpa only [hp, hq] using hKernel
 
 end BenIsraelGreville.Chapter06

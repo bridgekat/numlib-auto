@@ -123,3 +123,11 @@ source = "Ben-Israel and Greville, Chapter 6 §8, Example 1, Equation (191), exa
 [[node]]
 id = "bSvd_constraint_iff"
 source = "Ben-Israel and Greville, Chapter 6 §8, Exercise 92, Equations (197)–(198), equality of constraints"
+
+[[node]]
+id = "bSvd_rectDiagonal_exists"
+source = "Ben-Israel and Greville, Chapter 6 §8, Theorem 21, real or complex ordinary rectangular forms with trailing zero pairs"
+
+[[node]]
+id = "bSvd_orthogonal_exists"
+source = "Ben-Israel and Greville, Chapter 6 §8, Theorem 21 and Remark 1(c–d), real or complex orthogonally split existence"
