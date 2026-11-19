@@ -1572,4 +1572,183 @@ theorem represents_gramProjectionGreenKernel (v : ι → Lp V 2 μ)
 
 end GramProjectionKernels
 
+section GreenKernelProducts
+
+variable {𝕜 X U V W : Type*} [RCLike 𝕜] [MeasurableSpace X]
+  [NormedAddCommGroup U] [NormedSpace 𝕜 U]
+  [NormedAddCommGroup V] [NormedSpace 𝕜 V] [NormedSpace ℝ V]
+  [NormedAddCommGroup W] [NormedSpace 𝕜 W] [NormedSpace ℝ W]
+  [SMulCommClass ℝ 𝕜 W] {μ : Measure X}
+
+/-- The Green kernel of a composite is obtained by integrating the composed coefficients
+over the intermediate variable. -/
+def greenKernelProduct (μ : Measure X) (P : GreenKernel 𝕜 X V W)
+    (G : GreenKernel 𝕜 X U V) : GreenKernel 𝕜 X U W :=
+  fun s t => ∫ u, (P s u).comp (G u t) ∂μ
+
+/-- For a specified input, the composition has integrable coefficient rows and an
+integrable Fubini integrand for almost every output point. -/
+structure GreenKernelProductIntegrable (μ : Measure X) (P : GreenKernel 𝕜 X V W)
+    (G : GreenKernel 𝕜 X U V) (y : Lp U 2 μ) : Prop where
+  coefficient : ∀ᵐ s ∂μ, ∀ᵐ t ∂μ, Integrable (fun u => (P s u).comp (G u t)) μ
+  integrand : ∀ᵐ s ∂μ, Integrable (fun p : X × X => P s p.1 (G p.1 p.2 (y p.2))) (μ.prod μ)
+
+variable [CompleteSpace V] [CompleteSpace W] [SFinite μ]
+
+omit [SMulCommClass ℝ 𝕜 W] in
+/-- Under the coefficient and Fubini integrability conditions, the convolution represents
+the composition of the two Green operators on the given input. -/
+theorem represents_greenKernelProduct {P : GreenKernel 𝕜 X V W}
+    {G : GreenKernel 𝕜 X U V} {y : Lp U 2 μ} {v : Lp V 2 μ} {w : Lp W 2 μ}
+    (hP : RepresentsGreenAction P v w) (hG : RepresentsGreenAction G y v)
+    (hPG : GreenKernelProductIntegrable μ P G y) :
+    RepresentsGreenAction (greenKernelProduct μ P G) y w := by
+  have hAt : ∀ᵐ s ∂μ, ∀ᵐ t ∂μ,
+      greenKernelProduct μ P G s t (y t) = ∫ u, P s u (G u t (y t)) ∂μ := by
+    filter_upwards [hPG.coefficient] with s hs
+    filter_upwards [hs] with t ht
+    exact ContinuousLinearMap.integral_apply ht _
+  constructor
+  · filter_upwards [hAt, hPG.integrand] with s hs hi
+    exact hi.integral_prod_right.congr (Filter.EventuallyEq.symm hs)
+  · filter_upwards [hP.ae_eq_integral, hAt, hPG.integrand] with s hw hrow hs
+    rw [hw]
+    change (∫ u, P s u (v u) ∂μ) = ∫ t, greenKernelProduct μ P G s t (y t) ∂μ
+    calc
+      ∫ u, P s u (v u) ∂μ = ∫ u, ∫ t, P s u (G u t (y t)) ∂μ ∂μ := by
+        apply integral_congr_ae
+        filter_upwards [hG.ae_eq_integral, hG.integrable_row] with u hu hI
+        rw [hu]
+        exact ((P s u).integral_comp_comm hI).symm
+      _ = ∫ t, ∫ u, P s u (G u t (y t)) ∂μ ∂μ := integral_integral_swap hs
+      _ = ∫ t, greenKernelProduct μ P G s t (y t) ∂μ :=
+        integral_congr_ae (Filter.EventuallyEq.symm hrow)
+
+end GreenKernelProducts
+
+section GreenKernelCombination
+
+variable {𝕜 X V W : Type*} [RCLike 𝕜] [MeasurableSpace X]
+  [NormedAddCommGroup V] [NormedSpace 𝕜 V]
+  [NormedAddCommGroup W] [NormedSpace 𝕜 W] [NormedSpace ℝ W] {μ : Measure X}
+
+private theorem RepresentsGreenAction.addKernel {F G : GreenKernel 𝕜 X V W} {y : Lp V 2 μ}
+    {x z : Lp W 2 μ} (hF : RepresentsGreenAction F y x) (hG : RepresentsGreenAction G y z) :
+    RepresentsGreenAction (fun s t => F s t + G s t) y (x + z) := by
+  constructor
+  · filter_upwards [hF.integrable_row, hG.integrable_row] with s hFs hGs
+    exact hFs.add hGs
+  · filter_upwards [hF.ae_eq_integral, hG.ae_eq_integral, hF.integrable_row,
+      hG.integrable_row, Lp.coeFn_add x z] with s hx hz hiF hiG hs
+    change _ = ∫ t, F s t (y t) + G s t (y t) ∂μ
+    rw [hs, Pi.add_apply, hx, hz, integral_add hiF hiG]
+    rfl
+
+private theorem RepresentsGreenAction.subKernel {F G : GreenKernel 𝕜 X V W} {y : Lp V 2 μ}
+    {x z : Lp W 2 μ} (hF : RepresentsGreenAction F y x) (hG : RepresentsGreenAction G y z) :
+    RepresentsGreenAction (fun s t => F s t - G s t) y (x - z) := by
+  constructor
+  · filter_upwards [hF.integrable_row, hG.integrable_row] with s hFs hGs
+    exact hFs.sub hGs
+  · filter_upwards [hF.ae_eq_integral, hG.ae_eq_integral, hF.integrable_row,
+      hG.integrable_row, Lp.coeFn_sub x z] with s hx hz hiF hiG hs
+    change _ = ∫ t, F s t (y t) - G s t (y t) ∂μ
+    rw [hs, Pi.sub_apply, hx, hz, integral_sub hiF hiG]
+    rfl
+
+end GreenKernelCombination
+
+section LoudExpandedGreen
+
+variable {𝕜 X V W : Type*} [RCLike 𝕜] [MeasurableSpace X]
+  [NormedAddCommGroup V] [InnerProductSpace 𝕜 V] [CompleteSpace V]
+  [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace W]
+  [NormedSpace ℝ V] [SMulCommClass ℝ 𝕜 V]
+  [NormedSpace ℝ W] [SMulCommClass ℝ 𝕜 W] {μ : Measure X} [SFinite μ]
+
+/-- The double integral in the expansion of Loud's projected Green kernel. -/
+def greenKernelTripleProduct (μ : Measure X) (P : GreenKernel 𝕜 X W W)
+    (G : GreenKernel 𝕜 X V W) (Q : GreenKernel 𝕜 X V V) : GreenKernel 𝕜 X V W :=
+  fun s t => ∫ v, ∫ u, (P s u).comp ((G u v).comp (Q v t)) ∂μ ∂μ
+
+omit [CompleteSpace V] [NormedSpace ℝ V] [SMulCommClass ℝ 𝕜 V]
+  [SMulCommClass ℝ 𝕜 W] [SFinite μ] in
+private theorem greenKernelProduct_product_ae (P : GreenKernel 𝕜 X W W)
+    (G : GreenKernel 𝕜 X V W) (Q : GreenKernel 𝕜 X V V)
+    (h : ∀ᵐ s ∂μ, ∀ᵐ v ∂μ, Integrable (fun u => (P s u).comp (G u v)) μ) :
+    ∀ᵐ s ∂μ, ∀ t, greenKernelProduct μ (greenKernelProduct μ P G) Q s t =
+      greenKernelTripleProduct μ P G Q s t := by
+  filter_upwards [h] with s hs
+  intro t
+  apply integral_congr_ae
+  filter_upwards [hs] with v hv
+  let J : (V →L[𝕜] W) →L[𝕜] V →L[𝕜] W :=
+    (ContinuousLinearMap.compL 𝕜 V V W).flip (Q v t)
+  change J (∫ u, (P s u).comp (G u v) ∂μ) = ∫ u, J ((P s u).comp (G u v)) ∂μ
+  exact (J.integral_comp_comm hv).symm
+
+omit [SMulCommClass ℝ 𝕜 V] in
+/-- **Exercise 35**, Equation (67), of [benIsrael2003generalized].
+The four kernels in the expanded formula represent the maximal inverse on its domain.
+The two projection kernels may be taken to be the Gram kernels of (65)–(66). -/
+theorem exercise_9_35_kernel_expansion {L : Lp W 2 μ →ₗ.[𝕜] Lp V 2 μ}
+    (hL : IsNormallySolvable L) (hD : Dense (L.domain : Set (Lp W 2 μ)))
+    (G : GreenKernel 𝕜 X V W) (hG : IsGeneralizedGreenKernel L G)
+    (Gop : Lp V 2 μ →ₗ[𝕜] Lp W 2 μ) (hGop : ∀ x, RepresentsGreenAction G x (Gop x))
+    (P : GreenKernel 𝕜 X W W) (Q : GreenKernel 𝕜 X V V) :
+    letI := hL.1.isClosed_ker.completeSpace_coe
+    letI := (L.adjoint_isClosed hD).isClosed_ker.completeSpace_coe
+    (∀ x, RepresentsGreenAction P x (L.ker.starProjection x)) →
+    (∀ x, RepresentsGreenAction Q x (L.adjoint.ker.starProjection x)) →
+    ∀ y : (maximalTsengInverse L).domain,
+      GreenKernelProductIntegrable μ P G y.val →
+      GreenKernelProductIntegrable μ G Q y.val →
+      GreenKernelProductIntegrable μ P G (L.adjoint.ker.starProjection y.val) →
+      GreenKernelProductIntegrable μ (greenKernelProduct μ P G) Q y.val →
+      RepresentsGreenAction (fun s t =>
+        G s t - greenKernelProduct μ P G s t - greenKernelProduct μ G Q s t +
+          greenKernelTripleProduct μ P G Q s t) y.val (maximalTsengInverse L y) := by
+  let := hL.1.isClosed_ker.completeSpace_coe
+  let := (L.adjoint_isClosed hD).isClosed_ker.completeSpace_coe
+  let := hL.2.completeSpace_coe
+  intro hP hQ y hPG hGQ hPGQ hAll
+  let p := L.ker.starProjection
+  let q := L.adjoint.ker.starProjection
+  have h1 := hGop y.val
+  have h2 := represents_greenKernelProduct (hP (Gop y.val)) h1 hPG
+  have h3 := represents_greenKernelProduct (hGop (q y.val)) (hQ y.val) hGQ
+  have h4 := represents_greenKernelProduct (hP (Gop (q y.val))) (hGop (q y.val)) hPGQ
+  have h5 := represents_greenKernelProduct h4 (hQ y.val) hAll
+  have h6 := ((h1.subKernel h2).subKernel h3).addKernel h5
+  have hprod := greenKernelProduct_product_ae P G Q hPG.coefficient
+  let r := L.toFun.range.orthogonalProjectionOnto y.val
+  have hr : r.val = y.val - q y.val := (exercise_9_35_projection_complements hL hD).2 y.val
+  have hGproj : hG.toLinearMap r = Gop r.val :=
+    (hG.represents_toLinearMap r).output_unique (hGop r.val)
+  have hp (x : Lp W 2 μ) : L.kerᗮ.starProjection x = x - p x := by
+    apply Submodule.eq_starProjection_of_mem_orthogonal (L.ker.sub_starProjection_mem_orthogonal x)
+    rw [sub_sub_cancel, Submodule.orthogonal_orthogonal]
+    exact L.ker.starProjection_apply_mem x
+  have he : maximalTsengInverse L y =
+      Gop y.val - p (Gop y.val) - Gop (q y.val) + p (Gop (q y.val)) := by
+    rw [maximalInverse_eq_project_greenKernel hL hG, hGproj, hp, hr, map_sub, map_sub]
+    abel
+  have hrow : ∀ᵐ s ∂μ, (fun t =>
+      (G s t - greenKernelProduct μ P G s t - greenKernelProduct μ G Q s t +
+        greenKernelProduct μ (greenKernelProduct μ P G) Q s t) (y.val t)) =ᵐ[μ] fun t =>
+      (G s t - greenKernelProduct μ P G s t - greenKernelProduct μ G Q s t +
+        greenKernelTripleProduct μ P G Q s t) (y.val t) := by
+    filter_upwards [hprod] with s hs
+    exact Eventually.of_forall fun t => congrArg
+      (fun K : V →L[𝕜] W => (G s t - greenKernelProduct μ P G s t -
+        greenKernelProduct μ G Q s t + K) (y.val t)) (hs t)
+  rw [he]
+  constructor
+  · filter_upwards [h6.integrable_row, hrow] with s hs ht
+    exact hs.congr ht
+  · filter_upwards [h6.ae_eq_integral, hrow] with s hs ht
+    exact hs.trans (integral_congr_ae ht)
+
+end LoudExpandedGreen
+
 end BenIsraelGreville.Chapter09

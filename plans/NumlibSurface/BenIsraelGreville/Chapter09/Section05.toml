@@ -1,6 +1,5 @@
 namespace = "BenIsraelGreville.Chapter09"
 
-
 [[node]]
 id = "differentialExpression"
 source = "Ben-Israel and Greville, Ch. 9, §5, (46), differential expression"
@@ -219,10 +218,7 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 34(c)–(d), partial-map
 
 [[node]]
 id = "exercise_9_35_kernel_expansion"
-kind = "theorem"
-desc = '''Define the two single-integral products K_N(L)G and G K_N(L*) and their iterated double-integral product under row and product integrability hypotheses, then prove by Fubini that the four-term kernel represents the maximal inverse on its full domain. The normalized operator formula (63) and the two projection kernels (65)–(66) are formalized.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 35, (67), expanded kernel formula"
-deps = ["maximalInverse_eq_project_greenKernel", "represents_gramProjectionGreenKernel"]
+source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), expanded kernel formula"
 
 [[node]]
 id = "exercise_9_36"
@@ -230,3 +226,19 @@ kind = "theorem"
 desc = '''For Lx=x′−Bx with x(0)=x(1)=0, prove the free-endpoint adjoint, its homogeneous basis X⁻*, the Gram projection kernel with middle factor (∫X⁻¹X⁻*)⁻¹, and the projected Green formula. A positive fundamental kernel is causal (t<s), or a negative kernel is anticausal (s<t); the positive anticausal kernel printed in (69) differentiates to minus the forcing.'''
 source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, (68)–(69), endpoint-zero first-order system"
 deps = ["exercise_9_30_operator", "exercise_9_35_kernel_expansion"]
+
+[[node]]
+id = "greenKernelProduct"
+source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), convolution of two Green kernels"
+
+[[node]]
+id = "GreenKernelProductIntegrable"
+source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), coefficient and Fubini integrability"
+
+[[node]]
+id = "represents_greenKernelProduct"
+source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), represented composition"
+
+[[node]]
+id = "greenKernelTripleProduct"
+source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), iterated double integral"
