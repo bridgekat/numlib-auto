@@ -40,6 +40,8 @@ The proofs specialize the backbone modules `Numlib.Approximation.Hermite` and
 
 ## Deviations from the source
 
+* **Generalization and index correction.** Theorem A.9.2 allows order zero, uses the defined steps
+  only, and bounds the interpolant on the real line. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
 * **Theorem A.9.2** (generalization). The book assumes $p > 0$, which the proof does not use; the
   statement holds for every $p$. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
 * **Theorem A.9.2** (reading). The hypothesis $s_k > 0$ "for $k \in [0 : k_e]$" is read for
@@ -124,7 +126,12 @@ defined on $\mathbb{R}$, and the bound is for all $x \in \mathbb{R}$.
 
 The sum in (A.32) is the $j$-th derivative at $s_k$ of the Taylor polynomial $T_{k,p}(x_k, s) =
 \sum_{i=0}^p f_k^{(i)} s^i / i!$ of the jet at $x_k$. The nodes are `x : ℕ → ℝ` and the data are
-`F : ℕ → ℕ → ℝ`, with `F k j` $= f_k^{(j)}$. -/
+`F : ℕ → ℕ → ℝ`, with `F k j` $= f_k^{(j)}$.
+
+**Correction.** Order zero is allowed. Step positivity ranges over the actual consecutive pairs of
+data, from index zero through one before the final node. The derivative bounds apply on the real
+line.
+-/
 theorem theorem_A_9_2 (p : ℕ) {κ : ℝ} (hκ : 0 ≤ κ) : ∃ L B : ℝ, 0 ≤ L ∧ 0 ≤ B ∧
     ∀ (kₑ : ℕ) (x : ℕ → ℝ) (F : ℕ → ℕ → ℝ), 0 < kₑ → (∀ k < kₑ, x k < x (k + 1)) →
       (∀ k < kₑ, ∀ j ≤ p, |F (k + 1) j - ∑ i ∈ Finset.Icc j p,

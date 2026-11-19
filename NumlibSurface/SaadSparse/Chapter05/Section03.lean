@@ -83,6 +83,43 @@ estimates specialize `Numlib.Projection.OneDimensional`.
   The exact identity for the $A$-norm of the error of steepest descent,
   `SaadSparse.Chapter05.energyNorm_sdStep_sq_eq`, is the last display in the proof of Theorem 5.9,
   which the book does not number.
+
+## Deviations from the source
+
+* **Reading.** The scalar quotient of the one-dimensional projection step is totalized. See
+  `SaadSparse.Chapter05.step1`, `SaadSparse.Chapter05.step1_eq`.
+* **Generalization.** The steepest-descent step is defined even outside the SPD case. See
+  `SaadSparse.Chapter05.sdStep`.
+* **Generalization.** The minimal-residual step and its line optimality allow all real matrices. See
+  `SaadSparse.Chapter05.mrStep`, `SaadSparse.Chapter05.mrStep_min`.
+* **Generalization.** The residual-norm step and its equivalence with the normal-equation step allow
+  singular matrices. See `SaadSparse.Chapter05.rnsdStep`,
+  `SaadSparse.Chapter05.rnsdStep_eq_sdStep_normal`.
+* **Generalization.** The Galerkin property of the steepest-descent step needs positive realness.
+  See `SaadSparse.Chapter05.sdStep_isProjectionApprox`.
+* **Generalization.** The cross-multiplied Kantorovich inequality also holds at the zero vector. See
+  `SaadSparse.Chapter05.lemma_5_8`.
+* **Reading.** The convergence results concern indefinitely iterated exact steps, with geometric
+  bounds after $k$ steps. See `SaadSparse.Chapter05.theorem_5_9`,
+  `SaadSparse.Chapter05.theorem_5_9_tendsto`, `SaadSparse.Chapter05.theorem_5_10`,
+  `SaadSparse.Chapter05.theorem_5_10_tendsto`, `SaadSparse.Chapter05.rnsd_norm_residual_le`,
+  `SaadSparse.Chapter05.rnsd_tendsto`.
+* **Generalization.** The minimal-residual identities use totalized quotients and angles and allow
+  arbitrary matrices. See `SaadSparse.Chapter05.equation_5_18`,
+  `SaadSparse.Chapter05.norm_residual_mrStep_eq_sin`.
+* **Reading.** The squared steepest-descent error identity also includes the exact-solution case.
+  See `SaadSparse.Chapter05.energyNorm_sdStep_sq_eq`.
+* **Reading.** The angle-based factor uses a supremum without a separate attainment claim. See
+  `SaadSparse.Chapter05.sinAngleSup`, `SaadSparse.Chapter05.sin_angle_le_sinAngleSup`,
+  `SaadSparse.Chapter05.norm_residual_mrStep_le_sinAngleSup`,
+  `SaadSparse.Chapter05.sinAngleSup_lt_one`, `SaadSparse.Chapter05.norm_mrStep_le_sup_sin`.
+* **Reading.** The coordinate projection formula is a single Gauss–Seidel correction and is
+  totalized at zero diagonal. See `SaadSparse.Chapter05.example_5_1`.
+* **Reading.** The three algorithms have exact state-update specifications for a given number of
+  iterations. See `SaadSparse.Chapter05.sdAlgStep`, `SaadSparse.Chapter05.mrAlgStep`,
+  `SaadSparse.Chapter05.rnsdAlgStep`, `SaadSparse.Chapter05.rnsdAlgStep_alpha`,
+  `SaadSparse.Chapter05.sdAlg_spec`, `SaadSparse.Chapter05.mrAlg_spec`,
+  `SaadSparse.Chapter05.rnsdAlg_spec`.
 -/
 
 open Matrix Module Filter Topology
@@ -105,12 +142,20 @@ $b, v, w \in \mathbb{R}^n$, the **one-dimensional projection step** onto
 $\operatorname{span}\{v\}$ orthogonally to $\operatorname{span}\{w\}$ from $x$ is
 $$x \mapsto x + \frac{(w, r)}{(w, Av)} \, v, \qquad r = b - Ax.$$
 
-If $(w, Av) = 0$, the quotient is $0$ in Lean, and the step returns $x$. -/
+If $(w, Av) = 0$, the quotient is $0$ in Lean, and the step returns $x$.
+
+**Reading.** With zero denominator Lean assigns zero to the coefficient and returns the input. The
+source formula for the projection coefficient presupposes nonzero denominator.
+-/
 noncomputable def step1 (A : Matrix (Fin n) (Fin n) ℝ) (b v w x : E n) : E n :=
   x + (inner ℝ w (b - (A ⬝ x)) / inner ℝ w (A ⬝ v)) • v
 
 /-- The step (5.12) of [saad2003iterative] is `Projection.step1` of the backbone for the operator
-`Matrix.toEuclideanLin A`. -/
+`Matrix.toEuclideanLin A`.
+
+**Reading.** With zero denominator Lean assigns zero to the coefficient and returns the input. The
+source formula for the projection coefficient presupposes nonzero denominator.
+-/
 theorem step1_eq (A : Matrix (Fin n) (Fin n) ℝ) (b v w x : E n) :
     step1 A b v w x = Projection.step1 (toEuclideanLin A) b v w x := rfl
 
@@ -142,6 +187,9 @@ theorem isProjectionApprox_span_singleton_iff {v w x' : E n} (h : inner ℝ w (A
 /-- **Algorithm 5.2** of [saad2003iterative], the step. The **steepest descent step** from $x$ is
 the step (5.12) with $v = w = r$, where $r = b - Ax$:
 $$x \mapsto x + \frac{(r, r)}{(r, Ar)} \, r.$$
+
+**Generalization.** The step formula is defined for all real matrices and returns the input if its
+denominator vanishes. The source assumes a symmetric positive definite matrix.
 -/
 noncomputable def sdStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
   step1 A b (b - (A ⬝ x)) (b - (A ⬝ x)) x
@@ -149,12 +197,20 @@ noncomputable def sdStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
 /-- **Algorithm 5.3** of [saad2003iterative], the step. The **minimal residual step** from $x$ is
 the step (5.12) with $v = r$ and $w = Ar$, where $r = b - Ax$:
 $$x \mapsto x + \frac{(Ar, r)}{(Ar, Ar)} \, r.$$
+
+**Generalization.** The source assumes positive definiteness. Lean uses the totalized coefficient:
+if $Ar=0$, the residual is constant along the search line and the step may leave $x$ unchanged.
 -/
 noncomputable def mrStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
   step1 A b (b - (A ⬝ x)) (A ⬝ (b - (A ⬝ x))) x
 
 /-- **Algorithm 5.4** of [saad2003iterative], the step. The **residual norm steepest descent step**
-from $x$ is the step (5.12) with $v = A^Tr$ and $w = Av$, where $r = b - Ax$. -/
+from $x$ is the step (5.12) with $v = A^Tr$ and $w = Av$, where $r = b - Ax$.
+
+**Generalization.** The source assumes nonsingularity. Lean gives the formula and the equivalence
+with a steepest-descent step on the normal equations even for singular matrices, using totalized
+division.
+-/
 noncomputable def rnsdStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) : E n :=
   step1 A b (Aᵀ ⬝ (b - (A ⬝ x))) (A ⬝ (Aᵀ ⬝ (b - (A ⬝ x)))) x
 
@@ -169,7 +225,11 @@ theorem mrStep_eq (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
 
 /-- Algorithm 5.2 of [saad2003iterative]: if $A$ is positive definite, each steepest descent step is
 a projection approximation onto $\operatorname{span}\{r\}$ orthogonally to
-$\operatorname{span}\{r\}$, where $r = b - Ax$. -/
+$\operatorname{span}\{r\}$, where $r = b - Ax$.
+
+**Generalization.** Positive realness suffices for this Galerkin characterization, so Lean takes it
+without the symmetry required in the source's presentation.
+-/
 theorem sdStep_isProjectionApprox (hA : A.IsPositiveReal) (b x : E n) :
     IsProjectionApprox A b x (ℝ ∙ (b - (A ⬝ x))) (ℝ ∙ (b - (A ⬝ x))) (sdStep A b x) :=
   isProjectionApprox_iff.mpr
@@ -186,7 +246,11 @@ theorem sdStep_min (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x 
   exact ((proposition_5_2 hA hstar).mp (sdStep_isProjectionApprox hpr b x)).2 y hy
 
 /-- Algorithm 5.3 of [saad2003iterative]: for every $A$, the minimal residual step from $x$
-minimizes the residual norm $\|b - Ay\|_2$ over the line $y \in x + \operatorname{span}\{r\}$. -/
+minimizes the residual norm $\|b - Ay\|_2$ over the line $y \in x + \operatorname{span}\{r\}$.
+
+**Generalization.** The source assumes positive definiteness. Lean uses the totalized coefficient:
+if $Ar=0$, the residual is constant along the search line and the step may leave $x$ unchanged.
+-/
 theorem mrStep_min (b x y : E n)
     (hy : y - x ∈ (ℝ ∙ (b - (A ⬝ x)))) : R_A A b (mrStep A b x) ≤ R_A A b y :=
   (Projection.minResStep_isMinResidual x).min y hy
@@ -207,6 +271,9 @@ $B \in \mathbb{R}^{n \times n}$, $n \ge 1$, be symmetric positive definite with 
 largest eigenvalues $\lambda_{\min}$ and $\lambda_{\max}$. Then for every $x \in \mathbb{R}^n$,
 $$(Bx, x)(B^{-1}x, x) \le \frac{(\lambda_{\max} + \lambda_{\min})^2}{4 \lambda_{\max}
   \lambda_{\min}} (x, x)^2.$$
+
+**Generalization.** The inequality is cross-multiplied by the squared inner product, so it also
+applies to the zero vector. The source divides by that factor and assumes $x\ne0$.
 -/
 theorem lemma_5_8 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.PosDef) (x : Fin n → ℝ) :
     ((B *ᵥ x) ⬝ᵥ x) * ((B⁻¹ *ᵥ x) ⬝ᵥ x) ≤
@@ -265,7 +332,12 @@ $x_k$ of Algorithm 5.2 satisfy
 $$E(x_k) \le \left( \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} + \lambda_{\min}}
   \right)^k E(x_0).$$
 
-The proof specializes `Projection.energyNorm_iterate_steepestDescentStep_le`. -/
+The proof specializes `Projection.energyNorm_iterate_steepestDescentStep_le`.
+
+**Reading.** Lean takes exact iterates of the step map for every iteration index, remaining fixed
+once the exact solution is reached. The source gives a convergence-controlled loop. The geometric
+inequalities in Lean state the accumulated bound after $k$ steps.
+-/
 theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) (k : ℕ) :
     E_A A xstar ((sdStep A b)^[k] x₀) ≤
       ((lambdaMax hA.1 - lambdaMin hA.1) / (lambdaMax hA.1 + lambdaMin hA.1)) ^ k *
@@ -277,7 +349,12 @@ theorem theorem_5_9 (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x
 $n \ge 1$, be symmetric positive definite, and let $Ax^* = b$. Then the iterates of Algorithm
 5.2 converge to $x^*$ from every starting vector.
 
-The proof specializes `Projection.tendsto_iterate_steepestDescentStep`. -/
+The proof specializes `Projection.tendsto_iterate_steepestDescentStep`.
+
+**Reading.** Lean takes exact iterates of the step map for every iteration index, remaining fixed
+once the exact solution is reached. The source gives a convergence-controlled loop. The geometric
+inequalities in Lean state the accumulated bound after $k$ steps.
+-/
 theorem theorem_5_9_tendsto (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x₀ : E n) :
     Tendsto (fun k => (sdStep A b)^[k] x₀) atTop (𝓝 xstar) :=
   Projection.tendsto_iterate_steepestDescentStep (lambdaMin_pos hA)
@@ -352,6 +429,10 @@ open scoped Matrix.Norms.L2Operator in
 positive definite, and let $\mu = \lambda_{\min}((A + A^T)/2)$ and $\sigma = \|A\|_2$. Then for
 every $b$, $x_0$ and $k \ge 0$ the residuals $r_k = b - Ax_k$ of Algorithm 5.3 satisfy
 $$\|r_k\|_2 \le \left( 1 - \frac{\mu^2}{\sigma^2} \right)^{k/2} \|r_0\|_2.$$
+
+**Reading.** Lean takes exact iterates of the step map for every iteration index, remaining fixed
+once the exact solution is reached. The source gives a convergence-controlled loop. The geometric
+inequalities in Lean state the accumulated bound after $k$ steps.
 -/
 theorem theorem_5_10 (hA : A.IsPositiveReal) (b x₀ : E n) (k : ℕ) :
     ‖b - (A ⬝ ((mrStep A b)^[k] x₀))‖ ≤
@@ -373,7 +454,12 @@ $n \ge 1$, be positive definite. Then for every $b$ the iterates of Algorithm 5.
 $A^{-1}b$ from every starting vector.
 
 The coercivity bound $\mu \|x\|_2 \le \|Ax\|_2$ controls the error by the residual, so the
-geometric decay of `SaadSparse.Chapter05.theorem_5_10` carries over to the iterates. -/
+geometric decay of `SaadSparse.Chapter05.theorem_5_10` carries over to the iterates.
+
+**Reading.** Lean takes exact iterates of the step map for every iteration index, remaining fixed
+once the exact solution is reached. The source gives a convergence-controlled loop. The geometric
+inequalities in Lean state the accumulated bound after $k$ steps.
+-/
 theorem theorem_5_10_tendsto (hA : A.IsPositiveReal) (b x₀ : E n) :
     Tendsto (fun k => (mrStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b)) := by
   have hpos := lambdaMin_hermitianPart_pos hA
@@ -424,7 +510,12 @@ private theorem toEuclideanLin_normal (A : Matrix (Fin n) (Fin n) ℝ) (z : E n)
 
 omit [NeZero n] in
 /-- §5.3.3 of [saad2003iterative]: for every $A$, the residual norm steepest descent step is the
-steepest descent step for the normal equations $A^TAx = A^Tb$. -/
+steepest descent step for the normal equations $A^TAx = A^Tb$.
+
+**Generalization.** The source assumes nonsingularity. Lean gives the formula and the equivalence
+with a steepest-descent step on the normal equations even for singular matrices, using totalized
+division.
+-/
 theorem rnsdStep_eq_sdStep_normal (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     rnsdStep A b x = sdStep (Aᵀ * A) (Aᵀ ⬝ b) x := by
   have hAA : ∀ z : E n, ((Aᵀ * A) ⬝ z) = Aᵀ ⬝ (A ⬝ z) := by
@@ -488,7 +579,12 @@ theorem rnsdStep_min (hA : IsUnit A) (b x y : E n)
 and let $\lambda_{\min}$, $\lambda_{\max}$ be the extreme eigenvalues of $A^TA$. Then the
 residuals of Algorithm 5.4 satisfy $\|r_k\|_2 \le \big( (\lambda_{\max} -
 \lambda_{\min})/(\lambda_{\max} + \lambda_{\min}) \big)^k \|r_0\|_2$. This is Theorem 5.9 for
-the normal equations, by `SaadSparse.Chapter05.energyNorm_normal_eq_norm_residual`. -/
+the normal equations, by `SaadSparse.Chapter05.energyNorm_normal_eq_norm_residual`.
+
+**Reading.** Lean takes exact iterates of the step map for every iteration index, remaining fixed
+once the exact solution is reached. The source gives a convergence-controlled loop. The geometric
+inequalities in Lean state the accumulated bound after $k$ steps.
+-/
 theorem rnsd_norm_residual_le (hA : IsUnit A) (b x₀ : E n) (k : ℕ) :
     ‖b - (A ⬝ ((rnsdStep A b)^[k] x₀))‖ ≤
       ((lambdaMax (posDef_transpose_mul_self hA).1 - lambdaMin (posDef_transpose_mul_self hA).1) /
@@ -507,7 +603,12 @@ $A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be nonsingular. Then for every $b$ t
 Algorithm 5.4 converge to $A^{-1}b$ from every starting vector.
 
 Algorithm 5.4 is Algorithm 5.2 for the symmetric positive definite normal equations
-$A^TAx = A^Tb$, so Theorem 5.9 applies. -/
+$A^TAx = A^Tb$, so Theorem 5.9 applies.
+
+**Reading.** Lean takes exact iterates of the step map for every iteration index, remaining fixed
+once the exact solution is reached. The source gives a convergence-controlled loop. The geometric
+inequalities in Lean state the accumulated bound after $k$ steps.
+-/
 theorem rnsd_tendsto (hA : IsUnit A) (b x₀ : E n) :
     Tendsto (fun k => (rnsdStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ ⬝ b)) := by
   have hstar : (A ⬝ (A⁻¹ ⬝ b)) = b := toEuclideanLin_mul_nonsing_inv_apply hA b
@@ -526,7 +627,12 @@ $$\|b - Ax'\|_2^2 = \|r\|_2^2 \left( 1 - \frac{(Ar, r)^2}{\|r\|_2^2 \, \|Ar\|_2^
 
 No hypothesis is needed: at a breakdown, where $r = 0$ or $Ar = 0$, both sides are $\|r\|_2^2$,
 because division by zero is zero in Lean. The proof specializes
-`Projection.norm_residual_minResStep_sq_eq`. -/
+`Projection.norm_residual_minResStep_sq_eq`.
+
+**Generalization.** Lean makes this residual identity valid without positive definiteness, using
+totalized division and the Euclidean angle convention at zero. In the source the angle is acute
+under positive definiteness and nonzero residual.
+-/
 theorem equation_5_18 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ^ 2 =
       ‖b - (A ⬝ x)‖ ^ 2 *
@@ -540,7 +646,12 @@ omit [NeZero n] in
 /-- **Section 5.3.2** of [saad2003iterative], the geometric form of (5.18). For every $A$, $b$ and
 $x$, with $r = b - Ax$, the minimal residual step $x'$ satisfies
 $$\|b - Ax'\|_2 = \|r\|_2 \sin \angle(r, Ar),$$
-where $\cos \angle(r, Ar) = (Ar, r)/(\|Ar\|_2 \|r\|_2)$. -/
+where $\cos \angle(r, Ar) = (Ar, r)/(\|Ar\|_2 \|r\|_2)$.
+
+**Generalization.** Lean makes this residual identity valid without positive definiteness, using
+totalized division and the Euclidean angle convention at zero. In the source the angle is acute
+under positive definiteness and nonzero residual.
+-/
 theorem norm_residual_mrStep_eq_sin (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ =
       ‖b - (A ⬝ x)‖ * Real.sin (InnerProductGeometry.angle (b - (A ⬝ x)) (A ⬝ (b - (A ⬝ x)))) := by
@@ -560,7 +671,11 @@ Theorem 5.9 follows from it by Kantorovich's inequality (Lemma 5.8).
 
 This is the last display in the proof of Theorem 5.9, which the book does not number. Equation
 (5.20) of the book is the residual bound `SaadSparse.Chapter05.equation_5_20` of §5.3.2. The
-proof specializes `Projection.energyNorm_steepestDescentStep_sq_eq`. -/
+proof specializes `Projection.energyNorm_steepestDescentStep_sq_eq`.
+
+**Reading.** The exact identity also holds at zero residual by totalized division. The fractions in
+the printed derivation implicitly use a nonzero residual.
+-/
 theorem energyNorm_sdStep_sq_eq (hA : A.PosDef) {xstar : E n} (hstar : (A ⬝ xstar) = b) (x : E n) :
     E_A A xstar (sdStep A b x) ^ 2 =
       E_A A xstar x ^ 2 *
@@ -645,7 +760,12 @@ $$\rho = \sup_{x \neq 0} \sin \angle(x, Ax)$$
 is the convergence factor that the book reads off the geometric form $\|r_{k+1}\|_2 = \|r_k\|_2
 \sin \angle(r_k, Ar_k)$ of (5.18).
 
-The supremum is the real supremum over the nonzero vectors, so it is $0$ when $n = 0$. -/
+The supremum is the real supremum over the nonzero vectors, so it is $0$ when $n = 0$.
+
+**Reading.** Lean uses the supremum over nonzero vectors and the ordinary Euclidean angle. The
+source describes an attained maximum of sines of acute angles for positive definite $A$. The
+contraction statement in Lean bounds that supremum below one in the positive-real case.
+-/
 noncomputable def sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   ⨆ v : {v : E n // v ≠ 0}, Real.sin (InnerProductGeometry.angle (v : E n) (A ⬝ (v : E n)))
 
@@ -659,14 +779,24 @@ private theorem bddAbove_sinAngle (A : Matrix (Fin n) (Fin n) ℝ) :
   exact Real.sin_le_one _
 
 omit [NeZero n] in
-/-- For every $v \neq 0$, $\sin \angle(v, Av) \le \rho$. -/
+/-- For every $v \neq 0$, $\sin \angle(v, Av) \le \rho$.
+
+**Reading.** Lean uses the supremum over nonzero vectors and the ordinary Euclidean angle. The
+source describes an attained maximum of sines of acute angles for positive definite $A$. The
+contraction statement in Lean bounds that supremum below one in the positive-real case.
+-/
 theorem sin_angle_le_sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) {v : E n} (hv : v ≠ 0) :
     Real.sin (InnerProductGeometry.angle v (A ⬝ v)) ≤ sinAngleSup A :=
   le_ciSup (bddAbove_sinAngle A) (⟨v, hv⟩ : {v : E n // v ≠ 0})
 
 omit [NeZero n] in
 /-- §5.3.2 of [saad2003iterative]: for every $A$, $b$ and $x$, the minimal residual step $x'$
-satisfies $\|b - Ax'\|_2 \le \rho \|b - Ax\|_2$. -/
+satisfies $\|b - Ax'\|_2 \le \rho \|b - Ax\|_2$.
+
+**Reading.** Lean uses the supremum over nonzero vectors and the ordinary Euclidean angle. The
+source describes an attained maximum of sines of acute angles for positive definite $A$. The
+contraction statement in Lean bounds that supremum below one in the positive-real case.
+-/
 theorem norm_residual_mrStep_le_sinAngleSup (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ≤ sinAngleSup A * ‖b - (A ⬝ x)‖ := by
   rcases eq_or_ne (b - (A ⬝ x)) 0 with h0 | h0
@@ -681,7 +811,12 @@ open scoped Matrix.Norms.L2Operator in
 between $x$ and $Ax$ is acute in the sense that $\rho = \sup_{x \neq 0} \sin \angle(x, Ax) < 1$.
 The uniform bound is Theorem 5.10: for $b = x$ and the starting vector $0$, the residual is $x$,
 and (5.15) bounds its angle sine by $(1 - \mu^2/\sigma^2)^{1/2} < 1$. No compactness argument is
-needed. -/
+needed.
+
+**Reading.** Lean uses the supremum over nonzero vectors and the ordinary Euclidean angle. The
+source describes an attained maximum of sines of acute angles for positive definite $A$. The
+contraction statement in Lean bounds that supremum below one in the positive-real case.
+-/
 theorem sinAngleSup_lt_one (hA : A.IsPositiveReal) : sinAngleSup A < 1 := by
   have hbound : ∀ v : {v : E n // v ≠ 0},
       Real.sin (InnerProductGeometry.angle (v : E n) (A ⬝ (v : E n)))
@@ -700,6 +835,10 @@ $A \in \mathbb{R}^{n \times n}$, $n \ge 1$, be positive definite. Then for every
 minimal residual step $x'$ satisfies
 $$\|b - Ax'\|_2 \le \rho \, \|b - Ax\|_2, \qquad \rho = \sup_{x \neq 0} \sin \angle(x, Ax) <
   1.$$
+
+**Reading.** Lean uses the supremum over nonzero vectors and the ordinary Euclidean angle. The
+source describes an attained maximum of sines of acute angles for positive definite $A$. The
+contraction statement in Lean bounds that supremum below one in the positive-real case.
 -/
 theorem norm_mrStep_le_sup_sin (hA : A.IsPositiveReal) (b x : E n) :
     ‖b - (A ⬝ mrStep A b x)‖ ≤ sinAngleSup A * ‖b - (A ⬝ x)‖ ∧ sinAngleSup A < 1 :=
@@ -729,7 +868,12 @@ elementary relaxation step
 $$x \mapsto x + \frac{r_i}{a_{ii}} \, e_i, \qquad r = b - Ax,$$
 the inner step of the Gauss–Seidel sweep (4.6).
 
-If $a_{ii} = 0$, both sides are $x$, because division by zero is zero in Lean. -/
+If $a_{ii} = 0$, both sides are $x$, because division by zero is zero in Lean.
+
+**Reading.** The declaration is one coordinate step. It allows a zero diagonal entry using totalized
+division. The source assumes nonzero diagonal entries for Gauss–Seidel and cycles through all
+coordinates.
+-/
 theorem example_5_1 (A : Matrix (Fin n) (Fin n) ℝ) (b x : E n) (i : Fin n) :
     step1 A b (EuclideanSpace.single i (1 : ℝ)) (EuclideanSpace.single i (1 : ℝ)) x
       = x + (WithLp.ofLp (b - (A ⬝ x)) i / A i i) •
@@ -775,6 +919,10 @@ projection iterate.
 $(x, r)$ is
 $$p \leftarrow Ar, \quad \alpha \leftarrow \frac{(r, r)}{(p, r)}, \quad x \leftarrow x + \alpha
   r, \quad r \leftarrow r - \alpha p.$$
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
 -/
 noncomputable def sdAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) → (E n) × (E n)
   | (x, r) => (x + (inner ℝ r r / inner ℝ r (A ⬝ r)) • r,
@@ -784,6 +932,10 @@ noncomputable def sdAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) �
 $(x, r)$ is
 $$p \leftarrow Ar, \quad \alpha \leftarrow \frac{(p, r)}{(p, p)}, \quad x \leftarrow x + \alpha
   r, \quad r \leftarrow r - \alpha p.$$
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
 -/
 noncomputable def mrAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) → (E n) × (E n)
   | (x, r) => (x + (inner ℝ (A ⬝ r) r / inner ℝ (A ⬝ r) (A ⬝ r)) • r,
@@ -795,7 +947,12 @@ $$v \leftarrow A^Tr, \quad \alpha \leftarrow \frac{\|v\|_2^2}{\|Av\|_2^2}, \quad
   x + \alpha v, \quad r \leftarrow r - \alpha Av.$$
 
 The step length is written as $(Av, r)/(Av, Av)$, which equals $\|v\|_2^2/\|Av\|_2^2$ (5.21) by
-`SaadSparse.Chapter05.rnsdAlgStep_alpha`. -/
+`SaadSparse.Chapter05.rnsdAlgStep_alpha`.
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
+-/
 noncomputable def rnsdAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) → (E n) × (E n)
   | (x, r) =>
       (x + (inner ℝ (A ⬝ (Aᵀ ⬝ r)) r / inner ℝ (A ⬝ (Aᵀ ⬝ r)) (A ⬝ (Aᵀ ⬝ r))) • (Aᵀ ⬝ r),
@@ -803,7 +960,12 @@ noncomputable def rnsdAlgStep (A : Matrix (Fin n) (Fin n) ℝ) : (E n) × (E n) 
 
 omit [NeZero n] in
 /-- Equation (5.21) of [saad2003iterative]: with $v = A^Tr$, the step length of Algorithm 5.4 is
-$(Av, r)/(Av, Av) = \|v\|_2^2/\|Av\|_2^2$, because $(Av, r) = (v, v)$. -/
+$(Av, r)/(Av, Av) = \|v\|_2^2/\|Av\|_2^2$, because $(Av, r) = (v, v)$.
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
+-/
 theorem rnsdAlgStep_alpha (A : Matrix (Fin n) (Fin n) ℝ) (r : E n) :
     inner ℝ (A ⬝ (Aᵀ ⬝ r)) r / inner ℝ (A ⬝ (Aᵀ ⬝ r)) (A ⬝ (Aᵀ ⬝ r))
       = ‖Aᵀ ⬝ r‖ ^ 2 / ‖A ⬝ (Aᵀ ⬝ r)‖ ^ 2 := by
@@ -812,7 +974,12 @@ theorem rnsdAlgStep_alpha (A : Matrix (Fin n) (Fin n) ℝ) (r : E n) :
 omit [NeZero n] in
 /-- **Algorithm 5.2** of [saad2003iterative], correctness. For every $A$, $b$, $x_0$ and $k \ge 0$,
 the algorithm as printed, started at $(x_0, b - Ax_0)$, reaches after $k$ steps the pair
-$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th steepest descent iterate. -/
+$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th steepest descent iterate.
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
+-/
 theorem sdAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     (sdAlgStep A)^[k] (x₀, b - (A ⬝ x₀))
       = ((sdStep A b)^[k] x₀, b - (A ⬝ ((sdStep A b)^[k] x₀))) := by
@@ -828,7 +995,12 @@ theorem sdAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
 omit [NeZero n] in
 /-- **Algorithm 5.3** of [saad2003iterative], correctness. For every $A$, $b$, $x_0$ and $k \ge 0$,
 the algorithm as printed, started at $(x_0, b - Ax_0)$, reaches after $k$ steps the pair
-$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th minimal residual iterate. -/
+$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th minimal residual iterate.
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
+-/
 theorem mrAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     (mrAlgStep A)^[k] (x₀, b - (A ⬝ x₀))
       = ((mrStep A b)^[k] x₀, b - (A ⬝ ((mrStep A b)^[k] x₀))) := by
@@ -844,7 +1016,12 @@ theorem mrAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
 omit [NeZero n] in
 /-- **Algorithm 5.4** of [saad2003iterative], correctness. For every $A$, $b$, $x_0$ and $k \ge 0$,
 the algorithm as printed, started at $(x_0, b - Ax_0)$, reaches after $k$ steps the pair
-$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th residual norm steepest descent iterate. -/
+$(x_k, b - Ax_k)$, where $x_k$ is the $k$-th residual norm steepest descent iterate.
+
+**Reading.** Lean formalizes the exact state update on $(x,r)$, with division totalized and the
+matrix-vector factors calculated from the current state. The source presents a stopping loop and, in
+Algorithms 5.2–5.3, carries $p=Ar$ from one iteration to the next.
+-/
 theorem rnsdAlg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n) (k : ℕ) :
     (rnsdAlgStep A)^[k] (x₀, b - (A ⬝ x₀))
       = ((rnsdStep A b)^[k] x₀, b - (A ⬝ ((rnsdStep A b)^[k] x₀))) := by

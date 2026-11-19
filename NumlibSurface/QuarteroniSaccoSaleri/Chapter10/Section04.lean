@@ -72,6 +72,16 @@ the transform come from `Numlib.Approximation.GaussLobatto`, and the bounds on t
   Parseval's equality in $L^2(-1, 1)$ is `OrthogonalPolynomial.hilbertBasis` with
   `OrthogonalPolynomial.family_eq_legendre`.
 
+## Deviations from the source
+
+* **Equation (10.34)** (reading). `equation_10_34` evaluates $L_n$ in the weight denominator at
+  the Lobatto nodes $\bar x_j$. The printed denominator uses $x_j$, which labels the Gauss nodes
+  in (10.32). `legendreLobattoWeight_bounds` also applies to repeated choices from the Lobatto
+  nodes.
+* **Equation (10.40)** (generalization). `legendreDiscreteCoeff` is a total expression on
+  arbitrary nodes, including $n=0$ and $k>n$. The transform theorem uses the distinct Lobatto
+  nodes and the stated coefficient range.
+
 ## Not formalized
 
 * **Equations (10.36)–(10.37)**, the estimates $|(f, v_n) - (f, v_n)_n| \le C n^{-s} \|f\|_s
@@ -176,7 +186,10 @@ the Gauss–Lobatto nodes (10.33). For any such family of points:
 
 Here $L_n$ is the Legendre polynomial (10.12) of degree $n$. The existence is (10.17)–(10.18)
 for the Legendre weight, with `Quadrature.derivative_legendre_eq_family`. The weights are
-`Quadrature.legendreLobattoWeight_eq`. -/
+`Quadrature.legendreLobattoWeight_eq`.
+
+**Reading.** Evaluate the denominator at the Lobatto nodes $\bar x_j$ from (10.33). The source
+prints $x_j$, which it uses for the Gauss nodes in (10.32). -/
 theorem equation_10_34 (hn : 1 ≤ n) :
     (∃ x : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = -1 ∧ x (Fin.last n) = 1 ∧
       ∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n → (derivative (legendre n)).eval (x j) = 0) ∧
@@ -273,7 +286,10 @@ $$\frac{2}{n(n + 1)} \le \bar\alpha_j \le \frac{C}{n}, \qquad j = 0, \dots, n.$$
 The book quotes this from Bernardi and Maday. The proof gives the explicit constant $C = 8$ from
 two bounds of `Numlib.Approximation.OrthogonalPolynomial.LegendreBounds`:
 $L_n(\bar x_j)^2 \le 1$ on $[-1, 1]$ gives the lower bound, and $L_n(\bar x_j)^2 \ge 1/(4n)$ at
-a point where $(1 - x^2) L_n'$ vanishes gives the upper bound. The nodes need not be distinct. -/
+a point where $(1 - x^2) L_n'$ vanishes gives the upper bound. The nodes need not be distinct.
+
+**Generalization.** The bounds also hold pointwise for repetitions of the Lobatto nodes, since
+they depend only on the node values. -/
 theorem legendreLobattoWeight_bounds :
     ∃ c : ℝ, ∀ n : ℕ, 1 ≤ n → ∀ x : Fin (n + 1) → ℝ, x 0 = -1 → x (Fin.last n) = 1 →
       (∀ j : Fin (n + 1), 0 < (j : ℕ) → (j : ℕ) < n →
@@ -308,7 +324,10 @@ $$\tilde f_k = \frac{2k + 1}{n(n + 1)} \sum_{j=0}^n \frac{L_k(\bar x_j) f(\bar x
   \frac{f(\bar x_j)}{L_n(\bar x_j)}.$$
 
 The definition is given for every natural number $k$: the first formula is used for every
-$k \neq n$. -/
+$k \neq n$.
+
+**Generalization.** The finite formula is total on arbitrary nodes and extends to $n=0$ and
+$k>n$. -/
 noncomputable def legendreDiscreteCoeff (n : ℕ) (x : Fin (n + 1) → ℝ) (f : ℝ → ℝ) (k : ℕ) : ℝ :=
   if k = n then 1 / ((n : ℝ) + 1) * ∑ j, f (x j) / (legendre n).eval (x j)
   else (2 * k + 1) / ((n : ℝ) * ((n : ℝ) + 1)) *

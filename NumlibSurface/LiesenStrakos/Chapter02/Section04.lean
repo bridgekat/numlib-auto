@@ -28,6 +28,15 @@ two-sided recurrence uses biorthogonal trial and test vectors [liesen2013krylov]
 * `LiesenStrakos.lanczos_isJacobiMatrix` gives the Jacobi property through the grade.
 * `LiesenStrakos.arnoldiHessenberg_eq_lanczosTridiagonal` identifies their compressions
   for a Hermitian operator.
+
+## Deviations from the source
+
+* **Algorithms 2.4.1–2.4.2 and Eq. (2.4.3)** (reading). The Arnoldi vectors and matrices use
+  zero padding after the grade. The Lanczos tridiagonal model is defined even for non-Hermitian
+  operators.
+* **Algorithm 2.4.4** (generalization). The recurrence takes an independent left operator
+  $B$. The printed two-sided Lanczos algorithm is the case $B=A^*$. See
+  `LiesenStrakos.biLanczosVector`.
 -/
 
 namespace LiesenStrakos
@@ -35,24 +44,37 @@ namespace LiesenStrakos
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- The vectors of Algorithm 2.4.1 are the successive normalized classical Gram–Schmidt
-orthogonalizations in the Arnoldi recurrence. Lean starts the indexing at zero. -/
+orthogonalizations in the Arnoldi recurrence. Lean starts the indexing at zero.
+
+**Reading.** The definition uses normalized Gram–Schmidt on the power sequence. It gives the
+same vectors through the grade and then pads with zeros. -/
 noncomputable abbrev arnoldiVector (A : E →ₗ[𝕜] E) (v : E) : ℕ → E := Arnoldi.vec A v
 
 /-- The vectors of Algorithm 2.4.2 are obtained by modified Gram–Schmidt in place of classical
-Gram–Schmidt. -/
+Gram–Schmidt.
+
+**Reading.** The sequence uses total normalization and pads with zeros after the grade. -/
 noncomputable abbrev arnoldiMGSVector (A : E →ₗ[𝕜] E) (v : E) : ℕ → E := Arnoldi.mgsVec A v
 
-/-- In exact arithmetic the classical and modified Gram–Schmidt Arnoldi vectors coincide. -/
+/-- In exact arithmetic the classical and modified Gram–Schmidt Arnoldi vectors coincide.
+
+**Generalization.** Equality also holds on the zero-padded tails. -/
 theorem arnoldiMGSVector_eq (A : E →ₗ[𝕜] E) (v : E) :
     arnoldiMGSVector A v = arnoldiVector A v :=
   Arnoldi.mgsVec_eq_vec A v
 
-/-- The square Arnoldi matrix in (2.4.3) has entries $\langle v_i,Av_j\rangle$. -/
+/-- The square Arnoldi matrix in (2.4.3) has entries $\langle v_i,Av_j\rangle$.
+
+**Generalization.** The square matrix is defined also beyond the Arnoldi grade using zero-
+padded vectors. -/
 noncomputable abbrev arnoldiHessenberg (A : E →ₗ[𝕜] E) (v : E) (n : ℕ) :
     Matrix (Fin n) (Fin n) 𝕜 := Arnoldi.hessenbergSq A v n
 
 /-- The Hermitian Lanczos matrix (2.4.6) is the real tridiagonal matrix of diagonal and
-off-diagonal recurrence coefficients. -/
+off-diagonal recurrence coefficients.
+
+**Generalization.** This tridiagonal model is defined for arbitrary operators. It is the
+Lanczos compression when $A$ is Hermitian. -/
 noncomputable abbrev lanczosTridiagonal (A : E →ₗ[𝕜] E) (v : E) (n : ℕ) :
     Matrix (Fin n) (Fin n) ℝ := Lanczos.tridiag A v n
 
@@ -68,7 +90,9 @@ theorem arnoldi_basis [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) (v : E) 
       ∀ i, (V i : E) = arnoldiVector A v i :=
   ⟨Arnoldi.orthonormalBasis A v hn, Arnoldi.coe_orthonormalBasis_apply A v hn⟩
 
-/-- The Hermitian Lanczos compression through the grade is a Jacobi matrix. -/
+/-- The Hermitian Lanczos compression through the grade is a Jacobi matrix.
+
+**Generalization.** The tridiagonal model has this property even for non-Hermitian $A$. -/
 theorem lanczos_isJacobiMatrix [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E)
     (v : E) {n : ℕ} (hn : n ≤ grade A v) :
     IsJacobiMatrix (lanczosTridiagonal A v n) := by
@@ -84,12 +108,19 @@ theorem lanczos_isJacobiMatrix [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E)
       omega)
 
 /-- For Hermitian $A$, the Arnoldi Hessenberg matrix agrees with the real Lanczos tridiagonal
-matrix after casting each entry to the scalar field. -/
+matrix after casting each entry to the scalar field.
+
+**Generalization.** The equality includes matrices of size larger than the grade using zero
+padding. -/
 theorem arnoldiHessenberg_eq_lanczosTridiagonal (A : E →ₗ[𝕜] E) (hA : A.IsSymmetric)
     (v : E) (n : ℕ) :
     arnoldiHessenberg A v n = (lanczosTridiagonal A v n).map (algebraMap ℝ 𝕜) :=
   Lanczos.hessenbergSq_eq_map_tridiag v hA n
 
+/-- **Algorithm 2.4.4 loop** of [liesen2013krylov].
+
+**Reading.** Uses a supplied left operator while retaining the source normalization and breakdown.
+-/
 private noncomputable def bookBiLanczosStep (A B : E →ₗ[𝕜] E) (s : BiLanczos.State 𝕜 E) :
     Option (BiLanczos.State 𝕜 E) := by
   classical
@@ -115,8 +146,11 @@ private noncomputable def bookBiLanczosState (A B : E →ₗ[𝕜] E) (v w : E) 
 
 /-- The right and left vectors of Algorithm 2.4.4 through breakdown. The first right vector
 has unit norm, and each left vector is scaled using the conjugate of the pairing so that
-its inner product with the corresponding right vector is one. Here $B=A^*$ in the book.
-Once a normalization divisor vanishes, no further pair is produced. -/
+its inner product with the corresponding right vector is one. Once a normalization divisor
+vanishes, no further pair is produced.
+
+**Generalization.** The source uses $A^*$ for the left recurrence. Here a separate
+operator $B$ supplies that action. With $B=A^*$ the recurrence is the printed one. -/
 noncomputable def biLanczosVector (A B : E →ₗ[𝕜] E) (v w : E)
     (_hvw : inner 𝕜 w v ≠ 0) (n : ℕ) : Option (E × E) :=
   let v₁ := (↑(‖v‖⁻¹) : 𝕜) • v

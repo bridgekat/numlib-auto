@@ -37,6 +37,11 @@ The book's proof uses the KKT conditions. The proof here is an elementary monoto
 
 ## Deviations from the source
 
+* **Totalized square root.** The objective in (B.7.1) is totalized outside the feasible disk. See
+  `CartisGouldToint.AppendixB.psiB71`.
+* **Explicit uniqueness.** Lemma B.7.1 explicitly proves uniqueness of the minimizer. See
+  `CartisGouldToint.AppendixB.eq_of_neg_add_sqrt_sq_sub_sq_eq`,
+  `CartisGouldToint.AppendixB.lemma_B_7_1`.
 * **Lemma B.7.1** (generalization). The book speaks of "the" global minimizer without a proof of
   uniqueness; the uniqueness of the minimizer $(\omega, 0)$ is also proved. See
   `CartisGouldToint.AppendixB.lemma_B_7_1`.
@@ -49,12 +54,20 @@ objective of (B.7.1) is $\psi(f, c) = -f + \sqrt{\varepsilon^2 - c^2}$ for
 $(f, c) \in \mathbb{R}^2$.
 
 The square root is the real square root of Mathlib, which is $0$ at negative arguments; on the
-disc of Lemma B.7.1 its argument is positive. -/
+disc of Lemma B.7.1 its argument is positive.
+
+**Reading.** The objective has a real value even outside the disk when the radicand is negative,
+where Lean returns zero for the square-root term. On the feasible disk the original formula applies.
+-/
 noncomputable def psiB71 (ε : ℝ) (p : ℝ × ℝ) : ℝ := -p.1 + √(ε ^ 2 - p.2 ^ 2)
 
 /-- Let $0 \le \omega < \varepsilon$, and let $u, v \in \mathbb{R}$ with $u^2 + v^2 \le \omega^2$
 and $-u + \sqrt{\varepsilon^2 - v^2} = \varepsilon - \omega$. Then $u = \omega$ and $v = 0$.
-This gives the uniqueness of the minimizer in Lemma B.7.1. -/
+This gives the uniqueness of the minimizer in Lemma B.7.1.
+
+**Generalization.** The result and equality-case lemma show that only the specified feasible point
+attains the stated global value.
+-/
 theorem eq_of_neg_add_sqrt_sq_sub_sq_eq {ω ε u v : ℝ} (hω : 0 ≤ ω) (hωε : ω < ε)
     (huv : u ^ 2 + v ^ 2 ≤ ω ^ 2) (heq : -u + √(ε ^ 2 - v ^ 2) = ε - ω) : u = ω ∧ v = 0 := by
   set A := √(ε ^ 2 - v ^ 2) with hA
@@ -94,7 +107,11 @@ $(f, c) \in K$ with $\psi(f, c) = \varepsilon - \omega$ is equal to $(\omega, 0)
 **Generalization.** The book speaks of "the" global minimizer without a proof of uniqueness. The
 uniqueness of the minimizer is also proved.
 
-The objective is `CartisGouldToint.AppendixB.psiB71 ε`. The minimizer property is `IsMinOn`. -/
+The objective is `CartisGouldToint.AppendixB.psiB71 ε`. The minimizer property is `IsMinOn`.
+
+**Generalization.** The result and equality-case lemma show that only the specified feasible point
+attains the stated global value.
+-/
 theorem lemma_B_7_1 {ω ε : ℝ} (hω : 0 < ω) (hωε : ω < ε) :
     let K : Set (ℝ × ℝ) := {p | p.1 ^ 2 + p.2 ^ 2 ≤ ω ^ 2}
     (ω, 0) ∈ K ∧ IsMinOn (psiB71 ε) K (ω, 0) ∧ psiB71 ε (ω, 0) = ε - ω ∧

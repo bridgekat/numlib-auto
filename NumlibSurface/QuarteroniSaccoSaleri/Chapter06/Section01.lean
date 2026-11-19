@@ -53,6 +53,20 @@ perturbation of its coefficients; Example 6.1 shows that this bound is sharp. Th
 
 ## Deviations from the source
 
+* **Reading.** The approximate sensitivities are exact local condition numbers under the stated
+  inverse-branch hypotheses. See `QuarteroniSaccoSaleri.Chapter06.equation_6_3_abs`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_3_rel`.
+* **Reading.** At a multiple root the local absolute condition number is infinite on a continuous
+  inverse branch. See `QuarteroniSaccoSaleri.Chapter06.equation_6_4_absCondNumber_eq_top`.
+* **Reading.** The leading perturbation estimate is a punctured limit under local smoothness. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_4`.
+* **Reading.** Relative bounds use any constant above the asymptotic coefficient. Equation (6.7)
+  restricts roots to real values and allows arbitrary perturbation degree. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_5`, `QuarteroniSaccoSaleri.Chapter06.equation_6_6`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_7`.
+* **Correction.** The four complex roots have distinct phases and the claimed displacement size
+  holds for every positive perturbation. See `QuarteroniSaccoSaleri.Chapter06.example_6_1`,
+  `QuarteroniSaccoSaleri.Chapter06.example_6_1_norm`.
 * **Equation (6.4)** (reading). The source writes $K_{abs}(d) \simeq |m!\,\delta d /
   f^{(m)}(\alpha)|^{1/m} / |\delta d|$, a quantity that depends on $\delta d$; the condition number
   of Definition 2.1 is $+\infty$, and the content of (6.4) is stated as a limit. See
@@ -85,7 +99,12 @@ $f(x) = \varphi(x) - d$, that is, $f'(\alpha) \neq 0$. Then the first-order abso
 number of the root is $$K_{abs}(d) = \frac{1}{|f'(\alpha)|}.$$
 
 The source writes $K_{abs}(d) \simeq 1/|f'(\alpha)|$; here it is an equality for the first-order
-condition number. This is `QuarteroniSaccoSaleri.Chapter02.example_2_4` with $f' = \varphi'$. -/
+condition number. This is `QuarteroniSaccoSaleri.Chapter02.example_2_4` with $f' = \varphi'$.
+
+**Reading.** The displayed approximate sensitivities become exact local condition numbers for a
+continuous local inverse branch with nonzero derivative. The relative formula requires nonzero datum
+and root.
+-/
 theorem equation_6_3_abs (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hf' : deriv (fun x => φ x - d) (G d) ≠ 0) :
     absCondNumber G univ d = ENNReal.ofReal |deriv (fun x => φ x - d) (G d)|⁻¹ := by
@@ -97,7 +116,12 @@ of `QuarteroniSaccoSaleri.Chapter06.equation_6_3_abs`, and with $d \neq 0$ and
 $\alpha = G(d) \neq 0$, the first-order relative condition number of the root is $$K(d) =
 \frac{|d|}{|\alpha|\, |f'(\alpha)|}.$$
 
-This is `QuarteroniSaccoSaleri.Chapter02.example_2_4_rel`. -/
+This is `QuarteroniSaccoSaleri.Chapter02.example_2_4_rel`.
+
+**Reading.** The displayed approximate sensitivities become exact local condition numbers for a
+continuous local inverse branch with nonzero derivative. The relative formula requires nonzero datum
+and root.
+-/
 theorem equation_6_3_rel (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) (hf' : deriv (fun x => φ x - d) (G d) ≠ 0) (hd : d ≠ 0)
     (hα : G d ≠ 0) :
@@ -116,7 +140,11 @@ $f'(\alpha) = 0$. Then the first-order absolute condition number of the root is 
 $K_{abs}(d) = +\infty$.
 
 This is the precise form of the remark of the source that "$K_{abs}(d)$ could nevertheless be a
-large number". It is `QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`. -/
+large number". It is `QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`.
+
+**Reading.** For multiplicity at least two, the unbounded first-order condition number is stated for
+a continuous local inverse branch.
+-/
 theorem equation_6_4_absCondNumber_eq_top (hφ : ContDiff ℝ 1 φ) (hG : ContinuousAt G d)
     (hinv : ∀ᶠ y in 𝓝 d, φ (G y) = y) {m : ℕ} (hm : 2 ≤ m)
     (hα : IsRootOfMultiplicity (fun x => φ x - d) (G d) m) : absCondNumber G univ d = ⊤ := by
@@ -143,7 +171,11 @@ of Definition 2.1, whose value at a multiple root is $+\infty$
 (`QuarteroniSaccoSaleri.Chapter06.equation_6_4_absCondNumber_eq_top`). Its content is the
 asymptotic relation above, stated as a limit.
 
-The proof specializes `IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`. -/
+The proof specializes `IsRootOfMultiplicity.tendsto_abs_sub_div_abs_rpow`.
+
+**Reading.** The displayed nonlinear dependence is a punctured asymptotic ratio under local
+smoothness of order equal to the root multiplicity.
+-/
 theorem equation_6_4 (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α) (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => |x - α| / |f x| ^ (1 / (m : ℝ))) (𝓝[≠] α)
       (𝓝 ((m.factorial / |iteratedDeriv m f α|) ^ (1 / (m : ℝ)))) :=
@@ -159,7 +191,12 @@ c\, \frac{|\hat r|}{|\alpha|}, \qquad \hat r = f(\hat\alpha).$$
 (|f'(\alpha)|\, |\alpha|)$. The theorem reads $\lesssim$ as: for every constant above
 $1/|f'(\alpha)|$, the inequality holds near $\alpha$.
 
-This is the case $m = 1$ of `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow`. -/
+This is the case $m = 1$ of `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow`.
+
+**Reading.** The asymptotic bound becomes an eventual inequality with any constant strictly greater
+than the leading coefficient. Relative errors require a nonzero root. Equation (6.7) is stated for
+real roots and the perturbing polynomial can have arbitrary degree.
+-/
 theorem equation_6_5 (hf : ContDiffAt ℝ 1 f α) (hα : f α = 0) (hf' : deriv f α ≠ 0)
     (hα0 : α ≠ 0) {c : ℝ} (hc : 1 / |deriv f α| < c) :
     ∀ᶠ x in 𝓝 α, |x - α| / |α| ≤ c * |f x| / |α| := by
@@ -192,7 +229,12 @@ reads $\lesssim$ as: for every constant above the asymptotic one, the inequality
 $\alpha$.
 
 The proof specializes `IsRootOfMultiplicity.eventually_abs_sub_le_mul_abs_rpow` with the
-constant $c |\alpha|$. -/
+constant $c |\alpha|$.
+
+**Reading.** The asymptotic bound becomes an eventual inequality with any constant strictly greater
+than the leading coefficient. Relative errors require a nonzero root. Equation (6.7) is stated for
+real roots and the perturbing polynomial can have arbitrary degree.
+-/
 theorem equation_6_6 (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α) (hα : IsRootOfMultiplicity f α m)
     (hα0 : α ≠ 0) {c : ℝ}
     (hc : (m.factorial / (|iteratedDeriv m f α| * |α| ^ m)) ^ (1 / (m : ℝ)) < c) :
@@ -217,7 +259,12 @@ $\lesssim$ as in (6.6), and it is stated for real roots only; the complex form w
 `IsRootOfMultiplicity` over $\mathbb{C}$, which is not in the backbone.
 
 The multiplicity is `Polynomial.rootMultiplicity`. The theorem is (6.6) for $f = p$, whose
-residual at $\hat\alpha$ is $p(\hat\alpha) = -q(\hat\alpha)$. -/
+residual at $\hat\alpha$ is $p(\hat\alpha) = -q(\hat\alpha)$.
+
+**Reading.** The asymptotic bound becomes an eventual inequality with any constant strictly greater
+than the leading coefficient. Relative errors require a nonzero root. Equation (6.7) is stated for
+real roots and the perturbing polynomial can have arbitrary degree.
+-/
 theorem equation_6_7 {p q : ℝ[X]} {α : ℝ} (hα0 : α ≠ 0) {m : ℕ} (hm : 1 ≤ m)
     (hmult : p.rootMultiplicity α = m) {c : ℝ}
     (hc : (m.factorial / (|(derivative^[m] p).eval α| * |α| ^ m)) ^ (1 / (m : ℝ)) < c) :
@@ -253,7 +300,11 @@ open Complex
 $z$ is a root of the perturbed polynomial $\hat p_4(x) = (x - 1)^4 - \varepsilon$ if and only if
 $$z = 1 + \varepsilon^{1/4} i^k \quad \text{for some } k = 0, 1, 2, 3.$$ So the four roots lie
 at angular spacing $\pi/2$ on the circle of radius $\varepsilon^{1/4}$ about $1$, the fourfold
-root of $p_4(x) = (x - 1)^4$. -/
+root of $p_4(x) = (x - 1)^4$.
+
+**Correction.** The four displacements have the four phases $i^k$. Their common absolute size is the
+fourth root of the perturbation. The identities hold for all positive perturbations.
+-/
 theorem example_6_1 {ε : ℝ} (hε : 0 < ε) (z : ℂ) :
     ((X - 1) ^ 4 - C (ε : ℂ)).IsRoot z ↔
       ∃ k : Fin 4, z = 1 + ((ε ^ (1 / 4 : ℝ) : ℝ) : ℂ) * I ^ (k : ℕ) := by
@@ -292,7 +343,11 @@ root $\hat\alpha$ of $(x - 1)^4 - \varepsilon$ has the relative error $$\frac{|\
 stable ($\hat\alpha \to 1$ as $\varepsilon \to 0$) but ill-conditioned.
 
 Here $m = 4$, $p_4^{(4)} = 4!$ and $|q(\hat\alpha)| = \varepsilon$, so the asymptotic constant
-of (6.7) is $1$, and (6.7) with this constant holds with equality. -/
+of (6.7) is $1$, and (6.7) with this constant holds with equality.
+
+**Correction.** The four displacements have the four phases $i^k$. Their common absolute size is the
+fourth root of the perturbation. The identities hold for all positive perturbations.
+-/
 theorem example_6_1_norm {ε : ℝ} (hε : 0 < ε) {z : ℂ} (hz : ((X - 1) ^ 4 - C (ε : ℂ)).IsRoot z) :
     ‖z - 1‖ / ‖(1 : ℂ)‖ = ε ^ (1 / 4 : ℝ) := by
   obtain ⟨k, rfl⟩ := (example_6_1 hε z).1 hz

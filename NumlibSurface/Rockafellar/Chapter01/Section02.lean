@@ -71,6 +71,9 @@ All 13 numbered results of Section 2 are formalized. Most of them specialize the
 * **Theorem 2.4** (correction). The book states the theorem for every convex set $C$. For
   $C = \emptyset$ no simplex is included in $C$, and the maximum does not exist. The statement
   assumes that $C$ is non-empty. See `Rockafellar.theorem_2_4`.
+* **Theorem 2.7, smallest subspace** (generalization). Every set has a smallest containing
+  subspace, and the subspace is the affine hull whenever the set contains $0$. See
+  `Rockafellar.theorem_2_7_least` and `Rockafellar.theorem_2_7_aff`.
 -/
 
 namespace Rockafellar
@@ -406,7 +409,8 @@ theorem theorem_2_7_greatest {K : Set (Rn n)} (hK : IsCone K) (hconv : Convex �
 /-- **Theorem 2.7** of [rockafellar1970convex], the smallest subspace. For every
 $K \subseteq \mathbb{R}^n$, the linear span of $K$ is the smallest subspace that contains $K$.
 
-This part needs no hypothesis on $K$. -/
+**Generalization.** The book states the existence of a smallest containing subspace for convex
+cones containing $0$. The linear span has this property for every set. -/
 theorem theorem_2_7_least (K : Set (Rn n)) :
     IsLeast {L : Submodule ℝ (Rn n) | K ⊆ (L : Set (Rn n))} (Submodule.span ℝ K) :=
   ⟨Submodule.subset_span, fun _ hL => Submodule.span_le.2 hL⟩
@@ -421,8 +425,9 @@ theorem theorem_2_7_sub {K : Set (Rn n)} (hK : IsCone K) (hconv : Convex ℝ K)
 /-- **Theorem 2.7** of [rockafellar1970convex], the smallest subspace as an affine hull. Let
 $K \subseteq \mathbb{R}^n$ contain $0$. Then the linear span of $K$ is $\operatorname{aff} K$.
 
-This is the last sentence of the book's proof: the affine hull of a set that contains $0$ is a
-subspace, by Theorem 1.1. Only the hypothesis $0 \in K$ is needed. -/
+**Generalization.** The theorem in the book assumes that $K$ is a convex cone containing $0$.
+For this clause the origin condition suffices, since any affine set containing $0$ is a subspace
+by `Rockafellar.theorem_1_1`. -/
 theorem theorem_2_7_aff {K : Set (Rn n)} (h0 : (0 : Rn n) ∈ K) :
     (Submodule.span ℝ K : Set (Rn n)) = (affineSpan ℝ K : Set (Rn n)) :=
   (coe_affineSpan_of_zero_mem h0).symm

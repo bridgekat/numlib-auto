@@ -117,6 +117,30 @@ the elimination of the interior variables commutes with taking the block-lower t
 
 ## Deviations from the source
 
+* **(14.8)–(14.14)** (representation). `SaadSparse.Chapter14.VertexPartitioning` groups all
+  interiors before interfaces and uses a label to recover each subdomain's blocks. Sums over
+  off-diagonal subdomains include zero couplings in place of the source's explicit neighbor
+  sets. Local Schur formulas use total inverses.
+* **Algorithm 14.3 and Theorem 14.2** (representation and hypotheses).
+  `SaadSparse.Chapter14.VertexPartitioning.schwarzSweep` is an exact global block-lower inverse
+  update. `SaadSparse.Chapter14.theorem_14_2` makes the local inverses of $B_i$ and $S_i$ well
+  posed explicitly and allows real or complex matrices with arbitrary coupling patterns of the
+  given block shape.
+* **Proposition 14.3 and Lemma 14.4** (scope). `SaadSparse.Chapter14.proposition_14_3` states
+  the fixed-point update under positive definiteness and includes the additive identities from
+  §14.3.3. `SaadSparse.Chapter14.lemma_14_4` writes the recurrences from prefix $0$ and includes
+  the sum from (14.35).
+* **Theorems 14.5 and 14.7** (generalization). The eigenvalue bounds are stated for every
+  eigenvalue through its real part over the real or complex field, with companion inequalities
+  for the energy quadratic form. The orthogonal projector theory uses the Hermitian energy inner
+  product.
+* **Assumption 2 and Lemma 14.8** (generalization).
+  `SaadSparse.Chapter14.IsStrengthenedCauchySchwarz` takes vectors already in each projector's
+  range and uses the real parts of their Hermitian inner products.
+  `SaadSparse.Chapter14.lemma_14_8` requires Assumption 2 alone.
+* **Theorem 14.9** (reading). `SaadSparse.Chapter14.theorem_14_9` gives the operator bound
+  pointwise in the energy norm over the real or complex field, with $K_0>0$ and $K_1\ge0$
+  explicit.
 * **Theorem 14.6** (correction). The book asks only that subdomains of the same colour have no
   common nodes. This is not enough; the theorem assumes that subdomains of the same colour have no
   coupling in $A$. See `SaadSparse.Chapter14.theorem_14_6`.
@@ -141,7 +165,10 @@ section VertexBased
 
 /-- **Equation (14.8)** of [saad2003iterative], the subdomain of a node. A node is an interior node
 $\langle i, a \rangle$ or an interface node $\langle i, a \rangle$ of subdomain $i$, and its
-label is $i$. This labelling is the block structure (14.8) of the global matrix by subdomains. -/
+label is $i$. This labelling is the block structure (14.8) of the global matrix by subdomains.
+
+**Reading.** Uses explicit domain labels instead of requiring global block-by-subdomain order.
+-/
 def nodeLabel {ι : Type*} (P Q : ι → Type*) : ((i : ι) × P i) ⊕ ((i : ι) × Q i) → ι :=
   Sum.elim Sigma.fst Sigma.fst
 
@@ -165,7 +192,10 @@ The diagonal block $(i, i)$ of $C$ is $C_i$, and its block $(i, j)$ is $E_{ij}$ 
 No further condition is assumed, because (14.10) is what the shape of these data says. With the
 nodes listed interiors first and interfaces last, as in (14.2), the interior rows and columns of
 the global matrix are block diagonal over the subdomains. This is exactly the statement that for
-$i \ne j$ the block $A_{ij}$ of (14.8) is zero outside its interface–interface corner. -/
+$i \ne j$ the block $A_{ij}$ of (14.8) is zero outside its interface–interface corner.
+
+**Reading.** Field-parametric block record with interior and interface categories grouped globally.
+-/
 structure VertexPartitioning (𝕜 : Type*) {ι : Type*} (P Q : ι → Type*) where
   /-- The block $B_i$ of (14.9): the coupling between the interior nodes of subdomain $i$. -/
   B : ∀ i, Matrix (P i) (P i) 𝕜
@@ -284,7 +314,11 @@ $$A = \begin{pmatrix} \operatorname{diag}(B_i) & \operatorname{diag}(E_i) \\
   \operatorname{diag}(F_i) & C \end{pmatrix}.$$
 
 The block structure of (14.8) by subdomains is carried by `SaadSparse.Chapter14.nodeLabel`, not
-by the order of the indices. The two orders differ by a permutation only. -/
+by the order of the indices. The two orders differ by a permutation only.
+
+**Reading.** Uses interiors-first count and dependent domain indices instead of domain-contiguous
+ordering.
+-/
 def globalMatrix : Matrix (((i : ι) × P i) ⊕ ((i : ι) × Q i))
     (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 𝕜 :=
   fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F) V.C
@@ -301,12 +335,18 @@ def localMatrix (i : ι) : Matrix (P i ⊕ Q i) (P i ⊕ Q i) 𝕜 :=
 
 /-- **Equation (14.10)** of [saad2003iterative]. The block $E_{ij}$ of the interface matrix: the
 coupling from the interface nodes of subdomain $j$ to those of subdomain $i$. For $i \ne j$ it
-is the only nonzero block of $A_{ij}$. For $i = j$ it is $C_i$. -/
+is the only nonzero block of $A_{ij}$. For $i = j$ it is $C_i$.
+
+**Reading.** Defined for all pairs, including the same domain.
+-/
 def offDiag (i j : ι) : Matrix (Q i) (Q j) 𝕜 := V.C.submatrix (Sigma.mk i) (Sigma.mk j)
 
 /-- **Equation (14.13)** of [saad2003iterative]. The **local Schur complement** of subdomain $i$,
 $$S_i = C_i - F_i B_i^{-1} E_i,$$
-the Schur complement `Matrix.schurComplement` of the local matrix $A_i$. -/
+the Schur complement `Matrix.schurComplement` of the local matrix $A_i$.
+
+**Reading.** Uses total inverse beyond invertible local interior domains.
+-/
 noncomputable def localSchur (i : ι) : Matrix (Q i) (Q i) 𝕜 := (V.localMatrix i).schurComplement
 
 omit [Fintype ι] [LinearOrder ι] [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
@@ -319,7 +359,10 @@ theorem localSchur_eq (i : ι) :
 partitioning,
 $$S = C - \operatorname{diag}(F_i B_i^{-1} E_i).$$
 Its diagonal blocks are the local Schur complements $S_i$, and its off-diagonal blocks are the
-interface couplings $E_{ij}$. -/
+interface couplings $E_{ij}$.
+
+**Correction.** Subtracts block-diagonal correction with total local inverses.
+-/
 noncomputable def schurMatrix : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜 :=
   V.C - blockDiagonal' fun i => V.F i * (V.B i)⁻¹ * V.E i
 
@@ -327,7 +370,10 @@ omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
 /-- Let every $B_i$ be nonsingular, and let $X$ be any interface matrix. Then the Schur complement
 of $\begin{pmatrix} \operatorname{diag}(B_i) & \operatorname{diag}(E_i) \\
 \operatorname{diag}(F_i) & X \end{pmatrix}$ is $X - \operatorname{diag}(F_i B_i^{-1} E_i)$: the
-interior variables decouple, so $F B^{-1} E$ is assembled subdomain by subdomain. -/
+interior variables decouple, so $F B^{-1} E$ is assembled subdomain by subdomain.
+
+**Generalization.** Generalizes interface matrix to an arbitrary replacement while other data fixed.
+-/
 theorem schurComplement_fromBlocks_local (hB : ∀ i, IsUnit (V.B i))
     (X : Matrix ((i : ι) × Q i) ((i : ι) × Q i) 𝕜) :
     (fromBlocks (blockDiagonal' V.B) (blockDiagonal' V.E) (blockDiagonal' V.F) X).schurComplement
@@ -452,7 +498,10 @@ theorem blockDiagPart_globalMatrix :
 /-- **Algorithm 14.3** of [saad2003iterative]. The block-lower factor $D - E$ of the global matrix
 for the subdomain blocks: the sum of its block diagonal part and its strict block-lower part for
 the labelling `SaadSparse.Chapter14.nodeLabel`. One block Gauss–Seidel sweep over the subdomains
-solves a system with this matrix. -/
+solves a system with this matrix.
+
+**Reading.** Represents the sweep through a global block-lower matrix.
+-/
 def globalLower : Matrix (((i : ι) × P i) ⊕ ((i : ι) × Q i))
     (((i : ι) × P i) ⊕ ((i : ι) × Q i)) 𝕜 :=
   blockDiagPart (nodeLabel P Q) V.globalMatrix + blockStrictLower (nodeLabel P Q) V.globalMatrix
@@ -487,7 +536,10 @@ global matrix is the block-lower factor of the Schur complement system $S$.
 
 So the elimination of the interior variables commutes with taking the block-lower triangle. This
 is why a Schwarz sweep on (14.8) and a Gauss–Seidel sweep on (14.14) are the same iteration, and
-it is the key identity behind `SaadSparse.Chapter14.theorem_14_2`. -/
+it is the key identity behind `SaadSparse.Chapter14.theorem_14_2`.
+
+**Reading.** Adds explicit commutation of lower truncation with Schur elimination.
+-/
 theorem schurComplement_globalLower (hB : ∀ i, IsUnit (V.B i)) :
     V.globalLower.schurComplement = V.schurLower := by
   rw [globalLower_eq, V.schurComplement_fromBlocks_local hB, schurLower, schurMatrix,
@@ -496,7 +548,10 @@ theorem schurComplement_globalLower (hB : ∀ i, IsUnit (V.B i)) :
 
 omit [∀ i, Fintype (Q i)] [∀ i, DecidableEq (Q i)] in
 /-- Let every $B_i$ be nonsingular. Then the Schur complement of the block diagonal part of the
-global matrix is the block diagonal part of the Schur complement system $S$. -/
+global matrix is the block diagonal part of the Schur complement system $S$.
+
+**Reading.** Adds explicit commutation of block-diagonal extraction with Schur elimination.
+-/
 theorem schurComplement_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i)) :
     (blockDiagPart (nodeLabel P Q) V.globalMatrix).schurComplement
       = blockDiagPart Sigma.fst V.schurMatrix := by
@@ -506,7 +561,10 @@ theorem schurComplement_blockDiagPart_globalMatrix (hB : ∀ i, IsUnit (V.B i)) 
 /-- **Equation (14.12)** of [saad2003iterative], right-hand side. For a right-hand side $b = (f, g)$
 on all nodes, the right-hand side of the Schur complement system is
 $$g' = g - \operatorname{diag}(F_i) \operatorname{diag}(B_i)^{-1} f,$$
-with block $g_i - F_i B_i^{-1} f_i$ at subdomain $i$. -/
+with block $g_i - F_i B_i^{-1} f_i$ at subdomain $i$.
+
+**Reading.** Global block expression uses total inverse.
+-/
 noncomputable def reducedRhs (b : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
     ((i : ι) × Q i) → 𝕜 :=
   b ∘ Sum.inr - (blockDiagonal' V.F * (blockDiagonal' V.B)⁻¹) *ᵥ (b ∘ Sum.inl)
@@ -526,14 +584,21 @@ where $D - E$ is the block-lower factor of $A$ for the subdomain blocks.
 The algorithm solves $A_i \delta_i = r_i$ for each subdomain in turn, each time from the
 residual that the previous solve left behind. The accumulated correction solves the block-lower
 system $(D - E) \delta = b - Az$; this is
-`Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`. -/
+`Matrix.blockGaussSeidelSplitting_step_eq_multiplicativeStep`.
+
+**Representation.** The exact global block-lower inverse summarizes the sequence of local
+solves and residual updates in Algorithm 14.3. The equality of iterates assumes nonsingular
+local blocks. -/
 noncomputable def schwarzSweep (b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜) :
     (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜 :=
   z + V.globalLower⁻¹ *ᵥ (b - V.globalMatrix *ᵥ z)
 
 /-- One block Gauss–Seidel sweep on the Schur complement system (14.12), with the interface unknowns
 $y_i$ of the subdomains as blocks: for the right-hand side $g$ and the iterate $y$ it returns
-$y + (D_S - E_S)^{-1} (g - Sy)$, where $D_S - E_S$ is the block-lower factor of $S$. -/
+$y + (D_S - E_S)^{-1} (g - Sy)$, where $D_S - E_S$ is the block-lower factor of $S$.
+
+**Reading.** Uses total reduced block-lower inverse for the sweep.
+-/
 noncomputable def schurGaussSeidelSweep (g y : ((i : ι) × Q i) → 𝕜) : ((i : ι) × Q i) → 𝕜 :=
   y + V.schurLower⁻¹ *ᵥ (g - V.schurMatrix *ᵥ y)
 
@@ -664,7 +729,10 @@ $Sy = g'$ from $y$.
 When the interior residuals $r_{x,i}$ vanish, the subdomain solve $A_i \delta_i = (0, r_{y,i})$
 returns $\delta_{y,i} = S_i^{-1} r_{y,i}$ by (14.7). Assembled over the subdomains, this is the
 statement that the $(2,2)$ block of $(D - E)^{-1}$ is the inverse of the Schur complement of
-$D - E$. -/
+$D - E$.
+
+**Reading.** One-step equivalence with explicit invertibility and block-lower exact formulation.
+-/
 theorem comp_inr_schwarzSweep (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
     {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) :
     (V.schwarzSweep b z) ∘ Sum.inr
@@ -722,7 +790,11 @@ $Sy = g'$ from $y^{(0)}$.
 
 The two hypotheses are the nonsingularity that makes the two iterations defined: every $B_i$, so
 that the interior variables can be eliminated, and every $S_i$, so that the diagonal blocks of
-(14.14) can be solved with. -/
+(14.14) can be solved with.
+
+**Generalization.** The relation holds over the real or complex field with exact block solves.
+The proof uses the prescribed subdomain order and can work with a nonsymmetric coupling
+pattern. -/
 theorem theorem_14_2 (hB : ∀ i, IsUnit (V.B i)) (hS : ∀ i, IsUnit (V.localSchur i))
     {b z : (((i : ι) × P i) ⊕ ((i : ι) × Q i)) → 𝕜} (hc : V.IsConsistent b z) (k : ℕ) :
     ((V.schwarzSweep b)^[k] z) ∘ Sum.inr
@@ -766,14 +838,21 @@ a starting vector $x$, the sweep over the subdomains $S_0, \dots, S_{i-1}$ in or
 by
 $$x^{(0)} = x, \qquad x^{(j+1)} = x^{(j)} + T_j (b - A x^{(j)}),$$
 where $T_j = R_j^T A_j^{-1} R_j$. Each correction is computed from the iterate that the previous
-one produced. -/
+one produced.
+
+**Reading.** Prefix iteration on arbitrary real or complex sets with total inverses and empty sweep
+allowed.
+-/
 noncomputable def multiplicativeSweep (b : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → EuclideanSpace 𝕜 (Fin n) → EuclideanSpace 𝕜 (Fin n)
   | 0, x => x
   | i + 1, x => multiplicativeSweep b i x +
       (subdomainInverse A (S i) ⬝ (b - (A ⬝ multiplicativeSweep b i x)))
 
-/-- A sweep over no subdomains does not change the iterate. -/
+/-- A sweep over no subdomains does not change the iterate.
+
+**Generalization.** Extends update to empty sweep.
+-/
 @[simp]
 theorem multiplicativeSweep_zero (b x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b 0 x = x := rfl
@@ -788,6 +867,8 @@ theorem multiplicativeSweep_succ (b : EuclideanSpace 𝕜 (Fin n)) (i : ℕ)
 /-- **Section 14.3.3** of [saad2003iterative], the **additive Schwarz procedure**. All $s$
 corrections are computed from the same iterate and added at once:
 $$x \leftarrow x + \sum_{i < s} T_i (b - Ax).$$
+
+**Correction.** Sums corrections with shared residual, total inverse, arbitrary prefix and R or C.
 -/
 noncomputable def additiveSweep (s : ℕ) (b x : EuclideanSpace 𝕜 (Fin n)) :
     EuclideanSpace 𝕜 (Fin n) :=
@@ -796,7 +877,10 @@ noncomputable def additiveSweep (s : ℕ) (b x : EuclideanSpace 𝕜 (Fin n)) :
 /-- **Equation (14.26)** of [saad2003iterative]. The **error propagation operator** of one
 multiplicative Schwarz sweep over $S_0, \dots, S_{s-1}$,
 $$Q_s = (I - P_{s-1}) \cdots (I - P_0),$$
-where $P_i = T_i A$. The empty product $Q_0$ is $I$. -/
+where $P_i = T_i A$. The empty product $Q_0$ is $I$.
+
+**Reading.** Ordered exact product over prefixes of real or complex local operations.
+-/
 noncomputable def Q_s : ℕ → Matrix (Fin n) (Fin n) 𝕜
   | 0 => 1
   | i + 1 => (1 - subdomainProjector A (S i)) * Q_s i
@@ -811,6 +895,8 @@ theorem Q_s_succ (i : ℕ) :
 
 /-- **Equation (14.37)** of [saad2003iterative]. The **additive Schwarz operator**
 $$A_J = \sum_{i < s} P_i.$$
+
+**Reading.** Operator sum through arbitrary real or complex subdomain data with total inverse.
 -/
 noncomputable def A_J (s : ℕ) : Matrix (Fin n) (Fin n) 𝕜 :=
   ∑ i ∈ Finset.range s, subdomainProjector A (S i)
@@ -849,7 +935,11 @@ $A x_* = b$. Then for every $s$ and every $x$:
   $x \leftarrow x + M^{-1}(b - Ax)$ with $M^{-1} = (I - Q_s) A^{-1}$ (14.28), so that
   $M^{-1} A = I - Q_s$ (14.27);
 * one additive Schwarz step is the same iteration with $M^{-1} = \sum_{i < s} T_i$;
-* this $M^{-1}$ satisfies $M^{-1} A = A_J$, the additive Schwarz operator (14.37). -/
+* this $M^{-1}$ satisfies $M^{-1} A = A_J$, the additive Schwarz operator (14.37).
+
+**Scope.** The source's proposition concerns the multiplicative preconditioner. This theorem
+assumes a positive definite matrix and an exact solution and includes the additive identities
+from §14.3.3. -/
 theorem proposition_14_3 (hA : A.PosDef) {b xstar : EuclideanSpace 𝕜 (Fin n)}
     (hstar : (A ⬝ xstar) = b) (s : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     multiplicativeSweep A S b s x = x + (((1 - Q_s A S s) * A⁻¹) ⬝ (b - (A ⬝ x)))
@@ -891,7 +981,11 @@ $$Z_{i+1} = Z_i + P_i (I - Z_i), \qquad M_{i+1} = M_i + T_i (I - A M_i), \qquad 
   \sum_{j < s} P_j Q_j.$$
 
 These are the recurrences (14.32) and (14.33) and the expansion (14.35). The second recurrence
-is Algorithm 14.5: it applies $M^{-1}$ without ever forming $A^{-1}$. -/
+is Algorithm 14.5: it applies $M^{-1}$ without ever forming $A^{-1}$.
+
+**Reading.** Encodes recurrences in Q form starting from zero prefix, adds SPD A and sums expansion
+to numbered lemma.
+-/
 theorem lemma_14_4 (hA : A.PosDef) (i s : ℕ) :
     1 - Q_s A S (i + 1)
         = (1 - Q_s A S i) + subdomainProjector A (S i) * (1 - (1 - Q_s A S i))
@@ -1007,7 +1101,10 @@ private theorem hasEigenvalue_additiveOperator (s : ℕ) {μ : 𝕜}
 /-- **Theorem 14.5** of [saad2003iterative], quadratic-form version. Let $A$ be Hermitian positive
 definite. Then for every $s$ and every $u$
 $$\operatorname{Re} (A_J u, u)_A \le s \, \|u\|_A^2,$$
-since each $P_i$ has $A$-norm at most one. -/
+since each $P_i$ has $A$-norm at most one.
+
+**Reading.** Makes quadratic form bound explicit for real or complex data.
+-/
 theorem re_energyInner_A_J_le (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
     RCLike.re (energyInner (Matrix.toEuclideanLin A) (A_J A S s ⬝ u) u)
       ≤ s * energyNorm (Matrix.toEuclideanLin A) u ^ 2 := by
@@ -1016,7 +1113,10 @@ theorem re_energyInner_A_J_le (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
   exact Schwarz.re_inner_additiveOperator_le (energySpace hA S) s _
 
 /-- Let $A$ be Hermitian positive definite. Then the additive Schwarz operator is positive
-semidefinite in the energy inner product: $\operatorname{Re} (A_J u, u)_A \ge 0$ for every $u$. -/
+semidefinite in the energy inner product: $\operatorname{Re} (A_J u, u)_A \ge 0$ for every $u$.
+
+**Reading.** Positive semidefiniteness in energy inner product, including uncovered subdomains.
+-/
 theorem re_energyInner_A_J_nonneg (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
     0 ≤ RCLike.re (energyInner (Matrix.toEuclideanLin A) (A_J A S s ⬝ u) u) := by
   rw [← WithEnergy.inner_equiv (Matrix.toEuclideanLin A)
@@ -1025,7 +1125,10 @@ theorem re_energyInner_A_J_nonneg (s : ℕ) (u : EuclideanSpace 𝕜 (Fin n)) :
 
 /-- **Equation (14.37)** of [saad2003iterative]. Let $A$ be Hermitian positive definite. Then the
 additive Schwarz operator is self-adjoint for the energy inner product,
-$(A_J u, v)_A = (u, A_J v)_A$, so its eigenvalues are real. -/
+$(A_J u, v)_A = (u, A_J v)_A$, so its eigenvalues are real.
+
+**Reading.** Energy self-adjointness over R or C.
+-/
 theorem isSymmetric_energyInner_A_J (s : ℕ) (u v : EuclideanSpace 𝕜 (Fin n)) :
     energyInner (Matrix.toEuclideanLin A) (A_J A S s ⬝ u) v
       = energyInner (Matrix.toEuclideanLin A) u (A_J A S s ⬝ v) := by
@@ -1040,7 +1143,10 @@ $$\operatorname{Re} \mu \le s.$$
 That is, $\lambda_{\max}(A_J) \le s$.
 
 The eigenvalues of $A_J$ are real by `SaadSparse.Chapter14.isSymmetric_energyInner_A_J`, so the
-statement bounds the real part. -/
+statement bounds the real part.
+
+**Reading.** Bounds every eigenvalue via its real part, allows any R/C family with SPD A.
+-/
 theorem theorem_14_5 (s : ℕ) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue (Matrix.toEuclideanLin (A_J A S s)) μ) :
     RCLike.re μ ≤ s :=
@@ -1050,7 +1156,10 @@ theorem theorem_14_5 (s : ℕ) {μ : 𝕜}
     (fun u => Schwarz.re_inner_additiveOperator_le (energySpace hA S) s u)
     (hasEigenvalue_additiveOperator hA S s hμ)).2
 
-/-- If two subdomains have no coupling in $A$, then their subdomain spaces are $A$-orthogonal. -/
+/-- If two subdomains have no coupling in $A$, then their subdomain spaces are $A$-orthogonal.
+
+**Reading.** Uses vanishing A coupling to establish energy orthogonality.
+-/
 private theorem isOrtho_energySpace {i j : ℕ}
     (h : ∀ k ∈ S i, ∀ l ∈ S j, A l k = 0) : energySpace hA S i ⟂ energySpace hA S j := by
   have hgen : ∀ m : ℕ, energySpace hA S m
@@ -1121,7 +1230,10 @@ $u = \sum_{i < s} u_i$ with $u_i$ in the subdomain space of $S_i$ and
 $$\sum_{i < s} \|u_i\|_A^2 \le K_0 \|u\|_A^2.$$
 
 This is the hypothesis that the subdomains cover the domain stably. For a family of finite
-elements, an overlapping partition of unity provides it. -/
+elements, an overlapping partition of unity provides it.
+
+**Reading.** Hermitian energy analogue of specified real stable decomposition.
+-/
 def IsStableDecomposition (s : ℕ) (K₀ : ℝ) : Prop :=
   ∀ u : EuclideanSpace 𝕜 (Fin n), ∃ w : ℕ → EuclideanSpace 𝕜 (Fin n),
     (∀ i ∈ Finset.range s, w i ∈ subdomainSpace 𝕜 (S i)) ∧
@@ -1140,7 +1252,10 @@ The constant measures how far the subdomain spaces are from being $A$-orthogonal
 may contain the diagonal pairs $(i, i)$, so $K_1 \ge 1$ whenever one of the subdomain spaces of
 $S_0, \dots, S_{s-1}$ is nonzero. Mutually $A$-orthogonal subdomain spaces admit $K_1 = 1$,
 because then only the diagonal pairs contribute, and the plain Cauchy–Schwarz inequality always
-gives $K_1 = s$. -/
+gives $K_1 = s$.
+
+**Reading.** Uses direct subspace vectors and real part of Hermitian inner products.
+-/
 def IsStrengthenedCauchySchwarz (s : ℕ) (K₁ : ℝ) : Prop :=
   ∀ ps : Finset (ℕ × ℕ), ps ⊆ Finset.range s ×ˢ Finset.range s →
     ∀ u v : ℕ → EuclideanSpace 𝕜 (Fin n),
@@ -1197,7 +1312,10 @@ $$\frac{\|u\|_A^2}{K_0} \le \operatorname{Re} (A_J u, u)_A.$$
 
 With `SaadSparse.Chapter14.re_energyInner_A_J_le`, this encloses the spectrum of $A_J$ in
 $[1/K_0, s]$, so the condition number of the system preconditioned by additive Schwarz is at
-most $s K_0$. -/
+most $s K_0$.
+
+**Reading.** Quantitative quadratic-form lower bound over R or C.
+-/
 theorem le_re_energyInner_A_J {s : ℕ} {K₀ : ℝ} (hst : IsStableDecomposition A S s K₀)
     (u : EuclideanSpace 𝕜 (Fin n)) :
     energyNorm (Matrix.toEuclideanLin A) u ^ 2 / K₀
@@ -1214,7 +1332,10 @@ That is, $\lambda_{\min}(A_J) \ge 1/K_0$.
 
 With Theorem 14.5, the spectrum of the operator preconditioned by additive Schwarz lies in
 $[1/K_0, s]$. So its condition number is at most $s K_0$, and the preconditioned conjugate
-gradient method converges at the corresponding rate. -/
+gradient method converges at the corresponding rate.
+
+**Reading.** Pointwise lower bound on real part of every additive eigenvalue.
+-/
 theorem theorem_14_7 {s : ℕ} {K₀ : ℝ} (hst : IsStableDecomposition A S s K₀) {μ : 𝕜}
     (hμ : Module.End.HasEigenvalue (Matrix.toEuclideanLin (A_J A S s)) μ) :
     1 / K₀ ≤ RCLike.re μ :=
@@ -1230,7 +1351,10 @@ theorem theorem_14_7 {s : ℕ} {K₀ : ℝ} (hst : IsStableDecomposition A S s K
 every $s$ and every $v$
 $$\|Q_s v\|_A^2 = \|v\|_A^2 - \sum_{i < s} \|P_i Q_i v\|_A^2.$$
 In particular, the $A$-norm of the error does not increase at any substep of a multiplicative
-sweep. -/
+sweep.
+
+**Generalization.** Energy telescoping identity generalized to Hermitian A.
+-/
 theorem equation_14_39 (s : ℕ) (v : EuclideanSpace 𝕜 (Fin n)) :
     energyNorm (Matrix.toEuclideanLin A) (Q_s A S s ⬝ v) ^ 2
       = energyNorm (Matrix.toEuclideanLin A) v ^ 2
@@ -1242,7 +1366,10 @@ theorem equation_14_39 (s : ℕ) (v : EuclideanSpace 𝕜 (Fin n)) :
 /-- **Lemma 14.8** of [saad2003iterative], (14.41). Let $A$ be Hermitian positive definite, and let
 Assumption 2 hold with constant $K_1$. Then for every $v$
 $$\sum_{i < s} \|P_i v\|_A^2 \le (1 + K_1)^2 \sum_{i < s} \|P_i Q_i v\|_A^2.$$
-So the projections of a vector are controlled by the projections of the partially swept vectors. -/
+So the projections of a vector are controlled by the projections of the partially swept vectors.
+
+**Generalization.** The source assumes both Assumptions 1 and 2. The proof of this estimate
+uses Assumption 2, and the statement works over the real or complex energy space. -/
 theorem lemma_14_8 {s : ℕ} {K₁ : ℝ} (hcs : IsStrengthenedCauchySchwarz A S s K₁)
     (v : EuclideanSpace 𝕜 (Fin n)) :
     ∑ i ∈ Finset.range s, energyNorm (Matrix.toEuclideanLin A)
@@ -1258,7 +1385,10 @@ Assumptions 1 and 2 hold with constants $K_0 > 0$ and $K_1 \ge 0$. Then one mult
 Schwarz sweep contracts the $A$-norm of the error:
 $$\|Q_s v\|_A \le \sqrt{1 - \frac{1}{K_0 (1 + K_1)^2}} \, \|v\|_A$$
 for every $v$. The rate depends only on the two constants, and in particular not on the number
-of subdomains. -/
+of subdomains.
+
+**Reading.** Pointwise rate with explicit K₀>0,K₁≥0 and complex Hermitian extension.
+-/
 theorem theorem_14_9 {s : ℕ} {K₀ K₁ : ℝ} (hK₀ : 0 < K₀) (hK₁ : 0 ≤ K₁)
     (hst : IsStableDecomposition A S s K₀) (hcs : IsStrengthenedCauchySchwarz A S s K₁)
     (v : EuclideanSpace 𝕜 (Fin n)) :

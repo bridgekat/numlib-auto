@@ -96,8 +96,13 @@ shuffle come from `Numlib.LinearAlgebra.Matrix.Permutation`. The programs follow
 
 ## Deviations from the source
 
+* **Table 1.2.1** (reading). The book includes rectangular matrices. The theorem uses square
+  matrices. See `GolubVanLoan.Chapter01.table_1_2_1`.
 * **Algorithm 1.2.1** (generalization). The source takes $C$ upper triangular; the specification
   holds for every $C$. See `GolubVanLoan.Chapter01.algorithm_1_2_1_spec`.
+* **Equations (1.2.1) and (1.2.2)** (reading). The Lean accessors are total. The algorithms only
+  use entries within the printed domains. See `GolubVanLoan.Chapter01.bandEntry` and
+  `GolubVanLoan.Chapter01.packedIndex`.
 * **§1.2.11, the downshift** (typo). The source's formula $\mathcal{D}_n = I_n(v,:)$ with
   $v = [(2{:}n)\ 1]$ gives the upshift $\mathcal{D}_n^T$; the definition follows the displayed
   $\mathcal{D}_4$ and the name. See `GolubVanLoan.Chapter01.downshift`.
@@ -129,8 +134,9 @@ bidiagonal, upper Hessenberg or lower Hessenberg if and only if it has, respecti
 and upper bandwidths
 $$(0, 0),\ (0, n - 1),\ (n - 1, 0),\ (1, 1),\ (0, 1),\ (1, 0),\ (1, n - 1),\ (n - 1, 1).$$
 
-The source's table is for $m \times n$ matrices. The rows are stated for square matrices, where
-the triangular, bidiagonal and Hessenberg predicates of Mathlib and of the backbone are defined.
+**Reading.** The table is for $m \times n$ matrices. The theorem uses square matrices, the setting
+of the triangular, bidiagonal and Hessenberg predicates it compares.
+
 A matrix is lower Hessenberg here when its transpose $A^T$ is upper Hessenberg. -/
 theorem table_1_2_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     (A.IsDiag ↔ A.HasLowerBandwidth 0 ∧ A.HasUpperBandwidth 0) ∧
@@ -188,6 +194,10 @@ end
 The program computes $c_{ij} \leftarrow \mathrm{fl}(c_{ij} + \mathrm{fl}(a_{ik} b_{kj}))$ in
 this loop order.
 
+**Generalization.** The source takes $C$ upper triangular. The program leaves its lower entries
+unchanged, which is the correct update there because $AB$ is upper triangular. See
+`GolubVanLoan.Chapter01.algorithm_1_2_1_spec`.
+
 The ranges $j = i{:}n$ and $k = i{:}j$ are filtered index lists. -/
 def algorithm_1_2_1 {n : ℕ} (A B C : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun C i =>
@@ -200,7 +210,10 @@ def algorithm_1_2_1 {n : ℕ} (A B C : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (
 /-- The entry $\mathrm{A.band}(i - j + q + 1, j)$ of the band storage (1.2.1), which is
 `Aband ⟨i + q - j, _⟩ j` in 0-based indices. Below the band, where $i > j + p$, the value is
 $0$. Above the band, where $j > i + q$, the subtraction in `ℕ` truncates to $0$ and the value is
-the unrelated entry `Aband 0 j`. Algorithm 1.2.2 reads only entries inside the band. -/
+the unrelated entry `Aband 0 j`.
+
+**Reading.** Equation (1.2.1) applies only inside the band. The total function also has the
+values described above outside the band. Algorithm 1.2.2 reads only entries inside it. -/
 def bandEntry {p q n : ℕ} (Aband : Matrix (Fin (p + q + 1)) (Fin n) ℝ) (i j : Fin n) : ℝ :=
   if h : (i : ℕ) + q - j < p + q + 1 then Aband ⟨i + q - j, h⟩ j else 0
 
@@ -231,7 +244,10 @@ def algorithm_1_2_2 {n : ℕ} (p q : ℕ) (Aband : Matrix (Fin (p + q + 1)) (Fin
 
 /-- The position $jn - j(j+1)/2 + i$ of $a_{ij}$, for $j \le i$, in the packed storage (1.2.2), in
 0-based indices. It is the source's $(n - j/2)(j - 1) + i$ with $i$ and $j$ replaced by $i + 1$
-and $j + 1$, minus one. -/
+and $j + 1$, minus one.
+
+**Reading.** The source assigns packed positions only for $j \le i$. The definition also
+evaluates the arithmetic for $j>i$, where it has no packed-storage interpretation. -/
 def packedIndex (n : ℕ) (i j : Fin n) : ℕ :=
   (j : ℕ) * n - (j : ℕ) * ((j : ℕ) + 1) / 2 + (i : ℕ)
 

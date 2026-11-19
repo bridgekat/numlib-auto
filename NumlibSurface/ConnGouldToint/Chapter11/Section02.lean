@@ -60,6 +60,9 @@ errors.
 
 ## Deviations from the source
 
+* **(11.2.2) and Lemma 11.2.1** (reading). Division by the step norm is totalized to zero
+  at the zero step. The equivalence is stated at a fixed center and parameter in a nontrivial
+  finite-dimensional real inner-product space, with regularity given along positive rays.
 * **Lemma 11.2.2** (correction). Pointwise agreement and a compact parameter set do not give uniform
   agreement. The statement adds the equicontinuity of the normalized errors. See
   `ConnGouldToint.Chapter11.compactPerturbedModel_not_uniform`.
@@ -81,7 +84,10 @@ variable {E P : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 $m(x, p, \cdot)$ at the step $s$ is
 $$e(x, p, s) = \frac{f(x + s) - m(x, p, s)}{\|s\|}.$$
 
-Division is the Lean division, so $e(x, p, 0) = 0$. -/
+Division is the Lean division, so $e(x, p, 0) = 0$.
+
+**Reading.** Step-norm denominator is totalized to give zero at zero step.
+-/
 noncomputable def normalizedModelError (f : E → ℝ) (m : E → P → E → ℝ)
     (x : E) (p : P) (s : E) : ℝ :=
   (f (x + s) - m x p s) / ‖s‖
@@ -156,7 +162,11 @@ and only if $e(x, p, s) \to 0$ as $s \to 0$.
 
 The statement is for one fixed base point and parameter. Regularity is expressed by the limits
 along positive rays. The dimension condition excludes $E = \{0\}$, where the normalized error is
-always $0$ and does not detect value agreement. -/
+always $0$ and does not detect value agreement.
+
+**Reading.** Pointwise version with nontrivial finite-dimensional real inner-product space and
+directional ray hypotheses.
+-/
 theorem lemma_11_2_1 [FiniteDimensional ℝ E] [Nontrivial E] {f : E → ℝ}
     {m : E → P → E → ℝ} {x : E} {p : P} {U V : Set E} {Lf Lm : NNReal}
     (hU : U ∈ 𝓝 x) (hLf : LipschitzOnWith Lf f U)
@@ -255,6 +265,8 @@ def UniformNormalizedModelAgreementAt (f : E → ℝ) (m : E → P → E → ℝ
 space, the normalized errors are **equicontinuous** at $(x, p)$ if for every $a > 0$, all
 $(y, q)$ near $(x, p)$ satisfy
 $$|e(y, q, s) - e(x, p, s)| \le a \quad \text{for all } \|s\| \le 1.$$
+
+**Reading.** Additional equicontinuity premise needed for compactness to give uniformity.
 -/
 def ModelErrorEquicontinuousAt [TopologicalSpace P] (f : E → ℝ)
     (m : E → P → E → ℝ) (x : E) (p : P) : Prop :=
@@ -371,6 +383,10 @@ private theorem NonsmoothTRParams.gamma₁_pos (Q : NonsmoothTRParams) : 0 < Q.�
   (one_div_pos.mpr (zero_lt_one.trans Q.gamma₃_gt_one)).trans_le Q.inv_gamma₃_le_gamma₁
 
 omit [InnerProductSpace ℝ E] in
+/-- **Algorithm 11.1.1, Step 4** of [conn2000trust].
+
+**Reading.** Radius bounds along the corrected capped expansion trace.
+-/
 private theorem NonsmoothTRRun.radius_bounds {Q : NonsmoothTRParams}
     {f : E → ℝ} {m : E → P → E → ℝ} (R : NonsmoothTRRun Q f m) :
     ∀ k, 0 < R.Δ k ∧ R.Δ k ≤ Q.Δmax ∧ Q.γ₁ * R.Δ k ≤ R.Δ (k + 1) := by
@@ -725,7 +741,10 @@ theorem compactPerturbedModel_pointwise (x : ℝ) (p : CompactModelParameter) :
 $f(x) = x^2 - x$ at $0$.
 
 Despite compactness and pointwise agreement, the normalized error stays away from zero along a
-sequence of steps that depend on the parameter. -/
+sequence of steps that depend on the parameter.
+
+**Reading.** Compactness and pointwise agreement fail to imply uniform agreement.
+-/
 theorem compactPerturbedModel_not_uniform :
     ¬ UniformNormalizedModelAgreementAt oscillatoryObjective compactPerturbedModel 0 := by
   intro h
@@ -760,7 +779,10 @@ $$\frac12 \|g^*(0)\| \min\{1, \Delta\} \le m(0, p, 0) - m(0, p, \Delta),$$
 but its ratio is less than $3/4$.
 
 So with compact parameters and pointwise agreement, steps can be rejected at arbitrarily small
-radii. -/
+radii.
+
+**Reading.** Rejections occur at arbitrarily small radii despite the printed pointwise assumptions.
+-/
 theorem compactPerturbedModel_rejected {D : ℝ} (hD : 0 < D) :
     ∃ (p : CompactModelParameter) (Δ : ℝ), 0 < Δ ∧ Δ < D ∧
       (1 / 2 : ℝ) * ‖minimumNormSubgradient oscillatoryObjective 0‖ * min 1 Δ ≤

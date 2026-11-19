@@ -70,6 +70,16 @@ module `Numlib.Analysis.Convex.Separation`, the backbone theorems
   functional $f \neq 0$ and $\alpha \in \mathbb{R}$ such that $[f = \alpha]$ is closed and separates
   $A$ and $B$. The functional is `f : E →ₗ[ℝ] ℝ`, and its continuity follows from Proposition 1.5.
 
+## Deviations from the source
+
+* **Definitions of separation and strict separation** (generalization). The inequalities are
+  predicates for all linear functionals, including zero. See `Brezis.Chapter01.Separates` and
+  `Brezis.Chapter01.StrictlySeparates`.
+* **Lemma 1.3, order of the sets** (reading). For the specified functional $f$, the directed
+  separation predicate places $C$ first. See `Brezis.Chapter01.lemma_1_3`.
+* **Remark 5** (generalization). The sufficient condition for density is stated as a criterion
+  in both directions. See `Brezis.Chapter01.remark_1_5`.
+
 ## Not formalized
 
 * **Remark 4, first clause (Exercise 1.14).** Two disjoint closed convex subsets of $\ell^1$ that no
@@ -120,7 +130,9 @@ hyperplane $[f = \alpha]$ **separates** $A$ and $B$ if
 $$f(x) \le \alpha \quad \text{for all } x \in A \qquad \text{and} \qquad f(x) \ge \alpha \quad
   \text{for all } x \in B.$$
 
-The predicate does not require $f \neq 0$; the theorems state this condition separately. -/
+**Generalization.** The book defines separation by an affine hyperplane, which requires
+$f \ne 0$. The predicate records the inequalities for any $f$. The geometric separation
+theorems require a nonzero functional in their conclusions. -/
 def Separates (f : E →ₗ[ℝ] ℝ) (α : ℝ) (A B : Set E) : Prop :=
   (∀ x ∈ A, f x ≤ α) ∧ ∀ x ∈ B, α ≤ f x
 
@@ -138,7 +150,9 @@ hyperplane $[f = \alpha]$ **strictly separates** $A$ and $B$ if there is $\varep
 that
 $$f(x) \le \alpha - \varepsilon \quad \text{for all } x \in A \qquad \text{and} \qquad f(x) \ge
   \alpha + \varepsilon \quad \text{for all } x \in B.$$
--/
+
+**Generalization.** As for `Brezis.Chapter01.Separates`, the predicate applies even to $f = 0$.
+For example, it can then hold if one of the sets is empty. -/
 def StrictlySeparates (f : E →ₗ[ℝ] ℝ) (α : ℝ) (A B : Set E) : Prop :=
   ∃ ε > 0, (∀ x ∈ A, f x ≤ α - ε) ∧ ∀ x ∈ B, α + ε ≤ f x
 
@@ -221,6 +235,9 @@ $f \in E^\star$ with
 $$f(x) < f(x_0) \quad \text{for all } x \in C.$$
 In particular $f \neq 0$, and the hyperplane $[f = f(x_0)]$ separates $C$ and $\{x_0\}$.
 
+**Reading.** The source names $\{x_0\}$ first when describing the separating hyperplane.
+The directed predicate places $C$ first because $f(x) < f(x_0)$ for every $x \in C$.
+
 The proof specializes Mathlib's `geometric_hahn_banach_open_point`. -/
 theorem lemma_1_3 {C : Set E} (hC : Convex ℝ C) (hCne : C.Nonempty) (hCo : IsOpen C) {x₀ : E}
     (hx₀ : x₀ ∉ C) :
@@ -285,7 +302,10 @@ theorem corollary_1_8 {F : Submodule ℝ E} (hF : F.topologicalClosure ≠ ⊤) 
 
 /-- **Remark 5** of [brezis2011functional]. Let $E$ be a real normed space. A linear subspace
 $F \subseteq E$ is dense if and only if every continuous linear functional on $E$ that vanishes
-on $F$ vanishes everywhere on $E$. -/
+on $F$ vanishes everywhere on $E$.
+
+**Generalization.** The source states the sufficiency of this condition. The theorem also
+states necessity, since a continuous function that is zero on a dense set is zero everywhere. -/
 theorem remark_1_5 (F : Submodule ℝ E) :
     Dense (F : Set E) ↔ ∀ f : StrongDual ℝ E, (∀ x ∈ F, f x = 0) → f = 0 := by
   rw [← Submodule.strongDualAnnihilator_eq_bot_iff, Submodule.eq_bot_iff]

@@ -145,6 +145,35 @@ generalized Galerkin method. The proofs specialize `Numlib.Variational.EllipticI
   the Gauss–Lobatto nodes. The method (12.68) is therefore a `IsGeneralizedGalerkinSolution`, not a
   `IsGalerkinSolution`.
 
+## Deviations from the source
+
+* **Equations (12.42)–(12.45) and Exercise 12.12** (reading). The test space uses weak
+  derivatives and zero traces in accordance with (12.42). The preceding piecewise-smooth
+  description is narrower. The weak form uses essentially bounded coefficients. The classical-
+  to-weak theorems assume $C^1$ diffusion, and the lifting identity allows any $H^1$ lift.
+  Exercise 12.12 gives the nonhomogeneous Neumann formula. Its final mixed-boundary request is
+  not included.
+* **Equations (12.46)–(12.56)** (reading). The Galerkin predicate accepts any trial submodule of
+  $H^1$. `equation_12_53` requires the exact equation on all of $H^1$, whereas the printed
+  Dirichlet statement needs it only on $H_0^1$ with $V_h\subseteq H_0^1$. Coercivity and
+  stability use almost-everywhere coefficient inequalities. The abstract estimates accept
+  arbitrary trial submodules and Céa's bound uses a distance infimum. `galerkinMatrix_posDef`
+  assumes symmetry because Lean's `Matrix.PosDef` includes it.
+* **Equations (12.57)–(12.60)** (partial). The dimension theorem concerns the full space, of
+  dimension $nk+1$. The text states dimension $nk-1$ for its zero-trace subspace.
+  `equation_12_58` combines comparison and interpolation for $k=1$. The estimates in Property
+  12.1 treat $k=1$ and $\beta=0$, and the $L^2$ estimate assumes a bound on the $C^1$ diffusion
+  derivative.
+* **Equations (12.61)–(12.66) and the stiffness matrix** (reading). The nodal basis formulas
+  admit a single panel, and the quadratic shape functions allow any interior node in each panel.
+  The reference mapping of (12.65) uses the midpoint hypothesis. The condition number formula is
+  exact for uniform linear elements and the unit-coefficient model, while the source gives an
+  asymptotic estimate. The hierarchical declaration proves independence of its three functions.
+* **Example 12.1 and equations (12.68)–(12.69)** (reading). The rod identity applies on the real
+  line using the algebraic parameter relation. It verifies the exact solution. The spectral form
+  and load accept arbitrary weighted nodes, and the collocation equivalence uses the
+  Legendre–Lobatto hypotheses and the corrected endpoints $\pm1$.
+
 ## Not formalized
 
 * **Property 12.1 for $k \ge 2$.** Only the case $k = 1$, $s = 2$ of the estimates (12.59)–(12.60)
@@ -161,12 +190,18 @@ namespace QuarteroniSaccoSaleri.Chapter12
 $H^1(0, 1)$. It consists of the $v \in H^1(0, 1)$ with $v(0) = v(1) = 0$.
 
 The definition is `SobolevIntervalZero 0 1`. The description by the boundary values is
-`QuarteroniSaccoSaleri.Chapter12.equation_12_42_iff`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_42_iff`.
+
+**Reading.** Uses the full weak $H_0^1$ space with endpoint traces of the continuous
+representative. The preceding prose describes piecewise-continuous first derivatives. -/
 noncomputable abbrev equation_12_42 : Submodule ℝ (SobolevInterval 1 0 1) :=
   SobolevIntervalZero 0 1
 
 /-- An element $u \in H^1(0, 1)$ lies in the space $V$ of (12.42) if and only if its continuous
-representative vanishes at $0$ and at $1$. -/
+representative vanishes at $0$ and at $1$.
+
+**Reading.** Uses the full weak $H_0^1$ space with endpoint traces of the continuous
+representative. The preceding prose describes piecewise-continuous first derivatives. -/
 theorem equation_12_42_iff (u : SobolevInterval 1 0 1) :
     u ∈ equation_12_42 ↔ toContinuousMap zero_lt_one u ⟨0, left_mem_Icc.2 zero_le_one⟩ = 0 ∧
       toContinuousMap zero_lt_one u ⟨1, right_mem_Icc.2 zero_le_one⟩ = 0 :=
@@ -178,13 +213,19 @@ $$a(u, v) = \int_0^1 \alpha u' v' \, dx + \int_0^1 \beta u' v \, dx + \int_0^1 \
   dx.$$
 
 The form is the bounded bilinear form `EllipticInterval.form 0 1 α β γ`. Its integral expression
-is `QuarteroniSaccoSaleri.Chapter12.equation_12_44_apply`. -/
+is `QuarteroniSaccoSaleri.Chapter12.equation_12_44_apply`.
+
+**Generalization.** Uses essentially bounded coefficient classes and weak derivatives of
+arbitrary $H^1$ arguments. -/
 noncomputable abbrev equation_12_44 (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) :
     SesqForm ℝ (SobolevInterval 1 0 1) :=
   EllipticInterval.form 0 1 α β γ
 
 /-- The bilinear form (12.44) is the integral $a(u, v) = \int_0^1 (\alpha u' v' + \beta u' v +
-\gamma u v) \, dx$, where $u'$ and $v'$ are the weak derivatives. -/
+\gamma u v) \, dx$, where $u'$ and $v'$ are the weak derivatives.
+
+**Generalization.** Uses essentially bounded coefficient classes and weak derivatives of
+arbitrary $H^1$ arguments. -/
 theorem equation_12_44_apply (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (u v : SobolevInterval 1 0 1) :
     equation_12_44 α β γ u v = ∫ x in Ioo (0 : ℝ) 1,
@@ -208,7 +249,10 @@ Then $u \in V = H^1_0(0, 1)$ and $a(u, v) = (f, v)$ for every $v \in V$.
 
 The conclusion is `IsGalerkinSolution` with the subspace $V$. The derivative $u'$ is
 `u.shift.extend`, and the element of $H^1(0, 1)$ is `EllipticInterval.ofContDiffMapIcc
-zero_lt_one u`. -/
+zero_lt_one u`.
+
+**Reading.** The classical equation uses $C^1$ diffusion. The coefficients and forcing in the
+weak form are their almost-everywhere classes. -/
 theorem equation_12_43 {α β γ f : ℝ → ℝ}
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (fL : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
@@ -234,7 +278,10 @@ $$a(U - W, v) = (f, v) - a(W, v).$$
 
 In the book, $W$ is a lifting of the boundary values $u(0) = u_0$, $u(1) = u_1$, for example
 $W(x) = x u_1 + (1 - x) u_0$, so that $\mathring{u} = U - W$ lies in $V$. The identity holds for
-every $W$. -/
+every $W$.
+
+**Generalization.** The identity holds for any $H^1$ function $W$. Membership of $U-W$ in
+$H_0^1$ requires matching its endpoint traces. -/
 theorem equation_12_43_lift (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {U : SobolevInterval 1 0 1}
     (hU : ∀ v ∈ equation_12_42, equation_12_44 α β γ U v = EllipticInterval.load 0 1 f v)
@@ -245,7 +292,10 @@ theorem equation_12_43_lift (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : �
 
 /-- The homogeneous Neumann problem of Section 12.4.1. Let $\alpha$, $\beta$, $\gamma$, $f$ and
 $u \in C^2([0, 1])$ be as in (12.43), except that the boundary conditions are
-$\alpha(0) u'(0) = \alpha(1) u'(1) = 0$. Then $a(u, v) = (f, v)$ for every $v \in H^1(0, 1)$. -/
+$\alpha(0) u'(0) = \alpha(1) u'(1) = 0$. Then $a(u, v) = (f, v)$ for every $v \in H^1(0, 1)$.
+
+**Reading.** The classical equation uses $C^1$ diffusion. The coefficients and forcing in the
+weak form are their almost-everywhere classes. -/
 theorem equation_12_43_neumann {α β γ f : ℝ → ℝ}
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (fL : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
@@ -273,7 +323,10 @@ $$a(u, v) = (f, v) + w_1 v(1) - w_0 v(0).$$
 
 The mixed problem with $\alpha(0) u'(0) = w_0$ and $u(1) = u_1$ follows: test this identity with
 the $v$ that satisfy $v(1) = 0$, after a lifting of $u_1$. The values $v(0)$ and $v(1)$ are
-those of the continuous representative `SobolevInterval.rep v`. -/
+those of the continuous representative `SobolevInterval.rep v`.
+
+**Reading.** The classical equation uses $C^1$ diffusion. The coefficients and forcing in the
+weak form are their almost-everywhere classes. -/
 theorem exercise_12_12 {α β γ f : ℝ → ℝ}
     (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (fL : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
@@ -361,12 +414,18 @@ $$\langle T_f, \varphi \rangle = \int_{\mathbb{R}} \varphi f \, dx.$$
 The book uses this identification of a locally integrable function with a distribution without a
 name. The definition is Mathlib's `TestFunction.integralAgainstBilinCLM` for the product
 $(u, v) \mapsto uv$ and the Lebesgue measure. The integral formula, for a locally integrable
-$f$, is `QuarteroniSaccoSaleri.Chapter12.regularDistribution_apply`. -/
+$f$, is `QuarteroniSaccoSaleri.Chapter12.regularDistribution_apply`.
+
+**Generalization.** Uses the regular distribution on the full line. The integral formula holds
+for locally integrable functions. -/
 noncomputable def regularDistribution (f : ℝ → ℝ) : 𝓓'((⊤ : Opens ℝ), ℝ) :=
   TestFunction.integralAgainstBilinCLM (ContinuousLinearMap.mul ℝ ℝ) volume f
 
 /-- If $f$ is locally integrable on $\mathbb{R}$, then $\langle T_f, \varphi \rangle =
-\int_{\mathbb{R}} \varphi f \, dx$ for every test function $\varphi$ on $\mathbb{R}$. -/
+\int_{\mathbb{R}} \varphi f \, dx$ for every test function $\varphi$ on $\mathbb{R}$.
+
+**Generalization.** Uses the regular distribution on the full line. The integral formula holds
+for locally integrable functions. -/
 theorem regularDistribution_apply {f : ℝ → ℝ}
     (hf : LocallyIntegrableOn f (⊤ : Opens ℝ) volume) (φ : 𝓓((⊤ : Opens ℝ), ℝ)) :
     regularDistribution f φ = ∫ x, φ x * f x :=
@@ -435,7 +494,10 @@ $H^1(0, 1)$. An element $u_h$ **solves the Galerkin problem** in $V_h$ if $u_h \
 $$a(u_h, v_h) = (f, v_h) \quad \text{for all } v_h \in V_h.$$
 
 The book takes $V_h$ to be a finite-dimensional subspace of $V$; the definition allows any
-subspace of $H^1(0, 1)$. With $V_h = V$, it is the weak problem (12.43). -/
+subspace of $H^1(0, 1)$. With $V_h = V$, it is the weak problem (12.43).
+
+**Generalization.** Uses essentially bounded coefficients and an arbitrary trial subspace of
+$H^1$. The matrix equivalence uses a finite basis. -/
 abbrev equation_12_46 (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     (Vh : Submodule ℝ (SobolevInterval 1 0 1)) (uh : SobolevInterval 1 0 1) : Prop :=
@@ -445,7 +507,10 @@ abbrev equation_12_46 (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))
 $\varphi_1, \ldots, \varphi_N$ of elements of $H^1(0, 1)$, the matrix $A_G$ with entries
 $$(A_G)_{ij} = a(\varphi_j, \varphi_i).$$
 
-The definition is `SesqForm.gramMatrix` of the form (12.44). -/
+The definition is `SesqForm.gramMatrix` of the form (12.44).
+
+**Generalization.** Uses essentially bounded coefficients and an arbitrary trial subspace of
+$H^1$. The matrix equivalence uses a finite basis. -/
 noncomputable def equation_12_48_matrix {ι : Type*} (α β γ : Lp ℝ ⊤ (volume.restrict
     (Ioo (0 : ℝ) 1))) (φ : ι → SobolevInterval 1 0 1) : Matrix ι ι ℝ :=
   (equation_12_44 α β γ).gramMatrix φ
@@ -454,7 +519,9 @@ noncomputable def equation_12_48_matrix {ι : Type*} (α β γ : Lp ℝ ⊤ (vol
 be a basis of a subspace $V_h$ of $H^1(0, 1)$, and let $\xi \in \mathbb{R}^N$. Then
 $u_h = \sum_j \xi_j \varphi_j$ solves the Galerkin problem (12.46) in $V_h$ if and only if
 $$A_G \xi = f_G, \qquad (f_G)_i = (f, \varphi_i).$$
--/
+
+**Generalization.** Uses essentially bounded coefficients and an arbitrary trial subspace of
+$H^1$. The matrix equivalence uses a finite basis. -/
 theorem equation_12_48 {ι : Type*} [Fintype ι] (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Vh : Submodule ℝ (SobolevInterval 1 0 1)} (φ : Module.Basis ι ℝ Vh) (ξ : ι → ℝ) :
@@ -483,7 +550,10 @@ $\alpha, \gamma \in L^\infty(0, 1)$ with $\alpha \ge \alpha_0$ and $\gamma \ge 0
 everywhere on $(0, 1)$. Then the form (12.44) with $\beta = 0$ satisfies
 $$\alpha_0 |v|^2_{H^1(0,1)} \le a(v, v) \quad \text{for every } v \in H^1(0, 1).$$
 
-The inequality holds on all of $H^1(0, 1)$, and no sign condition on $\alpha_0$ is needed. -/
+The inequality holds on all of $H^1(0, 1)$, and no sign condition on $\alpha_0$ is needed.
+
+**Reading.** The coefficient inequalities are almost everywhere. The existence theorem and the
+stability estimate specialize to $\beta=0$. -/
 theorem equation_12_50 (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ}
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ x) (v : SobolevInterval 1 0 1) :
@@ -494,7 +564,10 @@ theorem equation_12_50 (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) 
 $\alpha, \gamma \in L^\infty(0, 1)$ with $\alpha \ge \alpha_0$ almost everywhere, and let
 $\beta \in C^1([0, 1])$ agree almost everywhere with an element of $L^\infty(0, 1)$. If
 $-\beta'/2 + \gamma \ge 0$ almost everywhere on $(0, 1)$, then
-$\alpha_0 |v|^2_{H^1(0,1)} \le a(v, v)$ for every $v \in V = H^1_0(0, 1)$. -/
+$\alpha_0 |v|^2_{H^1(0,1)} \le a(v, v)$ for every $v \in V = H^1_0(0, 1)$.
+
+**Reading.** The coefficient inequalities are almost everywhere. The existence theorem and the
+stability estimate specialize to $\beta=0$. -/
 theorem equation_12_50_of_le (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ}
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ αL x) {β : ℝ → ℝ}
     (hβL : βL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] β) (hβ : ContDiffOn ℝ 1 β (Icc 0 1))
@@ -506,7 +579,10 @@ theorem equation_12_50_of_le (αL βL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 
 /-- Unique solvability of the weak problem, the consequence of coercivity stated after (12.50) of
 [quarteroni2000numerical]. Let $\alpha, \gamma \in L^\infty(0, 1)$ with
 $\alpha \ge \alpha_0 > 0$ and $\gamma \ge 0$ almost everywhere, and let $f \in L^2(0, 1)$. Then
-the weak problem (12.43) with $\beta = 0$ has exactly one solution $u \in V$. -/
+the weak problem (12.43) with $\beta = 0$ has exactly one solution $u \in V$.
+
+**Reading.** The coefficient inequalities are almost everywhere. The existence theorem and the
+stability estimate specialize to $\beta=0$. -/
 theorem equation_12_50_existsUnique (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ}
     (hα₀ : 0 < α₀) (hα : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ x)
@@ -520,7 +596,10 @@ everywhere, and let $f \in L^2(0, 1)$. Let $V_h$ be any subspace of $V = H^1_0(0
 $u_h$ solve the Galerkin problem (12.46) in $V_h$ with $\beta = 0$. Then
 $$|u_h|_{H^1(0,1)} \le \frac{C_P}{\alpha_0} \|f\|_{L^2(0,1)}, \qquad C_P = \frac{1}{\sqrt{2}}.$$
 
-The bound does not depend on $V_h$. -/
+The bound does not depend on $V_h$.
+
+**Reading.** The coefficient inequalities are almost everywhere. The existence theorem and the
+stability estimate specialize to $\beta=0$. -/
 theorem equation_12_51 (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ x)
@@ -538,7 +617,10 @@ let $u_h$ solve the Galerkin problem (12.46) in $V_h$. Then
 $$a(u - u_h, v_h) = 0 \quad \text{for every } v_h \in V_h.$$
 
 The hypothesis on $u$ is the equation for all test functions $v \in H^1(0, 1)$, not only for
-$v \in V$. -/
+$v \in V$.
+
+**Reading.** Requires the exact variational equation on all of $H^1$. The source only needs it
+on $H_0^1$, since it assumes $V_h\subseteq H_0^1$. -/
 theorem equation_12_53 (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1)))
     (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Vh : Submodule ℝ (SobolevInterval 1 0 1)} {u uh : SobolevInterval 1 0 1}
@@ -553,7 +635,10 @@ $\beta = 0$. Let $u \in V$ solve the weak problem (12.43), let $V_h$ be a subspa
 let $u_h$ solve the Galerkin problem (12.46) in $V_h$. Then for every $w_h \in V_h$,
 $$|u - u_h|_{H^1(0,1)} \le C |u - w_h|_{H^1(0,1)}, \qquad C = \frac{1}{\alpha_0} \big(
   \|\alpha\|_\infty + C_P^2 \|\gamma\|_\infty \big), \quad C_P = \frac{1}{\sqrt{2}}.$$
-Hence $|u - u_h|_{H^1(0,1)} \le C \min_{w_h \in V_h} |u - w_h|_{H^1(0,1)}$, which is (12.52). -/
+Hence $|u - u_h|_{H^1(0,1)} \le C \min_{w_h \in V_h} |u - w_h|_{H^1(0,1)}$, which is (12.52).
+
+**Reading.** Gives the estimate for each trial comparison and allows $L^\infty$ coefficients.
+The source states the minimum over its finite-dimensional trial space. -/
 theorem theorem_12_3 (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α x)
     (hγ : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 0 ≤ γ x)
@@ -589,7 +674,10 @@ omit [CompleteSpace V] in
 /-- The stability bound of the Lax–Milgram lemma. Let $V$ be a real inner product space, let $a$ be
 a bounded bilinear form on $V$ that is coercive with constant $\alpha_0 > 0$, and let $\ell$ be
 a bounded linear functional with $\|\ell\| \le K$. If $a(u, v) = \ell(v)$ for every $v \in V$,
-then $\|u\| \le K / \alpha_0$. -/
+then $\|u\| \le K / \alpha_0$.
+
+**Generalization.** The norm bound concerns an existing solution, so no completeness assumption
+is needed. -/
 theorem laxMilgram_lemma_bound {α₀ K : ℝ} (hα₀ : 0 < α₀) (hcoer : a.IsCoerciveWith α₀)
     (hK : ‖ℓ‖ ≤ K) {u : V} (hu : ∀ v, a u v = ℓ v) : ‖u‖ ≤ K / α₀ :=
   (SesqForm.norm_le_of_forall_apply_eq a ℓ hα₀ hcoer hu).trans (by gcongr)
@@ -598,7 +686,9 @@ omit [CompleteSpace V] in
 /-- The Lax–Milgram lemma for the Galerkin problem. Let $V$ be a real inner product space, and let
 $a$ be a bounded bilinear form on $V$ that is coercive with constant $\alpha_0 > 0$. Then for
 every complete subspace $V_h$ of $V$ and every bounded linear functional $\ell$, the Galerkin
-problem in $V_h$ has exactly one solution $u_h$. -/
+problem in $V_h$ has exactly one solution $u_h$.
+
+**Generalization.** The trial subspace can have any dimension provided it is complete. -/
 theorem laxMilgram_lemma_galerkin {α₀ : ℝ} (hα₀ : 0 < α₀) (hcoer : a.IsCoerciveWith α₀)
     (Vh : Submodule ℝ V) [CompleteSpace Vh] : ∃! uh, IsGalerkinSolution a ℓ Vh uh :=
   IsGalerkinSolution.existsUnique hα₀ hcoer
@@ -607,7 +697,10 @@ omit [CompleteSpace V] in
 /-- The stability bound for the Galerkin problem. Let $V$ be a real inner product space, let $a$ be
 a bounded bilinear form on $V$ that is coercive with constant $\alpha_0 > 0$, and let $\ell$ be
 a bounded linear functional with $\|\ell\| \le K$. If $u_h$ solves the Galerkin problem in a
-subspace $V_h$, then $\|u_h\| \le K / \alpha_0$. -/
+subspace $V_h$, then $\|u_h\| \le K / \alpha_0$.
+
+**Generalization.** The norm bound concerns an existing solution, so no completeness assumption
+is needed. -/
 theorem laxMilgram_lemma_galerkin_bound {α₀ K : ℝ} (hα₀ : 0 < α₀) (hcoer : a.IsCoerciveWith α₀)
     (hK : ‖ℓ‖ ≤ K) {Vh : Submodule ℝ V} {uh : V} (huh : IsGalerkinSolution a ℓ Vh uh) :
     ‖uh‖ ≤ K / α₀ := by
@@ -632,7 +725,10 @@ satisfy $a(u, v) = \ell(v)$ for every $v \in V$, and let $u_h$ solve the Galerki
 subspace $V_h$. Then
 $$\|u - u_h\| \le \frac{M}{\alpha_0} \|u - w_h\| \quad \text{for every } w_h \in V_h.$$
 
-The form with the distance to $V_h$ is `QuarteroniSaccoSaleri.Chapter12.equation_12_56_infDist`. -/
+The form with the distance to $V_h$ is `QuarteroniSaccoSaleri.Chapter12.equation_12_56_infDist`.
+
+**Generalization.** The bound applies to any trial subspace with a supplied solution, expressed
+pointwise or by the distance infimum. -/
 theorem equation_12_56 {α₀ M : ℝ} (hα₀ : 0 < α₀) (hM : a.IsBoundedWith M)
     (hcoer : a.IsCoerciveWith α₀) {Vh : Submodule ℝ V} {u uh : V}
     (huh : IsGalerkinSolution a ℓ Vh uh) (hu : ∀ v, a u v = ℓ v) {w : V} (hw : w ∈ Vh) :
@@ -642,7 +738,10 @@ theorem equation_12_56 {α₀ M : ℝ} (hα₀ : 0 < α₀) (hM : a.IsBoundedWit
 omit [CompleteSpace V] in
 /-- Céa's lemma (12.56) with the distance to the subspace: under the hypotheses of
 `QuarteroniSaccoSaleri.Chapter12.equation_12_56`, $\|u - u_h\| \le (M / \alpha_0) \inf_{w_h \in
-V_h} \|u - w_h\|$. -/
+V_h} \|u - w_h\|$.
+
+**Generalization.** The bound applies to any trial subspace with a supplied solution, expressed
+pointwise or by the distance infimum. -/
 theorem equation_12_56_infDist {α₀ M : ℝ} (hα₀ : 0 < α₀) (hM : a.IsBoundedWith M)
     (hcoer : a.IsCoerciveWith α₀) {Vh : Submodule ℝ V} {u uh : V}
     (huh : IsGalerkinSolution a ℓ Vh uh) (hu : ∀ v, a u v = ℓ v) :
@@ -658,7 +757,10 @@ independent. Then the matrix $(a(\varphi_j, \varphi_i))_{ij}$ is symmetric posit
 
 The proof is $\xi^T A_G \xi = a(v_h, v_h) \ge \alpha_0 \|v_h\|^2 > 0$ for $\xi \neq 0$, where
 $v_h = \sum_j \xi_j \varphi_j$. For (12.41) with $\beta = 0$ the form (12.44) is symmetric, so
-this applies to $A_G$. -/
+this applies to $A_G$.
+
+**Reading.** Adds symmetry because `Matrix.PosDef` includes Hermitian symmetry. The text calls
+the positive quadratic form sufficient for its use of positive definite. -/
 theorem galerkinMatrix_posDef {ι : Type*} [Finite ι] {V : Type*}
     [NormedAddCommGroup V] [InnerProductSpace ℝ V] {a : SesqForm ℝ V} {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hsymm : a.IsHermitian) (hcoer : a.IsCoerciveWith α₀) {φ : ι → V}
@@ -668,7 +770,10 @@ theorem galerkinMatrix_posDef {ι : Type*} [Finite ι] {V : Type*}
   exact SesqForm.gramMatrix_posDef hα₀ hsymm hcoer hφ
 
 /-- The stiffness matrix of a symmetric bounded bilinear form on a real inner product space is
-symmetric (Section 12.4.4 of [quarteroni2000numerical]). -/
+symmetric (Section 12.4.4 of [quarteroni2000numerical]).
+
+**Reading.** Proves the forward direction for arbitrary families. Symmetry of a stiffness
+matrix only tests the form on the span of the family. -/
 theorem galerkinMatrix_isSymm {ι : Type*} {V : Type*} [NormedAddCommGroup V]
     [InnerProductSpace ℝ V] {a : SesqForm ℝ V} (hsymm : a.IsHermitian) (φ : ι → V) :
     (a.gramMatrix φ).IsHermitian :=
@@ -683,12 +788,18 @@ where $X_h^k$ is the space of the $v \in H^1(0, 1)$ whose continuous representat
 continuous piecewise polynomial of degree at most $k$ on the elements $[x_i, x_{i+1}]$.
 
 The definition is `FiniteElement.lagrangeSpaceZero`. It is a subspace of $V$ by
-`QuarteroniSaccoSaleri.Chapter12.equation_12_57_le`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_57_le`.
+
+**Generalization.** The space is defined for arbitrary node data and natural degrees, with
+partition hypotheses used in the subsequent results. -/
 noncomputable def equation_12_57 (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     Submodule ℝ (SobolevInterval 1 0 1) :=
   FiniteElement.lagrangeSpaceZero zero_lt_one n x k
 
-/-- The finite element space $X_h^{k,0}$ of (12.57) is a subspace of $V = H^1_0(0, 1)$. -/
+/-- The finite element space $X_h^{k,0}$ of (12.57) is a subspace of $V = H^1_0(0, 1)$.
+
+**Generalization.** The space is defined for arbitrary node data and natural degrees, with
+partition hypotheses used in the subsequent results. -/
 theorem equation_12_57_le (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : equation_12_57 n x k ≤ equation_12_42 :=
   FiniteElement.lagrangeSpaceZero_le_sobolevIntervalZero zero_lt_one n x k
 
@@ -696,7 +807,10 @@ theorem equation_12_57_le (n : ℕ) (x : ℕ → ℝ) (k : ℕ) : equation_12_57
 $nk + 1$, the number of nodal values of a continuous piecewise polynomial of degree $k$.
 
 The book gives $\dim V_h = nk - 1$ for $V_h = X_h^{k,0}$, which is this number minus the two
-endpoint values. -/
+endpoint values.
+
+**Reading.** Computes the dimension of the unconstrained space $X_h^k$. The text's dimension
+$nk-1$ is for the subspace with zero traces. -/
 theorem equation_12_57_finrank {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x)
     (hn : 1 ≤ n) (k : ℕ) :
     Module.finrank ℝ (FiniteElement.lagrangeSpace zero_lt_one n x k) = n * k + 1 :=
@@ -719,7 +833,14 @@ where $\Pi_h^1 u = \sum_{i=0}^n u(x_i) \varphi_i$ is the piecewise linear interp
 
 The interpolant lies in $X_h^{1,0}$, so this is Theorem 12.3 with $w_h = \Pi_h^1 u$. It turns
 the estimate of the Galerkin error into an estimate of the interpolation error. The interpolant
-is `FiniteElement.lagrangeInterp`. -/
+is `FiniteElement.lagrangeInterp`.
+
+**Partial.** Gives the solution error bound with the interpolant for $k=1$ and $\beta=0$,
+combining the printed comparison with the coercivity estimate.
+
+**Reading.** Combines Céa and interpolation for piecewise linear elements; does not state the
+displayed best-error inequality for general k.
+-/
 theorem equation_12_58 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
     (hα : ∀ᵐ t ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ α t)
@@ -749,7 +870,10 @@ together with the interpolation estimate (8.27), which is
 `FiniteElement.seminorm_sub_lagrangeInterp_le`; the interpolation constant is $1$. The element
 $u \in H^2(0, 1)$ is an element `U` of `SobolevInterval 2 0 1` whose image under
 `SobolevInterval.inclusionCLM` is $u$, and $|u|_{H^2(0,1)}$ is
-`SobolevInterval.seminorm 2 0 1 U`. -/
+`SobolevInterval.seminorm 2 0 1 U`.
+
+**Specialization.** Uses piecewise linear elements with $\beta=0$ and explicit constants. The
+$L^2$ estimate assumes $C^1$ diffusion with bounded derivative. -/
 theorem property_12_1 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ}
     (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     (α γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α₀ : ℝ} (hα₀ : 0 < α₀)
@@ -787,7 +911,10 @@ The book quotes this estimate from [quarteroni1994numerical]. The proof is the A
 duality argument `EllipticInterval.galerkin_norm_sub_le_l2`, whose approximation hypothesis
 holds for the piecewise linear interpolant with $\delta = h$. It gains one power of $h$ over
 `QuarteroniSaccoSaleri.Chapter12.property_12_1`. The bounds on $\alpha$ and $\alpha'$ are the
-hypotheses of the duality argument. The derivative $\alpha'$ is the derivative within $[0, 1]$. -/
+hypotheses of the duality argument. The derivative $\alpha'$ is the derivative within $[0, 1]$.
+
+**Specialization.** Uses piecewise linear elements with $\beta=0$ and explicit constants. The
+$L^2$ estimate assumes $C^1$ diffusion with bounded derivative. -/
 theorem property_12_1_l2 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {h : ℝ} (hh : 0 ≤ h)
     (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     (αL γL : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {α : ℝ → ℝ}
@@ -852,14 +979,20 @@ with $n \ge 1$, the shape function $\varphi_i$ of $X_h^1$: the continuous piecew
 function with $\varphi_i(x_j) = \delta_{ij}$, as an element of $H^1(0, 1)$.
 
 The definition is `FiniteElement.hatFunction`. The nodal values are
-`QuarteroniSaccoSaleri.Chapter12.equation_12_61_apply_node`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_61_apply_node`.
+
+**Generalization.** Includes a one-panel partition. The individual shape functions are defined
+for all natural shape indices. -/
 noncomputable def equation_12_61 (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval 1 0 1 :=
   FiniteElement.hatFunction hx hn i
 
 /-- **Equation (12.61)** of [quarteroni2000numerical], the interpolation property. For a partition
 $0 = x_0 < \cdots < x_n = 1$ with $n \ge 1$, every index $i$ and every $j \le n$,
-$\varphi_i(x_j) = \delta_{ij}$. -/
+$\varphi_i(x_j) = \delta_{ij}$.
+
+**Generalization.** Includes a one-panel partition. The individual shape functions are defined
+for all natural shape indices. -/
 theorem equation_12_61_apply_node (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {i j : ℕ}
     (hj : j ≤ n) : rep (equation_12_61 hx hn i) (x j) = if i = j then 1 else 0 :=
   FiniteElement.rep_hatFunction_node hx hn hj
@@ -867,7 +1000,10 @@ theorem equation_12_61_apply_node (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤
 /-- **Section 12.4.5** of [quarteroni2000numerical], the support of $\varphi_i$. For a partition
 $0 = x_0 < \cdots < x_n = 1$ with $n \ge 1$, let $k < n$ with $i \neq k$ and $i \neq k + 1$.
 Then $\varphi_i(t) = 0$ for every $t \in [x_k, x_{k+1}]$. So $\varphi_i$ vanishes outside
-$I_{i-1} \cup I_i$. -/
+$I_{i-1} \cup I_i$.
+
+**Generalization.** Includes a one-panel partition. The individual shape functions are defined
+for all natural shape indices. -/
 theorem equation_12_61_support (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {i k : ℕ}
     (hk : k < n) (h1 : i ≠ k) (h2 : i ≠ k + 1) {t : ℝ} (ht1 : x k ≤ t) (ht2 : t ≤ x (k + 1)) :
     rep (equation_12_61 hx hn i) t = 0 := by
@@ -881,13 +1017,19 @@ form a basis of $X_h^1$. The coordinates of an element in this basis are its $n 
 values.
 
 The definition is `FiniteElement.hatBasis`. The coordinates are
-`QuarteroniSaccoSaleri.Chapter12.equation_12_61_basis_repr`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_61_basis_repr`.
+
+**Generalization.** Includes a one-panel partition. The individual shape functions are defined
+for all natural shape indices. -/
 noncomputable def equation_12_61_basis (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) :
     Module.Basis (Fin (n + 1)) ℝ (FiniteElement.lagrangeSpace zero_lt_one n x 1) :=
   FiniteElement.hatBasis zero_lt_one hx hn
 
 /-- The coordinate of $v \in X_h^1$ at the index $j$ in the shape function basis is the nodal value
-$v(x_j)$. -/
+$v(x_j)$.
+
+**Generalization.** Includes a one-panel partition. The individual shape functions are defined
+for all natural shape indices. -/
 theorem equation_12_61_basis_repr (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (v : FiniteElement.lagrangeSpace zero_lt_one n x 1) (j : Fin (n + 1)) :
     (equation_12_61_basis hx hn).repr v j = rep (v : SobolevInterval 1 0 1) (x (j : ℕ)) :=
@@ -898,11 +1040,17 @@ $[0, 1]$ onto the element $I_i = [x_i, x_{i+1}]$:
 $$x = \phi(\xi) = x_i + \xi (x_{i+1} - x_i).$$
 
 Its inverse is the reference coordinate $\xi(x) = (x - x_i)/(x_{i+1} - x_i)$,
-`FiniteElement.refCoord`. -/
+`FiniteElement.refCoord`.
+
+**Generalization.** The affine and inverse formulas are real expressions on the whole line. The
+inverse identity is stated for a valid partition interval. -/
 noncomputable def equation_12_62 (x : ℕ → ℝ) (i : ℕ) : ℝ → ℝ := FiniteElement.affineMap x i
 
 /-- For a partition $0 = x_0 < \cdots < x_n = 1$ and $i < n$, the affine map (12.62) inverts the
-reference coordinate: $\phi(\xi(t)) = t$ for every real $t$. -/
+reference coordinate: $\phi(\xi(t)) = t$ for every real $t$.
+
+**Generalization.** The affine and inverse formulas are real expressions on the whole line. The
+inverse identity is stated for a valid partition interval. -/
 theorem equation_12_62_refCoord (hx : IsIntervalPartition 0 1 n x) {i : ℕ} (hi : i < n) (t : ℝ) :
     equation_12_62 x i (FiniteElement.refCoord x i t) = t :=
   FiniteElement.affineMap_refCoord (hx.step i hi).ne t
@@ -914,7 +1062,10 @@ $$\varphi_k(t) = \hat\varphi_0(\xi(t)), \qquad \varphi_{k+1}(t) = \hat\varphi_1(
 where $\hat\varphi_0(\xi) = 1 - \xi$, $\hat\varphi_1(\xi) = \xi$, and
 $\xi(t) = (t - x_k)/(x_{k+1} - x_k)$ is the reference coordinate.
 
-The reference shape functions are `FiniteElement.referenceHat`. -/
+The reference shape functions are `FiniteElement.referenceHat`.
+
+**Generalization.** Includes a one-panel partition. The individual shape functions are defined
+for all natural shape indices. -/
 theorem equation_12_62_shape (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n) {k : ℕ} (hk : k < n)
     {t : ℝ} (h1 : x k ≤ t) (h2 : t ≤ x (k + 1)) :
     rep (equation_12_61 hx hn k) t = FiniteElement.referenceHat 0 (FiniteElement.refCoord x k t) ∧
@@ -944,14 +1095,20 @@ with $\varphi_i(x_j) = \delta_{ij}$, as an element of $H^1(0, 1)$.
 
 For an even $i$, $\varphi_i$ has two quadratic branches on the two adjacent elements. For an odd
 $i$, $\varphi_i$ is a bubble supported in one element. The definition is
-`FiniteElement.quadraticShape`. -/
+`FiniteElement.quadraticShape`.
+
+**Generalization.** The interior interpolation node of each quadratic panel can be anywhere
+strictly between its endpoints. -/
 noncomputable def equation_12_63 (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) (i : ℕ) :
     SobolevInterval 1 0 1 :=
   FiniteElement.quadraticShape zero_lt_one hx hn i
 
 /-- **Equations (12.63)–(12.64)** of [quarteroni2000numerical], the interpolation property. For
 nodes $0 = x_0 < \cdots < x_{2n} = 1$ with $n \ge 1$, every index $i$ and every $j \le 2n$, the
-quadratic shape functions satisfy $\varphi_i(x_j) = \delta_{ij}$. -/
+quadratic shape functions satisfy $\varphi_i(x_j) = \delta_{ij}$.
+
+**Generalization.** The interior interpolation node of each quadratic panel can be anywhere
+strictly between its endpoints. -/
 theorem equation_12_63_apply_node (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i j : ℕ}
     (hj : j ≤ 2 * n) : rep (equation_12_63 hx hn i) (x j) = if i = j then 1 else 0 :=
   FiniteElement.rep_quadraticShape_node zero_lt_one hx hn hj
@@ -961,7 +1118,10 @@ For nodes $0 = x_0 < \cdots < x_{2n} = 1$ with $n \ge 1$, let $m < n$ and let $i
 $2m$, $2m + 1$ and $2m + 2$. Then $\varphi_i(t) = 0$ for every $t \in [x_{2m}, x_{2m+2}]$.
 
 So $\varphi_i$ vanishes on every element none of whose three nodes is $x_i$. In particular, the
-bubble $\varphi_{2m+1}$ is supported in the element $[x_{2m}, x_{2m+2}]$. -/
+bubble $\varphi_{2m+1}$ is supported in the element $[x_{2m}, x_{2m+2}]$.
+
+**Generalization.** The interior interpolation node of each quadratic panel can be anywhere
+strictly between its endpoints. -/
 theorem equation_12_63_support (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i m : ℕ}
     (hm : m < n) (h0 : i ≠ 2 * m) (h1 : i ≠ 2 * m + 1) (h2 : i ≠ 2 * m + 2) {t : ℝ}
     (ht1 : x (2 * m) ≤ t) (ht2 : t ≤ x (2 * m + 2)) : rep (equation_12_63 hx hn i) t = 0 :=
@@ -974,7 +1134,10 @@ The coordinates of an element in this basis are its $2n + 1$ nodal values.
 
 In particular $\dim X_h^2 = 2n + 1$, the value $nk + 1$ of the book at $k = 2$. The space
 $X_h^2$ is `FiniteElement.lagrangeSpace` on the even nodes `FiniteElement.evenNodes x`, and the
-basis is `FiniteElement.quadraticBasis`. -/
+basis is `FiniteElement.quadraticBasis`.
+
+**Generalization.** The interior interpolation node of each quadratic panel can be anywhere
+strictly between its endpoints. -/
 noncomputable def equation_12_63_basis (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) :
     Module.Basis (Fin (2 * n + 1)) ℝ
       (FiniteElement.lagrangeSpace zero_lt_one n (FiniteElement.evenNodes x) 2) :=
@@ -991,7 +1154,10 @@ reference coordinate of the element.
 
 The midpoint hypothesis is needed here but not in (12.63)–(12.64): those formulas give the
 Lagrange basis of the three nodes of the element for any interior node. The reference shape
-functions are `FiniteElement.referenceQuadratic`. -/
+functions are `FiniteElement.referenceQuadratic`.
+
+**Generalization.** Only the selected panel needs its interior point at the midpoint for these
+reference identities. -/
 theorem equation_12_65 (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {m : ℕ} (hm : m < n)
     (hmid : x (2 * m + 1) = (x (2 * m) + x (2 * m + 2)) / 2) {t : ℝ} (h1 : x (2 * m) ≤ t)
     (h2 : t ≤ x (2 * m + 2)) :
@@ -1008,7 +1174,10 @@ theorem equation_12_65 (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {
 
 /-- **Equation (12.57)** of [quarteroni2000numerical] for $k = 2$. For nodes
 $0 = x_0 < \cdots < x_{2n} = 1$ with $n \ge 1$ and an index $i$ with $i \neq 0$ and $i \neq 2n$,
-the quadratic shape function $\varphi_i$ lies in $X_h^{2,0}$. -/
+the quadratic shape function $\varphi_i$ lies in $X_h^{2,0}$.
+
+**Generalization.** The interior interpolation node of each quadratic panel can be anywhere
+strictly between its endpoints. -/
 theorem equation_12_63_mem_zero (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n) {i : ℕ}
     (h0 : i ≠ 0) (hi : i ≠ 2 * n) :
     equation_12_63 hx hn i
@@ -1024,7 +1193,13 @@ reference interval are linearly independent.
 Since they are three polynomials of degree at most $2$, they form a basis of $\mathbb{P}_2$. The
 book checks that $\alpha_0 + \xi(\alpha_1 - \alpha_0 + \alpha_2) - \alpha_1 \xi^2 \equiv 0$
 forces $\alpha_0 = \alpha_1 = \alpha_2 = 0$. The functions are
-`FiniteElement.referenceHierarchical`, as functions on $\mathbb{R}$. -/
+`FiniteElement.referenceHierarchical`, as functions on $\mathbb{R}$.
+
+**Partial.** Proves independence of the three polynomial functions on the real line.
+
+**Reading.** Proves independence of polynomial functions on ℝ, without explicitly stating spanning
+on the interval.
+-/
 theorem equation_12_66 : LinearIndependent ℝ FiniteElement.referenceHierarchical :=
   FiniteElement.referenceHierarchical_linearIndependent
 
@@ -1042,7 +1217,9 @@ $\alpha, \beta, \gamma \in L^\infty(0, 1)$, the entry $a_{ij} = a(\varphi_j, \va
 when $|i - j| \ge 2$.
 
 The supports of $\varphi_i$ and $\varphi_j$ then meet in a set of measure zero. The indices
-$i, j$ are natural numbers. -/
+$i, j$ are natural numbers.
+
+**Generalization.** Uses essentially bounded coefficients and permits a one-panel partition. -/
 theorem equation_12_61_stiffness (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) {i j : ℕ}
     (hij : i + 1 < j ∨ j + 1 < i) :
@@ -1055,7 +1232,9 @@ matrix $A_{fe}$ in the basis $\varphi_1, \ldots, \varphi_{n-1}$ of $V_h = X_h^{1
 tridiagonal.
 
 Tridiagonal is `Matrix.IsTridiagonal`. The matrix is indexed by `Fin (n - 1)`, and the index $k$
-stands for $\varphi_{k+1}$. -/
+stands for $\varphi_{k+1}$.
+
+**Generalization.** Uses essentially bounded coefficients and permits a one-panel partition. -/
 theorem equation_12_61_stiffness_tridiagonal (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (α β γ : Lp ℝ ⊤ (volume.restrict (Ioo (0 : ℝ) 1))) :
     (FiniteElement.stiffnessMatrix 0 1 α β γ
@@ -1072,7 +1251,10 @@ $$K_2(A_{fe}) = \|A_{fe}\|_2 \, \|A_{fe}^{-1}\|_2 = \cot^2\Big(\frac{\pi h}{2}\B
 The book quotes $K_2(A_{fe}) = O(h^{-2})$ from [quarteroni1994numerical]. This follows from
 `Matrix.condNumber_symmTridiagonalToeplitz_neg_one_two_le`, which gives
 $\cot^2(\pi h / 2) \le 4/(\pi h)^2$. The norm is the operator norm induced by the Euclidean
-norm, and the right-hand side is written $\cot^2(\pi / (2n))$. -/
+norm, and the right-hand side is written $\cot^2(\pi / (2n))$.
+
+**Specialization.** Gives an exact condition number for uniform partitions and the pure unit
+diffusion model. The text states a more general asymptotic estimate. -/
 theorem equation_12_61_stiffness_condNumber (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) :
     ‖FiniteElement.stiffnessMatrix 0 1 (EllipticInterval.constLinf 0 1 1)
@@ -1090,12 +1272,17 @@ end Stiffness
 
 /-- **Example 12.1** of [quarteroni2000numerical], the exact solution of (12.67): the function
 $$u(x) = u_0 \frac{\cosh(m(L - x))}{\cosh(mL)}, \qquad x \in \mathbb{R}.$$
--/
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 noncomputable def example_12_1_solution (L u₀ m : ℝ) : ℝ → ℝ :=
   fun x ↦ u₀ * Real.cosh (m * (L - x)) / Real.cosh (m * L)
 
 /-- The function $u$ of Example 12.1 has the derivative $u'(x) = -u_0 m \sinh(m(L - x)) / \cosh(mL)$
-at every $x \in \mathbb{R}$. -/
+at every $x \in \mathbb{R}$.
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 theorem hasDerivAt_example_12_1_solution (L u₀ m x : ℝ) :
     HasDerivAt (example_12_1_solution L u₀ m)
       (-(u₀ * m * Real.sinh (m * (L - x))) / Real.cosh (m * L)) x := by
@@ -1106,13 +1293,19 @@ theorem hasDerivAt_example_12_1_solution (L u₀ m x : ℝ) :
   exact ((h2.const_mul u₀).div_const (Real.cosh (m * L))).congr_deriv (by ring)
 
 /-- The derivative of the function $u$ of Example 12.1 is
-$u'(x) = -u_0 m \sinh(m(L - x)) / \cosh(mL)$. -/
+$u'(x) = -u_0 m \sinh(m(L - x)) / \cosh(mL)$.
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 theorem deriv_example_12_1_solution (L u₀ m : ℝ) :
     deriv (example_12_1_solution L u₀ m)
       = fun x ↦ -(u₀ * m * Real.sinh (m * (L - x))) / Real.cosh (m * L) :=
   funext fun x ↦ (hasDerivAt_example_12_1_solution L u₀ m x).deriv
 
-/-- The function $u$ of Example 12.1 satisfies $u''(x) = m^2 u(x)$ for every $x \in \mathbb{R}$. -/
+/-- The function $u$ of Example 12.1 satisfies $u''(x) = m^2 u(x)$ for every $x \in \mathbb{R}$.
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 theorem iteratedDeriv_two_example_12_1_solution (L u₀ m x : ℝ) :
     iteratedDeriv 2 (example_12_1_solution L u₀ m) x
       = m ^ 2 * example_12_1_solution L u₀ m x := by
@@ -1130,13 +1323,17 @@ theorem iteratedDeriv_two_example_12_1_solution (L u₀ m x : ℝ) :
   exact h3.deriv
 
 /-- The function $u$ of Example 12.1 satisfies the left boundary condition $u(0) = u_0$ of (12.67).
--/
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 @[simp]
 theorem example_12_1_solution_zero (L u₀ m : ℝ) : example_12_1_solution L u₀ m 0 = u₀ := by
   rw [example_12_1_solution, sub_zero, mul_div_assoc, div_self (Real.cosh_pos _).ne', mul_one]
 
 /-- The function $u$ of Example 12.1 satisfies the right boundary condition $u'(L) = 0$ of (12.67).
--/
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 @[simp]
 theorem deriv_example_12_1_solution_apply (L u₀ m : ℝ) :
     deriv (example_12_1_solution L u₀ m) L = 0 := by
@@ -1150,7 +1347,10 @@ $$-\mu A u''(x) + \sigma p \, u(x) = 0 \quad \text{for every } x \in \mathbb{R},
 so it solves the boundary value problem (12.67) on $(0, L)$.
 
 The book writes the hypothesis as $m^2 = \sigma p / (\mu A)$; the statement uses
-$\mu A m^2 = \sigma p$, which needs no division. -/
+$\mu A m^2 = \sigma p$, which needs no division.
+
+**Generalization.** The exact rod solution and derivative identities use real parameters on the
+whole line. The governing equation uses the relation $\mu A m^2=\sigma p$. -/
 theorem example_12_1 {mu A sigma p L u₀ m : ℝ} (hm : mu * A * m ^ 2 = sigma * p) :
     (∀ x : ℝ, -(mu * A) * iteratedDeriv 2 (example_12_1_solution L u₀ m) x
         + sigma * p * example_12_1_solution L u₀ m x = 0) ∧
@@ -1172,14 +1372,20 @@ of degree at most $n$ that vanish at $-1$ and at $1$, as a subspace of $\mathbb{
 
 The spectral method (12.68) is a generalized Galerkin method on this space. The trial space is
 not a subspace of a function space with the $H^1$ norm, because the discrete form (12.69)
-evaluates derivatives at the Gauss–Lobatto nodes. -/
+evaluates derivatives at the Gauss–Lobatto nodes.
+
+**Reading.** The spectral polynomials vanish at $\pm1$, the endpoints of the collocation
+interval. -/
 noncomputable def polyZero (n : ℕ) : Submodule ℝ ℝ[X] :=
   Polynomial.degreeLE ℝ (n : WithBot ℕ) ⊓ LinearMap.ker (Polynomial.leval (-1 : ℝ))
     ⊓ LinearMap.ker (Polynomial.leval (1 : ℝ))
 
 /-- A polynomial $p$ lies in $\mathbb{P}_n^0$ if and only if $\deg p \le n$, $p(-1) = 0$ and
 $p(1) = 0$. This is the form of the conditions in
-`QuarteroniSaccoSaleri.Chapter12.equation_12_36`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_36`.
+
+**Reading.** The spectral polynomials vanish at $\pm1$, the endpoints of the collocation
+interval. -/
 theorem mem_polyZero {p : ℝ[X]} :
     p ∈ polyZero n ↔ p.natDegree ≤ n ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 := by
   simp only [polyZero, Submodule.mem_inf, Polynomial.mem_degreeLE, LinearMap.mem_ker,
@@ -1222,7 +1428,10 @@ $$a_n(u, v) = (\alpha u', v')_n + (\beta u', v)_n + (\gamma u, v)_n,$$
 where $(\cdot, \cdot)_n$ is the discrete scalar product (12.37).
 
 The form arises from the form (12.44) when every integral is replaced by the Gauss–Lobatto
-formula (12.37). -/
+formula (12.37).
+
+**Generalization.** The sampled form and load accept arbitrary nodes, weights and coefficient
+values. The collocation theorem uses a Lobatto rule. -/
 noncomputable def equation_12_69 (n : ℕ) (x w : Fin (n + 1) → ℝ) (α β γ : ℝ → ℝ) :
     ℝ[X] →ₗ[ℝ] ℝ[X] →ₗ[ℝ] ℝ :=
   spectralPairing n x w α Polynomial.derivative Polynomial.derivative
@@ -1230,7 +1439,10 @@ noncomputable def equation_12_69 (n : ℕ) (x w : Fin (n + 1) → ℝ) (α β γ
     + spectralPairing n x w γ LinearMap.id LinearMap.id
 
 /-- The discrete form (12.69) is the sum of three discrete scalar products (12.37): $a_n(p, q) =
-(\alpha p', q')_n + (\beta p', q)_n + (\gamma p, q)_n$. -/
+(\alpha p', q')_n + (\beta p', q)_n + (\gamma p, q)_n$.
+
+**Generalization.** The sampled form and load accept arbitrary nodes, weights and coefficient
+values. The collocation theorem uses a Lobatto rule. -/
 theorem equation_12_69_apply (n : ℕ) (x w : Fin (n + 1) → ℝ) (α β γ : ℝ → ℝ) (p q : ℝ[X]) :
     equation_12_69 n x w α β γ p q
       = equation_12_37 n x w (fun t ↦ α t * (derivative p).eval t)
@@ -1242,7 +1454,10 @@ theorem equation_12_69_apply (n : ℕ) (x w : Fin (n + 1) → ℝ) (α β γ : �
 
 /-- **Equation (12.68)** of [quarteroni2000numerical], the discrete load functional. For nodes
 $x_k$, weights $w_k$ and a function $f$, the linear functional
-$v \mapsto (f, v)_n = \sum_k f(x_k) v(x_k) w_k$ on $\mathbb{R}[X]$. -/
+$v \mapsto (f, v)_n = \sum_k f(x_k) v(x_k) w_k$ on $\mathbb{R}[X]$.
+
+**Generalization.** The sampled form and load accept arbitrary nodes, weights and coefficient
+values. The collocation theorem uses a Lobatto rule. -/
 noncomputable def spectralLoad (n : ℕ) (x w : Fin (n + 1) → ℝ) (f : ℝ → ℝ) : ℝ[X] →ₗ[ℝ] ℝ where
   toFun q := ∑ k, f (x k) * q.eval (x k) * w k
   map_add' q₁ q₂ := by
@@ -1253,7 +1468,10 @@ noncomputable def spectralLoad (n : ℕ) (x w : Fin (n + 1) → ℝ) (f : ℝ �
     simp only [Polynomial.eval_smul, smul_eq_mul, RingHom.id_apply, Finset.mul_sum]
     exact Finset.sum_congr rfl fun k _ ↦ by ring
 
-/-- The discrete load functional is the discrete scalar product (12.37) with $f$. -/
+/-- The discrete load functional is the discrete scalar product (12.37) with $f$.
+
+**Generalization.** The sampled form and load accept arbitrary nodes, weights and coefficient
+values. The collocation theorem uses a Lobatto rule. -/
 theorem spectralLoad_apply (n : ℕ) (x w : Fin (n + 1) → ℝ) (f : ℝ → ℝ) (q : ℝ[X]) :
     spectralLoad n x w f q = equation_12_37 n x w f (fun t ↦ q.eval t) := by
   rw [equation_12_37_eq]
@@ -1267,7 +1485,10 @@ where $a_n$ is the discrete form (12.69).
 
 The definition is `IsGeneralizedGalerkinSolution` on the module $\mathbb{R}[X]$. It is not a
 Galerkin method, because $a_n$ is not the form $a$ of (12.44) and the trial space has no norm in
-which $a_n$ is bounded. -/
+which $a_n$ is bounded.
+
+**Generalization.** The sampled form and load accept arbitrary nodes, weights and coefficient
+values. The collocation theorem uses a Lobatto rule. -/
 def equation_12_68 (n : ℕ) (x w : Fin (n + 1) → ℝ) (α β γ f : ℝ → ℝ) (u : ℝ[X]) : Prop :=
   IsGeneralizedGalerkinSolution (equation_12_69 n x w α β γ) (spectralLoad n x w f)
     (polyZero n) u

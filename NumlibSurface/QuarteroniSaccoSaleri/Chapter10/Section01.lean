@@ -90,6 +90,22 @@ polynomials. The proofs specialize the backbone modules `Numlib.Approximation.Or
 
 ## Deviations from the source
 
+* **Equations (10.1)–(10.3), (10.7)–(10.8), and the generalized Fourier series**
+  (generalization). `weightMeasure` extends the density by taking its positive part. The
+  weighted space uses almost-everywhere equivalence classes. The Fourier and recurrence
+  declarations use the monic orthogonal family of any measure with finite moments and positive
+  mass outside each finite set. `truncation_tendsto` assumes compact interval support, proves
+  convergence and Parseval's equality, and omits the separate identity for the squared tail.
+* **Equations (10.4)–(10.6)** (reading). `discreteCoeff`, `discreteTruncation`,
+  `degree_discreteTruncation_le`, and `discreteNorm` admit arbitrary real quadrature data.
+  `equation_10_6` states the minimization for $n \geq 1$, distinct nodes and positive weights,
+  with exactness through $2n-1$ to ensure discrete orthogonality of the polynomials of distinct
+  degrees through $n$. The text leaves the quadrature conditions for this minimization implicit.
+  Lean permits arbitrary $f$.
+* **Section 10.1.1, the minimax property** (reading). `chebyshev_minimax` restricts $2^{1-n}T_n$
+  to $n\geq 1$. At $n=0$ the monic optimizer is $T_0=1$ and the displayed scaling gives $2$.
+* **Remark 10.1** (reading). `remark_10_1` compares the monic Jacobi family with the classical
+  Legendre and Chebyshev polynomials after dividing by their leading coefficients.
 * **Section 10.1, the weight function** (reading). The book leaves implicit that $w$ is not almost
   everywhere zero. The library assumes $\int_{-1}^1 w \neq 0$, without which $\|\cdot\|_w$ is not a
   norm. See `QuarteroniSaccoSaleri.Chapter10.isWeight_weightMeasure`.
@@ -111,14 +127,21 @@ $w(x)\,dx$ on $(-1, 1)$. The space $L^2_w(-1, 1)$ of the book is the $L^2$ space
 measure, with the scalar product $(f, g)_w = \int_{-1}^1 f g w \, dx$.
 
 The measure is the Lebesgue measure on $(-1, 1)$ with the density $\max(w, 0)$, so negative
-values of `w` count as $0$. The space $L^2_w(-1, 1)$ is `Lp ℝ 2 (weightMeasure w)`. -/
+values of `w` count as $0$. The space $L^2_w(-1, 1)$ is `Lp ℝ 2 (weightMeasure w)`.
+
+**Generalization.** The measure construction takes the positive part of a real density. The
+integral identification needs measurability and nonnegativity on the interval and allows
+weights whose total integral is not finite. -/
 noncomputable def weightMeasure (w : ℝ → ℝ) : Measure ℝ :=
   (volume.restrict (Ioo (-1 : ℝ) 1)).withDensity fun x => ENNReal.ofReal (w x)
 
 /-- Supports equation (10.1). Let $w$ be measurable and nonnegative on $(-1, 1)$. Then for every
 $f : \mathbb{R} \to \mathbb{R}$,
 $$\int f \, d(w\,dx) = \int_{-1}^1 w(x) f(x) \, dx.$$
--/
+
+**Generalization.** The measure construction takes the positive part of a real density. The
+integral identification needs measurability and nonnegativity on the interval and allows
+weights whose total integral is not finite. -/
 theorem integral_weightMeasure {w : ℝ → ℝ} (hmeas : Measurable w)
     (hnn : ∀ x ∈ Ioo (-1 : ℝ) 1, 0 ≤ w x) (f : ℝ → ℝ) :
     ∫ x, f x ∂weightMeasure w = ∫ x in Ioo (-1 : ℝ) 1, w x * f x := by
@@ -159,14 +182,21 @@ coefficient** of $f$ of index $k$ is
 $$\hat f_k = \frac{(f, p_k)_w}{\|p_k\|_w^2}.$$
 
 The norm $\|p_k\|_w^2$ is `OrthogonalPolynomial.normSq μ k`. The lemma
-`QuarteroniSaccoSaleri.Chapter10.fourierCoeff_eq` writes $\hat f_k$ as a quotient of integrals. -/
+`QuarteroniSaccoSaleri.Chapter10.fourierCoeff_eq` writes $\hat f_k$ as a quotient of integrals.
+
+**Generalization.** Uses the monic orthogonal family of a measure weight and the corresponding
+space of almost-everywhere equivalence classes. The book starts with a density on $(-1,1)$ and
+a family of orthogonal polynomials of unspecified normalization. -/
 noncomputable def fourierCoeff (hw : IsWeight μ) (f : Lp ℝ 2 μ) (k : ℕ) : ℝ :=
   inner ℝ f (hw.toLpₗ (family μ k)) / normSq μ k
 
 /-- Supports the definition of the Fourier coefficient in Section 10.1. Let $\mu$ be a weight with
 monic orthogonal family $\{p_k\}$, and let $f \in L^2_w$. Then
 $$\hat f_k = \frac{\int f p_k \, d\mu}{\int p_k^2 \, d\mu}.$$
--/
+
+**Generalization.** Uses the monic orthogonal family of a measure weight and the corresponding
+space of almost-everywhere equivalence classes. The book starts with a density on $(-1,1)$ and
+a family of orthogonal polynomials of unspecified normalization. -/
 theorem fourierCoeff_eq (hw : IsWeight μ) (f : Lp ℝ 2 μ) (k : ℕ) :
     fourierCoeff hw f k =
       (∫ x, f x * (family μ k).eval x ∂μ) / ∫ x, (family μ k).eval x ^ 2 ∂μ := by
@@ -181,14 +211,22 @@ theorem fourierCoeff_eq (hw : IsWeight μ) (f : Lp ℝ 2 μ) (k : ℕ) :
 family $\{p_k\}$, and let $f \in L^2_w$. The **truncation of order $n$** of the generalized
 Fourier series of $f$ is
 $$f_n = \sum_{k=0}^n \hat f_k p_k,$$
-an element of $\mathbb{P}_n \subseteq L^2_w$. -/
+an element of $\mathbb{P}_n \subseteq L^2_w$.
+
+**Generalization.** Uses the monic orthogonal family of a measure weight and the corresponding
+space of almost-everywhere equivalence classes. The book starts with a density on $(-1,1)$ and
+a family of orthogonal polynomials of unspecified normalization. -/
 noncomputable def truncation (hw : IsWeight μ) (n : ℕ) (f : Lp ℝ 2 μ) : Lp ℝ 2 μ :=
   ∑ k : Fin (n + 1), fourierCoeff hw f k • hw.toLpₗ (family μ k)
 
 /-- Supports equation (10.2). The truncation $f_n$ equals
 $\sum_{k=0}^n ((p_k, f)_w / \|p_k\|_w^2)\, p_k$, the form of the best approximation in
 `OrthogonalPolynomial.isBestApprox_truncation`, with the arguments of the scalar product in the
-other order. -/
+other order.
+
+**Generalization.** Uses the monic orthogonal family of a measure weight and the corresponding
+space of almost-everywhere equivalence classes. The book starts with a density on $(-1,1)$ and
+a family of orthogonal polynomials of unspecified normalization. -/
 theorem truncation_eq (hw : IsWeight μ) (n : ℕ) (f : Lp ℝ 2 μ) :
     truncation hw n f =
       ∑ k : Fin (n + 1), (inner ℝ (hw.toLpₗ (family μ k)) f / normSq μ k) • hw.toLpₗ (family μ k) :=
@@ -200,7 +238,11 @@ $$\|f - f_n\|_w = \min_{q \in \mathbb{P}_n} \|f - q\|_w.$$
 So $f_n$ is the orthogonal projection of $f$ onto $\mathbb{P}_n$ in $L^2_w$.
 
 The space $\mathbb{P}_n$ is its image in `Lp ℝ 2 μ`, and the minimum is `IsLeast`. The proof
-specializes `OrthogonalPolynomial.isBestApprox_truncation`. -/
+specializes `OrthogonalPolynomial.isBestApprox_truncation`.
+
+**Generalization.** Uses the monic orthogonal family of a measure weight and the corresponding
+space of almost-everywhere equivalence classes. The book starts with a density on $(-1,1)$ and
+a family of orthogonal polynomials of unspecified normalization. -/
 theorem equation_10_3 (hw : IsWeight μ) (n : ℕ) (f : Lp ℝ 2 μ) :
     truncation hw n f ∈ (degreeLE ℝ n).map hw.toLpₗ ∧
       IsLeast (Set.range fun q : (degreeLE ℝ n).map hw.toLpₗ => ‖f - (q : Lp ℝ 2 μ)‖)
@@ -234,7 +276,11 @@ $$\|f\|_w^2 = \sum_{k=0}^\infty \hat f_k^2 \|p_k\|_w^2.$$
 
 The orthonormal polynomials form a Hilbert basis of $L^2_w$
 (`OrthogonalPolynomial.hilbertBasis`), and $f_n$ is the partial sum of index $n$ of the
-expansion of $f$ in it. -/
+expansion of $f$ in it.
+
+**Generalization.** The measure can be supported on any compact interval. The statement
+includes convergence and Parseval's equality. The text also gives the squared norm of the
+remainder as the series over the omitted indices. -/
 theorem truncation_tendsto (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Icc a b)ᶜ = 0)
     (f : Lp ℝ 2 μ) :
     Tendsto (fun n => ‖f - truncation hw n f‖) atTop (𝓝 0) ∧
@@ -269,7 +315,11 @@ coefficient** of $f : \mathbb{R} \to \mathbb{R}$ of index $k$ is
 $$\tilde f_k = \frac{(f, p_k)_n}{\|p_k\|_n^2}.$$
 
 The discrete scalar product is `Quadrature.discreteInner`. The quotient uses the Lean convention
-$x / 0 = 0$. -/
+$x / 0 = 0$.
+
+**Generalization.** Allows arbitrary real quadrature data and function values. The book
+introduces these quantities for continuous functions using a quadrature approximation to the
+weighted scalar product. -/
 noncomputable def discreteCoeff {m : ℕ} (μ : Measure ℝ) (w x : Fin m → ℝ) (f : ℝ → ℝ) (k : ℕ) :
     ℝ :=
   Quadrature.discreteInner w x f (fun t => (family μ k).eval t) /
@@ -278,7 +328,10 @@ noncomputable def discreteCoeff {m : ℕ} (μ : Measure ℝ) (w x : Fin m → �
 /-- **Equation (10.4)** of [quarteroni2000numerical]. With the discrete coefficients $\tilde f_k$ of
 (10.5), the **discrete truncation of order $n$** of the Fourier series of $f$ is the polynomial
 $$f_n^* = \sum_{k=0}^n \tilde f_k p_k.$$
--/
+
+**Generalization.** Allows arbitrary real quadrature data and function values. The book
+introduces these quantities for continuous functions using a quadrature approximation to the
+weighted scalar product. -/
 noncomputable def discreteTruncation {m : ℕ} (μ : Measure ℝ) (w x : Fin m → ℝ) (n : ℕ)
     (f : ℝ → ℝ) : ℝ[X] :=
   ∑ k : Fin (n + 1), C (discreteCoeff μ w x f k) * family μ k
@@ -287,11 +340,19 @@ noncomputable def discreteTruncation {m : ℕ} (μ : Measure ℝ) (w x : Fin m �
 weights $\alpha_i$ and nodes $x_i$, the **discrete seminorm** of $g$ is
 $\|g\|_n = \sqrt{(g, g)_n}$.
 
-The square root is `Real.sqrt`, which is $0$ at negative arguments. -/
+The square root is `Real.sqrt`, which is $0$ at negative arguments.
+
+**Generalization.** Allows arbitrary real quadrature data and function values. The book
+introduces these quantities for continuous functions using a quadrature approximation to the
+weighted scalar product. -/
 noncomputable def discreteNorm {m : ℕ} (w x : Fin m → ℝ) (g : ℝ → ℝ) : ℝ :=
   √(Quadrature.discreteInner w x g g)
 
-/-- Supports equation (10.4). The discrete truncation $f_n^*$ has degree at most $n$. -/
+/-- Supports equation (10.4). The discrete truncation $f_n^*$ has degree at most $n$.
+
+**Generalization.** Allows arbitrary real quadrature data and function values. The book
+introduces these quantities for continuous functions using a quadrature approximation to the
+weighted scalar product. -/
 theorem degree_discreteTruncation_le {m : ℕ} (μ : Measure ℝ) (w x : Fin m → ℝ) (n : ℕ)
     (f : ℝ → ℝ) : (discreteTruncation μ w x n f).degree ≤ n := by
   refine (degree_sum_le _ _).trans (Finset.sup_le fun k _ => (degree_mul_le _ _).trans ?_)
@@ -311,7 +372,12 @@ So $f_n^*$ is the approximation of $f$ in $\mathbb{P}_n$ in the least-squares se
 
 In fact $f_n^*$ is the interpolant of $f$ at the nodes
 (`Quadrature.interpolate_eq_sum_discreteInner_smul`), so $\|f - f_n^*\|_n = 0$. The exactness is
-`Quadrature.IsExactOnMeasure μ w x (2 * n - 1)`. -/
+`Quadrature.IsExactOnMeasure μ w x (2 * n - 1)`.
+
+**Reading.** The theorem assumes $n\geq 1$, distinct nodes, positive weights, and quadrature
+exactness through degree $2n-1$, which ensures discrete orthogonality for distinct degrees
+through $n$. The text leaves the conditions on the quadrature implicit. The finite minimization
+allows any $f$. -/
 theorem equation_10_6 (hw : IsWeight μ) (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) {w : Fin (n + 1) → ℝ} (hwpos : ∀ i, 0 < w i)
     (hexact : Quadrature.IsExactOnMeasure μ w x (2 * n - 1)) (f : ℝ → ℝ) :
@@ -346,7 +412,10 @@ The statement has five parts: $p_0 = 1$; $p_1 = x - \alpha_0$, which is the step
 $\beta_0 p_{-1}$ vanishes; $p_{k+2} = (x - \alpha_{k+1}) p_{k+1} - \beta_{k+1} p_k$; and the two
 formulas for the coefficients. The coefficient $\alpha_k$ is `OrthogonalPolynomial.alpha μ k`,
 and the coefficient $\beta_{k+1}$ of the book is `OrthogonalPolynomial.beta μ k`. The proof
-specializes `OrthogonalPolynomial.three_term_recurrence`. -/
+specializes `OrthogonalPolynomial.three_term_recurrence`.
+
+**Generalization.** Applies to a general measure weight. The $k=0$ case is written separately,
+and `beta μ k` corresponds to the printed $\beta_{k+1}$. -/
 theorem equation_10_7 (hw : IsWeight μ) (k : ℕ) :
     family μ 0 = 1 ∧ family μ 1 = X - C (alpha μ 0) ∧
       family μ (k + 2) =
@@ -427,7 +496,10 @@ where $\|\cdot\|_\infty$ is the sup norm on $[-1, 1]$.
 The idea of the proof: if $\|p\|_\infty < 2^{1-n}$ for a monic $p$ of degree $n$, then
 $p / \|p\|_\infty$ is bounded by $1$ on $[-1, 1]$ and has leading coefficient greater than
 $2^{n-1}$. This contradicts Mathlib's
-`Polynomial.Chebyshev.leadingCoeff_le_of_forall_abs_le_one`. -/
+`Polynomial.Chebyshev.leadingCoeff_le_of_forall_abs_le_one`.
+
+**Reading.** The scaling $2^{1-n}$ requires $n\geq 1$. For $n=0$ the monic constant is $T_0=1$
+with norm $1$, whereas $2^{1-0}T_0$ has norm $2$. -/
 theorem chebyshev_minimax (hn : 1 ≤ n) :
     sSup ((fun x => |(C ((2 : ℝ) ^ (1 - (n : ℤ))) * Chebyshev.T ℝ n).eval x|) '' Icc (-1 : ℝ) 1) =
         (2 : ℝ) ^ (1 - (n : ℤ)) ∧
@@ -539,7 +611,10 @@ Legendre and Chebyshev polynomials belong to the Jacobi family:
 
 The measure of the Jacobi weight is `OrthogonalPolynomial.jacobiMeasure α β`. Its weight
 property is `OrthogonalPolynomial.isWeight_jacobiMeasure`. In the Lean statement the exponent
-$k - 1$ is a natural number, so it is $0$ at $k = 0$, and $(2^0)^{-1} T_0 = 1$. -/
+$k - 1$ is a natural number, so it is $0$ at $k = 0$, and $(2^0)^{-1} T_0 = 1$.
+
+**Reading.** Lean chooses a monic Jacobi family. Its specializations divide the classical
+Legendre and Chebyshev polynomials by their leading coefficients. -/
 theorem remark_10_1 {α β : ℝ} (hα : -1 < α) (hβ : -1 < β) :
     (∀ f : ℝ → ℝ, ∫ x, f x ∂jacobiMeasure α β =
         ∫ x in Ioo (-1 : ℝ) 1, (1 - x) ^ α * (1 + x) ^ β * f x) ∧

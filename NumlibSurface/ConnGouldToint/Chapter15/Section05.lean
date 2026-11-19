@@ -108,6 +108,50 @@ by the margin test, can admit infinitely many insertions with violations bounded
 
 ## Deviations from the source
 
+* **Attainment and feasibility.** The tangential criticality measure uses an infimum and its zero
+  characterization assumes a feasible normal base. See
+  `ConnGouldToint.Chapter15.sqpFilterCriticality`,
+  `ConnGouldToint.Chapter15.sqpFilterCriticality_zero_iff`.
+* **Direct assumptions.** Lemma 15.5.1 uses eventual linear feasibility and a gradient bound
+  directly. See `ConnGouldToint.Chapter15.lemma_15_5_1`.
+* **Correction.** Lemma 15.5.2 uses Pareto deletion. A bounded insertion stream refutes the printed
+  version. See `ConnGouldToint.Chapter15.sqpFilterInsert`, `ConnGouldToint.Chapter15.lemma_15_5_2`,
+  `ConnGouldToint.Chapter15.sqpFilter_margin_deletion_counterexample`.
+* **Explicit Taylor control.** Lemma 15.5.3 uses explicit uniform Taylor control along the trial
+  segment. See `ConnGouldToint.Chapter15.lemma_15_5_3`.
+* **Quantitative reformulation.** Equation (15.5.19) and Lemma 15.5.4 use a nonzero curvature
+  denominator and explicit quantitative smallness conditions. See
+  `ConnGouldToint.Chapter15.filterModelRadius`, `ConnGouldToint.Chapter15.filterModelRadius_bounds`,
+  `ConnGouldToint.Chapter15.lemma_15_5_4`.
+* **Explicit error coefficient.** Lemma 15.5.5 gives the acceptance-ratio bound using the explicit
+  prediction and model-error estimates. See `ConnGouldToint.Chapter15.filterRatioRadius`,
+  `ConnGouldToint.Chapter15.filterRatioRadius_bound`, `ConnGouldToint.Chapter15.lemma_15_5_5`.
+* **Direct estimates.** Lemma 15.5.6 uses the scalar violation and model-decrease estimates
+  directly. See `ConnGouldToint.Chapter15.lemma_15_5_6`.
+* **Strict margin.** Lemma 15.5.7 uses a strict radius comparison and establishes the strict
+  objective margin. See `ConnGouldToint.Chapter15.filterObjectiveMarginRadius_bound`,
+  `ConnGouldToint.Chapter15.lemma_15_5_7`.
+* **Explicit predecessor cases.** Lemma 15.5.8 makes the strict predecessor margins and accepted
+  versus retained branches explicit. See `ConnGouldToint.Chapter15.sqpFilterAccepts_of_improvement`,
+  `ConnGouldToint.Chapter15.lemma_15_5_8`.
+* **Corrected filter and explicit tail estimates.** Lemma 15.5.9 uses corrected filter update and
+  explicit tail estimates on infinite insertions. See `ConnGouldToint.Chapter15.lemma_15_5_9`.
+* **Explicit successful subsequence.** Lemma 15.5.10 explicitly requires frequent success and the
+  corresponding objective and normal-step bounds. See `ConnGouldToint.Chapter15.lemma_15_5_10`.
+* **Strict margins and tail bound.** Lemma 15.5.11 gives an eventual radius floor from explicit tail
+  and strict-margin estimates. See `ConnGouldToint.Chapter15.lemma_15_5_11`.
+* **Explicit tail assumptions.** Lemma 15.5.12 exposes the tail assumptions behind the criticality
+  limit inferior. See `ConnGouldToint.Chapter15.lemma_15_5_12`.
+* **Explicit tail conclusions and restoration failure.** Theorems 15.5.13–15.5.14 use explicit tail
+  estimates and abstract restoration failure. The composite-step result exposes the hypotheses
+  needed to identify a critical cluster point. See `ConnGouldToint.Chapter15.theorem_15_5_13`,
+  `ConnGouldToint.Chapter15.theorem_15_5_14`.
+* **Completed radius update.** Algorithm 15.5.1 completes the radius update for accepted trials with
+  low ratios. See `ConnGouldToint.Chapter15.sqpFilterRadiusUpdate`.
+* **Strict rejection contraction.** Strict rejection contraction is necessary to exclude the
+  illustrated frozen rejection tail. See
+  `ConnGouldToint.Chapter15.sqpFilter_unchanged_rejected_radius_counterexample`,
+  `ConnGouldToint.Chapter15.sqpFilter_success_frequently_of_radius_floor`.
 * **Lemma 15.5.2** (correction). The filter deletes an entry only if the new entry dominates it in
   both components. With the printed margin deletion a bounded insertion stream can keep violations
   bounded away from zero. See `ConnGouldToint.Chapter15.sqpFilter_margin_deletion_counterexample`.
@@ -168,7 +212,12 @@ $$\chi = -\inf\{\langle g, d \rangle : \|d\| \le 1, \ n + d \text{ feasible for 
 
 The directions $d$ are displacements from the base point of the normal step, so the linearized
 constraints are evaluated at the total step $n + d$. If no such $d$ exists, the Lean infimum of
-the empty set gives $\chi = 0$. -/
+the empty set gives $\chi = 0$.
+
+**Reading.** The unit-step criticality measure uses an infimum so attainment is unnecessary. The
+zero characterization assumes linear feasibility of the normal step, which supplies the zero
+displacement.
+-/
 noncomputable def sqpFilterCriticality (eq : ι → Bool) (c : ι → ℝ) (a : ι → E)
     (g n : E) : ℝ :=
   -sInf ((fun d : E => ⟪g, d⟫) '' {d : E | ‖d‖ ≤ 1 ∧ sqpFilterLinearFeasible eq c a (n + d)})
@@ -176,7 +225,12 @@ noncomputable def sqpFilterCriticality (eq : ι → Bool) (c : ι → ℝ) (a : 
 /-- **Section 15.5** of [conn2000trust], characterization of the criticality measure. If the normal
 step $n$ is feasible for the linearized constraints, then $\chi = 0$ if and only if
 $\langle g, d \rangle \ge 0$ for every $d$ with $\|d\| \le 1$ such that $n + d$ is feasible for
-the linearized constraints. -/
+the linearized constraints.
+
+**Reading.** The unit-step criticality measure uses an infimum so attainment is unnecessary. The
+zero characterization assumes linear feasibility of the normal step, which supplies the zero
+displacement.
+-/
 theorem sqpFilterCriticality_zero_iff (eq : ι → Bool) (c : ι → ℝ) (a : ι → E)
     (g n : E) (hn : sqpFilterLinearFeasible eq c a n) :
     sqpFilterCriticality eq c a g n = 0 ↔
@@ -218,7 +272,12 @@ If $n_k$ is eventually feasible for the linearized constraints at $(c_k, a_k)$, 
 $\kappa > 0$ with $\kappa \theta(c_k) \le \|n_k\|$ for all large $k$.
 
 A feasible linearization step cannot be shorter than the violation divided by a uniform bound on
-the gradients. -/
+the gradients.
+
+**Reading.** A uniform constraint-gradient bound and eventual linear feasibility give the
+normal-step lower bound directly. The vanishing violation and constraint-qualification assumptions
+of the source serve to produce a feasible normal step.
+-/
 theorem lemma_15_5_1 [Fintype ι] (eq : ι → Bool) (c : ℕ → ι → ℝ) (a : ℕ → ι → E)
     (n : ℕ → E) {G : ℝ} (hG : 0 ≤ G) (ha : ∀ k j, ‖a k j‖ ≤ G)
     (hlin : ∀ᶠ k in atTop, sqpFilterLinearFeasible eq (c k) (a k) (n k)) :
@@ -259,7 +318,12 @@ without $p_1 \le q_1$ and $p_2 \le q_2$.
 **Correction.** The source deletes the entries by the margin test, as in
 `ConnGouldToint.Chapter15.sqpFilterPrintedInsert`. That rule can forget an earlier margin; see
 `ConnGouldToint.Chapter15.sqpFilter_margin_deletion_counterexample`. Pareto deletion keeps every
-region that the filter excluded before. -/
+region that the filter excluded before.
+
+**Correction.** The main update deletes only pairs Pareto dominated by the inserted pair. This
+preserves exclusion by former entries. Under printed margin deletion the counterexample gives
+bounded accepted insertions with all violations at least one.
+-/
 def sqpFilterInsert (F : Set (ℝ × ℝ)) (p : ℝ × ℝ) : Set (ℝ × ℝ) :=
   insert p {q | q ∈ F ∧ ¬ (p.1 ≤ q.1 ∧ p.2 ≤ q.2)}
 
@@ -289,7 +353,12 @@ then $\theta_k \to 0$.
 `ConnGouldToint.Chapter15.sqpFilter_margin_deletion_counterexample`.
 
 Pareto deletion keeps the margins against all earlier insertions, so compactness excludes an
-infinite stream bounded away from feasibility. -/
+infinite stream bounded away from feasibility.
+
+**Correction.** The main update deletes only pairs Pareto dominated by the inserted pair. This
+preserves exclusion by former entries. Under printed margin deletion the counterexample gives
+bounded accepted insertions with all violations at least one.
+-/
 theorem lemma_15_5_2 (p : ℕ → ℝ × ℝ) (F : ℕ → Set (ℝ × ℝ))
     {γ V lo hi : ℝ} (hγ : 0 < γ) (hγ' : γ < 1)
     (hθ : ∀ k, (p k).1 ∈ Set.Icc 0 V) (hf : ∀ k, (p k).2 ∈ Set.Icc lo hi)
@@ -352,7 +421,12 @@ acceptable to $F_k$ with $\gamma = 1/2$ and $F_{k+1}$ is obtained by the printed
 $p_k$ into $F_k$. The violations $(p_k)_1$ do not tend to $0$.
 
 The stream alternates between two positive violation levels, and every insertion removes the
-previous entry. -/
+previous entry.
+
+**Correction.** The main update deletes only pairs Pareto dominated by the inserted pair. This
+preserves exclusion by former entries. Under printed margin deletion the counterexample gives
+bounded accepted insertions with all violations at least one.
+-/
 theorem sqpFilter_margin_deletion_counterexample :
     ∃ (p : ℕ → ℝ × ℝ) (F : ℕ → Set (ℝ × ℝ)),
       F 0 = ∅ ∧
@@ -437,7 +511,11 @@ $$\theta(c) \le \max\{K / \kappa, L\} \Delta^{1 + \mu}, \qquad \theta(c^+) \le \
   L\} \Delta^2.$$
 
 The Taylor bound on the trial constraint values is a hypothesis; it follows from a bound on the
-constraint second derivatives along the whole trial segment. -/
+constraint second derivatives along the whole trial segment.
+
+**Reading.** The result exposes the linear-feasibility, normal-step and segmentwise Taylor bounds
+that imply both violation estimates.
+-/
 theorem lemma_15_5_3 [Fintype ι] (eq : ι → Bool) (c cTrial : ι → ℝ)
     (a : ι → E) (n s : E) {κ K L Δ μ : ℝ}
     (hκ : 0 < κ) (hL : 0 ≤ L) (hΔ : 0 ≤ Δ)
@@ -469,7 +547,12 @@ theorem lemma_15_5_3 [Fintype ι] (eq : ι → Bool) (c cTrial : ι → ℝ)
 $$\delta = \min\Bigl\{\frac{\epsilon}{B + 1}, \Bigl(\frac{2 G}{(B + 1) K}\Bigr)^{1/(1 + \mu)},
   \Bigl(\frac{\kappa \epsilon}{4 G K}\Bigr)^{1/\mu}\Bigr\},$$
 where $G$ bounds the gradient, $B$ the Hessian, and $K$ is the product of the two compatibility
-constants of the normal step. -/
+constants of the normal step.
+
+**Reading.** The radius uses one plus a Hessian-norm bound and separate positive norm bounds. The
+lower bound on the model decrease is stated directly from the two smallness conditions and the
+tangential decrease estimate.
+-/
 noncomputable def filterModelRadius (G B K κ ε μ : ℝ) : ℝ :=
   min (ε / (B + 1))
     (min ((2 * G / ((B + 1) * K)) ^ (1 / (1 + μ)))
@@ -483,7 +566,12 @@ $$\bigl(G + \tfrac{1}{2} B K \Delta^{1 + \mu}\bigr) K \Delta^\mu \le \tfrac{1}{2
   \epsilon.$$
 
 Thus a positive gradient bound gives the printed threshold, and it implies the condition of
-`ConnGouldToint.Chapter15.lemma_15_5_4`, which does not divide by $G$. -/
+`ConnGouldToint.Chapter15.lemma_15_5_4`, which does not divide by $G$.
+
+**Reading.** The radius uses one plus a Hessian-norm bound and separate positive norm bounds. The
+lower bound on the model decrease is stated directly from the two smallness conditions and the
+tangential decrease estimate.
+-/
 theorem filterModelRadius_bounds {G B K κ ε μ Δ χ : ℝ}
     (hG : 0 < G) (hB : 0 ≤ B) (hK : 0 < K) (hκ : 0 < κ) (hε : 0 < ε) (hμ : 0 < μ)
     (hΔ : 0 < Δ) (hχ : ε ≤ χ) (hsmall : Δ ≤ filterModelRadius G B K κ ε μ) :
@@ -509,13 +597,21 @@ theorem filterModelRadius_bounds {G B K κ ε μ Δ χ : ℝ}
     _ ≤ _ := by nlinarith only [hq₃]
 
 /-- **Equation (15.5.21)** of [conn2000trust]. The **ratio radius** is $\min\{\delta_m, (1 - \eta)
-\kappa \epsilon / (2 C)\}$. Below it, the ratio test of Lemma 15.5.5 is very successful. -/
+\kappa \epsilon / (2 C)\}$. Below it, the ratio test of Lemma 15.5.5 is very successful.
+
+**Reading.** The threshold is parameterized by the coefficient in the quadratic model-error bound
+and the theorem assumes a positive linear prediction bound directly.
+-/
 noncomputable def filterRatioRadius (δm η κ ε C : ℝ) : ℝ :=
   min δm ((1 - η) * κ * ε / (2 * C))
 
 /-- **Equation (15.5.21)** of [conn2000trust], small-radius bound. If $C > 0$ and $\Delta$ is at
 most the ratio radius, then $\Delta \le \delta_m$ and $C \Delta \le (1 - \eta) \cdot \frac{1}{2}
-\kappa \epsilon$, the bound that Lemma 15.5.5 needs. -/
+\kappa \epsilon$, the bound that Lemma 15.5.5 needs.
+
+**Reading.** The threshold is parameterized by the coefficient in the quadratic model-error bound
+and the theorem assumes a positive linear prediction bound directly.
+-/
 theorem filterRatioRadius_bound {δm η κ ε C Δ : ℝ} (hC : 0 < C)
     (hΔ : Δ ≤ filterRatioRadius δm η κ ε C) :
     Δ ≤ δm ∧ C * Δ ≤ (1 - η) * (κ * ε / 2) := by
@@ -553,7 +649,11 @@ noncomputable def filterObjectiveMarginRadius (δρ η κ ε M γ : ℝ) : ℝ :
 /-- **Equation (15.5.23)** of [conn2000trust], strict bound. If $M > 0$, $\gamma > 0$ and $\Delta$
 is strictly less than the objective-margin radius, then $\Delta < \delta_\rho$ and $\gamma M
 \Delta < \eta \cdot \frac{1}{2} \kappa \epsilon$. This strict inequality gives the strict filter
-margin that the objective branch of the acceptance rule needs. -/
+margin that the objective branch of the acceptance rule needs.
+
+**Correction.** The radius comparison and objective-margin conclusion are strict so that the trial
+meets the actual acceptance test.
+-/
 theorem filterObjectiveMarginRadius_bound {δρ η κ ε M γ Δ : ℝ}
     (hM : 0 < M) (hγ : 0 < γ) (hΔ : Δ < filterObjectiveMarginRadius δρ η κ ε M γ) :
     Δ < δρ ∧ γ * M * Δ < η * (κ * ε / 2) := by
@@ -609,7 +709,12 @@ $$\tfrac{1}{2} \kappa \epsilon \Delta \le f_0 - q(s).$$
 The smallness condition is stated without dividing by the gradient bound $G$, which can be zero.
 For $G > 0$ it follows from the radius (15.5.19); see
 `ConnGouldToint.Chapter15.filterModelRadius_bounds`. The model is
-`ConnGouldToint.Chapter06.quadraticModel`. -/
+`ConnGouldToint.Chapter06.quadraticModel`.
+
+**Reading.** The radius uses one plus a Hessian-norm bound and separate positive norm bounds. The
+lower bound on the model decrease is stated directly from the two smallness conditions and the
+tangential decrease estimate.
+-/
 theorem lemma_15_5_4 (f₀ : ℝ) (g n s : E) (H : E →L[ℝ] E)
     {G B K κ ε Δ μ χ : ℝ}
     (hG : 0 ≤ G) (hB : 0 ≤ B) (hK : 0 ≤ K) (hκ : 0 ≤ κ)
@@ -658,7 +763,11 @@ $a \Delta \le \delta$, $C \Delta \le (1 - \eta) a$ and
 $$|f(x + s) - (f(x) - \delta)| \le C \Delta^2,$$
 then the ratio $\rho = (f(x) - f(x + s)) / \delta$ satisfies $\rho \ge \eta$.
 
-The ratio is `Optimization.reductionRatio`. -/
+The ratio is `Optimization.reductionRatio`.
+
+**Reading.** The threshold is parameterized by the coefficient in the quadratic model-error bound
+and the theorem assumes a positive linear prediction bound directly.
+-/
 theorem lemma_15_5_5 (f : E → ℝ) (x s : E) {η a Δ C d : ℝ}
     (ha : 0 < a) (hΔ : 0 < Δ) (hpred : a * Δ ≤ d)
     (hη : η ≤ 1) (hsmall : C * Δ ≤ (1 - η) * a)
@@ -674,7 +783,11 @@ theorem lemma_15_5_5 (f : E → ℝ) (x s : E) {η a Δ C d : ℝ}
 /-- **Lemma 15.5.6** of [conn2000trust]. Let $\theta \ge 0$, $\Delta > 0$ and $\kappa \ge 0$. If
 $\theta \le K \Delta^{1 + \mu}$, $\kappa K^2 \Delta^{1 + 2\mu} \le a$ and $a \Delta \le \delta$,
 then $\kappa \theta^2 \le \delta$. Thus compatibility makes the squared violation of higher
-order than the linear model decrease, and the switching test holds. -/
+order than the linear model decrease, and the switching test holds.
+
+**Reading.** The violation and prediction bounds are explicit hypotheses in the scalar switching
+result.
+-/
 theorem lemma_15_5_6 {θ Δ μ K κ a d : ℝ} (hθ : 0 ≤ θ) (hΔ : 0 < Δ) (hκ : 0 ≤ κ)
     (hcompat : θ ≤ K * Δ ^ (1 + μ))
     (hsmall : κ * K ^ 2 * Δ ^ (1 + 2 * μ) ≤ a) (hpred : a * Δ ≤ d) :
@@ -705,7 +818,11 @@ $\gamma M \Delta < \eta a$. Then
 $$f(x + s) < f(x) - \gamma \theta^+.$$
 
 **Correction.** The radius threshold is strict, so that the conclusion is the strict inequality
-that the objective branch of the acceptance test (15.5.7) requires. -/
+that the objective branch of the acceptance test (15.5.7) requires.
+
+**Correction.** The radius comparison and objective-margin conclusion are strict so that the trial
+meets the actual acceptance test.
+-/
 theorem lemma_15_5_7 (f : E → ℝ) (x s : E) {θtrial γ η a Δ M d : ℝ}
     (hγ : 0 ≤ γ) (hη : 0 ≤ η) (ha : 0 < a) (hΔ : 0 < Δ)
     (hpred : a * Δ ≤ d) (hratio : η ≤ Optimization.reductionRatio f x s d)
@@ -722,7 +839,12 @@ theorem lemma_15_5_7 (f : E → ℝ) (x s : E) {θtrial γ η a Δ M d : ℝ}
 /-- **Section 15.5** of [conn2000trust], preservation of acceptance used in Lemma 15.5.8. Let
 $\gamma \ge 0$, let $p$ be a pair with $p_1 \ge 0$ that is acceptable to the filter $F$, and let
 $q$ be a pair with $q_1 < (1 - \gamma) p_1$ and $q_2 < p_2 - \gamma q_1$. Then $q$ is acceptable
-to $F \cup \{p\}$. -/
+to $F \cup \{p\}$.
+
+**Reading.** Acceptance propagates from strict improvements in both margins. The compatibility bound
+assumes explicit radius and violation estimates for the predecessor and splits the cases according
+to the retained point.
+-/
 theorem sqpFilterAccepts_of_improvement {γ : ℝ} (hγ : 0 ≤ γ)
     {F : Set (ℝ × ℝ)} {p q : ℝ × ℝ} (hp : 0 ≤ p.1)
     (h : sqpFilterAccepts γ F p)
@@ -747,7 +869,12 @@ successful, $\theta = \theta^+$, or it was rejected, $\theta = \theta_{\mathrm{p
 $(\theta^+, f^+)$ is not acceptable to $F \cup \{(\theta_{\mathrm{prev}}, f_{\mathrm{prev}})\}$.
 Then $\nu \le K \Delta^{1 + \mu}$.
 
-In the rejected case, the acceptance of the current iterate quantifies the rejection. -/
+In the rejected case, the acceptance of the current iterate quantifies the rejection.
+
+**Reading.** Acceptance propagates from strict improvements in both margins. The compatibility bound
+assumes explicit radius and violation estimates for the predecessor and splits the cases according
+to the retained point.
+-/
 theorem lemma_15_5_8 {γ γ₀ K U M Δprev Δ μ θ θprev θtrial fprev ftrial normal : ℝ}
     (hγ : 0 ≤ γ) (hγ' : γ < 1) (hγ₀ : 0 < γ₀) (hΔ : 0 < Δ)
     (hΔprev : 0 ≤ Δprev) (hU : 0 ≤ U) (hM : 0 ≤ M)
@@ -810,7 +937,12 @@ Then $\theta_k \to 0$ and $\chi_k \to 0$.
 
 At small radii, the absence of restoration and the switching test exclude large criticality. At
 larger radii the tangential decrease stays positive, whereas the normal model cost and the
-switching threshold both vanish. -/
+switching threshold both vanish.
+
+**Correction.** The infinite insertion stream uses Pareto deletion. The scalar model conditions
+assume the vanishing normal cost, quantitative tangential control and a small-radius switching and
+compatibility guarantee.
+-/
 theorem lemma_15_5_9 (p : ℕ → ℝ × ℝ) (F : ℕ → Set (ℝ × ℝ))
     (χ Δ normalCost d : ℕ → ℝ) (R : Set ℕ)
     {γ V lo hi K U μ κ β κθ : ℝ} (hγ : 0 < γ) (hγ' : γ < 1)
@@ -866,7 +998,11 @@ large $k$. Then $\theta_k \to 0$, $l \theta_k \le \nu_k \le U \theta_k$ for all 
 $\nu_k \to 0$.
 
 Once the filter is frozen and the switching test holds, the objective decrease drives the
-violation to zero at each success, and the iterate does not change until the next success. -/
+violation to zero at each success, and the iterate does not change until the next success.
+
+**Reading.** The frozen-filter argument assumes infinitely many successful iterations, bounded
+monotone objective values, unchanged violations on rejection and the eventual normal-step bounds.
+-/
 theorem lemma_15_5_10 (θ f n : ℕ → ℝ) (S : Set ℕ) {η κ U l : ℝ}
     (hη : 0 < η) (hκ : 0 < κ) (hl : 0 < l)
     (hθ : ∀ k, 0 ≤ θ k)
@@ -921,7 +1057,12 @@ $\gamma_0 \Delta_k \le \Delta_{k+1}$ for all $k$, and that for all large $k$:
 * if $q_k$ is acceptable to $F \cup \{p_k\}$ and $\rho_k \ge \eta_2$, then
   $\Delta_k \le \Delta_{k+1}$.
 
-Then there is $b > 0$ with $b \le \Delta_k$ for all large $k$. -/
+Then there is $b > 0$ with $b \le \Delta_k$ for all large $k$.
+
+**Correction.** The small-radius trial objective margin is strict. The scalar theorem concludes an
+eventual positive radius bound using the predecessor inequality, fixed-filter separation and the
+good-trial radius update.
+-/
 theorem lemma_15_5_11 (p q : ℕ → ℝ × ℝ) (F : Set (ℝ × ℝ)) (Δ ρ : ℕ → ℝ)
     {γ γ₀ θF M r η₂ : ℝ} (hγ : γ < 1) (hγ₀ : 0 < γ₀) (hθF : 0 < θF)
     (hM : 0 ≤ M) (hr : 0 < r) (hΔ : ∀ k, 0 < Δ k)
@@ -971,7 +1112,12 @@ eventually bounded below by some $b > 0$. Then $\liminf_k \chi_k = 0$, and for e
 $\epsilon > 0$ there are infinitely many $k$ with $\chi_k < \epsilon$.
 
 If the criticality were uniformly positive on the tail, the radius floor would force a positive
-decrease at every success, which contradicts the convergence of the objective values. -/
+decrease at every success, which contradicts the convergence of the objective values.
+
+**Reading.** The result takes the frequent successes, vanishing normal cost, model decrease and
+conditional radius floor as direct hypotheses and also gives arbitrarily late small criticality
+values.
+-/
 theorem lemma_15_5_12 (χ f Δ d normalCost : ℕ → ℝ) (S : Set ℕ)
     {κ β η : ℝ} (hκ : 0 < κ) (hβ : 0 < β) (hη : 0 < η)
     (hχ : ∀ k, 0 ≤ χ k)
@@ -1027,7 +1173,12 @@ there is a strictly increasing sequence $(j_k)$ with $\theta_{j_k} \to 0$ and $\
 
 The criticality measure is the single-step measure of (15.5.45). The hypotheses are the
 conclusions of Lemmas 15.5.9 and 15.5.12. A failed restoration may instead end at a stationary
-point of the infeasibility problem. -/
+point of the infeasibility problem.
+
+**Reading.** Restoration failure is an abstract proposition. The infinite-insertion and final-tail
+estimates are hypotheses, and the composite-step result uses compactness, continuity and a
+stationarity implication to obtain a critical cluster point.
+-/
 theorem theorem_15_5_14 (θ π : ℕ → ℝ) (A : Set ℕ) (restorationFailure : Prop)
     (hπ : ∀ k, 0 ≤ π k)
     (hinfinite : ¬ restorationFailure → ∀ j : ℕ → ℕ, StrictMono j → (∀ k, j k ∈ A) →
@@ -1065,7 +1216,12 @@ restoration fails, or a subsequence $x_{j_k}$ converges to a first-order critica
 
 Compactness gives a cluster point of the feasible and critical subsequence. The vanishing normal
 step identifies the limit of the base points $x_k + n_k$ with the limit of the iterates, and
-continuity then gives a first-order critical point. -/
+continuity then gives a first-order critical point.
+
+**Reading.** Restoration failure is an abstract proposition. The infinite-insertion and final-tail
+estimates are hypotheses, and the composite-step result uses compactness, continuity and a
+stationarity implication to obtain a critical cluster point.
+-/
 theorem theorem_15_5_13 (x n : ℕ → E) (violation critical : E → ℝ)
     (A : Set ℕ) (restorationFailure : Prop) (firstOrder : E → Prop)
     {U : Set E} (hU : IsCompact U) (hx : ∀ k, x k ∈ U)
@@ -1115,7 +1271,11 @@ printed rule does not cover this case, and here it uses the shrink interval.
 
 Strict contraction on rejection is a separate hypothesis, because the printed parameter range
 allows $\gamma_1 = 1$; see
-`ConnGouldToint.Chapter15.sqpFilter_unchanged_rejected_radius_counterexample`. -/
+`ConnGouldToint.Chapter15.sqpFilter_unchanged_rejected_radius_counterexample`.
+
+**Correction.** The shrink interval also applies to an accepted trial with ratio below the first
+threshold when switching is inactive, a case left open in the source.
+-/
 def sqpFilterRadiusUpdate (γ₀ γ₁ γ₂ η₁ η₂ ρ Δ Δnext : ℝ) (accepted : Bool) : Prop :=
   if accepted = false ∨ ρ < η₁ then Δnext ∈ Set.Icc (γ₀ * Δ) (γ₁ * Δ)
   else if η₂ ≤ ρ then Δnext ∈ Set.Icc Δ (γ₂ * Δ)
@@ -1131,7 +1291,12 @@ $x_{k+1} = x_k$ with the radius rule for $\gamma_0 = 1/2$, $\gamma_1 = 1$, $\gam
 $\eta_1 = 1/4$, $\eta_2 = 3/4$, $\rho = 0$ and a rejected trial.
 
 The objective is quadratic and every iterate is feasible. With $\gamma_1 = 1$ the radius need
-not decrease, so the same trial is rejected forever. -/
+not decrease, so the same trial is rejected forever.
+
+**Correction.** The printed allowance of a unit rejection factor permits endlessly rejecting a fixed
+trial at a nonstationary point. Strict contraction and a positive radius floor give arbitrarily late
+successes.
+-/
 theorem sqpFilter_unchanged_rejected_radius_counterexample :
     ∃ f : ℝ → ℝ, ContDiff ℝ 2 f ∧ ∃ x s Δ : ℕ → ℝ,
       (∀ k, deriv f (x k) = -1) ∧
@@ -1164,7 +1329,12 @@ theorem sqpFilter_unchanged_rejected_radius_counterexample :
 /-- Let $0 \le \gamma < 1$. If the radii are bounded below by some $b > 0$ for all large $k$, and
 $\Delta_{k+1} \le \gamma \Delta_k$ for all large $k \notin S$, then $S$ is infinite. Thus strict
 contraction on rejection excludes an infinite tail of unsuccessful iterations with radii bounded
-below, in the analysis of Section 15.5 of [conn2000trust]. -/
+below, in the analysis of Section 15.5 of [conn2000trust].
+
+**Correction.** The printed allowance of a unit rejection factor permits endlessly rejecting a fixed
+trial at a nonstationary point. Strict contraction and a positive radius floor give arbitrarily late
+successes.
+-/
 theorem sqpFilter_success_frequently_of_radius_floor (Δ : ℕ → ℝ) (S : Set ℕ)
     {γ : ℝ} (hγ : 0 ≤ γ) (hγ' : γ < 1)
     (hfloor : ∃ b > 0, ∀ᶠ k in atTop, b ≤ Δ k)

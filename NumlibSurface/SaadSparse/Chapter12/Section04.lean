@@ -36,6 +36,14 @@ when $D_1$ is not diagonal, such as in domain decomposition methods", where it i
 * The block names of (12.18) put $F$ in the $(1,2)$ corner and $E$ in the $(2,1)$ corner, the
   opposite of the partitioning of Section 14.2. The statements keep the letters of the book.
 
+## Deviations from the source
+
+* **§12.4.1 and (12.18)** (generalization).
+  `SaadSparse.Chapter12.isDiag_submatrix_of_coloring` proves the diagonal property over any
+  entry type with zero. `SaadSparse.Chapter12.equation_12_18` allows any commutative ring and
+  invertible $D_1$, removes the diagonal block hypotheses, and gives an equivalence with the
+  reduced and back-substitution equations.
+
 ## Not formalized
 
 * **The colouring itself.** Which nodes receive which colour is a graph problem with no claim
@@ -55,7 +63,10 @@ of the same colour are coupled: $a_{ij} = 0$ whenever $i \neq j$ and $c(i) = c(j
 each colour $p$, the submatrix of $A$ on the nodes of colour $p$ is diagonal.
 
 Applied to the two colours of a red–black ordering, this says that $D_1$ and $D_2$ in (12.18)
-are diagonal. The colours are `Bool`, and the matrix has entries in any type with a zero. -/
+are diagonal. The colours are `Bool`, and the matrix has entries in any type with a zero.
+
+**Reading.** Diagonal same-color submatrices over any entry type with zero and arbitrary index type.
+-/
 theorem isDiag_submatrix_of_coloring {V R : Type*} [Zero R] (A : Matrix V V R)
     (c : V → Bool) (hc : ∀ i j, i ≠ j → c i = c j → A i j = 0) (p : Bool) :
     (A.submatrix (Subtype.val : {i // c i = p} → V) Subtype.val).IsDiag := fun i j hij =>
@@ -77,7 +88,11 @@ $$(D_2 - E D_1^{-1} F) x_2 = b_2 - E D_1^{-1} b_1$$
 and the red unknown is $x_1 = D_1^{-1} (b_1 - F x_2)$.
 
 The matrix of the reduced system is `Matrix.schurComplement` of the block matrix. The result
-does not need $D_1$ or $D_2$ to be diagonal. -/
+does not need $D_1$ or $D_2$ to be diagonal.
+
+**Generalization.** The theorem uses a commutative ring and requires an invertible $D_1$. It
+proves equivalence with the reduced system and the recovery equation for $x_1$, without
+diagonal hypotheses on either pivot block. -/
 theorem equation_12_18 (hD₁ : IsUnit D₁) (b₁ : m → R) (b₂ : n → R) (x₁ : m → R) (x₂ : n → R) :
     fromBlocks D₁ F E D₂ *ᵥ Sum.elim x₁ x₂ = Sum.elim b₁ b₂
       ↔ (fromBlocks D₁ F E D₂).schurComplement *ᵥ x₂ = b₂ - E *ᵥ (D₁⁻¹ *ᵥ b₁)

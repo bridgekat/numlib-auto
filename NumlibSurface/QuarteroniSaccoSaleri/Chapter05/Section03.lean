@@ -79,6 +79,29 @@ and `Numlib.Eigen.Perturbation` (the backward error of an approximate eigenpair)
 
 ## Deviations from the source
 
+* **Totalization.** Power and inverse iteration use total normalization and a total inverse for
+  shifted solves. See `QuarteroniSaccoSaleri.Chapter05.powerIterate`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_18`,
+  `QuarteroniSaccoSaleri.Chapter05.norm_smul_powerIterate`,
+  `QuarteroniSaccoSaleri.Chapter05.inverseIterate`.
+* **Reading.** The power iteration's Rayleigh value is the quadratic form used for normalized
+  iterates. See `QuarteroniSaccoSaleri.Chapter05.rayleighQuotient`.
+* **Correction.** The power method bound uses the sum of coefficient magnitudes for a general
+  diagonalizing basis. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_6`.
+* **Generalization.** Rayleigh convergence is stated with an arbitrary eigenbasis. See
+  `QuarteroniSaccoSaleri.Chapter05.theorem_5_6_rayleigh`.
+* **Correction.** The symmetric Rayleigh bound uses the spectral diameter. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_23`.
+* **Generalization.** The rank-one backward error is proved minimal and includes zero residual. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_24`.
+* **Reading.** Inverse iteration convergence includes the phase factor and the nonzero initial
+  component. See `QuarteroniSaccoSaleri.Chapter05.inverseIterate_tendsto`.
+* **Reading.** The repeated dominant eigenvalue case identifies the normalized dominant component up
+  to phase. See `QuarteroniSaccoSaleri.Chapter05.powerIterate_of_eq`.
+* **Equations (5.17) and (5.28)** (reading). The recursions accept arbitrary starting vectors
+  and have specified values when normalization or inversion is singular. See
+  `QuarteroniSaccoSaleri.Chapter05.powerIterate` and
+  `QuarteroniSaccoSaleri.Chapter05.inverseIterate`.
 * **Theorem 5.6** (correction). The book's constant $C = (\sum_{i \ge 2} (\alpha_i /
   \alpha_1)^2)^{1/2}$ needs orthonormal eigenvectors. For a diagonalizable $A$ the statement has
   $C = \sum_{i \ge 2} |\alpha_i / \alpha_1|$. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_6`.
@@ -120,8 +143,14 @@ The approximation of the eigenvalue is the Rayleigh quotient
 $\nu^{(k)} = (q^{(k)})^H A q^{(k)}$, which is
 `QuarteroniSaccoSaleri.Chapter05.rayleighQuotient`.
 
-The book takes $\|q^{(0)}\|_2 = 1$; the definition takes any $q^{(0)}$. Lean divides by zero to
-zero, so $z^{(k)} = 0$ gives $q^{(k)} = 0$, and the recursion is defined for every $k$. -/
+**Reading.** The book starts with a unit vector and presumes that each normalization is
+defined. The recursion accepts any $q^{(0)}$ and sets $q^{(k)} = 0$ if $z^{(k)} = 0$, using
+Lean's total scalar inverse.
+
+**Reading.** The definitions use total normalization and, for inverse iteration, the totalized
+shifted inverse. The normalized-power identities include zero powers of the vector after
+annihilation and index zero for a unit start.
+-/
 noncomputable def powerIterate (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → EuclideanSpace 𝕜 (Fin n)
   | 0 => q₀
@@ -131,7 +160,11 @@ noncomputable def powerIterate (A : Matrix (Fin n) (Fin n) 𝕜) (q₀ : Euclide
 /-- The **Rayleigh quotient** $q^H A q$ of a vector $q \in \mathbb{K}^n$ for
 $A \in \mathbb{K}^{n \times n}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. At
 $q = q^{(k)}$ it is the $\nu^{(k)}$ of (5.17) for the power method, and the $\sigma^{(k)}$ of
-(5.28) for inverse iteration. There is no division by $q^H q$. -/
+(5.28) for inverse iteration. There is no division by $q^H q$.
+
+**Reading.** The expression is the quadratic form on any vector; it is the usual Rayleigh quotient
+on the unit vectors of a successful run. The formal expression has no norm-squared denominator.
+-/
 noncomputable def rayleighQuotient (A : Matrix (Fin n) (Fin n) 𝕜) (q : EuclideanSpace 𝕜 (Fin n)) :
     𝕜 :=
   inner 𝕜 q (toEuclideanLin A q)
@@ -151,7 +184,12 @@ $q^{(0)} \in \mathbb{K}^n$ with $\|q^{(0)}\|_2 = 1$. Then for every $k$,
 $$q^{(k)} = \frac{A^k q^{(0)}}{\|A^k q^{(0)}\|_2}.$$
 
 If $A^k q^{(0)} = 0$, both sides are $0$. The proof specializes the backbone's
-`Krylov.powerIterate_eq_smul`. -/
+`Krylov.powerIterate_eq_smul`.
+
+**Reading.** The definitions use total normalization and, for inverse iteration, the totalized
+shifted inverse. The normalized-power identities include zero powers of the vector after
+annihilation and index zero for a unit start.
+-/
 theorem equation_5_18 (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace 𝕜 (Fin n)}
     (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
     powerIterate A q₀ k =
@@ -161,7 +199,12 @@ theorem equation_5_18 (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace �
 /-- Let $A \in \mathbb{K}^{n \times n}$ and $q^{(0)} \in \mathbb{K}^n$ with $\|q^{(0)}\|_2 = 1$.
 Then for every $k$, $\|A^k q^{(0)}\|_2 \, q^{(k)} = A^k q^{(0)}$. This identity turns the
 rescaled iterate $\tilde q^{(k)} = q^{(k)} \|A^k q^{(0)}\|_2 / (\alpha_1 \lambda_1^k)$ of (5.22)
-into $A^k q^{(0)} / (\alpha_1 \lambda_1^k)$. -/
+into $A^k q^{(0)} / (\alpha_1 \lambda_1^k)$.
+
+**Reading.** The definitions use total normalization and, for inverse iteration, the totalized
+shifted inverse. The normalized-power identities include zero powers of the vector after
+annihilation and index zero for a unit start.
+-/
 theorem norm_smul_powerIterate (A : Matrix (Fin n) (Fin n) 𝕜) {q₀ : EuclideanSpace 𝕜 (Fin n)}
     (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
     (‖toEuclideanLin (A ^ k) q₀‖ : 𝕜) • powerIterate A q₀ k = toEuclideanLin (A ^ k) q₀ := by
@@ -189,7 +232,13 @@ constant $C = \sum_{i \neq 1} |\alpha_i / \alpha_1|$, and this is what is proved
 
 The indices $1$ and $2$ are `i₀` and `i₁`. The proof specializes the backbone's
 `Krylov.norm_inv_pow_smul_pow_apply_sub_le_of_eigenbasis`, after
-`QuarteroniSaccoSaleri.Chapter05.norm_smul_powerIterate`. -/
+`QuarteroniSaccoSaleri.Chapter05.norm_smul_powerIterate`.
+
+**Correction.** With an arbitrary diagonalizing basis of unit vectors, the triangle inequality gives
+a sum of the magnitudes of the coefficient ratios. The source's Euclidean combination of the
+coefficients would require orthogonality of the eigenvectors. Lean gives the explicit sum bound also
+at $k=0$.
+-/
 theorem theorem_5_6 {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) (hx1 : ∀ i, ‖x i‖ = 1) {i₀ i₁ : Fin n}
@@ -235,7 +284,11 @@ $$\lim_{k \to \infty} \nu^{(k)} = \lambda_1.$$
 The eigenvectors need not be unit vectors here. The proof specializes the backbone's
 `Krylov.tendsto_inner_powerIterate`, with the splitting $q^{(0)} = \alpha_1 x_1 + \sum_{i \neq
 1} \alpha_i x_i$ of the starting vector along the dominant eigenvector and the other generalized
-eigenspaces. -/
+eigenspaces.
+
+**Generalization.** The convergence of the Rayleigh values holds without separately assuming the
+eigenbasis vectors are unit; the normalization is imposed on the iterates.
+-/
 theorem theorem_5_6_rayleigh {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n}
@@ -280,7 +333,12 @@ The eigenvectors and eigenvalues are `LinearMap.IsSymmetric.eigenvectorBasis` an
 $\lambda_{\min}$ are their supremum and infimum. The angle is
 $\theta_0 = \arccos |x_1^T q^{(0)}|$. The proof specializes the backbone's
 `LinearMap.IsSymmetric.abs_sub_rayleigh_powerIterate_le`, with $\tan^2 \theta_0 = (1 - \cos^2
-\theta_0) / \cos^2 \theta_0$. -/
+\theta_0) / \cos^2 \theta_0$.
+
+**Correction.** The eigenvalues in this section are ordered in modulus. The difference between the
+first and last in modulus need not bound the difference between eigenvalues of opposite signs. Lean
+uses the full spectral diameter.
+-/
 theorem equation_5_23 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {i₀ i₁ : Fin n}
     (hgap : |(hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin i₁| <
       |(hA.isSymmetric_toEuclideanLin).eigenvalues finrank_euclideanSpace_fin i₀|)
@@ -337,7 +395,12 @@ be the residual at step $k$, and let $\varepsilon E^{(k)} = -r^{(k)} (q^{(k)})^H
 The product $\varepsilon E^{(k)}$ is one matrix in the statement, so
 $\varepsilon = \|r^{(k)}\|_2$ and $\|E^{(k)}\|_2 = 1$ are read from part 2. The rank-one matrix
 $r q^H$ is `Matrix.vecMulVec r (star q)`. The proof specializes the backbone's
-`isLeast_eigen_backwardError`. -/
+`isLeast_eigen_backwardError`.
+
+**Generalization.** The perturbation product is one matrix, so the zero-residual case has zero
+perturbation. Lean also states its optimality among all matrix perturbations making the approximate
+eigenpair exact.
+-/
 theorem equation_5_24 (A : Matrix (Fin n) (Fin n) ℂ) {q₀ : EuclideanSpace ℂ (Fin n)}
     (hq₀ : ‖q₀‖ = 1) {k : ℕ} (hz : toEuclideanLin (A ^ k) q₀ ≠ 0) :
     let q := powerIterate A q₀ k
@@ -383,12 +446,19 @@ theorem equation_5_24 (A : Matrix (Fin n) (Fin n) ℂ) {q₀ : EuclideanSpace �
 
 /-- **Equation (5.28)** of [quarteroni2000numerical], inverse iteration with shift $\mu$. Let
 $A \in \mathbb{K}^{n \times n}$, $\mu \in \mathbb{K}$ and $q^{(0)} \in \mathbb{K}^n$. For
-$k = 1, 2, \dots$, the method solves $(A - \mu I) z^{(k)} = q^{(k-1)}$ and sets
+$k = 1, 2, \dots$, the recursion computes $z^{(k)} = (A - \mu I)^{-1} q^{(k-1)}$ and sets
 $q^{(k)} = z^{(k)} / \|z^{(k)}\|_2$. The approximation of the eigenvalue is the Rayleigh
 quotient $\sigma^{(k)} = (q^{(k)})^H A q^{(k)}$ of $A$ itself.
 
-The book takes $\|q^{(0)}\|_2 = 1$. The solution is $z^{(k)} = (A - \mu I)^{-1} q^{(k-1)}$ with
-Mathlib's inverse, which is $0$ when $A - \mu I$ is singular. Lean divides by zero to zero. -/
+**Reading.** The book takes a unit starting vector and a shift outside the spectrum, so the
+linear system $(A - \mu I) z^{(k)} = q^{(k-1)}$ has a unique solution. The recursive definition
+accepts any starting vector and shift. Mathlib's matrix inverse is zero at a singular matrix,
+and total scalar inversion gives a zero iterate when $z^{(k)} = 0$.
+
+**Reading.** The definitions use total normalization and, for inverse iteration, the totalized
+shifted inverse. The normalized-power identities include zero powers of the vector after
+annihilation and index zero for a unit start.
+-/
 noncomputable def inverseIterate (A : Matrix (Fin n) (Fin n) 𝕜) (μ : 𝕜)
     (q₀ : EuclideanSpace 𝕜 (Fin n)) : ℕ → EuclideanSpace 𝕜 (Fin n)
   | 0 => q₀
@@ -426,7 +496,12 @@ and $\sigma^{(k)} \to \lambda_m$.
 
 The scalars $c_k$ have modulus $1$, so the iterates converge to $x_m$ up to a unimodular factor.
 This is the book's $\tilde q^{(k)} \to x_m$. The proof specializes the backbone's
-`Krylov.tendsto_smul_inverseIterate` and `Krylov.tendsto_inner_inverseIterate`. -/
+`Krylov.tendsto_smul_inverseIterate` and `Krylov.tendsto_inner_inverseIterate`.
+
+**Reading.** Convergence to the uniquely closest eigenvector is up to unit-modulus phase. The
+theorem gives the explicit phase correction, assumes a nonzero component in that eigendirection, and
+proves convergence of the Rayleigh values.
+-/
 theorem inverseIterate_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) (hx1 : ∀ i, ‖x i‖ = 1) {μ : ℂ}
@@ -490,7 +565,12 @@ to the unit vector in the direction of $u$.
 The indices $1$ and $2$ are `i₀` and `i₁`. The proof specializes the backbone's
 `Krylov.exists_norm_eq_one_tendsto_smul_powerIterate` and `Krylov.tendsto_inner_powerIterate`,
 for which the $\lambda_1$-component $u$ of $q^{(0)}$ is an eigenvector. The backbone does not
-assume that $\lambda_1$ is simple. -/
+assume that $\lambda_1$ is simple.
+
+**Reading.** When the two dominant eigenvalues agree, the limiting unit direction is the normalized
+projection onto their span along the complementary eigenvector span. The result describes
+convergence up to phase, with a nonzero dominant component.
+-/
 theorem powerIterate_of_eq {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n} (hi : i₁ ≠ i₀)

@@ -44,10 +44,16 @@ it exists. The assumptions are stated with the backbone module
   space, together with $L \ge 1$. The library states the smoothness assumptions of later chapters in
   the same way.
 
+## Deviations from the source
+
+* **Theorem A.8.5, forward implication** (generalization). Under f.gL the Hessian bound needs no
+  second-order smoothness, with the iterated derivative set to zero where it does not exist. See
+  `CartisGouldToint.Chapter02.AssumptionGL.norm_iteratedFDeriv_two_le`.
+
 ## Not formalized
 
-* **The one-dimensional example** showing that f.Bb and f.C1 alone admit no complexity bound. It is
-  discussion, not a numbered result.
+* **Example 2.1.1**, the one-dimensional interpolation construction showing that f.Bb and f.C1
+  alone admit no complexity bound.
 -/
 
 open Set
@@ -177,8 +183,9 @@ theorem nonneg (h : AssumptionGL f L) : 0 ≤ L :=
 with constant $L$, then $\|\nabla^2 f(x)\| \le L$ for every $x \in \mathbb{R}^n$, in the
 operator norm.
 
-No second-order smoothness is needed: where $\nabla f$ is not differentiable,
-`iteratedFDeriv ℝ 2 f x` is $0$ by convention. -/
+**Generalization.** The theorem in the book assumes $f$ is twice continuously differentiable
+when $p = 1$. The bound for a Lipschitz gradient follows from the derivative bound at every
+point where the gradient is differentiable. Elsewhere, `iteratedFDeriv ℝ 2 f x` is $0$. -/
 theorem norm_iteratedFDeriv_two_le (h : AssumptionGL f L) (x : EuclideanSpace ℝ (Fin n)) :
     ‖iteratedFDeriv ℝ 2 f x‖ ≤ L :=
   norm_iteratedFDeriv_succ_le_of_lipschitzOn isOpen_univ h.nonneg h.iteratedFDerivLipschitzOn

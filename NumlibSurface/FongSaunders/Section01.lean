@@ -73,6 +73,24 @@ Both notations are scoped to the namespace `FongSaunders`, and Sections 2–5 us
 * The Lanczos vectors are not defined again here. They are the backbone Arnoldi vectors
   `Arnoldi.vec` of `Matrix.toEuclideanLin A` and $b$, which satisfy the three-term Lanczos
   recurrence when $A$ is symmetric. After the termination step the Arnoldi vectors are $0$.
+
+## Deviations from the source
+
+* **Section 1, Lanczos relations** (generalization). The matrix relations require symmetry
+  in place of positive definiteness. The rectangular relation uses zero columns after
+  termination and is stated for every $k$. See `FongSaunders.lanczos_relation` and
+  `FongSaunders.lanczos_relation_term`.
+* **Section 1, Lanczos basis and termination** (generalization). The Arnoldi basis,
+  coordinate descriptions and grade bound also apply to nonsymmetric matrices. The
+  spanning and coordinate results extend past termination by padding with zero vectors.
+  See `FongSaunders.lanczosVec_orthonormal`, `FongSaunders.span_lanczosVec`,
+  `FongSaunders.mem_krylov_iff_exists_lanczos` and `FongSaunders.lanczosTerm_le`.
+* **Section 1.1, exact solution** (reading). The inverse formula gives $x^*=0$ for a
+  singular matrix by the total inverse convention. See `FongSaunders.xstar`.
+* **Section 1, Lanczos data** (generalization). The basis vectors are defined by Arnoldi
+  for general $A$ and extended by zeros after the grade. The rectangular and square
+  tridiagonal arrays are defined at every index, including the terminal index. See
+  `FongSaunders.lanczosVec`, `FongSaunders.lanczosT` and `FongSaunders.lanczosTsq`.
 -/
 
 namespace FongSaunders
@@ -219,18 +237,24 @@ noncomputable def krylov (k : ℕ) : Submodule ℝ (Vec n) :=
 /-- The **Lanczos vector** $v_{j+1}$ of [fong2012cg] for $A$ and $b$: the index starts at $0$, so
 `FongSaunders.lanczosVec A b 0` is $v_1 = b / \|b\|$.
 
-The Lanczos vectors are the backbone Arnoldi vectors `Arnoldi.vec`, the Gram–Schmidt
-orthonormalization of $b, Ab, A^2 b, \dots$, which is $0$ after the termination step. For
-symmetric $A$ they satisfy the three-term Lanczos recurrence. -/
+**Generalization.** The source uses Lanczos vectors for symmetric positive definite $A$.
+The definition uses the Arnoldi vectors `Arnoldi.vec` for any real $A$, with zero vectors
+after the grade. For symmetric $A$ the vectors satisfy the three-term Lanczos recurrence. -/
 noncomputable abbrev lanczosVec (j : ℕ) : Vec n := Arnoldi.vec (Matrix.toEuclideanLin A) b j
 
 /-- The $(k+1) \times k$ tridiagonal Lanczos matrix $\underline{T}_k$ of [fong2012cg], which is
-`Lanczos.tridiagExt` of `Matrix.toEuclideanLin A` and $b$. -/
+`Lanczos.tridiagExt` of `Matrix.toEuclideanLin A` and $b$.
+
+**Generalization.** This array is defined at every index, with a zero last row at the
+terminal index. The source uses the square matrix at termination. -/
 noncomputable abbrev lanczosT (k : ℕ) : Matrix (Fin (k + 1)) (Fin k) ℝ :=
   Lanczos.tridiagExt (Matrix.toEuclideanLin A) b k
 
 /-- The $k \times k$ tridiagonal Lanczos matrix $T_k$ of [fong2012cg], which is `Lanczos.tridiag` of
-`Matrix.toEuclideanLin A` and $b$. -/
+`Matrix.toEuclideanLin A` and $b$.
+
+**Generalization.** The source singles out the square matrix at the terminal index $\ell$.
+The definition forms the square tridiagonal array at any index $k$. -/
 noncomputable abbrev lanczosTsq (k : ℕ) : Matrix (Fin k) (Fin k) ℝ :=
   Lanczos.tridiag (Matrix.toEuclideanLin A) b k
 
@@ -256,7 +280,11 @@ $x_0 = 0$ of the paper. -/
 
 /-- **Section 1** of [fong2012cg], Krylov coordinates. For every $k$, a vector $x \in \mathbb{R}^n$
 lies in $\mathcal{K}_k(A, b)$ if and only if $x = V_k y = \sum_{j=1}^{k} y_j v_j$ for some
-$y \in \mathbb{R}^k$. -/
+$y \in \mathbb{R}^k$.
+
+**Generalization.** The source uses Lanczos coordinates up to termination for a positive
+definite matrix. Here the Arnoldi coordinates also apply to nonsymmetric matrices and
+to indices beyond the grade, where the extra columns are zero. -/
 theorem mem_krylov_iff_exists_lanczos (k : ℕ) (x : Vec n) :
     x ∈ krylov A b k ↔ ∃ y : Fin k → ℝ, x = ∑ j, y j • lanczosVec A b j := by
   have hspan : krylov A b k =
@@ -291,8 +319,11 @@ symmetric and $b \in \mathbb{R}^n$. For every $k \in \mathbb{N}$, $$A V_k = V_{k
 \underline{T}_k,$$ that is, $A (V_k y) = V_{k+1} (\underline{T}_k y)$ for every
 $y \in \mathbb{R}^k$.
 
-The relation is stated for every $k$, also beyond the termination step $\ell$: there the extra
-Lanczos vectors are $0$, and both sides still agree. The matrix $V_k$ appears through the sum
+**Generalization.** The source assumes positive definiteness and discusses steps up to
+termination. Symmetry suffices for the tridiagonal relation. Extending the sequence by zero
+columns past $\ell$ makes the relation hold for every $k$.
+
+The matrix $V_k$ appears through the sum
 $\sum_j y_j v_j$, and $\underline{T}_k$ is `FongSaunders.lanczosT`. -/
 theorem lanczos_relation (hA : A.IsSymm) (k : ℕ) (y : Fin k → ℝ) :
     A ⬝ (∑ j, y j • lanczosVec A b j) =
@@ -306,6 +337,9 @@ let $\ell$ be the termination step of the Lanczos process. Then the Lanczos rela
 $$A V_\ell = V_\ell T_\ell,$$ that is, $A (V_\ell y) = V_\ell (T_\ell y)$ for every
 $y \in \mathbb{R}^\ell$.
 
+**Generalization.** The source assumes positive definiteness. Symmetry suffices for the
+tridiagonal compression and the Krylov space at the grade is invariant.
+
 The matrix $T_\ell$ is `FongSaunders.lanczosTsq` at the step `FongSaunders.lanczosTerm A b`. -/
 theorem lanczos_relation_term (hA : A.IsSymm) (y : Fin (lanczosTerm A b) → ℝ) :
     A ⬝ (∑ j, y j • lanczosVec A b j) =
@@ -318,7 +352,9 @@ theorem lanczos_relation_term (hA : A.IsSymm) (y : Fin (lanczosTerm A b) → ℝ
 $b \in \mathbb{R}^n$, the Lanczos vectors $v_1, \dots, v_\ell$ up to the termination step $\ell$
 are orthonormal.
 
-No symmetry of $A$ is needed, since the vectors come from the Gram–Schmidt process. -/
+**Generalization.** The source uses a symmetric positive definite matrix. Orthonormality
+through the grade also holds for general matrices, since the vectors come from the Arnoldi
+Gram–Schmidt process. -/
 theorem lanczosVec_orthonormal :
     Orthonormal ℝ fun j : Fin (lanczosTerm A b) => lanczosVec A b (j : ℕ) :=
   Arnoldi.orthonormal (Matrix.toEuclideanLin A) b
@@ -326,14 +362,21 @@ theorem lanczosVec_orthonormal :
 /-- **Section 1** of [fong2012cg], the Lanczos basis. For every $k \in \mathbb{N}$,
 $$\operatorname{span}\{v_1, \dots, v_k\} = \mathcal{K}_k(A, b).$$
 
+**Generalization.** The source uses Lanczos vectors for positive definite $A$ through
+termination. The spanning statement applies to Arnoldi vectors for general $A$, with
+zero columns beyond the grade.
+
 The vectors are `FongSaunders.lanczosVec A b j` for $j < k$. -/
 theorem span_lanczosVec (k : ℕ) :
     Submodule.span ℝ (lanczosVec A b '' Set.Iio k) = krylov A b k := by
   rw [krylov_eq]
   exact Arnoldi.span_vec (Matrix.toEuclideanLin A) b k
 
-/-- **Section 1** of [fong2012cg], termination. The Lanczos process for
-$A \in \mathbb{R}^{n \times n}$ and $b$ terminates at a step $\ell \le n$. -/
+/-- **Section 1** of [fong2012cg], termination. For $A \in \mathbb{R}^{n \times n}$ and
+$b \in \mathbb{R}^n$, the Krylov grade is $\ell \le n$.
+
+**Generalization.** The source uses positive definite $A$ and the Lanczos process.
+The dimension bound is independent of symmetry or positive definiteness. -/
 theorem lanczosTerm_le : lanczosTerm A b ≤ n := by
   have h := Krylov.grade_le_finrank (Matrix.toEuclideanLin A) b
   rwa [finrank_euclideanSpace_fin] at h
@@ -352,9 +395,10 @@ theorem existsUnique_solution {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (
 
 /-- **Section 1** of [fong2012cg], the exact solution. The vector $x^* = A^{-1} b$.
 
-The inverse is Mathlib's `Matrix.inv`, which is $0$ for a singular matrix. For positive definite
-$A$, `FongSaunders.mulVecE_xstar` shows $Ax^* = b$, and `FongSaunders.xstar_unique` shows that
-$x^*$ is the only solution. -/
+**Reading.** The source denotes the unique solution of its positive definite system by
+$x^*$. The total matrix inverse extends the notation by giving $x^*=0$ for singular $A$.
+For positive definite $A$, `FongSaunders.mulVecE_xstar` and
+`FongSaunders.xstar_unique` give the source characterization. -/
 noncomputable def xstar : Vec n := A⁻¹ ⬝ b
 
 variable {A b}

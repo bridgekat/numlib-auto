@@ -101,8 +101,15 @@ bounds on the entries), `Numlib.Analysis.InnerProductSpace.Energy` (the energy n
 
 ## Deviations from the source
 
+* **Definition 1.22 and Example 1.8** (reading). The definitions of positivity use the book's
+  quadratic forms. The companion theorem adds equivalent and related formulations. The real
+  positive definiteness in Example 1.8 is proved for all parameters, including $\alpha = -1$.
+* **Property 1.16** (generalization). The complex characterization adds the converse.
 * **Property 1.18(4)** (generalization). The source assumes $A$ symmetric. The equivalence holds
   without this hypothesis. See `QuarteroniSaccoSaleri.Chapter01.property_1_18_factor`.
+* **After Property 1.18 and Equation (1.28)** (reading). The combined entrywise result assumes
+  symmetric positive definiteness, although positivity on the diagonal holds without symmetry.
+  The uniqueness clause for the square root quantifies over symmetric positive definite roots.
 -/
 
 open Finset Matrix
@@ -157,7 +164,11 @@ The converse of the last statement fails, by Example 1.8. The operator is
 `Matrix.toEuclideanLin A` and coercivity is the backbone's `LinearMap.IsCoercive`, which in
 finite dimension is positivity of the form by `LinearMap.isCoercive_iff_forall_pos`. The order
 of $\mathbb{C}$ is Mathlib's `ComplexOrder`, and $A$ viewed as a complex matrix is
-`Matrix.complexify A`. -/
+`Matrix.complexify A`.
+
+**Reading.** The numbered definition gives the quadratic-form conditions directly. Their
+expressions using coercivity and the complex order, and the implication from complex to real
+positivity, are additional reformulations and consequences. -/
 theorem definition_1_22 (A : Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℂ) :
     (IsPositiveDefiniteReal A ↔ (toEuclideanLin A).IsCoercive) ∧
       (IsPositiveDefinite B ↔ ∀ x : Fin n → ℂ, x ≠ 0 → 0 < star x ⬝ᵥ (B *ᵥ x)) ∧
@@ -199,7 +210,11 @@ positive definite in $\mathbb{R}^n$ need not be symmetric, and need not be posit
 $\mathbb{C}^n$.
 
 The full value at $x = (1, i)$ is $(Ax, x) = 4 + (2\alpha + 2) i$. The components $x_1, x_2$ are
-`x 0` and `x 1`, and $A$ acts on complex vectors through `Matrix.complexify`. -/
+`x 0` and `x 1`, and $A$ acts on complex vectors through `Matrix.complexify`.
+
+**Generalization.** The book treats only $\alpha \ne -1$. The quadratic identity and real positive
+definiteness also hold at $\alpha = -1$. The failures of symmetry and complex positive
+definiteness retain the restriction. -/
 theorem example_1_8 (α : ℝ) :
     (∀ x : Fin 2 → ℝ,
         x ⬝ᵥ (example_1_8_matrix α *ᵥ x) = 2 * (x 0 ^ 2 + x 1 ^ 2 - x 0 * x 1)) ∧
@@ -293,7 +308,11 @@ is symmetric.
 The forward direction of the first clause is Mathlib's
 `LinearMap.isSymmetric_iff_inner_map_self_real` for the Euclidean operator, and the converse
 direction is `Matrix.IsHermitian.im_star_dotProduct_mulVec_self`. In the second clause, $B$ acts
-on complex vectors through `Matrix.complexify`. -/
+on complex vectors through `Matrix.complexify`.
+
+**Generalization.** The book gives the implication from a real-valued quadratic form to a
+Hermitian matrix. The complex clause adds the converse. In the real clause, as in the book,
+the form is tested on complex vectors. -/
 theorem property_1_16 (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin n) ℝ) :
     ((∀ x : Fin n → ℂ, (star x ⬝ᵥ (A *ᵥ x)).im = 0) ↔ A.IsHermitian) ∧
       ((∀ x : Fin n → ℂ, (star x ⬝ᵥ (complexify B *ᵥ x)).im = 0) → B.IsSymm) := by
@@ -397,7 +416,11 @@ so an entry of largest modulus lies on the diagonal. These are necessary conditi
 definiteness.
 
 The first part is Mathlib's `Matrix.PosDef.diag_pos`, and the second is the backbone's
-`Matrix.PosDef.norm_apply_le_max_re_diag`. -/
+`Matrix.PosDef.norm_apply_le_max_re_diag`.
+
+**Reading.** The source's positive-diagonal argument applies to every real positive definite
+matrix. The combined declaration assumes symmetric positive definiteness and gives a pointwise
+bound on the entries, which implies the claim about the entry of largest modulus. -/
 theorem posDef_diag_pos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     (∀ i, 0 < A i i) ∧ ∀ i j, |A i j| ≤ max (A i i) (A j j) :=
   ⟨fun _ => hA.diag_pos, fun i j => by simpa using hA.norm_apply_le_max_re_diag i j⟩
@@ -415,7 +438,11 @@ The matrix $A^{1/2}$ is Mathlib's `CFC.sqrt A` in the Loewner order, and its uni
 `CFC.sqrt_eq_iff`. The energy norm is the backbone's `energyNorm (toEuclideanLin A) x`, and the
 energy scalar product is `energyInner (toEuclideanLin A) x y`. The energy space is `WithEnergy`
 of `Numlib.Analysis.InnerProductSpace.Energy`, built from
-`Matrix.posDef_iff_isSymmetricCoercive`, and `WithEnergy.equiv` maps $x$ to its copy there. -/
+`Matrix.posDef_iff_isSymmetricCoercive`, and `WithEnergy.equiv` maps $x$ to its copy there.
+
+**Reading.** Uniqueness of the positive square root is stated using `Matrix.PosDef`, so the
+competing square roots in the equivalence are required to be symmetric. The energy norm and
+inner-product formulas use the same symmetric positive definite $A$ as the source. -/
 theorem equation_1_28 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     (∀ X : Matrix (Fin n) (Fin n) ℝ, X.PosDef ∧ X ^ 2 = A ↔ X = CFC.sqrt A) ∧
       (∀ x : EuclideanSpace ℝ (Fin n),

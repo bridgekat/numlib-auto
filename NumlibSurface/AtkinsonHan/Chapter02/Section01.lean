@@ -73,7 +73,22 @@ the estimate $\|Tv\| \le \gamma \|v\|$ is Proposition 2.2.3, in §2.2.
 * Example 2.1.3 is stated over an arbitrary field. This covers the real matrices of the book and the
   complex matrices of the remark after the example.
 
+## Deviations from the source
+
+* **Definition 2.1.1 and Example 2.1.2** (generalization). The three mapping properties,
+  the inverse of a bijection, and the identity example apply to arbitrary types.
+* **Example 2.1.3** (generalization). The rank criteria apply over any field.
+* **Definition 2.1.6, boundedness** (generalization). The boundedness criterion is for total
+  maps of seminormed additive groups. Its real bound may be increased to make it positive.
+* **Example 2.1.7** (reading). The formalization exhibits functions with bounded supremum norm
+  and arbitrarily large derivative norm as witnesses against boundedness.
+
 ## Not formalized
+
+* **The general inverse into the range after Definition 2.1.1.** The inverse statement gives
+  the case of a bijective map.
+* **The continuity criterion in Definition 2.1.6.** `ContinuousOn` handles continuity on a
+  specified domain. The surface definition covers boundedness.
 
 * **The bounded half of Example 2.1.7**, that $d/dx : C^1[0, 1] \to C[0, 1]$ is bounded for the norm
   (2.1.2). It is the backbone's `ContDiffMapIcc.derivCLM`, whose operator norm is at most $1$, and
@@ -93,7 +108,9 @@ variable {V W : Type*}
 /-- **Definition 2.1.1** of [han2009theoretical]. An operator $T : V \to W$ is **one-to-one**, or
 **injective**, if $v_1 \neq v_2$ implies $T v_1 \neq T v_2$ (2.1.1).
 
-The predicate is `Function.Injective` by `AtkinsonHan.Chapter02.definition_2_1_1_iff`. -/
+The predicate is `Function.Injective` by `AtkinsonHan.Chapter02.definition_2_1_1_iff`.
+
+**Generalization.** The criterion applies to total functions between arbitrary types. -/
 def definition_2_1_1 (T : V → W) : Prop :=
   ∀ v₁ v₂ : V, v₁ ≠ v₂ → T v₁ ≠ T v₂
 
@@ -106,7 +123,9 @@ theorem definition_2_1_1_iff (T : V → W) : definition_2_1_1 T ↔ Function.Inj
 $V$ onto $W$**, or is **surjective**, if its range is all of $W$: $R(T) = W$.
 
 The predicate is `Function.Surjective` by
-`AtkinsonHan.Chapter02.definition_2_1_1_surjective_iff`. -/
+`AtkinsonHan.Chapter02.definition_2_1_1_surjective_iff`.
+
+**Generalization.** The criterion applies to total functions between arbitrary types. -/
 def definition_2_1_1_surjective (T : V → W) : Prop :=
   Set.range T = Set.univ
 
@@ -119,7 +138,9 @@ theorem definition_2_1_1_surjective_iff (T : V → W) :
 /-- **Definition 2.1.1** of [han2009theoretical], third clause. An operator $T : V \to W$ that is
 both injective and surjective is a **bijection** from $V$ to $W$.
 
-The predicate is `Function.Bijective` by `AtkinsonHan.Chapter02.definition_2_1_1_bijection_iff`. -/
+The predicate is `Function.Bijective` by `AtkinsonHan.Chapter02.definition_2_1_1_bijection_iff`.
+
+**Generalization.** The criterion applies to total functions between arbitrary types. -/
 def definition_2_1_1_bijection (T : V → W) : Prop :=
   definition_2_1_1 T ∧ definition_2_1_1_surjective T
 
@@ -133,7 +154,8 @@ theorem definition_2_1_1_bijection_iff (T : V → W) :
 /-- The inverse of a bijection, as the book defines it after Definition 2.1.1 of
 [han2009theoretical]. If $T : V \to W$ is a bijection, then exactly one map $T^{-1} : W \to V$
 satisfies $$v = T^{-1} w \iff w = T v \qquad \text{for all } v \in V, \ w \in W.$$
--/
+
+**Generalization.** The inverse characterization applies to bijections between arbitrary types. -/
 theorem definition_2_1_1_inverse {T : V → W} (h : definition_2_1_1_bijection T) :
     ∃! S : W → V, ∀ (v : V) (w : W), v = S w ↔ w = T v := by
   obtain ⟨hinj, hsurj⟩ := (definition_2_1_1_bijection_iff T).mp h
@@ -148,7 +170,9 @@ theorem definition_2_1_1_inverse {T : V → W} (h : definition_2_1_1_bijection T
 bijection from $V$ to $V$, and its inverse is again the identity: every $S : V \to V$ with
 $v = S w \iff w = v$ for all $v, w \in V$ is the identity.
 
-The book takes $V$ to be a linear space; the statement holds for any set. -/
+The book takes $V$ to be a linear space; the statement holds for any set.
+
+**Generalization.** The identity and inverse properties do not need a linear structure. -/
 theorem example_2_1_2 (V : Type*) :
     definition_2_1_1_bijection (id : V → V) ∧
       ∀ S : V → V, (∀ (v w : V), v = S w ↔ w = id v) → S = id :=
@@ -163,7 +187,11 @@ The book states the example over $\mathbb{R}$ and remarks that the same holds ov
 both are cases of the statement over an arbitrary field. The rows and columns are indexed by
 finite types `m` and `n`, the space of column vectors is `n → 𝕜`, and $L$ is `A.mulVec`. The rank
 is `Matrix.rank`, the dimension of the range of $v \mapsto Av$, which is the book's maximal
-number of linearly independent columns. -/
+number of linearly independent columns.
+
+**Generalization.** Both rank criteria are generalized from real and complex matrices to matrices
+over any field.
+-/
 theorem example_2_1_3 {𝕜 : Type*} [Field 𝕜] {m n : Type*} [Fintype m] [Fintype n]
     (A : Matrix m n 𝕜) :
     (definition_2_1_1 A.mulVec ↔ A.rank = Fintype.card n) ∧
@@ -203,13 +231,18 @@ for every $r > 0$ there is an $R$ with $\|T v\| \le R$ whenever $\|v\| \le r$.
 This is not the condition that the operator norm of $T$ be finite. The two conditions agree for
 linear operators (Theorem 2.2.4) and differ in general. The equivalence with "bounded sets have
 bounded images" is `AtkinsonHan.Chapter02.isBoundedOperator_iff_image_bounded`. The spaces are
-seminormed groups, and no linear structure is used. -/
+seminormed groups, and no linear structure is used.
+
+**Reading.** The function is defined on the whole source type. The bound may be increased to
+obtain a strictly positive bound as in the source. -/
 def IsBoundedOperator (T : V → W) : Prop :=
   ∀ r > 0, ∃ R : ℝ, ∀ v : V, ‖v‖ ≤ r → ‖T v‖ ≤ R
 
 /-- An operator $T : V \to W$ between normed spaces is bounded in the sense of Definition 2.1.6 of
 [han2009theoretical] if and only if, for every bounded set $B \subseteq V$, the image $T(B)$ is
-bounded. These are the two readings of the definition that the book gives. -/
+bounded. These are the two readings of the definition that the book gives.
+
+**Generalization.** The equivalence applies to total maps between seminormed additive groups. -/
 theorem isBoundedOperator_iff_image_bounded (T : V → W) :
     IsBoundedOperator T ↔ ∀ B : Set V, IsBounded B → IsBounded (T '' B) := by
   constructor
@@ -231,9 +264,9 @@ such that $|v(x)| \le 1$ for all $x \in [0, 1]$ and $|v'(x)| > \gamma$ for some 
 Hence no $\gamma$ satisfies $\|v'\|_\infty \le \gamma \|v\|_\infty$ for all continuously
 differentiable $v$.
 
-The book's witnesses are the functions $v_n(x) = \sin(nx)$, with $\|v_n\|_\infty \le 1$ and
-$v_n'(0) = n$. The statement is the negation in witness form and does not use the space
-$C^1[0, 1]$. The bounded half of the example, that $d/dx$ is bounded for the norm
+**Reading.** The book states discontinuity in the supremum norm. Lean gives unboundedness in
+witness form with functions $v_n(x)=\sin(nx)$, for which $\|v_n\|_\infty \le 1$ and $v_n'(0)=n$.
+The bounded half of the example, that $d/dx$ is bounded for the norm
 $\|v\|_\infty + \|v'\|_\infty$, is the backbone's `ContDiffMapIcc.derivCLM`. -/
 theorem example_2_1_7 (γ : ℝ) :
     ∃ v v' : ℝ → ℝ, (∀ x, HasDerivAt v (v' x) x) ∧ Continuous v' ∧

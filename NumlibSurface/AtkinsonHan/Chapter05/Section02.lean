@@ -101,6 +101,25 @@ The proofs specialize the backbone modules `Numlib.Stationary.Basic`, `Numlib.St
   `ODE_solution_unique_of_mem_Icc` needs. The backbone module `Numlib.Analysis.ODE.PicardLindelof`
   proves this containment.
 
+## Deviations from the source
+
+* **Theorem 5.2.1** (scope). The closed interval may be a singleton. The derivative criterion
+  uses derivatives within the interval and a supplied bound.
+* **Section 5.2.2, matrix norms** (scope). The sufficient norm criterion, spectral radius bound
+  and Gelfand limit are stated for the operator norm of the vector maximum norm. The source
+  uses arbitrary induced norms for the first two and arbitrary matrix norms for the limit.
+* **Equations (5.2.7)–(5.2.8)** (scope). The formal hypothesis uses the reciprocal of
+  $|\lambda|$. At $\lambda = 0$ it holds in Lean and the associated fixed-point map is zero.
+  Equivalence to the displayed integral equation requires $\lambda \ne 0$.
+* **Theorem 5.2.3** (scope). Lean takes the continuous kernel and its Lipschitz bound on the
+  full square in $(t,s)$. The source needs them only on $s \le t$. A triangle kernel extends
+  to the square by evaluating it at $(t,\min(s,t))$.
+* **Theorem 5.2.4** (scope). The existence and uniqueness statement takes a positive bound
+  $M$ for the norm of $f$. The source writes a maximum, which need not be attained on a
+  Banach-space ball. The separate Picard convergence theorem treats a scalar equation on an
+  interval to the right of $t_0$ and uses the Bielecki constant $L/\beta$. The source gives
+  convergence for the two-sided Banach-space problem with $1 - e^{-La_0}$.
+
 ## Not formalized
 
 * The remark after Theorem 5.2.3: under its hypotheses on $[a, \infty)$, the Volterra equation has a
@@ -136,6 +155,8 @@ on $[a, b]$ with constant $\alpha$. Then:
    and for every $n \ge 0$,
 $$|u_n - u| \le \frac{\alpha^n}{1 - \alpha} |u_0 - u_1|, \qquad |u_{n+1} - u| \le
   \frac{\alpha}{1 - \alpha} |u_n - u_{n+1}|, \qquad |u_{n+1} - u| \le \alpha |u_n - u|.$$
+
+**Reading.** Allows degenerate interval with identical endpoints.
 -/
 theorem theorem_5_2_1 (hab : a ≤ b) (hT : MapsTo T (Icc a b) (Icc a b))
     (hα : ContractiveOn T (Icc a b) α) :
@@ -152,7 +173,10 @@ $x \in [a, b]$, with $|T'(x)| \le \alpha$ there. Then $T$ is contractive on $[a,
 constant $\alpha$.
 
 This is the scalar case of the backbone theorem `lipschitzOnWith_of_hasFDerivWithinAt`, that is,
-of Mathlib's `Convex.lipschitzOnWith_of_nnnorm_hasDerivWithin_le`. -/
+of Mathlib's `Convex.lipschitzOnWith_of_nnnorm_hasDerivWithin_le`.
+
+**Reading.** Uses within-interval derivatives and any supplied suitable uniform bound.
+-/
 theorem theorem_5_2_1_deriv {T' : ℝ → ℝ} (hα0 : 0 ≤ α) (hα1 : α < 1)
     (hT : ∀ x ∈ Icc a b, HasDerivWithinAt T (T' x) (Icc a b) x)
     (hbound : ∀ x ∈ Icc a b, |T' x| ≤ α) : ContractiveOn T (Icc a b) α :=
@@ -167,7 +191,11 @@ variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
 /-- A square matrix $G$ as a continuous linear map $x \mapsto Gx$ of `ι → ℝ` to itself. The space
 `ι → ℝ` has the maximum norm, and the backbone iteration `Stationary.step` acts in this normed
-space. -/
+space.
+
+**Reading.** Represented operator uses the maximum norm selected from the source's arbitrary vector
+norms.
+-/
 noncomputable def mulVecCLM (G : Matrix ι ι ℝ) : (ι → ℝ) →L[ℝ] (ι → ℝ) :=
   LinearMap.toContinuousLinearMap (Matrix.mulVecLin G)
 
@@ -290,7 +318,10 @@ theorem equation_5_2_5 {x b : ι → ℝ} (hx : A *ᵥ x = b) (x₀ : ι → ℝ
 iteration matrix satisfy $\|N^{-1} M\| < 1$ in the operator norm of the maximum norm. Let
 $Ax = b$. Then for every $x_0$ the iterates of $N x_n = M x_{n-1} + b$ converge to $x$.
 
-The proof specializes the backbone theorem `Stationary.norm_iterate_sub_le`. -/
+The proof specializes the backbone theorem `Stationary.norm_iterate_sub_le`.
+
+**Reading.** Specializes the sufficient criterion to the induced infinity norm.
+-/
 theorem tendsto_of_opNorm_lt_one (hG : ‖mulVecCLM s.iterMatrix‖ < 1) {x b : ι → ℝ}
     (hx : A *ᵥ x = b) (x₀ : ι → ℝ) :
     Tendsto (fun k => (s.iterStep b)^[k] x₀) atTop (𝓝 x) := by
@@ -353,7 +384,10 @@ $r_\sigma(G) < 1$.
 
 The inequality $r_\sigma(G) \le \|G\|$ itself is
 `AtkinsonHan.Chapter05.complexSpectralRadius_le_opNorm`. This proof uses
-`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead, which needs no matrix norm. -/
+`Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one` instead, which needs no matrix norm.
+
+**Reading.** Uses the induced infinity norm for the strict unit criterion.
+-/
 theorem complexSpectralRadius_lt_one_of_opNorm_lt_one {G : Matrix ι ι ℝ}
     (hG : ‖mulVecCLM G‖ < 1) : Matrix.complexSpectralRadius G < 1 := by
   classical
@@ -381,7 +415,10 @@ inequality for every submultiplicative, absolutely homogeneous, positive definit
 (`Matrix.complexSpectralRadius_le_of_norm`); the case used here is
 `Matrix.complexSpectralRadius_le_linfty_opNNNorm`. The spectral radius has values in
 $[0, \infty]$ and is finite for a matrix over a finite index type
-(`Matrix.complexSpectralRadius_ne_top`), so its conversion to a real number loses nothing. -/
+(`Matrix.complexSpectralRadius_ne_top`), so its conversion to a real number loses nothing.
+
+**Reading.** Compares the spectral radius to only the induced infinity norm.
+-/
 theorem complexSpectralRadius_le_opNorm (G : Matrix ι ι ℝ) :
     (Matrix.complexSpectralRadius G).toReal ≤ ‖mulVecCLM G‖ := by
   classical
@@ -433,7 +470,10 @@ asymptotic rate of convergence of the iteration.
 The backbone theorem `Matrix.tendsto_pow_rpow_linfty_opNorm` is the same limit for the norm on
 `Matrix ι ι ℝ`. The book states the formula for any matrix norm, not necessarily induced by a
 vector norm. This is the same limit, because two norms on a finite-dimensional space differ at
-most by a factor $C$, and $C^{1/k} \to 1$. -/
+most by a factor $C$, and $C^{1/k} \to 1$.
+
+**Reading.** Gelfand limit uses the induced infinity norm.
+-/
 theorem tendsto_pow_rpow_complexSpectralRadius (G : Matrix ι ι ℝ) :
     Tendsto (fun k : ℕ => ‖mulVecCLM (G ^ k)‖ ^ (1 / k : ℝ)) atTop
       (𝓝 (Matrix.complexSpectralRadius G).toReal) := by
@@ -593,7 +633,10 @@ $$\|T^n u_0 - u\|_\infty \le \frac{\alpha^n}{1 - \alpha} \|u_0 - T u_0\|_\infty 
 
 The number $\alpha$ is the contractivity constant of $T$, by the norm formula (2.2.8) for the
 integral operator. The maximum is the supremum `⨆ x`. In Lean $1/0 = 0$, so for $\lambda = 0$
-the map $T$ is $0$ and the statement is trivial. -/
+the map $T$ is $0$ and the statement is trivial.
+
+**Reading.** Admits zero lambda with totalized inverse and includes the a priori estimate.
+-/
 theorem equation_5_2_7 (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) (f : C(Icc a b, ℝ))
     {lam : ℝ} (hlam : |lam|⁻¹ * (⨆ x, ∫ y in a..b, |k (x, projIcc a b hab y)|) < 1)
     (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
@@ -675,7 +718,10 @@ $u_0 \in C[a, b]$ the iteration (5.2.16) $u_n = T u_{n-1}$ converges to $u$ in t
 
 No smallness condition on $M$ is needed. The factorial estimate
 `IntegralOperator.norm_iterate_volterra_sub_le` on the iterated kernels makes some power of $T$
-a contraction, and Exercise 5.1.2 applies. -/
+a contraction, and Exercise 5.1.2 applies.
+
+**Reading.** Uses a kernel supplied on the whole square instead of on the integration triangle.
+-/
 theorem theorem_5_2_3 (hab : a ≤ b) {k : C(Icc a b × Icc a b × ℝ, ℝ)} {M : ℝ≥0}
     (hk : ∀ t s : Icc a b, LipschitzWith M fun z => k (t, s, z)) (f : C(Icc a b, ℝ))
     (T : C(Icc a b, ℝ) → C(Icc a b, ℝ))
@@ -721,7 +767,11 @@ constant $L/\beta$. This norm is equivalent to the maximum norm
 convergence on $[t_0, t_1]$. The space with the norm $\|\cdot\|_\beta$ is
 `IntegralOperator.Bielecki t₀ t₁ β`. The book states the theorem in a Banach space, on an
 interval on both sides of $t_0$, and for a right-hand side that is Lipschitz only on a box; that
-form is `AtkinsonHan.Chapter05.theorem_5_2_4_ode`. -/
+form is `AtkinsonHan.Chapter05.theorem_5_2_4_ode`.
+
+**Reading.** Scalar one-sided weighted contraction with globally Lipschitz right-hand side and
+different constant.
+-/
 theorem theorem_5_2_4 {t₀ t₁ : ℝ} (ht : t₀ ≤ t₁) {g : C(Icc t₀ t₁ × ℝ, ℝ)} {L : ℝ≥0}
     (hg : ∀ s : Icc t₀ t₁, LipschitzWith L fun w => g (s, w)) (z : ℝ) {β : ℝ} (hβ : (L : ℝ) < β)
     (T : Bielecki t₀ t₁ β → Bielecki t₀ t₁ β)
@@ -791,7 +841,11 @@ The four constants of the book are the four constants of Mathlib's `IsPicardLind
 its ball radius, $M$ its bound on the field, $L$ its Lipschitz constant, and $a_0$ the largest
 half-length that its condition `mul_max_le` permits. The proof is
 `IsPicardLindelof.exists_unique_mem_closedBall_hasDerivWithinAt`. The convergence of Picard's
-iteration is `AtkinsonHan.Chapter05.theorem_5_2_4`. -/
+iteration is `AtkinsonHan.Chapter05.theorem_5_2_4`.
+
+**Reading.** Uses a positive upper bound instead of an attained maximum and covers existence and
+uniqueness only.
+-/
 theorem theorem_5_2_4_ode {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
     {f : ℝ → E → E} {t₀ a b M a₀ : ℝ} {L : ℝ≥0} {z : E} (ha : 0 < a) (hb : 0 < b) (hM : 0 < M)
     (hcont : ContinuousOn (fun p : ℝ × E => f p.1 p.2)

@@ -48,6 +48,9 @@ multiplier space $\mathbb{C}^m$. The proofs specialize results in
 
 ## Deviations from the source
 
+* **Lemma 10.2(i)–(ii)** (generalization). The Rayleigh formula and zero-eigenvalue
+  characterization hold for nonsymmetric $E$ as well. See `BenziGolubLiesen.lemma_10_2_i`
+  and `BenziGolubLiesen.lemma_10_2_ii`.
 * **Lemma 10.2(ii)** (correction). The source requires $y \neq 0$ for the eigenvalue $0$. The
   condition is $Ex = 0$ alone, with $y$ arbitrary as long as $(x, y) \neq 0$. See
   `BenziGolubLiesen.lemma_10_2_ii`.
@@ -85,6 +88,9 @@ $E \in \mathbb{R}^{n \times n}$. If $(\gamma, x, y)$ is an eigenpair of the cons
 $$\gamma = \frac{x^H E x}{x^H (I + B^T C^{-1} B) x} \quad \text{and} \quad \gamma \neq 0.$$
 The formula follows by eliminating the multiplier $y$.
 
+**Generalization.** The source assumes $E=E^T$. The formula only uses the block
+eigenvalue equations, so $E$ need not be symmetric.
+
 The eigenpair is `BenziGolubLiesen.IsConstraintPencilEigenvector`. The proof specializes
 `Matrix.HasPencilEigenvector.primalBlock_eq_rayleigh`. -/
 theorem lemma_10_2_i [DecidableEq m] (hB : B.rank = Fintype.card m) (hC : C.PosDef)
@@ -107,6 +113,9 @@ with the kernels taken over $\mathbb{C}$.
 arbitrary: only $(x, y) \neq 0$ is needed, and $y = 0$ is possible when $x \neq 0$. For
 $B = C = 1$ and $E = 0$, the triple $(0, 1, 0)$ is an eigenpair; see
 `BenziGolubLiesen.lemma_10_2_zero_multiplier_example`.
+
+**Generalization.** The source assumes $E=E^T$. The zero-eigenvalue characterization
+and kernel dimension also hold for nonsymmetric $E$.
 
 The eigenpair is `BenziGolubLiesen.IsConstraintPencilEigenvector`, and $\ker E$ is the kernel of
 `Matrix.complexify E`. The proof specializes

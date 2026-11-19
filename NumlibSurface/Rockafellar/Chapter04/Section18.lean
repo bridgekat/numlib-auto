@@ -100,14 +100,40 @@ to closed convex sets with a non-trivial lineality space, which the source state
 
 ## Deviations from the source
 
-* **Theorem 18.1** (generalization). The source assumes $D$ convex; this is not needed. See
-  `Rockafellar.theorem_18_1`.
+* **Section 18, faces and extreme points** (generalization). The face definition and
+  the extreme-point characterizations also admit nonconvex ambient sets. The face intersection
+  and transitivity statements and the intermediate-set property have the same extension.
+* **Theorem 18.1 and Corollaries 18.1.2 and 18.1.3** (generalization). The face containment,
+  equality and relative-boundary results apply without convexity of the ambient set. The
+  containment result also admits nonconvex $D$.
+* **Theorem 18.2**, covering and disjointness (generalization). The union also applies to
+  $C = \emptyset$, and disjointness of the relative interiors requires only that the faces
+  be distinct, even for a nonconvex ambient set.
 * **Theorem 18.3** (generalization). The source assumes the face $C'$ non-empty; this is not needed.
   See `Rockafellar.theorem_18_3`.
+* **Section 18, orthogonal reduction of faces** (generalization). The formulas for faces
+  and their orthogonal cross-sections apply to arbitrary ambient sets. See
+  `Rockafellar.eq_add_inter_orthogonal_of_isFace` and `Rockafellar.facesEquivFacesInterOrthogonal`.
+* **Section 18, extreme and exposed rays** (generalization). The ray predicates are defined
+  for arbitrary sets. The equivalence with directions uses closure under nonnegative scaling
+  without requiring convexity. This represents cones that contain the origin.
 * **Corollary 18.5.2** (generalization). The source assumes that the cone contains more than the
   origin; this is not needed. See `Rockafellar.corollary_18_5_2`.
+* **Section 18, exposed faces and points** (reading). The empty set is always exposed.
+  For an exposed point, the maximizer condition also allows the zero functional on a
+  singleton, including in dimension zero.
 * **Corollary 18.7.1** (generalization). The source assumes that the cone contains more than the
   origin; this is not needed. See `Rockafellar.corollary_18_7_1`.
+* **Section 18, tangency** (reading). `Rockafellar.IsTangentHyperplaneAt` requires uniqueness
+  of the supporting half-space, which is equivalent to uniqueness of the hyperplane
+  for the full-dimensional sets in Theorem 18.8.
+
+## Not formalized
+
+* **Corollary 18.1.3, dimension inequality for the empty proper face.**
+  `Rockafellar.corollary_18_1_3_dim` assumes the face is nonempty.
+* **Section 18, the meet of an empty family of faces.** `Rockafellar.faces_isGLB` uses the
+  ambient intersection for a nonempty family. The relative meet of the empty family is $C$.
 -/
 
 open Set
@@ -126,7 +152,10 @@ variable {n : ℕ} {C C' C₁ C₂ D : Set (Rn n)}
 every closed segment in $C$ with a relative interior point in $C'$ has both endpoints in $C'$.
 
 Convexity of $C'$ is a real requirement: $\{0, 1\}$ satisfies the segment condition in $[0, 1]$
-but is not a face of it. -/
+but is not a face of it.
+
+**Generalization.** The book defines faces of convex sets. The Lean condition applies to
+arbitrary ambient sets. -/
 theorem isFace_iff : IsFace C C' ↔ Convex ℝ C' ∧ C' ⊆ C ∧
     ∀ x ∈ C, ∀ y ∈ C, ∀ z ∈ C', z ∈ openSegment ℝ x y → x ∈ C' ∧ y ∈ C' :=
   ⟨fun h => ⟨h.convex, h.subset, fun _ hx _ hy _ hz hseg =>
@@ -137,25 +166,36 @@ theorem isFace_iff : IsFace C C' ↔ Convex ℝ C' ∧ C' ⊆ C ∧
 /-- A convex set is a face of itself. -/
 theorem isFace_self (hC : Convex ℝ C) : IsFace C C := Convex.isFace_self hC
 
-/-- The empty set is a face of every set. -/
+/-- The empty set is a face of every set.
+
+**Generalization.** The book states this for convex ambient sets. -/
 theorem isFace_empty : IsFace C (∅ : Set (Rn n)) := IsFace.empty
 
-/-- A face of a face of $C$ is a face of $C$. -/
+/-- A face of a face of $C$ is a face of $C$.
+
+**Generalization.** The ambient set $C$ may be nonconvex. -/
 theorem isFace_trans (h₁ : IsFace C C') (h₂ : IsFace C' C₁) : IsFace C C₁ := h₁.trans h₂
 
 /-- **Section 18** of [rockafellar1970convex] (page 163). If $C'$ is a face of $C$ and
-$C' \subseteq D \subseteq C$, then $C'$ is a face of $D$. -/
+$C' \subseteq D \subseteq C$, then $C'$ is a face of $D$.
+
+**Generalization.** The book assumes $C$ and $D$ convex. The Lean statement admits
+arbitrary ambient and intermediate sets. -/
 theorem isFace_mono (h : IsFace C C') (hDC : D ⊆ C) (hC'D : C' ⊆ D) : IsFace D C' :=
   h.mono hDC hC'D
 
 /-- **Section 18** of [rockafellar1970convex] (page 162). A point $x$ is an **extreme point** of $C$
-if and only if $\{x\}$ is a face of $C$: the extreme points are the zero-dimensional faces. -/
+if and only if $\{x\}$ is a face of $C$: the extreme points are the zero-dimensional faces.
+
+**Generalization.** The characterization holds for nonconvex $C$ as well. -/
 theorem isFace_singleton_iff {x : Rn n} : IsFace C {x} ↔ x ∈ C.extremePoints ℝ :=
   isFace_singleton
 
 /-- **Section 18** of [rockafellar1970convex] (page 162), definition of an extreme point. A point
 $x$ is an extreme point of $C \subseteq \mathbb{R}^n$ if and only if $x \in C$ and, whenever
-$x = (1 - \lambda) y + \lambda z$ with $y, z \in C$ and $0 < \lambda < 1$, then $y = z = x$. -/
+$x = (1 - \lambda) y + \lambda z$ with $y, z \in C$ and $0 < \lambda < 1$, then $y = z = x$.
+
+**Generalization.** The condition also defines extreme points of nonconvex sets. -/
 theorem mem_extremePoints_iff {x : Rn n} :
     x ∈ C.extremePoints ℝ ↔ x ∈ C ∧ ∀ y ∈ C, ∀ z ∈ C, ∀ l : ℝ, 0 < l → l < 1 →
       x = (1 - l) • y + l • z → y = x ∧ z = x := by
@@ -168,7 +208,10 @@ theorem mem_extremePoints_iff {x : Rn n} :
 /-! ### The lattice of faces (page 164) -/
 
 /-- **Section 18** of [rockafellar1970convex] (page 164). The intersection of a non-empty collection
-of faces of $C$ is a face of $C$, and it is the greatest lower bound of the collection. -/
+of faces of $C$ is a face of $C$, and it is the greatest lower bound of the collection.
+
+**Generalization.** The nonempty-family assertion also applies when the ambient set is
+nonconvex. The empty family in the book's face lattice has relative meet $C$. -/
 theorem faces_isGLB {F : Set (Set (Rn n))} (hF : F.Nonempty) (h : ∀ B ∈ F, IsFace C B) :
     IsFace C (⋂₀ F) ∧ IsGLB F (⋂₀ F) :=
   ⟨isFace_sInter hF h,
@@ -191,8 +234,8 @@ theorem faces_isLUB (hC : Convex ℝ C) (F : Set (Set (Rn n))) (h : ∀ B ∈ F,
 and let $D \subseteq C$ be a set such that $\operatorname{ri} D$ meets $C'$. Then
 $D \subseteq C'$.
 
-**Generalization.** The source also assumes $D$ convex. The proof uses only the prolongation
-property of relative interior points from §6, which concerns $\operatorname{ri} D$ alone. -/
+**Generalization.** The source assumes both $C$ and $D$ convex. The Lean result uses the face
+property and the prolongation property of $\operatorname{ri} D$. -/
 theorem theorem_18_1 (hface : IsFace C C') (hDC : D ⊆ C) (h : (ri D ∩ C').Nonempty) : D ⊆ C' :=
   hface.subset_of_relint_inter_nonempty hDC h
 
@@ -208,20 +251,29 @@ theorem corollary_18_1_1_isClosed (hC : Convex ℝ C) (hCcl : IsClosed C) (hface
   hface.isClosed hC hCcl
 
 /-- **Corollary 18.1.2** of [rockafellar1970convex]. If $C_1$ and $C_2$ are faces of $C$ and
-$\operatorname{ri} C_1 \cap \operatorname{ri} C_2 \neq \emptyset$, then $C_1 = C_2$. -/
+$\operatorname{ri} C_1 \cap \operatorname{ri} C_2 \neq \emptyset$, then $C_1 = C_2$.
+
+**Generalization.** The ambient set may be nonconvex. -/
 theorem corollary_18_1_2 (h₁ : IsFace C C₁) (h₂ : IsFace C C₂) (h : (ri C₁ ∩ ri C₂).Nonempty) :
     C₁ = C₂ :=
   h₁.eq_of_relint_inter_nonempty h₂ h
 
 /-- **Corollary 18.1.3** of [rockafellar1970convex]. If $C'$ is a face of $C$ and $C' \neq C$, then
 $C'$ is contained in the relative boundary $\operatorname{cl} C \setminus \operatorname{ri} C$
-of $C$. -/
+of $C$.
+
+**Generalization.** The ambient set may be nonconvex. -/
 theorem corollary_18_1_3 (hface : IsFace C C') (hne : C' ≠ C) : C' ⊆ relbd C := by
   rw [relbd_eq_intrinsicFrontier]
   exact hface.subset_intrinsicFrontier hne
 
 /-- **Corollary 18.1.3** of [rockafellar1970convex], dimension. Let $C$ be convex, and let $C'$ be a
-non-empty face of $C$ with $C' \neq C$. Then $\dim C' < \dim C$. -/
+non-empty face of $C$ with $C' \neq C$. Then $\dim C' < \dim C$.
+
+The book also permits the empty proper face, whose dimension is $-1$.
+
+**Reading.** Omits the empty proper face, whose dimension is minus one.
+-/
 theorem corollary_18_1_3_dim (hC : Convex ℝ C) (hface : IsFace C C') (hne' : C'.Nonempty)
     (hne : C' ≠ C) : dim C' < dim C :=
   corollary_6_3_3 hface.convex hC (hne'.mono hface.subset) (corollary_18_1_3 hface hne)
@@ -231,13 +283,18 @@ theorem corollary_18_1_3_dim (hC : Convex ℝ C) (hface : IsFace C C') (hne' : C
 /-- **Theorem 18.2** of [rockafellar1970convex], covering. Let $C$ be convex. Then
 $$C = \bigcup \{\operatorname{ri} C' \mid C' \text{ a face of } C\}.$$
 
-The empty face contributes nothing, since $\operatorname{ri} \emptyset = \emptyset$. -/
+**Generalization.** The book assumes $C$ nonempty and indexes the union by nonempty faces.
+Including the empty face contributes nothing, and the identity also holds for $C = \emptyset$.
+-/
 theorem theorem_18_2_union (hC : Convex ℝ C) : C = ⋃ C' ∈ {B : Set (Rn n) | IsFace C B}, ri C' :=
   eq_iUnion_relint_isFace hC
 
 /-- **Theorem 18.2** of [rockafellar1970convex], disjointness. If $C_1$ and $C_2$ are distinct faces
 of $C$, then $\operatorname{ri} C_1$ and $\operatorname{ri} C_2$ are disjoint. With
-`Rockafellar.theorem_18_2_union`, the relative interiors of the faces partition $C$. -/
+`Rockafellar.theorem_18_2_union`, the relative interiors of the faces partition $C$.
+
+**Generalization.** Disjointness also holds for distinct faces of a nonconvex set, and
+the empty face has empty relative interior. -/
 theorem theorem_18_2_disjoint (h₁ : IsFace C C₁) (h₂ : IsFace C C₂) (hne : C₁ ≠ C₂) :
     Disjoint (ri C₁) (ri C₂) :=
   h₁.relint_pairwise_disjoint h₂ hne
@@ -362,8 +419,11 @@ theorem theorem_18_5_lineality (hC : Convex ℝ C) (hCcl : IsClosed C) :
   exact eq_add_inter_of_isCompl hcompl
 
 /-- **Section 18** of [rockafellar1970convex] (page 166). Let $C'$ be a face of $C$ and let $L$ be
-the lineality space of $C$. Then $C' = (C' \cap L^\perp) + L$: a face contains the lineality of
-the set of which it is a face. -/
+the lineality space of $C$. Then $C' = (C' \cap L^\perp) + L$: a face is invariant under
+translation by $L$.
+
+**Generalization.** The book assumes $C$ convex. This decomposition applies to faces
+of arbitrary sets. -/
 theorem eq_add_inter_orthogonal_of_isFace (h : IsFace C C') :
     C' = (linealitySubmodule C : Set (Rn n)) +
       (C' ∩ ((linealitySubmodule C)ᗮ : Set (Rn n))) :=
@@ -374,9 +434,8 @@ theorem eq_add_inter_orthogonal_of_isFace (h : IsFace C C') :
 $C_0 = C \cap L^\perp$. The faces $C'$ of $C$ correspond one-to-one to the faces $C_0'$ of
 $C_0$, by $C_0' = C' \cap L^\perp$ and $C' = L + C_0'$.
 
-The source says that the correspondence is evident. It needs no hypothesis on $C$: it uses only
-that $L^\perp$ is a complement of $L$. The equivalence is `ConvexAnalysis.isFaceEquivInter` for
-$N = L$ and $M = L^\perp$. -/
+**Generalization.** The book states the correspondence for convex $C$. The Lean correspondence
+applies to arbitrary $C$ by using $L^\perp$ as a complement of $L$. -/
 noncomputable def facesEquivFacesInterOrthogonal (A : Set (Rn n)) :
     {C' : Set (Rn n) // IsFace A C'} ≃
       {C₀ : Set (Rn n) // IsFace (A ∩ ((linealitySubmodule A)ᗮ : Set (Rn n))) C₀} :=
@@ -402,19 +461,25 @@ candidate, but an extreme ray: a face that is a half-line from the origin.
 -/
 
 /-- **Section 18** of [rockafellar1970convex] (page 162), definition of an extreme ray. A vector
-$y \in \mathbb{R}^n$ generates an **extreme ray** of a convex cone $K$ if $y \neq 0$ and the
-half-line $\{\lambda y \mid \lambda \ge 0\}$ is a face of $K$. -/
+$y \in \mathbb{R}^n$ generates an **extreme ray** of $K$ if $y \neq 0$ and the
+half-line $\{\lambda y \mid \lambda \ge 0\}$ is a face of $K$.
+
+**Generalization.** The book defines this for convex cones. The predicate admits arbitrary $K$.
+-/
 def IsExtremeRay (K : Set (Rn n)) (y : Rn n) : Prop := y ≠ 0 ∧ IsFace K (halfLine 0 y)
 
 /-- **Section 18** of [rockafellar1970convex] (page 162), definition of an exposed ray. A vector
-$y \in \mathbb{R}^n$ generates an **exposed ray** of a convex cone $K$ if $y \neq 0$ and the
-half-line $\{\lambda y \mid \lambda \ge 0\}$ is an exposed face of $K$. -/
+$y \in \mathbb{R}^n$ generates an **exposed ray** of $K$ if $y \neq 0$ and the
+half-line $\{\lambda y \mid \lambda \ge 0\}$ is an exposed face of $K$.
+
+**Generalization.** The book defines this for convex cones. The predicate admits arbitrary $K$.
+-/
 def IsExposedRay (K : Set (Rn n)) (y : Rn n) : Prop := y ≠ 0 ∧ IsExposed ℝ K (halfLine 0 y)
 
 /-- Let $K \subseteq \mathbb{R}^n$ be non-empty and closed under multiplication by non-negative
 scalars, and let $y \neq 0$. If the half-line $\{x + \lambda y \mid \lambda \ge 0\}$ is an
-extreme subset of $K$, then $x = 0$. This is the content of the statement of the source that the
-extreme rays of a convex cone correspond one-to-one to its extreme directions. -/
+extreme subset of $K$, then $x = 0$. This is used for
+`Rockafellar.isExtremeRay_iff_isExtremeDirection`. -/
 theorem eq_zero_of_isExtreme_halfLine {K : Set (Rn n)} (hne : K.Nonempty)
     (hcone : ∀ x ∈ K, ∀ a : ℝ, 0 ≤ a → a • x ∈ K) {x y : Rn n} (hy : y ≠ 0)
     (h : IsExtreme ℝ K (halfLine x y)) : x = 0 := by
@@ -442,7 +507,10 @@ theorem eq_zero_of_isExtreme_halfLine {K : Set (Rn n)} (hne : K.Nonempty)
 
 /-- **Section 18** of [rockafellar1970convex] (page 162). Let $K \subseteq \mathbb{R}^n$ be
 non-empty and closed under multiplication by non-negative scalars. Then $y$ generates an extreme
-ray of $K$ if and only if $y$ generates an extreme direction of $K$. -/
+ray of $K$ if and only if $y$ generates an extreme direction of $K$.
+
+**Generalization.** The book states this for convex cones. The Lean criterion does not require
+convexity and assumes the scaling property at zero as well as positive scalars. -/
 theorem isExtremeRay_iff_isExtremeDirection {K : Set (Rn n)} (hne : K.Nonempty)
     (hcone : ∀ x ∈ K, ∀ a : ℝ, 0 ≤ a → a • x ∈ K) {y : Rn n} :
     IsExtremeRay K y ↔ IsExtremeDirection K y := by
@@ -452,7 +520,9 @@ theorem isExtremeRay_iff_isExtremeDirection {K : Set (Rn n)} (hne : K.Nonempty)
 
 /-- Let $K \subseteq \mathbb{R}^n$ be non-empty and closed under multiplication by non-negative
 scalars. Then $y$ generates an exposed ray of $K$ if and only if $y$ generates an exposed
-direction of $K$. -/
+direction of $K$.
+
+The same argument as for extreme rays applies to the exposed rays defined in the book. -/
 theorem isExposedRay_iff_isExposedDirection {K : Set (Rn n)} (hne : K.Nonempty)
     (hcone : ∀ x ∈ K, ∀ a : ℝ, 0 ≤ a → a • x ∈ K) {y : Rn n} :
     IsExposedRay K y ↔ IsExposedDirection K y := by
@@ -564,7 +634,10 @@ vector $b$ such that $C'$ is the set of points of $C$ at which the linear functi
 $\langle \cdot, b \rangle$ attains its maximum over $C$.
 
 The source quantifies over vectors $b$, and Mathlib over continuous linear functionals; in
-$\mathbb{R}^n$ the two are the same. As in Mathlib, the empty set is an exposed face. -/
+$\mathbb{R}^n$ the two are the same.
+
+**Reading.** The book allows the empty set when it arises as a maximizer set. The Lean
+predicate treats the empty set as exposed for every $C$, and allows nonconvex $C$. -/
 theorem isExposed_iff_exists_vector :
     IsExposed ℝ C C' ↔ (C'.Nonempty →
       ∃ b : Rn n, C' = {x | x ∈ C ∧ ∀ y ∈ C, pairing n y b ≤ pairing n x b}) := by
@@ -580,8 +653,11 @@ theorem isExposed_iff_exists_vector :
 /-- **Section 18** of [rockafellar1970convex] (page 162), definition of an exposed point. A point
 $x$ is an exposed point of $C \subseteq \mathbb{R}^n$ if and only if $x \in C$ and there is a
 vector $b$ such that $\langle y, b \rangle \le \langle x, b \rangle$ for all $y \in C$, with
-equality only for $y = x$. So the hyperplane $\{y \mid \langle y, b \rangle = \langle x, b
-\rangle\}$ supports $C$ at $x$ and contains no other point of $C$. -/
+equality only for $y = x$.
+
+**Reading.** For nonsingleton $C$ the maximizing vector is nonzero, so its supporting
+hyperplane meets $C$ only at $x$. For a singleton the maximizer condition also accepts
+the zero functional, including in dimension zero. The condition permits nonconvex $C$. -/
 theorem mem_exposedPoints_iff {x : Rn n} :
     x ∈ C.exposedPoints ℝ ↔ x ∈ C ∧ ∃ b : Rn n, (∀ y ∈ C, pairing n y b ≤ pairing n x b) ∧
       ∀ y ∈ C, pairing n x b ≤ pairing n y b → y = x := by
@@ -638,10 +714,13 @@ $z \in C$, and every non-zero linear function that attains its maximum over $C$ 
 positive multiple of $\langle \cdot, b \rangle$. The corresponding tangent half-space is $\{z
 \mid \langle z, b \rangle \le \langle x, b \rangle\}$.
 
-The definition is `ConvexAnalysis.IsTangentAt` for the linear function `Rockafellar.linFn b`. A
-hyperplane determines its linear function up to a non-zero factor, and the supporting inequality
-fixes the sign of the factor, so uniqueness of the hyperplane is uniqueness of the function up
-to a positive factor. -/
+The definition is `ConvexAnalysis.IsTangentAt` for the linear function `Rockafellar.linFn b`.
+
+**Reading.** The book uses uniqueness of the supporting hyperplane of a closed convex set.
+The Lean predicate requires uniqueness of its supporting half-space orientation and admits
+arbitrary sets. These uniqueness conditions agree for sets with nonempty interior. For
+$C = \{0\} \subseteq \mathbb{R}$, the unique supporting hyperplane has two supporting
+orientations, so the Lean predicate fails there. -/
 def IsTangentHyperplaneAt (C : Set (Rn n)) (b : Rn n) (x : Rn n) : Prop :=
   IsTangentAt C (linFn b) x
 

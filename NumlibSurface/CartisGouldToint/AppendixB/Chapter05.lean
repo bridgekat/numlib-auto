@@ -22,6 +22,8 @@ proofs of those results in Chapter 5 and in the backbone module
 
 ## Deviations from the source
 
+* **Correction and endpoint convention.** Lemma B.5.1 uses the third exponent and power inequalities
+  that cover a zero logarithm argument. See `CartisGouldToint.AppendixB.lemma_B_5_1`.
 * **Lemma B.5.1** (typo). The statement lists $\iota_1, \iota_2, \iota_1$; the third exponent is
   $\iota_3$. The proof writes $\iota_1$ for $\iota_2$ and $\iota_3$ in its second and third parts.
   See `CartisGouldToint.AppendixB.lemma_B_5_1`.
@@ -50,7 +52,11 @@ are written $p < 2^i$, $p - 1 < 2^i$ and $p - 2 < 2^i$. These forms are equivale
 have a meaning also when the logarithm has none.
 
 The exponents are `CartisGouldToint.Chapter05.iota`, with $p/2$ and $p/3$ computed in
-$\mathbb{R}$. -/
+$\mathbb{R}$.
+
+**Correction.** The third exponent is the one indexed by three. Power inequalities replace the
+logarithm comparisons and remain defined when their putative logarithm argument is zero.
+-/
 theorem lemma_B_5_1 {p i : ℕ} :
     (1 ≤ p → p < 2 ^ i → 0 < iota 1 p p i) ∧
     (0 < p → 2 ∣ p → (p : ℝ) - 1 < 2 ^ i → 0 < iota 2 p ((p : ℝ) / 2) i) ∧

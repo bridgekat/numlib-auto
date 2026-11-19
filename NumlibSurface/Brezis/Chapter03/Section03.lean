@@ -48,6 +48,15 @@ Mathlib's `RCLike.iInter_halfSpaces_eq'` for the field $\mathbb{R}$.
   Section 1.4.
 * The weak topology is that of `WeakSpace ℝ E`, as in Section 3.2.
 
+## Deviations from the source
+
+* **Corollary 3.8** (generalization). Each convex combination can use only terms in the
+  corresponding tail. See `Brezis.Chapter03.corollary_3_8`.
+* **Corollary 3.9** (generalization). The weak lower semicontinuity result also permits
+  function values of $-\infty$. See `Brezis.Chapter03.corollary_3_9`.
+* **Remark 6** (reading). The continuous convex function is taken to be real-valued. See
+  `Brezis.Chapter03.remark_3_6`.
+
 ## Not formalized
 
 * **Remark 7, second clause (Exercise 6.7).** A linear operator is continuous from $E$ weak into $F$
@@ -78,7 +87,11 @@ $N(n) \ge n$ and weights $\lambda_{n,i} \ge 0$ with $\sum_{i=n}^{N(n)} \lambda_{
 that
 $$\sum_{i=n}^{N(n)} \lambda_{n,i} x_i \to x \quad \text{strongly}.$$
 Second, there is a sequence $(y_n)$ in the convex hull of $\{x_n : n \in \mathbb{N}\}$ with
-$y_n \to x$ strongly. -/
+$y_n \to x$ strongly.
+
+**Generalization.** The source places each convex combination in the hull of the whole sequence.
+The first clause takes the combination from the $n$th tail, since each tail has the same weak
+limit. -/
 theorem corollary_3_8 [CompleteSpace E] {x : ℕ → E} {u : E} (h : x ⇀ u) :
     (∃ (N : ℕ → ℕ) (lam : ℕ → ℕ → ℝ), (∀ n, n ≤ N n) ∧ (∀ n i, 0 ≤ lam n i) ∧
       (∀ n, ∑ i ∈ Finset.Icc n (N n), lam n i = 1) ∧
@@ -103,11 +116,14 @@ theorem remark_3_5 [CompleteSpace E] {C : Set E} (hC : Convex ℝ C) (hCc : IsCl
   simpa only [RCLike.re_to_real] using this
 
 /-- **Corollary 3.9** of [brezis2011functional]. Let $E$ be a Banach space and let
-$\varphi : E \to (-\infty, +\infty]$ be convex and lower semicontinuous in the strong topology.
+$\varphi : E \to [-\infty, +\infty]$ be convex and lower semicontinuous in the strong topology.
 Then $\varphi$ is lower semicontinuous in the weak topology $\sigma(E, E^\star)$.
 
+**Generalization.** The source excludes values of $-\infty$. The proof through weak closedness
+of real sublevel sets also applies at those values.
+
 The weak lower semicontinuity is `LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm)` on
-`WeakSpace ℝ E`. The statement does not need that $\varphi$ never takes the value $-\infty$. -/
+`WeakSpace ℝ E`. -/
 theorem corollary_3_9 [CompleteSpace E] {φ : E → EReal} (hφ : ConvexAnalysis.ConvexFn φ)
     (hlsc : LowerSemicontinuous φ) : LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm) :=
   hlsc.comp_toWeakSpace_symm_of_convex_le (𝕜 := ℝ) fun b => hφ.convex_le b
@@ -117,7 +133,12 @@ $\varphi : E \to \mathbb{R}$ that is continuous in the strong topology is lower 
 in the weak topology $\sigma(E, E^\star)$. In particular the norm $\varphi(x) = \|x\|$ is weakly
 lower semicontinuous, and $x_n \rightharpoonup x$ implies
 $$\|x\| \le \liminf_{n \to \infty} \|x_n\|,$$
-which is Proposition 3.5(iii) again. -/
+which is Proposition 3.5(iii) again.
+
+**Reading.** The source states the implication for a continuous convex function in the
+setting of Corollary 3.9. The declaration uses a real-valued function, as in the norm example.
+The version for extended-real-valued continuous functions follows from
+`Brezis.Chapter03.corollary_3_9`. -/
 theorem remark_3_6 [CompleteSpace E] :
     (∀ φ : E → ℝ, ConvexOn ℝ Set.univ φ → Continuous φ →
       LowerSemicontinuous (φ ∘ (toWeakSpace ℝ E).symm)) ∧

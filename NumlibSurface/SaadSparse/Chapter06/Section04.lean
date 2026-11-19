@@ -96,6 +96,74 @@ proofs specialize the backbone modules `Numlib.Krylov.Arnoldi`, `Numlib.Krylov.H
 
 ## Deviations from the source
 
+* **Reading.** The fixed-size FOM formula returns the starting value if the projected matrix is
+  singular. See `SaadSparse.Chapter06.fomY`, `SaadSparse.Chapter06.fomFixed`,
+  `SaadSparse.Chapter06.fomFixed_zero`, `SaadSparse.Chapter06.fomFixed_eq_add_sum`.
+* **Reading.** FOM uses the exact Gram–Schmidt recurrence, the effective step count and totalized
+  inverses. See `SaadSparse.Chapter06.fom`.
+* **Generalization.** The FOM Galerkin equations also have complex-scalar formulations. See
+  `SaadSparse.Chapter06.H_mulVec_fomY`, `SaadSparse.Chapter06.fomFixed_isGalerkinIterate`,
+  `SaadSparse.Chapter06.fom_isGalerkinIterate`,
+  `SaadSparse.Chapter06.eq_fomFixed_of_isGalerkinIterate`.
+* **Generalization.** The projected initial residual formula includes zero initial residual and a
+  complex version. See `SaadSparse.Chapter06.conjTranspose_V_mulVec_r₀`,
+  `SaadSparse.Chapter06.Vt_r₀`.
+* **Generalization.** FOM's residual formulas generalize to complex scalars. See
+  `SaadSparse.Chapter06.residual_fomFixed`, `SaadSparse.Chapter06.norm_residual_fomFixed`.
+* **Reading.** The incomplete orthogonalization recurrence is exact, complex-capable and totalized
+  at breakdown. See `SaadSparse.Chapter06.iopW`, `SaadSparse.Chapter06.iopCoeffOf`,
+  `SaadSparse.Chapter06.iopW_succ`, `SaadSparse.Chapter06.iop`, `SaadSparse.Chapter06.iopVecW`,
+  `SaadSparse.Chapter06.iopCoeff`, `SaadSparse.Chapter06.iop_succ`,
+  `SaadSparse.Chapter06.iop_succ_eq_zero_iff`, `SaadSparse.Chapter06.norm_iop`.
+* **Generalization.** The incomplete Hessenberg relation holds even for the padded recurrence. See
+  `SaadSparse.Chapter06.iop_hessenbergRelation`, `SaadSparse.Chapter06.mul_VI_eq`,
+  `SaadSparse.Chapter06.iop_eq_6_7`, `SaadSparse.Chapter06.VI`, `SaadSparse.Chapter06.HbarI`,
+  `SaadSparse.Chapter06.HI`.
+* **Reading.** At the first zero subdiagonal, IOM drops the current step, unlike the rule stated for
+  FOM. See `SaadSparse.Chapter06.iomSteps`, `SaadSparse.Chapter06.iomSteps_le`,
+  `SaadSparse.Chapter06.iomSteps_eq`, `SaadSparse.Chapter06.iom`,
+  `SaadSparse.Chapter06.iom_eq_iomFixed`.
+* **Reading.** The fixed-size IOM formulas return zero coefficients for singular projected matrices.
+  See `SaadSparse.Chapter06.iomY`, `SaadSparse.Chapter06.iomFixed`,
+  `SaadSparse.Chapter06.iomFixed_eq_add_sum`.
+* **Generalization.** The fixed-prefix IOM residual formulas have real and complex versions. See
+  `SaadSparse.Chapter06.residual_iomFixed`, `SaadSparse.Chapter06.norm_residual_iomFixed`.
+* **Reading.** The fixed-size IOM projection interpretation makes the span and unit-vector
+  hypotheses explicit. See `SaadSparse.Chapter06.iomFixed_isPetrovGalerkin`.
+* **Reading.** The Hessenberg factor recurrences use totalized division and support complex
+  coefficients. See `SaadSparse.Chapter06.dioU`, `SaadSparse.Chapter06.dioL`,
+  `SaadSparse.Chapter06.dioU_succ`, `SaadSparse.Chapter06.hessL`, `SaadSparse.Chapter06.hessU`,
+  `SaadSparse.Chapter06.hessLU`.
+* **Reading.** The Hessenberg LU results state the nonzero-pivot conditions explicitly. See
+  `SaadSparse.Chapter06.hessL_mul_hessU`, `SaadSparse.Chapter06.isUnit_hessU`,
+  `SaadSparse.Chapter06.isUnit_hessenbergSqOf`, `SaadSparse.Chapter06.hessLU_spec`.
+* **Generalization.** The DIOM bidiagonal solve allows an arbitrary starting scalar. See
+  `SaadSparse.Chapter06.diomZeta`, `SaadSparse.Chapter06.diomZeta_succ`,
+  `SaadSparse.Chapter06.hessL_mulVec_diomZeta`.
+* **Reading.** The DIOM recurrence continues through the source's zero-pivot stop using a zero
+  direction. See `SaadSparse.Chapter06.diomP`, `SaadSparse.Chapter06.diomP_eq`,
+  `SaadSparse.Chapter06.diom`, `SaadSparse.Chapter06.diom_succ`,
+  `SaadSparse.Chapter06.diom_eq_add_sum`, `SaadSparse.Chapter06.smul_apply_diomP`.
+* **Reading.** The auxiliary DIOM solve totalizes the inverse, with correctness under nonzero
+  pivots. See `SaadSparse.Chapter06.diomY`, `SaadSparse.Chapter06.hessU_mulVec_diomY`,
+  `SaadSparse.Chapter06.HI_mulVec_diomY`, `SaadSparse.Chapter06.diomY_eq_iomY`.
+* **Reading.** The DIOM–IOM equivalence is with the fixed-size IOM formula. See
+  `SaadSparse.Chapter06.diom_eq_iomFixed`, `SaadSparse.Chapter06.algorithm_6_8_eq_alg_6_7`.
+* **Reading.** The DIOM residual statements expose the nonzero pivots and use coefficient moduli.
+  See `SaadSparse.Chapter06.diomY_last`, `SaadSparse.Chapter06.norm_residual_diom`,
+  `SaadSparse.Chapter06.residual_diom_eq_smul`, `SaadSparse.Chapter06.diom_residual`.
+* **Reading.** The local DIOM residual orthogonality includes the initial residual. See
+  `SaadSparse.Chapter06.inner_residual_diom_eq_zero`, `SaadSparse.Chapter06.equation_6_22`.
+* **Reading.** Local A-orthogonality and semi-conjugacy require a nonzero update scalar. See
+  `SaadSparse.Chapter06.inner_iop_apply_diomP_eq_zero`,
+  `SaadSparse.Chapter06.inner_diomP_apply_diomP_eq_zero`, `SaadSparse.Chapter06.equation_6_23`,
+  `SaadSparse.Chapter06.equation_6_24`.
+* **Generalization.** A finite window covering the prefix suffices for agreement with full MGS. See
+  `SaadSparse.Chapter06.iop_eq_arnoldiMGS_of_le`, `SaadSparse.Chapter06.algorithm_6_6_eq_alg_6_2`.
+* **Reading.** Restarted FOM takes a supplied number of exact cycles. See
+  `SaadSparse.Chapter06.fomCycle`, `SaadSparse.Chapter06.fomRestarted`,
+  `SaadSparse.Chapter06.fomRestarted_succ`,
+  `SaadSparse.Chapter06.fomRestarted_succ_isGalerkinIterate`.
 * **Proposition 6.8** (reading). The statement adds two hypotheses that the source leaves implicit:
   $\|v_{m+1}\| = 1$, and $v_1, \dots, v_m$ span $\mathcal{K}_m$. See
   `SaadSparse.Chapter06.proposition_6_8`.
@@ -116,7 +184,12 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)
 /-! ### (6.16)–(6.17) and Algorithm 6.4 -/
 
 /-- The vector $y_m = H_m^{-1} (\beta e_1)$ of (6.17) of [saad2003iterative]. Lean's matrix inverse
-is $0$ at a singular $H_m$, the breakdown case of the book, and then $y_m = 0$. -/
+is $0$ at a singular $H_m$, the breakdown case of the book, and then $y_m = 0$.
+
+**Reading.** Lean defines a fixed-size exact iterate over real or complex scalars. It uses the
+totalized Arnoldi basis and zero matrix inverse, so singular projected systems leave the starting
+value unchanged. The printed formula requires nonsingularity.
+-/
 noncomputable def fomY (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : Fin m → 𝕜 :=
   (H A (v₁ A b x₀) m)⁻¹ *ᵥ ((β A b x₀ : 𝕜) • e₁ m)
 
@@ -126,13 +199,23 @@ $$x_m = x_0 + V_m y_m, \qquad y_m = H_m^{-1} (\beta e_1),$$
 where $V_m$ and $H_m$ are computed by Algorithm 6.1 from $v_1 = r_0 / \beta$.
 
 If $H_m$ is singular, then $y_m = 0$ and $x_m = x_0$, by Lean's convention for the matrix
-inverse. -/
+inverse.
+
+**Reading.** Lean defines a fixed-size exact iterate over real or complex scalars. It uses the
+totalized Arnoldi basis and zero matrix inverse, so singular projected systems leave the starting
+value unchanged. The printed formula requires nonsingularity.
+-/
 noncomputable def fomFixed (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   x₀ + Matrix.toEuclideanLin (V A (v₁ A b x₀) m) (WithLp.toLp 2 (fomY A b x₀ m))
 
 /-- **Algorithm 6.4** of [saad2003iterative] (FOM). The iterate $x_m = x_0 + V_m y_m$ of
 (6.16)–(6.17), where the number of Arnoldi steps is $\min(m, \mu)$ with $\mu$ the grade of
-$v_1$. This is the book's "if $h_{j+1,j} = 0$ then set $m := j$". -/
+$v_1$. This is the book's "if $h_{j+1,j} = 0$ then set $m := j$".
+
+**Reading.** Lean uses the exact classical Gram–Schmidt recurrence, equivalent to the printed
+modified Gram–Schmidt process in exact arithmetic. It caps the number of steps at the grade and uses
+totalized inverses. At a zero initial residual it takes zero steps.
+-/
 noncomputable def fom (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   fomFixed A b x₀ (mEff A b x₀ m)
 
@@ -141,19 +224,34 @@ nonsingular. -/
 def FOMDefined (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : Prop :=
   IsUnit (H A (v₁ A b x₀) m)
 
-/-- With $m = 0$ steps, the FOM iterate is $x_0$. -/
+/-- With $m = 0$ steps, the FOM iterate is $x_0$.
+
+**Reading.** Lean defines a fixed-size exact iterate over real or complex scalars. It uses the
+totalized Arnoldi basis and zero matrix inverse, so singular projected systems leave the starting
+value unchanged. The printed formula requires nonsingularity.
+-/
 theorem fomFixed_zero : fomFixed A b x₀ 0 = x₀ := by
   rw [fomFixed, toEuclideanLin_V_apply]
   simp
 
 /-- The FOM iterate is $x_m = x_0 + \sum_{j} (y_m)_j v_j$, where the $v_j$ are the backbone Arnoldi
-vectors `Arnoldi.vec` of $r_0$. This is the form that the backbone uses. -/
+vectors `Arnoldi.vec` of $r_0$. This is the form that the backbone uses.
+
+**Reading.** Lean defines a fixed-size exact iterate over real or complex scalars. It uses the
+totalized Arnoldi basis and zero matrix inverse, so singular projected systems leave the starting
+value unchanged. The printed formula requires nonsingularity.
+-/
 theorem fomFixed_eq_add_sum (m : ℕ) :
     fomFixed A b x₀ m
       = x₀ + ∑ j, fomY A b x₀ m j • Arnoldi.vec (op A) (b - op A x₀) (j : ℕ) := by
   rw [fomFixed, toEuclideanLin_V_apply, arnoldiCGS_v₁ A b x₀]
 
-/-- If $H_m$ is nonsingular, then $y_m$ solves (6.17): $H_m y_m = \beta e_1$. -/
+/-- If $H_m$ is nonsingular, then $y_m$ solves (6.17): $H_m y_m = \beta e_1$.
+
+**Generalization.** These Galerkin formulas and the reduced system also apply over the complex
+scalars. The dimension conditions refer to an available Krylov basis. The version using the
+effective step count refers to that smaller subspace in case of early termination.
+-/
 theorem H_mulVec_fomY {m : ℕ} (hH : FOMDefined A b x₀ m) :
     H A (v₁ A b x₀) m *ᵥ fomY A b x₀ m = Krylov.firstVec (β A b x₀ : 𝕜) m := by
   rw [fomY, Matrix.mulVec_nonsing_inv_mulVec hH, smul_e₁_eq_firstVec]
@@ -161,7 +259,12 @@ theorem H_mulVec_fomY {m : ℕ} (hH : FOMDefined A b x₀ m) :
 /-- **Equations (6.16)–(6.17)** of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. Let $H_m$
 be nonsingular and let $m$ be at most the grade of $v_1$. Then the FOM iterate $x_m$ is the
 Galerkin iterate on $\mathcal{K}_m(A, r_0)$, the orthogonal projection method (6.15):
-$x_m - x_0 \in \mathcal{K}_m(A, r_0)$ and $b - Ax_m \perp \mathcal{K}_m(A, r_0)$. -/
+$x_m - x_0 \in \mathcal{K}_m(A, r_0)$ and $b - Ax_m \perp \mathcal{K}_m(A, r_0)$.
+
+**Generalization.** These Galerkin formulas and the reduced system also apply over the complex
+scalars. The dimension conditions refer to an available Krylov basis. The version using the
+effective step count refers to that smaller subspace in case of early termination.
+-/
 theorem fomFixed_isGalerkinIterate {m : ℕ} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) :
     Krylov.IsGalerkinIterate (op A) b x₀ m (fomFixed A b x₀ m) := by
@@ -178,13 +281,23 @@ theorem fomFixed_isGalerkinIterate {m : ℕ} (hH : FOMDefined A b x₀ m)
     rwa [← fomFixed_eq_add_sum A b x₀ m] at h
 
 /-- If $H_m$ is nonsingular for the number $m' = \min(m, \mu)$ of Arnoldi steps that Algorithm 6.4
-performs, then the FOM iterate is the Galerkin iterate on $\mathcal{K}_{m'}(A, r_0)$. -/
+performs, then the FOM iterate is the Galerkin iterate on $\mathcal{K}_{m'}(A, r_0)$.
+
+**Generalization.** These Galerkin formulas and the reduced system also apply over the complex
+scalars. The dimension conditions refer to an available Krylov basis. The version using the
+effective step count refers to that smaller subspace in case of early termination.
+-/
 theorem fom_isGalerkinIterate {m : ℕ} (hH : FOMDefined A b x₀ (mEff A b x₀ m)) :
     Krylov.IsGalerkinIterate (op A) b x₀ (mEff A b x₀ m) (fom A b x₀ m) :=
   fomFixed_isGalerkinIterate A b x₀ hH (mEff_le A b x₀ m)
 
 /-- Let $H_m$ be nonsingular and let $m$ be at most the grade of $v_1$. If $x$ is a Galerkin iterate
-on $\mathcal{K}_m(A, r_0)$, then $x$ is the FOM iterate $x_m$. -/
+on $\mathcal{K}_m(A, r_0)$, then $x$ is the FOM iterate $x_m$.
+
+**Generalization.** These Galerkin formulas and the reduced system also apply over the complex
+scalars. The dimension conditions refer to an available Krylov basis. The version using the
+effective step count refers to that smaller subspace in case of early termination.
+-/
 theorem eq_fomFixed_of_isGalerkinIterate {m : ℕ} {x : 𝔼} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) (hx : Krylov.IsGalerkinIterate (op A) b x₀ m x) :
     x = fomFixed A b x₀ m := by
@@ -198,7 +311,11 @@ theorem eq_fomFixed_of_isGalerkinIterate {m : ℕ} {x : 𝔼} (hH : FOMDefined A
     rw [huniq x hx, huniq _ (fomFixed_isGalerkinIterate A b x₀ hH hm)]
 
 /-- **Section 6.4.1** of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. For every $m$,
-$V_m^H r_0 = \beta e_1$. This is the book's $V_m^T r_0 = \beta e_1$ for real matrices. -/
+$V_m^H r_0 = \beta e_1$. This is the book's $V_m^T r_0 = \beta e_1$ for real matrices.
+
+**Generalization.** The identity also holds for the totalized zero starting residual. The
+conjugate-transpose formulation extends the real transpose identity to complex scalars.
+-/
 theorem conjTranspose_V_mulVec_r₀ (m : ℕ) :
     (V A (v₁ A b x₀) m)ᴴ *ᵥ WithLp.ofLp (r₀ A b x₀) = (β A b x₀ : 𝕜) • e₁ m := by
   funext i
@@ -234,7 +351,11 @@ $$b - Ax_m = -h_{m+1,m} (e_m^T y_m) v_{m+1}.$$
 
 The no-breakdown hypothesis $m \le \mu$ is kept so that `SaadSparse.Chapter06.proposition_6_7`
 reads as in the book. The identity needs only that $H_m$ is nonsingular, because after the grade
-of $v_1$ both sides vanish. -/
+of $v_1$ both sides vanish.
+
+**Generalization.** The residual formulas also apply over complex scalars, with the coefficient norm
+used in the residual norm. They assume a nonsingular projected matrix of the specified size.
+-/
 theorem residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ grade A (v₁ A b x₀))
     (hm0 : 0 < m) :
     b - op A (fomFixed A b x₀ m)
@@ -251,7 +372,11 @@ theorem residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m) (hm : m ≤ gra
 let $H_m$ be nonsingular, and let $m$ be at most the grade of $v_1$. Then
 $$\|b - Ax_m\|_2 = |h_{m+1,m}| \, |e_m^T y_m|.$$
 
-Both sides vanish at $m = \mu$, where the Arnoldi process has already stopped. -/
+Both sides vanish at $m = \mu$, where the Arnoldi process has already stopped.
+
+**Generalization.** The residual formulas also apply over complex scalars, with the coefficient norm
+used in the residual norm. They assume a nonsingular projected matrix of the specified size.
+-/
 theorem norm_residual_fomFixed {m : ℕ} (hH : FOMDefined A b x₀ m)
     (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0 < m) :
     ‖b - op A (fomFixed A b x₀ m)‖
@@ -282,7 +407,12 @@ This is the book's reason ("the orthogonality was not used") why (6.6)–(6.7), 
 
 /-- The inner loop of **Algorithm 6.6** of [saad2003iterative]. For a $0$-based sequence
 $u_0, u_1, \dots$, a lower index $l$ and a vector $w^{(0)}$, the vector $w^{(N)}$ is obtained by
-subtracting one at a time the projections on the $u_i$ with $l \le i < N$. -/
+subtracting one at a time the projections on the $u_i$ with $l \le i < N$.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 noncomputable def iopW (v : ℕ → 𝔼) (lo : ℕ) (w₀ : 𝔼) : ℕ → 𝔼
   | 0 => w₀
   | i + 1 =>
@@ -290,12 +420,22 @@ noncomputable def iopW (v : ℕ → 𝔼) (lo : ℕ) (w₀ : 𝔼) : ℕ → �
     if lo ≤ i then w - inner 𝕜 (v i) w • v i else w
 
 /-- The coefficient that the inner loop of Algorithm 6.6 produces at row $i$: $(w^{(i)}, u_i)$ if
-$i \ge l$, and $0$ outside the band. -/
+$i \ge l$, and $0$ outside the band.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 noncomputable def iopCoeffOf (v : ℕ → 𝔼) (lo : ℕ) (w₀ : 𝔼) (i : ℕ) : 𝕜 :=
   if lo ≤ i then inner 𝕜 (v i) (iopW v lo w₀ i) else 0
 
 /-- One step of the inner loop of Algorithm 6.6: $w^{(i+1)} = w^{(i)} - c_i u_i$, where $c_i$ is the
-coefficient of row $i$. -/
+coefficient of row $i$.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 theorem iopW_succ (v : ℕ → 𝔼) (lo : ℕ) (w₀ : 𝔼) (i : ℕ) :
     iopW v lo w₀ (i + 1) = iopW v lo w₀ i - iopCoeffOf v lo w₀ i • v i := by
   rw [iopW, iopCoeffOf]
@@ -357,7 +497,12 @@ $v_1 = v$. For $j = 1, 2, \dots$, set $w := Av_j$; for $i = \max\{1, j - k + 1\}
 $h_{ij} := (w, v_i)$ and $w := w - h_{ij} v_i$; then $v_{j+1} = w / \|w\|_2$.
 
 As in Algorithm 6.2, the clamp `min i j` in the definition does not matter. The index is
-$0$-based: `iop A v k j` is $v_{j+1}$. -/
+$0$-based: `iop A v k j` is $v_{j+1}$.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 noncomputable def iop (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k : ℕ) : ℕ → 𝔼
   | 0 => v
   | j + 1 =>
@@ -368,6 +513,10 @@ noncomputable def iop (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k : ℕ) : �
   decreasing_by exact Nat.lt_succ_of_le (Nat.min_le_right _ _)
 
 /-- The vector $w_j$ of Algorithm 6.6: what remains of $A v_j$ after the whole truncated inner loop.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
 -/
 noncomputable def iopVecW (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k j : ℕ) : 𝔼 :=
   iopW (iop A v k) (j + 1 - k) (op A (iop A v k j)) (j + 1)
@@ -376,7 +525,12 @@ noncomputable def iopVecW (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k j : �
 product of the band, which is $0$ for $i < j - k + 1$; $h_{j+1,j} = \|w_j\|_2$; and $h_{ij} = 0$
 for $i > j + 1$.
 
-The indices are $0$-based: `iopCoeff A v k i j` is $h_{i+1,j+1}$. -/
+The indices are $0$-based: `iopCoeff A v k i j` is $h_{i+1,j+1}$.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 noncomputable def iopCoeff (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k i j : ℕ) : 𝕜 :=
   if i ≤ j then iopCoeffOf (iop A v k) (j + 1 - k) (op A (iop A v k j)) i
   else if i = j + 1 then (‖iopVecW A v k j‖ : 𝕜) else 0
@@ -417,7 +571,12 @@ theorem iopCoeff_eq_zero_of_add_le {i j : ℕ} (h : i + k ≤ j) : iopCoeff A v 
   · rfl
 
 /-- **Algorithm 6.6** of [saad2003iterative], line 7. Each next vector is
-$v_{j+1} = w_j / h_{j+1,j}$, which is $0$ when $w_j = 0$. -/
+$v_{j+1} = w_j / h_{j+1,j}$, which is $0$ when $w_j = 0$.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 theorem iop_succ (j : ℕ) :
     iop A v k (j + 1) = ((‖iopVecW A v k j‖ : 𝕜)⁻¹) • iopVecW A v k j := by
   rw [iop, iopVecW]
@@ -434,6 +593,10 @@ theorem iopVecW_eq_smul (j : ℕ) :
   · rw [mul_inv_cancel₀ (by simpa using norm_ne_zero_iff.2 h), one_smul]
 
 /-- **Breakdown.** The next vector $v_{j+1}$ of Algorithm 6.6 is $0$ if and only if $h_{j+1,j} = 0$.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
 -/
 theorem iop_succ_eq_zero_iff (j : ℕ) :
     iop A v k (j + 1) = 0 ↔ iopCoeff A v k (j + 1) j = 0 := by
@@ -445,7 +608,12 @@ theorem iop_succ_eq_zero_iff (j : ℕ) :
     rw [iop_succ, h, norm_zero, RCLike.ofReal_zero, inv_zero, zero_smul]
 
 /-- If $\|v_1\| = 1$, then every vector of Algorithm 6.6 has norm $1$ or is $0$, the latter after a
-breakdown. -/
+breakdown.
+
+**Reading.** Lean gives a totalized, exact recurrence over real or complex scalars, with zeros after
+breakdown. A zero window omits the orthogonalization sweep. The source gives finite real-arithmetic
+instructions with division by the norm of the updated vector.
+-/
 theorem norm_iop (hv : ‖v‖ = 1) (j : ℕ) : ‖iop A v k j‖ = 1 ∨ iop A v k j = 0 := by
   cases j with
   | zero => rw [iop_zero]; exact Or.inl hv
@@ -460,7 +628,12 @@ theorem norm_iop (hv : ‖v‖ = 1) (j : ℕ) : ‖iop A v k j‖ = 1 ∨ iop A 
 Hessenberg relation `Krylov.HessenbergRelation`: $A v_j = \sum_{i=1}^{j+1} h_{ij} v_i$ for every
 $j$, and $h_{ij} = 0$ for $i > j + 1$. So (6.6)–(6.7) hold for incomplete orthogonalization.
 
-No hypothesis is needed, and no orthogonality is used. -/
+No hypothesis is needed, and no orthogonality is used.
+
+**Generalization.** The matrix relation is valid for the exact totalized recurrence at every
+requested dimension. It does not depend on orthonormality of the computed vectors. The general forms
+also allow complex scalars.
+-/
 theorem iop_hessenbergRelation :
     Krylov.HessenbergRelation (op A) (iop A v k) (iopCoeff A v k) := by
   refine ⟨fun j => ?_, fun i j hij => iopCoeff_eq_zero_of_lt A v k hij⟩
@@ -498,17 +671,32 @@ theorem inner_iop_eq_zero (hv : ‖v‖ = 1) :
 /-! ### The matrices of the incomplete process, and Algorithm 6.7 (IOM) -/
 
 /-- **Section 6.4.2** of [saad2003iterative]. The $n \times m$ matrix $V_m = [v_1, \dots, v_m]$
-whose columns are the vectors of Algorithm 6.6. -/
+whose columns are the vectors of Algorithm 6.6.
+
+**Generalization.** The matrix relation is valid for the exact totalized recurrence at every
+requested dimension. It does not depend on orthonormality of the computed vectors. The general forms
+also allow complex scalars.
+-/
 noncomputable def VI (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k m : ℕ) :
     Matrix (Fin n) (Fin m) 𝕜 :=
   colMatrix (iop A v k) m
 
-/-- The $(m+1) \times m$ Hessenberg matrix $\bar H_m$ of the coefficients of Algorithm 6.6. -/
+/-- The $(m+1) \times m$ Hessenberg matrix $\bar H_m$ of the coefficients of Algorithm 6.6.
+
+**Generalization.** The matrix relation is valid for the exact totalized recurrence at every
+requested dimension. It does not depend on orthonormality of the computed vectors. The general forms
+also allow complex scalars.
+-/
 noncomputable def HbarI (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k m : ℕ) :
     Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Krylov.hessenbergOf (iopCoeff A v k) m
 
-/-- The $m \times m$ Hessenberg matrix $H_m$ of the coefficients of Algorithm 6.6. -/
+/-- The $m \times m$ Hessenberg matrix $H_m$ of the coefficients of Algorithm 6.6.
+
+**Generalization.** The matrix relation is valid for the exact totalized recurrence at every
+requested dimension. It does not depend on orthonormality of the computed vectors. The general forms
+also allow complex scalars.
+-/
 noncomputable def HI (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k m : ℕ) :
     Matrix (Fin m) (Fin m) 𝕜 :=
   Krylov.hessenbergSqOf (iopCoeff A v k) m
@@ -518,7 +706,12 @@ noncomputable def HI (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k m : ℕ) :
 theorem HI_apply {m : ℕ} (i j : Fin m) : HI A v k m i j = iopCoeff A v k i j := rfl
 
 /-- **Equation (6.7)** of [saad2003iterative] for incomplete orthogonalization, over $\mathbb{R}$ or
-$\mathbb{C}$. For every $m$, $A V_m = V_{m+1} \bar H_m$. -/
+$\mathbb{C}$. For every $m$, $A V_m = V_{m+1} \bar H_m$.
+
+**Generalization.** The matrix relation is valid for the exact totalized recurrence at every
+requested dimension. It does not depend on orthonormality of the computed vectors. The general forms
+also allow complex scalars.
+-/
 theorem mul_VI_eq (m : ℕ) : A * VI A v k m = VI A v k (m + 1) * HbarI A v k m :=
   mul_colMatrix_eq A (iop_hessenbergRelation A v k) m
 
@@ -528,18 +721,36 @@ least $j$ such that `iopCoeff A v k (j + 1) j` vanishes, or $m$ if no $j$ has th
 In the book's indices, a breakdown $h_{j+1,j} = 0$ at step $j$, with no earlier breakdown, gives
 $j - 1$ steps. The book's instruction "set $m := j$" asks for $j$ steps, and
 `SaadSparse.Chapter06.mEff` for FOM gives $j$. The definition agrees with the book when there is
-no breakdown (`SaadSparse.Chapter06.iomSteps_eq`). -/
+no breakdown (`SaadSparse.Chapter06.iomSteps_eq`).
+
+**Reading.** When the first zero subdiagonal occurs at step $j$, the Lean step count is $j-1$. The
+source replaces the loop of Algorithm 6.4 by Algorithm 6.6, which has no explicit breakdown guard.
+If read with the FOM rule of retaining step $j$, the step counts differ. Lean and the source agree
+when there is no breakdown.
+-/
 noncomputable def iomSteps (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k m : ℕ) : ℕ :=
   sInf ({j | iopCoeff A v k (j + 1) j = 0} ∪ {m})
 
-/-- The number of steps that Algorithm 6.7 uses is at most $m$. -/
+/-- The number of steps that Algorithm 6.7 uses is at most $m$.
+
+**Reading.** When the first zero subdiagonal occurs at step $j$, the Lean step count is $j-1$. The
+source replaces the loop of Algorithm 6.4 by Algorithm 6.6, which has no explicit breakdown guard.
+If read with the FOM rule of retaining step $j$, the step counts differ. Lean and the source agree
+when there is no breakdown.
+-/
 theorem iomSteps_le (m : ℕ) : iomSteps A v k m ≤ m :=
   Nat.sInf_le (Set.mem_union_right _ rfl)
 
 /-- If $h_{j+1,j} \neq 0$ for every step $j \le m$, then Algorithm 6.7 uses all $m$ steps.
 
 In $0$-based indices the hypothesis is `iopCoeff A v k (j + 1) j ≠ 0` for $j < m$, which
-includes the coefficient $h_{m+1,m}$ of the last step. -/
+includes the coefficient $h_{m+1,m}$ of the last step.
+
+**Reading.** When the first zero subdiagonal occurs at step $j$, the Lean step count is $j-1$. The
+source replaces the loop of Algorithm 6.4 by Algorithm 6.6, which has no explicit breakdown guard.
+If read with the FOM rule of retaining step $j$, the step counts differ. Lean and the source agree
+when there is no breakdown.
+-/
 theorem iomSteps_eq {m : ℕ} (hnb : ∀ j < m, iopCoeff A v k (j + 1) j ≠ 0) :
     iomSteps A v k m = m := by
   refine le_antisymm (iomSteps_le A v k m) (le_csInf ⟨m, Set.mem_union_right _ rfl⟩ ?_)
@@ -549,30 +760,54 @@ theorem iomSteps_eq {m : ℕ} (hnb : ∀ j < m, iopCoeff A v k (j + 1) j ≠ 0) 
   · exact le_of_eq (Set.mem_singleton_iff.1 hc).symm
 
 /-- The vector $y_m = H_m^{-1} (\beta e_1)$ for the incomplete process, with $H_m$ the Hessenberg
-matrix of Algorithm 6.6 started at $v_1 = r_0 / \beta$. It is $0$ when $H_m$ is singular. -/
+matrix of Algorithm 6.6 started at $v_1 = r_0 / \beta$. It is $0$ when $H_m$ is singular.
+
+**Reading.** The fixed-size incomplete iterate is also defined for complex systems and singular
+projected matrices. In the singular case its totalized inverse gives zero coefficients.
+-/
 noncomputable def iomY (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k m : ℕ) : Fin m → 𝕜 :=
   (HI A (v₁ A b x₀) k m)⁻¹ *ᵥ ((β A b x₀ : 𝕜) • e₁ m)
 
 /-- The iterate of Algorithm 6.7 with exactly $m$ steps of Algorithm 6.6: $x_m = x_0 + V_m y_m$,
-with $V_m$ and $y_m$ from Algorithm 6.6 started at $v_1 = r_0 / \beta$. -/
+with $V_m$ and $y_m$ from Algorithm 6.6 started at $v_1 = r_0 / \beta$.
+
+**Reading.** The fixed-size incomplete iterate is also defined for complex systems and singular
+projected matrices. In the singular case its totalized inverse gives zero coefficients.
+-/
 noncomputable def iomFixed (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k m : ℕ) : 𝔼 :=
   x₀ + Matrix.toEuclideanLin (VI A (v₁ A b x₀) k m) (WithLp.toLp 2 (iomY A b x₀ k m))
 
 /-- **Algorithm 6.7** of [saad2003iterative] (IOM). Algorithm 6.4 with Algorithm 6.6 in place of the
 Arnoldi process: $x_m = x_0 + V_m y_m$ with $y_m = H_m^{-1} (\beta e_1)$.
 
-The number of steps is `SaadSparse.Chapter06.iomSteps`, which is $m$ when no breakdown occurs. -/
+The number of steps is `SaadSparse.Chapter06.iomSteps`, which is $m$ when no breakdown occurs.
+
+**Reading.** When the first zero subdiagonal occurs at step $j$, the Lean step count is $j-1$. The
+source replaces the loop of Algorithm 6.4 by Algorithm 6.6, which has no explicit breakdown guard.
+If read with the FOM rule of retaining step $j$, the step counts differ. Lean and the source agree
+when there is no breakdown.
+-/
 noncomputable def iom (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k m : ℕ) : 𝔼 :=
   iomFixed A b x₀ k (iomSteps A (v₁ A b x₀) k m)
 
 /-- If $h_{j+1,j} \neq 0$ for every step $j \le m$ of Algorithm 6.6 started at $v_1$, then the IOM
-iterate is the iterate with exactly $m$ steps. -/
+iterate is the iterate with exactly $m$ steps.
+
+**Reading.** When the first zero subdiagonal occurs at step $j$, the Lean step count is $j-1$. The
+source replaces the loop of Algorithm 6.4 by Algorithm 6.6, which has no explicit breakdown guard.
+If read with the FOM rule of retaining step $j$, the step counts differ. Lean and the source agree
+when there is no breakdown.
+-/
 theorem iom_eq_iomFixed {m : ℕ} (hnb : ∀ j < m, iopCoeff A (v₁ A b x₀) k (j + 1) j ≠ 0) :
     iom A b x₀ k m = iomFixed A b x₀ k m := by
   rw [iom, iomSteps_eq A (v₁ A b x₀) k hnb]
 
 /-- The IOM iterate with $m$ steps is $x_m = x_0 + \sum_{j=1}^{m} (y_m)_j v_j$, with the vectors
-$v_j$ of Algorithm 6.6. -/
+$v_j$ of Algorithm 6.6.
+
+**Reading.** The fixed-size incomplete iterate is also defined for complex systems and singular
+projected matrices. In the singular case its totalized inverse gives zero coefficients.
+-/
 theorem iomFixed_eq_add_sum (m : ℕ) :
     iomFixed A b x₀ k m = x₀ + ∑ j, iomY A b x₀ k m j • iop A (v₁ A b x₀) k (j : ℕ) := by
   rw [iomFixed, VI, toEuclideanLin_colMatrix_apply]
@@ -594,6 +829,9 @@ theorem HI_mulVec_iomY {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) :
 6.7 is still valid"), over $\mathbb{R}$ or $\mathbb{C}$. Let $m \ge 1$ and let the matrix $H_m$
 of Algorithm 6.6 be nonsingular. Then the IOM residual is
 $$b - Ax_m = -h_{m+1,m} (e_m^T y_m) v_{m+1}.$$
+
+**Generalization.** The fixed-size residual formulas apply over complex as well as real scalars.
+They describe the chosen prefix and assume its reduced system is nonsingular.
 -/
 theorem residual_iomFixed {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m) :
     b - op A (iomFixed A b x₀ k m)
@@ -607,7 +845,11 @@ theorem residual_iomFixed {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm
 $m \ge 1$, let the matrix $H_m$ of Algorithm 6.6 be nonsingular, and let $\|v_1\| = 1$. Then
 $$\|b - Ax_m\|_2 = |h_{m+1,m}| \, |e_m^T y_m|.$$
 
-Both sides vanish at a breakdown. -/
+Both sides vanish at a breakdown.
+
+**Generalization.** The fixed-size residual formulas apply over complex as well as real scalars.
+They describe the chosen prefix and assume its reduced system is nonsingular.
+-/
 theorem norm_residual_iomFixed {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
     (hv : ‖v₁ A b x₀‖ = 1) :
     ‖b - op A (iomFixed A b x₀ k m)‖
@@ -635,7 +877,12 @@ long as Algorithm 6.6 has not broken down, but neither follows from the nonsingu
 alone.
 
 The approximation is `IsPetrovGalerkin`: $x_m - x_0 \in \mathcal{K}_m(A, r_0)$ and
-$b - Ax_m \perp L_m$. -/
+$b - Ax_m \perp L_m$.
+
+**Reading.** Lean assumes a nonsingular projected system, a unit next vector and that the current
+vectors span the Krylov space. The printed statement does not spell out these conditions. The Lean
+theorem concerns the fixed-size IOM iterate and also works over complex scalars.
+-/
 theorem iomFixed_isPetrovGalerkin {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 : 0 < m)
     (hnorm : ‖iop A (v₁ A b x₀) k m‖ = 1)
     (hspan : Submodule.span 𝕜 (Set.range fun i : Fin m => iop A (v₁ A b x₀) k (i : ℕ))
@@ -667,16 +914,28 @@ bidiagonal, and $U_m$ is upper triangular, with $k$ nonzero diagonals when $H_m$
 
 /-- The upper factor of the LU factorization of a Hessenberg coefficient function $h$, $0$-based:
 $u_{0j} = h_{0j}$ and $u_{i+1,j} = h_{i+1,j} - l_i u_{ij}$, with $l_i = h_{i+1,i} / u_{ii}$. A
-zero pivot $u_{ii}$ gives $l_i = 0$. -/
+zero pivot $u_{ii}$ gives $l_i = 0$.
+
+**Reading.** Lean defines the unpivoted factor entries even at zero pivots by totalized division,
+and allows complex coefficients. The factorization correctness result assumes nonzero pivots.
+-/
 noncomputable def dioU (h : ℕ → ℕ → 𝕜) : ℕ → ℕ → 𝕜
   | 0, j => h 0 j
   | i + 1, j => h (i + 1) j - h (i + 1) i / dioU h i i * dioU h i j
 
 /-- The subdiagonal entry $l_i = h_{i+1,i} / u_{ii}$ of the unit lower bidiagonal factor, $0$-based.
-It is $0$ when $u_{ii} = 0$. -/
+It is $0$ when $u_{ii} = 0$.
+
+**Reading.** Lean defines the unpivoted factor entries even at zero pivots by totalized division,
+and allows complex coefficients. The factorization correctness result assumes nonzero pivots.
+-/
 noncomputable def dioL (h : ℕ → ℕ → 𝕜) (i : ℕ) : 𝕜 := h (i + 1) i / dioU h i i
 
-/-- The upper factor satisfies $u_{i+1,j} = h_{i+1,j} - l_i u_{ij}$. -/
+/-- The upper factor satisfies $u_{i+1,j} = h_{i+1,j} - l_i u_{ij}$.
+
+**Reading.** Lean defines the unpivoted factor entries even at zero pivots by totalized division,
+and allows complex coefficients. The factorization correctness result assumes nonzero pivots.
+-/
 theorem dioU_succ (h : ℕ → ℕ → 𝕜) (i j : ℕ) :
     dioU h (i + 1) j = h (i + 1) j - dioL h i * dioU h i j := rfl
 
@@ -706,13 +965,21 @@ theorem dioU_eq_zero_of_lt {h : ℕ → ℕ → 𝕜} (hh : ∀ a c, c + 1 < a �
     · rw [ih hlt, mul_zero, sub_zero, hh (i + 1) j (by omega)]
 
 /-- The unit lower bidiagonal $m \times m$ matrix $L_m$, with $1$ on the diagonal and $l_j$ at the
-position $(j + 1, j)$. -/
+position $(j + 1, j)$.
+
+**Reading.** Lean defines the unpivoted factor entries even at zero pivots by totalized division,
+and allows complex coefficients. The factorization correctness result assumes nonzero pivots.
+-/
 noncomputable def hessL (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => if (i : ℕ) = (j : ℕ) then 1 else if (i : ℕ) = (j : ℕ) + 1 then dioL h j
     else 0
 
 /-- The upper triangular $m \times m$ matrix $U_m$, with the entries $u_{ij}$ for $i \le j$ and $0$
-below the diagonal. -/
+below the diagonal.
+
+**Reading.** Lean defines the unpivoted factor entries even at zero pivots by totalized division,
+and allows complex coefficients. The factorization correctness result assumes nonzero pivots.
+-/
 noncomputable def hessU (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => if (i : ℕ) ≤ (j : ℕ) then dioU h i j else 0
 
@@ -720,7 +987,11 @@ noncomputable def hessU (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (F
 the Hessenberg matrix of a coefficient function $h$: the pair of matrices $(L_m, U_m)$.
 
 The factorization is correct when $h$ is upper Hessenberg and no pivot $u_{ll}$ with $l < m$
-vanishes (`SaadSparse.Chapter06.hessL_mul_hessU`). -/
+vanishes (`SaadSparse.Chapter06.hessL_mul_hessU`).
+
+**Reading.** Lean defines the unpivoted factor entries even at zero pivots by totalized division,
+and allows complex coefficients. The factorization correctness result assumes nonzero pivots.
+-/
 noncomputable def hessLU (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     Matrix (Fin m) (Fin m) 𝕜 × Matrix (Fin m) (Fin m) 𝕜 :=
   (hessL h m, hessU h m)
@@ -776,7 +1047,11 @@ private theorem sum_eq_pair {m : ℕ} (f : Fin m → 𝕜) (a c : Fin m) (hac : 
 
 /-- **Section 6.4.2** of [saad2003iterative], the LU factorization. Let $h$ be upper Hessenberg,
 $h_{ac} = 0$ for $a > c + 1$, and let the pivots $u_{ll}$ with $l < m$ be nonzero. Then
-$L_m U_m = H_m$, where $L_m$ is unit lower bidiagonal and $U_m$ is upper triangular. -/
+$L_m U_m = H_m$, where $L_m$ is unit lower bidiagonal and $U_m$ is upper triangular.
+
+**Reading.** Lean makes the nonzero-pivot hypotheses explicit, including the last pivot. The last
+pivot is needed for a nonsingular factor, while a factorization can exist with the last pivot zero.
+-/
 theorem hessL_mul_hessU (h : ℕ → ℕ → 𝕜) (hh : ∀ a c, c + 1 < a → h a c = 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU h l l ≠ 0) :
     hessL h m * hessU h m = Krylov.hessenbergSqOf h m := by
@@ -830,14 +1105,22 @@ theorem det_hessU (h : ℕ → ℕ → 𝕜) (m : ℕ) : (hessU h m).det = ∏ i
   rw [Matrix.det_of_isUpperTriangular (hessU_isUpperTriangular h m)]
   exact Finset.prod_congr rfl fun i _ => hessU_of_le h le_rfl
 
-/-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then $U_m$ is nonsingular. -/
+/-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then $U_m$ is nonsingular.
+
+**Reading.** Lean makes the nonzero-pivot hypotheses explicit, including the last pivot. The last
+pivot is needed for a nonsingular factor, while a factorization can exist with the last pivot zero.
+-/
 theorem isUnit_hessU (h : ℕ → ℕ → 𝕜) {m : ℕ} (hpiv : ∀ l, l < m → dioU h l l ≠ 0) :
     IsUnit (hessU h m) := by
   rw [Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero, det_hessU]
   exact Finset.prod_ne_zero_iff.2 fun i _ => hpiv i i.isLt
 
 /-- Let $h$ be upper Hessenberg, and let the pivots $u_{ll}$ with $l < m$ be nonzero. Then the
-$m \times m$ Hessenberg matrix of $h$ is nonsingular. -/
+$m \times m$ Hessenberg matrix of $h$ is nonsingular.
+
+**Reading.** Lean makes the nonzero-pivot hypotheses explicit, including the last pivot. The last
+pivot is needed for a nonsingular factor, while a factorization can exist with the last pivot zero.
+-/
 theorem isUnit_hessenbergSqOf (h : ℕ → ℕ → 𝕜) (hh : ∀ a c, c + 1 < a → h a c = 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU h l l ≠ 0) : IsUnit (Krylov.hessenbergSqOf h m) := by
   rw [← hessL_mul_hessU h hh hpiv]
@@ -851,12 +1134,20 @@ theorem isUnit_hessenbergSqOf (h : ℕ → ℕ → 𝕜) (hh : ∀ a c, c + 1 < 
 $\zeta_m = -l_{m,m-1} \zeta_{m-1}$, the entries of the solution $z_m$ of $L_m z_m = \beta e_1$.
 
 The index is $0$-based: the starting value $c$ is `diomZeta h c 0`, and `diomZeta h c (j + 1)`
-is $-l_j$ times `diomZeta h c j`. -/
+is $-l_j$ times `diomZeta h c j`.
+
+**Generalization.** The bidiagonal recursion is stated for an arbitrary starting scalar and
+arbitrary complex or real Hessenberg coefficients. The source uses the initial residual norm.
+-/
 noncomputable def diomZeta (h : ℕ → ℕ → 𝕜) (c : 𝕜) : ℕ → 𝕜
   | 0 => c
   | j + 1 => -dioL h j * diomZeta h c j
 
-/-- The scalars of Algorithm 6.8 satisfy $\zeta_{j+1} = -l_j \zeta_j$. -/
+/-- The scalars of Algorithm 6.8 satisfy $\zeta_{j+1} = -l_j \zeta_j$.
+
+**Generalization.** The bidiagonal recursion is stated for an arbitrary starting scalar and
+arbitrary complex or real Hessenberg coefficients. The source uses the initial residual norm.
+-/
 theorem diomZeta_succ (h : ℕ → ℕ → 𝕜) (c : 𝕜) (j : ℕ) :
     diomZeta h c (j + 1) = -dioL h j * diomZeta h c j := rfl
 
@@ -873,7 +1164,11 @@ theorem diomZeta_ne_zero {h : ℕ → ℕ → 𝕜} {c : 𝕜} (hc : c ≠ 0) :
       (ih fun i hi => hl i (Nat.lt_succ_of_lt hi))
 
 /-- The vector $z_m = (\zeta_1, \dots, \zeta_m)$ solves $L_m z_m = c \, e_1$. No hypothesis is
-needed. -/
+needed.
+
+**Generalization.** The bidiagonal recursion is stated for an arbitrary starting scalar and
+arbitrary complex or real Hessenberg coefficients. The source uses the initial residual norm.
+-/
 theorem hessL_mulVec_diomZeta (h : ℕ → ℕ → 𝕜) (c : 𝕜) (m : ℕ) :
     hessL h m *ᵥ (fun j : Fin m => diomZeta h c (j : ℕ)) = Krylov.firstVec c m := by
   funext i
@@ -900,7 +1195,12 @@ $$p_m = u_{mm}^{-1} \Big(v_m - \sum_{i = m-k+1}^{m-1} u_{im} p_i\Big),$$
 with the vectors $v_i$ of Algorithm 6.6 and the upper factor $U_m$ of their Hessenberg matrix.
 
 The index is $0$-based: `diomP A v k j` is $p_{j+1}$, and the lower limit of the sum is
-truncated at the first vector. The vector is $0$ when the pivot $u_{mm}$ vanishes. -/
+truncated at the first vector. The vector is $0$ when the pivot $u_{mm}$ vanishes.
+
+**Reading.** The Lean sequence has no stop guard for a zero upper-factor pivot. Its totalized
+division produces a zero direction at that index, whereas the source terminates. It allows complex
+as well as real scalars.
+-/
 noncomputable def diomP (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k : ℕ) : ℕ → 𝔼
   | j =>
     (dioU (iopCoeff A v k) j j)⁻¹ •
@@ -910,7 +1210,12 @@ noncomputable def diomP (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (k : ℕ) :
   decreasing_by exact i.isLt
 
 /-- The direction vectors of Algorithm 6.8 satisfy their defining recurrence, with the sum over the
-$0$-based indices $i$ with $j + 1 - k \le i < j$. -/
+$0$-based indices $i$ with $j + 1 - k \le i < j$.
+
+**Reading.** The Lean sequence has no stop guard for a zero upper-factor pivot. Its totalized
+division produces a zero direction at that index, whereas the source terminates. It allows complex
+as well as real scalars.
+-/
 theorem diomP_eq (j : ℕ) :
     diomP A v k j = (dioU (iopCoeff A v k) j j)⁻¹ •
       (iop A v k j - ∑ i ∈ Finset.Ico (j + 1 - k) j,
@@ -997,18 +1302,33 @@ $$x_m = x_{m-1} + \zeta_m p_m,$$
 as in (6.21), with the scalars $\zeta_m$ and the direction vectors $p_m$ of Algorithm 6.8 for
 Algorithm 6.6 started at $v_1 = r_0 / \beta$.
 
-The iterate keeps the book's index: `diom A b x₀ k m` is $x_m$. -/
+The iterate keeps the book's index: `diom A b x₀ k m` is $x_m$.
+
+**Reading.** The Lean sequence has no stop guard for a zero upper-factor pivot. Its totalized
+division produces a zero direction at that index, whereas the source terminates. It allows complex
+as well as real scalars.
+-/
 noncomputable def diom (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k : ℕ) : ℕ → 𝔼
   | 0 => x₀
   | m + 1 => diom A b x₀ k m
       + diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) m • diomP A (v₁ A b x₀) k m
 
-/-- The DIOM iterates satisfy $x_{m+1} = x_m + \zeta_{m+1} p_{m+1}$. -/
+/-- The DIOM iterates satisfy $x_{m+1} = x_m + \zeta_{m+1} p_{m+1}$.
+
+**Reading.** The Lean sequence has no stop guard for a zero upper-factor pivot. Its totalized
+division produces a zero direction at that index, whereas the source terminates. It allows complex
+as well as real scalars.
+-/
 theorem diom_succ (m : ℕ) :
     diom A b x₀ k (m + 1) = diom A b x₀ k m
       + diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) m • diomP A (v₁ A b x₀) k m := rfl
 
-/-- The DIOM iterate is $x_m = x_0 + \sum_{j=1}^{m} \zeta_j p_j$. -/
+/-- The DIOM iterate is $x_m = x_0 + \sum_{j=1}^{m} \zeta_j p_j$.
+
+**Reading.** The Lean sequence has no stop guard for a zero upper-factor pivot. Its totalized
+division produces a zero direction at that index, whereas the source terminates. It allows complex
+as well as real scalars.
+-/
 theorem diom_eq_add_sum (m : ℕ) :
     diom A b x₀ k m = x₀ + ∑ j ∈ Finset.range m,
       diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) j • diomP A (v₁ A b x₀) k j := by
@@ -1017,12 +1337,20 @@ theorem diom_eq_add_sum (m : ℕ) :
   | succ m ih => rw [diom_succ, ih, Finset.sum_range_succ, add_assoc]
 
 /-- The vector $y_m = U_m^{-1} z_m$. Algorithm 6.8 does not compute it, but the derivation of (6.20)
-in [saad2003iterative] passes through it. -/
+in [saad2003iterative] passes through it.
+
+**Reading.** Lean uses the reduced triangular system also over complex scalars. The inverse formula
+is totalized. The identities with the actual solve separately require nonzero pivots.
+-/
 noncomputable def diomY (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k m : ℕ) : Fin m → 𝕜 :=
   (hessU (iopCoeff A (v₁ A b x₀) k) m)⁻¹ *ᵥ
     fun j : Fin m => diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) (j : ℕ)
 
-/-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then $U_m y_m = z_m$. -/
+/-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then $U_m y_m = z_m$.
+
+**Reading.** Lean uses the reduced triangular system also over complex scalars. The inverse formula
+is totalized. The identities with the actual solve separately require nonzero pivots.
+-/
 theorem hessU_mulVec_diomY {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     hessU (iopCoeff A (v₁ A b x₀) k) m *ᵥ diomY A b x₀ k m
@@ -1036,7 +1364,11 @@ theorem isUnit_HI_of_pivots {m : ℕ}
   isUnit_hessenbergSqOf _ (fun _ _ hac => iopCoeff_eq_zero_of_lt A v k hac) hpiv
 
 /-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then $y_m = U_m^{-1} z_m$ solves
-$H_m y_m = \beta e_1$. -/
+$H_m y_m = \beta e_1$.
+
+**Reading.** Lean uses the reduced triangular system also over complex scalars. The inverse formula
+is totalized. The identities with the actual solve separately require nonzero pivots.
+-/
 theorem HI_mulVec_diomY {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     HI A (v₁ A b x₀) k m *ᵥ diomY A b x₀ k m = Krylov.firstVec (β A b x₀ : 𝕜) m := by
@@ -1044,7 +1376,11 @@ theorem HI_mulVec_diomY {m : ℕ}
     ← Matrix.mulVec_mulVec, hessU_mulVec_diomY A b x₀ k hpiv, hessL_mulVec_diomZeta]
 
 /-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then $U_m^{-1} z_m$ is the vector
-$y_m = H_m^{-1} (\beta e_1)$ of IOM. -/
+$y_m = H_m^{-1} (\beta e_1)$ of IOM.
+
+**Reading.** Lean uses the reduced triangular system also over complex scalars. The inverse formula
+is totalized. The identities with the actual solve separately require nonzero pivots.
+-/
 theorem diomY_eq_iomY {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     diomY A b x₀ k m = iomY A b x₀ k m := by
@@ -1053,7 +1389,11 @@ theorem diomY_eq_iomY {m : ℕ}
 
 /-- **Equations (6.20)–(6.21)** of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. If the
 pivots $u_{ll}$ with $l < m$ are nonzero, then Algorithm 6.8 computes the IOM iterate:
-$x_0 + P_m z_m = x_0 + V_m y_m$. -/
+$x_0 + P_m z_m = x_0 + V_m y_m$.
+
+**Reading.** The identities require nonzero factor pivots and compare DIOM with the fixed-size IOM
+formula, independently of the earlier stopping test used by the executable IOM definition.
+-/
 theorem diom_eq_iomFixed {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     diom A b x₀ k m = iomFixed A b x₀ k m := by
@@ -1083,7 +1423,11 @@ theorem diom_eq_iomFixed {m : ℕ}
             (congrFun (hessU_mulVec_diomY A b x₀ k hpiv) i)
 
 /-- If $m \ge 1$ and the pivots $u_{ll}$ with $l < m$ are nonzero, then the last entry of
-$y_m = U_m^{-1} z_m$ is $\zeta_m / u_{mm}$, by back substitution. -/
+$y_m = U_m^{-1} z_m$ is $\zeta_m / u_{mm}$, by back substitution.
+
+**Reading.** The nonzero-pivot hypotheses are explicit. General forms use complex moduli, and the
+norm formulas also hold at zero next vector because its coefficient vanishes.
+-/
 theorem diomY_last {m : ℕ} (hm0 : 0 < m)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     diomY A b x₀ k m ⟨m - 1, by omega⟩
@@ -1104,6 +1448,9 @@ theorem diomY_last {m : ℕ} (hm0 : 0 < m)
 $\|v_1\| = 1$, and let the pivots $u_{ll}$ with $l < m$ be nonzero. Then the DIOM residual norm
 is
 $$\|b - Ax_m\|_2 = |h_{m+1,m}| \, |\zeta_m / u_{mm}|.$$
+
+**Reading.** The nonzero-pivot hypotheses are explicit. General forms use complex moduli, and the
+norm formulas also hold at zero next vector because its coefficient vanishes.
 -/
 theorem norm_residual_diom {m : ℕ} (hm0 : 0 < m) (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
@@ -1118,7 +1465,11 @@ theorem norm_residual_diom {m : ℕ} (hm0 : 0 < m) (hv : ‖v₁ A b x₀‖ = 1
 /-! ### Equations (6.22)–(6.24), Exercise P-6.22 -/
 
 /-- If the pivots $u_{ll}$ with $l < m$ are nonzero, then the DIOM residual $b - Ax_m$ is a multiple
-of the vector $v_{m+1}$ of Algorithm 6.6. -/
+of the vector $v_{m+1}$ of Algorithm 6.6.
+
+**Reading.** The nonzero-pivot hypotheses are explicit. General forms use complex moduli, and the
+norm formulas also hold at zero next vector because its coefficient vanishes.
+-/
 theorem residual_diom_eq_smul {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     ∃ c : 𝕜, b - op A (diom A b x₀ k m) = c • iop A (v₁ A b x₀) k m := by
@@ -1130,7 +1481,11 @@ theorem residual_diom_eq_smul {m : ℕ}
 
 /-- **Equation (6.22)** of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. Let $\|v_1\| = 1$
 and let the pivots $u_{ll}$ with $l < m$ be nonzero. Then the DIOM residuals $r_i = b - Ax_i$
-satisfy $(r_j, r_i) = 0$ for all $i, j \le m$ with $i \neq j$ and $|i - j| \le k$. -/
+satisfy $(r_j, r_i) = 0$ for all $i, j \le m$ with $i \neq j$ and $|i - j| \le k$.
+
+**Reading.** Lean explicitly requires a unit start and nonzero factor pivots, and its local
+orthogonality result includes the initial residual. The general statement allows complex scalars.
+-/
 theorem inner_residual_diom_eq_zero {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hi : i ≤ m)
     (hj : j ≤ m) (hij : i ≠ j) (hk : |(i : ℤ) - (j : ℤ)| ≤ (k : ℤ)) :
@@ -1146,7 +1501,12 @@ theorem inner_residual_diom_eq_zero {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
   rw [hvv, mul_zero, mul_zero]
 
 /-- For every $m$, $\zeta_{m+1} A p_{m+1} = r_m - r_{m+1}$, where $r_i = b - Ax_i$ are the DIOM
-residuals. This is the residual form of (6.21). -/
+residuals. This is the residual form of (6.21).
+
+**Reading.** The Lean sequence has no stop guard for a zero upper-factor pivot. Its totalized
+division produces a zero direction at that index, whereas the source terminates. It allows complex
+as well as real scalars.
+-/
 theorem smul_apply_diomP (m : ℕ) :
     diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) m • op A (diomP A (v₁ A b x₀) k m)
       = (b - op A (diom A b x₀ k m)) - (b - op A (diom A b x₀ k (m + 1))) := by
@@ -1158,7 +1518,12 @@ $\|v_1\| = 1$, let the pivots $u_{ll}$ with $l < m$ be nonzero, let $j \le m$, a
 $\zeta_j \neq 0$. Then $(A p_j, v_i) = 0$ for $j - k + 1 < i < j$.
 
 The indices of the Lean statement are $0$-based. The condition $j + 1 \le m$ there is $j \le m$
-in the book's indices. -/
+in the book's indices.
+
+**Reading.** The proof in Lean explicitly requires the direction's update scalar to be nonzero, as
+well as nonzero factor pivots. A window at least as large as the requested prefix represents full
+orthogonalization in (6.24).
+-/
 theorem inner_iop_apply_diomP_eq_zero {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hj : j + 1 ≤ m)
     (hζ : diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) j ≠ 0) (h₁ : j + 1 < i + k)
@@ -1181,7 +1546,12 @@ $\|v_1\| = 1$, let $k \ge m$, so that the orthogonalization is full, let the piv
 with $l < m$ be nonzero, let $j \le m$, and let $\zeta_j \neq 0$. Then the direction vectors are
 semi-conjugate: $(A p_j, p_i) = 0$ for $i < j$.
 
-The indices of the Lean statement are $0$-based. -/
+The indices of the Lean statement are $0$-based.
+
+**Reading.** The proof in Lean explicitly requires the direction's update scalar to be nonzero, as
+well as nonzero factor pivots. A window at least as large as the requested prefix represents full
+orthogonalization in (6.24).
+-/
 theorem inner_diomP_apply_diomP_eq_zero {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1) (hk : m ≤ k)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hj : j + 1 ≤ m)
     (hζ : diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : 𝕜) j ≠ 0) (hij : i < j) :
@@ -1216,7 +1586,12 @@ Algorithm 6.6 computes the same vectors as Algorithm 6.2: incomplete orthogonali
 full orthogonalization.
 
 In Lean, `iop A v k j` equals `arnoldiMGS A v j` for all $j \le k$, $0$-based. No hypothesis on
-$v$ is needed. -/
+$v$ is needed.
+
+**Generalization.** The equivalence compares exact prefixes with a finite window at least as long as
+the prefix. It remains valid for the totalized zero-padded recurrences, and its general form permits
+complex scalars.
+-/
 theorem iop_eq_arnoldiMGS_of_le : ∀ j, j ≤ k → iop A v k j = arnoldiMGS A v j := by
   intro j
   induction j using Nat.strong_induction_on with
@@ -1246,11 +1621,21 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
 
 /-- One cycle of **Algorithm 6.5** of [saad2003iterative] (FOM($m$)): the FOM iterate of Algorithm
-6.4 with $m$ steps, started from $x_0$. -/
+6.4 with $m$ steps, started from $x_0$.
+
+**Reading.** Lean iterates a fixed restart size for a specified number of cycles. The source leaves
+the stopping check to the caller of the restarted method. The Lean theorem makes nonsingularity of
+the current projected matrix explicit.
+-/
 noncomputable def fomCycle (m : ℕ) (x₀ : 𝔼) : 𝔼 := fom A b x₀ m
 
 /-- **Algorithm 6.5** of [saad2003iterative] (FOM($m$)). The restarted iterate after $k$ cycles of
-$m$ steps, each cycle started from the iterate of the previous one. -/
+$m$ steps, each cycle started from the iterate of the previous one.
+
+**Reading.** Lean iterates a fixed restart size for a specified number of cycles. The source leaves
+the stopping check to the caller of the restarted method. The Lean theorem makes nonsingularity of
+the current projected matrix explicit.
+-/
 noncomputable def fomRestarted (m : ℕ) (x₀ : 𝔼) (k : ℕ) : 𝔼 := (fomCycle A b m)^[k] x₀
 
 /-- After $0$ cycles, the restarted iterate is $x_0$. -/
@@ -1258,6 +1643,10 @@ noncomputable def fomRestarted (m : ℕ) (x₀ : 𝔼) (k : ℕ) : 𝔼 := (fomC
 theorem fomRestarted_zero (m : ℕ) (x₀ : 𝔼) : fomRestarted A b m x₀ 0 = x₀ := rfl
 
 /-- The restarted iterate after $k + 1$ cycles is one cycle applied to the iterate after $k$ cycles.
+
+**Reading.** Lean iterates a fixed restart size for a specified number of cycles. The source leaves
+the stopping check to the caller of the restarted method. The Lean theorem makes nonsingularity of
+the current projected matrix explicit.
 -/
 theorem fomRestarted_succ (m : ℕ) (x₀ : 𝔼) (k : ℕ) :
     fomRestarted A b m x₀ (k + 1) = fomCycle A b m (fomRestarted A b m x₀ k) :=
@@ -1268,7 +1657,12 @@ iterate after $k$ cycles is nonsingular, then the iterate after $k + 1$ cycles i
 iterate on the Krylov subspace of the current residual, of dimension index $\min(m, \mu)$ with
 $\mu$ the grade of the current $v_1$.
 
-This is all that the book claims about Algorithm 6.5, apart from the numerical Example 6.1. -/
+This is all that the book claims about Algorithm 6.5, apart from the numerical Example 6.1.
+
+**Reading.** Lean iterates a fixed restart size for a specified number of cycles. The source leaves
+the stopping check to the caller of the restarted method. The Lean theorem makes nonsingularity of
+the current projected matrix explicit.
+-/
 theorem fomRestarted_succ_isGalerkinIterate (m : ℕ) (x₀ : 𝔼) (k : ℕ)
     (hH : FOMDefined A b (fomRestarted A b m x₀ k)
       (mEff A b (fomRestarted A b m x₀ k) m)) :
@@ -1328,7 +1722,11 @@ theorem existsUnique_isGalerkinIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A
 $b, x_0 \in \mathbb{R}^n$. Then for every $m$,
 $$V_m^T r_0 = \beta e_1.$$
 
-No hypothesis is needed: when $r_0 = 0$, both sides vanish. -/
+No hypothesis is needed: when $r_0 = 0$, both sides vanish.
+
+**Generalization.** The identity also holds for the totalized zero starting residual. The
+conjugate-transpose formulation extends the real transpose identity to complex scalars.
+-/
 theorem Vt_r₀ (m : ℕ) :
     (V A (v₁ A b x₀) m)ᵀ *ᵥ WithLp.ofLp (r₀ A b x₀) = (β A b x₀ : ℝ) • e₁ m := by
   rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
@@ -1370,7 +1768,12 @@ $A \in \mathbb{R}^{n \times n}$ and $v \in \mathbb{R}^n$. For every $k$ and $m$,
 coefficients of Algorithm 6.6 satisfy
 $$A V_m = V_{m+1} \bar H_m.$$
 
-The proof of (6.6)–(6.7) never uses the orthogonality of the $v_i$, so no hypothesis is needed. -/
+The proof of (6.6)–(6.7) never uses the orthogonality of the $v_i$, so no hypothesis is needed.
+
+**Generalization.** The matrix relation is valid for the exact totalized recurrence at every
+requested dimension. It does not depend on orthonormality of the computed vectors. The general forms
+also allow complex scalars.
+-/
 theorem iop_eq_6_7 (m : ℕ) : A * VI A v k m = VI A v k (m + 1) * HbarI A v k m :=
   mul_VI_eq A v k m
 
@@ -1404,7 +1807,11 @@ and let the pivots $u_{ll}$ with $l < m$ of the LU factorization of $H_m$ be non
 $$\|b - Ax_m\|_2 = |h_{m+1,m}| \, |\zeta_m / u_{mm}|.$$
 
 The indices of the Lean statement are $0$-based: $\zeta_m$ is `diomZeta _ _ (m - 1)` and
-$u_{mm}$ is `dioU _ (m - 1) (m - 1)`. -/
+$u_{mm}$ is `dioU _ (m - 1) (m - 1)`.
+
+**Reading.** The nonzero-pivot hypotheses are explicit. General forms use complex moduli, and the
+norm formulas also hold at zero next vector because its coefficient vanishes.
+-/
 theorem diom_residual {m : ℕ} (hm0 : 0 < m) (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     ‖b - op A (diom A b x₀ k m)‖
@@ -1418,7 +1825,11 @@ theorem diom_residual {m : ℕ} (hm0 : 0 < m) (hv : ‖v₁ A b x₀‖ = 1)
 coefficient function, $h_{ac} = 0$ for $a > c + 1$, with $k$ nonzero diagonals on and above the
 diagonal, $h_{ac} = 0$ for $a + k \le c$. Let the pivots $u_{ll}$ with $l < m$ be nonzero. Then
 $H_m = L_m U_m$, where $L_m$ is unit lower bidiagonal and $U_m$ is upper triangular with
-$u_{ij} = 0$ for $i + k \le j$. -/
+$u_{ij} = 0$ for $i + k \le j$.
+
+**Reading.** Lean makes the nonzero-pivot hypotheses explicit, including the last pivot. The last
+pivot is needed for a nonsingular factor, while a factorization can exist with the last pivot zero.
+-/
 theorem hessLU_spec (h : ℕ → ℕ → ℝ) (hh : ∀ a c, c + 1 < a → h a c = 0)
     (hband : ∀ a c, a + k ≤ c → h a c = 0) {m : ℕ} (hpiv : ∀ l, l < m → dioU h l l ≠ 0) :
     (hessLU h m).1 * (hessLU h m).2 = Krylov.hessenbergSqOf h m ∧
@@ -1432,7 +1843,11 @@ theorem hessLU_spec (h : ℕ → ℕ → ℝ) (hh : ∀ a c, c + 1 < a → h a c
 /-- **Equations (6.20)–(6.21)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ and
 $b, x_0 \in \mathbb{R}^n$, and let the pivots $u_{ll}$ with $l < m$ of the LU factorization of
 $H_m$ be nonzero. Then Algorithm 6.8 (DIOM) is mathematically equivalent to Algorithm 6.7 (IOM):
-the DIOM iterate $x_m$ is the IOM iterate with $m$ steps. -/
+the DIOM iterate $x_m$ is the IOM iterate with $m$ steps.
+
+**Reading.** The identities require nonzero factor pivots and compare DIOM with the fixed-size IOM
+formula, independently of the earlier stopping test used by the executable IOM definition.
+-/
 theorem algorithm_6_8_eq_alg_6_7 {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) :
     diom A b x₀ k m = iomFixed A b x₀ k m :=
@@ -1466,7 +1881,11 @@ theorem proposition_6_8 {m : ℕ} (hH : IsUnit (HI A (v₁ A b x₀) k m)) (hm0 
 /-- **Equation (6.22)** of [saad2003iterative] (Exercise P-6.22). Let
 $A \in \mathbb{R}^{n \times n}$ and $b, x_0 \in \mathbb{R}^n$. Let $\|v_1\| = 1$ and let the
 pivots $u_{ll}$ with $l < m$ be nonzero. Then the DIOM residuals are orthogonal within a window
-of $k$ steps: $(r_j, r_i) = 0$ for all $i, j \le m$ with $i \neq j$ and $|i - j| \le k$. -/
+of $k$ steps: $(r_j, r_i) = 0$ for all $i, j \le m$ with $i \neq j$ and $|i - j| \le k$.
+
+**Reading.** Lean explicitly requires a unit start and nonzero factor pivots, and its local
+orthogonality result includes the initial residual. The general statement allows complex scalars.
+-/
 theorem equation_6_22 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hi : i ≤ m)
     (hj : j ≤ m) (hij : i ≠ j) (hk : |(i : ℤ) - (j : ℤ)| ≤ (k : ℤ)) :
@@ -1478,7 +1897,12 @@ $A \in \mathbb{R}^{n \times n}$ and $b, x_0 \in \mathbb{R}^n$. Let $\|v_1\| = 1$
 $u_{ll}$ with $l < m$ be nonzero, let $j \le m$, and let $\zeta_j \neq 0$. Then
 $$(A p_j, v_i) = 0 \quad \text{for } j - k + 1 < i < j.$$
 
-The indices of the Lean statement are $0$-based. -/
+The indices of the Lean statement are $0$-based.
+
+**Reading.** The proof in Lean explicitly requires the direction's update scalar to be nonzero, as
+well as nonzero factor pivots. A window at least as large as the requested prefix represents full
+orthogonalization in (6.24).
+-/
 theorem equation_6_23 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hj : j + 1 ≤ m)
     (hζ : diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : ℝ) j ≠ 0) (h₁ : j + 1 < i + k)
@@ -1492,7 +1916,12 @@ so that the orthogonalization is full, let the pivots $u_{ll}$ with $l < m$ be n
 $j \le m$, and let $\zeta_j \neq 0$. Then the direction vectors are semi-conjugate:
 $$(A p_j, p_i) = 0 \quad \text{for } i < j.$$
 
-The indices of the Lean statement are $0$-based. -/
+The indices of the Lean statement are $0$-based.
+
+**Reading.** The proof in Lean explicitly requires the direction's update scalar to be nonzero, as
+well as nonzero factor pivots. A window at least as large as the requested prefix represents full
+orthogonalization in (6.24).
+-/
 theorem equation_6_24 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1) (hk : m ≤ k)
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) k) l l ≠ 0) {i j : ℕ} (hj : j + 1 ≤ m)
     (hζ : diomZeta (iopCoeff A (v₁ A b x₀) k) (β A b x₀ : ℝ) j ≠ 0) (hij : i < j) :
@@ -1502,7 +1931,12 @@ theorem equation_6_24 {m : ℕ} (hv : ‖v₁ A b x₀‖ = 1) (hk : m ≤ k)
 /-- **Section 6.4.2** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ and
 $v \in \mathbb{R}^n$. If $j \le k$ ($0$-based), then the vector `iop A v k j` of Algorithm 6.6
 equals the vector `arnoldiMGS A v j` of Algorithm 6.2: with a full band, incomplete
-orthogonalization is Arnoldi's method. -/
+orthogonalization is Arnoldi's method.
+
+**Generalization.** The equivalence compares exact prefixes with a finite window at least as long as
+the prefix. It remains valid for the totalized zero-padded recurrences, and its general form permits
+complex scalars.
+-/
 theorem algorithm_6_6_eq_alg_6_2 {j : ℕ} (hjk : j ≤ k) : iop A v k j = arnoldiMGS A v j :=
   iop_eq_arnoldiMGS_of_le A v k j hjk
 

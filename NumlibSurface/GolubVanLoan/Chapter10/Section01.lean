@@ -114,6 +114,13 @@ Chapter 8.
 
 ## Deviations from the source
 
+* **Algorithm 10.1.1 and Theorem 10.1.1** (reading). A fuel-limited prefix can retain the
+  residual term. The stopped exact theorem assumes enough fuel and uses the last coordinate
+  vector of $\mathbb R^k$ in (10.1.4). See `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`,
+  `GolubVanLoan.Chapter10.theorem_10_1_1`, and `GolubVanLoan.Chapter10.equation_10_1_4`.
+* **Theorem 10.1.4** (reading). The bound explicitly requires the interior index, strict
+  spectral gaps, separation from earlier Ritz values, and nonzero starting overlap. See
+  `GolubVanLoan.Chapter10.theorem_10_1_4`.
 * **Theorem 10.1.2** (reading). The hypothesis $q_1^T z_1 \neq 0$, implicit in the source, is
   explicit. The source's $\rho_1$ is undefined when $\lambda_2 = \lambda_n$; the statement takes
   $\rho_1 = 0$ and needs no gap hypothesis. See `GolubVanLoan.Chapter10.theorem_10_1_2`.
@@ -146,14 +153,20 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- The entrywise rounded quotient $\mathrm{fl}(x / \beta)$ of a vector $x \in \mathbb{R}^n$ by a
 scalar $\beta$, with one rounding per entry, computed in place. It is the normalization
-$q = r / \beta$ of the Lanczos, Arnoldi and Golub–Kahan processes. -/
+$q = r / \beta$ of the Lanczos, Arnoldi and Golub–Kahan processes.
+
+**Reading.** Entrywise rounded quotient, total division.
+-/
 noncomputable def vecDiv (x : Fin n → ℝ) (β : ℝ) : M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun y i => do
     let c ← rnd (y i / β)
     pure (Function.update y i c)) x
 
 /-- The rounded Euclidean norm $\mathrm{fl}(\sqrt{\mathrm{fl}(x^T x)})$ of a vector
-$x \in \mathbb{R}^n$: the dot product of Algorithm 1.1.1, followed by one rounded square root. -/
+$x \in \mathbb{R}^n$: the dot product of Algorithm 1.1.1, followed by one rounded square root.
+
+**Reading.** Rounded inner product and square root.
+-/
 noncomputable def vecNorm (x : Fin n → ℝ) : M ℝ := do
   let s ← algorithm_1_1_1 rnd x x
   rnd (Real.sqrt s)
@@ -161,7 +174,10 @@ noncomputable def vecNorm (x : Fin n → ℝ) : M ℝ := do
 end Helpers
 
 /-- In exact arithmetic, `GolubVanLoan.Chapter10.vecDiv` computes $x / \beta = \beta^{-1} x$. For
-$\beta = 0$ the result is $0$. -/
+$\beta = 0$ the result is $0$.
+
+**Reading.** Exact scaling by total reciprocal, including zero divisor.
+-/
 theorem vecDiv_spec (x : Fin n → ℝ) (β : ℝ) : Id.run (vecDiv pure x β) = β⁻¹ • x := by
   funext k
   rw [vecDiv, List.idRun_foldlM_update_apply (fun k b => (pure (b / β) : Id ℝ)) _
@@ -228,7 +244,10 @@ q_{k+1} = r_k/β_k,  k = k + 1,  α_k = q_kᵀ A q_k,
 r_k = (A − α_k I) q_k − β_{k−1} q_{k−1},  β_k = ‖r_k‖₂
 ```
 At the first pass the program uses $\beta_0 = 1$ and $q_0 = 0$. Once the flag `done` is set, a
-pass returns the state unchanged. -/
+pass returns the state unchanged.
+
+**Reading.** Same active arithmetic plus rounding and explicit stop.
+-/
 noncomputable def lanczosStep (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosState n) :
     M (LanczosState n) :=
   if s.done then pure s else do
@@ -261,7 +280,10 @@ end
 
 The program is generic in the monad `M` and the rounding hook `rnd`. The `while` loop is at most
 `fuel` passes of `GolubVanLoan.Chapter10.lanczosStep`. The program has no hypothesis on $A$ or
-$q_1$; its exact semantics is `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`. -/
+$q_1$; its exact semantics is `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`.
+
+**Reading.** Finite fuel, state output, explicit rounds and stop flag.
+-/
 noncomputable def algorithm_10_1_1 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) (fuel : ℕ) :
     M (LanczosState n) :=
   (List.range fuel).foldlM (fun s _ => lanczosStep rnd A s)
@@ -289,7 +311,10 @@ The Lanczos vectors and coefficients are the backbone's `Arnoldi.vec`, `Lanczos.
 `Lanczos.beta` of `toEuclideanLin A` and $q_1$, at the 0-based index $j - 1$, and the final
 residual is `Arnoldi.w` at index $k - 1$. In particular the source's choice
 $\beta_k = \|r_k\|_2 \ge 0$ is the backbone's. The proof is an induction on the passes, with the
-invariant that the state is the backbone's at step $k$. -/
+invariant that the state is the backbone's at step $k$.
+
+**Reading.** The source's zero-residual identity is for an exact run at termination. A run that
+exhausts its fuel earlier can have a nonzero residual, as in (10.1.4). -/
 theorem algorithm_10_1_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (algorithm_10_1_1 pure A q₁ fuel)
@@ -396,7 +421,11 @@ $$A Q_k = Q_k T_k + r_k e_k^T.$$
 
 The relation holds for every $k \ge 1$. The orthonormality of the columns of $Q_k$ needs
 $k \le m$, the grade of $q_1$, but the relation does not. The proof specializes
-`Lanczos.mul_basisMatrix`. -/
+`Lanczos.mul_basisMatrix`.
+
+**Correction.** The last coordinate vector belongs to the $k$-column coefficient space. The
+source writes $e_k=I_n(:,k)$ in Theorem 10.1.1; the stated outer product requires
+$e_k=I_k(:,k)$. -/
 theorem equation_10_1_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk : 1 ≤ k) :
     A * Arnoldi.basisMatrix A q₁ k =
@@ -456,7 +485,10 @@ The computed $Q_k$ and $T_k$ are identified with the backbone's `Arnoldi.basisMa
 coefficients, and the Krylov matrix is `Matrix.krylovMatrix A q₁ n`. The source proves the
 orthogonality by induction from the three-term recurrence. Here it comes from the Gram–Schmidt
 definition of the backbone, through `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`, and $m$ is
-the rank of the Krylov matrix by `Krylov.grade_eq_rank_krylovMatrix`. -/
+the rank of the Krylov matrix by `Krylov.grade_eq_rank_krylovMatrix`.
+
+**Reading.** Same rank, factorization, basis and span under explicit fuel≥n.
+-/
 theorem theorem_10_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) {fuel : ℕ} (hfuel : n ≤ fuel) :
     let s := Id.run (algorithm_10_1_1 pure A q₁ fuel)
@@ -528,7 +560,10 @@ theorem isRitzPair_lanczos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
   simpa using hTs
 
 /-- If $T_{k+1} s = \theta s$, then the residual of $y = Q_{k+1} s$ is
-$Ay - \theta y = s_{k+1} r_{k+1}$, where $s_{k+1}$ is the last entry of $s$. -/
+$Ay - \theta y = s_{k+1} r_{k+1}$, where $s_{k+1}$ is the last entry of $s$.
+
+**Reading.** Same algebraic residual for any coefficient eigenvector without normalization.
+-/
 private theorem ritz_residual_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) {θ : ℝ} {s : Fin (k + 1) → ℝ}
     (hTs : Lanczos.tridiag (toEuclideanLin A) q₁ (k + 1) *ᵥ s = θ • s) :
@@ -720,7 +755,10 @@ decreasingly and 0-based. The matrix $\tilde T_k$ is unreduced below the grade, 
 eigenvalues are simple (`Sturm.strictAnti_eigenvalues`); each of them is an eigenvalue of
 $A + \tau w w^T$ by `GolubVanLoan.Chapter10.golub_rankOne_modification`, and the rank-one
 interlacing of Theorem 8.1.8 puts an eigenvalue of $A$ between two of them. The determinant
-formula is (8.4.2), `GolubVanLoan.Chapter08.equation_8_4_2`, for $\tilde T_k$. -/
+formula is (8.4.2), `GolubVanLoan.Chapter08.equation_8_4_2`, for $\tilde T_k$.
+
+**Reading.** Same spectral bracketing and determinant recurrence for arbitrary tau and test scalar.
+-/
 theorem golub_rankOne_bracket {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ grade (toEuclideanLin A) q₁)
     (τ a b : ℝ) :
@@ -1148,7 +1186,11 @@ The hypotheses make every quantity of the bound defined. For a unit $q_1$,
 $\cos\phi_i = |q_1^T z_i|$, as in the source. In the Lean statement $i$ is 0-based, so the
 source's $\theta_i$ is `Lanczos.ritzValues (toEuclideanLin A) q₁ k i` for the Lean index $i$.
 The proof specializes `Lanczos.kaniel_paige_saad` for the eigenbasis $z$, whose $\kappa_i$ is
-built from the Ritz values as here, with `Lanczos.ritzValues_eq_eigenvalues_compression`. -/
+built from the Ritz values as here, with `Lanczos.ritzValues_eq_eigenvalues_compression`.
+
+**Specialization.** The statement makes the interior index, spectral gaps, nonzero overlap, and
+separation from the earlier Ritz values explicit. It uses the angle to the starting line, so
+scaling the starting vector does not change the bound. -/
 theorem theorem_10_1_4 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam)
     {q₁ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
@@ -1206,7 +1248,11 @@ $\operatorname{span}\{v\}$ (`LinearMap.IsSymmetric.abs_sub_rayleighQuotient_star
 and the tangent of the angle between $z_1$ and $\operatorname{span}\{v\}$ is at most
 $\tan\phi_1 (\lambda_2/\lambda_1)^{k-1}$ by the eigen-expansion of $A^{k-1} q_1$
 (`OrthonormalBasis.norm_aeval_apply_le_of_forall_repr`); the hypothesis $\lambda_n \ge 0$ gives
-$|\lambda_i| \le \lambda_2$ for $i \ge 2$. -/
+$|\lambda_i| \le \lambda_2$ for $i \ge 2$.
+
+**Reading.** Same two-sided power estimate, unnormalized start, explicit overlap, includes zero
+spectrum and k=0 convention.
+-/
 theorem equation_10_1_11 {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = diagonal lam) (hlam : Antitone lam)
     (hn : 2 ≤ n) {q₁ : EuclideanSpace ℝ (Fin n)} (k : ℕ) (hnonneg : 0 ≤ lam ⟨n - 1, by omega⟩)

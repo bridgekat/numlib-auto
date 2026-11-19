@@ -34,6 +34,11 @@ quadratures of §3.3 of [liesen2013krylov].
 * `LiesenStrakos.Chapter03.theorem_3_3_6` identifies its poles and residues with the Gauss rule.
 * `LiesenStrakos.Chapter03.gaussResolvent_tendsto` proves convergence of the resolvent quadratures.
 
+## Deviations from the source
+
+* **Section 3.3** (reading). Interlacing and partial fractions use explicit support,
+  integrability or exactness hypotheses. The continued fraction and second-kind definitions are
+  total. The resolvent convergence theorem is stated for real parameters.
 -/
 
 open Filter MeasureTheory OrthogonalPolynomial Polynomial Topology
@@ -49,7 +54,10 @@ private noncomputable def continuedFractionTail (μ : Measure ℝ) : ℕ → ℕ
 
 /-- The $n$th Stieltjes convergent is the finite Jacobi continued fraction with denominators
 $X-\alpha_0,\ldots,X-\alpha_{n-1}$ and interior numerators $-\beta_0,\ldots,-\beta_{n-2}$.
-This is (3.3.17)–(3.3.18) of [liesen2013krylov]. -/
+This is (3.3.17)–(3.3.18) of [liesen2013krylov].
+
+**Generalization.** The algebraic recursion is defined at every index, including zero and
+indices beyond a finite support. -/
 noncomputable def stieltjesRationalConvergent (μ : Measure ℝ) (n : ℕ) : RatFunc ℝ :=
   continuedFractionTail μ n 0
 
@@ -192,7 +200,10 @@ private noncomputable def secondKindOf (μ : Measure ℝ) (p : ℝ[X]) : ℝ[X] 
 /-- The second-kind polynomial is the coefficientwise integral of the polynomial divided
 difference $(\psi_n(X)-\psi_n(t))/(X-t)$ against $\mu$. The monic quotient by $X-C(t)$
 has this value, including at $X=t$ by polynomial evaluation. This is (3.3.20)
-of [liesen2013krylov]. -/
+of [liesen2013krylov].
+
+**Generalization.** This coefficientwise construction is defined for any measure and index
+using total integration. -/
 noncomputable def secondKindPolynomial (μ : Measure ℝ) (n : ℕ) : ℝ[X] :=
   secondKindOf μ (family μ n)
 
@@ -338,7 +349,10 @@ private theorem secondKindOf_family_succ_eq {μ : Measure ℝ} [IsProbabilityMea
 /-- **Theorem 3.3.5** of [liesen2013krylov]. The denominator of the Stieltjes convergent is
 the monic orthogonal polynomial. The numerator is the second-kind polynomial, which satisfies
 the same three-term recurrence with initial values $0$ and $1$. Nonzero norms below order $N$
-suffice through that order, including the final convergent of a distribution on $N$ points. -/
+suffice through that order, including the final convergent of a distribution on $N$ points.
+
+**Generalization.** Integrability of polynomials and nonzero earlier squared norms replace
+compact support. The numerator and denominator are exhibited as a rational-function quotient. -/
 theorem theorem_3_3_5 {μ : Measure ℝ} [IsProbabilityMeasure μ]
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ)
     (N : ℕ) (hnorm : ∀ j < N, normSq μ j ≠ 0) :
@@ -358,7 +372,10 @@ theorem theorem_3_3_5 {μ : Measure ℝ} [IsProbabilityMeasure μ]
 
 /-- **Theorem 3.3.6** of [liesen2013krylov]. For a Gauss rule of a probability measure,
 the Stieltjes convergent is the sum of simple fractions with
-poles at the nodes and residues equal to the quadrature weights. -/
+poles at the nodes and residues equal to the quadrature weights.
+
+**Generalization.** The identity follows from sufficiently high degree exactness at distinct
+nodes and includes the terminal rule of a finite distribution. -/
 theorem theorem_3_3_6 {μ : Measure ℝ} [IsProbabilityMeasure μ]
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ)
     {n : ℕ} (hm : ∀ s : Finset ℝ, s.card < n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0)
@@ -402,14 +419,19 @@ theorem theorem_3_3_6 {μ : Measure ℝ} [IsProbabilityMeasure μ]
   rw [← map_mul, mul_comm, ← hfac]
 
 /-- **Equation (3.3.20)** of [liesen2013krylov]. Evaluating the second-kind polynomial
-at $z$ integrates the polynomial divided difference at $(z,t)$. -/
+at $z$ integrates the polynomial divided difference at $(z,t)$.
+
+**Generalization.** The quotient by a monic linear factor gives the removable value at a
+coinciding argument. Polynomial integrability suffices. -/
 theorem secondKindPolynomial_eval {μ : Measure ℝ}
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) (n : ℕ) (z : ℝ) :
     (secondKindPolynomial μ n).eval z =
       ∫ t, (family μ n /ₘ (X - C t)).eval z ∂μ :=
   eval_secondKindOf hint _ z
 
-/-- **Theorem 3.3.6** of [liesen2013krylov], evaluated away from the Gauss nodes. -/
+/-- **Theorem 3.3.6** of [liesen2013krylov], evaluated away from the Gauss nodes.
+
+**Generalization.** The evaluated quotient identity needs no normalization of the measure. -/
 theorem theorem_3_3_6_eval {μ : Measure ℝ}
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ)
     {n : ℕ} (hm : ∀ s : Finset ℝ, s.card < n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0)
@@ -476,7 +498,11 @@ private theorem exists_opposite_signs_of_orthogonal_factor {μ : Measure ℝ} {n
 For a monic orthogonal polynomial $p$ of degree $n$, every gap between two distinct roots
 contains a node of each higher-order Gauss rule, and there are nodes on either side of
 every root. When the larger rule is the finite support itself, its exactness gives the same
-conclusion. The two outer gaps use whatever endpoint inclusion holds for its nodes. -/
+conclusion. The two outer gaps use whatever endpoint inclusion holds for its nodes.
+
+**Reading.** The larger node set comes from a given positive exact rule. The theorem gives
+relative positions with respect to these nodes, without prescribing enclosing interval
+endpoints. -/
 theorem theorem_3_3_1 {μ : Measure ℝ} {n m : ℕ} (hnm : n < m)
     {x : Fin n → ℝ} {y w : Fin m → ℝ} (hy : Function.Injective y) (hw : ∀ i, 0 < w i)
     (hexact : Quadrature.IsExactOnMeasure μ w y (2 * m - 1))
@@ -516,7 +542,10 @@ theorem theorem_3_3_1 {μ : Measure ℝ} {n m : ℕ} (hnm : n < m)
 polynomials, listed in descending order, strictly interlace:
 $x_{n+1,i+1}<x_{n,i}<x_{n+1,i}$. The smaller roots lie in $(a,b)$. The larger
 roots also lie there unless the polynomial is terminal, in which case its roots are
-the support points and may include the right endpoint. -/
+the support points and may include the right endpoint.
+
+**Reading.** Nodes are ordered from largest to smallest. The larger nodes are stated to lie in
+$(a,b]$, which includes the terminal right endpoint. -/
 theorem corollary_3_3_3 {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Ioc a b)ᶜ = 0) (n : ℕ)
     (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0) :
@@ -587,7 +616,10 @@ theorem corollary_3_3_3 {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
 
 /-- At a real parameter outside the interval $[a,b]$, quadratures with nonnegative weights
 and increasing degree of exactness converge to the Stieltjes integral
-$\int(\lambda-t)^{-1}\,d\mu(t)$. This is the convergence of (3.2.22) of [liesen2013krylov]. -/
+$\int(\lambda-t)^{-1}\,d\mu(t)$. This is the convergence of (3.2.22) of [liesen2013krylov].
+
+**Generalization.** Any nonnegative exact rules of increasing degree give convergence for real
+parameters outside the interval. -/
 theorem gaussResolvent_tendsto {μ : Measure ℝ} [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {m d : ℕ → ℕ} {x w : ∀ k, Fin (m k) → ℝ}
     (hinj : ∀ k, Function.Injective (x k)) (hmem : ∀ k i, x k i ∈ Set.Icc a b)

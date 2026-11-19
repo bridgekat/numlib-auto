@@ -78,8 +78,23 @@ weights of `Numlib.Approximation.OrthogonalPolynomial.Classical` together with
 
 ## Deviations from the source
 
-* **Equation (9.49)** (correction). The bound uses the constant $|M_n|/n^{n+3}$ of (9.26) as
-  corrected in Section 9.4. See `QuarteroniSaccoSaleri.Chapter09.equation_9_49`.
+* **(9.46)–(9.48)** (reading). `QuarteroniSaccoSaleri.Chapter09.equation_9_46` uses boundedness
+  and continuity on the two half-open intervals without assuming one-sided limits. The singular
+  endpoint estimates require the integrability or regularity hypotheses stated by each theorem.
+* **(9.51) and (9.52)** (generalization). `QuarteroniSaccoSaleri.Chapter09.equation_9_51`
+  integrates the finite Taylor sum for all $\mu<1$.
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_52` uses a pointwise witness and gives the
+  integral identity for every real $\mu$. The regularity theorem imposes $\mu<1$.
+* **(9.53)–(9.54)** (scope). The theorems use Lebesgue integrability and therefore cover
+  absolute convergence. The printed definitions also allow conditionally convergent improper
+  integrals.
+* **§9.8.3, Gaussian rules** (scope). `QuarteroniSaccoSaleri.Chapter09.gaussLaguerre` and
+  `QuarteroniSaccoSaleri.Chapter09.gaussHermite` give existence of positive weights with
+  polynomial exactness. Their statements omit the identification of the nodes as roots of the
+  specified orthogonal polynomials.
+* **Equation (9.49)** (scope). The bound uses the constant $|M_n|/n^{n+3}$ printed in (9.49),
+  which agrees with the correction to (9.26) in Section 9.4. The choice of $m$ that sets the bound
+  to $\delta/2$ remains outside `QuarteroniSaccoSaleri.Chapter09.equation_9_49`.
 * **The sentence after (9.52)** (generalization). The regularity of $g$ holds for every $\mu < 1$,
   without the standing assumption $0 \le \mu$ of the source. See
   `QuarteroniSaccoSaleri.Chapter09.equation_9_52_regularity`.
@@ -110,7 +125,11 @@ on $[a, c]$ and on $[c, b]$, and
 $$I(f) = \int_a^b f(x)\,dx = \int_a^c f(x)\,dx + \int_c^b f(x)\,dx.$$
 
 Such an $f$ may have a finite jump at $c$. Any integration formula of the previous sections can
-then be used on $[a, c^-]$ and on $[c^+, b]$ to approximate $I(f)$. -/
+then be used on $[a, c^-]$ and on $[c^+, b]$ to approximate $I(f)$.
+
+**Reading.** Proves interval integrability of both halves without requiring one-sided limits, with
+an overall pointwise bound.
+-/
 theorem equation_9_46 (hac : a ≤ c) (hcb : c ≤ b) {M : ℝ} (hf₁ : ContinuousOn f (Ico a c))
     (hf₂ : ContinuousOn f (Ioc c b)) (hM : ∀ x ∈ Icc a b, ‖f x‖ ≤ M) :
     IntervalIntegrable f volume a c ∧ IntervalIntegrable f volume c b ∧
@@ -137,6 +156,9 @@ $0 \le \mu < 1$, let $\varphi$ be continuous on $(a, b]$, and let $|\varphi(x)| 
 $x \in (a, b]$. Then $f(x) = \varphi(x)/(x - a)^\mu$ is integrable on $[a, b]$, and
 $$|I(f)| \le M \lim_{t \to a^+} \int_t^b (x - a)^{-\mu}\,dx = \frac{M (b - a)^{1-\mu}}{1 -
   \mu}.$$
+
+**Reading.** Adds explicit continuity on the half-open interval to justify integrability and states
+bound with integrability.
 -/
 theorem singularIntegral_bound (hab : a < b) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1)
     (hφ : ContinuousOn φ (Ioc a b)) {M : ℝ} (hM : ∀ x ∈ Ioc a b, |φ x| ≤ M) :
@@ -153,6 +175,8 @@ Let $\varphi$ be of class $C^{p+1}$ on an open set $U \supseteq [a, b]$, and let
 Then there is $\xi(x) \in (a, x)$ such that
 $$\varphi(x) = \Phi_p(x) + \frac{(x - a)^{p+1}}{(p + 1)!} \varphi^{(p+1)}(\xi(x)), \qquad
   \Phi_p(x) = \sum_{k=0}^{p} \frac{\varphi^{(k)}(a)}{k!} (x - a)^k.$$
+
+**Reading.** Taylor formula with open-neighborhood smoothness and on x>a only.
 -/
 theorem equation_9_47 (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) {x : ℝ} (hx : x ∈ Ioc a b) :
@@ -175,7 +199,11 @@ $$\int_a^b \frac{\Phi_p(x)}{(x - a)^\mu}\,dx = (b - a)^{1-\mu} \sum_{k=0}^{p} \f
 
 At $b = a + \varepsilon$ this is the truncated sum of Method 1, and it is the exact part (9.51)
 of Method 2. The proof is the backbone's `Quadrature.integral_sum_mul_pow_div_rpow` with
-$c_k = \varphi^{(k)}(a)/k!$. -/
+$c_k = \varphi^{(k)}(a)/k!$.
+
+**Reading.** Exact polynomial integral for all μ<1, including negative μ, arbitrary derivative data
+via total evaluation.
+-/
 theorem integral_taylorSum_div_rpow (hab : a ≤ b) (hμ1 : μ < 1) (φ : ℝ → ℝ) (p : ℕ) :
     (∫ x in a..b, (∑ k ∈ Finset.range (p + 1),
         iteratedDeriv k φ a * (x - a) ^ k / (Nat.factorial k : ℝ)) / (x - a) ^ μ)
@@ -204,7 +232,11 @@ and the error $E_1$ made by replacing $I_1 = \int_a^{a+\varepsilon} \varphi(x)/(
 by this finite sum satisfies
 $$|E_1| \le \frac{\varepsilon^{p+2-\mu}}{(p + 1)!\,(p + 2 - \mu)} M.$$
 
-The book writes $M$ as $\max_{a \le x \le a+\varepsilon} |\varphi^{(p+1)}(x)|$. -/
+The book writes $M$ as $\max_{a \le x \le a+\varepsilon} |\varphi^{(p+1)}(x)|$.
+
+**Reading.** Uses a supplied bound on the derivative and adds exact weighted Taylor polynomial
+integral.
+-/
 theorem equation_9_48 (hε : 0 < ε) (hμ0 : 0 ≤ μ) (hμ1 : μ < 1) (hU : IsOpen U)
     (hUab : Icc a (a + ε) ⊆ U) (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) {M : ℝ}
     (hM : ∀ x ∈ Icc a (a + ε), |iteratedDeriv (p + 1) φ x| ≤ M) :
@@ -378,6 +410,9 @@ $$I(f) = \int_a^b \frac{\varphi(x) - \Phi_p(x)}{(x - a)^\mu}\,dx + \int_a^b
 Let $a \le b$, let $\mu < 1$, let $\varphi : \mathbb{R} \to \mathbb{R}$, and let
 $p \in \mathbb{N}$. Then the second integral is
 $$I_2 = (b - a)^{1-\mu} \sum_{k=0}^{p} \frac{(b - a)^k \varphi^{(k)}(a)}{k!\,(k + 1 - \mu)}.$$
+
+**Reading.** Exact Taylor polynomial formula, with all μ<1 and no smoothness hypothesis needed for
+coefficient data.
 -/
 theorem equation_9_51 (hab : a ≤ b) (hμ1 : μ < 1) (φ : ℝ → ℝ) (p : ℕ) :
     (∫ x in a..b, (∑ k ∈ Finset.range (p + 1),
@@ -395,6 +430,9 @@ $$\frac{\varphi(x) - \Phi_p(x)}{(x - a)^\mu} = \frac{(x - a)^{p+1-\mu}}{(p + 1)!
 and therefore
 $$I_1 = \int_a^b \frac{(x - a)^{p+1-\mu}}{(p + 1)!} \varphi^{(p+1)}(\xi(x))\,dx = \int_a^b
   g(x)\,dx.$$
+
+**Reading.** Gives pointwise witness function and integral equality for any μ; regularity is stated
+separately.
 -/
 theorem equation_9_52 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hφ : ContDiffOn ℝ ((p + 1 : ℕ) : WithTop ℕ∞) φ U) (μ : ℝ) :
@@ -464,7 +502,9 @@ theorem equation_9_52_regularity (hab : a < b) (hμ1 : μ < 1) (hU : IsOpen U)
 /-- **Equation (9.53)** of [quarteroni2000numerical]. Let $f$ be integrable over $(a, \infty)$. Then
 the integral is the limit of the proper integrals:
 $$I(f) = \int_a^\infty f(x)\,dx = \lim_{t \to +\infty} \int_a^t f(x)\,dx.$$
--/
+
+**Scope.** The hypothesis is Lebesgue integrability on the half-line. The source's improper-
+limit definition also covers conditionally convergent examples. -/
 theorem equation_9_53 (hf : IntegrableOn f (Ioi a)) :
     Tendsto (fun t => ∫ x in a..t, f x) atTop (𝓝 (∫ x in Ioi a, f x)) :=
   intervalIntegral_tendsto_integral_Ioi a hf tendsto_id
@@ -474,7 +514,10 @@ integrable over $\mathbb{R}$. Then for every $c \in \mathbb{R}$,
 $$\int_{-\infty}^{c} f(x)\,dx + \int_c^\infty f(x)\,dx = \int_{-\infty}^{\infty} f(x)\,dx.$$
 
 So the definition of the integral over $\mathbb{R}$ as the sum of the two improper integrals
-does not depend on the choice of $c$. -/
+does not depend on the choice of $c$.
+
+**Reading.** Requires Lebesgue integrability on the whole real line.
+-/
 theorem equation_9_54 (hf : Integrable f) (c : ℝ) :
     (∫ x in Iic c, f x) + (∫ x in Ioi c, f x) = ∫ x, f x :=
   intervalIntegral.integral_Iic_add_Ioi hf.integrableOn hf.integrableOn
@@ -512,7 +555,11 @@ for every polynomial $p$ of degree at most $2n - 1$.
 The book takes as nodes the zeros of the Laguerre polynomial $\mathcal{L}_n$ of Section 10.5,
 the $n$-th orthogonal polynomial for the weight $e^{-x}$ on $(0, \infty)$. The statement here
 asserts only the existence of the nodes and weights. The proof applies `Quadrature.exists_gauss`
-to the Laguerre weight of `Numlib.Approximation.OrthogonalPolynomial.Classical`. -/
+to the Laguerre weight of `Numlib.Approximation.OrthogonalPolynomial.Classical`.
+
+**Reading.** Existential positive-weight quadrature exact below degree 2n without identifying nodes
+as roots.
+-/
 theorem gaussLaguerre (n : ℕ) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ P : Polynomial ℝ, P.degree < (2 * n : ℕ) →
@@ -531,7 +578,11 @@ for every polynomial $p$ of degree at most $2n - 1$.
 The book takes as nodes the zeros of the Hermite polynomial of Section 10.5, the $n$-th
 orthogonal polynomial for the weight $e^{-x^2}$ on $\mathbb{R}$. The statement here asserts only
 the existence of the nodes and weights. The proof applies `Quadrature.exists_gauss` to the
-Hermite weight of `Numlib.Approximation.OrthogonalPolynomial.Classical`. -/
+Hermite weight of `Numlib.Approximation.OrthogonalPolynomial.Classical`.
+
+**Reading.** Existential positive-weight quadrature exact below degree 2n without identifying nodes
+as roots.
+-/
 theorem gaussHermite (n : ℕ) :
     ∃ x w : Fin n → ℝ, Function.Injective x ∧ (∀ i, 0 < w i) ∧
       ∀ P : Polynomial ℝ, P.degree < (2 * n : ℕ) →

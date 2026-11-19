@@ -42,6 +42,10 @@ Under the partition, a run is a run of the backbone predicate `Subproblem.IsBrac
 
 ## Deviations from the source
 
+* **Algorithm 9.2.1, initial trial** (generalization). The initial trial can lie outside the
+  initial bracket. The contraction estimate starts with the first safeguarded trial.
+  See `CartisGouldToint.Chapter09.algorithm_9_2_1` and
+  `CartisGouldToint.Chapter09.algorithm_9_2_1_terminates`.
 * **Algorithm 9.2.1, contraction factor** (correction). The bound $\max(1 - \theta, \theta, \gamma
   \sqrt{\lambda^U}/(\sqrt{\lambda^L} + \sqrt{\lambda^U}))$ of the source is not uniformly below $1$;
   the uniform factor $\max(1 - \theta_L, \theta_U, 1/2)$ is used. See
@@ -77,8 +81,11 @@ at every step $k$:
   $\theta_l \le \theta_u$ in $[\theta_L, \theta_U]$ and $\gamma_1 \le \gamma_2$ in $\{0, 1\}$.
 
 The formula for the trial value is `Subproblem.bracketEstimate`. The optional raise by
-$-\lambda_E$ with $\lambda_E \ge \lambda_1$ is `Subproblem.IsLowerUpdate (-λ₁)`. The sets need
-not partition $\mathbb{R}$; the results below assume that they do. -/
+$-\lambda_E$ with $\lambda_E \ge \lambda_1$ is `Subproblem.IsLowerUpdate (-λ₁)`.
+
+**Generalization.** The surrounding prose starts with a trial already in the current bracket.
+The run allows any initial trial because the updates keep $\lambda^*$ in the bracket and put
+the next trial inside it. The termination results use the stated interval partition. -/
 structure algorithm_9_2_1 (setN setL setG : Set ℝ) (lam₁ lamStar θL θU : ℝ)
     (lo hi c : ℕ → ℝ) : Prop where
   /-- The constants satisfy $0 < \theta_L \le \theta_U < 1$. -/
@@ -141,7 +148,12 @@ bounds with $0 \le \lambda^L_0 \le \lambda^* \le \lambda^U_0$ (9.2.1) and any in
 value $\lambda^C_0$, there is a run of Algorithm 9.2.1 with these initial values.
 
 The run in the proof takes $\theta = \theta_L$, $\gamma = 0$ and no eigenvalue estimates. The
-eigenvalue $\lambda_1$ is arbitrary here. -/
+eigenvalue $\lambda_1$ is arbitrary here. The initial trial is allowed outside the bracket
+(`CartisGouldToint.Chapter09.algorithm_9_2_1`).
+
+**Reading.** Constructs a run for all admissible bounds, including trials outside the initial
+bracket.
+-/
 theorem algorithm_9_2_1_exists {a lo₀ hi₀ c₀ : ℝ} (hN : setN = Iic a)
     (hL : setL = Ioc a lamStar) (hG : setG = Ioi lamStar) (hab : a ≤ lamStar)
     (hθ : 0 < θL ∧ θL ≤ θU ∧ θU < 1) (h0 : 0 ≤ lo₀) (hlo : lo₀ ≤ lamStar)
@@ -187,7 +199,9 @@ $$k \le \left\lceil \frac{\log\bigl((\lambda^U_1 - \lambda^L_1)/(\lambda^* - \ma
 
 **Correction.** The source bounds the ratio of successive bracket widths by $\max(1 - \theta,
 \theta, \gamma \sqrt{\lambda^U}/(\sqrt{\lambda^L} + \sqrt{\lambda^U}))$. This bound is valid but
-not uniformly below $1$, so the uniform factor $\rho$ is used.
+not uniformly below $1$, so the uniform factor $\rho$ is used. The contraction estimate begins
+at $k=1$, after the safeguard has selected a trial. The initial trial could be a bracket endpoint
+that leaves the bracket unchanged, and a run freezes its bracket when it reaches $\mathcal{L}$.
 
 **Correction.** Finite termination needs the hypothesis $\lambda^L_0 < \lambda^*$. If
 $\lambda^L_0 = \lambda^*$, a run need not stop: while $\lambda^U_k > \lambda^*$, every trial
@@ -231,7 +245,11 @@ $\rho = \max(1 - \theta_L, \theta_U, 1/2) < 1$ at each step $k \ge 1$ that has n
 if $\lambda_s < \lambda^*$ and $\lambda^L_0 < \lambda^*$, some $\lambda^C_k$ with
 $$k \le \left\lceil \frac{\log\bigl((\lambda^U_1 - \lambda^L_1)/(\lambda^* - \max(\lambda^L_0,
   \lambda_s))\bigr)}{\log(1/\rho)} \right\rceil_+ + 1$$
-lies in $\mathcal{L}$. -/
+lies in $\mathcal{L}$.
+
+**Correction.** Retains the corrected contraction and the strict lower-bound condition with
+regularization regions.
+-/
 theorem algorithm_9_2_1_terminates_reg (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ}
     (hσ : 0 < σ) (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)}
     (hs : IsRegularizationSolution g H M σ r s)
@@ -261,7 +279,11 @@ $$k \le \left\lceil \frac{\log\bigl((\lambda^U_1 - \lambda^L_1)/(\lambda^* - \ma
   \lambda_s))\bigr)}{\log(1/\rho)} \right\rceil_+ + 1$$
 lies in $\mathcal{L}$.
 
-The multiplier conditions are `CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
+The multiplier conditions are `CartisGouldToint.Chapter08.IsTrustRegionKKT`.
+
+**Correction.** Retains the corrected contraction and the strict lower-bound condition with
+trust-region regions.
+-/
 theorem algorithm_9_2_1_terminates_tr (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsTrustRegionSolution g H M Δ s) {lamStar : ℝ}
     (hkkt : IsTrustRegionKKT g H M Δ s lamStar)

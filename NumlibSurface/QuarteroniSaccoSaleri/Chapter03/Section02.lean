@@ -69,6 +69,8 @@ rounding model, after Theorems 8.5 and 8.7 and Lemma 8.8 of [higham2002accuracy]
 
 ## Deviations from the source
 
+* **Equations (3.22)–(3.24)** (reading). Exact substitution includes one-by-one systems.
+  The rounded version uses explicit rounding relations and the smallness condition $nu<1$.
 * **Equation (3.25)** (correction). The book prints $nu$ where the constant that (3.24) and Theorem
   3.1 give is $\gamma_n = nu / (1 - nu) = nu + O(u^2)$. The statement uses $\gamma_n$. See
   `QuarteroniSaccoSaleri.Chapter03.equation_3_25`.
@@ -104,7 +106,10 @@ and it solves $Lx = b$.
 
 The vector $x$ is `Matrix.forwardSubst L b`, and its first index is `0`. The recurrence is
 stated for every $i$, including the first index, where the sum is empty. The proof is the
-backbone's `Matrix.forwardSubst_apply` and `Matrix.mulVec_forwardSubst`. -/
+backbone's `Matrix.forwardSubst_apply` and `Matrix.mulVec_forwardSubst`.
+
+**Generalization.** The book assumes order at least two. The formulas also cover the
+one-by-one system. -/
 theorem equation_3_22 [NeZero n] {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular)
     (hLu : IsUnit L) (b : Fin n → ℝ) :
     forwardSubst L b 0 = b 0 / L 0 0 ∧
@@ -124,7 +129,10 @@ and it solves $Ux = b$.
 
 The vector $x$ is `Matrix.backSubst U b`, and its last index is `⊤`, which is `Fin.last`. The
 recurrence is stated for every $i$, including the last index, where the sum is empty. The proof
-is the backbone's `Matrix.backSubst_apply` and `Matrix.mulVec_backSubst`. -/
+is the backbone's `Matrix.backSubst_apply` and `Matrix.mulVec_backSubst`.
+
+**Generalization.** The book assumes order at least two. The formulas also cover the
+one-by-one system. -/
 theorem equation_3_23 [NeZero n] {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular)
     (hUu : IsUnit U) (b : Fin n → ℝ) :
     backSubst U b ⊤ = b ⊤ / U ⊤ ⊤ ∧
@@ -160,7 +168,10 @@ $$(T + \delta T) \hat{x} = b, \qquad |\delta T| \le \frac{nu}{1 - nu} \, |T| \qu
 The computed solutions are `FloatingPoint.RoundsForwardSubst` and
 `FloatingPoint.RoundsBackSubst`. The proof is the backbone's
 `FloatingPoint.exists_roundsForwardSubst_eq` and `FloatingPoint.exists_roundsBackSubst_eq`,
-which follow Theorem 8.5 of [higham2002accuracy]. -/
+which follow Theorem 8.5 of [higham2002accuracy].
+
+**Reading.** The source assumes computation in machine arithmetic. The theorem uses the
+relational rounding model and makes explicit that the rational bound requires $nu<1$. -/
 theorem equation_3_24 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) (Fin n) ℝ}
     (hTu : IsUnit T) {b xhat : Fin n → ℝ} :
     (T.IsLowerTriangular → RoundsForwardSubst m T b xhat →
@@ -196,7 +207,11 @@ private theorem linfty_opNorm_le_of_abs_le {δT T : Matrix (Fin n) (Fin n) ℝ} 
 
 /-- If $T$ is nonsingular, $Tx = b$ with $b \neq 0$, $(T + \delta T) \hat{x} = b$,
 $\|\delta T\|_\infty \le \gamma \|T\|_\infty$ and $\gamma K_\infty(T) < 1$, then $\|x -
-\hat{x}\|_\infty / \|x\|_\infty \le \gamma K_\infty(T) / (1 - \gamma K_\infty(T))$. -/
+\hat{x}\|_\infty / \|x\|_\infty \le \gamma K_\infty(T) / (1 - \gamma K_\infty(T))$.
+
+**Reading.** The perturbation bound is expressed with the actual scalar relative matrix-error
+coefficient, before substituting γₙ.
+-/
 private theorem relative_error_le_of_linfty_le {T δT : Matrix (Fin n) (Fin n) ℝ}
     (hTu : IsUnit T) {b x xhat : Fin n → ℝ} (hx : T *ᵥ x = b) (hb : b ≠ 0)
     (hxhat : (T + δT) *ᵥ xhat = b) {γ : ℝ}
@@ -246,7 +261,11 @@ Frobenius norm; the statement is for the $\infty$-norm.
 
 By (3.24), $\|\delta T\|_\infty \le \gamma_n \|T\|_\infty$ (the backbone's
 `Matrix.linfty_opNorm_le_of_abs_entrywiseLE`), and Theorem 3.1 with $\delta b = 0$ gives the
-bound. The condition number $K_\infty(T)$ is `QuarteroniSaccoSaleri.Chapter03.condNumber ⊤ T`. -/
+bound. The condition number $K_\infty(T)$ is `QuarteroniSaccoSaleri.Chapter03.condNumber ⊤ T`.
+
+**Reading.** This theorem states the corrected finite-roundoff bound for the infinity norm.
+The first-order expansion and bounds in the other norms mentioned by the book have no clause
+here. -/
 theorem equation_3_25 [NeZero n] (hn : (n : ℝ) * m.u < 1) {T : Matrix (Fin n) (Fin n) ℝ}
     (hTu : IsUnit T) {b x xhat : Fin n → ℝ} (hx : T *ᵥ x = b) (hb : b ≠ 0)
     (hK : n * m.u / (1 - n * m.u) * condNumber ⊤ T < 1) :
@@ -286,8 +305,8 @@ $$|x_i - \hat{x}_i| \le 2^{n-i+1} \, \frac{nu}{1 - nu} \, \max_{j \ge i} |\hat{x
 
 Indices start at $0$, so the exponent $n - i + 1$ is written `n - i`. The proof is the
 backbone's `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_abs_le_diag`, which follows Theorem
-8.7 of [higham2002accuracy]. The same bound holds for a lower triangular $L$ with
-$|l_{ij}| \le |l_{ii}|$ for $j < i$, by transposition. -/
+8.7 of [higham2002accuracy]. The lower triangular counterpart follows by reversing the
+coordinate order on both rows and columns, which also reverses the error maximum's index range. -/
 theorem backSubst_componentwise_error [NeZero n] (hn : (n : ℝ) * m.u < 1)
     {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular) (hUu : IsUnit U)
     (hrow : ∀ i j, i < j → |U i j| ≤ |U i i|) {x b xhat : Fin n → ℝ} (hx : U *ᵥ x = b)
@@ -313,7 +332,8 @@ $$|x_i - \hat{x}_i| \le (2n - 1) \, \frac{nu}{1 - nu} \, \|\hat{x}\|_\infty.$$
 **Reading.** The book says "the same result holds … if $L$ and $U$ are diagonally dominant",
 which suggests the bound with $2^{n-i+1}$ of
 `QuarteroniSaccoSaleri.Chapter03.backSubst_componentwise_error`. The statement is the bound that
-holds under (weak, row) diagonal dominance, which is linear in $n$ and so better.
+holds under weak row diagonal dominance. This bound grows linearly in $n$ and uses the full
+solution norm.
 
 Diagonal dominance is `Matrix.IsDiagDominant`. The proof is the backbone's
 `FloatingPoint.abs_sub_le_of_roundsBackSubst_of_isDiagDominant`, which follows Lemma 8.8 of

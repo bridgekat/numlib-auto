@@ -83,10 +83,14 @@ of `Numlib.Analysis.PDE.DirichletLaplacian` and the Dirichlet eigenfunctions of
 
 ## Deviations from the source
 
-* **Examples 8.2.3 and 8.2.6** (generalization). The source assumes a Lipschitz boundary. The
-  statements hold on every bounded open set $\Omega \subseteq \mathbb{R}^{d+1}$, which for Example
-  8.2.3 must be nonempty. See `AtkinsonHan.Chapter08.example_8_2_3` and
-  `AtkinsonHan.Chapter08.example_8_2_6`.
+* **Definition 8.2.2 and Theorem 8.2.8** (scope). The closed-graph criterion and the nonlinear
+  uniqueness tests use normed spaces. The source assumes Banach spaces. In the second
+  uniqueness test the difference $T-I$ is taken for a self-map.
+* **Example 8.2.3** (scope). The text treats the distributional Laplacian without a boundary
+  condition in its closedness argument. The formal example uses the closed Dirichlet
+  realization on a nonempty bounded open set.
+* **Example 8.2.6** (generalization). The statement allows any bounded open set. The
+  source assumes a Lipschitz boundary.
 * **Example 8.2.6** (reading). The source takes the seminorm $|v|_{H^1}$ as the norm of
   $V = H_0^1(\Omega)$ and states $\|L\| = 1$ and $\langle Lv, v \rangle = \|v\|_V^2$. The type of
   $V$ carries the norm of $H^1(\Omega)$, so these facts are stated through the seminorm, and the
@@ -117,7 +121,10 @@ $$v_n \to v \text{ and } T v_n \to w \implies v \in D(T) \text{ and } T v = w.$$
 
 Mathlib's `LinearPMap.IsClosed` is the closedness of the graph, which in a metric space is the
 same property. The backbone statement `LinearPMap.isClosed_iff_seq` holds over any nontrivially
-normed field. -/
+normed field.
+
+**Reading.** Same sequential closed graph criterion in normed spaces.
+-/
 theorem isClosed_iff_seq (T : V →ₗ.[ℝ] W) :
     T.IsClosed ↔ ∀ (v : ℕ → T.domain) (x : V) (w : W),
       Tendsto (fun n => (v n : V)) atTop (𝓝 x) → Tendsto (fun n => T (v n)) atTop (𝓝 w) →
@@ -178,7 +185,10 @@ variable {V W : Type*} [NormedAddCommGroup V] [NormedAddCommGroup W]
 $D \subseteq V$, let $T : V \to W$ be a map, which need not be linear, and let $c > 0$ with
 $$c \|u - v\| \le \|Tu - Tv\| \quad \text{for all } u, v \in D.$$
 If $u_1, u_2 \in D$ satisfy $T u_1 = w$ and $T u_2 = w$, then $u_1 = u_2$. So the equation
-$Tu = w$ has at most one solution in $D$. -/
+$Tu = w$ has at most one solution in $D$.
+
+**Reading.** Same uniqueness from a positive lower Lipschitz bound without completeness.
+-/
 theorem theorem_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
     (hstab : ∀ u ∈ D, ∀ v ∈ D, c * ‖u - v‖ ≤ ‖T u - T v‖) {w : W} {u₁ u₂ : V} (h₁ : u₁ ∈ D)
     (h₂ : u₂ ∈ D) (hw₁ : T u₁ = w) (hw₂ : T u₂ = w) : u₁ = u₂ := by
@@ -190,7 +200,10 @@ theorem theorem_8_2_8a {D : Set V} (T : V → W) {c : ℝ} (hc : 0 < c)
 and let $T : V \to V$ be a map, which need not be linear, with
 $$\|(Tu - u) - (Tv - v)\| < \|u - v\| \quad \text{for all } u, v \in D \text{ with } u \neq v.$$
 If $u_1, u_2 \in D$ satisfy $T u_1 = w$ and $T u_2 = w$, then $u_1 = u_2$. So the equation
-$Tu = w$ has at most one solution in $D$. -/
+$Tu = w$ has at most one solution in $D$.
+
+**Reading.** Same strict contraction test for self-map minus identity without completeness.
+-/
 theorem theorem_8_2_8b {D : Set V} (T : V → V)
     (hstab : ∀ u ∈ D, ∀ v ∈ D, u ≠ v → ‖(T u - u) - (T v - v)‖ < ‖u - v‖) {w : V} {u₁ u₂ : V}
     (h₁ : u₁ ∈ D) (h₂ : u₂ ∈ D) (hw₁ : T u₁ = w) (hw₂ : T u₂ = w) : u₁ = u₂ := by

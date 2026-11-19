@@ -69,6 +69,14 @@ The trust-region analogues of Algorithms 9.2.1 and 8.3.2 are
 * **Equations (9.4.6) and (9.4.7)** (generalization). The bounds hold for any point on the sphere of
   radius $\Delta^+$ (or $\Delta^-$), not only for minimizers, and for $\Delta \le \Delta^+$ (or
   $\Delta^- \le \Delta$). See `CartisGouldToint.Chapter09.optimalValue_bounds_9_4_6`.
+* **Section 9.4.2, trust-region boundary** (correction). A singular positive semidefinite
+  model can have interior minimizers. Also, a trial in $\mathcal{L}$ can have
+  $\Delta(\lambda)=\Delta$. See `CartisGouldToint.Chapter09.trValue_of_posDef` and
+  `CartisGouldToint.Chapter09.tests_9_4_3_9_4_4_of_setL`.
+* **Section 9.4.2, optimal value and criticality tests** (generalization). Empty balls
+  have totalized value $0$, and the test equivalences also hold for thresholds of
+  arbitrary sign. See `CartisGouldToint.Chapter09.trValue` and
+  `CartisGouldToint.Chapter09.test_9_4_2_iff_of_contDiffAt`.
 
 ## Not formalized
 
@@ -131,7 +139,11 @@ $$m_\Delta = \inf \{ m(s) \mid \|s\|_M \le \Delta \}.$$
 
 The infimum is `sInf` of Mathlib, which is $0$ for the empty set, so $m_\Delta = 0$ for
 $\Delta < 0$. For $\Delta \ge 0$ the infimum is attained
-(`CartisGouldToint.Chapter09.exists_trValue_eq`). -/
+(`CartisGouldToint.Chapter09.exists_trValue_eq`).
+
+**Reading.** Uses an attained infimum on nonnegative-radius balls and totalized zero when the ball
+is empty.
+-/
 noncomputable def trValue (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (Δ : ℝ) : ℝ :=
   sInf (model g H '' {s | mNorm M s ≤ Δ})
@@ -213,7 +225,8 @@ $$m_{\Delta(\lambda)} = \tfrac12 \bigl(\langle g, s(\lambda) \rangle - \lambda
 
 **Generalization.** The source takes $s^+$ and $s^-$ to be minimizers for the radii $\Delta^+$
 and $\Delta^-$. The bounds (9.4.6) and (9.4.7) hold for any points on these spheres, and for
-$\Delta \le \Delta^+$ and $\Delta^- \le \Delta$. -/
+$\Delta \le \Delta^+$ and $\Delta^- \le \Delta$. At zero denominator, the rescaling gives
+the zero vector. -/
 theorem optimalValue_bounds_9_4_6 (hH : H.IsHermitian) (hM : M.PosDef) :
     (∀ Δ : ℝ, 0 ≤ Δ → (∃ s, IsTrustRegionSolution g H M Δ s ∧ model g H s = trValue g H M Δ) ∧
       trValue g H M Δ ≤ 0) ∧
@@ -260,6 +273,10 @@ symmetric positive definite and $H$ positive definite, and suppose that
 $\|H^{-1} g\|_M \le \Delta$. Then $s_\Delta = -H^{-1} g$ is a global minimizer of the
 trust-region subproblem (8.1.2), it is the only one, and
 $$m_\Delta = -\tfrac12 \langle g, H^{-1} g \rangle.$$
+
+**Correction.** The source goes on to claim boundary attainment by $s_\Delta$ in all other
+cases. A singular positive semidefinite model can have interior minimizers. For example,
+$H=0$, $g=0$ and $\Delta>0$ admit $s_\Delta=0$.
 -/
 theorem trValue_of_posDef (hM : M.PosDef) (hpos : H.PosDef) {Δ : ℝ}
     (hs : mNorm M (toEuclideanLin H⁻¹ g) ≤ Δ) :
@@ -307,8 +324,14 @@ $s$. Then for every $\Delta$,
 $$\phi^\Delta_{f,2}(x) = f(x) - \min_{\|s\| \le \Delta} T_{f,2}(x, s) = -m_\Delta,$$
 where $m_\Delta$ is taken with $M = I$.
 
-The hypothesis says that $m$ is the model (8.1.1) with $g = \nabla f(x)$ and
-$H = \nabla^2 f(x)$. The measure is `Optimization.taylorMeasure`. -/
+The derivative data $g=\nabla f(x)$ and $H=\nabla^2 f(x)$ satisfy the polynomial
+hypothesis for a $C^2$ function. The identity also holds for any data yielding the same
+polynomial and uses the totalized ball values when $\Delta<0$. The measure is
+`Optimization.taylorMeasure`.
+
+**Reading.** Uses a polynomial equality hypothesis and admits any model satisfying it; negative
+radii use the totalized empty value.
+-/
 theorem taylorMeasure_two_eq_neg_trValue {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hT : ∀ s, taylorPolynomial f 2 x s = f x + model g H s)
     (Δ : ℝ) :
@@ -326,7 +349,13 @@ and $x \in \mathbb{R}^n$, and suppose that $T_{f,2}(x, s) = f(x) + m(s)$ for all
 all $\Delta, \phi^L, \phi^U \in \mathbb{R}$, with $m_\Delta$ taken for $M = I$,
 $$\phi^\Delta_{f,2}(x) \ge \phi^U \iff m_\Delta \le -\phi^U, \qquad \phi^\Delta_{f,2}(x) \le
   \phi^L \iff m_\Delta \ge -\phi^L.$$
-So the tests (9.4.2) are the tests (9.4.3)–(9.4.4) with $m^L = -\phi^U$ and $m^U = -\phi^L$. -/
+So the tests (9.4.2) are the tests (9.4.3)–(9.4.4) with $m^L = -\phi^U$ and $m^U = -\phi^L$.
+The equivalences extend the source's positive $\phi^L,\phi^U$ to arbitrary thresholds and
+use the totalized ball values when $\Delta<0$.
+
+**Reading.** Both signs and threshold reversals agree; takes arbitrary thresholds and totalized
+radii.
+-/
 theorem test_9_4_2_iff {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
     (hT : ∀ s, taylorPolynomial f 2 x s = f x + model g H s) (Δ φL φU : ℝ) :
     (φU ≤ Optimization.taylorMeasure (ftaylorSeries ℝ f x) 2 Δ univ ↔
@@ -356,7 +385,12 @@ near $x$. Then for every $\Delta$,
 $$\phi^\Delta_{f,2}(x) = -\min_{\|s\| \le \Delta} m(s),$$
 where $m$ is the model (8.1.1) with $g = \nabla f(x)$, $H = \nabla^2 f(x)$ and $M = I$.
 
-The hypothesis on $f$ is `ContDiffAt ℝ 2 f x`. -/
+The hypothesis on $f$ is `ContDiffAt ℝ 2 f x`. The identity extends to $\Delta<0$ using the
+totalized values of the empty ball.
+
+**Generalization.** Exact negative optimal value for nonnegative radius; extends the identity by
+empty-ball totalization.
+-/
 theorem taylorMeasure_two_eq_neg_trValue_of_contDiffAt {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x) (Δ : ℝ) :
     Optimization.taylorMeasure (ftaylorSeries ℝ f x) 2 Δ univ =
@@ -369,6 +403,9 @@ $m_\Delta$ be the optimal value for $g = \nabla f(x)$, $H = \nabla^2 f(x)$ and $
 all $\Delta, \phi^L, \phi^U \in \mathbb{R}$,
 $$\phi^\Delta_{f,2}(x) \ge \phi^U \iff m_\Delta \le -\phi^U, \qquad \phi^\Delta_{f,2}(x) \le
   \phi^L \iff m_\Delta \ge -\phi^L.$$
+
+**Generalization.** The source takes positive thresholds. The equivalence also holds for
+arbitrary thresholds and extends to $\Delta<0$ using the totalized ball values.
 -/
 theorem test_9_4_2_iff_of_contDiffAt {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} (hf : ContDiffAt ℝ 2 f x) (Δ φL φU : ℝ) :
@@ -383,7 +420,11 @@ positive definite, $\Delta \ge 0$, $\Delta^+ \ge 0$ and $\|s^+\|_M = \Delta^+$. 
 $\|(\Delta/\Delta^+) s^+\|_M \le \Delta$.
 
 The theorem states only the inequality; equality holds when $\Delta^+ > 0$. For $\Delta^+ = 0$
-the scale factor $\Delta/\Delta^+$ is $0$, by division by zero. -/
+the scale factor $\Delta/\Delta^+$ is $0$, by division by zero.
+
+**Generalization.** Gives a feasible point and extends the formula to a zero sphere radius, where
+the scale is totalized.
+-/
 theorem mNorm_div_smul_le (hM : M.PosDef) {Δ Δ' : ℝ} (hΔ : 0 ≤ Δ) (hΔ' : 0 ≤ Δ')
     {s : EuclideanSpace ℝ (Fin n)} (hs : mNorm M s = Δ') : mNorm M ((Δ / Δ') • s) ≤ Δ := by
   rw [mNorm_eq_norm_toScaled hM, map_smul, norm_smul, ← mNorm_eq_norm_toScaled hM, hs,
@@ -396,7 +437,11 @@ theorem mNorm_div_smul_le (hM : M.PosDef) {Δ Δ' : ℝ} (hΔ : 0 ≤ Δ) (hΔ' 
 positive definite, $0 \le \Delta \le \Delta^+$ and $\|s^+\|_M = \Delta^+$, and let
 $\alpha^+ = \Delta/\Delta^+$. If $m(\alpha^+ s^+) \le m^L$, then $m_\Delta \le m^L$, and
 $\alpha^+ s^+$ is a feasible exemplar: $\|\alpha^+ s^+\|_M \le \Delta$ and
-$m(\alpha^+ s^+) \le m^L$. -/
+$m(\alpha^+ s^+) \le m^L$.
+
+**Reading.** Retains upper-value test and feasible exemplar, allowing a nonoptimal sphere point and
+equal radii.
+-/
 theorem test_9_4_3_of_9_4_6 (hM : M.PosDef) {Δ Δp mL : ℝ} {sp : EuclideanSpace ℝ (Fin n)}
     (hΔ : 0 ≤ Δ) (h : Δ ≤ Δp) (hsp : mNorm M sp = Δp) (hL : model g H ((Δ / Δp) • sp) ≤ mL) :
     trValue g H M Δ ≤ mL ∧ mNorm M ((Δ / Δp) • sp) ≤ Δ := by
@@ -407,7 +452,10 @@ theorem test_9_4_3_of_9_4_6 (hM : M.PosDef) {Δ Δp mL : ℝ} {sp : EuclideanSpa
 
 /-- **Section 9.4.2** of [cartis2022evaluation], test (9.4.4) from (9.4.6). Let $M$ be symmetric
 positive definite and $0 \le \Delta \le \Delta^+$. If $m_{\Delta^+} \ge m^U$, then
-$m_\Delta \ge m^U$. -/
+$m_\Delta \ge m^U$.
+
+**Reading.** Retains the lower-value test and allows equal radii and unrestricted thresholds.
+-/
 theorem test_9_4_4_of_9_4_6 (hM : M.PosDef) {Δ Δp mU : ℝ} (hΔ : 0 ≤ Δ) (h : Δ ≤ Δp)
     (hU : mU ≤ trValue g H M Δp) : mU ≤ trValue g H M Δ :=
   hU.trans (trValue_antitone hM hΔ h)
@@ -418,7 +466,11 @@ $\alpha^- = \Delta/\Delta^-$. If $\min(m(\alpha^- s^-), m_{\Delta^-}) \le m^L$, 
 $m_\Delta \le m^L$, and there is a feasible exemplar $s$ with $\|s\|_M \le \Delta$ and
 $m(s) \le m^L$.
 
-The exemplar is $\alpha^- s^-$ or a minimizer for the radius $\Delta^-$. -/
+The exemplar is $\alpha^- s^-$ or a minimizer for the radius $\Delta^-$.
+
+**Reading.** Retains lower-radius model test and gives a witness for either branch; admits arbitrary
+points on the sphere and equal radii.
+-/
 theorem test_9_4_3_of_9_4_7 (hM : M.PosDef) {Δ Δm mL : ℝ}
     {sm : EuclideanSpace ℝ (Fin n)} (hΔm : 0 ≤ Δm) (h : Δm ≤ Δ) (hsm : mNorm M sm = Δm)
     (hL : min (model g H ((Δ / Δm) • sm)) (trValue g H M Δm) ≤ mL) :
@@ -442,7 +494,10 @@ $\alpha^+ = \Delta/\Delta^+$. Then:
 
 The radius $\Delta^+$ is suitable for (9.4.6), with the computable value $m_{\Delta^+} = \frac12
 (\langle g, s(\lambda^+) \rangle - \lambda^+ (\Delta^+)^2)$. In the first case,
-$\alpha^+ s(\lambda^+)$ is a feasible exemplar. -/
+$\alpha^+ s(\lambda^+)$ is a feasible exemplar.
+
+**Correction.** The source gives $\Delta^+>\Delta$ for $\lambda^+\in\mathcal{L}$. Equality
+is possible at the secular root, and the tests use $\Delta^+\ge\Delta$. -/
 theorem tests_9_4_3_9_4_4_of_setL (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam mL mU : ℝ}
     (hΔ : 0 ≤ Δ) (hlam : lam ∈ setL_tr hH hM g Δ) :
     (model g H ((Δ / mNorm M (stepOf g H M lam)) • stepOf g H M lam) ≤ mL →
@@ -463,7 +518,13 @@ $$\min\Bigl(m(\alpha^- s(\lambda^-)), \tfrac12 \bigl(\langle g, s(\lambda^-) \ra
   (\Delta^-)^2\bigr)\Bigr) \le m^L,$$
 then $m_\Delta \le m^L$, and there is $s$ with $\|s\|_M \le \Delta$ and $m(s) \le m^L$.
 
-The radius $\Delta^-$ is suitable for (9.4.7), with the computable value $m_{\Delta^-}$. -/
+The radius $\Delta^-$ is suitable for (9.4.7), with the computable value $m_{\Delta^-}$.
+The source gives $\Delta^-\le\Delta$. Membership in $\mathcal{G}$ gives the strict inequality.
+For $\Delta^-=0$, the scaled step is $0$.
+
+**Reading.** Uses strict smaller radius implied by G, preserves the value test and witness, and
+totalizes scaling at zero radius.
+-/
 theorem test_9_4_3_of_setG (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam mL : ℝ}
     (hlam : lam ∈ setG_tr hH hM g Δ)
     (hL : min (model g H ((Δ / mNorm M (stepOf g H M lam)) • stepOf g H M lam))

@@ -80,17 +80,20 @@ are instances of `Optimization.restrictedSteps` from
 
 ## Deviations from the source
 
-* **Equations (6.1.5) and (6.1.9)** (typo). The source prints the measures without the leading minus
-  sign; the minus sign is meant and is used here. See `CartisGouldToint.Chapter06.omega1` and
-  `CartisGouldToint.Chapter06.omega3`.
 * **Start of Section 6.1** (correction). The source claims that C.CNe ensures that (6.1.1) has a
   solution. This is false: $f(x) = x$ on $\mathcal{C} = \mathbb{R}$ has no minimizer. See
   `CartisGouldToint.Chapter06.not_assumptionCNe_imp_exists_minimizer`.
 * **Equations (6.1.4) and (6.1.6)** (reading). The source asks for approximate minimizers "within
   $\mathcal{C}$"; this is the explicit condition $x \in \mathcal{C}$. See
   `CartisGouldToint.Chapter06.IsApproxMinimizerCC`.
-* **Order of the sought minimizer** (reading). An explicit $q \in \{1, 2, 3\}$ replaces the infinite
-  tolerances. See `CartisGouldToint.Chapter06.IsApproxMinimizerCC`.
+* **Domain of the measures and tests** (generalization). The measures give zero on an
+  empty direction set. The predicates accept unrestricted real thresholds and an
+  explicit natural order. The algorithm supplies the source's parameter ranges.
+  See `CartisGouldToint.Chapter06.IsApproxMinimizerCC`.
+* **End of Section 6.1.1** (correction). The third-order test in (6.1.9) can
+  differ from (4.1.3) even in the unconstrained case. The former can detect
+  directions inside the unit ball that the unit-sphere test omits.
+  See `CartisGouldToint.Chapter06.omega3`.
 
 ## Not formalized
 
@@ -149,16 +152,20 @@ $$\omega_{f,\mathcal{C},1}(x) = -\min_{d \in \mathcal{C}(x) \cap \mathcal{B}} \n
 where $\mathcal{C}(x) = \{d \mid x + d \in \mathcal{C}\}$ and $\mathcal{B}$ is the closed
 Euclidean unit ball.
 
-**Typo.** The source prints the measure without the leading minus sign. The minus sign is meant,
-as the comparison with (6.1.7) and (6.2.3)–(6.2.5) and the claimed nonnegativity show.
-
 The minimum is the supremum `Optimization.formCriticality` of $-\nabla^1 f(x)[d]$ over
-`Optimization.feasibleSteps C x`; it is $0$ if no feasible step lies in $\mathcal{B}$. -/
+`Optimization.feasibleSteps C x`; it is $0$ if no feasible step lies in $\mathcal{B}$.
+
+**Reading.** The original has the minus sign. The Lean supremum matches feasible minima and assigns
+zero on an empty direction set.
+-/
 noncomputable def omega1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) : ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 1 f x) (Optimization.feasibleSteps C x)
 
 /-- The measure $\omega_{f,\mathcal{C},1}(x)$ is `Optimization.formCriticality` of $\nabla^1 f(x)$
-over the feasible steps $\mathcal{C}(x)$. -/
+over the feasible steps $\mathcal{C}(x)$.
+
+**Reading.** Unfolds the same totalized first-order measure.
+-/
 theorem omega1_def (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (x : ℝⁿ) :
     omega1 f C x =
       Optimization.formCriticality (iteratedFDeriv ℝ 1 f x) (Optimization.feasibleSteps C x) :=
@@ -169,6 +176,11 @@ $\mathcal{C} \subseteq \mathbb{R}^n$, $\tau_1, \alpha \in \mathbb{R}$ and $x \in
 The set of **first-order $\alpha$-restricted feasible steps** is
 $$\mathcal{C}^1(x, \alpha) = \{d \in \mathcal{C}(x) \mid |\nabla^1 f(x)[d]| \le \tau_1
   \alpha\}.$$
+
+The formula accepts all real parameters. The source uses $\tau_1\in(0,1)$ and $\alpha>0$.
+
+**Generalization.** The printed absolute form restriction and feasibility condition extend to
+arbitrary real threshold parameters.
 -/
 noncomputable def restrictedSteps₁ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ α : ℝ) (x : ℝⁿ) : Set ℝⁿ :=
   Optimization.restrictedSteps (iteratedFDeriv ℝ 1 f x) (τ₁ * α) (Optimization.feasibleSteps C x)
@@ -181,7 +193,11 @@ $$\omega_{f,\mathcal{C},2}(x, \alpha) = -\min_{d \in \mathcal{C}^1(x, \alpha) \c
 with the restricted set $\mathcal{C}^1(x, \alpha)$ of (6.1.8).
 
 The minimum is the supremum `Optimization.formCriticality`; it is $0$ if no step of
-$\mathcal{C}^1(x, \alpha)$ lies in $\mathcal{B}$. -/
+$\mathcal{C}^1(x, \alpha)$ lies in $\mathcal{B}$.
+
+**Reading.** Matches the negative minimum of the Hessian quadratic form on the source domain; the
+empty direction set is totalized.
+-/
 noncomputable def omega2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ : ℝ) (x : ℝⁿ) (α : ℝ) : ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 2 f x) (restrictedSteps₁ f C τ₁ α x)
 
@@ -191,6 +207,10 @@ $x \in \mathbb{R}^n$. The set of **second-order $(\alpha_1, \alpha_2)$-restricte
 steps** is
 $$\mathcal{C}^2(x, \alpha_1, \alpha_2) = \{d \in \mathcal{C}^1(x, \alpha_1) \mid |\nabla^2
   f(x)[d]^2| \le \tau_2 \alpha_2\}.$$
+
+The formula accepts all real parameters. The source uses $\tau_2\in(0,1)$ and $\alpha_2>0$.
+
+**Generalization.** The printed nested restriction extends to arbitrary real threshold parameters.
 -/
 noncomputable def restrictedSteps₂ (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ α₁ α₂ : ℝ) (x : ℝⁿ) :
     Set ℝⁿ :=
@@ -203,11 +223,16 @@ $$\omega_{f,\mathcal{C},3}(x, \alpha_1, \alpha_2) = -\min_{d \in \mathcal{C}^2(x
   \alpha_2) \cap \mathcal{B}} \nabla^3 f(x)[d]^3,$$
 with the restricted set $\mathcal{C}^2(x, \alpha_1, \alpha_2)$ of (6.1.10).
 
-**Typo.** The source prints the measure without the leading minus sign. The minus sign is meant,
-as for (6.1.5).
-
 The minimum is the supremum `Optimization.formCriticality`; it is $0$ if no step of
-$\mathcal{C}^2(x, \alpha_1, \alpha_2)$ lies in $\mathcal{B}$. -/
+$\mathcal{C}^2(x, \alpha_1, \alpha_2)$ lies in $\mathcal{B}$.
+
+**Correction.** The source claims the third-order test recovers (4.1.3) when
+$\mathcal{C}=\mathbb{R}^n$ and the restricted-set thresholds are $\epsilon_1,\epsilon_2$.
+For $f(u,v)=u^2/2+2v^2+4v^3/3$ at the origin, $\epsilon_2=1$ makes the unit
+directions in (4.1.4) be $(\pm 1,0)$, where the third derivative vanishes.
+The feasible direction $(0,-1/2)$ in the unit ball passes the same curvature
+restriction and has third derivative $-1$. Equation (6.1.9) therefore fails the
+test with $0<\epsilon_3<1$. -/
 noncomputable def omega3 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ) (x : ℝⁿ) (α₁ α₂ : ℝ) :
     ℝ :=
   Optimization.formCriticality (iteratedFDeriv ℝ 3 f x) (restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x)
@@ -228,8 +253,9 @@ condition $x \in \mathcal{C}$. The source switches off the higher-order tests wi
 $\epsilon_2 = \epsilon_3 = \infty$ (first order) or $\epsilon_3 = \infty$ (second order); here
 the order $q$ is explicit instead.
 
-Only $q \in \{1, 2, 3\}$ is used: $q = 0$ gives the first-order notion, and $q > 3$ gives the
-third-order notion. -/
+**Generalization.** The predicate takes real thresholds, including zero, and any
+natural order. The source uses positive tolerances and orders $1,2,3$. Here $q=0$
+gives the first-order notion and $q>3$ gives the third-order notion. -/
 def IsApproxMinimizerCC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ) (q : ℕ) (ε₁ ε₂ ε₃ : ℝ)
     (x : ℝⁿ) : Prop :=
   x ∈ C ∧ omega1 f C x ≤ ε₁ ∧ (2 ≤ q → omega2 f C τ₁ x ε₁ ≤ ε₂) ∧
@@ -238,14 +264,20 @@ def IsApproxMinimizerCC (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (τ₁ τ₂ : ℝ
 variable {f : ℝⁿ → ℝ} {C : Set ℝⁿ} {x d : ℝⁿ} {τ₁ τ₂ α α₁ α₂ : ℝ}
 
 /-- A step $d$ lies in $\mathcal{C}^1(x, \alpha)$ if and only if $x + d \in \mathcal{C}$ and
-$|\nabla^1 f(x)[d]| \le \tau_1 \alpha$. -/
+$|\nabla^1 f(x)[d]| \le \tau_1 \alpha$.
+
+**Generalization.** Unfolds the restriction for the entire generalized parameter domain.
+-/
 theorem mem_restrictedSteps₁ :
     d ∈ restrictedSteps₁ f C τ₁ α x ↔
       x + d ∈ C ∧ |iteratedFDeriv ℝ 1 f x (fun _ => d)| ≤ τ₁ * α :=
   Iff.rfl
 
 /-- A step $d$ lies in $\mathcal{C}^2(x, \alpha_1, \alpha_2)$ if and only if
-$d \in \mathcal{C}^1(x, \alpha_1)$ and $|\nabla^2 f(x)[d]^2| \le \tau_2 \alpha_2$. -/
+$d \in \mathcal{C}^1(x, \alpha_1)$ and $|\nabla^2 f(x)[d]^2| \le \tau_2 \alpha_2$.
+
+**Generalization.** Unfolds the second restricted set for the entire generalized parameter domain.
+-/
 theorem mem_restrictedSteps₂ :
     d ∈ restrictedSteps₂ f C τ₁ τ₂ α₁ α₂ x ↔
       d ∈ restrictedSteps₁ f C τ₁ α₁ x ∧ |iteratedFDeriv ℝ 2 f x (fun _ => d)| ≤ τ₂ * α₂ :=
@@ -254,7 +286,11 @@ theorem mem_restrictedSteps₂ :
 /-- The definition of an approximate minimizer of order $q$ within $\mathcal{C}$, unfolded:
 $x \in \mathcal{C}$, $\omega_{f,\mathcal{C},1}(x) \le \epsilon_1$, $\omega_{f,\mathcal{C},2}(x,
 \epsilon_1) \le \epsilon_2$ if $q \ge 2$, and $\omega_{f,\mathcal{C},3}(x, \epsilon_1,
-\epsilon_2) \le \epsilon_3$ if $q \ge 3$. -/
+\epsilon_2) \le \epsilon_3$ if $q \ge 3$.
+
+**Generalization.** Unfolds the combined feasible approximate minimizer predicate with generalized
+orders and threshold domains.
+-/
 theorem isApproxMinimizerCC_iff {q : ℕ} {ε₁ ε₂ ε₃ : ℝ} :
     IsApproxMinimizerCC f C τ₁ τ₂ q ε₁ ε₂ ε₃ x ↔
       x ∈ C ∧ omega1 f C x ≤ ε₁ ∧ (2 ≤ q → omega2 f C τ₁ x ε₁ ≤ ε₂) ∧

@@ -100,15 +100,29 @@ to Mathlib.
 
 ## Deviations from the source
 
+* **Section 1.1, scalars** (generalization). The abstract linear algebra uses any division ring
+  in place of real or complex scalars. See `AtkinsonHan.Chapter01.definition_1_1_1`.
+* **Example 1.1.2** (reading). The function-space clauses use real-valued functions and state
+  the differentiability clause on all of $\mathbb{R}^d$. See `AtkinsonHan.Chapter01.example_1_1_2`.
 * **Definition 1.1.3** (reading). The book requires a subspace to be a linear space, which excludes
   the empty set. The definition states only the two closure conditions, and the correspondence with
   `Submodule` assumes that the set is nonempty. See `AtkinsonHan.Chapter01.definition_1_1_3_iff`.
+* **Theorem 1.1.10** (generalization). The finite-cardinality identity also applies to infinite
+  bases, for which both natural-valued counts are zero. See `AtkinsonHan.Chapter01.theorem_1_1_10`.
+* **Example 1.1.12** (correction). The dimension drops by two for $n \ge 1$; at $n = 0$ it drops
+  by one. See `AtkinsonHan.Chapter01.example_1_1_12`.
+* **Example 1.1.15** (reading). Lean gives the polynomial function subspace and states the
+  isomorphism on the polynomial type. The coefficient map is used in the proof. See
+  `AtkinsonHan.Chapter01.example_1_1_15`.
 
 ## Not formalized
 
 * **The exercises of §1.1.**
-* **The basis of $\mathbb{F}_{n,0}$ in Example 1.1.12.** The book exhibits the basis
-  $x(1 - x), \dots, x^{n-1}(1 - x)$; only the dimension count is stated.
+* **Parts of Example 1.1.2.** The complex coordinate space, continuous extension from an open
+  set to its closure, boundedness on compact domains, and differentiable periodic spaces are
+  outside the statement about componentwise operations and differentiability on $\mathbb R^d$.
+* **The bases in Example 1.1.12.** Only the dimension counts are stated for the polynomial space
+  and the subspace of polynomials vanishing at both endpoints.
 -/
 
 open scoped Real
@@ -128,8 +142,10 @@ $\alpha (\beta v) = (\alpha \beta) v$; $\alpha (u + v) = \alpha u + \alpha v$; a
 $(\alpha + \beta) v = \alpha v + \beta v$. The theorem states that every module $V$ over a
 division ring $\mathbb{K}$, with $V$ an additive commutative group, satisfies these eight rules.
 
-In Lean a linear space is `Module 𝕜 V` over `AddCommGroup V`. The book takes
-$\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. -/
+**Generalization.** The book takes $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The eight laws
+hold for modules over any division ring, including these two fields.
+
+In Lean a linear space is `Module 𝕜 V` over `AddCommGroup V`. -/
 theorem definition_1_1_1 (𝕜 V : Type*) [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V] :
     (∀ u v : V, u + v = v + u) ∧
       (∀ u v w : V, u + v + w = u + (v + w)) ∧
@@ -150,10 +166,13 @@ $(f + g)(x) = f(x) + g(x)$ and $(\alpha f)(x) = \alpha f(x)$. Moreover, if
 $f, g : \mathbb{R}^d \to \mathbb{R}$ are $m$ times continuously differentiable, then so are
 $f + g$ and $\alpha f$ for every $\alpha \in \mathbb{R}$.
 
+**Reading.** The book allows complex values in $C(D)$ and discusses $C^m(\Omega)$ and
+$C^m(\overline\Omega)$ for an open set $\Omega$. The function-space clauses here use real
+values and state differentiability on the whole of $\mathbb{R}^d$, where ordinary derivatives
+suffice.
+
 The book also lists $\mathbb{R}$ and $\mathbb{C}$, which are modules over themselves by
-instance. The function spaces are `C(D, ℝ)` and `C(AddCircle (2 * π), ℝ)`. The space
-$C^m(\Omega)$ is represented by the predicate `ContDiff ℝ m`, for functions on the whole of
-$\mathbb{R}^d$ rather than on an open set $\Omega$. -/
+instance. The function spaces are `C(D, ℝ)` and `C(AddCircle (2 * π), ℝ)`. -/
 theorem example_1_1_2 {d : ℕ} (m : ℕ) (D : Set (EuclideanSpace ℝ (Fin d))) :
     (∀ (x y : EuclideanSpace ℝ (Fin d)) (α : ℝ) (i : Fin d),
         (x + y) i = x i + y i ∧ (α • x) i = α * x i) ∧
@@ -182,7 +201,11 @@ Definition 1.1.3 of [han2009theoretical] if and only if $W$ is the carrier of a 
 $V$.
 
 Nonemptiness is the condition that the book leaves implicit: the two closure conditions hold for
-the empty set, which is not a linear space. -/
+the empty set, which is not a linear space.
+
+**Reading.** Assumes nonemptiness to restore the book's linear-subspace notion, over any division
+ring.
+-/
 theorem definition_1_1_3_iff {W : Set V} (hW : W.Nonempty) :
     definition_1_1_3 𝕜 W ↔ ∃ p : Submodule 𝕜 V, (p : Set V) = W := by
   constructor
@@ -229,7 +252,9 @@ $\alpha_1 = \dots = \alpha_n = 0$. Otherwise they are **linearly dependent**: so
 $\sum_{i=1}^n \alpha_i v_i = 0$ has a nonzero coefficient.
 
 The vectors form a family `v : Fin n → V`. The predicate is `LinearIndependent` by
-`AtkinsonHan.Chapter01.definition_1_1_5_iff`. -/
+`AtkinsonHan.Chapter01.definition_1_1_5_iff`.
+
+**Generalization.** The source uses real or complex scalars. Lean works over any division ring. -/
 def definition_1_1_5 (𝕜 : Type*) {V : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
     {n : ℕ} (v : Fin n → V) : Prop :=
   ∀ α : Fin n → 𝕜, ∑ i, α i • v i = 0 → ∀ i, α i = 0
@@ -287,7 +312,9 @@ v_n\} = \Big\{\sum_{i=1}^n \alpha_i v_i : \alpha_1, \dots, \alpha_n \in \mathbb{
 
 The span is the carrier of `Submodule.span 𝕜 (Set.range v)` by
 `AtkinsonHan.Chapter01.definition_1_1_8_iff`, and it is a subspace by
-`AtkinsonHan.Chapter01.definition_1_1_8_isSubspace`. -/
+`AtkinsonHan.Chapter01.definition_1_1_8_isSubspace`.
+
+**Generalization.** The finite linear combination formula applies over any division ring. -/
 def definition_1_1_8 (𝕜 : Type*) {V : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
     {n : ℕ} (v : Fin n → V) : Set V :=
   {u | ∃ α : Fin n → 𝕜, u = ∑ i, α i • v i}
@@ -302,7 +329,9 @@ theorem definition_1_1_8_iff {n : ℕ} (v : Fin n → V) :
   exact ⟨fun ⟨α, hα⟩ => ⟨α, hα.symm⟩, fun ⟨α, hα⟩ => ⟨α, hα.symm⟩⟩
 
 /-- The span of $v_1, \dots, v_n$ in the sense of Definition 1.1.8 of [han2009theoretical] is a
-subspace in the sense of Definition 1.1.3. The book observes this after Definition 1.1.8. -/
+subspace in the sense of Definition 1.1.3. The book observes this after Definition 1.1.8.
+
+**Generalization.** The closure statement for the span applies over any division ring. -/
 theorem definition_1_1_8_isSubspace {n : ℕ} (v : Fin n → V) :
     definition_1_1_3 𝕜 (definition_1_1_8 𝕜 v) := by
   rw [definition_1_1_8_iff]
@@ -317,7 +346,9 @@ dimensional** otherwise.
 The predicate is about one family `v : Fin n → V`, and the family $v_1, \dots, v_n, v$ is
 `Fin.snoc v w`. The predicate is `Module.Basis` by `AtkinsonHan.Chapter01.definition_1_1_9_iff`,
 and the existence of such a family is `FiniteDimensional` by
-`AtkinsonHan.Chapter01.definition_1_1_9_finiteDimensional_iff`. -/
+`AtkinsonHan.Chapter01.definition_1_1_9_finiteDimensional_iff`.
+
+**Generalization.** The finite-basis condition applies over any division ring. -/
 def definition_1_1_9 (𝕜 : Type*) {V : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
     {n : ℕ} (v : Fin n → V) : Prop :=
   definition_1_1_5 𝕜 v ∧ ∀ w : V, ¬ definition_1_1_5 𝕜 (Fin.snoc v w)
@@ -338,7 +369,9 @@ theorem definition_1_1_9_iff {n : ℕ} (v : Fin n → V) :
     trivial
 
 /-- A linear space $V$ has a finite basis in the sense of Definition 1.1.9 of [han2009theoretical]
-if and only if $V$ is `FiniteDimensional`. -/
+if and only if $V$ is `FiniteDimensional`.
+
+**Generalization.** The characterization applies over any division ring. -/
 theorem definition_1_1_9_finiteDimensional_iff (𝕜 V : Type*) [DivisionRing 𝕜] [AddCommGroup V]
     [Module 𝕜 V] :
     (∃ (n : ℕ) (v : Fin n → V), definition_1_1_9 𝕜 v) ↔ FiniteDimensional 𝕜 V := by
@@ -351,15 +384,16 @@ theorem definition_1_1_9_finiteDimensional_iff (𝕜 V : Type*) [DivisionRing �
     have : Fintype s := FiniteDimensional.fintypeBasisIndex b
     exact ⟨Fintype.card s, _, (definition_1_1_9_iff _).mpr ⟨b.reindex (Fintype.equivFin s), rfl⟩⟩
 
-/-- **Theorem 1.1.10** of [han2009theoretical]. Any two bases of a linear space $V$ have the same
-number of elements, and this number is $\dim V$: for every basis $\{b_i\}_{i \in \iota}$ of $V$,
-the index set $\iota$ has $\dim V$ elements.
+/-- **Theorem 1.1.10** of [han2009theoretical]. For every basis $\{b_i\}_{i \in \iota}$ of a
+linear space $V$, the natural-valued cardinality of $\iota$ equals the natural-valued dimension
+of $V$.
 
-The basis is `Module.Basis ι 𝕜 V` for an arbitrary index type `ι`, the number of elements is
-`Nat.card ι`, and the dimension is `Module.finrank 𝕜 V`. If $V$ is infinite dimensional, then `ι`
-is infinite and both sides are $0$ by the conventions of `Nat.card` and `Module.finrank`, so the
-statement has content only for a finite-dimensional $V$. Two bases are compared through this
-equality. -/
+**Generalization.** The book assumes finite dimension. The identity also holds in infinite
+dimension because both natural-valued counts are zero there. In finite dimension it gives the
+book's comparison of any two bases.
+
+The basis is `Module.Basis ι 𝕜 V`, the cardinality is `Nat.card ι`, and the dimension is
+`Module.finrank 𝕜 V`. -/
 theorem theorem_1_1_10 {ι : Type*} (b : Module.Basis ι 𝕜 V) :
     Nat.card ι = Module.finrank 𝕜 V :=
   (Module.finrank_eq_nat_card_basis b).symm
@@ -378,6 +412,10 @@ real polynomials of degree at most $n$, and let $W$ be its subspace $\mathbb{F}_
 \mathbb{F}_n : p(0) = p(1) = 0\}$. Then $\dim \mathbb{F}_n = n + 1$ and $$\dim
 \mathbb{F}_{n,0} + 2 = \dim \mathbb{F}_n.$$ The difference $2$ counts the two conditions at $0$
 and $1$.
+
+**Correction.** The source gives the drop by two without specifying $n \ge 1$. For $n = 0$
+the ambient space consists of constants, so vanishing at $0$ already forces vanishing at $1$.
+The drop is one in that case.
 
 The space $\mathbb{F}_n$ is `Polynomial.degreeLT ℝ (n + 1)`. The subspace is described by the
 hypothesis `hW` and is not named. The count is written with $+ 2$ to stay in $\mathbb{N}$. The
@@ -429,7 +467,9 @@ operator or transformation) if $L(u + v) = Lu + Lv$ and $L(\alpha v) = \alpha L 
 $u, v \in V$ and $\alpha \in \mathbb{K}$.
 
 The predicate is `LinearMap` by `AtkinsonHan.Chapter01.definition_1_1_13_iff`. Chapter 2 of the
-book develops the notion further. -/
+book develops the notion further.
+
+**Generalization.** The two laws define linearity over any division ring. -/
 def definition_1_1_13 (𝕜 : Type*) {V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
     [AddCommGroup W] [Module 𝕜 W] (L : V → W) : Prop :=
   (∀ u v : V, L (u + v) = L u + L v) ∧ ∀ (α : 𝕜) (v : V), L (α • v) = α • L v
@@ -444,7 +484,9 @@ theorem definition_1_1_13_iff (L : V → W) :
 are **isomorphic** if there is a linear bijection $\ell : U \to V$.
 
 The predicate is the existence of a `LinearEquiv` by
-`AtkinsonHan.Chapter01.definition_1_1_14_iff`. -/
+`AtkinsonHan.Chapter01.definition_1_1_14_iff`.
+
+**Generalization.** The isomorphism definition applies over any division ring. -/
 def definition_1_1_14 (𝕜 U V : Type*) [DivisionRing 𝕜] [AddCommGroup U] [Module 𝕜 U]
     [AddCommGroup V] [Module 𝕜 V] : Prop :=
   ∃ l : U → V, definition_1_1_13 𝕜 l ∧ Function.Bijective l
@@ -468,7 +510,10 @@ $\mathbb{R}^{k+1}$.
 
 The book gives the isomorphism $a_0 + a_1 x + \dots + a_k x^k \mapsto (a_0, a_1, \dots, a_k)$.
 The statement asserts only that an isomorphism exists. The space $\mathbb{F}_k$ is
-`Polynomial.degreeLT ℝ (k + 1)`. -/
+`Polynomial.degreeLT ℝ (k + 1)`.
+
+**Reading.** Lean gives the isomorphism on the polynomial type and states closure for the
+corresponding polynomial functions on $[0,1]$. The coefficient map appears in the proof. -/
 theorem example_1_1_15 (k : ℕ) :
     definition_1_1_3 ℝ {f : C(Set.Icc (0 : ℝ) 1, ℝ) |
         ∃ p ∈ Polynomial.degreeLT ℝ (k + 1), ∀ x, f x = p.eval (x : ℝ)} ∧
@@ -489,7 +534,9 @@ $$(u_1, v_1) + (u_2, v_2) = (u_1 + u_2, v_1 + v_2), \qquad \alpha (u, v) = (\alp
 v).$$ It is a linear space. The theorem states that the product `U × V` of Mathlib has exactly
 these operations.
 
-The linear space structure is the `Module` instance of `Prod`. -/
+The linear space structure is the `Module` instance of `Prod`.
+
+**Generalization.** The product rules apply over any division ring. -/
 theorem definition_1_1_16 (u₁ u₂ : U) (v₁ v₂ : V) (α : 𝕜) :
     ((u₁, v₁) + (u₂, v₂) : U × V) = (u₁ + u₂, v₁ + v₂) ∧
       α • ((u₁, v₁) : U × V) = (α • u₁, α • v₁) :=

@@ -75,6 +75,10 @@ on the pole $-\lambda_1$ of the full matrix.
 
 ## Deviations from the source
 
+* **Equation (7.3.16)** (reading). Corrected signs yield vanishing curvature via an explicit
+  determinant bound. The direction conclusion is convergence in distance to the kernel of the
+  singular shifted limit. See `ConnGouldToint.Chapter07.linpackCurvature_bound` and
+  `ConnGouldToint.Chapter07.linpackDirection_limit`.
 * **Section 7.3.7, sign rule** (correction). The source compares the signed candidates $1 - b$ and
   $-1 - b$, which always selects $+1$; this choice misses the kernel of the $2 \times 2$ all-ones
   matrix. The rule compares magnitudes. See `ConnGouldToint.Chapter07.linpackSign`.
@@ -106,7 +110,10 @@ theorem abs_linpackSign (b : ℝ) : |linpackSign b| = 1 := by
   split <;> norm_num
 
 /-- **Section 7.3.7** of [conn2000trust], greedy row bound. For every $b \in \mathbb{R}$, the
-LINPACK sign satisfies $|\sigma(b) - b| \ge 1$. -/
+LINPACK sign satisfies $|\sigma(b) - b| \ge 1$.
+
+**Reading.** Magnitude rule ensures one-unit lower bound for every row residual.
+-/
 theorem one_le_abs_linpackSign_sub (b : ℝ) : 1 ≤ |linpackSign b - b| := by
   have ht := abs_sub_le (1 - b) 0 (-1 - b)
   have htwo : (1 : ℝ) - b - (-1 - b) = 2 := by ring
@@ -121,7 +128,10 @@ $$w_i = \frac{\sigma(b_i) - b_i}{L_{ii}},$$
 where $\sigma$ is the LINPACK sign. The sign is chosen after the contribution of the earlier
 rows is known.
 
-The quotient is $0$ when $L_{ii} = 0$. -/
+The quotient is $0$ when $L_{ii} = 0$.
+
+**Correction.** Recursive forward substitution with corrected signs and total division.
+-/
 noncomputable def linpackForwardSubst {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) : Fin n → ℝ
   | i =>
     let b := ∑ j ∈ (Finset.univ.filter (· < i)).attach, L i j * linpackForwardSubst L j
@@ -131,7 +141,10 @@ decreasing_by exact (Finset.mem_filter.mp j.property).2
 
 /-- **Section 7.3.7** of [conn2000trust], greedy row recurrence. For every row $i$, with
 $b_i = \sum_{j < i} L_{ij} w_j$, the greedy forward substitution satisfies
-$w_i = (\sigma(b_i) - b_i) / L_{ii}$. -/
+$w_i = (\sigma(b_i) - b_i) / L_{ii}$.
+
+**Correction.** Unfolds the recurrence using the corrected rule.
+-/
 theorem linpackForwardSubst_apply {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     let b := ∑ j ∈ Finset.univ.filter (· < i), L i j * linpackForwardSubst L j
     linpackForwardSubst L i = (linpackSign b - b) / L i i := by
@@ -144,7 +157,10 @@ $v_i = \sigma(\sum_{j < i} L_{ij} w_j)$, and let $y$ be the back substitution so
 $L^T y = w$. Then
 $$L w = v, \qquad L^T y = w, \qquad v_i = \sigma(v_i - L_{ii} w_i) \text{ for all } i.$$
 
-These three facts form the certificate of the LINPACK direction. -/
+These three facts form the certificate of the LINPACK direction.
+
+**Correction.** Exact solves with the corrected greedy sign identity and nonzero diagonals.
+-/
 theorem linpack_triangular_solves {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
     (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0) :
     let w := linpackForwardSubst L
@@ -168,7 +184,9 @@ theorem linpack_triangular_solves {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
 quotient** of the back solve is
 $$\frac{y^T A y}{y^T y}.$$
 
-Its value is $0$ when $y = 0$. -/
+Its value is $0$ when $y = 0$.
+
+**Reading.** The Rayleigh formula uses total division, including for the zero vector. -/
 noncomputable def linpackCurvature {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (y : Fin n → ℝ) : ℝ :=
   (y ⬝ᵥ A *ᵥ y) / (y ⬝ᵥ y)
@@ -178,7 +196,8 @@ $n \ge 1$, let $L$ be lower triangular of order $n$ with positive diagonal, and 
 satisfy $L w = v$, $L^T y = w$ and $v_i = \sigma(v_i - L_{ii} w_i)$ for all $i$. Then the
 Rayleigh quotient $c = y^T L L^T y / y^T y$ satisfies
 $$0 \le c \quad \text{and} \quad c^n \le n^n \det(L L^T).$$
--/
+
+**Reading.** The corrected magnitude rule gives the explicit determinant estimate. -/
 theorem linpackCurvature_bound {n : ℕ} (hn : 0 < n)
     {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular)
     (hd : ∀ i, 0 < L i i) {v w y : Fin n → ℝ}
@@ -257,7 +276,11 @@ triangular with positive diagonal, $L_k w_k = v_k$, $L_k^T y_k = w_k$ and
 $v_{k,i} = \sigma(v_{k,i} - (L_k)_{ii} w_{k,i})$ for all $i$. If $\det(L_k L_k^T) \to 0$ along
 $f$, then the Rayleigh quotients $y_k^T L_k L_k^T y_k / y_k^T y_k$ tend to $0$ along $f$.
 
-For example, $f$ can be the filter of successful factorizations of a run. -/
+For example, $f$ can be the filter of successful factorizations of a run.
+
+**Correction.** Curvature convergence for eventual corrected certificates on an arbitrary filter
+when determinants vanish.
+-/
 theorem linpackCurvature_tendsto_zero_of_eventually {n : ℕ} (hn : 0 < n)
     {ι : Type*} {f : Filter ι} {L : ι → Matrix (Fin n) (Fin n) ℝ} {v w y : ι → Fin n → ℝ}
     (hcert : ∀ᶠ k in f, (L k).IsLowerTriangular ∧ (∀ i, 0 < L k i i) ∧
@@ -281,6 +304,8 @@ every $k$ let $L_k$ be lower triangular with positive diagonal, with $L_k w_k = 
 $L_k^T y_k = w_k$ and $v_{k,i} = \sigma(v_{k,i} - (L_k)_{ii} w_{k,i})$ for all $i$. If
 $\det(L_k L_k^T) \to 0$, then
 $$\frac{y_k^T L_k L_k^T y_k}{y_k^T y_k} \to 0.$$
+
+**Correction.** Sequence version for corrected certificates and vanishing determinant.
 -/
 theorem linpackCurvature_tendsto_zero {n : ℕ} (hn : 0 < n)
     {L : ℕ → Matrix (Fin n) (Fin n) ℝ} {v w y : ℕ → Fin n → ℝ}
@@ -317,7 +342,10 @@ $L_k L_k^T \to A$. Then
 $$u_k^T L_k L_k^T u_k \to 0 \quad \text{and} \quad \operatorname{dist}(u_k, \ker A) \to 0.$$
 
 When $L_k L_k^T = H + \lambda_k I$ with $\lambda_k \to -\lambda_1$, the kernel of $A$ is the
-eigenspace of $H$ for its least eigenvalue $\lambda_1$. -/
+eigenspace of $H$ for its least eigenvalue $\lambda_1$.
+
+**Reading.** Convergence toward the leftmost eigenspace is stated as vanishing distance to the
+kernel of the limiting matrix. -/
 theorem linpackDirection_limit {n : ℕ} (hn : 0 < n)
     {L : ℕ → Matrix (Fin n) (Fin n) ℝ} {v w y u : ℕ → Fin n → ℝ}
     (hL : ∀ k, (L k).IsLowerTriangular) (hd : ∀ k i, 0 < L k i i)
@@ -377,7 +405,10 @@ theorem linpackDirection_limit {n : ℕ} (hn : 0 < n)
 $L$ indexed by $\iota$ and a row $c$ indexed by $\iota$, the vector indexed by $\iota$ and the
 pivot is
 $$v = \begin{bmatrix} -L^{-T} c^T \\ 1 \end{bmatrix},$$
-where $L^{-T} c^T$ is computed by back substitution. -/
+where $L^{-T} c^T$ is computed by back substitution.
+
+**Reading.** Computes direction only in the leading block, with last component one.
+-/
 noncomputable def failedCholeskyBackSubst {ι : Type*} [Fintype ι] [LinearOrder ι]
     (L : Matrix ι ι ℝ) (C : Matrix Unit ι ℝ) : ι ⊕ Unit → ℝ :=
   Sum.elim (Lᵀ.backSubst (-(Cᵀ *ᵥ (fun _ => 1)))) (fun _ => 1)
@@ -431,6 +462,8 @@ $L$ be lower triangular of order $n$ with positive diagonal, $c$ a row, $\delta 
 $e$ the unit vector of the pivot, and $B$ a matrix of order $n + 1$ with
 $B + \delta e e^T = [L; c][L; c]^T$. Then there is $v$ with
 $$v_{\mathrm{pivot}} = 1, \qquad (B + \delta e e^T) v = 0, \qquad v^T B v = -\delta.$$
+
+**Correction.** Existential leading-block kernel direction, correcting full-matrix equation.
 -/
 theorem failedCholeskyPivotDirection {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
     (hL : L.IsLowerTriangular) (hd : ∀ i, 0 < L i i)
@@ -449,7 +482,10 @@ and let $e$ be the unit vector of the last coordinate. Then $\delta \ge 0$, and 
 with $v_{\mathrm{last}} = 1$, $(B + \delta e e^T) v = 0$ and $v^T B v = -\delta$.
 
 So the correction is the deficit between the accumulated row square $c c^T$ and the uncorrected
-pivot entry $d$. -/
+pivot entry $d$.
+
+**Correction.** Computes pivot correction and verifies its leading-block certificate.
+-/
 theorem failedCholeskyPivot_correction {n : ℕ} {L : Matrix (Fin n) (Fin n) ℝ}
     (hL : L.IsLowerTriangular) (hd : ∀ i, 0 < L i i)
     (C : Matrix Unit (Fin n) ℝ) (d : ℝ) (hpivot : d ≤ (C * Cᵀ) () ()) :
@@ -476,7 +512,10 @@ Let
 $$B = \begin{bmatrix} -1 & 1 \\ 1 & 1 \end{bmatrix}, \qquad e = \begin{bmatrix} 1 \\ 0
   \end{bmatrix}.$$
 Then $(B + e e^T) e = (0, 1)^T$. The correction of the first pivot removes the leading residual,
-but the second coordinate of the residual is $1$. -/
+but the second coordinate of the residual is $1$.
+
+**Reading.** Concrete example shows the padded full residual need not vanish.
+-/
 theorem failedCholeskyPivot_full_residual_counterexample :
     let B : Matrix (Fin 2) (Fin 2) ℝ := !![-1, 1; 1, 1]
     let e : Fin 2 → ℝ := ![1, 0]
@@ -496,7 +535,11 @@ $$\lambda + \frac{\delta}{v^T v} \le -\lambda_{\min}.$$
 
 Here $A = H + \lambda I$, and $\lambda_{\min}$ is a lower bound on the eigenvalues of $H$. The
 proof uses the zero extension of $v$, whose Rayleigh quotient for $A$ equals that for $B$, so
-the bound holds even when the full residual is nonzero. -/
+the bound holds even when the full residual is nonzero.
+
+**Reading.** Source pole bound derived from valid leading-block quadratic form and full Rayleigh
+premise.
+-/
 theorem failedCholeskyPivot_lower_bound {n : ℕ} {ι : Type*} [Fintype ι]
     {B : Matrix (Fin n ⊕ Unit) (Fin n ⊕ Unit) ℝ}
     (C : Matrix (Fin n ⊕ Unit) ι ℝ) (D : Matrix ι (Fin n ⊕ Unit) ℝ)

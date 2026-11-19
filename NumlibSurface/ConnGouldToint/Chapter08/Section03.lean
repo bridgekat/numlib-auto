@@ -31,6 +31,13 @@ as an approximate eigenpoint direction when no eigenvector attains the infimum.
 
 * The infimum runs over the nonzero vectors of $E$. On the zero space the index set is empty, and
   the Lean value is $0$. The two results assume that $E$ is nontrivial.
+
+## Deviations from the source
+
+* **Equation (8.3.3)** (generalization). The Rayleigh infimum is defined on real inner-product
+  spaces without a completeness assumption. The direction result gives a unit vector below any
+  strict upper threshold on the infimum. See `ConnGouldToint.Chapter08.hilbertRayleighFloor` and
+  `ConnGouldToint.Chapter08.exists_unit_direction_below_of_hilbertRayleighFloor_lt`.
 -/
 
 open Set
@@ -45,7 +52,10 @@ product space $E$, the **Rayleigh infimum** is
 $$\lambda_{\min}[H] = \inf_{d \neq 0} \frac{\langle d, H d \rangle}{\|d\|^2}.$$
 
 In infinite dimension it need not be an eigenvalue. The infimum is finite, since the Rayleigh
-quotients are bounded below by $-\|H\|$. On the zero space the Lean value is $0$. -/
+quotients are bounded below by $-\|H\|$. On the zero space the Lean value is $0$.
+
+**Generalization.** The quotient uses a bounded linear operator. The ambient real inner-product
+space need not be complete. -/
 noncomputable def hilbertRayleighFloor (H : E →L[ℝ] E) : ℝ :=
   ⨅ d : {d : E // d ≠ 0}, H.rayleighQuotient d
 
@@ -88,7 +98,10 @@ $H$ be a continuous linear operator on $E$, and let $\lambda_{\min}[H] < a$. The
 $d \in E$ with $\|d\| = 1$ and $\langle d, H d \rangle < a$.
 
 This gives a direction of negative curvature, when $a \le 0$, without an eigenvector that
-attains the infimum. -/
+attains the infimum.
+
+**Reading.** The conclusion provides a unit direction strictly below the given threshold.
+Attainment of the Rayleigh infimum is unnecessary. -/
 theorem exists_unit_direction_below_of_hilbertRayleighFloor_lt [Nontrivial E]
     (H : E →L[ℝ] E) {a : ℝ} (ha : hilbertRayleighFloor H < a) :
     ∃ d, ‖d‖ = 1 ∧ ⟪d, H d⟫ < a := by

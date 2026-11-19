@@ -19,6 +19,11 @@ updated residual.
 * The eigenvalues are indexed in decreasing order. The first $\ell$ entries are the largest
   $\ell$ eigenvalues, and the entry at index $\ell$ is the largest retained eigenvalue.
 
+## Deviations from the source
+
+* **Section 5.9** (generalization). The ceiling in the idealized iteration count is a natural
+  number, and the residual gap is a module identity.
+
 ## Not formalized
 
 * The finite-precision delay and attainable-accuracy estimates discussed in §§5.9.1–5.9.4
@@ -31,7 +36,10 @@ namespace LiesenStrakos.Chapter05
 
 /-- **Equation (5.9.1)** of [liesen2013krylov]. For eigenvalues in decreasing order on
 $\{0,\dots,N\}$, the **effective condition number** after discarding the first $\ell$ entries is
-the eigenvalue at $\ell$ divided by the eigenvalue at $N$. A zero denominator gives zero. -/
+the eigenvalue at $\ell$ divided by the eigenvalue at $N$. A zero denominator gives zero.
+
+**Generalization.** The total ratio accepts arbitrary real arrays, using descending order for
+the source's spectral interpretation. -/
 noncomputable def effectiveConditionNumber {N : ℕ} (μ : Fin (N + 1) → ℝ)
     (ℓ : Fin (N + 1)) : ℝ :=
   μ ℓ / μ (Fin.last N)
@@ -42,7 +50,10 @@ an integer $0\le \ell \le N$, put $\kappa_\ell$ equal to the ratio of the larges
 remaining after removing $\ell$ largest eigenvalues to the smallest eigenvalue. After
 $$n=\ell+\left\lceil \tfrac12\log(2/\delta)\sqrt{\kappa_\ell}\right\rceil$$
 exact CG steps, $\|x-x_n\|_A/\|x-x_0\|_A\le\delta$. If the initial error is zero, the ratio is zero.
-The ceiling is taken in the naturals. -/
+The ceiling is taken in the naturals.
+
+**Generalization.** The natural ceiling allows every positive tolerance, with ceiling zero for
+tolerances at least two. -/
 theorem theorem_5_9_1 {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
     [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} (hA : A.IsSymmetricCoercive)
     {N : ℕ} (hN : Module.finrank 𝕜 E = N + 1) {b x x₀ : E} (hx : A x = b)
@@ -64,7 +75,9 @@ theorem theorem_5_9_1 {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [Inn
     CG.energyNorm_error_le_of_iteration_limit hN hA hx hmin hle (Iio ℓ) hhigh hlow hδ
 
 /-- **Section 5.9.3** of [liesen2013krylov]. The **recursive residual gap** at a computed
-approximate solution $y$ is $(b-Ay)-\hat r$, where $\hat r$ is the recursively computed residual. -/
+approximate solution $y$ is $(b-Ay)-\hat r$, where $\hat r$ is the recursively computed residual.
+
+**Generalization.** The same difference is defined on modules over any semiring. -/
 def recursiveResidualGap {𝕜 E : Type*} [Semiring 𝕜] [AddCommGroup E] [Module 𝕜 E]
     (A : E →ₗ[𝕜] E) (b y r : E) : E :=
   b - A y - r

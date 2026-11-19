@@ -63,6 +63,10 @@ Theorem 1.3.13, and Theorem 4.1.2 uses it.
 
 ## Deviations from the source
 
+* **Theorem 3.1.1** (reading). The formal approximation bound is strict, which is equivalent
+  because the tolerance is arbitrary. The theorem also permits an empty interval.
+* **Theorem 3.1.2** (generalization). The approximation theorem applies to any compact
+  topological space, while the book assumes a compact subset of Euclidean space.
 * **Corollary 3.1.4** (generalization). The statement is for the continuous functions of any period
   $T > 0$; the source takes $T = 2\pi$. See `AtkinsonHan.Chapter03.corollary_3_1_4`.
 -/
@@ -79,7 +83,11 @@ polynomial $p$ with
 $$\max_{a \le x \le b} |f(x) - p(x)| < \varepsilon.$$
 
 The polynomial acts on $[a, b]$ through `Polynomial.toContinuousMapOn`, and the maximum is the
-norm of `C(Set.Icc a b, ℝ)`. If $a > b$ the interval is empty and the statement holds trivially. -/
+norm of `C(Set.Icc a b, ℝ)`. If $a > b$ the interval is empty and the statement holds trivially.
+
+**Reading.** The printed estimate is $\le \varepsilon$. Using a smaller positive tolerance shows
+that the conclusion with $< \varepsilon$ is equivalent. The formal statement also permits an
+empty interval. -/
 theorem theorem_3_1_1 (a b : ℝ) (f : C(Set.Icc a b, ℝ)) {ε : ℝ} (hε : 0 < ε) :
     ∃ p : ℝ[X], ‖p.toContinuousMapOn (Set.Icc a b) - f‖ < ε :=
   exists_polynomial_near_continuousMap a b f ε hε
@@ -90,7 +98,10 @@ $A$ is dense in $C(D)$.
 
 The source states the theorem for a linear subspace that is closed under products and contains
 the constant functions, which is exactly a subalgebra. The proof is Mathlib's Stone–Weierstrass
-theorem. -/
+theorem.
+
+**Generalization.** The book takes a compact subset of $\mathbb{R}^{d}$. The declaration
+allows an arbitrary compact topological space. -/
 theorem theorem_3_1_2 {D : Type*} [TopologicalSpace D] [CompactSpace D] (A : Subalgebra ℝ C(D, ℝ))
     (hA : A.SeparatesPoints) : A.topologicalClosure = ⊤ :=
   ContinuousMap.subalgebra_topologicalClosure_eq_top_of_separatesPoints A hA

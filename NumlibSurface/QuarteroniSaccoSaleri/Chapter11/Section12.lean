@@ -46,6 +46,13 @@ The results restate `Numlib.ODE.OneStep`, `Numlib.Algebra.LinearRecurrence` and
 
 ## Deviations from the source
 
+* **Exercises 11.1 and 11.2** (reading). The order results are for the supplied $C^3$ solution
+  on a finite interval and assume explicit derivative bounds. `exercise_11_1` also assumes a
+  Lipschitz field. `exercise_11_2` gives a local error bound without the mean-value point in
+  (11.90).
+* **Exercises 11.4 and 11.5** (generalization). The representation theorem uses a field in which
+  the $k$ distinct roots are supplied. The matrix theorem over any field needs only distinct
+  inputs.
 * **Exercise 11.3** (typo). The source prints $\sin(\pi/4)$ for $\sin(n\pi/4)$ in the solution. See
   `QuarteroniSaccoSaleri.Chapter11.exercise_11_3`.
 
@@ -78,7 +85,11 @@ $$|\tau_{n+1}(h)| \le \frac{h^2}{12} M_3 + \frac{h^2}{4} L M_2;$$
 
 The proof follows the hint of the source: it splits $h \tau_{n+1} = E_1 + E_2$, where $E_1$ is
 the error of the trapezoidal quadrature and $E_2$ the error of the forward Euler step inside
-$f$. It specializes `ODE.OneStep.norm_lte_heun_le` and `ODE.OneStep.hasOrderFor_heun`. -/
+$f$. It specializes `ODE.OneStep.norm_lte_heun_le` and `ODE.OneStep.hasOrderFor_heun`.
+
+**Reading.** States the order and the local error bound along the supplied $C^3$ solution under
+the indicated derivative bounds. For Crank–Nicolson the book gives a mean-value expression with
+an intermediate point. -/
 theorem exercise_11_1 (hT : 0 < T) {L : ℝ} (hL : 0 ≤ L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y) (hy3 : ContDiffOn ℝ 3 y (Icc t₀ (t₀ + T)))
@@ -115,7 +126,11 @@ $$\frac{y_{n+1} - y_n}{h} = \frac{f(t_n, y_n) + f(t_{n+1}, y_{n+1})}{2} - \frac{
 where the source writes the remainder as $f''(\xi_n, y(\xi_n))$, the second derivative of
 $s \mapsto f(s, y(s)) = y'(s)$. The mean-value form with the intermediate point $\xi_n$ is not
 formalized. The proof specializes `ODE.OneStep.norm_lte_crankNicolson_le` and
-`ODE.OneStep.hasOrderFor_crankNicolson`. -/
+`ODE.OneStep.hasOrderFor_crankNicolson`.
+
+**Reading.** States the order and the local error bound along the supplied $C^3$ solution under
+the indicated derivative bounds. For Crank–Nicolson the book gives a mean-value expression with
+an intermediate point. -/
 theorem exercise_11_2 (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y)
     (hy3 : ContDiffOn ℝ 3 y (Icc t₀ (t₀ + T))) {M₃ : ℝ}
     (hM₃ : ∀ s ∈ Icc t₀ (t₀ + T), |iteratedDerivWithin 3 y (Icc t₀ (t₀ + T)) s| ≤ M₃) :
@@ -135,7 +150,9 @@ theorem exercise_11_2 (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t�
 
 /-- The closed-form solution of Exercise 11.3:
 $$u_n = 2^n \Big(\frac{n}{4} - 1\Big) + 2^{(n-2)/2} \sin\Big(\frac{n\pi}{4}\Big) + n + 2.$$
--/
+
+**Correction.** The sinusoidal term uses $\sin(n\pi/4)$. The printed $\sin(\pi/4)$ would
+already violate the value $u_0=1$. -/
 noncomputable def exercise_11_3_sol (n : ℕ) : ℝ :=
   2 ^ n * (n / 4 - 1) + (2 : ℝ) ^ (((n : ℝ) - 2) / 2) * Real.sin (n * Real.pi / 4) + n + 2
 
@@ -280,7 +297,10 @@ homogeneous equation (11.28). Then:
 * every such $\gamma$ solves the Vandermonde system $\sum_{i=1}^k \gamma_i r_i^j = u_j$ for
   $j = 0, \dots, k - 1$.
 
-The proof specializes `LinearRecurrence.eq_sum_smul_pow_of_injective_roots`. -/
+The proof specializes `LinearRecurrence.eq_sum_smul_pow_of_injective_roots`.
+
+**Generalization.** Works over any field. For the determinant claim it suffices that the matrix
+arguments are distinct. -/
 theorem exercise_11_4 {K : Type*} [Field K] {k : ℕ} (α : Fin k → K) {r : Fin k → K}
     (hr : Function.Injective r) (hroot : ∀ j, (equation_11_30 α).IsRoot (r j)) {u : ℕ → K}
     (hu : (equation_11_28 α).IsSolution u) :
@@ -303,7 +323,10 @@ The source takes the $r_m$ to be the simple roots of the characteristic polynomi
 statement does not need this. $R$ is the transpose of the Vandermonde matrix of
 $r_1, \dots, r_k$, whose determinant $\prod_{i < j} (r_j - r_i)$ is not zero. The proof
 specializes `LinearRecurrence.det_vandermonde_transpose_ne_zero` and
-`Matrix.det_vandermonde_ne_zero_iff`. -/
+`Matrix.det_vandermonde_ne_zero_iff`.
+
+**Generalization.** Works over any field. For the determinant claim it suffices that the matrix
+arguments are distinct. -/
 theorem exercise_11_5 {K : Type*} [Field K] {k : ℕ} {r : Fin k → K} (hr : Function.Injective r) :
     (equation_11_37_matrix r).det ≠ 0 := by
   rw [equation_11_37_matrix_eq]

@@ -107,6 +107,10 @@ regularity result specializes `Elliptic.regularity_obstacle_sobolev_two` of
 
 ## Deviations from the source
 
+* **Lemma 11.3.5** (restriction). The statement uses a real-valued function on a nonempty closed
+  convex set. The book allows a proper extended-real convex function on the whole space.
+* **Theorem 11.3.7** (restriction). The statement uses an everywhere finite convex functional.
+  The source allows a proper extended-real functional with a smaller effective domain.
 * **Lemma 11.3.8** (generalization). The source assumes that $A$ is continuous on the
   finite-dimensional subspaces of $V$. The library assumes only that $A$ is right-continuous along
   the segments of $K$ that start at $u$, which the continuity of the source implies. See
@@ -117,10 +121,13 @@ regularity result specializes `Elliptic.regularity_obstacle_sobolev_two` of
 * **Example 11.3.11** (reading). The Lipschitz domain of the source is a domain with a boundary
   trace in the sense of `BoundaryData.TraceFamily`, for example a bounded $C^1$ domain or a polygon
   without slits. See `AtkinsonHan.Chapter11.example_11_3_11`.
+* **The projection argument after Example 11.3.11** (correction). The test vector $v$ in
+  $a(w-u,v-u) \le 0$ ranges over $K$, as in the preceding line of the proof. The printed
+  display quantifies over $V$.
 
 ## Not formalized
 
-* **Theorem 11.3.12 in the generality of the source** ($1 < p < \infty$, uniformly elliptic
+* **Theorem 11.3.12 in the generality of the source** ($2 \le p < \infty$, uniformly elliptic
   coefficients $a_{ij} \in C(\overline\Omega)$, a $C^{1,1}$ domain). Only the case $p = 2$,
   $a_{ij} = \delta_{ij}$ on a $C^2$ domain is formalized, as
   `AtkinsonHan.Chapter11.theorem_11_3_12_two`. The source quotes the theorem without proof from
@@ -151,7 +158,11 @@ The convexity of $K$ is part of `ConvexOn ℝ K j`. The function
 $j \colon V \to \mathbb{R} \cup \{+\infty\}$ of the source is proper, so it is real-valued on
 its effective domain, and that set is the $K$ here. The source proves the lemma by separating
 the epigraph of $j$ from a point below its graph; that separation is Mathlib's
-`ConvexOn.exists_affine_le_of_lt`. -/
+`ConvexOn.exists_affine_le_of_lt`.
+
+**Reading.** Affine minorant for real-valued l.s.c. convex functions on a nonempty closed convex
+set.
+-/
 theorem lemma_11_3_5 {W : Type*} [NormedAddCommGroup W] [NormedSpace ℝ W] {K : Set W}
     (hKne : K.Nonempty) (hKcl : IsClosed K) {j : W → ℝ} (hj : ConvexOn ℝ K j)
     (hjlsc : LowerSemicontinuousOn j K) : ∃ (ℓ : W →L[ℝ] ℝ) (c : ℝ), ∀ v ∈ K, ℓ v + c ≤ j v := by
@@ -194,7 +205,10 @@ theorem isVariationalInequalitySolution_zero_iff (A : V → V) (f : V) (K : Set 
 
 /-- **Equation (11.3.9)** of [han2009theoretical], the inequality of the second kind. With $K = V$,
 $u$ solves the variational inequality if and only if $(A u, v - u) + j(v) - j(u) \ge (f, v - u)$
-for all $v \in V$. -/
+for all $v \in V$.
+
+**Reading.** Second-kind form on the whole space with finite real-valued j.
+-/
 theorem isVariationalInequalitySolution_univ_iff (A : V → V) (j : V → ℝ) (f : V) (u : V) :
     IsVariationalInequalitySolution A j f univ u ↔
       ∀ v, ⟪A u, v - u⟫_ℝ + j v - j u ≥ ⟪f, v - u⟫_ℝ := by
@@ -278,7 +292,10 @@ $\|u_1 - u_2\| \le c_0^{-1} \|f_1 - f_2\|$.
 
 The function $j$ of the source takes values in $\mathbb{R} \cup \{+\infty\}$ and is proper. A
 real-valued $j$ on the whole space is this hypothesis with effective domain $V$, which is why
-the theorem is stated for $K = V$. -/
+the theorem is stated for $K = V$.
+
+**Generalization.** Uses finite real-valued j on the whole space in place of proper extended-real j.
+-/
 theorem theorem_11_3_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M) (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hj : ConvexOn ℝ univ j)
     (hjlsc : LowerSemicontinuous j) :
@@ -598,7 +615,11 @@ $\|v\|_a = \sqrt{a(v, v)}$:
 $$\|w - u\|_a \le \|w - v\|_a \quad \text{for all } v \in K.$$
 
 So the inequality can be solved by solving the equation and then projecting onto $K$ in the
-energy inner product. The energy norm is `AtkinsonHan.BilinForm.energyNorm`. -/
+energy inner product. The energy norm is `AtkinsonHan.BilinForm.energyNorm`.
+
+**Correction.** Tests v in K as required by the projection argument, correcting the display's v in
+V.
+-/
 theorem isBestApprox_energy_of_theorem_11_3_9 (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     {K : Set V} (hKcv : Convex ℝ K) {w u : V} (hw : ∀ v, a w v = ℓ v)

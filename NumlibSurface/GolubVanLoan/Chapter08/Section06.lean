@@ -108,6 +108,22 @@ orthogonality condition of one-sided Jacobi. The proofs use the backbone modules
 
 ## Deviations from the source
 
+* **§8.6.4, one-sided Jacobi cross-reference** (typo). The printed P8.6.8 is P8.6.6. See
+  `GolubVanLoan.Chapter08.oneSidedJacobi_orthogonal`.
+* **Theorem 8.6.1 and Corollaries 8.6.2–8.6.3** (reading).
+  `GolubVanLoan.Chapter08.theorem_8_6_1` expresses the extremal quotients through homogeneous
+  bounds. The corollaries use zero padding to cover arbitrary indices and rectangular
+  dimensions.
+* **Algorithm 8.6.1** (reading). `GolubVanLoan.Chapter08.algorithm_8_6_1_spec` states agreement
+  with the exact shifted QR step up to diagonal signs for the full window when the shifted Gram
+  matrix is invertible.
+* **Algorithm 8.6.2** (reading). `GolubVanLoan.Chapter08.algorithm_8_6_2` bounds the number of
+  passes and returns a stop flag. The final zero diagonal of a window uses the column chase from
+  the preceding discussion. `GolubVanLoan.Chapter08.algorithm_8_6_2_spec` and
+  `GolubVanLoan.Chapter08.algorithm_8_6_2_forward` bound exact-arithmetic threshold deflations
+  in Frobenius norm, with diagonal output conditional on stopping.
+* **§8.6.4, one-sided Jacobi** (reading). `GolubVanLoan.Chapter08.oneSidedJacobi_orthogonal`
+  scales nonzero columns to unit norm and leaves zero columns without an orthonormal completion.
 * **Theorem 8.6.5** (typo). The source swaps $P$ and $Q$: its $Q$ is $(n - r) \times r$. See
   `GolubVanLoan.Chapter08.theorem_8_6_5`.
 * **Theorem 8.6.5** (correction). As printed, the theorem is false for $m > n$. For $m > n$ the
@@ -278,7 +294,7 @@ theorem equation_8_6_3 {A : Matrix (Fin m) (Fin n) ℝ} {U₁ : Matrix (Fin m) (
       jw_conj σ, smul_smul]
     norm_num
 
-/-! ### §8.6.1 Perturbation theory -/
+/-! ### §8.6.2 Perturbation theory -/
 
 /-- **Theorem 8.6.1** of [golub2013matrix] (min-max characterization of singular values). Let
 $A \in \mathbb{R}^{m \times n}$ and $1 \le k \le \min\{m, n\}$. Then
@@ -291,7 +307,11 @@ In Lean the index is 0-based: the statement is about `A.sortedSingularValues k` 
 $k < n$. The maximum and the minimum are stated without division. The first: $\sigma_k(A)$ is
 the greatest $c$ for which some $S$ of dimension $k$ has $c\|x\|_2 \le \|Ax\|_2$ for all
 $x \in S$. The second: $\sigma_k(A)$ is the least $c$ for which some $S$ of dimension
-$n - k + 1$ has $y^T A x \le c \|x\|_2 \|y\|_2$ for all $x \in S$ and $y \in \mathbb{R}^m$. -/
+$n - k + 1$ has $y^T A x \le c \|x\|_2 \|y\|_2$ for all $x \in S$ and $y \in \mathbb{R}^m$.
+
+**Reading.** The Lean statement gives homogeneous inequalities on each candidate subspace,
+followed by attainment of the greatest or least admissible constant. This expresses the
+source’s min–max quotients without division by zero. -/
 theorem theorem_8_6_1 (A : Matrix (Fin m) (Fin n) ℝ) {k : ℕ} (hkm : k < m) (hkn : k < n) :
     IsGreatest {c : ℝ | ∃ S : Submodule ℝ (Fin n → ℝ), Module.finrank ℝ S = k + 1 ∧
       ∀ x ∈ S, c * ‖WithLp.toLp 2 x‖ ≤ ‖WithLp.toLp 2 (A *ᵥ x)‖} (A.sortedSingularValues k) ∧
@@ -336,7 +356,10 @@ $k$,
 $$|\sigma_k(A + E) - \sigma_k(A)| \le \sigma_1(E) = \|E\|_2.$$
 
 The index $k$ is any natural number, 0-based; for $k$ beyond $\min\{m, n\}$ both singular values
-are $0$. The 2-norm is `Matrix.lpOpNorm 2 E`. -/
+are $0$. The 2-norm is `Matrix.lpOpNorm 2 E`.
+
+**Generalization.** The source assumes $m\geq n$ and $1\leq k\leq n$. Lean proves the bound for
+all rectangular dimensions and every index using zero-padded singular values. -/
 theorem corollary_8_6_2 (A E : Matrix (Fin m) (Fin n) ℝ) (k : ℕ) :
     |(A + E).sortedSingularValues k - A.sortedSingularValues k| ≤ E.sortedSingularValues 0 ∧
       E.sortedSingularValues 0 = lpOpNorm 2 E := by
@@ -413,7 +436,11 @@ so that $\sigma_1(A_{r+1}) \ge \sigma_1(A_r) \ge \sigma_2(A_{r+1}) \ge \dots \ge
 
 The index is 0-based in Lean, and the inequalities hold for every index; for $k > r$ they are
 trivial because $\sigma_k(A_r) = 0$. The proof in the source cites "Corollary 8.1.7" where it
-means Theorem 8.1.7. -/
+means Theorem 8.1.7.
+
+**Generalization.** The source assumes $m\geq n$ and lists the interlacing for positive prefix
+lengths. Lean allows arbitrary row count, an empty first prefix, and every zero-padded singular
+value index. -/
 theorem corollary_8_6_3 (A : Matrix (Fin m) (Fin n) ℝ) {r : ℕ} (hr : r + 1 ≤ n) (k : ℕ) :
     (A.submatrix id (Fin.castLE (by omega : r ≤ n))).sortedSingularValues k ≤
         (A.submatrix id (Fin.castLE hr)).sortedSingularValues k ∧
@@ -715,7 +742,14 @@ and $p \ne q$. Then:
 
 The last part is the column scaling that finishes the one-sided Jacobi SVD. The rotation of
 Algorithm 8.5.1 for $A^T A$ is `(Matrix.jacobiCosSmall (Aᵀ * A) p q, Matrix.jacobiSinSmall (Aᵀ *
-A) p q)`. -/
+A) p q)`.
+
+**Reading.** This statement gives column scaling with unit columns only at nonzero column
+norms. It does not construct an orthonormal completion for zero columns. The scaling identity
+itself accepts any $V$ with pairwise orthogonal output columns.
+
+**Typo.** The source points to Problem P8.6.8 for the two-column rotation. The matching problem
+is P8.6.6. -/
 theorem oneSidedJacobi_orthogonal (A : Matrix (Fin m) (Fin n) ℝ) {p q : Fin n} (hpq : p ≠ q) :
     (∀ c s : ℝ, (A * planeRotation p q c (-s)).col p ⬝ᵥ (A * planeRotation p q c (-s)).col q =
       ((planeRotation p q c (-s))ᵀ * (Aᵀ * A) * planeRotation p q c (-s)) p q) ∧
@@ -881,7 +915,10 @@ $Q \in \mathbb{R}^{2 \times 1}$ such that $(\operatorname{ran}(V_1 + V_2 P),
 
 Here $A_{11} = [0]$ and $A_{22} = \begin{bmatrix} 1 \\ 0 \end{bmatrix}$, so the gap of the
 source is $\delta = 1$ and $\|E\|_F \le \delta/5$. The added hypothesis
-$\delta \le \sigma_{\min}(A_{11}) = 0$ of `GolubVanLoan.Chapter08.theorem_8_6_5` fails. -/
+$\delta \le \sigma_{\min}(A_{11}) = 0$ of `GolubVanLoan.Chapter08.theorem_8_6_5` fails.
+
+**Correction.** Concrete tall counterexample to the conclusion without separation from zero.
+-/
 theorem theorem_8_6_5_counterexample {ε : ℝ} (hε : 0 < ε) (hε' : ε ≤ 1 / 5) :
     let A : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, 1; 0, 0]
     let E : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, 0; ε, 0]
@@ -1279,7 +1316,11 @@ last index of the window, rotations of the rows $(j, k)$, $j = k + 1, \dots$, ze
 $(c, s) = \mathrm{givens}(b_{jj}, b_{kj})$, $B = G(j, k, \theta)^T B$ and
 $U = U\,G(j, k, \theta)$. If $k$ is the last index, rotations of the columns $(j, k)$,
 $j = k - 1, \dots, p$, zero column $k$: $(c, s) = \mathrm{givens}(b_{jj}, b_{jk})$,
-$B = B\,G(j, k, \theta)$ and $V = V\,G(j, k, \theta)$. -/
+$B = B\,G(j, k, \theta)$ and $V = V\,G(j, k, \theta)$.
+
+**Reading.** The algorithm display directs the reader to zero the superdiagonal entry in the
+same row as a zero diagonal. At the last index of a window that entry is absent. Lean
+implements the column chase described before the display in that case. -/
 noncomputable def zeroDiagonalChase (hnm : n ≤ m) (w : List (Fin n)) (k : Fin n)
     (B : Matrix (Fin m) (Fin n) ℝ) (U : Matrix (Fin m) (Fin m) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
@@ -1307,7 +1348,10 @@ open Classical in
 The pass deflates $B$ and finds the window of $B_{22}$. If the window is empty ($q = n$), the
 loop stops. Otherwise, if $B_{22}$ has a zero diagonal entry, the pass decouples by
 `GolubVanLoan.Chapter08.zeroDiagonalChase`, and if not, it applies Algorithm 8.6.1 to the window
-with the accumulators. -/
+with the accumulators.
+
+**Reading.** The source leaves the choice of zero diagonal entry open when several exist. Lean
+chases the first one in window order and returns a stop flag. -/
 noncomputable def svdPass (hnm : n ≤ m) (ε : ℝ)
     (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
@@ -1343,7 +1387,11 @@ end
 The initial $B$ is the bidiagonal part of the array of Algorithm 5.4.2, and $U$ and $V$ are the
 forward accumulations (§5.1.6) of its stored reflectors with the returned values of $\beta$. The
 loop runs at most `fuel` passes, with a flag `done`. The result is the tuple of the final $B$,
-$U$, $V$ and the flag. -/
+$U$, $V$ and the flag.
+
+**Reading.** The source loops until the whole bidiagonal is diagonal. The Lean program takes a
+fuel bound and returns the termination flag with the current bidiagonal and accumulated
+factors. -/
 noncomputable def algorithm_8_6_2 (hnm : n ≤ m) (ε : ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (fuel : ℕ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
@@ -1776,7 +1824,11 @@ So the step is the step of Algorithm 8.3.2 on $T$, up to signs; see
 `GolubVanLoan.Chapter08.wilkinsonShift (Bᵀ * B)`, and the QR step is `Matrix.shiftedQrStep μ T`.
 The matrices $\bar U$ and $\bar V$ are the products of the $n - 1$ row rotations and of the
 $n - 1$ column rotations. The proof chases one bulge, alternately below the diagonal and to the
-right of the superdiagonal. -/
+right of the superdiagonal.
+
+**Reading.** The source describes agreement with the implicit QR rotation up to signs. Lean
+proves the full-window version for order at least two, and the diagonal-sign similarity to the
+QR step is conditional on an invertible shifted Gram matrix. -/
 theorem algorithm_8_6_1_spec {N : ℕ} {B : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hB : B.IsUpperBidiagonal) (hd : ∀ i, B i i ≠ 0)
     (hf : ∀ i j : Fin (N + 2), (j : ℕ) = i + 1 → B i j ≠ 0)
@@ -2721,7 +2773,11 @@ chases act only on the unreduced block $B_{22}$, so there are at most $n - 1$ de
 forward form $U^T A V = B + E$ with $E$ supported on the deflated positions is false, as for
 `GolubVanLoan.Chapter08.algorithm_8_3_3_spec`: a later rotation on a window starting at $p$
 mixes a deflated entry $b_{p-1,p}$ into $b_{p-1,p+1}$. Convergence, that is, that some finite
-number of passes suffices, is not claimed. -/
+number of passes suffices, is not claimed.
+
+**Reading.** The source describes a finished diagonalization with 2-norm error on the scale of
+unit roundoff. The Lean theorem bounds the deflation error in Frobenius norm in exact
+arithmetic; its output is diagonal when the stop flag is set. -/
 theorem algorithm_8_6_2_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) {ε : ℝ} (hε : 0 ≤ ε)
     (fuel : ℕ) :
     let out := Id.run (algorithm_8_6_2 pure hnm ε A fuel)
@@ -2774,7 +2830,11 @@ whenever $c\varepsilon < 1$.
 
 The matrix $E'$ is $-U^T E V$ for the backward error $E$ of
 `GolubVanLoan.Chapter08.algorithm_8_6_2_spec`; it has the same Frobenius norm because $U$ and
-$V$ are orthogonal. -/
+$V$ are orthogonal.
+
+**Reading.** This forward form retains the source’s matrix equality with the computed
+bidiagonal in place of $D$. The error bound is in Frobenius norm for exact arithmetic with
+threshold deflations. -/
 theorem algorithm_8_6_2_forward (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) {ε : ℝ}
     (hε : 0 ≤ ε) (fuel : ℕ) :
     let out := Id.run (algorithm_8_6_2 pure hnm ε A fuel)

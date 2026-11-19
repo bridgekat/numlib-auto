@@ -94,6 +94,24 @@ The module defines band Gaussian elimination, band forward substitution and band
 
 ## Deviations from the source
 
+* **Correction.** The combined band theorem requires nonsingular proper leading blocks for the lower
+  factor. See `GolubVanLoan.Chapter04.theorem_4_3_1`.
+* **Reading.** Band Gaussian elimination uses a final empty step and totalized division. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_1`, `GolubVanLoan.Chapter04.bandGEStepId`.
+* **Reading.** The band forward-substitution program is defined before imposing its structural
+  hypotheses. See `GolubVanLoan.Chapter04.algorithm_4_3_2`.
+* **Reading.** Band back substitution totalizes division at zero diagonal entries. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_3`.
+* **Reading.** Band Cholesky totalizes the column update and its square-root division. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_5`, `GolubVanLoan.Chapter04.bandCholStepId`.
+* **Generalization.** The tridiagonal factorization requires just the nonzero pivots used as
+  divisors. See `GolubVanLoan.Chapter04.tridiagonal_ldlt`.
+* **Correction.** The exact forward substitution in the tridiagonal solver uses the previous
+  right-hand-side entry. See `GolubVanLoan.Chapter04.algorithm_4_3_6_id`.
+* **Reading.** The Hessenberg LU program includes a final unused pivot flag. See
+  `GolubVanLoan.Chapter04.hessenbergLUStep`, `GolubVanLoan.Chapter04.algorithm_4_3_4`.
+* **Reading.** The exact Hessenberg specification compares only flags at actual pivot steps. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_4_spec`.
 * **Theorem 4.3.1** (correction). The statement about $L$ is false without the nonsingularity of the
   leading principal submatrices: $\begin{bmatrix} 0 & 1 \\ 0 & 2 \end{bmatrix} = \begin{bmatrix} 1 &
   0 \\ \beta & 1 \end{bmatrix} \begin{bmatrix} 0 & 1 \\ 0 & 2 - \beta \end{bmatrix}$ for every
@@ -196,7 +214,12 @@ bandwidth $q$ and $L$ has lower bandwidth $p$.
 **Correction.** The source does not assume the nonsingularity of the leading principal
 submatrices. Without it the statement about $L$ fails; see
 `GolubVanLoan.Chapter04.theorem_4_3_1_b`. The statement about $U$ holds without it
-(`GolubVanLoan.Chapter04.theorem_4_3_1_a`). -/
+(`GolubVanLoan.Chapter04.theorem_4_3_1_a`).
+
+**Correction.** The upper-bandwidth conclusion holds for any LU factors. For the lower factor Lean
+requires invertible proper leading principal blocks. Existence of some LU factorization alone
+permits arbitrary multipliers in a column with zero pivot.
+-/
 theorem theorem_4_3_1 {A L U : Matrix (Fin n) (Fin n) ℝ} (h : IsLU A L U)
     (hA : ∀ k, IsUnit (A.strictLeadingPrincipalSubmatrix k)) {p q : ℕ}
     (hp : A.HasLowerBandwidth p) (hq : A.HasUpperBandwidth q) :
@@ -225,7 +248,11 @@ end
 ```
 
 The program runs the passes for $k = 1, \dots, n$; the last pass does nothing, because its index
-lists are empty. Every quotient, product and difference is rounded. -/
+lists are empty. Every quotient, product and difference is rounded.
+
+**Reading.** Lean adds a final empty elimination step, uses a rounding argument and totalizes
+division at zero pivots. Its exact factorization theorem assumes invertible proper leading blocks.
+-/
 noncomputable def algorithm_4_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) => do
@@ -253,7 +280,11 @@ end
 ```
 
 This is the column-oriented Algorithm 3.1.3 restricted to the band. It has no division, because
-$L$ has a unit diagonal. -/
+$L$ has a unit diagonal.
+
+**Reading.** The loop is defined for any supplied matrix with the selected band. The source assumes
+a unit lower triangular input of that bandwidth, which Lean uses in the exact correctness theorem.
+-/
 def algorithm_4_3_2 (p : ℕ) (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (b : Fin n → ℝ) (j : Fin n) =>
     ((List.finRange n).filter (fun i : Fin n => j < i ∧ (i : ℕ) ≤ j + p)).foldlM
@@ -273,6 +304,10 @@ for j = n:−1:1
     end
 end
 ```
+
+**Reading.** Lean performs the displayed band updates even if the supplied diagonal contains zeros,
+using totalized division. Its correctness theorem retains the source's nonzero pivots and upper
+bandwidth.
 -/
 noncomputable def algorithm_4_3_3 (q : ℕ) (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) :=
@@ -301,7 +336,12 @@ end
 
 The square root is computed once per column and rounded, and the whole column
 $A(j{:}\lambda, j)$, diagonal included, is divided by it. This is the operation order of
-Algorithm 4.2.1. -/
+Algorithm 4.2.1.
+
+**Reading.** The packed program is defined outside the source's SPD and bandwidth hypotheses. It
+uses rounded dot-product updates and divides by a totalized square root. The exact factorization
+theorem retains the structural hypotheses.
+-/
 noncomputable def algorithm_4_3_5 (p : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) => do
@@ -499,7 +539,12 @@ $\ell_k$ are the Thomas recurrences `Matrix.thomasAlpha` and `Matrix.thomasBeta`
 off-diagonals, and $L$ is `Matrix.thomasLower`. The hypothesis is on the pivots used as
 divisors. The source writes the recurrences with 1-based indices, $d_1 = a_{11}$,
 $\ell_{k-1} = a_{k,k-1} / d_{k-1}$ and $d_k = a_{kk} - \ell_{k-1} a_{k,k-1}$, and deduces them
-from the equation $A = LDL^T$. -/
+from the equation $A = LDL^T$.
+
+**Generalization.** The source works with symmetric positive definite tridiagonal matrices. For the
+factorization identity Lean only requires the actual elimination pivots used as divisors to be
+nonzero.
+-/
 theorem tridiagonal_ldlt (a e : ℕ → ℝ) (m : ℕ)
     (hd : ∀ i, i + 1 < m → thomasAlpha a (fun i => e (i - 1)) e i ≠ 0) :
     IsLDM (tridiagonalOfNat a (fun i => e (i - 1)) e m) (thomasLower a (fun i => e (i - 1)) e m)
@@ -643,7 +688,11 @@ noncomputable def algorithm_4_3_6 {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin
 end Programs
 
 /-- In exact arithmetic, Algorithm 4.3.6 is three folds: the factorization loop, the forward solve,
-and the back solve after the division of the last entry. -/
+and the back solve after the division of the last entry.
+
+**Correction.** The forward-substitution update uses the previous right-hand-side entry times the
+current subdiagonal multiplier. The source instead prints that multiplier squared.
+-/
 private theorem algorithm_4_3_6_id {N : ℕ} (α : Fin (N + 1) → ℝ) (β : Fin N → ℝ)
     (b : Fin (N + 1) → ℝ) :
     Id.run (algorithm_4_3_6 pure α β b) =
@@ -864,7 +913,12 @@ end
 ```
 
 The interchange of the two row segments and the comparisons are exact. The last pass, $k = n$,
-does nothing. -/
+does nothing.
+
+**Reading.** The full-length encoding includes a final zero pivot flag with no elimination. The
+source records the first $n-1$ flags. The exact correctness result supplies the Hessenberg
+hypothesis separately.
+-/
 noncomputable def hessenbergLUStep (s : Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) (k : Fin n) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) :=
   if h : (k : ℕ) + 1 < n then
@@ -894,7 +948,12 @@ encodes the permutations: if $P_k = I$, then $\mathrm{piv}(k) = 0$, and if $P_k$
 rows $k$ and $k + 1$, then $\mathrm{piv}(k) = 1$.
 
 The program runs the passes `GolubVanLoan.Chapter04.hessenbergLUStep` for $k = 1, \dots, n$ on
-the state $(H, \mathrm{piv})$, with $\mathrm{piv} = 0$ at the start. The last pass does nothing. -/
+the state $(H, \mathrm{piv})$, with $\mathrm{piv} = 0$ at the start. The last pass does nothing.
+
+**Reading.** The full-length encoding includes a final zero pivot flag with no elimination. The
+source records the first $n-1$ flags. The exact correctness result supplies the Hessenberg
+hypothesis separately.
+-/
 noncomputable def algorithm_4_3_4 (H : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℕ)) :=
   (List.finRange n).foldlM (hessenbergLUStep rnd) (H, 0)
@@ -1183,7 +1242,12 @@ arithmetic. Then:
 Gaussian elimination with partial pivoting is `Matrix.gemPivotStage H Matrix.partialPivotRow`.
 The multiplier is the entry $(k+1, k)$ of `Matrix.elimMultipliers` of the stage-$k$ matrix after
 its interchange, and it is $0$ when the pivot vanishes. The indices are 0-based. The bound
-$|F(k+1, k)| \le 1$ is `GolubVanLoan.Chapter04.algorithm_4_3_4_spec_abs_le_one`. -/
+$|F(k+1, k)| \le 1$ is `GolubVanLoan.Chapter04.algorithm_4_3_4_spec_abs_le_one`.
+
+**Reading.** The correctness statement identifies the packed upper entries, pivot flags and stored
+multipliers with exact partial pivoting. It leaves the final unused flag outside the comparison,
+matching the shorter pivot list in the source.
+-/
 theorem algorithm_4_3_4_spec {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsUpperHessenberg) :
     (∀ i j : Fin n, i ≤ j →
       (Id.run (algorithm_4_3_4 pure H)).1 i j = (gemPivotStage H partialPivotRow n).1 i j) ∧
@@ -1304,7 +1368,12 @@ private theorem bandChol_phase1 (j : Fin n) (p : ℕ) :
       ring
     · rw [ite_eq_right hc, ite_eq_right hc, hS₁c r c hc]
 
-/-- One column step of Algorithm 4.3.5 in exact arithmetic. -/
+/-- One column step of Algorithm 4.3.5 in exact arithmetic.
+
+**Reading.** The packed program is defined outside the source's SPD and bandwidth hypotheses. It
+uses rounded dot-product updates and divides by a totalized square root. The exact factorization
+theorem retains the structural hypotheses.
+-/
 private noncomputable def bandCholStepId (p : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) :
     Matrix (Fin n) (Fin n) ℝ :=
   (fun B : Matrix (Fin n) (Fin n) ℝ =>
@@ -1417,7 +1486,11 @@ theorem algorithm_4_3_5_spec {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.
 
 /-! ### Exact correctness of band Gaussian elimination -/
 
-/-- One pass $k$ of Algorithm 4.3.1 in exact arithmetic. -/
+/-- One pass $k$ of Algorithm 4.3.1 in exact arithmetic.
+
+**Reading.** Lean adds a final empty elimination step, uses a rounding argument and totalizes
+division at zero pivots. Its exact factorization theorem assumes invertible proper leading blocks.
+-/
 private noncomputable def bandGEStepId (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     Matrix (Fin n) (Fin n) ℝ :=
   ((List.finRange n).filter (fun j : Fin n => k < j ∧ (j : ℕ) ≤ k + q)).foldl

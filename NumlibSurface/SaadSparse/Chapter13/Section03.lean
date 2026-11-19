@@ -74,6 +74,18 @@ adjoint of the prolongation, because the factor $2^d$ cancels.
   of the book is a positive multiple of this adjoint, so the two give the same coarse-grid
   correction (`SaadSparse.Chapter13.coarseProjection_eq_of_scaled`,
   `SaadSparse.Chapter13.coarseProjection_apply_eq_of_smul`).
+
+## Deviations from the source
+
+* **(13.30) and (13.32)** (domain). The operators act on interior grid values, with zero
+  boundary values for interpolation. The preceding nodal description also includes boundary
+  values. The original matrix in (13.30) ends in a row with coefficient $1/2$, matching
+  `SaadSparse.Chapter13.prolongation1D`.
+* **Example 13.1** (generalization). `SaadSparse.Chapter13.equation_13_31` acts on tensor
+  products of arbitrary coordinate vectors. The example uses basis-vector pairs.
+* **(13.35)–(13.37)** (generalization). `SaadSparse.Chapter13.coarseProjection_eq_of_scaled` and
+  `SaadSparse.Chapter13.coarseProjection_apply_eq_of_smul` use any nonzero scalar over the real
+  or complex field. The source's weights are positive real scalars.
 -/
 
 open Matrix
@@ -93,7 +105,12 @@ with the boundary values $v^{2h}_0 = v^{2h}_{m+1} = 0$.
 Indices are $0$-based: column $q$ is the stencil $\frac12 [1\ 2\ 1]$ on the fine rows $2q$,
 $2q + 1$, $2q + 2$. The fine point $2q + 1$ is the coarse point $q$ and takes its value, and the
 two fine points beside it take the average of their coarse neighbours. For $m = 3$ this is the
-$7 \times 3$ matrix that the book displays. The definition is `Multigrid.linearInterpolation m`. -/
+$7 \times 3$ matrix that the book displays. The definition is `Multigrid.linearInterpolation m`.
+
+**Correction.** Uses the interior matrix with zero Dirichlet boundary values, while the preceding
+nodal description includes boundary data. The OCR tail rows differ from the correctly printed
+matrix.
+-/
 noncomputable def prolongation1D (m : ℕ) : Matrix (Fin (2 * m + 1)) (Fin m) ℝ :=
   Multigrid.linearInterpolation m
 
@@ -112,7 +129,11 @@ $I_h^{2h} \in \mathbb{R}^{m \times (2m+1)}$ takes the fine value at each coarse 
 $v^{2h}_j = v^h_{2j}$.
 
 With $0$-based indices, row $q$ has the entry $1$ in column $2q + 1$, the fine point that
-carries the coarse point $q$, and $0$ elsewhere. -/
+carries the coarse point $q$, and $0$ elsewhere.
+
+**Reading.** Restricts interior unknowns to coincident coarse interior nodes, omitting boundary
+data.
+-/
 def injection1D (m : ℕ) : Matrix (Fin m) (Fin (2 * m + 1)) ℝ :=
   Matrix.of fun j i => if (i : ℕ) = 2 * (j : ℕ) + 1 then 1 else 0
 
@@ -314,7 +335,10 @@ tensor product of the one-dimensional interpolations, so it separates the variab
 grid functions $v \in \mathbb{R}^{m_1}$ and $w \in \mathbb{R}^{m_2}$,
 $$I_{2h}^h (v \otimes w) = (I_{2h}^h v) \otimes (I_{2h}^h w).$$
 
-The product $v \otimes w$ is `Matrix.kroneckerVec v w`. -/
+The product $v \otimes w$ is `Matrix.kroneckerVec v w`.
+
+**Generalization.** Example 13.1 evaluates the interpolation on a tensor product of basis
+vectors. The theorem permits arbitrary vectors in each coordinate. -/
 theorem equation_13_31 (m₁ m₂ : ℕ) (v : Fin m₁ → ℝ) (w : Fin m₂ → ℝ) :
     prolongation2D m₁ m₂ *ᵥ kroneckerVec v w
       = kroneckerVec (prolongation1D m₁ *ᵥ v) (prolongation1D m₂ *ᵥ w) :=
@@ -401,7 +425,10 @@ variable [FiniteDimensional 𝕜 F] (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCo
 
 /-- The coarse-grid projector depends on the prolongation only through its range: if two
 prolongations $P$ and $P'$ have the same range, then they give the same coarse-grid projector
-for a symmetric coercive operator $A$. -/
+for a symmetric coercive operator $A$.
+
+**Reading.** States range invariance over R or C for any two coarse domains.
+-/
 theorem coarseProjection_congr_range {F' : Type*} [NormedAddCommGroup F']
     [InnerProductSpace 𝕜 F'] [FiniteDimensional 𝕜 F'] (Pr : F →ₗ[𝕜] E) (Pr' : F' →ₗ[𝕜] E)
     (h : LinearMap.range Pr = LinearMap.range Pr') :
@@ -411,7 +438,10 @@ theorem coarseProjection_congr_range {F' : Type*} [NormedAddCommGroup F']
 /-- The scaling of (13.35) of [saad2003iterative] cancels. Let $A$ be a symmetric coercive operator
 on $E$ and let $P : F \to E$ be a prolongation from a finite-dimensional space $F$. For every
 scalar $c \neq 0$, the prolongation $c \, P$ gives the same coarse-grid projector as $P$,
-because it has the same range. -/
+because it has the same range.
+
+**Generalization.** The source's full-weighting factors are positive real scalars. This result
+applies to every nonzero scalar over $\mathbb R$ or $\mathbb C$. -/
 theorem coarseProjection_eq_of_scaled (Pr : F →ₗ[𝕜] E) {c : 𝕜} (hc : c ≠ 0) :
     Multigrid.coarseProjection A hA (c • Pr) = Multigrid.coarseProjection A hA Pr :=
   coarseProjection_congr_range A hA (c • Pr) Pr (range_smul_of_ne_zero hc Pr)
@@ -425,7 +455,10 @@ Then the coarse-grid projector $Q$ of $P$ satisfies $Q x = P y$.
 The book's coarse equation $A_H y = I_h^{2h} (A x)$, with $I_h^{2h} = c \, P^*$ and
 $A_H = c \, P^* A P$, is the backbone coarse equation multiplied by $c$. So it has the same
 solutions and gives the same correction. The operator $P^* A P$ is
-`Multigrid.galerkinCoarse A Pr`. -/
+`Multigrid.galerkinCoarse A Pr`.
+
+**Reading.** Allows any nonzero scale simultaneously in the right-hand side and coarse operator.
+-/
 theorem coarseProjection_apply_eq_of_smul [FiniteDimensional 𝕜 E] (Pr : F →ₗ[𝕜] E) {c : 𝕜}
     (hc : c ≠ 0) {x : E} {y : F}
     (hy : c • Multigrid.galerkinCoarse A Pr y = c • LinearMap.adjoint Pr (A x)) :

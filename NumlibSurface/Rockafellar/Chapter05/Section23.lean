@@ -130,25 +130,47 @@ Theorem 16.4, and Theorem 23.9 from Theorem 16.3.
 
 ## Deviations from the source
 
-* **Theorem 23.1** (generalization). Positive homogeneity of $f'(x; \cdot)$ holds for every $f$ and
-  $x$, and $f'(x; 0) = 0$ holds without convexity. See `Rockafellar.theorem_23_1_posHomogeneous` and
+* **Theorem 23.1** (generalization). The infimum definition and positive homogeneity of
+  $f'(x; \cdot)$ apply for any $f$ and $x$, and $f'(x; 0) = 0$ holds without convexity.
+  See `Rockafellar.theorem_23_1_iInf`, `Rockafellar.theorem_23_1_posHomogeneous` and
   `Rockafellar.theorem_23_1_zero`.
 * **Theorem 23.2** (generalization). The equivalence holds without convexity of $f$. See
   `Rockafellar.theorem_23_2`.
+* **Theorem 23.3**, properness (generalization). A subgradient at a finite point makes the
+  function proper even without convexity. See `Rockafellar.theorem_23_3_proper`.
 * **Theorem 23.4**, first assertion (generalization). $\partial f(x) = \emptyset$ for
   $x \notin \operatorname{dom} f$ holds for every proper $f$. See
   `Rockafellar.theorem_23_4_notMem_dom`.
 * **Theorem 23.5** (generalization). Conditions (a), (b) and (c) are equivalent for every $f$, and
   (d) needs only properness, not convexity. See `Rockafellar.theorem_23_5_b`.
+  Under pointwise agreement with the closure, clauses (a*) and (b*) need only convexity,
+  and (a**) holds for any function. See `Rockafellar.theorem_23_5_a_star`,
+  `Rockafellar.theorem_23_5_b_star` and `Rockafellar.theorem_23_5_a_star_star`.
 * **Corollary 23.5.1** (generalization). The source assumes $f$ closed proper convex; properness is
   not needed. See `Rockafellar.corollary_23_5_1`.
 * **Corollary 23.5.2** (generalization). Properness is not needed. See
   `Rockafellar.corollary_23_5_2_clFn` and `Rockafellar.corollary_23_5_2_subdifferential`.
-* **Corollary 23.5.4** (generalization). The source assumes $K$ nonempty and closed; neither
-  hypothesis is needed. See `Rockafellar.corollary_23_5_4`.
+* **Corollary 23.5.4** (generalization). The three-condition characterization applies
+  to nonclosed cones containing the origin. See `Rockafellar.corollary_23_5_4`.
+* **Section 23, approximate subdifferentials** (generalization). Convexity and closedness
+  of the approximate subdifferential hold for arbitrary functions finite at the evaluation
+  point and for all real $\varepsilon$. The intersection identity also permits evaluation
+  at infinite values.
+* **Theorems 23.8 and 23.9**, inclusion clauses (generalization). The sum-rule and composition
+  inclusions apply to arbitrary functions. See `Rockafellar.theorem_23_8_subset` and
+  `Rockafellar.theorem_23_9_subset`.
 * **Corollary 23.8.1** (reading). The hypothesis $x \in C_i$ is added, because the normal cone of
   the library is defined at every point and the source's $N_C(x) = \partial \delta(x \mid C)$ is
   empty off $C$. See `Rockafellar.corollary_23_8_1`.
+
+## Not formalized
+
+* **Theorem 23.4, bounded subdifferentials outside the relative interior.** The book rules out
+  a nonempty bounded subdifferential there. The Lean boundedness equivalence assumes the point
+  lies in the relative interior.
+* **The example after Theorem 23.4, the full subdifferentiability locus.** The Lean example
+  proves nonconvexity by using two endpoints and their midpoint.
+* **Corollary 23.8.1, the weaker qualification for polyhedral sets.**
 -/
 
 open Set Pointwise
@@ -178,7 +200,8 @@ theorem theorem_23_1_monotone {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} 
 $\mathbb{R}^n$ with values in $[-\infty, +\infty]$ and all $x, y \in \mathbb{R}^n$,
 $$f'(x; y) = \inf_{\lambda > 0} \frac{f(x + \lambda y) - f(x)}{\lambda}.$$
 
-In the library this formula is the definition of `ConvexAnalysis.dirDeriv`. -/
+**Generalization.** The book derives this formula as a one-sided limit for convex $f$
+at a finite point. The Lean derivative is defined by the infimum for all $f$ and $x$. -/
 theorem theorem_23_1_iInf (f : Rn n → EReal) (x y : Rn n) :
     dirDeriv f x y = ⨅ a ∈ Ioi (0 : ℝ), (f (x + a • y) - f x) / (a : EReal) :=
   dirDeriv_apply f x y
@@ -254,7 +277,8 @@ theorem theorem_23_2_closure {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} (
 $\mathbb{R}^n$ with values in $[-\infty, +\infty]$, and let $x$ be a point where $f$ is finite.
 If $\partial f(x) \ne \emptyset$, then $f$ is proper.
 
-A subgradient gives an affine minorant of $f$, so $f$ never takes the value $-\infty$. -/
+**Generalization.** A subgradient gives an affine minorant of $f$, so properness follows
+without convexity. -/
 theorem theorem_23_3_proper {f : Rn n → EReal} {x : Rn n} (ht : f x ≠ ⊤) (hb : f x ≠ ⊥)
     (h : (subdifferential (pairing n) f x).Nonempty) : ProperConvex f :=
   properConvex_of_subdifferential_nonempty ht hb h
@@ -272,7 +296,10 @@ theorem theorem_23_3_two_sided {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
 
 /-- **Theorem 23.3** of [rockafellar1970convex], last assertion. Let $f$ be a convex function on
 $\mathbb{R}^n$, let $x$ be a point where $f$ is finite, and assume $\partial f(x) = \emptyset$.
-Then $f'(x; z - x) = -\infty$ for every $z \in \operatorname{ri}(\operatorname{dom} f)$. -/
+Then $f'(x; z - x) = -\infty$ for every $z \in \operatorname{ri}(\operatorname{dom} f)$.
+
+The opposite directional derivative is then $+\infty$ by `Rockafellar.theorem_23_1_neg_le`,
+recovering the two-sided conclusion of the book. -/
 theorem theorem_23_3_relint {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n} (ht : f x ≠ ⊤)
     (hb : f x ≠ ⊥) (hsub : subdifferential (pairing n) f x = ∅) {z : Rn n}
         (hz : z ∈ ri (convexDom f)) :
@@ -334,7 +361,11 @@ The source states that $\partial f(x)$ is nonempty and bounded if and only if
 $x \in \operatorname{int}(\operatorname{dom} f)$. The statement here assumes
 $x \in \operatorname{ri}(\operatorname{dom} f)$, where $\partial f(x)$ is nonempty by
 `Rockafellar.theorem_23_4_nonempty`; it says nothing about points outside
-$\operatorname{ri}(\operatorname{dom} f)$. -/
+$\operatorname{ri}(\operatorname{dom} f)$.
+
+**Reading.** Restricts the source's nonempty-and-bounded characterization to points already in the
+relative interior.
+-/
 theorem theorem_23_4_isBounded_iff {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     {x : Rn n} (hx : x ∈ ri (convexDom f)) :
     Bornology.IsBounded (subdifferential (pairing n) f x) ↔ x ∈ interior (convexDom f) :=
@@ -556,7 +587,11 @@ $x^* \in \partial f(x)$ if and only if
 $$f(z) \ge f(x) + \langle z - x, x^* \rangle \quad \text{for every } z \in \mathbb{R}^n.$$
 
 This is the definition of the subdifferential. It is stated separately so that the conditions of
-the theorem form one list. The subgradient $x^*$ is `y`. -/
+the theorem form one list. The subgradient $x^*$ is `y`.
+
+**Reading.** The subgradient inequality is equivalent to membership without requiring a proper
+convex function.
+-/
 theorem theorem_23_5_a {f : Rn n → EReal} {x y : Rn n} :
     y ∈ subdifferential (pairing n) f x ↔
       ∀ z : Rn n, f x + ((pairing n (z - x) y : ℝ) : EReal) ≤ f z :=
@@ -582,7 +617,10 @@ $x^* \in \partial f(x)$ if and only if
 $$f(x) + f^*(x^*) \le \langle x, x^* \rangle.$$
 
 The supremum in (b) is $f^*(x^*)$, so this is (b) in another form, and no hypothesis on $f$ is
-needed. See the generalization paragraph of `Rockafellar.theorem_23_5_b`. -/
+needed. See the generalization paragraph of `Rockafellar.theorem_23_5_b`.
+
+**Reading.** The Fenchel upper inequality characterizes membership for arbitrary functions.
+-/
 theorem theorem_23_5_c {f : Rn n → EReal} {x y : Rn n} :
     y ∈ subdifferential (pairing n) f x ↔
       f x + convexConj (pairing n) f y ≤ ((pairing n x y : ℝ) : EReal) :=
@@ -606,7 +644,9 @@ $x^* \in \mathbb{R}^n$,
 $$x \in \partial f^*(x^*) \iff x^* \in \partial f(x).$$
 
 For convex $f$ the condition $(\operatorname{cl} f)(x) = f(x)$ is the condition
-$f^{**}(x) = f(x)$ of the Fenchel–Moreau theorem. -/
+$f^{**}(x) = f(x)$ of the Fenchel–Moreau theorem.
+
+**Generalization.** The book assumes $f$ proper convex. Convexity suffices here. -/
 theorem theorem_23_5_a_star {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
     (hx : convexCl f x = f x) {y : Rn n} :
     x ∈ subdifferential (pairing n) (convexConj (pairing n) f) y ↔
@@ -621,6 +661,8 @@ $x^* \in \partial f(x)$ if and only if the function
 $z^* \mapsto \langle x, z^* \rangle - f^*(z^*)$ attains its supremum at $z^* = x^*$:
 $$\langle x, z^* \rangle - f^*(z^*) \le \langle x, x^* \rangle - f^*(x^*) \quad \text{for every
   } z^*.$$
+
+**Generalization.** The book assumes $f$ proper convex. Convexity suffices here.
 -/
 theorem theorem_23_5_b_star {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
     (hx : convexCl f x = f x) {y : Rn n} :
@@ -633,7 +675,10 @@ theorem theorem_23_5_b_star {f : Rn n → EReal} (hf : ConvexFn f) {x : Rn n}
 /-- **Theorem 23.5** of [rockafellar1970convex], condition (a**). Let $f$ be a function on
 $\mathbb{R}^n$ with values in $[-\infty, +\infty]$, and let $x$ be a point with
 $(\operatorname{cl} f)(x) = f(x)$. Then $x^* \in \partial(\operatorname{cl} f)(x)$ if and only
-if $x^* \in \partial f(x)$. -/
+if $x^* \in \partial f(x)$.
+
+**Generalization.** The book assumes $f$ proper convex. Agreement with the closure at $x$
+suffices for this equivalence. -/
 theorem theorem_23_5_a_star_star {f : Rn n → EReal} {x : Rn n} (hx : convexCl f x = f x)
     {y : Rn n} :
     y ∈ subdifferential (pairing n) (convexCl f) x ↔ y ∈ subdifferential (pairing n) f x :=
@@ -656,7 +701,10 @@ theorem corollary_23_5_1 {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedConv
 
 /-- **Corollary 23.5.1** of [rockafellar1970convex], pointwise form. Let $f$ be a closed convex
 function on $\mathbb{R}^n$. Then for all $x, x^* \in \mathbb{R}^n$, $x \in \partial f^*(x^*)$ if
-and only if $x^* \in \partial f(x)$. -/
+and only if $x^* \in \partial f(x)$.
+
+**Reading.** The inverse membership equivalence does not require properness.
+-/
 theorem corollary_23_5_1_mem {f : Rn n → EReal} (hf : ConvexFn f) (hc : ClosedConvex f)
     {x y : Rn n} :
     x ∈ subdifferential (pairing n) (convexConj (pairing n) f) y ↔
@@ -707,12 +755,10 @@ private theorem normalCone_zero (C : Set (Rn n)) :
 containing the origin. Then $x^* \in \partial \delta(x \mid K)$ if and only if
 $$x \in K, \qquad x^* \in K^\circ, \qquad \langle x, x^* \rangle = 0.$$
 
-**Generalization.** The source assumes that $K$ is nonempty and closed. Neither hypothesis is
-needed. The source derives the corollary from $\delta(\cdot \mid K)^* = \delta(\cdot \mid
-K^\circ)$, which needs closedness, but the subgradient inequality at $z = 0$ and $z = x + x$
-gives the result directly.
-
-The cone $K$ is a `PointedCone`, which always contains the origin. -/
+**Generalization.** The book assumes a nonempty closed convex cone. The Lean
+characterization also applies to nonclosed convex cones containing the origin. The
+subgradient inequality at $z = 0$ and $z = x + x$ gives the characterization directly.
+The inverse correspondence in `Rockafellar.corollary_23_5_4_inv` retains closedness. -/
 theorem corollary_23_5_4 (K : PointedCone ℝ (Rn n)) {x y : Rn n} :
     y ∈ subdifferential (pairing n) (indicatorFn (K : Set (Rn n))) x ↔
       x ∈ K ∧ y ∈ polarCone (pairing n) (K : Set (Rn n)) ∧ pairing n x y = 0 := by
@@ -751,7 +797,10 @@ $$\partial_\varepsilon f(x) = \{x^* \mid f(z) \ge f(x) + \langle z - x, x^* \ran
   \varepsilon \text{ for every } z\}$$
 is closed and convex.
 
-The set is $\{x^* \mid h^*(x^*) \le \varepsilon\}$ for $h(y) = f(x + y) - f(x)$. -/
+The set is $\{x^* \mid h^*(x^*) \le \varepsilon\}$ for $h(y) = f(x + y) - f(x)$.
+
+**Generalization.** The book assumes convex $f$ and positive $\varepsilon$. The conclusion
+holds for arbitrary $f$ finite at $x$ and any real $\varepsilon$. -/
 theorem epsSubdifferential_convex_closed {f : Rn n → EReal} {x : Rn n} {r : ℝ}
     (hr : f x = (r : EReal)) (ε : ℝ) :
     Convex ℝ (epsSubdifferential (pairing n) ε f x) ∧
@@ -760,7 +809,10 @@ theorem epsSubdifferential_convex_closed {f : Rn n → EReal} {x : Rn n} {r : �
 
 /-- **Section 23** of [rockafellar1970convex], before Theorem 23.6. For every function $f$ on
 $\mathbb{R}^n$ with values in $[-\infty, +\infty]$ and every $x$, the intersection of the sets
-$\partial_\varepsilon f(x)$ over $\varepsilon > 0$ is $\partial f(x)$. -/
+$\partial_\varepsilon f(x)$ over $\varepsilon > 0$ is $\partial f(x)$.
+
+**Generalization.** The book assumes convex $f$ finite at $x$. This identity also holds
+for nonconvex functions and at infinite function values. -/
 theorem epsSubdifferential_iInter (f : Rn n → EReal) (x : Rn n) :
     ⋂ ε ∈ Ioi (0 : ℝ), epsSubdifferential (pairing n) ε f x = subdifferential (pairing n) f x :=
   iInter_epsSubdifferential (pairing n) f x
@@ -845,7 +897,8 @@ theorem corollary_23_7_1_smul {f : Rn n → EReal} (hf : ConvexFn f) (hp : Prope
 on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$ and every $x$,
 $$\partial f_1(x) + \dots + \partial f_m(x) \subseteq \partial(f_1 + \dots + f_m)(x).$$
 
-No hypothesis is needed: the $m$ subgradient inequalities add. -/
+**Generalization.** The book assumes proper convex functions. The inclusion follows by
+adding the subgradient inequalities for arbitrary functions. -/
 theorem theorem_23_8_subset {ι : Type*} (s : Finset ι) (f : ι → Rn n → EReal) (x : Rn n) :
     ∑ i ∈ s, subdifferential (pairing n) (f i) x ⊆ subdifferential (pairing n) (∑ i ∈ s, f i) x :=
   subdifferential_finsetSum_subset (pairing n) s f x
@@ -955,7 +1008,8 @@ $A : \mathbb{R}^n \to \mathbb{R}^m$ be linear, let $h$ be a function on $\mathbb
 values in $[-\infty, +\infty]$, and let $f(x) = h(Ax)$. Then for every $x$,
 $$A^* \partial h(Ax) \subseteq \partial f(x).$$
 
-No hypothesis on $h$ is needed; the proof uses only the adjointness of $A^*$. -/
+**Generalization.** The book assumes a proper convex outer function. The inclusion
+holds for arbitrary outer functions by adjointness. -/
 theorem theorem_23_9_subset (A : Rn n →ₗ[ℝ] Rn m) (h : Rn m → EReal) (x : Rn n) :
     LinearMap.adjoint A '' subdifferential (pairing m) h (A x)
       ⊆ subdifferential (pairing n) (compLin h A) x :=

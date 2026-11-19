@@ -95,6 +95,23 @@ specializes `Numlib.Analysis.Calculus.MeanValue`.
 
 ## Deviations from the source
 
+* **Proposition 5.3.5** (scope). The Fréchet sum theorem normalizes the first coefficient to
+  one. The Gâteaux sum and scalar rules are stated separately.
+* **Example 5.3.10** (scope). The source assumes continuity of the partial derivative
+  along the graph of one $u_0$. The formal statement assumes that the partial derivative
+  exists and is jointly continuous on the full product, providing uniform control of the
+  remainder near each graph. It states the derivative for the integral term, which is also
+  the derivative after adding the source's fixed inhomogeneity.
+* **Propositions 5.3.11 and 5.3.13** (scope). The bounds hold in normed spaces and require
+  differentiability only along the segment. Most versions use a supplied derivative bound
+  in place of a supremum. The supremum version of (5.3.7) assumes global continuity of
+  the supplied derivative.
+* **Proposition 5.3.15 and Corollary 5.3.16** (scope). The partial-derivative statements use
+  normed spaces and ambient maps. The source frames them for Banach spaces and maps on
+  a domain.
+* **Theorems 5.3.17–5.3.19** (scope). The ambient Gâteaux derivative is used at all points
+  of the constraint set, including its boundary. The convexity equivalences also apply
+  to the empty set.
 * **Theorem 5.3.19** (generalization). The book states that the minimization problem and the
   variational inequality (5.3.10) are equivalent as problems; here they are equivalent at each point
   $u \in K$. See `AtkinsonHan.Chapter05.theorem_5_3_19`.
@@ -147,7 +164,10 @@ theorem proposition_5_3_3 {f : V₁ → V₂} {A : V₁ →L[ℝ] V₂} {u₀ : 
 
 /-- **Proposition 5.3.5** of [han2009theoretical] (sum rule). If $f, g : V_1 \to V_2$ have the
 Fréchet derivatives $A$ and $B$ at $u_0$ and $c \in \mathbb{R}$, then
-$u \mapsto f(u) + c\, g(u)$ has the Fréchet derivative $A + cB$ at $u_0$. -/
+$u \mapsto f(u) + c\, g(u)$ has the Fréchet derivative $A + cB$ at $u_0$.
+
+**Reading.** Normalizes the first coefficient to one in the Fréchet sum.
+-/
 theorem proposition_5_3_5 {f g : V₁ → V₂} {A B : V₁ →L[ℝ] V₂} {u₀ : V₁} (hf : HasFDerivAt f A u₀)
     (hg : HasFDerivAt g B u₀) (c : ℝ) :
     HasFDerivAt (fun u => f u + c • g u) (A + c • B) u₀ :=
@@ -228,7 +248,11 @@ $$\mathcal{K}'(u) v(x) = \int_a^b k_z(x, y, u(y))\, v(y)\, dy,$$
 the Fredholm integral operator with the kernel $k_z(x, y, u(y))$.
 
 The operators are `IntegralOperator.urysohn` and `IntegralOperator.fredholm`, and the kernel is
-`IntegralOperator.urysohnDerivKernel`. -/
+`IntegralOperator.urysohnDerivKernel`.
+
+**Reading.** Global partial-kernel regularity replaces continuity only along one graph, and states
+derivative of the integral term.
+-/
 theorem example_5_3_10 {a b : ℝ} (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
     (u : C(Icc a b, ℝ)) :
@@ -403,6 +427,9 @@ variable {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedAddComm
 bound on the derivative. Let $F : V \to W$ have the Fréchet derivative $F'(z)$ at every point
 $z$ of the segment $[u, w]$, and let $\|F'(z)\| \le C$ for all $z \in [u, w]$. Then
 $$\|F(u) - F(w)\| \le C \|u - w\|.$$
+
+**Reading.** Segment-only differentiability with a supplied upper bound and no completeness
+assumption.
 -/
 theorem proposition_5_3_11 {F : V → W} {F' : V → V →L[ℝ] W} {u w : V} {C : ℝ}
     (hF : ∀ z ∈ segment ℝ u w, HasFDerivAt F (F' z) z)
@@ -418,7 +445,11 @@ $$\|F(u) - F(w)\| \le \sup_{0 \le \theta \le 1} \|F'((1 - \theta) u + \theta w)\
   w\|.$$
 
 The continuity of $F'$ is a hypothesis of the book. It makes the supremum finite, so that `iSup`
-is a true supremum. -/
+is a true supremum.
+
+**Reading.** Keeps the supremum and assumes globally continuous derivative with differentiability
+along the segment.
+-/
 theorem proposition_5_3_11_iSup {F : V → W} {F' : V → V →L[ℝ] W} {u w : V}
     (hF : ∀ z ∈ segment ℝ u w, HasFDerivAt F (F' z) z) (hF' : Continuous F') :
     ‖F u - F w‖ ≤ (⨆ θ : Icc (0 : ℝ) 1, ‖F' ((1 - (θ : ℝ)) • u + (θ : ℝ) • w)‖) * ‖u - w‖ := by
@@ -448,7 +479,10 @@ $$\|F(y) - F(x) - F'(x)(y - x)\| \le \frac{L}{2} \|y - x\|^2.$$
 
 This is the sharp form of Proposition 5.3.13, and the estimate (5.4.5) of Section 5.4 rests on
 it. It is `Convex.norm_image_sub_sub_le_of_norm_hasFDerivAt_sub_le` under the two-sided
-Lipschitz condition of the book. -/
+Lipschitz condition of the book.
+
+**Reading.** Lipschitz first derivative gives same sharp coefficient without a second derivative.
+-/
 theorem norm_sub_sub_fderiv_le_half_mul_sq {s : Set V} (hs : Convex ℝ s) {F : V → W}
     {F' : V → V →L[ℝ] W} {L : ℝ} (hF : ∀ z ∈ s, HasFDerivAt F (F' z) z)
     (hL : ∀ z ∈ s, ∀ w ∈ s, ‖F' z - F' w‖ ≤ L * ‖z - w‖) {x y : V} (hx : x ∈ s) (hy : y ∈ s) :
@@ -459,6 +493,8 @@ theorem norm_sub_sub_fderiv_le_half_mul_sq {s : Set V} (hs : Convex ℝ s) {F : 
 $F'(z)$ at every point $z$ of the segment $[u_0, u_0 + h]$, let $F'$ have the Fréchet derivative
 $F''(z)$ there, and let $\|F''(z)\| \le C$ on the segment. Then
 $$\|F(u_0 + h) - F(u_0) - F'(u_0) h\| \le \frac{C}{2} \|h\|^2.$$
+
+**Reading.** Uses segment-only derivatives and a supplied Hessian bound in normed spaces.
 -/
 theorem proposition_5_3_13 {F : V → W} {F' : V → V →L[ℝ] W} {F'' : V → V →L[ℝ] V →L[ℝ] W} {u₀ h : V}
     {C : ℝ} (hF : ∀ z ∈ segment ℝ u₀ (u₀ + h), HasFDerivAt F (F' z) z)
@@ -486,7 +522,10 @@ in the first variable. Let $f : U \times V \to W$ have the Fréchet derivative $
 $p = (u_0, v_0)$. Then $u \mapsto f(u, v_0)$ has the Fréchet derivative $h \mapsto A(h, 0)$ at
 $u_0$. This is the partial derivative $f_u(u_0, v_0)$.
 
-The map $h \mapsto A(h, 0)$ is `A.comp (ContinuousLinearMap.inl ℝ U V)`. -/
+The map $h \mapsto A(h, 0)$ is `A.comp (ContinuousLinearMap.inl ℝ U V)`.
+
+**Reading.** First partial via the product embedding, in normed ambient spaces.
+-/
 theorem proposition_5_3_15_fst {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V}
     (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun u => f (u, p.2)) (A.comp (ContinuousLinearMap.inl ℝ U V)) p.1 :=
@@ -497,7 +536,10 @@ in the second variable. Let $f : U \times V \to W$ have the Fréchet derivative 
 $p = (u_0, v_0)$. Then $v \mapsto f(u_0, v)$ has the Fréchet derivative $k \mapsto A(0, k)$ at
 $v_0$. This is the partial derivative $f_v(u_0, v_0)$.
 
-The map $k \mapsto A(0, k)$ is `A.comp (ContinuousLinearMap.inr ℝ U V)`. -/
+The map $k \mapsto A(0, k)$ is `A.comp (ContinuousLinearMap.inr ℝ U V)`.
+
+**Reading.** Second partial via the product embedding, in normed ambient spaces.
+-/
 theorem proposition_5_3_15_snd {f : U × V → W} {A : U × V →L[ℝ] W} {p : U × V}
     (hf : HasFDerivAt f A p) :
     HasFDerivAt (fun v => f (p.1, v)) (A.comp (ContinuousLinearMap.inr ℝ U V)) p.2 :=
@@ -521,7 +563,10 @@ Fréchet derivative at $p$, given by $(h, k) \mapsto f_u(p) h + f_v(p) k$.
 
 The function $f$ is curried, `f : U → V → W`, and `↿f` is the function on $U \times V$. The
 derivative is `ContinuousLinearMap.coprod` of the partial derivatives. The proof is Mathlib's
-`hasStrictFDerivAt_uncurry_coprod`. -/
+`hasStrictFDerivAt_uncurry_coprod`.
+
+**Reading.** Partial existence near the point and continuity there suffice in normed ambient spaces.
+-/
 theorem proposition_5_3_15_of_partial {f : U → V → W} {f₁ : U → V → U →L[ℝ] W}
     {f₂ : U → V → V →L[ℝ] W}
     {p : U × V} (df₁ : ∀ᶠ q in 𝓝 p, HasFDerivAt (f · q.2) (↿f₁ q) q.1)
@@ -546,7 +591,10 @@ means differentiable in a neighbourhood with a derivative that is continuous the
 direction applies `AtkinsonHan.Chapter05.proposition_5_3_15_fst` and
 `AtkinsonHan.Chapter05.proposition_5_3_15_snd` at each point of the neighbourhood. The backward
 direction applies `AtkinsonHan.Chapter05.proposition_5_3_15_of_partial` at each point of the
-neighbourhood. -/
+neighbourhood.
+
+**Reading.** Neighborhood iff for continuous partials in normed ambient spaces.
+-/
 theorem corollary_5_3_16 {f : U → V → W} {p : U × V} :
     ContDiffAt ℝ 1 (↿f) p ↔
       ∃ (f₁ : U → V → U →L[ℝ] W) (f₂ : U → V → V →L[ℝ] W) (s : Set (U × V)), s ∈ 𝓝 p ∧
@@ -593,7 +641,11 @@ all $u, v \in K$; (c) $\langle f'(v) - f'(u), v - u \rangle \ge 0$ for all $u, v
 The statement is the conjunction of (a) $\iff$ (b) and (a) $\iff$ (c). These are
 `convexOn_iff_forall_add_lineDeriv_le` and `convexOn_iff_monotone_lineDeriv`, whose hypothesis
 `∀ h, HasLineDerivAt ℝ f (f' u h) u h` is `AtkinsonHan.Chapter05.HasGateauxDerivAt f (f' u) u`
-by definition. -/
+by definition.
+
+**Reading.** Same supporting inequality and monotonicity with ambient derivatives and empty-set
+allowance.
+-/
 theorem theorem_5_3_17 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, f u + f' u (v - u) ≤ f v) ∧
       (ConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, 0 ≤ (f' v - f' u) (v - u)) :=
@@ -606,7 +658,10 @@ $u, v \in K$ with $u \neq v$, and if and only if $\langle f'(v) - f'(u), v - u \
 all $u, v \in K$ with $u \neq v$.
 
 The proofs are `strictConvexOn_iff_forall_add_lineDeriv_lt` and
-`strictConvexOn_iff_forall_lineDeriv_sub_pos`. -/
+`strictConvexOn_iff_forall_lineDeriv_sub_pos`.
+
+**Reading.** Same strict convexity criteria with ambient derivatives and empty-set allowance.
+-/
 theorem theorem_5_3_18 (hK : Convex ℝ K) (hG : ∀ u ∈ K, HasGateauxDerivAt f (f' u) u) :
     (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → f u + f' u (v - u) < f v) ∧
       (StrictConvexOn ℝ K f ↔ ∀ u ∈ K, ∀ v ∈ K, u ≠ v → 0 < (f' v - f' u) (v - u)) :=
@@ -635,7 +690,11 @@ $u \in K$. Then $u \in K$ minimizes $f$ over $K$ if and only if $u$ solves the v
 equation
 $$\langle f'(u), v \rangle = 0 \quad \text{for all } v \in K.$$
 
-The proof is `isMinOn_iff_forall_lineDeriv_eq_zero`. -/
+The proof is `isMinOn_iff_forall_lineDeriv_eq_zero`.
+
+**Reading.** Pointwise minimality iff derivative annihilates submodule, stated for ambient
+differentiability.
+-/
 theorem theorem_5_3_19_submodule (K : Submodule ℝ V)
     (hG : ∀ u ∈ (K : Set V), HasGateauxDerivAt f (f' u) u) (hcvx : ConvexOn ℝ (K : Set V) f)
     {u : V} (hu : u ∈ K) : IsMinOn f (K : Set V) u ↔ ∀ v ∈ K, f' u v = 0 :=

@@ -126,6 +126,20 @@ specialize `Numlib.Krylov.Arnoldi`, `Numlib.Krylov.Decomposition`,
 
 ## Deviations from the source
 
+* **Algorithm 10.5.1** (reading). The printed zero-residual factorization concerns a completed
+  exact run. A fuel-limited prefix instead has the last residual term of (10.5.2). See
+  `GolubVanLoan.Chapter10.algorithm_10_5_1_spec` and
+  `GolubVanLoan.Chapter10.algorithm_10_5_1_matrices`.
+* **Equations (10.5.3) and (10.5.10)** (reading). The filter polynomial is the monic product,
+  and the first-column identities account for the source's normalization scalar separately. See
+  `GolubVanLoan.Chapter10.filterPolynomial` and
+  `GolubVanLoan.Chapter10.explicitRestartCycle_spec`.
+* **§10.5.3, continued Arnoldi steps** (reading). The specification of the full-size restart
+  requires reaching the requested order, since the continuation may stop earlier when its
+  residual vanishes. See `GolubVanLoan.Chapter10.implicitRestartCycle_spec`.
+* **Equation (10.5.11)** (generalization). The unsymmetric Lanczos program normalizes starting
+  vectors with nonzero mutual dot product, handles initially degenerate pairs by stopping, and
+  limits its loop by fuel. See `GolubVanLoan.Chapter10.unsymmetricLanczos`.
 * **Equation (10.5.4)** (typo). The source prints the loop as `for i = 0:p`. It runs for
   $i = 1, \dots, p$. See `GolubVanLoan.Chapter10.shiftedQrSteps`.
 * **Theorem 10.5.1** (generalization). The source defines $V_i$ and $R_i$ by QR factorizations. The
@@ -220,7 +234,10 @@ the same column space.
 
 The Krylov matrix is `Matrix.krylovMatrix A q₁ k`. The identity holds for every $k$, also past
 the grade, where the columns of $Q_k$ are $0$. The proof specializes `Arnoldi.range_basisMatrix`
-and `Matrix.range_krylovMatrix`. -/
+and `Matrix.range_krylovMatrix`.
+
+**Reading.** Equal spans for all k using zero-padded Arnoldi family past grade.
+-/
 theorem equation_10_5_1 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     LinearMap.range (Matrix.toEuclideanLin (Arnoldi.basisMatrix A q₁ k)) =
       LinearMap.range (Matrix.toEuclideanLin (Matrix.krylovMatrix A q₁.ofLp k)) := by
@@ -234,7 +251,10 @@ If $k$ is at most the grade of $q_1$ for $A$, then $(Q_k, H_k, r_k)$ is a $k$-st
 decomposition.
 
 The proof specializes `Arnoldi.mul_basisMatrix` and
-`Arnoldi.isArnoldiDecomposition_basisMatrix`. -/
+`Arnoldi.isArnoldiDecomposition_basisMatrix`.
+
+**Reading.** Algebraic relation and Hessenberg hold beyond grade; full decomposition needs k≤grade.
+-/
 theorem equation_10_5_2 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : 1 ≤ k) :
     A * Arnoldi.basisMatrix A q₁ k =
@@ -254,7 +274,10 @@ theorem equation_10_5_2 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace 
 
 /-- Let $A \in \mathbb{R}^{n \times n}$ and $q_1 \in \mathbb{R}^n$, and let $y \in \mathbb{R}^{k+1}$
 and $\lambda \in \mathbb{R}$ satisfy $H_{k+1} y = \lambda y$. Then $A (Q_{k+1} y) - \lambda
-Q_{k+1} y = y_{k+1} r_{k+1}$, the last entry of $y$ times the residual. -/
+Q_{k+1} y = y_{k+1} r_{k+1}$, the last entry of $y$ times the residual.
+
+**Reading.** Same residual equality for any coefficient eigenvector, no normalization.
+-/
 theorem arnoldi_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (k : ℕ) {y : Fin (k + 1) → ℝ} {θ : ℝ}
     (hy : (Arnoldi.hessenbergSq (Matrix.toEuclideanLin A) q₁ (k + 1)) *ᵥ y = θ • y) :
@@ -358,7 +381,10 @@ $i = 1, \dots, p$, with every $V_i$ orthogonal. Then $V = V_1 \cdots V_p$ of (10
 orthogonal and
 $$H_+ = H^{(p)} = V^T H_c V.$$
 
-The proof specializes `Matrix.IsShiftedQrChain.conjTranspose_mul_mul`. -/
+The proof specializes `Matrix.IsShiftedQrChain.conjTranspose_mul_mul`.
+
+**Reading.** Same orthogonal similarity for arbitrary such chain with orthogonal steps.
+-/
 theorem equation_10_5_6 {m : ℕ} {Hs V R : ℕ → Matrix (Fin m) (Fin m) ℝ} {μ : ℕ → ℝ} {p : ℕ}
     (h : Matrix.IsShiftedQrChain Hs V R μ p)
     (hV : ∀ i < p, V i ∈ Matrix.orthogonalGroup (Fin m) ℝ) :
@@ -379,12 +405,19 @@ private theorem isUpperTriangular_list_prod {m : ℕ} {R : ℕ → Matrix (Fin m
     exact (hR a List.mem_cons_self).mul (ih fun i hi => hR i (List.mem_cons_of_mem a hi))
 
 /-- The filter polynomial $p(\lambda) = (\lambda - \mu_1) \cdots (\lambda - \mu_p)$ of (10.5.3),
-where the source's $\mu_1, \dots, \mu_p$ are `μ 0, …, μ (p - 1)`. -/
+where the source's $\mu_1, \dots, \mu_p$ are `μ 0, …, μ (p - 1)`.
+
+**Reading.** The source includes a normalization scalar $c$ in its filter polynomial. This
+definition uses the monic product and the restart statements put the corresponding scalar on
+the other side of the equality. -/
 noncomputable def filterPolynomial (μ : ℕ → ℝ) (p : ℕ) : ℝ[X] :=
   ((List.range p).map fun i => X - C (μ i)).prod
 
 /-- For a square matrix $M$, the filter polynomial satisfies
-$p(M) = (M - \mu_1 I) \cdots (M - \mu_p I)$. -/
+$p(M) = (M - \mu_1 I) \cdots (M - \mu_p I)$.
+
+**Reading.** Monic matrix filter product identity.
+-/
 theorem aeval_filterPolynomial {m : ℕ} (M : Matrix (Fin m) (Fin m) ℝ) (μ : ℕ → ℝ) (p : ℕ) :
     aeval M (filterPolynomial μ p) = ((List.range p).map fun i => M - μ i • 1).prod := by
   rw [filterPolynomial, map_list_prod, List.map_map]
@@ -606,7 +639,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 /-- The modified Gram–Schmidt inner loop of Algorithm 10.5.1: for $i = 1, \dots, k$ it computes
 $h_{ik} = q_i^T r_k$ and then $r_k \leftarrow r_k - h_{ik} q_i$, so that each coefficient is
 taken against the current $r_k$. It returns the orthogonalized vector and the column of
-coefficients. -/
+coefficients.
+
+**Reading.** Same modified Gram–Schmidt pass with rounded dot and saxpy.
+-/
 def mgsLoop (q : ℕ → Fin n → ℝ) (k : ℕ) (r : Fin n → ℝ) : M ((Fin n → ℝ) × (ℕ → ℝ)) :=
   (List.range k).foldlM (fun (p : (Fin n → ℝ) × (ℕ → ℝ)) i => do
     let c ← algorithm_1_1_1 rnd (q i) p.1
@@ -619,7 +655,10 @@ q_{k+1} = r_k/h_{k+1,k},  k = k + 1,  r_k = A q_k
 for i = 1:k: h_{ik} = q_iᵀ r_k, r_k = r_k − h_{ik} q_i
 h_{k+1,k} = ‖r_k‖₂
 ```
-with $h_{10} = 1$ at the first pass. -/
+with $h_{10} = 1$ at the first pass.
+
+**Reading.** Same active recurrence and explicit stopped-state branch with rounding.
+-/
 noncomputable def arnoldiStep (A : Matrix (Fin n) (Fin n) ℝ) (s : ArnoldiState n) :
     M (ArnoldiState n) :=
   if s.done then pure s else do
@@ -652,7 +691,10 @@ t = k
 
 The `while` loop is at most `fuel` passes of `GolubVanLoan.Chapter10.arnoldiStep`, and every
 arithmetic result passes through the rounding hook `rnd`. The exact semantics is
-`GolubVanLoan.Chapter10.algorithm_10_5_1_spec`. -/
+`GolubVanLoan.Chapter10.algorithm_10_5_1_spec`.
+
+**Reading.** Finite fuel and stored stop flag instead of unbounded loop.
+-/
 noncomputable def algorithm_10_5_1 (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) (fuel : ℕ) :
     M (ArnoldiState n) :=
   (List.range fuel).foldlM (fun s _ => arnoldiStep rnd A s)
@@ -718,7 +760,11 @@ coefficients against the orthonormal $q_i$ are the classical ones
 (`Arnoldi.coeff_eq_inner_modifiedGramSchmidtSweep`). The normalization is `Arnoldi.vec_succ_eq`
 with $h_{k+1,k} = \|r_k\|_2$ (`Arnoldi.coeff_succ_self`), and the exit test is
 `Arnoldi.coeff_succ_self_eq_zero_iff`. The orthonormality of the $q_j$ (Problem P10.5.1) is
-`Arnoldi.orthonormal`. -/
+`Arnoldi.orthonormal`.
+
+**Reading.** The source's equality $AQ_t=Q_tH_t$ concerns a completed exact run stopped at zero
+residual. The state may exhaust its fuel first, in which case (10.5.2) includes the last
+residual term. -/
 theorem algorithm_10_5_1_spec (A : Matrix (Fin n) (Fin n) ℝ) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (algorithm_10_5_1 pure A q₁ fuel)
@@ -822,7 +868,10 @@ def shiftDiagRow {m : ℕ} (μ : ℝ) (r : Fin m) (x : Fin m → ℝ) : M (Fin m
   pure (Function.update x r d)
 
 /-- The matrix $B + \mu I$, with each diagonal entry rounded once. The shift $B - \mu I$ is the
-shift by $-\mu$, since negation is exact. -/
+shift by $-\mu$, since negation is exact.
+
+**Reading.** Rounded diagonal update for a matrix shift.
+-/
 def shiftDiag {m : ℕ} (μ : ℝ) (B : Matrix (Fin m) (Fin m) ℝ) : M (Matrix (Fin m) (Fin m) ℝ) :=
   (List.finRange m).foldlM (fun (B : Fin m → Fin m → ℝ) r => do
     let b ← shiftDiagRow rnd μ r (B r)
@@ -830,7 +879,10 @@ def shiftDiag {m : ℕ} (μ : ℝ) (B : Matrix (Fin m) (Fin m) ℝ) : M (Matrix 
 
 /-- The product $B G_1 \cdots G_k$ for the Givens rotations $G_{j+1} = G(j, j+1, \theta_j)$ given by
 the pairs $(c_j, s_j)$ = `cs j`, as Algorithm 5.2.5 returns them. Each rotation is applied to
-all rows by `GolubVanLoan.Chapter05.givensApplyRight`. -/
+all rows by `GolubVanLoan.Chapter05.givensApplyRight`.
+
+**Reading.** Same right product of Givens factors in rounded arithmetic.
+-/
 def rotationsApplyRight {k : ℕ} (cs : Fin k → ℝ × ℝ) (B : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :
     M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :=
   (List.finRange k).foldlM (fun B j =>
@@ -858,7 +910,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 /-- Step $i + 1$ of (10.5.4): the Givens QR factorization $H^{(i)} - \mu_{i+1} I = V_{i+1} R_{i+1}$
 of a Hessenberg matrix by Algorithm 5.2.5, which returns $R_{i+1}$ and the rotation pairs; the
 matrix $V_{i+1}$ formed from the rotations; $H^{(i+1)} = R_{i+1} V_{i+1} + \mu_{i+1} I$, with
-the rotations applied to $R_{i+1}$ on the right; and the update $V \leftarrow V V_{i+1}$. -/
+the rotations applied to $R_{i+1}$ on the right; and the update $V \leftarrow V V_{i+1}$.
+
+**Reading.** Same shift/QR/reversed-product order with rounding and Givens callback logic.
+-/
 noncomputable def shiftedQrStep {m : ℕ} (μ : ℕ → ℝ) (st : ShiftedQrState m) (i : ℕ) :
     M (ShiftedQrState m) := do
   let B ← shiftDiag rnd (-μ i) (st.H i)
@@ -938,7 +993,10 @@ satisfies:
 
 The two lines of (10.5.4) are `Matrix.IsShiftedQrChain`. The properties of $V_i$ and $R_i$ come
 from `GolubVanLoan.Chapter05.algorithm_5_2_5_spec`. The Hessenberg form of $H^{(i)}$ is the
-source's reference to §7.4.2, `Matrix.IsShiftedQrChain.isUpperHessenberg`. -/
+source's reference to §7.4.2, `Matrix.IsShiftedQrChain.isUpperHessenberg`.
+
+**Correction.** Exact structure and chain for corrected p-step range.
+-/
 theorem equation_10_5_4 {m : ℕ} {Hc : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ}
     (hH : Hc.IsUpperHessenberg) (μ : ℕ → ℝ) (p : ℕ) :
     let st := Id.run (shiftedQrSteps pure Hc μ p)
@@ -1023,7 +1081,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- One cycle of explicit restarting (10.5.10), with $m = j + p + 1$: $m$ steps of Algorithm 10.5.1
 from $q_1$, which give $Q_c$ and $H_c$; the filter values `shifts` $H_c$; $p$ steps of (10.5.4)
-on $H_c$; and the new starting vector $Q_c V(:, 1)$, computed by the gaxpy of Chapter 1. -/
+on $H_c$; and the new starting vector $Q_c V(:, 1)$, computed by the gaxpy of Chapter 1.
+
+**Reading.** Padded early termination, caller-supplied real shifts and rounding.
+-/
 noncomputable def explicitRestartCycle (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ) :
     M (Fin n → ℝ) := do
@@ -1043,7 +1104,10 @@ Repeat:
 
 Here $m$ is `j + p + 1`. The filter values are chosen by the function `shifts` of $H_c$ that the
 caller supplies; the source leaves the choice to heuristics, and only the values `shifts H_c i`
-for `i < p` are used. Each cycle is `GolubVanLoan.Chapter10.explicitRestartCycle`. -/
+for `i < p` are used. Each cycle is `GolubVanLoan.Chapter10.explicitRestartCycle`.
+
+**Reading.** Executes finite cycle count, with supplied shifts and rounding.
+-/
 noncomputable def explicitlyRestartedArnoldi (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (q₁ : Fin n → ℝ)
     (cycles : ℕ) : M (Fin n → ℝ) :=
@@ -1087,7 +1151,11 @@ steps and returns the matrices $Q_K$ and $H_K$ of the Arnoldi process, and, if $
 residual $r_K$.
 
 The matrices are `Arnoldi.basisMatrix`, `Arnoldi.hessenbergSq` and `Arnoldi.w`, read off by
-`GolubVanLoan.Chapter10.ArnoldiState.qMatrix` and `GolubVanLoan.Chapter10.ArnoldiState.hMatrix`. -/
+`GolubVanLoan.Chapter10.ArnoldiState.qMatrix` and `GolubVanLoan.Chapter10.ArnoldiState.hMatrix`.
+
+**Reading.** The full requested prefix is available only when its length is at most the
+starting vector's grade. The equality $AQ_t=Q_tH_t$ for an exact run stopped at zero residual
+is a special case of (10.5.2). -/
 theorem algorithm_10_5_1_matrices (A : Matrix (Fin n) (Fin n) ℝ) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) {K : ℕ}
     (hK : K ≤ grade (Matrix.toEuclideanLin A) (WithLp.toLp 2 q₁)) :
@@ -1143,7 +1211,11 @@ starting vector $q_+$ of the cycle is a unit vector, and
 $$R(1, 1) \, q_+ = p(A) q.$$
 
 This is the source's $q_+ = c \, p(A) q_1$ of §10.5.3, with $c = 1/R(1, 1)$, without the
-division. -/
+division.
+
+**Reading.** One cycle requires full Arnoldi grade prefix; normalized and cross-multiplied filter
+equality.
+-/
 theorem explicitRestartCycle_spec (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {q : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q : EuclideanSpace ℝ (Fin n))‖ = 1)
@@ -1191,7 +1263,11 @@ grade of $q^{(\ell)}$ for $A$. Then in exact arithmetic:
 * every $q^{(\ell)}$ with $\ell \le L$ is a unit vector;
 * $\rho_\ell \, q^{(\ell+1)} = p_\ell(A) q^{(\ell)}$ for every $\ell < L$;
 * if every $\rho_\ell$ with $\ell < L$ is nonzero, then $q^{(L)}$ is a multiple of
-  $p_{L-1}(A) \cdots p_0(A) q_1$. -/
+  $p_{L-1}(A) \cdots p_0(A) q_1$.
+
+**Reading.** Finite repeated cycles conditional on sufficient grade, with explicit scale factors
+even if zero.
+-/
 theorem equation_10_5_10 (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) (L : ℕ) :
@@ -1251,7 +1327,10 @@ then $Q_c \leftarrow Q_+(:, 1:j+1)$, $H_c \leftarrow H_+(1:j+1, 1:j+1)$, the res
 \leftarrow h^+_{j+2,j+1} Q_+(:, j+2) + v_{m,j+1} r_c$ of
 `GolubVanLoan.Chapter10.implicitRestart_isArnoldiDecomposition` and $h_{j+2,j+1} = \|r_c\|_2$;
 and finally the Arnoldi steps $j + 2, \dots, m$, continued from that state by $p$ passes of
-`GolubVanLoan.Chapter10.arnoldiStep`. -/
+`GolubVanLoan.Chapter10.arnoldiStep`.
+
+**Correction.** Corrected residual with both terms, early-stop continuation and explicit rounding.
+-/
 noncomputable def implicitRestartCycle (A : Matrix (Fin n) (Fin n) ℝ) (j p : ℕ)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) (s : ArnoldiState n) :
     M (ArnoldiState n) := do
@@ -1493,7 +1572,10 @@ private theorem arnoldiSteps_inv (A : Matrix (Fin n) (Fin n) ℝ) (t : ℕ) {s :
 
 /-- The exact state from which an implicit restart continues the Arnoldi steps: $Q_+ = Q_c V$
 truncated to $j + 1$ columns, $H_+$ truncated to its leading $(j+1) \times (j+1)$ block, the
-corrected residual $r_+$, and the entry $\|r_+\|$ below that block. -/
+corrected residual $r_+$, and the entry $\|r_+\|$ below that block.
+
+**Correction.** Keeps leading compressed basis and corrected residual term.
+-/
 private noncomputable def restartState (j p : ℕ) (s : ArnoldiState n)
     (st : ShiftedQrState (j + p)) :
     ArnoldiState n :=
@@ -1528,7 +1610,11 @@ the output state again has $m$ columns, then it is an $m$-step Arnoldi decomposi
 first column $q_+$ satisfies
 $$R(1, 1) \, q_+ = p(A) q_1.$$
 
-The hypothesis on the output says that the continued Arnoldi steps do not break down. -/
+The hypothesis on the output says that the continued Arnoldi steps do not break down.
+
+**Reading.** The full-size restarted decomposition is asserted if the continuation reaches the
+requested order. It can stop earlier when the corrected residual or a later Arnoldi residual
+vanishes. -/
 theorem implicitRestartCycle_spec (A : Matrix (Fin n) (Fin n) ℝ) {j p : ℕ} (hp : 0 < p)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {s : ArnoldiState n}
     (hs : IsArnoldiDecomposition A (s.qMatrix (j + p + 1)) (s.hMatrix (j + p + 1)) s.r) :
@@ -1618,7 +1704,10 @@ exact arithmetic:
 So the first column is, up to the factor $\rho_\ell$, the starting vector that explicit
 restarting (10.5.10) would use, obtained without restarting the Arnoldi process from step 1. By
 the implicit Q theorem `Matrix.IsArnoldiDecomposition.implicitQ`, an unreduced Arnoldi
-decomposition is determined by its first column. -/
+decomposition is determined by its first column.
+
+**Reading.** Full Arnoldi success conditional on each cycle reaching requested order.
+-/
 theorem implicitlyRestartedArnoldi_spec (A : Matrix (Fin n) (Fin n) ℝ) {j p : ℕ} (hp : 0 < p)
     (shifts : Matrix (Fin (j + p + 1)) (Fin (j + p + 1)) ℝ → ℕ → ℝ) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1)
@@ -1698,7 +1787,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ}
 r̃_k = (A − α_k I)ᵀ q̃_k − β_{k−1} q̃_{k−1}
 ```
 with $q_0 = \tilde q_0 = 0$. The loop test ($r_k \neq 0$, $\tilde r_k \neq 0$ and
-$\tilde r_k^T r_k \neq 0$) is evaluated on the computed values at the end of the pass. -/
+$\tilde r_k^T r_k \neq 0$) is evaluated on the computed values at the end of the pass.
+
+**Reading.** Same canonical scalar and paired residual updates with rounding and flag.
+-/
 noncomputable def unsymLanczosStep (A : Matrix (Fin n) (Fin n) ℝ) (st : UnsymLanczosState n) :
     M (UnsymLanczosState n) :=
   if st.done then pure st else do
@@ -1740,7 +1832,11 @@ end
 
 The source's $s_0$ is $\tilde r_0$. The loop is at most `fuel` passes of
 `GolubVanLoan.Chapter10.unsymLanczosStep`, every arithmetic result passes through the rounding
-hook `rnd`, and the entry test is evaluated on $q_1$ and $\tilde q_1$. -/
+hook `rnd`, and the entry test is evaluated on $q_1$ and $\tilde q_1$.
+
+**Generalization.** The source starts with two unit vectors of nonzero mutual dot product. The
+program normalizes any starting pair whose dot product is nonzero, and stops before the first
+pass for degenerate pairs. The loop is fuel-bounded. -/
 noncomputable def unsymmetricLanczos (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (fuel : ℕ) : M (UnsymLanczosState n) := do
   let sr ← algorithm_1_1_1 rnd qt₁ q₁
@@ -1952,7 +2048,10 @@ theorem equation_10_5_13 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ 
 
 /-- The exact run of (10.5.11) keeps $\tilde q_a^T q_a = 1$ and $\alpha_a = \tilde q_a^T A q_a$, its
 computed $\beta$ and $\gamma$ are nonzero, and its first vectors are nonzero multiples of $q_1$
-and $\tilde q_1$. -/
+and $\tilde q_1$.
+
+**Reading.** Mutual normalization and alpha formulas for any admitted pairs.
+-/
 private theorem unsym_normalized {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (t : ℕ) :
     let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ t)
@@ -2127,7 +2226,11 @@ executed pass had $r_k \neq 0$, $\tilde r_k \neq 0$ and $\tilde r_k^T r_k \neq 0
 uses the recurrences (10.5.12)–(10.5.13). The biorthogonality is
 `BiLanczos.inner_eq_ite_of_threeTerm`, which allows the source's normalization
 $\beta_k = \|r_k\|_2$ as well as the normalization $\delta_{j+1} = |\langle \hat w, \hat v
-\rangle|^{1/2}$ of `Numlib.Krylov.BiLanczos`. -/
+\rangle|^{1/2}$ of `Numlib.Krylov.BiLanczos`.
+
+**Reading.** Both spans and projected matrix with finite attained prefix and arbitrary starting
+pair.
+-/
 theorem equation_10_5_11 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (q₁ qt₁ : Fin n → ℝ)
     (fuel : ℕ) :
     let st := Id.run (unsymmetricLanczos pure A q₁ qt₁ fuel)

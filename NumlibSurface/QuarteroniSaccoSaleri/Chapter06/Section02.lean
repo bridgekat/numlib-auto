@@ -59,6 +59,22 @@ and Newton methods, which the source defers to Section 6.3.1, are in
 
 ## Deviations from the source
 
+* **Convention.** Bisection retains the lower interval at an exact midpoint root and permits a zero
+  endpoint product. See `QuarteroniSaccoSaleri.Chapter06.bisectionInterval`,
+  `QuarteroniSaccoSaleri.Chapter06.bisection`, `QuarteroniSaccoSaleri.Chapter06.equation_6_8`.
+* **Reading.** The iteration count gives a sufficient guarantee for the prescribed error. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_9`.
+* **Convention.** Chord, secant and Newton use totalized division, and Newton accepts the derivative
+  as an argument. See `QuarteroniSaccoSaleri.Chapter06.chord`,
+  `QuarteroniSaccoSaleri.Chapter06.chord_succ`, `QuarteroniSaccoSaleri.Chapter06.secant`,
+  `QuarteroniSaccoSaleri.Chapter06.secant_succ`, `QuarteroniSaccoSaleri.Chapter06.newton`,
+  `QuarteroniSaccoSaleri.Chapter06.newton_succ`.
+* **Correction.** The secant order theorem requires a simple root and distinct nearby starting
+  points away from the root. See `QuarteroniSaccoSaleri.Chapter06.property_6_2`.
+* **Convention.** False position retains exact roots and uses totalized division. See
+  `QuarteroniSaccoSaleri.Chapter06.regulaFalsi`.
+* **Specialization.** The stated false-position guarantee assumes a unique smooth simple root in a
+  continuous sign bracket. See `QuarteroniSaccoSaleri.Chapter06.regulaFalsi_order_one`.
 * **Bisection, Section 6.2.1** (reading). The tie $f(x^{(k)}) = 0$, which the prose leaves open,
   follows Program 46 ($b^{(k+1)} := x^{(k)}$), and the sign property is
   $f(a^{(k)}) f(b^{(k)}) \le 0$, since the source's $< 0$ fails at an exact hit. See
@@ -92,7 +108,12 @@ theorem property_6_1 (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) (h : f a * 
 $f : \mathbb{R} \to \mathbb{R}$ and $a, b \in \mathbb{R}$, the $k$-th value is the pair of
 endpoints $(a^{(k)}, b^{(k)})$ of the interval $I_k$, starting from $I_0 = [a, b]$.
 
-This is the backbone's `Bisection.bracket`. -/
+This is the backbone's `Bisection.bracket`.
+
+**Reading.** When the midpoint is an exact root, the algorithm retains the lower interval and hence
+retains the root as its right endpoint. Interval width and nesting are stated with a nonpositive
+endpoint product.
+-/
 noncomputable def bisectionInterval (f : ℝ → ℝ) (a b : ℝ) (k : ℕ) : ℝ × ℝ :=
   Bisection.bracket f a b k
 
@@ -101,7 +122,12 @@ the midpoint $$x^{(k)} = \frac{a^{(k)} + b^{(k)}}{2}$$ of $I_k$, and $I_{k+1}$ i
 $I_k$ on which $f$ changes sign. If $f(x^{(k)}) = 0$, then $b^{(k+1)} = x^{(k)}$, as in
 Program 46.
 
-This is the backbone's `Bisection.iterate`. -/
+This is the backbone's `Bisection.iterate`.
+
+**Reading.** When the midpoint is an exact root, the algorithm retains the lower interval and hence
+retains the root as its right endpoint. Interval width and nesting are stated with a nonpositive
+endpoint product.
+-/
 noncomputable def bisection (f : ℝ → ℝ) (a b : ℝ) (k : ℕ) : ℝ :=
   Bisection.iterate f a b k
 
@@ -114,7 +140,12 @@ $f(a^{(k)}) f(b^{(k)}) \le 0$.
 soon as an iterate is an exact root. The tie $f(x^{(k)}) = 0$ is resolved as in Program 46.
 
 The proof specializes `Bisection.bracket_sub`, `Bisection.bracket_nested` and
-`Bisection.bracket_mul_nonpos`. -/
+`Bisection.bracket_mul_nonpos`.
+
+**Reading.** When the midpoint is an exact root, the algorithm retains the lower interval and hence
+retains the root as its right endpoint. Interval width and nesting are stated with a nonpositive
+endpoint product.
+-/
 theorem equation_6_8 (hab : a ≤ b) (h : f a * f b ≤ 0) (k : ℕ) :
     (bisectionInterval f a b k).2 - (bisectionInterval f a b k).1 = (b - a) / 2 ^ k ∧
       Icc (bisectionInterval f a b (k + 1)).1 (bisectionInterval f a b (k + 1)).2 ⊆
@@ -149,7 +180,11 @@ $f$ such that for every tolerance $\varepsilon > 0$ and every $m$ with $$m \ge \
 \log_2 \varepsilon,$$ the bisection iterate satisfies $|x^{(m)} - \alpha| \le \varepsilon$.
 
 The proof specializes `Bisection.abs_iterate_sub_le_of_le_logb`, which needs only
-$\log_2((b - a)/\varepsilon) \le m + 1$. -/
+$\log_2((b - a)/\varepsilon) \le m + 1$.
+
+**Reading.** The logarithmic bound is sufficient to certify the target error, which can already be
+smaller at an earlier iteration.
+-/
 theorem equation_6_9 (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) (h : f a * f b < 0) :
     ∃ α ∈ Ioo a b, f α = 0 ∧ ∀ (m : ℕ) (ε : ℝ), 0 < ε →
       Real.logb 2 (b - a) - Real.logb 2 ε ≤ m → |bisection f a b m - α| ≤ ε := by
@@ -176,12 +211,21 @@ $f : \mathbb{R} \to \mathbb{R}$, $a, b \in \mathbb{R}$ and a starting value $x^{
 iterates are $$x^{(k+1)} = x^{(k)} - \frac{b - a}{f(b) - f(a)}\, f(x^{(k)}).$$
 
 Each step is `Chord.step` with the fixed slope $q = (f(b) - f(a))/(b - a)$. If $q = 0$, the step
-is the identity, by the convention that division by zero gives zero. -/
+is the identity, by the convention that division by zero gives zero.
+
+**Reading.** The recurrences use totalized division, so a zero denominator makes the current iterate
+stationary for that step. Newton's rule takes a supplied derivative function and agrees with the
+source when that function is the actual derivative.
+-/
 noncomputable def chord (f : ℝ → ℝ) (a b x₀ : ℝ) (k : ℕ) : ℝ :=
   (Chord.step f ((f b - f a) / (b - a)))^[k] x₀
 
 /-- The chord method (6.12) of [quarteroni2000numerical] satisfies the recurrence of the source:
 $$x^{(k+1)} = x^{(k)} - \frac{b - a}{f(b) - f(a)}\, f(x^{(k)}).$$
+
+**Reading.** The recurrences use totalized division, so a zero denominator makes the current iterate
+stationary for that step. Newton's rule takes a supplied derivative function and agrees with the
+source when that function is the actual derivative.
 -/
 theorem chord_succ (f : ℝ → ℝ) (a b x₀ : ℝ) (k : ℕ) :
     chord f a b x₀ (k + 1) = chord f a b x₀ k - (b - a) / (f b - f a) * f (chord f a b x₀ k) := by
@@ -208,7 +252,12 @@ initial values $x^{(-1)}$ and $x^{(0)}$, the iterates are $$x^{(k+1)} = x^{(k)} 
 
 The arguments are `xm1`, `x₀` and `k`, for $x^{(-1)}$, $x^{(0)}$ and the iterate $x^{(k)}$. If
 $f(x^{(k)}) = f(x^{(k-1)})$, the step stops at $x^{(k)}$, by the convention that division by
-zero gives zero. This is the backbone's `Secant.iterate`. -/
+zero gives zero. This is the backbone's `Secant.iterate`.
+
+**Reading.** The recurrences use totalized division, so a zero denominator makes the current iterate
+stationary for that step. Newton's rule takes a supplied derivative function and agrees with the
+source when that function is the actual derivative.
+-/
 noncomputable def secant (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) : ℝ :=
   Secant.iterate f xm1 x₀ k
 
@@ -217,7 +266,12 @@ the iterates $x^{(k+2)}$, $k \ge 0$: $$x^{(k+2)} = x^{(k+1)} - \frac{x^{(k+1)} -
 x^{(k)}}{f(x^{(k+1)}) - f(x^{(k)})}\, f(x^{(k+1)}).$$
 
 The proof uses `Secant.iterate_add_two`. The first step, from $x^{(-1)}$ and $x^{(0)}$, is
-`Secant.iterate_one`. -/
+`Secant.iterate_one`.
+
+**Reading.** The recurrences use totalized division, so a zero denominator makes the current iterate
+stationary for that step. Newton's rule takes a supplied derivative function and agrees with the
+source when that function is the actual derivative.
+-/
 theorem secant_succ (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) :
     secant f xm1 x₀ (k + 2) = secant f xm1 x₀ (k + 1) -
       (secant f xm1 x₀ (k + 1) - secant f xm1 x₀ k) /
@@ -239,7 +293,11 @@ and different from $\alpha$, since a start at $\alpha$ stops the method at once.
 
 The source assumes $f \in C^2(J)$ on a neighbourhood $J$ of $\alpha$; the theorem needs this
 smoothness only at $\alpha$, as `ContDiffAt ℝ 2 f α`. The proof specializes
-`Secant.exists_ball_convergesWithOrder_goldenRatio`. -/
+`Secant.exists_ball_convergesWithOrder_goldenRatio`.
+
+**Correction.** The local order theorem requires a simple root in addition to the nonzero second
+derivative. It takes distinct starting points near the root, neither already equal to the root.
+-/
 theorem property_6_2 (hf : ContDiffAt ℝ 2 f α) (hα : f α = 0) (hf' : deriv f α ≠ 0)
     (hf'' : iteratedDeriv 2 f α ≠ 0) :
     ∃ ε > 0, ∀ xm1 ∈ Ioo (α - ε) (α + ε), ∀ x₀ ∈ Ioo (α - ε) (α + ε), xm1 ≠ x₀ → xm1 ≠ α →
@@ -261,7 +319,11 @@ pair of initial values $x^{(-1)}$, $x^{(0)}$, each step is the secant step throu
 the latest earlier iterate $x^{(k')}$ with $f(x^{(k')}) f(x^{(k)}) < 0$: $$x^{(k+1)} = x^{(k)} -
 \frac{x^{(k)} - x^{(k')}}{f(x^{(k)}) - f(x^{(k')})}\, f(x^{(k)}).$$
 
-The iterate $x^{(k)}$ is the value at `k`. This is the backbone's `RegulaFalsi.iterate`. -/
+The iterate $x^{(k)}$ is the value at `k`. This is the backbone's `RegulaFalsi.iterate`.
+
+**Reading.** A zero endpoint is retained by the implementation and division is totalized. Its
+bracket state gives the preceding opposite-sign iterate on the strict-sign domain.
+-/
 noncomputable def regulaFalsi (f : ℝ → ℝ) (xm1 x₀ : ℝ) (k : ℕ) : ℝ :=
   RegulaFalsi.iterate f xm1 x₀ k
 
@@ -286,7 +348,12 @@ Then the regula falsi iterates converge to $\alpha$ with order $1$ in the sense 
 The source quotes this claim ("the Regula Falsi method … has linear convergence order") from
 Ralston and Rabinowitz without proof. The theorem does not need $f''(\alpha) \neq 0$, which the
 classical argument through an eventually fixed endpoint would use. The proof specializes
-`RegulaFalsi.tendsto_iterate` and `RegulaFalsi.convergesWithOrder_one_iterate`. -/
+`RegulaFalsi.tendsto_iterate` and `RegulaFalsi.convergesWithOrder_one_iterate`.
+
+**Reading.** The linear convergence claim assumes a continuous function, opposite endpoint signs,
+and a unique simple root with local twice continuous differentiability. The order conclusion is an
+upper error bound as in Definition 6.1.
+-/
 theorem regulaFalsi_order_one (hf : ContinuousOn f (uIcc xm1 x₀)) (h : f x₀ * f xm1 < 0) {α : ℝ}
     (huniq : ∀ y ∈ uIcc xm1 x₀, f y = 0 → y = α) (hC : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) :
@@ -305,12 +372,21 @@ $$x^{(k+1)} = x^{(k)} - \frac{f(x^{(k)})}{f'(x^{(k)})}.$$
 
 The derivative $f'$ is an argument, as the argument `dfun` of Program 50; the theorems about the
 method take $f'$ = `deriv f`. Each step is the backbone's `Newton.scalarStep`. If
-$f'(x^{(k)}) = 0$, the step is the identity, by the convention that division by zero gives zero. -/
+$f'(x^{(k)}) = 0$, the step is the identity, by the convention that division by zero gives zero.
+
+**Reading.** The recurrences use totalized division, so a zero denominator makes the current iterate
+stationary for that step. Newton's rule takes a supplied derivative function and agrees with the
+source when that function is the actual derivative.
+-/
 noncomputable def newton (f f' : ℝ → ℝ) (x₀ : ℝ) (k : ℕ) : ℝ :=
   (Newton.scalarStep f f')^[k] x₀
 
 /-- Newton's method (6.16) of [quarteroni2000numerical] satisfies the recurrence of the source:
 $$x^{(k+1)} = x^{(k)} - \frac{f(x^{(k)})}{f'(x^{(k)})}.$$
+
+**Reading.** The recurrences use totalized division, so a zero denominator makes the current iterate
+stationary for that step. Newton's rule takes a supplied derivative function and agrees with the
+source when that function is the actual derivative.
 -/
 theorem newton_succ (f f' : ℝ → ℝ) (x₀ : ℝ) (k : ℕ) :
     newton f f' x₀ (k + 1) = newton f f' x₀ k - f (newton f f' x₀ k) / f' (newton f f' x₀ k) := by

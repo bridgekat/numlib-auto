@@ -213,8 +213,15 @@ the vocabulary of `Numlib.Analysis.Normed.Operator.Embedding`.
 
 ## Deviations from the source
 
+* **Theorems 7.3.2 and 7.3.5** (scope). Density uses an extension-domain hypothesis.
+  For extension, the formal results treat bounded $C^k$ domains for a fixed order
+  $k \ge 1$. There is one operator for all $p$ at that order. The source uses half-spaces
+  and Lipschitz domains, with one operator for all orders and smoothness off the closure.
 * **Definition 7.3.6** (generalization). The source assumes that $V$ and $W$ are Banach spaces; the
   definition is for normed spaces. See `AtkinsonHan.Chapter07.definition_7_3_6`.
+* **Theorems 7.3.7–7.3.9** (scope). The primary embeddings are for bounded extension
+  domains. The critical and Hölder cases in Theorems 7.3.7 and 7.3.8 exclude the endpoint
+  $p = 1$ in dimension one.
 * **Theorem 7.3.8(a)** (reading). The source leaves $k \ge 1$ implicit; at $k = 0$ the clause would
   say $L^p(\Omega) \hookrightarrow\hookrightarrow L^q(\Omega)$ for $q < p$, which is false. See
   `AtkinsonHan.Chapter07.theorem_7_3_8_a`.
@@ -225,6 +232,9 @@ the vocabulary of `Numlib.Analysis.Normed.Operator.Embedding`.
   maps $W^{1,1}(\Omega)$ onto $L^1(\Gamma)$ and is not compact; the library assumes
   $1 < p < \infty$. See `AtkinsonHan.Chapter07.theorem_7_3_10_compact` and
   `AtkinsonHan.Chapter07.theorem_7_3_10_polygon_compact`.
+* **Theorem 7.3.11** (scope). The formal operators are traces from $W^{2,p}$ to boundary
+  $L^p$ for finite $p$. The source gives higher and fractional orders, Sobolev trace
+  targets and surjectivity.
 * **Theorem 7.3.11** (generalization). The source asks $v \in C^1(\overline\Omega)$ for
   $\gamma_0 v = v|_\Gamma$; continuity on $\overline\Omega$ is enough. See
   `AtkinsonHan.Chapter07.theorem_7_3_11_trace₀_ae_eq`.
@@ -236,6 +246,9 @@ the vocabulary of `Numlib.Analysis.Normed.Operator.Embedding`.
 * **Example 7.3.16** (reading). The open subset $\Gamma_0$ of $\Gamma$ is $U \cap \Gamma$ for an
   open $U \subseteq \mathbb{R}^{d+1}$, and "$v = 0$ a.e. on $\Gamma_0$" means $\gamma v = 0$
   $\sigma$-almost everywhere on $U$. See `AtkinsonHan.Chapter07.example_7_3_16`.
+* **Example 7.3.16, constant** (correction). The estimate is for a fixed boundary portion.
+  The constant can depend on that portion as well as the domain. A constant nonzero
+  function rules out a uniform bound for boundary portions of arbitrarily small measure.
 
 ## Not formalized
 
@@ -302,7 +315,10 @@ $(\iota v_{n'})$ converges in $W$.
 
 The definition is `IsCompactEmbedding ι`. By `isCompactEmbedding_iff_isCompactOperator` it is
 equivalent to $\iota$ being injective and a compact operator (`IsCompactOperator`), so the
-theory of compact operators applies to it. -/
+theory of compact operators applies to it.
+
+**Reading.** Compact injective linear map expresses the compact embedding beyond Banach spaces.
+-/
 def definition_7_3_6_compact (ι : V →ₗ[𝕜] W) : Prop := IsCompactEmbedding ι
 
 /-- Supporting result for **Definition 7.3.6** of [han2009theoretical]. If
@@ -419,7 +435,10 @@ This is Theorem 9.7 of [brezis2011functional]
 (`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`), through
 `AtkinsonHan.Chapter07.definition_7_2_1_contDiffDomain`, which relates Definition 7.2.1 to the
 graph domains of the backbone. The source states Section 7.3 for Lipschitz domains; a Lipschitz
-domain is an extension domain by the theorem of Stein or Calderón, which is not formalized. -/
+domain is an extension domain by the theorem of Stein or Calderón, which is not formalized.
+
+**Reading.** Bounded C1 domains admit first-order extensions at every p.
+-/
 theorem isSobolevExtensionDomainAll_of_definition_7_2_1
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ : definition_7_2_1 {g | ContDiff ℝ 1 g} Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -448,7 +467,10 @@ The source states the theorem for every order $k$ on a Lipschitz domain. Every o
 `IsSobolevExtensionDomain d p Ω`, which the bounded $C^1$ domains of Definition 7.2.1 satisfy
 (`AtkinsonHan.Chapter07.isSobolevExtensionDomainAll_of_definition_7_2_1`). The proof is
 Corollary 9.8 of [brezis2011functional]
-(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`). -/
+(`SobolevEuclidean.exists_seq_contDiff_hasCompactSupport_tendsto_of_hasSobolevExtensionOn`).
+
+**Reading.** First-order density assumes an extension domain rather than Lipschitz boundary.
+-/
 theorem theorem_7_3_2 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
     {Ω : Opens (EuclideanSpace ℝ (Fin d))} (hΩ : IsSobolevExtensionDomain d p Ω)
     (v : SobolevMultiIndex ℝ (stdBasis d) 1 p Ω volume) :
@@ -472,7 +494,10 @@ $W^{k,p}(\Omega) \to W^{k,p}(\mathbb{R}^{d+1})$.
 The proof is `IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain`, the higher-order
 reflection of Exercise 7.3.2 in the charts of Theorem 9.7 of [brezis2011functional], through
 `AtkinsonHan.Chapter07.definition_7_2_1_contDiffDomain`. A Lipschitz domain would satisfy the
-hypothesis by Stein's universal extension theorem, which is not formalized. -/
+hypothesis by Stein's universal extension theorem, which is not formalized.
+
+**Reading.** Extension property is derived at a fixed positive order for bounded C^k boundaries.
+-/
 theorem isSobolevExtensionDomainOfOrder_of_definition_7_2_1 {k : ℕ} (hk : 1 ≤ k) {p : ℝ≥0∞}
     [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : definition_7_2_1 {g | ContDiff ℝ k g} Ω)
@@ -494,7 +519,11 @@ The source assumes a Lipschitz domain. The hypothesis is
 satisfy (`AtkinsonHan.Chapter07.isSobolevExtensionDomainOfOrder_of_definition_7_2_1`). The proof
 is Corollary 9.8 of [brezis2011functional] at every order, through the extension operator of
 `Numlib.Analysis.Sobolev.ExtensionHigher`. The order $k = 1$ is
-`AtkinsonHan.Chapter07.theorem_7_3_2`. -/
+`AtkinsonHan.Chapter07.theorem_7_3_2`.
+
+**Reading.** Higher-order smooth approximation assumes an extension operator of the corresponding
+order.
+-/
 theorem theorem_7_3_2_higher {k : ℕ} {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp' : p ≠ ⊤)
     {Ω : Opens (EuclideanSpace ℝ (Fin d))} (hΩ : IsSobolevExtensionDomainOfOrder d k p Ω)
     (v : SobolevMultiIndex ℝ (stdBasis d) k p Ω volume) :
@@ -529,7 +558,10 @@ and every $p \in [1, \infty]$, with $Ev$ smooth outside $\overline\Omega$. That 
 formalized; see the module documentation. This declaration is Theorem 9.7 of
 [brezis2011functional] (`SobolevEuclidean.exists_extensionL`, reflection across $C^1$ charts):
 one operator for each $p$, at the order $k = 1$, and $Ev$ is not smooth outside
-$\overline\Omega$. -/
+$\overline\Omega$.
+
+**Reading.** Bounded C1 first-order extension without universality across orders.
+-/
 theorem theorem_7_3_5 {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : definition_7_2_1 {g | ContDiff ℝ 1 g} Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -560,7 +592,10 @@ Theorem 9.7 of [brezis2011functional] (`SobolevEuclidean.exists_extensionL_of_or
 operator for each $k$ and $p$, and $Ev$ is not smooth outside $\overline\Omega$. The order
 $k = 1$ on a $C^1$ domain is `AtkinsonHan.Chapter07.theorem_7_3_5`.
 `AtkinsonHan.Chapter07.theorem_7_3_5_order_lp` adds the $L^p$ bound, and
-`AtkinsonHan.Chapter07.theorem_7_3_5_order_uniform` gives one operator for every exponent. -/
+`AtkinsonHan.Chapter07.theorem_7_3_5_order_uniform` gives one operator for every exponent.
+
+**Reading.** Extension at fixed positive order for a bounded C^k domain.
+-/
 theorem theorem_7_3_5_order {k : ℕ} (hk : 1 ≤ k) {p : ℝ≥0∞} [Fact (1 ≤ p)]
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ : definition_7_2_1 {g | ContDiff ℝ k g} Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -594,7 +629,10 @@ order one to order $k$ does not change it (`SobolevEuclidean.exists_extensionL_o
 operator for all $k$ is not formalized. Example 7.4.3 on a domain
 (`AtkinsonHan.Chapter07.example_7_4_3`) uses this result, because it needs $\|Ev\|_{H^{d+1}}$
 and $\|Ev\|_{L^2}$ bounded by $\|v\|_{H^{d+1}(\Omega)}$ and $\|v\|_{L^2(\Omega)}$ at the same
-time. -/
+time.
+
+**Reading.** Bounded C^k extension also controls the original function in Lp.
+-/
 theorem theorem_7_3_5_order_lp {k : ℕ} (hk : 1 ≤ k) {p : ℝ≥0∞} [Fact (1 ≤ p)]
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ : definition_7_2_1 {g | ContDiff ℝ k g} Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -636,7 +674,11 @@ H_i^{-1})$, from the proof of Theorem 9.7 of [brezis2011functional] with the hig
 reflection $P$, read on functions. It is hidden in an existential only because the atlas and the
 partition of unity are existential. The proof is
 `SobolevEuclidean.exists_extensionL_of_order_uniform`, whose operators also have the $L^p$ bound
-of `AtkinsonHan.Chapter07.theorem_7_3_5_order_lp`. -/
+of `AtkinsonHan.Chapter07.theorem_7_3_5_order_lp`.
+
+**Reading.** One operator works across all p at fixed positive order, with no exterior smoothness
+conclusion.
+-/
 theorem theorem_7_3_5_order_uniform {k : ℕ} (hk : 1 ≤ k)
     {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))} (hΩ : definition_7_2_1 {g | ContDiff ℝ k g} Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -679,7 +721,10 @@ The source assumes a Lipschitz domain; see the module documentation. The embeddi
 inclusion `SobolevMultiIndex.toLpₗ`, and $\hookrightarrow$ is
 `AtkinsonHan.Chapter07.definition_7_3_6`. For $q \le p$ the result is Hölder's inequality on the
 bounded set $\Omega$. For $p < q \le p^*$ it is Corollary 9.15 of [brezis2011functional] on the
-domain (`SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension`). -/
+domain (`SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension`).
+
+**Reading.** Same subcritical exponent relation for a bounded extension domain.
+-/
 theorem theorem_7_3_7_a {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -729,7 +774,11 @@ $$W^{k,p}(\Omega) \hookrightarrow L^q(\Omega).$$
 
 The hypothesis "$d \ge 1$ or $p > 1$" excludes the case $d + 1 = 1 = p$, an interval and
 $W^{1,1}$, for which the backbone's form of Corollary 9.15 of [brezis2011functional] is not
-available; that case is Corollary 9.11 there. -/
+available; that case is Corollary 9.11 there.
+
+**Reading.** Same finite-q critical embedding for bounded extension domains, with one-dimensional
+endpoint excluded.
+-/
 theorem theorem_7_3_7_b {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))] [Fact (1 ≤ (q : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
@@ -773,7 +822,10 @@ $\le j$ extend continuously to $\overline\Omega$. The hypothesis "$d \ge 1$ or $
 backbone's. The proof is Corollary 9.15 of [brezis2011functional]
 (`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`). The case that $(d+1)/p$ is an
 integer, where the source allows every $\beta < 1$, is
-`AtkinsonHan.Chapter07.theorem_7_3_7_c_integer`. -/
+`AtkinsonHan.Chapter07.theorem_7_3_7_c_integer`.
+
+**Reading.** Noninteger Hölder estimate stated using a representative on an extension domain.
+-/
 theorem theorem_7_3_7_c {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω) (hN : 1 ≤ d ∨ 1 < p)
     (hk : ((d + 1 : ℕ) : ℝ) / p < k) (hint : ∀ j : ℕ, ((d + 1 : ℕ) : ℝ) / p ≠ j) :
@@ -847,7 +899,11 @@ $W^{j+1,q}(\Omega)$ for every $q < \infty$ (the critical case of Corollary 9.15 
 $q = (d+1)/(1 - \beta) > d + 1$ applies Morrey's theorem $W^{j+1,q}(\Omega) \hookrightarrow
 C^{j,\beta}(\overline\Omega)$ (`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`). The
 hypothesis "$d \ge 1$ or $p > 1$" is the backbone's. The case that $(d+1)/p$ is not an integer
-is `AtkinsonHan.Chapter07.theorem_7_3_7_c`. -/
+is `AtkinsonHan.Chapter07.theorem_7_3_7_c`.
+
+**Reading.** Integer endpoint Hölder estimate uses an extension domain and excludes the
+one-dimensional p=1 case.
+-/
 theorem theorem_7_3_7_c_integer {k ℓ : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω) (hN : 1 ≤ d ∨ 1 < p)
     (hℓ : ((d + 1 : ℕ) : ℝ) / p = ℓ) (hk : ℓ < k) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1) :
@@ -939,7 +995,10 @@ exponent by `AtkinsonHan.Chapter07.isSobolevExtensionDomainAll_of_definition_7_2
 clauses are `AtkinsonHan.Chapter07.theorem_7_3_7_a`, `AtkinsonHan.Chapter07.theorem_7_3_7_b` and
 `AtkinsonHan.Chapter07.theorem_7_3_7_c`. The hypothesis "$d \ge 1$ or $p > 1$" is the
 backbone's. The case of (c) in which $(d+1)/p$ is an integer, with every $\beta < 1$, is
-`AtkinsonHan.Chapter07.theorem_7_3_7_c_integer`. -/
+`AtkinsonHan.Chapter07.theorem_7_3_7_c_integer`.
+
+**Reading.** Assembles the continuous embeddings for bounded extension domains.
+-/
 theorem theorem_7_3_7 {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -1028,7 +1087,10 @@ $$W^{k,p}(\Omega) \hookrightarrow\hookrightarrow L^q(\Omega).$$
 The source prints a continuous embedding; see `AtkinsonHan.Chapter07.theorem_7_3_8_b`. The
 hypothesis $k = (d+1)/p$ gives $k \ge 1$. The proof is
 `SobolevEuclidean.isCompactEmbedding_toLpₗ_of_order_of_eq`: $W^{k,p}(\Omega) \hookrightarrow
-W^{1,d+1}(\Omega) \hookrightarrow\hookrightarrow L^q(\Omega)$. -/
+W^{1,d+1}(\Omega) \hookrightarrow\hookrightarrow L^q(\Omega)$.
+
+**Generalization.** Strengthens the printed critical embedding to compactness.
+-/
 theorem theorem_7_3_8_b_compact {k : ℕ} {p q : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hd : 1 ≤ d)
@@ -1063,7 +1125,11 @@ the case $\beta = 0$ with the order $k - [(d+1)/p] - 1$ replaced by $0$. The Hö
 `C(closure Ω, ℝ)`, with the sup norm since $\overline\Omega$ is compact. The proof is
 `SobolevEuclidean.exists_isCompactEmbedding_toContinuousMap_of_order`: $W^{k,p}(\Omega)
 \hookrightarrow W^{1,r}(\Omega)$ for some $r > d + 1$, and the Arzelà–Ascoli theorem. The
-hypothesis "$d \ge 1$ or $p > 1$" is the backbone's. -/
+hypothesis "$d \ge 1$ or $p > 1$" is the backbone's.
+
+**Reading.** Compact continuous-function target on the closure, with the extension-domain
+hypotheses.
+-/
 theorem theorem_7_3_8_c {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
@@ -1105,7 +1171,11 @@ Hölder interpolation in $C^{j,\cdot}(\overline\Omega)$, together with the sharp
 Corollary 9.15 of [brezis2011functional] when $(d+1)/p$ is not an integer, and the embedding
 $W^{k,p}(\Omega) \hookrightarrow W^{j+1,q}(\Omega)$ with Morrey's theorem at the exponent $q$
 when it is. The hypothesis "$d \ge 1$ or $p > 1$" is the backbone's. The case $\beta = 0$, with
-the target $C(\overline\Omega)$, is `AtkinsonHan.Chapter07.theorem_7_3_8_c`. -/
+the target $C(\overline\Omega)$, is `AtkinsonHan.Chapter07.theorem_7_3_8_c`.
+
+**Reading.** Positive Hölder exponent case uses bounded extension domains and excludes the
+one-dimensional endpoint.
+-/
 theorem theorem_7_3_8_c_holder {k : ℕ} {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomainAll (d + 1) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (hN : 1 ≤ d ∨ 1 < p)
@@ -1199,7 +1269,10 @@ greater than $l$.
 The source assumes a nonempty open bounded Lipschitz domain. The proof is
 `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_of_lt`, Theorem 9.16 of
 [brezis2011functional] applied repeatedly. The case $p = \infty$ is
-`AtkinsonHan.Chapter07.theorem_7_3_9_top`. -/
+`AtkinsonHan.Chapter07.theorem_7_3_9_top`.
+
+**Reading.** Compact reduction in differentiability order assumes an extension domain.
+-/
 theorem theorem_7_3_9 {k l : ℕ} (hlk : l < k) {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -1219,7 +1292,10 @@ $W^{1,\infty}$-extension domains by `AtkinsonHan.Chapter07.theorem_7_3_5`. The p
 `SobolevEuclidean.isCompactEmbedding_toLowerOrderL_top_of_lt`: the compact embedding
 $W^{1,\infty}(\Omega) \hookrightarrow\hookrightarrow L^\infty(\Omega)$ is the Arzelà–Ascoli
 theorem for the Lipschitz representatives of the extensions, and it is applied repeatedly as for
-$p < \infty$. The case $1 \le p < \infty$ is `AtkinsonHan.Chapter07.theorem_7_3_9`. -/
+$p < \infty$. The case $1 \le p < \infty$ is `AtkinsonHan.Chapter07.theorem_7_3_9`.
+
+**Reading.** Essentially bounded compact reduction of order assumes an extension domain.
+-/
 theorem theorem_7_3_9_top {k l : ℕ} (hlk : l < k) (hΩ : IsSobolevExtensionDomain (d + 1) ⊤ Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
     definition_7_3_6_compact
@@ -1256,7 +1332,10 @@ density of $C^\infty(\overline\Omega)$ (Theorem 7.3.2) extends $\gamma$. Clause 
 uniform approximation of a function continuous up to the boundary. Clause (c) is
 `AtkinsonHan.Chapter07.theorem_7_3_10_compact`. The range $\gamma(W^{1,p}(\Omega)) = W^{1 - 1/p,
 p}(\Gamma)$ and the space $H^{1/2}(\Gamma)$ with the norm (7.3.2) are not formalized; see the
-module documentation. -/
+module documentation.
+
+**Reading.** Continuous trace and boundary identification on bounded C1 domains.
+-/
 theorem theorem_7_3_10 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -1288,7 +1367,10 @@ functions vanish on $\partial\Omega$ and $\gamma$ is continuous, so
 $W_0^{1,p}(\Omega) \subseteq \ker\gamma$. Conversely, if $\gamma v = 0$, Green's formula against
 test functions on $\mathbb{R}^{d+1}$ (`IsContDiffDomain.green_contDiff`) shows that the
 extension of $v$ by zero lies in $W^{1,p}(\mathbb{R}^{d+1})$, which characterizes
-$W_0^{1,p}(\Omega)$ on a $C^1$ domain (Proposition 9.18 of [brezis2011functional]). -/
+$W_0^{1,p}(\Omega)$ on a $C^1$ domain (Proposition 9.18 of [brezis2011functional]).
+
+**Reading.** Zero-boundary space equals kernel for the bounded C1 trace.
+-/
 theorem theorem_7_3_10_kernel {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1368,7 +1450,10 @@ lies in $\Omega$), $\gamma$ is by definition the trace of the trace family
 `Triangulation.traceFamily` (`Triangulation.traceFamily_traceL`), which the results on polygons
 in Sections 7.6, 11 and 13 use. Green's formula needs the condition without slits
 (`AtkinsonHan.Chapter07.proposition_7_6_1_polygon`); clauses (a)–(c) hold for every
-triangulation. -/
+triangulation.
+
+**Reading.** Separate trace and norm bound for planar triangulations.
+-/
 theorem theorem_7_3_10_polygon {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
     {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) :
     (∀ (v : SobolevMultiIndex ℝ (stdBasis 2) 1 p Ω volume) (v' : 𝔼₂ → ℝ),
@@ -1427,7 +1512,10 @@ W^{1,p}(\Omega)$. It is linear and bounded.
 The inclusion is `SobolevMultiIndex.toLowerOrderL`, which forgets the derivatives of order two.
 By `AtkinsonHan.Chapter07.theorem_7_3_11_trace₀_ae_eq`, $\gamma_0 v = v|_\Gamma$ for $v$ with a
 representative continuous on $\overline\Omega$. The target is $L^p(\Gamma)$ where the source has
-$W^{s - 1/p, p}(\Gamma)$; see `AtkinsonHan.Chapter07.theorem_7_3_11`. -/
+$W^{s - 1/p, p}(\Gamma)$; see `AtkinsonHan.Chapter07.theorem_7_3_11`.
+
+**Reading.** Order-two input and boundary Lp target for value trace.
+-/
 noncomputable def theorem_7_3_11_trace₀ {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -1477,7 +1565,10 @@ This is the normal derivative $\partial v / \partial\nu = \sum_i (\partial v / \
 \partial\nu)|_\Gamma$ for $v$ with a $C^1$ representative. At $p = 2$ it is given by the same
 formula as `BoundaryData.TraceFamily.normalTrace` of `Numlib.Analysis.Sobolev.Boundary.Data`.
 The target is $L^p(\Gamma)$ where the source has $W^{s - 1 - 1/p, p}(\Gamma)$; see
-`AtkinsonHan.Chapter07.theorem_7_3_11`. -/
+`AtkinsonHan.Chapter07.theorem_7_3_11`.
+
+**Reading.** Normal trace lands in Lp and is constructed for order-two input.
+-/
 noncomputable def theorem_7_3_11_trace₁ {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -1515,7 +1606,11 @@ $C^1$ on $\mathbb{R}^{d+1}$, then the trace of $\partial_i v \in W^{1,p}(\Omega)
 $\partial_i \tilde v$ $\sigma$-almost everywhere.
 
 The result is Theorem 7.3.10(a) for $\partial_i v$, whose continuous representative is
-$\partial_i \tilde v$ (`SobolevEuclidean.weakDeriv_singleLE_ae_eq_fderiv`). -/
+$\partial_i \tilde v$ (`SobolevEuclidean.weakDeriv_singleLE_ae_eq_fderiv`).
+
+**Reading.** Identification of partial trace uses globally C1 representatives in the order-two
+setting.
+-/
 theorem theorem_7_3_11_traceL_partialDerivL_ae_eq {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1605,7 +1700,11 @@ $W^{2,p}(\Omega)$ of the restrictions of $C_c^\infty(\mathbb{R}^{d+1})$
 order two on $C^2$ chart domains, `IsSobolevExtensionDomainOfOrder.of_isContDiffChartDomain`):
 both $\gamma_0$ and $\gamma_1$ are prescribed on such functions, and two continuous linear maps
 that agree on a dense subspace are equal. The $C^1$ hypothesis is stated separately, although it
-follows from the $C^2$ one, so that the surface measure can refer to it. -/
+follows from the $C^2$ one, so that the surface measure can refer to it.
+
+**Reading.** Unique Lp traces for order two and finite p without the higher-order Sobolev targets or
+surjectivity.
+-/
 theorem theorem_7_3_11 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     (hΩ₁ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hΩ : IsContDiffDomain 2 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1726,7 +1825,11 @@ the function of $v$ agrees almost everywhere on $\Omega$ with one of them. The p
 argument of the source through $W^{k+1,p}(\Omega) \hookrightarrow\hookrightarrow
 W^{k,p}(\Omega)$ (Theorem 7.3.9), with the fact that $|v|_{k+1,p,\Omega} = 0$ on a connected
 $\Omega$ forces $v \in \mathbb{P}_k(\Omega)$
-(`SobolevMultiIndex.exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero`). -/
+(`SobolevMultiIndex.exists_mvPolynomial_ae_eq_of_forall_weakDeriv_eq_zero`).
+
+**Reading.** Makes connectedness explicit and replaces a Lipschitz domain with a bounded extension
+domain.
+-/
 theorem theorem_7_3_12 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1766,7 +1869,10 @@ $$c_1 \|v\|_{k+1,p,\Omega} \le \|v\| \le c_2 \|v\|_{k+1,p,\Omega} \qquad \text{f
 
 The source assumes an open bounded set with Lipschitz boundary. This is the form that gives the
 Poincaré–Friedrichs inequality of Example 7.3.15. The proof is
-`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`. -/
+`SobolevEuclidean.exists_norm_le_topSeminorm_add_sum_of_forall_eq_zero`.
+
+**Reading.** Same norm equivalence under a bounded extension-domain hypothesis.
+-/
 theorem theorem_7_3_13 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) {J : Type*} [Fintype J]
@@ -1848,7 +1954,10 @@ on $W_0^{1,p}(\Omega)$ (`SobolevEuclideanZero.norm_le_gradNorm`, Corollary 9.19 
 with $c = (1 + 4R^2)^{1/2}$ for $\Omega \subseteq B(0, R)$. $H_0^1(\Omega)$ is
 `SobolevEuclideanZero (d + 1) 1 2 Ω`, the closure of $C_0^\infty(\Omega)$ in the multi-index
 reading of Definition 7.2.2; `AtkinsonHan.Chapter07.definition_7_2_9` is the same closure in the
-bundled reading `Sobolev ℝ 1 2 Ω volume`, and the two are not identified. -/
+bundled reading `Sobolev ℝ 1 2 Ω volume`, and the two are not identified.
+
+**Reading.** The zero-boundary inequality needs boundedness but no Lipschitz boundary.
+-/
 theorem example_7_3_15 (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
     ∃ c : ℝ, ∀ v : SobolevEuclideanZero (d + 1) 1 2 Ω,
       ‖(v : SobolevMultiIndex ℝ (stdBasis (d + 1)) 1 2 Ω volume)‖
@@ -1886,7 +1995,10 @@ private theorem fn_ae_eq_const_of_degree_zero
 
 /-- If $v \in H^1(\Omega)$, on a bounded $C^1$ domain, satisfies $|v|_{1,\Omega} = 0$ and
 $\int_\Gamma |\gamma v| \, d\sigma = 0$, then $v = 0$: this is (H2)′ of Theorem 7.3.13 for this
-seminorm, without connectedness. -/
+seminorm, without connectedness.
+
+**Reading.** Coercivity kernel argument uses the trace constructed on a bounded C1 domain.
+-/
 private theorem eq_zero_of_topSeminorm_eq_zero_of_integral_abs_traceL_eq_zero
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1902,7 +2014,10 @@ private theorem eq_zero_of_topSeminorm_eq_zero_of_integral_abs_traceL_eq_zero
 
 /-- If $U$ has positive surface measure and $v \in H^1(\Omega)$ agrees almost everywhere with a
 polynomial of degree at most $0$ and has $\int_U |\gamma v| \, d\sigma = 0$, then $v = 0$: this
-is (H2) of Theorem 7.3.12 for the seminorm $f_1(v) = \int_U |\gamma v| \, d\sigma$. -/
+is (H2) of Theorem 7.3.12 for the seminorm $f_1(v) = \int_U |\gamma v| \, d\sigma$.
+
+**Reading.** Boundary-measure argument rules out nonzero constants using the formal C1 trace.
+-/
 private theorem eq_zero_of_degree_zero_of_setIntegral_abs_traceL_eq_zero
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -1934,7 +2049,10 @@ connectedness of $\Omega$: if $\int_\Gamma |\gamma v| \, d\sigma = 0$, then $\ga
 $v \in H_0^1(\Omega)$ by the kernel theorem (`AtkinsonHan.Chapter07.theorem_7_3_10_kernel`,
 `IsContDiffDomain.mem_zero_of_traceL_eq_zero`), and Poincaré's inequality on $H_0^1(\Omega)$
 (`SobolevEuclideanZero.norm_le_gradNorm`) with $|v|_{1,\Omega} = 0$ gives $v = 0$. The clause
-(7.3.10) on $H_0^1(\Omega)$ is `AtkinsonHan.Chapter07.example_7_3_15`, proved directly. -/
+(7.3.10) on $H_0^1(\Omega)$ is `AtkinsonHan.Chapter07.example_7_3_15`, proved directly.
+
+**Reading.** Boundary-integral norm inequality uses bounded C1 domains.
+-/
 theorem example_7_3_15_boundary
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :
@@ -1971,7 +2089,10 @@ theorem example_7_3_15_boundary
 
 /-- On a bounded connected $C^1$ domain, for an open $U$ that meets $\partial\Omega$, there is
 $c > 0$ with $\|v\|_{1,\Omega} \le c \, (|v|_{1,\Omega} + \int_U |\gamma v| \, d\sigma)$ on
-$H^1(\Omega)$: this is Theorem 7.3.12 with $k + 1 = 1$, $p = 2$ and one seminorm. -/
+$H^1(\Omega)$: this is Theorem 7.3.12 with $k + 1 = 1$, $p = 2$ and one seminorm.
+
+**Reading.** The partial-boundary estimate uses a fixed set and C1 trace.
+-/
 private theorem exists_norm_le_topSeminorm_add_setIntegral_abs_traceL
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -2083,7 +2204,10 @@ theorem to bounded functionals $f_i$ on $W^{k+1,p}(\Omega)$, the seminorms $|f_i
 hypotheses of Theorem 7.3.12, and the representative $v + q$ with $f_i(v + q) = 0$ for all $i$
 gives (7.3.13) (`SobolevEuclidean.exists_ciInf_norm_add_le_mul_topSeminorm`). The first
 inequality holds with $c_1 = 1$, because $|\cdot|_{k+1,p,\Omega}$ vanishes on
-$\mathbb{P}_k(\Omega)$ and is bounded by the norm. -/
+$\mathbb{P}_k(\Omega)$ and is bounded by the norm.
+
+**Reading.** Quotient norm equivalence uses bounded connected extension domain.
+-/
 theorem theorem_7_3_17 {p : ℝ≥0} [Fact (1 ≤ (p : ℝ≥0∞))]
     (hΩ : IsSobolevExtensionDomain (d + 1) p Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -2118,7 +2242,11 @@ $$\inf_{q \in \mathbb{P}_k(\Omega)} \|v + q\|_{k+1,\Omega} \le c \, |v|_{k+1,\Om
 This is `AtkinsonHan.Chapter07.theorem_7_3_17` at $p = 2$, the form that Chapter 10 uses for the
 error of finite element interpolation. The exponent is written `((2 : ℝ≥0) : ℝ≥0∞)`, the
 backbone's form of $p = 2$, and $H^{k+1}(\Omega)$ is `SobolevMultiIndex ℝ (stdBasis (d + 1))
-(k + 1) 2 Ω volume`. -/
+(k + 1) 2 Ω volume`.
+
+**Reading.** The polynomial approximation bound assumes boundedness, connectedness and an extension
+domain.
+-/
 theorem corollary_7_3_18 (hΩ : IsSobolevExtensionDomain (d + 1) ((2 : ℝ≥0) : ℝ≥0∞) Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) :

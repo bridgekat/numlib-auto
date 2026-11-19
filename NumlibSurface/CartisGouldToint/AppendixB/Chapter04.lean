@@ -49,6 +49,13 @@ space.
 
 ## Deviations from the source
 
+* **Correction.** Equation (B.4.3) is a radial lower bound in general and an equality at exponent
+  one. A counterexample refutes the printed norm equality. See
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii`, `CartisGouldToint.AppendixB.lemma_B_4_1_iii_radial`,
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii_bound`,
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`.
+* **Explicit differentiability range.** Lemma B.4.1 makes the derivative orders and the range at
+  zero explicit in its convexity claims. See `CartisGouldToint.AppendixB.lemma_B_4_1_iv`.
 * **Lemma B.4.1, (B.4.3)** (correction). The book's equality is false for $\beta \in (0, 1)$: for
   $n = 2$, $p = 1$ and $\beta = 1/2$ the norm at $s = e_1$ is at least $3/2$, while the book's value
   is $3/4$. The book's value is the radial value and a lower bound, and it is correct for
@@ -128,7 +135,12 @@ book's value $\beta (p+\beta)! \|s\|^{\beta-1}$ at $\beta = 1$, that is,
 $$\bigl\|\nabla^{p+1}_s(\|s\|^{p+1})\bigr\| = (p+1)!.$$
 
 For $\beta \in (0, 1)$ the equality (B.4.3) is false; see
-`CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`. -/
+`CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`.
+
+**Correction.** The coefficient in the source is the radial evaluation and hence a lower bound for
+the derivative norm. Equality is retained at exponent one, and a dimension-dependent upper bound
+supplies the same radial power in general. A counterexample refutes the unqualified equality.
+-/
 theorem lemma_B_4_1_iii {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
     ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + 1)) s‖ =
         1 * holderFactorial p 1 * ‖s‖ ^ ((1 : ℝ) - 1) ∧
@@ -150,7 +162,12 @@ $$\nabla^{p+1}_s(\|s\|^{p+\beta})\Bigl[\frac{s}{\|s\|}\Bigr]^{p+1} = \beta (p+\b
 and therefore $\beta (p+\beta)! \|s\|^{\beta-1} \le
 \bigl\|\nabla^{p+1}_s(\|s\|^{p+\beta})\bigr\|$.
 
-This holds for every real $\beta$, without the hypothesis $\beta \in (0, 1]$. -/
+This holds for every real $\beta$, without the hypothesis $\beta \in (0, 1]$.
+
+**Correction.** The coefficient in the source is the radial evaluation and hence a lower bound for
+the derivative norm. Equality is retained at exponent one, and a dimension-dependent upper bound
+supplies the same radial power in general. A counterexample refutes the unqualified equality.
+-/
 theorem lemma_B_4_1_iii_radial (β : ℝ) {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0) :
     iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s
         (fun _ ↦ ‖s‖⁻¹ • s) = β * holderFactorial p β * ‖s‖ ^ (β - 1) ∧
@@ -172,7 +189,12 @@ $n, p \in \mathbb{N}$ and $\beta \in \mathbb{R}$ there is a constant $C \ge 0$ w
 $$\bigl\|\nabla^{p+1}_s(\|s\|^{p+\beta})\bigr\| \le C \|s\|^{\beta-1} \quad \text{for all } s
   \in \mathbb{R}^n \setminus \{0\}.$$
 
-The constant depends on $n$, $p$ and $\beta$. -/
+The constant depends on $n$, $p$ and $\beta$.
+
+**Correction.** The coefficient in the source is the radial evaluation and hence a lower bound for
+the derivative norm. Equality is retained at exponent one, and a dimension-dependent upper bound
+supplies the same radial power in general. A counterexample refutes the unqualified equality.
+-/
 theorem lemma_B_4_1_iii_bound (n p : ℕ) (β : ℝ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ s : EuclideanSpace ℝ (Fin n), s ≠ 0 →
       ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ ≤
@@ -190,7 +212,12 @@ The equality fails for $n = 2$, $p = 1$, $\beta = 1/2$ and $s = e_1$: the norm i
 $3/2$, while the right-hand side is $3/4$, because the derivative is larger in the directions
 orthogonal to $s$. The counterexample needs $n \ge 2$; for $n = 1$ there is no direction
 orthogonal to $s$, and the radial value is the norm. The case $n = 1$ is not formalized
-separately. -/
+separately.
+
+**Correction.** The coefficient in the source is the radial evaluation and hence a lower bound for
+the derivative norm. Equality is retained at exponent one, and a dimension-dependent upper bound
+supplies the same radial power in general. A counterexample refutes the unqualified equality.
+-/
 theorem lemma_B_4_1_iii_false :
     ¬ ∀ (n p : ℕ) (β : ℝ), β ∈ Ioc (0 : ℝ) 1 → ∀ s : EuclideanSpace ℝ (Fin n), s ≠ 0 →
       ‖iteratedFDeriv ℝ (p + 1) (fun s : EuclideanSpace ℝ (Fin n) ↦ ‖s‖ ^ ((p : ℝ) + β)) s‖ =
@@ -213,7 +240,11 @@ $\mathbb{R}$.
 
 **Reading.** The book leaves the range of $j$ and the case $s = 0$ implicit. The claims are
 proved for $j \le p + 1$ and $s \neq 0$, and for $s = 0$ only when $j \le p$, where the
-derivative vanishes. -/
+derivative vanishes.
+
+**Reading.** The convexity claims concern orders through p plus one, and include zero only through
+order p.
+-/
 theorem lemma_B_4_1_iv (hβ : β ∈ Ioc (0 : ℝ) 1) {j : ℕ} (hj : j ≤ p + 1)
     {s : EuclideanSpace ℝ (Fin n)} (hs : s ≠ 0 ∨ j ≤ p) :
     ConvexOn ℝ ((ℝ ∙ s)ᗮ : Set (EuclideanSpace ℝ (Fin n)))

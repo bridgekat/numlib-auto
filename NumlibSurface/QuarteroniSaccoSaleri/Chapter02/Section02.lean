@@ -93,6 +93,10 @@ value problems comes from `Numlib.FiniteDifference.LaxEquivalence`, and the midp
 * **Example 2.5, strong consistency of the midpoint rule** (correction). The book assumes $f$
   piecewise linear, which is not sufficient. The statement assumes $f$ affine. See
   `QuarteroniSaccoSaleri.Chapter02.example_2_5_midpoint_stronglyConsistent`.
+* **Example 2.5, Newton's method** (reading). The residual is total, so it vanishes at
+  multiple roots as well as the simple roots considered in the book.
+* **Definition 2.2** (reading). The admissible set is an explicit parameter. The predicate
+  restricts perturbed data to that set and can be evaluated at any baseline datum.
 * **Example 2.7** (reading). The asymptotic condition number $K^{num}(p)$ is computed with the
   previous iterate fixed at a root. See `QuarteroniSaccoSaleri.Chapter02.example_2_7`.
 * **Equation (2.24)** (correction). The book concludes a Lipschitz bound of the order of
@@ -121,7 +125,10 @@ the residual of the $n$-th problem at the iterates $x_n, x_{n-1}$ is
 $$F_n(x_n, x_{n-1}, f) = x_n - x_{n-1} + \frac{f(x_{n-1})}{f'(x_{n-1})}.$$
 
 `x 0` is $x_n$ and `x 1` is $x_{n-1}$. The index $n$ plays no role. The derivative $f'$ is
-`deriv f`, and a division by $0$ gives $0$. -/
+`deriv f`, and a division by $0$ gives $0$.
+
+**Reading.** Lean's derivative and division are total. The residual agrees with the printed
+Newton step wherever the derivative is nonzero. -/
 noncomputable def example_2_5_newtonResidual (_n : ℕ) (x : Fin 2 → ℝ) (f : ℝ → ℝ) : ℝ :=
   x 0 - x 1 + f (x 1) / deriv f (x 1)
 
@@ -131,7 +138,10 @@ $F_n(\alpha, \alpha, f) = 0$ for all $n$, because $f(\alpha) = 0$.
 
 This is `Conditioning.IsStronglyConsistentMultistep` with two consecutive iterates ($q = 1$),
 with every function $f$ admissible. Since a division by $0$ gives $0$, no hypothesis on
-$f'(\alpha)$ is needed. -/
+$f'(\alpha)$ is needed.
+
+**Generalization.** The residual vanishes at every root under Lean's total division, including
+multiple roots. The numerical Newton step in the source is used at simple roots. -/
 theorem example_2_5_newton :
     IsStronglyConsistentMultistep (q := 1) (fun x (f : ℝ → ℝ) => f x) example_2_5_newtonResidual
       univ := by
@@ -144,7 +154,9 @@ $$M_n f = H \sum_{k=1}^{n} f\Bigl(\frac{t_k + t_{k+1}}{2}\Bigr), \qquad H = \fra
   \quad t_k = a + (k - 1) H.$$
 
 The datum space is `C(Icc a b, ℝ)`. The midpoints are placed in $[a, b]$ by `Set.projIcc`, which
-is the identity there. For $n = 0$ the sum is empty and $M_0 f = 0$. -/
+is the identity there. For $n = 0$ the sum is empty and $M_0 f = 0$.
+
+**Reading.** The rule extends to zero panels as the empty sum of value zero. -/
 noncomputable def example_2_5_midpointRule {a b : ℝ} (hab : a ≤ b) (n : ℕ) (f : C(Icc a b, ℝ)) :
     ℝ :=
   (b - a) / n * ∑ k ∈ Finset.range n, f (projIcc a b hab (a + (k + 1 / 2) * ((b - a) / n)))
@@ -443,7 +455,10 @@ $d + \delta d_n \in S$. Here $x(d) = G(d)$ is the exact solution and
 $x_n(d + \delta d_n) = G_n(d + \delta d_n)$ is the numerical solution with the perturbed datum.
 
 The book writes the witnesses as $n_0(\varepsilon)$ and $\delta(n_0, \varepsilon)$. This is the
-backbone's `Conditioning.IsConvergent` (`QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff`). -/
+backbone's `Conditioning.IsConvergent` (`QuarteroniSaccoSaleri.Chapter02.definition_2_2_iff`).
+
+**Reading.** The book fixes an admissible datum. The predicate is defined at every datum,
+while explicitly restricting perturbed data to $S$. -/
 def definition_2_2 (G : D → X) (Gn : ℕ → D → X) (S : Set D) (d : D) : Prop :=
   ∀ ε > (0 : ℝ), ∃ n₀ : ℕ, ∃ δ > (0 : ℝ), ∀ n > n₀, ∀ δd, ‖δd‖ < δ → d + δd ∈ S →
     ‖G d - Gn n (d + δd)‖ ≤ ε
@@ -533,7 +548,10 @@ if and only if it is convergent at $d$ (Definition 2.2).
 
 Stability is `Conditioning.IsStable`. The two directions are
 `QuarteroniSaccoSaleri.Chapter02.equation_2_24`, and the sufficient condition of Section 2.2.1,
-stability together with `QuarteroniSaccoSaleri.Chapter02.equation_2_25`. -/
+stability together with `QuarteroniSaccoSaleri.Chapter02.equation_2_25`.
+
+**Reading.** The book states a qualitative equivalence. This version uses the equicontinuity
+notion of stability and a uniform inverse Lipschitz bound for the approximation residuals. -/
 theorem laxRichtmyerEquivalence (hd : d ∈ S) (hF : F (G d) d = 0)
     (hFn : ∀ n, Fn n (Gn n d) d = 0) (hcons : IsConsistent F Fn S) {M : NNReal}
     (hanti : ∀ n, AntilipschitzWith M fun x => Fn n x d) :
@@ -561,7 +579,11 @@ sequence with $\Delta t_i \to 0$ and $m_i \Delta t_i \to t$, for every $u_0$ and
 $t \in [0, T]$. Stability is `FiniteDifference.IsStable`. This is a different formal statement
 from `QuarteroniSaccoSaleri.Chapter02.laxRichtmyerEquivalence`, recorded under the same
 paragraph of the book. It is the backbone's `FiniteDifference.isStable_iff_isConvergent` over
-$\mathbb{R}$. -/
+$\mathbb{R}$.
+
+**Reading.** The book cites the rigorous equivalence for linear initial value problems.
+This version specifies the evolution operators, dense consistency domain and uniform bound
+on one-step operators. -/
 theorem laxRichtmyerEquivalence_ivp {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     [CompleteSpace V] {S C : ℝ → V →L[ℝ] V} {T Δ₀ c₁ : ℝ} {D : Set V} (hT : 0 ≤ T)
     (hS0 : S 0 = 1) (hScont : ∀ u : V, ContinuousOn (fun t => S t u) (Icc 0 T))

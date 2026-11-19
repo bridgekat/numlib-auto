@@ -106,6 +106,21 @@ $Y^{-1} T Y$ is zero, by the Sylvester equation that Algorithm 7.6.2 solves, and
 
 ## Deviations from the source
 
+* **§7.6.2, two-by-two swap** (generalization). The matrix identity includes equal diagonal
+  entries and gives exactly $t_{12}$ for the off-diagonal entry in the stated rotation
+  convention. See `GolubVanLoan.Chapter07.swap_two_by_two`.
+* **Algorithm 7.6.1** (reading). The implementation takes a pass budget, and the correctness
+  theorem assumes at least $n$ passes are available. See
+  `GolubVanLoan.Chapter07.algorithm_7_6_1`.
+* **Equation (7.6.5)** (generalization). The recurrences allow arbitrary $F$ and upper
+  Hessenberg $G$ with the necessary local subdiagonal zeros. See
+  `GolubVanLoan.Chapter07.equation_7_6_5`.
+* **Equation (7.6.6)** (generalization). The separation bounds apply to complex blocks, with
+  positivity explicitly required for the solution norm bound. See
+  `GolubVanLoan.Chapter07.equation_7_6_6`.
+* **§7.6.5** (generalization). The Jordan block count applies to any one eigenvalue of a complex
+  matrix even when other eigenvalues are present. See
+  `GolubVanLoan.Chapter07.jordan_block_count`.
 * **Equation (7.6.1)** (reading). The source describes the convergence of inverse iteration
   informally; the statement fixes a precise form, in which $A$ need not be diagonalizable. See
   `GolubVanLoan.Chapter07.equation_7_6_1`.
@@ -359,7 +374,11 @@ $\mathtt{givens}(t_{12}, \lambda_2 - \lambda_1)$, then $T_F x = \lambda_2 x$ and
 $$Q_D^T T_F Q_D = \begin{bmatrix} \lambda_2 & t_{12} \\ 0 & \lambda_1 \end{bmatrix}.$$
 
 The source writes the $(1, 2)$ entry of the result as $\pm t_{12}$; with this sign convention
-for $Q_D$ it is $t_{12}$. The second entry of a vector is index `1`. -/
+for $Q_D$ it is $t_{12}$. The second entry of a vector is index `1`.
+
+**Generalization.** The matrix identity includes equal diagonal entries. The source takes
+distinct eigenvalues so that the displayed vector is nonzero. With this rotation convention the
+off-diagonal entry is exactly $t_{12}$. -/
 theorem swap_two_by_two {l₁ l₂ t c s : ℝ} (hcs : c ^ 2 + s ^ 2 = 1)
     (hQx : ((!![c, s; -s, c])ᵀ *ᵥ ![t, l₂ - l₁]) 1 = 0) :
     !![l₁, t; 0, l₂] *ᵥ ![t, l₂ - l₁] = l₂ • ![t, l₂ - l₁] ∧
@@ -393,7 +412,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- The test of the `while` loop of Algorithm 7.6.1, $\{t_{11}, \dots, t_{pp}\} = \Delta$, read with
 multiplicities: $T$ satisfies it if every diagonal entry above a diagonal entry in $\Delta$ is
-also in $\Delta$, that is, the diagonal entries in $\Delta$ come first. -/
+also in $\Delta$, that is, the diagonal entries in $\Delta$ come first.
+
+**Reading.** Tests that selected diagonal occurrences form a prefix, including multiplicities.
+-/
 def IsDeltaLeading (Δ : Finset ℝ) (T : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   ∀ k j : Fin n, j ≤ k → T k k ∈ Δ → T j j ∈ Δ
 
@@ -471,7 +493,10 @@ as `GolubVanLoan.Chapter07.IsDeltaLeading`: the diagonal entries in $\Delta$ com
 
 The `while` loop is at most `fuel` passes with a `done` flag, and a pass is
 `GolubVanLoan.Chapter07.schurReorderPass`. The difference $t_{k+1,k+1} - t_{kk}$ and every
-operation of the rotations are rounded by `rnd`. -/
+operation of the rotations are rounded by `rnd`.
+
+**Reading.** A natural-number fuel parameter bounds the number of complete passes. The source
+repeats passes until its leading-set condition holds. -/
 noncomputable def algorithm_7_6_1 (Q T : Matrix (Fin n) (Fin n) ℝ) (Δ : Finset ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
   let st ← (List.range fuel).foldlM (fun st _ => schurReorderPass rnd Δ st) ((Q, T), false)
@@ -1053,7 +1078,11 @@ columns $z_1, \dots, z_r$. Then:
 
 Hence $FZ - ZG = C$ holds exactly when these columns equal the columns of $C$. The source uses
 the third part when $g_{k+1,k} \neq 0$, but the identity holds without this condition. Upper
-Hessenberg is `Matrix.IsUpperHessenberg`. -/
+Hessenberg is `Matrix.IsUpperHessenberg`.
+
+**Generalization.** The column identities apply to arbitrary $F$ and upper Hessenberg $G$, with
+the local subdiagonal zeros required by the recurrences. The source uses upper quasi-triangular
+$F$ and $G$ to solve the resulting systems. -/
 theorem equation_7_6_5 {p r : ℕ} (F : Matrix (Fin p) (Fin p) ℝ) {G : Matrix (Fin r) (Fin r) ℝ}
     (hG : G.IsUpperHessenberg) (Z : Matrix (Fin p) (Fin r) ℝ) :
     (∀ k, (F * Z - Z * G).col k = F *ᵥ Z.col k - ∑ i, G i k • Z.col i) ∧
@@ -1391,7 +1420,10 @@ end
 The program returns the pair $(Q, T)$. It has no hypothesis on its inputs.
 
 The partitioning is a block index `b : Fin n → Fin q`, which the specification assumes monotone.
-The body of the loop is `GolubVanLoan.Chapter07.blockDiagStep`. -/
+The body of the loop is `GolubVanLoan.Chapter07.blockDiagStep`.
+
+**Reading.** Uses the triangular-only Bartels–Stewart solver in the block loop.
+-/
 noncomputable def algorithm_7_6_3 (Q T : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → Fin q) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange q).foldlM (fun QT (j : Fin q) =>
@@ -1964,7 +1996,11 @@ $$\|Z\|_F \le \frac{\|T_{ij}\|_F}{\operatorname{sep}(T_{ii}, T_{jj})}.$$
 
 The separation $\operatorname{sep}(A, B) = \min_{\|X\|_F = 1} \|AX - XB\|_F$ of (7.2.5) is
 `Matrix.sep`. The proof specializes `Matrix.sep_le_norm_sub` and
-`Matrix.frobenius_norm_le_div_sep`. -/
+`Matrix.frobenius_norm_le_div_sep`.
+
+**Generalization.** The bounds apply to complex blocks. The norm bound states positivity of the
+separation explicitly. The source gets it from the disjoint spectra of the real diagonal
+blocks. -/
 theorem equation_7_6_6 {p q : ℕ} (Tii : Matrix (Fin p) (Fin p) ℂ) (Tjj : Matrix (Fin q) (Fin q) ℂ)
     (Tij : Matrix (Fin p) (Fin q) ℂ) :
     (∀ μ ∈ spectrum ℂ Tii, ∀ ν ∈ spectrum ℂ Tjj, sep Tii Tjj ≤ ‖μ - ν‖) ∧
@@ -2139,7 +2175,11 @@ do not depend on the choice of the Jordan decomposition.
 
 The Jordan form is `Matrix.jordanForm e μ` with upper bidiagonal blocks, laid out along `Fin n`
 by the bijection `σ` through `Matrix.reindex`. The subtraction is in $\mathbb{N}$, which is
-exact because $p_k \le p_{k+1}$. The proof specializes `Matrix.card_filter_le_jordanBlocks_eq`. -/
+exact because $p_k \le p_{k+1}$. The proof specializes `Matrix.card_filter_le_jordanBlocks_eq`.
+
+**Generalization.** The source treats one real eigenvalue with $N$ strictly upper triangular.
+The formulation permits a complex eigenvalue and additional eigenvalues in $C$, and counts only
+the blocks for the specified eigenvalue. -/
 theorem jordan_block_count {C N X : Matrix (Fin n) (Fin n) ℂ} {c : ℂ} (hC : C = c • 1 + N)
     {q : ℕ} {e : Fin q → ℕ} {μ : Fin q → ℂ} (σ : ((i : Fin q) × Fin (e i)) ≃ Fin n)
     (hX : IsUnit X) (h : X⁻¹ * C * X = reindex σ σ (jordanForm e μ)) (k : ℕ) :

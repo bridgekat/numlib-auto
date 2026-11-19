@@ -36,6 +36,8 @@ numerical hull are larger sets used in the study of nonnormal operators.
 
 ## Deviations from the source
 
+* **Section 5.7.3** (reading). The closed pseudospectrum uses attained unit-vector residuals. In
+  infinite dimension it can omit spectral points included by the resolvent definition.
 * **Asymptotic convergence factor** (reading). An upper limit defines the expression for an
   arbitrary set. On sets where the limit exists it agrees with the definition in the source.
 
@@ -50,13 +52,19 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-- **Equation (5.7.3)** of [liesen2013krylov]. A **GMRES iteration polynomial** at step $n$ has
 degree at most $n$, value $1$ at $0$, and maps the initial residual to the $n$-th GMRES residual.
-The definition chooses a witness for the specified iterate. -/
+The definition chooses a witness for the specified iterate.
+
+**Generalization.** A polynomial is chosen for every iterate, including after the grade where
+its representation may cease to be unique. -/
 noncomputable def gmresIterationPolynomial {A : E →ₗ[𝕜] E} {b x₀ xₙ : E} {n : ℕ}
     (hx : IsMinResidualIterate A b x₀ n xₙ) : 𝕜[X] :=
   Classical.choose (exists_residual_poly hx.mem)
 
 /-- The chosen GMRES iteration polynomial has degree at most $n$ and value $1$ at $0$ and gives
-$b-Ax_n$ when evaluated at $A$ and applied to $b-Ax_0$. -/
+$b-Ax_n$ when evaluated at $A$ and applied to $b-Ax_0$.
+
+**Generalization.** The degree, normalization and residual identities also hold for the
+selected representative after termination. -/
 theorem gmresIterationPolynomial_spec {A : E →ₗ[𝕜] E} {b x₀ xₙ : E} {n : ℕ}
     (hx : IsMinResidualIterate A b x₀ n xₙ) :
     (gmresIterationPolynomial hx).degree ≤ n ∧ (gmresIterationPolynomial hx).eval 0 = 1 ∧
@@ -65,12 +73,18 @@ theorem gmresIterationPolynomial_spec {A : E →ₗ[𝕜] E} {b x₀ xₙ : E} {
 
 /-- **Definition 5.7.2** of [liesen2013krylov]. A **Ritz value** $\theta$ and corresponding
 **Ritz vector** $y$ of $A$ on $\mathcal{W}$ satisfy
-$y\ne0$, $y\in\mathcal{W}$, and $Ay-\theta y\perp\mathcal{W}$. -/
+$y\ne0$, $y\in\mathcal{W}$, and $Ay-\theta y\perp\mathcal{W}$.
+
+**Generalization.** The same residual orthogonality defines Ritz pairs in real or complex inner
+product spaces of any dimension. -/
 abbrev IsRitzPair (A : E →ₗ[𝕜] E) (W : Submodule 𝕜 E) (θ : 𝕜) (y : E) : Prop :=
   Krylov.IsRitzPair A W θ y
 
 /-- **Section 5.7.1** of [liesen2013krylov]. A **harmonic Ritz pair** $(\theta,y)$ for $A$ on
-$\mathcal{W}$ has $y\ne0$, $y\in\mathcal{W}$, and $Ay-\theta y\perp A\mathcal{W}$. -/
+$\mathcal{W}$ has $y\ne0$, $y\in\mathcal{W}$, and $Ay-\theta y\perp A\mathcal{W}$.
+
+**Generalization.** The image-based test space defines the harmonic Ritz condition directly,
+even for singular operators. -/
 abbrev IsHarmonicRitzPair (A : E →ₗ[𝕜] E) (W : Submodule 𝕜 E) (θ : 𝕜) (y : E) : Prop :=
   Krylov.IsObliqueRitzPair A W (W.map A) θ y
 
@@ -151,7 +165,10 @@ finite orthonormal eigenbasis with eigenvalues $\lambda_i$, let $r_0=b-Ax_0\ne0$
 $x_n$ be the GMRES iterate. Then
 $$\frac{\|b-Ax_n\|}{\|r_0\|}\le
  \inf_{\deg p\le n,\ p(0)=1}\max_i|p(\lambda_i)|.$$
-The finite orthonormal eigenbasis expresses the unitary diagonalisation assumed in the source. -/
+The finite orthonormal eigenbasis expresses the unitary diagonalisation assumed in the source.
+
+**Generalization.** The relative bound applies also to singular normal operators when the
+initial residual is nonzero. -/
 theorem theorem_5_7_4_normal {ι : Type*} [Fintype ι] [Nonempty ι]
     {A : E →ₗ[𝕜] E} {b x₀ xₙ : E} {n : ℕ}
     (basis : OrthonormalBasis ι 𝕜 E) (μ : ι → 𝕜)
@@ -174,16 +191,25 @@ variable {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℂ F]
 /-- **Section 5.7.3** of [liesen2013krylov]. The **closed $\varepsilon$-pseudospectrum** consists
 of $z$ for which some unit vector $w$ satisfies $\|Aw-zw\|\le\varepsilon$. In finite nonzero
 dimension and for $\varepsilon>0$, this is the spectrum together with the points where the
-resolvent has norm at least $1/\varepsilon$. -/
+resolvent has norm at least $1/\varepsilon$.
+
+**Reading.** The definition uses residuals attained on unit vectors. This agrees with the
+resolvent definition in finite dimension. For the unilateral shift on $\ell^2$, the origin is
+spectral, while the unit-vector residual there always has norm one. -/
 noncomputable abbrev closedPseudospectrum (A : F →L[ℂ] F) (ε : ℝ) : Set ℂ :=
   A.closedPseudospectrum ε
 
 /-- **Section 5.7.3** of [liesen2013krylov]. The **field of values** of $A$ is the set of all
-$\langle v,Av\rangle$ for unit vectors $v$. -/
+$\langle v,Av\rangle$ for unit vectors $v$.
+
+**Generalization.** The numerical range uses any complex inner product space. -/
 abbrev fieldOfValues (A : F →ₗ[ℂ] F) : Set ℂ := A.numericalRange
 
 /-- **Section 5.7.3** of [liesen2013krylov]. The **order-$n$ polynomial numerical hull** consists
-of $z$ for which $|p(z)|\le\|p(A)\|$ for all polynomials $p$ of degree at most $n$. -/
+of $z$ for which $|p(z)|\le\|p(A)\|$ for all polynomials $p$ of degree at most $n$.
+
+**Generalization.** The same polynomial inequality defines the hull for bounded operators in
+any dimension. -/
 def polynomialNumericalHull (A : F →L[ℂ] F) (n : ℕ) : Set ℂ :=
   {z | ∀ p : ℂ[X], p.degree ≤ n → ‖p.eval z‖ ≤ ‖aeval A p‖}
 
@@ -205,7 +231,10 @@ $A\mathcal K_n(A,r_0)$ for all $n\le d$. Let $r_n=b-Ax_n$ be the GMRES residuals
 $$r_n=r_0-\sum_{i<n}\langle w_i,r_0\rangle w_i
      =r_0-\sum_{i<n}\langle w_i,r_i\rangle w_i
      =\sum_{i\ge n}\langle w_i,r_0\rangle w_i.$$
-The basis uses zero-based indexing. -/
+The basis uses zero-based indexing.
+
+**Generalization.** Injectivity and a finite-dimensional cyclic span suffice in place of a
+nonsingular ambient matrix. -/
 theorem lemma_5_7_6 {A : E →ₗ[𝕜] E} {b x₀ : E}
     [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hA : Function.Injective A) {w : Fin (grade A (b - A x₀)) → E} (hw : Orthonormal 𝕜 w)
@@ -231,7 +260,10 @@ theorem lemma_5_7_6 {A : E →ₗ[𝕜] E} {b x₀ : E}
 spanning the mapped Krylov spaces, the decomposition
 $r_i=\langle w_i,r_0\rangle w_i+r_{i+1}$ is orthogonal, with
 $\langle w_i,r_i\rangle=\langle w_i,r_0\rangle$. Consequently
-$\|r_i\|^2-\|r_{i+1}\|^2=|\langle w_i,r_0\rangle|^2$. The index $i$ starts at zero. -/
+$\|r_i\|^2-\|r_{i+1}\|^2=|\langle w_i,r_0\rangle|^2$. The index $i$ starts at zero.
+
+**Generalization.** The one-step identity needs only the orthonormal family and its prescribed
+prefix spaces. -/
 theorem lemma_5_7_6_step {A : E →ₗ[𝕜] E} {b x₀ : E}
     {w : Fin (grade A (b - A x₀)) → E} (hw : Orthonormal 𝕜 w)
     (hspan : ∀ n ≤ grade A (b - A x₀),

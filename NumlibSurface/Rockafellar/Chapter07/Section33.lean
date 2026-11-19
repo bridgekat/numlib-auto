@@ -106,9 +106,19 @@ All 11 numbered results of Section 33 are formalized: Theorems 33.1–33.3 and C
 
 ## Deviations from the source
 
+* **Theorem 33.1 and Corollary 33.1.1**, closedness (generalization). Partial
+  conjugates and partial closures have the indicated closedness even for arbitrary inputs.
+* **Corollary 33.2.2**, exceptional case (generalization). The two opposite infinite
+  bracket values need only the stated failures of domain membership.
+* **Section 33, full closedness** (generalization). The characterization by both lower
+  and upper closedness holds for arbitrary functions.
+* **Corollary 33.3.1** (generalization). Only the lower function needs an explicit
+  concave-convex hypothesis for the representation. Its concave closure gives the upper
+  function. The identities alone give the separate closedness and order conclusions.
 * **Corollary 33.3.3** (generalization). The book assumes that $K$ is finite and continuous on
   $C \times D$, jointly. The statements here assume only that each section $K(u, \cdot)$ and
-  $K(\cdot, x^*)$ is continuous on its set. See `Rockafellar.corollary_33_3_3`.
+  $K(\cdot, x^*)$ is continuous on its set. The separate lower and upper closedness
+  statements do not need sectional convexity or concavity. See `Rockafellar.corollary_33_3_3`.
 -/
 
 open Set
@@ -236,7 +246,10 @@ theorem theorem_33_1_concaveConvex (hF : ConvexBifun F) : ConcaveConvexFn (bifun
 $\mathbb{R}^m$ to $\mathbb{R}^n$, the function $\langle Fu, x^* \rangle$ is convex-closed: for
 each $u$, the function $\langle Fu, \cdot \rangle$ is closed.
 
-No hypothesis on $F$ is needed, because each $\langle Fu, \cdot \rangle$ is a conjugate. -/
+No hypothesis on $F$ is needed, because each $\langle Fu, \cdot \rangle$ is a conjugate.
+
+**Reading.** Each slice is a closed conjugate for any bifunction.
+-/
 theorem theorem_33_1_convexClosed (F : Bifun (Rn m) (Rn n)) : PartialClosed₂ (bifunBracket F) :=
   partialClosed₂_saddleOfBifun
 
@@ -259,7 +272,10 @@ theorem theorem_33_1_convexBifun (hK : ConcaveConvexFn K) : ConvexBifun (bifunOf
 
 /-- **Theorem 33.1** of [rockafellar1970convex], converse, image-closedness. For every $K :
 \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$, the bifunction $F$ defined by
-$Fu = K(u, \cdot)^*$ is image-closed: each $Fu$ is a closed function, because it is a conjugate. -/
+$Fu = K(u, \cdot)^*$ is image-closed: each $Fu$ is a closed function, because it is a conjugate.
+
+**Reading.** Every reconstructed slice is closed without a saddle hypothesis.
+-/
 theorem theorem_33_1_imageClosed (K : Rn m × Rn n → EReal) :
     ImageClosedBifun (bifunOfSaddleFn K) :=
   imageClosedBifun_bifunOfSaddle
@@ -299,7 +315,10 @@ every $K : \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$, the functio
 $\operatorname{cl}_1 K$ is concave-closed: $\operatorname{cl}_1 \operatorname{cl}_1 K =
 \operatorname{cl}_1 K$.
 
-The concave closure is idempotent, so no hypothesis on $K$ is needed. -/
+The concave closure is idempotent, so no hypothesis on $K$ is needed.
+
+**Reading.** The first closure is closed in its first argument even for arbitrary functions.
+-/
 theorem corollary_33_1_1_cl₁_concaveClosed (K : Rn m × Rn n → EReal) :
     PartialClosed₁ (cl₁ K) :=
   partialClosed₁_partialCl₁ K
@@ -309,7 +328,10 @@ every $K : \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$, the functio
 $\operatorname{cl}_2 K$ is convex-closed: $\operatorname{cl}_2 \operatorname{cl}_2 K =
 \operatorname{cl}_2 K$.
 
-The convex closure is idempotent, so no hypothesis on $K$ is needed. -/
+The convex closure is idempotent, so no hypothesis on $K$ is needed.
+
+**Reading.** The second closure is closed in its second argument even for arbitrary functions.
+-/
 theorem corollary_33_1_1_cl₂_convexClosed (K : Rn m × Rn n → EReal) :
     PartialClosed₂ (cl₂ K) :=
   partialClosed₂_partialCl₂ K
@@ -403,7 +425,10 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 
 /-- For every bifunction $F$ from $\mathbb{R}^m$ to $\mathbb{R}^n$, the function
 $\langle u, F^* x^* \rangle$ is concave-convex in $(u, x^*)$. No hypothesis on $F$ is needed,
-because the adjoint of every bifunction is concave. -/
+because the adjoint of every bifunction is concave.
+
+**Reading.** The convex-to-concave adjoint yields a saddle bracket for arbitrary bifunctions.
+-/
 theorem adjointBracket_concaveConvex (F : Bifun (Rn m) (Rn n)) :
     ConcaveConvexFn (adjointBracket F) :=
   concaveConvexFn_concaveBracket (concaveBifun_convexAdjointBifun (pairing m) (pairing n) F)
@@ -513,7 +538,11 @@ bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$, and let $u \notin \operatornam
 $x^* \notin \operatorname{dom} F^*$. Then $\langle Fu, x^* \rangle = -\infty$ and
 $\langle u, F^* x^* \rangle = +\infty$.
 
-Neither polyhedrality nor properness is used. -/
+Neither polyhedrality nor properness is used.
+
+**Reading.** Opposite infinite values when both inputs are off their domains hold without
+polyhedrality or properness.
+-/
 theorem corollary_33_2_2_exceptional {u : Rn m} (hu : u ∉ convexDomBifun F) {y : Rn n}
     (hy : y ∉ concaveDomBifun (dualProgram F)) :
     bifunBracket F (u, y) = ⊥ ∧ adjointBracket F (u, y) = ⊤ :=
@@ -556,7 +585,10 @@ theorem fullyClosedFn_of_finite (hK : ConcaveConvexFn K) (hbot : ∀ p, K p ≠ 
 
 /-- A function $K$ on $\mathbb{R}^m \times \mathbb{R}^n$ is fully closed (convex-closed and
 concave-closed) if and only if it is both lower closed and upper closed. The proof uses the
-idempotence of $\operatorname{cl}_1$ and $\operatorname{cl}_2$. -/
+idempotence of $\operatorname{cl}_1$ and $\operatorname{cl}_2$.
+
+**Reading.** Both lower and upper closedness characterize full closedness for arbitrary functions.
+-/
 theorem fullyClosed_iff_lowerClosed_and_upperClosed (K : Rn m × Rn n → EReal) :
     FullyClosedFn K ↔ LowerClosedFn K ∧ UpperClosedFn K :=
   fullyClosedFn_iff
@@ -638,7 +670,11 @@ $$\underline{K}(u, x^*) = \langle Fu, x^* \rangle, \qquad \overline{K}(u, x^*) =
 
 The book states that such an $F$ exists, and is then unique, if and only if the two closure
 relations hold. The necessity is `Rockafellar.corollary_33_3_1_necessity_first` and
-`Rockafellar.corollary_33_3_1_necessity_second`. -/
+`Rockafellar.corollary_33_3_1_necessity_second`.
+
+**Reading.** Requires concavity-convexity only of the lower function. The upper one is its first
+closure.
+-/
 theorem corollary_33_3_1 (hK : ConcaveConvexFn Klow) (h1 : cl₁ Klow = Kup) (h2 : cl₂ Kup = Klow) :
     ∃! F : Bifun (Rn m) (Rn n), ConvexBifun F ∧ ClosedConvexBifun F ∧
       bifunBracket F = Klow ∧ adjointBracket F = Kup :=
@@ -646,7 +682,10 @@ theorem corollary_33_3_1 (hK : ConcaveConvexFn Klow) (h1 : cl₁ Klow = Kup) (h2
 
 /-- **Corollary 33.3.1** of [rockafellar1970convex], necessity, first relation. For a convex
 bifunction $F$, $\operatorname{cl}_1 \langle Fu, x^* \rangle = \langle u, F^* x^* \rangle$. No
-closedness of $F$ is needed. -/
+closedness of $F$ is needed.
+
+**Reading.** The first closure relation holds without closedness of F.
+-/
 theorem corollary_33_3_1_necessity_first (hF : ConvexBifun F) :
     cl₁ (bifunBracket F) = adjointBracket F :=
   partialCl₁_bracket (pairing m) (pairing n) hF
@@ -659,7 +698,10 @@ theorem corollary_33_3_1_necessity_second (hF : ConvexBifun F) (hcl : ClosedConv
 
 /-- **Corollary 33.3.1** of [rockafellar1970convex]. If $\operatorname{cl}_1 \underline{K} =
 \overline{K}$ and $\operatorname{cl}_2 \overline{K} = \underline{K}$, then $\underline{K}$ is
-lower closed. -/
+lower closed.
+
+**Reading.** The closure identities imply lower closedness without a saddle hypothesis.
+-/
 theorem corollary_33_3_1_lowerClosed (h1 : cl₁ Klow = Kup) (h2 : cl₂ Kup = Klow) :
     LowerClosedFn Klow := by
   have e1 : partialCl₁ Klow = Kup := h1
@@ -668,7 +710,10 @@ theorem corollary_33_3_1_lowerClosed (h1 : cl₁ Klow = Kup) (h2 : cl₂ Kup = K
 
 /-- **Corollary 33.3.1** of [rockafellar1970convex]. If $\operatorname{cl}_1 \underline{K} =
 \overline{K}$ and $\operatorname{cl}_2 \overline{K} = \underline{K}$, then $\overline{K}$ is
-upper closed. -/
+upper closed.
+
+**Reading.** The closure identities imply upper closedness without a saddle hypothesis.
+-/
 theorem corollary_33_3_1_upperClosed (h1 : cl₁ Klow = Kup) (h2 : cl₂ Kup = Klow) :
     UpperClosedFn Kup := by
   have e1 : partialCl₁ Klow = Kup := h1
@@ -677,7 +722,10 @@ theorem corollary_33_3_1_upperClosed (h1 : cl₁ Klow = Kup) (h2 : cl₂ Kup = K
 
 /-- **Corollary 33.3.1** of [rockafellar1970convex]. If $\operatorname{cl}_2 \overline{K} =
 \underline{K}$, then $\underline{K} \le \overline{K}$. Only this relation is used, because
-$\operatorname{cl}_2$ does not increase a function. -/
+$\operatorname{cl}_2$ does not increase a function.
+
+**Reading.** The second closure identity alone gives the pointwise order.
+-/
 theorem corollary_33_3_1_le (h2 : cl₂ Kup = Klow) : Klow ≤ Kup :=
   le_of_partialCl₂_eq h2
 
@@ -750,7 +798,10 @@ for each $u \in C$ and $K(\cdot, x^*)$ is continuous on $C$ for each $x^* \in D$
 simple extension $\underline{K}$ of $K$ is lower closed.
 
 The lower simple extension `ConvexAnalysis.lowerSimpleExt C D K` is $K$ on $C \times D$,
-$+\infty$ on $C \times (\mathbb{R}^n \setminus D)$ and $-\infty$ for $u \notin C$. -/
+$+\infty$ on $C \times (\mathbb{R}^n \setminus D)$ and $-\infty$ for $u \notin C$.
+
+**Reading.** Separate continuity suffices, without sectional convexity or concavity.
+-/
 theorem corollary_33_3_3_lowerClosed (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
     (hDne : D.Nonempty) (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
@@ -762,7 +813,10 @@ theorem corollary_33_3_3_lowerClosed (hCcl : IsClosed C) (hDcl : IsClosed D) (hC
 upper closed.
 
 The upper simple extension `ConvexAnalysis.upperSimpleExt C D K` is $K$ on $C \times D$,
-$-\infty$ on $(\mathbb{R}^m \setminus C) \times D$ and $+\infty$ for $x^* \notin D$. -/
+$-\infty$ on $(\mathbb{R}^m \setminus C) \times D$ and $+\infty$ for $x^* \notin D$.
+
+**Reading.** Separate continuity suffices, without sectional convexity or concavity.
+-/
 theorem corollary_33_3_3_upperClosed (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C.Nonempty)
     (hDne : D.Nonempty) (hcontD : ∀ u ∈ C, ContinuousOn (fun x => K (u, x)) D)
     (hcontC : ∀ x ∈ D, ContinuousOn (fun u => K (u, x)) C) :
@@ -798,7 +852,10 @@ theorem corollary_33_3_3 (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClose
 /-- **Corollary 33.3.3** of [rockafellar1970convex], the bifunction. Let $C$ be convex, $D$ closed,
 and $K$ real-valued with $K(u, \cdot)$ convex and continuous on $D$ for $u \in C$ and
 $K(\cdot, x^*)$ concave on $C$ for $x^* \in D$. Then the bifunction
-$Fu = \underline{K}(u, \cdot)^*$ satisfies $\langle Fu, x^* \rangle = \underline{K}(u, x^*)$. -/
+$Fu = \underline{K}(u, \cdot)^*$ satisfies $\langle Fu, x^* \rangle = \underline{K}(u, x^*)$.
+
+**Reading.** Only continuity in the second argument is needed for the lower bracket identity.
+-/
 theorem corollary_33_3_3_bracket (hC : Convex ℝ C) (hDcl : IsClosed D)
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
@@ -810,7 +867,10 @@ theorem corollary_33_3_3_bracket (hC : Convex ℝ C) (hDcl : IsClosed D)
 /-- **Corollary 33.3.3** of [rockafellar1970convex], the adjoint. Let $C$ be non-empty, closed and
 convex, $D$ closed, and $K$ real-valued with $K(u, \cdot)$ convex and continuous on $D$ for
 $u \in C$ and $K(\cdot, x^*)$ concave and continuous on $C$ for $x^* \in D$. Then the bifunction
-$Fu = \underline{K}(u, \cdot)^*$ satisfies $\langle u, F^* x^* \rangle = \overline{K}(u, x^*)$. -/
+$Fu = \underline{K}(u, \cdot)^*$ satisfies $\langle u, F^* x^* \rangle = \overline{K}(u, x^*)$.
+
+**Reading.** Uses separate continuity and allows an empty D.
+-/
 theorem corollary_33_3_3_adjointBracket (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
@@ -825,7 +885,11 @@ theorem corollary_33_3_3_adjointBracket (hC : Convex ℝ C) (hCcl : IsClosed C) 
 /-- **Corollary 33.3.3** of [rockafellar1970convex], $\operatorname{dom} F = C$. Let $C$ be convex,
 $D$ closed and non-empty, and $K$ real-valued with $K(u, \cdot)$ convex and continuous on $D$
 for $u \in C$ and $K(\cdot, x^*)$ concave on $C$ for $x^* \in D$. Then the bifunction
-$Fu = \underline{K}(u, \cdot)^*$ has $\operatorname{dom} F = C$. -/
+$Fu = \underline{K}(u, \cdot)^*$ has $\operatorname{dom} F = C$.
+
+**Reading.** Needs closedness, continuity and nonemptiness in the second coordinate only, apart from
+convexity assumptions.
+-/
 theorem corollary_33_3_3_dom (hC : Convex ℝ C) (hDcl : IsClosed D) (hDne : D.Nonempty)
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
@@ -840,7 +904,10 @@ theorem corollary_33_3_3_dom (hC : Convex ℝ C) (hDcl : IsClosed D) (hDne : D.N
 non-empty, closed and convex, $D$ closed, and $K$ real-valued with $K(u, \cdot)$ convex and
 continuous on $D$ for $u \in C$ and $K(\cdot, x^*)$ concave and continuous on $C$ for
 $x^* \in D$. Then the bifunction $Fu = \underline{K}(u, \cdot)^*$ has
-$\operatorname{dom} F^* = D$. -/
+$\operatorname{dom} F^* = D$.
+
+**Reading.** Separate continuity suffices and an empty D is allowed.
+-/
 theorem corollary_33_3_3_domAdjoint (hC : Convex ℝ C) (hCcl : IsClosed C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))
@@ -882,6 +949,8 @@ convex, $D$ closed, and $K$ real-valued with $K(u, \cdot)$ convex and continuous
 $u \in C$ and $K(\cdot, x^*)$ concave on $C$ for $x^* \in D$. For $x^* \in D$, the adjoint of
 $Fu = \underline{K}(u, \cdot)^*$ has
 $$(F^* x^*)(u^*) = \inf \{\langle u, u^* \rangle - K(u, x^*) \mid u \in C\}.$$
+
+**Reading.** The formula uses the infimum over C and needs only continuity in the second argument.
 -/
 theorem corollary_33_3_3_adjoint_of_mem (hC : Convex ℝ C) (hDcl : IsClosed D)
     (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
@@ -906,7 +975,10 @@ theorem corollary_33_3_3_adjoint_of_mem (hC : Convex ℝ C) (hDcl : IsClosed D)
 /-- **Corollary 33.3.3** of [rockafellar1970convex], the formula for $F^*$ off $D$. Let $C$ be
 non-empty and convex, $D$ closed, and $K$ real-valued with $K(u, \cdot)$ convex and continuous
 on $D$ for $u \in C$ and $K(\cdot, x^*)$ concave on $C$ for $x^* \in D$. For $x^* \notin D$, the
-adjoint of $Fu = \underline{K}(u, \cdot)^*$ has $(F^* x^*)(u^*) = -\infty$ for every $u^*$. -/
+adjoint of $Fu = \underline{K}(u, \cdot)^*$ has $(F^* x^*)(u^*) = -\infty$ for every $u^*$.
+
+**Reading.** The formula gives negative infinity using only continuity in the second argument.
+-/
 theorem corollary_33_3_3_adjoint_of_notMem (hC : Convex ℝ C) (hDcl : IsClosed D)
     (hCne : C.Nonempty) (hconv : ∀ u ∈ C, ConvexOn ℝ D fun x => K (u, x))
     (hconc : ∀ x ∈ D, ConcaveOn ℝ C fun u => K (u, x))

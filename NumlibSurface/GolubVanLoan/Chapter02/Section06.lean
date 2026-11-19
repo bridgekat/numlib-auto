@@ -92,11 +92,38 @@ theorem), `Numlib.Analysis.Matrix.OperatorNorm` (`Matrix.condNumberLp`, `Matrix.
 
 ## Deviations from the source
 
+* **Equation (2.6.1)** (generalization). An orthogonal diagonalization of the two-sided form
+  suffices, with signed and unordered diagonal entries. See `GolubVanLoan.Chapter02.equation_2_6_1`.
+* **Equations (2.6.2) and (2.6.4)** (reading). For induced $p$-norms, the bounds use an explicit
+  smallness condition, nonzero denominators and a finite factor in place of the asymptotic
+  remainder. See `GolubVanLoan.Chapter02.equation_2_6_2` and
+  `GolubVanLoan.Chapter02.equation_2_6_4`.
+* **Equations (2.6.3) and (2.6.7), Lemma 2.6.1 and Theorem 2.6.2** (reading). The surface
+  statements specialize the norm to an induced $p$-norm. See `GolubVanLoan.Chapter02.kappa`,
+  `GolubVanLoan.Chapter02.equation_2_6_7`, `GolubVanLoan.Chapter02.lemma_2_6_1` and
+  `GolubVanLoan.Chapter02.theorem_2_6_2`.
+* **Equations (2.6.5)–(2.6.7)** (reading). The ratio and inverse characterizations are stated
+  for nonsingular $A$. The minimum and normalized limit also require $n > 0$, and the limit is
+  from positive radii. See `GolubVanLoan.Chapter02.equation_2_6_5`,
+  `GolubVanLoan.Chapter02.equation_2_6_6` and `GolubVanLoan.Chapter02.equation_2_6_7`.
+* **Equation (2.6.8) and the Skeel condition number in §2.6.5** (reading). The real-valued
+  condition numbers use the totalized matrix inverse, giving $0$ for singular matrices.
+  Equation (2.6.8) also includes $n=0$ with $1/0=0$.
+  See `GolubVanLoan.Chapter02.equation_2_6_8` and
+  `GolubVanLoan.Chapter02.skeelCond_eq_and_le_condNumberLp`.
 * **Lemma 2.6.1** (reading). The source carries the nonsingularity of $A$ through the convention
   $\kappa(A) = \infty$. The lemma has the explicit hypothesis that $A$ is nonsingular. See
   `GolubVanLoan.Chapter02.lemma_2_6_1`.
+* **Equation (2.6.11)** (generalization). The identity requires only the two system equations
+  and nonsingularity of $A$. See `GolubVanLoan.Chapter02.equation_2_6_11`.
 * **Theorem 2.6.3** (typo). The source prints the hypothesis as $\delta \kappa_\infty(A) = r < 1$,
   with $\delta$ for $\epsilon$. See `GolubVanLoan.Chapter02.theorem_2_6_3`.
+* **Equation (2.6.13)** (reading). A zero denominator contributes $0$ when the row residual is
+  zero and precludes every finite feasible perturbation size otherwise.
+  See `GolubVanLoan.Chapter02.equation_2_6_13`.
+* **Equation (2.6.13)** (generalization). The theorem characterizes feasibility for every
+  perturbation size $\omega \ge 0$, in addition to identifying the minimum.
+  See `GolubVanLoan.Chapter02.equation_2_6_13`.
 
 ## Not formalized
 
@@ -142,8 +169,10 @@ and let $U, V \in \mathbb{R}^{n \times n}$ be orthogonal with $U^T A V =
 \operatorname{diag}(\sigma_1, \dots, \sigma_n)$. Then for every $b \in \mathbb{R}^n$,
 $$x = A^{-1} b = \sum_{i=1}^n \frac{u_i^T b}{\sigma_i} v_i.$$
 
-The vectors $u_i$ and $v_i$ are the columns `U.col i` and `V.col i`. The theorem does not
-require the $\sigma_i$ to be sorted or nonnegative. -/
+The vectors $u_i$ and $v_i$ are the columns `U.col i` and `V.col i`.
+
+**Generalization.** The source uses an SVD. The expansion holds for any orthogonal factors
+that diagonalize $A$, including signed or unordered diagonal entries. -/
 theorem equation_2_6_1 {A U V : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hU : U ∈ orthogonalGroup (Fin n) ℝ) (hV : V ∈ orthogonalGroup (Fin n) ℝ) {σ : ℕ → ℝ}
     (h : Uᵀ * A * V = diagonal fun i : Fin n => σ i) (b : Fin n → ℝ) :
@@ -192,9 +221,10 @@ f)$ satisfies
 $$\frac{\|x(\epsilon) - x\|_p}{\|x\|_p} \le \frac{|\epsilon| \|A^{-1}\|_p}{1 - |\epsilon|
   \|A^{-1}\|_p \|F\|_p} \Big( \frac{\|f\|_p}{\|x\|_p} + \|F\|_p \Big).$$
 
-The source states the first-order bound $|\epsilon| \|A^{-1}\| (\|f\|/\|x\| + \|F\|) +
-O(\epsilon^2)$. The term $O(\epsilon^2)$ comes from the factor $1/(1 - |\epsilon| \|A^{-1}\|
-\|F\|) = 1 + O(\epsilon)$. -/
+**Reading.** The source uses a consistent matrix norm and a first-order bound with an
+$O(\epsilon^2)$ remainder. The statement specializes to induced $p$-norms, requires $x \ne 0$
+for the relative error and gives an explicit bound for
+$|\epsilon| \|A^{-1}\|_p\|F\|_p < 1$. Expanding its denominator gives the printed remainder. -/
 theorem equation_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     {b f x : Fin n → ℝ} (hx : A *ᵥ x = b) (hx0 : x ≠ 0) {ε : ℝ}
     (hε : |ε| * lpOpNorm p A⁻¹ * lpOpNorm p F < 1) :
@@ -227,7 +257,10 @@ $$\kappa_p(A) = \|A\|_p \|A^{-1}\|_p$$
 if $A$ is nonsingular, and $\kappa_p(A) = \infty$ if $A$ is singular.
 
 The value is in `ℝ≥0∞`: it is `ENNReal.ofReal (Matrix.condNumberLp p A)` for nonsingular $A$ and
-`⊤` otherwise. -/
+`⊤` otherwise.
+
+**Reading.** The source defines the condition number using the underlying matrix norm.
+This definition uses the induced $p$-norm. -/
 noncomputable def kappa (p : ℝ≥0∞) [Fact (1 ≤ p)] (A : Matrix (Fin n) (Fin n) ℝ) : ℝ≥0∞ :=
   if IsUnit A then ENNReal.ofReal (condNumberLp p A) else ⊤
 
@@ -253,8 +286,10 @@ $$\frac{\|x(\epsilon) - x\|_p}{\|x\|_p} \le \frac{\kappa_p(A)}{1 - |\epsilon| \|
 where $\rho_A = |\epsilon| \|F\|_p / \|A\|_p$ and $\rho_b = |\epsilon| \|f\|_p / \|b\|_p$ are
 the relative errors in $A$ and $b$.
 
-The source states the first-order bound $\kappa(A)(\rho_A + \rho_b) + O(\epsilon^2)$. The
-condition number is `Matrix.condNumberLp p A`. -/
+**Reading.** The source states $\kappa(A)(\rho_A + \rho_b) + O(\epsilon^2)$ for a consistent
+matrix norm. The statement specializes to induced $p$-norms, requires $x,b \ne 0$ for the
+relative ratios and gives an explicit factor for $|\epsilon| \|A^{-1}\|_p\|F\|_p < 1$.
+The condition number is `Matrix.condNumberLp p A`. -/
 theorem equation_2_6_4 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A F : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     {b f x : Fin n → ℝ} (hx : A *ᵥ x = b) (hx0 : x ≠ 0) (hb : b ≠ 0) {ε : ℝ}
     (hε : |ε| * lpOpNorm p A⁻¹ * lpOpNorm p F < 1) :
@@ -285,6 +320,9 @@ open scoped Matrix.Norms.L2Operator
 
 /-- **Equation (2.6.5)** of [golub2013matrix]. For nonsingular $A \in \mathbb{R}^{n \times n}$,
 $$\kappa_2(A) = \|A\|_2 \|A^{-1}\|_2 = \frac{\sigma_{\max}(A)}{\sigma_{\min}(A)}.$$
+
+**Reading.** The displayed equality uses the real-valued products and ratio on nonsingular
+inputs. The source's separate convention gives $\kappa_2(A) = \infty$ for singular inputs.
 -/
 theorem equation_2_6_5 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     condNumberLp 2 A = lpOpNorm 2 A * lpOpNorm 2 A⁻¹ ∧
@@ -307,7 +345,10 @@ $$\frac{1}{\kappa_p(A)} = \min_{A + \Delta A \text{ singular}} \frac{\|\Delta A\
 So $\kappa_p(A)$ measures the relative distance from $A$ to the set of singular matrices.
 
 The minimum is an `IsLeast` statement: the value $1/\kappa_p(A)$ is attained by some $\Delta A$,
-and no singular $A + \Delta A$ is closer. -/
+and no singular $A + \Delta A$ is closer.
+
+**Reading.** The ratio is stated for nonsingular matrices of positive order. In order zero
+the norm in the denominator vanishes and there is no singular matrix to attain the minimum. -/
 theorem equation_2_6_6 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hn : 0 < n) :
     IsLeast {r : ℝ | ∃ ΔA : Matrix (Fin n) (Fin n) ℝ, ¬ IsUnit (A + ΔA) ∧
@@ -333,7 +374,11 @@ $$\kappa_p(A) = \lim_{\epsilon \to 0^+} \sup_{\|\Delta A\|_p \le \epsilon \|A\|_
   \Delta A)^{-1} - A^{-1}\|_p}{\epsilon \|A^{-1}\|_p}.$$
 
 The supremum is the real supremum `iSup`, and $(A + \Delta A)^{-1}$ is the inverse of Mathlib,
-which is $0$ at a singular matrix. -/
+which is $0$ at a singular matrix.
+
+**Reading.** The source says “any norm” and takes $\epsilon \to 0$. Here the norm is an induced
+$p$-norm and the limit approaches zero from positive radii. The condition $n \ge 1$ and
+nonsingularity ensure that $\|A^{-1}\|_p$ is positive. -/
 theorem equation_2_6_7 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hn : 0 < n) :
     Tendsto (fun ε : ℝ => (⨆ ΔA : {ΔA : Matrix (Fin n) (Fin n) ℝ //
@@ -360,8 +405,9 @@ $$\frac{1}{n} \kappa_2(A) \le \kappa_1(A) \le n \kappa_2(A), \qquad \frac{1}{n} 
   \le \kappa_2(A) \le n \kappa_\infty(A), \qquad \frac{1}{n^2} \kappa_1(A) \le \kappa_\infty(A)
   \le n^2 \kappa_1(A).$$
 
-The condition numbers are `Matrix.condNumberLp`, which is $0$ at a singular matrix, so the
-inequalities hold for every $A$. For $n = 0$ the Lean value of $1/n$ is $0$. -/
+**Reading.** The source uses $\kappa_p(A) = \infty$ at a singular matrix. The inequalities here
+use the real-valued `Matrix.condNumberLp`, which uses the zero inverse at a singular matrix.
+For $n = 0$, Lean also gives $1/n$ the value $0$. -/
 theorem equation_2_6_8 (A : Matrix (Fin n) (Fin n) ℝ) :
     1 / (n : ℝ) * condNumberLp 2 A ≤ condNumberLp 1 A ∧ condNumberLp 1 A ≤ n * condNumberLp 2 A ∧
       1 / (n : ℝ) * condNumberLp ∞ A ≤ condNumberLp 2 A ∧
@@ -609,7 +655,7 @@ $$\frac{\|y\|_p}{\|x\|_p} \le \frac{1 + r}{1 - r}.$$
 
 **Reading.** The source carries the nonsingularity of $A$ through the convention
 $\kappa(A) = \infty$ for singular $A$. Here it is an explicit hypothesis, and $\kappa_p(A)$ is
-`Matrix.condNumberLp p A`. -/
+`Matrix.condNumberLp p A`. The norm is specialized to the induced $p$-norm. -/
 theorem lemma_2_6_1 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) (Fin n) ℝ}
     {b Δb x y : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
     (hy : (A + ΔA) *ᵥ y = b + Δb) {ε : ℝ} (hΔA : lpOpNorm p ΔA ≤ ε * lpOpNorm p A)
@@ -628,6 +674,9 @@ theorem lemma_2_6_1 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) (F
 /-- **Equation (2.6.11)** of [golub2013matrix]. Let $A \in \mathbb{R}^{n \times n}$ be nonsingular,
 let $Ax = b$, and let $(A + \Delta A) y = b + \Delta b$. Then
 $$y - x = A^{-1} \Delta b - A^{-1} \Delta A \, y.$$
+
+**Generalization.** The source derives the identity under the perturbation hypotheses of
+Lemma 2.6.1. The two system equations and nonsingularity of $A$ suffice.
 -/
 theorem equation_2_6_11 {A ΔA : Matrix (Fin n) (Fin n) ℝ} {b Δb x y : Fin n → ℝ}
     (hA : IsUnit A) (hx : A *ᵥ x = b) (hy : (A + ΔA) *ᵥ y = b + Δb) :
@@ -639,6 +688,9 @@ is, $1 \le p \le \infty$, $A$ nonsingular, $Ax = b$ with $b \neq 0$,
 $(A + \Delta A) y = b + \Delta b$, $\|\Delta A\|_p \le \epsilon \|A\|_p$,
 $\|\Delta b\|_p \le \epsilon \|b\|_p$ and $r = \epsilon \kappa_p(A) < 1$,
 $$\frac{\|y - x\|_p}{\|x\|_p} \le \frac{2\epsilon}{1 - r} \kappa_p(A).$$
+
+**Reading.** As in the surface form of Lemma 2.6.1, the induced $p$-norm is used and
+nonsingularity of $A$ is explicit.
 -/
 theorem theorem_2_6_2 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A ΔA : Matrix (Fin n) (Fin n) ℝ}
     {b Δb x y : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
@@ -660,8 +712,11 @@ $A \in \mathbb{R}^{n \times n}$, the Skeel condition number `Matrix.skeelCond A`
 $\| |A^{-1}| |A| \|_\infty$, and
 $$\| |A^{-1}| |A| \|_\infty \le \kappa_\infty(A).$$
 
-Here $|A|$ is the entrywise absolute value. Both sides are $0$ when $A$ is singular, because the
-inverse of Mathlib is then $0$. -/
+Here $|A|$ is the entrywise absolute value.
+
+**Reading.** The source names the Skeel condition number in the nonsingular setting. Its
+comparison with $\kappa_\infty(A)$ here uses the totalized inverse and the real-valued
+condition number. Both sides are $0$ when $A$ is singular. -/
 theorem skeelCond_eq_and_le_condNumberLp (A : Matrix (Fin n) (Fin n) ℝ) :
     skeelCond A = lpOpNorm ∞ (A⁻¹.abs * A.abs) ∧ skeelCond A ≤ condNumberLp ∞ A :=
   ⟨(lpOpNorm_top _).symm, skeelCond_le_condNumberLp_top A⟩
@@ -720,8 +775,14 @@ $g = |E| |\hat x| + |f|$. Then:
   which is the value $\omega_{\min} = \infty$ of the source;
 * if $A \hat x = b$, then $\omega_{\min} = 0$.
 
-All inequalities between matrices and vectors are entrywise. The value $\omega_{\min}$ is
-`Matrix.componentwiseBackwardError A E b f x`, in which a row with $g_i = 0$ contributes $0$. -/
+All inequalities between matrices and vectors are entrywise.
+
+**Reading.** For a row with $g_i=0$, the residual must vanish for a finite solution to exist.
+When it vanishes, the ratio may be assigned $0$. The theorem states the infinite case as
+infeasibility for every finite $\omega$.
+
+**Generalization.** The source gives the minimum. The theorem also characterizes feasibility
+at each $\omega \ge 0$. -/
 theorem equation_2_6_13 (A E : Matrix (Fin n) (Fin n) ℝ) (b f x : Fin n → ℝ) :
     (∀ ω : ℝ, 0 ≤ ω →
       ((∃ (ΔA : Matrix (Fin n) (Fin n) ℝ) (Δb : Fin n → ℝ), (A + ΔA) *ᵥ x = b + Δb ∧

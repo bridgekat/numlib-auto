@@ -132,6 +132,52 @@ theory of `Numlib.Optimization.Subproblem.Krylov`.
 
 ## Deviations from the source
 
+* **Explicit nondegeneracy.** Lemma 7.5.3 makes the nondegenerate gradient and leading block
+  assumptions explicit and includes the initial iteration. See
+  `ConnGouldToint.Chapter07.lemma_7_5_3`.
+* **Generalized linear systems.** Equations (7.5.23)–(7.5.24) are also proved for general positive
+  definite shifted systems. See `ConnGouldToint.Chapter07.lemma_7_5_6_step`.
+* **Explicit curvature and stopping assumptions.** Lemma 7.5.6 has explicit positive curvature and
+  Krylov range assumptions for the shifted-system comparisons. See
+  `ConnGouldToint.Chapter07.lemma_7_5_6`,
+  `ConnGouldToint.Chapter07.cg_shift_comparisons_of_coercive`.
+* **Endpoint convention.** The interpolated CG path and its coefficients use a clipped-weight
+  extension outside the printed parameter interval. See `ConnGouldToint.Chapter07.cgPath`,
+  `ConnGouldToint.Chapter07.cgPathCoefficient`.
+* **Coordinate and curvature formulation.** The path expansion uses normalized residuals and makes
+  the positive-curvature conditions for monotonicity explicit. See
+  `ConnGouldToint.Chapter07.lemma_7_5_4`, `ConnGouldToint.Chapter07.lemma_7_5_5`.
+* **Explicit shifted comparisons.** Lemma 7.5.7 gives both an explicit comparison form and a
+  coercive CG form before exact termination. See `ConnGouldToint.Chapter07.lemma_7_5_7`,
+  `ConnGouldToint.Chapter07.lemma_7_5_7_of_coercive`.
+* **Correction and explicit assumptions.** Lemma 7.5.8 uses the iteration index, corrects the
+  gradient typo and exposes the shifted norm comparison. See `ConnGouldToint.Chapter07.lemma_7_5_8`,
+  `ConnGouldToint.Chapter07.lemma_7_5_8_of_coercive`.
+* **Radial derivative inequality.** The radial derivative estimate used in (7.5.47) avoids division
+  by zero radial curvature. See `ConnGouldToint.Chapter07.cgPath_inner_gradient_nonpos`.
+* **Explicit stopping cases.** Theorem 7.5.9 makes the exact stopping cases, including a
+  zero-curvature terminal ray, explicit. See `ConnGouldToint.Chapter07.theorem_7_5_9_boundary`,
+  `ConnGouldToint.Chapter07.theorem_7_5_9_stationary`,
+  `ConnGouldToint.Chapter07.theorem_7_5_9_of_coercive`, `ConnGouldToint.Chapter07.theorem_7_5_9`.
+* **Exact unpreconditioned stopping.** Algorithm 7.5.1 gives an exact unpreconditioned stopping
+  relation, unique positive root and finite-dimensional termination. See
+  `ConnGouldToint.Chapter07.steihaugRay_boundary_unique`,
+  `ConnGouldToint.Chapter07.steihaugRay_quadModel_of_nullCurvature`,
+  `ConnGouldToint.Chapter07.IsSteihaugTointBoundaryStop`,
+  `ConnGouldToint.Chapter07.exists_steihaugToint_stop`.
+* **Generalization.** Lemma 7.5.11 requires only unreduced superdiagonal entries of the tridiagonal
+  matrix. See `ConnGouldToint.Chapter07.lemma_7_5_11`.
+* **Spectral formulation.** Theorem 7.5.12 and Corollary 7.5.13 give the nonorthogonality conditions
+  in reduced and full coordinates. See `ConnGouldToint.Chapter07.theorem_7_5_12`,
+  `ConnGouldToint.Chapter07.corollary_7_5_13`.
+* **Explicit nonzero gradient scale.** Theorems 7.5.14–7.5.15 make the nonzero right-hand-side scale
+  explicit. See `ConnGouldToint.Chapter07.theorem_7_5_14`,
+  `ConnGouldToint.Chapter07.theorem_7_5_15`.
+* **Invariant subspace formulation.** Theorems 7.5.16–7.5.17 use the preconditioner inner product
+  and explicit spectral and invariant-subspace assumptions. See
+  `ConnGouldToint.Chapter07.theorem_7_5_16`, `ConnGouldToint.Chapter07.theorem_7_5_17`.
+* **Lemma 7.5.11** (generalization). A tridiagonal matrix with nonzero superdiagonal entries
+  suffices for the eigenvector conclusion. See `ConnGouldToint.Chapter07.lemma_7_5_11`.
 * **Lemma 7.5.8** (typo). The source prints the condition $g \ge 0$. The intended condition is on
   the iteration index, $k \ge 0$. See `ConnGouldToint.Chapter07.lemma_7_5_8_of_coercive`.
 * **Theorem 7.5.12** (reading). The exclusion of the hard case is stated as the nonorthogonality of
@@ -180,7 +226,12 @@ and $r = 0$ if and only if $\beta = 0$.
 
 These are equations (7.5.13)–(7.5.14) and the zero residual criterion. The exponent $k + 1$ in
 the sign also covers the case $k = 0$, which the source treats separately. The criterion
-$r = 0 \iff \beta = 0$ uses $\gamma \neq 0$ and the nonzero earlier subdiagonal entries. -/
+$r = 0 \iff \beta = 0$ uses $\gamma \neq 0$ and the nonzero earlier subdiagonal entries.
+
+**Reading.** The residual criterion explicitly assumes a nonzero initial gradient scale and
+invertibility of the leading block. The sign exponent is written as k plus one, which has the
+displayed parity and also covers the first iteration.
+-/
 theorem lemma_7_5_3 {k : ℕ}
     (T : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ) (hT : T.IsTridiagonal)
     (γ : ℝ) (hγ : γ ≠ 0)
@@ -292,7 +343,11 @@ let $\mu > 0$. If $Ax = b$ and $(A + \mu I) y = b$, then
 $$b^T y < b^T x \qquad \text{and} \qquad \|y\| < \|x\|.$$
 
 This covers any nonzero right-hand side of the reduced system, including the one-dimensional
-first step. The vectors $x$ and $y$ are the negatives of the trial steps of the source. -/
+first step. The vectors $x$ and $y$ are the negatives of the trial steps of the source.
+
+**Generalization.** The two shift inequalities are stated for an arbitrary nonzero right-hand side
+and positive definite matrix, independent of a Lanczos recurrence.
+-/
 theorem lemma_7_5_6_step {n : Type*} [Fintype n] [DecidableEq n]
     {A : Matrix n n ℝ} (hA : A.PosDef) {b x y : n → ℝ} (hb : b ≠ 0)
     {μ : ℝ} (hμ : 0 < μ) (hx : A *ᵥ x = b) (hy : (A + μ • 1) *ᵥ y = b) :
@@ -355,7 +410,12 @@ If $r_\mu \neq 0$, then $b^T y < b^T x$, $\|y\| < \|x\|$,
 $$\|r_\mu\| = \frac{\det A}{\det A_\mu} \|r\|, \qquad \text{and} \qquad \|r_\mu\| < \|r\|.$$
 
 The matrix $T$ is the current reduced matrix, and its leading block gives the preceding Galerkin
-step. The shifted preceding residual $r_\mu$ is the gradient of the shifted model at that step. -/
+step. The shifted preceding residual $r_\mu$ is the gradient of the shifted model at that step.
+
+**Reading.** The matrix form assumes a positive definite tridiagonal system and the stated leading
+nonzero links. The CG-coordinate form makes the valid range up to the Krylov grade explicit. The
+strict residual comparison is used before exact termination.
+-/
 theorem lemma_7_5_6 {k : ℕ} {T : Matrix (Fin (k + 2)) (Fin (k + 2)) ℝ}
     (hT : T.IsTridiagonal) (hpos : T.PosDef) {γ μ : ℝ} (hγ : γ ≠ 0) (hμ : 0 < μ)
     (hprev : ∀ i : Fin k, T i.succ.castSucc i.castSucc.castSucc ≠ 0) :
@@ -593,7 +653,12 @@ $$x(t) = \sum_{j=0}^{k} w_j(t) \, \alpha_j p_j, \qquad w_j(t) = \min\{1, \max\{0
 
 Each segment uses the full step length before its left endpoint, a fractional step length inside
 the segment, and zero step length for later steps. Thus $x(t) = 0$ for $t \le 0$ and
-$x(t) = x_{k+1}$ for $t \ge k + 1$. -/
+$x(t) = x_{k+1}$ for $t \ge k + 1$.
+
+**Reading.** The finite sum uses clipped weights and makes the path and coefficients constant
+outside the listed parameter interval. Within each segment the active weight is exactly the
+fractional progress along that segment.
+-/
 noncomputable def cgPath (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) (t : ℝ) : E :=
   ∑ j ∈ Finset.range (k + 1), (cgPathWeight j t * CG.alpha H (CG.iterate H (-g) 0 j)) •
     (CG.iterate H (-g) 0 j).p
@@ -606,7 +671,12 @@ $$c_i(t) = \frac{1}{\|r_i\|} \sum_{j=i}^{k} w_j(t) \, \alpha_j \|r_j\|^2, \qquad
 
 The clipped weights $w_j$ express the formula of the source with the floor and the fractional
 part of $t$, without a separate convention at the endpoints. The definition is also applied to
-the shifted operator $H + \mu I$. -/
+the shifted operator $H + \mu I$.
+
+**Reading.** The finite sum uses clipped weights and makes the path and coefficients constant
+outside the listed parameter interval. Within each segment the active weight is exactly the
+fractional progress along that segment.
+-/
 noncomputable def cgPathCoefficient (H : E →ₗ[ℝ] E) (g : E) (k i : ℕ) (t : ℝ) : ℝ :=
   (∑ j ∈ Finset.Icc i k, (cgPathWeight j t * CG.alpha H (CG.iterate H (-g) 0 j)) *
     ‖(CG.iterate H (-g) 0 j).r‖ ^ 2) / ‖(CG.iterate H (-g) 0 i).r‖
@@ -650,7 +720,12 @@ with the coefficients $c_i(t)$ of (7.5.17).
 
 The vectors $r_i / \|r_i\|$ are the negatives of the normalized gradients of the source, which
 absorbs the minus sign in (7.5.16). The coefficients are
-`ConnGouldToint.Chapter07.cgPathCoefficient`. -/
+`ConnGouldToint.Chapter07.cgPathCoefficient`.
+
+**Reading.** The expansion uses normalized CG residuals directly where the source writes signed
+basis vectors. The residual nonzero condition and the positive curvatures needed for strict
+monotonicity are explicit, and both algebraic path identities extend to the clipped path.
+-/
 theorem lemma_7_5_4 (H : E →ₗ[ℝ] E) (g : E) (k : ℕ) (t : ℝ)
     (hk : (CG.iterate H (-g) 0 k).r ≠ 0) :
     cgPath H g k t =
@@ -694,7 +769,12 @@ coefficients $c_i(t)$ through step $k + 1$:
 * the functions $t \mapsto -\langle g, x(t) \rangle$ and $t \mapsto \|x(t)\|$ are strictly
   increasing on $[0, k + 1]$.
 
-The hypothesis holds before a stop for nonpositive curvature or a zero residual. -/
+The hypothesis holds before a stop for nonpositive curvature or a zero residual.
+
+**Reading.** The expansion uses normalized CG residuals directly where the source writes signed
+basis vectors. The residual nonzero condition and the positive curvatures needed for strict
+monotonicity are explicit, and both algebraic path identities extend to the clipped path.
+-/
 theorem lemma_7_5_5 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ)
     (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫) :
     (∀ i ≤ k, StrictMonoOn (cgPathCoefficient H g k i) (Set.Icc (i : ℝ) ((k : ℝ) + 1))) ∧
@@ -918,7 +998,12 @@ $c_i(t) \le c_i^A(k + 1)$, with strict inequality when $i > 0$.
 The second and third assumptions are the shifted-system estimates (7.5.23) and (7.5.26) at the
 earlier iterates. `ConnGouldToint.Chapter07.lemma_7_5_7_of_coercive` derives all assumptions for
 a positive definite $H$ and $\mu > 0$. The proof compares the cumulative linear terms at each
-integer breakpoint. -/
+integer breakpoint.
+
+**Reading.** The general result assumes the two positive-curvature prefixes and the needed linear
+and residual comparisons directly. The coercive result derives these conditions for a positive shift
+before the Krylov grade.
+-/
 theorem lemma_7_5_7 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ) (μ : ℝ)
     (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
     (hshiftPos : let A := H + μ • (1 : E →ₗ[ℝ] E)
@@ -996,7 +1081,12 @@ $$-\langle g, x_{k+1}^A \rangle \le -\langle g, x(t) \rangle,$$
 with strict inequality when $k > 0$.
 
 The extra assumption is the endpoint norm comparison (7.5.24). The uniqueness of $t$ comes from
-the strict growth of $\|x(t)\|$ in Lemma 7.5.5. -/
+the strict growth of $\|x(t)\|$ in Lemma 7.5.5.
+
+**Correction.** The source's nonnegative quantity is the iteration index, not the gradient. The
+general result assumes the shifted endpoint norm comparison and other prefix bounds explicitly. The
+coercive result derives them for a positive shift before the Krylov grade.
+-/
 theorem lemma_7_5_8 (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E) (k : ℕ) (μ : ℝ)
     (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
     (hshiftPos : let A := H + μ • (1 : E →ₗ[ℝ] E)
@@ -1111,6 +1201,10 @@ symmetric operator on a real inner product space, let $g \in E$, and assume that
 directions for $Hx = -g$ from $0$ satisfy $\langle H p_i, p_i \rangle > 0$ for all $i \le k$.
 Then for every $t \in [0, k + 1)$ the CG path through step $k + 1$ satisfies
 $$\langle g + H x(t), x(t) \rangle \le 0.$$
+
+**Reading.** The theorem directly proves a nonpositive radial derivative along the path under
+positive prefix curvatures. This supplies the printed decrease argument without dividing by possibly
+zero radial curvature.
 -/
 theorem cgPath_inner_gradient_nonpos (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E)
     {k : ℕ} (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H (-g) 0 i).p, (CG.iterate H (-g) 0 i).p⟫)
@@ -1177,7 +1271,13 @@ and the CG path of $H$ satisfies $\|x(t)\| = \|x_{k+1}^A\|$, then
 $$m(x(t)) \le \tfrac{1}{2} \, m(x_{k+1}^A),$$
 where $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, H s \rangle$.
 
-The point $x(t)$ is the unique point on the CG path with the norm of $x_{k+1}^A$. -/
+The point $x(t)$ is the unique point on the CG path with the norm of $x_{k+1}^A$.
+
+**Reading.** The boundary calculation exposes the shifted-system comparisons. The full convex result
+uses the normalized zero-at-origin model, covers boundary stops including zero curvature, and gives
+the half-decrease inequality against any feasible comparison point. The stationary case is also
+given separately.
+-/
 theorem theorem_7_5_9_boundary (H : E →L[ℝ] E)
     (hH : (H : E →ₗ[ℝ] E).IsPositive) (g : E) (k : ℕ) (μ : ℝ)
     (hpos : ∀ i ≤ k, 0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 i).p,
@@ -1226,7 +1326,13 @@ where $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, H s \rangle$.
 
 By convexity the stationary point $x$ minimizes $m$ globally, and $m(x) \le m(0) = 0$. Thus its
 decrease is at least half of the decrease at any point, in particular at a trust-region
-minimizer. -/
+minimizer.
+
+**Reading.** The boundary calculation exposes the shifted-system comparisons. The full convex result
+uses the normalized zero-at-origin model, covers boundary stops including zero curvature, and gives
+the half-decrease inequality against any feasible comparison point. The stationary case is also
+given separately.
+-/
 theorem theorem_7_5_9_stationary (H : E →L[ℝ] E)
     (hH : (H : E →ₗ[ℝ] E).IsPositive) (g x y : E) (hx : H x = -g) :
     Subproblem.quadModel g H x ≤ (1 / 2) * Subproblem.quadModel g H y := by
@@ -1426,7 +1532,12 @@ $$-\langle g, x_{m+1}^A \rangle < -\langle g, x_{m+1} \rangle \qquad \text{and} 
 and, if $m + 1 < d$, the residuals satisfy $\|r_{m+1}^A\| < \|r_{m+1}\|$.
 
 The dimension $d$ is `Krylov.grade H (-g)`. The proof expresses both CG iterates in the common
-Arnoldi basis and applies the matrix estimates of Lemma 7.5.6. -/
+Arnoldi basis and applies the matrix estimates of Lemma 7.5.6.
+
+**Reading.** The matrix form assumes a positive definite tridiagonal system and the stated leading
+nonzero links. The CG-coordinate form makes the valid range up to the Krylov grade explicit. The
+strict residual comparison is used before exact termination.
+-/
 theorem cg_shift_comparisons_of_coercive [FiniteDimensional ℝ E]
     (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) (m : ℕ)
     {μ : ℝ} (hμ : 0 < μ) (hm : m + 1 ≤ grade H (-g)) :
@@ -1577,7 +1688,12 @@ satisfy $c_i(t) \le c_i^A(k + 1)$, with strict inequality when $i > 0$.
 The condition $k < d$ is equivalent to a nonzero shifted residual at step $k$. The dimension $d$
 is `Krylov.grade H (-g)`. The proof derives the hypotheses of
 `ConnGouldToint.Chapter07.lemma_7_5_7` from
-`ConnGouldToint.Chapter07.cg_shift_comparisons_of_coercive`. -/
+`ConnGouldToint.Chapter07.cg_shift_comparisons_of_coercive`.
+
+**Reading.** The general result assumes the two positive-curvature prefixes and the needed linear
+and residual comparisons directly. The coercive result derives these conditions for a positive shift
+before the Krylov grade.
+-/
 theorem lemma_7_5_7_of_coercive [FiniteDimensional ℝ E]
     (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) (k : ℕ) {μ : ℝ}
     (hμ : 0 < μ) (hk : k < grade H (-g)) :
@@ -1599,7 +1715,12 @@ x(t) \rangle$, with strict inequality when $k > 0$.
 **Typo.** The source prints the condition $g \ge 0$. The intended condition is on the iteration
 index, $k \ge 0$, which every $k \in \mathbb{N}$ satisfies.
 
-The dimension $d$ is `Krylov.grade H (-g)`. -/
+The dimension $d$ is `Krylov.grade H (-g)`.
+
+**Correction.** The source's nonnegative quantity is the iteration index, not the gradient. The
+general result assumes the shifted endpoint norm comparison and other prefix bounds explicitly. The
+coercive result derives them for a positive shift before the Krylov grade.
+-/
 theorem lemma_7_5_8_of_coercive [FiniteDimensional ℝ E]
     (H : E →ₗ[ℝ] E) (hH : H.IsSymmetricCoercive) (g : E) (k : ℕ) {μ : ℝ}
     (hμ : 0 < μ) (hk : k < grade H (-g)) :
@@ -1623,7 +1744,13 @@ $$m(x) \le \tfrac{1}{2} \, m(y).$$
 
 The output of the truncated method is either stationary or a boundary point on the CG path. The
 endpoint $t = k + 1$ is included, because a zero multiplier can put the minimizer exactly at the
-last CG iterate. -/
+last CG iterate.
+
+**Reading.** The boundary calculation exposes the shifted-system comparisons. The full convex result
+uses the normalized zero-at-origin model, covers boundary stops including zero curvature, and gives
+the half-decrease inequality against any feasible comparison point. The stationary case is also
+given separately.
+-/
 theorem theorem_7_5_9_of_coercive [FiniteDimensional ℝ E] (H : E →L[ℝ] E)
     (hH : H.toLinearMap.IsSymmetricCoercive) (g : E) {Δ : ℝ} (hΔ : 0 < Δ)
     {x y : E} (hy : ‖y‖ ≤ Δ)
@@ -1831,7 +1958,12 @@ for $Hx = -g$ from $0$. Assume $\langle H p_j, p_j \rangle > 0$ for all $j < k$,
 and $\|x_k\| < \Delta$. Then there is exactly one $\sigma > 0$ with
 $$\|x_k + \sigma p_k\| = \Delta.$$
 
-The proof shows that $\|x_k + \sigma p_k\|$ is strictly increasing in $\sigma \ge 0$. -/
+The proof shows that $\|x_k + \sigma p_k\|$ is strictly increasing in $\sigma \ge 0$.
+
+**Reading.** The exact unpreconditioned run stops at a stationary point or the first boundary ray.
+The ray root uses a strictly interior base and nonzero current residual. A zero-curvature terminal
+ray has a linear model value and finite-dimensional exact termination is explicit.
+-/
 theorem steihaugRay_boundary_unique (H : E →ₗ[ℝ] E) (hH : H.IsSymmetric) (g : E)
     {k : ℕ} (hpos : ∀ j < k, 0 < ⟪H (CG.iterate H (-g) 0 j).p, (CG.iterate H (-g) 0 j).p⟫)
     (hr : (CG.iterate H (-g) 0 k).r ≠ 0) {Δ : ℝ}
@@ -1887,7 +2019,12 @@ semidefinite operator on a real inner product space, let $g \in E$, and let $x_j
 be the CG quantities for $Hx = -g$ from $0$. Assume $\langle H p_j, p_j \rangle > 0$ for all
 $j < k$ and $\langle H p_k, p_k \rangle = 0$. Then for every $\sigma \in \mathbb{R}$,
 $$m(x_k + \sigma p_k) = m(x_k) - \sigma \|r_k\|^2,$$
-where $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, H s \rangle$. -/
+where $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, H s \rangle$.
+
+**Reading.** The exact unpreconditioned run stops at a stationary point or the first boundary ray.
+The ray root uses a strictly interior base and nonzero current residual. A zero-curvature terminal
+ray has a linear model value and finite-dimensional exact termination is explicit.
+-/
 theorem steihaugRay_quadModel_of_nullCurvature (H : E →L[ℝ] E)
     (hH : H.toLinearMap.IsPositive) (g : E) {k : ℕ}
     (hpos : ∀ j < k, 0 < ⟪H (CG.iterate H.toLinearMap (-g) 0 j).p,
@@ -1929,7 +2066,12 @@ $\sigma \in \mathbb{R}$ such that
 This is Algorithm 7.5.1 with the identity preconditioner. All earlier directions have positive
 curvature and all earlier iterates are interior. The returned point is the positive boundary
 point of the current ray, and when the curvature is positive it comes no later than the full CG
-step. -/
+step.
+
+**Reading.** The exact unpreconditioned run stops at a stationary point or the first boundary ray.
+The ray root uses a strictly interior base and nonzero current residual. A zero-curvature terminal
+ray has a linear model value and finite-dimensional exact termination is explicit.
+-/
 def IsSteihaugTointBoundaryStop (H : E →ₗ[ℝ] E) (g : E) (Δ : ℝ) (x : E) : Prop :=
   ∃ k : ℕ, ∃ σ : ℝ,
     (∀ j < k, 0 < ⟪H (CG.iterate H (-g) 0 j).p, (CG.iterate H (-g) 0 j).p⟫) ∧
@@ -2003,7 +2145,13 @@ The result covers stationary stops and boundary stops along rays of positive or 
 The boundary stop is `ConnGouldToint.Chapter07.IsSteihaugTointBoundaryStop`. The proof adds a
 small positive perturbation on the orthogonal complement of the explored Krylov subspace; it
 preserves the CG run and makes the operator positive definite. On a ray of zero curvature the
-full step length tends to infinity as the perturbation tends to zero. -/
+full step length tends to infinity as the perturbation tends to zero.
+
+**Reading.** The boundary calculation exposes the shifted-system comparisons. The full convex result
+uses the normalized zero-at-origin model, covers boundary stops including zero curvature, and gives
+the half-decrease inequality against any feasible comparison point. The stationary case is also
+given separately.
+-/
 theorem theorem_7_5_9 [FiniteDimensional ℝ E] (H : E →L[ℝ] E)
     (hH : H.toLinearMap.IsPositive) (g : E) {Δ : ℝ} (hΔ : 0 < Δ)
     {x y : E} (hy : ‖y‖ ≤ Δ) (hx : H x = -g ∨ IsSteihaugTointBoundaryStop H.toLinearMap g Δ x) :
@@ -2090,7 +2238,12 @@ with $\|x\| \le \Delta$ such that $Hx = -g$ or $x$ is a boundary stop of Algorit
 radius $\Delta$.
 
 If no ray meets the boundary, the CG residual vanishes when the step index reaches the dimension
-of the Krylov space. -/
+of the Krylov space.
+
+**Reading.** The exact unpreconditioned run stops at a stationary point or the first boundary ray.
+The ray root uses a strictly interior base and nonzero current residual. A zero-curvature terminal
+ray has a linear model value and finite-dimensional exact termination is explicit.
+-/
 theorem exists_steihaugToint_stop [FiniteDimensional ℝ E] (H : E →ₗ[ℝ] E)
     (hH : H.IsSymmetric) (g : E) {Δ : ℝ} (hΔ : 0 < Δ) :
     ∃ x, ‖x‖ ≤ Δ ∧ (H x = -g ∨ IsSteihaugTointBoundaryStop H g Δ x) := by
@@ -2205,7 +2358,13 @@ theorem theorem_7_5_10 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ
 with $T_{i, i+1} \neq 0$ for all $i < n$, with indices from $0$. If $Tv = \theta v$ and
 $v \neq 0$, then $v_0 \neq 0$.
 
-Only the superdiagonal entries need to be nonzero, and $T$ need not be symmetric. -/
+**Generalization.** The book assumes a symmetric tridiagonal matrix with nonzero off-diagonal
+entries. Only the superdiagonal entries enter the argument that $v_i = 0$ and the preceding
+components being zero force $v_{i+1} = 0$.
+
+**Generalization.** For the first component of an eigenvector to be nonzero, a tridiagonal matrix
+with nonzero superdiagonal suffices. The lower diagonal need not be nonzero.
+-/
 theorem lemma_7_5_11 {n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hT : T.IsTridiagonal) (hsup : ∀ i : Fin n, T i.castSucc i.succ ≠ 0) {θ : ℝ}
     {v : Fin (n + 1) → ℝ} (hv : T *ᵥ v = θ • v) (hv₀ : v ≠ 0) :
@@ -2222,7 +2381,12 @@ $$(\gamma e_1)^T v \neq 0.$$
 gradient $\gamma e_1$. The statement here is the nonorthogonality of every eigenvector of $T$ to
 $\gamma e_1$, which includes the eigenvectors for the smallest eigenvalue.
 
-The Lanczos starting coefficient $\gamma$ is nonzero when the starting gradient is nonzero. -/
+The Lanczos starting coefficient $\gamma$ is nonzero when the starting gradient is nonzero.
+
+**Reading.** The no-hard-case conclusion is stated as nonorthogonality of every eigenvector to the
+gradient, first in the reduced coordinates and then in the full space through an explicit full basis
+and pencil recurrence. The nonzero initial gradient factor is explicit.
+-/
 theorem theorem_7_5_12 {n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hT : T.IsUnreducedUpperHessenberg) (hS : T.IsSymm) {γ : ℝ} (hγ : γ ≠ 0)
     {θ : ℝ} {v : Fin (n + 1) → ℝ} (hv : T *ᵥ v = θ • v) (hv₀ : v ≠ 0) :
@@ -2240,7 +2404,12 @@ $\langle g, Q y \rangle = \gamma y_0$ for all $y$. If $Hv = \theta M v$ and $v \
 $\langle g, v \rangle \neq 0$.
 
 An irreducible full Lanczos tridiagonal thus rules out the hard case in the original problem: no
-nonzero generalized eigenvector of $(H, M)$ is orthogonal to $g$. -/
+nonzero generalized eigenvector of $(H, M)$ is orthogonal to $g$.
+
+**Reading.** The no-hard-case conclusion is stated as nonorthogonality of every eigenvector to the
+gradient, first in the reduced coordinates and then in the full space through an explicit full basis
+and pencil recurrence. The nonzero initial gradient factor is explicit.
+-/
 theorem corollary_7_5_13 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     {n : ℕ} (H M : E →ₗ[ℝ] E) (hM : Function.Injective M)
     (Q : (Fin (n + 1) → ℝ) ≃ₗ[ℝ] E) {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
@@ -2261,7 +2430,11 @@ theorem corollary_7_5_13 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace �
 /-- **Theorem 7.5.14** of [conn2000trust]. Let $T \in \mathbb{R}^{(n+1) \times (n+1)}$ be symmetric
 and unreduced upper Hessenberg, let $\gamma \neq 0$ and $\mu \in \mathbb{R}$, and let
 $h \in \mathbb{R}^{n+1}$ satisfy $(T + \mu I) h = -\gamma e_1$. If $T + \mu I$ is positive
-semidefinite, then it is positive definite. -/
+semidefinite, then it is positive definite.
+
+**Reading.** The shifted system has an explicitly nonzero first right-hand-side entry. In the
+last-component theorem, reducibility is expressed as the existence of a zero subdiagonal link.
+-/
 theorem theorem_7_5_14 {n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hT : T.IsUnreducedUpperHessenberg) (hS : T.IsSymm) {γ μ : ℝ} (hγ : γ ≠ 0)
     {h : Fin (n + 1) → ℝ}
@@ -2289,7 +2462,11 @@ tridiagonal, with indices from $0$, let $\gamma \neq 0$ and $\mu \in \mathbb{R}$
 $h \in \mathbb{R}^{n+1}$ satisfy $(T + \mu I) h = -\gamma e_1$. If $h_n = 0$, then
 $T_{i+1, i} = 0$ for some $i < n$.
 
-For a symmetric $T$ this means that $T$ is reducible. -/
+For a symmetric $T$ this means that $T$ is reducible.
+
+**Reading.** The shifted system has an explicitly nonzero first right-hand-side entry. In the
+last-component theorem, reducibility is expressed as the existence of a zero subdiagonal link.
+-/
 theorem theorem_7_5_15 {n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (htri : T.IsTridiagonal) {γ μ : ℝ} (hγ : γ ≠ 0) {h : Fin (n + 1) → ℝ}
     (hh : (T + μ • 1) *ᵥ h = Pi.single 0 (-γ)) (hlast : h (Fin.last n) = 0) :
@@ -2357,7 +2534,13 @@ $\|s\| \le \Delta$.
 product, $H$ stands for the preconditioned Hessian and $g$ for the preconditioned gradient.
 
 The coefficient $\beta_n$ is `Lanczos.beta H g n`. The least eigenvalue $\lambda_1$ is
-`Subproblem.leftmost hH`. -/
+`Subproblem.leftmost hH`.
+
+**Reading.** The preconditioner is absorbed into the ambient inner product. The easy case gives full
+optimality from a reduced minimizer at breakdown and a nonorthogonal leftmost eigenvector. The two
+hard-case alternatives use an invariant first subspace and an orthogonal eigenvector at the global
+threshold instead of a specific block-tridiagonal matrix representation.
+-/
 theorem theorem_7_5_16 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] {H : E →L[ℝ] E} (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     {g : E} {n : ℕ} (hbreak : Lanczos.beta (H : E →ₗ[ℝ] E) g n = 0)
@@ -2390,7 +2573,13 @@ The subspace $V$ is the image of the first Lanczos block, and $v$ is the lift of
 eigenvector of the final block. If the multiplier of the first block reaches the global
 threshold $\theta$, its step solves the full problem. Otherwise the threshold system on the
 first block has a unique solution, and a correction along the orthogonal eigenvector takes it to
-the boundary. -/
+the boundary.
+
+**Reading.** The preconditioner is absorbed into the ambient inner product. The easy case gives full
+optimality from a reduced minimizer at breakdown and a nonorthogonal leftmost eigenvector. The two
+hard-case alternatives use an invariant first subspace and an orthogonal eigenvector at the global
+threshold instead of a specific block-tridiagonal matrix representation.
+-/
 theorem theorem_7_5_17 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] {H : E →L[ℝ] E} (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (V : Submodule ℝ E) (hV : ∀ x ∈ V, H x ∈ V)

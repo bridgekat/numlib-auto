@@ -127,6 +127,9 @@ theorem; the proofs here do not use Helly's theorem. The proofs specialize the b
 
 ## Deviations from the source
 
+* **Section 27, minimum-set criteria** (generalization). Convexity of the minimum set allows
+  improper convex functions. The zero-subgradient criterion holds for any function, and the
+  directional-derivative criterion needs only finiteness at the given point.
 * **Theorem 27.1(a)** (generalization). The source assumes that $f$ is closed proper convex. Clause
   (a) holds for every function. See `Rockafellar.theorem_27_1_a` and
   `Rockafellar.theorem_27_1_a_bddBelow`.
@@ -134,6 +137,14 @@ theorem; the proofs here do not use Helly's theorem. The proofs specialize the b
   `Rockafellar.theorem_27_1_b` and `Rockafellar.theorem_27_1_b_attained`.
 * **Theorem 27.1(g)**, first sentence (generalization). Properness is not needed. See
   `Rockafellar.theorem_27_1_g_setOf_le`.
+* **Theorem 27.1(h)**, proof identity (generalization). The $\varepsilon$-subdifferential
+  formula allows all real $\varepsilon$. See `Rockafellar.theorem_27_1_h_epsSubdifferential`.
+* **Corollary 27.2.1** (generalization). The distance-to-minimizers version allows an
+  arbitrary filter. See `Rockafellar.corollary_27_2_1_infDist`.
+* **Corollaries 27.3.1 and 27.3.2** (reading). Lean explicitly requires a nonempty polyhedral
+  constraint set, as required for any attaining point to exist.
+* **Corollary 27.3.3**, polyhedral refinement (generalization). The finite polyhedral
+  constraint functions need only polyhedral epigraphs. The source assumes they are proper.
 * **Theorem 27.4**, sufficiency (generalization). No hypothesis on $h$ or $C$ is needed, and $x$
   need not lie in $C$. See `Rockafellar.theorem_27_4_sufficient`.
 -/
@@ -209,7 +220,10 @@ section Opening
 variable {f : Rn n → EReal} {x : Rn n}
 
 /-- The minimum set of a convex function $f$ on $\mathbb{R}^n$ is convex. The reason given in the
-source is that the minimum set, when it is non-empty, is a level set of $f$. -/
+source is that the minimum set, when it is non-empty, is a level set of $f$.
+
+**Generalization.** The opening discussion concerns proper convex functions. The
+convexity assertion also holds for improper ones. -/
 theorem convex_argmin_surface (hf : ConvexFn f) : Convex ℝ (argmin f) :=
   convex_argmin hf
 
@@ -247,14 +261,20 @@ theorem subsingleton_argmin_of_strictConvexOnFn (hp : ProperConvex f)
   exact absurd (hμ ▸ hx ((1 / 2 : ℝ) • x + (1 / 2 : ℝ) • y)) (not_le.2 hstrict)
 
 /-- A point $x$ minimizes $f$ on $\mathbb{R}^n$ if and only if $0 \in \partial f(x)$. The minimum
-set unfolds to the subgradient inequality for the subgradient $0$. -/
+set unfolds to the subgradient inequality for the subgradient $0$.
+
+**Generalization.** Lean allows arbitrary functions. The statement uses extended-real
+values both in the minimum comparison and in the subgradient inequality. -/
 theorem mem_argmin_iff_zero_mem_subdifferential_surface (f : Rn n → EReal) (x : Rn n) :
     x ∈ argmin f ↔ (0 : Rn n) ∈ subdifferential (pairing n) f x :=
   mem_argmin_iff_zero_mem_subdifferential (pairing n) f x
 
 /-- Let $f$ be finite at $x$. Then $x$ minimizes $f$ on $\mathbb{R}^n$ if and only if
 $f'(x; y) \ge 0$ for every $y \in \mathbb{R}^n$. This follows from Theorem 23.2, which
-characterizes $0 \in \partial f(x)$. -/
+characterizes $0 \in \partial f(x)$.
+
+**Generalization.** Finiteness at $x$ suffices. The opening discussion assumes a proper
+convex function. -/
 theorem mem_argmin_iff_zero_le_dirDeriv (ht : f x ≠ ⊤) (hb : f x ≠ ⊥) :
     x ∈ argmin f ↔ ∀ y : Rn n, 0 ≤ dirDeriv f x y := by
   rw [mem_argmin_iff_zero_mem_subdifferential_surface, mem_subdifferential_iff_le_dirDeriv ht hb]
@@ -321,7 +341,10 @@ theorem theorem_27_1_a (f : Rn n → EReal) : (⨅ x, f x) = -(convexConj (pairi
 
 /-- **Theorem 27.1(a)** of [rockafellar1970convex], second sentence. For every function $f$ on
 $\mathbb{R}^n$, $f$ is bounded below if and only if $0 \in \operatorname{dom} f^*$. As for the
-first sentence, no hypothesis is needed. -/
+first sentence, no hypothesis is needed.
+
+**Reading.** The lower-boundedness criterion holds for every function.
+-/
 theorem theorem_27_1_a_bddBelow (f : Rn n → EReal) :
     (⊥ : EReal) < ⨅ x, f x ↔ (0 : Rn n) ∈ convexDom (convexConj (pairing n) f) :=
   (zero_mem_convexDom_convexConj_iff (pairing n) f).symm
@@ -342,7 +365,11 @@ theorem theorem_27_1_b (hf : ConvexFn f) (hc : ClosedConvex f) :
 /-- **Theorem 27.1(b)** of [rockafellar1970convex], second sentence. Let $f$ be a closed convex
 function on $\mathbb{R}^n$. Then the infimum of $f$ is attained if and only if
 $\partial f^*(0) \neq \emptyset$, that is, $f^*$ is subdifferentiable at $0$. Properness is not
-assumed. -/
+assumed.
+
+**Generalization.** The extended-real attainment criterion also admits improper closed convex
+functions.
+-/
 theorem theorem_27_1_b_attained (hf : ConvexFn f) (hc : ClosedConvex f) :
     (argmin f).Nonempty ↔ (subdifferential (pairing n) (convexConj (pairing n) f) 0).Nonempty := by
   rw [theorem_27_1_b hf hc]
@@ -537,7 +564,10 @@ theorem theorem_27_1_h (hf : ConvexFn f) (hc : ClosedConvex f) (hp : ProperConve
 /-- Let $f$ be a closed proper convex function on $\mathbb{R}^n$ whose infimum $\mu$ is finite, and
 let $\varepsilon \in \mathbb{R}$. Then the $\varepsilon$-subdifferential of $f^*$ at $0$ is the
 level set $\{z \mid f(z) \le \mu + \varepsilon\}$. The proof of Theorem 27.1(h) uses this
-identification, which the source does not number. -/
+identification, which the source does not number.
+
+**Generalization.** Section 23 defines $\varepsilon$-subgradients for $\varepsilon > 0$.
+Lean includes $\varepsilon = 0$ and negative $\varepsilon$, for which the level set is empty. -/
 theorem theorem_27_1_h_epsSubdifferential (hf : ConvexFn f) (hc : ClosedConvex f)
     (hp : ProperConvex f)
     {μ : ℝ} (hμ : (⨅ x, f x) = (μ : EReal)) (ε : ℝ) :
@@ -668,8 +698,8 @@ theorem corollary_27_2_1_clusterPt (hf : ClosedProperConvexFn f)
 let $(u_i)_{i \in \iota}$ be a family such that $f(u_i) \to \inf f$ along a filter $l$ on
 $\iota$. Then the distance from $u_i$ to the minimum set of $f$ tends to $0$ along $l$.
 
-This is the content of Corollary 27.2.1, for an arbitrary filter. The minimizing sequences of
-the source are the case of the filter `Filter.atTop` on `ℕ`. -/
+**Generalization.** Corollary 27.2.1 gives boundedness and identifies cluster points of
+minimizing sequences. This consequence gives distance convergence along an arbitrary filter. -/
 theorem corollary_27_2_1_infDist (hf : ClosedProperConvexFn f)
     (hrec : ¬ ∃ y : Rn n, IsDirectionOfRecession f y) {ι : Type*} {l : Filter ι} {u : ι → Rn n}
     (hu : Tendsto (fun i => f (u i)) l (𝓝 (⨅ z, f z))) :
@@ -732,8 +762,9 @@ non-empty closed convex set in $\mathbb{R}^n$, and let $h$ be a closed proper co
 $\mathbb{R}^n$ such that every common direction of recession of $h$ and $C$ is a direction in
 which $h$ is constant and $C$ is linear. That is, $0^+ h \cap 0^+ C$ is contained in the
 intersection of the constancy space of $h$ and the lineality space of $C$. Then $h$ attains its
-infimum relative to $C$. This hypothesis lies strictly between the two hypotheses of Theorem
-27.3 in the source. -/
+infimum relative to $C$. The recession condition is weaker than requiring no common
+nonzero recession direction. The polyhedral variant allows common recession directions
+that leave $h$ constant even when they do not lie in the lineality space of $C$. -/
 theorem theorem_27_3_lineality (hh : ClosedProperConvexFn h) (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty)
     (hrec : recessionConeFn h ∩ recessionCone C ⊆ constancySpace h ∩ linealitySpace C) :
@@ -747,6 +778,9 @@ $\mathbb{R}^n$ such that every direction of recession of $h$ is a direction in w
 affine, that is, $0^+ h$ is contained in the lineality space of $h$. Let $C$ be a non-empty
 polyhedral convex set, and suppose that $h(x) \ge \beta$ for every $x \in C$, for some
 $\beta \in \mathbb{R}$. Then $h$ attains its infimum relative to $C$.
+
+**Reading.** The source says any polyhedral convex set with a lower bound. Lean explicitly
+requires nonemptiness, as in Theorem 27.3.
 
 The lower bound cannot be dropped: $h(\xi_1, \xi_2) = \xi_1$ is affine in every direction, and
 its infimum over $\{\xi_2 = 0\}$ is $-\infty$. The lineality space of $h$ is the set of $y$ with
@@ -769,6 +803,8 @@ theorem corollary_27_3_1_unconstrained (hh : ClosedProperConvexFn h)
 /-- **Corollary 27.3.2** of [rockafellar1970convex]. Let $h$ be a polyhedral convex function on
 $\mathbb{R}^n$, and let $C$ be a non-empty polyhedral convex set such that
 $\inf_{x \in C} h(x) > -\infty$. Then $h$ attains its infimum relative to $C$.
+
+**Reading.** Lean explicitly requires nonemptiness, as in Theorem 27.3.
 
 The source derives this from Corollary 27.3.1, and so from Helly's theorem. The proof here needs
 neither. A polyhedral convex function is a function whose epigraph is a polyhedral convex set,
@@ -822,6 +858,9 @@ $I_1$ arbitrary. Suppose that the system $g_i(x) \le 0$, $i \in I_0 \cup I_1$, i
 Suppose also that every common direction of recession of $f_0$ and of all the $g_i$ is a
 direction in which $f_0$ and all the $g_j$, $j \in I_1$, are constant. Then $f_0$ attains its
 infimum subject to the constraints $g_i(x) \le 0$, $i \in I_0 \cup I_1$.
+
+**Generalization.** The source assumes every constraint function is proper. The finite
+polyhedral part in Lean only assumes polyhedral epigraphs.
 
 The reduction in the source leads to the polyhedral case of Theorem 27.3, so Helly's theorem is
 not needed. The two families are `g₀` and `g₁`. -/

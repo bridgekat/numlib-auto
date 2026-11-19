@@ -100,6 +100,8 @@ triangulation. The results specialize `Numlib.FiniteElement.Interpolation`,
 
 ## Deviations from the source
 
+* **Lemma 10.2.2** (generalization). The bounds use the diameters of any inscribed closed balls
+  in the two bounded sets. The book uses the largest inscribed balls.
 * **Equation (10.2.23), Exercises 10.2.1 and 10.2.3** (reading). The source quantifies over the
   functions of the local space that are "determined by" their values at the nodes. The statements
   quantify over the coefficients of a general polynomial of the space. See
@@ -128,7 +130,10 @@ statement with $\hat K$ and $K$ exchanged; the second applies the first to the i
 $y \mapsto T_K^{-1} y - T_K^{-1} b_K$, which carries $K$ onto $\hat K$. Both sets are assumed
 bounded, as the closed triangles of the source are: `Metric.diam` of an unbounded set is $0$,
 and the bounds would then be false. The proof specializes
-`FiniteElement.opNorm_le_diam_div_of_image`. -/
+`FiniteElement.opNorm_le_diam_div_of_image`.
+
+**Reading.** For arbitrary inscribed closed balls in place of the largest inscribed balls.
+-/
 theorem lemma_10_2_2 {Kref K : Set (EuclideanSpace ℝ (Fin d))}
     {T : EuclideanSpace ℝ (Fin d) ≃L[ℝ] EuclideanSpace ℝ (Fin d)}
     {b cref c : EuclideanSpace ℝ (Fin d)} {ρref ρK : ℝ} (hρref : 0 < ρref) (hρK : 0 < ρK)

@@ -107,6 +107,42 @@ inner SOR iteration.
 
 ## Deviations from the source
 
+* **Generalization.** Newton convergence is formulated in finite-dimensional real normed spaces
+  using conditions local to a ball. See `QuarteroniSaccoSaleri.Chapter07.theorem_7_1`.
+* **Specialization.** Newton–SOR fixes the sweep count and relaxation across outer iterations and
+  uses a totalized inverse. See `QuarteroniSaccoSaleri.Chapter07.newtonSORStep`,
+  `QuarteroniSaccoSaleri.Chapter07.newtonSORIterate`,
+  `QuarteroniSaccoSaleri.Chapter07.exercise_7_1`.
+* **Convention.** Difference Newton allows signed increments and totalizes zero increments and
+  singular inverses. See `QuarteroniSaccoSaleri.Chapter07.equation_7_9`,
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_10`,
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_10_succ`.
+* **Representation.** Difference-Newton convergence uses Euclidean norms and permits signed
+  increments. Only the convergence implication of the residual clause is formalized. See
+  `QuarteroniSaccoSaleri.Chapter07.property_7_1`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_1_quadratic`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_1_residual`.
+* **Specialization.** Only the most recent secant equation is formalized for the Broyden update. See
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_12`.
+* **Reading.** The least-change characterization uses the latest nonzero displacement. The algebraic
+  update is total at zero displacement. See `QuarteroniSaccoSaleri.Chapter07.equation_7_14`,
+  `QuarteroniSaccoSaleri.Chapter07.broydenUpdate_leastChange`.
+* **Reading.** The Broyden convergence statement also certifies invertibility and an explicit
+  geometric error bound. See `QuarteroniSaccoSaleri.Chapter07.property_7_2`.
+* **Generalization.** The contraction theorem is generalized to complete normed spaces and requires
+  a nonempty invariant set. See `QuarteroniSaccoSaleri.Chapter07.definition_7_1`,
+  `QuarteroniSaccoSaleri.Chapter07.theorem_7_2`,
+  `QuarteroniSaccoSaleri.Chapter07.theorem_7_2_tendsto`.
+* **Convention.** The Jacobian uses the Fréchet derivative and its zero convention at
+  nondifferentiable points. See `QuarteroniSaccoSaleri.Chapter07.jacobianMatrix`,
+  `QuarteroniSaccoSaleri.Chapter07.jacobianMatrix_apply`.
+* **Specialization.** An operator-norm variant gives a geometric bound under differentiability at
+  the fixed point. See `QuarteroniSaccoSaleri.Chapter07.property_7_3_norm`.
+* **Convention.** The example maps use the totalized real square root. See
+  `QuarteroniSaccoSaleri.Chapter07.example_7_4_G₁`,
+  `QuarteroniSaccoSaleri.Chapter07.example_7_4_G₂`.
+* **Correction.** The Newton residual equations use the Jacobian of F, correcting the printed
+  matrix. See `QuarteroniSaccoSaleri.Chapter07.remark_7_1`.
 * **Property 7.1** (reading). The source states the property in the norm $\|\cdot\|_1$. Here it is
   stated in the Euclidean norm, where the error of the difference Jacobian carries a factor
   $\sqrt{n}$ that changes no conclusion. See `QuarteroniSaccoSaleri.Chapter07.property_7_1`.
@@ -173,7 +209,12 @@ The source assumes $F \in C^1$ on a convex open set that contains $x^*$; here $F
 differentiable with derivative $F'$ on the ball $B(x^*; R)$, and the Lipschitz condition makes
 $F'$ continuous there. The norm of $E$ is any norm, and the operator norm is the induced matrix
 norm. The proof takes the radius $r = \min(R, 1/(2CL))$ of the source and specializes
-`Newton.forall_norm_iterate_succ_sub_le_of_mem_ball`. -/
+`Newton.forall_norm_iterate_succ_sub_le_of_mem_ball`.
+
+**Generalization.** The theorem uses a Lipschitz derivative on a ball in any finite-dimensional real
+normed space. It explicitly certifies invertibility at every iterate and preserves the $CL$
+quadratic bound.
+-/
 theorem theorem_7_1 [FiniteDimensional ℝ E] {F : E → E} {F' : E → E →L[ℝ] E} {xstar : E}
     (hstar : F xstar = 0) (e : E ≃L[ℝ] E) (he : (e : E →L[ℝ] E) = F' xstar) {R C L : ℝ}
     (hR : 0 < R) (hC : 0 < C) (hL : 0 < L) (hCe : ‖(e.symm : E →L[ℝ] E)‖ ≤ C)
@@ -211,7 +252,12 @@ The matrix $M$ is `Matrix.sorIterationMatrix (J x) ω`, and $D - \omega E$ is
 `diagPart (J x) + ω • strictLower (J x)`. The inner iteration is
 `QuarteroniSaccoSaleri.Chapter04.affineStep`. The method is stated on `Fin n → ℝ`, because the
 splitting is a matrix operation. Matrix inverses are those of Mathlib, which are $0$ for a
-singular matrix. -/
+singular matrix.
+
+**Reading.** The sweep count and relaxation parameter are fixed across outer iterations; the prose
+permits both to vary. The supplied Jacobian is treated algebraically, and a singular triangular
+matrix uses the totalized matrix inverse.
+-/
 noncomputable def newtonSORStep (F : (Fin n → ℝ) → Fin n → ℝ)
     (J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (m : ℕ) (x : Fin n → ℝ) : Fin n → ℝ :=
   x + (Chapter04.affineStep (sorIterationMatrix (J x) ω)
@@ -219,7 +265,12 @@ noncomputable def newtonSORStep (F : (Fin n → ℝ) → Fin n → ℝ)
 
 /-- **Section 7.1.2** of [quarteroni2000numerical], the iterates $x^{(k)}$ of the $m$-step
 Newton–SOR method from $x^{(0)}$: at every outer step, $m$ sweeps of SOR on the Newton system.
-The one-step Newton–SOR method is the case $m = 1$. -/
+The one-step Newton–SOR method is the case $m = 1$.
+
+**Reading.** The sweep count and relaxation parameter are fixed across outer iterations; the prose
+permits both to vary. The supplied Jacobian is treated algebraically, and a singular triangular
+matrix uses the totalized matrix inverse.
+-/
 noncomputable def newtonSORIterate (F : (Fin n → ℝ) → Fin n → ℝ)
     (J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (m : ℕ) (x₀ : Fin n → ℝ) (k : ℕ) :
     Fin n → ℝ :=
@@ -259,7 +310,12 @@ The identity is algebraic. It needs neither a nonsingular $D_k$ nor $\omega \neq
 inverses of Mathlib are $0$ at singular matrices. The matrix $M_k$ is `Matrix.sorIterationMatrix`
 of $J(x^{(k)})$ and $\omega$, and $D_k - \omega E_k$ is $D_k + \omega$ times the strictly lower
 part of $J(x^{(k)})$. The proof uses `Stationary.step_iterate_eq_pow_add_sum` and
-$\delta_0 = 0$. -/
+$\delta_0 = 0$.
+
+**Reading.** The sweep count and relaxation parameter are fixed across outer iterations; the prose
+permits both to vary. The supplied Jacobian is treated algebraically, and a singular triangular
+matrix uses the totalized matrix inverse.
+-/
 theorem exercise_7_1 (F : (Fin n → ℝ) → Fin n → ℝ) (J : (Fin n → ℝ) → Matrix (Fin n) (Fin n) ℝ)
     (ω : ℝ) (m : ℕ) (x₀ : Fin n → ℝ) (k : ℕ) :
     newtonSORIterate F J ω m x₀ (k + 1)
@@ -287,7 +343,12 @@ and its column $j$, the image of the basis vector $e_j$, is the forward differen
 $(F(x + h_j e_j) - F(x)) / h_j$ of $F$ along $e_j$.
 
 The difference Jacobian is `Matrix.differenceJacobian`. An increment $h_j = 0$ gives the column
-$0$. -/
+$0$.
+
+**Reading.** Increments may be signed and zero increments are totalized. At singular difference
+Jacobians the iteration uses the total continuous-linear-map inverse. The source iteration is
+recovered where every increment is positive and the matrices are invertible.
+-/
 theorem equation_7_9 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) (h : Fin n → ℝ) (i j : Fin n) :
     differenceJacobian F x h i j = (F (x + h j • EuclideanSpace.single j 1) i - F x i) / h j ∧
@@ -301,7 +362,12 @@ where $J_h^{(k)}$ is the difference Jacobian (7.9) at $x^{(k)}$ with the increme
 step $k$.
 
 The inverse is `ContinuousLinearMap.inverse`, whose value at a noninvertible operator is $0$. So
-the invertibility of every $J_h^{(k)}$ is a conclusion of Property 7.1, not a hypothesis. -/
+the invertibility of every $J_h^{(k)}$ is a conclusion of Property 7.1, not a hypothesis.
+
+**Reading.** Increments may be signed and zero increments are totalized. At singular difference
+Jacobians the iteration uses the total continuous-linear-map inverse. The source iteration is
+recovered where every increment is positive and the matrices are invertible.
+-/
 noncomputable def equation_7_10 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (h : ℕ → Fin n → ℝ) (x₀ : EuclideanSpace ℝ (Fin n)) : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => x₀
@@ -309,7 +375,12 @@ noncomputable def equation_7_10 (F : EuclideanSpace ℝ (Fin n) → EuclideanSpa
       - (toEuclideanCLM (𝕜 := ℝ) (differenceJacobian F (equation_7_10 F h x₀ k) (h k))).inverse
           (F (equation_7_10 F h x₀ k))
 
-/-- The recurrence of (7.10): $x^{(k+1)} = x^{(k)} - (J_h^{(k)})^{-1} F(x^{(k)})$. -/
+/-- The recurrence of (7.10): $x^{(k+1)} = x^{(k)} - (J_h^{(k)})^{-1} F(x^{(k)})$.
+
+**Reading.** Increments may be signed and zero increments are totalized. At singular difference
+Jacobians the iteration uses the total continuous-linear-map inverse. The source iteration is
+recovered where every increment is positive and the matrices are invertible.
+-/
 theorem equation_7_10_succ (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (h : ℕ → Fin n → ℝ) (x₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     equation_7_10 F h x₀ (k + 1) = equation_7_10 F h x₀ k
@@ -407,7 +478,13 @@ changes only the constants.
 
 The source states the result without proof. The order is `ConvergesWithOrder`. The proof
 specializes `Newton.tendsto_of_forall_inverse_sub_step_of_norm_sub_fderiv_le` with the error
-bound `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le` of the difference Jacobian. -/
+bound `Matrix.opNorm_toEuclideanCLM_differenceJacobian_sub_le` of the difference Jacobian.
+
+**Reading.** The statements use Euclidean rather than induced 1-norms, and signed nonzero increments
+are permitted. The residual clause proves the implication from the residual bound to quadratic
+convergence. Uniformly nonzero increments combined with the proportional bound exclude an exact hit
+of the root in the quadratic clauses.
+-/
 theorem property_7_1 {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -441,7 +518,13 @@ and the sequence (7.10) converges to $x^*$ with order $2$.
 
 The proof gives $K = 2C (\sqrt{n} (L/2) C' + L/2)$. It specializes
 `Newton.norm_succ_sub_le_sq_of_norm_sub_fderiv_le_mul` with the error
-$\sqrt{n} (L/2) C' \|x^{(k)} - x^*\|$ of the derivative. -/
+$\sqrt{n} (L/2) C' \|x^{(k)} - x^*\|$ of the derivative.
+
+**Reading.** The statements use Euclidean rather than induced 1-norms, and signed nonzero increments
+are permitted. The residual clause proves the implication from the residual bound to quadratic
+convergence. Uniformly nonzero increments combined with the proportional bound exclude an exact hit
+of the root in the quadratic clauses.
+-/
 theorem property_7_1_quadratic {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -499,7 +582,13 @@ inequality, $F$ is Lipschitz on $B(x^*; R)$ with constant $\|F'(x^*)\| + |L| R$,
 $F(x^*) = 0$, so $\|F(x^{(k)})\| \le (\|F'(x^*)\| + |L| R) \|x^{(k)} - x^*\|$.
 
 The second part then applies with $C' = c (\|F'(x^*)\| + |L| R)$. The constant is written with
-$|L|$ because no sign of $L$ is assumed. -/
+$|L|$ because no sign of $L$ is assumed.
+
+**Reading.** The statements use Euclidean rather than induced 1-norms, and signed nonzero increments
+are permitted. The residual clause proves the implication from the residual bound to quadratic
+convergence. Uniformly nonzero increments combined with the proportional bound exclude an exact hit
+of the root in the quadratic clauses.
+-/
 theorem property_7_1_residual {R C L : ℝ} (hstar : F xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) = F' xstar) (hR : 0 < R)
@@ -577,7 +666,11 @@ a real inner product space and $F : H \to H$. If a step of Broyden's method from
 $(x^{(k)}, Q_k)$ gives $x^{(k+1)} \neq x^{(k)}$, then the updated matrix satisfies
 $$Q_{k+1} (x^{(k+1)} - x^{(k)}) = F(x^{(k+1)}) - F(x^{(k)}).$$
 
-The proof is `Broyden.step_Q_apply_sub`, from `Broyden.update_apply_self`. -/
+The proof is `Broyden.step_Q_apply_sub`, from `Broyden.update_apply_self`.
+
+**Reading.** Broyden's update enforces the j = 1 secant condition on a nonzero most recent step. The
+complete multisecant system indexed by j = 1 through n is not part of this theorem.
+-/
 theorem equation_7_12 (F : H → H) (σ : Broyden.State H) (h : (Broyden.step F σ).x ≠ σ.x) :
     (Broyden.step F σ).Q ((Broyden.step F σ).x - σ.x) = F (Broyden.step F σ).x - F σ.x :=
   Broyden.step_Q_apply_sub F σ h
@@ -590,7 +683,12 @@ and on $\mathbb{R}^n$ with the Euclidean inner product this matrix is the operat
 
 In the notation of the source, $Q_k = \mathrm{broydenUpdate}(Q_{k-1}, \delta x^{(k)}, b^{(k)})$.
 The matrix update is `Matrix.broydenUpdate`. If $s = 0$, the coefficient $1 / (s^T s)$ is $0$
-and the update returns $Q$. The second part is `Matrix.toEuclideanCLM_broydenUpdate`. -/
+and the update returns $Q$. The second part is `Matrix.toEuclideanCLM_broydenUpdate`.
+
+**Reading.** The update fixes the old operator on directions orthogonal to the latest nonzero
+displacement and imposes its latest secant value. The matrix formula additionally agrees with the
+operator update and is totalized at zero displacement.
+-/
 theorem equation_7_14 {n : ℕ} (Q : Matrix (Fin n) (Fin n) ℝ) (s y : Fin n → ℝ) :
     broydenUpdate Q s y = Q + (1 / (s ⬝ᵥ s)) • vecMulVec (y - Q *ᵥ s) s ∧
       toEuclideanCLM (𝕜 := ℝ) (broydenUpdate Q s y)
@@ -610,7 +708,12 @@ Then:
 The second property gives the smallest possible value of the quantity that the source minimizes.
 Uniqueness holds because an operator is determined by its values on the span of $s$ and on the
 orthogonal complement of $s$. The proof uses `Broyden.update_apply_self` and
-`Broyden.update_sub_apply_of_inner_eq_zero`. -/
+`Broyden.update_sub_apply_of_inner_eq_zero`.
+
+**Reading.** The update fixes the old operator on directions orthogonal to the latest nonzero
+displacement and imposes its latest secant value. The matrix formula additionally agrees with the
+operator update and is totalized at zero displacement.
+-/
 theorem broydenUpdate_leastChange (Q : H →L[ℝ] H) {s : H} (hs : s ≠ 0) (b : H) :
     Broyden.update Q s b s = b ∧
       (∀ v, ⟪s, v⟫_ℝ = 0 → (Broyden.update Q s b - Q) v = 0) ∧
@@ -652,7 +755,12 @@ $\|Q_0 - F'(x^*)\| \le \gamma$, Broyden's method (7.11)–(7.14) from $(x^{(0)},
 The proof gives $c_k = 4C (\eta_k + L \varepsilon / 2^k)$, where $\eta_k = \|(Q_k - F'(x^*))
 \delta x^{(k+1)}\| / \|\delta x^{(k+1)}\| \to 0$ is the Dennis–Moré quotient. It is the
 Dennis–Moré theory, Theorem 8.2.2 of Dennis and Schnabel, as the backbone's
-`Broyden.exists_superlinear`. -/
+`Broyden.exists_superlinear`.
+
+**Reading.** In addition to the superlinear ratios tending to zero, the theorem certifies
+invertibility and supplies a geometric error bound. Ratios are indexed from the current to the next
+step.
+-/
 theorem property_7_2 {n : ℕ} {F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
     {F' : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)}
     {xstar : EuclideanSpace ℝ (Fin n)} (hstar : F xstar = 0)
@@ -701,7 +809,12 @@ $$\|G(x) - G(y)\| \le \alpha \|x - y\| \qquad \text{for all } x, y \in D_0.$$
 The "suitable vector norm" of the source is the norm of $E$, so a different norm is a different
 space $E$. As in the source, $\alpha \ge 0$ is not required. A negative $\alpha$ forces $D_0$ to
 have at most one point, and is the same as $\alpha = 0$, by
-`QuarteroniSaccoSaleri.Chapter07.definition_7_1_iff`. -/
+`QuarteroniSaccoSaleri.Chapter07.definition_7_1_iff`.
+
+**Generalization.** Contractivity is stated on a normed space and the theorem holds in complete
+normed spaces with a closed nonempty invariant set. Nonemptiness is essential to the existence
+assertion. The companion theorem gives the limit of the Cauchy bound in the source proof.
+-/
 def definition_7_1 (G : E → E) (D₀ : Set E) : Prop :=
   ∃ α < 1, ∀ x ∈ D₀, ∀ y ∈ D₀, ‖G x - G y‖ ≤ α * ‖x - y‖
 
@@ -733,7 +846,12 @@ point in $D_0$.
 all other hypotheses and has no fixed point.
 
 The source states the theorem on $\mathbb{R}^n$, which is complete. The proof specializes
-`exists_unique_fixedPoint_of_mapsTo`. -/
+`exists_unique_fixedPoint_of_mapsTo`.
+
+**Generalization.** Contractivity is stated on a normed space and the theorem holds in complete
+normed spaces with a closed nonempty invariant set. Nonemptiness is essential to the existence
+assertion. The companion theorem gives the limit of the Cauchy bound in the source proof.
+-/
 theorem theorem_7_2 [CompleteSpace E] {G : E → E} {D₀ : Set E} (hG : definition_7_1 G D₀)
     (hD : IsClosed D₀) (hne : D₀.Nonempty) (hmaps : MapsTo G D₀ D₀) :
     ∃! x, x ∈ D₀ ∧ G x = x := by
@@ -755,7 +873,12 @@ and converge to $x^*$.
 
 The estimate is the limit, as $p \to \infty$, of the Cauchy estimate $\|x^{(k+p)} - x^{(k)}\|
 \le \alpha^k / (1 - \alpha) \, \|x^{(1)} - x^{(0)}\|$ of the proof in the source. The proof
-specializes `dist_iterate_le_of_mapsTo`. -/
+specializes `dist_iterate_le_of_mapsTo`.
+
+**Generalization.** Contractivity is stated on a normed space and the theorem holds in complete
+normed spaces with a closed nonempty invariant set. Nonemptiness is essential to the existence
+assertion. The companion theorem gives the limit of the Cauchy bound in the source proof.
+-/
 theorem theorem_7_2_tendsto [CompleteSpace E] {G : E → E} {D₀ : Set E} {α : ℝ} (hα0 : 0 ≤ α)
     (hα : α < 1) (hG : ∀ x ∈ D₀, ∀ y ∈ D₀, ‖G x - G y‖ ≤ α * ‖x - y‖) (hD : IsClosed D₀)
     (hmaps : MapsTo G D₀ D₀) {xstar : E} (hstar : xstar ∈ D₀) (hfix : G xstar = xstar) {x₀ : E}
@@ -783,14 +906,22 @@ $$(J_F(x))_{ij} = \frac{\partial F_i}{\partial x_j}(x).$$
 
 It is defined as the matrix of the Fréchet derivative `fderiv ℝ F x` in the standard basis of
 `EuclideanSpace ℝ (Fin n)`. If $F$ is not differentiable at $x$, the derivative is $0$ and so is
-the matrix. -/
+the matrix.
+
+**Reading.** The matrix is built from the Fréchet derivative, whose totalized value is zero at
+points without a derivative. The coordinate formula uses the standard orthonormal basis.
+-/
 noncomputable def jacobianMatrix (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) : Matrix (Fin n) (Fin n) ℝ :=
   LinearMap.toMatrix (EuclideanSpace.basisFun (Fin n) ℝ).toBasis
     (EuclideanSpace.basisFun (Fin n) ℝ).toBasis (fderiv ℝ F x : _ →ₗ[ℝ] _)
 
 /-- The entries of the Jacobian matrix are the partial derivatives: $(J_F(x))_{ij}$ is the component
-$i$ of the derivative of $F$ at $x$ in the direction of the basis vector $e_j$. -/
+$i$ of the derivative of $F$ at $x$ in the direction of the basis vector $e_j$.
+
+**Reading.** The matrix is built from the Fréchet derivative, whose totalized value is zero at
+points without a derivative. The coordinate formula uses the standard orthonormal basis.
+-/
 theorem jacobianMatrix_apply (F : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n))
     (x : EuclideanSpace ℝ (Fin n)) (i j : Fin n) :
     jacobianMatrix F x i j = fderiv ℝ F x (EuclideanSpace.single j 1) i := by
@@ -854,7 +985,11 @@ $$\|x^{(k)} - x^*\| \le q^k \|x^{(0)} - x^*\|.$$
 The source says that it suffices that $\|J_G(x^*)\| < 1$ in some induced matrix norm; here the
 norm is the spectral norm, the norm of `Matrix.toEuclideanCLM` applied to $J_G(x^*)$. The proof
 specializes `exists_ball_norm_iterate_sub_le_of_norm_fderiv_lt_one`, the case $m = 1$ of
-Ostrowski's theorem. -/
+Ostrowski's theorem.
+
+**Reading.** A sufficient operator-norm bound replaces the spectral-radius condition, requires
+differentiability only at the fixed point and gives a geometric error bound.
+-/
 theorem property_7_3_norm {G : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)}
     {D : Set (EuclideanSpace ℝ (Fin n))} {xstar : EuclideanSpace ℝ (Fin n)}
     (hint : xstar ∈ interior D) (hfix : G xstar = xstar) (hG : DifferentiableAt ℝ G xstar)
@@ -894,14 +1029,22 @@ noncomputable def example_7_4_F (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpac
 /-- **Example 7.4** of [quarteroni2000numerical], the first iteration function of (7.18),
 $$G_1(x) = \left( \frac{1 - x_2}{2}, \ \sqrt{1 - x_1^2} \right).$$
 
-The square root is `Real.sqrt`, whose value at a negative number is $0$. -/
+The square root is `Real.sqrt`, whose value at a negative number is $0$.
+
+**Reading.** The real square root is totalized as zero at a negative argument, extending the printed
+formulas outside their real domain.
+-/
 noncomputable def example_7_4_G₁ (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpace ℝ (Fin 2) :=
   !₂[(1 - x 1) / 2, √(1 - x 0 ^ 2)]
 
 /-- **Example 7.4** of [quarteroni2000numerical], the second iteration function of (7.18),
 $$G_2(x) = \left( \frac{1 - x_2}{2}, \ -\sqrt{1 - x_1^2} \right).$$
 
-The square root is `Real.sqrt`, whose value at a negative number is $0$. -/
+The square root is `Real.sqrt`, whose value at a negative number is $0$.
+
+**Reading.** The real square root is totalized as zero at a negative argument, extending the printed
+formulas outside their real domain.
+-/
 noncomputable def example_7_4_G₂ (x : EuclideanSpace ℝ (Fin 2)) : EuclideanSpace ℝ (Fin 2) :=
   !₂[(1 - x 1) / 2, -√(1 - x 0 ^ 2)]
 
@@ -1063,7 +1206,12 @@ $J_{G_N}(x) = -(D(J_F^{-1})(x) \, \cdot) F(x)$, so $I - J_{G_N}(x) \neq J_F(x)$ 
 root, for example, $I - J_{G_N}$ is $I$, while $J_F$ need not be $I$. The matrix that makes the
 identity true is $J_F(x^{(k)})$.
 
-The damped step is the one of Section 7.2.6. The derivative $F'(x)$ stands for $J_F(x)$. -/
+The damped step is the one of Section 7.2.6. The derivative $F'(x)$ stands for $J_F(x)$.
+
+**Correction.** The matrix in both residual equations is the Jacobian of F. The printed identity
+minus the Jacobian of the Newton map is generally different. The step and fixed-point equivalence
+assume an invertible Jacobian.
+-/
 theorem remark_7_1 (F : E → E) (F' : E → E →L[ℝ] E) (x : E) (e : E ≃L[ℝ] E)
     (he : (e : E →L[ℝ] E) = F' x) (α : ℝ) :
     Newton.step F F' x = x - (F' x).inverse (F x) ∧

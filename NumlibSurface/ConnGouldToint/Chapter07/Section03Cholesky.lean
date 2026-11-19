@@ -66,6 +66,12 @@ spectral results.
 
 ## Deviations from the source
 
+* **Algorithm 7.3.4, Steps 1–5** (reading). The matrix implementation computes the first failed
+  pivot, uses the corrected LINPACK sign rule, and updates the bracket from a supplied initial
+  triple. The multiplier orbit leaves the stopping tests separate. The hard-case theorem uses
+  explicit multiplier and bracket hypotheses. See
+  `ConnGouldToint.Chapter07.moreSorensenMatrixIterates` and
+  `ConnGouldToint.Chapter07.moreSorensen_computed_hard_matrix_run`.
 * **Equation (7.3.17)** (correction). The kernel identity at a failed pivot holds on the leading
   principal block, not on the full matrix. See
   `ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`.
@@ -111,7 +117,9 @@ private theorem cholesky_mul_transpose_apply_of_pos {n : ℕ}
 
 /-- **Algorithm 7.3.4** of [conn2000trust], Step 1, the first failed pivot. For a square matrix $A$
 of order $n$, scan the computed Cholesky diagonal entries $L_{11}, L_{22}, \dots$ in order and
-return the first index $k$ with $L_{kk} \le 0$, or no index if all are positive. -/
+return the first index $k$ with $L_{kk} \le 0$, or no index if all are positive.
+
+**Reading.** The first nonpositive computed Cholesky diagonal is returned as an optional index. -/
 noncomputable def firstFailedCholeskyPivot {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     Option (Fin n) :=
   (List.ofFn (id : Fin n → Fin n)).find? (fun i => decide (cholesky A i i ≤ 0))
@@ -119,7 +127,11 @@ noncomputable def firstFailedCholeskyPivot {n : ℕ} (A : Matrix (Fin n) (Fin n)
 /-- **Algorithm 7.3.4** of [conn2000trust], Step 1, full factor or first failed pivot. Let $A$ be
 symmetric, and let $L$ be its computed Cholesky factor. If the scan finds no failed pivot, then
 $L$ is lower triangular with positive diagonal and $L L^T = A$. If the scan returns $k$, then
-$L_{kk} \le 0$ and $L_{jj} > 0$ for all $j < k$. -/
+$L_{kk} \le 0$ and $L_{jj} > 0$ for all $j < k$.
+
+**Reading.** Gives either full Cholesky equality or exact first-failure condition, with explicit
+symmetry.
+-/
 theorem firstFailedCholeskyPivot_spec {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) :
     match firstFailedCholeskyPivot A with
@@ -176,7 +188,9 @@ substitution solution of $L^T y = w$. Then $L L^T = A$, $L$ is lower triangular 
 diagonal, and
 $$L w = v, \qquad L^T y = w, \qquad v_i = \sigma(v_i - L_{ii} w_i) \text{ for all } i.$$
 
-This is the certificate that `ConnGouldToint.Chapter07.linpackCurvature_bound` uses. -/
+This is the certificate that `ConnGouldToint.Chapter07.linpackCurvature_bound` uses.
+
+**Correction.** The solve uses the magnitude-based LINPACK sign choice. -/
 theorem cholesky_linpack_certificate {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) (h : firstFailedCholeskyPivot A = none) :
     let L := cholesky A
@@ -283,7 +297,11 @@ $(\lambda + \lambda_{\min}) z^T z \le z^T A z$ for all $z$, then
 $$\lambda + \frac{\delta}{v^T v} \le -\lambda_{\min}.$$
 
 Here $A = M + \lambda I$ and $\lambda_{\min}$ is a lower bound on the eigenvalues of $M$. The
-bound is the Rayleigh quotient of the zero extension of $v$ to the full matrix. -/
+bound is the Rayleigh quotient of the zero extension of $v$ to the full matrix.
+
+**Correction.** Computes the source Rayleigh bound from the corrected leading-block identity and
+full-system Rayleigh premise.
+-/
 theorem choleskyFailedPivot_lower_bound {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) {k : Fin n} (hk : firstFailedCholeskyPivot A = some k)
     {lam lamMin : ℝ} (hRayleigh : ∀ z, (lam + lamMin) * (z ⬝ᵥ z) ≤ z ⬝ᵥ A *ᵥ z) :
@@ -441,7 +459,11 @@ matrix $M$ and a trial $x$, let $A = M + x I$ with computed factor $L$. If the s
 no failed pivot, the estimate is $x - c$, where $c$ is the Rayleigh quotient for $L L^T$ of the
 LINPACK back solve $y$. If the scan returns the failed pivot $k$, the estimate is
 $x + \delta / v^T v$, with $\delta$ and $v$ as in
-`ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`. -/
+`ConnGouldToint.Chapter07.choleskyFailedPivot_certificate`.
+
+**Correction.** Uses computed corrected greedy signs above the pole and leading-block failed-pivot
+witness otherwise.
+-/
 noncomputable def moreSorensenMatrixLowerEstimate (M : Matrix (Fin n) (Fin n) ℝ)
     (x : ℝ) : ℝ :=
   let A := M + x • 1
@@ -461,7 +483,11 @@ noncomputable def moreSorensenMatrixLowerEstimate (M : Matrix (Fin n) (Fin n) �
 /-- **Algorithm 7.3.4** of [conn2000trust], Steps 3b–d, validity of the computed lower estimate. Let
 $M$ be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$. For every $x$, the
 computed lower estimate is at most $-\lambda_1$. If $x > -\lambda_1$, the estimate is exactly
-$x - c$, where $c$ is the Rayleigh quotient of the LINPACK back solve for $M + x I$. -/
+$x - c$, where $c$ is the Rayleigh quotient of the LINPACK back solve for $M + x I$.
+
+**Correction.** Validates the corrected lower estimate against the pole, with explicit symmetry and
+nonempty dimension.
+-/
 theorem moreSorensenMatrixLowerEstimate_spec (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (x : ℝ) :
@@ -500,7 +526,10 @@ theorem moreSorensenMatrixLowerEstimate_spec (hn : 0 < n)
 `ConnGouldToint.Chapter07.moreSorensenSafeguardedStepBy` with the Cholesky scan as the test of
 positive definiteness and with the computed lower estimate at the current trial.
 
-The orbit does not need the pole $-\lambda_1$ as an input. -/
+The orbit does not need the pole $-\lambda_1$ as an input.
+
+**Reading.** This is the computed multiplier orbit before any stopping test, starting from the
+supplied bracket. -/
 noncomputable def moreSorensenMatrixIterates (M : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (Δ θ : ℝ) (initial : ℝ × ℝ × ℝ) :
     ℕ → ℝ × ℝ × ℝ
@@ -514,7 +543,11 @@ noncomputable def moreSorensenMatrixIterates (M : Matrix (Fin n) (Fin n) ℝ)
 /-- **Algorithm 7.3.4** of [conn2000trust], agreement of the computed recurrence with the spectral
 one. Let $M$ be symmetric of order $n \ge 1$ with least eigenvalue $\lambda_1$. Each step of the
 computed orbit equals the update `ConnGouldToint.Chapter07.moreSorensenSafeguardedStep` with the
-pole $-\lambda_1$ and the computed lower estimate at the current trial. -/
+pole $-\lambda_1$ and the computed lower estimate at the current trial.
+
+**Correction.** Relates computed recurrence to abstract update, with corrected bound and no
+stopping.
+-/
 theorem moreSorensenMatrixIterates_succ (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     (g : EuclideanSpace ℝ (Fin n)) (Δ θ : ℝ) (initial : ℝ × ℝ × ℝ) (k : ℕ) :
@@ -563,7 +596,11 @@ satisfy $q(s_j) \to q(s_M)$, and every limit of a subsequence of $(s_j)$ lies in
 a global minimizer of $q$ there. Here $u_j$ is the normalized LINPACK direction for
 $M + \lambda_{k_j} I$ and $\alpha_j$ is the best boundary coefficient.
 
-All multiplier and curvature certificates come from the matrix $M$. -/
+All multiplier and curvature certificates come from the matrix $M$.
+
+**Reading.** For certified hard-case inputs and valid initial bracket, gives multiplier convergence
+and a positive-definite subsequence using computed lower estimates.
+-/
 theorem moreSorensen_computed_hard_matrix_run (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     {g sM : EuclideanSpace ℝ (Fin n)} (hg : g ≠ 0)

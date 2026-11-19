@@ -97,6 +97,32 @@ counterexample).
   `Icc (min t (⨅ i, x i)) (max t (⨆ i, x i))`. Theorem 8.2's hypothesis $f \in C^{n+1}(I_x)$ is read
   as `ContDiffOn` on an open set that contains $I_x$.
 
+## Deviations from the source
+
+* **Convention.** The Lagrange formulas use totalized denominators outside the distinct-node
+  setting. See `QuarteroniSaccoSaleri.Chapter08.equation_8_4`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_5`.
+* **Generalization.** The Vandermonde result gives an equivalence and a signed product determinant
+  formula. See `QuarteroniSaccoSaleri.Chapter08.exercise_8_2`,
+  `QuarteroniSaccoSaleri.Chapter08.exercise_8_2_det`.
+* **Reading.** The interpolation remainder uses an open neighborhood of the minimal closed interval.
+  See `QuarteroniSaccoSaleri.Chapter08.theorem_8_2`.
+* **Representation.** The interpolation row is a continuous linear operator, with row injectivity
+  required in the estimates. See `QuarteroniSaccoSaleri.Chapter08.interpRow`,
+  `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant`.
+* **Representation.** The best approximation error is represented as distance to the polynomial
+  subspace. See `QuarteroniSaccoSaleri.Chapter08.property_8_1`,
+  `QuarteroniSaccoSaleri.Chapter08.property_8_1_bestApprox`.
+* **Reading.** The Runge example proves failure of convergence using a uniform subsequence lower
+  bound at a specific point. See `QuarteroniSaccoSaleri.Chapter08.example_8_1_nodes`,
+  `QuarteroniSaccoSaleri.Chapter08.example_8_1_one_le`,
+  `QuarteroniSaccoSaleri.Chapter08.example_8_1`.
+* **Specialization.** The equispaced array extends unused entries and a one-sided exponential lower
+  bound replaces the asymptotic equivalence. See `QuarteroniSaccoSaleri.Chapter08.equispacedMatrix`,
+  `QuarteroniSaccoSaleri.Chapter08.coe_equispacedMatrix`,
+  `QuarteroniSaccoSaleri.Chapter08.isInterpMatrix_equispacedMatrix`,
+  `QuarteroniSaccoSaleri.Chapter08.lebesgueConstant_equispaced_lower`.
+
 ## Not formalized
 
 * **Section 8.1.2, Erdős's lower bound.** For every interpolation matrix $X$ on $[a, b]$ there is
@@ -177,6 +203,10 @@ theorem equation_8_3 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (i j 
 /-- **Equation (8.4)** of [quarteroni2000numerical], the Lagrange form of the interpolating
 polynomial: for nodes $x_0, \ldots, x_n$ and values $y_0, \ldots, y_n$,
 $$\Pi_n(x) = \sum_{i=0}^n y_i l_i(x).$$
+
+**Reading.** The polynomial identity is defined for arbitrary node lists using totalized basis
+denominators. The nodal-quotient identity assumes the evaluation point differs from all nodes and
+also uses totalized division for repeated nodes. The source starts with distinct nodes.
 -/
 theorem equation_8_4 (x y : Fin (n + 1) → ℝ) :
     Lagrange.interpolate Finset.univ x y = ∑ i, C (y i) * Lagrange.basis Finset.univ x i :=
@@ -216,7 +246,12 @@ theorem exercise_8_1 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) :
 /-- **Exercise 2 of Chapter 8** of [quarteroni2000numerical]. The Vandermonde matrix $[x_i^j]$ of
 the nodes $x_0, \ldots, x_n$ is nonsingular if and only if the nodes are distinct.
 
-The proof is Mathlib's `Matrix.det_vandermonde_ne_zero_iff`. -/
+The proof is Mathlib's `Matrix.det_vandermonde_ne_zero_iff`.
+
+**Generalization.** Exercise 8.2 asks for the implication from distinct nodes to nonsingularity. The
+theorem proves the converse as well, and gives the product determinant formula for the chosen
+Vandermonde order. The transpose convention has the same determinant.
+-/
 theorem exercise_8_2 (x : Fin (n + 1) → ℝ) :
     (Matrix.vandermonde x).det ≠ 0 ↔ Function.Injective x :=
   Matrix.det_vandermonde_ne_zero_iff
@@ -225,7 +260,12 @@ theorem exercise_8_2 (x : Fin (n + 1) → ℝ) :
 Vandermonde matrix of $x_0, \ldots, x_n$ is
 $$\det [x_i^j] = \prod_{0 \le j < i \le n} (x_i - x_j).$$
 
-The proof is Mathlib's `Matrix.det_vandermonde`. -/
+The proof is Mathlib's `Matrix.det_vandermonde`.
+
+**Generalization.** Exercise 8.2 asks for the implication from distinct nodes to nonsingularity. The
+theorem proves the converse as well, and gives the product determinant formula for the chosen
+Vandermonde order. The transpose convention has the same determinant.
+-/
 theorem exercise_8_2_det (x : Fin (n + 1) → ℝ) :
     (Matrix.vandermonde x).det = ∏ j, ∏ i ∈ Finset.Ioi j, (x i - x j) :=
   Matrix.det_vandermonde x
@@ -251,7 +291,12 @@ $y_0, \ldots, y_n$ values. For every $t$ that is not a node,
 $$\Pi_n(t) = \sum_{i=0}^n \frac{\omega_{n+1}(t)}{(t - x_i) \, \omega_{n+1}'(x_i)} \, y_i.$$
 
 The statement assumes no distinctness of the nodes. The proof is Mathlib's first barycentric
-form `Lagrange.eval_interpolate_not_at_node`. -/
+form `Lagrange.eval_interpolate_not_at_node`.
+
+**Reading.** The polynomial identity is defined for arbitrary node lists using totalized basis
+denominators. The nodal-quotient identity assumes the evaluation point differs from all nodes and
+also uses totalized division for repeated nodes. The source starts with distinct nodes.
+-/
 theorem equation_8_5 (x y : Fin (n + 1) → ℝ) {t : ℝ} (ht : ∀ i, t ≠ x i) :
     (Lagrange.interpolate Finset.univ x y).eval t
       = ∑ i, (Lagrange.nodal Finset.univ x).eval t
@@ -271,7 +316,11 @@ $$E_n(t) = f(t) - \Pi_n f(t) = \frac{f^{(n+1)}(\xi)}{(n+1)!} \, \omega_{n+1}(t).
 
 When $I_t$ has nonempty interior, the proof specializes
 `Lagrange.exists_sub_interpolate_eq_of_contDiffOn`. When $I_t$ is a single point, $t$ is the
-node $x_0$ and both sides are $0$. -/
+node $x_0$ and both sides are $0$.
+
+**Reading.** Smoothness is formulated on an open neighborhood of the closed hull of the nodes and
+evaluation point. The result includes coincident evaluation with a node, where both sides vanish.
+-/
 theorem theorem_8_2 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (t : ℝ) {f : ℝ → ℝ}
     {U : Set ℝ} (hU : IsOpen U) (hUsub : Icc (min t (⨅ i, x i)) (max t (⨆ i, x i)) ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
@@ -316,7 +365,12 @@ def IsInterpMatrix (X : ℕ → ℕ → Icc a b) : Prop :=
 $C([a, b])$ at the nodes $X_{n,0}, \ldots, X_{n,n}$ of row $n$ of $X$. It maps $f$ to the
 restriction to $[a, b]$ of its interpolating polynomial at these nodes.
 
-The operator is `Lagrange.interpolateCLM` at these nodes. -/
+The operator is `Lagrange.interpolateCLM` at these nodes.
+
+**Reading.** The row is a continuous linear operator on continuous functions and the Lebesgue
+constant is the supremum of the absolute cardinal functions. Definitions are total for arbitrary
+node arrays, with row injectivity imposed in estimates.
+-/
 noncomputable def interpRow (X : ℕ → ℕ → Icc a b) (n : ℕ) : C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ) :=
   Lagrange.interpolateCLM fun j : Fin (n + 1) => X n j
 
@@ -328,7 +382,12 @@ $$\Lambda_n(X) = \Big\| \sum_{j=0}^n |l_j^{(n)}| \Big\|_\infty = \sup_{t \in [a,
 the maximum over $[a, b]$ of the Lebesgue function $\sum_j |l_j^{(n)}|$.
 
 The maximum is written as the supremum `sSup` of the range of the Lebesgue function on $[a, b]$,
-as in Section 10.8. -/
+as in Section 10.8.
+
+**Reading.** The row is a continuous linear operator on continuous functions and the Lebesgue
+constant is the supremum of the absolute cardinal functions. Definitions are total for arbitrary
+node arrays, with row injectivity imposed in estimates.
+-/
 noncomputable def lebesgueConstant (X : ℕ → ℕ → Icc a b) (n : ℕ) : ℝ :=
   sSup (Set.range fun t : Icc a b =>
     ∑ j, |Lagrange.basisCM (fun j : Fin (n + 1) => X n j) j t|)
@@ -360,7 +419,11 @@ where $E_{n,\infty}(X) = \|f - \Pi_n f\|_\infty$ is the interpolation error (8.9
 
 The number $E_n^*$ is `Metric.infDist` from $f$ to $\mathbb{P}_n$. The proof is the Lebesgue
 lemma `norm_sub_apply_le_of_isIdempotentElem` for the projection $\Pi_n$, whose range is
-$\mathbb{P}_n$ and whose norm is $\Lambda_n(X)$. -/
+$\mathbb{P}_n$ and whose norm is $\Lambda_n(X)$.
+
+**Reading.** The best approximation error is first expressed as a distance to the polynomial
+subspace. The separate theorem replaces it with the norm error of a given best approximant.
+-/
 theorem property_8_1 {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X) (f : C(Icc a b, ℝ)) (n : ℕ) :
     ‖f - interpRow X n f‖
       ≤ (1 + lebesgueConstant X n) * Metric.infDist f (polyLE (Icc a b) n : Set C(Icc a b, ℝ)) := by
@@ -375,7 +438,11 @@ is a polynomial of best approximation of $f$ in the maximum norm, then
 $$\|f - \Pi_n f\|_\infty \le (1 + \Lambda_n(X)) \|f - p_n^*\|_\infty.$$
 
 For $a < b$ the polynomial of best approximation exists and is unique, by
-`existsUnique_isBestApprox_polyLE`. -/
+`existsUnique_isBestApprox_polyLE`.
+
+**Reading.** The best approximation error is first expressed as a distance to the polynomial
+subspace. The separate theorem replaces it with the norm error of a given best approximant.
+-/
 theorem property_8_1_bestApprox {X : ℕ → ℕ → Icc a b} (hX : IsInterpMatrix X)
     {f p : C(Icc a b, ℝ)} (hp : IsBestApprox (polyLE (Icc a b) n : Set C(Icc a b, ℝ)) f p) :
     ‖f - interpRow X n f‖ ≤ (1 + lebesgueConstant X n) * ‖f - p‖ := by
@@ -429,7 +496,12 @@ theorem interpRow_sub_le_lebesgueConstant {X : ℕ → ℕ → Icc a b} (hX : Is
 /-- **Example 8.1** of [quarteroni2000numerical], the equally spaced nodes $x_j^{(n)} = -5 + 10j/n$,
 $j = 0, \ldots, n$, on $[-5, 5]$.
 
-For $n = 0$ the single node is $-5$, by the Lean convention $a / 0 = 0$. -/
+For $n = 0$ the single node is $-5$, by the Lean convention $a / 0 = 0$.
+
+**Reading.** The single degree-zero node is the left endpoint. A bound at $49/10$ for every odd
+degree at least 400 proves nonconvergence at a specific point. The source's displayed nonzero limit
+need not exist for the nonconvergence conclusion.
+-/
 noncomputable def example_8_1_nodes (n : ℕ) (j : Fin (n + 1)) : ℝ :=
   -5 + 10 * (j : ℝ) / n
 
@@ -439,7 +511,12 @@ $x_j^{(n)} = -5 + 10j/n$ on $[-5, 5]$. For every odd $n \ge 400$, that is, every
 $n \ge 401$,
 $$|f(4.9) - \Pi_n f(4.9)| \ge 1.$$
 
-The proof specializes `Runge.one_le_abs_sub_interpolate`. -/
+The proof specializes `Runge.one_le_abs_sub_interpolate`.
+
+**Reading.** The single degree-zero node is the left endpoint. A bound at $49/10$ for every odd
+degree at least 400 proves nonconvergence at a specific point. The source's displayed nonzero limit
+need not exist for the nonconvergence conclusion.
+-/
 theorem example_8_1_one_le {n : ℕ} (hn : Odd n) (hn400 : 400 ≤ n) :
     1 ≤ |1 / (1 + (49 / 10 : ℝ) ^ 2)
       - (Lagrange.interpolate Finset.univ (example_8_1_nodes n)
@@ -457,7 +534,12 @@ The point is $x = 4.9$: along the odd $n$ the error stays at least $1$, by
 not part of the statement. The proof specializes `Runge.not_tendsto_interpolate`: the error is
 $\omega_{n+1}(x) f[x_0, \ldots, x_n, x]$, the divided difference is computed exactly through the
 partial fraction $1/(1 + s^2) = \operatorname{Re}(i/(i - s))$, and the products are estimated by
-Riemann sums of logarithms. -/
+Riemann sums of logarithms.
+
+**Reading.** The single degree-zero node is the left endpoint. A bound at $49/10$ for every odd
+degree at least 400 proves nonconvergence at a specific point. The source's displayed nonzero limit
+need not exist for the nonconvergence conclusion.
+-/
 theorem example_8_1 :
     ∃ t ∈ Icc (-5 : ℝ) 5, ¬ Filter.Tendsto
       (fun n => (Lagrange.interpolate Finset.univ (example_8_1_nodes n)
@@ -474,12 +556,22 @@ for $a < b$. Row $n$ consists of the equally spaced nodes
 $$x_j^{(n)} = a + \frac{j (b - a)}{n}, \qquad j = 0, \ldots, n,$$
 of Runge's example and of the asymptotics $\Lambda_n \simeq 2^{n+1}/(e n \log n)$.
 
-The entries with $j > n$ are not used; `Set.projIcc` moves them into $[a, b]$. -/
+The entries with $j > n$ are not used; `Set.projIcc` moves them into $[a, b]$.
+
+**Reading.** The matrix is extended by projecting unused entries into the interval, and its
+degree-zero row uses the left endpoint. The lower bound proves exponential growth but does not give
+the printed asymptotic equivalence.
+-/
 noncomputable def equispacedMatrix (hab : a < b) (n j : ℕ) : Icc a b :=
   projIcc a b hab.le (a + j * (b - a) / n)
 
 /-- The nodes of row $n$ of `QuarteroniSaccoSaleri.Chapter08.equispacedMatrix` are the equally
-spaced points: for $j \le n$, the entry $x_j^{(n)}$ is $a + j(b - a)/n$. -/
+spaced points: for $j \le n$, the entry $x_j^{(n)}$ is $a + j(b - a)/n$.
+
+**Reading.** The matrix is extended by projecting unused entries into the interval, and its
+degree-zero row uses the left endpoint. The lower bound proves exponential growth but does not give
+the printed asymptotic equivalence.
+-/
 theorem coe_equispacedMatrix (hab : a < b) {n j : ℕ} (hj : j ≤ n) :
     ((equispacedMatrix hab n j : Icc a b) : ℝ) = a + j * (b - a) / n := by
   have hmem : a + (j : ℝ) * (b - a) / n ∈ Icc a b := by
@@ -500,7 +592,12 @@ theorem coe_equispacedMatrix (hab : a < b) {n j : ℕ} (hj : j ≤ n) :
   rw [equispacedMatrix, Set.projIcc_of_mem hab.le hmem]
 
 /-- For $a < b$, the equispaced nodes form an interpolation matrix: the nodes of each row are
-distinct. -/
+distinct.
+
+**Reading.** The matrix is extended by projecting unused entries into the interval, and its
+degree-zero row uses the left endpoint. The lower bound proves exponential growth but does not give
+the printed asymptotic equivalence.
+-/
 theorem isInterpMatrix_equispacedMatrix (hab : a < b) :
     IsInterpMatrix (equispacedMatrix hab) := by
   intro n j k hjk
@@ -541,7 +638,12 @@ $l_i(t) = \prod_{j \neq i} (1/2 - j)/(i - j)$. The denominators give $i! \, (n -
 common numerator gives $(2n)!/(2^{2n+1} n!)$, with the largest omitted factor $(2n - 1)/2$. With
 $\sum_i 1/(i! \, (n - i)!) = 2^n/n!$ this gives $\binom{2n}{n} 2^n / (4^n (2n - 1))$, which is
 at least $2^n/(8n^2)$. The proof specializes
-`Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`. -/
+`Lagrange.two_pow_div_le_sum_abs_eval_basis_equispaced`.
+
+**Reading.** The matrix is extended by projecting unused entries into the interval, and its
+degree-zero row uses the left endpoint. The lower bound proves exponential growth but does not give
+the printed asymptotic equivalence.
+-/
 theorem lebesgueConstant_equispaced_lower (hab : a < b) {n : ℕ} (hn : 1 ≤ n) :
     (2 : ℝ) ^ n / (8 * (n : ℝ) ^ 2) ≤ lebesgueConstant (equispacedMatrix hab) n := by
   have hn0 : (0 : ℝ) < n := by exact_mod_cast hn

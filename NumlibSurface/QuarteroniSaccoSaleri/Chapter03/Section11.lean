@@ -51,6 +51,12 @@ $\|A^{-1}d\|/\|d\| \le \|A^{-1}\|$ and the condition estimate `condEstimate` on 
   book's estimate in the $1$-norm needs the matrix form
   `QuarteroniSaccoSaleri.Chapter03.condEstimate`.
 
+## Deviations from the source
+
+* **Equation (3.70) and the condition estimate** (scope). The source uses the $1$-norm and
+  $2$-norm with a triangular factor or an LU solve. The statements allow any induced $p$-norm
+  and use inverses of the input matrix directly. A zero probe gives a zero ratio.
+
 ## Not formalized
 
 * **The lookahead heuristic (3.71)** for the signs of $d$, which states no theorem.
@@ -74,7 +80,11 @@ $\|y\|_p / \|x\|_p \le \|A^{-1}\|_p$.
 
 The book writes $R$ for $A$ in (3.70), and it assumes $d \neq 0$; for $d = 0$ the quotient is
 $0$ by Lean's division. The bound follows from the definition of the induced norm. The proof
-uses `norm_apply_div_le_norm_inverse`. -/
+uses `norm_apply_div_le_norm_inverse`.
+
+**Scope.** The source discusses the $2$-norm and $1$-norm with a triangular factor, then
+an LU solve. This bound applies to any induced $p$-norm and invertible matrix. The quotient
+at a zero probe is interpreted as zero. -/
 theorem equation_3_70 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (d : Fin n → ℝ) :
     ‖toLp p (A⁻¹ *ᵥ d)‖ / ‖toLp p d‖ ≤ lpOpNorm p A⁻¹ ∧
       ‖toLp p (A⁻¹ *ᵥ (Aᵀ⁻¹ *ᵥ d))‖ / ‖toLp p (Aᵀ⁻¹ *ᵥ d)‖ ≤ lpOpNorm p A⁻¹ := by
@@ -92,7 +102,10 @@ The systems are the book's $R^T x = d$, $Ry = x$ of (3.70) and $(LU)^T x = d$, $
 (3.72). The case $p = 1$ is the book's $\hat K_1(A)$. The quality of the estimate depends on the
 heuristic choice of $d$, and its one provable property is $\hat K_p(A) \le K_p(A)$
 (`QuarteroniSaccoSaleri.Chapter03.condEstimate_le`). The vectors are $x = A^{-T} d$ and
-$y = A^{-1} x$ with Lean's matrix inverse, and the estimate is $0$ when $x = 0$. -/
+$y = A^{-1} x$ with Lean's matrix inverse, and the estimate is $0$ when $x = 0$.
+
+**Scope.** The definition uses any invertible input matrix and induced $p$-norm in the
+source's condition estimate. The quotient at a zero probe is interpreted as zero. -/
 noncomputable def condEstimate (A : Matrix (Fin n) (Fin n) ℝ) (d : Fin n → ℝ) : ℝ :=
   lpOpNorm p A * ‖toLp p (A⁻¹ *ᵥ (Aᵀ⁻¹ *ᵥ d))‖ / ‖toLp p (Aᵀ⁻¹ *ᵥ d)‖
 
@@ -124,7 +137,10 @@ $d \in \mathbb{R}^n$ be any probe vector. Then the estimate never exceeds the co
 $$\hat K_p(A) \le K_p(A).$$
 
 The reason is that $\|y\|/\|x\| = \|A^{-1}x\|/\|x\| \le \|A^{-1}\|$. The theorem is the matrix
-form of the backbone's `condEstimate_le_condNumber`. -/
+form of the backbone's `condEstimate_le_condNumber`.
+
+**Reading.** Explicit lower-bound theorem for any induced p-norm.
+-/
 theorem condEstimate_le {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (d : Fin n → ℝ) :
     condEstimate p A d ≤ condNumber p A := by
   rw [condEstimate, condNumber, mul_div_assoc]

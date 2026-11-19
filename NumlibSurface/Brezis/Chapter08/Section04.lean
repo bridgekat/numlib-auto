@@ -111,9 +111,9 @@ half-line $(0, +\infty)$. The proofs specialize the backbone modules
 * Examples 5–7, the classical solution, `Brezis.Chapter08.example_8_5_6_7_C2`: for continuous $f$
   these solutions lie in $C^2(\bar I)$.
 * Example 8, a classical solution is a weak solution, `Brezis.Chapter08.example_8_8_classical_weak`:
-  a classical solution of (30) lies in $H^1(\mathbb{R})$ and satisfies (31).
-* Example 8, existence and uniqueness, `Brezis.Chapter08.example_8_8_existsUnique`: (31) has a
-  unique solution in $H^1(\mathbb{R})$.
+  a classical solution of (30) lies in $H^1(\mathbb{R})$ and satisfies the weak equation.
+* Example 8, existence and uniqueness, `Brezis.Chapter08.example_8_8_existsUnique`: the weak
+  equation has a unique solution in $H^1(\mathbb{R})$.
 * Example 8, regularity, `Brezis.Chapter08.example_8_8_regularity`: the weak solution lies in
   $H^2(\mathbb{R})$ and tends to $0$ at infinity, and for continuous $f$ problem (30) has a unique
   classical solution.
@@ -150,16 +150,41 @@ half-line $(0, +\infty)$. The proofs specialize the backbone modules
 
 ## Deviations from the source
 
+* **Classical solution of (14)** (reading). The library requires the equation on the closed
+  interval, including endpoints. See `Brezis.Chapter08.IsClassicalSolutionDirichlet`.
+* **Proposition 8.15, energy** (generalization). The energy identity applies in the ambient
+  space $H^1$, including functions with nonzero trace. See `Brezis.Chapter08.energy_dirichlet_eq`.
+* **Proposition 8.16, Method 1** (reading). The source allows any smooth lift. The library
+  takes the affine lift suggested in footnote 12. See `Brezis.Chapter08.proposition_8_16_method1`.
+* **Propositions 8.16–8.18 and Examples 5–7, classical regularity** (generalization). The
+  regularity statements apply to any $H^2$ solution of the interior equation, without prescribed
+  traces. See `Brezis.Chapter08.proposition_8_16_C2`, `Brezis.Chapter08.proposition_8_17_C2`
+  and `Brezis.Chapter08.example_8_5_6_7_C2`.
 * **Example 2, existence, uniqueness and minimization** (generalization). The source assumes
   $p \in C^1(\bar I)$ and $q \in C(\bar I)$. Existence, uniqueness and the minimization need only
   $p, q \in L^\infty(I)$ with $p \ge \alpha > 0$ and $q \ge 0$. See
   `Brezis.Chapter08.example_8_2_existsUnique` and `Brezis.Chapter08.example_8_2_min`.
 * **Example 2, problem (20)** (generalization). The source takes $p \in C^1(\bar I)$ and
   $q, r \in C(\bar I)$. The coefficients here are in $L^\infty(I)$, with the bounds almost
-  everywhere. See `Brezis.Chapter08.example_8_2_general`.
+  everywhere. Case (i) gives a constant on all of $H^1(I)$. See
+  `Brezis.Chapter08.example_8_2_general` and `Brezis.Chapter08.example_8_2_general_i_coercive`.
+* **Example 2, regularity** (generalization). The $H^2$ statement allows essentially bounded
+  $q$, and both regularity statements apply without assuming $q \ge 0$. See
+  `Brezis.Chapter08.example_8_2_H2` and `Brezis.Chapter08.example_8_2_C2`.
+* **Example 2, symmetrization** (reading). The library states the differential identities,
+  including the equivalence on the line under global hypotheses. See
+  `Brezis.Chapter08.example_8_2_symmetrization`.
+* **Examples 5–7, existence and uniqueness** (reading). For Example 5 the source leaves the
+  solution to the reader. The Robin statement covers $k \ge 0$, and the periodic statement adds
+  uniqueness. Robin coercivity holds on all of $H^1$. See `Brezis.Chapter08.example_8_5`,
+  `Brezis.Chapter08.example_8_6`, `Brezis.Chapter08.example_8_6_coercive` and
+  `Brezis.Chapter08.example_8_7`.
+* **Remark 25, boundary and decay** (generalization). The conclusions hold for every element of
+  $H_0^1(0,+\infty)$. See `Brezis.Chapter08.remark_8_25_boundary`.
 
 ## Not formalized
 
+* **Example 2.** The weighted weak solution, minimization and regularity after symmetrization.
 * **Footnotes 14 and 15 of Example 6.** The general boundary condition of the third type, and the
   Robin problem for small negative $k$.
 -/
@@ -178,7 +203,10 @@ $f : \mathbb{R} \to \mathbb{R}$. A function $u \in C^2([0, 1])$ is a **classical
 problem (14) if
 $$-u'' + u = f \text{ on } [0, 1], \qquad u(0) = u(1) = 0.$$
 
-This is `Brezis.Chapter08.IsClassicalSolution` of Section 8.1 on the interval $[0, 1]$. -/
+This is `Brezis.Chapter08.IsClassicalSolution` of Section 8.1 on the interval $[0, 1]$.
+
+**Reading.** The source prints the differential equation on $(0,1)$. The predicate also checks
+it at the endpoints. The interior equation implies those endpoint identities for continuous $f$. -/
 abbrev IsClassicalSolutionDirichlet (f : ℝ → ℝ) (u : ContDiffMapIcc (zero_lt_one' ℝ).le 2) :
     Prop :=
   IsClassicalSolution (zero_lt_one' ℝ) f u
@@ -271,7 +299,8 @@ theorem proposition_8_15 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :
 $v \in H^1(0, 1)$. The energy (`SesqForm.energy`) of the form $a(u, v) = \int u'v' + \int uv$
 and the load $v \mapsto \int fv$, at $v$, is the functional of the source:
 $$\frac12 \int_0^1 (v'^2 + v^2) - \int_0^1 fv.$$
--/
+
+**Generalization.** The energy formula applies to every element of the ambient $H^1$ space. -/
 theorem energy_dirichlet_eq (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     (v : SobolevInterval 1 0 1) :
     (modelForm 0 1).energy (load 0 1 f) v
@@ -459,7 +488,10 @@ $$-v'' + v = f \text{ on } (0, 1).$$
 This is the statement of the source that $u \in C^2(\bar I)$ if in addition $f \in C(\bar I)$.
 The boundary conditions play no role. Here $v''$ is the derivative of the extension of $v'$ to
 $\mathbb{R}$ (`ContDiffMapIcc.shift` and `ContDiffMapIcc.extend`). The proof specializes
-`EllipticInterval.exists_contDiffMapIcc_of_deriv_two`. -/
+`EllipticInterval.exists_contDiffMapIcc_of_deriv_two`.
+
+**Generalization.** The regularity claim applies to any $H^2$ solution of the interior
+ equation, without prescribing Dirichlet traces. -/
 theorem proposition_8_16_C2 {f : ℝ → ℝ} (fL : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     (hfL : fL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] f) (hf : ContinuousOn f (Icc 0 1))
     {Φ : SobolevInterval 2 0 1}
@@ -476,7 +508,10 @@ $u_0(x) = \alpha + (\beta - \alpha)x$ be the affine function with $u_0(0) = \alp
 $u_0(1) = \beta$. Then $u - u_0$ is the weak solution of (14) with the datum $f - u_0$.
 
 The source writes the new datum as $f + u_0'' - u_0$, which is $f - u_0$ because $u_0$ is
-affine. The function $u_0$ is `EllipticInterval.affineLift`. -/
+affine. The function $u_0$ is `EllipticInterval.affineLift`.
+
+**Reading.** The source allows any smooth lift and suggests an affine lift in footnote 12.
+ This statement instantiates the method with the affine lift. -/
 theorem proposition_8_16_method1 (α β : ℝ) (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -611,7 +646,10 @@ $\int_I pu'v' + \int_I q_L uv = \int_I fv$ for all $v \in H_0^1(I)$, then $u \in
 
 In the source, (19) shows that $pu' \in H^1$, so $u' = (1/p)(pu') \in H^1$ by Corollary 8.10. No
 sign condition on $q$ is used. The proof specializes
-`EllipticInterval.isWeakSolution_mem_sobolevInterval_two`. -/
+`EllipticInterval.isWeakSolution_mem_sobolevInterval_two`.
+
+**Generalization.** The regularity claim allows $q$ to be essentially bounded without a
+ continuous representative. -/
 theorem example_8_2_H2 (hα₀ : 0 < α₀) (hpL : pL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] p)
     (hp : ContDiffOn ℝ 1 p (Icc 0 1)) (hpα : ∀ x ∈ Icc (0 : ℝ) 1, α₀ ≤ p x)
     (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u : SobolevInterval 1 0 1}
@@ -630,7 +668,10 @@ $$-(pv')' + qv = f \text{ on } (0, 1), \qquad v(0) = v(1) = 0.$$
 So $v$ is a classical solution of the Sturm–Liouville problem (18).
 
 In the source, $pu' \in C^1(\bar I)$, so $u \in C^2(\bar I)$, and Step D carries over. The proof
-specializes `EllipticInterval.exists_contDiffMapIcc_of_continuous`. -/
+specializes `EllipticInterval.exists_contDiffMapIcc_of_continuous`.
+
+**Generalization.** The regularity claim assumes a weak solution and makes no sign assumption
+ on $q$. -/
 theorem example_8_2_C2 {f : ℝ → ℝ} (hpL : pL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] p)
     (hp : ContDiffOn ℝ 1 p (Icc 0 1)) (hpα : ∀ x ∈ Icc (0 : ℝ) 1, α₀ ≤ p x) (hα₀ : 0 < α₀)
     (hqL : qL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] q) (hq : ContinuousOn q (Icc 0 1))
@@ -663,7 +704,10 @@ $\int_I pu'v' + \int_I quv = \int_I fv$ for all $v \in H_0^1(I)$. Then:
 * every weak solution lies in $H^2(I)$;
 * if $f$ is equal almost everywhere on $I$ to a function $g$ continuous on $[0, 1]$, then every
   weak solution is carried by some $v \in C^2([0, 1])$ with $-(pv')' + qv = g$ on $(0, 1)$ and
-  $v(0) = v(1) = 0$. -/
+  $v(0) = v(1) = 0$.
+
+**Reading.** The conclusion packages existence, uniqueness and regularity. The minimization
+ assertion is stated separately as `Brezis.Chapter08.example_8_2_min`. -/
 theorem example_8_2 (hα₀ : 0 < α₀)
     (hpL : pL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] p) (hp : ContDiffOn ℝ 1 p (Icc 0 1))
     (hpα : ∀ x ∈ Icc (0 : ℝ) 1, α₀ ≤ p x)
@@ -705,7 +749,11 @@ satisfies $a(v, v) \ge c \|v\|_{H^1}^2$ for all $v \in H^1(I)$, with $c = (4\alp
 
 The proof bounds $a(v, v) \ge \alpha \|v'\|^2 - \|r\|_\infty \|v'\| \|v\| + \|v\|^2$, a positive
 definite quadratic form in $(\|v'\|, \|v\|)$. Here $\|r\|_\infty$ is the norm of `rL` in
-$L^\infty(I)$. -/
+$L^\infty(I)$.
+
+**Generalization.** The source gives coercivity on $H_0^1$ for continuous coefficients with
+ $r^2 < 4\alpha$ on the closed interval. This statement uses the corresponding strict
+ essential-norm bound, allows essentially bounded coefficients, and gives a constant on $H^1$. -/
 theorem example_8_2_general_i_coercive (hα₀ : 0 < α₀)
     (hp : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ pL x)
     (hq : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 1 ≤ qL x) (_hr : ‖rL‖ ^ 2 < 4 * α₀) :
@@ -757,7 +805,10 @@ there is a unique $u \in H_0^1(I)$ with
 $$\int_I pu'v' + \int_I ru'v + \int_I quv = \int_I fv \quad \text{for all } v \in H_0^1(I).$$
 
 The proof is the Lax–Milgram theorem. The source remarks that there is no straightforward
-associated minimization problem, because the form is not symmetric. -/
+associated minimization problem, because the form is not symmetric.
+
+**Generalization.** The statement allows essentially bounded coefficients. It expresses the
+ source's strict $r^2 < 4\alpha$ bound on the closed interval as an essential-norm bound. -/
 theorem example_8_2_general_i (hα₀ : 0 < α₀)
     (hp : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ pL x)
     (hq : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 1 ≤ qL x) (hr : ‖rL‖ ^ 2 < 4 * α₀)
@@ -777,7 +828,10 @@ $$a(v, v) \ge \frac{\alpha}{1 + 1/2} \|v\|_{H^1}^2 \quad \text{for all } v \in H
 For $v \in H_0^1$, $\int rv'v = -\frac12 \int r'v^2$
 (`EllipticInterval.integral_mul_deriv_mul_rep_eq`), so $a(v, v) \ge \alpha \|v'\|^2$; Poincaré's
 inequality on $H_0^1(0, 1)$ then gives the constant. The proof specializes
-`EllipticInterval.form_isCoerciveWith_seminorm_of_le`. -/
+`EllipticInterval.form_isCoerciveWith_seminorm_of_le`.
+
+**Generalization.** The coefficients $p$ and $q$ need only be essentially bounded. A positive
+ coercivity constant is specified. -/
 theorem example_8_2_general_ii_coercive (hα₀ : 0 < α₀)
     (hp : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ pL x)
     (hq : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 1 ≤ qL x)
@@ -810,7 +864,9 @@ $r \in C^1([0, 1])$ with $r' \le 2$ on $[0, 1]$. For every $f \in L^2(I)$ there 
 $u \in H_0^1(I)$ with
 $$\int_I pu'v' + \int_I r_L u'v + \int_I quv = \int_I fv \quad \text{for all } v \in H_0^1(I).$$
 
-The proof is the Lax–Milgram theorem on $H_0^1(I)$. -/
+The proof is the Lax–Milgram theorem on $H_0^1(I)$.
+
+**Generalization.** The coefficients $p$ and $q$ need only be essentially bounded. -/
 theorem example_8_2_general_ii (hα₀ : 0 < α₀)
     (hp : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), α₀ ≤ pL x)
     (hq : ∀ᵐ x ∂(volume.restrict (Ioo (0 : ℝ) 1)), 1 ≤ qL x)
@@ -860,7 +916,9 @@ the symmetrization. Let $p, r, R : \mathbb{R} \to \mathbb{R}$ and $x \in \mathbb
 $p(x) \neq 0$, and let $R$ have the derivative $r(x)/p(x)$ at $x$. Then $\zeta = e^{-R}$
 satisfies
 $$\zeta'(x) p(x) + \zeta(x) r(x) = 0.$$
--/
+
+**Generalization.** The identity is local at a point where $p(x) \ne 0$. The source uses it
+ inside the interval under the assumptions for (20). -/
 theorem example_8_2_symmetrization_deriv {R : ℝ → ℝ} {x : ℝ}
     (hR : HasDerivAt R (r x / p x) x) (hpx : p x ≠ 0) :
     deriv (fun t ↦ Real.exp (-R t)) x * p x + Real.exp (-R x) * r x = 0 := by
@@ -878,7 +936,11 @@ $$-(pu')'(x) + r(x)u'(x) + q(x)u(x) = f(x) \iff -(\zeta pu')'(x) + \zeta(x) q(x)
   f(x).$$
 
 The proof multiplies by $\zeta > 0$ and uses $\zeta' p + \zeta r = 0$
-(`Brezis.Chapter08.example_8_2_symmetrization_deriv`). -/
+(`Brezis.Chapter08.example_8_2_symmetrization_deriv`).
+
+**Reading.** This states the equivalence of the differential equations for whole-line
+ functions with nowhere-zero $p$. It omits the zero boundary conditions, which the change of
+ equation preserves. The ensuing weighted minimization is outside the statement. -/
 theorem example_8_2_symmetrization {R u f : ℝ → ℝ} (hR : ∀ x, HasDerivAt R (r x / p x) x)
     (hp : ∀ x, p x ≠ 0) (hpd : Differentiable ℝ p) (hu : ContDiff ℝ 2 u) (x : ℝ) :
     -deriv (fun t ↦ p t * deriv u t) x + r x * deriv u x + q x * u x = f x ↔
@@ -957,7 +1019,10 @@ $H^1(0, 1)$ carried by $v$ and $-v'' + v = f$ on $(0, 1)$.
 
 This is the statement of the source that $u \in C^2(\bar I)$ if in addition $f \in C(\bar I)$.
 The boundary conditions play no role, and the statement is the same as
-`Brezis.Chapter08.proposition_8_16_C2`. -/
+`Brezis.Chapter08.proposition_8_16_C2`.
+
+**Generalization.** The regularity claim applies to any $H^2$ solution of the interior
+ equation, without prescribing Neumann traces. -/
 theorem proposition_8_17_C2 {f : ℝ → ℝ} (fL : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     (hfL : fL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] f) (hf : ContinuousOn f (Icc 0 1))
     {Φ : SobolevInterval 2 0 1}
@@ -1012,7 +1077,10 @@ $$-u'' + u = f \text{ a.e. on } I, \qquad u(0) = 0, \quad u'(1) = 0.$$
 
 The weak formulation (26) is set in $H = \{v \in H^1(I) : v(0) = 0\}$,
 `EllipticInterval.mixedSpace`. The source leaves the rest to the reader. The proof specializes
-`EllipticInterval.existsUnique_mixed`. -/
+`EllipticInterval.existsUnique_mixed`.
+
+**Reading.** The library states existence and uniqueness in $H^2$ following the source's
+ variational setup, which leaves this part as an exercise. -/
 theorem example_8_5 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :
     ∃! Φ : SobolevInterval 2 0 1,
       ((SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -1027,7 +1095,10 @@ $$a(u, v) = \int_I u'v' + \int_I uv + k u(0) v(0),$$
 it is symmetric, and it satisfies $a(v, v) \ge \|v\|_{H^1}^2$ for all $v \in H^1(I)$.
 
 The form is `EllipticInterval.robinForm`, and it is continuous by its type. The source uses it
-on $H = \{v \in H^1(I) : v(1) = 0\}$, `EllipticInterval.robinSpace`. -/
+on $H = \{v \in H^1(I) : v(1) = 0\}$, `EllipticInterval.robinSpace`.
+
+**Generalization.** The source uses the Robin form on the subspace with zero trace at $1$.
+ The coercivity estimate here applies on all of $H^1(I)$. -/
 theorem example_8_6_coercive {k : ℝ} (hk : 0 ≤ k) :
     (∀ u v : SobolevInterval 1 0 1, robinForm (zero_lt_one' ℝ) k u v
       = modelForm 0 1 u v + k * (SobolevInterval.rep u 0 * SobolevInterval.rep v 0)) ∧
@@ -1042,7 +1113,11 @@ $$-u'' + u = f \text{ a.e. on } I, \qquad u'(0) = k u(0), \quad u(1) = 0.$$
 
 The proof is the Lax–Milgram theorem for the Robin form on $H = \{v \in H^1(I) : v(1) = 0\}$,
 `EllipticInterval.existsUnique_robin`. Footnotes 14 and 15 of the source, on the general
-condition of the third type and on small negative $k$, are not formalized. -/
+condition of the third type and on small negative $k$, are not formalized.
+
+**Reading.** The source sets up the variational problem for real $k$ and gives the sufficient
+ coercivity condition $k \ge 0$. This statement gives existence and uniqueness under that
+ condition. -/
 theorem example_8_6 {k : ℝ} (hk : 0 ≤ k) (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :
     ∃! Φ : SobolevInterval 2 0 1,
       ((SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -1058,7 +1133,10 @@ $$-u'' + u = f \text{ a.e. on } I, \qquad u(0) = u(1), \quad u'(0) = u'(1).$$
 
 The proof is the Lax–Milgram theorem for the form $\int u'v' + \int uv$ on
 $H = \{v \in H^1(I) : v(0) = v(1)\}$, `EllipticInterval.periodicSpace`, with the weak
-formulation (29). It specializes `EllipticInterval.existsUnique_periodic`. -/
+formulation (29). It specializes `EllipticInterval.existsUnique_periodic`.
+
+**Generalization.** The source states existence for the periodic problem. This statement also
+ asserts uniqueness. -/
 theorem example_8_7 (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) :
     ∃! Φ : SobolevInterval 2 0 1,
       ((SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -1077,7 +1155,10 @@ $H^1(0, 1)$ carried by $v$ and $-v'' + v = f$ on $(0, 1)$.
 
 The boundary conditions play no role, so the statement covers the solutions of the mixed, Robin
 and periodic problems. The proof specializes
-`EllipticInterval.exists_contDiffMapIcc_of_deriv_two`. -/
+`EllipticInterval.exists_contDiffMapIcc_of_deriv_two`.
+
+**Generalization.** The source explicitly states the classical conclusion for the periodic
+ problem. Here the conclusion follows for any $H^2$ solution of the interior equation. -/
 theorem example_8_5_6_7_C2 {f : ℝ → ℝ} (fL : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     (hfL : fL =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] f) (hf : ContinuousOn f (Icc 0 1))
     {Φ : SobolevInterval 2 0 1}
@@ -1095,12 +1176,13 @@ Let $f : \mathbb{R} \to \mathbb{R}$ be equal almost everywhere to some
 $f_L \in L^2(\mathbb{R})$, and let $u \in C^2(\mathbb{R})$ be a classical solution of (30):
 $$-u'' + u = f \text{ on } \mathbb{R}, \qquad u(x) \to 0 \text{ as } |x| \to \infty.$$
 Then $u \in H^1(\mathbb{R})$, and there is $U \in H^1(\mathbb{R})$ whose continuous
-representative is $u$ and which satisfies (31):
+representative is $u$ and which satisfies the weak equation:
 $$\int_{\mathbb{R}} U'v' + \int_{\mathbb{R}} Uv = \int_{\mathbb{R}} fv \quad \text{for all } v
   \in H^1(\mathbb{R}).$$
 
-The source proves $u \in H^1(\mathbb{R})$ with cut-off functions $\zeta_n$. The form and the
-load of (31) are `EllipticInterval.Line.form`, the inner product of $H^1(\mathbb{R})$, and
+The source proves $u \in H^1(\mathbb{R})$ with cut-off functions $\zeta_n$ using (31).
+The form and load of the weak equation are `EllipticInterval.Line.form`, the
+inner product of $H^1(\mathbb{R})$, and
 `EllipticInterval.Line.load`. The proof specializes
 `EllipticInterval.Line.memSobolevIntervalLp_of_classical` and
 `EllipticInterval.Line.isWeakSolution_of_classical`. -/
@@ -1120,7 +1202,7 @@ theorem example_8_8_classical_weak {u f : ℝ → ℝ} (hu : ContDiff ℝ 2 u)
 
 /-- **Example 8** in Section 8.4 of [brezis2011functional], existence and uniqueness of the weak
 solution. For every $f \in L^2(\mathbb{R})$ there is exactly one $u \in H^1(\mathbb{R})$ that
-satisfies (31):
+satisfies the weak equation:
 $$\int_{\mathbb{R}} u'v' + \int_{\mathbb{R}} uv = \int_{\mathbb{R}} fv \quad \text{for all } v
   \in H^1(\mathbb{R}).$$
 
@@ -1131,7 +1213,7 @@ theorem example_8_8_existsUnique (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens �
   ⟨Line.solution fL, Line.form_solution fL, fun _ hu ↦ Line.eq_solution_of_forall hu⟩
 
 /-- **Example 8** in Section 8.4 of [brezis2011functional], regularity and the classical solution.
-Let $f \in L^2(\mathbb{R})$ and let $u \in H^1(\mathbb{R})$ be the weak solution of (31). Then:
+Let $f \in L^2(\mathbb{R})$ and let $u \in H^1(\mathbb{R})$ be the weak solution of (30). Then:
 * $u \in H^2(\mathbb{R})$;
 * $u(x) \to 0$ as $|x| \to \infty$;
 * if $f$ is equal almost everywhere to a continuous function $g$, then $u \in C^2(\mathbb{R})$
@@ -1156,10 +1238,10 @@ theorem example_8_8_regularity (fL : Lp ℝ 2 (volume.restrict ((⊤ : Opens ℝ
     fun _ hfL hf ↦ ⟨Line.contDiff_rep_solution fL hfL hf, Line.exists_classical_solution fL hfL hf⟩⟩
 
 /-- **Example 8** in Section 8.4 of [brezis2011functional]. Let $f \in L^2(\mathbb{R})$, and let
-$u_f \in H^1(\mathbb{R})$ be the weak solution of (31). Then:
+$u_f \in H^1(\mathbb{R})$ be the weak solution of (30). Then:
 * every classical solution $u \in C^2(\mathbb{R})$ of (30) for a function a.e. equal to $f$ lies
   in $H^1(\mathbb{R})$ and is equal to the continuous representative of $u_f$;
-* (31) has exactly one solution in $H^1(\mathbb{R})$;
+* the weak equation has exactly one solution in $H^1(\mathbb{R})$;
 * $u_f \in H^2(\mathbb{R})$;
 * if $f$ is equal almost everywhere to a continuous function $g$, problem (30) with the datum
   $g$ has a unique classical solution in $C^2(\mathbb{R})$.
@@ -1504,7 +1586,10 @@ theorem remark_8_25_regularity
 infinity. Every $u \in H_0^1(0, +\infty)$ satisfies $u(0) = 0$ and $u(x) \to 0$ as
 $x \to +\infty$. In particular the weak solution of the half-line problem does.
 
-The decay is Corollary 8.9. -/
+The decay is Corollary 8.9.
+
+**Generalization.** The source asks for the boundary condition and decay of the half-line
+ solution. The statement gives them for every element of $H_0^1(0,+\infty)$. -/
 theorem remark_8_25_boundary (u : SobolevIntervalLpZero 1 2 (Opens.Ioi 0)) :
     (u : SobolevIntervalLp 1 2 (Opens.Ioi 0)).rep 0 = 0 ∧
       Tendsto (u : SobolevIntervalLp 1 2 (Opens.Ioi 0)).rep atTop (𝓝 0) :=

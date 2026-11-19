@@ -122,6 +122,11 @@ Lemma 7.1.5 (`GolubVanLoan.Chapter07.lemma_7_1_5`).
 
 ## Deviations from the source
 
+* **Theorem 12.1.1, rank bound** (generalization). The rank inequality holds without spectral
+  separation. See `GolubVanLoan.Chapter12.theorem_12_1_1_b`.
+* **Algorithm 12.1.2** (correction). Pivoting selects a first-column entry of maximal modulus.
+  The signed maximum printed in the source can be zero for nonsingular $A$. See
+  `GolubVanLoan.Chapter12.algorithm_12_1_2`.
 * **Equation (12.1.3)** (generalization). The source defines the displacement rank only for a
   nonsingular Sylvester operator. The generators exist without this assumption. See
   `GolubVanLoan.Chapter12.equation_12_1_3`.
@@ -211,7 +216,10 @@ $e \in \mathbb{R}^n$ is the vector of ones. If $n \ge 1$, then $A$ has
 $\{\Omega, \Lambda\}$-displacement rank $1$, and $A$ is Cauchy-like with respect to $\omega$ and
 $\nu$, with the generators $R = S = e$.
 
-The Cauchy matrix is `Matrix.cauchy ω (-ν)`, and $ee^T$ is `Matrix.vecMulVec 1 1`. -/
+The Cauchy matrix is `Matrix.cauchy ω (-ν)`, and $ee^T$ is `Matrix.vecMulVec 1 1`.
+
+**Reading.** All-ones displacement and rank one when n>0; also covers zero order.
+-/
 theorem cauchy_displacement {ω ν : Fin n → ℝ} (h : ∀ k j, ω k ≠ ν j) :
     diagonal ω * cauchy ω (-ν) - cauchy ω (-ν) * diagonal ν = vecMulVec 1 1 ∧
       (n ≠ 0 → displacementRank (diagonal ω) (diagonal ν) (cauchy ω (-ν)) = 1) ∧
@@ -273,7 +281,11 @@ $A$ as in `GolubVanLoan.Chapter12.theorem_12_1_1`, and assume $\alpha \neq 0$. I
 $\operatorname{rank}_{\Omega, \Lambda}(A) \le r$, then the Schur complement
 $A_1 = B - fg^T/\alpha$ satisfies $\operatorname{rank}_{\Omega_1, \Lambda_1}(A_1) \le r$.
 
-No hypothesis on the diagonal entries $\omega_k$ and $\nu_j$ is needed. -/
+No hypothesis on the diagonal entries $\omega_k$ and $\nu_j$ is needed.
+
+**Generalization.** The rank inequality also holds without separation of the two diagonal
+spectra. The proof starts with a generator representation and does not invert the Sylvester
+operator. -/
 theorem theorem_12_1_1_b {ω ν : Fin (N + 1) → ℝ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (h : displacementRank (diagonal ω) (diagonal ν) A ≤ r) (hα : A 0 0 ≠ 0) :
     displacementRank (diagonal (ω ∘ Fin.succ)) (diagonal (ν ∘ Fin.succ))
@@ -330,7 +342,10 @@ $$L = \begin{bmatrix} 1 & 0 \\ f/\alpha & L_1 \end{bmatrix}, \qquad U = \begin{b
 g^T \\ 0 & U_1 \end{bmatrix}.$$
 
 Every arithmetic result passes through the rounding hook `rnd`. The dot products are
-`FloatingPoint.dotAccum`, and the vectors are computed by `GolubVanLoan.Chapter12.vecLoop`. -/
+`FloatingPoint.dotAccum`, and the vectors are computed by `GolubVanLoan.Chapter12.vecLoop`.
+
+**Reading.** Rounded operations and total division in recursive unpivoted algorithm.
+-/
 noncomputable def algorithm_12_1_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {r : ℕ} :
     (N : ℕ) → (ω ν : Fin (N + 1) → ℝ) → (R S : Matrix (Fin (N + 1)) (Fin r) ℝ) →
       M (Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ × Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ)
@@ -604,8 +619,11 @@ theorem displacement_permute {ω ν : Fin n → ℝ} {r : ℕ} {A : Matrix (Fin 
 section LUdispPiv
 
 /-- The pivot of Algorithm 12.1.2 for a vector $a$: the first index $i$ at which $|a_i|$ is largest.
-The source chooses a permutation $P$ with $|[Pa]_1|$ maximal; here ties go to the smallest
-index. The comparisons act on the computed values and are exact. -/
+The source asks for $[Pa]_1$ to be maximal. This definition maximizes its modulus and breaks ties at
+the smallest index. The comparisons act on the computed values and are exact.
+
+**Reading.** Uses maximal modulus and first-index tie break.
+-/
 noncomputable def pivotIndex {k : ℕ} (a : Fin (k + 1) → ℝ) : Fin (k + 1) :=
   (List.finRange (k + 1)).foldl (fun best i => if |a best| < |a i| then i else best) 0
 
@@ -628,7 +646,10 @@ private theorem abs_le_abs_foldl_max {k : ℕ} (a : Fin k → ℝ) (l : List (Fi
     exact ⟨hb.1.trans ih1, hb.2.trans ih1, ih2⟩
 
 /-- The pivot index $p$ of a vector $a$ has an entry of largest modulus: $|a_i| \le |a_p|$ for all
-$i$. -/
+$i$.
+
+**Reading.** Specifies maximal modulus where source gives signed comparison.
+-/
 theorem abs_le_abs_pivotIndex {k : ℕ} (a : Fin (k + 1) → ℝ) (i : Fin (k + 1)) :
     |a i| ≤ |a (pivotIndex a)| :=
   (abs_le_abs_foldl_max a _ 0).2 i (List.mem_finRange i)
@@ -648,7 +669,11 @@ g^T \\ 0 & U_1 \end{bmatrix}, \qquad P = \begin{bmatrix} 1 & 0 \\ 0 & P_1 \end{b
 Every arithmetic result passes through the rounding hook `rnd`. The pivot is
 `GolubVanLoan.Chapter12.pivotIndex`. The permutation is returned as an `Equiv.Perm`, built by
 `Equiv.Perm.decomposeFin` from the pivot index and the permutation of the recursive call; its
-matrix is `Equiv.Perm.permMatrix`. -/
+matrix is `Equiv.Perm.permMatrix`.
+
+**Correction.** The instruction to choose a maximal first-column entry uses maximal modulus
+here. A signed maximum can select a zero pivot in a nonsingular matrix when the remaining
+entries of the column are negative. -/
 noncomputable def algorithm_12_1_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {r : ℕ} :
     (N : ℕ) → (ω ν : Fin (N + 1) → ℝ) → (R S : Matrix (Fin (N + 1)) (Fin r) ℝ) →
       M (Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ × Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ ×
@@ -689,7 +714,10 @@ theorem algorithm_12_1_2_zero (ω ν : Fin 1 → ℝ) (R S : Matrix (Fin 1) (Fin
 /-- In exact arithmetic, Algorithm 12.1.2 on a matrix of order $N + 2$ computes the first column $a$
 by its formula, swaps the pivot to the top, computes $g$ and the updated generators from the
 permuted data, calls itself on order $N + 1$ for $[L_1, U_1, P_1]$, and returns the bordered
-factors $L$, $U$ and the combined permutation. -/
+factors $L$, $U$ and the combined permutation.
+
+**Reading.** Recursion uses modulus-maximizing pivot and permuted first generator row.
+-/
 theorem algorithm_12_1_2_succ {N : ℕ} (ω ν : Fin (N + 2) → ℝ)
     (R S : Matrix (Fin (N + 2)) (Fin r) ℝ) :
     Id.run (algorithm_12_1_2 pure (N + 1) ω ν R S) =
@@ -850,7 +878,10 @@ triangular and $U$ upper triangular, and $|l_{ij}| \le 1$ for all $i, j$.
 The factorization is `Matrix.IsLU`, and $P$ is the `Equiv.Perm.permMatrix` of the returned
 permutation. The proof tracks the row swap on the generators (§12.1.6) and uses that
 nonsingularity passes to the Schur complement. The pivot is nonzero,
-$|\alpha| = \max_i |a_i| > 0$, because the first column of a nonsingular $A$ is nonzero. -/
+$|\alpha| = \max_i |a_i| > 0$, because the first column of a nonsingular $A$ is nonzero.
+
+**Reading.** Nonsingularity protects nonzero maximal-modulus pivots and yields multiplier bound.
+-/
 theorem algorithm_12_1_2_spec {N : ℕ} {ω ν : Fin (N + 1) → ℝ}
     {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} {R S : Matrix (Fin (N + 1)) (Fin r) ℝ}
     (hων : ∀ k j, ω k ≠ ν j) (h : diagonal ω * A - A * diagonal ν = R * Sᵀ) (hA : IsUnit A) :
@@ -880,7 +911,10 @@ def IsToeplitzLike (r : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
 /-- **§12.1.7** of [golub2013matrix], definition of a Hankel-like matrix. A matrix
 $A \in \mathbb{R}^{n \times n}$ is **Hankel-like** of displacement rank at most $r$ if
 $Z_1^T A - A Z_{-1}$ has rank at most $r$, that is, $Z_1^T A - A Z_{-1} = RS^T$ for some
-$R, S \in \mathbb{R}^{n \times r}$. -/
+$R, S \in \mathbb{R}^{n \times r}$.
+
+**Reading.** Rank at most r without informal r≪n.
+-/
 def IsHankelLike (r : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   displacementRank (cyclicShift n 1)ᵀ (cyclicShift n (-1)) A ≤ r
 
@@ -890,7 +924,10 @@ $r$ if $Y_{0,0} A - A Y_{1,1}$ has rank at most $r$, that is, $Y_{0,0} A - A Y_{
 some $R, S \in \mathbb{R}^{n \times r}$.
 
 $Y_{\gamma,\delta}$, with ones on the two off-diagonals, $\gamma$ in the top left corner and
-$\delta$ in the bottom right corner, is `Matrix.cornerTridiagonal n γ δ`. -/
+$\delta$ in the bottom right corner, is `Matrix.cornerTridiagonal n γ δ`.
+
+**Reading.** Rank at most r without informal r≪n.
+-/
 def IsToeplitzPlusHankelLike (r : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   displacementRank (cornerTridiagonal n 0 0) (cornerTridiagonal n 1 1) A ≤ r
 

@@ -56,8 +56,8 @@ proofs specialize `Numlib.LinearAlgebra.Matrix.Complexify`, `Numlib.Stationary.D
   parts `SaadSparse.Chapter04.antiDiagL` and `SaadSparse.Chapter04.antiDiagU`.
 * Definition 4.13, `SaadSparse.Chapter04.IsConsistentlyOrdered`: a consistent ordering, as a
   labelling of the indices.
-* §4.2.5, `SaadSparse.Chapter04.IsTMatrix`: T-matrices, the block tridiagonal form (4.44) with
-  diagonal diagonal blocks.
+* Example 4.2, `SaadSparse.Chapter04.IsTMatrix`: block tridiagonal matrices with diagonal
+  matrices as diagonal blocks.
 
 ## Main results
 
@@ -138,9 +138,51 @@ proofs specialize `Numlib.LinearAlgebra.Matrix.Complexify`, `Numlib.Stationary.D
 
 ## Deviations from the source
 
+* **Reading.** The $p$-norm versions of Corollary 4.2 use the induced vector $p$-norms. See
+  `SaadSparse.Chapter04.corollary_4_2_lp`,
+  `SaadSparse.Chapter04.complexSpectralRadius_lt_one_of_lpOpNorm_lt_one`.
+* **Generalization.** The algebra-norm spectral bound allows non-induced norms on real matrices. See
+  `SaadSparse.Chapter04.complexSpectralRadius_le_algebraNorm`.
+* **Reading.** The complex eigenvalue bound before Theorem 4.6 is specialized to induced vector
+  $p$-norms. See `SaadSparse.Chapter04.norm_le_lpOpNorm_of_mem_spectrum`.
+* **Reading.** The convergence-factor theorem expresses attainment by a nonzero initial error using
+  a limit superior. See `SaadSparse.Chapter04.exists_specific_eq`.
+* **Generalization.** The Richardson step and its affine representation allow signed parameters. See
+  `SaadSparse.Chapter04.richardsonStep`, `SaadSparse.Chapter04.richardsonStep_eq_affine`.
+* **Generalization.** The splitting and convergence criterion for Richardson use all nonzero signed
+  parameters. See `SaadSparse.Chapter04.richardsonStep_eq`,
+  `SaadSparse.Chapter04.richardson_tendsto_iff`.
+* **Reading.** The Richardson spectral-radius formula assumes symmetry and a signed nonzero
+  parameter. See `SaadSparse.Chapter04.example_4_1_spectralRadius`.
+* **Reading.** The Richardson convergence interval uses a symmetric matrix and the strict bound from
+  the final display. See `SaadSparse.Chapter04.example_4_1_tendsto_iff`.
+* **Correction.** The indefinite Richardson result excludes the identity step at zero and assumes
+  symmetry. See `SaadSparse.Chapter04.example_4_1_diverges`.
+* **Reading.** The Richardson optimum uses symmetry and minimizes on the positive parameter range.
+  See `SaadSparse.Chapter04.example_4_1_opt`.
+* **Reading.** The row readings of Corollary 4.8 follow the Gershgorin argument. See
+  `SaadSparse.Chapter04.corollary_4_8_strict`, `SaadSparse.Chapter04.corollary_4_8_irred`.
+* **Reading.** The row readings of Theorem 4.9 follow the proof. See
+  `SaadSparse.Chapter04.theorem_4_9_jacobi`, `SaadSparse.Chapter04.theorem_4_9_gs`,
+  `SaadSparse.Chapter04.theorem_4_9_jacobi_irred`, `SaadSparse.Chapter04.theorem_4_9_gs_irred`.
+* **Reading.** The strict column readings of Theorem 4.9 use the printed definition and make
+  diagonal nonsingularity explicit. See `SaadSparse.Chapter04.theorem_4_9_jacobi_col`,
+  `SaadSparse.Chapter04.theorem_4_9_gs_col`.
+* **Reading.** The spectral reading of Theorem 4.10 encodes convergence for every right-hand side
+  and starting vector. See `SaadSparse.Chapter04.theorem_4_10`.
+* **Reading.** The converse of Theorem 4.16 also excludes a zero SOR eigenvalue. See
+  `SaadSparse.Chapter04.theorem_4_16_mpr`.
+* **Reading.** The optimal SOR parameter makes the real Jacobi spectrum, radius bound and nonempty
+  size explicit. See `SaadSparse.Chapter04.equation_4_47`.
+
+* **Corollary 4.2** (generalization). The norm can be any submultiplicative norm on the real
+  matrix space, including norms outside the induced class of §1.5. See
+  `SaadSparse.Chapter04.corollary_4_2`.
 * **Definition 4.5** (reading). The book prints all three conditions with column sums, while the
   proofs of Theorems 4.6 and 4.9 use row sums. Both forms are stated. See
   `SaadSparse.Chapter04.definition_4_5_iff`.
+* **Theorem 4.10** (reading). The convergence criterion quantifies over the right-hand side as
+  well as the starting vector. See `SaadSparse.Chapter04.theorem_4_10_tendsto`.
 * **Theorem 4.16** (reading). The book uses the name $M_{SOR}$ for the SOR iteration matrix, while
   (4.26) uses it for the preconditioner. The two are named apart. See
   `SaadSparse.Chapter04.theorem_4_16_mp`.
@@ -149,6 +191,8 @@ proofs specialize `Numlib.LinearAlgebra.Matrix.Complexify`, `Numlib.Stationary.D
 
 * **The specific convergence factor of §4.2.1 for a general $d_0$.** The book derives it
   heuristically from the Jordan form.
+* **Theorem 4.9 for irreducible column diagonal dominance.** The irreducible case is stated with
+  the row sums used in the proof of the book.
 -/
 
 open Matrix
@@ -330,7 +374,11 @@ theorem lpOpNorm_pow_le (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right ih (norm_nonneg _))
 
 /-- Corollary 4.2 of [saad2003iterative] for an induced norm: if $\|G\|_p < 1$ for some
-$1 \le p \le \infty$, then $\rho(G) < 1$. -/
+$1 \le p \le \infty$, then $\rho(G) < 1$.
+
+**Reading.** This is the induced vector $p$-norm case. The source allows any induced matrix norm
+under the convention of §1.5.
+-/
 theorem complexSpectralRadius_lt_one_of_lpOpNorm_lt_one {G : Matrix (Fin n) (Fin n) ℝ}
     (hG : lpOpNorm p G < 1) : complexSpectralRadius G < 1 := by
   have hnn : (0 : ℝ) ≤ lpOpNorm p G := norm_nonneg _
@@ -357,14 +405,22 @@ theorem complexSpectralRadius_lt_one_of_lpOpNorm_lt_one {G : Matrix (Fin n) (Fin
 $G \in \mathbb{R}^{n \times n}$ and $1 \le p \le \infty$ with $\|G\|_p < 1$. Then $I - G$ is
 nonsingular, and for every $f, x_0$ the iterates of (4.28) converge to $(I - G)^{-1} f$.
 
-The norm $\|G\|_p$ is `Matrix.lpOpNorm p G`. -/
+The norm $\|G\|_p$ is `Matrix.lpOpNorm p G`.
+
+**Reading.** This is the induced vector $p$-norm case. The source allows any induced matrix norm
+under the convention of §1.5.
+-/
 theorem corollary_4_2_lp {G : Matrix (Fin n) (Fin n) ℝ} (hG : lpOpNorm p G < 1) :
     IsUnit (1 - G) ∧ ∀ f x₀ : Fin n → ℝ,
       Tendsto (fun k => (affineStep G f)^[k] x₀) atTop (𝓝 ((1 - G)⁻¹ *ᵥ f)) :=
   theorem_4_1_mp (complexSpectralRadius_lt_one_of_lpOpNorm_lt_one p hG)
 
 /-- §4.2 of [saad2003iterative], the remark before Theorem 4.6: for $A \in \mathbb{C}^{n \times n}$
-and $1 \le p \le \infty$, every eigenvalue $\lambda$ of $A$ satisfies $|\lambda| \le \|A\|_p$. -/
+and $1 \le p \le \infty$, every eigenvalue $\lambda$ of $A$ satisfies $|\lambda| \le \|A\|_p$.
+
+**Reading.** This complex eigenvalue bound uses an induced vector $p$-norm. The source states the
+bound for any induced matrix norm.
+-/
 theorem norm_le_lpOpNorm_of_mem_spectrum (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ A) : ‖μ‖ ≤ lpOpNorm p A := by
   rw [← Matrix.spectrum_toLin'] at hμ
@@ -390,12 +446,20 @@ end Lp
 /-! ### Example 4.1: Richardson's iteration -/
 
 /-- Example 4.1 of [saad2003iterative]: the **Richardson step** with parameter $\alpha$ is
-$x \mapsto x + \alpha(b - Ax)$. -/
+$x \mapsto x + \alpha(b - Ax)$.
+
+**Generalization.** Lean allows signed $\alpha$. The source introduces Richardson iteration with
+$\alpha \ge 0$.
+-/
 def richardsonStep (A : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   x + α • (b - A *ᵥ x)
 
 /-- Example 4.1 of [saad2003iterative]: the Richardson step is the affine map
-$x \mapsto G_\alpha x + \alpha b$ with iteration matrix $G_\alpha = I - \alpha A$. -/
+$x \mapsto G_\alpha x + \alpha b$ with iteration matrix $G_\alpha = I - \alpha A$.
+
+**Generalization.** Lean allows signed $\alpha$. The source introduces Richardson iteration with
+$\alpha \ge 0$.
+-/
 theorem richardsonStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) (b : Fin n → ℝ) :
     richardsonStep A α b = affineStep (1 - α • A) (α • b) := by
   funext x
@@ -403,7 +467,12 @@ theorem richardsonStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) (b 
   abel
 
 /-- Example 4.1 of [saad2003iterative]: for $\alpha \neq 0$, the Richardson step is the step of the
-splitting with $M = \alpha^{-1} I$, `Stationary.Splitting.richardson`. -/
+splitting with $M = \alpha^{-1} I$, `Stationary.Splitting.richardson`.
+
+**Generalization.** Lean allows either sign of the nonzero parameter $\alpha$. The source introduces
+$\alpha \ge 0$. At $\alpha=0$ the step is the identity, so convergence in the sense of existence of
+a limit need not give a solution.
+-/
 theorem richardsonStep_eq (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα : α ≠ 0) (b : Fin n → ℝ) :
     richardsonStep A α b = Splitting.step (Stationary.Splitting.richardson A hα) b := by
   funext x
@@ -414,7 +483,12 @@ theorem richardsonStep_eq (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα : α 
   rw [hm, hx, smul_mulVec, one_mulVec, smul_smul, inv_mul_cancel₀ hα, one_smul]
 
 /-- Example 4.1 of [saad2003iterative]: for $\alpha \neq 0$, Richardson's iteration converges for
-every $b$ and every $x_0$ if and only if $\rho(I - \alpha A) < 1$. -/
+every $b$ and every $x_0$ if and only if $\rho(I - \alpha A) < 1$.
+
+**Generalization.** Lean allows either sign of the nonzero parameter $\alpha$. The source introduces
+$\alpha \ge 0$. At $\alpha=0$ the step is the identity, so convergence in the sense of existence of
+a limit need not give a solution.
+-/
 theorem richardson_tendsto_iff (A : Matrix (Fin n) (Fin n) ℝ) {α : ℝ} (hα : α ≠ 0) :
     (∀ b x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (richardsonStep A α b)^[k] x₀) atTop (𝓝 x)) ↔
       complexSpectralRadius (1 - α • A) < 1 := by
@@ -532,7 +606,11 @@ theorem theorem_4_6_col (A : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ �
 
 /-- **Corollary 4.8** of [saad2003iterative], strict dominance by rows. Let
 $A \in \mathbb{K}^{n \times n}$ satisfy $|a_{ii}| > \sum_{j \neq i} |a_{ij}|$ for every $i$.
-Then $A$ is nonsingular. -/
+Then $A$ is nonsingular.
+
+**Reading.** These hypotheses use row dominance, as in the Gershgorin argument. The printed
+Definition 4.5 gives column dominance.
+-/
 theorem corollary_4_8_strict {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsStrictDiagDominant) : IsUnit A :=
   h.isUnit
@@ -551,7 +629,11 @@ variable {A : Matrix (Fin n) (Fin n) ℝ}
 
 /-- **Theorem 4.9** of [saad2003iterative], Jacobi, strict dominance by rows. Let
 $A \in \mathbb{R}^{n \times n}$ be strictly diagonally dominant by rows. Then for every $b$ and
-every $x_0$ the Jacobi iterates converge to the solution $A^{-1}b$. -/
+every $x_0$ the Jacobi iterates converge to the solution $A^{-1}b$.
+
+**Reading.** The Lean theorem uses row dominance, as in the proof. Definition 4.5 prints dominance
+by columns.
+-/
 theorem theorem_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
@@ -561,7 +643,11 @@ theorem theorem_4_9_jacobi (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ)
 
 /-- **Theorem 4.9** of [saad2003iterative], Gauss–Seidel, strict dominance by rows. Let
 $A \in \mathbb{R}^{n \times n}$ be strictly diagonally dominant by rows. Then for every $b$ and
-every $x_0$ the Gauss–Seidel iterates converge to the solution $A^{-1}b$. -/
+every $x_0$ the Gauss–Seidel iterates converge to the solution $A^{-1}b$.
+
+**Reading.** The Lean theorem uses row dominance, as in the proof. Definition 4.5 prints dominance
+by columns.
+-/
 theorem theorem_4_9_gs (h : A.IsStrictDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   have hd := h.isUnit_diagPart
@@ -575,7 +661,12 @@ diagonal $D$. Then for every $b$ and every $x_0$ the Jacobi iterates converge to
 $A^{-1}b$.
 
 This is the variant of Kress. The proof specializes
-`Matrix.jacobi_spectralRadius_lt_one_of_col`. -/
+`Matrix.jacobi_spectralRadius_lt_one_of_col`.
+
+**Reading.** This is the strict case with column sums, as in the printed Definition 4.5. The proof
+in the source instead uses row sums. The explicit nonsingularity of $D$ follows from strict
+dominance.
+-/
 theorem theorem_4_9_jacobi_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [jacobiStep_eq hd]
@@ -714,7 +805,12 @@ $\mathbb{R}^{n \times n}$, that is a norm that is submultiplicative, absolutely 
 positive definite. Then $\rho(G) \le N(G)$ for every $G$. This is the remark
 $|\lambda| \le \|A\|$ before Theorem 4.6, for a norm that need not be an induced $p$-norm.
 
-The norm $N$ is an `AlgebraNorm ℝ` on `Matrix (Fin n) (Fin n) ℝ`. -/
+The norm $N$ is an `AlgebraNorm ℝ` on `Matrix (Fin n) (Fin n) ℝ`.
+
+**Generalization.** Lean allows every submultiplicative real algebra norm on these real matrices,
+including norms outside the induced class of §1.5. The pre-Gershgorin statement in the source also
+applies to complex matrices.
+-/
 theorem complexSpectralRadius_le_algebraNorm (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (G : Matrix (Fin n) (Fin n) ℝ) : complexSpectralRadius G ≤ ENNReal.ofReal (N G) := by
   have hnn : ∀ B : Matrix (Fin n) (Fin n) ℝ, 0 ≤ N B := fun B => apply_nonneg N B
@@ -740,6 +836,10 @@ theorem complexSpectralRadius_le_algebraNorm (N : AlgebraNorm ℝ (Matrix (Fin n
 $\mathbb{R}^{n \times n}$, and let $G \in \mathbb{R}^{n \times n}$ with $N(G) < 1$. Then $I - G$
 is nonsingular, and for every $f, x_0$ the iterates of (4.28) converge to $(I - G)^{-1} f$.
 
+**Generalization.** The book uses its convention of induced matrix norms from §1.5. The statement
+allows any submultiplicative norm on the real matrix space, because each such norm bounds the
+spectral radius.
+
 The norm $N$ is an `AlgebraNorm ℝ`. The case of an induced $p$-norm is
 `SaadSparse.Chapter04.corollary_4_2_lp`. -/
 theorem corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
@@ -753,7 +853,12 @@ theorem corollary_4_2 (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ))
 $G \in \mathbb{R}^{n \times n}$ with $n \ge 1$. Some initial error $d_0 \neq 0$ has the specific
 convergence factor $\rho(G)$:
 $$\limsup_{k \to \infty} \left( \frac{\|G^k d_0\|_2}{\|d_0\|_2} \right)^{1/k} = \rho(G).$$
-So the general convergence factor $\rho(G)$ is attained. -/
+So the general convergence factor $\rho(G)$ is attained.
+
+**Reading.** Lean formulates attainment at a nonzero initial error using a limit superior. The
+source defines the specific factor by an ordinary limit and obtains the general factor by maximizing
+the ratio over initial errors at each step.
+-/
 theorem exists_specific_eq [NeZero n] (G : Matrix (Fin n) (Fin n) ℝ) :
     ∃ d₀ : Fin n → ℝ, d₀ ≠ 0 ∧
       limsup (fun k : ℕ => (‖(WithLp.toLp 2 ((G ^ k) *ᵥ d₀) : EuclideanSpace ℝ (Fin n))‖ /
@@ -778,6 +883,9 @@ be symmetric, and let $\lambda_{\min}$ and $\lambda_{\max}$ be eigenvalues of $A
 every eigenvalue of $A$ lies in $[\lambda_{\min}, \lambda_{\max}]$. Then for $\alpha \neq 0$ the
 iteration matrix $G_\alpha = I - \alpha A$ of Richardson's iteration has
 $$\rho(G_\alpha) = \max\{|1 - \alpha \lambda_{\min}|, |1 - \alpha \lambda_{\max}|\}.$$
+
+**Reading.** The source assumes real eigenvalues, and the formula applies at $\alpha=0$. Lean
+assumes the stronger condition of symmetry and takes signed nonzero $\alpha$.
 -/
 theorem example_4_1_spectralRadius (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) {α : ℝ} (hα : α ≠ 0) :
@@ -791,6 +899,10 @@ symmetric with smallest and largest eigenvalues $\lambda_{\min}$ and $\lambda_{\
 $\alpha \neq 0$, Richardson's iteration converges for every right-hand side $b$ and every
 starting vector $x_0$ if and only if
 $$0 < \alpha < \frac{2}{\lambda_{\max}}.$$
+
+**Reading.** Lean assumes symmetry, whereas the source assumes real eigenvalues. It also allows
+signed nonzero $\alpha$ when stating the equivalence. The strict upper bound in the final interval
+of the source is used. The preceding sentence prints a weak inequality.
 -/
 theorem example_4_1_tendsto_iff (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) {α : ℝ}
@@ -803,7 +915,13 @@ theorem example_4_1_tendsto_iff (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ 
 /-- **Example 4.1** of [saad2003iterative], indefinite case. Let $A \in \mathbb{R}^{n \times n}$ be
 symmetric with smallest and largest eigenvalues $\lambda_{\min} < 0 < \lambda_{\max}$. Then for
 every $\alpha \neq 0$ there are a right-hand side $b$ and a starting vector $x_0$ for which
-Richardson's iteration does not converge. -/
+Richardson's iteration does not converge.
+
+**Correction.** At $\alpha=0$ the iterates are constant, although the source says divergence occurs
+for some initial guess for any $\alpha$. Lean assumes symmetry, which is stronger than the source's
+real-spectrum hypothesis, and proves divergence for some right-hand side and initial vector for
+either sign of nonzero $\alpha$.
+-/
 theorem example_4_1_diverges (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hneg : lmin < 0) (hpos : 0 < lmax)
     {α : ℝ} (hα : α ≠ 0) :
@@ -829,6 +947,10 @@ $0 < \lambda_{\min} \le \lambda_{\max}$. Over $\alpha > 0$, the spectral radius
 $\rho(I - \alpha A)$ is smallest at $\alpha_{opt} = 2/(\lambda_{\min} + \lambda_{\max})$, and
 $$\rho(I - \alpha_{opt} A) = \frac{\lambda_{\max} - \lambda_{\min}}{\lambda_{\max} +
   \lambda_{\min}}.$$
+
+**Reading.** Lean assumes symmetry, which is stronger than having real eigenvalues, and states the
+minimization over $\alpha>0$. Including zero gives the same optimizer in the source's nonnegative
+parameter range.
 -/
 theorem example_4_1_opt (hA : A.IsHermitian) (hsub : spectrum ℝ A ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ A) (hmax : lmax ∈ spectrum ℝ A) (hpos : 0 < lmin) :
@@ -936,7 +1058,11 @@ theorem theorem_4_7 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsPatternIrreducibl
 
 /-- **Corollary 4.8** of [saad2003iterative], irreducible dominance by rows. Let
 $A \in \mathbb{K}^{n \times n}$ be irreducibly diagonally dominant by rows. Then $A$ is
-nonsingular. -/
+nonsingular.
+
+**Reading.** These hypotheses use row dominance, as in the Gershgorin argument. The printed
+Definition 4.5 gives column dominance.
+-/
 theorem corollary_4_8_irred {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
     (h : A.IsIrreduciblyDiagDominant) : IsUnit A :=
   h.isUnit
@@ -953,7 +1079,11 @@ variable {A : Matrix (Fin n) (Fin n) ℝ}
 
 /-- **Theorem 4.9** of [saad2003iterative], Jacobi, irreducible dominance by rows. Let
 $A \in \mathbb{R}^{n \times n}$ be irreducibly diagonally dominant by rows. Then for every $b$
-and every $x_0$ the Jacobi iterates converge to the solution $A^{-1}b$. -/
+and every $x_0$ the Jacobi iterates converge to the solution $A^{-1}b$.
+
+**Reading.** The Lean theorem uses row dominance, as in the proof. Definition 4.5 prints dominance
+by columns.
+-/
 theorem theorem_4_9_jacobi_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (jacobiStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [jacobiStep_eq h.isUnit_diagPart]
@@ -962,7 +1092,11 @@ theorem theorem_4_9_jacobi_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin
 
 /-- **Theorem 4.9** of [saad2003iterative], Gauss–Seidel, irreducible dominance by rows. Let
 $A \in \mathbb{R}^{n \times n}$ be irreducibly diagonally dominant by rows. Then for every $b$
-and every $x_0$ the Gauss–Seidel iterates converge to the solution $A^{-1}b$. -/
+and every $x_0$ the Gauss–Seidel iterates converge to the solution $A^{-1}b$.
+
+**Reading.** The Lean theorem uses row dominance, as in the proof. Definition 4.5 prints dominance
+by columns.
+-/
 theorem theorem_4_9_gs_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq h.isUnit_diagPart]
@@ -972,7 +1106,12 @@ theorem theorem_4_9_gs_irred (h : A.IsIrreduciblyDiagDominant) (b x₀ : Fin n �
 /-- **Theorem 4.9** of [saad2003iterative], Gauss–Seidel, strict dominance by columns, the reading
 of Definition 4.5 as printed. Let $A \in \mathbb{R}^{n \times n}$ be strictly diagonally
 dominant by columns, with nonsingular diagonal $D$. Then for every $b$ and every $x_0$ the
-Gauss–Seidel iterates converge to the solution $A^{-1}b$. -/
+Gauss–Seidel iterates converge to the solution $A^{-1}b$.
+
+**Reading.** This is the strict case with column sums, as in the printed Definition 4.5. The proof
+in the source instead uses row sums. The explicit nonsingularity of $D$ follows from strict
+dominance.
+-/
 theorem theorem_4_9_gs_col (h : A.IsStrictColDiagDominant) (hd : IsUnit (diagPart A))
     (b x₀ : Fin n → ℝ) : Tendsto (fun k => (gsStep A b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
   rw [gsStep_eq hd]
@@ -996,7 +1135,11 @@ symmetric with positive diagonal entries, and let $0 < \omega < 2$. Then the SOR
 matrix $G_\omega$ satisfies $\rho(G_\omega) < 1$ if and only if $A$ is positive definite.
 
 The iteration matrix is the iteration operator of `Matrix.sorSplitting`. The positive diagonal
-is stated twice in Lean, as $a_{ii} > 0$ and as the nonsingularity of $D$. -/
+is stated twice in Lean, as $a_{ii} > 0$ and as the nonsingularity of $D$.
+
+**Reading.** The source states convergence. Lean states the equivalent spectral criterion for
+convergence for every right-hand side and starting vector.
+-/
 theorem theorem_4_10 (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A)) {ω : ℝ}
     (hω0 : 0 < ω) (hω2 : ω < 2) :
     complexSpectralRadius (A.sorSplitting h hω0.ne').iterationOperator < 1 ↔ A.PosDef :=
@@ -1007,9 +1150,12 @@ theorem theorem_4_10 (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPa
 positive diagonal entries, and let $0 < \omega < 2$. Then SOR converges for every right-hand
 side $b$ and every starting vector $x_0$ if and only if $A$ is positive definite.
 
-The proof combines `SaadSparse.Chapter04.theorem_4_10` with Theorem 4.1. The quantifier over $b$
-cannot be dropped: for a singular positive semidefinite $A$ and $b = 0$, the iterates converge
-for every $x_0$. -/
+**Reading.** The book quantifies explicitly over $x_0$. The declaration also quantifies over $b$,
+as in the stationary convergence criterion of Theorem 4.1. For the $2 \times 2$ all-ones matrix,
+$b = 0$ and $\omega = 1$, one SOR step sends $(x_1,x_2)$ to $(-x_2,x_2)$ and the iterates stay
+there, even though the matrix is singular.
+
+The proof combines `SaadSparse.Chapter04.theorem_4_10` with Theorem 4.1. -/
 theorem theorem_4_10_tendsto (hA : A.IsSymm) (hd : ∀ i, 0 < A i i) (h : IsUnit (diagPart A))
     {ω : ℝ} (hω0 : 0 < ω) (hω2 : ω < 2) :
     (∀ b x₀ : Fin n → ℝ, ∃ x, Tendsto (fun k => (sorStep A ω b)^[k] x₀) atTop (𝓝 x)) ↔
@@ -1123,10 +1269,9 @@ def IsConsistentlyOrdered (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
     ∀ i j, i < j → A i j ≠ 0 → c j = c i + 1
 
 /-- **Section 4.2.5** of [saad2003iterative], T-matrices. A matrix $A \in \mathbb{C}^{n \times n}$
-is a **T-matrix**, that is of the block tridiagonal form (4.44) with diagonal matrices as
-diagonal blocks, if there is a nondecreasing labelling $c : \{1, \dots, n\} \to \mathbb{N}$ such
-that every nonzero off-diagonal entry $a_{ij}$ joins two neighbouring blocks: $c(i) = c(j) + 1$
-or $c(j) = c(i) + 1$. -/
+is a **T-matrix** of the form in Example 4.2 if there is a nondecreasing labelling
+$c : \{1, \dots, n\} \to \mathbb{N}$ such that every nonzero off-diagonal entry $a_{ij}$
+joins two neighbouring blocks: $c(i) = c(j) + 1$ or $c(j) = c(i) + 1$. -/
 def IsTMatrix (A : Matrix (Fin n) (Fin n) ℂ) : Prop :=
   ∃ c : Fin n → ℕ, Monotone c ∧ ∀ i j, i ≠ j → A i j ≠ 0 → c i = c j + 1 ∨ c j = c i + 1
 
@@ -1317,7 +1462,12 @@ and $\mu$ satisfy $(\lambda + \omega - 1)^2 = \lambda \omega^2 \mu^2$. If $\mu$ 
 of the Jacobi iteration matrix $B$, then $\lambda$ is an eigenvalue of the SOR iteration matrix.
 
 The iteration matrices are the iteration operators of `Matrix.jacobiSplitting` and
-`Matrix.sorSplitting`. -/
+`Matrix.sorSplitting`.
+
+**Reading.** Lean requires $\lambda \ne 0$ in this direction as well, while the printed converse
+allows any root of (4.46). A zero root forces $\omega=1$. On a nonempty matrix that Gauss–Seidel
+iteration matrix is singular because its strict upper factor is singular.
+-/
 theorem theorem_4_16_mpr (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A)) {ω : ℂ}
     (hω : ω ≠ 0) {l μ : ℂ} (hl : l ≠ 0) (hrel : (l + ω - 1) ^ 2 = l * ω ^ 2 * μ ^ 2)
     (hμB : μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator) :
@@ -1333,7 +1483,12 @@ $$\omega_{opt} = \frac{2}{1 + \sqrt{1 - \rho(B)^2}},$$
 and its value there is $\omega_{opt} - 1$.
 
 The SOR iteration matrix for a real $\omega$ is `Matrix.sorIterationMatrix A ω`, and the
-spectral radii are values of `spectralRadius ℂ` in $[0, \infty]$. -/
+spectral radii are values of `spectralRadius ℂ` in $[0, \infty]$.
+
+**Reading.** The source gives the formula without listing these hypotheses at (4.47). Lean makes
+explicit that the Jacobi spectrum is real, $\rho(B)<1$, and the matrix is nonempty. The theorem also
+gives the attained spectral radius.
+-/
 theorem equation_4_47 [NeZero n] (h : IsConsistentlyOrdered A) (hd : IsUnit (diagPart A))
     (hreal : ∀ μ ∈ spectrum ℂ (Matrix.jacobiSplitting A hd).iterationOperator, μ.im = 0)
     (hlt : spectralRadius ℂ (Matrix.jacobiSplitting A hd).iterationOperator < 1) :

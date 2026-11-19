@@ -67,6 +67,16 @@ The proofs specialize the backbone module `Numlib.LinearAlgebra.Matrix.SVD`.
 
 ## Deviations from the source
 
+* **Equation (1.10)** (correction and reading). Column-indexed singular values are padded by
+  zeros when $n>m$. The Gram formulas use $\Sigma^H\Sigma$ and $\Sigma\Sigma^H$, since the
+  printed $\Sigma^2$ is undefined for a rectangular matrix. The eigenvector formulas also
+  hold for arbitrary complex diagonal entries, with their squared moduli.
+* **Kernel, range, and Definition 1.15** (generalization). The formulas use each zero or
+  nonzero entry as it occurs in any unitary diagonal factorization. For the pseudoinverse,
+  the diagonal entries are inverted with $0^{-1}=0$.
+* **Definition 1.15, full-column-rank formula** (correction). Lean uses $A^H$ for complex
+  matrices and $A^T$ for real matrices. For the complex column $(1,i)^T$, $A^T A=0$ while
+  $A^H A=2$, so the printed transpose formula fails.
 * **Exercise 12 of Chapter 1** (generalization). The book assumes $\operatorname{rank} A = n$; the
   identities $A^\dagger A A^\dagger = A^\dagger$ and $A A^\dagger A = A$ are stated for every $A$.
   See `QuarteroniSaccoSaleri.Chapter01.exercise_1_12`.
@@ -145,7 +155,10 @@ for some $\sigma_1, \sigma_2, \dots \in \mathbb{C}$. Then:
 The singular values indexed by the columns are the backbone's `Matrix.colSingularValues A`,
 defined by the square root in (1.10). The second clause uses the backbone theorem
 `Matrix.singularValues_eq_of_svd`. In Lean the indices are 0-based, so the conditions
-$i \le \min(m, n)$, $j \le m$ and $i \le n$ read `i < m ∧ i < n`, `j < m` and `i < n`. -/
+$i \le \min(m, n)$, $j \le m$ and $i \le n$ read `i < m ∧ i < n`, `j < m` and `i < n`.
+
+**Correction.** In a rectangular SVD the printed $\Sigma^2$ is undefined. The formulas use
+$\Sigma^H\Sigma$ and $\Sigma\Sigma^H$. The entries beyond the rectangular diagonal are zero. -/
 theorem equation_1_10 (A : Matrix (Fin m) (Fin n) ℂ) {U : Matrix (Fin m) (Fin m) ℂ}
     {V : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ unitaryGroup (Fin m) ℂ)
     (hV : V ∈ unitaryGroup (Fin n) ℂ) {σ : ℕ → ℂ} (h : star U * A * V = rectDiagonal σ) :
@@ -232,7 +245,10 @@ For sorted singular values with $\sigma_r > \sigma_{r+1} = 0$, these are $\ker(A
 
 In Lean the indices are 0-based, so $j > m$ and $i \le n$ read `m ≤ j` and `i < n`. The proof
 uses the backbone theorems `Matrix.ker_mulVecLin_eq_span_of_svd` and
-`Matrix.range_mulVecLin_eq_span_of_svd`. -/
+`Matrix.range_mulVecLin_eq_span_of_svd`.
+
+**Generalization.** Any unitary diagonal factorization suffices. The coefficient conditions
+select the same spans without needing the source's sorted order. -/
 theorem ker_range_of_svd {A : Matrix (Fin m) (Fin n) ℂ} {U : Matrix (Fin m) (Fin m) ℂ}
     {V : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ unitaryGroup (Fin m) ℂ)
     (hV : V ∈ unitaryGroup (Fin n) ℂ) {σ : ℕ → ℂ} (h : star U * A * V = rectDiagonal σ) :
@@ -255,7 +271,9 @@ The matrix $A^\dagger$ does not depend on the chosen decomposition.
 
 The statement is a theorem about the backbone's `Matrix.pinv A`, which is defined without a
 decomposition. The matrix $\Sigma^\dagger$ is the entrywise inverse of the diagonal, because
-$0^{-1} = 0$ in Lean. The proof is the backbone theorem `Matrix.pinv_eq_of_svd`. -/
+$0^{-1} = 0$ in Lean. The proof is the backbone theorem `Matrix.pinv_eq_of_svd`.
+
+**Generalization.** The formula holds even when the diagonal entries are unsorted or complex. -/
 theorem definition_1_15 {A : Matrix (Fin m) (Fin n) ℂ} {U : Matrix (Fin m) (Fin m) ℂ}
     {V : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ unitaryGroup (Fin m) ℂ)
     (hV : V ∈ unitaryGroup (Fin n) ℂ) {σ : ℕ → ℂ} (h : star U * A * V = rectDiagonal σ) :
@@ -271,7 +289,10 @@ $\operatorname{rank} C = n$, then $C^\dagger = C^{-1}$.
 
 The proof uses the backbone theorems
 `Matrix.pinv_eq_inv_conjTranspose_mul_self_mul_conjTranspose_of_isUnit` and
-`Matrix.pinv_eq_inv`. -/
+`Matrix.pinv_eq_inv`.
+
+**Correction.** In the complex case the source's ordinary transpose can make $A^TA$ singular
+for a full-column-rank matrix, as for the column $(1,i)^T$. Lean uses $A^H$ in that case. -/
 theorem definition_1_15_fullRank (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin m) (Fin n) ℝ)
     (C : Matrix (Fin n) (Fin n) ℂ) :
     (A.rank = n → A.pinv = (Aᴴ * A)⁻¹ * Aᴴ) ∧ (B.rank = n → B.pinv = (Bᵀ * B)⁻¹ * Bᵀ) ∧

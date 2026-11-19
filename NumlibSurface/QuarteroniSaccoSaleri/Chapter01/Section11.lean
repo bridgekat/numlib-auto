@@ -117,11 +117,21 @@ matrices), `Numlib.LinearAlgebra.Matrix.Complexify` (the spectral radius of a re
 
 ## Deviations from the source
 
+* **Definitions 1.20–1.21 and Theorem 1.1** (reading). Consistency also applies to seminorms
+  and arbitrary matrix functions. Definition 1.21 is represented by its application to matrix
+  $r$-norms, and Theorem 1.1 allows separate domain and codomain norms.
 * **Example 1.7** (typo). Equation (1.18) prints $\|A\|_F = \operatorname{tr}(A A^H)$ for
   $\sqrt{\operatorname{tr}(A A^H)}$. See `QuarteroniSaccoSaleri.Chapter01.example_1_7`.
+* **Theorem 1.2 and the subsequent bounds** (reading). The spectral-radius formulas allow
+  rectangular matrices, while the singular-value clause is square. The unitary corollary includes
+  real orthogonal matrices, and the entrywise bounds avoid a maximum over an empty set.
 * **After Theorem 1.2** (generalization). The book states $\|A\|_2 \le \|A\|_p$ for a normal $A$ and
   $p \ge 2$; it holds for every $p \ge 1$. See
   `QuarteroniSaccoSaleri.Chapter01.l2_opNorm_le_lpOpNorm_of_isStarNormal`.
+* **Exercise 16, Theorem 1.4 and Property 1.13** (generalization). Exercise 16 includes
+  spectral-norm estimates in addition to the Frobenius identity. Theorem 1.4 allows consistent
+  matrix functions and includes a real variant. Property 1.13 supplies an induced norm for both
+  the complex and real cases.
 * **After Property 1.13** (correction). The book calls the spectral radius a sub-multiplicative
   seminorm; it is neither subadditive nor sub-multiplicative. See
   `QuarteroniSaccoSaleri.Chapter01.spectralRadius_not_subadditive`.
@@ -130,6 +140,8 @@ matrices), `Numlib.LinearAlgebra.Matrix.Complexify` (the spectral radius of a re
   `QuarteroniSaccoSaleri.Chapter01.equation_1_23`.
 * **Property 1.14** (generalization). The book asks for a consistent matrix norm; the limit holds
   for every matrix norm. See `QuarteroniSaccoSaleri.Chapter01.property_1_14`.
+* **Theorem 1.5** (reading). The power and series criteria are stated for both real and complex
+  matrices, while the source discussion starts from real matrices.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -147,7 +159,10 @@ $$\|Ax\|_q \le \|A\| \, \|x\|_p \quad \text{for all } A \in \mathbb{R}^{m \times
   \mathbb{R}^n.$$
 For square matrices the same vector norm is taken on both sides.
 
-Consistency is the backbone predicate `Matrix.IsConsistent N q p`. -/
+Consistency is the backbone predicate `Matrix.IsConsistent N q p`.
+
+**Generalization.** The book assumes definite vector and matrix norms. This characterization also
+applies to vector seminorms and arbitrary real-valued matrix functions. -/
 theorem definition_1_20 {m n : ℕ} (N : Matrix (Fin m) (Fin n) ℝ → ℝ) (q : Seminorm ℝ (Fin m → ℝ))
     (p : Seminorm ℝ (Fin n → ℝ)) (N' : Matrix (Fin n) (Fin n) ℝ → ℝ) :
     (IsConsistent N q p ↔ ∀ A x, q (A *ᵥ x) ≤ N A * p x) ∧
@@ -161,7 +176,10 @@ the matrix $r$-norms are sub-multiplicative for every $r \in [1, \infty]$:
 $$\|AB\|_r \le \|A\|_r \|B\|_r.$$
 
 This is the remark after Theorem 1.3. The proof is the backbone theorem
-`Matrix.lpOpNorm_mul_le`. -/
+`Matrix.lpOpNorm_mul_le`.
+
+**Reading.** This specializes the defining inequality to matrix $r$-norms and proves it, following
+the remark after Theorem 1.3. Definition 1.21 gives a criterion for arbitrary matrix norms. -/
 theorem definition_1_21 {n m q : ℕ} (r : ℝ≥0∞) [Fact (1 ≤ r)] (A : Matrix (Fin n) (Fin m) ℝ)
     (B : Matrix (Fin m) (Fin q) ℝ) :
     lpOpNorm r (A * B) ≤ lpOpNorm r A * lpOpNorm r B :=
@@ -257,7 +275,10 @@ $A, B \in \mathbb{R}^{m \times n}$ and $\alpha \in \mathbb{R}$, $\|A\| \ge 0$, $
 and only if $A = 0$, $\|\alpha A\| = |\alpha| \|A\|$, and $\|A + B\| \le \|A\| + \|B\|$.
 
 The induced norm is the backbone's `Matrix.inducedNorm q p A`, defined as the supremum of
-$\|Ax\|_q$ over $\|x\|_p \le 1$. -/
+$\|Ax\|_q$ over $\|x\|_p \le 1$.
+
+**Reading.** The printed quotient uses one norm symbol for vectors in both spaces. Here the domain
+and codomain can have different vector norms, as in the rectangular case of Definition 1.20. -/
 theorem theorem_1_1 [NeZero n] (q : Seminorm ℝ (Fin m → ℝ)) (p : Seminorm ℝ (Fin n → ℝ))
     (hq : ∀ y, q y = 0 → y = 0) (hp : ∀ x, p x = 0 → x = 0) (A B : Matrix (Fin m) (Fin n) ℝ)
     (α : ℝ) :
@@ -338,7 +359,11 @@ The spectral norm $\|\cdot\|_2$ is Mathlib's scoped `Matrix.Norms.L2Operator`. T
 $\|A\|_2^2 = \rho(A^H A)$ are the backbone theorem
 `Matrix.l2_opNorm_sq_eq_spectralRadius_conjTranspose_mul_self` and its companions, stated in
 $[0, \infty]$; the square roots are their real form. The singular values are
-`Matrix.colSingularValues B`. -/
+`Matrix.colSingularValues B`.
+
+**Reading.** The spectral-radius identities cover rectangular complex matrices. The equality with
+the largest singular value is stated here only for square complex matrices, and the explicit real
+variant gives the squared norm for a square real matrix. -/
 theorem theorem_1_2 [NeZero n] (A : Matrix (Fin m) (Fin n) ℂ) (B : Matrix (Fin n) (Fin n) ℂ)
     (C : Matrix (Fin n) (Fin n) ℝ) :
     ((‖A‖₊ : ℝ≥0∞) ^ 2 = spectralRadius ℂ (Aᴴ * A) ∧
@@ -374,7 +399,10 @@ theorem theorem_1_2_hermitian {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermiti
 $A \in \mathbb{C}^{n \times n}$ is unitary, then $\|A\|_2 = 1$. If
 $Q \in \mathbb{R}^{n \times n}$ is orthogonal, then $\|Q\|_2 = 1$.
 
-The proof uses the backbone theorem `Matrix.l2_opNorm_of_mem_unitaryGroup`. -/
+The proof uses the backbone theorem `Matrix.l2_opNorm_of_mem_unitaryGroup`.
+
+**Generalization.** The book states the assertion for a unitary matrix. The declaration includes
+the real orthogonal case explicitly. -/
 theorem theorem_1_2_unitary [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : A ∈ unitaryGroup (Fin n) ℂ) {Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) : ‖A‖ = 1 ∧ ‖Q‖ = 1 :=
@@ -403,7 +431,10 @@ factor $n^{-1/2}$ is $0$. The proof uses the backbone theorems `Matrix.norm_entr
 `Matrix.l2_opNorm_le_sqrt_card_mul_of_forall_norm_le`,
 `Matrix.l2_opNorm_le_sqrt_card_mul_linfty_opNorm`,
 `Matrix.l2_opNorm_le_sqrt_card_mul_lpOpNorm_one` and
-`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`. -/
+`Matrix.l2_opNorm_sq_le_lpOpNorm_one_mul_linfty_opNorm`.
+
+**Reading.** The entrywise maximum bounds are given pointwise and using an arbitrary nonnegative
+upper bound for the entries. This also allows the empty matrix via Lean's total division. -/
 theorem l2_opNorm_bounds (A : Matrix (Fin n) (Fin n) ℂ) :
     ((∀ i j, ‖A i j‖ ≤ lpOpNorm 2 A) ∧
         ∀ M : ℝ, 0 ≤ M → (∀ i j, ‖A i j‖ ≤ M) → lpOpNorm 2 A ≤ n * M) ∧
@@ -437,15 +468,19 @@ theorem l2_opNorm_le_lpOpNorm_of_isStarNormal (A : Matrix (Fin n) (Fin n) ℂ) [
   Matrix.l2_opNorm_le_lpOpNorm_of_isStarNormal A p
 
 open scoped Matrix.Norms.Frobenius in
-/-- **Exercise 16 of Chapter 1** of [quarteroni2000numerical], which §1.11 cites for the table of
-Exercise 17. Let $A \in \mathbb{R}^{m \times n}$ with singular values $\sigma_i$. Then the
+/-- **Exercise 16 of Chapter 1** of [quarteroni2000numerical]. Let
+$A \in \mathbb{R}^{m \times n}$ with singular values $\sigma_i$. Then the
 square of the Frobenius norm is the sum of the squares of the singular values,
 $$\|A\|_F^2 = \sum_i \sigma_i(A)^2,$$
 and consequently $\|A\|_2 \le \|A\|_F \le \sqrt{\operatorname{rank} A} \, \|A\|_2$.
 
 The singular values are `Matrix.colSingularValues A`, indexed by the columns. The proof uses the
 backbone theorems `Matrix.frobenius_norm_sq_eq_sum_sq_colSingularValues`,
-`Matrix.l2_opNorm_le_frobenius_norm` and `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`. -/
+`Matrix.l2_opNorm_le_frobenius_norm` and `Matrix.frobenius_norm_le_sqrt_rank_mul_l2_opNorm`.
+
+**Generalization.** The exercise asks for the sum of squares of the first $\min(m,n)$ singular
+values. The declaration sums the column-indexed singular values, including padding by zeros, and
+adds two comparisons with the spectral norm. -/
 theorem exercise_1_16 (A : Matrix (Fin m) (Fin n) ℝ) :
     ‖A‖ ^ 2 = ∑ i, A.colSingularValues i ^ 2 ∧ lpOpNorm 2 A ≤ ‖A‖ ∧
       ‖A‖ ≤ √(A.rank : ℝ) * lpOpNorm 2 A :=
@@ -491,7 +526,10 @@ $\mathbb{C}^n$, and let $N$ be a function on $\mathbb{C}^{n \times n}$ consisten
 $$\rho(A) \le N(A) \quad \text{for every } A \in \mathbb{C}^{n \times n}.$$
 
 The proof is the book's eigenvector argument, the backbone theorem
-`Matrix.spectralRadius_le_of_isConsistent`. -/
+`Matrix.spectralRadius_le_of_isConsistent`.
+
+**Generalization.** The book assumes a consistent matrix norm. The bound only needs consistency
+with a definite vector norm, so the matrix function need not satisfy the norm axioms. -/
 theorem theorem_1_4 {N : Matrix (Fin n) (Fin n) ℂ → ℝ} {p : Seminorm ℂ (Fin n → ℂ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℂ) :
     spectralRadius ℂ A ≤ ENNReal.ofReal (N A) :=
@@ -508,7 +546,10 @@ $r$-norm for any $r \in [1, \infty]$.
 The eigenvector in the book's proof can be complex, so it does not apply directly to a real
 vector norm. The backbone proof goes through the induced norm, which is an algebra norm:
 `Matrix.complexSpectralRadius_le_of_isConsistent`, `Matrix.complexSpectralRadius_le_inducedNorm`
-and `Matrix.complexSpectralRadius_le_lpOpNorm`. -/
+and `Matrix.complexSpectralRadius_le_lpOpNorm`.
+
+**Generalization.** The theorem in the book is stated for complex matrices. This real-matrix
+version also states the induced norm and matrix $r$-norm bounds. -/
 theorem theorem_1_4_real {N : Matrix (Fin n) (Fin n) ℝ → ℝ} {p : Seminorm ℝ (Fin n → ℝ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℝ)
     (r : ℝ≥0∞) [Fact (1 ≤ r)] :
@@ -528,7 +569,10 @@ spectral radius of $B$ regarded as a complex matrix.
 
 The proof uses the backbone theorems `Matrix.exists_inducedNorm_le_spectralRadius_add` and
 `Matrix.exists_inducedNorm_le_complexSpectralRadius_add`, built on the norm of
-`Numlib.LinearAlgebra.Matrix.EpsilonNorm`. -/
+`Numlib.LinearAlgebra.Matrix.EpsilonNorm`.
+
+**Reading.** The book asserts existence of a consistent matrix norm in the complex case. The
+witness here is induced by a definite vector norm, and the statement includes the real case. -/
 theorem property_1_13 (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin n) ℝ) {ε : ℝ}
     (hε : 0 < ε) :
     (∃ p : Seminorm ℂ (Fin n → ℂ), (∀ x, p x = 0 → x = 0) ∧ IsConsistent (inducedNorm p p) p p ∧
@@ -544,9 +588,10 @@ $$\rho(A) = \inf \|A\|,$$
 where the infimum is taken over the matrix norms induced by the vector norms on $\mathbb{R}^n$,
 and $\rho(A)$ is the spectral radius of $A$ regarded as a complex matrix.
 
-**Reading.** The book takes the infimum over all consistent matrix norms. This gives the same
-value: every consistent norm is at least $\rho(A)$ by Theorem 1.4, and the induced norms are
-consistent.
+**Reading.** In the complex-matrix discussion, the book takes the infimum over all consistent
+matrix norms. This is the real-matrix counterpart with the infimum restricted to induced norms.
+Every consistent norm is at least $\rho(A)$, and induced norms can approach $\rho(A)$ arbitrarily
+closely by Property 1.13.
 
 The proof is the backbone theorem `Matrix.complexSpectralRadius_eq_iInf_inducedNorm`. -/
 theorem equation_1_23 (A : Matrix (Fin n) (Fin n) ℝ) :
@@ -678,7 +723,10 @@ $B \in \mathbb{C}^{n \times n}$.
 
 The real case is the backbone theorem `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`. The
 complex case is the backbone theorem `spectralRadius_lt_one_iff_tendsto_pow` in the Banach
-algebra $\mathbb{C}^{n \times n}$. -/
+algebra $\mathbb{C}^{n \times n}$.
+
+**Reading.** The preceding discussion uses real matrices. The declaration states the criterion
+separately for real and complex matrices. -/
 theorem theorem_1_5 [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin n) ℂ) :
     (Tendsto (fun k => A ^ k) atTop (𝓝 0) ↔ A.complexSpectralRadius < 1) ∧
       (Tendsto (fun k => B ^ k) atTop (𝓝 0) ↔ spectralRadius ℂ B < 1) := by
@@ -697,7 +745,10 @@ The same holds for $B \in \mathbb{C}^{n \times n}$.
 The real case uses the backbone theorems `Matrix.summable_pow_iff_complexSpectralRadius_lt_one`
 and `Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one`. The complex case uses the
 backbone theorems `summable_pow_iff_spectralRadius_lt_one` and
-`hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one`. -/
+`hasSum_pow_inverse_one_sub_of_spectralRadius_lt_one`.
+
+**Reading.** The preceding discussion uses real matrices. The declaration states the series
+criterion and identifies its sum for both real and complex matrices using `HasSum`. -/
 theorem theorem_1_5_series [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin n) ℂ) :
     ((Summable fun k => A ^ k) ↔ A.complexSpectralRadius < 1) ∧

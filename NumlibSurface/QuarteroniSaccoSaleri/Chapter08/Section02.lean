@@ -58,6 +58,16 @@ definitions. The other proofs specialize `Numlib.Approximation.NewtonForm`.
 * The book's case $n \ge 1$ in (8.14)–(8.16) is a family `x : Fin (n + 2) → ℝ`. Then `Fin.init x` is
   the family of the first $n + 1$ nodes and `x (Fin.last _)` is the last node.
 
+## Deviations from the source
+
+* **Convention.** The divided-difference sum, symmetry and linearity use a totalized raw formula at
+  coincident nodes. See `QuarteroniSaccoSaleri.Chapter08.equation_8_18`,
+  `QuarteroniSaccoSaleri.Chapter08.dividedDifference_perm`,
+  `QuarteroniSaccoSaleri.Chapter08.dividedDifference_linear`.
+* **Reading.** The error divided difference uses an evaluation point distinct from every node and
+  smoothness on a neighborhood of the hull. See `QuarteroniSaccoSaleri.Chapter08.equation_8_20`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_21`.
+
 ## Not formalized
 
 * **Examples 8.3 and 8.4.** They are tables of computed divided differences.
@@ -128,7 +138,12 @@ $$f[x_0, \ldots, x_n] = \sum_{i=0}^n \frac{f(x_i)}{\omega_{n+1}'(x_i)}.$$
 The statement assumes no distinctness of the nodes; a term with $\omega_{n+1}'(x_i) = 0$ is $0$
 by the Lean convention $a / 0 = 0$. The result is the definition of `DividedDifference.newton`
 once the denominators $\prod_{j \neq i} (x_i - x_j)$ are read as the values
-$\omega_{n+1}'(x_i)$, by Exercise 3 of Chapter 8. -/
+$\omega_{n+1}'(x_i)$, by Exercise 3 of Chapter 8.
+
+**Reading.** The explicit sum and its symmetry and linearity extend to repeated nodes by totalized
+division. This extension is the raw formula, which is not the confluent divided difference of Remark
+8.3.
+-/
 theorem equation_8_18 (f : ℝ → ℝ) (x : Fin (n + 1) → ℝ) :
     DividedDifference.newton f x
       = ∑ i, f (x i) / (derivative (Lagrange.nodal Finset.univ x)).eval (x i) := by
@@ -140,7 +155,12 @@ under permutations of the indices of the nodes: for every permutation $\sigma$ o
 $\{0, \ldots, n\}$,
 $$f[x_{\sigma(0)}, \ldots, x_{\sigma(n)}] = f[x_0, \ldots, x_n].$$
 
-The proof specializes `DividedDifference.newton_comp_perm`. -/
+The proof specializes `DividedDifference.newton_comp_perm`.
+
+**Reading.** The explicit sum and its symmetry and linearity extend to repeated nodes by totalized
+division. This extension is the raw formula, which is not the confluent divided difference of Remark
+8.3.
+-/
 theorem dividedDifference_perm (f : ℝ → ℝ) (x : Fin (n + 1) → ℝ) (σ : Equiv.Perm (Fin (n + 1))) :
     DividedDifference.newton f (x ∘ σ) = DividedDifference.newton f x :=
   DividedDifference.newton_comp_perm f x σ
@@ -149,7 +169,12 @@ theorem dividedDifference_perm (f : ℝ → ℝ) (x : Fin (n + 1) → ℝ) (σ :
 $\alpha, \beta \in \mathbb{R}$, then
 $$f[x_0, \ldots, x_n] = \alpha g[x_0, \ldots, x_n] + \beta h[x_0, \ldots, x_n].$$
 
-The proof uses `DividedDifference.newton_add` and `DividedDifference.newton_smul`. -/
+The proof uses `DividedDifference.newton_add` and `DividedDifference.newton_smul`.
+
+**Reading.** The explicit sum and its symmetry and linearity extend to repeated nodes by totalized
+division. This extension is the raw formula, which is not the confluent divided difference of Remark
+8.3.
+-/
 theorem dividedDifference_linear (α β : ℝ) (g h : ℝ → ℝ) (x : Fin (n + 1) → ℝ) :
     DividedDifference.newton (fun t => α * g t + β * h t) x
       = α * DividedDifference.newton g x + β * DividedDifference.newton h x := by
@@ -198,7 +223,12 @@ theorem dividedDifference_eq_zero_of_mem_polyLT {p : ℝ[X]} (hp : p.degree < n)
 let $x$ be a point distinct from the nodes. Then
 $$E_n(x) = f(x) - \Pi_n f(x) = \omega_{n+1}(x) f[x_0, \ldots, x_n, x].$$
 
-The proof specializes `DividedDifference.sub_eval_interpolate_eq_newton`. -/
+The proof specializes `DividedDifference.sub_eval_interpolate_eq_newton`.
+
+**Reading.** The evaluation point is required to differ from all nodes because the enlarged divided
+difference is the nonconfluent one. For (8.21), differentiability is stated on an open neighborhood
+of the closed hull.
+-/
 theorem equation_8_20 (f : ℝ → ℝ) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {t : ℝ}
     (ht : ∀ i, x i ≠ t) :
     f t - (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t
@@ -213,7 +243,12 @@ $$f[x_0, \ldots, x_n, t] = \frac{f^{(n+1)}(\xi)}{(n+1)!}.$$
 
 The book obtains the formula by comparing (8.20) with (8.7). The proof specializes
 `DividedDifference.exists_newton_eq_iteratedDeriv_div_of_contDiffOn`, which uses the generalized
-Rolle theorem at the $n + 2$ points $x_0, \ldots, x_n, t$. -/
+Rolle theorem at the $n + 2$ points $x_0, \ldots, x_n, t$.
+
+**Reading.** The evaluation point is required to differ from all nodes because the enlarged divided
+difference is the nonconfluent one. For (8.21), differentiability is stated on an open neighborhood
+of the closed hull.
+-/
 theorem equation_8_21 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {t : ℝ}
     (ht : ∀ i, x i ≠ t) {f : ℝ → ℝ} {U : Set ℝ} (hU : IsOpen U)
     (hUsub : Icc (min t (⨅ i, x i)) (max t (⨆ i, x i)) ⊆ U)

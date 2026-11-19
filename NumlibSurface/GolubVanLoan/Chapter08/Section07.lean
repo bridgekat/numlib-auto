@@ -125,6 +125,25 @@ Crawford number) and `Numlib.LinearAlgebra.Matrix.SVD`. The algorithms call the 
 
 ## Deviations from the source
 
+* **§8.7.2, Cholesky spectrum** (reading). `GolubVanLoan.Chapter08.pencil_eq_cholesky_spectrum`
+  combines the source’s Cholesky spectral identity with identification of the output of an exact
+  Schur routine.
+* **Equation (8.7.5)** (reading). `GolubVanLoan.Chapter08.generalizedRayleighQuotientIteration`
+  uses totalized inversion and returns zero at a singular shifted solve or zero normalization
+  direction.
+* **§8.7.4, GSVD pencil consequences** (reading).
+  `GolubVanLoan.Chapter08.gsvd_columns_and_pencil` assumes the corresponding $\beta_k\neq 0$ for
+  each finite generalized eigenvalue and assumes all denominators are nonzero to identify the
+  full finite spectrum.
+* **Algorithm 8.7.2 and the following RQ discussion** (typo).
+  `GolubVanLoan.Chapter08.algorithm_8_7_2_spec` uses $D_B\in\mathbb{R}^{m_2\times n}$,
+  correcting the printed $m_1$. `GolubVanLoan.Chapter08.gsvd_subspace_via_rq` uses $X=R^{-1}V$,
+  as follows from $RX=V$.
+* **§8.7.9, quadratic eigenvalue problems** (generalization).
+  `GolubVanLoan.Chapter08.equation_8_7_13`, `GolubVanLoan.Chapter08.equation_8_7_15`, and
+  `GolubVanLoan.Chapter08.qep_re_nonpos` allow complex coefficient matrices. The discriminant
+  identity avoids division by $x^H Mx$, and `GolubVanLoan.Chapter08.palindromic_reciprocal`
+  restricts the reciprocal to nonzero finite values.
 * **Equation (8.7.4)** (correction). The source's display of the Crawford number has no square root.
   The definition takes the square root, which the ratio $\epsilon / c(A, B)$ of Theorem 8.7.3 needs.
   See `GolubVanLoan.Chapter08.crawfordNumber`.
@@ -256,7 +275,10 @@ $A = 0$, $B = 1$, $E_A = \sqrt{3}/4$ and $E_B = -1/4$. Then $\|E_A\|_2^2 + \|E_B
 so $\epsilon = 1/2 < 1 = c(A, B)$. Moreover $\lambda(A, B) = \{0\}$ and
 $\lambda(A + E_A, B + E_B) = \{1/\sqrt{3}\}$, and
 $$|\arctan 0 - \arctan(1/\sqrt{3})| = \pi/6 > \arctan(\epsilon / c(A, B)).$$
-So the bound as printed in the source fails. -/
+So the bound as printed in the source fails.
+
+**Correction.** Explicit one-dimensional counterexample to printed arctangent bound.
+-/
 theorem theorem_8_7_3_counterexample :
     let A : Matrix (Fin 1) (Fin 1) ℝ := 0
     let B : Matrix (Fin 1) (Fin 1) ℝ := 1
@@ -469,7 +491,11 @@ $(X, a)$ of Algorithm 8.7.1 in exact arithmetic.
 
 The factor $G$ is `Matrix.cholesky B`. The first identity is
 `GolubVanLoan.Chapter08.pencil_congruence` with $X = G^{-T}$. The hypothesis on the Schur step
-is also present for the first identity, which does not use it. -/
+is also present for the first identity, which does not use it.
+
+**Reading.** The source’s spectral identity for $G^{-1}AG^{-T}$ is independent of a Schur
+routine. Lean combines it with the spectrum of the routine’s output, so the joint statement
+takes an exact Schur routine as a hypothesis. -/
 theorem pencil_eq_cholesky_spectrum
     (schur : Matrix (Fin n) (Fin n) ℝ → Id (Matrix (Fin n) (Fin n) ℝ × (Fin n → ℝ)))
     (hschur : ∀ C : Matrix (Fin n) (Fin n) ℝ, C.IsSymm →
@@ -509,7 +535,11 @@ $$\mu_k = \frac{x_k^T A x_k}{x_k^T B x_k}, \qquad (A - \mu_k B) z_{k+1} = B x_k,
 
 The solve uses the Lean inverse `Matrix.inv`, which is total: if $A - \mu_k B$ is singular, then
 $z_{k+1} = 0$ and $x_{k+1} = 0$. If $x_k^T B x_k = 0$, then $\mu_k = 0$, and if $z_{k+1} = 0$,
-then $x_{k+1} = 0$. -/
+then $x_{k+1} = 0$.
+
+**Reading.** The source prescribes a shifted linear solve and normalization at each step. The
+Lean definitions are total at breakdown, where a singular shifted matrix or a zero direction
+gives a zero next iterate. -/
 noncomputable def generalizedRayleighQuotientIteration (A B : Matrix (Fin n) (Fin n) ℝ)
     (x₀ : Fin n → ℝ) : ℕ → Fin n → ℝ
   | 0 => x₀
@@ -518,11 +548,15 @@ noncomputable def generalizedRayleighQuotientIteration (A B : Matrix (Fin n) (Fi
     let z := (A - ((x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ B *ᵥ x)) • B)⁻¹ *ᵥ (B *ᵥ x)
     ‖(WithLp.toLp 2 z : EuclideanSpace ℝ (Fin n))‖⁻¹ • z
 
-/-- **Equation (8.7.5)** of [golub2013matrix], as Rayleigh quotient iteration on $B^{-1} A$. Let $B$
+/-- **Equation (8.7.5)** of [golub2013matrix], with the shifted solve using $B^{-1} A$. Let $B$
 be nonsingular. Then each step of the generalized Rayleigh quotient iteration solves
 $$(B^{-1} A - \mu_k I) z_{k+1} = x_k, \qquad \mu_k = \frac{x_k^T A x_k}{x_k^T B x_k},$$
 and sets $x_{k+1} = z_{k+1} / \|z_{k+1}\|_2$. This is inverse iteration (7.6.1) on $B^{-1} A$
-with the generalized Rayleigh quotient $\mu_k$ as shift. -/
+with the generalized Rayleigh quotient $\mu_k$ as shift.
+
+**Reading.** This identity rewrites only the shifted solve using $B^{-1}A$. The shift remains
+the generalized quotient $x^TAx/(x^TBx)$, which is the Rayleigh quotient of $B^{-1}A$ in the
+$B$ inner product when $B$ is positive definite. -/
 theorem generalizedRayleighQuotientIteration_succ {A B : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsUnit B.det) (x₀ : Fin n → ℝ) (k : ℕ) :
     let x := generalizedRayleighQuotientIteration A B x₀ k
@@ -626,7 +660,11 @@ $U_2$. Then:
   1, \dots, n\}$, the squares of the generalized singular values
   $\sigma(A, B) = \{\alpha_k / \beta_k\}$.
 
-The eigenvector condition is `Matrix.HasPencilEigenvector`. -/
+The eigenvector condition is `Matrix.HasPencilEigenvector`.
+
+**Reading.** The source states the connection to finite pencil eigenvalues without a
+denominator condition. The Lean eigenvector clause assumes $\beta_k\neq 0$ for that column, and
+the equality of the full finite spectra assumes every $\beta_k\neq 0$. -/
 theorem gsvd_columns_and_pencil {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {B : Matrix (Fin m₂) (Fin n) ℝ} (hm₁ : n ≤ m₁) (hm₂ : n ≤ m₂)
     {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ} {U₂ : Matrix (Fin m₂) (Fin m₂) ℝ}
@@ -728,7 +766,10 @@ $\operatorname{null}(A) \cap \operatorname{null}(B) = \{0\}$.
 
 The hypothesis on the CS step is a thin CS decomposition; Theorem 2.5.2 of Chapter 2 gives one
 when $m_1, m_2 \ge n$. The stacked matrix has full column rank, so Algorithm 5.2.6 computes a
-thin QR factorization with positive diagonal, and $AX = Q_1 RX = Q_1 V$. -/
+thin QR factorization with positive diagonal, and $AX = Q_1 RX = Q_1 V$.
+
+**Typo.** The printed output dimension of $D_B$ is $m_1\times n$. It is $m_2\times n$ in Lean,
+since $D_B=U_2^TBX$. -/
 theorem algorithm_8_7_2_spec {m₁ m₂ : ℕ}
     (cs : Matrix (Fin m₁) (Fin n) ℝ → Matrix (Fin m₂) (Fin n) ℝ →
       Id (Matrix (Fin m₁) (Fin m₁) ℝ × Matrix (Fin m₂) (Fin m₂) ℝ × Matrix (Fin n) (Fin n) ℝ ×
@@ -812,7 +853,10 @@ $X = R^{-1} V$ and every $k \le n$,
 $$\operatorname{span}\{x_1, \dots, x_k\} = \operatorname{span}\{z_1, \dots, z_k\}.$$
 
 The source assumes that $R$ is nonsingular. The statement does not need this hypothesis, because
-$V^T R = T Z^T$ is then nonsingular. -/
+$V^T R = T Z^T$ is then nonsingular.
+
+**Typo.** Before the RQ argument the source writes $X=VR^{-1}$. The solve $RX=V$ and the
+source’s subsequent RQ identity both give $X=R^{-1}V$, as in Lean. -/
 theorem gsvd_subspace_via_rq {R V Z T : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) (hZ : Z ∈ orthogonalGroup (Fin n) ℝ)
     (hT : T.IsUpperTriangular) (hTu : IsUnit T.det) (hTZ : T * Zᵀ = Vᵀ * R) :
@@ -902,7 +946,10 @@ theorem kogbetliantz_twoByTwo {F G U₁ U₂ : Matrix (Fin 2) (Fin 2) ℝ} (hG :
 $\lambda \in \mathbb{C}$ and $x \in \mathbb{C}^n$ with $(\lambda^2 M + \lambda C + K) x = 0$.
 With $m = x^H M x$, $c = x^H C x$ and $k = x^H K x$,
 $$m \lambda^2 + c \lambda + k = 0, \qquad (2m\lambda + c)^2 = c^2 - 4mk.$$
-For $m \neq 0$ the second identity is the quadratic formula (8.7.14). -/
+For $m \neq 0$ the second identity is the quadratic formula (8.7.14).
+
+**Reading.** Lean allows complex coefficient matrices. It states the quadratic formula as a
+squared discriminant identity that remains valid when $x^H Mx=0$. -/
 theorem equation_8_7_13 (M C K : Matrix (Fin n) (Fin n) ℂ) {l : ℂ} {x : Fin n → ℂ}
     (h : (l ^ 2 • M + l • C + K) *ᵥ x = 0) :
     (star x ⬝ᵥ M *ᵥ x) * l ^ 2 + (star x ⬝ᵥ C *ᵥ x) * l + star x ⬝ᵥ K *ᵥ x = 0 ∧
@@ -939,7 +986,11 @@ $$\begin{bmatrix} -K & 0 \\ 0 & N \end{bmatrix} \begin{bmatrix} x \\ \lambda x \
 Moreover, every solution $(x, u)$ of either linearization has $u = \lambda x$, so an eigenvector
 of a linearization has $x \neq 0$.
 
-Block matrices are `Matrix.fromBlocks`, and the vector $(x, u)$ is `Sum.elim x u`. -/
+Block matrices are `Matrix.fromBlocks`, and the vector $(x, u)$ is `Sum.elim x u`.
+
+**Generalization.** The source gives the two linearizations for real coefficient matrices. Lean
+uses complex matrices and states both equivalences as well as the auxiliary vector relation
+$u=\lambda x$. -/
 theorem equation_8_7_15 (M C K : Matrix (Fin n) (Fin n) ℂ) {N : Matrix (Fin n) (Fin n) ℂ}
     (hN : IsUnit N) (l : ℂ) :
     (∀ x : Fin n → ℂ, (l ^ 2 • M + l • C + K) *ᵥ x = 0 ↔
@@ -984,7 +1035,10 @@ $M$ and $C$ positive definite and $K$ positive semidefinite. If $x \neq 0$ and
 $(\lambda^2 M + \lambda C + K) x = 0$, then $\operatorname{Re} \lambda \le 0$.
 
 The source takes $M$, $C$ and $K$ real symmetric. The statement uses the complex Hermitian forms
-of these hypotheses. -/
+of these hypotheses.
+
+**Generalization.** The source assumes real symmetric coefficients. The Lean theorem allows
+complex Hermitian coefficients with the same definiteness conditions. -/
 theorem qep_re_nonpos {M C K : Matrix (Fin n) (Fin n) ℂ} (hM : M.PosDef) (hC : C.PosDef)
     (hK : K.PosSemidef) {l : ℂ} {x : Fin n → ℂ} (hx : x ≠ 0)
     (h : (l ^ 2 • M + l • C + K) *ᵥ x = 0) : l.re ≤ 0 := by
@@ -1091,7 +1145,10 @@ open scoped ComplexOrder in
 $C = 0$ and $K = -1$. Then $M$ is positive definite, $C^H = -C$ and $K$ is Hermitian, and there
 are $\lambda$ and $x \neq 0$ with $(\lambda^2 M + \lambda C + K) x = 0$ and
 $\operatorname{Re} \lambda \neq 0$ (for example $\lambda = 1$). So the gyroscopic claim of the
-source needs $K \succeq 0$. -/
+source needs $K \succeq 0$.
+
+**Correction.** Counterexample to imaginary spectrum under merely symmetric K.
+-/
 theorem gyroscopic_counterexample :
     let M : Matrix (Fin 1) (Fin 1) ℂ := 1
     let C : Matrix (Fin 1) (Fin 1) ℂ := 0
@@ -1106,7 +1163,11 @@ theorem gyroscopic_counterexample :
 with $C^T = C$, and let $Q(\lambda) = \lambda^2 M + \lambda C + M^T$. For $\lambda \neq 0$,
 $Q(\lambda)$ is singular if and only if $Q(1/\lambda)$ is singular.
 
-The transpose is the plain transpose, not the conjugate transpose. -/
+The transpose is the plain transpose, not the conjugate transpose.
+
+**Reading.** The source describes reciprocal eigenvalue pairs. The Lean determinant equivalence
+applies to nonzero finite $\lambda$, where the reciprocal is defined, and allows complex
+coefficient matrices. -/
 theorem palindromic_reciprocal {M C : Matrix (Fin n) (Fin n) ℂ} (hC : Cᵀ = C) {l : ℂ}
     (hl : l ≠ 0) :
     (l ^ 2 • M + l • C + Mᵀ).det = 0 ↔ (l⁻¹ ^ 2 • M + l⁻¹ • C + Mᵀ).det = 0 := by

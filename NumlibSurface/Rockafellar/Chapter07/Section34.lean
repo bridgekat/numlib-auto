@@ -106,16 +106,21 @@ and Corollary 34.5.1. Theorem 34.3 is formalized in its six clauses (a)–(f) an
 * **Theorem 34.1** (generalization). The lower closure is lower closed and the upper closure is
   upper closed for every function $K$, with no hypothesis of concave-convexity or properness. See
   `Rockafellar.theorem_34_1_lower`.
-* **Theorem 34.2**, the domain clause (correction). The factor statements
+* **Theorem 34.2**, the domain and relative-interior clauses (reading). The factor statements
   $\operatorname{dom}_1 K = \operatorname{dom} F$ and $\operatorname{dom}_2 K = \operatorname{dom}
   F^*$ assume that the other factor of $\operatorname{dom} K$ is non-empty, and $\operatorname{dom}
-  K = \operatorname{dom} F \times \operatorname{dom} F^*$ assumes that $K$ is proper. See
-  `Rockafellar.theorem_34_2_dom₁`.
-* **Corollary 34.2.1**, the domain clause (generalization). The book assumes that $K$ is closed. The
-  equality of the effective domains needs no closedness. See `Rockafellar.corollary_34_2_1_dom`.
+  K = \operatorname{dom} F \times \operatorname{dom} F^*$ and the relative-interior
+  comparisons assume that $K$ is proper. The source also covers constant improper classes.
+  See `Rockafellar.theorem_34_2_dom₁`.
+* **Corollary 34.2.1** (reading). The domain comparison drops closedness and assumes
+  properness. The relative-interior comparisons assume both. The source also covers
+  constant improper classes. See `Rockafellar.corollary_34_2_1_dom`.
+* **Corollaries 34.2.2 and 34.2.3** (generalization). The closure, extremal member and
+  improper-class statements hold for arbitrary functions under the stated closure predicates.
 * **Corollary 34.2.4** (generalization). The book assumes that $K$ is continuous on $C \times D$,
   jointly. Here only each one-variable section is assumed continuous. See
-  `Rockafellar.corollary_34_2_4_equiv`.
+  `Rockafellar.corollary_34_2_4_equiv`. The interval characterization and closure claims
+  do not require the extensions to be concave-convex.
 
 ## Not formalized
 
@@ -262,7 +267,10 @@ $\mathbb{R}^m$ to $\mathbb{R}^n$. Then every $K \in \Omega(F)$ satisfies
 $\operatorname{cl}_1 K = \overline{K}$, that is, $(\operatorname{cl}_1 K)(u, x^*) = \langle u,
 F^* x^* \rangle$.
 
-No closedness of $F$ is needed. -/
+No closedness of $F$ is needed.
+
+**Reading.** The first partial closure equals the adjoint bracket without closedness of F.
+-/
 theorem theorem_34_2_cl₁ (hF : ConvexBifun F) (hK : K ∈ Ω F) :
     cl₁ K = adjointBracket F :=
   partialCl₁_eq_concaveBracket_of_mem_saddleClass (pairing m) (pairing n) hF hK.2
@@ -326,9 +334,11 @@ theorem theorem_34_2_mem_self (hK : ConcaveConvexFn K) (hlow : bifunBracket F = 
 bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$, and let $K \in \Omega(F)$ with
 $\operatorname{dom}_2 K \neq \emptyset$. Then $\operatorname{dom}_1 K = \operatorname{dom} F$.
 
-**Correction.** The book states $\operatorname{dom} K = \operatorname{dom} F \times
+**Reading.** The book states $\operatorname{dom} K = \operatorname{dom} F \times
 \operatorname{dom} F^*$ and argues the two factors separately, without the hypothesis
-$\operatorname{dom}_2 K \neq \emptyset$. The statement here needs this hypothesis. -/
+$\operatorname{dom}_2 K \neq \emptyset$. The Lean proof uses this hypothesis for the
+partial-closure domain comparison. In the improper cases, both brackets are the same
+constant and their domains can be computed directly. -/
 theorem theorem_34_2_dom₁ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (hne : (dom₂ K).Nonempty) : dom₁ K = convexDomBifun F :=
   dom₁_eq_convexDomBifun_of_mem_bifunSaddleClass (pairing m) (pairing n) hF hcl hK.2 hK.1 hne
@@ -349,8 +359,8 @@ private theorem dom₂_adjointBracket (F : Bifun (Rn m) (Rn n)) :
 bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$, and let $K \in \Omega(F)$ with
 $\operatorname{dom}_1 K \neq \emptyset$. Then $\operatorname{dom}_2 K = \operatorname{dom} F^*$.
 
-**Correction.** As for `Rockafellar.theorem_34_2_dom₁`, the book does not have the hypothesis
-$\operatorname{dom}_1 K \neq \emptyset$.
+**Reading.** Lean uses $\operatorname{dom}_1 K \neq \emptyset$ for the partial-closure
+domain comparison, as in `Rockafellar.theorem_34_2_dom₁`.
 
 The domain $\operatorname{dom} F^*$ is the set of $x^*$ for which $F^* x^*$ is not identically
 $-\infty$. -/
@@ -363,8 +373,8 @@ theorem theorem_34_2_dom₂ (hF : ConvexBifun F) (hK : K ∈ Ω F) (hne : (dom�
 $\mathbb{R}^m$ to $\mathbb{R}^n$, and let $K \in \Omega(F)$ be proper. Then
 $$\operatorname{dom} K = \operatorname{dom} F \times \operatorname{dom} F^*.$$
 
-**Correction.** The book does not assume that $K$ is proper. The hypothesis supplies the
-non-emptiness hypotheses of `Rockafellar.theorem_34_2_dom₁` and `Rockafellar.theorem_34_2_dom₂`. -/
+**Reading.** Properness supplies the non-emptiness hypotheses of the two factor
+declarations. The source also includes the constant improper classes. -/
 theorem theorem_34_2_dom (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (hp : ProperSaddleFn K) :
     domSaddle K = convexDomBifun F ×ˢ concaveDomBifun (dualProgram F) := by
@@ -427,6 +437,8 @@ theorem theorem_34_2_adjoint (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (h
 bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$, let $K \in \Omega(F)$ be proper, and let
 $u \in \operatorname{ri}(\operatorname{dom} F)$. Then for every $x^*$,
 $$K(u, x^*) = \langle Fu, x^* \rangle = \langle u, F^* x^* \rangle.$$
+
+**Reading.** Assumes K proper.
 -/
 theorem theorem_34_2_eq_of_mem_relint_dom₁ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ Ω F) (hp : ProperSaddleFn K) {u : Rn m} (hu : u ∈ ri (convexDomBifun F)) (x : Rn n) :
@@ -445,6 +457,8 @@ theorem theorem_34_2_eq_of_mem_relint_dom₁ (hF : ConvexBifun F) (hcl : ClosedC
 convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$, let $K \in \Omega(F)$ be proper, and
 let $x^* \in \operatorname{ri}(\operatorname{dom} F^*)$. Then for every $u$,
 $$K(u, x^*) = \langle Fu, x^* \rangle = \langle u, F^* x^* \rangle.$$
+
+**Reading.** Assumes K proper.
 -/
 theorem theorem_34_2_eq_of_mem_relint_dom₂ (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ Ω F) (hp : ProperSaddleFn K) {x : Rn n}
@@ -495,6 +509,8 @@ theorem theorem_34_1_upper (K : Rn m × Rn n → EReal) : UpperClosedFn (upperCl
 $\mathbb{R}^m \times \mathbb{R}^n$,
 $$\operatorname{cl}_2 \operatorname{cl}_1 \operatorname{cl}_2 \operatorname{cl}_1 K =
   \operatorname{cl}_2 \operatorname{cl}_1 K.$$
+
+**Reading.** Idempotence holds without any saddle hypothesis.
 -/
 theorem theorem_34_1_lower_eq (K : Rn m × Rn n → EReal) :
     cl₂ (cl₁ (cl₂ (cl₁ K))) = cl₂ (cl₁ K) := by
@@ -506,6 +522,8 @@ theorem theorem_34_1_lower_eq (K : Rn m × Rn n → EReal) :
 on $\mathbb{R}^m \times \mathbb{R}^n$,
 $$\operatorname{cl}_1 \operatorname{cl}_2 \operatorname{cl}_1 \operatorname{cl}_2 K =
   \operatorname{cl}_1 \operatorname{cl}_2 K.$$
+
+**Reading.** Idempotence holds without any saddle hypothesis.
 -/
 theorem theorem_34_1_upper_eq (K : Rn m × Rn n → EReal) :
     cl₁ (cl₂ (cl₁ (cl₂ K))) = cl₁ (cl₂ K) := by
@@ -525,7 +543,8 @@ variable {m n : ℕ} {K L : Rn m × Rn n → EReal}
 proper concave-convex functions on $\mathbb{R}^m \times \mathbb{R}^n$. Then
 $\operatorname{dom} L = \operatorname{dom} K$.
 
-**Generalization.** The book assumes that $K$ is closed. This clause needs no closedness. -/
+**Reading.** The domain equality holds for equivalent proper saddle-functions without
+closedness. The source assumes closedness and covers the constant improper classes. -/
 theorem corollary_34_2_1_dom (h : SaddleEquiv K L) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) :
     domSaddle L = domSaddle K :=
@@ -539,7 +558,11 @@ $\operatorname{dom}_1 L = \operatorname{dom}_1 K$ and $\operatorname{dom}_2 L =
 No closedness is needed, although the blanket hypothesis "$K$ closed" of the book suggests that
 it is: $\operatorname{dom}_1 K = \operatorname{dom}_1 (\operatorname{cl}_2 K)$ and
 $\operatorname{dom}_2 K = \operatorname{dom}_2 (\operatorname{cl}_1 K)$, so equivalence alone
-gives both factors. -/
+gives both factors.
+
+**Reading.** Gives both factor identities for equivalent proper functions even when neither is
+closed.
+-/
 theorem corollary_34_2_1_dom_of_not_closed (h : SaddleEquiv K L) (hK : ConcaveConvexFn K)
     (hpK : ProperSaddleFn K) (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) :
     dom₁ L = dom₁ K ∧ dom₂ L = dom₂ K :=
@@ -547,7 +570,10 @@ theorem corollary_34_2_1_dom_of_not_closed (h : SaddleEquiv K L) (hK : ConcaveCo
 
 /-- **Corollary 34.2.1** of [rockafellar1970convex], second clause, first argument. Let $K$ and $L$
 be equivalent closed proper concave-convex functions on $\mathbb{R}^m \times \mathbb{R}^n$, and
-let $u \in \operatorname{ri}(\operatorname{dom}_1 K)$. Then $L(u, v) = K(u, v)$ for every $v$. -/
+let $u \in \operatorname{ri}(\operatorname{dom}_1 K)$. Then $L(u, v) = K(u, v)$ for every $v$.
+
+**Reading.** Adds explicit properness of both functions. Closure of L follows from equivalence.
+-/
 theorem corollary_34_2_1_eq_of_mem_relint_dom₁ (h : SaddleEquiv K L) (hclK : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L)
     (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) {u : Rn m} (hu : u ∈ ri (dom₁ K))
@@ -556,7 +582,10 @@ theorem corollary_34_2_1_eq_of_mem_relint_dom₁ (h : SaddleEquiv K L) (hclK : C
 
 /-- **Corollary 34.2.1** of [rockafellar1970convex], second clause, second argument. Let $K$ and $L$
 be equivalent closed proper concave-convex functions on $\mathbb{R}^m \times \mathbb{R}^n$, and
-let $v \in \operatorname{ri}(\operatorname{dom}_2 K)$. Then $L(u, v) = K(u, v)$ for every $u$. -/
+let $v \in \operatorname{ri}(\operatorname{dom}_2 K)$. Then $L(u, v) = K(u, v)$ for every $u$.
+
+**Reading.** Adds explicit properness of both functions. Closure of L follows from equivalence.
+-/
 theorem corollary_34_2_1_eq_of_mem_relint_dom₂ (h : SaddleEquiv K L) (hclK : ClosedSaddleFn K)
     (hK : ConcaveConvexFn K) (hpK : ProperSaddleFn K) (hclL : ClosedSaddleFn L)
     (hL : ConcaveConvexFn L) (hpL : ProperSaddleFn L) {v : Rn n} (hv : v ∈ ri (dom₂ K))
@@ -572,45 +601,71 @@ section Cor3422
 variable {m n : ℕ} {K L : Rn m × Rn n → EReal}
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex]. A lower closed function on
-$\mathbb{R}^m \times \mathbb{R}^n$ is closed. -/
+$\mathbb{R}^m \times \mathbb{R}^n$ is closed.
+
+**Reading.** Lower closedness implies closedness for arbitrary functions.
+-/
 theorem corollary_34_2_2_of_lowerClosed (h : LowerClosedFn K) : ClosedSaddleFn K :=
   h.closedSaddleFn
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex]. An upper closed function on
-$\mathbb{R}^m \times \mathbb{R}^n$ is closed. -/
+$\mathbb{R}^m \times \mathbb{R}^n$ is closed.
+
+**Reading.** Upper closedness implies closedness for arbitrary functions.
+-/
 theorem corollary_34_2_2_of_upperClosed (h : UpperClosedFn K) : ClosedSaddleFn K :=
   h.closedSaddleFn
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex]. A fully closed function on
 $\mathbb{R}^m \times \mathbb{R}^n$, one that is both convex-closed and concave-closed, is
-closed. -/
+closed.
+
+**Reading.** Full closedness implies closedness for arbitrary functions.
+-/
 theorem corollary_34_2_2_of_fullyClosed (h : FullyClosedFn K) : ClosedSaddleFn K :=
   (fullyClosedFn_iff.1 h).1.closedSaddleFn
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex], existence of a lower closed member. If $K$ is
 closed, then $\operatorname{cl}_2 K$ is lower closed. Since $\operatorname{cl}_2 K$ is
-equivalent to $K$, the class of $K$ has a lower closed member. -/
+equivalent to $K$, the class of $K$ has a lower closed member.
+
+**Reading.** The second partial closure is lower closed without a saddle hypothesis.
+-/
 theorem corollary_34_2_2_lower_exists (hcl : ClosedSaddleFn K) : LowerClosedFn (cl₂ K) :=
   hcl.lowerClosedFn_partialCl₂
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex], existence of an upper closed member. If $K$ is
 closed, then $\operatorname{cl}_1 K$ is upper closed. Since $\operatorname{cl}_1 K$ is
-equivalent to $K$, the class of $K$ has an upper closed member. -/
+equivalent to $K$, the class of $K$ has an upper closed member.
+
+**Reading.** The first partial closure is upper closed without a saddle hypothesis.
+-/
 theorem corollary_34_2_2_upper_exists (hcl : ClosedSaddleFn K) : UpperClosedFn (cl₁ K) :=
   hcl.upperClosedFn_partialCl₁
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex], uniqueness of the lower closed member. If $L$
-is equivalent to $K$ and lower closed, then $L = \operatorname{cl}_2 K$. -/
+is equivalent to $K$ and lower closed, then $L = \operatorname{cl}_2 K$.
+
+**Reading.** The lower closed member equals the second partial closure even without
+concave-convexity.
+-/
 theorem corollary_34_2_2_lower_unique (h : SaddleEquiv K L) (hL : LowerClosedFn L) : L = cl₂ K :=
   h.eq_partialCl₂_of_lowerClosedFn hL
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex], uniqueness of the upper closed member. If $L$
-is equivalent to $K$ and upper closed, then $L = \operatorname{cl}_1 K$. -/
+is equivalent to $K$ and upper closed, then $L = \operatorname{cl}_1 K$.
+
+**Reading.** The upper closed member equals the first partial closure even without
+concave-convexity.
+-/
 theorem corollary_34_2_2_upper_unique (h : SaddleEquiv K L) (hL : UpperClosedFn L) : L = cl₁ K :=
   h.eq_partialCl₁_of_upperClosedFn hL
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex], the least member. If $L$ is equivalent to $K$
-and lower closed, then $L \le K$. So the lower closed member is the least member of the class. -/
+and lower closed, then $L \le K$. So the lower closed member is the least member of the class.
+
+**Reading.** The pointwise order follows from the closure identities without a saddle hypothesis.
+-/
 theorem corollary_34_2_2_least (h : SaddleEquiv K L) (hL : LowerClosedFn L) : L ≤ K := by
   have e : L = partialCl₂ K := h.eq_partialCl₂_of_lowerClosedFn hL
   rw [e]
@@ -618,7 +673,10 @@ theorem corollary_34_2_2_least (h : SaddleEquiv K L) (hL : LowerClosedFn L) : L 
 
 /-- **Corollary 34.2.2** of [rockafellar1970convex], the greatest member. If $L$ is equivalent to
 $K$ and upper closed, then $K \le L$. So the upper closed member is the greatest member of the
-class. -/
+class.
+
+**Reading.** The pointwise order follows from the closure identities without a saddle hypothesis.
+-/
 theorem corollary_34_2_2_greatest (h : SaddleEquiv K L) (hL : UpperClosedFn L) : K ≤ L := by
   have e : L = partialCl₁ K := h.eq_partialCl₁_of_upperClosedFn hL
   rw [e]
@@ -634,7 +692,11 @@ variable {m n : ℕ} {K : Rn m × Rn n → EReal}
 
 /-- **Corollary 34.2.3** of [rockafellar1970convex]. Let $K$ be a closed function on
 $\mathbb{R}^m \times \mathbb{R}^n$ that is not proper. Then $K$ is the constant $-\infty$ or the
-constant $+\infty$. -/
+constant $+\infty$.
+
+**Reading.** Closedness and impropriety alone imply that the function is identically one of the
+infinities.
+-/
 theorem corollary_34_2_3 (hcl : ClosedSaddleFn K) (hp : ¬ ProperSaddleFn K) :
     K = (fun _ => (⊥ : EReal)) ∨ K = fun _ => (⊤ : EReal) :=
   hcl.eq_const_of_not_properSaddleFn hp
@@ -668,7 +730,10 @@ $$L = K \text{ on } C \times D, \qquad L = +\infty \text{ on } C \times (\mathbb
 The values on $(\mathbb{R}^m \setminus C) \times (\mathbb{R}^n \setminus D)$ are arbitrary.
 
 The class is the order interval `ConvexAnalysis.saddleClass`, without the condition of
-concave-convexity that the book's $\Omega$ also contains. -/
+concave-convexity that the book's $\Omega$ also contains.
+
+**Reading.** The interval condition characterizes the extension formulas for arbitrary L.
+-/
 theorem corollary_34_2_4_mem_iff :
     L ∈ saddleClass (lowerSimpleExt C D K) (upperSimpleExt C D K) ↔
       (∀ u ∈ C, ∀ v ∈ D, L (u, v) = (K (u, v) : EReal)) ∧
@@ -691,7 +756,10 @@ theorem corollary_34_2_4_closed (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : 
 
 /-- **Corollary 34.2.4** of [rockafellar1970convex], properness. Let $C \subseteq \mathbb{R}^m$ and
 $D \subseteq \mathbb{R}^n$ be non-empty and $K : \mathbb{R}^m \times \mathbb{R}^n \to
-\mathbb{R}$. Then every $L$ between the lower and the upper simple extensions of $K$ is proper. -/
+\mathbb{R}$. Then every $L$ between the lower and the upper simple extensions of $K$ is proper.
+
+**Reading.** The interval condition and nonempty product suffice for properness.
+-/
 theorem corollary_34_2_4_proper (hCne : C.Nonempty) (hDne : D.Nonempty)
     (hL : L ∈ saddleClass (lowerSimpleExt C D K) (upperSimpleExt C D K)) : ProperSaddleFn L :=
   properSaddleFn_of_mem_saddleClass_simpleExt hCne hDne hL
@@ -716,7 +784,10 @@ theorem corollary_34_2_4_equiv (hCcl : IsClosed C) (hDcl : IsClosed D) (hCne : C
 $C \subseteq \mathbb{R}^m$, let $D \subseteq \mathbb{R}^n$ be non-empty and closed, and let $K :
 \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}$ be such that $K(u, \cdot)$ is continuous on $D$
 for each $u \in C$. Then the lower simple extension of $K$ belongs to the class, so it is its
-least member. -/
+least member.
+
+**Reading.** Membership of the lower simple extension needs fewer structural assumptions.
+-/
 theorem corollary_34_2_4_least (hDcl : IsClosed D) (hDne : D.Nonempty)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun v => K (u, v)) D) :
     lowerSimpleExt C D K ∈ saddleClass (lowerSimpleExt C D K) (upperSimpleExt C D K) :=
@@ -726,7 +797,10 @@ theorem corollary_34_2_4_least (hDcl : IsClosed D) (hDne : D.Nonempty)
 $C \subseteq \mathbb{R}^m$, let $D \subseteq \mathbb{R}^n$ be non-empty and closed, and let $K :
 \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}$ be such that $K(u, \cdot)$ is continuous on $D$
 for each $u \in C$. Then the upper simple extension of $K$ belongs to the class, so it is its
-greatest member. -/
+greatest member.
+
+**Reading.** Membership of the upper simple extension needs fewer structural assumptions.
+-/
 theorem corollary_34_2_4_greatest (hDcl : IsClosed D) (hDne : D.Nonempty)
     (hcontD : ∀ u ∈ C, ContinuousOn (fun v => K (u, v)) D) :
     upperSimpleExt C D K ∈ saddleClass (lowerSimpleExt C D K) (upperSimpleExt C D K) :=
@@ -913,7 +987,10 @@ $K(u, x^*) = \langle Fu, x^* \rangle$ is proper. Then $K$ is simple.
 
 The book states the exercise for every convex or concave bifunction $F$. Here $F$ is closed, so
 that $K$ is closed (Theorem 33.3), and $K$ is proper, so that Theorem 34.3 applies. The
-unrestricted statement is not formalized. -/
+unrestricted statement is not formalized.
+
+**Reading.** Only the bracket of a closed convex bifunction with proper saddle-function is covered.
+-/
 theorem simpleSaddleFn_bifunBracket {F : Bifun (Rn m) (Rn n)} (hF : ConvexBifun F)
     (hcl : ClosedConvexBifun F) (hp : ProperSaddleFn (bifunBracket F)) :
     SimpleSaddleFn (bifunBracket F) :=
@@ -962,14 +1039,20 @@ theorem theorem_34_5_equiv (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
 /-- **Theorem 34.5** of [rockafellar1970convex], closedness. Let $K$ be a simple proper
 concave-convex function on $\mathbb{R}^m \times \mathbb{R}^n$. Then every $L$ with
 $\operatorname{cl}_2 \operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$
-is closed. -/
+is closed.
+
+**Reading.** Closedness holds even without concavity-convexity of the interval member.
+-/
 theorem theorem_34_5_closed (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hs : SimpleSaddleFn K) (hL : L ∈ saddleClass (lowerCl K) (upperCl K)) : ClosedSaddleFn L :=
   closedSaddleFn_of_mem_saddleClass_lowerCl hK hp hs hL
 
 /-- **Theorem 34.5** of [rockafellar1970convex], properness. Let $K$ be a proper concave-convex
 function on $\mathbb{R}^m \times \mathbb{R}^n$. Then every $L$ with $\operatorname{cl}_2
-\operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$ is proper. -/
+\operatorname{cl}_1 K \le L \le \operatorname{cl}_1 \operatorname{cl}_2 K$ is proper.
+
+**Reading.** Properness does not need simplicity of K or a saddle hypothesis on the interval member.
+-/
 theorem theorem_34_5_proper (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
     (hL : L ∈ saddleClass (lowerCl K) (upperCl K)) : ProperSaddleFn L :=
   properSaddleFn_of_mem_saddleClass_lowerCl hK hp hL

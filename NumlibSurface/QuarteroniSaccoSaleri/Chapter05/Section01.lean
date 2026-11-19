@@ -79,6 +79,15 @@ Gershgorin theorem), and Theorem 1.4 of Chapter 1 for (5.1).
 
 ## Deviations from the source
 
+* **Generalization.** The spectral bound uses a compatible matrix seminorm and separating vector
+  seminorm. See `QuarteroniSaccoSaleri.Chapter05.equation_5_1`.
+* **Generalization.** Gershgorin multiplicity counts are stated for any partition of the row disks.
+  See `QuarteroniSaccoSaleri.Chapter05.property_5_2`.
+* **Generalization.** The reducibility definition only needs a zero entry and uses proper nonempty
+  blocks. See `QuarteroniSaccoSaleri.Chapter05.definition_5_1`.
+* **Scope.** The irreducible graph and boundary results are stated in dimensions at least two. See
+  `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`,
+  `QuarteroniSaccoSaleri.Chapter05.property_5_3`, `QuarteroniSaccoSaleri.Chapter05.property_5_4`.
 * **Definition 5.1, Properties 5.3 and 5.4** (reading). Definition 5.1 and the backbone's
   `Matrix.IsPatternIrreducible` differ for $n = 1$: the $1 \times 1$ zero matrix is
   pattern-reducible (it has no path of positive length) but not reducible in the sense of the book
@@ -108,7 +117,11 @@ So all the eigenvalues of $A$ lie in the disc of radius $N(A)$ about the origin.
 
 The vector norm $p$ is a seminorm with $p(x) = 0 \Rightarrow x = 0$, and consistency is
 Definition 1.20, `Matrix.IsConsistent N p p`. The result is Theorem 1.4, $\rho(A) \le \|A\|$,
-read at one eigenvalue. -/
+read at one eigenvalue.
+
+**Generalization.** The matrix bound uses a seminorm compatible with a separating vector seminorm.
+The source calls the matrix quantity a consistent norm.
+-/
 theorem equation_5_1 {N : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ)} {p : Seminorm ℂ (Fin n → ℂ)}
     (hp : ∀ x, p x = 0 → x = 0) (hN : IsConsistent N p p) (A : Matrix (Fin n) (Fin n) ℂ) :
     ∀ μ ∈ spectrum ℂ A, ‖μ‖ ≤ N A := by
@@ -188,7 +201,11 @@ every eigenvalue of $A$ that is not in $S_1$ lies in $S_2$.
 The book takes $\tau = \{1, \dots, m\}$. The counts are `Polynomial.countRootsIn` of the
 characteristic polynomial. The proof applies the backbone's
 `Matrix.card_spectrum_of_disjoint_gershgorin` to $\tau$ and to its complement, and Theorem 5.2
-to the last clause. -/
+to the last clause.
+
+**Generalization.** Lean allows any index subset in place of the first $m$ indices and states the
+counts in both disjoint unions with algebraic multiplicity.
+-/
 theorem property_5_2 (A : Matrix (Fin n) (Fin n) ℂ) (τ : Finset (Fin n)) {S₁ S₂ : Set ℂ}
     (hS₁ : S₁ = ⋃ i ∈ τ, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖))
     (hS₂ : S₂ = ⋃ i ∈ τᶜ, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖))
@@ -214,7 +231,11 @@ Here $P A P^T$ is `A.submatrix σ σ` for a permutation $\sigma$ of the indices,
 set of the leading block $B_{11}$, which is proper and nonempty, and the zero block is the
 condition that the entries in the rows outside $s$ and the columns in $s$ vanish. The definition
 depends only on the zero pattern, so it is stated for any entry type with a zero. The book
-states it over $\mathbb{C}$ and uses it over $\mathbb{R}$ in Property 5.3. -/
+states it over $\mathbb{C}$ and uses it over $\mathbb{R}$ in Property 5.3.
+
+**Generalization.** The zero-block condition is stated for every entry type with a zero. It uses a
+proper nonempty block and allows its indices as an arbitrary finite subset after permutation.
+-/
 def definition_5_1 {R : Type*} [Zero R] (A : Matrix (Fin n) (Fin n) R) : Prop :=
   ∃ (σ : Equiv.Perm (Fin n)) (s : Finset (Fin n)), s.Nonempty ∧ s ≠ univ ∧
     ∀ i ∉ s, ∀ j ∈ s, A.submatrix σ σ i j = 0
@@ -228,7 +249,12 @@ The proof is `Matrix.not_isPatternIrreducible_iff_exists_submatrix_blockTriangul
 index set of the block replaced by its complement: the backbone sets the entries from $s$ to its
 complement to zero, and the book the entries from the complement to $s$. For $n = 1$ the two
 notions differ: the $1 \times 1$ zero matrix is pattern-reducible but not reducible. This is the
-reason for the hypothesis $n \ge 2$. -/
+reason for the hypothesis $n \ge 2$.
+
+**Reading.** These results use a dimension of at least two to compare the book's convention of
+connectivity for distinct vertices with the backbone's positive-length path convention. A zero
+one-by-one matrix has no proper nonempty block but fails that backbone connectivity predicate.
+-/
 theorem definition_5_1_iff {R : Type*} [NormedAddCommGroup R] (hn : 2 ≤ n)
     (A : Matrix (Fin n) (Fin n) R) : definition_5_1 A ↔ ¬ A.IsPatternIrreducible := by
   have : Nontrivial (Fin n) := Fin.nontrivial_iff_two_le.mpr hn
@@ -255,7 +281,12 @@ vertices $P_i$ and $P_j$ there is an oriented path from $P_i$ to $P_j$.
 The oriented graph is Mathlib's `Matrix.adjQuiver A`, whose arrows $i \to j$ are exactly the
 nonzero entries (`Matrix.nonempty_adjQuiver_hom_iff`). The proof specializes the backbone's
 `Matrix.isPatternIrreducible_iff_nonempty_path` through
-`QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`. The book cites Varga (1962) for the proof. -/
+`QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`. The book cites Varga (1962) for the proof.
+
+**Reading.** These results use a dimension of at least two to compare the book's convention of
+connectivity for distinct vertices with the backbone's positive-length path convention. A zero
+one-by-one matrix has no proper nonempty block but fails that backbone connectivity predicate.
+-/
 theorem property_5_3 (hn : 2 ≤ n) (A : Matrix (Fin n) (Fin n) ℝ) :
     ¬ definition_5_1 A ↔
       letI := A.adjQuiver; ∀ i j : Fin n, i ≠ j → Nonempty (Quiver.Path i j) := by
@@ -278,7 +309,12 @@ $$|\lambda - a_{ii}| = \sum_{j \neq i} |a_{ij}|, \qquad i = 1, \dots, n.$$
 `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`.
 
 The proof specializes the backbone's `Matrix.IsPatternIrreducible.norm_sub_eq_of_mem_frontier`
-through `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`. -/
+through `QuarteroniSaccoSaleri.Chapter05.definition_5_1_iff`.
+
+**Reading.** These results use a dimension of at least two to compare the book's convention of
+connectivity for distinct vertices with the backbone's positive-length path convention. A zero
+one-by-one matrix has no proper nonempty block but fails that backbone connectivity predicate.
+-/
 theorem property_5_4 (hn : 2 ≤ n) {A : Matrix (Fin n) (Fin n) ℂ} (hA : ¬ definition_5_1 A)
     {μ : ℂ} (hμ : μ ∈ spectrum ℂ A)
     (hfr : μ ∈ frontier (⋃ i, Metric.closedBall (A i i) (∑ j ∈ univ.erase i, ‖A i j‖)))

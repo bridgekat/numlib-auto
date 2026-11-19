@@ -26,7 +26,20 @@ saddle-point matrix and its inverse are quasidefinite.
 
 ## Deviations from the source
 
-* The multiplier in (3.5) is $-S^{-1}BA^{-1}f$, in agreement with (3.4).
+* **Section 3.3, oblique projector** (generalization). The range and kernel
+  calculation needs nonsingularity of $BA^{-1}B^T$, with no positive definiteness
+  hypothesis on $A$. See `BenziGolubLiesen.saddleObliqueProjector_spec`.
+* **(3.5)** (correction). The multiplier is $-S^{-1}BA^{-1}f$, in agreement with (3.4).
+  See `BenziGolubLiesen.saddlePointSolution_zero_constraint`.
+* **(3.5)** (generalization). The solution formula requires invertible $A$ and $BA^{-1}B^T$;
+  the source assumes symmetric positive definite $A$. See
+  `BenziGolubLiesen.saddlePointSolution_zero_constraint`.
+* **Equation (3.8)** (generalization). The inverse formula requires invertibility of
+  $Z^TAZ$ directly. The source obtains it from a positive semidefinite symmetric part and
+  a kernel-intersection condition. See `BenziGolubLiesen.saddlePointMatrix_inv_eq_of_nullBasis`.
+* **After (3.8)** (correction). The projector $I-ZZ^T$ assumes orthonormal columns of $Z$.
+  For a general null basis it is $I-Z(Z^TZ)^{-1}Z^T$. See
+  `BenziGolubLiesen.saddlePointMatrix_inv_eq_of_nullBasis`.
 -/
 
 namespace BenziGolubLiesen
@@ -56,7 +69,10 @@ private theorem projector_constraints (A : Matrix n n ℝ) (B : Matrix m n ℝ)
       hleft, Matrix.mul_one]
 
 /-- **Section 3.3** of [benzi2005numerical]. If $BA^{-1}B^T$ is nonsingular, $\Pi$ is
-idempotent with range $\operatorname{range}(A^{-1}B^T)$ and kernel $\ker B$. -/
+idempotent with range $\operatorname{range}(A^{-1}B^T)$ and kernel $\ker B$.
+
+**Generalization.** The source establishes these properties with $A$ positive
+definite. The range and kernel computation only uses the inverse of $BA^{-1}B^T$. -/
 theorem saddleObliqueProjector_spec (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (hH : IsUnit (B * (A⁻¹ * Bᵀ))) :
     let P := saddleObliqueProjector A B
@@ -83,9 +99,15 @@ theorem saddleObliqueProjector_spec (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     · intro hx
       simp only [P, saddleObliqueProjector, ← mulVec_mulVec, hx, mulVec_zero]
 
-/-- **Equation (3.5)** of [benzi2005numerical]. With $H=BA^{-1}B^T$ nonsingular and $g=0$,
-the solution has components $(I-\Pi)A^{-1}f$ and $H^{-1}BA^{-1}f$. The latter equals
-$-S^{-1}BA^{-1}f$, correcting the printed sign. -/
+/-- **Equation (3.5)** of [benzi2005numerical]. With $A$ and $H=BA^{-1}B^T$ nonsingular and
+$g=0$, the solution has components $(I-\Pi)A^{-1}f$ and $H^{-1}BA^{-1}f$.
+
+**Correction.** The printed multiplier is $S^{-1}BA^{-1}f$, but $S=-H$. The negative sign
+in (3.4) gives the multiplier $-S^{-1}BA^{-1}f$. For $A=B=f=[1]$, the constraint gives
+$x=0$ and the top equation gives $y=1$, whereas the printed formula gives $y=-1$.
+
+**Generalization.** The source assumes $A$ is symmetric positive definite. Nonsingularity
+of $A$ and $H$ suffices for the block solve. -/
 theorem saddlePointSolution_zero_constraint (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (hA : IsUnit A) (hH : IsUnit (B * (A⁻¹ * Bᵀ))) (f : n → ℝ) :
     let H := B * (A⁻¹ * Bᵀ)
@@ -171,8 +193,15 @@ theorem saddlePointSolution_minWeightedResidual {A : Matrix n n ℝ} (hA : A.Pos
 
 /-- **Equation (3.8)** of [benzi2005numerical]. A null basis $Z$ for $B$ yields the inverse
 without inverting $A$, provided $B$ has full row rank and $Z^T A Z$ is invertible.
-The subsequent projector formula in the survey needs orthonormal columns for $I-ZZ^T$;
-for a general null basis its right-hand side is $I-Z(Z^TZ)^{-1}Z^T$. -/
+
+**Generalization.** The source infers invertibility of $Z^TAZ$ from a positive semidefinite
+symmetric part of $A$ and the kernel condition in Theorem 3.4(i). The inverse formula
+requires only invertibility of $Z^TAZ$ itself under the stated rank and basis hypotheses.
+
+**Correction.** The subsequent projector formula uses $I-ZZ^T$ for a general null basis.
+That expression requires orthonormal columns. For $B=[1,0]$ and $Z=(0,2)^T$, it gives
+$\operatorname{diag}(1,-3)$ instead of the row-space projector $\operatorname{diag}(1,0)$.
+For a general null basis the formula is $I-Z(Z^TZ)^{-1}Z^T$. -/
 theorem saddlePointMatrix_inv_eq_of_nullBasis {k : Type*} [Fintype k] [DecidableEq k]
     (A : Matrix n n ℝ) (B : Matrix m n ℝ) (Z : Matrix n k ℝ)
     (hZ : IsNullBasis B Z) (hB : Function.Injective Bᵀ.mulVec) (hK : IsUnit (Zᵀ * A * Z)) :

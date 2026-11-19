@@ -24,6 +24,9 @@ of the domain where $f$ is differentiable, and they alternate with rejected step
 
 ## Deviations from the source
 
+* **Counterexample.** A counterexample explains the need for uniform trial-segment control in Lemma
+  15.4.3 and Theorems 15.4.10–15.4.11. See
+  `ConnGouldToint.Chapter15.sqp_trialSegment_counterexample`.
 * **Lemma 15.4.3 and Theorems 15.4.10–15.4.11** (correction). Lipschitz continuity of the objective
   derivative near the iterates does not control the rejected trial segments. The corrected results
   assume uniform control along the trial segments. See
@@ -202,7 +205,12 @@ The objective is $f(x) = -x$ for $x < 0$ and $f(x) = 1$ for $x \ge 0$. The itera
 $x_{2j} = x_{2j+1} = -2^{-j}$, with radius $2 \cdot 2^{-j}$ at even and $2^{-j} / 2$ at odd
 indices. The even steps cross $0$ and are rejected, and the odd steps are accepted. The run is a
 `ConnGouldToint.Chapter06.BTRRun`, and AA.1 is
-`ConnGouldToint.Chapter06.HasSufficientModelDecrease`. -/
+`ConnGouldToint.Chapter06.HasSufficientModelDecrease`.
+
+**Correction.** Iterates stay in a smooth region while rejected trials encounter a discontinuity
+outside it. Smoothness and Taylor control at the iterates alone do not justify the ratio estimate
+along those trial segments.
+-/
 theorem sqp_trialSegment_counterexample :
     ∃ (f : ℝ → ℝ) (P : BTRParams) (run : BTRRun f P
       (fun _ m x s => HasSufficientModelDecrease m x s (-1 : ℝ) 1 ‖s‖ (1 / 2))),

@@ -84,8 +84,18 @@ that Mathlib already has. The norm of an integral operator is the backbone resul
 
 ## Deviations from the source
 
+* **Definition 2.2.1** (generalization). The two equivalent linearity criteria apply over any
+  division ring.
+* **Equation (2.2.3)** (reading). The Lipschitz inequality uses the operator norm as the constant.
+  The source writes it with an arbitrary bound from (2.2.2).
+* **Theorem 2.2.5 and its preceding displays** (reading). The ratio, unit-ball, unit-sphere and
+  least-bound formulas identify the bundled operator norm, using zero for an empty supremum.
+  The source also gives the corresponding ball and sphere formulas for every positive radius.
 * **Example 2.2.7** (reading). The book does not exclude the zero space, on which every operator
   norm is $0$. The statement assumes $V \neq \{0\}$. See `AtkinsonHan.Chapter02.example_2_2_7`.
+* **Example 2.2.8** (generalization and reading). The row and column formulas cover real and
+  complex scalars and allow empty index sets. The spectral norm formula uses $A^*A$. The source
+  also gives the equality with the square root of the spectral radius of $AA^*$.
 
 ## Not formalized
 
@@ -115,7 +125,9 @@ The book adds that, equivalently, $L$ is additive and homogeneous as in Definiti
 equivalence is `AtkinsonHan.Chapter02.definition_2_2_1_iff`, and
 `AtkinsonHan.Chapter02.definition_2_2_1_iff_linearMap` identifies the definition with Mathlib's
 `LinearMap`. The book's space $\mathcal{L}(V, W)$ of bounded linear operators is Mathlib's
-`V →L[𝕜] W`, which the rest of the section uses. -/
+`V →L[𝕜] W`, which the rest of the section uses.
+
+**Generalization.** The linear-combination formula applies over any division ring. -/
 def definition_2_2_1 (𝕜 : Type*) {V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
     [AddCommGroup W] [Module 𝕜 W] (L : V → W) : Prop :=
   ∀ (v₁ v₂ : V) (α₁ α₂ : 𝕜), L (α₁ • v₁ + α₂ • v₂) = α₁ • L v₁ + α₂ • L v₂
@@ -124,7 +136,9 @@ def definition_2_2_1 (𝕜 : Type*) {V W : Type*} [DivisionRing 𝕜] [AddCommGr
 spaces over a division ring $\mathbb{K}$. A map $L : V \to W$ is linear in the sense of
 Definition 2.2.1 if and only if it is additive and homogeneous in the sense of Definition
 1.1.13: $L(u + v) = Lu + Lv$ and $L(\alpha v) = \alpha L v$ for all $u, v \in V$ and
-$\alpha \in \mathbb{K}$. -/
+$\alpha \in \mathbb{K}$.
+
+**Generalization.** The equivalence of the criteria holds over any division ring. -/
 theorem definition_2_2_1_iff (L : V → W) :
     definition_2_2_1 𝕜 L ↔ Chapter01.definition_1_1_13 𝕜 L := by
   constructor
@@ -211,7 +225,10 @@ and let $L \in \mathcal{L}(V, W)$. Then for all $v_1, v_2 \in V$,
 $$\|L v_1 - L v_2\| \le \|L\| \, \|v_1 - v_2\|.$$
 
 Thus a continuous linear operator is Lipschitz continuous with the constant $\|L\|$, which is
-what the book means when it says that continuity of a linear operator is uniform. -/
+what the book means when it says that continuity of a linear operator is uniform.
+
+**Reading.** The source uses any bound $\gamma$ from (2.2.2). Lean records the optimal
+bound $\|L\|$ on a bundled continuous linear operator. -/
 theorem equation_2_2_3 (L : V →L[𝕜] W) (v₁ v₂ : V) : ‖L v₁ - L v₂‖ ≤ ‖L‖ * ‖v₁ - v₂‖ := by
   rw [← map_sub]
   exact L.le_opNorm _
@@ -227,7 +244,11 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace �
 and let $L \in \mathcal{L}(V, W)$. Then
 $$\|L\| = \sup \Big\{ \frac{\|Lv\|}{\|v\|} : v \in V, \ v \neq 0 \Big\}.$$
 If $V = \{0\}$, the set is empty and both sides are $0$, because `sSup ∅ = 0`. Otherwise the set
-is bounded above by $\|L\|$, so the supremum is a real supremum. -/
+is bounded above by $\|L\|$, so the supremum is a real supremum.
+
+**Reading.** Norm equals supremum over nonzero vectors, using zero for the empty set in the trivial
+space.
+-/
 theorem opNorm_eq_sSup_ratio (L : V →L[𝕜] W) :
     ‖L‖ = sSup ((fun v => ‖L v‖ / ‖v‖) '' {v : V | v ≠ 0}) := by
   rcases subsingleton_or_nontrivial V with hV | hV
@@ -262,7 +283,10 @@ and $\|L\|$ is the least $\gamma \ge 0$ such that $\|Lv\| \le \gamma \|v\|$ for 
 The book also states that $\mathcal{L}(V, W)$ with this norm is a normed linear space. In Lean
 this is the normed space `V →L[𝕜] W` of Mathlib, so the theorem states only the four
 descriptions of the norm. The suprema are `sSup` of the images; on the zero space every supremum
-here is $0$, the value of `sSup` at the empty set and at $\{0\}$. -/
+here is $0$, the value of `sSup` at the empty set and at $\{0\}$.
+
+**Reading.** Lean states the norm formulas on the unit ball and sphere. The source also
+states the rescaled formulas on balls and spheres of arbitrary positive radius. -/
 theorem theorem_2_2_5 (L : V →L[𝕜] W) :
     ‖L‖ = sSup ((fun v => ‖L v‖ / ‖v‖) '' {v : V | v ≠ 0}) ∧
       ‖L‖ = sSup ((fun v => ‖L v‖) '' closedBall 0 1) ∧
@@ -333,7 +357,10 @@ and it is the operator norm of the map $x \mapsto Ax$ from $\mathbb{K}^n$ to $\m
 both with the norm $\|\cdot\|_\infty$.
 
 The matrix norm is Mathlib's operator norm of the scope `Matrix.Norms.Operator`. The maximum
-over an empty set of rows is $0$. -/
+over an empty set of rows is $0$.
+
+**Generalization.** The row formula applies to both real and complex scalars. An empty set
+of rows gives the value zero. -/
 theorem example_2_2_8_linfty (A : Matrix m n 𝕜) :
     ‖A‖ = ((Finset.univ.sup fun i => ∑ j, ‖A i j‖₊ : NNReal) : ℝ) ∧
       ‖A‖ = ‖ContinuousLinearMap.mk (Matrix.mulVecLin A)
@@ -360,7 +387,10 @@ characterization of the induced norm as a least constant, which is the descripti
 operator norm in Exercise 2.2.4 and in the fourth clause of
 `AtkinsonHan.Chapter02.theorem_2_2_5`. It says what the book's
 $\|A\|_1 = \max_j \sum_i |a_{ij}|$ says. The least constant is attained at the unit vector $e_j$
-of a column $j$ with the largest sum. -/
+of a column $j$ with the largest sum.
+
+**Generalization.** The column formula applies to both real and complex scalars. An empty
+set of columns gives the value zero. -/
 theorem example_2_2_8_l1 (A : Matrix m n 𝕜) :
     IsLeast {γ : ℝ | 0 ≤ γ ∧ ∀ x : n → 𝕜, ∑ i, ‖(A *ᵥ x) i‖ ≤ γ * ∑ j, ‖x j‖}
       ((Finset.univ.sup fun j => ∑ i, ‖A i j‖₊ : NNReal) : ℝ) := by
@@ -419,7 +449,10 @@ The second clause is the $C^*$-identity from which the formula follows: $A^* A$ 
 so its spectral radius is its norm. The statement is over $\mathbb{C}$, as the book states
 Example 2.2.8, because Mathlib has the spectral radius formula for self-adjoint elements of a
 $C^*$-algebra over $\mathbb{C}$. The matrix norm is Mathlib's operator norm of the scope
-`Matrix.Norms.L2Operator`. -/
+`Matrix.Norms.L2Operator`.
+
+**Reading.** The source also gives the square root of the spectral radius of $AA^*$. Lean
+states the formula with $A^*A$ and the corresponding identity for squared operator norms. -/
 theorem example_2_2_8_l2 (A : Matrix m n ℂ) :
     ‖A‖ = Real.sqrt (spectralRadius ℂ (Aᴴ * A)).toReal ∧
       ‖Aᴴ * A‖ = ‖A‖ ^ 2 ∧

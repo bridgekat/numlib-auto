@@ -57,6 +57,14 @@ the convergence for a smooth integrand without a sign hypothesis on the weights
 
 ## Deviations from the source
 
+* **(9.25) and Theorem 9.3** (reading). `QuarteroniSaccoSaleri.Chapter09.equation_9_25` uses
+  uniform panels with closed nodes. The even error theorem uses smoothness on an open
+  neighbourhood and a witness in the closed interval. The source places its witness in the
+  interior.
+* **Property 9.1** (scope). `QuarteroniSaccoSaleri.Chapter09.property_9_1` and
+  `QuarteroniSaccoSaleri.Chapter09.property_9_1_midpoint` give convergence for $n\ge1$ and
+  $n=0$. `QuarteroniSaccoSaleri.Chapter09.property_9_1_bound` states the quantitative modulus
+  estimate for $n\ge1$.
 * **Theorem 9.3, equation (9.26)** (correction). The source prints the constant $M_n/(n + 2)^{n+3}$.
   The correct constant is $M_n/n^{n+3}$. See `QuarteroniSaccoSaleri.Chapter09.theorem_9_3_even`.
 
@@ -86,7 +94,11 @@ where the weights $\alpha_k^{(j)}$ do not depend on $T_j$.
 
 The composite formula is `Quadrature.compositeNewtonCotes n f a b m`, and $w_k$ is
 `Quadrature.newtonCotesWeight n k`. In Lean, division by zero gives zero, so the identity also
-holds for $m = 0$ or $n = 0$. -/
+holds for $m = 0$ or $n = 0$.
+
+**Reading.** Uses uniform m panels and equally spaced closed nodes, with total definition at zero
+panel or local subdivision count.
+-/
 theorem equation_9_25 (n : ℕ) (f : ℝ → ℝ) (a b : ℝ) (m : ℕ) :
     Quadrature.compositeNewtonCotes n f a b m
       = ∑ j ∈ Finset.range m, ∑ k : Fin (n + 1),
@@ -130,7 +142,10 @@ let $a < b$, and let $f \in C^{n+2}([a, b])$. Then
 $$\lim_{m \to \infty} I_{n,m}(f) = \int_a^b f(x)\,dx.$$
 
 The book states that "for $n$ fixed, $E_{n,m}(f) \to 0$ as $m \to \infty$". The proof uses the
-bound (9.26) with $M = \max |f^{(n+2)}|$ and $H^{n+2} \to 0$. -/
+bound (9.26) with $M = \max |f^{(n+2)}|$ and $H^{n+2} \to 0$.
+
+**Reading.** Convergence along m atTop with open-neighborhood regularity and n fixed.
+-/
 theorem theorem_9_3_tendsto_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
     Tendsto (fun m => Quadrature.compositeNewtonCotes n f a b m) atTop
@@ -172,7 +187,11 @@ $$\lim_{m \to \infty} I_{n,m}(f) = \int_a^b f(x)\,dx.$$
 The book reads this from (9.27), which is not formalized. The backbone proves the convergence
 from the $O(H^{n+1})$ bound that the Lagrange interpolation error gives for every $n$
 (`Quadrature.tendsto_compositeNewtonCotes_of_contDiffOn`). Unlike Property 9.1, this needs no
-sign hypothesis on the weights. -/
+sign hypothesis on the weights.
+
+**Reading.** Convergence established with any smoothness order n+1 neighborhood, without exact
+formula (9.27).
+-/
 theorem theorem_9_3_tendsto_odd (hn : Odd n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) :
     Tendsto (fun m => Quadrature.compositeNewtonCotes n f a b m) atTop
@@ -221,7 +240,10 @@ noncomputable def modulusOfContinuity (f : ℝ → ℝ) (a b H : ℝ) : ℝ :=
 /-- Let $f \in C^0([a, b])$, let $x, y \in [a, b]$, and let $|x - y| \le H$. Then
 $|f(x) - f(y)| \le \Omega(f; H)$.
 
-The case $x = y$ is included, because $\Omega(f; H) \ge 0$. -/
+The case $x = y$ is included, because $\Omega(f; H) \ge 0$.
+
+**Reading.** Also allows x=y via nonnegativity of modulus.
+-/
 theorem abs_sub_le_modulusOfContinuity (hf : ContinuousOn f (Icc a b)) {H : ℝ} {x y : ℝ}
     (hx : x ∈ Icc a b) (hy : y ∈ Icc a b) (hxy : |x - y| ≤ H) :
     |f x - f y| ≤ modulusOfContinuity f a b H := by
@@ -251,7 +273,10 @@ $f \in C^0([a, b])$, let $m \ge 1$, and let $H = (b - a)/m$. Then
 $$\Bigl|\int_a^b f(x)\,dx - I_{n,m}(f)\Bigr| \le 2(b - a)\,\Omega(f; H).$$
 
 The backbone's `Quadrature.abs_sub_compositeNewtonCotes_le` proves the bound with the constant
-$1$ in place of $2$. The bound of the book follows, because $\Omega(f; H) \ge 0$. -/
+$1$ in place of $2$. The bound of the book follows, because $\Omega(f; H) \ge 0$.
+
+**Scope.** This bound concerns closed rules with $n\ge1$. The midpoint specialization of
+Property 9.1 is formalized as a convergence result. -/
 theorem property_9_1_bound (hn : 1 ≤ n) (hw : ∀ k, 0 ≤ Quadrature.newtonCotesWeight n k)
     (hab : a ≤ b) (hf : ContinuousOn f (Icc a b)) {m : ℕ} (hm : 1 ≤ m) :
     |(∫ x in a..b, f x) - Quadrature.compositeNewtonCotes n f a b m|

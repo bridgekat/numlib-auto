@@ -88,6 +88,20 @@ All 8 numbered results of Section 5 are formalized.
 
 * **Theorem 5.1** (generalization). The book takes $\varphi$ with values in $(-\infty, +\infty]$.
   The statement allows $\varphi$ to take the value $-\infty$. See `Rockafellar.theorem_5_1`.
+* **Section 5, infimal convolution** (generalization). With the epigraph definition, the domain
+  sum and translation formulas also hold for improper and nonconvex functions. See
+  `Rockafellar.convexDom_infimalConvolution` and
+  `Rockafellar.infimalConvolution_indicatorFn_singleton`.
+* **Section 5, right scalar multiplication** (generalization). The lower boundary of the scaled
+  epigraph is convex for every real scale and the formulas at nonnegative scales hold for
+  arbitrary functions. See `Rockafellar.convexFn_rightSMul`, `Rockafellar.rightSMul_apply_pos` and
+  `Rockafellar.rightSMul_zero`.
+* **Section 5, positively homogeneous convex generator** (generalization). The greatest-function
+  property holds for arbitrary $h$, and the formula away from $0$ includes $h \equiv +\infty$.
+  See `Rockafellar.isGreatest_posHomGen` and `Rockafellar.posHomGen_apply`.
+* **Section 5, maximum coordinate and Tchebycheff norm** (generalization). The extended-real
+  supremum equals $-\infty$ when there are no coordinates. See `Rockafellar.convexFn_maxCoord`
+  and `Rockafellar.convexFn_tchebycheffNorm`.
 * **Theorem 5.8**, function $f$ (generalization). The book assumes that $f_1, \dots, f_m$ are
   proper. The statement does not. See `Rockafellar.theorem_5_8_f`.
 * **Theorem 5.8**, function $h$ (generalization). The book assumes that $f_1, \dots, f_m$ are
@@ -242,7 +256,9 @@ the sum of $\operatorname{dom} f$ and $\operatorname{dom} g$": for all functions
 $\mathbb{R}^n$,
 $$\operatorname{dom}(f \mathbin{\square} g) = \operatorname{dom} f + \operatorname{dom} g.$$
 
-The statement has no hypothesis on $f$ and $g$. -/
+**Generalization.** The book states this identity in its discussion of infimal convolution of
+proper convex functions. The effective domain is the projection of the epigraph, so addition of
+epigraphs gives the domain formula for arbitrary functions. -/
 theorem convexDom_infimalConvolution {n : ℕ} (f g : Rn n → EReal) :
     convexDom (f □ g) = convexDom f + convexDom g :=
   convexDom_infConv f g
@@ -251,7 +267,9 @@ theorem convexDom_infimalConvolution {n : ℕ} (f g : Rn n → EReal) :
 $a \in \mathbb{R}^n$, $f \mathbin{\square} \delta(\cdot \mid a)$ is the function whose graph is
 obtained by translating the graph of $f$ horizontally by $a$:
 $$(f \mathbin{\square} \delta(\cdot \mid a))(x) = f(x - a).$$
--/
+
+**Generalization.** The book gives the formula in its discussion of proper convex functions.
+Adding the epigraph of a singleton indicator translates the lower boundary of any epigraph. -/
 theorem infimalConvolution_indicatorFn_singleton {n : ℕ} (f : Rn n → EReal) (a : Rn n) :
     (f □ indicatorFn ({a} : Set (Rn n))) = fun x => f (x - a) :=
   infConv_indicatorFn_singleton f a
@@ -317,9 +335,10 @@ theorem convexFn_leftSMul {n : ℕ} {f : Rn n → EReal} (l : ℝ) (hl : 0 ≤ l
 /-- **Section 5** of [rockafellar1970convex]. Right scalar multiplication preserves convexity: if
 $f$ is a convex function on $\mathbb{R}^n$, then $f\lambda$ is convex for every real $\lambda$.
 
-The function $f\lambda$ is `ConvexAnalysis.smulRight f λ`, the lower boundary of the convex set
-$\lambda (\operatorname{epi} f)$, so the statement is Theorem 5.3. The definition and the
-statement cover every real $\lambda$; the book uses $\lambda \ge 0$. -/
+**Generalization.** The book defines right scalar multiplication for $\lambda \ge 0$. The scaled
+epigraph is convex for every real $\lambda$, so its lower boundary is convex by Theorem 5.3.
+
+The function $f\lambda$ is `ConvexAnalysis.smulRight f λ`. -/
 theorem convexFn_rightSMul {n : ℕ} {f : Rn n → EReal} (l : ℝ) (hf : ConvexFn f) :
     ConvexFn (smulRight f l) :=
   convexFn_smulRight l hf
@@ -327,7 +346,9 @@ theorem convexFn_rightSMul {n : ℕ} {f : Rn n → EReal} (l : ℝ) (hf : Convex
 /-- **Section 5** of [rockafellar1970convex], definition of $f\lambda$ for $\lambda > 0$. For every
 function $f$ on $\mathbb{R}^n$ and $\lambda > 0$,
 $$(f\lambda)(x) = \lambda f(\lambda^{-1} x).$$
--/
+
+**Generalization.** The book defines the operation for convex $f$. For every function, positive
+scaling sends the epigraph to the epigraph of the stated function. -/
 theorem rightSMul_apply_pos {n : ℕ} {l : ℝ} (hl : 0 < l) (f : Rn n → EReal) (x : Rn n) :
     smulRight f l x = (l : EReal) * f (l⁻¹ • x) :=
   smulRight_apply_pos hl f x
@@ -335,15 +356,15 @@ theorem rightSMul_apply_pos {n : ℕ} {l : ℝ} (hl : 0 < l) (f : Rn n → EReal
 /-- **Section 5** of [rockafellar1970convex], definition of $f0$. If $f \not\equiv +\infty$, then
 $f0 = \delta(\cdot \mid 0)$.
 
-The hypothesis $f \not\equiv +\infty$ is the book's own and is needed; see
-`Rockafellar.rightSMul_zero_of_top` for the other case. -/
+**Generalization.** The book assumes convexity. Every function with a nonempty effective domain
+has a nonempty epigraph, so scaling it by zero reduces it to the origin. -/
 theorem rightSMul_zero {n : ℕ} {f : Rn n → EReal} (hf : (convexDom f).Nonempty) :
     smulRight f 0 = indicatorFn ({0} : Set (Rn n)) :=
   smulRight_zero hf
 
-/-- **Section 5** of [rockafellar1970convex], definition of $f0$ when $f \equiv +\infty$: "trivially
-$f0 = f$ if $f \equiv +\infty$". With `Rockafellar.rightSMul_zero`, this gives the whole
-definition by cases of the book at $\lambda = 0$. -/
+/-- **Section 5** of [rockafellar1970convex], definition of $f0$ when $f \equiv +\infty$. Then
+$f0 = f$. With `Rockafellar.rightSMul_zero`, this gives the whole definition by cases of the book
+at $\lambda = 0$. -/
 theorem rightSMul_zero_of_top {n : ℕ} {f : Rn n → EReal} (hf : f = ⊤) :
     smulRight f 0 = f := by
   rw [smulRight_of_epi_eq_empty (by rw [hf]; exact epi_top) 0, hf]
@@ -361,6 +382,9 @@ by $h$. For every function $h$ on $\mathbb{R}^n$, the function `ConvexAnalysis.p
 the greatest function $f$ such that $f$ is positively homogeneous and convex, $f(0) \le 0$ and
 $f \le h$.
 
+**Generalization.** The book assumes that $h$ is convex. The greatest-function property holds
+for every $h$ since the construction takes the convex cone generated by its epigraph.
+
 The function is obtained by Theorem 5.3 from the convex cone in $\mathbb{R}^{n+1}$ generated by
 $\operatorname{epi} h$. It is not the backbone function `ConvexAnalysis.hom`, which is the same
 construction applied to the lift of $h$ at level one, and is a function on
@@ -375,9 +399,9 @@ generated by $h$. Let $h$ be a convex function on $\mathbb{R}^n$, let $f$ be the
 homogeneous convex function generated by $h$, and let $x \neq 0$. Then
 $$f(x) = \inf \{(h\lambda)(x) \mid \lambda > 0\}.$$
 
-The book gives the formula $f(x) = \inf \{(h\lambda)(x) \mid \lambda \ge 0\}$ and remarks that
-$\lambda = 0$ can be omitted from the infimum if $x \neq 0$. This is the form with $\lambda = 0$
-omitted. -/
+**Generalization.** The book gives the infimum formula when $h \not\equiv +\infty$. At $x \neq 0$
+the formula over $\lambda > 0$ also holds for $h \equiv +\infty$, since every term and the
+generated function at $x$ are then $+\infty$. -/
 theorem posHomGen_apply {n : ℕ} {h : Rn n → EReal} (hh : ConvexFn h) {x : Rn n} (hx : x ≠ 0) :
     posHomGen h x = ⨅ l > (0 : ℝ), smulRight h l x := by
   rw [posHomGen_apply_of_ne_zero hh hx]
@@ -396,8 +420,10 @@ theorem theorem_5_5 {n : ℕ} {ι : Sort*} {f : ι → Rn n → EReal} (hf : ∀
 assigns to $x = (\xi_1, \dots, \xi_n)$ the greatest of its components $\xi_j$ is convex,
 "because it is the pointwise supremum of the linear functions $\langle x, e_j \rangle$".
 
-The supremum is taken in `EReal`, so for $n = 0$ the function is the constant $-\infty$. The
-function is also the support function of the unit simplex. -/
+**Generalization.** The book takes the maximum of a nonempty coordinate family. The supremum in
+`EReal` also gives a convex function when $n = 0$, where its value is $-\infty$.
+
+The function is also the support function of the unit simplex. -/
 theorem convexFn_maxCoord {n : ℕ} :
     ConvexFn fun x : Rn n => ⨆ j : Fin n, ((x j : ℝ) : EReal) :=
   convexFn_iSup fun j => convexFn_coe_linearMap (coordFunctional n j)
@@ -407,7 +433,8 @@ $k(x) = \max \{|\xi_j| \mid j = 1, \dots, n\}$ on $\mathbb{R}^n$, "which is call
 **Tchebycheff norm** on $\mathbb{R}^n$", is convex, as "can be seen similarly from Theorem 5.5":
 it is the pointwise supremum of the $2n$ linear functions $\pm \xi_j$.
 
-The supremum is taken in `EReal`, so for $n = 0$ the function is the constant $-\infty$. -/
+**Generalization.** The book uses the maximum over a nonempty coordinate family. For $n = 0$ the
+extended-real supremum gives the constant $-\infty$, which is convex. -/
 theorem convexFn_tchebycheffNorm {n : ℕ} :
     ConvexFn fun x : Rn n => ⨆ j : Fin n, ((|x j| : ℝ) : EReal) := by
   have hrw : (fun x : Rn n => ⨆ j : Fin n, ((|x j| : ℝ) : EReal))

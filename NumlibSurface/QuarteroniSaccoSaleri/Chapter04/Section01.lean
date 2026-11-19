@@ -103,6 +103,26 @@ real matrix and the equivalence $B^k \to 0 \iff \rho(B) < 1$) and
 
 ## Deviations from the source
 
+* **Generalization.** The consistency and convergence statements use the totalized candidate even
+  for singular systems. See `QuarteroniSaccoSaleri.Chapter04.definition_4_1`,
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_1_iff`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_4`, `QuarteroniSaccoSaleri.Chapter04.theorem_4_1`,
+  `QuarteroniSaccoSaleri.Chapter04.tendsto_of_algebraNorm_lt_one`.
+* **Reading.** The alternating sequence in Example 4.1 is nonconvergent for a nonzero right-hand
+  side. See `QuarteroniSaccoSaleri.Chapter04.example_4_1_not_tendsto`.
+* **Generalization.** The power identity and necessary spectral condition also apply directly to
+  affine iterates. See `QuarteroniSaccoSaleri.Chapter04.affineStep_iterate_sub_iterate`,
+  `QuarteroniSaccoSaleri.Chapter04.complexSpectralRadius_lt_one_of_forall_tendsto`.
+* **Scope.** Definition 4.2 specializes to the Euclidean operator norm and uses total operations.
+  See `QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor`,
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_2_averageFactor`,
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_2_rate`.
+* **Totalization.** The real-valued convergence rates use total logarithm and the general rate limit
+  excludes spectral radius zero. See `QuarteroniSaccoSaleri.Chapter04.asymptoticConvergenceRate`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_5`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_5_symm`.
+* **Scope.** The asymptotic factor limit uses the Euclidean operator norm. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_5_factor`.
 * **Equation (4.4) and Theorem 4.1** (generalization). The statements do not assume that $A$ is
   nonsingular. For a singular $A$, $A^{-1} = 0$ in Lean, consistency reads $f = 0$, and the
   statements remain true. See `QuarteroniSaccoSaleri.Chapter04.equation_4_4` and
@@ -110,7 +130,7 @@ real matrix and the equivalence $B^k \to 0 \iff \rho(B) < 1$) and
 * **Definition 4.2** (reading). The book allows any matrix norm. The definitions use the spectral
   norm. See `QuarteroniSaccoSaleri.Chapter04.definition_4_2_factor`.
 * **Equation (4.5)** (reading). The limit is stated for $\rho(B) \neq 0$. For a nilpotent $B$ the
-  book's rate is $+\infty$, and the formal rates $R_k(B)$ are $0$. See
+  book's rate is $+\infty$. The formal rates are $0$ once $B^k = 0$. See
   `QuarteroniSaccoSaleri.Chapter04.equation_4_5`.
 
 ## Not formalized
@@ -167,7 +187,12 @@ $$A^{-1} b = B A^{-1} b + f.$$
 
 The definition is meaningful for a nonsingular $A$, the standing assumption of Section 3.2. For
 a singular $A$, Lean's $A^{-1}$ is $0$. The "equivalently, $f = (I - B) A^{-1} b$" of the book
-is `QuarteroniSaccoSaleri.Chapter04.definition_4_1_iff`. -/
+is `QuarteroniSaccoSaleri.Chapter04.definition_4_1_iff`.
+
+**Generalization.** The book studies nonsingular $A$. Lean allows any $A$ by defining consistency
+and convergence relative to the total candidate $A^{-1}b$. If $A$ is singular this candidate is
+zero, and the conclusions concern the affine iteration about that fixed point.
+-/
 def definition_4_1 (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (B : Matrix (Fin n) (Fin n) ℝ)
     (f : Fin n → ℝ) : Prop :=
   A⁻¹ *ᵥ b = B *ᵥ (A⁻¹ *ᵥ b) + f
@@ -176,7 +201,12 @@ def definition_4_1 (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (B : Mat
 $A, B \in \mathbb{R}^{n \times n}$ and $b, f \in \mathbb{R}^n$. The method (4.2) is consistent
 with $Ax = b$ if and only if
 $$f = (I - B) A^{-1} b.$$
-This is a rearrangement, and it holds for every $A$. -/
+This is a rearrangement, and it holds for every $A$.
+
+**Generalization.** The book studies nonsingular $A$. Lean allows any $A$ by defining consistency
+and convergence relative to the total candidate $A^{-1}b$. If $A$ is singular this candidate is
+zero, and the conclusions concern the affine iteration about that fixed point.
+-/
 theorem definition_4_1_iff (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
     (B : Matrix (Fin n) (Fin n) ℝ) (f : Fin n → ℝ) :
     definition_4_1 A b B f ↔ f = (1 - B) *ᵥ (A⁻¹ *ᵥ b) := by
@@ -233,7 +263,12 @@ theorem example_4_1_iterate (b : Fin n → ℝ) (k : ℕ) :
 /-- **Example 4.1** of [quarteroni2000numerical], non-convergence. Let $b \in \mathbb{R}^n$ with
 $b \neq 0$. The sequence $x^{(k)}$ of the method $x^{(k+1)} = -x^{(k)} + b$ started at
 $x^{(0)} = 0$ has no limit, because its even terms are $0$ and its odd terms are $b$. So
-consistency alone does not give convergence. -/
+consistency alone does not give convergence.
+
+**Reading.** The nonconvergence statement is for the zero start and $b\ne0$. When $b=0$ the
+displayed alternating sequence is constant. Other starts can converge, as the example's last
+sentence shows.
+-/
 theorem example_4_1_not_tendsto {b : Fin n → ℝ} (hb : b ≠ 0) :
     ¬ ∃ x, Tendsto (fun k => (affineStep (-1) b)^[k] 0) atTop (𝓝 x) := by
   rintro ⟨x, hx⟩
@@ -281,7 +316,12 @@ hypothesis: for a singular $A$, $A^{-1} = 0$ in Lean, consistency reads $f = 0$,
 identity is still true.
 
 The proof specializes `Stationary.step_iterate_sub`, transported along
-`QuarteroniSaccoSaleri.Chapter04.toLp_affineStep_iterate`. -/
+`QuarteroniSaccoSaleri.Chapter04.toLp_affineStep_iterate`.
+
+**Generalization.** The book studies nonsingular $A$. Lean allows any $A$ by defining consistency
+and convergence relative to the total candidate $A^{-1}b$. If $A$ is singular this candidate is
+zero, and the conclusions concern the affine iteration about that fixed point.
+-/
 theorem equation_4_4 {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b = (B ^ k) *ᵥ (x₀ - A⁻¹ *ᵥ b) := by
@@ -298,7 +338,12 @@ No fixed point is needed. This identity is the reason why convergence for every 
 $B^k \to 0$, whatever the limit is.
 
 The proof takes the difference of two instances of the closed form
-`Stationary.step_iterate_eq_pow_add_sum`. -/
+`Stationary.step_iterate_eq_pow_add_sum`.
+
+**Generalization.** The difference of two affine iterates obeys the same power identity without a
+fixed-point hypothesis. Convergence to a common limit from all starts then suffices for the
+spectral-radius bound, without reference to a coefficient matrix $A$.
+-/
 theorem affineStep_iterate_sub_iterate (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ y₀ : Fin n → ℝ)
     (k : ℕ) :
     (affineStep B f)^[k] x₀ - (affineStep B f)^[k] y₀ = (B ^ k) *ᵥ (x₀ - y₀) := by
@@ -319,7 +364,12 @@ this direction.
 
 The reason is that the differences $x^{(k)} - y^{(k)} = B^k (x^{(0)} - y^{(0)})$ of two
 iterations tend to $0$, so that $B^k v \to 0$ for every $v$, and Theorem 1.5 gives
-$\rho(B) < 1$. -/
+$\rho(B) < 1$.
+
+**Generalization.** The difference of two affine iterates obeys the same power identity without a
+fixed-point hypothesis. Convergence to a common limit from all starts then suffices for the
+spectral-radius bound, without reference to a coefficient matrix $A$.
+-/
 theorem complexSpectralRadius_lt_one_of_forall_tendsto {B : Matrix (Fin n) (Fin n) ℝ}
     {f x : Fin n → ℝ} (h : ∀ x₀, Tendsto (fun k => (affineStep B f)^[k] x₀) atTop (𝓝 x)) :
     complexSpectralRadius B < 1 := by
@@ -344,7 +394,12 @@ $B^k \to 0$, if and only if $\rho(B) < 1$ (Theorem 1.5,
 `Matrix.tendsto_pow_iff_complexSpectralRadius_lt_one`). The book proves the converse with an
 eigenvector for an eigenvalue of modulus greater than $1$, and it does not treat the case
 $\rho(B) = 1$. The equivalence of Theorem 1.5 covers both cases
-(`QuarteroniSaccoSaleri.Chapter04.complexSpectralRadius_lt_one_of_forall_tendsto`). -/
+(`QuarteroniSaccoSaleri.Chapter04.complexSpectralRadius_lt_one_of_forall_tendsto`).
+
+**Generalization.** The book studies nonsingular $A$. Lean allows any $A$ by defining consistency
+and convergence relative to the total candidate $A^{-1}b$. If $A$ is singular this candidate is
+zero, and the conclusions concern the affine iteration about that fixed point.
+-/
 theorem theorem_4_1 {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) :
     (∀ x₀, Tendsto (fun k => (affineStep B f)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
@@ -363,7 +418,12 @@ $\|B\| < 1$ in some matrix norm is a sufficient condition for convergence.
 
 A matrix norm is an algebra norm, that is, a submultiplicative norm
 (`AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)`). By (1.23) and Theorem 1.5 the powers of $B$ tend
-to $0$ (`Matrix.tendsto_pow_of_algebraNorm_lt_one`), so $\rho(B) < 1$ and Theorem 4.1 applies. -/
+to $0$ (`Matrix.tendsto_pow_of_algebraNorm_lt_one`), so $\rho(B) < 1$ and Theorem 4.1 applies.
+
+**Generalization.** The book studies nonsingular $A$. Lean allows any $A$ by defining consistency
+and convergence relative to the total candidate $A^{-1}b$. If $A$ is singular this candidate is
+zero, and the conclusions concern the affine iteration about that fixed point.
+-/
 theorem tendsto_of_algebraNorm_lt_one {A B : Matrix (Fin n) (Fin n) ℝ} {b f : Fin n → ℝ}
     (hc : definition_4_1 A b B f) (N : AlgebraNorm ℝ (Matrix (Fin n) (Fin n) ℝ)) (hN : N B < 1)
     (x₀ : Fin n → ℝ) :
@@ -383,14 +443,24 @@ $B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$. The **convergence factor
 steps** of the iteration with matrix $B$ is $\|B^m\|_2$, in the spectral norm. It bounds the
 reduction of the error over $m$ steps: $\|e^{(m)}\| \le \|B^m\| \|e^{(0)}\|$ (Section 4.6).
 
-**Reading.** The book allows any matrix norm. The definition fixes the spectral norm. -/
+**Reading.** The book allows any matrix norm. The definition fixes the spectral norm.
+
+**Reading.** The convergence quantities use the Euclidean operator norm. The book allows any matrix
+norm. The Lean definitions are total for all natural exponents, with real logarithm and division at
+zero.
+-/
 noncomputable def definition_4_2_factor (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) : ℝ := ‖B ^ m‖
 
 /-- **Definition 4.2** of [quarteroni2000numerical], the average convergence factor. Let
 $B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$. The **average convergence factor after
 $m$ steps** is $\|B^m\|_2^{1/m}$.
 
-At $m = 0$ the exponent $1/m$ is $0$ in Lean, so the value is $1$. -/
+At $m = 0$ the exponent $1/m$ is $0$ in Lean, so the value is $1$.
+
+**Reading.** The convergence quantities use the Euclidean operator norm. The book allows any matrix
+norm. The Lean definitions are total for all natural exponents, with real logarithm and division at
+zero.
+-/
 noncomputable def definition_4_2_averageFactor (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) : ℝ :=
   ‖B ^ m‖ ^ (1 / m : ℝ)
 
@@ -399,7 +469,12 @@ $B \in \mathbb{R}^{n \times n}$ and $m \in \mathbb{N}$. The **average convergenc
 steps** is
 $$R_m(B) = -\frac{1}{m} \log \|B^m\|_2.$$
 
-In Lean, $1/0 = 0$ and $\log 0 = 0$. So $R_0(B) = 0$, and $R_m(B) = 0$ when $B^m = 0$. -/
+In Lean, $1/0 = 0$ and $\log 0 = 0$. So $R_0(B) = 0$, and $R_m(B) = 0$ when $B^m = 0$.
+
+**Reading.** The convergence quantities use the Euclidean operator norm. The book allows any matrix
+norm. The Lean definitions are total for all natural exponents, with real logarithm and division at
+zero.
+-/
 noncomputable def definition_4_2_rate (B : Matrix (Fin n) (Fin n) ℝ) (m : ℕ) : ℝ :=
   -(1 / m : ℝ) * Real.log ‖B ^ m‖
 
@@ -426,7 +501,13 @@ $B \in \mathbb{R}^{n \times n}$, the **asymptotic convergence rate** is
 $$R(B) = -\log \rho(B).$$
 It is the limit of the average convergence rates $R_k(B)$; see
 `QuarteroniSaccoSaleri.Chapter04.equation_4_5`. At $\rho(B) = 0$ the value is $0$ in Lean,
-because $\log 0 = 0$. -/
+because $\log 0 = 0$.
+
+**Reading.** Lean represents the rate by a real logarithm. At spectral radius zero the value is
+zero, and nilpotent powers give rate zero from the first zero power onward. The general limit
+theorem assumes positive spectral radius, while the symmetric identity uses the real-log convention
+at zero.
+-/
 noncomputable def asymptoticConvergenceRate (B : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   -Real.log (complexSpectralRadius B).toReal
 
@@ -440,7 +521,13 @@ $+\infty$, while the formal rates $R_k(B)$ are $0$ for large $k$. The statement 
 assumes $\rho(B) \neq 0$.
 
 The proof composes Gelfand's formula $\|B^k\|^{1/k} \to \rho(B)$ with the logarithm
-(`Matrix.tendsto_averageConvergenceRate`). -/
+(`Matrix.tendsto_averageConvergenceRate`).
+
+**Reading.** Lean represents the rate by a real logarithm. At spectral radius zero the value is
+zero, and nilpotent powers give rate zero from the first zero power onward. The general limit
+theorem assumes positive spectral radius, while the symmetric identity uses the real-log convention
+at zero.
+-/
 theorem equation_4_5 {B : Matrix (Fin n) (Fin n) ℝ} (hρ : complexSpectralRadius B ≠ 0) :
     Tendsto (definition_4_2_rate B) atTop (𝓝 (asymptoticConvergenceRate B)) :=
   tendsto_averageConvergenceRate B hρ
@@ -451,7 +538,11 @@ radius:
 $$\lim_{m \to \infty} \|B^m\|_2^{1/m} = \rho(B).$$
 So $\rho(B)$ is the **asymptotic convergence factor**.
 
-This is Property 1.14; the proof specializes `Matrix.tendsto_pow_rpow_complexSpectralRadius`. -/
+This is Property 1.14; the proof specializes `Matrix.tendsto_pow_rpow_complexSpectralRadius`.
+
+**Reading.** The limit of the mean factor is stated for the Euclidean operator norm. It includes
+spectral radius zero.
+-/
 theorem equation_4_5_factor (B : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (definition_4_2_averageFactor B) atTop (𝓝 (complexSpectralRadius B).toReal) :=
   tendsto_pow_rpow_complexSpectralRadius B
@@ -463,7 +554,13 @@ because $\|B^m\|_2 = \|B\|_2^m = \rho(B)^m$.
 
 The statement has no condition on $\rho(B)$. If $\rho(B) = 0$, then $B = 0$, and both sides are
 $0$ because $\log 0 = 0$ in Lean. The proof specializes `Matrix.IsHermitian.l2_opNorm_pow` and
-`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`. -/
+`Matrix.l2_opNorm_eq_complexSpectralRadius_of_isHermitian`.
+
+**Reading.** Lean represents the rate by a real logarithm. At spectral radius zero the value is
+zero, and nilpotent powers give rate zero from the first zero power onward. The general limit
+theorem assumes positive spectral radius, while the symmetric identity uses the real-log convention
+at zero.
+-/
 theorem equation_4_5_symm {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {m : ℕ} (hm : m ≠ 0) :
     definition_4_2_rate B m = asymptoticConvergenceRate B := by
   have hB' : B.IsHermitian := isHermitian_iff_isSymm.mpr hB

@@ -77,9 +77,18 @@ The proofs specialize the backbone modules `Numlib.Analysis.Sobolev.Chart`,
 
 ## Deviations from the source
 
+* **Local chart definition** (typo and generalization). The Section 9.2 definition prints
+  $H(Q_+) = U \cap Q$. The library uses $H(Q_+) = U \cap \Omega$ as in the proof of Theorem 9.7
+  and the definition in Section 9.6. The library includes order zero, and the comparison with
+  Atkinson–Han's graph condition allows unbounded open sets. See
+  `Brezis.Chapter09.IsOfClassC` and `Brezis.Chapter09.isClassC1_iff_isContDiffDomain`.
+* **Lemma 9.2** (generalization). The extension by reflection applies on any open set invariant
+  under the reflection. See `Brezis.Chapter09.lemma_9_2_of_symm`.
 * **Definition of an open set of class $C^\infty$** (reading). The source defines "of class
   $C^\infty$" as "of class $C^m$ for every $m$". The library reads it as one chart of class
   $C^\infty$ at each boundary point, which is a priori stronger. See `Brezis.Chapter09.IsOfClassC`.
+* **Theorem 9.7** (reading). The extension bound is stated for each $p$, with no uniformity
+  across $p$. See `Brezis.Chapter09.theorem_9_7` and `Brezis.Chapter09.theorem_9_7_halfSpace`.
 -/
 
 open Filter MeasureTheory Metric Topology TopologicalSpace EuclideanSpace
@@ -116,7 +125,12 @@ same for all $m$, and is not proved.
 The source states the definition for $m = 1$ in Section 9.2 and for general $m$ in Section 9.6.
 The definition is the backbone's chart condition `IsContDiffChartDomain m Ω`, and
 `Brezis.Chapter09.isOfClassC_iff` unfolds it to the wording of the source. Here $m$ ranges over
-$\mathbb{N} \cup \{\infty\}$. -/
+$\mathbb{N} \cup \{\infty\}$.
+
+**Typo.** The definition in Section 9.2 prints $H(Q_+) = U \cap Q$. The proof of Theorem 9.7
+ and the definition in Section 9.6 give $H(Q_+) = U \cap \Omega$, which is used here.
+
+**Generalization.** The library also includes order zero. -/
 def IsOfClassC (m : ℕ∞) (Ω : Set 𝔼) : Prop :=
   IsContDiffChartDomain m Ω
 
@@ -129,7 +143,12 @@ $H(Q_+) = U \cap \Omega$ and $H(Q_0) = U \cap \partial\Omega$.
 
 The maps $H$ and $H^{-1}$ are functions on $\mathbb{R}^N$. The regularity on the closures is
 `ContDiffOn` on `closure (unitChartCube d)` and on `closure U`, and the bijection is `Set.BijOn`
-with inverse `Set.InvOn` between $Q$ and $U$. -/
+with inverse `Set.InvOn` between $Q$ and $U$.
+
+**Typo.** The right side uses $H(Q_+) = U \cap \Omega$ as in Section 9.6, correcting
+ $U \cap Q$ in the original Section 9.2 definition.
+
+**Generalization.** The equivalence includes order zero. -/
 theorem isOfClassC_iff (m : ℕ) (Ω : Set 𝔼) :
     IsOfClassC m Ω ↔ IsOpen Ω ∧ ∀ x ∈ frontier Ω, ∃ (U : Set 𝔼) (H Hinv : 𝔼 → 𝔼),
       IsOpen U ∧ x ∈ U ∧ ContDiffOn ℝ m H (closure (unitChartCube d)) ∧
@@ -161,7 +180,10 @@ $\Omega$ is **of class $C^1$** if it is of class $C^m$ for $m = 1$
 (`Brezis.Chapter09.IsOfClassC`).
 
 This is the hypothesis of Theorem 9.7 and Corollary 9.8, and of Corollaries 9.14 and 9.15,
-Theorem 9.16 and Remark 21 in Sections 9.3 and 9.4 of the source. -/
+Theorem 9.16 and Remark 21 in Sections 9.3 and 9.4 of the source.
+
+**Typo.** The chart maps $Q_+$ to $U \cap \Omega$. Section 9.2 prints $U \cap Q$ in the
+ definition and uses $U \cap \Omega$ in the proof of Theorem 9.7. -/
 abbrev IsClassC1 (Ω : Set 𝔼) : Prop :=
   IsOfClassC 1 Ω
 
@@ -170,7 +192,10 @@ graphs, `IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]), is o
 the sense of [brezis2011functional], Section 9.2.
 
 A local graph gives a local chart by straightening (`IsContDiffDomain.isContDiffChartDomain`).
-The converse is `Brezis.Chapter09.isContDiffDomain_of_isClassC1`. -/
+The converse is `Brezis.Chapter09.isContDiffDomain_of_isClassC1`.
+
+**Generalization.** Atkinson–Han assumes $\Omega$ bounded. This local implication extends
+ to unbounded open sets. -/
 theorem isClassC1_of_isContDiffDomain {Ω : Set 𝔼} (h : IsContDiffDomain 1 Ω) : IsClassC1 Ω :=
   h.isContDiffChartDomain
 
@@ -180,13 +205,19 @@ the sense of the source, by local charts, is a $C^1$ domain in the sense of loca
 
 The proof specializes the backbone's `IsContDiffChartDomain.isContDiffDomain`: the implicit
 function theorem applies to the last coordinate of the inverse chart, whose derivative is
-invertible, after a rigid motion that sends its gradient to $e_N$. -/
+invertible, after a rigid motion that sends its gradient to $e_N$.
+
+**Generalization.** Atkinson–Han assumes $\Omega$ bounded. This local implication extends
+ to unbounded open sets. -/
 theorem isContDiffDomain_of_isClassC1 {Ω : Set 𝔼} (h : IsClassC1 Ω) : IsContDiffDomain 1 Ω :=
   h.isContDiffDomain le_rfl WithTop.coe_ne_top
 
 /-- The two definitions of a $C^1$ domain agree. An open set $\Omega$ is of class $C^1$ in the sense
 of the source, by local charts, if and only if it is a $C^1$ domain in the sense of local
-graphs, `IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]). -/
+graphs, `IsContDiffDomain 1 Ω` (Definition 7.2.1 of [han2009theoretical]).
+
+**Generalization.** The equivalence includes arbitrary open sets. Atkinson–Han defines the
+ graph condition for bounded open sets. -/
 theorem isClassC1_iff_isContDiffDomain {Ω : Set 𝔼} : IsClassC1 Ω ↔ IsContDiffDomain 1 Ω :=
   ⟨isContDiffDomain_of_isClassC1, isClassC1_of_isContDiffDomain⟩
 
@@ -244,7 +275,10 @@ for all $u \in W^{1,p}(\Omega)$:
 
 (iii) $\|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C \|u\|_{W^{1,p}(\Omega)}$.
 
-The source says that $C$ depends only on $\Omega$; here $C$ depends on $\Omega$ and $p$.
+**Reading.** The source specifies a bound $C$ depending only on $\Omega$. The declaration fixes
+$p$ before it produces $C$, so it provides a bound for the chosen exponent without asserting
+uniformity across exponents.
+
 Property (i) holds almost everywhere on $\Omega$, and the norm in (iii) is the norm
 `Brezis.Chapter09.bookNorm` of the source. -/
 theorem theorem_9_7 {Ω : Opens 𝔼} (hΩ : IsClassC1 (Ω : Set 𝔼))
@@ -262,6 +296,9 @@ W^{1,p}(\mathbb{R}^N_+) \to W^{1,p}(\mathbb{R}^N)$ and a constant $C$ such that 
 $u \in W^{1,p}(\mathbb{R}^N_+)$, $Pu = u$ almost everywhere on $\mathbb{R}^N_+$,
 $\|Pu\|_{L^p(\mathbb{R}^N)} \le C \|u\|_{L^p(\mathbb{R}^N_+)}$ and
 $\|Pu\|_{W^{1,p}(\mathbb{R}^N)} \le C \|u\|_{W^{1,p}(\mathbb{R}^N_+)}$.
+
+**Reading.** As in `Brezis.Chapter09.theorem_9_7`, the bound is stated for the chosen $p$.
+The source specifies a constant independent of the exponent.
 
 The operator is the extension by reflection of Lemma 9.2. The half space is
 `EuclideanSpace.upperHalfSpaceOpens d`. -/
@@ -351,7 +388,10 @@ $$\frac{\partial u^\star}{\partial x_i} = \Big(\frac{\partial u}{\partial x_i}\B
   \quad (8).$$
 
 The norm $\|\cdot\|_{W^{1,p}}$ is `Brezis.Chapter09.bookNorm`. The cases $V = Q$ and
-$V = \mathbb{R}^N$ are `Brezis.Chapter09.lemma_9_2` and `Brezis.Chapter09.lemma_9_2_halfSpace`. -/
+$V = \mathbb{R}^N$ are `Brezis.Chapter09.lemma_9_2` and `Brezis.Chapter09.lemma_9_2_halfSpace`.
+
+**Generalization.** The reflection argument applies on an arbitrary open set invariant under
+ reflection in the last coordinate. The source states the cylinder and whole-space cases. -/
 theorem lemma_9_2_of_symm {V : Opens 𝔼} (hV : hyperplaneReflection eN '' (V : Set 𝔼) = V)
     (u : sobolevSpace (d + 1) p (posHalf eN V)) :
     ∃ w : sobolevSpace (d + 1) p V,

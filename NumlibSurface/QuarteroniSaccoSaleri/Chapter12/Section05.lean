@@ -114,6 +114,36 @@ convergence rates. The proofs specialize `Numlib.Variational.AdvectionDiffusion`
   Equations*, 2nd edition). It is not expected for the finite difference right-hand side $f(x_i)$,
   nor for the piecewise linear load with the viscosity $\phi^{SG}$ alone.
 
+## Deviations from the source
+
+* **Equations (12.70)–(12.77)** (reading). The exact solution and uniqueness are stated for a
+  differential equation on the whole real line. The Péclet quotients extend to all real inputs
+  using total division, and the centered finite-element stencil permits arbitrary real
+  coefficients. The oscillation result concerns the extended geometric sequence, and for $0 <
+  \mathrm{Pe} < 1$ the grid values are strictly increasing. See
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_70_solution` and
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_76_strictMono`.
+* **Remark 12.5** (generalization). Integration by parts is stated for constant coefficients on
+  the full Sobolev space, with the test function taking zero endpoint traces. See
+  `QuarteroniSaccoSaleri.Chapter12.remark_12_5`.
+* **Equations (12.78)–(12.84)** (reading). The viscosity identities extend to arbitrary real
+  coefficients and accept any stabilization function. The zero-diffusion theorem uses a fixed
+  backward stencil, while the source switches to a forward stencil for negative advection. The
+  Galerkin predicate uses the unlifted solution with zero load, equivalent to the lifted
+  formulation when the affine lift belongs to the discrete space. See
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_84_problem`.
+* **Remark 12.6 and Exercise 12.13** (reading). The asymptotics theorem states the large-Péclet
+  quotient limit and a global quadratic SG bound. Nodal exactness covers zero forcing; the
+  source allows cellwise-constant forcing. The exercise abstracts the sign and positive-
+  viscosity conditions used for the M-matrix and maximum-principle result. See
+  `QuarteroniSaccoSaleri.Chapter12.remark_12_6_nodal_exact` and
+  `QuarteroniSaccoSaleri.Chapter12.exercise_12_13`.
+* **Theorem 12.4** (reading). The linear SG estimate uses the explicit constant $1$ on the
+  uniform mesh for the homogeneous model. The linear upwind and quadratic SG estimates use
+  arbitrary loads on the respective test spaces and give explicit constants and mesh bounds. See
+  `QuarteroniSaccoSaleri.Chapter12.theorem_12_4` and
+  `QuarteroniSaccoSaleri.Chapter12.equation_12_86`.
+
 ## Not formalized
 
 * **Remark 12.6, the case of a piecewise constant $f$.** The claim is that the Scharfetter–Gummel
@@ -139,25 +169,39 @@ $$\mathrm{Pe}_{gl} = \frac{|\beta| L}{2\varepsilon}.$$
 It measures the dominance of the advective term over the diffusive term.
 
 The formula is `QuarteroniSaccoSaleri.Chapter12.equation_12_71_eq`. Division by
-$\varepsilon = 0$ gives $0$. -/
+$\varepsilon = 0$ gives $0$.
+
+**Reading.** The quotient is total on arbitrary real inputs. The source assumes positive
+interval length and diffusion. -/
 noncomputable def equation_12_71 (β L ε : ℝ) : ℝ := AdvectionDiffusion.globalPeclet β L ε
 
 /-- **Equation (12.71)** of [quarteroni2000numerical]. The global Péclet number is
-$\mathrm{Pe}_{gl} = |\beta| L / (2\varepsilon)$. -/
+$\mathrm{Pe}_{gl} = |\beta| L / (2\varepsilon)$.
+
+**Reading.** Unfolding covers inputs outside the model assumptions.
+-/
 theorem equation_12_71_eq (β L ε : ℝ) : equation_12_71 β L ε = |β| * L / (2 * ε) := rfl
 
 /-- **Section 12.5.1** of [quarteroni2000numerical]. The **local Péclet number** of a mesh of width
 $h$,
 $$\mathrm{Pe} = \frac{|\beta| h}{2\varepsilon}.$$
--/
+
+**Reading.** The definition extends the source's quotient to all real inputs, using Lean's
+total division at zero diffusion. -/
 noncomputable def meshPeclet (β h ε : ℝ) : ℝ := AdvectionDiffusion.localPeclet β h ε
 
 /-- **Section 12.5.1** of [quarteroni2000numerical]. The local Péclet number is
-$\mathrm{Pe} = |\beta| h / (2\varepsilon)$. -/
+$\mathrm{Pe} = |\beta| h / (2\varepsilon)$.
+
+**Reading.** Unfolding covers arbitrary real coefficients.
+-/
 theorem meshPeclet_eq (β h ε : ℝ) : meshPeclet β h ε = |β| * h / (2 * ε) := rfl
 
 /-- **Section 12.5.1** of [quarteroni2000numerical]. On the unit interval, the local Péclet number
-is $h$ times the global one: $\mathrm{Pe} = \mathrm{Pe}_{gl} \, h$ with $L = 1$. -/
+is $h$ times the global one: $\mathrm{Pe} = \mathrm{Pe}_{gl} \, h$ with $L = 1$.
+
+**Reading.** Relates the local quotient to the unit-length specialization, using total division.
+-/
 theorem meshPeclet_eq_equation_12_71_mul (β h ε : ℝ) :
     meshPeclet β h ε = equation_12_71 β 1 ε * h :=
   AdvectionDiffusion.localPeclet_eq_globalPeclet_mul β h ε
@@ -171,7 +215,10 @@ satisfies $u(0) = 0$, $u(1) = 1$ and $-\varepsilon u''(x) + \beta u'(x) = 0$ for
 $x \in \mathbb{R}$.
 
 The function comes from the roots $\lambda_1 = 0$ and $\lambda_2 = \beta / \varepsilon$ of the
-characteristic equation. It is `AdvectionDiffusion.exactSolution ε β`. -/
+characteristic equation. It is `AdvectionDiffusion.exactSolution ε β`.
+
+**Generalization.** The exact solution satisfies the differential identity on all of $\mathbb
+R$. The source considers the open unit interval. -/
 theorem equation_12_70_solution {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) :
     AdvectionDiffusion.exactSolution ε β 0 = 0 ∧ AdvectionDiffusion.exactSolution ε β 1 = 1 ∧
       ∀ x, -ε * deriv (deriv (AdvectionDiffusion.exactSolution ε β)) x
@@ -185,7 +232,10 @@ $x \in \mathbb{R}$, $u(0) = 0$ and $u(1) = 1$. Then $u(x) = (e^{\beta x / \varep
 1)/(e^{\beta / \varepsilon} - 1)$ for every $x$.
 
 The general solution is $C_1 + C_2 e^{\beta x / \varepsilon}$, and the boundary conditions fix
-the two constants. The equation is assumed on all of $\mathbb{R}$. -/
+the two constants. The equation is assumed on all of $\mathbb{R}$.
+
+**Reading.** The uniqueness theorem requires the differentiability hypotheses and differential
+equation on all of $\mathbb R$. -/
 theorem equation_12_70_unique {ε β : ℝ} (hε : 0 < ε) (hβ : 0 < β) {u : ℝ → ℝ}
     (hu : ContDiff ℝ 2 u) (hode : ∀ x, -ε * deriv (deriv u) x + β * deriv u x = 0)
     (h0 : u 0 = 0) (h1 : u 1 = 1) : u = AdvectionDiffusion.exactSolution ε β :=
@@ -203,7 +253,10 @@ $$\int_0^1 (\varepsilon u' v' + \beta u' v) \, dx = \int_0^1 (\varepsilon u' - \
 
 The two sides differ by $\beta \int_0^1 (u' v + u v') = \beta [u v]_0^1$, which vanishes because
 $v(0) = v(1) = 0$. The left side is `EllipticInterval.form` with the coefficients $\varepsilon$,
-$\beta$, $0$, and $u$ in the integrand on the right is the continuous representative. -/
+$\beta$, $0$, and $u$ in the integrand on the right is the continuous representative.
+
+**Generalization.** The same constant-coefficient identity applies to Sobolev functions, with
+zero endpoint traces for the test function. -/
 theorem remark_12_5 (ε β : ℝ) (u : SobolevInterval 1 0 1) {v : SobolevInterval 1 0 1}
     (hv : v ∈ SobolevIntervalZero 0 1) :
     EllipticInterval.form 0 1 (EllipticInterval.constLinf 0 1 ε)
@@ -283,7 +336,8 @@ approximation of (12.70). For nodes $x_0, \ldots, x_n$, an element $u_h \in H^1(
 the Galerkin problem** if $u_h \in X_h^1$, $u_h(0) = 0$, $u_h(1) = 1$, and
 $$a(u_h, v_h) = \int_0^1 (\varepsilon u_h' v_h' + \beta u_h' v_h) \, dx = 0 \quad \text{for
   every } v_h \in X_h^{1,0}.$$
--/
+
+**Generalization.** The predicate permits arbitrary real constant coefficients. -/
 def equation_12_72 (ε β : ℝ) (n : ℕ) (x : ℕ → ℝ) (uh : SobolevInterval 1 0 1) : Prop :=
   uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x 1 ∧
     SobolevInterval.rep uh 0 = 0 ∧ SobolevInterval.rep uh 1 = 1 ∧
@@ -300,7 +354,9 @@ $$\frac{\varepsilon}{h} (-u_{i-1} + 2u_i - u_{i+1}) + \frac{\beta}{2} (u_{i+1} -
 
 By `QuarteroniSaccoSaleri.Chapter12.equation_12_77` this is the centred finite difference
 scheme. Multiplied by $h / \varepsilon$, it is $(\mathrm{Pe} - 1) u_{i+1} + 2 u_i -
-(\mathrm{Pe} + 1) u_{i-1} = 0$ with $\mathrm{Pe} = |\beta| h / (2\varepsilon)$ when $\beta > 0$. -/
+(\mathrm{Pe} + 1) u_{i-1} = 0$ with $\mathrm{Pe} = |\beta| h / (2\varepsilon)$ when $\beta > 0$.
+
+**Generalization.** The stencil identity permits arbitrary real constant coefficients. -/
 theorem equation_12_75 (ε β : ℝ) {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x)
     (hn : 1 ≤ n) {h : ℝ} (hh : 0 < h) (huni : ∀ k < n, x (k + 1) - x k = h) (u : ℕ → ℝ)
     (hu0 : u 0 = 0) (hun : u n = 1) :
@@ -359,7 +415,10 @@ so the increments of the discrete solution alternate in sign.
 
 For $\mathrm{Pe} > 1$ the ratio $\rho$ is negative. For $\mathrm{Pe} < 1$ the discrete solution
 is increasing, like the exact one: see
-`QuarteroniSaccoSaleri.Chapter12.equation_12_76_strictMono`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_76_strictMono`.
+
+**Generalization.** Consecutive differences alternate in sign for the geometric formula on all
+natural indices. -/
 theorem equation_12_76_oscillates {Pe : ℝ} (hPe : 1 < Pe) {n : ℕ} (hn : n ≠ 0) (i : ℕ) :
     0 < (-1) ^ i * (AdvectionDiffusion.centredSolution n Pe (i + 1)
         - AdvectionDiffusion.centredSolution n Pe i)
@@ -369,7 +428,9 @@ theorem equation_12_76_oscillates {Pe : ℝ} (hPe : 1 < Pe) {n : ℕ} (hn : n �
 /-- **Equation (12.76)** of [quarteroni2000numerical], monotonicity. Let $0 < \mathrm{Pe} < 1$ and
 $n \ge 1$. Then the solution $u_i = (1 - \rho^i)/(1 - \rho^n)$ of (12.76) is strictly increasing
 in $i$. This is the monotonicity that the mesh condition $\mathrm{Pe} < 1$ of Section 12.5.1
-gives. -/
+gives.
+
+**Reading.** Strict increase on the mesh is the formal conclusion for $0 < \mathrm{Pe} < 1$. -/
 theorem equation_12_76_strictMono {Pe : ℝ} (hPe : 0 < Pe) (hPe1 : Pe < 1) {n : ℕ} (hn : n ≠ 0) :
     StrictMono (AdvectionDiffusion.centredSolution n Pe) :=
   AdvectionDiffusion.centredSolution_strictMono hPe hPe1 hn
@@ -385,7 +446,9 @@ if and only if $u_0 = 0$, $u_n = 1$ and $(\varepsilon / h)(-u_{i-1} + 2u_i - u_{
 
 The second form is the equation (12.75) of the piecewise linear Galerkin method; it is the first
 form multiplied by $h$. The centred scheme is `AdvectionDiffusion.viscosityScheme` with
-$\phi = 0$. -/
+$\phi = 0$.
+
+**Generalization.** The centered coefficient identity permits arbitrary real coefficients. -/
 theorem equation_12_77 {ε β : ℝ} {n : ℕ} (hn : n ≠ 0) (u : ℕ → ℝ) :
     AdvectionDiffusion.viscosityScheme ε β n 0 u ↔ u 0 = 0 ∧ u n = 1 ∧ ∀ i, i + 2 ≤ n →
       ε / AdvectionDiffusion.meshWidth n * (-u i + 2 * u (i + 1) - u (i + 2))
@@ -402,7 +465,9 @@ $\varepsilon_h = \varepsilon(1 + \mathrm{Pe})$ in place of $\varepsilon$.
 
 The proof is the identity $(u_i - u_{i-1})/h = (u_{i+1} - u_{i-1})/(2h) - (h/2)(u_{i+1} - 2u_i +
 u_{i-1})/h^2$. The two schemes are `AdvectionDiffusion.upwindScheme` and
-`AdvectionDiffusion.viscosityScheme` with $\phi = \phi^{UP}$. -/
+`AdvectionDiffusion.viscosityScheme` with $\phi = \phi^{UP}$.
+
+**Generalization.** The equivalence uses $\beta>0$ and any nonzero $\varepsilon$. -/
 theorem equation_12_79 {ε β : ℝ} {n : ℕ} (hε : ε ≠ 0) (hβ : 0 < β) (hn : n ≠ 0) (u : ℕ → ℝ) :
     AdvectionDiffusion.upwindScheme ε β n u
       ↔ AdvectionDiffusion.viscosityScheme ε β n AdvectionDiffusion.phiUpwind u :=
@@ -413,7 +478,10 @@ $\varepsilon \neq 0$, the viscosity of the upwind scheme is
 $$\varepsilon_h = \varepsilon (1 + \mathrm{Pe}) = \varepsilon + \frac{|\beta| h}{2}.$$
 
 So the upwind scheme adds the term $\varepsilon \, \mathrm{Pe} \, u'' = (|\beta| h / 2) u''$ to
-the equation. -/
+the equation.
+
+**Reading.** The result gives the viscosity coefficient identity with absolute advection. The
+source derives the perturbation for positive advection. -/
 theorem equation_12_81 {ε : ℝ} (hε : ε ≠ 0) (β h : ℝ) :
     AdvectionDiffusion.viscosity ε β h AdvectionDiffusion.phiUpwind = ε + |β| * h / 2 :=
   AdvectionDiffusion.viscosity_phiUpwind hε β h
@@ -421,7 +489,10 @@ theorem equation_12_81 {ε : ℝ} (hε : ε ≠ 0) (β h : ℝ) :
 /-- **Section 12.5.2** of [quarteroni2000numerical], the limit $\varepsilon = 0$. Let $\beta \neq 0$
 and $n \ge 1$. If $u$ satisfies the upwind scheme with $\varepsilon = 0$, then $u_i = u_{i-1}$
 for $1 \le i \le n - 1$. So $u_0 = u_1 = \cdots = u_{n-1}$, like the solution of the limit
-problem $\beta u' = 0$. -/
+problem $\beta u' = 0$.
+
+**Reading.** This is the backward stencil with arbitrary real advection. For negative
+advection, the source uses a different, forward stencil. -/
 theorem equation_12_78_zero_diffusion {β : ℝ} {n : ℕ} (hβ : β ≠ 0) (hn : n ≠ 0) {u : ℕ → ℝ}
     (hu : AdvectionDiffusion.upwindScheme 0 β n u) {i : ℕ} (hi : i + 2 ≤ n) :
     u (i + 1) = u i :=
@@ -434,19 +505,27 @@ $$\varepsilon_h = \varepsilon (1 + \phi(\mathrm{Pe})), \qquad \mathrm{Pe} = \fra
 
 The book requires $\phi(t) \to 0$ as $t \to 0^+$; the definition accepts any $\phi$. The choice
 $\phi = 0$ gives the centred scheme (12.77), $\phi^{UP}(t) = t$ gives the upwind scheme (12.78),
-and $\phi^{SG}$ of (12.83) gives the exponential fitting scheme. -/
+and $\phi^{SG}$ of (12.83) gives the exponential fitting scheme.
+
+**Generalization.** The formula accepts arbitrary coefficients and stabilization functions. -/
 noncomputable def equation_12_82 (ε β : ℝ) (n : ℕ) (φ : ℝ → ℝ) : ℝ :=
   AdvectionDiffusion.viscosity ε β (AdvectionDiffusion.meshWidth n) φ
 
 /-- **Equation (12.82)** of [quarteroni2000numerical]. The viscosity is $\varepsilon_h =
 \varepsilon(1 + \phi(\mathrm{Pe}))$, with the local Péclet number $\mathrm{Pe}$ of the mesh
-width $h = 1/n$. -/
+width $h = 1/n$.
+
+**Reading.** Identical algebra with unrestricted φ and total division.
+-/
 theorem equation_12_82_eq (ε β : ℝ) (n : ℕ) (φ : ℝ → ℝ) :
     equation_12_82 ε β n φ
       = ε * (1 + φ (meshPeclet β (AdvectionDiffusion.meshWidth n) ε)) := rfl
 
 /-- **Equation (12.82)** of [quarteroni2000numerical] for $\phi = 0$. The viscosity is
-$\varepsilon_h = \varepsilon$, the diffusion of the centred scheme. -/
+$\varepsilon_h = \varepsilon$, the diffusion of the centred scheme.
+
+**Reading.** Recovers centered viscosity at all real inputs.
+-/
 theorem equation_12_82_zero (ε β : ℝ) (n : ℕ) : equation_12_82 ε β n 0 = ε :=
   AdvectionDiffusion.viscosity_zero ε β _
 
@@ -485,7 +564,10 @@ $$0 \le \phi^{SG}(t) \le \frac{t^2}{3} \quad \text{for every } t \ge 0.$$
 So $\phi^{SG} \simeq \phi^{UP}$ for large Péclet numbers; their difference $B(2t) - 1$ tends to
 $-1$. For small $h$, $\phi^{SG}(\mathrm{Pe}) = O(h^2)$, where
 $\phi^{UP}(\mathrm{Pe}) = \mathrm{Pe} = O(h)$. This is why the Scharfetter–Gummel method is
-second-order accurate. -/
+second-order accurate.
+
+**Reading.** The large-Péclet comparison is a quotient limit. The small-Péclet conclusion is a
+quadratic bound for SG. -/
 theorem remark_12_6_asymptotics :
     Tendsto (fun t => AdvectionDiffusion.phiSG t / AdvectionDiffusion.phiUpwind t) atTop (𝓝 1) ∧
       ∀ t : ℝ, 0 ≤ t → 0 ≤ AdvectionDiffusion.phiSG t ∧ AdvectionDiffusion.phiSG t ≤ t ^ 2 / 3 :=
@@ -498,7 +580,10 @@ $\phi^{SG}$, then for every $i \le n$
 $$u_i = \frac{e^{\beta i h / \varepsilon} - 1}{e^{\beta / \varepsilon} - 1},$$
 the value of the exact solution of (12.70) at the node $x_i = ih$.
 
-This holds for every mesh size, and hence for every local Péclet number. -/
+This holds for every mesh size, and hence for every local Péclet number.
+
+**Specialization.** The source also states nodal exactness for cellwise-constant forcing. This
+result has zero forcing. -/
 theorem remark_12_6_nodal_exact {ε β : ℝ} {n : ℕ} (hε : 0 < ε) (hβ : 0 < β) (hn : n ≠ 0)
     {u : ℕ → ℝ} (hu : AdvectionDiffusion.viscosityScheme ε β n AdvectionDiffusion.phiSG u)
     {i : ℕ} (hi : i ≤ n) :
@@ -538,7 +623,10 @@ $|\mathrm{Pe}^*| \le 1$ holds for the upwind and the Scharfetter–Gummel viscos
 mesh size. The discrete solution then satisfies the maximum principle of Section 12.2.2,
 `QuarteroniSaccoSaleri.Chapter12.exercise_12_13_maximumPrinciple`. An M-matrix is
 `Matrix.IsMMatrix`: its off-diagonal entries are nonpositive, it is invertible, and its inverse
-is entrywise nonnegative. -/
+is entrywise nonnegative.
+
+**Generalization.** The M-matrix proof factors out the sign and positive-viscosity conditions
+for a general tridiagonal grid matrix. -/
 theorem exercise_12_13 {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (m : ℕ)
     (hεh : 0 < AdvectionDiffusion.viscosity ε β (AdvectionDiffusion.meshWidth n) φ) (hn : n ≠ 0)
     (hPe : |AdvectionDiffusion.stabilizedPeclet φ
@@ -554,7 +642,10 @@ theorem exercise_12_13 {ε β : ℝ} {n : ℕ} {φ : ℝ → ℝ} (m : ℕ)
 
 /-- **Exercise 12.13** of [quarteroni2000numerical], the discrete maximum principle. Let
 $A \in \mathbb{R}^{m \times m}$ be an M-matrix and $x \in \mathbb{R}^m$. If $Ax \ge 0$
-entrywise, then $x \ge 0$ entrywise. -/
+entrywise, then $x \ge 0$ entrywise.
+
+**Generalization.** The maximum principle is expressed using inverse positivity of the abstract
+M-matrix. -/
 theorem exercise_12_13_maximumPrinciple {m : ℕ} {A : Matrix (Fin m) (Fin m) ℝ} (hA : A.IsMMatrix)
     {x : Fin m → ℝ} (hx : 0 ≤ A.mulVec x) : 0 ≤ x :=
   hA.nonneg_of_mulVec_nonneg hx
@@ -573,7 +664,10 @@ The definition is `AdvectionDiffusion.stabilizedForm`. The stabilized problem of
 $\mathring{u}_h \in X_h^{k,0}$ with $a_h(\mathring{u}_h, v_h) = -\int_0^1 \beta v_h$ for all
 $v_h \in X_h^{k,0}$, is `IsGalerkinSolution` for this form on `FiniteElement.lagrangeSpaceZero`,
 after the lifting $\mathring{u} = u - x$. The problem without the lifting is
-`QuarteroniSaccoSaleri.Chapter12.equation_12_84_problem`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_84_problem`.
+
+**Generalization.** The bilinear form uses arbitrary coefficients and stabilization functions
+on $H^1$. -/
 noncomputable def equation_12_84 (ε β h : ℝ) (φ : ℝ → ℝ) : SesqForm ℝ (SobolevInterval 1 0 1) :=
   AdvectionDiffusion.stabilizedForm 0 1 ε β h φ
 
@@ -582,7 +676,10 @@ $v \in H^1_0(0, 1)$,
 $$a_h(v, v) = \varepsilon_h |v|^2_{H^1(0,1)}.$$
 
 Since $\varepsilon_h / \varepsilon = 1 + \phi(\mathrm{Pe}) \ge 1$ for a nonnegative $\phi$, this
-gives the stabilized problem its better monotonicity. -/
+gives the stabilized problem its better monotonicity.
+
+**Reading.** Identity holds for any zero-trace H¹ function without viscosity conditions.
+-/
 theorem equation_12_84_self {ε β h : ℝ} (φ : ℝ → ℝ) {v : SobolevInterval 1 0 1}
     (hv : v ∈ SobolevIntervalZero 0 1) :
     equation_12_84 ε β h φ v v
@@ -593,6 +690,8 @@ theorem equation_12_84_self {ε β h : ℝ} (φ : ℝ → ℝ) {v : SobolevInter
 $u, v \in H^1(0, 1)$, the difference between the stabilized form and the Galerkin form (12.73)
 is
 $$a_h(u, v) - a(u, v) = \varepsilon \phi(\mathrm{Pe}) \int_0^1 u' v' \, dx.$$
+
+**Reading.** Algebraic perturbation on all H¹, with no viscosity restrictions.
 -/
 theorem equation_12_84_sub (ε β h : ℝ) (φ : ℝ → ℝ) (u v : SobolevInterval 1 0 1) :
     equation_12_84 ε β h φ u v
@@ -612,7 +711,10 @@ $u_h(1) = 1$, and $a_h(u_h, v_h) = 0$ for every $v_h \in X_h^{k,0}$.
 The book's form is: find $\mathring{u}_h \in X_h^{k,0}$ with
 $a_h(\mathring{u}_h, v_h) = -\int_0^1 \beta v_h$. It is this problem after the subtraction of
 the lifting $\bar{u}(x) = x$, since $a_h(\bar{u}, v_h) = \int_0^1 \beta v_h$ for every $v_h$
-that vanishes at both endpoints. -/
+that vanishes at both endpoints.
+
+**Reading.** This is the unlifted, zero-forcing formulation. Subtracting $x$ gives the source
+formulation if the discrete space contains the affine lift. -/
 def equation_12_84_problem (ε β h : ℝ) (φ : ℝ → ℝ) (k n : ℕ) (x : ℕ → ℝ)
     (uh : SobolevInterval 1 0 1) : Prop :=
   uh ∈ FiniteElement.lagrangeSpace zero_lt_one n x k ∧
@@ -636,7 +738,10 @@ same inequality, since $\mathring{u} - \mathring{u}_h = u - u_h$ and
 $|\mathring{u}|_{H^2} = |u|_{H^2}$ for the affine lifting $\bar{u}(x) = x$. The seminorm
 $|u|_{H^2(0,1)}$ is $\|u''\|_{L^2(0,1)}$. The upwind case is
 `QuarteroniSaccoSaleri.Chapter12.theorem_12_4_upwind`, and the case $k = 2$ is
-`QuarteroniSaccoSaleri.Chapter12.equation_12_86`. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_86`.
+
+**Reading.** Explicit bound for the exact homogeneous-model solution on a uniform linear mesh.
+-/
 theorem theorem_12_4 {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = AdvectionDiffusion.meshWidth n) {ε β : ℝ} (hε : 0 < ε)
     (hβ : 0 < β) {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
@@ -661,7 +766,10 @@ $$|\mathring{u} - \mathring{u}_h|_{H^1(0,1)} \le C h \big( |\mathring{u}|_{H^1(0
   \frac{|\beta|}{2\varepsilon}, \quad C_P = \frac{1}{\sqrt{2}}.$$
 The constant $C$ does not depend on $h$ or $\mathring{u}$.
 
-The equation for $\mathring{u}$ is needed only on $X_h^{1,0}$. -/
+The equation for $\mathring{u}$ is needed only on $X_h^{1,0}$.
+
+**Generalization.** The weak equations use any common bounded load on the test space. The
+estimate exposes its constant and an upper bound on the element lengths. -/
 theorem theorem_12_4_upwind {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     {ε β h : ℝ} (hε : 0 < ε) (hmesh : ∀ k < n, x (k + 1) - x k ≤ h)
     {ℓ : SobolevInterval 1 0 1 →L[ℝ] ℝ} {u uh : SobolevInterval 1 0 1} (U : SobolevInterval 2 0 1)
@@ -695,7 +803,10 @@ basis is `QuarteroniSaccoSaleri.Chapter12.equation_12_63_basis`. The gain of one
 over (12.85) has two sources: the quadratic interpolation estimate $|\mathring{u} - \Pi_h^2
 \mathring{u}|_{H^1} \le h^2 |\mathring{u}|_{H^3}$ of (8.26), and the bound
 $\phi^{SG}(\mathrm{Pe}) \le \mathrm{Pe}^2/3$, which makes the stabilization term $O(h^2)$ where
-the upwind term is $O(h)$. -/
+the upwind term is $O(h)$.
+
+**Generalization.** The weak equations use any common bounded load on the quadratic space, and
+the estimate makes its constant explicit. -/
 theorem equation_12_86 {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 (2 * n) x) (hn : 1 ≤ n)
     {ε β h : ℝ} (hε : 0 < ε) (hmesh : ∀ m < n, x (2 * m + 2) - x (2 * m) ≤ h)
     {ℓ : SobolevInterval 1 0 1 →L[ℝ] ℝ} {u uh : SobolevInterval 1 0 1}

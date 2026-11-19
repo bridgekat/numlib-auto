@@ -54,11 +54,18 @@ $\varepsilon_{\min}^{\omega}$. The proofs specialize the analysis of
   \varepsilon_j^{\omega}$ "for some $j$". The library reads it with the decrease
   $\Delta T_{f,p}(x_k, s_k)$ that the ratio and the complexity analysis use, and with
   $\varepsilon_{\min}^{\omega}$ as in (12.3.2). See `CartisGouldToint.Chapter12.ARqpRelaxedStep`.
+* **(12.3.2), guaranteed decrease** (reading). With the printed step-length threshold,
+  Lemma 4.1.1 gives a decrease constant $\sigma_{\min}\kappa_{\mathrm{decr}}/(p+1)!$.
+  The complexity bound retains this factor.
+  See `CartisGouldToint.Chapter12.complexity_arqpSufficientDecrease`.
 * **Complexity of the relaxed method** (reading). The source takes $\omega = \pi_q$ and says only
   that the conclusions of Theorem 12.2.14 are not affected. The library states the bounds for every
   $\omega \ge \pi_q$, in terms of $\varepsilon_{\min}^{\omega}$ instead of
   $\min_j \varepsilon_j^{\pi_j}$. See
   `CartisGouldToint.Chapter12.complexity_arqpSufficientDecrease`.
+* **Section 12.3, occasional insufficient decreases** (partial). The complexity theorem
+  uses the relaxed step condition throughout the run. The prose also discusses allowing
+  a tolerance-independent number of iterations with insufficient decrease.
 
 ## Not formalized
 
@@ -90,6 +97,9 @@ $$\Delta T_{f,p}(x, s) \ge \kappa_{\mathrm{decr}} \varepsilon_{\min}^{\omega} \q
 $\Delta T_{f,p}(x_k, s_k)$ that the ratio (12.2.30) and the complexity analysis use, and with
 $\varepsilon_{\min}^{\omega}$ as in (12.3.2).
 
+For a step admitted by (12.3.2), the coefficient of $\varepsilon_{\min}^\omega$ guaranteed
+by model decrease is $\sigma_{\min}\kappa_{\mathrm{decr}}/(p+1)!$.
+
 The predicted decrease is the field `Optimization.ARqpData.pred`, which is
 $\Delta T_{f,p}(x, \cdot)$ for the exact model data `Optimization.ARqpData.ofTaylor`. The
 condition that $m(s) = m(0)$ only at a global model minimizer $0$ is the normalization of Step 2
@@ -116,7 +126,11 @@ $\delta_{k+1} = \delta_{s_k}$, while an unsuccessful iteration keeps $\delta_{k+
 and $d_{k+1} = d_k$.
 
 The structure has the fields of `Optimization.IsARqpRun` with $X = E$, except that the Step-2
-condition is the relaxed one. -/
+condition is the relaxed one.
+
+**Reading.** Changes Step 2 as documented while retaining the source witness, acceptance, and radius
+rules.
+-/
 structure IsARqpSufficientDecreaseRun (f : E → ℝ) (P : ARqpParams) (p q : ℕ) (ε δ₀ : ℕ → ℝ)
     (κdecr ω : ℝ) (x s : ℕ → E) (σ : ℕ → ℝ) (δ δs : ℕ → ℕ → ℝ) (d dm : ℕ → ℕ → E) : Prop where
   /-- Steps 2–4 form an adaptive-regularization run with the Step-1 test, the relaxed Step 2, and

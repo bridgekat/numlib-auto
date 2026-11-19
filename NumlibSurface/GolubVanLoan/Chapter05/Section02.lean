@@ -142,6 +142,44 @@ programs of §5.1 and on `Numlib.FloatingPoint.Householder`.
 
 ## Deviations from the source
 
+* **(5.2.3) and (5.2.4)** (generalizations). `GolubVanLoan.Chapter05.equation_5_2_3` needs no
+  rank hypothesis. `GolubVanLoan.Chapter05.kappa2` uses the pseudoinverse for every matrix, and
+  `GolubVanLoan.Chapter05.kappa2_eq_div_of_rows` gives the full-row-rank counterpart of (5.2.4).
+* **Algorithm 5.2.1** (representation). `GolubVanLoan.Chapter05.algorithm_5_2_1` retains the
+  coefficients returned by `house` along with the packed array. Its exact correctness theorem
+  assumes $m \ge n$.
+* **§5.2.2, backward error** (precision). `GolubVanLoan.Chapter05.algorithm_5_2_1_rounding`
+  and `GolubVanLoan.Chapter05.algorithm_5_2_1_rounding_data` replace the approximate spectral
+  norm bound by explicit columnwise bounds, with idempotence and smallness assumptions in the
+  rounding model.
+* **§5.2.3 and Algorithm 5.2.2** (corrections). The preceding trailing-block example omits the
+  outer transpose, and the algorithm's block identity omits the transpose of $Y_k$.
+  `GolubVanLoan.Chapter05.wyApplyLeft` applies $(I-W_k Y_k^T)^T$, and
+  `GolubVanLoan.Chapter05.blockQRPanel` multiplies $Q$ on the right by $I-W_k Y_k^T$.
+  `GolubVanLoan.Chapter05.algorithm_5_2_2` returns a packed array, and its exact specification
+  uses its upper part.
+* **§5.2.5, row-ordered Givens QR** (correction). The printed inner loop runs to $i-1$, which
+  can exceed the number of columns. `GolubVanLoan.Chapter05.givensQRByRow` restricts the upper
+  endpoint to $\min(i-1,n)$.
+* **Algorithm 5.2.5** (reading). `GolubVanLoan.Chapter05.algorithm_5_2_5` represents positive
+  orders as $k+1$ and returns the rotation parameters. Its specification also proves the
+  Hessenberg structure of $Q$ described in §7.4.2.
+* **Algorithms 5.2.4 and 5.2.5** (extensions).
+  `GolubVanLoan.Chapter05.algorithm_5_2_4_rounding` and
+  `GolubVanLoan.Chapter05.algorithm_5_2_5_rounding` give explicit columnwise bounds for the
+  completed Givens reductions.
+* **§5.2.7 and Algorithm 5.2.6** (totalization). The Gram–Schmidt programs and their exact
+  equalities to the backbone factors extend to all matrices using total division. The thin QR
+  specifications retain full column rank. Modified Gram–Schmidt writes $Q$ to a separate array.
+  `GolubVanLoan.Chapter05.mgs_remainder_eq` applies to any thin QR and assumes a positive pivot
+  only for the normalization and coefficient identities.
+* **§5.2.10** (scope). `GolubVanLoan.Chapter05.complexHouseholderQR` proves existence of a
+  complex QR factorization. The statement omits the complex Householder pseudocode and the
+  sequence of reflectors.
+* **§6.5.1, Givens sweeps** (generalization). `GolubVanLoan.Chapter05.givensHessenbergSweep`
+  and `GolubVanLoan.Chapter05.givensVectorSweep` take explicit interval limits and rectangular
+  arrays, applying each rotation to the whole array. Their specifications state the active
+  interval and the shape or support hypotheses used in the updating algorithms.
 * **§5.2.2, the formula $\beta_j = 2/(1 + \|A(j{+}1{:}m, j)\|_2^2)$** (correction). The formula
   gives $2$ where `house` returned $\beta_j = 0$; it is stated only for the nonzero $\beta_j$. See
   `GolubVanLoan.Chapter05.equation_5_1_4_beta`.
@@ -201,7 +239,10 @@ $$a_k = \sum_{i \le k} r_{ik} q_i,$$
 where $a_k$ is column $k$ of $A$ and $q_i$ is column $i$ of $Q$.
 
 The source obtains (5.2.3) in the proof of Theorem 5.2.2 by comparing the $k$-th columns of
-$A = QR$; the statement needs no rank hypothesis. The factorization is `Matrix.IsQR`. -/
+$A = QR$; the statement needs no rank hypothesis. The factorization is `Matrix.IsQR`.
+
+**Reading.** Removes the enclosing full-column-rank hypothesis.
+-/
 theorem equation_5_2_3 {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
     {R : Matrix (Fin m) (Fin n) ℝ} (h : IsQR A Q R) (k : Fin n) :
     A.col k = ∑ i ∈ Finset.univ.filter (fun i : Fin m => (i : ℕ) ≤ k), R i k • Q.col i := by
@@ -317,7 +358,10 @@ The source defines $\kappa_2(A) = \sigma_{\max}(A)/\sigma_{\min}(A)$ for rectang
 with full column rank. The definition here applies to every $A$. For full column rank it is
 $\sigma_{\max}(A)/\sigma_{\min}(A)$ (`GolubVanLoan.Chapter05.equation_5_2_4`), and for a
 nonsingular square $A$ it is the $\kappa_2(A)$ of §2.6.2
-(`GolubVanLoan.Chapter05.kappa2_eq_kappa`). The definition is `Matrix.pinvCondNumberLp 2 A`. -/
+(`GolubVanLoan.Chapter05.kappa2_eq_kappa`). The definition is `Matrix.pinvCondNumberLp 2 A`.
+
+**Generalization.** The source defines the rectangular condition number for full column rank.
+The pseudoinverse formula here also assigns a value when column rank is deficient. -/
 noncomputable def kappa2 (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
   pinvCondNumberLp 2 A
 
@@ -363,7 +407,10 @@ open scoped Matrix.Norms.L2Operator in
 /-- If $A \in \mathbb{R}^{m \times n}$ has full row rank and $m \ge 1$, then
 $\kappa_2(A) = \|A\|_2 / \sigma_m(A)$, where $\sigma_m(A)$ is the infimum of the $m$ singular
 values `Matrix.colSingularValues Aᵀ` of $A^T$. The twin of
-`GolubVanLoan.Chapter05.kappa2_eq_div`. -/
+`GolubVanLoan.Chapter05.kappa2_eq_div`.
+
+**Generalization.** This is the transposed full-row-rank version of the full-column-rank
+formula (5.2.4). -/
 theorem kappa2_eq_div_of_rows [NeZero m] {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ A) : kappa2 A = ‖A‖ / ⨅ i, Aᵀ.colSingularValues i := by
   have hAt : LinearIndependent ℝ Aᵀᵀ := by rwa [transpose_transpose]
@@ -401,7 +448,10 @@ $[v, \beta] = \operatorname{house}(A(j{:}m, j))$, then $A(j{:}m, j{:}n) = (I - \
 A(j{:}m, j{:}n)$ and $A(j{+}1{:}m, j) = v(2{:}m{-}j{+}1)$, and $\beta$ is recorded as $\beta_j$.
 The step calls `GolubVanLoan.Chapter05.houseOn` and
 `GolubVanLoan.Chapter05.householderApplyLeft` on the full array with the index lists of the rows
-and columns from $j$ on. -/
+and columns from $j$ on.
+
+**Reading.** Stores actual beta separately from the packed vector tail.
+-/
 noncomputable def householderQRStep (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) (j : Fin n) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) := do
   let vβ ← houseOn rnd (indexFrom m j) (fun i => st.1 i j)
@@ -427,7 +477,11 @@ the overwritten array together with the vector $(\beta_1, \dots, \beta_n)$.
 The factored form of $Q$ consists of the Householder vectors and the corresponding $\beta_j$
 (§5.1.6). The program returns the $\beta_j$ that `house` computed, and $Q$ is built from these
 (`GolubVanLoan.Chapter05.factoredQ`). The program has no hypothesis on $m$ and $n$; the
-specification `GolubVanLoan.Chapter05.algorithm_5_2_1_spec` assumes $m \ge n$. -/
+specification `GolubVanLoan.Chapter05.algorithm_5_2_1_spec` assumes $m \ge n$.
+
+**Reading.** Program totalizes dimensions and returns the actual reflector coefficients in addition
+to packed A.
+-/
 noncomputable def algorithm_5_2_1 (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) :=
   (List.finRange n).foldlM (householderQRStep rnd) (A, 0)
@@ -477,7 +531,10 @@ theorem lt_of_mem_take_finRange {j : ℕ} {k : Fin n}
   omega
 
 /-- The product of the reflectors of the first $j$ steps of Algorithm 5.2.1, built from the stored
-Householder vectors and the recorded $\beta$ of the state. -/
+Householder vectors and the recorded $\beta$ of the state.
+
+**Reading.** Householder product for every prefix with recorded rather than reconstructed beta.
+-/
 private noncomputable def qrPrefix (j : ℕ) (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) :
     Matrix (Fin m) (Fin m) ℝ :=
   householderProduct
@@ -628,7 +685,10 @@ so that each $H_j$ is the identity or the Householder matrix of $v^{(j)}$.
 
 $Q$ is `GolubVanLoan.Chapter05.factoredQ β A'`, $R$ is `GolubVanLoan.Chapter05.upperPart A'`,
 $v^{(j)}$ is `GolubVanLoan.Chapter05.storedHouseholderVec A' j`, and the factorization is
-`Matrix.IsQR`. Exact arithmetic is the monad `Id` with the hook `pure`. -/
+`Matrix.IsQR`. Exact arithmetic is the monad `Id` with the hook `pure`.
+
+**Correction.** Correct Q and R with actual beta and explicit identity-reflector branch.
+-/
 theorem algorithm_5_2_1_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     IsQR A (factoredQ (Id.run (algorithm_5_2_1 pure A)).2 (Id.run (algorithm_5_2_1 pure A)).1)
         (upperPart (Id.run (algorithm_5_2_1 pure A)).1) ∧
@@ -927,7 +987,10 @@ $P_j = I - \beta_j v_j v_j^T$ is orthogonal, the data of each column $q$ is admi
 sense of `GolubVanLoan.Chapter05.IsStepData`, the upper triangular part $\hat R$ of $A'$ is
 $\hat R = P_{n-1} \cdots P_0 (A + E)$, and $\|E(:, q)\|_2 \le ((1 + \varepsilon)^n - 1) \|A(:,
 q)\|_2$ for every column $q$, with $\varepsilon = 3\gamma_{3(18m+31)+m+3}$. This is the form of
-`GolubVanLoan.Chapter05.algorithm_5_2_1_rounding` that keeps the reflectors. -/
+`GolubVanLoan.Chapter05.algorithm_5_2_1_rounding` that keeps the reflectors.
+
+**Reading.** Adds per-step reflector witnesses and explicit columnwise bound with model assumptions.
+-/
 theorem algorithm_5_2_1_rounding_data {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hnm : n ≤ m) (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) {st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)}
@@ -1024,7 +1087,11 @@ $n\varepsilon < 1$ by `FloatingPoint.one_add_pow_sub_one_le_gamma`. $Z$ is the p
 exact reflectors of the computed columns. The subdiagonal entries of the processed columns,
 which hold the Householder vectors, are not part of $\hat R$, and $E$ accounts for them.
 Idempotence is `FloatingPoint.RoundingModel.IsIdempotent`. The proof specializes
-`GolubVanLoan.Chapter05.algorithm_5_2_1_rounding_data`. -/
+`GolubVanLoan.Chapter05.algorithm_5_2_1_rounding_data`.
+
+**Reading.** Explicit columnwise bound with smallness and idempotence assumptions replaces
+approximate normwise scale.
+-/
 theorem algorithm_5_2_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin m) (Fin n) ℝ)
     {st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)} (h : st ∈ (algorithm_5_2_1 fp.round A).run) :
@@ -1067,7 +1134,10 @@ end
 
 The pair $(c, s)$ is computed by Algorithm 5.1.3 (`GolubVanLoan.Chapter05.algorithm_5_1_3`), and
 the row update is `GolubVanLoan.Chapter05.givensApplyLeft` on the columns $j{:}n$. The program
-needs no hypothesis on $m$ and $n$, and neither do its specifications. -/
+needs no hypothesis on $m$ and $n$, and neither do its specifications.
+
+**Reading.** Same backward adjacent sweep for rectangular matrices including wide matrices.
+-/
 noncomputable def algorithm_5_2_4 (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) =>
     ((List.finRange m).filter (fun i : Fin m => (j : ℕ) < i)).reverse.foldlM
@@ -1107,7 +1177,10 @@ for i = 2:m
 end
 ```
 
-The inner loop runs over the columns $j < \min(i, n)$. -/
+The inner loop runs over the columns $j < \min(i, n)$.
+
+**Correction.** The source prints $j = 1, \ldots, i-1$. For $i > n+1$, that range references
+columns beyond $n$. The program iterates through $j = 1, \ldots, \min(i-1,n)$. -/
 noncomputable def givensQRByRow (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange m).foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) (i : Fin m) =>
@@ -1129,7 +1202,10 @@ end
 ```
 The program also returns the pairs $(c_j, s_j)$.
 
-The order is written $n = k + 1$, so $n \ge 1$. -/
+The order is written $n = k + 1$, so $n \ge 1$.
+
+**Reading.** The program indexes positive orders as $n=k+1$ and returns the pairs $(c_j,s_j)$
+along with the overwritten array so that the product $Q$ is available. -/
 noncomputable def algorithm_5_2_5 {k : ℕ} (A : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) :
     M (Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin k → ℝ × ℝ)) :=
   (List.finRange k).foldlM
@@ -1147,7 +1223,10 @@ with $j + 1 \ge m$ or $j \ge n$ is skipped.
 
 In §6.5.1 the source computes, following Algorithm 5.2.4, Givens rotations $G_k$, $k = 1{:}n-1$,
 such that $G_{n-1}^T \cdots G_1^T H_1 = R_1$ is upper triangular; §6.5.2 and §6.5.3 start the
-same sweep at a column $a$. Indices are 0-based. -/
+same sweep at a column $a$. Indices are 0-based.
+
+**Reading.** Parameterized partial rectangular sweep, applies each pair to the entire matrix.
+-/
 noncomputable def givensHessenbergSweep {m n : ℕ} (a count : ℕ) (Q : Matrix (Fin m) (Fin m) ℝ)
     (H : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
   (List.range' a count).foldlM
@@ -1172,7 +1251,11 @@ into the columns $j$ and $j + 1$ of $Q$. A step with $j + 1 \ge m$ is skipped.
 In §6.5.1 the source computes rotations $J_{n-1}, \dots, J_1$ with
 $J_1^T \cdots J_{n-1}^T w = \pm \|w\|_2 e_1$ and applies them to $R$; in §6.5.3 it computes
 Givens rotations $G_1, \dots, G_{m-1}$ with $G_1^T \cdots G_{m-1}^T q = \alpha e_1$. Indices are
-0-based. -/
+0-based.
+
+**Reading.** Parameterized bottom-up sweep with arbitrary active start, applies rotations to entire
+rectangular matrix.
+-/
 noncomputable def givensVectorSweep {m n : ℕ} (b count : ℕ) (w : Fin m → ℝ)
     (Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ) :
     M ((Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
@@ -1284,7 +1367,11 @@ row of $l$. Let $S$ be a set of rows that are neither in $l$ nor pivots, let $QB
 orthogonal, let the columns of $B$ before $j$ vanish below the diagonal, and let $B(r, j) = 0$
 for $r \in S$. Then after the rotations, each of which zeroes $B(i, j)$, there is an orthogonal
 $Q'$ with $Q'B' = A_0$, the columns before $j$ still vanish below the diagonal, and
-$B'(r, j) = 0$ for every row $r$ in $S$ or in $l$. -/
+$B'(r, j) = 0$ for every row $r$ in $S$ or in $l$.
+
+**Generalization.** Sufficient abstract pivot conditions formalize and generalize the described
+flexibility.
+-/
 theorem givensColumnLoop (A₀ : Matrix (Fin m) (Fin n) ℝ) (j : Fin n) (piv : Fin m → Fin m) :
     ∀ (l : List (Fin m)) (B : Matrix (Fin m) (Fin n) ℝ) (S : Fin m → Prop),
       (∀ i ∈ l, piv i ≠ i ∧ (j : ℕ) ≤ piv i ∧ (j : ℕ) < i) →
@@ -1345,7 +1432,10 @@ for Algorithm 5.2.4 and its first reordering. Let $A \in \mathbb{R}^{m \times n}
 column $j$ let the rows $i = m - 1, \dots, j + 1$ be rotated in the plane $(\pi_j(i), i)$, where
 $\pi_j(i) \neq i$, $\pi_j(i) \ge j$, and no row $b > a$ is the pivot $\pi_j(a)$ of a row $a > j$
 processed after it. Then the resulting array $R$ is upper triangular and $A = QR$ for an
-orthogonal $Q$. -/
+orthogonal $Q$.
+
+**Correction.** One correctness theorem for any admissible pivot function.
+-/
 theorem givensQR_columnwise (A : Matrix (Fin m) (Fin n) ℝ) (pivF : Fin n → Fin m → Fin m)
     (hpiv : ∀ (j : Fin n) (i : Fin m), (j : ℕ) < i → pivF j i ≠ i ∧ (j : ℕ) ≤ pivF j i)
     (hpw : ∀ (j : Fin n) (a b : Fin m), (j : ℕ) < a → a < b → b ≠ pivF j a) :
@@ -1544,7 +1634,10 @@ $j = 1{:}i-1$, rotations in the planes $(j, i)$). Then $R$ is upper triangular a
 an orthogonal $Q$.
 
 The factorization is `Matrix.IsQR`. The proof is an induction over the rows with
-`GolubVanLoan.Chapter05.givensRowLoop`. -/
+`GolubVanLoan.Chapter05.givensRowLoop`.
+
+**Correction.** This verifies the row-ordered loop with its column bound clipped at $n$, as in
+`GolubVanLoan.Chapter05.givensQRByRow`. -/
 theorem givensQRByRow_spec (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ Q, IsQR A Q (Id.run (givensQRByRow pure hnm A)) := by
   set F : Matrix (Fin m) (Fin n) ℝ → Fin m → Matrix (Fin m) (Fin n) ℝ :=
@@ -1616,7 +1709,11 @@ theorem hessenbergRotationsProd_succ {k : ℕ} (cs : Fin k → ℝ × ℝ) {t : 
 /-- A product of rotations in the adjacent planes $(j, j + 1)$, in increasing order, is upper
 Hessenberg: for $t \le k$, the partial product $G_0 \cdots G_{t-1}$ vanishes below the first
 subdiagonal, and its columns $q > t$ are the unit vectors $e_q$. For $t = k$ this shows that the
-$Q = G_1 \cdots G_{n-1}$ of Algorithm 5.2.5 is upper Hessenberg. -/
+$Q = G_1 \cdots G_{n-1}$ of Algorithm 5.2.5 is upper Hessenberg.
+
+**Reading.** Upper Hessenberg shape holds for each prefix and the theorem records untouched trailing
+columns.
+-/
 theorem hessenbergRotationsProd_shape {k : ℕ} (cs : Fin k → ℝ × ℝ) :
     ∀ t ≤ k, (∀ r q : Fin (k + 1), (q : ℕ) + 1 < r → hessenbergRotationsProd cs t r q = 0) ∧
       ∀ r q : Fin (k + 1), t < (q : ℕ) →
@@ -1685,7 +1782,11 @@ is orthogonal, $R$ is upper triangular, $A = QR$, and $Q$ is upper Hessenberg.
 
 The order is $n = k + 1$. The rotation $G_j$ is `GolubVanLoan.Chapter05.givensRotation` in the
 plane of the 0-based rows $j$ and $j + 1$, and the product is taken in increasing order of $j$.
-The factorization is `Matrix.IsQR`. -/
+The factorization is `Matrix.IsQR`.
+
+**Reading.** Positive order, extracts Q from returned rotation parameters and includes the
+Hessenberg Q property.
+-/
 theorem algorithm_5_2_5_spec {k : ℕ} (A : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ)
     (hA : A.IsUpperHessenberg) :
     IsQR A (List.ofFn fun j : Fin k => givensRotation j.castSucc j.succ
@@ -1876,7 +1977,10 @@ theorem givensPairStep_eq_zero {m n : ℕ} {p q : Fin m} (hpq : p ≠ q) (cs : �
 private theorem val_eq_or_of_eq_or {m : ℕ} {p q r : Fin m} (h : r = p ∨ r = q) :
     (r : ℕ) = p ∨ (r : ℕ) = q := h.imp (congrArg _) (congrArg _)
 
-/-- The exact step of `GolubVanLoan.Chapter05.givensHessenbergSweep` at index $j$. -/
+/-- The exact step of `GolubVanLoan.Chapter05.givensHessenbergSweep` at index $j$.
+
+**Reading.** Exact single diagonal-driven rotation with an out-of-range no-op.
+-/
 private noncomputable def hessStep {m n : ℕ}
     (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) :
     Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ :=
@@ -1912,7 +2016,11 @@ $m \le a + \mathrm{count} + 1$, then its output $(Q', H')$ in exact arithmetic i
 factorization of $A$: $Q'$ is orthogonal, $H'$ is upper triangular, and $Q'H' = A$.
 
 Each rotation zeroes the subdiagonal entry of its column and keeps the earlier columns. The
-factorization is `Matrix.IsQR`. -/
+factorization is `Matrix.IsQR`.
+
+**Reading.** Exact sweep starting midmatrix with explicit processed-prefix and sweep endpoint
+hypotheses.
+-/
 theorem givensHessenbergSweep_spec {m n : ℕ} {a count : ℕ} {A H : Matrix (Fin m) (Fin n) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} (hQ : Q ∈ orthogonalGroup (Fin m) ℝ) (hQH : Q * H = A)
     (hH : ∀ (i : Fin m) (j : Fin n), (j : ℕ) + 1 < i → H i j = 0)
@@ -1979,7 +2087,10 @@ theorem givensHessenbergSweep_spec {m n : ℕ} {a count : ℕ} {A H : Matrix (Fi
   have := j.isLt
   omega
 
-/-- The exact step of `GolubVanLoan.Chapter05.givensVectorSweep` at index $j$. -/
+/-- The exact step of `GolubVanLoan.Chapter05.givensVectorSweep` at index $j$.
+
+**Reading.** Exact single vector-driven rotation with an out-of-range no-op.
+-/
 private noncomputable def vecStep {m n : ℕ}
     (st : (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) (j : ℕ) :
     (Fin m → ℝ) × Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ :=
@@ -2019,7 +2130,11 @@ Then:
 * $R'$ is still upper triangular in its columns before $b$: $r'_{ij} = 0$ for $i > j$ and
   $j < b$.
 
-Indices are 0-based. $Q$ need not be orthogonal. -/
+Indices are 0-based. $Q$ need not be orthogonal.
+
+**Reading.** Bottom-up reduction to a specified active row with explicit zero support and Hessenberg
+conclusions.
+-/
 theorem givensVectorSweep_spec {m n : ℕ} (b count : ℕ) (w : Fin m → ℝ)
     (Q : Matrix (Fin m) (Fin m) ℝ) (R : Matrix (Fin m) (Fin n) ℝ)
     (hR : ∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → R i j = 0)
@@ -2185,7 +2300,14 @@ The bound applies the rounding analysis of a sequence of rotations in §5.1.12 t
 rotations of the algorithm. $Q$ is the product of the exact rotations of which the computed
 pairs are relative perturbations (`GolubVanLoan.Chapter05.algorithm_5_1_3_rounding`). The
 computed subdiagonal entries, which are zero in exact arithmetic, are not part of $\hat R$
-(`GolubVanLoan.Chapter05.upperPart`). The order is $n = k + 1$. -/
+(`GolubVanLoan.Chapter05.upperPart`). The order is $n = k + 1$.
+
+**Extension.** Section 5.2.6 describes the Hessenberg algorithm and its flop count. The
+backward error statement here derives an explicit bound for the complete sweep from the single-
+rotation analysis.
+
+**Reading.** Adds a global columnwise rounding theorem for the Hessenberg routine.
+-/
 theorem algorithm_5_2_5_rounding {fp : RoundingModel ℝ} (hu : ((15 : ℕ) : ℝ) * fp.u < 1) {k : ℕ}
     (A : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ) (hA : A.IsUpperHessenberg)
     {st : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ × (Fin k → ℝ × ℝ)}
@@ -2367,7 +2489,10 @@ $m$ and $n$.
 In §5.3.3 the source says that similar results hold if Givens QR is used; the bound applies the
 rounding analysis of §5.1.12 to the rotations of Algorithm 5.2.4. The exponent $mn$ bounds the
 number of rotations. $Q$ is the product of the exact rotations of which the computed pairs are
-relative perturbations, and the computed subdiagonal entries are not part of $\hat R$. -/
+relative perturbations, and the computed subdiagonal entries are not part of $\hat R$.
+
+**Extension.** Section 5.2.5 describes exact Givens QR. This theorem derives an explicit
+columnwise bound for the complete reduction from the single-rotation analysis. -/
 theorem algorithm_5_2_4_rounding {fp : RoundingModel ℝ} (hu : ((15 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) {A' : Matrix (Fin m) (Fin n) ℝ}
     (h : A' ∈ (algorithm_5_2_4 fp.round A).run) :
@@ -2627,7 +2752,11 @@ and $R = 0$, and returns $(Q, R)$.
 
 The first step is the loop body with no previous columns: $z = A(:, 1)$, and no subtraction is
 performed. The dot products are Algorithm 1.1.1 (`GolubVanLoan.Chapter01.algorithm_1_1_1`), and
-the norm is the square root of a dot product. -/
+the norm is the square root of a dot product.
+
+**Reading.** Total matrix program, including columns for which the book's normalization would divide
+by zero.
+-/
 noncomputable def classicalGramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (cgsStep rnd A) (0, 0)
@@ -2646,7 +2775,11 @@ noncomputable def mgsInner (q : Fin m → ℝ) (k : Fin n)
 
 /-- Step $k$ of Algorithm 5.2.6 on the state consisting of the working array, $Q$ and $R$:
 $R(k, k) = \|A(:, k)\|_2$ and $Q(:, k) = A(:, k)/R(k, k)$, then the inner loop
-`GolubVanLoan.Chapter05.mgsInner` over $j = k{+}1{:}n$. -/
+`GolubVanLoan.Chapter05.mgsInner` over $j = k{+}1{:}n$.
+
+**Reading.** Forms normalized column in a separate output array, while the source also explains
+in-place storage.
+-/
 noncomputable def mgsStep
     (st : Matrix (Fin m) (Fin n) ℝ × Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ)
     (k : Fin n) :
@@ -2677,7 +2810,10 @@ The program runs `GolubVanLoan.Chapter05.mgsStep` for $k = 1, \dots, n$. The wor
 is part of the state, and the result is $(Q_1, R_1)$.
 
 The program has no hypothesis on $A$; the rank condition is a hypothesis of
-`GolubVanLoan.Chapter05.algorithm_5_2_6_spec`. -/
+`GolubVanLoan.Chapter05.algorithm_5_2_6_spec`.
+
+**Reading.** Total matrix program with rank-limited QR theorem and separate Q and R output.
+-/
 noncomputable def algorithm_5_2_6 (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
   let st ← (List.finRange n).foldlM (mgsStep rnd) (A, 0, 0)
@@ -2841,7 +2977,10 @@ pair of Gram–Schmidt factors $(Q, R)$ of $A$: column $k$ of $Q$ is the normali
 vector of the columns of $A$, and $r_{ik} = q_i^T a_k$.
 
 There is no rank hypothesis. A column whose residual vanishes gives a zero column of $Q$ and a
-zero diagonal entry of $R$. The factors are `Matrix.gramSchmidtQ A` and `Matrix.gramSchmidtR A`. -/
+zero diagonal entry of $R$. The factors are `Matrix.gramSchmidtQ A` and `Matrix.gramSchmidtR A`.
+
+**Reading.** All-input exact equality to the total backbone factors.
+-/
 theorem classicalGramSchmidt_eq_gramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (classicalGramSchmidt pure A) = (gramSchmidtQ A, gramSchmidtR A) := by
   have hall : ∀ j ≤ n, ((List.finRange n).take j).foldl
@@ -3055,7 +3194,10 @@ $A \in \mathbb{R}^{m \times n}$, the output of Algorithm 5.2.6 in exact arithmet
 of Gram–Schmidt factors $(Q, R)$ of $A$.
 
 There is no rank hypothesis. The factors are `Matrix.gramSchmidtQ A` and
-`Matrix.gramSchmidtR A`. -/
+`Matrix.gramSchmidtR A`.
+
+**Reading.** All-input equality to the total backbone factors.
+-/
 theorem algorithm_5_2_6_eq_gramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_5_2_6 pure A) = (gramSchmidtQ A, gramSchmidtR A) := by
   have hall : ∀ j ≤ n, ((List.finRange n).take j).foldl
@@ -3096,7 +3238,10 @@ Gram–Schmidt compute the same pair $(Q, R)$ in exact arithmetic.
 
 The source calls MGS a rearrangement of the calculation in CGS. The common value is the pair of
 Gram–Schmidt factors (`GolubVanLoan.Chapter05.algorithm_5_2_6_eq_gramSchmidt`,
-`GolubVanLoan.Chapter05.classicalGramSchmidt_eq_gramSchmidt`), and no rank hypothesis is needed. -/
+`GolubVanLoan.Chapter05.classicalGramSchmidt_eq_gramSchmidt`), and no rank hypothesis is needed.
+
+**Reading.** Exact equality of total program outputs for every input.
+-/
 theorem algorithm_5_2_6_eq_classicalGramSchmidt (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_5_2_6 pure A) = Id.run (classicalGramSchmidt pure A) := by
   rw [algorithm_5_2_6_eq_gramSchmidt, classicalGramSchmidt_eq_gramSchmidt]
@@ -3123,7 +3268,11 @@ Then:
 
 The source writes the remainder as $[0 \mid A^{(k)}]$ with $A^{(k)} = [z \mid B]$, and the last
 part as $[r_{k,k+1} \cdots r_{kn}] = q_k^T B$. Here $A^{(k)}$ denotes the full $m \times n$
-matrix with zero leading columns. Indices are 0-based. -/
+matrix with zero leading columns. Indices are 0-based.
+
+**Generalization.** The remainder identity holds for every thin QR factorization. The theorem
+assumes a positive diagonal entry at the current step for the normalization and coefficient
+identities. -/
 theorem mgs_remainder_eq {A Q : Matrix (Fin m) (Fin n) ℝ} {R : Matrix (Fin n) (Fin n) ℝ}
     (h : IsThinQR A Q R) (k : Fin n) :
     A - ∑ i ∈ Finset.univ.filter (· < k), vecMulVec (Q.col i) (R i) =
@@ -3208,7 +3357,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 $Q_1$ is the first $n$ columns of the product of the stored reflectors with the returned
 $\beta$, accumulated by `GolubVanLoan.Chapter05.backwardAccumulation`, and $R_1$ is the first
 $n$ rows of the upper triangular part of the overwritten array; entries past row or column $m$
-are $0$, so the program is defined for all $m$ and $n$. -/
+are $0$, so the program is defined for all $m$ and $n$.
+
+**Reading.** Specified tall base case, total definition zero-pads out-of-range thin factors.
+-/
 noncomputable def thinHouseholderQR {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) := do
   let st ← algorithm_5_2_1 rnd A
@@ -3240,7 +3392,11 @@ The recursion is well founded on $n$. The column blocks are split and reassemble
 The two matrix products are Algorithm 1.1.5 (`GolubVanLoan.Chapter01.algorithm_1_1_5`), computed
 as $R_{12} = 0 + Q_1^T A_2$ and $A_2 + (-Q_1) R_{12}$. The base case is also taken when
 $n \le 1$. For $n_b \ge 1$ this is the test of the source; for $n_b = 0$ it makes the recursion
-stop at $n = 1$, where the recursion of the source would not terminate. -/
+stop at $n = 1$, where the recursion of the source would not terminate.
+
+**Reading.** Stops at widths at most one as well as the block size, permitting a zero blocking
+parameter.
+-/
 noncomputable def algorithm_5_2_3 (nb : ℕ) {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   if _h : n ≤ nb ∨ n ≤ 1 then thinHouseholderQR rnd A
@@ -3320,7 +3476,10 @@ theorem mulVec_blockSplit {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (u : Fin (n
   simp
 
 /-- If $n \le m$, the base case of Algorithm 5.2.3 computes a thin QR factorization of
-$A \in \mathbb{R}^{m \times n}$ in exact arithmetic. -/
+$A \in \mathbb{R}^{m \times n}$ in exact arithmetic.
+
+**Reading.** Tall rank-deficient inputs as well as full rank have exact thin Householder QR.
+-/
 theorem thinHouseholderQR_spec {n : ℕ} (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     IsThinQR A (Id.run (thinHouseholderQR pure A)).1 (Id.run (thinHouseholderQR pure A)).2 := by
   obtain ⟨hQR, -⟩ := algorithm_5_2_1_spec hnm A
@@ -3486,7 +3645,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 restricted to the panel $\lambda{:}\tau$: $[v, \beta] = \operatorname{house}(A(j{:}m, j))$,
 $A(j{:}m, j{:}\tau) = (I - \beta v v^T) A(j{:}m, j{:}\tau)$ in place on the full array,
 $A(j{+}1{:}m, j) = v(2{:}m{-}j{+}1)$, $\beta$ recorded, and $(v, \beta)$ appended to the
-reflector data of the panel. -/
+reflector data of the panel.
+
+**Reading.** Stores actual beta and data list in addition to packed panel.
+-/
 noncomputable def blockPanelStep (τ : ℕ)
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × List ((Fin m → ℝ) × ℝ)) (j : Fin n) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × List ((Fin m → ℝ) × ℝ)) := do
@@ -3499,7 +3661,10 @@ noncomputable def blockPanelStep (τ : ℕ)
 Y(W^T A(:, \mathrm{cols}))$, in place, column by column. For each listed column $a$, it computes
 $t = W^T a$ by Algorithm 1.1.1 entry by entry, then
 $a_i \leftarrow \mathrm{fl}(a_i - Y(i, :)\, t)$, with the inner product accumulated as in
-Algorithm 1.1.1. -/
+Algorithm 1.1.1.
+
+**Correction.** The example preceding Algorithm 5.2.2 omits the outer transpose. The trailing
+update follows the algorithm's displayed assignment $(I-WY^T)^T A$. -/
 noncomputable def wyApplyLeft {r : ℕ} (W Y : Matrix (Fin m) (Fin r) ℝ) (cols : List (Fin n))
     (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   cols.foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) q => do
@@ -3533,7 +3698,11 @@ the source's $\tau = \min(\lambda + r - 1, n)$ in 0-based form. The pass factors
 `GolubVanLoan.Chapter05.blockPanelStep` and collects its reflector data, forms
 $I - WY^T = H_\lambda \cdots H_\tau$ by Algorithm 5.1.2, updates the columns from $\tau$ on by
 $(I - WY^T)^T$ (`GolubVanLoan.Chapter05.wyApplyLeft`), and updates $Q = Q(I - WY^T)$
-(`GolubVanLoan.Chapter05.wyApplyRight`). -/
+(`GolubVanLoan.Chapter05.wyApplyRight`).
+
+**Correction.** Uses the corrected WY product and transpose, with packed updates and full-height WY
+representation.
+-/
 noncomputable def blockQRPanel (r : ℕ)
     (st : Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) (lam : ℕ) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ)) := do
@@ -3566,7 +3735,16 @@ triangular part of $A'$.
 
 As in Algorithm 5.2.1, the array keeps the Householder vectors below the diagonal. $W$ and $Y$
 are full-length $m \times r$ arrays, zero above row $\lambda$ in exact arithmetic, so the two
-block updates run over all rows. -/
+block updates run over all rows.
+
+**Corrections and representation.** The printed block identity in Algorithm 5.2.2 omits the
+transpose of $Y_k$. The program uses $I-W_k Y_k^T$, and the trailing update uses its transpose.
+Subdiagonal entries continue to hold reflector data, so `GolubVanLoan.Chapter05.upperPart`
+extracts $R$. A zero panel width is a degenerate input and executes no panels.
+
+**Correction.** Returns packed R, uses corrected transpose notation, and defines an empty execution
+for zero panel width.
+-/
 noncomputable def algorithm_5_2_2 (r : ℕ) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) := do
   let st ← ((List.range ((n + r - 1) / r)).map (· * r)).foldlM (blockQRPanel rnd r) (1, A, 0)
@@ -3585,6 +3763,9 @@ theorem foldl_update_sub_eq {ι : Type*} [DecidableEq ι] (h : ι → ℝ) {l : 
   List.foldl_update_of_nodup hl (fun k y => y k - h k) (fun _ _ _ _ _ h => by rw [h]) y₀
 
 /-- The exact block update of one column $q$: column $q$ of $A$ becomes column $q$ of $(I - YW^T)A$.
+
+**Correction.** Transpose used for each selected column as in pseudocode, correcting the
+illustrative equation.
 -/
 theorem wyApplyLeft_single {r : ℕ} (W Y : Matrix (Fin m) (Fin r) ℝ) (q : Fin n)
     (A : Matrix (Fin m) (Fin n) ℝ) :
@@ -3601,7 +3782,11 @@ theorem wyApplyLeft_single {r : ℕ} (W Y : Matrix (Fin m) (Fin r) ℝ) (q : Fin
 
 /-- Exact semantics of the block update: for a duplicate-free list of columns,
 `GolubVanLoan.Chapter05.wyApplyLeft` replaces the listed columns of $A$ by those of
-$(I - YW^T)A$ and keeps the other columns. -/
+$(I - YW^T)A$ and keeps the other columns.
+
+**Correction.** Arbitrary list of selected columns with pseudocode's transpose, correcting the
+illustrative equation.
+-/
 theorem wyApplyLeft_pure {r : ℕ} (W Y : Matrix (Fin m) (Fin r) ℝ) {cols : List (Fin n)}
     (hcols : cols.Nodup) (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (wyApplyLeft pure W Y cols A) =
@@ -3685,7 +3870,11 @@ def storeCol (j : Fin n) (v : Fin m → ℝ) (B : Matrix (Fin m) (Fin n) ℝ) :
 /-- One exact step $j$ of Householder QR in which the reflector is applied to the column list
 `cols j`: the reflector of `GolubVanLoan.Chapter05.exactHouse` is applied to these columns, the
 Householder vector is stored below the diagonal of column $j$, $\beta_j$ is recorded, and
-$(v, \beta)$ is appended to the reflector data. -/
+$(v, \beta)$ is appended to the reflector data.
+
+**Reading.** Abstracts shared loop body over arbitrary selected columns and stores actual reflector
+data.
+-/
 noncomputable def exactQRStep (cols : Fin n → List (Fin n))
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × List ((Fin m → ℝ) × ℝ)) (j : Fin n) :
     Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × List ((Fin m → ℝ) × ℝ) :=
@@ -3693,7 +3882,10 @@ noncomputable def exactQRStep (cols : Fin n → List (Fin n))
     Function.update st.2.1 j (exactHouse st.1 j).2, st.2.2 ++ [exactHouse st.1 j])
 
 /-- If $n \le m$, the exact step $j$ of Algorithm 5.2.1 is `GolubVanLoan.Chapter05.exactQRStep` on
-the columns $j, \dots, n - 1$, without its reflector data. -/
+the columns $j, \dots, n - 1$, without its reflector data.
+
+**Reading.** Exact step uses packed A and retained beta.
+-/
 theorem run_householderQRStep (hnm : n ≤ m) (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ))
     (D : List ((Fin m → ℝ) × ℝ)) (j : Fin n) :
     Id.run (householderQRStep pure st j) =
@@ -3707,7 +3899,10 @@ theorem run_householderQRStep (hnm : n ≤ m) (st : Matrix (Fin m) (Fin n) ℝ �
   rfl
 
 /-- If $n \le m$, the exact step $j$ of the panel factorization of Algorithm 5.2.2 is
-`GolubVanLoan.Chapter05.exactQRStep` on the panel columns $j, \dots, \tau - 1$. -/
+`GolubVanLoan.Chapter05.exactQRStep` on the panel columns $j, \dots, \tau - 1$.
+
+**Reading.** Exact panel step uses packed A, retained beta and reflector array.
+-/
 theorem run_blockPanelStep (hnm : n ≤ m) (τ : ℕ)
     (st : Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × List ((Fin m → ℝ) × ℝ)) (j : Fin n) :
     Id.run (blockPanelStep pure τ st j) = exactQRStep (fun j => colsBetween n j τ) st j := by
@@ -3840,7 +4035,10 @@ theorem take_eq_take_append_panelCols (lam r : ℕ) :
 
 /-- The exact reflector data of Algorithm 5.2.1 is its factored form: if $n \le m$ and $t \le n$,
 the data $(v^{(k)}, \beta_k)$, $k < t$, that the first $t$ exact steps collect are the
-Householder vectors stored in the current array together with the recorded $\beta_k$. -/
+Householder vectors stored in the current array together with the recorded $\beta_k$.
+
+**Reading.** Reconstruction uses separately recorded beta, including beta zero.
+-/
 theorem exactQR_data (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) : ∀ t ≤ n,
     (((List.finRange n).take t).foldl (exactQRStep (fun j => indexFrom n j)) (A, 0, [])).2.2 =
       ((List.finRange n).take t).map fun k =>
@@ -3908,7 +4106,10 @@ theorem exactQR_data (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) : ∀ t �
 /-- The exact block pass. If $n \le m$, one pass of Algorithm 5.2.2 at $\lambda$ in exact arithmetic
 runs the panel steps on the array, multiplies $Q$ by the product $H$ of the panel's reflectors,
 and replaces the columns from $\tau = \min(\lambda + r, n)$ on by those of $H^T$ times the array
-after the panel steps. -/
+after the panel steps.
+
+**Correction.** Exact proof uses both corrected WY updates and includes packed reflector data.
+-/
 theorem run_blockQRPanel (hnm : n ≤ m) (r : ℕ) (Q : Matrix (Fin m) (Fin m) ℝ)
     (B : Matrix (Fin m) (Fin n) ℝ) (β : Fin n → ℝ) (lam : ℕ) :
     Id.run (blockQRPanel pure r (Q, B, β) lam) =
@@ -4008,7 +4209,11 @@ theorem algorithm_5_2_2_inv (hnm : n ≤ m) (r : ℕ) (A : Matrix (Fin m) (Fin n
 $m \ge n$ and $r \ge 1$; in exact arithmetic, the array that Algorithm 5.2.2 returns is the
 output $A'$ of Algorithm 5.2.1, and its $Q$ is the factored form $H_1 \cdots H_n$ of the stored
 vectors with the returned $\beta$. The blocked updates by $(I - W_k Y_k^T)^T$ and
-$I - W_k Y_k^T$ are the products of the panel's reflectors (Algorithm 5.1.2). -/
+$I - W_k Y_k^T$ are the products of the panel's reflectors (Algorithm 5.1.2).
+
+**Reading.** Explicit equality of packed array and accumulated Q under tallness and positive block
+size.
+-/
 theorem algorithm_5_2_2_eq (hnm : n ≤ m) {r : ℕ} (hr : 0 < r) (A : Matrix (Fin m) (Fin n) ℝ) :
     Id.run (algorithm_5_2_2 pure r A) =
       (factoredQ (Id.run (algorithm_5_2_1 pure A)).2 (Id.run (algorithm_5_2_1 pure A)).1,
@@ -4063,7 +4268,11 @@ $Q \in \mathbb{C}^{m \times m}$ unitary and $R \in \mathbb{C}^{m \times n}$ uppe
 
 The factorization is `Matrix.IsQR`. The statement does not say that $Q$ is a product of complex
 Householder matrices; the proof specializes `Matrix.exists_isQR`, which constructs $Q$ by
-Householder triangularization. -/
+Householder triangularization.
+
+**Reading.** Proves existence only, without the stated complex Householder program or its
+reflector-by-reflector specification.
+-/
 theorem complexHouseholderQR (A : Matrix (Fin m) (Fin n) ℂ) : ∃ Q R, IsQR A Q R :=
   exists_isQR A
 

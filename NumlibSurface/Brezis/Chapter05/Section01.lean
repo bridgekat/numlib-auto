@@ -87,6 +87,21 @@ so that Proposition 5.1 and Remark 2 use Theorem 3.31 (Milman–Pettis), as the 
   class of Hilbert spaces.
 * Theorem 5.12 belongs to the Comments on Chapter 5. It is in this module because it is the converse
   of the parallelogram law.
+
+## Deviations from the source
+
+* **Proposition 5.1, uniform convexity** (generalization). The conclusion applies to incomplete
+  real inner product spaces. See `Brezis.Chapter05.proposition_5_1`.
+* **Theorem 5.2, equations (2) and (3)** (generalization). The distance formula applies to
+  arbitrary subsets of normed spaces, and the inner-product criterion applies to convex subsets
+  of possibly incomplete inner product spaces. Both assume the candidate lies in the set. See
+  `Brezis.Chapter05.theorem_5_2_infDist` and `Brezis.Chapter05.theorem_5_2_iff`.
+* **Remark 1** (typos). For a minimum, the left endpoint has $F'(0) \ge 0$, the right endpoint
+  has $F'(1) \le 0$, and $F'(u)(v-u) \ge 0$. See `Brezis.Chapter05.remark_5_1`.
+* **Remark 2** (typo). The unique minimizer belongs to $K$. The source only requires $u\in E$
+  as printed. See `Brezis.Chapter05.remark_5_2`.
+* **Corollary 5.4, linearity** (generalization). The orthogonal projection includes its operator
+  norm bound, which follows from Proposition 5.3. See `Brezis.Chapter05.corollary_5_4_linear`.
 -/
 
 open Filter Topology
@@ -211,7 +226,9 @@ $H$ is uniformly convex in the sense of Section 3.7.
 
 Uniform convexity is `Brezis.Chapter03.IsUniformlyConvex`. Mathlib's instance
 `InnerProductSpace.toUniformConvexSpace` follows the proof of the source, the parallelogram law
-with $\delta = 1 - (1 - \varepsilon^2/4)^{1/2}$. Completeness is not needed. -/
+with $\delta = 1 - (1 - \varepsilon^2/4)^{1/2}$.
+
+**Generalization.** Uniform convexity also holds in incomplete inner product spaces. -/
 theorem proposition_5_1 : IsUniformlyConvex H :=
   uniformlyConvex_iff.2 inferInstance
 
@@ -246,8 +263,9 @@ omit [InnerProductSpace ℝ H] [CompleteSpace H] in
 space and let $u \in K$. Then $u$ is a best approximation of $f$ from $K$ if and only if
 $$|f - u| = \operatorname{dist}(f, K) = \inf_{v \in K} |f - v|.$$
 
-No scalar product and no completeness are needed. The distance is Mathlib's
-`Metric.infDist f K`. -/
+The distance is Mathlib's `Metric.infDist f K`.
+
+**Generalization.** The identity applies to any subset of a real normed space when $u \in K$. -/
 theorem theorem_5_2_infDist {K : Set H} {f u : H} (hu : u ∈ K) :
     IsBestApprox K f u ↔ ‖f - u‖ = Metric.infDist f K :=
   isBestApprox_iff_norm_sub_eq_infDist hu
@@ -258,7 +276,7 @@ convex, let $f \in H$ and let $u \in K$. Then $u$ is the best approximation of $
 and only if
 $$(f - u, v - u) \le 0 \quad \text{for all } v \in K.$$
 
-This part needs neither the closedness of $K$ nor the completeness of $H$. -/
+**Generalization.** The equivalence applies to all convex sets in real inner product spaces. -/
 theorem theorem_5_2_iff {K : Set H} (hK : Convex ℝ K) {f u : H} (hu : u ∈ K) :
     IsBestApprox K f u ↔ ∀ v ∈ K, ⟪f - u, v - u⟫_ℝ ≤ 0 :=
   isBestApprox_iff_inner_le_zero hK hu
@@ -287,7 +305,14 @@ holds:
 3. $u = 1$ and $F'(u) \le 0$.
 
 The three cases are summarized by $F'(u)(v - u) \ge 0$ for all $v \in [0, 1]$, which is also
-stated. -/
+stated.
+
+**Typos.** The book prints $F'(u)\le 0$ at $u=0$, $F'(u)=1$ at $u=1$, and a reversed sign
+in the summary inequality.
+
+**Correction.** Corrects the source's reversed left-endpoint and variational inequalities and the
+right-endpoint equality to one.
+-/
 theorem remark_5_1 {F : ℝ → ℝ} (hF : Differentiable ℝ F) {u : ℝ} (hu : u ∈ Set.Icc 0 1)
     (hmin : IsMinOn F (Set.Icc 0 1) u) :
     ((u ∈ Set.Ioo 0 1 ∧ deriv F u = 0) ∨ (u = 0 ∧ 0 ≤ deriv F u) ∨ (u = 1 ∧ deriv F u ≤ 0)) ∧
@@ -316,6 +341,9 @@ theorem remark_5_1 {F : ℝ → ℝ} (hF : Differentiable ℝ F) {u : ℝ} (hu :
 space and let $K \subseteq E$ be a nonempty closed convex set. Then for every $f \in E$ there is
 a unique $u \in K$ with
 $$\|f - u\| = \min_{v \in K} \|f - v\|.$$
+
+**Typo.** The printed remark requires $u\in E$. Membership in $K$ is needed for uniqueness,
+as in Exercise 3.32.
 
 The source refers to Exercise 3.32, a direct argument with a minimizing sequence. Here existence
 follows from reflexivity (Theorem 3.31, Milman–Pettis) and the direct method of the calculus of
@@ -353,7 +381,10 @@ theorem corollary_5_4 {M : Submodule ℝ H} (hM : IsClosed (M : Set H)) (f u : H
 /-- **Corollary 5.4** of [brezis2011functional], linearity. Let $M \subseteq H$ be a closed linear
 subspace. Then $P_M$ is a linear operator, called the **orthogonal projection** onto $M$.
 Precisely, $P_M$ is the bounded linear operator `Submodule.starProjection M`, and its norm is at
-most $1$. -/
+most $1$.
+
+**Generalization.** The operator norm bound follows from Proposition 5.3 and is included in this
+statement of the corollary. -/
 theorem corollary_5_4_linear {M : Submodule ℝ H} (hM : IsClosed (M : Set H)) :
     haveI := hM.completeSpace_coe
     bestApprox (M : Set H) = ⇑M.starProjection ∧ ‖M.starProjection‖ ≤ 1 := by

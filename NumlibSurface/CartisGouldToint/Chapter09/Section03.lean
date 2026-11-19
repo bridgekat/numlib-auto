@@ -76,22 +76,33 @@ $M$-inner product space `Subproblem.ScaledSpace`.
 * **Equation (9.3.5)** (generalization). The source takes the rightmost root $\lambda^L$; the bound
   $\lambda^L \le \lambda^*$ holds for every nonnegative root. See
   `CartisGouldToint.Chapter09.lambdaStar_bounds_9_3_3`.
-* **Theorem 9.3.1, start condition** (correction). The printed theorem omits the hypothesis
-  $z_0 \in \mathcal{Z}_1$; it is added. See `CartisGouldToint.Chapter09.theorem_9_3_1`.
+* **Theorem 9.3.1, start condition** (reading). The printed algorithm assumes
+  $z_0 \in \mathcal{Z}_1$. The formal convergence theorem requires its weighted counterpart
+  explicitly. See `CartisGouldToint.Chapter09.theorem_9_3_1`.
 * **Theorem 9.3.1, the set $\mathcal{Z}_1$** (reading). The condition is read in the $M$-inner
   product, $\langle z, M v \rangle \neq 0$ for a generalized eigenvector $v$ for $\lambda_1$. See
   `CartisGouldToint.Chapter09.theorem_9_3_1`.
 * **Theorem 9.3.1, quantifiers and order** (reading). The parameter sequences are fixed before the
-  radius $\varepsilon$, and the Q-order $\bar\gamma$ is stated as two-sided bounds. See
+  radius $\varepsilon$. The normalized error quotient satisfies two-sided bounds and can
+  oscillate for varying $\omega_k$. See
   `CartisGouldToint.Chapter09.theorem_9_3_1`.
-* **Algorithm 9.3.1, initial shift** (generalization). The source assumes
-  $\lambda^G_0 \in \mathcal{G}$; only $H + \lambda^G_0 M \succ 0$ is required. See
+* **Algorithm 9.3.1, initial data** (generalization). The run assumes a positive definite
+  initial shift and a normalized vector. The source requires $\lambda^G_0\in\mathcal{G}$
+  and $z_0\in\mathcal{Z}_1$. See
   `CartisGouldToint.Chapter09.algorithm_9_3_1`.
+* **Section 9.3.5, reusing a multiplier** (correction). Inclusion of the previous starting
+  point in $\mathcal{L}_+$ requires $\lambda>\lambda_s$.
+  See `CartisGouldToint.Chapter09.setL_reg_mono`.
 * **Theorem 9.3.2** (correction). With the Euclidean $\lambda_{\min}$ in (9.3.14c) the theorem is
   false for $M \neq I$; (9.3.14) is stated with the $M$-scalings. See
   `CartisGouldToint.Chapter09.theorem_9_3_2`.
+* **Section 9.3.6, neighborhood of a minimizer** (correction). The stopping inequalities
+  can fail arbitrarily close to a minimizer when its model value is $0$.
+  See `CartisGouldToint.Chapter09.stoppingRules_9_3_14`.
 * **Equation (9.3.6), middle term** (correction). The middle term is not a valid bound as printed;
   only the outer inequality is stated. See `CartisGouldToint.Chapter09.exists_abs_sub_le_of_eigen`.
+* **Equation (9.3.16), upper factor** (reading). The reciprocal term is omitted when its
+  denominator is zero as well as when it is negative. See `CartisGouldToint.Chapter09.etaU`.
 
 ## Not formalized
 
@@ -112,7 +123,11 @@ variable {n : ℕ} {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n
 /-! ### The extreme pencil eigenvalues -/
 
 /-- The **rightmost eigenvalue** $\lambda_n$ of the pencil $(H, M)$, for $H$ symmetric and $M$
-symmetric positive definite: the largest of `Matrix.pencilEigenvalues`. It is $0$ when $n = 0$. -/
+symmetric positive definite: the largest of `Matrix.pencilEigenvalues`. It is $0$ when $n = 0$.
+
+**Generalization.** Largest generalized eigenvalue on nonempty matrices; extends the definition by
+zero in dimension zero.
+-/
 noncomputable def rightmostPencil (hH : H.IsHermitian) (hM : M.PosDef) : ℝ :=
   ⨆ i, pencilEigenvalues hH hM i
 
@@ -225,7 +240,9 @@ where $o_k^A = \sum_{i \neq k} |a_{ki}|$.
 
 **Correction.** The source prints the middle term $|\sum_{i \neq k} (h_{ki} - \mu m_{ki})|$,
 which drops the factors $u_i/u_k$ (with $|u_i/u_k| \le 1$) and is not a valid bound as printed.
-Only the outer inequality is stated, which is what (9.3.7) uses.
+For $M=I$, take $H$ with rows $(1,1,-1)$, $(1,2,0)$ and $(-1,0,2)$ and eigenvector
+$(1,-1/2,1/2)$ for $\mu=0$. The unique largest coordinate gives left side $1$ and printed
+middle term $0$. Equation (9.3.7) uses the outer inequality.
 
 The proof specializes `Matrix.exists_abs_sub_le_of_mulVec_eq`. -/
 theorem exists_abs_sub_le_of_eigen {μ : ℝ} {u : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0)
@@ -415,7 +432,11 @@ $\lambda$ are $w_0 = z$ and $w_i = v_i/\|v_i\|_M$ with $v_i = (H + \lambda M)^{-
 for $i \ge 1$.
 
 The inverse is the matrix inverse of Mathlib, which is $0$ for a singular matrix, and division
-by a zero norm gives $0$. -/
+by a zero norm gives $0$.
+
+**Reading.** Uses shifted inverse times M followed by M-normalization; singular inverses and zero
+norms are totalized.
+-/
 noncomputable def invIterVec (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ)
     (z : EuclideanSpace ℝ (Fin n)) : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => z
@@ -439,8 +460,9 @@ iteration counts $n_k$, weights $\omega_k$ and exponents $\gamma_k$ form a **run
 * with the Rayleigh quotient $\rho_k = \langle z_{k+1}, H z_{k+1} \rangle$,
 $$\lambda^G_{k+1} = -\rho_k + \omega_k (\lambda^G_k + \rho_k)^{\gamma_k}.$$
 
-**Generalization.** The source assumes $\lambda^G_0 \in \mathcal{G}$. Only the consequence that
-$H + \lambda^G_0 M$ is positive definite is used, and only that is required.
+**Generalization.** The source assumes $\lambda^G_0\in\mathcal{G}$ and $z_0\in\mathcal{Z}_1$.
+The run requires $H+\lambda^G_0 M$ positive definite and $z_0$ normalized. The weighted
+eigenspace condition is a separate premise of `CartisGouldToint.Chapter09.theorem_9_3_1`.
 
 The power is the real power `Real.rpow`. The inner iterations are
 `CartisGouldToint.Chapter09.invIterVec`. -/
@@ -540,20 +562,23 @@ $$c \, (\lambda^G_k + \lambda_1)^{\bar\gamma} \le \lambda^G_{k+1} + \lambda_1 \l
   (\lambda^G_k + \lambda_1)^{\bar\gamma}$$
 for all large $k$. In particular, $\lambda^G_k \to -\lambda_1$ with order $\bar\gamma$.
 
-**Correction.** The printed theorem omits the hypothesis $z_0 \in \mathcal{Z}_1$; footnote 64 of
-the source notes that it is missing from the source paper. It is added here.
+**Reading.** The printed theorem inherits $z_0\in\mathcal{Z}_1$ from Algorithm 9.3.1.
+Footnote 64 notes that the source paper omitted it. The formal theorem states the weighted
+condition explicitly.
 
-**Reading.** The source writes $\mathcal{Z}_1$ with the Euclidean condition
-$\langle z, v_i \rangle \neq 0$, which is the right condition only for $M = I$. The condition is
-read in the $M$-inner product, $\langle z, M v \rangle \neq 0$. It is equivalent to $z_0$ having
+**Correction.** The source writes $\mathcal{Z}_1$ with the Euclidean condition
+$\langle z, v_i \rangle \neq 0$. The iteration uses the $M$-inner product, so its condition is
+$\langle z, M v \rangle \neq 0$. This is equivalent to $z_0$ having
 a nonzero $M$-orthogonal component in the leftmost eigenspace
 (`CartisGouldToint.Chapter09.starProjection_ne_zero_of_mem_Z₁`).
 
 **Reading.** The sequences $n_k$, $\omega_k$, $\gamma_k$ are fixed before $\varepsilon$, which
 depends on them through a bound on $n_k$, and on $z_0$, but not on $n_U$ or on the run. No
 single $\varepsilon$ serves all runs when $n_U = \infty$ (see
-`Subproblem.IsInverseIterationRun.convergence`). The Q-order $\bar\gamma$ is stated as the
-two-sided bounds above.
+`Subproblem.IsInverseIterationRun.convergence`). The two-sided bounds allow the normalized
+error quotient to oscillate. For $H=0$, $M=1$, $z_0=1$, and fixed $\gamma_k=3/2$, the quotient
+is exactly $\omega_k$, which may alternate between two positive values. Thus the ordinary
+limit used in Appendix A.3 need not exist.
 
 Order of convergence is `ConvergesWithOrder`. The proof specializes
 `Subproblem.IsInverseIterationRun.convergence_of_eventually_const`. -/
@@ -589,6 +614,9 @@ $\mathcal{L}$ and $\mathcal{L}_+$ be the regularization sets of Section 8.3.1 fo
 $\sigma_+$. Then $\mathcal{L} \subseteq \mathcal{L}_+$. Moreover, every $\lambda > \lambda_s$
 with $\pi(\lambda) \ge (\lambda/\sigma_+)^{2/(r-2)}$ lies in $\mathcal{L}_+$.
 
+**Correction.** The source also allows a previous multiplier equal to $\lambda_s$ as a point
+of $\mathcal{L}_+$. The partition keeps $\lambda_s$ in $\mathcal{N}$ for every $\sigma_+$.
+
 The set $\mathcal{N} = (-\infty, \lambda_s]$ does not depend on $\sigma$, since
 $\lambda_s = \max(0, -\lambda_1)$ depends only on $H$ and $M$. This is why
 $\mathcal{N}_+ = \mathcal{N}$. -/
@@ -623,7 +651,11 @@ appropriate $M$-scalings" of the source suggests.
 
 Condition (9.3.14c) says $\lambda_{\min}[\nabla^2 m^R(s), M] \ge -\theta_2 \|s\|_M$, where
 $\nabla^2 m^R(s) = H + \lambda M + (r - 2) \lambda (M s)(M s)^T/\|s\|_M^2$ is the Hessian
-(8.2.34). The powers are real powers. -/
+(8.2.34). The powers are real powers.
+
+**Correction.** The prose infers that the requirements hold in a neighborhood of a minimizer
+by continuity. With $g=0$, $H=M=1$, $\sigma=1$ and $r=3$, the minimizer $s=0$ has value $0$,
+and every nearby nonzero step violates (9.3.14a). -/
 structure stoppingRules_9_3_14 (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (σ r θ₁ θ₂ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop where
   /-- Requirement (9.3.14a): $m^R(s) \le 0$. -/
@@ -667,7 +699,10 @@ Then $s = s(\lambda_c)$ satisfies the requirements (9.3.14).
 **Correction.** With the Euclidean $\lambda_{\min}$ in (9.3.14c), the theorem is false for
 $M \neq I$, since (9.3.15c) only yields $\nabla^2 m^R(s) \succeq -\theta_2 \|s\|_M M$. The
 theorem is stated for the $M$-scaled requirements
-`CartisGouldToint.Chapter09.stoppingRules_9_3_14`. -/
+`CartisGouldToint.Chapter09.stoppingRules_9_3_14`. For scalar data $H=-38$, $M=4$, $g=-1$,
+$\lambda_c=10$, $r=3$, and $\sigma=1$, the step is $1/2$ and $\pi=1$. The three
+inequalities hold with $\theta_1=18$ and $\theta_2=9$, but the Euclidean Hessian is $-30$,
+below the printed threshold $-9$. -/
 theorem theorem_9_3_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r θ₁ θ₂ lamc : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) (hc : lamc ∈ setF_reg hH hM g σ r)
     (ha : secularFn g H M lamc ≤ (r / 2) ^ (2 / (r - 2)) * (lamc / σ) ^ (2 / (r - 2)))
@@ -690,7 +725,11 @@ noncomputable def etaL (σ θ₁ θ₂ : ℝ) : ℝ := max (1 / (1 + θ₁ / (2 
 
 /-- **Equation (9.3.16)** of [cartis2022evaluation], the upper factor
 $$\eta^U(\sigma, \theta_1) = \min\Bigl(\frac32, \frac{1}{1 - \theta_1/(2\sigma)}\Bigr)$$
-when $1 - \theta_1/(2\sigma) > 0$, and $\eta^U(\sigma, \theta_1) = 3/2$ otherwise. -/
+when $1 - \theta_1/(2\sigma) > 0$, and $\eta^U(\sigma, \theta_1) = 3/2$ otherwise.
+
+**Reading.** The text says to omit the reciprocal when negative. If the denominator is
+zero, the constraint $(1-\theta_1/(2\sigma))\|s\|_M \le \lambda_c/\sigma$ is automatic
+and the same omission applies. -/
 noncomputable def etaU (σ θ₁ : ℝ) : ℝ :=
   if 0 < 1 - θ₁ / (2 * σ) then min (3 / 2) (1 / (1 - θ₁ / (2 * σ))) else 3 / 2
 
@@ -735,6 +774,9 @@ and $\lambda_c \in \mathcal{F}$. Then the conditions (9.3.15a)–(9.3.15c) on $\
 hold if and only if
 $$\eta^L(\sigma, \theta_1, \theta_2) \, \frac{\lambda_c}{\sigma} \le \|s(\lambda_c)\|_M \le
   \eta^U(\sigma, \theta_1) \, \frac{\lambda_c}{\sigma}.$$
+
+**Generalization.** The equivalence also holds when either tolerance is zero. For a zero
+denominator in the upper factor, see `CartisGouldToint.Chapter09.etaU`.
 -/
 theorem cubic_termination_9_3_16 (hH : H.IsHermitian) (hM : M.PosDef) {σ r θ₁ θ₂ lamc : ℝ}
     (hσ : 0 < σ) (hr : r = 3) (hθ₁ : 0 ≤ θ₁) (hθ₂ : 0 ≤ θ₂) (hc : lamc ∈ setF_reg hH hM g σ r) :

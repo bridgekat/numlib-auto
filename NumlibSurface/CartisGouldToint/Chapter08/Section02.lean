@@ -98,26 +98,33 @@ and $M^{-1} H$ for every $\lambda$ (`CartisGouldToint.Chapter08.secularFn_eq_sec
 
 ## Deviations from the source
 
+* **Equations (8.2.2), (8.2.4) and (8.2.29)** (generalization). The inverse-based
+  step, secular function and derivative-vector recursion all give zero at a singular
+  shift. The results about the secular equation use nonsingular shifts or right limits.
+  See `CartisGouldToint.Chapter08.stepOf` and `CartisGouldToint.Chapter08.secularDerivVec`.
 * **Lemma 8.2.1** (reading). The hypothesis $\pi(\lambda_s) > \tau(\lambda_s)$ is read as
   $\pi(\lambda) \ge c > \tau(\lambda_s)$ for $\lambda$ near $\lambda_s$ from the right, and $\tau$
   is assumed right-continuous at $\lambda_s$. See `CartisGouldToint.Chapter08.lemma_8_2_1`.
 * **Theorem 8.2.2** (generalization). The source states it for $k > 0$. It holds for every
   $k \ge 0$. See `CartisGouldToint.Chapter08.theorem_8_2_2`.
-* **Lemma 8.2.3** (correction). The strict inequalities fail for $g = 0$, and for $\beta = -1/2$
-  when $g = M v$ for a generalized eigenvector $v$. See
+* **Lemma 8.2.3** (correction). The second derivative can vanish with $g\ne0$ at
+  $\beta=-1/2$ when $g = M v$ for a generalized eigenvector $v$. See
   `CartisGouldToint.Chapter08.lemma_8_2_3_strict`.
 * **Corollary 8.2.4** (correction). The statement needs $g \neq 0$; for $g = 0$ the function
   $\pi(\lambda; \beta)$ is constant. See `CartisGouldToint.Chapter08.corollary_8_2_4`.
 * **Corollary 8.2.4** (reading). The starting value "$\pi(\lambda_s; \beta)$" is the right limit at
   $\lambda_s$, which can be $+\infty$. See
   `CartisGouldToint.Chapter08.corollary_8_2_4_tendsto_lambdaS`.
-* **Theorem 8.2.5** (correction). The strict inequalities fail for $g = 0$ and for $\delta = 0$, and
+* **Theorem 8.2.5** (correction). The strict inequalities fail for $\delta = 0$, and
   (8.2.21) is an equality for $\beta = -1/2$ when $g = M v$ for a generalized eigenvector $v$. See
   `CartisGouldToint.Chapter08.theorem_8_2_5_strict`.
-* **Section 8.2, transformed secular equations** (correction). The source claims the convexity of
-  $-\lambda^\gamma$ for $\gamma \in (0, 1]$ and the concavity of $\lambda^\gamma$ for $\gamma < 0$
-  on $\lambda \ge \lambda_s$. This interval can contain $0$ when $\lambda_1 \ge 0$. The two
-  properties hold on $\lambda > 0$.
+* **Section 8.2.2, transformed secular equations** (correction). The interval following
+  (8.2.17) should start at $\lambda_s$, as in Lemma 8.2.3. For $\gamma<0$ the
+  concavity assertion for $-\lambda^\gamma$ uses $\lambda>0$. The endpoint
+  $\lambda_s=0$ is allowed for the convex case $\gamma\in(0,1]$.
+* **Theorem 8.2.8, uniqueness proof** (correction). Positive definiteness of the shifted
+  matrix can hold at $\lambda_*=\lambda_s=0$, for example when $g=0$ and $H$ is positive
+  definite. The Lean uniqueness proof includes this case.
 -/
 
 open Matrix Set Filter Topology
@@ -137,12 +144,19 @@ $H, M \in \mathbb{R}^{n \times n}$ and $\lambda \in \mathbb{R}$. The **step** is
 $$s(\lambda) = (H + \lambda M)^{-1} (-g).$$
 If $H + \lambda M$ is nonsingular, $s(\lambda)$ is the solution of $(H + \lambda M) s = -g$.
 
-If $H + \lambda M$ is singular, the Mathlib convention $A^{-1} = 0$ gives $s(\lambda) = 0$. -/
+If $H + \lambda M$ is singular, the Mathlib convention $A^{-1} = 0$ gives $s(\lambda) = 0$.
+
+**Reading.** Uses the inverse solution formula and assigns zero at singular shifts, where the source
+equation can be underdetermined or inconsistent.
+-/
 noncomputable def stepOf (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : EuclideanSpace ℝ (Fin n) :=
   toEuclideanLin (H + lam • M)⁻¹ (-g)
 
-/-- The definition of the step, unfolded: $s(\lambda) = (H + \lambda M)^{-1} (-g)$. -/
+/-- The definition of the step, unfolded: $s(\lambda) = (H + \lambda M)^{-1} (-g)$.
+
+**Reading.** Unfolds the same totalized inverse step.
+-/
 theorem stepOf_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) :
     stepOf g H M lam = toEuclideanLin (H + lam • M)⁻¹ (-g) :=
   rfl
@@ -154,13 +168,20 @@ which is $\|s(\lambda)\|_M^2$ for a positive definite $M$.
 
 The transformed secular function $\pi(\lambda; \beta)$ of (8.2.17) is
 `CartisGouldToint.Chapter08.secularFn g H M λ ^ β`. Where $H + \lambda M$ is singular,
-$s(\lambda) = 0$ and so $\pi(\lambda) = 0$. -/
+$s(\lambda) = 0$ and so $\pi(\lambda) = 0$.
+
+**Reading.** Matches the inner-product secular formula and assigns zero at singular shifts under the
+matrix inverse convention.
+-/
 noncomputable def secularFn (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : ℝ :=
   ⟪stepOf g H M lam, toEuclideanLin M (stepOf g H M lam)⟫
 
 /-- The definition of the secular function, unfolded: $\pi(\lambda) = \langle s(\lambda), M
-s(\lambda) \rangle$. -/
+s(\lambda) \rangle$.
+
+**Generalization.** Unfolds the secular form over the generalized domain.
+-/
 theorem secularFn_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) :
     secularFn g H M lam = ⟪stepOf g H M lam, toEuclideanLin M (stepOf g H M lam)⟫ :=
   rfl
@@ -170,7 +191,11 @@ and $M$ be positive definite. The **leftmost eigenvalue** $\lambda_1$ of the pen
 the least of the eigenvalues `Matrix.pencilEigenvalues`, that is, the least $\lambda$ with
 $H v = \lambda M v$ for some $v \neq 0$.
 
-For $n = 0$ the value is $0$, the infimum of the empty family in Mathlib. -/
+For $n = 0$ the value is $0$, the infimum of the empty family in Mathlib.
+
+**Reading.** Same least eigenvalue for positive dimension; the empty family is assigned infimum
+zero.
+-/
 noncomputable def leftmostPencil {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian)
     (hM : M.PosDef) : ℝ :=
   ⨅ i, pencilEigenvalues hH hM i
@@ -178,12 +203,18 @@ noncomputable def leftmostPencil {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHe
 /-- **Lemma 8.2.1** of [cartis2022evaluation], the threshold. Let $H$ be symmetric and $M$ be
 positive definite, with leftmost pencil eigenvalue $\lambda_1$. The **threshold** is
 $$\lambda_s = \max(0, -\lambda_1).$$
+
+**Reading.** Same maximum of zero and the negative least eigenvalue, including the totalized
+zero-dimensional value.
 -/
 noncomputable def lambdaS {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian)
     (hM : M.PosDef) : ℝ :=
   max 0 (-leftmostPencil hH hM)
 
-/-- The definition of the threshold, unfolded: $\lambda_s = \max(0, -\lambda_1)$. -/
+/-- The definition of the threshold, unfolded: $\lambda_s = \max(0, -\lambda_1)$.
+
+**Reading.** Unfolds the same threshold for all dimensions.
+-/
 theorem lambdaS_def {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian) (hM : M.PosDef) :
     lambdaS hH hM = max 0 (-leftmostPencil hH hM) :=
   rfl
@@ -191,13 +222,20 @@ theorem lambdaS_def {H M : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsHermitian) (hM 
 variable {g : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n) ℝ}
 
 /-- The leftmost eigenvalue of the pencil $(H, M)$ is the leftmost eigenvalue `Subproblem.leftmost`
-of the scaled operator $M^{-1} H$ on the $M$-inner product space. -/
+of the scaled operator $M^{-1} H$ on the $M$-inner product space.
+
+**Reading.** Identifies the least pencil eigenvalue with the least scaled-operator eigenvalue, also
+with the empty infimum convention.
+-/
 theorem leftmostPencil_eq (hH : H.IsHermitian) (hM : M.PosDef) :
     leftmostPencil hH hM = leftmost (isSymmetric_scaledOp (hM := hM) hH) :=
   (leftmost_scaledOp hH).symm
 
 /-- The threshold $\lambda_s$ is the shift threshold `Subproblem.shiftThreshold` of the scaled
-operator $M^{-1} H$ on the $M$-inner product space. -/
+operator $M^{-1} H$ on the $M$-inner product space.
+
+**Generalization.** Identifies the generalized threshold with its scaled-operator counterpart.
+-/
 theorem lambdaS_eq (hH : H.IsHermitian) (hM : M.PosDef) :
     lambdaS hH hM = shiftThreshold (isSymmetric_scaledOp (hM := hM) hH) := by
   rw [lambdaS, shiftThreshold, leftmostPencil_eq]
@@ -230,7 +268,11 @@ theorem lambdaS_lt_iff [NeZero n] (hH : H.IsHermitian) (hM : M.PosDef) {lam : �
 /-- Let $M$ be positive definite. For every $\lambda \in \mathbb{R}$, the step $s(\lambda)$, carried
 into the $M$-inner product space, is the operator step `Subproblem.step` of $M^{-1} g$ and
 $M^{-1} H$ at $\lambda$. This holds also where $H + \lambda M$ is singular, since both steps are
-then $0$. -/
+then $0$.
+
+**Reading.** Rewrites the same solution in the scaled space, including the totalized inverse at
+singularity.
+-/
 theorem toScaled_stepOf (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n)) (lam : ℝ) :
     toScaled hM (stepOf g H M lam) = step (scaledGrad hM g) (scaledOp H hM) lam :=
   toScaled_step g lam
@@ -240,18 +282,28 @@ function $\pi$ equals the operator secular function `Subproblem.secular` of $M^{
 $M^{-1} H$ in the $M$-inner product space.
 
 This is the bridge through which every result of this module is proved from the operator
-backbone. -/
+backbone.
+
+**Reading.** Rewrites the same secular inner product in the scaled space using totalized inverse.
+-/
 theorem secularFn_eq_secular (hM : M.PosDef) :
     secularFn g H M = secular (scaledGrad hM g) (scaledOp H hM) := by
   funext lam
   rw [secular_scaled g lam, secularFn, stepOf, real_inner_comm]
 
-/-- Let $M$ be positive definite. For every $\lambda$, $\|s(\lambda)\|_M^2 = \pi(\lambda)$. -/
+/-- Let $M$ be positive definite. For every $\lambda$, $\|s(\lambda)\|_M^2 = \pi(\lambda)$.
+
+**Reading.** Matches the squared-norm identity for positive-definite M even where the inverse step
+is totalized.
+-/
 theorem mNorm_stepOf_sq (hM : M.PosDef) (lam : ℝ) :
     mNorm M (stepOf g H M lam) ^ 2 = secularFn g H M lam :=
   mNorm_sq hM _
 
-/-- Let $M$ be positive definite. Then $\pi(\lambda) \ge 0$ for every $\lambda$. -/
+/-- Let $M$ be positive definite. Then $\pi(\lambda) \ge 0$ for every $\lambda$.
+
+**Reading.** Proves nonnegativity, allowing zero at g=0 and at singular shifts.
+-/
 theorem secularFn_nonneg (hM : M.PosDef) (lam : ℝ) : 0 ≤ secularFn g H M lam := by
   rw [← mNorm_stepOf_sq hM]; positivity
 
@@ -375,10 +427,13 @@ $$\pi(\lambda) = \tau(\lambda) \qquad (8.2.8)$$
 has exactly one root $\lambda_* > \lambda_s$.
 
 **Reading.** The source assumes $\pi(\lambda_s) > \tau(\lambda_s)$. Since $\lambda_s$ can be a
-pole of $\pi$, where the value of `CartisGouldToint.Chapter08.secularFn` is a junk value, this
-is read as the bound on $\pi$ near $\lambda_s$ from the right. The source assumes continuity of
+pole of $\pi$, where the inverse convention sets `CartisGouldToint.Chapter08.secularFn` to zero,
+this is read as the bound on $\pi$ near $\lambda_s$ from the right. The source assumes continuity of
 $\tau$ only on $(\lambda_s, \infty)$ but uses $\tau(\lambda_s)$; the statement assumes
-right-continuity at $\lambda_s$, which also gives $\tau(\lambda_s) \ge 0$. -/
+right-continuity at $\lambda_s$, which also gives $\tau(\lambda_s) \ge 0$.
+For $H=M=g=1$, the threshold is $0$ and $\pi(\lambda)=(1+\lambda)^{-2}$.
+The source's strict endpoint comparison holds with $\tau(0)=0$ and $\tau(\lambda)=2$
+for $\lambda>0$, although the equation has no root on $(0,\infty)$. -/
 theorem lemma_8_2_1 (hH : H.IsHermitian) (hM : M.PosDef) {τ : ℝ → ℝ}
     (hτ0 : ∀ lam ∈ Ioi (lambdaS hH hM), 0 ≤ τ lam) (hτm : MonotoneOn τ (Ioi (lambdaS hH hM)))
     (hτc : ContinuousOn τ (Ioi (lambdaS hH hM)))
@@ -401,7 +456,11 @@ nondecreasing and continuous on $[a, \infty)$, and not identically zero on $(a, 
 
 Continuity on the closed half-line contains the right-continuity at $a$ that
 `CartisGouldToint.Chapter08.lemma_8_2_1` needs. The structure is the hypothesis of
-`CartisGouldToint.Chapter08.IsAdmissibleTarget.lemma_8_2_1`. -/
+`CartisGouldToint.Chapter08.IsAdmissibleTarget.lemma_8_2_1`.
+
+**Reading.** Requires continuity on the closed half-line to include the needed right endpoint
+behavior.
+-/
 structure IsAdmissibleTarget (a : ℝ) (τ : ℝ → ℝ) : Prop where
   /-- The target is nonnegative on $[a, \infty)$. -/
   nonneg : ∀ lam ∈ Ici a, 0 ≤ τ lam
@@ -417,8 +476,13 @@ definite. For every $\Delta > 0$ the trust-region target $\tau(\lambda) = \Delta
 every $\sigma > 0$ and $r > 2$ the regularization target
 $$\tau(\lambda) = \left(\frac{\lambda}{\sigma}\right)^{2/(r-2)},$$
 are admissible targets with threshold $\lambda_s$
-(`CartisGouldToint.Chapter08.IsAdmissibleTarget`), so that they satisfy the hypotheses of Lemma
-8.2.1. -/
+(`CartisGouldToint.Chapter08.IsAdmissibleTarget`). The shift-to-norm exponent in the
+regularization example requires $r>2$. The comparison with the data-dependent $\pi$ at
+the left endpoint is a separate hypothesis of Lemma 8.2.1.
+
+**Reading.** Establishes shape and right continuity for the two targets with r>2 in the
+regularization case; the endpoint domination condition remains separate.
+-/
 theorem tau_admissible_8_2_9 (hH : H.IsHermitian) (hM : M.PosDef) :
     (∀ Δ : ℝ, 0 < Δ → IsAdmissibleTarget (lambdaS hH hM) fun _ => Δ ^ 2) ∧
       ∀ σ r : ℝ, 0 < σ → 2 < r →
@@ -497,7 +561,10 @@ let $M$ be positive definite, let $\lambda_c > \lambda_s$, and let $k \in \mathb
 inequalities (8.2.13) and (8.2.14) are strict: for every $\delta > 0$,
 $\pi(\lambda_c + \delta) < t_k(\delta)$ if $k$ is even and
 $\pi(\lambda_c + \delta) > t_k(\delta)$ if $k$ is odd; for every $\delta$ with
-$\lambda_s - \lambda_c < \delta < 0$, $\pi(\lambda_c + \delta) > t_{k+1}(\delta) > t_k(\delta)$. -/
+$\lambda_s - \lambda_c < \delta < 0$, $\pi(\lambda_c + \delta) > t_{k+1}(\delta) > t_k(\delta)$.
+
+**Reading.** Matches strict estimates for a nonzero gradient and also proves them at degree zero.
+-/
 theorem theorem_8_2_2_strict (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {lamc : ℝ}
     (hc : lambdaS hH hM < lamc) (k : ℕ) :
     (∀ δ, 0 < δ → (Even k → secularFn g H M (lamc + δ) < secularTaylorPoly g H M k lamc δ) ∧
@@ -729,20 +796,29 @@ solved with $(H + \lambda M)^{-1}$.
 
 They are the derivatives of $s(\lambda)$ for $\lambda > -\lambda_1$
 (`CartisGouldToint.Chapter08.toScaled_secularDerivVec`). Where $H + \lambda M$ is singular, the
-Mathlib convention $A^{-1} = 0$ gives $s^{(k)}(\lambda) = 0$. -/
+Mathlib convention $A^{-1} = 0$ gives $s^{(k)}(\lambda) = 0$.
+
+**Reading.** Implements the exact negative-sign recursion with zero fallback at singular shifts.
+-/
 noncomputable def secularDerivVec (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (lam : ℝ) : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => stepOf g H M lam
   | k + 1 => toEuclideanLin (H + lam • M)⁻¹
       (-((k + 1 : ℝ) • toEuclideanLin M (secularDerivVec g H M lam k)))
 
-/-- The derivative vector of order $0$ is the step: $s^{(0)}(\lambda) = s(\lambda)$. -/
+/-- The derivative vector of order $0$ is the step: $s^{(0)}(\lambda) = s(\lambda)$.
+
+**Generalization.** The same step definition with the generalized singular inverse convention.
+-/
 theorem secularDerivVec_zero (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) : secularDerivVec g H M lam 0 = stepOf g H M lam :=
   rfl
 
 /-- The recursion of the derivative vectors: $s^{(k+1)}(\lambda) = (H + \lambda M)^{-1}
-\bigl(-(k + 1) M s^{(k)}(\lambda)\bigr)$. -/
+\bigl(-(k + 1) M s^{(k)}(\lambda)\bigr)$.
+
+**Reading.** Solves the source shifted recurrence using the total inverse.
+-/
 theorem secularDerivVec_succ (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (lam : ℝ) (k : ℕ) :
     secularDerivVec g H M lam (k + 1) = toEuclideanLin (H + lam • M)⁻¹
@@ -896,7 +972,11 @@ and $r > 2$. Let $s_*$ be a global minimizer of the regularization subproblem (8
 $\lambda_* = \sigma \|s_*\|_M^{r-2}$ (8.2.33). Then
 $$(H + \lambda_* M) s_* = -g \qquad (8.2.31)$$
 and $H + \lambda_* M$ is positive semidefinite. If moreover $H + \lambda_* M$ is positive
-definite, then $s_*$ is the only global minimizer of (8.1.3). -/
+definite, then $s_*$ is the only global minimizer of (8.1.3).
+
+The source's uniqueness argument assumes $\lambda_*>\lambda_s$ after invoking positive
+definiteness. The Lean proof also covers $\lambda_*=\lambda_s=0$, which occurs for $g=0$
+and positive definite $H$. -/
 theorem theorem_8_2_8 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g H M σ r s) :
     toEuclideanLin (H + (σ * mNorm M s ^ (r - 2)) • M) s = -g ∧
@@ -920,7 +1000,11 @@ section Sufficiency
 /-- Sufficiency of the multiplier conditions for (8.1.2). Let $H$ be symmetric, let $M$ be positive
 definite, and let $\Delta > 0$. If $\lambda$ is a multiplier of $s$
 (`CartisGouldToint.Chapter08.IsTrustRegionKKT`) and $\|s\|_M \le \Delta$, then $s$ is a global
-minimizer of the trust-region subproblem. -/
+minimizer of the trust-region subproblem.
+
+**Reading.** Adds sufficient optimality for a feasible step satisfying the source multiplier
+conditions.
+-/
 theorem isTrustRegionSolution_of_kkt (hH : H.IsHermitian) (hM : M.PosDef) {Δ lam : ℝ}
     (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} (h : IsTrustRegionKKT g H M Δ s lam)
     (hs : mNorm M s ≤ Δ) : IsTrustRegionSolution g H M Δ s := by
@@ -931,7 +1015,10 @@ theorem isTrustRegionSolution_of_kkt (hH : H.IsHermitian) (hM : M.PosDef) {Δ la
 /-- Sufficiency of the optimality conditions for (8.1.3). Let $H$ be symmetric, let $M$ be positive
 definite, and let $\sigma > 0$ and $r > 2$. Let $\lambda = \sigma \|s\|_M^{r-2}$. If
 $(H + \lambda M) s = -g$ and $H + \lambda M$ is positive semidefinite, then $s$ is a global
-minimizer of the regularization subproblem. -/
+minimizer of the regularization subproblem.
+
+**Reading.** Adds sufficient optimality from the source shifted equation and semidefiniteness.
+-/
 theorem isRegularizationSolution_of_shifted (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ}
     (hσ : 0 < σ) (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)}
     (h1 : toEuclideanLin (H + (σ * mNorm M s ^ (r - 2)) • M) s = -g)

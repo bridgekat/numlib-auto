@@ -84,6 +84,9 @@ and Corollary 10.4, on every open set) and `Numlib.Analysis.PDE.Heat.Classical` 
   \|u_0\|_{L^\infty(\Omega)}$. The library states $\|u(t)\|_{L^\infty(\Omega)} \le
   \|u_0\|_{L^\infty(\Omega)}$ for every $t \ge 0$, because no jointly measurable representative of
   the curve is built. See `Brezis.Chapter10.corollary_10_4_ii`.
+* **Corollary 10.4(i) and Corollary 10.5** (reading). Positivity holds almost everywhere
+  at each time. Continuity on the closed cylinder is stated for a representative. See
+  `Brezis.Chapter10.corollary_10_4_i` and `Brezis.Chapter10.corollary_10_5`.
 * **Theorem 10.6** (reading). The source leaves $\Omega \neq \emptyset$ implicit; for
   $\Omega = \emptyset$ there is no maximum. The library assumes it for the attained maximum and
   states the bound form without it. See `Brezis.Chapter10.theorem_10_6` and
@@ -150,7 +153,10 @@ $$\min\{0, \operatorname{ess\,inf}_\Omega u_0\} \le u(t) \le \max\{0,
   \operatorname{ess\,sup}_\Omega u_0\} \qquad \text{almost everywhere on } \Omega.$$
 
 **Reading.** The source writes $\inf_\Omega u_0$ and $\sup_\Omega u_0$ for an $L^2$ datum. They
-are read as the essential infimum and supremum. -/
+are read as the essential infimum and supremum.
+
+**Reading.** Real-valued essential extrema are used when both are finite. Either bound alone
+ can be propagated by `Brezis.Chapter10.theorem_10_3`. -/
 theorem theorem_10_3_essSup (hu : IsHeatSolution Ω u₀ u)
     (hb : IsBoundedUnder (· ≤ ·) (ae (volume.restrict (Ω : Set 𝔼))) u₀)
     (hb' : IsBoundedUnder (· ≥ ·) (ae (volume.restrict (Ω : Set 𝔼))) u₀) {t : ℝ} (ht : 0 ≤ t) :
@@ -182,7 +188,10 @@ The representative $U$ of the smoothing (5) of Theorem 10.1
 $C^\infty(\overline{\Omega} \times [\varepsilon, \infty))$ is `ContDiffOnClosure`. An
 almost-everywhere bound on an open set for a continuous function holds everywhere:
 $\max(U(\cdot, t), K)$ is continuous on $\Omega$ and almost everywhere equal to the constant $K$
-(`MeasureTheory.Measure.eqOn_open_of_ae_eq`). -/
+(`MeasureTheory.Measure.eqOn_open_of_ae_eq`).
+
+**Reading.** The pointwise statement uses a smooth representative of the solution and a
+ finite essential bound on the datum. -/
 theorem theorem_10_3_pointwise (hu : IsHeatSolution Ω u₀ u) {U : 𝔼 × ℝ → ℝ}
     (hU : ∀ t, 0 < t → (fun x ↦ U (x, t)) =ᵐ[volume.restrict (Ω : Set 𝔼)] u t)
     (hUs : ∀ ε > 0, ContDiffOnClosure ℝ ∞ U ((Ω : Set 𝔼) ×ˢ Ioi ε)) {K : ℝ} (hK : 0 ≤ K) :
@@ -217,7 +226,10 @@ $u_0 \ge 0$ almost everywhere on $\Omega$, then $u \ge 0$ in $Q$: $u(t) \ge 0$ a
 on $\Omega$ for every $t \ge 0$.
 
 The proof is Theorem 10.3 with $K = 0$ for the lower bound. It specializes
-`Heat.IsSolution.nonneg`. -/
+`Heat.IsSolution.nonneg`.
+
+**Reading.** The sign holds almost everywhere in space at each time, including the initial
+ time, and the result applies on any open set. -/
 theorem corollary_10_4_i (hu : IsHeatSolution Ω u₀ u)
     (hu₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ u₀ x) {t : ℝ} (ht : 0 ≤ t) :
     ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ u t x :=
@@ -275,7 +287,10 @@ $u_n \in C^\infty(\overline{Q})$ by Theorem 10.2(c), and $\|u_n - u_m\|_{L^\inft
 $\overline{Q}$. The source identifies the limit with $u$ by
 $|u_n(t) - u(t)|_{L^2} \le |u_{0n} - u_0|_{L^2}$ (Theorem 7.7); the backbone uses (19) once
 more, which gives $u_n(t) \to u(t)$ almost everywhere. The proof specializes
-`Heat.IsSolution.continuousOn_spaceTime`. -/
+`Heat.IsSolution.continuousOn_spaceTime`.
+
+**Reading.** Continuity on the closed cylinder is stated for a representative that agrees
+ with each $L^2$ time slice and recovers the pointwise initial datum on the closure. -/
 theorem corollary_10_5 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) {f : 𝔼 → ℝ}
     (hf : ContinuousOn f (closure (Ω : Set 𝔼))) (hf0 : ∀ x ∈ frontier (Ω : Set 𝔼), f x = 0)
@@ -400,7 +415,9 @@ $\overline{\Omega} \times [0, T]$.
 
 This is the inequality $\max_{\overline{\Omega} \times [0, T]} u \le \max_P u$, which needs no
 hypothesis $\Omega \neq \emptyset$. The proof specializes
-`Heat.IsClassicalSubsolution.le_of_le_on_parabolicBoundary`. -/
+`Heat.IsClassicalSubsolution.le_of_le_on_parabolicBoundary`.
+
+**Generalization.** The upper-bound form includes the empty domain. -/
 theorem theorem_10_6_le (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hT : 0 < T)
     (hu : IsHeatSubsolution Ω T u) {M : ℝ} (hM : ∀ p ∈ parabolicBoundary Ω T, u p ≤ M) :
     ∀ q ∈ closure (Ω : Set 𝔼) ×ˢ Icc 0 T, u q ≤ M :=

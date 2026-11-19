@@ -10,6 +10,11 @@ import Numlib.LinearAlgebra.Matrix.Jordan
 
 The first assertion of Theorem 5.7.4 estimates the relative residual using the
 individual Jordan blocks and the condition number of the Jordan basis.
+
+## Deviations from the source
+
+* **Equation (5.7.10)** (generalization). The Jordan bound permits singular matrices and all
+  step indices.
 -/
 
 open Krylov Matrix Polynomial
@@ -21,7 +26,10 @@ namespace LiesenStrakos.Chapter05
 For a Jordan decomposition $A=Y\operatorname{diag}(J_i)Y^{-1}$ with
 $r_0=b-Ax_0\ne0$, the step-$n$ GMRES iterate satisfies
 $$\frac{\|b-Ax_n\|}{\|r_0\|}\le
-\kappa_2(Y)\inf_{\deg p\le n,\ p(0)=1}\max_i\|p(J_i)\|_2.$$ -/
+\kappa_2(Y)\inf_{\deg p\le n,\ p(0)=1}\max_i\|p(J_i)\|_2.$$
+
+**Generalization.** The bound also applies to singular matrices and any step with a nonzero
+initial residual. -/
 theorem theorem_5_7_4 {ι : Type*} [Fintype ι] [DecidableEq ι] (m : ι → ℕ) (μ : ι → ℂ)
     {A Y : Matrix (Σ i, Fin (m i)) (Σ i, Fin (m i)) ℂ}
     (hY : IsUnit Y) (hA : A = Y * jordanForm m μ * Y⁻¹)

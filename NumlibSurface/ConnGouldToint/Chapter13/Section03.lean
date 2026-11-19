@@ -47,6 +47,16 @@ specialize `ConnGouldToint.Chapter06.theorem_6_3_1` and use the boundary separat
 
 ## Deviations from the source
 
+* **Representation.** The second inner run packages the maximum decrease test and uses ordinary
+  interior. See `ConnGouldToint.Chapter13.HasConstrainedBarrierDecrease`,
+  `ConnGouldToint.Chapter13.SecondPrimalBarrierInnerRun`.
+* **Generalization.** The ray bounds use a single model and explicit directions; the eigenstep
+  theorem needs only directional curvature and the sign test. See
+  `ConnGouldToint.Chapter13.theorem_13_3_1`,
+  `ConnGouldToint.Chapter13.IsConstrainedBarrierEigenstep`,
+  `ConnGouldToint.Chapter13.theorem_13_3_3`.
+* **Correction.** The constrained Cauchy decrease uses the objective lower bound from the corrected
+  separation theorem. See `ConnGouldToint.Chapter13.corollary_13_3_2`.
 * **Corollary 13.3.2** (correction). The corollary uses the corrected hypothesis of Theorem 13.2.1:
   the objective is bounded below along the iterates. See
   `ConnGouldToint.Chapter13.corollary_13_3_2`.
@@ -86,7 +96,12 @@ least-curvature measure $\tau$ and the constant $\kappa$ if
 $$m(x) - m(x + s) \ge \kappa \max\left\{\|g\| \min\left\{\frac{\|g\|}{\beta},
   \hat\Delta\right\},\ -\tau \min\{\tau^2, \hat\Delta^2\}\right\},$$
 where $\hat\Delta = \min\{\Delta, (1 - \sigma) d\}$ is the reduced radius for the radius
-$\Delta$, the fraction $\sigma$ and the boundary distance $d$. -/
+$\Delta$, the fraction $\sigma$ and the boundary distance $d$.
+
+**Reading.** The pair of sufficient reductions is encoded as the maximum of gradient and
+negative-curvature bounds, with the trust-region radius shortened by the clearance. The run inherits
+ordinary interior and the guarded transitions.
+-/
 def HasConstrainedBarrierDecrease (m : E → ℝ) (x s g : E) (β Δ σ d τ κ : ℝ) : Prop :=
   κ * max (‖g‖ * min (‖g‖ / β) (constrainedBarrierRadius Δ σ d))
     (-τ * min (τ ^ 2) (constrainedBarrierRadius Δ σ d ^ 2)) ≤ m x - m (x + s)
@@ -105,7 +120,12 @@ conditions for each iteration $j$:
 
 Since every trial passes the fraction-to-boundary test, the ratio and the radius rules agree
 with those of Algorithm 13.2.1. The supremum and the infimum are `sSup` and `sInf` on
-$\mathbb{R}$, so they are $0$ for an unbounded or an empty set. -/
+$\mathbb{R}$, so they are $0$ for an unbounded or an empty set.
+
+**Reading.** The pair of sufficient reductions is encoded as the maximum of gradient and
+negative-curvature bounds, with the trust-region radius shortened by the clearance. The run inherits
+ordinary interior and the guarded transitions.
+-/
 structure SecondPrimalBarrierInnerRun [CompleteSpace E] (P : BTRParams) (C : Set E) (σ : ℝ)
     (φ : E → ℝ)
     extends PrimalBarrierInnerRun P C σ φ where
@@ -154,7 +174,12 @@ $$c - m(s) \ge \frac12 \|g\| \min\left\{\frac{\|g\|}{1 + \|H\|}, \hat\Delta\righ
 
 The constrained Cauchy decrease is the ordinary Cauchy decrease of a quadratic model with the
 reduced radius. The number $1 + \|H\|$ is `ConnGouldToint.Chapter06.quadraticCurvatureBound`,
-and the proof specializes `ConnGouldToint.Chapter06.theorem_6_3_1`. -/
+and the proof specializes `ConnGouldToint.Chapter06.theorem_6_3_1`.
+
+**Generalization.** The decrease results are single quadratic-model estimates given the appropriate
+ray minimizer. The eigenstep theorem uses an explicit negative-curvature direction, avoiding an
+assumption that the direction comes from a supplied symmetric eigenvalue decomposition.
+-/
 theorem theorem_13_3_1 (c : ℝ) (g : E) (H : E →L[ℝ] E) {Δ σ d : ℝ}
     (hΔ : 0 ≤ Δ) (hσ : σ ≤ 1) (hd : 0 ≤ d) {s : E}
     (hs : IsConstrainedBarrierCauchyStep (quadraticModel c g H.toLinearMap) g Δ σ d s) :
@@ -188,7 +213,12 @@ $\kappa_{\rm mdb}$ of (13.3.19); see `ConnGouldToint.Chapter13.theorem_13_2_1`.
 The truncated gradient measure $\pi_j$ thus satisfies the decrease bound of AA.1b. AC.8 is
 `ConnGouldToint.Chapter13.BarrierDivergesAtBoundary`. The proof takes $\kappa_{\rm mdc} = 1/2$
 and combines `ConnGouldToint.Chapter13.PrimalBarrierInnerRun.boundary_separation` with
-`ConnGouldToint.Chapter13.theorem_13_3_1`. -/
+`ConnGouldToint.Chapter13.theorem_13_3_1`.
+
+**Correction.** The lower bound on the objective along the run is included to apply the corrected
+boundary separation theorem. The result also makes the quadratic model and constrained Cauchy
+representations explicit.
+-/
 theorem corollary_13_3_2 [CompleteSpace E] {P : BTRParams} {C : Set E} {σ : ℝ} {f b : E → ℝ}
     (r : SecondPrimalBarrierInnerRun P C σ (f + b)) {L : ℝ} (hf : ∀ j, L ≤ f (r.x j))
     (hb : BarrierDivergesAtBoundary C b) (H : ℕ → E →L[ℝ] E)
@@ -231,7 +261,12 @@ theorem corollary_13_3_2 [CompleteSpace E] {P : BTRParams} {C : Set E} {σ : ℝ
 /-- **Equation (13.3.20)** of [conn2000trust], constrained eigenpoint. Let $m$ be a model written as
 a function of the displacement, and let $u \in E$ be a direction. A displacement $s$ is a
 **constrained eigenstep** if it minimizes $m$ over the segment $\{t u : t \in [0, 1]\}$ and lies
-on this segment. -/
+on this segment.
+
+**Generalization.** The decrease results are single quadratic-model estimates given the appropriate
+ray minimizer. The eigenstep theorem uses an explicit negative-curvature direction, avoiding an
+assumption that the direction comes from a supplied symmetric eigenvalue decomposition.
+-/
 def IsConstrainedBarrierEigenstep (m : E → ℝ) (u s : E) : Prop :=
   IsMinOn m ((fun t : ℝ ↦ t • u) '' Icc 0 1) s ∧ s ∈ (fun t : ℝ ↦ t • u) '' Icc 0 1
 
@@ -247,7 +282,12 @@ $$c - m(s) \ge -\frac12 \kappa \tau \hat\Delta^2.$$
 
 The three conditions on $u$ are the conditions in (13.3.20) and the inequality that follows it.
 The decrease at the constrained eigenpoint dominates the decrease at the end $u$ of the
-negative-curvature segment. -/
+negative-curvature segment.
+
+**Generalization.** The decrease results are single quadratic-model estimates given the appropriate
+ray minimizer. The eigenstep theorem uses an explicit negative-curvature direction, avoiding an
+assumption that the direction comes from a supplied symmetric eigenvalue decomposition.
+-/
 theorem theorem_13_3_3 (c : ℝ) (g u : E) (H : E →ₗ[ℝ] E) {Δ σ d κ τ : ℝ}
     (_hκ : κ ∈ Ioc (0 : ℝ) 1) (_hτ : τ < 0)
     (hg : inner ℝ u g ≤ 0) (_hu : ‖u‖ = constrainedBarrierRadius Δ σ d)

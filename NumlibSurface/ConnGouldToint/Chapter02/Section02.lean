@@ -56,10 +56,24 @@ Gershgorin theorem `eigenvalue_mem_ball`, and the backbone modules `Numlib.Eigen
 
 ## Deviations from the source
 
+* **Generalization.** Equations (2.2.1) and (2.2.7) define eigenpairs over an arbitrary field. See
+  `ConnGouldToint.Chapter02.IsEigenpair`, `ConnGouldToint.Chapter02.IsGeneralizedEigenpair`.
+* **Ordering convention.** Equation (2.2.4) supplies an SVD with the singular values in
+  nonincreasing order. See `ConnGouldToint.Chapter02.singular_value_decomposition_2_2_4`.
+* **Correction.** The Gershgorin bound uses the union of the discs, with a counterexample to the
+  printed intersection claim. See `ConnGouldToint.Chapter02.gershgorin_union`,
+  `ConnGouldToint.Chapter02.gershgorin_intersection_counterexample`.
+* **Generalization.** The minimum-norm pseudoinverse solution covers consistent and inconsistent
+  systems. See `ConnGouldToint.Chapter02.svd_leastSquares_2_2_8`.
+* **Equations (2.2.1) and (2.2.7)** (generalization). The book works with real matrices. The
+  definitions allow matrices over any field. See `ConnGouldToint.Chapter02.IsEigenpair` and
+  `ConnGouldToint.Chapter02.IsGeneralizedEigenpair`.
 * **Prose before (2.2.6)** (correction). The source places each eigenvalue in the intersection of
   the Gershgorin discs. It lies in their union, and a diagonal $2 \times 2$ matrix has an eigenvalue
   outside one disc. See `ConnGouldToint.Chapter02.gershgorin_union` and
   `ConnGouldToint.Chapter02.gershgorin_intersection_counterexample`.
+* **Prose after (2.2.8)** (generalization). The minimum-norm least-squares result also covers
+  consistent systems. See `ConnGouldToint.Chapter02.svd_leastSquares_2_2_8`.
 -/
 
 open Matrix
@@ -71,7 +85,14 @@ variable {m n : ℕ}
 
 /-- **Equation (2.2.1)** of [conn2000trust]. Let $A \in \mathbb{K}^{n \times n}$ over a field
 $\mathbb{K}$. A vector $u \in \mathbb{K}^n$ and a scalar $\mu \in \mathbb{K}$ form an
-**eigenpair** of $A$ if $u \neq 0$ and $Au = \mu u$. -/
+**eigenpair** of $A$ if $u \neq 0$ and $Au = \mu u$.
+
+**Generalization.** The book works with real matrices, allowing complex eigenpairs. The definition
+allows coefficients in any field. It also applies to a real matrix embedded in the complex field.
+
+**Generalization.** The matrix and eigenpair live over an arbitrary field. The source uses real
+matrices, with complex eigenpairs allowed when appropriate.
+-/
 def IsEigenpair {𝕜 : Type*} [Field 𝕜] (A : Matrix (Fin n) (Fin n) 𝕜)
     (u : Fin n → 𝕜) (μ : 𝕜) : Prop :=
   u ≠ 0 ∧ A *ᵥ u = μ • u
@@ -110,7 +131,12 @@ where $\Sigma \in \mathbb{R}^{m \times n}$ has the entries $\Sigma_{ii} = \sigma
 $i < \min\{m, n\}$ and zero entries elsewhere.
 
 The sequence $\sigma$ is a nonincreasing nonnegative function `σ : ℕ → ℝ`, and $\Sigma$ is
-`Matrix.rectDiagonal σ`. -/
+`Matrix.rectDiagonal σ`.
+
+**Reading.** The orthogonal factors and nonnegative rectangular diagonal agree with the source
+decomposition. The indexed diagonal is supplied in nonincreasing order, whereas later source
+notation enumerates singular values from smallest to largest.
+-/
 theorem singular_value_decomposition_2_2_4 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ Matrix.unitaryGroup (Fin m) ℝ, ∃ V ∈ Matrix.unitaryGroup (Fin n) ℝ,
       ∃ σ : ℕ → ℝ, Antitone σ ∧ (∀ i, 0 ≤ σ i) ∧
@@ -154,7 +180,11 @@ statement is the union, as here.
 `ConnGouldToint.Chapter02.gershgorin_intersection_counterexample` shows that the intersection
 claim is false.
 
-The proof uses Mathlib's `eigenvalue_mem_ball`. -/
+The proof uses Mathlib's `eigenvalue_mem_ball`.
+
+**Correction.** Each eigenvalue belongs to at least one row disc. A diagonal matrix with distinct
+entries provides a counterexample to the printed intersection claim.
+-/
 theorem gershgorin_union {A : Matrix (Fin n) (Fin n) ℂ} {u : Fin n → ℂ} {μ : ℂ}
     (h : IsEigenpair A u μ) :
     ∃ i, μ ∈ Metric.closedBall (A i i) (∑ j ∈ Finset.univ.erase i, ‖A i j‖) :=
@@ -167,7 +197,11 @@ every Gershgorin disc of $A$, that is, $|\mu - a_{ii}| > \sum_{j \neq i} |a_{ij}
 
 This refutes the intersection claim of the source; see
 `ConnGouldToint.Chapter02.gershgorin_union`. The witness is $A = \operatorname{diag}(0, 1)$ with
-$u = e_1$ and $\mu = 0$: the second disc is the single point $1$. -/
+$u = e_1$ and $\mu = 0$: the second disc is the single point $1$.
+
+**Correction.** Each eigenvalue belongs to at least one row disc. A diagonal matrix with distinct
+entries provides a counterexample to the printed intersection claim.
+-/
 theorem gershgorin_intersection_counterexample :
     ∃ (A : Matrix (Fin 2) (Fin 2) ℂ) (u : Fin 2 → ℂ) (μ : ℂ),
       IsEigenpair A u μ ∧
@@ -227,7 +261,14 @@ theorem gershgorin_bounds_2_2_6 {H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
 
 /-- **Equation (2.2.7)** of [conn2000trust]. Let $A, B \in \mathbb{K}^{n \times n}$ over a field
 $\mathbb{K}$. A vector $u \in \mathbb{K}^n$ and a scalar $\mu \in \mathbb{K}$ form a
-**generalized eigenpair** of the pencil $(A, B)$ if $u \neq 0$ and $Au = \mu Bu$. -/
+**generalized eigenpair** of the pencil $(A, B)$ if $u \neq 0$ and $Au = \mu Bu$.
+
+**Generalization.** The book works with real matrix pencils. The defining equation and the nonzero
+condition make sense over any field.
+
+**Generalization.** The matrix and eigenpair live over an arbitrary field. The source uses real
+matrices, with complex eigenpairs allowed when appropriate.
+-/
 def IsGeneralizedEigenpair {𝕜 : Type*} [Field 𝕜] (A B : Matrix (Fin n) (Fin n) 𝕜)
     (u : Fin n → 𝕜) (μ : 𝕜) : Prop :=
   u ≠ 0 ∧ A *ᵥ u = μ • (B *ᵥ u)
@@ -257,10 +298,17 @@ $x = V \Sigma^+ U^T b$. Then
 * $\|Ax - b\|_2 \le \|Ay - b\|_2$ for every $y \in \mathbb{R}^n$, and
 * $\|x\|_2 \le \|y\|_2$ for every solution $y$ of the normal equations $A^T A y = A^T b$.
 
-The system need not be consistent. The solutions of the normal equations are the least-squares
-solutions, so $x$ is the least-squares solution of minimum norm. The matrix $\Sigma^+$ is as in
+**Generalization.** The prose after (2.2.8) gives the minimum-norm least-squares conclusion for
+inconsistent systems. The statement covers both consistent and inconsistent systems.
+
+The solutions of the normal equations are the least-squares solutions, so $x$ is the least-squares
+solution of minimum norm. The matrix $\Sigma^+$ is as in
 `ConnGouldToint.Chapter02.svd_solution_2_2_8`. The proof identifies $V \Sigma^+ U^T$ with the
-pseudoinverse `Matrix.pinv`. -/
+pseudoinverse `Matrix.pinv`.
+
+**Generalization.** The pseudoinverse gives a residual minimizer of minimum Euclidean norm among
+normal-equation solutions for every right-hand side, including consistent systems.
+-/
 theorem svd_leastSquares_2_2_8 {A : Matrix (Fin m) (Fin n) ℝ} {U V σ}
     (h : Matrix.IsSVD A U σ V) (b : EuclideanSpace ℝ (Fin m)) :
     let x := Matrix.toEuclideanLin

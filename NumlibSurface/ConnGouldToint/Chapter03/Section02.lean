@@ -142,22 +142,93 @@ The proofs specialize the backbone modules `Numlib.Optimization.Optimality.Uncon
 
 ## Deviations from the source
 
+* **Generalization.** Assumption AF.1 and Theorems 3.2.1–3.2.2 extend to general real normed spaces.
+  See `ConnGouldToint.Chapter03.theorem_3_2_1`, `ConnGouldToint.Chapter03.AF1`,
+  `ConnGouldToint.Chapter03.theorem_3_2_2`.
+* **Generalization.** Theorem 3.2.9 derives normal-cone membership directly from the tangent
+  directional tests. See `ConnGouldToint.Chapter03.theorem_3_2_9`.
+* **Explicit tangent qualification.** Theorem 3.2.10 gives the normal-cone formula with the active
+  tangent linearization as an explicit hypothesis. See
+  `ConnGouldToint.Chapter03.ActiveLinearizedConeMatches`,
+  `ConnGouldToint.Chapter03.theorem_3_2_10_normalCone`.
+* **Continuity formulation.** Theorem 3.2.10 makes fixed-active-set, bounded-section hemicontinuity
+  and normal selection explicit. See `ConnGouldToint.Chapter03.isClosed_normalCone_graph`,
+  `ConnGouldToint.Chapter03.continuous_normal_selection_on_active_face`,
+  `ConnGouldToint.Chapter03.theorem_3_2_10_face_continuity`.
+* **Generalization.** Theorem 3.2.12 extends Clarke stationarity to complete real Hilbert spaces.
+  See `ConnGouldToint.Chapter03.theorem_3_2_12`.
+* **Correction.** Corollary 3.2.13 uses a Clarke chain-rule bound, with a counterexample to the
+  printed equality. See `ConnGouldToint.Chapter03.corollary_3_2_13`,
+  `ConnGouldToint.Chapter03.clarke_composite_equality_counterexample`.
+* **Generalization.** Theorem 3.2.4 exposes the tangent qualification and uses local
+  differentiability. See `ConnGouldToint.Chapter03.theorem_3_2_4`.
+* **Local smoothness and qualification variants.** Theorems 3.2.5–3.2.6 need only local smoothness,
+  with both tangent-qualified and regular-point necessity statements. See
+  `ConnGouldToint.Chapter03.theorem_3_2_5_of_constraint_qualifications`,
+  `ConnGouldToint.Chapter03.theorem_3_2_5`, `ConnGouldToint.Chapter03.theorem_3_2_6`.
+* **Generalization.** Theorem 3.2.7 allows parameter-dependent inequalities and gives local
+  uniqueness among all local minimizers. See
+  `ConnGouldToint.Chapter03.theorem_3_2_7_strict_minimizer_branch`,
+  `ConnGouldToint.Chapter03.theorem_3_2_7`.
+* **Correction and generalization.** Theorem 3.2.8 gives continuous values and upper hemicontinuous
+  minimizers under compactness, with counterexamples to the stronger printed claims. See
+  `ConnGouldToint.Chapter03.theorem_3_2_8`, `ConnGouldToint.Chapter03.theorem_3_2_8_counterexample`,
+  `ConnGouldToint.Chapter03.theorem_3_2_8_noncompact_value_counterexample`.
+* **Correction and generalization.** Theorem 3.2.14 uses affine minorants and establishes strict
+  local minimality on the domain. See `ConnGouldToint.Chapter03.theorem_3_2_14`.
+* **Correction.** Theorem 3.2.11 adds a normal-cone sum hypothesis and includes a counterexample to
+  relying on the tangent condition alone. See
+  `ConnGouldToint.Chapter03.theorem_3_2_11_of_normalCone_sum`,
+  `ConnGouldToint.Chapter03.theorem_3_2_11`,
+  `ConnGouldToint.Chapter03.theorem_3_2_11_tangent_counterexample`.
+* **Correction and Clarke variant.** Theorem 3.2.15 uses local Lipschitz and active descent
+  assumptions. Its counterexample shows that convexity on an arbitrary outer domain is insufficient.
+  See `ConnGouldToint.Chapter03.theorem_3_2_15_boundary_counterexample`,
+  `ConnGouldToint.Chapter03.theorem_3_2_15_clarke`, `ConnGouldToint.Chapter03.theorem_3_2_15`.
+* **Assumption AF.1 and Theorems 3.2.1–3.2.2** (generalization). The objective can be on any real
+  normed space. See `ConnGouldToint.Chapter03.AF1`, `ConnGouldToint.Chapter03.theorem_3_2_1` and
+  `ConnGouldToint.Chapter03.theorem_3_2_2`.
+* **Theorem 3.2.4** (generalization). The objective needs only differentiability at the candidate
+  minimizer, and the tangent inclusion supplies the needed constraint data. See
+  `ConnGouldToint.Chapter03.theorem_3_2_4`.
+* **Theorems 3.2.5–3.2.6** (generalization). Second-order smoothness is local to the candidate
+  minimizer. See `ConnGouldToint.Chapter03.theorem_3_2_5_of_constraint_qualifications`,
+  `ConnGouldToint.Chapter03.theorem_3_2_5` and `ConnGouldToint.Chapter03.theorem_3_2_6`.
+* **Theorem 3.2.7** (generalization). The inequality constraints can depend on the parameter,
+  and the minimizer is unique among all local minimizers in a neighbourhood. See
+  `ConnGouldToint.Chapter03.theorem_3_2_7`.
 * **Theorem 3.2.8** (correction). The statement assumes nonempty compact feasible sets and gives
   continuity of the minimum value and upper hemicontinuity of the minimizers. The minimizers need
   not be lower hemicontinuous, and without compactness the value need not be continuous. See
   `ConnGouldToint.Chapter03.theorem_3_2_8`, `ConnGouldToint.Chapter03.theorem_3_2_8_counterexample`
   and `ConnGouldToint.Chapter03.theorem_3_2_8_noncompact_value_counterexample`.
+* **Theorem 3.2.8** (generalization). The feasible sets and objective may be nonconvex, and
+  the variables and parameters may lie in arbitrary topological spaces. See
+  `ConnGouldToint.Chapter03.theorem_3_2_8`.
+* **Theorem 3.2.9** (generalization). The tangent-cone inequality gives normal-cone membership
+  without a constraint qualification or continuous differentiability on the feasible set. See
+  `ConnGouldToint.Chapter03.theorem_3_2_9`.
 * **Theorem 3.2.10** (reading). The continuity of the normal and tangent cones is stated on a face
   with a fixed active set, as upper and lower hemicontinuity of their bounded sections. See
   `ConnGouldToint.Chapter03.theorem_3_2_10_face_continuity`.
+* **Theorem 3.2.10, normal-cone formula** (generalization). The active tangent linearization
+  suffices without global smoothness of the constraint functions. See
+  `ConnGouldToint.Chapter03.theorem_3_2_10_normalCone`.
 * **Theorem 3.2.11** (correction). The multiplier conclusion needs a normal-cone sum rule at the
   minimizer; linearization of the tangent cone alone does not suffice. See
   `ConnGouldToint.Chapter03.theorem_3_2_11_of_normalCone_sum` and
   `ConnGouldToint.Chapter03.theorem_3_2_11_tangent_counterexample`.
+* **Theorem 3.2.12** (generalization). The Clarke first-order condition holds in any real Hilbert
+  space. See `ConnGouldToint.Chapter03.theorem_3_2_12`.
 * **Corollary 3.2.13** (correction). The first-order condition uses the bound
   $f'(x) d + h^\circ(c(x); c'(x) d)$. It is not equal to the Clarke derivative of the composite in
   general. See `ConnGouldToint.Chapter03.corollary_3_2_13` and
   `ConnGouldToint.Chapter03.clarke_composite_equality_counterexample`.
+* **Theorem 3.2.14** (correction). The result gives strict local optimality on the domain.
+  Isolation among local minimizers can fail on a domain with isolated points accumulating
+  at the minimizer. See `ConnGouldToint.Chapter03.theorem_3_2_14`.
+* **Theorem 3.2.14** (generalization). Affine minorants touching at $c(x)$ suffice for the
+  second-order argument, so $h$ can be arbitrary. See `ConnGouldToint.Chapter03.theorem_3_2_14`.
 * **Theorem 3.2.15** (correction). The outer functions are locally Lipschitz, and an active
   constraint needs a strict Clarke descent direction. The printed conditions on the domains of the
   outer functions are not sufficient. See `ConnGouldToint.Chapter03.theorem_3_2_15` and
@@ -173,18 +244,39 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- **Theorem 3.2.1** of [conn2000trust]. Let $E$ be a real normed space, and let
 $f : E \to \mathbb{R}$ be continuously differentiable. If $x$ is a local minimizer of $f$, then
-$f'(x) = 0$. -/
+$f'(x) = 0$.
+
+**Generalization.** The book works on $\mathbb{R}^n$. The first-order condition holds in any
+real normed space by considering directional derivatives along lines.
+
+**Generalization.** The unconstrained necessary conditions and smoothness assumption use Fréchet
+derivatives on real normed spaces.
+-/
 theorem theorem_3_2_1 {f : E → ℝ} (hf : ContDiff ℝ 1 f) {x : E} (hx : IsLocalMin f x) :
     fderiv ℝ f x = 0 :=
   hx.hasFDerivAt_eq_zero (hf.differentiable (by norm_num) x).hasFDerivAt
 
 /-- **Assumption AF.1** of [conn2000trust]. The objective function $f : E \to \mathbb{R}$ is twice
-continuously differentiable on $E$. -/
+continuously differentiable on $E$.
+
+**Generalization.** The book uses $E = \mathbb{R}^n$. The smoothness condition applies to an
+arbitrary real normed space.
+
+**Generalization.** The unconstrained necessary conditions and smoothness assumption use Fréchet
+derivatives on real normed spaces.
+-/
 abbrev AF1 (f : E → ℝ) : Prop := ContDiff ℝ 2 f
 
 /-- **Theorem 3.2.2** of [conn2000trust]. Let $E$ be a real normed space, and let
 $f : E \to \mathbb{R}$ satisfy AF.1. If $x$ is a local minimizer of $f$, then $f'(x) = 0$ and
 $$\langle s, \nabla^2 f(x) s \rangle \ge 0 \quad \text{for all } s \in E.$$
+
+**Generalization.** The book works on $\mathbb{R}^n$. Nonnegativity of the second variation
+holds in any real normed space because its evaluation on $s$ comes from a real function
+along the line through $x$ in direction $s$.
+
+**Generalization.** The unconstrained necessary conditions and smoothness assumption use Fréchet
+derivatives on real normed spaces.
 -/
 theorem theorem_3_2_2 {f : E → ℝ} (hf : AF1 f) {x : E} (hx : IsLocalMin f x) :
     fderiv ℝ f x = 0 ∧ ∀ s : E, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => s) :=
@@ -257,8 +349,14 @@ satisfy AC.2, let $f : V \to \mathbb{R}$, and let $x \in C$. If
 $$f'(x) d \ge 0 \quad \text{for all } d \in T_C(x),$$
 then $-\nabla f(x) \in N_C(x)$.
 
-The hypothesis is first-order criticality on the tangent cone. In this form the constraint
-qualification that leads from algebraic stationarity to the hypothesis is not needed. -/
+**Generalization.** The source assumes continuous differentiability and the first-order constraint
+qualification AO.1. Here the tangent-cone inequality directly implies normal-cone membership,
+since for each $z \in C$ the vector $z - x$ is tangent at $x$. The derivative in the statement
+is Mathlib's `fderiv`, which is zero where the derivative does not exist.
+
+**Generalization.** The conclusion is phrased via normal-cone membership and directly assumes the
+tangent directional inequality. The source assumes differentiability throughout the feasible set.
+-/
 theorem theorem_3_2_9 [CompleteSpace V] {C : Set V} (hC : AC2 C) {f : V → ℝ} {x : V} (hx : x ∈ C)
     (hcrit : ∀ d ∈ posTangentConeAt C x, 0 ≤ fderiv ℝ f x d) :
     -gradient f x ∈ normalCone (innerₗ V) C x := by
@@ -279,6 +377,9 @@ functions $c_i : V \to \mathbb{R}$ and $x \in V$, the **active linearization qua
 holds at $x$ if a direction $d$ is tangent to $C$ at $x$ exactly when it satisfies the
 linearized active constraints:
 $$d \in T_C(x) \iff c_i'(x) d \ge 0 \text{ for every } i \text{ with } c_i(x) = 0.$$
+
+**Reading.** For the cone formula the feasible tangent cone is assumed to match the linearized
+active cone. This supplies the needed constraint qualification without global differentiability.
 -/
 def ActiveLinearizedConeMatches {ι : Type*} (C : Set V) (c : ι → V → ℝ) (x : V) : Prop :=
   ∀ d : V, d ∈ posTangentConeAt C x ↔ ∀ i, c i x = 0 → 0 ≤ fderiv ℝ (c i) x d
@@ -288,6 +389,13 @@ real inner product space, let $C$ satisfy AC.2 and AC.7 with finitely many $c_i$
 feasible. If the active linearization qualification holds at $x$, then $g \in N_C(x)$ if and
 only if
 $$g = \sum_{i : c_i(x) = 0} a_i \, (-\nabla c_i(x)) \quad \text{for some } a_i \ge 0.$$
+
+**Generalization.** The book assumes AC.1, global twice-continuous differentiability of the
+constraints. The normal-cone formula needs the active tangent linearization at $x$ alone.
+The constraint gradients come from Mathlib's totalized derivative.
+
+**Reading.** For the cone formula the feasible tangent cone is assumed to match the linearized
+active cone. This supplies the needed constraint qualification without global differentiability.
 -/
 theorem theorem_3_2_10_normalCone [CompleteSpace V] [FiniteDimensional ℝ V]
     {ι : Type*} [Fintype ι] {C : Set V} {c : ι → V → ℝ} (hC : AC2 C) (hset : AC7 C c)
@@ -322,7 +430,12 @@ theorem theorem_3_2_10_normalCone [CompleteSpace V] [FiniteDimensional ℝ V]
 /-- **Theorem 3.2.10** of [conn2000trust], closed graph of the normal cone. For every
 $C \subseteq V$, the set of pairs $(x, g)$ with $g \in N_C(x)$ is closed in $V \times V$.
 
-This is the outer-limit part of the continuity of the normal cone. -/
+This is the outer-limit part of the continuity of the normal cone.
+
+**Reading.** The cone graph is closed. Inner continuity uses a selection on feasible points with the
+same active set and qualifying linearization. The hemicontinuity statement concerns positive-radius
+bounded sections of the cones.
+-/
 theorem isClosed_normalCone_graph (C : Set V) :
     IsClosed {p : V × V | p.2 ∈ normalCone (innerₗ V) C p.1} := by
   have he : {p : V × V | p.2 ∈ normalCone (innerₗ V) C p.1} =
@@ -340,7 +453,12 @@ hold at $x$, and let $g \in N_C(x)$. Then there is a continuous $G : V \to V$ wi
 and $G(z) \in N_C(z)$ for every feasible $z$ that has the same active constraints as $x$ and at
 which the active linearization qualification holds.
 
-The map $G$ keeps the coefficients of $g$ in the active gradients fixed. -/
+The map $G$ keeps the coefficients of $g$ in the active gradients fixed.
+
+**Reading.** The cone graph is closed. Inner continuity uses a selection on feasible points with the
+same active set and qualifying linearization. The hemicontinuity statement concerns positive-radius
+bounded sections of the cones.
+-/
 theorem continuous_normal_selection_on_active_face [CompleteSpace V] [FiniteDimensional ℝ V]
     {ι : Type*} [Fintype ι] {C : Set V} {c : ι → V → ℝ} (hC : AC2 C) (hset : AC7 C c)
     (hc : ∀ i, ContDiff ℝ 1 (c i)) {x : V} (hx : ∀ i, 0 ≤ c i x)
@@ -422,7 +540,12 @@ are both upper and lower hemicontinuous.
 
 **Reading.** The source states that the normal and tangent cones are continuous. Here the
 continuity is stated on a face with a fixed active set and for the sections of the cones by
-closed balls, which gives the usual local convergence of closed cones. -/
+closed balls, which gives the usual local convergence of closed cones.
+
+**Reading.** The cone graph is closed. Inner continuity uses a selection on feasible points with the
+same active set and qualifying linearization. The hemicontinuity statement concerns positive-radius
+bounded sections of the cones.
+-/
 theorem theorem_3_2_10_face_continuity [CompleteSpace V] [FiniteDimensional ℝ V]
     {ι : Type*} [Fintype ι] {C : Set V} {c : ι → V → ℝ} (hC : AC2 C) (hset : AC7 C c)
     (hc : ∀ i, ContDiff ℝ 1 (c i)) (x₀ : V) {R : ℝ} (hR : 0 < R) :
@@ -514,7 +637,14 @@ $f : V \to \mathbb{R}$ be Lipschitz continuous on a neighbourhood of $x$, and le
 minimizer of $f$. Then $0 \in \partial^\circ f(x)$, $f^\circ(x; d) \ge 0$ for all $d$, and
 $f^\circ(x; \cdot)$ is the support function of $\partial^\circ f(x)$.
 
-The support property is `Optimization.HasClarkeSupport`. -/
+**Generalization.** The book states the result on $\mathbb{R}^n$. The directional argument and
+the Clarke support property hold in an arbitrary real Hilbert space.
+
+The support property is `Optimization.HasClarkeSupport`.
+
+**Generalization.** The Clarke condition and nonnegative directional derivatives hold in a complete
+real Hilbert space. The result also states the support representation.
+-/
 theorem theorem_3_2_12 [CompleteSpace V] {f : V → ℝ} {x : V} (hmin : IsLocalMin f x)
     {U : Set V} {L : ℝ≥0} (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
     0 ∈ Optimization.clarkeSubgradient f x ∧
@@ -606,7 +736,12 @@ $c(x)$, and let $x$ be a local minimizer of $f + h \circ c$. Then
 **Correction.** The source identifies $f'(x) d + h^\circ(c(x); c'(x) d)$ with the Clarke
 directional derivative of the composite $f + h \circ c$. This identity fails in general; see
 `ConnGouldToint.Chapter03.clarke_composite_equality_counterexample`. The statement uses the
-linearized bound, which is the support function of the set of $\nabla f(x) + c'(x)^* y$. -/
+linearized bound, which is the support function of the set of $\nabla f(x) + c'(x)^* y$.
+
+**Correction.** The Clarke derivative of the composite is bounded above by the chain-rule
+expression. The stationarity conclusion uses that upper bound. A Lipschitz example shows that the
+printed derivative equality can fail.
+-/
 theorem corollary_3_2_13 [CompleteSpace V]
     {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W] [FiniteDimensional ℝ W]
     {f : V → ℝ} {c : V → W} {h : W → ℝ} {x : V}
@@ -661,7 +796,12 @@ that the function $t \mapsto h(td)$ has Clarke derivative $0$ at $0$ in the dire
 $h^\circ(0; d) \ge 2$.
 
 With the linear map $c(t) = td$, the Clarke derivative of $h \circ c$ is smaller than
-$h^\circ(c(0); c'(0) 1)$, although the restriction is constant and the embedding is linear. -/
+$h^\circ(c(0); c'(0) 1)$, although the restriction is constant and the embedding is linear.
+
+**Correction.** The Clarke derivative of the composite is bounded above by the chain-rule
+expression. The stationarity conclusion uses that upper bound. A Lipschitz example shows that the
+printed derivative equality can fail.
+-/
 theorem clarke_composite_equality_counterexample :
     ∃ (h : EuclideanSpace ℝ (Fin 2) → ℝ) (d : EuclideanSpace ℝ (Fin 2)),
       LipschitzWith 4 h ∧
@@ -726,10 +866,19 @@ $$f'(x) = \sum_{i \in \mathcal{E}} y_i c_i'(x) + \sum_{i \in \mathcal{I}} y_i c_
 $c_i(x) = 0$ for $i \in \mathcal{E}$, and $c_i(x) \ge 0$, $y_i \ge 0$ and $c_i(x) y_i = 0$ for
 $i \in \mathcal{I}$.
 
+**Generalization.** The book assumes that $f$ and the constraints are continuously
+differentiable. The argument needs differentiability of $f$ at $x$ and the inclusion of the
+linearized directions in the tangent cone. The constraint derivatives in that inclusion are
+Mathlib's `fderiv`.
+
 The qualification is the tangent inclusion form of AO.1. The constraints are written
 $c_i \ge 0$, as in the source, so the inequality multipliers are nonnegative with this sign of
 the stationarity condition. In the Lean statement the equality constraints are `ce` with
-multipliers `l`, and the inequality constraints are `ci` with multipliers `μ`. -/
+multipliers `l`, and the inequality constraints are `ci` with multipliers `μ`.
+
+**Generalization.** The objective only needs a derivative at the candidate, with the necessary
+linearized-to-feasible tangent inclusion as an explicit premise.
+-/
 theorem theorem_3_2_4 [FiniteDimensional ℝ E] {ι κ : Type*} [Fintype ι] [Fintype κ]
     {f : E → ℝ} {ce : ι → E → ℝ} {ci : κ → E → ℝ} {x : E}
     (hf : DifferentiableAt ℝ f x)
@@ -812,9 +961,17 @@ $$\langle d, \nabla^2 \mathcal{L}(x) d \rangle \ge 0 \quad \text{for all } d \in
   \mu),$$
 where $\mathcal{L} = f + \sum_i \lambda_i h_i + \sum_j \mu_j g_j$.
 
+**Generalization.** The book assumes that the objective and constraints are twice
+continuously differentiable everywhere. The conclusion requires this smoothness only at $x$.
+
 The inequalities are written $g_j \le 0$. The KKT conditions are `Constrained.IsKKTPoint`:
 feasibility, stationarity $f'(x) + \sum_i \lambda_i h_i'(x) + \sum_j \mu_j g_j'(x) = 0$,
-$\mu \ge 0$ and $\mu_j g_j(x) = 0$. -/
+$\mu \ge 0$ and $\mu_j g_j(x) = 0$.
+
+**Reading.** Twice continuous differentiability is local to the candidate. The necessary condition
+is given with explicit tangent qualifications and in a variant using regularity of the active
+constraints.
+-/
 theorem theorem_3_2_5_of_constraint_qualifications
     {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
     (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x)
@@ -842,9 +999,18 @@ $(x, \lambda, \mu)$ is a KKT point and
 $$\langle d, \nabla^2 \mathcal{L}(x) d \rangle \ge 0 \quad \text{for all } d \in \mathcal{C}(x,
   \mu).$$
 
+**Generalization.** The book assumes twice-continuous differentiability everywhere. The
+statement uses only the smoothness at $x$. Linear independence gives the constraint
+qualifications for this formulation.
+
 The inequalities are written $g_j \le 0$, the negated constraints of the source, so the
 inequality part of the Lagrangian is added. Linear independence supplies AO.1 and AO.2 by
-`ConnGouldToint.Chapter03.ao1_ao2_of_isRegularPointIneq`. -/
+`ConnGouldToint.Chapter03.ao1_ao2_of_isRegularPointIneq`.
+
+**Reading.** Twice continuous differentiability is local to the candidate. The necessary condition
+is given with explicit tangent qualifications and in a variant using regularity of the active
+constraints.
+-/
 theorem theorem_3_2_5 {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
     (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x)
     (hg : ∀ j, ContDiffAt ℝ 2 (g j) x)
@@ -863,7 +1029,15 @@ $f$, $h_i$ and $g_j$ be twice continuously differentiable at $x$, and let $(x, \
 a KKT point. If
 $$\langle d, \nabla^2 \mathcal{L}(x) d \rangle > 0 \quad \text{for all nonzero } d \in
   \mathcal{C}(x, \mu),$$
-then $x$ is a strict local minimizer of $f$ on the feasible set. -/
+then $x$ is a strict local minimizer of $f$ on the feasible set.
+
+**Generalization.** The book assumes twice-continuous differentiability everywhere; the
+second-order sufficient condition uses this smoothness at $x$.
+
+**Reading.** Twice continuous differentiability is local to the candidate. The necessary condition
+is given with explicit tangent qualifications and in a variant using regularity of the active
+constraints.
+-/
 theorem theorem_3_2_6 {f : E → ℝ} {h : ι → E → ℝ} {g : κ → E → ℝ} {x : E}
     {l : ι → ℝ} {μ : κ → ℝ}
     (hf : ContDiffAt ℝ 2 f x) (hh : ∀ i, ContDiffAt ℝ 2 (h i) x)
@@ -1235,7 +1409,12 @@ and $x(p)$ is the only feasible local minimizer in $X$.
 
 The smooth residual and its block derivative are hypotheses here.
 `ConnGouldToint.Chapter03.theorem_3_2_7_joint_smooth_data` constructs them from jointly smooth
-data. -/
+data.
+
+**Generalization.** Inequalities may depend on the parameter. The parameter branch is differentiable
+at the base, preserves the active set, and the full theorem gives uniqueness among nearby local
+minimizers and uniqueness of the multipliers.
+-/
 theorem theorem_3_2_7_strict_minimizer_branch
     {f : P → V → ℝ} {h : ι → P → V → ℝ} {g : κ ⊕ ν → P → V → ℝ}
     {F : P × (V × ActiveDual ι κ) → V × ActiveDual ι κ}
@@ -1639,10 +1818,19 @@ condition and the positivity of the Lagrangian Hessian on the kernel persist; $x
 point with these multipliers; $x(p)$ is a strict local minimizer; its KKT multipliers are
 unique; and $x(p)$ is the only feasible local minimizer in $X$.
 
-This includes the differentiable variant of the theorem from the notes of the source. The active
-Jacobian is described by its rows. The proof applies
+**Generalization.** The displayed problem (3.2.15) has parameter-independent inequality
+constraints, and the theorem states uniqueness among strict local minimizers. The statement
+allows parameter-dependent inequalities and gives uniqueness among all nearby local minimizers.
+It also gives differentiability at $p_0$, as in the variant mentioned in the source notes.
+
+The active Jacobian is described by its rows. The proof applies
 `ConnGouldToint.Chapter03.theorem_3_2_7_strict_minimizer_branch` to the data of
-`ConnGouldToint.Chapter03.theorem_3_2_7_joint_smooth_data`. -/
+`ConnGouldToint.Chapter03.theorem_3_2_7_joint_smooth_data`.
+
+**Generalization.** Inequalities may depend on the parameter. The parameter branch is differentiable
+at the base, preserves the active set, and the full theorem gives uniqueness among nearby local
+minimizers and uniqueness of the multipliers.
+-/
 theorem theorem_3_2_7
     {f : P → V → ℝ} {h : ι → P → V → ℝ} {g : κ ⊕ ν → P → V → ℝ}
     {p₀ : P} {z₀ : V × ActiveDual ι κ}
@@ -1765,7 +1953,16 @@ objective on a fixed compact convex set
 (`ConnGouldToint.Chapter03.theorem_3_2_8_counterexample`), and without compactness $v$ need not
 be continuous (`ConnGouldToint.Chapter03.theorem_3_2_8_noncompact_value_counterexample`).
 
-The value $v(p)$ is `sInf` of the image of $C(p)$. -/
+**Generalization.** The book assumes convex feasible sets, a convex objective in the decision
+variable, and Euclidean spaces. Compactness and hemicontinuity suffice for the comparison of
+minimum values in arbitrary topological spaces.
+
+The value $v(p)$ is `sInf` of the image of $C(p)$.
+
+**Correction.** Compact nonempty continuous feasible values yield a continuous optimum, attained
+minimizers and upper hemicontinuity even without convexity. The examples show failure of lower
+hemicontinuity of minimizers and failure of value continuity without compactness.
+-/
 theorem theorem_3_2_8 {C : P → Set X} {f : X × P → ℝ}
     (hC : ∀ p, IsCompact (C p)) (hne : ∀ p, (C p).Nonempty)
     (hupper : UpperHemicontinuous C) (hlower : LowerHemicontinuous C) (hf : Continuous f) :
@@ -1836,7 +2033,12 @@ $$p \mapsto \operatorname*{argmin}_{x \in [0, 1]} px$$
 on $\mathbb{R}$ is not lower hemicontinuous.
 
 The failure is at $p = 0$, where every point of $[0, 1]$ is a minimizer. The feasible set is
-fixed, and the objective is jointly continuous and linear in $x$. -/
+fixed, and the objective is jointly continuous and linear in $x$.
+
+**Correction.** Compact nonempty continuous feasible values yield a continuous optimum, attained
+minimizers and upper hemicontinuity even without convexity. The examples show failure of lower
+hemicontinuity of minimizers and failure of value continuity without compactness.
+-/
 theorem theorem_3_2_8_counterexample :
     ¬ LowerHemicontinuous (fun p : ℝ ↦
       {x ∈ Icc (0 : ℝ) 1 | IsMinOn (fun y ↦ p * y) (Icc (0 : ℝ) 1) x}) := by
@@ -1884,8 +2086,21 @@ $$\langle d, \nabla^2 L_{g^*}(x) d \rangle > 0$$
 for every $d$ with $\|d\| = 1$ and $L_g'(x) d \le 0$ for all $g \in K$. Then $x$ is a strict
 local minimizer of $f + h \circ c$ on $S$.
 
+**Correction.** The book also asserts isolation among local minimizers. On the domain
+$S = \{0\} \cup \{1/j : j \in \mathbb{N},\ j \ge 1\}$, take $f(y) = y^2$ and $h = c = 0$ with
+$C = \mathbb{R}$. The conditions hold at $0$. Every point $1/j$ is a local minimizer on $S$, so
+the isolation claim fails for this domain. The statement gives strict local optimality on $S$.
+
+**Generalization.** The source assumes convexity of $h$. The argument only uses the affine
+minorants touching at $c(x)$, which the statement collects in $K$ for any $h$.
+
 Because $g^*$ gives zero first variation, the zero support condition in (3.2.24) is equivalent
-to the condition that every first variation $L_g'(x) d$ with $g \in K$ is nonpositive. -/
+to the condition that every first variation $L_g'(x) d$ with $g \in K$ is nonpositive.
+
+**Correction.** The result uses supporting affine minorants of the outer function on its domain. It
+concludes strict local minimality on the stated feasible domain. An arbitrary domain can have
+accumulating isolated points, so isolation among local minimizers is omitted.
+-/
 theorem theorem_3_2_14 [FiniteDimensional ℝ E]
     {W : Type*} [NormedAddCommGroup W] [InnerProductSpace ℝ W]
     {f : E → ℝ} {c : E → W} {h : W → ℝ} {S : Set E} {C : Set W} {x : E}
@@ -1959,7 +2174,12 @@ $$-\nabla f(x) - \sum_i \lambda_i \nabla h_i(x) - \sum_j \mu_j \nabla g_j(x) \in
 alone. The normal-cone sum rule at the minimizer is also needed; see
 `ConnGouldToint.Chapter03.theorem_3_2_11_tangent_counterexample`.
 
-The inequalities are written $g_j \le 0$. -/
+The inequalities are written $g_j \le 0$.
+
+**Correction.** A normal-cone sum rule is required in addition to the local tangent inclusion. One
+variant derives the rule from exactness of the indicator sum. The counterexample has the tangent
+equality but no required multiplier.
+-/
 theorem theorem_3_2_11_of_normalCone_sum {ι κ : Type*} [Fintype ι] [Fintype κ]
     {C : Set V} {f : V → ℝ} {h : ι → V → ℝ} {g : κ → V → ℝ} {x : V}
     (hx : x ∈ feasible h g) (hf : DifferentiableAt ℝ f x)
@@ -2032,7 +2252,12 @@ $$-\nabla f(x) - \sum_i \lambda_i \nabla h_i(x) - \sum_j \mu_j \nabla g_j(x) \in
 linearization of the tangent cone alone does not give the multipliers.
 
 The exact sum rule is `ConvexAnalysis.IsExactSum` for the indicator functions; it gives the
-normal-cone sum rule. -/
+normal-cone sum rule.
+
+**Correction.** A normal-cone sum rule is required in addition to the local tangent inclusion. One
+variant derives the rule from exactness of the indicator sum. The counterexample has the tangent
+equality but no required multiplier.
+-/
 theorem theorem_3_2_11 {ι κ : Type*} [Fintype ι] [Fintype κ]
     {C : Set V} {f : V → ℝ} {h : ι → V → ℝ} {g : κ → V → ℝ} {x : V}
     (hxC : x ∈ C) (hx : x ∈ feasible h g) (hf : DifferentiableAt ℝ f x)
@@ -2060,7 +2285,12 @@ the kernel of $h'(0)$, and the tangent cone is exactly linearized:
 $T_{C \cap Q}(0) = T_C(0) \cap Q$. But there is no $\lambda \in \mathbb{R}$ with
 $$-\nabla f(0) - \lambda \nabla h(0) \in N_C(0).$$
 
-The set $C \cap Q$ is the nonnegative $w_2$-axis. -/
+The set $C \cap Q$ is the nonnegative $w_2$-axis.
+
+**Correction.** A normal-cone sum rule is required in addition to the local tangent inclusion. One
+variant derives the rule from exactness of the indicator sum. The counterexample has the tangent
+equality but no required multiplier.
+-/
 theorem theorem_3_2_11_tangent_counterexample :
     let W := EuclideanSpace ℝ (Fin 3)
     let C : Set W := {w | 0 ≤ w 2 ∧ ∀ t : ℝ, 0 ≤ w 1 + 2 * t * w 0 + t ^ 2 * w 2}
@@ -2178,7 +2408,12 @@ $$p \mapsto \inf_{x \in \mathbb{R}} (px - 1)^2$$
 is not continuous.
 
 Its value is $0$ for $p \neq 0$ and $1$ for $p = 0$. The feasible set $\mathbb{R}$ is fixed but
-not compact. -/
+not compact.
+
+**Correction.** Compact nonempty continuous feasible values yield a continuous optimum, attained
+minimizers and upper hemicontinuity even without convexity. The examples show failure of lower
+hemicontinuity of minimizers and failure of value continuity without compactness.
+-/
 theorem theorem_3_2_8_noncompact_value_counterexample :
     ¬ Continuous (fun p : ℝ ↦ sInf (Set.range (fun x : ℝ ↦ (p * x - 1) ^ 2))) := by
   let v (p : ℝ) := sInf (Set.range (fun x : ℝ ↦ (p * x - 1) ^ 2))
@@ -2208,7 +2443,13 @@ inactive, and $0$ is a local minimizer of $f + h \circ c$, which is $x \mapsto x
 no subgradient at $c(0) = 0$ relative to $[0, \infty)$: there is no $a$ with
 $h(0) + za \le h(z)$ for all $z \ge 0$.
 
-The outer function must therefore be regular at the composite point. -/
+The outer function must therefore be regular at the composite point.
+
+**Correction.** Local Lipschitz control supplies outer subgradients and an active constraint needs a
+strict linearized Clarke descent direction. The convex theorem uses globally defined outer
+functions. A boundary example shows convexity on the printed arbitrary domain alone can leave the
+outer subdifferential empty.
+-/
 theorem theorem_3_2_15_boundary_counterexample :
     let h := fun z : ℝ ↦ -Real.sqrt z
     let c := fun x : ℝ ↦ x ^ 4
@@ -2350,7 +2591,13 @@ strict Clarke descent direction through $r$. The printed conditions on the domai
 functions do not suffice; see `ConnGouldToint.Chapter03.theorem_3_2_15_boundary_counterexample`.
 
 The multipliers use Clarke subgradients, so the result also applies to nonconvex outer
-functions. -/
+functions.
+
+**Correction.** Local Lipschitz control supplies outer subgradients and an active constraint needs a
+strict linearized Clarke descent direction. The convex theorem uses globally defined outer
+functions. A boundary example shows convexity on the printed arbitrary domain alone can leave the
+outer subdifferential empty.
+-/
 theorem theorem_3_2_15_clarke {f : V → ℝ} {c : V → W} {r : V → Z} {h : W → ℝ}
     {t : Z → ℝ} {x : V} (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)
     (hr : DifferentiableAt ℝ r x) {U : Set W} {T : Set Z} {K M : ℝ≥0}
@@ -2478,7 +2725,13 @@ $$\nabla f(x) + c'(x)^* y + \mu \, r'(x)^* u = 0.$$
 **Correction.** The outer functions are convex on their full spaces and locally Lipschitz at the
 image points, and an active constraint needs a strict Clarke descent direction through $r$. The
 printed conditions on the domains of the outer functions do not suffice; see
-`ConnGouldToint.Chapter03.theorem_3_2_15_boundary_counterexample`. -/
+`ConnGouldToint.Chapter03.theorem_3_2_15_boundary_counterexample`.
+
+**Correction.** Local Lipschitz control supplies outer subgradients and an active constraint needs a
+strict linearized Clarke descent direction. The convex theorem uses globally defined outer
+functions. A boundary example shows convexity on the printed arbitrary domain alone can leave the
+outer subdifferential empty.
+-/
 theorem theorem_3_2_15 {f : V → ℝ} {c : V → W} {r : V → Z} {h : W → ℝ}
     {t : Z → ℝ} {x : V} (hf : DifferentiableAt ℝ f x) (hc : DifferentiableAt ℝ c x)
     (hr : DifferentiableAt ℝ r x) (hh : ConvexOn ℝ univ h) (ht : ConvexOn ℝ univ t)

@@ -127,6 +127,32 @@ each damping factor is bounded away from $1$ independently of $h$: this is the s
 
 ## Deviations from the source
 
+* **§13.2, grid values after (13.14)** (reading).
+  `SaadSparse.Chapter13.kroneckerVec_sineVec_eq_sin_grid` uses normalized coordinates. On the
+  earlier rectangle with side lengths $l_1,l_2$, the physical coordinates must be divided by the
+  respective side lengths.
+* **(13.15)–(13.16)** (convention and generalization).
+  `SaadSparse.Chapter13.richardson_reduction` uses the iterate minus the solution and allows any
+  $\gamma$, with total division. The source uses the solution minus the iterate and chooses a
+  positive spectral upper bound.
+* **(13.19)–(13.22)** (scope). The weighted Jacobi eigenpair statements use a splitting with
+  nonzero weight. `SaadSparse.Chapter13.equation_13_22` gives an absolute-value bound for
+  $0<\omega\le1$ where the printed display states signed endpoint bounds.
+* **Text before (13.23)** (correction). The sine-square estimate uses $\theta_k/2$, as in
+  `SaadSparse.Chapter13.sin_sq_theta_div_two_ge_half` and the factor in (13.21). The printed
+  prose omits the half angle.
+* **Smoothing factors in §13.2.2** (scope). The theorem at weight $2/3$ in one dimension and the
+  theorem at weight $4/5$ in two dimensions give the stated bounds at those weights. The
+  optimality comparisons across weights are omitted.
+* **(13.25)** (scope). `SaadSparse.Chapter13.weightedJacobi2D_eigenvalue_mem_Ioc` assumes an
+  oscillatory mode in at least one coordinate and proves the simple interval bounds. The source
+  also gives a sharper finite-grid lower bound.
+* **§13.2.3, Gauss–Seidel spectrum** (correction and scope).
+  `SaadSparse.Chapter13.gaussSeidel_eigenvalues` asserts membership of the cosine-square values.
+  The list misses zero for even positive $n$, which
+  `SaadSparse.Chapter13.gaussSeidel1D_mulVec_single` supplies. In the corrected eigenvector
+  formula the vectors from paired modes $k$ and $n+1-k$ differ only by a sign, so the family
+  cannot furnish the basis suggested by the text.
 * **Equation (13.23)** (generalization). The book prints the upper bound $1 - \omega/2$ for the
   oscillatory weighted Jacobi eigenvalues in one dimension; the sharp bound $1 - \omega$ is proved.
   See `SaadSparse.Chapter13.weightedJacobi_eigenvalue_mem_Ioc`.
@@ -364,7 +390,10 @@ theorem sin_sq_theta_div_two_le (n : ℕ) (k : Fin n) :
 $\sin^2(\theta_k/2) \ge 1/2$.
 
 With the $0$-based index `k`, the condition $k > n/2$ reads `n + 1 ≤ 2 * (k + 1)`. This one
-inequality is behind every mesh-independent smoothing factor of Section 13.2. -/
+inequality is behind every mesh-independent smoothing factor of Section 13.2.
+
+**Correction.** Correct uses half angle, whereas source sentence omits half angle.
+-/
 theorem sin_sq_theta_div_two_ge_half (n : ℕ) {k : Fin n} (hk : n + 1 ≤ 2 * ((k : ℕ) + 1)) :
     1 / 2 ≤ Real.sin (theta n k / 2) ^ 2 := by
   have hk' : (n : ℝ) + 1 ≤ 2 * (((k : ℕ) : ℝ) + 1) := by exact_mod_cast hk
@@ -481,7 +510,11 @@ theorem laplacian2D_mulVec_kroneckerVec (n m : ℕ) (k : Fin n) (l : Fin m) :
 $z_{k,l} = w_k \otimes v_l$ has the value $\sin(k\pi x_i)\sin(l\pi y_j)$ at the grid point
 $(x_i, y_j)$, where $x_i = i/(n+1)$ and $y_j = j/(m+1)$.
 
-All indices are $0$-based in the Lean statement, each standing for the book's index plus one. -/
+All indices are $0$-based in the Lean statement, each standing for the book's index plus one.
+
+**Reading.** The two coordinate arguments are normalized grid positions. If $x_i$ and $y_j$ are
+physical coordinates on the earlier rectangle with side lengths $l_1,l_2$, the sine factors use
+$x_i/l_1$ and $y_j/l_2$. -/
 theorem kroneckerVec_sineVec_eq_sin_grid (n m : ℕ) (k : Fin n) (l : Fin m)
     (p : Fin n × Fin m) :
     kroneckerVec (sineVec n k) (sineVec m l) p =
@@ -603,7 +636,11 @@ the Gershgorin bound and an upper bound for the spectrum
 $1 - \sin^2(\pi/(2(n+1))) = 1 - O(h^2)$ (`SaadSparse.Chapter13.richardson_factor_le`), so the
 iteration is a very slow solver. On the oscillatory half $k > n/2$ of the spectrum it is at most
 $1/2$ for every mesh (`SaadSparse.Chapter13.richardson_factor_le_half_of_oscillatory`). The
-iteration step is `SaadSparse.Chapter04.richardsonStep`. -/
+iteration step is `SaadSparse.Chapter04.richardsonStep`.
+
+**Reading.** Uses the negative of the source error convention and takes any real gamma with total
+inverse.
+-/
 theorem richardson_reduction (n : ℕ) (γ : ℝ) (b x₀ xstar : Fin n → ℝ)
     (hxstar : laplacian1D n *ᵥ xstar = b) (k : Fin n) (j : ℕ) :
     sineVec n k ⬝ᵥ ((Chapter04.richardsonStep (laplacian1D n) γ⁻¹ b)^[j] x₀ - xstar) =
@@ -663,7 +700,10 @@ variable {n m : ℕ} {ω : ℝ}
 
 /-- The weighted Jacobi iteration matrix of (13.19)–(13.20) of [saad2003iterative]: for a square
 matrix $A$ with invertible diagonal $D$ and $\omega \neq 0$, the iteration operator of
-`Matrix.jorSplitting`, whose matrix $M$ is $\omega^{-1} D$, is $J_\omega = I - \omega D^{-1} A$. -/
+`Matrix.jorSplitting`, whose matrix $M$ is $\omega^{-1} D$, is $J_\omega = I - \omega D^{-1} A$.
+
+**Reading.** Requires nonzero omega for representation by a splitting.
+-/
 theorem jorSplitting_iterationOperator_eq {N : Type*} [Fintype N] [DecidableEq N]
     (A : Matrix N N ℝ) (h : IsUnit (diagPart A)) (hω : ω ≠ 0) :
     (jorSplitting A h hω).iterationOperator = 1 - ω • ((diagPart A)⁻¹ * A) := by
@@ -676,7 +716,10 @@ theorem jorSplitting_iterationOperator_eq {N : Type*} [Fintype N] [DecidableEq N
   rw [h1, ← nonsing_inv_eq_ringInverse, hinv, Matrix.smul_mul]
 
 /-- If the diagonal of $A$ is $cI$ with $c \neq 0$, then the weighted Jacobi iteration matrix is
-$J_\omega = I - (\omega/c) A$. -/
+$J_\omega = I - (\omega/c) A$.
+
+**Reading.** General scalar diagonal formula, with explicit invertibility and nonzero weights.
+-/
 private theorem jorSplitting_of_diagPart_eq {N : Type*} [Fintype N] [DecidableEq N]
     {A : Matrix N N ℝ} {c : ℝ} (hc : c ≠ 0) (hA : diagPart A = c • 1)
     (h : IsUnit (diagPart A)) (hω : ω ≠ 0) :
@@ -688,14 +731,20 @@ private theorem jorSplitting_of_diagPart_eq {N : Type*} [Fintype N] [DecidableEq
     smul_smul, ← div_eq_mul_inv]
 
 /-- Since $D = 2I$ for the one-dimensional model matrix, weighted Jacobi on it has the iteration
-matrix $J_\omega = I - (\omega/2) A$, for $\omega \neq 0$. -/
+matrix $J_\omega = I - (\omega/2) A$, for $\omega \neq 0$.
+
+**Reading.** Uses omega nonzero for the built splitting.
+-/
 theorem jorSplitting_laplacian1D (n : ℕ) (hω : ω ≠ 0) :
     (jorSplitting (laplacian1D n) (isUnit_diagPart_laplacian1D n) hω).iterationOperator =
       1 - (ω / 2) • laplacian1D n :=
   jorSplitting_of_diagPart_eq two_ne_zero (diagPart_laplacian1D n) _ hω
 
 /-- Since $D = 4I$ for the two-dimensional model matrix, weighted Jacobi on it has the iteration
-matrix $J_\omega = I - (\omega/4) A$, for $\omega \neq 0$. -/
+matrix $J_\omega = I - (\omega/4) A$, for $\omega \neq 0$.
+
+**Reading.** Uses omega nonzero for the built splitting.
+-/
 theorem jorSplitting_laplacian2D (n m : ℕ) (hω : ω ≠ 0) :
     (jorSplitting (laplacian2D n m) (isUnit_diagPart_laplacian2D n m) hω).iterationOperator =
       1 - (ω / 4) • laplacian2D n m :=
@@ -707,7 +756,10 @@ eigenvectors:
 $$J_\omega w_k = \mu_k(\omega) \, w_k, \qquad \mu_k(\omega) = 1 -
   2\omega\sin^2\frac{k\pi}{2(n+1)}.$$
 
-The hypothesis $\omega \neq 0$ is needed to define the splitting `Matrix.jorSplitting`. -/
+The hypothesis $\omega \neq 0$ is needed to define the splitting `Matrix.jorSplitting`.
+
+**Reading.** Exact eigenrelation through nonzero-weight splitting.
+-/
 theorem equation_13_21 (n : ℕ) (hω : ω ≠ 0) (k : Fin n) :
     (jorSplitting (laplacian1D n) (isUnit_diagPart_laplacian1D n) hω).iterationOperator *ᵥ
         sineVec n k =
@@ -724,6 +776,8 @@ $w_k \otimes v_l$:
 $$J_\omega (w_k \otimes v_l) = \mu_{k,l}(\omega) \, (w_k \otimes v_l), \qquad
   \mu_{k,l}(\omega) = 1 - \omega\left(\sin^2\frac{k\pi}{2(n+1)} +
   \sin^2\frac{l\pi}{2(m+1)}\right).$$
+
+**Correction.** Correct product mode with nonzero-weight splitting.
 -/
 theorem equation_13_21_two (n m : ℕ) (hω : ω ≠ 0) (k : Fin n) (l : Fin m) :
     (jorSplitting (laplacian2D n m) (isUnit_diagPart_laplacian2D n m) hω).iterationOperator *ᵥ
@@ -743,7 +797,10 @@ $$|\mu_k(\omega)| = \left|1 - 2\omega\sin^2\frac{\theta_k}{2}\right| \le 1 -
 
 The book states that the spectral radius equals this bound, which is attained at $k = 1$; the
 Lean statement gives the bound for every $k$. So $\omega = 1$ is the best choice for the
-iteration as a solver, and every choice converges slowly. -/
+iteration as a solver, and every choice converges slowly.
+
+**Scope.** The theorem gives the absolute-value estimate used in the following spectral-radius
+discussion, for $0<\omega\le1$. The numbered display itself gives two signed bounds. -/
 theorem equation_13_22 (n : ℕ) (hω0 : 0 < ω) (hω1 : ω ≤ 1) (k : Fin n) :
     |1 - 2 * ω * Real.sin (theta n k / 2) ^ 2| ≤
       1 - 2 * ω * Real.sin (π / (2 * ((n : ℝ) + 1))) ^ 2 := by
@@ -787,6 +844,8 @@ theorem smoothingFactor_one_half (n : ℕ) {k : Fin n} (hk : n + 1 ≤ 2 * ((k :
 mesh-independent smoothing factor of weighted Jacobi is smallest at $\omega = 2/3$: if
 $k > n/2$, then
 $$\left|1 - 2 \cdot \tfrac23 \sin^2\frac{\theta_k}{2}\right| \le \frac13.$$
+
+**Reading.** Proves upper bound 1/3 for chosen weight; no minimax optimality assertion.
 -/
 theorem smoothingFactor_two_thirds (n : ℕ) {k : Fin n} (hk : n + 1 ≤ 2 * ((k : ℕ) + 1)) :
     |1 - 2 * (2 / 3 : ℝ) * Real.sin (theta n k / 2) ^ 2| ≤ 1 / 3 := by
@@ -801,7 +860,11 @@ $$1 - 2\omega < \mu_{k,l}(\omega) = 1 - \omega\left(\sin^2\frac{\theta_k}{2} +
   \sin^2\frac{\theta_l}{2}\right) \le 1 - \frac{\omega}{2}.$$
 
 Here the bound $1 - \omega/2$ of the book is sharp; the two ends have the same absolute value at
-$\omega = 4/5$. -/
+$\omega = 4/5$.
+
+**Reading.** Defines high frequency in at least one coordinate and uses simple strict lower endpoint
+without the sharper finite-grid additive term.
+-/
 theorem weightedJacobi2D_eigenvalue_mem_Ioc (n m : ℕ) (hω : 0 < ω) {k : Fin n} {l : Fin m}
     (hkl : n + 1 ≤ 2 * ((k : ℕ) + 1) ∨ m + 1 ≤ 2 * ((l : ℕ) + 1)) :
     1 - ω * (Real.sin (theta n k / 2) ^ 2 + Real.sin (theta m l / 2) ^ 2) ∈
@@ -908,7 +971,10 @@ private theorem pad_succ (v : Fin n → ℝ) (j : ℕ) :
 private theorem pad_val_succ (v : Fin n → ℝ) (i : Fin n) : pad v ((i : ℕ) + 1) = v i := by
   rw [pad_succ, dite_eq_left i.isLt]
 
-/-- The extended vector is $0$ past the upper boundary, at every index $j > n$. -/
+/-- The extended vector is $0$ past the upper boundary, at every index $j > n$.
+
+**Generalization.** Upper boundary and all larger natural indices extend by zero.
+-/
 private theorem pad_of_gt (v : Fin n → ℝ) {j : ℕ} (hj : n < j) : pad v j = 0 := by
   cases j with
   | zero => rfl
@@ -973,7 +1039,10 @@ private theorem gsLower_mulVec_apply (v : Fin n → ℝ) (i : Fin n) :
   ring
 
 /-- The extended Gauss–Seidel vector is $(\cos\theta_k)^j \sin(j\theta_k)$ at every index
-$j \le n + 1$: the values $0$ at both ends are $\sin 0 = 0$ and $\sin((n+1)\theta_k) = 0$. -/
+$j \le n + 1$: the values $0$ at both ends are $\sin 0 = 0$ and $\sin((n+1)\theta_k) = 0$.
+
+**Reading.** Signed cosine expression on the padded domain, including zero endpoints.
+-/
 private theorem pad_gaussSeidelVec (n : ℕ) (k : Fin n) {j : ℕ} (hj : j ≤ n + 1) :
     pad (gaussSeidelVec n k) j =
       Real.cos (theta n k) ^ j * Real.sin ((j : ℝ) * theta n k) := by
@@ -1003,7 +1072,10 @@ where $G$ is the Gauss–Seidel iteration matrix of the one-dimensional model pr
 At $\cos\theta_k = 0$, that is for $n$ odd and $k = (n+1)/2$, where the eigenvalue is $0$, the
 vector $u_k$ is zero and the identity says nothing. There the eigenvector is $e_1$
 (`SaadSparse.Chapter13.gaussSeidel1D_mulVec_single`). The vector $u_k$ is nonzero when
-$\cos\theta_k \neq 0$ (`SaadSparse.Chapter13.gaussSeidelVec_ne_zero`). -/
+$\cos\theta_k \neq 0$ (`SaadSparse.Chapter13.gaussSeidelVec_ne_zero`).
+
+**Reading.** Exact eigenrelation using signed formula, admitting zero vector when cosine is zero.
+-/
 theorem equation_13_29 (n : ℕ) (k : Fin n) :
     gaussSeidel1D n *ᵥ gaussSeidelVec n k = (Real.cos (theta n k) ^ 2) • gaussSeidelVec n k := by
   have key : laplacian1D n *ᵥ gaussSeidelVec n k =
@@ -1038,7 +1110,11 @@ theorem gaussSeidelVec_ne_zero (n : ℕ) {k : Fin n} (hk : Real.cos (theta n k) 
 /-- The degenerate case of (13.29) in Section 13.2.3 of [saad2003iterative]: for $n \ge 1$, the
 first unit vector $e_1$ satisfies $G e_1 = 0$, so it is an eigenvector of the Gauss–Seidel
 iteration matrix for the eigenvalue $0$. This replaces (13.29) at the eigenvalue $0$, where that
-formula gives the zero vector. -/
+formula gives the zero vector.
+
+**Reading.** Shows e₁ zero eigenvector for all positive sizes, including even n when no cosine is
+zero.
+-/
 theorem gaussSeidel1D_mulVec_single (n : ℕ) (hn : 0 < n) :
     gaussSeidel1D n *ᵥ (Pi.single ⟨0, hn⟩ 1 : Fin n → ℝ) = 0 := by
   have hkey : laplacian1D n *ᵥ (Pi.single ⟨0, hn⟩ 1 : Fin n → ℝ) =
@@ -1113,7 +1189,12 @@ numbers $\cos\theta_k$. The eigenvectors are given by (13.29),
 `SaadSparse.Chapter13.equation_13_29`. The smallest of these eigenvalues are those with $k$ near
 $n/2$, so Gauss–Seidel damps the middle of the spectrum fastest. This is not the same as damping
 the oscillatory modes, and it is why Section 13.2.3 ends without a smoothing factor. The
-statement is membership in `spectrum ℂ (complexify (gaussSeidel1D n))`. -/
+statement is membership in `spectrum ℂ (complexify (gaussSeidel1D n))`.
+
+**Scope.** These values belong to the spectrum. For even positive $n$ the zero eigenvalue also
+occurs, as `SaadSparse.Chapter13.gaussSeidel1D_mulVec_single` shows. The signed vectors from
+paired modes $k$ and $n+1-k$ in source indexing are negatives of each other, so this family
+cannot give the basis suggested after (13.29). -/
 theorem gaussSeidel_eigenvalues (n : ℕ) (k : Fin n) :
     ((Real.cos (theta n k) ^ 2 : ℝ) : ℂ) ∈ spectrum ℂ (complexify (gaussSeidel1D n)) := by
   by_cases hc : Real.cos (theta n k) = 0

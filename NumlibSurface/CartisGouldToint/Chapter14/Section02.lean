@@ -61,7 +61,7 @@ result of `Numlib.Optimization.Optimality.TaylorStability`, the sparse linear su
 * Lemma 14.2.2, TRq-SC row, `CartisGouldToint.Chapter14.trqSadF`,
   `CartisGouldToint.Chapter14.trqSadX`, `CartisGouldToint.Chapter14.trqSadP`: the objective
   $f_a(x) = x_1^2/2 - a x_2^2/2$, the box $[-1, 1]^2$ and the trust-region parameters of the
-  counterexample to the printed exponents.
+  counterexample to an alternative order-dependent exponent.
 
 ## Main results
 
@@ -75,8 +75,8 @@ result of `Numlib.Optimization.Optimality.TaylorStability`, the sparse linear su
 * Lemma 14.2.2, TRq-SC row, `CartisGouldToint.Chapter14.lemma_14_2_2_trq`,
   `CartisGouldToint.Chapter14.lemma_14_2_2_trq_anchored`: a successful iteration decreases $f$ by a
   multiple of $\epsilon_{\min}^{q+1}$.
-* Lemma 14.2.2, TRq-SC row, `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false`,
-  `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`: the printed exponents
+* `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false`,
+  `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`: the alternative exponents
   $\pi_j = j + 1$ fail for $q = 2$ with uniform constants.
 * Lemma 14.2.2, ARqp-SC row, `CartisGouldToint.Chapter14.lemma_14_2_2_arqp`,
   `CartisGouldToint.Chapter14.lemma_14_2_2_arqp_anchored`: the decrease $\eta_1 \kappa_{\Delta m}
@@ -148,8 +148,8 @@ coordinate with a parallel half-plane makes the criterion of ARqpIDA fail at the
 * The regularization methods have two radii modes, selected by a proposition $u$. If $u$ holds, the
   radii after a short step are $1$ and $\pi_j = (p+1)/(p-j+1)$. If $u$ fails, the radii satisfy a
   lower bound of the type (12.2.51) at every order and $\pi_j = j(p+1)/p$. The exponents are
-  `Optimization.arqpPiOf u p j` and `Optimization.arPiOf u p j`. The split of the source is the mode
-  $u = (q \le 2)$.
+  `Optimization.arqpPiOf u p j` and `Optimization.arPiOf u p j`. The source associates unit radii
+  with $q = 1$ and convex $X$, or with $q = 2$ and $X = \mathbb{R}^n$.
 * TRqIDA-SC and ARqpIDA-SC have no termination rule. For them, "before termination" means "before
   the first iterate that is approximately optimal on $X$".
 * The evaluation counts are `Optimization.funEvalCount` (one value at $x_0$ and one per iteration),
@@ -198,12 +198,15 @@ coordinate with a parallel half-plane makes the criterion of ARqpIDA fail at the
   `CartisGouldToint.Chapter14.sparseMeasure_eq`.
 * **Lemma 14.2.5** (generalization). The hypothesis $\|x\|_0 \le n_{\mathrm{nz}}$ is not needed. See
   `CartisGouldToint.Chapter14.lemma_14_2_5`.
-* **Lemma 14.2.2, TRq-SC row of (14.2.12)** (correction). The source prints $\pi_j = j + 1$, which
-  is stronger than what Lemmas 12.2.4, 13.1.5 and 13.3.2 give, inconsistent with the order
-  $O(\max_j \epsilon_j^{-(q+1)})$ of Theorem 14.2.4, and false per iteration for $q = 2$ with
-  $\kappa_{\mathrm{decr}}$ depending only on the algorithm parameters and the f.D1qLaB.X constants.
-  The TR rows use $\pi_j = q + 1$. See `CartisGouldToint.Chapter14.lemma_14_2_2_trq` and
+* **Lemma 14.2.2, TRq-SC row of (14.2.12)** (OCR discrepancy). The original PDF and the Lean
+  TR rows all use $\pi_j = q + 1$. The OCR reading $\pi_j = j + 1$ is false per iteration
+  for $q = 2$ with a constant depending only on the algorithm and f.D1qLaB.X constants. See
   `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`.
+* **Equation (14.2.4)** (correction). The model criticality test measures reduction from the
+  value of the model at the trial step, $m_k(s)$. The display in the source subtracts from $f(x)$.
+* **Lemma 14.2.2, ARqpC-SC row** (reading). The statement for general radii uses the composite
+  objective decrease and requires a successful step followed by a failed Step-1 test. The
+  convex first-order complexity statement uses a unit initial radius.
 * **Lemma 14.2.2, ARqpIDA-SC row** (correction). The decrease holds at the successful iterations
   that are followed by an iterate that is not approximately optimal, as in the correction of Lemma
   13.1.18. See `CartisGouldToint.Chapter14.lemma_14_2_2_arqpida`.
@@ -246,6 +249,8 @@ coordinate with a parallel half-plane makes the criterion of ARqpIDA fail at the
   the oracles (solving (14.2.2) and ensuring (14.2.5) costs no evaluation of $f$), not a
   mathematical property: the feasible set enters the run predicates only through the measures and
   the feasibility of the iterates, and the evaluation counts never charge the subproblems.
+* **Theorem 14.2.4, sharpness of the "otherwise" entry of the ARqpC-SC row.** Section 14.1 leaves
+  sharpness of (14.1.36)–(14.1.37) open. The convex first-order case is Corollary 14.1.11.
 * **Theorem 14.2.4, sharpness of the "otherwise" entry of the ARqpIDA-SC row on $X = \mathbb{R}^n$
   for $3 \le q < p$.** The claim of the table for this entry is met with a feasible set
   $X \neq \mathbb{R}^n$
@@ -584,7 +589,11 @@ case. This is the row $\pi_j = j + 1$ of (14.2.12).
 
 The radius policy (14.1.28) holds for every run, so it is not a hypothesis. The constant is
 `CartisGouldToint.Chapter14.kappaDm2`. The convex case $q = 1$ is the first part of
-`CartisGouldToint.Chapter14.lemma_14_1_9`. -/
+`CartisGouldToint.Chapter14.lemma_14_1_9`.
+
+**Correction.** Uses the composite objective, explicit next Step-1 failure and orderwise decrease,
+and the corrected constants from Section 14.1.
+-/
 theorem lemma_14_2_2_arqpc (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς) (hf : Chapter12.AssumptionD1pL f p Lf)
     (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {k : ℕ}
@@ -610,7 +619,11 @@ $\mathcal{S}_k$ is the set of successful iterations in $[0 : k]$ and $\sigma_{\m
 bound of Lemma 14.1.6.
 
 This is Lemma 2.4.1 with the bound $\sigma_{\max}$ of Lemma 14.1.6
-(`CartisGouldToint.Chapter14.arqpcSigmaMax`). -/
+(`CartisGouldToint.Chapter14.arqpcSigmaMax`).
+
+**Reading.** Adds an explicit ARqpC-SC count on the reached prefix from the regularization parameter
+bound.
+-/
 theorem lemma_14_2_3_arqpc (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hf : Chapter12.AssumptionD1pL f p Lf) (hc : AssumptionCD1pL c p Lc)
     (hL : AssumptionHLip h Lh) {k : ℕ} (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
@@ -635,7 +648,11 @@ of derivative evaluations is at most $N + 2$.
 This is part 2 of Theorem 14.1.10 for ARqpC-SC runs, with the measures taken over the feasible
 displacements and the additional conclusion $x_{k_\epsilon} \in X$. The constant
 $\kappa_{\Delta m}$ is `CartisGouldToint.Chapter14.kappaDm2` and $\sigma_{\max}$ is
-`CartisGouldToint.Chapter14.arqpcSigmaMax`. -/
+`CartisGouldToint.Chapter14.arqpcSigmaMax`.
+
+**Reading.** Explicit composite counts through first stop using any positive lower bound on the
+tolerance powers.
+-/
 theorem theorem_14_2_4_arqpc (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς) (hf : Chapter12.AssumptionD1pL f p Lf)
     (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {wlow : ℝ}
@@ -669,7 +686,10 @@ evaluations is at most $N + 2$.
 
 This is part 1 of Theorem 14.1.10 for ARqpC-SC runs, with the additional conclusion
 $x_{k_\epsilon} \in X$. The constant $\kappa_{\Delta m}$ is that of Lemma 14.1.9 in the convex
-case, `CartisGouldToint.Chapter14.kappaDm1`. -/
+case, `CartisGouldToint.Chapter14.kappaDm1`.
+
+**Correction.** Uses the corrected first-order composite constants and assumes unit initial radius.
+-/
 theorem theorem_14_2_4_arqpc_convex (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς) (hf : Chapter12.AssumptionD1pL f p Lf)
     (hc : AssumptionCD1pL c p Lc) (hL : AssumptionHLip h Lh) {wlow : ℝ}
@@ -702,7 +722,11 @@ ARqpC-SC. Let $h$ satisfy h.L and h.S0, let $\theta < \varsigma$, and consider a
 on $X$. Let $k$ be a successful iteration such that the termination test fails at the iterations
 $0, \dots, k$ and the Step-1 test fails at iteration $k + 1$. Then there is $j \in [1 : q]$ with
 $$w(x_k) - w(x_{k+1}) \ge \eta_1 \kappa_{\Delta m} \epsilon_j^{j+1},$$ with the constant
-$\kappa_{\Delta m}$ (`CartisGouldToint.Chapter14.kappaDm2`) of Lemma 14.1.9 in the general case. -/
+$\kappa_{\Delta m}$ (`CartisGouldToint.Chapter14.kappaDm2`) of Lemma 14.1.9 in the general case.
+
+**Correction.** Uses the composite objective, explicit next Step-1 failure and orderwise decrease,
+and the corrected constants from Section 14.1.
+-/
 theorem lemma_14_2_2_arqpc_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς)
     (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
@@ -727,7 +751,11 @@ iteration $k$ such that the termination test fails at all iterations before $k$ 
 \le \Big(1 + \frac{|\log \gamma_1|}{\log \gamma_2}\Big) |\mathcal{S}_k| +
 \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_2} \quad \text{(14.2.13)},$$ with
 $\sigma_{\max}$ of Lemma 14.1.6 and $\mathcal{S}_k$ the set of successful iterations in
-$[0 : k]$. -/
+$[0 : k]$.
+
+**Reading.** Adds an explicit ARqpC-SC count on the reached prefix from the regularization parameter
+bound.
+-/
 theorem lemma_14_2_3_arqpc_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
     (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) {k : ℕ}
@@ -753,7 +781,11 @@ evaluations is at most $$\Big(1 + \frac{|\log \gamma_1|}{\log \gamma_2}\Big) N +
 evaluations is at most $N + 2$.
 
 This is `CartisGouldToint.Chapter14.theorem_14_1_10_ii_anchored` for ARqpC-SC runs, with the
-additional conclusion $x_{k_\epsilon} \in X$. -/
+additional conclusion $x_{k_\epsilon} \in X$.
+
+**Reading.** Explicit composite counts through first stop using any positive lower bound on the
+tolerance powers.
+-/
 theorem theorem_14_2_4_arqpc_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς)
     (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
@@ -793,14 +825,15 @@ $$\Delta T_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\Delta)^{q+1}}{q!}
 \epsilon_{\min}^{q+1},$$ and if $k$ is successful ($\rho_k \ge \eta_1$), then
 $f(x_k) - f(x_{k+1})$ is at least $\eta_1$ times this bound.
 
-**Correction.** The table (14.2.12) prints $\pi_j = j + 1$ for TRq-SC. This is stronger than
-what Lemma 12.2.4 gives, and it is false per iteration for $q = 2$ with uniform constants
-(`CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`). Here $\pi_j = q + 1$ for
-every $j$: the decrease is a multiple of $\epsilon_{\min}^{q+1}$.
+The exponent $\pi_j = q + 1$ for every $j$ agrees with the original table (14.2.12).
 
 This is Lemma 12.2.4 with a feasible set. The normalization $L_j \ge 1$ is not needed. The
 constant $\kappa_\Delta$ of (12.2.14) is `Optimization.trqKappaDelta f P q L ϑ (x 0)`, and
-$\epsilon_{\min}$ is `Optimization.finMin 1 ε q`. -/
+$\epsilon_{\min}$ is `Optimization.finMin 1 ε q`.
+
+**Reading.** The q+1 exponent agrees with the PDF. Includes explicit model decrement and
+quantitative threshold hypotheses; the pairwise variant uses a general real inner product space.
+-/
 theorem lemma_14_2_2_trq (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : LipschitzDerivsAnchored f C C 1 q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
@@ -830,7 +863,11 @@ order is $O(\max_j \epsilon_j^{-(q+1)})$.
 
 This is Theorem 12.2.5 with a feasible set. The normalization $L_j \ge 1$ is not needed. The
 constants are `Optimization.kappaATRq`, `Optimization.kappaBTRq`, `Optimization.kappaCTRq` and
-`Optimization.kappaSTRq` of Theorem 12.2.5. -/
+`Optimization.kappaSTRq` of Theorem 12.2.5.
+
+**Reading.** Explicit counts and first stopping certificate, with tolerance-dependent logarithmic
+term and first-order through q-th order anchored regularity sufficient.
+-/
 theorem theorem_14_2_4_trq {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ f y)
     (hf : LipschitzDerivsAnchored f C C 1 q L) (hXC : X ⊆ C) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
@@ -952,7 +989,11 @@ normalization $L_j \ge 1$ is not needed. The other rows are
 `CartisGouldToint.Chapter14.lemma_14_2_3_trqida`,
 `CartisGouldToint.Chapter14.lemma_14_2_3_trqeda`,
 `CartisGouldToint.Chapter14.lemma_14_2_3_arqpida` and
-`CartisGouldToint.Chapter14.lemma_14_2_3_arqpeda`. -/
+`CartisGouldToint.Chapter14.lemma_14_2_3_arqpeda`.
+
+**Reading.** Explicit prefix count with logarithm of sigma_max/sigma_0 and matching
+algorithm-parameter coefficient.
+-/
 theorem lemma_14_2_3 (hf : LipschitzDerivsAnchored f C C 1 p L) (hXC : X ⊆ C) (hp : 1 ≤ p)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) :
@@ -1134,10 +1175,13 @@ $$\Delta T_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\Delta)^{q+1}}{q!}
 \epsilon_{\min}^{q+1},$$ and if $k$ is successful ($\rho_k \ge \eta_1$), then
 $f(x_k) - f(x_{k+1})$ is at least $\eta_1$ times this bound.
 
-**Correction.** As in `CartisGouldToint.Chapter14.lemma_14_2_2_trq`, the exponents are
-$\pi_j = q + 1$, not the printed $\pi_j = j + 1$.
+The exponent $\pi_j = q + 1$ agrees with (14.2.12).
 
-The constant $\kappa_\Delta$ of (12.2.14) is `Optimization.trqKappaDelta f P q L ϑ (x 0)`. -/
+The constant $\kappa_\Delta$ of (12.2.14) is `Optimization.trqKappaDelta f P q L ϑ (x 0)`.
+
+**Reading.** The q+1 exponent agrees with the PDF. Includes explicit model decrement and
+quantitative threshold hypotheses; the pairwise variant uses a general real inner product space.
+-/
 theorem lemma_14_2_2_trq_anchored (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
@@ -1159,7 +1203,11 @@ every iteration $k$ such that the termination test fails at all iterations befor
 $$k \le \Big(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\Big) |\mathcal{S}_k| +
 \frac{|\log(\min(\gamma_1 \vartheta, \kappa_\Delta \varsigma \epsilon_{\min}) /
 \Delta_0)|}{|\log \gamma_2|} \quad \text{(14.2.13)},$$ where $\mathcal{S}_k$ is the set of
-successful iterations in $[0 : k]$ and $\kappa_\Delta$ is the constant of (12.2.14). -/
+successful iterations in $[0 : k]$ and $\kappa_\Delta$ is the constant of (12.2.14).
+
+**Reading.** The prefix count has explicit parameters and the logarithm of the tolerance-dependent
+radius floor.
+-/
 theorem lemma_14_2_3_trq_anchored (h : Chapter12.algorithm_12_2_1_feasible f X P q ε ϑ x s Δ jk d)
     (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
@@ -1185,7 +1233,11 @@ f_{\mathrm{low}}}{\epsilon_{\min}^{q+1}} + \kappa^B_{\mathrm{TRq}} |\log \epsilo
 \kappa^C_{\mathrm{TRq}},$$ and the number of derivative evaluations is at most
 $\kappa^S_{\mathrm{TRq}} (f(x_0) - f_{\mathrm{low}}) / \epsilon_{\min}^{q+1} + 1$, with the
 constants of Theorem 12.2.5 (`Optimization.kappaATRq`, `Optimization.kappaBTRq`,
-`Optimization.kappaCTRq`, `Optimization.kappaSTRq`). -/
+`Optimization.kappaCTRq`, `Optimization.kappaSTRq`).
+
+**Reading.** Explicit counts and first stopping certificate, with tolerance-dependent logarithmic
+term and first-order through q-th order anchored regularity sufficient.
+-/
 theorem theorem_14_2_4_trq_anchored {flow : ℝ} (hb : AssumptionBbX f X flow)
     (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 q L B) (hx0 : x 0 ∈ X)
     (hε : ∀ j ∈ Finset.Icc 1 q, ε j ∈ Ioc 0 1) (hϑ : Optimization.finMin 1 ε q ≤ ϑ) (hϑ1 : ϑ ≤ 1)
@@ -1257,7 +1309,11 @@ run on $X$, every iteration $k$ such that the termination test fails at all iter
 $k$ satisfies $$k \le \Big(1 + \frac{|\log \gamma_1|}{\log \gamma_2}\Big) |\mathcal{S}_k| +
 \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_2} \quad \text{(14.2.13)}, \qquad
 \sigma_{\max} = \max\Big(\sigma_0, \frac{\gamma_3 L_p}{1 - \eta_2}\Big),$$ where $\mathcal{S}_k$
-is the set of successful iterations in $[0 : k]$. -/
+is the set of successful iterations in $[0 : k]$.
+
+**Reading.** Explicit prefix count with logarithm of sigma_max/sigma_0 and matching
+algorithm-parameter coefficient.
+-/
 theorem lemma_14_2_3_anchored (hf : AssumptionD1qLaBX f X X₀ (x 0) 1 p L B) (hp : 1 ≤ p)
     (h : Chapter12.algorithm_12_2_2_feasible f X P p q ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ Optimization.arqpStop f P p q ε x s σ δ d i) :
@@ -1360,8 +1416,7 @@ accuracy-improving, with $\rho_k \ge \eta_1$) satisfies $$f(x_k) - f(x_{k+1}) \g
 (\varsigma \kappa_\delta)^{q+1}}{2 \, q!} \epsilon_{\min}^{q+1}, \qquad \kappa_\delta =
 \kappa_\Delta / 2.$$
 
-**Correction.** As for TRq-SC (`CartisGouldToint.Chapter14.lemma_14_2_2_trq`), the exponents are
-$\pi_j = q + 1$, not the printed $\pi_j = j + 1$.
+The exponent $\pi_j = q + 1$ is the TRq-SC exponent in (14.2.12).
 
 This is Lemma 13.1.5 with a feasible set. The admissibility of $\kappa_\Delta$ is
 `Optimization.IsTRKappaDelta`, and `Optimization.epsMin q ε` is $\epsilon_{\min}$. -/
@@ -1439,7 +1494,11 @@ every iteration $k$ such that no iterate before $x_k$ is approximately optimal o
 $$k \le \Big(1 + \frac{\log \gamma_3}{|\log \gamma_2|}\Big) |\mathcal{S}_k| +
 \frac{|\log(\varsigma \kappa_\delta \epsilon_{\min} / \Delta_0)|}{|\log \gamma_2|} +
 N_{\mathcal{A}} \quad \text{(14.2.13)},$$ with $\mathcal{S}_k$ and $N_{\mathcal{A}}$ as in
-`CartisGouldToint.Chapter14.lemma_14_2_3_trqida`. -/
+`CartisGouldToint.Chapter14.lemma_14_2_3_trqida`.
+
+**Reading.** Before first approximately optimal iterate, with explicit logarithmic radius and
+accuracy overhead.
+-/
 theorem lemma_14_2_3_trqida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.q L B)
     (hrun : IsTRqIDARun f X κg P ε x₀ x Δ h D dd jk s acc)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) {k : ℕ}
@@ -1473,7 +1532,11 @@ the order is $O(\max_j \epsilon_j^{-(q+1)})$.
 This is Theorem 13.1.8 with a feasible set. The constants are `Optimization.trKappaS` and
 `Optimization.trKappaAcc` as in `CartisGouldToint.Chapter14.lemma_14_2_3_trqida`; the counts are
 `Optimization.derivEvalCount` of the trial iterations and of the successful or
-accuracy-improving iterations. -/
+accuracy-improving iterations.
+
+**Reading.** First approximately optimal iterate and explicit function and derivative counts with
+logarithmic overhead.
+-/
 theorem theorem_14_2_4_trqida (hf : LipschitzDerivsAnchored f C C 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
@@ -1509,6 +1572,9 @@ most $$N + \frac{|\log \epsilon_{\min}|}{|\log \gamma_2|} + \frac{|\log(\varsigm
 / (2 \Delta_0))|}{|\log \gamma_2|} + 1,$$ and the number of derivative evaluations is at most
 $$N + \frac{q(q+1)}{|\log \gamma_h|} |\log \epsilon_{\min}| + \frac{|\log(\kappa_{\mathrm{acc}}
 / \kappa_h)|}{|\log \gamma_h|} + 2.$$
+
+**Reading.** First approximately optimal iterate and explicit function and derivative counts with
+logarithmic overhead.
 -/
 theorem theorem_14_2_4_trqida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.q L B) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
@@ -1553,8 +1619,7 @@ successful iteration $k$ before termination (not accuracy-improving, with the in
 \kappa_\delta)^{q+1}}{2 \, q!} \epsilon_{\min}^{q+1}, \qquad \kappa_\delta = \kappa_\Delta /
 2.$$
 
-**Correction.** As for TRq-SC (`CartisGouldToint.Chapter14.lemma_14_2_2_trq`), the exponents are
-$\pi_j = q + 1$, not the printed $\pi_j = j + 1$.
+The exponent $\pi_j = q + 1$ is the TRq-SC exponent in (14.2.12).
 
 This is Lemma 13.3.2 with a feasible set. The termination test is `Optimization.edaStopTR` and
 the ratio is `Optimization.edaRatio`. -/
@@ -1631,7 +1696,10 @@ $\kappa_\delta = \kappa_\Delta / 2$. Then every iteration $k$ such that the term
 fails at all iterations before $k$ satisfies $$k \le \Big(1 + \frac{\log \gamma_3}{|\log
 \gamma_2|}\Big) |\mathcal{S}_k| + \frac{|\log(\varsigma \kappa_\delta \epsilon_{\min} /
 \Delta_0)|}{|\log \gamma_2|} + N_{\mathcal{A}} \quad \text{(14.2.13)},$$ with $\mathcal{S}_k$
-and $N_{\mathcal{A}}$ as in `CartisGouldToint.Chapter14.lemma_14_2_3_trqeda`. -/
+and $N_{\mathcal{A}}$ as in `CartisGouldToint.Chapter14.lemma_14_2_3_trqeda`.
+
+**Reading.** Explicit prefix bound shows tolerance-dependent radius and accuracy overhead.
+-/
 theorem lemma_14_2_3_trqeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.q L B)
     (hrun : IsTRqEDARun f X P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R)
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ) {k : ℕ}
@@ -1665,7 +1733,11 @@ $$N + \frac{q(q+1)}{|\log \gamma_h|} |\log \epsilon_{\min}| + \frac{|\log(\kappa
 $O(\max_j \epsilon_j^{-(q+1)})$.
 
 This is Theorem 13.3.4 with a feasible set. The function evaluations are counted by
-`Optimization.edaFunEvalCount`. -/
+`Optimization.edaFunEvalCount`.
+
+**Reading.** Explicit first stopping certificate and inexact value and derivative counts, including
+logarithmic terms.
+-/
 theorem theorem_14_2_4_trqeda (hf : LipschitzDerivsAnchored f C C 0 P.q L)
     (hL : ∀ j ≤ P.q, 1 ≤ L j) (hXC : X ⊆ C) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
@@ -1704,6 +1776,9 @@ inexact function evaluations is at most $$2 N + \frac{2 |\log \epsilon_{\min}|}{
 1\Big),$$ and the number of derivative evaluations is at most $$N + \frac{q(q+1)}{|\log
 \gamma_h|} |\log \epsilon_{\min}| + \frac{|\log(\kappa_{\mathrm{acc}} / \kappa_h)|}{|\log
 \gamma_h|} + 2.$$
+
+**Reading.** Explicit first stopping certificate and inexact value and derivative counts, including
+logarithmic terms.
 -/
 theorem theorem_14_2_4_trqeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.q L B) {flow : ℝ}
     (hb : ∀ y ∈ X, flow ≤ f y)
@@ -1855,7 +1930,11 @@ iteration $k$ such that no iterate before $x_k$ is approximately optimal on $X$ 
 \le \Big(1 + \frac{|\log \gamma_1|}{\log \gamma_2}\Big) |\mathcal{S}_k| +
 \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_2} + N_{\mathcal{A}} \quad \text{(14.2.13)},$$
 with $\mathcal{S}_k$, $\sigma_{\max}$ and $N_{\mathcal{A}}$ as in
-`CartisGouldToint.Chapter14.lemma_14_2_3_arqpida`. -/
+`CartisGouldToint.Chapter14.lemma_14_2_3_arqpida`.
+
+**Reading.** Counts only up to first approximately optimal iterate and shows accuracy-improvement
+overhead.
+-/
 theorem lemma_14_2_3_arqpida_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B)
     (hrun : IsARqpIDARun f X κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
     (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + ordMax P.p κg * P.κh) σ δs s acc i) {k : ℕ}
@@ -1990,7 +2069,11 @@ nonincreasing in $\delta$ for $j \le 2$. Hence the bound of
 $\epsilon^{-2(p+1)/p}$, is not sharp for $q = 2 < p$ on $\mathbb{R}^n$: it exceeds
 $\epsilon^{-(p+1)/(p-1)}$. For ARqpEDA, in contrast, the order of the lower-bound mode is
 attained on $X = \mathbb{R}^1$
-(`CartisGouldToint.Chapter14.theorem_14_2_4_sharp_arqpeda_otherwise`). -/
+(`CartisGouldToint.Chapter14.theorem_14_2_4_sharp_arqpeda_otherwise`).
+
+**Reading.** Derives the unit-radius rates for every unconstrained run at orders one and two even
+when the recorded radii use the other mode.
+-/
 theorem theorem_14_2_4_arqpida_le_two (hf : LipschitzDerivsAnchored f univ univ 0 P.p L)
     (hL : ∀ j ≤ P.p, 1 ≤ L j) {flow : ℝ}
     (hb : ∀ y, flow ≤ f y) (hq2 : P.q ≤ 2)
@@ -2152,7 +2235,11 @@ iteration $k$ such that the termination test fails at all iterations before $k$ 
 \le \Big(1 + \frac{|\log \gamma_1|}{\log \gamma_2}\Big) |\mathcal{S}_k| +
 \frac{\log(\sigma_{\max}/\sigma_0)}{\log \gamma_2} + N_{\mathcal{A}} \quad \text{(14.2.13)},$$
 with $\mathcal{S}_k$, $\sigma_{\max}$ and $N_{\mathcal{A}}$ as in
-`CartisGouldToint.Chapter14.lemma_14_2_3_arqpeda`. -/
+`CartisGouldToint.Chapter14.lemma_14_2_3_arqpeda`.
+
+**Reading.** Explicit prefix bound includes accuracy-improving iterations and logarithmic dependence
+on tolerance.
+-/
 theorem lemma_14_2_3_arqpeda_anchored (hf : AssumptionD0qLaBX f X X₀ x₀ P.p L B)
     (hrun : IsARqpEDARun f X P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hrc : ∀ i, ARqpDARadiiControl u P ε (lipMax L P.p + P.κh) σ δs s acc i) {k : ℕ}
@@ -2434,7 +2521,11 @@ The run is the slow example of Theorem 12.2.17 with $r = p$, which stays in $(-\
 together with its displacements, so it is a run on $X$. This covers the "otherwise" entries of
 the table for $q = 1$ (nonconvex $X$) and $q = 2$ ($X \neq \mathbb{R}^n$), which the source's
 reduction to $X = \mathbb{R}^n$ does not reach. For $q > 2$ it complements
-`CartisGouldToint.Chapter14.theorem_14_2_4_sharp_arqp`, which uses $X = \mathbb{R}$. -/
+`CartisGouldToint.Chapter14.theorem_14_2_4_sharp_arqp`, which uses $X = \mathbb{R}$.
+
+**Reading.** Exhibits the rate for all positive q by imposing the small-radius mode directly,
+including in unconstrained cases.
+-/
 theorem theorem_14_2_4_sharp_arqp_otherwise {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 / 2 → ∀ P : ARqpParams,
       P.σ₀ = Chapter12.arqpSigmaSharp p q →
@@ -2901,23 +2992,24 @@ set_option hygiene false in
 local notation "ℝ²" => EuclideanSpace ℝ (Fin 2)
 
 /-!
-### Failure of the TRq-SC row $\pi_j = j + 1$ of (14.2.12) for $q = 2$
+### Failure of the alternative TRq-SC exponent $\pi_j = j + 1$ for $q = 2$
 
-For $q = 2$ the printed TRq-SC row of (14.2.12) fails per iteration with uniform constants. The
-example is the backbone module `Numlib.Optimization.Complexity.SlowExample.TRqSaddle`.
+For $q = 2$ the OCR reading $\pi_j = j + 1$ fails per iteration with uniform constants.
+The original PDF has $\pi_j = q + 1$. The example is in
+`Numlib.Optimization.Complexity.SlowExample.TRqSaddle`.
 -/
 
-/-- The objective $f_a(x) = x_1^2/2 - a x_2^2/2$ on $\mathbb{R}^2$ of the counterexample to the
-TRq-SC row of (14.2.12) of [cartis2022evaluation]. It is `Optimization.saddleQuad`, with $x_1$
-and $x_2$ the coordinates `v 0` and `v 1`. -/
+/-- The objective $f_a(x) = x_1^2/2 - a x_2^2/2$ on $\mathbb{R}^2$ of the counterexample to
+the alternative exponent $\pi_j = j + 1$. It is `Optimization.saddleQuad`, with $x_1$ and $x_2$
+the coordinates `v 0` and `v 1`. -/
 noncomputable abbrev trqSadF (a : ℝ) : ℝ² → ℝ := saddleQuad a
 
-/-- The box $X = [-1, 1]^2$ of the counterexample to the TRq-SC row of (14.2.12) of
-[cartis2022evaluation]. It is `Optimization.saddleBox`. -/
+/-- The box $X = [-1, 1]^2$ of the counterexample to the alternative exponent $\pi_j = j + 1$.
+It is `Optimization.saddleBox`. -/
 abbrev trqSadX : Set ℝ² := saddleBox
 
-/-- The trust-region parameters of the counterexample to the TRq-SC row of (14.2.12) of
-[cartis2022evaluation]: $\Delta_0 = \Delta_{\max} = 1$, $\eta_1 = 1/4$, $\eta_2 = 3/4$,
+/-- The trust-region parameters of the counterexample to the alternative exponent
+$\pi_j = j + 1$ are $\Delta_0 = \Delta_{\max} = 1$, $\eta_1 = 1/4$, $\eta_2 = 3/4$,
 $\gamma_1 = 1/4$, $\gamma_2 = 1/2$, $\gamma_3 = 2$ and $\varsigma = 1/2$. They are
 `Optimization.saddleTRqParams`. -/
 noncomputable abbrev trqSadP : Optimization.TRqParams := saddleTRqParams
@@ -2933,8 +3025,8 @@ theorem trqSadF_assumption {a : ℝ} (ha0 : 0 ≤ a) (ha1 : a ≤ 1) (x₀ : ℝ
     (fun _ hj => iteratedFDerivLipschitzOn_saddleQuad ha0 ha1 hj)
     (fun _ hj _ hx => norm_iteratedFDeriv_saddleQuad_le_four ha0 ha1 hj hx)
 
-/-- **Lemma 14.2.2** of [cartis2022evaluation], TRq-SC row of (14.2.12), counterexample to the
-printed exponents $\pi_j = j + 1$ for $q = 2$. Consider the TRq parameters
+/-- Counterexample to the alternative exponents $\pi_j = j + 1$ for $q = 2$ in the TRq-SC
+decrease relation (14.2.11) of [cartis2022evaluation]. Consider the TRq parameters
 `CartisGouldToint.Chapter14.trqSadP`, the threshold $\vartheta = 1$ and the box $X = [-1, 1]^2$.
 For every $\kappa > 0$ there are $a \in (0, 1]$, tolerances $\epsilon \in (0, 1]^2$ and a TRq-SC
 run on $X$ for $f_a(x) = x_1^2/2 - a x_2^2/2$ with $x_0 \in X$, where $f_a$ satisfies f.D1qLaB.X
@@ -2968,8 +3060,8 @@ theorem lemma_14_2_2_trq_printed_false {κ : ℝ} (hκ : 0 < κ) :
   exact ⟨a, ε, x, s, Δ, jk, d, k, ha0, ha1, hε, hx0, trqSadF_assumption ha0.le ha1 (x 0), hrun,
     hns, hρ, hlt⟩
 
-/-- **Lemma 14.2.2** of [cartis2022evaluation], TRq-SC row of (14.2.11)–(14.2.12) for $q = 2$: there
-is no uniform $\kappa_{\mathrm{decr}}$ for the printed exponents $\pi_j = j + 1$. There is no
+/-- For $q = 2$ the TRq-SC decrease relation (14.2.11) of [cartis2022evaluation] lacks a uniform
+$\kappa_{\mathrm{decr}}$ with the alternative exponents $\pi_j = j + 1$. There is no
 $\kappa > 0$ such that, for every $a \in (0, 1]$, every $\epsilon \in (0, 1]^2$, every TRq-SC
 run with the parameters `CartisGouldToint.Chapter14.trqSadP`, $\vartheta = 1$ and
 $X = [-1, 1]^2$ on $f_a(x) = x_1^2/2 - a x_2^2/2$ for which $f_a$ satisfies f.D1qLaB.X on the

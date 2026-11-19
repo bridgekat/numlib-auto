@@ -114,8 +114,8 @@ from there.
 
 ## Implementation notes
 
-* After a breakdown, division by zero gives $0$ in Lean, so every later vector is $0$; this is the
-  book's "Stop", and the definitions are total.
+* At a breakdown the normalization uses totalized division, so the new vectors and every later
+  pair are $0$.
 * `SaadSparse.Chapter07.NoSeriousBreakdown` is the weaker global hypothesis that the Hessenberg
   relation needs: a vanishing $(\hat v_{j+1}, \hat w_{j+1})$ must come with $\hat v_{j+1} = 0$. It
   does not follow from `SaadSparse.Chapter07.NoBreakdown A v₁ w₁ m` for any $m$, because in finite
@@ -130,6 +130,66 @@ from there.
 
 ## Deviations from the source
 
+* **Generalization.** The two-sided Lanczos matrices use the totalized vector and coefficient
+  sequences. See `SaadSparse.Chapter07.bilanczosCoeff`, `SaadSparse.Chapter07.T`,
+  `SaadSparse.Chapter07.Tbar`, `SaadSparse.Chapter07.V`, `SaadSparse.Chapter07.W`,
+  `SaadSparse.Chapter07.T_apply`, `SaadSparse.Chapter07.Tbar_apply`, `SaadSparse.Chapter07.V_apply`,
+  `SaadSparse.Chapter07.W_apply`.
+* **Generalization.** Biorthogonality and the span identities extend to complex matrices with the
+  adjoint. See `SaadSparse.Chapter07.proposition_7_1`, `SaadSparse.Chapter07.proposition_7_1'`,
+  `SaadSparse.Chapter07.proposition_7_1_span`, `SaadSparse.Chapter07.span_bilanczosV_succ`.
+* **Scope.** The full-rank declaration certifies an $m$-column prefix after $m$ successful steps.
+  See `SaadSparse.Chapter07.problem_7_2`.
+* **Reading.** The combined matrix expansion uses a single successful-step hypothesis and two
+  adjacent sizes. See `SaadSparse.Chapter07.apply_bilanczosV_sum`,
+  `SaadSparse.Chapter07.apply_bilanczosW_sum`, `SaadSparse.Chapter07.equation_7_3`.
+* **Reading.** The global primal Hessenberg relation imposes a primal termination hypothesis. See
+  `SaadSparse.Chapter07.bilanczos_hessenbergRelation`.
+* **Generalization.** The projected matrix result includes both complex adjoint compressions. See
+  `SaadSparse.Chapter07.equation_7_5`.
+* **Scope.** The exercise declarations give the primal projector and the Lanczos-pair intersection.
+  See `SaadSparse.Chapter07.problem_7_6`, `SaadSparse.Chapter07.problem_7_6_inf_eq_bot`.
+* **Scope.** The lucky-breakdown results concern termination and invariance on the primal side. See
+  `SaadSparse.Chapter07.noSeriousBreakdown_of_bilanczosVhat_eq_zero`,
+  `SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`.
+* **Generalization.** The Lanczos moment form remains bilinear over the complex field. See
+  `SaadSparse.Chapter07.polyForm`, `SaadSparse.Chapter07.momentMatrix`,
+  `SaadSparse.Chapter07.polyForm_eq_moment`, `SaadSparse.Chapter07.momentMatrix_apply_eq_of_add_eq`.
+* **Reading.** The formal polynomial sequence is total, with degree and orthogonality proved on
+  nonbroken prefixes. See `SaadSparse.Chapter07.bilanczosPoly`,
+  `SaadSparse.Chapter07.bilanczosVhat_eq_aeval`, `SaadSparse.Chapter07.bilanczosPoly_natDegree`,
+  `SaadSparse.Chapter07.polyForm_bilanczosPoly_eq_zero`.
+* **Correction.** The dual polynomial evaluation uses the dual initial vector. See
+  `SaadSparse.Chapter07.bilanczosWhat_eq_smul`.
+* **Correction.** The polynomial criterion detects the zero pairing in both breakdown cases. See
+  `SaadSparse.Chapter07.breakdown_iff_polyForm_eq_zero`.
+* **Reading.** The unit-norm variant is expressed by rescaled vectors and the entries of its
+  projected pencil. See `SaadSparse.Chapter07.bilanczosVUnit`,
+  `SaadSparse.Chapter07.bilanczosWUnit`, `SaadSparse.Chapter07.problem_7_3`.
+* **Reading.** The dual starting vector is computed by rescaling an arbitrary candidate. See
+  `SaadSparse.Chapter07.w₁`, `SaadSparse.Chapter07.inner_w₁_v₁`.
+* **Generalization.** The two-sided Lanczos recurrence extends to complex scalars and totalizes
+  breakdown. See `SaadSparse.Chapter07.bilanczosStep`, `SaadSparse.Chapter07.bilanczos`,
+  `SaadSparse.Chapter07.bilanczosV`, `SaadSparse.Chapter07.bilanczosW`,
+  `SaadSparse.Chapter07.bilanczosVPrev`, `SaadSparse.Chapter07.bilanczosWPrev`,
+  `SaadSparse.Chapter07.bilanczosBeta`, `SaadSparse.Chapter07.bilanczosDelta`,
+  `SaadSparse.Chapter07.bilanczosAlpha`, `SaadSparse.Chapter07.bilanczosVhat`,
+  `SaadSparse.Chapter07.bilanczosWhat`, `SaadSparse.Chapter07.bilanczosVPrev_succ`,
+  `SaadSparse.Chapter07.bilanczosWPrev_succ`, `SaadSparse.Chapter07.bilanczosDelta_succ`,
+  `SaadSparse.Chapter07.bilanczosBeta_succ`, `SaadSparse.Chapter07.bilanczosW_succ`,
+  `SaadSparse.Chapter07.bilanczosV_succ`.
+* **Generalization.** The normalization coefficients have the same modulus at every index. See
+  `SaadSparse.Chapter07.norm_bilanczosBeta_succ`.
+* **Generalization.** The normalization product identity also holds at zero in the totalized
+  recurrence. See `SaadSparse.Chapter07.equation_7_1`.
+* **Generalization.** The admissible normalization rule conjugates the denominator for the complex
+  dual vector. See `SaadSparse.Chapter07.inner_smul_smul_eq_one`.
+* **Reading.** The alternative normalization preserves the pairing by applying unit norm only on the
+  primal side. See `SaadSparse.Chapter07.equation_7_1_norm`.
+* **Reading.** The no-breakdown predicate counts completed normalizations after initialization. See
+  `SaadSparse.Chapter07.NoBreakdown`.
+* **Reading.** The no-serious-breakdown predicate is specific to the primal expansion. See
+  `SaadSparse.Chapter07.NoSeriousBreakdown`.
 * **Exercise P-7.5** (correction). The book says that $t^k p_j$ is orthogonal to
   $p_1, \dots, p_{j-k}$; the range is one polynomial too long, and the statement here stops at
   $p_{j-k-1}$. The worked example of Section 7.1.2 has the same off-by-one. See
@@ -167,7 +227,12 @@ $v_1 = r_0/\|r_0\|$ with $r_0 = b - Ax_0$, and let $w$ be a vector, in Algorithm
 residual $r_0^* = b^* - A^H x_0^*$. Then
 $$w_1 = \frac{w}{(w, v_1)},$$
 so that $(v_1, w_1) = 1$. If $(w, v_1) = 0$, no such rescaling exists, and $w_1 = 0$ by division
-by zero in Lean. -/
+by zero in Lean.
+
+**Reading.** The source permits any pair with the required inner product. Lean forms the primal
+vector from the normalized residual and rescales a supplied dual vector. When the cross inner
+product vanishes, totalized division produces zero and the normalization theorem does not apply.
+-/
 noncomputable def w₁ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w : EuclideanSpace 𝕜 (Fin n)) :
     EuclideanSpace 𝕜 (Fin n) :=
   (inner 𝕜 (Chapter06.v₁ A b x₀) w)⁻¹ • w
@@ -176,7 +241,12 @@ noncomputable def w₁ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w : EuclideanSp
 vector satisfies $(v_1, w_1) = 1$.
 
 In Mathlib's inner product, which is conjugate-linear in the first argument, $(v_1, w_1)$ is
-`inner 𝕜 w₁ v₁`. -/
+`inner 𝕜 w₁ v₁`.
+
+**Reading.** The source permits any pair with the required inner product. Lean forms the primal
+vector from the normalized residual and rescales a supplied dual vector. When the cross inner
+product vanishes, totalized division produces zero and the normalization theorem does not apply.
+-/
 theorem inner_w₁_v₁ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w : EuclideanSpace 𝕜 (Fin n))
     (hw : inner 𝕜 (Chapter06.v₁ A b x₀) w ≠ 0) :
     inner 𝕜 (w₁ A b x₀ w) (Chapter06.v₁ A b x₀) = 1 := by
@@ -202,7 +272,13 @@ w_{j-1}$, the scalars $\delta_{j+1} = |(\hat v_{j+1}, \hat w_{j+1})|^{1/2}$ and 
 \beta_{j+1}, \delta_{j+1})$ with $v_{j+1} = \hat v_{j+1}/\delta_{j+1}$ and
 $w_{j+1} = \hat w_{j+1}/\bar\beta_{j+1}$.
 
-The state is the backbone record `BiLanczos.State`. -/
+The state is the backbone record `BiLanczos.State`.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosStep (s : BiLanczos.State 𝕜 (EuclideanSpace 𝕜 (Fin n))) :
     BiLanczos.State 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 s.w (op A s.v)
@@ -222,36 +298,84 @@ steps of the procedure started from the pair $(v_1, w_1)$, with $v_0 = w_0 = 0$ 
 $\beta_1 = \delta_1 = 0$.
 
 The state holds $(v_{j+1}, w_{j+1}, v_j, w_j, \beta_{j+1}, \delta_{j+1})$. A breakdown makes all
-later vectors $0$, by division by zero in Lean. -/
+later vectors $0$, by division by zero in Lean.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczos (j : ℕ) : BiLanczos.State 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
   (bilanczosStep A)^[j] { v := v₁, w := w₁, vPrev := 0, wPrev := 0, beta := 0, delta := 0 }
 
 /-- **Algorithm 7.1** of [saad2003iterative], the primal Lanczos vectors:
-`SaadSparse.Chapter07.bilanczosV A v₁ w₁ j` is $v_{j+1}$. -/
+`SaadSparse.Chapter07.bilanczosV A v₁ w₁ j` is $v_{j+1}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosV (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).v
 
 /-- **Algorithm 7.1** of [saad2003iterative], the dual Lanczos vectors:
-`SaadSparse.Chapter07.bilanczosW A v₁ w₁ j` is $w_{j+1}$. -/
+`SaadSparse.Chapter07.bilanczosW A v₁ w₁ j` is $w_{j+1}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosW (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).w
 
 /-- The previous primal vector: `SaadSparse.Chapter07.bilanczosVPrev A v₁ w₁ j` is $v_j$, with
-$v_0 = 0$ as in line 2 of Algorithm 7.1. -/
+$v_0 = 0$ as in line 2 of Algorithm 7.1.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosVPrev (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).vPrev
 
 /-- The previous dual vector: `SaadSparse.Chapter07.bilanczosWPrev A v₁ w₁ j` is $w_j$, with
-$w_0 = 0$ as in line 2 of Algorithm 7.1. -/
+$w_0 = 0$ as in line 2 of Algorithm 7.1.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosWPrev (j : ℕ) : EuclideanSpace 𝕜 (Fin n) := (bilanczos A v₁ w₁ j).wPrev
 
 /-- **Algorithm 7.1** of [saad2003iterative], line 8, the superdiagonal coefficients:
-`SaadSparse.Chapter07.bilanczosBeta A v₁ w₁ j` is $\beta_{j+1}$, with $\beta_1 = 0$. -/
+`SaadSparse.Chapter07.bilanczosBeta A v₁ w₁ j` is $\beta_{j+1}$, with $\beta_1 = 0$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosBeta (j : ℕ) : 𝕜 := (bilanczos A v₁ w₁ j).beta
 
 /-- **Algorithm 7.1** of [saad2003iterative], line 7, the subdiagonal coefficients:
-`SaadSparse.Chapter07.bilanczosDelta A v₁ w₁ j` is $\delta_{j+1}$, with $\delta_1 = 0$. -/
+`SaadSparse.Chapter07.bilanczosDelta A v₁ w₁ j` is $\delta_{j+1}$, with $\delta_1 = 0$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosDelta (j : ℕ) : 𝕜 := (bilanczos A v₁ w₁ j).delta
 
 /-- **Algorithm 7.1** of [saad2003iterative], line 4, the diagonal coefficients
-$\alpha_j = (Av_j, w_j)$: `SaadSparse.Chapter07.bilanczosAlpha A v₁ w₁ j` is $\alpha_{j+1}$. -/
+$\alpha_j = (Av_j, w_j)$: `SaadSparse.Chapter07.bilanczosAlpha A v₁ w₁ j` is $\alpha_{j+1}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 (bilanczosW A v₁ w₁ j) (op A (bilanczosV A v₁ w₁ j))
 
@@ -259,7 +383,13 @@ noncomputable def bilanczosAlpha (j : ℕ) : 𝕜 :=
 $$\hat v_{j+1} = Av_j - \alpha_j v_j - \beta_j v_{j-1}.$$
 
 `SaadSparse.Chapter07.bilanczosVhat A v₁ w₁ j` is the vector computed from $v_{j+1}$, that is,
-the book's $\hat v_{j+2}$. -/
+the book's $\hat v_{j+2}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosVhat (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   op A (bilanczosV A v₁ w₁ j) - bilanczosAlpha A v₁ w₁ j • bilanczosV A v₁ w₁ j -
     bilanczosBeta A v₁ w₁ j • bilanczosVPrev A v₁ w₁ j
@@ -268,7 +398,13 @@ noncomputable def bilanczosVhat (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
 $$\hat w_{j+1} = A^H w_j - \bar\alpha_j w_j - \bar\delta_j w_{j-1}.$$
 
 `SaadSparse.Chapter07.bilanczosWhat A v₁ w₁ j` is the vector computed from $w_{j+1}$, that is,
-the book's $\hat w_{j+2}$. -/
+the book's $\hat w_{j+2}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 noncomputable def bilanczosWhat (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   op Aᴴ (bilanczosW A v₁ w₁ j) - starRingEnd 𝕜 (bilanczosAlpha A v₁ w₁ j) • bilanczosW A v₁ w₁ j -
     starRingEnd 𝕜 (bilanczosDelta A v₁ w₁ j) • bilanczosWPrev A v₁ w₁ j
@@ -361,25 +497,49 @@ theorem bilanczosWhat_eq (j : ℕ) :
 /-- Algorithm 7.1, line 2: $\delta_1 = 0$. -/
 @[simp] theorem bilanczosDelta_zero : bilanczosDelta A v₁ w₁ 0 = 0 := rfl
 
-/-- The previous primal vector after step $j + 1$ is $v_{j+1}$. -/
+/-- The previous primal vector after step $j + 1$ is $v_{j+1}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 @[simp] theorem bilanczosVPrev_succ (j : ℕ) :
     bilanczosVPrev A v₁ w₁ (j + 1) = bilanczosV A v₁ w₁ j := by
   rw [bilanczosVPrev_eq, bilanczosV_eq, BiLanczos.vecPrev_succ]
 
-/-- The previous dual vector after step $j + 1$ is $w_{j+1}$. -/
+/-- The previous dual vector after step $j + 1$ is $w_{j+1}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 @[simp] theorem bilanczosWPrev_succ (j : ℕ) :
     bilanczosWPrev A v₁ w₁ (j + 1) = bilanczosW A v₁ w₁ j := by
   rw [bilanczosWPrev_eq, bilanczosW_eq, BiLanczos.dualVecPrev_succ]
 
 /-- Algorithm 7.1, line 7: for every $j \ge 1$, $\delta_{j+1} = |(\hat v_{j+1}, \hat
-w_{j+1})|^{1/2}$. -/
+w_{j+1})|^{1/2}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 theorem bilanczosDelta_succ (j : ℕ) : bilanczosDelta A v₁ w₁ (j + 1) =
     ((Real.sqrt ‖inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j)‖ : ℝ) : 𝕜) := by
   rw [bilanczosDelta_eq, bilanczosWhat_eq, bilanczosVhat_eq, BiLanczos.delta_succ]
   rfl
 
 /-- Algorithm 7.1, line 8: for every $j \ge 1$, $\beta_{j+1} = (\hat v_{j+1}, \hat
-w_{j+1})/\delta_{j+1}$. -/
+w_{j+1})/\delta_{j+1}$.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 theorem bilanczosBeta_succ (j : ℕ) : bilanczosBeta A v₁ w₁ (j + 1) =
     inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) /
       bilanczosDelta A v₁ w₁ (j + 1) := by
@@ -391,19 +551,35 @@ theorem bilanczosBeta_succ (j : ℕ) : bilanczosBeta A v₁ w₁ (j + 1) =
 Algorithm 7.1, $|\beta_j| = |\delta_j|$ for every $j \ge 2$; the book says that "the
 $\delta_j$'s are positive and $\beta_j = \pm\delta_j$".
 
-The equality holds at every step, with no hypothesis on breakdown. -/
+The equality holds at every step, with no hypothesis on breakdown.
+
+**Generalization.** The equality of moduli replaces the real sign relation for complex coefficients
+and also covers the zero coefficients at breakdown.
+-/
 theorem norm_bilanczosBeta_succ (j : ℕ) :
     ‖bilanczosBeta A v₁ w₁ (j + 1)‖ = ‖bilanczosDelta A v₁ w₁ (j + 1)‖ := by
   rw [bilanczosBeta_eq, bilanczosDelta_eq, BiLanczos.norm_beta_succ]
 
 /-- Algorithm 7.1, line 9: for every $j \ge 1$, $w_{j+1} = \hat w_{j+1}/\bar\beta_{j+1}$, and
-$w_{j+1} = 0$ on breakdown. -/
+$w_{j+1} = 0$ on breakdown.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 theorem bilanczosW_succ (j : ℕ) : bilanczosW A v₁ w₁ (j + 1) =
     (starRingEnd 𝕜 (bilanczosBeta A v₁ w₁ (j + 1)))⁻¹ • bilanczosWhat A v₁ w₁ j := by
   rw [bilanczosW_eq, bilanczosWhat_eq, bilanczosBeta_eq, BiLanczos.dualVec_succ]
 
 /-- Algorithm 7.1, line 10: for every $j \ge 1$, $v_{j+1} = \hat v_{j+1}/\delta_{j+1}$, and
-$v_{j+1} = 0$ on breakdown. -/
+$v_{j+1} = 0$ on breakdown.
+
+**Generalization.** The recurrence extends to complex scalars using the adjoint and conjugated dual
+coefficients. The source uses real scalars and stops at the first zero normalization. Lean accepts
+arbitrary initial vectors and extends the sequence using totalized division, which sets both new
+vectors to zero at breakdown.
+-/
 theorem bilanczosV_succ (j : ℕ) : bilanczosV A v₁ w₁ (j + 1) =
     (bilanczosDelta A v₁ w₁ (j + 1))⁻¹ • bilanczosVhat A v₁ w₁ j := by
   rw [bilanczosV_eq, bilanczosVhat_eq, bilanczosDelta_eq, BiLanczos.vec_succ]
@@ -417,7 +593,11 @@ $$\delta_{j+1} \beta_{j+1} = (\hat v_{j+1}, \hat w_{j+1}).$$
 Lines 9 and 10 divide $\hat w_{j+1}$ and $\hat v_{j+1}$ by these scalars, so this product is the
 only constraint that the normalization $(v_{j+1}, w_{j+1}) = 1$ puts on the pair, and the choice
 of lines 7–8 is one of many admissible ones (`SaadSparse.Chapter07.inner_smul_smul_eq_one`). No
-hypothesis is needed: at a breakdown both sides are $0$. -/
+hypothesis is needed: at a breakdown both sides are $0$.
+
+**Generalization.** The source states the product constraint for choosing admissible normalizations.
+Lean proves it for the totalized complex recurrence, where both sides also vanish at breakdown.
+-/
 theorem equation_7_1 (j : ℕ) :
     bilanczosDelta A v₁ w₁ (j + 1) * bilanczosBeta A v₁ w₁ (j + 1)
       = inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) := by
@@ -428,7 +608,11 @@ theorem equation_7_1 (j : ℕ) :
 /-- Let $\hat v$, $\hat w$ be vectors with $(\hat v, \hat w) \neq 0$, and let $\delta$, $\beta$ be
 scalars with $\delta\beta = (\hat v, \hat w)$. Then $(\hat v/\delta, \hat w/\bar\beta) = 1$. So
 any such pair may be used in lines 7–8 of Algorithm 7.1, and lines 9–10 still give the
-normalization $(v_{j+1}, w_{j+1}) = 1$. -/
+normalization $(v_{j+1}, w_{j+1}) = 1$.
+
+**Generalization.** The source's real normalization rule extends to complex coefficients when the
+denominator for the dual vector is conjugated. The common product is assumed nonzero.
+-/
 theorem inner_smul_smul_eq_one {vh wh : EuclideanSpace 𝕜 (Fin n)} {δ β : 𝕜}
     (hne : inner 𝕜 wh vh ≠ 0) (h : δ * β = inner 𝕜 wh vh) :
     inner 𝕜 ((starRingEnd 𝕜 β)⁻¹ • wh) (δ⁻¹ • vh) = 1 :=
@@ -439,8 +623,12 @@ vectors with $(\hat v, \hat w) \neq 0$, and let $\delta = \|\hat v\|_2$ and
 $\beta = (\hat v, \hat w)/\|\hat v\|_2$. Then $\delta\beta = (\hat v, \hat w)$, the vector
 $\hat v/\delta$ has unit 2-norm, and $(\hat v/\delta, \hat w/\bar\beta) = 1$.
 
-This is the book's remark in Section 7.1.1 that "both vectors can also be scaled by their
-2-norms". It justifies the hypothesis $\|v_j\|_2 = 1$ that Section 7.3 uses from (7.18) on. -/
+This convention gives the primal unit-norm condition that Section 7.3 uses from (7.18) on.
+
+**Reading.** Lean normalizes only the primal vector to unit 2-norm and chooses the dual factor to
+preserve the biorthogonal pairing. The remark in the text discusses scaling both vectors
+individually to unit norm, which generally changes that pairing.
+-/
 theorem equation_7_1_norm {vh wh : EuclideanSpace 𝕜 (Fin n)} (hne : inner 𝕜 wh vh ≠ 0) :
     (‖vh‖ : 𝕜) * (inner 𝕜 wh vh / (‖vh‖ : 𝕜)) = inner 𝕜 wh vh ∧
       ‖((‖vh‖ : 𝕜))⁻¹ • vh‖ = 1 ∧
@@ -468,7 +656,12 @@ $1 \le j \le m$.
 This is the hypothesis that the book carries through Section 7.1. It is the surface form of
 `BiLanczos.NoBreakdown`; the adjoint relation that the backbone takes as data holds here
 automatically, because `SaadSparse.Chapter06.op Aᴴ` is the adjoint of
-`SaadSparse.Chapter06.op A`. -/
+`SaadSparse.Chapter06.op A`.
+
+**Reading.** The predicate includes the normalized starting pair and a successful normalization at
+each of the first $m$ steps, so it includes both vectors numbered $m+1$. A source conclusion about
+the first $m$ vectors needs only $m-1$ successful steps.
+-/
 structure NoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
     Prop where
   /-- Line 1 of Algorithm 7.1: $(v_1, w_1) = 1$. -/
@@ -484,7 +677,12 @@ terminated.
 
 This holds generically and at a regular termination. Unlike `SaadSparse.Chapter07.NoBreakdown`,
 it is a hypothesis about every step. This is what (7.3) needs: at a serious breakdown there is
-no $v_{m+1}$ along which to expand $Av_m$, and the relation is false. -/
+no $v_{m+1}$ along which to expand $Av_m$, and the relation is false.
+
+**Reading.** The source calls a breakdown lucky when either unnormalized vector vanishes. This
+predicate excludes a breakdown with nonzero primal vector, even if the dual one is zero. It is
+global across all steps and ensures the primal expansion remains valid.
+-/
 structure NoSeriousBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ w₁ : EuclideanSpace 𝕜 (Fin n)) : Prop where
   /-- If $(\hat v_{j+1}, \hat w_{j+1}) = 0$, then $\hat v_{j+1} = 0$. -/
@@ -557,7 +755,11 @@ the diagonal, $\beta_{j+1}$ in position $(j, j+1)$, $\delta_{j+1}$ in position $
 $0$ elsewhere.
 
 The indices are $0$-based: `SaadSparse.Chapter07.bilanczosCoeff A v₁ w₁ i j` is the entry in row
-$i + 1$ and column $j + 1$ of the book. -/
+$i + 1$ and column $j + 1$ of the book.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 noncomputable def bilanczosCoeff (i j : ℕ) : 𝕜 :=
   if i = j then bilanczosAlpha A v₁ w₁ i
   else if i = j + 1 then bilanczosDelta A v₁ w₁ i
@@ -596,35 +798,67 @@ theorem bilanczosCoeff_eq_zero_of_lt {i j : ℕ} (h : j + 1 < i) : bilanczosCoef
 /-- **Equation (7.2)** of [saad2003iterative]. The $m \times m$ tridiagonal matrix
 $$T_m = \begin{bmatrix} \alpha_1 & \beta_2 & & \\ \delta_2 & \alpha_2 & \ddots & \\ & \ddots &
   \ddots & \beta_m \\ & & \delta_m & \alpha_m \end{bmatrix}$$
-of the Lanczos biorthogonalization procedure. -/
+of the Lanczos biorthogonalization procedure.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 noncomputable def T (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => bilanczosCoeff A v₁ w₁ i j
 
 /-- **Equation (7.15)** of [saad2003iterative]. The $(m + 1) \times m$ matrix $\bar T_m$: the matrix
-$T_m$ with the row $\delta_{m+1} e_m^T$ appended. -/
+$T_m$ with the row $\delta_{m+1} e_m^T$ appended.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 noncomputable def Tbar (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Matrix.of fun i j => bilanczosCoeff A v₁ w₁ i j
 
 /-- **Section 7.1** of [saad2003iterative]. The $n \times m$ matrix $V_m = [v_1, \dots, v_m]$ whose
-columns are the primal Lanczos vectors. -/
+columns are the primal Lanczos vectors.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 noncomputable def V (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Chapter06.colMatrix (bilanczosV A v₁ w₁) m
 
 /-- **Section 7.1** of [saad2003iterative]. The $n \times m$ matrix $W_m = [w_1, \dots, w_m]$ whose
-columns are the dual Lanczos vectors. -/
+columns are the dual Lanczos vectors.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 noncomputable def W (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 := Chapter06.colMatrix (bilanczosW A v₁ w₁) m
 
-/-- The entries of $T_m$ are the tridiagonal coefficients. -/
+/-- The entries of $T_m$ are the tridiagonal coefficients.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 @[simp] theorem T_apply {m : ℕ} (i j : Fin m) : T A v₁ w₁ m i j = bilanczosCoeff A v₁ w₁ i j := rfl
 
-/-- The entries of $\bar T_m$ are the tridiagonal coefficients. -/
+/-- The entries of $\bar T_m$ are the tridiagonal coefficients.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 @[simp] theorem Tbar_apply {m : ℕ} (i : Fin (m + 1)) (j : Fin m) :
     Tbar A v₁ w₁ m i j = bilanczosCoeff A v₁ w₁ i j := rfl
 
-/-- The columns of $V_m$ are the primal Lanczos vectors. -/
+/-- The columns of $V_m$ are the primal Lanczos vectors.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 @[simp] theorem V_apply {m : ℕ} (i : Fin n) (j : Fin m) :
     V A v₁ w₁ m i j = bilanczosV A v₁ w₁ (j : ℕ) i := rfl
 
-/-- The columns of $W_m$ are the dual Lanczos vectors. -/
+/-- The columns of $W_m$ are the dual Lanczos vectors.
+
+**Generalization.** The arrays are defined for complex matrices and at all sizes, including zero and
+sizes beyond breakdown. The source forms these matrices from the data generated before it stops.
+-/
 @[simp] theorem W_apply {m : ℕ} (i : Fin n) (j : Fin m) :
     W A v₁ w₁ m i j = bilanczosW A v₁ w₁ (j : ℕ) i := rfl
 
@@ -651,14 +885,24 @@ then the two families are biorthogonal:
 $$(v_j, w_i) = \delta_{ij} \qquad \text{for } 1 \le i, j \le m + 1.$$
 
 In Mathlib's notation $(v_j, w_i)$ is `inner 𝕜 (bilanczosW A v₁ w₁ i) (bilanczosV A v₁ w₁ j)`,
-with $0$-based indices. -/
+with $0$-based indices.
+
+**Generalization.** The primal and dual biorthogonality and span conclusions extend to complex
+matrices with the adjoint. Lean states the span conclusions separately and provides both size
+conventions for primal spans.
+-/
 theorem proposition_7_1 (h : NoBreakdown A v₁ w₁ m) {i j : ℕ} (hi : i ≤ m) (hj : j ≤ m) :
     inner 𝕜 (bilanczosW A v₁ w₁ i) (bilanczosV A v₁ w₁ j) = if i = j then 1 else 0 := by
   rw [bilanczosW_eq, bilanczosV_eq]
   exact BiLanczos.inner_dualVec_vec h.toBiLanczos hi hj
 
 /-- **Proposition 7.1** of [saad2003iterative], with the arguments exchanged. If Algorithm 7.1 runs
-$m$ steps without breakdown, then $(w_j, v_i) = \delta_{ij}$ for $1 \le i, j \le m + 1$. -/
+$m$ steps without breakdown, then $(w_j, v_i) = \delta_{ij}$ for $1 \le i, j \le m + 1$.
+
+**Generalization.** The primal and dual biorthogonality and span conclusions extend to complex
+matrices with the adjoint. Lean states the span conclusions separately and provides both size
+conventions for primal spans.
+-/
 theorem proposition_7_1' (h : NoBreakdown A v₁ w₁ m) {i j : ℕ} (hi : i ≤ m) (hj : j ≤ m) :
     inner 𝕜 (bilanczosV A v₁ w₁ i) (bilanczosW A v₁ w₁ j) = if i = j then 1 else 0 := by
   rw [bilanczosW_eq, bilanczosV_eq]
@@ -675,7 +919,12 @@ breakdown, then $\{v_1, \dots, v_m\}$ spans $\mathcal{K}_m(A, v_1)$ and $\{w_1, 
 spans $\mathcal{K}_m(A^H, w_1)$.
 
 With `SaadSparse.Chapter07.problem_7_2` these are bases. This is the full-rank hypothesis that
-Theorem 7.4 therefore does not need to assume. -/
+Theorem 7.4 therefore does not need to assume.
+
+**Generalization.** The primal and dual biorthogonality and span conclusions extend to complex
+matrices with the adjoint. Lean states the span conclusions separately and provides both size
+conventions for primal spans.
+-/
 theorem proposition_7_1_span (h : NoBreakdown A v₁ w₁ m) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => bilanczosV A v₁ w₁ (i : ℕ))
         = Chapter06.krylov A v₁ m ∧
@@ -705,7 +954,11 @@ private theorem linearIndependent_of_biorthogonal {k : ℕ}
 then the vectors $v_1, \dots, v_m$, the columns of $V_m$, are linearly independent, and so are
 the vectors $w_1, \dots, w_m$, the columns of $W_m$.
 
-This follows from the biorthogonality of Proposition 7.1. -/
+This follows from the biorthogonality of Proposition 7.1.
+
+**Reading.** After $m$ successful normalizations Lean proves independence of the first $m$ primal
+and dual vectors. The requested full rank concerns the first $m+1$ vectors obtained at that point.
+-/
 theorem problem_7_2 (h : NoBreakdown A v₁ w₁ m) :
     LinearIndependent 𝕜 (fun i : Fin m => bilanczosV A v₁ w₁ (i : ℕ)) ∧
       LinearIndependent 𝕜 (fun i : Fin m => bilanczosW A v₁ w₁ (i : ℕ)) :=
@@ -760,7 +1013,12 @@ private theorem sum_dualCoeff_lt (A : Matrix (Fin n) (Fin n) 𝕜)
 variable {A : Matrix (Fin n) (Fin n) 𝕜} {v₁ w₁ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
 
 /-- Equation (7.3) column by column: if the first $m$ steps run without breakdown and $j \le m$,
-then $Av_j = \sum_{i \le j+1} t_{ij} v_i$. -/
+then $Av_j = \sum_{i \le j+1} t_{ij} v_i$.
+
+**Reading.** The primal and dual expansions use the adjoint for complex scalars. They explicitly
+assume the successful normalization that constructs the last vector on the right. The combined
+matrix theorem gives the extended relation (7.15) at a size one smaller than (7.3) and (7.4).
+-/
 private theorem apply_bilanczosV_sum (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j < m) :
     op A (bilanczosV A v₁ w₁ j)
       = ∑ i ∈ Finset.range (j + 2), bilanczosCoeff A v₁ w₁ i j • bilanczosV A v₁ w₁ i := by
@@ -771,7 +1029,12 @@ private theorem apply_bilanczosV_sum (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (
   exact BiLanczos.apply_vec _ _ _ _ (h.toBiLanczos.delta_ne_zero j hj)
 
 /-- Equation (7.4) column by column: if the first $m$ steps run without breakdown and $j \le m$,
-then $A^H w_j = \sum_{i \le j+1} \bar t_{ji} w_i$. -/
+then $A^H w_j = \sum_{i \le j+1} \bar t_{ji} w_i$.
+
+**Reading.** The primal and dual expansions use the adjoint for complex scalars. They explicitly
+assume the successful normalization that constructs the last vector on the right. The combined
+matrix theorem gives the extended relation (7.15) at a size one smaller than (7.3) and (7.4).
+-/
 private theorem apply_bilanczosW_sum (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j < m) :
     op Aᴴ (bilanczosW A v₁ w₁ j) = ∑ i ∈ Finset.range (j + 2),
       starRingEnd 𝕜 (bilanczosCoeff A v₁ w₁ j i) • bilanczosW A v₁ w₁ i := by
@@ -789,7 +1052,12 @@ where $t_{ij}$ are the tridiagonal coefficients of (7.2), which vanish for $i > 
 This is the backbone `Krylov.HessenbergRelation`. So the residual formula of
 `Numlib.Krylov.Hessenberg`, and the quasi-minimal-residual results built on it, apply to the
 two-sided Lanczos basis, which is biorthogonal rather than orthonormal. This is the basis of
-Sections 7.2 and 7.3. -/
+Sections 7.2 and 7.3.
+
+**Reading.** The global relation quantifies over every step and assumes that a failed inner-product
+test always has zero primal unnormalized vector. The source derives the relation for the generated
+finite basis.
+-/
 theorem bilanczos_hessenbergRelation (h : NoSeriousBreakdown A v₁ w₁) :
     Krylov.HessenbergRelation (op A) (bilanczosV A v₁ w₁) (bilanczosCoeff A v₁ w₁) := by
   have hv : bilanczosV A v₁ w₁ = BiLanczos.vec (op A) (op Aᴴ) v₁ w₁ :=
@@ -881,7 +1149,12 @@ $$AV_k = V_k T_k + \delta_{k+1} v_{k+1} e_k^T, \qquad A^H W_k = W_k T_k^H + \bar
 and, with $m = k - 1$, $AV_m = V_{m+1} \bar T_m$.
 
 The last identity is the extended form (7.15), on which Chapter 7 runs QMR. In the Lean
-statement $k = m + 1$. -/
+statement $k = m + 1$.
+
+**Reading.** The primal and dual expansions use the adjoint for complex scalars. They explicitly
+assume the successful normalization that constructs the last vector on the right. The combined
+matrix theorem gives the extended relation (7.15) at a size one smaller than (7.3) and (7.4).
+-/
 theorem equation_7_3 (h : NoBreakdown A v₁ w₁ (m + 1)) :
     A * V A v₁ w₁ (m + 1) = V A v₁ w₁ (m + 1) * T A v₁ w₁ (m + 1)
         + Matrix.vecMulVec
@@ -913,7 +1186,11 @@ private theorem mul_V_apply (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : Eucli
 then
 $$W_m^H A V_m = T_m \quad\text{and}\quad V_m^H A^H W_m = T_m^H.$$
 So $T_m$ is the compression of $A$ to $\mathcal{K}_m(A, v_1)$ along $\mathcal{K}_m(A^H, w_1)$,
-and $T_m^H$ compresses $A^H$ the other way. -/
+and $T_m^H$ compresses $A^H$ the other way.
+
+**Generalization.** The source's real transpose compression becomes an adjoint compression. Lean
+states both the primal and dual matrix identities.
+-/
 theorem equation_7_5 (h : NoBreakdown A v₁ w₁ m) :
     (W A v₁ w₁ m)ᴴ * A * V A v₁ w₁ m = T A v₁ w₁ m ∧
       (V A v₁ w₁ m)ᴴ * Aᴴ * W A v₁ w₁ m = (T A v₁ w₁ m)ᴴ := by
@@ -983,7 +1260,12 @@ bases, it is idempotent, its range is $\mathcal{K}_m(A, v_1)$, and its kernel is
 $\mathcal{K}_m(A^H, w_1)^\perp$.
 
 The general formula $V(W^H V)^{-1} W^H$ reduces to $V_m W_m^H$ because $W_m^H V_m = I$ by
-Proposition 7.1. -/
+Proposition 7.1.
+
+**Reading.** These results identify the primal projector and give the trivial intersection for the
+Lanczos pair. The exercise also asks for the dual projector and the existence criterion for
+arbitrary subspaces.
+-/
 theorem problem_7_6 (h : NoBreakdown A v₁ w₁ m) :
     Matrix.toEuclideanLin (V A v₁ w₁ m * (W A v₁ w₁ m)ᴴ)
         = LinearMap.obliqueProjectionOfBases 𝕜 (fun i : Fin m => bilanczosV A v₁ w₁ (i : ℕ))
@@ -1023,6 +1305,10 @@ theorem problem_7_6 (h : NoBreakdown A v₁ w₁ m) :
 exactly when $K \cap L^\perp = \{0\}$. If Algorithm 7.1 runs $m$ steps without breakdown, the
 two Lanczos subspaces satisfy this condition:
 $$\mathcal{K}_m(A, v_1) \cap \mathcal{K}_m(A^H, w_1)^\perp = \{0\}.$$
+
+**Reading.** These results identify the primal projector and give the trivial intersection for the
+Lanczos pair. The exercise also asks for the dual projector and the existence criterion for
+arbitrary subspaces.
 -/
 theorem problem_7_6_inf_eq_bot (h : NoBreakdown A v₁ w₁ m) :
     Chapter06.krylov A v₁ m ⊓ (Chapter06.krylov Aᴴ w₁ m)ᗮ = ⊥ := by
@@ -1052,7 +1338,12 @@ then Algorithm 7.1 has no serious breakdown.
 In the first $m$ steps the test of line 7 passes, and from then on every later $\hat v$ is $0$.
 So everything that Sections 7.1–7.3 prove without serious breakdown, (7.3) included, holds after
 a lucky breakdown; only the serious breakdown (7.6), where $\hat v_{j+1} \neq 0$ but
-$(\hat v_{j+1}, \hat w_{j+1}) = 0$, is excluded. -/
+$(\hat v_{j+1}, \hat w_{j+1}) = 0$, is excluded.
+
+**Reading.** The assertion concerns a zero primal unnormalized vector after successful preceding
+steps. The source separately discusses the dual lucky breakdown, which is not expressed in these
+results.
+-/
 theorem noSeriousBreakdown_of_bilanczosVhat_eq_zero (h : NoBreakdown A v₁ w₁ m)
     (hv : bilanczosVhat A v₁ w₁ m = 0) : NoSeriousBreakdown A v₁ w₁ :=
   NoSeriousBreakdown.ofBiLanczos
@@ -1066,7 +1357,12 @@ invariant under $A$.
 
 The last three-term relation has lost its term in $v_{m+2}$, so $Av_{m+1}$ lies in the span of
 the earlier vectors. The iterate of Algorithm 7.2 is then exact; see
-`SaadSparse.Chapter07.lanczosSolve_eq_of_bilanczosVhat_eq_zero`. -/
+`SaadSparse.Chapter07.lanczosSolve_eq_of_bilanczosVhat_eq_zero`.
+
+**Reading.** The assertion concerns a zero primal unnormalized vector after successful preceding
+steps. The source separately discusses the dual lucky breakdown, which is not expressed in these
+results.
+-/
 theorem krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero (h : NoBreakdown A v₁ w₁ m)
     (hv : bilanczosVhat A v₁ w₁ m = 0) :
     Chapter06.krylov A v₁ (m + 1) ∈ Module.End.invtSubmodule (op A) := by
@@ -1080,7 +1376,12 @@ then the $m + 1$ vectors $v_1, \dots, v_{m+1}$ span $\mathcal{K}_{m+1}(A, v_1)$.
 This is one Krylov subspace more than `SaadSparse.Chapter07.proposition_7_1_span` gives for $m$
 steps, and it needs no hypothesis on step $m + 1$. It applies in particular at a lucky
 breakdown, where the test of line 7 has just failed and Proposition 7.1 for $m + 1$ steps is not
-available. -/
+available.
+
+**Generalization.** The primal and dual biorthogonality and span conclusions extend to complex
+matrices with the adjoint. Lean states the span conclusions separately and provides both size
+conventions for primal spans.
+-/
 theorem span_bilanczosV_succ (h : NoBreakdown A v₁ w₁ m) :
     Submodule.span 𝕜 (Set.range fun i : Fin (m + 1) => bilanczosV A v₁ w₁ (i : ℕ))
       = Chapter06.krylov A v₁ (m + 1) := by
@@ -1104,20 +1405,34 @@ $$\langle p, q \rangle = (p(A) v_1, q(A^T) w_1).$$
 
 Over $\mathbb{C}$ the conjugation that the book's transpose hides is applied to the coefficients
 of $q$: the form is $(p(A) v_1, \bar q(A^H) w_1)$, which keeps it bilinear. It is an indefinite
-form, since $\langle p, p \rangle$ can vanish for a nonzero $p$, and this is exactly the serious
-breakdown of Section 7.1.2 (`SaadSparse.Chapter07.breakdown_iff_polyForm_eq_zero`). This is the
-backbone `BiLanczos.polyForm`. -/
+form, since $\langle p, p \rangle$ can vanish for a nonzero $p$. See the breakdown criterion
+`SaadSparse.Chapter07.breakdown_iff_polyForm_eq_zero`. This is the
+backbone `BiLanczos.polyForm`.
+
+**Generalization.** The complex form uses the adjoint and conjugates the second polynomial's
+coefficients so the form remains bilinear. Its real restriction gives the book's form and moment
+matrix.
+-/
 noncomputable abbrev polyForm : 𝕜[X] → 𝕜[X] → 𝕜 := BiLanczos.polyForm (op A) (op Aᴴ) v₁ w₁
 
 /-- **Section 7.1.2** of [saad2003iterative]. The polynomial $p_j$ with $\hat v_{j+1} = p_j(A) v_1$.
 
 `SaadSparse.Chapter07.bilanczosPoly A v₁ w₁ j` is the book's $p_{j+1}$, of degree $j + 1$
 without breakdown (`SaadSparse.Chapter07.bilanczosPoly_natDegree`). This is the backbone
-`BiLanczos.vhatPoly`. -/
+`BiLanczos.vhatPoly`.
+
+**Reading.** Lean defines the polynomials along the totalized recurrence, also over the complex
+field. It uses the nonbreakdown prefix in the exact-degree and orthogonality conclusions.
+-/
 noncomputable abbrev bilanczosPoly : ℕ → 𝕜[X] := BiLanczos.vhatPoly (op A) (op Aᴴ) v₁ w₁
 
 /-- **Section 7.1.2** of [saad2003iterative]. The $k \times k$ moment matrix $M_k = \{\langle
-x^{i-1}, x^{j-1} \rangle\}_{i,j=1,\dots,k}$ of the form (7.7). -/
+x^{i-1}, x^{j-1} \rangle\}_{i,j=1,\dots,k}$ of the form (7.7).
+
+**Generalization.** The complex form uses the adjoint and conjugates the second polynomial's
+coefficients so the form remains bilinear. Its real restriction gives the book's form and moment
+matrix.
+-/
 noncomputable abbrev momentMatrix (k : ℕ) : Matrix (Fin k) (Fin k) 𝕜 :=
   BiLanczos.momentMatrix (op A) (op Aᴴ) v₁ w₁ k
 
@@ -1125,7 +1440,11 @@ noncomputable abbrev momentMatrix (k : ℕ) : Matrix (Fin k) (Fin k) 𝕜 :=
 $\hat v_{j+1} = p_j(A) v_1$.
 
 This needs no hypothesis on breakdown. The degree of $p_j$ is
-`SaadSparse.Chapter07.bilanczosPoly_natDegree`. -/
+`SaadSparse.Chapter07.bilanczosPoly_natDegree`.
+
+**Reading.** Lean defines the polynomials along the totalized recurrence, also over the complex
+field. It uses the nonbreakdown prefix in the exact-degree and orthogonality conclusions.
+-/
 theorem bilanczosVhat_eq_aeval (j : ℕ) :
     bilanczosVhat A v₁ w₁ j = aeval (op A) (bilanczosPoly A v₁ w₁ j) v₁ := by
   rw [bilanczosVhat_eq, BiLanczos.aeval_vhatPoly]
@@ -1136,7 +1455,12 @@ $$\hat w_{j+1} = \gamma_j\, \bar p_j(A^H) w_1,$$
 where $\bar p_j$ has the conjugate coefficients of $p_j$.
 
 The scalar is `BiLanczos.dualPolyScalar`. Over $\mathbb{R}$ the conjugation has no effect, and
-this is the statement of the book. -/
+this is the statement of the book.
+
+**Correction.** The dual polynomial acts on $w_1$. The source prints $v_1$ in the dual evaluation,
+although the preceding definition (7.7) evaluates the dual polynomial on $w_1$. The complex formula
+also conjugates the coefficients and uses the adjoint.
+-/
 theorem bilanczosWhat_eq_smul (j : ℕ) :
     bilanczosWhat A v₁ w₁ j = BiLanczos.dualPolyScalar (op A) (op Aᴴ) v₁ w₁ j •
       aeval (op Aᴴ) ((bilanczosPoly A v₁ w₁ j).map (starRingEnd 𝕜)) w₁ := by
@@ -1147,7 +1471,12 @@ polynomials $p$ and $q$,
 $$\langle p, q \rangle = L(pq), \qquad L(r) = (r(A) v_1, w_1).$$
 
 The symmetry of the form and the Hankel structure of the moment matrix both follow from this
-identity. The functional $L$ is `BiLanczos.moment`. -/
+identity. The functional $L$ is `BiLanczos.moment`.
+
+**Generalization.** The complex form uses the adjoint and conjugates the second polynomial's
+coefficients so the form remains bilinear. Its real restriction gives the book's form and moment
+matrix.
+-/
 theorem polyForm_eq_moment (p q : 𝕜[X]) :
     polyForm A v₁ w₁ p q = BiLanczos.moment (op A) v₁ w₁ (p * q) :=
   BiLanczos.polyForm_eq_moment (LinearMap.isAdjointPair_inner_iff'.2 (inner_op_conjTranspose A))
@@ -1155,7 +1484,12 @@ theorem polyForm_eq_moment (p q : 𝕜[X]) :
 
 /-- **Section 7.1.2** of [saad2003iterative]: "$M_k$ is a Hankel matrix, i.e., its coefficients
 $m_{ij}$ are constant along anti-diagonals". For indices with $i + j = i' + j'$, the entries of
-the moment matrix satisfy $m_{ij} = m_{i'j'}$. -/
+the moment matrix satisfy $m_{ij} = m_{i'j'}$.
+
+**Generalization.** The complex form uses the adjoint and conjugates the second polynomial's
+coefficients so the form remains bilinear. Its real restriction gives the book's form and moment
+matrix.
+-/
 theorem momentMatrix_apply_eq_of_add_eq {k : ℕ} {i j i' j' : Fin k}
     (hij : (i : ℕ) + (j : ℕ) = (i' : ℕ) + (j' : ℕ)) :
     momentMatrix A v₁ w₁ k i j = momentMatrix A v₁ w₁ k i' j' :=
@@ -1168,7 +1502,11 @@ variable {A v₁ w₁}
 without breakdown, then $p_j$ has degree exactly $j$ for $1 \le j \le m + 1$.
 
 In the $0$-based Lean statement, `SaadSparse.Chapter07.bilanczosPoly A v₁ w₁ j` has degree
-$j + 1$ for $j \le m$. -/
+$j + 1$ for $j \le m$.
+
+**Reading.** Lean defines the polynomials along the totalized recurrence, also over the complex
+field. It uses the nonbreakdown prefix in the exact-degree and orthogonality conclusions.
+-/
 theorem bilanczosPoly_natDegree {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
     (bilanczosPoly A v₁ w₁ j).natDegree = j + 1 :=
   BiLanczos.vhatPoly_natDegree h.toBiLanczos hj
@@ -1179,7 +1517,12 @@ without breakdown, then for $1 \le j \le m + 1$
 $$(\hat v_{j+1}, \hat w_{j+1}) = 0 \iff \langle p_j, p_j \rangle = 0.$$
 
 The two numbers differ by the factor $\gamma_j$ of `SaadSparse.Chapter07.bilanczosWhat_eq_smul`,
-which is nonzero as long as the process has run this far. -/
+which is nonzero as long as the process has run this far.
+
+**Correction.** A zero diagonal value of the form detects failure of the normalization test, which
+includes lucky breakdowns. The book calls this a criterion for serious breakdown, although that case
+also requires both unnormalized vectors to be nonzero.
+-/
 theorem breakdown_iff_polyForm_eq_zero {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {j : ℕ} (hj : j ≤ m) :
     inner 𝕜 (bilanczosWhat A v₁ w₁ j) (bilanczosVhat A v₁ w₁ j) = 0 ↔
       polyForm A v₁ w₁ (bilanczosPoly A v₁ w₁ j) (bilanczosPoly A v₁ w₁ j) = 0 := by
@@ -1192,7 +1535,11 @@ product defined above". If Algorithm 7.1 runs $m$ steps without breakdown, then
 $\langle p_i, p_j \rangle = 0$ for $1 \le i, j \le m$ with $i \neq j$.
 
 In fact $p_j$ is orthogonal to every polynomial of lower degree
-(`BiLanczos.polyForm_vhatPoly_eq_zero_of_natDegree_le`). -/
+(`BiLanczos.polyForm_vhatPoly_eq_zero_of_natDegree_le`).
+
+**Reading.** Lean defines the polynomials along the totalized recurrence, also over the complex
+field. It uses the nonbreakdown prefix in the exact-degree and orthogonality conclusions.
+-/
 theorem polyForm_bilanczosPoly_eq_zero {m : ℕ} (h : NoBreakdown A v₁ w₁ m) {i j : ℕ} (hi : i < m)
     (hj : j < m) (hij : i ≠ j) :
     polyForm A v₁ w₁ (bilanczosPoly A v₁ w₁ i) (bilanczosPoly A v₁ w₁ j) = 0 :=
@@ -1237,12 +1584,24 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ w₁ : EuclideanSpace 𝕜 (Fin
 These are the vectors that the variant of P-7.3 computes. Only the scaling of lines 7–8 differs;
 the choice $\delta_{j+1} = \|\hat v_{j+1}\|_2$ is admissible by (7.1)
 (`SaadSparse.Chapter07.equation_7_1_norm`), and the vectors that a run with this scaling
-produces are the rescalings of the vectors of Algorithm 7.1. A zero vector stays $0$. -/
+produces are the rescalings of the vectors of Algorithm 7.1. A zero vector stays $0$.
+
+**Reading.** The unit-norm sequences are obtained by rescaling the existing biorthogonal vectors,
+with totalized division. The theorem works over the complex field and gives the inner-product
+entries of the pencil. The exercise asks for a modified iteration and the resulting projected
+problem.
+-/
 noncomputable def bilanczosVUnit (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   ((‖bilanczosV A v₁ w₁ j‖ : ℝ) : 𝕜)⁻¹ • bilanczosV A v₁ w₁ j
 
 /-- **Exercise P-7.3** of [saad2003iterative]. The dual vectors of Algorithm 7.1 rescaled to unit
-2-norm, $w'_j = w_j/\|w_j\|_2$; see `SaadSparse.Chapter07.bilanczosVUnit`. -/
+2-norm, $w'_j = w_j/\|w_j\|_2$; see `SaadSparse.Chapter07.bilanczosVUnit`.
+
+**Reading.** The unit-norm sequences are obtained by rescaling the existing biorthogonal vectors,
+with totalized division. The theorem works over the complex field and gives the inner-product
+entries of the pencil. The exercise asks for a modified iteration and the resulting projected
+problem.
+-/
 noncomputable def bilanczosWUnit (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   ((‖bilanczosW A v₁ w₁ j‖ : ℝ) : 𝕜)⁻¹ • bilanczosW A v₁ w₁ j
 
@@ -1284,7 +1643,13 @@ So the rescaled families stay biorthogonal, but the projected problem becomes a 
 Where Algorithm 7.1 has $W_m^H V_m = I$ and $W_m^H A V_m = T_m$, the rescaled families have
 $W_m^H V_m = D_m$ and $W_m^H A V_m = D_W T_m D_V$, with diagonal matrices $D_m$, $D_W$, $D_V$ of
 reciprocal norms. The eigenvalue problem to solve is then $T'_m y = \lambda D_m y$ instead of
-$T_m y = \lambda y$. -/
+$T_m y = \lambda y$.
+
+**Reading.** The unit-norm sequences are obtained by rescaling the existing biorthogonal vectors,
+with totalized division. The theorem works over the complex field and gives the inner-product
+entries of the pencil. The exercise asks for a modified iteration and the resulting projected
+problem.
+-/
 theorem problem_7_3 {m : ℕ} (h : NoBreakdown A v₁ w₁ m) :
     (∀ i ≤ m, ‖bilanczosVUnit A v₁ w₁ i‖ = 1 ∧ ‖bilanczosWUnit A v₁ w₁ i‖ = 1) ∧
       (∀ i ≤ m, ∀ j ≤ m, inner 𝕜 (bilanczosWUnit A v₁ w₁ i) (bilanczosVUnit A v₁ w₁ j)

@@ -105,6 +105,11 @@ componentwise theory, the Skeel condition number and the bound with a computed r
 
 ## Deviations from the source
 
+* **Equation (3.4)** (reading). The declaration uses the induced $p$-norm on real matrices and
+  gives $0$ at a singular matrix, where the source assigns $+\infty$. See
+  `QuarteroniSaccoSaleri.Chapter03.condNumber`.
+* **Remark 3.1** (reading). The distance-to-singularity result is stated for nonsingular
+  real matrices, while the text considers complex matrices.
 * **Equation (3.7)** (correction). The book prints $\|\delta A\|_p \|A\|_p < 1$ and says that it
   follows from the nonsingularity of $A + \delta A$. The statement is:
   $\|\delta A\|_p \|A^{-1}\|_p < 1$ implies that $A + \delta A$ is nonsingular. See
@@ -115,9 +120,12 @@ componentwise theory, the Skeel condition number and the bound with a computed r
   $\| |A^{-1}| |A| \|_\infty$. See `QuarteroniSaccoSaleri.Chapter03.equation_3_15`.
 * **Example 3.1** (generalization). The book takes $0 < \alpha < 1$. The identities hold for every
   $\alpha > 0$. See `QuarteroniSaccoSaleri.Chapter03.example_3_1`.
-* **Equation (3.19)** (correction). The roles of $A$ and $C$ in the hypothesis are interchanged: the
-  residual that has to be small is $R = CA - I$. See
+* **Equation (3.19)** (reading). The declaration uses the residual $CA-I$ after swapping
+  the roles in Property 3.1. The same bound also holds with $AC-I$. See
   `QuarteroniSaccoSaleri.Chapter03.equation_3_19`.
+* **Equations (3.15)–(3.16) and the computed residual bound** (reading). The first
+  estimate assumes a positive denominator. The componentwise ratio uses total division.
+  The computed residual hypotheses are expressed through rounded arithmetic.
 -/
 
 open Finset Matrix WithLp
@@ -135,9 +143,13 @@ the vector $p$-norm is
 $$K_p(A) = \|A\|_p \, \|A^{-1}\|_p.$$
 The cases $p = 1, 2, \infty$ are the important instances.
 
-The matrix norm $\|A\|_p$ is `Matrix.lpOpNorm p A`. In Mathlib $A^{-1} = 0$ for a singular $A$,
-so the value is then $0$ rather than the $\infty$ of the book; every statement about it assumes
-$A$ nonsingular. The definition is the backbone's `Matrix.condNumberLp p A`. -/
+**Reading.** The source defines the condition number for induced norms on complex matrices and
+assigns $+\infty$ to singular matrices. The declaration uses induced $p$-norms on real matrices.
+Its real-valued formula gives $0$ at a singular matrix because Mathlib's total inverse is zero
+there. The perturbation estimates assume that the matrix being conditioned is nonsingular.
+
+The matrix norm $\|A\|_p$ is `Matrix.lpOpNorm p A`. The condition number is the backbone's
+`Matrix.condNumberLp p A`. -/
 noncomputable def condNumber (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   lpOpNorm p A * lpOpNorm p A⁻¹
 
@@ -170,7 +182,11 @@ theorem one_le_condNumber [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUn
 $A \in \mathbb{R}^{n \times n}$, $K_p(A^{-1}) = K_p(A)$.
 
 For a singular $A$ both sides are $0$. The proof is the backbone's
-`NormedRing.condNumber_inverse`. -/
+`NormedRing.condNumber_inverse`.
+
+**Reading.** The source uses a nonsingular matrix to form its inverse. The identity extends
+to singular matrices under Mathlib's convention that the inverse and the condition number
+both evaluate to zero there. -/
 theorem condNumber_inv (A : Matrix (Fin n) (Fin n) ℝ) : condNumber p A⁻¹ = condNumber p A := by
   rw [condNumber_eq, condNumber_eq, ← ringInverse_lpCLM, NormedRing.condNumber_inverse]
 
@@ -178,7 +194,10 @@ theorem condNumber_inv (A : Matrix (Fin n) (Fin n) ℝ) : condNumber p A⁻¹ = 
 $A \in \mathbb{R}^{n \times n}$ and every $\alpha \in \mathbb{R}$ with $\alpha \neq 0$,
 $K_p(\alpha A) = K_p(A)$.
 
-The proof is the backbone's `Matrix.condNumberLp_smul`. -/
+The proof is the backbone's `Matrix.condNumberLp_smul`.
+
+**Reading.** The source permits nonzero complex scalars. The theorem uses real scalars and
+the real matrix condition number. -/
 theorem condNumber_smul {α : ℝ} (hα : α ≠ 0) (A : Matrix (Fin n) (Fin n) ℝ) :
     condNumber p (α • A) = condNumber p A :=
   condNumberLp_smul p hα A
@@ -212,7 +231,10 @@ the ratio of the largest and the smallest singular values of $A$.
 
 The singular values are `Matrix.colSingularValues A`, indexed by the columns of $A$ in no
 particular order, so $\sigma_1(A)$ and $\sigma_n(A)$ are their supremum and infimum. The proof
-is the backbone's `Matrix.condNumber_l2_eq_div_colSingularValues`. -/
+is the backbone's `Matrix.condNumber_l2_eq_div_colSingularValues`.
+
+**Reading.** This is the real nonsingular case of the printed ratio. The positive denominator
+makes the ratio agree with the condition number as defined in the text. -/
 theorem condNumber_two_eq_div_singularValues [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : IsUnit A) :
     condNumber 2 A = (⨆ i, A.colSingularValues i) / ⨅ i, A.colSingularValues i := by
@@ -258,7 +280,10 @@ is attained, and it equals $1 / K_p(A)$.
 
 The statement is `IsLeast` for the set of these ratios. The proof is the backbone's
 `ContinuousLinearEquiv.isLeast_dist_singular` for the operator $x \mapsto Ax$ on
-`PiLp p (Fin n → ℝ)`. -/
+`PiLp p (Fin n → ℝ)`.
+
+**Reading.** The book states the distance formula for complex matrices. This version treats
+nonsingular real matrices and makes attainment explicit. -/
 theorem remark_3_1 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     IsLeast {r | ∃ δA : Matrix (Fin n) (Fin n) ℝ,
         ¬ IsUnit (A + δA) ∧ lpOpNorm p δA / lpOpNorm p A = r}
@@ -468,7 +493,10 @@ $$\frac{\|\delta x\|_\infty}{\|x\|_\infty} \le \frac{2 \gamma}{1 - \gamma \, \| 
 quantity is $\| |A^{-1}| |A| \|_\infty$, the Skeel condition number `Matrix.skeelCond A`.
 
 The proof is the backbone's `Matrix.norm_sub_le_of_abs_le_abs`, which is Theorem 7.4 of
-[higham2002accuracy] with $E = |A|$ and $f = |b|$. -/
+[higham2002accuracy] with $E = |A|$ and $f = |b|$.
+
+**Reading.** The denominators require $\gamma\,\||A^{-1}||A|\|_\infty<1$ and a nonzero
+solution. The Lean theorem makes these assumptions explicit. -/
 theorem equation_3_15 (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
     (hδx : (A + δA) *ᵥ (x + δx) = b + δb) {γ : ℝ} (hγ : 0 ≤ γ) (hδA : δA.abs ≤ₑ γ • A.abs)
     (hδb : |δb| ≤ γ • |b|) (hsmall : γ * ‖A⁻¹.abs * A.abs‖ < 1) :
@@ -503,7 +531,10 @@ $$\frac{|\delta x_i|}{|x_i|} \le \gamma \, \frac{|r_{(i)}^T| \, |b|}{|r_{(i)}^T 
 where $r_{(i)}^T = e_i^T A^{-1}$ is the $i$-th row of $A^{-1}$.
 
 Here $r_{(i)}^T b = x_i$. If $x_i = 0$, both sides are $0$, because a division by $0$ gives $0$
-in Lean. The proof is the backbone's `Matrix.abs_sub_apply_div_le_of_abs_le_abs`. -/
+in Lean. The proof is the backbone's `Matrix.abs_sub_apply_div_le_of_abs_le_abs`.
+
+**Reading.** At a zero component the source ratio is undefined. Lean uses total division,
+so the bound at that component becomes $0\le 0$. -/
 theorem equation_3_16_b (hA : IsUnit A) (hx : A *ᵥ x = b) (hδx : A *ᵥ (x + δx) = b + δb)
     {γ : ℝ} (hδb : |δb| ≤ γ • |b|) (i : Fin n) :
     |δx i| / |x i| ≤ γ * (|A⁻¹ i| ⬝ᵥ |b|) / |A⁻¹ i ⬝ᵥ b| := by
@@ -512,7 +543,9 @@ theorem equation_3_16_b (hA : IsUnit A) (hx : A *ᵥ x = b) (hδx : A *ᵥ (x + 
 
 /-- **Example 3.1** of [quarteroni2000numerical], the matrix. For $\alpha \in \mathbb{R}$, this is
 $$A = \begin{bmatrix} \alpha & 1/\alpha \\ 0 & 1/\alpha \end{bmatrix}.$$
--/
+
+**Reading.** The matrix is defined for all real parameters using total division, while the
+example considers $0<\alpha<1$. -/
 noncomputable def example_3_1_matrix (α : ℝ) : Matrix (Fin 2) (Fin 2) ℝ := !![α, α⁻¹; 0, α⁻¹]
 
 /-- For $\alpha > 0$, the inverse of the matrix of Example 3.1 is $\begin{bmatrix} 1/\alpha &
@@ -634,9 +667,9 @@ the exact inverse of a perturbed matrix $A + \delta A$, so that $C (A + \delta A
 $\delta A = C^{-1} - A$. Then
 $$\|\delta A\|_p \le \frac{\|R\|_p \, \|A\|_p}{1 - \|R\|_p}.$$
 
-**Correction.** The book's derivation applies Property 3.1 with $R = AC - I$. Because $C$ is the
-exact inverse of $A + \delta A$, the derivation needs the roles of $A$ and $C$ interchanged, and
-the statement assumes $\|CA - I\|_p < 1$.
+**Reading.** Swapping $A$ and $C$ in Property 3.1 gives the version with $R = CA - I$. The
+same estimate with $R = AC-I$ follows by writing
+$C^{-1}-A = ((AC)^{-1}-I)A$ and bounding the inverse of $AC$ with the Neumann estimate.
 
 The proof is the backbone's `NormedRing.norm_sub_le_of_norm_mul_sub_one_lt`. -/
 theorem equation_3_19 [NeZero n] (hR : lpOpNorm p (C * A - 1) < 1) :
@@ -705,7 +738,11 @@ relational rounding model `m`, whose unit roundoff is $u$. Then $\hat{r} = r + \
 $|\delta r| \le \gamma_{n+1} (|A| \, |y| + |b|)$, by the backbone's
 `FloatingPoint.exists_roundsAffineStep_eq_add`, and the bound is
 `Matrix.norm_sub_le_of_computedResidual`. The backbone writes the constant $\gamma_{n+1}$ as
-`FloatingPoint.gamma`. -/
+`FloatingPoint.gamma`.
+
+**Reading.** The source assumes a componentwise bound on the computed residual error. This
+version derives it from the relational rounding error model and $(n+1)u<1$. The displayed
+relative comparison uses Lean's total division when the approximation is zero. -/
 theorem computedResidualErrorBound {m : FloatingPoint.RoundingModel ℝ}
     (hu : ((n + 1 : ℕ) : ℝ) * m.u < 1) (hA : IsUnit A) (hx : A *ᵥ x = b) {y rhat : Fin n → ℝ}
     (hr : FloatingPoint.RoundsAffineStep m (-A) b y rhat) :

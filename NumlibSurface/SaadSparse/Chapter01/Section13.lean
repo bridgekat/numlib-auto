@@ -61,6 +61,15 @@ perturbation bounds specialize the backbone module `Numlib.Conditioning.LinearSy
 
 ## Deviations from the source
 
+* **§1.13.1, Case 2** (generalization). The affine description of the solution set also holds
+  for nonsingular matrices. See `Matrix.setOf_mulVec_eq`.
+* **Equations (1.74)–(1.75)** (generalization). The direction parameter may be complex and the
+  differentiable map is the totalized inverse formula. See `Matrix.equation_1_75`.
+* **Equation (1.76)** (reading). The declaration gives a finite perturbation estimate with an
+  explicit stability denominator and nonzero reference norms. See
+  `Matrix.relative_error_le_of_perturbed`.
+* **§1.13.2, relative residual bound** (reading). The reference right-hand side is explicitly
+  nonzero. See `Matrix.relative_error_le_condNumberLp`.
 * **Example 1.5** (generalization). The book takes $i$ to be the first index and $j$ the last. The
   statement holds for any $i \neq j$. See `Matrix.example_1_5`.
 -/
@@ -86,7 +95,10 @@ theorem existsUnique_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) (hA : IsUnit A)
 /-- **Section 1.13.1** of [saad2003iterative], Case 2. Let $A \in \mathbb{K}^{n \times n}$ and
 $Ax_0 = b$. Then the set of solutions of $Ax = b$ is the coset
 $$\{x : Ax = b\} = x_0 + \operatorname{Null}(A).$$
--/
+
+**Generalization.** Case 2 assumes singularity and describes translations of a solution by
+null vectors. The theorem gives the entire coset without the singularity hypothesis, since the
+difference of any two solutions is always a null vector. -/
 theorem setOf_mulVec_eq (A : Matrix (Fin n) (Fin n) 𝕜) {b x₀ : Fin n → 𝕜} (hx₀ : A *ᵥ x₀ = b) :
     {x | A *ᵥ x = b} = (fun z => x₀ + z) '' {z | A *ᵥ z = 0} := by
   ext x
@@ -128,8 +140,8 @@ section Lp
 variable (p : ℝ≥0∞) [Fact (1 ≤ p)]
 
 /-- **Section 1.13.2** of [saad2003iterative]. For $\alpha \in \mathbb{K}$,
-$\det(\alpha I) = \alpha^n$. Since $\kappa_p(\alpha I) = 1$ (`Matrix.condNumberLp_smul_one`),
-the determinant gives no indication of the conditioning of a matrix. -/
+$\det(\alpha I) = \alpha^n$. For $n \ge 1$ and $\alpha \neq 0$, the condition number is
+$\kappa_p(\alpha I) = 1$ by `Matrix.condNumberLp_smul_one`. -/
 theorem det_smul_one (c : 𝕜) : (c • (1 : Matrix (Fin n) (Fin n) 𝕜)).det = c ^ n := by
   rw [det_smul, det_one, mul_one, Fintype.card_fin]
 
@@ -144,9 +156,13 @@ $x \neq 0$ and $b \neq 0$. Then
 $$\frac{\|y - x\|_p}{\|x\|_p} \le \frac{\kappa_p(A)}{1 - \|A^{-1}\|_p \|\Delta A\|_p} \left(
   \frac{\|\Delta A\|_p}{\|A\|_p} + \frac{\|\Delta b\|_p}{\|b\|_p} \right).$$
 
-With $\Delta A = \varepsilon E$ and $\Delta b = \varepsilon e$ this gives the bound $\varepsilon
-\kappa(A) (\|e\|/\|b\| + \|E\|/\|A\|) + o(\varepsilon)$ of the book. The vectors are elements of
-`PiLp p`, and $Ax$ is `Matrix.lpCLM p A x`. -/
+**Reading.** The source gives a first-order estimate along the perturbation direction $(E,e)$.
+The theorem gives an upper bound for finite perturbations in an induced $p$-norm, provided
+$\|A^{-1}\|_p\|\Delta A\|_p < 1$. For $\Delta A=\varepsilon E$ and
+$\Delta b=\varepsilon e$, the denominator tends to $1$ and yields the printed first-order bound
+as $\varepsilon\to 0^+$. Nonzero $x$ and $b$ ensure that the relative quantities are defined.
+
+The vectors are elements of `PiLp p`, and $Ax$ is `Matrix.lpCLM p A x`. -/
 theorem relative_error_le_of_perturbed (hA : IsUnit A) (ΔA : Matrix (Fin n) (Fin n) 𝕜)
     {b Δb x y : PiLp p (fun _ : Fin n => 𝕜)}
     (hx : lpCLM p A x = b) (hy : lpCLM p (A + ΔA) y = b + Δb)
@@ -172,6 +188,10 @@ of the perturbed system is differentiable in $\varepsilon \in \mathbb{K}$ at $\v
 with derivative
 $$x'(0) = A^{-1} (e - E x), \qquad x = A^{-1} b.$$
 
+**Generalization.** The book discusses a small real perturbation parameter. The derivative
+also exists for complex perturbation parameters when the matrix entries are complex. The
+function is defined by the totalized inverse and agrees with the solution near zero.
+
 The proof is `hasDerivAt_perturbed_solution` of `Numlib.Conditioning.LinearSystem`, transported
 to matrices by `Matrix.ringInverse_lpCLM`: the matrix inverse of $A + \varepsilon E$ is the ring
 inverse of the induced operator, also where it is singular. Since $A$ is nonsingular,
@@ -179,7 +199,7 @@ $A + \varepsilon E$ is nonsingular for all small $\varepsilon$, so near $0$ the 
 solution of the perturbed system. Together with the norm bound
 `Matrix.relative_error_le_of_perturbed`, this gives the first-order form (1.76) of the book,
 $\|x(\varepsilon) - x\|/\|x\| \le \varepsilon \kappa(A) (\|E\|/\|A\| + \|e\|/\|b\|) +
-o(\varepsilon)$. -/
+o(\varepsilon)$ as $\varepsilon \to 0^+$ for $b \neq 0$. -/
 theorem equation_1_75 (hA : IsUnit A) (E : Matrix (Fin n) (Fin n) 𝕜)
     (b e : PiLp p (fun _ : Fin n => 𝕜)) :
     HasDerivAt (fun ε : 𝕜 => lpCLM p ((A + ε • E)⁻¹) (b + ε • e))
@@ -192,7 +212,9 @@ theorem equation_1_75 (hA : IsUnit A) (E : Matrix (Fin n) (Fin n) 𝕜)
 let $A \in \mathbb{K}^{n \times n}$ be nonsingular, let $Ax = b$ with $b \neq 0$, and let
 $\tilde x \in \mathbb{K}^n$. Then, with the residual $r = b - A\tilde x$,
 $$\frac{\|x - \tilde x\|_p}{\|x\|_p} \le \kappa_p(A) \frac{\|r\|_p}{\|b\|_p}.$$
--/
+
+**Reading.** The source leaves $b \neq 0$ implicit in the relative residual. The hypothesis
+ensures that both $\|b\|_p$ and $\|x\|_p$ are nonzero. -/
 theorem relative_error_le_condNumberLp (hA : IsUnit A) {b x : Fin n → 𝕜} (hx : A *ᵥ x = b)
     (hb : (WithLp.toLp p b : PiLp p (fun _ : Fin n => 𝕜)) ≠ 0) (y : Fin n → 𝕜) :
     ‖(WithLp.toLp p (x - y) : PiLp p (fun _ : Fin n => 𝕜))‖ / ‖(WithLp.toLp p x :

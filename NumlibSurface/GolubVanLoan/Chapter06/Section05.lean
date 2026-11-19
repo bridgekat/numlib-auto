@@ -139,6 +139,23 @@ Chapter 5 and Algorithms 1.1.2–1.1.3 of Chapter 1.
 
 ## Deviations from the source
 
+* **Equations (6.5.6) and (6.5.10)** (generalization). The two Gram identities hold for any
+  square $G$ with $GG^T=A$, without the source's positive-definite Cholesky setting. See
+  `GolubVanLoan.Chapter06.equation_6_5_6` and `GolubVanLoan.Chapter06.equation_6_5_10`.
+* **Equations (6.5.2)–(6.5.3)** (generalization). Arbitrary embedded adjacent blocks preserve
+  the Hessenberg structure. The rank-one update identity assumes only that the sweep maps $w$ to
+  $\rho e_1$. See `GolubVanLoan.Chapter06.equation_6_5_2` and
+  `GolubVanLoan.Chapter06.equation_6_5_3`.
+* **§6.5.2** (generalization). The column updates accept wide upper trapezoidal factors.
+  Insertion can occur at the first column. See `GolubVanLoan.Chapter06.qrDeleteColumn` and
+  `GolubVanLoan.Chapter06.qrInsertColumn`.
+* **§6.5.3, row deletion** (reading). The arbitrary-row result gives existence of a QR
+  factorization. The implemented update treats the source's detailed first-row procedure. See
+  `GolubVanLoan.Chapter06.qrDeleteRow_exists` and `GolubVanLoan.Chapter06.qrDeleteFirstRow`.
+* **§6.5.4, downdate sweep** (typo). The matrix whose bottom row is zeroed is the stack
+  $[G^T;z^T]$. The prose immediately before Theorem 6.5.1 transposes the concatenation
+  $[G^T\mid z]$, which gives $[G;z^T]$. See
+  `GolubVanLoan.Chapter06.choleskyDowndate`.
 * **§6.5.1** (typo). "Following Algorithm 5.2.4" means Algorithm 5.2.5, the QR factorization of an
   upper Hessenberg matrix. See `GolubVanLoan.Chapter06.qrUpdateRankOne`.
 * **Equation (6.5.7)** (typo). The source prints $\tilde A = RR^T$. The correct identity is
@@ -153,8 +170,8 @@ Chapter 5 and Algorithms 1.1.2–1.1.3 of Chapter 1.
 * **§6.5.4, nonexistence of a hyperbolic rotation** (generalization). The source treats
   $|x_2| > |x_1|$. The statement also covers $|x_2| = |x_1| \neq 0$. See
   `GolubVanLoan.Chapter06.hyperbolic_not_exists`.
-* **Theorem 6.5.1** (typo). The statement is garbled in print ("If / and / A = …"). See
-  `GolubVanLoan.Chapter06.theorem_6_5_1`.
+* **Proof of Theorem 6.5.1** (typo). The Schur complement in the proof uses the pivot
+  $\alpha - \mu^2$, printed as $\alpha$ in the prose. See `GolubVanLoan.Chapter06.theorem_6_5_1`.
 * **Equation (6.5.16)** (generalization). The source obtains $\Pi$ and $R$ from QR with column
   pivoting. The statement holds for every orthogonal $\Pi$ and every $R$ with $U^T A \Pi = [R; 0]$.
   See `GolubVanLoan.Chapter06.equation_6_5_16`.
@@ -217,7 +234,10 @@ planes as in (6.5.2), and let $w, v \in \mathbb{R}^n$ with $Pw = \rho e_1$. Then
 PR + \rho e_1 v^T = H_1,$$ and $H_1$ is upper Hessenberg.
 
 The source has $\rho = \pm\|w\|_2$. As in (6.5.2), the $2 \times 2$ blocks of the rotations are
-arbitrary. -/
+arbitrary.
+
+**Generalization.** The proof uses arbitrary adjacent two-by-two blocks that map $w$ to $\rho
+e_1$. For the orthogonal sweep in the source, $|\rho|=\|w\|_2$. -/
 theorem equation_6_5_3 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUpperTriangular)
     (G : ℕ → Matrix (Fin 2) (Fin 2) ℝ) {P : Matrix (Fin n) (Fin n) ℝ}
     (hP : P = (List.map (fun j => adjacentEmbed j (G j)) (List.range (n - 1))).prod)
@@ -235,7 +255,10 @@ theorem equation_6_5_3 {n : ℕ} {R : Matrix (Fin n) (Fin n) ℝ} (hR : R.IsUppe
 /-- **Section 6.5.3** of [golub2013matrix], deleting an arbitrary row ("The procedure is similar
 when an arbitrary row is deleted."). If $A = QR$ is a QR factorization of
 $A \in \mathbb{R}^{(m+1) \times n}$ and $k$ is a row index, then the matrix $A$ with its row $k$
-deleted has a QR factorization. -/
+deleted has a QR factorization.
+
+**Reading.** The arbitrary-row declaration gives existence of the smaller QR factorization. The
+executable Givens sweep in this module treats deletion of the first row. -/
 theorem qrDeleteRow_exists {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
     {Q : Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ} {R : Matrix (Fin (m + 1)) (Fin n) ℝ}
     (h : IsQR A Q R) (k : Fin (m + 1)) :
@@ -248,6 +271,8 @@ theorem qrDeleteRow_exists {m n : ℕ} {A : Matrix (Fin (m + 1)) (Fin n) ℝ}
 /-- **Equation (6.5.6)** of [golub2013matrix]. Let $G \in \mathbb{R}^{n \times n}$ with $GG^T = A$,
 and let $z \in \mathbb{R}^n$. Then $\tilde A = A + zz^T$ (6.5.5) satisfies $$\tilde A =
 \begin{bmatrix} G^T \\ z^T \end{bmatrix}^T \begin{bmatrix} G^T \\ z^T \end{bmatrix}.$$
+
+**Reading.** Stacked Gram identity only uses GGᵀ=A, without definite or triangular premise.
 -/
 theorem equation_6_5_6 {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hA : G * Gᵀ = A)
     (z : Fin n → ℝ) :
@@ -288,6 +313,8 @@ theorem equation_6_5_7 {n : ℕ} {A G R : Matrix (Fin n) (Fin n) ℝ} (hA : G * 
 let $z \in \mathbb{R}^n$, and let $S = \operatorname{diag}(I_n, -1)$ (6.5.9). Then $$\tilde A =
 GG^T - zz^T = \begin{bmatrix} G^T \\ z^T \end{bmatrix}^T S \begin{bmatrix} G^T \\ z^T
 \end{bmatrix}.$$
+
+**Reading.** Signature Gram identity only uses GGᵀ=A, without triangularity or positivity premise.
 -/
 theorem equation_6_5_10 {n : ℕ} {A G : Matrix (Fin n) (Fin n) ℝ} (hA : G * Gᵀ = A)
     (z : Fin n → ℝ) :
@@ -410,15 +437,13 @@ $c = \cosh(\theta)$ and $s = \sinh(\theta)$ such that $$\begin{bmatrix} c & 0 & 
 \end{bmatrix}$$ for some $\tilde g_{11}$, $\tilde g_1$ and $w_1$. Moreover, the matrix
 $\tilde A_1 = G_1 G_1^T - w_1 w_1^T$ is positive definite.
 
-**Typo.** The statement of the theorem is garbled in print ("If / and / A = …"). The statement
-here is the one that the proof establishes.
+**Typo.** The proof calls $\tilde A_1$ the Schur complement of $\alpha$ in $\tilde A$. The pivot
+is its $(1,1)$ entry, $\alpha - \mu^2$, as the displayed block matrix for $\tilde A$ shows.
 
 The factorization is `Matrix.IsCholesky A H` with $H = [g_{11}\ g_1^T; 0\ G_1^T]$ indexed by
 `Fin (n + 1)`, where the first index carries $\alpha$, $g_{11}$ and $\mu$. The rotated stacked
 matrix is $[R'; z'^T]$, where $R'$ equals $H$ off its first row, $z'_1 = 0$, and $w_1$ is the
-rest of $z'$. In the proof, the source calls the trailing block the Schur complement of
-$\alpha$; it is the Schur complement of the entry $(1, 1)$ of $\tilde A$, which is
-$\alpha - \mu^2$. The theorem is `Matrix.hyperbolicDowndate_step`. -/
+rest of $z'$. The theorem is `Matrix.hyperbolicDowndate_step`. -/
 theorem theorem_6_5_1 {n : ℕ} {A H : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hH : IsCholesky A H) {z : Fin (n + 1) → ℝ} (hA : (A - vecMulVec z z).PosDef) :
     ∃ θ : ℝ, ∃ (R' : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ) (z' : Fin (n + 1) → ℝ),
@@ -564,7 +589,10 @@ $k = 1, \dots, n$. Each is computed by (6.5.13), $$\tau = x_2 / x_1, \qquad c = 
 $(n + 1, k)$. The output is $\tilde G = R^T$ for the triangular block $R$ of the result.
 
 Every arithmetic result is rounded, and $\sqrt{\cdot}$ is `Real.sqrt` followed by one rounding.
-The rotations are applied by `GolubVanLoan.Chapter05.hyperbolicApplyLeft`. -/
+The rotations are applied by `GolubVanLoan.Chapter05.hyperbolicApplyLeft`.
+
+**Typo.** The prose before Theorem 6.5.1 writes the stack of the factor and update vector as
+$[G^T\mid z]^T$. The sweep uses the stacked matrix $[G^T;z^T]$ from (6.5.12). -/
 noncomputable def choleskyDowndate {n : ℕ} (G : Matrix (Fin n) (Fin n) ℝ) (z : Fin n → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let S ← (List.finRange n).foldlM (fun (S : Matrix (Fin n ⊕ Unit) (Fin n) ℝ) (k : Fin n) => do
@@ -753,7 +781,10 @@ rotations, $G_{n-1}^T \cdots G_k^T H = R_1$, and returns $(Q_1, R_1)$ with
 $Q_1 = Q G_k \cdots G_{n-1}$, a QR factorization of $\tilde A$.
 
 Forming $H$ needs no arithmetic. The sweep is `GolubVanLoan.Chapter05.givensHessenbergSweep`
-from column $k$. -/
+from column $k$.
+
+**Generalization.** The program also handles wide upper trapezoidal factors, stopping rotations
+when either adjacent row is absent. -/
 noncomputable def qrDeleteColumn {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin (n + 1)) ℝ) (k : Fin (n + 1)) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin n) ℝ) :=
@@ -768,7 +799,10 @@ inserts it into $R$ as column $k$ to obtain $H$, and then, for $j = m - 2, \dots
 $[c, s] = \operatorname{givens}(H(j, k), H(j + 1, k))$ to zero $H(j + 1, k)$, rotates the rows
 $j$ and $j + 1$ of $H$, and accumulates the rotation into $Q$.
 
-These rotations are the $J_{m-1}, \dots, J_{k+1}$ of the source. -/
+These rotations are the $J_{m-1}, \dots, J_{k+1}$ of the source.
+
+**Generalization.** The insertion index can be the first position, and the input factor can be
+wide. The source illustrates insertion after the $k$-th column in a tall factor. -/
 noncomputable def qrInsertColumn {m n : ℕ} (Q : Matrix (Fin m) (Fin m) ℝ)
     (R : Matrix (Fin m) (Fin n) ℝ) (z : Fin m → ℝ) (k : Fin (n + 1)) :
     M (Matrix (Fin m) (Fin m) ℝ × Matrix (Fin m) (Fin (n + 1)) ℝ) := do
@@ -906,7 +940,10 @@ deleted.
 
 The run is at `M := Id` with `rnd := pure`. The matrix $Q^T \tilde A = H$ is upper Hessenberg
 and upper triangular before column $k$ (`Matrix.IsQR.conjTranspose_mul_deleteColumn`), and the
-sweep from column $k$ triangularizes it. -/
+sweep from column $k$ triangularizes it.
+
+**Reading.** Deletion result includes wide matrices.
+-/
 theorem qrDeleteColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin (n + 1)) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin (n + 1)) ℝ} (h : IsQR A Q R)
     (k : Fin (n + 1)) :
@@ -939,7 +976,10 @@ factorization of $A$ with $z$ inserted as its column $k$.
 The run is at `M := Id` with `rnd := pure`. The invariant of the bottom-up sweep is:
 $QH = \tilde A$; $H$ is upper triangular off the spike column $k$; the diagonal entries right of
 the spike vanish in the rows not yet rotated, so a rotation of the rows $j$ and $j + 1$ creates
-no subdiagonal entry; and the spike vanishes below the rows already rotated. -/
+no subdiagonal entry; and the spike vanishes below the rows already rotated.
+
+**Reading.** Exact QR for any insertion position and any rectangular shape.
+-/
 theorem qrInsertColumn_spec {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {Q : Matrix (Fin m) (Fin m) ℝ} {R : Matrix (Fin m) (Fin n) ℝ} (h : IsQR A Q R)
     (z : Fin m → ℝ) (k : Fin (n + 1)) :

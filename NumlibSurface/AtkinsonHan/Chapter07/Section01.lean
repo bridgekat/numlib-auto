@@ -98,6 +98,14 @@ formula.
 
 ## Deviations from the source
 
+* **Definition 7.1.1** (scope). The locally integrable predicate allows all extended
+  nonnegative exponents. The source specifies $1 \le p < \infty$.
+* **Definition 7.1.3, Lemmas 7.1.4–7.1.5 and Proposition 7.1.10** (scope). The first
+  formulation uses a multilinear weak derivative of a given order. The multi-index
+  predicate gives the scalar derivative in the source. The predicates allow an empty
+  open set.
+* **Proposition 7.1.11** (scope). There is a separate multiplication rule for a smooth
+  factor, stated without the conjugate-exponent hypotheses.
 * **Proposition 7.1.12** (generalization). The source assumes $v \in W^{1,p}(\Omega)$ and concludes
   for every first-order derivative. The library assumes $v, \partial^\alpha v \in L^p(\Omega)$ for
   one $\alpha$ with $|\alpha| = 1$ and concludes for that $\alpha$. See
@@ -126,7 +134,11 @@ on which $v$ is $p$-integrable.
 The source asks that $v \in L^p(\Omega')$ for an open $\Omega'$ with
 $\overline{\Omega'} \subseteq \Omega$. On an open $\Omega$ this is the same condition, because
 every point of $\Omega$ has a ball whose closure lies in $\Omega$. The definition is
-`MeasureTheory.LocallyMemLpOn v p Ω volume`, and it accepts every `p : ℝ≥0∞`. -/
+`MeasureTheory.LocallyMemLpOn v p Ω volume`, and it accepts every `p : ℝ≥0∞`.
+
+**Generalization.** Same local integrability for the stated exponent range and extends to all
+extended nonnegative exponents.
+-/
 def definition_7_1_1 (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin d)))
     (v : EuclideanSpace ℝ (Fin d) → ℝ) : Prop :=
   LocallyMemLpOn v p Ω volume
@@ -159,7 +171,11 @@ $\mathbb{R}^d$.
 
 A tuple $y$ of directions names a multi-index $\alpha$ with $|\alpha| = n$, and $w(x)(y)$ is
 then the weak $\partial^\alpha v(x)$. The definition is
-`HasWeakIteratedFDerivOn n v w Ω volume`. -/
+`HasWeakIteratedFDerivOn n v w Ω volume`.
+
+**Reading.** Bundles all weak derivatives of fixed order as a multilinear map rather than one
+coordinate derivative.
+-/
 def definition_7_1_3 (n : ℕ) (v : EuclideanSpace ℝ (Fin d) → ℝ)
     (w : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ)
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Prop :=
@@ -201,7 +217,10 @@ theorem definition_7_1_3_multiIndex_of_definition_7_1_3 (α : Fin d → ℕ)
 
 /-- **Lemma 7.1.4** of [han2009theoretical]. If $w_1$ and $w_2$ are both weak derivatives of order
 $n$ of $v$ on $\Omega$, then $w_1 = w_2$ almost everywhere on $\Omega$. So a weak derivative, if
-it exists, is unique up to a set of measure zero. -/
+it exists, is unique up to a set of measure zero.
+
+**Reading.** Almost-everywhere uniqueness is formulated for the full multilinear derivative.
+-/
 theorem lemma_7_1_4 {w₁ w₂ : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ}
     (h₁ : definition_7_1_3 n v w₁ Ω) (h₂ : definition_7_1_3 n v w₂ Ω) :
     ∀ᵐ x, x ∈ (Ω : Set (EuclideanSpace ℝ (Fin d))) → w₁ x = w₂ x :=
@@ -214,7 +233,10 @@ the classical $\partial^\alpha v$ is the weak $\alpha$-th derivative, and the we
 extends the classical one.
 
 The classical derivative is `iteratedFDeriv ℝ n v`, and $v \in C^m(\Omega)$ is
-`ContDiffOn ℝ m v Ω`. -/
+`ContDiffOn ℝ m v Ω`.
+
+**Reading.** Uses the entire iterated Fréchet derivative in the weak identity.
+-/
 theorem lemma_7_1_5 (hv : ContDiffOn ℝ m v Ω) (hnm : n ≤ m) :
     definition_7_1_3 n v (iteratedFDeriv ℝ n v) Ω :=
   hv.hasWeakIteratedFDerivOn (by exact_mod_cast hnm)
@@ -222,7 +244,10 @@ theorem lemma_7_1_5 (hv : ContDiffOn ℝ m v Ω) (hnm : n ≤ m) :
 /-- **Proposition 7.1.10** of [han2009theoretical]. Let $w_1$ and $w_2$ be weak derivatives of order
 $n$ of $u$ and $v$ on $\Omega$, and let $c_1, c_2 \in \mathbb{R}$. Then $c_1 w_1 + c_2 w_2$ is
 the weak derivative of order $n$ of $c_1 u + c_2 v$. So weak differentiation is linear:
-$\partial^\alpha(c_1 u + c_2 v) = c_1 \partial^\alpha u + c_2 \partial^\alpha v$. -/
+$\partial^\alpha(c_1 u + c_2 v) = c_1 \partial^\alpha u + c_2 \partial^\alpha v$.
+
+**Reading.** Linearity is formulated for the full multilinear weak derivative.
+-/
 theorem proposition_7_1_10 {w₁ w₂ : EuclideanSpace ℝ (Fin d) → EuclideanSpace ℝ (Fin d) [×n]→L[ℝ] ℝ}
     (h₁ : definition_7_1_3 n u w₁ Ω) (h₂ : definition_7_1_3 n v w₂ Ω) (c₁ c₂ : ℝ) :
     definition_7_1_3 n (c₁ • u + c₂ • v) (c₁ • w₁ + c₂ • w₂) Ω :=
@@ -238,7 +263,10 @@ where $\partial^\alpha g$ is the classical derivative of $g$.
 This is a special case of `AtkinsonHan.Chapter07.proposition_7_1_11`, which allows two locally
 integrable factors. The smooth case is elementary, because $g \varphi$ is again a test function
 when $\varphi$ is. The identity is then the integration by parts $\int (\partial^\alpha \varphi)
-g u = \int \partial^\alpha(g \varphi) u - \int \varphi (\partial^\alpha g) u$. -/
+g u = \int \partial^\alpha(g \varphi) u - \int \varphi (\partial^\alpha g) u$.
+
+**Reading.** Separate smooth multiplier rule without conjugate-exponent hypotheses.
+-/
 theorem proposition_7_1_11_contDiff {α : Fin d → ℕ} (hα : ∑ i, α i = 1)
     {w : EuclideanSpace ℝ (Fin d) → ℝ} (h : definition_7_1_3_multiIndex α u w Ω)
     {g : EuclideanSpace ℝ (Fin d) → ℝ} (hg : ContDiff ℝ ∞ g) :

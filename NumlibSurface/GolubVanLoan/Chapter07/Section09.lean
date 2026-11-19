@@ -101,6 +101,23 @@ and the lower bound (7.9.11) on transient growth. The proofs specialize the back
 
 ## Deviations from the source
 
+* **Equation (7.9.5), closed level set** (reading). `GolubVanLoan.Chapter07.pseudospectrum`
+  takes the nonstrict inequality. With a positive tolerance the two conventions can differ at
+  boundary points, even for the scalar zero matrix.
+* **Equation (7.9.7)** (reading). `GolubVanLoan.Chapter07.equation_7_9_7` makes the source’s
+  implicit existential perturbation quantifier explicit.
+* **Theorem 7.9.2, proof** (typo). The rightmost factor of the resolvent similarity is $X$, not
+  the printed $X^{-1}$. See `GolubVanLoan.Chapter07.theorem_7_9_2`.
+* **Theorem 7.9.8 and §7.9.5** (reading). `GolubVanLoan.Chapter07.theorem_7_9_8` uses the least
+  singular value everywhere and the reciprocal resolvent only off the spectrum.
+  `GolubVanLoan.Chapter07.sigmaMin_schur` does not require a triangular transformed matrix for
+  the stated identities.
+* **Equations (7.9.8)–(7.9.9)** (reading). `GolubVanLoan.Chapter07.pseudospectralAbscissa` and
+  `GolubVanLoan.Chapter07.pseudospectralRadius` use real suprema. Attainment is proved for
+  nonempty matrices and nonnegative tolerance.
+* **Equations (7.9.10)–(7.9.11)** (reading). The ray eigenvalue and singular value
+  correspondence is bidirectional for positive tolerance. The transient growth estimate uses
+  arbitrary real uniform upper bounds in place of a supremum.
 * **(7.9.5)** (typo). The source writes $\lambda$ for $z$ inside the set-builder. See
   `GolubVanLoan.Chapter07.pseudospectrum`.
 * **(7.9.6)** (reading). The resolvent form is stated for $\varepsilon > 0$ with
@@ -345,7 +362,11 @@ its elements are the **$\varepsilon$-pseudoeigenvalues** of $A$.
 The least singular value is `⨅ i, (A - z • 1).colSingularValues i`. For an empty index type this
 infimum is $0$, so that $\Lambda_\varepsilon(A) = \mathbb{C}$ for $\varepsilon \ge 0$. For a
 nonempty index type, $\Lambda_\varepsilon(A)$ is the backbone's closed pseudospectrum of the
-Euclidean operator of $A$ (`GolubVanLoan.Chapter07.pseudospectrum_eq`). -/
+Euclidean operator of $A$ (`GolubVanLoan.Chapter07.pseudospectrum_eq`).
+
+**Reading.** The source discusses strict and nonstrict inequalities as interchangeable. They
+define different point sets at the boundary: for a $1\times1$ zero matrix and positive
+tolerance, the strict version is the open disk and the Lean definition is the closed disk. -/
 noncomputable def pseudospectrum (ε : ℝ) (A : Matrix m m ℂ) : Set ℂ :=
   {z | ⨅ i, (A - z • 1).colSingularValues i ≤ ε}
 
@@ -439,7 +460,10 @@ theorem equation_7_9_6 [Nonempty m] {ε : ℝ} (hε : 0 < ε) (A : Matrix m m �
 /-- **Equation (7.9.7)** of [golub2013matrix]. Let $A$ be a square complex matrix over a nonempty
 index type, $\varepsilon \in \mathbb{R}$ and $z \in \mathbb{C}$. Then
 $z \in \Lambda_\varepsilon(A)$ if and only if there is a matrix $E$ with
-$\|E\|_2 \le \varepsilon$ such that $z$ is an eigenvalue of $A + E$. -/
+$\|E\|_2 \le \varepsilon$ such that $z$ is an eigenvalue of $A + E$.
+
+**Reading.** The source’s set display leaves the perturbation quantifier implicit. The Lean
+theorem explicitly requires the existence of a matrix $E$ satisfying both conditions. -/
 theorem equation_7_9_7 [Nonempty m] (ε : ℝ) (A : Matrix m m ℂ) (z : ℂ) :
     z ∈ pseudospectrum ε A ↔ ∃ E : Matrix m m ℂ, ‖E‖ ≤ ε ∧ z ∈ spectrum ℂ (A + E) := by
   rw [pseudospectrum_eq,
@@ -501,7 +525,10 @@ $$\Lambda_\varepsilon(X^{-1} A X) \subseteq \Lambda_{\varepsilon \kappa_2(X)}(A)
 $\kappa_2(X) = \|X\|_2 \|X^{-1}\|_2$.
 
 The condition number is `NormedRing.condNumber X` for the operator 2-norm. The source's proof
-writes $X^{-1} (zI - A)^{-1} X^{-1}$ where $X^{-1} (zI - A)^{-1} X$ is meant. -/
+writes $X^{-1} (zI - A)^{-1} X^{-1}$ where $X^{-1} (zI - A)^{-1} X$ is meant.
+
+**Typo.** The second similarity factor on the right of the resolvent identity in the source
+proof is $X$, where it prints $X^{-1}$. -/
 theorem theorem_7_9_2 [Nonempty m] {X : Matrix m m ℂ} (hX : IsUnit X) (A : Matrix m m ℂ)
     (ε : ℝ) :
     pseudospectrum ε (X⁻¹ * A * X) ⊆ pseudospectrum (ε * NormedRing.condNumber X) A := by
@@ -573,7 +600,11 @@ $z_0 \notin \lambda(A)$, then $$\operatorname{dist}(z_0, \Lambda_\varepsilon(A))
 
 The second inequality is the source's statement; it follows from the first, because
 $\sigma_{\min}(z_0 I - A) = 1/\|(z_0 I - A)^{-1}\|_2$ when $z_0 \notin \lambda(A)$. The distance
-is `Metric.infDist`. -/
+is `Metric.infDist`.
+
+**Reading.** The source gives a reciprocal resolvent expression at $z_0$. Lean makes the
+condition $z_0\notin\Lambda(A)$ explicit for that expression and gives the least-singular-value
+version for all $z_0$. -/
 theorem theorem_7_9_8 [Nonempty m] {ε : ℝ} (hε : 0 ≤ ε) (A : Matrix m m ℂ) (z₀ : ℂ) :
     (⨅ i, (z₀ • 1 - A).colSingularValues i) - ε ≤ infDist z₀ (pseudospectrum ε A) ∧
       (z₀ ∉ spectrum ℂ A → 1 / ‖(z₀ • 1 - A)⁻¹‖ - ε ≤ infDist z₀ (pseudospectrum ε A)) := by
@@ -601,7 +632,9 @@ $n \ge 1$, let $A, Q, T \in \mathbb{C}^{n \times n}$ with $Q$ unitary and $Q^H A
 $z \in \mathbb{C}$. Then $\sigma_{\min}(zI - A) = \sigma_{\min}(zI - T)$. Moreover, if
 $d, y \in \mathbb{C}^n$ satisfy $\|d\|_2 = 1$ and $(zI - T) y = d$, then $$\sigma_{\min}(zI - T)
 \le \frac{1}{\|y\|_2}.$$
--/
+
+**Generalization.** Triangularity of $T$ enables the source’s contemplated computation, while
+these identities and the upper estimate need only unitary similarity and the indicated solve. -/
 theorem sigmaMin_schur [NeZero n] {A Q T : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin n) ℂ) (hT : star Q * A * Q = T) (z : ℂ) :
     ⨅ i, (z • 1 - A).colSingularValues i = ⨅ i, (z • 1 - T).colSingularValues i ∧
@@ -630,7 +663,11 @@ $$\alpha_\varepsilon(A) = \sup\{\operatorname{Re} z : z \in \Lambda_\varepsilon(
 The supremum is the real `sSup`, which is $0$ for an empty or an unbounded set. For a nonempty
 index type and $\varepsilon \ge 0$ the supremum is a maximum, and the definition agrees with the
 backbone's `Matrix.pseudospectralAbscissa`
-(`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`). -/
+(`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`).
+
+**Reading.** The source uses a maximum. Lean uses a real supremum, and
+`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec` gives attainment for nonempty matrices and
+nonnegative tolerance. -/
 noncomputable def pseudospectralAbscissa (ε : ℝ) (A : Matrix m m ℂ) : ℝ :=
   sSup (Complex.re '' pseudospectrum ε A)
 
@@ -640,7 +677,10 @@ $$\rho_\varepsilon(A) = \sup\{|z| : z \in \Lambda_\varepsilon(A)\}.$$
 
 The supremum is the real `sSup`, which is $0$ for an empty or an unbounded set. For a nonempty
 index type and $\varepsilon \ge 0$ the supremum is a maximum, and the definition agrees with the
-backbone's `Matrix.pseudospectralRadius` (`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`). -/
+backbone's `Matrix.pseudospectralRadius` (`GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`).
+
+**Reading.** The source uses a maximum. Lean uses a real supremum, with attainment under the
+hypotheses of `GolubVanLoan.Chapter07.pseudospectralAbscissa_spec`. -/
 noncomputable def pseudospectralRadius (ε : ℝ) (A : Matrix m m ℂ) : ℝ :=
   sSup ((‖·‖) '' pseudospectrum ε A)
 
@@ -744,7 +784,11 @@ $M [f; g] = i \cdot r [f; g]$, then $(A - re^{i\theta} I)^H (A - re^{i\theta} I)
 \varepsilon^2 g$". For $\varepsilon > 0$, $g = 0$ forces $f = 0$, so the eigenvector gives a
 singular vector; the converse is built from a singular pair. The eigenvalue condition is the
 existence of $v \neq 0$ with $Mv = irv$, and "$\varepsilon$ is a singular value of $B$" is
-$\varepsilon = $ `B.colSingularValues i` for some `i`. -/
+$\varepsilon = $ `B.colSingularValues i` for some `i`.
+
+**Reading.** The source shows the implication from a crossing eigenvalue to a singular value.
+Lean gives the two-way statement for positive tolerance and keeps the squared Gram identity for
+every real tolerance. -/
 theorem equation_7_9_10 (θ r ε : ℝ) (A : Matrix m m ℂ) :
     (∀ f g : m → ℂ, rayCrossingMatrix θ ε A *ᵥ Sum.elim f g = (Complex.I * r) • Sum.elim f g →
       ((A - ((r : ℂ) * Complex.exp (θ * Complex.I)) • 1)ᴴ *
@@ -883,7 +927,11 @@ over a nonempty index type and $\varepsilon > 0$. Then $$\sup_{k \ge 0} \|A^k\|_
 
 The source takes the bound from Trefethen and Embree, pp. 160–161. The supremum is stated
 through its upper bounds: if $\|A^k\|_2 \le M$ for all $k \ge 0$, then
-$(\rho_\varepsilon(A) - 1)/\varepsilon \le M$. -/
+$(\rho_\varepsilon(A) - 1)/\varepsilon \le M$.
+
+**Reading.** The source writes the supremum of all power norms. Lean gives the bound for any
+real uniform upper bound, also covering the case where the powers are unbounded through the
+absence of such a bound. -/
 theorem equation_7_9_11 [Nonempty m] {ε : ℝ} (hε : 0 < ε) (A : Matrix m m ℂ) {M : ℝ}
     (hM : ∀ k : ℕ, ‖A ^ k‖ ≤ M) : (pseudospectralRadius ε A - 1) / ε ≤ M := by
   rw [(pseudospectralAbscissa_spec hε.le A).2.1]

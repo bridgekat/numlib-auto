@@ -127,6 +127,51 @@ of the symmetric Powell–Broyden update. The proofs specialize `Numlib.Optimiza
 
 ## Deviations from the source
 
+* **Convention.** The Hessian definition uses totalized Fréchet derivatives. See
+  `QuarteroniSaccoSaleri.Chapter07.hessianMatrix`.
+* **Generalization.** Gradient stationarity at a local minimum needs only differentiability there.
+  See `QuarteroniSaccoSaleri.Chapter07.property_7_4_gradient`.
+* **Correction.** The Hessian test includes stationarity and concludes a strict local minimum. See
+  `QuarteroniSaccoSaleri.Chapter07.property_7_4_sufficient`.
+* **Convention.** Criticality uses the totalized gradient, with differentiability supplied where
+  needed. See `QuarteroniSaccoSaleri.Chapter07.IsCriticalPoint`.
+* **Generalization.** The descent and line-orthogonality results use pointwise differentiability,
+  and a local line minimum suffices for orthogonality. See
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_27`, `QuarteroniSaccoSaleri.Chapter07.theorem_7_3`.
+* **Reading.** The Armijo equivalence uses the inner bound; descent gives the outer nonnegativity
+  under the source assumptions. See `QuarteroniSaccoSaleri.Chapter07.equation_7_31`.
+* **Reading.** The Goldstein ratio has a strictly negative slope. Armijo backtracking proves
+  existence of a satisfactory exponent. See `QuarteroniSaccoSaleri.Chapter07.equation_7_34`.
+* **Reading.** The line-search interval theorem makes smoothness and strict descent explicit and
+  satisfies both curvature conditions. See `QuarteroniSaccoSaleri.Chapter07.property_7_5`.
+* **Generalization.** The quadratic derivative identities use symmetry alone. See
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_35`.
+* **Reading.** The exact quadratic line minimizer is unique for a nonzero direction. See
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_36`.
+* **Convention.** The energy identity uses totalized division and gives strict decrease when the
+  directional product is nonzero. See `QuarteroniSaccoSaleri.Chapter07.equation_7_38`.
+* **Correction.** Quadratic minimization uses an affine search space, and termination assumes n
+  nonzero conjugate directions. See `QuarteroniSaccoSaleri.Chapter07.property_7_6_isMinOn`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_6_termination`.
+* **Convention.** The linear and nonlinear CG formulas are totalized at zero residual, and the
+  quadratic comparison uses exact line search. See
+  `QuarteroniSaccoSaleri.Chapter07.conjugateGradient_eq_CG`,
+  `QuarteroniSaccoSaleri.Chapter07.remark_7_2`.
+* **Reading.** Newton's local result applies to a stationary point with invertible Lipschitz
+  Hessian. The quadratic theorem proves one-step convergence. See
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_40`, `QuarteroniSaccoSaleri.Chapter07.equation_7_41`.
+* **Correction.** The Wolfe convergence result gives a disjunction; with totalized ratios the
+  alternatives can overlap. See `QuarteroniSaccoSaleri.Chapter07.property_7_7`.
+* **Generalization.** Bounded iterates with all cluster points critical suffice for the gradient to
+  tend to zero. See `QuarteroniSaccoSaleri.Chapter07.property_7_8`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_8_of_tendsto`.
+* **Reading.** The symmetric rank-one update and its inverse make the symmetry and nonzero
+  denominators explicit. See `QuarteroniSaccoSaleri.Chapter07.equation_7_43`,
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_44`.
+* **Reading.** The symmetric Powell–Broyden results specify symmetric input and nonzero
+  displacement, with Frobenius norms in the deterioration bound. See
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_46`, `QuarteroniSaccoSaleri.Chapter07.psbLeastChange`,
+  `QuarteroniSaccoSaleri.Chapter07.psbBoundedDeterioration`.
 * **Property 7.4(a)** (generalization). The source assumes $f \in C^1(B(x^*; R))$; differentiability
   at $x^*$ is enough. See `QuarteroniSaccoSaleri.Chapter07.property_7_4_gradient`.
 * **Property 7.4(c)** (correction). The source omits the hypothesis $\nabla f(x^*) = 0$, without
@@ -181,7 +226,11 @@ Where these derivatives do not exist, Mathlib's `fderiv` gives $0$. For a $C^2$ 
 is the matrix of the second Fréchet derivative
 (`QuarteroniSaccoSaleri.Chapter07.hessianMatrix_apply`), it is symmetric
 (`QuarteroniSaccoSaleri.Chapter07.hessianMatrix_isSymm`), and it is the derivative of the
-gradient map (`QuarteroniSaccoSaleri.Chapter07.hasFDerivAt_gradient`). -/
+gradient map (`QuarteroniSaccoSaleri.Chapter07.hasFDerivAt_gradient`).
+
+**Reading.** The matrix of iterated coordinate derivatives is defined using totalized Fréchet
+derivatives. On the usual twice continuously differentiable domain it has the source's entries.
+-/
 noncomputable def hessianMatrix (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) :
     Matrix (Fin n) (Fin n) ℝ :=
   Matrix.of fun i j =>
@@ -282,7 +331,11 @@ local minimizer $x^*$ and be differentiable at $x^*$. Then $\nabla f(x^*) = 0$.
 **Generalization.** The source assumes $f \in C^1(B(x^*; R))$. Differentiability at $x^*$ is
 enough.
 
-The proof is Mathlib's `IsLocalMin.hasFDerivAt_eq_zero`. -/
+The proof is Mathlib's `IsLocalMin.hasFDerivAt_eq_zero`.
+
+**Generalization.** Differentiability at the minimizer suffices in place of continuous
+differentiability on a neighborhood.
+-/
 theorem property_7_4_gradient (hmin : IsLocalMin f xstar) (hf : DifferentiableAt ℝ f xstar) :
     gradient f xstar = 0 := by
   have h := hmin.hasFDerivAt_eq_zero (hasGradientAt_iff_hasFDerivAt.1 hf.hasGradientAt)
@@ -322,7 +375,12 @@ statement is false: $f(x) = x + x^2$ has $f''(0) = 2 > 0$, but $0$ is not a loca
 conclusion is also stronger: the minimum is strict.
 
 The proof specializes `Descent.isLocalMin_of_coercive_second`, with the coercivity of the
-Hessian form from `Matrix.posDef_iff_isSymmetricCoercive`. -/
+Hessian form from `Matrix.posDef_iff_isSymmetricCoercive`.
+
+**Correction.** A positive definite Hessian is sufficient only at a stationary point. The theorem
+supplies zero gradient and proves a strict local minimum. For instance, $f(t)=t+t^2$ has positive
+second derivative at zero but is not minimized there.
+-/
 theorem property_7_4_sufficient (hf : ContDiffAt ℝ 2 f xstar) (hcrit : gradient f xstar = 0)
     (hH : (hessianMatrix f xstar).PosDef) :
     ∃ δ > 0, ∀ y ∈ ball xstar δ, y ≠ xstar → f xstar < f y := by
@@ -349,7 +407,11 @@ $f : \mathbb{R}^n \to \mathbb{R}$ if $\nabla f(x^*) = 0$.
 
 By Property 7.4(a) this is necessary for a local minimum. It is sufficient when $f$ is convex,
 by `QuarteroniSaccoSaleri.Chapter07.isMinOn_of_convexOn_of_isCriticalPoint`. Where $f$ is not
-differentiable, `gradient f x` is $0$, so such a point counts as critical. -/
+differentiable, `gradient f x` is $0$, so such a point counts as critical.
+
+**Reading.** The predicate is zero totalized gradient. Applications requiring actual stationarity
+supply differentiability, since the default gradient is zero when no derivative exists.
+-/
 def IsCriticalPoint (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   gradient f x = 0
 
@@ -412,7 +474,12 @@ be differentiable at $x$, and let $d$ be a descent direction at $x$ in the sense
 is, $d^T \nabla f(x) < 0$. Then there is $\varepsilon > 0$ with $f(x + \alpha d) < f(x)$ for
 every $\alpha \in (0, \varepsilon)$.
 
-The proof specializes `Descent.exists_forall_lt_of_isDescentDirection`. -/
+The proof specializes `Descent.exists_forall_lt_of_isDescentDirection`.
+
+**Generalization.** Descent is proved from differentiability at the current point, while
+orthogonality needs differentiability at the next point and a local minimum of the unrestricted line
+function. The book describes an exact line minimizer.
+-/
 theorem equation_7_27 {x d : EuclideanSpace ℝ (Fin n)} (hf : DifferentiableAt ℝ f x)
     (hd : ⟪gradient f x, d⟫_ℝ < 0) : ∃ ε > 0, ∀ α ∈ Ioo (0 : ℝ) ε, f (x + α • d) < f x :=
   Descent.exists_forall_lt_of_isDescentDirection (f' := fderiv ℝ f) hf.hasFDerivAt
@@ -466,7 +533,12 @@ Then
 $$\nabla f(x^{(k+1)})^T d^{(k)} = 0.$$
 
 The descent method is `Descent.IsDescentSequence`. The proof specializes
-`Descent.fderiv_apply_eq_zero_of_isLocalMin_line`. -/
+`Descent.fderiv_apply_eq_zero_of_isLocalMin_line`.
+
+**Generalization.** Descent is proved from differentiability at the current point, while
+orthogonality needs differentiability at the next point and a local minimum of the unrestricted line
+function. The book describes an exact line minimizer.
+-/
 theorem theorem_7_3 {x d : ℕ → EuclideanSpace ℝ (Fin n)} {α : ℕ → ℝ}
     (hseq : Descent.IsDescentSequence (fderiv ℝ f) x d α) (k : ℕ)
     (hf : DifferentiableAt ℝ f (x (k + 1)))
@@ -490,7 +562,12 @@ initial rate of descent.
 $0 \ge v_M(x^{(k+1)})$. The Armijo condition is the inner inequality; for a descent direction
 the outer one is a consequence of it, not part of the condition.
 
-The condition is `LineSearch.Armijo f (fderiv ℝ f) σ x d α`. -/
+The condition is `LineSearch.Armijo f (fderiv ℝ f) σ x d α`.
+
+**Reading.** The Armijo predicate is equivalent to the inner inequality on positive step lengths.
+The outer nonnegativity of the descent rate follows under the source's positive parameter and strict
+descent assumptions, which the equivalence itself does not require.
+-/
 theorem equation_7_31 (hα : 0 < α) :
     LineSearch.Armijo f (fderiv ℝ f) σ x d α ↔
       -σ * ⟪gradient f x, d⟫_ℝ ≤ (f x - f (x + α • d)) / α := by
@@ -535,7 +612,12 @@ $\nabla f(x)^T d < 0$, and let $\alpha > 0$. Then:
 The second part says that the Armijo rule $\alpha_k = \beta^{m_k} \bar{\alpha}$, with $m_k$ the
 first nonnegative integer for which (7.31) holds, is well defined. The Goldstein conditions are
 `LineSearch.Goldstein`. The second part uses
-`LineSearch.eventually_armijo_of_isDescentDirection`. -/
+`LineSearch.eventually_armijo_of_isDescentDirection`.
+
+**Reading.** The Goldstein ratio is interpreted with a strictly negative slope and positive step.
+The backtracking result supplies an acceptable exponent, without specifying the first acceptable
+exponent.
+-/
 theorem equation_7_34 (hd : ⟪gradient f x, d⟫_ℝ < 0) (hα : 0 < α) :
     (LineSearch.Goldstein f (fderiv ℝ f) σ x d α ↔
       σ ≤ (f (x + α • d) - f x) / (α * ⟪gradient f x, d⟫_ℝ) ∧
@@ -572,7 +654,12 @@ strong Wolfe condition (7.32) and the weak Wolfe condition (7.33).
 
 The restriction $\sigma < 1/2$ of the source is kept, but the proof does not use it. The proof
 specializes `LineSearch.exists_Icc_armijo_wolfe`, which holds for every
-$0 < \sigma < \beta < 1$. -/
+$0 < \sigma < \beta < 1$.
+
+**Reading.** The bounded-below objective is continuously differentiable, and the initial directional
+derivative is strictly negative. The interval is shown to satisfy Armijo and both curvature
+conditions.
+-/
 theorem property_7_5 (hf : ContDiff ℝ 1 f) {M : ℝ} (hM : ∀ y, M ≤ f y)
     (hd : ⟪gradient f x, d⟫_ℝ < 0) (hσ : 0 < σ) (hσ2 : σ < 1 / 2) (hσβ : σ < β) (hβ : β < 1) :
     ∃ c C : ℝ, 0 < c ∧ c < C ∧ ∀ α ∈ Icc c C,
@@ -609,7 +696,11 @@ has the gradient $\nabla f(x) = A x - b = -r$, the negative of the residual, and
 matrix $H(x) = A$ at every $x$.
 
 The quadratic is the backbone's `energyFunctional (toEuclideanLin A) b`. The proof uses
-`hasGradientAt_energyFunctional`. -/
+`hasGradientAt_energyFunctional`.
+
+**Generalization.** The value, gradient and Hessian identities hold for any symmetric matrix. The
+source assumes positive definiteness for the subsequent minimization problem.
+-/
 theorem equation_7_35 (hA : A.IsSymm) (x : EuclideanSpace ℝ (Fin n)) :
     energyFunctional (toEuclideanLin A) b x
         = (ofLp x ⬝ᵥ (A *ᵥ ofLp x)) / 2 - ofLp b ⬝ᵥ ofLp x ∧
@@ -656,7 +747,11 @@ and the new point $x + \alpha d$ is the backbone's
 
 Minimality is `Projection.step1_isGalerkin` with `IsGalerkin.quadratic_le`. Uniqueness follows
 from the expansion $f(x + t d) = f(x + \alpha d) + \frac{1}{2} (t - \alpha)^2 d^T A d$, by
-`LinearMap.IsSymmetric.energyFunctional_add`. -/
+`LinearMap.IsSymmetric.energyFunctional_add`.
+
+**Reading.** The direction must be nonzero to give a unique exact line minimizer. The theorem
+supplies that minimizer and its uniqueness.
+-/
 theorem equation_7_36 (hA : A.PosDef) (x : EuclideanSpace ℝ (Fin n))
     {d : EuclideanSpace ℝ (Fin n)} (hd : d ≠ 0) :
     Projection.step1 (toEuclideanLin A) b d d x
@@ -717,7 +812,12 @@ when $d^T r \neq 0$, and $\rho = 1$ when $d^T r = 0$.
 
 The energy norm is `energyNorm (toEuclideanLin A)`. The statement is over $\mathbb{R}$, where
 the backbone's $|d^T r|^2$ is $(d^T r)^2$. The proof specializes
-`Projection.energyNorm_step1_sq_eq_mul`. -/
+`Projection.energyNorm_step1_sq_eq_mul`.
+
+**Reading.** The energy identity uses totalized quotients, including zero direction and zero
+residual. Strict decrease of the factor requires a nonzero directional product; it equals one for a
+direction orthogonal to the residual.
+-/
 theorem equation_7_38 (hA : A.PosDef) {xstar : EuclideanSpace ℝ (Fin n)}
     (hstar : toEuclideanLin A xstar = b) (x d : EuclideanSpace ℝ (Fin n)) :
     energyNorm (toEuclideanLin A) (xstar - Projection.step1 (toEuclideanLin A) b d d x) ^ 2
@@ -846,7 +946,12 @@ $$x^{(0)} + \operatorname{span}\{d^{(0)}, \dots, d^{(k)}\}.$$
 
 This affine subspace is the "subspace generated by $x^{(0)}, d^{(0)}, \dots, d^{(k)}$" of the
 source. The proof specializes `ConjugateDirection.isGalerkin_iterate` with
-`IsGalerkin.quadratic_le`. -/
+`IsGalerkin.quadratic_le`.
+
+**Correction.** The minimization set is the affine space formed by adding the starting point to the
+span of the used directions. The linear span of the starting point and directions, as printed, can
+be larger. Termination assumes the first n directions are nonzero, so conjugacy makes them a basis.
+-/
 theorem property_7_6_isMinOn (hA : A.PosDef) (x₀ : EuclideanSpace ℝ (Fin n))
     {d : ℕ → EuclideanSpace ℝ (Fin n)}
     (hd : ConjugateDirection.IsConjugateFamily (toEuclideanLin A) d) (k : ℕ) :
@@ -864,7 +969,12 @@ $d^{(0)}, d^{(1)}, \dots$ be pairwise $A$-conjugate with $d^{(i)} \neq 0$ for $i
 conjugate direction method with the steps (7.36) reaches the minimizer $x^*$ of the quadratic
 (7.35) after at most $n$ steps: $x^{(k)} = x^*$ for every $k \ge n$.
 
-The proof specializes `ConjugateDirection.iterate_eq_of_finrank_le`. -/
+The proof specializes `ConjugateDirection.iterate_eq_of_finrank_le`.
+
+**Correction.** The minimization set is the affine space formed by adding the starting point to the
+span of the used directions. The linear span of the starting point and directions, as printed, can
+be larger. Termination assumes the first n directions are nonzero, so conjugacy makes them a basis.
+-/
 theorem property_7_6_termination (hA : A.PosDef) (x₀ : EuclideanSpace ℝ (Fin n))
     {d : ℕ → EuclideanSpace ℝ (Fin n)}
     (hd : ConjugateDirection.IsConjugateFamily (toEuclideanLin A) d) (h0 : ∀ i < n, d i ≠ 0)
@@ -890,7 +1000,12 @@ So the method of the source, with both expressions of $\beta_k$, is the backbone
 gradient iteration. The proof uses `CG.iterate_x_eq_conjugateDirection_iterate`,
 `CG.beta_iterate` and `CG.inner_residual_eq_zero`. The error estimate $\|x^{(k)} - x^*\|_A \le 2
 ((\sqrt{K_2(A)} - 1)/(\sqrt{K_2(A)} + 1))^k \|x^{(0)} - x^*\|_A$ is the restatement in Chapter 4
-of `Krylov.IsGalerkinIterate.energyNorm_error_le`. -/
+of `Krylov.IsGalerkinIterate.energyNorm_error_le`.
+
+**Reading.** The recurrences use the backbone's totalized step sizes and beta ratios. At zero
+residual they remain defined, whereas the source formulas are used up to termination. In the
+quadratic comparison the step size is the exact line minimizer.
+-/
 theorem conjugateGradient_eq_CG (hA : A.PosDef) (x₀ : EuclideanSpace ℝ (Fin n)) :
     (∀ k, (CG.iterate (toEuclideanLin A) b x₀ k).x
         = ConjugateDirection.iterate (toEuclideanLin A) b
@@ -959,7 +1074,12 @@ The initial direction is the choice $\beta_1 = 0$ of the source. The coefficient
 `NonlinearCG.iterate`, and the exact step is `NonlinearCG.exactStep`. The last two parts are the
 sense in which the methods extend the conjugate gradient method to nonquadratic $f$. The proof
 uses `NonlinearCG.iterate_fletcherReeves_eq_CG_iterate` and
-`NonlinearCG.iterate_polakRibiere_eq_CG_iterate`. -/
+`NonlinearCG.iterate_polakRibiere_eq_CG_iterate`.
+
+**Reading.** The recurrences use the backbone's totalized step sizes and beta ratios. At zero
+residual they remain defined, whereas the source formulas are used up to termination. In the
+quadratic comparison the step size is the exact line minimizer.
+-/
 theorem remark_7_2 (gOld gNew : EuclideanSpace ℝ (Fin n))
     (g : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)) (x₀ : EuclideanSpace ℝ (Fin n))
     (hA : A.PosDef) :
@@ -1015,7 +1135,13 @@ The second part is the "result analogous to Theorem 7.1" of the source. The iter
 `Newton.iterate (gradient f) (fun x => toEuclideanCLM (hessianMatrix f x)) x₀`, and the inverse
 is `ContinuousLinearMap.inverse`. The proof is `QuarteroniSaccoSaleri.Chapter07.theorem_7_1` for
 $F = \nabla f$, whose derivative is $H$ by
-`QuarteroniSaccoSaleri.Chapter07.hasFDerivAt_gradient`. -/
+`QuarteroniSaccoSaleri.Chapter07.hasFDerivAt_gradient`.
+
+**Reading.** The local quadratic result specifies a stationary point with invertible Lipschitz
+Hessian, which may be a saddle or maximizer without positive definiteness. The recurrence is
+totalized at a singular Hessian. The second theorem proves the one-step result for a positive
+definite quadratic, leaving the formal Taylor approximation in (7.41) unstated.
+-/
 theorem equation_7_40 {xstar : EuclideanSpace ℝ (Fin n)} (hcrit : gradient f xstar = 0)
     (e : EuclideanSpace ℝ (Fin n) ≃L[ℝ] EuclideanSpace ℝ (Fin n))
     (he : (e : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
@@ -1053,7 +1179,13 @@ $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite. For the quadrati
 Newton's method (7.40) converges in one step: from every $x^{(0)}$, $x^{(1)} = A^{-1} b$.
 
 This holds because $H = A$ and $\nabla f(x^{(0)}) = A x^{(0)} - b$, by
-`QuarteroniSaccoSaleri.Chapter07.equation_7_35`. -/
+`QuarteroniSaccoSaleri.Chapter07.equation_7_35`.
+
+**Reading.** The local quadratic result specifies a stationary point with invertible Lipschitz
+Hessian, which may be a saddle or maximizer without positive definiteness. The recurrence is
+totalized at a singular Hessian. The second theorem proves the one-step result for a positive
+definite quadratic, leaving the formal Taylor approximation in (7.41) unstated.
+-/
 theorem equation_7_41 {A : Matrix (Fin n) (Fin n) ℝ} {b : EuclideanSpace ℝ (Fin n)} (hA : A.PosDef)
     (x₀ : EuclideanSpace ℝ (Fin n)) :
     Newton.iterate (gradient (energyFunctional (toEuclideanLin A) b))
@@ -1095,7 +1227,12 @@ $0 < \sigma < \beta < 1$. Then one of the following holds:
 The first case is termination. Otherwise the method is a `Descent.IsDescentSequence` and
 Zoutendijk's theorem `LineSearch.tendsto_atBot_or_tendsto_zero` applies. The source cites Wolfe
 for the proof. The hypotheses $f \in C^1$ and $\sigma < \beta$ are those of the source; the
-proof uses only the Lipschitz gradient, $0 < \sigma$ and $\beta < 1$. -/
+proof uses only the Lipschitz gradient, $0 < \sigma$ and $\beta < 1$.
+
+**Correction.** The printed alternatives are labeled mutually exclusive. The theorem asserts their
+disjunction, takes a zero direction at a critical iterate, and uses a totalized slope ratio. A
+stationary tail then satisfies both the critical-iterate and zero-ratio alternatives.
+-/
 theorem property_7_7 (hf : ContDiff ℝ 1 f) {L : ℝ}
     (hL : ∀ y z, ‖gradient f y - gradient f z‖ ≤ L * ‖y - z‖)
     {x d : ℕ → EuclideanSpace ℝ (Fin n)} {α : ℕ → ℝ} (hstep : ∀ k, x (k + 1) = x k + α k • d k)
@@ -1130,7 +1267,12 @@ that "any limit" is a critical point. Read literally, the property is the contin
 $\nabla f$, which is `QuarteroniSaccoSaleri.Chapter07.property_7_8_of_tendsto`. The intended
 statement is the one for bounded sequences and their cluster points, as here.
 
-The proof specializes `Descent.tendsto_fderiv_zero_of_forall_clusterPt`. -/
+The proof specializes `Descent.tendsto_fderiv_zero_of_forall_clusterPt`.
+
+**Generalization.** The bounded-sequence version requires all cluster points to be critical and
+allows the iterates themselves to fail to converge. The convergent-sequence version follows directly
+by continuity of the gradient.
+-/
 theorem property_7_8 (hf : ContDiff ℝ 1 f) {x : ℕ → EuclideanSpace ℝ (Fin n)}
     (hb : Bornology.IsBounded (Set.range x))
     (hcl : ∀ y, MapClusterPt y atTop x → IsCriticalPoint f y) :
@@ -1148,7 +1290,12 @@ $f : \mathbb{R}^n \to \mathbb{R}$ be of class $C^1$, and let $x^{(k)}$ converge 
 point $y$ of $f$. Then $\nabla f(x^{(k)}) \to 0$.
 
 This is the continuity of $\nabla f$. The intended statement is
-`QuarteroniSaccoSaleri.Chapter07.property_7_8`. -/
+`QuarteroniSaccoSaleri.Chapter07.property_7_8`.
+
+**Generalization.** The bounded-sequence version requires all cluster points to be critical and
+allows the iterates themselves to fail to converge. The convergent-sequence version follows directly
+by continuity of the gradient.
+-/
 theorem property_7_8_of_tendsto (hf : ContDiff ℝ 1 f) {x : ℕ → EuclideanSpace ℝ (Fin n)}
     {y : EuclideanSpace ℝ (Fin n)} (hx : Tendsto x atTop (𝓝 y)) (hy : IsCriticalPoint f y) :
     Tendsto (fun k => gradient f (x k)) atTop (𝓝 0) := by
@@ -1180,7 +1327,11 @@ theorem equation_7_42 (B : Matrix (Fin n) (Fin n) ℝ) {s c : Fin n → ℝ} (hc
 /-- **Equation (7.43)** of [quarteroni2000numerical], the symmetric rank-one update. Let
 $B \in \mathbb{R}^{n \times n}$ be symmetric and $s, y \in \mathbb{R}^n$ with
 $(y - B s)^T s \neq 0$. The symmetric rank-one update `Matrix.sr1Update B s y` is the update
-(7.42) with $c = y - B s$, it is symmetric, and it satisfies the secant equation $B_+ s = y$. -/
+(7.42) with $c = y - B s$, it is symmetric, and it satisfies the secant equation $B_+ s = y$.
+
+**Reading.** Symmetry of the direct update requires a symmetric input. The inverse identity requires
+the old matrix invertible and both scalar denominators nonzero.
+-/
 theorem equation_7_43 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {s y : Fin n → ℝ}
     (h : (y - B *ᵥ s) ⬝ᵥ s ≠ 0) :
     sr1Update B s y = rankOneSecantUpdate B s y (y - B *ᵥ s) ∧ (sr1Update B s y).IsSymm ∧
@@ -1193,7 +1344,11 @@ and $w^T y \neq 0$, where $w = s - C y$. Then the inverse of the symmetric rank-
 $B$ is
 $$C_+ = C + \frac{w w^T}{w^T y}.$$
 
-The proof uses the Sherman–Morrison formula (3.57), as `Matrix.sr1Update_inv`. -/
+The proof uses the Sherman–Morrison formula (3.57), as `Matrix.sr1Update_inv`.
+
+**Reading.** Symmetry of the direct update requires a symmetric input. The inverse identity requires
+the old matrix invertible and both scalar denominators nonzero.
+-/
 theorem equation_7_44 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) (hu : IsUnit B)
     {s y : Fin n → ℝ} (hσ : (y - B *ᵥ s) ⬝ᵥ s ≠ 0) (hw : (s - B⁻¹ *ᵥ y) ⬝ᵥ y ≠ 0) :
     (sr1Update B s y)⁻¹
@@ -1214,7 +1369,12 @@ to (7.46) from a symmetric $B$.
 
 The source says "it can be shown". One step of the iteration is `Matrix.symmetrizationStep`, the
 matrix (7.46) is `Matrix.generalSymmetricUpdate B s y c`, and $B_{\mathrm{SPB}}$ is
-`Matrix.psbUpdate B s y`. The proof specializes `Matrix.tendsto_symmetrizationStep_iterate`. -/
+`Matrix.psbUpdate B s y`. The proof specializes `Matrix.tendsto_symmetrizationStep_iterate`.
+
+**Reading.** The limit, least-change property and deterioration bound are stated for symmetric input
+and a nonzero displacement. The deterioration bound also specifies the convex domain containing the
+step and uses Frobenius norms.
+-/
 theorem equation_7_46 {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {s c : Fin n → ℝ}
     (hcs : c ⬝ᵥ s ≠ 0) (hs : s ≠ 0) (y : Fin n → ℝ) :
     Tendsto (fun j => (symmetrizationStep s y c)^[j] B) atTop
@@ -1234,7 +1394,12 @@ with $B_{\mathrm{SPB}} s = y$, $\|B_{\mathrm{SPB}} - B\|_F \le \|B' - B\|_F$ for
 $B'$ with $B' s = y$, and equality forces $B' = B_{\mathrm{SPB}}$.
 
 The norm is the Frobenius norm. The proof uses `Matrix.frobenius_norm_psbUpdate_sub_le` and its
-strict form `Matrix.frobenius_norm_psbUpdate_sub_lt`. -/
+strict form `Matrix.frobenius_norm_psbUpdate_sub_lt`.
+
+**Reading.** The limit, least-change property and deterioration bound are stated for symmetric input
+and a nonzero displacement. The deterioration bound also specifies the convex domain containing the
+step and uses Frobenius norms.
+-/
 theorem psbLeastChange {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) {s : Fin n → ℝ} (hs : s ≠ 0)
     (y : Fin n → ℝ) :
     (psbUpdate B s y).IsSymm ∧ psbUpdate B s y *ᵥ s = y ∧
@@ -1260,7 +1425,12 @@ $$\|B_{\mathrm{SPB}} - H(x + s)\|_F \le \|B - H(x)\|_F + 3 L \|s\|.$$
 In the notation of the source, $x = x^{(k)}$, $s = s^{(k)}$ and $x + s = x^{(k+1)}$. The set $D$
 need not be open. The proof specializes `Matrix.frobenius_norm_psbUpdate_sub_le_add` with $H$ =
 `QuarteroniSaccoSaleri.Chapter07.hessianMatrix f`, whose relation to $\nabla f$ is
-`QuarteroniSaccoSaleri.Chapter07.hasFDerivAt_gradient`. -/
+`QuarteroniSaccoSaleri.Chapter07.hasFDerivAt_gradient`.
+
+**Reading.** The limit, least-change property and deterioration bound are stated for symmetric input
+and a nonzero displacement. The deterioration bound also specifies the convex domain containing the
+step and uses Frobenius norms.
+-/
 theorem psbBoundedDeterioration {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {D : Set (EuclideanSpace ℝ (Fin n))} (hD : Convex ℝ D) (hf : ∀ w ∈ D, ContDiffAt ℝ 2 f w)
     {L : ℝ} (hL : ∀ w ∈ D, ∀ z ∈ D, ‖hessianMatrix f w - hessianMatrix f z‖ ≤ L * ‖w - z‖)

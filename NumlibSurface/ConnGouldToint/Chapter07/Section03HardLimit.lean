@@ -48,6 +48,15 @@ function of $x$ whose sign is that of a polynomial, so it has a constant sign on
 neighborhood of the pole. Induction over the rows gives a constant sign vector $v$. Then the back
 solve is a positive multiple of $\operatorname{adj}(M + x I) v$, a polynomial vector in $x$, and
 removing the common vanishing factor of its entries gives the limit of its normalized direction.
+
+## Deviations from the source
+
+* **Theorem 7.3.4 and Algorithm 7.3.4, Step 3b(iii)** (reading). The computed hard-case vector
+  limit uses deterministic magnitude-based LINPACK signs and a fixed rule selecting the
+  positive-square-root boundary root on a tie. The step converges along above-pole trials, and
+  the intermediate sign vector stabilizes for shifts approaching the pole from the right. See
+  `ConnGouldToint.Chapter07.linpackShiftedSigns_eventually_constant` and
+  `ConnGouldToint.Chapter07.moreSorensen_computed_hard_matrix_run_vector_limit`.
 -/
 
 namespace ConnGouldToint.Chapter07
@@ -63,7 +72,10 @@ private noncomputable def linpackRowSum {n : ℕ} (L : Matrix (Fin n) (Fin n) �
 solve. For a square matrix $M$, a shift $x$ and a row $i$, the **shifted sign** is
 $\sigma(b_i)$, where $\sigma$ is the LINPACK sign and $b_i = \sum_{j < i} L_{ij} w_j$ is the
 forward contribution of the earlier rows, for the computed Cholesky factor $L$ of $M + x I$ and
-its greedy forward substitution $w$. -/
+its greedy forward substitution $w$.
+
+**Reading.** Deterministic magnitude-based signs on shifted Cholesky factors.
+-/
 noncomputable def linpackShiftedSigns {n : ℕ} (M : Matrix (Fin n) (Fin n) ℝ)
     (x : ℝ) (i : Fin n) : ℝ :=
   linpackSign (linpackRowSum (cholesky (M + x • 1)) i)
@@ -152,7 +164,10 @@ definite for all $x > a$ near $a$. Then there is a sign vector $v$ such that the
 of $M + x I$ equal $v$ for all $x > a$ near $a$.
 
 After the signs of the earlier rows are fixed, the forward contribution of each row has a
-polynomial numerator in $x$, so its sign is eventually constant. -/
+polynomial numerator in $x$, so its sign is eventually constant.
+
+**Reading.** This intermediate result uses deterministic magnitude-based signs as the shift
+approaches from the right. -/
 theorem linpackShiftedSigns_eventually_constant {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
     {a : ℝ} (hpos : ∀ᶠ x in 𝓝[>] a, (M + x • 1).PosDef) :
     ∃ v : Fin n → ℝ, ∀ᶠ x in 𝓝[>] a, linpackShiftedSigns M x = v := by
@@ -276,6 +291,10 @@ private theorem eval_adjugatePolynomialVec {n : ℕ}
   simp only [adjugatePolynomialVec, Matrix.mulVec, dotProduct, eval_finsetSum,
     eval_mul, eval_C, he]
 
+/-- **§7.3.7 triangular solves** of [conn2000trust].
+
+**Reading.** Combines the exact shifted linear system with the corrected deterministic sign vector.
+-/
 private theorem linpack_backsolve_mul_shift {n : ℕ} {M : Matrix (Fin n) (Fin n) ℝ}
     {x : ℝ} (hpd : (M + x • 1).PosDef) :
     let A := M + x • 1
@@ -303,7 +322,10 @@ for the computed factor $L$ of $M + x I$ and its greedy forward substitution $w(
 to some vector $u$ as $x \to a$ from above.
 
 With the signs fixed, $y(x)$ is a positive multiple of a polynomial vector in $x$, the adjugate
-of $M + x I$ applied to $v$. Removing the common vanishing factor gives the limit. -/
+of $M + x I$ applied to $v$. Removing the common vanishing factor gives the limit.
+
+**Reading.** Provides a right-sided vector limit for the normalized deterministic backsolve.
+-/
 theorem linpackDirection_eventually_tendsto {n : ℕ} (hn : 0 < n)
     {M : Matrix (Fin n) (Fin n) ℝ} {a : ℝ}
     (hpos : ∀ᶠ x in 𝓝[>] a, (M + x • 1).PosDef) :
@@ -354,7 +376,11 @@ $$\sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \rangle \qua
 and the other root $-\sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \rangle$
 if $\langle s, u \rangle < 0$.
 
-A zero inner product uses the convention of the positive square root. -/
+A zero inner product uses the convention of the positive square root.
+
+**Reading.** Characterizes deterministic root by the sign of the raw-step inner product under
+positive curvature.
+-/
 theorem moreSorensenBestBoundaryCoefficient_eq_ite_inner {E : Type*}
     [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     {g s u : E} {H : E →L[ℝ] E} {x Δ : ℝ}
@@ -484,7 +510,9 @@ private theorem shiftedStep_norm_lt_of_hard
 matrix $M$ of order $n$, a gradient $g$, a radius $\Delta$ and a trial $x$, let $u$ be the
 normalized LINPACK direction for the computed Cholesky factor of $M + x I$ and $s = s(x)$ the
 shifted step. The **computed hard step** is $s + \alpha u$, where $\alpha$ is the best boundary
-coefficient of $s$ and $u$. -/
+coefficient of $s$ and $u$.
+
+**Reading.** The step fixes both the corrected greedy sign rule and the boundary-root tie rule. -/
 noncomputable def moreSorensenComputedHardStep (M : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (Δ x : ℝ) : EuclideanSpace ℝ (Fin n) :=
   let H := toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M
@@ -499,7 +527,10 @@ that $-\lambda_1$ is an optimal multiplier for a global minimizer $s_M$ with
 $\|s_M\| \le \Delta$ (the hard case). Then the computed hard step at $x$ converges to some
 vector $z$ as $x \to -\lambda_1$ from above.
 
-Both the normalized direction and the choice of the boundary root stabilize near the pole. -/
+Both the normalized direction and the choice of the boundary root stabilize near the pole.
+
+**Reading.** The limit uses the computed deterministic correction as the shift approaches from
+the right. -/
 theorem moreSorensen_computed_hard_step_tendsto (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     {g sM : EuclideanSpace ℝ (Fin n)} {Δ : ℝ} (hΔ : 0 < Δ)
@@ -575,7 +606,11 @@ $\lambda_k > -\lambda_1$ for infinitely many $k$, and there is a global minimize
 the ball of radius $\Delta$ such that the computed hard steps at $\lambda_k$ converge to $z$
 along the indices $k$ with $\lambda_k > -\lambda_1$.
 
-The minimizer need not be unique. The initial upper end must exceed the pole. -/
+The minimizer need not be unique. The initial upper end must exceed the pole.
+
+**Correction.** Computed orbit multiplier converges, and corrected step converges along above-pole
+trials to a minimizer.
+-/
 theorem moreSorensen_computed_hard_matrix_run_vector_limit (hn : 0 < n)
     (hM : (Mop : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n)).IsSymmetric)
     {g sM : EuclideanSpace ℝ (Fin n)}

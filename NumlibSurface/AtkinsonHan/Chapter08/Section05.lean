@@ -78,6 +78,8 @@ Theorem 8.3.3.
 
 ## Deviations from the source
 
+* **Equations (8.5.6)–(8.5.8)** (reading). The coefficient fields are $L^\infty$
+  classes. Their symmetries and uniform positivity are read almost everywhere.
 * **Theorem 8.5.1** (generalization). The source assumes a Lipschitz domain. In the pure
   displacement case the theorem here holds on every bounded open set. See
   `AtkinsonHan.Chapter08.theorem_8_5_1_dirichlet`.
@@ -228,7 +230,10 @@ $$a(u, v) = \int_\Omega [C \varepsilon(u)] : \varepsilon(v) \, dx = \sum_{i, j, 
   \int_\Omega C_{ijkl} \, \varepsilon_{kl}(u) \, \varepsilon_{ij}(v) \, dx.$$
 
 It is defined as the sum of the strain pairings of the multiplication operators by $C_{ijkl}$.
-The integral form is `AtkinsonHan.Chapter08.elasticityForm_apply`. -/
+The integral form is `AtkinsonHan.Chapter08.elasticityForm_apply`.
+
+**Reading.** Bilinear form is restricted to zero trace on the whole boundary.
+-/
 noncomputable def elasticityForm
     (C : Fin N → Fin N → Fin N → Fin N →
       Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) :
@@ -245,7 +250,11 @@ $$\sum_{i, j, k, l} C_{ijkl}(x) \, \varepsilon_{kl} \, \varepsilon_{ij} \ge \alp
   \varepsilon_{ij}^2.$$
 
 The condition (8.5.6) is the type of the components. The symmetry $C_{ijkl} = C_{ijlk}$ follows
-from the two symmetries that are fields. -/
+from the two symmetries that are fields.
+
+**Reading.** Same symmetries and symmetric strain coercivity in essentially bounded coefficient
+classes.
+-/
 structure IsElasticityTensor
     (C : Fin N → Fin N → Fin N → Fin N →
       Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -427,7 +436,10 @@ Korn's first inequality is enough, and no regularity of the boundary enters. The
 inequality (`SobolevEuclideanZeroVec.norm_sq_le_sum_norm_strainL_sq`). Korn's first inequality
 `SobolevEuclideanZeroVec.korn_first` comes from the identity $\int_\Omega |\varepsilon(v)|^2 =
 \frac12 \int_\Omega |\nabla v|^2 + \frac12 \int_\Omega (\operatorname{div} v)^2$ on
-$[H^1_0(\Omega)]^{d+1}$, which follows by two integrations by parts and density. -/
+$[H^1_0(\Omega)]^{d+1}$, which follows by two integrations by parts and density.
+
+**Reading.** Korn and Poincaré bound gives explicit coercivity for zero trace on the whole boundary.
+-/
 theorem elasticityForm_isCoerciveWith {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R) {α : ℝ}
     (hC : IsElasticityTensor Ω C α) :
@@ -452,7 +464,10 @@ functional on $[H^1_0(\Omega)]^{d+1}$
 $$\ell(v) = \int_\Omega f \cdot v \, dx = \sum_i \int_\Omega f_i v_i \, dx.$$
 
 The traction term $\int_{\Gamma_N} g \cdot v \, ds$ of (8.5.14) is absent in the pure
-displacement case. -/
+displacement case.
+
+**Reading.** Pure displacement case keeps only the interior load.
+-/
 noncomputable def elasticityLoad
     (f : Fin (d + 1) → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))) :
     StrongDual ℝ (SobolevEuclideanZeroVec (d + 1) Ω) :=
@@ -460,7 +475,10 @@ noncomputable def elasticityLoad
     (PiLp.proj 2 (fun _ : Fin (d + 1) ↦ SobolevEuclideanZero (d + 1) 1 2 Ω) i))
 
 /-- The load satisfies $\ell(v) = \sum_i \int_\Omega f_i v_i \, dx$ for every
-$v \in [H^1_0(\Omega)]^{d+1}$. -/
+$v \in [H^1_0(\Omega)]^{d+1}$.
+
+**Reading.** Evaluates only the body-force term because all boundary displacements are prescribed.
+-/
 theorem elasticityLoad_apply
     (f : Fin (d + 1) → Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     (v : SobolevEuclideanZeroVec (d + 1) Ω) :

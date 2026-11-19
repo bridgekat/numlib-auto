@@ -129,9 +129,33 @@ equation. The proofs specialize the backbone modules `Numlib.FiniteDifference.St
 
 ## Deviations from the source
 
-* **CFL condition, Section 13.8.3** (correction). The source calls the CFL condition necessary and
-  sufficient for stability. It is only necessary: the forward Euler/centred scheme satisfies it and
-  is unstable. See `QuarteroniSaccoSaleri.Chapter13.cfl_necessary` and
+* **Residual and consistency in §13.8.1** (correction). The first displayed residual for forward
+  Euler/centered subtracts the spatial advection difference. Applying (13.37) gives a plus sign.
+  The definitions use the characteristic foot on the whole real line, and the real supremum in
+  the consistency predicate defaults to zero for unbounded error. The order estimates state
+  global derivative hypotheses and explicit constants. See
+  `QuarteroniSaccoSaleri.Chapter13.truncationError_eq` and
+  `QuarteroniSaccoSaleri.Chapter13.isConsistent`.
+* **Equations (13.46)–(13.49)** (reading). Convergence is uniform over a specified finite
+  horizon, and stability uses bounded linear operators on a mesh family. The discrete norm also
+  permits general $p$. The domain-of-dependence result gives the stencil cone bound; the cone
+  can contain nodes on which a particular stencil does not depend. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_46` and
+  `QuarteroniSaccoSaleri.Chapter13.numericalDomainOfDependence`.
+* **Equation (13.52) and Theorem 13.1** (specialization). Fourier evolution and the
+  contractivity estimates use a finite periodic grid and an arbitrary complex convolution; the
+  single-mode formula does not assert convergence of an infinite Fourier series. The forward
+  Euler instability theorem exhibits a refining periodic family, and the explicit CFL necessity
+  proof concerns convergence. See `QuarteroniSaccoSaleri.Chapter13.theorem_13_1` and
+  `QuarteroniSaccoSaleri.Chapter13.cfl_necessary`.
+* **Equation (13.53)** (reading). The maximum principle states upper and lower bounds on bounded
+  grid data for both upwind directions. At positive speed the two convex-combination weights are
+  both nonnegative under CFL, where the source says either is nonnegative. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_53`.
+* **CFL condition, Section 13.8.3** (correction). The source presents CFL as equivalent to
+  stability. The formal result proves necessity for convergence of three-point schemes. Forward
+  Euler/centred can satisfy CFL and still be unstable. See
+  `QuarteroniSaccoSaleri.Chapter13.cfl_necessary` and
   `QuarteroniSaccoSaleri.Chapter13.forwardEulerCentred_not_isStable`.
 * **Leap-frog accuracy, Section 13.8.1** (generalization). The source states second order accuracy
   for $\Delta t = \Delta x$. The truncation error is $O(\Delta t^2 + \Delta x^2)$ for every ratio
@@ -166,7 +190,10 @@ $u_0(x - at)$, at the grid point whose characteristic has the foot $\xi = x_j - 
 $$\tau(\xi) = \frac{1}{\Delta t} \Bigl[u_0(\xi - a \Delta t) - \sum_s c_s\, u_0(\xi - s \Delta
   x)\Bigr].$$
 
-The definition is `FiniteDifference.Hyperbolic.truncationError`. -/
+The definition is `FiniteDifference.Hyperbolic.truncationError`.
+
+**Typo.** The source's displayed centered-forward residual subtracts the spatial advection
+term. The step (13.37) gives a plus sign in the residual. -/
 noncomputable def truncationError (c : Stencil) (a Δt Δx : ℝ) (u₀ : ℝ → ℝ) (ξ : ℝ) : ℝ :=
   Hyperbolic.truncationError c a Δt Δx u₀ ξ
 
@@ -176,7 +203,10 @@ be a stencil, $\Delta t \ge 0$, $\Delta x \in \mathbb{R}$, $j \in \mathbb{Z}$ an
 $n \in \mathbb{N}$. With $x_j = j \Delta x$ and $t^n = n \Delta t$,
 $$\tau(x_j - a t^n) = \frac{1}{\Delta t} \Bigl[u(x_j, t^{n+1}) - \bigl(c\, u(\cdot,
   t^n)\bigr)_j\Bigr],$$
-where $c$ acts on the grid values $i \mapsto u(x_i, t^n)$. -/
+where $c$ acts on the grid values $i \mapsto u(x_i, t^n)$.
+
+**Generalization.** The formula concerns arbitrary stencils and includes zero time step under
+total division. -/
 theorem truncationError_eq {a : ℝ} {u₀ : ℝ → ℝ} {u : ℝ → ℝ → ℝ} (hu : equation_13_26 a u₀ u)
     (c : Stencil) {Δt Δx : ℝ} (hΔt : 0 ≤ Δt) (j : ℤ) (n : ℕ) :
     truncationError c a Δt Δx u₀ ((j : ℝ) * Δx - a * (n * Δt))
@@ -191,7 +221,10 @@ $$\tau(\Delta t, \Delta x) = \sup_{\xi \in \mathbb{R}} |\tau(\xi)| \to 0$$
 as $\Delta t \to 0^+$ and $\Delta x \to 0^+$ independently.
 
 The definition is `FiniteDifference.Hyperbolic.IsConsistent`. The supremum is the Lean supremum
-`⨆`, which is $0$ for an unbounded set of values. -/
+`⨆`, which is $0$ for an unbounded set of values.
+
+**Reading.** The supremum ranges over all real characteristic feet. Lean's real supremum is
+zero if the errors are unbounded. -/
 def isConsistent (c : ℝ → ℝ → Stencil) (a : ℝ) (u₀ : ℝ → ℝ) : Prop :=
   Hyperbolic.IsConsistent c a u₀
 
@@ -202,13 +235,19 @@ and $q$ in space** if there are $C$ and $\delta_0 > 0$ such that
 $$|\tau(\xi)| \le C (\Delta t^p + \Delta x^q)$$
 for all $\Delta t, \Delta x \in (0, \delta_0]$ and all $\xi \in \mathbb{R}$.
 
-The definition is `FiniteDifference.Hyperbolic.IsOfOrder`. -/
+The definition is `FiniteDifference.Hyperbolic.IsOfOrder`.
+
+**Reading.** The uniform estimate is over real characteristic feet for one fixed datum. Natural
+orders, including zero, are represented. -/
 def isOfOrder (c : ℝ → ℝ → Stencil) (a : ℝ) (u₀ : ℝ → ℝ) (p q : ℕ) : Prop :=
   Hyperbolic.IsOfOrder c a u₀ p q
 
 /-- **Section 13.8.1** of [quarteroni2000numerical]. Let $c(\Delta t, \Delta x)$ be a family of
 stencils, $a \in \mathbb{R}$ and $u_0 : \mathbb{R} \to \mathbb{R}$. If the family has order
-$p \neq 0$ in time and $q \neq 0$ in space, then it is consistent. -/
+$p \neq 0$ in time and $q \neq 0$ in space, then it is consistent.
+
+**Reading.** Uses positive orders and the total-supremum interpretation.
+-/
 theorem isOfOrder_isConsistent {c : ℝ → ℝ → Stencil} {a : ℝ} {u₀ : ℝ → ℝ} {p q : ℕ} (hp : p ≠ 0)
     (hq : q ≠ 0) (h : isOfOrder c a u₀ p q) : isConsistent c a u₀ :=
   Hyperbolic.IsOfOrder.isConsistent hp hq h
@@ -222,7 +261,10 @@ $$|\tau(\xi)| \le \frac{a^2}{2} M_2 \Delta t + \frac{|a|}{6} M_3 \Delta x^2.$$
 So the error is $O(\Delta t + \Delta x^2)$.
 
 Table 13.1 gives the same order for the backward Euler/centred scheme; this theorem treats the
-forward scheme. -/
+forward scheme.
+
+**Reading.** The source gives this order in the prose of §13.8.1. The estimate supplies
+explicit global derivative bounds and constants. -/
 theorem table_13_1_truncation_forwardEulerCentred {u₀ : ℝ → ℝ} {M₂ M₃ a Δt Δx lam : ℝ}
     (hu : ContDiff ℝ 3 u₀) (hM₂ : ∀ y, |iteratedDeriv 2 u₀ y| ≤ M₂)
     (hM₃ : ∀ y, |iteratedDeriv 3 u₀ y| ≤ M₃) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
@@ -238,7 +280,10 @@ $\lambda = \Delta t/\Delta x$. Then the truncation error of the scheme (13.39) s
 every $\xi$,
 $$|\tau(\xi)| \le \frac{M_2}{2} \frac{\Delta x^2}{\Delta t} + \frac{a^2}{2} M_2 \Delta t +
   \frac{|a|}{6} M_3 \Delta x^2.$$
-So the error is $O(\Delta x^2/\Delta t + \Delta t + \Delta x^2)$. -/
+So the error is $O(\Delta x^2/\Delta t + \Delta t + \Delta x^2)$.
+
+**Reading.** Under the displayed derivative bounds the pure spatial term is bounded by order
+$\Delta x^2$. Table 13.1 gives order $\Delta x$ for that term. -/
 theorem table_13_1_truncation_laxFriedrichs {u₀ : ℝ → ℝ} {M₂ M₃ a Δt Δx lam : ℝ}
     (hu : ContDiff ℝ 3 u₀) (hM₂ : ∀ y, |iteratedDeriv 2 u₀ y| ≤ M₂)
     (hM₃ : ∀ y, |iteratedDeriv 3 u₀ y| ≤ M₃) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
@@ -255,7 +300,10 @@ every $\xi$,
 $$|\tau(\xi)| \le \frac{|a|^3}{6} M_3 \Delta t^2 + \Bigl(\frac{|a|}{6} M_3 + \frac{|a| +
   a^2}{24} M_4\Bigr) \Delta x^2.$$
 So the error is $O(\Delta t^2 + \Delta x^2)$; it is the only second-order scheme of Section
-13.7. -/
+13.7.
+
+**Reading.** The order estimate makes the global derivative bounds and the small-step range
+explicit. -/
 theorem table_13_1_truncation_laxWendroff {u₀ : ℝ → ℝ} {M₃ M₄ a Δt Δx lam : ℝ}
     (hu : ContDiff ℝ 4 u₀) (hM₃ : ∀ y, |iteratedDeriv 3 u₀ y| ≤ M₃)
     (hM₄ : ∀ y, |iteratedDeriv 4 u₀ y| ≤ M₄) (hΔt : 0 < Δt) (hΔt1 : Δt ≤ 1) (hΔx : 0 < Δx)
@@ -269,7 +317,9 @@ $u_0 : \mathbb{R} \to \mathbb{R}$ be of class $C^2$ with $|u_0''| \le M_2$, let
 $a \in \mathbb{R}$, $\Delta t, \Delta x > 0$ and $\lambda = \Delta t/\Delta x$. Then the
 truncation error of the scheme (13.41) satisfies, for every $\xi$,
 $$|\tau(\xi)| \le \frac{a^2}{2} M_2 \Delta t + \frac{|a|}{2} M_2 \Delta x.$$
-So the error is $O(\Delta t + \Delta x)$. -/
+So the error is $O(\Delta t + \Delta x)$.
+
+**Reading.** The estimate makes the second derivative bound and its constants explicit. -/
 theorem table_13_1_truncation_upwind {u₀ : ℝ → ℝ} {M₂ a Δt Δx lam : ℝ} (hu : ContDiff ℝ 2 u₀)
     (hM₂ : ∀ y, |iteratedDeriv 2 u₀ y| ≤ M₂) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
     (hlam : lam = Δt / Δx) (ξ : ℝ) :
@@ -359,7 +409,10 @@ $$\bigl|u_0(x_j - a t^n) - \bigl(c(\Delta t, \Delta x)^n u_0|_{\text{grid}}\bigr
 where $u_0|_{\text{grid}}$ is the grid function $i \mapsto u_0(x_i)$.
 
 The definition is `FiniteDifference.Hyperbolic.IsConvergent`. The steps $\Delta t$ and
-$\Delta x$ tend to $0$ independently. -/
+$\Delta x$ tend to $0$ independently.
+
+**Reading.** Convergence is uniform on the grid up to a specified finite time $T$ and uses the
+exact transported datum. -/
 def isConvergent (a : ℝ) (u₀ : ℝ → ℝ) (c : ℝ → ℝ → Stencil) (T : ℝ) : Prop :=
   Hyperbolic.IsConvergent a u₀ c T
 
@@ -370,7 +423,10 @@ $\Delta x \in \mathbb{R}$ and $v \in \ell^p(\mathbb{Z})$,
 $$\|v\|_{\Delta,p} = \Delta x^{1/p} \|v\|_{\ell^p} = \Bigl(\Delta x \sum_j |v_j|^p\Bigr)^{1/p}$$
 for finite $p$ and $\Delta x \ge 0$, and $\|v\|_{\Delta,\infty} = \sup_j |v_j|$.
 
-The definition is `FiniteDifference.discreteNorm`. -/
+The definition is `FiniteDifference.discreteNorm`.
+
+**Generalization.** The formula is defined for general $p$, including the printed
+$p=1,2,\infty$. -/
 noncomputable def equation_13_47 (p : ℝ≥0∞) (Δx : ℝ) (v : lp (fun _ : ℤ => ℝ) p) : ℝ :=
   FiniteDifference.discreteNorm p Δx v
 
@@ -382,7 +438,10 @@ whenever $\Delta t_i, \Delta x_i \in (0, \delta_0]$ and $n \Delta t_i \le T$. Fo
 this is $\|u^n\|_\Delta \le C_T \|u^0\|_\Delta$.
 
 The definition is `FiniteDifference.IsStableFamily`. The spaces $E_i$ may depend on $i$, so that
-periodic grids and the whole line are both covered. -/
+periodic grids and the whole line are both covered.
+
+**Reading.** The stability definition quantifies over bounded linear operators on a family of
+meshes. The source also discusses nonlinear updates. -/
 def equation_13_46 {ι : Type*} {E : ι → Type*} [∀ i, NormedAddCommGroup (E i)]
     [∀ i, NormedSpace ℝ (E i)] (Δt Δx : ι → ℝ) (Q : ∀ i, E i →L[ℝ] E i) : Prop :=
   FiniteDifference.IsStableFamily Δt Δx Q
@@ -394,7 +453,10 @@ $$\|B^{-1} u\|_{\Delta,2} \le \|u\|_{\Delta,2},$$
 so it is unconditionally stable in $\|\cdot\|_{\Delta,2}$ with constant $1$. Section 13.8.2 of
 the source uses this result.
 
-The reason is that the centred difference is skew-adjoint, so $\langle Bu, u \rangle = \|u\|^2$. -/
+The reason is that the centred difference is skew-adjoint, so $\langle Bu, u \rangle = \|u\|^2$.
+
+**Reading.** One-step estimate on all ℓ² inputs with nonnegative spatial scale.
+-/
 theorem exercise_13_7 {a lam Δx : ℝ} (hΔx : 0 ≤ Δx) (u : lp (fun _ : ℤ => ℝ) 2) :
     equation_13_47 2 Δx (equation_13_43 a lam u) ≤ equation_13_47 2 Δx u := by
   refine mul_le_mul_of_nonneg_left (Hyperbolic.norm_backwardEulerCentred_apply_le a lam u)
@@ -417,7 +479,10 @@ a stencil with $c_s = 0$ for $|s| > 1$, let $n \in \mathbb{N}$, $j \in \mathbb{Z
 $u, v : \mathbb{Z} \to \mathbb{R}$ with $u_i = v_i$ whenever $|i - j| \le n$. Then
 $$(c^n u)_j = (c^n v)_j.$$
 So the numerical domain of dependence of $(x_j, t^n)$ lies in
-$\{x : |x - x_j| \le n \Delta x = t^n/\lambda\}$. -/
+$\{x : |x - x_j| \le n \Delta x = t^n/\lambda\}$.
+
+**Reading.** The cone bounds the possible dependence. It is an upper bound even when some
+stencil weights vanish. -/
 theorem numericalDomainOfDependence {c : Stencil} (hc : ∀ s ∈ c.support, |s| ≤ 1) (n : ℕ)
     {u v : ℤ → ℝ} {j : ℤ} (h : ∀ i : ℤ, |i - j| ≤ (n : ℤ) → u i = v i) :
     (Stencil.apply c)^[n] u j = (Stencil.apply c)^[n] v j :=
@@ -428,7 +493,9 @@ $\bar x \in \mathbb{R}$ and $\bar t > 0$. Then the CFL condition $|a\lambda| \le
 only if the domain of dependence $\{\bar x - a \bar t\}$ of (13.31) lies in the limit numerical
 domain of dependence $\{x : |x - \bar x| \le \bar t/\lambda\}$, that is,
 $$|(\bar x - a \bar t) - \bar x| \le \bar t/\lambda.$$
--/
+
+**Specialization.** The characteristic-foot inequality is the scalar, positive-time and
+positive-mesh-ratio case. -/
 theorem equation_13_49 {a lam xb tb : ℝ} (hlam : 0 < lam) (htb : 0 < tb) :
     equation_13_48 a lam ↔ |(xb - a * tb) - xb| ≤ tb / lam := by
   rw [equation_13_48, Hyperbolic.CFL, show (xb - a * tb) - xb = -(a * tb) from by ring, abs_neg,
@@ -450,7 +517,9 @@ exact solution there is $u_0(-a)$. A smooth bump datum concentrated at $-a$, wit
 vanishes on $|x| \le 1/\lambda$. Convergence in the sense of
 `QuarteroniSaccoSaleri.Chapter13.isConvergent` asks for all small $\Delta t$ and $\Delta x$
 independently, and the number $\lambda$ is not tied to the family $c$. The proof specializes
-`FiniteDifference.Hyperbolic.not_isConvergent_of_one_lt_abs_mul`. -/
+`FiniteDifference.Hyperbolic.not_isConvergent_of_one_lt_abs_mul`.
+
+**Reading.** The counterexample proves necessity for convergence on the unit time horizon. -/
 theorem cfl_necessary {a lam : ℝ} (hlam : 0 < lam) (hcfl : 1 < |a| * lam)
     (c : ℝ → ℝ → Stencil) (hc : ∀ Δt Δx : ℝ, ∀ s ∈ (c Δt Δx).support, |s| ≤ 1) :
     ∃ u₀ : ℝ → ℝ, ContDiff ℝ ((⊤ : ℕ∞) : WithTop ℕ∞) u₀ ∧ ¬isConvergent a u₀ c 1 :=
@@ -460,7 +529,10 @@ theorem cfl_necessary {a lam : ℝ} (hlam : 0 < lam) (hcfl : 1 < |a| * lam)
 with $0 \le \lambda |a| \le 1$ and $|\lambda a| \le 1$. Then the upwind stencil (13.41) and the
 Lax–Friedrichs stencil (13.39) are monotone: their weights are nonnegative and sum to $1$.
 
-Monotonicity is `FiniteDifference.Stencil.IsMonotone`. -/
+Monotonicity is `FiniteDifference.Stencil.IsMonotone`.
+
+**Generalization.** The theorem packages the convex stencil conditions for both schemes and
+covers both upwind directions. -/
 theorem upwind_isMonotone {a lam : ℝ} (h0 : 0 ≤ lam * |a|) (h1 : lam * |a| ≤ 1)
     (h2 : |lam * a| ≤ 1) :
     Stencil.IsMonotone (equation_13_41 a lam) ∧ Stencil.IsMonotone (equation_13_39 a lam) :=
@@ -470,7 +542,10 @@ theorem upwind_isMonotone {a lam : ℝ} (h0 : 0 ≤ lam * |a|) (h1 : lam * |a| �
 $a, \lambda \in \mathbb{R}$ with $0 \le \lambda |a| \le 1$, let $\Delta x \ge 0$ and
 $u \in \ell^1(\mathbb{Z})$. Then one step $Q$ of the upwind scheme (13.41) satisfies
 $$\|Q u\|_{\Delta,1} \le \|u\|_{\Delta,1},$$
-so (13.46) holds with $C_T = 1$. -/
+so (13.46) holds with $C_T = 1$.
+
+**Reading.** Same one-step ℓ¹ contraction for either sign of speed and nonnegative spatial scale.
+-/
 theorem upwind_discreteNorm_le {a lam Δx : ℝ} (hΔx : 0 ≤ Δx) (h0 : 0 ≤ lam * |a|)
     (h1 : lam * |a| ≤ 1) (u : lp (fun _ : ℤ => ℝ) 1) :
     equation_13_47 1 Δx (Stencil.lpCLM (equation_13_41 a lam) 1 u) ≤ equation_13_47 1 Δx u :=
@@ -501,7 +576,10 @@ $u_j^n = \sum_k \alpha_k \gamma_k^n e^{ikjh}$ of (13.52).
 
 The matrix $Q$ is `FiniteDifference.periodicScheme c`, and the mode is
 `FiniteDifference.fourierMode`. The amplification factor is
-`FiniteDifference.amplificationFactor c k`, the discrete Fourier transform of $c$ at $k$. -/
+`FiniteDifference.amplificationFactor c k`, the discrete Fourier transform of $c$ at $k$.
+
+**Specialization.** The theorem gives exact evolution of one mode on a finite periodic grid,
+for a general convolution. -/
 theorem equation_13_52 {N : ℕ} (c : Fin N → ℂ) (k : Fin N) (n : ℕ) :
     (FiniteDifference.periodicScheme c ^ n) *ᵥ FiniteDifference.fourierMode N k
       = FiniteDifference.amplificationFactor c k ^ n • FiniteDifference.fourierMode N k :=
@@ -513,7 +591,10 @@ of the scheme (13.37) on the periodic grid of $N$ points is
 $$\gamma_k = 1 - i \lambda a \sin\varphi_k, \qquad |\gamma_k|^2 = 1 + (\lambda a
   \sin\varphi_k)^2,$$
 and $|\gamma_k| > 1$ whenever $\lambda a \sin\varphi_k \neq 0$. So the scheme is unconditionally
-unstable. -/
+unstable.
+
+**Specialization.** The amplification factor and its growth condition are on a finite periodic
+grid. -/
 theorem amplificationFactor_forwardEulerCentred {N : ℕ} [NeZero N] (a lam : ℝ) (k : Fin N) :
     FiniteDifference.amplificationFactor
         (Stencil.toPeriodic N (equation_13_37 a lam)) k
@@ -536,7 +617,10 @@ the CFL condition is not sufficient for stability.
 On every grid the mode nearest to $\varphi = \pi/2$ has
 $|\gamma_k| \ge \sqrt{1 + (\lambda a)^2/2} > 1$. The family is
 `FiniteDifference.Hyperbolic.forwardEulerCentredFamily`, as real-linear operators on
-`EuclideanSpace ℂ (Fin (m + 8))`. -/
+`EuclideanSpace ℂ (Fin (m + 8))`.
+
+**Reading.** The instability is witnessed by a concrete refining periodic family with fixed
+positive mesh ratio and nonzero speed. -/
 theorem forwardEulerCentred_not_isStable {a lam : ℝ} (ha : a ≠ 0) (hlam : 0 < lam) :
     ¬equation_13_46 (fun m : ℕ => lam * (2 * Real.pi / (m + 8)))
       (fun m : ℕ => 2 * Real.pi / (m + 8)) (Hyperbolic.forwardEulerCentredFamily a lam) :=
@@ -546,7 +630,9 @@ theorem forwardEulerCentred_not_isStable {a lam : ℝ} (ha : a ≠ 0) (hlam : 0 
 $a \in \mathbb{R}$, let $u_0 : \mathbb{R} \to \mathbb{R}$ have $|u_0|$ bounded above, and let
 $u$ be a solution of (13.26). Then for all $x$ and all $t \ge 0$
 $$|u(x, t)| = |u_0(x - at)| \le \sup_s |u_0(s)|.$$
-The growth of the centred scheme is measured against this bound. -/
+The growth of the centred scheme is measured against this bound.
+
+**Generalization.** A real supremum replaces the maximum. Bounded initial data suffice. -/
 theorem exactSolution_abs_le {a : ℝ} {u₀ : ℝ → ℝ} {u : ℝ → ℝ → ℝ} (hu : equation_13_26 a u₀ u)
     (hb : BddAbove (range fun s => |u₀ s|)) (x : ℝ) {t : ℝ} (ht : 0 ≤ t) :
     |u x t| ≤ ⨆ s, |u₀ s| :=
@@ -559,7 +645,10 @@ $u \in \mathbb{C}^N$
 $$\|Q^n u\|_2 \le \|u\|_2.$$
 So the scheme is stable in $\|\cdot\|_{\Delta,2}$ with constant $1$.
 
-The proof uses the discrete Parseval identity, from Lemma 10.1 of the source. -/
+The proof uses the discrete Parseval identity, from Lemma 10.1 of the source.
+
+**Reading.** The result is power contractivity for a finite periodic convolution, the setting
+of the source's proof. -/
 theorem theorem_13_1 {N : ℕ} (c : Fin N → ℂ)
     (h : ∀ k, ‖FiniteDifference.amplificationFactor c k‖ ≤ 1) (n : ℕ)
     (u : EuclideanSpace ℂ (Fin N)) :
@@ -618,7 +707,9 @@ upwind scheme (13.41) on the periodic grid of $N$ points. Then for all $n$ and
 $u \in \mathbb{C}^N$
 $$\|Q^n u\|_2 \le \|u\|_2.$$
 
-This follows from Theorem 13.1 and Exercise 6. -/
+This follows from Theorem 13.1 and Exercise 6.
+
+**Specialization.** The contractivity conclusion is for the finite periodic grid. -/
 theorem upwind_stable_l2 {N : ℕ} [NeZero N] (hN : 2 ≤ N) {a lam : ℝ} (hlam : 0 ≤ lam)
     (h : lam * |a| ≤ 1) (n : ℕ) (u : EuclideanSpace ℂ (Fin N)) :
     ‖toEuclideanLin
@@ -631,7 +722,10 @@ also Figure 13.7). Let $N \ge 3$, $a, \lambda \in \mathbb{R}$ and $\varphi_k = 2
 amplification factor of the scheme (13.39) on the periodic grid of $N$ points is
 $$\gamma_k = \cos\varphi_k - i \lambda a \sin\varphi_k, \qquad |\gamma_k|^2 = \cos^2\varphi_k +
   (\lambda a)^2 \sin^2\varphi_k,$$
-and $|\gamma_k| \le 1$ for every $k$ if and only if $|\lambda a| \le 1$. -/
+and $|\gamma_k| \le 1$ for every $k$ if and only if $|\lambda a| \le 1$.
+
+**Reading.** This derives the periodic Fourier factor and sharp CFL test for the Lax–Friedrichs
+stencil. -/
 theorem amplificationFactor_laxFriedrichs {N : ℕ} [NeZero N] (hN : 3 ≤ N) (a lam : ℝ)
     (k : Fin N) :
     FiniteDifference.amplificationFactor (Stencil.toPeriodic N (equation_13_39 a lam)) k
@@ -654,7 +748,10 @@ $$\gamma_k = 1 - (\lambda a)^2 (1 - \cos\varphi_k) - i \lambda a \sin\varphi_k, 
 and $|\gamma_k| \le 1$ for every $k$ if and only if $|\lambda a| \le 1$.
 
 The source writes the modulus as $|\gamma_k|^2 = 1 - 4(\lambda a)^2 (1 - (\lambda a)^2)
-\sin^4(\varphi_k/2)$, which is the same. -/
+\sin^4(\varphi_k/2)$, which is the same.
+
+**Reading.** This gives the periodic Fourier factor and sharp CFL test for the Lax–Wendroff
+stencil. -/
 theorem amplificationFactor_laxWendroff {N : ℕ} [NeZero N] (hN : 2 ≤ N) (a lam : ℝ) (k : Fin N) :
     FiniteDifference.amplificationFactor (Stencil.toPeriodic N (equation_13_40 a lam)) k
         = ((1 - (lam * a) ^ 2 * (1 - Real.cos (Hyperbolic.gridPhase N k)) : ℝ) : ℂ)
@@ -675,7 +772,9 @@ $u \in \mathbb{C}^N$
 $$\|Q^n u\|_2 \le \|u\|_2.$$
 
 The source refers to the literature for this result. Here it follows from Theorem 13.1, because
-$|\gamma_k| \le 1$ for every $k$. -/
+$|\gamma_k| \le 1$ for every $k$.
+
+**Specialization.** The discrete contractivity estimate is for a finite periodic grid. -/
 theorem laxWendroff_stable {N : ℕ} [NeZero N] (hN : 2 ≤ N) {a lam : ℝ} (h : |lam * a| ≤ 1)
     (n : ℕ) (u : EuclideanSpace ℂ (Fin N)) :
     ‖toEuclideanLin
@@ -692,7 +791,9 @@ for every $\lambda$, $a$ and $k$. This is the periodic counterpart of Exercise 7
 
 The factor is `FiniteDifference.amplificationFactor₂` of the left stencil
 $u_j + \frac{\lambda a}{2}(u_{j+1} - u_{j-1})$ and the identity stencil: the quotient of their
-amplification factors. -/
+amplification factors.
+
+**Reading.** This gives the finite periodic Fourier factor behind unconditional stability. -/
 theorem amplificationFactor_backwardEulerCentred {N : ℕ} [NeZero N] (a lam : ℝ) (k : Fin N) :
     FiniteDifference.amplificationFactor₂
         (Stencil.toPeriodic N (Stencil.threePoint (-(lam * a / 2)) 1 (lam * a / 2)))
@@ -709,7 +810,10 @@ $a, \lambda \in \mathbb{R}$ with $0 \le \lambda |a| \le 1$, and let
 $u : \mathbb{Z} \to \mathbb{R}$ be bounded. Then the iterates of the upwind scheme (13.41)
 satisfy, for all $n$ and $j$,
 $$\inf_i u_i \le (Q^n u)_j \le \sup_i u_i.$$
-So $\|u^n\|_{\Delta,\infty} \le \|u^0\|_{\Delta,\infty}$. -/
+So $\|u^n\|_{\Delta,\infty} \le \|u^0\|_{\Delta,\infty}$.
+
+**Reading.** The formal maximum principle uses infimum and supremum bounds on bounded grid
+data, for either sign of the speed. -/
 theorem equation_13_53 {a lam : ℝ} (h0 : 0 ≤ lam * |a|) (h1 : lam * |a| ≤ 1) {u : ℤ → ℝ}
     (hba : BddAbove (range u)) (hbb : BddBelow (range u)) (n : ℕ) (j : ℤ) :
     ⨅ i, u i ≤ (Stencil.apply (equation_13_41 a lam))^[n] u j ∧

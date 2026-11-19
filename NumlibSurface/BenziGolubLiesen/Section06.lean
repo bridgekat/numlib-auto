@@ -42,6 +42,13 @@ proofs use `Numlib.LinearAlgebra.Matrix.SaddlePoint.NullSpaceReduction` and
 
 ## Deviations from the source
 
+* **Equations (6.1)–(6.2)** (generalization). The equivalence of the equations
+  does not require the kernel condition used for uniqueness. See
+  `BenziGolubLiesen.nullSpace_reduced_system_iff`.
+* **Equation (6.4)** (generalization). The two shift identities use any real $\rho$
+  and any matrix $A$ with the stated compression hypotheses. See
+  `BenziGolubLiesen.reducedHessian_add_smul_one` and
+  `BenziGolubLiesen.reducedHessian_add_smul_one_eq_spectral`.
 * **Null basis** (reading). The condition $BZ=0$ is not sufficient for a basis; the text also
   requires that the columns span $\ker B$ and uses their full rank.
 * **Equation (6.1), nonsingularity** (correction). The symmetric part $H$ must also be positive
@@ -86,7 +93,9 @@ theorem nullSpace_feasible_iff (hZ : IsNullBasis B Z) {x xhat : n → ℝ} {g : 
 null basis of $B$, and $\hat x$ satisfy $B\hat x=g$. For real data, the pair $(x,y)$ solves the
 saddle-point system with $C=0$ if and only if there is a vector $v$ with
 $$x=Zv+\hat x,\qquad Z^TAZv=Z^T(f-A\hat x),\qquad BB^Ty=B(f-Ax).$$
-The equivalence remains valid even if $Z^TAZ$ is singular. -/
+
+**Generalization.** The source assumes a nonsingular reduced Hessian via a kernel
+condition. The equation equivalence holds even when $Z^TAZ$ is singular. -/
 theorem nullSpace_reduced_system_iff (hB : B.rank = Fintype.card m) (hZ : IsNullBasis B Z)
     {x xhat f : n → ℝ} {y g : m → ℝ} (hxhat : B *ᵥ xhat = g) :
     saddlePointMatrix A B B 0 *ᵥ Sum.elim x y = Sum.elim f g ↔
@@ -198,7 +207,10 @@ theorem isNullBasis_of_split_qr [DecidableEq m] [DecidableEq k]
 
 omit [Fintype m] [Fintype k] in
 /-- **Equation (6.4)** of [benzi2005numerical], shift of the reduced Hessian. For real matrices
-$A,Z$ with $Z^TZ=I$, and any real $\rho$, the compression of $A+\rho I$ is $Z^TAZ+\rho I$. -/
+$A,Z$ with $Z^TZ=I$, and any real $\rho$, the compression of $A+\rho I$ is $Z^TAZ+\rho I$.
+
+**Generalization.** The source uses a positive smoothing parameter and a symmetric
+primal matrix. The identity needs neither restriction. -/
 theorem reducedHessian_add_smul_one [DecidableEq n] [DecidableEq k]
     (hZ : Zᵀ * Z = 1) (ρ : ℝ) :
     Zᵀ * (A + ρ • (1 : Matrix n n ℝ)) * Z = Zᵀ * A * Z + ρ • (1 : Matrix k k ℝ) := by
@@ -208,7 +220,11 @@ omit [Fintype m] in
 /-- **Equation (6.4)** of [benzi2005numerical], spectral reuse. Let $Z$ have orthonormal
 columns, and suppose $Z^TAZ=U\Lambda U^T$ with $UU^T=I$. Then, for any real $\rho$,
 $$Z^T(A+\rho I)Z = U(\Lambda+\rho I)U^T.$$
-For a diagonal $\Lambda$ this shifts the eigenvalues while retaining the same eigenvectors. -/
+For a diagonal $\Lambda$ this shifts the eigenvalues while retaining the same eigenvectors.
+
+**Generalization.** The source takes a real symmetric matrix with a spectral
+decomposition. The identity holds for any such orthogonal factorization, whether or
+not $\Lambda$ is diagonal. -/
 theorem reducedHessian_add_smul_one_eq_spectral [DecidableEq n] [DecidableEq k]
     (hZ : Zᵀ * Z = 1) {U Λ : Matrix k k ℝ} (hU : U * Uᵀ = 1)
     (hspec : Zᵀ * A * Z = U * Λ * Uᵀ) (ρ : ℝ) :

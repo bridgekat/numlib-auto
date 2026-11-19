@@ -59,6 +59,17 @@ The proofs specialize the backbone module `Numlib.ODE.Multistep` at $E = \mathbb
   $f^{(m-1)}$, which the Lean code calls `fv`. The scheme $P(EC)^mE$ computes only $u$, and its
   function values are evaluated at the corrected values.
 
+## Deviations from the source
+
+* **Equations (11.67)–(11.69) and Example 11.8** (reading). `equation_11_68` uses the product
+  condition $h|b_{-1}|L<1$, so zero Lipschitz constant or zero step is allowed. The orbit
+  relations pad both histories to a common length and also accept $m=0$. Initial field
+  evaluations for the PEC orbit, including the ABM example, are left to the caller.
+* **Property 11.3 and Example 11.10** (partial). `property_11_3` gives the guaranteed order of
+  the PECE variant along the exact curve. It does not specify a principal error term or show
+  equality with the PEC variant. `example_11_10` gives the characteristic polynomials for $p\geq
+  2$ and leaves the numerical stability region comparison out.
+
 ## Not formalized
 
 * **Example 11.9.** It is a numerical experiment.
@@ -89,7 +100,10 @@ In the book, $t = t_{n+1}$, $G = \sum_{j=0}^{p} a_j u_{n-j} + h \sum_{j=0}^{p} b
 iteration (11.67) is $u_{n+1}^{(k+1)} = \Psi(u_{n+1}^{(k)})$, and the condition is written
 $h < 1/(|b_{-1}| L)$. The map $\Psi$ is a contraction, and the proof uses Mathlib's
 `ContractingWith.fixedPoint` and `ContractingWith.tendsto_iterate_fixedPoint`, the contraction
-mapping theorem (Theorem 6.1 of the book). -/
+mapping theorem (Theorem 6.1 of the book).
+
+**Reading.** Uses the contraction condition $h|b_{-1}|L<1$, including the case $|b_{-1}|L=0$.
+The limit is the unique fixed point from any start. -/
 theorem equation_11_68 (M : LinearMultistep) {L : ℝ} (hL : 0 ≤ L) (t : ℝ)
     (hf : ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) (hh : 0 ≤ h)
     (hcond : h * |M.bm1| * L < 1) (G : ℝ) :
@@ -125,7 +139,10 @@ $f^{(m-1)}$ **are computed by the scheme $P(EC)^m$** if at every step $n \ge p$:
   b_{-1} f^{(k)}_{n+1}$.
 
 The scheme $PEC$ is the case $m = 1$. The definition is `ODE.PredictorCorrector.IsOrbitPEC`, and
-the sequence $f^{(m-1)}$ is the argument `fv`. -/
+the sequence $f^{(m-1)}$ is the argument `fv`.
+
+**Generalization.** Pads histories to a common index set and uses a natural correction count
+that can be zero. The recurrence leaves the starting values free. -/
 def equation_11_69 (PC : PredictorCorrector) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ) (u fv : ℕ → ℝ) : Prop :=
   PC.IsOrbitPEC f h t₀ u fv
 
@@ -134,7 +151,10 @@ is computed by the scheme $P(EC)^mE$ if it follows the steps of $P(EC)^m$, follo
 evaluation $f^{(m)}_{n+1} = f(t_{n+1}, u^{(m)}_{n+1})$. So the stored function values are those
 of the corrected values.
 
-The definition is `ODE.PredictorCorrector.IsOrbitPECE`. -/
+The definition is `ODE.PredictorCorrector.IsOrbitPECE`.
+
+**Generalization.** Pads histories to a common index set and uses a natural correction count
+that can be zero. The recurrence leaves the starting values free. -/
 def equation_11_69_pece (PC : PredictorCorrector) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ) (u : ℕ → ℝ) : Prop :=
   PC.IsOrbitPECE f h t₀ u
 
@@ -146,7 +166,10 @@ Then $u$ and $f^{(m-1)}$ are computed by the scheme $P(EC)^m$ if and only if for
 $$u_{n+1} = \Psi_n^m\bigl(u^{(0)}_{n+1}\bigr), \qquad f^{(m-1)}_{n+1} = f\bigl(t_{n+1},
   \Psi_n^{m-1}(u^{(0)}_{n+1})\bigr).$$
 
-For $m = 0$, the exponent $m - 1$ is $0$, by truncated subtraction. -/
+For $m = 0$, the exponent $m - 1$ is $0$, by truncated subtraction.
+
+**Generalization.** Pads histories to a common index set and uses a natural correction count
+that can be zero. The recurrence leaves the starting values free. -/
 theorem equation_11_69_iff (PC : PredictorCorrector) (u fv : ℕ → ℝ) :
     equation_11_69 PC f h t₀ u fv ↔ ∀ n, PC.p ≤ n →
       u (n + 1) = (fun v => (∑ j : Fin (PC.p + 1), PC.a j * u (n - j) +
@@ -174,7 +197,10 @@ sequence $u$ is computed by the scheme $P(EC)^mE$ if and only if for every $n \g
 $$u_{n+1} = \Psi_n^m\bigl(u^{(0)}_{n+1}\bigr),$$
 where $\Psi_n$ and $u^{(0)}_{n+1}$ are as in
 `QuarteroniSaccoSaleri.Chapter11.equation_11_69_iff`, with the stored function values
-$f(t_{n-j}, u_{n-j})$ in place of $f^{(m-1)}_{n-j}$. -/
+$f(t_{n-j}, u_{n-j})$ in place of $f^{(m-1)}_{n-j}$.
+
+**Generalization.** Pads histories to a common index set and uses a natural correction count
+that can be zero. The recurrence leaves the starting values free. -/
 theorem equation_11_69_pece_iff (PC : PredictorCorrector) (u : ℕ → ℝ) :
     equation_11_69_pece PC f h t₀ u ↔ ∀ n, PC.p ≤ n →
       u (n + 1) = (fun v => (∑ j : Fin (PC.p + 1), PC.a j * u (n - j) +
@@ -226,7 +252,10 @@ $$\begin{aligned} u^{(0)}_{n+1} &= u_n + \tfrac{h}{2} \bigl(3 f^{(0)}_n - f^{(0)
   \bigl(5 f^{(0)}_{n+1} + 8 f^{(0)}_n - f^{(0)}_{n-1}\bigr). \end{aligned}$$
 
 In the Lean statement the predicted value $u^{(0)}_{n+1}$ is substituted into the other two
-equations. -/
+equations.
+
+**Reading.** The recurrence leaves the initial stored field values arbitrary. The printed
+algorithm initializes them with evaluations of $f$ at the starting nodes and states. -/
 theorem example_11_8_abm (u fv : ℕ → ℝ) :
     example_11_8_abm_pair.toPredictor = LinearMultistep.adamsBashforth 1 ∧
     example_11_8_abm_pair.toCorrector = LinearMultistep.adamsMoulton 2 ∧
@@ -273,7 +302,14 @@ $O(h^q)$ as $h \to 0^+$. The global truncation error is the maximum over the ste
 $p \le n < N_h$ of $|y_{n+1} - \Phi_h(y_n, \dots, y_{n-p})|/h$, where $\Phi_h$ is one step of
 the scheme applied to the exact values.
 
-The definition is `ODE.PredictorCorrector.HasOrderFor`. -/
+The definition is `ODE.PredictorCorrector.HasOrderFor`.
+
+**Partial.** The order predicate and theorem concern the PECE method along the supplied curve.
+The theorem gives the guaranteed order, without the principal-error comparison between
+correction counts or between PEC and PECE.
+
+**Reading.** Defines order of the PECE variant by global LTE, on a supplied solution.
+-/
 def pecOrder (PC : PredictorCorrector) (f : ℝ → ℝ → ℝ) (t₀ T : ℝ) (y : ℝ → ℝ) (q : ℕ) : Prop :=
   PC.HasOrderFor f t₀ T y q
 
@@ -291,7 +327,15 @@ The book states the property for the scheme $P(EC)^m$ and adds that $P(EC)^mE$ h
 order. The scheme $P(EC)^m$, whose truncation error is not defined in the backbone, and the
 clauses on the principal local truncation error (the same as that of the corrector if
 $m > q - \tilde q$, a different one if $m = q - \tilde q$) are not formalized. The book quotes
-the property without proof. The proof specializes `ODE.PredictorCorrector.hasOrderFor_of`. -/
+the property without proof. The proof specializes `ODE.PredictorCorrector.hasOrderFor_of`.
+
+**Partial.** The order predicate and theorem concern the PECE method along the supplied curve.
+The theorem gives the guaranteed order, without the principal-error comparison between
+correction counts or between PEC and PECE.
+
+**Reading.** Lower bound on PECE order under Lipschitz and exact-curve assumptions; no sharp PLTE or
+comparison with PEC.
+-/
 theorem property_11_3 (PC : PredictorCorrector) {L : ℝ}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) {qp q : ℕ}
@@ -323,7 +367,14 @@ and the second characteristic polynomial of the padded corrector is
 $\hat\sigma(r) = r\,\sigma(r)$, where $\sigma$ is that of the Adams–Moulton corrector.
 
 The pair is `ODE.PredictorCorrector.abm p m`. The proof specializes
-`ODE.PredictorCorrector.abm_charPoly`. -/
+`ODE.PredictorCorrector.abm_charPoly`.
+
+**Partial.** States the polynomial identities for $p\geq 2$ and arbitrary correction count. The
+printed example also compares computed stability regions.
+
+**Reading.** Same padded polynomials for p≥2 and arbitrary m, without stability-region plots or size
+comparison.
+-/
 theorem example_11_10 (p m : ℕ) (hp : 2 ≤ p) :
     (characteristicPolynomials (PredictorCorrector.abm p m).toCorrector).1 =
         X * (X ^ (p - 1) - X ^ (p - 2)) ∧

@@ -48,6 +48,13 @@ linear system specializes `Numlib.Analysis.ODE.LinearSystem`.
 
 ## Deviations from the source
 
+* **Equations (11.78)–(11.79) and Property 11.5** (reading). The solution predicate uses within-
+  set derivatives. The existence theorem works on a closed time interval and fixes a common
+  constant extension off the interval for uniqueness as total functions.
+* **Equations (11.82)–(11.84)** (reading). `equation_11_82` computes the expansion coefficients
+  from time zero. `equation_11_83` gives decay directly from negative real parts. The printed
+  trigonometric expansion in (11.84) omits the time factor in the imaginary arguments, which
+  does not affect the stated decay conclusion.
 * **Equations (11.82)–(11.85)** (generalization). The source assumes that $A$ has $n$ distinct
   eigenvalues; the results assume only that $A$ is diagonalizable over $\mathbb{C}$. See
   `QuarteroniSaccoSaleri.Chapter11.equation_11_82`.
@@ -65,7 +72,10 @@ $I \subseteq \mathbb{R}$. A function $y : \mathbb{R} \to \mathbb{R}^n$ **solves 
 Cauchy problem** on $I$ if $y(t_0) = y_0$ and $y'(t) = F(t, y(t))$ for every $t \in I$, the
 derivative taken within $I$.
 
-The definition is `ODE.IsSolutionOn` on `EuclideanSpace ℝ (Fin n)`. -/
+The definition is `ODE.IsSolutionOn` on `EuclideanSpace ℝ (Fin n)`.
+
+**Generalization.** Uses within-set derivatives on arbitrary time sets, with the initial value
+condition separate. -/
 def equation_11_78 (F : ℝ → EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)) (t₀ : ℝ)
     (y₀ : EuclideanSpace ℝ (Fin n)) (I : Set ℝ) (y : ℝ → EuclideanSpace ℝ (Fin n)) : Prop :=
   ODE.IsSolutionOn F t₀ y₀ I y
@@ -81,7 +91,10 @@ and satisfies $y(t) = y_0$ for $t \notin [t_0, T]$.
 
 The values off $[t_0, T]$ are fixed so that uniqueness of a function on $\mathbb{R}$ makes
 sense. The norm is the Euclidean norm. The proof specializes
-`ODE.existsUnique_isSolutionOn_of_lipschitz`. -/
+`ODE.existsUnique_isSolutionOn_of_lipschitz`.
+
+**Reading.** Allows $L=0$, explicitly orders the interval endpoints, and assigns the same
+constant value outside the interval to obtain uniqueness of total functions. -/
 theorem property_11_5 {F : ℝ → EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n)} {t₀ T L : ℝ}
     (hT : t₀ ≤ T) (hL : 0 ≤ L) (hF : ContinuousOn (Function.uncurry F) (Icc t₀ T ×ˢ univ))
     (hlip : ∀ t ∈ Icc t₀ T, ∀ y w : EuclideanSpace ℝ (Fin n), ‖F t y - F t w‖ ≤ L * ‖y - w‖)
@@ -128,7 +141,11 @@ where $v_j$ is the $j$-th column of $Q$, and the identity holds in $\mathbb{C}^n
 eigenvectors $v_j$. The statement assumes only the diagonalization $A = Q \Lambda Q^{-1}$, which
 is how the assumption is used.
 
-The proof specializes `ODE.linear_solution_eq_sum_exp_smul`. -/
+The proof specializes `ODE.linear_solution_eq_sum_exp_smul`.
+
+**Generalization.** A complex diagonalization suffices even when eigenvalues repeat. The
+solution is initialized at time zero and its coefficients are the coordinates of the initial
+vector in the eigenbasis. -/
 theorem equation_11_82 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
     (hA : A.map ((↑) : ℝ → ℂ) = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) {T : ℝ}
     (hy : ODE.IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ (Icc 0 T) y) {t : ℝ} (ht : t ∈ Icc 0 T) :
@@ -148,7 +165,11 @@ assumes only that $A$ is diagonalizable over $\mathbb{C}$.
 The decay comes from $e^{\lambda_j t} = e^{\operatorname{Re}(\lambda_j) t}
 (\cos(\operatorname{Im}(\lambda_j) t) + i \sin(\operatorname{Im}(\lambda_j) t)) \to 0$. The norm
 is the supremum norm of `Fin n → ℝ`. The proof specializes
-`ODE.linear_tendsto_zero_of_re_lt_zero`. -/
+`ODE.linear_tendsto_zero_of_re_lt_zero`.
+
+**Reading.** Decay uses a complex diagonalization and negative real parts. The printed equality
+(11.84) omits $t$ in the sine and cosine arguments. The theorem states the resulting norm
+limit. -/
 theorem equation_11_83 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
     (hA : A.map ((↑) : ℝ → ℂ) = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) (hμ : ∀ j, (μ j).re < 0)
     (hy : ODE.IsSolutionOn (fun _ v => A *ᵥ v) 0 y₀ (Ici 0) y) :
@@ -168,7 +189,10 @@ solves the scalar test equation $z_j' = \lambda_j z_j$, $z_j(t_0) = (Q^{-1} y_0)
 assumes only that $A$ is diagonalizable over $\mathbb{C}$.
 
 The proof specializes `ODE.linear_diagonalized_isSolutionOn` and
-`ODE.isSolutionOn_diagonal_iff`. -/
+`ODE.isSolutionOn_diagonal_iff`.
+
+**Generalization.** A complex diagonalization suffices, and the change of coordinates applies
+to arbitrary time sets and initial times. -/
 theorem equation_11_85 {Q : Matrix (Fin n) (Fin n) ℂ} {μ : Fin n → ℂ}
     (hA : A.map ((↑) : ℝ → ℂ) = Q * diagonal μ * Q⁻¹) (hQ : IsUnit Q) {t₀ : ℝ} {I : Set ℝ}
     (hy : ODE.IsSolutionOn (fun _ v => A *ᵥ v) t₀ y₀ I y) :

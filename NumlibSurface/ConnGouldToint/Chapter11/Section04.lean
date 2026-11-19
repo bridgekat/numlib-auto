@@ -55,6 +55,15 @@ subgradients. The dual norm is `ConnGouldToint.Chapter08.dualNorm` of (8.1.11).
 
 * Vectors are elements of `EuclideanSpace ℝ ι`, and $p$ is a `Seminorm`. The dual unit ball is
   stated in the pointwise form $|\langle y, d \rangle| \le p(d)$ for all $d$.
+
+## Deviations from the source
+
+* **Theorem 11.4.1 and Corollary 11.4.2** (generalization). The clipping formulas allow a
+  monotone seminorm. The dual condition uses a pointwise bound, which also handles seminorm
+  kernels. Reflection in the negative penalty reverses equality coordinates as well, with
+  their magnitudes preserved under the monotone seminorm.
+* **Theorem 11.4.3** (generalization). The same active affine-gradient hull formula holds
+  for a finite family on a real Hilbert space.
 -/
 
 open Filter Topology Set Optimization ConvexAnalysis
@@ -62,6 +71,11 @@ open scoped RealInnerProductSpace
 
 namespace ConnGouldToint.Chapter11
 
+/-- **§11.4.1, convex support argument** of [conn2000trust].
+
+**Reading.** Reusable supporting-hyperplane criterion for convex Lipschitz functions on an
+inner-product space.
+-/
 private theorem clarke_mem_iff_supports {E : Type*} [NormedAddCommGroup E]
     [InnerProductSpace ℝ E] {f : E → ℝ} {x y : E} {K : NNReal}
     (hconv : ConvexOn ℝ univ f) (hLip : LipschitzWith K f) :
@@ -91,12 +105,18 @@ noncomputable def clipResidualPlus (I : Set ι) (x : EuclideanSpace ℝ ι) : Eu
 
 /-- **Section 11.4** of [conn2000trust], the monotonicity condition of (11.4.2)–(11.4.5). A seminorm
 $p$ on $\mathbb{R}^\iota$ is **monotone** if $p(x) \le p(y)$ whenever $|x_i| \le |y_i|$ for
-every coordinate $i$. -/
+every coordinate $i$.
+
+**Reading.** Uses a seminorm with the coordinate-magnitude ordering in place of a norm.
+-/
 def MonotoneResidualSeminorm (p : Seminorm ℝ (EuclideanSpace ℝ ι)) : Prop :=
   ∀ x y, (∀ i, |x i| ≤ |y i|) → p x ≤ p y
 
 /-- **Equation (11.4.2)** of [conn2000trust]. The **positive-part residual penalty** is
-$\theta^+(x) = p([x]_+)$. -/
+$\theta^+(x) = p([x]_+)$.
+
+**Reading.** Norm of the clipped residual replaced by a seminorm.
+-/
 noncomputable def residualPlus (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I : Set ι)
     (x : EuclideanSpace ℝ ι) : ℝ :=
   p (clipResidualPlus I x)
@@ -104,7 +124,11 @@ noncomputable def residualPlus (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I : S
 /-- **Equation (11.4.3)** of [conn2000trust]. The **negative-part residual penalty** is
 $\theta^-(x) = \theta^+(-x) = p([-x]_+)$.
 
-The definition uses the reflection identity (11.4.11) for a coordinatewise monotone norm. -/
+The definition uses the reflection identity (11.4.11) for a coordinatewise monotone norm.
+
+**Reading.** Seminorm of the reflected positive clipped residual, agreeing with the book for a
+monotone norm.
+-/
 noncomputable def residualMinus (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I : Set ι)
     (x : EuclideanSpace ℝ ι) : ℝ :=
   residualPlus p I (-x)
@@ -112,7 +136,10 @@ noncomputable def residualMinus (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I : 
 /-- **Equation (11.4.5)** of [conn2000trust], the dual unit ball. The **dual unit ball** of $p$ is
 the set of $y$ with $|\langle y, d \rangle| \le p(d)$ for every $d$.
 
-For a norm $p$ this is equivalent to the dual norm bound $\|y\|_D \le 1$ of (11.4.5). -/
+For a norm $p$ this is equivalent to the dual norm bound $\|y\|_D \le 1$ of (11.4.5).
+
+**Reading.** Pointwise dual unit ball inequality accommodates a seminorm kernel.
+-/
 def residualDualBall (p : Seminorm ℝ (EuclideanSpace ℝ ι)) : Set (EuclideanSpace ℝ ι) :=
   {y | ∀ d : EuclideanSpace ℝ ι, |⟪y, d⟫| ≤ p d}
 
@@ -126,6 +153,10 @@ private theorem residualPlus_zero (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I 
   simp [residualPlus, h]
 
 omit [Fintype ι] in
+/-- **Proof of Theorem 11.4.1** of [conn2000trust].
+
+**Reading.** Positive homogeneity of the clipped seminorm.
+-/
 private theorem residualPlus_smul (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I : Set ι)
     {t : ℝ} (ht : 0 ≤ t) (x : EuclideanSpace ℝ ι) :
     residualPlus p I (t • x) = t * residualPlus p I x := by
@@ -140,6 +171,10 @@ private theorem residualPlus_smul (p : Seminorm ℝ (EuclideanSpace ℝ ι)) (I 
   rfl
 
 omit [Fintype ι] in
+/-- **Proof of Theorem 11.4.1** of [conn2000trust].
+
+**Reading.** Monotonicity bounds clipping by the full seminorm.
+-/
 private theorem residualPlus_le (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) (I : Set ι) (x : EuclideanSpace ℝ ι) :
     residualPlus p I x ≤ p x := by
@@ -153,6 +188,10 @@ private theorem residualPlus_le (p : Seminorm ℝ (EuclideanSpace ℝ ι))
   · simp [clipResidualPlus, hi]
 
 omit [Fintype ι] in
+/-- **Proof of Theorem 11.4.1** of [conn2000trust].
+
+**Reading.** Subadditivity of the clipped seminorm residual.
+-/
 private theorem residualPlus_add_le (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) (I : Set ι) (x y : EuclideanSpace ℝ ι) :
     residualPlus p I (x + y) ≤ residualPlus p I x + residualPlus p I y := by
@@ -167,6 +206,10 @@ private theorem residualPlus_add_le (p : Seminorm ℝ (EuclideanSpace ℝ ι))
   · simp [clipResidualPlus, hi, PiLp.add_apply]
 
 omit [Fintype ι] in
+/-- **Proof of Theorem 11.4.1** of [conn2000trust].
+
+**Reading.** Convexity in the monotone seminorm setting.
+-/
 private theorem residualPlus_convex (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) (I : Set ι) : ConvexOn ℝ univ (residualPlus p I) := by
   refine ⟨convex_univ, ?_⟩
@@ -174,6 +217,10 @@ private theorem residualPlus_convex (p : Seminorm ℝ (EuclideanSpace ℝ ι))
   simpa only [residualPlus_smul p I ha, residualPlus_smul p I hb, smul_eq_mul] using
     residualPlus_add_le p hp I (a • x) (b • y)
 
+/-- **Proof of Theorem 11.4.1** of [conn2000trust].
+
+**Reading.** Lipschitz bound for the clipped residual using a seminorm comparison.
+-/
 private theorem residualPlus_lipschitz (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) (I : Set ι) {K : NNReal}
     (hK : ∀ d, p d ≤ K * ‖d‖) : LipschitzWith K (residualPlus p I) := by
@@ -223,7 +270,11 @@ and only if all of the following hold:
 
 So the generalized gradient is the part of the dual unit ball that is nonnegative on the
 inequality coordinates and supports the clipped penalty at $x$. The last two conditions say that
-$y$ vanishes on the negative inequality coordinates and attains the dual bound at $[x]_+$. -/
+$y$ vanishes on the negative inequality coordinates and attains the dual bound at $[x]_+$.
+
+**Reading.** Clarke subgradients characterized using a monotone seminorm and its pointwise dual unit
+ball.
+-/
 theorem theorem_11_4_1 (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) (I : Set ι) (x y : EuclideanSpace ℝ ι) :
     y ∈ clarkeSubgradient (residualPlus p I) x ↔
@@ -295,7 +346,10 @@ if and only if all of the following hold:
 * $y_i = 0$ for every $i \in I$ with $x_i > 0$;
 * $\langle -y, [-x]_+ \rangle = p([-x]_+)$.
 
-The reflection $x \mapsto -x$ changes the sign of the inequality coordinates in Theorem 11.4.1. -/
+The reflection $x \mapsto -x$ changes the sign of the inequality coordinates in Theorem 11.4.1.
+
+**Reading.** Reflected-sign subgradient criterion for a monotone seminorm.
+-/
 theorem corollary_11_4_2 (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) (I : Set ι) (x y : EuclideanSpace ℝ ι) :
     y ∈ clarkeSubgradient (residualMinus p I) x ↔
@@ -333,6 +387,10 @@ theorem corollary_11_4_2 (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     neg_eq_zero]
 
 
+/-- **Proof of Theorem 11.4.1** of [conn2000trust].
+
+**Reading.** Attainment of the normalized support bound including a seminorm kernel.
+-/
 private theorem dualNorm_eq_one_of_support (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     {y d : EuclideanSpace ℝ ι} (hy : y ∈ residualDualBall p)
     (hd : 0 < p d) (h : ⟪y, d⟫ = p d) : Chapter08.dualNorm p y = 1 := by
@@ -348,7 +406,10 @@ private theorem dualNorm_eq_one_of_support (p : Seminorm ℝ (EuclideanSpace ℝ
 
 /-- **Theorem 11.4.1** of [conn2000trust], dual norm attainment. Let $p$ be a monotone seminorm. If
 $y \in \partial \theta^+(x)$ and $\theta^+(x) > 0$, then the dual norm of $y$ is $\|y\|_D =
-\sup_d |\langle y, d \rangle| / p(d) = 1$. -/
+\sup_d |\langle y, d \rangle| / p(d) = 1$.
+
+**Reading.** Positive clipped seminorm makes each subgradient have dual norm one.
+-/
 theorem residualPlus_dualNorm_eq_one (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) {I : Set ι} {x y : EuclideanSpace ℝ ι}
     (hy : y ∈ clarkeSubgradient (residualPlus p I) x) (hx : 0 < residualPlus p I x) :
@@ -358,7 +419,10 @@ theorem residualPlus_dualNorm_eq_one (p : Seminorm ℝ (EuclideanSpace ℝ ι))
 
 /-- **Corollary 11.4.2** of [conn2000trust], dual norm attainment. Let $p$ be a monotone seminorm.
 If $y \in \partial \theta^-(x)$ and $\theta^-(x) > 0$, then the dual norm of $y$ is
-$\|y\|_D = 1$. -/
+$\|y\|_D = 1$.
+
+**Reading.** Reflected clipped seminorm version of the dual norm attainment.
+-/
 theorem residualMinus_dualNorm_eq_one (p : Seminorm ℝ (EuclideanSpace ℝ ι))
     (hp : MonotoneResidualSeminorm p) {I : Set ι} {x y : EuclideanSpace ℝ ι}
     (hy : y ∈ clarkeSubgradient (residualMinus p I) x) (hx : 0 < residualMinus p I x) :
@@ -380,13 +444,18 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [Nonempty 
 /-- **Equation (11.4.4)** of [conn2000trust]. For a nonempty finite index set $\iota$, vectors
 $p_i \in E$ and numbers $b_i$, the **polyhedral residual** is
 $$\theta(x) = \max_{i \in \iota} \bigl(\langle p_i, x \rangle + b_i\bigr).$$
+
+**Reading.** Maximum of finitely many affine functions on an arbitrary real inner-product space.
 -/
 noncomputable def polyhedralResidual (p : ι → E) (b : ι → ℝ) (x : E) : ℝ :=
   Finset.univ.sup' Finset.univ_nonempty (fun i ↦ ⟪p i, x⟫ + b i)
 
 /-- **Equation (11.4.13)** of [conn2000trust], the active terms. The **active set** of the
 polyhedral residual at $x$ is the set of indices $i$ with
-$\langle p_i, x \rangle + b_i = \theta(x)$. -/
+$\langle p_i, x \rangle + b_i = \theta(x)$.
+
+**Reading.** Same active affine indices on an arbitrary real inner-product space.
+-/
 def polyhedralActiveSet (p : ι → E) (b : ι → ℝ) (x : E) : Set ι :=
   {i | ⟪p i, x⟫ + b i = polyhedralResidual p b x}
 
@@ -394,6 +463,10 @@ private theorem affine_le_polyhedral (p : ι → E) (b : ι → ℝ) (x : E) (i 
     ⟪p i, x⟫ + b i ≤ polyhedralResidual p b x :=
   Finset.le_sup' (fun i ↦ ⟪p i, x⟫ + b i) (Finset.mem_univ i)
 
+/-- **§11.4, polyhedral residual** of [conn2000trust].
+
+**Reading.** Convexity of finite affine maxima on a general real inner-product space.
+-/
 private theorem polyhedral_convex (p : ι → E) (b : ι → ℝ) :
     ConvexOn ℝ univ (polyhedralResidual p b) := by
   refine ⟨convex_univ, ?_⟩
@@ -406,6 +479,10 @@ private theorem polyhedral_convex (p : ι → E) (b : ι → ℝ) :
   have hy := mul_le_mul_of_nonneg_left (affine_le_polyhedral p b y i) hc
   nlinarith only [hx, hy, congrArg (fun z : ℝ ↦ z * b i) hac]
 
+/-- **§11.4, polyhedral residual** of [conn2000trust].
+
+**Reading.** Explicit Lipschitz bound on a general real inner-product space.
+-/
 private theorem polyhedral_lipschitz (p : ι → E) (b : ι → ℝ) :
     LipschitzWith (∑ i, ‖p i‖₊) (polyhedralResidual p b) := by
   apply LipschitzWith.of_dist_le_mul
@@ -432,6 +509,8 @@ finite index set, $p_i \in E$ and $b_i \in \mathbb{R}$. The Clarke subdifferenti
 polyhedral residual $\theta(x) = \max_i (\langle p_i, x \rangle + b_i)$ is the convex hull of
 the gradients of the active terms:
 $$\partial \theta(x) = \operatorname{conv} \{p_i : \langle p_i, x \rangle + b_i = \theta(x)\}.$$
+
+**Reading.** Finite active-gradient hull in an arbitrary real Hilbert space.
 -/
 theorem theorem_11_4_3 [CompleteSpace E] (p : ι → E) (b : ι → ℝ) (x : E) :
     clarkeSubgradient (polyhedralResidual p b) x =

@@ -67,9 +67,10 @@ examples of `Numlib.Optimization.Complexity.SlowExample.Ridge` and
 
 ## Deviations from the source
 
-* **Lemma 2.2.1, (2.2.7)** (correction). The bound $t_k \ge t_{\mathrm{low}}/2$ holds only when
-  $t_{\mathrm{ini}} \ge t_{\mathrm{low}}/2$; in general $t_k \ge \min(t_{\mathrm{ini}},
-  t_{\mathrm{low}}/2)$. See `CartisGouldToint.Chapter02.lemma_2_2_1_index`.
+* **Equations (2.2.6) and (2.2.7)** (correction). The index bound uses the natural-number ceiling
+  because the printed integer ceiling can be negative. The step bound is
+  $t_k \ge \min(t_{\mathrm{ini}},t_{\mathrm{low}}/2)$.
+  See `CartisGouldToint.Chapter02.lemma_2_2_1_index`.
 * **Theorem 2.2.2** (correction). Because of the corrected (2.2.7), the constant is $\kappa =
   1/(\alpha \min(t_{\mathrm{ini}}, (1-\alpha)/L))$. The printed bound (2.2.8) on the objective
   evaluations is false, and the corrected bound is $1 + (\lceil \log_2(L
@@ -80,6 +81,13 @@ examples of `Numlib.Optimization.Complexity.SlowExample.Ridge` and
 * **Theorems 2.2.3 and 2.2.5** (reading). The number $\varepsilon^{-2}$ is assumed to be an integer,
   as the proof does in (2.2.14). See `CartisGouldToint.Chapter02.theorem_2_2_3` and
   `CartisGouldToint.Chapter02.theorem_2_2_5`.
+* **Theorem 2.2.3, evaluation count** (correction). In the slow example the first hit
+  is at iteration $k_\varepsilon$. There are $k_\varepsilon+1$ objective evaluations,
+  including the initial value, and the same number of gradients, including the final
+  termination test. The proof in the book counts $k_\varepsilon$ for each.
+* **Theorem 2.2.4** (reading). The bound assumes existence of the exact linesearch
+  run. The two source smoothness and boundedness assumptions alone do not ensure that
+  the line minimum is attained. See `CartisGouldToint.Chapter02.theorem_2_2_4`.
 
 ## Not formalized
 
@@ -125,7 +133,8 @@ only when $t_{\mathrm{ini}} \ge t_{\mathrm{low}}/2$: if $t_{\mathrm{ini}} < t_{\
 the first trial step is accepted and $t_k = t_{\mathrm{ini}}$.
 
 The backtracking index is `LineSearch.backtrackingIndex f α tini x`. The ceiling is the
-natural-number ceiling `⌈·⌉₊`, which is $0$ for a nonpositive argument. -/
+natural-number ceiling `⌈·⌉₊`. This corrects (2.2.6), whose integer ceiling is negative
+when $t_{\mathrm{ini}}/t_{\mathrm{low}} \le 1/2$. -/
 theorem lemma_2_2_1_index (hf : AssumptionGL f L) (hα : α < 1) (htini : 0 < tini)
     (x : EuclideanSpace ℝ (Fin n)) :
     backtrackingIndex f α tini x ≤ ⌈Real.logb 2 (L * tini / (2 * (1 - α)))⌉₊ ∧
@@ -228,6 +237,9 @@ satisfy f.gL with constant $L$, and let the termination test fail at all iterati
 Then
 $$f(x_k) - f(x_{k+1}) \ge \alpha \min\Bigl(t_{\mathrm{ini}}, \frac{1-\alpha}{L}\Bigr) \|\nabla
   f(x_k)\|^2.$$
+
+**Correction.** The minimum uses the corrected lower bound in
+`CartisGouldToint.Chapter02.lemma_2_2_1_index` in place of $t_{\mathrm{low}}/2$.
 -/
 theorem sub_ge (h : algorithm_2_2_1 f α tini ε x i) (hf : AssumptionGL f L) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) :
@@ -266,11 +278,18 @@ theorem exists_algorithm_2_2_1 {f : EuclideanSpace ℝ (Fin n) → ℝ} {L α ti
 $(i_j)$, the number of objective evaluations of SDBA before iteration $k$ is
 $$1 + \sum_{j<k} (i_j + 1):$$
 one evaluation at Step 0, and $i_j + 1$ evaluations at iteration $j$, in Step 2 and in each
-backtrack of Step 3. -/
+backtrack of Step 3.
+
+**Reading.** Counts initial objective evaluation and the first trial per iteration, which the
+printed bound omits.
+-/
 def sdbaFunEvalCount (i : ℕ → ℕ) (k : ℕ) : ℕ :=
   1 + ∑ j ∈ range k, (i j + 1)
 
-/-- The evaluation count of SDBA before iteration $k$ is $1 + \sum_{j<k} (i_j + 1)$. -/
+/-- The evaluation count of SDBA before iteration $k$ is $1 + \sum_{j<k} (i_j + 1)$.
+
+**Correction.** Unfolds the corrected count including initial and first trial evaluations.
+-/
 theorem sdbaFunEvalCount_def (i : ℕ → ℕ) (k : ℕ) :
     sdbaFunEvalCount i k = 1 + ∑ j ∈ range k, (i j + 1) := rfl
 
@@ -576,7 +595,8 @@ linesearch (2.2.26), if $\varepsilon > 0$ and at every iteration $k$ before the 
 $\|\nabla f(x_k)\| \le \varepsilon$ first holds, $t_k$ is the first global minimizer of
 $t \mapsto f(x_k - t \nabla f(x_k))$ on $t \ge 0$ and $x_{k+1} = x_k - t_k \nabla f(x_k)$.
 
-The exact linesearch is `LineSearch.IsExactLineMin`. -/
+**Reading.** The book offers choosing the first minimizer as an example tie rule.
+`LineSearch.IsExactLineMin` fixes that rule for every run. -/
 structure IsSDEXRun (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε : ℝ) (x : ℕ → EuclideanSpace ℝ (Fin n))
     (t : ℕ → ℝ) : Prop where
   /-- The accuracy level is positive: $\varepsilon > 0$. -/
@@ -622,8 +642,12 @@ f(x_{k_\varepsilon})\| \le \varepsilon$, and
 $$k_\varepsilon \le \kappa_{\mathrm{SDEX}} \frac{f(x_0) - f_{\mathrm{low}}}{\varepsilon^2},
   \qquad \kappa_{\mathrm{SDEX}} = 2L.$$
 
-This is (2.2.27). It bounds the iterations, not the evaluations, since the exact linesearch has
-no evaluation count. -/
+This is the iteration bound (2.2.27).
+
+**Reading.** The statement assumes an exact linesearch run. For example, on the real line let
+$f(x)=1-x$ for $x<0$ and $f(x)=e^{-x}$ for $x\ge 0$. Then $f$ is bounded below and its
+gradient is $1$-Lipschitz. From $x_0=0$ and with $\varepsilon<1$, the first search minimizes
+$e^{-t}$ on $t\ge 0$, where the infimum is unattained. -/
 theorem theorem_2_2_4 {flow L ε : ℝ} {x : ℕ → EuclideanSpace ℝ (Fin n)} {t : ℕ → ℝ}
     (hb : AssumptionBb f flow) (hf : AssumptionGL f L) (h : IsSDEXRun f ε x t) :
     ∃ kε, IsFirstHit (fun k => ‖gradient f (x k)‖ ≤ ε) kε ∧

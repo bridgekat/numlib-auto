@@ -154,8 +154,9 @@ theorem tendsto_coord_zero (x : lp (fun _ : ℕ => ℝ) 2) :
 every $x$ does not imply $\|T_n - T\| \to 0$. On $E = \ell^2$, the coordinate functionals
 $T_n x = x_n$ converge pointwise to $T = 0$, but $\|T_n - T\|$ does not tend to $0$.
 
-The functional $T_n$ is `lp.evalCLM ℝ (fun _ => ℝ) 2 n`. The source notes that $\|T_n\| = 1$ for
-every $n$; the statement asserts only that $\|T_n - 0\| \not\to 0$. -/
+The functional $T_n$ is `lp.evalCLM ℝ (fun _ => ℝ) 2 n`. Evaluating it at the $n$th coordinate
+unit vector gives the lower bound $\|T_n\| \ge 1$. This example exhibits the failure of norm
+convergence asserted in the source. -/
 theorem remark_2_3 :
     (∀ x : lp (fun _ : ℕ => ℝ) 2,
       Tendsto (fun n => lp.evalCLM ℝ (fun _ : ℕ => ℝ) 2 n x) atTop

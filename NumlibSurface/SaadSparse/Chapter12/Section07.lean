@@ -56,6 +56,14 @@ $x^T \tilde A x = 0$, which contradicts the positive definiteness of $\tilde A$ 
   and the element matrices $A_{K_e}$ of the book do not appear, because the proof does not need
   them.
 
+## Deviations from the source
+
+* **(12.24) and (12.25)** (scope and generalization).
+  `SaadSparse.Chapter12.diag_diagonalScaled` uses the positive diagonal of $A$ and proves unit
+  diagonal for that choice of $D$. `SaadSparse.Chapter12.equation_12_25` takes already scaled
+  positive semidefinite summands and a positive definite unit-diagonal sum, which gives the
+  Winget conclusion without finite-element connectivity data.
+
 ## Not formalized
 
 * **(12.26)–(12.29)**, the element-by-element preconditioners. They are definitions, and the book
@@ -80,7 +88,11 @@ $i$.
 
 This is the hypothesis under which Exercise 8 of Chapter 12 asks for the positive definiteness
 of the Winget regularization, see `SaadSparse.Chapter12.equation_12_25`. The matrix $D^{-1/2}$
-is `diagonal (fun j => (Real.sqrt (A j j))⁻¹)`. -/
+is `diagonal (fun j => (Real.sqrt (A j j))⁻¹)`.
+
+**Reading.** Formalizes unit diagonal consequence of scaling by A's own diagonal, for any positive
+diagonal.
+-/
 theorem diag_diagonalScaled (A : Matrix n n ℝ) (hA : ∀ i, 0 < A i i) (i : n) :
     (diagonal (fun j => (Real.sqrt (A j j))⁻¹) * A * diagonal (fun j => (Real.sqrt (A j j))⁻¹))
       i i = 1 := by
@@ -94,7 +106,10 @@ theorem diag_diagonalScaled (A : Matrix n n ℝ) (hA : ∀ i, 0 < A i i) (i : n)
 matrix $M$ is
 $$\bar M = I + M - \operatorname{diag}(M).$$
 It replaces the diagonal of $M$ by the identity and keeps the off-diagonal entries. The book
-applies it to each scaled element matrix $\tilde A^{[e]}$ and obtains $\bar A^{[e]}$. -/
+applies it to each scaled element matrix $\tilde A^{[e]}$ and obtains $\bar A^{[e]}$.
+
+**Reading.** Applies the diagonal replacement formula to any square real matrix.
+-/
 def wingetRegularized (M : Matrix n n ℝ) : Matrix n n ℝ := 1 + M - diagonal M.diag
 
 omit [Fintype n] in
@@ -117,12 +132,16 @@ $$\bar A^{[e]} = I + \tilde A^{[e]} - \operatorname{diag}(\tilde A^{[e]})$$
 is positive definite.
 
 The book states only that these matrices are positive definite and leaves the reason to the
-exercise. The hypotheses are the ones that its sentence names: a scaled element matrix is a
-congruence of an element stiffness matrix and is therefore positive semidefinite, and the
-scaling (12.24) makes the diagonal of $\tilde A$ the identity
+exercise. The theorem uses the finite-element setting of the assertion: a scaled element
+stiffness matrix is positive semidefinite, and scaling (12.24) by the diagonal of $A$ makes
+the diagonal of $\tilde A$ the identity
 (`SaadSparse.Chapter12.diag_diagonalScaled`). The proof writes the quadratic form of
 $\bar A^{[e]}$ as a sum of two nonnegative terms, and shows that if both vanish at $x$, then
-$x^T \tilde A x = 0$. -/
+$x^T \tilde A x = 0$.
+
+**Generalization.** The input consists of already scaled positive semidefinite terms whose sum
+is positive definite with unit diagonal. The resulting criterion does not depend on the element
+connectivity matrices. -/
 theorem equation_12_25 (Atilde : ι → Matrix n n ℝ) (hpsd : ∀ e, (Atilde e).PosSemidef)
     (hpd : (∑ e, Atilde e).PosDef) (hdiag : ∀ i, (∑ e, Atilde e) i i = 1) (e : ι) :
     (wingetRegularized (Atilde e)).PosDef := by

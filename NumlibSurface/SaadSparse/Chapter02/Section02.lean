@@ -30,9 +30,8 @@ The section states no numbered result, so the definitions matter most:
 results specialize `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`, which gives the eigenpairs of
 $\operatorname{tridiag}(a, b, a)$ and the orthogonality of the discrete sine basis, and
 `Numlib.LinearAlgebra.Matrix.KroneckerSum`, which gives the eigenvalues of a Kronecker sum. The
-source gives the eigenvalues only for the block $B = \operatorname{tridiag}(-1, 4, -1)$ of (2.27).
-The corresponding statements for the one-dimensional and the two-dimensional model matrices are not
-in the source, and are recorded here as what the backbone supplies.
+source gives the eigenvalues of $B = \operatorname{tridiag}(-1, 4, -1)$ of (2.27) here and
+treats the spectra of the model matrices in §13.2 with unscaled matrices.
 
 ## Main definitions
 
@@ -84,7 +83,7 @@ in the source, and are recorded here as what the backbone supplies.
   order.
 * §2.2.3, `SaadSparse.Chapter02.laplacian1D_mulVec_apply`: the rows of the model matrix are the
   difference equations $(-v_{i-1} + 2v_i - v_{i+1})/h^2$.
-* §2.2.3, not in the source: `SaadSparse.Chapter02.laplacian1D_mulVec_sineVec`,
+* §2.2.3 and §13.2: `SaadSparse.Chapter02.laplacian1D_mulVec_sineVec`,
   `SaadSparse.Chapter02.laplacian1D_isSymmetricBoundedBy`, `SaadSparse.Chapter02.laplacian1D_posDef`
   and `SaadSparse.Chapter02.laplacian1D_lambdaMax_div_lambdaMin`: the eigenpairs, the sharp spectral
   bounds, the positive definiteness and the ratio of the extreme eigenvalues of the model matrix.
@@ -105,12 +104,12 @@ in the source, and are recorded here as what the backbone supplies.
   diagonally dominant matrix with nonpositive off-diagonal entries.
 * Equations (2.22)–(2.23), `SaadSparse.Chapter02.equation_2_23`: the upwind approximation of $b u'$
   in one formula for both signs of $b$.
-* §2.2.5, not in the source: `SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` and
+* Equation (13.12), `SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` and
   `SaadSparse.Chapter02.laplacian2D_smul`: the five-point matrix is a Kronecker sum of
-  one-dimensional model matrices.
+  one-dimensional model matrices, with the mesh scaling of §2.2.5 made explicit.
 * Equation (2.26), `SaadSparse.Chapter02.laplacian2D_block_apply`: the block tridiagonal form of the
   scaled five-point matrix.
-* §2.2.5, not in the source: `SaadSparse.Chapter02.laplacian2D_mulVec_kroneckerVec` and
+* §13.2 and §2.2.5, `SaadSparse.Chapter02.laplacian2D_mulVec_kroneckerVec` and
   `SaadSparse.Chapter02.laplacian2D_posDef`: the eigenpairs and the positive definiteness of the
   five-point matrix.
 * Equation (2.27), `SaadSparse.Chapter02.sineMatrix_transpose_mul_self`,
@@ -140,11 +139,10 @@ in the source, and are recorded here as what the backbone supplies.
 
 ## Implementation notes
 
-* The two-dimensional grid is indexed by the product type `Fin n₁ × Fin n₂`, not by `Fin (n₁ * n₂)`,
-  because `Numlib.LinearAlgebra.Matrix.KroneckerSum` is stated over products. The lexicographic
-  ordering of the source is then a reindexing along an equivalence of index types, which nothing in
-  the library needs. The first coordinate is the $x$ direction, with mesh size $h_1$, and it is the
-  block index of the block form (2.26).
+* The two-dimensional grid is indexed by `Fin n₁ × Fin n₂` for the two coordinate directions.
+  The first coordinate is the $x_1$ direction with mesh size $h_1$. The source orders horizontal
+  lines by $x_2$. The block formula here fixes $x_1$ and uses vertical lines, which amounts to
+  swapping the two coordinates before applying the source's block convention.
 * Each truncation error statement names the intermediate point at which the Lagrange remainder is
   evaluated, as the displays of the source do.
 * Every difference quotient and every model matrix is defined for all step sizes $h$. At $h = 0$ it
@@ -152,14 +150,71 @@ in the source, and are recorded here as what the backbone supplies.
 
 ## Deviations from the source
 
-* **§2.2.3, the scaling $1/h^2$** (reading). The source writes the scaling on the right-hand side of
-  the scalar equation and on the matrix in the display. The library uses the matrix convention only.
-  See `SaadSparse.Chapter02.laplacian1D`.
-* **§2.2.5, the interior index range** (typo). The source prints $0 < i < n_1$, which is off by one.
-  See `SaadSparse.Chapter02.laplacian2D`.
+* **Equations (2.9)–(2.13)** (reading). The difference estimates use global regularity.
+  The first derivative formulas give exact Lagrange remainders. See
+  `SaadSparse.Chapter02.equation_2_10`, `SaadSparse.Chapter02.equation_2_12` and
+  `SaadSparse.Chapter02.equation_2_13`.
+* **Equation (2.16) and Problems P-2.6–P-2.7** (reading). The staggered difference identity is
+  unscaled, and the accuracy result gives an exact remainder for globally $C^4$ functions.
+  See `SaadSparse.Chapter02.equation_2_16_symm` and `SaadSparse.Chapter02.equation_2_16`.
+* **Equation (2.17), Figure 2.4 and Problem P-2.4** (reading). The error formulas evaluate
+  the relevant derivatives at intermediate points, under separate regularity hypotheses.
+  See `SaadSparse.Chapter02.equation_2_17`, `SaadSparse.Chapter02.ninePointC_error` and
+  `SaadSparse.Chapter02.ninePointD_error`.
+* **§2.2.2, stencil definitions** (reading). The uniform-grid quotients extend to all real
+  step sizes and have value $0$ at step size zero. See `SaadSparse.Chapter02.diffX`,
+  `SaadSparse.Chapter02.diffY`, `SaadSparse.Chapter02.diagonalStencil`,
+  `SaadSparse.Chapter02.ninePointC` and `SaadSparse.Chapter02.ninePointD`.
+* **§2.2.3, grid and stencil** (reading and generalization). The scalar equation has $h^2 f_i$
+  on the right, and the matrix display carries $1/h^2$. The surface matrix uses the latter
+  convention for any size and step, with zero padding outside the interior.
+  See `SaadSparse.Chapter02.dirichletExt`, `SaadSparse.Chapter02.dirichletExt_of_gt`,
+  `SaadSparse.Chapter02.laplacian1D`, `SaadSparse.Chapter02.laplacian1D_apply` and
+  `SaadSparse.Chapter02.laplacian1D_mulVec_apply`.
+* **Equations (13.7)–(13.8), eigenpairs of the 1-D model matrix** (reading). The eigenvalues
+  here carry the $1/h^2$ scaling of §2.2.3.
+  See `SaadSparse.Chapter02.laplacian1D_mulVec_sineVec`.
+* **Equation (2.20)** (reading). The exponential formula is totalized at $R=0$. The
+  uniqueness theorem uses nonzero denominators and derivative hypotheses on $[0,1]$.
+  See `SaadSparse.Chapter02.convDiffExact` and `SaadSparse.Chapter02.equation_2_20`.
+* **Equation (2.21)** (reading). The closed forms are totalized at zero denominators.
+  The uniqueness statement on the grid excludes the degenerate roots at $c=0,1$.
+  See `SaadSparse.Chapter02.convDiffRatio`, `SaadSparse.Chapter02.convDiffDiscrete` and
+  `SaadSparse.Chapter02.equation_2_21`.
+* **§2.2.4, positivity, monotonicity and oscillation** (generalization). The continuous and
+  discrete formulas have these properties beyond the source's grid interval under the stated
+  parameter conditions. See `SaadSparse.Chapter02.convDiffExact_pos`,
+  `SaadSparse.Chapter02.convDiffExact_strictMono`, `SaadSparse.Chapter02.equation_2_21_oscillates`
+  and `SaadSparse.Chapter02.equation_2_21_strictMono`.
+* **§2.2.4, centered and backward upwind matrices** (generalization). The six-point
+  displays extend to arbitrary matrix sizes and independent parameters. The sign and
+  dominance results use explicit size and parameter ranges.
+  See `SaadSparse.Chapter02.convDiffCentered`, `SaadSparse.Chapter02.convDiffCentered_apply`,
+  `SaadSparse.Chapter02.convDiffUpwind`, `SaadSparse.Chapter02.convDiffUpwind_apply`,
+  `SaadSparse.Chapter02.convDiffCentered_not_isMMatrix`,
+  `SaadSparse.Chapter02.convDiffCentered_not_diagDominant` and
+  `SaadSparse.Chapter02.convDiffUpwind_diagDominant`.
+* **Equation (2.23)** (reading). The two upwind expressions are equal for all steps,
+  including zero by totalized division. See `SaadSparse.Chapter02.equation_2_23`.
+* **§2.2.5, the interior index ranges** (typo). The source omits the last interior index in
+  each direction. The formal grid has $n_1$ by $n_2$ interior points.
+  See `SaadSparse.Chapter02.laplacian2D` and `SaadSparse.Chapter02.laplacian2D_apply`.
+* **§2.2.5 and Equations (2.26), (13.12), (13.14)** (reading and generalization). The
+  scaled matrix formulas use independent step sizes for the two grid directions.
+  The block form fixes the first coordinate, giving vertical blocks.
+  See `SaadSparse.Chapter02.laplacian2D`, `SaadSparse.Chapter02.laplacian2D_apply`,
+  `SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum`, `SaadSparse.Chapter02.laplacian2D_smul`,
+  `SaadSparse.Chapter02.laplacian2D_block_apply` and
+  `SaadSparse.Chapter02.laplacian2D_mulVec_kroneckerVec`.
 * **Equation (2.29)** (typo). The source prints the two indices transposed, which gives systems of
   the wrong size. The library states $p$ systems of size $m$, as line 2 of Algorithm 2.1 says. See
   `SaadSparse.Chapter02.equation_2_29`.
+* **Equations (2.33) and (2.36)** (generalization). The cyclic reduction recurrence,
+  its polynomial form, and the factorization apply to arbitrary square real matrices.
+  See `SaadSparse.Chapter02.cyclicReduction`, `SaadSparse.Chapter02.equation_2_33` and
+  `SaadSparse.Chapter02.equation_2_36`.
+* **Equation (2.36)** (typo). The product for the block solve uses $B$ in place of the
+  printed $A$. See `SaadSparse.Chapter02.equation_2_36`.
 
 ## Not formalized
 
@@ -250,8 +305,9 @@ $x \in \mathbb{R}$ and let $h > 0$. Then there is $\xi \in (x, x + h)$ with
 $$\frac{u(x + h) - u(x)}{h} = u'(x) + \frac{h}{2} u''(x) + \frac{h^2}{6} u'''(\xi).$$
 In particular the error is $\frac{h}{2} u''(x) + O(h^2)$, which is of first order in $h$.
 
-The backward difference (2.11) is the same statement at $-h$. The derivative $u^{(k)}$ is
-`iteratedDeriv k u`, and $u'$ is `deriv u`. -/
+**Reading.** The source starts with a local $C^4$ Taylor expansion in (2.9) and writes an
+$O(h^2)$ remainder in (2.10). This theorem uses global $C^3$ regularity and gives the
+forward-difference remainder as an exact third-derivative term at an intermediate point. -/
 theorem equation_2_10 {u : ℝ → ℝ} (hu : ContDiff ℝ 3 u) (x : ℝ) {h : ℝ} (hh : 0 < h) :
     ∃ ξ ∈ Set.Ioo x (x + h),
       (u (x + h) - u x) / h
@@ -273,8 +329,9 @@ $$\frac{u(x + h) - 2u(x) + u(x - h)}{h^2} = u''(x) + \frac{h^2}{12} u^{(4)}(\xi)
 This is the truncation error of the model problem, and the reason that the scheme is of second
 order.
 
-The proof adds two Lagrange remainders of order four, and combines the two fourth-order terms by
-the intermediate value theorem applied to $u^{(4)}$. This is the step that the source flags. -/
+**Reading.** The source uses the two local Taylor expansions around $x$. The Lean theorem
+assumes $u$ is $C^4$ on all of $\mathbb{R}$ and gives the same fourth-derivative remainder
+with $\xi$ in the full stencil interval. -/
 theorem equation_2_12 {u : ℝ → ℝ} (hu : ContDiff ℝ 4 u) (x : ℝ) {h : ℝ} (hh : 0 < h) :
     ∃ ξ ∈ Set.Icc (x - h) (x + h),
       (u (x + h) - 2 * u x + u (x - h)) / h ^ 2
@@ -299,8 +356,8 @@ $$\frac{u(x + h) - u(x - h)}{2h} = u'(x) + \frac{h^2}{6} u'''(\xi).$$
 So the centered formula is of second order, while the forward difference (2.8) is of first order
 (`SaadSparse.Chapter02.equation_2_10`).
 
-The source calls this easy to show and gives no proof. The proof takes the difference of two
-Lagrange remainders of order three. -/
+**Reading.** The source states second-order accuracy. The theorem uses a globally $C^3$
+function and gives the exact Lagrange remainder. -/
 theorem equation_2_13 {u : ℝ → ℝ} (hu : ContDiff ℝ 3 u) (x : ℝ) {h : ℝ} (hh : 0 < h) :
     ∃ ξ ∈ Set.Icc (x - h) (x + h),
       (u (x + h) - u (x - h)) / (2 * h) = deriv u x + h ^ 2 / 6 * iteratedDeriv 3 u ξ := by
@@ -322,6 +379,9 @@ difference of the staggered forward difference, $\delta^-(a_{i+1/2} \delta^+ u)$
 $a, u : \mathbb{R} \to \mathbb{R}$ and $x, h \in \mathbb{R}$, and let
 $g(t) = a(t + h/2)(u(t + h) - u(t))$ be the staggered flux. Then
 $$a(x + h/2)(u(x + h) - u(x)) - a(x - h/2)(u(x) - u(x - h)) = g(x) - g(x - h).$$
+
+**Reading.** The exercise includes the factor $1/h^2$ on each side. The theorem gives
+the unscaled identity, from which the exercise follows by multiplying by $1/h^2$.
 -/
 theorem equation_2_16_symm (a u : ℝ → ℝ) (x h : ℝ) :
     a (x + h / 2) * (u (x + h) - u x) - a (x - h / 2) * (u x - u (x - h))
@@ -352,6 +412,9 @@ $$\frac{a(x + \frac{h}{2})(u(x + h) - u(x)) - a(x - \frac{h}{2})(u(x) - u(x - h)
   \frac{a'''(\zeta')(u'(x) + \frac{h^2}{6} u'''(\xi'))}{24} \Big).$$
 The bracket is a fixed polynomial in values of $a$, $u$ and their derivatives at these points
 and at $x$, so it is bounded independently of $h$ on any bounded range of steps.
+
+**Reading.** The source states an $O(h^2)$ remainder and asks for second-order accuracy.
+The theorem gives the exact remainder under global $C^4$ assumptions on $a$ and $u$.
 
 The proof splits the difference into the average and the half difference of the two staggered
 coefficients. The average multiplies the centered second difference of $u$, and the half
@@ -412,10 +475,9 @@ $$\frac{u(x_1 + h, x_2) + u(x_1 - h, x_2) + u(x_1, x_2 + h) + u(x_1, x_2 - h) - 
   x_2)}{h^2} = \Delta u(x_1, x_2) + \frac{h^2}{12} \big( \partial_1^4 u(\xi, x_2) + \partial_2^4
   u(x_1, \eta) \big).$$
 
-The function is curried, `u : ℝ → ℝ → ℝ`, and $\partial_1^k u(x_1, x_2)$ is
-`iteratedDeriv k (fun t => u t x₂) x₁`. The proof applies `SaadSparse.Chapter02.equation_2_12`
-once in each variable. The anisotropic form with $h_1 \neq h_2$ is the same statement with the
-two errors weighted separately. -/
+**Reading.** The source expands the leading error at $(x_1,x_2)$ and writes an
+$O(h^3)$ remainder. The theorem gives exact fourth-derivative terms at intermediate
+points and assumes global $C^4$ regularity on coordinate lines separately. -/
 theorem equation_2_17 {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fun t => u t y)
     (h₂ : ∀ x, ContDiff ℝ 4 fun t => u x t) (x₁ x₂ : ℝ) {h : ℝ} (hh : 0 < h) :
     ∃ ξ ∈ Set.Icc (x₁ - h) (x₁ + h), ∃ η ∈ Set.Icc (x₂ - h) (x₂ + h),
@@ -460,13 +522,17 @@ and the sixth-order clause would need that bridge iterated to order six.
 variable:
 $$\delta_x^2 u(x, y) = \frac{u(x + h, y) - 2u(x, y) + u(x - h, y)}{h^2}.$$
 
-It is kept as a function of both variables, so that it can be differenced again. -/
+**Reading.** The source uses a positive mesh size. This uniform-grid quotient also
+accepts signed $h$, with value $0$ at $h=0$ by totalized division. -/
 noncomputable def diffX (u : ℝ → ℝ → ℝ) (h : ℝ) : ℝ → ℝ → ℝ :=
   fun x y => (u (x + h) y - 2 * u x y + u (x - h) y) / h ^ 2
 
 /-- **Section 2.2.2** of [saad2003iterative], the centred second difference quotient in the second
 variable:
 $$\delta_y^2 u(x, y) = \frac{u(x, y + h) - 2u(x, y) + u(x, y - h)}{h^2}.$$
+
+**Reading.** The source uses a positive mesh size. This uniform-grid quotient also
+accepts signed $h$, with value $0$ at $h=0$ by totalized division.
 -/
 noncomputable def diffY (u : ℝ → ℝ → ℝ) (h : ℝ) : ℝ → ℝ → ℝ :=
   fun x y => (u x (y + h) - 2 * u x y + u x (y - h)) / h ^ 2
@@ -475,7 +541,10 @@ noncomputable def diffY (u : ℝ → ℝ → ℝ) (h : ℝ) : ℝ → ℝ → �
 taken on the two diagonal lines through $(x, y)$,
 $$\frac{u(x + h, y + h) + u(x + h, y - h) + u(x - h, y + h) + u(x - h, y - h) - 4u(x,
   y)}{2h^2}.$$
-The mesh spacing along a diagonal line is $h\sqrt{2}$, hence the denominator $2h^2$. -/
+The mesh spacing along a diagonal line is $h\sqrt{2}$ for $h>0$.
+
+**Reading.** The source uses a positive mesh size. The definition is total and gives
+$0$ at $h=0$. -/
 noncomputable def diagonalStencil (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
   (u (x + h) (y + h) + u (x + h) (y - h) + u (x - h) (y + h) + u (x - h) (y - h)
     - 4 * u x y) / (2 * h ^ 2)
@@ -485,7 +554,10 @@ $$\frac{1}{3h^2} \big[ (N + S + E + W) + (NE + NW + SE + SW) - 8C \big],$$
 where $C = u(x, y)$, the letters $N, S, E, W$ stand for the values of $u$ at the four neighbours
 $(x, y \pm h)$ and $(x \pm h, y)$, and $NE, NW, SE, SW$ stand for the values at the four
 diagonal neighbours $(x \pm h, y \pm h)$. It is $1/3$ of the five-point formula (2.17) plus
-$2/3$ of the diagonal stencil. -/
+$2/3$ of the diagonal stencil.
+
+**Reading.** The source uses a positive mesh size. The definition is total and gives
+$0$ at $h=0$. -/
 noncomputable def ninePointC (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
   (u (x + h) y + u (x - h) y + u x (y + h) + u x (y - h)
     + (u (x + h) (y + h) + u (x + h) (y - h) + u (x - h) (y + h) + u (x - h) (y - h))
@@ -494,8 +566,10 @@ noncomputable def ninePointC (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
 /-- **Figure 2.4(d)** of [saad2003iterative], the nine-point stencil
 $$\frac{1}{6h^2} \big[ 4(N + S + E + W) + (NE + NW + SE + SW) - 20C \big],$$
 with the notation of `SaadSparse.Chapter02.ninePointC`. It is $2/3$ of the five-point formula
-(2.17) plus $1/3$ of the diagonal stencil. This is the formula that the source calls sixth order
-accurate on harmonic functions. -/
+(2.17) plus $1/3$ of the diagonal stencil.
+
+**Reading.** The source uses a positive mesh size. The definition is total and gives
+$0$ at $h=0$. -/
 noncomputable def ninePointD (u : ℝ → ℝ → ℝ) (h x y : ℝ) : ℝ :=
   (4 * (u (x + h) y + u (x - h) y + u x (y + h) + u x (y - h))
     + (u (x + h) (y + h) + u (x + h) (y - h) + u (x - h) (y + h) + u (x - h) (y - h))
@@ -607,10 +681,9 @@ $$(d) - \Delta u(x, y) = h^2 \Big( \frac{\partial_1^4 u(\xi, y)}{12} + \frac{\pa
   \eta)}{12} + \frac{\partial_2^2 \partial_1^2 u(\theta, \zeta)}{6} \Big),$$
 where $(d)$ is the stencil `SaadSparse.Chapter02.ninePointD` at $(x, y)$.
 
-The first two terms are the five-point error of (2.17). The third term is the cost of the
-product correction $\frac{h^2}{6} \delta_x^2 \delta_y^2$ of
-`SaadSparse.Chapter02.ninePointD_eq`. The mixed regularity hypothesis on $\partial_1^2 u$ is
-part of what "$u$ of class $C^4$" gives, and the separate-variable hypotheses do not give it. -/
+**Reading.** The source asserts second-order accuracy. The theorem gives an exact
+remainder with pure and mixed derivatives at intermediate points. Local boundedness
+of those derivatives, as for a jointly $C^4$ function, gives the asymptotic bound. -/
 theorem ninePointD_error {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fun t => u t y)
     (h₂ : ∀ x, ContDiff ℝ 4 fun t => u x t)
     (h₁₂ : ∀ t, ContDiff ℝ 2 fun s => iteratedDeriv 2 (fun r => u r s) t)
@@ -640,8 +713,9 @@ $$(c) - \Delta u(x, y) = h^2 \Big( \frac{\partial_1^4 u(\xi, y)}{12} + \frac{\pa
   \eta)}{12} + \frac{\partial_2^2 \partial_1^2 u(\theta, \zeta)}{3} \Big),$$
 where $(c)$ is the stencil `SaadSparse.Chapter02.ninePointC` at $(x, y)$.
 
-The product correction has the weight $1/3$ instead of $1/6$, because (c) is the reverse
-combination of Problem P-2.4. -/
+**Reading.** The source asserts second-order accuracy. The theorem gives an exact
+remainder with pure and mixed derivatives at intermediate points. Local boundedness of
+those derivatives, as for a jointly $C^4$ function, gives the asymptotic bound. -/
 theorem ninePointC_error {u : ℝ → ℝ → ℝ} (h₁ : ∀ y, ContDiff ℝ 4 fun t => u t y)
     (h₂ : ∀ x, ContDiff ℝ 4 fun t => u x t)
     (h₁₂ : ∀ t, ContDiff ℝ 2 fun s => iteratedDeriv 2 (fun r => u r s) t)
@@ -678,7 +752,10 @@ indices $k \in \mathbb{N}$ by $v_k$ for $1 \le k \le n$ and by $0$ otherwise, so
 $v_0 = v_{n+1} = 0$.
 
 In Lean `dirichletExt v (i + 1) = v i` for an interior index `i : Fin n`. The definition is the
-backbone's zero padding `Matrix.padZero`. -/
+backbone's zero padding `Matrix.padZero`.
+
+**Reading.** The source gives values on the interior and the two endpoints of the grid.
+This definition extends by zero on all natural indices outside the interior. -/
 def dirichletExt (v : Fin n → ℝ) : ℕ → ℝ :=
   Matrix.padZero v
 
@@ -698,7 +775,10 @@ theorem dirichletExt_coe_succ (v : Fin n → ℝ) (i : Fin n) :
     dirichletExt v ((i : ℕ) + 1) = v i :=
   Matrix.padZero_val_succ v i
 
-/-- The Dirichlet extension vanishes at every grid index $k > n$. -/
+/-- The Dirichlet extension vanishes at every grid index $k > n$.
+
+**Generalization.** The source imposes the right boundary value at $k=n+1$. The zero
+extension has value $0$ at all indices beyond $n$. -/
 theorem dirichletExt_of_gt (v : Fin n → ℝ) {k : ℕ} (hk : n < k) : dirichletExt v k = 0 :=
   Matrix.padZero_of_lt v hk
 
@@ -708,18 +788,19 @@ $$A = \frac{1}{h^2} \operatorname{tridiag}(-1, 2, -1) \in \mathbb{R}^{n \times n
 the matrix of $-u'' = f$ on $(0, 1)$ with homogeneous Dirichlet boundary conditions, discretized
 on the uniform grid $x_i = ih$.
 
-**Reading.** The source writes the scaling $1/h^2$ on the right-hand side of the scalar
-difference equation and on the matrix in the display. The library uses the matrix convention
-only.
+**Reading.** The scalar equation in the source has $h^2 f_i$ on its right side. The
+displayed matrix instead carries $1/h^2$, which is the convention used here.
 
-The source displays the matrix without an equation number, and takes $h = 1/(n + 1)$; here $h$
-is a free parameter, and at $h = 0$ the matrix is $0$. The matrix
-$\operatorname{tridiag}(-1, 2, -1)$ is `Matrix.symmTridiagonalToeplitz n (-1) 2`. -/
+**Generalization.** The source displays the matrix at $n=6$ for $h=1/(n+1)$. The
+definition accepts every size and free step $h$, with value $0$ at $h=0$. -/
 noncomputable def laplacian1D (n : ℕ) (h : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (h ^ 2)⁻¹ • Matrix.symmTridiagonalToeplitz n (-1) 2
 
 /-- The entries of the one-dimensional model matrix: $a_{ii} = 2/h^2$, $a_{ij} = -1/h^2$ if
-$|i - j| = 1$, and $a_{ij} = 0$ otherwise. -/
+$|i - j| = 1$, and $a_{ij} = 0$ otherwise.
+
+**Generalization.** The source displays the six-point matrix of §2.2.3 for its grid spacing.
+The entry formula holds for every size and free step, with value $0$ at $h=0$. -/
 theorem laplacian1D_apply (h : ℝ) (i j : Fin n) :
     laplacian1D n h i j =
       (h ^ 2)⁻¹ * (if (i : ℕ) = j then 2 else
@@ -755,7 +836,11 @@ Then for $i = 1, \dots, n$ the $i$-th entry of $Av$ is
 $$(Av)_i = \frac{-v_{i-1} + 2v_i - v_{i+1}}{h^2}.$$
 
 The boundary values are supplied by `SaadSparse.Chapter02.dirichletExt`, and the Lean row
-`i : Fin n` is the book's row $i + 1$. -/
+`i : Fin n` is the book's row $i + 1$.
+
+**Reading.** The source writes the scalar stencil equation with $h^2 f_i$ on the right.
+The identity uses the scaled operator on the left as in the displayed matrix. It
+holds for a free step and arbitrary interior values. -/
 theorem laplacian1D_mulVec_apply (h : ℝ) (v : Fin n → ℝ) (i : Fin n) :
     (laplacian1D n h *ᵥ v) i
       = (-dirichletExt v (i : ℕ) + 2 * dirichletExt v ((i : ℕ) + 1)
@@ -770,7 +855,9 @@ theorem laplacian1D_mulVec_apply (h : ℝ) (v : Fin n → ℝ) (i : Fin n) :
 $h \in \mathbb{R}$ and $k \in \{1, \dots, n\}$, and let $w_k \in \mathbb{R}^n$ be the discrete
 sine vector with entries $\sin(jk\pi/(n + 1))$, $j = 1, \dots, n$. Then
 $$A w_k = \frac{4}{h^2} \sin^2\Big(\frac{k\pi}{2(n + 1)}\Big) w_k.$$
-The source does not state this.
+
+**Reading.** Equations (13.7)–(13.8) give the eigenpairs for the unscaled matrix.
+This form uses the $1/h^2$ scaling of §2.2.3 and includes $h=0$ by totalized division.
 
 The vector $w_k$ is `Matrix.sineVec n k`, and the Lean index `k : Fin n` stands for the book's
 $k + 1$. -/
@@ -794,8 +881,8 @@ $$\frac{4}{h^2} \sin^2\Big(\frac{\pi}{2(n + 1)}\Big) \|x\|^2 \le (Ax, x) \le \fr
   \cos^2\Big(\frac{\pi}{2(n + 1)}\Big) \|x\|^2.$$
 The source does not state this.
 
-Both bounds are eigenvalues, by `SaadSparse.Chapter02.laplacian1D_mulVec_sineVec` at $k = 1$ and
-at $k = n$, so the interval is sharp. The statement is `LinearMap.IsSymmetricBoundedBy` for
+For $n\ge 1$ both bounds are eigenvalues, at $k=1$ and $k=n$, so the interval is sharp.
+The statement is `LinearMap.IsSymmetricBoundedBy` for
 `Matrix.toEuclideanLin A`. -/
 theorem laplacian1D_isSymmetricBoundedBy (n : ℕ) {h : ℝ} (hh : h ≠ 0) :
     (Matrix.toEuclideanLin (laplacian1D n h)).IsSymmetricBoundedBy
@@ -838,8 +925,8 @@ theorem laplacian1D_posDef (n : ℕ) {h : ℝ} (hh : h ≠ 0) : (laplacian1D n h
 `SaadSparse.Chapter02.laplacian1D_isSymmetricBoundedBy` satisfy
 $$\frac{4 \cos^2(\pi/(2(n + 1)))/h^2}{4 \sin^2(\pi/(2(n + 1)))/h^2} =
   \cot^2\Big(\frac{\pi}{2(n + 1)}\Big).$$
-This ratio is the $2$-norm condition number of the matrix, and it does not depend on $h$. The
-source does not state this.
+For $n\ge 1$ this ratio is the $2$-norm condition number of the matrix. It is independent of
+the scaling step $h$. The theorem states the exact algebraic ratio of the bounds.
 
 Since $h = 1/(n + 1)$ in the source, the ratio is asymptotically $4/(\pi^2 h^2)$. This is the
 origin of every remark in the source that the condition number grows like $h^{-2}$. The
@@ -863,9 +950,12 @@ section ConvectionDiffusion
 /-- **Equation (2.20)** of [saad2003iterative], the exact solution of the convection–diffusion model
 problem. For the Péclet number $R \in \mathbb{R}$ and $x \in \mathbb{R}$,
 $$u(x) = \frac{1 - e^{Rx}}{1 - e^R}.$$
-For $R = b/a$ it solves $-a u'' + b u' = 0$ on $(0, 1)$ with $u(0) = 0$ and $u(1) = 1$.
+For $R=b/a\ne 0$ with $a\ne 0$, it solves $-a u'' + b u' = 0$ on $(0,1)$ with
+$u(0)=0$ and $u(1)=1$.
 
-At $R = 0$ the denominator vanishes and the value is $0$. -/
+**Reading.** The displayed quotient in the source requires $R\ne 0$. The totalized
+definition gives $0$ at $R=0$. For $a\ne 0$ and $b=0$, the boundary value problem itself
+has the solution $u(x)=x$. -/
 noncomputable def convDiffExact (R x : ℝ) : ℝ := (1 - Real.exp (R * x)) / (1 - Real.exp R)
 
 /-- The exact solution (2.20) of [saad2003iterative] has the derivative $-R e^{Rx}/(1 - e^R)$ at
@@ -955,8 +1045,10 @@ $u'$ has the derivative $u''$ at every point of $[0, 1]$. If
 $$-a u''(x) + b u'(x) = 0 \quad (x \in [0, 1]), \qquad u(0) = 0, \qquad u(1) = 1,$$
 then $u(x) = (1 - e^{Rx})/(1 - e^R)$ for every $x \in [0, 1]$, where $R = b/a$.
 
-The equation gives $u'' = R u'$, so $u'$ is a multiple of $e^{Rx}$, and the two boundary
-conditions fix the two constants. -/
+**Reading.** The source states the differential equation on $(0,1)$ and presents the
+exponential formula as a solution. The theorem assumes the derivative and equation
+hypotheses on $[0,1]$, makes the nonzero denominators explicit and states that any
+solution equals the formula there. -/
 theorem equation_2_20 {a b : ℝ} (ha : a ≠ 0) (hR : b / a ≠ 0) {u u' u'' : ℝ → ℝ}
     (hu : ∀ x ∈ Set.Icc (0 : ℝ) 1, HasDerivAt u (u' x) x)
     (hu' : ∀ x ∈ Set.Icc (0 : ℝ) 1, HasDerivAt u' (u'' x) x)
@@ -977,7 +1069,8 @@ private theorem one_lt_exp_of_pos {t : ℝ} (ht : 0 < t) : 1 < Real.exp t := by
 /-- **Section 2.2.4** of [saad2003iterative]: for a positive Péclet number the exact solution is
 positive. Let $R > 0$ and $x > 0$. Then $(1 - e^{Rx})/(1 - e^R) > 0$.
 
-This is the behaviour that the centered scheme fails to reproduce when the mesh is too coarse. -/
+**Generalization.** The source states positivity on the interior of the unit interval.
+The expression is positive at every $x>0$ when $R>0$. -/
 theorem convDiffExact_pos {R : ℝ} (hR : 0 < R) {x : ℝ} (hx : 0 < x) : 0 < convDiffExact R x := by
   have h1 := one_lt_exp_of_pos (mul_pos hR hx)
   have h2 := one_lt_exp_of_pos hR
@@ -987,7 +1080,10 @@ theorem convDiffExact_pos {R : ℝ} (hR : 0 < R) {x : ℝ} (hx : 0 < x) : 0 < co
   exact div_pos (by linarith) (by linarith)
 
 /-- **Section 2.2.4** of [saad2003iterative]: for a positive Péclet number $R > 0$ the exact
-solution $x \mapsto (1 - e^{Rx})/(1 - e^R)$ is strictly increasing on $\mathbb{R}$. -/
+solution $x \mapsto (1 - e^{Rx})/(1 - e^R)$ is strictly increasing on $\mathbb{R}$.
+
+**Generalization.** The source describes monotonicity on $[0,1]$. The formula is
+strictly increasing on the whole real line. -/
 theorem convDiffExact_strictMono {R : ℝ} (hR : 0 < R) : StrictMono (convDiffExact R) := by
   intro x y hxy
   have h2 := one_lt_exp_of_pos hR
@@ -1002,14 +1098,17 @@ $$\sigma = \frac{1 + c}{1 - c}.$$
 For $c \neq 1$ the characteristic equation $(1 - c) r^2 - 2r + (1 + c) = 0$ of the centered
 difference scheme has the two roots $1$ and $\sigma$. In the scheme $c = Rh/2$.
 
-At $c = 1$ the value is $0$. -/
+**Reading.** The source's ratio requires $c\ne1$. The totalized definition gives $0$
+at $c=1$, where the characteristic equation is linear. -/
 noncomputable def convDiffRatio (c : ℝ) : ℝ := (1 + c) / (1 - c)
 
 /-- **Equation (2.21)** of [saad2003iterative], the solution of the centered difference scheme: for
 $c \in \mathbb{R}$ and $n, i \in \mathbb{N}$,
 $$u_i = \frac{1 - \sigma^i}{1 - \sigma^{n+1}}, \qquad \sigma = \frac{1 + c}{1 - c}.$$
 
-When the denominator vanishes the value is $0$; this does not happen for $c \neq 0, 1$. -/
+**Reading.** The source gives the quotient on the finite grid in the case of distinct
+characteristic roots. This definition accepts all $i$, gives $0$ at $c=0$, and uses
+the totalized ratio at $c=1$. The solution theorem treats $c\notin\{0,1\}$. -/
 noncomputable def convDiffDiscrete (c : ℝ) (n i : ℕ) : ℝ :=
   (1 - convDiffRatio c ^ i) / (1 - convDiffRatio c ^ (n + 1))
 
@@ -1046,17 +1145,18 @@ private theorem convDiffRatio_pow_ne_one {c : ℝ} (hc1 : c ≠ 1) (hc0 : c ≠ 
   · exact convDiffRatio_ne_one hc1 hc0 h'
   · exact convDiffRatio_ne_neg_one hc1 h'
 
-/-- **Equation (2.21)** of [saad2003iterative]: the centered difference scheme has exactly one
-solution. Let $n \in \mathbb{N}$ and $c \in \mathbb{R}$ with $c \neq 1$ and $c \neq 0$, and let
+/-- **Equation (2.21)** of [saad2003iterative]: every solution of the centered difference
+scheme agrees with the closed form on the grid. Let $n \in \mathbb{N}$ and $c \in \mathbb{R}$
+with $c \neq 1$ and $c \neq 0$, and let
 $(u_i)_{i \in \mathbb{N}}$ satisfy
 $$-(1 - c) u_{i+1} + 2u_i - (1 + c) u_{i-1} = 0 \quad (1 \le i \le n), \qquad u_0 = 0, \qquad
   u_{n+1} = 1.$$
 Then for $0 \le i \le n + 1$
 $$u_i = \frac{1 - \sigma^i}{1 - \sigma^{n+1}}, \qquad \sigma = \frac{1 + c}{1 - c}.$$
 
-The hypothesis $c \neq 1$ makes $\sigma$ defined, and $c \neq 0$ gives $\sigma \neq 1$. The
-characteristic equation has the roots $1$ and $\sigma$, and the two boundary conditions fix the
-two coefficients. -/
+**Reading.** The source gives the closed-form solution via the two characteristic roots.
+The statement spells out $c\ne 1$ and $c\ne 0$ for this derivation and proves the uniqueness
+direction on the grid. -/
 theorem equation_2_21 {n : ℕ} {c : ℝ} (hc1 : c ≠ 1) (hc0 : c ≠ 0) {u : ℕ → ℝ}
     (hrec : ∀ i, 1 ≤ i → i ≤ n → -(1 - c) * u (i + 1) + 2 * u i - (1 + c) * u (i - 1) = 0)
     (h0 : u 0 = 0) (h1 : u (n + 1) = 1) :
@@ -1126,8 +1226,8 @@ $$u_i u_{i+1} < 0.$$
 The exact solution of (2.20) is positive and increasing
 (`SaadSparse.Chapter02.convDiffExact_pos`, `SaadSparse.Chapter02.convDiffExact_strictMono`).
 
-The remark of the source that the oscillations disappear when $b < 0$ is the same computation
-with the sign of $c$ reversed. -/
+**Generalization.** The source discusses the computed values on the grid. The extension
+of the closed form to all natural indices also alternates in sign for $i\ge 1$. -/
 theorem equation_2_21_oscillates {n : ℕ} {c : ℝ} (hc : 1 < c) {i : ℕ} (hi : 1 ≤ i) :
     convDiffDiscrete c n i * convDiffDiscrete c n (i + 1) < 0 := by
   have hc1 : c ≠ 1 := ne_of_gt hc
@@ -1161,7 +1261,11 @@ theorem equation_2_21_oscillates {n : ℕ} {c : ℝ} (hc : 1 < c) {i : ℕ} (hi 
 
 /-- **Section 2.2.4** of [saad2003iterative]: let $0 < c < 1$, that is $h < 2/R$ for $c = Rh/2$.
 Then $\sigma > 1$, and the discrete solution (2.21) is strictly increasing along the grid, as
-the exact solution is: $u_i < u_{i+1}$ for every $n$ and every $i \in \mathbb{N}$. -/
+the exact solution is: $u_i < u_{i+1}$ for every $n$ and every $i \in \mathbb{N}$.
+
+**Generalization.** The source compares the discrete and continuous solutions on the
+grid. The theorem proves the strict inequality for the closed form at every natural
+index under $0<c<1$. -/
 theorem equation_2_21_strictMono {n : ℕ} {c : ℝ} (hc0 : 0 < c) (hc1 : c < 1) (i : ℕ) :
     convDiffDiscrete c n i < convDiffDiscrete c n (i + 1) := by
   have hcpos : (0 : ℝ) < 1 - c := by linarith
@@ -1183,7 +1287,9 @@ $n \in \mathbb{N}$ and $h, c \in \mathbb{R}$ it is the tridiagonal matrix
 $$\frac{1}{h^2} \operatorname{tridiag}(-1 - c, 2, -1 + c) \in \mathbb{R}^{n \times n},$$
 with diagonal $2$, subdiagonal $-1 - c$ and superdiagonal $-1 + c$, all scaled by $1/h^2$.
 
-The source displays the matrix without an equation number. At $h = 0$ the matrix is $0$. -/
+**Generalization.** The source displays the six-point matrix with $c=Rh/2$ and a
+positive mesh size. The definition allows all sizes and independent real $h,c$,
+with value $0$ at $h=0$. -/
 noncomputable def convDiffCentered (n : ℕ) (h c : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (h ^ 2)⁻¹ • Matrix.of fun i j : Fin n =>
     if (i : ℕ) = j then 2 else if (i : ℕ) + 1 = j then -1 + c
@@ -1194,21 +1300,29 @@ $b > 0$. For $n \in \mathbb{N}$ and $h, c \in \mathbb{R}$ it is the tridiagonal 
 $$\frac{1}{h^2} \operatorname{tridiag}(-1 - c, 2 + c, -1) \in \mathbb{R}^{n \times n},$$
 with diagonal $2 + c$, subdiagonal $-1 - c$ and superdiagonal $-1$, all scaled by $1/h^2$.
 
-At $h = 0$ the matrix is $0$. -/
+**Generalization.** The source displays the six-point backward stencil with $c=Rh$
+for $b>0$. The definition extends that formula to all sizes and real parameters,
+with value $0$ at $h=0$. For $b<0$ the upwind scheme in the source uses a forward stencil. -/
 noncomputable def convDiffUpwind (n : ℕ) (h c : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (h ^ 2)⁻¹ • Matrix.of fun i j : Fin n =>
     if (i : ℕ) = j then 2 + c else if (i : ℕ) + 1 = j then -1
       else if (j : ℕ) + 1 = i then -1 - c else 0
 
 /-- The entries of the centered matrix: $1/h^2$ times $2$ on the diagonal, $-1 + c$ on the
-superdiagonal, $-1 - c$ on the subdiagonal, and $0$ elsewhere. -/
+superdiagonal, $-1 - c$ on the subdiagonal, and $0$ elsewhere.
+
+**Generalization.** The six-point centered display gives the same entries when
+$c=Rh/2$. The formula holds for the extended matrix at all sizes and free parameters. -/
 theorem convDiffCentered_apply (n : ℕ) (h c : ℝ) (i j : Fin n) :
     convDiffCentered n h c i j =
       (h ^ 2)⁻¹ * (if (i : ℕ) = j then 2 else if (i : ℕ) + 1 = j then -1 + c
         else if (j : ℕ) + 1 = i then -1 - c else 0) := rfl
 
 /-- The entries of the upwind matrix: $1/h^2$ times $2 + c$ on the diagonal, $-1$ on the
-superdiagonal, $-1 - c$ on the subdiagonal, and $0$ elsewhere. -/
+superdiagonal, $-1 - c$ on the subdiagonal, and $0$ elsewhere.
+
+**Generalization.** The six-point backward upwind display gives the same entries when
+$c=Rh$ and $b>0$. The formula holds for the extended matrix at all sizes and free parameters. -/
 theorem convDiffUpwind_apply (n : ℕ) (h c : ℝ) (i j : Fin n) :
     convDiffUpwind n h c i j =
       (h ^ 2)⁻¹ * (if (i : ℕ) = j then 2 + c else if (i : ℕ) + 1 = j then -1
@@ -1223,9 +1337,8 @@ Let $n \ge 2$, $h \neq 0$ and $c > 1$. Then the matrix $\frac{1}{h^2}
 \operatorname{tridiag}(-1 - c, 2, -1 + c)$ is not an M-matrix, because its superdiagonal entry
 $(-1 + c)/h^2$ is positive, so that it is not even a Z-matrix.
 
-This is why the convergence theorems of Chapter 4 do not apply to the centered discretization of
-a convection-dominated problem. An M-matrix is `Matrix.IsMMatrix`, Definition 1.30 of
-[saad2003iterative]. -/
+**Generalization.** The source discusses the six-point matrix. A positive
+superdiagonal gives the conclusion already for $n\ge 2$ and any $h\ne 0$. -/
 theorem convDiffCentered_not_isMMatrix {n : ℕ} (hn : 2 ≤ n) {h c : ℝ} (hh : h ≠ 0) (hc : 1 < c) :
     ¬ (convDiffCentered n h c).IsMMatrix := by
   intro hM
@@ -1241,7 +1354,10 @@ theorem convDiffCentered_not_isMMatrix {n : ℕ} (hn : 2 ≤ n) {h c : ℝ} (hh 
 /-- **Section 2.2.4** of [saad2003iterative]: for $c > 1$ the centered matrix is not weakly
 diagonally dominant by rows. Let $n \ge 3$, $h \neq 0$ and $c > 1$. Then it is false that
 $\sum_{j \neq i} |a_{ij}| \le |a_{ii}|$ for every row $i$, because an interior row has
-$|-1 - c| + |-1 + c| = 2c > 2$, before the scaling by $1/h^2$. -/
+$|-1 - c| + |-1 + c| = 2c > 2$, before the scaling by $1/h^2$.
+
+**Generalization.** The source discusses the six-point centered matrix. An interior
+row gives failure of weak diagonal dominance for every $n\ge 3$ and $h\ne 0$. -/
 theorem convDiffCentered_not_diagDominant {n : ℕ} (hn : 3 ≤ n) {h c : ℝ} (hh : h ≠ 0)
     (hc : 1 < c) :
     ¬ ∀ i : Fin n, ∑ j ∈ univ.erase i, |convDiffCentered n h c i j|
@@ -1319,6 +1435,9 @@ theorems of Chapter 4 need. Let $h \neq 0$ and $c \ge 0$. Then the matrix $A = \
 entries, and is weakly diagonally dominant by rows:
 $$a_{ii} > 0, \qquad a_{ij} \le 0 \quad (i \neq j), \qquad \sum_{j \neq i} |a_{ij}| \le |a_{ii}|
   \quad \text{for every row } i.$$
+
+**Generalization.** The source uses the six-point backward stencil for positive
+convection. The same signs and dominance hold for all sizes, $c\ge 0$ and $h\ne 0$.
 -/
 theorem convDiffUpwind_diagDominant {n : ℕ} {h c : ℝ} (hh : h ≠ 0) (hc : 0 ≤ c) :
     (∀ i : Fin n, 0 < convDiffUpwind n h c i i) ∧
@@ -1356,8 +1475,11 @@ where $b^+ = \max(b, 0)$ and $b^- = \min(b, 0)$. The three coefficients satisfy 
 $-b^+ \le 0$, $b^- \le 0$ and $-b^+ + |b| + b^- = 0$.
 
 The left side takes the backward difference where $b > 0$ and the forward difference where
-$b < 0$, so the formula holds for both signs of $b$. The identity is the same algebraic fact as
-(2.53) of §2.5, `SaadSparse.Chapter02.equation_2_53`. -/
+$b < 0$.
+
+**Reading.** The source presents a discretization with positive spacing. This theorem
+states the exact algebraic equality between its two stencil expressions, including
+$h=0$ by totalized division. -/
 theorem equation_2_23 (b uprev ucur unext h : ℝ) :
     (max b 0 * (ucur - uprev) + min b 0 * (unext - ucur)) / h
         = (-(max b 0) * uprev + |b| * ucur + min b 0 * unext) / h ∧
@@ -1382,8 +1504,11 @@ $2/h_1^2 + 2/h_2^2$, a neighbour $(i \pm 1, j)$ in the $x$ direction contributes
 neighbour $(i, j \pm 1)$ in the $y$ direction contributes $-1/h_2^2$, and all other entries are
 $0$.
 
-**Typo.** The source prints the interior index range as $0 < i < n_1$, which is off by one. Here
-the grid has $n_1$ interior points in the $x$ direction.
+**Typo.** The source prints $0<i<n_1$ and $0<j<n_2$. The interior grid includes $i=n_1$
+and $j=n_2$ because the endpoint indices are $0$ and $n_k+1$ in direction $k$.
+
+**Reading.** The source chooses the spacings from the side lengths of the rectangle.
+The parameters are free in Lean, with a zero contribution from a direction at step size zero.
 
 The source displays the matrix without an equation number, and numbers the scaled copy
 (2.26)–(2.27). The index type is `Fin n₁ × Fin n₂`, whose first coordinate is the $x$ direction.
@@ -1398,7 +1523,10 @@ noncomputable def laplacian2D (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) :
 
 /-- The entries of the five-point matrix: $2/h_1^2 + 2/h_2^2$ on the diagonal, $-1/h_1^2$ between
 neighbours in the first coordinate, $-1/h_2^2$ between neighbours in the second coordinate, and
-$0$ elsewhere. -/
+$0$ elsewhere.
+
+**Reading.** The definition includes the last interior row and column of the grid and accepts
+all real spacings. At zero spacing one direction contributes zero by totalized division. -/
 theorem laplacian2D_apply (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) (p q : Fin n₁ × Fin n₂) :
     laplacian2D n₁ n₂ h₁ h₂ p q =
       if (p.1 : ℕ) = q.1 ∧ (p.2 : ℕ) = q.2 then 2 * (h₁ ^ 2)⁻¹ + 2 * (h₂ ^ 2)⁻¹
@@ -1423,10 +1551,10 @@ noncomputable def blockEigenvalue (p : ℕ) (j : Fin p) : ℝ :=
 one-dimensional model matrices, one for each coordinate direction:
 $$A_{2D}(n_1, n_2, h_1, h_2) = A_{1D}(n_1, h_1) \otimes I + I \otimes A_{1D}(n_2, h_2),$$
 where $A_{1D}$ is `SaadSparse.Chapter02.laplacian1D` and $A_{2D}$ is
-`SaadSparse.Chapter02.laplacian2D`. The source states neither this identity nor the spectrum
-that it gives, and a reader of the block form (2.26) needs both.
+`SaadSparse.Chapter02.laplacian2D`.
 
-The Kronecker sum is `Matrix.kroneckerSum`, written `⊕ₖ`. -/
+**Generalization.** Equation (13.12) gives the tensor sum for unscaled matrices and equal
+spacings. The same identity holds for separate scales after reindexing the two directions. -/
 theorem laplacian2D_eq_kroneckerSum (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) :
     laplacian2D n₁ n₂ h₁ h₂ = laplacian1D n₁ h₁ ⊕ₖ laplacian1D n₂ h₂ := by
   ext p q
@@ -1440,7 +1568,9 @@ theorem laplacian2D_eq_kroneckerSum (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) :
 five-point matrix with $h_1 = h_2 = h$ by $h^2$ removes the mesh size:
 $$h^2 A_{2D}(n_1, n_2, h, h) = T_{n_1} \otimes I + I \otimes T_{n_2}, \qquad T_m =
   \operatorname{tridiag}(-1, 2, -1) \in \mathbb{R}^{m \times m}.$$
-The right side is the matrix of (2.26)–(2.27). -/
+**Reading.** The right side is the tensor sum of (13.12) in the scaling of (2.26).
+This version orders indices as $(x_1,x_2)$. The source's horizontal-line blocks order
+them as $(x_2,x_1)$. -/
 theorem laplacian2D_smul (n₁ n₂ : ℕ) {h : ℝ} (hh : h ≠ 0) :
     h ^ 2 • laplacian2D n₁ n₂ h h
       = Matrix.symmTridiagonalToeplitz n₁ (-1) 2 ⊕ₖ Matrix.symmTridiagonalToeplitz n₂ (-1) 2 := by
@@ -1454,8 +1584,11 @@ $$\begin{cases} B = \operatorname{tridiag}(-1, 4, -1), & i_1 = j_1, \\ -I, & |i_
   0, & \text{otherwise}, \end{cases}$$
 where $B$ and $I$ are of order $n_2$.
 
-The block $B$ is `SaadSparse.Chapter02.blockB`. The statement is entrywise, at the entry
-$((i_1, i_2), (j_1, j_2))$. -/
+The block $B$ is `SaadSparse.Chapter02.blockB`. The statement is entrywise.
+
+**Reading.** The source fixes $x_2$ for each horizontal block and uses blocks of order $n_1$.
+This version fixes $x_1$ and uses vertical blocks of order $n_2$. The formulas agree after
+swapping the two coordinates. -/
 theorem laplacian2D_block_apply (n₁ n₂ : ℕ) {h : ℝ} (hh : h ≠ 0) (i₁ j₁ : Fin n₁)
     (i₂ j₂ : Fin n₂) :
     (h ^ 2 • laplacian2D n₁ n₂ h h) (i₁, i₂) (j₁, j₂)
@@ -1474,7 +1607,10 @@ $w_k$ and $w_l$ be the discrete sine vectors of
 `SaadSparse.Chapter02.laplacian1D_mulVec_sineVec`. Then
 $$A_{2D} (w_k \otimes w_l) = \Big( \frac{4}{h_1^2} \sin^2\frac{k\pi}{2(n_1 + 1)} +
   \frac{4}{h_2^2} \sin^2\frac{l\pi}{2(n_2 + 1)} \Big) w_k \otimes w_l.$$
-The source does not state this.
+
+**Generalization.** Equation (13.14) and the adjoining display give the eigenpairs for the
+unscaled equal-step matrix. This version weights the two eigenvalues separately by $1/h_i^2$
+and orders the tensor vector by the first coordinate followed by the second.
 
 The tensor product $w_k \otimes w_l$ is `Matrix.kroneckerVec`, and the Lean indices `k : Fin n₁`
 and `l : Fin n₂` stand for the book's $k + 1$ and $l + 1$. -/
@@ -1692,7 +1828,10 @@ theorem equation_2_29 {m p : ℕ} {u b : Fin m × Fin p → ℝ}
 $B \in \mathbb{R}^{p \times p}$,
 $$B^{(0)} = B, \qquad B^{(r+1)} = (B^{(r)})^2 - 2I.$$
 
-The numeral `2` in the Lean code is the matrix $2I$, as in the display of the source. -/
+The numeral `2` in the Lean code is the matrix $2I$.
+
+**Generalization.** The source starts with the Poisson block and obtains the recurrence
+while eliminating rows. The definition iterates that recurrence for any square matrix. -/
 noncomputable def cyclicReduction {p : ℕ} (B : Matrix (Fin p) (Fin p) ℝ) : ℕ →
     Matrix (Fin p) (Fin p) ℝ
   | 0 => B
@@ -1714,7 +1853,10 @@ $C_m(x) = 2T_m(x/2)$ for the Chebyshev polynomial $T_m$, this gives $B^{(r)} = 2
 
 The polynomial $C_m$ is `Polynomial.Chebyshev.C ℝ m`, evaluated at $B$ by `Polynomial.aeval B`.
 The induction step is the duplication formula $C_{2k} = C_k^2 - 2$. The factorization of
-$C_{2^r}$ into linear factors gives (2.36), `SaadSparse.Chapter02.equation_2_36`. -/
+$C_{2^r}$ into linear factors gives (2.36), `SaadSparse.Chapter02.equation_2_36`.
+
+**Generalization.** The source identifies the polynomial for the block from (2.27).
+The polynomial identity holds for any square real matrix. -/
 theorem equation_2_33 {p : ℕ} (B : Matrix (Fin p) (Fin p) ℝ) (r : ℕ) :
     cyclicReduction B r = Polynomial.aeval B (Polynomial.Chebyshev.C ℝ ((2 : ℤ) ^ r)) := by
   induction r with
@@ -1764,6 +1906,12 @@ $$B^{(r)} = \prod_{i=1}^{h} \big( B - \lambda_i^{(r)} I \big), \qquad \lambda_i^
   2\cos\Big(\frac{(2i - 1)\pi}{2h}\Big).$$
 So the solves with $B^{(r)}$ on lines 5 and 14 of Algorithm 2.2 split into $h$ tridiagonal
 solves.
+
+**Typo.** Equation (2.36) prints $A-\lambda_i^{(r)}I$ in the product. The preceding
+factorization uses $B-\lambda_i^{(r)}I$, the coefficient matrix for those solves.
+
+**Generalization.** The statement gives the factorization of the operator on its own,
+for every square real $B$, independently of the number of grid blocks or right-hand sides.
 
 The Lean product runs over $i = 0, \dots, h - 1$ and writes the node as
 $2\cos((2i + 1)\pi/(2h))$, which is the list of the source with the index shifted by one. It is

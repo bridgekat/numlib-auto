@@ -73,6 +73,25 @@ small banded systems. The proofs specialize `Numlib.Krylov.Block`.
 * Block FOM and block GMRES are `IsGalerkin` and `IsMinResidual` over $x_0^{(i)} +
   \operatorname{span}\{v_1, \dots, v_m\}$, one right-hand side at a time.
 
+## Deviations from the source
+
+* **Reading.** Ruhe's definition uses raw block powers and can continue through dependent columns.
+  See `SaadSparse.Chapter06.ruhe`.
+* **Generalization.** The Ruhe band relation includes zero columns produced by raw-sequence
+  dependence. See `SaadSparse.Chapter06.ruheCoeff`, `SaadSparse.Chapter06.HbarBlock`,
+  `SaadSparse.Chapter06.HBlock`, `SaadSparse.Chapter06.equation_6_130`.
+* **Scope.** The block Arnoldi comparison assumes an infinite orthonormal sequence and is vacuous in
+  finite dimension. See `SaadSparse.Chapter06.IsBlockArnoldi`,
+  `SaadSparse.Chapter06.equation_6_129`, `SaadSparse.Chapter06.ruhe_eq_blockArnoldiMGS`.
+* **Generalization.** Ruhe's block Krylov span identity persists through dependent columns. See
+  `SaadSparse.Chapter06.span_ruhe_eq_blockKrylov`.
+* **Scope.** The initial residual coefficient theorem uses span membership and a single right-hand
+  side. See `SaadSparse.Chapter06.exists_initial_residual_coeffs`.
+* **Reading.** The residual and FOM formulas use one right-hand side and general initial block
+  coefficients. See `SaadSparse.Chapter06.equation_6_136`, `SaadSparse.Chapter06.blockFOM_iff`.
+* **Scope.** The block GMRES definitions and coordinate theorem state minimality without a
+  uniqueness claim. See `SaadSparse.Chapter06.IsBlockGMRES`, `SaadSparse.Chapter06.blockGMRES_iff`.
+
 ## Not formalized
 
 * **The Givens elimination of block GMRES**, with $p$ rotations per column. The book states no
@@ -117,27 +136,48 @@ one vector at a time by the Gram–Schmidt process. The book forms each vector a
 from $A$ applied to the vector $p$ places earlier, orthogonalized against all vectors computed
 so far and normalized. Without breakdown this gives the same vectors.
 
-`SaadSparse.Chapter06.ruhe A v j` is the book's $v_{j+1}$. The book's "if $\|w\| = 0$ then Stop"
-is division by zero in Lean, which gives $0$, so all later vectors are $0$. This is the
-backbone's `BlockArnoldi.vec`. -/
+`SaadSparse.Chapter06.ruhe A v j` is the book's $v_{j+1}$ before breakdown. This is the
+backbone's `BlockArnoldi.vec`.
+
+**Reading.** Lean applies normalized Gram–Schmidt to the raw block Krylov sequence, including the
+supplied initial block. The source starts with an orthonormal block and applies $A$ to the computed
+vector $p$ places earlier. The construction agrees prior to dependence. The printed line 9 divides
+by the norm without a zero test. Lean gives zero at a dependent raw column and can give nonzero
+vectors at later independent columns.
+-/
 noncomputable abbrev ruhe (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) : ℕ → 𝔼 :=
   BlockArnoldi.vec (op A) v
 
 /-- **Algorithm 6.24** of [saad2003iterative], lines 5 and 9. The coefficients
 $h_{ik} = (Av_k, v_i)$ of Ruhe's variant.
 
-This is the backbone's `BlockArnoldi.coeff`, with $0$-based indices. -/
+This is the backbone's `BlockArnoldi.coeff`, with $0$-based indices.
+
+**Generalization.** The coefficients are inner products with the normalized raw-sequence vectors.
+Their band identities hold at every index, including dependent columns represented by zero. The
+source derives them for the orthonormal vectors actually computed by the displayed loop.
+-/
 noncomputable abbrev ruheCoeff (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) (i k : ℕ) : 𝕜 :=
   BlockArnoldi.coeff (op A) v i k
 
 /-- **Equation (6.130)** of [saad2003iterative]. The $(m + p) \times m$ band Hessenberg matrix
-$\bar H_m = (h_{ik})$ of the coefficients of Ruhe's variant. -/
+$\bar H_m = (h_{ik})$ of the coefficients of Ruhe's variant.
+
+**Generalization.** The coefficients are inner products with the normalized raw-sequence vectors.
+Their band identities hold at every index, including dependent columns represented by zero. The
+source derives them for the orthonormal vectors actually computed by the displayed loop.
+-/
 noncomputable abbrev HbarBlock (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) (m : ℕ) :
     Matrix (Fin (m + p)) (Fin m) 𝕜 :=
   BlockArnoldi.hessenberg (op A) v m
 
 /-- **Section 6.12** of [saad2003iterative]. The square $m \times m$ band Hessenberg matrix $H_m$ of
-Ruhe's variant, the first $m$ rows of $\bar H_m$. -/
+Ruhe's variant, the first $m$ rows of $\bar H_m$.
+
+**Generalization.** The coefficients are inner products with the normalized raw-sequence vectors.
+Their band identities hold at every index, including dependent columns represented by zero. The
+source derives them for the orthonormal vectors actually computed by the displayed loop.
+-/
 noncomputable abbrev HBlock (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) (m : ℕ) :
     Matrix (Fin m) (Fin m) 𝕜 :=
   BlockArnoldi.hessenbergSq (op A) v m
@@ -155,7 +195,13 @@ $k \in \mathbb{N}$, so it describes a process that never breaks down. Since an o
 family in $\mathbb{K}^n$ has at most $n$ members, no sequence indexed by all of $\mathbb{N}$
 satisfies it, and the results that assume it, `SaadSparse.Chapter06.equation_6_129` and
 `SaadSparse.Chapter06.ruhe_eq_blockArnoldiMGS`, are vacuous as stated. The definition is the
-backbone's `IsBlockArnoldiBasis`. -/
+backbone's `IsBlockArnoldiBasis`.
+
+**Reading.** The specification requires orthonormality and equality of the prefix spans for an
+infinite sequence in a finite-dimensional space. No such sequence exists. Consequently the two
+theorems taking this predicate as a hypothesis do not establish the source claims for a finite block
+Arnoldi run. The Hessenberg formula also selects the Gram–Schmidt phase convention.
+-/
 def IsBlockArnoldi (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) (u : ℕ → 𝔼) : Prop :=
   IsBlockArnoldiBasis (op A) v u
 
@@ -174,7 +220,13 @@ Vector by vector, this is the band Hessenberg relation
 $AU_m = U_m H_m + V_{m+1} H_{m+1,m} E_m^T$ of the book. The hypothesis $(u_k, s_k) > 0$ is the
 Gram–Schmidt sign convention on the block QR factorization, which Algorithm 6.23 (modified
 Gram–Schmidt) satisfies. Without it, the same conclusion holds after the unimodular rescaling of
-`SaadSparse.Chapter06.ruhe_eq_blockArnoldiMGS`. -/
+`SaadSparse.Chapter06.ruhe_eq_blockArnoldiMGS`.
+
+**Reading.** The specification requires orthonormality and equality of the prefix spans for an
+infinite sequence in a finite-dimensional space. No such sequence exists. Consequently the two
+theorems taking this predicate as a hypothesis do not establish the source claims for a finite block
+Arnoldi run. The Hessenberg formula also selects the Gram–Schmidt phase convention.
+-/
 theorem equation_6_129 {A : Matrix (Fin n) (Fin n) 𝕜} {v : Fin p → 𝔼} {u : ℕ → 𝔼}
     (hu : IsBlockArnoldi A v u)
     (hpos : ∀ k, 0 < inner 𝕜 (u k) (Krylov.blockSeq (op A) v k)) :
@@ -201,7 +253,13 @@ factorization. Then:
 3. for every $m$, the first $mp$ vectors $u_k$ span the block Krylov subspace
    $\mathcal{K}_m(A, V_1)$.
 
-So, when the number of vectors is a multiple of $p$, the two algorithms build the same space. -/
+So, when the number of vectors is a multiple of $p$, the two algorithms build the same space.
+
+**Reading.** The specification requires orthonormality and equality of the prefix spans for an
+infinite sequence in a finite-dimensional space. No such sequence exists. Consequently the two
+theorems taking this predicate as a hypothesis do not establish the source claims for a finite block
+Arnoldi run. The Hessenberg formula also selects the Gram–Schmidt phase convention.
+-/
 theorem ruhe_eq_blockArnoldiMGS {A : Matrix (Fin n) (Fin n) 𝕜} {v : Fin p → 𝔼} {u : ℕ → 𝔼}
     (hu : IsBlockArnoldi A v u) :
     (∀ k, 0 < inner 𝕜 (u k) (Krylov.blockSeq (op A) v k) → u k = ruhe A v k) ∧
@@ -215,7 +273,12 @@ $$Av_k = \sum_{i=1}^{k+p} h_{ik} v_i \quad\text{and}\quad h_{ik} = 0 \text{ for 
 that is, $AV_m = V_{m+p} \bar H_m$: for every $m$ and $y \in \mathbb{K}^m$,
 $A V_m y = V_{m+p} \bar H_m y$.
 
-The indices in the Lean statement are $0$-based. -/
+The indices in the Lean statement are $0$-based.
+
+**Generalization.** The coefficients are inner products with the normalized raw-sequence vectors.
+Their band identities hold at every index, including dependent columns represented by zero. The
+source derives them for the orthonormal vectors actually computed by the displayed loop.
+-/
 theorem equation_6_130 (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) :
     (∀ k, op A (ruhe A v k) =
         ∑ i ∈ Finset.range (k + p + 1), ruheCoeff A v i k • ruhe A v i) ∧
@@ -228,7 +291,11 @@ theorem equation_6_130 (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) :
 
 /-- **Section 6.12** of [saad2003iterative]. For every $m$, the first $mp$ vectors of Ruhe's variant
 span the block Krylov subspace $\mathcal{K}_m(A, V_1)$. So Algorithm 6.24 reaches the spaces of
-Algorithm 6.22 exactly at the multiples of $p$. -/
+Algorithm 6.22 exactly at the multiples of $p$.
+
+**Generalization.** The span relation holds for the raw-sequence definition even when some vectors
+are zero because the orthogonalization has found a dependent column.
+-/
 theorem span_ruhe_eq_blockKrylov (A : Matrix (Fin n) (Fin n) 𝕜) (v : Fin p → 𝔼) (m : ℕ) :
     Submodule.span 𝕜 (ruhe A v '' Set.Iio (m * p)) = blockKrylov A v m :=
   BlockArnoldi.span_vec_eq_blockSubspace (op A) v m
@@ -242,7 +309,12 @@ if it minimizes the residual norm $\|b^{(i)} - Ax\|_2$ over $x_0^{(i)} +
 variant.
 
 For $m = kp$, the search space is $x_0^{(i)} + \mathcal{K}_k(A, V_1)$
-(`SaadSparse.Chapter06.span_ruhe_eq_blockKrylov`). -/
+(`SaadSparse.Chapter06.span_ruhe_eq_blockKrylov`).
+
+**Reading.** Lean specifies minimization of the individual residual and its coordinate
+characterization. The source calls the minimizing vector unique, which requires injectivity of the
+matrix on the trial space. Lean does not assume this or assert a uniqueness conclusion.
+-/
 def IsBlockGMRES (A : Matrix (Fin n) (Fin n) 𝕜) (B X₀ v : Fin p → 𝔼) (m : ℕ) (i : Fin p)
     (x : 𝔼) : Prop :=
   IsMinResidual (op A) (B i) (X₀ i) (Submodule.span 𝕜 (ruhe A v '' Set.Iio m)) x
@@ -265,7 +337,12 @@ residual block. If the $i$-th initial residual $b^{(i)} - Ax_0^{(i)}$ lies in
 $\mathcal{K}_1(A, V_1)$, then it is a linear combination $\sum_{k < p} g_k v_k$ of the first $p$
 vectors of Ruhe's variant.
 
-This is the form of the hypothesis on the initial residual in (6.135)–(6.136). -/
+This is the form of the hypothesis on the initial residual in (6.135)–(6.136).
+
+**Reading.** The result extracts a coefficient vector for a single residual that lies in the first
+block span. The source factors the whole residual block with orthonormal columns and an upper
+triangular factor. This theorem proves coefficient existence without that triangular structure.
+-/
 theorem exists_initial_residual_coeffs (hr : B i - op A (X₀ i) ∈ blockKrylov A v 1) :
     ∃ g : ℕ → 𝕜, B i - op A (X₀ i) = ∑ k ∈ Finset.range p, g k • ruhe A v k :=
   BlockArnoldi.exists_coeffs_of_mem_blockSubspace_one (op A) v hr
@@ -280,7 +357,12 @@ and therefore $\|b^{(i)} - Ax\|_2 = \|\bar g^{(i)} - \bar H_m y\|_2$.
 
 In the book, $\bar g^{(i)} = E_1 R e_i$ and the residual block is
 $B - AX = V_{m+p}(E_1 R - \bar H_m Y)$. Here $\bar g^{(i)}$ is
-`Krylov.firstBlockVec g p (m + p)`. -/
+`Krylov.firstBlockVec g p (m + p)`.
+
+**Reading.** The reduction is stated for one right-hand side, with an explicit orthonormality
+hypothesis on the finite prefix. Its coefficient vector can have nonzeros anywhere in the first $p$
+entries, unlike the column-dependent triangular pattern of the source's QR factor.
+-/
 theorem equation_6_136 (hon : Orthonormal 𝕜 fun k : Fin (m + p) => ruhe A v (k : ℕ))
     (hr : B i - op A (X₀ i) = ∑ k ∈ Finset.range p, g k • ruhe A v k) (y : Fin m → 𝕜) :
     (B i - op A (X₀ i + ∑ j, y j • ruhe A v (j : ℕ)) =
@@ -298,7 +380,12 @@ $\sum_{k < p} g_k v_k$. Then for $y \in \mathbb{K}^m$, the vector $x_0^{(i)} + V
 FOM approximation if and only if $y$ solves the square band system
 $$H_m y = \bar g^{(i)},$$
 where $\bar g^{(i)} \in \mathbb{K}^m$ has the entries $g_k$ for $k < \min(p, m)$, followed by
-zeros. -/
+zeros.
+
+**Reading.** The reduction is stated for one right-hand side, with an explicit orthonormality
+hypothesis on the finite prefix. Its coefficient vector can have nonzeros anywhere in the first $p$
+entries, unlike the column-dependent triangular pattern of the source's QR factor.
+-/
 theorem blockFOM_iff (hon : Orthonormal 𝕜 fun k : Fin (m + p) => ruhe A v (k : ℕ))
     (hr : B i - op A (X₀ i) = ∑ k ∈ Finset.range p, g k • ruhe A v k) (y : Fin m → 𝕜) :
     IsBlockFOM A B X₀ v m i (X₀ i + ∑ j, y j • ruhe A v (j : ℕ)) ↔
@@ -311,7 +398,12 @@ $\sum_{k < p} g_k v_k$. Then for $y \in \mathbb{K}^m$, the vector $x_0^{(i)} + V
 GMRES approximation if and only if $y$ solves the banded least-squares problem
 $$\min_{z \in \mathbb{K}^m} \left\|\bar g^{(i)} - \bar H_m z\right\|_2,$$
 where $\bar g^{(i)} \in \mathbb{K}^{m+p}$ has the entries $g_0, \dots, g_{p-1}$ followed by
-zeros. -/
+zeros.
+
+**Reading.** Lean specifies minimization of the individual residual and its coordinate
+characterization. The source calls the minimizing vector unique, which requires injectivity of the
+matrix on the trial space. Lean does not assume this or assert a uniqueness conclusion.
+-/
 theorem blockGMRES_iff (hon : Orthonormal 𝕜 fun k : Fin (m + p) => ruhe A v (k : ℕ))
     (hr : B i - op A (X₀ i) = ∑ k ∈ Finset.range p, g k • ruhe A v k) (y : Fin m → 𝕜) :
     IsBlockGMRES A B X₀ v m i (X₀ i + ∑ j, y j • ruhe A v (j : ℕ)) ↔

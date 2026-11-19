@@ -86,17 +86,21 @@ tensors of the model.
 
 ## Deviations from the source
 
+* **Model measures (6.2.3)–(6.2.5), (6.2.14) and (6.2.16)** (generalization). The supremum
+  convention assigns zero on an empty direction set, as for the measures in §6.1.1.
 * **Order of the sought minimizer** (reading). The source selects the order by infinite tolerances
   ($\epsilon_2 = \epsilon_3 = \infty$ for first order, $\epsilon_3 = \infty$ for second order). Here
   the order is an explicit $q \in \{1, 2, 3\}$. See `CartisGouldToint.Chapter06.algorithm_6_2_1`.
 * **Orders and degree** (reading). Second order needs $p \ge 2$ and third order needs $p \ge 3$; all
-  complexity results assume $q \le p$. See `CartisGouldToint.Chapter06.theorem_6_2_3`.
+  complexity results assume $q \le p$. The run predicate itself leaves this bound
+  to its callers. See `CartisGouldToint.Chapter06.theorem_6_2_3`.
 * **Algorithm 6.2.1, Step 2** (correction). For $q \ge 2$, Step 2 can be infeasible, even at a
   strict global minimizer of $f$ on $\mathcal{C}$. Theorem 6.2.3 holds for every run; runs exist for
   $q = 1$, and for $q \ge 2$ whenever Step 2 is always feasible. See
   `CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`.
 * **Lemma 6.2.1, (6.2.18)–(6.2.19)** (correction). The bounds are proved only for $\|d\| \le 1$,
-  which is what the proof through (6.2.23) gives and what the measures use. See
+  which is what the proof through (6.2.23) gives and what the measures use. The unrestricted
+  bounds can fail for an accepted step. See
   `CartisGouldToint.Chapter06.lemma_6_2_1_iv`.
 * **Lemma 6.2.2** (typo). The prefactor of $\kappa^{cc}_j$ is $\eta_1 \sigma_{\min} / (p+1)!$, not
   $\eta_1 \sigma_{\min} / p!$. See `CartisGouldToint.Chapter06.lemma_6_2_2`.
@@ -263,7 +267,12 @@ model measure** is
 $$\omega_{m_k,\mathcal{M},1}(s) = -\min_{d \in \mathcal{M}^0_k(s) \cap \mathcal{B}} \nabla_s
   m_k(s)[d].$$
 
-The minimum is the supremum `Optimization.formCriticality`. -/
+The minimum is the supremum `Optimization.formCriticality`, which gives zero
+on an empty direction set as in §6.1.1.
+
+**Reading.** Matches the negative minimum on the source domain and gives zero for an empty direction
+set.
+-/
 noncomputable def modelOmega1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (x : ℝⁿ) (σ : ℝ) (s : ℝⁿ) :
     ℝ :=
   formCriticality (iteratedFDeriv ℝ 1 (regularizedModel (ftaylorSeries ℝ f x) p σ) s)
@@ -273,6 +282,11 @@ noncomputable def modelOmega1 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (x
 model measure** is
 $$\omega_{m_k,\mathcal{M},2}(s) = -\min_{d \in \mathcal{M}^1_k(s) \cap \mathcal{B}} \nabla^2_s
   m_k(s)[d]^2.$$
+
+The same empty-set convention as in `CartisGouldToint.Chapter06.modelOmega1` applies.
+
+**Reading.** Uses the first model-restricted set and totalizes an empty intersection with the unit
+ball.
 -/
 noncomputable def modelOmega2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : ℝ :=
@@ -283,6 +297,11 @@ noncomputable def modelOmega2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (�
 **third-order model measure** is
 $$\omega_{m_k,\mathcal{M},3}(s) = -\min_{d \in \mathcal{M}^2_k(s) \cap \mathcal{B}} \nabla^3_s
   m_k(s)[d]^3.$$
+
+The same empty-set convention as in `CartisGouldToint.Chapter06.modelOmega1` applies.
+
+**Reading.** Uses the second model-restricted set and totalizes an empty intersection with the unit
+ball.
 -/
 noncomputable def modelOmega3 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ)
     (σ : ℝ) (s : ℝⁿ) : ℝ :=
@@ -323,7 +342,8 @@ order $q$ within $\mathcal{C}$", the step $s_k$ satisfies the Step 2 conditions
 weight.
 
 **Reading.** The source selects the order by infinite tolerances; here $q$ is explicit and the
-tolerances are finite.
+tolerances are finite. The run predicate leaves $q \le p$ to the results that
+use the derivatives of all requested orders.
 
 The run is `Optimization.IsARRun` with the test `CartisGouldToint.Chapter06.IsApproxMinimizerCC`
 for the factors $\tau_1, \tau_2$ of $P$, the step conditions
@@ -372,6 +392,9 @@ structure algorithm_6_2_2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (P : A
 /-- **Equation (6.2.14)** of [cartis2022evaluation]. With the notation of (6.2.1), the **mixed
 second-order measure** combines the objective tensor at $x + s$ with the model set:
 $$\omega_{k+1,2} = -\min_{d \in \mathcal{M}^1_k(s) \cap \mathcal{B}} \nabla^2 f(x + s)[d]^2.$$
+
+**Reading.** The objective Hessian is evaluated at the trial point on the model-defined first
+restricted set, with an empty-set convention.
 -/
 noncomputable def omegaNext2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ ε₁ : ℝ) (x : ℝⁿ) (σ : ℝ)
     (s : ℝⁿ) : ℝ :=
@@ -380,6 +403,9 @@ noncomputable def omegaNext2 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ
 /-- **Equation (6.2.16)** of [cartis2022evaluation]. With the notation of (6.2.1) and (6.2.2), the
 **mixed third-order measure** is
 $$\omega_{k+1,3} = -\min_{d \in \mathcal{M}^2_k(s) \cap \mathcal{B}} \nabla^3 f(x + s)[d]^3.$$
+
+**Reading.** The objective third derivative is evaluated at the trial point on the model-defined
+second restricted set, with an empty-set convention.
 -/
 noncomputable def omegaNext3 (f : ℝⁿ → ℝ) (C : Set ℝⁿ) (p : ℕ) (θ₁ θ₂ ε₁ ε₂ : ℝ) (x : ℝⁿ)
     (σ : ℝ) (s : ℝⁿ) : ℝ :=
@@ -660,6 +686,11 @@ $$|\nabla^2_s m_k(s_k)[d]^2| \le \frac{L + \sigma_{\max}}{(p-1)!} \|s_k\|^{p-1} 
 
 **Correction.** The source states both bounds for all $d$ in the restricted sets. Its proof,
 through (6.2.23), covers only $\|d\| \le 1$, because the error term scales like $\|d\|^j$.
+For $f(t)=t^3$ on $[0,\infty)$, the degree-three trial $x=1$, $s=-1$ and
+$\sigma=1/10$ has $\rho=1$ and satisfies the first- and second-order model tests with
+$\epsilon_1=1/10$. At $x+s=0$ both objective derivatives vanish, so the restricted
+sets contain all $d\ge0$. The model has derivatives $-\sigma/6$ and $\sigma/2$ at
+$s=-1$. Its directional forms are unbounded over these sets without the unit-ball bound.
 Accordingly, the inclusions $\mathcal{C}^1(x_{k+1}, \epsilon_1) \subseteq \mathcal{M}^1_k(s_k)$
 and $\mathcal{C}^2(x_{k+1}, \epsilon_1, \epsilon_2) \subseteq \mathcal{M}^2_k(s_k)$ in the proof
 of Theorem 6.2.3 are used on $\mathcal{B}$, which is all that the measures see. -/
@@ -691,7 +722,10 @@ theorem _root_.CartisGouldToint.Chapter06.lemma_6_2_1_iv
 
 /-- On a successful iteration before termination, if $\|s_k\|^m > b \epsilon$ with $m \ne 0$ and
 $b, \epsilon \ge 0$, then $f(x_k) - f(x_{k+1}) > \eta_1 \sigma_{\min} b^{(p+1)/m}
-\epsilon^{(p+1)/m} / (p+1)!$, as in the proof of Lemma 4.1.4. -/
+\epsilon^{(p+1)/m} / (p+1)!$, as in the proof of Lemma 4.1.4.
+
+**Correction.** Isolates the shared successful objective estimate with the corrected factorial.
+-/
 private theorem decrease_gt (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j))
@@ -714,7 +748,10 @@ private theorem decrease_gt (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s
 
 /-- Lemma 6.2.2 for one order $j \le p$: on a successful iteration before termination, if
 $\theta < 1$, $\epsilon \ge 0$ and $\|s_k\|^{p-j+1} > (p-j+1)! (1 - \theta) \epsilon / (L +
-\sigma_{\max})$, then $f(x_k) - f(x_{k+1}) > \kappa^{cc}_j \epsilon^{(p+1)/(p-j+1)}$. -/
+\sigma_{\max})$, then $f(x_k) - f(x_{k+1}) > \kappa^{cc}_j \epsilon^{(p+1)/(p-j+1)}$.
+
+**Correction.** Packages the bound with the corrected indexed coefficient.
+-/
 private theorem decrease_gt_kappaCC (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ (x j))
@@ -794,7 +831,10 @@ noncomputable def ccFactor (P : ARpCCParams) (L : ℝ) (p j : ℕ) (θ : ℝ) : 
 
 /-- The maximum of the terms `CartisGouldToint.Chapter06.ccFactor` over the orders $j = 1, \dots, q$
 with $\theta = \theta_j$; for $q \le 1$ it is the first term, and for $q \ge 3$ it is the
-maximum of the three terms. -/
+maximum of the three terms.
+
+**Reading.** Selects the maximum over active orders; the printed display takes all three.
+-/
 noncomputable def ccMax (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
   if q ≤ 1 then ccFactor P L p 1 P.θ₁
   else if q = 2 then max (ccFactor P L p 1 P.θ₁) (ccFactor P L p 2 P.θ₂)
@@ -804,12 +844,20 @@ noncomputable def ccMax (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
 constants, $L \in \mathbb{R}$ and $p, q \in \mathbb{N}$. The constant is
 $$\kappa^S_{\mathrm{ARpCC}} = \frac{(p+1)!}{\eta_1 \sigma_{\min}} \max_{j \in [1 : q]}
   \left(\frac{L + \sigma_{\max}}{(p-j+1)! (1 - \theta_j)}\right)^{(p+1)/(p-j+1)},$$
-which is $1 / \min_j \kappa^{cc}_j$. -/
+which is $1 / \min_j \kappa^{cc}_j$.
+
+**Generalization.** Same factorial prefactor and maximum, generalized to active orders one through
+three.
+-/
 noncomputable def kappaSARpCC (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
   ((p + 1)! : ℝ) / (P.η₁ * P.σmin) * ccMax P L p q
 
 /-- **Theorem 6.2.3** of [cartis2022evaluation], the constant $\kappa^A$. The constant is
-$\kappa^A_{\mathrm{ARpCC}} = \kappa^S_{\mathrm{ARpCC}} (1 + |\log \gamma_1| / \log \gamma_2)$. -/
+$\kappa^A_{\mathrm{ARpCC}} = \kappa^S_{\mathrm{ARpCC}} (1 + |\log \gamma_1| / \log \gamma_2)$.
+
+**Generalization.** Same logarithmic inflation of the successful-iteration constant generalized in
+q.
+-/
 noncomputable def kappaAARpCC (P : ARpCCParams) (L : ℝ) (p q : ℕ) : ℝ :=
   kappaSARpCC P L p q * (1 + |Real.log P.γ₁| / Real.log P.γ₂)
 
@@ -826,7 +874,11 @@ $\epsilon_1, \epsilon_2, \epsilon_3 \in \mathbb{R}$. The accuracy term is $\min_
 $\min[\epsilon_1^{(p+1)/p}, \epsilon_2^{(p+1)/(p-1)}]$ for $q = 2$, and
 $\min[\epsilon_1^{(p+1)/p}, \epsilon_2^{(p+1)/(p-1)}, \epsilon_3^{(p+1)/(p-2)}]$ for $q \ge 3$.
 
-The exponents are real quotients; a zero denominator gives the exponent $0$. -/
+The exponents are real quotients; a zero denominator gives the exponent $0$.
+
+**Reading.** Matches the minimum of all three powers for order three and omits inactive terms for
+lower orders.
+-/
 noncomputable def tolMin (p q : ℕ) (ε₁ ε₂ ε₃ : ℝ) : ℝ :=
   if q ≤ 1 then ε₁ ^ (((p : ℝ) + 1) / p)
   else if q = 2 then min (ε₁ ^ (((p : ℝ) + 1) / p)) (ε₂ ^ (((p : ℝ) + 1) / ((p : ℝ) - 1)))
@@ -845,7 +897,10 @@ theorem ccFactor_pos (hL : 0 ≤ L) {j : ℕ} {θ : ℝ} (hθ : θ < 1) : 0 < cc
   unfold ccFactor
   positivity
 
-/-- If $L \ge 0$, then the maximum `CartisGouldToint.Chapter06.ccMax` is positive. -/
+/-- If $L \ge 0$, then the maximum `CartisGouldToint.Chapter06.ccMax` is positive.
+
+**Reading.** The defined maximum is positive at each active order.
+-/
 theorem ccMax_pos (hL : 0 ≤ L) : 0 < ccMax P L p q := by
   have h1 := ccFactor_pos (P := P) (p := p) (j := 1) hL P.θ₁_lt_one
   unfold ccMax
@@ -854,20 +909,31 @@ theorem ccMax_pos (hL : 0 ≤ L) : 0 < ccMax P L p q := by
   · exact lt_max_of_lt_left h1
   · exact lt_max_of_lt_left (lt_max_of_lt_left h1)
 
-/-- If $L \ge 0$, then $\kappa^S_{\mathrm{ARpCC}} > 0$. -/
+/-- If $L \ge 0$, then $\kappa^S_{\mathrm{ARpCC}} > 0$.
+
+**Generalization.** Positivity of the generalized successful-iteration bound coefficient.
+-/
 theorem kappaSARpCC_pos (hL : 0 ≤ L) : 0 < kappaSARpCC P L p q := by
   have := P.η₁_pos; have := P.σmin_pos; have := ccMax_pos (P := P) (p := p) (q := q) hL
   unfold kappaSARpCC
   positivity
 
 /-- If $\epsilon_1, \epsilon_2, \epsilon_3 > 0$, then the accuracy term
-$\min_j \epsilon_j^{(p+1)/(p-j+1)}$ is positive. -/
+$\min_j \epsilon_j^{(p+1)/(p-j+1)}$ is positive.
+
+**Generalization.** Positivity of the active tolerance denominator extends to all positive
+tolerances.
+-/
 theorem tolMin_pos (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) (h₃ : 0 < ε₃) : 0 < tolMin p q ε₁ ε₂ ε₃ := by
   unfold tolMin
   split_ifs <;> positivity
 
 /-- If $L \ge 0$ and $\theta < 1$, then $\kappa^{cc}_j$ is $\eta_1 \sigma_{\min} / (p+1)!$ divided
-by the $j$-th term `CartisGouldToint.Chapter06.ccFactor` of $\kappa^S_{\mathrm{ARpCC}}$. -/
+by the $j$-th term `CartisGouldToint.Chapter06.ccFactor` of $\kappa^S_{\mathrm{ARpCC}}$.
+
+**Correction.** Rewrites each corrected decrease coefficient through the reciprocal factor in the
+proof.
+-/
 theorem kappaCC_eq (hL : 0 ≤ L) {j : ℕ} {θ : ℝ} (hθ : θ < 1) :
     kappaCC P L p j θ = P.η₁ * P.σmin / ((p + 1)! : ℝ) / ccFactor P L p j θ := by
   have := P.sigmaMax_pos L
@@ -876,7 +942,10 @@ theorem kappaCC_eq (hL : 0 ≤ L) {j : ℕ} {θ : ℝ} (hθ : θ < 1) :
 
 /-- The bookkeeping of the proof of Theorem 6.2.3: if the $j$-th term is at most the maximum and the
 accuracy term is at most $\epsilon^e$, then the accuracy term divided by
-$\kappa^S_{\mathrm{ARpCC}}$ is at most $\kappa^{cc}_j \epsilon^e$. -/
+$\kappa^S_{\mathrm{ARpCC}}$ is at most $\kappa^{cc}_j \epsilon^e$.
+
+**Correction.** The common decrease floor is at most any corrected active one-order decrease bound.
+-/
 private theorem div_kappaS_le (hL : 0 ≤ L) {j : ℕ} {θ ε e : ℝ} (hθ : θ < 1) (hε : 0 ≤ ε)
     (hF : ccFactor P L p j θ ≤ ccMax P L p q) (ht : tolMin p q ε₁ ε₂ ε₃ ≤ ε ^ e) :
     tolMin p q ε₁ ε₂ ε₃ / kappaSARpCC P L p q ≤ kappaCC P L p j θ * ε ^ e := by
@@ -962,7 +1031,11 @@ follows from Lemma 4.1.1. Otherwise Lemma 6.2.1 and (6.2.7) give $\mathcal{C}^1(
 \epsilon_1, \epsilon_2) \cap \mathcal{B} \subseteq \mathcal{M}^2_k(s_k)$, so
 $\omega_{f,\mathcal{C},2}(x_{k+1}, \epsilon_1) \le \omega_{k+1,2}$ and
 $\omega_{f,\mathcal{C},3}(x_{k+1}, \epsilon_1, \epsilon_2) \le \omega_{k+1,3}$, and Lemma 6.2.2
-applies to the measure that fails. -/
+applies to the measure that fails.
+
+**Reading.** The next-iterate test yields the common decrease floor for the active order, using
+unit-ball inclusions.
+-/
 theorem _root_.CartisGouldToint.Chapter06.arpcc_decrease_of_not_test
     (h : algorithm_6_2_1 f C p P q ε₁ ε₂ ε₃ x s σ)
     (hC : AssumptionCNe C) (hf : AssumptionDpLC f C p L) (hqp : q ≤ p) {k : ℕ}
@@ -1124,7 +1197,10 @@ $\sigma \ge \sigma_{\min}$, some step satisfies the Step 2 conditions. Then for 
 $x_0 \in \mathcal{C}$ there is a run of ARp-CC of order $q$ that starts at $x_0$.
 
 The hypothesis can fail for $q \ge 2$
-(`CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`). -/
+(`CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`).
+
+**Reading.** The source's run construction is conditional on explicit admissible steps.
+-/
 theorem exists_algorithm_6_2_1_of_forall_exists_step (h₁ : 0 < ε₁) (h₂ : 0 < ε₂) (h₃ : 0 < ε₃)
     (hq : 1 ≤ q) (hq3 : q ≤ 3)
     (hstep : ∀ y ∈ C, ∀ σ, P.σmin ≤ σ → ¬ IsApproxMinimizerCC f C P.τ₁ P.τ₂ q ε₁ ε₂ ε₃ y →
@@ -1380,9 +1456,11 @@ $f : \mathbb{R}^1 \to \mathbb{R}$ such that:
 * no run of ARp-CC with $p = 3$ starts at $x_0 = 0$.
 
 **Correction.** The source asserts in Section 6.2.1 that the model measures (6.2.3)–(6.2.5)
-"will all be small in the neighbourhood of any … global minimizer of $m_k$", but Step 2 also
-demands $m_k(s_k) < m_k(0)$, and this need not be possible. The second-order measure ranges over
-directions with $|\nabla f(x)[d]| \le \tau_1 \epsilon_1$, which include ascent directions.
+"will all be small in the neighbourhood of any … global minimizer of $m_k$".
+In the example below the model second-order measure at its global minimizer $0$
+is at least $K$, since $\tau_1\epsilon_1<\theta_1\epsilon_1$ and the quartic
+regularizer has zero Hessian at $0$. The approximate test ranges over ascent
+directions with a small first derivative, and Step 2 also requires strict model decrease.
 Theorem 6.2.3 holds for every run.
 
 The example is $\mathcal{C} = \{x \mid x_1 \ge 0\}$ and

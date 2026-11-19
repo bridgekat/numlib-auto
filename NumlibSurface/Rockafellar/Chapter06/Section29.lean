@@ -138,22 +138,40 @@ book prints Corollary 29.4.1 with no proof. The proofs specialize the backbone m
 
 ## Deviations from the source
 
+* **Section 29, graph domain** (generalization). The graph domain and its projection formula
+  are defined for arbitrary bifunctions. Convexity of the graph domain still requires
+  convexity of the bifunction.
 * **Theorem 29.1** (generalization). The book states the theorem for a convex bifunction. The
   equation $\operatorname{dom}(\inf F) = \operatorname{dom} F$ and the description of the
   Kuhn–Tucker vectors by $\partial(\inf F)(0)$ hold for every bifunction. See
   `Rockafellar.theorem_29_1` and `Rockafellar.theorem_29_1_dom`.
+* **Corollaries 29.1.1 and 29.1.5**, properties of the Kuhn–Tucker set (generalization).
+  Closedness and convexity need neither a convex bifunction nor strict consistency.
+  These statements retain finiteness of the optimal value.
+* **Corollary 29.1.1**, directional derivative (reading). Lean defines the derivative by an
+  infimum of positive-step quotients for arbitrary bifunctions. In the source setting,
+  monotonicity identifies the infimum with the right-hand limit.
 * **Corollary 29.1.6**, the parenthesis (generalization). The equation $(\inf F)(u) = +\infty$ for
   $u \notin \operatorname{dom} F$ holds for every bifunction, without the hypotheses of the
   corollary. See `Rockafellar.corollary_29_1_6_top`.
-* **Theorem 29.2**, existence of an optimal solution (generalization). The book assumes that the
-  optimal value is finite. The statement assumes only that it is not $-\infty$, and concludes that
-  $F0$ attains its infimum. See `Rockafellar.theorem_29_2_argmin_nonempty`.
+* **Theorem 29.2** (generalization). Each slice $Fu$ is polyhedral. The attainment
+  statement requires only that the optimal value exceeds $-\infty$, so it includes
+  the constant $+\infty$ slice. See `Rockafellar.theorem_29_2_argmin_nonempty`.
+* **Section 29, closure of bifunctions** (generalization). Closedness of $\operatorname{cl} F$
+  uses no convexity hypothesis.
+* **Corollary 29.4.1**, minimizers (generalization). Inclusion of minimum sets also
+  applies to extended-real minimizers without a finite optimum.
 * **Corollary 29.4.1**, perturbation clause (correction). The book states that the perturbation
   functions of $(P)$ and $(\operatorname{cl} P)$ agree on a neighbourhood of $0$ for every convex
   bifunction $F$ with $(P)$ strongly consistent. This is false: the convex bifunction
   `Rockafellar.originBifun` on $\mathbb{R}^1$, which is not proper, is a counterexample; see
   `Rockafellar.corollary_29_4_1_perturbation_false`. The statement adds the hypothesis that $F$ is
   proper. See `Rockafellar.corollary_29_4_1_eventually`.
+
+## Not formalized
+
+* The reverse implication that properness of $\operatorname{cl} F$ implies properness of $F$.
+  The forward implication is `Rockafellar.convexClBifun_properConvex`.
 -/
 
 open Filter Topology
@@ -171,7 +189,10 @@ variable {m n : ℕ}
 
 /-- The **graph domain** of a bifunction $F$ from $\mathbb{R}^m$ to $\mathbb{R}^n$: the effective
 domain $\{(u, x) \mid (Fu)(x) < +\infty\} \subseteq \mathbb{R}^m \times \mathbb{R}^n$ of its
-graph function. It is convex when $F$ is convex (`Rockafellar.convex_graphDomain`). -/
+graph function. It is convex when $F$ is convex (`Rockafellar.convex_graphDomain`).
+
+**Generalization.** The source introduces the graph domain for convex bifunctions. The
+definition and its projection formula use no convexity hypothesis. -/
 def graphDomain (F : Bifun (Rn m) (Rn n)) : Set (Rn m × Rn n) := convexDom (graphFn F)
 
 /-- The graph domain of $F$ is the effective domain of the graph function of $F$. -/
@@ -182,7 +203,10 @@ theorem graphDomain_eq (F : Bifun (Rn m) (Rn n)) : graphDomain F = convexDom (gr
     (u, x) ∈ graphDomain F ↔ F u x < ⊤ := Iff.rfl
 
 /-- The set $\operatorname{dom} F$ is the projection of the graph domain of $F$ on $\mathbb{R}^m$.
-Every step of Theorem 29.4 that concerns relative interiors uses this identification. -/
+Every step of Theorem 29.4 that concerns relative interiors uses this identification.
+
+**Generalization.** The source gives the formula for convex bifunctions. The projection
+identity holds for arbitrary bifunctions. -/
 theorem convexDomBifun_eq_image_graphDomain (F : Bifun (Rn m) (Rn n)) :
     convexDomBifun F = LinearMap.fst ℝ (Rn m) (Rn n) '' graphDomain F :=
   convexDomBifun_eq_image_convexDom_graphFn F
@@ -325,7 +349,9 @@ theorem theorem_29_1_dom (F : Bifun (Rn m) (Rn n)) : convexDom (infBifun F) = co
 is finite and
 $$(\inf F)(0) \le \langle u, u^* \rangle + (\inf F)(u) \qquad \text{for every } u \in
   \mathbb{R}^m.$$
-The book records this reformulation of the definition immediately after the definition. -/
+The book records this reformulation of the definition immediately after the definition.
+
+**Generalization.** The reformulation also holds for arbitrary bifunctions. -/
 theorem theorem_29_1_forall_le :
     v ∈ KuhnTucker (pairing m) F ↔ infBifun F 0 ≠ ⊤ ∧ infBifun F 0 ≠ ⊥ ∧
       ∀ u : Rn m, infBifun F 0 ≤ ((pairing m u v : ℝ) : EReal) + infBifun F u :=
@@ -347,7 +373,9 @@ theorem theorem_29_1 (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
 /-- **Theorem 29.1** of [rockafellar1970convex], Kuhn–Tucker vectors as a set. If the optimal value
 $(\inf F)(0)$ is finite, then the set of Kuhn–Tucker vectors for $(P)$ is
 $-\partial (\inf F)(0)$. Corollaries 29.1.1–29.1.5 transfer properties of subdifferentials
-through this equation. -/
+through this equation.
+
+**Generalization.** The set identity holds without convexity of $F$. -/
 theorem theorem_29_1_set (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     KuhnTucker (pairing m) F = -(subdifferential (pairing m) (infBifun F) 0) :=
   kuhnTucker_eq_neg_subdifferential ht hb
@@ -378,7 +406,9 @@ theorem corollary_29_1_1_monotone {r : ℝ} (hF : ConvexBifun F) (hr : infBifun 
 bifunction $F$ from $\mathbb{R}^m$ to $\mathbb{R}^n$ and every $u \in \mathbb{R}^m$,
 $$(\inf F)'(0; u) = \inf_{\lambda > 0} \frac{(\inf F)(\lambda u) - (\inf F)(0)}{\lambda}.$$
 
-This is the definition of `ConvexAnalysis.dirDeriv`, so no hypothesis is needed. -/
+**Reading.** The source uses a right-hand limit for a convex bifunction with finite optimal
+value. Monotonicity in that setting identifies the limit with this infimum. Lean uses
+the infimum as the definition with no such hypotheses. -/
 theorem corollary_29_1_1_iInf (F : Bifun (Rn m) (Rn n)) (u : Rn m) :
     dirDeriv (infBifun F) 0 u
       = ⨅ a ∈ Set.Ioi (0 : ℝ), (infBifun F (0 + a • u) - infBifun F 0) / (a : EReal) :=
@@ -388,7 +418,8 @@ theorem corollary_29_1_1_iInf (F : Bifun (Rn m) (Rn n)) (u : Rn m) :
 the directional derivative $(\inf F)'(0; \cdot)$ is positively homogeneous: $(\inf F)'(0;
 \lambda u) = \lambda (\inf F)'(0; u)$ for every $\lambda > 0$ and every $u$.
 
-The proof is a change of variable in the infimum, and needs no hypothesis. -/
+**Generalization.** Changing variables in the infimum gives positive homogeneity even
+without convexity or a finite optimal value. -/
 theorem corollary_29_1_1_posHomogeneous (F : Bifun (Rn m) (Rn n)) :
     PosHomogeneous (dirDeriv (infBifun F) 0) :=
   posHomogeneous_dirDeriv_infBifun F
@@ -401,13 +432,17 @@ theorem corollary_29_1_1_convexFn (hF : ConvexBifun F) (ht : infBifun F 0 ≠ �
   convexFn_dirDeriv_infBifun hF ht hb
 
 /-- **Corollary 29.1.1** of [rockafellar1970convex], convexity of the Kuhn–Tucker set. If the
-optimal value $(\inf F)(0)$ is finite, then the set of Kuhn–Tucker vectors for $(P)$ is convex. -/
+optimal value $(\inf F)(0)$ is finite, then the set of Kuhn–Tucker vectors for $(P)$ is convex.
+
+**Generalization.** Convexity of $F$ is unnecessary. -/
 theorem corollary_29_1_1_convex (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     Convex ℝ (KuhnTucker (pairing m) F) :=
   convex_kuhnTucker ht hb
 
 /-- **Corollary 29.1.1** of [rockafellar1970convex], closedness of the Kuhn–Tucker set. If the
-optimal value $(\inf F)(0)$ is finite, then the set of Kuhn–Tucker vectors for $(P)$ is closed. -/
+optimal value $(\inf F)(0)$ is finite, then the set of Kuhn–Tucker vectors for $(P)$ is closed.
+
+**Generalization.** Convexity of $F$ is unnecessary. -/
 theorem corollary_29_1_1_isClosed (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     IsClosed (KuhnTucker (pairing m) F) :=
   isClosed_kuhnTucker ht hb
@@ -606,7 +641,9 @@ theorem corollary_29_1_5_nonempty (hF : ConvexBifun F) (hs : StrictlyConsistent 
     (properConvex_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs ht
 
 /-- **Corollary 29.1.5** of [rockafellar1970convex], closedness. If the optimal value $(\inf F)(0)$
-is finite, then the set of Kuhn–Tucker vectors for $(P)$ is closed. -/
+is finite, then the set of Kuhn–Tucker vectors for $(P)$ is closed.
+
+**Generalization.** Neither convexity of $F$ nor strict consistency is needed. -/
 theorem corollary_29_1_5_isClosed (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     IsClosed (KuhnTucker (pairing m) F) :=
   corollary_29_1_1_isClosed ht hb
@@ -624,7 +661,9 @@ theorem corollary_29_1_5_isBounded (hF : ConvexBifun F) (hs : StrictlyConsistent
     (properConvex_infBifun_of_stronglyConsistent hF hs.stronglyConsistent hb) hs
 
 /-- **Corollary 29.1.5** of [rockafellar1970convex], convexity. If the optimal value $(\inf F)(0)$
-is finite, then the set of Kuhn–Tucker vectors for $(P)$ is convex. -/
+is finite, then the set of Kuhn–Tucker vectors for $(P)$ is convex.
+
+**Generalization.** Neither convexity of $F$ nor strict consistency is needed. -/
 theorem corollary_29_1_5_convex (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) :
     Convex ℝ (KuhnTucker (pairing m) F) :=
   corollary_29_1_1_convex ht hb
@@ -678,7 +717,10 @@ convex bifunction, then every function $Fu$, and in particular the objective fun
 polyhedral convex function.
 
 A polyhedral convex bifunction is one whose graph function is polyhedral convex
-(`ConvexAnalysis.PolyhedralBifun`). -/
+(`ConvexAnalysis.PolyhedralBifun`).
+
+**Generalization.** The source states polyhedrality of the unperturbed objective $F0$.
+Lean gives the same conclusion at every $u$. -/
 theorem theorem_29_2_objective (hF : PolyhedralBifun F) (u : Rn m) : PolyhedralFn (F u) :=
   hF.polyhedralFn_apply u
 
@@ -845,7 +887,9 @@ variable {m n : ℕ} {F : Bifun (Rn m) (Rn n)}
 theorem convexClBifun_convex (hF : ConvexBifun F) : ConvexBifun (convexClBifun F) :=
   ConvexBifun.convexClBifun hF
 
-/-- For every bifunction $F$, the bifunction $\operatorname{cl} F$ is closed. -/
+/-- For every bifunction $F$, the bifunction $\operatorname{cl} F$ is closed.
+
+**Generalization.** The source's closure discussion assumes convexity of $F$. -/
 theorem convexClBifun_closed (F : Bifun (Rn m) (Rn n)) : ClosedConvexBifun (convexClBifun F) :=
   closedConvexBifun_convexClBifun F
 
@@ -963,7 +1007,10 @@ theorem corollary_29_4_1_optimalValue (hF : ConvexBifun F) (hs : StronglyConsist
 and $(P)$ is strongly consistent, then every minimizer of $F0$ is a minimizer of
 $(\operatorname{cl} F)0$.
 
-The inclusion can be strict, because the closure can create new minimizers. -/
+The inclusion can be strict, because the closure can create new minimizers.
+
+**Generalization.** The source uses optimal solutions with finite objective values.
+The minimum-set inclusion also holds when the optimal value is $-\infty$. -/
 theorem corollary_29_4_1_argmin (hF : ConvexBifun F) (hs : StronglyConsistent F) :
     argmin (F 0) ⊆ argmin (convexClBifun F 0) :=
   argmin_subset_argmin_convexClBifun hF hs
@@ -1129,7 +1176,11 @@ $0 \in \operatorname{ri}(\operatorname{dom} F)$ holds. This clause needs agreeme
 $\operatorname{ri}(\operatorname{dom} F)$, which only the inclusion
 $\operatorname{dom}(\operatorname{cl} F) \subseteq \operatorname{cl}(\operatorname{dom} F)$
 gives, and that inclusion is stated for proper $F$. For proper $F$ the clause is
-`Rockafellar.corollary_29_4_1_eventually`. -/
+`Rockafellar.corollary_29_4_1_eventually`.
+
+**Correction.** Refutes the neighborhood equality using the strongly consistent improper
+counterexample.
+-/
 theorem corollary_29_4_1_perturbation_false : ¬ corollary_29_4_1_perturbation := by
   intro hcor
   have hev := hcor 1 1 originBifun convexBifun_originBifun stronglyConsistent_originBifun

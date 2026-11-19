@@ -83,6 +83,34 @@ are those of `NumlibSurface.ConnGouldToint.Chapter15.Section04`.
 
 ## Deviations from the source
 
+* **Explicit decomposition and stationary case.** The Byrd–Omojokun normal step exposes the
+  decomposition hypotheses and the zero step at normal stationarity. See
+  `ConnGouldToint.Chapter15.ByrdOmojokunNormalStep`,
+  `ConnGouldToint.Chapter15.ByrdOmojokunNormalStep.eq_zero_of_normal_stationary`.
+* **Explicit trial data.** The Byrd–Omojokun variants expose quantitative Cauchy and
+  negative-curvature decrease and the admissible trial data. See
+  `ConnGouldToint.Chapter15.SQPSecondOrderTangentialStep`,
+  `ConnGouldToint.Chapter15.SQPCompositeTrial`, `ConnGouldToint.Chapter15.SQPCompositeTrial.cauchy`.
+* **Zero-decrease convention.** The Byrd–Omojokun variants explicitly retain the baseline penalty at
+  zero normal-model decrease. See `ConnGouldToint.Chapter15.SQPCompositeTrial.penalty`.
+* **One-step formulation.** Algorithm 15.4.5 is given as an admissible one-iteration relation. See
+  `ConnGouldToint.Chapter15.algorithm_15_4_5`.
+* **Explicit correction and curvature rules.** Algorithms 15.4.6–15.4.7 expose correction admission
+  and preserve the original prediction, with a unit-sphere curvature infimum for the latter. See
+  `ConnGouldToint.Chapter15.algorithm_15_4_6`, `ConnGouldToint.Chapter15.algorithm_15_4_7`.
+* **Correction.** The infeasibility SQP model corrects the center normalization so that the penalty
+  is counted once. See `ConnGouldToint.Chapter15.infeasibilitySQPModel`,
+  `ConnGouldToint.Chapter15.infeasibilitySQPModel_zero`,
+  `ConnGouldToint.Chapter15.infeasibilitySQPModel_drop`.
+* **Correction.** Algorithm 15.4.8 Step 2 corrects the penalty-threshold sign and includes a
+  counterexample to the printed sign. See
+  `ConnGouldToint.Chapter15.infeasibilitySQPPenaltyRequired`,
+  `ConnGouldToint.Chapter15.infeasibilitySQPPenaltyRequired_le_iff`,
+  `ConnGouldToint.Chapter15.infeasibilitySQPPenalty_printed_sign_counterexample`.
+* **Explicit admissibility and corrected model.** Algorithm 15.4.8 exposes residual and prediction
+  conditions and uses the corrected model center and penalty threshold. See
+  `ConnGouldToint.Chapter15.algorithm_15_4_8`,
+  `ConnGouldToint.Chapter15.algorithm_15_4_8_invariants`.
 * **Algorithms 15.4.6 and 15.4.7, acceptance** (reading). The corrected trial is tested against the
   predicted decrease of the original composite trial, and a correction is tried only if it satisfies
   the norm cap. See `ConnGouldToint.Chapter15.algorithm_15_4_6`.
@@ -140,7 +168,12 @@ components $n_R \in U$ and $n_N \in V$ is a **Byrd–Omojokun normal step** if
   $\operatorname{range} A^*$ and $\ker A$, and $n = R n_R + N n_N$;
 * $\|n_N\| \le \kappa_{drs} \|n_R\|$, and $n_R = 0$ if $A^* c = 0$.
 
-The quotient $\|A^* c\| / \|c\|$ is $0$ when $c = 0$. -/
+The quotient $\|A^* c\| / \|c\|$ is $0$ when $c = 0$.
+
+**Reading.** The range and null-space components are provided as linear images and the decomposition
+and norm conditions are explicit. At normal stationarity the range component is required to vanish,
+forcing the null component to vanish as well.
+-/
 structure ByrdOmojokunNormalStep (c : F) (A : E →L[ℝ] F) (p : Seminorm ℝ E)
     (ξN Δ κ β κdrs : ℝ) (R : U →ₗ[ℝ] E) (N : V →ₗ[ℝ] E)
     (n : E) (nR : U) (nN : V) : Prop where
@@ -167,7 +200,12 @@ structure ByrdOmojokunNormalStep (c : F) (A : E →L[ℝ] F) (p : Seminorm ℝ E
 
 omit [CompleteSpace V] in
 /-- **Equation (15.4.121)** of [conn2000trust]. If $n$ is a Byrd–Omojokun normal step and
-$A^* c = 0$, then $n = 0$. -/
+$A^* c = 0$, then $n = 0$.
+
+**Reading.** The range and null-space components are provided as linear images and the decomposition
+and norm conditions are explicit. At normal stationarity the range component is required to vanish,
+forcing the null component to vanish as well.
+-/
 theorem ByrdOmojokunNormalStep.eq_zero_of_normal_stationary
     {c : F} {A : E →L[ℝ] F} {p : Seminorm ℝ E} {ξN Δ κ β κdrs : ℝ}
     {R : U →ₗ[ℝ] E} {N : V →ₗ[ℝ] E} {n : E} {nR : U} {nN : V}
@@ -185,7 +223,12 @@ $$q^T(0) - q^T(t) \ge \kappa_T \gamma \min\Big\{\frac{\xi_T \Delta}{b},
   \frac{\gamma}{\beta}\Big\}, \qquad \tau < 0 \implies q^T(0) - q^T(t) \ge -\kappa_2 \tau
   \Delta^2.$$
 Here $\gamma$ is the norm of the reduced gradient, $b$ the norm of the null-space basis, $\beta$
-a curvature bound and $\tau$ the curvature of the reduced Hessian, all supplied as real numbers. -/
+a curvature bound and $\tau$ the curvature of the reduced Hessian, all supplied as real numbers.
+
+**Reading.** The composite trial packages explicit normal and tangential admissibility, a
+Cauchy-decrease bound and a second-order decrease condition expressed using the reduced Rayleigh
+quotient.
+-/
 structure SQPSecondOrderTangentialStep (A : E →L[ℝ] F) (g n t : E) (H : E →L[ℝ] E)
     (p : Seminorm ℝ E) (ξT Δ reducedGradient basisNorm κT β κ₂ τ : ℝ) : Prop where
   /-- The tangential step lies in the null space of $A$: $A t = 0$. -/
@@ -204,7 +247,12 @@ omit [CompleteSpace E] [CompleteSpace F] in
 /-- **Algorithms 15.4.5 and 15.4.7** of [conn2000trust], trial data. A composite trial consists of
 the iterate $x$, the normal step $n$, the tangential step $t$, a gradient $g$, a Jacobian $A$, a
 Hessian approximation $H$, a trust-region norm $p$ with $p(v) = 0$ only for $v = 0$, the radius
-$\Delta$, the previous penalty and the baseline penalty. The trial step is $n + t$. -/
+$\Delta$, the previous penalty and the baseline penalty. The trial step is $n + t$.
+
+**Reading.** The composite trial packages explicit normal and tangential admissibility, a
+Cauchy-decrease bound and a second-order decrease condition expressed using the reduced Rayleigh
+quotient.
+-/
 structure SQPCompositeTrial (E F : Type*) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] where
   /-- The iterate $x$. -/
@@ -237,7 +285,11 @@ $\delta_T = q^T(0) - q^T(t)$ and the objective model decrease $\delta_q = f(x) -
 $q(s) = f(x) + \langle g, s\rangle + \frac12 \langle s, Hs\rangle$, the required penalty is
 $\max\{\sigma^B, -(\delta_q + \delta_T)/((1 - \nu)\delta_N)\}$ if $\delta_N > 0$ and the
 baseline penalty $\sigma^B$ otherwise. The penalty is then
-`ConnGouldToint.Chapter15.sqpPenaltyUpdate` applied to the required and the previous penalty. -/
+`ConnGouldToint.Chapter15.sqpPenaltyUpdate` applied to the required and the previous penalty.
+
+**Reading.** The update retains the baseline penalty when the normal-model decrease vanishes, making
+the denominator-dependent rule total.
+-/
 noncomputable def SQPCompositeTrial.penalty (tr : SQPCompositeTrial E F) (P : SQPVariantParams)
     (f : E → ℝ) (c : E → F) : ℝ :=
   let normal := ‖c tr.x‖ - sqpNormalModel (c tr.x) tr.A tr.n
@@ -265,7 +317,12 @@ omit [CompleteSpace E] [CompleteSpace F] in
 composite trial satisfies $A t = 0$, $p(t) \le \xi_T \Delta$ and
 $$q^T(0) - q^T(t) \ge \kappa_T \gamma \min\Big\{\frac{\xi_T \Delta}{b},
   \frac{\gamma}{\beta}\Big\},$$
-for the reduced-gradient norm $\gamma$, the basis norm $b$ and the curvature bound $\beta$. -/
+for the reduced-gradient norm $\gamma$, the basis norm $b$ and the curvature bound $\beta$.
+
+**Reading.** The composite trial packages explicit normal and tangential admissibility, a
+Cauchy-decrease bound and a second-order decrease condition expressed using the reduced Rayleigh
+quotient.
+-/
 def SQPCompositeTrial.cauchy (tr : SQPCompositeTrial E F)
     (ξT reducedGradient basisNorm κT β : ℝ) : Prop :=
   tr.A tr.t = 0 ∧ tr.p tr.t ≤ ξT * tr.radius ∧
@@ -282,7 +339,11 @@ components $n_R$ and $n_N$; $t$ satisfies AA.1i with $\gamma = \|N^*(g + Hn)\|$,
 $\beta = 1 + \|N^* H N\|$; $\sigma$ is the inherited penalty; the predicted decrease of
 $s = n + t$ is positive; $x' = x + s$ if the ratio $\rho$ of the merit function
 $f + \sigma\|c\|$ is at least $\eta_1$ and $x' = x$ otherwise; and $\Delta'$ follows the basic
-trust-region update for $\rho$. -/
+trust-region update for $\rho$.
+
+**Reading.** The algorithm is a one-iteration relation on admissible trials with positive prediction
+and explicit radius, iterate and penalty updates.
+-/
 def algorithm_15_4_5 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
     (tr : SQPCompositeTrial E F) (ξN ξT κN βN κdrs κT : ℝ)
     (R : U →ₗ[ℝ] E) (N : V →L[ℝ] E) (nR : U) (nN : V) (x' : E) (Δ' σ : ℝ) : Prop :=
@@ -316,7 +377,12 @@ $\eta_{CS} > 0$:
   $\eta_1 \le \rho < \eta_2$ and $c(x) + An = 0$.
 
 **Reading.** The corrected trial is tested against the predicted decrease of the original trial,
-and the correction is tried only if it satisfies the norm cap. -/
+and the correction is tried only if it satisfies the norm cap.
+
+**Correction.** A corrected point may replace only a rejected original trial and must satisfy the
+correction equations and cap. Acceptance still uses the original prediction. The second-order option
+expresses reduced curvature as a unit-sphere infimum.
+-/
 def algorithm_15_4_6 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
     (tr : SQPCompositeTrial E F) (ξN ξT κN βN κdrs κT ηCS : ℝ)
     (R : U →ₗ[ℝ] E) (N : V →L[ℝ] E) (nR : U) (nN : V)
@@ -348,7 +414,12 @@ def algorithm_15_4_6 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
 negative-curvature condition AA.2d: $\kappa_2 > 0$, $\tau = \inf\{\langle v, N^* H N v\rangle :
 \|v\| = 1\}$, and if $\tau < 0$ then $q^T(0) - q^T(t) \ge -\kappa_2 \tau \Delta^2$.
 
-The infimum is $0$ when $V$ is the zero space. -/
+The infimum is $0$ when $V$ is the zero space.
+
+**Correction.** A corrected point may replace only a rejected original trial and must satisfy the
+correction equations and cap. Acceptance still uses the original prediction. The second-order option
+expresses reduced curvature as a unit-sphere infimum.
+-/
 def algorithm_15_4_7 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
     (tr : SQPCompositeTrial E F) (ξN ξT κN βN κdrs κT κ₂ τ ηCS : ℝ)
     (R : U →ₗ[ℝ] E) (N : V →L[ℝ] E) (nR : U) (nN : V)
@@ -385,7 +456,12 @@ $$m(s, d) = f_0 - \langle c, y\rangle + \langle g, s\rangle + \tfrac12 \langle s
 
 **Correction.** The constant term is the Lagrangian value $f_0 - \langle c, y\rangle$ without
 the penalty term. The squared residual penalty is then counted once, and the model agrees with
-the merit function at the center (`ConnGouldToint.Chapter15.infeasibilitySQPModel_zero`). -/
+the merit function at the center (`ConnGouldToint.Chapter15.infeasibilitySQPModel_zero`).
+
+**Correction.** The model is centered at the objective minus the linear multiplier term. Adding the
+quadratic penalty at zero step then gives exactly the merit value, avoiding double-counting that
+penalty. The model-decrease identity uses this normalization.
+-/
 noncomputable def infeasibilitySQPModel (f₀ : ℝ) (c y : F) (g : E) (H : E →L[ℝ] E)
     (A : E →L[ℝ] F) (σ : ℝ) (step : E × F) : ℝ :=
   quadraticModel (f₀ - ⟪c, y⟫) g H.toLinearMap step.1 -
@@ -393,7 +469,12 @@ noncomputable def infeasibilitySQPModel (f₀ : ℝ) (c y : F) (g : E) (H : E �
 
 /-- **Algorithm 15.4.8** of [conn2000trust], Step 2. At $z = (x, y)$, the augmented model with
 center data $f(x)$, $c(x)$ and $y$ takes the value $\phi(x, y)$ at the zero step, for every
-gradient, Hessian, Jacobian and penalty. -/
+gradient, Hessian, Jacobian and penalty.
+
+**Correction.** The model is centered at the objective minus the linear multiplier term. Adding the
+quadratic penalty at zero step then gives exactly the merit value, avoiding double-counting that
+penalty. The model-decrease identity uses this normalization.
+-/
 theorem infeasibilitySQPModel_zero (f : E → ℝ) (c : E → F) (z : E × F)
     (g : E) (H : E →L[ℝ] E) (A : E →L[ℝ] F) (σ : ℝ) :
     infeasibilitySQPModel (f z.1) (c z.1) z.2 g H A σ 0 =
@@ -403,6 +484,10 @@ theorem infeasibilitySQPModel_zero (f : E → ℝ) (c : E → F) (z : E × F)
 /-- **Equation (15.4.171)** of [conn2000trust]. The predicted decrease of the augmented model is
 $$m(0) - m(s, d) = \frac{\sigma}{2} \big(\|c\|^2 - \|c + A s\|^2\big) - \Big(\langle g,
   s\rangle + \tfrac12 \langle s, Hs\rangle - \langle c + A s, d\rangle\Big).$$
+
+**Correction.** The model is centered at the objective minus the linear multiplier term. Adding the
+quadratic penalty at zero step then gives exactly the merit value, avoiding double-counting that
+penalty. The model-decrease identity uses this normalization.
 -/
 theorem infeasibilitySQPModel_drop (f₀ : ℝ) (c y : F) (g : E) (H : E →L[ℝ] E)
     (A : E →L[ℝ] F) (σ : ℝ) (step : E × F) :
@@ -421,7 +506,12 @@ $$\max\Big\{\sigma^B, \frac{2\delta_F}{(1 - \nu)\delta_N}\Big\}.$$
 a change, the positive sign is the one that gives (15.4.171); see
 `ConnGouldToint.Chapter15.infeasibilitySQPPenalty_printed_sign_counterexample`.
 
-The quotient is $0$ when $\delta_N = 0$. Algorithm 15.4.8 then keeps the previous penalty. -/
+The quotient is $0$ when $\delta_N = 0$. Algorithm 15.4.8 then keeps the previous penalty.
+
+**Correction.** The threshold has the sign obtained by rearranging the model-decrease test, namely
+positive twice the unpenalized model discrepancy divided by the positive scalar times the normal
+decrease. The counterexample shows that the printed opposite sign can fail the test.
+-/
 noncomputable def infeasibilitySQPPenaltyRequired (ν δN δF base : ℝ) : ℝ :=
   max base (2 * δF / ((1 - ν) * δN))
 
@@ -429,6 +519,10 @@ noncomputable def infeasibilitySQPPenaltyRequired (ν δN δF base : ℝ) : ℝ 
 $\delta_N > 0$. Then the required penalty is at most $\sigma$ if and only if
 $\sigma^B \le \sigma$ and
 $$\frac{\nu\sigma}{2} \delta_N \le \frac{\sigma}{2} \delta_N - \delta_F.$$
+
+**Correction.** The threshold has the sign obtained by rearranging the model-decrease test, namely
+positive twice the unpenalized model discrepancy divided by the positive scalar times the normal
+decrease. The counterexample shows that the printed opposite sign can fail the test.
 -/
 theorem infeasibilitySQPPenaltyRequired_le_iff {ν δN δF base σ : ℝ}
     (hν : ν < 1) (hN : 0 < δN) :
@@ -441,7 +535,12 @@ theorem infeasibilitySQPPenaltyRequired_le_iff {ν δN δF base σ : ℝ}
 /-- **Algorithm 15.4.8** of [conn2000trust], Step 2, sign counterexample. Take $\nu = 1/2$,
 $\delta_N = 1$, $\delta_F = 1$, $\sigma^B = 1$ and $\sigma = 1$. The printed threshold gives
 $\max\{1, -2\delta_F/((1 - \nu)\delta_N)\} = 1 \le \sigma$, but (15.4.171) fails:
-$\frac{\nu\sigma}{2}\delta_N = \frac14 > \frac{\sigma}{2}\delta_N - \delta_F = -\frac12$. -/
+$\frac{\nu\sigma}{2}\delta_N = \frac14 > \frac{\sigma}{2}\delta_N - \delta_F = -\frac12$.
+
+**Correction.** The threshold has the sign obtained by rearranging the model-decrease test, namely
+positive twice the unpenalized model discrepancy divided by the positive scalar times the normal
+decrease. The counterexample shows that the printed opposite sign can fail the test.
+-/
 theorem infeasibilitySQPPenalty_printed_sign_counterexample :
     max (1 : ℝ) (-2 / ((1 - 1 / 2) * 1)) ≤ 1 ∧
       ¬ ((1 / 2 : ℝ) * 1 / 2) * 1 ≤ (1 / 2 : ℝ) * 1 - 1 := by
@@ -464,7 +563,12 @@ step $n$ and a step $(s, d)$. The conditions are:
 * the predicted decrease of the augmented model is positive, $z'$ is accepted by the ratio test
   for the augmented merit function, and $\Delta'$ follows the basic trust-region update.
 
-The multiplier step $d$ is free. A zero predicted decrease ends the ratio-based iteration. -/
+The multiplier step $d$ is free. A zero predicted decrease ends the ratio-based iteration.
+
+**Correction.** The one-step relation distinguishes cases for zero, improving and nonimproving
+residuals, requires positive prediction and updates the accepted point and multiplier jointly. It
+uses the corrected model center and penalty threshold.
+-/
 def algorithm_15_4_8 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
     (approximate : (E → ℝ) → Set E → E → Prop)
     (A : E →L[ℝ] F) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E) (base : ℝ)
@@ -494,6 +598,10 @@ def algorithm_15_4_8 (P : SQPVariantParams) (f : E → ℝ) (c : E → F)
 /-- **Algorithm 15.4.8** of [conn2000trust], Steps 2–4. An iteration of Algorithm 15.4.8 gives
 $\Delta' > 0$ and $\sigma^- \le \sigma$, and the predicted decrease satisfies (15.4.171):
 $$\frac{\nu\sigma}{2} \big(\|c(x)\|^2 - \|c(x) + A s\|^2\big) \le m(0) - m(s, d).$$
+
+**Correction.** The one-step relation distinguishes cases for zero, improving and nonimproving
+residuals, requires positive prediction and updates the accepted point and multiplier jointly. It
+uses the corrected model center and penalty threshold.
 -/
 theorem algorithm_15_4_8_invariants {P : SQPVariantParams}
     {f : E → ℝ} {c : E → F} {approximate : (E → ℝ) → Set E → E → Prop}

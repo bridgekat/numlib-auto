@@ -57,6 +57,11 @@ constituent Hessians.
 
 ## Deviations from the source
 
+* **Equations (8.5.1)–(8.5.5) and Theorem 8.5.1** (generalization). The composition and chain
+  rules use Fréchet derivatives on real normed spaces. The pointwise Hessian estimate uses
+  separate bounds for the constituent derivatives and the product maximum norm. See
+  `ConnGouldToint.Chapter08.second_fderiv_compositeObjective` and
+  `ConnGouldToint.Chapter08.theorem_8_5_1_hessian`.
 * **Theorems 8.5.1 and 8.5.2(i)** (reading). The agreement of the inner model with $u$ in value and
   derivative at the center, and the bound $|Df_0(x, u(x))(0, z)| \le D \|z\|$ on the outer partial
   derivative in the inner variable, are explicit hypotheses. See
@@ -81,13 +86,17 @@ $f_0 : E \times F \to \mathbb{R}$ and an inner function $u : E \to F$, the **com
 objective** is
 $$x \mapsto f_0(x, u(x)).$$
 
-With $u$ replaced by an inner model $m$, the same definition gives the composite model (8.5.2). -/
+With $u$ replaced by an inner model $m$, the same definition gives the composite model (8.5.2).
+
+**Generalization.** The inner and outer functions act on arbitrary real normed spaces. -/
 def compositeObjective (f₀ : E × F → ℝ) (u : E → F) (x : E) : ℝ := f₀ (x, u x)
 
 /-- **Equation (8.5.3)** of [conn2000trust]. If $f_0$ is differentiable at $(x, u(x))$ and $u$ is
 differentiable at $x$, then the derivative of the composite objective at $x$ is
 $$Df_0(x, u(x)) \circ (I, Du(x)),$$
-that is, $v \mapsto Df_0(x, u(x))(v, Du(x) v)$. -/
+that is, $v \mapsto Df_0(x, u(x))(v, Du(x) v)$.
+
+**Generalization.** The coordinate gradient expansion is stated as a Fréchet block chain rule. -/
 theorem fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F} {x : E}
     (hf : DifferentiableAt ℝ f₀ (x, u x)) (hu : DifferentiableAt ℝ u x) :
     fderiv ℝ (compositeObjective f₀ u) x =
@@ -101,7 +110,10 @@ $$\nabla^2 f(x)(v, w) = \nabla^2 f_0(x, u(x))\big((v, Du(x) v), (w, Du(x) w)\big
   u(x))\big(0, \nabla^2 u(x)(v, w)\big).$$
 
 The two graph tangents $(v, Du(x) v)$ and $(w, Du(x) w)$ produce the four second-derivative
-terms of the outer function in block form. -/
+terms of the outer function in block form.
+
+**Generalization.** The component expansion is expressed as a single bilinear Fréchet
+derivative identity. -/
 theorem second_fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) (x v w : E) :
     fderiv ℝ (fderiv ℝ (compositeObjective f₀ u)) x v w =
@@ -143,7 +155,11 @@ theorem second_fderiv_compositeObjective {f₀ : E × F → ℝ} {u : E → F}
 objective $x \mapsto f_0(x, u(x))$ is $C^2$.
 
 Applied to $u$ and to an inner model $m$, this gives the smoothness requirements on the
-objective and the model. -/
+objective and the model.
+
+**Reading.** C² composition on normed spaces, without separately bundling the algorithm model
+assumptions.
+-/
 theorem theorem_8_5_1_smooth {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) :
     ContDiff ℝ 2 (compositeObjective f₀ u) :=
@@ -151,7 +167,10 @@ theorem theorem_8_5_1_smooth {f₀ : E × F → ℝ} {u : E → F}
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddCommGroup F] [NormedSpace ℝ F] in
 /-- **Theorem 8.5.1(ii)** of [conn2000trust]. If $f_0$ is bounded below, then the composite
-$x \mapsto f_0(x, u(x))$ is bounded below for every $u : E \to F$. -/
+$x \mapsto f_0(x, u(x))$ is bounded below for every $u : E \to F$.
+
+**Reading.** Boundedness below by range containment on arbitrary normed domains.
+-/
 theorem theorem_8_5_1_lower {f₀ : E × F → ℝ} (u : E → F)
     (hf : BddBelow (Set.range f₀)) : BddBelow (Set.range (compositeObjective f₀ u)) :=
   hf.mono (show Set.range (compositeObjective f₀ u) ⊆ Set.range f₀ from
@@ -167,7 +186,10 @@ $$\|\nabla^2 f(x)\| \le A \max\{1, C\}^2 + D B.$$
 **Reading.** The bound $D$ on the outer partial derivative in the inner variable is an explicit
 hypothesis.
 
-The estimate is pointwise, so the same constants apply on every trust region. -/
+The estimate is pointwise, so the same constants apply on every trust region.
+
+**Reading.** The estimate is pointwise and uses the product maximum norm to bound the first
+derivative of $x\mapsto(x,u(x))$. -/
 theorem theorem_8_5_1_hessian {f₀ : E × F → ℝ} {u : E → F}
     (hf : ContDiff ℝ 2 f₀) (hu : ContDiff ℝ 2 u) (x : E)
     {A B C D : ℝ} (hA : 0 ≤ A) (hB : 0 ≤ B) (hD : 0 ≤ D)
@@ -212,6 +234,9 @@ and $m$ be differentiable at $x$ with $m(x) = u(x)$ and $Dm(x) = Du(x)$. Then th
 agree at $x$ in value and derivative:
 $$f_0(x, m(x)) = f_0(x, u(x)) \qquad \text{and} \qquad D\big[f_0(\cdot, m(\cdot))\big](x) =
   D\big[f_0(\cdot, u(\cdot))\big](x).$$
+
+**Reading.** Uses explicit value and derivative agreement at one point and Fréchet
+differentiability.
 -/
 theorem theorem_8_5_1_agreement {f₀ : E × F → ℝ} {u m : E → F} {x : E}
     (hf : DifferentiableAt ℝ f₀ (x, u x)) (hu : DifferentiableAt ℝ u x)

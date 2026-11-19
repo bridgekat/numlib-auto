@@ -118,6 +118,24 @@ $\ell^2$ and in $\ell^1$ over the window of frequencies.
 
 ## Deviations from the source
 
+* **Equations (10.48)–(10.50)** (generalization). The coefficient formula uses the total
+  integral on circle functions and the decomposition (10.49) already holds for integrable
+  functions. The continuous truncation and projection use complex functions and permit odd or
+  zero $N$. The positive-exponent modes agree with the synthesis and coefficient integrals in
+  (10.50).
+* **Equations (10.51)–(10.55) and the matrices $T$ and $C$** (generalization). The discrete
+  formulas admit complex inputs, and use a consecutive $N$-mode window starting at $-\lfloor
+  N/2\rfloor$ for odd as well as even $N$. The total definitions also admit $N=0$. Inversion and
+  interpolation assume $N>0$. `equation_10_55_inv` gives $CT=I$ and `trigDiscreteNorm` defines
+  the seminorm on all functions.
+* **Section 10.9, Fourier error estimates** (generalization). The smooth interpolation and
+  quadrature estimates specify constants and allow $2\pi$-periodic complex $C^s$ functions with
+  any positive $N$. `fourier_trapezoid_error_sobolev` also gives the quadrature bound for $H^s$
+  coefficient sequences of real exponent $s>1/2$.
+* **Equation (10.56) and Section 10.9.2** (reading). `equation_10_56` fills in the removable
+  central Lanczos factor with $1$. `fft_radix_two` proves one split for any even transform
+  length. Its unnormalized, unshifted Fourier matrix is related to the printed transform by
+  scaling and modulation of the samples.
 * **Equations (10.50) and (10.52)** (typo). The book writes the coefficients as
   $(f, \tilde\varphi_k)/2\pi$ and $(f, \tilde\varphi_k)_N/2\pi$ with
   $\tilde\varphi_k = e^{-i(k - N/2)x}$, which gives the wrong sign in the exponent. The library uses
@@ -151,7 +169,11 @@ and let $k \in \mathbb{Z}$. The $k$-th Fourier coefficient of $f$ is
 $$\hat f_k = \frac{1}{2\pi} \int_0^{2\pi} f(x) e^{-ikx} \, dx.$$
 
 The coefficient is Mathlib's `fourierCoeff` on `AddCircle (2 * π)`. The proof specializes
-`fourierCoeff_eq_intervalIntegral`. -/
+`fourierCoeff_eq_intervalIntegral`.
+
+**Generalization.** The formulas use circle functions. The coefficient and symmetry hold with
+the total integral, and the real and imaginary decomposition assumes integrability. The source
+starts this discussion in $L^2(0,2\pi)$. -/
 theorem equation_10_48 (f : AddCircle (2 * π) → ℂ) (k : ℤ) :
     fourierCoeff f k
       = ((1 / (2 * π) : ℝ) : ℂ) * ∫ x in (0 : ℝ)..2 * π, f x * Complex.exp (-(k * x * I)) := by
@@ -195,7 +217,11 @@ Fourier coefficient is $\hat f_k = a_k + i b_k$ with
 $$a_k = \frac{1}{2\pi} \int_0^{2\pi} (\alpha \cos kx + \beta \sin kx) \, dx, \qquad b_k =
   \frac{1}{2\pi} \int_0^{2\pi} (-\alpha \sin kx + \beta \cos kx) \, dx.$$
 
-The proof expands $e^{-ikx} = \cos kx - i \sin kx$ in (10.48). -/
+The proof expands $e^{-ikx} = \cos kx - i \sin kx$ in (10.48).
+
+**Generalization.** The formulas use circle functions. The coefficient and symmetry hold with
+the total integral, and the real and imaginary decomposition assumes integrability. The source
+starts this discussion in $L^2(0,2\pi)$. -/
 theorem equation_10_49 {f : AddCircle (2 * π) → ℂ} (hf : Integrable f haarAddCircle) (k : ℤ) :
     fourierCoeff f k
       = ((1 / (2 * π) * ∫ x in (0 : ℝ)..2 * π,
@@ -238,7 +264,11 @@ real-valued, read as a function on the circle $\mathbb{R}/2\pi\mathbb{Z}$. Then
 $\hat f_{-k} = \overline{\hat f_k}$ for every $k \in \mathbb{Z}$.
 
 Conjugation of the integrand of (10.48) changes $e^{-ikx}$ into $e^{ikx}$ and does not change
-$f$. -/
+$f$.
+
+**Generalization.** The formulas use circle functions. The coefficient and symmetry hold with
+the total integral, and the real and imaginary decomposition assumes integrability. The source
+starts this discussion in $L^2(0,2\pi)$. -/
 theorem equation_10_49_conj {f : AddCircle (2 * π) → ℂ} (hf : ∀ x, (f x).im = 0) (k : ℤ) :
     fourierCoeff f (-k) = conj (fourierCoeff f k) := by
   simp only [fourierCoeff, ← integral_conj]
@@ -253,7 +283,11 @@ $$f_N^*(x) = \sum_{k=-N/2}^{N/2-1} \hat f_k e^{ikx},$$
 an element of $L^2(0, 2\pi)$.
 
 The sum runs over `DFT.window N`, the $N$ integers that start at $-\lfloor N/2 \rfloor$, so the
-definition also applies to odd $N$. -/
+definition also applies to odd $N$.
+
+**Generalization.** Uses complex $L^2$ functions and a window of $N$ frequencies beginning at
+$-\lfloor N/2\rfloor$ for any $N$. The synthesis uses positive-exponent modes, as in the sum in
+(10.50). -/
 noncomputable def trigTruncation (N : ℕ) (f : Lp ℂ 2 (@haarAddCircle (2 * π) _)) :
     Lp ℂ 2 (@haarAddCircle (2 * π) _) :=
   ∑ k ∈ DFT.window N, fourierCoeff f k • fourierLp 2 k
@@ -266,7 +300,11 @@ $$\|f - f_N^*\|_{L^2} = \min_{g \in S_N} \|f - g\|_{L^2}.$$
 The statement is `IsBestApprox` for the span of the functions `fourierLp 2 k`, $k$ in
 `DFT.window N`. The proof shows that $f_N^*$ is the orthogonal projection of $f$ onto $S_N$: by
 the orthonormality of the Fourier system, $f - f_N^*$ is orthogonal to every $e^{ikx}$ in the
-window, and the theorem of Pythagoras gives the bound. -/
+window, and the theorem of Pythagoras gives the bound.
+
+**Generalization.** Uses complex $L^2$ functions and a window of $N$ frequencies beginning at
+$-\lfloor N/2\rfloor$ for any $N$. The synthesis uses positive-exponent modes, as in the sum in
+(10.50). -/
 theorem trigTruncation_isBestApprox (N : ℕ) (f : Lp ℂ 2 (@haarAddCircle (2 * π) _)) :
     IsBestApprox (SetLike.coe (Submodule.span ℂ (fourierLp 2 ''
         (DFT.window N : Set ℤ))))
@@ -310,7 +348,10 @@ $f, g : \mathbb{R} \to \mathbb{C}$, the **discrete scalar product** is
 $$(f, g)_N = h \sum_{j=0}^{N-1} f(x_j) \overline{g(x_j)}, \qquad h = \frac{2\pi}{N}, \quad x_j =
   jh.$$
 
-The node $x_j$ is `Quadrature.angleNode N j`. -/
+The node $x_j$ is `Quadrature.angleNode N j`.
+
+**Generalization.** The finite expression takes any functions and extends to $N=0$. The source
+takes $N$ even and positive and describes a norm on its finite interpolation space. -/
 noncomputable def equation_10_51 (N : ℕ) (f g : ℝ → ℂ) : ℂ :=
   ((2 * π / N : ℝ) : ℂ) * ∑ j ∈ range N, f (angleNode N j) * conj (g (angleNode N j))
 
@@ -319,7 +360,10 @@ $f : \mathbb{R} \to \mathbb{C}$, the **discrete norm** is $\|f\|_N = (f, f)_N^{1
 discrete scalar product (10.51).
 
 In Lean it is the real square root of the real part of $(f, f)_N$. The number $(f, f)_N$ is real
-and nonnegative. -/
+and nonnegative.
+
+**Generalization.** The finite expression takes any functions and extends to $N=0$. The source
+takes $N$ even and positive and describes a norm on its finite interpolation space. -/
 noncomputable def trigDiscreteNorm (N : ℕ) (f : ℝ → ℂ) : ℝ :=
   Real.sqrt (equation_10_51 N f f).re
 
@@ -329,7 +373,10 @@ $$\tilde f_k = \frac{1}{N} \sum_{j=0}^{N-1} f(x_j) W_N^{(k - N/2)j}, \qquad W_N 
   i/N}.$$
 
 The definition is `DFT.coeff` at the window offset $m = -N/2$. The index $k$ is a natural
-number, and the definition gives a value for every $k$. -/
+number, and the definition gives a value for every $k$.
+
+**Generalization.** The definition uses integral frequency shift $-\lfloor N/2\rfloor$ when
+centered frequencies occur, and extends the finite formula to all $N$. -/
 noncomputable def equation_10_52 (N : ℕ) (f : ℝ → ℂ) (k : ℕ) : ℂ :=
   DFT.coeff N (-((N / 2 : ℕ) : ℤ)) f k
 
@@ -337,7 +384,10 @@ noncomputable def equation_10_52 (N : ℕ) (f : ℝ → ℂ) (k : ℕ) : ℂ :=
 $f : \mathbb{R} \to \mathbb{C}$, the **discrete Fourier series of order $N$** is
 $$\Pi^F_N f(x) = \sum_{k=0}^{N-1} \tilde f_k e^{i(k - N/2)x}.$$
 
-The definition is `DFT.interp` at the window offset $m = -N/2$. -/
+The definition is `DFT.interp` at the window offset $m = -N/2$.
+
+**Generalization.** The definition uses integral frequency shift $-\lfloor N/2\rfloor$ when
+centered frequencies occur, and extends the finite formula to all $N$. -/
 noncomputable def discreteSeries (N : ℕ) (f : ℝ → ℂ) (x : ℝ) : ℂ :=
   DFT.interp N (-((N / 2 : ℕ) : ℤ)) f x
 
@@ -349,7 +399,10 @@ $$\tilde f_k = \frac{(f, \tilde\varphi_k)_N}{2\pi}, \qquad \tilde\varphi_k(x) = 
 **Typo.** The book prints $\tilde\varphi_k = e^{-i(k - N/2)x}$. With the scalar product
 $(f, g)_N = h \sum_j f(x_j) \overline{g(x_j)}$ of (10.51), this gives the wrong sign in the
 exponent. The same misprint appears in (10.50) for the continuous scalar product
-$(f, g) = \int_0^{2\pi} f \bar g$. -/
+$(f, g) = \int_0^{2\pi} f \bar g$.
+
+**Generalization.** The identity applies to every positive $N$ using integral shift $-\lfloor
+N/2\rfloor$. The source uses even $N$. -/
 theorem equation_10_52_eq_discreteInner {N : ℕ} (hN : 0 < N) (f : ℝ → ℂ) (k : ℕ) :
     equation_10_52 N f k
       = equation_10_51 N f
@@ -411,7 +464,10 @@ $W_N^{-(j - N/2)k}$. The book's own derivation $\Pi^F_N f(x_j) = \sum_k \tilde f
 e^{-ijhN/2}$ gives the exponent $-(k - N/2)j$. The two forms differ by the factor $(-1)^{j-k}$.
 See `QuarteroniSaccoSaleri.Chapter10.idftMatrix`.
 
-The proof specializes `DFT.interp_angleNode`. -/
+The proof specializes `DFT.interp_angleNode`.
+
+**Generalization.** The identity applies to every positive $N$ using integral shift $-\lfloor
+N/2\rfloor$. The source uses even $N$. -/
 theorem equation_10_55 {N : ℕ} (hN : 0 < N) (f : ℝ → ℂ) {j : ℕ} (hj : j < N) :
     discreteSeries N f (angleNode N j) = f (angleNode N j) ∧
       f (angleNode N j) = ∑ k ∈ range N, equation_10_52 N f k
@@ -431,13 +487,18 @@ theorem equation_10_55 {N : ℕ} (hN : 0 < N) (f : ℝ → ℂ) {j : ℕ} (hj : 
   ring
 
 /-- **Equation (10.52)** of [quarteroni2000numerical], the root of unity. For $N \in \mathbb{N}$,
-the principal $N$-th root of unity of the book is $W_N = e^{-2\pi i/N}$. -/
+the principal $N$-th root of unity of the book is $W_N = e^{-2\pi i/N}$.
+
+**Generalization.** The definition uses integral frequency shift $-\lfloor N/2\rfloor$ when
+centered frequencies occur, and extends the finite formula to all $N$. -/
 noncomputable def principalRoot (N : ℕ) : ℂ := Complex.exp (-(2 * π * I / N))
 
 /-- **The matrix $T$ after (10.55)** of [quarteroni2000numerical]. For $N \in \mathbb{N}$, the
 matrix $T \in \mathbb{C}^{N \times N}$ of the **discrete Fourier transform** has the entries
 $$T_{kj} = \frac{1}{N} W_N^{(k - N/2)j}, \qquad 0 \le k, j \le N - 1.$$
--/
+
+**Generalization.** The definition uses integral frequency shift $-\lfloor N/2\rfloor$ when
+centered frequencies occur, and extends the finite formula to all $N$. -/
 noncomputable def dftMatrix (N : ℕ) : Matrix (Fin N) (Fin N) ℂ :=
   Matrix.of fun k j : Fin N =>
     (N : ℂ)⁻¹ * principalRoot N ^ ((((k : ℕ) : ℤ) - (N / 2 : ℕ)) * ((j : ℕ) : ℤ))
@@ -450,13 +511,19 @@ $$C_{jk} = W_N^{-(k - N/2)j}, \qquad 0 \le j, k \le N - 1.$$
 **Correction.** The book prints $C_{jk} = W_N^{-(j - N/2)k}$. This differs from the entry above
 by the factor $(-1)^{j-k}$, and that matrix does not invert $T$. The entry here follows from the
 book's derivation of (10.55), and Program 89 of the book implements it. See
-`QuarteroniSaccoSaleri.Chapter10.equation_10_55_inv`. -/
+`QuarteroniSaccoSaleri.Chapter10.equation_10_55_inv`.
+
+**Generalization.** The definition uses integral frequency shift $-\lfloor N/2\rfloor$ when
+centered frequencies occur, and extends the finite formula to all $N$. -/
 noncomputable def idftMatrix (N : ℕ) : Matrix (Fin N) (Fin N) ℂ :=
   Matrix.of fun j k : Fin N =>
     principalRoot N ^ (-(((((k : ℕ) : ℤ) - (N / 2 : ℕ)) * ((j : ℕ) : ℤ))))
 
 /-- For $N \ge 1$, $p \in \mathbb{Z}$ and $j \in \mathbb{N}$, the powers of $W_N$ are the values of
-an exponential at the nodes: $W_N^{pj} = e^{-ipx_j}$. This supports the matrix forms of (10.55). -/
+an exponential at the nodes: $W_N^{pj} = e^{-ipx_j}$. This supports the matrix forms of (10.55).
+
+**Generalization.** This equality of exponential expressions holds for any integer frequency
+and natural sample index. -/
 theorem principalRoot_zpow_mul {N : ℕ} (hN : 0 < N) (p : ℤ) (j : ℕ) :
     principalRoot N ^ (p * (j : ℤ)) = Complex.exp (-((p : ℂ) * (angleNode N j : ℝ) * I)) := by
   have hN' : (N : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
@@ -470,7 +537,9 @@ theorem principalRoot_zpow_mul {N : ℕ} (hN : 0 < N) (p : ℤ) (j : ℕ) :
 For $N \ge 1$ and $f : \mathbb{R} \to \mathbb{C}$, the vector of the discrete Fourier
 coefficients is
 $$(\tilde f_k)_{k=0}^{N-1} = T \, (f(x_j))_{j=0}^{N-1}.$$
--/
+
+**Generalization.** The identity applies to every positive $N$ using integral shift $-\lfloor
+N/2\rfloor$. The source uses even $N$. -/
 theorem equation_10_55_dft {N : ℕ} (hN : 0 < N) (f : ℝ → ℂ) :
     (fun k : Fin N => equation_10_52 N f k)
       = dftMatrix N *ᵥ fun j : Fin N => f (angleNode N j) := by
@@ -486,7 +555,9 @@ theorem equation_10_55_dft {N : ℕ} (hN : 0 < N) (f : ℝ → ℂ) :
 For $N \ge 1$ and $f : \mathbb{R} \to \mathbb{C}$, the interpolation property (10.55) in matrix
 form is
 $$(f(x_j))_{j=0}^{N-1} = C \, (\tilde f_k)_{k=0}^{N-1}.$$
--/
+
+**Generalization.** The identity applies to every positive $N$ using integral shift $-\lfloor
+N/2\rfloor$. The source uses even $N$. -/
 theorem equation_10_55_idft {N : ℕ} (hN : 0 < N) (f : ℝ → ℂ) :
     (fun j : Fin N => f (angleNode N j))
       = idftMatrix N *ᵥ fun k : Fin N => equation_10_52 N f k := by
@@ -501,7 +572,10 @@ IDFT and the DFT satisfy $CT = I$, so $C = T^{-1}$.
 The proof writes both matrices through $F_N$ = `Matrix.dft N` with $\omega = W_N^{-1}$:
 $C = \operatorname{diag}(\omega^{-Nj/2}) F_N$ and $T = N^{-1} F_N^H
 \operatorname{diag}(\omega^{Nj/2})$. Then $F_N F_N^H = N I$ (`Matrix.dft_mul_conjTranspose_dft`)
-gives the result. -/
+gives the result.
+
+**Generalization.** The identity applies to every positive $N$ using integral shift $-\lfloor
+N/2\rfloor$. The source uses even $N$. -/
 theorem equation_10_55_inv {N : ℕ} (hN : 0 < N) : idftMatrix N * dftMatrix N = 1 := by
   have hN' : (N : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hN.ne'
   set ω : ℂ := Complex.exp (2 * π * I / N) with hω
@@ -576,7 +650,10 @@ leaves $C$ unspecified. Here $\zeta$ is `zetaReal`, and $\|f\|_s^2$ is
 `PeriodicSobolev.ofSmooth`. It lies in $H^s$ with $\|\phi\| \le (2\pi)^{-1/2} \|f\|_s$, and its
 series sums to $f$. Then
 `PeriodicSobolev.sqrt_intervalIntegral_norm_eval_sub_interp_sq_le` bounds the error by the
-aliasing and truncation tails. -/
+aliasing and truncation tails.
+
+**Generalization.** The estimate specifies a constant and assumes a complex $C^s$ function of
+period $2\pi$ and any positive $N$. -/
 theorem fourier_interp_error {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
     (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) :
     √(∫ x in (0 : ℝ)..2 * π, ‖f x - discreteSeries N f x‖ ^ 2)
@@ -613,7 +690,10 @@ every $x$ is equivalent. The error is a trigonometric series, bounded by the sum
 of its coefficients. The $\ell^1$ aliasing bound over the window and the $\ell^1$ tail outside
 it give the estimate (`PeriodicSobolev.norm_eval_sub_interp_le`). The extra factor $\sqrt N$
 compared with the $L^2$ estimate comes from the Cauchy–Schwarz inequality over the $N$
-frequencies of the window. -/
+frequencies of the window.
+
+**Generalization.** The estimate specifies a constant and assumes a complex $C^s$ function of
+period $2\pi$ and any positive $N$. -/
 theorem fourier_interp_error_sup {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
     (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) (x : ℝ) :
     ‖f x - discreteSeries N f x‖
@@ -646,7 +726,10 @@ The book quotes the estimate from Canuto, Hussaini, Quarteroni and Zang (1988). 
 $v_N$ is `DFT.windowTrigPoly N c`. The discrete orthogonality changes the difference into $2\pi
 \sum_k (\hat f_k - \tilde f_k) \overline{c_k}$, and the $\ell^2$ aliasing bound and the
 Cauchy–Schwarz inequality bound it
-(`PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le`). -/
+(`PeriodicSobolev.norm_intervalIntegral_sub_discreteInner_le`).
+
+**Generalization.** The estimate specifies a constant and assumes a complex $C^s$ function of
+period $2\pi$ and any positive $N$. -/
 theorem fourier_discreteInner_error {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
     (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) (c : ℤ → ℂ) :
     ‖(∫ x in (0 : ℝ)..2 * π, f x * conj (DFT.windowTrigPoly N c x))
@@ -684,7 +767,10 @@ $v_N = 1$. The space $H^s$ is `PeriodicSobolev s`, and $f$ is `PeriodicSobolev.e
 The proof specializes `PeriodicSobolev.norm_intervalIntegral_sub_trapezoidSum_le`, whose
 trapezoidal sum runs over the nodes $x_1, \dots, x_N$. By periodicity this sum equals the sum
 over $x_0, \dots, x_{N-1}$. `QuarteroniSaccoSaleri.Chapter10.fourier_trapezoid_error` restates
-the estimate in the norm $\|f\|_s$ of the book. -/
+the estimate in the norm $\|f\|_s$ of the book.
+
+**Generalization.** Uses real $s>1/2$ and an $H^s$ coefficient sequence. The source states the
+bound for a function with periodic derivatives through integer order $s\geq 1$. -/
 theorem fourier_trapezoid_error_sobolev {s : ℝ} (hs : 1 / 2 < s) {N : ℕ} (hN : 0 < N)
     (φ : PeriodicSobolev s) :
     ‖(∫ x in (0 : ℝ)..2 * π, PeriodicSobolev.eval (2 * π) φ x)
@@ -726,7 +812,10 @@ The book quotes the estimate from Canuto, Hussaini, Quarteroni and Zang (1988). 
 applies `QuarteroniSaccoSaleri.Chapter10.fourier_trapezoid_error_sobolev` to the coefficient
 sequence `PeriodicSobolev.ofSmooth` of $f$. This series sums to $f$
 (`PeriodicSobolev.eval_ofSmooth`), and its norm is at most $(2\pi)^{-1/2} \|f\|_s$
-(`PeriodicSobolev.norm_ofSmooth_le`). -/
+(`PeriodicSobolev.norm_ofSmooth_le`).
+
+**Generalization.** The estimate specifies a constant and assumes a complex $C^s$ function of
+period $2\pi$ and any positive $N$. -/
 theorem fourier_trapezoid_error {s : ℕ} (hs : 1 ≤ s) {f : ℝ → ℂ}
     (hf : Function.Periodic f (2 * π)) (hd : ContDiff ℝ s f) {N : ℕ} (hN : 0 < N) :
     ‖(∫ x in (0 : ℝ)..2 * π, f x) - ((2 * π / N : ℝ) : ℂ) * ∑ j ∈ range N, f (angleNode N j)‖
@@ -763,7 +852,10 @@ $k = 0, \dots, N - 1$, the **Lanczos smoothing factors** are
 $$\sigma_k = \frac{\sin(2(k - N/2)\pi/N)}{2(k - N/2)\pi/N}, \qquad \sigma_{N/2} = 1.$$
 
 The value $\sigma_{N/2} = 1$ removes the singularity. The factors act on the coefficients as
-$\hat f_k \mapsto \sigma_k \hat f_k$ and reduce the coefficients of high order. -/
+$\hat f_k \mapsto \sigma_k \hat f_k$ and reduce the coefficients of high order.
+
+**Reading.** Defines the central value by the continuous extension of the sinc function and
+allows arbitrary natural indices and odd or zero $N$. -/
 noncomputable def equation_10_56 (N k : ℕ) : ℝ :=
   if (k : ℤ) = (N / 2 : ℕ) then 1
   else Real.sin (2 * ((k : ℝ) - (N / 2 : ℕ)) * π / N) / (2 * ((k : ℝ) - (N / 2 : ℕ)) * π / N)
@@ -781,7 +873,10 @@ This is the identity $p(x) = p_e(x^2) + x p_o(x^2)$ of the book at the $N$-th ro
 The matrix $F_N$ is `Matrix.dft N`, and the proof specializes `Matrix.dft_radix_two` and
 `Matrix.dft_radix_two_add`. The transform $T$ of the book is $N^{-1}$ times this conjugate DFT
 applied to the modulated samples $(-1)^j f(x_j)$ (`DFT.coeff_eq_dft_mulVec`, whose modulation
-$\omega^{-mj}$ is $(-1)^j$ at $m = -N/2$). -/
+$\omega^{-mj}$ is $(-1)^j$ at $m = -N/2$).
+
+**Reading.** Gives one unnormalized and unshifted split for an arbitrary even transform length.
+The source describes the recursive algorithm for powers of two. -/
 theorem fft_radix_two {M : ℕ} (y : Fin (2 * M) → ℂ) (k : Fin M) :
     ((Matrix.dft (2 * M))ᴴ *ᵥ y) ⟨(k : ℕ), by omega⟩
         = ((Matrix.dft M)ᴴ *ᵥ fun m : Fin M => y ⟨2 * (m : ℕ), by omega⟩) k

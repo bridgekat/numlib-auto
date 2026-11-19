@@ -107,6 +107,12 @@ All 18 numbered results of Section 6 are formalized; Theorem 6.9 only in the cas
 
 ## Deviations from the source
 
+* **Section 6, relative topology** (generalization). The relative boundary and relative openness
+  are defined for arbitrary sets, and relative interior is contained in the original set, which
+  is contained in its closure. See `Rockafellar.relbd`, `Rockafellar.IsRelativelyOpen` and
+  `Rockafellar.relint_subset_subset_closure`.
+* **Section 6, relative and ordinary interior** (generalization). They agree for every set whose
+  affine hull is the whole space. See `Rockafellar.relint_eq_interior`.
 * **Theorem 6.2**, affine hull and dimension of the closure (generalization). The book assumes that
   $C$ is convex. The statements hold for every set. See `Rockafellar.theorem_6_2_aff_cl` and
   `Rockafellar.theorem_6_2_dim_cl`.
@@ -115,11 +121,19 @@ All 18 numbered results of Section 6 are formalized; Theorem 6.9 only in the cas
   `Rockafellar.theorem_6_6_cl`.
 * **Corollary 6.6.2**, closure (generalization). The book assumes that $C_1$ and $C_2$ are convex.
   The inclusion holds for all sets. See `Rockafellar.corollary_6_6_2_cl`.
+* **Section 6, direct sums** (generalization). Relative interior and closure commute with the
+  Cartesian product of arbitrary sets. See `Rockafellar.relint_prod` and `Rockafellar.closure_prod`.
+* **Section 6, closure of a cone** (generalization). The closure preserves the cone property
+  without convexity. See `Rockafellar.isCone_closure`.
 
 ## Not formalized
 
+* **Relative openness of the relative interior of an arbitrary set.**
+  `Rockafellar.isRelativelyOpen_relint` assumes convexity.
 * **Theorem 6.9 for more than two sets.** The book states the theorem for $m$ sets
   $C_1, \dots, C_m$. Only the case $m = 2$ is formalized, as `Rockafellar.theorem_6_9`.
+* **Relative openness for a finite intersection that is empty.**
+  `Rockafellar.isRelativelyOpen_iInter` assumes the intersection is nonempty.
 -/
 
 namespace Rockafellar
@@ -133,7 +147,10 @@ variable {n m p : ℕ} {C C₁ C₂ : Set (Rn n)}
 
 /-- **Section 6** of [rockafellar1970convex] (p. 44), definition of relative boundary. The
 **relative boundary** of $C \subseteq \mathbb{R}^n$ is the set $\operatorname{cl} C \setminus
-\operatorname{ri} C$. -/
+\operatorname{ri} C$.
+
+**Generalization.** The book introduces relative boundary for convex sets. Relative interior
+in the affine hull gives the same definition for every set. -/
 noncomputable def relbd (C : Set (Rn n)) : Set (Rn n) := closure C \ ri C
 
 /-- The relative boundary of $C \subseteq \mathbb{R}^n$ is the Mathlib `intrinsicFrontier ℝ C`. -/
@@ -145,7 +162,10 @@ $x \notin \operatorname{ri} C$. -/
 theorem mem_relbd_iff {x : Rn n} : x ∈ relbd C ↔ x ∈ closure C ∧ x ∉ ri C := Iff.rfl
 
 /-- **Section 6** of [rockafellar1970convex] (p. 44), definition of relatively open set. A set
-$C \subseteq \mathbb{R}^n$ is **relatively open** if $\operatorname{ri} C = C$. -/
+$C \subseteq \mathbb{R}^n$ is **relatively open** if $\operatorname{ri} C = C$.
+
+**Generalization.** The book introduces relative openness for convex sets. The same condition
+applies to every set, since relative interior is taken in the affine hull. -/
 def IsRelativelyOpen (C : Set (Rn n)) : Prop := ri C = C
 
 /-- A set $C$ is relatively open if and only if $\operatorname{ri} C = C$. This holds by definition.
@@ -153,15 +173,19 @@ def IsRelativelyOpen (C : Set (Rn n)) : Prop := ri C = C
 theorem isRelativelyOpen_iff : IsRelativelyOpen C ↔ ri C = C := Iff.rfl
 
 /-- **Section 6** of [rockafellar1970convex] (p. 44). For every $C \subseteq \mathbb{R}^n$,
-$\operatorname{ri} C \subseteq C \subseteq \operatorname{cl} C$. -/
+$\operatorname{ri} C \subseteq C \subseteq \operatorname{cl} C$.
+
+**Generalization.** The book states these inclusions for convex $C$. Interior in the affine
+hull is contained in the original set, and every set is contained in its closure. -/
 theorem relint_subset_subset_closure (C : Set (Rn n)) : ri C ⊆ C ∧ C ⊆ closure C :=
   ⟨intrinsicInterior_subset, subset_closure⟩
 
 /-- **Section 6** of [rockafellar1970convex] (p. 45). If $C \subseteq \mathbb{R}^n$ has
 $\operatorname{aff} C = \mathbb{R}^n$, then $\operatorname{ri} C = \operatorname{int} C$.
 
-The book applies this to an $n$-dimensional convex set, for which
-$\operatorname{aff} C = \mathbb{R}^n$. The statement needs no convexity. -/
+**Generalization.** The book gives the equality for an $n$-dimensional convex set. The same
+equality holds whenever $\operatorname{aff} C = \mathbb{R}^n$, because the relative topology of
+the full affine hull is the ambient topology. -/
 theorem relint_eq_interior (h : affineSpan ℝ C = ⊤) : ri C = interior C :=
   intrinsicInterior_eq_interior h
 
@@ -274,7 +298,10 @@ $\operatorname{ri}(\operatorname{ri} C) = \operatorname{ri} C$, that is, $\opera
 is relatively open.
 
 The book asserts this for arbitrary sets, before Theorem 6.3. The statement here is for convex
-sets, and the backbone proves it through Theorem 6.3. -/
+sets, and the backbone proves it through Theorem 6.3.
+
+**Reading.** The source states idempotence for arbitrary sets. The Lean theorem requires convexity.
+-/
 theorem isRelativelyOpen_relint (hC : Convex ℝ C) : IsRelativelyOpen (ri C) :=
   Convex.relint_relint hC
 
@@ -450,8 +477,10 @@ $C_2 \subseteq \mathbb{R}^m$, the relative interior of the direct sum is the dir
 relative interiors:
 $$\operatorname{ri}(C_1 \oplus C_2) = \operatorname{ri} C_1 \oplus \operatorname{ri} C_2.$$
 
-The book calls this formula elementary. The direct sum is the product `D₁ ×ˢ D₂`, and the
-statement needs no convexity. -/
+**Generalization.** The book states the formula for convex factors. Relative interior in the
+product of the affine hulls gives the formula for all sets.
+
+The direct sum is the product `D₁ ×ˢ D₂`. -/
 theorem relint_prod (D₁ : Set (Rn n)) (D₂ : Set (Rn m)) :
     ri (D₁ ×ˢ D₂) = ri D₁ ×ˢ ri D₂ :=
   intrinsicInterior_prod_eq D₁ D₂
@@ -459,7 +488,9 @@ theorem relint_prod (D₁ : Set (Rn n)) (D₂ : Set (Rn m)) :
 /-- **Section 6** of [rockafellar1970convex] (p. 49). For any sets $C_1 \subseteq \mathbb{R}^n$ and
 $C_2 \subseteq \mathbb{R}^m$,
 $$\operatorname{cl}(C_1 \oplus C_2) = \operatorname{cl} C_1 \oplus \operatorname{cl} C_2.$$
--/
+
+**Generalization.** The book uses convex factors. Closure in the product topology gives the
+same formula for arbitrary factors. -/
 theorem closure_prod (D₁ : Set (Rn n)) (D₂ : Set (Rn m)) :
     closure (D₁ ×ˢ D₂) = closure D₁ ×ˢ closure D₂ :=
   closure_prod_eq
@@ -591,7 +622,11 @@ non-empty convex sets in $\mathbb{R}^n$, and let $C_0 = \operatorname{conv}(C_1 
 $$\operatorname{ri} C_0 = \bigcup \{\lambda_1 \operatorname{ri} C_1 + \lambda_2
   \operatorname{ri} C_2 \mid \lambda_1 > 0,\ \lambda_2 > 0,\ \lambda_1 + \lambda_2 = 1\}.$$
 
-The book states the theorem for $m$ sets $C_1, \dots, C_m$. Only the case $m = 2$ is formalized. -/
+The book states the theorem for $m$ sets $C_1, \dots, C_m$. Only the case $m = 2$ is formalized.
+
+**Reading.** Formalizes the formula for two nonempty convex sets. The book uses an arbitrary finite
+nonempty list.
+-/
 theorem theorem_6_9 (h₁ : Convex ℝ C₁) (hne₁ : C₁.Nonempty) (h₂ : Convex ℝ C₂)
     (hne₂ : C₂.Nonempty) :
     ri (convexHull ℝ (C₁ ∪ C₂)) =
@@ -621,7 +656,12 @@ $C_i \subseteq \mathbb{R}^n$ is a relatively open convex set for each $i$ in a f
 $I$ and $\bigcap_{i \in I} C_i \neq \emptyset$, then $\bigcap_{i \in I} C_i$ is relatively open.
 
 For relatively open sets, the condition of Theorem 6.5 that the relative interiors meet is the
-non-emptiness of the intersection. -/
+non-emptiness of the intersection. The book states preservation for all finite intersections.
+The empty-intersection case is relatively open by the definition of relative interior.
+
+**Reading.** Only nonempty finite intersections are covered. The empty intersection value is
+separately relatively open by definition.
+-/
 theorem isRelativelyOpen_iInter {ι : Type*} [Finite ι] {C : ι → Set (Rn n)}
     (hC : ∀ i, Convex ℝ (C i)) (hopen : ∀ i, IsRelativelyOpen (C i))
     (h : (⋂ i, C i).Nonempty) : IsRelativelyOpen (⋂ i, C i) := by
@@ -652,7 +692,9 @@ theorem isCone_relint (hK : IsCone C) (hC : Convex ℝ C) : IsCone (ri C) := by
 this statement gives the cone property: if $C \subseteq \mathbb{R}^n$ is a cone, then
 $\operatorname{cl} C$ is a cone.
 
-The statement needs no convexity. -/
+**Generalization.** The book gives the closure property for convex cones. The equality
+$\lambda C = C$ for $\lambda > 0$ passes to the closure by continuity of scaling and its inverse,
+so convexity is unnecessary for the cone property. -/
 theorem isCone_closure (hK : IsCone C) : IsCone (closure C) := by
   rw [isCone_iff_smul_set_eq]
   exact smul_closure_eq_of_isCone hK

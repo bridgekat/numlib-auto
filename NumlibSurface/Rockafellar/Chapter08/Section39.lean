@@ -144,6 +144,12 @@ $(BA)^* = A^* B^*$. All nine numbered results are formalized: Theorems 39.1–39
 
 ## Deviations from the source
 
+* **Image of a function** (reading). The indicator-sum definition agrees with the
+  book's fiber infimum for functions that never take $-\infty$. An infeasible input
+  with value $-\infty$ can contribute to the Lean infimum. See `Rockafellar.imageFn`.
+* **Oriented sums and products** (generalization). The book considers operands of
+  like orientation. The Lean operations are total and use the orientation of the
+  first summand or of the process applied first.
 * **Theorem 39.3**, last assertion (generalization). The book assumes that $A$ is closed for both
   halves. The half $\langle Au, x^* \rangle = \langle u, A^* x^* \rangle$ for
   $u \in \operatorname{ri}(\operatorname{dom} A)$ holds without closedness. See
@@ -151,13 +157,23 @@ $(BA)^* = A^* B^*$. All nine numbered results are formalized: Theorems 39.1–39
 * **Theorem 39.7** (generalization). The book assumes that $f$ is proper convex. The statements of
   the first assertion assume only that $f$ is proper. See `Rockafellar.theorem_39_7` and
   `Rockafellar.theorem_39_7_attained`.
+* **Theorem 39.7**, attainment (correction). The book states primal attainment for
+  every target. The zero linear map with $f=0$ gives an empty fiber at any nonzero
+  target, even though the relative-interior condition holds. Lean restricts primal
+  attainment to targets with image value below $+\infty$. Its dual attainment clause
+  gives equality in the indicator-sum formula, which allows an infeasible witness
+  when the value is $+\infty$. See `Rockafellar.theorem_39_7_attained_image`.
+* **Theorems 39.5, 39.7, and 39.8** (reading). The formalized statements assume
+  pointwise exact-sum hypotheses in place of relative-interior overlap. The closure
+  and adjoint-closure clauses in 39.5 and 39.8 treat the supremum orientation.
 
 ## Not formalized
 
-* **Theorems 39.5, 39.7 and 39.8 under the relative-interior conditions of the book.** The
-  formalized versions assume an exact-sum condition, which is strictly stronger (see Implementation
-  notes).
 * **Theorem 39.2, last assertion, for an infimum-oriented process.**
+* **Theorem 39.3, the reverse closure identity and relative-interior equalities**, for
+  an infimum-oriented process.
+* **Theorems 39.5 and 39.8, the closure and adjoint-closure clauses**, for
+  infimum-oriented processes.
 -/
 
 namespace Rockafellar
@@ -253,14 +269,18 @@ $$(Af)(x) = \inf_u \{f(u) + \delta(x \mid Au)\}.$$
 
 This is `ConvexAnalysis.imageBifun` for the indicator bifunction of $A$. If $f$ never takes the
 value $-\infty$, it is the formula $(Af)(x) = \inf \{f(u) \mid x \in Au\}$ of the book
-(`Rockafellar.imageFn_apply`). -/
+(`Rockafellar.imageFn_apply`).
+
+**Reading.** If $f \equiv -\infty$ and $A$ is the zero linear map, the indicator sum
+gives $-\infty$ at a nonzero target, where the book's fiber is empty and its infimum
+is $+\infty$. -/
 noncomputable def imageFn (A : ConvexProcess (Rn m) (Rn n)) (f : Rn m → EReal) : Rn n → EReal :=
   imageBifun A.indicatorBifun f
 
 /-- Let $A$ be a convex process and let $f$ be a function that never takes the value $-\infty$. Then
 $$(Af)(x) = \inf \{f(u) \mid u \in A^{-1} x\}.$$
 
-The hypothesis on $f$ makes the term $f(u) + \delta(x \mid Au)$ equal to $+\infty$ for
+**Reading.** The hypothesis on $f$ makes the term $f(u) + \delta(x \mid Au)$ equal to $+\infty$ for
 $u \notin A^{-1} x$. It holds for the proper function $f$ of Theorem 39.7. -/
 theorem imageFn_apply (A : ConvexProcess (Rn m) (Rn n)) {f : Rn m → EReal}
     (hf : ∀ u, f u ≠ ⊥) (x : Rn n) :
@@ -532,7 +552,10 @@ orientation of $A$. -/
 orientation of $A_1$.
 
 The book considers only sums of processes with the same orientation. So every theorem about a
-sum below has the hypothesis that the two orientations are equal. -/
+sum below has the hypothesis that the two orientations are equal.
+
+**Reading.** The total instance also sums mixed orientations and takes the first tag.
+-/
 instance : Add (OrientedProcess m n) where
   add A₁ A₂ := ⟨A₁.process + A₂.process, A₁.orientation⟩
 
@@ -540,7 +563,10 @@ instance : Add (OrientedProcess m n) where
 @[simp] theorem add_process (A₁ A₂ : OrientedProcess m n) :
     (A₁ + A₂).process = A₁.process + A₂.process := rfl
 
-/-- The orientation of $A_1 + A_2$ is the orientation of $A_1$. -/
+/-- The orientation of $A_1 + A_2$ is the orientation of $A_1$.
+
+**Reading.** When orientations differ the Lean sum uses the first tag.
+-/
 @[simp] theorem add_orientation (A₁ A₂ : OrientedProcess m n) :
     (A₁ + A₂).orientation = A₁.orientation := rfl
 
@@ -562,7 +588,11 @@ from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $B$ from $\mathbb{R}^n$ to $\mathbb{R}
 $BA$ is the convex process $(BA) u = \bigcup \{Bx \mid x \in Au\}$, with the orientation of $A$.
 
 The book considers only products of processes with the same orientation. Theorem 39.8 has the
-hypothesis that the orientations of $A$ and $B$ are equal. -/
+hypothesis that the orientations of $A$ and $B$ are equal.
+
+**Reading.** The total operation also composes mixed orientations and keeps the tag of the process
+applied first.
+-/
 def comp (B : OrientedProcess n p) (A : OrientedProcess m n) : OrientedProcess m p :=
   ⟨B.process.comp A.process, A.orientation⟩
 
@@ -570,7 +600,10 @@ def comp (B : OrientedProcess n p) (A : OrientedProcess m n) : OrientedProcess m
 @[simp] theorem comp_process (B : OrientedProcess n p) (A : OrientedProcess m n) :
     (B.comp A).process = B.process.comp A.process := rfl
 
-/-- The orientation of $BA$ is the orientation of $A$. -/
+/-- The orientation of $BA$ is the orientation of $A$.
+
+**Reading.** For mixed orientations the tag is that of the process applied first.
+-/
 @[simp] theorem comp_orientation (B : OrientedProcess n p) (A : OrientedProcess m n) :
     (B.comp A).orientation = A.orientation := rfl
 
@@ -723,7 +756,10 @@ $$(F^* x^*)(u^*) = -\delta(u^* \mid A^* x^*).$$
 The indicator has a minus sign because $A^*$ has the infimum orientation, and an
 infimum-oriented set $C$ is identified with $-\delta(\cdot \mid C)$. The adjoint bifunction is
 `ConvexAnalysis.convexAdjointBifun`. The same assertion for an infimum-oriented process is not
-formalized. -/
+formalized.
+
+**Reading.** The indicator-bifunction identity treats supremum orientation only.
+-/
 theorem theorem_39_2_indicatorBifun (A : ConvexProcess (Rn m) (Rn n)) (y : Rn n) (v : Rn m) :
     convexAdjointBifun (pairing m) (pairing n) A.indicatorBifun y v
       = -((OrientedProcess.mk A Orientation.sup).adjoint.process.indicatorBifun y v) :=
@@ -879,7 +915,10 @@ where $\operatorname{cl}_{x^*}$ is the convex closure in the variable $x^*$.
 
 Closedness of $A$ is needed here: this is the second equation of Theorem 33.2. The closure in
 $x^*$ is `ConvexAnalysis.partialCl₂` of the function
-$(u, x^*) \mapsto \langle u, A^* x^* \rangle$. -/
+$(u, x^*) \mapsto \langle u, A^* x^* \rangle$.
+
+**Reading.** Dual-variable reverse closure is stated for the supremum orientation only.
+-/
 theorem theorem_39_3_cl_adjoint (A : ConvexProcess (Rn m) (Rn n))
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) :
     partialCl₂ (fun q : Rn m × Rn n =>
@@ -914,7 +953,10 @@ theorem theorem_39_3_relint_dom (A : ConvexProcess (Rn m) (Rn n)) {u : Rn m}
 /-- **Theorem 39.3** of [rockafellar1970convex], last assertion, dual half. Let $A$ be a closed
 supremum-oriented convex process from $\mathbb{R}^m$ to $\mathbb{R}^n$ and let $x^* \in
 \operatorname{ri}(\operatorname{dom} A^*)$. Then $\langle Au, x^* \rangle = \langle u, A^* x^*
-\rangle$ for every $u \in \mathbb{R}^m$. -/
+\rangle$ for every $u \in \mathbb{R}^m$.
+
+**Reading.** The dual-relative-interior identity is stated for the supremum orientation only.
+-/
 theorem theorem_39_3_relint_dom_adjoint (A : ConvexProcess (Rn m) (Rn n))
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (u : Rn m) {y : Rn n}
     (hy : y ∈ ri (OrientedProcess.mk A Orientation.sup).adjoint.process.dom) :
@@ -976,7 +1018,10 @@ The book assumes $\operatorname{ri}(\operatorname{dom} A_1) \cap
 \operatorname{ri}(\operatorname{dom} A_2) \neq \emptyset$. The exact-sum hypothesis
 (`ConvexAnalysis.IsExactSum`) is strictly stronger, and this form of the theorem is not
 formalized; see the module doc comment. The equal orientations are essential, and they are the
-reason that the orientation is data. The equation is an equation of oriented processes. -/
+reason that the orientation is data. The equation is an equation of oriented processes.
+
+**Reading.** Slice-wise exactness replaces relative-interior overlap in the adjoint-of-sum formula.
+-/
 theorem theorem_39_5 (A₁ A₂ : OrientedProcess m n) (hor : A₁.orientation = A₂.orientation)
     (hex : ∀ y : Rn n, IsExactSum (pairing m)
       (fun u => -(supportFn (pairing n) (A₁.process.eval u) y))
@@ -1000,7 +1045,10 @@ and $x^* \mapsto -\delta^*(u \mid A_2^* x^*)$ have an exact sum. Then $A_1 + A_2
 The book assumes that $\operatorname{ri}(\operatorname{dom} A_1^*)$ and
 $\operatorname{ri}(\operatorname{dom} A_2^*)$ meet. The exact-sum hypothesis is strictly
 stronger. The proof does not use Corollary 38.2.1: $A_1 + A_2$ is the infimum-oriented adjoint
-of $A_1^* + A_2^*$. -/
+of $A_1^* + A_2^*$.
+
+**Reading.** Sum closure uses exactness and treats the supremum orientation.
+-/
 theorem theorem_39_5_isClosed {A₁ A₂ : ConvexProcess (Rn m) (Rn n)}
     (hA₁ : IsClosed (A₁.graph : Set (Rn m × Rn n)))
     (hA₂ : IsClosed (A₂.graph : Set (Rn m × Rn n)))
@@ -1017,6 +1065,8 @@ theorem theorem_39_5_isClosed {A₁ A₂ : ConvexProcess (Rn m) (Rn n)}
 hypotheses of `Rockafellar.theorem_39_5_isClosed`, the graph of $(A_1 + A_2)^*$ is the closure
 of the graph of $A_1^* + A_2^*$:
 $$(A_1 + A_2)^* = \operatorname{cl}(A_1^* + A_2^*).$$
+
+**Reading.** Adjoint closure uses exactness and treats the supremum orientation.
 -/
 theorem theorem_39_5_closure {A₁ A₂ : ConvexProcess (Rn m) (Rn n)}
     (hA₁ : IsClosed (A₁.graph : Set (Rn m × Rn n)))
@@ -1100,7 +1150,11 @@ $u^* \mapsto -\langle A^{*-1} u^*, x \rangle$ have an exact sum, where $A^{*-1}$
 oriented. Then $Af$ is closed.
 
 The book assumes that $\operatorname{ri}(\operatorname{dom} f^*)$ meets
-$\operatorname{ri}(\operatorname{dom} A^{*-1})$. The exact-sum hypothesis is strictly stronger. -/
+$\operatorname{ri}(\operatorname{dom} A^{*-1})$. The exact-sum hypothesis is strictly stronger.
+
+**Reading.** Closedness of the image uses slice-wise exactness in place of relative-interior
+overlap.
+-/
 theorem theorem_39_7_closedFn {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → EReal}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hf : ClosedProperConvexFn f)
     (hex : ∀ x : Rn n, IsExactSum (pairing m) (convexConj (pairing m) f)
@@ -1116,7 +1170,12 @@ theorem theorem_39_7_closedFn {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → ER
 process from $\mathbb{R}^m$ to $\mathbb{R}^n$, let $f$ be a closed proper convex function on
 $\mathbb{R}^m$, and let $x \in \mathbb{R}^n$ with $(Af)(x) < +\infty$. Suppose that $f^*$ and
 $u^* \mapsto -\langle A^{*-1} u^*, x \rangle$ have an exact sum. Then there is $u$ with
-$x \in Au$ and $f(u) = (Af)(x)$. -/
+$x \in Au$ and $f(u) = (Af)(x)$.
+
+**Correction.** The book states attainment for every $x$. For the zero linear map and
+$f=0$, the source relative-interior condition holds since both dual domains are $\{0\}$,
+and a nonzero $x$ has an empty fiber. The Lean hypothesis $(Af)(x)\ne+\infty$ excludes
+that case. -/
 theorem theorem_39_7_attained_image {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → EReal}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hf : ClosedProperConvexFn f) {x : Rn n}
     (hex : IsExactSum (pairing m) (convexConj (pairing m) f)
@@ -1132,7 +1191,10 @@ theorem theorem_39_7_attained_image {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m 
 /-- **Theorem 39.7** of [rockafellar1970convex], the conjugate of $Af$. Under the hypotheses of
 `Rockafellar.theorem_39_7_closedFn`,
 $$(Af)^* = \operatorname{cl}(A^{*-1} f^*),$$
-where $\operatorname{cl}$ is the closure `ConvexAnalysis.convexCl`. -/
+where $\operatorname{cl}$ is the closure `ConvexAnalysis.convexCl`.
+
+**Reading.** The conjugate closure formula uses a family of exact sums.
+-/
 theorem theorem_39_7_closure {A : ConvexProcess (Rn m) (Rn n)} {f : Rn m → EReal}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hf : ClosedProperConvexFn f)
     (hex : ∀ x : Rn n, IsExactSum (pairing m) (convexConj (pairing m) f)
@@ -1190,7 +1252,10 @@ The book assumes $\operatorname{ri}(\operatorname{range} A) \cap
 (`ConvexAnalysis.IsExactSum`) is strictly stronger, and this form of the theorem is not
 formalized; see the module doc comment. As in Theorem 39.5, the equal orientations can be
 expressed only because the orientation is data. The proof does not use Theorem 38.5; it obtains
-a linear function between the two functions from Fenchel's duality theorem. -/
+a linear function between the two functions from Fenchel's duality theorem.
+
+**Reading.** The adjoint composition formula uses exact sums instead of relative-interior overlap.
+-/
 theorem theorem_39_8 (A : OrientedProcess m n) (B : OrientedProcess n p)
     (hor : B.orientation = A.orientation)
     (hex : ∀ (w : Rn p) (v : Rn m), IsExactSum (pairing n)
@@ -1216,7 +1281,10 @@ $$x^* \mapsto \inf \{\langle z, w^* \rangle \mid w^* \in B^{*-1} x^*\}, \qquad x
 have an exact sum. Then $BA$ is closed.
 
 The book assumes that $\operatorname{ri}(\operatorname{range} B^*)$ meets
-$\operatorname{ri}(\operatorname{dom} A^*)$. The exact-sum hypothesis is strictly stronger. -/
+$\operatorname{ri}(\operatorname{dom} A^*)$. The exact-sum hypothesis is strictly stronger.
+
+**Reading.** Composition closure uses exactness and treats the supremum orientation.
+-/
 theorem theorem_39_8_isClosed {A : ConvexProcess (Rn m) (Rn n)} {B : ConvexProcess (Rn n) (Rn p)}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hB : IsClosed (B.graph : Set (Rn n × Rn p)))
     (hex : ∀ (u : Rn m) (z : Rn p), IsExactSum (pairing n)
@@ -1232,6 +1300,8 @@ theorem theorem_39_8_isClosed {A : ConvexProcess (Rn m) (Rn n)} {B : ConvexProce
 the hypotheses of `Rockafellar.theorem_39_8_isClosed`, the graph of $(BA)^*$ is the closure of
 the graph of $A^* B^*$:
 $$(BA)^* = \operatorname{cl}(A^* B^*).$$
+
+**Reading.** Adjoint closure uses exactness and treats the supremum orientation.
 -/
 theorem theorem_39_8_closure {A : ConvexProcess (Rn m) (Rn n)} {B : ConvexProcess (Rn n) (Rn p)}
     (hA : IsClosed (A.graph : Set (Rn m × Rn n))) (hB : IsClosed (B.graph : Set (Rn n × Rn p)))

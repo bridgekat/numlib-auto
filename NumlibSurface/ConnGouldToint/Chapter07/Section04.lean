@@ -48,6 +48,13 @@ scaled space of `Numlib.Optimization.Subproblem.Matrix` and the ball characteriz
 
 ## Deviations from the source
 
+* **Equations (7.4.1)–(7.4.4)** (reading). The norm and feasible set use the total real square
+  root, while their minimizer equivalences impose the positive-definite metric or invertible
+  congruence. The intrinsic equivalent problem chooses the positive square root for the
+  coordinate change. See `ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_scaled` and
+  `ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_congruence`.
+* **Theorem 7.4.1** (generalization). The multiplier statement also gives uniqueness under
+  positive definiteness of the shifted Hessian. See `ConnGouldToint.Chapter07.theorem_7_4_1`.
 * **Theorem 7.4.1** (correction). The statement requires $\Delta > 0$, as in Section 7.2. At
   $\Delta = 0$ the only feasible point is $0$, and the shifted system has no solution when
   $g \neq 0$. See `ConnGouldToint.Chapter07.theorem_7_4_1`.
@@ -68,7 +75,11 @@ the **$M$-norm** of $s \in \mathbb{R}^n$ is
 $$\|s\|_M = \sqrt{s^T M s}.$$
 
 The square root is `Real.sqrt`, so the value is $0$ when $s^T M s < 0$. The results of this
-module assume that $M$ is symmetric positive definite. -/
+module assume that $M$ is symmetric positive definite.
+
+**Reading.** Square-root formula defined for unrestricted matrices and zero for a negative quadratic
+form.
+-/
 noncomputable def mNorm (M : Matrix ι ι ℝ) (s : EuclideanSpace ℝ ι) : ℝ :=
   √⟪s, toEuclideanLin M s⟫
 
@@ -82,10 +93,17 @@ noncomputable def matrixQuadModel (g : EuclideanSpace ℝ ι) (H : Matrix ι ι 
 
 /-- **Equation (7.4.1)** of [conn2000trust], feasible set. For $M \in \mathbb{R}^{n \times n}$ and
 $\Delta \in \mathbb{R}$, the **weighted trust region** is the ellipsoid
-$\{s \in \mathbb{R}^n : \|s\|_M \le \Delta\}$. -/
+$\{s \in \mathbb{R}^n : \|s\|_M \le \Delta\}$.
+
+**Reading.** The set uses the total real square-root expression for every real matrix. -/
 def weightedTrustRegion (M : Matrix ι ι ℝ) (Δ : ℝ) : Set (EuclideanSpace ℝ ι) :=
   {s | mNorm M s ≤ Δ}
 
+/-- **(7.4.2) derivation** of [conn2000trust].
+
+**Reading.** The metric identity uses the intrinsic positive square root for the change of
+coordinates.
+-/
 private theorem norm_toScaled_eq_mNorm (hM : M.PosDef) (s : EuclideanSpace ℝ ι) :
     ‖toScaled hM s‖ = mNorm M s := by
   rw [norm_toScaled, mNorm, real_inner_comm]
@@ -102,7 +120,9 @@ on the closed ball of radius $\Delta$ of this inner product space.
 The inner product space is `Subproblem.ScaledSpace hM`, the identity map into it is
 `Subproblem.toScaled hM`, and the model on the right is `Subproblem.quadModel
 (Subproblem.scaledGrad hM g) (Subproblem.scaledOp H hM)`. The two models agree pointwise, so no
-symmetry of $H$ is needed. -/
+symmetry of $H$ is needed.
+
+**Reading.** The intrinsic coordinates are chosen by the positive-definite square root. -/
 theorem isMinOn_weightedTrustRegion_iff_scaled (hM : M.PosDef) (s : EuclideanSpace ℝ ι) :
     IsMinOn (matrixQuadModel g H) (weightedTrustRegion M Δ) s ↔
       IsMinOn (quadModel (scaledGrad hM g) (scaledOp H hM)) (closedBall 0 Δ)
@@ -170,7 +190,9 @@ $\{s : \|s\|_M \le \Delta\}$.
 feasible point is $s = 0$, and the system $(H + \mu M) 0 = -g$ has no solution when $g \neq 0$.
 
 The proof transports the ball characterization `Subproblem.isMinOn_closedBall_iff` through
-`ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_scaled`. -/
+`ConnGouldToint.Chapter07.isMinOn_weightedTrustRegion_iff_scaled`.
+
+**Generalization.** The shifted positive-definiteness condition also implies uniqueness. -/
 theorem theorem_7_4_1 (hM : M.PosDef) (hH : H.IsHermitian) (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ ι} (hs : s ∈ weightedTrustRegion M Δ)
     (hmin : IsMinOn (matrixQuadModel g H) (weightedTrustRegion M Δ) s) :

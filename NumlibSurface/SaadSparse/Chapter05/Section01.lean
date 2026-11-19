@@ -83,6 +83,25 @@ identification of (5.5)–(5.6) with the Petrov–Galerkin condition `IsPetrovGa
 
 ## Deviations from the source
 
+* **Generalization.** The Petrov–Galerkin predicate allows trial and test subspaces of unequal
+  dimension. See `SaadSparse.Chapter05.IsProjectionApprox`,
+  `SaadSparse.Chapter05.isProjectionApprox_iff`.
+* **Reading.** The projection prototype is a single update with a totalized inverse. See
+  `SaadSparse.Chapter05.projStep`.
+* **Reading.** Proposition 5.1 is stated as basis-free existence and uniqueness. See
+  `SaadSparse.Chapter05.proposition_5_1_i`, `SaadSparse.Chapter05.proposition_5_1_ii`.
+* **Generalization.** The error functional is defined for all matrices, with the norm interpretation
+  in the SPD case. See `SaadSparse.Chapter05.E_A`.
+* **Reading.** Proposition 5.5 is represented by its algebraic characterization and a separate norm
+  bound. See `SaadSparse.Chapter05.proposition_5_5_char`.
+* **Reading.** The reduced operator and projector reformulations make the oblique projector’s
+  hypotheses explicit. See `SaadSparse.Chapter05.A_m`,
+  `SaadSparse.Chapter05.isProjectionApprox_zero_iff_Q`,
+  `SaadSparse.Chapter05.isProjectionApprox_zero_iff_A_m`.
+* **Reading.** The general statement of Theorem 5.7 gives the residual identity from its proof. See
+  `SaadSparse.Chapter05.theorem_5_7`.
+* **Reading.** The matrix forms expose the automatic trivial-intersection hypothesis when $L=K$. See
+  `SaadSparse.Chapter05.theorem_5_7_matrix_eq`, `SaadSparse.Chapter05.theorem_5_7_matrix`.
 * **§5.1.2** (reading). The book states that $W^TAV$ is nonsingular if and only if no vector of $AK$
   is orthogonal to $L$; read literally, this fails for $A = 0$. The statement here is that $u \in K$
   and $u \neq 0$ imply $Au \notin L^\perp$. See `SaadSparse.Chapter05.isUnit_transpose_mul_mul_iff`.
@@ -109,6 +128,9 @@ $b, x_0 \in \mathbb{R}^n$, and let $K$, $L$ be subspaces of $\mathbb{R}^n$. A ve
 is a **projection approximation** onto $K$ orthogonally to $L$, starting from $x_0$, if
 $$\tilde x - x_0 \in K \qquad \text{and} \qquad (w, b - A\tilde x) = 0 \text{ for every } w \in
   L.$$
+
+**Generalization.** The defining conditions make sense for unequal-dimensional subspaces, which Lean
+allows. The setup of §5.1 starts with equal dimensions.
 -/
 def IsProjectionApprox (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n)
     (K L : Submodule ℝ (E n)) (x : E n) : Prop :=
@@ -117,7 +139,11 @@ def IsProjectionApprox (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : E n)
 variable {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ x : E n} {K L : Submodule ℝ (E n)}
 
 /-- Equations (5.5)–(5.6) of [saad2003iterative] are the Petrov–Galerkin condition
-`IsPetrovGalerkin` of the backbone for the operator `Matrix.toEuclideanLin A`. -/
+`IsPetrovGalerkin` of the backbone for the operator `Matrix.toEuclideanLin A`.
+
+**Generalization.** The defining conditions make sense for unequal-dimensional subspaces, which Lean
+allows. The setup of §5.1 starts with equal dimensions.
+-/
 theorem isProjectionApprox_iff :
     IsProjectionApprox A b x₀ K L x ↔ IsPetrovGalerkin (toEuclideanLin A) b x₀ K L x :=
   ⟨fun h => ⟨h.1, (Submodule.mem_orthogonal _ _).2 h.2⟩,
@@ -127,7 +153,12 @@ theorem isProjectionApprox_iff :
 and $V, W \in \mathbb{R}^{n \times m}$, the **projection step** from $x$ is
 $$x \mapsto x + V (W^TAV)^{-1} W^T (b - Ax).$$
 
-If $W^TAV$ is singular, its inverse is $0$ in Lean, and the step returns $x$. -/
+If $W^TAV$ is singular, its inverse is $0$ in Lean, and the step returns $x$.
+
+**Reading.** Lean defines one update with the supplied matrices and uses the zero inverse at a
+singular projected matrix, returning $x$. The source requires a nonsingular projected matrix and
+iteratively selects bases until convergence.
+-/
 noncomputable def projStep (A : Matrix (Fin n) (Fin n) ℝ) (b : E n)
     (V W : Matrix (Fin n) (Fin m) ℝ) (x : E n) : E n :=
   x + ((V * (Wᵀ * A * V)⁻¹ * Wᵀ) ⬝ (b - (A ⬝ x)))
@@ -258,7 +289,11 @@ $x_0$ there is exactly one projection approximation onto $K$ orthogonally to $K$
 The book states that $W^TAV$ is nonsingular for any bases $V$ and $W$ of $K$ and $L$. By
 `SaadSparse.Chapter05.isProjectionApprox_add_iff` this is equivalent to the unique existence of
 the approximation, which is the form stated here. Positive definiteness is
-`Matrix.IsPositiveReal`. -/
+`Matrix.IsPositiveReal`.
+
+**Reading.** The source asserts nonsingularity of the reduced matrix for any bases. Lean states its
+basis-free consequence, existence and uniqueness of the projection approximation.
+-/
 theorem proposition_5_1_i (hA : A.IsPositiveReal) (K : Submodule ℝ (E n)) (b x₀ : E n) :
     ∃! x, IsProjectionApprox A b x₀ K K x := by
   have hc : (toEuclideanLin A).IsCoercive := (Matrix.isPositiveReal_iff_isCoercive A).mp hA
@@ -275,7 +310,11 @@ theorem injective_toEuclideanLin (hA : IsUnit A) : Function.Injective (toEuclide
 nonsingular and let $L = AK$. Then for every $b$ and $x_0$ there is exactly one projection
 approximation onto $K$ orthogonally to $AK$.
 
-As in part (i), the unique existence of the approximation is the nonsingularity of $W^TAV$. -/
+As in part (i), the unique existence of the approximation is the nonsingularity of $W^TAV$.
+
+**Reading.** The source asserts nonsingularity of the reduced matrix for any bases. Lean states its
+basis-free consequence, existence and uniqueness of the projection approximation.
+-/
 theorem proposition_5_1_ii (hA : IsUnit A) (K : Submodule ℝ (E n)) (b x₀ : E n) :
     ∃! x, IsProjectionApprox A b x₀ K (K.map (toEuclideanLin A)) x := by
   have hinj : Set.InjOn (toEuclideanLin A) K :=
@@ -306,7 +345,11 @@ $A \in \mathbb{R}^{n \times n}$ and the exact solution $x^*$, the **error functi
 $$E(x) = \big( A(x^* - x), x^* - x \big)^{1/2},$$
 the quantity that Proposition 5.2 minimizes.
 
-The square root is `Real.sqrt`, which is $0$ at a negative argument. -/
+The square root is `Real.sqrt`, which is $0$ at a negative argument.
+
+**Generalization.** Lean defines the square-root expression for all $A$. Its intended interpretation
+as an error norm requires symmetric positive definiteness as in Proposition 5.2.
+-/
 noncomputable def E_A (A : Matrix (Fin n) (Fin n) ℝ) (xstar x : E n) : ℝ :=
   Real.sqrt (inner ℝ (A ⬝ (xstar - x)) (xstar - x))
 
@@ -369,7 +412,12 @@ $\tilde x$ is a projection approximation onto $K$ orthogonally to $K$, then
 $\tilde x - x_0 \in K$ and the error $x^* - \tilde x$ is $A$-orthogonal to $K$:
 $$\big( A(x^* - \tilde x), w \big) = 0 \qquad \text{for every } w \in K.$$
 
-The $A$-inner product is `Matrix.energyInner`. -/
+The $A$-inner product is `Matrix.energyInner`.
+
+**Reading.** Lean gives the algebraic orthogonality characterization used by the source. It holds
+without symmetric positive definiteness. The printed proposition gives the projector identity in the
+inner product induced by an SPD matrix.
+-/
 theorem proposition_5_5_char {xstar : E n} (hstar : (A ⬝ xstar) = b)
     (hx : IsProjectionApprox A b x₀ K K x) :
     x - x₀ ∈ K ∧ ∀ w ∈ K, A.energyInner (xstar - x) w = 0 := by
@@ -393,7 +441,11 @@ $$A_m = Q_K^L A P_K,$$
 where $P_K$ is the orthogonal projector onto $K$ and $Q_K^L$ is the projector onto $K$
 orthogonally to $L$.
 
-$Q_K^L$ is `SaadSparse.obliqueProjection K L` and $P_K$ is `Submodule.starProjection` of $K$. -/
+$Q_K^L$ is `SaadSparse.obliqueProjection K L` and $P_K$ is `Submodule.starProjection` of $K$.
+
+**Reading.** Lean requires $\dim K=\dim L$ and $K\cap L^\perp=\{0\}$ so the oblique projector
+$Q_K^L$ in these formulations exists. The section relies implicitly on the projector from §1.12.
+-/
 noncomputable def A_m (A : Matrix (Fin n) (Fin n) ℝ) (K L : Submodule ℝ (E n))
     (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) : (E n) →ₗ[ℝ] (E n) :=
   (SaadSparse.obliqueProjection K L hd h).comp
@@ -401,7 +453,11 @@ noncomputable def A_m (A : Matrix (Fin n) (Fin n) ℝ) (K L : Submodule ℝ (E n
 
 /-- §5.2.3 of [saad2003iterative]: let $\dim K = \dim L$ and $K \cap L^\perp = \{0\}$. With
 $x_0 = 0$, a vector $x$ is a projection approximation onto $K$ orthogonally to $L$ if and only
-if $x \in K$ and $Q_K^L(b - Ax) = 0$. -/
+if $x \in K$ and $Q_K^L(b - Ax) = 0$.
+
+**Reading.** Lean requires $\dim K=\dim L$ and $K\cap L^\perp=\{0\}$ so the oblique projector
+$Q_K^L$ in these formulations exists. The section relies implicitly on the projector from §1.12.
+-/
 theorem isProjectionApprox_zero_iff_Q (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) :
     IsProjectionApprox A b 0 K L x ↔
       x ∈ K ∧ SaadSparse.obliqueProjection K L hd h (b - (A ⬝ x)) = 0 := by
@@ -412,7 +468,11 @@ theorem isProjectionApprox_zero_iff_Q (hd : finrank ℝ K = finrank ℝ L) (h : 
 
 /-- §5.2.3 of [saad2003iterative]: let $\dim K = \dim L$ and $K \cap L^\perp = \{0\}$. With
 $x_0 = 0$, a vector $x$ is a projection approximation onto $K$ orthogonally to $L$ if and only
-if $x \in K$ and $A_m x = Q_K^L b$. -/
+if $x \in K$ and $A_m x = Q_K^L b$.
+
+**Reading.** Lean requires $\dim K=\dim L$ and $K\cap L^\perp=\{0\}$ so the oblique projector
+$Q_K^L$ in these formulations exists. The section relies implicitly on the projector from §1.12.
+-/
 theorem isProjectionApprox_zero_iff_A_m (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) :
     IsProjectionApprox A b 0 K L x ↔
       x ∈ K ∧ A_m A K L hd h x = SaadSparse.obliqueProjection K L hd h b := by
@@ -440,7 +500,7 @@ theorem proposition_5_6 (hK : K ∈ Module.End.invtSubmodule (toEuclideanLin A))
 
 /-! ### Theorem 5.7 -/
 
-/-- §5.2.4 of [saad2003iterative]: for every $x \in K$, the distance from $x^*$ to $x$ is at least
+/-- §5.2.3 of [saad2003iterative]: for every $x \in K$, the distance from $x^*$ to $x$ is at least
 the distance from $x^*$ to $K$: $\|x^* - P_K x^*\|_2 \le \|x^* - x\|_2$. -/
 theorem norm_sub_ge_of_mem {xstar : E n} (hx : x ∈ K) :
     ‖xstar - K.starProjection xstar‖ ≤ ‖xstar - x‖ :=
@@ -453,7 +513,12 @@ $$b - A_m x^* = Q_K^L A (I - P_K) x^*.$$
 
 With $x_0 = 0$, the bound $\|b - A_m x^*\|_2 \le \|Q_K^L A (I - P_K)\|_2 \|(I - P_K) x^*\|_2$ of
 (5.11) follows from this identity by the definition of the operator norm. The bound is stated in
-the matrix form for $L = K$, `SaadSparse.Chapter05.theorem_5_7_matrix`. -/
+the matrix form for $L = K$, `SaadSparse.Chapter05.theorem_5_7_matrix`.
+
+**Reading.** Lean gives the residual identity from the proof, with the conditions for $Q_K^L$
+explicit. The source's statement is the norm bound for general $K,L$. The bound is stated separately
+in Lean for the orthogonal matrix case $L=K$.
+-/
 theorem theorem_5_7 (hd : finrank ℝ K = finrank ℝ L) (h : K ⊓ Lᗮ = ⊥) (hb : b ∈ K)
     {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     b - A_m A K L hd h xstar =
@@ -491,7 +556,11 @@ theorem norm_toEuclideanLin_of_orthonormal (hV : Vᵀ * V = 1) (y : E m) : ‖(V
 be a basis of $K$ with $V^TV = I$, let $K \cap K^\perp = \{0\}$ and $b \in K$. Then for every
 $x$,
 $$\|V^Tb - (V^TAV)V^Tx\|_2 = \|b - A_m x\|_2.$$
-The reason is that $VV^T = P_K$ and $b = VV^Tb$, so $V(V^Tb - (V^TAV)V^Tx) = b - A_m x$. -/
+The reason is that $VV^T = P_K$ and $b = VV^Tb$, so $V(V^Tb - (V^TAV)V^Tx) = b - A_m x$.
+
+**Reading.** The explicit hypothesis $K\cap K^\perp=\{0\}$ comes from the oblique-projector
+representation. For $L=K$ it holds for all subspaces.
+-/
 theorem theorem_5_7_matrix_eq (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K ⊓ Kᗮ = ⊥)
     (hb : b ∈ K) : ‖(Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ x))‖ = ‖b - A_m A K K rfl h x‖ := by
   have hVVt : toEuclideanLin (V * Vᵀ) = (K.starProjection : (E n) →ₗ[ℝ] (E n)) :=
@@ -524,7 +593,11 @@ This is (5.11) in the coordinates of $V$: the residual of the projected system i
 the part of the exact solution that $K$ does not contain.
 
 The hypothesis $K \cap K^\perp = \{0\}$ always holds; it is the hypothesis of
-`SaadSparse.obliqueProjection` for $L = K$. -/
+`SaadSparse.obliqueProjection` for $L = K$.
+
+**Reading.** The explicit hypothesis $K\cap K^\perp=\{0\}$ comes from the oblique-projector
+representation. For $L=K$ it holds for all subspaces.
+-/
 theorem theorem_5_7_matrix (hV : Vᵀ * V = 1) (hVK : V.IsBasisOf K) (h : K ⊓ Kᗮ = ⊥) (hb : b ∈ K)
     {xstar : E n} (hstar : (A ⬝ xstar) = b) :
     ‖(Vᵀ ⬝ b) - ((Vᵀ * A * V) ⬝ (Vᵀ ⬝ xstar))‖ ≤

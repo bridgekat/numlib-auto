@@ -26,6 +26,9 @@ limit.
 
 ## Deviations from the source
 
+* **Correction.** A constant-radius run disproves identification at both a successful subsequence
+  and the whole iterate sequence. See
+  `ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`.
 * **Lemma 12.3.7** (correction). The claimed subsequence of successful iterations with the limiting
   active set need not exist. See
   `ConnGouldToint.Chapter12.theorem_12_3_8_iterate_identification_counterexample`.
@@ -535,7 +538,12 @@ degenerate active constraint, although the active gradients at the limit are ind
 The constraints are `ConnGouldToint.Chapter12.ConstraintExample.constraints`, $C$ is the
 quadrant $v_0, v_1 \ge 0$, and $f(v) = v_0 + v_0^2 + v_1 + v_1^2 + v_2^2/2$. The iterates are
 $x_k = (0, a_k, a_k^2)$ with $a_k = 2^{-k}/8$, so only $c_0$ is active at $x_k$. The Cauchy
-point is $w = (0, 0, -1)$ for every $k$. -/
+point is $w = (0, 0, -1)$ for every $k$.
+
+**Correction.** At a remote projected trial, a constraint remains active but has zero gradient. The
+run uses constant radii and every step is very successful, yet no accepted iterate has the limit's
+active set. Independence and strict complementarity at the limit do hold.
+-/
 theorem theorem_12_3_8_iterate_identification_counterexample :
     ∃ (C : Set (EuclideanSpace ℝ (Fin 3))) (f : EuclideanSpace ℝ (Fin 3) → ℝ)
       (c : Fin 2 → EuclideanSpace ℝ (Fin 3) → ℝ) (Q : GeneralizedCauchyParams)

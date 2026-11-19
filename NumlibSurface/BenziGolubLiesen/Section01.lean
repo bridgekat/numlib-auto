@@ -34,6 +34,12 @@ The later sections of the library state their results for this matrix and its sp
 
 * The matrix is indexed by `n ⊕ m`: the first $n$ coordinates belong to the block $A$, the last $m$
   coordinates to the block $C$.
+
+## Deviations from the source
+
+* **Section 1.1, quadratic Lagrangian saddle** (generalization). The source identifies
+  block-system solutions as saddle points. The equivalence also gives the reverse implication.
+  See `BenziGolubLiesen.isSaddlePoint_quadraticLagrangian_iff`.
 -/
 
 namespace BenziGolubLiesen
@@ -105,7 +111,13 @@ private theorem lagrangian_add {A : Matrix n n ℝ} (hA : Aᵀ = A) (B : Matrix 
   ring
 
 /-- **Section 1.1** of [benzi2005numerical]. With $A$ symmetric positive semidefinite, the
-solutions of (1.3) are exactly the saddle points of the quadratic Lagrangian. The multiplier
+solutions of (1.3) are exactly the saddle points of the quadratic Lagrangian.
+
+**Generalization.** The source states that each solution is a saddle point. The reverse
+direction follows from the saddle inequalities by varying the multiplier to obtain
+feasibility and varying the primal point to obtain stationarity.
+
+The multiplier
 is the first argument of `ConvexAnalysis.IsSaddlePoint`, which maximizes in that argument. -/
 theorem isSaddlePoint_quadraticLagrangian_iff {A : Matrix n n ℝ} (hA : A.PosSemidef)
     (B : Matrix m n ℝ) (f x : n → ℝ) (g y : m → ℝ) :

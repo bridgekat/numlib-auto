@@ -61,6 +61,23 @@ has already computed, so it needs no extra product with $M$. The proofs use the 
   matrix is nonsingular.
 * GMRES in the $M$-inner product is the backbone GMRES specification `Krylov.IsMinResidualIterate`
   on the space with the $M$-inner product, `Krylov.IsPreconditioner.EnergySpace`.
+
+## Deviations from the source
+
+* **Scope.** The GMRES definitions implement one fixed-length cycle, with total inversion and
+  complex scalars. See `SaadSparse.Chapter09.gmresLeft`, `SaadSparse.Chapter09.gmresRight`,
+  `SaadSparse.Chapter09.gmresRight_eq`.
+* **Scope.** The two GMRES optimality theorems require an invertible preconditioned operator and a
+  prefix up to the grade. See `SaadSparse.Chapter09.gmresLeft_isMinResidual`,
+  `SaadSparse.Chapter09.gmresRight_isMinResidual`.
+* **Generalization.** The polynomial intertwining equation adds the Krylov space identity and does
+  not require invertibility. See `SaadSparse.Chapter09.equation_9_18`.
+* **Scope.** Proposition 9.1's polynomial representation is separated from optimality and uses the
+  factors as printed in the proposition. See `SaadSparse.Chapter09.proposition_9_1`.
+* **Scope.** The energy-GMRES declarations give the optimality specification for P-9.13. See
+  `SaadSparse.Chapter09.IsGMRESEnergyIterate`, `SaadSparse.Chapter09.isGMRESEnergyIterate_iff`.
+* **Generalization.** The energy-product identities are stated for arbitrary vectors and with
+  complex conjugation conventions. See `SaadSparse.Chapter09.equation_9_12`.
 -/
 
 open Matrix Polynomial
@@ -86,7 +103,12 @@ $M^{-1} A$ with right-hand side $M^{-1} b$, started at $x_0$.
 
 The Arnoldi basis spans $\mathcal{K}_m(M^{-1} A, M^{-1} r_0)$, and the residual that the
 algorithm monitors is the preconditioned residual $M^{-1}(b - A x_m)$. GMRES is
-`SaadSparse.Chapter06.gmresFixed`. -/
+`SaadSparse.Chapter06.gmresFixed`.
+
+**Reading.** The definitions use a single fixed-length GMRES run. The printed algorithms also
+restart and apply a stopping rule. The inverse is total and the equivalence between the two
+right-preconditioned coordinate descriptions requires an invertible preconditioner.
+-/
 noncomputable def gmresLeft (M A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   Chapter06.gmresFixed (leftPreconditioned M A) (op M⁻¹ b) x₀ m
@@ -99,7 +121,12 @@ $$x_m = x_0 + M^{-1} (u_m - M x_0) = x_0 + M^{-1} V_m y_m.$$
 
 The variable $u$ does not appear in the printed algorithm, and the residual that it monitors is
 the true residual $b - A x_m$. With $M = M_L M_R$ this is the split-preconditioned algorithm of
-Section 9.3.3. -/
+Section 9.3.3.
+
+**Reading.** The definitions use a single fixed-length GMRES run. The printed algorithms also
+restart and apply a stopping rule. The inverse is total and the equivalence between the two
+right-preconditioned coordinate descriptions requires an invertible preconditioner.
+-/
 noncomputable def gmresRight (M A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   x₀ + op M⁻¹ (Chapter06.gmresFixed (rightPreconditioned M A) b (op M x₀) m - op M x₀)
@@ -113,7 +140,12 @@ private theorem inv_apply_apply' (hM : IsUnit M) (x : EuclideanSpace 𝕜 (Fin n
 
 /-- **Algorithm 9.5** of [saad2003iterative], the two forms of the iterate. Let $M$ be nonsingular.
 Then the approximation $x_m = x_0 + M^{-1} V_m y_m$ of Algorithm 9.5 is $x_m = M^{-1} u_m$,
-where $u_m$ is the GMRES approximation of $A M^{-1} u = b$ started at $u_0 = M x_0$. -/
+where $u_m$ is the GMRES approximation of $A M^{-1} u = b$ started at $u_0 = M x_0$.
+
+**Reading.** The definitions use a single fixed-length GMRES run. The printed algorithms also
+restart and apply a stopping rule. The inverse is total and the equivalence between the two
+right-preconditioned coordinate descriptions requires an invertible preconditioner.
+-/
 theorem gmresRight_eq (hM : IsUnit M) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
     gmresRight M A b x₀ m
       = op M⁻¹ (Chapter06.gmresFixed (rightPreconditioned M A) b (op M x₀) m) := by
@@ -129,7 +161,13 @@ $$\|M^{-1}(b - A x_m)\|_2 \le \|M^{-1}(b - A x)\|_2 \quad \text{for all } x \in 
   \mathcal{K}_m(M^{-1} A, M^{-1} r_0).$$
 
 That is, $x_m$ is the minimal-residual Krylov iterate of $M^{-1} A x = M^{-1} b$,
-`Krylov.IsMinResidualIterate`. -/
+`Krylov.IsMinResidualIterate`.
+
+**Reading.** The minimality guarantee for the fixed-length definitions assumes an invertible
+preconditioned operator and a Krylov length at most the grade. Left preconditioning minimizes the
+preconditioned residual, and right preconditioning minimizes the original residual on the common
+affine search space.
+-/
 theorem gmresLeft_isMinResidual (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ}
     (hMA : IsUnit (leftPreconditioned M A))
     (hm : m ≤ Chapter06.grade (leftPreconditioned M A)
@@ -147,7 +185,13 @@ $$\|b - A x_m\|_2 \le \|b - A x\|_2 \quad \text{for all } x \in x_0 + \mathcal{K
   M^{-1} r_0).$$
 
 The affine space is the one that Algorithm 9.4 searches. This is the difference between left and
-right preconditioning: the space is the same, but the norm that is minimized over it is not. -/
+right preconditioning: the space is the same, but the norm that is minimized over it is not.
+
+**Reading.** The minimality guarantee for the fixed-length definitions assumes an invertible
+preconditioned operator and a Krylov length at most the grade. Left preconditioning minimizes the
+preconditioned residual, and right preconditioning minimizes the original residual on the common
+affine search space.
+-/
 theorem gmresRight_isMinResidual (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hM : IsUnit M)
     (hAM : IsUnit (rightPreconditioned M A))
     (hm : m ≤ Chapter06.grade (rightPreconditioned M A)
@@ -182,7 +226,11 @@ $$M^{-1} \mathcal{K}_m(A M^{-1}, r) = \mathcal{K}_m(M^{-1} A, M^{-1} r).$$
 So the preconditioned Krylov spaces (9.17) and (9.20) of the left- and right-preconditioned
 algorithms are the same space.
 
-No invertibility of $M$ is needed. The Krylov subspaces are the backbone `Krylov.subspace`. -/
+No invertibility of $M$ is needed. The Krylov subspaces are the backbone `Krylov.subspace`.
+
+**Generalization.** Polynomial intertwining holds without invertibility for Lean's total inverse and
+is accompanied by a mapped Krylov-subspace identity.
+-/
 theorem equation_9_18 (s : 𝕜[X]) (r : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
     aeval (op (leftPreconditioned M A)) s (op M⁻¹ r)
         = op M⁻¹ (aeval (op (rightPreconditioned M A)) s r)
@@ -208,7 +256,14 @@ Which polynomial $s$ arises depends on the side of the preconditioning. On the r
 minimizes $\|b - A x_m\|_2$ (`SaadSparse.Chapter09.gmresRight_isMinResidual`), and on the left
 $\|M^{-1}(b - A x_m)\|_2$ (`SaadSparse.Chapter09.gmresLeft_isMinResidual`). The statement takes
 the iterate as the left-preconditioned minimal-residual iterate `Krylov.IsMinResidualIterate`;
-the form $x_0 + s(M^{-1} A) z_0$ uses only that $x - x_0$ lies in the Krylov space. -/
+the form $x_0 + s(M^{-1} A) z_0$ uses only that $x - x_0$ lies in the Krylov space.
+
+**Reading.** This declaration derives the two equivalent polynomial forms from the left
+minimal-residual predicate. The right minimality theorem and the two minimized norms are covered by
+separate declarations. The degree can be any value strictly below $m$, including the zero
+polynomial. The two factors in the formula follow Proposition 9.1; the prose preceding it on pp.
+285–286 puts an extra $M^{-1}$ on the left form and omits $M^{-1}$ on the right form.
+-/
 theorem proposition_9_1 {b x₀ : EuclideanSpace 𝕜 (Fin n)} {m : ℕ}
     {x : EuclideanSpace 𝕜 (Fin n)}
     (hx : Krylov.IsMinResidualIterate (op (leftPreconditioned M A)) (op M⁻¹ b) x₀ m x) :
@@ -235,7 +290,12 @@ $A$ need not be symmetric.
 This is the Arnoldi process and GMRES of the backbone run in the space with the $M$-inner
 product, which is the modified Gram–Schmidt process of (9.10)–(9.11). The definition is
 `Krylov.IsMinResidualIterate` for `hM.energyEnd (op M⁻¹ ∘ₗ op A)`, with each vector moved to
-that space by `hM.toEnergy`. -/
+that space by `hM.toEnergy`.
+
+**Reading.** The declarations specify the energy-minimal iterate of the left-preconditioned system
+and characterize its norm and search space. They do not construct the modified Gram–Schmidt
+procedure requested in the exercise.
+-/
 def IsGMRESEnergyIterate (A : Matrix (Fin n) (Fin n) 𝕜)
     {M : Matrix (Fin n) (Fin n) 𝕜} (hM : Krylov.IsPreconditioner (op M) (op M⁻¹))
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) : Prop :=
@@ -251,7 +311,12 @@ $$\|M^{-1}(b - Ax)\|_M \le \|M^{-1}(b - Ay)\|_M \quad \text{for all } y \in x_0 
 
 The space is the one that Algorithms 9.4 and 9.5 search. The $M$-norm of the preconditioned
 residual is the $M^{-1}$-norm of the true residual $b - Ax$. The norm $\|\cdot\|_M$ is
-`energyNorm (op M)`. -/
+`energyNorm (op M)`.
+
+**Reading.** The declarations specify the energy-minimal iterate of the left-preconditioned system
+and characterize its norm and search space. They do not construct the modified Gram–Schmidt
+procedure requested in the exercise.
+-/
 theorem isGMRESEnergyIterate_iff (hM : Krylov.IsPreconditioner (op M) (op M⁻¹))
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) (x : EuclideanSpace 𝕜 (Fin n)) :
     IsGMRESEnergyIterate A hM b x₀ m x ↔
@@ -276,7 +341,13 @@ product of vectors that it has already computed, and no extra product with $M$ i
 With $w = A v_j$ these give the coefficients $h_{ij}$ and the subdiagonal entry $h_{j+1,j}$ of
 the $M$-orthogonal Arnoldi process. In Lean the first identity is
 `energyInner (op M) (op M⁻¹ w) v = inner 𝕜 w v`, and the second takes the real part of the inner
-product. -/
+product.
+
+**Generalization.** The inner-product and norm identities hold for every input pair under the
+preconditioner hypothesis. The source application uses a matrix image and its orthogonalized,
+preconditioned vector. The Lean norm takes the real part before the square root over complex
+scalars.
+-/
 theorem equation_9_12 (hM : Krylov.IsPreconditioner (op M) (op M⁻¹))
     (v w : EuclideanSpace 𝕜 (Fin n)) :
     energyInner (op M) (op M⁻¹ w) v = inner 𝕜 w v ∧

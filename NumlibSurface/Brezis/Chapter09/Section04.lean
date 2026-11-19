@@ -122,6 +122,15 @@ scalar product of $H_0^1(\Omega)$).
 
 ## Deviations from the source
 
+* **Zero Sobolev spaces and duals** (generalization). The library defines the closure of smooth
+  tests and its dual also for $p=\infty$. See `Brezis.Chapter09.sobolevZeroSpace` and
+  `Brezis.Chapter09.dualSpace`.
+* **Lemma 9.5** (reading). The compact support hypothesis is expressed as almost-everywhere
+  vanishing outside a compact subset of the open set. See `Brezis.Chapter09.lemma_9_5`.
+* **Remark 22** (typo and generalization). The source prints $W_0^{m,p}$ as the ambient space for
+  its own closure definition. The library closes in $W^{m,p}$, and includes order zero and
+  $p=\infty$ in its definition. See `Brezis.Chapter09.sobolevZeroSpaceHigher` and
+  `Brezis.Chapter09.sobolevZeroSpaceHigher_eq_closure_contDiff`.
 * **Remark 17, punctured space** (reading). The condition "$\mathbb{R}^N \setminus \Omega$
   sufficiently thin and $p < N$" is informal. The statement here takes
   $\Omega = \mathbb{R}^N \setminus \{0\}$ with $N \ge 2$, and includes $p = N$. See
@@ -130,10 +139,16 @@ scalar product of $H_0^1(\Omega)$).
   $\Rightarrow$ (iii) are proved for $1 \le p \le \infty$, and (ii) $\Rightarrow$ (iii) for
   $1 < p \le \infty$, all on an arbitrary open set. See `Brezis.Chapter09.proposition_9_18_i_ii`,
   `Brezis.Chapter09.proposition_9_18_ii_iii` and `Brezis.Chapter09.proposition_9_18_i_iii`.
+  The reverse implication from (iii) includes $p=1$, and the zero-extension derivative identity
+  is stated separately from the equivalence. See `Brezis.Chapter09.proposition_9_18_iii_i`.
 * **Remark 20** (reading). The clauses for $p = N$ assume $N \ge 2$, as Corollary 9.14. The
   constants of the Hölder estimate and of the Sobolev inequality are stated for each fixed $\Omega$;
   the independence of $\Omega$ that the source states is not recorded. See
   `Brezis.Chapter09.remark_9_20`.
+* **Corollary 9.19** (reading and generalization). The coordinate gradient-norm estimate is
+  stated separately. The gradient form's formula, symmetry and diagonal square-root identity
+  hold on all of $H^1$. See `Brezis.Chapter09.corollary_9_19_gradNorm` and
+  `Brezis.Chapter09.corollary_9_19_inner`.
 * **Remark 21** (reading). The finite-measure clause is stated for $N \ge 2$, and the
   bounded-projection clause for the last coordinate axis. See `Brezis.Chapter09.remark_9_21`.
 * **Proposition 9.20** (reading). The source states $\|F\| = \max_i \|f_i\|_{p'}$, which refers to
@@ -176,7 +191,10 @@ test functions $\mathcal{D}(\Omega)$ in $W^{1,p}(\Omega)$, as a submodule of $W^
 The source defines $W_0^{1,p}(\Omega)$, for $1 \le p < \infty$, as the closure of
 $C_c^1(\Omega)$ in $W^{1,p}(\Omega)$. The two closures agree by Remark 18
 (`Brezis.Chapter09.remark_9_18_closure`). The definition is the backbone's
-`SobolevEuclideanZero N 1 p Ω`. -/
+`SobolevEuclideanZero N 1 p Ω`.
+
+**Generalization.** The library also defines this closure at $p = \infty$, using smooth
+ test functions as its generating set. -/
 noncomputable abbrev sobolevZeroSpace (N : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Submodule ℝ (sobolevSpace N p Ω) :=
   SobolevEuclideanZero N 1 p Ω
@@ -290,7 +308,10 @@ $u \in W_0^{1,p}(\Omega)$.
 The proof specializes `SobolevMultiIndex.mem_zero_of_ae_eq_zero_compl_isCompact`. The proof of
 the source takes an open set $\omega$ with $\operatorname{supp} u \subset \omega \subset\subset
 \Omega$, a cut-off function $\alpha \in C_c^1(\omega)$ with $\alpha = 1$ on
-$\operatorname{supp} u$, and uses Theorem 9.2. -/
+$\operatorname{supp} u$, and uses Theorem 9.2.
+
+**Reading.** Compact support is expressed by vanishing almost everywhere outside a compact
+ subset of the domain. -/
 theorem lemma_9_5 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) {K : Set 𝔼} (hK : IsCompact K)
     (hKΩ : K ⊆ Ω) (hu : ∀ᵐ x ∂volume.restrict (Ω : Set 𝔼), x ∉ K → SobolevMultiIndex.fn u x = 0) :
     u ∈ sobolevZeroSpace N p Ω :=
@@ -307,7 +328,9 @@ Remark 19 states that this direction does not use the smoothness of $\Omega$. Th
 specializes `SobolevEuclideanZero.mem_of_continuousOn_closure_of_eqOn_frontier`. The truncations
 $u_n = G(nu)/n$ of the proof of the source (with Proposition 9.5) have compact support in
 $\Omega$, so they lie in $W_0^{1,p}(\Omega)$ by Lemma 9.5, and they converge to $u$ in
-$W^{1,p}(\Omega)$. -/
+$W^{1,p}(\Omega)$.
+
+**Generalization.** The source drops the $C^1$ hypothesis for this direction in Remark 19. -/
 theorem theorem_9_17_mp (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) {ũ : 𝔼 → ℝ}
     (hu : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
     (hc : ContinuousOn ũ (closure (Ω : Set 𝔼))) (h0 : EqOn ũ 0 (frontier (Ω : Set 𝔼))) :
@@ -322,7 +345,10 @@ a.e. on $\Omega$. If $\tilde u = 0$ on $\partial\Omega$, then $u \in W_0^{1,p}(\
 This is the implication (i) $\Rightarrow$ (ii) of Theorem 9.17 without a smoothness hypothesis,
 `Brezis.Chapter09.theorem_9_17_mp`. The second sentence of the remark, that the converse fails
 on $\Omega = \mathbb{R}^N \setminus \{0\}$, is the punctured space of Remark 17,
-`Brezis.Chapter09.remark_9_17_punctured_of_le`. -/
+`Brezis.Chapter09.remark_9_17_punctured_of_le`.
+
+**Reading.** The forward implication is stated here. The punctured-space behavior used to
+ illustrate the reverse failure is in `Brezis.Chapter09.remark_9_17_punctured_of_le`. -/
 theorem remark_9_19 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) {ũ : 𝔼 → ℝ}
     (hu : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
     (hc : ContinuousOn ũ (closure (Ω : Set 𝔼))) (h0 : EqOn ũ 0 (frontier (Ω : Set 𝔼))) :
@@ -479,7 +505,9 @@ $\bar u$ of $u$ belongs to $W^{1,p}(\mathbb{R}^N)$, then $u$ belongs to $W_0^{1,
 
 The proof specializes `SobolevEuclideanZero.mem_of_indicator_memSobolev`. Local charts and a
 partition of unity reduce the problem to $Q_+$. There one uses the one-sided mollifiers $\rho_n$
-supported in $\{1/(2n) < x_N < 1/n\}$, for which $\rho_n \star (\alpha \bar u) \in C_c^1(Q_+)$. -/
+supported in $\{1/(2n) < x_N < 1/n\}$, for which $\rho_n \star (\alpha \bar u) \in C_c^1(Q_+)$.
+
+**Generalization.** The reverse implication also holds at $p=1$. -/
 theorem proposition_9_18_iii_i (hΩ : IsClassC1 (Ω : Set 𝔼)) (hp' : p ≠ ⊤) {u : 𝔼 → ℝ}
     (h : ∃ w : sobolevSpace (d + 1) p ⊤,
       SobolevMultiIndex.fn w =ᵐ[volume] (Ω : Set 𝔼).indicator u) :
@@ -500,7 +528,10 @@ $W^{1,p}(\mathbb{R}^N)$.
 
 In this case $\partial \bar u / \partial x_i = \overline{\partial u / \partial x_i}$
 (`Brezis.Chapter09.proposition_9_18_i_iii`). Only (iii) $\Rightarrow$ (i) uses the regularity of
-$\Omega$. -/
+$\Omega$.
+
+**Reading.** The equivalence uses zero-extension membership as (iii). The source also states
+ the derivative formula, which is given separately in `Brezis.Chapter09.proposition_9_18_i_iii`. -/
 theorem proposition_9_18 (hΩ : IsClassC1 (Ω : Set 𝔼)) [p.HolderConjugate q] (hp : 1 < p)
     (hp' : p ≠ ⊤) {u : 𝔼 → ℝ} (hu : MemLp u p (volume.restrict (Ω : Set 𝔼))) :
     [∃ v ∈ sobolevZeroSpace (d + 1) p Ω,
@@ -528,7 +559,9 @@ $W_0^{1,p}(\Omega)$ lies in $L^q(\Omega)$ and the inclusion $W_0^{1,p}(\Omega) \
 is a continuous embedding.
 
 This is `Brezis.Chapter09.IsContinuousInjectionLp` of Section 9.3 for the subspace
-$W_0^{1,p}(\Omega)$. The inclusion is `SobolevMultiIndex.toLpₗOn`. -/
+$W_0^{1,p}(\Omega)$. The inclusion is `SobolevMultiIndex.toLpₗOn`.
+
+**Generalization.** The inclusion predicate is also available for $p=\infty$. -/
 def IsContinuousInjectionLpZero (N : ℕ) (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Prop :=
   ∃ h : ∀ u : sobolevZeroSpace N p Ω, MemLp (SobolevMultiIndex.fn (u : sobolevSpace N p Ω)) q
@@ -541,7 +574,9 @@ def IsContinuousInjectionLpZero (N : ℕ) (p q : ℝ≥0∞) [Fact (1 ≤ p)] [F
 $W_0^{1,p}(\Omega)$. Let $1 \le p, q \le \infty$ and $\Omega \subseteq \mathbb{R}^N$ open. Then
 **$W_0^{1,p}(\Omega) \subset L^q(\Omega)$ with compact injection** if every function of
 $W_0^{1,p}(\Omega)$ lies in $L^q(\Omega)$ and the inclusion $W_0^{1,p}(\Omega) \to L^q(\Omega)$
-is a compact embedding. -/
+is a compact embedding.
+
+**Generalization.** The inclusion predicate is also available for $p=\infty$. -/
 def IsCompactInjectionLpZero (N : ℕ) (p q : ℝ≥0∞) [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Prop :=
   ∃ h : ∀ u : sobolevZeroSpace N p Ω, MemLp (SobolevMultiIndex.fn (u : sobolevSpace N p Ω)) q
@@ -573,7 +608,10 @@ every $q \in [p, p^*]$.
 
 The extension by zero (`SobolevEuclideanZero.hasSobolevExtensionOn`) replaces the extension
 operator of Theorem 9.7. The proof specializes
-`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`. -/
+`SobolevEuclideanZero.isContinuousEmbedding_toLp_of_lt`.
+
+**Generalization.** This includes every $q$ between $p$ and $p^*$. The source invokes the
+ subcritical embedding displayed for $q=p^*$. -/
 theorem remark_9_20_embedding_lt [Fact (1 ≤ (q : ℝ≥0∞))] {p' : ℝ≥0} (hpN : p < N)
     (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) (hpq : p ≤ q) (hqp' : q ≤ p') :
     IsContinuousInjectionLpZero N p q Ω :=
@@ -665,7 +703,10 @@ depend on $\Omega$; see `Brezis.Chapter09.remark_9_20_embedding_eq` and
 `Brezis.Chapter09.remark_9_20_embedding_holder`.
 
 No regularity of $\Omega$ is needed, because the extension by zero is valid on every open set
-(Proposition 9.18, (i) $\Rightarrow$ (iii)). -/
+(Proposition 9.18, (i) $\Rightarrow$ (iii)).
+
+**Reading.** The subcritical clause includes intermediate exponents, and the critical clause
+ requires $N\ge 2$. The Hölder conclusion uses a continuous representative on the closure. -/
 theorem remark_9_20_embedding :
     (∀ (q p' : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))], p < N → (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹ → p ≤ q →
       q ≤ p' → IsContinuousInjectionLpZero N p q Ω) ∧
@@ -729,7 +770,10 @@ noncomputable def toContinuousMapClosureZero (hb : Bornology.IsBounded (Ω : Set
 /-- Let $\Omega \subseteq \mathbb{R}^N$ be a bounded open set, $N < p < \infty$ and
 $u \in W_0^{1,p}(\Omega)$. There is a continuous function $\tilde u$ on $\mathbb{R}^N$ with
 $u = \tilde u$ a.e. on $\Omega$ whose restriction to $\bar\Omega$ is the image of $u$ under
-`Brezis.Chapter09.toContinuousMapClosureZero`. -/
+`Brezis.Chapter09.toContinuousMapClosureZero`.
+
+**Reading.** The representative on the closure is the restriction of a continuous function
+ on the whole space. -/
 theorem exists_continuous_ae_eq_toContinuousMapClosureZero (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hp : (N : ℝ≥0) < p) (u : sobolevZeroSpace N p Ω) :
     ∃ ũ : 𝔼 → ℝ, Continuous ũ ∧
@@ -774,7 +818,10 @@ $$W_0^{1,p}(\Omega) \subset L^q(\Omega) \text{ for all } q \in [p, +\infty), \qu
 $$W_0^{1,p}(\Omega) \subset C(\bar\Omega), \quad \text{if } p > N,$$
 and $W_0^{1,p}(\Omega) \subset L^p(\Omega)$ with compact injection for all $p$ and all $N$.
 
-**Reading.** The case $p = N$ assumes $N \ge 2$; see `Brezis.Chapter09.remark_9_20_compact_eq`. -/
+**Reading.** The case $p = N$ assumes $N \ge 2$; see `Brezis.Chapter09.remark_9_20_compact_eq`.
+
+**Reading.** The critical clause assumes $N\ge 2$. The final self-embedding assertion also
+ covers $N=p=1$. -/
 theorem remark_9_20_compact (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
     (∀ (q p' : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))], p < N → (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹ → q < p' →
       IsCompactInjectionLpZero N p q Ω) ∧
@@ -940,7 +987,10 @@ Thus the $\ell^p$ gradient norm is a norm on $W_0^{1,p}(\Omega)$ that is equival
 The $\ell^p$ gradient norm is `SobolevMultiIndex.gradNorm`. Its other norm axioms hold on all of
 $W^{1,p}(\Omega)$ (`SobolevMultiIndex.gradNorm_add_le`, `SobolevMultiIndex.gradNorm_smul`), and
 the other bound is `SobolevMultiIndex.gradNorm_le_norm`. The proof specializes
-`SobolevEuclideanZero.norm_le_gradNorm`. -/
+`SobolevEuclideanZero.norm_le_gradNorm`.
+
+**Reading.** This version uses the library's coordinate gradient norm and equivalent bundled
+ Sobolev norm. The source norms are used in `Brezis.Chapter09.corollary_9_19_norm`. -/
 theorem corollary_9_19_gradNorm (hp' : p ≠ ⊤) (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
     ∃ C : ℝ, ∀ u ∈ sobolevZeroSpace (d + 1) p Ω, ‖u‖ ≤ C * SobolevMultiIndex.gradNorm u := by
   obtain ⟨R, hR⟩ := hb.subset_ball 0
@@ -1015,7 +1065,10 @@ $\|\nabla u\|_{L^2(\Omega)}$ is equivalent to the norm of $H^1$.
 
 The Dirichlet form is `Elliptic.dirichletForm Ω`, a bounded bilinear form on $H^1(\Omega)$.
 Parts (d) and (e) follow from Poincaré's inequality (`SobolevEuclideanZero.norm_le_gradNorm` at
-$p = 2$) and `Elliptic.dirichletForm_self_eq_gradNorm_sq`. -/
+$p = 2$) and `Elliptic.dirichletForm_self_eq_gradNorm_sq`.
+
+**Generalization.** The formula, symmetry and diagonal square-root identity are stated on
+ $H^1$. Positive definiteness and norm equivalence are stated on $H_0^1$. -/
 theorem corollary_9_19_inner (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
     (∀ u v : hSpace (d + 1) Ω, Elliptic.dirichletForm Ω u v
         = ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv u i x * partialDeriv v i x) ∧
@@ -1175,14 +1228,21 @@ $C_c^m(\Omega)$ in $W^{m,p}(\Omega)$. The two closures agree by
 `Brezis.Chapter09.sobolevZeroSpaceHigher_eq_closure_contDiff`. The definition is the backbone's
 `SobolevEuclideanZero N m p Ω`. The heuristic of the remark, "$D^\alpha u = 0$ on $\Gamma$ for
 $|\alpha| \le m - 1$", and its comparison of $W_0^{m,p}(\Omega)$ with
-$W^{m,p}(\Omega) \cap W_0^{1,p}(\Omega)$ for $m \ge 2$ are not formalized. -/
+$W^{m,p}(\Omega) \cap W_0^{1,p}(\Omega)$ for $m \ge 2$ are not formalized.
+
+**Typo.** Remark 22 prints $W_0^{m,p}$ as the ambient space for its own closure definition.
+ The ambient space here is $W^{m,p}$.
+
+**Generalization.** The type also includes order zero and exponent $p=\infty$. -/
 noncomputable abbrev sobolevZeroSpaceHigher (N m : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Submodule ℝ (sobolevSpaceHigher N m p Ω) :=
   SobolevEuclideanZero N m p Ω
 
 variable {p : ℝ≥0∞} [Fact (1 ≤ p)] {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 
-/-- The space $W_0^{1,p}(\Omega)$ is the case $m = 1$ of $W_0^{m,p}(\Omega)$. -/
+/-- The space $W_0^{1,p}(\Omega)$ is the case $m = 1$ of $W_0^{m,p}(\Omega)$.
+
+**Generalization.** The identity also holds for the library's $p=\infty$ spaces. -/
 theorem sobolevZeroSpaceHigher_one :
     sobolevZeroSpaceHigher N 1 p Ω = sobolevZeroSpace N p Ω :=
   rfl
@@ -1194,7 +1254,11 @@ $W_0^{m,p}(\Omega)$.
 
 As in Remark 18, the inclusion $\subseteq$ is Lemma 9.5 at order $m$
 (`SobolevMultiIndex.mem_zero_of_fn_ae_eq_of_tsupport_subset`), and the inclusion $\supseteq$
-holds because a test function is a $C^m$ function with compact support in $\Omega$. -/
+holds because a test function is a $C^m$ function with compact support in $\Omega$.
+
+**Typo.** The source prints the closure in $W_0^{m,p}$. The library closes in $W^{m,p}$.
+
+**Generalization.** The closure description also includes order zero. -/
 theorem sobolevZeroSpaceHigher_eq_closure_contDiff (hp' : p ≠ ⊤) {m : ℕ} :
     closure {u : sobolevSpaceHigher N m p Ω | ∃ v : 𝔼 → ℝ, ContDiff ℝ m v ∧ HasCompactSupport v ∧
         tsupport v ⊆ Ω ∧ SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] v}
@@ -1229,7 +1293,9 @@ with conjugate exponent $p'$. The space **$W^{-1,p'}(\Omega)$** is the dual spac
 $W_0^{1,p}(\Omega)$, the space of bounded linear functionals on $W_0^{1,p}(\Omega)$.
 
 The source uses the notation for $1 \le p < \infty$. The dual norm is taken with respect to the
-norm of the Lean type of $W_0^{1,p}(\Omega)$. -/
+norm of the Lean type of $W_0^{1,p}(\Omega)$.
+
+**Generalization.** The dual construction also applies to the library's $p=\infty$ space. -/
 noncomputable abbrev dualSpace (N : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Type :=
   StrongDual ℝ (sobolevZeroSpace N p Ω)
@@ -1316,7 +1382,10 @@ $$\langle F, v \rangle = \sum_{i=1}^N \int_\Omega f_i \frac{\partial v}{\partial
 and $\|f_i\|_{L^{p'}(\Omega)} \le C \|F\|$ for every $i$.
 
 The constant comes from Poincaré's inequality, by which $v \mapsto \nabla v$ is bounded below on
-$W_0^{1,p}(\Omega)$. The proof specializes `SobolevEuclideanZero.exists_dual_repr_of_isBounded`. -/
+$W_0^{1,p}(\Omega)$. The proof specializes `SobolevEuclideanZero.exists_dual_repr_of_isBounded`.
+
+**Reading.** The representation has $f_0=0$ as in the source. The coefficient bound here
+ uses a constant depending on the domain and exponent and the norm of the type. -/
 theorem proposition_9_20_bounded [p.HolderConjugate q] (hp' : p ≠ ⊤)
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
     ∃ C : ℝ, ∀ F : dualSpace (d + 1) p Ω, ∃ f : Fin (d + 1) → Lp ℝ q (volume.restrict (Ω : Set 𝔼)),
@@ -1352,7 +1421,11 @@ For $p \le 2$ the map is the embedding $W_0^{1,p}(\Omega) \subset L^q(\Omega)$ o
 $q = 2$ (`Brezis.Chapter09.remark_9_20_embedding`), since the condition $1/p - 1/N \le 1/2$ is
 $2N/(N + 2) \le p$. For $p > 2$ and bounded $\Omega$ it is the inclusion $W_0^{1,p}(\Omega)
 \subset W_0^{1,2}(\Omega) \subset L^2(\Omega)$ (`SobolevMultiIndexZero.toLowerExponentL`), by
-Hölder's inequality on a set of finite measure. -/
+Hölder's inequality on a set of finite measure.
+
+**Reading.** This existence statement for the first injection uses $p>1$, as required by
+ the paired dense-injection result. The source's first inclusion also applies at $p=1$
+ when it is in the stated range. -/
 theorem exists_inclusionL2_of_le (hp : 1 < p)
     (hpN : (2 * (d + 1 : ℕ) / ((d + 1 : ℕ) + 2) : ℝ) ≤ p)
     (h : p ≤ 2 ∨ Bornology.IsBounded (Ω : Set 𝔼)) :

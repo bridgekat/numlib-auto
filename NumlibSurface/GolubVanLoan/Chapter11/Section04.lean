@@ -152,6 +152,15 @@ BiCGstab from `Numlib.Krylov.TransposeFree`, whose recurrences are those of Figu
 
 ## Deviations from the source
 
+* **§11.4.1, MINRES initialization and Givens update** (correction). The initial scale uses
+  $\|r_0\|_2$. The final rotation is determined from the new column after its earlier rotations
+  and the new subdiagonal entry. See `GolubVanLoan.Chapter11.minres_reduction` and
+  `GolubVanLoan.Chapter11.minres_givens_update`.
+* **§11.4.2, LSMR monotonicity** (specialization). The formal ordinary residual norm bound
+  requires full column rank. The normal residual norm bound has no rank assumption. See
+  `GolubVanLoan.Chapter11.lsmr_norm_residual_antitone`.
+* **§11.4.5, BiCG LU expression** (typo). The final LU expression restores the base iterate
+  $x_0$. See `GolubVanLoan.Chapter11.bicg_residual_orthogonal`.
 * **Display for $\phi(\alpha x)$ in §11.4.1** (typo). The source prints $\phi(\alpha x) =
   \alpha^2\lambda_{\min} - \alpha x^Tb$; the value is $\frac12\alpha^2\lambda_{\min}\|x\|_2^2 -
   \alpha x^Tb$. See `GolubVanLoan.Chapter11.energyFunctional_unbounded_of_indefinite`.
@@ -249,7 +258,10 @@ private theorem map_algebraMap_real {k l : ℕ} (M : Matrix (Fin k) (Fin l) ℝ)
   ext i j
   simp
 
-/-- If $k$ is at most the grade, then the first $k$ Arnoldi vectors are orthonormal. -/
+/-- If $k$ is at most the grade, then the first $k$ Arnoldi vectors are orthonormal.
+
+**Reading.** Orthonormality conditional on prefix inside grade.
+-/
 private theorem orthonormal_vec_fin (T : EuclideanSpace ℝ (Fin n) →ₗ[ℝ] EuclideanSpace ℝ (Fin n))
     (r : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk : k ≤ grade T r) :
     Orthonormal ℝ fun i : Fin k => Arnoldi.vec T r i :=
@@ -350,7 +362,10 @@ $y \in \mathbb{R}^k$, $$\|A(x_0 + Q_ky) - b\|_2 = \|H_ky - \beta_0e_1\|_2.$$
 
 The source writes the chain "$\|A(x_0 + Q_ky) - b\|_2 = \|Q_{k+1}H_ky - (b - Ax_0)\|_2 =
 \|H_ky - \beta_0e_1\|_2$" for $x = x_0 + Q_ky$, where $\operatorname{ran} Q_k = \mathcal{K}(A,
-r_0, k)$. The bound on $k$ makes $q_1, \dots, q_k$ orthonormal. -/
+r_0, k)$. The bound on $k$ makes $q_1, \dots, q_k$ orthonormal.
+
+**Correction.** The starting scale is $\beta_0 = \|r_0\|_2$, with $r_0 = b-Ax_0$. The source
+prints $g_0$ in this initialization. -/
 theorem minres_reduction {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (b x₀ : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : k ≤ grade (toEuclideanLin A) (b - toEuclideanLin A x₀)) (y : Fin k → ℝ) :
@@ -450,7 +465,12 @@ The source says that "the transition $\{H_{k-1}, R_{k-1}, p_{k-1}, \rho_{k-1}\} 
 p_k, \rho_k\}$ can be realized … after the $k$th Lanczos step", with one new rotation, and that
 "the matrix $R_k$ has upper bandwidth 2". The statement is at $k + 1$ in place of $k$. The first
 two parts hold for every $A$ (`GolubVanLoan.Chapter11.gmres_givens_prefix`); the bandwidth needs
-the tridiagonal $H_k$ of a symmetric $A$. The flop counts are not formalized. -/
+the tridiagonal $H_k$ of a symmetric $A$. The flop counts are not formalized.
+
+**Correction.** The last Givens rotation uses the diagonal-position entry of the new column
+after applying the earlier rotations to that column, together with its subdiagonal entry. The
+previous leading factor entry $[R_{k-1}]_{k-1,k-1}$ is not the diagonal-position entry of the
+new column. -/
 theorem minres_givens_update {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (r₀ : EuclideanSpace ℝ (Fin n)) (β₀ : ℝ) (k : ℕ) :
     (∀ i j : Fin k, hessenbergSqOf (rotated (Arnoldi.coeff (toEuclideanLin A) r₀) (k + 1))
@@ -565,7 +585,11 @@ The product $G_1 \cdots G_m$ is $Q_m^T$. With `T = Matrix.toEuclideanLin A` and
 `h = Arnoldi.coeff T r₀`, the accumulated rotation is `Krylov.givensQ h m`, the matrix of
 (11.4.3) is `Arnoldi.hessenberg T r₀ m`, the rotated matrix $\bar R_m$ is
 `Krylov.hessenbergOf (Krylov.rotated h m) m`, and the minimum-norm property comes from
-`Krylov.conjTranspose_hessenbergOf_mulVec_givensQ_snoc`. -/
+`Krylov.conjTranspose_hessenbergOf_mulVec_givensQ_snoc`.
+
+**Reading.** Same triangular solve and min-norm condition before grade; arbitrary right-hand side
+scalar.
+-/
 theorem symmlq_minNorm_solution {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (r₀ : EuclideanSpace ℝ (Fin n)) {m : ℕ} (hm : m < grade (toEuclideanLin A) r₀) (β₀ : ℝ) :
     (Arnoldi.hessenberg (toEuclideanLin A) r₀ m)ᵀ *
@@ -649,7 +673,10 @@ The process is the Golub–Kahan process of the pair $(A^T, A)$ of
 `Numlib.Krylov.Bidiagonalization`. The vectors $v_{j+1}$ and $u_{j+1}$ and the matrix $\tilde B_k$
 are, with `T = Matrix.toEuclideanLin A` and `Tt = Matrix.toEuclideanLin Aᵀ`, the vectors
 `GolubKahan.leftVec Tt T u₁ j` and `GolubKahan.rightVec Tt T u₁ j` and the matrix
-`GolubKahan.bidiagLower Tt T u₁ k`. -/
+`GolubKahan.bidiagLower Tt T u₁ k`.
+
+**Reading.** Zero-padded factor identity for all k; orthonormal clauses with respective grades.
+-/
 theorem equation_11_4_6 (A : Matrix (Fin m) (Fin n) ℝ) (u₁ : EuclideanSpace ℝ (Fin m)) (k : ℕ) :
     (∀ y : Fin k → ℝ, toEuclideanLin A
         (∑ j, y j • GolubKahan.leftVec (toEuclideanLin Aᵀ) (toEuclideanLin A) u₁ j) =
@@ -781,7 +808,11 @@ positive definite.
 The first part holds because the iterates minimize over nested spaces. The second part follows
 Fong and Saunders: $\|r_k\|_2^2 = \|b - Ax_{LS}\|_2^2 + \|x_k - x_{LS}\|_{A^TA}^2$, and the
 energy error of MINRES on a positive definite system is nonincreasing. Full column rank is
-`Function.Injective A.mulVec`. -/
+`Function.Injective A.mulVec`.
+
+**Specialization.** The source asserts both monotonicity properties without a rank restriction.
+The ordinary residual's monotonicity is shown here under full column rank; the normal
+residual's monotonicity holds at arbitrary rank. -/
 theorem lsmr_norm_residual_antitone (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     (x₀ : Fin n → ℝ) {x : ℕ → Fin n → ℝ} (hx : ∀ k, IsLSMRIterate A b x₀ k (x k)) :
     Antitone (fun k => ‖(WithLp.toLp 2 (Aᵀ *ᵥ (b - A *ᵥ x k)) : EuclideanSpace ℝ (Fin n))‖) ∧
@@ -849,7 +880,10 @@ The source says: "After $k$ steps of the Arnoldi iteration … it is easy to con
 (10.5.2) that $AQ_k = Q_{k+1}\tilde H_k$ where the columns of $Q_{k+1}$ are the orthonormal
 Arnoldi vectors and the upper Hessenberg matrix $\tilde H_k$ … Moreover, if $q_1 = r_0/\beta_0$
 … then $\operatorname{span}\{q_1, \dots, q_k\} = \mathcal{K}(A, r_0, k)$." The matrix
-$\tilde H_k$ is `Arnoldi.hessenberg (Matrix.toEuclideanLin A) r₀ k`. -/
+$\tilde H_k$ is `Arnoldi.hessenberg (Matrix.toEuclideanLin A) r₀ k`.
+
+**Reading.** Same Arnoldi product, span and Hessenberg; orthonormality needs grade.
+-/
 theorem equation_11_4_8 (A : Matrix (Fin n) (Fin n) ℝ) (r₀ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     (∀ y : Fin k → ℝ, toEuclideanLin A (∑ j, y j • Arnoldi.vec (toEuclideanLin A) r₀ j) =
       ∑ i : Fin (k + 1), (Arnoldi.hessenberg (toEuclideanLin A) r₀ k *ᵥ y) i •
@@ -916,7 +950,10 @@ $G_k^T \cdots G_1^T\tilde H_k = [R_k; 0]$, $R_k \in \mathbb{R}^{k \times k}$, is
 triangular". The matrix $W$ is `Krylov.givensQ h k`, and $W\tilde H_k$ is
 `Krylov.hessenbergOf (Krylov.rotated h k) k`, where
 `h = Arnoldi.coeff (Matrix.toEuclideanLin A) r₀`. The statement says that the square part of
-$W\tilde H_k$ is upper triangular and that its last row is zero. -/
+$W\tilde H_k$ is upper triangular and that its last row is zero.
+
+**Reading.** Same Givens triangularization before grade.
+-/
 theorem equation_11_4_9 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : k < grade (toEuclideanLin A) (b - toEuclideanLin A x₀)) :
     givensQ (Arnoldi.coeff (toEuclideanLin A) (b - toEuclideanLin A x₀)) k ∈
@@ -941,7 +978,10 @@ GMRES iterate, and $\|Ax_k - b\|_2 = |\rho_k|$.
 
 The source says: "If … $G_k^T \cdots G_1^T(\beta_0e_1) = [p_k; \rho_k]$ … then $R_ky_k = p_k$
 and $|\rho_k| = \|Ax_k - b\|_2$." The entries of $p_k$ are `Krylov.gvec h β₀ i` for $i < k$, and
-$\rho_k$ is `Krylov.gamma h β₀ k`, where `h = Arnoldi.coeff (Matrix.toEuclideanLin A) r₀`. -/
+$\rho_k$ is `Krylov.gamma h β₀ k`, where `h = Arnoldi.coeff (Matrix.toEuclideanLin A) r₀`.
+
+**Reading.** Same rotated RHS and residual norm before grade.
+-/
 theorem equation_11_4_10 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : k < grade (toEuclideanLin A) (b - toEuclideanLin A x₀)) {y : Fin k → ℝ}
     (hy : hessenbergSqOf (rotated (Arnoldi.coeff (toEuclideanLin A)
@@ -1016,7 +1056,10 @@ With $\mathrm{op}(q) = Aq$ computed by the gaxpy of Algorithm 1.1.3, the pass is
 `GolubVanLoan.Chapter10.arnoldiStep` of Algorithm 10.5.1
 (`GolubVanLoan.Chapter11.arnoldiStepOp_gaxpy`). With $\mathrm{op}(q) = M^{-1}(Aq)$ it is the
 pass of the preconditioned GMRES of §11.5. The Gram–Schmidt loop is
-`GolubVanLoan.Chapter10.mgsLoop`. -/
+`GolubVanLoan.Chapter10.mgsLoop`.
+
+**Reading.** Replaces matrix-vector product with callback and checks done flag.
+-/
 noncomputable def arnoldiStepOp (op : (Fin n → ℝ) → M (Fin n → ℝ))
     (s : GolubVanLoan.Chapter10.ArnoldiState n) : M (GolubVanLoan.Chapter10.ArnoldiState n) :=
   if s.done then pure s else do
@@ -1045,7 +1088,10 @@ marked `done` ($\beta_k = 0$), the pass does nothing. Otherwise it runs the Arno
 `GolubVanLoan.Chapter11.arnoldiStepOp`, copies the new column $H(1{:}k+1, k)$ into the rotated
 matrix, applies $G_1, \dots, G_{k-1}$ to it, determines $G_k$ from $(r_{kk}, h_{k+1,k})$ by
 `givens` (Algorithm 5.1.3), and applies $G_k$ to the column and to the right-hand side
-(`GolubVanLoan.Chapter05.givensApplyLeft`, `GolubVanLoan.Chapter05.givensRotateVec`). -/
+(`GolubVanLoan.Chapter05.givensApplyLeft`, `GolubVanLoan.Chapter05.givensRotateVec`).
+
+**Reading.** One rounded pass with explicit stopped branch and padded column.
+-/
 noncomputable def gmresStep (op : (Fin n → ℝ) → M (Fin n → ℝ)) (s : GMRESState n m) (j : Fin m) :
     M (GMRESState n m) :=
   if s.arnoldi.done then pure s else do
@@ -1068,7 +1114,11 @@ $R_ky_k = p_k$ on the leading $k \times k$ block of the rotated matrix by back s
 returns the final state and $\tilde x$.
 
 The initial vector $z_0$ is $r_0$ for Algorithm 11.4.2 and $M^{-1}r_0$ for Algorithm 11.5.2. In
-the branch $k > m$, which serves only to type the leading block, the program returns $x_0$. -/
+the branch $k > m$, which serves only to type the leading block, the program returns $x_0$.
+
+**Reading.** Callback product and bounded rounded loop with explicit zero norm and final dimension
+guards.
+-/
 noncomputable def gmresCore (op : (Fin n → ℝ) → M (Fin n → ℝ)) (x₀ z₀ : Fin n → ℝ) (m : ℕ) :
     M (GMRESState n m × (Fin n → ℝ)) := do
   let β₀ ← GolubVanLoan.Chapter10.vecNorm rnd z₀
@@ -1109,7 +1159,10 @@ The program has no hypothesis on $A$; nonsingularity is a hypothesis of
 `GolubVanLoan.Chapter11.algorithm_11_4_2_spec`. The Arnoldi part of a pass is the pass of
 Algorithm 10.5.1, started from $q_1 = r_0/\beta_0$. Its first normalization divides again by
 $h_{1,0} = 1$, which in the rounding model adds one rounding per entry of $q_1$ to the single
-division of the source; it is kept so that the loop of chapter 10 is reused unchanged. -/
+division of the source; it is kept so that the loop of chapter 10 is reused unchanged.
+
+**Reading.** Rounded core, permits m=0 and guards Arnoldi termination.
+-/
 noncomputable def algorithm_11_4_2 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (m : ℕ) :
     M (GMRESState n m × (Fin n → ℝ)) := do
   let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -1130,7 +1183,10 @@ private noncomputable def gmresRot (c : ℝ × ℝ) (i : Fin m) :
     Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ :=
   GolubVanLoan.Chapter05.givensRotation i.castSucc i.succ c.1 c.2
 
-/-- The product $G_t^T \cdots G_1^T$ of the transposed rotations of the first $t$ planes. -/
+/-- The product $G_t^T \cdots G_1^T$ of the transposed rotations of the first $t$ planes.
+
+**Reading.** Ordered transpose product truncated at allocated capacity.
+-/
 private noncomputable def gmresW (cs : Fin m → ℝ × ℝ) : ℕ → Matrix (Fin (m + 1)) (Fin (m + 1)) ℝ
   | 0 => 1
   | t + 1 => if h : t < m then (gmresRot (cs ⟨t, h⟩) ⟨t, h⟩)ᵀ * gmresW cs t else gmresW cs t
@@ -1359,7 +1415,10 @@ private noncomputable def gmresC (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (
   Id.run (GolubVanLoan.Chapter05.algorithm_5_1_3 pure (gmresV op s j j.castSucc)
     (gmresV op s j j.succ))
 
-/-- The exact run of a genuine GMRES pass. -/
+/-- The exact run of a genuine GMRES pass.
+
+**Reading.** Exact active padded pass, same Givens updates.
+-/
 private theorem gmresStep_run (op : (Fin n → ℝ) → Id (Fin n → ℝ)) (s : GMRESState n m)
     (j : Fin m) (hd : s.arnoldi.done = false) :
     Id.run (gmresStep pure op s j) =
@@ -1414,13 +1473,19 @@ private theorem algorithm_10_5_1_run_eq_iterate (B : Matrix (Fin n) (Fin n) ℝ)
     simp only [GolubVanLoan.Chapter10.algorithm_10_5_1, List.range_succ, List.foldlM_append,
       List.foldlM_cons, List.foldlM_nil, bind_pure, Id.run_bind]
 
-/-- The exact initial state of `GolubVanLoan.Chapter11.gmresCore` from $z_0$. -/
+/-- The exact initial state of `GolubVanLoan.Chapter11.gmresCore` from $z_0$.
+
+**Reading.** Exact initial residual normalization and explicit zero stop.
+-/
 private noncomputable def gmresInit (z₀ : Fin n → ℝ) (m : ℕ) : GMRESState n m :=
   ⟨⟨0, fun _ => 0, fun _ _ => 0, (‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖)⁻¹ • z₀,
       decide (‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖ = 0)⟩, 0,
     Krylov.firstVec ‖(WithLp.toLp 2 z₀ : EuclideanSpace ℝ (Fin n))‖ (m + 1), fun _ => (1, 0)⟩
 
-/-- The exact triangular solve and update after the loop of `GolubVanLoan.Chapter11.gmresCore`. -/
+/-- The exact triangular solve and update after the loop of `GolubVanLoan.Chapter11.gmresCore`.
+
+**Reading.** Exact triangular solve and update with typed dimension guard.
+-/
 private noncomputable def gmresFinish (x₀ : Fin n → ℝ) (s : GMRESState n m) :
     GMRESState n m × (Fin n → ℝ) :=
   if h : s.arnoldi.k ≤ m then
@@ -1592,7 +1657,10 @@ private theorem gmresW_apply_of_lt_left (cs : Fin m → ℝ × ℝ) (t : ℕ) {a
   exact h
 
 /-- The exact GMRES loop makes $\min(m, g)$ Arnoldi steps on $z_0$, where $g$ is the grade, and
-computes the Arnoldi vectors and the Hessenberg entries of $z_0$. -/
+computes the Arnoldi vectors and the Hessenberg entries of $z_0$.
+
+**Reading.** Exact min of grade and limit, with captured coefficients.
+-/
 private theorem gmres_arnoldi_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)}
     {B : Matrix (Fin n) (Fin n) ℝ} (hop : ∀ q, Id.run (op q) = B *ᵥ q) (z₀ : Fin n → ℝ)
     (m : ℕ) :
@@ -1664,7 +1732,10 @@ $[R_k; 0]$ with $R_k$ upper triangular and nonsingular, so the back substitution
 $R_ky_k = p_k$. The case $\beta_k = 0$ uses `Krylov.IsMinResidualIterate.apply_eq_of_grade_le`.
 The rotations of `givens` need not be those of `Krylov.givensQ`, because their signs are fixed
 differently; the proof uses `Krylov.isMinResidualIterate_of_unitary_mul_hessenberg`, which needs
-only that they are orthogonal and triangularize $\tilde H_k$. -/
+only that they are orthogonal and triangularize $\tilde H_k$.
+
+**Reading.** Exact terminal count and minimizer conditional on nonsingular callback operator.
+-/
 theorem gmresCore_spec {op : (Fin n → ℝ) → Id (Fin n → ℝ)} {B : Matrix (Fin n) (Fin n) ℝ}
     (hB : IsUnit B) (hop : ∀ q, Id.run (op q) = B *ᵥ q) (c x₀ z₀ : Fin n → ℝ)
     (hz : z₀ = c - B *ᵥ x₀) (m : ℕ) :
@@ -1878,7 +1949,10 @@ The modified Gram–Schmidt loop (11.4.11) is Gram–Schmidt in exact arithmetic
 (`GolubVanLoan.Chapter10.algorithm_10_5_1_spec`). The rotations are those of `givens` (Algorithm
 5.1.3), whose signs can differ from those of `Krylov.givensQ`. The proof,
 `GolubVanLoan.Chapter11.gmresCore_spec`, uses only that they are orthogonal and give the
-triangular form. -/
+triangular form.
+
+**Reading.** Exact count, absolute residual factor, terminal solution and minimizer; also m=0.
+-/
 theorem algorithm_11_4_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (b x₀ : Fin n → ℝ)
     (m : ℕ) :
     let out := Id.run (algorithm_11_4_2 pure A b x₀ m)
@@ -1920,7 +1994,11 @@ is $y \in \mathbb{R}^k$ with $Q_ky = \phi(A)q_1$.
 The source says: "Suppose the columns of $Q_k \in \mathbb{R}^{n \times k}$ span
 $\mathcal{K}(A, q_1, k)$. It follows that if $y \in \mathbb{R}^k$, then $Q_ky = \phi(A)q_1$ for
 some polynomial $\phi$ that has degree $k - 1$ or less." The converse is added. The degree is
-`Polynomial.degree`, so the zero polynomial is allowed. -/
+`Polynomial.degree`, so the zero polynomial is allowed.
+
+**Reading.** Both directions of polynomial representation; allows dependent columns and zero
+polynomial.
+-/
 theorem krylov_eq_aeval (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (Q : Fin k → EuclideanSpace ℝ (Fin n))
     (hQ : Submodule.span ℝ (Set.range Q) = Krylov.subspace (toEuclideanLin A) q₁ k) :
@@ -2004,7 +2082,11 @@ source. The source's $r_k = \beta_kq_{k+1}$ is $\delta_kv_k$ in this indexing.
 The process is `BiLanczos` for `Matrix.toEuclideanLin A` and its adjoint
 `Matrix.toEuclideanLin Aᵀ`: $v_j$ is `BiLanczos.vec`, $w_j$ is `BiLanczos.dualVec`, $T$ is
 `BiLanczos.coeff`, and "no breakdown through step $k$" is `BiLanczos.NoBreakdown`. The dual
-relation (11.4.13) is `GolubVanLoan.Chapter11.equation_11_4_13`. -/
+relation (11.4.13) is `GolubVanLoan.Chapter11.equation_11_4_13`.
+
+**Reading.** Column version with independent nonzero starting scalings and explicit no-breakdown
+prefix.
+-/
 theorem equation_11_4_12 (A : Matrix (Fin n) (Fin n) ℝ) {r₀ rt₀ q₁ qt₁ : EuclideanSpace ℝ (Fin n)}
     {β₀ γ₀ : ℝ} (hβ : β₀ ≠ 0) (hγ : γ₀ ≠ 0) (hr : r₀ = β₀ • q₁) (hrt : rt₀ = γ₀ • qt₁) {k : ℕ}
     (h : BiLanczos.NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) q₁ qt₁ k) :
@@ -2046,7 +2128,10 @@ $A^T$ from $(q_1, \tilde q_1)$ has no breakdown through step $k$, with the notat
 * for $j < k$, $A^Tw_j = \delta_jw_{j-1} + \alpha_jw_j + \beta_{j+1}w_{j+1}$, with $w_{-1} = 0$;
   this is column $j$ of $A^T\tilde Q_k = \tilde Q_kT_k^T + \tilde r_ke_k^T$;
 * $v_i^Tw_k = 0$ for $i < k$, that is, $Q_k^T\tilde r_k = 0$, because the source's $\tilde r_k$
-  is a multiple of $w_k$. -/
+  is a multiple of $w_k$.
+
+**Reading.** Column version with explicit no-breakdown prefix.
+-/
 theorem equation_11_4_13 (A : Matrix (Fin n) (Fin n) ℝ) {q₁ qt₁ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
     (h : BiLanczos.NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) q₁ qt₁ k) :
     (∀ j < k, toEuclideanLin Aᵀ
@@ -2083,7 +2168,10 @@ $T_k$ has an LU factorization $T_k = L_kU_k$ … It follows that $x_k = x_0 +
 (Q_kU_k^{-1})(L_k^{-1}(\tilde Q_k^Tr_0))$." The statement is at $k + 1$ in place of $k$, and it
 does not need $q_1 = r_0/\beta_0$. The BiCG recurrence of Figure 11.4.1 computes this iterate
 (`BCG.isPetrovGalerkin`, through `GolubVanLoan.Chapter11.bicg_spec`). The proof specializes
-`BiLanczos.inner_dualVec_sub_apply_sum_eq_zero`. -/
+`BiLanczos.inner_dualVec_sub_apply_sum_eq_zero`.
+
+**Typo.** The final printed LU expression omits the base iterate $x_0$. The update retains it,
+as in the preceding expression $x_0+Q_k T_k^{-1}\tilde Q_k^T r_0$. -/
 theorem bicg_residual_orthogonal (A : Matrix (Fin n) (Fin n) ℝ)
     {b x₀ q₁ qt₁ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
     (h : BiLanczos.NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) q₁ qt₁ (k + 1))
@@ -2161,7 +2249,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 τ = r̃₊ᵀr₊ / r̃_cᵀr_c,      p₊ = r₊ + τp_c,    p̃₊ = r̃₊ + τp̃_c
 ```
 The products with $A$ and $A^T$ are gaxpys onto $0$ (Algorithm 1.1.3), the inner products are
-Algorithm 1.1.1, the updates are saxpys (Algorithm 1.1.2), and each quotient is rounded once. -/
+Algorithm 1.1.1, the updates are saxpys (Algorithm 1.1.2), and each quotient is rounded once.
+
+**Reading.** Same updates with monadic rounding and total division.
+-/
 noncomputable def bicgStep (A : Matrix (Fin n) (Fin n) ℝ) (s : BiCGState n) :
     M (BiCGState n) := do
   let Ap ← Chapter01.algorithm_1_1_3 rnd A s.p 0
@@ -2187,7 +2278,10 @@ The figure gives the initializations "$r_0 = b - Ax_0$, $\tilde r_0^Tr_0 \neq 0$
 $p_c = r_c = r_0$, $\tilde p_c = \tilde r_c = \tilde r_0$" and the update formulae, but no
 stopping test, so the number of passes `fuel` is the last argument. The condition
 $\tilde r_0^Tr_0 \neq 0$ is not a test of the program; the theorems state the hypotheses that
-they need. -/
+they need.
+
+**Reading.** Runs a fixed finite number of updates without breakdown checks.
+-/
 noncomputable def bicg (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (fuel : ℕ) :
     M (BiCGState n) := do
   let Ax ← Chapter01.algorithm_1_1_3 rnd A x₀ 0
@@ -2201,7 +2295,10 @@ r₊ = r_c − μA(u_c + q_c),   τ = r̃₀ᵀr₊ / r̃₀ᵀr_c,   u₊ = r�
 ```
 The products with $A$ are gaxpys onto $0$ (Algorithm 1.1.3), the inner products are Algorithm
 1.1.1, the updates are saxpys (Algorithm 1.1.2) and one rounded vector sum, and each quotient is
-rounded once. -/
+rounded once.
+
+**Reading.** Same recurrence with monadic rounding and total division.
+-/
 noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n → ℝ) (s : CGSState n) :
     M (CGSState n) := do
   let Ap ← Chapter01.algorithm_1_1_3 rnd A s.p 0
@@ -2244,7 +2341,10 @@ p₊ = r₊ + τ(p_c − ωAp_c)
 ```
 The inner product $s_c^TAs_c$ is accumulated as $(As_c)^Ts_c$, from the same products. The
 operations are rounded as in `GolubVanLoan.Chapter11.bicgStep`, and $\tau$ is computed as
-$\mathrm{fl}(\mathrm{fl}(\tilde r_0^Tr_+ \cdot \mu)/\mathrm{fl}(\tilde r_0^Tr_c \cdot \omega))$. -/
+$\mathrm{fl}(\mathrm{fl}(\tilde r_0^Tr_+ \cdot \mu)/\mathrm{fl}(\tilde r_0^Tr_c \cdot \omega))$.
+
+**Reading.** Same omega and tau updates with monadic rounding and total division.
+-/
 noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n → ℝ)
     (st : BiCGstabState n) : M (BiCGstabState n) := do
   let Ap ← Chapter01.algorithm_1_1_3 rnd A st.p 0
@@ -2301,7 +2401,10 @@ def BiCGstabState.toState (s : BiCGstabState n) :
     BiCGSTAB.State (EuclideanSpace ℝ (Fin n)) :=
   ⟨WithLp.toLp 2 s.x, WithLp.toLp 2 s.r, WithLp.toLp 2 s.p⟩
 
-/-- The exact BiCG pass is the backbone step `BCG.step` for $A$ and its adjoint $A^T$. -/
+/-- The exact BiCG pass is the backbone step `BCG.step` for $A$ and its adjoint $A^T$.
+
+**Reading.** Exact backbone equality with total division even at breakdown.
+-/
 private theorem bicgStep_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : BiCGState n) :
     (Id.run (bicgStep pure A s)).toState =
       BCG.step (toEuclideanLin A) (toEuclideanLin Aᵀ) s.toState := by
@@ -2311,7 +2414,10 @@ private theorem bicgStep_exact (A : Matrix (Fin n) (Fin n) ℝ) (s : BiCGState n
     ← WithLp.toLp_add, ← WithLp.toLp_smul, ← WithLp.toLp_sub, toEuclideanLin_toLp, inner_toLp,
     neg_smul, ← sub_eq_add_neg]
 
-/-- The exact CGS pass is the backbone `CGS.step`. -/
+/-- The exact CGS pass is the backbone `CGS.step`.
+
+**Reading.** Exact backbone equality with total division even at breakdown.
+-/
 private theorem cgsStep_exact (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n → ℝ)
     (s : CGSState n) :
     (Id.run (cgsStep pure A rt₀ s)).toState =
@@ -2322,7 +2428,10 @@ private theorem cgsStep_exact (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n �
   simp only [CGSState.toState, CGS.step, ← WithLp.toLp_add, ← WithLp.toLp_smul,
     ← WithLp.toLp_sub, toEuclideanLin_toLp, inner_toLp, neg_smul, ← sub_eq_add_neg]
 
-/-- The exact BiCGstab pass is the backbone `BiCGSTAB.step`. -/
+/-- The exact BiCGstab pass is the backbone `BiCGSTAB.step`.
+
+**Reading.** Exact backbone equality with total division even at breakdown.
+-/
 private theorem bicgstabStep_exact (A : Matrix (Fin n) (Fin n) ℝ) (rt₀ : Fin n → ℝ)
     (s : BiCGstabState n) :
     (Id.run (bicgstabStep pure A rt₀ s)).toState =
@@ -2356,7 +2465,11 @@ and let $x_k, r_k, \tilde r_k, p_k, \tilde p_k$ be the state after $k$ exact pas
 The iteration `BCG.iterate` is the recurrence of Algorithm 7.3 of [saad2003iterative]. "No
 breakdown through step $m$" is `BCG.NoBreakdown`: neither $\tilde r_k^Tr_k$ nor
 $\tilde p_k^TAp_k$ vanishes for $k < m$. The Petrov–Galerkin iterate is `IsPetrovGalerkin`; it
-is the iterate of `GolubVanLoan.Chapter11.bicg_residual_orthogonal`. -/
+is the iterate of `GolubVanLoan.Chapter11.bicg_residual_orthogonal`.
+
+**Reading.** Totalized program agrees with backbone for all k; projection and conjugacy need no
+breakdown.
+-/
 theorem bicg_spec (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) :
     (∀ k, (Id.run (bicg pure A b x₀ rt₀ k)).toState =
       BCG.iterate (toEuclideanLin A) (toEuclideanLin Aᵀ) (WithLp.toLp 2 b) (WithLp.toLp 2 x₀)
@@ -2482,7 +2595,11 @@ r_0^T(\psi_k(A)^2r_0), \qquad \tilde p_k^TAp_k = \tilde r_0^T(A\phi_k(A)^2r_0).$
 
 The source says that this enables "us to characterize expressions like $\tilde r_k^Tr_k$ and
 $\tilde p_k^TAp_k$ in a way that involves only $A$-times-vector". The proof moves the polynomial
-in $A^T$ across the inner product (`BiLanczos.inner_aeval_map_eq`). -/
+in $A^T$ across the inner product (`BiLanczos.inner_aeval_map_eq`).
+
+**Generalization.** Same pair of transpose-free polynomial products extends through totalized
+recurrence.
+-/
 theorem bicg_inner_eq_poly (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (k : ℕ) :
     inner ℝ (WithLp.toLp 2 (Id.run (bicg pure A b x₀ rt₀ k)).rt : EuclideanSpace ℝ (Fin n))
         (WithLp.toLp 2 (Id.run (bicg pure A b x₀ rt₀ k)).r) =
@@ -2527,7 +2644,10 @@ backbone, and $$r_k = \psi_k(A)^2r_0, \qquad p_k = \phi_k(A)^2r_0.$$
 The source says that CGS "produces iterates $x_k$ whose residuals $r_k$ satisfy
 $r_k = \psi_k(A)^2r_0$", with products by $A$ only. The iteration `CGS.iterate` is Algorithm 7.6
 of [saad2003iterative], line by line the same as the figure. The polynomial identities are
-`CGS.residual_eq_aeval_sq`; they need no hypothesis on breakdown. -/
+`CGS.residual_eq_aeval_sq`; they need no hypothesis on breakdown.
+
+**Generalization.** Same squared polynomial identities extend through totalized recurrence.
+-/
 theorem cgs_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (k : ℕ) :
     (Id.run (cgs pure A b x₀ rt₀ k)).toState =
         CGS.iterate (toEuclideanLin A) (WithLp.toLp 2 b) (WithLp.toLp 2 x₀) (WithLp.toLp 2 rt₀) k ∧
@@ -2570,7 +2690,11 @@ given $\omega_1, \dots, \omega_{k-1}$ and the vector $\psi_k(A)r_0$." The indice
 are 0-based here. The iteration `BiCGSTAB.iterate` is Algorithm 7.7 of [saad2003iterative]. The
 residual identity is `BiCGSTAB.residual_eq`, and the product of the factors $1 - \omega_jA$ is
 `BiCGSTAB.stabPoly`. The minimization is Problem P11.4.2 of the source, the one-dimensional
-minimal-residual step `Projection.minResStep`. -/
+minimal-residual step `Projection.minResStep`.
+
+**Reading.** Same stabilization polynomial under explicit no-BiCG-breakdown and nonzero-omega
+hypotheses.
+-/
 theorem bicgstab_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ rt₀ : Fin n → ℝ) (k : ℕ) :
     (Id.run (bicgstab pure A b x₀ rt₀ k)).toState =
         BiCGSTAB.iterate (toEuclideanLin A) (WithLp.toLp 2 b) (WithLp.toLp 2 x₀)
@@ -2644,7 +2768,11 @@ is chosen to minimize $\|\beta_0e_1 - \tilde T_ky\|_2$."
 "No serious breakdown" is `BiLanczos.NoSeriousBreakdown`: whenever $\delta_{j+1} = 0$, the
 primal recurrence has already terminated. The residual identity is
 `Krylov.HessenbergRelation₂.residual_eq` for `BiLanczos.hessenbergRelation`. The QMR iterate is
-`QMR.IsQuasiMinResidual`, which is the minimization of the source by definition. -/
+`QMR.IsQuasiMinResidual`, which is the minimization of the source by definition.
+
+**Reading.** Same coordinate minimization under global no-serious-breakdown and general initial
+scaling.
+-/
 theorem qmr_residual_eq (A : Matrix (Fin n) (Fin n) ℝ) {b x₀ q₁ qt₁ : EuclideanSpace ℝ (Fin n)}
     {β₀ : ℝ} (h : BiLanczos.NoSeriousBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) q₁ qt₁)
     (hr : b - toEuclideanLin A x₀ = β₀ • q₁) (k : ℕ) :
@@ -2670,7 +2798,10 @@ GMRES iterate, the minimizer of $\|b - Ax\|_2$ over $x_0 + \mathcal{K}(A, r_0, k
 
 The source says: "GMRES minimizes the same quantity because $Q_{k+1}$ has orthonormal columns in
 Arnoldi." The quasi-minimal-residual iterate is `Krylov.IsQuasiMinResidualIterate` for the
-Arnoldi vectors and coefficients. -/
+Arnoldi vectors and coefficients.
+
+**Reading.** The equivalence is for the orthonormal Arnoldi representation, up to grade.
+-/
 theorem qmr_eq_gmres_of_orthonormal (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : k ≤ grade (toEuclideanLin A) (b - toEuclideanLin A x₀)) (x : EuclideanSpace ℝ (Fin n)) :

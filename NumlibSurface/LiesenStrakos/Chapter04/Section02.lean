@@ -53,9 +53,13 @@ basis comes from `Numlib.LinearAlgebra.Matrix.Jordan`.
 
 ## Deviations from the source
 
+* **Definitions 4.2.1 and 4.2.5** (generalization). Grade and operator minimal-polynomial
+  definitions allow arbitrary dimensions and fields. The invariant-subspace definition also
+  includes the zero subspace.
 * **Lemma 4.2.9** (generalization). Either summand may be zero because its vector minimal
   polynomial is $1$ and its cyclic space is zero.
-* **Corollary 4.2.10** (generalization). The empty decomposition is allowed for the zero space.
+* **Corollary 4.2.10** (generalization). The zero space admits the empty cyclic decomposition. See
+  `LiesenStrakos.corollary_4_2_10`.
 -/
 
 open Polynomial
@@ -72,7 +76,10 @@ noncomputable abbrev vectorMinimalPolynomial (A : Module.End ℂ V) (v : V) : �
 
 /-- The grade $d(A,v)$ of $v$ with respect to $A$ is the degree of its minimal polynomial.
 Equivalently it is the dimension of the span of $v,Av,A^2v,\ldots$. This is Definition 4.2.1
-of [liesen2013krylov]. -/
+of [liesen2013krylov].
+
+**Generalization.** The ambient vector space and scalar field are arbitrary. An infinite-
+dimensional cyclic span gives grade zero under the finite-rank convention. -/
 noncomputable abbrev vectorGrade {K W : Type*} [Field K] [AddCommGroup W] [Module K W]
     (A : Module.End K W) (v : W) : ℕ := Krylov.grade A v
 
@@ -99,17 +106,26 @@ theorem lemma_4_2_3 (A : Module.End ℂ V) (v : V) (p : ℂ[X])
   (Krylov.minpolyVec_dvd_iff A v).2 hp
 
 /-- The minimal polynomial of $A$ on an invariant subspace $W$ is the minimal polynomial of the
-endomorphism induced by $A$ on $W$. This is Definition 4.2.5 of [liesen2013krylov]. -/
+endomorphism induced by $A$ on $W$. This is Definition 4.2.5 of [liesen2013krylov].
+
+**Generalization.** The definition includes the zero invariant subspace, with minimal
+polynomial $1$. -/
 noncomputable abbrev subspaceMinimalPolynomial (A : Module.End ℂ V) (W : Submodule ℂ V)
     (hW : Set.MapsTo A W W) : ℂ[X] := A.minpolyOn W hW
 
 /-- The minimal polynomial of $A$ on the full space is its monic annihilator of least degree.
-This is Definition 4.2.5 of [liesen2013krylov]. -/
+This is Definition 4.2.5 of [liesen2013krylov].
+
+**Generalization.** Any scalar field and ambient dimension are allowed. A nonintegral operator
+has minimal polynomial zero. -/
 noncomputable abbrev operatorMinimalPolynomial {K W : Type*} [Field K] [AddCommGroup W]
     [Module K W] (A : Module.End K W) : K[X] := minpoly K A
 
 /-- The degree $d_{\min}(A)$ of the minimal polynomial of the operator $A$.
-This is Definition 4.2.5 of [liesen2013krylov]. -/
+This is Definition 4.2.5 of [liesen2013krylov].
+
+**Generalization.** This natural degree is zero for a nonintegral operator, whose minimal
+polynomial is zero. -/
 noncomputable abbrev operatorMinimalDegree {K W : Type*} [Field K] [AddCommGroup W]
     [Module K W] (A : Module.End K W) : ℕ :=
   (operatorMinimalPolynomial A).natDegree
@@ -117,7 +133,9 @@ noncomputable abbrev operatorMinimalDegree {K W : Type*} [Field K] [AddCommGroup
 /-- The invariant-subspace minimal polynomial is monic, divides exactly the polynomials that
 annihilate the subspace, and is divisible by each vector minimal polynomial in the subspace.
 For an annihilating monic polynomial, equality of degree forces equality with the minimal
-polynomial. This is Lemma 4.2.4 of [liesen2013krylov]. -/
+polynomial. This is Lemma 4.2.4 of [liesen2013krylov].
+
+**Generalization.** The characterization also includes the zero invariant subspace. -/
 theorem lemma_4_2_4 (A : Module.End ℂ V) (W : Submodule ℂ V) (hW : Set.MapsTo A W W) :
     let μ := subspaceMinimalPolynomial A W hW
     μ.Monic ∧ (∀ p : ℂ[X], μ ∣ p ↔ ∀ v ∈ W, aeval A p v = 0) ∧

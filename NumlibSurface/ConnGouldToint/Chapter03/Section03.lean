@@ -53,6 +53,20 @@ The proofs specialize the backbone module `Numlib.Nonlinear.Newton`.
 
 ## Deviations from the source
 
+* **Correction.** Section 3.3.1 corrects the Q-rate criteria to use the successor error, with
+  consequences for the R-rate envelope. See `ConnGouldToint.Chapter03.ConvergesQLinearly`,
+  `ConnGouldToint.Chapter03.ConvergesQSuperlinearly`,
+  `ConnGouldToint.Chapter03.ConvergesQQuadratically`,
+  `ConnGouldToint.Chapter03.ConvergesRQuadratically`,
+  `ConnGouldToint.Chapter03.reciprocal_succ_counterexample`.
+* **One-step specification.** Algorithm 3.3.1 specifies a unique Newton step under invertibility of
+  the derivative. See `ConnGouldToint.Chapter03.algorithm_3_3_1`.
+* **Generalization.** Theorem 3.3.1 removes global convexity of the domain and uses the corrected
+  Q-rate definitions. See `ConnGouldToint.Chapter03.theorem_3_3_1`.
+* **Explicit domain and size conditions.** Theorem 3.3.2 gives quantitative initial-step bounds and
+  requires the Kantorovich ball to remain in the domain. See
+  `ConnGouldToint.Chapter03.theorem_3_3_2`,
+  `ConnGouldToint.Chapter03.newton_correction_small_without_domain_ball`.
 * **Q-rate definitions of Section 3.3.1** (typo). The printed criteria on pp. 50–51 compare the
   successive difference $\|u_{k+1} - u_k\|$ with the error $\|u_k - x\|$. The definitions use the
   successor error $\|u_{k+1} - x\|$. See `ConnGouldToint.Chapter03.ConvergesQQuadratically` and
@@ -74,7 +88,12 @@ $$\|u_{k+1} - x\| \le q \|u_k - x\|$$
 for all sufficiently large $k$.
 
 **Typo.** The source compares the successive difference $\|u_{k+1} - u_k\|$ with the error
-$\|u_k - x\|$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here. -/
+$\|u_k - x\|$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here.
+
+**Correction.** The Q-rate compares the successor error with the current error. The R-rate is
+defined by domination by an envelope with this corrected Q-rate. The reciprocal sequence satisfies
+the printed successive-difference test without Q-quadratic convergence.
+-/
 def ConvergesQLinearly (u : ℕ → E) (x : E) : Prop :=
   Tendsto u atTop (𝓝 x) ∧ ∃ q ∈ Set.Ico (0 : ℝ) 1,
     ∀ᶠ k in atTop, ‖u (k + 1) - x‖ ≤ q * ‖u k - x‖
@@ -86,7 +105,12 @@ $$\|u_{k+1} - x\| = o(\|u_k - x\|) \qquad (k \to \infty).$$
 **Typo.** The source compares the successive difference $\|u_{k+1} - u_k\|$ with the error
 $\|u_k - x\|$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here.
 
-The little-o is Mathlib's `Asymptotics.IsLittleO` along `atTop`. -/
+The little-o is Mathlib's `Asymptotics.IsLittleO` along `atTop`.
+
+**Correction.** The Q-rate compares the successor error with the current error. The R-rate is
+defined by domination by an envelope with this corrected Q-rate. The reciprocal sequence satisfies
+the printed successive-difference test without Q-quadratic convergence.
+-/
 def ConvergesQSuperlinearly (u : ℕ → E) (x : E) : Prop :=
   Tendsto u atTop (𝓝 x) ∧ (fun k => u (k + 1) - x) =o[atTop] fun k => u k - x
 
@@ -98,7 +122,12 @@ for all sufficiently large $k$.
 **Typo.** The source compares the successive difference $\|u_{k+1} - u_k\|$ with
 $\|u_k - x\|^2$. The intended criterion uses the successor error $\|u_{k+1} - x\|$, as here.
 `ConnGouldToint.Chapter03.reciprocal_succ_counterexample` shows that the printed inequality
-holds for a sequence that does not converge Q-quadratically. -/
+holds for a sequence that does not converge Q-quadratically.
+
+**Correction.** The Q-rate compares the successor error with the current error. The R-rate is
+defined by domination by an envelope with this corrected Q-rate. The reciprocal sequence satisfies
+the printed successive-difference test without Q-quadratic convergence.
+-/
 def ConvergesQQuadratically (u : ℕ → E) (x : E) : Prop :=
   Tendsto u atTop (𝓝 x) ∧ ∃ C : ℝ, ∀ᶠ k in atTop, ‖u (k + 1) - x‖ ≤ C * ‖u k - x‖ ^ 2
 
@@ -107,7 +136,12 @@ group **converges R-quadratically** to $x$ if there is a real sequence $(w_k)$ t
 Q-quadratically to $0$ with
 $$\|u_k - x\| \le w_k \quad \text{for all } k.$$
 
-The bound forces $w_k \ge 0$ and $u_k \to x$. -/
+The bound forces $w_k \ge 0$ and $u_k \to x$.
+
+**Correction.** The Q-rate compares the successor error with the current error. The R-rate is
+defined by domination by an envelope with this corrected Q-rate. The reciprocal sequence satisfies
+the printed successive-difference test without Q-quadratic convergence.
+-/
 def ConvergesRQuadratically (u : ℕ → E) (x : E) : Prop :=
   ∃ w : ℕ → ℝ, ConvergesQQuadratically w 0 ∧ ∀ k, ‖u k - x‖ ≤ w k
 
@@ -117,7 +151,12 @@ $$|u_{k+1} - u_k| \le |u_k|^2 \quad \text{for all } k,$$
 but it does not converge Q-quadratically to $0$.
 
 The printed criterion, with the successive difference on the left, therefore does not define
-Q-quadratic convergence; see `ConnGouldToint.Chapter03.ConvergesQQuadratically`. -/
+Q-quadratic convergence; see `ConnGouldToint.Chapter03.ConvergesQQuadratically`.
+
+**Correction.** The Q-rate compares the successor error with the current error. The R-rate is
+defined by domination by an envelope with this corrected Q-rate. The reciprocal sequence satisfies
+the printed successive-difference test without Q-quadratic convergence.
+-/
 theorem reciprocal_succ_counterexample :
     let u : ℕ → ℝ := fun k => 1 / ((k : ℝ) + 1)
     Tendsto u atTop (𝓝 0) ∧ (∀ k, ‖u (k + 1) - u k‖ ≤ ‖u k‖ ^ 2) ∧
@@ -167,7 +206,11 @@ $x_0$. If $f$ has an invertible derivative $J(x_k)$ at $x_k$, then there is exac
 that solves the Newton equation and gives the next iterate:
 $$J(x_k) s = -f(x_k) \quad \text{and} \quad x_{k+1} = x_k + s.$$
 
-The iterates are `Newton.iterate f (fderiv ℝ f) x₀`. -/
+The iterates are `Newton.iterate f (fderiv ℝ f) x₀`.
+
+**Reading.** The Newton iteration is represented by the shared iterate, with a continuous linear
+equivalence at the current point guaranteeing the unique step solving the Newton equation.
+-/
 theorem algorithm_3_3_1 (f : E → F) (x₀ : E) (k : ℕ)
     (e : E ≃L[ℝ] F)
     (he : HasFDerivAt f (e : E →L[ℝ] F) (Newton.iterate f (fderiv ℝ f) x₀ k)) :
@@ -234,7 +277,12 @@ $(x_k)$ from $x_0$, then $x_k$ converges Q-quadratically to $x$ and $f(x_k)$ con
 Q-quadratically to $0$.
 
 The invertibility of $J(x)$ is a continuous linear equivalence `e : E ≃L[ℝ] F` equal to
-`fderiv ℝ f x`. -/
+`fderiv ℝ f x`.
+
+**Generalization.** The open domain need not be convex. The derivative is Lipschitz there, and the
+result uses a cluster point that is a root with invertible derivative to obtain the two corrected
+Q-rate conclusions.
+-/
 theorem theorem_3_3_1 {S : Set E} (hS : IsOpen S) {f : E → F} {x₀ x : E} (hx : x ∈ S)
     (hF : ∀ z ∈ S, DifferentiableAt ℝ f z) {L : ℝ}
     (hLip : ∀ z ∈ S, ∀ w ∈ S, ‖fderiv ℝ f z - fderiv ℝ f w‖ ≤ L * ‖z - w‖)
@@ -295,7 +343,12 @@ this condition the first Newton step can leave the domain, even when the first c
 arbitrarily small; see `ConnGouldToint.Chapter03.newton_correction_small_without_domain_ball`.
 
 The invertibility of $J(x_0)$ is a continuous linear equivalence `e : E ≃L[ℝ] F` equal to
-`fderiv ℝ f x₀`. -/
+`fderiv ℝ f x₀`.
+
+**Reading.** The theorem requires the Kantorovich ball to lie in the differentiability domain and
+gives the numerical smallness bound on the initial correction. The counterexample has an arbitrarily
+small first correction leaving the domain and no root in it.
+-/
 theorem theorem_3_3_2 {S : Set E} {f : E → F} {x₀ : E}
     (hF : ∀ z ∈ S, DifferentiableAt ℝ f z) {β L η : ℝ}
     (hβ : 0 < β) (hL : 0 < L) (hη : 0 ≤ η)
@@ -355,7 +408,12 @@ first Newton iterate is negative, and $f$ has no root in $(0, \infty)$.
 
 On the domain $S = (0, \infty)$ the derivative is constant and invertible, so all hypotheses of
 Theorem 3.3.2 except the ball condition hold with $\beta = 1$ and a small $L > 0$. The
-conclusion fails, because the domain contains no root. -/
+conclusion fails, because the domain contains no root.
+
+**Reading.** The theorem requires the Kantorovich ball to lie in the differentiability domain and
+gives the numerical smallness bound on the initial correction. The counterexample has an arbitrarily
+small first correction leaving the domain and no root in it.
+-/
 theorem newton_correction_small_without_domain_ball (ε : ℝ) (hε : 0 < ε) :
     ∃ (f : ℝ → ℝ) (x₀ : ℝ), 0 < x₀ ∧
       (∀ x, HasFDerivAt f (ContinuousLinearMap.id ℝ ℝ) x) ∧

@@ -89,11 +89,48 @@ specialize the backbone modules `Numlib.Krylov.Arnoldi`, `Numlib.Krylov.Lanczos`
   (`RCLike 𝕜`). The general lemmas assume that the operator of $A$ is symmetric, that is, $A$ is
   Hermitian, and that $\|v_1\| = 1$. The numbered results are stated over $\mathbb{R}$ with $A$
   symmetric (`Matrix.IsSymm`), the generality of the source.
-* The book's "if $\beta_{j+1} = 0$ then Stop" is the Lean convention $x / 0 = 0$: after a breakdown
-  all later vectors are $0$. The breakdown happens exactly at the grade of $v_1$
+* The recurrence uses totalized division. After a breakdown all further vectors are $0$.
+  The breakdown happens exactly at the grade of $v_1$
   (`SaadSparse.Chapter06.lanczosBeta_succ_eq_zero_iff`).
 * `SaadSparse.Chapter06.lanczosAlpha` is the real part of the computed coefficient. For a Hermitian
   $A$ the coefficient is real (`SaadSparse.Chapter06.lanczosAlpha_eq_inner`).
+
+## Deviations from the source
+
+* **Reading.** The Lanczos state, vector and off-diagonal coefficient continue with zeros after
+  breakdown. See `SaadSparse.Chapter06.lanczosStep`, `SaadSparse.Chapter06.lanczosStep_eq`,
+  `SaadSparse.Chapter06.lanczosState`, `SaadSparse.Chapter06.lanczosState_succ`,
+  `SaadSparse.Chapter06.lanczosV`, `SaadSparse.Chapter06.lanczosBeta`.
+* **Generalization.** The Lanczos residual and coefficient formulas extend to the complex inner
+  product. See `SaadSparse.Chapter06.lanczosStepAlpha`, `SaadSparse.Chapter06.lanczosStepAlpha_eq`,
+  `SaadSparse.Chapter06.lanczosStepW`, `SaadSparse.Chapter06.lanczosStepW_eq`.
+* **Reading.** The Lanczos diagonal accessor extracts a real coefficient. See
+  `SaadSparse.Chapter06.lanczosAlpha`.
+* **Generalization.** The Lanczos and Arnoldi comparisons extend to Hermitian matrices and the
+  totalized sequences. See `SaadSparse.Chapter06.lanczosV_eq`,
+  `SaadSparse.Chapter06.lanczosV_eq_arnoldiMGS`,
+  `SaadSparse.Chapter06.lanczosAlpha_eq_arnoldiCoeff`,
+  `SaadSparse.Chapter06.lanczosBeta_succ_eq_arnoldiCoeff`.
+* **Reading.** The zero-norm test characterizes breakdown and subsequent indices. See
+  `SaadSparse.Chapter06.lanczosBeta_succ_eq_zero_iff`.
+* **Reading.** The tridiagonal and equivalence theorems quantify over the totalized coefficients.
+  See `SaadSparse.Chapter06.theorem_6_19`, `SaadSparse.Chapter06.algorithm_6_15_eq_alg_6_2`.
+* **Generalization.** The tridiagonal and Hessenberg arrays agree after mapping real coefficients
+  into the field. See `SaadSparse.Chapter06.map_T_eq_H`, `SaadSparse.Chapter06.map_Tbar_eq_Hbar`.
+* **Generalization.** The polynomial pairing is defined on all polynomials over the real or complex
+  field. See `SaadSparse.Chapter06.polyInner`.
+* **Generalization.** Polynomial evaluation is surjective even when the degree bound exceeds the
+  grade. See `SaadSparse.Chapter06.polyToKrylov`, `SaadSparse.Chapter06.polyToKrylov_surjective`.
+* **Reading.** A Lanczos polynomial is chosen at every index and has the prescribed degree below the
+  grade. See `SaadSparse.Chapter06.lanczosPoly`, `SaadSparse.Chapter06.aeval_lanczosPoly`.
+* **Scope.** The polynomial pairing theorem states nondegeneracy directly. See
+  `SaadSparse.Chapter06.equation_6_85_nondegenerate`.
+* **Reading.** The Lanczos polynomial orthogonality includes the totalized post-breakdown vectors.
+  See `SaadSparse.Chapter06.equation_6_85_orthogonal_polynomials`.
+* **Reading.** Characteristic-polynomial minimization is among monic polynomials of the same degree.
+  See `SaadSparse.Chapter06.equation_6_85_charpoly_isMinOn`.
+* **Reading.** The characteristic-polynomial vectors equal the Lanczos vectors multiplied by the
+  subdiagonal product. See `SaadSparse.Chapter06.equation_6_85_lanczos_charpoly`.
 -/
 
 open Polynomial
@@ -124,12 +161,22 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-! ### Algorithm 6.15 -/
 
 /-- The coefficient $\alpha_j = (w_j, v_j)$ of line 4 of Algorithm 6.15, computed from a state at
-step $j$, where $w_j = A v_j - \beta_j v_{j-1}$ is the vector of line 3. -/
+step $j$, where $w_j = A v_j - \beta_j v_{j-1}$ is the vector of line 3.
+
+**Generalization.** These expressions permit arbitrary complex states and use the inner product
+linear in the candidate residual $w_j$, corresponding to $(w_j,v_j)$ with the book's convention. The
+source works in real arithmetic.
+-/
 noncomputable def lanczosStepAlpha (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n 𝕜) : 𝕜 :=
   inner 𝕜 s.v (op A s.v - (s.beta : 𝕜) • s.vPrev)
 
 /-- The vector $w_j = A v_j - \beta_j v_{j-1} - \alpha_j v_j$ after lines 3 and 5 of Algorithm 6.15,
-computed from a state at step $j$. -/
+computed from a state at step $j$.
+
+**Generalization.** These expressions permit arbitrary complex states and use the inner product
+linear in the candidate residual $w_j$, corresponding to $(w_j,v_j)$ with the book's convention. The
+source works in real arithmetic.
+-/
 noncomputable def lanczosStepW (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n 𝕜) :
     EuclideanSpace 𝕜 (Fin n) :=
   op A s.v - (s.beta : 𝕜) • s.vPrev - lanczosStepAlpha A s • s.v
@@ -138,24 +185,43 @@ noncomputable def lanczosStepW (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosSta
 $j + 1$: $w_j := A v_j - \beta_j v_{j-1}$, $\alpha_j := (w_j, v_j)$,
 $w_j := w_j - \alpha_j v_j$, $\beta_{j+1} := \|w_j\|_2$ and $v_{j+1} := w_j / \beta_{j+1}$.
 
-The book's "if $\beta_{j+1} = 0$ then Stop" is the Lean convention $x / 0 = 0$: after a
-breakdown all later vectors are $0$. -/
+At a zero norm the new vector is $0$ by totalized division.
+
+**Reading.** The source stops on a zero norm. The Lean step totalizes the reciprocal and returns a
+zero new vector; the sequence is defined at all subsequent indices. The state and step are also
+defined for complex matrices and without a unit-vector check.
+-/
 noncomputable def lanczosStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n 𝕜) :
     LanczosState n 𝕜 :=
   { vPrev := s.v, v := ((‖lanczosStepW A s‖ : 𝕜))⁻¹ • lanczosStepW A s,
     beta := ‖lanczosStepW A s‖, alpha := lanczosStepAlpha A s }
 
-/-- The coefficient `SaadSparse.Chapter06.lanczosStepAlpha` is $(A v_j - \beta_j v_{j-1}, v_j)$. -/
+/-- The coefficient `SaadSparse.Chapter06.lanczosStepAlpha` is $(A v_j - \beta_j v_{j-1}, v_j)$.
+
+**Generalization.** These expressions permit arbitrary complex states and use the inner product
+linear in the candidate residual $w_j$, corresponding to $(w_j,v_j)$ with the book's convention. The
+source works in real arithmetic.
+-/
 theorem lanczosStepAlpha_eq (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n 𝕜) :
     lanczosStepAlpha A s = inner 𝕜 s.v (op A s.v - (s.beta : 𝕜) • s.vPrev) := rfl
 
-/-- The vector `SaadSparse.Chapter06.lanczosStepW` is $A v_j - \beta_j v_{j-1} - \alpha_j v_j$. -/
+/-- The vector `SaadSparse.Chapter06.lanczosStepW` is $A v_j - \beta_j v_{j-1} - \alpha_j v_j$.
+
+**Generalization.** These expressions permit arbitrary complex states and use the inner product
+linear in the candidate residual $w_j$, corresponding to $(w_j,v_j)$ with the book's convention. The
+source works in real arithmetic.
+-/
 theorem lanczosStepW_eq (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n 𝕜) :
     lanczosStepW A s =
       op A s.v - (s.beta : 𝕜) • s.vPrev - lanczosStepAlpha A s • s.v := rfl
 
 /-- One pass of Algorithm 6.15 gives the state with previous vector $v_j$, current vector
-$w_j / \|w_j\|$, coefficient $\beta_{j+1} = \|w_j\|$ and coefficient $\alpha_j$. -/
+$w_j / \|w_j\|$, coefficient $\beta_{j+1} = \|w_j\|$ and coefficient $\alpha_j$.
+
+**Reading.** The source stops on a zero norm. The Lean step totalizes the reciprocal and returns a
+zero new vector; the sequence is defined at all subsequent indices. The state and step are also
+defined for complex matrices and without a unit-vector check.
+-/
 theorem lanczosStep_eq (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n 𝕜) :
     lanczosStep A s =
       { vPrev := s.v, v := ((‖lanczosStepW A s‖ : 𝕜))⁻¹ • lanczosStepW A s,
@@ -163,7 +229,12 @@ theorem lanczosStep_eq (A : Matrix (Fin n) (Fin n) 𝕜) (s : LanczosState n �
 
 /-- **Algorithm 6.15** of [saad2003iterative] (symmetric Lanczos). The state after $j$ passes of the
 algorithm from the starting vector $v_1$, with $v_0 = 0$ and $\beta_1 = 0$; this is the state at
-step $j + 1$. -/
+step $j + 1$.
+
+**Reading.** The source stops on a zero norm. The Lean step totalizes the reciprocal and returns a
+zero new vector; the sequence is defined at all subsequent indices. The state and step are also
+defined for complex matrices and without a unit-vector check.
+-/
 noncomputable def lanczosState (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (j : ℕ) :
     LanczosState n 𝕜 :=
   (lanczosStep A)^[j] { vPrev := 0, v := v₁, beta := 0, alpha := 0 }
@@ -175,16 +246,31 @@ $\mathbb{K}$, a starting vector $v_1$ and $j \ge 0$, this is the vector $v_{j+1}
 $j$ passes of Algorithm 6.15.
 
 Indices start at $0$: `lanczosV A v₁ 0 = v₁`. The book takes $\|v_1\|_2 = 1$. The definition
-does not need it, and the results that compare the algorithm with Arnoldi's method assume it. -/
+does not need it, and the results that compare the algorithm with Arnoldi's method assume it.
+
+**Reading.** The source stops on a zero norm. The Lean step totalizes the reciprocal and returns a
+zero new vector; the sequence is defined at all subsequent indices. The state and step are also
+defined for complex matrices and without a unit-vector check.
+-/
 noncomputable def lanczosV (j : ℕ) : 𝔼 := (lanczosState A v₁ j).v
 
 /-- The diagonal coefficient $\alpha_{j+1}$ of Algorithm 6.15, line 4: the real part of the
 coefficient that the pass at step $j + 1$ computes. For a Hermitian $A$ this coefficient is real
-(`SaadSparse.Chapter06.lanczosAlpha_eq_inner`). -/
+(`SaadSparse.Chapter06.lanczosAlpha_eq_inner`).
+
+**Reading.** The accessor extracts the real part of the stored inner product. In the source's real
+setting this leaves the result unchanged; for an arbitrary complex state the underlying step
+coefficient can be nonreal.
+-/
 noncomputable def lanczosAlpha (j : ℕ) : ℝ := RCLike.re (lanczosState A v₁ (j + 1)).alpha
 
 /-- The off-diagonal coefficient $\beta_{j+1}$ of Algorithm 6.15: $\beta_1 = 0$ (line 1), and for
-$j \ge 1$, $\beta_{j+1} = \|w_j\|_2$ is computed on line 6 of the pass at step $j$. -/
+$j \ge 1$, $\beta_{j+1} = \|w_j\|_2$ is computed on line 6 of the pass at step $j$.
+
+**Reading.** The source stops on a zero norm. The Lean step totalizes the reciprocal and returns a
+zero new vector; the sequence is defined at all subsequent indices. The state and step are also
+defined for complex matrices and without a unit-vector check.
+-/
 noncomputable def lanczosBeta (j : ℕ) : ℝ := (lanczosState A v₁ j).beta
 
 /-- The first Lanczos vector is the starting vector $v_1$. -/
@@ -193,7 +279,12 @@ noncomputable def lanczosBeta (j : ℕ) : ℝ := (lanczosState A v₁ j).beta
 /-- The coefficient $\beta_1$ is $0$. -/
 @[simp] theorem lanczosBeta_zero : lanczosBeta A v₁ 0 = 0 := rfl
 
-/-- The state after $j + 1$ passes is one pass applied to the state after $j$ passes. -/
+/-- The state after $j + 1$ passes is one pass applied to the state after $j$ passes.
+
+**Reading.** The source stops on a zero norm. The Lean step totalizes the reciprocal and returns a
+zero new vector; the sequence is defined at all subsequent indices. The state and step are also
+defined for complex matrices and without a unit-vector check.
+-/
 theorem lanczosState_succ (j : ℕ) :
     lanczosState A v₁ (j + 1) = lanczosStep A (lanczosState A v₁ j) :=
   Function.iterate_succ_apply' _ _ _
@@ -269,19 +360,34 @@ the vector $v_j$ of Algorithm 6.15 is the vector $v_j$ of Algorithm 6.1 (Arnoldi
 classical Gram–Schmidt).
 
 The vectors of Algorithm 6.1 are `SaadSparse.Chapter06.arnoldiCGS`. The proof identifies both
-families with `Arnoldi.vec`. -/
+families with `Arnoldi.vec`.
+
+**Generalization.** The exact comparison extends from real symmetric matrices to Hermitian matrices
+and quantifies over the totalized sequences. The source compares generated vectors and coefficients
+before either process stops.
+-/
 theorem lanczosV_eq (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :
     lanczosV A v₁ j = arnoldiCGS A v₁ j := by
   rw [lanczosV_eq_vec A v₁ hA hv, arnoldiCGS_eq_vec A v₁ hv]
 
 /-- Section 6.6.1: for a Hermitian $A$ and $\|v_1\| = 1$, Algorithm 6.15 computes the vectors of
-Algorithm 6.2 (Arnoldi's method with modified Gram–Schmidt). -/
+Algorithm 6.2 (Arnoldi's method with modified Gram–Schmidt).
+
+**Generalization.** The exact comparison extends from real symmetric matrices to Hermitian matrices
+and quantifies over the totalized sequences. The source compares generated vectors and coefficients
+before either process stops.
+-/
 theorem lanczosV_eq_arnoldiMGS (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :
     lanczosV A v₁ j = arnoldiMGS A v₁ j := by
   rw [lanczosV_eq A v₁ hA hv, arnoldiMGS_eq_arnoldiCGS A v₁ hv]
 
 /-- For a Hermitian $A$, $\|v_1\| = 1$ and $j \ge 1$, the coefficient $\alpha_j$ of Algorithm 6.15
-is the diagonal Arnoldi coefficient $h_{jj}$. -/
+is the diagonal Arnoldi coefficient $h_{jj}$.
+
+**Generalization.** The exact comparison extends from real symmetric matrices to Hermitian matrices
+and quantifies over the totalized sequences. The source compares generated vectors and coefficients
+before either process stops.
+-/
 theorem lanczosAlpha_eq_arnoldiCoeff (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :
     ((lanczosAlpha A v₁ j : ℝ) : 𝕜) = arnoldiCoeff A v₁ j j := by
   rw [lanczosAlpha, lanczosState_succ_eq A v₁ hA hv, arnoldiCoeff_eq A v₁ hv]
@@ -300,7 +406,12 @@ theorem lanczosBeta_succ_eq (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j :
     lanczosBeta A v₁ (j + 1) = Lanczos.beta (op A) v₁ j := by
   rw [lanczosBeta, lanczosState_succ_eq A v₁ hA hv]
 
-/-- For a Hermitian $A$, $\|v_1\| = 1$ and $j \ge 1$, $\beta_{j+1} = h_{j+1,j}$. -/
+/-- For a Hermitian $A$, $\|v_1\| = 1$ and $j \ge 1$, $\beta_{j+1} = h_{j+1,j}$.
+
+**Generalization.** The exact comparison extends from real symmetric matrices to Hermitian matrices
+and quantifies over the totalized sequences. The source compares generated vectors and coefficients
+before either process stops.
+-/
 theorem lanczosBeta_succ_eq_arnoldiCoeff (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :
     ((lanczosBeta A v₁ (j + 1) : ℝ) : 𝕜) = arnoldiCoeff A v₁ (j + 1) j := by
   rw [lanczosBeta_succ_eq A v₁ hA hv, arnoldiCoeff_eq A v₁ hv, Lanczos.coe_beta]
@@ -314,7 +425,11 @@ theorem lanczosBeta_nonneg (j : ℕ) : 0 ≤ lanczosBeta A v₁ j := by
     exact norm_nonneg _
 
 /-- Breakdown. Let $A$ be Hermitian, $\|v_1\| = 1$ and $j \ge 1$. Then $\beta_{j+1} = 0$ if and only
-if the grade $\mu$ of $v_1$ satisfies $\mu \le j$. -/
+if the grade $\mu$ of $v_1$ satisfies $\mu \le j$.
+
+**Reading.** The source tests for the first zero norm and stops. Lean identifies all zero norms in
+the totalized sequence as those at or after the grade.
+-/
 theorem lanczosBeta_succ_eq_zero_iff (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (j : ℕ) :
     lanczosBeta A v₁ (j + 1) = 0 ↔ grade A v₁ ≤ j + 1 := by
   rw [lanczosBeta_succ_eq A v₁ hA hv, Lanczos.beta_eq_zero_iff v₁, grade_eq]
@@ -456,13 +571,21 @@ theorem Tbar_eq_tridiagExt (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (m : 
   · rfl
 
 /-- Equation (6.84): for a Hermitian $A$ and $\|v_1\| = 1$, the matrix $T_m$, with its real entries
-viewed in $\mathbb{K}$, is the Arnoldi matrix $H_m$. -/
+viewed in $\mathbb{K}$, is the Arnoldi matrix $H_m$.
+
+**Generalization.** The real tridiagonal arrays are mapped into the scalar field, so that the
+identity also holds for Hermitian matrices in complex arithmetic.
+-/
 theorem map_T_eq_H (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (m : ℕ) :
     (T A v₁ m).map (algebraMap ℝ 𝕜) = H A v₁ m := by
   rw [T_eq_tridiag A v₁ hA hv, H_eq A v₁ hv, Lanczos.hessenbergSq_eq_map_tridiag v₁ hA m]
 
 /-- For a Hermitian $A$ and $\|v_1\| = 1$, the matrix $\bar T_m$, with its real entries viewed in
-$\mathbb{K}$, is the Arnoldi matrix $\bar H_m$. -/
+$\mathbb{K}$, is the Arnoldi matrix $\bar H_m$.
+
+**Generalization.** The real tridiagonal arrays are mapped into the scalar field, so that the
+identity also holds for Hermitian matrices in complex arithmetic.
+-/
 theorem map_Tbar_eq_Hbar (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (m : ℕ) :
     (Tbar A v₁ m).map (algebraMap ℝ 𝕜) = Hbar A v₁ m := by
   rw [Tbar_eq_tridiagExt A v₁ hA hv, Hbar_eq A v₁ hv,
@@ -487,7 +610,12 @@ $$\langle p, q \rangle_{v_1} = (p(A) v_1, q(A) v_1).$$
 
 In Lean the form is `inner 𝕜 (q(A) v₁) (p(A) v₁)`: Mathlib's inner product is conjugate-linear
 in its first argument, and the book's in its second. So the form is linear in $p$ and
-conjugate-linear in $q$, as in the book. -/
+conjugate-linear in $q$, as in the book.
+
+**Generalization.** The expression is defined on all polynomials, with the inner-product arguments
+ordered to match the convention linear in the first polynomial. The source uses a real bilinear form
+on the degree-restricted space, where the grade makes it nondegenerate.
+-/
 noncomputable def polyInner (p q : 𝕜[X]) : 𝕜 :=
   inner 𝕜 (aeval (op A) q v₁) (aeval (op A) p v₁)
 
@@ -502,7 +630,12 @@ theorem polyInner_self_eq_zero_iff (p : 𝕜[X]) :
   rw [polyInner, inner_self_eq_zero]
 
 /-- The linear map $q \mapsto q(A) v_1$ of Section 6.6.2, from $\mathbb{P}_{m-1}$, the polynomials
-of degree less than $m$, into $\mathcal{K}_m$. -/
+of degree less than $m$, into $\mathcal{K}_m$.
+
+**Generalization.** The evaluation map is defined and surjective at every degree bound. The source
+invokes the bound by the grade to obtain the isomorphism. Lean imposes that bound separately for
+injectivity.
+-/
 noncomputable def polyToKrylov (m : ℕ) : degreeLT 𝕜 m →ₗ[𝕜] krylov A v₁ m :=
   ((Krylov.polyEval (op A) v₁).domRestrict (degreeLT 𝕜 m)).codRestrict (krylov A v₁ m) fun p => by
     rw [krylov_eq_map_degreeLT]
@@ -513,7 +646,12 @@ noncomputable def polyToKrylov (m : ℕ) : degreeLT 𝕜 m →ₗ[𝕜] krylov A
     (polyToKrylov A v₁ m p : 𝔼) = aeval (op A) (p : 𝕜[X]) v₁ := rfl
 
 /-- For every $m$, the map $q \mapsto q(A) v_1$ from $\mathbb{P}_{m-1}$ to $\mathcal{K}_m$ is
-surjective. -/
+surjective.
+
+**Generalization.** The evaluation map is defined and surjective at every degree bound. The source
+invokes the bound by the grade to obtain the isomorphism. Lean imposes that bound separately for
+injectivity.
+-/
 theorem polyToKrylov_surjective (m : ℕ) : Function.Surjective (polyToKrylov A v₁ m) := by
   rintro ⟨x, hx⟩
   obtain ⟨p, hp, hpx⟩ := (mem_krylov_iff_exists_aeval A v₁).1 hx
@@ -566,7 +704,12 @@ polynomial of degree at most $i$ such that $q_i(A) v_1$ is the backbone Arnoldi 
 vector, so $v_{i+1} = q_i(A) v_1$ (`SaadSparse.Chapter06.aeval_lanczosPoly`).
 
 The polynomial is chosen with `Classical.choose`. For $i < \mu$ it is unique
-(`SaadSparse.Chapter06.eq_zero_of_aeval_eq_zero`). -/
+(`SaadSparse.Chapter06.eq_zero_of_aeval_eq_zero`).
+
+**Reading.** Lean chooses some polynomial of degree at most the index whose evaluation is the
+corresponding vector. Past breakdown the vector is zero and the chosen polynomial can be nonunique.
+Below the grade the polynomial is uniquely determined and has the stated exact degree.
+-/
 noncomputable def lanczosPoly (i : ℕ) : 𝕜[X] := (exists_aeval_eq_vec A v₁ i).choose
 
 /-- The polynomial $q_i$ has degree less than $i + 1$. -/
@@ -578,7 +721,12 @@ theorem aeval_lanczosPoly_eq_vec (i : ℕ) :
     aeval (op A) (lanczosPoly A v₁ i) v₁ = Arnoldi.vec (op A) v₁ i :=
   (exists_aeval_eq_vec A v₁ i).choose_spec.2
 
-/-- Section 6.6.2, third property: for a Hermitian $A$ and $\|v_1\| = 1$, $v_{i+1} = q_i(A) v_1$. -/
+/-- Section 6.6.2, third property: for a Hermitian $A$ and $\|v_1\| = 1$, $v_{i+1} = q_i(A) v_1$.
+
+**Reading.** Lean chooses some polynomial of degree at most the index whose evaluation is the
+corresponding vector. Past breakdown the vector is zero and the chosen polynomial can be nonunique.
+Below the grade the polynomial is uniquely determined and has the stated exact degree.
+-/
 theorem aeval_lanczosPoly (hA : (op A).IsSymmetric) (hv : ‖v₁‖ = 1) (i : ℕ) :
     aeval (op A) (lanczosPoly A v₁ i) v₁ = lanczosV A v₁ i := by
   rw [aeval_lanczosPoly_eq_vec, lanczosV_eq_vec A v₁ hA hv]
@@ -630,7 +778,12 @@ and symmetric.
 
 The coefficients are `SaadSparse.Chapter06.arnoldiCoeff` of Algorithm 6.1, indexed from $0$:
 `arnoldiCoeff A v₁ i j` is $h_{i+1,j+1}$. So (6.82) is stated for $i + 1 < j$, and (6.83) for
-all $j \ge 0$. -/
+all $j \ge 0$.
+
+**Reading.** The coefficients and vectors are defined at every natural index. The source states the
+identities for the data generated by the finite Arnoldi or Lanczos process. In particular, the
+equality involving the entry above the last subdiagonal uses coefficients from the enlarged matrix.
+-/
 theorem theorem_6_19 (hA : A.IsSymm) (hv : ‖v₁‖ = 1) (m : ℕ) :
     (∀ i j : ℕ, i + 1 < j → arnoldiCoeff A v₁ i j = 0) ∧
       (∀ j : ℕ, arnoldiCoeff A v₁ j (j + 1) = arnoldiCoeff A v₁ (j + 1) j) ∧
@@ -663,7 +816,12 @@ $$\alpha_j = h_{jj}, \qquad \beta_{j+1} = h_{j+1,j}.$$
 In Lean the index starts at $0$: the three equations are for `lanczosV A v₁ j`,
 `lanczosAlpha A v₁ j` and `lanczosBeta A v₁ (j + 1)`, against `arnoldiMGS A v₁ j`,
 `arnoldiCoeff A v₁ j j` and `arnoldiCoeff A v₁ (j + 1) j`. The coefficients
-`SaadSparse.Chapter06.arnoldiCoeff` are defined from the vectors of Algorithm 6.1. -/
+`SaadSparse.Chapter06.arnoldiCoeff` are defined from the vectors of Algorithm 6.1.
+
+**Reading.** The coefficients and vectors are defined at every natural index. The source states the
+identities for the data generated by the finite Arnoldi or Lanczos process. In particular, the
+equality involving the entry above the last subdiagonal uses coefficients from the enlarged matrix.
+-/
 theorem algorithm_6_15_eq_alg_6_2 (hA : A.IsSymm) (hv : ‖v₁‖ = 1) (j : ℕ) :
     lanczosV A v₁ j = arnoldiMGS A v₁ j ∧ lanczosAlpha A v₁ j = arnoldiCoeff A v₁ j j ∧
       lanczosBeta A v₁ (j + 1) = arnoldiCoeff A v₁ (j + 1) j :=
@@ -722,7 +880,12 @@ $q \in \mathbb{P}_{m-1}$, then $p = 0$. So (6.85) is a nondegenerate bilinear fo
 $\mathbb{P}_{m-1}$.
 
 The statement needs neither the symmetry of $A$ nor $\|v_1\| = 1$. The polynomials of degree
-less than $m$ are those `p : ℝ[X]` with `p.degree < m`. -/
+less than $m$ are those `p : ℝ[X]` with `p.degree < m`.
+
+**Reading.** The statement gives nondegeneracy as an implication for a polynomial paired with every
+member of the degree-restricted space. The source also refers to the pairing there as an inner
+product.
+-/
 theorem equation_6_85_nondegenerate {m : ℕ} (hm : m ≤ grade A v₁) {p : ℝ[X]} (hp : p.degree < m)
     (h : ∀ q : ℝ[X], q.degree < m → polyInner A v₁ p q = 0) : p = 0 :=
   polyInner_nondegenerate A v₁ hm hp h
@@ -734,7 +897,12 @@ $v_{i+1} = q_i(A) v_1$, and is orthogonal to every other Lanczos polynomial:
 $\langle q_i, q_j \rangle_{v_1} = 0$ for every $j \ne i$.
 
 The polynomials are `SaadSparse.Chapter06.lanczosPoly`. The Lanczos vector `lanczosV A v₁ i` is
-$v_{i+1}$. -/
+$v_{i+1}$.
+
+**Reading.** The polynomial indexed by $i$ is required to precede breakdown for its degree
+conclusion. Its pairing with every other polynomial vanishes, including with the choices for zero
+vectors after breakdown.
+-/
 theorem equation_6_85_orthogonal_polynomials (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {i : ℕ}
     (hi : i < grade A v₁) :
     (lanczosPoly A v₁ i).degree = (i : ℕ) ∧
@@ -764,7 +932,12 @@ $$\|p_{T_m}(A) v_1\|_2 \le \|p(A) v_1\|_2 \quad \text{for every monic } p \text{
 The book states this property without proof. The proof specializes
 `Arnoldi.charpoly_compression_isMinOn`: $T_m$ is the matrix of the compression of $A$ to
 $\mathcal{K}_m$ (6.84), and the hypothesis $m \le \mu$ gives this compression the $m$
-orthonormal basis vectors that form the book's $V_m$. -/
+orthonormal basis vectors that form the book's $V_m$.
+
+**Reading.** The source describes minimization over monic polynomials without spelling out the
+degree in that sentence. The comparison is between monic polynomials of the same degree $m$, with
+$m$ bounded by the grade.
+-/
 theorem equation_6_85_charpoly_isMinOn (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {m : ℕ}
     (hm : m ≤ grade A v₁) :
     IsMinOn (fun p : ℝ[X] => ‖aeval (op A) p v₁‖) {p : ℝ[X] | p.Monic ∧ p.natDegree = m}
@@ -781,7 +954,12 @@ $\beta_{m+1} = 0$, that is, when the algorithm breaks down at step $m$.
 
 The book states this property without proof. The product is over `Finset.range m` of
 `lanczosBeta A v₁ (j + 1)`. The vector `lanczosV A v₁ m` is $v_{m+1}$. For $m = 0$ the product
-is empty and the statement is $v_1 = v_1$. -/
+is empty and the statement is $v_1 = v_1$.
+
+**Reading.** The source says the Lanczos recurrence computes the vectors without displaying the
+normalization. Lean gives the exact product of subdiagonal coefficients relating these vectors to
+the normalized Lanczos sequence. At breakdown the product is zero.
+-/
 theorem equation_6_85_lanczos_charpoly (hA : A.IsSymm) (hv : ‖v₁‖ = 1) {m : ℕ}
     (hm : m ≤ grade A v₁) :
     aeval (op A) (T A v₁ m).charpoly v₁ =

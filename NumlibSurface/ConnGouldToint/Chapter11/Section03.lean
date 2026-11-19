@@ -60,6 +60,11 @@ also used by Algorithms 15.3.1 and 16.2.1.
 * **Theorems 11.3.1 and 11.3.2** (correction). Both assume uniform normalized agreement of the
   models (11.2.1), as the corrected Lemma 11.2.3 does. See `ConnGouldToint.Chapter11.theorem_11_3_1`
   and `ConnGouldToint.Chapter11.theorem_11_3_2`.
+* **Algorithm 11.3.1** (correction). The very-successful expansion uses the capped lower bound
+  from the corrected (11.1.16), keeping the update feasible at the maximum radius.
+* **Algorithms 15.3.1 and 16.2.1** (generalization). The optional correction takes arbitrary
+  base and correction models. The proposal must reduce its own model, meet the enlarged
+  radius, and leave the trial objective no larger. The denominator uses the base prediction.
 -/
 
 open Filter Topology Metric Set Optimization
@@ -77,7 +82,11 @@ that $\Delta_{k+1} \ge \gamma_3 \Delta_k$ whenever $\|x_k - z\| < \varepsilon$ a
 $\Delta_k < T$. Then there is $r > 0$ with $\Delta_k \ge r$ for every $k$ with
 $\|x_k - z\| < \varepsilon/2$.
 
-The constant $K$ allows composite steps that are bounded by a fixed multiple of the radius. -/
+The constant $K$ allows composite steps that are bounded by a fixed multiple of the radius.
+
+**Reading.** Abstract expansion and step-length estimates on a normed additive group give a positive
+local floor.
+-/
 theorem radius_floor_of_local_expansion {x : ℕ → E} {z : E} {Δ : ℕ → ℝ}
     {ε T K γ₁ γ₃ : ℝ} (hε : 0 < ε) (hT : 0 < T) (hK : 0 < K)
     (hγ₁ : 0 < γ₁) (hγ₃ : 1 < γ₃)
@@ -129,6 +138,10 @@ theorem radius_floor_of_local_expansion {x : ℕ → E} {z : E} {Δ : ℕ → �
     (hr.trans_le (min_le_right _ _))
   exact hgood k ⟨hrD, by linarith only [hdist, hrε]⟩
 
+/-- **Proofs of Theorems 11.3.1–11.3.2** of [conn2000trust].
+
+**Reading.** Abstract entry-and-exit argument with an explicit accepted-decrease budget.
+-/
 private theorem no_noncritical_cluster_of_predicted_sum {x : ℕ → E} {z : E}
     {S : Set ℕ} {pred Δ : ℕ → ℝ} {ε r d γ : ℝ}
     (hε : 0 < ε) (hr : 0 < r) (hd : 0 < d) (hγ : 0 ≤ γ) (hγ' : γ < 1)
@@ -283,7 +296,11 @@ theorem theorem_11_3_1 {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → 
 for a trial $x + s$ and an optional proposal $d$ is $d$ if a proposal exists and
 $f(x + s + d) \le f(x + s)$, and $0$ otherwise.
 
-So a skipped or rejected correction is zero. -/
+So a skipped or rejected correction is zero.
+
+**Reading.** Abstracts the model-specific objective test to any objective and optional proposed
+step.
+-/
 noncomputable def selectOptionalCorrection (f : E → ℝ) (x s : E) (proposal : Option E) : E :=
   match proposal with
   | none => 0
@@ -299,7 +316,10 @@ selected correction.
 Here $m$ is the model of the trial step, $m_{CS}$ the model of the correction, $p$ the
 trust-region norm, and $r$ the current sufficient-decrease benchmark. A proposed correction must
 reduce its own model and fit in the enlarged radius before the comparison of the objective
-values. -/
+values.
+
+**Correction.** Abstract base and correction models and a supplied decrease benchmark.
+-/
 structure OptionalCorrectionStep (f m mCS : E → ℝ) (p : E → ℝ)
     (x s : E) (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop where
   /-- The radius is nonnegative: $\Delta \ge 0$. -/
@@ -323,7 +343,10 @@ omit [InnerProductSpace ℝ E] [CompleteSpace E] in
 optional correction step satisfies the enlarged radius, $p(s + c) \le \tau \Delta$, and does not
 increase the objective at the original trial, $f(x + s + c) \le f(x + s)$.
 
-This also holds when the correction is reset to zero. -/
+This also holds when the correction is reset to zero.
+
+**Reading.** Bounds for the selected optional step using general objective and model premises.
+-/
 theorem OptionalCorrectionStep.selected_bounds
     {f m mCS : E → ℝ} {p : E → ℝ} {x s : E} {Δ τ required : ℝ}
     {proposal : Option E} {correction : E}
@@ -348,7 +371,10 @@ omit [InnerProductSpace ℝ E] [CompleteSpace E] in
 with selected correction $c$, the ratios with the original prediction $m(0) - m(s)$ satisfy
 $$\frac{f(x) - f(x + s)}{m(0) - m(s)} \le \frac{f(x) - f(x + s + c)}{m(0) - m(s)}.$$
 So the correction can only improve the reduction ratio when the prediction comes from the
-original step. -/
+original step.
+
+**Reading.** Abstract comparison with the original ratio for positive prediction.
+-/
 theorem OptionalCorrectionStep.original_ratio_le
     {f m mCS : E → ℝ} {p : E → ℝ} {x s : E} {Δ τ required : ℝ}
     {proposal : Option E} {correction : E}
@@ -368,7 +394,10 @@ $\tau \ge 1$, such that $\|s_k\| \le \Delta_k$, $\|s_k + c_k\| \le \tau \Delta_k
 $f(x_k + s_k + c_k) \le f(x_k + s_k)$ and $m(x_k, p_k, 0) - m(x_k, p_k, s_k) \ge 0$. The ratio
 $$\rho_k = \frac{f(x_k) - f(x_k + s_k + c_k)}{m(x_k, p_k, 0) - m(x_k, p_k, s_k)}$$
 uses the corrected trial and the original prediction. The next iterate is $x_k + s_k + c_k$ if
-$\rho_k \ge \eta_1$ and $x_k$ otherwise, and the radius is updated by (11.1.16) with $\rho_k$. -/
+$\rho_k \ge \eta_1$ and $x_k$ otherwise, and the radius is updated by (11.1.16) with $\rho_k$.
+
+**Correction.** Corrected capped radius update for the extended trial trace.
+-/
 structure NonsmoothCorrectionRun (Q : NonsmoothTRParams) (f : E → ℝ)
     (m : E → P → E → ℝ) where
   /-- The iterates $x_k$. -/
@@ -414,7 +443,10 @@ $0 < \Delta_0 \le \Delta_{\max}$, the iterate update by the acceptance test with
 the radius update (11.1.16) form a run of Algorithm 11.3.1.
 
 The iterate and radius updates use the selected trial $s_k + c_k$ and the original prediction
-$m(x_k, p_k, 0) - m(x_k, p_k, s_k)$. -/
+$m(x_k, p_k, 0) - m(x_k, p_k, s_k)$.
+
+**Correction.** Uses abstract options and the ambient norm to construct the corrected run.
+-/
 def NonsmoothCorrectionRun.ofOptionalCorrectionSteps
     {Q : NonsmoothTRParams} {f : E → ℝ} {m : E → P → E → ℝ}
     (x s correction : ℕ → E) (Δ required : ℕ → ℝ) (parameter : ℕ → P)

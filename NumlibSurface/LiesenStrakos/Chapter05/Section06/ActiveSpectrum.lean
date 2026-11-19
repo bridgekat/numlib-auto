@@ -25,7 +25,11 @@ namespace LiesenStrakos.Chapter05
 /-- **Theorem 5.6.6** of [liesen2013krylov], active-eigenvalue formula (5.6.20).
 Let $A$ be symmetric coercive and let $0<n<d_{\min}(A)$. Then $n+1$ distinct
 eigenvalues suffice to determine the degree-$n$ minimax bound, whose value
-is the reciprocal of the sum of the absolute Lagrange basis values at zero. -/
+is the reciprocal of the sum of the absolute Lagrange basis values at zero.
+
+**Correction.** Corrects full-spectrum maximum and uses selected eigenvalues on the certificate
+side.
+-/
 theorem theorem_5_6_6_certificate
     {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
     [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E} {N : ℕ} (hN : Module.finrank 𝕜 E = N)

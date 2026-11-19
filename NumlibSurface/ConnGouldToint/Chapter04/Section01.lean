@@ -35,6 +35,9 @@ The proofs use the backbone modules `Numlib.LinearAlgebra.Matrix.SchurComplement
 
 ## Deviations from the source
 
+* **Equations (4.1.1) and (4.1.3)** (generalization). The block constructor and elimination
+  identity accept arbitrary square diagonal blocks and rectangular $A$. The source introduces
+  symmetric $H$ and $D$ in the optimization setting.
 * **Equation (4.1.2)** (correction). The source assumes only that $H$ and $D$ are invertible. The
   formula also needs the invertibility of $D^{-1} + A H^{-1} A^T$. See
   `ConnGouldToint.Chapter04.woodbury_solution_4_1_2` and
@@ -53,7 +56,10 @@ $A \in \mathbb{R}^{m \times n}$ and $D \in \mathbb{R}^{m \times m}$, the **optim
 is the block matrix
 $$\begin{bmatrix} H & A^T \\ A & -D \end{bmatrix} \in \mathbb{R}^{(n + m) \times (n + m)}.$$
 
-It is `Matrix.saddleMatrix H Aᵀ (-D)`, indexed by `Fin n ⊕ Fin m`. -/
+It is `Matrix.saddleMatrix H Aᵀ (-D)`, indexed by `Fin n ⊕ Fin m`.
+
+**Reading.** Same blocks for arbitrary square H and D.
+-/
 abbrev optimizationMatrix (H : Matrix (Fin n) (Fin n) ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (D : Matrix (Fin m) (Fin m) ℝ) : Matrix (Fin n ⊕ Fin m) (Fin n ⊕ Fin m) ℝ :=
   Matrix.saddleMatrix H Aᵀ (-D)
@@ -89,7 +95,10 @@ theorem woodbury_solution_4_1_2 {H : Matrix (Fin n) (Fin n) ℝ}
 $H, D, A \in \mathbb{R}^{1 \times 1}$ with $H$ and $D$ invertible and $D^{-1} + A H^{-1} A^T$
 singular.
 
-The witness is $H = -1$ and $D = A = 1$, for which $D^{-1} + A H^{-1} A^T = 0$. -/
+The witness is $H = -1$ and $D = A = 1$, for which $D^{-1} + A H^{-1} A^T = 0$.
+
+**Reading.** Invertibility of H and D alone leaves the middle matrix singular in a scalar example.
+-/
 theorem woodbury_middle_inverse_counterexample :
     ∃ H D A : Matrix (Fin 1) (Fin 1) ℝ,
       IsUnit H ∧ IsUnit D ∧ ¬ IsUnit (D⁻¹ + A * H⁻¹ * Aᵀ) := by
@@ -104,7 +113,10 @@ $x, b \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$,
 $$\begin{bmatrix} H & A^T \\ A & -D^{-1} \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} =
   \begin{bmatrix} b \\ 0 \end{bmatrix} \iff (H + A^T D A) x = b \text{ and } y = DAx.$$
 
-The vector $(x, y)$ is `Sum.elim x y`. -/
+The vector $(x, y)$ is `Sum.elim x y`.
+
+**Reading.** Gives the elimination equivalence without symmetry of H or D.
+-/
 theorem augmented_system_4_1_3 {H : Matrix (Fin n) (Fin n) ℝ}
     {D : Matrix (Fin m) (Fin m) ℝ} (A : Matrix (Fin m) (Fin n) ℝ) (hD : IsUnit D)
     (x b : Fin n → ℝ) (y : Fin m → ℝ) :

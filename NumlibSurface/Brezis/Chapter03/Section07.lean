@@ -60,6 +60,12 @@ backbone's `NormedSpace.isReflexive_congr`.
 * `WithLp 1 (ℝ × ℝ)` is $\mathbb{R}^2$ with the norm $\|\cdot\|_1$.
 * `ℝ × ℝ` is $\mathbb{R}^2$ with the norm $\|\cdot\|_\infty$, which is Mathlib's norm on a product.
 
+## Deviations from the source
+
+* **Definition of uniform convexity and Example 2** (generalization). The definition applies to
+  incomplete normed spaces, and the Hilbert-space example applies to incomplete inner product
+  spaces. See `Brezis.Chapter03.IsUniformlyConvex` and `Brezis.Chapter03.example_3_7_2`.
+
 ## Not formalized
 
 * **Example 2, the spaces $L^p$ with $1 < p < \infty$.** This claim is Theorem 4.10 of Chapter 4.
@@ -77,7 +83,8 @@ for all $x, y \in E$,
 $$\|x\| \le 1,\ \|y\| \le 1,\ \|x - y\| > \varepsilon \implies \Bigl\|\frac{x + y}{2}\Bigr\| <
   1 - \delta.$$
 
-The source makes the definition for a Banach space. -/
+**Generalization.** The source makes the definition for a Banach space. The predicate applies to
+real normed spaces. -/
 def IsUniformlyConvex (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] : Prop :=
   ∀ ε > 0, ∃ δ > 0, ∀ x y : E, ‖x‖ ≤ 1 → ‖y‖ ≤ 1 → ε < ‖x - y‖ →
     ‖(1 / 2 : ℝ) • (x + y)‖ < 1 - δ
@@ -156,8 +163,9 @@ theorem example_3_7_1_linf : ¬ UniformConvexSpace (ℝ × ℝ) := by
 /-- **Example 2** of [brezis2011functional], Section 3.7, Hilbert spaces. Every real inner product
 space $H$ is uniformly convex.
 
-The proof is Mathlib's `InnerProductSpace.toUniformConvexSpace`, which uses the parallelogram
-law. Completeness of $H$ is not needed. The clause on $L^p$, $1 < p < \infty$, is Theorem 4.10. -/
+**Generalization.** The Hilbert-space clause applies to incomplete real inner product spaces.
+The proof is Mathlib's `InnerProductSpace.toUniformConvexSpace`, which uses the parallelogram law.
+The clause on $L^p$, $1 < p < \infty$, is Theorem 4.10. -/
 theorem example_3_7_2 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] :
     UniformConvexSpace H :=
   inferInstance

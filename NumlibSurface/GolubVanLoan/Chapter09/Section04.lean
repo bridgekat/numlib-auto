@@ -109,14 +109,28 @@ The proofs specialize the backbone modules `Numlib.Analysis.Matrix.Function.Sign
 
 ## Deviations from the source
 
+* **§9.4.1, the sign and projector** (reading). `GolubVanLoan.Chapter09.matrixSign_eq_conj` and
+  `GolubVanLoan.Chapter09.sign_projector` use any similarity separating the two open half-
+  planes; the latter also states idempotence.
+* **§9.4.4, logarithm series and inverse scaling** (reading).
+  `GolubVanLoan.Chapter09.log_maclaurin`, `GolubVanLoan.Chapter09.log_gregory`, and
+  `GolubVanLoan.Chapter09.log_inverse_scaling` state complex-matrix versions. The inverse-
+  scaling identity holds after any prescribed number of square roots.
+* **Equation (9.4.4)** (reading). `GolubVanLoan.Chapter09.equation_9_4_4` proves that each
+  eigenvalue of $G_0$ comes from an eigenvalue of $A$. The source states the opposite inclusion.
+* **Equation (9.4.5)** (typo). `GolubVanLoan.Chapter09.equation_9_4_5` supplies the missing
+  closing parenthesis in the intermediate Newton–Schulz expression.
+* **Equation (9.4.7)** (reading). `GolubVanLoan.Chapter09.newtonSqrt_tendsto` states the square-
+  root limit and transformation to the sign iterates, with an explicit quadratic step estimate
+  for those sign iterates.
+* **§9.4.4, the Padé approximant** (reading). `GolubVanLoan.Chapter09.log_pade_33` proves the
+  local scalar error estimate, while the source evaluates the fraction at $A-I$.
 * **§9.4.1** (typo). The source derives the Jordan-form expression of $\operatorname{sign}(A)$ "from
   Theorem 9.1.1", which does not exist; the expression follows from the definition (9.1.3)–(9.1.4).
   The source also writes $S^2 = S$ for $S^2 = I$. See `GolubVanLoan.Chapter09.matrixSign_eq_conj`.
 * **§9.4.2, the principal square root** (reading). The source leaves implicit that $A$ has no
   eigenvalue on $(-\infty, 0]$. The statement assumes it. See
   `GolubVanLoan.Chapter09.principalSqrt_existsUnique`.
-* **Equation (9.4.11)** (reading). The body of the iteration is lost in the source. It is read off
-  (9.4.12) as $X_{k+1} = (X_k + X_k^{-T})/2$. See `GolubVanLoan.Chapter09.equation_9_4_12`.
 * **§9.4.3, $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}\right) =
   \begin{bmatrix} 0 & U \\ U^T & 0 \end{bmatrix}$** (correction). The identity needs $A$ to be
   nonsingular, which the source omits. See `GolubVanLoan.Chapter09.sign_block_polar`.
@@ -157,7 +171,10 @@ follows from the definition (9.1.3)–(9.1.4) of $f(A)$. The text of §9.4.1 als
 for $S^2 = I$.
 
 The blocks $J_1$ and $J_2$ need not be Jordan blocks. The block matrix is placed in `Fin n` by
-the bijection `e`. -/
+the bijection `e`.
+
+**Reading.** The source uses Jordan form to separate the two open half-planes. The Lean
+identity holds for any similarity with this spectral block separation. -/
 theorem matrixSign_eq_conj {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin n)
     {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {J₁ : Matrix (Fin m₁) (Fin m₁) ℂ}
     {J₂ : Matrix (Fin m₂) (Fin m₂) ℂ}
@@ -188,7 +205,11 @@ The matrix $\frac12 (I_n + \operatorname{sign}(A))$ is idempotent, its range is
 $\operatorname{ran}(X_2)$, the invariant subspace of the eigenvalues in the right half plane,
 and this range has dimension $m_2$.
 
-The rows $Y_i^H$ of $X^{-1}$ are written `Z₁` and `Z₂` in the statement. -/
+The rows $Y_i^H$ of $X^{-1}$ are written `Z₁` and `Z₂` in the statement.
+
+**Reading.** The source presents the right-half-plane spectral projector using the Jordan
+basis. The Lean statement needs only a block similarity separating the two half-planes and also
+proves idempotence. -/
 theorem sign_projector {m₁ m₂ : ℕ} (e : Fin m₁ ⊕ Fin m₂ ≃ Fin n)
     {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {J₁ : Matrix (Fin m₁) (Fin m₁) ℂ}
     {J₂ : Matrix (Fin m₂) (Fin m₂) ℂ}
@@ -230,7 +251,10 @@ theorem newtonSign_isUnit {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spec
     Matrix.matrixSign_newtonSignIterate hA k⟩
 
 /-- For $A$ with no eigenvalue on the imaginary axis, $\operatorname{sign}(A)^2 = I$, and every
-Newton iterate $S_k$ commutes with $\operatorname{sign}(A)$. -/
+Newton iterate $S_k$ commutes with $\operatorname{sign}(A)$.
+
+**Reading.** Restores S²=I and sign commutes with all iterates.
+-/
 private theorem newtonSign_aux {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0)
     (k : ℕ) :
     Matrix.matrixSign A * Matrix.matrixSign A = 1 ∧
@@ -297,7 +321,12 @@ $G_k = G_0^{2^k}$ for every $k$. Every eigenvalue $\mu$ of $G_0 = (A - S)(A + S)
 form
 $$\mu = \frac{\lambda - \operatorname{sign}(\operatorname{Re} \lambda)}{\lambda +
   \operatorname{sign}(\operatorname{Re} \lambda)}$$
-for an eigenvalue $\lambda$ of $A$, and $|\mu| < 1$. -/
+for an eigenvalue $\lambda$ of $A$, and $|\mu| < 1$.
+
+**Reading.** The source starts with an eigenvalue of $A$ and shows that its Cayley transform is
+an eigenvalue of $G_0$. The Lean spectral clause starts with an eigenvalue of $G_0$ and shows
+that it comes from an eigenvalue of $A$. This is the direction used to bound the spectral
+radius of $G_0$. -/
 theorem equation_9_4_4 {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, μ.re ≠ 0) :
     let S := Matrix.matrixSign A
     let G := fun k => (Matrix.newtonSignIterate A k - S) * (Matrix.newtonSignIterate A k + S)⁻¹
@@ -413,7 +442,9 @@ theorem newtonSign_tendsto {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spe
 $S \in \mathbb{C}^{n \times n}$, replacing $S^{-1}$ by its Newton approximation $S(2I - S^2)$ in
 the Newton step (9.4.1) gives
 $$\tfrac12 \big(S + S(2I - S^2)\big) = \tfrac12 S (3I - S^2).$$
--/
+
+**Typo.** In the original PDF, the intermediate expression is missing the closing parenthesis
+after $S_k(2I-S_k^2)$. The Lean identity groups the entire sum before multiplication by $1/2$. -/
 theorem equation_9_4_5 (S : Matrix (Fin n) (Fin n) ℂ) :
     (2 : ℂ)⁻¹ • (S + S * (2 • 1 - S ^ 2)) = (2 : ℂ)⁻¹ • (S * (3 • 1 - S ^ 2)) := by
   congr 1
@@ -450,7 +481,11 @@ iterates (9.4.1) of $A^{1/2}$, and $X_k \to A^{1/2}$. "Global convergence and lo
 convergence follow from what we know about (9.4.1)": with $S = \operatorname{sign}(A^{1/2})$,
 $$\|S_{k+1} - S\|_2 \le \tfrac12 \|S_k^{-1}\|_2 \|S_k - S\|_2^2.$$
 
-The iterates $X_k$ are `Matrix.newtonSqrtIterate A k`. -/
+The iterates $X_k$ are `Matrix.newtonSqrtIterate A k`.
+
+**Reading.** The source states local quadratic convergence of $X_k$ by reduction to the sign
+iteration. The Lean statement gives the limit of $X_k$ and its relation to $S_k$, with the
+explicit quadratic step estimate stated for $S_k$. -/
 theorem newtonSqrt_tendsto {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) :
     (∀ k, Matrix.newtonSqrtIterate A k =
@@ -592,8 +627,6 @@ $A \in \mathbb{R}^{n \times n}$ be nonsingular with polar decomposition $A = UP$
 $X_0 = A$ and $X_{k+1} = (X_k + X_k^{-T})/2$. Then every $X_k$ is nonsingular, and
 $X_k = U P_k$, where $P_0 = P$, $P_{k+1} = (P_k + P_k^{-1})/2$ and every $P_k$ is positive
 definite.
-
-**Reading.** The body of the iteration (9.4.11) is lost in the source. It is read off (9.4.12).
 
 The iterates $X_k$ and $P_k$ are `Matrix.newtonPolarIterate A k` and
 `Matrix.newtonPolarIterate P k`. -/
@@ -821,7 +854,11 @@ eigenvalue $\lambda$, that is, $\rho(A - I) < 1$. Then $M_q(A) \to \log(A)$, tha
 $$\log(A) = \sum_{k=1}^{\infty} \frac{(-1)^{k+1}}{k} (A - I)^k,$$
 and $\log(A)$ is Mathlib's series logarithm `NormedSpace.log A`.
 
-Mathlib's logarithm is taken with the norm $\|\cdot\|_2$. -/
+Mathlib's logarithm is taken with the norm $\|\cdot\|_2$.
+
+**Reading.** The source starts with a real matrix and describes convergence of partial sums.
+The Lean statement gives the series sum for complex matrices under the same spectral disk
+condition. -/
 theorem log_maclaurin {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, ‖μ - 1‖ < 1) :
     HasSum (fun k : ℕ => ((-1) ^ k / (k + 1) : ℂ) • (A - 1) ^ (k + 1)) (Matrix.principalLog A) ∧
     Matrix.principalLog A = NormedSpace.log A :=
@@ -832,7 +869,9 @@ theorem log_maclaurin {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum
 A)(I + A)^{-1})^{2k+1} / (2k + 1)$. Let $A \in \mathbb{C}^{n \times n}$ have only eigenvalues
 with positive real part. Then $G_q(A) \to \log(A)$, that is,
 $$\log(A) = -2 \sum_{k=0}^{\infty} \frac{1}{2k + 1} \big((I - A)(I + A)^{-1}\big)^{2k+1}.$$
--/
+
+**Reading.** The source describes convergence of partial sums for real matrices. The Lean
+statement gives the series sum for complex matrices under the same right-half-plane condition. -/
 theorem log_gregory {A : Matrix (Fin n) (Fin n) ℂ} (hA : ∀ μ ∈ spectrum ℂ A, 0 < μ.re) :
     HasSum (fun k : ℕ => (-2 / (2 * k + 1) : ℂ) • ((1 - A) * (1 + A)⁻¹) ^ (2 * k + 1))
       (Matrix.principalLog A) :=
@@ -844,7 +883,11 @@ $$r_{33}(x) = \frac{N(x)}{D(x)}, \qquad N(x) = 60x + 60x^2 + 11x^3, \qquad D(x) 
 Then $D$ does not vanish near $x = 0$, so $r_{33}$ is defined there, and
 $$r_{33}(x) - \log(1 + x) = O(x^7) \quad \text{as } x \to 0 \text{ in } \mathbb{C}.$$
 
-The source writes $N$ and $D$ at $x = A - I$. -/
+The source writes $N$ and $D$ at $x = A - I$.
+
+**Reading.** The source evaluates the Padé fraction at the matrix $A-I$. The Lean statement
+proves a local order-seven error bound and denominator nonvanishing for the scalar approximant
+on $\mathbb{C}$. -/
 theorem log_pade_33 :
     (∀ᶠ x in 𝓝 (0 : ℂ), (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3 : ℂ) ≠ 0) ∧
     (fun x : ℂ => (60 * x + 60 * x ^ 2 + 11 * x ^ 3) / (60 + 90 * x + 36 * x ^ 2 + 3 * x ^ 3) -
@@ -897,7 +940,10 @@ theorem log_pade_33 :
 $A \in \mathbb{C}^{n \times n}$ have no eigenvalue on $(-\infty, 0]$, and let $A_0 = A$ and
 $A_k = A_{k-1}^{1/2}$. Then for every $k$
 $$\log(A) = 2^k \log(A_k).$$
--/
+
+**Reading.** The source presents the identity in a real-matrix stopping loop. The Lean
+statement gives the identity after an arbitrary number of principal square roots for complex
+matrices with spectra in the slit plane. -/
 theorem log_inverse_scaling {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : spectrum ℂ A ⊆ Complex.slitPlane) (k : ℕ) :
     Matrix.principalLog A = (2 ^ k : ℂ) • Matrix.principalLog (Matrix.principalSqrt^[k] A) :=

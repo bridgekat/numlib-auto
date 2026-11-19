@@ -44,6 +44,11 @@ Arzelà–Ascoli theorem is in the backbone module `Numlib.Topology.ContinuousMa
   which is weaker and, on a compact domain, equivalent; `UniformEquicontinuous.equicontinuous`
   converts.
 
+## Deviations from the source
+
+* **Definition 1.6.1** (generalization). The compactness criteria apply to normed additive
+  commutative groups. Precompactness by compact closure applies in any topological space.
+
 ## Not formalized
 
 * **The converse half of Theorem 1.6.3**, that a precompact subset of $C(D)$ is uniformly bounded
@@ -66,8 +71,10 @@ converges to an element of $S$. The theorem states that `IsCompact S` is equival
 the two conditions.
 
 The second condition is `IsSeqCompact S`. Clause (a) is the general topological definition, and
-clause (b) is the usual definition in a metric space. In clause (a) the index type of the cover
-lies in the same universe as $V$. -/
+clause (b) is the usual definition in a metric space. The covering test uses index types in the
+same universe as $V$. This suffices since each member of a cover is an open subset of $V$.
+
+**Generalization.** Both criteria apply in normed additive commutative groups. -/
 theorem definition_1_6_1 {V : Type u} [NormedAddCommGroup V] (S : Set V) :
     (IsCompact S ↔ ∀ (ι : Type u) (U : ι → Set V), (∀ i, IsOpen (U i)) → S ⊆ ⋃ i, U i →
         ∃ t : Finset ι, S ⊆ ⋃ i ∈ t, U i) ∧
@@ -81,7 +88,10 @@ $\bar S$ is compact.
 
 The book states the definition for a subset of a normed space. The definition uses only the
 topology, so it is stated for a subset of a topological space, which is how §2.8 and Theorem
-1.6.3 use it. -/
+1.6.3 use it.
+
+**Reading.** Compact closure defines precompactness on any topological space.
+-/
 def definition_1_6_1_precompact {V : Type*} [TopologicalSpace V] (S : Set V) : Prop :=
   IsCompact (closure S)
 

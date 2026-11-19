@@ -53,6 +53,10 @@ the memory error quadratic in the radius (Theorem 9.5.2). The run of Algorithm 9
 
 ## Deviations from the source
 
+* **Theorem 9.5.1 and (9.5.8)** (correction). The exact weight on the past is
+  $\prod_{j=t+1}^k\alpha_j$. The geometric-series expression in (9.5.8) is an upper bound.
+  The proof uses the exact weight and a common pointwise model bound to obtain the factor
+  $2B$ in (9.5.3).
 * **Theorem 9.5.2** (correction). The memory estimate uses the bound on the past local models at the
   last accepted center. The product of recent weights is controlled by the lower radius factor
   $\gamma \Delta_k \le \Delta_{k+1}$ of adjacent iterations, so that the radii can vary during a
@@ -95,7 +99,10 @@ $v \in \mathbb{R}$ with $q_j(z) = v$ for all $j$ with $t < j \le k$. Then
 $$m_k(z) - v = \Big(\prod_{j=t+1}^{k} \alpha_j\Big) (m_t(z) - v).$$
 
 After the last accepted step $t$ the local model stays fixed, and the remaining memory error is
-the error at $t$ multiplied by exactly the intervening weights. -/
+the error at $t$ multiplied by exactly the intervening weights.
+
+**Reading.** Exact recent-weight product replaces the printed geometric-series equality.
+-/
 theorem memoryModel_sub_local_eq_prod (q : ℕ → E → ℝ) (α : ℕ → ℝ)
     {t k : ℕ} (ht : t ≤ k) {z : E} {v : ℝ} (hq : ∀ j, t < j → j ≤ k → q j z = v) :
     memoryModel q α k z - v =
@@ -133,7 +140,10 @@ $|q_j(z)| \le B$ for all $j \le t$, that $|q_k(z)| \le B$, and that $q_j(z) = q_
 $t < j \le k$. Then
 $$|m_k(z) - q_k(z)| \le 2 B a^{k - t}.$$
 
-The constant $B$ bounds the earlier local models and the new fixed local model at the point $z$. -/
+The constant $B$ bounds the earlier local models and the new fixed local model at the point $z$.
+
+**Reading.** Pointwise model bounds, exact memory weight and explicit coefficient 2.
+-/
 theorem theorem_9_5_1 (q : ℕ → E → ℝ) (α : ℕ → ℝ)
     {t k : ℕ} (ht : t < k) {z : E} {B a : ℝ} (ha : 0 ≤ a)
     (hα : ∀ j, 0 ≤ α j ∧ α j ≤ 1)
@@ -157,7 +167,10 @@ theorem theorem_9_5_1 (q : ℕ → E → ℝ) (α : ℕ → ℝ)
 /-- **Equation (9.5.16)** of [conn2000trust], adjacent radius factor. Let a conditional radius run
 with the corrected update be given, with $0 < \gamma_1 \le 1$, and suppose that
 $\rho_k \ge \eta_1$ implies $\hat{\rho}_k \ge \eta_0$ for every $k$. Then
-$\gamma_1 \Delta_k \le \Delta_{k+1}$ for every $k$. -/
+$\gamma_1 \Delta_k \le \Delta_{k+1}$ for every $k$.
+
+**Correction.** Adjacent radius lower factor derived for the corrected update.
+-/
 theorem ConditionalRadiusRun.radius_next_ge_factor {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (hγ : 0 < γ₁) (hγ₁ : γ₁ ≤ 1)
     (haccept : ∀ k, η₁ ≤ run.raw k → η₀ ≤ run.selected k) (k : ℕ) :
@@ -179,7 +192,10 @@ Then $\alpha \le (\Delta')^\psi$.
 
 The hypothesis $\alpha \le \kappa s^\psi$ is the step-size restriction of AM.10, and
 $\gamma \Delta \le \Delta'$ is the lower update factor of adjacent radii. The powers are real
-powers `Real.rpow`. -/
+powers `Real.rpow`.
+
+**Reading.** Transfers the step-weight bound through an explicit adjacent-radius comparison.
+-/
 theorem memoryWeight_le_radius_rpow {α Δ Δ' s κ K γ ψ : ℝ}
     (hΔ' : 0 ≤ Δ') (hs : 0 ≤ s)
     (hκ : 0 ≤ κ) (hK : 0 ≤ K) (hγ : 0 < γ) (hψ : 0 ≤ ψ)

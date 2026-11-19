@@ -68,6 +68,20 @@ is `DividedDifference.newton f (Fin.snoc x t)` of Chapter 8, and (9.21) is the i
   `Quadrature.intNodal n`, whose evaluation is given by `Quadrature.intNodal_eval`.
 * Exercise 9.k is Exercise k of Chapter 9.
 
+## Deviations from the source
+
+* **Theorem 9.2** (scope and regularity). The even error formulas use smoothness on an open
+  neighbourhood of $[a,b]$. `QuarteroniSaccoSaleri.Chapter09.theorem_9_2_order_even` and
+  `QuarteroniSaccoSaleri.Chapter09.theorem_9_2_order_odd` give explicit upper bounds for closed
+  rules. The whole signed remainder formula for odd $n$ is outside these statements.
+* **(9.21) and (9.22)** (reading). `QuarteroniSaccoSaleri.Chapter09.equation_9_21` uses
+  arbitrary distinct nodes, and `QuarteroniSaccoSaleri.Chapter09.exercise_9_4` takes the
+  derivative away from the fixed nodes. Its repeated-node value is a coefficient of the Hermite
+  interpolant.
+* **Tables 9.2 and 9.6** (scope). `QuarteroniSaccoSaleri.Chapter09.table_9_2` checks five
+  selected columns. `QuarteroniSaccoSaleri.Chapter09.table_9_6` checks the sign of the single
+  weight $w_2$.
+
 ## Not formalized
 
 * **Theorem 9.2, the error formula (9.20) for odd $n$**, closed and open. The book states it without
@@ -76,7 +90,8 @@ is `DividedDifference.newton f (Fin.snoc x t)` of Chapter 8, and (9.21) is the i
   rational arithmetic confirms for every odd $n \le 31$ but which has no formal proof. The module
   doc comment of `Numlib.Approximation.NewtonCotes` gives the reduction. The two consequences of
   (9.20), the degree of exactness and the order of infinitesimal, are formalized without it.
-* **Table 9.2, the remaining columns.** They are damaged in the source.
+* **Table 9.2, the remaining columns.** The OCR transcription damages several fractions. They are
+  legible in the original PDF.
 * **Examples 9.2 and 9.3, Tables 9.3–9.5.** They are numerical.
 -/
 
@@ -144,7 +159,10 @@ for $n = 3$. The weights of the open formulae are $(2)$ for $n = 0$ and $(8/3, -
 $n = 2$.
 
 The last case shows "the presence of negative weights in open formulae for $n \ge 2$". The
-remaining columns of the printed table are damaged in the source and are not stated. -/
+remaining columns of the printed table are damaged in the source and are not stated.
+
+**Scope.** The theorem checks five selected columns and recovers their unprinted symmetric
+partners by reversal. The remaining columns of the PDF table are legible. -/
 theorem table_9_2 :
     Quadrature.newtonCotesWeight 1 = ![1 / 2, 1 / 2] ∧
       Quadrature.newtonCotesWeight 2 = ![1 / 3, 4 / 3, 1 / 3] ∧
@@ -168,7 +186,11 @@ The constant $M_n$ is `Quadrature.newtonCotesM n`;
 `QuarteroniSaccoSaleri.Chapter09.theorem_9_2_M_closed` gives its value and sign. The proof is
 the backbone's `Quadrature.exists_sub_closedNewtonCotes_eq_of_even`, which follows the book:
 (9.21), integration by parts against $W(x) = \int_a^x \omega_{n+1}$, (9.22), the positivity of
-$W$ inside $(a, b)$, and the mean value theorem. -/
+$W$ inside $(a, b)$, and the mean value theorem.
+
+**Reading.** Exact even closed error with interior witness, using regularity on open neighborhood
+and positive n.
+-/
 theorem theorem_9_2_closed_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
     ∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - Quadrature.closedNewtonCotes n f a b
@@ -201,7 +223,11 @@ is `Quadrature.openNewtonCotesM n`, positive by `Quadrature.openNewtonCotesM_pos
 the backbone's `Quadrature.exists_sub_openNewtonCotes_eq_of_even`, along the same route as the
 closed case: (9.21), integration by parts against $W(x) = \int_a^x \omega_{n+1}$ (which for the
 open nodes is negative inside $(a, b)$), (9.22), the Peano kernel theorem and the mean value
-theorem. -/
+theorem.
+
+**Reading.** Exact even open error, integral expression for positive Mₙ, with regularity on open
+neighborhood.
+-/
 theorem theorem_9_2_open_even (hn : Even n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) :
     (∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - Quadrature.openNewtonCotes n f a b
@@ -218,7 +244,10 @@ theorem theorem_9_2_open_even (hn : Even n) (hab : a < b) (hU : IsOpen U) (hUab 
 even $n$. Let $n \ge 2$ be even and let $a < b$. Then the closed Newton–Cotes formula is exact
 for every polynomial of degree at most $n + 1$, and it is not exact for $x^{n+2}$.
 
-The book says: "From (9.19), it turns out that the degree of exactness is equal to $n + 1$." -/
+The book says: "From (9.19), it turns out that the degree of exactness is equal to $n + 1$."
+
+**Reading.** Exact degree statement restricted to closed rules, includes first failure.
+-/
 theorem theorem_9_2_degreeOfExactness_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) :
     (∀ p : ℝ[X], p.degree ≤ n + 1 →
         (∫ x in a..b, p.eval x) = Quadrature.closedNewtonCotes n (fun x => p.eval x) a b) ∧
@@ -231,7 +260,10 @@ even $n$. Let $n \ge 2$ be even, let $a < b$, let $f \in C^{n+2}([a, b])$, and l
 $|f^{(n+2)}(x)| \le M$ for all $x \in [a, b]$. Then
 $$|E_n(f)| \le \frac{|M_n|}{(n + 2)!} M h^{n+3}, \qquad h = \frac{b - a}{n}.$$
 
-The book says that "the order of infinitesimal is $n + 3$": the error is $O(h^{n+3})$. -/
+The book says that "the order of infinitesimal is $n + 3$": the error is $O(h^{n+3})$.
+
+**Reading.** Explicit inequality using derivative bound in place of asymptotic order statement.
+-/
 theorem theorem_9_2_order_even (hn : Even n) (hn0 : 0 < n) (hab : a < b) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ ((n + 2 : ℕ) : WithTop ℕ∞) f U) {M : ℝ}
     (hM : ∀ x ∈ Icc a b, |iteratedDeriv (n + 2) f x| ≤ M) :
@@ -260,7 +292,10 @@ and the formula is not exact for $x^{n+1}$.
 The book says: "The degree of exactness is thus equal to $n$." The constant $K_n$ is
 `Quadrature.newtonCotesK n`, and it is negative by `Quadrature.newtonCotesK_neg`. The error at
 the first monomial that the formula does not reproduce is the one that (9.20) predicts, so this
-fixes the constant $K_n$ of (9.20), although (9.20) itself is not formalized. -/
+fixes the constant $K_n$ of (9.20), although (9.20) itself is not formalized.
+
+**Reading.** Closed-rule exactness and monomial error only, no arbitrary smooth exact remainder.
+-/
 theorem theorem_9_2_degreeOfExactness_odd (hn : Odd n) (hab : a < b) :
     (∀ p : ℝ[X], p.degree ≤ n →
         (∫ x in a..b, p.eval x) = Quadrature.closedNewtonCotes n (fun x => p.eval x) a b) ∧
@@ -282,7 +317,11 @@ The book says that "the order of infinitesimal is $n + 2$": the error is $O(h^{n
 reads the order from (9.20), which is not formalized. The backbone proves the bound directly
 from the Lagrange interpolation error (`Quadrature.abs_sub_closedNewtonCotes_le_of_contDiffOn`).
 The constant $\int_0^n |\pi_{n+1}|$ is therefore larger than the sharp constant
-$|K_n| = |\int_0^n \pi_{n+1}|$. -/
+$|K_n| = |\int_0^n \pi_{n+1}|$.
+
+**Reading.** Proves derivative times absolute nodal-product bound in place of signed constant and
+pointwise exact error.
+-/
 theorem theorem_9_2_order_odd (hn : Odd n) (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f U) {M : ℝ}
     (hM : ∀ x ∈ Icc a b, |iteratedDeriv (n + 1) f x| ≤ M) :
@@ -302,7 +341,11 @@ $$E_n(f) = \int_a^b f(x)\,dx - I_n(f) = \int_a^b f[x_0, \dots, x_n, x]\, \omega_
 
 The divided difference $f[x_0, \dots, x_n, x]$ is `DividedDifference.newton f (Fin.snoc x t)`.
 The proof integrates (8.20) of Chapter 8, $f - \Pi_n f = \omega_{n+1} f[x_0, \dots, x_n, \cdot]$
-off the nodes, over $[a, b]$; the nodes form a null set. -/
+off the nodes, over $[a, b]$; the nodes form a null set.
+
+**Reading.** Error integral for any distinct nodes and continuous f, not restricted to equally
+spaced Newton–Cotes nodes.
+-/
 theorem equation_9_21 (hab : a ≤ b) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hf : ContinuousOn f (Icc a b)) :
     (∫ t in a..b, f t) - lagrangeQuadrature x a b f
@@ -321,7 +364,11 @@ $$\frac{d}{dx} f[x_0, \dots, x_n, x] = f[x_0, \dots, x_n, x, x].$$
 The confluent divided difference on the right is the coefficient of $X^{n+2}$ in the Hermite
 interpolant of $f$ at the simple nodes $x_0, \dots, x_n$ and the double node $x$, which is
 `Hermite.interpolate (Fin.snoc x t) (Fin.snoc (fun _ => 0) 1) f`. The proof is the backbone's
-`DividedDifference.hasDerivAt_newton_snoc`. -/
+`DividedDifference.hasDerivAt_newton_snoc`.
+
+**Reading.** Takes derivative at a point distinct from the fixed nodes and represents the
+repeated-node value by a Hermite coefficient.
+-/
 theorem exercise_9_4 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {t : ℝ}
     (ht : t ∉ Set.range x) (hf : DifferentiableAt ℝ f t) :
     HasDerivAt (fun y => DividedDifference.newton f (Fin.snoc x y))
@@ -336,7 +383,10 @@ with $n = 8$ is negative.
 The book uses the table to show that "the weights of the closed Newton–Cotes formula with
 $n = 8$ do not have the same sign". The value of $w_2$ is $-928/28350$; the printed table lists
 the weights scaled by $4$, with the signs lost. The proof uses the moment equations
-$\sum_i w_i i^k = 8^{k+1}/(k + 1)$ for $k = 0, \dots, 8$, which determine the weights. -/
+$\sum_i w_i i^k = 8^{k+1}/(k + 1)$ for $k = 0, \dots, 8$, which determine the weights.
+
+**Reading.** Verifies only negativity of w₂ for n=8, omitting its exact value and remaining columns.
+-/
 theorem table_9_6 : Quadrature.newtonCotesWeight 8 2 < 0 := by
   set w := Quadrature.newtonCotesWeight 8 with hw
   have h : ∀ k : ℕ, k ≤ 8 → w 0 * 0 ^ k + w 1 * 1 ^ k + w 2 * 2 ^ k + w 3 * 3 ^ k + w 4 * 4 ^ k

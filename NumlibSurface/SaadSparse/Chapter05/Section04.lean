@@ -63,6 +63,29 @@ relaxations of Section 4.1.1, formula (4.17), is the projection step (5.7) with 
   it.
 * The columns of a matrix $V$ are `Matrix.cols V`, and a projection approximation in the sense of
   (5.5)–(5.6) is `SaadSparse.Chapter05.IsProjectionApprox`.
+
+## Deviations from the source
+
+* **Generalization.** Projection families permit arbitrary column matrices and repeated subspaces.
+  See `SaadSparse.Chapter05.ProjFamily`, `SaadSparse.Chapter05.ProjFamily.subspace`.
+* **Reading.** The corrector and residual-projector formulas use totalized inverses. See
+  `SaadSparse.Chapter05.corrector`, `SaadSparse.Chapter05.P_i`,
+  `SaadSparse.Chapter05.P_i_eq_obliqueProj`.
+* **Generalization.** The additive update and residual identity use arbitrary families and totalized
+  inverses. See `SaadSparse.Chapter05.additiveStep`, `SaadSparse.Chapter05.residual_additiveStep`.
+* **Reading.** The multiplicative procedure is one ordered sweep with totalized reduced solves. See
+  `SaadSparse.Chapter05.multiplicativeSweep`.
+* **Generalization.** The block correction and projection formulas agree for arbitrary column
+  matrices. See `SaadSparse.Chapter05.blockCorrection_eq_projStep`.
+* **Generalization.** The abstract process identities require nonsingular compressions and allow
+  arbitrary bases. See `SaadSparse.Chapter05.additiveStep_eq`,
+  `SaadSparse.Chapter05.multiplicativeSweep_eq`.
+* **Generalization.** The residual-projector characterization needs invertible compression without
+  orthogonal columns. See `SaadSparse.Chapter05.P_i_isProjOnto`.
+* **Reading.** The least-squares projector explicitly assumes an invertible Gram matrix. See
+  `SaadSparse.Chapter05.leastSquares_P_i_eq_starProjection`.
+* **Reading.** One-step exactness is represented by the sum-of-projectors identity. See
+  `SaadSparse.Chapter05.sum_P_i_eq_one`.
 -/
 
 open Matrix Module Finset
@@ -81,17 +104,27 @@ $V_i \in \mathbb{R}^{n \times n_i}$ whose columns span the subspace $K_i$.
 
 The structure does not require the columns of $V_i$ to be linearly independent. They are
 independent as soon as $V_i^T A V_i$ is nonsingular for some $A$
-(`SaadSparse.Chapter05.linearIndependent_cols_of_isUnit`). -/
+(`SaadSparse.Chapter05.linearIndependent_cols_of_isUnit`).
+
+**Generalization.** The source uses orthogonal column systems with pairwise distinct spans. Lean
+allows any family of column matrices, so the stored column count need not be the dimension of the
+span.
+-/
 structure ProjFamily (n : ℕ) where
   /-- The number $p$ of subspaces. -/
   p : ℕ
-  /-- The dimension $n_i$ of the $i$-th subspace, that is, the number of columns of $V_i$. -/
+  /-- The number $n_i$ of columns of $V_i$. -/
   size : Fin p → ℕ
   /-- The matrix $V_i \in \mathbb{R}^{n \times n_i}$ whose columns span the $i$-th subspace. -/
   V : ∀ i, Matrix (Fin n) (Fin (size i)) ℝ
 
 /-- **Section 5.4** of [saad2003iterative]. The **subspace** $K_i = \operatorname{span}(V_i)
-\subseteq \mathbb{R}^n$ spanned by the columns of the $i$-th matrix of the family. -/
+\subseteq \mathbb{R}^n$ spanned by the columns of the $i$-th matrix of the family.
+
+**Generalization.** The source uses orthogonal column systems with pairwise distinct spans. Lean
+allows any family of column matrices, so the stored column count need not be the dimension of the
+span.
+-/
 def ProjFamily.subspace (𝒱 : ProjFamily n) (i : Fin 𝒱.p) : Submodule ℝ (E n) :=
   Submodule.span ℝ (Set.range (𝒱.V i).cols)
 
@@ -99,7 +132,12 @@ variable (𝒱 : ProjFamily n) (A : Matrix (Fin n) (Fin n) ℝ)
 
 /-- The local correction matrix $V_i (V_i^T A V_i)^{-1} V_i^T$ of the $i$-th subspace, which maps
 the residual to the correction of Algorithm 5.5 of [saad2003iterative]. It is $0$ when
-$V_i^T A V_i$ is singular. -/
+$V_i^T A V_i$ is singular.
+
+**Reading.** The inverse is totalized, so singular compression gives the zero matrix. The source
+uses an invertible compression for its correction and projector. The Lean projector theorem
+separately imposes this nonsingularity.
+-/
 noncomputable def corrector (i : Fin 𝒱.p) : Matrix (Fin n) (Fin n) ℝ :=
   𝒱.V i * ((𝒱.V i)ᵀ * A * 𝒱.V i)⁻¹ * (𝒱.V i)ᵀ
 
@@ -108,7 +146,12 @@ of the $i$-th subspace is
 $$P_i = A V_i (V_i^T A V_i)^{-1} V_i^T.$$
 
 It is the projector onto $A K_i$ orthogonally to $K_i$ when $V_i^T A V_i$ is nonsingular
-(`SaadSparse.Chapter05.P_i_isProjOnto`). The matrix is $0$ when $V_i^T A V_i$ is singular. -/
+(`SaadSparse.Chapter05.P_i_isProjOnto`). The matrix is $0$ when $V_i^T A V_i$ is singular.
+
+**Reading.** The inverse is totalized, so singular compression gives the zero matrix. The source
+uses an invertible compression for its correction and projector. The Lean projector theorem
+separately imposes this nonsingularity.
+-/
 noncomputable def P_i (i : Fin 𝒱.p) : Matrix (Fin n) (Fin n) ℝ :=
   A * 𝒱.V i * ((𝒱.V i)ᵀ * A * 𝒱.V i)⁻¹ * (𝒱.V i)ᵀ
 
@@ -116,7 +159,12 @@ noncomputable def P_i (i : Fin 𝒱.p) : Matrix (Fin n) (Fin n) ℝ :=
 parameters $\omega_1, \dots, \omega_p$, one step maps the iterate $x$ to
 $$x + \sum_{i=1}^{p} \omega_i V_i (V_i^T A V_i)^{-1} V_i^T (b - Ax).$$
 
-If $V_i^T A V_i$ is singular, Lean's matrix inverse is $0$ and the $i$-th correction vanishes. -/
+If $V_i^T A V_i$ is singular, Lean's matrix inverse is $0$ and the $i$-th correction vanishes.
+
+**Generalization.** The source assumes orthogonal column systems spanning distinct subspaces and
+solves nonsingular reduced systems. Lean permits repeated subspaces and uses the zero inverse at
+singular compression. It states one exact weighted update and its residual identity.
+-/
 noncomputable def additiveStep (ω : Fin 𝒱.p → ℝ) (b x : E n) : E n :=
   x + ∑ i, ω i • ((corrector 𝒱 A i) ⬝ (b - (A ⬝ x)))
 
@@ -125,14 +173,24 @@ applies, to the iterate $x$, the projection step (5.7) with $W = V = V_i$ for $i
 in this order. Each step maps $y$ to $y + V_i (V_i^T A V_i)^{-1} V_i^T (b - Ay)$.
 
 The step (5.7) is `SaadSparse.Chapter05.projStep`, and the sweep is a left fold over
-`List.finRange p`. -/
+`List.finRange p`.
+
+**Reading.** Lean formalizes a single exact sweep in index order. It permits arbitrary column
+matrices, with a singular compression yielding no correction. The source gives a convergence loop of
+reduced solves.
+-/
 noncomputable def multiplicativeSweep (b : E n) (x : E n) : E n :=
   (List.finRange 𝒱.p).foldl (fun y i => projStep A b (𝒱.V i) (𝒱.V i) y) x
 
 variable {𝒱 A}
 
 /-- The projector $P_i$ is the matrix (1.66) of [saad2003iterative] for the bases $A V_i$ and $V_i$:
-$P_i = (A V_i) (V_i^T A V_i)^{-1} V_i^T$, which is `Matrix.obliqueProj (A * V i) (V i)`. -/
+$P_i = (A V_i) (V_i^T A V_i)^{-1} V_i^T$, which is `Matrix.obliqueProj (A * V i) (V i)`.
+
+**Reading.** The inverse is totalized, so singular compression gives the zero matrix. The source
+uses an invertible compression for its correction and projector. The Lean projector theorem
+separately imposes this nonsingularity.
+-/
 theorem P_i_eq_obliqueProj (i : Fin 𝒱.p) :
     P_i 𝒱 A i = Matrix.obliqueProj (A * 𝒱.V i) (𝒱.V i) := by
   rw [P_i, Matrix.obliqueProj, conjTranspose_eq_transpose, Matrix.mul_assoc (𝒱.V i)ᵀ A]
@@ -147,7 +205,12 @@ residual of one additive step from $x$ is
 $$b - A x_{\mathrm{new}} = (b - Ax) - \sum_{i=1}^{p} \omega_i P_i (b - Ax).$$
 
 No nonsingularity is needed: the identity follows from $A V_i (V_i^T A V_i)^{-1} V_i^T = P_i$,
-which holds for Lean's total inverse. -/
+which holds for Lean's total inverse.
+
+**Generalization.** The source assumes orthogonal column systems spanning distinct subspaces and
+solves nonsingular reduced systems. Lean permits repeated subspaces and uses the zero inverse at
+singular compression. It states one exact weighted update and its residual identity.
+-/
 theorem residual_additiveStep (ω : Fin 𝒱.p → ℝ) (b x : E n) :
     b - (A ⬝ additiveStep 𝒱 A ω b x) =
       (b - (A ⬝ x)) - ∑ i, ω i • ((P_i 𝒱 A i) ⬝ (b - (A ⬝ x))) := by
@@ -157,7 +220,11 @@ theorem residual_additiveStep (ω : Fin 𝒱.p → ℝ) (b x : E n) :
 
 /-- **Section 5.4** of [saad2003iterative], the remark on block relaxation. For every matrix
 $V \in \mathbb{R}^{n \times m}$, the block-relaxation correction (4.17),
-$x + V (V^T A V)^{-1} V^T (b - Ax)$, is the projection step (5.7) with $W = V$. -/
+$x + V (V^T A V)^{-1} V^T (b - Ax)$, is the projection step (5.7) with $W = V$.
+
+**Generalization.** Lean identifies the formulas for any real column matrix using total inverse,
+while the source compares the reduced solves for coordinate-block bases.
+-/
 theorem blockCorrection_eq_projStep {m : ℕ} (V : Matrix (Fin n) (Fin m) ℝ) (b x : E n) :
     x + ((V * (Vᵀ * A * V)⁻¹ * Vᵀ) ⬝ (b - (A ⬝ x))) = projStep A b V V x := rfl
 
@@ -298,7 +365,11 @@ $V_i^T A V_i$ be nonsingular. Then for every $z \in \mathbb{R}^n$ the vector $P_
 projection of $z$ onto $A K_i$ orthogonally to $K_i$:
 $$P_i z \in A K_i \quad \text{and} \quad z - P_i z \perp K_i.$$
 
-The projection is `SaadSparse.IsProjOnto`, the definition (1.59)–(1.60). -/
+The projection is `SaadSparse.IsProjOnto`, the definition (1.59)–(1.60).
+
+**Generalization.** Invertibility of the compression suffices for the projector characterization.
+The source introduces the projectors using orthogonal column systems spanning distinct subspaces.
+-/
 theorem P_i_isProjOnto {i : Fin 𝒲.p} (h : IsUnit ((𝒲.V i)ᵀ * A * 𝒲.V i)) (z : E n) :
     SaadSparse.IsProjOnto ((𝒲.subspace i).map (toEuclideanLin A)) (𝒲.subspace i) z
       ((P_i 𝒲 A i) ⬝ z) := by
@@ -314,7 +385,12 @@ additive step is the backbone step `Projection.additiveStep`,
 $$x + \sum_{i=1}^{p} \omega_i (\tilde x_i - x),$$
 where $\tilde x_i$ is the Petrov–Galerkin step from $x$ for the pair $(K_i, K_i)$.
 
-The residual identity (5.23) is therefore also `Projection.residual_additiveStep`. -/
+The residual identity (5.23) is therefore also `Projection.residual_additiveStep`.
+
+**Generalization.** Under nonsingular compressions the Lean step agrees with the abstract projection
+process. It does not require orthogonal bases or distinct spans, and takes one additive update or
+one ordered multiplicative sweep.
+-/
 theorem additiveStep_eq (h : ∀ i, IsUnit ((𝒲.V i)ᵀ * A * 𝒲.V i)) (ω : Fin 𝒲.p → ℝ) (b x : E n) :
     additiveStep 𝒲 A ω b x =
       Projection.additiveStep (toEuclideanLin A) b 𝒲.subspace 𝒲.subspace
@@ -337,7 +413,12 @@ nonsingular for every $i$. Then the multiplicative sweep is the backbone sweep
 `Projection.multiplicativeStep` over the subspaces $K_1, \dots, K_p$ in this order.
 
 By `Projection.residual_multiplicativeStep`, the residual after the sweep is
-$(I - P_p) \cdots (I - P_1) (b - Ax)$. -/
+$(I - P_p) \cdots (I - P_1) (b - Ax)$.
+
+**Generalization.** Under nonsingular compressions the Lean step agrees with the abstract projection
+process. It does not require orthogonal bases or distinct spans, and takes one additive update or
+one ordered multiplicative sweep.
+-/
 theorem multiplicativeSweep_eq (h : ∀ i, IsUnit ((𝒲.V i)ᵀ * A * 𝒲.V i)) (b x : E n) :
     multiplicativeSweep 𝒲 A b x =
       Projection.multiplicativeStep (toEuclideanLin A) b 𝒲.subspace 𝒲.subspace
@@ -362,7 +443,12 @@ $$A V_i \big((A V_i)^T A V_i\big)^{-1} (A V_i)^T$$
 is the orthogonal projector onto $A K_i$.
 
 The matrix is `Matrix.obliqueProj (A * V i) (A * V i)`, and the orthogonal projector is
-`Submodule.starProjection`. -/
+`Submodule.starProjection`.
+
+**Reading.** For the least-squares choice the projection formula uses $AV_i$ in both slots. Lean
+states nonsingularity of its Gram matrix explicitly, without assuming that the columns of $V_i$ are
+orthogonal.
+-/
 theorem leastSquares_P_i_eq_starProjection {i : Fin 𝒲.p}
     (h : IsUnit ((A * 𝒲.V i)ᵀ * (A * 𝒲.V i))) :
     toEuclideanLin (Matrix.obliqueProj (A * 𝒲.V i) (A * 𝒲.V i)) =
@@ -385,7 +471,12 @@ $\sum_i \dim (A K_i) = n$. Then the least-squares projectors sum to the identity
 $$\sum_{i=1}^{p} A V_i \big((A V_i)^T A V_i\big)^{-1} (A V_i)^T = I.$$
 
 By (5.23) with $\omega_i = 1$, one step of the least-squares additive process then gives the
-exact solution. This consequence is not stated as a separate declaration. -/
+exact solution. This consequence is not stated as a separate declaration.
+
+**Reading.** Lean states the operator identity from the proof of one-step exactness. It uses
+pairwise orthogonality and the total dimension hypothesis on the image spaces, and makes the
+invertibility of each Gram matrix explicit.
+-/
 theorem sum_P_i_eq_one (horth : ∀ i j, i ≠ j → (A * 𝒲.V i)ᵀ * (A * 𝒲.V j) = 0)
     (h : ∀ i, IsUnit ((A * 𝒲.V i)ᵀ * (A * 𝒲.V i)))
     (hdim : ∑ i, finrank ℝ ((𝒲.subspace i).map (toEuclideanLin A)) = n) :

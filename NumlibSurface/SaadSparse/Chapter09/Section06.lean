@@ -68,6 +68,22 @@ skew-adjoint operator.
   reuses the step length and the coefficient of Algorithm 9.1 (`SaadSparse.Chapter09.pcgStepAlpha`
   and `SaadSparse.Chapter09.pcgStepBeta`).
 
+## Deviations from the source
+
+* **Generalization.** The energy identities make the preconditioner hypothesis explicit and identify
+  the adjoint. See `SaadSparse.Chapter09.isSkewAdjoint_energy`,
+  `SaadSparse.Chapter09.energyEnd_eq_one_sub`, `SaadSparse.Chapter09.adjoint_energyEnd`,
+  `SaadSparse.Chapter09.isShiftedSkewAdjoint_energyEnd`.
+* **Reading.** The tridiagonal identities use the preconditioned operator and the complex
+  skew-Hermitian form of the display. See `SaadSparse.Chapter09.equation_9_29`.
+* **Generalization.** The CGW coefficient and state recurrences are total and retain the negative
+  beta. See `SaadSparse.Chapter09.cgwStep`, `SaadSparse.Chapter09.cgw`,
+  `SaadSparse.Chapter09.cgw_succ`, `SaadSparse.Chapter09.cgwAlpha`, `SaadSparse.Chapter09.cgwBeta`,
+  `SaadSparse.Chapter09.cgw_alpha`.
+* **Scope.** The CGW equivalence and Galerkin result are proved for real input with a valid energy
+  preconditioner. See `SaadSparse.Chapter09.cgw_eq_CGW_iterate`,
+  `SaadSparse.Chapter09.cgw_isGalerkinIterate`.
+
 ## Not formalized
 
 * The inner-outer variants of Golub and Overton, which the notes of Section 9.6 mention. The book
@@ -139,7 +155,12 @@ $N \in \mathbb{K}^{n \times n}$ be skew-Hermitian, $N^H = -N$, and let $M$ be a 
 Then $M^{-1} N$ is skew-adjoint for the $M$-inner product:
 $$(M^{-1} N u, v)_M = -(u, M^{-1} N v)_M \quad \text{for all } u, v.$$
 
-The vectors $u$ and $v$ are elements of the space with the $M$-inner product, `hM.EnergySpace`. -/
+The vectors $u$ and $v$ are elements of the space with the $M$-inner product, `hM.EnergySpace`.
+
+**Generalization.** The skew-adjoint fact is stated for an arbitrary skew-Hermitian matrix and
+energy preconditioner. The specialized formulas explicitly assume a valid positive definite energy
+inner product, and identify the adjoint as $2I-M^{-1}A$.
+-/
 theorem isSkewAdjoint_energy {N : Matrix (Fin n) (Fin n) 𝕜} (hN : Nᴴ = -N)
     (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (u v : hM.EnergySpace) :
     inner 𝕜 (hM.energyEnd (op M⁻¹ ∘ₗ op N) u) v
@@ -152,7 +173,12 @@ theorem isSkewAdjoint_energy {N : Matrix (Fin n) (Fin n) 𝕜} (hN : Nᴴ = -N)
   rw [hneg, LinearMap.neg_apply, inner_neg_right]
 
 /-- Let the Hermitian part $M$ of $A$ be a preconditioner. Then $M^{-1} A u = u - M^{-1} N u$ for
-every $u$, in the space with the $M$-inner product. -/
+every $u$, in the space with the $M$-inner product.
+
+**Generalization.** The skew-adjoint fact is stated for an arbitrary skew-Hermitian matrix and
+energy preconditioner. The specialized formulas explicitly assume a valid positive definite energy
+inner product, and identify the adjoint as $2I-M^{-1}A$.
+-/
 theorem energyEnd_eq_one_sub (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (u : hM.EnergySpace) :
     hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) u
@@ -171,7 +197,12 @@ definite). Then the adjoint of $M^{-1} A$ for the $M$-inner product is $2I - M^{
 $$(M^{-1} A u, v)_M = (u, 2v - M^{-1} A v)_M \quad \text{for all } u, v.$$
 
 The whole section rests on this fact: it makes the Hessenberg matrix of the $M$-orthogonal
-Arnoldi process tridiagonal. -/
+Arnoldi process tridiagonal.
+
+**Generalization.** The skew-adjoint fact is stated for an arbitrary skew-Hermitian matrix and
+energy preconditioner. The specialized formulas explicitly assume a valid positive definite energy
+inner product, and identify the adjoint as $2I-M^{-1}A$.
+-/
 theorem adjoint_energyEnd (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (u v : hM.EnergySpace) :
     inner 𝕜 (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A) u) v
@@ -201,7 +232,13 @@ $h_{ij} = (B v_j, v_i)_M$ be the Hessenberg coefficients. Then:
 
 Over $\mathbb{R}$ the third clause is the statement $h_{ii} = 1$ of the book. The Arnoldi
 vectors and coefficients are the backbone `Arnoldi.vec` and `Arnoldi.coeff`, with $0$-based
-indices; the vectors are the normalized Gram–Schmidt vectors of the sequence $B^i b$. -/
+indices; the vectors are the normalized Gram–Schmidt vectors of the sequence $B^i b$.
+
+**Reading.** The surrounding text discusses $M^{-1}A$; the sentence before the display names $A$.
+Lean uses the preconditioned operator. The complex result fixes the real part of the diagonal to one
+before the grade and relates opposite entries by negative conjugation on an orthogonal prefix; the
+displayed real matrix uses diagonal ones and opposite signed entries.
+-/
 theorem equation_9_29 (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (b : hM.EnergySpace) :
     (∀ i j : ℕ, i + 2 ≤ j →
@@ -267,7 +304,12 @@ variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 /-- One step of the Concus–Golub–Widlund recurrence: Algorithm 9.1 of [saad2003iterative] with the
 sign of $\beta_j$ reversed. It maps the state $(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \;
 r_{j+1}, \; z_{j+1} - \beta_j p_j)$, where $\alpha_j$, $r_{j+1}$, $z_{j+1} = M^{-1} r_{j+1}$ and
-$\beta_j$ are as in Algorithm 9.1. -/
+$\beta_j$ are as in Algorithm 9.1.
+
+**Generalization.** The recurrences are total for all matrices and indices, including an undefined
+quotient. The coefficient order follows the conjugate-linear-first convention and recovers the real
+recurrence. The negative sign of beta follows the printed CGW formula.
+-/
 noncomputable def cgwStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + pcgStepAlpha A M s • s.2.2, pcgStepR A M s,
     op M⁻¹ (pcgStepR A M s) - pcgStepBeta A M s • s.2.2)
@@ -282,7 +324,12 @@ $$\alpha_j = \frac{(r_j, z_j)}{(A p_j, p_j)}, \quad x_{j+1} = x_j + \alpha_j p_j
   r_{j+1} = r_j - \alpha_j A p_j,$$
 $$z_{j+1} = M^{-1} r_{j+1}, \quad \beta_j = -\frac{(r_{j+1}, z_{j+1})}{(r_j, z_j)}, \quad
   p_{j+1} = z_{j+1} + \beta_j p_j.$$
-The value at $j$ is the triple $(x_j, r_j, p_j)$ after $j$ steps. -/
+The value at $j$ is the triple $(x_j, r_j, p_j)$ after $j$ steps.
+
+**Generalization.** The recurrences are total for all matrices and indices, including an undefined
+quotient. The coefficient order follows the conjugate-linear-first convention and recovers the real
+recurrence. The negative sign of beta follows the printed CGW formula.
+-/
 noncomputable def cgw (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (cgwStep A (cgwM A))^[j] (x₀, b - op A x₀, op (cgwM A)⁻¹ (b - op A x₀))
 
@@ -298,15 +345,30 @@ noncomputable def cgwP (j : ℕ) : 𝔼 := (cgw A b x₀ j).2.2
 /-- The preconditioned residual $z_j = M^{-1} r_j$ of the Concus–Golub–Widlund algorithm. -/
 noncomputable def cgwZ (j : ℕ) : 𝔼 := op (cgwM A)⁻¹ (cgwR A b x₀ j)
 
-/-- The step length $\alpha_j$ of the Concus–Golub–Widlund algorithm. -/
+/-- The step length $\alpha_j$ of the Concus–Golub–Widlund algorithm.
+
+**Generalization.** The recurrences are total for all matrices and indices, including an undefined
+quotient. The coefficient order follows the conjugate-linear-first convention and recovers the real
+recurrence. The negative sign of beta follows the printed CGW formula.
+-/
 noncomputable def cgwAlpha (j : ℕ) : 𝕜 := pcgStepAlpha A (cgwM A) (cgw A b x₀ j)
 
 /-- The direction coefficient $\beta_j$ of the Concus–Golub–Widlund algorithm, the negative of the
-coefficient of Algorithm 9.1. -/
+coefficient of Algorithm 9.1.
+
+**Generalization.** The recurrences are total for all matrices and indices, including an undefined
+quotient. The coefficient order follows the conjugate-linear-first convention and recovers the real
+recurrence. The negative sign of beta follows the printed CGW formula.
+-/
 noncomputable def cgwBeta (j : ℕ) : 𝕜 := -pcgStepBeta A (cgwM A) (cgw A b x₀ j)
 
 /-- The state of the Concus–Golub–Widlund algorithm after $j + 1$ steps is one step applied to the
-state after $j$ steps. -/
+state after $j$ steps.
+
+**Generalization.** The recurrences are total for all matrices and indices, including an undefined
+quotient. The coefficient order follows the conjugate-linear-first convention and recovers the real
+recurrence. The negative sign of beta follows the printed CGW formula.
+-/
 theorem cgw_succ (j : ℕ) : cgw A b x₀ (j + 1) = cgwStep A (cgwM A) (cgw A b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -358,7 +420,12 @@ $$\alpha_j = \frac{(r_j, z_j)}{(A p_j, p_j)}, \qquad \beta_j = -\frac{(r_{j+1}, 
 The step length is that of Algorithm 9.1, and the direction coefficient is its negative.
 
 The sign comes from the skew-adjointness of $M^{-1} N$, through $(M^{-1} A z_{j+1}, p_j)_M =
--(z_{j+1}, M^{-1} A p_j)_M$ for the relevant vectors. -/
+-(z_{j+1}, M^{-1} A p_j)_M$ for the relevant vectors.
+
+**Generalization.** The recurrences are total for all matrices and indices, including an undefined
+quotient. The coefficient order follows the conjugate-linear-first convention and recovers the real
+recurrence. The negative sign of beta follows the printed CGW formula.
+-/
 theorem cgw_alpha (j : ℕ) :
     cgwAlpha A b x₀ j
         = inner 𝕜 (cgwZ A b x₀ j) (cgwR A b x₀ j)
@@ -384,7 +451,12 @@ $B = M^{-1} A$ is shifted skew-adjoint for the $M$-inner product: $B + B^* = 2I$
 the adjoint for the $M$-inner product.
 
 This is `SaadSparse.Chapter09.adjoint_energyEnd` over $\mathbb{R}$, in the form
-`LinearMap.IsShiftedSkewAdjoint` that `CGW.iterate` needs. -/
+`LinearMap.IsShiftedSkewAdjoint` that `CGW.iterate` needs.
+
+**Generalization.** The skew-adjoint fact is stated for an arbitrary skew-Hermitian matrix and
+energy preconditioner. The specialized formulas explicitly assume a valid positive definite energy
+inner product, and identify the adjoint as $2I-M^{-1}A$.
+-/
 theorem isShiftedSkewAdjoint_energyEnd
     (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹)) :
     (hM.energyEnd (op (cgwM A)⁻¹ ∘ₗ op A)).IsShiftedSkewAdjoint := by
@@ -402,7 +474,12 @@ $$x_j = \xi_j, \qquad z_j = \rho_j, \qquad p_j = \pi_j.$$
 
 The iterate and the search direction carry over unchanged. The preconditioned residual
 $z_j = M^{-1} r_j$ plays the part of the backbone residual. Each vector is moved to the
-$M$-inner product space by `hM.toEnergy`. -/
+$M$-inner product space by `hM.toEnergy`.
+
+**Reading.** The update formulas are available over complex scalars, but the equivalence with the
+shifted-skew CGW iteration and the Galerkin theorem are over the reals with a valid energy
+preconditioner.
+-/
 theorem cgw_eq_CGW_iterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (b x₀ : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
     hM.toEnergy (cgwX A b x₀ j)
@@ -470,7 +547,12 @@ This is the only optimality property of the algorithm. It comes with no minimiza
 $M^{-1} A$ is not self-adjoint for the $M$-inner product. The statement holds over $\mathbb{R}$
 only. Over $\mathbb{C}$ the recurrence is not a projection method: the step length $\alpha_j$ is
 complex, and the cancellation that makes the directions $M^{-1} A$-conjugate fails already at
-$j = 1$; see the module doc comment of `Numlib.Krylov.CGW`. -/
+$j = 1$; see the module doc comment of `Numlib.Krylov.CGW`.
+
+**Reading.** The update formulas are available over complex scalars, but the equivalence with the
+shifted-skew CGW iteration and the Galerkin theorem are over the reals with a valid energy
+preconditioner.
+-/
 theorem cgw_isGalerkinIterate (hM : Krylov.IsPreconditioner (op (cgwM A)) (op (cgwM A)⁻¹))
     (b x₀ : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
     IsGalerkin (op A) b x₀

@@ -90,6 +90,13 @@ from a data point to a hyperplane. The proofs specialize
 
 ## Deviations from the source
 
+* **Equation (6.3.6)** (reading). The orthogonal-regression theorem uses the explicit singular-
+  vector minimizer under the strict singular-value gap and permits zero row weights for the
+  objective comparison. See `GolubVanLoan.Chapter06.equation_6_3_6`.
+* **Algorithm 6.3.1** (reading). The trailing equal values can cover the entire spectrum. The
+  zero-pivot branch returns `none`, and the exact specification proves that no TLS solution
+  exists in that case. See `GolubVanLoan.Chapter06.algorithm_6_3_1` and
+  `GolubVanLoan.Chapter06.algorithm_6_3_1_spec`.
 * **Theorem 6.3.1, nonsingularity of $V_{22}$** (generalization). The source assumes that $D$ and
   $T$ are nonsingular and $m \ge n + k$. The nonsingularity of $V_{22}$ holds without these
   hypotheses. See `GolubVanLoan.Chapter06.theorem_6_3_1_isUnit`.
@@ -407,7 +414,11 @@ T_1^{-2} x + t_{n+1}^{-2}}.$$
 
 This is the generic case of Theorem 6.3.1 with one right-hand side, where
 $x_{TLS} = -T_1 V_{12} V_{22}^{-1} t_{n+1}^{-1}$. The function $\psi$ is
-`Matrix.tlsObjective d t A b`. The statement does not need $d$ to be nonzero. -/
+`Matrix.tlsObjective d t A b`. The statement does not need $d$ to be nonzero.
+
+**Reading.** The source states the geometric minimization property for a TLS solution. This
+theorem specifies the explicit singular-vector minimizer under the strict gap of Theorem 6.3.1.
+The objective comparison also allows zero row weights. -/
 theorem equation_6_3_6 (hmn : n < m) (d : Fin m → ℝ) {t : Fin (n + 1) → ℝ}
     (ht : ∀ j, t j ≠ 0) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
@@ -690,7 +701,10 @@ theorem tlsMatrix_apply (d : Fin m → ℝ) (t : Fin (n + 1) → ℝ) (A : Matri
 
 /-- The start $r$ of the run of values equal to the last one, $\sigma_r = \dots = \sigma_n$
 (0-based), found by exact comparisons: $r = n + 1 - \#\{j \le n : \sigma_j = \sigma_n\}$. This
-is the index $n - p$ of Algorithm 6.3.1 of [golub2013matrix]. -/
+is the index $n - p$ of Algorithm 6.3.1 of [golub2013matrix].
+
+**Reading.** Counts computed singular values equal to last and admits all values tying.
+-/
 noncomputable def tailStart (σ : ℕ → ℝ) (n : ℕ) : ℕ :=
   open Classical in n + 1 - ((Finset.range (n + 1)).filter fun j => σ j = σ n).card
 
@@ -727,7 +741,10 @@ private theorem eq_iff_tailStart_le {σ : ℕ → ℝ} (hσ : Antitone σ) {j : 
 
 /-- For a nonincreasing sequence $\sigma$, the index $r$ = `GolubVanLoan.Chapter06.tailStart σ n`
 satisfies $r \le n$, $\sigma_j > \sigma_n$ for all $j < r$, and $\sigma_r = \sigma_n$ (0-based).
-This determines the $p$ of Algorithm 6.3.1 of [golub2013matrix]. -/
+This determines the $p$ of Algorithm 6.3.1 of [golub2013matrix].
+
+**Reading.** All preceding values strictly larger with condition vacuous for full tie.
+-/
 theorem tailStart_spec {σ : ℕ → ℝ} (hσ : Antitone σ) :
     tailStart σ n ≤ n ∧ (∀ j < tailStart σ n, σ n < σ j) ∧ σ (tailStart σ n) = σ n := by
   have hn := (eq_iff_tailStart_le (n := n) (j := n) hσ le_rfl).1 rfl
@@ -810,7 +827,11 @@ $\sigma$ with `GolubVanLoan.Chapter06.tailStart`. The Householder $P$ is
 `GolubVanLoan.Chapter05.houseOn` on the last row of $V$ over the index list
 $[n, n - 1, \dots, n - p]$ with the pivot $n$, applied to the columns of $V$ by
 `GolubVanLoan.Chapter05.householderApplyRight`. The output is `some x`, or `none` when
-$\tilde v_{n+1,n+1} = 0$. -/
+$\tilde v_{n+1,n+1} = 0$.
+
+**Reading.** The supplied SVD routine produces the values used to detect the last equal-
+singular-value run, including a run that spans all singular values. The zero-pivot branch
+returns `none`, making the source's missing-output case explicit. -/
 noncomputable def algorithm_6_3_1
     (svd : Matrix (Fin m) (Fin (n + 1)) ℝ →
       M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ))
@@ -915,7 +936,10 @@ TLS problem has no solution.
 
 The run is at `M := Id` with `rnd := pure`. A TLS solution is `Matrix.IsTLSSolution` with the
 weights `d` and `GolubVanLoan.Chapter06.tlsWeights t`, for the columns
-`Matrix.replicateCol Unit b` and `Matrix.replicateCol Unit x`. -/
+`Matrix.replicateCol Unit b` and `Matrix.replicateCol Unit x`.
+
+**Correction.** Exact optional output correctly distinguishes existence and failure.
+-/
 theorem algorithm_6_3_1_spec (hmn : n < m)
     (svd : Matrix (Fin m) (Fin (n + 1)) ℝ →
       Id (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ))

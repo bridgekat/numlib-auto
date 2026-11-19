@@ -122,16 +122,25 @@ abstract results specialize `Numlib.FiniteDifference.LaxEquivalence`, and the ex
 ## Deviations from the source
 
 * **Definition 6.2.7** (reading). The truncation error is tested only at the $t \in [0, T]$ with
-  $t + \Delta t \le T$, where the solution operators are determined. See
+  $t + \Delta t \le T$, where the solution operators are determined. Any dense set of
+  initial values suffices in place of a dense linear subspace. See
   `AtkinsonHan.Chapter06.IsConsistent`.
 * **Definition 6.2.9** (reading). The limit is taken along every pair of sequences
   $(\Delta t_i, m_i)$ with $\Delta t_i \to 0$ and $m_i \Delta t_i \to t$, restricted to
   $m_i \Delta t_i \le T$. See `AtkinsonHan.Chapter06.IsConvergent`.
 * **Proposition 6.2.6** (reading). The statement assumes well-posedness on every horizon $T' \le T$,
   not only on $T$. See `AtkinsonHan.Chapter06.proposition_6_2_6`.
-* **Theorem 6.2.11** (reading). The uniform bound $\|C(\Delta t)\| \le c_1$, which the source
-  assumes silently when it introduces the family, is an explicit hypothesis. See
+* **Theorem 6.2.11** (reading). The statement takes the uniform bound
+  $\|C(\Delta t)\| \le c_1$ as an argument. The source explicitly assumes this bound
+  when introducing the family, before stating the theorem. See
   `AtkinsonHan.Chapter06.theorem_6_2_11`.
+* **Corollary 6.2.12** (correction and scope). The source prints the same constant $c$
+  for the local and global bounds. The estimate takes a bound $M_0$ on the powers as
+  a hypothesis and has the factor $M_0 t c$ in the global error. It applies at one
+  fixed step size to any initial value satisfying the local bound.
+* **Example 6.2.8** (scope). The stencil definitions extend to arbitrary real parameters
+  using totalized division, square root and, for the backward scheme, inversion. The
+  local error estimates replace Taylor remainder notation with explicit sine-series bounds.
 * **Exercise 6.2.3** (correction). The equality $\|C(\Delta t)\| = |1 - 2r| + 2r$ needs a small
   space step; the library assumes $\Delta x < \pi/2$. See
   `AtkinsonHan.Chapter06.norm_forwardScheme_eq`.
@@ -403,7 +412,7 @@ Let $\{C(\Delta t)\}$ be a family of bounded operators with $\|C(\Delta t)\| \le
 $\Delta t \in (0, \Delta_0]$, consistent with $S$ on a set $V_c$. Then the method is stable if
 and only if it is convergent.
 
-**Reading.** The source assumes the uniform bound $\|C(\Delta t)\| \le c_1$ silently, when it
+**Reading.** The source assumes the uniform bound $\|C(\Delta t)\| \le c_1$ explicitly when it
 introduces the family a page before the theorem. Its proof of the implication from convergence
 to stability uses the bound: without it, the estimate $\sup_k \|C(\Delta t_k)^{m_k}\| \le \sup_k
 \|C(\Delta t_k)\|^{m_k} < \infty$ for step sizes bounded away from zero fails.
@@ -430,7 +439,11 @@ The statement is for one fixed step size, with explicit constants and no limit. 
 $u_0 \in V_0$, $S(t) u_0$ is the exact solution $u(t)$, by
 `AtkinsonHan.Chapter06.solutionOperator_apply`. The local error hypothesis is asked for every
 $s \in [0, T]$, so also at $s$ with $s + \Delta t > T$. The proof specializes
-`FiniteDifference.norm_iterate_sub_le`. -/
+`FiniteDifference.norm_iterate_sub_le`.
+
+**Reading.** Requires an explicit power bound and includes the missing time and stability factors in
+global error.
+-/
 theorem corollary_6_2_12 {C : ℝ → V →L[ℝ] V} {Δt c M₀ t : ℝ} {k m : ℕ} (u₀ : V) (hΔt : 0 < Δt)
     (hmΔt : (m : ℝ) * Δt = t) (ht : t ∈ Icc (0 : ℝ) T)
     (hstab : ∀ i ≤ m, ‖C Δt ^ i‖ ≤ M₀)
@@ -953,13 +966,20 @@ $$C(\Delta t) v(x) = (1 - 2r) v(x) + r [\tilde v(x + \Delta x) + \tilde v(x - \D
 where $\tilde v$ is the odd $2\pi$-periodic extension of $v$. The mesh ratio
 $r = \nu \Delta t / \Delta x^2$ is held fixed as $\Delta t \to 0$.
 
-The space step is `Real.sqrt (ν * Δt / r)`, which is $0$ when $\nu \Delta t / r \le 0$. -/
+The space step is `Real.sqrt (ν * Δt / r)`, which is $0$ when $\nu \Delta t / r \le 0$.
+
+**Generalization.** Same operator on physical inputs, extending formula to arbitrary real
+parameters.
+-/
 noncomputable def forwardScheme (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
   (1 - 2 * r) • (1 : C₀ →L[ℝ] C₀) + r • translateSum (Real.sqrt (ν * Δt / r))
 
 /-- The value of the forward scheme at $x \in [0, \pi]$ is $(1 - 2r) v(x) + r [\tilde v(x + \Delta
 x) + \tilde v(x - \Delta x)]$ with $\Delta x = \sqrt{\nu \Delta t / r}$, the formula of Example
-6.2.8. -/
+6.2.8.
+
+**Reading.** Same stencil and mesh relation with totalized square root and division.
+-/
 theorem forwardScheme_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     (forwardScheme ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) x
       = (1 - 2 * r) * (v : C(Icc (0 : ℝ) π, ℝ)) x
@@ -993,7 +1013,10 @@ theorem forall_norm_forwardScheme_le {r : ℝ} (hr : 0 ≤ r) (ν Δ₀ : ℝ) :
 $\sum_{j < n} b_j \sin((j + 1) x)$:
 $$c = \frac{1}{2} \sum_{j < n} |b_j| \bigl(\nu (j + 1)^2\bigr)^2 + \frac{\nu^2}{12 r} \sum_{j <
   n} |b_j| (j + 1)^4.$$
-The two terms bound $u_{tt}/2$ and $(\nu^2 / 12 r) \, u_{xxxx}$. -/
+The two terms bound $u_{tt}/2$ and $(\nu^2 / 12 r) \, u_{xxxx}$.
+
+**Reading.** Replaces implicit remainder constants with finite sine-coefficient sums.
+-/
 noncomputable def forwardConsistencyConst (ν r : ℝ) (n : ℕ) (b : ℕ → ℝ) : ℝ :=
   (∑ j ∈ Finset.range n, |b j| * (ν * ((j : ℝ) + 1) ^ 2) ^ 2) / 2
     + ν ^ 2 * (∑ j ∈ Finset.range n, |b j| * ((j : ℝ) + 1) ^ 4) / (12 * r)
@@ -1014,7 +1037,10 @@ $\sum_{j < n} b_j \sin((j + 1) x)$, the solution $u$ of (6.2.7) satisfies
 $$\|C(\Delta t) u(t) - u(t + \Delta t)\| \le c \, \Delta t^2,$$
 with the constant $c$ of `AtkinsonHan.Chapter06.forwardConsistencyConst`.
 
-The proof uses Taylor expansions of $u$ in $t$ and in $x$. -/
+The proof uses Taylor expansions of $u$ in $t$ and in $x$.
+
+**Reading.** Explicit second-order local error bound before division by the time step.
+-/
 theorem norm_forwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (n : ℕ)
     (b : ℕ → ℝ) {t Δt : ℝ} (ht : 0 ≤ t) (hΔt : 0 ≤ Δt) :
     ‖forwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
@@ -1068,7 +1094,10 @@ sizes in $(0, \Delta_0]$. For each sine polynomial initial value, the truncation
 $\|[C(\Delta t) u(t) - u(t + \Delta t)] / \Delta t\| \le c \, \Delta t$.
 
 The family $S$ is the solution operators of Definition 6.2.3 on $[0, T]$ itself, since
-Definition 6.2.7 evaluates $S(t + \Delta t)$ only for $t + \Delta t \le T$. -/
+Definition 6.2.7 evaluates $S(t + \Delta t)$ only for $t + \Delta t \le T$.
+
+**Reading.** Formalizes consistency using the clipped time horizon.
+-/
 theorem example_6_2_8 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
       (example_6_2_4 hν T)) (forwardScheme ν r) T Δ₀ sinePolynomials := by
@@ -1099,12 +1128,17 @@ $\Delta x = \sqrt{\nu \Delta t / r}$. It is the left side of the implicit relati
 backward scheme of Example 6.2.8,
 $$(1 + 2r) u(x, t + \Delta t) - r [u(x - \Delta x, t + \Delta t) + u(x + \Delta x, t + \Delta
   t)] = u(x, t).$$
+
+**Generalization.** Extends the same implicit stencil to arbitrary real parameters.
 -/
 noncomputable def backwardSchemeInv (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
   (1 + 2 * r) • (1 : C₀ →L[ℝ] C₀) - r • translateSum (Real.sqrt (ν * Δt / r))
 
 /-- The value of $Q_1 v$ at $x \in [0, \pi]$ is $(1 + 2r) v(x) - r [\tilde v(x + \Delta x) + \tilde
-v(x - \Delta x)]$. -/
+v(x - \Delta x)]$.
+
+**Reading.** Pointwise formula uses totalized mesh relation.
+-/
 theorem backwardSchemeInv_apply (ν r Δt : ℝ) (v : C₀) (x : Icc (0 : ℝ) π) :
     (backwardSchemeInv ν r Δt v : C(Icc (0 : ℝ) π, ℝ)) x
       = (1 + 2 * r) * (v : C(Icc (0 : ℝ) π, ℝ)) x
@@ -1141,7 +1175,11 @@ $$(1 + 2r) w(x) - r [\tilde w(x - \Delta x) + \tilde w(x + \Delta x)] = v(x), \q
   \sqrt{\nu \Delta t / r}.$$
 
 The inverse is Mathlib's `Ring.inverse`, which is $0$ when $Q_1$ is not invertible. For
-$r \ge 0$, $Q_1$ is invertible by `AtkinsonHan.Chapter06.isUnit_backwardSchemeInv`. -/
+$r \ge 0$, $Q_1$ is invertible by `AtkinsonHan.Chapter06.isUnit_backwardSchemeInv`.
+
+**Reading.** The ring inverse is defined even outside the parameter range that makes the stencil
+invertible.
+-/
 noncomputable def backwardScheme (ν r Δt : ℝ) : C₀ →L[ℝ] C₀ :=
   Ring.inverse (backwardSchemeInv ν r Δt)
 
@@ -1203,7 +1241,10 @@ with the same constant $c$ (`AtkinsonHan.Chapter06.forwardConsistencyConst`) as 
 scheme.
 
 The proof writes $C(\Delta t) u(t) - u(t + \Delta t) = C(\Delta t) [u(t) - Q_1 u(t + \Delta
-t)]$, uses $\|C(\Delta t)\| \le 1$, and expands $u$ by Taylor's formula at $(x, t + \Delta t)$. -/
+t)]$, uses $\|C(\Delta t)\| \le 1$, and expands $u$ by Taylor's formula at $(x, t + \Delta t)$.
+
+**Reading.** Provides an explicit local error constant for the second-order bound.
+-/
 theorem norm_backwardScheme_sineSolution_sub_le (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (n : ℕ)
     (b : ℕ → ℝ) {t Δt : ℝ} (ht : 0 ≤ t) (hΔt : 0 ≤ Δt) :
     ‖backwardScheme ν r Δt (sineSolution ν n b t) - sineSolution ν n b (t + Δt)‖
@@ -1265,7 +1306,10 @@ $r > 0$, $T \ge 0$ and $\Delta_0 \in \mathbb{R}$. The backward scheme is consist
 sizes in $(0, \Delta_0]$.
 
 The source calls this case "more involved" and leaves it to the reader. The proof uses
-`AtkinsonHan.Chapter06.norm_backwardScheme_sineSolution_sub_le`. -/
+`AtkinsonHan.Chapter06.norm_backwardScheme_sineSolution_sub_le`.
+
+**Reading.** The backward consistency proof uses the clipped time horizon.
+-/
 theorem example_6_2_8_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsConsistent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one
       (example_6_2_4 hν T)) (backwardScheme ν r) T Δ₀ sinePolynomials := by
@@ -1299,7 +1343,11 @@ $m_i \Delta t_i \to t$, for every $u_0 \in C_0[0, \pi]$.
 For $r \le 1/2$ the bound (6.2.8) gives $\|C(\Delta t)\| \le 1$, hence
 $\|C(\Delta t)^m\| \le 1$. Convergence then follows from consistency
 (`AtkinsonHan.Chapter06.example_6_2_8`) and the Lax equivalence theorem
-`AtkinsonHan.Chapter06.theorem_6_2_11`. -/
+`AtkinsonHan.Chapter06.theorem_6_2_11`.
+
+**Reading.** Same sufficient condition and conclusions using the formal clipped convergence
+definition.
+-/
 theorem example_6_2_13 (hν : 0 < ν) {r : ℝ} (hr : 0 < r) (hr2 : r ≤ 1 / 2) {T Δ₀ : ℝ}
     (hT : 0 ≤ T) :
     IsStable (forwardScheme ν r) T Δ₀ ∧
@@ -1319,7 +1367,11 @@ sizes in $(0, \Delta_0]$, and it is convergent to the solution operators of the 
 So the backward scheme is unconditionally stable and convergent.
 
 The proof uses $\|C(\Delta t)\| \le 1$, consistency
-(`AtkinsonHan.Chapter06.example_6_2_8_backward`) and the Lax equivalence theorem. -/
+(`AtkinsonHan.Chapter06.example_6_2_8_backward`) and the Lax equivalence theorem.
+
+**Reading.** Same unconditional stability and convergence for positive mesh ratios, with clipped
+convergence definition.
+-/
 theorem example_6_2_13_backward (hν : 0 < ν) {r : ℝ} (hr : 0 < r) {T Δ₀ : ℝ} (hT : 0 ≤ T) :
     IsStable (backwardScheme ν r) T Δ₀ ∧
       IsConvergent (solutionOperator (heatOperator ν) dense_heatOperator_domain hT zero_le_one

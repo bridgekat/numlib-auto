@@ -109,12 +109,10 @@ quasi-minimal residual specification, and the results from (7.16) on are theorem
     `SaadSparse.Chapter06.quasiResidualNorm h β m`.
 * "Algorithm 7.1 has no serious breakdown" is `SaadSparse.Chapter07.NoSeriousBreakdown`: whenever
   $(\hat v_{j+1}, \hat w_{j+1}) = 0$, also $\hat v_{j+1} = 0$.
-* From (7.18) on, the book normalizes the Lanczos vectors to $\|v_j\|_2 = 1$. This is a different
-  scaling from Algorithm 7.1, admissible by (7.1). It is the hypothesis $\|v_j\|_2 = 1$ for all $j$
-  of `SaadSparse.Chapter07.equation_7_20` and the results after it. By
-  `SaadSparse.Chapter07.equation_7_1_norm`, the choice $\delta_{j+1} = \|\hat v_{j+1}\|_2$ satisfies
-  the constraint (7.1) and gives a unit primal vector without changing $(v_j, w_j) = 1$, so the
-  hypothesis is a scaling of Algorithm 7.1 and not a new assumption.
+* From (7.18) on, the book normalizes the active primal vectors to unit norm. The alternate
+  scaling in `SaadSparse.Chapter07.equation_7_1_norm` makes this possible when the denominator is
+  nonzero. The definition `SaadSparse.Chapter07.qmrV` uses Algorithm 7.1's original scaling, and
+  some results assume unit norm for every index of that totalized sequence.
 
 ## Implementation notes
 
@@ -130,6 +128,50 @@ quasi-minimal residual specification, and the results from (7.16) on are theorem
   no-breakdown hypothesis.
 * The coefficients `SaadSparse.Chapter07.bcgAlpha` and `SaadSparse.Chapter07.bcgBeta` are used again
   by the transpose-free variants of Section 7.4.
+
+## Deviations from the source
+
+* **Generalization.** The BCG recurrence totalizes the quotients and uses conjugated dual updates.
+  See `SaadSparse.Chapter07.bcgStep`, `SaadSparse.Chapter07.bcg`,
+  `SaadSparse.Chapter07.bcg_alpha_eq`, `SaadSparse.Chapter07.bcg_beta_eq`,
+  `SaadSparse.Chapter07.bcgAlpha`, `SaadSparse.Chapter07.bcgBeta`,
+  `SaadSparse.Chapter07.bcgAlpha_eq`, `SaadSparse.Chapter07.bcgBeta_eq`.
+* **Reading.** The BCG orthogonality and projection require nonzero divisors on the active prefix.
+  See `SaadSparse.Chapter07.BCGNoBreakdown`, `SaadSparse.Chapter07.proposition_7_2`,
+  `SaadSparse.Chapter07.bcg_isPetrovGalerkin`.
+* **Scope.** The BCG–Lanczos equality compares primal iterates under both no-breakdown conditions.
+  See `SaadSparse.Chapter07.bcg_eq_lanczosSolve`.
+* **Generalization.** The BCG three-term identities include complex scalars and specify the residual
+  division condition. See `SaadSparse.Chapter07.problem_7_7`,
+  `SaadSparse.Chapter07.problem_7_7_direction`, `SaadSparse.Chapter07.problem_7_7_start`.
+* **Reading.** The exact QMR definition uses a supplied dual starting vector and a projected
+  triangular solve. See `SaadSparse.Chapter07.qmrV`, `SaadSparse.Chapter07.qmrCoeff`,
+  `SaadSparse.Chapter07.qmr`.
+* **Reading.** The QMR minimization specification explicitly assumes an invertible projected factor.
+  See `SaadSparse.Chapter07.qmr_isQuasiMinResidualIterate`.
+* **Correction.** The residual expansion uses the normalization from the displayed derivation. See
+  `SaadSparse.Chapter07.equation_7_16`, `SaadSparse.Chapter07.smul_qmrV_zero`.
+* **Reading.** The sine product gives the rotated coordinate before assuming projected solvability.
+  See `SaadSparse.Chapter07.equation_7_18`.
+* **Reading.** The scalar residual identity uses the Algorithm 7.2 residual. See
+  `SaadSparse.Chapter07.equation_7_19`.
+* **Scope.** Several QMR norm and smoothing results require an all-index unit-norm hypothesis. See
+  `SaadSparse.Chapter07.equation_7_20`, `SaadSparse.Chapter07.equation_7_23`,
+  `SaadSparse.Chapter07.equation_7_24`, `SaadSparse.Chapter07.proposition_7_5`,
+  `SaadSparse.Chapter07.qmrsTau_eq`, `SaadSparse.Chapter07.qmrsEta_eq`,
+  `SaadSparse.Chapter07.qmrSmoothing_eq_qmr`.
+* **Generalization.** The QMR residual bound accepts any operator bound, with a specialization to
+  vector norms at most one. See `SaadSparse.Chapter07.proposition_7_3`,
+  `SaadSparse.Chapter07.proposition_7_3_sqrt`.
+* **Reading.** The QMR–GMRES comparison uses supplied basis bounds and explicit projected solve
+  hypotheses. See `SaadSparse.Chapter07.theorem_7_4`.
+* **Generalization.** QMR residual recovery and its update use complex rotation conventions. See
+  `SaadSparse.Chapter07.equation_7_26`, `SaadSparse.Chapter07.equation_7_28`.
+* **Generalization.** The exact smoothing identities compare QMR with the tridiagonal-solve
+  iterates. See `SaadSparse.Chapter07.equation_7_29`, `SaadSparse.Chapter07.equation_7_30`.
+* **Reading.** Residual smoothing returns a pair and uses the algebraically reduced weight. See
+  `SaadSparse.Chapter07.qmrSmoothing`, `SaadSparse.Chapter07.qmrsTau_succ`,
+  `SaadSparse.Chapter07.qmrsEta_def`.
 -/
 
 open Matrix
@@ -153,7 +195,13 @@ $(x_j, r_j, r^*_j, p_j, p^*_j)$ it computes $\alpha_j = (r_j, r^*_j)/(Ap_j, p^*_
 $x_{j+1} = x_j + \alpha_j p_j$, $r_{j+1} = r_j - \alpha_j Ap_j$,
 $r^*_{j+1} = r^*_j - \bar\alpha_j A^H p^*_j$, $\beta_j = (r_{j+1}, r^*_{j+1})/(r_j, r^*_j)$,
 $p_{j+1} = r_{j+1} + \beta_j p_j$ and $p^*_{j+1} = r^*_{j+1} + \bar\beta_j p^*_j$. A division by
-zero gives $0$. The state is the backbone record `BCG.State`. -/
+zero gives $0$. The state is the backbone record `BCG.State`.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 noncomputable def bcgStep (s : BCG.State (EuclideanSpace 𝕜 (Fin n))) :
     BCG.State (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 s.rs s.r / inner 𝕜 s.ps (op A s.p)
@@ -172,7 +220,13 @@ applications of `SaadSparse.Chapter07.bcgStep` to the initial state
 $(x_0, r_0, r^*_0, p_0, p^*_0)$ with $r_0 = p_0 = b - Ax_0$ and $p^*_0 = r^*_0$.
 
 The book requires $(r_0, r^*_0) \neq 0$. The definition accepts any $r^*_0$, and the condition
-is part of the hypothesis `SaadSparse.Chapter07.BCGNoBreakdown` of the theorems below. -/
+is part of the hypothesis `SaadSparse.Chapter07.BCGNoBreakdown` of the theorems below.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 noncomputable def bcg (k : ℕ) : BCG.State (EuclideanSpace 𝕜 (Fin n)) :=
   (bcgStep A)^[k] { x := x₀, r := b - op A x₀, rs := rs₀, p := b - op A x₀, ps := rs₀ }
 
@@ -195,7 +249,13 @@ $r_0 = b - Ax_0$. -/
       = { x := x₀, r := b - op A x₀, rs := rs₀, p := b - op A x₀, ps := rs₀ } := rfl
 
 /-- Line 4 of Algorithm 7.3: the backbone step length `BCG.alpha` at step $k$ is
-$\alpha_k = (r_k, r^*_k)/(Ap_k, p^*_k)$, computed from the state of BCG after $k$ steps. -/
+$\alpha_k = (r_k, r^*_k)/(Ap_k, p^*_k)$, computed from the state of BCG after $k$ steps.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 theorem bcg_alpha_eq (k : ℕ) : BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ k =
     inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r /
       inner 𝕜 (bcg A b x₀ rs₀ k).ps (op A (bcg A b x₀ rs₀ k).p) := by
@@ -203,27 +263,57 @@ theorem bcg_alpha_eq (k : ℕ) : BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ k =
 
 /-- Line 8 of Algorithm 7.3: the backbone coefficient `BCG.beta` at step $k$ is
 $\beta_k = (r_{k+1}, r^*_{k+1})/(r_k, r^*_k)$, computed from the states of BCG after $k$ and
-$k + 1$ steps. -/
+$k + 1$ steps.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 theorem bcg_beta_eq (k : ℕ) : BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k =
     inner 𝕜 (bcg A b x₀ rs₀ (k + 1)).rs (bcg A b x₀ rs₀ (k + 1)).r /
       inner 𝕜 (bcg A b x₀ rs₀ k).rs (bcg A b x₀ rs₀ k).r := by
   rw [bcg_eq, bcg_eq]; rfl
 
 /-- The step length $\alpha_j$ of Algorithm 7.3: the backbone `BCG.alpha` for the operators $A$ and
-$A^H$. -/
+$A^H$.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 noncomputable abbrev bcgAlpha (j : ℕ) : 𝕜 := BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ j
 
 /-- The direction coefficient $\beta_j$ of Algorithm 7.3: the backbone `BCG.beta` for the operators
-$A$ and $A^H$. -/
+$A$ and $A^H$.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 noncomputable abbrev bcgBeta (j : ℕ) : 𝕜 := BCG.beta (op A) (op Aᴴ) b x₀ rs₀ j
 
-/-- Line 4 of Algorithm 7.3: $\alpha_j = (r_j, r^*_j)/(Ap_j, p^*_j)$. -/
+/-- Line 4 of Algorithm 7.3: $\alpha_j = (r_j, r^*_j)/(Ap_j, p^*_j)$.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 theorem bcgAlpha_eq (j : ℕ) : bcgAlpha A b x₀ rs₀ j =
     inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r /
       inner 𝕜 (bcg A b x₀ rs₀ j).ps (op A (bcg A b x₀ rs₀ j).p) :=
   bcg_alpha_eq A b x₀ rs₀ j
 
-/-- Line 8 of Algorithm 7.3: $\beta_j = (r_{j+1}, r^*_{j+1})/(r_j, r^*_j)$. -/
+/-- Line 8 of Algorithm 7.3: $\beta_j = (r_{j+1}, r^*_{j+1})/(r_j, r^*_j)$.
+
+**Generalization.** Lean implements the primal and dual residual and direction updates over the real
+or complex field, with conjugated coefficients for the adjoint step. It accepts any initial dual
+residual, uses totalized division and runs for a supplied number of steps. Its state does not
+maintain the optional dual iterate.
+-/
 theorem bcgBeta_eq (j : ℕ) : bcgBeta A b x₀ rs₀ j =
     inner 𝕜 (bcg A b x₀ rs₀ (j + 1)).rs (bcg A b x₀ rs₀ (j + 1)).r /
       inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ j).r :=
@@ -242,7 +332,12 @@ $\beta_k$ (line 8) and of $\alpha_k$ (line 4).
 The backbone hypothesis `BCG.NoBreakdown` also contains the adjoint relation
 $(Ax, y) = (x, A^H y)$. This relation holds for every matrix, so this structure is the whole of
 the book's hypothesis, and `SaadSparse.Chapter07.BCGNoBreakdown.toBCG` gives the backbone
-hypothesis. -/
+hypothesis.
+
+**Reading.** The nonzero residual pairing and nonzero step denominator are explicit for the active
+prefix. The biorthogonality and projection use the complex adjoint, extending the book's real
+transpose case.
+-/
 structure BCGNoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Prop where
   /-- For every $k < m$, $(r_k, r^*_k) \neq 0$: the numerator of $\alpha_k$ and the denominator of
@@ -277,7 +372,12 @@ $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, and assume
 r^*_j) = 0 \quad\text{and}\quad (Ap_i, p^*_j) = 0.$$ That is, the BCG residuals are biorthogonal
 and the BCG directions are $A$-biconjugate.
 
-The book asks for the same result in exercise P-7.10. -/
+The book asks for the same result in exercise P-7.10.
+
+**Reading.** The nonzero residual pairing and nonzero step denominator are explicit for the active
+prefix. The biorthogonality and projection use the complex adjoint, extending the book's real
+transpose case.
+-/
 theorem proposition_7_2 (h : BCGNoBreakdown A b x₀ rs₀ m) {i j : ℕ} (hi : i ≤ m) (hj : j ≤ m)
     (hij : i ≠ j) :
     inner 𝕜 (bcg A b x₀ rs₀ j).rs (bcg A b x₀ rs₀ i).r = 0 ∧
@@ -294,7 +394,12 @@ approximation onto $\mathcal{K}_m(A, r_0)$ orthogonally to $\mathcal{K}_m(A^H, r
 This is the projection process with which the section opens.
 
 The Krylov subspaces are `SaadSparse.Chapter06.krylov`, and the conclusion is `IsPetrovGalerkin`
-for the operator `op A`. -/
+for the operator `op A`.
+
+**Reading.** The nonzero residual pairing and nonzero step denominator are explicit for the active
+prefix. The biorthogonality and projection use the complex adjoint, extending the book's real
+transpose case.
+-/
 theorem bcg_isPetrovGalerkin (h : BCGNoBreakdown A b x₀ rs₀ m) :
     IsPetrovGalerkin (op A) b x₀ (Chapter06.krylov A (Chapter06.r₀ A b x₀) m)
       (Chapter06.krylov Aᴴ rs₀ m) (bcg A b x₀ rs₀ m).x := by
@@ -312,7 +417,12 @@ The hypothesis is needed because of the division by $\alpha_k$.
 `BCG.alpha_smul_residual_add_two` is the same identity multiplied by $\alpha_k$, and it holds at
 every step. The coefficients are the backbone `BCG.alpha` and `BCG.beta`;
 `SaadSparse.Chapter07.bcg_alpha_eq` and `SaadSparse.Chapter07.bcg_beta_eq` give their formulas
-from lines 4 and 8. `SaadSparse.Chapter07.problem_7_7_start` gives the first two residuals. -/
+from lines 4 and 8. `SaadSparse.Chapter07.problem_7_7_start` gives the first two residuals.
+
+**Generalization.** The primal residual and direction recurrences extend to the complex field. The
+residual recurrence explicitly requires a nonzero earlier step length. The direction recurrence and
+first terms use totalized coefficients and hold without that condition.
+-/
 theorem problem_7_7 (h : BCGNoBreakdown A b x₀ rs₀ m) {k : ℕ} (hk : k < m) :
     (bcg A b x₀ rs₀ (k + 2)).r
       = (1 + BCG.alpha (op A) (op Aᴴ) b x₀ rs₀ (k + 1) * BCG.beta (op A) (op Aᴴ) b x₀ rs₀ k /
@@ -329,7 +439,12 @@ BCG directions satisfy $$p_{k+2} = (1 + \beta_{k+1}) p_{k+1} - \alpha_{k+1} A p_
 p_k.$$
 
 The recurrence comes from the elimination of the residuals. It needs no hypothesis, also at a
-breakdown, where Lean's division by zero gives $\alpha_k = 0$ or $\beta_k = 0$. -/
+breakdown, where Lean's division by zero gives $\alpha_k = 0$ or $\beta_k = 0$.
+
+**Generalization.** The primal residual and direction recurrences extend to the complex field. The
+residual recurrence explicitly requires a nonzero earlier step length. The direction recurrence and
+first terms use totalized coefficients and hold without that condition.
+-/
 theorem problem_7_7_direction (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (k : ℕ) :
     (bcg A b x₀ rs₀ (k + 2)).p
@@ -344,7 +459,12 @@ $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$. The first 
 gives $$r_1 = r_0 - \alpha_0 A r_0 \quad\text{and}\quad p_1 = (1 + \beta_0) p_0 - \alpha_0 A
 p_0.$$ Together with $r_0 = p_0 = b - Ax_0$ (`SaadSparse.Chapter07.bcg_zero`), these start the
 recurrences of `SaadSparse.Chapter07.problem_7_7` and
-`SaadSparse.Chapter07.problem_7_7_direction`. -/
+`SaadSparse.Chapter07.problem_7_7_direction`.
+
+**Generalization.** The primal residual and direction recurrences extend to the complex field. The
+residual recurrence explicitly requires a nonzero earlier step length. The direction recurrence and
+first terms use totalized coefficients and hold without that condition.
+-/
 theorem problem_7_7_start (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     (bcg A b x₀ rs₀ 1).r
@@ -407,7 +527,12 @@ $P_m = V_m U_m^{-1}$ and $P^*_m = W_m L_m^{-H}$. The proof here uses that both i
 Petrov–Galerkin approximations onto $\mathcal{K}_m(A, r_0)$ orthogonally to
 $\mathcal{K}_m(A^H, r^*_0)$, and that a nonsingular $T_m$ makes such an approximation unique.
 The vector $w_1$ is `SaadSparse.Chapter07.w₁ A b x₀ rs₀`, and the iterate of Algorithm 7.2 is
-`SaadSparse.Chapter07.lanczosSolve`. -/
+`SaadSparse.Chapter07.lanczosSolve`.
+
+**Reading.** The result compares primal iterates through the oblique projection, requiring
+successful BCG and Lanczos prefixes and invertible $T_m$. The source derives the comparison using
+explicit factors and primal and dual direction matrices.
+-/
 theorem bcg_eq_lanczosSolve (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hnb : NoBreakdown A (Chapter06.v₁ A b x₀) (w₁ A b x₀ rs₀) m)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) (w₁ A b x₀ rs₀) m))
@@ -432,14 +557,26 @@ end BCGBreakdown
 section QMR
 
 /-- The basis in which QMR expands its iterate: the primal vectors of Algorithm 7.1 started from
-$v_1 = r_0/\beta$ and a dual vector $w_1$. `qmrV A b x₀ w₁ j` is the book's $v_{j+1}$. -/
+$v_1 = r_0/\beta$ and a dual vector $w_1$. `qmrV A b x₀ w₁ j` is the book's $v_{j+1}$.
+
+**Reading.** Lean accepts a supplied dual starting vector, whereas line 1 in the source chooses it
+equal to the normalized primal vector. Lean defines the exact iterate by a full projected triangular
+solve, not the two-rotation short recurrence or its stopping test. A singular factor returns the
+initial guess.
+-/
 noncomputable abbrev qmrV (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)) : ℕ → EuclideanSpace 𝕜 (Fin n) :=
   bilanczosV A (Chapter06.v₁ A b x₀) w₁
 
 /-- The tridiagonal coefficient array of (7.2) and (7.15), whose leading $(m + 1) \times m$ block is
 $\bar T_m$, for Algorithm 7.1 started from $(v_1, w_1) = (r_0/\beta, w_1)$. QMR applies its
-Givens rotations to this array. -/
+Givens rotations to this array.
+
+**Reading.** Lean accepts a supplied dual starting vector, whereas line 1 in the source chooses it
+equal to the normalized primal vector. Lean defines the exact iterate by a full projected triangular
+solve, not the two-rotation short recurrence or its stopping test. A singular factor returns the
+initial guess.
+-/
 noncomputable abbrev qmrCoeff (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ w₁ : EuclideanSpace 𝕜 (Fin n)) : ℕ → ℕ → 𝕜 :=
   bilanczosCoeff A (Chapter06.v₁ A b x₀) w₁
@@ -457,11 +594,22 @@ quasi-residual norm $\|\beta e_1 - \bar T_m y\|_2$ of (7.17)
 
 The definition is `SaadSparse.Chapter06.qgmres` at the basis `SaadSparse.Chapter07.qmrV` and the
 coefficients `SaadSparse.Chapter07.qmrCoeff`. When $R_m$ is singular, Lean's matrix inverse is
-$0$, so $y_m = 0$. -/
+$0$, so $y_m = 0$.
+
+**Reading.** Lean accepts a supplied dual starting vector, whereas line 1 in the source chooses it
+equal to the normalized primal vector. Lean defines the exact iterate by a full projected triangular
+solve, not the two-rotation short recurrence or its stopping test. A singular factor returns the
+initial guess.
+-/
 noncomputable def qmr (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   Chapter06.qgmres x₀ (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) m
 
-/-- The starting relation $r_0 = \beta v_1$. -/
+/-- The starting relation $r_0 = \beta v_1$.
+
+**Correction.** The starting relation used is $r_0=\beta v_1$. The preceding prose prints
+$v_1=\beta r_0$, although (7.16) itself uses the correct normalization. The residual identity uses
+the global primal Hessenberg relation.
+-/
 private theorem smul_qmrV_zero :
     b - op A x₀ = (Chapter06.β A b x₀ : 𝕜) • qmrV A b x₀ w₁ 0 := (smul_v₁_eq_r₀ A b x₀).symm
 
@@ -554,7 +702,11 @@ quasi-residual norm $\|\beta e_1 - \bar T_m y\|_2$ over all of $\mathbb{K}^m$.
 
 The conclusion is the backbone specification `Krylov.IsQuasiMinResidualIterate` for the basis
 `SaadSparse.Chapter07.qmrV` and the coefficients `SaadSparse.Chapter07.qmrCoeff`. The results
-from (7.16) on follow from this identification and theorems of `Numlib.Krylov.QuasiMinRes`. -/
+from (7.16) on follow from this identification and theorems of `Numlib.Krylov.QuasiMinRes`.
+
+**Reading.** The property is proved for the exact triangular-solve iterate with invertible projected
+factor. The source defines the approximation directly by the least-squares problem.
+-/
 theorem qmr_isQuasiMinResidualIterate {m : ℕ} (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
     Krylov.IsQuasiMinResidualIterate (qmrV A b x₀ w₁) (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜)
       x₀ m (qmr A b x₀ w₁ m) :=
@@ -569,7 +721,12 @@ right-hand side would have the norm $\|\beta e_1 - \bar T_m y\|_2$, as in GMRES,
 quasi-residual norm would be the residual norm.
 
 The products $V_m y$ and $V_{m+1} u$ are written as the sums $\sum_j y_j v_j$ and
-$\sum_i u_i v_i$. -/
+$\sum_i u_i v_i$.
+
+**Correction.** The starting relation used is $r_0=\beta v_1$. The preceding prose prints
+$v_1=\beta r_0$, although (7.16) itself uses the correct normalization. The residual identity uses
+the global primal Hessenberg relation.
+-/
 theorem equation_7_16 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) (m : ℕ) (y : Fin m → 𝕜) :
     b - op A (x₀ + ∑ j, y j • qmrV A b x₀ w₁ (j : ℕ))
       = ∑ i, (Krylov.firstVec (Chapter06.β A b x₀ : 𝕜) (m + 1)
@@ -585,7 +742,12 @@ $$\rho^Q_m = |s_1 s_2 \cdots s_m| \, \|r_0\|_2, \qquad\text{hence}\qquad \rho^Q_
 
 The norm $\rho^Q_m$ is `SaadSparse.Chapter06.quasiResidualNorm` for
 `SaadSparse.Chapter07.qmrCoeff`, and $s_{k+1}$ is
-`SaadSparse.Chapter06.s (qmrCoeff A b x₀ w₁) k`. -/
+`SaadSparse.Chapter06.s (qmrCoeff A b x₀ w₁) k`.
+
+**Reading.** The identity holds for the defined rotated last coordinate at all indices without a
+unit-norm basis requirement. The interpretation as the minimum quasi-residual assumes a solvable
+projected least-squares reduction.
+-/
 theorem equation_7_18 (m : ℕ) :
     Chapter06.quasiResidualNorm (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) m
         = (∏ k ∈ Finset.range m, ‖Chapter06.s (qmrCoeff A b x₀ w₁) k‖) * ‖Chapter06.r₀ A b x₀‖ ∧
@@ -603,7 +765,12 @@ v_{m+1} = c_m r_m,$$ where $r_m = b - Ax_m$ is the residual of the iterate $x_m$
 7.2 (the BCG iterate). This is the two-sided form of (6.56).
 
 Both sides are multiples of $v_{m+1}$, by (7.9). The Lean statement is written for $m + 1$ with
-$m \ge 0$. -/
+$m \ge 0$.
+
+**Reading.** The residual is that of the tridiagonal solve from Algorithm 7.2. The source calls it
+the BCG residual. The equality to BCG separately requires the two active prefixes and projected
+invertibility.
+-/
 theorem equation_7_19 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1))) :
     Chapter06.γ (qmrCoeff A b x₀ w₁) (Chapter06.β A b x₀ : 𝕜) (m + 1) • qmrV A b x₀ w₁ (m + 1)
@@ -629,7 +796,13 @@ serious breakdown and that its primal vectors have unit norm, $\|v_j\|_2 = 1$ fo
 $m \ge 1$ and assume that $T_m$ is nonsingular. Then $$\rho^Q_m = |c_m| \, \rho_m,$$ where
 $\rho_m = \|b - Ax_m\|_2$ is the residual norm of the iterate $x_m$ of Algorithm 7.2.
 
-The Lean statement is written for $m + 1$ with $m \ge 0$. -/
+The Lean statement is written for $m + 1$ with $m \ge 0$.
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 theorem equation_7_20 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) {m : ℕ}
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1))) :
@@ -695,7 +868,12 @@ $$\|b - Ax^Q_m\|_2 \le C \, |s_1 \cdots s_m| \, \|r_0\|_2.$$ With $C = \|V_{m+1}
 the printed bound.
 
 The product $V_{m+1} u$ is the sum $\sum_i u_i v_i$. The proof specializes
-`Krylov.IsQuasiMinResidualIterate.norm_residual_le`. -/
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le`.
+
+**Generalization.** The result accepts an arbitrary bound on the basis operator norm. The
+square-root bound holds for vector norms at most one, including zero, while the book considers unit
+vectors. Both forms assume the projected triangular factor is invertible.
+-/
 theorem proposition_7_3 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) {C : ℝ}
     (hC : ∀ w : Fin (m + 1) → 𝕜, ‖∑ i, w i • qmrV A b x₀ w₁ (i : ℕ)‖
@@ -717,7 +895,12 @@ started from $(v_1, w_1)$ has no serious breakdown, that $R_m$ is nonsingular, a
 $\|v_j\|_2 \le 1$ for all $j$. Then $\|V_{m+1}\|_2 \le \sqrt{m+1}$ by the Cauchy–Schwarz
 inequality, and therefore $$\|b - Ax^Q_m\|_2 \le \sqrt{m+1} \, |s_1 \cdots s_m| \, \|r_0\|_2.$$
 
-The bound on $\|V_{m+1}\|_2$ is `Krylov.norm_sum_smul_le_sqrt_mul`. -/
+The bound on $\|V_{m+1}\|_2$ is `Krylov.norm_sum_smul_le_sqrt_mul`.
+
+**Generalization.** The result accepts an arbitrary bound on the basis operator norm. The
+square-root bound holds for vector norms at most one, including zero, while the book considers unit
+vectors. Both forms assume the projected triangular factor is invertible.
+-/
 theorem proposition_7_3_sqrt (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ ≤ 1) :
     ‖b - op A (qmr A b x₀ w₁ m)‖
@@ -742,7 +925,12 @@ This is the same theorem as Theorem 6.11 (`SaadSparse.Chapter06.theorem_6_11`). 
 hypothesis that the book assumes there is contained in $c > 0$, and such a $c$ exists because
 $V_{m+1}$ has full rank (`SaadSparse.Chapter07.problem_7_2`). GMRES is
 `SaadSparse.Chapter06.gmresFixed`. The proof specializes
-`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`. -/
+`Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul`.
+
+**Reading.** The ratio is formed from supplied lower and upper bounds on the basis operator. Using
+the extremal bounds gives the condition number in the book. The theorem adds explicit fixed-length
+projected solve conditions and assumes the global primal Hessenberg relation.
+-/
 theorem theorem_7_4 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hnb : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m) (hr : Chapter06.r₀ A b x₀ ≠ 0)
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -769,7 +957,13 @@ $$\frac{1}{(\rho^Q_{m+1})^2} = \frac{1}{(\rho^Q_m)^2} + \frac{1}{\rho_{m+1}^2},$
 $\rho_{m+1}$ is the residual norm of the iterate $x_{m+1}$ of Algorithm 7.2. This is the
 two-sided analogue of (6.65).
 
-The proof specializes `Krylov.inv_sq_norm_gamma`. -/
+The proof specializes `Krylov.inv_sq_norm_gamma`.
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 theorem equation_7_23 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) {m : ℕ}
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1)))
@@ -800,7 +994,13 @@ $T_k$ is nonsingular for every $k$, and that $\rho^Q_m \neq 0$. Then the quasi-r
 the harmonic combination $$\frac{1}{(\rho^Q_m)^2} = \sum_{i=0}^{m} \frac{1}{\rho_i^2}$$ of the
 residual norms $\rho_i = \|b - Ax_i\|_2$ of Algorithm 7.2.
 
-The proof specializes `Krylov.inv_sq_norm_gamma_eq_sum`. -/
+The proof specializes `Krylov.inv_sq_norm_gamma_eq_sum`.
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 theorem equation_7_24 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1)
     (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k)) {m : ℕ}
@@ -821,7 +1021,13 @@ Algorithm 7.2 among $x_0, \dots, x_m$. Then $$\rho^Q_m \le \rho_{m*} \le \sqrt{m
 \rho^Q_m.$$
 
 The minimum is `Finset.inf'` over $\{0, \dots, m\}$. The proof specializes
-`Krylov.exists_norm_gamma_div_givensC_le`. -/
+`Krylov.exists_norm_gamma_div_givensC_le`.
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 theorem proposition_7_5 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1)
     (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k)) {m : ℕ}
@@ -854,7 +1060,12 @@ serious breakdown and that $R_m$ is nonsingular. Then the QMR residual is $$b - 
 \bar c_{m+1} v_{m+2}.$$
 
 The vector $z_{m+1}$ is the last column of $Z_{m+1} = V_{m+1} Q_m^H$ of (6.52),
-`SaadSparse.Chapter06.z`. -/
+`SaadSparse.Chapter06.z`.
+
+**Generalization.** The complex formulas use conjugated rotation coefficients and squared moduli.
+The exact finite residual identities require the global primal Hessenberg relation and nonsingular
+projected triangular factors at the sizes used.
+-/
 theorem equation_7_26 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m)) :
     b - op A (qmr A b x₀ w₁ m)
@@ -876,7 +1087,12 @@ s_m^2 r^Q_{m-1} + c_m \gamma_{m+1} v_{m+1}$.
 
 The identity comes from (7.27) inserted into (7.26), with the recurrence
 $\gamma_{m+2} = -s_{m+1} \gamma_{m+1}$. Nothing in it is special to the two-sided Lanczos basis,
-and the proof specializes `SaadSparse.Chapter06.equation_6_55`. -/
+and the proof specializes `SaadSparse.Chapter06.equation_6_55`.
+
+**Generalization.** The complex formulas use conjugated rotation coefficients and squared moduli.
+The exact finite residual identities require the global primal Hessenberg relation and nonsingular
+projected triangular factors at the sizes used.
+-/
 theorem equation_7_28 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁) {m : ℕ}
     (hR : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
     (hR' : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) (m + 1))) :
@@ -899,7 +1115,12 @@ comes from (7.28) and (7.19). It explains why peaks of the BCG residual norms co
 plateaus of the QMR quasi-residual norms: when $|s_{m+1}|$ is near $1$, which means slow
 progress of BCG, $r^Q$ is almost unchanged.
 
-A rotation is nondegenerate when its denominator `Krylov.givensRho` is nonzero. -/
+A rotation is nondegenerate when its denominator `Krylov.givensRho` is nonzero.
+
+**Generalization.** Lean uses the squared moduli of complex rotations, making their nondegeneracy
+and both projected solve conditions explicit. The comparison is with the tridiagonal-solve iterate
+of Algorithm 7.2.
+-/
 theorem equation_7_29 {m : ℕ}
     (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
     (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -926,7 +1147,12 @@ from which the book derives it. Equation (7.31) writes it as $x^Q_{m+1} = x^Q_m 
 (x_{m+1} - x^Q_m)$.
 
 No hypothesis on serious breakdown is needed: the identity concerns the rotations and the two
-coordinate systems, not the basis. -/
+coordinate systems, not the basis.
+
+**Generalization.** Lean uses the squared moduli of complex rotations, making their nondegeneracy
+and both projected solve conditions explicit. The comparison is with the tridiagonal-solve iterate
+of Algorithm 7.2.
+-/
 theorem equation_7_30 {m : ℕ}
     (hρ : ∀ k < m + 1, Krylov.givensRho (qmrCoeff A b x₀ w₁) k ≠ 0)
     (hRm : IsUnit (Chapter06.R (qmrCoeff A b x₀ w₁) m))
@@ -961,7 +1187,12 @@ The value at $j$ is the pair $(x^Q_j, r^Q_j)$.
 When $\tau_{j-1} \neq 0$ and $r_j \neq 0$, $\eta_j = (\tau_j/\|r_j\|_2)^2$, which is the form of
 the book. The definition is `SaadSparse.Chapter06.qmrs`, the smoothing of Section 6.5.8, applied
 to an arbitrary sequence. Lean's division by zero gives $1/0 = 0$ in the recurrence for
-$\tau_j$; thus if $\tau_{j-1} = 0$ and $r_j \neq 0$, then $\eta_j = 0$ but $\tau_j = \|r_j\|_2$. -/
+$\tau_j$; thus if $\tau_{j-1} = 0$ and $r_j \neq 0$, then $\eta_j = 0$ but $\tau_j = \|r_j\|_2$.
+
+**Reading.** Lean returns the smoothed residual as well as the iterate, and uses the closed quotient
+with the preceding quasi-residual norm in place of the book's squared ratio. The quotients agree
+when the norms used as divisors are nonzero. The Lean formulas are total at zero.
+-/
 noncomputable abbrev qmrSmoothing (xO rO : ℕ → EuclideanSpace ℝ (Fin n)) :
     ℕ → EuclideanSpace ℝ (Fin n) × EuclideanSpace ℝ (Fin n) := Chapter06.qmrs xO rO
 
@@ -970,10 +1201,22 @@ variable {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ w₁ : EuclideanSpace ℝ (Fin
 private theorem qmrsTau_zero (rO : ℕ → EuclideanSpace ℝ (Fin n)) :
     Chapter06.qmrsTau rO 0 = ‖rO 0‖ := rfl
 
+/-- The quasi-residual norm update in line 4 of Algorithm 7.5.
+
+**Reading.** Lean returns the smoothed residual as well as the iterate, and uses the closed quotient
+with the preceding quasi-residual norm in place of the book's squared ratio. The quotients agree
+when the norms used as divisors are nonzero. The Lean formulas are total at zero.
+-/
 private theorem qmrsTau_succ (rO : ℕ → EuclideanSpace ℝ (Fin n)) (m : ℕ) :
     Chapter06.qmrsTau rO (m + 1)
       = Real.sqrt (1 / (1 / Chapter06.qmrsTau rO m ^ 2 + 1 / ‖rO (m + 1)‖ ^ 2)) := rfl
 
+/-- The smoothing weight of line 4 of Algorithm 7.5.
+
+**Reading.** Lean returns the smoothed residual as well as the iterate, and uses the closed quotient
+with the preceding quasi-residual norm in place of the book's squared ratio. The quotients agree
+when the norms used as divisors are nonzero. The Lean formulas are total at zero.
+-/
 private theorem qmrsEta_def (rO : ℕ → EuclideanSpace ℝ (Fin n)) (m : ℕ) :
     Chapter06.qmrsEta rO m
       = Chapter06.qmrsTau rO m ^ 2 / (Chapter06.qmrsTau rO m ^ 2 + ‖rO (m + 1)‖ ^ 2) := rfl
@@ -998,7 +1241,13 @@ private theorem eta_eq_sq (P R c : ℝ) (hP : 0 < P) (hR : 0 < R)
   linear_combination hfin
 
 /-- Applied to the iterates of Algorithm 7.2, the scale factors of Algorithm 7.5 are the
-quasi-residual norms of QMR, $\tau_m = \rho^Q_m$, by (7.23). -/
+quasi-residual norms of QMR, $\tau_m = \rho^Q_m$, by (7.23).
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 private theorem qmrsTau_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k))
     (hne : ∀ j, b - op A (lanczosSolve A b x₀ w₁ j) ≠ 0) (m : ℕ) :
@@ -1018,7 +1267,13 @@ private theorem qmrsTau_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) 
       Real.sqrt_sq (norm_nonneg _)]
 
 /-- Applied to the iterates of Algorithm 7.2, the smoothing parameter of step $m + 1$ of Algorithm
-7.5 is $|c_{m+1}|^2$, which makes the algorithm reproduce QMR. -/
+7.5 is $|c_{m+1}|^2$, which makes the algorithm reproduce QMR.
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 private theorem qmrsEta_eq (hs : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1) (hT : ∀ k, IsUnit (T A (Chapter06.v₁ A b x₀) w₁ k))
     (hne : ∀ j, b - op A (lanczosSolve A b x₀ w₁ j) ≠ 0) (m : ℕ) :
@@ -1041,7 +1296,13 @@ Algorithm 7.2 (the BCG iterates) and their residuals $r_j$ reproduces the QMR it
 every $m$, its iterate $x^Q_m$ is the iterate of Algorithm 7.4.
 
 This is the remark of the book that closes Section 7.3. The reason is that (7.29) is the
-smoothing recurrence with $\eta_m = |c_m|^2 = (\rho^Q_m/\rho_m)^2$. -/
+smoothing recurrence with $\eta_m = |c_m|^2 = (\rho^Q_m/\rho_m)^2$.
+
+**Reading.** The hypothesis requires every vector of the totalized Algorithm 7.1 sequence to have
+unit norm. The book uses unit-scaled vectors for an active finite prefix. With a normalized start in
+finite dimension the recurrence must terminate, produces zero thereafter, and cannot satisfy the
+global unit-norm hypothesis. The summed formulas also demand projected invertibility at every size.
+-/
 theorem qmrSmoothing_eq_qmr {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ w₁ : EuclideanSpace ℝ (Fin n)} (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hv : ∀ j, ‖qmrV A b x₀ w₁ j‖ = 1)

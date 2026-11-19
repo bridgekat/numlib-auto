@@ -63,6 +63,15 @@ convergence) and `Numlib.Analysis.Matrix.ToEuclideanLin` (orthogonal invariance)
 * The predicate `GolubVanLoan.Chapter02.IsVectorNorm` is connected to the vocabulary of Mathlib, a
   definite `Seminorm ℝ E`, by `GolubVanLoan.Chapter02.IsVectorNorm.exists_seminorm`.
 
+## Deviations from the source
+
+* **§2.2.1, vector norm** (generalization). The axioms apply to every real vector space.
+  See `GolubVanLoan.Chapter02.IsVectorNorm`.
+* **Equation (2.2.1) and following special cases** (reading). The infinity norm of the empty
+  vector is zero. See `GolubVanLoan.Chapter02.equation_2_2_1`.
+* **§2.2.4, convergence** (generalization). The equivalence holds on every finite-dimensional
+  real normed space. See `GolubVanLoan.Chapter02.tendsto_iff_of_isVectorNorm`.
+
 ## Not formalized
 
 * **Absolute and relative error, §2.2.3.** The subsection names quantities and states a heuristic,
@@ -83,7 +92,9 @@ space $E$ (the source's $\mathbb{R}^n$) is a **vector norm** if, for all $x, y \
 $\alpha \in \mathbb{R}$,
 $$f(x) \ge 0, \qquad f(x) = 0 \iff x = 0, \qquad f(x + y) \le f(x) + f(y), \qquad f(\alpha x) =
   |\alpha| f(x).$$
--/
+
+**Generalization.** The book states the axioms on $\mathbb R^n$. The same axioms define a
+norm on any real vector space, including the matrix spaces used in §2.3.1. -/
 structure IsVectorNorm {E : Type*} [AddCommGroup E] [Module ℝ E] (f : E → ℝ) : Prop where
   /-- A vector norm is nonnegative: $f(x) \ge 0$. -/
   nonneg : ∀ x, 0 ≤ f x
@@ -130,7 +141,8 @@ The three most important norms are
 $$\|x\|_1 = |x_1| + \dots + |x_n|, \qquad \|x\|_2 = (x^T x)^{1/2}, \qquad \|x\|_\infty = \max_{1
   \le i \le n} |x_i|.$$
 
-The maximum is a supremum over the indices, which is $0$ for $n = 0$. -/
+**Reading.** The book writes a maximum over $1,\dots,n$. The declaration uses a supremum
+that gives zero in dimension zero. -/
 theorem equation_2_2_1 (x : Fin n → ℝ) {p : ℝ≥0∞} (hp1 : 1 ≤ p) (hp : p ≠ ∞) :
     ‖WithLp.toLp p x‖ = (∑ i, |x i| ^ p.toReal) ^ (1 / p.toReal) ∧
       ‖WithLp.toLp 1 x‖ = ∑ i, |x i| ∧
@@ -225,7 +237,8 @@ let $f$ be a vector norm on $E$, and let $x^{(k)}$ be a sequence in $E$ and $x \
 $f(x^{(k)} - x) \to 0$ if and only if $x^{(k)} \to x$. So "convergence in any particular norm
 implies convergence in all norms".
 
-The source states this on $\mathbb{R}^n$, and §2.3.2 uses it on $\mathbb{R}^{m \times n}$. -/
+**Generalization.** The source states this on $\mathbb{R}^n$. The theorem uses an arbitrary
+finite-dimensional real normed space, with its given topology as the reference. -/
 theorem tendsto_iff_of_isVectorNorm {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E] {f : E → ℝ} (hf : IsVectorNorm f) (x : ℕ → E) (x₀ : E) :
     Tendsto (fun k => f (x k - x₀)) atTop (𝓝 0) ↔ Tendsto x atTop (𝓝 x₀) := by

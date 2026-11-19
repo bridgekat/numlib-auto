@@ -70,6 +70,26 @@ over Mathlib's `Polynomial.divByMonic`, `Polynomial.signVariations` and `Polynom
 
 ## Deviations from the source
 
+* **Reading.** Descartes' rule skips zero coefficients and states parity for nonzero polynomials.
+  See `QuarteroniSaccoSaleri.Chapter06.property_6_5`,
+  `QuarteroniSaccoSaleri.Chapter06.property_6_5_parity`.
+* **Representation.** Horner's scalar recurrence is packaged as a descending list scan and an
+  evaluation identity. See `QuarteroniSaccoSaleri.Chapter06.equation_6_26`.
+* **Representation.** The associated polynomial is defined by monic division, with separate degree
+  and Horner coefficient identities. See `QuarteroniSaccoSaleri.Chapter06.equation_6_27`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_27_natDegree`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_27_coeff`.
+* **Reading.** Polynomial division assumes exact degree for the divisor and allows an upper bound on
+  the dividend degree. See `QuarteroniSaccoSaleri.Chapter06.equation_6_28`.
+* **Specialization.** The deflation theorem is over the real polynomial ring and its multiset
+  identity counts real roots. See `QuarteroniSaccoSaleri.Chapter06.deflation`.
+* **Specialization.** Newton–Horner is formalized over the reals and uses totalized division. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_29`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_29_eq_newton`.
+* **Specialization.** Muller's recurrence uses real square roots and totalized division. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_30`.
+* **Specialization.** Muller's order is the tribonacci constant, with a local bound in place of the
+  printed exact quotient limit. See `QuarteroniSaccoSaleri.Chapter06.muller_order`.
 * **Property 6.5** (reading). The "number of sign changes" of the coefficients ignores the zero
   coefficients. See `QuarteroniSaccoSaleri.Chapter06.property_6_5`.
 * **Property 6.6** (reading). The zeros are the complex zeros of the real polynomial. See
@@ -108,7 +128,11 @@ at most the number $\nu$ of sign changes in the sequence of its coefficients.
 Mathlib's `Polynomial.signVariations`.
 
 For $p = 0$ both numbers are $0$. The proof is Mathlib's
-`Polynomial.roots_countP_pos_le_signVariations`. -/
+`Polynomial.roots_countP_pos_le_signVariations`.
+
+**Reading.** Sign variations skip zero coefficients. The parity statement applies to nonzero
+polynomials and counts positive real roots with multiplicity.
+-/
 theorem property_6_5 : p.roots.countP (0 < ·) ≤ p.signVariations :=
   roots_countP_pos_le_signVariations p
 
@@ -118,7 +142,11 @@ multiplicity, and let $\nu$ be the number of sign changes in its coefficients. T
 even.
 
 The difference is the truncated difference of natural numbers; by the first half it is the true
-difference. The proof is the backbone's `Polynomial.even_signVariations_sub_roots_countP_pos`. -/
+difference. The proof is the backbone's `Polynomial.even_signVariations_sub_roots_countP_pos`.
+
+**Reading.** Sign variations skip zero coefficients. The parity statement applies to nonzero
+polynomials and counts positive real roots with multiplicity.
+-/
 theorem property_6_5_parity (hp : p ≠ 0) : Even (p.signVariations - p.roots.countP (0 < ·)) :=
   even_signVariations_sub_roots_countP_pos hp
 
@@ -186,7 +214,11 @@ division. Let $p_n(x) = \sum_{k=0}^n a_k x^k$ be a real polynomial and $z \in \m
 
 The nested form is `Polynomial.hornerEval` and the list $[b_n, \dots, b_0]$ is
 `Polynomial.hornerScan`, both applied to the coefficient list $[a_n, \dots, a_0]$. The proof
-specializes `Polynomial.hornerEval_coeffList` and `Polynomial.hornerScan_coeffList`. -/
+specializes `Polynomial.hornerEval_coeffList` and `Polynomial.hornerScan_coeffList`.
+
+**Reading.** The Horner scan of the descending coefficient list is identified with the quotient's
+coefficient list followed by the remainder, and evaluation is also supplied at the zero polynomial.
+-/
 theorem equation_6_26 :
     hornerEval p.coeffList z = p.eval z ∧
       (p ≠ 0 → hornerScan p.coeffList z = (p /ₘ (X - C z)).coeffList ++ [p.eval z]) :=
@@ -196,11 +228,21 @@ theorem equation_6_26 :
 polynomial $p_n$ at $z \in \mathbb{R}$ is
 $$q_{n-1}(x; z) = \sum_{k=1}^n b_k x^{k-1},$$
 with $b_k$ the values of the synthetic division (6.26). It is defined as the quotient
-`p /ₘ (X - C z)` of $p_n$ by $x - z$. -/
+`p /ₘ (X - C z)` of $p_n$ by $x - z$.
+
+**Reading.** The associated polynomial is defined by monic division, with the degree and coefficient
+formulas proved separately in their stated ranges. The quotient is defined even for zero or constant
+input.
+-/
 noncomputable def equation_6_27 (p : ℝ[X]) (z : ℝ) : ℝ[X] := p /ₘ (X - C z)
 
 /-- The associated polynomial $q_{n-1}(\cdot; z)$ of a real polynomial $p_n$ of degree $n \ge 1$ has
-degree $n - 1$. The proof is `Polynomial.natDegree_divByMonic_X_sub_C`. -/
+degree $n - 1$. The proof is `Polynomial.natDegree_divByMonic_X_sub_C`.
+
+**Reading.** The associated polynomial is defined by monic division, with the degree and coefficient
+formulas proved separately in their stated ranges. The quotient is defined even for zero or constant
+input.
+-/
 theorem equation_6_27_natDegree (hn : 0 < p.natDegree) :
     (equation_6_27 p z).natDegree = p.natDegree - 1 :=
   (natDegree_divByMonic_X_sub_C hn z).2
@@ -211,7 +253,12 @@ the list $[b_n, \dots, b_1, b_0]$ of synthetic division is the coefficient of $x
 $q_{n-1}(\cdot; z)$.
 
 The list is `Polynomial.hornerScan` of the coefficient list, indexed from $0$. The proof uses
-`Polynomial.hornerEval_take_coeffList`. -/
+`Polynomial.hornerEval_take_coeffList`.
+
+**Reading.** The associated polynomial is defined by monic division, with the degree and coefficient
+formulas proved separately in their stated ranges. The quotient is defined even for zero or constant
+input.
+-/
 theorem equation_6_27_coeff {i : ℕ} (hi : i < p.natDegree) :
     (hornerScan p.coeffList z)[i]'(by simp [coeffList,
       withBotSucc_degree_eq_natDegree_add_one (ne_zero_of_natDegree_gt hi)]; omega) =
@@ -234,7 +281,11 @@ $\deg \rho < m$, which also covers $m = 0$.
 
 The proof uses Mathlib's `Polynomial.divByMonic` and `Polynomial.modByMonic` by the monic
 polynomial $g / \operatorname{lc}(g)$, with `Polynomial.div_modByMonic_unique` for the
-uniqueness. -/
+uniqueness.
+
+**Reading.** The divisor must have exact degree m, because otherwise the quotient degree bound and
+uniqueness with remainders of degree below m fail. The dividend can have any degree at most n.
+-/
 theorem equation_6_28 {h g : ℝ[X]} {n m : ℕ} (hh : h.degree ≤ n) (hg : g.degree = m)
     (_hmn : m ≤ n) :
     ∃! δρ : ℝ[X] × ℝ[X], δρ.1.degree ≤ (n - m : ℕ) ∧ δρ.2.degree < m ∧ h = g * δρ.1 + δρ.2 := by
@@ -283,7 +334,11 @@ roots of $p_n$, counted with multiplicity, are $z$ together with the roots of
 $q_{n-1}(\cdot; z)$.
 
 So the equation $q_{n-1}(x; z) = 0$ gives the remaining $n - 1$ roots of $p_n$. The proof uses
-Mathlib's `Polynomial.mul_divByMonic_eq_iff_isRoot` and `Polynomial.roots_divByMonic_X_sub_C`. -/
+Mathlib's `Polynomial.mul_divByMonic_eq_iff_isRoot` and `Polynomial.roots_divByMonic_X_sub_C`.
+
+**Reading.** The factorization divides out a real root, and the multiset identity deletes one copy
+among the real roots of a nonzero polynomial. The source also applies deflation to complex roots.
+-/
 theorem deflation (hz : p.IsRoot z) :
     p = (X - C z) * equation_6_27 p z ∧
       (p ≠ 0 → p.roots = (equation_6_27 p z).roots + {z}) :=
@@ -315,7 +370,11 @@ where synthetic division supplies the derivative $p_n'(r^{(k)}) = q_{n-1}(r^{(k)
 
 The value at $k$ is the $k$-th iterate of the backbone's `NewtonHorner.step` from $r^{(0)}$. The
 source recommends complex arithmetic for complex roots; `NewtonHorner.step` is defined over any
-field, so that variant is the same definition over `ℂ[X]`. -/
+field, so that variant is the same definition over `ℂ[X]`.
+
+**Reading.** The Newton–Horner formula is for real polynomials and iterates. The text also allows
+complex arithmetic. Zero derivative is handled by totalized division.
+-/
 noncomputable def equation_6_29 (p : ℝ[X]) (r₀ : ℝ) (k : ℕ) : ℝ := (NewtonHorner.step p)^[k] r₀
 
 /-- The Newton–Horner method (6.29) for a real polynomial $p_n$ is Newton's method (6.16) for
@@ -324,7 +383,11 @@ $f = p_n$ with $f' = p_n'$: for every $r^{(0)}$ and $k$ the two iterates agree.
 So `QuarteroniSaccoSaleri.Chapter06.newton_order_two` and
 `QuarteroniSaccoSaleri.Chapter06.equation_6_22`, with
 `Polynomial.isRootOfMultiplicity_eval_iff`, describe its convergence. The proof uses
-`NewtonHorner.step_eq`. -/
+`NewtonHorner.step_eq`.
+
+**Reading.** The Newton–Horner formula is for real polynomials and iterates. The text also allows
+complex arithmetic. Zero derivative is handled by totalized division.
+-/
 theorem equation_6_29_eq_newton (r₀ : ℝ) (k : ℕ) :
     equation_6_29 p r₀ k = newton (fun x => p.eval x) (fun x => p.derivative.eval x) r₀ k := by
   rw [equation_6_29, newton]
@@ -349,7 +412,11 @@ maximizes the modulus of the denominator.
 
 The method is in real arithmetic only, as `Muller.iterate`, and the square root of a negative
 radicand is $0$. The index is shifted: the value at $k$ is the iterate $x^{(k+2)}$ of the
-source, so the value at $0$ is $x^{(2)}$. -/
+source, so the value at $0$ is $x^{(2)}$.
+
+**Reading.** The step uses real square roots and totalized division. The source allows complex
+iterates when the interpolating quadratic gives a nonreal root.
+-/
 noncomputable def equation_6_30 (f : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
   Muller.iterate f x₀ x₁ x₂ k
 
@@ -371,7 +438,12 @@ the secant method is treated in the same way.
 
 The hypothesis $f'''(\alpha) \neq 0$ plays the role that $f''(\alpha) \neq 0$ plays for the
 secant method in `QuarteroniSaccoSaleri.Chapter06.property_6_2`. The proof specializes
-`Muller.exists_ball_convergesWithOrder`. -/
+`Muller.exists_ball_convergesWithOrder`.
+
+**Reading.** The theorem states a local convergence-order bound for distinct real starting points
+avoiding the root and assumes a nonzero third derivative. It uses the exact tribonacci order and
+leaves the displayed quotient limit and constant unstated.
+-/
 theorem muller_order {f : ℝ → ℝ} {α : ℝ} (hf : ContDiffAt ℝ 3 f α) (hα : f α = 0)
     (hf' : deriv f α ≠ 0) (hf3 : iteratedDeriv 3 f α ≠ 0) :
     ∃ ε > 0, ∀ x₀ ∈ Ioo (α - ε) (α + ε), ∀ x₁ ∈ Ioo (α - ε) (α + ε),

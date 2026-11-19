@@ -69,6 +69,23 @@ All 9 numbered results of Section 3 are formalized.
 
 ## Deviations from the source
 
+* **Section 3, direct sum by unique decomposition** (correction). Both summands must be nonempty
+  for their difference sets to intersect in $\{0\}$. See `Rockafellar.directSum_iff_unique`.
+* **Section 3, direct sum by unique decomposition** (generalization). The equivalence applies to
+  arbitrary nonempty sets. See `Rockafellar.directSum_iff_unique`.
+* **Section 3, partial addition** (generalization). The operation and its algebraic laws extend
+  to sets in a product of arbitrary types with the relevant addition operations. See
+  `Rockafellar.partialAdd`, `Rockafellar.partialAdd_comm`, `Rockafellar.partialAdd_assoc`,
+  `Rockafellar.partialAdd_eq_add`, `Rockafellar.partialAdd_eq_inter`,
+  `Rockafellar.theorem_3_6_add` and `Rockafellar.theorem_3_6_inter`.
+* **Section 3, cone correspondence** (correction). The cone of a convex set contains the origin
+  when the set is nonempty. The empty set has empty cone. See `Rockafellar.coneLift` and
+  `Rockafellar.zero_mem_coneLift`.
+* **Section 3, inverse sum** (generalization). The formula and its two membership descriptions
+  apply to arbitrary sets. See `Rockafellar.invSum`, `Rockafellar.mem_invSum_iff_exists`,
+  `Rockafellar.invSum_eq_iUnion_singleton` and `Rockafellar.invSum_eq_partialAdd_coneLift`.
+* **Section 3, inverse sum along a ray** (generalization). The scalar formula also holds when
+  the common direction vector is zero. See `Rockafellar.invSum_singleton_smul`.
 * **Theorem 3.8** (generalization). The book assumes that $K_1$ and $K_2$ are convex cones. The
   equation $K_1 \# K_2 = K_1 \cap K_2$ is proved for cones that contain the origin, without
   convexity. See `Rockafellar.theorem_3_8_invSum`.
@@ -305,7 +322,12 @@ theorem theorem_3_5 {C : Set (Rn m)} {D : Set (Rn p)} (hC : Convex ℝ C) (hD : 
 $x = y + z$ with $y \in C$ and $z \in D$ if and only if $(C - C) \cap (D - D) = \{0\}$. In this
 case $C + D$ is also called a direct sum.
 
-The book states this fact without proof. -/
+**Correction.** The book places no nonemptiness condition on $C$ and $D$. If either is empty,
+each point of the empty sum has a unique decomposition vacuously, while the difference sets
+have empty intersection.
+
+**Generalization.** The book discusses convex summands. The difference-set argument works for
+every pair of nonempty sets. -/
 theorem directSum_iff_unique {C D : Set (Rn n)} (hC : C.Nonempty) (hD : D.Nonempty) :
     (∀ y₁ ∈ C, ∀ z₁ ∈ D, ∀ y₂ ∈ C, ∀ z₂ ∈ D, y₁ + z₁ = y₂ + z₂ → y₁ = y₂ ∧ z₁ = z₂) ↔
       (C - C) ∩ (D - D) = {0} := by
@@ -346,10 +368,9 @@ variable {Y Z : Type*}
 $(y, z)$, the **partial addition** of $C_1$ and $C_2$ is the set of the pairs $(y, z)$ for which
 there are $z_1$ and $z_2$ with $(y, z_1) \in C_1$, $(y, z_2) \in C_2$ and $z_1 + z_2 = z$.
 
-The book describes this operation in words, as addition in the $z$ argument alone, and fixes no
-symbol for it. There is one such operation for each decomposition of $\mathbb{R}^n$ into a
-direct sum of two subspaces. The definition here is for arbitrary types $Y$ and $Z$ with an
-addition on $Z$. -/
+**Generalization.** The book defines the operation on convex sets in a product of Euclidean
+spaces. The membership condition applies to arbitrary sets in a product of types $Y$ and $Z$
+with an addition operation on $Z$. -/
 def partialAdd [Add Z] (C₁ C₂ : Set (Y × Z)) : Set (Y × Z) :=
   {q | ∃ z₁ z₂, (q.1, z₁) ∈ C₁ ∧ (q.1, z₂) ∈ C₂ ∧ z₁ + z₂ = q.2}
 
@@ -359,16 +380,22 @@ $z_1, z_2$ with $(y, z_1) \in C_1$, $(y, z_2) \in C_2$ and $z_1 + z_2 = z$. -/
     (y, z) ∈ partialAdd C₁ C₂ ↔ ∃ z₁ z₂, (y, z₁) ∈ C₁ ∧ (y, z₂) ∈ C₂ ∧ z₁ + z₂ = z :=
   Iff.rfl
 
-/-- **Section 3** of [rockafellar1970convex] (p. 20). Partial addition is commutative, when $Z$ is a
-commutative additive monoid. -/
+/-- **Section 3** of [rockafellar1970convex] (p. 20). Partial addition is commutative when $Z$ is a
+commutative additive monoid.
+
+**Generalization.** The book states commutativity for convex sets in a product of Euclidean
+spaces. In arbitrary product types, the result follows by interchanging the summands in $Z$. -/
 theorem partialAdd_comm [AddCommMonoid Z] (C₁ C₂ : Set (Y × Z)) :
     partialAdd C₁ C₂ = partialAdd C₂ C₁ := by
   ext ⟨y, z⟩
   constructor <;> rintro ⟨z₁, z₂, h₁, h₂, h⟩ <;>
     exact ⟨z₂, z₁, h₂, h₁, by rw [add_comm]; exact h⟩
 
-/-- **Section 3** of [rockafellar1970convex] (p. 20). Partial addition is associative, when $Z$ is a
-commutative additive monoid. -/
+/-- **Section 3** of [rockafellar1970convex] (p. 20). Partial addition is associative when $Z$ is a
+commutative additive monoid.
+
+**Generalization.** The book states associativity for convex sets in a product of Euclidean
+spaces. The result holds in arbitrary product types by associativity of addition in $Z$. -/
 theorem partialAdd_assoc [AddCommMonoid Z] (C₁ C₂ C₃ : Set (Y × Z)) :
     partialAdd (partialAdd C₁ C₂) C₃ = partialAdd C₁ (partialAdd C₂ C₃) := by
   ext ⟨y, z⟩
@@ -380,7 +407,10 @@ theorem partialAdd_assoc [AddCommMonoid Z] (C₁ C₂ C₃ : Set (Y × Z)) :
 
 /-- **Section 3** of [rockafellar1970convex] (p. 20), the extreme case $m = 0$. If the first factor
 $Y$ has at most one element, then partial addition is ordinary addition of sets of pairs: the
-partial addition of $C_1$ and $C_2$ is $C_1 + C_2$. -/
+partial addition of $C_1$ and $C_2$ is $C_1 + C_2$.
+
+**Generalization.** The book takes the first factor to be $\mathbb{R}^0$. For arbitrary types
+with addition on each factor, it suffices that the first factor has at most one element. -/
 theorem partialAdd_eq_add [Add Y] [Add Z] [Subsingleton Y] (C₁ C₂ : Set (Y × Z)) :
     partialAdd C₁ C₂ = C₁ + C₂ := by
   ext ⟨y, z⟩
@@ -397,7 +427,11 @@ theorem partialAdd_eq_add [Add Y] [Add Z] [Subsingleton Y] (C₁ C₂ : Set (Y �
 
 /-- **Section 3** of [rockafellar1970convex] (p. 20), the extreme case $p = 0$. If the second factor
 $Z$ has at most one element, then partial addition is intersection: the partial addition of
-$C_1$ and $C_2$ is $C_1 \cap C_2$. -/
+$C_1$ and $C_2$ is $C_1 \cap C_2$.
+
+**Generalization.** The book takes the second factor to be $\mathbb{R}^0$. For arbitrary product
+types with addition on the second factor, it suffices that the second factor has at most one
+element. -/
 theorem partialAdd_eq_inter [Add Z] [Subsingleton Z] (C₁ C₂ : Set (Y × Z)) :
     partialAdd C₁ C₂ = C₁ ∩ C₂ := by
   ext ⟨y, z⟩
@@ -429,13 +463,19 @@ theorem theorem_3_6 {C₁ C₂ : Set (Rn m × Rn p)} (h₁ : Convex ℝ C₁) (h
 
 /-- **Section 3** of [rockafellar1970convex] (p. 20). Ordinary addition of sets in $\mathbb{R}^p$ is
 the extreme case $m = 0$ of Theorem 3.6: for $C_1, C_2 \subseteq \mathbb{R}^0 \times
-\mathbb{R}^p$, the partial addition of $C_1$ and $C_2$ is $C_1 + C_2$. -/
+  \mathbb{R}^p$, the partial addition of $C_1$ and $C_2$ is $C_1 + C_2$.
+
+**Generalization.** The book describes the zero-dimensional factor for convex sets. With the
+first factor a singleton, the identity holds for all sets of pairs. -/
 theorem theorem_3_6_add (C₁ C₂ : Set (Rn 0 × Rn p)) : partialAdd C₁ C₂ = C₁ + C₂ :=
   partialAdd_eq_add C₁ C₂
 
 /-- **Section 3** of [rockafellar1970convex] (p. 20). Intersection of sets in $\mathbb{R}^m$ is the
 extreme case $p = 0$ of Theorem 3.6: for $C_1, C_2 \subseteq \mathbb{R}^m \times \mathbb{R}^0$,
-the partial addition of $C_1$ and $C_2$ is $C_1 \cap C_2$. -/
+  the partial addition of $C_1$ and $C_2$ is $C_1 \cap C_2$.
+
+**Generalization.** The book describes the zero-dimensional factor for convex sets. With the
+second factor a singleton, the identity holds for all sets of pairs. -/
 theorem theorem_3_6_inter (C₁ C₂ : Set (Rn m × Rn 0)) : partialAdd C₁ C₂ = C₁ ∩ C₂ :=
   partialAdd_eq_inter C₁ C₂
 
@@ -444,6 +484,9 @@ theorem theorem_3_6_inter (C₁ C₂ : Set (Rn m × Rn 0)) : partialAdd C₁ C�
 /-- **Section 3** of [rockafellar1970convex], definition of inverse sum. The **inverse sum** of
 $C_1, C_2 \subseteq \mathbb{R}^n$ is
 $$C_1 \# C_2 = \bigcup \{(1 - \lambda) C_1 \cap \lambda C_2 \mid 0 \le \lambda \le 1\}.$$
+
+**Generalization.** The book introduces inverse addition as an operation on convex sets. The
+union formula defines it on arbitrary sets.
 
 The book obtains $C_1 \# C_2$ as the partial addition in the $\lambda$ argument alone of the
 cones in $\mathbb{R}^{n+1}$ that correspond to $C_1$ and $C_2$. This derivation is
@@ -460,7 +503,9 @@ theorem mem_invSum {C₁ C₂ : Set (Rn n)} {x : Rn n} :
 /-- **Section 3** of [rockafellar1970convex] (p. 21). The inverse sum $C_1 \# C_2$ consists of all
 the vectors $x$ which can be expressed in the form
 $$x = (1 - \lambda) x_1 = \lambda x_2, \qquad 0 \le \lambda \le 1,\ x_1 \in C_1,\ x_2 \in C_2.$$
--/
+
+**Generalization.** The book describes inverse sums of convex sets. The membership equivalence
+holds for arbitrary sets by expressing membership in each scaled set. -/
 theorem mem_invSum_iff_exists {C₁ C₂ : Set (Rn n)} {x : Rn n} :
     x ∈ invSum C₁ C₂ ↔ ∃ l : ℝ, 0 ≤ l ∧ l ≤ 1 ∧ ∃ x₁ ∈ C₁, ∃ x₂ ∈ C₂,
       x = (1 - l) • x₁ ∧ x = l • x₂ := by
@@ -483,8 +528,8 @@ theorem invSum_mono {C₁ C₂ D₁ D₂ : Set (Rn n)} (h₁ : C₁ ⊆ D₁) (h
 $$C_1 \# C_2 = \bigcup \{x_1 \# x_2 \mid x_1 \in C_1,\ x_2 \in C_2\},$$
 where $x_1 \# x_2$ is the inverse sum $\{x_1\} \# \{x_2\}$ of two one-point sets.
 
-The set $\{x_1\} \# \{x_2\}$ is non-empty exactly when $x_1$ and $x_2$ lie on a common ray from
-the origin. -/
+**Generalization.** The book states the pointwise formula for convex sets. It holds for arbitrary
+sets because the defining membership condition uses one point from each set. -/
 theorem invSum_eq_iUnion_singleton (C₁ C₂ : Set (Rn n)) :
     invSum C₁ C₂ = ⋃ x₁ ∈ C₁, ⋃ x₂ ∈ C₂, invSum {x₁} {x₂} := by
   refine Set.Subset.antisymm ?_ ?_
@@ -500,6 +545,9 @@ $\alpha_1, \alpha_2 \ge 0$. Then
 $$\{\alpha_1 e\} \# \{\alpha_2 e\} = \Bigl\{\frac{\alpha_1 \alpha_2}{\alpha_1 + \alpha_2}
   e\Bigr\},$$
 where the coefficient is $0$ for $\alpha_1 = \alpha_2 = 0$.
+
+**Generalization.** The book chooses a nonzero direction $e$ for the common ray. The formula also
+holds for $e = 0$, when both input points and their inverse sum are at the origin.
 
 The book writes the coefficient as $(\alpha_1^{-1} + \alpha_2^{-1})^{-1}$. The statement uses
 the product form, because with the Lean convention $0^{-1} = 0$ the form of the book gives the
@@ -573,6 +621,10 @@ $C \subseteq \mathbb{R}^n$, this is the set of the pairs $(x, \lambda) \in \math
 generated by $\{(x, 1) \mid x \in C\}$ together with the origin, and it is convex when $C$ is
 convex (`Rockafellar.convex_coneLift`).
 
+**Correction.** The book says that the cone of every convex set contains the origin. For
+$C = \emptyset$, each scaled copy $\lambda C$ is empty, so the defining condition gives the
+empty cone. For nonempty $C$, scaling any member by zero produces the origin.
+
 The height $\lambda$ is the second component, so that partial addition in the height is
 `Rockafellar.partialAdd`. -/
 def coneLift (C : Set (Rn n)) : Set (Rn n × ℝ) := {q | 0 ≤ q.2 ∧ q.1 ∈ q.2 • C}
@@ -611,7 +663,10 @@ $\{x \mid (x, 1) \in K\} = C$. So the correspondence $C \mapsto K$ of the book i
   simp
 
 /-- If $C \subseteq \mathbb{R}^n$ is non-empty, the cone `Rockafellar.coneLift C` contains the
-origin of $\mathbb{R}^{n+1}$. The cones $K$ of the book are those that contain the origin. -/
+origin of $\mathbb{R}^{n+1}$.
+
+**Correction.** The book says that the cone of every convex set contains the origin. The empty
+set gives an empty cone. A nonempty set gives the origin by taking scale zero. -/
 theorem zero_mem_coneLift {C : Set (Rn n)} (hne : C.Nonempty) : (0 : Rn n × ℝ) ∈ coneLift C := by
   refine ⟨le_rfl, ?_⟩
   change (0 : Rn n) ∈ (0 : ℝ) • C
@@ -630,7 +685,8 @@ theorem smul_mem_coneLift {C : Set (Rn n)} {q : Rn n × ℝ} (hq : q ∈ coneLif
 /-- If $C \subseteq \mathbb{R}^n$ is convex, then `Rockafellar.coneLift C` is convex.
 
 With `Rockafellar.coneLift_eq_iUnion_smul`, this gives the convex cone $K$ in $\mathbb{R}^{n+1}$
-of the book, which contains the origin and has a cross-section identifiable with $C$. -/
+with cross-section $C$. When $C$ is nonempty, $K$ contains the origin by
+`Rockafellar.zero_mem_coneLift`. -/
 theorem convex_coneLift {C : Set (Rn n)} (hC : Convex ℝ C) : Convex ℝ (coneLift C) := by
   rintro ⟨x, l⟩ ⟨hl, hx⟩ ⟨y, k⟩ ⟨hk, hy⟩ a b ha hb hab
   have hl' : (0 : ℝ) ≤ l := hl
@@ -652,6 +708,9 @@ $K_1$ and $K_2$ in the $\lambda$ argument alone:
 $$C_1 \# C_2 = \{x \mid (x, 1) \in K\},$$
 where $K$ is the set of $(x, \lambda)$ such that $(x, \lambda_1) \in K_1$,
 $(x, \lambda_2) \in K_2$ and $\lambda_1 + \lambda_2 = \lambda$ for some $\lambda_1, \lambda_2$.
+
+**Generalization.** The book states the correspondence for convex sets. Partial addition and the
+height-one section give the same identity for arbitrary sets.
 
 This connects `Rockafellar.invSum` with Theorem 3.6. -/
 theorem invSum_eq_partialAdd_coneLift (C₁ C₂ : Set (Rn n)) :

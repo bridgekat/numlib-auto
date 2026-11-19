@@ -189,6 +189,16 @@ Toeplitz matrices of `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz` and the s
 
 ## Deviations from the source
 
+* **§11.2.2, block Jacobi and Gauss–Seidel** (generalization). Ordered block labels permit
+  arbitrary numbers and sizes of blocks and noncontiguous original indices. See
+  `GolubVanLoan.Chapter11.blockJacobi_eq` and `GolubVanLoan.Chapter11.blockGaussSeidel_eq`.
+* **Equation (11.2.27)** (generalization). The normalized SSOR product and eigenvalue quotient
+  hold for symmetric matrices with positive diagonals and any nonzero weight. See
+  `GolubVanLoan.Chapter11.equation_11_2_27`.
+* **§11.2.8, Chebyshev interval** (reading). The bound requires $\alpha<\beta$ because the
+  rescaling divides by $\beta-\alpha$. The program uses finite fuel and the bound is at its
+  attained iterate. See `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le` and
+  `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le'`.
 * **Equation (11.2.8)** (correction). The source prints the corner entry of the $k$-th power as
   $\alpha \lambda^{k-1}$, which is false for $k \ge 2$. The corner entry is
   $k \alpha \lambda^{k-1}$. See `GolubVanLoan.Chapter11.equation_11_2_8`.
@@ -269,7 +279,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 the program computes $$b_i - \sum_{j=1}^{i-1} a_{ij} x_j - \sum_{j=i+1}^{n} a_{ij} x_j.$$
 
 The program starts from $b_i$ and runs over $j \ne i$ in increasing order. Each step rounds the
-product $a_{ij} x_j$ and then the difference. -/
+product $a_{ij} x_j$ and then the difference.
+
+**Reading.** Folds rounded off-diagonal subtraction into a single accumulator.
+-/
 def offDiagResidual (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) (i : Fin n) : M ℝ :=
   ((List.finRange n).filter (· ≠ i)).foldlM (fun s j => do rnd (s - (← rnd (A i j * x j)))) (b i)
 
@@ -281,7 +294,10 @@ $$x_i^{(k)} = \Bigl(b_i - \sum_{j=1}^{i-1} a_{ij} x_j^{(k-1)} - \sum_{j=i+1}^{n}
 Every entry $x_j$ that it reads is an entry of the old vector $x^{(k-1)}$.
 
 The residual is `GolubVanLoan.Chapter11.offDiagResidual` on the old vector, and the quotient is
-rounded once. The result overwrites entry $i$ by `Function.update`. -/
+rounded once. The result overwrites entry $i$ by `Function.update`.
+
+**Reading.** Rounded loop with total division; reads unchanged old iterate.
+-/
 noncomputable def jacobiSweep (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun y i => do
@@ -296,7 +312,10 @@ $$x_i^{(k)} = \Bigl(b_i - \sum_{j=1}^{i-1} a_{ij} x_j^{(k)} - \sum_{j=i+1}^{n} a
   x_j^{(k-1)}\Bigr) \Big/ a_{ii}.$$
 
 The arithmetic is that of `GolubVanLoan.Chapter11.jacobiSweep`, but the vector is updated in
-place, so that the most recent estimates are used. -/
+place, so that the most recent estimates are used.
+
+**Reading.** Rounded in-place loop with total division.
+-/
 noncomputable def gaussSeidelSweep (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun y i => do
@@ -327,7 +346,10 @@ noncomputable def sorSweep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fi
 
 /-- **Section 11.2.7** of [golub2013matrix], backward SOR. The program does the arithmetic of
 `GolubVanLoan.Chapter11.sorSweep`, with $i$ running from $n$ down to $1$. The source says "we
-can just as easily update from bottom to top". -/
+can just as easily update from bottom to top".
+
+**Reading.** Rounded reverse-order in-place relaxed update.
+-/
 noncomputable def backwardSorSweep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let c ← rnd (1 - ω)
@@ -340,7 +362,10 @@ noncomputable def backwardSorSweep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (
     pure (Function.update y i xi)) x
 
 /-- **Equations (11.2.22)–(11.2.23)** of [golub2013matrix] (one SSOR step). A forward SOR sweep from
-$x^{(k-1)}$ gives $y^{(k)}$, and a backward SOR sweep from $y^{(k)}$ gives $x^{(k)}$. -/
+$x^{(k-1)}$ gives $y^{(k)}$, and a backward SOR sweep from $y^{(k)}$ gives $x^{(k)}$.
+
+**Reading.** Rounded forward then backward in-place sweeps.
+-/
 noncomputable def ssorSweep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let y ← sorSweep rnd A ω b x
@@ -385,13 +410,19 @@ private theorem sum_ne_backward (A : Matrix (Fin n) (Fin n) ℝ) (z x : Fin n �
     rw [ite_eq_left ⟨List.mem_reverse.2 (List.mem_finRange j), (Finset.mem_filter.1 hj).2⟩]
 
 /-- The exact forward SOR program is the in-place loop $y_i \leftarrow \omega r_i(y)/a_{ii} + (1 -
-\omega) y_i$, where $r_i$ is the off-diagonal residual. -/
+\omega) y_i$, where $r_i$ is the off-diagonal residual.
+
+**Reading.** Exact closed form with total division.
+-/
 private theorem sorSweep_run (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     Id.run (sorSweep pure A ω b x) = (List.finRange n).foldl (fun y i => Function.update y i
       (ω * (Id.run (offDiagResidual pure A b y i) / A i i) + (1 - ω) * y i)) x :=
   List.idRun_foldlM
 
-/-- The exact backward SOR program is the same in-place loop in the reverse order. -/
+/-- The exact backward SOR program is the same in-place loop in the reverse order.
+
+**Reading.** Exact reverse closed form with total division.
+-/
 private theorem backwardSorSweep_run (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     Id.run (backwardSorSweep pure A ω b x) = (List.finRange n).reverse.foldl
       (fun y i => Function.update y i
@@ -563,7 +594,10 @@ for every block $i$ if and only if $x^+$ is the step of the block Jacobi splitti
 
 The block equations are stated row by row: in row $r$, the columns in the block of $r$ carry
 $x^+$ and all other columns carry the old $x$. The blocks need not be contiguous. The splitting
-is `Matrix.blockJacobiSplitting`. -/
+is `Matrix.blockJacobiSplitting`.
+
+**Generalization.** The grouping is any ordered block-label map, so blocks can have arbitrary
+sizes and noncontiguous indices. The source displays three contiguous blocks. -/
 theorem blockJacobi_eq {p : ℕ} (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ)
     (h : IsUnit (Matrix.blockDiagPart π A)) (b x y : Fin n → ℝ) :
     (∀ r, ∑ c ∈ univ.filter (fun c => π c = π r), A r c * y c =
@@ -590,7 +624,10 @@ for every block $i$ if and only if $x^+$ is the step of the block Gauss–Seidel
 $x$.
 
 As in `GolubVanLoan.Chapter11.blockJacobi_eq`, the equations are stated row by row. The
-splitting is `Matrix.blockGaussSeidelSplitting`. -/
+splitting is `Matrix.blockGaussSeidelSplitting`.
+
+**Generalization.** The ordered block labels determine which entries have been updated. The
+proof applies to any label map, extending the source's three-block display. -/
 theorem blockGaussSeidel_eq {p : ℕ} (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ)
     (h : IsUnit (Matrix.blockDiagPart π A)) (b x y : Fin n → ℝ) :
     (∀ r, ∑ c ∈ univ.filter (fun c => π c = π r), A r c * y c =
@@ -1051,7 +1088,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- The average $\bigl(W(i-1, j) + W(i, j+1) + W(i+1, j) + W(i, j-1)\bigr)/4$ of the four grid
 neighbours of an interior unknown in the array $W$, summed in the order of the source, with
-every operation rounded. -/
+every operation rounded.
+
+**Reading.** Same stencil with explicit addition order and rounding.
+-/
 noncomputable def gridAverage (W : Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) (p : Fin n₁ × Fin n₂) :
     M ℝ := do
   let s₁ ← rnd (W (⟨p.1, by omega⟩, ⟨p.2 + 1, by omega⟩) +
@@ -1067,7 +1107,10 @@ $$U(i, j) = \bigl(V(i-1, j) + V(i, j+1) + V(i+1, j) + V(i, j-1)\bigr)/4.$$
 Every average reads the copy $V$ of the old array.
 
 The array is a function on pairs of indices. Each average is
-`GolubVanLoan.Chapter11.gridAverage`. -/
+`GolubVanLoan.Chapter11.gridAverage`.
+
+**Reading.** Reads old copy, updates interior, with monadic rounding.
+-/
 noncomputable def poissonJacobiArray (U : Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) :
     M (Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) :=
   let V := U
@@ -1079,7 +1122,10 @@ noncomputable def poissonJacobiArray (U : Fin (n₁ + 2) × Fin (n₂ + 2) → �
 $U(0{:}n_1 + 1, 0{:}n_2 + 1)$, the program computes in place, for $i = 1{:}n_1$ and
 $j = 1{:}n_2$,
 $$U(i, j) = \bigl(U(i-1, j) + U(i, j+1) + U(i+1, j) + U(i, j-1)\bigr)/4,$$
-so that $U(i-1, j)$ and $U(i, j-1)$ already hold the new values. -/
+so that $U(i-1, j)$ and $U(i, j-1)$ already hold the new values.
+
+**Reading.** Uses current values in lexicographic order, with monadic rounding.
+-/
 noncomputable def poissonGaussSeidelArray (U : Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) :
     M (Fin (n₁ + 2) × Fin (n₂ + 2) → ℝ) :=
   (List.finRange n₁).foldlM (fun U i => (List.finRange n₂).foldlM (fun U j => do
@@ -1732,7 +1778,10 @@ theorem equation_11_2_18 (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (Matrix.di
     _ = _ := by module
 
 /-- The parts of the backward SOR splitting are $M = \omega^{-1} D_A + U_A$ and
-$N = (\omega^{-1} - 1) D_A - L_A$. -/
+$N = (\omega^{-1} - 1) D_A - L_A$.
+
+**Reading.** Uses negative strictly lower part in N.
+-/
 private theorem backwardSorSplitting_m_n (A : Matrix (Fin n) (Fin n) ℝ)
     (h : IsUnit (Matrix.diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     (Matrix.backwardSorSplitting A h hω).m = ω⁻¹ • Matrix.diagPart A + Matrix.strictUpper A ∧
@@ -1868,7 +1917,11 @@ theorem equation_11_2_25 {A : Matrix (Fin n) (Fin n) ℝ} (h : IsUnit (Matrix.di
     Stationary.Splitting.mulVecStep_eq_add_inv_mulVec]
 
 /-- The iteration matrix of the SSOR splitting of a symmetric matrix is $G = M_\omega^{-T}
-N_\omega^T M_\omega^{-1} N_\omega$, the matrix of Theorem 11.2.4. -/
+N_\omega^T M_\omega^{-1} N_\omega$, the matrix of Theorem 11.2.4.
+
+**Reading.** Same operator product for symmetric matrices and allowed nonzero weight outside
+convergence range.
+-/
 private theorem ssor_iterationOperator_eq {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (h : IsUnit (Matrix.diagPart A)) {ω : ℝ} (hω : ω ≠ 0) (hω2 : ω ≠ 2) :
     (Matrix.ssorSplitting A h hω hω2).iterationOperator =
@@ -1989,7 +2042,11 @@ $$\lambda = \frac{\|(1 - \omega) v - \omega L_1^T v\|_2^2}{\|v + \omega L_1^T v\
   = 1 - \frac{\omega (2 - \omega) (1 + 2 v^T L_1^T v)}{\|v + \omega L_1^T v\|_2^2}.$$
 
 The Lean statement defines $G_1$ by the product formula and proves $D_1 G D_1^{-1} = G_1$. The
-squared norms are dot products. -/
+squared norms are dot products.
+
+**Generalization.** The normalized product and eigenvalue quotient require only symmetry,
+positive diagonal entries, and $\omega \ne 0$. The stronger assumptions in Theorem 11.2.4 yield
+the spectral bound. -/
 theorem equation_11_2_27 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hd : ∀ i, 0 < A i i)
     {ω : ℝ} (hω : ω ≠ 0) :
     let D₁ := Matrix.diagonal fun i => Real.sqrt (A i i)
@@ -2178,12 +2235,18 @@ where $c_k$ is the Chebyshev polynomial of degree $k$.
 
 The polynomial $c_k$ is `Polynomial.Chebyshev.T ℝ k`. Division by zero gives $0$: if
 $c_k(\mu) = 0$, the definition gives $p_k = 0$, and if $\beta = \alpha$, every quotient by
-$\beta - \alpha$ is $0$. -/
+$\beta - \alpha$ is $0$.
+
+**Reading.** Same polynomial formula on its domain, with total real reciprocal outside it.
+-/
 noncomputable def chebyshevSemiIterativePoly (α β : ℝ) (k : ℕ) : ℝ[X] :=
   C ((Chebyshev.T ℝ k).eval (-1 + 2 * (1 - α) / (β - α)))⁻¹ *
     (Chebyshev.T ℝ k).comp (C (2 / (β - α)) * X + C (-1 - 2 * α / (β - α)))
 
-/-- The value of the Chebyshev polynomial of §11.2.8. -/
+/-- The value of the Chebyshev polynomial of §11.2.8.
+
+**Reading.** Requires a nondegenerate interval for substitution.
+-/
 private theorem eval_chebyshevSemiIterativePoly {α β : ℝ} (hαβ : α < β) (k : ℕ) (t : ℝ) :
     (chebyshevSemiIterativePoly α β k).eval t =
       ((Chebyshev.T ℝ k).eval (-1 + 2 * (1 - α) / (β - α)))⁻¹ *
@@ -2194,7 +2257,10 @@ private theorem eval_chebyshevSemiIterativePoly {α β : ℝ} (hαβ : α < β) 
     ring
   simp only [chebyshevSemiIterativePoly, eval_mul, eval_C, eval_comp, eval_add, eval_X, hl]
 
-/-- The Chebyshev polynomial of §11.2.8 has degree at most `k`. -/
+/-- The Chebyshev polynomial of §11.2.8 has degree at most `k`.
+
+**Reading.** Uniform upper bound includes degenerate interval and zero polynomial.
+-/
 private theorem natDegree_chebyshevSemiIterativePoly_lt (α β : ℝ) (k : ℕ) :
     (chebyshevSemiIterativePoly α β k).natDegree < k + 1 := by
   have hT : (Chebyshev.T ℝ k).natDegree = k := by rw [Chebyshev.natDegree_T]; simp
@@ -2213,6 +2279,9 @@ $p_k$. Then $p_k(1) = 1$, $|p_k(t)| \le 1/|c_k(\mu)|$ for all $t \in [\alpha, \b
 $$\|y^{(k)} - x\|_2 \le \frac{\|x - x^{(0)}\|_2}{|c_k(\mu)|}.$$
 
 **Typo.** The source writes $\lambda_i \in \lambda(A)$; it means the eigenvalues of $G$.
+
+**Reading.** The affine rescaling divides by $\beta-\alpha$, so the spectral enclosure must
+have positive length. The source's enclosure (11.2.30) permits equal endpoints.
 
 Here $\mu = 1 + 2(1 - \beta)/(\beta - \alpha) > 1$. The eigenvalues of $G$ are
 `Matrix.IsHermitian.eigenvalues`. -/
@@ -2278,7 +2347,10 @@ theorem chebyshevSemiIterative_norm_le {A : Matrix (Fin n) (Fin n) ℝ} (s : Sta
 
 /-- **Section 11.2.8** of [golub2013matrix], the update
 $$y^{(k+1)} = y^{(k-1)} + \omega \bigl(y^{(k)} + z^{(k)} - y^{(k-1)}\bigr)$$
-of the Chebyshev semi-iterative method, computed entry by entry with every operation rounded. -/
+of the Chebyshev semi-iterative method, computed entry by entry with every operation rounded.
+
+**Reading.** Same vector recurrence with explicit rounded arithmetic.
+-/
 def chebyshevCombine {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (yp y z : Fin n → ℝ) (ω : ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun w i => do
@@ -2293,7 +2365,10 @@ semi-iterative method, on the state $(k, c_{k-1}, c_k, y^{(k-1)}, y^{(k)}, r^{(k
 $\|r^{(k)}\|_2$ is at most the tolerance, the pass marks the state as done. Otherwise it
 computes $c_{k+1} = (2/\beta) c_k - c_{k-1}$ and $\omega_{k+1} = 1 + c_{k-1}/c_{k+1}$, solves
 $M z^{(k)} = r^{(k)}$, forms $y^{(k+1)}$ by `GolubVanLoan.Chapter11.chebyshevCombine`, and
-computes the residual $r^{(k+1)} = b - A y^{(k+1)}$. -/
+computes the residual $r^{(k+1)} = b - A y^{(k+1)}$.
+
+**Reading.** Same scalar/vector recurrence, callback solve, rounded arithmetic and stop flag.
+-/
 noncomputable def chebyshevSemiIterativeStep {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ)
     (β tol : ℝ) (st : ℕ × ℝ × ℝ × (Fin n → ℝ) × (Fin n → ℝ) × (Fin n → ℝ) × Bool) :
@@ -2329,7 +2404,10 @@ The solves with $M$ are a routine `solveM`, whose exact meaning is $M^{-1}$. The
 $N$ and $A$ are the gaxpy `GolubVanLoan.Chapter01.algorithm_1_1_3`, and the test compares the
 computed $\mathrm{fl}(\sqrt{\mathrm{fl}(r^T r)})$, with $r^T r$ from the dot product
 `GolubVanLoan.Chapter01.algorithm_1_1_1`, with the tolerance. The loop makes at most `fuel`
-passes. -/
+passes.
+
+**Reading.** Same compulsory first step then finite-fuel recurrence with stop checks.
+-/
 noncomputable def chebyshevSemiIterative {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (solveM : (Fin n → ℝ) → M (Fin n → ℝ)) (A N : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (β tol : ℝ) (fuel : ℕ) :
@@ -2346,7 +2424,10 @@ noncomputable def chebyshevSemiIterative {M : Type → Type} [Monad M] (rnd : �
 $$p_k(z) = \frac{c_k(z/\beta)}{c_k(1/\beta)}.$$
 
 Division by zero gives $0$: for $\beta = 0$ the quotients $z/\beta$ and $1/\beta$ are $0$, and
-if $c_k(1/\beta) = 0$, the definition gives $p_k = 0$. -/
+if $c_k(1/\beta) = 0$, the definition gives $p_k = 0$.
+
+**Reading.** Totalized normalized symmetric-interval polynomial.
+-/
 noncomputable def chebyshevSymmetricPoly (β : ℝ) (k : ℕ) : ℝ[X] :=
   C ((Chebyshev.T ℝ k).eval (1 / β))⁻¹ * (Chebyshev.T ℝ k).comp (C (1 / β) * X)
 
@@ -2361,7 +2442,10 @@ private theorem chebyshevCombine_id (yp y z : Fin n → ℝ) (ω : ℝ) :
     (fun i _ => yp i + ω * (y i + z i - yp i)) (List.pairwise_lt_finRange n) y
     (List.mem_finRange i)
 
-/-- The exact pass of the Chebyshev loop when the solve with $M$ is multiplication by a matrix. -/
+/-- The exact pass of the Chebyshev loop when the solve with $M$ is multiplication by a matrix.
+
+**Reading.** Exact active update or explicit tolerance stop.
+-/
 private theorem chebyshevSemiIterativeStep_id (Minv A : Matrix (Fin n) (Fin n) ℝ)
     (b : Fin n → ℝ) (β tol : ℝ) (k : ℕ) (cp c : ℝ) (yp y r : Fin n → ℝ) :
     Id.run (chebyshevSemiIterativeStep pure (fun r => pure (Minv *ᵥ r)) A b β tol
@@ -2385,7 +2469,10 @@ private theorem chebyshevSemiIterativeStep_id (Minv A : Matrix (Fin n) (Fin n) �
 /-- The values $c_j(1/\beta)$ of the Chebyshev polynomials. -/
 private noncomputable def chebC (β : ℝ) (j : ℕ) : ℝ := (Chebyshev.T ℝ j).eval (1 / β)
 
-/-- The three-term recurrence $c_{j+2}(1/\beta) = (2/\beta) c_{j+1}(1/\beta) - c_j(1/\beta)$. -/
+/-- The three-term recurrence $c_{j+2}(1/\beta) = (2/\beta) c_{j+1}(1/\beta) - c_j(1/\beta)$.
+
+**Reading.** Recurrence under total division for every beta.
+-/
 private theorem chebC_add_two (β : ℝ) (j : ℕ) :
     chebC β (j + 2) = 2 / β * chebC β (j + 1) - chebC β j := by
   have h := Chebyshev.T_add_two ℝ (j : ℤ)
@@ -2452,7 +2539,10 @@ $$y^{(k)} - x = p_k(G) (x^{(0)} - x), \qquad p_k(z) = \frac{c_k(z/\beta)}{c_k(1/
 The polynomial $p_k$ is `GolubVanLoan.Chapter11.chebyshevSymmetricPoly`, the case
 $\alpha = -\beta$ of the polynomial of `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le`
 (`GolubVanLoan.Chapter11.chebyshevSymmetricPoly_eq`). So the bound there applies; see
-`GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le'`. -/
+`GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le'`.
+
+**Reading.** Vector polynomial identity for actual finite attained count, with 0<beta<1.
+-/
 theorem chebyshevSemiIterative_spec {A : Matrix (Fin n) (Fin n) ℝ} (s : Stationary.Splitting A)
     {b x : Fin n → ℝ} (hx : A *ᵥ x = b) (x₀ : Fin n → ℝ) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
     (tol : ℝ) (fuel : ℕ) :
@@ -2555,7 +2645,10 @@ and any fuel, ends with the counter $k$ and the iterate $y^{(k)}$, then
 $$\|y^{(k)} - x\|_2 \le \frac{\|x - x^{(0)}\|_2}{|c_k(1/\beta)|}.$$
 This is `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le` at $\alpha = -\beta$, through
 `GolubVanLoan.Chapter11.chebyshevSemiIterative_spec` and
-`GolubVanLoan.Chapter11.chebyshevSymmetricPoly_eq`. -/
+`GolubVanLoan.Chapter11.chebyshevSymmetricPoly_eq`.
+
+**Reading.** Bound for actual attained finite iterate under symmetric spectral enclosure.
+-/
 theorem chebyshevSemiIterative_norm_le' {A : Matrix (Fin n) (Fin n) ℝ}
     (s : Stationary.Splitting A) (hG : s.iterationOperator.IsHermitian) {β : ℝ} (hβ0 : 0 < β)
     (hβ1 : β < 1) (hGab : ∀ i, hG.eigenvalues i ∈ Set.Icc (-β) β) {b x : Fin n → ℝ}

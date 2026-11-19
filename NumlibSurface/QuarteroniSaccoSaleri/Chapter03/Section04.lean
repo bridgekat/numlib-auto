@@ -99,13 +99,22 @@ Mathlib's Gram–Schmidt process with `Numlib.Analysis.InnerProductSpace.GramSch
 
 ## Deviations from the source
 
+* **Equation (3.45) and Definition 3.1** (reading). The Cholesky recurrence is total and
+  produces the factor under positive definiteness. The QR predicate also admits wide matrices.
+* **Cholesky rounding error** (reading). The componentwise theorem uses a relational
+  rounding model. The book quotes a normwise estimate.
 * **Theorem 3.5** (reading). The source asks that "all the principal minors" of $A$ are nonzero. Its
   proof uses the leading principal minors of orders $1, \ldots, n$, and this is the hypothesis
   stated. See `QuarteroniSaccoSaleri.Chapter03.theorem_3_5`.
+* **Property 3.3, the reduced factorization** (generalization). Truncating a full factorization
+  works even when $A$ has deficient column rank. See `QuarteroniSaccoSaleri.Chapter03.property_3_3`.
 * **Property 3.3, uniqueness** (reading). The source calls the reduced factorization unique. It is
   unique only up to a diagonal matrix of signs; the statement normalizes the diagonal of $\tilde R$
   to be positive, as the last clause of the property presupposes. See
   `QuarteroniSaccoSaleri.Chapter03.property_3_3_unique`.
+* **Remark after (3.49)** (generalization). Full column rank is equivalent to every diagonal
+  entry of $\tilde R$ being nonzero. See
+  `QuarteroniSaccoSaleri.Chapter03.property_3_3_diag_ne_zero_iff`.
 
 ## Not formalized
 
@@ -219,7 +228,10 @@ matrix is the Cholesky factor $H$ of Theorem 3.6.
 The indices are $0$-based; the book starts at $h_{11} = \sqrt{a_{11}}$. The function
 `Matrix.cholesky` is total: Lean's square root is $0$ at a negative argument, and a division by
 zero gives $0$. The proof uses `Matrix.cholesky_apply_of_lt`, `Matrix.cholesky_apply_self` and
-`Matrix.isCholesky_cholesky`. -/
+`Matrix.isCholesky_cholesky`.
+
+**Reading.** The recurrence is defined for an arbitrary matrix with total square roots and
+division. The factorization assertion still requires the positive definiteness of the source. -/
 theorem equation_3_45 [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
     cholesky A 0 0 = √(A 0 0) ∧
     (∀ i j, j < i →
@@ -254,7 +266,10 @@ not formalized; the theorem states instead the componentwise bound of Theorem 10
 [higham2002accuracy].
 
 The computed factor is an admissible `FloatingPoint.RoundsCholesky m A Ht`. The proof uses
-`FloatingPoint.exists_roundsCholesky_eq_add`. -/
+`FloatingPoint.exists_roundsCholesky_eq_add`.
+
+**Reading.** The book quotes Wilkinson's normwise estimate. This declaration proves the
+componentwise factor bound for a specified rounding model and nonzero computed pivots. -/
 theorem cholesky_backward_error {m : RoundingModel ℝ} (hn : ((n + 1 : ℕ) : ℝ) * m.u < 1)
     (hA : A.IsSymm) {Ht : Matrix (Fin n) (Fin n) ℝ} (h : RoundsCholesky m A Ht)
     (hd : ∀ i, Ht i i ≠ 0) :
@@ -284,7 +299,10 @@ $$A = QR.$$
 
 The definition is `Matrix.IsQR A Q R` for some $Q$ and $R$. It is spelled out in
 `QuarteroniSaccoSaleri.Chapter03.definition_3_1_iff`. The book assumes $m \ge n$; the Lean
-definition does not need it. -/
+definition does not need it.
+
+**Generalization.** The book assumes $m\ge n$. The definition of orthogonal times upper
+trapezoidal factors also permits wide matrices. -/
 def definition_3_1 (A : Matrix (Fin m) (Fin n) ℝ) : Prop :=
   ∃ Q R, IsQR A Q R
 
@@ -295,7 +313,10 @@ $r_{ij} = 0$ for $j < i$ and for $i \ge n$, such that $A = QR$. Moreover, every 
 factorization.
 
 Existence follows from Householder triangularization, by `Matrix.exists_isQR` and
-`Matrix.exists_unitary_mul_upperTriangular`. -/
+`Matrix.exists_unitary_mul_upperTriangular`.
+
+**Reading.** Characterizes the same factors with additional wide-matrix support.
+-/
 theorem definition_3_1_iff (A : Matrix (Fin m) (Fin n) ℝ) :
     (definition_3_1 A ↔ ∃ Q ∈ orthogonalGroup (Fin m) ℝ, ∃ R : Matrix (Fin m) (Fin n) ℝ,
       (∀ (i : Fin m) (j : Fin n), (j : ℕ) < i → R i j = 0) ∧
@@ -317,8 +338,11 @@ $\tilde Q = Q(1{:}m, 1{:}n)$ and $\tilde R = R(1{:}n, 1{:}n)$. Then
 $$A = \tilde Q \tilde R, \qquad \tilde Q^T \tilde Q = I_n,$$
 and $\tilde R$ is upper triangular.
 
-The book assumes that $A$ has rank $n$; this part does not need it. The matrices $\tilde Q$ and
-$\tilde R$ are `Matrix.firstColumns Q hnm` and `Matrix.firstRows R hnm`. The proof uses
+**Generalization.** The book assumes that $A$ has rank $n$. The truncation identities hold for
+any $A$ with $n \le m$, since the discarded rows of the upper trapezoidal $R$ are zero.
+
+The matrices $\tilde Q$ and $\tilde R$ are `Matrix.firstColumns Q hnm` and
+`Matrix.firstRows R hnm`. The proof uses
 `Matrix.IsQR.isThinQR`. -/
 theorem property_3_3 (h : IsQR A Q R) (hnm : n ≤ m) :
     A = firstColumns Q hnm * firstRows R hnm ∧
@@ -373,10 +397,10 @@ $\tilde R$. Let $A \in \mathbb{R}^{m \times n}$ with $n \le m$, let $A = QR$ be 
 factorization, and let $\tilde R = R(1{:}n, 1{:}n)$. Then all diagonal entries of $\tilde R$ are
 nonzero if and only if $A$ has rank $n$.
 
-The book states only that the diagonal entries are nonzero only if $A$ has full rank; the
-converse is also proved. One direction is
-`Matrix.IsQR.firstRows_diag_ne_zero_of_linearIndependent`. For the other, $\tilde R$ is then
-nonsingular, so $A = \tilde Q \tilde R$ is injective. -/
+**Generalization.** The source says that if all diagonal entries are nonzero, then $A$ has full
+column rank. The equivalence also gives the converse. Full column rank makes $\tilde R$ injective
+because $A = \tilde Q \tilde R$. An injective square triangular matrix has no zero diagonal
+entry. -/
 theorem property_3_3_diag_ne_zero_iff (h : IsQR A Q R) (hnm : n ≤ m) :
     (∀ j, firstRows R hnm j j ≠ 0) ↔ LinearIndependent ℝ Aᵀ := by
   refine ⟨fun hd => ?_, h.firstRows_diag_ne_zero_of_linearIndependent hnm⟩

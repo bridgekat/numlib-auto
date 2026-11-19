@@ -63,9 +63,8 @@ and `Numlib.Approximation.MvLagrange`.
 
 ## Implementation notes
 
-* A scheme is exact in the degrees $\le o$, which the oracles compute, and declares the number of
-  oracle calls of degree $\le o$ per estimate in the field `cost`. Oracle calls are a counting
-  convention, as all evaluation counts of the source are.
+* A scheme is exact in degrees $\le o$ and declares its oracle budget in the field `cost`.
+  The complexity statements use this budget to weight derivative estimates.
 * The forward-difference gradient ($o = 0$, $r = 1$, $n$ function values) and Hessian ($o = 1$,
   $r = 2$, $n$ gradients) are those of `Numlib.FiniteDifference.Gradient`.
 * The stencil of (13.2.1) is a tensor product of one-dimensional derivative weights
@@ -93,8 +92,16 @@ and `Numlib.Approximation.MvLagrange`.
   $\|\nabla^i \hat\ell_j(0)\| \le \Lambda_i$ at the centre is used, where the source takes
   $\Lambda_i$ as a maximum over the unit ball, and the points need only lie in the closed unit ball.
   See `CartisGouldToint.Chapter13.eq_13_2_4_scaled`.
-* **Theorem 13.2.1, (13.2.5)–(13.2.7)** (typo). The source prints $O(\min_j \epsilon_j^{-\dots})$;
-  the bounds are $O(\max_j \epsilon_j^{-\dots})$, consistent with Theorems 13.1.8 and 13.1.19. See
+* **Finite derivative-approximation scheme** (abstraction). The source describes a finite
+  process that uses only oracles of degree $\le o$. The structure axiomatizes the error and
+  exactness of the output and takes the cost as a supplied number. It has no oracle trace or
+  proof of the cost. In particular, the Hessian estimate's declared cost counts the shifted
+  gradients and assumes the base gradient is available. See
+  `CartisGouldToint.Chapter13.FiniteDerivativeApproxScheme` and
+  `CartisGouldToint.Chapter13.fdHessianScheme`.
+* **Theorem 13.2.1, (13.2.5)–(13.2.7)** (typo and refinement). The source prints
+  $O(\min_j \epsilon_j^{-\dots})$. The bounds take the maximum, with the order-dependent
+  exponents of Theorem 13.1.19 for ARqpIDA. See
   `CartisGouldToint.Chapter13.theorem_13_2_1_i`, `CartisGouldToint.Chapter13.theorem_13_2_1_ii`.
 
 ## Not formalized
@@ -127,7 +134,16 @@ in the degrees $i \le o$.
 
 The oracles of degree at most $o$ give the derivatives of $f$ of degree at most $o$ exactly. The
 estimates are jets `FormalMultilinearSeries ℝ ℝⁿ ℝ`, and the error model is
-`Optimization.JetApprox`. -/
+`Optimization.JetApprox`.
+
+**Abstraction.** The source describes a finite process with access to oracles of degree at
+most $o$. Here `est` is a map on points and requested accuracies with the required error and
+exactness properties. Its oracle access pattern and the validity of the supplied budget `cost`
+are outside the structure.
+
+**Reading.** Imposes error and exactness at low degrees with a supplied budget, without a certified
+lower-oracle implementation or cost trace.
+-/
 structure FiniteDerivativeApproxScheme (f : ℝⁿ → ℝ) (o r : ℕ) (κg : ℕ → ℝ) where
   /-- The inexact derivatives at a point $x$ for the requested accuracies $h$. -/
   est : ℝⁿ → (ℕ → ℝ) → FormalMultilinearSeries ℝ ℝⁿ ℝ
@@ -175,7 +191,13 @@ scheme with $o = 1$, $r = 2$, $n$ gradient values per estimate,
 $\kappa_{\nabla,2} = \sqrt{n} L / 2$ and $\kappa_{\nabla,1} = 0$.
 
 The Hessian is the operator `Optimization.hessianOperator f`, and it enters the jet through
-`Optimization.hessianJet`. The error bound is `FiniteDifference.jetApprox_fdHessian`. -/
+`Optimization.hessianJet`. The error bound is `FiniteDifference.jetApprox_fdHessian`. The declared
+cost $n$ is for shifted gradients. The formula also uses the baseline gradient at $x$, which
+requires one further call if it is unavailable.
+
+**Reading.** The gradient difference formula is exact. The declared n counts shifted gradients;
+baseline availability is assumed by that budget.
+-/
 noncomputable def fdHessianScheme (f : ℝⁿ → ℝ) {L : ℝ} (hf : ContDiff ℝ 2 f)
     (hL : ∀ y z, ‖hessianOperator f y - hessianOperator f z‖ ≤ L * ‖y - z‖) :
     FiniteDerivativeApproxScheme f 1 2 (fun i => if i = 2 then √n * L / 2 else 0) where
@@ -210,7 +232,11 @@ private theorem sum_mul_int_smul_single {r K : ℕ} (h : ℝ) (j' : Fin r → Fi
   simp [mul_ite, eq_comm]
 
 /-- The stencil formula (13.2.1) for a derivative of degree $o + r$, with the stencil indexed by a
-finite type. -/
+finite type.
+
+**Reading.** The same stencil rate on a convex set containing the stencil points, with arbitrary
+positive step and explicit constant.
+-/
 private theorem eq_13_2_1_aux {p o r : ℕ} (hor : o + r ≤ p) (j : Fin (o + r) → Fin n) :
     ∃ (ι : Type) (_ : Fintype ι) (c : ι → ℝ) (z : ι → Fin n → ℤ) (K : ℝ), 0 ≤ K ∧
       ∀ (f : ℝⁿ → ℝ) (L h : ℝ) (C : Set ℝⁿ) (x : ℝⁿ), Convex ℝ C →
@@ -389,7 +415,11 @@ noncomputable def stencilEntry (f : ℝⁿ → ℝ) (p o : ℕ) {i : ℕ} (j : F
 /-- Let $o < i \le p$, let $f$ be $C^p$ on $\mathbb{R}^n$ with $\nabla^p f$ Lipschitz with constant
 $L$, and let $h > 0$. Then the stencil estimate of the entry
 $\nabla^i f(x)[e_{j_1}, \dots, e_{j_i}]$ with step $h$ has error at most $K_{i,j} L h^{p-i+1}$,
-where $K_{i,j}$ is the stencil constant of the entry. -/
+where $K_{i,j}$ is the stencil constant of the entry.
+
+**Generalization.** Bounds the chosen component's global error for all positive steps, extending the
+stated small-step range.
+-/
 theorem abs_stencilEntry_sub_le {f : ℝⁿ → ℝ} {p o i : ℕ} {L h : ℝ} (hoi : o < i) (hip : i ≤ p)
     (hf : ContDiff ℝ p f) (hL : IteratedFDerivLipschitzOn f p L univ) (j : Fin i → Fin n)
     (x : ℝⁿ) (hh : 0 < h) :
@@ -412,7 +442,10 @@ noncomputable def stencilTensor (f : ℝⁿ → ℝ) (p o i : ℕ) (x : ℝⁿ) 
 $\mathbb{R}^n$ with $\nabla^p f$ Lipschitz with constant $L$, and let $h > 0$. Then the stencil
 estimate $\bar\nabla^i f(x)$ satisfies
 $$\|\bar\nabla^i f(x) - \nabla^i f(x)\| \le K_i L h^{p-i+1}, \qquad K_i = \sum_j K_{i,j},$$
-the sum of the entrywise constants. -/
+the sum of the entrywise constants.
+
+**Generalization.** Makes the tensor norm error explicit as a sum and extends to all positive steps.
+-/
 theorem norm_stencilTensor_sub_le {f : ℝⁿ → ℝ} {p o i : ℕ} {L h : ℝ} (hoi : o < i) (hip : i ≤ p)
     (hf : ContDiff ℝ p f) (hL : IteratedFDerivLipschitzOn f p L univ) (x : ℝⁿ) (hh : 0 < h) :
     ‖stencilTensor f p o i x h - iteratedFDeriv ℝ i f x‖ ≤
@@ -445,7 +478,11 @@ the number of points of the stencil of the entry $j$.
 
 The step is `CartisGouldToint.Chapter13.accuracyStep`, the tensor estimate is
 `CartisGouldToint.Chapter13.stencilTensor`, and the numbers of points are
-`CartisGouldToint.Chapter13.stencilSize`. -/
+`CartisGouldToint.Chapter13.stencilSize`.
+
+**Reading.** Uses the requested-accuracy roots and supplies the shifted degree-o call budget; exact
+low-degree values are represented separately.
+-/
 noncomputable def stencilScheme (f : ℝⁿ → ℝ) {p o r : ℕ} {L : ℝ} (hf : ContDiff ℝ p f)
     (hL : IteratedFDerivLipschitzOn f p L univ) (hL0 : 0 ≤ L) (hrp : r ≤ p) :
     FiniteDerivativeApproxScheme f o r
@@ -537,7 +574,11 @@ theorem eq_13_2_4_scaled {p m : ℕ} {y : Fin m → ℝⁿ} {ℓ : Fin m → ℝ
 /-- The interpolation radius $\delta = \min_{i \in [1, r]} h_i^{1/(p-i+1)}$ of
 `CartisGouldToint.Chapter13.interpolationScheme`. For positive accuracies it is the largest
 radius with $\delta^{p-i+1} \le h_i$ for all $i \in [1, r]$, as in the choice
-$h_i = \delta^{p-i+1}$ of the source with one interpolation set for all degrees. -/
+$h_i = \delta^{p-i+1}$ of the source with one interpolation set for all degrees.
+
+**Reading.** Chooses a common radius as the minimum over roots to accommodate independently
+requested orderwise accuracies.
+-/
 noncomputable def interpRadius (p r : ℕ) (h : ℕ → ℝ) : ℝ :=
   epsMin r fun i => accuracyStep p i (h i)
 
@@ -554,7 +595,11 @@ $\kappa_{\nabla,i} \delta^{p-i+1}$ is at most $\kappa_{\nabla,i} h_i$, with
 $\delta^{p-i+1} = h_i$ for the degree that attains the minimum.
 
 The radius is `CartisGouldToint.Chapter13.interpRadius`, and the error bound is
-`CartisGouldToint.Chapter13.eq_13_2_4_scaled`. -/
+`CartisGouldToint.Chapter13.eq_13_2_4_scaled`.
+
+**Correction.** Uses the corrected cardinality, exact base value and one radius computed from all
+requested orders.
+-/
 noncomputable def interpolationScheme (f : ℝⁿ → ℝ) {p m r : ℕ} {L : ℝ} {y : Fin m → ℝⁿ}
     {ℓ : Fin m → ℝⁿ → ℝ} {Λ : ℕ → ℝ} (hℓ : IsLagrangeBasis n p y ℓ) (hy1 : ∀ j, ‖y j‖ ≤ 1)
     (hΛ : ∀ i j, ‖iteratedFDeriv ℝ i (ℓ j) 0‖ ≤ Λ i) (hf : ContDiff ℝ p f)
@@ -714,7 +759,10 @@ $$\#F + c \cdot \#D \le \frac{C}{\min_j \epsilon_j^{\pi_j}},$$
 with $\pi_j = (p+1)/(p-j+1)$ if $q \le 2$ and $\pi_j = j (p+1)/p$ if $q > 2$. The bound is
 $O(\max_j \epsilon_j^{-\pi_j})$.
 
-**Typo.** The source prints $\min_j$ in place of $\max_j$ in the orders (13.2.6)–(13.2.7).
+**Typo and refinement.** The source prints $\min_j$ in place of $\max_j$ in the orders
+(13.2.6)–(13.2.7). Its displayed exponents use $q$ where Theorem 13.1.19 uses the varying
+order $j$. Lean retains the order-dependent exponents, which also imply the bound with $q$
+in each exponent after correcting the extremum.
 
 The exponents are `Optimization.arPi`, and the approximate-optimality test is
 `CartisGouldToint.Chapter13.arTest`. The proof applies
@@ -826,7 +874,11 @@ $\epsilon_j \le \delta_{0,j}$ and oracle constants $\kappa_{\nabla,i} \ge 0$ be 
 finite derivative-approximation scheme $S$ that produces derivatives up to degree $p$ and every
 starting point $x_0$, there is an ARqpIDA run with derivative estimates $S(x_k, h_k)$ and the
 radii control at every iteration, which are the hypotheses of
-`CartisGouldToint.Chapter13.theorem_13_2_1_ii`. -/
+`CartisGouldToint.Chapter13.theorem_13_2_1_ii`.
+
+**Correction.** The run uses the scheme's oracle output with the corrected regularization algorithm
+and sufficient radii control.
+-/
 theorem exists_algorithm_13_1_2_of_scheme {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {P : ARqpIDAParams}
     {ε : ℕ → ℝ} {L : ℕ → ℝ} (hf : AssumptionD0pL f P.p L)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hεδ : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j)

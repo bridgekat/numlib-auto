@@ -91,19 +91,27 @@ place of (3.3.5). AR2 is an instance of the generic adaptive-regularization run 
 
 ## Deviations from the source
 
+* **Equation (3.3.1)** (generalization). The model formula accepts any real
+  regularization weight, while an active run uses positive weights.
 * **Hessian of the model after (3.3.2)** (typo). The displayed Hessian has a spurious factor $2$.
   Nothing depends on it; the curvature bounds use
   `Optimization.minCurvature_ge_of_regularizedModel`.
 * **Step 1 of Algorithm 3.3.1** (reading). The source also stops at strict local minimizers. These
   satisfy (3.3.4), so the termination test is (3.3.4) alone (`CartisGouldToint.Chapter03.stopTest`).
+* **Proof of Lemma 3.3.4** (typo). Passing from the preceding prefix to the current
+  one uses $|\mathcal S_k|\le|\mathcal S_{k-1}|+1$. The source displays the
+  opposite order of the two prefix cardinalities.
 * **Theorems 3.3.6 and 3.3.10** (reading). The source defers the proofs to §12.2.2.4. They are
-  proved here from the data of Theorem 12.2.15. See `CartisGouldToint.Chapter03.theorem_3_3_6` and
-  `CartisGouldToint.Chapter03.theorem_3_3_10`.
+  proved here from the data of Theorem 12.2.15 with the run's initial weight in
+  place of that example's fixed weight. The first hit is the ceiling of the
+  indicated power, or the maximum of the two ceilings. See
+  `CartisGouldToint.Chapter03.theorem_3_3_6` and `CartisGouldToint.Chapter03.theorem_3_3_10`.
 * **Theorem 3.3.9, (3.3.30)** (correction). The printed bound on the derivative evaluations ends
   with $+ 1$, which is false; the bound holds with $+ 2$. See
   `CartisGouldToint.Chapter03.theorem_3_3_9`.
-* **Theorem 3.3.9** (generalization). The hypothesis $\epsilon_2 \le 1$ is not used and is dropped.
-  See `CartisGouldToint.Chapter03.theorem_3_3_9`.
+* **Lemma 3.3.8 and Theorem 3.3.9** (generalization). The finite second tolerance
+  need only be positive. See `CartisGouldToint.Chapter03.lemma_3_3_8` and
+  `CartisGouldToint.Chapter03.theorem_3_3_9`.
 -/
 
 open Set Finset Optimization Subproblem
@@ -133,13 +141,20 @@ abbrev AR2Params.ar (P : AR2Params) : Optimization.ARParams := P.toAR1Params.toA
 $x \in \mathbb{R}^n$ and $\sigma \in \mathbb{R}$. The **cubic model** of AR2 at $x$ is
 $$m(s) = T_{f,2}(x, s) + \frac{\sigma}{6} \|s\|^3,$$
 where $T_{f,2}(x, \cdot)$ is the second-order Taylor polynomial of $f$ at $x$. It is
-`Optimization.regularizedModel` of `ftaylorSeries ℝ f x` with $p = 2$. -/
+`Optimization.regularizedModel` of `ftaylorSeries ℝ f x` with $p = 2$.
+
+**Reading.** Defines the cubic model for arbitrary real weights, beyond the positive weights of a
+run.
+-/
 noncomputable def ar2Model (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (σ : ℝ) : EuclideanSpace ℝ (Fin n) → ℝ :=
   regularizedModel (ftaylorSeries ℝ f x) 2 σ
 
 /-- The AR2 model is $m(s) = T_{f,2}(x, s) + \frac{\sigma}{6} \|s\|^3$, with $T_{f,2}(x, \cdot)$
-given by `taylorPolynomial f 2 x`. -/
+given by `taylorPolynomial f 2 x`.
+
+**Reading.** Unfolds the model for all real weights and total derivative data.
+-/
 theorem ar2Model_apply (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
     ar2Model f x σ s = taylorPolynomial f 2 x s + σ / 6 * ‖s‖ ^ 3 := by
@@ -151,7 +166,11 @@ section AR2Model
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
 /-- The derivative of the AR2 model (3.3.2). If $f$ is twice continuously differentiable at $x$,
-then $\nabla m(s) = \nabla f(x) + \nabla^2 f(x) s + \frac{\sigma}{2} \|s\| s$. -/
+then $\nabla m(s) = \nabla f(x) + \nabla^2 f(x) s + \frac{\sigma}{2} \|s\| s$.
+
+**Reading.** The displayed gradient is packaged as a Fréchet derivative and allows arbitrary real
+weights.
+-/
 theorem hasFDerivAt_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
     HasFDerivAt (ar2Model f x σ)
       (innerSL ℝ (gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s)) s := by
@@ -165,7 +184,10 @@ theorem hasFDerivAt_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : Euclide
   norm_num
 
 /-- If $f$ is twice continuously differentiable at $x$, then $\|\nabla m(s)\| = \|\nabla f(x) +
-\nabla^2 f(x) s + \frac{\sigma}{2} \|s\| s\|$. -/
+\nabla^2 f(x) s + \frac{\sigma}{2} \|s\| s\|$.
+
+**Reading.** The derivative norm formula also allows arbitrary real weights.
+-/
 theorem norm_fderiv_ar2Model (hf : ContDiffAt ℝ 2 f x) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
     ‖fderiv ℝ (ar2Model f x σ) s‖ =
       ‖gradient f x + hessianOperator f x s + (σ / 2 * ‖s‖) • s‖ := by
@@ -233,7 +255,10 @@ $k$ at which the test (3.3.4) has failed for all $j \le k$.
 The run stops at the first $k$ at which $x_k$ passes the test (3.3.4). The structure is the
 generic run `Optimization.IsARRun` with the termination test
 `CartisGouldToint.Chapter03.stopTest`, the step condition `CartisGouldToint.Chapter03.ar2Step`,
-no termination test after the step, and the ratio `Optimization.taylorRatio f 2`. -/
+no termination test after the step, and the ratio `Optimization.taylorRatio f 2`.
+
+**Reading.** Combines the strict and ordinary stop branches without recording which branch fired.
+-/
 structure algorithm_3_3_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : AR2Params) (ε₁ : ℝ)
     (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) : Prop where
   /-- The first-order tolerance satisfies $\epsilon_1 > 0$. -/
@@ -411,7 +436,11 @@ theorem kappaSAR2_pos {P : AR2Params} {L : ℝ} (hL : 0 ≤ L) : 0 < kappaSAR2 P
 
 /-- The decrease at a successful AR2 iteration, from the argument of Lemma 3.3.4. Assume f.HL, and
 let $k$ be a successful iteration before termination with $\|\nabla f(x_{k+1})\| \ge \zeta$ for
-some $\zeta > 0$. Then $f(x_k) - f(x_{k+1}) \ge \zeta^{3/2} / \kappa^S_{\mathrm{AR2}}$. -/
+some $\zeta > 0$. Then $f(x_k) - f(x_{k+1}) \ge \zeta^{3/2} / \kappa^S_{\mathrm{AR2}}$.
+
+**Reading.** The descent lower bound uses an arbitrary positive lower bound on the next gradient
+norm.
+-/
 theorem ar2_decrease_of_le (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ)
     {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j)) (hs : P.η₁ ≤ taylorRatio f 2 x s k)
     {ζ : ℝ} (hζ : 0 < ζ) (hg : ζ ≤ ‖gradient f (x (k + 1))‖) :
@@ -471,7 +500,10 @@ iterations up to $k$ satisfies (3.3.19):
 $$|\mathcal{S}_k| \le \kappa^S_{\mathrm{AR2}} \frac{f(x_0) -
   f_{\mathrm{low}}}{\epsilon_1^{3/2}} + 1.$$
 
-The set $\mathcal{S}_k = \{j \le k : \rho_j \ge \eta_1\}$ is `Optimization.successSet`. -/
+The set $\mathcal{S}_k = \{j \le k : \rho_j \ge \eta_1\}$ is `Optimization.successSet`.
+
+**Typo.** In the source proof the cardinalities of the two prefixes are reversed
+in the inequality used to pass to the bound on $|\mathcal S_k|$. -/
 theorem lemma_3_3_4 (hb : Chapter02.AssumptionBb f flow) (hf : AssumptionHL f L₂)
     (h : algorithm_3_3_1 f P ε₁ none x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopTest f ε₁ none (x j)) :
@@ -590,7 +622,10 @@ def ar2ModStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : AR2Params) (ε₂ :
 is Algorithm 3.3.1 with the accuracy condition (3.3.5) replaced by (3.3.23), for $\theta_1 > 1$.
 Sequences $x_k$, $s_k$ and $\sigma_k$ form a run of the modified algorithm if $\theta_1 > 1$,
 $\epsilon_1 \in (0, 1]$, $\epsilon_2 > 0$ when it is finite, and Steps 1–4 of AR2 hold with the
-modified Step 2 `CartisGouldToint.Chapter03.ar2ModStep`. -/
+modified Step 2 `CartisGouldToint.Chapter03.ar2ModStep`.
+
+**Reading.** Instantiates the described variant as a total run with the same merged stopping test.
+-/
 structure IsModifiedAR2Run (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : AR2Params) (ε₁ : ℝ)
     (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) : Prop where
   /-- The first-order step accuracy satisfies $\theta_1 > 1$. -/
@@ -613,7 +648,11 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {P : AR2Params} {ε₁ L₂ : 
 
 /-- If $\theta_1 \ge 1$ and $\sigma \ge 0$, a global minimizer $s$ of the AR2 model with
 $m(s) < m(0)$ satisfies the modified Step 2 (3.3.23). At such a stationary point, $\nabla_s
-T_{f,2}(x, s) = -\frac{\sigma}{2} \|s\| s$. -/
+T_{f,2}(x, s) = -\frac{\sigma}{2} \|s\| s$.
+
+**Reading.** The global-minimizer sufficient condition allows theta equal to one as well as strictly
+larger.
+-/
 theorem ar2ModStep_of_isMinOn {x : EuclideanSpace ℝ (Fin n)} (P : AR2Params) (hθ : 1 ≤ P.θ₁)
     (ε₂ : Option ℝ) {σ : ℝ} (hσ : 0 ≤ σ) {s : EuclideanSpace ℝ (Fin n)}
     (hmin : IsMinOn (ar2Model f x σ) univ s) (hdec : ar2Model f x σ s < ar2Model f x σ 0) :
@@ -696,6 +735,8 @@ successful, $\rho_k \ge \eta_1$, and assume $\lambda_{\min}[\nabla^2 f(x_{k+1})]
 (3.3.25) holds:
 $$\|s_k\| \ge \frac{|\lambda_{\min}[\nabla^2 f(x_{k+1})]|}{L_{f,2} + \theta_2 +
   \sigma_{\max}}.$$
+
+**Generalization.** The argument applies to every finite positive $\epsilon_2$.
 -/
 theorem lemma_3_3_8 (hf : AssumptionHL f L₂) (h : algorithm_3_3_1 f P ε₁ ε₂ x s σ)
     (hε₂ : ε₂ ≠ none) {k : ℕ} (hk : ∀ j ≤ k, ¬ stopTest f ε₁ ε₂ (x j))
@@ -819,10 +860,13 @@ evaluations of $\nabla f$ and $\nabla^2 f$, where $\kappa^T = \kappa^T_{\mathrm{
 $\kappa^D = \kappa^T (1 + |\log \gamma_1| / \log \gamma_2)$ and
 $\kappa^F = \kappa^C_{\mathrm{AR2}}$.
 
-**Correction.** The source prints (3.3.30) with $+ 1$ in place of $+ 2$. The bound with $+ 1$ is
-false, because the decrease is guaranteed only at successful iterations that are followed by a
-non-terminal one. The $+ 2$ counts the initial evaluation and the last successful iteration, as
-in (3.3.22).
+**Correction.** The explicit bound in (3.3.30) needs $+2$. The descent estimate counts
+successful steps followed by a nonterminal iterate. The initial evaluation and the
+last successful step add two to that count, as in (3.3.22).
+For example, take $f(x)=M x^2/2$, $x_0=2/M$, $\epsilon_1=\epsilon_2=1$, and
+$L_{f,2}=1$. With fixed AR2 parameters and sufficiently large $M$, the exact cubic
+step has ratio $1$ and reduces the gradient from $2$ to below $1$. The two gradient
+and Hessian evaluations exceed the printed bound $1+2\kappa^T_{\mathrm{AR2}}/M$.
 
 **Generalization.** The source assumes $\epsilon_2 \le 1$. The bound holds for every
 $\epsilon_2 > 0$. -/
@@ -916,7 +960,11 @@ $f$ with $x_k = \xi_k e_0$ for all $k$ and $\sigma_k = \sigma_0$ for all $k$, wh
 for $k < K$ are global minimizers of the models and have $\rho_k = 1$, and which terminates
 exactly at iteration $K$.
 
-The spike jet is `Optimization.IsSpikeJetOf 2 G q`. -/
+The spike jet is `Optimization.IsSpikeJetOf 2 G q`.
+
+**Reading.** Realizes global minimizers and unit ratios for AR2 with arbitrary initial weight in
+place of the fixed sample weight.
+-/
 theorem exists_ar2_ridge_run (P : AR2Params) {ε₁ : ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1)
     {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0 < e) {q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) {G : ℝ → ℝ}
     (hG : ContDiff ℝ 2 G) {xr α : ℕ → ℝ} {K : ℕ} (hα : ∀ k < K, 0 < α k)
@@ -1061,7 +1109,11 @@ $k_\epsilon = \lceil \epsilon^{-3/(3 - q)} \rceil$ and the heights $\alpha_k = \
   is $T_{f,2}(x_k, s_k)$.
 
 The construction is `Optimization.exists_slowTaylorOrder_interpolant`, in which the constants
-depend only on $\sigma_0$. -/
+depend only on $\sigma_0$.
+
+**Reading.** Uses the prescribed jets and value recursion with any positive initial weight and
+accepts tolerances up to one.
+-/
 theorem exists_ar2_slow_data (P : AR2Params) {q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) :
     ∃ L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ 0 ≤ B ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
       ∃ (G : ℝ → ℝ) (xr : ℕ → ℝ), ContDiff ℝ 2 G ∧

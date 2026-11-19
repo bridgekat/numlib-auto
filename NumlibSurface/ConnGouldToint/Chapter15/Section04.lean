@@ -114,6 +114,73 @@ constants of their proofs. The Cauchy points and the quadratic model come from
 
 ## Deviations from the source
 
+* **Representation.** The composite models use inner-product operators and normalize the tangential
+  model at zero. See `ConnGouldToint.Chapter15.sqpMerit`, `ConnGouldToint.Chapter15.sqpNormalModel`,
+  `ConnGouldToint.Chapter15.sqpOverallModel`, `ConnGouldToint.Chapter15.sqpTangentialModel`,
+  `ConnGouldToint.Chapter15.sqpOverallModel_decrease`.
+* **Convention.** The penalty threshold equivalence uses positive normal decrease; the scalar
+  formula is totalized at zero. See `ConnGouldToint.Chapter15.sqpPenaltyThreshold`,
+  `ConnGouldToint.Chapter15.sqpPenaltyThreshold_le_iff`.
+* **Reading.** Normal scaling defines a zero-step branch and makes the stability bound on the
+  unscaled normal solution explicit. See `ConnGouldToint.Chapter15.IsSQPNormalScaling`,
+  `ConnGouldToint.Chapter15.sqpNormalModel_decrease_scaled`,
+  `ConnGouldToint.Chapter15.lemma_15_4_1`, `ConnGouldToint.Chapter15.lemma_15_4_7`.
+* **Reading.** The tangential Cauchy decrease is evaluated at the named Cauchy point. See
+  `ConnGouldToint.Chapter15.lemma_15_4_2`.
+* **Correction.** The merit-model error needs derivative control along the entire trial segment. See
+  `ConnGouldToint.Chapter15.lemma_15_4_3`.
+* **Reading.** The small-radius acceptance lemmas make uniform trial error and two-case predicted
+  decrease explicit. See `ConnGouldToint.Chapter15.lemma_15_4_4`,
+  `ConnGouldToint.Chapter15.lemma_15_4_18`.
+* **Representation.** Normalized merit descent is stated on the accepted subsequence with positive
+  nondecreasing weights. See `ConnGouldToint.Chapter15.sqpNormalizedMerit`,
+  `ConnGouldToint.Chapter15.lemma_15_4_5`.
+* **Generalization.** The same Lipschitz neighborhood lemma applies to both criticality measures.
+  See `ConnGouldToint.Chapter15.sqpCriticalityNeighborhood`,
+  `ConnGouldToint.Chapter15.sqpCriticalityNeighborhood_bounds`.
+* **Correction.** The neighborhood radius floor depends on the entry radius as well as the success
+  threshold. See `ConnGouldToint.Chapter15.sqpNeighborhoodRadiusFloor`,
+  `ConnGouldToint.Chapter15.sqpNeighborhoodRadiusFloor_le`.
+* **Correction.** The tangential acceptance threshold includes the effective decrease and
+  model-error coefficients. See `ConnGouldToint.Chapter15.sqpTangentialAcceptanceRadius`,
+  `ConnGouldToint.Chapter15.sqpTangentialAcceptanceRadius_ratio`.
+* **Generalization.** The uniform normal curvature bound uses a Jacobian norm bound without assuming
+  that it is attained. See `ConnGouldToint.Chapter15.sqpNormalCurvatureBound`,
+  `ConnGouldToint.Chapter15.sqpNormalCurvatureBound_le`.
+* **Correction.** The two exit cases combine with minima; explicit examples disprove the printed
+  maxima. See `ConnGouldToint.Chapter15.sqpFeasibilityExitCoeff`,
+  `ConnGouldToint.Chapter15.sqpFeasibilityExitCoeff_bound`,
+  `ConnGouldToint.Chapter15.sqpNormalCriticalityExitCoeff`,
+  `ConnGouldToint.Chapter15.sqpNormalCriticalityExitCoeff_bound`,
+  `ConnGouldToint.Chapter15.sqp_exit_max_counterexamples`.
+* **Reading.** The feasibility and normal-criticality limits expose trial errors, accepted-step
+  variation and the rank bound needed for the corollary. See
+  `ConnGouldToint.Chapter15.theorem_15_4_6`,
+  `ConnGouldToint.Chapter15.sqp_normal_criticality_of_accepted_decrease`,
+  `ConnGouldToint.Chapter15.theorem_15_4_19`, `ConnGouldToint.Chapter15.corollary_15_4_20`.
+* **Reading.** Penalty stabilization is derived from explicit requirements and a positive additive
+  increase. See `ConnGouldToint.Chapter15.sqpPenaltyUpdate`,
+  `ConnGouldToint.Chapter15.sqpPenaltyUpdate_eventually_constant`,
+  `ConnGouldToint.Chapter15.theorem_15_4_8`.
+* **Correction.** The revised tangential coefficient is always positive on the stated domain, unlike
+  the printed expression. See `ConnGouldToint.Chapter15.lemma_15_4_9`,
+  `ConnGouldToint.Chapter15.printed_tangential_coefficient_nonpos`.
+* **Correction.** The tangential limits require uniform trial model error and reduced-gradient
+  controls, with extra variation control for a full limit. See
+  `ConnGouldToint.Chapter15.SQPTangentialRun`,
+  `ConnGouldToint.Chapter15.sqpReducedGradient_perturbation`,
+  `ConnGouldToint.Chapter15.theorem_15_4_10`, `ConnGouldToint.Chapter15.theorem_15_4_11`.
+* **Reading.** The normal Cauchy decrease uses the adjoint gradient and a totalized ratio. See
+  `ConnGouldToint.Chapter15.lemma_15_4_17`.
+* **Correction.** The normal-step estimate uses the corrected singular-value factor and explicit
+  decomposition bounds. See `ConnGouldToint.Chapter15.lemma_15_4_21`.
+* **Correction.** The corrected-step convergence uses original-trial small-radius success, with
+  accepted-step control for the full tangential limit. See
+  `ConnGouldToint.Chapter15.sqp_normal_correction_progress`,
+  `ConnGouldToint.Chapter15.theorem_15_4_12`.
+* **Correction.** The second-order limit theorem requires coverage of the curvature tail and uniform
+  two-case decrease. See `ConnGouldToint.Chapter15.sqp_secondOrder_correction_progress`,
+  `ConnGouldToint.Chapter15.theorem_15_4_16`.
 * **Equation (15.4.12)** (reading). The scaling interval applies to a nonzero trial normal step; a
   zero trial step has the scaling $1$. See `ConnGouldToint.Chapter15.IsSQPNormalScaling`.
 * **Lemma 15.4.2** (reading). The left-hand side is evaluated at the stated Cauchy step. See
@@ -161,13 +228,23 @@ variable {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- **Section 15.4.1.1** of [conn2000trust]. For $f : E \to \mathbb{R}$, $c : E \to F$ and
 $\sigma \in \mathbb{R}$, the **exact penalty merit function** is
-$\phi_\sigma(x) = f(x) + \sigma \|c(x)\|$. -/
+$\phi_\sigma(x) = f(x) + \sigma \|c(x)\|$.
+
+**Reading.** The models are written on inner-product spaces. The tangential model omits its additive
+constant, which cancels in model decrease. The decrease identity assumes a symmetric Hessian and a
+tangential direction in the exact Jacobian kernel.
+-/
 noncomputable def sqpMerit (f : E → ℝ) (c : E → F) (σ : ℝ) (x : E) : ℝ :=
   f x + σ * ‖c x‖
 
 /-- **Section 15.4.1.1** of [conn2000trust]. For $c \in F$ and a continuous linear map
 $A : E \to F$, the **normal model** is the residual $\|c + A n\|$ of the linearized constraint
-at the step $n$. -/
+at the step $n$.
+
+**Reading.** The models are written on inner-product spaces. The tangential model omits its additive
+constant, which cancels in model decrease. The decrease identity assumes a symmetric Hessian and a
+tangential direction in the exact Jacobian kernel.
+-/
 noncomputable def sqpNormalModel (c : F) (A : E →L[ℝ] F) (n : E) : ℝ :=
   ‖c + A n‖
 
@@ -175,6 +252,10 @@ noncomputable def sqpNormalModel (c : F) (A : E →L[ℝ] F) (n : E) : ℝ :=
 continuous linear map $H : E \to E$, $c \in F$ and $A : E \to F$, the **overall model** is
 $$m(s) = f_0 + \langle g, s \rangle + \tfrac{1}{2} \langle s, H s \rangle + \sigma \|c + A
   s\|.$$
+
+**Reading.** The models are written on inner-product spaces. The tangential model omits its additive
+constant, which cancels in model decrease. The decrease identity assumes a symmetric Hessian and a
+tangential direction in the exact Jacobian kernel.
 -/
 noncomputable def sqpOverallModel (f₀ : ℝ) (g : E) (H : E →L[ℝ] E)
     (c : F) (A : E →L[ℝ] F) (σ : ℝ) (s : E) : ℝ :=
@@ -182,6 +263,10 @@ noncomputable def sqpOverallModel (f₀ : ℝ) (g : E) (H : E →L[ℝ] E)
 
 /-- **Equation (15.4.5)** of [conn2000trust]. After the normal step $n$, the **tangential model** is
 $$m_T(t) = \langle g + H n, t \rangle + \tfrac{1}{2} \langle t, H t \rangle.$$
+
+**Reading.** The models are written on inner-product spaces. The tangential model omits its additive
+constant, which cancels in model decrease. The decrease identity assumes a symmetric Hessian and a
+tangential direction in the exact Jacobian kernel.
 -/
 noncomputable def sqpTangentialModel (g : E) (H : E →L[ℝ] E) (n t : E) : ℝ :=
   quadraticModel 0 (g + H n) H.toLinearMap t
@@ -191,7 +276,12 @@ $$m(0) - m(n + t) = \bigl(m_T(0) - m_T(t)\bigr) + \sigma \bigl(\|c\| - \|c + A n
   \bigl(q(0) - q(n)\bigr),$$
 where $q(s) = f_0 + \langle g, s \rangle + \frac{1}{2} \langle s, H s \rangle$. The three terms
 are the tangential decrease, the penalized decrease of the normal model, and the decrease of the
-objective model along the normal step. -/
+objective model along the normal step.
+
+**Reading.** The models are written on inner-product spaces. The tangential model omits its additive
+constant, which cancels in model decrease. The decrease identity assumes a symmetric Hessian and a
+tangential direction in the exact Jacobian kernel.
+-/
 theorem sqpOverallModel_decrease (f₀ σ : ℝ) (g : E) (H : E →L[ℝ] E)
     (hH : H.toLinearMap.IsSymmetric) (c : F) (A : E →L[ℝ] F) (n t : E) (ht : A t = 0) :
     sqpOverallModel f₀ g H c A σ 0 - sqpOverallModel f₀ g H c A σ (n + t) =
@@ -207,6 +297,9 @@ theorem sqpOverallModel_decrease (f₀ σ : ℝ) (g : E) (H : E →L[ℝ] E)
 $\delta_N > 0$, the tangential decrease $\delta_T$ and the objective decrease $\delta_q$ along
 the normal step, the **penalty threshold** is
 $$\sigma_{\mathrm{req}} = -\frac{\delta_q + \delta_T}{(1 - \nu) \delta_N}.$$
+
+**Reading.** The scalar threshold is totalized when the denominator vanishes. The equivalence with
+sufficient overall decrease assumes positive normal decrease and a fraction below one.
 -/
 noncomputable def sqpPenaltyThreshold (ν dN dT dq : ℝ) : ℝ :=
   -(dq + dT) / ((1 - ν) * dN)
@@ -214,7 +307,11 @@ noncomputable def sqpPenaltyThreshold (ν dN dT dq : ℝ) : ℝ :=
 /-- **Equations (15.4.7)–(15.4.8)** of [conn2000trust]. Let $\nu < 1$ and $\delta_N > 0$. Then
 $\sigma_{\mathrm{req}} \le \sigma$ if and only if
 $$\nu \sigma \delta_N \le \delta_T + \sigma \delta_N + \delta_q,$$
-that is, the overall model decrease is at least $\nu \sigma \delta_N$. -/
+that is, the overall model decrease is at least $\nu \sigma \delta_N$.
+
+**Reading.** The scalar threshold is totalized when the denominator vanishes. The equivalence with
+sufficient overall decrease assumes positive normal decrease and a fraction below one.
+-/
 theorem sqpPenaltyThreshold_le_iff {ν dN dT dq σ : ℝ} (hν : ν < 1) (hN : 0 < dN) :
     sqpPenaltyThreshold ν dN dT dq ≤ σ ↔ ν * σ * dN ≤ dT + σ * dN + dq := by
   unfold sqpPenaltyThreshold
@@ -229,7 +326,11 @@ $$\min\Bigl\{1, \frac{\theta \xi \Delta}{\|n_C\|}\Bigr\} \le \alpha \le \min\Big
   \Delta}{\|n_C\|}\Bigr\}.$$
 
 **Reading.** The interval (15.4.12) divides by $\|n_C\|$, so it applies only to a nonzero trial
-step. At a zero trial step the scaling is $1$. -/
+step. At a zero trial step the scaling is $1$.
+
+**Reading.** Scaling chooses one when the trial normal step is zero, and otherwise uses the printed
+interval. The step and decrease estimates take an explicit bound for the linearized normal solution.
+-/
 def IsSQPNormalScaling (nC : E) (θ ξ Δ α : ℝ) : Prop :=
   open Classical in
   if nC = 0 then α = 1 else
@@ -237,6 +338,9 @@ def IsSQPNormalScaling (nC : E) (θ ξ Δ α : ℝ) : Prop :=
 
 /-- **Equation (15.4.16)** of [conn2000trust]. If $A n_C + c = 0$ and $\alpha \le 1$, then
 $$\|c\| - \|c + \alpha A n_C\| = \alpha \|c\|.$$
+
+**Reading.** Scaling chooses one when the trial normal step is zero, and otherwise uses the printed
+interval. The step and decrease estimates take an explicit bound for the linearized normal solution.
 -/
 theorem sqpNormalModel_decrease_scaled {c : F} {A : E →L[ℝ] F} {nC : E} {α : ℝ}
     (hlin : A nC + c = 0) (hα : α ≤ 1) :
@@ -252,7 +356,11 @@ satisfy $A n_C + c = 0$ and $\|n_C\| \le \kappa \|c\|$, and let $\alpha$ be an a
 scaling of $n_C$. Then the normal decrease $\delta_N = \|c\| - \|c + \alpha A n_C\|$ satisfies
 $$\min\Bigl\{\|c\|, \frac{\theta \xi}{\kappa} \Delta\Bigr\} \le \delta_N \le \|c\|.$$
 
-The statement includes the case $n_C = 0$, in which $c = 0$. -/
+The statement includes the case $n_C = 0$, in which $c = 0$.
+
+**Reading.** Scaling chooses one when the trial normal step is zero, and otherwise uses the printed
+interval. The step and decrease estimates take an explicit bound for the linearized normal solution.
+-/
 theorem lemma_15_4_1 {c : F} {A : E →L[ℝ] F} {nC : E} {θ ξ Δ α κ : ℝ}
     (hθ : 0 ≤ θ) (hξ : 0 ≤ ξ) (hΔ : 0 ≤ Δ) (hκ : 0 < κ)
     (hlin : A nC + c = 0) (hbound : ‖nC‖ ≤ κ * ‖c‖)
@@ -287,7 +395,12 @@ $$\tfrac{1}{2} \|g\| \min\Bigl\{\frac{R}{\|N\|}, \frac{\|g\|}{1 + \|H\|}\Bigr\} 
 **Reading.** The left-hand side of the source is evaluated at the stated Cauchy step $z_C$.
 
 The Cauchy point is `ConnGouldToint.Chapter06.IsCauchyPoint`, and $1 + \|H\|$ is
-`ConnGouldToint.Chapter06.quadraticCurvatureBound`. -/
+`ConnGouldToint.Chapter06.quadraticCurvatureBound`.
+
+**Reading.** The decrease is evaluated at the constrained Cauchy step appearing in the hypothesis.
+The reduced-space embedding is supplied as an injective linear map and its operator norm bounds the
+feasible ray.
+-/
 theorem lemma_15_4_2 {Z : Type*} [NormedAddCommGroup Z] [InnerProductSpace ℝ Z]
     (N : Z →L[ℝ] E) (hN : Function.Injective N) (g : Z) (H : Z →L[ℝ] Z)
     {R : ℝ} (hR : 0 ≤ R) {zC : Z}
@@ -331,7 +444,11 @@ $$e \le \kappa (1 + \sigma) \|s\|^2 \quad \text{and} \quad e \le \xi^2 \kappa (1
 points that the algorithm may reject. Lipschitz bounds near the iterates do not control the
 rejected trial segments; see `ConnGouldToint.Chapter15.sqp_trialSegment_counterexample`.
 
-The gradient is Mathlib's `gradient f x`. -/
+The gradient is Mathlib's `gradient f x`.
+
+**Correction.** The Lipschitz derivative bounds must hold along the whole trial segment, rather than
+just on the iterates. The statement gives explicit model-error constants from the segment bounds.
+-/
 theorem lemma_15_4_3 [CompleteSpace E] {f : E → ℝ} {c : E → F} {x s : E}
     (H : E →L[ℝ] E) {σ Δ ξ Lf Lc B : ℝ}
     (hσ : 0 ≤ σ) (hs : ‖s‖ ≤ ξ * Δ)
@@ -489,7 +606,12 @@ Suppose also one of the two cases:
 Then there is $r_0 > 0$ such that the ratio satisfies $\rho \ge \eta$ for all $r \in (0, r_0]$.
 
 In the feasible case the reduced gradient is nonzero and the penalty is bounded. The infeasible
-case uses the penalty-weighted normal decrease, so the penalty need not be bounded above. -/
+case uses the penalty-weighted normal decrease, so the penalty need not be bounded above.
+
+**Reading.** The small-radius acceptance argument uses an explicit uniform model-error bound for the
+trial segment and lower bounds on predicted decrease for the two cases. The Byrd–Omojokun version
+uses normal criticality where the first variant uses feasibility.
+-/
 theorem lemma_15_4_4 (f : E → ℝ) (c : E → F) (x : E)
     (s : ℝ → E) (m : ℝ → E → ℝ) (σ : ℝ → ℝ)
     {η C σmin : ℝ} (hη : η < 1) (hC : 0 ≤ C) (hmin : 0 < σmin)
@@ -513,7 +635,12 @@ theorem lemma_15_4_4 (f : E → ℝ) (c : E → F) (x : E)
 
 /-- **Section 15.4.1.4** of [conn2000trust]. For a lower bound $f_{\min}$ of the objective and
 $\sigma \in \mathbb{R}$, the **normalized merit function** is
-$(\phi_\sigma(x) - f_{\min}) / \sigma$. -/
+$(\phi_\sigma(x) - f_{\min}) / \sigma$.
+
+**Reading.** The descent comparison is indexed directly by successive accepted states and a positive
+nondecreasing penalty weight. The normalization allows a total quotient outside the domain used by
+the lemma.
+-/
 noncomputable def sqpNormalizedMerit (f : E → ℝ) (c : E → F) (fmin σ : ℝ) (x : E) : ℝ :=
   (sqpMerit f c σ x - fmin) / σ
 
@@ -527,7 +654,12 @@ nonnegative, and $\psi_{i+j} \le \psi_i - \eta \delta_i / \sigma_i$ for all $i$ 
 
 **Reading.** Rejected iterations leave the iterate unchanged, so the lemma is stated on the
 subsequence of successful iterates. The reduction condition compares consecutive points of this
-subsequence at the old penalty. -/
+subsequence at the old penalty.
+
+**Reading.** The descent comparison is indexed directly by successive accepted states and a positive
+nondecreasing penalty weight. The normalization allows a total quotient outside the domain used by
+the lemma.
+-/
 theorem lemma_15_4_5 (f : E → ℝ) (c : E → F) (x : ℕ → E) (σ d : ℕ → ℝ)
     {fmin η : ℝ} (hf : ∀ i, fmin ≤ f (x i)) (hσ : ∀ i, 0 < σ i) (hmono : Monotone σ)
     (hη : 0 ≤ η) (hd : ∀ i, 0 ≤ d i)
@@ -564,7 +696,11 @@ theorem lemma_15_4_5 (f : E → ℝ) (c : E → F) (x : ℕ → E) (σ d : ℕ �
 /-- **Equations (15.4.45) and (15.4.127)** of [conn2000trust]. For a measure $u : E \to \mathbb{R}$,
 a point $x$ and $\gamma \in \mathbb{R}$, the **criticality neighborhood** is the open ball
 $B(x, u(x) / (2\gamma))$. It keeps the residual norm (15.4.45) or the normal criticality measure
-(15.4.127) bounded away from zero. -/
+(15.4.127) bounded away from zero.
+
+**Generalization.** A common scalar neighborhood and Lipschitz estimate are used for the residual
+norm and the normal criticality measure.
+-/
 noncomputable def sqpCriticalityNeighborhood (u : E → ℝ) (x : E) (γ : ℝ) : Set E :=
   Metric.ball x (u x / (2 * γ))
 
@@ -573,6 +709,9 @@ omit [InnerProductSpace ℝ E] in
 $\gamma > 0$, and let $|u(y) - u(x)| \le \gamma \operatorname{dist}(y, x)$. If $y$ lies in the
 criticality neighborhood of $x$, then
 $$\tfrac{1}{2} u(x) < u(y) < \tfrac{3}{2} u(x).$$
+
+**Generalization.** A common scalar neighborhood and Lipschitz estimate are used for the residual
+norm and the normal criticality measure.
 -/
 theorem sqpCriticalityNeighborhood_bounds {u : E → ℝ} {x y : E} {γ : ℝ}
     (hγ : 0 < γ) (hLip : |u y - u x| ≤ γ * dist y x)
@@ -588,7 +727,11 @@ $\gamma \min\{\Delta_N, r\}$, where $\Delta_N$ is the radius at entry to the cri
 neighborhood and $r$ is the threshold below which the radius does not decrease.
 
 **Correction.** The floor includes the radius at entry, which can be smaller than the threshold
-term. -/
+term.
+
+**Correction.** The floor includes a minimum with the radius on entry to the neighborhood, because
+the very-successful small-radius branch only promises nondecrease there.
+-/
 def sqpNeighborhoodRadiusFloor (γ entry threshold : ℝ) : ℝ :=
   γ * min entry threshold
 
@@ -608,7 +751,11 @@ private theorem sqp_radius_floor {Δ : ℕ → ℝ} {γ r : ℝ} {N : ℕ}
 /-- **Equation (15.4.50)** of [conn2000trust]. Let $\gamma \in [0, 1]$, $\Delta_N \ge 0$ and
 $N \le k$. Suppose that $\gamma \Delta_j \le \Delta_{j+1}$ for all $j$, and that
 $\Delta_j \le r$ implies $\Delta_j \le \Delta_{j+1}$ for all $j \ge N$. Then
-$\gamma \min\{\Delta_N, r\} \le \Delta_k$. -/
+$\gamma \min\{\Delta_N, r\} \le \Delta_k$.
+
+**Correction.** The floor includes a minimum with the radius on entry to the neighborhood, because
+the very-successful small-radius branch only promises nondecrease there.
+-/
 theorem sqpNeighborhoodRadiusFloor_le {Δ : ℕ → ℝ} {γ r : ℝ} {N k : ℕ}
     (hγ : γ ∈ Set.Icc (0 : ℝ) 1) (hN : 0 ≤ Δ N) (hk : N ≤ k)
     (hnext : ∀ j, γ * Δ j ≤ Δ (j + 1))
@@ -628,14 +775,24 @@ fraction of the tangential Cauchy decrease required of the overall model, and $C
 trial error coefficient.
 
 **Correction.** The threshold includes the effective decrease coefficient $\kappa$ and the model
-error coefficient $C$; see `ConnGouldToint.Chapter15.sqpTangentialAcceptanceRadius_ratio`. -/
+error coefficient $C$; see `ConnGouldToint.Chapter15.sqpTangentialAcceptanceRadius_ratio`.
+
+**Correction.** The threshold accounts for both the size of the Cauchy-decrease regime and the
+actual merit-model error coefficient. This ensures a positive prediction and the advertised ratio
+bound.
+-/
 noncomputable def sqpTangentialAcceptanceRadius (G β b η κ C : ℝ) : ℝ :=
   min (G / (β * b)) ((1 - η) * κ * G * b / (C + 1))
 
 /-- **Equation (15.4.71)** of [conn2000trust], acceptance estimate. Let $G, \beta, b, \kappa > 0$,
 $\eta < 1$, $C \ge 0$ and $r > 0$, with $r$ at most the tangential acceptance radius. If the
 predicted decrease satisfies $\kappa G \min\{b r, G / \beta\} \le \delta$ and the actual
-decrease satisfies $|a - \delta| \le C r^2$, then $\eta \le a / \delta$. -/
+decrease satisfies $|a - \delta| \le C r^2$, then $\eta \le a / \delta$.
+
+**Correction.** The threshold accounts for both the size of the Cauchy-decrease regime and the
+actual merit-model error coefficient. This ensures a positive prediction and the advertised ratio
+bound.
+-/
 theorem sqpTangentialAcceptanceRadius_ratio {G β b η κ C r d actual : ℝ}
     (hG : 0 < G) (hβ : 0 < β) (hb : 0 < b) (hη : η < 1)
     (hκ : 0 < κ) (hC : 0 ≤ C) (hr : 0 < r)
@@ -661,11 +818,19 @@ theorem sqpTangentialAcceptanceRadius_ratio {G β b η κ C r d actual : ℝ}
 the iterates, the **normal curvature bound** is $1 + B^2$.
 
 **Reading.** The bound uses a uniform bound $B$ on the Jacobian norms and does not require that
-a maximum is attained. -/
+a maximum is attained.
+
+**Generalization.** A uniform bound on the Jacobian norms gives a valid bound on one plus the normal
+curvature, without requiring that the largest Jacobian norm be attained.
+-/
 def sqpNormalCurvatureBound (B : ℝ) : ℝ := 1 + B ^ 2
 
 /-- **Equation (15.4.131)** of [conn2000trust]. Let $X$ and $Y$ be real Hilbert spaces and
-$A : X \to Y$ continuous linear with $\|A\| \le B$. Then $1 + \|A^* A\| \le 1 + B^2$. -/
+$A : X \to Y$ continuous linear with $\|A\| \le B$. Then $1 + \|A^* A\| \le 1 + B^2$.
+
+**Generalization.** A uniform bound on the Jacobian norms gives a valid bound on one plus the normal
+curvature, without requiring that the largest Jacobian norm be attained.
+-/
 theorem sqpNormalCurvatureBound_le
     {X Y : Type*} [NormedAddCommGroup X] [InnerProductSpace ℝ X] [CompleteSpace X]
     [NormedAddCommGroup Y] [InnerProductSpace ℝ Y] [CompleteSpace Y]
@@ -707,7 +872,12 @@ private theorem sqp_capped_drop_sum {v r : ℕ → ℝ} {a b T : ℝ}
 $$\frac{\eta \nu}{2} \min\Bigl\{1, \frac{b}{\gamma \xi}\Bigr\}.$$
 
 **Correction.** The source takes the maximum of the bounds of the two exit cases. A common lower
-bound needs the minimum; see `ConnGouldToint.Chapter15.sqp_exit_max_counterexamples`. -/
+bound needs the minimum; see `ConnGouldToint.Chapter15.sqp_exit_max_counterexamples`.
+
+**Correction.** Combining the two exit cases gives a minimum of the coefficients. A one-step
+construction satisfies the decrease and displacement assumptions yet violates the printed maximum in
+each formula.
+-/
 noncomputable def sqpFeasibilityExitCoeff (η ν b γ ξ : ℝ) : ℝ :=
   η * ν / 2 * min 1 (b / (γ * ξ))
 
@@ -716,6 +886,10 @@ $r_k \ge 0$. Suppose that the accepted steps leave the neighborhood (15.4.45),
 $u / (2\gamma) \le \xi \sum_{k < n} r_k$, and that $\eta \nu \min\{u / 2, b r_k\} \le v_k -
 v_{k+1}$ for $k < n$. Then the accumulated merit decrease satisfies
 $$\frac{\eta \nu}{2} \min\Bigl\{1, \frac{b}{\gamma \xi}\Bigr\} u \le v_0 - v_n.$$
+
+**Correction.** Combining the two exit cases gives a minimum of the coefficients. A one-step
+construction satisfies the decrease and displacement assumptions yet violates the printed maximum in
+each formula.
 -/
 theorem sqpFeasibilityExitCoeff_bound {v r : ℕ → ℝ} {η ν b γ ξ u : ℝ}
     (hη : 0 ≤ η) (hν : 0 ≤ ν) (hb : 0 ≤ b) (_hγ : 0 < γ) (hξ : 0 < ξ)
@@ -744,7 +918,12 @@ coefficient** is
 $$\frac{\eta \kappa \nu}{4 c_{\max}} \min\Bigl\{\frac{1}{\beta}, \frac{b}{\gamma \xi}\Bigr\}.$$
 
 **Correction.** The source takes the maximum of the bounds of the two exit cases. A common lower
-bound needs the minimum; see `ConnGouldToint.Chapter15.sqp_exit_max_counterexamples`. -/
+bound needs the minimum; see `ConnGouldToint.Chapter15.sqp_exit_max_counterexamples`.
+
+**Correction.** Combining the two exit cases gives a minimum of the coefficients. A one-step
+construction satisfies the decrease and displacement assumptions yet violates the printed maximum in
+each formula.
+-/
 noncomputable def sqpNormalCriticalityExitCoeff (η κ ν cmax β b γ ξ : ℝ) : ℝ :=
   η * κ * ν / (4 * cmax) * min (1 / β) (b / (γ * ξ))
 
@@ -753,7 +932,12 @@ $c_{\max}, \beta, \gamma, \xi > 0$ and $r_k \ge 0$. Suppose that the accepted st
 neighborhood (15.4.127), $u / (2\gamma) \le \xi \sum_{k < n} r_k$, and that
 $$\frac{\eta \kappa \nu u}{2 c_{\max}} \min\Bigl\{\frac{u}{2 \beta}, b r_k\Bigr\} \le v_k -
   v_{k+1} \quad (k < n).$$
-Then the normal criticality exit coefficient times $u^2$ is at most $v_0 - v_n$. -/
+Then the normal criticality exit coefficient times $u^2$ is at most $v_0 - v_n$.
+
+**Correction.** Combining the two exit cases gives a minimum of the coefficients. A one-step
+construction satisfies the decrease and displacement assumptions yet violates the printed maximum in
+each formula.
+-/
 theorem sqpNormalCriticalityExitCoeff_bound {v r : ℕ → ℝ}
     {η κ ν cmax β b γ ξ u : ℝ}
     (hη : 0 ≤ η) (hκ : 0 ≤ κ) (hν : 0 ≤ ν) (hcmax : 0 < cmax) (hβ : 0 < β)
@@ -787,6 +971,10 @@ and $w = (1/16, 0)$. The exit condition $1/2 \le r_0$ and the step estimates
 $\frac{1}{4} \min\{1/2, 2 r_0\} \le v_0 - v_1$ and
 $\frac{1}{8} \min\{1/2, 2 r_0\} \le w_0 - w_1$ hold, but
 $$v_0 - v_1 < \tfrac{1}{8} \max\{1, 2\}, \qquad w_0 - w_1 < \tfrac{1}{16} \max\{1, 2\}.$$
+
+**Correction.** Combining the two exit cases gives a minimum of the coefficients. A one-step
+construction satisfies the decrease and displacement assumptions yet violates the printed maximum in
+each formula.
 -/
 theorem sqp_exit_max_counterexamples :
     let r : ℕ → ℝ := fun _ ↦ 1
@@ -1054,7 +1242,12 @@ $\Delta_k \le \Delta_{k+1}$ when $\rho_k \ge \eta_2$.
 
 The lower bound on the model decrease combines (15.4.7) and Lemma 15.4.1, and the error bound is
 the second inequality of Lemma 15.4.3. The variation bound on the constraints is required only
-on the steps actually taken. -/
+on the steps actually taken.
+
+**Reading.** The limits use explicit predictions, uniform original-trial model errors, the ratio and
+radius branches, and variation on accepted steps. Normal criticality is abstracted to a vector field
+used at the iterates. Conversion to feasibility uses a uniform positive lower singular-value bound.
+-/
 theorem theorem_15_4_6 (f : E → ℝ) (c : E → F) (x s : ℕ → E) (σ d Δ : ℕ → ℝ)
     (S : Set ℕ) {fmin σmin η η₂ ν b C L γ γ₂ : ℝ}
     (hη : 0 < η) (hη₂ : η ≤ η₂) (hη₂' : η₂ < 1) (hν : 0 < ν) (hb : 0 < b) (hC : 0 ≤ C)
@@ -1114,7 +1307,11 @@ $\delta_N = \|c\| - \|c + \alpha A n_C\|$ satisfies
 $$\frac{1}{\kappa} \|\alpha n_C\| \le \delta_N \le \|c\|.$$
 
 The exact reduction identity (15.4.16) gives the coefficient $1/\kappa$ directly, whichever
-radius bound is active. -/
+radius bound is active.
+
+**Reading.** Scaling chooses one when the trial normal step is zero, and otherwise uses the printed
+interval. The step and decrease estimates take an explicit bound for the linearized normal solution.
+-/
 theorem lemma_15_4_7 {c : F} {A : E →L[ℝ] F} {nC : E} {α κ : ℝ}
     (hκ : 0 < κ) (hlin : A nC + c = 0) (hbound : ‖nC‖ ≤ κ * ‖c‖)
     (hα : α ∈ Set.Icc (0 : ℝ) 1) :
@@ -1135,6 +1332,10 @@ penalty $\sigma_{\mathrm{req}}$ and the previous penalty $\sigma$, the **penalty
 $$\sigma^+ = \begin{cases} \sigma & \text{if } \sigma_{\mathrm{req}} \le \sigma, \\
   \max\{\sigma_{\mathrm{req}}, \tau_1 \sigma, \sigma + \tau_2\} & \text{otherwise.}
   \end{cases}$$
+
+**Reading.** The scalar update separates the auxiliary requirement and the model threshold,
+including a zero normal decrease branch. Stabilization is proved from an eventual uniform bound on
+the requirements and a positive additive upgrade whenever the weight changes.
 -/
 noncomputable def sqpPenaltyUpdate (τ₁ τ₂ required previous : ℝ) : ℝ :=
   if required ≤ previous then previous else max required (max (τ₁ * previous) (previous + τ₂))
@@ -1145,7 +1346,12 @@ the required penalty $r_k$. If $r_k \le B$ for all $k \ge K$, then there is $j \
 $\sigma_j > 0$ and $\sigma_k = \sigma_j$ for all $k \ge j$.
 
 Each increase adds at least $\tau_2$, so a bounded threshold allows only finitely many
-increases. -/
+increases.
+
+**Reading.** The scalar update separates the auxiliary requirement and the model threshold,
+including a zero normal decrease branch. Stabilization is proved from an eventual uniform bound on
+the requirements and a positive additive upgrade whenever the weight changes.
+-/
 theorem sqpPenaltyUpdate_eventually_constant {τ₁ τ₂ : ℝ} (hτ₁ : 0 ≤ τ₁) (hτ₂ : 0 < τ₂)
     {required σ : ℕ → ℝ} (hσ₀ : 0 < σ 0)
     (hupdate : ∀ k, σ (k + 1) = sqpPenaltyUpdate τ₁ τ₂ (required k) (σ k))
@@ -1212,7 +1418,12 @@ $$\delta_{T,k} + (\sigma_{k+1} - C) \delta_{N,k} \le \delta_{T,k} + \sigma_{k+1}
 
 The objective term along the normal step is bounded by a constant times the normal decrease, and
 the penalty eventually stops increasing. The penalty used at iteration $k$ has index $k + 1$,
-and index $0$ is the initial penalty. -/
+and index $0$ is the initial penalty.
+
+**Reading.** The scalar update separates the auxiliary requirement and the model threshold,
+including a zero normal decrease branch. Stabilization is proved from an eventual uniform bound on
+the requirements and a positive additive upgrade whenever the weight changes.
+-/
 theorem theorem_15_4_8 (g n : ℕ → E) (H : ℕ → E →L[ℝ] E)
     (dN dT σ auxiliary : ℕ → ℝ) {G B U b S ν τ₁ τ₂ : ℝ} {K : ℕ}
     (hG : 0 ≤ G) (hB : 0 ≤ B) (hU : 0 ≤ U) (hb : 0 < b)
@@ -1285,7 +1496,11 @@ $$0 < \frac{\nu \sigma}{\nu \sigma + B} \quad \text{and} \quad \frac{\nu \sigma}
 **Correction.** The coefficient in the printed proof can be negative; see
 `ConnGouldToint.Chapter15.printed_tangential_coefficient_nonpos`. The coefficient here is
 positive for every bound $B \ge 0$ on the normal objective loss, even if the stabilized penalty
-meets or exceeds $B$. -/
+meets or exceeds $B$.
+
+**Correction.** The bound uses the positive coefficient obtained by combining the two lower bounds
+on overall decrease. The coefficient in the printed proof can be negative.
+-/
 theorem lemma_15_4_9 {ν σ B : ℝ} (hν : 0 < ν) (hσ : 0 < σ) (hB : 0 ≤ B)
     {dN dT dm : ℝ} (hN : 0 ≤ dN)
     (h₁ : dT + (σ - B) * dN ≤ dm) (h₂ : ν * σ * dN ≤ dm) :
@@ -1303,7 +1518,11 @@ theorem lemma_15_4_9 {ν σ B : ℝ} (hν : 0 < ν) (hσ : 0 < σ) (hB : 0 ≤ B
 /-- The coefficient in the printed proof of Lemma 15.4.9 of [conn2000trust] can be negative:
 $$\tfrac{1}{2} \min\Bigl\{1, \frac{\frac{1}{2} \cdot 2}{1 - 2}\Bigr\} < 0.$$
 Here the penalty $2$ exceeds the bound $1$ on the normal objective loss. This shows the
-correction in `ConnGouldToint.Chapter15.lemma_15_4_9`. -/
+correction in `ConnGouldToint.Chapter15.lemma_15_4_9`.
+
+**Correction.** The bound uses the positive coefficient obtained by combining the two lower bounds
+on overall decrease. The coefficient in the printed proof can be negative.
+-/
 theorem printed_tangential_coefficient_nonpos :
     (1 / 2 : ℝ) * min 1 ((1 / 2) * 2 / (1 - 2)) < 0 := by
   norm_num
@@ -1315,7 +1534,13 @@ values $v_k$ at the fixed penalty, the radii $\Delta_k$, the predicted decreases
 actual decreases $a_k$, and the set $S$ of successful iterations. They satisfy the fields below.
 
 Here $u_k$ is the unshifted reduced gradient norm, $w_k$ includes the correction by the normal
-step, and $v_k$ is the merit function shifted by a lower bound. -/
+step, and $v_k$ is the merit function shifted by a lower bound.
+
+**Correction.** The stabilized-tail argument takes uniform model error, predicted decrease, and
+convergence of the perturbation between base and shifted reduced gradients explicitly.
+Whole-sequence convergence also assumes controlled reduced-gradient variation on accepted steps and
+no change on rejection.
+-/
 structure SQPTangentialRun (P : BTRParams) (u w v Δ d actual : ℕ → ℝ) (S : Set ℕ) where
   /-- The reduced gradient norms are nonnegative. -/
   u_nonneg : ∀ k, 0 ≤ u k
@@ -1339,6 +1564,11 @@ structure SQPTangentialRun (P : BTRParams) (u w v Δ d actual : ℕ → ℝ) (S 
 $\|H_k\| \le B$, and let $N_k^T : E \to Z$ be continuous linear maps with $\|N_k^T\| \le D$ for
 some $D \ge 0$. If the normal steps satisfy $n_k \to 0$, then
 $$\|N_k^T (g_k + H_k n_k)\| - \|N_k^T g_k\| \to 0.$$
+
+**Correction.** The stabilized-tail argument takes uniform model error, predicted decrease, and
+convergence of the perturbation between base and shifted reduced gradients explicitly.
+Whole-sequence convergence also assumes controlled reduced-gradient variation on accepted steps and
+no change on rejection.
 -/
 theorem sqpReducedGradient_perturbation {Z : Type*} [NormedAddCommGroup Z] [NormedSpace ℝ Z]
     (g n : ℕ → E) (H : ℕ → E →L[ℝ] E) (NT : ℕ → E →L[ℝ] Z)
@@ -1410,7 +1640,13 @@ in the proof includes the Cauchy coefficient; see
 `ConnGouldToint.Chapter15.sqpTangentialAcceptanceRadius`.
 
 The tail data are `ConnGouldToint.Chapter15.SQPTangentialRun`, with a bounded penalty and a
-vanishing normal perturbation. -/
+vanishing normal perturbation.
+
+**Correction.** The stabilized-tail argument takes uniform model error, predicted decrease, and
+convergence of the perturbation between base and shifted reduced gradients explicitly.
+Whole-sequence convergence also assumes controlled reduced-gradient variation on accepted steps and
+no change on rejection.
+-/
 theorem theorem_15_4_10 {P : BTRParams} {u w v Δ d actual : ℕ → ℝ} {S : Set ℕ}
     (run : SQPTangentialRun P u w v Δ d actual S)
     {κ b β C : ℝ} (hκ : 0 < κ) (hb : 0 < b) (hβ : 0 < β) (hC : 0 ≤ C)
@@ -1442,7 +1678,13 @@ $u_k \to 0$.
 
 **Correction.** The uniform control of the variation of the reduced gradient on accepted steps
 is a hypothesis. It follows, for example, from a Lipschitz reduced-gradient map and the bound on
-the composite step by the radius. -/
+the composite step by the radius.
+
+**Correction.** The stabilized-tail argument takes uniform model error, predicted decrease, and
+convergence of the perturbation between base and shifted reduced gradients explicitly.
+Whole-sequence convergence also assumes controlled reduced-gradient variation on accepted steps and
+no change on rejection.
+-/
 theorem theorem_15_4_11 {P : BTRParams} {u w v Δ d actual : ℕ → ℝ} {S : Set ℕ}
     (run : SQPTangentialRun P u w v Δ d actual S)
     {κ b β C L : ℝ} (hκ : 0 < κ) (hb : 0 < b) (hβ : 0 < β) (hC : 0 ≤ C)
@@ -1467,7 +1709,11 @@ $$\frac{1}{2} \frac{\|A^* c\|}{\|c\|} \min\Bigl\{R, \frac{\|A^* c\|}{1 + \|A^* A
 
 Squaring the residual does not change the Cauchy point, so the Cauchy bound for the quadratic
 model transfers to the unsquared normal model. When $c = 0$ the decrease is $0$ and the Lean
-quotient $\|A^* c\| / \|c\|$ is $0$. -/
+quotient $\|A^* c\| / \|c\|$ is $0$.
+
+**Reading.** The bound is stated directly for the normal model with adjoint gradient and Gram
+curvature. The ratio is totalized when the constraint residual is zero.
+-/
 theorem lemma_15_4_17 [CompleteSpace E]
     {Z : Type*} [NormedAddCommGroup Z] [InnerProductSpace ℝ Z] [CompleteSpace Z]
     (c : Z) (A : E →L[ℝ] Z) {R : ℝ} (hR : 0 ≤ R) {n : E}
@@ -1533,7 +1779,12 @@ suppose one of the two cases:
 
 Then there is $r_0 > 0$ such that $\rho \ge \eta$ for all $r \in (0, r_0]$.
 
-**Correction.** The model error bound is required uniformly along the trial segments. -/
+**Correction.** The model error bound is required uniformly along the trial segments.
+
+**Reading.** The small-radius acceptance argument uses an explicit uniform model-error bound for the
+trial segment and lower bounds on predicted decrease for the two cases. The Byrd–Omojokun version
+uses normal criticality where the first variant uses feasibility.
+-/
 theorem lemma_15_4_18 (f : E → ℝ) (c : E → F) (x : E)
     (s : ℝ → E) (m : ℝ → E → ℝ) (σ : ℝ → ℝ)
     {η C σmin u v : ℝ} (hη : η < 1) (hC : 0 ≤ C) (hmin : 0 < σmin)
@@ -1584,7 +1835,12 @@ Unlike `ConnGouldToint.Chapter15.theorem_15_4_19`, the statement does not requir
 $x_{k+1} = x_k + s_k$ on successful iterations, nor that $k \in S$ exactly when
 $\rho_k \ge \eta$, nor $\eta \le \eta_2$. The acceptance test concerns the original trial, and
 the decrease concerns the accepted iterate. The uniform trial error and the variation bound on
-accepted steps make explicit the regularity that the convergence argument needs. -/
+accepted steps make explicit the regularity that the convergence argument needs.
+
+**Reading.** The limits use explicit predictions, uniform original-trial model errors, the ratio and
+radius branches, and variation on accepted steps. Normal criticality is abstracted to a vector field
+used at the iterates. Conversion to feasibility uses a uniform positive lower singular-value bound.
+-/
 theorem sqp_normal_criticality_of_accepted_decrease (f : E → ℝ) (c : E → F) (a : E → E)
     (x s : ℕ → E) (σ d Δ : ℕ → ℝ) (S : Set ℕ)
     {fmin σmin η η₂ κ cmax β ξ C L γ γ₂ : ℝ}
@@ -1650,7 +1906,12 @@ $k \notin S$. Then $a(x_k) \to 0$.
 
 **Correction.** The uniform trial error bound and the bound on the variation of the normal
 criticality on accepted steps are hypotheses; they make explicit the regularity that the
-convergence argument needs. -/
+convergence argument needs.
+
+**Reading.** The limits use explicit predictions, uniform original-trial model errors, the ratio and
+radius branches, and variation on accepted steps. Normal criticality is abstracted to a vector field
+used at the iterates. Conversion to feasibility uses a uniform positive lower singular-value bound.
+-/
 theorem theorem_15_4_19 (f : E → ℝ) (c : E → F) (a : E → E)
     (x s : ℕ → E) (σ d Δ : ℕ → ℝ) (S : Set ℕ)
     {fmin σmin η η₂ κ cmax β ξ C L γ γ₂ : ℝ}
@@ -1689,7 +1950,12 @@ theorem theorem_15_4_19 (f : E → ℝ) (c : E → F) (a : E → E)
 omit [InnerProductSpace ℝ E] [NormedSpace ℝ F] in
 /-- **Corollary 15.4.20** of [conn2000trust]. Let $m > 0$, and suppose that $m \|c_k\| \le \|a_k\|$
 for all $k$, the uniform lower singular-value bound of assumption AA.14. If $a_k \to 0$, then
-$c_k \to 0$. -/
+$c_k \to 0$.
+
+**Reading.** The limits use explicit predictions, uniform original-trial model errors, the ratio and
+radius branches, and variation on accepted steps. Normal criticality is abstracted to a vector field
+used at the iterates. Conversion to feasibility uses a uniform positive lower singular-value bound.
+-/
 theorem corollary_15_4_20 (c : ℕ → F) (a : ℕ → E) {m : ℝ} (hm : 0 < m)
     (hrank : ∀ k, m * ‖c k‖ ≤ ‖a k‖)
     (hcrit : Filter.Tendsto a Filter.atTop (nhds 0)) :
@@ -1718,7 +1984,12 @@ where $\delta_{N,k} = \|c_k\| - \|c_k + A_k n_k\|$.
 Then there is $a > 0$ with $a \|n_k\| \le \delta_{N,k} \le \|c_k\|$ for all $k$.
 
 **Correction.** In (15.4.142), the second entry of the minimum uses the reciprocal of the rank
-constant. The rank lower bound is used in both factors of the Cauchy estimate. -/
+constant. The rank lower bound is used in both factors of the Cauchy estimate.
+
+**Correction.** The minimum uses the bound on the smallest singular value in the proper factor. The
+estimate makes explicit the decomposition of the normal step, the bound on its null-space component,
+and the relevant rank inequalities.
+-/
 theorem lemma_15_4_21 [CompleteSpace E]
     {Z W : Type*} [NormedAddCommGroup Z] [InnerProductSpace ℝ Z] [CompleteSpace Z]
     [NormedAddCommGroup W] [NormedSpace ℝ W]
@@ -1801,7 +2072,12 @@ such that for all $k \ge K$ with $q_k \ge \epsilon$:
 
 At positive normal criticality a small radius makes the original trial very successful, so the
 correction branch is not used. Normalizing the actual and the predicted decrease by the same
-positive factor does not change the ratio. -/
+positive factor does not change the ratio.
+
+**Correction.** The small-radius success and nonshrinkage guarantee is for the original trial and
+excludes the correction in that branch. Successful merit reduction is expressed using the original
+prediction. The full tangential limit is conditional on accepted-step variation.
+-/
 theorem sqp_normal_correction_progress {P : BTRParams}
     (q v Δ d actual : ℕ → ℝ) (S corrections : Set ℕ)
     {A b C : ℝ} (hA : 0 < A) (hb : 0 < b) (hC : 0 ≤ C) (hΔ : ∀ k, 0 < Δ k)
@@ -1861,7 +2137,12 @@ $q$ and $v_N$. Then:
 while the small-radius guarantee concerns the original trial. A correction cannot occur at small
 radii and positive normal criticality, so bounded constraints control even an unrestricted
 correction in the feasibility proof. Convergence of the full reduced gradient needs the separate
-variation estimate on accepted steps. -/
+variation estimate on accepted steps.
+
+**Correction.** The small-radius success and nonshrinkage guarantee is for the original trial and
+excludes the correction in that branch. Successful merit reduction is expressed using the original
+prediction. The full tangential limit is conditional on accepted-step variation.
+-/
 theorem theorem_15_4_12 {P : BTRParams} {u w q vN v Δ d actual σ required : ℕ → ℝ}
     {S corrections : Set ℕ} (run : SQPTangentialRun P u w v Δ d actual S)
     {κ b β C L B τ₁ τ₂ Bσ : ℝ} {Kσ : ℕ}
@@ -1930,7 +2211,13 @@ Then for every $\delta > 0$ there are $a, r > 0$ such that for all large $k$ wit
 $\mu_k \le -\delta$: if $\Delta_k \le r$, then $k \in S$ and $\Delta_k \le \Delta_{k+1}$; and if
 $k \in S$, then $a \min\{r^2, \Delta_k^2\} \le v_k - v_{k+1}$.
 
-The clipped bound applies also when a successful trial has a radius above the threshold $r$. -/
+The clipped bound applies also when a successful trial has a radius above the threshold $r$.
+
+**Correction.** Finite limit points must cover the eventual curvature values, and the normal and
+corrected tangential branches must give uniform accepted decrease whenever curvature is bounded away
+from zero on the negative side. The conclusion is stated as a nonnegative curvature limit at one
+first-order index.
+-/
 theorem sqp_secondOrder_correction_progress {P : BTRParams}
     (μ v Δ d original corrected : ℕ → ℝ) (S normal : Set ℕ)
     {A B C : ℝ} (hA : 0 < A) (hB : 0 < B) (hC : 0 ≤ C)
@@ -2020,7 +2307,13 @@ set must control the tail, as relative compactness ensures. If every cluster poi
 second-order test, the maximum cluster curvature gives a uniform negative margin.
 
 The decrease hypotheses are the small-radius and accepted-step consequences of the two
-correction cases of the algorithm. -/
+correction cases of the algorithm.
+
+**Correction.** Finite limit points must cover the eventual curvature values, and the normal and
+corrected tangential branches must give uniform accepted decrease whenever curvature is bounded away
+from zero on the negative side. The conclusion is stated as a nonnegative curvature limit at one
+first-order index.
+-/
 theorem theorem_15_4_16 {ι : Type*} [Finite ι] [Nonempty ι]
     (firstOrder : ι → Prop) (curvLimit : ι → ℝ) (μ v Δ : ℕ → ℝ) (S : Set ℕ)
     {γ γ₂ : ℝ} (hγ : 0 < γ) (hγ₂ : 0 ≤ γ₂) (hγ₂' : γ₂ < 1)

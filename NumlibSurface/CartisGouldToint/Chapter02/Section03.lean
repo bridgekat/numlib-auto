@@ -82,13 +82,27 @@ come from `Numlib.Optimization.Complexity.Telescoping`.
 
 ## Deviations from the source
 
+* **Equations (2.3.1) and (2.3.6)** (generalization). The model formula accepts any
+  linear operator, with symmetry imposed by the run. The ratio is total, with value $0$
+  at zero predicted decrease. The Cauchy condition rules out that denominator before
+  termination. See `CartisGouldToint.Chapter02.tr1Model` and
+  `CartisGouldToint.Chapter02.tr1Ratio`.
+* **Equation (2.3.5)** (reading). The Cauchy step is constrained by
+  $t\|\nabla f(x_k)\|\le \Delta_k$, using the trust-region ball (2.3.2)
+  centered at the current iterate to interpret the printed $\mathcal{R}_k$.
 * **Lemma 2.3.4** (reading). The bound is stated for every iteration up to and including the
   termination index, where the run is defined. See `CartisGouldToint.Chapter02.lemma_2_3_4`.
+* **Equations (2.3.17), (2.3.20), and (2.3.23)** (reading). The constants involving
+  division by the initial gradient norm are totalized. When that norm vanishes the
+  algorithm terminates immediately.
 * **Lemma 2.3.5** (typo). The source writes the model decrease as $m_k(x_k) - m_k(x_k + s_k)$; it is
   $m_k(0) - m_k(s_k)$. See `CartisGouldToint.Chapter02.lemma_2_3_5`.
 * **Theorem 2.3.8** (correction). With the printed $B_k = 2t^{-1}$ the Cauchy condition (2.3.4)
   fails. The example uses $B_k = t^{-1} I$ with $t = \Delta_0/2$, and then $\rho_k = 2$. See
   `CartisGouldToint.Chapter02.theorem_2_3_8`.
+* **Theorem 2.3.8, tolerance and counts** (reading). The example assumes an integral
+  $\epsilon^{-2}$ and counts the initial objective and gradient evaluations, for a total
+  of $\epsilon^{-2}+1$ each.
 
 ## Not formalized
 
@@ -120,7 +134,11 @@ $x \in \mathbb{R}^n$, and let $B$ be a continuous linear operator on $\mathbb{R}
 $$m(s) = f(x) + \langle \nabla f(x), s \rangle + \tfrac12 \langle s, Bs \rangle.$$
 
 The operator $B$ stands for the book's symmetric matrix $B_k$. The definition does not require
-$B$ to be self-adjoint; a TR1 run does. -/
+$B$ to be self-adjoint; a TR1 run does.
+
+**Reading.** The model formula accepts an arbitrary linear operator, with symmetry imposed in the
+algorithm.
+-/
 noncomputable def tr1Model (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (B : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
     (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
@@ -148,7 +166,11 @@ end Model
 /-- Step 2 of Algorithm 2.3.1, conditions (2.3.4)–(2.3.5) of [cartis2022evaluation]. A step $s$ is a
 **TR1 step** at $x$ with radius $\Delta$ if $\|s\| \le \Delta$ and $m(s) \le m(-t \nabla f(x))$
 for some Cauchy step length $t$, where $m$ is the TR1 model and the Cauchy step length is in the
-sense of `Optimization.IsCauchyStep`. -/
+sense of `Optimization.IsCauchyStep`.
+
+**Reading.** Uses explicit ball feasibility and the trust-region Cauchy minimization for the printed
+region.
+-/
 def tr1Step (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (B : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)) (x : EuclideanSpace ℝ (Fin n))
     (Δ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
@@ -156,7 +178,10 @@ def tr1Step (f : EuclideanSpace ℝ (Fin n) → ℝ)
     tr1Model f x B s ≤ tr1Model f x B (-(t • gradient f x))
 
 /-- A step $s$ is a TR1 step if and only if $\|s\| \le \Delta$ and $m(s) \le m(-t \nabla f(x))$ for
-some Cauchy step length $t$. -/
+some Cauchy step length $t$.
+
+**Reading.** Unfolds the ball constraint and strong Cauchy condition.
+-/
 theorem tr1Step_iff {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {B : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)} {x : EuclideanSpace ℝ (Fin n)}
     {Δ : ℝ} {s : EuclideanSpace ℝ (Fin n)} :
@@ -166,7 +191,10 @@ theorem tr1Step_iff {f : EuclideanSpace ℝ (Fin n) → ℝ}
 
 /-- The ratio (2.3.6) of [cartis2022evaluation] of achieved to predicted decrease:
 $$\rho = \frac{f(x) - f(x + s)}{m(0) - m(s)},$$
-where $m$ is the TR1 model. Lean's division gives $\rho = 0$ when $m(0) = m(s)$. -/
+where $m$ is the TR1 model. Lean's division gives $\rho = 0$ when $m(0) = m(s)$.
+
+**Reading.** Totalized ratio equals zero when the model decrease is zero.
+-/
 noncomputable def tr1Ratio (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (B : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
     (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
@@ -369,7 +397,10 @@ theorem lemma_2_3_2_pred_pos (h : algorithm_2_3_1 f P ε B x s Δ) {k : ℕ}
 $B$ be a continuous linear operator with $\|B\| \le \kappa_B$, let $\Delta > 0$,
 $\nabla f(x) \neq 0$, $\eta \ge 0$ and $\Delta < (1 - \eta) \|\nabla f(x)\| / (2(L +
 \kappa_B))$, and let $s$ be a TR1 step at $x$ with radius $\Delta$. Then the ratio (2.3.6)
-satisfies $\rho \ge \eta$. -/
+satisfies $\rho \ge \eta$.
+
+**Reading.** States the one-step ratio estimate with a free nonnegative threshold.
+-/
 theorem tr1Ratio_ge_of_tr1Step (hf : AssumptionGL f L) {x s : EuclideanSpace ℝ (Fin n)}
     {Bk : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n)} {Δ η : ℝ}
     (hstep : tr1Step f Bk x Δ s) (hBk : ‖Bk‖ ≤ κB) (hΔ : 0 < Δ) (hg : 0 < ‖gradient f x‖)
@@ -404,7 +435,11 @@ theorem lemma_2_3_3 (hf : AssumptionGL f L) (hB : AssumptionMHBa B κB)
 /-- The constant of the proof of Lemma 2.3.4,
 $$\alpha = \frac{1 - \eta_2}{2(L + \kappa_B)} \min\left( 1, \frac{\Delta_0}{g_0} \right),$$
 where $g_0$ stands for $\|\nabla f(x_0)\|$. Lean's division gives $\Delta_0 / 0 = 0$, so
-$\alpha = 0$ when $g_0 = 0$. -/
+$\alpha = 0$ when $g_0 = 0$.
+
+**Reading.** The scalar coefficient matches when the initial gradient norm is positive and uses
+total division otherwise.
+-/
 noncomputable def tr1Alpha (P : TR1Params) (L κB g₀ : ℝ) : ℝ :=
   (1 - P.η₂) / (2 * (L + κB)) * min 1 (P.Δ₀ / g₀)
 
@@ -499,7 +534,11 @@ theorem lemma_2_3_4 (hf : AssumptionGL f L) (hB : AssumptionMHBa B κB)
 /-- Lemma 2.3.4 of [cartis2022evaluation] for the next radius. Assume f.gL and m.HBa, and consider a
 TR1 run with $\|\nabla f(x_j)\| > \epsilon$ for all $j \le k$. Then $\Delta_{k+1} \ge \gamma_1
 \alpha \min_{0 \le i \le k} \|\nabla f(x_i)\|$, where $\alpha$ is
-`CartisGouldToint.Chapter02.tr1Alpha`. -/
+`CartisGouldToint.Chapter02.tr1Alpha`.
+
+**Reading.** Combines the same coefficient with the previous gradient minimum to bound the next
+radius.
+-/
 theorem lemma_2_3_4_succ (hf : AssumptionGL f L) (hB : AssumptionMHBa B κB)
     (h : algorithm_2_3_1 f P ε B x s Δ) {k : ℕ} (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) :
     P.γ₁ * tr1Alpha P L κB ‖gradient f (x 0)‖ * gradMin f x k ≤ Δ (k + 1) := by
@@ -518,7 +557,10 @@ theorem lemma_2_3_4_succ (hf : AssumptionGL f L) (hB : AssumptionMHBa B κB)
 /-- The constant of (2.3.20) of [cartis2022evaluation],
 $$\kappa_{\mathrm{decr}} = \frac12 \min\left( \frac{1}{1 + \kappa_B}, \gamma_1 \frac{1 -
   \eta_2}{2(L + \kappa_B)} \min\left( 1, \frac{\Delta_0}{g_0} \right) \right),$$
-where $g_0$ stands for $\|\nabla f(x_0)\|$. -/
+where $g_0$ stands for $\|\nabla f(x_0)\|$.
+
+**Reading.** Uses the totalized radius coefficient in the model-decrease constant.
+-/
 noncomputable def kappaDecrTR1 (P : TR1Params) (L κB g₀ : ℝ) : ℝ :=
   1 / 2 * min (1 / (1 + κB)) (P.γ₁ * tr1Alpha P L κB g₀)
 
@@ -672,7 +714,10 @@ theorem lemma_2_3_6 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
 /-- The constant of (2.3.23) of [cartis2022evaluation],
 $$\kappa^C_{\mathrm{TR1}} = \frac{\left| \log\left( \frac{\gamma_1 (1 - \eta_2)}{2 \Delta_0 (L +
   \kappa_B)} \min\left( 1, \frac{\Delta_0}{g_0} \right) \right) \right|}{|\log \gamma_2|} + 1,$$
-where $g_0$ stands for $\|\nabla f(x_0)\|$. -/
+where $g_0$ stands for $\|\nabla f(x_0)\|$.
+
+**Reading.** Totalized quotient and logarithm define the constant even at zero initial gradient.
+-/
 noncomputable def kappaCTR1 (P : TR1Params) (L κB g₀ : ℝ) : ℝ :=
   |Real.log (P.γ₁ * (1 - P.η₂) / (2 * P.Δ₀ * (L + κB)) * min 1 (P.Δ₀ / g₀))| /
     |Real.log P.γ₂| + 1

@@ -98,18 +98,24 @@ $(Z, W)$.
 
 ## Deviations from the source
 
+* **Section 2.5.1, projection onto a line** (reading). The quotient requires $v \ne 0$.
+  See `GolubVanLoan.Chapter02.isOrthogonalProjection_vecMulVec`.
+* **Equation (2.5.1) and the bounds in §2.5.3** (generalization). The distance, its matrix
+  formula and the bounds $0 \le \operatorname{dist} \le 1$ apply to unequal dimensions too.
+  See `GolubVanLoan.Chapter02.subspaceDist`,
+  `GolubVanLoan.Chapter02.subspaceDist_eq_lpOpNorm_sub` and
+  `GolubVanLoan.Chapter02.subspaceDist_mem_Icc`.
 * **Section 2.5.3, $\operatorname{dist}(S_1, S_2) = 0 \Rightarrow S_1 = S_2$** (generalization). The
   source states an implication. The theorem is an equivalence and needs no hypothesis on the
   dimensions. See `GolubVanLoan.Chapter02.subspaceDist_eq_zero`.
 * **Section 2.5.3, $\operatorname{dist}(S_1, S_2) = 1 \Rightarrow S_1 \cap S_2^\perp \neq \{0\}$**
   (generalization). The source states an implication. The theorem is an equivalence. See
   `GolubVanLoan.Chapter02.subspaceDist_eq_one`.
-* **Theorem 2.5.3** (generalization). The source assumes $m_1 \ge m_2$ and that $Q$ is orthogonal.
-  The theorem does not assume $m_1 \ge m_2$, and it assumes only $Q^T Q = I$ for the square matrix
-  $Q$. See `GolubVanLoan.Chapter02.theorem_2_5_3`.
-* **Theorem 2.5.3** (typo). The row labels of the block display are misprinted ($n_1 - n_1$). The
-  block sizes that add up are the rows $p, n_1 - p, m_1 - n_1 \mid n_1 - p, q$ and the columns
-  $p, n_1 - p \mid n_1 - p, q, m_1 - n_1$. See `GolubVanLoan.Chapter02.theorem_2_5_3`.
+* **Theorem 2.5.2** (typo). The right-hand side stacks the rectangular diagonal matrices
+  $C_0$ and $S_0$, labeled $C$ and $S$ in the source display.
+  See `GolubVanLoan.Chapter02.theorem_2_5_2`.
+* **Theorem 2.5.3** (generalization). The decomposition also holds when $m_1 < m_2$.
+  See `GolubVanLoan.Chapter02.theorem_2_5_3`.
 
 ## Not formalized
 
@@ -240,7 +246,9 @@ theorem isOrthogonalProjection_mul_transpose {V : Matrix (Fin n) (Fin k) ℝ} (h
 
 /-- **Section 2.5.1** of [golub2013matrix]. Let $v \in \mathbb{R}^n$ with $v \neq 0$. Then
 $$P = \frac{v v^T}{v^T v}$$
-is the orthogonal projection onto $\operatorname{span}\{v\}$. -/
+is the orthogonal projection onto $\operatorname{span}\{v\}$.
+
+**Reading.** The source leaves $v \ne 0$ implicit in the quotient $vv^T/(v^Tv)$. -/
 theorem isOrthogonalProjection_vecMulVec {v : Fin n → ℝ} (hv : v ≠ 0) :
     IsOrthogonalProjection ((1 / (v ⬝ᵥ v)) • vecMulVec v v) (ℝ ∙ WithLp.toLp 2 v) := by
   have hvv : v ⬝ᵥ v ≠ 0 := by
@@ -402,9 +410,10 @@ and $S_2$ of $\mathbb{R}^n$, the **distance** is
 $$\operatorname{dist}(S_1, S_2) = \|P_1 - P_2\|_2,$$
 where $P_i$ is the orthogonal projection onto $S_i$.
 
-The definition is the gap `Submodule.gap` of the backbone. The source defines the distance only
-when $\dim S_1 = \dim S_2$. The Lean definition applies to every pair of subspaces, and the
-theorems below assume equal dimensions where they need it. -/
+The definition is the gap `Submodule.gap` of the backbone.
+
+**Generalization.** The source defines the distance for $\dim S_1 = \dim S_2$. The same formula
+defines the distance in Lean for every pair of subspaces. -/
 noncomputable def subspaceDist (S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))) : ℝ :=
   S₁.gap S₂
 
@@ -412,6 +421,9 @@ noncomputable def subspaceDist (S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (F
 $P_1, P_2 \in \mathbb{R}^{n \times n}$ be the orthogonal projections onto subspaces $S_1$ and
 $S_2$ of $\mathbb{R}^n$. Then
 $$\operatorname{dist}(S_1, S_2) = \|P_1 - P_2\|_2.$$
+
+**Generalization.** The source defines and uses this formula for equal-dimensional subspaces.
+The formula here holds for arbitrary $S_1$ and $S_2$.
 -/
 theorem subspaceDist_eq_lpOpNorm_sub {P₁ P₂ : Matrix (Fin n) (Fin n) ℝ}
     {S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (h₁ : IsOrthogonalProjection P₁ S₁)
@@ -465,7 +477,8 @@ theorem theorem_2_5_1 {W Z : Matrix (Fin n) (Fin n) ℝ} (hW : W ∈ orthogonalG
 /-- **Section 2.5.3** of [golub2013matrix]. For subspaces $S_1$ and $S_2$ of $\mathbb{R}^n$,
 $$0 \le \operatorname{dist}(S_1, S_2) \le 1.$$
 
-No hypothesis on the dimensions is needed. -/
+**Generalization.** The source states the bounds for equal-dimensional subspaces. The bounds
+hold for arbitrary $S_1$ and $S_2$. -/
 theorem subspaceDist_mem_Icc (S₁ S₂ : Submodule ℝ (EuclideanSpace ℝ (Fin n))) :
     subspaceDist S₁ S₂ ∈ Set.Icc 0 1 :=
   ⟨S₁.gap_nonneg S₂, S₁.gap_le_one S₂⟩
@@ -503,6 +516,9 @@ $$\begin{bmatrix} U_1 & 0 \\ 0 & U_2 \end{bmatrix}^T \begin{bmatrix} Q_1 \\ Q_2 
 where $C_0 = \operatorname{diag}(\cos\theta_1, \dots, \cos\theta_{n_1}) \in \mathbb{R}^{m_1
 \times n_1}$, $S_0 = \operatorname{diag}(\sin\theta_1, \dots, \sin\theta_{n_1}) \in
 \mathbb{R}^{m_2 \times n_1}$ and $0 \le \theta_1 \le \dots \le \theta_{n_1} \le \pi/2$.
+
+**Typo.** The source labels the stacked blocks $C$ and $S$ in the display and defines them as
+$C_0$ and $S_0$ immediately below. The theorem uses the rectangular diagonals $C_0$ and $S_0$.
 
 The angles are a monotone function `θ : ℕ → ℝ` with values in $[0, \pi/2]$, and $C_0$ and $S_0$
 are each a `Matrix.rectDiagonal`, of the cosines and of the sines. The proof applies
@@ -547,12 +563,8 @@ sizes $p, n_1 - p, n_1 - p, q, m_1 - n_1$, $C = \operatorname{diag}(\cos\theta_{
 \cos\theta_{n_1})$, $S = \operatorname{diag}(\sin\theta_{p+1}, \dots, \sin\theta_{n_1})$ and $0
 \le \theta_{p+1} \le \dots \le \theta_{n_1} \le \pi/2$.
 
-**Generalization.** The source assumes $m_1 \ge m_2$ and that $Q$ is orthogonal. The theorem
-does not need $m_1 \ge m_2$. Of the orthogonality it assumes only $Q^T Q = I$, which implies
-$Q Q^T = I$ because $Q$ is square.
-
-**Typo.** The row labels of the block display in the source are misprinted ($n_1 - n_1$). The
-block sizes above are the ones that add up to $m_1 + m_2$ and $n_1 + n_2$.
+**Generalization.** The source assumes $m_1 \ge m_2$. The decomposition holds without that
+inequality. For square $Q$, the hypothesis $Q^T Q = I$ expresses orthogonality.
 
 The angles are a monotone function `θ : ℕ → ℝ` with values in $[0, \pi/2]$ whose first $p$
 values (0-based) are $0$; these give the leading identity block, with $\cos\theta_i = 1$. In

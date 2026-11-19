@@ -86,6 +86,13 @@ the separation and recession theory of `Numlib.Analysis.Convex`.
 
 ## Deviations from the source
 
+* **Section 21, systems of inequalities** (generalization). The system, its solution set,
+  consistency, intersection formula and right-hand-side normalization admit arbitrary
+  functions. Convexity is an explicit hypothesis for convexity of the solution set, and
+  closedness alone suffices for a weak system to have a closed solution set.
+* **Theorems 21.1–21.3**, exclusivity (generalization). The weighted-sum contradictions
+  need no convexity or domain qualifications. Theorem 21.3 also needs no closedness,
+  recession condition or cardinality bound for exclusivity.
 * **Comments and References for Part IV** (typo). The source cites a "Corollary 21.3.3", which does
   not exist; the intended reference is Corollary 21.3.2, Helly's theorem.
 -/
@@ -107,8 +114,10 @@ $\alpha_i \in [-\infty, +\infty]$, and asks for $x$ with
 $$f_i(x) \le \alpha_i \quad (i \in I_1), \qquad f_j(x) < \alpha_j \quad (j \in I_2),$$
 where the index sets $I_1$ and $I_2$ are arbitrary.
 
-The index set $I_1$ is the type `ι` and $I_2$ is the type `κ`. Convexity of the $f_i$ is not
-part of the structure: the statements about the solution set carry it as a hypothesis. -/
+The index set $I_1$ is the type `ι` and $I_2$ is the type `κ`.
+
+**Generalization.** The book assumes that every function is convex. The structure admits
+arbitrary functions and the solution-set convexity theorem supplies that hypothesis. -/
 structure ConvexSystem (n : ℕ) (ι κ : Type*) where
   /-- The functions $f_i$, $i \in I_1$, of the weak inequalities $f_i(x) \le \alpha_i$. -/
   weakFn : ι → Rn n → EReal
@@ -125,17 +134,23 @@ variable {ι κ : Type*}
 
 /-- **Section 21** of [rockafellar1970convex], solution set. The **solution set** of a system of
 convex inequalities is the set of $x \in \mathbb{R}^n$ with $f_i(x) \le \alpha_i$ for every
-$i \in I_1$ and $f_j(x) < \alpha_j$ for every $j \in I_2$. -/
+$i \in I_1$ and $f_j(x) < \alpha_j$ for every $j \in I_2$.
+
+**Generalization.** The solution set is defined for arbitrary functions. -/
 def solutions (S : ConvexSystem n ι κ) : Set (Rn n) :=
   {x | (∀ i, S.weakFn i x ≤ S.weakBound i) ∧ ∀ j, S.strictFn j x < S.strictBound j}
 
-/-- **Section 21** of [rockafellar1970convex], consistency. A system of convex inequalities is
-**consistent** if its solution set is nonempty. -/
+/-- **Section 21** of [rockafellar1970convex], consistency. A system of inequalities is
+**consistent** if its solution set is nonempty.
+
+**Generalization.** This applies to nonconvex inequalities as well. -/
 def Consistent (S : ConvexSystem n ι κ) : Prop := S.solutions.Nonempty
 
 /-- **Section 21** of [rockafellar1970convex], p. 185. The solution set of a system of convex
 inequalities is the intersection of the sets $\{x \mid f_i(x) \le \alpha_i\}$, $i \in I_1$, and
-$\{x \mid f_j(x) < \alpha_j\}$, $j \in I_2$. -/
+$\{x \mid f_j(x) < \alpha_j\}$, $j \in I_2$.
+
+**Generalization.** The intersection identity applies to arbitrary input functions. -/
 theorem solutions_eq_iInter (S : ConvexSystem n ι κ) :
     S.solutions = (⋂ i, {x | S.weakFn i x ≤ S.weakBound i})
       ∩ ⋂ j, {x | S.strictFn j x < S.strictBound j} := by
@@ -172,7 +187,9 @@ theorem isClosed_setOf_le {f : Rn n → EReal} (hf : ClosedConvex f) (a : EReal)
 
 /-- **Section 21** of [rockafellar1970convex], p. 185. If a system of convex inequalities has no
 strict inequalities ($I_2 = \emptyset$) and every $f_i$, $i \in I_1$, is closed, then its
-solution set is closed. -/
+solution set is closed.
+
+**Generalization.** This closedness result also allows nonconvex functions. -/
 theorem isClosed_solutions [IsEmpty κ] (S : ConvexSystem n ι κ)
     (hw : ∀ i, ClosedConvex (S.weakFn i)) : IsClosed S.solutions := by
   rw [solutions_eq_iInter]
@@ -185,7 +202,10 @@ theorem isClosed_solutions [IsEmpty κ] (S : ConvexSystem n ι κ)
 and let $\alpha \in \mathbb{R}$. Then $f(x) \le \alpha$ if and only if $f(x) - \alpha \le 0$,
 and $f(x) < \alpha$ if and only if $f(x) - \alpha < 0$.
 
-This justifies the right-hand sides $0$ in the numbered theorems. -/
+This justifies the right-hand sides $0$ in the numbered theorems.
+
+**Generalization.** The book normalizes convex inequalities. The scalar equivalences hold
+for arbitrary functions. -/
 theorem solutions_normalize (f : Rn n → EReal) (a : ℝ) (x : Rn n) :
     (f x ≤ (a : EReal) ↔ f x - (a : EReal) ≤ 0) ∧ (f x < (a : EReal) ↔ f x - (a : EReal) < 0) := by
   generalize f x = y
@@ -243,8 +263,9 @@ $f_1, \dots, f_m$ be functions on $\mathbb{R}^n$ with values in $[-\infty, +\inf
 $\lambda_1, \dots, \lambda_m \ge 0$ be not all zero with $\sum_i \lambda_i f_i(x) \ge 0$ for
 every $x \in C$. Then there is no $x \in C$ with $f_i(x) < 0$ for every $i$.
 
-No hypothesis on $C$ or the $f_i$ is needed: at a point where every $f_i$ is negative, every
-term $\lambda_i f_i(x)$ is nonpositive and the terms with $\lambda_i \ne 0$ are negative. -/
+**Generalization.** At a point where every $f_i$ is negative, the terms with
+$\lambda_i \ne 0$ are negative and the others vanish. Exclusivity needs no convexity,
+properness or relative-interior condition. -/
 theorem theorem_21_1_exclusive {ι : Type*} [Fintype ι] {C : Set (Rn n)} {f : ι → Rn n → EReal}
     {l : ι → ℝ} (hl : ∀ i, 0 ≤ l i) (hl0 : l ≠ 0)
     (h : ∀ x ∈ C, (0 : EReal) ≤ ∑ i, (l i : EReal) * f i x) :
@@ -289,8 +310,9 @@ $\lambda_1, \dots, \lambda_k$ not all zero, satisfy $\sum_i \lambda_i f_i(x) \ge
 $x \in C$, then there is no $x \in C$ with $f_i(x) < 0$ for $i \le k$ and $f_i(x) \le 0$ for
 $i > k$.
 
-At a solution of the mixed system the convex part of the weighted sum is negative and the affine
-part is nonpositive. -/
+**Generalization.** At a mixed solution the strict part of the weighted sum is negative
+and the affine part is nonpositive. The exclusivity conclusion needs no convexity,
+properness or feasible relative-interior point. -/
 theorem theorem_21_2_exclusive {ι κ : Type*} [Fintype ι] [Fintype κ] {C : Set (Rn n)}
     {f : ι → Rn n → EReal} {a : κ → (Rn n →ᵃ[ℝ] ℝ)} {l : ι → ℝ} {μ : κ → ℝ}
     (hl : ∀ i, 0 ≤ l i) (hμ : ∀ j, 0 ≤ μ j) (hl0 : l ≠ 0)
@@ -354,8 +376,8 @@ finite, and let $\lambda_i \ge 0$ and $\varepsilon > 0$ satisfy $\sum_{i \in t} 
 \ge \varepsilon$ for every $x \in C$. Then there is no $x \in C$ with $f_i(x) \le 0$ for every
 $i \in I$.
 
-At a solution of the weak system every term $\lambda_i f_i(x)$ is nonpositive, so the sum cannot
-be bounded below by a positive $\varepsilon$. -/
+**Generalization.** Every term is nonpositive at a weak solution. This uses no convexity,
+closedness, recession hypothesis or cardinality bound on the finite sum. -/
 theorem theorem_21_3_exclusive {ι : Type*} {C : Set (Rn n)} {f : ι → Rn n → EReal}
     {t : Finset ι} {l : ι → ℝ} {ε : ℝ} (hl : ∀ i, 0 ≤ l i) (hε : 0 < ε)
     (h : ∀ x ∈ C, (ε : EReal) ≤ ∑ i ∈ t, (l i : EReal) * f i x) :

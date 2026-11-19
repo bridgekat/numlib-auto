@@ -65,6 +65,14 @@ The proofs specialize the backbone module `Numlib.Variational.EllipticInterval.M
   $\sup_I f < \infty$, and the statement of the source is vacuous otherwise. See
   `Brezis.Chapter08.theorem_8_19`, `Brezis.Chapter08.proposition_8_21` and
   `Brezis.Chapter08.remark_8_28`.
+* **Theorem 8.19 and Corollary 8.20** (reading). The estimates apply to the continuous
+  representative on the closed interval, and the norm estimates are stated pointwise.
+  The alternative to (ii) uses any essential bound of $|f|$. See
+  `Brezis.Chapter08.theorem_8_19` and `Brezis.Chapter08.corollary_8_20_ii'`.
+* **Remarks 26 and 27** (reading and typo). The classical statements give the upper-bound
+  argument for a $C^2$ solution satisfying the closed-interval equation. In Remark 26 the identity
+  at a maximum follows from (32), cited in the source as (33). See
+  `Brezis.Chapter08.remark_8_26` and `Brezis.Chapter08.remark_8_27`.
 -/
 
 open Filter MeasureTheory Set TopologicalSpace EllipticInterval
@@ -92,7 +100,10 @@ $I$. Then $u(x) \le K$ for every $x \in [0, 1]$.
 When $\sup_I f < \infty$, the choice $K = \max\{\alpha, \beta, \sup_I f\}$ gives the upper bound
 of (33). The proof is Stampacchia's truncation method,
 `EllipticInterval.rep_le_of_le_of_isWeakSolution` with both coefficients equal to $1$, applied
-to the weak equation (34) on $H_0^1$ that follows from Green's formula. -/
+to the weak equation (34) on $H_0^1$ that follows from Green's formula.
+
+**Reading.** The library states a bound on the closed interval. The endpoint inequalities
+ are among the hypotheses. -/
 theorem theorem_8_19_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α β : ℝ}
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -114,7 +125,10 @@ $K \in \mathbb{R}$ with $K \le \alpha$, $K \le \beta$ and $K \le f$ almost every
 Then $K \le u(x)$ for every $x \in [0, 1]$.
 
 When $\inf_I f > -\infty$, the choice $K = \min\{\alpha, \beta, \inf_I f\}$ gives the lower
-bound of (33). The proof applies the upper bound to $-u$. -/
+bound of (33). The proof applies the upper bound to $-u$.
+
+**Reading.** The library states a bound on the closed interval. The endpoint inequalities
+ are among the hypotheses. -/
 theorem theorem_8_19_ge (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {α β : ℝ}
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -168,7 +182,13 @@ and (33) follows from the classical approach to the maximum principle. Let $x_0 
 point where $u$ attains its maximum. If $x_0 = 0$ or $x_0 = 1$ the conclusion is obvious.
 Otherwise $u'(x_0) = 0$ and $u''(x_0) \le 0$, so $u(x_0) = f(x_0) + u''(x_0) \le f(x_0) \le K$.
 The proof specializes `EllipticInterval.le_of_contDiffMapIcc_classical`, which uses the
-second-derivative test `IsLocalMax.deriv_deriv_nonpos`. -/
+second-derivative test `IsLocalMax.deriv_deriv_nonpos`.
+
+**Reading.** The upper-bound argument starts with an arbitrary $C^2$ classical solution whose
+ equation is assumed on the closed interval. The source starts with the solution for continuous
+ $f$ and appeals to its classical regularity.
+
+**Typo.** The displayed identity at the maximum follows from (32). The source cites (33). -/
 theorem remark_8_26 (v : ContDiffMapIcc (zero_lt_one' ℝ).le 2) {f : ℝ → ℝ}
     (hode : ∀ x : Icc (0 : ℝ) 1, -v.deriv 2 x + v x = f x) {K : ℝ}
     (hK0 : v ⟨0, left_mem_Icc.2 zero_le_one⟩ ≤ K) (hK1 : v ⟨1, right_mem_Icc.2 zero_le_one⟩ ≤ K)
@@ -216,7 +236,10 @@ theorem corollary_8_20_ii (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1))) {u 
 /-- **Corollary 8.20(ii)** of [brezis2011functional], with an explicit essential bound. Let
 $I = (0, 1)$ and $f \in L^2(I)$, let $u \in H^1(I)$ be a solution of (34) with
 $u(0) = u(1) = 0$, and let $M \in \mathbb{R}$ with $|f| \le M$ almost everywhere on $I$. Then
-$|u(x)| \le M$ for every $x \in [0, 1]$. -/
+$|u(x)| \le M$ for every $x \in [0, 1]$.
+
+**Reading.** The source states the estimate using the essential supremum norm. This version
+ uses an arbitrary almost-everywhere bound of $|f|$. -/
 theorem corollary_8_20_ii' (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {u : SobolevInterval 1 0 1}
     (hu : ∀ v ∈ SobolevIntervalZero 0 1, modelForm 0 1 u v = load 0 1 f v)
@@ -268,7 +291,10 @@ $x \in [0, 1]$.
 
 When $\sup_I f$ is finite, $K = \sup_I f$ is allowed. The proof puts the truncation $G(u - K)$
 into the weak formulation (36) on $H^1(I)$; it specializes
-`EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann`. -/
+`EllipticInterval.rep_le_of_le_of_isWeakSolution_neumann`.
+
+**Reading.** States the estimate for every finite real essential upper bound.
+-/
 theorem proposition_8_21_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -283,7 +309,10 @@ theorem proposition_8_21_le (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
 /-- **Proposition 8.21** of [brezis2011functional], the lower bound. Let $I = (0, 1)$ and
 $f \in L^2(I)$, and let $u \in H^2(I)$ be the solution of the Neumann problem $-u'' + u = f$
 a.e. on $I$, $u'(0) = u'(1) = 0$. Let $K \in \mathbb{R}$ with $K \le f$ almost everywhere on
-$I$. Then $K \le u(x)$ for every $x \in [0, 1]$. -/
+$I$. Then $K \le u(x)$ for every $x \in [0, 1]$.
+
+**Reading.** States the estimate for every finite real essential lower bound.
+-/
 theorem proposition_8_21_ge (f : Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     {Φ : SobolevInterval 2 0 1}
     (hΦ : (SobolevInterval.deriv Φ 2 : ℝ → ℝ) =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)]
@@ -327,7 +356,10 @@ $C^2(\bar I)$, and (35) follows along the lines of Remark 26. If $u$ attains its
 $\partial I$, say at $0$, then $u''(0) \le 0$: extend $u$ by reflection to the left of $0$ and
 use $u'(0) = 0$. The proof specializes
 `EllipticInterval.le_of_contDiffMapIcc_classical_neumann`, which uses the one-sided
-second-derivative test at the endpoints. -/
+second-derivative test at the endpoints.
+
+**Reading.** The statement isolates the upper-bound argument for arbitrary $C^2$ classical
+ solutions of the closed-interval equation. The lower bound follows by applying it to $-v$. -/
 theorem remark_8_27 (v : ContDiffMapIcc (zero_lt_one' ℝ).le 2) {f : ℝ → ℝ}
     (hode : ∀ x : Icc (0 : ℝ) 1, -v.deriv 2 x + v x = f x)
     (hv0 : v.deriv 1 ⟨0, left_mem_Icc.2 zero_le_one⟩ = 0)

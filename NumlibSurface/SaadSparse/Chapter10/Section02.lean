@@ -55,6 +55,11 @@ ILU(0). The proofs specialize the splittings of `Numlib.Stationary.Splitting`.
   of `Matrix.jacobiSplitting` and `Matrix.gaussSeidelSplitting`, so (10.4)–(10.6) are the
   definitions of the backbone read from the preconditioning side.
 
+## Deviations from the source
+
+* **Totalization.** The SGS matrix and lower factor are totalized; their intended factor properties
+  use a nonsingular diagonal. See `SaadSparse.Chapter10.M_sgs`, `SaadSparse.Chapter10.L_sgs`.
+
 ## Not formalized
 
 * **Example 10.1.** Table 10.1 records a floating-point run of GMRES with the symmetric Gauss–Seidel
@@ -107,7 +112,11 @@ $A = D - E - F$, the **symmetric Gauss–Seidel preconditioner** is
 $$M_{SGS} = (D - E) D^{-1} (D - F).$$
 
 The inverse $D^{-1}$ is Mathlib's matrix inverse, which is $0$ when $D$ is singular; the results
-below assume that $D$ is nonsingular. -/
+below assume that $D$ is nonsingular.
+
+**Reading.** The matrix formulas allow a singular diagonal with Lean's zero matrix inverse. The
+inverse-diagonal and unit-lower-triangular identities are stated for an invertible diagonal.
+-/
 noncomputable def M_sgs (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (Chapter04.D A - Chapter04.E A) * (Chapter04.D A)⁻¹ * (Chapter04.D A - Chapter04.F A)
 
@@ -122,7 +131,11 @@ theorem M_sgs_eq_ssorSplitting (h : IsUnit (diagPart A)) :
   rw [M_sgs, Chapter04.D_sub_E, Chapter04.D_sub_F, Chapter04.D]
   norm_num
 
-/-- The unit lower triangular factor $L = I - E D^{-1}$ of the factorization $M_{SGS} = LU$. -/
+/-- The unit lower triangular factor $L = I - E D^{-1}$ of the factorization $M_{SGS} = LU$.
+
+**Reading.** The matrix formulas allow a singular diagonal with Lean's zero matrix inverse. The
+inverse-diagonal and unit-lower-triangular identities are stated for an invertible diagonal.
+-/
 noncomputable def L_sgs (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   1 - Chapter04.E A * (Chapter04.D A)⁻¹
 

@@ -11,6 +11,11 @@ import Numlib.Krylov.Iterate
 A computed Arnoldi relation has a factorisation defect. Its basis also has a separate
 orthogonality defect, given by the difference between the identity and the Gram matrix.
 
+## Deviations from the source
+
+* **Section 5.10.1** (generalization). The trial span and right-hand side identities use
+  arbitrary spanning families or prefix orthogonality.
+
 ## Not formalized
 
 * The condition number formula for the Simpler GMRES basis in (5.10.7).
@@ -24,7 +29,10 @@ open scoped InnerProductSpace
 
 /-- **Equation (5.10.2)** of [liesen2013krylov]. Adjoining the initial residual to a
 spanning family of the image of the previous Krylov space gives the next trial space
-used by Simpler GMRES. -/
+used by Simpler GMRES.
+
+**Generalization.** The span identity holds over any field and only requires the family to span
+the image trial space. -/
 theorem simplerGMRES_trial_span {𝕜 E : Type*} [Field 𝕜] [AddCommGroup E] [Module 𝕜 E]
     (A : E →ₗ[𝕜] E) (v : E) (n : ℕ) (W : Fin n → E)
     (hW : Submodule.span 𝕜 (Set.range W) = (Krylov.subspace A v n).map A) :
@@ -47,7 +55,9 @@ theorem simplerGMRES_trial_span {𝕜 E : Type*} [Field 𝕜] [AddCommGroup E] [
 
 /-- **Equation (5.10.6)** of [liesen2013krylov]. In Simpler GMRES the new orthogonal
 image-space vector has the same inner product with the initial residual and with the
-previous residual. The difference of those residuals belongs to the previous image space. -/
+previous residual. The difference of those residuals belongs to the previous image space.
+
+**Generalization.** Affine membership and orthogonality to the preceding image space suffice. -/
 theorem simplerGMRES_rhs_eq {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] (A : E →ₗ[𝕜] E) (b x₀ : E) {n : ℕ} (W y : Fin n → E)
     (hy : ∀ i, y i - x₀ ∈ Krylov.subspace A (b - A x₀) i.val)
@@ -70,7 +80,9 @@ def computedArnoldiDefect {N n : ℕ} {𝕜 : Type*} [Ring 𝕜]
   A * V - Vnext * H
 
 /-- **Section 5.10.2** of [liesen2013krylov]. For a computed basis matrix $V$, the
-**orthogonality defect** is $I-V^*V$. It vanishes when the columns of $V$ are orthonormal. -/
+**orthogonality defect** is $I-V^*V$. It vanishes when the columns of $V$ are orthonormal.
+
+**Generalization.** The matrix difference is defined over any star ring. -/
 def computedOrthogonalityDefect {N n : ℕ} {𝕜 : Type*} [Ring 𝕜] [StarRing 𝕜]
     (V : Matrix (Fin N) (Fin n) 𝕜) : Matrix (Fin n) (Fin n) 𝕜 :=
   1 - V.conjTranspose * V

@@ -78,6 +78,35 @@ construction `Bezier.casteljau` and the lemmas on Bernstein polynomials) and
 
 ## Deviations from the source
 
+* **Specialization.** Parametric interpolation uses natural cubic splines in each coordinate. See
+  `QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline`,
+  `QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline_apply`,
+  `QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline_apply_node`.
+* **Reading.** Strict cumulative parameter partitions require distinct neighbors, and the natural
+  spline is equivariant under affine isometries. See
+  `QuarteroniSaccoSaleri.Chapter08.isPartition_cumulativeLength`,
+  `QuarteroniSaccoSaleri.Chapter08.cumulativeLength_comp`,
+  `QuarteroniSaccoSaleri.Chapter08.cumulativeLengthSpline_invariant`.
+* **Representation.** Bernstein formulas are polynomial identities, with the basis stated on the
+  unit interval. See `QuarteroniSaccoSaleri.Chapter08.bernsteinPolynomial_eval`,
+  `QuarteroniSaccoSaleri.Chapter08.bernsteinRecursion_zero`,
+  `QuarteroniSaccoSaleri.Chapter08.bernsteinRecursion`,
+  `QuarteroniSaccoSaleri.Chapter08.bernstein_mem_polyLE`,
+  `QuarteroniSaccoSaleri.Chapter08.bernsteinBasis`.
+* **Generalization.** Bézier formulas and the de Casteljau recursion generalize from planar points
+  to a real vector space. See `QuarteroniSaccoSaleri.Chapter08.equation_8_58`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_58_apply`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_58_mem_convexHull`,
+  `QuarteroniSaccoSaleri.Chapter08.deCasteljau_step`, `QuarteroniSaccoSaleri.Chapter08.deCasteljau`,
+  `QuarteroniSaccoSaleri.Chapter08.deCasteljau_succ`,
+  `QuarteroniSaccoSaleri.Chapter08.bezier_reverse`,
+  `QuarteroniSaccoSaleri.Chapter08.bezier_reverse_image`,
+  `QuarteroniSaccoSaleri.Chapter08.bezier_endpoints`.
+* **Reading.** B-spline locality uses half-open support, and the convex-hull claim is restricted to
+  the partition-of-unity interval. See `QuarteroniSaccoSaleri.Chapter08.parametricBSpline`,
+  `QuarteroniSaccoSaleri.Chapter08.parametricBSpline_apply`,
+  `QuarteroniSaccoSaleri.Chapter08.parametricBSpline_local`,
+  `QuarteroniSaccoSaleri.Chapter08.parametricBSpline_mem_convexHull`.
 * **The parametric cubic spline** (reading). The source does not fix the end conditions of the
   coordinate splines. The natural end conditions (8.45) are used. See
   `QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline`.
@@ -108,7 +137,12 @@ end conditions (8.45) are used.
 
 The spline is the vector-valued natural spline `Spline.cubicInterpVec n t P 0 0 0 0`. Its
 coordinates are the natural splines of the coordinates, by
-`QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline_apply`. -/
+`QuarteroniSaccoSaleri.Chapter08.parametricCubicSpline_apply`.
+
+**Reading.** The source defines parametric splines of general degree with no fixed closure. The
+declarations choose cubic natural splines in the two coordinates and prove the interpolation
+conditions on a partition.
+-/
 noncomputable def parametricCubicSpline (t : ℕ → ℝ) (n : ℕ) (P : ℕ → EuclideanSpace ℝ (Fin 2)) :
     ℝ → EuclideanSpace ℝ (Fin 2) :=
   Spline.cubicInterpVec n t P 0 0 0 0
@@ -116,7 +150,12 @@ noncomputable def parametricCubicSpline (t : ℕ → ℝ) (n : ℕ) (P : ℕ →
 /-- **Section 8.7** of [quarteroni2000numerical], the coordinates. Let $P_0, \ldots, P_n$ be points
 of the plane and $t_0, \ldots, t_n$ parameter values. For every $\tau \in \mathbb{R}$ and
 $j \in \{0, 1\}$, the coordinate $j$ of $S_3(\tau)$ is $s_{3,j}(\tau)$, where $s_{3,j}$ is the
-natural cubic spline `Spline.naturalInterp` that interpolates the data $\{t_i, (P_i)_j\}$. -/
+natural cubic spline `Spline.naturalInterp` that interpolates the data $\{t_i, (P_i)_j\}$.
+
+**Reading.** The source defines parametric splines of general degree with no fixed closure. The
+declarations choose cubic natural splines in the two coordinates and prove the interpolation
+conditions on a partition.
+-/
 theorem parametricCubicSpline_apply (t : ℕ → ℝ) (n : ℕ) (P : ℕ → EuclideanSpace ℝ (Fin 2))
     (τ : ℝ) (j : Fin 2) :
     parametricCubicSpline t n P τ j = Spline.naturalInterp n t (fun i => P i j) τ := by
@@ -126,7 +165,12 @@ theorem parametricCubicSpline_apply (t : ℕ → ℝ) (n : ℕ) (P : ℕ → Euc
 
 /-- **Section 8.7** of [quarteroni2000numerical], interpolation. Let
 $0 = t_0 < t_1 < \cdots < t_n = T$ with $n \ge 1$, and let $P_0, \ldots, P_n$ be points of the
-plane. Then $S_3(t_i) = P_i$ for $i = 0, \ldots, n$. -/
+plane. Then $S_3(t_i) = P_i$ for $i = 0, \ldots, n$.
+
+**Reading.** The source defines parametric splines of general degree with no fixed closure. The
+declarations choose cubic natural splines in the two coordinates and prove the interpolation
+conditions on a partition.
+-/
 theorem parametricCubicSpline_apply_node {T : ℝ} {t : ℕ → ℝ} {n : ℕ}
     (ht : IsIntervalPartition 0 T n t) (hn : 1 ≤ n) (P : ℕ → EuclideanSpace ℝ (Fin 2)) {i : ℕ}
     (hi : i ≤ n) :
@@ -163,7 +207,11 @@ theorem cumulativeLength_succ (P : ℕ → EuclideanSpace ℝ (Fin 2)) (i : ℕ)
 $P_0, \ldots, P_n$ be points of the plane with $P_k \neq P_{k+1}$ for $k < n$. Then
 $0 = t_0 < t_1 < \cdots < t_n = T$ with $T = t_n$.
 
-Every $l_i$ is positive because consecutive points are distinct. -/
+Every $l_i$ is positive because consecutive points are distinct.
+
+**Reading.** Partition strictness assumes consecutive points differ. Geometric invariance is stated
+as equivariance for affine Euclidean isometries, with preservation of cumulative parameters.
+-/
 theorem isPartition_cumulativeLength {n : ℕ} {P : ℕ → EuclideanSpace ℝ (Fin 2)}
     (hP : ∀ k < n, P k ≠ P (k + 1)) :
     IsIntervalPartition 0 (cumulativeLength P n) n (cumulativeLength P) where
@@ -176,7 +224,11 @@ theorem isPartition_cumulativeLength {n : ℕ} {P : ℕ → EuclideanSpace ℝ (
 /-- **Section 8.7** of [quarteroni2000numerical], invariance of the cumulative lengths. Let $Q$ be
 an isometry of the plane, an affine isometric equivalence of `EuclideanSpace ℝ (Fin 2)`, and let
 $P_0, P_1, \ldots$ be points of the plane. Then the cumulative lengths of the points $Q(P_i)$
-are those of the points $P_i$. -/
+are those of the points $P_i$.
+
+**Reading.** Partition strictness assumes consecutive points differ. Geometric invariance is stated
+as equivariance for affine Euclidean isometries, with preservation of cumulative parameters.
+-/
 theorem cumulativeLength_comp (Q : EuclideanSpace ℝ (Fin 2) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin 2))
     (P : ℕ → EuclideanSpace ℝ (Fin 2)) : cumulativeLength (Q ∘ P) = cumulativeLength P := by
   funext i
@@ -191,7 +243,11 @@ $Q(P_i)$. Then $S_3^Q(t) = Q(S_3(t))$ for every $t \in \mathbb{R}$.
 
 The cumulative lengths do not change (`QuarteroniSaccoSaleri.Chapter08.cumulativeLength_comp`),
 and the natural cubic spline commutes with affine maps of the data
-(`Spline.cubicInterpVec_affine`, with $Q(P) = Q_{\mathrm{lin}}(P) + Q(0)$). -/
+(`Spline.cubicInterpVec_affine`, with $Q(P) = Q_{\mathrm{lin}}(P) + Q(0)$).
+
+**Reading.** Partition strictness assumes consecutive points differ. Geometric invariance is stated
+as equivariance for affine Euclidean isometries, with preservation of cumulative parameters.
+-/
 theorem cumulativeLengthSpline_invariant
     (Q : EuclideanSpace ℝ (Fin 2) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin 2)) (n : ℕ)
     (P : ℕ → EuclideanSpace ℝ (Fin 2)) :
@@ -217,13 +273,23 @@ $n, k \in \mathbb{N}$ and $t \in \mathbb{R}$, the Bernstein polynomial $b_{n,k}$
 satisfies
 $$b_{n,k}(t) = \binom{n}{k} t^k (1 - t)^{n-k}.$$
 
-The polynomial is `bernsteinPolynomial ℝ n k`. For $k > n$ the binomial coefficient is $0$. -/
+The polynomial is `bernsteinPolynomial ℝ n k`. For $k > n$ the binomial coefficient is $0$.
+
+**Reading.** The identities are for real polynomials on all real arguments, with coefficients
+defined for all natural indices. The basis theorem restricts the polynomials to the unit interval
+and uses precisely the degree-bounded indices.
+-/
 theorem bernsteinPolynomial_eval (n k : ℕ) (t : ℝ) :
     (bernsteinPolynomial ℝ n k).eval t = n.choose k * t ^ k * (1 - t) ^ (n - k) := by
   simp [bernsteinPolynomial]
 
 /-- **Section 8.7.1** of [quarteroni2000numerical], the Bernstein recursion, first line. For
-$n \in \mathbb{N}$ and $t \in \mathbb{R}$, $b_{n,0}(t) = (1 - t)^n$. -/
+$n \in \mathbb{N}$ and $t \in \mathbb{R}$, $b_{n,0}(t) = (1 - t)^n$.
+
+**Reading.** The identities are for real polynomials on all real arguments, with coefficients
+defined for all natural indices. The basis theorem restricts the polynomials to the unit interval
+and uses precisely the degree-bounded indices.
+-/
 theorem bernsteinRecursion_zero (n : ℕ) (t : ℝ) :
     (bernsteinPolynomial ℝ n 0).eval t = (1 - t) ^ n := by
   simp [bernsteinPolynomial]
@@ -234,7 +300,12 @@ $$b_{n+1,k+1}(t) = (1 - t) \, b_{n,k+1}(t) + t \, b_{n,k}(t).$$
 
 The book writes the recursion $b_{n,k}(t) = (1 - t) b_{n-1,k}(t) + t b_{n-1,k-1}(t)$ for
 $k = 1, \ldots, n$; it is stated here for $n + 1$ and $k + 1$, and for every $k$, since both
-sides vanish when $k > n$. The proof is `bernsteinPolynomial.succ_succ`. -/
+sides vanish when $k > n$. The proof is `bernsteinPolynomial.succ_succ`.
+
+**Reading.** The identities are for real polynomials on all real arguments, with coefficients
+defined for all natural indices. The basis theorem restricts the polynomials to the unit interval
+and uses precisely the degree-bounded indices.
+-/
 theorem bernsteinRecursion (n k : ℕ) (t : ℝ) :
     (bernsteinPolynomial ℝ (n + 1) (k + 1)).eval t
       = (1 - t) * (bernsteinPolynomial ℝ n (k + 1)).eval t
@@ -246,7 +317,12 @@ theorem bernsteinRecursion (n k : ℕ) (t : ℝ) :
 Bernstein polynomial $b_{n,k}$, as a function on $[0, 1]$, lies in $\mathbb{P}_n$: "it is easily
 seen that $b_{n,k} \in \mathbb{P}_n$ for $k = 0, \ldots, n$".
 
-The proof is `bernsteinPolynomial.degree_le`. -/
+The proof is `bernsteinPolynomial.degree_le`.
+
+**Reading.** The identities are for real polynomials on all real arguments, with coefficients
+defined for all natural indices. The basis theorem restricts the polynomials to the unit interval
+and uses precisely the degree-bounded indices.
+-/
 theorem bernstein_mem_polyLE (n k : ℕ) :
     (bernsteinPolynomial ℝ n k).toContinuousMapOn (Icc 0 1) ∈ polyLE (Icc (0 : ℝ) 1) n :=
   mem_polyLE_iff.mpr ⟨bernsteinPolynomial ℝ n k, bernsteinPolynomial.degree_le ℝ n k, fun _ => rfl⟩
@@ -256,7 +332,12 @@ functions $b_{n,0}, \ldots, b_{n,n}$ on $[0, 1]$ form a basis of the space $\mat
 polynomials of degree at most $n$ on $[0, 1]$: "$\{b_{n,k}, k = 0, \ldots, n\}$ provides a basis
 for $\mathbb{P}_n$".
 
-The proof is `bernsteinPolynomial.exists_basis_polyLE`. -/
+The proof is `bernsteinPolynomial.exists_basis_polyLE`.
+
+**Reading.** The identities are for real polynomials on all real arguments, with coefficients
+defined for all natural indices. The basis theorem restricts the polynomials to the unit interval
+and uses precisely the degree-bounded indices.
+-/
 theorem bernsteinBasis (n : ℕ) :
     ∃ B : Module.Basis (Fin (n + 1)) ℝ (polyLE (Icc (0 : ℝ) 1) n),
       ∀ (k : Fin (n + 1)) (t : Icc (0 : ℝ) 1),
@@ -270,13 +351,23 @@ space and let $P_0, P_1, \ldots, P_n \in E$ be $n + 1$ ordered points, the verti
 characteristic (or Bézier) polygon. The **Bézier curve** of the points is
 $$B_n(P_0, P_1, \ldots, P_n; t) = \sum_{k=0}^n P_k b_{n,k}(t), \qquad 0 \le t \le 1.$$
 
-The curve is `Bezier.curve P t`. It is defined for every $t \in \mathbb{R}$. -/
+The curve is `Bezier.curve P t`. It is defined for every $t \in \mathbb{R}$.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 noncomputable def equation_8_58 (P : Fin (n + 1) → E) (t : ℝ) : E :=
   Bezier.curve P t
 
 /-- **Equation (8.58)** of [quarteroni2000numerical], unfolded. For points $P_0, \ldots, P_n$ of a
 real vector space and $t \in \mathbb{R}$, $B_n(P_0, \ldots, P_n; t) = \sum_{k=0}^n b_{n,k}(t)
-P_k$. -/
+P_k$.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem equation_8_58_apply (P : Fin (n + 1) → E) (t : ℝ) :
     equation_8_58 P t = ∑ k : Fin (n + 1), (bernsteinPolynomial ℝ n k).eval t • P k :=
   rfl
@@ -286,7 +377,12 @@ points of a real vector space and $t \in [0, 1]$. Then $B_n(P_0, \ldots, P_n; t)
 convex hull of $P_0, \ldots, P_n$.
 
 The weights $b_{n,k}(t)$ are nonnegative and sum to $1$. The proof is
-`Bezier.curve_mem_convexHull`. -/
+`Bezier.curve_mem_convexHull`.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem equation_8_58_mem_convexHull (P : Fin (n + 1) → E) {t : ℝ} (ht : t ∈ Icc (0 : ℝ) 1) :
     equation_8_58 P t ∈ convexHull ℝ (range P) :=
   Bezier.curve_mem_convexHull P ht
@@ -297,7 +393,12 @@ the construction gives the new vertices
 $$P_{i,1}(t) = (1 - t) P_i + t P_{i+1}, \qquad i = 0, \ldots, n,$$
 of a polygon with one vertex less.
 
-The step is `Bezier.casteljauStep`. -/
+The step is `Bezier.casteljauStep`.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem deCasteljau_step (t : ℝ) (P : Fin (n + 2) → E) (i : Fin (n + 1)) :
     Bezier.casteljauStep t P i = (1 - t) • P i.castSucc + t • P i.succ :=
   rfl
@@ -307,7 +408,12 @@ $P_0, \ldots, P_n$ be points of a real vector space and $t \in \mathbb{R}$. Repe
 until the polygon has a single vertex $P_{0,n}(t)$. Then
 $$P_{0,n}(t) = B_n(P_0, \ldots, P_n; t).$$
 
-The construction is `Bezier.casteljau`, and the proof is `Bezier.casteljau_eq_curve`. -/
+The construction is `Bezier.casteljau`, and the proof is `Bezier.casteljau_eq_curve`.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem deCasteljau (t : ℝ) (P : Fin (n + 1) → E) : Bezier.casteljau t P = equation_8_58 P t :=
   Bezier.casteljau_eq_curve P t
 
@@ -317,7 +423,12 @@ Then
 $$B_{n+1}(P_0, \ldots, P_{n+1}; t) = (1 - t) \, B_n(P_0, \ldots, P_n; t) + t \, B_n(P_1, \ldots,
   P_{n+1}; t).$$
 
-The proof is `Bezier.curve_succ`. -/
+The proof is `Bezier.curve_succ`.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem deCasteljau_succ (P : Fin (n + 2) → E) (t : ℝ) :
     equation_8_58 P t = (1 - t) • equation_8_58 (Fin.init P) t + t • equation_8_58 (Fin.tail P) t :=
   Bezier.curve_succ P t
@@ -327,14 +438,24 @@ real vector space and $t \in \mathbb{R}$. Then
 $$B_n(P_n, P_{n-1}, \ldots, P_0; t) = B_n(P_0, P_1, \ldots, P_n; 1 - t).$$
 
 The book says that the two curves coincide "apart from the orientation". The proof is
-`Bezier.curve_rev`. -/
+`Bezier.curve_rev`.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem bezier_reverse (P : Fin (n + 1) → E) (t : ℝ) :
     equation_8_58 (P ∘ Fin.rev) t = equation_8_58 P (1 - t) :=
   Bezier.curve_rev P t
 
 /-- **Section 8.7.1** of [quarteroni2000numerical], reversal of the traces. Let $P_0, \ldots, P_n$
 be points of a real vector space. The Bézier curves of $P_0, \ldots, P_n$ and of
-$P_n, \ldots, P_0$ have the same image of $[0, 1]$. -/
+$P_n, \ldots, P_0$ have the same image of $[0, 1]$.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem bezier_reverse_image (P : Fin (n + 1) → E) :
     equation_8_58 (P ∘ Fin.rev) '' Icc (0 : ℝ) 1 = equation_8_58 P '' Icc (0 : ℝ) 1 := by
   ext p
@@ -349,7 +470,12 @@ theorem bezier_reverse_image (P : Fin (n + 1) → E) :
 of a real vector space. Then $B_n(P_0, \ldots, P_n; 0) = P_0$ and
 $B_n(P_0, \ldots, P_n; 1) = P_n$.
 
-The proof is `Bezier.curve_zero` and `Bezier.curve_one`. -/
+The proof is `Bezier.curve_zero` and `Bezier.curve_one`.
+
+**Generalization.** The formulas and recursion use an arbitrary real vector space and all real
+parameters. The convex-hull and orientation-independent image results restrict the parameter to the
+unit interval.
+-/
 theorem bezier_endpoints (P : Fin (n + 1) → E) :
     equation_8_58 P 0 = P 0 ∧ equation_8_58 P 1 = P (Fin.last n) :=
   ⟨Bezier.curve_zero P, Bezier.curve_one P⟩
@@ -362,12 +488,22 @@ $P_0, \ldots, P_{N-1} \in E$ be control points. The **parametric B-spline** is t
 $$t \mapsto \sum_{i=0}^{N-1} B_{i,k+1}(t) P_i.$$
 
 The book uses the B-splines on a nondecreasing knot sequence "in (8.58) instead of the Bernstein
-polynomials". The curve is `BSpline.curve x k P N t`. -/
+polynomials". The curve is `BSpline.curve x k P N t`.
+
+**Reading.** Changing a control point preserves the curve outside its half-open support. The
+convex-hull assertion is made on the half-open interval where the selected basis functions form a
+partition of unity. The formulas work in real vector spaces.
+-/
 noncomputable def parametricBSpline (x : ℕ → ℝ) (k : ℕ) (P : ℕ → E) (N : ℕ) (t : ℝ) : E :=
   BSpline.curve x k P N t
 
 /-- **Section 8.7.1** of [quarteroni2000numerical], the parametric B-spline unfolded. The parametric
-B-spline at $t$ is $\sum_{i=0}^{N-1} B_{i,k+1}(t) P_i$. -/
+B-spline at $t$ is $\sum_{i=0}^{N-1} B_{i,k+1}(t) P_i$.
+
+**Reading.** Changing a control point preserves the curve outside its half-open support. The
+convex-hull assertion is made on the half-open interval where the selected basis functions form a
+partition of unity. The formulas work in real vector spaces.
+-/
 theorem parametricBSpline_apply (x : ℕ → ℝ) (k : ℕ) (P : ℕ → E) (N : ℕ) (t : ℝ) :
     parametricBSpline x k P N t = ∑ i ∈ Finset.range N, BSpline.bspline x k i t • P i :=
   rfl
@@ -379,7 +515,12 @@ parameters $t \notin [x_j, x_{j+k+1})$, the support of $B_{j,k+1}$.
 
 The book says that "perturbing a single vertex of the characteristic polygon yields a local
 perturbation of the curve only around the vertex itself". The proof is
-`BSpline.curve_update_eq_of_notMem`. -/
+`BSpline.curve_update_eq_of_notMem`.
+
+**Reading.** Changing a control point preserves the curve outside its half-open support. The
+convex-hull assertion is made on the half-open interval where the selected basis functions form a
+partition of unity. The formulas work in real vector spaces.
+-/
 theorem parametricBSpline_local {x : ℕ → ℝ} (hx : Monotone x) (k : ℕ) (P : ℕ → E) (j : ℕ) (Q : E)
     (N : ℕ) {t : ℝ} (ht : t ∉ Ico (x j) (x (j + k + 1))) :
     parametricBSpline x k (Function.update P j Q) N t = parametricBSpline x k P N t :=
@@ -394,7 +535,12 @@ The book says that the curve "is always contained within the convex hull of the 
 parameter range $[x_k, x_N)$ the coefficients $B_{i,k+1}(t)$ are nonnegative and sum to $1$. The
 first half of the book's sentence, that the parametric B-spline "better approximates the control
 polygon than the corresponding Bézier curve does", is not a mathematical statement and is not
-formalized. The proof is `BSpline.curve_mem_convexHull`. -/
+formalized. The proof is `BSpline.curve_mem_convexHull`.
+
+**Reading.** Changing a control point preserves the curve outside its half-open support. The
+convex-hull assertion is made on the half-open interval where the selected basis functions form a
+partition of unity. The formulas work in real vector spaces.
+-/
 theorem parametricBSpline_mem_convexHull {x : ℕ → ℝ} (hx : Monotone x) (k : ℕ) (P : ℕ → E) {N : ℕ}
     (hN : 1 ≤ N) {t : ℝ} (ht : t ∈ Ico (x k) (x N)) :
     parametricBSpline x k P N t ∈ convexHull ℝ (P '' Iio N) :=

@@ -72,6 +72,13 @@ normal matrices, `Matrix.IsStarNormal.spectral_theorem`) and `Numlib.LinearAlgeb
   the block $i$, is `Xᵀ (σ ⟨i, j⟩)`.
 * Property 1.6 groups the Jordan blocks by eigenvalue, as the backbone statement does. Example 1.6
   places the blocks one after the other along the diagonal, through `finSigmaFinEquiv`.
+
+## Deviations from the source
+
+* **Products $AB$ and $BA$** (reading). The book describes the two products as nonsimilar.
+  They have different orders if $m\ne n$. They can be similar when $m=n$, for example when $A$
+  is invertible. Lean states the shared nonzero spectrum and spectral radius without a
+  nonsimilarity claim.
 -/
 
 open Finset Matrix Polynomial
@@ -125,7 +132,10 @@ $$\sigma(AB) \setminus \{0\} = \sigma(BA) \setminus \{0\},$$
 and consequently $\rho(AB) = \rho(BA)$.
 
 The proof uses the identity $\lambda^m p_{AB}(\lambda) = \lambda^n p_{BA}(\lambda)$ of Mathlib's
-`Matrix.charpoly_mul_comm'`. -/
+`Matrix.charpoly_mul_comm'`.
+
+**Reading.** The source describes the products as nonsimilar. For square invertible $A$,
+$BA=A^{-1}(AB)A$, so the theorem makes no nonsimilarity assertion. -/
 theorem spectrum_mul_comm {m : ℕ} (A : Matrix (Fin n) (Fin m) ℂ) (B : Matrix (Fin m) (Fin n) ℂ) :
     spectrum ℂ (A * B) \ {0} = spectrum ℂ (B * A) \ {0} ∧
       spectralRadius ℂ (A * B) = spectralRadius ℂ (B * A) := by

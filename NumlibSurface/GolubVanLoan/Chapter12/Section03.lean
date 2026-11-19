@@ -124,11 +124,18 @@ of rank at most $\tilde r$. They use (1.3.5) and (1.3.6) of Chapter 1
 
 ## Deviations from the source
 
+* **Equations (12.3.3)–(12.3.4)** (reading). The Kronecker congruences require only the two
+  factor identities. The SVD statement uses real matrices and column-indexed singular values.
+  See `GolubVanLoan.Chapter12.equation_12_3_3` and `GolubVanLoan.Chapter12.equation_12_3_4`.
+* **Theorem 12.3.1 and (12.3.19)** (generalization). The exact expansion accepts arbitrary outer
+  products. The truncation may include zero singular values. See
+  `GolubVanLoan.Chapter12.theorem_12_3_1` and `GolubVanLoan.Chapter12.equation_12_3_19`.
 * **Equation (12.3.9)** (typo). The source states $X \in \mathbb{R}^{n_1 \times m_2}$ for
   $X \in \mathbb{R}^{n_2 \times n_1}$. See `GolubVanLoan.Chapter12.equation_12_3_9`.
 * **§12.3.5, the two-pass transposition** (correction). The source prints
-  $\Gamma_1 = \mathcal{P}_{r,q} \otimes I_q$, which is correct only for $r = q$, and announces a
-  factorization of $\mathcal{P}_{rq,q}$ before it writes $\mathcal{P}_{q,rq}$. See
+  $\Gamma_1 = \mathcal{P}_{r,q} \otimes I_q$, which generally has the opposite shuffle
+  orientation, and announces a factorization of $\mathcal{P}_{rq,q}$ before it writes
+  $\mathcal{P}_{q,rq}$. See
   `GolubVanLoan.Chapter12.perfectShuffle_two_pass`.
 * **Equation (12.3.21)** (typo). The source writes $\phi_{skew}(X)$ for $\phi_{skew}(X, Y)$ and
   drops a parenthesis. See `GolubVanLoan.Chapter12.equation_12_3_21`.
@@ -304,7 +311,10 @@ are. Hence $\lambda(B \otimes C) = \{\beta_i \gamma_j\}$: if the characteristic 
 $B$ and $C$ are $\prod_i (x - \beta_i)$ and $\prod_j (x - \gamma_j)$, then the characteristic
 polynomial of $B \otimes C$ is $\prod_{i,j} (x - \beta_i \gamma_j)$.
 
-The identity does not need $Q_B$ and $Q_C$ to be unitary. -/
+The identity does not need $Q_B$ and $Q_C$ to be unitary.
+
+**Generalization.** The congruence identity holds for arbitrary factors satisfying the two
+input equalities. The spectral products are stated with characteristic multiplicities. -/
 theorem equation_12_3_3 {m n : ℕ} (B Q_B T_B : Matrix (Fin m) (Fin m) ℂ)
     (C Q_C T_C : Matrix (Fin n) (Fin n) ℂ) (hB : Q_Bᴴ * B * Q_B = T_B)
     (hC : Q_Cᴴ * C * Q_C = T_C) :
@@ -327,7 +337,10 @@ values of $B \otimes C$ are the products of those of $B$ and $C$: there is a bij
 the index pairs with $\sigma_{e(i,j)}(B \otimes C) = \sigma_i(B) \sigma_j(C)$.
 
 The identity does not need $U_B, V_B, U_C, V_C$ to be orthogonal. The singular values are
-indexed by the columns, `Matrix.colSingularValues`, so $B \otimes C$ has $n_1 n_2$ of them. -/
+indexed by the columns, `Matrix.colSingularValues`, so $B \otimes C$ has $n_1 n_2$ of them.
+
+**Reading.** The source uses conjugate transpose. Here the factors and matrices are real, and
+the singular-value product uses column-indexed values with zeros appended as needed. -/
 theorem equation_12_3_4 {m₁ n₁ m₂ n₂ : ℕ} (U_B : Matrix (Fin m₁) (Fin m₁) ℝ)
     (V_B : Matrix (Fin n₁) (Fin n₁) ℝ) (U_C : Matrix (Fin m₂) (Fin m₂) ℝ)
     (V_C : Matrix (Fin n₂) (Fin n₂) ℝ) (Bᵣ : Matrix (Fin m₁) (Fin n₁) ℝ)
@@ -743,7 +756,7 @@ theorem rearrangement_sum {ι : Type*} (s : Finset ι)
   ext I J
   simp [rearrangement, Matrix.sum_apply]
 
-/-- The rearrangement of a Kronecker product has rank one: $\mathcal{R}(B \otimes C) =
+/-- The rearrangement of a Kronecker product has rank at most one: $\mathcal{R}(B \otimes C) =
 \operatorname{vec}(B) \operatorname{vec}(C)^T$. -/
 theorem rearrangement_kroneckerFin (B : Matrix (Fin m₁) (Fin n₁) ℝ)
     (C : Matrix (Fin m₂) (Fin n₂) ℝ) :
@@ -807,7 +820,10 @@ m_2, n_2).$$ If moreover the expansion is an SVD, that is, $\sigma_k > 0$ for al
 $u_1, \dots, u_r$ and $v_1, \dots, v_r$ are orthonormal, then $r$ is the Kronecker product rank
 of $A$, the rank of $\mathcal{R}(A)$.
 
-The Kronecker product rank is `Matrix.kroneckerRank`. -/
+The Kronecker product rank is `Matrix.kroneckerRank`.
+
+**Generalization.** The expansion holds for any decomposition into outer products. Positivity
+and orthonormality yield the rank equality. -/
 theorem theorem_12_3_1 {r : ℕ} (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ) (σ : Fin r → ℝ)
     (u : Fin r → Fin (n₁ * m₁) → ℝ) (v : Fin r → Fin (n₂ * m₂) → ℝ)
     (hA : rearrangement A = ∑ k, σ k • vecMulVec (u k) (v k)) :
@@ -886,7 +902,10 @@ has rank at most $\tilde r$, and $\mathcal{R}(A_{\tilde r})$ is the truncated SV
 (`Matrix.svdTruncation_eq_sum`). The Frobenius form of the Eckart–Young theorem in Chapter 2,
 `GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius`, compares only matrices whose rank is
 equal to some $k < \operatorname{rank}(A)$. It does not apply as stated, because here the
-competitors have rank at most $\tilde r$. -/
+competitors have rank at most $\tilde r$.
+
+**Generalization.** The truncation may include zero singular values when its length exceeds the
+rank. -/
 theorem equation_12_3_19 (A : Matrix (Fin (m₁ * m₂)) (Fin (n₁ * n₂)) ℝ)
     {U : Matrix (Fin (n₁ * m₁)) (Fin (n₁ * m₁)) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (n₂ * m₂)) (Fin (n₂ * m₂)) ℝ} (h : IsSVD (rearrangement A) U σ V) {r : ℕ}

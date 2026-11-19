@@ -61,6 +61,12 @@ closed-form Gauss–Lobatto weights of `Numlib.Approximation.OrthogonalPolynomia
 
 ## Deviations from the source
 
+* **Equations (12.36)–(12.38)** (reading). `IsLegendreLobatto` describes the Lobatto rule by
+  positivity, endpoints and exactness. `equation_12_37` is a total finite sum for arbitrary real
+  data. The weak form and collocation statement use the corrected endpoints $\pm1$.
+* **Section 12.3, stability and uniqueness** (reading). `poincare_poly` specializes (12.16) with
+  an explicit constant and needs only the left endpoint condition. `equation_12_36_unique`
+  proves equality of any two solutions. The source also asserts existence.
 * **Equation (12.36)** (typo). The source writes the conditions of $\mathbb{P}_n^0$ as
   $p(0) = p(1) = 0$, although the problem is posed on $(-1, 1)$; the conditions are $p(\pm 1) = 0$.
   See `QuarteroniSaccoSaleri.Chapter12.equation_12_36`.
@@ -106,7 +112,11 @@ $$\sum_{j=0}^n w_j \, p(x_j) = \int_{-1}^1 p(x)\, dx \qquad \text{for every poly
 
 The structure is a bundle of hypotheses; it does not fix the nodes by a formula. The exactness
 is `Quadrature.IsExactOnMeasure` for `OrthogonalPolynomial.legendreMeasure`, the Lebesgue
-measure on $(-1, 1)$. -/
+measure on $(-1, 1)$.
+
+**Reading.** Uses an exactness/positivity predicate instead of explicit derivative-root and weight
+formulas.
+-/
 structure IsLegendreLobatto (n : ℕ) (x w : Fin (n + 1) → ℝ) : Prop where
   /-- The nodes are distinct. -/
   injective : Function.Injective x
@@ -152,7 +162,10 @@ the problem is posed on $(-1, 1)$. The conditions here are $p(\pm 1) = 0$, which
 the rest of the section use.
 
 The source writes the equation as $L_n u_n(x_j) = f(x_j)$ with $L = -d^2/dx^2$ and
-$L_n v = L(I_n v)$. On $\mathbb{P}_n$ the interpolant $I_n v$ is $v$, so $L_n u_n = -u_n''$. -/
+$L_n v = L(I_n v)$. On $\mathbb{P}_n$ the interpolant $I_n v$ is $v$, so $L_n u_n = -u_n''$.
+
+**Reading.** Uses zero values at $-1,1$. The description of $\mathbb P_n^0$ following (12.36)
+prints $0,1$. -/
 def equation_12_36 (n : ℕ) (x : Fin (n + 1) → ℝ) (f : ℝ → ℝ) (p : ℝ[X]) : Prop :=
   p.natDegree ≤ n ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 ∧
     ∀ j : Fin (n + 1), j ≠ 0 → j ≠ Fin.last n →
@@ -162,12 +175,18 @@ def equation_12_36 (n : ℕ) (x : Fin (n + 1) → ℝ) (f : ℝ → ℝ) (p : �
 $w_0, \dots, w_n$, the **discrete scalar product** of $u, v : \mathbb{R} \to \mathbb{R}$ is
 $$(u, v)_n = \sum_{j=0}^n u(x_j) v(x_j) w_j.$$
 
-The definition is `Quadrature.discreteInner`. -/
+The definition is `Quadrature.discreteInner`.
+
+**Generalization.** The finite expression is defined without requiring Lobatto nodes or
+positive weights. -/
 noncomputable def equation_12_37 (n : ℕ) (x w : Fin (n + 1) → ℝ) (u v : ℝ → ℝ) : ℝ :=
   Quadrature.discreteInner w x u v
 
 /-- **Equation (12.37)** of [quarteroni2000numerical], unfolded:
-$(u, v)_n = \sum_{j=0}^n u(x_j) v(x_j) w_j$. -/
+$(u, v)_n = \sum_{j=0}^n u(x_j) v(x_j) w_j$.
+
+**Generalization.** The finite expression is defined without requiring Lobatto nodes or
+positive weights. -/
 theorem equation_12_37_eq (n : ℕ) (x w : Fin (n + 1) → ℝ) (u v : ℝ → ℝ) :
     equation_12_37 n x w u v = ∑ j, u (x j) * v (x j) * w j := by
   simp only [equation_12_37, Quadrature.discreteInner]
@@ -221,7 +240,9 @@ $\|f\|_n \le \sqrt{2} \|f\|_\infty$. Let $x$ and $w$ be the Legendre–Gauss–L
 weights of $[-1, 1]$, and let $|f(x_j)| \le M$ for $j = 0, \dots, n$. Then
 $$(f, f)_n \le 2M^2.$$
 
-This is the first of the two estimates that the stability bound after (12.38) uses. -/
+This is the first of the two estimates that the stability bound after (12.38) uses.
+
+**Generalization.** A bound on the finitely many nodal values suffices. -/
 theorem equation_12_37_le_sup {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w)
     {f : ℝ → ℝ} {M : ℝ} (hM : ∀ j, |f (x j)| ≤ M) :
     equation_12_37 n x w f f ≤ 2 * M ^ 2 := by
@@ -269,7 +290,10 @@ $$(-p'', q)_n = (f, q)_n \qquad \text{for every } q \in \mathbb{P}_n^0.$$
 In the forward direction, both sides are sums over the nodes; the endpoint terms vanish because
 $q(\pm 1) = 0$, and the interior terms agree by the collocation equations. In the backward
 direction, one tests with the Lagrange basis polynomial of an interior node and divides by its
-positive weight. -/
+positive weight.
+
+**Reading.** Uses zero values at $-1,1$. The description of $\mathbb P_n^0$ following (12.36)
+prints $0,1$. -/
 theorem equation_12_38 {n : ℕ} {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w) (f : ℝ → ℝ)
     (p : ℝ[X]) :
     equation_12_36 n x f p ↔ p.natDegree ≤ n ∧ p.eval (-1) = 0 ∧ p.eval 1 = 0 ∧
@@ -390,7 +414,10 @@ for the Legendre weight, and the nodal polynomial $\prod_{j=0}^n (X - x_j)$ is t
 polynomial `Quadrature.lobattoNodal` of degree $n + 1$.
 
 The proof uses the uniqueness of the Gauss–Lobatto rule,
-`Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure`. -/
+`Quadrature.nodal_eq_lobattoNodal_of_isExactOnMeasure`.
+
+**Reading.** Characterizes the rule by its endpoints, interval membership, positivity and
+exactness. The source refers to the explicit Legendre–Lobatto construction from Section 10.4. -/
 theorem IsLegendreLobatto.isInterpolatoryMeasure_and_nodal_eq {n : ℕ} (hn : 1 ≤ n)
     {x w : Fin (n + 1) → ℝ} (hx : IsLegendreLobatto n x w) :
     Quadrature.IsInterpolatoryMeasure OrthogonalPolynomial.legendreMeasure w x ∧
@@ -432,7 +459,10 @@ with the constant $C_P^2 = (b - a)^2/2 = 2$.
 
 From $p(y) = \int_{-1}^y p'$, the Cauchy–Schwarz inequality against $1$ gives
 $p(y)^2 \le (y + 1) \int_{-1}^1 (p')^2$, and $\int_{-1}^1 (y + 1)\, dy = 2$. The proof
-specializes `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`. -/
+specializes `intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero`.
+
+**Reading.** Gives the squared Poincaré bound on $[-1,1]$ for a polynomial with only its left
+endpoint value set to zero. -/
 theorem poincare_poly {p : ℝ[X]} (hm1 : p.eval (-1) = 0) :
     (∫ t in (-1 : ℝ)..1, p.eval t ^ 2) ≤ 2 * ∫ t in (-1 : ℝ)..1, (derivative p).eval t ^ 2 := by
   have := intervalIntegral.integral_sq_le_of_hasDerivAt_of_left_eq_zero
@@ -504,7 +534,13 @@ Legendre–Gauss–Lobatto nodes and weights of $[-1, 1]$, and let $p$ and $q$ s
 problem (12.36) with the same $f$. Then $p = q$.
 
 The difference $p - q$ solves (12.36) with $f = 0$, so $\|(p - q)'\|_{L^2} \le 0$. A polynomial
-with zero derivative is constant, and this constant vanishes at $\pm 1$. -/
+with zero derivative is constant, and this constant vanishes at $\pm 1$.
+
+**Partial.** Establishes equality of two supplied collocation solutions. The text also asserts
+existence.
+
+**Reading.** States at most one solution rather than existence and uniqueness.
+-/
 theorem equation_12_36_unique {n : ℕ} (hn : 1 ≤ n) {x w : Fin (n + 1) → ℝ}
     (hx : IsLegendreLobatto n x w) {f : ℝ → ℝ} {p q : ℝ[X]} (hp : equation_12_36 n x f p)
     (hq : equation_12_36 n x f q) : p = q := by

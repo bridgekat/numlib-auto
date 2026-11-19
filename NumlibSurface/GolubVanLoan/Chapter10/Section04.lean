@@ -115,6 +115,13 @@ process of `Numlib.Krylov.Bidiagonalization` and the SVD results of
 
 ## Deviations from the source
 
+* **Algorithms 10.4.1–10.4.2, zero normalization coefficients** (reading). The exact results
+  identify the totalized vectors and coefficients. A zero normalization coefficient can give a
+  zero vector. For Algorithm 10.4.2 this can occur even when the leading square block is
+  nonsingular. See `GolubVanLoan.Chapter10.bidiagLoop_spec` and
+  `GolubVanLoan.Chapter10.algorithm_10_4_2_spec`.
+* **§10.4.5, CUR product** (correction). Equation (10.4.24) also needs the transpose on $D_R
+  Z_1(\mathrm{row},:)$. See `GolubVanLoan.Chapter10.equation_10_4_24`.
 * **Equation (10.4.6)** (typo). The source prints $A U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)$, with $U$
   and $V$ exchanged. See `GolubVanLoan.Chapter10.equation_10_4_6`.
 * **Equation (10.4.6)** (generalization). The source attributes the identity to $\beta_k = 0$. It
@@ -401,7 +408,10 @@ $\beta_1, \dots, \beta_{k-1}$. Then
 $$A V_k = U_k B_k.$$
 
 The identity holds for every $k$: after a breakdown both sides have zero columns. The proof
-specializes `GolubKahan.mul_rightMatrix`. -/
+specializes `GolubKahan.mul_rightMatrix`.
+
+**Reading.** Same bidiagonal product for totalized basis, no positive pivot assumption.
+-/
 theorem equation_10_4_9 (k : ℕ) :
     A * GolubKahan.rightMatrix A v k =
       GolubKahan.leftMatrix A v k *
@@ -418,7 +428,11 @@ where $e_k$ is the last unit vector of $\mathbb{R}^k$.
 In 0-based indices $\beta_k$ and $v_{k+1}$ are `GolubKahan.beta T Ts v (k - 1)` and
 `GolubKahan.rightVec T Ts v k`, and $e_k$ is `Krylov.lastVec 1 k`. The proof splits
 `GolubKahan.conjTranspose_mul_leftMatrix`, which is $A^T U_k = V_{k+1} \bar B_k$, into the first
-$k$ columns of $V_{k+1}$ and the last one. -/
+$k$ columns of $V_{k+1}$ and the last one.
+
+**Reading.** Same transpose relation with explicit residual, valid with totalization even when alpha
+vanishes.
+-/
 theorem equation_10_4_10 {k : ℕ} (hk : 1 ≤ k) :
     Aᵀ * GolubKahan.leftMatrix A v k =
       GolubKahan.rightMatrix A v k *
@@ -455,7 +469,10 @@ $v_c \in \mathbb{R}^n$ and $k \ge 0$. The first $k$ right Golub–Kahan vectors 
 span the Krylov subspace of $A^T A$:
 $$\operatorname{span}\{v_1, \dots, v_k\} = \mathcal{K}(A^T A, v_c, k).$$
 
-The proof specializes `GolubKahan.span_rightVec`. -/
+The proof specializes `GolubKahan.span_rightVec`.
+
+**Reading.** Same right Krylov span for every prefix, including padded vectors.
+-/
 theorem equation_10_4_11 (k : ℕ) :
     Submodule.span ℝ (GolubKahan.rightVec (toEuclideanLin A) (toEuclideanLin Aᵀ) v '' Set.Iio k) =
       Krylov.subspace (toEuclideanLin (Aᵀ * A)) v k := by
@@ -466,7 +483,10 @@ $v_c \in \mathbb{R}^n$ and $k \ge 0$. The first $k$ left Golub–Kahan vectors o
 span the Krylov subspace of $A A^T$ from $A v_c$:
 $$\operatorname{span}\{u_1, \dots, u_k\} = \mathcal{K}(A A^T, A v_c, k).$$
 
-The proof specializes `GolubKahan.span_leftVec`. -/
+The proof specializes `GolubKahan.span_leftVec`.
+
+**Reading.** Same left Krylov span for every prefix, including padded vectors.
+-/
 theorem equation_10_4_12 (k : ℕ) :
     Submodule.span ℝ (GolubKahan.leftVec (toEuclideanLin A) (toEuclideanLin Aᵀ) v '' Set.Iio k) =
       Krylov.subspace (toEuclideanLin (A * Aᵀ)) (toEuclideanLin A v) k := by
@@ -481,7 +501,10 @@ the $k \times k$ Lanczos tridiagonal matrix of $A^T A$ from $v_c$.
 So the squares of the singular values of $B_k$ are the Ritz values of $A^T A$ on
 $\mathcal{K}(A^T A, v_c, k)$ (`Lanczos.ritzValues`), which Theorems 10.1.2–10.1.4 bound; this is
 how the source applies the convergence theory of the symmetric Lanczos process. The Lanczos
-matrix is `Lanczos.tridiag`. The proof specializes `GolubKahan.bidiag_conjTranspose_mul_bidiag`. -/
+matrix is `Lanczos.tridiag`. The proof specializes `GolubKahan.bidiag_conjTranspose_mul_bidiag`.
+
+**Reading.** Same Gram identity for all prefix lengths, including beyond grade.
+-/
 theorem bidiag_transpose_mul_bidiag (k : ℕ) :
     (GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k)ᵀ *
         GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k =
@@ -503,7 +526,11 @@ Then $Y_k = V_k G_k$ and $Z_k = U_k F_k$ satisfy
 $$A Y_k = Z_k \Gamma,$$
 that is, $A y_i = \gamma_i z_i$ for every column.
 
-The orthogonality of $G_k$ is not needed. The proof uses (10.4.9). -/
+The orthogonality of $G_k$ is not needed. The proof uses (10.4.9).
+
+**Reading.** Uses orthogonal F and transformed bidiagonal equation; no orthogonality of G or sorted
+diagonal required.
+-/
 theorem equation_10_4_14 {k : ℕ} {F G : Matrix (Fin k) (Fin k) ℝ}
     (hF : F ∈ orthogonalGroup (Fin k) ℝ) {γ : Fin k → ℝ}
     (hSVD : Fᵀ * GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k * G = diagonal γ) :
@@ -520,7 +547,11 @@ $Y_k = V_k G_k$, $Z_k = U_k F_k$ and $p_k = \beta_k v_{k+1}$ as in (10.4.10),
 $$A^T Z_k = Y_k \Gamma + p_k e_k^T F_k,$$
 that is, $A^T z_i = \gamma_i y_i + [F_k]_{ki} p_k$ for every column.
 
-The row vector $e_k^T F_k$ is `Krylov.lastVec 1 k ᵥ* F`. The proof uses (10.4.10). -/
+The row vector $e_k^T F_k$ is `Krylov.lastVec 1 k ᵥ* F`. The proof uses (10.4.10).
+
+**Reading.** Same residual row rotated by F, with diagonal equality and orthogonality rather than
+sorted SVD conventions.
+-/
 theorem equation_10_4_15 {k : ℕ} (hk : 1 ≤ k) {F G : Matrix (Fin k) (Fin k) ℝ}
     (hF : F ∈ orthogonalGroup (Fin k) ℝ) (hG : G ∈ orthogonalGroup (Fin k) ℝ) {γ : Fin k → ℝ}
     (hSVD : Fᵀ * GolubKahan.bidiag (toEuclideanLin A) (toEuclideanLin Aᵀ) v k * G = diagonal γ) :
@@ -552,7 +583,10 @@ $(i + 1, i)$. In particular, for $m > n$ only the first $n + 1$ rows can be nonz
 
 Lower bidiagonal is `Matrix.IsLowerBidiagonalRect`. No relation between $m$ and $n$ is assumed.
 The factorization is the transpose of an upper bidiagonalization of $A^T$
-(`Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero`). -/
+(`Matrix.exists_unitary_mul_mul_unitary_apply_eq_zero`).
+
+**Reading.** Lower bidiagonal existence for all rectangular shapes, including wide and square.
+-/
 theorem equation_10_4_18 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
       (Uᵀ * A * V).IsLowerBidiagonalRect := by
@@ -576,7 +610,10 @@ $$A V(:, 1:k) = U(:, 1:k) B(1:k, 1:k) + p_k e_k^T, \qquad p_k = \beta_{k+1} u_{k
 The source's $u_j$ is `GolubKahan.rightVec (toEuclideanLin Aᵀ) (toEuclideanLin A) u_c (j - 1)`
 and its $v_j$ is the corresponding `GolubKahan.leftVec`. The matrix $B(1:k, 1:k)$ is the
 transpose of the upper bidiagonal `GolubKahan.bidiag` of the pair $(A^T, A)$. The statement is
-(10.4.10) for $A^T$. -/
+(10.4.10) for $A^T$.
+
+**Reading.** Same residual relation under transpose-targeted construction with totalized vectors.
+-/
 theorem equation_10_4_19 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (u : EuclideanSpace ℝ (Fin m))
     {k : ℕ} (hk : 1 ≤ k) :
     A * GolubKahan.leftMatrix Aᵀ u k =
@@ -676,7 +713,10 @@ $$\|A - \tilde A_k\|_F \le \|A - B\|_F \quad \text{for every } B \in \mathbb{R}^
 
 This is the Eckart–Young–Mirsky remark after Theorem 2.4.8. No bound on $k$ is needed. The proof
 specializes `Matrix.frobenius_norm_sub_svdTruncation` and
-`Matrix.isLeast_frobenius_norm_sub_of_rank_le`. -/
+`Matrix.isLeast_frobenius_norm_sub_of_rank_le`.
+
+**Reading.** Norm optimality for every k, including above matrix rank.
+-/
 theorem equation_10_4_20_frobenius {m n : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     (k : ℕ) (B : Matrix (Fin m) (Fin n) ℝ) (hB : B.rank ≤ k) :
@@ -702,7 +742,10 @@ $\Sigma_1$ is nonsingular, and let $\Phi = Y_1 \Sigma_1^{-2} Y_1^T$. Then
 $$C \Phi = Z_1 \Sigma_1^{-1} Y_1^T.$$
 
 In the source $Y = [Y_1 | Y_2]$ is orthogonal; only the two relations $Y_1^T Y_1 = I$ and
-$Y_2^T Y_1 = 0$ are used. The diagonals of $\Sigma_1$ and $\Sigma_2$ are vectors `σ₁` and `σ₂`. -/
+$Y_2^T Y_1 = 0$ are used. The diagonals of $\Sigma_1$ and $\Sigma_2$ are vectors `σ₁` and `σ₂`.
+
+**Reading.** Algebraic identity with just right-block orthogonality and nonzero retained diagonal.
+-/
 theorem equation_10_4_22 (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diagonal σ₂ * Y₂ᵀ)
     (hY₁ : Y₁ᵀ * Y₁ = 1) (hY₂₁ : Y₂ᵀ * Y₁ = 0) (hσ : ∀ i, σ₁ i ≠ 0) :
     C * (Y₁ * diagonal (fun i => (σ₁ i)⁻¹ ^ 2) * Y₁ᵀ) =
@@ -741,7 +784,10 @@ $$\Psi^T R = \bigl(D_R (Z_1(\mathrm{row}, :) \Sigma_1 Y_1^T + Z_2(\mathrm{row}, 
 
 This is the SVD of $C$ substituted in the selected rows; no relation between the factors is
 needed. The source writes the left side as $\Psi^T R$ here and as $\Psi R$ in (10.4.24). The
-selection is a map `row : Fin s → Fin m`, which need not be injective. -/
+selection is a map `row : Fin s → Fin m`, which need not be injective.
+
+**Correction.** Deterministic shape-correct identity for arbitrary selected rows and scale.
+-/
 theorem equation_10_4_23 {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (row : Fin s → Fin m)
     (d : Fin s → ℝ) (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diagonal σ₂ * Y₂ᵀ) :
     (diagonal d * C.submatrix row id)ᵀ * (diagonal d * A.submatrix row id) =
@@ -758,7 +804,10 @@ $$C U R = (C \Phi)(\Psi^T R) = Z_1 (D_R Z_1(\mathrm{row}, :))^T (D_R A(\mathrm{r
 **Typo.** The source prints $(C\Phi)(\Psi R)$ and omits the transpose. The product $\Psi R$ is
 not defined unless $s = c$, and (10.4.23) has $\Psi^T R$.
 
-The proof combines (10.4.22), (10.4.23) and $Y_1^T Y_2 = 0$. -/
+The proof combines (10.4.22), (10.4.23) and $Y_1^T Y_2 = 0$.
+
+**Correction.** The last product in the printed equation also needs the transpose on $D_R
+Z_1(\mathrm{row},:)$. The formal expression gives it on both sides. -/
 theorem equation_10_4_24 {n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (row : Fin s → Fin m)
     (d : Fin s → ℝ) (hC : C = Z₁ * diagonal σ₁ * Y₁ᵀ + Z₂ * diagonal σ₂ * Y₂ᵀ)
     (hY₁ : Y₁ᵀ * Y₁ = 1) (hY₂₁ : Y₂ᵀ * Y₁ = 0) (hσ : ∀ i, σ₁ i ≠ 0) :
@@ -920,7 +969,10 @@ p_k = C u_k − α_k v_k,  β_k = ‖p_k‖₂
 ```
 with $\beta_0 = 1$ and $u_0 = 0$ at the first pass. For $(B, C) = (A, A^T)$ it is the loop body
 of Algorithm 10.4.1, and for $(A^T, A)$ it is the loop body of Algorithm 10.4.2 with the roles
-of $u$ and $v$ exchanged. -/
+of $u$ and $v$ exchanged.
+
+**Reading.** Shared two-operator loop, rounded arithmetic and total normalization.
+-/
 noncomputable def bidiagStep (B : Matrix (Fin m) (Fin n) ℝ) (C : Matrix (Fin n) (Fin m) ℝ)
     (s : BidiagState m n) : M (BidiagState m n) :=
   if s.done then pure s else do
@@ -944,7 +996,10 @@ noncomputable def bidiagStep (B : Matrix (Fin m) (Fin n) ℝ) (C : Matrix (Fin n
 
 /-- The bidiagonalization loop for a pair $(B, C)$ from the starting vector $v_0$: at most `fuel`
 passes of `GolubVanLoan.Chapter10.bidiagStep`, from the state with $k = 0$, $p = v_0$ and all
-vectors and coefficients zero. -/
+vectors and coefficients zero.
+
+**Reading.** Shared loop with explicit finite fuel and stopped flag.
+-/
 noncomputable def bidiagLoop (B : Matrix (Fin m) (Fin n) ℝ) (C : Matrix (Fin n) (Fin m) ℝ)
     (v₀ : Fin n → ℝ) (fuel : ℕ) : M (BidiagState m n) :=
   (List.range fuel).foldlM (fun s _ => bidiagStep rnd B C s)
@@ -965,7 +1020,10 @@ end
 
 The program is `GolubVanLoan.Chapter10.bidiagLoop` for the pair $(A, A^T)$. The `while` loop is
 at most `fuel` passes, and every arithmetic result passes through the rounding hook `rnd`. The
-exact semantics is `GolubVanLoan.Chapter10.algorithm_10_4_1_spec`. -/
+exact semantics is `GolubVanLoan.Chapter10.algorithm_10_4_1_spec`.
+
+**Reading.** Same upper recurrence with bounded fuel and totalized division.
+-/
 noncomputable def algorithm_10_4_1 (A : Matrix (Fin m) (Fin n) ℝ) (vc : Fin n → ℝ) (fuel : ℕ) :
     M (BidiagState m n) :=
   bidiagLoop rnd A Aᵀ vc fuel
@@ -1017,7 +1075,11 @@ private theorem bidiagLoop_succ {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ)
 $B \in \mathbb{R}^{m \times n}$ and let $v_0 \in \mathbb{R}^n$ be a unit vector. In exact
 arithmetic the run ends with the step counter $\min(\mathrm{fuel}, g)$, where $g$ is the grade
 of $v_0$ for $B^T B$, and for every $j$ below this counter the computed $v_{j+1}$, $u_{j+1}$,
-$\alpha_{j+1}$, $\beta_{j+1}$ are the Golub–Kahan vectors and coefficients of $B$ from $v_0$. -/
+$\alpha_{j+1}$, $\beta_{j+1}$ are the Golub–Kahan vectors and coefficients of $B$ from $v_0$.
+
+**Reading.** The identities compare the attained vectors with the backbone's totalized
+recurrences. When a normalization coefficient is zero, division returns the zero vector, which
+is not a unit bidiagonalization vector. -/
 theorem bidiagLoop_spec {m n : ℕ} (B : Matrix (Fin m) (Fin n) ℝ) {v₀ : Fin n → ℝ}
     (hv : ‖(WithLp.toLp 2 v₀ : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (bidiagLoop pure B Bᵀ v₀ fuel)
@@ -1213,7 +1275,12 @@ zero; that is full column rank.
 In 0-based indices the computed quantities are `GolubKahan.rightVec T Ts q (j - 1)`,
 `GolubKahan.leftVec T Ts q (j - 1)`, `GolubKahan.alpha T Ts q (j - 1)` and
 `GolubKahan.beta T Ts q (j - 1)` for `T = Matrix.toEuclideanLin Aᵀ` and
-`Ts = Matrix.toEuclideanLin A`. -/
+`Ts = Matrix.toEuclideanLin A`.
+
+**Limitation.** The source assumes a nonsingular leading square block, which can still give
+$A^T u_c = 0$ for a rectangular matrix. For example, $A=(1,0)^T$ and $u_c=(0,1)^T$ produce
+$\alpha_1=0$. The exact theorem identifies the totalized vectors and coefficients. It does not
+assert that a vector computed by division by a zero coefficient is a unit basis vector. -/
 theorem algorithm_10_4_2_spec {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {uc : Fin m → ℝ}
     (hu : ‖(WithLp.toLp 2 uc : EuclideanSpace ℝ (Fin m))‖ = 1) (fuel : ℕ) :
     let s := Id.run (algorithm_10_4_2 pure A uc fuel)
@@ -1246,7 +1313,11 @@ entry $(i, i+1)$ is `GolubKahan.alpha T Ts v (i / 2)` for even $i$ and
 `GolubKahan.beta T Ts v (i / 2)` for odd $i$. The matrix $C$ is the Hermitian dilation
 `LinearMap.hermitianDilation` in coordinates. The proof carries
 `GolubKahan.lanczos_jordanWielandt` to coordinates by `Arnoldi.coeff_conj_linearIsometryEquiv`
-along `PiLp.sumPiLpEquivProdLpPiLp`. -/
+along `PiLp.sumPiLpEquivProdLpPiLp`.
+
+**Reading.** Canonical block swap with same alternating entries, allows all shapes, orders and
+starting vectors.
+-/
 theorem lanczos_jordanWielandt {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ)
     (v : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     Lanczos.tridiag (toEuclideanLin (Matrix.fromBlocks 0 Aᵀ A 0))

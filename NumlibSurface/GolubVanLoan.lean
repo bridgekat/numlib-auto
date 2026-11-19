@@ -361,8 +361,15 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 1: Matrix multiplication**
 
+* **Algorithm 1.1.6** (reading). The program retains the rounding order of Algorithm 1.1.5 by
+  accumulating the dot product onto $C(i,j)$. See `GolubVanLoan.Chapter01.algorithm_1_1_6`.
+* **Table 1.2.1** (reading). The book includes rectangular matrices. The theorem uses square
+  matrices. See `GolubVanLoan.Chapter01.table_1_2_1`.
 * **Algorithm 1.2.1** (generalization). The source takes $C$ upper triangular; the specification
   holds for every $C$. See `GolubVanLoan.Chapter01.algorithm_1_2_1_spec`.
+* **Equations (1.2.1) and (1.2.2)** (reading). The storage accessors are total and the algorithms
+  use only their printed domains. See `GolubVanLoan.Chapter01.bandEntry` and
+  `GolubVanLoan.Chapter01.packedIndex`.
 * **§1.2.11, the downshift** (typo). The source's formula $\mathcal{D}_n = I_n(v,:)$ with
   $v = [(2{:}n)\ 1]$ gives the upshift $\mathcal{D}_n^T$; the definition follows the displayed
   $\mathcal{D}_4$ and the name. See `GolubVanLoan.Chapter01.downshift`.
@@ -374,65 +381,270 @@ source prints and what the library states instead, and the declaration with the 
   `GolubVanLoan.Chapter01.symplectic_blocks`.
 * **Algorithm 1.3.1** (generalization). The source assumes $n_{\min} = 2^d$ with $d \le q$; the
   specification holds for every $d$. See `GolubVanLoan.Chapter01.algorithm_1_3_1_spec`.
-* **§1.4.3, the Haar matrix** (typo). The printed recursion for $W_{2m}$ lost its brackets, and the
-  printed $W_4$ and the sixth row of $W_8$ are garbled; the definition follows $W_2$ and the intact
-  rows of $W_8$. See `GolubVanLoan.Chapter01.haarMatrix`.
+* **Equations (1.4.3), (1.4.4), and (1.4.8)** (reading). At $m=0$, the sine transform is empty
+  and the cosine transform is the identity on one entry. See `GolubVanLoan.Chapter01.dstTransform`,
+  `GolubVanLoan.Chapter01.dctTransform` and `GolubVanLoan.Chapter01.equation_1_4_8`.
+* **Algorithm 1.4.1, twiddle factors** (reading). The program computes successive powers by
+  repeated rounded multiplication. See `GolubVanLoan.Chapter01.fftTwiddles`.
+* **Algorithms 1.4.2 and 1.4.3** (reading). The programs choose the radix-2 FFT, so $m$ is a power
+  of two. The rounded outputs are complex. See `GolubVanLoan.Chapter01.algorithm_1_4_2` and
+  `GolubVanLoan.Chapter01.algorithm_1_4_3`.
 * **Algorithm 1.4.4** (typo). The source writes $y(1{:}2{:}m)$ and $y(2{:}2{:}m)$ for $y(1{:}2{:}n)$
   and $y(2{:}2{:}n)$. See `GolubVanLoan.Chapter01.algorithm_1_4_4`.
+* **§1.6.8 and Equation (1.6.16)** (generalization). The four-block displays extend to arbitrary
+  positive order as in Problem P1.6.6. See `GolubVanLoan.Chapter01.cannonA`,
+  `GolubVanLoan.Chapter01.cannonB`, `GolubVanLoan.Chapter01.equation_1_6_16` and
+  `GolubVanLoan.Chapter01.cannon_succ`.
 
 **Chapter 2: Matrix analysis**
 
+* **Equations (2.1.1) and (2.1.2)** (generalization). The identities also hold for singular
+  matrices with Mathlib's inverse convention. See `GolubVanLoan.Chapter02.equation_2_1_1` and
+  `GolubVanLoan.Chapter02.equation_2_1_2`.
+* **Note after Theorem 2.1.1** (generalization). The orthogonal complement identity allows
+  arbitrary complementary column selections. See
+  `GolubVanLoan.Chapter02.orthogonal_range_submatrix_eq`.
+* **§2.1.7, similarity** (generalization). Equality of the characteristic polynomials records
+  the eigenvalues with multiplicity. See `GolubVanLoan.Chapter02.isSimilar_spectrum_eq`.
+* **§2.2.1, vector norm** (generalization). The axioms apply to every real vector space.
+  See `GolubVanLoan.Chapter02.IsVectorNorm`.
+* **Equation (2.2.1) and following special cases** (reading). The infinity norm of the empty
+  vector is zero. See `GolubVanLoan.Chapter02.equation_2_2_1`.
+* **§2.2.4, convergence** (generalization). The equivalence holds on every finite-dimensional
+  real normed space. See `GolubVanLoan.Chapter02.tendsto_iff_of_isVectorNorm`.
+* **Equation (2.3.2), attainment** (reading). The unit-vector conclusion requires positive
+  input dimension. See `GolubVanLoan.Chapter02.equation_2_3_2`.
+* **Equations (2.3.5)–(2.3.6)** (generalization and reading). The target may carry a seminorm.
+  Attainment requires positive input dimension. See `GolubVanLoan.Chapter02.equation_2_3_5`
+  and `GolubVanLoan.Chapter02.equation_2_3_6`.
+* **Equations (2.3.8)–(2.3.12)** (reading). Empty maxima and division by zero evaluate to zero.
+  See `GolubVanLoan.Chapter02.equation_2_3_8`, `GolubVanLoan.Chapter02.equation_2_3_9`,
+  `GolubVanLoan.Chapter02.equation_2_3_10`, `GolubVanLoan.Chapter02.equation_2_3_11`, and
+  `GolubVanLoan.Chapter02.equation_2_3_12`.
+* **Theorem 2.3.1 and its spectral formula** (reading). The column count is positive. See
+  `GolubVanLoan.Chapter02.theorem_2_3_1` and `GolubVanLoan.Chapter02.l2_opNorm_eq_sqrt_lambdaMax`.
+* **Proof of Theorem 2.3.4** (correction). The proof factors out $A$ on the left to retain the
+  stated bound in terms of $\|A^{-1}E\|_p$. See `GolubVanLoan.Chapter02.theorem_2_3_4`.
+* **§2.4.1 and Corollaries 2.4.3–2.4.4** (reading). The extremal singular values are zero
+  when the singular-value list is empty. See `GolubVanLoan.Chapter02.sigmaMax`,
+  `GolubVanLoan.Chapter02.sigmaMin`, `GolubVanLoan.Chapter02.corollary_2_4_3`, and
+  `GolubVanLoan.Chapter02.corollary_2_4_4`.
+* **Proof of Corollary 2.4.4** (correction). The lower bound on $\|Ax\|_2$ used in the proof
+  can fail for wide matrices. See `GolubVanLoan.Chapter02.corollary_2_4_4`.
 * **Corollary 2.4.5** (reading). The source does not define $\sigma_{\min}$ of an $m \times 0$
   matrix; the corollary assumes $n \ge 1$. See `GolubVanLoan.Chapter02.corollary_2_4_5`.
 * **Remark after Theorem 2.4.8** (reading). The statement that $\sigma_{\min}(A)$ is the distance to
   the rank-deficient matrices assumes $m, n \ge 1$. See
   `GolubVanLoan.Chapter02.sigmaMin_eq_dist_rankDeficient`.
+* **Frobenius-norm remark after Theorem 2.4.8** (generalization). The theorem also gives the
+  exact error of the truncation. See `GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius`.
+* **Section 2.5.1, projection onto a line** (reading). The quotient requires $v \ne 0$.
+  See `GolubVanLoan.Chapter02.isOrthogonalProjection_vecMulVec`.
+* **Equation (2.5.1) and the bounds in §2.5.3** (generalization). The distance, its matrix
+  formula and the bounds $0 \le \operatorname{dist} \le 1$ apply to unequal dimensions too.
+  See `GolubVanLoan.Chapter02.subspaceDist`,
+  `GolubVanLoan.Chapter02.subspaceDist_eq_lpOpNorm_sub` and
+  `GolubVanLoan.Chapter02.subspaceDist_mem_Icc`.
 * **Section 2.5.3, $\operatorname{dist}(S_1, S_2) = 0 \Rightarrow S_1 = S_2$** (generalization). The
   source states an implication. The theorem is an equivalence and needs no hypothesis on the
   dimensions. See `GolubVanLoan.Chapter02.subspaceDist_eq_zero`.
 * **Section 2.5.3, $\operatorname{dist}(S_1, S_2) = 1 \Rightarrow S_1 \cap S_2^\perp \neq \{0\}$**
   (generalization). The source states an implication. The theorem is an equivalence. See
   `GolubVanLoan.Chapter02.subspaceDist_eq_one`.
-* **Theorem 2.5.3** (generalization). The source assumes $m_1 \ge m_2$ and that $Q$ is orthogonal.
-  The theorem does not assume $m_1 \ge m_2$, and it assumes only $Q^T Q = I$ for the square matrix
-  $Q$. See `GolubVanLoan.Chapter02.theorem_2_5_3`.
-* **Theorem 2.5.3** (typo). The row labels of the block display are misprinted ($n_1 - n_1$). The
-  block sizes that add up are the rows $p, n_1 - p, m_1 - n_1 \mid n_1 - p, q$ and the columns
-  $p, n_1 - p \mid n_1 - p, q, m_1 - n_1$. See `GolubVanLoan.Chapter02.theorem_2_5_3`.
+* **Theorem 2.5.2** (typo). The right-hand side stacks the rectangular diagonal matrices
+  $C_0$ and $S_0$, labeled $C$ and $S$ in the source display.
+  See `GolubVanLoan.Chapter02.theorem_2_5_2`.
+* **Theorem 2.5.3** (generalization). The decomposition also holds when $m_1 < m_2$.
+  See `GolubVanLoan.Chapter02.theorem_2_5_3`.
+* **Equation (2.6.1)** (generalization). An orthogonal diagonalization of the two-sided form
+  suffices, with signed and unordered diagonal entries. See `GolubVanLoan.Chapter02.equation_2_6_1`.
+* **Equations (2.6.2) and (2.6.4)** (reading). For induced $p$-norms, the bounds use an explicit
+  smallness condition, nonzero denominators and a finite factor in place of the asymptotic
+  remainder. See `GolubVanLoan.Chapter02.equation_2_6_2` and
+  `GolubVanLoan.Chapter02.equation_2_6_4`.
+* **Equations (2.6.3) and (2.6.7), Lemma 2.6.1 and Theorem 2.6.2** (reading). The surface
+  statements specialize the norm to an induced $p$-norm. See `GolubVanLoan.Chapter02.kappa`,
+  `GolubVanLoan.Chapter02.equation_2_6_7`, `GolubVanLoan.Chapter02.lemma_2_6_1` and
+  `GolubVanLoan.Chapter02.theorem_2_6_2`.
+* **Equations (2.6.5)–(2.6.7)** (reading). The ratio and inverse characterizations are stated
+  for nonsingular $A$. The minimum and normalized limit also require $n > 0$, and the limit is
+  from positive radii. See `GolubVanLoan.Chapter02.equation_2_6_5`,
+  `GolubVanLoan.Chapter02.equation_2_6_6` and `GolubVanLoan.Chapter02.equation_2_6_7`.
+* **Equation (2.6.8) and the Skeel condition number in §2.6.5** (reading). The real-valued
+  condition numbers use the totalized matrix inverse, giving $0$ for singular matrices.
+  Equation (2.6.8) also includes $n=0$ with $1/0=0$.
+  See `GolubVanLoan.Chapter02.equation_2_6_8` and
+  `GolubVanLoan.Chapter02.skeelCond_eq_and_le_condNumberLp`.
 * **Lemma 2.6.1** (reading). The source carries the nonsingularity of $A$ through the convention
   $\kappa(A) = \infty$. The lemma has the explicit hypothesis that $A$ is nonsingular. See
   `GolubVanLoan.Chapter02.lemma_2_6_1`.
+* **Equation (2.6.11)** (generalization). The identity requires only the two system equations
+  and nonsingularity of $A$. See `GolubVanLoan.Chapter02.equation_2_6_11`.
 * **Theorem 2.6.3** (typo). The source prints the hypothesis as $\delta \kappa_\infty(A) = r < 1$,
   with $\delta$ for $\epsilon$. See `GolubVanLoan.Chapter02.theorem_2_6_3`.
+* **Equation (2.6.13)** (reading). A zero denominator contributes $0$ when the row residual is
+  zero and precludes every finite feasible perturbation size otherwise.
+  See `GolubVanLoan.Chapter02.equation_2_6_13`.
+* **Equation (2.6.13)** (generalization). The theorem characterizes feasibility for every
+  perturbation size $\omega \ge 0$, in addition to identifying the minimum.
+  See `GolubVanLoan.Chapter02.equation_2_6_13`.
+* **Section 2.7.2, rounding to nearest** (generalization). The error bound includes both tie
+  choices and every real value at least as close as any normalized double.
+  See `GolubVanLoan.Chapter02.ieeeDouble_round_nearest`.
+* **Equations (2.7.4) and (2.7.6)** (reading). The concrete rounding and arithmetic use
+  unbounded exponents. Equation (2.7.6) takes its operands from the normalized set with zero.
+  See `GolubVanLoan.Chapter02.equation_2_7_4_system` and `GolubVanLoan.Chapter02.equation_2_7_6`.
+* **Equation (2.7.5)** (reading). The gap above $1$ requires an exponent range containing the
+  binade of $1$ and at least two digits. See `GolubVanLoan.Chapter02.equation_2_7_5`.
+* **Equation (2.7.6)** (generalization). The arithmetic bound applies to every real binary
+  operation. See `GolubVanLoan.Chapter02.equation_2_7_6`.
+* **Equation (2.7.12)** (reading and generalization). The dot product bound has explicit
+  coefficient $\gamma_n$ when $nu<1$. A second bound allows inexact addition of the first
+  product to zero and uses $\gamma_{n+1}$. See `GolubVanLoan.Chapter02.equation_2_7_12`.
+* **Equations (2.7.17) and (2.7.18)** (reading). The remainder is an explicit quadratic term
+  in the unit roundoff. See `GolubVanLoan.Chapter02.equation_2_7_17` and
+  `GolubVanLoan.Chapter02.equation_2_7_18`.
+* **Equations (2.7.19) and (2.7.20), and the nonnegative product bound in §2.7.10** (reading).
+  The coefficient is $\gamma_r$ when $ru<1$, where $r$ is the inner dimension. The norm and
+  nonnegative product bounds use dot product multiplication.
+  See `GolubVanLoan.Chapter02.equation_2_7_19`, `GolubVanLoan.Chapter02.equation_2_7_19_saxpy`,
+  `GolubVanLoan.Chapter02.equation_2_7_19_outer`, `GolubVanLoan.Chapter02.equation_2_7_20` and
+  `GolubVanLoan.Chapter02.abs_sub_le_gamma_mul_abs_of_nonneg`.
+* **Section 2.7.9, triangular product** (reading). The backward error bounds use $\gamma_2$
+  when $2u<1$. See `GolubVanLoan.Chapter02.triangular_mul_two_backward`.
+* **Equation (2.7.21)** (reading). The result states the storage bounds. The perturbed
+  solution equation appears as a hypothesis in the next theorem.
+  See `GolubVanLoan.Chapter02.equation_2_7_21` and `GolubVanLoan.Chapter02.equation_2_7_22`.
+* **Equation (2.7.22)** (generalization). The estimate holds for all perturbations satisfying
+  the norm bounds. See `GolubVanLoan.Chapter02.equation_2_7_22`.
 
 **Chapter 3: General linear systems**
 
+* **Algorithms 3.1.1–3.1.4** (reading). The programs specify the rounding order and
+  use totalized division on arbitrary inputs. The exact solve specifications require
+  nonsingular triangular input. See `GolubVanLoan.Chapter03.algorithm_3_1_1`,
+  `GolubVanLoan.Chapter03.algorithm_3_1_2`, `GolubVanLoan.Chapter03.algorithm_3_1_3` and
+  `GolubVanLoan.Chapter03.algorithm_3_1_4`.
+* **Equations (3.1.1)–(3.1.2) and §3.1.3** (reading). The explicit coefficient
+  $\gamma_n$ is used under $u<1$ and $nu<1$. See `GolubVanLoan.Chapter03.equation_3_1_1`,
+  `GolubVanLoan.Chapter03.equation_3_1_2`, `GolubVanLoan.Chapter03.algorithm_3_1_3_rounding` and
+  `GolubVanLoan.Chapter03.algorithm_3_1_4_rounding`.
+* **Equation (3.1.4) and Problem P3.1.3** (reading). The block program uses labelled rows,
+  a column-oriented solve on each block and rounded running differences for the block
+  update. Its specification uses contiguous blocks and nonzero diagonal entries.
+  See `GolubVanLoan.Chapter03.forwardSubstColOn`, `GolubVanLoan.Chapter03.blockForwardElim`
+  and `GolubVanLoan.Chapter03.equation_3_1_4`.
+* **§3.1.6, wide lower triangular systems** (typo and reading). The leading part of
+  the solution is the vector slice $x(1{:}m)$. The solve assumes a nonzero diagonal
+  in the leading block and includes the square case.
+  See `GolubVanLoan.Chapter03.nonsquareLower_wide`.
+* **§3.1.7, unit triangular solve** (reading). The column program omits division by
+  the unit diagonal. See `GolubVanLoan.Chapter03.unitForwardSubstColOn`.
+* **§3.1.7, inverse triangularity** (reading). The statement uses the totalized inverse
+  and includes singular matrices. See `GolubVanLoan.Chapter03.triangular_inv`.
+* **Equation (3.2.1)** (generalization). The two solve equations imply $Ax=b$ for
+  any factors with $A=LU$. See `GolubVanLoan.Chapter03.equation_3_2_1`.
+* **§3.2.1 and (3.2.2)** (reading). The Gauss vector is zero at a zero pivot by totalized
+  division. The rank-one matrix formula accepts any $\tau$, with the structured case
+  specified by a separate predicate. See `GolubVanLoan.Chapter03.gaussVector` and
+  `GolubVanLoan.Chapter03.gaussTransformation`.
+* **§3.2.2, outer product update** (generalization). The multiplication identity holds
+  for arbitrary $\tau$. The rounded program specifies the order of operations.
+  See `GolubVanLoan.Chapter03.gaussTransformation_mul` and
+  `GolubVanLoan.Chapter03.gaussUpdate`.
+* **§3.2.3, roundoff** (reading). The Gauss vector and update use totalized quotients.
+  The update bound uses an explicit $\gamma_3$ coefficient when $3u<1$.
+  See `GolubVanLoan.Chapter03.gaussVector_rounding` and
+  `GolubVanLoan.Chapter03.gaussUpdate_rounding`.
+* **Equations (3.2.3), (3.2.5) and (3.2.7)** (reading). A zero pivot leaves the stage
+  unchanged and contributes zero multipliers. The additional terminal step has no
+  update. See `GolubVanLoan.Chapter03.gaussStage`, `GolubVanLoan.Chapter03.equation_3_2_3`,
+  `GolubVanLoan.Chapter03.pivot`, `GolubVanLoan.Chapter03.equation_3_2_5` and
+  `GolubVanLoan.Chapter03.equation_3_2_7`.
+* **Theorem 3.2.1, determinant** (generalization). The product of diagonal entries
+  gives the determinant for any LU factorization, including singular matrices.
+  See `GolubVanLoan.Chapter03.theorem_3_2_1_det`.
 * **§3.2.5, the inverse of a Gauss transformation** (generalization). The source states
   $M_k^{-1} = I_n + \tau e_k^T$ for a Gauss transformation. The theorem needs only $\tau_k = 0$. See
   `GolubVanLoan.Chapter03.gaussTransformation_inv`.
+* **Algorithms 3.2.1 and 3.2.2** (reading). The rounded programs give explicit scalar
+  evaluation orders and totalized quotients. The gaxpy specification identifies the
+  exact output with the totalized Doolittle formulas before assuming nonzero pivots.
+  See `GolubVanLoan.Chapter03.outerProductStep`, `GolubVanLoan.Chapter03.algorithm_3_2_1`,
+  `GolubVanLoan.Chapter03.gaxpyColumn`, `GolubVanLoan.Chapter03.algorithm_3_2_2` and
+  `GolubVanLoan.Chapter03.algorithm_3_2_2_spec`.
+* **Equation (3.2.8)** (reading). The rectangular program specifies scalar rounding
+  and includes square matrices. The exact specification requires nonsingular
+  leading blocks through the column count. See `GolubVanLoan.Chapter03.tallOuterProductLU`
+  and `GolubVanLoan.Chapter03.equation_3_2_8`.
+* **Equation (3.2.9) and the assembled block LU** (generalization). The product
+  identities use only the indicated block factors and solves. Nonsingularity is
+  used for the inverse form of the Schur complement. See
+  `GolubVanLoan.Chapter03.equation_3_2_9` and `GolubVanLoan.Chapter03.blockLU_of_schur`.
 * **Algorithm 3.2.3** (correction). The source assumes that $A$ has an LU factorization. This does
   not exclude a zero pivot, for example $A = \begin{bmatrix} 0 & 1 \\ 0 & 1 \end{bmatrix}$, and the
   algorithm then fails. The specification assumes that $A(1{:}k, 1{:}k)$ is nonsingular for
   $k = 1, \dots, n-1$. See `GolubVanLoan.Chapter03.algorithm_3_2_3_spec`.
 * **Algorithm 3.2.4** (correction). The same hypothesis replaces "$A$ has an LU factorization". See
   `GolubVanLoan.Chapter03.algorithm_3_2_4_spec`.
+* **Algorithms 3.2.3 and 3.2.4, evaluation order** (reading). Both programs
+  use unit triangular solves without diagonal divisions, and rounded running differences
+  for the block products. The nonrecursive program uses equal block sizes.
+  See `GolubVanLoan.Chapter03.algorithm_3_2_3` and `GolubVanLoan.Chapter03.algorithm_3_2_4`.
 * **Theorems 3.3.1 and 3.3.2** (generalization). The source assumes that the entries of $A$ are
   floating point numbers. The theorems hold for every real matrix $A$. See
   `GolubVanLoan.Chapter03.theorem_3_3_1` and `GolubVanLoan.Chapter03.theorem_3_3_2`.
 * **Theorem 3.3.1** (generalization). The source assumes that no zero pivots occur. Only the pivots
   that are used as divisors, $\hat u_{jj}$ for $j < n$, must be nonzero. See
   `GolubVanLoan.Chapter03.theorem_3_3_1`.
-* **(3.4.8)** (correction). The source defines the growth factor on the computed stages
-  $\hat A^{(k)}$. The definition uses the exact stages, since only these admit bounds. See
-  `GolubVanLoan.Chapter03.growthFactorStages`.
-* **(3.4.9)** (reading). The source's $\rho$ bounds the computed $\hat U$ through
-  $|\hat u_{ij}| \le \rho \|A\|_\infty$. The theorem takes this bound as a hypothesis, with any
-  $\rho \ge 0$. See `GolubVanLoan.Chapter03.equation_3_4_9`.
+* **Theorems 3.3.1 and 3.3.2** (reading). The error estimates use explicit $\gamma_n$ and
+  $\gamma_{3n}$ bounds with smallness hypotheses. The solves require every diagonal pivot
+  of $\hat U$ to be nonzero. See `GolubVanLoan.Chapter03.theorem_3_3_1`,
+  `GolubVanLoan.Chapter03.theorem_3_3_1_gaxpy`, `GolubVanLoan.Chapter03.theorem_3_3_2` and
+  `GolubVanLoan.Chapter03.theorem_3_3_2_column`.
+* **Reading.** The pivot encoding in §3.4.1 accepts full-length vectors with identity swaps in
+  unused positions. The algorithms take first maximizing rows for partial pivoting, and include the
+  final identity step in the outer-product loops. See `GolubVanLoan.Chapter03.pivPerm`,
+  `GolubVanLoan.Chapter03.applyPiv`, `GolubVanLoan.Chapter03.applyPivRev`,
+  `GolubVanLoan.Chapter03.partialPivotStage`, `GolubVanLoan.Chapter03.equation_3_4_2`,
+  `GolubVanLoan.Chapter03.algorithm_3_4_1` and `GolubVanLoan.Chapter03.algorithm_3_4_3`.
+* **Reading.** The gaxpy variant returns separate factors and uses rounded running differences for
+  the substitution and trailing update. See `GolubVanLoan.Chapter03.algorithm_3_4_2`.
+* **Reading.** The triangular solves are totalized at zero pivots. The column permutation for
+  complete pivoting follows Step 3, applying $Q^T$ where the following sentence prints $Q$. The
+  matrix-power solve also accepts exponent zero. See `GolubVanLoan.Chapter03.solvePLU`,
+  `GolubVanLoan.Chapter03.solveGEPP`, `GolubVanLoan.Chapter03.solvePLUQ`,
+  `GolubVanLoan.Chapter03.solveGECP`, `GolubVanLoan.Chapter03.solveMultipleRHS`,
+  `GolubVanLoan.Chapter03.solvePowerSystem` and `GolubVanLoan.Chapter03.equation_3_4_13`.
+* **Reading.** The rounding bridges use nonzero returned pivots before the last and the multiplier
+  bound $1+u$. The backward-error theorems use explicit $\gamma_{3n}$ bounds with $3nu<1$ and
+  nonzero pivots. See `GolubVanLoan.Chapter03.algorithm_3_4_1_rounds`,
+  `GolubVanLoan.Chapter03.algorithm_3_4_2_rounds`, `GolubVanLoan.Chapter03.equation_3_4_6`,
+  `GolubVanLoan.Chapter03.equation_3_4_6_gaxpy`, `GolubVanLoan.Chapter03.equation_3_4_7` and
+  `GolubVanLoan.Chapter03.equation_3_4_7_gaxpy`.
+* **Reading.** Equation (3.4.8) uses computed stages. The norm-scaled Lean growth factor uses exact
+  stages, and both backward-error versions of (3.4.9) assume a bound on the computed upper factor.
+  See `GolubVanLoan.Chapter03.growthFactorStages`, `GolubVanLoan.Chapter03.growthFactorStages_eq`,
+  `GolubVanLoan.Chapter03.growthFactor_le_two_pow`, `GolubVanLoan.Chapter03.equation_3_4_9` and
+  `GolubVanLoan.Chapter03.equation_3_4_9_gaxpy`.
+* **Correction.** The exact growth-example equality $2^{n-1}$ uses the maximum input entry modulus
+  in the denominator. With the norm denominator of (3.4.8), it is $2^{n-1}/n$. See
+  `GolubVanLoan.Chapter03.growthExample_noInterchange`.
+* **Reading.** The complete-pivoting factorization may still swap entries in a zero trailing block.
+  Its rank theorem describes the block structure of the factors of the full run. See
+  `GolubVanLoan.Chapter03.completePivoting_rank_factorization`.
+* **Correction.** The rook loop recomputes $\tau=|a_{\mu\lambda}|$ after a candidate change, which
+  the printed loop omits. It uses a sufficient explicit fuel bound. See
+  `GolubVanLoan.Chapter03.rookPivotSearch`, `GolubVanLoan.Chapter03.rookPivotSearch_spec`,
+  `GolubVanLoan.Chapter03.rookPivot` and `GolubVanLoan.Chapter03.isRookPivot_rookPivot`.
+* **Generalization.** The underdetermined factorization also permits square matrices and asserts
+  existence. The solve uses invertible $U_1$ and does not require its triangularity. See
+  `GolubVanLoan.Chapter03.equation_3_4_11` and `GolubVanLoan.Chapter03.underdetermined_solve`.
 * **(3.4.10)** (correction). The source prints the bound with $k$ in place of $k + 1$, which is
   false for $k = 1$ when $A^{(k)}$ is the matrix after $k$ steps. See
   `GolubVanLoan.Chapter03.equation_3_4_10`.
-* **Heuristic I (§3.5)** (reading). The source states $\|b - A\hat x\|_\infty \approx u \|A\|_\infty
-  \|\hat x\|_\infty$. The theorem states a rigorous bound under the hypotheses of (3.4.9). See
+* **Heuristic I** (reading). The source states $\|b - A\hat x\|_\infty \approx u \|A\|_\infty \|\hat
+  x\|_\infty$. The theorem states a rigorous bound under the hypotheses of (3.4.9). See
   `GolubVanLoan.Chapter03.heuristic_I`.
 * **(3.5.2)** (reading). The source states $\|\hat x - x\|_\infty / \|x\|_\infty \approx u
   \kappa_\infty(A)$. The theorem states the bound $2\varepsilon\kappa_\infty(A) / (1 -
@@ -440,14 +652,184 @@ source prints and what the library states instead, and the declaration with the 
   `GolubVanLoan.Chapter03.equation_3_5_2`.
 * **(3.5.3)** (generalization). The source takes $D_1$ and $D_2$ diagonal. The theorem holds for any
   nonsingular $D_1$, $D_2$. See `GolubVanLoan.Chapter03.equation_3_5_3`.
+* **(3.5.3)** (reading). The exact scaled error identity uses totalized division.
+  See `GolubVanLoan.Chapter03.equation_3_5_3`.
+* **§3.5.2, equilibration** (reading). The interval test takes a real parameter in place
+  of the machine radix. See `GolubVanLoan.Chapter03.IsEquilibrated`.
+* **(3.5.4)–(3.5.5)** (reading). The residual is computed by rounded row dot products.
+  The mixed-precision loop takes two rounding operations and a pass count. Its
+  correctness statement treats the case where both operations are exact.
+  See `GolubVanLoan.Chapter03.iterativeImprovementStep`,
+  `GolubVanLoan.Chapter03.mixedPrecisionImprovement` and
+  `GolubVanLoan.Chapter03.equation_3_5_5`.
+* **§3.5.4, inverse-norm estimate** (generalization). The norm and condition bounds
+  allow $d=0$ by using the product form and totalized division.
+  See `GolubVanLoan.Chapter03.condEstimate_lowerBound`.
+* **(3.5.6) and §3.5.4, norm computation** (reading). The right-hand-side choice is a
+  function of the step and running vector. The rounded matrix norm uses a fixed
+  summation order. See `GolubVanLoan.Chapter03.backSubstChosenRHS` and
+  `GolubVanLoan.Chapter03.linftyNormRounded`.
+* **Algorithm 3.5.1, rounding** (reading). Look-ahead scores accumulate from the
+  absolute candidate solution entry. The program accepts an explicit rounding operation.
+  See `GolubVanLoan.Chapter03.algorithm_3_5_1`.
+* **§3.5.4, LU condition estimation** (reading). The lower triangular estimator is
+  invoked on reversed indices and passes its normalized vector to the next solve.
+  The common scale cancels in the exact norm ratio.
+  See `GolubVanLoan.Chapter03.luCondEstimate` and `GolubVanLoan.Chapter03.luCondEstimate_le`.
 * **Algorithm 3.5.1** (reading). The source says $\|Ty\|_\infty \approx 1/\|T^{-1}\|_\infty$ and
   $\kappa \approx \kappa_\infty(T)$. The theorem states the inequalities that hold in exact
   arithmetic. See `GolubVanLoan.Chapter03.algorithm_3_5_1_spec`.
+* **Equation (3.6.2)** (reading). The rectangular step states existence with the multiplier
+  bound from partial pivoting. See `GolubVanLoan.Chapter03.equation_3_6_2`.
+* **Equations (3.6.3)–(3.6.5), and assembly** (generalization). The block identities allow
+  arbitrary combined trailing size. The Schur complement identity uses only the stated
+  product equations. See `GolubVanLoan.Chapter03.equation_3_6_5` and
+  `GolubVanLoan.Chapter03.blockLUPivoting`.
 * **§3.6.1, block column induction** (generalization). The source assumes $n = rN$; the last block
   column may be narrower. See `GolubVanLoan.Chapter03.exists_blockLUPivoting`.
 
 **Chapter 4: Special linear systems**
 
+* **Generalization.** The diagonalization solve identity extends to the totalized inverse of
+  singular matrices. See `GolubVanLoan.Chapter04.equation_4_8_2`.
+* **Generalization.** The Fourier and circulant identities include the empty matrix case. See
+  `GolubVanLoan.Chapter04.map_star_fourierMatrix`, `GolubVanLoan.Chapter04.dft_conjTranspose`,
+  `GolubVanLoan.Chapter04.dft_conjTranspose_mul_self`, `GolubVanLoan.Chapter04.theorem_4_8_2`.
+* **Reading.** The circulant program uses one forward FFT interface and totalized division. See
+  `GolubVanLoan.Chapter04.algorithm_4_8_1`.
+* **Scope.** The circulant solver specification captures correctness for any exact transform. See
+  `GolubVanLoan.Chapter04.algorithm_4_8_1_spec`.
+* **Reading.** The scalar divided-difference identity uses arbitrary nonzero grid step. See
+  `GolubVanLoan.Chapter04.equation_4_8_6`.
+* **Reading.** The Poisson program takes transform callbacks and totalizes zero eigenvalue sums. See
+  `GolubVanLoan.Chapter04.algorithm_4_8_2`.
+* **Generalization.** The exact Poisson solve does not impose a complexity bound on its transforms.
+  See `GolubVanLoan.Chapter04.algorithm_4_8_2_spec`.
+* **Reading.** The Dirichlet Poisson bandwidth bounds count distances from the main diagonal. See
+  `GolubVanLoan.Chapter04.poisson2D_posDef_bandwidth`.
+* **Scope.** The periodic real transform theorem proves column eigen-equations. See
+  `GolubVanLoan.Chapter04.equation_4_8_25`.
+* **Generalization.** The persymmetry results include the totalized inverse of a singular matrix.
+  See `GolubVanLoan.Chapter04.isPersymmetric_inv`,
+  `GolubVanLoan.Chapter04.isPersymmetric_inv_of_isToeplitz`.
+* **Generalization.** The Durbin and Levinson bordering identities require only a nonzero
+  denominator. See `GolubVanLoan.Chapter04.durbin_step`, `GolubVanLoan.Chapter04.equation_4_7_3`.
+* **Reading.** The beta recurrence explicitly assumes the previous denominator is nonzero. See
+  `GolubVanLoan.Chapter04.durbin_beta_succ`.
+* **Reading.** The rounded Durbin and Levinson programs totalize division at zero pivots. See
+  `GolubVanLoan.Chapter04.durbinStep`, `GolubVanLoan.Chapter04.algorithm_4_7_1`,
+  `GolubVanLoan.Chapter04.algorithm_4_7_2`.
+* **Reading.** The Trench program returns zeros for the uncomputed entries. See
+  `GolubVanLoan.Chapter04.algorithm_4_7_3`.
+* **Generalization.** The secular identity and Newton convergence also apply to indefinite Toeplitz
+  matrices. See `GolubVanLoan.Chapter04.secular_lambdaMin`,
+  `GolubVanLoan.Chapter04.equation_4_7_10`.
+* **Generalization.** The derivative formulas and shifted Newton step require only symmetry of the
+  trailing block. See `GolubVanLoan.Chapter04.secular_deriv`,
+  `GolubVanLoan.Chapter04.newton_step_eq`.
+* **Generalization.** The definiteness criteria include converses and the bisection index is
+  antitone. See `GolubVanLoan.Chapter04.durbin_beta_pos_iff`,
+  `GolubVanLoan.Chapter04.bisectionIndex_spec`.
+* **Reading.** The normalized Toeplitz data are total at shift one. See
+  `GolubVanLoan.Chapter04.shiftedToeplitzSeq`.
+* **Reading.** The exact bisection index uses the matrix size when every denominator is positive.
+  See `GolubVanLoan.Chapter04.bisectionIndex`, `GolubVanLoan.Chapter04.durbinIndex_spec`.
+* **Reading.** The bisection index tests the denominator after the full Durbin step. See
+  `GolubVanLoan.Chapter04.durbinIndex`.
+* **Scope.** The Toeplitz bisection returns a bracket and an explicit stopping flag. See
+  `GolubVanLoan.Chapter04.durbinBisection`.
+* **Generalization.** The unsymmetric Toeplitz bordering implication uses cross-multiplied scalar
+  equations. See `GolubVanLoan.Chapter04.equation_4_7_13`.
+* **Generalization.** The nonsingularity criterion includes the converse. See
+  `GolubVanLoan.Chapter04.vandermonde_isUnit_iff`.
+* **Correction.** The Newton interpolant can have degree less than $n$. See
+  `GolubVanLoan.Chapter04.equation_4_6_2`.
+* **Reading.** The Björck–Pereyra programs totalize division and use a rounding hook. See
+  `GolubVanLoan.Chapter04.algorithm_4_6_1`, `GolubVanLoan.Chapter04.algorithm_4_6_2`.
+* **Reading.** The factorization and exact recurrence require only the pivots used in forming
+  multipliers. See `GolubVanLoan.Chapter04.equation_4_5_3`, `GolubVanLoan.Chapter04.equation_4_5_4`.
+* **Reading.** The block solve programs specify pivoting, rounding and singular-input behavior. See
+  `GolubVanLoan.Chapter04.blockTridiagonalLU`, `GolubVanLoan.Chapter04.blockTridiagonalSolve`.
+* **Generalization.** A single cyclic reduction step works with any odd block count. See
+  `GolubVanLoan.Chapter04.cyclicReduction_step`.
+* **Generalization.** The local back-substitution equations hold without commutativity. See
+  `GolubVanLoan.Chapter04.cyclicReduction_back`.
+* **Generalization.** The SPIKE scaling is stated for general invertible diagonal blocks. See
+  `GolubVanLoan.Chapter04.equation_4_5_14`, `GolubVanLoan.Chapter04.diagonal_inv_mul_tridiagonalOf`.
+* **Correction.** The first component of the Aasen recurrence uses the boundary rule in (4.4.14).
+  See `GolubVanLoan.Chapter04.aasenH`, `GolubVanLoan.Chapter04.hval`.
+* **Reading.** The rounded Aasen column updates use running subtractions. See
+  `GolubVanLoan.Chapter04.aasenColumn`.
+* **Reading.** The Aasen recurrence totalizes division at a zero subdiagonal pivot. See
+  `GolubVanLoan.Chapter04.aasenNoPivot`, `GolubVanLoan.Chapter04.ColDone`.
+* **Reading.** The no-pivot factorization assumes nonzero entries only where the program divides.
+  See `GolubVanLoan.Chapter04.equation_4_4_14`.
+* **Generalization.** The one-by-one growth bound needs only a positive entry bound and an
+  admissible pivot. See `GolubVanLoan.Chapter04.equation_4_4_16`.
+* **Generalization.** The two-by-two growth bound allows threshold equality at the selected diagonal
+  entries. See `GolubVanLoan.Chapter04.equation_4_4_17`.
+* **Scope.** The parameter theorem characterizes equality of the two factors. See
+  `GolubVanLoan.Chapter04.bunchParlett_alpha`.
+* **Scope.** The theorem for (4.4.5) gives the matrix identity and its Hessenberg support. See
+  `GolubVanLoan.Chapter04.equation_4_4_5`.
+* **Correction.** The combined band theorem requires nonsingular proper leading blocks for the lower
+  factor. See `GolubVanLoan.Chapter04.theorem_4_3_1`.
+* **Reading.** Band Gaussian elimination uses a final empty step and totalized division. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_1`, `GolubVanLoan.Chapter04.bandGEStepId`.
+* **Reading.** The band forward-substitution program is defined before imposing its structural
+  hypotheses. See `GolubVanLoan.Chapter04.algorithm_4_3_2`.
+* **Reading.** Band back substitution totalizes division at zero diagonal entries. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_3`.
+* **Reading.** Band Cholesky totalizes the column update and its square-root division. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_5`, `GolubVanLoan.Chapter04.bandCholStepId`.
+* **Generalization.** The tridiagonal factorization requires just the nonzero pivots used as
+  divisors. See `GolubVanLoan.Chapter04.tridiagonal_ldlt`.
+* **Correction.** The exact forward substitution in the tridiagonal solver uses the previous
+  right-hand-side entry. See `GolubVanLoan.Chapter04.algorithm_4_3_6_id`.
+* **Reading.** The Hessenberg LU program includes a final unused pivot flag. See
+  `GolubVanLoan.Chapter04.hessenbergLUStep`, `GolubVanLoan.Chapter04.algorithm_4_3_4`.
+* **Reading.** The exact Hessenberg specification compares only flags at actual pivot steps. See
+  `GolubVanLoan.Chapter04.algorithm_4_3_4_spec`.
+* **Reading.** Gaxpy Cholesky uses rounded running differences and a totalized recurrence. See
+  `GolubVanLoan.Chapter04.algorithm_4_2_1`, `GolubVanLoan.Chapter04.algorithm_4_2_1_rounds`,
+  `GolubVanLoan.Chapter04.algorithm_4_2_1_lower_eq_cholesky`.
+* **Reading.** The Cholesky solve uses column-oriented substitutions and totalized division. See
+  `GolubVanLoan.Chapter04.solveCholesky`.
+* **Reading.** The Cholesky backward-error theorem gives a finite bound for a completed run with
+  nonzero pivots. See `GolubVanLoan.Chapter04.cholesky_backward_error`.
+* **Reading.** The symmetric diagonal pivot chooses the first maximizer. See
+  `GolubVanLoan.Chapter04.diagPivot`, `GolubVanLoan.Chapter04.diagPivot_spec`.
+* **Reading.** The pivoted LDLᵀ programs totalize the displayed update at zero pivots. See
+  `GolubVanLoan.Chapter04.ldltPivotStep`, `GolubVanLoan.Chapter04.algorithm_4_2_2`,
+  `GolubVanLoan.Chapter04.pivotElim`, `GolubVanLoan.Chapter04.ldltPivotStep_id`.
+* **Reading.** Equation (4.2.11) states nonnegativity and a count rather than a formula for the
+  positions in sorted order. See `GolubVanLoan.Chapter04.equation_4_2_11`.
+* **Generalization.** The bundled semidefinite bounds include diagonal indices in (4.2.13). See
+  `GolubVanLoan.Chapter04.theorem_4_2_8`.
+* **Generalization.** The rank-revealing invariant covers all stages, including those beyond the
+  rank. See `GolubVanLoan.Chapter04.equation_4_2_16`.
+* **Reading.** The algorithmic reading of (4.2.17) specifies the pivot pattern used to truncate the
+  factors. See `GolubVanLoan.Chapter04.equation_4_2_17_algorithm`.
+* **Reading.** The block algorithms use the totalized gaxpy Cholesky implementation for diagonal
+  blocks. See `GolubVanLoan.Chapter04.choleskyLower`, `GolubVanLoan.Chapter04.choleskyLower_id`.
+* **Reading.** The block triangular solves use rowwise substitution with totalized division. See
+  `GolubVanLoan.Chapter04.solveRowsLower`, `GolubVanLoan.Chapter04.solveRowsLower_id`.
+* **Reading.** The block product differences use running subtractions in a chosen order. See
+  `GolubVanLoan.Chapter04.mulTransposeDiff`, `GolubVanLoan.Chapter04.mulTransposeDiff_id`.
+* **Reading.** The recursive and nonrecursive block programs are totalized and use a fixed order of
+  operations. See `GolubVanLoan.Chapter04.algorithm_4_2_3`,
+  `GolubVanLoan.Chapter04.algorithm_4_2_4`, `GolubVanLoan.Chapter04.blockCholeskyStep`.
+* **Reading.** Theorem 4.1.1 uses weak column dominance, with a weak inequality in the proof. See
+  `GolubVanLoan.Chapter04.theorem_4_1_1`.
+* **Generalization.** The inverse-norm bound uses any positive lower bound on the column margins.
+  See `GolubVanLoan.Chapter04.theorem_4_1_2`.
+* **Reading.** The LDLᵀ program uses running differences and describes rounded operations even at
+  zero pivots. See `GolubVanLoan.Chapter04.algorithm_4_1_1`,
+  `GolubVanLoan.Chapter04.algorithm_4_1_1_rounds`.
+* **Reading.** The LDLᵀ solve fixes the substitution order and totalizes division at zero diagonal
+  entries. See `GolubVanLoan.Chapter04.solveLDLT`.
+* **Reading.** Equation (4.1.4) uses an explicit finite-roundoff bound and nonzero computed pivots.
+  See `GolubVanLoan.Chapter04.equation_4_1_4`.
 * **Algorithm 4.1.1** (reading). The source assumes that $A$ has an LU factorization. The
   specification assumes the hypothesis of Theorem 4.1.3, nonsingular leading principal submatrices
   of orders $1, \dots, n-1$. See `GolubVanLoan.Chapter04.algorithm_4_1_1_spec`.
@@ -481,8 +863,6 @@ source prints and what the library states instead, and the declaration with the 
   false for the Bunch–Parlett strategy of the section. The library proves
   $|\ell_{ij}| \le \max(1/\alpha, 1/(1 - \alpha))$. See
   `GolubVanLoan.Chapter04.equation_4_4_2_multipliers`.
-* **(4.4.9)** (typo). The vector $[0; \ell_{52}; \ell_{53}; \ell_{53}; \ell_{54}]$ should read
-  $[0; \ell_{52}; \ell_{53}; \ell_{54}; 1]$. See `GolubVanLoan.Chapter04.equation_4_4_14`.
 * **(4.4.10)** (typo). The loop starts at $k = 1$, which needs an undefined $\beta_0$. The program
   follows (4.4.14), whose loop starts at $k = 2$. See `GolubVanLoan.Chapter04.aasenNoPivot`.
 * **(4.4.15)** (generalization). The pivot block $E$ need not be symmetric for the displayed
@@ -492,10 +872,6 @@ source prints and what the library states instead, and the declaration with the 
 * **(4.5.8)** (reading). The source prints $\|U_i\|_1 \le \|A_n\|_1$, whose right-hand side has no
   referent in the section. It is read as the $1$-norm of the whole matrix $A$. See
   `GolubVanLoan.Chapter04.equation_4_5_8`.
-* **The display for $N = 7$ in §4.5.3** (typo). The source prints $b_4 = Fx_5 + Dx_4 + Fx_5$ for
-  $b_4 = Fx_3 + Dx_4 + Fx_5$. See `GolubVanLoan.Chapter04.cyclicReduction_step`.
-* **(4.7.6), lower bound** (generalization). The source prints the two lower bounds with an extra
-  factor $1/(n - 1)$. The bounds hold without it. See `GolubVanLoan.Chapter04.equation_4_7_6_lower`.
 * **The bracket of §4.7.7** (reading). The source writes $\lambda_{\min}(T) < \lambda_{\min}(B)$,
   which is the hypothesis (4.7.8). The theorem proves $\lambda_{\min}(T) \le \lambda_{\min}(B)$
   without it. See `GolubVanLoan.Chapter04.lambdaMin_bracket`.
@@ -516,6 +892,37 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 5: Orthogonalization and least squares**
 
+* **(5.1.1), (5.1.2) and §5.1.13** (domain). `GolubVanLoan.Chapter05.householderMatrix`
+  assigns the identity to the zero vector, extending the source's nonzero domain.
+  `GolubVanLoan.Chapter05.equation_5_1_2` and `GolubVanLoan.Chapter05.complexHouseholder` impose
+  the nonzero normal explicitly for the selected sign. The complex theorem fixes the phase at
+  $1$ when the first component is zero.
+* **(5.1.8)** (reading). `GolubVanLoan.Chapter05.equation_5_1_8` requires a nonzero input pair
+  to ensure a nonzero denominator and gives the first component as well as the zero second
+  component.
+* **§5.1.4, §5.1.9 and §6.5.4** (generalization).
+  `GolubVanLoan.Chapter05.householderApplyLeft`, `GolubVanLoan.Chapter05.householderApplyRight`,
+  `GolubVanLoan.Chapter05.givensApplyLeft`, `GolubVanLoan.Chapter05.givensApplyRight` and
+  `GolubVanLoan.Chapter05.hyperbolicApplyLeft` work on selected index lists, including
+  noncontiguous ones. The exact specifications use duplicate-free lists.
+* **§5.1.5 and §5.1.10** (precision). The rounding theorems state explicit constants in the
+  relative rounding model. The update bounds use row or column norms and the Frobenius norm of
+  the selected block where the source gives a spectral-norm backward error.
+  `GolubVanLoan.Chapter05.one_sub_smul_vecMulVec_computed_sub_le` also analyzes the applied
+  reflector with the actual computed coefficient, including an identity step.
+* **(5.1.3), (5.1.6) and Algorithm 5.1.2** (generalizations).
+  `GolubVanLoan.Chapter05.householderProduct` and the accumulation programs accept arbitrary
+  lists of rank-one update data. `GolubVanLoan.Chapter05.equation_5_1_6` and
+  `GolubVanLoan.Chapter05.algorithm_5_1_2_spec` establish WY even for nonorthogonal factors and
+  empty data.
+* **§5.1.12** (precision). `GolubVanLoan.Chapter05.orthogonalToWorkingPrecision` takes an
+  explicit tolerance in the spectral norm. The corollary bounds the orthogonality defect by
+  $2\varepsilon+\varepsilon^2$. Equation (5.1.11) assumes a local Frobenius error bound at the
+  computed iterates and gives explicit global Frobenius and spectral bounds.
+* **(5.1.12)** (scope). `GolubVanLoan.Chapter05.equation_5_1_12` proves that the second
+  component is zero using the three real rotations.
+  `GolubVanLoan.Chapter05.complexGivens_mem_unitaryGroup` gives the separate unitary-matrix
+  result.
 * **Algorithm 5.1.1** (correction). The source sets $\beta = -2$ in the branch $\sigma = 0$,
   $x(1) < 0$, which makes $P$ not orthogonal. The program sets $\beta = 2$. See
   `GolubVanLoan.Chapter05.algorithm_5_1_1`.
@@ -527,9 +934,49 @@ source prints and what the library states instead, and the declaration with the 
   `GolubVanLoan.Chapter05.storedQFirstColumns`.
 * **Lemma 5.1.1** (generalization). The source assumes that $Q$ is orthogonal. The identity holds
   without this assumption. See `GolubVanLoan.Chapter05.lemma_5_1_1`.
-* **Equation (5.1.11)** (reading). The orthogonal matrices $Q_k$ and $Z_k$ are the exact
-  transformations determined by the computed data at each step. See
+* **Equation (5.1.11)** (reading). The source refers to the rotations or reflections that would
+  be produced without roundoff. The theorem uses the exact transformations determined by the
+  computed data at each step and assumes a local error bound for them. See
   `GolubVanLoan.Chapter05.equation_5_1_11`.
+
+* **(5.2.3) and (5.2.4)** (generalizations). `GolubVanLoan.Chapter05.equation_5_2_3` needs no
+  rank hypothesis. `GolubVanLoan.Chapter05.kappa2` uses the pseudoinverse for every matrix, and
+  `GolubVanLoan.Chapter05.kappa2_eq_div_of_rows` gives the full-row-rank counterpart of (5.2.4).
+* **Algorithm 5.2.1** (representation). `GolubVanLoan.Chapter05.algorithm_5_2_1` retains the
+  coefficients returned by `house` along with the packed array. Its exact correctness theorem
+  assumes $m \ge n$.
+* **§5.2.2, backward error** (precision). `GolubVanLoan.Chapter05.algorithm_5_2_1_rounding`
+  and `GolubVanLoan.Chapter05.algorithm_5_2_1_rounding_data` replace the approximate spectral
+  norm bound by explicit columnwise bounds, with idempotence and smallness assumptions in the
+  rounding model.
+* **§5.2.3 and Algorithm 5.2.2** (corrections). The preceding trailing-block example omits the
+  outer transpose, and the algorithm's block identity omits the transpose of $Y_k$.
+  `GolubVanLoan.Chapter05.wyApplyLeft` applies $(I-W_k Y_k^T)^T$, and
+  `GolubVanLoan.Chapter05.blockQRPanel` multiplies $Q$ on the right by $I-W_k Y_k^T$.
+  `GolubVanLoan.Chapter05.algorithm_5_2_2` returns a packed array, and its exact specification
+  uses its upper part.
+* **§5.2.5, row-ordered Givens QR** (correction). The printed inner loop runs to $i-1$, which
+  can exceed the number of columns. `GolubVanLoan.Chapter05.givensQRByRow` restricts the upper
+  endpoint to $\min(i-1,n)$.
+* **Algorithm 5.2.5** (reading). `GolubVanLoan.Chapter05.algorithm_5_2_5` represents positive
+  orders as $k+1$ and returns the rotation parameters. Its specification also proves the
+  Hessenberg structure of $Q$ described in §7.4.2.
+* **Algorithms 5.2.4 and 5.2.5** (extensions).
+  `GolubVanLoan.Chapter05.algorithm_5_2_4_rounding` and
+  `GolubVanLoan.Chapter05.algorithm_5_2_5_rounding` give explicit columnwise bounds for the
+  completed Givens reductions.
+* **§5.2.7 and Algorithm 5.2.6** (totalization). The Gram–Schmidt programs and their exact
+  equalities to the backbone factors extend to all matrices using total division. The thin QR
+  specifications retain full column rank. Modified Gram–Schmidt writes $Q$ to a separate array.
+  `GolubVanLoan.Chapter05.mgs_remainder_eq` applies to any thin QR and assumes a positive pivot
+  only for the normalization and coefficient identities.
+* **§5.2.10** (scope). `GolubVanLoan.Chapter05.complexHouseholderQR` proves existence of a
+  complex QR factorization. The statement omits the complex Householder pseudocode and the
+  sequence of reflectors.
+* **§6.5.1, Givens sweeps** (generalization). `GolubVanLoan.Chapter05.givensHessenbergSweep`
+  and `GolubVanLoan.Chapter05.givensVectorSweep` take explicit interval limits and rectangular
+  arrays, applying each rotation to the whole array. Their specifications state the active
+  interval and the shape or support hypotheses used in the updating algorithms.
 * **§5.2.2, the formula $\beta_j = 2/(1 + \|A(j{+}1{:}m, j)\|_2^2)$** (correction). The formula
   gives $2$ where `house` returned $\beta_j = 0$; it is stated only for the nonzero $\beta_j$. See
   `GolubVanLoan.Chapter05.equation_5_1_4_beta`.
@@ -546,6 +993,21 @@ source prints and what the library states instead, and the declaration with the 
   the backward error bound hold for all $m$ and $n$. See
   `GolubVanLoan.Chapter05.algorithm_5_2_4_spec` and
   `GolubVanLoan.Chapter05.algorithm_5_2_4_rounding`.
+
+* **Equation (5.3.5)** (generalization). The QR residual split is independent of rank. The
+  inverse formula for the minimizer uses full column rank. See
+  `GolubVanLoan.Chapter05.equation_5_3_5`.
+* **§5.3.5, augmented modified Gram–Schmidt** (reading). The exact theorem requires independent
+  columns of $[A\mid b]$ to justify the final normalization. See
+  `GolubVanLoan.Chapter05.mgs_augmented`.
+* **Equation (5.3.9)** (reading). The projector norm identities assume $0<n<m$. A full-rank
+  square matrix has zero residual projector. See `GolubVanLoan.Chapter05.equation_5_3_9`.
+* **§5.3.8, iterative improvement** (reading). The program takes an iteration count and two
+  rounding functions. The exact theorem gives a solution after any positive number of
+  iterations. See `GolubVanLoan.Chapter05.lsIterativeImprovement` and
+  `GolubVanLoan.Chapter05.lsIterativeImprovement_spec`.
+* **Equation (5.3.25)** (reading). The normalized inner product requires nonzero vectors. See
+  `GolubVanLoan.Chapter05.equation_5_3_25`.
 * **Equation (5.3.3)** (typo). The source prints the upper summation limit as $2$; it is $m$. See
   `GolubVanLoan.Chapter05.equation_5_3_3`.
 * **Equation (5.3.4)** (reading). The source estimates the relative error as
@@ -573,6 +1035,20 @@ source prints and what the library states instead, and the declaration with the 
   `GolubVanLoan.Chapter05.equation_5_3_27`.
 * **Equation (5.3.29)** (correction). Three distinct points do not determine a plane; the points
   must not be collinear, $v \neq 0$. See `GolubVanLoan.Chapter05.equation_5_3_29`.
+
+* **§5.4.3, pivoted QR roundoff and stopping criterion** (reading). The theorem gives an
+  explicit columnwise backward error under idempotent rounding. The singular-value bound is
+  conditional on the trailing-block test. See `GolubVanLoan.Chapter05.algorithm_5_4_1_rounding`
+  and `GolubVanLoan.Chapter05.algorithm_5_4_1_sigma_succ_le`.
+* **Theorem 5.4.1** (reading). The statement requires $m\ge n$ explicitly, as needed by the last
+  diagonal entry. The chosen permutation works for any QR factorization. See
+  `GolubVanLoan.Chapter05.theorem_5_4_1`.
+* **§5.4.5, zero-chasing update** (reading). The implementation allows either sign of the last
+  unit vector, which preserves the last-column norm identity. See
+  `GolubVanLoan.Chapter05.givensRevealUpdate_spec`.
+* **Equation (5.4.13) and Algorithm 5.4.2** (reading). Existence also covers wide matrices. The
+  tall Householder program returns both arrays of reflector coefficients with the packed matrix.
+  See `GolubVanLoan.Chapter05.equation_5_4_13` and `GolubVanLoan.Chapter05.algorithm_5_4_2`.
 * **Algorithm 5.4.1** (typo). The source prints $A(:r{:}m, r{:}n)$; it is $A(r{:}m, r{:}n)$. See
   `GolubVanLoan.Chapter05.algorithm_5_4_1`.
 * **The Kahan matrix, §5.4.3** (generalization). The source takes $c > 0$; the result needs only
@@ -583,10 +1059,18 @@ source prints and what the library states instead, and the declaration with the 
   $\|L_{21}\|_2$. See `GolubVanLoan.Chapter05.equation_5_4_11`.
 * **Equation (5.4.11)** (generalization). As for (5.4.10), the separation
   $\sigma_k(A) > \sigma_{k+1}(A)$ is not needed. See `GolubVanLoan.Chapter05.equation_5_4_11`.
-* **Algorithm 5.4.2** (typo). The source prints the second call of `house` as "ho se". See
-  `GolubVanLoan.Chapter05.algorithm_5_4_2`.
-* **§5.5.1** (typo). The source writes $z \in \operatorname{hull}(A)$ where
-  $z \in \operatorname{null}(A)$ is meant. See `GolubVanLoan.Chapter05.minNorm_existsUnique`.
+
+* **§5.5.2, Moore–Penrose projections** (reading). The declaration states the projection onto
+  the range of $A$. The source also identifies the projection onto the range of $A^T$. See
+  `GolubVanLoan.Chapter05.moorePenrose`.
+* **§5.5.4, truncation bound** (generalization). Only the retained terms require positive
+  singular values. Zero singular values in the omitted tail contribute zero through the
+  pseudoinverse convention. See `GolubVanLoan.Chapter05.norm_truncatedSVDSolution_sub_le`.
+* **§5.5.5, basic solution** (correction). A zero $R_{12}$ is sufficient for the basic solution
+  to have minimum norm. The source phrases this as necessary, although equality can also occur
+  for nonzero $R_{12}$. See `GolubVanLoan.Chapter05.basicSolution_eq_pinv_of_eq_zero`.
+* **Algorithm 5.5.1** (reading). The program receives $V$ and the rank estimate from the caller,
+  and uses a padded pivoted QR. See `GolubVanLoan.Chapter05.algorithm_5_5_1`.
 * **Equation (5.5.3)** (typo). The source prints $X \in \mathbb{R}^{m \times n}$; the unknown is
   $X \in \mathbb{R}^{n \times m}$. See `GolubVanLoan.Chapter05.equation_5_5_3`.
 * **Example of §5.5.3** (typo). The source prints $(A + \delta A)^+$ with a spurious entry $1$ in
@@ -598,6 +1082,16 @@ source prints and what the library states instead, and the declaration with the 
 * **Theorem 5.5.3** (reading). The source leaves the hypothesis
   $\tilde r \le \operatorname{rank}(A)$ implicit; the statement assumes it. See
   `GolubVanLoan.Chapter05.theorem_5_5_3`.
+
+* **§5.6.2, SVD minimum-norm solution** (generalization). The expansion applies to consistent
+  systems of any shape. See `GolubVanLoan.Chapter05.minNorm_svd_underdetermined`.
+* **Algorithm 5.6.1** (reading). Zero padding lets the program reuse square pivoted QR. The
+  source factors the input directly. See `GolubVanLoan.Chapter05.algorithm_5_6_1`.
+* **Theorem 5.6.1, rank preservation** (reading). The exact bound requires $\|\delta
+  A\|_2<\sigma_m(A)$. The first-order theorem chooses a sufficient relative-error threshold for
+  $A$. The printed comparison of dimensionless $\epsilon$ with $\sigma_m(A)$ does not by itself
+  imply this rank-preservation condition. See `GolubVanLoan.Chapter05.theorem_5_6_1` and
+  `GolubVanLoan.Chapter05.theorem_5_6_1_firstOrder`.
 * **Theorem 5.6.1** (reading). The source states a first-order bound with an implicit
   $O(\epsilon^2)$ term. The library reads the remainder as $K \epsilon^2$ for all perturbations with
   $\epsilon \le \epsilon_0$, and also proves a rigorous bound in which $\sigma_m(A)$ is replaced by
@@ -606,6 +1100,24 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 6: Modified least squares problems and methods**
 
+* **Equation (6.1.1)** (generalization). The weighted objective and its minimizers allow zero
+  weights. See `GolubVanLoan.Chapter06.IsWeightedLeastSquaresSolution` and
+  `GolubVanLoan.Chapter06.equation_6_1_1`.
+* **After (6.1.4)** (typo). The positive definite weighted Gram matrix uses the squared weight
+  matrix $D(\delta)^2$, as in the derivative formula. See
+  `GolubVanLoan.Chapter06.equation_6_1_4`.
+* **§6.1.4, ridge limits and monotonicity** (reading). The positive-parameter limit selects the
+  minimum-norm solution. The norm is nonincreasing, with strict decrease when $A^Tb$ is nonzero.
+  See `GolubVanLoan.Chapter06.tendsto_ridge_leastSquares` and
+  `GolubVanLoan.Chapter06.norm_ridge_antitoneOn`.
+* **§6.1.4, cross-validation** (reading). The sum accepts signed weights. Equation (6.1.18) uses
+  the full ridge residual for both the numerator and derivative, with (6.1.17) giving the
+  quotient as the leave-one-out residual. See `GolubVanLoan.Chapter06.crossValidationError` and
+  `GolubVanLoan.Chapter06.equation_6_1_18`.
+* **Theorem 6.1.1 and §6.1.6** (reading). The full GSVD theorem includes the normalization from
+  the CS construction. The generalized eigenvalue relation is homogeneous, with a finite ratio
+  when $\beta_i$ is nonzero. See `GolubVanLoan.Chapter06.theorem_6_1_1_b` and
+  `GolubVanLoan.Chapter06.gsvd_generalizedEigen`.
 * **Remark after (6.1.4)** (correction). The source derives the monotonicity of $|r_k(\delta)|$ from
   $\frac{d}{d\delta} [r_k(\delta)^2] < 0$, which fails when $a_k = 0$ or $r_k(\delta) = 0$. The
   library states the non-strict monotonicity. See
@@ -626,6 +1138,24 @@ source prints and what the library states instead, and the declaration with the 
 * **§6.1.6, the GSVD of $(A, I)$** (correction). The source sets $X = U_2$ to obtain the SVD of $A$;
   in fact $X = U_2 D_B$ and $U_1^T A U_2 = \operatorname{diag}(\alpha_i / \beta_i)$. See
   `GolubVanLoan.Chapter06.gsvd_one`.
+
+* **§6.2.3, QR derivation** (generalization). Full row rank of $B$ suffices for the QR
+  construction given a reduced least-squares solution. Full column rank of $A$ suffices for
+  uniqueness. See `GolubVanLoan.Chapter06.isLSESolution_qr`.
+* **Equation (6.2.13)** (generalization). The stacked objective identity includes zero penalty
+  weight. For positive weight, the theorem also gives positive definiteness under the trivial
+  common-kernel condition. See `GolubVanLoan.Chapter06.equation_6_2_13`.
+* **Equation (6.2.1), solution predicate** (generalization). The closed-ball problem includes
+  radius zero. The source starts with a positive radius. See
+  `GolubVanLoan.Chapter06.IsSphereLSQISolution`.
+* **Algorithm 6.2.1** (reading). The program delegates the SVD and root steps. The supplied root
+  routine receives the exact secular function. See `GolubVanLoan.Chapter06.algorithm_6_2_1`.
+* **Equation (6.2.12)** (reading). The formula requires full row rank of $B$ to ensure nonzero
+  constraint denominators. See `GolubVanLoan.Chapter06.equation_6_2_12`.
+* **Equation (6.2.14) and penalty convergence** (generalization). Full row rank of $B$ and a
+  trivial common kernel suffice in place of full rank of both matrices. See
+  `GolubVanLoan.Chapter06.equation_6_2_14` and
+  `GolubVanLoan.Chapter06.tendsto_penaltyLSE_solution`.
 * **§6.2.1, the secular equation** (reading). The source's $f(0) > 0$ is read as
   $f(0^+) = \|x_{LS}\|_2^2 - \alpha^2 > 0$, because $x(\lambda)$ is $x_{LS}$ only in the limit. See
   `GolubVanLoan.Chapter06.secular_existsUnique`.
@@ -633,15 +1163,15 @@ source prints and what the library states instead, and the declaration with the 
   holds for all $m$ and $n$. See `GolubVanLoan.Chapter06.algorithm_6_2_1_spec`.
 * **Equation (6.2.6)** (typo). The source cites "(6.2.23)" for (6.1.23). See
   `GolubVanLoan.Chapter06.equation_6_2_6`.
-* **Equation (6.2.7)** (reading). The source prints it in the block order of the GSVD of the third
-  edition, which is inconsistent with Theorem 6.1.1. The library uses the block order of Theorem
-  6.1.1. See `GolubVanLoan.Chapter06.equation_6_2_7`.
+* **Equation (6.2.7)** (generalization). The diagonal residual formula is stated for both tall and
+  wide rectangular matrices. For $m_1 \ge n_1$ it splits into the two sums printed in the source.
+  See `GolubVanLoan.Chapter06.equation_6_2_7`.
 * **Equation (6.2.8)** (correction). The source prints it in the block order of the third edition,
   and its second sum, over $\tilde d_i$ for $i = m_2 + 1, \dots, n_1$, is meaningless. See
   `GolubVanLoan.Chapter06.equation_6_2_8`.
-* **§6.2.3, non-uniqueness of the LSE solution** (reading). The printed sentence is garbled. The
-  library states that an LSE solution exists for $d \in \operatorname{ran}(B)$ and stays a solution
-  after adding a vector of $\operatorname{null}(A) \cap \operatorname{null}(B)$. See
+* **§6.2.3, non-uniqueness of the LSE solution** (generalization). The source gives a sufficient
+  condition for non-uniqueness. The theorem gives existence whenever $d \in \operatorname{ran}(B)$
+  and shows that every common null vector translates a solution to another solution. See
   `GolubVanLoan.Chapter06.isLSESolution_not_unique`.
 * **Algorithm 6.2.2** (generalization). The source assumes $m_2 < n_1$; the correctness statement
   allows $m_2 \le n_1$. See `GolubVanLoan.Chapter06.algorithm_6_2_2_spec`.
@@ -650,6 +1180,14 @@ source prints and what the library states instead, and the declaration with the 
 * **Equation (6.2.14)** (correction). The source prints it in the block order of the third edition,
   with $\lambda^2$ for $\lambda$, $u_i^T b$ and $v_i^T d$ for $\tilde b_i$ and $\tilde d_i$, and the
   range $1{:}p$. See `GolubVanLoan.Chapter06.equation_6_2_14`.
+
+* **Equation (6.3.6)** (reading). The orthogonal-regression theorem uses the explicit singular-
+  vector minimizer under the strict singular-value gap and permits zero row weights for the
+  objective comparison. See `GolubVanLoan.Chapter06.equation_6_3_6`.
+* **Algorithm 6.3.1** (reading). The trailing equal values can cover the entire spectrum. The
+  zero-pivot branch returns `none`, and the exact specification proves that no TLS solution
+  exists in that case. See `GolubVanLoan.Chapter06.algorithm_6_3_1` and
+  `GolubVanLoan.Chapter06.algorithm_6_3_1_spec`.
 * **Theorem 6.3.1, nonsingularity of $V_{22}$** (generalization). The source assumes that $D$ and
   $T$ are nonsingular and $m \ge n + k$. The nonsingularity of $V_{22}$ holds without these
   hypotheses. See `GolubVanLoan.Chapter06.theorem_6_3_1_isUnit`.
@@ -659,6 +1197,19 @@ source prints and what the library states instead, and the declaration with the 
 * **§6.3.2, the single right-hand side** (reading). The source says that the last column has the
   largest $(n{+}1)$st component of all vectors in the span. The statement compares absolute values
   over the unit vectors of the span. See `GolubVanLoan.Chapter06.tls_single`.
+
+* **§6.4.1, polar factor** (generalization). The orthogonal polar factor of $B^T A$ is a
+  Procrustes minimizer for arbitrary $A$ and $B$. The source discusses the special case $B=I$.
+  See `GolubVanLoan.Chapter06.procrustes_solution_of_isPolarDecomposition`.
+* **Algorithm 6.4.2** (reading). Exact comparisons of computed singular values give the rank.
+  The trivial intersection returns a zero-column matrix. See
+  `GolubVanLoan.Chapter06.algorithm_6_4_2`.
+* **Equation (6.4.3) and §6.4.3** (generalization). The recursive characterization includes the
+  empty family. The cosine and singular-value equality is zero-extended beyond the available
+  pairs and permits either dimension order. See `GolubVanLoan.Chapter06.equation_6_4_3` and
+  `GolubVanLoan.Chapter06.singularValues_transpose_mul_eq_cosPrincipalAngle`.
+* **Theorem 6.4.2** (reading). The initial run of unit cosines can be empty or include all
+  indices. See `GolubVanLoan.Chapter06.theorem_6_4_2`.
 * **Algorithm 6.4.3** (typo). The heading says that the algorithm computes the cosines of the
   principal angles $\theta_1 \ge \dots \ge \theta_q$. The order is reversed: the cosines decrease
   and the angles increase. See `GolubVanLoan.Chapter06.algorithm_6_4_3`.
@@ -672,6 +1223,24 @@ source prints and what the library states instead, and the declaration with the 
 * **Theorem 6.4.2** (generalization). The source states the theorem for the principal vectors
   computed by Algorithm 6.4.3. It holds for any principal vectors of
   $(\operatorname{ran}(A), \operatorname{ran}(B))$. See `GolubVanLoan.Chapter06.theorem_6_4_2`.
+
+* **Equations (6.5.6) and (6.5.10)** (generalization). The two Gram identities hold for any
+  square $G$ with $GG^T=A$, without the source's positive-definite Cholesky setting. See
+  `GolubVanLoan.Chapter06.equation_6_5_6` and `GolubVanLoan.Chapter06.equation_6_5_10`.
+* **Equations (6.5.2)–(6.5.3)** (generalization). Arbitrary embedded adjacent blocks preserve
+  the Hessenberg structure. The rank-one update identity assumes only that the sweep maps $w$ to
+  $\rho e_1$. See `GolubVanLoan.Chapter06.equation_6_5_2` and
+  `GolubVanLoan.Chapter06.equation_6_5_3`.
+* **§6.5.2** (generalization). The column updates accept wide upper trapezoidal factors.
+  Insertion can occur at the first column. See `GolubVanLoan.Chapter06.qrDeleteColumn` and
+  `GolubVanLoan.Chapter06.qrInsertColumn`.
+* **§6.5.3, row deletion** (reading). The arbitrary-row result gives existence of a QR
+  factorization. The implemented update treats the source's detailed first-row procedure. See
+  `GolubVanLoan.Chapter06.qrDeleteRow_exists` and `GolubVanLoan.Chapter06.qrDeleteFirstRow`.
+* **§6.5.4, downdate sweep** (typo). The matrix whose bottom row is zeroed is the stack
+  $[G^T;z^T]$. The prose immediately before Theorem 6.5.1 transposes the concatenation
+  $[G^T\mid z]$, which gives $[G;z^T]$. See
+  `GolubVanLoan.Chapter06.choleskyDowndate`.
 * **§6.5.1** (typo). "Following Algorithm 5.2.4" means Algorithm 5.2.5, the QR factorization of an
   upper Hessenberg matrix. See `GolubVanLoan.Chapter06.qrUpdateRankOne`.
 * **Equation (6.5.7)** (typo). The source prints $\tilde A = RR^T$. The correct identity is
@@ -686,8 +1255,8 @@ source prints and what the library states instead, and the declaration with the 
 * **§6.5.4, nonexistence of a hyperbolic rotation** (generalization). The source treats
   $|x_2| > |x_1|$. The statement also covers $|x_2| = |x_1| \neq 0$. See
   `GolubVanLoan.Chapter06.hyperbolic_not_exists`.
-* **Theorem 6.5.1** (typo). The statement is garbled in print ("If / and / A = …"). See
-  `GolubVanLoan.Chapter06.theorem_6_5_1`.
+* **Proof of Theorem 6.5.1** (typo). The Schur complement in the proof uses the pivot
+  $\alpha - \mu^2$, printed as $\alpha$ in the prose. See `GolubVanLoan.Chapter06.theorem_6_5_1`.
 * **Equation (6.5.16)** (generalization). The source obtains $\Pi$ and $R$ from QR with column
   pivoting. The statement holds for every orthogonal $\Pi$ and every $R$ with $U^T A \Pi = [R; 0]$.
   See `GolubVanLoan.Chapter06.equation_6_5_16`.
@@ -697,24 +1266,68 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 7: Unsymmetric eigenvalue problems**
 
+* **Equations (7.1.1)–(7.1.3)** (reading). The radius and abscissa use suprema and take value
+  zero in dimension zero, where the maxima in the source are undefined. See
+  `GolubVanLoan.Chapter07.spectralRadius`, `GolubVanLoan.Chapter07.spectralAbscissa` and
+  `GolubVanLoan.Chapter07.numericalRadius`.
+* **Lemma 7.1.1** (reading). The characteristic polynomial identity gives multiplicities and
+  establishes spectral equality without the source's counting argument for sets. See
+  `GolubVanLoan.Chapter07.lemma_7_1_1`.
+* **Corollary 7.1.7** (reading). The block-size data permit empty blocks. Removing these gives
+  the decomposition into eigenvalue blocks. See `GolubVanLoan.Chapter07.corollary_7_1_7`.
 * **Equation (7.1.3)** (typo). The source prints the maximum as $\max_{\lambda \in \lambda(A)}$. The
   maximum is over the unit vectors $x$. See `GolubVanLoan.Chapter07.numericalRadius`.
 * **Lemma 7.1.5, block diagonalization** (generalization). The source assumes that $\phi$ is
   nonsingular. The statement needs only a solution $Z$ of $\phi(Z) = -T_{12}$. See
   `GolubVanLoan.Chapter07.lemma_7_1_5_blockDiagonal`.
-* **Theorem 7.1.6** (typo). The source prints the hypothesis as $\lambda(T_{ij}) \cap
-  \lambda(T_{jj}) = \emptyset$. It means $\lambda(T_{ii}) \cap \lambda(T_{jj}) = \emptyset$. See
-  `GolubVanLoan.Chapter07.theorem_7_1_6`.
+* **Theorem 7.1.6** (generalization). The theorem uses a block upper triangular form whose
+  diagonal blocks can be arbitrary square matrices. The source assumes a Schur decomposition.
+  See `GolubVanLoan.Chapter07.theorem_7_1_6`.
 * **Equation (7.1.13)** (reading). The source says that the diagonalizing matrix has "a 2-norm
   condition of order $1/\varepsilon$". The statement gives the lower bound $1/(2\varepsilon)$ for
   every diagonalizing matrix and the upper bound $1/\varepsilon + 2\varepsilon$ for one of them. See
   `GolubVanLoan.Chapter07.equation_7_1_13`.
+
+* **§7.2.2** (typo). The source interchanges $x$ and $y$ when assigning them to columns of the
+  right and left Jordan bases. See `GolubVanLoan.Chapter07.inner_ne_zero_of_simple`.
+* **Equation (7.2.2), derivative argument** (reading). The assertion states differentiability at
+  the origin and bounds the derivative for an arbitrary perturbation direction, scaled by its
+  norm. See `GolubVanLoan.Chapter07.equation_7_2_2`.
+* **Theorem 7.2.4 and Corollary 7.2.5** (generalization). The separation and invariant-subspace
+  bounds apply to upper block triangular matrices with arbitrary diagonal blocks. See
+  `GolubVanLoan.Chapter07.theorem_7_2_4` and `GolubVanLoan.Chapter07.corollary_7_2_5`.
 * **Theorem 7.2.3** (generalization). The source takes a Schur decomposition, with $N$ strictly
   upper triangular, and the least $p$ with $|N|^p = 0$. The theorem holds for every $p \ge 1$ with
   $|N|^p = 0$ and every such $N$. See `GolubVanLoan.Chapter07.theorem_7_2_3`.
 * **§7.2.3** (reading). The source says that the rate of change of the eigenvalues at the origin is
   infinite. The statement reads this as: no branch of eigenvalues is differentiable at
   $\varepsilon = 0$. See `GolubVanLoan.Chapter07.repeated_eigenvalue_example`.
+
+* **§7.3.2, dominant invariant subspace** (generalization). The diagonal blocks may be arbitrary
+  matrices with strictly separated spectral moduli. Disjoint spectra alone suffice to identify
+  the leading span with a sum of generalized eigenspaces. See
+  `GolubVanLoan.Chapter07.dominantInvariantSubspace_unique` and
+  `GolubVanLoan.Chapter07.span_leading_schurVectors_eq`.
+* **Equations (7.3.1)–(7.3.2)** (generalization). The similarity identity allows arbitrary
+  second factors $R_k$. See `GolubVanLoan.Chapter07.equation_7_3_2`.
+* **Equations (7.3.3), (7.3.5) and §7.3.1** (generalization). The power method also accepts real
+  matrices and defines a zero iterate when normalization encounters zero. The rate assumes an
+  eigenvector expansion of the initial vector and allows any bound on the nondominant moduli.
+  The backward error gives a minimum over perturbations. See
+  `GolubVanLoan.Chapter07.powerMethod`, `GolubVanLoan.Chapter07.equation_7_3_5`,
+  `GolubVanLoan.Chapter07.powerMethod_dist` and
+  `GolubVanLoan.Chapter07.powerMethod_backwardError`.
+* **Equation (7.3.6) and §7.3.2** (reading). The iterate predicate records the QR sequence,
+  including the empty-width case. The range theorem assumes full column rank of $A^kQ_0$ and
+  gives first-column agreement with power iteration up to a unit-modulus phase. See
+  `GolubVanLoan.Chapter07.orthogonalIteration` and
+  `GolubVanLoan.Chapter07.orthogonalIteration_range`.
+* **Equations (7.3.23)–(7.3.25)** (generalization). The factor bound accepts any square factor
+  with $GG^H=I+XX^H$. The invariant-subspace theorem also gives the complementary right
+  identity. See `GolubVanLoan.Chapter07.equation_7_3_24` and
+  `GolubVanLoan.Chapter07.equation_7_3_25`.
+* **Equation (7.3.26)** (typo). The displayed definition of $Z$ has $r$ columns. The source
+  labels it as $n$ by $n-r$. See `GolubVanLoan.Chapter07.equation_7_3_26`.
 * **Theorem 7.3.1** (correction). The printed bound is false. The theorem assumes
   $\operatorname{dist}(D_r(A^H), \operatorname{ran}(Q_0)) < 1$ in place of (7.3.9) and has this
   distance in the denominator. See `GolubVanLoan.Chapter07.theorem_7_3_1` and
@@ -732,6 +1345,36 @@ source prints and what the library states instead, and the declaration with the 
 * **Equations (7.3.12)–(7.3.14)** (reading). The source starts treppeniteration from
   $G_0 \in \mathbb{C}^{n \times r}$ of rank $r$. The statement takes $r = n$ and $G_0 = L_0$ unit
   lower triangular. See `GolubVanLoan.Chapter07.equation_7_3_14`.
+
+* **Algorithm 7.4.2** (reading). The program returns the compact storage array and a separate
+  list of reflector vectors and coefficients. The upper Hessenberg part of the array is $H$. See
+  `GolubVanLoan.Chapter07.algorithm_7_4_2`.
+* **§7.4.3, rounding analysis** (reading). The source states a bound with an unspecified
+  constant times $n^2u$. The theorem gives an explicit nested $\gamma$ bound with idempotent
+  rounding and quantitative smallness assumptions. See
+  `GolubVanLoan.Chapter07.algorithm_7_4_2_rounding`.
+* **Theorem 7.4.2** (generalization). The first part allows any prefix with nonzero subdiagonal
+  entries. The essential-uniqueness statement requires only one unreduced output. See
+  `GolubVanLoan.Chapter07.theorem_7_4_2` and `GolubVanLoan.Chapter07.theorem_7_4_2_essential`.
+* **Theorem 7.4.4** (typo). The proof's rank calculation concerns $H - \lambda I$, printed as $A
+  - \lambda I$. See `GolubVanLoan.Chapter07.theorem_7_4_4`.
+* **Equation (7.4.4)** (generalization). The identity $AK=KC$ needs only a solution of $Kc=-A^n
+  x$. Nonsingularity is required for the similarity conclusion. See
+  `GolubVanLoan.Chapter07.equation_7_4_4`.
+
+* **§7.5.4, real double shift** (reading). The canonical QR factors give a real result for a
+  nonsingular conjugate pair of shifts. Arbitrary factors give diagonal unitary similarity. The
+  source also allows two distinct real shifts. See `GolubVanLoan.Chapter07.double_shift_real`.
+* **Algorithm 7.5.1** (generalization). The program takes a consecutive window and returns its
+  Householder data. Windows with fewer than three indices are left unchanged. See
+  `GolubVanLoan.Chapter07.algorithm_7_5_1`.
+* **§7.5.5, essential uniqueness** (reading). The comparison with the explicit step assumes a
+  nonsingular shift polynomial and takes its canonical QR factors. The source assumes that both
+  output Hessenberg matrices are unreduced and that the orthogonal factors share their first
+  column. See `GolubVanLoan.Chapter07.algorithm_7_5_1_essential`.
+* **Algorithm 7.5.2** (reading). The program always returns $Q$ and exposes a pass budget and
+  completion flag. The source also describes an eigenvalues-only mode that skips transformations
+  outside the active diagonal block. See `GolubVanLoan.Chapter07.algorithm_7_5_2`.
 * **(7.5.3) and (7.5.6)–(7.5.7)** (generalization). The source takes the factorizations to be QR
   factorizations. The identities hold for any second factor $R$, $R_1$, $R_2$. See
   `GolubVanLoan.Chapter07.equation_7_5_3` and `GolubVanLoan.Chapter07.equation_7_5_7`.
@@ -740,9 +1383,6 @@ source prints and what the library states instead, and the declaration with the 
   assumes a diagonalizable $A$ with real eigenvalues, distinct nonzero $|\lambda_i - \mu|$ and a
   general-position condition, and it gives the bound $C (r / |\lambda_p - \mu|)^k$ for every
   $r > |\lambda_{p+1} - \mu|$. See `GolubVanLoan.Chapter07.shiftedQr_rate`.
-* **Theorem 7.5.1** (generalization). The source concludes $\tilde h_{n,n-1} = 0$ and
-  $\tilde h_{nn} = \mu$. The theorem shows that the whole last row of $\tilde H$ is $\mu e_n^T$. See
-  `GolubVanLoan.Chapter07.theorem_7_5_1`.
 * **§7.5.3, the quadratic convergence** (reading). The source says that if $h_{n,n-1}$ converges to
   zero, it is likely to do so at a quadratic rate. The theorem is a local bound near an
   algebraically simple real eigenvalue. See `GolubVanLoan.Chapter07.single_shift_quadratic`.
@@ -756,6 +1396,22 @@ source prints and what the library states instead, and the declaration with the 
   $Q^T A Q = T$. The deflations set nonzero entries to zero, so in exact arithmetic the theorem
   states $T = Q^T (A + E) Q$ with a bound on $\|E\|_F$, and $E = 0$ if $\mathrm{tol} = 0$. See
   `GolubVanLoan.Chapter07.algorithm_7_5_2_spec`.
+
+* **§7.6.2, two-by-two swap** (generalization). The matrix identity includes equal diagonal
+  entries and gives exactly $t_{12}$ for the off-diagonal entry in the stated rotation
+  convention. See `GolubVanLoan.Chapter07.swap_two_by_two`.
+* **Algorithm 7.6.1** (reading). The implementation takes a pass budget, and the correctness
+  theorem assumes at least $n$ passes are available. See
+  `GolubVanLoan.Chapter07.algorithm_7_6_1`.
+* **Equation (7.6.5)** (generalization). The recurrences allow arbitrary $F$ and upper
+  Hessenberg $G$ with the necessary local subdiagonal zeros. See
+  `GolubVanLoan.Chapter07.equation_7_6_5`.
+* **Equation (7.6.6)** (generalization). The separation bounds apply to complex blocks, with
+  positivity explicitly required for the solution norm bound. See
+  `GolubVanLoan.Chapter07.equation_7_6_6`.
+* **§7.6.5** (generalization). The Jordan block count applies to any one eigenvalue of a complex
+  matrix even when other eigenvalues are present. See
+  `GolubVanLoan.Chapter07.jordan_block_count`.
 * **Equation (7.6.1)** (reading). The source describes the convergence of inverse iteration
   informally; the statement fixes a precise form, in which $A$ need not be diagonalizable. See
   `GolubVanLoan.Chapter07.equation_7_6_1`.
@@ -779,12 +1435,59 @@ source prints and what the library states instead, and the declaration with the 
 * **§7.6.4** (generalization). The identities hold without the hypothesis $\lambda \notin
   \lambda(T_{11}) \cup \lambda(T_{33})$, which the source needs only to solve for $w$ and $z$. See
   `GolubVanLoan.Chapter07.schur_eigenvectors`.
+
+* **§7.7.1, the pencil eigenvalue count** (reading).
+  `GolubVanLoan.Chapter07.pencilSpectrum_card` states degree of the determinant polynomial,
+  which counts eigenvalues with multiplicity when the determinant polynomial is nonzero.
+* **§7.7.5, the zero chase** (typo). The penultimate source diagram prints $BZ_{34}^T$ alongside
+  $AZ_{34}$. `GolubVanLoan.Chapter07.qzZeroChase` applies the same right factor to both arrays.
+* **Algorithm 7.7.2** (reading). `GolubVanLoan.Chapter07.algorithm_7_7_2` acts on a window and
+  returns reflector lists. Its exact full-window theorem uses an order of at least three and
+  compares with the Francis polynomial-factorization condition. The product on the left of the
+  source's similarity relation is the updated $\bar A\bar B^{-1}$.
+* **Algorithm 7.7.3** (reading). `GolubVanLoan.Chapter07.algorithm_7_7_3` always accumulates
+  both orthogonal factors and returns a stop flag after bounded work. Its exact specification
+  bounds threshold deflations of $A$ in Frobenius norm and gives quasi-triangular $T$ upon
+  stopping.
+* **Equations (7.7.5)–(7.7.6)** (reading). `GolubVanLoan.Chapter07.equation_7_7_5` corrects
+  missing factors of $x$ in the elimination and proves the converse kernel relation.
+  `GolubVanLoan.Chapter07.equation_7_7_6` establishes the factorization for all coefficients,
+  including cases where the leading coefficient vanishes.
 * **§7.7.8, generalized inverse iteration** (typo). The source prints the eigenvalue estimate as
   $\lambda^{(k)} = q^{(k)H} A q^{(k)} / q^{(k)H} A q^{(k)}$; the denominator is
   $q^{(k)H} B q^{(k)}$. See `GolubVanLoan.Chapter07.generalizedInverseIteration_eq`.
-* **Equation (7.8.1)** (typo). The source labels the blocks $F$ and $G$ of the Hamiltonian matrix in
-  (7.8.1) differently from Figure 7.8.1. See `GolubVanLoan.Chapter07.equation_7_8_1` and
-  `GolubVanLoan.Chapter07.equation_7_8_2`.
+
+* **Figure 7.8.1, orthogonal-symplectic row** (reading).
+  `GolubVanLoan.Chapter07.figure_7_8_1_orthogonalSymplectic` takes orthogonality explicitly when
+  characterizing symplecticity by $JQ=QJ$.
+* **§7.8.1, structured vector reduction** (generalization).
+  `GolubVanLoan.Chapter07.symplectic_householder_givens` allows any repeated orthogonal block
+  and any target coordinate in the first block.
+* **Equations (7.8.1)–(7.8.2)** (reading). `GolubVanLoan.Chapter07.equation_7_8_1` includes the
+  stable ordering of $T$ specified in the Riccati discussion.
+  `GolubVanLoan.Chapter07.equation_7_8_2` derives symmetry from the cross Gram identity and uses
+  the block transformation without assuming symmetry of $F$ and $G$.
+* **§7.8.2, perfect shuffle display** (typo). The source repeats the same permutation matrix on
+  both sides. `GolubVanLoan.Chapter07.blockCyclic_shuffle_isUpperHessenberg` uses simultaneous
+  row and column reindexing, equivalent to a permutation similarity.
+
+* **Equation (7.9.5), closed level set** (reading). `GolubVanLoan.Chapter07.pseudospectrum`
+  takes the nonstrict inequality. With a positive tolerance the two conventions can differ at
+  boundary points, even for the scalar zero matrix.
+* **Equation (7.9.7)** (reading). `GolubVanLoan.Chapter07.equation_7_9_7` makes the source’s
+  implicit existential perturbation quantifier explicit.
+* **Theorem 7.9.2, proof** (typo). The rightmost factor of the resolvent similarity is $X$, not
+  the printed $X^{-1}$. See `GolubVanLoan.Chapter07.theorem_7_9_2`.
+* **Theorem 7.9.8 and §7.9.5** (reading). `GolubVanLoan.Chapter07.theorem_7_9_8` uses the least
+  singular value everywhere and the reciprocal resolvent only off the spectrum.
+  `GolubVanLoan.Chapter07.sigmaMin_schur` does not require a triangular transformed matrix for
+  the stated identities.
+* **Equations (7.9.8)–(7.9.9)** (reading). `GolubVanLoan.Chapter07.pseudospectralAbscissa` and
+  `GolubVanLoan.Chapter07.pseudospectralRadius` use real suprema. Attainment is proved for
+  nonempty matrices and nonnegative tolerance.
+* **Equations (7.9.10)–(7.9.11)** (reading). The ray eigenvalue and singular value
+  correspondence is bidirectional for positive tolerance. The transient growth estimate uses
+  arbitrary real uniform upper bounds in place of a supremum.
 * **(7.9.5)** (typo). The source writes $\lambda$ for $z$ inside the set-builder. See
   `GolubVanLoan.Chapter07.pseudospectrum`.
 * **(7.9.6)** (reading). The resolvent form is stated for $\varepsilon > 0$ with
@@ -800,14 +1503,22 @@ source prints and what the library states instead, and the declaration with the 
 * **§7.9.1, the power bound of the $2 \times 2$ example** (correction). The source states the bound
   for any $\varepsilon > 0$; at $k = 0$ it reads $1 \le M/\varepsilon$, so $\varepsilon \le M$ is
   needed. See `GolubVanLoan.Chapter07.two_by_two_power_bound`.
-* **§7.9.1, the citation in the power bound of the $2 \times 2$ example** (typo). The source cites
-  "Lemma 7.3.1" for Lemma 7.3.2. See `GolubVanLoan.Chapter07.two_by_two_power_bound`.
-* **Proofs of Theorems 7.9.1 and 7.9.2** (typo). The proofs in the source contain misprints. The
-  statements are not affected. See `GolubVanLoan.Chapter07.theorem_7_9_1` and
-  `GolubVanLoan.Chapter07.theorem_7_9_2`.
 
 **Chapter 8: Symmetric eigenvalue problems**
 
+* **§8.1.1, the Rayleigh quotient and Theorem 8.1.2** (reading).
+  `GolubVanLoan.Chapter08.rayleighQuotient` has a total value at the zero vector, and
+  `GolubVanLoan.Chapter08.theorem_8_1_2_minmax` gives the dual of the source’s max–min
+  statement.
+* **Equation (8.1.2) and Problem P8.1.9** (correction). `GolubVanLoan.Chapter08.sepSymm_eq_sep`
+  compares spectral separation to the Sylvester-operator minimum on the Frobenius unit sphere.
+  The printed unconstrained minimum includes $X=0$.
+* **Theorems 8.1.13–8.1.14** (reading). `GolubVanLoan.Chapter08.theorem_8_1_13_weak` bounds one
+  projected eigenvalue with factor one. `GolubVanLoan.Chapter08.theorem_8_1_14` gives the
+  Frobenius residual minimum for arbitrary real $A$.
+* **Equations (8.1.5)–(8.1.7)** (correction). The intermediate norms use $Q-X_1$ and
+  $X_1^TX_1-I_r$. `GolubVanLoan.Chapter08.equation_8_1_7` uses the full singular-value deviation
+  from one, correcting the printed equality with the smallest singular value alone.
 * **Theorem 8.1.3** (generalization). The source assumes that $A$ is symmetric. The inclusion holds
   for the real eigenvalues of every real $A$. See `GolubVanLoan.Chapter08.theorem_8_1_3`.
 * **Theorem 8.1.7** (generalization). The source assumes that $A$ is symmetric. Only the leading
@@ -830,9 +1541,25 @@ source prints and what the library states instead, and the declaration with the 
   holds for every $Q$. See `GolubVanLoan.Chapter08.equation_8_1_5`.
 * **Theorem 8.1.16** (reading). As in Theorem 8.1.13, the eigenvalues $\mu_k$ are
   $\lambda_{\sigma(k)}(A)$ for an injective $\sigma$. See `GolubVanLoan.Chapter08.theorem_8_1_16`.
+* **§8.2.1, residual error estimate** (reading).
+  `GolubVanLoan.Chapter08.powerMethod_residual_bound` proves the factor-one estimate as well as
+  the printed $\sqrt2$ estimate.
+* **§8.2.2–§8.2.3** (reading). `GolubVanLoan.Chapter08.inverseIteration_expansion` requires a
+  shift outside the spectrum. `GolubVanLoan.Chapter08.rayleighQuotientIteration` is total at a
+  singular shifted solve. The residual minimizer theorem applies to nonsymmetric real $A$ as
+  well.
+* **Theorem 8.2.2, final line of the proof** (typo). The theorem's bound and Lean both contain
+  $1/\sqrt{1-d_0^2}$. The source proof's final line omits the square root.
+* **§8.2.5, subspace and diagonal convergence** (reading).
+  `GolubVanLoan.Chapter08.orthogonalIteration_gap_le_of_forall` gives the explicit finite-step
+  gap estimate. `GolubVanLoan.Chapter08.qrIterate_tendsto_diagonal` uses canonical QR from the
+  identity basis, assumes nonzero eigenvalues, and specifies each diagonal limit.
 * **Equations (8.2.1)–(8.2.2)** (generalization). The source takes $U_0$ orthogonal. The similarity
   $T_k = (U_0 \cdots U_k)^T A (U_0 \cdots U_k)$ and the symmetry of $T_k$ hold for every $U_0$, and
   the $R_k$ need not be upper triangular. See `GolubVanLoan.Chapter08.equation_8_2_2`.
+* **Proof of Theorem 8.2.1** (typo). The final bound uses the maximum of $|\lambda_1-\lambda_i|$,
+  as in (8.2.5). The proof prints $\lambda_n$ inside that maximum. See
+  `GolubVanLoan.Chapter08.theorem_8_2_1_b`.
 * **Equation (8.2.7)** (correction). The source omits the hypothesis $c_k s_k \neq 0$; without it
   $\mu_k$ is an eigenvalue and the step is not defined. See `GolubVanLoan.Chapter08.equation_8_2_7`.
 * **Equation (8.2.7)** (typo). The source loses the minus sign: the next iterate is
@@ -840,17 +1567,61 @@ source prints and what the library states instead, and the declaration with the 
 * **Equation (8.2.13)** (typo). The source defines both $V_k$ and $W_k$ with $Q_0$;
   $V_k = Q_\alpha^T Q_k$ and $W_k = Q_\beta^T Q_k$ are meant. See
   `GolubVanLoan.Chapter08.equation_8_2_13`.
+* **§8.3.1, the rank-two update** (generalization).
+  `GolubVanLoan.Chapter08.householder_conj_eq_sub_rankTwo` proves the algebraic formula before
+  requiring a Householder coefficient.
+* **Algorithm 8.3.2, implicit versus explicit step** (reading).
+  `GolubVanLoan.Chapter08.algorithm_8_3_2_spec` proves the explicit-step comparison up to
+  diagonal signs under shifted nonsingularity.
+* **Equation (8.3.6)** (generalization). `GolubVanLoan.Chapter08.IsRitzAcceleration` accepts any
+  real $A$ for which the iterate data include an orthogonal diagonalization of each projected
+  matrix.
+* **Equation (8.3.1) and Algorithm 8.3.1** (reading). The tridiagonal reduction fixes the first
+  coordinate vector. `GolubVanLoan.Chapter08.algorithm_8_3_1` keeps the reflectors separately
+  and mirrors the lower-triangular trailing update. Its rounding theorem gives a dimension-
+  dependent explicit coefficient under stated rounding-model hypotheses.
+* **Theorem 8.3.1 and the spectral split** (generalization).
+  `GolubVanLoan.Chapter08.theorem_8_3_1` uses a tridiagonal reduction without requiring
+  symmetry. `GolubVanLoan.Chapter08.tridiagonal_spectrum_split` uses vanishing couplings on both
+  sides and retains multiplicities.
+* **Equation (8.3.2)** (reading). `GolubVanLoan.Chapter08.explicitShiftedQR` uses the canonical
+  QR decomposition, a rule depending on the current iterate, and a supplied initial matrix. The
+  associated theorem states orthogonal similarity and symmetry for any symmetric start.
+* **Algorithms 8.3.2–8.3.3** (reading). The implicit step accepts a working window and
+  accumulates rotations. The outer algorithm uses a finite pass budget and always accumulates
+  the orthogonal factor. Its error and eigenvalue results are exact-arithmetic estimates for
+  threshold deflations, conditional on the stop flag where diagonalization is needed.
+* **§8.3.6, the Rayleigh quotient connection** (reading).
+  `GolubVanLoan.Chapter08.rayleigh_qr_connection` makes the shifted solve’s nonsingularity
+  explicit and gives the next iterate up to the sign of $r_{nn}$.
+* **§8.3.7, Ritz acceleration** (reading). `GolubVanLoan.Chapter08.ritzAcceleration_residual`
+  formalizes the residual minimum over coefficient matrices in the selected subspace, with
+  invariance under its Ritz rotation.
 * **§8.3.3, preservation of form** (correction). The source states it for every QR factorization
   $T = QR$. For singular $T$ the orthogonal factor is not unique ($T = 0 = Q \cdot 0$ for every
   orthogonal $Q$), and the claim fails. The statements assume that $T$ (or $T - sI$) is nonsingular
   or that $(Q, R)$ is the Givens QR factorization. See
   `GolubVanLoan.Chapter08.qr_tridiagonal_preservation` and
   `GolubVanLoan.Chapter08.shifted_qr_tridiagonal`.
-* **Equation (8.3.3)** (reading). The source does not fix $\operatorname{sign}(0)$. The Wilkinson
-  shift needs $\operatorname{sign}(0) = 1$. See `GolubVanLoan.Chapter08.wilkinsonShift`.
-* **Theorem 8.3.2** (generalization). The source takes $A$ symmetric, which makes $T$ and $S$
-  tridiagonal. The theorem uses only that $T$ and $S$ are tridiagonal. See
+* **Equation (8.3.3)** (reading). The source does not fix $\operatorname{sign}(0)$. Lean uses
+  $\operatorname{sign}(0) = 1$ to select one of the two equally close eigenvalues when $d=0$.
+  See `GolubVanLoan.Chapter08.wilkinsonShift`.
+* **Theorem 8.3.2** (generalization). The source assumes that $A$ is symmetric and that $T$ and
+  $S$ are tridiagonal. The Lean theorem only needs the latter assumption. See
   `GolubVanLoan.Chapter08.theorem_8_3_2`.
+* **Lemma 8.4.2 and Theorem 8.4.3(a), (c)** (generalization).
+  `GolubVanLoan.Chapter08.lemma_8_4_2` and `GolubVanLoan.Chapter08.theorem_8_4_3` need distinct
+  diagonal entries, without sorting them. The secular roots are taken away from the poles of the
+  source formula.
+* **§8.4.3, final line of Theorem 8.4.3's proof** (typo). The rank-one update is $D+\rho zz^T$,
+  where the source writes $D+\rho vv^T$.
+* **Equations (8.4.10)–(8.4.11)** (reading). `GolubVanLoan.Chapter08.equation_8_4_10` states the
+  general resolvent and determinant identities for points outside the spectrum of $T$. The
+  source uses the special case where the trailing principal block has the point as an
+  eigenvalue.
+* **§8.4.6, inverse eigenvalue construction** (reading).
+  `GolubVanLoan.Chapter08.inverseTridiagonal_exists` states existence with the two
+  characteristic polynomials and their multiplicities. The source gives construction steps.
 * **§8.4.1, bisection loop** (reading). In exact arithmetic the first bisection loop need not
   terminate when the bracketed zero is $0$. The declaration states one step of the loop. See
   `GolubVanLoan.Chapter08.bisection_bracket`.
@@ -869,6 +1640,32 @@ source prints and what the library states instead, and the declaration with the 
   See `GolubVanLoan.Chapter08.equation_8_4_6` and `GolubVanLoan.Chapter08.equation_8_4_12`.
 * **(8.4.12)** (typo). The product in the denominator runs over $j \ne k$, $j = 1, \dots, n$. See
   `GolubVanLoan.Chapter08.equation_8_4_12`.
+* **Equation (8.5.1)** (generalization). `GolubVanLoan.Chapter08.equation_8_5_1` is a block
+  identity for every $c,s$ and any distinct $p,q$, before imposing orthogonality or an ordering.
+* **Equation (8.5.3) and the chosen root** (reading). `GolubVanLoan.Chapter08.equation_8_5_3`
+  follows the printed formula, which selects a root of smaller absolute value.
+* **Algorithms 8.5.2–8.5.3** (reading). `GolubVanLoan.Chapter08.algorithm_8_5_2` and
+  `GolubVanLoan.Chapter08.algorithm_8_5_3` take fuel and return a stop flag. The classical pivot
+  selects the first maximizer in the upper triangle. Their exact specifications make the
+  stopping guarantee conditional on the flag, and
+  `GolubVanLoan.Chapter08.algorithm_8_5_2_terminates` supplies a sufficient classical budget for
+  the output to meet tolerance.
+* **§8.6.4, one-sided Jacobi cross-reference** (typo). The printed P8.6.8 is P8.6.6. See
+  `GolubVanLoan.Chapter08.oneSidedJacobi_orthogonal`.
+* **Theorem 8.6.1 and Corollaries 8.6.2–8.6.3** (reading).
+  `GolubVanLoan.Chapter08.theorem_8_6_1` expresses the extremal quotients through homogeneous
+  bounds. The corollaries use zero padding to cover arbitrary indices and rectangular
+  dimensions.
+* **Algorithm 8.6.1** (reading). `GolubVanLoan.Chapter08.algorithm_8_6_1_spec` states agreement
+  with the exact shifted QR step up to diagonal signs for the full window when the shifted Gram
+  matrix is invertible.
+* **Algorithm 8.6.2** (reading). `GolubVanLoan.Chapter08.algorithm_8_6_2` bounds the number of
+  passes and returns a stop flag. The final zero diagonal of a window uses the column chase from
+  the preceding discussion. `GolubVanLoan.Chapter08.algorithm_8_6_2_spec` and
+  `GolubVanLoan.Chapter08.algorithm_8_6_2_forward` bound exact-arithmetic threshold deflations
+  in Frobenius norm, with diagonal output conditional on stopping.
+* **§8.6.4, one-sided Jacobi** (reading). `GolubVanLoan.Chapter08.oneSidedJacobi_orthogonal`
+  scales nonzero columns to unit norm and leaves zero columns without an orthonormal completion.
 * **Theorem 8.6.5** (typo). The source swaps $P$ and $Q$: its $Q$ is $(n - r) \times r$. See
   `GolubVanLoan.Chapter08.theorem_8_6_5`.
 * **Theorem 8.6.5** (correction). As printed, the theorem is false for $m > n$. For $m > n$ the
@@ -876,6 +1673,25 @@ source prints and what the library states instead, and the declaration with the 
   `GolubVanLoan.Chapter08.theorem_8_6_5` and `GolubVanLoan.Chapter08.theorem_8_6_5_counterexample`.
 * **Algorithm 8.6.1** (typo). The source says $B \in \mathbb{R}^{m \times n}$ for a square $B$. See
   `GolubVanLoan.Chapter08.algorithm_8_6_1`.
+* **§8.7.2, Cholesky spectrum** (reading). `GolubVanLoan.Chapter08.pencil_eq_cholesky_spectrum`
+  combines the source’s Cholesky spectral identity with identification of the output of an exact
+  Schur routine.
+* **Equation (8.7.5)** (reading). `GolubVanLoan.Chapter08.generalizedRayleighQuotientIteration`
+  uses totalized inversion and returns zero at a singular shifted solve or zero normalization
+  direction.
+* **§8.7.4, GSVD pencil consequences** (reading).
+  `GolubVanLoan.Chapter08.gsvd_columns_and_pencil` assumes the corresponding $\beta_k\neq 0$ for
+  each finite generalized eigenvalue and assumes all denominators are nonzero to identify the
+  full finite spectrum.
+* **Algorithm 8.7.2 and the following RQ discussion** (typo).
+  `GolubVanLoan.Chapter08.algorithm_8_7_2_spec` uses $D_B\in\mathbb{R}^{m_2\times n}$,
+  correcting the printed $m_1$. `GolubVanLoan.Chapter08.gsvd_subspace_via_rq` uses $X=R^{-1}V$,
+  as follows from $RX=V$.
+* **§8.7.9, quadratic eigenvalue problems** (generalization).
+  `GolubVanLoan.Chapter08.equation_8_7_13`, `GolubVanLoan.Chapter08.equation_8_7_15`, and
+  `GolubVanLoan.Chapter08.qep_re_nonpos` allow complex coefficient matrices. The discriminant
+  identity avoids division by $x^H Mx$, and `GolubVanLoan.Chapter08.palindromic_reciprocal`
+  restricts the reciprocal to nonzero finite values.
 * **Equation (8.7.4)** (correction). The source's display of the Crawford number has no square root.
   The definition takes the square root, which the ratio $\epsilon / c(A, B)$ of Theorem 8.7.3 needs.
   See `GolubVanLoan.Chapter08.crawfordNumber`.
@@ -897,21 +1713,64 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 9: Functions of matrices**
 
+* **Equations (9.1.3), (9.1.4), and (9.1.6)** (reading).
+  `GolubVanLoan.Chapter09.equation_9_1_3`, `GolubVanLoan.Chapter09.equation_9_1_4`, and
+  `GolubVanLoan.Chapter09.equation_9_1_6` apply to total primary functional calculus and total
+  iterated derivatives. The source assumes the required derivative evaluations exist.
+* **Equation (9.1.8)** (generalization). Along with correcting the similarity orientation,
+  `GolubVanLoan.Chapter09.equation_9_1_8` drops the Taylor-series restriction of the surrounding
+  text.
+* **Theorem 9.1.4** (reading). `GolubVanLoan.Chapter09.theorem_9_1_4` uses total primary
+  functional calculus and confluent divided differences, so it has no separate hypothesis that
+  $f(T)$ is defined.
+* **§9.1.5 and Equation (9.1.12)** (generalization). `GolubVanLoan.Chapter09.blockParlett_diag`
+  and `GolubVanLoan.Chapter09.equation_9_1_12` use an arbitrary block-upper-triangular matrix.
+  `GolubVanLoan.Chapter09.equation_9_1_12_unique` needs separation only for the particular two
+  diagonal blocks.
+* **§9.1.6** (reading). `GolubVanLoan.Chapter09.condRel` uses an extended nonnegative right
+  limsup on normed additive groups. `GolubVanLoan.Chapter09.condRel_eq_of_hasFDerivAt` states
+  the normalized derivative formula under explicit differentiability and nonzero conditions.
 * **§9.1.2, the logarithm series** (typo). The source prints $\log(I - A) = \sum_{k \ge 1} A^k / k$,
   which is the series of $-\log(I - A)$. See `GolubVanLoan.Chapter09.taylor_log_one_sub`.
 * **Equation (9.1.7)** (generalization). The source restricts the identity to functions given by a
   Taylor series. It holds for every $f$. See `GolubVanLoan.Chapter09.equation_9_1_7`.
 * **Equation (9.1.8)** (typo). The source prints $f(X^{-1} A X) = X f(A) X^{-1}$, with $X$ and
   $X^{-1}$ exchanged on the right. See `GolubVanLoan.Chapter09.equation_9_1_8`.
+* **Theorem 9.2.3** (reading). `GolubVanLoan.Chapter09.theorem_9_2_3` accepts any uniform bound
+  on the derivative norm. Its proof uses the integral remainder in place of the pointwise real
+  Taylor remainder printed for complex entries.
+* **Algorithm 9.2.1** (reading). `GolubVanLoan.Chapter09.algorithm_9_2_1` is total at degree
+  zero, where the printed start has an invalid coefficient index. The correctness theorem
+  assumes positive degree.
+* **Equation (9.2.5)** (reading). `GolubVanLoan.Chapter09.equation_9_2_5` proves the grouping
+  identity for semiring algebras and allows all natural block sizes, including the degenerate
+  size zero.
+* **Equation (9.2.8)** (reading). `GolubVanLoan.Chapter09.equation_9_2_8` identifies the primary
+  matrix function with the contour integral for circles. The source states the formula for a
+  general enclosing contour.
 * **Theorem 9.2.1** (typo). The source takes the maximum over $1 \le i \le p$. The intended range is
   $1 \le i \le q$, the blocks of the Jordan form. See `GolubVanLoan.Chapter09.theorem_9_2_1`.
-* **Equation (9.2.1) and Theorem 9.2.2** (reading). The source takes $\Omega$ closed and convex, but
-  the supremum $\delta_r$ is finite only for bounded $\Omega$. The statements take $\Omega$ compact
+* **Equation (9.2.1) and Theorem 9.2.2** (reading). The source takes $\Omega$ closed and convex.
+  The statements take $\Omega$ compact to guarantee that $\delta_r$ is finite
   and convex. See `GolubVanLoan.Chapter09.equation_9_2_1` and
   `GolubVanLoan.Chapter09.theorem_9_2_2`.
 * **Equation (9.2.7)** (correction). The source bounds the error by
   $\max_{a \le t \le b} \|f^{(4)}(At)\|_2$, without the factor $A^4$, which is false. The statement
   has $\max_{a \le t \le b} \|A^4 f^{(4)}(At)\|_2$. See `GolubVanLoan.Chapter09.equation_9_2_7`.
+* **§9.3.1, even and odd evaluation** (generalization). `GolubVanLoan.Chapter09.pade_even_odd`
+  proves the split for every diagonal Padé order. The source gives the example $q=8$.
+* **§9.3.1, the Padé fraction and Equation (9.3.1)** (reading).
+  `GolubVanLoan.Chapter09.pade_def` uses a total inverse when the denominator is singular, and
+  `GolubVanLoan.Chapter09.equation_9_3_1` makes the invertibility needed for the remainder
+  formula explicit.
+* **§9.3.2–§9.3.3, time domain** (reading). `GolubVanLoan.Chapter09.exp_perturbation_integral`,
+  `GolubVanLoan.Chapter09.exp_perturbation_schur`, and `GolubVanLoan.Chapter09.equation_9_3_4`
+  make the nonnegative time restriction on the norm results explicit.
+* **Equation (9.3.6)** (reading). `GolubVanLoan.Chapter09.equation_9_3_6` gives a lower bound on
+  every real uniform upper bound, expressing the source’s supremum bound without requiring a
+  finite supremum.
+* **§9.3.4, normal squaring** (reading). `GolubVanLoan.Chapter09.normal_squaring` includes the
+  zeroth power and uses totalized Padé evaluation.
 * **Algorithm 9.3.1** (correction). The printed exponent $j = \max\{0, 1 + \lfloor \log_2
   \|A\|_\infty \rfloor\}$ only guarantees $\|A/2^j\|_\infty < 1$, not the bound
   $\|A/2^j\|_\infty \le 1/2$ that the Moler–Van Loan bound needs. The library proves the claim of
@@ -927,14 +1786,28 @@ source prints and what the library states instead, and the declaration with the 
   and `GolubVanLoan.Chapter09.expCondNumber_eq_iff_counterexample`.
 * **Equation (9.3.6)** (typo). The source cites "(7.8.8)" for the pseudospectral abscissa, which is
   (7.9.8). See `GolubVanLoan.Chapter09.equation_9_3_6`.
+* **§9.4.1, the sign and projector** (reading). `GolubVanLoan.Chapter09.matrixSign_eq_conj` and
+  `GolubVanLoan.Chapter09.sign_projector` use any similarity separating the two open half-
+  planes; the latter also states idempotence.
+* **§9.4.4, logarithm series and inverse scaling** (reading).
+  `GolubVanLoan.Chapter09.log_maclaurin`, `GolubVanLoan.Chapter09.log_gregory`, and
+  `GolubVanLoan.Chapter09.log_inverse_scaling` state complex-matrix versions. The inverse-
+  scaling identity holds after any prescribed number of square roots.
+* **Equation (9.4.4)** (reading). `GolubVanLoan.Chapter09.equation_9_4_4` proves that each
+  eigenvalue of $G_0$ comes from an eigenvalue of $A$. The source states the opposite inclusion.
+* **Equation (9.4.5)** (typo). `GolubVanLoan.Chapter09.equation_9_4_5` supplies the missing
+  closing parenthesis in the intermediate Newton–Schulz expression.
+* **Equation (9.4.7)** (reading). `GolubVanLoan.Chapter09.newtonSqrt_tendsto` states the square-
+  root limit and transformation to the sign iterates, with an explicit quadratic step estimate
+  for those sign iterates.
+* **§9.4.4, the Padé approximant** (reading). `GolubVanLoan.Chapter09.log_pade_33` proves the
+  local scalar error estimate, while the source evaluates the fraction at $A-I$.
 * **§9.4.1** (typo). The source derives the Jordan-form expression of $\operatorname{sign}(A)$ "from
   Theorem 9.1.1", which does not exist; the expression follows from the definition (9.1.3)–(9.1.4).
   The source also writes $S^2 = S$ for $S^2 = I$. See `GolubVanLoan.Chapter09.matrixSign_eq_conj`.
 * **§9.4.2, the principal square root** (reading). The source leaves implicit that $A$ has no
   eigenvalue on $(-\infty, 0]$. The statement assumes it. See
   `GolubVanLoan.Chapter09.principalSqrt_existsUnique`.
-* **Equation (9.4.11)** (reading). The body of the iteration is lost in the source. It is read off
-  (9.4.12) as $X_{k+1} = (X_k + X_k^{-T})/2$. See `GolubVanLoan.Chapter09.equation_9_4_12`.
 * **§9.4.3, $\operatorname{sign}\left(\begin{bmatrix} 0 & A \\ A^T & 0 \end{bmatrix}\right) =
   \begin{bmatrix} 0 & U \\ U^T & 0 \end{bmatrix}$** (correction). The identity needs $A$ to be
   nonsingular, which the source omits. See `GolubVanLoan.Chapter09.sign_block_polar`.
@@ -946,6 +1819,13 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 10: Large sparse eigenvalue problems**
 
+* **Algorithm 10.1.1 and Theorem 10.1.1** (reading). A fuel-limited prefix can retain the
+  residual term. The stopped exact theorem assumes enough fuel and uses the last coordinate
+  vector of $\mathbb R^k$ in (10.1.4). See `GolubVanLoan.Chapter10.algorithm_10_1_1_spec`,
+  `GolubVanLoan.Chapter10.theorem_10_1_1`, and `GolubVanLoan.Chapter10.equation_10_1_4`.
+* **Theorem 10.1.4** (reading). The bound explicitly requires the interior index, strict
+  spectral gaps, separation from earlier Ritz values, and nonzero starting overlap. See
+  `GolubVanLoan.Chapter10.theorem_10_1_4`.
 * **Theorem 10.1.2** (reading). The hypothesis $q_1^T z_1 \neq 0$, implicit in the source, is
   explicit. The source's $\rho_1$ is undefined when $\lambda_2 = \lambda_n$; the statement takes
   $\rho_1 = 0$ and needs no gap hypothesis. See `GolubVanLoan.Chapter10.theorem_10_1_2`.
@@ -954,6 +1834,21 @@ source prints and what the library states instead, and the declaration with the 
 * **Golub's rank-one modification, §10.1.4** (generalization). The source takes
   $\tau \in \{-1, 1\}$; the statement holds for every real $\tau$. See
   `GolubVanLoan.Chapter10.golub_rankOne_modification`.
+* **Equations (10.2.7)–(10.2.10), quadrature existence** (reading). The weight hypothesis
+  requires finite moments of every order and infinite support. The Gauss existence theorem gives
+  distinct real nodes but does not state their location in a prescribed interval. See
+  `GolubVanLoan.Chapter10.equation_10_2_7`.
+* **Gauss–Radau and Gauss–Lobatto remainders, §10.2.2** (specialization). The mean-value point
+  is asserted in $[a,b]$. The printed statement places it in $(a,b)$. See
+  `GolubVanLoan.Chapter10.gaussRadau_remainder` and
+  `GolubVanLoan.Chapter10.gaussLobatto_remainder`.
+* **Fact 1, §10.2.3** (correction). The constant polynomial is normalized by the reciprocal
+  square root of the total mass. The printed $p_0=1$ requires a unit-mass weight. See
+  `GolubVanLoan.Chapter10.orthonormalPolynomials_threeTerm`.
+* **§10.2.5, Radau exactness by Lanczos** (generalization). The special node for polynomial
+  exactness need not be a spectral endpoint. The shifted tridiagonal matrix must be invertible
+  and the Krylov prefix must have full dimension. See
+  `GolubVanLoan.Chapter10.gaussRadau_via_lanczos`.
 * **Remainder of the Gauss rule, §10.2.2** (typo). The source prints $(2n)!$; the rule has $k$ nodes
   and the factor is $(2k)!$. See `GolubVanLoan.Chapter10.gauss_remainder`.
 * **Remainder of the Gauss–Lobatto rule, §10.2.2** (typo). The source's list prints this remainder
@@ -972,9 +1867,29 @@ source prints and what the library states instead, and the declaration with the 
 * **Gauss–Radau modification, §10.2.5** (typo). The source prints $\beta_{k+1}^2$ for $\beta_k^2$ in
   $\tilde\alpha_{k+1}$, and its display of $\tilde T_{k+1}$ omits $\beta_k$ above the diagonal. See
   `GolubVanLoan.Chapter10.gaussRadau_tridiag`.
+* **Equation (10.3.4)** (reading). The reflector program gives an exact orthogonal completion,
+  and the comparison with Lanczos vectors is restricted to indices below the grade. See
+  `GolubVanLoan.Chapter10.equation_10_3_4`.
+* **§10.3.4, good Ritz pairs** (reading). The predicate expresses the residual test alone. The
+  source applies the test to already computed Ritz pairs. See
+  `GolubVanLoan.Chapter10.IsGoodRitzPair`.
+* **Equations (10.3.7)–(10.3.9)** (generalization). The prefix identities do not need $n=rp$.
+  Global orthogonality and compression of a prefix use the full-rank residual condition in the
+  text. See `GolubVanLoan.Chapter10.equation_10_3_8` and
+  `GolubVanLoan.Chapter10.equation_10_3_9`.
+* **Theorem 10.3.2** (typo). The bound uses $\tan(\phi_p)$ for the angle defined by the smallest
+  singular value. The source prints $\tan(\theta_p)$. See
+  `GolubVanLoan.Chapter10.theorem_10_3_2`.
 * **Theorem 10.3.2** (reading). The source's $\rho_i$ is undefined when $\lambda_{p+1} = \lambda_n$;
   the statement takes $\rho_i = 0$ and needs no gap hypothesis. See
   `GolubVanLoan.Chapter10.theorem_10_3_2`.
+* **Algorithms 10.4.1–10.4.2, zero normalization coefficients** (reading). The exact results
+  identify the totalized vectors and coefficients. A zero normalization coefficient can give a
+  zero vector. For Algorithm 10.4.2 this can occur even when the leading square block is
+  nonsingular. See `GolubVanLoan.Chapter10.bidiagLoop_spec` and
+  `GolubVanLoan.Chapter10.algorithm_10_4_2_spec`.
+* **§10.4.5, CUR product** (correction). Equation (10.4.24) also needs the transpose on $D_R
+  Z_1(\mathrm{row},:)$. See `GolubVanLoan.Chapter10.equation_10_4_24`.
 * **Equation (10.4.6)** (typo). The source prints $A U(:, 1:k) = V(:, 1:k) B(1:k, 1:k)$, with $U$
   and $V$ exchanged. See `GolubVanLoan.Chapter10.equation_10_4_6`.
 * **Equation (10.4.6)** (generalization). The source attributes the identity to $\beta_k = 0$. It
@@ -995,6 +1910,20 @@ source prints and what the library states instead, and the declaration with the 
   exact semantics holds for every $A$. See `GolubVanLoan.Chapter10.algorithm_10_4_2_spec`.
 * **Equation (10.4.24)** (typo). The source prints $(C\Phi)(\Psi R)$. The product is
   $(C\Phi)(\Psi^T R)$, as in (10.4.23). See `GolubVanLoan.Chapter10.equation_10_4_24`.
+* **Algorithm 10.5.1** (reading). The printed zero-residual factorization concerns a completed
+  exact run. A fuel-limited prefix instead has the last residual term of (10.5.2). See
+  `GolubVanLoan.Chapter10.algorithm_10_5_1_spec` and
+  `GolubVanLoan.Chapter10.algorithm_10_5_1_matrices`.
+* **Equations (10.5.3) and (10.5.10)** (reading). The filter polynomial is the monic product,
+  and the first-column identities account for the source's normalization scalar separately. See
+  `GolubVanLoan.Chapter10.filterPolynomial` and
+  `GolubVanLoan.Chapter10.explicitRestartCycle_spec`.
+* **§10.5.3, continued Arnoldi steps** (reading). The specification of the full-size restart
+  requires reaching the requested order, since the continuation may stop earlier when its
+  residual vanishes. See `GolubVanLoan.Chapter10.implicitRestartCycle_spec`.
+* **Equation (10.5.11)** (generalization). The unsymmetric Lanczos program normalizes starting
+  vectors with nonzero mutual dot product, handles initially degenerate pairs by stopping, and
+  limits its loop by fuel. See `GolubVanLoan.Chapter10.unsymmetricLanczos`.
 * **Equation (10.5.4)** (typo). The source prints the loop as `for i = 0:p`. It runs for
   $i = 1, \dots, p$. See `GolubVanLoan.Chapter10.shiftedQrSteps`.
 * **Theorem 10.5.1** (generalization). The source defines $V_i$ and $R_i$ by QR factorizations. The
@@ -1018,6 +1947,19 @@ source prints and what the library states instead, and the declaration with the 
 * **§10.5.4, the Krylov–Schur restart** (generalization). The source uses a Schur decomposition of
   $H_m$. Only the block upper triangular form of $U^T H_m U$ is needed. See
   `GolubVanLoan.Chapter10.krylovSchur_isArnoldiDecomposition`.
+* **Equations (10.6.4)–(10.6.5)** (correction). The linear constraint fixes $w^Tx=1$. Taking
+  $w=x_c$ does not force the next vector to have unit norm. See
+  `GolubVanLoan.Chapter10.equation_10_6_4`.
+* **Equations (10.6.6)–(10.6.10)** (reading). The formulas assume the shifted matrix and scalar
+  denominator used in them are invertible. See `GolubVanLoan.Chapter10.equation_10_6_7` and
+  `GolubVanLoan.Chapter10.equation_10_6_10`.
+* **Davidson and Jacobi–Davidson correctness** (limitation). Five specifications ask for unit
+  Ritz vectors in every projected dimension, including dimension zero, where none exist. The
+  iteration requests Ritz pairs only in positive dimension. See
+  `GolubVanLoan.Chapter10.subspaceExpansion_spec`, `GolubVanLoan.Chapter10.equation_10_6_16`,
+  `GolubVanLoan.Chapter10.subspaceExpansion_ritzValue_mono`,
+  `GolubVanLoan.Chapter10.davidson_ritzValue_mono`, and
+  `GolubVanLoan.Chapter10.jacobiDavidson_spec`.
 * **Equation (10.6.13)** (typo). The source prints $\alpha + + c^T z_c$ in the right-hand side; the
   intended term is $\alpha + c^T z_c$. See `GolubVanLoan.Chapter10.equation_10_6_13`.
 * **Trace-min principle, §10.6.5** (correction). The source says that every minimizer
@@ -1026,11 +1968,19 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 11: Large sparse linear system problems**
 
+* **§11.1.1, compressed columns** (reading). Stored positions may include zeros, and row indices
+  inside each column must increase strictly. See `GolubVanLoan.Chapter11.CompressedColumn`.
+* **Equation (11.1.6)** (reading). When the minimum's set is empty, the index is the diagonal
+  position and $i-f_i(A)=0$. See `GolubVanLoan.Chapter11.profileIndex`.
+* **§11.1.8, Sparse QR Challenge** (typo). For $A(:,p)=AP^T$, use $P=I_n(p,:)$, the transpose of
+  the printed $I_n(:,p)$. See `GolubVanLoan.Chapter11.seminormal_cholesky` and
+  `GolubVanLoan.Chapter11.seminormal_normalEquations`.
 * **Equation (11.1.8)** (correction). The source runs the loop for $k = 1{:}n-2$, which leaves the
   last two columns unfactored; the program runs it for $k = 1{:}n$. See
   `GolubVanLoan.Chapter11.choleskyWithPivoting`.
-* **Formula after Fact 2, §11.1.6** (generalization). The source states the formula for $j < i$; it
-  holds for all $i$ and $j$. See `GolubVanLoan.Chapter11.cholesky_apply_eq`.
+* **Formula after Fact 2, §11.1.6** (generalization). The source discusses lower-triangular
+  entries. The formula holds for every pair of indices. See
+  `GolubVanLoan.Chapter11.cholesky_apply_eq`.
 * **Facts 1–2, §11.1.6** (reading). The source says that $g_{ij}$ is nonzero at the predicted
   positions "assuming no numerical cancellation", which has no exact reading; the theorem states the
   exact converse, that $g_{ij}$ vanishes off the symbolic fill. See
@@ -1039,6 +1989,16 @@ source prints and what the library states instead, and the declaration with the 
   structural symmetry; this is false for the computed $A^{(1)}$, and the theorem states it for the
   predicted pattern. See `GolubVanLoan.Chapter11.symbolicElim_isPatternSymm` and
   `GolubVanLoan.Chapter11.symbolicElim_isPatternSymm_counterexample`.
+* **§11.2.2, block Jacobi and Gauss–Seidel** (generalization). Ordered block labels permit
+  arbitrary numbers and sizes of blocks and noncontiguous original indices. See
+  `GolubVanLoan.Chapter11.blockJacobi_eq` and `GolubVanLoan.Chapter11.blockGaussSeidel_eq`.
+* **Equation (11.2.27)** (generalization). The normalized SSOR product and eigenvalue quotient
+  hold for symmetric matrices with positive diagonals and any nonzero weight. See
+  `GolubVanLoan.Chapter11.equation_11_2_27`.
+* **§11.2.8, Chebyshev interval** (reading). The bound requires $\alpha<\beta$ because the
+  rescaling divides by $\beta-\alpha$. The program uses finite fuel and the bound is at its
+  attained iterate. See `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le` and
+  `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le'`.
 * **Equation (11.2.8)** (correction). The source prints the corner entry of the $k$-th power as
   $\alpha \lambda^{k-1}$, which is false for $k \ge 2$. The corner entry is
   $k \alpha \lambda^{k-1}$. See `GolubVanLoan.Chapter11.equation_11_2_8`.
@@ -1066,18 +2026,44 @@ source prints and what the library states instead, and the declaration with the 
   $[0, 1)$, which the proof in the source shows. See `GolubVanLoan.Chapter11.theorem_11_2_4`.
 * **Section 11.2.8** (typo). The Chebyshev bound in the source writes $\lambda_i \in \lambda(A)$; it
   means the eigenvalues of $G$. See `GolubVanLoan.Chapter11.chebyshevSemiIterative_norm_le`.
+* **Equation (11.3.24)** (typo). The numerator is $p_{k-1}^TAg_{k-1}$, with a transpose missing
+  in print. See `GolubVanLoan.Chapter11.equation_11_3_24`.
+* **Algorithms 11.3.2–11.3.3 and (11.3.26)** (reading). The programs have bounded fuel. The
+  returned iterate may already solve the system before a subsequent pass records the failed loop
+  test. See `GolubVanLoan.Chapter11.algorithm_11_3_2_spec`,
+  `GolubVanLoan.Chapter11.algorithm_11_3_3_spec`, and `GolubVanLoan.Chapter11.equation_11_3_26`.
+* **Equation (11.3.28), CGNR and CGNE** (generalization). The rectangular CGNR criterion assumes
+  full column rank. The rectangular CGNE criterion assumes full row rank and a consistent right-
+  hand side, with $x_0=A^Ty_0$. See `GolubVanLoan.Chapter11.cgnr_isMinResidual_of_injective` and
+  `GolubVanLoan.Chapter11.cgne_isMinError_of_injective_transpose`.
+* **Algorithm 11.3.1** (reading). Exact termination at a sufficient finite fuel budget requires
+  positive tolerance. See `GolubVanLoan.Chapter11.algorithm_11_3_1_spec`.
+* **Equations (11.3.10)–(11.3.11) and the Krylov argument** (correction). The subspace contains
+  the affine displacement $x_k-x_0$ and the gradient $g_k=g_0+A(x_k-x_0)$. Nested spaces may
+  repeat. See `GolubVanLoan.Chapter11.equation_11_3_11` and
+  `GolubVanLoan.Chapter11.gradient_mem_krylov`.
 * **Corollary 11.3.2** (generalization). The source assumes that $D$ is symmetric and that $r < n$;
   neither is needed. See `GolubVanLoan.Chapter11.corollary_11_3_2`.
 * **Equation (11.3.14)** (correction). The source prints $x_k = Q_ky_k$, which holds only for
   $x_0 = 0$; the method computes $x_k = x_0 + Q_ky_k$. See `GolubVanLoan.Chapter11.preliminaryCG`.
-* **Equation (11.3.19)** (typo). The source prints the garbled
-  $v_k = [\nu_1; \dots; \nu_{k-1}/\nu_k]$ for $v_k = [v_{k-1}; \nu_k]$. See
+* **Equation (11.3.19)** (generalization). The source extends the solution vector for a positive
+  definite Lanczos tridiagonal matrix. The theorem gives the extension for arbitrary recurrence
+  coefficients and states each row identity under a local nonzero-pivot hypothesis. See
   `GolubVanLoan.Chapter11.equation_11_3_19`.
 * **Theorem 11.3.4** (generalization). The orthogonality $g_i^Tg_j = 0$ holds for $0 \le i < j$, not
   only for $1 \le i < j$. See `GolubVanLoan.Chapter11.theorem_11_3_4`.
 * **Theorem 11.3.5** (typo). The source prints the range $1 \le i < j \le k$, which excludes the
   case $i = j$ of its own statement; the range is $1 \le i, j \le k$. See
   `GolubVanLoan.Chapter11.theorem_11_3_5`.
+* **§11.4.1, MINRES initialization and Givens update** (correction). The initial scale uses
+  $\|r_0\|_2$. The final rotation is determined from the new column after its earlier rotations
+  and the new subdiagonal entry. See `GolubVanLoan.Chapter11.minres_reduction` and
+  `GolubVanLoan.Chapter11.minres_givens_update`.
+* **§11.4.2, LSMR monotonicity** (specialization). The formal ordinary residual norm bound
+  requires full column rank. The normal residual norm bound has no rank assumption. See
+  `GolubVanLoan.Chapter11.lsmr_norm_residual_antitone`.
+* **§11.4.5, BiCG LU expression** (typo). The final LU expression restores the base iterate
+  $x_0$. See `GolubVanLoan.Chapter11.bicg_residual_orthogonal`.
 * **Display for $\phi(\alpha x)$ in §11.4.1** (typo). The source prints $\phi(\alpha x) =
   \alpha^2\lambda_{\min} - \alpha x^Tb$; the value is $\frac12\alpha^2\lambda_{\min}\|x\|_2^2 -
   \alpha x^Tb$. See `GolubVanLoan.Chapter11.energyFunctional_unbounded_of_indefinite`.
@@ -1106,6 +2092,23 @@ source prints and what the library states instead, and the declaration with the 
 * **Figure 11.4.1, CGS and BiCGstab** (typo). The figure prints the initial condition
   $\tilde r_0^T\tilde r_0 \neq 0$; it is $\tilde r_0^Tr_0 \neq 0$. See `GolubVanLoan.Chapter11.cgs`
   and `GolubVanLoan.Chapter11.bicgstab`.
+* **§11.5.1, transformed system** (generalization). Only the left factor must be nonsingular for
+  the stated equivalence, which uses the total inverse of the right factor. See
+  `GolubVanLoan.Chapter11.preconditioned_system_iff`.
+* **§11.5.3, SSOR** (generalization). The unscaled SSOR product is positive definite for
+  symmetric $A$ with positive diagonal and any real $\omega$. See
+  `GolubVanLoan.Chapter11.ssorPreconditioner_posDef`.
+* **§11.5.8, incomplete Cholesky** (reading). `GolubVanLoan.Chapter11.incChol` uses the real-
+  valued mask as a keep-or-drop test. `GolubVanLoan.Chapter11.incChol_isIncompleteCholesky`
+  requires dropped input positions to be zero for the agreement asserted in (11.5.7).
+* **§11.5.9, block Cholesky recurrence** (generalization). The block product uses invertible
+  diagonal factors satisfying the Schur update and does not require them to be triangular. In
+  (11.5.10), the bandwidth of a Cholesky factor is conditional on its existence. See
+  `GolubVanLoan.Chapter11.blockTridiagonal_cholesky` and
+  `GolubVanLoan.Chapter11.equation_11_5_10`.
+* **§11.5.11, Schwarz update** (generalization). The affine update allows arbitrary
+  nondegenerate trial and test spaces and additive weights. The residual multiplier is not
+  asserted to be invertible. See `GolubVanLoan.Chapter11.schwarz_update_affine`.
 * **Equation (11.5.1)** (typo). The printed recurrence mixes the gradient and residual sign
   conventions and writes $\tilde p_+ = \tilde r_c + \tau \tilde p_c$ for
   $\tilde r_+ + \tau \tilde p_c$; the consistent recurrence is stated. See
@@ -1135,8 +2138,14 @@ source prints and what the library states instead, and the declaration with the 
   of $U$ are $-FA_1^{-1}C$ and $-GA_1^{-1}B$, not $0$ as printed. See
   `GolubVanLoan.Chapter11.equation_11_5_11_blockLU` and
   `GolubVanLoan.Chapter11.equation_11_5_11_counterexample`.
-* **Grid sizes (§11.6)** (generalization). The source takes $n = 2^k - 1$. Everything it proves uses
-  only $n = 2m + 1$, and the results hold for every $m$. See `GolubVanLoan.Chapter11.modelA`.
+* **Equations (11.6.11)–(11.6.12)** (generalization). The two algebraic identities hold for all
+  nonzero $\omega$. The restriction $0 < \omega \leq 1$ is used for the contraction bound. See
+  `GolubVanLoan.Chapter11.equation_11_6_11` and `GolubVanLoan.Chapter11.equation_11_6_12`.
+* **Theorem 11.6.2, proof** (typo). The coarse diagonal eigenvalue matrix is $(4/h^2) S^h C^h$.
+  The printed value $(1/(2h^2))(I_m - \sqrt{C^h})$ does not equal it. See
+  `GolubVanLoan.Chapter11.theorem_11_6_2`.
+* **Grid sizes** (generalization). The source takes $n = 2^k - 1$. Everything it proves uses only
+  $n = 2m + 1$, and the results hold for every $m$. See `GolubVanLoan.Chapter11.modelA`.
 * **Equation (11.6.16)** (typo). The source updates $u_c$ instead of $u_{p_1}$ in the coarse-grid
   correction. See `GolubVanLoan.Chapter11.coarseGridCorrection`.
 * **§11.6.2**, the optimal $\omega$ (reading). The source says that the minimization of the
@@ -1146,6 +2155,11 @@ source prints and what the library states instead, and the declaration with the 
 
 **Chapter 12: Special topics**
 
+* **Theorem 12.1.1, rank bound** (generalization). The rank inequality holds without spectral
+  separation. See `GolubVanLoan.Chapter12.theorem_12_1_1_b`.
+* **Algorithm 12.1.2** (correction). Pivoting selects a first-column entry of maximal modulus.
+  The signed maximum printed in the source can be zero for nonsingular $A$. See
+  `GolubVanLoan.Chapter12.algorithm_12_1_2`.
 * **Equation (12.1.3)** (generalization). The source defines the displacement rank only for a
   nonsingular Sylvester operator. The generators exist without this assumption. See
   `GolubVanLoan.Chapter12.equation_12_1_3`.
@@ -1163,6 +2177,17 @@ source prints and what the library states instead, and the declaration with the 
   `GolubVanLoan.Chapter12.disjoint_spectra_displacement_operators`.
 * **§12.1.8** (typo). The first display prints $X_G^{-1} G X_F$ for $X_G^{-1} G X_G$. See
   `GolubVanLoan.Chapter12.cauchyLike_of_diagonalizable`.
+* **Equation (12.2.3)** (correction). The inverse blocks have rank at most one, allowing
+  vanishing blocks. See `GolubVanLoan.Chapter12.equation_12_2_3`.
+* **Equations (12.2.15)–(12.2.16)** (correction). The second term in (12.2.15) uses the strict
+  upper triangle, as in Algorithm 12.2.2, so the diagonal is included only once. See
+  `GolubVanLoan.Chapter12.equation_12_2_16`.
+* **§12.2.10, quasiseparability and Facts 1–2** (generalization). The rank bound holds for all
+  orthogonal upper Hessenberg matrices. The reflector product similarity and the even-order
+  spectral relation allow arbitrary angles. See
+  `GolubVanLoan.Chapter12.orthogonalHessenberg_isQuasiseparable`,
+  `GolubVanLoan.Chapter12.orthogonalHessenberg_fact_1`, and
+  `GolubVanLoan.Chapter12.orthogonalHessenberg_fact_2`.
 * **§12.2.3, $B(r)$ has no generator representation** (generalization). The source takes $r$ with
   nonzero entries; $r_1 \neq 0$ and $r_2 \neq 0$ suffice. See
   `GolubVanLoan.Chapter12.unitBidiagonal_not_generatorRepresentable`.
@@ -1187,11 +2212,18 @@ source prints and what the library states instead, and the declaration with the 
 * **Equation (12.2.18)** (correction). The source assumes a nonzero subdiagonal. The statement
   assumes a positive subdiagonal, even order and $\det H = 1$. See
   `GolubVanLoan.Chapter12.equation_12_2_18`.
+* **Equations (12.3.3)–(12.3.4)** (reading). The Kronecker congruences require only the two
+  factor identities. The SVD statement uses real matrices and column-indexed singular values.
+  See `GolubVanLoan.Chapter12.equation_12_3_3` and `GolubVanLoan.Chapter12.equation_12_3_4`.
+* **Theorem 12.3.1 and (12.3.19)** (generalization). The exact expansion accepts arbitrary outer
+  products. The truncation may include zero singular values. See
+  `GolubVanLoan.Chapter12.theorem_12_3_1` and `GolubVanLoan.Chapter12.equation_12_3_19`.
 * **Equation (12.3.9)** (typo). The source states $X \in \mathbb{R}^{n_1 \times m_2}$ for
   $X \in \mathbb{R}^{n_2 \times n_1}$. See `GolubVanLoan.Chapter12.equation_12_3_9`.
 * **§12.3.5, the two-pass transposition** (correction). The source prints
-  $\Gamma_1 = \mathcal{P}_{r,q} \otimes I_q$, which is correct only for $r = q$, and announces a
-  factorization of $\mathcal{P}_{rq,q}$ before it writes $\mathcal{P}_{q,rq}$. See
+  $\Gamma_1 = \mathcal{P}_{r,q} \otimes I_q$, which generally has the opposite shuffle
+  orientation, and announces a factorization of $\mathcal{P}_{rq,q}$ before it writes
+  $\mathcal{P}_{q,rq}$. See
   `GolubVanLoan.Chapter12.perfectShuffle_two_pass`.
 * **Equation (12.3.21)** (typo). The source writes $\phi_{skew}(X)$ for $\phi_{skew}(X, Y)$ and
   drops a parenthesis. See `GolubVanLoan.Chapter12.equation_12_3_21`.
@@ -1206,8 +2238,27 @@ source prints and what the library states instead, and the declaration with the 
 * **Lemma 12.3.3** (generalization). Of the hypothesis $S [u \,|\, v] = [u \,|\, v] \begin{bmatrix}
   0 & \mu \\ -\mu & 0 \end{bmatrix}$ only $Sv = \mu u$ is needed. See
   `GolubVanLoan.Chapter12.lemma_12_3_3`.
+* **Sections 12.4.2 and 12.4.9** (generalization). Equal slice modes give a fiber, inverted
+  colon bounds give an empty mode, and the contraction identity takes arbitrary typed outer mode
+  families. See `GolubVanLoan.Chapter12.slice`, `GolubVanLoan.Chapter12.subtensor` and
+  `GolubVanLoan.Chapter12.equation_12_4_13`.
+* **Equations (12.4.18)–(12.4.19)** (reading). The successive-product expressions use square
+  factors. The coordinate and Kronecker formulas allow rectangular factors. See
+  `GolubVanLoan.Chapter12.equation_12_4_19`.
 * **Equation (12.4.17)** (correction). The source prints $\mathcal{S} \times_k (FG)$. The correct
   right side is $\mathcal{S} \times_k (GF)$. See `GolubVanLoan.Chapter12.equation_12_4_17`.
+* **Equation (12.5.4)** (typo). The third row-inner-product line is missing its equality sign.
+  The full Gram identity states the inner products in all modes of tensors of arbitrary positive
+  order. See `GolubVanLoan.Chapter12.gram_modeUnfold_of_isSVD`.
+* **Equations (12.5.16)–(12.5.20)** (generalization). The CP unfolding identity uses arbitrary
+  order, and the row normal equations are combined into a matrix equivalence. See
+  `GolubVanLoan.Chapter12.equation_12_5_16` and `GolubVanLoan.Chapter12.equation_12_5_20`.
+* **Equation (12.5.22)** (correction). The absolute value of a stationary quotient is a singular
+  value. A sign change in one vector changes the quotient sign. See
+  `GolubVanLoan.Chapter12.equation_12_5_22`.
+* **Equations (12.5.25)–(12.5.29)** (reading). The contraction extends to arbitrary boundary
+  ranks. The TT-SVD result gives existence with the sequential unfolding ranks. See
+  `GolubVanLoan.Chapter12.equation_12_5_25` and `GolubVanLoan.Chapter12.equation_12_5_29`.
 * **Equation (12.5.1)** (typo). The source writes $v_i T$ for $v_i^T$. See
   `GolubVanLoan.Chapter12.equation_12_5_1`.
 * **Equation (12.5.3)** (typo). The source writes the maximum of $\|Q^T A\|_F$ as

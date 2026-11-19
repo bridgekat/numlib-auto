@@ -55,6 +55,10 @@ The uniform agreement is `ConnGouldToint.Chapter11.UniformNormalizedModelAgreeme
 * **Theorem 11.5.1** (correction). The accuracy estimate also assumes that the modeled residual
   $c(x) + c'(x) s + r(x, i, s)$ lies in the domain where $h$ is Lipschitz. See
   `ConnGouldToint.Chapter11.compositeTaylorModel_domain_counterexample`.
+* **Theorem 11.5.1** (partial translation). The error estimates use uniform quadratic bounds
+  on the added terms. The value and directional agreement result assumes regularity of the
+  objective and model. The book also asserts continuity of the model family and compactness
+  of the model parameter set.
 -/
 
 open Filter Metric Optimization ConvexAnalysis
@@ -72,7 +76,10 @@ $$m(x, i, s) = f(x) + f'(x) s + q(x, i, s) + h\bigl(c(x) + c'(x) s + r(x, i, s)\
 
 The quadratic terms are represented by their values. Both are zero for (11.5.1), they are the
 second-order Taylor terms of $f$ and $c$ for (11.5.2), and only the quadratic term of $f$ is
-kept for (11.5.3). The derivatives are `fderiv`. -/
+kept for (11.5.3). The derivatives are `fderiv`.
+
+**Reading.** Unified model with arbitrary parameter and term values on normed spaces.
+-/
 noncomputable def compositeTaylorModel (f : E → ℝ) (c : E → Y) (h : Y → ℝ)
     (q : E → I → E → ℝ) (r : E → I → E → Y) (x : E) (i : I) (s : E) : ℝ :=
   f x + fderiv ℝ f x s + q x i s + h (c x + fderiv ℝ c x s + r x i s)
@@ -121,7 +128,10 @@ $$|f(y + s) - m(y, i, s)| \le K \|s\|^2$$
 for every $y$ in the open ball of radius $\varepsilon$ about $x$, every parameter $i$ and every
 $\|s\| \le \delta$, then the models have uniform normalized agreement with $f$ at $x$.
 
-This applies to all three Taylor models (11.5.1)–(11.5.3). -/
+This applies to all three Taylor models (11.5.1)–(11.5.3).
+
+**Reading.** Derives uniform normalized agreement from a supplied quadratic error estimate.
+-/
 theorem theorem_11_5_1_uniform_agreement {f : E → ℝ} {m : E → I → E → ℝ}
     {x : E} {ε δ K : ℝ} (hε : 0 < ε) (hδ : 0 < δ) (hK : 0 ≤ K)
     (herr : ∀ y ∈ ball x ε, ∀ i s, ‖s‖ ≤ δ →
@@ -194,7 +204,11 @@ regular: their one-sided directional derivatives along positive rays exist and e
 Clarke derivatives. Then $m(x, i, 0) = f(x)$ and $m(x, i, \cdot)^\circ(0; d) = f^\circ(x; d)$
 for every $d \neq 0$.
 
-The proof applies `ConnGouldToint.Chapter11.lemma_11_2_1`. -/
+The proof applies `ConnGouldToint.Chapter11.lemma_11_2_1`.
+
+**Reading.** Deduces center value and directional agreement under explicit local regularity; it does
+not establish all four source assumptions.
+-/
 theorem theorem_11_5_1_value_and_directional_agreement
     {V₀ : Type*} [NormedAddCommGroup V₀] [InnerProductSpace ℝ V₀]
     [FiniteDimensional ℝ V₀] [Nontrivial V₀]
@@ -225,7 +239,10 @@ $|s| < \varepsilon$ such that $(x + s)^2 \ge 0$ but $x^2 + 2 x s < 0$.
 
 For $c(x) = x^2$ and an outer function that is Lipschitz only on $[0, \infty)$, the actual
 residual $c(x + s)$ stays in this domain, while its affine model $c(x) + c'(x) s$ leaves it at
-arbitrarily small steps. -/
+arbitrarily small steps.
+
+**Reading.** Modeled residual can leave the Lipschitz domain arbitrarily close to the base point.
+-/
 theorem compositeTaylorModel_domain_counterexample :
     ∀ ε > (0 : ℝ), ∃ x s : ℝ, |x| < ε ∧ |s| < ε ∧
       0 ≤ (x + s) ^ 2 ∧ x ^ 2 + (2 * x) * s < 0 := by

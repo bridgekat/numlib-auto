@@ -53,6 +53,15 @@ and (5.6.5) of Theorem 5.6.1 in the energy norm $\|v\|_a = \sqrt{a(v, v)}$.
 * The operator $A$ is `AtkinsonHan.BilinForm.toOperator`, and $f$ is `SesqForm.rieszRep` of $\ell$.
 * Divisions are those of Lean: $\alpha_k = 0$ if $a(s_k, s_k) = 0$, and $\beta_k = 0$ if $r_k = 0$.
 
+## Deviations from the source
+
+* **Algorithm 1** (scope). Division by zero gives zero in the update formulas.
+  Iteration continues after an exact zero residual with the solution fixed.
+* **Convergence of Algorithm 1** (scope). The convergence theorem in this module
+  assumes $\alpha < M$. The source invokes Theorem 5.6.1, which also covers equality.
+* **Quadratic energy after Algorithm 1** (scope). The derivative is shown in the
+  Fréchet sense. The source gives the Gâteaux formula.
+
 ## Not formalized
 
 * **Algorithm 2** (nonlinear conjugate gradient method for a strictly convex functional $J$). The
@@ -80,7 +89,10 @@ noncomputable def residual (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : Str
   SesqForm.rieszRep (ℓ - a.toCLM hM u)
 
 /-- The step length $\alpha_k = \|r_k\|^2 / a(s_k, s_k)$ of Algorithm 1, for a state with residual
-$r_k$ and search direction $s_k$. It is $0$ when $a(s_k, s_k) = 0$. -/
+$r_k$ and search direction $s_k$. It is $0$ when $a(s_k, s_k) = 0$.
+
+**Reading.** Same step fraction with totalized denominator.
+-/
 noncomputable def cgAlpha (a : BilinForm V) (st : CG.State V) : ℝ :=
   ‖st.r‖ ^ 2 / a st.p st.p
 
@@ -91,7 +103,10 @@ $\beta_k = \|r_{k+1}\|^2 / \|r_k\|^2$.
 
 The state is the backbone structure `CG.State`, whose fields `x`, `r` and `p` are $u_k$, $r_k$
 and $s_k$. The residual $r_{k+1}$ is `AtkinsonHan.Chapter09.residual` at $u_{k+1}$. With the
-division of Lean, $\alpha_k = 0$ if $a(s_k, s_k) = 0$, and $\beta_k = 0$ if $r_k = 0$. -/
+division of Lean, $\alpha_k = 0$ if $a(s_k, s_k) = 0$, and $\beta_k = 0$ if $r_k = 0$.
+
+**Reading.** Same step, residual and direction using totalized divisions.
+-/
 noncomputable def cgStep (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (st : CG.State V) : CG.State V :=
   { x := st.x + cgAlpha a st • st.p
@@ -101,7 +116,10 @@ noncomputable def cgStep (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : Stron
 
 /-- **Algorithm 1** of [han2009theoretical], Section 9.4. The $k$-th state $(u_k, r_k, s_k)$ of the
 conjugate gradient method started at $u_0 \in V$, with $r_0$ the residual at $u_0$ and
-$s_0 = r_0$. It is the $k$-th iterate of `AtkinsonHan.Chapter09.cgStep`. -/
+$s_0 = r_0$. It is the $k$-th iterate of `AtkinsonHan.Chapter09.cgStep`.
+
+**Reading.** Same initialization and iteration continued after a zero residual.
+-/
 noncomputable def cgIterate (a : BilinForm V) (hM : a.IsBoundedWith M) (ℓ : StrongDual ℝ V)
     (u₀ : V) (k : ℕ) : CG.State V :=
   (cgStep a hM ℓ)^[k] ⟨u₀, residual a hM ℓ u₀, residual a hM ℓ u₀⟩
@@ -309,7 +327,10 @@ $a(u, v) = \ell(v)$ for all $v \in V$. Then the iterates $u_k$ of Algorithm 1 fr
 $u_0 \in V$ converge to $u$ in $V$.
 
 The proof combines the bound (5.6.5) of `AtkinsonHan.Chapter09.cg_energy_bound` with
-$\sqrt{\alpha} \|v\| \le \|v\|_a$. -/
+$\sqrt{\alpha} \|v\| \le \|v\|_a$.
+
+**Reading.** Adds strict inequality between ellipticity and boundedness constants.
+-/
 theorem cg_converges (hM : a.IsBoundedWith M) (hs : LinearMap.BilinForm.IsSymm a) (hα : 0 < α)
     (hαM : α < M) (ha : a.IsEllipticWith α) (ℓ : StrongDual ℝ V) {u : V} (hu : ∀ v, a u v = ℓ v)
     (u₀ : V) : Tendsto (fun k => (cgIterate a hM ℓ u₀ k).x) atTop (𝓝 u) := by
@@ -347,7 +368,10 @@ omit [CompleteSpace V] in
 /-- Let $V$ be a real inner product space, and let $a$ be symmetric and bounded with constant
 $M \ge 0$. Then the energy $E(v) = \frac12 a(v, v) - \ell(v)$ has at each $u \in V$ the Fréchet
 derivative $$\langle E'(u), v \rangle = a(u, v) - \ell(v).$$ In particular $E$ is Gâteaux
-differentiable. -/
+differentiable.
+
+**Reading.** Derives the source gradient in the stronger Fréchet sense.
+-/
 theorem hasFDerivAt_energy (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M)
     (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V) (u : V) :
     HasFDerivAt (a.energy ℓ) (a.toCLM hM u - ℓ) u := by

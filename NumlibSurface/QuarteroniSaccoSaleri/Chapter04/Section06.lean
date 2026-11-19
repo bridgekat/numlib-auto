@@ -66,6 +66,19 @@ condition number).
 
 ## Deviations from the source
 
+* **Totalization.** The error bounds use the Euclidean operator norm and include zero starting
+  error. See `QuarteroniSaccoSaleri.Chapter04.norm_error_le_convergenceFactor`.
+* **Reading.** The rate-based stopping equivalence states the domain of the real logarithmic
+  calculation. See `QuarteroniSaccoSaleri.Chapter04.equation_4_69`.
+* **Scope.** The increment error bounds use the Euclidean operator norm and explicit strict
+  contraction. See `QuarteroniSaccoSaleri.Chapter04.equation_4_71`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_72`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_72_apriori`.
+* **Totalization.** The increment ratio gives a lower bound on the operator norm, with
+  zero-denominator totalization. See `QuarteroniSaccoSaleri.Chapter04.increment_succ_le`.
+* **Scope.** The residual tests use Euclidean norms and require nonzero data for relative
+  normalization. See `QuarteroniSaccoSaleri.Chapter04.residual_stopping_abs`,
+  `QuarteroniSaccoSaleri.Chapter04.residual_stopping_rel`.
 * **Equation (4.69)** (reading). It is stated for $k \ge 1$ with $0 < \|B^k\| < 1$ and
   $\varepsilon > 0$, the conditions under which both sides make sense. The book's "amounts to
   requiring" is the equivalence $\|B^k\| \le \varepsilon \iff k \ge -\log \varepsilon / R_k(B)$. See
@@ -104,7 +117,11 @@ $$\|e^{(k)}\| \le \|B^k\| \, \|e^{(0)}\|, \qquad \frac{\|e^{(k)}\|}{\|e^{(0)}\|}
 The convergence factor after $k$ steps thus estimates the reduction of the error.
 
 The quotient is $0$ when $e^{(0)} = 0$. The first bound follows from (4.4). The proof
-specializes the backbone's `Stationary.norm_step_iterate_sub_le`. -/
+specializes the backbone's `Stationary.norm_step_iterate_sub_le`.
+
+**Reading.** Lean uses the Euclidean operator norm and also states the relative bound with totalized
+division when the starting error is zero.
+-/
 theorem norm_error_le_convergenceFactor (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : ℕ) :
     ‖(toLp 2 ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ≤
         definition_4_2_factor B k * ‖(toLp 2 (x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ∧
@@ -128,7 +145,12 @@ Here $R_k(B) = -\frac{1}{k} \log \|B^k\|$ is the average convergence rate of Def
 
 **Reading.** The book says that the condition $\|B^k\| \le \varepsilon$ "amounts to requiring"
 (4.69). This is stated as an equivalence, under the conditions $k \ge 1$, $0 < \|B^k\| < 1$ and
-$\varepsilon > 0$, under which $R_k(B) > 0$ and $\log \varepsilon$ is finite. -/
+$\varepsilon > 0$, under which $R_k(B) > 0$ and $\log \varepsilon$ is finite.
+
+**Reading.** The logarithmic equivalence explicitly restricts to a positive iteration count, strict
+contraction with nonzero norm, and positive tolerance. The first error implication does not need
+logarithms.
+-/
 theorem equation_4_69 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) {k : ℕ} {ε : ℝ} :
     (definition_4_2_factor B k ≤ ε →
         ‖(toLp 2 ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b) : EuclideanSpace ℝ (Fin n))‖ ≤
@@ -153,6 +175,9 @@ theorem equation_4_69 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) {k : 
 consistent with $Ax = b$, where $x = A^{-1} b$. Then for every $x^{(0)}$ and $k$, the errors
 satisfy the recursion $e^{(k+1)} = B e^{(k)}$ of (4.4), and
 $$\|e^{(k+1)}\| \le \|B\| \, \|e^{(k)}\|.$$
+
+**Reading.** The norm bounds are specialized to the Euclidean operator norm. The denominators in the
+increment estimates are positive by the explicit contraction assumption.
 -/
 theorem equation_4_71 (hc : definition_4_1 A b B f) (x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep B f)^[k + 1] x₀ - A⁻¹ *ᵥ b = B *ᵥ ((affineStep B f)^[k] x₀ - A⁻¹ *ᵥ b) ∧
@@ -171,7 +196,11 @@ $$\|x - x^{(k+1)}\| \le \frac{\|B\|}{1 - \|B\|} \, \|x^{(k+1)} - x^{(k)}\|.$$
 
 The bound follows from the triangle inequality in (4.71), $\|e^{(k+1)}\| \le \|B\|
 (\|e^{(k+1)}\| + \|x^{(k+1)} - x^{(k)}\|)$. The proof specializes the backbone's
-`Stationary.norm_iterate_sub_le'`. -/
+`Stationary.norm_iterate_sub_le'`.
+
+**Reading.** The norm bounds are specialized to the Euclidean operator norm. The denominators in the
+increment estimates are positive by the explicit contraction assumption.
+-/
 theorem equation_4_72 (hc : definition_4_1 A b B f) (hB : ‖B‖ < 1) (x₀ : Fin n → ℝ) (k : ℕ) :
     ‖(toLp 2 (A⁻¹ *ᵥ b - (affineStep B f)^[k + 1] x₀) : EuclideanSpace ℝ (Fin n))‖ ≤
       ‖B‖ / (1 - ‖B‖) *
@@ -191,7 +220,11 @@ $x = A^{-1} b$, and let $\|B\| < 1$. Then for every $x^{(0)}$ and $k$,
 $$\|x - x^{(k+1)}\| \le \frac{\|B\|^{k+1}}{1 - \|B\|} \, \|x^{(1)} - x^{(0)}\|.$$
 This bound estimates the number of iterations that are needed to reach a given tolerance.
 
-The proof specializes the backbone's `Stationary.norm_iterate_sub_le`. -/
+The proof specializes the backbone's `Stationary.norm_iterate_sub_le`.
+
+**Reading.** The norm bounds are specialized to the Euclidean operator norm. The denominators in the
+increment estimates are positive by the explicit contraction assumption.
+-/
 theorem equation_4_72_apriori (hc : definition_4_1 A b B f) (hB : ‖B‖ < 1) (x₀ : Fin n → ℝ)
     (k : ℕ) :
     ‖(toLp 2 (A⁻¹ *ᵥ b - (affineStep B f)^[k + 1] x₀) : EuclideanSpace ℝ (Fin n))‖ ≤
@@ -216,7 +249,12 @@ So the ratio $c$ of two consecutive increments is a lower bound for $\|B\|$.
 No consistency hypothesis is needed. The quotient is $0$ when $\delta_{k+1} = 0$. The proof
 specializes the backbone's `Stationary.step_iterate_succ_sub`. The indicator
 $\varepsilon^{(k+1)} = \delta_{k+1}^2 / (\delta_k - \delta_{k+1})$ of (4.73), which replaces
-$\|B\|$ with $c$ in (4.72), is a heuristic and is not formalized. -/
+$\|B\|$ with $c$ in (4.72), is a heuristic and is not formalized.
+
+**Reading.** The inequality for increment ratios uses total division when the previous increment
+vanishes, and its cross-multiplied version is available. It does not use the ratio as an upper bound
+on the error.
+-/
 theorem increment_succ_le (B : Matrix (Fin n) (Fin n) ℝ) (f x₀ : Fin n → ℝ) (k : ℕ) :
     (affineStep B f)^[k + 2] x₀ - (affineStep B f)^[k + 1] x₀ =
         B *ᵥ ((affineStep B f)^[k + 1] x₀ - (affineStep B f)^[k] x₀) ∧
@@ -254,7 +292,12 @@ iterate), and let $\varepsilon \in \mathbb{R}$. If the residual satisfies
 $\|b - A y\| \le \varepsilon$, then
 $$\|A^{-1} b - y\| \le \|A^{-1}\| \, \varepsilon.$$
 
-The proof uses $A^{-1} b - y = A^{-1} (b - A y)$. -/
+The proof uses $A^{-1} b - y = A^{-1} (b - A y)$.
+
+**Reading.** The error estimates apply to an arbitrary candidate iterate, in Euclidean norm. The
+normalized test uses the Euclidean condition number and explicitly requires a nonzero right-hand
+side.
+-/
 theorem residual_stopping_abs (hA : IsUnit A) (b y : Fin n → ℝ) {ε : ℝ}
     (hr : ‖(toLp 2 (b - A *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ ≤ ε) :
     ‖(toLp 2 (A⁻¹ *ᵥ b - y) : EuclideanSpace ℝ (Fin n))‖ ≤ ‖A⁻¹‖ * ε := by
@@ -271,7 +314,12 @@ $$\frac{\|x - y\|}{\|x\|} \le K(A) \, \varepsilon, \qquad K(A) = \|A\|_2 \|A^{-1
 
 The proof passes through $\|x - y\| / \|x\| \le K(A) \|b - A y\| / \|b\|$. It specializes the
 backbone's `relative_error_le_condNumber_mul_relative_residual` to the operator $x \mapsto Ax$
-on `EuclideanSpace ℝ (Fin n)`. -/
+on `EuclideanSpace ℝ (Fin n)`.
+
+**Reading.** The error estimates apply to an arbitrary candidate iterate, in Euclidean norm. The
+normalized test uses the Euclidean condition number and explicitly requires a nonzero right-hand
+side.
+-/
 theorem residual_stopping_rel (hA : IsUnit A) {b : Fin n → ℝ} (hb : b ≠ 0) (y : Fin n → ℝ)
     {ε : ℝ} (hr : ‖(toLp 2 (b - A *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ /
       ‖(toLp 2 b : EuclideanSpace ℝ (Fin n))‖ ≤ ε) :

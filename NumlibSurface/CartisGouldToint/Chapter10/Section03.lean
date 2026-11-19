@@ -52,8 +52,8 @@ module `Numlib.Optimization.Subproblem.KrylovConvergence`.
 ## Deviations from the source
 
 * **Corollary 10.3.3** (correction). The printed bound $\lceil \log(2 \|M^{-1}H\| \kappa_* \Delta /
-  \epsilon) / \log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$ cannot be met when the
-  logarithm is negative and is undefined for $\kappa_* = 1$. The ceiling is $\lceil \cdot \rceil_+$,
+  \epsilon) / \log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$ can be below $1$
+  and is undefined for $\kappa_* = 1$. The ceiling is $\lceil \cdot \rceil_+$,
   the case $\kappa_* = 1$ gives some $k \le \min(2, \text{grade})$, and the hypothesis $g \neq 0$ is
   added. See `CartisGouldToint.Chapter10.corollary_10_3_3`.
 -/
@@ -222,9 +222,9 @@ If $\kappa_* = 1$, it holds for some $1 \le k \le \min(2, \operatorname{grade}(M
 M^{-1}g))$.
 
 **Correction.** The source prints the bound $\lceil \log(2 \|M^{-1}H\| \kappa_* \Delta /
-\epsilon) / \log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$. This bound cannot be
-met when the logarithm in the numerator is negative, for example for a large $\epsilon$, and it
-is undefined for $\kappa_* = 1$. Here the ceiling is
+\epsilon) / \log((\sqrt{\kappa_*} + 1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$. The bound can be
+below $1$ for a sufficiently large $\epsilon$ and is undefined for $\kappa_* = 1$.
+Here the ceiling is
 $\lceil x \rceil_+ = \max(\lceil x \rceil, 0)$, the case $\kappa_* = 1$ is stated separately,
 and the hypothesis $g \neq 0$, which the proof needs, is added.
 

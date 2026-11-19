@@ -104,6 +104,18 @@ unfoldings and products of `NumlibSurface.GolubVanLoan.Chapter12.Section04`.
 
 ## Deviations from the source
 
+* **Equation (12.5.4)** (typo). The third row-inner-product line is missing its equality sign.
+  The full Gram identity states the inner products in all modes of tensors of arbitrary positive
+  order. See `GolubVanLoan.Chapter12.gram_modeUnfold_of_isSVD`.
+* **Equations (12.5.16)–(12.5.20)** (generalization). The CP unfolding identity uses arbitrary
+  order, and the row normal equations are combined into a matrix equivalence. See
+  `GolubVanLoan.Chapter12.equation_12_5_16` and `GolubVanLoan.Chapter12.equation_12_5_20`.
+* **Equation (12.5.22)** (correction). The absolute value of a stationary quotient is a singular
+  value. A sign change in one vector changes the quotient sign. See
+  `GolubVanLoan.Chapter12.equation_12_5_22`.
+* **Equations (12.5.25)–(12.5.29)** (reading). The contraction extends to arbitrary boundary
+  ranks. The TT-SVD result gives existence with the sequential unfolding ranks. See
+  `GolubVanLoan.Chapter12.equation_12_5_25` and `GolubVanLoan.Chapter12.equation_12_5_29`.
 * **Equation (12.5.1)** (typo). The source writes $v_i T$ for $v_i^T$. See
   `GolubVanLoan.Chapter12.equation_12_5_1`.
 * **Equation (12.5.3)** (typo). The source writes the maximum of $\|Q^T A\|_F$ as
@@ -303,7 +315,10 @@ $U_k^T \mathcal{A}_{(k)}$, with the typed unfolding $\mathcal{A}_{(k)}$, are ort
 $$U_k^T \mathcal{A}_{(k)} \bigl(U_k^T \mathcal{A}_{(k)}\bigr)^T =
   \operatorname{diag}(\sigma_0^2, \sigma_1^2, \dots),$$
 where, with 0-based indices, the $i$-th diagonal entry is $0$ when $i$ is at least the number
-$\prod_{j \neq k} n_j$ of columns of the unfolding. -/
+$\prod_{j \neq k} n_j$ of columns of the unfolding.
+
+**Generalization.** The Gram identity holds in every mode of a tensor of arbitrary positive
+order. The third equality in (12.5.4) is missing its equality sign in print. -/
 theorem gram_modeUnfold_of_isSVD {A : RTensor n} {k : Fin (d + 1)}
     {U : Matrix (Fin (n k)) (Fin (n k)) ℝ} {σ : ℕ → ℝ}
     {V : Matrix (Fin (∏ j : Fin d, n (k.succAbove j))) (Fin (∏ j : Fin d, n (k.succAbove j))) ℝ}
@@ -432,7 +447,10 @@ the unfoldings are the flattened `GolubVanLoan.Chapter12.modalUnfolding`, and $\
 `Matrix.rectDiagonal (σ k)`. The sorted singular values are `Matrix.sortedSingularValues`,
 identified with the diagonal of the SVD by `Matrix.IsSVD.singularValues_eq`. It follows that the
 rows of $\mathcal{S}_{(k)}$ beyond $\operatorname{rank}(\mathcal{A}_{(k)})$ vanish, so the sums
-of the HOSVD may stop at $\operatorname{rank}_*(\mathcal{A})$, as §12.5.2 of the source says. -/
+of the HOSVD may stop at $\operatorname{rank}_*(\mathcal{A})$, as §12.5.2 of the source says.
+
+**Generalization.** The Gram matrix gives the row norms, including zero singular values within
+the rectangular size. -/
 theorem theorem_12_5_1_b (A : RTensor n) (U : ∀ k, Matrix (Fin (n k)) (Fin (n k)) ℝ)
     (σ : Fin (d + 1) → ℕ → ℝ) (V : ∀ k, Matrix (Fin (∏ j : Fin d, n (k.succAbove j)))
       (Fin (∏ j : Fin d, n (k.succAbove j))) ℝ)
@@ -618,7 +636,10 @@ private theorem norm_modalUnfolding (T : RTensor n) (k : Fin (d + 1)) :
 open scoped Matrix.Norms.Frobenius in
 /-- For every mode $k$, $\|\mathcal{A} \times_1 U_1^T \cdots \times_d U_d^T\|_F = \|U_k^T
 \mathcal{A}_{(k)} (U_d \otimes \cdots \otimes U_{k+1} \otimes U_{k-1} \otimes \cdots \otimes
-U_1)\|_F$. -/
+U_1)\|_F$.
+
+**Reading.** Unfolded objective formula for arbitrary positive tensor order.
+-/
 private theorem norm_multilinearProd_transpose_eq_modalUnfolding
     (U : ∀ k, Matrix (Fin (n k)) (Fin (r k)) ℝ) (A : RTensor n) (k : Fin (d + 1)) :
     ‖Tensor.multilinearProd (fun k => (U k)ᵀ) A‖ =
@@ -726,7 +747,10 @@ which is Problem P12.5.6 of the source.
 The Lean tensor has order `d + 1`, and the statement holds at every order. The tensor
 $\mathcal{X}$ is `Tensor.cp c F`, where `c` is the vector $\lambda$. The Khatri–Rao product of a
 family is `Matrix.piKhatriRao`, with its rows flattened by `finPiFinEquiv` in the reversed order
-of the source. The unfoldings are the flattened `GolubVanLoan.Chapter12.modalUnfolding`. -/
+of the source. The unfoldings are the flattened `GolubVanLoan.Chapter12.modalUnfolding`.
+
+**Generalization.** The CP unfolding and vectorization formulas hold for arbitrary positive
+tensor order. -/
 theorem equation_12_5_16 (c : Fin r → ℝ) (F : ∀ k, Matrix (Fin (n k)) (Fin r) ℝ)
     (k : Fin (d + 1)) :
     modalUnfolding (Tensor.cp c F : RTensor n) k =
@@ -778,7 +802,10 @@ columns of $A$ are indexed by the same pairs. The entrywise product is Mathlib's
 product `Matrix.hadamard`. The proof uses the Gram identity $(H \odot G)^T (H \odot G) = (H^T H)
 .\!* (G^T G)$ (`Matrix.khatriRao_transpose_mul_self`). For $N = 1$ this is the vector form of
 the source: $z$ minimizes $\|(B \odot C) z - d\|_2$ if and only if
-$((B^T B) .\!* (C^T C)) z = (B \odot C)^T d$. -/
+$((B^T B) .\!* (C^T C)) z = (B \odot C)^T d$.
+
+**Reading.** The statement combines the separate least-squares normal equations into one matrix
+equivalence. -/
 theorem equation_12_5_20 {N p q r : ℕ} (H : Matrix (Fin p) (Fin r) ℝ) (G : Matrix (Fin q) (Fin r) ℝ)
     (A : Matrix (Fin N) (Fin p × Fin q) ℝ) (F : Matrix (Fin N) (Fin r) ℝ) :
     (∀ F' : Matrix (Fin N) (Fin r) ℝ,
@@ -806,7 +833,11 @@ up to sign, the stationary values of $\psi_A$.
 The function $\psi_A$ is `Matrix.bilinearRayleigh A` on pairs of Euclidean vectors, and
 $\nabla \psi_A(u, v) = 0$ is the vanishing of its Fréchet derivative `fderiv`. A singular value
 is a value of `Matrix.colSingularValues A`, the square roots of the eigenvalues of $A^T A$
-listed with multiplicity, which include zeros when $n > m$. -/
+listed with multiplicity, which include zeros when $n > m$.
+
+**Correction.** The stationary quotient is signed. For $A=[1]$, $u=-1$ and $v=1$, it is $-1$.
+Its absolute value is a singular value. The hypotheses permit arbitrary nonzero inputs,
+normalized in the equations. -/
 theorem equation_12_5_22 {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) {u : EuclideanSpace ℝ (Fin m)}
     {v : EuclideanSpace ℝ (Fin n)} (hu : u ≠ 0) (hv : v ≠ 0) :
     (fderiv ℝ A.bilinearRayleigh (u, v) = 0 ↔
@@ -853,7 +884,10 @@ the sum over all rank indices $\kappa_0, \dots, \kappa_d$.
 Indices are 0-based: the carriage `𝒢 k` has the shape `r k × n k × r (k + 1)`, and the carriages
 are given for every `k : ℕ`, of which the first $d$ are used. The source has $r_0 = r_d = 1$, so
 that the boundary rank indices $\kappa_0$ and $\kappa_d$ take a single value; the definition
-does not assume it. -/
+does not assume it.
+
+**Reading.** Defines arbitrary-order contraction summing even over nonsingleton boundary ranks.
+-/
 noncomputable def trainOfCarriages (d : ℕ)
     (𝒢 : ∀ k : ℕ, Fin (r k) → Fin (n k) → Fin (r (k + 1)) → ℝ) :
     Tensor (fun k : Fin d => Fin (n k)) ℝ :=
@@ -922,7 +956,10 @@ $$\mathcal{T}(i) = G_1(i_1) \, G_2(i_2) \cdots G_d(i_d),$$
 a product of size $1 \times 1$, where $G_k(i_k) = \mathcal{G}_k(:, i_k, :)$.
 
 The left side is `GolubVanLoan.Chapter12.trainOfCarriages`, and the right side is the backbone's
-`Tensor.tensorTrain` with the cores `GolubVanLoan.Chapter12.carriageCores`. -/
+`Tensor.tensorTrain` with the cores `GolubVanLoan.Chapter12.carriageCores`.
+
+**Reading.** Equivalent core matrix contractions with boundary ranks one in every order.
+-/
 theorem equation_12_5_25 (d : ℕ) (𝒢 : ∀ k : ℕ, Fin (r k) → Fin (n k) → Fin (r (k + 1)) → ℝ)
     (h0 : r 0 = 1) (hd : r d = 1) :
     trainOfCarriages d 𝒢 = Tensor.tensorTrain (carriageCores 𝒢) d h0 hd := by
@@ -955,7 +992,10 @@ this property exist whenever $\operatorname{rank}(C) \le s$.
 
 The columns of $C$ are indexed by any finite type. For a fixed $i_3$, the carriage is the
 $p \times s$ matrix `of fun k' k₃ => U₃ (k', i) k₃`. The existence part is the backbone's
-`Tensor.exists_ttCore_of_rank`. -/
+`Tensor.exists_ttCore_of_rank`.
+
+**Generalization.** The reshaping identity takes an arbitrary factorization, with rank alone
+ensuring existence of a compressed one. -/
 theorem equation_12_5_28 {p m s : ℕ} {N : Type*} [Fintype N] (C : Matrix (Fin p × Fin m) N ℝ) :
     (∀ (U₃ : Matrix (Fin p × Fin m) (Fin s) ℝ) (W : Matrix (Fin s) N ℝ), C = U₃ * W →
       ∀ k i c, C (k, i) c = ((of fun k' k₃ => U₃ (k', i) k₃) * W) k c) ∧
@@ -991,7 +1031,10 @@ The form $\mathcal{A}(u)$ is `Tensor.multilinearForm A u`. The quotient $\psi_{\
 `Tensor.multilinearRayleigh A`. The condition $\nabla \psi_{\mathcal{A}}(u) = 0$ is
 `HasFDerivAt` with the derivative $0$. The unfoldings are the typed unfoldings
 `Tensor.modeUnfold`, whose columns are the tuples of the other indices. The tensor
-$\bigotimes_{j \neq k} u_j$ is the rank-one tensor `Tensor.rankOne` of the other vectors. -/
+$\bigotimes_{j \neq k} u_j$ is the rank-one tensor `Tensor.rankOne` of the other vectors.
+
+**Generalization.** The derivative criterion applies to a tensor of any order, with normalized
+factors in each mode. -/
 theorem tensor_singular_value (A : RTensor n) :
     (∀ (u : ∀ i, Fin (n i) → ℝ) (k : Fin d), Tensor.multilinearForm A u =
       u k ⬝ᵥ (A.modeUnfold k *ᵥ Tensor.rankOne fun j : {j // j ≠ k} => u j)) ∧
@@ -1044,7 +1087,10 @@ For $d = 0$ a tensor train is the constant $1$, so the hypothesis $d \neq 0$ is 
 sequential unfolding is `Tensor.unfold` with the 0-based modes below $k$ as row modes, and the
 train is `GolubVanLoan.Chapter12.trainOfCarriages`. The proof specializes the backbone's
 `Tensor.exists_tensorTrain_of_ne_zero`, through `GolubVanLoan.Chapter12.equation_12_5_25`. The
-procedure itself is not a program, because its ranks depend on the data. -/
+procedure itself is not a program, because its ranks depend on the data.
+
+**Reading.** Existence of exact train with unfolding ranks instead of executable sequence of SVDs.
+-/
 theorem equation_12_5_29 {n : ℕ → ℕ} {d : ℕ} (hd : d ≠ 0)
     (A : Tensor (fun k : Fin d => Fin (n k)) ℝ) :
     ∃ (r : ℕ → ℕ) (_ : r 0 = 1) (_ : r d = 1),

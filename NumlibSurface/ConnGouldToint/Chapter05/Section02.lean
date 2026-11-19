@@ -64,6 +64,14 @@ The proofs specialize the backbone modules `Numlib.Krylov.Lanczos` and `Numlib.K
   `Krylov.Arnoldi.w`. Its norm `Krylov.Lanczos.beta` is the coefficient $\gamma_k$.
 * The tridiagonal matrix $T_k$ of order $k + 1$ is `Krylov.Lanczos.tridiag`. Indices start at $0$,
   and $e_{k+1}$ is the last coordinate vector `Pi.single (Fin.last k) 1`.
+
+## Deviations from the source
+
+* **Lemma 5.2.1** (generalization). The nested span identities suffice for the conclusion in any
+  real vector space. See `ConnGouldToint.Chapter05.lemma_5_2_1`.
+* **Algorithms 5.2.1–5.2.4** (reading). The recurrences use Arnoldi vectors and adjoints in
+  inner-product spaces. Normalization is totalized when a Lanczos vector vanishes; the
+  orthonormality and compression identities assume the active vectors are nonzero.
 -/
 
 namespace ConnGouldToint.Chapter05
@@ -76,7 +84,8 @@ $$\mathcal{K}_{j+1}(H, q_0) = \operatorname{span}\{q_0, \dots, q_j\} \quad \text
   k + 1.$$
 Then $q_{i+1} \in \operatorname{span}\{q_0, \dots, q_i\} + \operatorname{span}\{H q_i\}$.
 
-The argument uses only the nested spans; the vectors need not be normalized. -/
+**Generalization.** The book assumes that the $q_j$ are mutually orthonormal. The conclusion
+follows from the nested span identities alone, so any real vector space suffices. -/
 theorem lemma_5_2_1 {E : Type*} [AddCommGroup E] [Module ℝ E]
     (H : E →ₗ[ℝ] E) (q : ℕ → E) {k i : ℕ} (hi : i ≤ k)
     (hspan : ∀ j ≤ k + 1,
@@ -119,7 +128,11 @@ $y_0 = r_0$ and let $y_{k+1}$ be the unnormalized next vector. Then, with $q_{-1
 $$q_k = \frac{y_k}{\|y_k\|}, \qquad y_{k+1} = H q_k - \langle q_k, H q_k \rangle q_k - \|y_k\|
   q_{k-1}.$$
 
-When $y_k = 0$, the first formula gives $q_k = 0$ by Lean's convention $0^{-1} = 0$. -/
+When $y_k = 0$, the first formula gives $q_k = 0$ by Lean's convention $0^{-1} = 0$.
+
+**Reading.** Arnoldi realizes the symmetric three-term recurrence in an inner-product space with
+totalized normalization.
+-/
 theorem algorithm_5_2_1 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     {H : E →ₗ[ℝ] E} (hH : H.IsSymmetric) {r₀ : E} (hr₀ : r₀ ≠ 0) (k : ℕ) :
     let q := Arnoldi.vec H r₀
@@ -168,7 +181,11 @@ $$H Q_k - Q_k T_k = \gamma_k q_{k+1} e_{k+1}^T,$$
 where $\gamma_k$ is the norm of the unnormalized next vector.
 
 The rank-one remainder has its only nonzero column in the last position. It vanishes at a
-breakdown, where $q_{k+1} = 0$. -/
+breakdown, where $q_{k+1} = 0$.
+
+**Reading.** Matrix relation expressed using totalized Lanczos vectors without an active-vector
+restriction.
+-/
 theorem lanczos_relation_5_2_14 {H : Matrix n n ℝ} (hH : H.IsSymm)
     (r₀ : n → ℝ) (k : ℕ) :
     let A := toEuclideanLin H
@@ -264,7 +281,10 @@ and Algorithm 5.2.4, with the dual vectors $t_k$ and $w_k$, holds:
 $$t_0 = r_0, \quad y_k = M^{-1} t_k, \quad \gamma_{k-1} = \sqrt{\langle t_k, y_k \rangle}, \quad
   w_k = t_k / \gamma_{k-1}, \quad t_{k+1} = H q_k - \delta_k w_k - \gamma_{k-1} w_{k-1}.$$
 
-The number $\gamma_{-1} = \|\bar{r}_0\|$ normalizes the first vector. -/
+The number $\gamma_{-1} = \|\bar{r}_0\|$ normalizes the first vector.
+
+**Reading.** Uses Hilbert-space equivalence and adjoints, with totalized normalization.
+-/
 theorem algorithms_5_2_3_5_2_4
     {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
@@ -358,6 +378,9 @@ and $r_0 \in E$. Let $\bar{q}_j$ be the Lanczos vectors of $S^* H S$ and $S^* r_
 $q_j = S \bar{q}_j$. Then
 $$\langle q_i, M q_j \rangle = 0 \quad (i \neq j), \qquad \langle q_i, M q_i \rangle = 1 \quad
   \text{if } \bar{q}_i \neq 0.$$
+
+**Reading.** Weighted orthonormality uses the transported Hilbert-space inner products for active
+vectors.
 -/
 theorem preconditioned_lanczos_orthonormal_5_2_51
     {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
@@ -491,7 +514,10 @@ def lanczosBlockFactor (L U : Matrix k k ℝ) : Matrix k k ℝ := L * U
 $M \in \mathbb{R}^{k \times k}$, the **conjugate basis** is the matrix $Q M^{-T}$, whose columns
 are obtained from the columns of $Q$ by the inverse transpose of $M$.
 
-The inverse is the matrix inverse `Matrix.inv`, which is zero for a singular matrix. -/
+The inverse is the matrix inverse `Matrix.inv`, which is zero for a singular matrix.
+
+**Reading.** Same M inverse-transpose formula with totalized matrix inverse.
+-/
 noncomputable def lanczosConjugateBasis (Q : Matrix n k ℝ) (M : Matrix k k ℝ) :
     Matrix n k ℝ :=
   Q * Mᵀ⁻¹

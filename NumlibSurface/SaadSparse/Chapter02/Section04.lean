@@ -31,6 +31,12 @@ similar to it, because every edge of a child is half of a segment of the parent.
   `SaadSparse.Chapter02.cornerTriangle_angle_eq B A C` and
   `SaadSparse.Chapter02.cornerTriangle_angle_eq C A B` give the other two.
 
+## Deviations from the source
+
+* **§2.4, preservation of angles** (generalization). The single-triangle identities also hold
+  for degenerate vertex triples under Mathlib's unoriented-angle convention. See
+  `SaadSparse.Chapter02.medialTriangle_angle_eq` and `SaadSparse.Chapter02.cornerTriangle_angle_eq`.
+
 ## Not formalized
 
 * **Triangulations, their mesh size and their successive refinements.** This is the same missing
@@ -69,10 +75,8 @@ plane, and let $M_A$, $M_B$ and $M_C$ be the midpoints of $BC$, $AC$ and $AB$. T
 $$\angle M_B M_A M_C = \angle BAC, \qquad \angle M_A M_B M_C = \angle ABC, \qquad \angle M_A M_C
   M_B = \angle ACB.$$
 
-Every edge of the medial triangle is half of a side of $ABC$ with the opposite sign, so the
-medial triangle is the image of $ABC$ under the homothety of ratio $-1/2$ about the centroid. No
-hypothesis is needed, so the statement also holds for degenerate triangles. The angle is the
-unoriented angle `EuclideanGeometry.angle`. -/
+**Generalization.** The book refines nondegenerate mesh triangles. A homothety of ratio $-1/2$
+about the centroid preserves Mathlib's unoriented angle, including for degenerate triples. -/
 theorem medialTriangle_angle_eq :
     ∠ (midpoint ℝ A C) (midpoint ℝ B C) (midpoint ℝ A B) = ∠ B A C ∧
       ∠ (midpoint ℝ B C) (midpoint ℝ A C) (midpoint ℝ A B) = ∠ A B C ∧
@@ -88,6 +92,9 @@ Euclidean plane, and let $M_B$ and $M_C$ be the midpoints of $AC$ and $AB$. Then
 $A M_C M_B$ satisfies
 $$\angle M_C A M_B = \angle BAC, \qquad \angle A M_C M_B = \angle ABC, \qquad \angle A M_B M_C =
   \angle ACB.$$
+
+**Generalization.** The book considers triangles in a mesh. The identity also holds for
+degenerate vertex triples because it scales both angle vectors by the same nonzero factor.
 
 The corner triangle is the image of $ABC$ under the homothety of ratio $1/2$ about $A$. The
 corner triangles at $B$ and at $C$ are this statement read at $BAC$ and at $CAB$, because

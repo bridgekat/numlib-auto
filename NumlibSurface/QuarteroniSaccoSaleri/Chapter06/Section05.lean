@@ -38,6 +38,11 @@ and `tendsto_sub_div_sub_succ_of_hasDerivAt` in `Numlib.Nonlinear.Order`.
 
 ## Deviations from the source
 
+* **Reading.** The residual estimate is a ratio limit for sequences approaching the root without
+  hitting it. See `QuarteroniSaccoSaleri.Chapter06.residualTest`,
+  `QuarteroniSaccoSaleri.Chapter06.residualTest_simple`.
+* **Reading.** The increment estimate is a signed ratio limit for a converging orbit, with eventual
+  nonzero increments. See `QuarteroniSaccoSaleri.Chapter06.equation_6_31`.
 * **Section 6.5, residual test** (reading). The estimates are stated as limits along sequences that
   never equal $\alpha$. See `QuarteroniSaccoSaleri.Chapter06.residualTest` and
   `QuarteroniSaccoSaleri.Chapter06.residualTest_simple`.
@@ -74,7 +79,11 @@ The condition $\alpha \neq 0$ is the standing assumption of the source for a rel
 proof does not use it, since at $\alpha = 0$ both sides are $0$ because division by $0$ gives
 $0$ in Lean. The proof composes `QuarteroniSaccoSaleri.Chapter06.equation_6_4` with the
 convergence $x^{(k)} \to \alpha$ in the punctured neighbourhood of $\alpha$, and uses
-`QuarteroniSaccoSaleri.Chapter06.rpow_div_abs_eq` for the constant. -/
+`QuarteroniSaccoSaleri.Chapter06.rpow_div_abs_eq` for the constant.
+
+**Reading.** The error/residual estimates are ratio limits along converging sequences that avoid the
+root. The relative estimate also requires a nonzero root.
+-/
 theorem residualTest {m : ℕ} (hm : 1 ≤ m) (hf : ContDiffAt ℝ m f α)
     (hα : IsRootOfMultiplicity f α m) (hα0 : α ≠ 0) {x : ℕ → ℝ} (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) :
@@ -96,7 +105,11 @@ $$\lim_{k \to \infty} \frac{|x^{(k)} - \alpha|}{|f(x^{(k)})|} = \frac{1}{|f'(\al
 $1 / |f'(\alpha)|$. Here this is a limit, which needs $x^{(k)} \neq \alpha$.
 
 This is the case $m = 1$ of `QuarteroniSaccoSaleri.Chapter06.residualTest` without the division
-by $|\alpha|$, so $\alpha = 0$ is allowed. -/
+by $|\alpha|$, so $\alpha = 0$ is allowed.
+
+**Reading.** The error/residual estimates are ratio limits along converging sequences that avoid the
+root. The relative estimate also requires a nonzero root.
+-/
 theorem residualTest_simple (hf : ContDiffAt ℝ 1 f α) (hα : f α = 0) (hf' : deriv f α ≠ 0)
     {x : ℕ → ℝ} (hne : ∀ k, x k ≠ α) (hlim : Tendsto x atTop (𝓝 α)) :
     Tendsto (fun k => |x k - α| / |f (x k)|) atTop (𝓝 (1 / |deriv f α|)) := by
@@ -120,7 +133,12 @@ $x^{(k)} \neq \alpha$.
 
 So the test is unreliable when $\varphi'(\alpha)$ is close to $1$, optimal for methods of order
 $2$, where $\varphi'(\alpha) = 0$ (Newton's method), and still satisfactory for
-$-1 < \varphi'(\alpha) < 0$. The proof specializes `tendsto_sub_div_sub_succ_of_hasDerivAt`. -/
+$-1 < \varphi'(\alpha) < 0$. The proof specializes `tendsto_sub_div_sub_succ_of_hasDerivAt`.
+
+**Reading.** The approximate error formula is a limit of the signed error divided by the increment,
+which is eventually nonzero under the stated hypotheses. It uses differentiability at the fixed
+point and assumes a convergent orbit avoiding that point.
+-/
 theorem equation_6_31 (hφ : DifferentiableAt ℝ φ α) (hα : φ α = α) (h1 : deriv φ α ≠ 1)
     {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k)) (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) :

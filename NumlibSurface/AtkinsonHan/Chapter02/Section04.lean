@@ -81,6 +81,12 @@ the quadrature rules of `Numlib.Approximation.Quadrature`, and the space $H^1(0,
 
 ## Deviations from the source
 
+* **Stability and (2.4.1)** (generalization and reading). A bounded linear isomorphism suffices
+  for the estimates. The relative error bound explicitly requires a nonzero exact solution.
+* **The condition number lower bound** (correction). The bound requires a nonzero domain since
+  both operator norms vanish on the zero space.
+* **Theorem 2.4.5, sufficiency** (generalization). A dense subset suffices, and the ambient
+  space need not be complete for that direction.
 * **Section 2.4.4** (generalization). The book approximates the functional
   $Lv = \int_0^1 w(x) v(x) \, dx$. The statement holds for every bounded linear functional $L$ on
   $C[0, 1]$. See `AtkinsonHan.Chapter02.quadrature_convergence`.
@@ -146,7 +152,10 @@ spaces over $\mathbb{K}$, and let $L$ be a bijection of $V$ onto $W$ with $L$ an
 bounded. Then for all $v, \hat v \in V$,
 $$\|v - \hat v\| \le \|L^{-1}\| \, \|Lv - L\hat v\|.$$
 Thus the solution of $Lv = w$ depends Lipschitz continuously on the data $w$, with the constant
-$\|L^{-1}\|$. -/
+$\|L^{-1}\|$.
+
+**Generalization.** A bounded inverse is supplied directly, so completeness of the two spaces
+is unnecessary for the estimate. -/
 theorem stability_of_isomorphism (L : V ≃L[𝕜] W) (v vhat : V) :
     ‖v - vhat‖ ≤ ‖(L.symm : W →L[𝕜] V)‖ * ‖L v - L vhat‖ := by
   have hv : (L.symm : W →L[𝕜] V) (L v - L vhat) = v - vhat := by simp
@@ -174,7 +183,10 @@ theorem cond_eq_condNumber (L : V ≃L[𝕜] V) :
 spaces over $\mathbb{K}$, and let $L$ be a bijection of $V$ onto $W$ with $L$ and $L^{-1}$
 bounded. Then $\operatorname{cond}(L) \ge 1$.
 
-The proof uses $\|I\| = 1$ for $I = L^{-1} L$, which needs $V \neq \{0\}$. -/
+The proof uses $\|I\| = 1$ for $I = L^{-1} L$, which needs $V \neq \{0\}$.
+
+**Reading.** Adds nontriviality because the zero space has condition number zero.
+-/
 theorem one_le_cond [Nontrivial V] (L : V ≃L[𝕜] W) : 1 ≤ cond L := by
   rw [cond, mul_comm]
   exact L.one_le_norm_mul_norm_symm
@@ -184,7 +196,9 @@ normed spaces over $\mathbb{K}$, and let $L$ be a bijection of $V$ onto $W$ with
 $L^{-1}$ bounded. Let $v \neq 0$ and $\hat v$ be in $V$, and let $w = Lv$ and
 $\hat w = L \hat v$. Then
 $$\frac{\|v - \hat v\|}{\|v\|} \le \operatorname{cond}(L) \, \frac{\|w - \hat w\|}{\|w\|}.$$
--/
+
+**Reading.** The exact solution is assumed nonzero so both denominators are nonzero.
+Completeness is unnecessary once the bounded inverse is supplied. -/
 theorem equation_2_4_1 (L : V ≃L[𝕜] W) {v vhat : V} (hv : v ≠ 0) :
     ‖v - vhat‖ / ‖v‖ ≤ cond L * (‖L v - L vhat‖ / ‖L v‖) := by
   have ha : 0 < ‖v‖ := norm_pos_iff.2 hv
@@ -219,7 +233,10 @@ Neither the completeness of $V$ nor the linearity of $S$ is used. This is the $\
 argument of the book, and it is the backbone's
 `ContinuousLinearMap.tendsto_of_tendsto_on_dense_of_bounded` of
 `Numlib.Analysis.Normed.Operator.BanachSteinhaus`, which states it along any filter on any index
-type. -/
+type.
+
+**Generalization.** The sufficiency direction uses a dense subset and does not require
+completeness of the domain. -/
 theorem tendsto_of_tendsto_on_dense_of_bounded {s : Set V} (hs : Dense s) {L : V →L[𝕜] W}
     {Ln : ℕ → V →L[𝕜] W} {C : ℝ} (hC : ∀ n, ‖Ln n‖ ≤ C)
     (h : ∀ v ∈ s, Tendsto (fun n => Ln n v) atTop (𝓝 (L v))) (v : V) :

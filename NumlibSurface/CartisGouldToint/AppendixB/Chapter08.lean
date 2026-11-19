@@ -35,6 +35,11 @@ Chapter 8. The proofs specialize the backbone module `Numlib.Nonlinear.MonotoneN
 
 ## Deviations from the source
 
+* **Correction.** Lemma B.8.1 requires a simple root, corrects the concave starting signs and
+  tangent bound, and permits exact termination. See `CartisGouldToint.AppendixB.lemma_B_8_1`,
+  `CartisGouldToint.AppendixB.lemma_B_8_1_concave`.
+* **Explicit nondegeneracy.** Lemma B.8.2 excludes exponent zero, assumes a nonzero gradient and
+  positive radius, and drops the unused root premise. See `CartisGouldToint.AppendixB.lemma_B_8_2`.
 * **Lemma B.8.1** (correction). The hypothesis $\theta'(\lambda^*) \neq 0$ is added: for
   $\theta(x) = (1 - x)^2$ on $[0, 1]$ and $\lambda_0 = 0$ the Newton iterates are $1 - 2^{-j}$,
   which converge only linearly, and $\gamma^N = 1$. See `CartisGouldToint.AppendixB.lemma_B_8_1`.
@@ -90,7 +95,12 @@ stay there.
 The Newton iterates are the iterates of `Newton.scalarStep θ θ'`. The secant iterates are
 `Secant.iterate θ λ₀ λ₁`, with `Secant.iterate θ λ₀ λ₁ j` $= \lambda_{j+1}$. Q-superlinear
 convergence is `ConvergesSuperlinearly`, and convergence with Q-order $2$ is
-`ConvergesWithOrder` with order $2$. -/
+`ConvergesWithOrder` with order $2$.
+
+**Correction.** The root must have a nonzero derivative for the stated rates. The concave increasing
+case starts below the root with negative secant values. The tangent bound uses the convex inequality
+direction, and monotonicity permits equality after reaching the root.
+-/
 theorem lemma_B_8_1 {θ θ' : ℝ → ℝ} {lmin lmax lamStar : ℝ}
     (hc : ConvexOn ℝ (Icc lmin lmax) θ) (hm : StrictAntiOn θ (Icc lmin lmax))
     (hd : ∀ x ∈ Icc lmin lmax, HasDerivWithinAt θ (θ' x) (Icc lmin lmax) x)
@@ -136,7 +146,12 @@ from $\lambda_0 < \lambda_1$ in $I$ with $\theta(\lambda_0) < 0$ and $\theta(\la
 **Correction.** The book prints the starting conditions $\theta(\lambda_0) > 0$ and
 $\theta(\lambda_1) > 0$ for both cases. In the concave increasing case the conditions must be
 $\theta(\lambda_0) < 0$ and $\theta(\lambda_1) < 0$, as the reduction of the proof to $-\theta$
-shows. As in the convex case, the hypothesis $\theta'(\lambda^*) \neq 0$ is added. -/
+shows. As in the convex case, the hypothesis $\theta'(\lambda^*) \neq 0$ is added.
+
+**Correction.** The root must have a nonzero derivative for the stated rates. The concave increasing
+case starts below the root with negative secant values. The tangent bound uses the convex inequality
+direction, and monotonicity permits equality after reaching the root.
+-/
 theorem lemma_B_8_1_concave {θ θ' : ℝ → ℝ} {lmin lmax lamStar : ℝ}
     (hc : ConcaveOn ℝ (Icc lmin lmax) θ) (hm : StrictMonoOn θ (Icc lmin lmax))
     (hd : ∀ x ∈ Icc lmin lmax, HasDerivWithinAt θ (θ' x) (Icc lmin lmax) x)
@@ -189,7 +204,11 @@ hypothesis plays no role and is dropped. The hypothesis $g \neq 0$ is stated, si
 step is defined only then.
 
 The secular function is `CartisGouldToint.Chapter08.secularFn g H M`, and $\lambda_s$ is
-`CartisGouldToint.Chapter08.lambdaS`. The derivatives are `deriv`. -/
+`CartisGouldToint.Chapter08.lambdaS`. The derivatives are `deriv`.
+
+**Reading.** The monotonicity holds on the nonzero exponents. The Newton denominator also needs
+nonzero gradient and positive radius, while existence of a root of the secular equation is unused.
+-/
 theorem lemma_B_8_2 (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {lamc Δ : ℝ}
     (hc : lambdaS hH hM < lamc) (hΔ : 0 < Δ) :
     (∀ β : ℝ, β ≠ 0 →

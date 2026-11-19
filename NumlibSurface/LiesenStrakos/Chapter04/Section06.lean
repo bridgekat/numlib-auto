@@ -38,6 +38,8 @@ criterion, its corollary, and the degree-one characterization are in
 
 ## Deviations from the source
 
+* **Theorem 4.6.2** (reading). The full equivalence is stated for complex starting vectors.
+  Sufficiency also holds for real starts.
 * **Theorem 4.6.3, Corollary 4.6.4, and Theorem 4.6.5 (2)** (reading). The eigendecomposition
   uses complex arithmetic, expressed by the algebraic closure of the scalar field.
 
@@ -103,7 +105,10 @@ theorem theorem_4_6_2_sufficient {A B : Matrix n n 𝕜} {s : ℕ}
 /-- When $s+2$ is less than the minimal-polynomial degree of a complex matrix $A$,
 $A$ admits an optimal $(s+2)$-term recurrence for the positive definite weight $B$
 if and only if it is $B$-normal of degree $s$.
-This is the complex case of Theorem 4.6.2 of [liesen2013krylov]. -/
+This is the complex case of Theorem 4.6.2 of [liesen2013krylov].
+
+**Reading.** The equivalence uses complex starting vectors. The sufficiency result also covers
+real starts. -/
 theorem theorem_4_6_2 (A B : Matrix n n ℂ) (hB : B.PosDef) (s : ℕ)
     (hmin : s + 2 < (minpoly ℂ A).natDegree) :
     AdmitsOptimalWeightedRecurrence A B s ↔ IsBNormalOfDegree A B s := by

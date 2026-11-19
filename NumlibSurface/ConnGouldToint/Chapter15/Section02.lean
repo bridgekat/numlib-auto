@@ -87,6 +87,24 @@ those of no larger norm, and it identifies the active set (Theorem 15.2.2). The 
 
 ## Deviations from the source
 
+* **Representation.** The SQP operator uses the actual multiplier increment, with the corresponding
+  negative block. See `ConnGouldToint.Chapter15.sqpKKT`, `ConnGouldToint.Chapter15.sqpResidual`,
+  `ConnGouldToint.Chapter15.hasFDerivAt_sqpResidual`, `ConnGouldToint.Chapter15.IsSQPCorrection`,
+  `ConnGouldToint.Chapter15.isSQPCorrection_iff_newton`.
+* **Generalization.** The joint quadratic convergence uses the local Lipschitz KKT derivative and a
+  product-space ball. See `ConnGouldToint.Chapter15.theorem_15_2_1_ii`.
+* **Representation.** The primal correction uses an arbitrary residual multiplier reference in an
+  invertible system. See `ConnGouldToint.Chapter15.sqpExternalStep`,
+  `ConnGouldToint.Chapter15.sqpExternalStep_reference_independent`.
+* **Correction.** The external multipliers need uniform local closeness; convergence alone can allow
+  an inconsistent first subproblem. See `ConnGouldToint.Chapter15.theorem_15_2_1_i`,
+  `ConnGouldToint.Chapter15.sqp_unrestricted_multiplier_counterexample`.
+* **Reading.** The mixed SQP result certifies active-set identification and the closest local
+  minimizer; external multipliers must stay in the local ball. See
+  `ConnGouldToint.Chapter15.mixedSQP_strict_minimizer_of_active_correction`,
+  `ConnGouldToint.Chapter15.theorem_15_2_2_iii`, `ConnGouldToint.Chapter15.theorem_15_2_2_closest`,
+  `ConnGouldToint.Chapter15.mixedSQP_uniform_closest`, `ConnGouldToint.Chapter15.theorem_15_2_2_ii`,
+  `ConnGouldToint.Chapter15.theorem_15_2_2_i`.
 * **Theorem 15.2.1(i)** (correction). The supplied multipliers must lie in a fixed ball around the
   root multiplier from the first iteration. Convergence of the multipliers alone allows an
   inconsistent first subproblem. See `ConnGouldToint.Chapter15.theorem_15_2_1_i` and
@@ -116,7 +134,12 @@ $$K(z)(s, \delta y) = \big(H(z) s - A^T(x) \delta y, \ A(x) s\big), \qquad K(z) 
   \begin{bmatrix} H(z) & -A^T(x) \\ A(x) & 0 \end{bmatrix}.$$
 
 The operator acts on the multiplier increment $\delta y$. The matrix displayed in the source
-acts on the negated increment, so its upper right block has the opposite sign. -/
+acts on the negated increment, so its upper right block has the opposite sign.
+
+**Reading.** The signed block operator acts on the actual multiplier increment, so the upper
+off-diagonal block is negative. The book's positive block in (15.2.1) acts on the negated multiplier
+increment in (15.2.3). The continuous-linear-map equations express the same update.
+-/
 def sqpKKT (H : E × Y → E →L[ℝ] E) (A : E → E →L[ℝ] Y)
     (AT : E → Y →L[ℝ] E) (z : E × Y) : E × Y →L[ℝ] E × Y :=
   ((H z).comp (ContinuousLinearMap.fst ℝ E Y) -
@@ -126,14 +149,24 @@ def sqpKKT (H : E × Y → E →L[ℝ] E) (A : E → E →L[ℝ] Y)
 /-- **Equation (15.2.2)** of [conn2000trust]. For $g : E \to E$, $c : E \to Y$ and
 $A^T : E \to L(Y, E)$, the **KKT residual** at $(x, y)$ is
 $$R(x, y) = \big(g(x) - A^T(x) y, \ c(x)\big),$$
-the stationarity residual of the Lagrangian and the equality-constraint residual. -/
+the stationarity residual of the Lagrangian and the equality-constraint residual.
+
+**Reading.** The signed block operator acts on the actual multiplier increment, so the upper
+off-diagonal block is negative. The book's positive block in (15.2.1) acts on the negated multiplier
+increment in (15.2.3). The continuous-linear-map equations express the same update.
+-/
 def sqpResidual (g : E → E) (c : E → Y) (AT : E → Y →L[ℝ] E) (z : E × Y) : E × Y :=
   (g z.1 - AT z.1 z.2, c z.1)
 
 /-- **Equations (15.2.1)–(15.2.3)** of [conn2000trust]. Let $z = (x, y)$. If $g$, $c$ and $A^T$ are
 differentiable at $x$, then the KKT residual $R$ is differentiable at $z$ with derivative
 $K(z)$, the KKT operator with $A = c'$ and with the Hessian $H(w) = D_x\big(g(x) - A^T(x)
-w_2\big)|_{x = w_1}$, the derivative of the stationarity residual at a fixed multiplier. -/
+w_2\big)|_{x = w_1}$, the derivative of the stationarity residual at a fixed multiplier.
+
+**Reading.** The signed block operator acts on the actual multiplier increment, so the upper
+off-diagonal block is negative. The book's positive block in (15.2.1) acts on the negated multiplier
+increment in (15.2.3). The continuous-linear-map equations express the same update.
+-/
 theorem hasFDerivAt_sqpResidual {g : E → E} {c : E → Y} {AT : E → Y →L[ℝ] E}
     {z : E × Y} (hg : DifferentiableAt ℝ g z.1) (hc : DifferentiableAt ℝ c z.1)
     (hAT : DifferentiableAt ℝ AT z.1) :
@@ -162,7 +195,12 @@ theorem hasFDerivAt_sqpResidual {g : E → E} {c : E → Y} {AT : E → Y →L[�
 $y^+ \in Y$ satisfy the **SQP equations** at $z = (x, y)$ if
 $$H(z) s - A^T(x) y^+ = -g(x), \qquad A(x) s = -c(x).$$
 These are the stationarity conditions of the quadratic subproblem, written with the new
-multiplier rather than its increment. -/
+multiplier rather than its increment.
+
+**Reading.** The signed block operator acts on the actual multiplier increment, so the upper
+off-diagonal block is negative. The book's positive block in (15.2.1) acts on the negated multiplier
+increment in (15.2.3). The continuous-linear-map equations express the same update.
+-/
 def IsSQPCorrection (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E) (z : E × Y) (s : E) (y' : Y) : Prop :=
   H z s - AT z.1 y' = -g z.1 ∧ A z.1 s = -c z.1
@@ -171,6 +209,10 @@ def IsSQPCorrection (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
 $\delta y \in Y$. Then $(s, y + \delta y)$ satisfies the SQP equations at $z$ if and only if
 $(s, \delta y)$ solves the Newton equation
 $$K(z)(s, \delta y) = -R(z).$$
+
+**Reading.** The signed block operator acts on the actual multiplier increment, so the upper
+off-diagonal block is negative. The book's positive block in (15.2.1) acts on the negated multiplier
+increment in (15.2.3). The continuous-linear-map equations express the same update.
 -/
 theorem isSQPCorrection_iff_newton (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E) (z : E × Y) (s : E) (dy : Y) :
@@ -287,7 +329,12 @@ at $z_k$.
 
 When the multipliers are updated from the subproblem, SQP is thus Newton's method for the KKT
 residual. The iterates are `Newton.iterate`, and the invertibility of $K(z_*)$ is a continuous
-linear equivalence `e` equal to it. -/
+linear equivalence `e` equal to it.
+
+**Generalization.** The joint convergence is formulated as Newton's method in normed spaces with a
+local Lipschitz derivative and invertibility at the root. The theorem supplies corrections and a
+product-space ball, which gives the separate primal and dual neighborhoods.
+-/
 theorem theorem_15_2_1_ii
     (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E) {zstar : E × Y}
@@ -312,7 +359,12 @@ the primal component of the Newton step with the residual frozen at the referenc
 $K(x, y)$ is not invertible, the inverse is taken to be $0$ and the next iterate is $x$.
 
 The reference multiplier cancels from the SQP equations; see
-`ConnGouldToint.Chapter15.sqpExternalStep_reference_independent`. -/
+`ConnGouldToint.Chapter15.sqpExternalStep_reference_independent`.
+
+**Reading.** The external multiplier controls the Hessian, while the residual may use any reference
+multiplier when the block system is invertible. The resulting primal update is independent of that
+reference. The inverse in the definition is totalized.
+-/
 noncomputable def sqpExternalStep (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E) (yref : Y) (x : E) (y : Y) : E :=
   x - ((sqpKKT H A AT (x, y)).inverse (sqpResidual g c AT (x, yref))).1
@@ -321,7 +373,12 @@ omit [CompleteSpace E] [CompleteSpace Y] in
 /-- **Equation (15.2.5)** of [conn2000trust]. If $K(x, y)$ is invertible, the next primal iterate at
 $(x, y)$ is the same for every reference multiplier: a change of reference changes only the
 multiplier increment. The primal step can therefore be computed with reference $0$, without
-knowing the root multiplier. -/
+knowing the root multiplier.
+
+**Reading.** The external multiplier controls the Hessian, while the residual may use any reference
+multiplier when the block system is invertible. The resulting primal update is independent of that
+reference. The inverse in the definition is totalized.
+-/
 theorem sqpExternalStep_reference_independent
     (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E) (x : E) (y v w : Y)
@@ -535,7 +592,12 @@ multiplier lies in $B(y_*, \delta)$ from the first iteration.
 
 The recurrence uses the reference multiplier $y_*$. By
 `ConnGouldToint.Chapter15.sqpExternalStep_reference_independent`, any other reference gives the
-same iterates. -/
+same iterates.
+
+**Correction.** External multipliers must stay in a fixed neighborhood of the limiting multiplier
+from the first iteration. A merely converging multiplier sequence can make the initial subproblem
+inconsistent. The convergence rate is stated as error inequalities valid also at exact termination.
+-/
 theorem theorem_15_2_1_i
     (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E) {xstar : E} {ystar : Y}
@@ -598,7 +660,13 @@ $$g + H s - A^* y = 0, \qquad c + A s = 0,$$
 that $y_j > 0$ for every active inequality $j$, and that $b_j + B_j s > 0$ for every inactive
 inequality $j$. Then $s$ lies in the feasible set of the mixed quadratic program and is a strict
 local minimizer of $q(s) = \langle g, s\rangle + \frac12 \langle s, H s\rangle$ on it, the
-active inequalities hold with equality at $s$, and the inactive inequalities hold strictly. -/
+active inequalities hold with equality at $s$, and the inactive inequalities hold strictly.
+
+**Reading.** The active constraints are represented by the equality KKT system and the mixed QP
+proof certifies that its correction is the unique closest local minimizer with the identified active
+set. The external multiplier version needs all multipliers initially and uniformly in its local
+ball, as for Theorem 15.2.1(i).
+-/
 theorem mixedSQP_strict_minimizer_of_active_correction [Finite ν]
     {g : V} {H : V →L[ℝ] V} {c : ActiveDual ι κ} {A : V →L[ℝ] ActiveDual ι κ}
     {b : ν → ℝ} {B : ν → V →L[ℝ] ℝ} {s : V} {y : ActiveDual ι κ}
@@ -732,7 +800,13 @@ quadratic program at $x_k$, the active inequalities hold with equality at $s_k$,
 inactive inequalities hold strictly.
 
 The limits are taken along an arbitrary filter on an arbitrary index type, so the result covers
-sequences and nets. -/
+sequences and nets.
+
+**Reading.** The active constraints are represented by the equality KKT system and the mixed QP
+proof certifies that its correction is the unique closest local minimizer with the identified active
+set. The external multiplier version needs all multipliers initially and uniformly in its local
+ball, as for Theorem 15.2.1(i).
+-/
 theorem theorem_15_2_2_iii [Finite ν]
     {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
     {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
@@ -784,7 +858,13 @@ omit [Fintype ν] in
 hypotheses of `ConnGouldToint.Chapter15.theorem_15_2_2_iii`, suppose also that $g$ is continuous
 at $x_*$ and $g(x_*) - A(x_*)^* y_* = 0$. Then eventually $s_k$ lies in the feasible set $C_k$
 of the mixed quadratic program at $x_k$, is a strict local minimizer of the model on $C_k$, and
-every local minimizer $t$ of the model on $C_k$ with $\|t\| \le \|s_k\|$ equals $s_k$. -/
+every local minimizer $t$ of the model on $C_k$ with $\|t\| \le \|s_k\|$ equals $s_k$.
+
+**Reading.** The active constraints are represented by the equality KKT system and the mixed QP
+proof certifies that its correction is the unique closest local minimizer with the identified active
+set. The external multiplier version needs all multipliers initially and uniformly in its local
+ball, as for Theorem 15.2.1(i).
+-/
 theorem theorem_15_2_2_closest [Finite ν]
     {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
     {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
@@ -954,7 +1034,13 @@ $\|s\| < \eta$ and $\|y^+ - y_*\| < \eta$, let $(s, y^+)$ satisfy the SQP equati
 let $H(z)$ be symmetric. Then $s$ lies in the feasible set $C$ of the mixed quadratic program at
 $x$ and is a strict local minimizer of the model on $C$, the active inequalities hold with
 equality at $s$, the inactive inequalities hold strictly, and every local minimizer $t$ of the
-model on $C$ with $\|t\| \le \|s\|$ equals $s$. -/
+model on $C$ with $\|t\| \le \|s\|$ equals $s$.
+
+**Reading.** The active constraints are represented by the equality KKT system and the mixed QP
+proof certifies that its correction is the unique closest local minimizer with the identified active
+set. The external multiplier version needs all multipliers initially and uniformly in its local
+ball, as for Theorem 15.2.1(i).
+-/
 theorem mixedSQP_uniform_closest [Finite ν]
     {g : V → V} {c : V → ActiveDual ι κ} {H : V × ActiveDual ι κ → V →L[ℝ] V}
     {A : V → V →L[ℝ] ActiveDual ι κ} {b : ν → V → ℝ} {B : ν → V → V →L[ℝ] ℝ}
@@ -1041,7 +1127,13 @@ Here the iteration is Newton's method for the active KKT equations, and the theo
 its step is the unique local minimizer of the mixed program among those of no larger norm, with
 exactly the active set of the solution.
 
-The continuity of $g$ at $x_*$ follows from the derivative hypothesis. -/
+The continuity of $g$ at $x_*$ follows from the derivative hypothesis.
+
+**Reading.** The active constraints are represented by the equality KKT system and the mixed QP
+proof certifies that its correction is the unique closest local minimizer with the identified active
+set. The external multiplier version needs all multipliers initially and uniformly in its local
+ball, as for Theorem 15.2.1(i).
+-/
 theorem theorem_15_2_2_ii [Finite ν]
     (g : V → V) (c : V → ActiveDual ι κ) (H : V × ActiveDual ι κ → V →L[ℝ] V)
     (A : V → V →L[ℝ] ActiveDual ι κ) (b : ν → V → ℝ) (B : ν → V → V →L[ℝ] ℝ)
@@ -1128,7 +1220,13 @@ from the first iteration; convergence alone is not enough
 (`ConnGouldToint.Chapter15.sqp_unrestricted_multiplier_counterexample`).
 
 **Reading.** The step is the Newton step for the active KKT equations, and the theorem proves
-that it solves the mixed quadratic program, as in `ConnGouldToint.Chapter15.theorem_15_2_2_ii`. -/
+that it solves the mixed quadratic program, as in `ConnGouldToint.Chapter15.theorem_15_2_2_ii`.
+
+**Reading.** The active constraints are represented by the equality KKT system and the mixed QP
+proof certifies that its correction is the unique closest local minimizer with the identified active
+set. The external multiplier version needs all multipliers initially and uniformly in its local
+ball, as for Theorem 15.2.1(i).
+-/
 theorem theorem_15_2_2_i [Finite ν]
     (g : V → V) (c : V → ActiveDual ι κ) (H : V × ActiveDual ι κ → V →L[ℝ] V)
     (A : V → V →L[ℝ] ActiveDual ι κ) (b : ν → V → ℝ) (B : ν → V → V →L[ℝ] ℝ)
@@ -1324,7 +1422,12 @@ $\operatorname{diag}(1 - y, 0)$. Then:
   solution of the SQP equations at $(x, y_0)$.
 
 The sequence is $y_0 = 1$ and $y_k = 0$ for $k \ge 1$. At $y_0 = 1$ the Hessian vanishes, and
-the stationarity equations are inconsistent at every point with $z \neq 0$. -/
+the stationarity equations are inconsistent at every point with $z \neq 0$.
+
+**Correction.** External multipliers must stay in a fixed neighborhood of the limiting multiplier
+from the first iteration. A merely converging multiplier sequence can make the initial subproblem
+inconsistent. The convergence rate is stated as error inequalities valid also at exact termination.
+-/
 theorem sqp_unrestricted_multiplier_counterexample :
     (∀ x : X, HasFDerivAt exampleObjective
       ((exampleGrad x).1 • ContinuousLinearMap.fst ℝ ℝ ℝ +

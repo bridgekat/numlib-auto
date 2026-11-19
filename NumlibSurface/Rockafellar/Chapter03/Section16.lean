@@ -113,31 +113,58 @@ it in §19.
 
 ## Deviations from the source
 
-* **Theorem 16.1** (generalization). For $\lambda > 0$ the source assumes $f$ proper convex; the
-  formulas hold for every $f$. See `Rockafellar.theorem_16_1_left`.
+* **Theorem 16.1** (generalization). Both formulas for $\lambda > 0$ hold for every $f$,
+  and the right multiplication formula at zero needs only properness. See
+  `Rockafellar.theorem_16_1_left`, `Rockafellar.theorem_16_1_right` and
+  `Rockafellar.theorem_16_1_right_zero`.
 * **Corollary 16.1.1** (generalization). The source assumes $C$ convex; only non-emptiness is used.
   See `Rockafellar.corollary_16_1_1`.
 * **Corollary 16.1.2** (generalization). The source assumes $C$ non-empty and convex; the formula
   holds for every set. See `Rockafellar.corollary_16_1_2`.
 * **Theorem 16.3**, first formula (generalization). The source assumes $f$ convex; the formula holds
   for every $f$. See `Rockafellar.theorem_16_3_image`.
+* **Theorem 16.3**, exact form and attainment (reading). The Lean declarations assume $g$ proper.
+  With the stated relative-interior hypothesis, an improper $g$ gives a vacuous $+\infty$
+  infimum everywhere. See `Rockafellar.theorem_16_3_exact` and `Rockafellar.theorem_16_3_attained`.
 * **Corollary 16.3.1**, first formula (generalization). The source assumes $C$ convex; the formula
   holds for every set. See `Rockafellar.corollary_16_3_1_image`.
 * **Corollary 16.3.2**, first formula (generalization). The source assumes $C$ convex; the formula
   holds for every set. See `Rockafellar.corollary_16_3_2_image`.
+* **Corollary 16.3.2**, second formula (correction). The printed equality can fail. For $A = 0$
+  on $\mathbb{R}$ and $D = \{1\}$, its left side is $\mathbb{R}$ and its right side is $\{0\}$.
+  `Rockafellar.corollary_16_3_2_preimage` gives the adjoint-image inclusion for all $D$.
+* **Theorem 16.4**, first two formulas (generalization). The conjugate of the infimal convolution
+  is stated for arbitrary functions, and the two-function closure formula allows improper
+  convex functions. See `Rockafellar.theorem_16_4_infConv_finset`,
+  `Rockafellar.theorem_16_4_infConv` and `Rockafellar.theorem_16_4_closure`.
+* **Corollary 16.4.1**, first two formulas (generalization). The sum formulas admit arbitrary
+  sets, and the two-set intersection formula allows empty convex sets. See
+  `Rockafellar.corollary_16_4_1_add`, `Rockafellar.corollary_16_4_1_add_finset`
+  and `Rockafellar.corollary_16_4_1_closure`.
 * **Corollary 16.4.2** (generalization). The source assumes convex cones; convexity is not used. See
   `Rockafellar.corollary_16_4_2_add`.
+* **Theorem 16.5**, first two formulas (generalization). The convex-hull formula admits arbitrary
+  functions. The closure formula admits improper convex functions. See
+  `Rockafellar.theorem_16_5_convFn` and `Rockafellar.theorem_16_5_closure`.
+* **Corollaries 16.5.1 and 16.5.2**, first formulas (generalization). The convex-hull formulas
+  for support and polarity admit arbitrary sets. See `Rockafellar.corollary_16_5_1_hull`
+  and `Rockafellar.corollary_16_5_2_hull`.
 * **Corollary 16.5.1**, second formula (reading). The formula fails for an empty family, so the
-  index set is assumed non-empty. See `Rockafellar.corollary_16_5_1_closure`.
+  index set is assumed nonempty. The individual convex sets may be empty. See
+  `Rockafellar.corollary_16_5_1_closure`.
+* **Corollary 16.5.2**, second formula (correction). Taking $C_1 = \{1\}$ and $C_2 = \{2\}$
+  in $\mathbb{R}$ gives $\mathbb{R}$ on the left and $(-\infty,1]$ on the right.
+  `Rockafellar.corollary_16_5_2_inter` gives the inclusion of each polar.
 
 ## Not formalized
 
 * **Corollary 16.3.1**, attainment of the infimum in the exact form.
-* **Corollary 16.3.2**, second formula as an equality. Only the inclusion
-  $A^*(D^\circ) \subseteq (A^{-1} D)^\circ$ is formalized.
-* **Corollary 16.4.2**, the formulas after the first.
-* **Corollary 16.5.2**, second formula as an equality. Only the inclusion
-  $C_i^\circ \subseteq (\bigcap_j C_j)^\circ$ is formalized.
+* **Corollary 16.3.2**, the equality under the relative-interior qualification.
+* **Theorem 16.4 and Corollary 16.4.1**, the unconditional closure formulas for more than two
+  inputs.
+* **Corollary 16.4.2**, the first formula for more than two inputs and the formulas after it.
+* **Theorem 16.5**, the formula without closure and attainment under the assumptions on a
+  finite family with a common closed effective domain.
 -/
 
 open Set Pointwise
@@ -226,8 +253,10 @@ theorem theorem_16_1_left_zero {f : Rn n → EReal} (hf : ConvexFn f) (hp : Prop
 proper function on $\mathbb{R}^n$. Then $(f 0)^* = 0 f^*$.
 
 Here $f 0$ is the indicator function $\delta(\cdot \mid 0)$, and $0 f^*$ is the constant
-function $0$, by the convention $0 \cdot (\pm\infty) = 0$ of `EReal`. Convexity of $f$ is not
-assumed. -/
+function $0$, by the convention $0 \cdot (\pm\infty) = 0$ of `EReal`.
+
+**Generalization.** The book assumes $f$ proper convex. This zero-scalar identity needs only
+properness. -/
 theorem theorem_16_1_right_zero {f : Rn n → EReal} (hp : ProperConvex f) :
     convexConj (pairing n) (smulRight f 0) = fun y => (0 : EReal) * convexConj (pairing n) f y := by
   rw [smulRight_zero hp.convexDom_nonempty, convexConj_indicatorFn_zero_rn]
@@ -364,7 +393,9 @@ $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for some $x \in \mathbb{R}^n$, 
 in the second formula can be omitted:
 $$(gA)^* = A^* g^*.$$
 
-As in the source, $g$ need not be closed. -/
+**Reading.** The source also allows improper convex $g$. With the stated relative-interior
+hypothesis, both sides for an improper $g$ are identically $+\infty$. The Lean formula
+assumes properness. -/
 theorem theorem_16_3_exact (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
     (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom g)) :
     convexConj (pairing n) (compLin g A)
@@ -379,8 +410,9 @@ $g^*(y^*) = (gA)^*(x^*)$, so the infimum
 $$(A^* g^*)(x^*) = \inf \{ g^*(y^*) \mid A^* y^* = x^* \}$$
 is attained.
 
-The source says that the infimum is attained or is $+\infty$ vacuously. The hypothesis
-$(gA)^*(x^*) < +\infty$ excludes the second case. -/
+**Reading.** The source allows improper $g$, which gives a vacuous infimum of $+\infty$
+under the relative-interior hypothesis. The Lean result assumes $g$ proper and the value
+finite, the case where the book asserts a witness. -/
 theorem theorem_16_3_attained (A : Rn n →ₗ[ℝ] Rn m) {g : Rn m → EReal} (hg : ConvexFn g)
     (hp : ProperConvex g) {x₀ : Rn n} (hx₀ : A x₀ ∈ ri (convexDom g)) {y : Rn n}
     (hy : convexConj (pairing n) (compLin g A) y < ⊤) :
@@ -490,8 +522,9 @@ linear transformation from $\mathbb{R}^n$ to $\mathbb{R}^m$ and let $D \subseteq
 Then
 $$A^*(D^\circ) \subseteq (A^{-1} D)^\circ.$$
 
-The source states an equality, after a closure, and without the closure under the qualification
-of Corollary 16.3.1. The equality is not formalized. -/
+**Correction.** The book states unconditional equality with the indicated closures for convex
+$D$. For $A = 0$ on $\mathbb{R}$ and $D = \{1\}$, its left side is the polar of the empty set
+and its right side is $\{0\}$. The Lean inclusion holds for every $D$. -/
 theorem corollary_16_3_2_preimage (A : Rn n →ₗ[ℝ] Rn m) (D : Set (Rn m)) :
     LinearMap.adjoint A '' polarSet (pairing m) D ⊆ polarSet (pairing n) (A ⁻¹' D) := by
   rintro _ ⟨y, hy, rfl⟩ x hx
@@ -505,9 +538,10 @@ $f_1, \dots, f_m$ be any functions on $\mathbb{R}^n$ with values in $[-\infty, +
 $$(f_1 \mathbin{\square} \cdots \mathbin{\square} f_m)^* = f_1^* + \cdots + f_m^*.$$
 
 The functions are indexed by a `Finset`. The infimal convolution of the family is the sum in the
-commutative monoid `ConvexAnalysis.InfConvFn`, whose zero is $\delta(\cdot \mid 0)$, so the
-empty family is allowed. Properness is not assumed, and must not be assumed at intermediate
-stages, since infimal convolution does not preserve it. -/
+commutative monoid `ConvexAnalysis.InfConvFn`, whose zero is $\delta(\cdot \mid 0)$.
+
+**Generalization.** The source assumes proper convex inputs. The Lean result covers arbitrary
+functions and the empty family. -/
 theorem theorem_16_4_infConv_finset {ι : Type*} (s : Finset ι) (f : ι → Rn n → EReal) :
     convexConj (pairing n) (ofInfConvFn (∑ i ∈ s, toInfConvFn (f i)))
       = ∑ i ∈ s, convexConj (pairing n) (f i) :=
@@ -516,6 +550,9 @@ theorem theorem_16_4_infConv_finset {ι : Type*} (s : Finset ι) (f : ι → Rn 
 /-- **Theorem 16.4** of [rockafellar1970convex], first formula for two functions. Let $f$ and $g$ be
 any functions on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$. Then
 $$(f \mathbin{\square} g)^* = f^* + g^*.$$
+
+**Generalization.** The book assumes proper convex functions. The binary formula holds for
+arbitrary functions.
 -/
 theorem theorem_16_4_infConv (f g : Rn n → EReal) :
     convexConj (pairing n) (infConv f g) = convexConj (pairing n) f + convexConj (pairing n) g :=
@@ -526,7 +563,8 @@ on $\mathbb{R}^n$. Then
 $$(\operatorname{cl} f + \operatorname{cl} g)^* = \operatorname{cl}(f^* \mathbin{\square}
   g^*).$$
 
-The proof applies `ConvexAnalysis.convexConj_add_eq_convexCl_infConv` to the closures. -/
+**Generalization.** The book assumes proper convex inputs. The Lean two-function formula
+also allows improper convex functions. -/
 theorem theorem_16_4_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hg : ConvexFn g) :
     convexConj (pairing n) (convexCl f + convexCl g)
       = convexCl (infConv (convexConj (pairing n) f) (convexConj (pairing n) g)) := by
@@ -566,8 +604,8 @@ theorem theorem_16_4_attained {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : Pr
 $C_1, C_2 \subseteq \mathbb{R}^n$. Then
 $$\delta^*(\cdot \mid C_1 + C_2) = \delta^*(\cdot \mid C_1) + \delta^*(\cdot \mid C_2).$$
 
-Unlike the statement for functions, this needs no hypothesis: two suprema over sets never
-produce the expression $\infty - \infty$. -/
+**Generalization.** The book assumes nonempty convex inputs. The Lean statement permits
+arbitrary sets. If one is empty, $-\infty$ is absorbing under `EReal` addition. -/
 theorem corollary_16_4_1_add (C D : Set (Rn n)) :
     supportFn (pairing n) (C + D) = supportFn (pairing n) C + supportFn (pairing n) D :=
   supportFn_add_rn C D
@@ -577,7 +615,8 @@ $C_1, \dots, C_m \subseteq \mathbb{R}^n$. Then
 $$\delta^*(\cdot \mid C_1 + \cdots + C_m) = \delta^*(\cdot \mid C_1) + \cdots + \delta^*(\cdot
   \mid C_m).$$
 
-The sets are indexed by a `Finset`, and the empty family is allowed. -/
+**Generalization.** The book assumes nonempty convex sets. The Lean statement accepts
+arbitrary sets and also permits the indexing `Finset` to be empty. -/
 theorem corollary_16_4_1_add_finset {ι : Type*} (s : Finset ι) (C : ι → Set (Rn n)) :
     supportFn (pairing n) (∑ i ∈ s, C i) = ∑ i ∈ s, supportFn (pairing n) (C i) := by
   induction s using Finset.cons_induction with
@@ -592,8 +631,8 @@ $C_1, C_2 \subseteq \mathbb{R}^n$ be convex. Then
 $$\delta^*(\cdot \mid \operatorname{cl} C_1 \cap \operatorname{cl} C_2) =
   \operatorname{cl}(\delta^*(\cdot \mid C_1) \mathbin{\square} \delta^*(\cdot \mid C_2)).$$
 
-This is the case of indicator functions of `Rockafellar.theorem_16_4_closure`: the sum of two
-indicator functions is the indicator function of the intersection. -/
+**Generalization.** The book assumes nonempty convex sets. The Lean formula for two sets
+permits empty convex sets. -/
 theorem corollary_16_4_1_closure {C D : Set (Rn n)} (hC : Convex ℝ C) (hD : Convex ℝ D) :
     supportFn (pairing n) (closure C ∩ closure D)
       = convexCl (infConv (supportFn (pairing n) C) (supportFn (pairing n) D)) := by
@@ -629,7 +668,8 @@ $$(K_1 + K_2)^\circ = K_1^\circ \cap K_2^\circ,$$
 where $K^\circ = \{x^* \mid \langle x, x^* \rangle \le 0 \text{ for all } x \in K\}$ is the
 polar cone.
 
-**Generalization.** The source assumes convex cones. Only the cone property is used.
+**Generalization.** The source assumes convex cones. The Lean statement for two sets uses
+only nonemptiness and the cone property.
 
 The support function of a cone is the indicator function of its polar, the sum of two indicator
 functions is the indicator function of the intersection, and an indicator function determines
@@ -762,8 +802,8 @@ family of functions on $\mathbb{R}^n$ with values in $[-\infty, +\infty]$, over 
 index set $I$. Then
 $$(\operatorname{conv} \{f_i \mid i \in I\})^* = \sup \{f_i^* \mid i \in I\}.$$
 
-No hypothesis is placed on the functions, and the empty family is allowed. The proof specializes
-`ConvexAnalysis.convexConj_convFn`. -/
+**Generalization.** The source assumes proper convex inputs. The formula holds for arbitrary
+functions. -/
 theorem theorem_16_5_convFn {ι : Sort*} (f : ι → Rn n → EReal) :
     convexConj (pairing n) (convFn f) = ⨆ i, convexConj (pairing n) (f i) :=
   convexConj_convFn (pairing n) f
@@ -773,7 +813,8 @@ family of convex functions on $\mathbb{R}^n$. Then
 $$(\sup \{\operatorname{cl} f_i \mid i \in I\})^* = \operatorname{cl}(\operatorname{conv}
   \{f_i^* \mid i \in I\}).$$
 
-The proof applies `ConvexAnalysis.convexConj_iSup_eq_convexCl_convFn` to the closures. -/
+**Generalization.** The source assumes proper convex inputs. The formula also holds for
+improper convex functions. -/
 theorem theorem_16_5_closure {ι : Sort*} {f : ι → Rn n → EReal} (hf : ∀ i, ConvexFn (f i)) :
     convexConj (pairing n) (⨆ i, convexCl (f i))
       = convexCl (convFn fun i => convexConj (pairing n) (f i)) := by
@@ -784,6 +825,9 @@ theorem theorem_16_5_closure {ι : Sort*} {f : ι → Rn n → EReal} (hf : ∀ 
 /-- **Corollary 16.5.1** of [rockafellar1970convex], first formula. Let $\{C_i \mid i \in I\}$ be
 any family of subsets of $\mathbb{R}^n$, and let $D$ be the convex hull of their union. Then
 $$\delta^*(\cdot \mid D) = \sup \{\delta^*(\cdot \mid C_i) \mid i \in I\}.$$
+
+**Generalization.** The book assumes nonempty convex sets. The formula applies to arbitrary
+sets.
 -/
 theorem corollary_16_5_1_hull {ι : Sort*} (C : ι → Set (Rn n)) :
     supportFn (pairing n) (convexHull ℝ (⋃ i, C i))
@@ -797,7 +841,8 @@ $$\delta^*\Bigl(\cdot \Bigm| \bigcap_{i \in I} \operatorname{cl} C_i\Bigr) =
 
 **Reading.** The source does not exclude an empty index set. For an empty family the left side
 is $\delta^*(\cdot \mid \mathbb{R}^n) = \delta(\cdot \mid 0)$ and the right side is the constant
-$+\infty$, so the declaration assumes $I$ non-empty.
+$+\infty$, so the declaration assumes $I$ nonempty. The book assumes each $C_i$ nonempty,
+and the Lean result allows empty members.
 
 This is the case of indicator functions of `Rockafellar.theorem_16_5_closure`. -/
 theorem corollary_16_5_1_closure {ι : Sort*} [Nonempty ι] {C : ι → Set (Rn n)}
@@ -824,8 +869,8 @@ theorem corollary_16_5_1_closure {ι : Sort*} [Nonempty ι] {C : ι → Set (Rn 
 any family of subsets of $\mathbb{R}^n$. Then
 $$\Bigl(\operatorname{conv} \bigcup_{i \in I} C_i\Bigr)^\circ = \bigcap_{i \in I} C_i^\circ.$$
 
-Polarity reverses inclusion, and each half-space $\{x \mid \langle x, x^* \rangle \le 1\}$ is
-convex, so the convex hull does not change the polar. This is the second proof in the source. -/
+**Generalization.** The book assumes convex sets. Polarity takes inequalities over a set
+and its convex hull to the same condition, so arbitrary sets suffice. -/
 theorem corollary_16_5_2_hull {ι : Sort*} (C : ι → Set (Rn n)) :
     polarSet (pairing n) (convexHull ℝ (⋃ i, C i)) = ⋂ i, polarSet (pairing n) (C i) := by
   ext y
@@ -844,9 +889,10 @@ theorem corollary_16_5_2_hull {ι : Sort*} (C : ι → Set (Rn n)) :
 $\{C_j \mid j \in I\}$ be any family of subsets of $\mathbb{R}^n$. Then for each $i \in I$
 $$C_i^\circ \subseteq \Bigl(\bigcap_{j \in I} C_j\Bigr)^\circ.$$
 
-Each $C_i^\circ$ is contained in the polar of the intersection, and so is the convex hull of
-their union. The source states an equality for the polar of $\bigcap_j \operatorname{cl} C_j$,
-which holds after a closure. The equality is not formalized. -/
+**Correction.** The book states equality for the polar of $\bigcap_j \operatorname{cl} C_j$
+with the closed convex hull of the polars. For $C_1 = \{1\}$ and $C_2 = \{2\}$ in $\mathbb{R}$,
+the left side is $\mathbb{R}$ and the right side is $(-\infty,1]$. The Lean inclusion applies to
+every family of sets. -/
 theorem corollary_16_5_2_inter {ι : Sort*} (C : ι → Set (Rn n)) (i : ι) :
     polarSet (pairing n) (C i) ⊆ polarSet (pairing n) (⋂ j, C j) :=
   polarSet_anti (Set.iInter_subset C i)

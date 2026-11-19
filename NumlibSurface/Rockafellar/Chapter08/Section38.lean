@@ -95,9 +95,25 @@ and Corollaries 38.2.1, 38.4.1, 38.5.1, 38.7.1 and 38.7.2. The proofs specialize
 
 ## Deviations from the source
 
-* **Theorem 38.1** (typo). The book prints $\operatorname{dom}(F_1 \cap F_2)$ on the left-hand side
-  of the domain formula. The operation meant is $\square$, as the proof of the book shows. See
-  `Rockafellar.theorem_38_1_dom`.
+* **Theorem 38.1** (generalization). The effective-domain and bracket formulas allow arbitrary
+  bifunctions. The printed effective-domain formula uses $\square$ on the left and
+  $\cap$ on the right. See `Rockafellar.theorem_38_1_dom`.
+* **Theorem 38.3** (generalization). The bracket, adjoint, and preservation of properness under
+  positive scaling require no convexity. See `Rockafellar.theorem_38_3_bracket`.
+* **Lemma 38.6** (reading). The conjugate identities require properness on each side and
+  allow functions without the convexity or concavity assumed in the book. See
+  `Rockafellar.lemma_38_6`.
+* **Theorem 38.7** (reading). The two identities use the infimum or supremum side of
+  Fenchel pairing. The book asserts existence of the pairings in addition to the
+  identities. See `Rockafellar.theorem_38_7` and `Rockafellar.theorem_38_7_third`.
+* **Cofiniteness criteria** (reading). The bracket criterion assumes every slice is closed
+  and proper and tests that each bracket is strictly below $+\infty$. The full-domain criterion
+  assumes graph properness explicitly. See `Rockafellar.cofinite_iff_forall_bracket_finite`
+  and `Rockafellar.cofiniteBifun_of_convexDomBifun_eq_univ'`.
+* **Fenchel pairing** (reading). The book defines the pairing of convex and concave
+  functions only when the extrema over the displayed domains agree. The Lean functions
+  use unrestricted extended-real extrema. `Rockafellar.HasInnerProduct` imposes equality,
+  while `Rockafellar.innerProduct` is the infimum side even without equality.
 * **Relative interior hypotheses** (reading). Every condition of the book of the form
   "$\operatorname{ri}(\operatorname{dom} \cdot)$ and $\operatorname{ri}(\operatorname{dom} \cdot)$
   have a point in common" is the hypothesis of Theorem 16.4. Each statement here assumes instead the
@@ -118,6 +134,7 @@ and Corollaries 38.2.1, 38.4.1, 38.5.1, 38.7.1 and 38.7.2. The proofs specialize
 * **Lemma 38.6**, the second assertion: $\langle \operatorname{cl} f, \operatorname{cl} g \rangle$
   then exists and equals $\langle f, g \rangle$.
 * **Theorem 38.7**, the middle member $-\langle f^*, F_* g \rangle$ of the chain of equalities.
+* **Theorem 38.7**, the existence of all four pairings.
 -/
 
 open Set
@@ -196,7 +213,11 @@ where $f^*$ is the convex conjugate of $f$ and $g^*$ is the concave conjugate of
 leaves $\langle f, g \rangle$ undefined when the two extrema differ.
 
 This predicate is the side condition of every statement below that says that an inner product
-exists. The definition is `ConvexAnalysis.HasFenchelPairing` for the Euclidean pairing. -/
+exists. The definition is `ConvexAnalysis.HasFenchelPairing` for the Euclidean pairing.
+
+**Reading.** Lean tests equality of unrestricted Fenchel extrema and does not impose convexity and
+concavity in the type.
+-/
 abbrev HasInnerProduct {n : ℕ} (f g : Rn n → EReal) : Prop :=
   HasFenchelPairing (pairing n) f g
 
@@ -204,20 +225,30 @@ abbrev HasInnerProduct {n : ℕ} (f g : Rn n → EReal) : Prop :=
 $f, g : \mathbb{R}^n \to [-\infty, +\infty]$, this is the infimum side
 $$\inf_y \{f^*(y) - g(y)\}$$
 of $\langle f, g \rangle$. It is the inner product of the book only when
-`Rockafellar.HasInnerProduct f g` holds. -/
+`Rockafellar.HasInnerProduct f g` holds.
+
+**Reading.** The infimum side is total even when the source pairing does not exist.
+-/
 noncomputable abbrev innerProduct {n : ℕ} (f g : Rn n → EReal) : EReal :=
   fenchelPairing (pairing n) f g
 
 variable {m n k : ℕ}
 
 /-- For $f, g : \mathbb{R}^n \to [-\infty, +\infty]$, the value `Rockafellar.innerProduct f g` is
-$\inf_y \{f^*(y) - g(y)\}$. -/
+$\inf_y \{f^*(y) - g(y)\}$.
+
+**Generalization.** The infimum uses the total extended-real subtraction convention.
+-/
 theorem innerProduct_eq (f g : Rn n → EReal) :
     innerProduct f g = ⨅ y, (convexConj (pairing n) f y - g y) := rfl
 
 /-- For $f, g : \mathbb{R}^n \to [-\infty, +\infty]$, the inner product $\langle f, g \rangle$
 exists if and only if $\sup_x \{g^*(x) - f(x)\} = \inf_y \{f^*(y) - g(y)\}$. This is the
-condition of the book in its own two extrema. -/
+condition of the book in its own two extrema.
+
+**Generalization.** The pairing condition uses both total extended-real extrema without domain
+restrictions.
+-/
 theorem hasInnerProduct_iff (f g : Rn n → EReal) :
     HasInnerProduct f g ↔
       (⨆ x, (concaveConj (pairing n) g x - f x)) = ⨅ y, (convexConj (pairing n) f y - g y) := by
@@ -230,7 +261,10 @@ theorem hasInnerProduct_iff (f g : Rn n → EReal) :
 /-- Weak duality: for all $f, g : \mathbb{R}^n \to [-\infty, +\infty]$,
 $$\sup_x \{g^*(x) - f(x)\} \le \inf_y \{f^*(y) - g(y)\}.$$
 No hypothesis is needed. So every claim below that an inner product exists reduces to the
-reverse inequality. -/
+reverse inequality.
+
+**Generalization.** The weak bound extends to unrestricted functions with total arithmetic.
+-/
 theorem fenchelSup_le_innerProduct (f g : Rn n → EReal) :
     (⨆ x, (concaveConj (pairing n) g x - f x)) ≤ innerProduct f g := by
   have h : (⨆ x, (concaveConj (pairing n) g x - f x)) = fenchelSup (pairing n) f g := by
@@ -256,8 +290,7 @@ $F_2$ from $\mathbb{R}^m$ to $\mathbb{R}^n$,
 $$\operatorname{dom}(F_1 \square F_2) = \operatorname{dom} F_1 \cap \operatorname{dom} F_2.$$
 No hypothesis is needed.
 
-**Typo.** The book prints the left-hand side as $\operatorname{dom}(F_1 \cap F_2)$. The
-operation meant is $\square$, as the proof of the book shows. -/
+**Generalization.** The book states the formula for proper convex bifunctions. -/
 theorem theorem_38_1_dom (F₁ F₂ : Bifun (Rn m) (Rn n)) :
     convexDomBifun (infConvBifun F₁ F₂) = convexDomBifun F₁ ∩ convexDomBifun F₂ :=
   convexDomBifun_infConvBifun F₁ F₂
@@ -269,7 +302,8 @@ $$\langle (F_1 \square F_2)u, x^* \rangle = \langle F_1 u, x^* \rangle + \langle
   \rangle,$$
 where the sum uses the convex convention $\infty - \infty = -\infty$.
 
-No hypothesis is needed. The identity is the formula $(f \square g)^* = f^* + g^*$ of Theorem
+**Generalization.** The book assumes proper convex bifunctions. The identity is the formula
+$(f \square g)^* = f^* + g^*$ of Theorem
 16.4, which holds without hypotheses, applied to each slice. -/
 theorem theorem_38_1_bracket (F₁ F₂ : Bifun (Rn m) (Rn n)) (u : Rn m) (y : Rn n) :
     bracket (pairing n) (infConvBifun F₁ F₂) u y
@@ -284,7 +318,9 @@ uses the concave convention $\infty - \infty = +\infty$.
 
 For concave bifunctions, $\square$ is supremal convolution and $\langle G u, x^* \rangle$ is the
 concave conjugate of the slice $Gu$. The statement is false with the convex convention in place
-of the concave one. No hypothesis is needed. -/
+of the concave one.
+
+**Generalization.** The bracket formula applies to arbitrary bifunctions. -/
 theorem theorem_38_1_bracket_concave (G₁ G₂ : Bifun (Rn m) (Rn n)) (u : Rn m) (y : Rn n) :
     concaveConj (pairing n) (supConv (G₁ u) (G₂ u)) y
       = concaveAdd (concaveConj (pairing n) (G₁ u) y) (concaveConj (pairing n) (G₂ u) y) :=
@@ -404,6 +440,8 @@ theorem theorem_38_3_convex {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hl : 0 < l)
 from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $\lambda > 0$. Then for all $u \in \mathbb{R}^m$ and
 $x^* \in \mathbb{R}^n$,
 $$\langle (F\lambda)u, x^* \rangle = \lambda \langle Fu, x^* \rangle.$$
+
+**Generalization.** The bracket identity requires no convexity of $F$.
 -/
 theorem theorem_38_3_bracket {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hl : 0 < l) (u : Rn m)
     (y : Rn n) :
@@ -411,8 +449,9 @@ theorem theorem_38_3_bracket {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hl : 0 < l) (u
   congrFun (bracket_smulRightBifun hl (pairing n) F u) y
 
 /-- **Theorem 38.3** of [rockafellar1970convex], the adjoint. Let $F$ be a bifunction from
-$\mathbb{R}^m$ to $\mathbb{R}^n$ and $\lambda > 0$. Then $(F\lambda)^* = F^*\lambda$. No other
-hypothesis is needed. -/
+$\mathbb{R}^m$ to $\mathbb{R}^n$ and $\lambda > 0$. Then $(F\lambda)^* = F^*\lambda$.
+
+**Generalization.** The adjoint identity requires no convexity of $F$. -/
 theorem theorem_38_3_adjoint {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hl : 0 < l) :
     dualProgram (smulRightBifun F l) = smulRightBifun (dualProgram F) l :=
   funext fun y => funext fun v => convexAdjointBifun_smulRightBifun hl (pairing m) (pairing n) F y v
@@ -430,7 +469,9 @@ theorem theorem_38_3_closed {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hl : 0 < l) (hF
     (closedConvex_compLin (closedConvexBifun_iff.1 hcl) hcont) hl
 
 /-- **Theorem 38.3** of [rockafellar1970convex], properness. Let $F$ be a proper bifunction from
-$\mathbb{R}^m$ to $\mathbb{R}^n$ and $\lambda > 0$. Then $F\lambda$ is proper. -/
+$\mathbb{R}^m$ to $\mathbb{R}^n$ and $\lambda > 0$. Then $F\lambda$ is proper.
+
+**Generalization.** Preservation of properness requires no convexity of $F$. -/
 theorem theorem_38_3_proper {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hl : 0 < l)
     (hp : ProperConvex (graphFn F)) : ProperConvex (graphFn (smulRightBifun F l)) := by
   rw [graphFn_smulRightBifun hl F]
@@ -681,7 +722,10 @@ $\langle f^*, g^* \rangle$ exists.
 
 The proof of the book is the chain $-\langle f, g \rangle \le \sup \text{side of } \langle f^*,
 g^* \rangle \le \inf \text{side of } \langle f^*, g^* \rangle \le -\langle f, g \rangle$, whose
-middle inequality is weak duality. -/
+middle inequality is weak duality.
+
+**Reading.** The hypotheses require properness in place of the book's convexity and
+concavity assumptions. -/
 theorem lemma_38_6_exists {f g : Rn n → EReal} (hf : ProperConvex f) (hg : ProperConcave g)
     (h : HasInnerProduct f g) :
     HasInnerProduct (convexConj (pairing n) f) (concaveConj (pairing n) g) := by
@@ -695,7 +739,10 @@ $$\langle f^*, g^* \rangle = -\langle f, g \rangle.$$
 The second assertion of the lemma, that $\langle \operatorname{cl} f, \operatorname{cl} g
 \rangle$ then exists and equals $\langle f, g \rangle$, is not formalized. The values are the
 infimum sides (`Rockafellar.innerProduct`); `Rockafellar.lemma_38_6_exists` gives the existence
-of $\langle f^*, g^* \rangle$. -/
+of $\langle f^*, g^* \rangle$.
+
+**Reading.** The hypotheses require properness in place of the book's convexity and
+concavity assumptions. -/
 theorem lemma_38_6 {f g : Rn n → EReal} (hf : ProperConvex f) (hg : ProperConcave g)
     (h : HasInnerProduct f g) :
     innerProduct (convexConj (pairing n) f) (concaveConj (pairing n) g) = -(innerProduct f g) := by
@@ -749,8 +796,8 @@ where $(F^* g^*)(u^*) = \sup_{x^*} \{g^*(x^*) + (F^* x^*)(u^*)\}$. Both sides ar
 $\operatorname{ri}(\operatorname{dom} g)$. The statement here assumes exactness together with a
 point at which $f$, $F$ and $g$ are all finite.
 
-The middle member $-\langle f^*, F_* g \rangle$ of the chain of equalities of the book is not
-formalized. -/
+The conclusion compares infimum sides of the pairings. The book also asserts existence
+of all four pairings and includes the member $-\langle f^*, F_* g \rangle$. -/
 theorem theorem_38_7 {F : Bifun (Rn m) (Rn n)} {f : Rn m → EReal} {g : Rn n → EReal}
     (hFp : ProperConvex (graphFn F)) (hf : ProperConvex f) (hgd : (concaveDom g).Nonempty)
         {u₀ : Rn m}
@@ -769,7 +816,8 @@ side uses the infimum side of $\langle Ff, g^* \rangle$. Both sides reduce to th
 extremum.
 
 **Reading.** The book's relative interior condition is replaced by exactness, as in
-`Rockafellar.theorem_38_7`. -/
+`Rockafellar.theorem_38_7`. The equality uses one side of each Fenchel pairing and
+does not assert existence of the pairings. -/
 theorem theorem_38_7_third {F : Bifun (Rn m) (Rn n)} {f : Rn m → EReal} {g : Rn n → EReal}
     (hFp : ProperConvex (graphFn F)) (hf : ProperConvex f) (hgd : (concaveDom g).Nonempty)
         {u₀ : Rn m}
@@ -857,7 +905,10 @@ theorem cofiniteBifun_bracket_finite {F : Bifun (Rn m) (Rn n)} (hF : CofiniteBif
 
 /-- Let $F$ be a convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ such that every slice $Fu$
 is closed proper convex. Then $F$ is co-finite if and only if
-$\langle Fu, x^* \rangle < +\infty$ for all $u \in \mathbb{R}^m$ and $x^* \in \mathbb{R}^n$. -/
+$\langle Fu, x^* \rangle < +\infty$ for all $u \in \mathbb{R}^m$ and $x^* \in \mathbb{R}^n$.
+
+**Reading.** The book assumes closedness of $F$ and two-sided finiteness of each
+bracket. Here properness of each closed slice supplies the lower bound. -/
 theorem cofinite_iff_forall_bracket_finite {F : Bifun (Rn m) (Rn n)} (hF : ConvexBifun F)
     (hcl : ∀ u, ClosedProperConvexFn (F u)) :
     CofiniteBifun F ↔ ∀ (u : Rn m) (y : Rn n), bracket (pairing n) F u y < ⊤ :=
@@ -897,8 +948,8 @@ theorem cofinite_smulRightBifun' {F : Bifun (Rn m) (Rn n)} {l : ℝ} (hF : Cofin
 co-finite if and only if $\operatorname{dom} F = \mathbb{R}^m$ and
 $\operatorname{dom} F^* = \mathbb{R}^n$.
 
-The book cites Theorem 34.2. The proof here does not use the correspondence with
-saddle-functions; it applies Corollary 13.3.1 to each slice. -/
+**Reading.** The statement assumes properness of the graph function explicitly.
+The proof applies Corollary 13.3.1 to each slice. -/
 theorem cofiniteBifun_of_convexDomBifun_eq_univ' {F : Bifun (Rn m) (Rn n)} (hF : ConvexBifun F)
     (hcl : ClosedConvexBifun F) (hp : ProperConvex (graphFn F)) :
     CofiniteBifun F ↔ convexDomBifun F = univ ∧ concaveDomBifun (dualProgram F) = univ :=

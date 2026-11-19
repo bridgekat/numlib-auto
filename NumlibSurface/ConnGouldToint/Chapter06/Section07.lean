@@ -30,6 +30,12 @@ uniform norm comparison of assumption AN.1 (Theorem 6.7.1).
 * Equation (6.7.9), `ConnGouldToint.Chapter06.scaledTrustNorm_sq`: the two formulas for $\|s\|_S^2$.
 * Theorem 6.7.1, `ConnGouldToint.Chapter06.theorem_6_7_1`: uniform bounds on the singular values of
   the scaling maps give the norm comparisons of AN.1.
+
+## Deviations from the source
+
+* **Equations (6.7.8)–(6.7.9) and Theorem 6.7.1** (generalization). The coordinates are related by a
+  linear equivalence of real inner product spaces. The singular-value bounds in the finite
+  dimensional result become bounds on the norms of images of vectors under that equivalence.
 -/
 
 namespace ConnGouldToint.Chapter06
@@ -41,6 +47,8 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 /-- **Equation (6.7.2)** of [conn2000trust]. For $f : E \to \mathbb{R}$, a point $x \in E$ and an
 invertible linear map $S : E \to E$, the **scaled objective** is the function
 $$w \mapsto f(x + S w).$$
+
+**Reading.** Linear equivalence between abstract real inner product spaces replaces scaling matrix.
 -/
 def scaledObjective (f : E → ℝ) (x : E) (S : E ≃ₗ[ℝ] E) (w : E) : ℝ :=
   f (x + S w)
@@ -48,7 +56,10 @@ def scaledObjective (f : E → ℝ) (x : E) (S : E ≃ₗ[ℝ] E) (w : E) : ℝ 
 /-- **Equation (6.7.9)** of [conn2000trust]. For an invertible linear map $S : E \to E$, the
 **scaled trust-region norm** is $\|s\|_S = \|S^{-1} s\|$.
 
-It is a seminorm on $E$, written as the Euclidean norm composed with $S^{-1}$. -/
+It is a seminorm on $E$, written as the Euclidean norm composed with $S^{-1}$.
+
+**Reading.** Pulls the norm back through an equivalence of real inner product spaces.
+-/
 noncomputable def scaledTrustNorm (S : E ≃ₗ[ℝ] E) : Seminorm ℝ E :=
   (normSeminorm ℝ E).comp S.symm.toLinearMap
 
@@ -56,6 +67,8 @@ noncomputable def scaledTrustNorm (S : E ≃ₗ[ℝ] E) : Seminorm ℝ E :=
 $\Delta \in \mathbb{R}$, the scaled trust region is the image of the closed Euclidean ball under
 $S$:
 $$\{s \in E : \|S^{-1} s\| \le \Delta\} = S\bigl(\{w \in E : \|w\| \le \Delta\}\bigr).$$
+
+**Reading.** Ball-image identity for abstract real inner product spaces.
 -/
 theorem scaledTrustRegion_eq_image (S : E ≃ₗ[ℝ] E) (Δ : ℝ) :
     {s | scaledTrustNorm S s ≤ Δ} = S '' Metric.closedBall (0 : E) Δ := by
@@ -71,7 +84,10 @@ theorem scaledTrustRegion_eq_image (S : E ≃ₗ[ℝ] E) (Δ : ℝ) :
 /-- **Equation (6.7.9)** of [conn2000trust]. Let $E$ be a real Hilbert space and $S : E \to E$ a
 continuous linear map with continuous inverse. For every $s \in E$,
 $$\|s\|_S^2 = \langle S^{-1} s, S^{-1} s \rangle = \langle s, (S^{-1})^* S^{-1} s \rangle,$$
-where $(S^{-1})^*$ is the adjoint of $S^{-1}$. -/
+where $(S^{-1})^*$ is the adjoint of $S^{-1}$.
+
+**Reading.** Inner product and adjoint formula for an abstract equivalence.
+-/
 theorem scaledTrustNorm_sq [CompleteSpace E] (S : E ≃L[ℝ] E) (s : E) :
     scaledTrustNorm S.toLinearEquiv s ^ 2 = ⟪S.symm s, S.symm s⟫ ∧
       ⟪S.symm s, S.symm s⟫ =
@@ -87,7 +103,11 @@ $$\frac{\|v\|}{\kappa} \le \|S_k^{-1} v\| \le \kappa \|v\|.$$
 
 These are the two uniform norm comparisons of assumption AN.1 for the norms $\|\cdot\|_{S_k}$.
 The singular values are `LinearMap.singularValues` in decreasing order, so the largest has index
-$0$ and the smallest has index $n - 1$. -/
+$0$ and the smallest has index $n - 1$.
+
+**Reading.** Operator bounds on equivalent finite-dimensional spaces serve as singular-value
+endpoint bounds.
+-/
 theorem theorem_6_7_1 [FiniteDimensional ℝ E] [Nontrivial E]
     (S : ℕ → E ≃ₗ[ℝ] E) {κ : ℝ} (hκ : 1 ≤ κ)
     (hmin : ∀ k, 1 / κ ≤ (S k).toLinearMap.singularValues (Module.finrank ℝ E - 1))

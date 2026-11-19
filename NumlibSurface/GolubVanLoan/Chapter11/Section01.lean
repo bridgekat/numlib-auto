@@ -90,7 +90,7 @@ factorization of §5.2.
 
 * Matrices are real, `Matrix (Fin n) (Fin n) ℝ`, with 0-based indices: the source's $a_{ij}$,
   $i, j = 1{:}n$, is `A (i - 1) (j - 1)`.
-* The source's permutation $P = I_n(:, p)$ acts as `A.submatrix p p`, which is $PAP^T$, and $Pv$ for
+* The row permutation $P = I_n(p, :)$ acts as `A.submatrix p p`, which is $PAP^T$, and $Pv$ for
   a vector $v$ is `v ∘ p`.
 * The lower Cholesky factor $G$ of the source, with $A = GG^T$, is $H^T$ for the backbone's
   `Matrix.IsCholesky A H`, where $H$ is upper triangular with positive diagonal and $H^H H = A$.
@@ -109,11 +109,19 @@ factorization of §5.2.
 
 ## Deviations from the source
 
+* **§11.1.1, compressed columns** (reading). Stored positions may include zeros, and row indices
+  inside each column must increase strictly. See `GolubVanLoan.Chapter11.CompressedColumn`.
+* **Equation (11.1.6)** (reading). When the minimum's set is empty, the index is the diagonal
+  position and $i-f_i(A)=0$. See `GolubVanLoan.Chapter11.profileIndex`.
+* **§11.1.8, Sparse QR Challenge** (typo). For $A(:,p)=AP^T$, use $P=I_n(p,:)$, the transpose of
+  the printed $I_n(:,p)$. See `GolubVanLoan.Chapter11.seminormal_cholesky` and
+  `GolubVanLoan.Chapter11.seminormal_normalEquations`.
 * **Equation (11.1.8)** (correction). The source runs the loop for $k = 1{:}n-2$, which leaves the
   last two columns unfactored; the program runs it for $k = 1{:}n$. See
   `GolubVanLoan.Chapter11.choleskyWithPivoting`.
-* **Formula after Fact 2, §11.1.6** (generalization). The source states the formula for $j < i$; it
-  holds for all $i$ and $j$. See `GolubVanLoan.Chapter11.cholesky_apply_eq`.
+* **Formula after Fact 2, §11.1.6** (generalization). The source discusses lower-triangular
+  entries. The formula holds for every pair of indices. See
+  `GolubVanLoan.Chapter11.cholesky_apply_eq`.
 * **Facts 1–2, §11.1.6** (reading). The source says that $g_{ij}$ is nonzero at the predicted
   positions "assuming no numerical cancellation", which has no exact reading; the theorem states the
   exact converse, that $g_{ij}$ vanishes off the symbolic fill. See
@@ -155,7 +163,10 @@ strictly increasing.
 The positions are 0-based. The condition $A.c(n) = \mathrm{nnz}$ is the 0-based form of the
 source's "the last component of $A.c$ houses $\mathrm{nnz}(A) + 1$". The merge of (11.1.2)
 relies on the increasing row indices. A vector of $\mathbb{R}^m$ in this format is a
-`CompressedColumn m 1 nnz`. -/
+`CompressedColumn m 1 nnz`.
+
+**Reading.** The structure makes row ordering explicit within each column. Stored values can be
+zero, as needed for the preallocated pattern of (11.1.2). -/
 structure CompressedColumn (m n nnz : ℕ) where
   /-- The stored values, the source's $A.\mathrm{val}$. -/
   val : Fin nnz → ℝ
@@ -204,7 +215,10 @@ theorem eq_of_mem_positions {j j' : Fin n} {k : Fin nnz} (h : k ∈ A.positions 
       A.colStart_mono (Fin.le_def.2 (by simpa using hlt))
     omega
 
-/-- Along the positions of a column the row indices are strictly increasing. -/
+/-- Along the positions of a column the row indices are strictly increasing.
+
+**Reading.** Strict row sorting made explicit for the merge.
+-/
 theorem pairwise_row_lt (j : Fin n) :
     (A.positions j).Pairwise fun k l => A.row k < A.row l := by
   refine ((List.pairwise_lt_finRange nnz).filter _).imp_of_mem fun {k l} hk hl hkl => ?_
@@ -244,7 +258,10 @@ theorem mem_positions_zero (u : CompressedColumn m 1 nnz) (k : Fin nnz) : k ∈ 
   rw [h, u.colStart_last]
   exact k.2
 
-/-- The row indices of a sparse vector are strictly increasing. -/
+/-- The row indices of a sparse vector are strictly increasing.
+
+**Reading.** Strict row ordering for sparse vector used by merge.
+-/
 theorem row_strictMono_zero (u : CompressedColumn m 1 nnz) : StrictMono u.row := fun k l hkl =>
   u.row_strictMono 0 k l ((u.mem_positions.1 (u.mem_positions_zero k)).1) hkl
     ((u.mem_positions.1 (u.mem_positions_zero l)).2)
@@ -273,7 +290,10 @@ end
 ```
 It overwrites $y$ with $y + Ax$ (`GolubVanLoan.Chapter11.equation_11_1_1`).
 
-Each product and each sum is rounded. -/
+Each product and each sum is rounded.
+
+**Reading.** Same column then position loop with rounded multiply/add.
+-/
 def sparseGaxpy {mm n nnz : ℕ} (A : CompressedColumn mm n nnz) (x : Fin n → ℝ) (y : Fin mm → ℝ) :
     M (Fin mm → ℝ) :=
   (List.finRange n).foldlM (fun y j =>
@@ -301,7 +321,10 @@ It changes the stored values of $A$ and keeps the pattern.
 
 The pattern, the fields `row` and `colStart`, is not changed. The index $\alpha$ is 0-based
 here; it is the merge pointer into the stored entries of $u$. The index comparisons are exact,
-and each product and each sum is rounded. -/
+and each product and each sum is rounded.
+
+**Reading.** Same merge and fixed allocated pattern with rounded updates.
+-/
 def sparseOuterProductUpdate {mm n nnz nu nv : ℕ} (A : CompressedColumn mm n nnz)
     (u : CompressedColumn mm 1 nu) (v : CompressedColumn n 1 nv) :
     M (CompressedColumn mm n nnz) := do
@@ -486,7 +509,11 @@ overwrites $A$ with $A + uv^T$.
 
 The hypothesis is the source's "storing zeros in locations that are destined to become nonzero".
 The merge pointer $\alpha$ works because the row indices of $u$ and of each column of $A$ are
-strictly increasing. -/
+strictly increasing.
+
+**Reading.** Exact rank-one update with preallocation covering all stored u/v row pairs, including
+stored zeros.
+-/
 theorem equation_11_1_2 {mm n nnz nu nv : ℕ} (A : CompressedColumn mm n nnz)
     (u : CompressedColumn mm 1 nu) (v : CompressedColumn n 1 nv)
     (hA : ∀ (β : Fin nv) (a : Fin nu), ∃ k ∈ A.positions (v.row β), A.row k = u.row a) :
@@ -602,7 +629,10 @@ The source says that "if $P$ is a permutation, then, except for vertex labeling,
 graphs for $A$ and $PAP^T$ look the same". The pattern graph is `Matrix.adjGraph`, in which $i$
 and $j$ are adjacent when $i \neq j$ and $a_{ij} \neq 0$ or $a_{ji} \neq 0$. By the second part,
 for a symmetric matrix it is the adjacency graph $\mathcal{G}_A$ of the source, with a node for
-each row and an edge $(i, j)$ for each nonzero off-diagonal entry $a_{ij}$. -/
+each row and an edge $(i, j)$ for each nonzero off-diagonal entry $a_{ij}$.
+
+**Generalization.** The relabeling identity concerns the undirected adjacency graph of any real
+matrix. Symmetry is used to identify an edge with a single directed entry $a_{ij} \ne 0$. -/
 theorem adjGraph_submatrix_iso {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (σ : Equiv.Perm (Fin n)) :
     (∃ e : (A.submatrix σ σ).adjGraph ≃g A.adjGraph, ∀ i, e i = σ i) ∧
@@ -615,10 +645,12 @@ open Classical in
 $A \in \mathbb{R}^{n \times n}$ and a row $i$,
 $$f_i(A) = \min\{j : 1 \le j \le i,\ a_{ij} \neq 0\}.$$
 If row $i$ has no nonzero entry at or left of the diagonal, the minimum of the source is
-undefined; the definition then gives $f_i(A) = i$, so that the row contributes $0$ to the
-profile.
+undefined; the definition then gives $f_i(A) = i$, so that $i-f_i(A)=0$.
 
-The indices are 0-based. -/
+The indices are 0-based.
+
+**Reading.** Uses diagonal index when source minimum is undefined.
+-/
 noncomputable def profileIndex {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) : Fin n :=
   if h : (univ.filter fun j => j ≤ i ∧ A i j ≠ 0).Nonempty then
     (univ.filter fun j => j ≤ i ∧ A i j ≠ 0).min' h
@@ -636,7 +668,10 @@ theorem profileIndex_le {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
 /-- **Section 11.1.5** of [golub2013matrix], the profile. For $A \in \mathbb{R}^{n \times n}$,
 $$\operatorname{profile}(A) = n + \sum_{i=1}^n (i - f_i(A)),$$
 where $f_i(A)$ is the profile index (11.1.6). The source uses the profile only in Problem
-P11.1.6. -/
+P11.1.6.
+
+**Generalization.** Same profile sum, extended to every matrix and empty row minima.
+-/
 noncomputable def profile {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) : ℕ :=
   n + ∑ i : Fin n, ((i : ℕ) - (profileIndex A i : ℕ))
 
@@ -652,7 +687,10 @@ is block tridiagonal with the level sets as diagonal blocks. The theorem itself 
 $A$ and the levels, and the ordering is not constructed.
 
 The graph is the pattern graph `Matrix.adjGraph A`, and the distance is `SimpleGraph.dist`,
-which is $0$ for a node that is not connected to $v$. -/
+which is $0$ for a node that is not connected to $v$.
+
+**Reading.** Distance separation implies zero entry for arbitrary permutation and matrix.
+-/
 theorem submatrix_apply_eq_zero_of_levels_far {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (v : Fin n)
     (σ : Equiv.Perm (Fin n)) {k l : Fin n}
     (h : A.adjGraph.dist v (σ k) + 2 ≤ A.adjGraph.dist v (σ l) ∨
@@ -671,7 +709,10 @@ $A(k{:}n, k{:}n)$, that is, the index that minimizes the number of indices $i \g
 $i \neq p$ and $a_{ip} \neq 0$. Ties are broken by the least index.
 
 The indices are 0-based. The minimum is `List.argmin` over the indices $p \ge k$ in increasing
-order. -/
+order.
+
+**Reading.** Minimizes current trailing off-diagonal column nonzero count; tie via ordered argmin.
+-/
 noncomputable def minDegreePivot {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n :=
   (((List.finRange n).filter fun p => k ≤ p).argmin fun p =>
     (univ.filter fun i => k ≤ i ∧ i ≠ p ∧ A i p ≠ 0).card).getD k
@@ -813,7 +854,10 @@ private theorem foldl_schur {n : ℕ} (k : Fin n) (I J : List (Fin n)) (hI : I.N
         · simp [hi, hjJ]
       · simp [hi, hiI]
 
-/-- The exact run of (11.1.8) is the loop of the exact steps. -/
+/-- The exact run of (11.1.8) is the loop of the exact steps.
+
+**Reading.** Exact closed-form iteration over all columns.
+-/
 private theorem choleskyWithPivoting_run {n : ℕ}
     (pivot : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n) (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (choleskyWithPivoting pure pivot A) =
@@ -1024,7 +1068,10 @@ $M$. Then $G$ is the Cholesky factor of $PAP^T$: $G$ is lower triangular with po
 and $PAP^T = GG^T$.
 
 Here $PAP^T$ is `A.submatrix p p`, and the conclusion is
-`Matrix.IsCholesky (A.submatrix p p) Gᵀ`, whose factor $G^T$ is upper triangular. -/
+`Matrix.IsCholesky (A.submatrix p p) Gᵀ`, whose factor $G^T$ is upper triangular.
+
+**Reading.** Full exact Cholesky in symmetric reordered coordinates for any trailing pivot rule.
+-/
 theorem equation_11_1_8 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (pivot : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n) (hpivot : ∀ M k, k ≤ pivot M k) :
     let out := Id.run (choleskyWithPivoting pure pivot A)
@@ -1052,7 +1099,10 @@ theorem equation_11_1_8 {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDe
 
 /-- With the minimum-degree pivot rule of §11.1.6, the exact run of (11.1.8) on a symmetric positive
 definite $A$ returns $(P, M)$ such that the lower triangle $G$ of $M$ is the Cholesky factor of
-$PAP^T$. -/
+$PAP^T$.
+
+**Correction.** Full exact factorization after corrected all-column loop with minimum-degree pivot.
+-/
 theorem minDegree_cholesky {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) :
     let out := Id.run (choleskyWithPivoting pure minDegreePivot A)
     (A.submatrix out.1 out.1).IsCholesky
@@ -1064,8 +1114,8 @@ $A, H \in \mathbb{R}^{n \times n}$ with `Matrix.IsCholesky A H`, and let $G = H^
 Cholesky factor, so that $A = GG^T$. Then for all $i$ and $j$,
 $$g_{ij} = \frac{a_{ij} - \sum_{k < j} g_{ik} g_{jk}}{g_{jj}}.$$
 
-**Generalization.** The source states the formula for $j < i$. It holds for all $i$ and $j$: for
-$i < j$ both sides vanish, and for $i = j$ it is the formula for the diagonal entry.
+**Generalization.** The formula holds outside the lower triangle, where both sides vanish.
+For $i = j$ it gives the formula for the diagonal entry.
 
 The formula is entry $i$ of the column formula (4.2.9) of the gaxpy Cholesky factorization,
 `GolubVanLoan.Chapter04.equation_4_2_9`. -/
@@ -1125,7 +1175,11 @@ $P(A^TA)P^T$ and $R$, so in particular $P(A^TA)P^T = R^TR$.
 
 The source says that "if $AP^T = QR$ is the thin QR factorization of $AP^T$, then
 $P(A^TA)P^T = R^TR$, i.e., $R^T$ is the Cholesky factor of $P(A^TA)P^T$". Here $AP^T = A(:, p)$
-is `A.submatrix id σ`. The positive diagonal of $R$ makes $A$ of full column rank. -/
+is `A.submatrix id σ`. The positive diagonal of $R$ makes $A$ of full column rank.
+
+**Correction.** For column list $p$, the permutation satisfying $A(:,p)=AP^T$ is $P=I_n(p,:)$,
+the transpose of the matrix printed in the Sparse QR Challenge. The formal statement uses the
+explicit column reindexing and normal-matrix reindexing. -/
 theorem seminormal_cholesky {m n : ℕ} {A Q : Matrix (Fin m) (Fin n) ℝ}
     {R : Matrix (Fin n) (Fin n) ℝ} (σ : Equiv.Perm (Fin n)) (hQR : A.submatrix id σ = Q * R)
     (hQ : Qᵀ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) :
@@ -1138,7 +1192,10 @@ theorem seminormal_cholesky {m n : ℕ} {A Q : Matrix (Fin m) (Fin n) ℝ}
 `GolubVanLoan.Chapter11.seminormal_cholesky`, and let $x \in \mathbb{R}^n$ and
 $b \in \mathbb{R}^m$. Then the normal equations $A^TAx = A^Tb$ hold if and only if
 $$R^TR\,(Px) = P(A^Tb).$$
-The factor $Q$ is not needed to form these equations. -/
+The factor $Q$ is not needed to form these equations.
+
+**Reading.** The permuted unknown is `x ∘ σ`. If $P$ denotes the row permutation matrix
+$I_n(p,:)$, this is $Px$ and the reordered data matrix is $AP^T$. -/
 theorem seminormal_normalEquations {m n : ℕ} {A Q : Matrix (Fin m) (Fin n) ℝ}
     {R : Matrix (Fin n) (Fin n) ℝ} (σ : Equiv.Perm (Fin n)) (hQR : A.submatrix id σ = Q * R)
     (hQ : Qᵀ * Q = 1) (hR : R.IsUpperTriangular) (hd : ∀ i, 0 < R i i) (x : Fin n → ℝ)
@@ -1181,7 +1238,11 @@ The program assumes $n \le m$, the least-squares setting of §11.1.8.
 The rotation is `GolubVanLoan.Chapter05.algorithm_5_1_3` (Algorithm 5.1.3) of
 $(a_{jj}, a_{ij})$, and the update is the row helper `GolubVanLoan.Chapter05.givensApplyLeft` on
 the columns $j, \dots, n - 1$ (algorithm conventions 5, 10 and 13). The test $a_{ij} \neq 0$ is
-an exact comparison on the computed entry (algorithm convention 1). -/
+an exact comparison on the computed entry (algorithm convention 1).
+
+**Reading.** Same row/column order and skip rule for tall or square matrices, with rounded plane
+operations.
+-/
 noncomputable def rowGivensQR {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m n : ℕ}
     (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) : M (Matrix (Fin m) (Fin n) ℝ) :=
   (List.finRange m).foldlM (fun (A : Matrix (Fin m) (Fin n) ℝ) (i : Fin m) =>
@@ -1271,7 +1332,10 @@ $b_{ij} - v_i \alpha^{-1} w_j$.
 
 The statement is about the block matrix itself; $P$ and $Q$ do not appear in it. The block
 matrices are indexed by `Fin 1 ⊕ Fin n`, and the Schur complement is
-`Matrix.schurComplementSingle` at the index `Sum.inl 0`. -/
+`Matrix.schurComplementSingle` at the index `Sum.inl 0`.
+
+**Reading.** States factor identity for reordered blocks, with explicit nonzero pivot.
+-/
 theorem equation_11_1_10 {n : ℕ} {α : ℝ} (hα : α ≠ 0) (v w : Fin n → ℝ)
     (B : Matrix (Fin n) (Fin n) ℝ) :
     fromBlocks (of fun _ _ => α) (of fun (_ : Fin 1) j => w j) (of fun i (_ : Fin 1) => v i) B =

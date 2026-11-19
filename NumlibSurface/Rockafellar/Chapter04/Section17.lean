@@ -74,6 +74,9 @@ empty.
 
 ## Deviations from the source
 
+* **Theorem 17.1**, simplex decomposition (reading). The generalized simplex formula is stated
+  for a nonempty point set so its dimension is a natural number. The directions-only case is
+  the empty hull, as stated by `Rockafellar.convexHullPD_empty_points`.
 * **Corollary 17.1.2** (generalization). The source assumes $x \neq 0$ and $C_i \neq \emptyset$;
   neither is needed. See `Rockafellar.corollary_17_1_2`.
 * **Corollary 17.1.4** (correction). The printed statement is false; a counterexample on
@@ -81,11 +84,13 @@ empty.
 * **Corollary 17.1.6** (correction). The printed statement is false; a counterexample on
   $\mathbb{R}^1$ is `Rockafellar.corollary_17_1_6_false`.
 * **Theorem 17.3** (correction). The statement needs the hypothesis $0 \notin S^*$, which the source
-  omits; the source's hypotheses $S^* \neq \emptyset$ and $x^* \neq 0$ are not needed. See
-  `Rockafellar.theorem_17_3`.
+  omits. For $S^* = \{(0,0)\} \cup \{(1/k,1/k^2) \mid k \ge 1\}$ in dimension one, the valid
+  inequality $x \le 0$ has no representation of the stated form. The Lean result also admits
+  empty $S^*$ and zero target normals. See `Rockafellar.theorem_17_3`.
 
 ## Not formalized
 
+* **Corollary 17.1.5**, the formula restricted to affinely independent tuples.
 * **Corollary 17.2.1**, attainment of the infimum in the formula for $\operatorname{conv} f$. Only
   the closedness and properness of $\operatorname{conv} f$ are formalized.
 -/
@@ -211,9 +216,11 @@ $$\operatorname{conv} S = \bigcup \{\operatorname{conv} S' \mid S' \subseteq S \
 A generalized $d$-dimensional simplex (page 155 of the source) is the convex hull of $d + 1$
 affinely independent points and directions: the points are its ordinary vertices, and the
 directions are its vertices at infinity. Affine independence is `ConvexAnalysis.AffineIndepPD`,
-and $d$ is the natural number `m` with `Rockafellar.dim (convexHullPD P D) = m`. The hypothesis
-$P \neq \emptyset$ corresponds to the convention $\operatorname{conv} S = \emptyset$ for a set
-of directions only. -/
+and $d$ is the natural number `m` with `Rockafellar.dim (convexHullPD P D) = m`.
+
+**Reading.** The book describes the union for all mixed sets. The Lean declaration treats
+nonempty point sets, for which the dimension is a natural number. If there are no points,
+`Rockafellar.convexHullPD_empty_points` gives the empty hull. -/
 theorem theorem_17_1_simplex {P D : Set (Rn n)} (hP : P.Nonempty) {m : ℕ}
     (hm : dim (convexHullPD P D) = (m : ℤ)) :
     convexHullPD P D =
@@ -293,7 +300,8 @@ $$(\operatorname{conv} f)(x) = \inf \Bigl\{ \sum_{i=1}^{n+1} \lambda_i f(x_i) \B
 
 The points $x_i$ need not be distinct, and the coefficients can be zero, so the combinations are
 indexed by `Fin (n + 1)`. The convention $0 \cdot (+\infty) = 0$ of the extended reals makes a
-zero coefficient harmless. The function $\operatorname{conv} f$ is `ConvexAnalysis.convHullFn f`. -/
+zero coefficient harmless. The function $\operatorname{conv} f$ is `ConvexAnalysis.convHullFn f`.
+The source also gives a version restricted to affinely independent $(n+1)$-tuples. -/
 theorem corollary_17_1_5 {f : Rn n → EReal} (hf : ∀ x, f x ≠ ⊥) (x : Rn n) :
     convHullFn f x = sInf {z : EReal | ∃ (w : Fin (n + 1) → ℝ) (p : Fin (n + 1) → Rn n),
       (∀ i, 0 ≤ w i) ∧ ∑ i, w i = 1 ∧ ∑ i, w i • p i = x ∧
@@ -341,11 +349,12 @@ distinct pairs $(x_i^*, \mu_i^*) \in S^*$ and coefficients $\lambda_i \ge 0$ wit
 $$b = \lambda_1 x_1^* + \cdots + \lambda_k x_k^*, \qquad \lambda_1 \mu_1^* + \cdots + \lambda_k
   \mu_k^* \le \beta.$$
 
-**Correction.** The source does not assume $(0, 0) \notin S^*$, and the statement is false
-without it. The proof in the source concludes that the origin of $\mathbb{R}^{n+1}$ lies outside
-$\operatorname{conv}(S^* \cup \{(0, 1)\})$, and this fails as soon as $(0, 0) \in S^*$. The
-source also assumes $S^* \neq \emptyset$ and a normal vector $x^* \neq 0$ of the half-space.
-These hypotheses are not needed: the empty combination covers $b = 0$.
+**Correction.** The book omits $(0, 0) \notin S^*$. In dimension one, take
+$S^* = \{(0,0)\} \cup \{(1/k,1/k^2) \mid k \in \mathbb{N},\ k \ge 1\}$.
+This is closed and bounded, and its inequalities define $(-\infty,0]$. Any nonnegative
+combination with normal $1$ uses a nonzero coefficient at a pair with positive second
+coordinate, so it cannot have right-hand side at most $0$. The Lean result also admits
+empty $S^*$ and zero target normals.
 
 The set $C$ is `ConvexAnalysis.inequalitySet (pairing n) S`, and its dimension is
 `Rockafellar.dim`. -/
@@ -424,7 +433,11 @@ $n = 1$ only one index is admitted, and $\lambda x_1 = e$ forces the value $-1$ 
 
 The elimination that proves Corollary 17.1.3 has no conical analogue. An affine dependency has
 coefficients with sum zero, so both signs occur and one sign can be chosen to lower the cost. A
-linear dependency between vectors of a cone can have all its coefficients of one sign. -/
+linear dependency between vectors of a cone can have all its coefficients of one sign.
+
+**Correction.** A formal counterexample refutes the printed positive-homogeneous infimum formula for
+a family of two linear functions in dimension one.
+-/
 theorem corollary_17_1_4_false : ¬ corollary_17_1_4 := by
   classical
   intro hcor
@@ -501,7 +514,10 @@ $(y + s, -|y + s|)$ and $(y - s, -|y - s|)$ is $(y, \alpha)$ with $\alpha \le -s
 $\operatorname{conv} f$ is identically $-\infty$, and so is the generated function $k$. At
 $x = e \neq 0$, however, $n = 1$ admits one vector, and $\lambda x_1 = e$ with $\lambda \ge 0$
 forces $\lambda f(x_1) = -1$, so the infimum is $-1$. This is the failure of Corollary 17.1.4
-for a family with one function. -/
+for a family with one function.
+
+**Correction.** The negative absolute-value function in dimension one refutes the printed formula.
+-/
 theorem corollary_17_1_6_false : ¬ corollary_17_1_6 := by
   classical
   intro hcor

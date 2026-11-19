@@ -53,6 +53,30 @@ The Krylov subspace and the grade are identified with the backbone objects `Kryl
   module.
 * Section 6.1 is the introduction of the chapter. Its one substantive paragraph is stated here with
   Section 6.2.
+
+## Deviations from the source
+
+* **Generalization.** The matrix operator in §6.2 is available over real and complex scalars. See
+  `SaadSparse.Chapter06.op`.
+* **Generalization.** The span in (6.2) includes complex scalars and zero steps. See
+  `SaadSparse.Chapter06.krylov`, `SaadSparse.Chapter06.krylov_mono`.
+* **Generalization.** The minimal-polynomial and grade statements are available over real and
+  complex scalars. See `SaadSparse.Chapter06.grade`, `SaadSparse.Chapter06.minpolyVec`,
+  `SaadSparse.Chapter06.monic_natDegree_eq_grade`, `SaadSparse.Chapter06.grade_le_natDegree`,
+  `SaadSparse.Chapter06.minpolyVec_monic`, `SaadSparse.Chapter06.natDegree_minpolyVec`,
+  `SaadSparse.Chapter06.op_aeval_minpolyVec`, `SaadSparse.Chapter06.grade_le_card`.
+* **Generalization.** The polynomial characterization uses strict degree bounds and includes zero
+  steps. See `SaadSparse.Chapter06.krylov_eq_map_degreeLT`,
+  `SaadSparse.Chapter06.mem_krylov_iff_exists_aeval`, `SaadSparse.Chapter06.aeval_mem_krylov`.
+* **Generalization.** The invariance, stabilization and dimension results have real and complex
+  formulations. See `SaadSparse.Chapter06.krylov_grade_mem_invtSubmodule`,
+  `SaadSparse.Chapter06.krylov_eq_of_grade_le`, `SaadSparse.Chapter06.proposition_6_1`,
+  `SaadSparse.Chapter06.finrank_krylov`, `SaadSparse.Chapter06.finrank_krylov_eq_iff`.
+* **Generalization.** The section is defined for arbitrary maps onto the subspace, with idempotence
+  used in the identities. See `SaadSparse.Chapter06.section'`.
+* **Generalization.** The two polynomial compression identities generalize to complex scalars. See
+  `SaadSparse.Chapter06.coe_aeval_section'`,
+  `SaadSparse.Chapter06.apply_aeval_eq_coe_aeval_section'`.
 -/
 
 open Polynomial
@@ -70,7 +94,11 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-- **Section 6.2** of [saad2003iterative]. The **operator** $x \mapsto Ax$ on $\mathbb{K}^n$
 defined by a square matrix $A$. The book writes it $A$ too.
 
-It is `Matrix.toEuclideanLin A`. -/
+It is `Matrix.toEuclideanLin A`.
+
+**Generalization.** The source's Krylov subspace discussion uses real vectors. Lean's operator view
+also works over the complex scalars.
+-/
 abbrev op (A : Matrix (Fin n) (Fin n) 𝕜) : 𝔼 →ₗ[𝕜] 𝔼 := Matrix.toEuclideanLin A
 
 /-- For a polynomial $p$, the operator of the matrix $p(A)$ is $p$ evaluated at the operator of $A$.
@@ -85,7 +113,11 @@ theorem op_aeval (A : Matrix (Fin n) (Fin n) 𝕜) (p : 𝕜[X]) :
 index $m$ is
 $$\mathcal{K}_m(A, v) = \operatorname{span}\{v, Av, A^2 v, \dots, A^{m-1} v\}.$$
 
-For $m = 0$ it is the zero subspace. -/
+For $m = 0$ it is the zero subspace.
+
+**Generalization.** The definition and monotonicity are available over the complex scalars as well
+as the real scalars of the source discussion. The zero-step Krylov span is the zero subspace.
+-/
 def krylov (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) (m : ℕ) : Submodule 𝕜 𝔼 :=
   Submodule.span 𝕜 (Set.range fun i : Fin m => op (A ^ (i : ℕ)) v)
 
@@ -108,7 +140,11 @@ theorem self_mem_krylov {m : ℕ} (h : 0 < m) : v ∈ krylov A v m := by
 
 /-- **Section 6.2** of [saad2003iterative]. The Krylov subspaces increase with $m$: if $k \le l$,
 then $\mathcal{K}_k(A, v) \subseteq \mathcal{K}_l(A, v)$. By Proposition 6.1 they stop
-increasing at the grade of $v$. -/
+increasing at the grade of $v$.
+
+**Generalization.** The definition and monotonicity are available over the complex scalars as well
+as the real scalars of the source discussion. The zero-step Krylov span is the zero subspace.
+-/
 theorem krylov_mono {k l : ℕ} (h : k ≤ l) : krylov A v k ≤ krylov A v l := by
   rw [krylov_eq, krylov_eq]
   exact Krylov.subspace_mono (op A) v h
@@ -125,19 +161,31 @@ $p(A) v = 0$.
 
 The set of such degrees is not empty by the Cayley–Hamilton theorem, so the infimum is attained
 (`SaadSparse.Chapter06.monic_natDegree_eq_grade`). The grade of $v = 0$ is $0$, since the
-constant polynomial $1$ annihilates it. -/
+constant polynomial $1$ annihilates it.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 noncomputable def grade (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) : ℕ :=
   sInf {d : ℕ | ∃ p : 𝕜[X], p.Monic ∧ p.natDegree = d ∧ op (aeval A p) v = 0}
 
 /-- The grade is attained: there is a monic polynomial $p$ of degree $\mu$, the grade of $v$, with
-$p(A) v = 0$. -/
+$p(A) v = 0$.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 theorem monic_natDegree_eq_grade :
     ∃ p : 𝕜[X], p.Monic ∧ p.natDegree = grade A v ∧ op (aeval A p) v = 0 :=
   Nat.sInf_mem (s := {d : ℕ | ∃ p : 𝕜[X], p.Monic ∧ p.natDegree = d ∧ op (aeval A p) v = 0})
     (exists_monic_natDegree_eq A v)
 
 /-- The grade is a lower bound: if $p$ is monic and $p(A) v = 0$, then the grade of $v$ is at most
-$\deg p$. -/
+$\deg p$.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 theorem grade_le_natDegree {p : 𝕜[X]} (hp : p.Monic) (h : op (aeval A p) v = 0) :
     grade A v ≤ p.natDegree :=
   Nat.sInf_le ⟨p, hp, rfl, h⟩
@@ -147,19 +195,35 @@ monic polynomial $p$ of the least possible degree with $p(A) v = 0$. Its degree 
 $v$.
 
 It is chosen among the monic annihilators of degree $\mu$
-(`SaadSparse.Chapter06.monic_natDegree_eq_grade`). -/
+(`SaadSparse.Chapter06.monic_natDegree_eq_grade`).
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 noncomputable def minpolyVec (A : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) : 𝕜[X] :=
   (monic_natDegree_eq_grade A v).choose
 
-/-- The minimal polynomial of $v$ is monic. -/
+/-- The minimal polynomial of $v$ is monic.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 theorem minpolyVec_monic : (minpolyVec A v).Monic :=
   (monic_natDegree_eq_grade A v).choose_spec.1
 
-/-- The degree of the minimal polynomial of $v$ is the grade of $v$. -/
+/-- The degree of the minimal polynomial of $v$ is the grade of $v$.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 theorem natDegree_minpolyVec : (minpolyVec A v).natDegree = grade A v :=
   (monic_natDegree_eq_grade A v).choose_spec.2.1
 
-/-- The minimal polynomial $p$ of $v$ annihilates $v$: $p(A) v = 0$. -/
+/-- The minimal polynomial $p$ of $v$ annihilates $v$: $p(A) v = 0$.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 theorem op_aeval_minpolyVec : op (aeval A (minpolyVec A v)) v = 0 :=
   (monic_natDegree_eq_grade A v).choose_spec.2.2
 
@@ -178,7 +242,11 @@ theorem grade_eq : grade A v = Krylov.grade (op A) v := by
 $A \in \mathbb{K}^{n \times n}$ is at most $n$.
 
 The proof uses the Cayley–Hamilton theorem: the characteristic polynomial of $A$ is monic of
-degree $n$ and annihilates $v$. -/
+degree $n$ and annihilates $v$.
+
+**Generalization.** Lean uses monic annihilators over the real or complex scalars, with grade zero
+for the zero vector. The source gives these notions in the real Krylov space.
+-/
 theorem grade_le_card : grade A v ≤ n := by
   rw [grade_eq]
   simpa using Krylov.grade_le_finrank (op A) v
@@ -209,6 +277,9 @@ theorem grade_normalize {r : EuclideanSpace 𝕜 (Fin n)} (hr : r ≠ 0) :
 /-- **Section 6.2** of [saad2003iterative], the first property after (6.2). The Krylov subspace is
 the image of the polynomials of degree less than $m$ under $p \mapsto p(A) v$:
 $$\mathcal{K}_m(A, v) = \{p(A) v : \deg p < m\}.$$
+
+**Generalization.** The polynomial image description is valid over real and complex scalars. With
+zero steps the degree condition admits the zero polynomial, whose degree is bottom.
 -/
 theorem krylov_eq_map_degreeLT (m : ℕ) :
     krylov A v m = (Polynomial.degreeLT 𝕜 m).map (Krylov.polyEval (op A) v) := by
@@ -216,12 +287,20 @@ theorem krylov_eq_map_degreeLT (m : ℕ) :
 
 /-- **Section 6.2** of [saad2003iterative], the first property after (6.2), pointwise. A vector $x$
 lies in $\mathcal{K}_m(A, v)$ if and only if $x = p(A) v$ for some polynomial $p$ of degree at
-most $m - 1$. -/
+most $m - 1$.
+
+**Generalization.** The polynomial image description is valid over real and complex scalars. With
+zero steps the degree condition admits the zero polynomial, whose degree is bottom.
+-/
 theorem mem_krylov_iff_exists_aeval {x : 𝔼} {m : ℕ} :
     x ∈ krylov A v m ↔ ∃ p : 𝕜[X], p.degree < m ∧ aeval (op A) p v = x := by
   rw [krylov_eq, Krylov.mem_subspace_iff_exists_aeval]
 
-/-- If $\deg p < m$, then $p(A) v \in \mathcal{K}_m(A, v)$. -/
+/-- If $\deg p < m$, then $p(A) v \in \mathcal{K}_m(A, v)$.
+
+**Generalization.** The polynomial image description is valid over real and complex scalars. With
+zero steps the degree condition admits the zero polynomial, whose degree is bottom.
+-/
 theorem aeval_mem_krylov {p : 𝕜[X]} {m : ℕ} (hp : p.degree < m) :
     aeval (op A) p v ∈ krylov A v m :=
   (mem_krylov_iff_exists_aeval A v).2 ⟨p, hp, rfl⟩
@@ -229,7 +308,11 @@ theorem aeval_mem_krylov {p : 𝕜[X]} {m : ℕ} (hp : p.degree < m) :
 /-! ### Proposition 6.1 -/
 
 /-- Let $\mu$ be the grade of $v$. Then $\mathcal{K}_\mu(A, v)$ is invariant under $A$. This is the
-first part of Proposition 6.1 of [saad2003iterative]. -/
+first part of Proposition 6.1 of [saad2003iterative].
+
+**Generalization.** Lean proves invariance, stabilization and the dimension formula over complex as
+well as real scalars, while the source discussion is over the reals.
+-/
 theorem krylov_grade_mem_invtSubmodule :
     krylov A v (grade A v) ∈ Module.End.invtSubmodule (op A) := by
   rw [krylov_eq, grade_eq]
@@ -237,7 +320,11 @@ theorem krylov_grade_mem_invtSubmodule :
 
 /-- Let $\mu$ be the grade of $v$. If $m \ge \mu$, then
 $\mathcal{K}_m(A, v) = \mathcal{K}_\mu(A, v)$. This is the second part of Proposition 6.1 of
-[saad2003iterative]. -/
+[saad2003iterative].
+
+**Generalization.** Lean proves invariance, stabilization and the dimension formula over complex as
+well as real scalars, while the source discussion is over the reals.
+-/
 theorem krylov_eq_of_grade_le {m : ℕ} (h : grade A v ≤ m) :
     krylov A v m = krylov A v (grade A v) := by
   rw [krylov_eq, krylov_eq, grade_eq]
@@ -246,13 +333,21 @@ theorem krylov_eq_of_grade_le {m : ℕ} (h : grade A v ≤ m) :
 /-! ### Proposition 6.2 and (6.3)–(6.4) -/
 
 /-- For every $m$, $\dim \mathcal{K}_m(A, v) = \min\{m, \mu\}$, where $\mu$ is the grade of $v$.
-This is (6.4) of [saad2003iterative] over $\mathbb{R}$ or $\mathbb{C}$. -/
+This is (6.4) of [saad2003iterative] over $\mathbb{R}$ or $\mathbb{C}$.
+
+**Generalization.** Lean proves invariance, stabilization and the dimension formula over complex as
+well as real scalars, while the source discussion is over the reals.
+-/
 theorem finrank_krylov (m : ℕ) : Module.finrank 𝕜 (krylov A v m) = min m (grade A v) := by
   rw [krylov_eq, grade_eq]
   exact Krylov.finrank_subspace (op A) v m
 
 /-- For every $m$, $\dim \mathcal{K}_m(A, v) = m$ if and only if $m \le \mu$, where $\mu$ is the
-grade of $v$. This is (6.3) of [saad2003iterative] over $\mathbb{R}$ or $\mathbb{C}$. -/
+grade of $v$. This is (6.3) of [saad2003iterative] over $\mathbb{R}$ or $\mathbb{C}$.
+
+**Generalization.** Lean proves invariance, stabilization and the dimension formula over complex as
+well as real scalars, while the source discussion is over the reals.
+-/
 theorem finrank_krylov_eq_iff {m : ℕ} :
     Module.finrank 𝕜 (krylov A v m) = m ↔ m ≤ grade A v := by
   rw [finrank_krylov, min_eq_left_iff]
@@ -280,7 +375,12 @@ private theorem toKrylov_eq_self {m : ℕ} {Q : 𝔼 →ₗ[𝕜] 𝔼} (hidem :
 the operator $A_m = Q A|_{\mathcal{K}_m}$ on $\mathcal{K}_m$. This is the operator of
 Proposition 6.3 of [saad2003iterative].
 
-The definition does not require $Q$ to be idempotent; the theorems about it do. -/
+The definition does not require $Q$ to be idempotent; the theorems about it do.
+
+**Generalization.** Lean defines the compression for any map with range the Krylov subspace,
+including nonidempotent maps. The source defines the section using a projector. The polynomial
+identities separately require idempotence.
+-/
 noncomputable def section' (m : ℕ) (Q : 𝔼 →ₗ[𝕜] 𝔼) (hQ : LinearMap.range Q = krylov A v m) :
     krylov A v m →ₗ[𝕜] krylov A v m :=
   compressionBy (toKrylov m Q hQ) (op A)
@@ -288,7 +388,12 @@ noncomputable def section' (m : ℕ) (Q : 𝔼 →ₗ[𝕜] 𝔼) (hQ : LinearMa
 /-- Let $m \ge 1$, let $Q$ be a projector with range $\mathcal{K}_m$, and let
 $A_m = Q A|_{\mathcal{K}_m}$. Then for every polynomial $q$ of degree at most $m - 1$,
 $q(A) v = q(A_m) v$. This is the first part of Proposition 6.3 of [saad2003iterative], over
-$\mathbb{R}$ or $\mathbb{C}$. -/
+$\mathbb{R}$ or $\mathbb{C}$.
+
+**Generalization.** These clauses hold over real and complex scalars. They require a positive number
+of steps so the starting vector is available as a member of the Krylov space, and make the
+idempotence and range conditions explicit.
+-/
 theorem coe_aeval_section' {m : ℕ} (hm : 0 < m) {Q : 𝔼 →ₗ[𝕜] 𝔼} (hidem : IsIdempotentElem Q)
     (hQ : LinearMap.range Q = krylov A v m) {q : 𝕜[X]} (hq : q.degree < m) :
     ((aeval (section' m Q hQ) q ⟨v, self_mem_krylov A v hm⟩ : krylov A v m) : 𝔼)
@@ -303,7 +408,12 @@ theorem coe_aeval_section' {m : ℕ} (hm : 0 < m) {Q : 𝔼 →ₗ[𝕜] 𝔼} (
 /-- Let $m \ge 1$, let $Q$ be a projector with range $\mathcal{K}_m$, and let
 $A_m = Q A|_{\mathcal{K}_m}$. Then for every polynomial $q$ of degree at most $m$,
 $Q \, q(A) v = q(A_m) v$. This is the second part of Proposition 6.3 of [saad2003iterative],
-over $\mathbb{R}$ or $\mathbb{C}$. -/
+over $\mathbb{R}$ or $\mathbb{C}$.
+
+**Generalization.** These clauses hold over real and complex scalars. They require a positive number
+of steps so the starting vector is available as a member of the Krylov space, and make the
+idempotence and range conditions explicit.
+-/
 theorem apply_aeval_eq_coe_aeval_section' {m : ℕ} (hm : 0 < m) {Q : 𝔼 →ₗ[𝕜] 𝔼}
     (hidem : IsIdempotentElem Q) (hQ : LinearMap.range Q = krylov A v m) {q : 𝕜[X]}
     (hq : q.degree ≤ m) :
@@ -326,7 +436,11 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin
 /-- **Proposition 6.1** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$, let
 $v \in \mathbb{R}^n$, and let $\mu$ be the grade of $v$ with respect to $A$. Then
 $\mathcal{K}_\mu$ is invariant under $A$, and $\mathcal{K}_m = \mathcal{K}_\mu$ for all
-$m \ge \mu$. -/
+$m \ge \mu$.
+
+**Generalization.** Lean proves invariance, stabilization and the dimension formula over complex as
+well as real scalars, while the source discussion is over the reals.
+-/
 theorem proposition_6_1 : krylov A v (grade A v) ∈ Module.End.invtSubmodule (op A) ∧
     ∀ m, grade A v ≤ m → krylov A v m = krylov A v (grade A v) :=
   ⟨krylov_grade_mem_invtSubmodule A v, fun _ h => krylov_eq_of_grade_le A v h⟩

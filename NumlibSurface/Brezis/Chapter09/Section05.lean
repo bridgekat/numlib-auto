@@ -156,6 +156,10 @@ formula `BoundaryData.integral_laplacian_mul_add_eq` and the density theorem
 
 ## Deviations from the source
 
+* **Examples 1–2, solution predicates** (generalization). The predicates are available for
+  arbitrary open sets. The separate versions using Mathlib's closure regularity make a
+  stronger assumption on the classical solution. See `Brezis.Chapter09.IsClassicalSolutionDirichlet`
+  and `Brezis.Chapter09.isClassicalSolutionDirichlet_of_contDiffOn`.
 * **Theorem 9.21** (generalization). The source assumes that $\Omega$ is bounded. The existence,
   uniqueness and Dirichlet's principle hold for every open set. See `Brezis.Chapter09.theorem_9_21`
   and `Brezis.Chapter09.theorem_9_21_isMinOn`.
@@ -164,15 +168,30 @@ formula `BoundaryData.integral_laplacian_mul_add_eq` and the density theorem
   hypothesis. See `Brezis.Chapter09.example_9_1_stepD_of_continuous`.
 * **Example 2, the set $K$** (generalization). The source takes $\tilde g \in H^1(\Omega) \cap
   C(\overline\Omega)$ with $\tilde g = g$ on $\Gamma$. The definition takes any
-  $\tilde g \in H^1(\Omega)$. See `Brezis.Chapter09.admissibleSetInhomogeneous`.
+  $\tilde g \in H^1(\Omega)$. Existence and minimization also hold for any lift on arbitrary
+  open sets. See `Brezis.Chapter09.admissibleSetInhomogeneous` and
+  `Brezis.Chapter09.proposition_9_22`.
+* **Example 3, the classical solution predicate** (reading). The coefficient regularity is an
+  external hypothesis, and the predicate uses Mathlib's total Fréchet derivative. See
+  `Brezis.Chapter09.IsClassicalSolutionElliptic`.
 * **Example 3, existence and the symmetric case** (generalization). The source assumes
   $a_{ij} \in C^1(\overline\Omega)$. The statements assume only $a_{ij} \in C(\overline\Omega)$. See
   `Brezis.Chapter09.example_9_3` and `Brezis.Chapter09.example_9_3_isMinOn`.
+* **Example 3, Step A and symmetry** (generalization and reading). Step A can omit the
+  ellipticity assumption. Symmetry in the minimization statement is equality of the global
+  coefficient functions. See `Brezis.Chapter09.example_9_3_stepA` and
+  `Brezis.Chapter09.example_9_3_isMinOn`.
 * **Remark 23, second clause** (reading). The source leaves the hypothesis $N \ge 1$ implicit. See
   `Brezis.Chapter09.remark_9_23_zero_drift`.
 * **Proposition 9.24** (generalization). The source assumes that $\Omega$ is bounded and of class
   $C^1$. The statement holds for every open set. See `Brezis.Chapter09.proposition_9_24` and
   `Brezis.Chapter09.proposition_9_24_isMinOn`.
+* **Example 4, classical predicate and Step D** (reading and correction). The normal field is a
+  parameter in the predicate. The library recovers the interior equation almost everywhere,
+  then pointwise for a continuous representative of the datum. The boundary result uses
+  regularity up to the boundary, while Step D starts with $u \in C^2(\Omega)$ in the source. See
+  `Brezis.Chapter09.IsClassicalSolutionNeumann`, `Brezis.Chapter09.example_9_4_stepD_interior`
+  and `Brezis.Chapter09.example_9_4_stepD`.
 
 ## Not formalized
 
@@ -207,7 +226,10 @@ Here $u \in C^2(\overline\Omega)$ has the meaning of footnote 16 of Section 9.3:
 `ContDiffOnClosure ℝ 2 u Ω` ($u$ is $C^2$ on $\Omega$ and its derivatives of order at most $2$
 extend continuously to $\overline\Omega$), and $u$ is continuous on $\overline\Omega$. The
 boundary $\Gamma$ is `frontier Ω`, and the Laplacian is the one of Mathlib,
-`InnerProductSpace.instLaplacian`. -/
+`InnerProductSpace.instLaplacian`.
+
+**Generalization.** The predicate is available on any open set. Example 1 starts with
+ a bounded open set. -/
 def IsClassicalSolutionDirichlet (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (f u : EuclideanSpace ℝ (Fin N) → ℝ) : Prop :=
   ContDiffOnClosure ℝ 2 u Ω ∧ ContinuousOn u (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) ∧
@@ -219,7 +241,9 @@ $-\Delta u + u = f$ in $\Omega$ and $u = 0$ on $\Gamma$, then $u$ is a classical
 (31) in the sense of `Brezis.Chapter09.IsClassicalSolutionDirichlet`.
 
 The hypothesis gives `ContDiffOnClosure ℝ 2 u Ω` by `ContDiffOn.contDiffOnClosure`, and it gives
-the continuity of $u$ on $\overline\Omega$. -/
+the continuity of $u$ on $\overline\Omega$.
+
+**Reading.** This sufficient condition uses Mathlib's stronger $C^2$ condition on the closure. -/
 theorem isClassicalSolutionDirichlet_of_contDiffOn {f u : 𝔼 → ℝ}
     (hu : ContDiffOn ℝ 2 u (closure (Ω : Set 𝔼))) (heq : ∀ x ∈ Ω, -Δ u x + u x = f x)
     (h0 : EqOn u 0 (frontier (Ω : Set 𝔼))) : IsClassicalSolutionDirichlet Ω f u :=
@@ -235,7 +259,9 @@ v}{\partial x_i}$.
 
 The space $H^1(\Omega)$ is `Brezis.Chapter09.hSpace N Ω` and $H_0^1(\Omega)$ is
 `Brezis.Chapter09.hZeroSpace N Ω`. The weak derivative $\partial u / \partial x_i$ is
-`Brezis.Chapter09.partialDeriv u i`, and the function of $u$ is `SobolevMultiIndex.fn u`. -/
+`Brezis.Chapter09.partialDeriv u i`, and the function of $u$ is `SobolevMultiIndex.fn u`.
+
+**Generalization.** The weak predicate is available on any open set. -/
 def IsWeakSolutionDirichlet (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) (u : hSpace N Ω) : Prop :=
   u ∈ hZeroSpace N Ω ∧ ∀ v ∈ hZeroSpace N Ω,
@@ -299,7 +325,9 @@ there is $U \in H^1(\Omega)$ whose function equals $u$ almost everywhere on $\Om
 a weak solution of (31).
 
 The proof combines `Brezis.Chapter09.example_9_1_stepA` with
-`Brezis.Chapter09.isClassicalSolutionDirichlet_of_contDiffOn`. -/
+`Brezis.Chapter09.isClassicalSolutionDirichlet_of_contDiffOn`.
+
+**Reading.** This version uses Mathlib's stronger $C^2$ condition on the closure. -/
 theorem example_9_1_stepA_of_contDiffOn (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : 𝔼 → ℝ}
     (hu : ContDiffOn ℝ 2 u (closure (Ω : Set 𝔼))) {f : 𝔼 → ℝ}
     (heq : ∀ x ∈ Ω, -Δ u x + u x = f x) (h0 : EqOn u 0 (frontier (Ω : Set 𝔼)))
@@ -373,7 +401,10 @@ The boundary condition follows from Theorem 9.17, and the equation from Corollar
 the backbone's `Elliptic.laplacian_ae_eq_of_isGalerkinSolution`. With a continuous datum the
 equation holds everywhere, see `Brezis.Chapter09.example_9_1_stepD_of_continuous`. The statement
 does not assume that $\Omega$ is bounded. "Of class $C^1$" is `Brezis.Chapter09.IsClassC1`, and
-$\mathbb{R}^N$ is written with $N = d + 1$. -/
+$\mathbb{R}^N$ is written with $N = d + 1$.
+
+**Correction.** For a general $L^2$ datum the recovered interior equation holds almost
+ everywhere. A pointwise equation with a chosen continuous representative is stated separately. -/
 theorem example_9_1_stepD (hΩ : IsClassC1 (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
     {U : hSpace (d + 1) Ω} (hU : IsWeakSolutionDirichlet Ω f U) {u : 𝔼 → ℝ}
     (hUu : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u)
@@ -431,7 +462,10 @@ noncomputable abbrev admissibleSetInhomogeneous (Ω : Opens (EuclideanSpace ℝ 
   Elliptic.admissibleSet Ω g
 
 /-- Let $\tilde g, v \in H^1(\Omega)$. Then $v$ belongs to the set $K$ of Example 2 if and only if
-$v - \tilde g \in H_0^1(\Omega)$. -/
+$v - \tilde g \in H_0^1(\Omega)$.
+
+**Generalization.** The lift is any element of $H^1$. The source starts with a lift continuous
+ on the closure with prescribed values on the boundary. -/
 theorem mem_admissibleSetInhomogeneous_iff {g v : hSpace N Ω} :
     v ∈ admissibleSetInhomogeneous Ω g ↔ v - g ∈ hZeroSpace N Ω :=
   Iff.rfl
@@ -446,7 +480,10 @@ $\Gamma$. Then $\tilde g$ and $\tilde g_2$ define the same set $K$.
 The source says: "it follows from Theorem 9.17 that $K$ is independent of the choice of
 $\tilde g$ and depends only on $g$". Indeed, $k_1 - k_2 \in H^1(\Omega) \cap C(\overline\Omega)$
 vanishes on $\Gamma$, so it lies in $H_0^1(\Omega)$ by Theorem 9.17, (i) ⇒ (ii), which needs no
-regularity of $\Omega$. -/
+regularity of $\Omega$.
+
+**Generalization.** Nonemptiness, closedness and convexity hold for any $H^1$ lift and any
+ open set. Independence from the lift uses continuous representatives agreeing on the boundary. -/
 theorem example_9_2 (g : hSpace N Ω) :
     (admissibleSetInhomogeneous Ω g).Nonempty ∧ IsClosed (admissibleSetInhomogeneous Ω g) ∧
     Convex ℝ (admissibleSetInhomogeneous Ω g) ∧
@@ -469,7 +506,9 @@ $$-\Delta u + u = f \text{ in } \Omega, \qquad u = g \text{ on } \Gamma,$$
 if $u \in C^2(\overline\Omega)$, $-\Delta u(x) + u(x) = f(x)$ for every $x \in \Omega$, and
 $u(x) = g(x)$ for every $x \in \Gamma$.
 
-The class $C^2(\overline\Omega)$ is read as in `Brezis.Chapter09.IsClassicalSolutionDirichlet`. -/
+The class $C^2(\overline\Omega)$ is read as in `Brezis.Chapter09.IsClassicalSolutionDirichlet`.
+
+**Generalization.** The predicate is available on any open set. -/
 def IsClassicalSolutionInhomogeneous (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (f g u : EuclideanSpace ℝ (Fin N) → ℝ) : Prop :=
   ContDiffOnClosure ℝ 2 u Ω ∧ ContinuousOn u (closure (Ω : Set (EuclideanSpace ℝ (Fin N)))) ∧
@@ -482,7 +521,9 @@ $u \in K$ and
 $$\int_\Omega (\nabla u \cdot \nabla v + u v) = \int_\Omega f v \quad \text{for all } v \in
   H_0^1(\Omega). \qquad (34)$$
 
-The set $K$ is `Brezis.Chapter09.admissibleSetInhomogeneous Ω g`. -/
+The set $K$ is `Brezis.Chapter09.admissibleSetInhomogeneous Ω g`.
+
+**Generalization.** The lift is any element of $H^1$, and the open set may be unbounded. -/
 def IsWeakSolutionInhomogeneous (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) (g u : hSpace N Ω) :
     Prop :=
@@ -494,7 +535,9 @@ def IsWeakSolutionInhomogeneous (Ω : Opens (EuclideanSpace ℝ (Fin N)))
 /-- Let $\Omega \subset \mathbb{R}^N$ be open, let $f \in L^2(\Omega)$ and let
 $\tilde g, u \in H^1(\Omega)$. Then $u$ is a weak solution of (33) in the sense of (34) if and
 only if $u \in K$ and $a(u, v) = \int_\Omega f v$ for all $v \in H_0^1(\Omega)$, where $a$ is
-the backbone's form `Elliptic.laplaceForm Ω` and the right-hand side is `Elliptic.load Ω f`. -/
+the backbone's form `Elliptic.laplaceForm Ω` and the right-hand side is `Elliptic.load Ω f`.
+
+**Generalization.** The variational identity holds for any $H^1$ lift on any open set. -/
 theorem isWeakSolutionInhomogeneous_iff (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (g u : hSpace N Ω) :
     IsWeakSolutionInhomogeneous Ω f g u ↔ u ∈ Elliptic.admissibleSet Ω g ∧
@@ -535,7 +578,9 @@ $u \in K$ of (33).
 The proof is the backbone's `Elliptic.existsUnique_isWeakSolution_inhomogeneous`. The proof in
 the source goes through the variational inequality (35)
 (`Brezis.Chapter09.proposition_9_22_iff`) and Stampacchia's theorem (Theorem 5.6) on the
-nonempty closed convex set $K$ (`Brezis.Chapter09.example_9_2`). -/
+nonempty closed convex set $K$ (`Brezis.Chapter09.example_9_2`).
+
+**Generalization.** Existence and uniqueness hold on any open set for any $H^1$ lift. -/
 theorem proposition_9_22 (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) (g : hSpace N Ω) :
     ∃! u : hSpace N Ω, IsWeakSolutionInhomogeneous Ω f g u := by
   simp only [isWeakSolutionInhomogeneous_iff]
@@ -549,7 +594,9 @@ $$\int_\Omega \nabla u \cdot \nabla (v - u) + \int_\Omega u (v - u) \ge \int_\Om
 
 If $u$ is a weak solution, (35) holds with equality. Conversely, $v = u \pm w$ with
 $w \in H_0^1(\Omega)$ gives (34). The proof is the backbone's
-`Elliptic.isWeakSolution_inhomogeneous_iff_forall_le`. -/
+`Elliptic.isWeakSolution_inhomogeneous_iff_forall_le`.
+
+**Generalization.** The equivalence applies to any $H^1$ lift and open set. -/
 theorem proposition_9_22_iff (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) {g u : hSpace N Ω}
     (hu : u ∈ admissibleSetInhomogeneous Ω g) :
     IsWeakSolutionInhomogeneous Ω f g u ↔ ∀ v ∈ admissibleSetInhomogeneous Ω g,
@@ -568,7 +615,9 @@ $$\frac12 \int_\Omega \bigl(|\nabla v|^2 + v^2\bigr) - \int_\Omega f v$$
 over $v \in K$ if and only if $u$ is the weak solution of (33).
 
 The source states ("furthermore") that the weak solution is obtained by this minimum. The proof
-is the backbone's `Elliptic.isMinOn_energy_iff_isWeakSolution_inhomogeneous`. -/
+is the backbone's `Elliptic.isMinOn_energy_iff_isWeakSolution_inhomogeneous`.
+
+**Generalization.** The minimization equivalence applies to any $H^1$ lift and open set. -/
 theorem proposition_9_22_isMinOn (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) {g u : hSpace N Ω}
     (hu : u ∈ admissibleSetInhomogeneous Ω g) :
     IsMinOn (fun v : hSpace N Ω ↦ (1 / 2 : ℝ) * (∫ x in (Ω : Set 𝔼),
@@ -644,9 +693,12 @@ $$-\sum_{i,j} \frac{\partial}{\partial x_j}\Bigl(a_{ij} \frac{\partial u}{\parti
 if $u \in C^2(\overline\Omega)$, the equation holds at every point of $\Omega$, and $u = 0$ at
 every point of $\Gamma$.
 
-The source takes $a_{ij} \in C^1(\overline\Omega)$ and $a_0 \in C(\overline\Omega)$; the
-definition puts no condition on the coefficients, and Step A assumes them. The derivative
-$\partial_j(a_{ij} \partial_i u)(x)$ is the Fréchet derivative of
+**Reading.** The source works with $a_{ij} \in C^1(\overline\Omega)$ and
+$a_0 \in C(\overline\Omega)$. The predicate allows arbitrary coefficients and uses the
+total Fréchet derivative, which returns zero where differentiability fails. Step A assumes
+the source's coefficient regularity, so the derivatives there have their classical meaning.
+
+The derivative $\partial_j(a_{ij} \partial_i u)(x)$ is the Fréchet derivative of
 $y \mapsto a_{ij}(y) \, Du(y) e_i$ at $x$ applied to $e_j$, where $e_i$ is
 `EuclideanSpace.single i 1`. The class $C^2(\overline\Omega)$ is read as in
 `Brezis.Chapter09.IsClassicalSolutionDirichlet`. -/
@@ -667,7 +719,10 @@ $$\int_\Omega \sum_{i,j} a_{ij} \frac{\partial u}{\partial x_i} \frac{\partial v
   (38)$$
 
 The coefficients are functions on $\mathbb{R}^N$, not classes in $L^\infty(\Omega)$.
-`Brezis.Chapter09.isWeakSolutionElliptic_iff` relates (38) to the backbone's Galerkin problem. -/
+`Brezis.Chapter09.isWeakSolutionElliptic_iff` relates (38) to the backbone's Galerkin problem.
+
+**Reading.** The predicate uses plain coefficient functions. The regularity and boundedness
+ needed for the integrals are supplied externally in the source problems and theorems. -/
 def IsWeakSolutionElliptic (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (a : Fin N → Fin N → EuclideanSpace ℝ (Fin N) → ℝ) (a₀ : EuclideanSpace ℝ (Fin N) → ℝ)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) (u : hSpace N Ω) : Prop :=
@@ -688,7 +743,9 @@ $$\int_\Omega \sum_{i,j} a_{ij} \frac{\partial u}{\partial x_i} \frac{\partial v
 
 The coefficients $a_{ij}$ are `A i j` and the $a_i$ are `a₁ i`. The bilinear form (41) of the
 left-hand side is `Elliptic.generalForm Ω A a₁ a₀`; in general it is not symmetric (footnote
-23). -/
+23).
+
+**Reading.** Ellipticity is an external hypothesis in the results about this weak predicate. -/
 def IsWeakSolutionGeneralElliptic (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (A : Fin N → Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
     (a₁ : Fin N → Lp ℝ ⊤ (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N)))))
@@ -789,7 +846,10 @@ of the coefficients in $L^\infty(\Omega)$, with no first-order term. The functio
 $u \in H^1(\Omega) \cap C(\overline\Omega)$ vanishes on $\Gamma$, so it lies in $H_0^1(\Omega)$
 by Theorem 9.17. For $v \in C_c^1(\Omega)$ the identity (38) is the integration by parts
 $\int_\Omega \partial_j(a_{ij} \partial_i u) v = -\int_\Omega a_{ij} \partial_i u \, \partial_j
-v$ of the $C^1$ functions $a_{ij} \partial_i u$, and it extends to $H_0^1(\Omega)$ by density. -/
+v$ of the $C^1$ functions $a_{ij} \partial_i u$, and it extends to $H_0^1(\Omega)$ by density.
+
+**Generalization.** The classical-to-weak argument only needs the regularity of the
+ coefficients. Ellipticity is assumed for the example in the source. -/
 theorem example_9_3_stepA (hb : Bornology.IsBounded (Ω : Set 𝔼)) {a : Fin N → Fin N → 𝔼 → ℝ}
     (ha : ∀ i j, ContDiffOnClosure ℝ 1 (a i j) Ω) {a₀ : 𝔼 → ℝ}
     (ha₀ : ContinuousOn a₀ (closure (Ω : Set 𝔼))) {f u : 𝔼 → ℝ}
@@ -870,7 +930,10 @@ assumed to be continuous on $\overline\Omega$, not of class $C^1(\overline\Omega
 
 The source says that the form (38) is then symmetric and that the weak solution is obtained by
 this minimum. The proof is the backbone's
-`Elliptic.isMinOn_energy_iff_isGalerkinSolution_general_of_symm`. -/
+`Elliptic.isMinOn_energy_iff_isGalerkinSolution_general_of_symm`.
+
+**Reading.** Symmetry here is equality of the coefficient functions on the whole space.
+ The source needs symmetry on $\Omega$. -/
 theorem example_9_3_isMinOn (hb : Bornology.IsBounded (Ω : Set 𝔼))
     {a : Fin (d + 1) → Fin (d + 1) → 𝔼 → ℝ} (ha : ∀ i j, ContinuousOn (a i j) (closure (Ω : Set 𝔼)))
     (hsymm : ∀ i j, a i j = a j i) {α : ℝ} (hell : ellipticityCondition Ω a α) {a₀ : 𝔼 → ℝ}
@@ -1010,7 +1073,10 @@ everywhere, by the maximum principle for $u \in H_0^1(\Omega)$ (footnote 38; the
 `Elliptic.nonneg_of_mem_zero_general_zero_drift` and
 `Elliptic.nonpos_of_mem_zero_general_zero_drift`). Then `Brezis.Chapter09.remark_9_23` applies.
 The case of arbitrary $a_i$ rests on Proposition 9.29 in the general case (Gilbarg–Trudinger),
-which the source does not prove; it is not formalized. -/
+which the source does not prove; it is not formalized.
+
+**Reading.** Only the zero first-order term case of the second clause is stated here.
+ The source also asserts the case of arbitrary bounded first-order terms. -/
 theorem remark_9_23_zero_drift (hN : N ≠ 0) (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hA : Elliptic.IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ a₀ x)
@@ -1060,7 +1126,10 @@ The normal derivative $\partial u / \partial n = \nabla u \cdot n$ is read throu
 continuous extension $g$ of $Du$ to $\overline\Omega$ that $u \in C^2(\overline\Omega)$
 provides; this extension is unique, because $\Omega$ is dense in $\overline\Omega$. The class
 $C^2(\overline\Omega)$ is read as in `Brezis.Chapter09.IsClassicalSolutionDirichlet`. The normal
-field $n$ is a parameter: the definition does not derive it from a $C^1$ structure of $\Omega$. -/
+field $n$ is a parameter: the definition does not derive it from a $C^1$ structure of $\Omega$.
+
+**Reading.** The normal field is a parameter. The source takes the unit outward normal
+ of a bounded $C^1$ domain. -/
 def IsClassicalSolutionNeumann (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (n : EuclideanSpace ℝ (Fin N) → EuclideanSpace ℝ (Fin N))
     (f u : EuclideanSpace ℝ (Fin N) → ℝ) : Prop :=
@@ -1075,7 +1144,8 @@ $\Omega \subset \mathbb{R}^N$ be open and let $f \in L^2(\Omega)$. An element
 $u \in H^1(\Omega)$ is a **weak solution** of (44) if
 $$\int_\Omega \nabla u \cdot \nabla v + \int_\Omega u v = \int_\Omega f v \quad \text{for all }
   v \in H^1(\Omega). \qquad (45)$$
--/
+
+**Generalization.** The variational equation is defined for arbitrary open sets. -/
 def IsWeakSolutionNeumann (Ω : Opens (EuclideanSpace ℝ (Fin N)))
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin N))))) (u : hSpace N Ω) : Prop :=
   ∀ v : hSpace N Ω,
@@ -1143,7 +1213,11 @@ $-\Delta u + u = g$ at every point of $\Omega$.
 
 The proof applies the weak identity (46) to $v \in C_c^1(\Omega)$ and uses Corollary 4.24,
 through the backbone's `Elliptic.laplacian_ae_eq_of_forall_testFunction`: a weak solution of the
-Neumann problem satisfies in particular the weak identity for all test functions. -/
+Neumann problem satisfies in particular the weak identity for all test functions.
+
+**Correction.** The test identity gives the interior equation almost everywhere. The
+ pointwise conclusion uses a continuous representative of the datum. This interior result
+ applies to arbitrary open sets and requires only interior regularity. -/
 theorem example_9_4_stepD_interior {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {U : hSpace N Ω}
     (hU : IsWeakSolutionNeumann Ω f U) {u : 𝔼 → ℝ}
     (hUu : SobolevMultiIndex.fn U =ᵐ[volume.restrict (Ω : Set 𝔼)] u) (hu : ContDiffOn ℝ 2 u Ω) :
@@ -1307,7 +1381,11 @@ Green's formula `BoundaryData.integral_laplacian_mul_add_eq` and the equation in
 $\Gamma$ (`IsContDiffDomain.continuousOn_outwardNormal`), and every open set that meets $\Gamma$
 has positive surface measure (`IsContDiffDomain.boundaryMeasure_pos_of_isOpen`), so
 $\partial u / \partial n$ vanishes on $\Gamma$
-(`BoundaryData.eqOn_zero_frontier_of_forall_integral_mul_eq_zero`). -/
+(`BoundaryData.eqOn_zero_frontier_of_forall_integral_mul_eq_zero`).
+
+**Correction.** The source writes $u \in C^2(\Omega)$ before invoking a boundary formula
+ that requires regularity up to the boundary. This statement supplies the boundary
+ regularity and uses a continuous representative of the datum for the pointwise equation. -/
 theorem example_9_4_stepD (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
     {U : hSpace (d + 1) Ω} (hU : IsWeakSolutionNeumann Ω f U) {u : 𝔼 → ℝ}

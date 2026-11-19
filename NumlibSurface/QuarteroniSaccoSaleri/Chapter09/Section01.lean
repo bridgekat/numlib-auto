@@ -68,6 +68,17 @@ $[a, b]$, `ContinuousMap.integralIccCLM hab b` of `Numlib.Analysis.Calculus.Cont
 * The backbone lemma `Quadrature.isExactOn_integralIccCLM_iff` says that "degree of exactness at
   least $d$" for a formula $\sum_i \alpha_i f(x_i)$ on $[a, b]$, stated on real polynomials, is
   `Quadrature.IsExactOn` for the integral functional.
+
+## Deviations from the source
+
+* **§9.1, quadrature error** (hypotheses).
+  `QuarteroniSaccoSaleri.Chapter09.quadratureError_le_integral_abs` and
+  `QuarteroniSaccoSaleri.Chapter09.quadratureError_le` assume continuity of the approximant as
+  well as the target function. The latter uses a pointwise bound in place of the displayed sup
+  norm.
+* **(9.1)–(9.3)** (generalization). `QuarteroniSaccoSaleri.Chapter09.lagrangeQuadrature` and its
+  integral identity use the total algebraic Lagrange formula, which is defined for coincident
+  nodes. The polynomial exactness and converse retain distinct nodes.
 -/
 
 open Set intervalIntegral
@@ -83,6 +94,8 @@ variable {a b : ℝ} {n : ℕ}
 let $f$ and $f_n$ be continuous on $[a, b]$. Then the error $E_n(f) = I(f) - I_n(f)$ of the
 formula (9.1), $I_n(f) = \int_a^b f_n(x) \, dx$, satisfies
 $$|E_n(f)| \le \int_a^b |f(x) - f_n(x)| \, dx.$$
+
+**Reading.** Assumes the approximant is continuous as well as the integrand.
 -/
 theorem quadratureError_le_integral_abs (hab : a ≤ b) {f fn : ℝ → ℝ}
     (hf : ContinuousOn f (Icc a b)) (hfn : ContinuousOn fn (Icc a b)) :
@@ -96,7 +109,11 @@ the error of the formula (9.1) satisfies
 $$|E_n(f)| \le (b - a) M.$$
 
 The bound $M$ can be $\|f - f_n\|_\infty$. The book uses the estimate in the form: if
-$\|f - f_n\|_\infty < \varepsilon$ for some $n$, then $|E_n(f)| \le \varepsilon (b - a)$. -/
+$\|f - f_n\|_\infty < \varepsilon$ for some $n$, then $|E_n(f)| \le \varepsilon (b - a)$.
+
+**Reading.** Uses a pointwise bound M rather than the explicit sup norm, and assumes both functions
+continuous.
+-/
 theorem quadratureError_le (hab : a ≤ b) {f fn : ℝ → ℝ} (hf : ContinuousOn f (Icc a b))
     (hfn : ContinuousOn fn (Icc a b)) {M : ℝ} (hM : ∀ x ∈ Icc a b, |f x - fn x| ≤ M) :
     |(∫ x in a..b, f x) - ∫ x in a..b, fn x| ≤ (b - a) * M := by
@@ -114,7 +131,10 @@ theorem quadratureError_le (hab : a ≤ b) {f fn : ℝ → ℝ} (hf : Continuous
 /-- **Equations (9.2)–(9.3)** of [quarteroni2000numerical], the weights. Let $x_0, \ldots, x_n$ be
 real nodes and $a, b \in \mathbb{R}$. The **weights of the Lagrange quadrature formula** are
 $$\alpha_i = \int_a^b l_i(x) \, dx, \qquad i = 0, \ldots, n,$$
-where $l_i$ is the characteristic Lagrange polynomial of the nodes (Section 8.1). -/
+where $l_i$ is the characteristic Lagrange polynomial of the nodes (Section 8.1).
+
+**Reading.** Uses total Lagrange basis formula for all node arrays, including collisions.
+-/
 noncomputable def lagrangeWeights (x : Fin (n + 1) → ℝ) (a b : ℝ) (i : Fin (n + 1)) : ℝ :=
   ∫ t in a..b, (Lagrange.basis Finset.univ x i).eval t
 
@@ -124,7 +144,11 @@ $x_0, \ldots, x_n$ be real nodes, $a, b \in \mathbb{R}$ and $f : \mathbb{R} \to 
 $$I_n(f) = \sum_{i=0}^n \alpha_i f(x_i), \qquad \alpha_i = \int_a^b l_i(x) \, dx.$$
 
 It is an instance of the general formula (9.3), $I_n(f) = \sum_i \alpha_i f(x_i)$, with the
-weights `QuarteroniSaccoSaleri.Chapter09.lagrangeWeights`. -/
+weights `QuarteroniSaccoSaleri.Chapter09.lagrangeWeights`.
+
+**Reading.** Defines weighted sum for all real endpoints and nodes, without distinctness or
+membership.
+-/
 noncomputable def lagrangeQuadrature (x : Fin (n + 1) → ℝ) (a b : ℝ) (f : ℝ → ℝ) : ℝ :=
   ∑ i, lagrangeWeights x a b i * f (x i)
 
@@ -140,7 +164,11 @@ is the formula (9.1) with $f_n = \Pi_n f$, the interpolating polynomial of $f$ a
 $$I_n(f) = \int_a^b \Pi_n f(x) \, dx.$$
 
 The proof is the linearity of the integral applied to the Lagrange form
-$\Pi_n f = \sum_i f(x_i) l_i$. -/
+$\Pi_n f = \sum_i f(x_i) l_i$.
+
+**Generalization.** The algebraic identity uses the total Lagrange formula for every array of
+nodes. Polynomial interpolation of the given values and the exactness result use distinct
+nodes. -/
 theorem lagrangeQuadrature_eq_integral_interpolate (x : Fin (n + 1) → ℝ) (a b : ℝ) (f : ℝ → ℝ) :
     lagrangeQuadrature x a b f
       = ∫ t in a..b, (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t := by
@@ -160,7 +188,11 @@ nodes read as points of $[a, b]$, form an interpolatory rule for the integral ov
 the nodes.
 
 Interpolatory is `Quadrature.IsInterpolatory`, and the integral is
-`ContinuousMap.integralIccCLM hab b`. -/
+`ContinuousMap.integralIccCLM hab b`.
+
+**Reading.** Backbone property uses existence of the displayed basis weights and does not require
+distinct nodes.
+-/
 theorem isInterpolatory_lagrangeQuadrature (hab : a ≤ b) {x : Fin (n + 1) → ℝ}
     (hx : ∀ i, x i ∈ Icc a b) :
     Quadrature.IsInterpolatory (ContinuousMap.integralIccCLM hab b) (lagrangeWeights x a b)

@@ -221,7 +221,11 @@ $$\eta \le \frac{f(x) - f(x^+)}{m(x) - m(x^+)}.$$
 
 The error bounds at both endpoints allow conditional models that do not interpolate $f$ at the
 center. The ratio is `ConnGouldToint.Chapter09.selectedTrialRatio`, with the original trial
-point as the selected point. -/
+point as the selected point.
+
+**Reading.** Abstract model-decrease inequality and local validity yield the same acceptance
+implication.
+-/
 theorem conditionalRatio_ge_eta_of_small_valid_radius {f m : E → ℝ} {x trial : E}
     {Δ a β κ C η : ℝ} (hΔ : 0 < Δ) (ha : 0 < a) (hβ : 0 < β)
     (hκ : 0 < κ) (hκ₁ : κ ≤ 1) (hη₀ : 0 ≤ η) (hη₁ : η < 1)
@@ -263,7 +267,10 @@ theorem conditionalRatio_ge_eta_of_small_valid_radius {f m : E → ℝ} {x trial
   linarith [(abs_le.mp herror).1]
 
 /-- Let a conditional radius run with the corrected update and $\gamma_1 > 0$ be given. Then
-$\Delta^{\mathrm{ref}}_k > 0$ and $\Delta_k > 0$ for all $k$. -/
+$\Delta^{\mathrm{ref}}_k > 0$ and $\Delta_k > 0$ for all $k$.
+
+**Correction.** Positivity invariant for the corrected radius update.
+-/
 theorem ConditionalRadiusRun.radius_and_ref_pos {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (hγ : 0 < γ₁) :
     ∀ k, 0 < run.ref k ∧ 0 < run.radius k := by
@@ -291,7 +298,11 @@ theorem ConditionalRadiusRun.radius_and_ref_pos {η₀ η₁ γ₁ γ₂ : ℝ}
 /-- Let a conditional radius run with the corrected update be given, with $\gamma_1 > 0$, $t > 0$
 and $N \in \mathbb{N}$. Suppose that for every $k \ge N$, a valid model at iteration $k$ with
 $\Delta_k \le t$ gives $\rho_k \ge \eta_1$. Then there is $r > 0$ with $r < \Delta_k$ for all
-$k \ge N$. This is the radius argument of Theorem 9.2.1 on a tail of the run. -/
+$k \ge N$. This is the radius argument of Theorem 9.2.1 on a tail of the run.
+
+**Correction.** Tail floor in the corrected radius recurrence with an explicit small-radius
+acceptance premise.
+-/
 theorem ConditionalRadiusRun.tail_radius_floor {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (N : ℕ) {t : ℝ}
     (ht : 0 < t) (hγ : 0 < γ₁)
@@ -407,7 +418,10 @@ fails under the printed update.
 An exact replacement model, $f$ itself, is available after a single improvement. But the
 selection of the improved point moves the center in Step 5, and at the new center the algorithm
 can again build an invalid model. The run has $\Delta_k = 2^{-k}$, $x_k = 1 - \Delta_k$ and
-$m_k(z) = f(x_k) + (z - x_k)$. -/
+$m_k(z) = f(x_k) + (z - x_k)$.
+
+**Reading.** Quadratic example violates lower bound under the printed invalid-model contraction.
+-/
 theorem theorem_9_2_1_quadratic_counterexample :
     let f : ℝ → ℝ := fun z ↦ (2 - z) ^ 2
     ∃ (run : ConditionalRadiusRun (1 / 4) (1 / 2) (1 / 2) (1 / 2) True)
@@ -530,7 +544,10 @@ there is $k \ge N$ with a valid model and $\Delta_k < t$.
 
 This is the radius argument in the proof of Theorem 9.2.2 of [conn2000trust]: each valid
 iteration contracts the radius by the factor $\gamma_2$, and each invalid iteration between them
-keeps it. -/
+keeps it.
+
+**Correction.** Small valid radii on the rejected tail under the corrected update.
+-/
 theorem ConditionalRadiusRun.exists_valid_small_radius {η₀ η₁ γ₁ γ₂ : ℝ}
     (run : ConditionalRadiusRun η₀ η₁ γ₁ γ₂ False) (N : ℕ) (hγ₂ : 0 < γ₂) (hγ₂' : γ₂ < 1)
     (hpos : ∀ k, 0 < run.radius k)
@@ -789,6 +806,8 @@ $\kappa > 0$. If $m$ is valid for $f$ on $B(x, \delta)$ with constant $\kappa$ a
 $\delta \le \mu \|\nabla m(x)\|$, then
 $$\|\nabla f(x)\| \le \left(1 + \left(2\kappa + \tfrac{1}{2}(B_f + B_m)\right) \mu\right)
   \|\nabla m(x)\|.$$
+
+**Reading.** Quantitative normed-space derivative bound at an accepted positive test radius.
 -/
 theorem norm_fderiv_le_of_accepted_criticality {f m : E → ℝ} (hf : ContDiff ℝ 2 f)
     (hm : Differentiable ℝ m) (hDm : Differentiable ℝ (fderiv ℝ m)) {x : E}
@@ -887,7 +906,11 @@ infinitely many $k$ with $u(x_k) < \varepsilon$. Then for every $\varepsilon > 0
 infinitely many $k \in S$ with $u(x_k) < \varepsilon$.
 
 An unsuccessful iterate stays fixed until the next successful iteration, which has the same
-value of $u$. -/
+value of $u$.
+
+**Reading.** Infinitely many successes and iterate constancy between successes are explicit
+premises.
+-/
 theorem frequently_successful_small_gradient {x : ℕ → E} {u : E → ℝ} {S : Set ℕ}
     (hS : ∃ᶠ k in atTop, k ∈ S) (hstay : ∀ k ∉ S, x (k + 1) = x k)
     (hfreq : ∀ ε > 0, ∃ᶠ k in atTop, u (x k) < ε) :

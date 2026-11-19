@@ -97,6 +97,13 @@ level sets of the obverse and of $f^\circ$ are described, ending with $\{x^* \mi
 
 ## Deviations from the source
 
+* **Section 15, gauge and polar formulas** (generalization). `Rockafellar.gaugeFn_apply_rn`
+  admits arbitrary sets, `Rockafellar.polarGauge_apply_rn` admits arbitrary functions, and
+  `Rockafellar.polarFn_apply_rn` applies to nonnegative functions vanishing at zero without
+  requiring convexity.
+* **Section 15, obverse formula** (generalization). `Rockafellar.obverse_apply_rn` states the
+  formula for arbitrary extended-real functions. The book introduces it for nonnegative
+  closed convex functions vanishing at zero.
 * **Corollary 15.1.1**, polar sets and polar gauges (generalization). The set $C$ need not be
   closed. See `Rockafellar.corollary_15_1_1_sets`.
 * **Corollary 15.1.2** (generalization). The identity $\gamma(\cdot \mid C)^\circ = \delta^*(\cdot
@@ -110,6 +117,12 @@ level sets of the obverse and of $f^\circ$ are described, ending with $\{x^* \mi
   convexity needs only $f \ge 0$, and closedness needs $f \ge 0$ and $f(0) = 0$; convexity of $f$ is
   never needed. See `Rockafellar.theorem_15_4_nonneg`, `Rockafellar.theorem_15_4_map_zero`,
   `Rockafellar.theorem_15_4_convexFn` and `Rockafellar.theorem_15_4_closedFn`.
+
+## Not formalized
+
+* **Existence of a norm inducing a given Minkowski metric.**
+  `Rockafellar.minkowskiMetric_eq_sub` identifies the only possible norm, and
+  `Rockafellar.isMinkowskiMetric_of_isNorm` proves that each norm induces such a metric.
 -/
 
 open Set Pointwise Bornology
@@ -127,7 +140,10 @@ $C \subseteq \mathbb{R}^n$ and $x \in \mathbb{R}^n$,
 $$\gamma(x \mid C) = \inf \{\mu \ge 0 \mid x \in \mu C\},$$
 with $\inf \emptyset = +\infty$.
 
-The gauge is `ConvexAnalysis.gaugeFn C`, and this equation is its definition unfolded. -/
+The gauge is `ConvexAnalysis.gaugeFn C`.
+
+**Generalization.** The book uses the formula for nonempty convex $C$. The Lean formula
+also applies to arbitrary sets. -/
 theorem gaugeFn_apply_rn (C : Set (Rn n)) (x : Rn n) :
     gaugeFn C x = ⨅ a ∈ {a : ℝ | 0 ≤ a ∧ x ∈ a • C}, (a : EReal) :=
   gaugeFn_apply C x
@@ -153,7 +169,10 @@ $$k^\circ(x^*) = \inf \{\mu^* \ge 0 \mid \langle x, x^* \rangle \le \mu^* k(x) \
 
 The polar is `ConvexAnalysis.polarGauge (Rockafellar.pairing n) k`, and this equation is its
 definition unfolded. The product $\mu^* k(x)$ is taken in `EReal`, where
-$0 \cdot (+\infty) = 0$. -/
+$0 \cdot (+\infty) = 0$.
+
+**Generalization.** The book assumes $k$ is a gauge. The formula is defined here for
+arbitrary functions. -/
 theorem polarGauge_apply_rn (k : Rn n → EReal) (y : Rn n) :
     polarGauge (pairing n) k y
       = ⨅ m ∈ {m : ℝ | 0 ≤ m ∧ ∀ x : Rn n, ((inner ℝ x y : ℝ) : EReal) ≤ (m : EReal) * k x},
@@ -168,7 +187,10 @@ $$f^\circ(x^*) = \inf \{\mu^* \ge 0 \mid \langle x, x^* \rangle \le 1 + \mu^* f(
 
 The backbone definition `ConvexAnalysis.polarFn` quantifies over the points of
 $\operatorname{epi} f$ instead of over $x$, because the admissible set of the book is not closed
-at $\mu^* = 0$. `ConvexAnalysis.polarFn_apply_eq` identifies the two forms. -/
+at $\mu^* = 0$. `ConvexAnalysis.polarFn_apply_eq` identifies the two forms.
+
+**Generalization.** The book assumes $f$ convex. The displayed formula only needs
+nonnegativity and $f(0) = 0$. -/
 theorem polarFn_apply_rn {f : Rn n → EReal} (hnn : ∀ x, 0 ≤ f x) (h0 : f 0 = 0) (y : Rn n) :
     polarFn (pairing n) f y
       = ⨅ m ∈ {m : ℝ | 0 ≤ m ∧ ∀ x : Rn n, ((inner ℝ x y : ℝ) : EReal) ≤ 1 + (m : EReal) * f x},
@@ -179,7 +201,10 @@ theorem polarFn_apply_rn {f : Rn n → EReal} (hnn : ∀ x, 0 ≤ f x) (h0 : f 0
 $f : \mathbb{R}^n \to [-\infty, +\infty]$ and $x \in \mathbb{R}^n$, the obverse $g$ of $f$ is
 $$g(x) = \inf \{\lambda > 0 \mid (f\lambda)(x) \le 1\},$$
 where $(f\lambda)(x) = \lambda f(\lambda^{-1} x)$ is the right scalar multiple of Section 5
-(`ConvexAnalysis.smulRight`). -/
+(`ConvexAnalysis.smulRight`).
+
+**Generalization.** The book introduces the formula for nonnegative closed convex $f$
+vanishing at zero. The infimum formula applies to any $f$. -/
 theorem obverse_apply_rn (f : Rn n → EReal) (x : Rn n) :
     obverse f x = ⨅ l ∈ {l : ℝ | 0 < l ∧ smulRight f l x ≤ 1}, (l : EReal) :=
   obverse_apply f x
@@ -518,8 +543,8 @@ theorem isMinkowskiMetric_of_isNorm {k : Rn n → EReal} (hk : IsNorm k) :
 
 /-- **Section 15** of [rockafellar1970convex], norms from Minkowski metrics (p. 132). Let $\rho$ be
 a Minkowski metric on $\mathbb{R}^n$. Then $\rho(x, y) = \rho(x - y, 0)$ for all $x, y$, so
-$\rho$ is determined by the function $x \mapsto \rho(x, 0)$. This is the uniqueness half of the
-correspondence between norms and Minkowski metrics. -/
+$\rho$ is determined by the function $x \mapsto \rho(x, 0)$. This gives the candidate norm
+from the uniqueness part of the correspondence. -/
 theorem minkowskiMetric_eq_sub {rho : Rn n → Rn n → ℝ} (h : IsMinkowskiMetric rho) (x y : Rn n) :
     rho x y = rho (x - y) 0 := by
   have hv := h.vadd (x - y) 0 y

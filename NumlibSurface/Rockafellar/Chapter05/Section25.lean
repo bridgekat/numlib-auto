@@ -103,17 +103,33 @@ are formalized.
 
 ## Deviations from the source
 
+* **Section 25, gradient vector** (reading). `Rockafellar.gradientVec` returns a vector at every
+  point. Its value uses the derivative of the real trace, with the Mathlib zero convention
+  when that trace has no derivative.
+* **Theorem 25.1** (reading). The converse and both equivalences assume properness. A singleton
+  subdifferential at a finite point already forces properness.
+* **Corollary 25.1.3** (generalization). The support-set formula already ensures that $C$ is
+  nonempty, closed and convex.
 * **Theorem 25.3**, continuity and monotonicity (generalization). The source states that $f'$ is
   continuous and non-decreasing relative to $D$. Here the right derivative, which is defined on all
   of $\mathbb{R}$, is continuous at each point of $D$ and non-decreasing on $\mathbb{R}$. See
   `Rockafellar.theorem_25_3_continuousAt` and `Rockafellar.theorem_25_3_monotone`.
-* **Theorem 25.4**, first assertion (generalization). The source assumes $y \neq 0$. The statement
-  also holds for $y = 0$. See `Rockafellar.theorem_25_4_continuousAt_iff`.
+  The continuity statement assumes closedness, as in the source's proof.
+* **Theorem 25.4** (generalization). The three formalized assertions also allow $y = 0$.
 * **Theorem 25.6** (reading). The source sets $K(x) = \emptyset$ for
   $x \notin \operatorname{dom} f$. Here $K(x)$ is the normal cone, which is defined at every $x$.
   See `Rockafellar.theorem_25_6`.
+* **Section 23 recession-cone exercise** (generalization). The identity used in Theorem 25.6
+  holds for a proper function with a subgradient even without convexity.
 * **Theorem 25.7** (generalization). The source assumes that all functions are differentiable on
   $C$. The pointwise statement uses differentiability at $x$ only. See `Rockafellar.theorem_25_7`.
+
+## Not formalized
+
+* Theorem 25.4's decomposition of the exceptional set into relatively closed sets with finite
+  intersection with bounded line intervals, and the subsequent $G_\delta$ remarks in
+  Theorems 25.4 and 25.5.
+* The remark after Theorem 25.7 that pointwise convergence on a dense subset of $C$ suffices.
 -/
 
 open Filter MeasureTheory Topology
@@ -167,13 +183,18 @@ Fréchet derivative at $x$ of the real trace $g$ of $f$.
 The real trace is `fun z => (f z).toReal`, and $Dg(x)$ is Mathlib's `fderiv`. The vector is
 defined for every $x$. Where $f$ is differentiable it is the gradient of $f$
 (`Rockafellar.hasGradientVecAt_gradientVec`). Where the real trace is not differentiable,
-`fderiv` is $0$ and so is the vector. -/
+`fderiv` is $0$ and so is the vector.
+
+**Reading.** The source defines the gradient only at points of differentiability of $f$. -/
 noncomputable def gradientVec (f : Rn n → EReal) (x : Rn n) : Rn n :=
   (InnerProductSpace.toDual ℝ (Rn n)).symm (fderiv ℝ (fun z => (f z).toReal) x)
 
 /-- The linear function $z \mapsto \langle z, v \rangle$, for the vector $v$ given by
 `Rockafellar.gradientVec f x`, is the Fréchet derivative at $x$ of the real trace $z \mapsto$
-`(f z).toReal` of $f$. -/
+`(f z).toReal` of $f$.
+
+**Reading.** This equality uses the total definitions of `Rockafellar.gradientVec` and
+`fderiv`. The source's linear approximation concerns only points of differentiability. -/
 theorem linFn_gradientVec (f : Rn n → EReal) (x : Rn n) :
     linFn (gradientVec f x) = fderiv ℝ (fun z => (f z).toReal) x := by
   rw [linFn_eq_toDual]
@@ -252,7 +273,10 @@ $\nabla f(x) = b$.
 
 This half uses the finite dimension of $\mathbb{R}^n$: a convex set in $\mathbb{R}^n$ is a
 neighbourhood of every point at which its normal cone is $\{0\}$ (Corollary 11.6.1). The source
-passes over this step. -/
+passes over this step.
+
+**Reading.** Lean assumes properness. In the source, a subgradient at a finite point implies
+properness by the subgradient inequality. -/
 theorem theorem_25_1_converse (hf : ConvexFn f) (hp : ProperConvex f)
     (h : subdifferential (pairing n) f x = {b}) : HasGradientVecAt f b x := by
   have hg := hasGradientAtFn_toDual_of_subdifferential_eq_singleton (E := Rn n) hf hp h
@@ -264,8 +288,8 @@ $\mathbb{R}^n$, and let $x, b \in \mathbb{R}^n$. Then $f$ is differentiable at $
 $b$ if and only if $b$ is the unique subgradient of $f$ at $x$:
 $$\nabla f(x) = b \iff \partial f(x) = \{b\}.$$
 
-The source assumes that $f$ is finite at $x$. Here properness takes the place of this
-hypothesis: each side of the equivalence makes $f(x)$ finite. The two directions are
+**Reading.** Lean assumes properness, and each side of the equivalence implies finiteness at
+$x$. A subgradient at a finite point already implies properness. The two directions are
 `Rockafellar.theorem_25_1_forward` and `Rockafellar.theorem_25_1_converse`. -/
 theorem theorem_25_1 (hf : ConvexFn f) (hp : ProperConvex f) :
     HasGradientVecAt f b x ↔ subdifferential (pairing n) f x = {b} :=
@@ -273,7 +297,9 @@ theorem theorem_25_1 (hf : ConvexFn f) (hp : ProperConvex f) :
 
 /-- **Theorem 25.1** of [rockafellar1970convex], the sentence after it. Let $f$ be a proper convex
 function on $\mathbb{R}^n$. Then $f$ is differentiable at $x$ if and only if $\partial f(x)$
-consists of exactly one vector. -/
+consists of exactly one vector.
+
+**Reading.** Lean assumes properness, as in `Rockafellar.theorem_25_1`. -/
 theorem theorem_25_1_differentiableAtFn (hf : ConvexFn f) (hp : ProperConvex f) :
     DifferentiableAtFn f x ↔ ∃ b : Rn n, subdifferential (pairing n) f x = {b} := by
   rw [differentiableAtFn_iff_exists_hasGradientVecAt]
@@ -320,8 +346,8 @@ $$C = \{z \mid \langle y, z \rangle \le g(y) \text{ for every } y\}.$$
 Then $z$ is an exposed point of $C$ if and only if there is a point $y$ at which $g$ is
 differentiable with $\nabla g(y) = z$.
 
-The source takes $C$ to be a non-empty closed convex set. These properties of $C$ follow from
-the other hypotheses and are not assumed. The set $C$ is `ConvexAnalysis.supportSet
+**Generalization.** The source assumes that $C$ is nonempty, closed and convex. These properties
+follow from the other hypotheses. The set $C$ is `ConvexAnalysis.supportSet
 (Rockafellar.pairing n) g`. -/
 theorem corollary_25_1_3 {g : Rn n → EReal} {C : Set (Rn n)} (hgh : PosHomogeneous g)
     (hgc : ConvexFn g) (hgp : ProperConvex g)
@@ -480,7 +506,9 @@ $z \in \operatorname{int}(\operatorname{dom} f)$ with $f'(z; y) = -f'(z; -y)$ is
 $\operatorname{int}(\operatorname{dom} f)$.
 
 This clause holds in any space: the restriction of $f$ to a line in the direction $y$ reduces it
-to Theorem 25.3. -/
+to Theorem 25.3.
+
+**Generalization.** Lean also allows $y = 0$. -/
 theorem theorem_25_4_dense (hf : ConvexFn f) (hp : ProperConvex f) (y : Rn n) :
     interior (convexDom f) ⊆
       closure {z ∈ interior (convexDom f) | dirDeriv f z y = -dirDeriv f z (-y)} :=
@@ -490,6 +518,9 @@ theorem theorem_25_4_dense (hf : ConvexFn f) (hp : ProperConvex f) (y : Rn n) :
 on $\mathbb{R}^n$, and let $y \in \mathbb{R}^n$. Then the set of points
 $z \in \operatorname{int}(\operatorname{dom} f)$ with $f'(z; y) \neq -f'(z; -y)$ has Lebesgue
 measure zero.
+
+**Generalization.** Lean also allows $y = 0$. The further decomposition of the exceptional set
+into relatively closed sets is omitted.
 
 The source proves this clause first, by a Fubini argument over lines, and deduces Theorem 25.5
 from it. Here the order is reversed: Theorem 25.5 follows from Rademacher's theorem, and this
@@ -578,7 +609,10 @@ theorem mem_gradientLimits_iff {v : Rn n} :
 recession cone of $\partial f(x)$ is the normal cone to $\operatorname{dom} f$ at $x$. The
 source leaves this as an exercise in Section 23 and says that it is verified in the proof of
 Theorem 25.6. That proof uses only the inclusion $\subseteq$, and the equality is proved here
-separately. -/
+separately.
+
+**Generalization.** The exercise occurs in the convex setting. Lean only assumes properness
+and the existence of a subgradient. -/
 theorem recessionCone_subdifferential_eq_normalCone (hp : ProperConvex f) {v : Rn n}
     (hv : v ∈ subdifferential (pairing n) f x) :
     recessionCone (subdifferential (pairing n) f x) = normalCone (pairing n) (convexDom f) x :=
@@ -593,9 +627,9 @@ differentiable at $x_i$ and $x_i \to x$, and $K(x)$ is the normal cone to $\oper
 at $x$.
 
 **Reading.** The source sets $K(x) = \emptyset$ for $x \notin \operatorname{dom} f$. Here $K(x)$
-is `ConvexAnalysis.normalCone`, which is defined at every $x$. The two readings agree wherever
-both sides are non-empty. For $x \notin \operatorname{dom} f$ the left side is empty, so the
-theorem forces $\operatorname{cl}(\operatorname{conv} S(x))$ to be empty.
+is `ConvexAnalysis.normalCone`, which always contains $0$. If
+$x \notin \operatorname{dom} f$, the closed subdifferential graph gives $S(x)=\emptyset$,
+so the right side stays empty under either convention.
 
 The set $S(x)$ is `ConvexAnalysis.gradientLimits f x` (see
 `Rockafellar.mem_gradientLimits_iff`). -/

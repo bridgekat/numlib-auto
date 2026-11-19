@@ -68,6 +68,13 @@ identity.
   `LinearPMap.yosida`, which are defined for every $\lambda$ and agree with the source's for
   $\lambda > 0$.
 
+## Deviations from the source
+
+* **Definitions of monotonicity and maximal monotonicity** (generalization). The predicates and
+  the range characterization apply to incomplete inner product spaces. See
+  `Brezis.Chapter07.IsMonotone`, `Brezis.Chapter07.IsMaximalMonotone` and
+  `Brezis.Chapter07.isMaximalMonotone_iff_range`.
+
 ## Not formalized
 
 * **Remark 1, second sentence.** The claim that $A + B$ on $D(A) \cap D(B)$ need not be maximal
@@ -91,7 +98,9 @@ operator $A : D(A) \subseteq H \to H$ is **monotone** if
 $$(Av, v) \ge 0 \quad \text{for all } v \in D(A).$$
 
 Footnote 1 of the source says that some authors call such an operator accretive, or say that
-$-A$ is dissipative. -/
+$-A$ is dissipative.
+
+**Generalization.** The predicate applies to incomplete inner product spaces. -/
 def IsMonotone (A : H →ₗ.[ℝ] H) : Prop :=
   ∀ v : A.domain, 0 ≤ ⟪A v, (v : H)⟫_ℝ
 
@@ -102,7 +111,9 @@ theorem isMonotone_iff (A : H →ₗ.[ℝ] H) : IsMonotone A ↔ A.IsMonotone :=
 
 /-- **Section 7.1** of [brezis2011functional], definition of a maximal monotone operator. A linear
 unbounded operator $A : D(A) \subseteq H \to H$ is **maximal monotone** if it is monotone and
-$R(I + A) = H$, that is, for every $f \in H$ there is $u \in D(A)$ with $u + Au = f$. -/
+$R(I + A) = H$, that is, for every $f \in H$ there is $u \in D(A)$ with $u + Au = f$.
+
+**Generalization.** The predicate applies to incomplete inner product spaces. -/
 def IsMaximalMonotone (A : H →ₗ.[ℝ] H) : Prop :=
   IsMonotone A ∧ ∀ f : H, ∃ u : A.domain, (u : H) + A u = f
 
@@ -120,7 +131,9 @@ theorem IsMaximalMonotone.isMaximalMonotone {A : H →ₗ.[ℝ] H} (hA : IsMaxim
 /-- A linear unbounded operator $A$ is maximal monotone if and only if it is monotone and the
 operator $I + A$, defined on $D(A)$, has range $H$.
 
-The operator $I + A$ is Mathlib's `LinearMap.id +ᵥ A`. -/
+The operator $I + A$ is Mathlib's `LinearMap.id +ᵥ A`.
+
+**Generalization.** The characterization applies to incomplete inner product spaces. -/
 theorem isMaximalMonotone_iff_range (A : H →ₗ.[ℝ] H) :
     IsMaximalMonotone A ↔
       IsMonotone A ∧ LinearMap.range ((LinearMap.id : H →ₗ[ℝ] H) +ᵥ A).toFun = ⊤ := by

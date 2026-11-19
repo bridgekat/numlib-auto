@@ -122,8 +122,8 @@ the runs that refute printed statements are the backbone examples
   `CartisGouldToint.Chapter14.theorem_14_3_9_trq_one`: the complexity of TPqp-GC with INNER =
   TRq-SC; `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`,
   `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false` and
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false_phase2` show what fails in the
-  printed statement.
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false_phase2` give the logarithmic lower
+  bound and rule out the alternate exponents $j + 1$.
 * `CartisGouldToint.Chapter14.exists_algorithm_14_3_1`,
   `CartisGouldToint.Chapter14.exists_algorithm_14_3_2`,
   `CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun`,
@@ -180,6 +180,145 @@ the runs that refute printed statements are the backbone examples
 
 ## Deviations from the source
 
+* **Additional term and restricted printed order.** The ARqp-SC result adds an inverse
+  tolerance-product term for general orders and recovers the printed orders when the criticality and
+  model orders coincide. See `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_corrected`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp`.
+* **Concrete regularization runs.** Algorithm 14.3.2 has concrete ARqp-SC realizations under either
+  merit-level or problem-level smoothness. See `CartisGouldToint.Chapter14.exists_algorithm_14_3_2`,
+  `CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun`.
+* **Concrete unit-radius runs.** Algorithm 14.3.2 has a whole-space unit-radius run with explicit
+  trace and count data, with existence for orders at most two. See
+  `CartisGouldToint.Chapter14.IsARqpUnitCallOut`,
+  `CartisGouldToint.Chapter14.IsARqpUnitPhase2Calls`,
+  `CartisGouldToint.Chapter14.IsARqpUnitPhase2Calls.isInnerPhaseRunStrong`,
+  `CartisGouldToint.Chapter14.IsTPqpGCARqpUnitRun`,
+  `CartisGouldToint.Chapter14.exists_isTPqpGCARqpUnitRun`.
+* **Additional term and restricted printed order.** The unit-radius complexity adds inverse
+  tolerance products and recovers the printed orders when the two orders coincide and are at most
+  two. See `CartisGouldToint.Chapter14.exists_const_order_arqp_unit`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit_corrected`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit`.
+* **Order comparison.** The additional inverse tolerance product can exceed the printed order for
+  both regularization exponent choices at the stated orders. See
+  `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt`,
+  `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt_arqp`,
+  `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt_arqp_unit`.
+* **Counterexample.** ARqp-SC counterexamples refute the printed uniform bounds at criticality
+  orders one and two when the model order is at least three larger. See
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_counterexample`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_printed_false`.
+* **Concrete trust-region runs.** Algorithm 14.3.2 has actual TRq-SC inner runs with explicit
+  admissibility and verification data. See `CartisGouldToint.Chapter14.IsTRqSCPhase2Calls`,
+  `CartisGouldToint.Chapter14.IsTPqpGCTRqSCRun`,
+  `CartisGouldToint.Chapter14.exists_isTPqpGCTRqSCRun`.
+* **Trust-region smoothness data.** The trust-region variant of Lemma 14.3.6 packages derivative
+  maxima at order q. See `CartisGouldToint.Chapter14.exists_nu_trq`,
+  `CartisGouldToint.Chapter14.exists_mu_trq`.
+* **Coarser explicit bound.** The Phase-1 iteration count also has an explicit
+  inverse-primal-tolerance bound. See `CartisGouldToint.Chapter14.phase1_iter_le`.
+* **Correction.** The trust-region complexity retains the printed exponent $q + 1$ and includes
+  logarithmic overhead in function evaluations. See
+  `CartisGouldToint.Chapter14.phase1_call_cost_trq`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_one`.
+* **Counterexample.** The trust-region example refutes the unmodified first-order
+  function-evaluation bound and the bare inverse-primal order at every positive order. See
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary_inv`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`.
+* **Correction.** Lemma 14.3.8 counts good and bad iterations separately and includes a
+  counterexample to the printed counting argument. See `CartisGouldToint.Chapter14.lemma_14_3_8`,
+  `CartisGouldToint.Chapter14.lemma_14_3_8_proof_gap_counterexample`.
+* **Corrected generic complexity.** The generic bound in Theorem 14.3.9 uses an explicit
+  bad-iteration term and a stronger inner-call contract. Counterexamples distinguish the per-call
+  and uniform readings of the source. See `CartisGouldToint.Chapter14.theorem_14_3_9`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_false`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`.
+* **Counterexamples.** Finite-dimensional examples refute the printed second- and third-order
+  tangent bounds in Lemma 14.3.5. See `CartisGouldToint.Chapter14.lemma_14_3_5_counterexample`.
+* **Explicit algorithm realization.** The INNER output in (14.3.19) has a concrete ARqp-SC
+  realization with anchored smoothness and recorded evaluation costs. See
+  `CartisGouldToint.Chapter14.IsARqpSCOutput`, `CartisGouldToint.Chapter14.IsARqpSCOutputCost`,
+  `CartisGouldToint.Chapter14.exists_isARqpSCOutputCost_anchored`.
+* **Conditional multiplicative bound.** The multiplicative ARqp-SC bound of order indexed by j plus
+  one explicitly requires an overhead-absorption inequality. See
+  `CartisGouldToint.Chapter14.arqpSCKappaF`, `CartisGouldToint.Chapter14.arqpSCKappaD`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le`.
+* **Additive overhead and its absorption.** For the ARqp-SC exponents the cost bound retains
+  overhead unless an explicit absorption condition holds, as it does for LEN order at least two. See
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_add_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_lenq`.
+* **Unit-radius realization.** An unconstrained unit-radius INNER realization covers orders at most
+  two and retains additive costs. See `CartisGouldToint.Chapter14.IsARqpUnitOutputCost`,
+  `CartisGouldToint.Chapter14.exists_isARqpUnitOutputCost_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpUnitOutputCost.cost_le_add_anchored`.
+* **Well-definedness for concrete INNER choices.** Algorithm 14.3.1 has realizations with actual
+  ARqp-SC inner outputs and with unit radii in the unconstrained low-order case. See
+  `CartisGouldToint.Chapter14.lenq_core_anchored`,
+  `CartisGouldToint.Chapter14.exists_algorithm_14_3_1`,
+  `CartisGouldToint.Chapter14.exists_algorithm_14_3_1_unit`.
+* **Counterexample.** A first-order LEN example refutes the printed multiplicative ARqp-SC call
+  bound. See `CartisGouldToint.Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`.
+* **Unit-radius call variant.** Algorithm 14.3.2 has an unconstrained unit-radius inner-call
+  realization. See `CartisGouldToint.Chapter14.IsARqpUnitCall`.
+* **Phase-1 construction and bound.** The Phase-1 construction supplies actual inner calls and
+  bounds their costs with the exponents j plus one under the anchored data. See
+  `CartisGouldToint.Chapter14.exists_algorithm_14_3_2_of_phase2_anchored`,
+  `CartisGouldToint.Chapter14.phase1_cost_le_anchored`.
+* **Explicit derivative budgets.** The scalar specialization of f.D1pLaB.X exposes the derivative
+  budgets and uses an explicit shared majorant. See `CartisGouldToint.Chapter14.anchoredConst`,
+  `CartisGouldToint.Chapter14.anchoredConst_apply`,
+  `CartisGouldToint.Chapter14.anchoredCompositeBounds_zeroCon_of`,
+  `CartisGouldToint.Chapter14.anchoredCompositeBounds_zeroCon`.
+* **Anchored solver formulation.** Lemma 14.3.6 is also instantiated as anchored inner-solver bounds
+  for both merits. See `CartisGouldToint.Chapter14.nuAnchoredConst`,
+  `CartisGouldToint.Chapter14.exists_anchoredCompositeBounds_nu_mu`.
+* **Call-output radii and count contract.** The ARqp-SC Phase-2 call uses certified output radii and
+  derives the stronger inner-test contract with explicit radius floors. See
+  `CartisGouldToint.Chapter14.IsARqpSCCallOut`, `CartisGouldToint.Chapter14.IsARqpSCPhase2Calls`,
+  `CartisGouldToint.Chapter14.IsARqpSCPhase2Calls.isInnerPhaseRunStrong`,
+  `CartisGouldToint.Chapter14.IsARqpSCPhase2Calls.isInnerPhaseRunStrong_arqp`.
+* **Concrete run and bound.** The order j plus one result for Theorem 14.3.9 uses concrete inner
+  traces and supplies Phase-2 termination. See `CartisGouldToint.Chapter14.IsTPqpGCARqpSCRun`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqpc`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqpc_terminates`.
+* **Corrected total order.** The ARqp-SC bound in Theorem 14.3.9 exposes the additional inverse
+  tolerance-product term. See `CartisGouldToint.Chapter14.exists_const_order_arqp`.
+* **Correction.** Theorem 14.3.1 tests genuinely equality-feasible arcs and drops X.CQ. See
+  `CartisGouldToint.Chapter14.theorem_14_3_1`.
+* **Generalization and radius correction.** Theorem 14.3.2 uses a radius-sized ball, works at
+  arbitrary Taylor order and includes zero Lipschitz constants in the step cutoff. See
+  `CartisGouldToint.Chapter14.theorem_14_3_2`.
+* **Correction.** Example 14.3.1 corrects the multiplier and proves that the origin is a minimizer
+  along the full feasible locus. See `CartisGouldToint.Chapter14.example1431_lagrangian_eq`,
+  `CartisGouldToint.Chapter14.example1431_derivs`, `CartisGouldToint.Chapter14.example_14_3_1`.
+* **Run specification.** Algorithm 14.3.1 specifies the pretermination run and distinguishes the
+  initial residual test from later criticality tests. See `CartisGouldToint.Chapter14.lenStop`,
+  `CartisGouldToint.Chapter14.algorithm_14_3_1`.
+* **Correction.** Theorem 14.3.3 rounds the logarithmic iteration bound up. See
+  `CartisGouldToint.Chapter14.theorem_14_3_3`.
+* **Correction and additive contract.** Theorem 14.3.4 sums the orderwise costs and has a version
+  retaining per-call overhead. See `CartisGouldToint.Chapter14.theorem_14_3_4`,
+  `CartisGouldToint.Chapter14.theorem_14_3_4_add`.
+* **Correction.** Equation (14.3.63) bounds derivatives of the target merit. See
+  `CartisGouldToint.Chapter14.lemma_14_3_6_ii`.
+* **Explicit call trace.** Phase 2 exposes the INNER call trace, merit monotonicity and early
+  termination. See `CartisGouldToint.Chapter14.TPqpSeq`,
+  `CartisGouldToint.Chapter14.IsTPqpGCPhase2`.
+* **Correction and run formulation.** Algorithm 14.3.2 enters Phase 2 at equality in the primal
+  threshold. See `CartisGouldToint.Chapter14.algorithm_14_3_2`,
+  `CartisGouldToint.Chapter14.algorithm_14_3_2.phase1_exit`.
+* **Corrected higher-order bounds.** Lemma 14.3.5 supplies the missing product-rule terms and gives
+  the corresponding restrictions when the objective equals the target. See
+  `CartisGouldToint.Chapter14.lemma_14_3_5`.
+* **Correction and additive contract.** Lemma 14.3.7 sums across orders in Phase 1 and retains
+  additive overhead in a separate bound. See `CartisGouldToint.Chapter14.lemma_14_3_7`,
+  `CartisGouldToint.Chapter14.lemma_14_3_7_add`.
+* **Explicit test and decrement contracts.** The Phase-2 trace distinguishes the INNER stopping test
+  from the outer criticality test and exposes its count and radius contracts. See
+  `CartisGouldToint.Chapter14.IsInnerPhaseRun`, `CartisGouldToint.Chapter14.IsInnerPhaseRunStrong`.
 * **Theorem 14.3.1** (correction). With arcs that only stay in $X$ the theorem is false; the arcs
   must stay in $X \cap \{c = 0\}$, and X.CQ is then not needed. See
   `CartisGouldToint.Chapter14.theorem_14_3_1`.
@@ -224,14 +363,11 @@ the runs that refute printed statements are the backbone examples
   `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt_arqp_unit`,
   `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_counterexample` and
   `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_printed_false`.
-* **Theorem 14.3.9, INNER = TRq-SC** (correction). The theorem holds with the exponents
-  $\pi_j = q + 1$ and a factor $1 + |\log(\epsilon_0 \epsilon_{\min})|$, which is needed for
-  $q = 1$; the printed order fails for every $q \ge 2$, and the TRq-SC row $j + 1$ of (14.2.12)
-  fails per iteration for $q = 2$. See `CartisGouldToint.Chapter14.theorem_14_3_9_trq`,
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`,
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false`,
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false_phase2` and
-  `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`.
+* **Theorem 14.3.9, INNER = TRq-SC** (correction). The function-evaluation bound includes the
+  factor $1 + |\log(\epsilon_0 \epsilon_{\min})|$, which is needed for $q = 1$. The exponents
+  $\pi_j = q + 1$ agree with the book's (14.2.12). See
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq` and
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`.
 * **Algorithm 14.3.2** (reading). The INNER calls of Phase 2 are described by their iterates;
   $\mu(\cdot, t_k)$ does not increase along a call, and a call stops as soon as
   $\|r\| < \theta \epsilon_0$. With INNER = ARqp-SC the radii returned at a Step-2 termination may
@@ -305,7 +441,13 @@ Assumption X.CQ is not needed.
 
 The expansion coefficient of order $j$ is `Optimization.curveCoeff`, the book's $\sum_{k=1}^{j}
 \frac{1}{k!} \sum_{P(j,k)} \nabla^k [s_{\ell_1}, \dots, s_{\ell_k}]$. The arc condition is
-`Optimization.IsFeasibleArc`. -/
+`Optimization.IsFeasibleArc`.
+
+**Correction.** The tested arcs stay in the equality-feasible set as well as X. On those arcs the
+constraint jet vanishes and the Lagrangian equals the objective. The printed X.CQ only asserts
+existence of X-feasible jets, which is insufficient to make every tested jet follow the equality
+constraints.
+-/
 theorem theorem_14_3_1 {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {xs : ℝⁿ}
     (hsmooth : ∃ U, IsOpen U ∧ X ⊆ U ∧ ContDiffOn ℝ q f U ∧ ContDiffOn ℝ q c U)
     (hfeas : xs ∈ X ∩ {x | c x = 0}) (hmin : IsLocalMinOn f (X ∩ {x | c x = 0}) xs) :
@@ -350,7 +492,12 @@ ball of radius $\delta$.
 
 Here $\|(1, y)\| = \sqrt{1 + \|y\|^2}$, and the Taylor measure of the Lagrangian is
 `Optimization.taylorMeasure` applied to the Taylor series of
-`Constrained.innerLagrangian f c y_ε`. -/
+`Constrained.innerLagrangian f c y_ε`.
+
+**Correction.** The lemma works at any Taylor order, uses derivative bounds throughout the closed
+ball of radius delta, and writes the step cutoff as a product inequality that also handles zero
+Lipschitz constants. Feasible-direction membership is supplied directly.
+-/
 theorem theorem_14_3_2 {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {xε : ℝⁿ} {yε : ℝᵐ} {V : Set ℝⁿ} {j : ℕ}
     {δ ε η ε₀ Lf Lc : ℝ} (hf : ∀ z ∈ closedBall xε δ, ContDiffAt ℝ j f z)
     (hc : ∀ z ∈ closedBall xε δ, ContDiffAt ℝ j c z)
@@ -418,7 +565,12 @@ theorem example1431C_eq_zero_iff (x : EuclideanSpace ℝ (Fin 3)) :
 
 
 /-- In Example 14.3.1, with $y_0 = (-1, 0)$ the Lagrangian $f - \langle y_0, c \rangle$ is
-$x \mapsto x_2^3 + x_1 x_2$. -/
+$x \mapsto x_2^3 + x_1 x_2$.
+
+**Correction.** The feasible locus is the polynomial curve on which the objective is zero, so the
+origin is a minimizer. The corrected multiplier is minus one on the first constraint and zero on the
+second. The mixed Hessian term and the cubic term then cancel in the arc coefficient.
+-/
 theorem example1431_lagrangian_eq :
     innerLagrangian example1431F example1431C (!₂[-1, 0]) = fun x => x 1 ^ 3 + x 0 * x 1 := by
   funext x
@@ -450,7 +602,12 @@ private theorem bilin_polar {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ 
 
 /-- In Example 14.3.1, with $y_0 = (-1, 0)$: $\nabla^2 \mathcal{L}(0, y_0)[s_1, s_2] = -1$ and
 $\frac{1}{6} \nabla^3 \mathcal{L}(0, y_0)[s_1]^3 = 1$. So the condition (14.3.6) holds with both
-terms nonzero. -/
+terms nonzero.
+
+**Correction.** The feasible locus is the polynomial curve on which the objective is zero, so the
+origin is a minimizer. The corrected multiplier is minus one on the first constraint and zero on the
+second. The mixed Hessian term and the cubic term then cancel in the arc coefficient.
+-/
 theorem example1431_derivs :
     iteratedFDeriv ℝ 2 (innerLagrangian example1431F example1431C (!₂[-1, 0])) 0
         ![example1431Arc 1, example1431Arc 2] = -1 ∧
@@ -503,7 +660,12 @@ of the book this is (14.3.6): $\nabla^2 \mathcal{L}[s_1, s_2] + \frac{1}{6} \nab
 **Correction.** The source calls the origin a "high-order saddle point". It is a minimizer. The
 source also gives the multiplier $(1, 0)$; this corresponds to the opposite sign convention
 $\mathcal{L} = f + \langle y, c \rangle$, and with $\mathcal{L} = f - \langle y, c \rangle$ the
-multiplier is $y_0 = (-1, 0)$. -/
+multiplier is $y_0 = (-1, 0)$.
+
+**Correction.** The feasible locus is the polynomial curve on which the objective is zero, so the
+origin is a minimizer. The corrected multiplier is minus one on the first constraint and zero on the
+second. The mixed Hessian term and the cubic term then cancel in the arc coefficient.
+-/
 theorem example_14_3_1 :
     Optimization.IsFeasibleArc (univ ∩ {x | example1431C x = 0}) 0 3 example1431Arc ∧
     (∀ x : EuclideanSpace ℝ (Fin 3), example1431C x = 0 ↔ ∃ t : ℝ, x = !₂[-t ^ 2, t, t ^ 3]) ∧
@@ -552,7 +714,12 @@ iteration $k$: either $\|r(x_k)\| \le \epsilon_0$, or $k \ge 1$ and
 $$\phi^{\delta_{k,j}}_{\Phi_2,X(x_k),j}(x_k) \le \epsilon_j \|r(x_k)\| \frac{\delta_{k,j}^j}{j!}
   \quad \text{for all } j \in \{1, \dots, q\},$$
 where $\delta_k$ are the radii returned at iteration $k$. The primal tolerance $\epsilon_0$ is
-`ε 0`. -/
+`ε 0`.
+
+**Reading.** The initial point is tested only for the primal residual bound. Subsequent calls supply
+feasible iterates, radii and the scaled INNER inequalities as long as the method has not already
+stopped. The relation imposes no conditions beyond the first stop.
+-/
 def lenStop (r : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (ε : ℕ → ℝ) (x : ℕ → ℝⁿ) (δ : ℕ → ℕ → ℝ)
     (k : ℕ) : Prop :=
   ‖r (x k)‖ ≤ ε 0 ∨ (1 ≤ k ∧ ∀ j ∈ Finset.Icc 1 q,
@@ -571,7 +738,12 @@ $$\phi^{\delta_{k,j}}_{\Phi_2,X(x_k),j}(x_k) \le \beta \|r(x_{k-1})\| \epsilon_j
   \frac{\delta_{k,j}^j}{j!}, \qquad j \in \{1, \dots, q\}.$$
 
 The run stops at the first iteration $k$ that passes (14.3.23); at $k = 0$ only the test
-$\|r(x_0)\| \le \epsilon_0$ can hold. -/
+$\|r(x_0)\| \le \epsilon_0$ can hold.
+
+**Reading.** The initial point is tested only for the primal residual bound. Subsequent calls supply
+feasible iterates, radii and the scaled INNER inequalities as long as the method has not already
+stopped. The relation imposes no conditions beyond the first stop.
+-/
 structure algorithm_14_3_1 (r : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (ε : ℕ → ℝ) (β : ℝ)
     (x : ℕ → ℝⁿ) (δ : ℕ → ℕ → ℝ) : Prop where
   /-- The starting point $x_0$ lies in $X$. -/
@@ -649,7 +821,12 @@ terminated at the iterations $0, \dots, k$.
 **Typo.** The source bounds $k_{\max}$ by $\max(0, \log(\epsilon_0 / \|r(x_0)\|) / \log \beta)$;
 this real number must be rounded up.
 
-The ceiling is the natural-number ceiling `⌈·⌉₊`, which is $0$ for a negative argument. -/
+The ceiling is the natural-number ceiling `⌈·⌉₊`, which is $0$ for a negative argument.
+
+**Correction.** The integer iteration bound is the nonnegative ceiling of the logarithmic
+expression. The theorem identifies the first stopping index and states the pretermination geometric
+decrease.
+-/
 theorem theorem_14_3_3 {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε : ℕ → ℝ} {β : ℝ}
     {x : ℕ → ℝⁿ} {δ : ℕ → ℕ → ℝ} (h : algorithm_14_3_1 r X q ε β x δ) :
     (∃ kmax, Optimization.IsFirstHit (lenStop r X q ε x δ) kmax ∧
@@ -716,7 +893,11 @@ $$\sum_{k=1}^{k_{\max}} n_k \le \frac{1}{2} \kappa \|r(x_0)\| \sum_{j=1}^{q} \fr
 $\sum_j$. Its proof exchanges a sum over $k$ and a maximum over $j$, and
 $\sum_k \max_j \le \max_j \sum_k$ is false in general.
 
-The cost bound is `CartisGouldToint.Chapter14.innerEvalBound`. -/
+The cost bound is `CartisGouldToint.Chapter14.innerEvalBound`.
+
+**Correction.** The aggregated expression sums over derivative orders because the maximizing order
+can vary by call. The second version retains a per-call additive cost instead of discarding it.
+-/
 theorem theorem_14_3_4 {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε : ℕ → ℝ} {β : ℝ}
     {x : ℕ → ℝⁿ} {δ : ℕ → ℕ → ℝ} (h : algorithm_14_3_1 r X q ε β x δ) {kmax : ℕ}
     (hend : Optimization.IsFirstHit (lenStop r X q ε x δ) kmax) {π : ℕ → ℝ}
@@ -808,7 +989,11 @@ $k_{\max} a$.
 The book notes (footnote 114) that the contract (14.3.20)–(14.3.21) ignores the additive
 constants of the INNER bounds. The multiplicative contract fails for some INNER methods
 (`CartisGouldToint.Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`), and this
-additive form is the one that holds for ARqp-SC. -/
+additive form is the one that holds for ARqp-SC.
+
+**Correction.** The aggregated expression sums over derivative orders because the maximizing order
+can vary by call. The second version retains a per-call additive cost instead of discarding it.
+-/
 theorem theorem_14_3_4_add {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ} {ε : ℕ → ℝ} {β : ℝ}
     {x : ℕ → ℝⁿ} {δ : ℕ → ℕ → ℝ} (h : algorithm_14_3_1 r X q ε β x δ) {kmax : ℕ}
     (hend : Optimization.IsFirstHit (lenStop r X q ε x δ) kmax) {π : ℕ → ℝ}
@@ -1017,7 +1202,12 @@ $$\|\nabla^j \mu(x, t) - \nabla^j \mu(y, t)\| \le L_{\mu,j} \|x - y\| \quad (14.
 
 **Typo.** The source writes $\nabla^j \nu$ in (14.3.63); the bound is on $\nabla^j \mu$.
 
-The Lipschitz condition is anchored: it holds for $x$ in $\mathcal{L}_\mu(t)$ and $y$ in $X_0$. -/
+The Lipschitz condition is anchored: it holds for $x$ in $\mathcal{L}_\mu(t)$ and $y$ in $X_0$.
+
+**Correction.** The derivative bounded on the target-merit sublevel is that of the target merit,
+consistent with the other estimate in this part. The displayed source bound names the feasibility
+merit instead.
+-/
 theorem lemma_14_3_6_ii {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X X₀ : Set ℝⁿ} {p : ℕ}
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ p Lc Bc)
     (hf : AssumptionD1pLBX f X X₀ p Lf Bf) :
@@ -1097,7 +1287,12 @@ number $e_k$ of iterations and its successful iterations.
 It is the backbone `Constrained.HighOrderTargetSeq`, which also defines the sets $\mathcal{K}_a$
 and $\mathcal{K}_b$ of (14.3.36) (`Constrained.HighOrderTargetSeq.IsKa`,
 `Constrained.HighOrderTargetSeq.IsKb`), the termination, INNER's test (14.3.19) at the end of a
-call (`Constrained.HighOrderTargetSeq.InnerTest`) and the evaluation counts. -/
+call (`Constrained.HighOrderTargetSeq.InnerTest`) and the evaluation counts.
+
+**Reading.** Phase 2 records the inner path, status and counts. It requires monotone target merit
+and permits earliest residual-based termination, with certificates and radii carried by the
+inner-call result.
+-/
 abbrev TPqpSeq (n : ℕ) := Constrained.HighOrderTargetSeq (EuclideanSpace ℝ (Fin n))
 
 /-- **Phase 2 of Algorithm 14.3.2** of [cartis2022evaluation] (TPqp-GC), as a run predicate on the
@@ -1122,7 +1317,12 @@ iterates, with the two properties above.
 The predicate is the backbone `Constrained.IsHighOrderTargetRun`. A run is a run of the
 target-following outer loop of the library (`Constrained.IsHighOrderTargetRun.toRun`), and its
 output satisfies (14.3.48), (14.3.49) and (14.3.52)
-(`Constrained.IsHighOrderTargetRun.output_spec`). -/
+(`Constrained.IsHighOrderTargetRun.output_spec`).
+
+**Reading.** Phase 2 records the inner path, status and counts. It requires monotone target merit
+and permits earliest residual-based termination, with certificates and radii carried by the
+inner-call result.
+-/
 abbrev IsTPqpGCPhase2 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (x₁ : ℝⁿ) (D : TPqpSeq n) : Prop :=
   Constrained.IsHighOrderTargetRun f c X q θ β ε x₁ D
@@ -1137,7 +1337,12 @@ $\|c(x_1)\| > \theta \epsilon_0$ the algorithm terminates; otherwise Phase 2
 
 **Reading.** The LENq-SC test stops at $\|c(x_1)\| \le \theta \epsilon_0$, while (14.3.31) is
 printed with $<$. The two differ only when $\|c(x_1)\| = \theta \epsilon_0$; then Phase 2 is
-entered, which agrees with the exit test $\|c(x_1)\| > \theta \epsilon_0$. -/
+entered, which agrees with the exit test $\|c(x_1)\| > \theta \epsilon_0$.
+
+**Correction.** Phase 2 is entered at equality in the Phase-1 residual threshold, consistently with
+the printed strict exit test. The first-hitting Phase-1 predicate yields the alternative exit
+certificate when the residual remains above threshold.
+-/
 structure algorithm_14_3_2 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β₁ β : ℝ)
     (ε : ℕ → ℝ) (x₀ : ℝⁿ) (xP : ℕ → ℝⁿ) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq n) : Prop where
   /-- Phase 1 starts at $x_0$. -/
@@ -1162,7 +1367,12 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X X₀ : Set ℝⁿ} {q p
 /-- If Phase 1 of TPqp-GC ends with $\|c(x_1)\| > \theta \epsilon_0$, then $k_1 \ge 1$, the radii
 $\delta^P_{k_1}$ of the last LENq-SC iteration lie in $(0, 1]^q$, and they satisfy (14.3.41) at
 $x_1$: $\phi^{\delta_j}_{\nu,X(x_1),j}(x_1) \le \epsilon_j \|c(x_1)\| \delta_j^j / j!$ for
-$j \in \{1, \dots, q\}$. -/
+$j \in \{1, \dots, q\}$.
+
+**Correction.** Phase 2 is entered at equality in the Phase-1 residual threshold, consistently with
+the printed strict exit test. The first-hitting Phase-1 predicate yields the alternative exit
+certificate when the residual remains above threshold.
+-/
 theorem algorithm_14_3_2.phase1_exit (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D)
     (hc : θ * ε 0 < ‖c (xP k₁)‖) :
     1 ≤ k₁ ∧ (∀ j ∈ Finset.Icc 1 q, 0 < δP k₁ j ∧ δP k₁ j ≤ 1) ∧
@@ -1240,7 +1450,13 @@ holds only in the corrected forms above.
 The output is $x_\epsilon = x_{k_\epsilon + 1}$, $t_\epsilon$ is
 `Constrained.HighOrderTargetSeq.targetOut`, the radii are $\delta_{k_\epsilon + 1}$, and
 $y_\epsilon$ is `Constrained.targetMultiplier`. Only the smoothness parts of c.D1pLB.X and
-f.D1pLB.X ($C^q$ near $x_\epsilon$) are used. -/
+f.D1pLB.X ($C^q$ near $x_\epsilon$) are used.
+
+**Correction.** The second- and third-order bounds include product terms from differentiating the
+squared objective-to-target gap. When the gap is zero, the first-order source assertion is preserved
+and higher orders use bounds with derivative terms or are restricted to directions annihilating the
+objective derivative.
+-/
 theorem lemma_14_3_5 (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D) {Lc Bc Lf Bf : ℕ → ℝ}
     (hcB : AssumptionCD1pLBX c X X₀ p Lc Bc) (hfB : AssumptionD1pLBX f X X₀ p Lf Bf)
     (hqp : q ≤ p) :
@@ -1436,7 +1652,11 @@ $$\frac{1}{2} \kappa \|c(x_0)\| \sum_{j=1}^{q} \frac{\beta_1^{1 - 2\pi_j}}{\beta
 correction is that of Theorem 14.3.4.
 
 By Lemma 14.3.6(i), constants $\kappa$ for the contract exist; they depend on the constants of
-c.D1pLB.X and on $\|c(x_0)\|$. -/
+c.D1pLB.X and on $\|c(x_0)\|$.
+
+**Correction.** The Phase-1 evaluation bound sums over derivative orders because the maximum can
+vary across calls. The additive version also accumulates the supplied cost per call.
+-/
 theorem lemma_14_3_7 (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D) (hθ : 0 < θ)
     {π : ℕ → ℝ} (hπ : ∀ j ∈ Finset.Icc 1 q, 1 < π j) {κ : ℝ} (hκ : 0 ≤ κ) {cost : ℕ → ℝ}
     (hcost : ∀ k ∈ Finset.Icc 1 k₁, cost k ≤ innerEvalBound κ π q (phi2 c (xP (k - 1)))
@@ -1470,7 +1690,11 @@ theorem lemma_14_3_7 (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k�
 /-- **Lemma 14.3.7** of [cartis2022evaluation] with an additive constant per call. If the cost of
 the $k$-th INNER call of Phase 1 satisfies the contract (14.3.20) for $\nu$ up to an additive
 constant $a$ ($\theta > 0$, $\pi_j > 1$, $\kappa \ge 0$), then the total cost of Phase 1 is at
-most the bound of `CartisGouldToint.Chapter14.lemma_14_3_7` plus $k_1 a$. -/
+most the bound of `CartisGouldToint.Chapter14.lemma_14_3_7` plus $k_1 a$.
+
+**Correction.** The Phase-1 evaluation bound sums over derivative orders because the maximum can
+vary across calls. The additive version also accumulates the supplied cost per call.
+-/
 theorem lemma_14_3_7_add (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D) (hθ : 0 < θ)
     {π : ℕ → ℝ} (hπ : ∀ j ∈ Finset.Icc 1 q, 1 < π j) {κ a : ℝ} (hκ : 0 ≤ κ) {cost : ℕ → ℝ}
     (hcost : ∀ k ∈ Finset.Icc 1 k₁, cost k ≤ innerEvalBound κ π q (phi2 c (xP (k - 1)))
@@ -1508,7 +1732,12 @@ has not been satisfied" (B.14.21). This exemption is weaker than what INNER runs
 14.2.2 exempts only the steps after which INNER's own test (14.3.19) holds
 (`CartisGouldToint.Chapter14.IsInnerPhaseRunStrong`). It is too weak to bound the bad outer
 iterations (`CartisGouldToint.Chapter14.lemma_14_3_8_proof_gap_counterexample`). The contract is
-the backbone `Constrained.HighOrderTargetSeq.IsEndCritContract`. -/
+the backbone `Constrained.HighOrderTargetSeq.IsEndCritContract`.
+
+**Reading.** The count and sufficient-decrease assumptions are stated as predicates on the trace.
+The stronger version keys the exemption to INNER's own criticality test and carries lower radius
+bounds separately.
+-/
 abbrev IsInnerPhaseRun (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (D : TPqpSeq n) (κdecr κuns κunc : ℝ) (π : ℕ → ℝ) : Prop :=
   D.IsEndCritContract f c X q θ β ε κdecr κuns κunc π
@@ -1520,7 +1749,12 @@ decrease is required unless the call ends, by any test of (14.3.32), at a point 
 INNER's test (14.3.19) (`Constrained.HighOrderTargetSeq.InnerTest`). A case-(b) call that ends
 at a point that passes (14.3.19) returns radii $\delta_{k+1,j} \ge \rho_j$.
 
-It is the backbone `Constrained.HighOrderTargetSeq.IsInnerTestContract`. -/
+It is the backbone `Constrained.HighOrderTargetSeq.IsInnerTestContract`.
+
+**Reading.** The count and sufficient-decrease assumptions are stated as predicates on the trace.
+The stronger version keys the exemption to INNER's own criticality test and carries lower radius
+bounds separately.
+-/
 abbrev IsInnerPhaseRunStrong (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ) (θ β : ℝ)
     (ε : ℕ → ℝ) (D : TPqpSeq n) (κdecr κuns κunc : ℝ) (π ρ : ℕ → ℝ) : Prop :=
   D.IsInnerTestContract f c X q θ β ε κdecr κuns κunc π ρ
@@ -1561,7 +1795,12 @@ bounds $\|r(x_{j,s}, t_j)\|^{\pi_l - 1}$ below by $\epsilon_0^{\pi_l - 1}$ after
 while (B.14.20) gives only $(\theta \epsilon_0)^{\pi_l - 1}$; the constant $\kappa^S$ of
 (14.3.71) is still right, because the INNER tolerance $\beta \|r(x_{j,0}, t_j)\| \epsilon_l$ of
 (B.14.21) is at least $\beta \theta \epsilon_0 \epsilon_l$ and the residuals are at most
-$\epsilon_0$ (`Constrained.IsHighOrderTargetRun.residual_drop`). -/
+$\epsilon_0$ (`Constrained.IsHighOrderTargetRun.residual_drop`).
+
+**Correction.** The counting estimate distinguishes good inner decreases from bad outer iterations.
+A call can end immediately after its only successful step, so the source proof's decreases alone do
+not bound the bad iterations. The example has arbitrarily many such iterations.
+-/
 theorem lemma_14_3_8 (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     (hin : IsInnerPhaseRun f c X q θ β ε D κdecr κuns κunc π) (hκ : 0 < κdecr)
     (hπ : ∀ l ∈ Finset.Icc 1 q, 0 ≤ π l ∧ π l ≤ πmax) (hM0 : 0 < M)
@@ -1640,7 +1879,14 @@ The realizations of INNER are treated in `CartisGouldToint.Chapter14.theorem_14_
 a parameter, under the weaker contract, is `Constrained.IsHighOrderTargetRun.complexity`, and
 the Phase-2 part of this theorem is `Constrained.IsHighOrderTargetRun.complexity_of_innerTest`.
 The constant $\eta$ is `Constrained.kbMargin`. The smoothness and boundedness assumptions of the
-book serve only to justify the contracts (Lemmas 14.2.2–14.2.3 and 14.3.6). -/
+book serve only to justify the contracts (Lemmas 14.2.2–14.2.3 and 14.3.6).
+
+**Correction.** The theorem uses additive Phase-1 costs and a Phase-2 contract with a separate lower
+radius bound and a positive bad-iteration margin. The latter contributes an extra reciprocal-margin
+term. One example refutes the per-call reading of the printed complexity claim, and another shows
+that a uniform multiplicative first-order cost bound can fall below one even when a call needs an
+evaluation.
+-/
 theorem theorem_14_3_9 {β₁ : ℝ} {x₀ : ℝⁿ} {xP : ℕ → ℝⁿ} {δP : ℕ → ℕ → ℝ} {k₁ : ℕ}
     (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D) (hθ : 0 < θ)
     (hπ1 : ∀ j ∈ Finset.Icc 1 q, 1 < π j) {κF₁ κD₁ aF aD : ℝ} (hκF₁ : 0 ≤ κF₁)
@@ -1785,7 +2031,12 @@ $\phi^1_{f,3}(0) \ge 718/216$, while the printed right-hand side is at most $43/
 corrected bounds of `CartisGouldToint.Chapter14.lemma_14_3_5`, with the terms
 $(\|\nabla f\| \delta)^2 / (2\tau)$ and $(\|\nabla f\| \delta + \|\nabla^2 f\| \delta^2)
 \|\nabla f\| \delta / (2\tau)$, hold; for example $\frac{1}{2} + (1/4)^2 / (2 \epsilon_0) = 29/8
-\ge 27/8$. -/
+\ge 27/8$.
+
+**Correction.** One-dimensional examples satisfy the algorithmic stopping data while the printed
+second- and third-order tangent bounds fail. They exhibit the need for the missing product-rule
+terms.
+-/
 theorem lemma_14_3_5_counterexample :
     (∃ (f : ℝ¹ → ℝ) (c : ℝ¹ → ℝ¹) (X X₀ : Set ℝ¹) (q p : ℕ) (θ β₁ β : ℝ) (ε : ℕ → ℝ)
       (x₀ : ℝ¹) (xP : ℕ → ℝ¹) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq 1)
@@ -1927,7 +2178,12 @@ decrease of `CartisGouldToint.Chapter14.IsInnerPhaseRun` and is not good. The te
 fails at $x_{k+1}$ for $t_{k+1}$, because the decrease along $d = -e_2$ is
 $\theta + a_k > \sqrt{\theta^2 + a_k^2}$; so Phase 2 does not stop. The decreases of $\mu$ along
 the calls and the target drops $2 a_k$ are summable, and the sequence converges to $((0, 0), 0)$
-without terminating. -/
+without terminating.
+
+**Correction.** The counting estimate distinguishes good inner decreases from bad outer iterations.
+A call can end immediately after its only successful step, so the source proof's decreases alone do
+not bound the bad iterations. The example has arbitrarily many such iterations.
+-/
 theorem lemma_14_3_8_proof_gap_counterexample :
     ∃ (f : ℝ² → ℝ) (c : ℝ² → ℝ¹) (X : Set ℝ²) (θ : ℝ) (ε : ℕ → ℝ) (x₀ : ℝ²) (xP : ℕ → ℝ²)
       (δP : ℕ → ℕ → ℝ) (D : TPqpSeq 2),
@@ -2071,7 +2327,14 @@ $\|r(x_k, t_k)\| \ge u^2/2$. After the reflection (14.3.35) the decrease along $
 $u^3/2 + E_{k+1} \ge 7u^3/8 > \epsilon_1 \|r(x_{k+1}, t_{k+1})\|$, so (14.3.34) fails. The
 targets drop by $2 E_{k+1} \approx u^3$, so $N \approx 1/u^3$ such iterations fit in $X$. The
 last call lands on its target, $f(x_{N+1}) = t_N$, where the third test of (14.3.32) holds (case
-(c)), and Phase 2 stops at $k_\epsilon = N$. -/
+(c)), and Phase 2 stops at $k_\epsilon = N$.
+
+**Correction.** The theorem uses additive Phase-1 costs and a Phase-2 contract with a separate lower
+radius bound and a positive bad-iteration margin. The latter contributes an extra reciprocal-margin
+term. One example refutes the per-call reading of the printed complexity claim, and another shows
+that a uniform multiplicative first-order cost bound can fall below one even when a call needs an
+evaluation.
+-/
 theorem theorem_14_3_9_false :
     ∃ (f : ℝ² → ℝ) (c : ℝ² → ℝ¹) (X : Set ℝ²),
       AssumptionXCNe X ∧ Convex ℝ X ∧ ContDiff ℝ ⊤ f ∧ ContDiff ℝ ⊤ c ∧
@@ -2195,7 +2458,14 @@ So under this reading no INNER, ARqp-SC included (compare
 `CartisGouldToint.Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`), satisfies
 the hypotheses of Theorem 14.3.9 on this problem for $\pi_1 < 2$, and the printed theorem is
 vacuous there. Under the per-call reading it is false for $\pi_1 \in [4/3, 3/2]$
-(`CartisGouldToint.Chapter14.theorem_14_3_9_false`). -/
+(`CartisGouldToint.Chapter14.theorem_14_3_9_false`).
+
+**Correction.** The theorem uses additive Phase-1 costs and a Phase-2 contract with a separate lower
+radius bound and a positive bad-iteration margin. The latter contributes an extra reciprocal-margin
+term. One example refutes the per-call reading of the printed complexity claim, and another shows
+that a uniform multiplicative first-order cost bound can fall below one even when a call needs an
+evaluation.
+-/
 theorem theorem_14_3_9_cost_hypothesis_unsatisfiable (π : ℕ → ℝ) (hπ : π 1 < 2) {β : ℝ}
     (hβ : 0 < β) (hβ1 : β < 1) (κ : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j, 0 < ε j ∧ ε j ≤ 1) ∧ pt 0 (-1) ∈ Box.square ∧ ‖Box.con (pt 0 (-1))‖ = 0 ∧
@@ -2249,7 +2519,11 @@ by ARqp-SC. That is, $y$ is the first termination iterate of an ARqpC-SC run
 (`CartisGouldToint.Chapter14.algorithm_14_1_1`) with $c = 0$, $h = 0$ and initial radii $1$ on
 $F$ from $x^S$, and the radii $\delta \in (0, 1]^q$ satisfy (14.3.19) at $y$.
 
-It is the backbone `Optimization.IsARqpOutput`. -/
+It is the backbone `Optimization.IsARqpOutput`.
+
+**Reading.** The nonspecific INNER output is realized with an ARqp-SC trace on the scalar objective.
+Its feasible point, certified radii and evaluations are exposed under anchored sublevel assumptions.
+-/
 abbrev IsARqpSCOutput (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ)
     (xS y : ℝⁿ) (δ : ℕ → ℝ) : Prop :=
   Optimization.IsARqpOutput (EuclideanSpace ℝ (Fin 0)) F X p q P.toARqpParams ε xS y δ
@@ -2258,7 +2532,11 @@ abbrev IsARqpSCOutput (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (p q : ℕ) (P : ARq
 $\mathrm{INNER}(F, X, q, x^S, \epsilon)$, as in `CartisGouldToint.Chapter14.IsARqpSCOutput`,
 whose run uses $n_F$ evaluations of $F$ and $n_D$ evaluations of its derivatives.
 
-It is the backbone `Optimization.IsARqpOutputCost`. -/
+It is the backbone `Optimization.IsARqpOutputCost`.
+
+**Reading.** The nonspecific INNER output is realized with an ARqp-SC trace on the scalar objective.
+Its feasible point, certified radii and evaluations are exposed under anchored sublevel assumptions.
+-/
 abbrev IsARqpSCOutputCost (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ)
     (xS y : ℝⁿ) (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
   Optimization.IsARqpOutputCost (EuclideanSpace ℝ (Fin 0)) F X p q P.toARqpParams ε xS y δ nF nD
@@ -2266,14 +2544,24 @@ abbrev IsARqpSCOutputCost (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (p q : ℕ) (P :
 /-- The constant $\kappa_F = \kappa_{\mathrm{uns}} / \kappa_{\mathrm{decr}} + 2 \kappa_C$ of the
 cost contract (14.3.20) of [cartis2022evaluation] for the function evaluations of an ARqp-SC
 call, from the ARqpC-SC row of (14.2.12). The constants `Optimization.arqpCallKappaDecr` and
-`Optimization.kappaCARqp` are $\kappa_{\mathrm{decr}}$ and $\kappa_C$. -/
+`Optimization.kappaCARqp` are $\kappa_{\mathrm{decr}}$ and $\kappa_C$.
+
+**Reading.** The concrete constants cover the inner counts with exponents indexed by order plus one.
+This form assumes enough initial objective value to absorb the additive counts, expressed by the
+first tolerance squared.
+-/
 noncomputable def arqpSCKappaF (P : ARqpCParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
   Optimization.arqpKappaUns P.toARqpParams / Optimization.arqpCallKappaDecr P.toARqpParams L p q +
     2 * Optimization.kappaCARqp P.toARqpParams L p
 
 /-- The constant $\kappa_D = 1 / \kappa_{\mathrm{decr}} + 4$ of the cost contract (14.3.21) of
 [cartis2022evaluation] for the derivative evaluations of an ARqp-SC call, from the ARqpC-SC row
-of (14.2.12). -/
+of (14.2.12).
+
+**Reading.** The concrete constants cover the inner counts with exponents indexed by order plus one.
+This form assumes enough initial objective value to absorb the additive counts, expressed by the
+first tolerance squared.
+-/
 noncomputable def arqpSCKappaD (P : ARqpCParams) (L : ℕ → ℝ) (p q : ℕ) : ℝ :=
   1 / Optimization.arqpCallKappaDecr P.toARqpParams L p q + 4
 
@@ -2287,7 +2575,11 @@ and an open convex $X_0 \supseteq X$) on a set $S$ that contains every $y \in X$
 $F(y) \le F(x^S)$. Let $F \ge f_{\mathrm{low}}$ on $X$, $X$ closed, $\theta < \varsigma$ for the
 ARqpC constants, $1 \le q \le p$, $x^S \in X$ and $\epsilon_j \in (0, 1]$ for
 $j \in \{1, \dots, q\}$. Then there is an ARqp-SC call from $x^S$ with tolerances $\epsilon$,
-with some output and counts (`Optimization.exists_isARqpOutputCost`). -/
+with some output and counts (`Optimization.exists_isARqpOutputCost`).
+
+**Reading.** The nonspecific INNER output is realized with an ARqp-SC trace on the scalar objective.
+Its feasible point, certified radii and evaluations are exposed under anchored sublevel assumptions.
+-/
 theorem exists_isARqpSCOutputCost_anchored {X₀ S : Set ℝⁿ} {L : ℕ → ℝ}
     (hF : AnchoredCompositeBounds F (zeroCon n) X₀ S p L (fun _ => 0)) (hXX₀ : X ⊆ X₀)
     {flow : ℝ} (hb : ∀ y ∈ X, flow ≤ F y) (P : ARqpCParams) (hθς : P.θ < P.ς) (hq : 1 ≤ q)
@@ -2330,7 +2622,12 @@ derivatives.
 The constants are $\kappa_F$ = `CartisGouldToint.Chapter14.arqpSCKappaF` and $\kappa_D$ =
 `CartisGouldToint.Chapter14.arqpSCKappaD`, and the bound is
 `CartisGouldToint.Chapter14.innerEvalBound`. Under global assumptions the result is
-`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le`. -/
+`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le`.
+
+**Reading.** The concrete constants cover the inner counts with exponents indexed by order plus one.
+This form assumes enough initial objective value to absorb the additive counts, expressed by the
+first tolerance squared.
+-/
 theorem IsARqpSCOutputCost.cost_le_anchored {X₀ S : Set ℝⁿ} {L : ℕ → ℝ}
     (hF : AnchoredCompositeBounds F (zeroCon n) X₀ S p L (fun _ => 0)) (hXX₀ : X ⊆ X₀)
     (hb : ∀ y ∈ X, 0 ≤ F y) (hθς : P.θ < P.ς) {xS y : ℝⁿ} {δ' : ℕ → ℝ} {nF nD : ℕ}
@@ -2397,7 +2694,12 @@ $\kappa_D F(x^S) \max_j \epsilon_j^{-(j+1)}$ evaluations of its derivatives, wit
 `CartisGouldToint.Chapter14.arqpSCKappaD`.
 
 The exponents $j + 1$ are those of the ARqpC-SC row. The ARqp-SC row, in additive form, is
-`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_add_anchored`. -/
+`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_add_anchored`.
+
+**Reading.** The concrete constants cover the inner counts with exponents indexed by order plus one.
+This form assumes enough initial objective value to absorb the additive counts, expressed by the
+first tolerance squared.
+-/
 theorem IsARqpSCOutputCost.cost_le {L : ℕ → ℝ} (hF : Chapter12.AssumptionD1pL F p L)
     (hb : ∀ y ∈ X, 0 ≤ F y) (hθς : P.θ < P.ς) {xS y : ℝⁿ} {δ' : ℕ → ℝ} {nF nD : ℕ}
     (h : IsARqpSCOutputCost F X p q P ε xS y δ' nF nD) (hxS : xS ∈ X)
@@ -2426,7 +2728,12 @@ $$\frac{\kappa_{\mathrm{uns}}}{\eta_1 \kappa_{\Delta m}} F(x^S) \max_j \epsilon_
   \kappa_C$$
 evaluations of $F$ and at most $(\eta_1 \kappa_{\Delta m})^{-1} F(x^S) \max_j
 \epsilon_j^{-\pi_j} + 2$ evaluations of its derivatives, with $\pi_j$ =
-`Optimization.arqpPiOf u p j`. -/
+`Optimization.arqpPiOf u p j`.
+
+**Reading.** The ARqp-SC row supplies a bound with additive overhead. A multiplicative version needs
+an explicit tolerance-order term large enough to absorb it. The LEN application establishes this
+from the scaled residual tolerance for order at least two.
+-/
 theorem IsARqpSCOutputCost.cost_le_arqp_add_anchored {X₀ S : Set ℝⁿ} {L : ℕ → ℝ}
     (hF : AnchoredCompositeBounds F (zeroCon n) X₀ S p L (fun _ => 0)) (hXX₀ : X ⊆ X₀)
     (hb : ∀ y ∈ X, 0 ≤ F y) (hθς : P.θ < P.ς) {u : Prop} [Decidable u]
@@ -2492,7 +2799,12 @@ derivatives. Here $\pi_j$ = `Optimization.arqpPiOf u p j`, $\kappa_F$ =
 For LENq-SC calls the absorption holds as soon as some $\pi_j \ge 2$, for example for every
 $q \ge 2$ (`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_lenq`). It fails for
 $q = 1$, $p \ge 2$
-(`CartisGouldToint.Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`). -/
+(`CartisGouldToint.Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`).
+
+**Reading.** The ARqp-SC row supplies a bound with additive overhead. A multiplicative version needs
+an explicit tolerance-order term large enough to absorb it. The LEN application establishes this
+from the scaled residual tolerance for order at least two.
+-/
 theorem IsARqpSCOutputCost.cost_le_arqp_anchored {X₀ S : Set ℝⁿ} {L : ℕ → ℝ}
     (hF : AnchoredCompositeBounds F (zeroCon n) X₀ S p L (fun _ => 0)) (hXX₀ : X ⊆ X₀)
     (hb : ∀ y ∈ X, 0 ≤ F y) (hθς : P.θ < P.ς) {u : Prop} [Decidable u]
@@ -2528,7 +2840,12 @@ ARqp-SC call on $\Phi_2$ from $x^S \in X$ with the tolerances $\beta \|r(x^S)\| 
 at most $\kappa_F \Phi_2(x^S) \max_j (\beta \|r(x^S)\| \epsilon_j)^{-\pi_j}$ evaluations of
 $\Phi_2$, and the same bound with $\kappa_D$ for its derivatives, with $\pi_j = j(p+1)/p$.
 
-The absorption of the additive constants works because $\pi_q = q(p+1)/p \ge 2$. -/
+The absorption of the additive constants works because $\pi_q = q(p+1)/p \ge 2$.
+
+**Reading.** The ARqp-SC row supplies a bound with additive overhead. A multiplicative version needs
+an explicit tolerance-order term large enough to absorb it. The LEN application establishes this
+from the scaled residual tolerance for order at least two.
+-/
 theorem IsARqpSCOutputCost.cost_le_arqp_lenq {r : ℝⁿ → ℝᵐ} {X₀ S : Set ℝⁿ} {L : ℕ → ℝ}
     (hF : AnchoredCompositeBounds (phi2 r) (zeroCon n) X₀ S p L (fun _ => 0)) (hXX₀ : X ⊆ X₀)
     (hθς : P.θ < P.ς) (hq : 2 ≤ q) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β ≤ 1) (hεq : ε q ≤ 1)
@@ -2571,7 +2888,11 @@ and $n_D$ of its derivatives. That is, $y$ is the first termination iterate of a
 (`CartisGouldToint.Chapter12.algorithm_12_2_2`) on $F$ from $x^S$ with initial radii $1$ whose
 Step-2 radii are $1$ before termination, and the radii $\delta = 1$ satisfy (14.3.19) at $y$.
 
-It is the backbone `Optimization.IsARqpUnitOutputCost`. -/
+It is the backbone `Optimization.IsARqpUnitOutputCost`.
+
+**Reading.** The inner algorithm uses unit radii on the whole space. The existence theorem treats
+orders at most two and the evaluation estimate retains the per-call additive terms.
+-/
 abbrev IsARqpUnitOutputCost (F : ℝⁿ → ℝ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ) (xS y : ℝⁿ)
     (δ : ℕ → ℝ) (nF nD : ℕ) : Prop :=
   Optimization.IsARqpUnitOutputCost F p q P.toARqpParams ε xS y δ nF nD
@@ -2581,7 +2902,11 @@ $F \ge f_{\mathrm{low}}$ satisfy the anchored bounds
 (`CartisGouldToint.Chapter14.AnchoredCompositeBounds` with $c = 0$ and $X_0 = \mathbb{R}^n$) on
 a set $S$ that contains every $y$ with $F(y) \le F(x^S)$, let $\theta < \varsigma$,
 $1 \le q \le 2$, $q \le p$ and $\epsilon_j \in (0, 1]$. Then there is such a call from $x^S$
-with radii $1$ (`Optimization.exists_isARqpUnitOutputCost`). -/
+with radii $1$ (`Optimization.exists_isARqpUnitOutputCost`).
+
+**Reading.** The inner algorithm uses unit radii on the whole space. The existence theorem treats
+orders at most two and the evaluation estimate retains the per-call additive terms.
+-/
 theorem exists_isARqpUnitOutputCost_anchored {L : ℕ → ℝ} {S : Set ℝⁿ}
     (hF : AnchoredCompositeBounds F (zeroCon n) univ S p L (fun _ => 0))
     {flow : ℝ} (hb : ∀ y, flow ≤ F y) (P : ARqpCParams) (hθς : P.θ < P.ς) (hq : 1 ≤ q)
@@ -2600,7 +2925,11 @@ unit-radius exponents $\pi_j = (p+1)/(p-j+1)$.
 
 This is `Optimization.IsARqpUnitOutputCost.cost_le` with the maximum
 `CartisGouldToint.Chapter14.innerEvalBound` in place of the minimum; $\kappa^A$ and $\kappa^S$
-are `Optimization.kappaAARqpOf` and `Optimization.kappaSARqpOf`. -/
+are `Optimization.kappaAARqpOf` and `Optimization.kappaSARqpOf`.
+
+**Reading.** The inner algorithm uses unit radii on the whole space. The existence theorem treats
+orders at most two and the evaluation estimate retains the per-call additive terms.
+-/
 theorem IsARqpUnitOutputCost.cost_le_add_anchored {L : ℕ → ℝ} {S : Set ℝⁿ} {xS y : ℝⁿ}
     {δ' : ℕ → ℝ} {nF nD : ℕ}
     (hF : AnchoredCompositeBounds F (zeroCon n) univ S p L (fun _ => 0)) (hb : ∀ y, 0 ≤ F y)
@@ -2714,7 +3043,12 @@ that contains every $y \in X$ with $\|r(y)\| \le \|r(x_0)\|$, for an open convex
 $X_0 \supseteq X$. Let $\theta < \varsigma$, $\epsilon_j \in (0, 1]$ for $j \le q$,
 $\beta \in (0, 1)$, $x_0 \in X$ and $\beta \|r(x_0)\| < 1$. Then there is a LENq-SC run from
 $x_0$ whose $k$-th INNER call, before termination, is an ARqp-SC call with evaluation counts
-$n_F(k)$ and $n_D(k)$. -/
+$n_F(k)$ and $n_D(k)$.
+
+**Reading.** The existence results construct pretermination sequences with explicit available inner
+solvers. They require the corresponding smoothness assumptions and give both simply constrained
+ARqp-SC and unconstrained unit-radius variants.
+-/
 theorem lenq_core_anchored {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} (hX : IsClosed X) {p q : ℕ}
     (hq : 1 ≤ q) (hqp : q ≤ p) {L : ℕ → ℝ} {X₀ S : Set ℝⁿ}
     (hΦ : AnchoredCompositeBounds (phi2 r) (zeroCon n) X₀ S p L (fun _ => 0)) (hXX₀ : X ⊆ X₀)
@@ -2749,7 +3083,12 @@ iterate $x_k$, $k \ge 1$ before termination, is the output of an ARqp-SC call
 $\mathrm{INNER}(\Phi_2, X, q, x_{k-1}, \beta \|r(x_{k-1})\| \epsilon)$, with some evaluation
 counts.
 
-ARqp-SC is run as ARqpC-SC with $c = 0$ and $h = 0$; each call terminates by Theorem 14.2.4. -/
+ARqp-SC is run as ARqpC-SC with $c = 0$ and $h = 0$; each call terminates by Theorem 14.2.4.
+
+**Reading.** The existence results construct pretermination sequences with explicit available inner
+solvers. They require the corresponding smoothness assumptions and give both simply constrained
+ARqp-SC and unconstrained unit-radius variants.
+-/
 theorem exists_algorithm_14_3_1 {r : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} (hX : IsClosed X) {p q : ℕ}
     (hq : 1 ≤ q) (hqp : q ≤ p) {L : ℕ → ℝ} (hΦ : Chapter12.AssumptionD1pL (phi2 r) p L)
     (P : ARqpCParams) (hθς : P.θ < P.ς) {ε : ℕ → ℝ}
@@ -2770,7 +3109,12 @@ Let $\theta < \varsigma$, $\epsilon_j \in (0, 1]$ for $j \le q$, $\beta \in (0, 
 $\beta \|r(x_0)\| < 1$. Then there is a LENq-SC run from $x_0$ that terminates at its first
 termination index $k_{\max}$ (Theorem 14.3.3) and whose $k$-th INNER call,
 $1 \le k \le k_{\max}$, is an ARqp call with unit radii that uses $n_F(k)$ evaluations of
-$\Phi_2$ and $n_D(k)$ of its derivatives (`CartisGouldToint.Chapter14.IsARqpUnitOutputCost`). -/
+$\Phi_2$ and $n_D(k)$ of its derivatives (`CartisGouldToint.Chapter14.IsARqpUnitOutputCost`).
+
+**Reading.** The existence results construct pretermination sequences with explicit available inner
+solvers. They require the corresponding smoothness assumptions and give both simply constrained
+ARqp-SC and unconstrained unit-radius variants.
+-/
 theorem exists_algorithm_14_3_1_unit {r : ℝⁿ → ℝᵐ} {p q : ℕ} (hq : 1 ≤ q)
     (hq2 : q ≤ 2) (hqp : q ≤ p) {L : ℕ → ℝ} {S : Set ℝⁿ}
     (hΦ : AnchoredCompositeBounds (phi2 r) (zeroCon n) univ S p L (fun _ => 0))
@@ -2821,7 +3165,11 @@ evaluations at $x^S$, the per-run convention of Theorems 12.2.14 and 14.2.4. A c
 $\kappa \|r(x_0)\|$ of the bound, which the book allows for $\nu$, still tends to $0$, since
 $x^S = x_0$. The corrected statement is the additive form
 `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_add_anchored`, used with
-`CartisGouldToint.Chapter14.theorem_14_3_4_add`. -/
+`CartisGouldToint.Chapter14.theorem_14_3_4_add`.
+
+**Correction.** For first-order LEN and model order at least two, an actual ARqp-SC inner call can
+exceed both printed multiplicative evaluation bounds for any proposed constant.
+-/
 theorem exists_algorithm_14_3_1_cost_contract_counterexample {p : ℕ} (hp : 2 ≤ p)
     (u : Prop) [Decidable u] (P : ARqpCParams) (hθς : P.θ < P.ς) {β : ℝ} (hβ0 : 0 < β)
     (hβ1 : β < 1) (κ : ℝ) :
@@ -2903,7 +3251,11 @@ $\epsilon$. They are the first $e + 1$ iterates of an ARqp run
 termination) on $F$ whose first termination index is at least $e$, and the successful iterations
 are those of the run.
 
-It is the backbone `Optimization.IsARqpUnitCall`. -/
+It is the backbone `Optimization.IsARqpUnitCall`.
+
+**Reading.** An inner call is instantiated with the unconstrained ARqp trace at unit radii and
+includes the successful-step count data.
+-/
 abbrev IsARqpUnitCall (F : ℝⁿ → ℝ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ) (xi : ℕ → ℝⁿ)
     (e : ℕ) (succ : ℕ → Prop) : Prop :=
   Optimization.IsARqpUnitCall F p q P.toARqpParams ε xi e succ
@@ -2956,7 +3308,12 @@ with some evaluation counts (LENq-SC by `CartisGouldToint.Chapter14.lenq_core_an
 whose Phase-2 sequences have the property $Q$ when Phase 2 is entered.
 
 The proofs of `CartisGouldToint.Chapter14.exists_algorithm_14_3_2` and
-`CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun` use this construction for Phase 1. -/
+`CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun` use this construction for Phase 1.
+
+**Reading.** The anchored method supplies actual ARqp-SC Phase-1 calls and evaluation counts. A
+supplied Phase-2 construction extends a feasible Phase-1 output, while the concrete multiplicative
+Phase-1 bound uses exponents indexed by order plus one.
+-/
 theorem exists_algorithm_14_3_2_of_phase2_anchored (hX : IsClosed X) (hq : 1 ≤ q)
     (hqp : q ≤ p) {X₀ : Set ℝⁿ} {Lν : ℕ → ℝ} {x₀ : ℝⁿ}
     (hν : AnchoredCompositeBounds (phi2 c) (zeroCon n) X₀ (nuSublevel c X x₀) p Lν (fun _ => 0))
@@ -3005,7 +3362,12 @@ anchored bounds with constants $L_\nu$ on $\mathcal{L}_\nu(x_0)$ for an open con
 $X_0 \supseteq X$, $\theta < \varsigma$, and $\epsilon_j \in (0, 1]$ for $j \le q$. The
 constants are `CartisGouldToint.Chapter14.arqpSCKappaF` and
 `CartisGouldToint.Chapter14.arqpSCKappaD` for $L_\nu$; the result follows from
-`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_anchored`. -/
+`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_anchored`.
+
+**Reading.** The anchored method supplies actual ARqp-SC Phase-1 calls and evaluation counts. A
+supplied Phase-2 construction extends a feasible Phase-1 output, while the concrete multiplicative
+Phase-1 bound uses exponents indexed by order plus one.
+-/
 theorem phase1_cost_le_anchored {β₁ : ℝ} {x₀ : ℝⁿ} {xP : ℕ → ℝⁿ} {δP : ℕ → ℕ → ℝ}
     {k₁ : ℕ} {D : TPqpSeq n} {nF₁ nD₁ : ℕ → ℕ}
     (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D) (hq : 1 ≤ q) {X₀ : Set ℝⁿ}
@@ -3058,10 +3420,22 @@ section ARqpSCAnchored
 /-- The constants $\max(L_j, B_{j+1})$. If $\nabla^j F$ is $L_j$-Lipschitz anchored on $S$ and
 $\|\nabla^j F\| \le B_j$ on $S$, then the anchored bounds of the ARqpC analysis
 (`CartisGouldToint.Chapter14.AnchoredCompositeBounds`, which bounds $\|\nabla^i F\|$ by the
-constant of order $i - 1$) hold with these constants. -/
+constant of order $i - 1$) hold with these constants.
+
+**Reading.** To instantiate the scalar special case of the composite bounds, the formalization
+packages the needed highest-order Lipschitz bound and higher derivative bounds. A common constant at
+each order is chosen as the maximum of the supplied Lipschitz constant and the next derivative
+bound.
+-/
 noncomputable def anchoredConst (L B : ℕ → ℝ) : ℕ → ℝ := fun j => max (L j) (B (j + 1))
 
-/-- The constant of order $j$ is $\max(L_j, B_{j+1})$. -/
+/-- The constant of order $j$ is $\max(L_j, B_{j+1})$.
+
+**Reading.** To instantiate the scalar special case of the composite bounds, the formalization
+packages the needed highest-order Lipschitz bound and higher derivative bounds. A common constant at
+each order is chosen as the maximum of the supplied Lipschitz constant and the next derivative
+bound.
+-/
 theorem anchoredConst_apply (L B : ℕ → ℝ) (j : ℕ) : anchoredConst L B j = max (L j) (B (j + 1)) :=
   rfl
 
@@ -3075,7 +3449,13 @@ theorem iteratedFDeriv_zeroCon (i : ℕ) (x : ℝⁿ) : iteratedFDeriv ℝ i (ze
 need only the following. Let $X_0$ be open and convex, $S \subseteq X_0$, $F$ of class $C^p$ on
 $X_0$, $\nabla^p F$ Lipschitz anchored on $S$ with respect to $X_0$ with a constant $L_p \ge 1$,
 and $\|\nabla^i F\| \le L_{i-1}$ on $S$ for $i \in \{2, \dots, p\}$. Then $F$ and $c = 0$
-satisfy the anchored bounds with the constants $L$ and $0$. -/
+satisfy the anchored bounds with the constants $L$ and $0$.
+
+**Reading.** To instantiate the scalar special case of the composite bounds, the formalization
+packages the needed highest-order Lipschitz bound and higher derivative bounds. A common constant at
+each order is chosen as the maximum of the supplied Lipschitz constant and the next derivative
+bound.
+-/
 theorem anchoredCompositeBounds_zeroCon_of {F : ℝⁿ → ℝ} {X₀ S : Set ℝⁿ} {p : ℕ} {L : ℕ → ℝ}
     (hX₀ : IsOpen X₀) (hconv : Convex ℝ X₀) (hS : S ⊆ X₀) (hF : ContDiffOn ℝ p F X₀)
     (hL1 : 1 ≤ L p) (hlip : IteratedFDerivLipschitzAnchored F p (L p) S X₀)
@@ -3098,7 +3478,13 @@ $L_p \ge 1$. If for $j \in \{1, \dots, p\}$ the derivative $\nabla^j F$ is $L_j$
 anchored on $S$ and $\|\nabla^j F\| \le B_j$ on $S$ (the shape of f.D1pLaB.X), then $F$ and
 $c = 0$ satisfy the anchored bounds of the ARqpC analysis with the constants
 `CartisGouldToint.Chapter14.anchoredConst L B` (by
-`CartisGouldToint.Chapter14.anchoredCompositeBounds_zeroCon_of`). -/
+`CartisGouldToint.Chapter14.anchoredCompositeBounds_zeroCon_of`).
+
+**Reading.** To instantiate the scalar special case of the composite bounds, the formalization
+packages the needed highest-order Lipschitz bound and higher derivative bounds. A common constant at
+each order is chosen as the maximum of the supplied Lipschitz constant and the next derivative
+bound.
+-/
 theorem anchoredCompositeBounds_zeroCon {F : ℝⁿ → ℝ} {X₀ S : Set ℝⁿ} {p : ℕ} {L B : ℕ → ℝ}
     (hX₀ : IsOpen X₀) (hconv : Convex ℝ X₀) (hS : S ⊆ X₀) (hF : ContDiffOn ℝ p F X₀)
     (hp : 1 ≤ p) (hL1 : 1 ≤ L p)
@@ -3129,7 +3515,12 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {p q : �
 (`CartisGouldToint.Chapter14.anchoredConst`) of the anchored bounds of
 $\nu = \frac{1}{2} \|c\|^2$ on $\mathcal{L}_\nu(x_0)$ that Lemma 14.3.6(i) of
 [cartis2022evaluation] gives. Here $L^A, L^B, B^A, B^B$ are the constants of the lemma and
-$r = \|c(x_0)\|$. -/
+$r = \|c(x_0)\|$.
+
+**Reading.** The smoothness estimates are assembled as inner-solver anchored bounds. The
+feasibility-merit constant depends affinely on the initial residual before taking a maximum, and the
+target-merit bound is uniform in the target.
+-/
 noncomputable def nuAnchoredConst (LA LB BA BB : ℕ → ℝ) (r : ℝ) : ℕ → ℝ :=
   anchoredConst (fun j => LA j + LB j * r) (fun j => BA j + BB j * r)
 
@@ -3150,7 +3541,12 @@ $\nu$ and $\mu$ of the TPqp-GC results stated under anchored bounds
 (`CartisGouldToint.Chapter14.theorem_14_3_9_arqpc`,
 `CartisGouldToint.Chapter14.theorem_14_3_9_arqp`,
 `CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun`, and, on $X = X_0 = \mathbb{R}^n$,
-`CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit`). -/
+`CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit`).
+
+**Reading.** The smoothness estimates are assembled as inner-solver anchored bounds. The
+feasibility-merit constant depends affinely on the initial residual before taking a maximum, and the
+target-merit bound is uniform in the target.
+-/
 theorem exists_anchoredCompositeBounds_nu_mu (hp : 1 ≤ p) {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ p Lc Bc) (hf : AssumptionD1pLBX f X X₀ p Lf Bf) :
     ∃ LA LB BA BB Lμ Bμ : ℕ → ℝ,
@@ -3220,7 +3616,12 @@ last iterate, one of:
 **Reading.** The last radii satisfy (14.3.19) at $x_e$, because $0$ minimizes the model there;
 the step radii $\delta_{s_e}$ that the book returns need not satisfy it.
 
-It is the backbone `Optimization.IsARqpCallOut`. -/
+It is the backbone `Optimization.IsARqpCallOut`.
+
+**Reading.** A terminating inner step returns certified output radii, which can differ from the
+nominal step radii. The proofs derive sufficient decrease, count and radius bounds for the two
+regularization exponent choices and use the inner termination test.
+-/
 abbrev IsARqpSCCallOut (F : ℝⁿ → ℝ) (X : Set ℝⁿ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ)
     (xi : ℕ → ℝⁿ) (e : ℕ) (succ : ℕ → Prop) (δo : ℕ → ℝ) : Prop :=
   Optimization.IsARqpCallOut (EuclideanSpace ℝ (Fin 0)) F X p q P.toARqpParams ε xi e succ δo
@@ -3239,7 +3640,12 @@ iterations and the output radii $\delta_{k+1}$ of the $k$-th call are those of a
 $\mu(\cdot, t_k)$ with tolerances $\beta \|r(x_k, t_k)\| \epsilon_j$
 (`CartisGouldToint.Chapter14.IsARqpSCCallOut`), cut at any iteration by any test of (14.3.32).
 
-It is `Constrained.HighOrderTargetSeq.IsARqpCalls` with $c = 0 : \mathbb{R}^n \to \mathbb{R}^0$. -/
+It is `Constrained.HighOrderTargetSeq.IsARqpCalls` with $c = 0 : \mathbb{R}^n \to \mathbb{R}^0$.
+
+**Reading.** A terminating inner step returns certified output radii, which can differ from the
+nominal step radii. The proofs derive sufficient decrease, count and radius bounds for the two
+regularization exponent choices and use the inner termination test.
+-/
 abbrev IsARqpSCPhase2Calls (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (p q : ℕ) (P : ARqpCParams)
     (θ β : ℝ) (ε : ℕ → ℝ) (D : TPqpSeq n) : Prop :=
   D.IsARqpCalls (EuclideanSpace ℝ (Fin 0)) f c X p q P.toARqpParams θ β ε
@@ -3258,7 +3664,12 @@ $\kappa_{\mathrm{uns}}$ = `Optimization.arqpKappaUns` and $\kappa_{\mathrm{unc}}
 It holds for every run, with calls cut by any test of (14.3.32). Lemma 14.3.6(ii) gives the
 anchored bounds under c.D1pLB.X and f.D1pLB.X
 (`CartisGouldToint.Chapter14.exists_anchoredCompositeBounds_nu_mu`). The proof is
-`Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls`. -/
+`Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpCalls`.
+
+**Reading.** A terminating inner step returns certified output radii, which can differ from the
+nominal step radii. The proofs derive sufficient decrease, count and radius bounds for the two
+regularization exponent choices and use the inner termination test.
+-/
 theorem IsARqpSCPhase2Calls.isInnerPhaseRunStrong (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     (hcalls : IsARqpSCPhase2Calls f c X p q P θ β ε D) {X₀ : Set ℝⁿ} {L : ℕ → ℝ}
     (hμ : ∀ t, AnchoredCompositeBounds (Constrained.targetMerit f c t) (zeroCon n) X₀
@@ -3280,7 +3691,12 @@ $\kappa_{\mathrm{decr}}$ = `CartisGouldToint.Chapter14.arqpRowKappaDecr u P L p 
 as there.
 
 The lower-bound mode $u$ = `False`, with the exponents $j(p+1)/p$, applies for every $q$ and
-$X$; the unit-radius mode applies when $u$ forces $q = 1$ and $X$ convex. -/
+$X$; the unit-radius mode applies when $u$ forces $q = 1$ and $X$ convex.
+
+**Reading.** A terminating inner step returns certified output radii, which can differ from the
+nominal step radii. The proofs derive sufficient decrease, count and radius bounds for the two
+regularization exponent choices and use the inner termination test.
+-/
 theorem IsARqpSCPhase2Calls.isInnerPhaseRunStrong_arqp (h : IsTPqpGCPhase2 f c X q θ β ε x₁ D)
     (hcalls : IsARqpSCPhase2Calls f c X p q P θ β ε D) {X₀ : Set ℝⁿ} {L : ℕ → ℝ}
     (hμ : ∀ t, AnchoredCompositeBounds (Constrained.targetMerit f c t) (zeroCon n) X₀
@@ -3370,7 +3786,12 @@ is a TPqp-GC run (`CartisGouldToint.Chapter14.algorithm_14_3_2`) such that:
   that use $n^F_1(k)$ evaluations of $c$ and $n^D_1(k)$ of its derivatives
   (`CartisGouldToint.Chapter14.IsARqpSCOutputCost`);
 * if Phase 2 is entered, the Phase-2 INNER calls are ARqp-SC runs on $\mu(\cdot, t_k)$ with
-  their output radii, cut at any iteration (`CartisGouldToint.Chapter14.IsARqpSCPhase2Calls`). -/
+  their output radii, cut at any iteration (`CartisGouldToint.Chapter14.IsARqpSCPhase2Calls`).
+
+**Reading.** Both phases expose actual admissible inner traces. With exponents indexed by order plus
+one, the additional counting term is absorbed in the printed orders and the theorem also gives a
+terminating Phase-2 index when that phase is reached.
+-/
 structure IsTPqpGCARqpSCRun (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (p q : ℕ)
     (P : ARqpCParams) (θ β₁ β : ℝ) (ε : ℕ → ℝ) (x₀ : ℝⁿ) (xP : ℕ → ℝⁿ) (δP : ℕ → ℕ → ℝ)
     (k₁ : ℕ) (D : TPqpSeq n) (nF₁ nD₁ : ℕ → ℕ) : Prop where
@@ -3433,7 +3854,12 @@ bad-iteration term $(\epsilon_0 \epsilon_j)^{-j}$ of
 `Constrained.IsHighOrderTargetRun.complexity_of_innerTest` is at most
 $\epsilon_0^{-j} \epsilon_j^{-(j+1)}$ (`Constrained.inv_mul_pow_le_rpow_succ`), and since
 $\pi_1 = 2$ the term $\epsilon_0^{-1}$ is absorbed in $O_D$
-(`CartisGouldToint.Chapter14.tpqpOrderF_le_tpqpOrderD`). -/
+(`CartisGouldToint.Chapter14.tpqpOrderF_le_tpqpOrderD`).
+
+**Reading.** Both phases expose actual admissible inner traces. With exponents indexed by order plus
+one, the additional counting term is absorbed in the printed orders and the theorem also gives a
+terminating Phase-2 index when that phase is reached.
+-/
 theorem theorem_14_3_9_arqpc (hq : 1 ≤ q) (hqp : q ≤ p) {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ p Lc Bc) (hf : AssumptionD1pLBX f X X₀ p Lf Bf)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup)
@@ -3552,7 +3978,12 @@ enters Phase 2, Phase 2 terminates. The proof checks the Phase-1 cost contract w
 exponents $j + 1$ (`CartisGouldToint.Chapter14.phase1_cost_le_anchored`), the Phase-2 contract
 keyed on INNER's test (`CartisGouldToint.Chapter14.IsARqpSCPhase2Calls.isInnerPhaseRunStrong`),
 the smoothness and derivative bounds and a margin $\tau > 0$, and applies
-`CartisGouldToint.Chapter14.theorem_14_3_9`. -/
+`CartisGouldToint.Chapter14.theorem_14_3_9`.
+
+**Reading.** Both phases expose actual admissible inner traces. With exponents indexed by order plus
+one, the additional counting term is absorbed in the printed orders and the theorem also gives a
+terminating Phase-2 index when that phase is reached.
+-/
 theorem theorem_14_3_9_arqpc_terminates (hq : 1 ≤ q) (hqp : q ≤ p) {X₀ : Set ℝⁿ}
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ p Lc Bc)
     (hf : AssumptionD1pLBX f X X₀ p Lf Bf) {βF flow fup : ℝ}
@@ -3770,7 +4201,12 @@ The exponents $\pi_l$ = `Optimization.arqpPiOf False p l` are the "otherwise" en
 (`CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_add_anchored`,
 `CartisGouldToint.Chapter14.lemma_14_3_7_add`); the extra term $\kappa_C k_1 + 2 k_1$, with $k_1
 \le \lceil \log(\theta \epsilon_0 / \|c(x_0)\|) / \log \beta_1 \rceil$, is $O(\epsilon_0^{-1})$
-(`Real.natCeil_log_div_log_le`). -/
+(`Real.natCeil_log_div_log_le`).
+
+**Correction.** A common majorant must bound the primal inverse, the printed tolerance-order terms
+and inverse powers of each product of primal and orderwise tolerance. The last requirement accounts
+for bad iterations.
+-/
 theorem exists_const_order_arqp (hq : 1 ≤ q) (hqp : q ≤ p) {X₀ : Set ℝⁿ}
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ p Lc Bc)
     (hf : AssumptionD1pLBX f X X₀ p Lf Bf) {βF flow fup : ℝ}
@@ -3863,7 +4299,12 @@ $\rho_j \sim \epsilon_0 \epsilon_j$). For $q = p$ it is within the printed order
 $j \ge 2$ and $\epsilon_1 = \epsilon_0^s$ with $\max(0, q(p+1)/p - 2) < s < p - 1$.
 
 The exponents are `Optimization.arqpPiOf False p`, the "otherwise" entries of (14.2.12), which
-come from the radius bound (12.2.51). -/
+come from the radius bound (12.2.51).
+
+**Correction.** For general criticality order at most the model order, both costs include the sum of
+inverse tolerance products raised to their respective orders. When the criticality and model orders
+coincide, the additional term is absorbed and the printed separate orders are recovered.
+-/
 theorem theorem_14_3_9_arqp_corrected (hq : 1 ≤ q) (hqp : q ≤ p) {X₀ : Set ℝⁿ}
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ p Lc Bc)
     (hf : AssumptionD1pLBX f X X₀ p Lf Bf) {βF flow fup : ℝ}
@@ -3920,7 +4361,12 @@ $O_D = \max_j \epsilon_0^{1 - \pi_j} \epsilon_j^{-\pi_j}$
 The bad-iteration term $(\epsilon_0 \epsilon_j)^{-j}$ is at most $\epsilon_0^{-p} +
 \epsilon_0^{1 - \pi_j} \epsilon_j^{-\pi_j}$ (`Constrained.inv_mul_pow_le_add_arqpPiOf`), and
 $\epsilon_0^{-p} \le \epsilon_0^{1 - \pi_p} \epsilon_p^{-\pi_p}$. For $q < p$ see
-`CartisGouldToint.Chapter14.theorem_14_3_9_arqp_corrected`. -/
+`CartisGouldToint.Chapter14.theorem_14_3_9_arqp_corrected`.
+
+**Correction.** For general criticality order at most the model order, both costs include the sum of
+inverse tolerance products raised to their respective orders. When the criticality and model orders
+coincide, the additional term is absorbed and the printed separate orders are recovered.
+-/
 theorem theorem_14_3_9_arqp (hq : 1 ≤ q) {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ q Lc Bc) (hf : AssumptionD1pLBX f X X₀ q Lf Bf)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup) (P : ARqpCParams)
@@ -4022,7 +4468,12 @@ there is a TPqp-GC run from $x_0$ whose INNER calls in both phases are runs of A
 (`CartisGouldToint.Chapter14.IsTPqpGCARqpSCRun`).
 
 Under the assumptions of Section 14.3.2.2 of the book this is
-`CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun`. -/
+`CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun`.
+
+**Reading.** The pure admissibility relation is also realized by actual ARqp-SC calls in both
+phases. The two existence theorems assume either smoothness bounds directly for both merits or the
+underlying constraint and objective assumptions.
+-/
 theorem exists_algorithm_14_3_2 (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p) {Lν : ℕ → ℝ}
     (hν : Chapter12.AssumptionD1pL (phi2 c) p Lν)
     (hμ : ∀ t, ∃ L, Chapter12.AssumptionD1pL (Constrained.targetMerit f c t) p L)
@@ -4047,7 +4498,12 @@ there is a run of `CartisGouldToint.Chapter14.IsTPqpGCARqpSCRun`. So the class o
 `CartisGouldToint.Chapter14.theorem_14_3_9_arqp` is not empty.
 
 The bounds come from Lemma 14.3.6
-(`CartisGouldToint.Chapter14.exists_anchoredCompositeBounds_nu_mu`). -/
+(`CartisGouldToint.Chapter14.exists_anchoredCompositeBounds_nu_mu`).
+
+**Reading.** The pure admissibility relation is also realized by actual ARqp-SC calls in both
+phases. The two existence theorems assume either smoothness bounds directly for both merits or the
+underlying constraint and objective assumptions.
+-/
 theorem exists_isTPqpGCARqpSCRun (hX : IsClosed X) (hq : 1 ≤ q) (hqp : q ≤ p) {X₀ : Set ℝⁿ}
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ p Lc Bc)
     (hf : AssumptionD1pLBX f X X₀ p Lf Bf) (P : ARqpCParams) (hθς : P.θ < P.ς) (hθ0 : 0 < θ)
@@ -4077,7 +4533,12 @@ $j \le 2$, that returns the radii $1$ of the run.
 
 This is the regime $X = \mathbb{R}^n$, $q \le 2$ of the unit-radius exponents of Chapter 12; the
 table (14.2.12) keys this ARqp-SC entry as "$q = 1$, $X$ convex". The predicate is the backbone
-`Optimization.IsARqpUnitCallOut`, and its contract is `Optimization.IsARqpUnitCallOut.contract`. -/
+`Optimization.IsARqpUnitCallOut`, and its contract is `Optimization.IsARqpUnitCallOut.contract`.
+
+**Reading.** These use whole-space ARqp calls with unit step-criticality radii, explicit trace and
+count data, and a unit lower-radius bound in the strong contract. Existence is proved for
+criticality orders at most two.
+-/
 abbrev IsARqpUnitCallOut (F : ℝⁿ → ℝ) (p q : ℕ) (P : ARqpCParams) (ε : ℕ → ℝ) (xi : ℕ → ℝⁿ)
     (e : ℕ) (succ : ℕ → Prop) (δo : ℕ → ℝ) : Prop :=
   Optimization.IsARqpUnitCallOut F p q P.toARqpParams ε xi e succ δo
@@ -4089,7 +4550,12 @@ every outer iteration $k \ge 1$ that is reached, the $k$-th call is a call
 `CartisGouldToint.Chapter14.IsARqpUnitCallOut` on $\mu(\cdot, t_k)$ with tolerances
 $\beta \|r(x_k, t_k)\| \epsilon_j$, cut at any iteration.
 
-It is the backbone `Constrained.HighOrderTargetSeq.IsARqpUnitCalls`. -/
+It is the backbone `Constrained.HighOrderTargetSeq.IsARqpUnitCalls`.
+
+**Reading.** These use whole-space ARqp calls with unit step-criticality radii, explicit trace and
+count data, and a unit lower-radius bound in the strong contract. Existence is proved for
+criticality orders at most two.
+-/
 abbrev IsARqpUnitPhase2Calls (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (p q : ℕ) (P : ARqpCParams) (θ β : ℝ)
     (ε : ℕ → ℝ) (D : TPqpSeq n) : Prop :=
   D.IsARqpUnitCalls f c p q P.toARqpParams θ β ε
@@ -4104,7 +4570,12 @@ $\kappa_{\mathrm{decr}}$ = `CartisGouldToint.Chapter14.arqpRowKappaDecr True P L
 $\kappa_{\mathrm{uns}}$ = `Optimization.arqpKappaUns` and $\kappa_{\mathrm{unc}}$ =
 `Optimization.arqpCallKappaUnc`, which are independent of $t$, and the radii $\rho_j = 1$.
 
-The proof is `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpUnitCalls`. -/
+The proof is `Constrained.IsHighOrderTargetRun.isInnerTestContract_of_isARqpUnitCalls`.
+
+**Reading.** These use whole-space ARqp calls with unit step-criticality radii, explicit trace and
+count data, and a unit lower-radius bound in the strong contract. Existence is proved for
+criticality orders at most two.
+-/
 theorem IsARqpUnitPhase2Calls.isInnerPhaseRunStrong (h : IsTPqpGCPhase2 f c univ q θ β ε x₁ D)
     (hcalls : IsARqpUnitPhase2Calls f c p q P θ β ε D) {L : ℕ → ℝ}
     (hμ : ∀ t, AnchoredCompositeBounds (Constrained.targetMerit f c t) (zeroCon n) univ
@@ -4130,7 +4601,12 @@ of Chapter 12 with Step 2 by Algorithm 12.2.3). It is a TPqp-GC run
 ARqp runs with unit radii on $\nu$ that use $n^F_1(k)$ evaluations of $c$ and $n^D_1(k)$ of its
 derivatives (`CartisGouldToint.Chapter14.IsARqpUnitOutputCost`), and whose Phase-2 INNER calls,
 if Phase 2 is entered, are ARqp runs with unit radii on $\mu(\cdot, t_k)$, cut at any iteration
-(`CartisGouldToint.Chapter14.IsARqpUnitPhase2Calls`). -/
+(`CartisGouldToint.Chapter14.IsARqpUnitPhase2Calls`).
+
+**Reading.** These use whole-space ARqp calls with unit step-criticality radii, explicit trace and
+count data, and a unit lower-radius bound in the strong contract. Existence is proved for
+criticality orders at most two.
+-/
 structure IsTPqpGCARqpUnitRun (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (p q : ℕ) (P : ARqpCParams)
     (θ β₁ β : ℝ) (ε : ℕ → ℝ) (x₀ : ℝⁿ) (xP : ℕ → ℝⁿ) (δP : ℕ → ℕ → ℝ) (k₁ : ℕ)
     (D : TPqpSeq n) (nF₁ nD₁ : ℕ → ℕ) : Prop where
@@ -4155,7 +4631,12 @@ the class of runs of `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit` and
 
 Phase 1 is LENq-SC with unit-radius ARqp calls
 (`CartisGouldToint.Chapter14.exists_algorithm_14_3_1_unit`); Phase 2 uses the calls of
-`Constrained.exists_arqpUnitCall` (`CartisGouldToint.Chapter14.phase2_core_of`). -/
+`Constrained.exists_arqpUnitCall` (`CartisGouldToint.Chapter14.phase2_core_of`).
+
+**Reading.** These use whole-space ARqp calls with unit step-criticality radii, explicit trace and
+count data, and a unit lower-radius bound in the strong contract. Existence is proved for
+criticality orders at most two.
+-/
 theorem exists_isTPqpGCARqpUnitRun (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q ≤ p)
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c univ univ p Lc Bc)
     (hf : AssumptionD1pLBX f univ univ p Lf Bf) (P : ARqpCParams) (hθς : P.θ < P.ς)
@@ -4208,7 +4689,12 @@ terminates), are at most $\kappa_F O$ for $(f, c)$ and at most $\kappa_D O$ for 
 
 The class of runs is not empty for $q \le 2$
 (`CartisGouldToint.Chapter14.exists_isTPqpGCARqpUnitRun`). For $q > 2$ it may be empty, since
-Algorithm 12.2.3 may halve the radii of the orders $j \ge 3$. -/
+Algorithm 12.2.3 may halve the radii of the orders $j \ge 3$.
+
+**Correction.** The unit-radius exponents are used with an extra sum of inverse products of the
+primal and individual dual tolerances. When the orders coincide and are at most two, the additional
+term is absorbed into the stated separate evaluation orders.
+-/
 theorem exists_const_order_arqp_unit (hq : 1 ≤ q) (hqp : q ≤ p)
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c univ univ p Lc Bc)
     (hf : AssumptionD1pLBX f univ univ p Lf Bf) {βF flow fup : ℝ}
@@ -4370,7 +4856,12 @@ for $q < p$ it is not dominated by $O_F$
 
 The class of runs is not empty for $q \le 2$
 (`CartisGouldToint.Chapter14.exists_isTPqpGCARqpUnitRun`), where Algorithm 12.2.3 keeps the
-radii $1$; for $q > 2$ it may be empty. -/
+radii $1$; for $q > 2$ it may be empty.
+
+**Correction.** The unit-radius exponents are used with an extra sum of inverse products of the
+primal and individual dual tolerances. When the orders coincide and are at most two, the additional
+term is absorbed into the stated separate evaluation orders.
+-/
 theorem theorem_14_3_9_arqp_unit_corrected (hq : 1 ≤ q) (hqp : q ≤ p)
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c univ univ p Lc Bc)
     (hf : AssumptionD1pLBX f univ univ p Lf Bf) {βF flow fup : ℝ}
@@ -4418,7 +4909,12 @@ $\epsilon_0 \le \beta_F$ and every run of `CartisGouldToint.Chapter14.IsTPqpGCAR
 
 Here $O_F$ = `CartisGouldToint.Chapter14.tpqpOrderF` and $O_D$ =
 `CartisGouldToint.Chapter14.tpqpOrderD` with the unit-radius exponents $\pi_j = (p+1)/(p-j+1)$,
-which for $p = q \le 2$ are the exponents $j(p+1)/p$, with $\pi_p = p + 1$. -/
+which for $p = q \le 2$ are the exponents $j(p+1)/p$, with $\pi_p = p + 1$.
+
+**Correction.** The unit-radius exponents are used with an extra sum of inverse products of the
+primal and individual dual tolerances. When the orders coincide and are at most two, the additional
+term is absorbed into the stated separate evaluation orders.
+-/
 theorem theorem_14_3_9_arqp_unit (hq : 1 ≤ q) (hq2 : q ≤ 2) {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c univ univ q Lc Bc) (hf : AssumptionD1pLBX f univ univ q Lf Bf)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c univ βF flow fup) (P : ARqpCParams)
@@ -4497,7 +4993,13 @@ For every $C$ there are tolerances $\epsilon \in (0, 1]^{q+1}$ with
 $$C \max\Big[\epsilon_0^{-1}, \max_j \epsilon_0^{1 - \pi_j} \epsilon_j^{-\pi_j}\Big] <
   (\epsilon_0 \epsilon_1)^{-1}.$$
 The tolerances are $\epsilon_0 = \delta$, $\epsilon_1 = \delta^a$ for a suitable exponent
-$a > 0$, and $\epsilon_i = 1$ for $i \ge 2$, with $\delta$ small. -/
+$a > 0$, and $\epsilon_i = 1$ for $i \ge 2$, with $\delta$ small.
+
+**Reading.** For the indicated exponent ranges the inverse product of the primal and first dual
+tolerance can exceed every fixed multiple of the printed function-evaluation order. This includes
+both indicated regularization exponent choices when the criticality order is strictly below the
+model order.
+-/
 theorem exists_tpqpOrderF_lt {π : ℕ → ℝ} {q : ℕ} (hπ1 : 1 < π 1) (hπ2 : π 1 < 2)
     (hπ : ∀ i ∈ Finset.Icc 1 q, π i - 2 < (2 - π 1) / (π 1 - 1)) (C : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) ∧
@@ -4511,7 +5013,13 @@ $(\epsilon_0 \epsilon_1)^{-1}$ is a lower bound for the extra term
 $\sum_j (\epsilon_0 \epsilon_j)^{-j}$.
 
 This is `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt` with $\pi_1 = (p+1)/p$, for which
-$(2 - \pi_1)/(\pi_1 - 1) = p - 1 > q(p+1)/p - 2$. -/
+$(2 - \pi_1)/(\pi_1 - 1) = p - 1 > q(p+1)/p - 2$.
+
+**Reading.** For the indicated exponent ranges the inverse product of the primal and first dual
+tolerance can exceed every fixed multiple of the printed function-evaluation order. This includes
+both indicated regularization exponent choices when the criticality order is strictly below the
+model order.
+-/
 theorem exists_tpqpOrderF_lt_arqp {p q : ℕ} (hq : 1 ≤ q) (hqp : q < p) (C : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) ∧
       C * tpqpOrderF (Optimization.arqpPiOf False p) q ε < (ε 0 * ε 1)⁻¹ :=
@@ -4523,7 +5031,13 @@ With the unit-radius exponents $\pi_j = (p+1)/(p-j+1)$, for every $C$ there are 
 $\epsilon \in (0, 1]^{q+1}$ with $C O_F < (\epsilon_0 \epsilon_1)^{-1}$.
 
 This is `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt`: here
-$(2 - \pi_1)/(\pi_1 - 1) = p - 1$, and $\pi_2 - 2 = (3 - p)/(p - 1) < p - 1$ for $p \ge 3$. -/
+$(2 - \pi_1)/(\pi_1 - 1) = p - 1$, and $\pi_2 - 2 = (3 - p)/(p - 1) < p - 1$ for $p \ge 3$.
+
+**Reading.** For the indicated exponent ranges the inverse product of the primal and first dual
+tolerance can exceed every fixed multiple of the printed function-evaluation order. This includes
+both indicated regularization exponent choices when the criticality order is strictly below the
+model order.
+-/
 theorem exists_tpqpOrderF_lt_arqp_unit {p q : ℕ} (hq : 1 ≤ q) (hq2 : q ≤ 2) (hqp : q < p)
     (C : ℝ) :
     ∃ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) ∧
@@ -4596,7 +5110,12 @@ exact ($\mu$ is a quartic polynomial and $p \ge 4$;
 second-order tests ($q = 2$) hold with room to spare. The number of evaluations is
 $M + 2 \sim (\epsilon_0 \epsilon_1)^{-1}$, the extra term of
 `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_corrected`, which is thus attained for
-$q \in \{1, 2\}$ and $p \ge q + 3$. -/
+$q \in \{1, 2\}$ and $p \ge q + 3$.
+
+**Correction.** Actual ARqp-SC inner runs can exceed any claimed uniform constant in both printed
+orders when the criticality order is one or two and the model order is larger by at least three. The
+example quantifies the inverse tolerance-product cost.
+-/
 theorem theorem_14_3_9_arqp_counterexample {p q : ℕ} (hq1 : 1 ≤ q) (hq2 : q ≤ 2)
     (hpq : q + 3 ≤ p) :
     ∃ (f : ℝ² → ℝ) (c : ℝ² → ℝ¹) (X : Set ℝ²) (Lc Bc Lf Bf : ℕ → ℝ) (P : ARqpCParams),
@@ -4702,7 +5221,12 @@ $\kappa_D \max_j \epsilon_0^{1 - \pi_j} \epsilon_j^{-\pi_j}$, with $\pi_j = j(p+
 This conclusion is that of `CartisGouldToint.Chapter14.theorem_14_3_9_arqp`, which proves it for
 $q = p$, and that of the corrected `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_corrected`
 without its extra term $\sum_j (\epsilon_0 \epsilon_j)^{-j}$. With $\mu$ bounded below away from
-$0$ the question is open. -/
+$0$ the question is open.
+
+**Correction.** Actual ARqp-SC inner runs can exceed any claimed uniform constant in both printed
+orders when the criticality order is one or two and the model order is larger by at least three. The
+example quantifies the inverse tolerance-product cost.
+-/
 theorem theorem_14_3_9_arqp_printed_false {p q : ℕ} (hq1 : 1 ≤ q) (hq2 : q ≤ 2)
     (hpq : q + 3 ≤ p) :
     ∃ (f : ℝ² → ℝ) (c : ℝ² → ℝ¹) (X : Set ℝ²) (Lc Bc Lf Bf : ℕ → ℝ) (P : ARqpCParams),
@@ -4758,7 +5282,11 @@ TRq-SC run on $\mu(\cdot, t_k)$ with threshold $\vartheta$ and tolerances
 $\beta \|r(x_k, t_k)\| \epsilon_j$ (`Optimization.IsTRqCallOut`), cut at any iteration by any
 test of (14.3.32).
 
-It is the backbone `Constrained.HighOrderTargetSeq.IsTRqCalls`. -/
+It is the backbone `Constrained.HighOrderTargetSeq.IsTRqCalls`.
+
+**Reading.** The admissible run records actual TRq-SC outputs in both phases. Its existence theorem
+assumes the stated feasibility-domain, smoothness and tolerance safeguards.
+-/
 abbrev IsTRqSCPhase2Calls (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ)
     (P : Optimization.TRqParams) (ϑ θ β : ℝ) (ε : ℕ → ℝ) (D : TPqpSeq n) : Prop :=
   D.IsTRqCalls f c X q P ϑ θ β ε
@@ -4804,7 +5332,11 @@ with an INNER of trust-region type). It is a TPqp-GC run
   derivatives (`Optimization.IsTRqOutputCost`);
 * if Phase 2 is entered, the Phase-2 INNER calls are TRq-SC runs on $\mu(\cdot, t_k)$ with
   threshold $\vartheta$ and their output radii, cut at any iteration
-  (`CartisGouldToint.Chapter14.IsTRqSCPhase2Calls`). -/
+  (`CartisGouldToint.Chapter14.IsTRqSCPhase2Calls`).
+
+**Reading.** The admissible run records actual TRq-SC outputs in both phases. Its existence theorem
+assumes the stated feasibility-domain, smoothness and tolerance safeguards.
+-/
 structure IsTPqpGCTRqSCRun (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X : Set ℝⁿ) (q : ℕ)
     (P : Optimization.TRqParams) (ϑ θ β₁ β : ℝ) (ε : ℕ → ℝ) (x₀ : ℝⁿ) (xP : ℕ → ℝⁿ)
     (δP : ℕ → ℕ → ℝ) (k₁ : ℕ) (D : TPqpSeq n) (nF₁ nD₁ : ℕ → ℕ) : Prop where
@@ -4829,7 +5361,12 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X : Set ℝⁿ} {q : ℕ}
 $\mathcal{L}_\nu(x_0)$. There are constants $L^A, L^B, B^A, B^B$ such that for every $x_0$ the
 derivatives of $\nu$ of orders $1, \dots, q$ are Lipschitz anchored on $\mathcal{L}_\nu(x_0)$
 with the constants $L^A_j + L^B_j \|c(x_0)\|$, and $\max_{1 \le i \le q} \|\nabla^i \nu(y)\| \le
-\max(1, \max_{1 \le j \le q} (B^A_j + B^B_j \|c(x_0)\|))$ for $y \in \mathcal{L}_\nu(x_0)$. -/
+\max(1, \max_{1 \le j \le q} (B^A_j + B^B_j \|c(x_0)\|))$ for $y \in \mathcal{L}_\nu(x_0)$.
+
+**Reading.** The feasibility and target merit bounds are packaged at order q with finite maxima for
+the derivative bounds, as used by the trust-region solver. The bound for the target merit is
+independent of the target.
+-/
 theorem exists_nu_trq {X₀ : Set ℝⁿ} {Lc Bc : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ q Lc Bc) :
     ∃ LA LB BA BB : ℕ → ℝ, ∀ x₀ : ℝⁿ,
       LipschitzDerivsAnchored (phi2 c) X₀ (nuSublevel c X x₀) 1 q
@@ -4850,7 +5387,12 @@ f.D1qL for every $\mu(\cdot, t)$ on $\mathcal{L}_\mu(t)$. There are constants $L
 $B_\mu$, independent of $t$, such that for every $t$ the derivatives of $\mu(\cdot, t)$ of
 orders $1, \dots, q$ are Lipschitz anchored on $\mathcal{L}_\mu(t)$ with the constants $L_\mu$,
 and $\max_{1 \le i \le q} \|\nabla^i \mu(y, t)\| \le \max(1, \max_{1 \le j \le q} B_{\mu,j})$
-for $y \in \mathcal{L}_\mu(t)$. -/
+for $y \in \mathcal{L}_\mu(t)$.
+
+**Reading.** The feasibility and target merit bounds are packaged at order q with finite maxima for
+the derivative bounds, as used by the trust-region solver. The bound for the target merit is
+independent of the target.
+-/
 theorem exists_mu_trq {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ q Lc Bc) (hf : AssumptionD1pLBX f X X₀ q Lf Bf) :
     ∃ Lμ Bμ : ℕ → ℝ, ∀ t : ℝ,
@@ -4867,7 +5409,11 @@ theorem exists_mu_trq {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
 
 /-- For $\theta > 0$, the number of Phase-1 iterations of TPqp-GC satisfies $k_1 \le 1 + \|c(x_0)\|
 / (\theta |\log \beta_1|) \cdot \epsilon_0^{-1}$ (Theorem 14.3.3 and
-`Real.natCeil_log_div_log_le`). -/
+`Real.natCeil_log_div_log_le`).
+
+**Generalization.** The integer logarithmic limit is bounded by one plus a multiple of the inverse
+primal tolerance, with the Phase-1 threshold and initial residual explicit.
+-/
 theorem phase1_iter_le {θ β₁ β : ℝ} {ε : ℕ → ℝ} {x₀ : ℝⁿ} {xP : ℕ → ℝⁿ} {δP : ℕ → ℕ → ℝ}
     {k₁ : ℕ} {D : TPqpSeq n} (h : algorithm_14_3_2 f c X q θ β₁ β ε x₀ xP δP k₁ D)
     (hθ0 : 0 < θ) : (k₁ : ℝ) ≤ 1 + ‖c x₀‖ / (θ * |Real.log β₁|) * (ε 0)⁻¹ := by
@@ -4901,7 +5447,12 @@ tolerances of the call with the Phase-1 tolerances $\epsilon^{(1)}$.
 
 The constants are `Optimization.trqCallKappaA`, `Optimization.kappaBTRq`,
 `Optimization.trqCallKappaC` and `Optimization.trqCallKappaS`. The proof uses
-`Optimization.IsTRqOutputCost.cost_le` and $\|c(x_{k-1})\| > \theta \epsilon_0$. -/
+`Optimization.IsTRqOutputCost.cost_le` and $\|c(x_{k-1})\| > \theta \epsilon_0$.
+
+**Correction.** The trust-region bounds use the exponent $q + 1$ of the original (14.2.12). Function
+counts include tolerance-dependent logarithmic overhead. The problem regularity hypothesis is
+f.D1qLB.X, which is defined in the source.
+-/
 theorem phase1_call_cost_trq {P : Optimization.TRqParams} {ϑ θ β₁ β : ℝ} {ε : ℕ → ℝ}
     {x₀ : ℝⁿ} {xP : ℕ → ℝⁿ} {δP : ℕ → ℕ → ℝ} {k₁ : ℕ} {D : TPqpSeq n} {nF₁ nD₁ : ℕ → ℕ}
     (hR : IsTPqpGCTRqSCRun f c X q P ϑ θ β₁ β ε x₀ xP δP k₁ D nF₁ nD₁) (hq : 1 ≤ q)
@@ -4986,14 +5537,8 @@ Here $\pi_j = q + 1$ for every $j$, $O_F = \max[\epsilon_0^{-1}, \max_j \epsilon
 \epsilon_j^{-(q+1)}$ (`CartisGouldToint.Chapter14.tpqpOrderD`), and
 $\Lambda = |\log(\epsilon_0 \epsilon_{\min})|$ (`Constrained.tolLogTerm`).
 
-**Correction.** The table (14.2.12) prints $\pi_j = j + 1$ for TRq-SC. The decrease proved for
-TRq (Lemma 12.2.4) is $\kappa \epsilon_{\min}^{q+1}$, which gives $\pi_j = q + 1$, the order of
-the TRq-SC row of Theorem 14.2.4 of the book. The row $j + 1$ is false per iteration for
-$q = 2$, with $\kappa_{\mathrm{decr}}$ depending only on the parameters of the algorithm and the
-constants of f.D1qLaB.X (`CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`),
-and false for whole runs for every $q \ge 2$
-(`CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false`). The two exponents agree for
-$q = 1$ (`CartisGouldToint.Chapter14.theorem_14_3_9_trq_one`). The bound on the function
+**Correction.** The exponents $\pi_j = q + 1$ are those of the original (14.2.12).
+The bound on the function
 evaluations has the factor $1 + \Lambda$, which is needed for $q = 1$
 (`CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`): every INNER call restarts from
 the radius $\Delta_0$, and its unsuccessful iterations are bounded only by $\log(\Delta_0 /
@@ -5006,7 +5551,12 @@ is used.
 
 Such runs exist (`CartisGouldToint.Chapter14.exists_isTPqpGCTRqSCRun`). Phase-2 calls may be cut
 by any test of (14.3.32). The exponent $q + 1$ is the TRq-SC row of Lemma 14.2.2 as proved in
-`NumlibSurface.CartisGouldToint.Chapter14.Section02`. -/
+`NumlibSurface.CartisGouldToint.Chapter14.Section02`.
+
+**Correction.** The trust-region bounds use the exponent $q + 1$ of the original (14.2.12). Function
+counts include tolerance-dependent logarithmic overhead. The problem regularity hypothesis is
+f.D1qLB.X, which is defined in the source.
+-/
 theorem theorem_14_3_9_trq (hq : 1 ≤ q) {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ q Lc Bc) (hf : AssumptionD1pLBX f X X₀ q Lf Bf)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup)
@@ -5173,7 +5723,8 @@ theorem tpqpOrderD_congr {π π' : ℕ → ℝ} {ε : ℕ → ℝ} (h : ∀ j �
   exact Optimization.finMax_congr fun j hj => by simp only [h j hj]
 
 /-- **Theorem 14.3.9** of [cartis2022evaluation] with a trust-region INNER for $q = 1$, with the
-printed exponent $\pi_1 = 2$ (the TRq-SC entry $j + 1$ of (14.2.12)). Under the assumptions of
+printed exponent $\pi_1 = 2$ (the TRq-SC entry $q + 1$ of (14.2.12) at $q = 1$). Under the
+assumptions of
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq` with $q = 1$, there are constants
 $\kappa_F, \kappa_L, \kappa_D \ge 0$ such that for all tolerances
 $\epsilon_0, \epsilon_1 \in (0, 1]$ with $\epsilon_0 \le \beta_F$ and every TPqp-GC run with
@@ -5191,7 +5742,12 @@ restarts of the trust-region radius. That factor is needed: the printed bound fa
 (`CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`).
 
 This is `CartisGouldToint.Chapter14.theorem_14_3_9_trq` with $q = 1$, where the exponent $q + 1$
-of Lemma 12.2.4 is the printed $j + 1$. -/
+of Lemma 12.2.4 and the source's (14.2.12) is $2$.
+
+**Correction.** The trust-region bounds use the exponent $q + 1$ of the original (14.2.12). Function
+counts include tolerance-dependent logarithmic overhead. The problem regularity hypothesis is
+f.D1qLB.X, which is defined in the source.
+-/
 theorem theorem_14_3_9_trq_one {X₀ : Set ℝⁿ} {Lc Bc Lf Bf : ℕ → ℝ}
     (hc : AssumptionCD1pLBX c X X₀ 1 Lc Bc) (hf : AssumptionD1pLBX f X X₀ 1 Lf Bf)
     {βF flow fup : ℝ} (hB : Chapter07.AssumptionBFb f c X βF flow fup)
@@ -5244,7 +5800,11 @@ $\beta_1 \in (0, 1)$ and $x_0 \in X$ with $\beta_1 \|c(x_0)\| < 1$ and
 $\beta_1 \|c(x_0)\| \le \vartheta$, there is such a run from $x_0$.
 
 Phase 1 is LENq-SC with TRq-SC calls on $\nu$, and Phase 2 is a run with TRq-SC calls
-(`Constrained.exists_isHighOrderTargetRun_isTRqCalls`). -/
+(`Constrained.exists_isHighOrderTargetRun_isTRqCalls`).
+
+**Reading.** The admissible run records actual TRq-SC outputs in both phases. Its existence theorem
+assumes the stated feasibility-domain, smoothness and tolerance safeguards.
+-/
 theorem exists_isTPqpGCTRqSCRun (hX : IsClosed X) (hq : 1 ≤ q) {X₀ : Set ℝⁿ}
     {Lc Bc Lf Bf : ℕ → ℝ} (hc : AssumptionCD1pLBX c X X₀ q Lc Bc)
     (hf : AssumptionD1pLBX f X X₀ q Lf Bf) (P : Optimization.TRqParams) (hθ0 : 0 < θ)
@@ -5370,7 +5930,7 @@ theorem trqLog_phase1 {q : ℕ} {θ β₁ β : ℝ} {ε : ℕ → ℝ} {xP : ℕ
 
 open Constrained.TwoPhaseExample in
 /-- The problem of `Constrained.TwoPhaseExample.Rectangle` satisfies the hypotheses of Theorem
-14.3.9 of [cartis2022evaluation] with a trust-region INNER, both of the printed statement and of
+14.3.9 of [cartis2022evaluation] with a trust-region INNER, for the printed statement and for
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq_one`, for every $q$: $X$ is closed and contains
 $x_0$, c.D1qLB.X and f.D1qLB.X hold on the ball of radius $3$ with some constants, and f.B.Fb
 holds for every $\beta_F$ with $f_{\mathrm{low}} = 0$ and $f_{\mathrm{up}} = 2$. -/
@@ -5425,9 +5985,14 @@ iterations (`Constrained.TwoPhaseExample.Rectangle.lt_e_of_trqCalls`,
 `Constrained.TwoPhaseExample.Rectangle.funEvals_ge`). For $q = 1$ the bound
 $\kappa_F \epsilon_0^{-1}$ is the printed order
 (`CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`). For $q \ge 2$ this does not
-contradict the printed order, nor the order with the exponents $q + 1$: at these tolerances both
-are at least $\epsilon_0^{-2}$ (`CartisGouldToint.Chapter14.inv_sq_le_tpqpOrderF_trqLogTol`),
-while the lower bound of this example is only of order $\epsilon_0^{-1} \log(1/\epsilon_0)$. -/
+contradict the printed order, which at these tolerances is at least $\epsilon_0^{-2}$
+(`CartisGouldToint.Chapter14.inv_sq_le_tpqpOrderF_trqLogTol`),
+while the lower bound of this example is only of order $\epsilon_0^{-1} \log(1/\epsilon_0)$.
+
+**Correction.** At the example's fixed dual tolerances, an inverse-primal-tolerance function bound
+fails at every positive order. For order one this also refutes the entire printed
+function-evaluation order, establishing the need to retain logarithmic overhead in that case.
+-/
 theorem theorem_14_3_9_trq_log_necessary_inv {q : ℕ} (hq : 1 ≤ q) (P : Optimization.TRqParams)
     {ϑ θ β β₁ βF : ℝ} (hϑ1 : ϑ ≤ 1) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ)
     (hβϑ : β ≤ ϑ) (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) (hβF : 0 < βF) :
@@ -5518,7 +6083,12 @@ order of $\epsilon_0^{-1} \log(1/\epsilon_0)$ evaluations
 (`Constrained.TwoPhaseExample.Rectangle.funEvals_ge`,
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary_inv`). The bound of
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq_one`, with the factor
-$1 + |\log(\epsilon_0 \epsilon_1)|$, holds on this example. -/
+$1 + |\log(\epsilon_0 \epsilon_1)|$, holds on this example.
+
+**Correction.** At the example's fixed dual tolerances, an inverse-primal-tolerance function bound
+fails at every positive order. For order one this also refutes the entire printed
+function-evaluation order, establishing the need to retain logarithmic overhead in that case.
+-/
 theorem theorem_14_3_9_trq_log_necessary (P : Optimization.TRqParams) {ϑ θ β β₁ βF : ℝ}
     (hϑ1 : ϑ ≤ 1) (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβθ : β ≤ θ) (hβϑ : β ≤ ϑ)
     (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) (hβF : 0 < βF) :
@@ -5587,7 +6157,8 @@ $c(v) = (1, v_1^{-1/8}, v_2)$ or $c_2(v) = (v_1^{-1/8}, v_2)$ on $X = \{v \mid v
 problems and the long TRq runs on them are in
 `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.SlowDecay` and
 `Numlib.Optimization.Constrained.TwoPhase.HighOrder.Examples.SlowDecayTwoPhase`. This part checks
-the assumptions of Theorem 14.3.9 for them and states the failure of the printed order.
+the assumptions of Theorem 14.3.9 and uses the examples to refute the alternative exponent $j + 1$
+for TRq-SC. The original (14.2.12) specifies $q + 1$.
 -/
 
 section Assumptions
@@ -5694,7 +6265,8 @@ $\epsilon_1 = 2^{-10M}$ and $\epsilon_2 = 2^{-5M}$. Then there is a run of
 derivative evaluations in Phase 1.
 
 The run makes a single INNER call, the long call of
-`Constrained.TwoPhaseExample.SlowDecay.exists_isTRqOutputCost`. -/
+`Constrained.TwoPhaseExample.SlowDecay.exists_isTRqOutputCost`.
+-/
 theorem trqSlow_exists_tpqp_run {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 1 ≤ M) {θ β : ℝ}
     (hθ0 : 0 < θ) (hθ1 : θ < 1) {ε : ℕ → ℝ} (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1)
     (h1 : ε 1 = (1 / 2) ^ (10 * M)) (h2 : ε 2 = (1 / 2) ^ (5 * M)) :
@@ -5796,7 +6368,8 @@ Phase 1 ends at once, since $\|c_2(x_0)\| = 1/2 = \theta \epsilon_0$. Phase 2 is
 `Constrained.TwoPhaseExample.SlowDecay.exists_isHighOrderTargetRun`: a single INNER call on
 $\mu(\cdot, t_1)$, which differs from $\frac{1}{2} \|c\|^2$ (for $c$ =
 `Constrained.TwoPhaseExample.SlowDecay.con`) by a constant, followed by a termination in case
-(c). -/
+(c).
+-/
 theorem trqSlow_exists_tpqp_run_phase2 {q : ℕ} (hq : 2 ≤ q) {M : ℕ} (hM : 2 ≤ M) {β₁ : ℝ}
     (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) (h0 : ε 0 = 1)
@@ -5842,7 +6415,7 @@ theorem tpqpOrderD_le_tpqpOrderF {π : ℕ → ℝ} {q : ℕ} {ε : ℕ → ℝ}
   Optimization.finMax_le ((inv_nonneg.2 h0.le).trans inv_le_tpqpOrderF) fun _ hj =>
     term_le_tpqpOrderF hj
 
-/-- For $\kappa \ge 0$ and $\epsilon_0 \in (0, 1]$, with the printed exponents $\pi_j = j + 1$:
+/-- For $\kappa \ge 0$ and $\epsilon_0 \in (0, 1]$, with the alternative exponents $\pi_j = j + 1$:
 $\kappa O_D \le \kappa (1 + |\log(\epsilon_0 \epsilon_{\min})|) O_F$. -/
 theorem mul_tpqpOrderD_le_printed {q : ℕ} {ε : ℕ → ℝ} {κ : ℝ} (hκ : 0 ≤ κ) (h0 : 0 < ε 0)
     (h1 : ε 0 ≤ 1) :
@@ -5858,14 +6431,16 @@ theorem mul_tpqpOrderD_le_printed {q : ℕ} {ε : ℕ → ℝ} {κ : ℝ} (hκ :
       gcongr
       nlinarith
 
-/-- The count against the printed order. Let $q \ge 2$ and $M > 20 |\kappa| + 20$. A count
+/-- The count against the order with exponents $j + 1$. Let $q \ge 2$ and $M > 20 |\kappa| + 20$.
+A count
 $N \ge 2^{22M} - 2^{18M} - 2^{10M} + 1$ exceeds $\kappa (1 + |\log(\epsilon_0 \epsilon_{\min})|)
 \max[\epsilon_0^{-1}, \max_j \epsilon_0^{-j} \epsilon_j^{-(j+1)}]$ at the tolerances
 `Constrained.TwoPhaseExample.SlowDecay.tol M`.
 
 The proof uses `Constrained.TwoPhaseExample.SlowDecay.not_le_of_count`,
 `Constrained.TwoPhaseExample.SlowDecay.finMax_tol_le` and
-`Constrained.TwoPhaseExample.SlowDecay.abs_log_tol_le`. -/
+`Constrained.TwoPhaseExample.SlowDecay.abs_log_tol_le`.
+-/
 theorem trqSlow_not_le_printed {q : ℕ} (hq : 2 ≤ q) {κ : ℝ} {M : ℕ} (hM : 20 * |κ| + 20 < M)
     {N : ℝ} (hN : ((2 ^ (22 * M) - 2 ^ (18 * M) - 2 ^ (10 * M) : ℕ) : ℝ) + 1 ≤ N) :
     ¬ N ≤ κ * (1 + Constrained.tolLogTerm q (tol M)) *
@@ -5886,17 +6461,18 @@ $\beta \in \mathbb{R}$. Then there is no constant $\kappa$ such that every run o
 `CartisGouldToint.Chapter14.IsTPqpGCTRqSCRun` that terminates in Phase 1 uses at most $\kappa
 (1 + |\log(\epsilon_0 \epsilon_{\min})|) \max[\epsilon_0^{-1}, \max_j \epsilon_0^{-j}
 \epsilon_j^{-(j+1)}]$ derivative evaluations, for all tolerances $\epsilon \in (0, 1]^{q+1}$. So
-the printed order fails even with the logarithmic factor, and even for the derivative
+the order with exponents $j + 1$ fails even with the logarithmic factor, and even for the derivative
 evaluations alone, which are at most the function evaluations.
 
 With $\epsilon_0 = 1$, $\epsilon_1 = 2^{-10M}$, $\epsilon_2 = 2^{-5M}$ and $\epsilon_j = 1$ for
-$j \ge 3$, the printed order is $2^{20M}$, while the run of
+$j \ge 3$, the order with exponents $j + 1$ is $2^{20M}$, while the run of
 `CartisGouldToint.Chapter14.trqSlow_exists_tpqp_run` has at least $2^{22M}/2$ successful
 iterations. After the radius has been driven down to about $\epsilon_1$ (by first-order failures
 across a direction of unit curvature), the INNER run takes second-order steps of length about
 $\epsilon_1$ along the first axis, where $\nu$ has a slope of about $v_1^{-5/4}$, between
 $\epsilon_2 \epsilon_1$ and $\epsilon_1$, and negligible curvature. Each step decreases $\nu$
-only by about $\epsilon_2 \epsilon_1^2$, and the first axis is long. -/
+only by about $\epsilon_2 \epsilon_1^2$, and the first axis is long.
+-/
 theorem theorem_14_3_9_trq_printed_false {q : ℕ} (hq : 2 ≤ q) {θ β : ℝ} (hθ0 : 0 < θ)
     (hθ1 : θ < 1) :
     ¬ ∃ κ : ℝ, ∀ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) →
@@ -5917,15 +6493,16 @@ theorem theorem_14_3_9_trq_printed_false {q : ℕ} (hq : 2 ≤ q) {θ β : ℝ} 
   have h := hκ (tol M) (fun j _ => tol_mem M j) xP δP k₁ D nF₁ nD₁ hrun hexit
   exact trqSlow_not_le_printed hq hM hcount h
 
-/-- The printed form of `CartisGouldToint.Chapter14.theorem_14_3_9_trq` is false for every
+/-- The $j + 1$ variant of `CartisGouldToint.Chapter14.theorem_14_3_9_trq` is false for every
 $q \ge 2$. Let $\theta \in (0, 1)$ and $0 < \beta \le 1$. The fixed problem of
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false` satisfies every hypothesis of
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq`: c.D1qLB.X, f.D1qLB.X, f.B.Fb with
 $\beta_F = 1$, $\vartheta = 1$, $0 < \beta \le \vartheta$ and
 $\beta_1 \|c(x_0)\| \le \vartheta$. But there are no constants
 $\kappa_F, \kappa_L, \kappa_D \ge 0$ for which the conclusion of
-`CartisGouldToint.Chapter14.theorem_14_3_9_trq` holds with the printed exponents $\pi_j = j + 1$
-in place of $q + 1$, for all tolerances $\epsilon \in (0, 1]^{q+1}$ with $\epsilon_0 \le 1$. -/
+`CartisGouldToint.Chapter14.theorem_14_3_9_trq` holds with the alternative exponents $\pi_j = j + 1$
+in place of $q + 1$, for all tolerances $\epsilon \in (0, 1]^{q+1}$ with $\epsilon_0 \le 1$.
+-/
 theorem theorem_14_3_9_trq_printed_false_conclusion {q : ℕ} (hq : 2 ≤ q) {θ β : ℝ}
     (hθ0 : 0 < θ) (hθ1 : θ < 1) (hβ0 : 0 < β) (hβ1 : β ≤ 1) :
     AssumptionCD1pLBX con halfPlane openHalfPlane q (fun j => derivBound (j + 1)) derivBound ∧
@@ -5970,7 +6547,8 @@ Phase 2, for all tolerances $\epsilon \in (0, 1]^{q+1}$.
 
 The runs of `CartisGouldToint.Chapter14.trqSlow_exists_tpqp_run_phase2` have a single INNER call
 on $\mu(\cdot, t_1)$, the TRq-SC run of `Constrained.TwoPhaseExample.SlowDecay.exists_long_run`
-started at $(256, 0)$. -/
+started at $(256, 0)$.
+-/
 theorem theorem_14_3_9_trq_printed_false_phase2 {q : ℕ} (hq : 2 ≤ q) {β₁ : ℝ} (hβ₁0 : 0 < β₁)
     (hβ₁1 : β₁ < 1) :
     ¬ ∃ κ : ℝ, ∀ ε : ℕ → ℝ, (∀ j ∈ Finset.range (q + 1), 0 < ε j ∧ ε j ≤ 1) →
@@ -5993,15 +6571,16 @@ theorem theorem_14_3_9_trq_printed_false_phase2 {q : ℕ} (hq : 2 ≤ q) {β₁ 
     hrun hph2
   exact trqSlow_not_le_printed hq hM (hcount kε hend) h
 
-/-- The printed form of `CartisGouldToint.Chapter14.theorem_14_3_9_trq` is false in Phase 2 for
+/-- The $j + 1$ variant of `CartisGouldToint.Chapter14.theorem_14_3_9_trq` is false in Phase 2 for
 every $q \ge 2$. Let $\beta_1 \in (0, 1)$. The fixed problem of
 `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false_phase2` satisfies every hypothesis
 of `CartisGouldToint.Chapter14.theorem_14_3_9_trq`: c.D1qLB.X, f.D1qLB.X, f.B.Fb with
 $\beta_F = 1$, $\vartheta = 1$, $\theta = \beta = 1/2$ and $\beta_1 \|c_2(x_0)\| = \beta_1 / 2
 \le \vartheta$. But there are no constants $\kappa_F, \kappa_L, \kappa_D \ge 0$ for which the
-conclusion of `CartisGouldToint.Chapter14.theorem_14_3_9_trq` holds with the printed exponents
+conclusion of `CartisGouldToint.Chapter14.theorem_14_3_9_trq` holds with the alternative exponents
 $\pi_j = j + 1$, for all tolerances $\epsilon \in (0, 1]^{q+1}$ with $\epsilon_0 \le 1$; the
-failure is in the Phase-2 part. -/
+failure is in the Phase-2 part.
+-/
 theorem theorem_14_3_9_trq_printed_false_conclusion_phase2 {q : ℕ} (hq : 2 ≤ q) {β₁ : ℝ}
     (hβ₁0 : 0 < β₁) (hβ₁1 : β₁ < 1) :
     AssumptionCD1pLBX con₂ halfPlane openHalfPlane q (fun j => derivBound (j + 1)) derivBound ∧

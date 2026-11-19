@@ -129,6 +129,23 @@ proofs specialize the backbone modules `Numlib.Eigen.Pencil` and
 
 ## Deviations from the source
 
+* **§7.7.1, the pencil eigenvalue count** (reading).
+  `GolubVanLoan.Chapter07.pencilSpectrum_card` states degree of the determinant polynomial,
+  which counts eigenvalues with multiplicity when the determinant polynomial is nonzero.
+* **§7.7.5, the zero chase** (typo). The penultimate source diagram prints $BZ_{34}^T$ alongside
+  $AZ_{34}$. `GolubVanLoan.Chapter07.qzZeroChase` applies the same right factor to both arrays.
+* **Algorithm 7.7.2** (reading). `GolubVanLoan.Chapter07.algorithm_7_7_2` acts on a window and
+  returns reflector lists. Its exact full-window theorem uses an order of at least three and
+  compares with the Francis polynomial-factorization condition. The product on the left of the
+  source's similarity relation is the updated $\bar A\bar B^{-1}$.
+* **Algorithm 7.7.3** (reading). `GolubVanLoan.Chapter07.algorithm_7_7_3` always accumulates
+  both orthogonal factors and returns a stop flag after bounded work. Its exact specification
+  bounds threshold deflations of $A$ in Frobenius norm and gives quasi-triangular $T$ upon
+  stopping.
+* **Equations (7.7.5)–(7.7.6)** (reading). `GolubVanLoan.Chapter07.equation_7_7_5` corrects
+  missing factors of $x$ in the elimination and proves the converse kernel relation.
+  `GolubVanLoan.Chapter07.equation_7_7_6` establishes the factorization for all coefficients,
+  including cases where the leading coefficient vanishes.
 * **§7.7.8, generalized inverse iteration** (typo). The source prints the eigenvalue estimate as
   $\lambda^{(k)} = q^{(k)H} A q^{(k)} / q^{(k)H} A q^{(k)}$; the denominator is
   $q^{(k)H} B q^{(k)}$. See `GolubVanLoan.Chapter07.generalizedInverseIteration_eq`.
@@ -155,7 +172,11 @@ variable {n : ℕ}
 $\operatorname{rank}(B) = n$". Let $A, B \in \mathbb{C}^{n \times n}$. The characteristic
 polynomial $\det(A - \lambda B)$ has degree $n$ if and only if $\operatorname{rank} B = n$.
 
-The polynomial is `Matrix.pencilPoly A B`, and its degree is `Polynomial.natDegree`. -/
+The polynomial is `Matrix.pencilPoly A B`, and its degree is `Polynomial.natDegree`.
+
+**Reading.** The source’s count is a polynomial degree statement, hence a count with algebraic
+multiplicity when the pencil determinant is nonzero. The left side is not the cardinality of
+the set of distinct eigenvalues. -/
 theorem pencilSpectrum_card (A B : Matrix (Fin n) (Fin n) ℂ) :
     (pencilPoly A B).natDegree = n ↔ B.rank = n := by
   have h := natDegree_pencilPoly_eq_card_iff A B
@@ -766,7 +787,11 @@ $a_{r,r-1}$. All rotations act on the whole arrays and are accumulated into $Q$ 
 $r \ge n$, the program returns the state unchanged.
 
 The source's display is the case $p = 0$, $r = n - 1$; Algorithm 7.7.3 runs the program on its
-unreduced block. The exact semantics is `GolubVanLoan.Chapter07.qzZeroChase_spec`. -/
+unreduced block. The exact semantics is `GolubVanLoan.Chapter07.qzZeroChase_spec`.
+
+**Typo.** In the example’s penultimate diagram the source writes $BZ_{34}^T$ while applying
+$Z_{34}$ on the right of $A$. Lean applies the same right rotation to both arrays, preserving
+pencil equivalence. -/
 noncomputable def qzZeroChase (p k r : ℕ) (st : QZArrays n) : M (QZArrays n) := do
   let st ← (List.finRange n).foldlM (fun st (j : Fin n) =>
     if h : k ≤ (j : ℕ) ∧ (j : ℕ) < r ∧ r < n then
@@ -902,7 +927,11 @@ unreduced block $A_{22}$. Since the reflectors act on the whole arrays, the prog
 performs the source's update $A = \operatorname{diag}(I_p, Q, I_q)^T A \operatorname{diag}(I_p,
 Z, I_q)$ of Algorithm 7.7.3. The program has no hypotheses; the exact semantics are
 `GolubVanLoan.Chapter07.algorithm_7_7_2_block`, `GolubVanLoan.Chapter07.algorithm_7_7_2_spec`
-and `GolubVanLoan.Chapter07.algorithm_7_7_2_window`. -/
+and `GolubVanLoan.Chapter07.algorithm_7_7_2_window`.
+
+**Reading.** The source applies the step to a full unreduced pencil. Lean applies the same
+reflectors on a window and returns the reflector lists; it returns the input with empty lists
+when the window has fewer than two valid indices. -/
 noncomputable def algorithm_7_7_2 (p r : ℕ) (A B : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ) ×
       List ((Fin n → ℝ) × ℝ)) :=
@@ -1162,7 +1191,11 @@ $b_{rr} = 0$, $a_{r,r-1} = 0$ if $p < r$, and the block is still decoupled.
 
 With $p = 0$, $r = n - 1$ and $Q = Z = I$ at the start this is the source's display: the output
 is $(Q^T A Z, Q^T B Z)$ with $(Q^T A Z)_{n,n-1} = 0$ and $(Q^T B Z)_{nn} = 0$. The entries at
-natural indices are read with `GolubVanLoan.Chapter07.qzEntry`, which is $0$ out of range. -/
+natural indices are read with `GolubVanLoan.Chapter07.qzEntry`, which is $0$ out of range.
+
+**Generalization.** The source presents deflation at the last position of the whole pencil.
+This theorem also applies to a decoupled active window and explicitly certifies the
+corresponding boundary and terminal zeros. -/
 theorem qzZeroChase_spec {p k r : ℕ} (hpk : p ≤ k) (hkr : k ≤ r) (hr : r < n)
     {st : QZArrays n} (h : st.IsEquiv A₀ B₀) (hA : st.A.IsUpperHessenberg)
     (hB : st.B.IsUpperTriangular) (hk : qzEntry st.B k k = 0)
@@ -1352,7 +1385,11 @@ $A_{22}$ and $B_{22}$ and update", by accumulating the reflector data into $Q$ a
 The integers $q$ and $p$ are found by `Nat.findGreatest` over
 `GolubVanLoan.Chapter07.qzTrailingQuasi` and `GolubVanLoan.Chapter07.qzUnreducedTail`. The
 singularity test of $B_{22}$ compares its diagonal entries with $0$ exactly. The reflector data
-are accumulated by `GolubVanLoan.Chapter05.householderApplyRight` on the columns of the block. -/
+are accumulated by `GolubVanLoan.Chapter05.householderApplyRight` on the columns of the block.
+
+**Reading.** The source instructs a zero chase when the active triangular block is singular.
+Lean compares its diagonal against zero exactly, chooses the last zero, and accumulates both
+transformations in either branch. -/
 noncomputable def qzPass (ε : ℝ) (st : QZArrays n × Bool) : M (QZArrays n × Bool) :=
   if st.2 then pure st else do
     let A ← qzDeflate rnd ε st.1.A
@@ -1386,7 +1423,11 @@ end
 ```
 The `until` loop runs at most `fuel` passes. The result is $(T, S, Q, Z)$ together with the flag
 `done`, which says that $q = n$ was reached. The exact semantics is
-`GolubVanLoan.Chapter07.algorithm_7_7_3_spec`. -/
+`GolubVanLoan.Chapter07.algorithm_7_7_3_spec`.
+
+**Reading.** The source loops until the whole active pencil is in generalized Schur form and
+discusses the cost of optional factor accumulation. Lean always accumulates both factors and
+returns its state with a stop flag after at most the supplied number of passes. -/
 noncomputable def algorithm_7_7_3 (ε : ℝ) (A B : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (QZArrays n × Bool) := do
   let st ← algorithm_7_7_1 rnd A B
@@ -1405,7 +1446,11 @@ is inverse iteration (7.6.1) for $B^{-1} A$ with the same shift.
 q^{(k)H} A q^{(k)}$; the denominator is $q^{(k)H} B q^{(k)}$.
 
 With Lean's convention that a singular matrix has inverse $0$, the identity holds for every
-$\mu$: when $A - \mu B$ is singular, both sides are $0$. -/
+$\mu$: when $A - \mu B$ is singular, both sides are $0$.
+
+**Reading.** The source discusses an iteration with vector normalization and an eigenvalue
+estimate. This theorem establishes the inverse-matrix identity only, and uses totalized
+inversion also at singular shifts. -/
 theorem generalizedInverseIteration_eq {A B : Matrix (Fin n) (Fin n) ℂ} (hB : IsUnit B) (μ : ℂ) :
     (A - μ • B)⁻¹ * B = (B⁻¹ * A - μ • 1)⁻¹ := by
   have hBd : IsUnit B.det := (isUnit_iff_isUnit_det B).1 hB
@@ -1487,7 +1532,10 @@ its companion pencil (7.7.5). The following hold.
 
 The block rows give $u_2 = (A_2 + \lambda A_3) x$, $u_1 = A_1 x + \lambda u_2$ and
 $\lambda u_1 + A_0 x = P(\lambda) x$. The source's chain writes $A_0 + \dots$ where
-$A_0 x + \dots$ is meant. -/
+$A_0 x + \dots$ is meant.
+
+**Reading.** The source’s calculation eliminates $u_1,u_2$ to derive $P(\lambda)x=0$. Lean also
+reconstructs those blocks in the opposite direction and proves equivalence of nonzero kernels. -/
 theorem equation_7_7_5 (A₀ A₁ A₂ A₃ : Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     (∀ u₁ u₂ x : Fin n → ℂ, cubicPencil A₀ A₁ A₂ A₃ l *ᵥ Sum.elim (Sum.elim u₁ u₂) x = 0 →
       (A₀ + l • A₁ + l ^ 2 • A₂ + l ^ 3 • A₃) *ᵥ x = 0) ∧
@@ -1844,7 +1892,12 @@ The source displays the steps for $d = 2$ and $d = 3$; the theorem holds for eve
 The degree is $d = e + 1$, and the coefficients are
 `A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ`. The factors are
 `GolubVanLoan.Chapter07.linearizationS`, `GolubVanLoan.Chapter07.linearizationDiag`,
-`GolubVanLoan.Chapter07.linearizationT` and `GolubVanLoan.Chapter07.linearizationPencil`. -/
+`GolubVanLoan.Chapter07.linearizationT` and `GolubVanLoan.Chapter07.linearizationPencil`.
+
+**Reading.** The source assumes a nonzero leading coefficient and describes a degree-one
+linearization. Lean proves the factorization and determinant identities for all supplied
+coefficients and each evaluation point. The pencil is affine in $\lambda$ and can have lower
+degree for degenerate coefficients. -/
 theorem equation_7_7_6 (A : Fin (e + 2) → Matrix (Fin n) (Fin n) ℂ) (l : ℂ) :
     linearizationS l * linearizationDiag A l * linearizationT A l = linearizationPencil A l ∧
       (linearizationS (n := n) (e := e) l).det = 1 ∧
@@ -2653,7 +2706,9 @@ private theorem qzShiftVector_full {A B M : Matrix (Fin (N + 3)) (Fin (N + 3)) �
 /-- A two-sided orthogonal equivalence of a pencil is a similarity of $AB^{-1}$. Let
 $A, B, Q, Z \in \mathbb{R}^{k \times k}$ with $Q$ and $Z$ orthogonal and $B$ nonsingular. Then
 $$(Q^T A Z)(Q^T B Z)^{-1} = Q^T (AB^{-1}) Q.$$
--/
+
+**Typo.** The source prints $AB^{-1}$ as the left side after updating both matrices. The left
+side here uses the transformed pair and equals the similarity of the original product. -/
 theorem transpose_mul_mul_mul_inv {k : ℕ} {A B Q Z : Matrix (Fin k) (Fin k) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin k) ℝ) (hZ : Z ∈ orthogonalGroup (Fin k) ℝ)
     (hB : IsUnit B.det) : Qᵀ * A * Z * (Qᵀ * B * Z)⁻¹ = Qᵀ * (A * B⁻¹) * Q := by
@@ -2795,7 +2850,13 @@ transformation in Algorithm 7.5.1 when it is applied to $AB^{-1}$", and that
 explicitly applied to $AB^{-1}$". Since $Q e_1$ is parallel to $(M - aI)(M - bI) e_1$, the
 matrix $Q^T (M - aI)(M - bI)$ is upper triangular by the implicit Q theorem
 (`Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`). Here $n = N + 3$, the
-run is on the block $p = 0$, $r = N + 2$, and a Francis step is `Matrix.IsFrancisStep`. -/
+run is on the block $p = 0$, $r = N + 2$, and a Francis step is `Matrix.IsFrancisStep`.
+
+**Typo.** In the discussion before Algorithm 7.7.2, the left side of the similarity relation
+should be the updated product $\bar A\bar B^{-1}$. The source prints the original $AB^{-1}$ on
+both sides.  **Reading.** The exact theorem proves the Francis-step relation for a full window
+of order at least three; it states the implicit polynomial-factorization condition rather than
+equality of first columns of two particular programs. -/
 theorem algorithm_7_7_2_spec {N : ℕ} {A B A' B' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     {dQ dZ : List ((Fin (N + 3) → ℝ) × ℝ)} (hA : IsUnreduced A) (hB : B.IsUpperTriangular)
     (hBd : ∀ i, B i i ≠ 0) (h : Id.run (algorithm_7_7_2 pure 0 (N + 2) A B) = (A', B', dQ, dZ)) :
@@ -3369,7 +3430,12 @@ in which each state comes from the previous one by a pass in the sense of
 When the loop ended, $(T, S)$ is a generalized real Schur form of $(A + E, B)$: this is Theorem
 7.7.2 made constructive, up to the perturbation of the deflations. The zero chase and the QZ
 steps are exact equivalences, so $E$ comes from the deflations alone. The norm is the Frobenius
-norm. -/
+norm.
+
+**Reading.** The source describes a completed floating-point factorization with spectral-norm
+perturbations in both arrays. Lean gives a bounded exact-arithmetic run with an explicit
+Frobenius bound for threshold deflations in $A$, exact equivalence on $B$, and quasi-
+triangularity conditional on the stop flag. -/
 theorem algorithm_7_7_3_spec {ε : ℝ} (hε : 0 ≤ ε) (A B : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ)
     {st : QZArrays n} {done : Bool}
     (h : Id.run (algorithm_7_7_3 pure ε A B fuel) = (st, done)) :

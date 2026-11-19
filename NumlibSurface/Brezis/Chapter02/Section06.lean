@@ -49,8 +49,8 @@ The adjoint is the backbone `LinearPMap.strongDualAdjoint` of the module
 * Remark 12, `Brezis.Chapter02.remark_2_12`: the kernel of a closed operator is closed.
 * Remark 12, `Brezis.Chapter02.remark_2_12_range_not_closed`: a bounded operator on $\ell^2$ whose
   range is not closed.
-* Section 2.6, `Brezis.Chapter02.adjoint_domain_iff`: the domain (24) of $A^\star$.
-* Section 2.6, `Brezis.Chapter02.adjoint_apply`: the fundamental relation (25), $\langle v, Au
+* Section 2.6, `Brezis.Chapter02.adjoint_domain_iff`: the domain of $A^\star$.
+* Section 2.6, `Brezis.Chapter02.adjoint_apply`: the fundamental relation $\langle v, Au
   \rangle = \langle A^\star v, u \rangle$.
 * Section 2.6, `Brezis.Chapter02.adjoint_apply_eq`: $A^\star v$ is the unique extension of
   $u \mapsto \langle v, Au \rangle$.
@@ -59,8 +59,8 @@ The adjoint is the backbone `LinearPMap.strongDualAdjoint` of the module
 * Remark 16, `Brezis.Chapter02.remark_2_16`: the adjoint of a bounded operator $T$ is the bounded
   operator $T^\star$, with $\|T^\star\| = \|T\|$.
 * Proposition 2.17, `Brezis.Chapter02.proposition_2_17`: $A^\star$ is closed.
-* Section 2.6, `Brezis.Chapter02.graph_adjoint_eq_annihilator_graph`: the relations (27),
-  $I[G(A^\star)] = G(A)^\perp$, and (28).
+* Section 2.6, `Brezis.Chapter02.graph_adjoint_eq_annihilator_graph`: the graph identity
+  $I[G(A^\star)] = G(A)^\perp$ and the corresponding membership criterion.
 * Corollary 2.18, `Brezis.Chapter02.corollary_2_18`: $N(A) = R(A^\star)^\perp$,
   $N(A^\star) = R(A)^\perp$, $N(A)^\perp \supseteq \overline{R(A^\star)}$ and
   $N(A^\star)^\perp = \overline{R(A)}$.
@@ -85,6 +85,17 @@ The adjoint is the backbone `LinearPMap.strongDualAdjoint` of the module
   defined for every $A$. When $D(A)$ is not dense, the values of `LinearPMap.strongDualAdjoint` are
   $0$, so the results about the values assume that $D(A)$ is dense.
 
+## Deviations from the source
+
+* **Standing setting of Section 2.6** (generalization). The definitions and adjoint results
+  apply to normed spaces. The source starts with Banach spaces. See
+  `Brezis.Chapter02.IsBoundedOperator`, `Brezis.Chapter02.proposition_2_17` and
+  `Brezis.Chapter02.corollary_2_18`.
+* **Remark 11, sequential closedness** (generalization). The sufficient condition is stated
+  as an equivalence. See `Brezis.Chapter02.remark_2_11`.
+* **Domain of the adjoint** (generalization). The boundedness test applies to operators
+  with nondense domain. See `Brezis.Chapter02.adjoint_domain_iff`.
+
 ## Not formalized
 
 * **Remarks 10, 13 and 14.** They are discussion.
@@ -108,6 +119,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 operator $A : D(A) \subseteq E \to F$ is **bounded** (or **continuous**) if $D(A) = E$ and there
 is a constant $c \ge 0$ such that
 $$\|Au\| \le c\|u\| \quad \text{for all } u \in E.$$
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
 -/
 def IsBoundedOperator (A : E →ₗ.[ℝ] F) : Prop :=
   A.domain = ⊤ ∧ ∃ c : ℝ, 0 ≤ c ∧ ∀ u : A.domain, ‖A u‖ ≤ c * ‖(u : E)‖
@@ -133,7 +147,10 @@ theorem isBoundedOperator_iff (A : E →ₗ.[ℝ] F) :
 /-- **Section 2.6** of [brezis2011functional], the graph. The graph of $A : D(A) \subseteq E \to F$
 is
 $$G(A) = \{[u, Au] : u \in D(A)\} \subseteq E \times F.$$
-It is `A.graph`, and the theorem states its membership criterion. -/
+It is `A.graph`, and the theorem states its membership criterion.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem mem_graph_iff (A : E →ₗ.[ℝ] F) (x : E) (y : F) :
     (x, y) ∈ A.graph ↔ ∃ u : A.domain, (u : E) = x ∧ A u = y :=
   LinearPMap.mem_graph_iff A
@@ -141,7 +158,10 @@ theorem mem_graph_iff (A : E →ₗ.[ℝ] F) (x : E) (y : F) :
 /-- **Section 2.6** of [brezis2011functional], the range. The range of $A : D(A) \subseteq E \to F$
 is
 $$R(A) = \{Au : u \in D(A)\} \subseteq F.$$
-It is `LinearMap.range A.toFun`, and the theorem states its membership criterion. -/
+It is `LinearMap.range A.toFun`, and the theorem states its membership criterion.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem mem_range_iff (A : E →ₗ.[ℝ] F) (y : F) :
     y ∈ LinearMap.range A.toFun ↔ ∃ u : A.domain, A u = y :=
   LinearMap.mem_range
@@ -149,20 +169,30 @@ theorem mem_range_iff (A : E →ₗ.[ℝ] F) (y : F) :
 /-- **Section 2.6** of [brezis2011functional], the kernel. The kernel of
 $A : D(A) \subseteq E \to F$ is
 $$N(A) = \{u \in D(A) : Au = 0\} \subseteq E.$$
-It is `A.ker`, and the theorem states its membership criterion. -/
+It is `A.ker`, and the theorem states its membership criterion.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem mem_ker_iff (A : E →ₗ.[ℝ] F) (x : E) :
     x ∈ A.ker ↔ ∃ u : A.domain, x = u ∧ A u = 0 :=
   LinearPMap.mem_ker_iff
 
 /-- **Section 2.6** of [brezis2011functional], closed operators. An unbounded operator
 $A : D(A) \subseteq E \to F$ is **closed** if and only if its graph $G(A)$ is closed in
-$E \times F$. Closedness is Mathlib's `LinearPMap.IsClosed`. -/
+$E \times F$. Closedness is Mathlib's `LinearPMap.IsClosed`.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem isClosed_iff (A : E →ₗ.[ℝ] F) : A.IsClosed ↔ IsClosed (A.graph : Set (E × F)) :=
   Iff.rfl
 
 /-- **Remark 11** of [brezis2011functional]. An unbounded operator $A : D(A) \subseteq E \to F$ is
 closed if and only if, for every sequence $(u_n)$ in $D(A)$ with $u_n \to u$ in $E$ and
 $Au_n \to f$ in $F$, one has (a) $u \in D(A)$ and (b) $f = Au$.
+
+**Generalization.** The source gives the sequential test as sufficient for closedness in Banach
+spaces. In metric spaces sequential closedness is equivalent to closedness, so the criterion
+is stated in both directions and needs no completeness.
 
 The source gives this as the method to prove that $A$ is closed. -/
 theorem remark_2_11 (A : E →ₗ.[ℝ] F) :
@@ -172,7 +202,10 @@ theorem remark_2_11 (A : E →ₗ.[ℝ] F) :
   LinearPMap.isClosed_iff_seq A
 
 /-- **Remark 12** of [brezis2011functional], first clause. If $A : D(A) \subseteq E \to F$ is
-closed, then $N(A)$ is closed. -/
+closed, then $N(A)$ is closed.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem remark_2_12 {A : E →ₗ.[ℝ] F} (hA : A.IsClosed) : IsClosed (A.ker : Set E) :=
   hA.isClosed_ker
 
@@ -344,10 +377,14 @@ theorem remark_2_11_not_closed :
 
 /-! ### The adjoint -/
 
-/-- **Section 2.6** of [brezis2011functional], the domain of the adjoint, (24). Let
+/-- **Section 2.6** of [brezis2011functional], the domain of the adjoint. Let
 $A : D(A) \subseteq E \to F$ be an unbounded operator. Then $v \in F^\star$ is in $D(A^\star)$
 if and only if there is a constant $c \ge 0$ such that
 $$|\langle v, Au \rangle| \le c\|u\| \quad \text{for all } u \in D(A).$$
+
+**Generalization.** The source starts with a densely defined operator between Banach spaces.
+The same boundedness test defines the domain for any operator between normed spaces. The
+value formula in `Brezis.Chapter02.adjoint_apply` still assumes a dense domain.
 
 The adjoint is the backbone `LinearPMap.strongDualAdjoint`. Its domain is defined for every $A$,
 densely defined or not. -/
@@ -363,10 +400,13 @@ theorem adjoint_domain_iff (A : E →ₗ.[ℝ] F) (v : StrongDual ℝ F) :
   · rintro ⟨c, -, hc⟩
     exact ⟨c, fun u => by rw [Real.norm_eq_abs, ← Submodule.norm_coe]; exact hc u⟩
 
-/-- **Section 2.6** of [brezis2011functional], the fundamental relation (25). Let
+/-- **Section 2.6** of [brezis2011functional], the fundamental adjoint relation. Let
 $A : D(A) \subseteq E \to F$ be densely defined. Then
 $$\langle v, Au \rangle_{F^\star, F} = \langle A^\star v, u \rangle_{E^\star, E} \quad \text{for
   all } u \in D(A),\ v \in D(A^\star).$$
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
 -/
 theorem adjoint_apply {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E))
     (v : A.strongDualAdjoint.domain) (u : A.domain) :
@@ -378,6 +418,9 @@ $A : D(A) \subseteq E \to F$ be densely defined and $v \in D(A^\star)$. If $f \i
 satisfies $\langle f, u \rangle = \langle v, Au \rangle$ for all $u \in D(A)$, then
 $f = A^\star v$.
 
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
+
 The source notes that the extension is unique since $D(A)$ is dense. -/
 theorem adjoint_apply_eq {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E))
     (v : A.strongDualAdjoint.domain) {f : StrongDual ℝ E}
@@ -387,6 +430,9 @@ theorem adjoint_apply_eq {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E))
 /-- **Remark 15** of [brezis2011functional], the weak-$\star$ clause. If
 $A : D(A) \subseteq E \to F$ is closed and densely defined, then $D(A^\star)$ is dense in
 $F^\star$ for the weak-$\star$ topology $\sigma(F^\star, F)$.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
 
 The weak-$\star$ topology is that of Mathlib's `WeakDual`, reached through
 `StrongDual.toWeakDual`. -/
@@ -399,6 +445,9 @@ operator $A$ with $D(A) = E$. Then $A^\star$ is the bounded operator
 $T^\star : F^\star \to E^\star$, $T^\star v = v \circ T$, with $D(A^\star) = F^\star$, and
 $$\|T^\star\|_{\mathcal{L}(F^\star, E^\star)} = \|T\|_{\mathcal{L}(E, F)}.$$
 In particular $A^\star$ is a bounded operator.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
 
 The operator $T^\star$ is `ContinuousLinearMap.strongDualMap`. -/
 theorem remark_2_16 (T : E →L[ℝ] F) :
@@ -414,19 +463,25 @@ theorem remark_2_16 (T : E →L[ℝ] F) :
   exact ⟨T.strongDualMap, T.toPMap_strongDualAdjoint hdense⟩
 
 /-- **Proposition 2.17** of [brezis2011functional]. Let $A : D(A) \subseteq E \to F$ be a densely
-defined unbounded linear operator. Then $A^\star$ is closed. -/
+defined unbounded linear operator. Then $A^\star$ is closed.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem proposition_2_17 {A : E →ₗ.[ℝ] F} (hA : Dense (A.domain : Set E)) :
     A.strongDualAdjoint.IsClosed :=
   LinearPMap.strongDualAdjoint_isClosed hA
 
-/-- **Section 2.6** of [brezis2011functional], the orthogonality relations (27) and (28). Let
+/-- **Section 2.6** of [brezis2011functional], the graph orthogonality relations. Let
 $A : D(A) \subseteq E \to F$ be densely defined, and let $I : F^\star \times E^\star \to E^\star
 \times F^\star$ be the isomorphism $I([v, f]) = [-f, v]$. Then
-$$I[G(A^\star)] = G(A)^\perp, \qquad (27)$$
+$$I[G(A^\star)] = G(A)^\perp,$$
 where $(E \times F)^\star$ is identified with $E^\star \times F^\star$. Moreover, for
 $v \in F^\star$ and $f \in E^\star$,
 $$[v, f] \in G(A^\star) \iff \langle f, u \rangle = \langle v, Au \rangle \quad \text{for all }
-  u \in D(A). \qquad (28)$$
+  u \in D(A).$$
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
 
 The map $I$ is `LinearEquiv.skewSwap`, and the identification of $E^\star \times F^\star$ with
 $(E \times F)^\star$ is `ContinuousLinearMap.coprodEquivL`. -/
@@ -444,6 +499,9 @@ theorem graph_adjoint_eq_annihilator_graph {A : E →ₗ.[ℝ] F} (hA : Dense (A
 
 /-- **Corollary 2.18** of [brezis2011functional]. Let $A : D(A) \subseteq E \to F$ be a densely
 defined closed unbounded operator. Then
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
 
 (i) $N(A) = R(A^\star)^\perp$,
 
@@ -468,6 +526,9 @@ theorem corollary_2_18 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.d
 $A : D(A) \subseteq E \to F$ be densely defined and closed. Then $N(A)^\perp$ is the closure of
 $R(A^\star)$ for the weak-$\star$ topology $\sigma(E^\star, E)$.
 
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces.
+
 The weak-$\star$ topology is that of Mathlib's `WeakDual`, reached through
 `StrongDual.toWeakDual`. -/
 theorem remark_2_17 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.domain : Set E)) :
@@ -479,7 +540,10 @@ theorem remark_2_17 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hA : Dense (A.doma
 /-- **Remark 17** of [brezis2011functional], the last clause. Let $E$ be reflexive and let
 $A : D(A) \subseteq E \to F$ be densely defined and closed. Then
 $$N(A)^\perp = \overline{R(A^\star)},$$
-with the closure in the norm topology of $E^\star$. -/
+with the closure in the norm topology of $E^\star$.
+
+**Generalization.** The source starts with Banach spaces. This statement works for arbitrary
+real normed spaces. -/
 theorem remark_2_17_reflexive [IsReflexive ℝ E] {A : E →ₗ.[ℝ] F} (hc : A.IsClosed)
     (hA : Dense (A.domain : Set E)) :
     A.ker.strongDualAnnihilator =

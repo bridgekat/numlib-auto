@@ -95,8 +95,17 @@ The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.LeastSqu
 
 ## Deviations from the source
 
-* **§5.5.1** (typo). The source writes $z \in \operatorname{hull}(A)$ where
-  $z \in \operatorname{null}(A)$ is meant. See `GolubVanLoan.Chapter05.minNorm_existsUnique`.
+* **§5.5.2, Moore–Penrose projections** (reading). The declaration states the projection onto
+  the range of $A$. The source also identifies the projection onto the range of $A^T$. See
+  `GolubVanLoan.Chapter05.moorePenrose`.
+* **§5.5.4, truncation bound** (generalization). Only the retained terms require positive
+  singular values. Zero singular values in the omitted tail contribute zero through the
+  pseudoinverse convention. See `GolubVanLoan.Chapter05.norm_truncatedSVDSolution_sub_le`.
+* **§5.5.5, basic solution** (correction). A zero $R_{12}$ is sufficient for the basic solution
+  to have minimum norm. The source phrases this as necessary, although equality can also occur
+  for nonzero $R_{12}$. See `GolubVanLoan.Chapter05.basicSolution_eq_pinv_of_eq_zero`.
+* **Algorithm 5.5.1** (reading). The program receives $V$ and the rank estimate from the caller,
+  and uses a padded pivoted QR. See `GolubVanLoan.Chapter05.algorithm_5_5_1`.
 * **Equation (5.5.3)** (typo). The source prints $X \in \mathbb{R}^{m \times n}$; the unknown is
   $X \in \mathbb{R}^{n \times m}$. See `GolubVanLoan.Chapter05.equation_5_5_3`.
 * **Example of §5.5.3** (typo). The source prints $(A + \delta A)^+$ with a spurious entry $1$ in
@@ -134,9 +143,6 @@ section MinNorm
 and $b \in \mathbb{R}^m$. The set $\mathcal{X} = \{x \in \mathbb{R}^n : \|Ax - b\|_2 = \min\}$
 of least-squares minimizers is convex, the vector $x_{LS} = A^+ b$ is a least-squares minimizer
 of minimum 2-norm, and every least-squares minimizer of minimum 2-norm is equal to $A^+ b$.
-
-**Typo.** The source writes $z \in \operatorname{hull}(A)$ in this subsection where
-$z \in \operatorname{null}(A)$ is meant.
 
 The minimizer of minimum 2-norm is `Matrix.IsMinNormLeastSquaresSolution`, and $x_{LS}$ is
 `toEuclideanLin A.pinv b`. -/
@@ -368,7 +374,10 @@ satisfies
 Moreover, $AA^+$ is the orthogonal projection onto $\operatorname{ran}(A)$.
 
 The orthogonal projection is `Submodule.starProjection` of the range of
-`Matrix.toEuclideanLin A`. -/
+`Matrix.toEuclideanLin A`.
+
+**Reading.** The statement includes the projection onto the range of $A$. The source also
+identifies $A^+A$ as the projection onto the range of $A^T$. -/
 theorem moorePenrose (A : Matrix (Fin m) (Fin n) ℝ) :
     A * A.pinv * A = A ∧ A.pinv * A * A.pinv = A.pinv ∧ (A * A.pinv)ᵀ = A * A.pinv ∧
       (A.pinv * A)ᵀ = A.pinv * A ∧
@@ -418,7 +427,10 @@ def pinvExampleA : Matrix (Fin 3) (Fin 2) ℝ := !![1, 0; 0, 0; 0, 0]
 def pinvExampleE (ε : ℝ) : Matrix (Fin 3) (Fin 2) ℝ := !![0, 0; 0, ε; 0, 0]
 
 /-- For $\epsilon \neq 0$, the pseudoinverse of $A + \delta A$ in the example of §5.5.3 is
-$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 1/\epsilon & 0 \end{bmatrix}$. -/
+$\begin{bmatrix} 1 & 0 & 0 \\ 0 & 1/\epsilon & 0 \end{bmatrix}$.
+
+**Correction.** Corrects spurious lower-left entry to zero.
+-/
 theorem pinv_pinvExample {ε : ℝ} (hε : ε ≠ 0) :
     (pinvExampleA + pinvExampleE ε).pinv = !![1, 0, 0; 0, 1 / ε, 0] := by
   symm
@@ -585,7 +597,11 @@ The source makes the simplifying assumptions $r = n$ and $\Delta A = 0$ in (5.4.
 $\hat\Sigma = \Sigma = W^T A Z$ with $W$ and $Z$ orthogonal; here this is an SVD
 `Matrix.IsSVD A W σ Z` with $n \le m$. The hypothesis on $\sigma_{\hat r}$ is stated for the
 0-based `σ (r - 1)`, so for $\hat r = 0$ it reads $\sigma_1 > 0$. A term with $\sigma_i = 0$ in
-the last sum is zero, because division by zero gives zero in Lean. -/
+the last sum is zero, because division by zero gives zero in Lean.
+
+**Generalization.** A positive singular value at the truncation threshold suffices. Zero
+singular values in the omitted tail contribute zero, extending the source's full-column-rank
+derivation. -/
 theorem norm_truncatedSVDSolution_sub_le {A : Matrix (Fin m) (Fin n) ℝ}
     {W : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {Z : Matrix (Fin n) (Fin n) ℝ}
     (h : IsSVD A W σ Z) (hnm : n ≤ m) {r : ℕ} (hr : r ≤ n) (hσ : 0 < σ (r - 1))
@@ -771,7 +787,11 @@ theorem equation_5_5_4 (h : IsPivotedQR.IsRankRevealing A Q R π r)
 /-- **§5.5.5** of [golub2013matrix]. In the setting of `GolubVanLoan.Chapter05.basicSolution`, if
 $R_{12} = 0$, then $x_B = x_{LS} = A^+ b$ for every $b$. This is the converse of the remark of
 the source that "the basic solution is not the minimal 2-norm solution unless the submatrix
-$R_{12}$ is zero". -/
+$R_{12}$ is zero".
+
+**Correction.** The source describes $R_{12}=0$ as necessary for the basic solution to have
+minimum norm. It is a sufficient condition, and equality can hold with $R_{12}\ne 0$, for
+example when $b=0$. -/
 theorem basicSolution_eq_pinv_of_eq_zero (h : IsPivotedQR.IsRankRevealing A Q R π r)
     (hR : R.submatrix (Fin.castLE h.le_rows) (tailIdx h.le_cols) = 0)
     (b : EuclideanSpace ℝ (Fin m)) :
@@ -786,7 +806,10 @@ theorem basicSolution_eq_pinv_of_eq_zero (h : IsPivotedQR.IsRankRevealing A Q R 
 `GolubVanLoan.Chapter05.basicSolution`, if $x_{LS} = A^+ b \neq 0$, then
 $$1 \le \frac{\|x_B\|_2}{\|x_{LS}\|_2} \le \sqrt{1 + \|R_{11}^{-1} R_{12}\|_2^2}.$$
 
-The matrix norm $\|\cdot\|_2$ is the spectral norm. -/
+The matrix norm $\|\cdot\|_2$ is the spectral norm.
+
+**Reading.** Two-sided bound assumes nonzero minimum-norm solution for well-defined ratio.
+-/
 theorem equation_5_5_5 (h : IsPivotedQR.IsRankRevealing A Q R π r)
     (b : EuclideanSpace ℝ (Fin m)) (hx : toEuclideanLin A.pinv b ≠ 0) :
     1 ≤ ‖pivotedBasicSolution Q R π h.le_rows h.le_cols b‖ / ‖toEuclideanLin A.pinv b‖ ∧
@@ -993,7 +1016,11 @@ inputs (convention 5 of `NumlibSurface.GolubVanLoan`). QR with column pivoting i
 (`Matrix.padRows`), and $P$ is `GolubVanLoan.Chapter05.pivotPerm` of its pivots. The
 least-squares step is the Householder least-squares solution of §5.3.3 with the returned $\beta$
 (`GolubVanLoan.Chapter05.householderLS`). Algorithm 5.3.2 as printed recomputes $\beta$ and
-fails, for example for $B_1 = I_2$ (`GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample`). -/
+fails, for example for $B_1 = I_2$ (`GolubVanLoan.Chapter05.algorithm_5_3_2_counterexample`).
+
+**Reading.** The program takes the right singular-vector matrix $V$ and selected rank as
+inputs. The source first computes an SVD and then chooses the rank. The pivoted QR is applied
+after zero padding. -/
 noncomputable def algorithm_5_5_1 {r : ℕ} (hrn : r ≤ n) (hrm : r ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (V : Matrix (Fin n) (Fin n) ℝ) (b : Fin m → ℝ) :
     M (Equiv.Perm (Fin n) × (Fin r → ℝ)) := do
@@ -1022,7 +1049,11 @@ QR with column pivoting of $V(:, 1{:}\tilde r)^T$ has rank $\tilde r$, because t
 matrix are orthonormal, so its pivots give a nonsingular $\tilde V_{11}$
 (`GolubVanLoan.Chapter05.qrcp_V11`). Theorem 5.5.2 then gives the bound, whose left side is
 positive. The least-squares property is `GolubVanLoan.Chapter05.householderLS_spec`. The zero
-rows of the padding change neither the rank nor the rows of $R$ that the argument uses. -/
+rows of the padding change neither the rank nor the rows of $R$ that the argument uses.
+
+**Reading.** Assumes supplied valid SVD and positive admissible rank, states independent selected
+columns, lower bound and least-squares minimization.
+-/
 theorem algorithm_5_5_1_spec {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {r : ℕ} (hrn : r ≤ n)
     (hrm : r ≤ m) (hr0 : 0 < r) (hrA : r ≤ A.rank) (b : Fin m → ℝ)

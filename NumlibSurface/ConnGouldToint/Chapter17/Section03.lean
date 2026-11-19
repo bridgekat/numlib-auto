@@ -46,6 +46,12 @@ from `Numlib.Analysis.InnerProductSpace.BoxProjection`, and the model is `Subpro
 
 ## Deviations from the source
 
+* **Corrected zero slope and terminal cases.** Algorithm 17.3.1 continues at a zero slope with
+  negative curvature and gives explicit terminal and degenerate-box cases. See
+  `ConnGouldToint.Chapter17.cauchyQuadratic_lt_on_negative_stationary_segment`,
+  `ConnGouldToint.Chapter17.generalizedCauchyPoint`,
+  `ConnGouldToint.Chapter17.generalizedCauchyPoint_eq_zero_of_no_positive_breakpoint`,
+  `ConnGouldToint.Chapter17.generalizedCauchyPoint_zero_radius`.
 * **Algorithm 17.3.1** (correction). A zero slope stops the scan only if the curvature of the
   outgoing piece is nonnegative; at negative curvature the model still decreases. See
   `ConnGouldToint.Chapter17.cauchyQuadratic_lt_on_negative_stationary_segment`.
@@ -115,7 +121,12 @@ noncomputable def boxedCauchyBreakpoint (l u : EReal) (Δ d : ℝ) : ℝ :=
 $g, s, d \in E$, and let $H : E \to E$ be a symmetric continuous linear map. If the slope
 $\langle g, d \rangle + \langle s, H d \rangle$ is $0$ and the curvature
 $\langle d, H d \rangle$ is negative, then $m(s + t d) < m(s)$ for every $t \neq 0$. Therefore
-Step 3 must continue in this case. -/
+Step 3 must continue in this case.
+
+**Correction.** At zero slope the scan stops only with nonnegative outgoing curvature. Equal
+breakpoints are grouped, the scan returns the endpoint of the last segment, and it returns zero when
+no positive breakpoint exists, including a zero-radius box containing the origin.
+-/
 theorem cauchyQuadratic_lt_on_negative_stationary_segment (f : ℝ) (g s d : E)
     {H : E →L[ℝ] E} (hH : H.toLinearMap.IsSymmetric)
     (hSlope : ⟪g, d⟫ + ⟪s, H d⟫ = 0) (hCurv : ⟪d, H d⟫ < 0)
@@ -172,7 +183,12 @@ the scan returns its left endpoint without asking for another breakpoint.
 
 The algorithm is meant for a box that contains the zero displacement; the definition itself has
 no hypothesis on the bounds. The breakpoints are
-`ConnGouldToint.Chapter17.boxedCauchyBreakpoint`. -/
+`ConnGouldToint.Chapter17.boxedCauchyBreakpoint`.
+
+**Correction.** At zero slope the scan stops only with nonnegative outgoing curvature. Equal
+breakpoints are grouped, the scan returns the endpoint of the last segment, and it returns zero when
+no positive breakpoint exists, including a zero-radius box containing the origin.
+-/
 noncomputable def generalizedCauchyPoint {ι : Type*} [Fintype ι]
     (l u : ι → EReal) (Δ : ℝ) (g d : EuclideanSpace ℝ ι)
     (H : EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι) :
@@ -183,7 +199,12 @@ noncomputable def generalizedCauchyPoint {ι : Type*} [Fintype ι]
   cauchyScan b g d H times.sort 0 0 v ⟪g, v⟫ (H v)
 
 /-- **Algorithm 17.3.1** of [conn2000trust], terminal first interval. If every breakpoint $t_i$ is
-at most $0$, then the corrected scan returns $(0, 0)$. -/
+at most $0$, then the corrected scan returns $(0, 0)$.
+
+**Correction.** At zero slope the scan stops only with nonnegative outgoing curvature. Equal
+breakpoints are grouped, the scan returns the endpoint of the last segment, and it returns zero when
+no positive breakpoint exists, including a zero-radius box containing the origin.
+-/
 theorem generalizedCauchyPoint_eq_zero_of_no_positive_breakpoint {ι : Type*} [Fintype ι]
     (l u : ι → EReal) (Δ : ℝ) (g d : EuclideanSpace ℝ ι)
     (H : EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι)
@@ -201,7 +222,12 @@ theorem generalizedCauchyPoint_eq_zero_of_no_positive_breakpoint {ι : Type*} [F
 
 /-- **Algorithm 17.3.1** of [conn2000trust], degenerate trust box. If $l_i \le 0 \le u_i$ for all
 $i$, then the corrected scan with radius $\Delta = 0$ returns $(0, 0)$, even when the direction
-$d$ is nonzero. -/
+$d$ is nonzero.
+
+**Correction.** At zero slope the scan stops only with nonnegative outgoing curvature. Equal
+breakpoints are grouped, the scan returns the endpoint of the last segment, and it returns zero when
+no positive breakpoint exists, including a zero-radius box containing the origin.
+-/
 theorem generalizedCauchyPoint_zero_radius {ι : Type*} [Fintype ι]
     (l u : ι → EReal) (g d : EuclideanSpace ℝ ι)
     (H : EuclideanSpace ℝ ι →L[ℝ] EuclideanSpace ℝ ι)

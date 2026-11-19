@@ -53,6 +53,14 @@ $(k + \beta)! = \prod_{\ell=1}^k (\ell + \beta)$. The proofs specialize the back
 
 ## Deviations from the source
 
+* **Explicit order and interval.** Theorem A.8.1 makes the order and ordered-interval assumptions
+  explicit. See `CartisGouldToint.AppendixA.theorem_A_8_1`.
+* **Explicit nondegenerate interval.** Theorem A.8.2 requires a nonzero increment and allows either
+  sign. See `CartisGouldToint.AppendixA.theorem_A_8_2`.
+* **Explicit order.** Equation (A.16) makes the positive integer order explicit. See
+  `CartisGouldToint.AppendixA.eq_A_16`.
+* **Explicit nonnegative constant.** Theorem A.8.5 explicitly requires a nonnegative Lipschitz
+  constant. See `CartisGouldToint.AppendixA.theorem_A_8_5`.
 * **Theorem A.8.1** (reading). The conditions $k \ge 1$ and $h \ge 0$, which the book leaves
   implicit, are hypotheses. See `CartisGouldToint.AppendixA.theorem_A_8_1`.
 * **Theorem A.8.2** (correction). The point $\xi$ lies strictly between $t$ and $t + h$, which needs
@@ -108,7 +116,11 @@ $$\psi(t + h) - \tau_k(t, h) = \frac{1}{(k-1)!} \int_0^h (h - \xi)^{k-1} \bigl(\
 contains $(k-1)!$, and the interval is $[t, t + h]$.
 
 The approximation $\tau_k$ is `CartisGouldToint.AppendixA.taylorApprox` with $I = [t, t + h]$.
-All derivatives, also $\psi^{(k)}$ in the integrand, are taken within $[t, t + h]$. -/
+All derivatives, also $\psi^{(k)}$ in the integrand, are taken within $[t, t + h]$.
+
+**Reading.** The integral formula assumes positive Taylor order and a nonnegative increment, as
+required for the factorial and the printed ordered interval.
+-/
 theorem theorem_A_8_1 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hk : 1 ≤ k) (hh : 0 ≤ h)
     (hψ : ContDiffOn ℝ k ψ (Icc t (t + h))) :
     ψ (t + h) - taylorApprox ψ (Icc t (t + h)) k t h =
@@ -130,7 +142,11 @@ and $t + h$ is empty, so no such $\xi$ exists, although the identity holds with 
 The statement holds for either sign of $h$. The derivative $\psi^{(k+1)}(\xi)$ is the ordinary
 derivative `iteratedDeriv (k + 1) ψ ξ`. In the Lean statement,
 `CartisGouldToint.AppendixA.taylorApprox` takes its derivatives within the closed interval
-`uIcc t (t + h)`, and the point lies in the open interval `uIoo t (t + h)`. -/
+`uIcc t (t + h)`, and the point lies in the open interval `uIoo t (t + h)`.
+
+**Reading.** A strictly interior remainder point requires a nonzero increment. An unordered interval
+allows increments of either sign.
+-/
 theorem theorem_A_8_2 {ψ : ℝ → ℝ} {k : ℕ} {t h : ℝ} (hh : h ≠ 0)
     (hψ : ContDiffOn ℝ (k + 1) ψ (uIcc t (t + h))) :
     ∃ ξ ∈ uIoo t (t + h), ψ (t + h) - taylorApprox ψ (uIcc t (t + h)) k t h =
@@ -150,7 +166,11 @@ $$\int_0^1 \xi^\beta (1 - \xi)^{k-1} \, d\xi = \frac{(k-1)!}{(k+\beta)!},$$
 where $(k + \beta)! = \prod_{\ell=1}^k (\ell + \beta)$.
 
 The proof of Theorem A.8.3 uses this identity. The factorial $(k + \beta)!$ is
-`holderFactorial k β`. The proof does not use the hypothesis $\beta \le 1$. -/
+`holderFactorial k β`. The proof does not use the hypothesis $\beta \le 1$.
+
+**Reading.** The beta integral uses positive integer order, so the exponent and factorial of order
+one less have the intended meanings.
+-/
 theorem eq_A_16 {k : ℕ} (hk : 1 ≤ k) {β : ℝ} (hβ0 : 0 ≤ β) (_hβ1 : β ≤ 1) :
     ∫ ξ in (0 : ℝ)..1, ξ ^ β * (1 - ξ) ^ (k - 1) = ((k - 1)! : ℝ) / holderFactorial k β :=
   integral_rpow_mul_one_sub_pow hk hβ0
@@ -224,7 +244,11 @@ $$\|\nabla^p f(x) - \nabla^p f(y)\| \le L \|x - y\| \quad \text{for all } x, y \
 if and only if (A.21) holds: $\|\nabla^{p+1} f(x)\| \le L$ for all $x \in C$.
 
 **Correction.** The book leaves the sign of $L$ implicit. The hypothesis $L \ge 0$ is needed: on
-$\mathbb{R}^0$ with $L < 0$ the Lipschitz condition holds trivially, while (A.21) fails. -/
+$\mathbb{R}^0$ with $L < 0$ the Lipschitz condition holds trivially, while (A.21) fails.
+
+**Reading.** The Lipschitz constant is assumed nonnegative. This matters for the raw inequality
+formulation in dimension zero.
+-/
 theorem theorem_A_8_5 {C : Set (EuclideanSpace ℝ (Fin n))} (hCo : IsOpen C) (hC : Convex ℝ C)
     {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} (hf : ContDiffOn ℝ (p + 1) f C) {L : ℝ}
     (hL : 0 ≤ L) :

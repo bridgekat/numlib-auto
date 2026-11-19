@@ -56,6 +56,14 @@ of a triangular matrix), `Numlib.LinearAlgebra.Matrix.Bidiagonal` and
 
 ## Deviations from the source
 
+* **Generalization.** Inverse iteration commutes with any unitary similarity. See
+  `QuarteroniSaccoSaleri.Chapter05.inverseIterate_conj`.
+* **Scope.** Schur eigenvector extraction is stated for the complex upper triangular form. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_56`.
+* **Scope.** The bidiagonal reduction is stated as an orthogonal factorization. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_57`.
+* **Scope.** The SVD second phase states an exact factorization for any input with a zero trailing
+  block. See `QuarteroniSaccoSaleri.Chapter05.golubKahan_svd`.
 * **The iterative phase of the Golub–Kahan–Reinsch algorithm, Section 5.8.3** (reading). The source
   describes the iteration only by its limit; the theorem states the existence of that limit, which
   is the SVD of $B$, and claims nothing about the iteration. See
@@ -95,7 +103,12 @@ approximate eigenvector $q$ of $H$ gives the approximate eigenvector $x = Qq$ of
 
 The iteration is `QuarteroniSaccoSaleri.Chapter05.inverseIterate`, and the vector $Q^H v$ is
 `toEuclideanLin Qᴴ v`. The proof specializes `Krylov.inverseIterate_conj_linearIsometryEquiv`,
-through `QuarteroniSaccoSaleri.Chapter05.inverseIterate_eq_krylov` on both sides. -/
+through `QuarteroniSaccoSaleri.Chapter05.inverseIterate_eq_krylov` on both sides.
+
+**Generalization.** The correspondence works for arbitrary unitary similarity over real or complex
+scalars, without requiring the transformed matrix to be Hessenberg. The shift stays outside the
+spectrum.
+-/
 theorem inverseIterate_conj {A Q : Matrix (Fin n) (Fin n) 𝕜}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) 𝕜) {μ : 𝕜} (hμ : μ ∉ spectrum 𝕜 A)
     {q₀ : EuclideanSpace 𝕜 (Fin n)} (hq₀ : ‖q₀‖ = 1) (k : ℕ) :
@@ -132,7 +145,12 @@ Indices are 0-based, so $T_{11}$ is the leading block of order `k`,
 `T.submatrix (Fin.castLE _) (Fin.castLE _)`. The vector $y$ is
 `Matrix.IsUpperTriangular.schurEigenvector T k`. The proof specializes
 `Matrix.IsUpperTriangular.mulVec_schurEigenvector`, which needs only $t_{ii} \neq \lambda$ for
-$i < k$, and `Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`. -/
+$i < k$, and `Matrix.mulVec_conj_eq_smul_of_mulVec_eq_smul`.
+
+**Reading.** The theorem assumes a complex upper triangular Schur matrix and a simple diagonal
+eigenvalue. The book discusses extraction from Schur form; the displayed triangular derivation does
+not cover back substitution through real two-by-two blocks.
+-/
 theorem equation_5_56 {T : Matrix (Fin n) (Fin n) ℂ} (hT : T.IsUpperTriangular) {k : Fin n}
     (hk : ∀ i, i ≠ k → T i i ≠ T k k) :
     let y := IsUpperTriangular.schurEigenvector T k
@@ -170,7 +188,12 @@ bidiagonal.
 
 Indices are 0-based, so the zero rows are those with index at least `n`. The proof specializes
 `Matrix.exists_unitary_mul_mul_unitary_isUpperBidiagonal`, which uses Householder reflectors
-alternately on the two sides. -/
+alternately on the two sides.
+
+**Reading.** Lean gives the existence of the orthogonal factors and the bidiagonal block with zero
+trailing rows. The theorem does not give the counted sequence of Householder applications in the
+source procedure.
+-/
 theorem equation_5_57 {m : ℕ} (h : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ Matrix.orthogonalGroup (Fin m) ℝ, ∃ V ∈ Matrix.orthogonalGroup (Fin n) ℝ,
       (∀ (i : Fin m) (j : Fin n), n ≤ (i : ℕ) → (Uᵀ * A * V) i j = 0) ∧
@@ -244,7 +267,12 @@ computation $\operatorname{diag}(\mathcal{W}, I)^T \begin{bmatrix} B \\ 0 \end{b
 \mathcal{Z} = \begin{bmatrix} \mathcal{W}^T B \mathcal{Z} \\ 0 \end{bmatrix}$, with
 $\operatorname{diag}(\mathcal{W}, I)$ the matrix `QuarteroniSaccoSaleri.Chapter05.padBlock h W`.
 The rounding-error bound $\|\delta A\|_2 \le C_{mn} u \|A\|_2$ that the source quotes after the
-algorithm is not formalized. -/
+algorithm is not formalized.
+
+**Reading.** The result gives existence of real diagonal factors for the square upper block and
+embeds them into the rectangular factorization. It assumes only the zero trailing block, and does
+not assert convergence or backward stability of the implicit QR iteration.
+-/
 theorem golubKahan_svd {m : ℕ} (h : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ)
     {𝒰 : Matrix (Fin m) (Fin m) ℝ} (h𝒰 : 𝒰 ∈ orthogonalGroup (Fin m) ℝ)
     {𝒱 : Matrix (Fin n) (Fin n) ℝ} (h𝒱 : 𝒱 ∈ orthogonalGroup (Fin n) ℝ)

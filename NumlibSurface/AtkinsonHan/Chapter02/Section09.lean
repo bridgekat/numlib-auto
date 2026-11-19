@@ -75,6 +75,11 @@ series (2.9.3), come from the perturbation theorems for inverses in the backbone
 * **Definition 2.9.1** (generalization). The source works on a complex Banach space. The definition
   here allows real or complex scalars and any normed space. See
   `AtkinsonHan.Chapter02.definition_2_9_1`.
+* **Lemma 2.9.2, equation (2.9.3), and the spectral radius bound** (generalization and reading).
+  These statements also apply over the reals. The local estimates use the product form of
+  (2.9.1). The perturbation bound explicitly assumes a nonzero space.
+* **Continuity of the resolvent** (reading). The text describes continuity on $\mathbb C$ after
+  (2.9.2). The local bound has domain $\rho(L)$, where the inverse exists.
 
 ## Not formalized
 
@@ -133,7 +138,8 @@ theorem definition_2_9_1_iff (L : V →L[𝕜] V) (lam : 𝕜) :
 /-- **Definition 2.9.1(a)** of [han2009theoretical], the resolvent operator. If $\lambda$ is in the
 resolvent set of $L$, then `resolvent L lam` is a two-sided inverse of $\lambda - L$:
 $$(\lambda - L) R(\lambda) = I, \qquad R(\lambda) (\lambda - L) = I.$$
--/
+
+**Generalization.** These identities also apply to real normed spaces and to incomplete spaces. -/
 theorem definition_2_9_1_resolvent (L : V →L[𝕜] V) {lam : 𝕜} (h : definition_2_9_1 𝕜 L lam) :
     (lam • (1 : V →L[𝕜] V) - L) * resolvent L lam = 1 ∧
       resolvent L lam * (lam • (1 : V →L[𝕜] V) - L) = 1 := by
@@ -150,7 +156,11 @@ linear operator $L$ on $V$ is the set of the scalars $\lambda$ that are not in t
 $\rho(L)$.
 
 The source writes $\sigma(L) = \mathbb{C} \setminus \rho(L)$; here the scalars are those of $V$.
-By `AtkinsonHan.Chapter02.definition_2_9_1_spectrum_eq` this is Mathlib's `spectrum`. -/
+By `AtkinsonHan.Chapter02.definition_2_9_1_spectrum_eq` this is Mathlib's `spectrum`.
+
+**Reading.** The spectrum complement is defined for real or complex normed spaces, including
+incomplete ones.
+-/
 def definition_2_9_1_spectrum (𝕜 : Type*) {V : Type*} [RCLike 𝕜] [NormedAddCommGroup V]
     [NormedSpace 𝕜 V] (L : V →L[𝕜] V) : Set 𝕜 :=
   {lam | ¬ definition_2_9_1 𝕜 L lam}
@@ -177,7 +187,10 @@ $$\|R(\lambda) - R(\lambda_0)\| \le \frac{\|R(\lambda_0)\|^2 \, |\lambda - \lamb
   \|R(\lambda_0)\| \, |\lambda - \lambda_0|}.$$
 
 $R(\lambda)$ is `resolvent L lam`. The hypothesis that $V$ is nonzero is `[Nontrivial V]`; see
-the module doc comment. -/
+the module doc comment.
+
+**Reading.** The estimate controls the inverse on the resolvent set. It is stated over real
+or complex scalars and assumes that the space is nonzero. -/
 theorem lemma_2_9_2 (L : V →L[𝕜] V) :
     IsOpen (resolventSet 𝕜 L) ∧ IsClosed (spectrum 𝕜 L) ∧
       ∀ lam₀ ∈ resolventSet 𝕜 L, ∀ lam : 𝕜,
@@ -221,7 +234,9 @@ $\|R(\lambda_0)\| \, |\lambda - \lambda_0| < 1$, then
 $$R(\lambda) = \sum_{k=0}^\infty (-1)^k (\lambda - \lambda_0)^k R(\lambda_0)^{k+1},$$
 with the series convergent in $\mathcal{L}(V)$.
 
-The series is the Taylor expansion of $R$ at $\lambda_0$. The sum is Mathlib's `HasSum`. -/
+The series is the Taylor expansion of $R$ at $\lambda_0$. The sum is Mathlib's `HasSum`.
+
+**Generalization.** The expansion also holds over the reals. -/
 theorem equation_2_9_3 (L : V →L[𝕜] V) {lam₀ : 𝕜} (h₀ : lam₀ ∈ resolventSet 𝕜 L) (lam : 𝕜)
     (hlt : ‖resolvent L lam₀‖ * ‖lam - lam₀‖ < 1) :
     HasSum (fun k : ℕ =>
@@ -267,7 +282,9 @@ theorem equation_2_9_3 (L : V →L[𝕜] V) {lam₀ : 𝕜} (h₀ : lam₀ ∈ r
 nonzero Banach space and let $L$ be a bounded linear operator on $V$. Then every $\lambda$ with
 $|\lambda| > \|L\|$ is in the resolvent set $\rho(L)$, and the spectrum lies in the closed disc
 $$\sigma(L) \subseteq \{\lambda : |\lambda| \le \|L\|\}.$$
-So the resolvent is defined near infinity, which §2.9 and Chapter 6 use. -/
+So the resolvent is defined near infinity, which §2.9 and Chapter 6 use.
+
+**Generalization.** The radius bound also holds over the reals. -/
 theorem spectrum_subset_closedBall (L : V →L[𝕜] V) :
     {lam : 𝕜 | ‖L‖ < ‖lam‖} ⊆ resolventSet 𝕜 L ∧
       spectrum 𝕜 L ⊆ Metric.closedBall (0 : 𝕜) ‖L‖ :=

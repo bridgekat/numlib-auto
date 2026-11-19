@@ -111,6 +111,17 @@ backbone modules `Numlib.Approximation.Jackson`, `Numlib.Approximation.Trigonome
 
 ## Deviations from the source
 
+* **Jackson's theorems and the Fourier comparison** (reading). The estimates use infimum
+  distances and allow a zero Hölder constant. Equation (3.7.5) uses periodic data on the
+  circle with the unnormalized measure. Equation (3.7.9) uses the equality in the following
+  sentence of the book.
+* **Equations (3.7.13)–(3.7.18)** (generalization and correction). The expansion and row
+  norm formulas allow a finite measure and continuous families. The printed integrals in
+  (3.7.15) and (3.7.17) omit the weight needed by the weighted expansion. The
+  Christoffel–Darboux identity allows finite-moment measures beyond weight densities.
+* **Example 3.7.4** (correction). The final integral for the operator norm requires the
+  absolute value of the Dirichlet kernel. The orthonormal Chebyshev family determines the
+  kernel. See `AtkinsonHan.Chapter03.example_3_7_4`.
 * **(3.7.20)** (correction). The book quotes the bound $\|\mathcal{I}_n\| \le 1 + (2/\pi) \log n$
   for $n \ge 1$. It is false at $n = 1$, where $\|\mathcal{I}_1\| \ge 5/3$. The library proves its
   negation and the bound $\|\mathcal{I}_n\| \le 2 + (2/\pi) \log(2n + 1)$. See
@@ -140,7 +151,10 @@ $$\|u - \mathcal{P}u\| \le (1 + \|\mathcal{P}\|)\, \|u - q\|.$$
 
 This is the common form of (3.7.11), (3.7.14) and (3.7.21) in [han2009theoretical]: the error of
 a projection method is at most $1 + \|\mathcal{P}\|$ times the best approximation error from the
-range of $\mathcal{P}$. -/
+range of $\mathcal{P}$.
+
+**Generalization.** The concrete approximation inequalities in the book follow from this
+form for any bounded idempotent on a real or complex normed space. -/
 theorem lebesgue_lemma (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) {q : V}
     (hq : q ∈ LinearMap.range (P : V →ₗ[𝕜] V)) : ‖u - P u‖ ≤ (1 + ‖P‖) * ‖u - q‖ :=
   norm_sub_apply_le_of_isIdempotentElem_of_mem P hP u hq
@@ -148,7 +162,9 @@ theorem lebesgue_lemma (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) {q
 /-- The **Lebesgue lemma** with the best approximation error. Let $\mathcal{P}$ be a bounded linear
 operator on a normed space $V$ with $\mathcal{P}^2 = \mathcal{P}$. Then for every $u \in V$,
 $$\|u - \mathcal{P}u\| \le (1 + \|\mathcal{P}\|) \inf_{w \in \mathcal{P}(V)} \|u - w\|.$$
--/
+
+**Generalization.** Takes the infimum of the comparison errors in the general normed-space
+lemma, where the printed projection bound compares to an arbitrary approximation. -/
 theorem lebesgue_lemma_iInf (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) :
     ‖u - P u‖ ≤ (1 + ‖P‖) *
       ⨅ w : (LinearMap.range (P : V →ₗ[𝕜] V) : Set V), ‖u - (w : V)‖ := by
@@ -160,7 +176,8 @@ theorem lebesgue_lemma_iInf (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : 
 $1 + \|\mathcal{P}\|$. Let $\mathcal{P}$ be a bounded linear operator on a normed space $V$ with
 $\mathcal{P}^2 = \mathcal{P}$. Then for every $u \in V$,
 $$\|u - \mathcal{P}u\| \le \|I - \mathcal{P}\| \inf_{w \in \mathcal{P}(V)} \|u - w\|.$$
--/
+
+**Generalization.** The constant $\|I-P\|$ sharpens the general bound with $1+\|P\|$. -/
 theorem lebesgue_lemma_one_sub (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (u : V) :
     ‖u - P u‖ ≤ ‖(1 : V →L[𝕜] V) - P‖ *
       ⨅ w : (LinearMap.range (P : V →ₗ[𝕜] V) : Set V), ‖u - (w : V)‖ := by
@@ -180,7 +197,10 @@ Fourier projections $\mathcal{F}_n$ on $C_p(2\pi)$, whose norms are the Lebesgue
 $L_n$, it gives a continuous periodic function whose Fourier series does not converge uniformly;
 see `AtkinsonHan.Chapter03.exists_not_tendsto_fourierProj`. The proof is the backbone's
 `ContinuousLinearMap.exists_not_tendsto_of_not_bddAbove` with the identity as the limit
-operator. -/
+operator.
+
+**Generalization.** The book argues for the Fourier projections. The uniform boundedness
+argument applies to any sequence of bounded linear operators on a Banach space. -/
 theorem exists_not_tendsto_of_not_bddAbove [CompleteSpace V] (P : ℕ → V →L[𝕜] V)
     (h : ¬ BddAbove (Set.range fun n => ‖P n‖)) :
     ∃ f : V, ¬ Tendsto (fun n => P n f) atTop (𝓝 f) :=
@@ -202,7 +222,10 @@ $g : \mathbb{R} \to \mathbb{R}$ is in the class if it is continuous and $2\pi$-p
 times continuously differentiable, and its $k$-th derivative satisfies
 $$|g^{(k)}(x) - g^{(k)}(y)| \le M |x - y|^\alpha \quad \text{for all } x, y \in \mathbb{R}.$$
 
-Here $\alpha, M \ge 0$, and the Hölder condition is Mathlib's `HolderWith M α`. -/
+Here $\alpha, M \ge 0$, and the Hölder condition is Mathlib's `HolderWith M α`.
+
+**Reading.** The predicate also permits $M=0$ and arbitrary nonnegative exponents. The Jackson
+estimates separately require $0<\alpha\le 1$. -/
 def HolderClass (k : ℕ) (α M : ℝ≥0) (g : ℝ → ℝ) : Prop :=
   IsPeriodicCont g ∧ ContDiff ℝ k g ∧ HolderWith M α (iteratedDeriv k g)
 
@@ -212,7 +235,10 @@ continuously differentiable on $[-1, 1]$ and its $k$-th derivative within $[-1, 
 $$|f^{(k)}(x) - f^{(k)}(y)| \le M |x - y|^\alpha \quad \text{for all } x, y \in [-1, 1].$$
 
 The derivative is `iteratedDerivWithin k f (Set.Icc (-1) 1)`, which is one-sided at the
-endpoints. -/
+endpoints.
+
+**Reading.** The predicate also permits $M=0$ and arbitrary nonnegative exponents. The Jackson
+estimates separately require $0<\alpha\le 1$. -/
 def HolderClassIcc (k : ℕ) (α M : ℝ≥0) (f : ℝ → ℝ) : Prop :=
   ContDiffOn ℝ k f (Set.Icc (-1) 1) ∧
     HolderOnWith M α (iteratedDerivWithin k f (Set.Icc (-1) 1)) (Set.Icc (-1) 1)
@@ -264,7 +290,10 @@ theorem equation_3_7_6 (n : ℕ) (f : PeriodicCont) (x : ℝ) :
 with $\sin(t/2) \neq 0$. Then the Dirichlet kernel satisfies
 $$D_n(t) = \frac{1}{2} + \sum_{j=1}^{n} \cos(jt) = \frac{\sin((n + 1/2) t)}{2 \sin(t/2)}.$$
 
-The first equality is the definition of `dirichletKernel` and holds for all $t$. -/
+The first equality is the definition of `dirichletKernel` and holds for all $t$.
+
+**Reading.** The two formulas are bundled under the nonvanishing denominator hypothesis.
+The finite cosine sum alone is valid for every argument. -/
 theorem equation_3_7_8 (n : ℕ) {t : ℝ} (ht : Real.sin (t / 2) ≠ 0) :
     dirichletKernel n t = 1 / 2 + ∑ j ∈ Finset.Icc 1 n, Real.cos (j * t) ∧
       dirichletKernel n t = Real.sin ((n + 1 / 2) * t) / (2 * Real.sin (t / 2)) :=
@@ -275,7 +304,10 @@ $\mathcal{F}_n$ on $C_p(2\pi)$ is the $n$-th Lebesgue constant
 $$\|\mathcal{F}_n\| = L_n = \frac{2}{\pi} \int_0^\pi |D_n(t)|\, dt.$$
 
 That $\mathcal{F}_n$ is a bounded projection onto $\mathcal{T}_n$ is
-`AtkinsonHan.Chapter03.example_3_6_8`. -/
+`AtkinsonHan.Chapter03.example_3_6_8`.
+
+**Reading.** The printed display gives an upper bound. The next sentence states equality,
+which is the form proved here. -/
 theorem equation_3_7_9 (n : ℕ) :
     ‖fourierProj n‖ = 2 / π * ∫ t in (0 : ℝ)..π, |dirichletKernel n t| := by
   rw [norm_fourierProj, lebesgueConstant_eq]
@@ -289,7 +321,10 @@ $L_n = (4/\pi^2) \log n + O(1)$, which is not formalized.
 The lower bound makes the norms unbounded, and so gives a continuous periodic function whose
 Fourier series does not converge uniformly
 (`AtkinsonHan.Chapter03.exists_not_tendsto_fourierProj`). The upper bound gives the convergence
-rate (3.7.12). At $n = 0$ the left side is $0$, since `Real.log 0 = 0`. -/
+rate (3.7.12). At $n = 0$ the left side is $0$, since `Real.log 0 = 0`.
+
+**Reading.** The bounds give logarithmic growth and imply the divergence result, without
+asserting the bounded remainder in the sharper source formula (3.7.10). -/
 theorem norm_fourierProj_asymptotics (n : ℕ) :
     4 / π ^ 2 * Real.log n ≤ ‖fourierProj n‖ ∧
       ‖fourierProj n‖ ≤ 1 + Real.log (2 * (n : ℝ) + 1) := by
@@ -302,7 +337,10 @@ $$\|f - \mathcal{F}_n f\|_{L^2(-\pi, \pi)} \le \sqrt{2\pi}\, \|f - \mathcal{F}_n
 The $L^2$ norm is taken for the standard measure `volume` of the circle
 $\mathbb{R}/2\pi\mathbb{Z}$, which has total mass $2\pi$ and is the Lebesgue measure of one
 period. The constant $\sqrt{2\pi}$ is the square root of that mass. The inequality holds for
-$f - q$ with any $q \in C_p(2\pi)$, not only for $q = \mathcal{F}_n f$. -/
+$f - q$ with any $q \in C_p(2\pi)$, not only for $q = \mathcal{F}_n f$.
+
+**Reading.** The book's displayed comparison allows continuous data on $[-\pi,\pi]$.
+This version uses continuous periodic data on the circle with the unnormalized measure. -/
 theorem equation_3_7_5 (n : ℕ) (f : PeriodicCont) :
     ‖ContinuousMap.toLp (E := ℝ) 2 (MeasureTheory.volume : MeasureTheory.Measure
         (AddCircle (2 * π))) ℝ (f - fourierProj n f)‖
@@ -385,7 +423,10 @@ $$\inf_{q \in \mathcal{T}_n} \|g - q\|_\infty \le \frac{c^{k+1} M_k}{n^{k+\alpha
 
 The hypothesis $\alpha > 0$ is the book's, and the proof does not use it: the bound also holds
 for $\alpha = 0$. The book requires $M_k > 0$; the statement also allows $M_k = 0$. The proof
-specializes the backbone's `Jackson.infDist_le_of_holder_deriv'`. -/
+specializes the backbone's `Jackson.infDist_le_of_holder_deriv'`.
+
+**Reading.** The bound is on the infimum distance to the trigonometric subspace, which is the
+error of the best approximant. The declaration allows $M=0$ and requires $n\ge 1$ explicitly. -/
 theorem theorem_3_7_1 {k n : ℕ} {α M : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) (hn : 1 ≤ n)
     {g : ℝ → ℝ} (hg : HolderClass k α M g) :
     Metric.infDist (PeriodicCont.ofIsPeriodicCont hg.1)
@@ -423,7 +464,10 @@ two endpoints; this is what `ContDiffOn` on a closed interval provides. As in Th
 hypothesis $\alpha > 0$ is the book's and is not used. The backbone proof transfers the problem
 to the trigonometric case through the substitution $x = \cos\theta$ and then uses a recursion in
 the degree, which for algebraic polynomials loses nothing. It proves the smaller
-constant $(\pi^2/2)^{k+1}$ in place of $c^{k+1}$; see `Jackson.infDist_le_of_holder_poly`. -/
+constant $(\pi^2/2)^{k+1}$ in place of $c^{k+1}$; see `Jackson.infDist_le_of_holder_poly`.
+
+**Reading.** The bound is on the infimum distance to the polynomial subspace. The constant
+bound is assumed for the given degree and $M$ may be zero. -/
 theorem theorem_3_7_2 {k n : ℕ} {α M d : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) (hkn : k < n)
     {f : ℝ → ℝ} (hf : HolderClassIcc k α M f)
     (hd : (n : ℝ) ^ ((k : ℝ) + (α : ℝ)) /
@@ -469,7 +513,10 @@ every $g \in C_p^{k,\alpha}(2\pi)$ with Hölder constant $M_k$, and every $n \ge
 $$\|g - \mathcal{F}_n g\|_\infty \le \frac{c_k M_k \log n}{n^{k+\alpha}}.$$
 
 The constant is explicit in the proof, because the bound $L_n \le 1 + \log(2n + 1)$ on the
-Lebesgue constants is. -/
+Lebesgue constants is.
+
+**Reading.** The constant is split into a positive constant independent of the Hölder
+constant and function, and the explicit factor $M$. -/
 theorem equation_3_7_12 (k : ℕ) {α : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) :
     ∃ c : ℝ, 0 < c ∧ ∀ (M : ℝ≥0) (g : ℝ → ℝ) (hg : HolderClass k α M g) (n : ℕ), 2 ≤ n →
       ‖PeriodicCont.ofIsPeriodicCont hg.1 - fourierProj n (PeriodicCont.ofIsPeriodicCont hg.1)‖
@@ -582,7 +629,10 @@ every $g \in C_p^{k,\alpha}(2\pi)$ with Hölder constant $M_k$, and every $n \ge
 $$\|g - \mathcal{I}_n g\|_\infty \le \frac{c_k M_k \log n}{n^{k+\alpha}}.$$
 
 The constant is explicit in the proof, because the bound
-$\|\mathcal{I}_n\| \le 2 + (2/\pi) \log(2n + 1)$ is. -/
+$\|\mathcal{I}_n\| \le 2 + (2/\pi) \log(2n + 1)$ is.
+
+**Reading.** The source's linear dependence on the Hölder constant is written as an
+explicit factor $M$, with the remaining constant independent of the function. -/
 theorem equation_3_7_22 (k : ℕ) {α : ℝ≥0} (hα0 : 0 < α) (hα1 : α ≤ 1) :
     ∃ c : ℝ, 0 < c ∧ ∀ (M : ℝ≥0) (g : ℝ → ℝ) (hg : HolderClass k α M g) (n : ℕ), 2 ≤ n →
       ‖PeriodicCont.ofIsPeriodicCont hg.1
@@ -655,7 +705,10 @@ $$\sum_{n=0}^{N} p_n(x) p_n(t) = \frac{p_{N+1}(x) p_N(t) - p_N(x) p_{N+1}(t)}{a_
 
 The hypothesis on $\mu$ is `OrthogonalPolynomial.IsWeight`, and $p_n$ is
 `OrthogonalPolynomial.orthonormalFamily μ n`, the monic orthogonal polynomial scaled to norm $1$
-in $L^2(\mu)$. -/
+in $L^2(\mu)$.
+
+**Generalization.** The book uses a weight density. The theorem applies to any measure with
+finite moments whose mass is not carried by a finite set. -/
 theorem theorem_3_7_3 (hw : IsWeight μ) (N : ℕ) {x t : ℝ} (hxt : x ≠ t) :
     ∑ n ∈ Finset.range (N + 1),
         (orthonormalFamily μ n).eval x * (orthonormalFamily μ n).eval t
@@ -670,7 +723,9 @@ theorem theorem_3_7_3 (hw : IsWeight μ) (N : ℕ) {x t : ℝ} (hxt : x ≠ t) :
 /-- **Theorem 3.7.3** of [han2009theoretical], the confluent case $x = t$. Let $\mu$, $p_n$ and
 $a_N$ be as in `AtkinsonHan.Chapter03.theorem_3_7_3`. Then for every $t \in \mathbb{R}$,
 $$\sum_{n=0}^{N} p_n(t)^2 = \frac{p_{N+1}'(t) p_N(t) - p_N'(t) p_{N+1}(t)}{a_N}.$$
--/
+
+**Generalization.** The same finite-moment measure assumptions replace the book's weight
+density as in the off-diagonal case. -/
 theorem theorem_3_7_3_confluent (hw : IsWeight μ) (N : ℕ) (t : ℝ) :
     ∑ n ∈ Finset.range (N + 1), (orthonormalFamily μ n).eval t ^ 2
       = ((derivative (orthonormalFamily μ (N + 1))).eval t * (orthonormalFamily μ N).eval t
@@ -707,7 +762,10 @@ $$P_N u = \sum_{n=0}^{N} \xi_n p_n, \qquad \xi_n = \int u(t) p_n(t)\, d\mu(t) = 
 When the $p_n$ are orthonormal in $L^2(\mu)$, $P_N$ is the least squares projection onto their
 span. The book takes $\mu = w(x)\, dx$ and the $p_n$ the orthonormal polynomials of the weight
 $w$; the statement here uses only that the $p_n$ are continuous. The operator is
-`Approximation.expansionCLM μ p`. -/
+`Approximation.expansionCLM μ p`.
+
+**Generalization.** The expansion formula works with any finite measure and continuous
+family. The orthonormal polynomial setting gives the projection interpretation. -/
 theorem equation_3_7_13 (u : C(Set.Icc (-1 : ℝ) 1, ℝ)) :
     expansionCLM μ p u = ∑ n, (∫ t, u t * p n t ∂μ) • p n :=
   expansionCLM_eq_sum μ p u
@@ -719,7 +777,10 @@ for every $u \in C[-1, 1]$,
 $$\|u - P_N u\|_\infty \le (1 + \|P_N\|) \inf_{q \in \operatorname{span}\{p_n\}} \|u -
   q\|_\infty.$$
 
-Orthonormality is `Approximation.IsOrthonormal μ p`. -/
+Orthonormality is `Approximation.IsOrthonormal μ p`.
+
+**Generalization.** The comparison applies to the span of any finite orthonormal
+continuous family for a finite measure. It takes the infimum over comparison functions. -/
 theorem equation_3_7_14 (h : IsOrthonormal μ p) (u : C(Set.Icc (-1 : ℝ) 1, ℝ)) :
     ‖u - expansionCLM μ p u‖
       ≤ (1 + ‖expansionCLM μ p‖) *
@@ -731,7 +792,10 @@ $[-1, 1]$ and let $p_0, \ldots, p_N \in C[-1, 1]$. Then the operator $P_N$ of (3
 integral operator of the kernel $K(x, t) = \sum_{n=0}^{N} p_n(x) p_n(t)$: for all
 $u \in C[-1, 1]$ and $x \in [-1, 1]$,
 $$P_N u(x) = \int K(x, t)\, u(t)\, d\mu(t).$$
--/
+
+**Correction.** Equation (3.7.15) integrates against plain $dt$. Its expansion in (3.7.13)
+uses the weighted inner product, so the kernel must be integrated against $w(t)\,dt$.
+The declaration states this for an arbitrary finite measure and continuous family. -/
 theorem equation_3_7_15 (u : C(Set.Icc (-1 : ℝ) 1, ℝ)) (x : Set.Icc (-1 : ℝ) 1) :
     expansionCLM μ p u x = ∫ t, (∑ n, p n x * p n t) * u t ∂μ :=
   rfl
@@ -741,7 +805,10 @@ let $p_0, \ldots, p_N \in C[-1, 1]$. Then the norm of the operator $P_N$ of (3.7
 $C[-1, 1]$ is the largest row integral of its kernel:
 $$\|P_N\| = \sup_{x \in [-1, 1]} \int |K(x, t)|\, d\mu(t).$$
 
-This is (2.2.8), the norm of an integral operator with continuous kernel, applied to (3.7.15). -/
+This is (2.2.8), the norm of an integral operator with continuous kernel, applied to (3.7.15).
+
+**Correction.** The weight must also enter the row integral in the norm formula. The
+formal supremum is a maximum by compactness and continuity of the row integral. -/
 theorem equation_3_7_17 :
     ‖expansionCLM μ p‖ = ⨆ x, ∫ t, |∑ n, p n x * p n t| ∂μ :=
   norm_expansionCLM μ p
@@ -761,7 +828,11 @@ turns the kernel into $(1/\pi)[D_N(\theta - \varphi) + D_N(\theta + \varphi)]$
 where it is $(2/\pi) \int_0^\pi |D_N| = L_N$. The book then quotes (3.7.10) for
 $L_N = (4/\pi^2) \log N + O(1)$. These asymptotics are not formalized;
 `AtkinsonHan.Chapter03.norm_chebyshevProj_asymptotics` gives the two-sided bound that the
-backbone proves. The operator is `Approximation.chebyshevProj N`. -/
+backbone proves. The operator is `Approximation.chebyshevProj N`.
+
+**Correction.** The printed final integral for $\|P_N\|$ omits the absolute value of the
+Dirichlet kernel. The equality uses the integral of its absolute value, as in (3.7.9).
+The formal projection also uses the orthonormal, rather than unnormalized, Chebyshev family. -/
 theorem example_3_7_4 (N : ℕ) : ‖chebyshevProj N‖ = lebesgueConstant N :=
   norm_chebyshevProj N
 
@@ -770,7 +841,9 @@ Then
 $$\frac{4}{\pi^2} \log N \le \|P_N\| \le 1 + \log(2N + 1).$$
 So $\|P_N\| \to \infty$, and by `AtkinsonHan.Chapter03.exists_not_tendsto_of_not_bddAbove` some
 $u \in C[-1, 1]$ has $P_N u \not\to u$ uniformly. This is the conclusion that the book draws
-from Example 3.7.4 and (3.7.10), here with the two-sided bound in place of the sharp constant. -/
+from Example 3.7.4 and (3.7.10), here with the two-sided bound in place of the sharp constant.
+
+**Reading.** The two-sided bounds replace the source's sharper bounded-remainder asymptotic. -/
 theorem norm_chebyshevProj_asymptotics (N : ℕ) :
     4 / π ^ 2 * Real.log N ≤ ‖chebyshevProj N‖ ∧
       ‖chebyshevProj N‖ ≤ 1 + Real.log (2 * (N : ℝ) + 1) := by

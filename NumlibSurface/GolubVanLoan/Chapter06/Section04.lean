@@ -106,6 +106,18 @@ and `Numlib.Analysis.InnerProductSpace.PrincipalAngles`, together with Mathlib's
 
 ## Deviations from the source
 
+* **§6.4.1, polar factor** (generalization). The orthogonal polar factor of $B^T A$ is a
+  Procrustes minimizer for arbitrary $A$ and $B$. The source discusses the special case $B=I$.
+  See `GolubVanLoan.Chapter06.procrustes_solution_of_isPolarDecomposition`.
+* **Algorithm 6.4.2** (reading). Exact comparisons of computed singular values give the rank.
+  The trivial intersection returns a zero-column matrix. See
+  `GolubVanLoan.Chapter06.algorithm_6_4_2`.
+* **Equation (6.4.3) and §6.4.3** (generalization). The recursive characterization includes the
+  empty family. The cosine and singular-value equality is zero-extended beyond the available
+  pairs and permits either dimension order. See `GolubVanLoan.Chapter06.equation_6_4_3` and
+  `GolubVanLoan.Chapter06.singularValues_transpose_mul_eq_cosPrincipalAngle`.
+* **Theorem 6.4.2** (reading). The initial run of unit cosines can be empty or include all
+  indices. See `GolubVanLoan.Chapter06.theorem_6_4_2`.
 * **Algorithm 6.4.3** (typo). The heading says that the algorithm computes the cosines of the
   principal angles $\theta_1 \ge \dots \ge \theta_q$. The order is reversed: the cosines decrease
   and the angles increase. See `GolubVanLoan.Chapter06.algorithm_6_4_3`.
@@ -207,7 +219,10 @@ is orthogonal and solves (6.4.1): $\|A - BQ_0\|_F \le \|A - BQ\|_F$ for every or
 $Q \in \mathbb{R}^{p \times p}$.
 
 The source remarks that for $B = I_p$ the problem (6.4.1) is related to the polar decomposition;
-the statement holds for every $B$. A polar decomposition is `Matrix.IsPolarDecomposition`. -/
+the statement holds for every $B$. A polar decomposition is `Matrix.IsPolarDecomposition`.
+
+**Generalization.** The source relates the problem to the polar decomposition when $B=I$. The
+orthogonal polar factor of $B^T A$ minimizes the objective for arbitrary $A$ and $B$. -/
 theorem procrustes_solution_of_isPolarDecomposition {A B : Matrix (Fin m) (Fin p) ℝ}
     {Q₀ P : Matrix (Fin p) (Fin p) ℝ} (h : IsPolarDecomposition (Bᵀ * A) Q₀ P) :
     Q₀ ∈ orthogonalGroup (Fin p) ℝ ∧
@@ -419,7 +434,11 @@ end
 The two SVDs are the parameters `svdA` and `svdC`; `svdC` takes the number of columns as an
 argument. The ranks are the numbers of nonzero computed singular values,
 `GolubVanLoan.Chapter05.deltaRank` at $\delta = 0$. The products are
-`GolubVanLoan.Chapter01.algorithm_1_1_5`. The output is the pair $(s, Y)$. -/
+`GolubVanLoan.Chapter01.algorithm_1_1_5`. The output is the pair $(s, Y)$.
+
+**Reading.** Rank is the count of computed singular values different from zero. A trivial
+intersection returns the zero-column matrix. The source discusses numerical rank without
+prescribing a threshold. -/
 noncomputable def algorithm_6_4_2 {n : ℕ}
     (svdA : Matrix (Fin m) (Fin n) ℝ →
       M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ))
@@ -523,7 +542,10 @@ The cosines are `Submodule.cosPrincipalAngle`, the singular values of the projec
 restricted to $G$. Principal vectors are `Submodule.IsPrincipalVectors`: $g$ is an orthonormal
 basis of $G$, $f$ is orthonormal in $F$, and the projection of $g_k$ onto $F$ is
 $\cos\theta_k \, f_k$. A sequence produced by the recursion is
-`Submodule.IsRecursivePrincipalVectors`. -/
+`Submodule.IsRecursivePrincipalVectors`.
+
+**Generalization.** The recursive specification permits the empty list of angle and vector
+pairs when $\dim G=0$. -/
 theorem equation_6_4_3 (h : Module.finrank ℝ G ≤ Module.finrank ℝ F) :
     (∃ f g : Fin (Module.finrank ℝ G) → EuclideanSpace ℝ (Fin m), F.IsPrincipalVectors G f g) ∧
       (∀ {q : ℕ} {f g : Fin q → EuclideanSpace ℝ (Fin m)}, F.IsPrincipalVectors G f g →
@@ -574,7 +596,11 @@ $Q_A^T Q_B$ is the cosine $\cos(\theta_i)$ of the $i$-th principal angle between
 $\operatorname{ran}(Q_A)$ and $\operatorname{ran}(Q_B)$, with $0 \le \sigma_i \le 1$.
 
 The singular values are `LinearMap.singularValues` of `toEuclideanLin (QAᵀ * QB)`, 0-based, and
-the equality holds for every index $i$. -/
+the equality holds for every index $i$.
+
+**Generalization.** Either subspace may be the larger one. The equality uses the total
+sequences of angle cosines and singular values, including their zero extension past the
+available pairs. -/
 theorem singularValues_transpose_mul_eq_cosPrincipalAngle {QA : Matrix (Fin m) (Fin p) ℝ}
     {QB : Matrix (Fin m) (Fin q) ℝ}
     (hA : QAᵀ * QA = 1) (hB : QBᵀ * QB = 1) :
@@ -660,10 +686,9 @@ Q_B Z(:, 1:q) = [g₁ | ⋯ | g_q]
 ```
 
 **Typo.** The source writes the angles as $\theta_1 \ge \dots \ge \theta_q$. The order is
-reversed: the cosines decrease and the angles increase.
-
-**Typo.** The source says that the subspaces lie in $\mathbb{R}^m$ but takes
-$A \in \mathbb{R}^{n \times p}$. Here $A \in \mathbb{R}^{m \times p}$.
+reversed because the cosines decrease and the angles increase. The source gives the ambient
+space as $\mathbb{R}^m$ and the dimensions of $A$ as $n \times p$. The algorithm takes
+$A \in \mathbb{R}^{m \times p}$.
 
 The thin QR factorizations are the Householder QR `GolubVanLoan.Chapter05.algorithm_5_2_1`. The
 orthogonal factor is accumulated forward from the returned reflector data and the returned
@@ -763,7 +788,10 @@ the two ranges, and the projection of $g_k$ onto $\operatorname{ran}(A)$ is
 $\cos(\theta_k) f_k$.
 
 The run is at `M := Id` with `rnd := pure`. The Householder QR factorizations of Chapter 5 need
-no further hypothesis. The index $k$ is 0-based in the Lean statement. -/
+no further hypothesis. The index $k$ is 0-based in the Lean statement.
+
+**Correction.** Correct cosines and vectors, ordering fixed via the SVD.
+-/
 theorem algorithm_6_4_3_spec
     (svd : Matrix (Fin p) (Fin q) ℝ →
       Id (Matrix (Fin p) (Fin p) ℝ × (ℕ → ℝ) × Matrix (Fin q) (Fin q) ℝ))
@@ -818,7 +846,10 @@ If the index $s$ is defined by $$1 = \cos(\theta_1) = \dots = \cos(\theta_s) >
 
 The index $s$ is given by the condition that $\cos(\theta_{i+1}) = 1$ if and only if $i < s$,
 for every 0-based $i < q$. The one-line proof in the source ("if $\cos(\theta_i) = 1$, then
-$f_i = g_i$") gives only the inclusion $\supseteq$; the backbone proves both inclusions. -/
+$f_i = g_i$") gives only the inclusion $\supseteq$; the backbone proves both inclusions.
+
+**Reading.** The finite-index test includes $s=0$ and $s=q$. It requires no reference to a
+$(q+1)$st principal angle when all the cosines equal one. -/
 theorem theorem_6_4_2 {q : ℕ} {A : Matrix (Fin m) (Fin p) ℝ} {B : Matrix (Fin m) (Fin q) ℝ}
     {f g : Fin q → EuclideanSpace ℝ (Fin m)}
     (hfg : (LinearMap.range (toEuclideanLin A)).IsPrincipalVectors

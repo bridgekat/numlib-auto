@@ -82,6 +82,12 @@ and Theorems 2.12 and 2.13 restate Mathlib and the backbone.
   `Submodule.finrank_eq_finrank_quotient_strongDualCoannihilator`, which is Proposition 11.14 of the
   source.
 
+## Deviations from the source
+
+* **Definition of a topological complement** (generalization). The predicate applies in any
+  real normed space and to any subspace $G$, as does the unique-decomposition result. See
+  `Brezis.Chapter02.IsComplement` and `Brezis.Chapter02.IsComplement.existsUnique_add`.
+
 ## Not formalized
 
 * **Remark 8 (Lindenstrauss–Tzafriri).**
@@ -139,8 +145,12 @@ $L \subseteq E$ is a **topological complement** (or simply a **complement**) of 
 is closed, and (ii) $G \cap L = \{0\}$ and $G + L = E$. Then $G$ and $L$ are **complementary
 subspaces**.
 
-The source assumes that $G$ is closed and $E$ is a Banach space; here these are hypotheses of
-the theorems. Condition (ii) is Mathlib's `IsCompl G L` in the lattice of submodules. -/
+**Generalization.** The source defines a complement of a closed subspace $G$ of a Banach space.
+The predicate applies with any $G$ in a real normed space, since closedness of $L$ and the
+algebraic complement conditions make sense in that setting. The comparison with topological
+complements assumes that $G$ is closed and $E$ is complete.
+
+Condition (ii) is Mathlib's `IsCompl G L` in the lattice of submodules. -/
 def IsComplement (G L : Submodule ℝ E) : Prop :=
   IsClosed (L : Set E) ∧ IsCompl G L
 
@@ -163,7 +173,11 @@ theorem exists_isComplement_iff_closedComplemented [CompleteSpace E] {G : Submod
 
 /-- **Section 2.4** of [brezis2011functional], unique decomposition. If $G$ and $L$ are
 complementary subspaces of a real normed space $E$, then every $z \in E$ can be written uniquely
-as $z = x + y$ with $x \in G$ and $y \in L$. -/
+as $z = x + y$ with $x \in G$ and $y \in L$.
+
+**Generalization.** The source takes $E$ complete and $G$ closed. The conclusion holds with
+the more general predicate `Brezis.Chapter02.IsComplement`, since just the sum and intersection
+conditions give existence and uniqueness. -/
 theorem IsComplement.existsUnique_add {G L : Submodule ℝ E} (h : IsComplement G L) (z : E) :
     ∃! p : G × L, (p.1 : E) + p.2 = z :=
   Submodule.existsUnique_add_of_isCompl_prod h.2 z

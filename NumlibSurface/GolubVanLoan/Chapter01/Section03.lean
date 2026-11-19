@@ -324,6 +324,9 @@ function C = strass(A, B, n, n_min)
 ```
 Every sum and difference of blocks is computed entrywise with one rounding per entry.
 
+**Generalization.** The printed precondition is $d \le q$. The program also accepts $d > q$ and
+uses conventional multiplication immediately, since the input is already below the threshold.
+
 The conventional product is Algorithm 1.1.5 with $C = 0$, and the test $n \le n_{\min}$ is
 $q \le d$. The program is defined by recursion on $q$. -/
 def algorithm_1_3_1 (d : ℕ) :

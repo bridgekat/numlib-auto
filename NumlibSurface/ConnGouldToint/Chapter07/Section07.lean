@@ -76,6 +76,19 @@ that the algorithm returns either an exact minimizer or a step that passes the r
   zero, so a coordinate with $d_i + x = 0$ contributes $0$.
 * The algorithm returns `Option V`. The value `none` occurs only if no Newton iterate passes the
   relative radius test, which `ConnGouldToint.Chapter07.algorithm_7_7_1_returns` excludes.
+
+## Deviations from the source
+
+* **Equation (7.7.12)** (generalization). The matrix product is defined for arbitrary factors.
+  Positive definiteness uses invertible outer factors and a positive-definite middle factor,
+  without the permutation, triangular or block restrictions. See
+  `ConnGouldToint.Chapter07.modifiedAbsoluteValuePreconditioner_posDef`.
+* **Algorithm 7.7.1** (reading). A classical first-stop function describes the Newton loop. It
+  starts from zero for a positive-definite model whose unshifted step lies outside the region,
+  and it selects a coordinate eigenvector and one root in the compatible singular branch. The
+  return theorem uses positive tolerances, gives an exact minimizer or a radius-tolerance step,
+  and treats minimum-index selection separately. See `ConnGouldToint.Chapter07.algorithm_7_7_1`
+  and `ConnGouldToint.Chapter07.algorithm_7_7_1_returns`.
 -/
 
 namespace ConnGouldToint.Chapter07
@@ -92,13 +105,17 @@ absolute-value preconditioner** is
 $$P L C L^T P^T.$$
 
 Here $P$ is the permutation, $L$ the triangular factor and $C$ the modified block diagonal of
-the factorization of the Hessian. -/
+the factorization of the Hessian.
+
+**Generalization.** This product is defined for all matrix factors. -/
 def modifiedAbsoluteValuePreconditioner {ι : Type*} [Fintype ι]
     (P L C : Matrix ι ι ℝ) : Matrix ι ι ℝ :=
   P * L * C * Lᵀ * Pᵀ
 
 /-- **Equation (7.7.12)** of [conn2000trust], positive definite metric. If $P$ and $L$ are
-invertible and $C$ is positive definite, then $P L C L^T P^T$ is positive definite. -/
+invertible and $C$ is positive definite, then $P L C L^T P^T$ is positive definite.
+
+**Generalization.** Invertibility of $P,L$ and positive definiteness of $C$ suffice. -/
 theorem modifiedAbsoluteValuePreconditioner_posDef {ι : Type*} [Fintype ι] [DecidableEq ι]
     {P L C : Matrix ι ι ℝ} (hP : IsUnit P) (hL : IsUnit L) (hC : C.PosDef) :
     (modifiedAbsoluteValuePreconditioner P L C).PosDef := by
@@ -125,7 +142,8 @@ noncomputable def diagonalNullGradient (d : Fin (n + 1) → ℝ) (x : ℝ) (g : 
 /-- **Algorithm 7.7.1** of [conn2000trust], Steps 4–5. For $d, g \in \mathbb{R}^{n+1}$ and
 $\Delta, x \in \mathbb{R}$, let $s = -(D + xI)^+ g$. The **Newton update** of the shift is
 $$x + \frac{\|s\| - \Delta}{\Delta} \cdot \frac{\|s\|^2}{\langle s, (D + xI)^+ s \rangle}.$$
--/
+
+**Reading.** The formula is total even if a denominator vanishes. -/
 noncomputable def diagonalNewtonStep (d : Fin (n + 1) → ℝ) (g : V) (Δ x : ℝ) : ℝ :=
   let s := -diagonalShiftInverse d x g
   x + ((‖s‖ - Δ) / Δ) * (‖s‖ ^ 2 / ⟪s, diagonalShiftInverse d x s⟫)
@@ -147,7 +165,10 @@ algorithm returns:
 If the unshifted matrix is positive definite and its trial lies outside the trust region, Newton
 starts at $x_0 = 0$. In the singular compatible boundary case both roots of
 $\|p + \alpha e_{i_0}\| = \Delta$ give the same model value, so the positive square root is
-used; the coefficient is `ConnGouldToint.Chapter07.moreSorensenBoundaryCoefficient`. -/
+used; the coefficient is `ConnGouldToint.Chapter07.moreSorensenBoundaryCoefficient`.
+
+**Reading.** This is a classical first-stop specification of the loop. The branch after a
+positive-definite outside step starts Newton at zero. -/
 noncomputable def algorithm_7_7_1 (d : Fin (n + 1) → ℝ) (g : V) (Δ ε : ℝ)
     (i₀ : Fin (n + 1)) : Option V := by
   classical
@@ -298,6 +319,11 @@ private theorem diagonal_entries_ne_zero (d : Fin (n + 1) → ℝ) {x : ℝ}
   have hh := leftmost_le_diagonal d i
   exact ne_of_gt (by linarith)
 
+/-- **§7.7.4 after Algorithm 7.7.1** of [conn2000trust].
+
+**Reading.** Interior-shift convergence for any eligible starting shift, with explicit global
+Q-linear and asymptotic quadratic orders.
+-/
 private theorem diagonalNewton_open_converges (d : Fin (n + 1) → ℝ) (g : V)
     {Δ x₀ : ℝ} (hΔ : 0 < Δ) (hx₀ : 0 ≤ x₀)
     (hx : -leftmost (diagonalOperator_symm d) < x₀)
@@ -392,7 +418,11 @@ and $\|(D + x_k I)^+ g\| \to \Delta$.
 Convergence with order $2$ is `ConvergesWithOrder x r 2`: $x_k \to r$ and eventually
 $|x_{k+1} - r| \le C |x_k - r|^2$ for some $C > 0$. At a singular starting shift, the proof
 moves the diagonal entries with $d_i + x_0 = 0$ so that $D + x_0 I$ becomes positive definite;
-this changes no computed Newton step. -/
+this changes no computed Newton step.
+
+**Reading.** Allows a compatible singular starting shift and gives explicit convergence statements
+for shifts and step norms.
+-/
 theorem algorithm_7_7_1_newton_converges (d : Fin (n + 1) → ℝ) (g : V)
     {Δ x₀ : ℝ} (hΔ : 0 < Δ) (hx₀ : 0 ≤ x₀)
     (hd : ∀ i, 0 ≤ d i + x₀) (hg : ∀ i, d i + x₀ = 0 → g i = 0)
@@ -436,7 +466,9 @@ theorem algorithm_7_7_1_newton_converges (d : Fin (n + 1) → ℝ) (g : V)
 Newton iterate $x_k$ satisfies
 $$\big| \|(D + x_k I)^+ g\| - \Delta \big| \le \varepsilon \Delta.$$
 
-This covers a compatible start at the pole. -/
+This covers a compatible start at the pole.
+
+**Generalization.** The stopping proof allows any positive tolerance. -/
 theorem algorithm_7_7_1_newton_stop (d : Fin (n + 1) → ℝ) (g : V)
     {Δ ε x₀ : ℝ} (hΔ : 0 < Δ) (hε : 0 < ε) (hx₀ : 0 ≤ x₀)
     (hd : ∀ i, 0 ≤ d i + x₀) (hg : ∀ i, d i + x₀ = 0 → g i = 0)
@@ -493,7 +525,11 @@ $\Delta > 0$ and $\varepsilon > 0$, and let $d_{i_0} \le d_i$ for every $i$. The
 $$\big| \|s\| - \Delta \big| \le \varepsilon \Delta.$$
 
 The exact branches in Steps 1 and 2 return minimizers, and a Newton return passes the relative
-radius test. -/
+radius test.
+
+**Reading.** For positive radius and tolerance returns an exact minimizer or a step meeting the
+printed radial tolerance.
+-/
 theorem algorithm_7_7_1_returns (d : Fin (n + 1) → ℝ) (g : V) {Δ ε : ℝ}
     (hΔ : 0 < Δ) (hε : 0 < ε) (i₀ : Fin (n + 1)) (hi : ∀ i, d i₀ ≤ d i) :
     ∃ s, algorithm_7_7_1 d g Δ ε i₀ = some s ∧
@@ -573,7 +609,9 @@ theorem algorithm_7_7_1_returns (d : Fin (n + 1) → ℝ) (g : V) {Δ ε : ℝ}
 
 /-- **Algorithm 7.7.1** of [conn2000trust], automatic selection. For $d, g \in \mathbb{R}^{n+1}$ and
 $\Delta, \varepsilon \in \mathbb{R}$, this runs Algorithm 7.7.1 with an index $i_0$ that attains
-$\min_i d_i$, chosen by `Classical.choose`. -/
+$\min_i d_i$, chosen by `Classical.choose`.
+
+**Reading.** The minimum diagonal index is chosen noncomputably. -/
 noncomputable def algorithm_7_7_1_auto (d : Fin (n + 1) → ℝ) (g : V) (Δ ε : ℝ) : Option V :=
   algorithm_7_7_1 d g Δ ε (Classical.choose
     (Finset.exists_min_image Finset.univ d Finset.univ_nonempty))
@@ -582,7 +620,10 @@ noncomputable def algorithm_7_7_1_auto (d : Fin (n + 1) → ℝ) (g : V) (Δ ε 
 $d, g \in \mathbb{R}^{n+1}$, $\Delta > 0$ and $\varepsilon > 0$. Then the algorithm with
 automatic least-diagonal selection returns a step $s$, and either $\|s\| \le \Delta$ and $s$
 minimizes $m(s) = \langle g, s \rangle + \frac{1}{2} \langle s, D s \rangle$ on the ball
-$\|s\| \le \Delta$, or $\big| \|s\| - \Delta \big| \le \varepsilon \Delta$. -/
+$\|s\| \le \Delta$, or $\big| \|s\| - \Delta \big| \le \varepsilon \Delta$.
+
+**Reading.** Automatic minimum-index selection with exact-or-radial-tolerance specification.
+-/
 theorem algorithm_7_7_1_auto_returns (d : Fin (n + 1) → ℝ) (g : V) {Δ ε : ℝ}
     (hΔ : 0 < Δ) (hε : 0 < ε) :
     ∃ s, algorithm_7_7_1_auto d g Δ ε = some s ∧

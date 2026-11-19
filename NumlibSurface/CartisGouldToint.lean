@@ -44,9 +44,9 @@ constructions of slow examples and lower bounds (`Numlib.Optimization.Complexity
 
 ## Coverage
 
-Every numbered theorem, lemma, corollary and example of Chapters 1–14 and of Appendices A and B has
-a declaration, and so does every numbered algorithm, as a run predicate with an existence theorem or
-a counterexample to existence. The numbered assumptions, the definitions and the displayed equations
+Numbered theorems, lemmas, corollaries and examples are covered as listed below. Numbered algorithms
+are formulated as run predicates with an existence theorem or a counterexample to existence.
+The numbered assumptions, the definitions and the displayed equations
 that the statements use are formalized with them. Theorem 14.3.9 is proved for the classes of inner
 solvers listed under Deviations, and some of its cases are open (see Not formalized). Chapter 11 has
 no numbered results; the library states the displayed claims of that chapter that can be checked. In
@@ -168,6 +168,12 @@ the remarks of the Notes sections.
 
 **Chapter 1**
 
+* **Section 1.1.2.5, active set** (generalization). The same zero-constraint test also defines an
+  active set at infeasible points. See `CartisGouldToint.Chapter01.activeSet`.
+* **Equation (1.1.5) and Section 1.1.2.6** (generalization). The curvature and the criticality
+  measures are defined on the zero-dimensional space and for arbitrary objectives using Lean's
+  totalized derivatives. See `CartisGouldToint.Chapter01.hessianMinEig`,
+  `CartisGouldToint.Chapter01.omega₁` and `CartisGouldToint.Chapter01.omega₂`.
 * **Theorem 1.1.2, sufficient condition** (correction). The printed condition, strict curvature on
   the nonzero radial directions $d \in \mathcal{C}(x^*)$ with
   $\langle d, \nabla f(x^*) \rangle = 0$, is not sufficient; the condition is stated on the tangent
@@ -179,12 +185,19 @@ the remarks of the Notes sections.
   `CartisGouldToint.Chapter01.theorem_1_1_3_iii` and `CartisGouldToint.Chapter01.theorem_1_1_4_iii`.
 * **Theorems 1.1.3 and 1.1.4, constraint qualification** (reading). The source leaves it
   unspecified; LICQ is used. See `CartisGouldToint.Chapter01.licq`.
+* **Theorems 1.1.3 and 1.1.4, first-order necessary conditions** (generalization). LICQ gives
+  uniqueness of the multiplier vector as well as existence. See
+  `CartisGouldToint.Chapter01.theorem_1_1_3_i` and
+  `CartisGouldToint.Chapter01.theorem_1_1_4_i`.
 * **(1.1.14) and (1.1.17)** (generalization). The second-order necessary conditions hold for every
   multiplier vector that satisfies the first-order conditions. See
   `CartisGouldToint.Chapter01.theorem_1_1_3_ii` and `CartisGouldToint.Chapter01.theorem_1_1_4_ii`.
 
 **Chapter 2**
 
+* **Theorem A.8.5, forward implication** (generalization). Under f.gL the Hessian bound needs no
+  second-order smoothness, with the iterated derivative set to zero where it does not exist. See
+  `CartisGouldToint.Chapter02.AssumptionGL.norm_iteratedFDeriv_two_le`.
 * **Lemma 2.2.1, (2.2.7)** (correction). The printed bound $t_k \ge t_{\mathrm{low}}/2$ needs
   $t_{\mathrm{ini}} \ge t_{\mathrm{low}}/2$; in general $t_k \ge \min(t_{\mathrm{ini}},
   t_{\mathrm{low}}/2)$. See `CartisGouldToint.Chapter02.lemma_2_2_1_index`.
@@ -196,6 +209,12 @@ the remarks of the Notes sections.
   when $t_{\mathrm{ini}} \ge (1-\alpha)/L$. See `CartisGouldToint.Chapter02.theorem_2_2_2`.
 * **Theorem 2.2.3** (generalization). The hypothesis $t_{\mathrm{ini}} \ge \alpha$ of the proof is
   not needed. See `CartisGouldToint.Chapter02.theorem_2_2_3`.
+* **Theorem 2.2.3, evaluation count** (correction). A first hit at $k_\varepsilon$ takes
+  $k_\varepsilon+1$ objective and gradient evaluations in the slow example. The initial
+  objective evaluation and final gradient test contribute to those counts.
+* **Theorem 2.2.4** (reading). The exact-linesearch bound assumes a run because f.Bb
+  and f.gL can hold when the line infimum is unattained.
+  See `CartisGouldToint.Chapter02.theorem_2_2_4`.
 * **Theorems 2.2.3 and 2.2.5** (reading). The number $\epsilon^{-2}$ is assumed to be an integer, as
   the proof does in (2.2.14). See `CartisGouldToint.Chapter02.theorem_2_2_3` and
   `CartisGouldToint.Chapter02.theorem_2_2_5`.
@@ -203,21 +222,38 @@ the remarks of the Notes sections.
   termination index. See `CartisGouldToint.Chapter02.lemma_2_3_4`.
 * **Lemma 2.3.5** (typo). The model decrease, printed $m_k(x_k) - m_k(x_k + s_k)$, is
   $m_k(0) - m_k(s_k)$. See `CartisGouldToint.Chapter02.lemma_2_3_5`.
+* **TR1 model and constants** (reading). The model formula accepts any linear operator,
+  while the run imposes symmetry. The reduction ratio and expressions using the initial
+  gradient norm use total division. See `CartisGouldToint.Chapter02.tr1Ratio` and
+  `CartisGouldToint.Chapter02.tr1Alpha`.
 * **Theorem 2.3.8** (correction). With the printed $B_k = 2t^{-1}$ the Cauchy condition (2.3.4)
   fails; the example uses $B_k = t^{-1} I$ with $t = \Delta_0/2$, and then $\rho_k = 2$. See
   `CartisGouldToint.Chapter02.theorem_2_3_8`.
 * **"Reasonable values" after Algorithm 2.4.1** (typo). The values $\gamma_1 = 2$,
   $\gamma_2 = \gamma_3 = 0.5$ contradict (2.4.2); they are not used.
+* **Proof of Lemma 2.4.3** (typo). The gradient test is required starting at index $0$, since
+  $\mathcal{S}_k$ can contain $0$. See `CartisGouldToint.Chapter02.lemma_2_4_3`.
+* **AR1 model, ratio, and slow example** (reading). The model and ratio use total
+  formulas off the run. The slow example assumes integral $\epsilon^{-2}$ and counts
+  the initial evaluations. See `CartisGouldToint.Chapter02.ar1_step_eq` and
+  `CartisGouldToint.Chapter02.theorem_2_4_5`.
 
 **Chapter 3**
 
+* **Theorem 3.1.1, evaluation counts** (reading). The result gives the first-hit
+  iteration $k_\epsilon$. Algorithm 3.1.1 uses $k_\epsilon+1$ gradients and
+  $k_\epsilon$ Hessians, with no prescribed objective evaluation. See
+  `CartisGouldToint.Chapter03.theorem_3_1_1`.
+* **Equation (3.1.7)** (reading). The slow Newton example uses smooth interpolation
+  of separated jets in place of the displayed piecewise formula. See
+  `CartisGouldToint.Chapter03.NewtonSlow.exists_example`.
 * **Theorems 3.1.1 and 3.2.2** (correction). For the data (3.1.4) the claim
   $\|\nabla f(x_k)\| > \epsilon_1$ can fail at $k = k_\epsilon$. The example prescribes
   $\nabla f(x_{k_\epsilon}) = 0$, and the runs stop exactly at
   $k_\epsilon = \lceil \epsilon_1^{-2} \rceil$. See `CartisGouldToint.Chapter03.theorem_3_1_1` and
   `CartisGouldToint.Chapter03.theorem_3_2_2`.
 * **§3.2.1, trust-region constraints** (reading). The constraints $x_k - t g \in \mathcal{R}_k$ and
-  $x_k + t u \in \mathcal{B}_{\Delta_k}$ on the Cauchy and eigenpoint steps are
+  $x_k - t u \in \mathcal{B}_{\Delta_k}$ on the Cauchy and eigenpoint steps are
   $\|t g\| \le \Delta_k$ and $\|t u\| \le \Delta_k$. See `CartisGouldToint.Chapter03.tr2Step`.
 * **Step 1 of Algorithms 3.2.1 and 3.3.1** (reading). The source also stops at approximate strict
   local minimizers. These satisfy (3.2.9) and (3.3.4), so the termination test is that test alone.
@@ -227,21 +263,32 @@ the remarks of the Notes sections.
 * **Theorem 3.2.6, $\kappa^F_{\mathrm{TR2}}$** (typo). The printed constant lacks a $|\log \cdot|$;
   the constant of the proof is at most the printed one with $|\log \cdot|$ inserted. See
   `CartisGouldToint.Chapter03.kappaFTR2_le_book`.
-* **Theorem 3.2.6** (generalization). The unused hypothesis $\epsilon_1 \le 1$ is dropped. See
-  `CartisGouldToint.Chapter03.theorem_3_2_6`.
+* **Theorem 3.2.6** (reading). The source proof uses $\epsilon_1 \le 1$ in (3.2.22).
+  The Lean proof covers all positive $\epsilon_1$, as quantified in the printed theorem.
+  See `CartisGouldToint.Chapter03.theorem_3_2_6`.
 * **Theorem 3.2.7, (3.2.25)** (typo). The iterates are $x_k = k \epsilon$, not $(k - 1) \epsilon$,
   and "$s_1 = \epsilon$" means $s_0$. See `CartisGouldToint.Chapter03.theorem_3_2_7`.
+* **Theorem 3.2.7, range and counts** (correction). The ceiling in the iteration
+  count can make the last objective value negative. The construction uses a uniform
+  lower bound and counts the initial evaluations.
 * **Hessian of the model after (3.3.2)** (typo). The displayed Hessian has a spurious factor $2$;
   nothing depends on it. See `Optimization.minCurvature_ge_of_regularizedModel`.
+* **Proof of Lemma 3.3.4** (typo). The relevant prefix relation is
+  $|\mathcal S_k|\le |\mathcal S_{k-1}|+1$. See `CartisGouldToint.Chapter03.lemma_3_3_4`.
 * **Theorems 3.3.6 and 3.3.10** (reading). The source defers the proofs to §12.2.2.4; they are
   proved from the data of Theorem 12.2.15. See `CartisGouldToint.Chapter03.theorem_3_3_6` and
   `CartisGouldToint.Chapter03.theorem_3_3_10`.
 * **Theorem 3.3.9, (3.3.30)** (correction). The printed bound on the derivative evaluations ends
   with $+ 1$ and is false; it holds with $+ 2$. See `CartisGouldToint.Chapter03.theorem_3_3_9`.
-* **Theorem 3.3.9** (generalization). The unused hypothesis $\epsilon_2 \le 1$ is dropped. See
+* **Lemma 3.3.8 and Theorem 3.3.9** (generalization). The finite second tolerance
+  need only be positive. See `CartisGouldToint.Chapter03.lemma_3_3_8` and
   `CartisGouldToint.Chapter03.theorem_3_3_9`.
 * **Lemma 3.4.1** (generalization). The inequality (3.4.7), printed with $\ge$, is strict. See
   `CartisGouldToint.Chapter03.lemma_3_4_1`.
+* **Algorithms 3.4.1 and 3.4.2** (reading). The TRε run leaves the model weight
+  independent of the stopping tolerances. The iRN subspace curvature tests correspond
+  to orthonormal columns of $Q_k$. See `CartisGouldToint.Chapter03.algorithm_3_4_1`
+  and `CartisGouldToint.Chapter03.irnTest`.
 * **Lemma 3.4.3** (typo). The quadratic inequality and its root in the proof are misprinted;
   (3.4.10) is proved directly. See `CartisGouldToint.Chapter03.lemma_3_4_3`.
 * **Lemma 3.4.4** (typo). The case labels (3.4.13) and (3.4.14) in the proof are swapped. See
@@ -259,9 +306,9 @@ the remarks of the Notes sections.
 * **Theorem 3.4.12** (correction). The claim of the proof that the gradient stays small is
   unjustified; the bounds hold with a factor $2$ on the leading terms and $\kappa^D = 2M + 3$. See
   `CartisGouldToint.Chapter03.theorem_3_4_12`.
-* **Lemma 3.5.1** (typo). The printed constant $\kappa_\lambda = 2 \sqrt{\kappa_\lambda (1 +
-  \kappa_{rg})}$ is self-referential; it is $2 \sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}$. See
-  `CartisGouldToint.Chapter03.lemma_3_5_1`.
+* **The class $\mathcal M$ and Theorem 3.5.4** (reading). The method accesses a
+  deterministic oracle of order two. Membership is tested on the constructed
+  objective up to termination. See `CartisGouldToint.Chapter03.IsMClassMethod`.
 * **Lemma 3.5.1** (generalization). The lemma holds without (3.5.3), $\kappa_{rg} < 1$ and
   $s \neq 0$. See `CartisGouldToint.Chapter03.lemma_3_5_1`.
 * **Lemma 3.5.2** (generalization). The assumptions f.Bb and f.gL are not needed, and the bound
@@ -281,6 +328,12 @@ the remarks of the Notes sections.
 
 **Chapter 4**
 
+* **Equations (4.1.3)–(4.1.4)** (reading). The third-order predicate uses a universal
+  inequality over the small-curvature set, permitting the empty set. See
+  `CartisGouldToint.Chapter04.IsApproxThirdOrderMinimizer`.
+* **Lemma 4.1.1** (reading). The displacement in the model comparison is the same displacement
+  as in the Taylor decrease, with no algorithm-run hypothesis. See
+  `CartisGouldToint.Chapter04.lemma_4_1_1`.
 * **Algorithm 4.1.1, (4.1.8)–(4.1.9)** (correction). The source also requires
   $\mathcal{M}_k \neq \emptyset$, with which a run can get stuck. The condition is read as "for all
   $d \in \mathcal{M}_k$", as in the proof of Theorem 4.1.5, and so is (4.1.13). See
@@ -325,6 +378,13 @@ the remarks of the Notes sections.
 
 **Chapter 5**
 
+* **Section 5.1** (generalization). The residual-power objective accepts any real exponent,
+  the scaled measures are total at a zero residual, and the set in (5.1.7) may be empty.
+  See `CartisGouldToint.Chapter05.Phi` and `CartisGouldToint.Chapter05.zSet`.
+* **Algorithm 5.1.1 and Lemmas 5.1.2–5.1.4** (generalization). The run predicate leaves the
+  exponent, order, regularization and tolerance restrictions to its callers. The estimates
+  use total division, and (5.1.18) already applies at order two. See
+  `CartisGouldToint.Chapter05.algorithm_5_1_1` and `CartisGouldToint.Chapter05.lemma_5_1_2`.
 * **Algorithm 5.1.1, third-order test** (correction). With the requirement
   $\mathcal{M}_k \neq \emptyset$ the proof of Theorem 5.1.7 fails when
   $\mathcal{M}_{k+1} = \emptyset$, so "for all $d \in \mathcal{M}_k$" is read vacuously. See
@@ -341,14 +401,33 @@ the remarks of the Notes sections.
 * **Theorem 5.1.7** (generalization). The tolerances need only be positive, and a general form holds
   for every order $q \le 3$ and all $\ell$, $i$ with $\iota_j \ge 0$ for $j \le q$. See
   `CartisGouldToint.Chapter05.theorem_5_1_7_of_iota_nonneg`.
-* **Domination in §5.3** (generalization). Domination is assumed only at the iterates, as the book
-  remarks after Lemma 5.3.1. See `CartisGouldToint.Chapter05.IsDominated.range`.
-* **Theorems 5.3.3–5.3.5** (generalization). The hypothesis $\Gamma_0 > 0$ is not needed. See
-  `CartisGouldToint.Chapter05.theorem_5_3_3`.
+* **Equation (5.1.64)** (reading). The bound is assumed for the adjoint of the Jacobian.
+  A positive smallest singular value in the usual list for a tall matrix alone does not
+  imply this bound. See `CartisGouldToint.Chapter05.psiOne_ge_of_jacobian`.
+* **Equation (5.2.2)** (reading). The Taylor identity assumes each element function is
+  $C^p$ at its projected base point. See
+  `CartisGouldToint.Chapter05.taylorPolynomial_partiallySeparable`.
+* **Domination and run classes in §5.3** (generalization). The settings permit any reference
+  lower bound and require domination only at the iterates. The TR run may continue past
+  a zero measure. See `CartisGouldToint.Chapter05.ARSetting` and
+  `CartisGouldToint.Chapter05.IsTRpsiNuRun`.
+* **Sublinear convergence in §5.3** (correction). The polynomial upper bounds permit
+  faster convergence. For TR, the decrease controls the running minimum of the optimality
+  measures, and the individual measures need not converge. See
+  `CartisGouldToint.Chapter05.lemma_5_3_1` and `CartisGouldToint.Chapter05.theorem_5_3_9`.
+* **Iteration and evaluation bounds in §5.3** (reading). The abstract theorems count
+  iterations and successful iterations. Evaluation counts require an algorithm's
+  evaluation schedule. See `CartisGouldToint.Chapter05.theorem_5_3_2`.
+* **Theorems 5.3.3–5.3.5** (generalization). The Lean statements handle $\Gamma_0 = 0$.
+  See `CartisGouldToint.Chapter05.theorem_5_3_3`.
+* **Theorems 5.3.7–5.3.9** (specialization). The Lean statements make $\Gamma_0 > 0$
+  explicit. See `CartisGouldToint.Chapter05.theorem_5_3_7`.
 * **Theorem 5.3.3** (reading). The bounds $\log|\log\epsilon|$ are stated as
   $\log\max(1, |\log\epsilon|)$. See `CartisGouldToint.Chapter05.theorem_5_3_3`.
 * **Theorem 5.3.3, $\kappa^F$** (typo). The constant of Appendix B is corrected to
   `Optimization.superlinearCountConst`. See `CartisGouldToint.Chapter05.theorem_5_3_3`.
+* **Theorem 5.3.4** (typo). Appendix B omits the reciprocal in the convergence factor.
+  See `CartisGouldToint.Chapter05.theorem_5_3_4`.
 * **Theorem 5.3.5, $\kappa^E$** (typo). It uses $\min(1, \alpha)$ for $\alpha$ and
   $\Gamma_0^{-\alpha}$ for the printed $\kappa_\psi^{\nu/\mu}/\kappa_\nu$, and the halving argument
   gives $2M + 2$ successful iterations. See `CartisGouldToint.Chapter05.theorem_5_3_5`.
@@ -379,27 +458,40 @@ the remarks of the Notes sections.
   `CartisGouldToint.Chapter05.norm_step_le_of_strict`, `CartisGouldToint.Chapter05.zetaStar` and
   `CartisGouldToint.Chapter05.lemma_5_4_2`.
 * **Lemma 5.4.3 and Theorem 5.4.4, (5.4.14)** (correction). The count
-  $\log_2 \log_2(\zeta/\epsilon)$ is one too small in the worst case, has no ceiling and is
+  $\log_2 \log_2(\zeta/\epsilon)$ can be zero when a step is needed, has no ceiling and is
   undefined for $\epsilon \ge \zeta$; it is $\lceil \log_2 \log_2(\zeta_*/\epsilon) \rceil_+$. See
   `CartisGouldToint.Chapter05.lemma_5_4_3` and `CartisGouldToint.Chapter05.theorem_5_4_4`.
 * **Theorem 5.4.4, second part** (reading). The bound (5.4.17) is stated for $|\mathcal{S}_k|$ at
-  every iteration before termination, and (5.4.18) is restricted to these iterations. See
+  every iteration before termination, and (5.4.18) is restricted to these iterations. The
+  stopping test can hold at equality with the gradient tolerance. See
   `CartisGouldToint.Chapter05.theorem_5_4_4`.
+* **Algorithm 5.5.1, Step 0** (generalization). The run parameters allow $\gamma_2=\gamma_3$.
+  See `CartisGouldToint.Chapter05.ARpHParams`.
 * **Algorithm 5.5.1, Step 4** (typo). The third case is "$\rho_k < \eta_1$, or (5.5.10) fails, or
   (5.5.11) fails", the complement of the first two cases. See
   `CartisGouldToint.Chapter05.algorithm_5_5_1`.
-* **Lemma 5.5.2** (typo). The display writes $\nabla_s m_k(x_k + s_k)$ for $\nabla_s m_k(s_k)$. See
-  `CartisGouldToint.Chapter05.lemma_5_5_2`.
+* **Lemmas 5.5.1 and 5.5.2** (reading). The Lean statements cover trials whose termination test
+  fails. The decrease is strict and the gradient bound uses $\nabla_s m_k(s_k)$ and the
+  triangle inequality. See `CartisGouldToint.Chapter05.lemma_5_5_2`.
 * **Lemma 5.5.4** (typo). In case (b) of the proof, $\epsilon_2$ is printed as $\epsilon_1$. See
   `CartisGouldToint.Chapter05.lemma_5_5_4`.
-* **Theorem 5.5.7** (correction). The function is evaluated at $x_0$ and at every trial point,
-  $k_\epsilon + 2$ times, so $\kappa^C$ needs an additional $+ 2$. See
+* **Lemmas 5.5.3 and 5.5.6** (correction). Equation (5.5.26) uses weak inequalities to allow
+  $H_{f,p}=0$. The formula before (5.5.48) uses the reciprocal of the maximum.
+  See `CartisGouldToint.Chapter05.div_holderFactorial_le_kappaBeta_two` and
+  `CartisGouldToint.Chapter05.lemma_5_5_6`.
+* **Theorem 5.5.7** (correction). The $k_\epsilon+2$ bound covers derivatives evaluated at
+  the initial point and every trial. The objective count is at most $k_\epsilon+1$ because
+  a terminating trial skips Step 3. The complexity constant and proof account for this. See
   `CartisGouldToint.Chapter05.theorem_5_5_7`.
 
 **Chapter 6**
 
-* **(6.1.5) and (6.1.9)** (typo). The leading minus sign of the measures is missing. See
-  `CartisGouldToint.Chapter06.omega1` and `CartisGouldToint.Chapter06.omega3`.
+* **Measures and tests in §6.1.1** (generalization). The measures give zero on an empty
+  direction set, and tests accept real thresholds and any natural order. See
+  `CartisGouldToint.Chapter06.IsApproxMinimizerCC`.
+* **End of §6.1.1** (correction). The third-order unit-ball test can detect directions
+  omitted by the earlier unit-sphere test even on the whole space. See
+  `CartisGouldToint.Chapter06.omega3`.
 * **Start of §6.1** (correction). The claim that C.CNe ensures that (6.1.1) has a solution is false:
   $f(x) = x$ on $\mathcal{C} = \mathbb{R}$ has no minimizer. See
   `CartisGouldToint.Chapter06.not_assumptionCNe_imp_exists_minimizer`.
@@ -412,6 +504,8 @@ the remarks of the Notes sections.
 * **Algorithm 6.2.1, Step 2** (correction). For $q \ge 2$ Step 2 can be infeasible, even at a strict
   global minimizer. Theorem 6.2.3 holds for every run, and runs exist for $q = 1$ and whenever Step
   2 is feasible. See `CartisGouldToint.Chapter06.algorithm_6_2_1_not_exists_step`.
+* **Model measures in §6.2** (generalization). The supremum convention gives zero on an
+  empty feasible direction set. See `CartisGouldToint.Chapter06.modelOmega1`.
 * **Lemma 6.2.1, (6.2.18)–(6.2.19)** (correction). The bounds are proved only for $\|d\| \le 1$. See
   `CartisGouldToint.Chapter06.lemma_6_2_1_iii` and `CartisGouldToint.Chapter06.lemma_6_2_1_iv`.
 * **Lemma 6.2.2** (typo). The prefactor of $\kappa^{cc}_j$ is $\eta_1 \sigma_{\min} / (p+1)!$, not
@@ -423,11 +517,9 @@ the remarks of the Notes sections.
   `CartisGouldToint.Chapter06.exists_algorithm_6_2_2`.
 * **Test (6.3.2)** (reading). The quotient test is written multiplicatively; the two forms agree
   whenever (6.3.1) fails and $\epsilon_0 \ge 0$. See `CartisGouldToint.Chapter06.stopLE`.
-* **Display before (6.3.3)** (typo). It mixes the scaled and unscaled measures; the decrease that
-  holds is $\kappa_1 \ell \, \omega_{\Phi_\ell,\mathcal{C},1}(x_{k+1})^{(p+1)/p}$. See
+* **Equation (6.3.3) and the preceding display** (typo). The first decrease uses the
+  unscaled measure alone. The potential estimate uses its normalized form. See
   `CartisGouldToint.Chapter06.arpleCC_decrease`.
-* **Theorem 6.3.1** (typo). "(5.1.38) for (5.1.39)" means "or". See
-  `CartisGouldToint.Chapter06.theorem_6_3_1`.
 * **Theorem 6.3.1** (generalization). Only $\iota_1(p, \ell, i) \ge 0$ is assumed, and
   $\epsilon_0, \epsilon_1 \le 1$ is not needed. See `CartisGouldToint.Chapter06.theorem_6_3_1`.
 
@@ -437,6 +529,9 @@ the remarks of the Notes sections.
   convex.
 * **Theorem 7.1.1** (generalization). The set $\mathcal{S}$ need be neither closed nor a subset of
   $\mathcal{C}$. See `CartisGouldToint.Chapter07.theorem_7_1_1`.
+* **Text after Theorem 7.1.1** (correction). For local optimality on the larger feasible
+  set, $\mathcal{S}$ can be required to contain a relative neighborhood of $x_*$. The
+  printed boundary condition is insufficient. See `CartisGouldToint.Chapter07.theorem_7_1_1`.
 * **(7.1.3)–(7.1.4)** (typo). $\mathcal{C}(x)$ and the gradient are evaluated at $x_*$ and
   $x_\epsilon$, not at a free $x$. See `CartisGouldToint.Chapter07.IsFirstOrderMinimizerGC` and
   `CartisGouldToint.Chapter07.IsApproxFirstOrderGC`.
@@ -446,13 +541,17 @@ the remarks of the Notes sections.
   for the universally quantified form. See `CartisGouldToint.Chapter07.AssumptionBFb`.
 * **Assumption f.D1pL.C** (typo). $\nabla^j_x f_i$ means $\nabla^j_x f$. See
   `CartisGouldToint.Chapter07.AssumptionFD1pLC`.
+* **Smoothness before Algorithm 7.2.1** (correction). The smooth merits can conceal a
+  nonsmooth constraint. The termination guarantees assume differentiability of the
+  objective and constraints directly. See `CartisGouldToint.Chapter07.lemma_7_2_1`.
 * **Algorithm 7.2.1, Phase 2** (correction). Step 1 applies ARp1-CC (Algorithm 6.2.2), not ARp-CC,
   since the proof of Lemma 7.2.6 uses Lemma 6.2.4. See `CartisGouldToint.Chapter07.IsTPpGCPhase2`.
 * **Algorithm 7.2.1, Step 2(a)** (correction). With the printed test
   $\|r(x_{k+1}, t_k)\| < \theta \epsilon_0$ Lemma 7.2.1 fails; the test is $\le \theta \epsilon_0$.
   See `CartisGouldToint.Chapter07.Phase2Seq.IsKa`.
-* **Lemma 7.2.2, (7.2.24)** (correction). The derivative-evaluation bound lacks the term $+ 2$ of
-  Theorem 6.3.1. See `CartisGouldToint.Chapter07.lemma_7_2_2`.
+* **Lemma 7.2.2** (correction). The residual bound uses $\theta\epsilon_0$ from (7.2.9), and
+  the derivative-evaluation bound restores $+2$ from Theorem 6.3.1. See
+  `CartisGouldToint.Chapter07.lemma_7_2_2`.
 * **Lemma 7.2.5** (generalization). The hypothesis $\Phi_\ell$.DpL.C is not needed. See
   `CartisGouldToint.Chapter07.lemma_7_2_5`.
 * **Lemma 7.2.6** (correction). The block argument omits the restart of $\sigma$ at $\sigma_0$ in
@@ -460,8 +559,8 @@ the remarks of the Notes sections.
   gives no bound on the bad outer iterations. See `CartisGouldToint.Chapter07.lemma_7_2_6`.
 * **Theorem 7.2.7** (correction). The number of bad outer iterations is a parameter; under bounded
   gradients it is $N_b = O(\epsilon_0^{-1} \epsilon_1^{-1})$, within the order of (7.2.50) for
-  $\epsilon_0 = \epsilon_1$ if and only if $p \le 2$. The derivative count has a term
-  $\epsilon_0^{-1}$ that (7.2.53) lacks, and whether (7.2.53) holds is open. See
+  $\epsilon_0 = \epsilon_1$ if and only if $p \le 2$. The derivative count includes
+  an outer-call term absent from (7.2.53). See
   `CartisGouldToint.Chapter07.theorem_7_2_7` and
   `CartisGouldToint.Chapter07.theorem_7_2_7_of_gradient_le`.
 * **(7.2.47)** (generalization). The constant $\kappa_1^{-1} \theta^{-(p+1)/p}$ replaces the weaker
@@ -469,41 +568,58 @@ the remarks of the Notes sections.
 
 **Chapter 8**
 
+* **Section 8.1** (generalization). The quadratic and regularized models accept arbitrary
+  square matrices, and the subproblem predicates allow any real radii, weights and powers.
+  See `CartisGouldToint.Chapter08.mNorm` and `CartisGouldToint.Chapter08.regModel`.
 * **Lemma 8.2.1** (reading). The hypothesis $\pi(\lambda_s) > \tau(\lambda_s)$ is read as
   $\pi(\lambda) \ge c > \tau(\lambda_s)$ for $\lambda$ near $\lambda_s$ from the right, and $\tau$
   is right-continuous at $\lambda_s$. See `CartisGouldToint.Chapter08.lemma_8_2_1`.
 * **Theorem 8.2.2** (generalization). It holds for every $k \ge 0$, not only for $k > 0$. See
   `CartisGouldToint.Chapter08.theorem_8_2_2`.
-* **Lemma 8.2.3** (correction). The strict inequalities fail for $g = 0$, and for $\beta = -1/2$
-  when $g = M v$ for a generalized eigenvector $v$. See
+* **Lemma 8.2.3** (correction). The second derivative can vanish with $g\ne0$ at
+  $\beta=-1/2$ when $g=Mv$ for a generalized eigenvector $v$. See
   `CartisGouldToint.Chapter08.lemma_8_2_3_strict`.
 * **Corollary 8.2.4** (correction). The statement needs $g \neq 0$; for $g = 0$ the function
   $\pi(\lambda; \beta)$ is constant. See `CartisGouldToint.Chapter08.corollary_8_2_4`.
 * **Corollary 8.2.4** (reading). The starting value "$\pi(\lambda_s; \beta)$" is the right limit at
   $\lambda_s$, which can be $+\infty$. See
   `CartisGouldToint.Chapter08.corollary_8_2_4_tendsto_lambdaS`.
-* **Theorem 8.2.5** (correction). The strict inequalities fail for $g = 0$ and for $\delta = 0$, and
+* **Theorem 8.2.5** (correction). The strict inequalities fail for $\delta = 0$, and
   (8.2.21) is an equality for $\beta = -1/2$ when $g = M v$ for a generalized eigenvector $v$. See
   `CartisGouldToint.Chapter08.theorem_8_2_5_strict`.
-* **§8.2, transformed secular equations** (correction). The convexity of $-\lambda^\gamma$ for
-  $\gamma \in (0, 1]$ and the concavity of $\lambda^\gamma$ for $\gamma < 0$, claimed on
-  $\lambda \ge \lambda_s$, hold on $\lambda > 0$; the first interval can contain $0$.
+* **§8.2.2, transformed secular equations** (correction). The interval after (8.2.17)
+  starts at $\lambda_s$. The concavity of $-\lambda^\gamma$ for $\gamma<0$
+  uses $\lambda>0$. The convex case $\gamma\in(0,1]$ also allows $\lambda=0$.
+* **Theorem 8.2.8, uniqueness proof** (correction). The shifted matrix can be
+  positive definite when $\lambda_*=\lambda_s=0$.
+  See `CartisGouldToint.Chapter08.theorem_8_2_8`.
 * **§8.3, the sets $\mathcal{N}$, $\mathcal{L}$, $\mathcal{G}$** (correction). The set-builder
   descriptions are wrong when $\lambda_1 > 0$; the interval forms, which partition $\mathbb{R}$, are
   used. See `CartisGouldToint.Chapter08.setN`, `CartisGouldToint.Chapter08.setF_reg_eq_Ioi` and
   `CartisGouldToint.Chapter08.setL_tr_union_setG_tr`.
 * **§8.3.1, the transformed target** (typo). The target is $(\lambda/\sigma)^{2\beta/(r-2)}$, not
   $(\lambda/\sigma)^{\beta/(r-2)}$, and the ranges of $\beta$ are $(0, (r-2)/2]$ and $[-1/2, 0)$.
+  The printed defining difference repeats $\theta$ where $\pi(\lambda)^\beta$ is intended.
   See `CartisGouldToint.Chapter08.regSecularFn`.
 * **Algorithm 8.3.1** (correction). The Newton correction (8.2.25) is undefined at $\beta = 0$, so
-  the exponents satisfy $\beta_j \neq 0$. See `CartisGouldToint.Chapter08.algorithm_8_3_1`.
+  the exponents satisfy $\beta_j \neq 0$. Repeated exponents are allowed.
+  See `CartisGouldToint.Chapter08.algorithm_8_3_1`.
+* **§8.3.2, transformed trust-region target** (correction). The Taylor corrections use $\Delta^2$.
+  Transforming with $\beta=-1/2$ gives the Newton target $1/\Delta$.
+  See `CartisGouldToint.Chapter08.candidates832`.
+* **§8.3, convergence rates** (partial). The combined-algorithm results omit the Q-order
+  claim for individual Taylor iterations and the secant variants.
+  See `CartisGouldToint.Chapter08.algorithm_8_3_1_terminates` and
+  `CartisGouldToint.Chapter08.algorithm_8_3_2_terminates`.
 * **Corollaries 8.3.1 and 8.3.2** (correction). When $\lambda_1$ is multiple, one eigenvector does
   not parametrize all minimizers; any nonzero generalized eigenvector for $\lambda_1$ is allowed.
   See `CartisGouldToint.Chapter08.corollary_8_3_1` and `CartisGouldToint.Chapter08.corollary_8_3_2`.
-* **(8.3.2)** (reading). The minimum-norm solution is taken in the $M$-norm. See
+* **(8.3.2)** (correction). The trajectory limit uses the $M$-norm minimizer, which can
+  differ from the Euclidean pseudoinverse of Appendix A.5. See
   `CartisGouldToint.Chapter08.minNormSolution`.
 * **Corollary 8.3.2, boundary condition** (correction). For $\lambda^* = 0$ the minimizer need not
-  lie on the boundary; $\|s_s + \alpha v\|_M = \Delta$ is stated for $\lambda^* > 0$. See
+  lie on the boundary. For $\lambda^* > 0$, the norm itself equals $\Delta$. The preceding
+  paragraph adds an exponent $r-2$ to that norm. See
   `CartisGouldToint.Chapter08.corollary_8_3_2`.
 
 **Chapter 9**
@@ -511,9 +627,15 @@ the remarks of the Notes sections.
 * **Algorithm 9.1.1** (typo). The right-hand side has the sign opposite to (8.2.29), so the vectors
   are $(-1)^k s^{(k)}$; the values $\pi^{(j)}$ are not affected. See
   `CartisGouldToint.Chapter09.algS_eq`.
+* **Algorithm 9.1.1, loop bound** (correction). For odd $l_{\max}$ the inclusive upper bound
+  calls an additional iteration with an uncomputed input vector. The formal sequence
+  defines each derivative by order. See `CartisGouldToint.Chapter09.algorithm_9_1_1`.
 * **Remark after Algorithm 9.1.1** (typo). With a Cholesky factorization
   $\pi^{(2k+1)} = -\beta_k \|y^{(k+1)}\|^2$, without the printed factor $2$. See
   `CartisGouldToint.Chapter09.corollary_9_1_1`.
+* **Algorithm 9.2.1, initial trial** (generalization). The run allows any initial trial, and
+  the contraction estimate starts after the first safeguarded choice.
+  See `CartisGouldToint.Chapter09.algorithm_9_2_1`.
 * **Algorithm 9.2.1, contraction factor** (correction). The printed factor is not uniformly below
   $1$; the uniform factor $\max(1 - \theta_L, \theta_U, 1/2)$ is used. See
   `CartisGouldToint.Chapter09.algorithm_9_2_1_terminates`.
@@ -521,18 +643,27 @@ the remarks of the Notes sections.
   strictly below $\lambda^*$. See `CartisGouldToint.Chapter09.algorithm_9_2_1_terminates`.
 * **(9.3.5)** (generalization). The bound $\lambda^L \le \lambda^*$ holds for every nonnegative
   root, not only for the rightmost one. See `CartisGouldToint.Chapter09.lambdaStar_bounds_9_3_3`.
-* **Theorem 9.3.1** (correction). The hypothesis $z_0 \in \mathcal{Z}_1$, which the source omits, is
-  added. See `CartisGouldToint.Chapter09.theorem_9_3_1`.
+* **Theorem 9.3.1, start condition** (reading). The formal theorem makes the algorithm's start
+  condition explicit in its weighted form. See `CartisGouldToint.Chapter09.theorem_9_3_1`.
 * **Theorem 9.3.1, the set $\mathcal{Z}_1$** (reading). The condition is read in the $M$-inner
   product. See `CartisGouldToint.Chapter09.theorem_9_3_1`.
 * **Theorem 9.3.1, quantifiers and order** (reading). The parameter sequences are fixed before the
-  radius $\epsilon$, and the Q-order is stated as two-sided bounds. See
+  radius $\epsilon$. The normalized error quotient satisfies two-sided bounds and can
+  oscillate for varying $\omega_k$. See
   `CartisGouldToint.Chapter09.theorem_9_3_1`.
-* **Algorithm 9.3.1, initial shift** (generalization). Only $H + \lambda^G_0 M \succ 0$ is required,
-  not $\lambda^G_0 \in \mathcal{G}$. See `CartisGouldToint.Chapter09.algorithm_9_3_1`.
+* **Algorithm 9.3.1, initial data** (generalization). The run assumes a positive definite
+  initial shift and a normalized vector. The weighted eigenspace assumption belongs to
+  the convergence theorem. See `CartisGouldToint.Chapter09.algorithm_9_3_1`.
+* **§9.3.5, reusing a multiplier** (correction). Inclusion in $\mathcal{L}_+$ requires
+  $\lambda>\lambda_s$. See `CartisGouldToint.Chapter09.setL_reg_mono`.
 * **Theorem 9.3.2** (correction). With the Euclidean $\lambda_{\min}$ in (9.3.14c) the theorem is
   false for $M \neq I$; (9.3.14) is stated with the $M$-scalings. See
   `CartisGouldToint.Chapter09.theorem_9_3_2`.
+* **§9.3.6, neighborhood of a minimizer** (correction). The stopping inequalities may fail
+  arbitrarily close to a minimizer of value $0$. See
+  `CartisGouldToint.Chapter09.stoppingRules_9_3_14`.
+* **(9.3.16), upper factor** (reading). The reciprocal term is omitted at a zero
+  denominator as well as a negative denominator. See `CartisGouldToint.Chapter09.etaU`.
 * **(9.3.6), middle term** (correction). The middle term is not a valid bound; only the outer
   inequality is stated. See `CartisGouldToint.Chapter09.exists_abs_sub_le_of_eigen`.
 * **(9.4.5)** (correction). The equivalence $m_{\Delta_2} \le m_{\Delta_1} \iff \Delta_2 \ge
@@ -540,6 +671,14 @@ the remarks of the Notes sections.
 * **(9.4.6) and (9.4.7)** (generalization). The bounds hold for any point on the sphere of radius
   $\Delta^+$ (or $\Delta^-$), not only for minimizers. See
   `CartisGouldToint.Chapter09.optimalValue_bounds_9_4_6`.
+* **§9.4.2, trust-region boundary** (correction). Singular positive semidefinite models
+  can have interior minimizers. A trial in $\mathcal{L}$ can lie exactly on the boundary.
+  See `CartisGouldToint.Chapter09.trValue_of_posDef` and
+  `CartisGouldToint.Chapter09.tests_9_4_3_9_4_4_of_setL`.
+* **§9.4.2, optimal value and criticality tests** (generalization). Empty balls have totalized
+  value $0$, and the test equivalences allow thresholds of arbitrary sign.
+  See `CartisGouldToint.Chapter09.trValue` and
+  `CartisGouldToint.Chapter09.test_9_4_2_iff_of_contDiffAt`.
 
 **Chapter 10**
 
@@ -548,10 +687,29 @@ the remarks of the Notes sections.
 * **§10.1.1, nesting of the Krylov subspaces** (typo). $\mathcal{K}(A, b, k + 1)$ is the span of
   $\mathcal{K}(A, b, k) \cup \{A^k b\}$, not the union. See
   `CartisGouldToint.Chapter10.krylovSpace_succ`.
+* **(10.1.2), reduced subproblems** (generalization). Dependent columns are allowed.
+  See `CartisGouldToint.Chapter10.subspaceSolution_iff_reduced`.
+* **Algorithm 10.1.1, preconditioning** (typo). The solve is $M y_k=t_k$.
+  See `CartisGouldToint.Chapter10.algorithm_10_1_1.t_eq`.
+* **Algorithm 10.1.1, breakdown and grade** (correction). Breakdown at $k=d+1$ detects
+  grade $d<n$. The run continues with a totalized recurrence after the printed stop.
+  See `CartisGouldToint.Chapter10.algorithm_10_1_1_spec`.
+* **(10.1.4), zero starting vector** (generalization). The reduced-gradient identity
+  includes $g=0$ with $\gamma_1=0$. See `CartisGouldToint.Chapter10.lanczosGrad_eq`.
+* **§10.1.2, hard-case Krylov space** (correction). The containment is in the span of the
+  remaining generalized eigenvectors. See `CartisGouldToint.Chapter10.krylov_hardCase_10_1_2`.
+* **Algorithms 10.2.1–10.2.2** (reading). The factorization reports failure without a
+  pivot index. The solve specifies the output, and the printed arithmetic count is one
+  multiplication too high. See `CartisGouldToint.Chapter10.algorithm_10_2_1` and
+  `CartisGouldToint.Chapter10.algorithm_10_2_2`.
 * **Lemma 10.2.1** (typo). The problem is (8.1.3), not the model (8.1.4). See
   `CartisGouldToint.Chapter10.lemma_10_2_1`.
-* **Corollaries 10.2.3 and 10.3.3** (correction). The printed iteration bounds cannot hold when the
-  logarithm is negative and are undefined for $\kappa_* = 1$. The ceiling is
+* **(10.2.7), root count** (correction). The admissible root is unique. The general
+  equation can have three real roots. See `CartisGouldToint.Chapter10.start_10_2_3`.
+* **Theorem 10.2.2, (B.10.1)** (typo). The proof's residual norm omits the linear term $g$.
+  See `CartisGouldToint.Chapter10.theorem_10_2_2`.
+* **Corollaries 10.2.3 and 10.3.3** (correction). The printed iteration bounds can be below $1$
+  and are undefined for $\kappa_* = 1$. The ceiling is
   $\lceil \cdot \rceil_+$, the case $\kappa_* = 1$ gives some $k \le \min(2, \text{grade})$, and the
   hypothesis $g \neq 0$ is added. See `CartisGouldToint.Chapter10.corollary_10_2_3` and
   `CartisGouldToint.Chapter10.corollary_10_3_3`.
@@ -562,6 +720,11 @@ the remarks of the Notes sections.
   $\|s\|^r$. See `CartisGouldToint.Chapter11.idealScaling_transform`.
 * **(11.1.7)** (typo). The cases read $\lambda_i \ge \delta$ and $\lambda_i \le -\delta$ (printed
   $>$ and $<$), to agree with (11.1.4). See `CartisGouldToint.Chapter11.div_modifiedAbs`.
+* **§11.1.3, trust-region multiplier** (correction). A strictly interior solution has
+  $\lambda_*=0$. At a boundary solution the multiplier can be positive.
+  See `CartisGouldToint.Chapter11.diagonal_kkt_iff`.
+* **§11.1.3, all-positive diagonal** (typo). The step direction for nonzero $g^D$ is $-g^D$,
+  as in (11.1.11). See `CartisGouldToint.Chapter11.diagonal_regularization_solution`.
 * **§11.1.3, regularization** (typo). The secular equation has the right-hand side
   $(\lambda/\sigma)^{2/(r-2)}$ (printed $(\lambda^2/\sigma^2)^{2/(r-2)}$), the hard case occurs if
   and only if $\frac12 \|g^D\| \le \sigma^{-1/(r-2)}$ (printed $\ge$), and then $\sum \alpha_i^2 =
@@ -573,6 +736,15 @@ the remarks of the Notes sections.
   the derivation, Table 11.2.1 and the rule (11.2.6) confirm. See
   `CartisGouldToint.Chapter11.trMultiplier_asymptotics` and
   `CartisGouldToint.Chapter11.radius_weight_correspondence`.
+* **(11.2.3)–(11.2.6), nonzero gradient** (correction). The ratio limits require $g\ne 0$.
+  The trust-region product limit also holds at $g=0$.
+  See `CartisGouldToint.Chapter11.regMultiplier_asymptotics`.
+* **§11.3, secular root** (correction). A boundary least-squares step can have multiplier
+  zero. The positive-root result separates this case.
+  See `CartisGouldToint.Chapter11.leastSquares_structure`.
+* **(11.3.3), augmented matrix** (correction). The system equivalence includes degenerate
+  data where the matrix lacks a positive eigenvalue.
+  See `CartisGouldToint.Chapter11.augmentedSystem_iff`.
 
 **Chapter 12**
 
@@ -580,35 +752,47 @@ the remarks of the Notes sections.
   $(t, \frac12 e^{-1/t^2})$ is used. See `CartisGouldToint.Chapter12.example_12_1_1`.
 * **Theorem 12.1.1** (generalization). The restriction to tuples of nonzero $s_i$ is dropped. See
   `CartisGouldToint.Chapter12.theorem_12_1_1`.
+* **(12.1.10)–(12.1.11)** (generalization). The measure uses a supremum in general
+  normed spaces and is totalized on an empty ball. See `CartisGouldToint.Chapter12.phiMeasure`.
 * **Example 12.1.2** (typo). The printed $\kappa_1 = 1$, $\kappa_2 = 2$ give no saddle;
   $\kappa_1 = 3$, $\kappa_2 = 2$ are used, as in Figure 12.1.2, also in Theorem 12.1.2. See
   `CartisGouldToint.Chapter12.example_12_1_2` and `CartisGouldToint.Chapter12.theorem_12_1_2`.
 * **Theorem 12.1.3 (iii)** (generalization). For the projected norm on
   $\ker^1[\nabla f(x)] \cap \ker^2[\nabla^2 f(x)]$ the first- and second-order hypotheses are not
   needed. See `CartisGouldToint.Chapter12.theorem_12_1_3_iii`.
+* **Theorem 12.1.3 (i)–(ii)** (generalization). Totalized derivatives allow the
+  identities without smoothness assumptions, and (ii) also gives a converse.
+  See `CartisGouldToint.Chapter12.theorem_12_1_3_i` and
+  `CartisGouldToint.Chapter12.theorem_12_1_3_ii`.
 * **Example 12.1.3 (iv)** (correction). The claim is false in $n$ variables and is stated in one
   variable. See `CartisGouldToint.Chapter12.example_12_1_3`.
 * **Theorem 12.1.5** (correction). An isolated minimizer $s = 0$ of $T_{f,j}(x, \cdot)$ need not be
   uniformly isolated, and the printed statement is false; the theorem is proved under growth of
   order $j$. See `CartisGouldToint.Chapter12.theorem_12_1_5` and
   `CartisGouldToint.Chapter12.theorem_12_1_5_counterexample`.
-* **Theorem 12.1.6 (ii)** (correction). The statement needs $f \in C^2$, not only $C^1$, and the
-  constant $\kappa(x)$ is explicit. See `CartisGouldToint.Chapter12.theorem_12_1_6_ii`.
+* **Theorem 12.1.6 (ii)** (correction). Classically the Hessian must exist. The
+  Hessian-only constant in the gradient bound uses $\epsilon_2\le 1$.
+  See `CartisGouldToint.Chapter12.theorem_12_1_6_ii`.
 * **Theorem 12.1.7** (generalization). The radius condition is written multiplicatively, so that
   $\nabla^j f(x) = 0$ is allowed. See `CartisGouldToint.Chapter12.theorem_12_1_7`.
 * **After Theorem 12.1.7** (typo). The recursive use of the theorem needs
   $\epsilon_q \le \dots \le \epsilon_1$; the printed chain is reversed.
 * **Theorem 12.1.8, (12.1.35)** (typo). The printed $\delta^j$ is $\delta_j^j$. See
   `CartisGouldToint.Chapter12.theorem_12_1_8`.
+* **Algorithm 12.2.1, Step 1** (reading). The run records witnesses at every order, with
+  the first failed test selecting the step order. See `CartisGouldToint.Chapter12.algorithm_12_2_1`.
 * **Algorithm 12.2.2, Step 1** (typo). The test continues on $>$, not the printed $\ge$, with which
   the sharpness examples never stop. See `CartisGouldToint.Chapter12.algorithm_12_2_2`.
 * **Algorithm 12.2.2, Step 2** (reading). Termination in Step 2 is allowed only when $0$ is a global
   minimizer of the model, as Algorithm 12.2.3 guarantees. See
   `CartisGouldToint.Chapter12.algorithm_12_2_2`.
 * **(12.2.28)** (typo). The long-step branch is $\|s_k\| \ge 1$, printed $\|s_k\| > 1$, as in
-  Algorithm 12.2.3. See `CartisGouldToint.Chapter12.algorithm_12_2_2`.
+  Algorithm 12.2.3. The long-step radii can differ from those of Step 1.
+  See `CartisGouldToint.Chapter12.algorithm_12_2_2`.
 * **Theorem 12.2.5** (typo). The printed conclusion $\phi^{\delta_\epsilon}_{f,q}$ is
   $\phi^{\delta_\epsilon}_{f,j}$. See `CartisGouldToint.Chapter12.theorem_12_2_5`.
+* **Theorem 12.2.5, proof** (correction). A run can reject its first step and terminate
+  without any successful iteration. See `CartisGouldToint.Chapter12.theorem_12_2_5`.
 * **Theorem 12.2.6** (correction). The slow data of Appendix B are wrong in the decrease of $f$
   against the Taylor decrease, in $x_k = k\epsilon$, in $\epsilon^{q+1} k_\epsilon \le 1$ (only
   $\le 2$ holds) and in the factor $q!/(q-j)!$ of the residuals; corrected data are used. See
@@ -620,7 +804,7 @@ the remarks of the Notes sections.
   $\hat\kappa = \min(\kappa_{\delta,\min}, \tau_q/2)$, also in Lemma 12.2.13 and Theorem 12.2.14
   (2). See `CartisGouldToint.Chapter12.lemma_12_2_12`.
 * **Lemma 12.2.13** (correction). The lemma needs f.D1pL (printed f.D1qL) and holds at successful
-  iterations that are followed by an iteration without termination. See
+  iterations followed by a failed Step-1 test. See
   `CartisGouldToint.Chapter12.lemma_12_2_13`.
 * **(12.2.56)** (typo). The printed $(p-j+1)!$ and $\|s_k\|^{p-j+1}$ are $(p-\ell+1)!$ and
   $\|s_k\|^{p-\ell+1}$. See `CartisGouldToint.Chapter12.lemma_12_2_13`.
@@ -645,10 +829,13 @@ the remarks of the Notes sections.
   `CartisGouldToint.Chapter12.example_12_2_2`.
 * **Theorem 12.2.17** (reading). "$\epsilon$ sufficiently small" is $\epsilon \le \frac12$. See
   `CartisGouldToint.Chapter12.theorem_12_2_17`.
-* **(12.2.78)** (typo). The residual of order $q$ is $\epsilon/k_\epsilon$, not $0$. See
-  `CartisGouldToint.Chapter12.theorem_12_2_17`.
+* **(12.2.78)** (typo). The residual of order $q$ has magnitude $\epsilon/k_\epsilon$.
+  See `CartisGouldToint.Chapter12.theorem_12_2_15`.
 * **(12.3.1)** (reading). The decrease is $\Delta T_{f,p}(x_k, s_k)$, with
   $\epsilon_{\min}^{\omega}$ as in (12.3.2). See `CartisGouldToint.Chapter12.ARqpRelaxedStep`.
+* **(12.3.2), guaranteed decrease** (reading). The complexity constant for the printed
+  length threshold includes $\sigma_{\min}/(p+1)!$. The theorem uses the relaxed step
+  conditions throughout the run. See `CartisGouldToint.Chapter12.complexity_arqpSufficientDecrease`.
 * **Complexity of the relaxed method of §12.3** (reading). The bounds are stated for every
   $\omega \ge \pi_q$, in terms of $\epsilon_{\min}^{\omega}$. See
   `CartisGouldToint.Chapter12.complexity_arqpSufficientDecrease`.
@@ -666,8 +853,11 @@ the remarks of the Notes sections.
   and `CartisGouldToint.Chapter13.lemma_13_1_9`.
 * **Lemma 13.1.4** (generalization). The lemma holds for every admissible $\kappa_\Delta$, of which
   (13.1.31) is one. See `CartisGouldToint.Chapter13.lemma_13_1_4`.
-* **Lemma 13.1.6** (reading). The constant $\bar L_f$, defined only in (13.1.63), is
-  $L_f + \kappa_{\nabla,\max} \kappa_h$. See `CartisGouldToint.Chapter13.lemma_13_1_6`.
+* **Lemma 13.1.5** (generalization). The decrease bounds hold for every trial iteration and every
+  admissible $\kappa_\Delta$. See `CartisGouldToint.Chapter13.lemma_13_1_5`.
+* **Lemma 13.1.6** (reading). The trial-iteration conclusion assumes Step 1 advances to Step 2.
+  Equation (13.1.24) defines the bound $\bar L_f$. See
+  `CartisGouldToint.Chapter13.lemma_13_1_6`.
 * **Theorem 13.1.8** (correction). The bound (13.1.39) omits the initial derivative estimate and the
   last accuracy-improving iteration; the constant is $\kappa^F + 2$. See
   `CartisGouldToint.Chapter13.theorem_13_1_8`.
@@ -679,8 +869,15 @@ the remarks of the Notes sections.
   and for long steps, not only for $i \in [1, q]$ and short steps, and $\sigma_{\max}$ of Lemma
   13.1.14 uses $\max(\kappa_s, \kappa_h)$. See `Optimization.ARqpDAStep` and
   `CartisGouldToint.Chapter13.lemma_13_1_14`.
-* **Lemma 13.1.12** (generalization). The lemma holds for every bound $\bar\sigma \ge \sigma_i$,
+* **Lemmas 13.1.10 and 13.1.11** (proof typos). The decrement subtracts the regularizer, and the
+  witness in (13.1.67) need only exceed the threshold in (13.1.53). See
+  `CartisGouldToint.Chapter13.lemma_13_1_10` and `CartisGouldToint.Chapter13.lemma_13_1_11`.
+* **Lemma 13.1.12** (correction and generalization). The conclusion $k \in \mathcal{T}$ also
+  assumes Step 1 advances to Step 2, and the lemma holds for every bound $\bar\sigma \ge \sigma_i$,
   $i \le k$. See `CartisGouldToint.Chapter13.lemma_13_1_12`.
+* **Lemmas 13.1.7 and 13.1.15 and Theorems 13.1.8 and 13.1.19** (zero-error case). The Step 1
+  conditions of the source divide by $\kappa_{\nabla,\max}$. With zero error constants, Step 1
+  imposes no accuracy restriction. See `Optimization.trKappaAcc` and `Optimization.arKappaAcc`.
 * **Radii control (13.1.69)–(13.1.70)** (generalization). The results assume the weaker condition
   `Optimization.RadiiControl`, which the condition of the source implies. See
   `Optimization.RadiiControl.of_unit_le_two`.
@@ -706,25 +903,32 @@ the remarks of the Notes sections.
   `CartisGouldToint.Chapter13.eq_13_2_4_scaled`.
 * **Display after (13.2.4)** (generalization). Only the bound at the centre is used, and the points
   need only lie in the closed unit ball. See `CartisGouldToint.Chapter13.eq_13_2_4_scaled`.
-* **Theorem 13.2.1, (13.2.5)–(13.2.7)** (typo). The bounds are $O(\max_j \dots)$, printed
-  $O(\min_j \dots)$. See `CartisGouldToint.Chapter13.theorem_13_2_1_i` and
+* **Finite derivative-approximation schemes** (abstraction). The formal scheme takes its cost
+  as a supplied number and specifies the output error and exactness. Its oracle trace and cost
+  certification are outside the structure. See
+  `CartisGouldToint.Chapter13.FiniteDerivativeApproxScheme`.
+* **Theorem 13.2.1, (13.2.5)–(13.2.7)** (typo and refinement). The bounds take a maximum and the
+  ARqpIDA bound uses the order-dependent exponents of Theorem 13.1.19. See
+  `CartisGouldToint.Chapter13.theorem_13_2_1_i` and
   `CartisGouldToint.Chapter13.theorem_13_2_1_ii`.
+* **Algorithms 13.3.1 and 13.3.2, Step 3** (correction and generalization). A reused
+  estimate must be from a trial at the current point and meet the required accuracy. The
+  preceding trial in the printed rule may have been rejected. See `Optimization.EDAStep3`.
 * **Theorem 13.3.4** (typo). The printed constants $\kappa^B_{\rm TRqEDA}$ and
   $\kappa^C_{\rm TRqEDA}$ are garbled; the proof gives the factor $2$ only. See
   `CartisGouldToint.Chapter13.theorem_13_3_4`.
 * **Theorem 13.3.4** (correction). The derivative count omits the initial estimate and the last
   accuracy-improving iteration; the constant is $\kappa^F + 2$. See
   `CartisGouldToint.Chapter13.theorem_13_3_4`.
-* **Theorem 13.3.8** (correction). As in Theorem 13.1.19, the derivative-estimate count omits the
-  initial estimate and the last accuracy-improving iteration; the constant is $\kappa^F + 3$. See
-  `CartisGouldToint.Chapter13.theorem_13_3_8_ii`.
 * **Lemma 13.3.5** (correction). The bound $\sigma_{\max}$ needs $\max(\kappa_s, \kappa_h)$ in place
   of $\kappa_s$. See `CartisGouldToint.Chapter13.lemma_13_3_5`.
 * **Lemma 13.3.7 and Theorem 13.3.8** (correction). The reused Lemmas 13.1.16–13.1.17 need that
   $x_{k+1}$ is not approximately optimal, which does not follow from non-termination. The corrected
   argument needs $\theta < \varsigma / 2$, with $\varsigma/2 - \theta$ for $1 - \theta$ and
-  $4 \kappa_s$ for $3 \kappa_{\nabla,\max} \kappa_s$ in the constants; the orders in $\epsilon$ are
-  unchanged. See `CartisGouldToint.Chapter13.lemma_13_3_7`,
+  $4 \kappa_s$ for $3 \kappa_{\nabla,\max} \kappa_s$ in the constants. The function count also
+  has a logarithmic term for short successful steps that lead to another accuracy improvement.
+  The derivative count includes those steps and the accuracy improvements themselves. See
+  `CartisGouldToint.Chapter13.lemma_13_3_7`,
   `CartisGouldToint.Chapter13.theorem_13_3_8_i` and `CartisGouldToint.Chapter13.theorem_13_3_8_ii`.
 
 **Chapter 14**
@@ -743,6 +947,10 @@ the remarks of the Notes sections.
 * **Lemmas 14.1.4 and 14.1.6** (generalization). Only the smoothness and Lipschitz properties that
   the proofs use are assumed. See `CartisGouldToint.Chapter14.lemma_14_1_4` and
   `CartisGouldToint.Chapter14.lemma_14_1_6`.
+* **Lemma 14.1.5** (reading). The Taylor decrease concerns reached iterations that execute Step 2,
+  which computes $s_k$. See `CartisGouldToint.Chapter14.lemma_14_1_5`.
+* **Lemma 14.1.5** (generalization). The Taylor decrease is positive when Step 2 continues.
+  See `CartisGouldToint.Chapter14.lemma_14_1_5`.
 * **Lemma 14.1.7** (correction). The factor $(1 - \theta)$ is $(\varsigma - \theta)$, the term in
   $\|s_k\|^{p+1}$ has a factor $2$, and the inequality is strict. See
   `CartisGouldToint.Chapter14.lemma_14_1_7`.
@@ -750,9 +958,8 @@ the remarks of the Notes sections.
   are $(p - \ell + 1)!$ and $\|s_k\|^{p-\ell+1}$. See `CartisGouldToint.Chapter14.lemma_14_1_7`.
 * **Lemma 14.1.7 and Theorem 14.1.10 (1)** (generalization). The hypothesis h.S0 is not used. See
   `CartisGouldToint.Chapter14.lemma_14_1_7` and `CartisGouldToint.Chapter14.theorem_14_1_10_i`.
-* **Lemma 14.1.8** (correction). The second case of (14.1.31) needs the factor
-  $\epsilon_j^{(j+1)/(p+1)}$, and $(1 - \theta)$ is $(\varsigma - \theta)$ with
-  $\theta < \varsigma$. See `CartisGouldToint.Chapter14.lemma_14_1_8`.
+* **Lemma 14.1.8** (correction). In (14.1.31), $(1 - \theta)$ is replaced by
+  $(\varsigma - \theta)$, with $\theta < \varsigma$. See `CartisGouldToint.Chapter14.lemma_14_1_8`.
 * **Lemma 14.1.9** (correction). The decreases hold at successful iterations that are not followed
   by termination, with $(\varsigma - \theta)$ for $(1 - \theta)$. See
   `CartisGouldToint.Chapter14.lemma_14_1_9`.
@@ -784,10 +991,6 @@ the remarks of the Notes sections.
   $\ell(d) = \langle \nabla f(x), d \rangle$. See `CartisGouldToint.Chapter14.sparseMeasure_eq`.
 * **Lemma 14.2.5** (generalization). The hypothesis $\|x\|_0 \le n_{\mathrm{nz}}$ is not needed. See
   `CartisGouldToint.Chapter14.lemma_14_2_5`.
-* **Lemma 14.2.2, TRq-SC row of (14.2.12)** (correction). The printed $\pi_j = j + 1$ is false per
-  iteration for $q = 2$; the TR rows use $\pi_j = q + 1$. See
-  `CartisGouldToint.Chapter14.lemma_14_2_2_trq` and
-  `CartisGouldToint.Chapter14.lemma_14_2_2_trq_printed_false_uniform`.
 * **Lemma 14.2.2, ARqpIDA-SC row** (correction). The decrease holds at the successful iterations
   that are followed by an iterate that is not approximately optimal. See
   `CartisGouldToint.Chapter14.lemma_14_2_2_arqpida`.
@@ -858,12 +1061,11 @@ the remarks of the Notes sections.
   `CartisGouldToint.Chapter14.theorem_14_3_9_arqpc`,
   `CartisGouldToint.Chapter14.theorem_14_3_9_arqp` and
   `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_printed_false`.
-* **Theorem 14.3.9, INNER = TRq-SC** (correction). The theorem holds with $\pi_j = q + 1$ and a
-  factor $1 + |\log(\epsilon_0 \epsilon_{\min})|$ on the function evaluations, which is needed for
-  $q = 1$; the printed order fails for every $q \ge 2$. See
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq`,
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary` and
-  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_printed_false`.
+* **Theorem 14.3.9, INNER = TRq-SC** (correction). The function-evaluation bound includes
+  $1 + |\log(\epsilon_0 \epsilon_{\min})|$, which is needed for $q = 1$. The exponents
+  $\pi_j = q + 1$ agree with (14.2.12). See
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq` and
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`.
 * **Algorithm 14.3.2** (reading). The INNER calls of Phase 2 are described by their iterates; with
   INNER = ARqp-SC the radii returned at a Step-2 termination certify (14.3.19), which the radii
   $\delta_{s_k}$ of the book need not. See `CartisGouldToint.Chapter14.IsTPqpGCPhase2` and
@@ -872,6 +1074,163 @@ the remarks of the Notes sections.
   printed with $<$. See `CartisGouldToint.Chapter14.algorithm_14_3_2`.
 * **Assumption f.D1qLB.Fb** (reading). The book uses it for the trust-region case without a
   definition; f.D1qLB.X is used. See `CartisGouldToint.Chapter14.theorem_14_3_9_trq`.
+
+* **ARqpC run and derivative assumptions.** Algorithms 14.1.1–14.1.2 use feasible
+  sets and require the detailed Step 2 whenever the reached Step 1 continues.
+  The order-one radius stays at one when both the outer function and the feasible
+  set are convex. The anchored variants use the composite sublevel and
+  top-order Lipschitz estimates.
+* **Lemma 14.1.8.** The second case of (14.1.31) retains the tolerance power present
+  in the original PDF. The Lean bounds use the corrected coefficient
+  $\varsigma - \theta$ and refer to the radii at the next iterate.
+* **Simply constrained model measure.** Equation (14.2.4) measures the decrease
+  from the trial-step value of the model. The source display instead uses $f(x)$.
+* **TRq-SC decrease exponent.** The original PDF and the Lean TR rows use
+  $\pi_j = q+1$ in (14.2.12). The saddle example refutes the OCR reading
+  $\pi_j = j+1$ for $q=2$ with a uniform constant.
+* **Scope of sharpness.** Theorem 14.2.4 claims sharpness across all rows, while
+  Section 14.1 leaves the general-radii ARqpC rate open. The convex first-order
+  rate has the lower-bound example of Corollary 14.1.11.
+
+* **Correction.** Theorem 14.3.1 tests genuinely equality-feasible arcs and drops X.CQ. See
+  `CartisGouldToint.Chapter14.theorem_14_3_1`.
+* **Generalization and radius correction.** Theorem 14.3.2 uses a radius-sized ball, works at
+  arbitrary Taylor order and includes zero Lipschitz constants in the step cutoff. See
+  `CartisGouldToint.Chapter14.theorem_14_3_2`.
+* **Correction.** Example 14.3.1 corrects the multiplier and proves that the origin is a minimizer
+  along the full feasible locus. See `CartisGouldToint.Chapter14.example1431_lagrangian_eq`,
+  `CartisGouldToint.Chapter14.example1431_derivs`, `CartisGouldToint.Chapter14.example_14_3_1`.
+* **Run specification.** Algorithm 14.3.1 specifies the pretermination run and distinguishes the
+  initial residual test from later criticality tests. See `CartisGouldToint.Chapter14.lenStop`,
+  `CartisGouldToint.Chapter14.algorithm_14_3_1`.
+* **Correction.** Theorem 14.3.3 rounds the logarithmic iteration bound up. See
+  `CartisGouldToint.Chapter14.theorem_14_3_3`.
+* **Correction and additive contract.** Theorem 14.3.4 sums the orderwise costs and has a version
+  retaining per-call overhead. See `CartisGouldToint.Chapter14.theorem_14_3_4`,
+  `CartisGouldToint.Chapter14.theorem_14_3_4_add`.
+* **Correction.** Equation (14.3.63) bounds derivatives of the target merit. See
+  `CartisGouldToint.Chapter14.lemma_14_3_6_ii`.
+* **Explicit call trace.** Phase 2 exposes the INNER call trace, merit monotonicity and early
+  termination. See `CartisGouldToint.Chapter14.TPqpSeq`,
+  `CartisGouldToint.Chapter14.IsTPqpGCPhase2`.
+* **Correction and run formulation.** Algorithm 14.3.2 enters Phase 2 at equality in the primal
+  threshold. See `CartisGouldToint.Chapter14.algorithm_14_3_2`,
+  `CartisGouldToint.Chapter14.algorithm_14_3_2.phase1_exit`.
+* **Corrected higher-order bounds.** Lemma 14.3.5 supplies the missing product-rule terms and gives
+  the corresponding restrictions when the objective equals the target. See
+  `CartisGouldToint.Chapter14.lemma_14_3_5`.
+* **Correction and additive contract.** Lemma 14.3.7 sums across orders in Phase 1 and retains
+  additive overhead in a separate bound. See `CartisGouldToint.Chapter14.lemma_14_3_7`,
+  `CartisGouldToint.Chapter14.lemma_14_3_7_add`.
+* **Explicit test and decrement contracts.** The Phase-2 trace distinguishes the INNER stopping test
+  from the outer criticality test and exposes its count and radius contracts. See
+  `CartisGouldToint.Chapter14.IsInnerPhaseRun`, `CartisGouldToint.Chapter14.IsInnerPhaseRunStrong`.
+* **Correction.** Lemma 14.3.8 counts good and bad iterations separately and includes a
+  counterexample to the printed counting argument. See `CartisGouldToint.Chapter14.lemma_14_3_8`,
+  `CartisGouldToint.Chapter14.lemma_14_3_8_proof_gap_counterexample`.
+* **Corrected generic complexity.** The generic bound in Theorem 14.3.9 uses an explicit
+  bad-iteration term and a stronger inner-call contract. Counterexamples distinguish the per-call
+  and uniform readings of the source. See `CartisGouldToint.Chapter14.theorem_14_3_9`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_false`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_cost_hypothesis_unsatisfiable`.
+* **Counterexamples.** Finite-dimensional examples refute the printed second- and third-order
+  tangent bounds in Lemma 14.3.5. See `CartisGouldToint.Chapter14.lemma_14_3_5_counterexample`.
+* **Explicit algorithm realization.** The INNER output in (14.3.19) has a concrete ARqp-SC
+  realization with anchored smoothness and recorded evaluation costs. See
+  `CartisGouldToint.Chapter14.IsARqpSCOutput`, `CartisGouldToint.Chapter14.IsARqpSCOutputCost`,
+  `CartisGouldToint.Chapter14.exists_isARqpSCOutputCost_anchored`.
+* **Conditional multiplicative bound.** The multiplicative ARqp-SC bound of order indexed by j plus
+  one explicitly requires an overhead-absorption inequality. See
+  `CartisGouldToint.Chapter14.arqpSCKappaF`, `CartisGouldToint.Chapter14.arqpSCKappaD`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le`.
+* **Additive overhead and its absorption.** For the ARqp-SC exponents the cost bound retains
+  overhead unless an explicit absorption condition holds, as it does for LEN order at least two. See
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_add_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpSCOutputCost.cost_le_arqp_lenq`.
+* **Unit-radius realization.** An unconstrained unit-radius INNER realization covers orders at most
+  two and retains additive costs. See `CartisGouldToint.Chapter14.IsARqpUnitOutputCost`,
+  `CartisGouldToint.Chapter14.exists_isARqpUnitOutputCost_anchored`,
+  `CartisGouldToint.Chapter14.IsARqpUnitOutputCost.cost_le_add_anchored`.
+* **Well-definedness for concrete INNER choices.** Algorithm 14.3.1 has realizations with actual
+  ARqp-SC inner outputs and with unit radii in the unconstrained low-order case. See
+  `CartisGouldToint.Chapter14.lenq_core_anchored`,
+  `CartisGouldToint.Chapter14.exists_algorithm_14_3_1`,
+  `CartisGouldToint.Chapter14.exists_algorithm_14_3_1_unit`.
+* **Counterexample.** A first-order LEN example refutes the printed multiplicative ARqp-SC call
+  bound. See `CartisGouldToint.Chapter14.exists_algorithm_14_3_1_cost_contract_counterexample`.
+* **Unit-radius call variant.** Algorithm 14.3.2 has an unconstrained unit-radius inner-call
+  realization. See `CartisGouldToint.Chapter14.IsARqpUnitCall`.
+* **Phase-1 construction and bound.** The Phase-1 construction supplies actual inner calls and
+  bounds their costs with the exponents j plus one under the anchored data. See
+  `CartisGouldToint.Chapter14.exists_algorithm_14_3_2_of_phase2_anchored`,
+  `CartisGouldToint.Chapter14.phase1_cost_le_anchored`.
+* **Explicit derivative budgets.** The scalar specialization of f.D1pLaB.X exposes the derivative
+  budgets and uses an explicit shared majorant. See `CartisGouldToint.Chapter14.anchoredConst`,
+  `CartisGouldToint.Chapter14.anchoredConst_apply`,
+  `CartisGouldToint.Chapter14.anchoredCompositeBounds_zeroCon_of`,
+  `CartisGouldToint.Chapter14.anchoredCompositeBounds_zeroCon`.
+* **Anchored solver formulation.** Lemma 14.3.6 is also instantiated as anchored inner-solver bounds
+  for both merits. See `CartisGouldToint.Chapter14.nuAnchoredConst`,
+  `CartisGouldToint.Chapter14.exists_anchoredCompositeBounds_nu_mu`.
+* **Call-output radii and count contract.** The ARqp-SC Phase-2 call uses certified output radii and
+  derives the stronger inner-test contract with explicit radius floors. See
+  `CartisGouldToint.Chapter14.IsARqpSCCallOut`, `CartisGouldToint.Chapter14.IsARqpSCPhase2Calls`,
+  `CartisGouldToint.Chapter14.IsARqpSCPhase2Calls.isInnerPhaseRunStrong`,
+  `CartisGouldToint.Chapter14.IsARqpSCPhase2Calls.isInnerPhaseRunStrong_arqp`.
+* **Concrete run and bound.** The order j plus one result for Theorem 14.3.9 uses concrete inner
+  traces and supplies Phase-2 termination. See `CartisGouldToint.Chapter14.IsTPqpGCARqpSCRun`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqpc`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqpc_terminates`.
+* **Corrected total order.** The ARqp-SC bound in Theorem 14.3.9 exposes the additional inverse
+  tolerance-product term. See `CartisGouldToint.Chapter14.exists_const_order_arqp`.
+* **Additional term and restricted printed order.** The ARqp-SC result adds an inverse
+  tolerance-product term for general orders and recovers the printed orders when the criticality and
+  model orders coincide. See `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_corrected`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp`.
+* **Concrete regularization runs.** Algorithm 14.3.2 has concrete ARqp-SC realizations under either
+  merit-level or problem-level smoothness. See `CartisGouldToint.Chapter14.exists_algorithm_14_3_2`,
+  `CartisGouldToint.Chapter14.exists_isTPqpGCARqpSCRun`.
+* **Concrete unit-radius runs.** Algorithm 14.3.2 has a whole-space unit-radius run with explicit
+  trace and count data, with existence for orders at most two. See
+  `CartisGouldToint.Chapter14.IsARqpUnitCallOut`,
+  `CartisGouldToint.Chapter14.IsARqpUnitPhase2Calls`,
+  `CartisGouldToint.Chapter14.IsARqpUnitPhase2Calls.isInnerPhaseRunStrong`,
+  `CartisGouldToint.Chapter14.IsTPqpGCARqpUnitRun`,
+  `CartisGouldToint.Chapter14.exists_isTPqpGCARqpUnitRun`.
+* **Additional term and restricted printed order.** The unit-radius complexity adds inverse
+  tolerance products and recovers the printed orders when the two orders coincide and are at most
+  two. See `CartisGouldToint.Chapter14.exists_const_order_arqp_unit`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit_corrected`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_unit`.
+* **Order comparison.** The additional inverse tolerance product can exceed the printed order for
+  both regularization exponent choices at the stated orders. See
+  `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt`,
+  `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt_arqp`,
+  `CartisGouldToint.Chapter14.exists_tpqpOrderF_lt_arqp_unit`.
+* **Counterexample.** ARqp-SC counterexamples refute the printed uniform bounds at criticality
+  orders one and two when the model order is at least three larger. See
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_counterexample`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_arqp_printed_false`.
+* **Concrete trust-region runs.** Algorithm 14.3.2 has actual TRq-SC inner runs with explicit
+  admissibility and verification data. See `CartisGouldToint.Chapter14.IsTRqSCPhase2Calls`,
+  `CartisGouldToint.Chapter14.IsTPqpGCTRqSCRun`,
+  `CartisGouldToint.Chapter14.exists_isTPqpGCTRqSCRun`.
+* **Trust-region smoothness data.** The trust-region variant of Lemma 14.3.6 packages derivative
+  maxima at order q. See `CartisGouldToint.Chapter14.exists_nu_trq`,
+  `CartisGouldToint.Chapter14.exists_mu_trq`.
+* **Coarser explicit bound.** The Phase-1 iteration count also has an explicit
+  inverse-primal-tolerance bound. See `CartisGouldToint.Chapter14.phase1_iter_le`.
+* **Correction.** The trust-region complexity retains the printed exponent $q + 1$ and includes
+  logarithmic overhead in function evaluations. See
+  `CartisGouldToint.Chapter14.phase1_call_cost_trq`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_one`.
+* **Counterexample.** The trust-region example refutes the unmodified first-order
+  function-evaluation bound and the bare inverse-primal order at every positive order. See
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary_inv`,
+  `CartisGouldToint.Chapter14.theorem_14_3_9_trq_log_necessary`.
 
 **Appendix A**
 
@@ -891,6 +1250,17 @@ the remarks of the Notes sections.
   $k < k_e$. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
 * **Theorem A.9.2** (typo). The derivative bound "for all $x \in \mathbb{R}^n$" is for all
   $x \in \mathbb{R}$. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
+
+* **Explicit order and interval.** Theorem A.8.1 makes the order and ordered-interval assumptions
+  explicit. See `CartisGouldToint.AppendixA.theorem_A_8_1`.
+* **Explicit nondegenerate interval.** Theorem A.8.2 requires a nonzero increment and allows either
+  sign. See `CartisGouldToint.AppendixA.theorem_A_8_2`.
+* **Explicit order.** Equation (A.16) makes the positive integer order explicit. See
+  `CartisGouldToint.AppendixA.eq_A_16`.
+* **Explicit nonnegative constant.** Theorem A.8.5 explicitly requires a nonnegative Lipschitz
+  constant. See `CartisGouldToint.AppendixA.theorem_A_8_5`.
+* **Generalization and index correction.** Theorem A.9.2 allows order zero, uses the defined steps
+  only, and bounds the interpolant on the real line. See `CartisGouldToint.AppendixA.theorem_A_9_2`.
 
 **Appendix B**
 
@@ -939,6 +1309,37 @@ the remarks of the Notes sections.
 * **Lemma B.12.1** (generalization). Neither $H$ nor the trilinear form $T$ need be symmetric, and
   the radius $\Delta$ is arbitrary. See `CartisGouldToint.AppendixB.lemma_B_12_1`.
 
+* **Correction.** Lemma B.2.1 bounds the initial jet in addition to the endpoint residuals. See
+  `CartisGouldToint.AppendixB.lemma_B_2_1_bound`.
+* **Finite construction and integrality.** Lemma B.2.2 requires an integer stopping count satisfying
+  the source identity and proves the first-hit property through that count. See
+  `CartisGouldToint.AppendixB.lemma_B_2_2`.
+* **Modified corridor construction.** Lemmas B.2.3–B.2.6 use a modified corridor extension that
+  yields a global exact line minimizer. See `CartisGouldToint.AppendixB.lemma_B_2_3`,
+  `CartisGouldToint.AppendixB.lemma_B_2_4`, `CartisGouldToint.AppendixB.lemma_B_2_5`,
+  `CartisGouldToint.AppendixB.lemma_B_2_6`.
+* **Correction.** Equation (B.4.3) is a radial lower bound in general and an equality at exponent
+  one. A counterexample refutes the printed norm equality. See
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii`, `CartisGouldToint.AppendixB.lemma_B_4_1_iii_radial`,
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii_bound`,
+  `CartisGouldToint.AppendixB.lemma_B_4_1_iii_false`.
+* **Explicit differentiability range.** Lemma B.4.1 makes the derivative orders and the range at
+  zero explicit in its convexity claims. See `CartisGouldToint.AppendixB.lemma_B_4_1_iv`.
+* **Correction and endpoint convention.** Lemma B.5.1 uses the third exponent and power inequalities
+  that cover a zero logarithm argument. See `CartisGouldToint.AppendixB.lemma_B_5_1`.
+* **Totalized square root.** The objective in (B.7.1) is totalized outside the feasible disk. See
+  `CartisGouldToint.AppendixB.psiB71`.
+* **Explicit uniqueness.** Lemma B.7.1 explicitly proves uniqueness of the minimizer. See
+  `CartisGouldToint.AppendixB.eq_of_neg_add_sqrt_sq_sub_sq_eq`,
+  `CartisGouldToint.AppendixB.lemma_B_7_1`.
+* **Correction.** Lemma B.8.1 requires a simple root, corrects the concave starting signs and
+  tangent bound, and permits exact termination. See `CartisGouldToint.AppendixB.lemma_B_8_1`,
+  `CartisGouldToint.AppendixB.lemma_B_8_1_concave`.
+* **Explicit nondegeneracy.** Lemma B.8.2 excludes exponent zero, assumes a nonzero gradient and
+  positive radius, and drops the unused root premise. See `CartisGouldToint.AppendixB.lemma_B_8_2`.
+* **Generalization.** Lemma B.12.1 drops the symmetry hypotheses and admits arbitrary radii under
+  the infimum convention. See `CartisGouldToint.AppendixB.lemma_B_12_1`.
+
 ## Not formalized
 
 **Chapter 1**
@@ -952,8 +1353,8 @@ the remarks of the Notes sections.
 
 **Chapter 2**
 
-* **The one-dimensional example of §2.1** showing that f.Bb and f.C1 alone admit no complexity
-  bound. It is discussion, not a numbered result.
+* **Example 2.1.1**, the one-dimensional interpolation construction showing that f.Bb and f.C1
+  alone admit no complexity bound.
 * **The variants of §§2.2.3.1–2.2.3.3 and §2.2.3.5**: the flexible Armijo condition, the
   Goldstein–Armijo conditions, Nesterov's view and nonmonotone methods. These sections contain no
   numbered results.

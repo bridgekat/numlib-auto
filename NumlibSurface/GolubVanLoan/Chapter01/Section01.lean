@@ -100,6 +100,12 @@ $|\mathrm{fl}(AB) - AB| \le \gamma_r |A| |B|$.
   independently is, entry by entry, the loop run on that entry (`SetM.mem_run_foldlM_of_pi`); this
   is loop interchange in the relational model.
 
+## Deviations from the source
+
+* **Algorithm 1.1.6** (reading). The source presents the dot-product display as a rewrite of
+  Algorithm 1.1.5. The program retains the rounding order of 1.1.5 by accumulating onto $C(i,j)$.
+  See `GolubVanLoan.Chapter01.algorithm_1_1_6`.
+
 ## Not formalized
 
 * **The notation of §1.1.1–1.1.4 and §1.1.7–1.1.8.** The displays (1.1.1)–(1.1.3) are partition
@@ -285,10 +291,11 @@ for i = 1:m
     end
 end
 ```
-The source introduces it as Algorithm 1.1.5 "which we rewrite using the colon notation to
-highlight the mission of the innermost loop". The update $C(i,j) + A(i,:) \cdot B(:,j)$ is the
-loop of Algorithm 1.1.1 accumulating onto $c = C(i,j)$, so Algorithm 1.1.6 performs exactly the
-operations of Algorithm 1.1.5.
+
+**Reading.** The dot-product notation leaves the rounding order implicit. The source introduces
+the display as a rewrite of Algorithm 1.1.5, so the program interprets it as a single accumulation
+starting at $C(i,j)$. Evaluating the dot product first and adding $C(i,j)$ afterward gives the same
+exact result and may round differently.
 
 The update is `FloatingPoint.dotAccum` started at $C(i,j)$. -/
 def algorithm_1_1_6 {m r n : ℕ} (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ)

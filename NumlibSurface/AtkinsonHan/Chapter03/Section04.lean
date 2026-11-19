@@ -96,6 +96,14 @@ projection of `Numlib.Analysis.Normed.Module.BestApprox`, its Hilbert space theo
   results are stated over $\mathbb{R}$ or $\mathbb{C}$.
 * **Proposition 3.4.4** (generalization). `AtkinsonHan.Chapter03.proposition_3_4_4` states the two
   inequalities for any two best approximations from a convex set, with no completeness of the space.
+* **Corollary 3.4.2 and Theorem 3.4.5** (reading and correction). Uniqueness is conditional on
+  existence. The finite-dimensional existence theorem explicitly requires a nonempty set.
+* **Projection after Theorem 3.4.3** (reading). The map also works with arbitrary sets, by
+  choosing a minimizer when one exists and defaulting to its input otherwise.
+* **Expansion after (3.4.6)** (generalization). The unordered expansion allows arbitrary
+  index types and complex spaces.
+* **Example 3.4.9** (reading). Probability Haar measure changes the $L^2$ normalization and
+  the orthonormal coefficients, while the partial sums describe the same approximant.
 -/
 
 open Filter Topology
@@ -119,7 +127,10 @@ theorem lemma_3_4_1 {K : Set H} (hK : Convex ℝ K) {u uhat : H} (hu : uhat ∈ 
 
 /-- **Corollary 3.4.2** of [han2009theoretical]. Let $H$ be a real inner product space and let
 $K \subseteq H$ be convex. If $v_1$ and $v_2$ are both best approximations of $u \in H$ from
-$K$, then $v_1 = v_2$. -/
+$K$, then $v_1 = v_2$.
+
+**Reading.** The corollary establishes uniqueness when best approximations exist. The next
+theorem supplies existence under extra hypotheses. -/
 theorem corollary_3_4_2 {K : Set H} (hK : Convex ℝ K) {u v₁ v₂ : H} (h₁ : IsBestApprox K u v₁)
     (h₂ : IsBestApprox K u v₂) : v₁ = v₂ :=
   h₁.unique hK h₂
@@ -140,9 +151,13 @@ $P_K u = u$ otherwise.
 
 The definition is the backbone's metric projection `bestApprox K`, which is defined for every
 set $K$. On a nonempty closed convex subset of a real Hilbert space, $P_K u$ is the best
-approximation (`AtkinsonHan.Chapter03.isBestApprox_projConvex`). $P_K$ is not linear unless $K$
-is a subspace, where it is the orthogonal projection
-(`AtkinsonHan.Chapter03.projConvex_eq_starProjection`). -/
+approximation (`AtkinsonHan.Chapter03.isBestApprox_projConvex`). For such sets, linearity
+requires $K$ to be a subspace, where it is the orthogonal projection
+(`AtkinsonHan.Chapter03.projConvex_eq_starProjection`).
+
+**Reading.** The book defines $P_K$ for the projection theorem's nonempty closed convex set in
+a Hilbert space. The Lean map chooses a minimizer for any set when one exists, and defaults to
+the input otherwise. -/
 noncomputable abbrev projConvex (K : Set H) : H → H :=
   bestApprox K
 
@@ -190,7 +205,9 @@ theorem proposition_3_4_4' [CompleteSpace H] {K : Set H} (hne : K.Nonempty) (hcl
 $S \subseteq H$ be a finite-dimensional subspace, and let $K \subseteq S$ be nonempty, closed
 and convex. Then every $u \in H$ has exactly one best approximation from $K$.
 
-The space $H$ need not be complete. -/
+The space $H$ need not be complete.
+
+**Correction.** The book omits that $K$ is nonempty. That hypothesis is necessary for existence. -/
 theorem theorem_3_4_5 {K : Set H} (S : Submodule ℝ H) [FiniteDimensional ℝ S] (hKS : K ⊆ S)
     (hcl : IsClosed K) (hK : Convex ℝ K) (hne : K.Nonempty) (u : H) :
     ∃! uhat, IsBestApprox K u uhat := by
@@ -294,7 +311,10 @@ $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then for every $u \in H$ the family
 $\{(u, \varphi_i)\, \varphi_i\}$ is summable with sum $u$:
 $$u = \sum_{i \in \iota} (u, \varphi_i)\, \varphi_i.$$
 
-The sum is an unordered sum (`HasSum`). -/
+The sum is an unordered sum (`HasSum`).
+
+**Generalization.** The book uses a sequence of orthonormal basis vectors in a real space.
+The declaration uses unordered sums for arbitrary index types and includes complex spaces. -/
 theorem hilbertBasis_expansion {ι : Type*} (b : HilbertBasis ι 𝕜 H) (u : H) :
     HasSum (fun i => inner 𝕜 (b i) u • b i) u := by
   simpa [b.repr_apply_apply] using b.hasSum_repr u
@@ -435,7 +455,10 @@ trigonometric polynomials of degree at most $n$ under the inclusion of
 $C(\mathbb{R}/2\pi\mathbb{Z})$ into $L^2$.
 
 The trigonometric polynomials are `trigPolyLE (2 * π) n`, and $L^2$ is taken for the probability
-Haar measure of the circle. -/
+Haar measure of the circle.
+
+**Reading.** The $L^2$ space uses probability Haar measure on the circle, corresponding to
+Lebesgue measure on one period divided by $2\pi$. -/
 noncomputable def trigPolyLpLE (n : ℕ) :
     Submodule ℝ (Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :=
   (trigPolyLE (2 * π) n).map
@@ -472,7 +495,11 @@ partial sum with the classical coefficients as $a_0/2 + \sum_{j=1}^{n} (a_j \cos
 \sin(jx))$, where $a_j$ and $b_j$ are the integrals (3.4.9), which are (4.1.2) in Chapter 4. The
 relation between these coefficients and $(f, \varphi_m)$ is
 `AtkinsonHan.Chapter04.equation_4_1_3_const`, `AtkinsonHan.Chapter04.equation_4_1_3_cos` and
-`AtkinsonHan.Chapter04.equation_4_1_3_sin`, which give the factors $2$ and $\sqrt 2$. -/
+`AtkinsonHan.Chapter04.equation_4_1_3_sin`, which give the factors $2$ and $\sqrt 2$.
+
+**Reading.** Probability Haar measure rescales the $L^2$ norm. The orthonormal factors cancel
+in the projection, giving the same approximants as the source. The Fourier expansion is
+expressed as unordered convergence in $L^2$. -/
 theorem example_3_4_9 (n : ℕ)
     (f : Lp ℝ 2 (AddCircle.haarAddCircle : Measure (AddCircle (2 * π)))) :
     IsBestApprox (trigPolyLpLE n : Set (Lp ℝ 2 AddCircle.haarAddCircle)) f

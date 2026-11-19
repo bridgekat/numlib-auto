@@ -96,6 +96,31 @@ which defines the rounding relations of the substitutions and proves their backw
   (`FloatingPoint.roundsBackSubst_iff_roundsForwardSubst_toDual`,
   `FloatingPoint.roundsBackSubstDot_iff_roundsForwardSubstDot_toDual`).
 
+## Deviations from the source
+
+* **Algorithms 3.1.1–3.1.4** (reading). The programs specify the rounding order and
+  use totalized division on arbitrary inputs. The exact solve specifications require
+  nonsingular triangular input. See `GolubVanLoan.Chapter03.algorithm_3_1_1`,
+  `GolubVanLoan.Chapter03.algorithm_3_1_2`, `GolubVanLoan.Chapter03.algorithm_3_1_3` and
+  `GolubVanLoan.Chapter03.algorithm_3_1_4`.
+* **Equations (3.1.1)–(3.1.2) and §3.1.3** (reading). The explicit coefficient
+  $\gamma_n$ is used under $u<1$ and $nu<1$. See `GolubVanLoan.Chapter03.equation_3_1_1`,
+  `GolubVanLoan.Chapter03.equation_3_1_2`, `GolubVanLoan.Chapter03.algorithm_3_1_3_rounding` and
+  `GolubVanLoan.Chapter03.algorithm_3_1_4_rounding`.
+* **Equation (3.1.4) and Problem P3.1.3** (reading). The block program uses labelled rows,
+  a column-oriented solve on each block and rounded running differences for the block
+  update. Its specification uses contiguous blocks and nonzero diagonal entries.
+  See `GolubVanLoan.Chapter03.forwardSubstColOn`, `GolubVanLoan.Chapter03.blockForwardElim`
+  and `GolubVanLoan.Chapter03.equation_3_1_4`.
+* **§3.1.6, wide lower triangular systems** (typo and reading). The leading part of
+  the solution is the vector slice $x(1{:}m)$. The solve assumes a nonzero diagonal
+  in the leading block and includes the square case.
+  See `GolubVanLoan.Chapter03.nonsquareLower_wide`.
+* **§3.1.7, unit triangular solve** (reading). The column program omits division by
+  the unit diagonal. See `GolubVanLoan.Chapter03.unitForwardSubstColOn`.
+* **§3.1.7, inverse triangularity** (reading). The statement uses the totalized inverse
+  and includes singular matrices. See `GolubVanLoan.Chapter03.triangular_inv`.
+
 ## Not formalized
 
 * **The flop counts and the level-3 fraction of §3.1.5.** Operation counts are out of scope for the
@@ -151,9 +176,9 @@ $i = 2, \dots, n$, $b_i \leftarrow \mathrm{fl}(\mathrm{fl}(b_i - s_i) / \ell_{ii
 is the inner product $\sum_{j < i} \ell_{ij} b_j$ accumulated from $0$ as in Algorithm 1.1.1,
 with every product and every sum rounded.
 
-The program is generic in the monad `M` and the rounding hook `rnd`, and every quotient,
-product, sum and difference passes through `rnd`. Indices are 0-based, and $s_i$ is
-`FloatingPoint.dotAccum` over the indices below $i$. The program has no hypothesis on $L$. -/
+**Reading.** The source assumes a nonsingular lower triangular matrix and leaves the
+inner product as one expression. The program specifies a rounded accumulation from
+zero and uses totalized quotients for arbitrary input matrices. -/
 noncomputable def algorithm_3_1_1 {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (b : Fin n → ℝ) (i : Fin n) => do
@@ -177,7 +202,9 @@ $i = n-1, \dots, 1$, $b_i \leftarrow \mathrm{fl}(\mathrm{fl}(b_i - s_i) / u_{ii}
 is the inner product $\sum_{j > i} u_{ij} b_j$ accumulated from $0$ over increasing $j$, with
 every product and every sum rounded.
 
-Indices are 0-based, and the last row is `n - 1`. The program has no hypothesis on $U$. -/
+**Reading.** The source assumes a nonsingular upper triangular matrix and leaves the
+inner product as one expression. The program accumulates in increasing column order
+and uses totalized quotients for arbitrary input matrices. -/
 noncomputable def algorithm_3_1_2 {n : ℕ} (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).reverse.foldlM (fun (b : Fin n → ℝ) (i : Fin n) => do
@@ -200,8 +227,9 @@ b(n) = b(n)/L(n,n)
 The program computes, for $j = 1, \dots, n$, first $b_j \leftarrow \mathrm{fl}(b_j / \ell_{jj})$
 and then $b_i \leftarrow \mathrm{fl}(b_i - \mathrm{fl}(b_j \ell_{ij}))$ for every $i > j$.
 
-The source's final step $b(n) = b(n)/L(n,n)$ is the last iteration of the loop, whose update is
-empty. The program has no hypothesis on $L$. -/
+**Reading.** The source assumes a nonsingular lower triangular matrix. The program
+uses totalized quotients for arbitrary matrices and rounds each product separately
+from its subtraction. The final division is the last loop iteration. -/
 noncomputable def algorithm_3_1_3 {n : ℕ} (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (b : Fin n → ℝ) j => do
@@ -227,8 +255,9 @@ b(1) = b(1)/U(1,1)
 The program computes, for $j = n, \dots, 1$, first $b_j \leftarrow \mathrm{fl}(b_j / u_{jj})$
 and then $b_i \leftarrow \mathrm{fl}(b_i - \mathrm{fl}(b_j u_{ij}))$ for every $i < j$.
 
-The source's final step $b(1) = b(1)/U(1,1)$ is the last iteration of the loop, whose update is
-empty. The program has no hypothesis on $U$. -/
+**Reading.** The source assumes a nonsingular upper triangular matrix. The program
+uses totalized quotients for arbitrary matrices and rounds each product separately
+from its subtraction. The final division is the last loop iteration. -/
 noncomputable def algorithm_3_1_4 {n : ℕ} (U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).reverse.foldlM (fun (b : Fin n → ℝ) j => do
@@ -509,7 +538,8 @@ and $b$, then there is $F \in \mathbb{R}^{n \times n}$ with
 $$(L + F) \hat x = b, \qquad |f_{ij}| \le \gamma_n |\ell_{ij}| \text{ for all } i, j,$$
 where $\gamma_n = nu/(1 - nu)$.
 
-The source prints $|F| \le nu|L| + O(u^2)$, which follows because $\gamma_n = nu + O(u^2)$. -/
+**Reading.** The source states an asymptotic bound. The theorem uses the explicit
+coefficient $\gamma_n$ under $u<1$ and $nu<1$. -/
 theorem equation_3_1_1 (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1)
     {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0)
     {b x : Fin n → ℝ} (hx : x ∈ (algorithm_3_1_1 fp.round L b).run) :
@@ -524,7 +554,8 @@ $nu < 1$. If $\hat x$ is computed by Algorithm 3.1.2 from $U$ and $b$, then ther
 $F \in \mathbb{R}^{n \times n}$ with
 $$(U + F) \hat x = b, \qquad |f_{ij}| \le \gamma_n |u_{ij}| \text{ for all } i, j.$$
 
-The source prints $|F| \le nu|U| + O(u^2)$, which follows because $\gamma_n = nu + O(u^2)$. -/
+**Reading.** The source states an asymptotic bound. The theorem uses the explicit
+coefficient $\gamma_n$ under $u<1$ and $nu<1$. -/
 theorem equation_3_1_2 (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1)
     {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     {b x : Fin n → ℝ} (hx : x ∈ (algorithm_3_1_2 fp.round U b).run) :
@@ -540,8 +571,9 @@ $b \in \mathbb{R}^n$, and let $u < 1$ and $nu < 1$. If $\hat x$ is computed by A
 from $L$ and $b$, then there is $F \in \mathbb{R}^{n \times n}$ with
 $$(L + F) \hat x = b, \qquad |f_{ij}| \le \gamma_n |\ell_{ij}| \text{ for all } i, j.$$
 
-This is the constant of (3.1.1). The proof is Theorem 8.5 of [higham2002accuracy] in the
-running-difference order. -/
+**Reading.** The source describes the roundoff behaviour as essentially the same as
+for the row-oriented solve. The theorem specifies the same coefficient $\gamma_n$
+and the same smallness conditions for the column-oriented forward solve. -/
 theorem algorithm_3_1_3_rounding (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1)
     {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0)
     {b x : Fin n → ℝ} (hx : x ∈ (algorithm_3_1_3 fp.round L b).run) :
@@ -557,7 +589,9 @@ $nu < 1$. If $\hat x$ is computed by Algorithm 3.1.4 from $U$ and $b$, then ther
 $F \in \mathbb{R}^{n \times n}$ with
 $$(U + F) \hat x = b, \qquad |f_{ij}| \le \gamma_n |u_{ij}| \text{ for all } i, j.$$
 
-This is the constant of (3.1.2). -/
+**Reading.** The source describes the roundoff behaviour as essentially the same as
+for the row-oriented solve. The theorem specifies the same coefficient $\gamma_n$
+and the same smallness conditions for the column-oriented back solve. -/
 theorem algorithm_3_1_4_rounding (hu : fp.u < 1) (hn : (n : ℝ) * fp.u < 1)
     {U : Matrix (Fin n) (Fin n) ℝ} (hU : U.IsUpperTriangular) (hd : ∀ i, U i i ≠ 0)
     {b x : Fin n → ℝ} (hx : x ∈ (algorithm_3_1_4 fp.round U b).run) :
@@ -579,9 +613,9 @@ in $o$, in list order, $b_j \leftarrow \mathrm{fl}(b_j / \ell_{jj})$, and then $
 \mathrm{fl}(b_i - \mathrm{fl}(b_j \ell_{ij}))$ for each $i$ in $o$ with $i > j$. The entries of
 $b$ off $o$ are not changed.
 
-This is the source's step "solve $L_{JJ} X_J = B_J$" for a diagonal block given by its index
-list. On the full list `List.finRange n` it is Algorithm 3.1.3
-(`GolubVanLoan.Chapter03.forwardSubstColOn_finRange`). -/
+**Reading.** Equation (3.1.4) leaves the diagonal-block solve implicit. The program
+uses column substitution on a list of indices, which is increasing when obtained
+from the block labelling in the block program. The full list gives Algorithm 3.1.3. -/
 noncomputable def forwardSubstColOn {n : ℕ} (o : List (Fin n)) (L : Matrix (Fin n) (Fin n) ℝ)
     (b : Fin n → ℝ) : M (Fin n → ℝ) :=
   o.foldlM (fun (b : Fin n → ℝ) j => do
@@ -607,9 +641,9 @@ $j$ in $o$, in list order, the program computes $b_i \leftarrow \mathrm{fl}(b_i 
 `GolubVanLoan.Chapter03.forwardSubstColOn` for a unit lower triangular $L$, without the division
 by the unit diagonal.
 
-The diagonal of $L$ is not read. A division by a unit diagonal inside a factorization is not
-performed, by the algorithm conventions of `NumlibSurface.GolubVanLoan`. The block LU Algorithms
-3.2.3 and 3.2.4 use this solve for $L_{11}$ and $L_{kk}$. -/
+**Reading.** The source observes that the triangular solves can handle a unit
+diagonal. This implementation uses the column update on a supplied index list and
+omits the division by one. -/
 noncomputable def unitForwardSubstColOn {n : ℕ} (o : List (Fin n))
     (L : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) :=
   o.foldlM (fun (b : Fin n → ℝ) j =>
@@ -638,8 +672,10 @@ later block and every column $c$, it computes $b_{ic} \leftarrow \mathrm{fl}(b_{
 \mathrm{fl}(\ell_{ij} b_{jc}))$ for the indices $j$ of block $J$ in increasing order, so that
 the block update $B_I = B_I - L_{IJ} X_J$ is a sequence of rounded running differences.
 
-The blocks are the fibres of a labelling `blk : Fin n → Fin N`. They are contiguous when `blk`
-is monotone, and $n$ need not be a multiple of $N$ (compare Problem P3.1.3 of the source). -/
+**Reading.** The source gives a block product followed by a subtraction. The program
+updates each entry by rounded running differences instead of first accumulating the
+whole product. The partition is given by labels, with contiguous blocks when the
+labelling is monotone. Unequal block sizes are allowed as in Problem P3.1.3. -/
 noncomputable def blockForwardElim {n N q : ℕ} (blk : Fin n → Fin N)
     (L : Matrix (Fin n) (Fin n) ℝ) (B : Matrix (Fin n) (Fin q) ℝ) :
     M (Matrix (Fin n) (Fin q) ℝ) :=
@@ -870,7 +906,11 @@ result $X$ of block forward elimination in exact arithmetic satisfies $LX = B$.
 The labelling is `blk : Fin n → Fin N` with `Monotone blk`. The proof uses the invariant that,
 after the blocks of a prefix, the rows of those blocks are finished,
 $\sum_{j} \ell_{ij} x_{jc} = b_{ic}$ with $j$ in the finished blocks, and every later row holds
-$b_{ic}$ minus the contributions of the finished rows. -/
+$b_{ic}$ minus the contributions of the finished rows.
+
+**Reading.** The source writes an ordered block partition and a sequence of diagonal
+solves. The specification uses a monotone block labelling and explicitly requires the
+nonzero diagonal entries needed for those solves. -/
 theorem equation_3_1_4 {n N q : ℕ} {blk : Fin n → Fin N} (hblk : Monotone blk)
     {L : Matrix (Fin n) (Fin n) ℝ} (hL : L.IsLowerTriangular) (hd : ∀ i, L i i ≠ 0)
     (B : Matrix (Fin n) (Fin q) ℝ) : L * Id.run (blockForwardElim pure blk L B) = B := by
@@ -1047,8 +1087,11 @@ $$x(1{:}m) = L(1{:}m, 1{:}m)^{-1} b.$$
 So the system is solved by forward substitution on the square system, with an arbitrary value
 for $x(m+1{:}m+p)$, as the source says.
 
-The square block $L(1{:}m, 1{:}m)$ is `L.submatrix id (Fin.castAdd p)`. The statement also holds
-for $p = 0$. -/
+**Typo.** The source writes $x(1{:}m,1{:}m)$ in the leading system. Its unknowns
+form the vector slice $x(1{:}m)$.
+
+**Reading.** The leading block must be nonsingular to use forward substitution.
+The statement makes its nonzero diagonal explicit and permits $p=0$. -/
 theorem nonsquareLower_wide {m p : ℕ} {L : Matrix (Fin m) (Fin (m + p)) ℝ}
     (hL : ∀ (i : Fin m) (j : Fin (m + p)), (i : ℕ) < j → L i j = 0)
     (hd : ∀ i : Fin m, L i (Fin.castAdd p i) ≠ 0) (b : Fin m → ℝ) (x : Fin (m + p) → ℝ) :
@@ -1080,8 +1123,8 @@ variable {n : ℕ}
 an upper triangular $U$ is upper triangular, and the inverse of a lower triangular $L$ is lower
 triangular.
 
-The inverse is Mathlib's `Matrix.inv`, which is $0$ for a singular matrix, so the statement also
-holds for a singular triangular matrix. -/
+**Reading.** The source uses an ordinary inverse. The totalized matrix inverse is
+$0$ on a singular input, so triangularity also holds there. -/
 theorem triangular_inv :
     (∀ U : Matrix (Fin n) (Fin n) ℝ, U.IsUpperTriangular → U⁻¹.IsUpperTriangular) ∧
       ∀ L : Matrix (Fin n) (Fin n) ℝ, L.IsLowerTriangular → L⁻¹.IsLowerTriangular :=

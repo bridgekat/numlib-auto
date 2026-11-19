@@ -51,6 +51,14 @@ The results specialize the backbone modules `Numlib.Analysis.Normed.Operator.Unb
   and 2.21 from Theorem 2.19. The backbone proves them directly.
 * Remark 19, the method of a priori estimates, is the direction (b) $\Rightarrow$ (a) of Theorem
   2.20.
+
+## Deviations from the source
+
+* **Theorem 2.21, domain of $A$** (typo). The source places $D(A)$ in $F$. It is a subspace of
+  $E$, consistent with the preceding definition of $A^\star$. See `Brezis.Chapter02.theorem_2_21`.
+* **Remark 20, general implications** (generalization). The surjectivity-to-injectivity
+  implications also hold for incomplete normed spaces. See
+  `Brezis.Chapter02.remark_2_20_implications`.
 -/
 
 open Metric
@@ -109,6 +117,9 @@ $R(A^\star) = E^\star$; (b) there is a constant $C$ such that
 $$\|u\| \le C\|Au\| \quad \text{for all } u \in D(A);$$
 (c) $N(A) = \{0\}$ and $R(A)$ is closed.
 
+**Typo.** The source prints $D(A) \subset F$. The operator maps from a subspace of $E$ to $F$,
+so its adjoint takes values in $E^\star$, as required in clause (a).
+
 The statement is the two equivalences (a) $\iff$ (b) and (a) $\iff$ (c). -/
 theorem theorem_2_21 {A : E →ₗ.[ℝ] F} (hc : A.IsClosed) (hd : Dense (A.domain : Set E)) :
     (LinearMap.range A.strongDualAdjoint.toFun = ⊤ ↔
@@ -135,7 +146,10 @@ omit [CompleteSpace E] [CompleteSpace F] in
 /-- **Remark 20** of [brezis2011functional], the general case. Let $E$ and $F$ be real normed spaces
 and let $A : D(A) \subseteq E \to F$ be a densely defined closed unbounded linear operator. If
 $A$ is surjective, then $A^\star$ is injective. If $A^\star$ is surjective, then $A$ is
-injective. -/
+injective.
+
+**Generalization.** The source works between Banach spaces. These two implications follow
+from duality and closedness of the given operator without assuming either space is complete. -/
 theorem remark_2_20_implications {A : E →ₗ.[ℝ] F} (hc : A.IsClosed)
     (hd : Dense (A.domain : Set E)) :
     (LinearMap.range A.toFun = ⊤ → A.strongDualAdjoint.ker = ⊥) ∧

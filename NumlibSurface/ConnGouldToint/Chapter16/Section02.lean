@@ -85,6 +85,23 @@ algorithms come from `NumlibSurface.ConnGouldToint.Chapter11.Section01` and
 
 ## Deviations from the source
 
+* **Correction.** Lemma 16.2.3 distinguishes the real minimum from the singleton set of minimizers.
+  See `ConnGouldToint.Chapter16.lemma_16_2_3`.
+* **Relational step selection.** Algorithm 16.2.1 uses an optional-correction relation with the
+  derivative shift and admissibility conditions explicit. See
+  `ConnGouldToint.Chapter16.polyhedralResidualCorrectionModel`,
+  `ConnGouldToint.Chapter16.algorithm_16_2_1`.
+* **Correction.** Theorem 16.2.2 corrects the curvature contraction in (16.2.15), distinguishing
+  residual components from affine branches. See
+  `ConnGouldToint.Chapter16.fderiv_fderiv_affineResidualBranch`,
+  `ConnGouldToint.Chapter16.fderiv_fderiv_polyhedralEpigraphLagrangian`,
+  `ConnGouldToint.Chapter16.theorem_16_2_2`.
+* **Explicit Lipschitz bound.** The polyhedral maximum uses an explicit Lipschitz constant given by
+  the sum of slope norms. See `ConnGouldToint.Chapter16.lipschitzWith_polyhedralAffineMaximum`.
+* **Restricted algorithm and explicit bounds.** Theorem 16.2.1 treats the monotone run, with
+  explicit curvature and local sufficient-decrease bounds. See
+  `ConnGouldToint.Chapter16.polyhedralResidualModel_uniformAgreement`,
+  `ConnGouldToint.Chapter16.theorem_16_2_1_monotone`.
 * **Equation (16.2.15)** (reading). The Hessian of the epigraph Lagrangian sums the residual
   Hessians over the residual components, weighted by the convex combination of the slopes;
   equivalently it weights the Hessians of the affine branches. See
@@ -113,7 +130,11 @@ $\sigma > 1$. Then $h(c(x))$ is the least value of $t \mapsto \phi(x, \sigma, t)
 of its global minimizers is $\{h(c(x))\}$.
 
 **Reading.** Equation (16.2.24) gives the minimum value $h(c(x))$, a real number. The set of
-minimizers is the singleton that contains this value. -/
+minimizers is the singleton that contains this value.
+
+**Correction.** The optimum is a real number and the argmin is a singleton. The theorem
+distinguishes the value from the minimizer set in the printed chain of equalities.
+-/
 theorem lemma_16_2_3 {X Y : Type*} (c : X → Y) (h : Y → ℝ)
     (x : X) {σ : ℝ} (hσ : 1 < σ) :
     IsLeast (Set.range (epigraphMerit c h x σ)) (h (c x)) ∧
@@ -176,7 +197,12 @@ $$m_{CS}(d) = \tfrac{1}{2} H_{CS}(d, d) + h\bigl(c(x + s) + J(x + z) d\bigr),$$
 the polyhedral maximum of the residual at the original trial point $x + s$, linearized with the
 Jacobian at the shifted point $x + z$.
 
-The shift $z$ is the argument `shift`. -/
+The shift $z$ is the argument `shift`.
+
+**Reading.** The correction model is parameterized by the derivative evaluation shift and the
+algorithm is an optional one-step relation with explicit radius, size and decrease tests inherited
+from Chapter 11.
+-/
 noncomputable def polyhedralResidualCorrectionModel [Nonempty ι] (c : E → Y)
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) (HCS : E →L[ℝ] E →L[ℝ] ℝ)
     (x s shift d : E) : ℝ :=
@@ -190,7 +216,12 @@ $0 \le r \le m(0) - m(s)$, each proposed correction $d$ satisfies $m_{CS}(d) \le
 $\|s + d\| \le \tau \Delta$, and the correction is the proposal if it does not increase
 $h \circ c$ at the trial point, and $0$ otherwise.
 
-The step is `ConnGouldToint.Chapter11.OptionalCorrectionStep`. -/
+The step is `ConnGouldToint.Chapter11.OptionalCorrectionStep`.
+
+**Reading.** The correction model is parameterized by the derivative evaluation shift and the
+algorithm is an optional one-step relation with explicit radius, size and decrease tests inherited
+from Chapter 11.
+-/
 def algorithm_16_2_1 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
     (H HCS : E →L[ℝ] E →L[ℝ] ℝ) (normK : Seminorm ℝ E) (x s shift : E)
     (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop :=
@@ -457,7 +488,12 @@ theorem fderiv_affineResidualBranch {c : E → Y} {x : E}
 
 /-- Let $c : E \to Y$ be twice continuously differentiable at $x$, $p$ a continuous linear
 functional on $Y$ and $b \in \mathbb{R}$. For all $d, e \in E$, the second derivative of the
-branch $z \mapsto p(c(z)) + b$ at $x$ in the directions $d, e$ is $p(\nabla^2 c(x)(d, e))$. -/
+branch $z \mapsto p(c(z)) + b$ at $x$ in the directions $d, e$ is $p(\nabla^2 c(x)(d, e))$.
+
+**Correction.** The curvature is the Hessian of the residual paired with the weighted branch slopes.
+Its component expression ranges over residual components, which can differ in number from the affine
+branches. The theorem states the algebraic criterion equivalence explicitly.
+-/
 theorem fderiv_fderiv_affineResidualBranch {c : E → Y} {x : E}
     (hc : ContDiffAt ℝ 2 c x) (p : Y →L[ℝ] ℝ) (b : ℝ) (d e : E) :
     fderiv ℝ (fderiv ℝ (fun z ↦ p (c z) + b)) x d e =
@@ -500,7 +536,12 @@ $$\nabla^2 L(x, t)(v, w) = \sum_i \theta_i \, p_i\bigl(\nabla^2 c(x)(v_1, w_1)\b
 **Reading.** The residual Hessian is evaluated against the convex combination
 $\sum_i \theta_i p_i$ of the slopes, that is, the Hessians of the residual components are
 summed. Equivalently, the formula weights the Hessians of the affine branches. It does not
-depend on the number of branches. -/
+depend on the number of branches.
+
+**Correction.** The curvature is the Hessian of the residual paired with the weighted branch slopes.
+Its component expression ranges over residual components, which can differ in number from the affine
+branches. The theorem states the algebraic criterion equivalence explicitly.
+-/
 theorem fderiv_fderiv_polyhedralEpigraphLagrangian
     {c : E → Y} {x : E} (hc : ContDiffAt ℝ 2 c x) (p : ι → Y →L[ℝ] ℝ)
     (b θ : ι → ℝ) (hθ : ∑ i, θ i = 1) (t : ℝ) (v w : E × ℝ) :
@@ -540,7 +581,12 @@ following are equivalent.
 The first condition uses the epigraph height and its first-order multipliers. The second uses a
 subgradient of $h$ at $c(x)$, represented by the active slopes, and restricts the residual
 Hessian to the unit directions with support value $0$. Stationarity supplies a subgradient that
-is $0$ on every direction of this test. -/
+is $0$ on every direction of this test.
+
+**Correction.** The curvature is the Hessian of the residual paired with the weighted branch slopes.
+Its component expression ranges over residual components, which can differ in number from the affine
+branches. The theorem states the algebraic criterion equivalence explicitly.
+-/
 theorem theorem_16_2_2 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
     (b : ι → ℝ) (x : E) :
     let a i := p i (c x) + b i
@@ -597,7 +643,11 @@ theorem theorem_16_2_2 [Nonempty ι] (c : E → Y) (p : ι → Y →L[ℝ] ℝ)
 
 omit [NormedAddCommGroup E] [NormedSpace ℝ E] in
 /-- Let $\iota$ be nonempty and finite. The polyhedral maximum $h(y) = \max_i (p_i(y) + b_i)$ is
-Lipschitz with constant $\sum_i \|p_i\|$. -/
+Lipschitz with constant $\sum_i \|p_i\|$.
+
+**Reading.** The sum of the slope norms is used as a uniform Lipschitz constant for the finite
+maximum.
+-/
 theorem lipschitzWith_polyhedralAffineMaximum [Nonempty ι]
     (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ) :
     LipschitzWith (∑ i, ‖p i‖₊) (polyhedralAffineMaximum p b) := by
@@ -677,7 +727,12 @@ with $h \circ c$ after normalization by the step length, uniformly in the base p
 and in $j$.
 
 The agreement is `ConnGouldToint.Chapter11.UniformNormalizedModelAgreementAt`. The proof uses
-the Lipschitz bound `ConnGouldToint.Chapter16.lipschitzWith_polyhedralAffineMaximum`. -/
+the Lipschitz bound `ConnGouldToint.Chapter16.lipschitzWith_polyhedralAffineMaximum`.
+
+**Reading.** The result covers the monotone Algorithm 11.1.1. It assumes a uniform bilinear-model
+bound and the local sufficient-decrease property, and proves Clarke stationarity of every
+subsequential limit using first-order uniform agreement.
+-/
 theorem polyhedralResidualModel_uniformAgreement
     [Nonempty ι] {I : Type*} {c : E → Y}
     (hc : ContDiff ℝ 1 c) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)
@@ -744,7 +799,12 @@ $h \circ c$ at $x$.
 
 The run is `ConnGouldToint.Chapter11.NonsmoothTRRun`, AA.1n is
 `ConnGouldToint.Chapter11.NonsmoothTRRun.HasLocalSufficientDecrease`, and the subdifferential is
-`Optimization.clarkeSubgradient`. -/
+`Optimization.clarkeSubgradient`.
+
+**Reading.** The result covers the monotone Algorithm 11.1.1. It assumes a uniform bilinear-model
+bound and the local sufficient-decrease property, and proves Clarke stationarity of every
+subsequential limit using first-order uniform agreement.
+-/
 theorem theorem_16_2_1_monotone
     [CompleteSpace E] [Nonempty ι] {I : Type*} {c : E → Y}
     (hc : ContDiff ℝ 1 c) (p : ι → Y →L[ℝ] ℝ) (b : ι → ℝ)

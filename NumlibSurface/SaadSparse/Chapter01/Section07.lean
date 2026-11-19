@@ -72,22 +72,36 @@ unitary diagonal factor. The proofs specialize the backbone module `Numlib.Linea
 * Algorithm 1.2 is written out as the recursion `SaadSparse.Chapter01.modifiedGramSchmidt`, with the
   running vector `SaadSparse.Chapter01.mgsRun` and the coefficients
   `SaadSparse.Chapter01.modifiedGramSchmidtCoeff`.
-* Division by a vanishing norm is $0$ in Lean. This reproduces the instruction "If $r_{jj} = 0$ then
-  Stop" of the book: every vector that the algorithm produces after a breakdown is $0$, and the
-  identities of the module hold past a breakdown with no hypothesis.
+* Division by a vanishing norm gives zero at that step. The Lean recurrences are defined at
+  later steps as well, and the identities of the module apply to those values.
 
 ## Deviations from the source
 
+* **Algorithms 1.1 and 1.2** (reading). The book stops at the first zero pivot. The recurrences
+  put a zero vector at that index and continue. See `SaadSparse.Chapter01.gramSchmidt_expansion`,
+  `SaadSparse.Chapter01.modifiedGramSchmidt` and `SaadSparse.Chapter01.algorithm_1_2_eq`.
+* **Equation (1.19)** (generalization). The statement adds uniqueness with a positive real
+  diagonal in $R$. See `SaadSparse.Chapter01.equation_1_19`.
 * **Derivation of (1.22)** (typo). The book prints $\|x\|_1^2$ where $\|x\|_2^2$ is meant. See
+  `SaadSparse.Chapter01.equation_1_22`.
+* **Equation (1.22)** (generalization and reading). The reflector uses a conjugate transpose and
+  can target any coordinate. The phase of a zero pivot is $1$. See
   `SaadSparse.Chapter01.equation_1_22`.
 * **Equation (1.25)** (typo). The book prints the axis entry $z_i = \beta + x_{ii}$, where
   $\beta + x_{kk}$, the pivot of step $k$, is meant. See
   `SaadSparse.Chapter01.householder_mulVec_apply_of_eq_zero`.
+* **Equations (1.27)–(1.28) and Algorithm 1.3** (reading). The surface gives the factorization
+  with a unitary factor. The individual reflectors and intermediate states are absent from its
+  statement. See `SaadSparse.Chapter01.equation_1_28`.
+* **§1.7, the leading identity columns** (generalization). A request for more than $n$ columns
+  appends zero columns. See `SaadSparse.Chapter01.stdCols`.
 
 ## Not formalized
 
 * **The difference between Algorithms 1.1 and 1.2 in floating-point arithmetic.** It belongs to a
   floating-point layer.
+* **Algorithm 1.3, the step-by-step program.** The declaration states the factorization that
+  results from the reduction.
 -/
 
 open InnerProductSpace Matrix
@@ -137,7 +151,10 @@ private theorem gramSchmidtNormed_pairwise_orthogonal (x : ι → E) :
   simp [gramSchmidtNormed, inner_smul_left, inner_smul_right, gramSchmidt_orthogonal 𝕜 x hij]
 
 /-- The Gram–Schmidt vector $\tilde q_j$ is $x_j$ minus its projections on the earlier normalized
-vectors: $\tilde q_j = x_j - \sum_{i < j} (x_j, q_i) q_i$. -/
+vectors: $\tilde q_j = x_j - \sum_{i < j} (x_j, q_i) q_i$.
+
+**Reading.** The printed loop stops at a zero pivot. The formula uses the totalized family and
+also holds beyond the first zero pivot. -/
 private theorem gramSchmidt_eq_sub_sum (x : ι → E) (j : ι) :
     gramSchmidt 𝕜 x j
       = x j - ∑ i ∈ Finset.Iio j,
@@ -192,8 +209,9 @@ $x_1, \dots, x_r \in \mathbb{K}^n$, and let $q_1, \dots, q_r$ be the vectors of 
 process. Then for every $j$,
 $$x_j = \sum_{i \le j} r_{ij} q_i, \qquad r_{ij} = (x_j, q_i).$$
 
-This is column $j$ of the factorization (1.19). It needs no hypothesis on $x$: at a breakdown
-both $q_j$ and the coefficient $r_{jj}$ vanish. -/
+**Reading.** The book gives this expansion at each step of its stopping algorithm. The theorem
+uses the totalized Gram–Schmidt family at every index. A zero pivot gives $q_j = r_{jj} = 0$, and
+the expansion still holds at later indices. -/
 theorem gramSchmidt_expansion (x : Fin r → 𝔼) (j : Fin r) :
     x j = ∑ i ∈ Finset.Iic j,
       inner 𝕜 (gramSchmidtNormed 𝕜 x i) (x j) • gramSchmidtNormed 𝕜 x i := by
@@ -220,8 +238,11 @@ $$q_{j+1} = \hat q / \|\hat q\|_2,$$
 where $\hat q$ is the running vector `SaadSparse.Chapter01.mgsRun` that starts from $x_{j+1}$
 and subtracts the projections on $q_0, \dots, q_j$ one at a time.
 
-Division by $0$ gives $0$, so after a breakdown every vector is $0$. The book's $q_j$ is
-`modifiedGramSchmidt x (j - 1)`. -/
+**Reading.** The book stops when the running vector has norm zero. The recurrence takes
+$q_j = 0$ at such a step and continues. For $x_0 = 0$ and $x_1 \neq 0$, it gives $q_0 = 0$ and
+$q_1 = x_1/\|x_1\|_2$.
+
+The book's $q_j$ is `SaadSparse.Chapter01.modifiedGramSchmidt x (j - 1)` before a stop. -/
 noncomputable def modifiedGramSchmidt (x : ℕ → 𝔼) : ℕ → 𝔼
   | 0 => ((‖x 0‖ : 𝕜)⁻¹) • x 0
   | j + 1 =>
@@ -233,7 +254,10 @@ noncomputable def modifiedGramSchmidt (x : ℕ → 𝔼) : ℕ → 𝔼
 /-- The coefficients $r_{ij}$ of **Algorithm 1.2** of [saad2003iterative]. For $i < j$,
 $r_{ij} = (\hat q, q_i)$, where $\hat q$ is the running vector of the inner loop for $x_j$ after
 the projections on $q_0, \dots, q_{i-1}$ have been subtracted. The diagonal coefficient $r_{jj}$
-is the norm of the vector that the inner loop leaves, and $r_{ij} = 0$ for $i > j$. -/
+is the norm of the vector that the inner loop leaves, and $r_{ij} = 0$ for $i > j$.
+
+**Reading.** The coefficients of the printed loop are available only up to its stopping step.
+The recurrence defines them also for later steps. -/
 noncomputable def modifiedGramSchmidtCoeff (x : ℕ → 𝔼) (i j : ℕ) : 𝕜 :=
   if i < j then inner 𝕜 (modifiedGramSchmidt x i) (mgsRun (modifiedGramSchmidt x) (x j) i)
   else if i = j then ((‖mgsRun (modifiedGramSchmidt x) (x j) j‖ : 𝕜)) else 0
@@ -276,15 +300,19 @@ private theorem mgsRun_gramSchmidtNormed (x : ℕ → 𝔼) (k : ℕ) :
     ← Nat.Iio_eq_range]
   exact (gramSchmidt_eq_sub_sum x k).symm
 
-/-- The first step of Algorithm 1.2: $q_0 = x_0 / \|x_0\|_2$, since the inner loop is empty. -/
+/-- The first step of Algorithm 1.2: $q_0 = x_0 / \|x_0\|_2$, since the inner loop is empty.
+
+**Reading.** When $x_0=0$, the printed loop stops and the total recurrence defines $q_0=0$. -/
 @[simp]
 theorem modifiedGramSchmidt_zero (x : ℕ → 𝔼) :
     modifiedGramSchmidt x 0 = ((‖x 0‖ : 𝕜)⁻¹) • x 0 := by
   rw [modifiedGramSchmidt]
 
 /-- The later steps of Algorithm 1.2: $q_{j+1}$ is the running vector of the inner loop for
-$x_{j+1}$, after the projections on $q_0, \dots, q_j$, divided by its norm. The clamp of the
-index in the definition does not appear, since the loop reads only the vectors already computed. -/
+$x_{j+1}$, after the projections on $q_0, \dots, q_j$, divided by its norm.
+
+**Reading.** The printed normalization is conditional on a nonzero residual. The recurrence
+uses zero when the residual vanishes and continues. -/
 theorem modifiedGramSchmidt_succ (x : ℕ → 𝔼) (j : ℕ) :
     modifiedGramSchmidt x (j + 1)
       = ((‖mgsRun (modifiedGramSchmidt x) (x (j + 1)) (j + 1)‖ : 𝕜)⁻¹)
@@ -294,7 +322,10 @@ theorem modifiedGramSchmidt_succ (x : ℕ → 𝔼) (j : ℕ) :
       (x (j + 1)) fun i hi => by rw [Nat.min_eq_left (Nat.lt_succ_iff.1 hi)]]
 
 /-- For every $j$, the vector $q_j$ of Algorithm 1.2 equals the vector $q_j$ of Algorithm 1.1,
-`InnerProductSpace.gramSchmidtNormed 𝕜 x j`. -/
+`InnerProductSpace.gramSchmidtNormed 𝕜 x j`.
+
+**Reading.** The comparison extends beyond the printed stopping steps by using the total
+recurrences of both algorithms. -/
 theorem modifiedGramSchmidt_eq (x : ℕ → 𝔼) (j : ℕ) :
     modifiedGramSchmidt x j = gramSchmidtNormed 𝕜 x j := by
   induction j using Nat.strong_induction_on with
@@ -308,7 +339,10 @@ theorem modifiedGramSchmidt_eq (x : ℕ → 𝔼) (j : ℕ) :
         mgsRun_gramSchmidtNormed, gramSchmidtNormed]
 
 /-- For $i \le j$, the coefficient $r_{ij}$ of Algorithm 1.2 equals the coefficient $(x_j, q_i)$ of
-Algorithm 1.1, although Algorithm 1.2 computes it from the running vector and not from $x_j$. -/
+Algorithm 1.1.
+
+**Reading.** The comparison uses both total recurrences, with coefficients defined also beyond
+a zero pivot. -/
 theorem modifiedGramSchmidtCoeff_eq (x : ℕ → 𝔼) {i j : ℕ} (hij : i ≤ j) :
     modifiedGramSchmidtCoeff x i j = inner 𝕜 (gramSchmidtNormed 𝕜 x i) (x j) := by
   have hvec : modifiedGramSchmidt x = gramSchmidtNormed 𝕜 x := funext (modifiedGramSchmidt_eq x)
@@ -326,8 +360,9 @@ and the same coefficients as Algorithm 1.1: for every $j$ the vector $q_j$ of Al
 the Gram–Schmidt vector $q_j$, and for all $i \le j$ the coefficient $r_{ij}$ of Algorithm 1.2
 is $(x_j, q_i)$.
 
-Neither part needs a hypothesis on $x$: after a breakdown both algorithms return the zero vector
-and the zero coefficient. -/
+**Reading.** Both printed algorithms stop at a zero pivot. The theorem compares their total
+recurrences, which assign a zero vector and a zero diagonal coefficient at each zero pivot and
+can have nonzero vectors at later indices. -/
 theorem algorithm_1_2_eq (x : ℕ → 𝔼) :
     modifiedGramSchmidt x = gramSchmidtNormed 𝕜 x ∧
       ∀ i j, i ≤ j → modifiedGramSchmidtCoeff x i j = inner 𝕜 (gramSchmidtNormed 𝕜 x i) (x j) :=
@@ -340,6 +375,9 @@ independent columns. Then there is exactly one pair $(Q, R)$ with
 $Q \in \mathbb{K}^{n \times r}$ and $R \in \mathbb{K}^{r \times r}$ such that
 $$X = QR, \qquad Q^H Q = I,$$
 and $R$ is upper triangular with positive real diagonal entries.
+
+**Generalization.** The book establishes existence of the factorization. The theorem also
+establishes uniqueness under the positive real diagonal convention supplied by the algorithm.
 
 The columns of $X$ are the rows of `Xᵀ`, and positivity of a scalar in $\mathbb{K}$ means that
 it is real and positive. In this factorization, $Q$ is the Gram–Schmidt orthonormalization of
@@ -367,10 +405,14 @@ so one reflector annihilates every entry of $x$ except entry $i$.
 **Typo.** The derivation in the book, in which $2(x - \alpha e_1)^T x = \|x - \alpha e_1\|_2^2$
 forces $\alpha = \pm \|x\|_2$, prints $\|x\|_1^2$ where $\|x\|_2^2$ is meant.
 
-The book's $\operatorname{sign}(\xi)$ is `Matrix.phase`, which is $1$ at $0$ and $z/|z|$
-elsewhere, so the statement covers the complex case of §1.7 as well as the real case. The vector
-$w$ is `Matrix.householderVec x i` and $P$ is `Matrix.householder`. The derivation in the book
-is the computation behind `Matrix.householder_mulVec_eq_smul_single`. -/
+**Generalization.** The printed derivation uses a real reflector targeting $e_1$. The theorem
+uses $ww^H$ over complex scalars and can target any $e_i$.
+
+**Reading.** The printed formula leaves the zero pivot case implicit. Taking the phase
+to be $1$ there preserves a nonzero pivot magnitude when $x$ is nonzero.
+
+The phase is `Matrix.phase`, the vector $w$ is `Matrix.householderVec x i`, and $P$ is
+`Matrix.householder`. -/
 theorem equation_1_22 {x : Fin n → 𝕜} (hx : x ≠ 0) (i : Fin n) :
     householder (householderVec x i) * householder (householderVec x i) = 1 ∧
       householder (householderVec x i) ∈ Matrix.unitaryGroup (Fin n) 𝕜 ∧
@@ -399,7 +441,10 @@ theorem householder_mulVec_apply_of_eq_zero {x : Fin n → 𝕜} {i s : Fin n} (
 
 /-- **Equation (1.28)** of [saad2003iterative]. The matrix $E_m = [e_1, e_2, \dots, e_m] \in
 \mathbb{K}^{n \times m}$ has entry $1$ at position $(i, j)$ when $i = j$, and $0$ elsewhere. For
-$m \le n$ its columns are the first $m$ columns of the $n \times n$ identity matrix. -/
+$m \le n$ its columns are the first $m$ columns of the $n \times n$ identity matrix.
+
+**Generalization.** The source selects at most $n$ columns. When $m>n$, the entry formula
+appends $m-n$ zero columns. -/
 def stdCols (𝕜 : Type*) [RCLike 𝕜] (n m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 :=
   Matrix.of fun i j => if (i : ℕ) = (j : ℕ) then 1 else 0
 
@@ -496,10 +541,13 @@ $R = E_m^H P X$,
 $$X = QR, \qquad Q^H Q = I,$$
 and $R$ is upper triangular.
 
-No hypothesis on the columns of $X$ is needed. The statement asserts only that $P$ is unitary;
-the backbone constructs it as a product $P = P_m \cdots P_1$ of Householder reflectors
-(`Matrix.exists_unitary_mul_upperTriangular`). The comparison of $(Q, R)$ with the factorization
-(1.19), whose $R$ has a positive diagonal, is `SaadSparse.Chapter01.equation_1_28_normalized`. -/
+**Reading.** The source describes the successive reflectors and the resulting orthogonal
+factorization. The theorem asserts the final factorization using a unitary $P$ and therefore
+also covers complex inputs. The individual steps of Algorithm 1.3 are outside its conclusion.
+
+The backbone constructs $P$ as a product of reflectors by
+`Matrix.exists_unitary_mul_upperTriangular`. The comparison with positive-diagonal QR is
+`SaadSparse.Chapter01.equation_1_28_normalized`. -/
 theorem equation_1_28 {m : ℕ} (hmn : m ≤ n) (X : Matrix (Fin n) (Fin m) 𝕜) :
     ∃ P ∈ Matrix.unitaryGroup (Fin n) 𝕜,
       (∀ (i : Fin n) (j : Fin m), (j : ℕ) < (i : ℕ) → (P * X) i j = 0) ∧
@@ -543,8 +591,8 @@ private theorem qr_change_of_factor {m : ℕ} {X Q₀ Q : Matrix (Fin n) (Fin m)
       _ = (R₀ * R⁻¹)ᴴ * (R₀ * R⁻¹ * R) := Matrix.mul_assoc _ _ _
       _ = (R₀ * R⁻¹)ᴴ * R₀ := by rw [hDR]
 
-/-- **Section 1.7** of [saad2003iterative], comparison of Algorithm 1.3 with the Gram–Schmidt
-process. Let $m \le n$, and let $X = QR$ with $Q \in \mathbb{K}^{n \times m}$, $Q^H Q = I$, and
+/-- The two QR constructions of §1.7 of [saad2003iterative] agree up to diagonal unitary scaling.
+Let $m \le n$, and let $X = QR$ with $Q \in \mathbb{K}^{n \times m}$, $Q^H Q = I$, and
 $R \in \mathbb{K}^{m \times m}$ upper triangular with positive real diagonal entries. Then there
 are a unitary $P \in \mathbb{K}^{n \times n}$ such that $PX$ is upper triangular and a matrix
 $D \in \mathbb{K}^{m \times m}$ with $D^H D = I$ and $D$ upper triangular, such that

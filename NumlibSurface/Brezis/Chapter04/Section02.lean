@@ -52,6 +52,15 @@ The proofs use Mathlib's `MeasureTheory.Lp`, and the backbone modules
   a function $f$ belongs to $L^p$ is `MemLp f p μ`, and its norm in $[0, +\infty]$ is
   `eLpNorm f p μ`.
 * Conjugate exponents $p$ and $p'$, with $1/p + 1/p' = 1$, are `p.HolderConjugate q`.
+
+## Deviations from the source
+
+* **Measure hypotheses** (generalization). The results allow arbitrary measures. The source
+  assumes $\sigma$-finiteness at the start of Chapter 4.
+* **Definitions of the $L^p$ norms** (reading). The formulas allow a.e. measurable representatives.
+  The finite-exponent formula includes $p=1$, and the $L^\infty$ formula uses the real `sInf`
+  convention for the zero measure. See `Brezis.Chapter04.lpNorm_eq_integral_rpow` and
+  `Brezis.Chapter04.lInftyNorm_eq_sInf`.
 -/
 
 open Filter MeasureTheory Topology
@@ -69,7 +78,10 @@ belongs to $L^p(\Omega)$ if and only if $|f|^p$ is integrable. For $f \in L^p(\O
 $$\|f\|_p = \Bigl(\int_\Omega |f|^p \, d\mu\Bigr)^{1/p}.$$
 
 The source takes these formulas as the definition. Here they are proved for Mathlib's `MemLp`
-and the norm of `MeasureTheory.Lp`. Measurability of $f$ is `AEStronglyMeasurable`. -/
+and the norm of `MeasureTheory.Lp`.
+
+**Generalization.** The formulas apply to any measure and use a.e. measurable representatives.
+They include $p=1$, given separately at the start of Chapter 4 in the source. -/
 theorem lpNorm_eq_integral_rpow {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     (∀ f : α → ℝ, AEStronglyMeasurable f μ →
       (MemLp f p μ ↔ Integrable (fun x => |f x| ^ p.toReal) μ)) ∧
@@ -97,7 +109,10 @@ $f \in L^\infty(\Omega)$,
 $$\|f\|_\infty = \inf\{C : |f(x)| \le C \text{ for a.e. } x \in \Omega\}.$$
 
 The source takes these formulas as the definition. Here they are proved for Mathlib's `MemLp`
-with exponent $\infty$ and the norm of `MeasureTheory.Lp`. -/
+with exponent $\infty$ and the norm of `MeasureTheory.Lp`.
+
+**Reading.** The formulas apply to any measure and use a.e. measurable representatives. For
+the zero measure all real constants qualify, and the real `sInf` convention gives norm zero. -/
 theorem lInftyNorm_eq_sInf :
     (∀ f : α → ℝ, AEStronglyMeasurable f μ → (MemLp f ∞ μ ↔ ∃ C : ℝ, ∀ᵐ x ∂μ, |f x| ≤ C)) ∧
     ∀ f : Lp ℝ ∞ μ, ‖f‖ = sInf {C : ℝ | ∀ᵐ x ∂μ, |f x| ≤ C} := by
@@ -126,7 +141,9 @@ theorem lInftyNorm_eq_sInf :
           exact hμ this
 
 /-- **Remark 1** in Chapter 4 of [brezis2011functional]. For $f \in L^\infty(\Omega)$,
-$|f(x)| \le \|f\|_\infty$ for a.e. $x \in \Omega$. -/
+$|f(x)| \le \|f\|_\infty$ for a.e. $x \in \Omega$.
+
+**Generalization.** The bound holds for any measure. -/
 theorem remark_4_1 (f : Lp ℝ ∞ μ) : ∀ᵐ x ∂μ, |f x| ≤ ‖f‖ := by
   simpa only [Real.norm_eq_abs] using Lp.ae_norm_le_norm_top f
 
@@ -138,7 +155,9 @@ $g \in L^{p'}(\Omega)$. Then $fg$ is integrable and
 $$\int_\Omega |fg| \, d\mu \le \|f\|_p \|g\|_{p'}.$$
 
 The conjugate exponent $p'$ is `q`. The norms are the real parts of `eLpNorm`, which are finite
-here. -/
+here.
+
+**Generalization.** The theorem allows arbitrary measures. -/
 theorem theorem_4_6 {p q : ℝ≥0∞} [p.HolderConjugate q] {f g : α → ℝ} (hf : MemLp f p μ)
     (hg : MemLp g q μ) :
     Integrable (f * g) μ ∧
@@ -170,7 +189,9 @@ $$\|f\|_r \le \|f\|_p^\alpha \|f\|_q^{1 - \alpha}.$$
 The exponents are in $[1, +\infty]$, and the norms are `eLpNorm`, with values in $[0, +\infty]$.
 The source writes $1/p = 1/p_1 + \dots + 1/p_k \le 1$; the condition $r \ge 1$ is the same. In
 (2) the number $\alpha$ is `θ`. The proofs are in
-`Numlib.MeasureTheory.Function.LpInterpolation`. -/
+`Numlib.MeasureTheory.Function.LpInterpolation`.
+
+**Generalization.** The inequalities hold for any measure, and the indexed product can be empty. -/
 theorem remark_4_2 :
     (∀ {ι : Type*} (s : Finset ι) (f : ι → α → ℝ) (p : ι → ℝ≥0∞) (r : ℝ≥0∞),
       (∀ i ∈ s, MemLp (f i) (p i) μ) → r⁻¹ = ∑ i ∈ s, (p i)⁻¹ → 1 ≤ r →
@@ -197,7 +218,9 @@ vector space and $\|\cdot\|_p$ is a norm on it. Precisely:
 5. $\|f\|_p = 0$ if and only if $f = 0$.
 
 Parts (1) and (2) are about functions, with `MemLp`. Parts (3) to (5) are about elements of
-`MeasureTheory.Lp ℝ p μ`, that is, classes of a.e. equal functions. -/
+`MeasureTheory.Lp ℝ p μ`, that is, classes of a.e. equal functions.
+
+**Generalization.** The theorem allows arbitrary measures. -/
 theorem theorem_4_7 {p : ℝ≥0∞} [Fact (1 ≤ p)] :
     (∀ f g : α → ℝ, MemLp f p μ → MemLp g p μ → MemLp (f + g) p μ) ∧
     (∀ (c : ℝ) (f : α → ℝ), MemLp f p μ → MemLp (c • f) p μ) ∧
@@ -208,7 +231,9 @@ theorem theorem_4_7 {p : ℝ≥0∞} [Fact (1 ≤ p)] :
     fun c f => by rw [norm_smul, Real.norm_eq_abs], fun f => norm_eq_zero⟩
 
 /-- **Theorem 4.8** of [brezis2011functional] (Fischer–Riesz). Let $1 \le p \le \infty$. Then
-$L^p(\Omega)$ is a Banach space. -/
+$L^p(\Omega)$ is a Banach space.
+
+**Generalization.** The theorem allows arbitrary measures. -/
 theorem theorem_4_8 {p : ℝ≥0∞} [Fact (1 ≤ p)] : CompleteSpace (Lp ℝ p μ) := inferInstance
 
 /-- **Theorem 4.9** of [brezis2011functional]. Let $1 \le p \le \infty$, and let $(f_n)$ be a
@@ -219,7 +244,9 @@ $(f_{n_k})$ and a function $h \in L^p(\Omega)$ such that
 2. $|f_{n_k}(x)| \le h(x)$ for every $k$ and a.e. $x \in \Omega$.
 
 The limit is `g` in the Lean statement, and the subsequence is `f ∘ ns` with `ns` strictly
-increasing. -/
+increasing.
+
+**Generalization.** The theorem allows arbitrary measures. -/
 theorem theorem_4_9 {p : ℝ≥0∞} [Fact (1 ≤ p)] {f : ℕ → Lp ℝ p μ} {g : Lp ℝ p μ}
     (hfg : Tendsto f atTop (𝓝 g)) :
     ∃ ns : ℕ → ℕ, StrictMono ns ∧ ∃ h : Lp ℝ p μ,

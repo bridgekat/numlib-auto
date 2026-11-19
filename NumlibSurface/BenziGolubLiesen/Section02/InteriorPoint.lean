@@ -131,7 +131,11 @@ Let $f$ and each $c_i$ be convex functions on the real coordinate space. Suppose
 restrictions to lines through $x$ are differentiable and the second derivatives at
 $x$ along $v$ are $v^T H_f v$ and $v^T H_i v$ for symmetric matrices $H_f,H_i$.
 For nonnegative multipliers $y$, the Lagrangian Hessian $H_f+\sum_i y_i H_i$ is
-positive semidefinite. -/
+positive semidefinite.
+
+**Correction.** Proves semidefiniteness from nonnegative multipliers and line curvatures, correcting
+the printed strict-convexity implication.
+-/
 theorem lagrangianHessian_posSemidef_of_convex
     (f : (n → ℝ) → ℝ) (c : m → (n → ℝ) → ℝ) (x : n → ℝ)
     (Hf : Matrix n n ℝ) (Hc : m → Matrix n n ℝ) (y : m → ℝ) (hy : 0 ≤ y)

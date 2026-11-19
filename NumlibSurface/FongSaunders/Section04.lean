@@ -51,9 +51,20 @@ formalized in `NumlibSurface.FongSaunders.Section05`, together with Table 5.1.
 
 ## Deviations from the source
 
+* **Section 4.1.1, product of residual ratios** (generalization). The exact identity
+  holds for arbitrary sequences with nonzero denominators. The approximation by the
+  stopping tolerance is outside the identity. See `FongSaunders.prod_ratio_residual`.
+* **Equation (4.1)** (reading). The result assumes $r_k^M \neq 0$, excluding the step
+  that first reaches the exact solution. See `FongSaunders.equation_4_1` and
+  `FongSaunders.equation_4_1_minres`.
+* **Section 4.2, MINRES coordinates** (reading). The source considers symmetric systems that
+  are nonsingular or consistent. The coordinate results here require positive definiteness.
+  See `FongSaunders.minres_subproblem` and `FongSaunders.minres_coeff_unique`.
+* **Steihaug's theorem for CG** (reading). The curvature test uses the direction
+  $p_{j-1}$ entering iteration $j$, as in Table 2.1. See `FongSaunders.steihaug_cg`.
 * **Steihaug's theorem for CR and MINRES** (reading). The paper assumes $p_j^T A p_j > 0$ and
-  $r_j^T A r_j > 0$ for $1 \le j \le k$; here $r_j^T A r_j > 0$ is assumed at every iteration before
-  termination, and the first condition is dropped as redundant. See `FongSaunders.steihaug_cr`.
+  $r_j^T A r_j > 0$ for $1 \le j \le k$. Here the sufficient condition uses
+  $r_j^T A r_j > 0$ at every iteration before termination. See `FongSaunders.steihaug_cr`.
 
 ## Not formalized
 
@@ -85,6 +96,10 @@ private theorem cg_res (k : ℕ) : b - Matrix.toEuclideanLin A (cg A b k).x = (c
 /-- **Equation (4.1)** of [fong2012cg]. Let $A \in \mathbb{R}^{n \times n}$ be positive definite,
 and let $k \ge 1$. If the MINRES residual satisfies $r_k^M \neq 0$, then the CG residual
 satisfies $$\|r_k^C\| = \frac{\|r_k^M\|}{\sqrt{1 - \|r_k^M\|^2 / \|r_{k-1}^M\|^2}}.$$
+
+**Reading.** The source gives the formula without a nonzero condition on $r_k^M$. The result
+here requires $r_k^M \neq 0$ to apply the inverse-square residual identity. At the first zero
+residual, both sides of the source formula are zero if $r_{k-1}^M \neq 0$.
 
 The relation is Lemma 5.4.1 of [greenbaum1997iterative], also due to Titley-Péloquin. The
 statement is written for step $k + 1$ with $k \in \mathbb{N}$, so that $k \ge 1$ holds by
@@ -129,7 +144,10 @@ positive definite, let $(x_k)$ be a sequence such that each $x_k$ is a MINRES it
 $k$, and let $r_k^M = b - A x_k$. For $k \ge 1$ with $r_k^M \neq 0$, $$\|r_k^C\| =
 \frac{\|r_k^M\|}{\sqrt{1 - \|r_k^M\|^2 / \|r_{k-1}^M\|^2}}.$$
 
-As in `FongSaunders.equation_4_1`, the statement is written for step $k + 1$ with
+**Reading.** As in `FongSaunders.equation_4_1`, the statement assumes $r_k^M \neq 0$,
+leaving out the step that first reaches the exact solution.
+
+The statement is written for step $k + 1$ with
 $k \in \mathbb{N}$. -/
 theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k))
     (k : ℕ) (hk : b - A ⬝ x (k + 1) ≠ 0) :
@@ -148,7 +166,11 @@ theorem equation_4_1_minres (hA : A.PosDef) {x : ℕ → Vec n} (hx : ∀ k, IsM
 sequence of vectors with $r_0 = b$. If $l \in \mathbb{N}$ and $r_0, r_1, \dots, r_{l-1}$ are
 nonzero, then $$\prod_{k=1}^{l} \frac{\|r_k\|}{\|r_{k-1}\|} = \frac{\|r_l\|}{\|b\|}.$$
 
-The sequence is arbitrary; it need not come from an algorithm. The condition $b \neq 0$ follows
+**Generalization.** The source considers residuals at a stopping iteration and compares
+the final ratio approximately with the tolerance. The exact telescoping identity applies
+to any sequence with the stated denominators.
+
+The condition $b \neq 0$ follows
 from the other conditions when $l \ge 1$; it is stated so that the case $l = 0$ is also covered.
 The product is written over $k < l$ with the factor $\|r_{k+1}\| / \|r_k\|$. -/
 theorem prod_ratio_residual (r : ℕ → Vec n) (hb : b ≠ 0) (hr0 : r 0 = b) (l : ℕ)
@@ -177,6 +199,9 @@ $k \le \ell$. For $y \in \mathbb{R}^k$, the vector $V_k y$ is a MINRES iterate a
 and only if $y$ minimizes $$\|\beta_1 e_1 - \underline{T}_k z\| \quad \text{over } z \in
 \mathbb{R}^k, \qquad \beta_1 = \|b\|.$$
 
+**Reading.** The source uses this least-squares characterization for symmetric systems,
+including indefinite ones. The result here assumes positive definiteness.
+
 The vector $\beta_1 e_1 \in \mathbb{R}^{k+1}$ is `Krylov.firstVec ‖b‖ (k + 1)`, and $V_k y$ is
 the sum $\sum_j y_j v_j$ of the Lanczos vectors. -/
 theorem minres_subproblem (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b) (y : Fin k → ℝ) :
@@ -193,7 +218,11 @@ theorem minres_subproblem (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b)
 /-- **Section 4.2** of [fong2012cg], uniqueness of the MINRES coordinates. Let
 $A \in \mathbb{R}^{n \times n}$ be positive definite, let $\ell$ be the termination step of the
 Lanczos process, and let $k \le \ell$. Then there is exactly one $y \in \mathbb{R}^k$ such that
-$V_k y$ is a MINRES iterate at step $k$. -/
+$V_k y$ is a MINRES iterate at step $k$.
+
+**Reading.** The source states uniqueness for a nonsingular or consistent symmetric system.
+The result here assumes positive definiteness, which ensures uniqueness of the MINRES iterate.
+-/
 theorem minres_coeff_unique (hA : A.PosDef) (k : ℕ) (hk : k ≤ lanczosTerm A b) :
     ∃! y : Fin k → ℝ, IsMINRESIterate A b k (∑ j, y j • lanczosVec A b j) := by
   have hinj : Function.Injective fun j : Fin k => (⟨(j : ℕ), lt_of_lt_of_le j.2 hk⟩ :
@@ -226,6 +255,9 @@ be the iterates and the directions of Algorithm CG for $Ax = b$ from $x_0 = 0$. 
 $k \in \mathbb{N}$, and suppose that $(p_j^C)^T A p_j^C > 0$ for $j = 0, \dots, k - 1$, the
 directions of iterations $1, \dots, k$. Then $$\|x_0^C\| < \|x_1^C\| < \dots < \|x_k^C\|.$$
 
+**Reading.** The source writes $p_j^T A p_j>0$ for iterations $1,\ldots,k$. In Table 2.1,
+iteration $j$ uses $p_{j-1}$ to update $x_{j-1}$, so the hypothesis tests $p_0,\ldots,p_{k-1}$.
+
 The conclusion is stated as $\|x_i^C\| < \|x_{i+1}^C\|$ for every $i < k$. -/
 theorem steihaug_cg (hA : A.IsSymm) {k : ℕ}
     (hpos : ∀ j < k, 0 < ⟪(cg A b j).p, A ⬝ (cg A b j).p⟫_ℝ) {i : ℕ} (hi : i < k) :
@@ -245,9 +277,9 @@ $j < \ell$. Then for every $i < \ell$, the CR iterates satisfy $$\|x_i\| < \|x_{
 and $r_j^T A r_j > 0$ for all iterations $1 \le j \le k$, which is a local hypothesis. Its proof
 of Theorem 2.2(d) expands $r_i$ over all the remaining steps, so a single negative $\rho_m$
 after step $k$ breaks the argument. The statement here therefore reads the hypothesis globally
-and assumes $\rho_j > 0$ up to the termination step $\ell$. The condition $p_j^T A p_j > 0$ is
-then redundant, because $r_j^T A p_j = \rho_j \neq 0$ already forces $A p_j \neq 0$ (see
-`CR.norm_iterate_lt_of_pos`).
+and assumes $\rho_j > 0$ up to the termination step $\ell$. The identity
+$r_j^T A p_j = \rho_j$ gives $A p_j \neq 0$ for the step length. The strict-increase proof
+`CR.norm_iterate_lt_of_pos` uses these hypotheses without a separate curvature condition.
 
 The termination step $\ell$ is `FongSaunders.crTerm A b`. If no CR residual vanishes, its value
 is $0$ and the statement says nothing. Under the hypotheses,

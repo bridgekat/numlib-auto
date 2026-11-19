@@ -146,14 +146,20 @@ successful ones.
   vacuous. See `CartisGouldToint.Chapter07.AssumptionBFb`.
 * **Assumption f.D1pL.C** (typo). The source writes $\nabla^j_x f_i$. The objective is scalar, and
   $\nabla^j_x f$ is meant. See `CartisGouldToint.Chapter07.AssumptionFD1pLC`.
+* **Smoothness before Algorithm 7.2.1** (correction). Smoothness of the squared merit
+  functions alone does not imply smoothness of each constraint. For example, $f=0$ and
+  $c(x)=|x|$ give smooth $\Phi_2$ and $\mu_2(\cdot,t)$ for every $t$, but $c$ fails to
+  be differentiable at zero. The output theorem assumes differentiability of $f,c$
+  at feasible points as in §7.1. See `CartisGouldToint.Chapter07.lemma_7_2_1`.
 * **Algorithm 7.2.1, Phase 2, Step 1** (correction). Step 1 applies ARp1-CC (Algorithm 6.2.2), not
   ARp-CC, since the proof of Lemma 7.2.6 uses Lemma 6.2.4. See
   `CartisGouldToint.Chapter07.IsTPpGCPhase2`.
 * **Algorithm 7.2.1, Step 2(a)** (correction). The source prints the test
   $\|r(x_{k+1}, t_k)\| < \theta \epsilon_0$, with which Lemma 7.2.1 fails. The test is
   $\|r(x_{k+1}, t_k)\| \le \theta \epsilon_0$. See `CartisGouldToint.Chapter07.Phase2Seq.IsKa`.
-* **Lemma 7.2.2** (correction). The printed derivative-evaluation bound (7.2.24) lacks the term $+2$
-  of Theorem 6.3.1, which is restored. See `CartisGouldToint.Chapter07.lemma_7_2_2`.
+* **Lemma 7.2.2** (correction). The stopping alternative uses $\theta\epsilon_0$ as in
+  (7.2.9), which strengthens the printed $\epsilon_0$. The derivative-evaluation bound
+  restores the $+2$ from Theorem 6.3.1. See `CartisGouldToint.Chapter07.lemma_7_2_2`.
 * **Lemma 7.2.5** (generalization). The hypothesis $\Phi_\ell$.DpL.C of the source is not needed.
   See `CartisGouldToint.Chapter07.lemma_7_2_5`.
 * **Lemma 7.2.6** (correction). The block argument of the source omits the restart of $\sigma$ at
@@ -163,8 +169,8 @@ successful ones.
 * **Theorem 7.2.7** (correction). The number of bad outer iterations is a parameter of the
   statement; under bounded gradients it is bounded by $N_b = O(\epsilon_0^{-1} \epsilon_1^{-1})$,
   which is within the order of (7.2.50) for $\epsilon_0 = \epsilon_1$ if and only if $p \le 2$. The
-  derivative count has a term $\epsilon_0^{-1}$ that (7.2.53) lacks, and whether (7.2.53) holds is
-  open. See `CartisGouldToint.Chapter07.theorem_7_2_7` and
+  derivative count includes an outer-call term that is absent in (7.2.53). See
+  `CartisGouldToint.Chapter07.theorem_7_2_7` and
   `CartisGouldToint.Chapter07.theorem_7_2_7_of_gradient_le`.
 * **Equation (7.2.47)** (generalization). The constant $\kappa^S_{\mathrm{ARpGC}} = \kappa_1^{-1}
   \theta^{-(p+1)/p}$ replaces the weaker $\kappa_1^{-1} \theta^{-(p+2)/p}$ of the source. See
@@ -263,7 +269,10 @@ theorem assumptionCD1pLC_iff : AssumptionCD1pLC c C p ↔ ∀ i, IsD1pLOn (fun x
   Iff.rfl
 
 /-- The definition of f.D1pL.C, unfolded: $f$ satisfies `CartisGouldToint.Chapter07.IsD1pLOn` on
-$\mathcal{C}$. -/
+$\mathcal{C}$.
+
+**Correction.** Unfolds the corrected bounded Lipschitz condition for the scalar objective.
+-/
 theorem assumptionFD1pLC_iff : AssumptionFD1pLC f C p ↔ IsD1pLOn f C p := Iff.rfl
 
 /-- A point lies in $\mathcal{F}_\beta$ if and only if $x \in \mathcal{C}$ and $\|c(x)\| \le \beta$.
@@ -315,8 +324,9 @@ satisfies f.DpL.C on $\mathcal{C}$ with constant $L$
 (`CartisGouldToint.Chapter06.AssumptionDpLC`).
 
 Footnote 53 of the source describes the assumption as $\Phi_\ell$.DpL.C for
-$\Phi_\ell = \mu_2(\cdot, t)$. The constant may depend on $t$; Lemma 7.2.5
-(`CartisGouldToint.Chapter07.lemma_7_2_5`) makes it uniform over a bounded interval of targets. -/
+$\Phi_\ell = \mu_2(\cdot, t)$. The Lean definition quantifies over all real targets
+with constants that may depend on $t$. Lemma 7.2.5 makes the constant uniform on
+the interval of targets used by the algorithm. -/
 def AssumptionMu2DpLC (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (p : ℕ) : Prop :=
   ∀ t : ℝ, ∃ L, Chapter06.AssumptionDpLC (Constrained.targetMerit f c t) C p L
 
@@ -414,13 +424,20 @@ def IsKa (k : ℕ) : Prop := Constrained.targetResidual f c (D.t k) (D.X (k + 1)
 /-- **Equation (7.2.25)** of [cartis2022evaluation], the set $\mathcal{K}_b$. Outer iteration $k$ is
 in $\mathcal{K}_b$, that is, Step 2(b) occurs, if
 $$\|r(x_{k+1}, t_k)\| > \theta \epsilon_0 \quad \text{and} \quad f(x_{k+1}) < t_k.$$
+
+**Correction.** Requires residual strictly above the corrected case-a threshold together with
+objective below target.
 -/
 def IsKb (k : ℕ) : Prop :=
   P.θ * ε₀ < Constrained.targetResidual f c (D.t k) (D.X (k + 1)) ∧ f (D.X (k + 1)) < D.t k
 
 /-- The sequences of Phase 2 of TPp-GC as data of the target-following outer loop of the backbone
 (`Constrained.TargetFollowingSeq`). The case tests are $\mathcal{K}_a$ and $\mathcal{K}_b$, and
-the criticality test at outer iteration $k$ for a target $\tau$ is (7.2.12) at $x_{k+1}$. -/
+the criticality test at outer iteration $k$ for a target $\tau$ is (7.2.12) at $x_{k+1}$.
+
+**Correction.** Encodes outer data and criticality using the corrected branch tests in the generic
+run interface.
+-/
 def toTargetFollowingSeq : Constrained.TargetFollowingSeq ℝⁿ where
   x := D.X
   t := D.t
@@ -445,18 +462,30 @@ def toCountSeq (Ka Kb : ℕ → Prop) : Constrained.TargetFollowingSeq ℝⁿ wh
 /-- **Algorithm 7.2.1** of [cartis2022evaluation], Step 2, termination. Phase 2 terminates at outer
 iteration $k$ if $k$ is in neither $\mathcal{K}_a$ nor $\mathcal{K}_b$ (case (c)), or if
 $k \in \mathcal{K}_a \cup \mathcal{K}_b$ and the criticality test (7.2.12) holds at
-$(x_{k+1}, t_{k+1})$. -/
+$(x_{k+1}, t_{k+1})$.
+
+**Correction.** Matches the termination cases with the corrected branch partition at threshold
+equality.
+-/
 abbrev Stop (k : ℕ) : Prop := (D.toTargetFollowingSeq f c C P ε₀ ε₁).Stop k
 
 /-- Outer iteration $k$ is reached: no outer iteration $j \in [1, k)$ terminates Phase 2. -/
 abbrev Before (k : ℕ) : Prop := (D.toTargetFollowingSeq f c C P ε₀ ε₁).Before k
 
 /-- Phase 2 terminates at outer iteration $k_\epsilon$: $k_\epsilon \ge 1$, outer iteration
-$k_\epsilon$ is reached, and Phase 2 terminates there. -/
+$k_\epsilon$ is reached, and Phase 2 terminates there.
+
+**Correction.** First outer stop under the corrected tests, explicitly restricted to the source
+index range from one.
+-/
 abbrev IsEnd (kε : ℕ) : Prop := (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsEnd kε
 
 /-- The output target $t_\epsilon$ of Phase 2 terminating at outer iteration $k$: $t_{k+1}$ in cases
-(a) and (b), and $t_k$ in case (c). The output point is $x_\epsilon = x_{k+1}$. -/
+(a) and (b), and $t_k$ in case (c). The output point is $x_\epsilon = x_{k+1}$.
+
+**Reading.** Uses the updated target for cases a and b and original for case c, with equality
+assigned to case a.
+-/
 noncomputable abbrev targetOut (k : ℕ) : ℝ :=
   (D.toCountSeq (D.IsKa f c P ε₀) (D.IsKb f c P ε₀)).targetOut k
 
@@ -480,7 +509,10 @@ one at $x_1$ and one per successful inner iteration. -/
 noncomputable abbrev derivEvals (k : ℕ) : ℕ :=
   (D.toCountSeq (fun _ => False) fun _ => False).derivEvals (D.InnerSucc f c p P) k
 
-/-- The number of outer iterations $k \in [1, K)$ in $\mathcal{K}_a$. -/
+/-- The number of outer iterations $k \in [1, K)$ in $\mathcal{K}_a$.
+
+**Correction.** Counts the corrected case-a events in a finite prefix rather than the global set.
+-/
 noncomputable abbrev kaCount (K : ℕ) : ℕ :=
   (D.toCountSeq (D.IsKa f c P ε₀) fun _ => False).kaCount K
 
@@ -488,7 +520,11 @@ noncomputable abbrev kaCount (K : ℕ) : ℕ :=
 exempt if $k \in \mathcal{K}_a$, or if
 $$\omega_{\mu_2,\mathcal{C},1}(x_{k+1}, t_k) \le e_1 \|r(x_{k+1}, t_k)\|.$$
 For $e_1 = \epsilon_1$ the second condition is the third test of (7.2.10). The last inner
-iteration of an exempt outer iteration is not a good iteration. -/
+iteration of an exempt outer iteration is not a good iteration.
+
+**Reading.** Exempts the last step when a residual reset or small old-target measure prevents the
+decrease argument.
+-/
 def Exempt (e₁ : ℝ) (k : ℕ) : Prop :=
   D.IsKa f c P ε₀ k ∨ targetCrit f c C e₁ (D.t k) (D.X (k + 1))
 
@@ -500,13 +536,20 @@ has $\|r(x_{k,i+1}, t_k)\| \ge \theta \epsilon_0$.
 These are the iterations that the proof of Lemma 7.2.6 of [cartis2022evaluation] counts; Lemma
 6.2.4 controls their decrease. For a Phase-2 run they are the successful iterations whose new
 iterate fails the third test of (7.2.10) and has residual greater than $\theta \epsilon_0$
-(`CartisGouldToint.Chapter07.IsTPpGCPhase2.isGood_iff`). -/
+(`CartisGouldToint.Chapter07.IsTPpGCPhase2.isGood_iff`).
+
+**Reading.** Isolates the successful steps for which both the lower residual and failed criticality
+conditions are guaranteed.
+-/
 abbrev IsGood (k i : ℕ) : Prop :=
   (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsGood f c P.θ ε₀ (D.InnerSucc f c p P)
     (D.Exempt f c C P ε₀ ε₁) k i
 
 /-- The number of good iterations (`CartisGouldToint.Chapter07.Phase2Seq.IsGood`) of the $k$-th
-inner run. -/
+inner run.
+
+**Reading.** Counts the steps for which the claimed uniform residual decrement is justified.
+-/
 noncomputable abbrev goodCount (k : ℕ) : ℕ :=
   (D.toTargetFollowingSeq f c C P ε₀ ε₁).goodCount f c P.θ ε₀ (D.InnerSucc f c p P)
     (D.Exempt f c C P ε₀ ε₁) k
@@ -517,13 +560,20 @@ iteration.
 For a Phase-2 run the new iterate of a bad outer iteration passes the third test of (7.2.10) for
 the old target, $\omega_{\mu_2,\mathcal{C},1}(x_{k+1}, t_k) \le \epsilon_1 \|r(x_{k+1}, t_k)\|$
 (`CartisGouldToint.Chapter07.IsTPpGCPhase2.isBad_targetCrit`). The source gives no bound on the
-number of such iterations. -/
+number of such iterations.
+
+**Reading.** Separately classifies a reflecting outer step with no decrement-counted successful
+trial, a case missing from the printed count.
+-/
 abbrev IsBad (k : ℕ) : Prop :=
   (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsBad f c P.θ ε₀ (D.InnerSucc f c p P)
     (D.Exempt f c C P ε₀ ε₁) k
 
 /-- The number of bad outer iterations (`CartisGouldToint.Chapter07.Phase2Seq.IsBad`)
-$k \in [1, K)$. -/
+$k \in [1, K)$.
+
+**Reading.** Counts reflecting calls with no counted progress before a reached index.
+-/
 noncomputable abbrev badCount (K : ℕ) : ℕ :=
   (D.toTargetFollowingSeq f c C P ε₀ ε₁).badCount f c P.θ ε₀ (D.InnerSucc f c p P)
     (D.Exempt f c C P ε₀ ε₁) K
@@ -594,7 +644,11 @@ namespace Phase2Seq
 variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {C : Set ℝⁿ} {P : TPpGCParams} {ε₀ ε₁ : ℝ}
   {D : Phase2Seq n}
 
-/-- An outer iteration in $\mathcal{K}_b$ is not in $\mathcal{K}_a$. -/
+/-- An outer iteration in $\mathcal{K}_b$ is not in $\mathcal{K}_a$.
+
+**Correction.** Disjointness of cases a and b with the corrected complementary residual
+inequalities.
+-/
 theorem IsKb.not_isKa {k : ℕ} (h : D.IsKb f c P ε₀ k) : ¬ D.IsKa f c P ε₀ k :=
   fun ha => absurd ha (not_le.2 h.1)
 
@@ -618,7 +672,10 @@ theorem inner_not_stop {i : ℕ} (hi : i < D.e k) :
   (h.inner_hit k hk1 hk).2 i hi
 
 /-- For a Phase-2 run and a reached outer iteration $k \ge 1$, every inner step $s_{k,i}$ with
-$i < e_k$ satisfies the step conditions of ARp1-CC for $\mu_2(\cdot, t_k)$. -/
+$i < e_k$ satisfies the step conditions of ARp1-CC for $\mu_2(\cdot, t_k)$.
+
+**Correction.** Projects the corrected ARp1-CC model rule for a reached inner trial.
+-/
 theorem inner_step {i : ℕ} (hi : i < D.e k) :
     IsFirstOrderCCStep (Constrained.targetMerit f c (D.t k)) C p P.θ₁ (D.xi k i) (D.σi k i)
       (D.si k i) :=
@@ -721,7 +778,11 @@ from $x_1$, the data `CartisGouldToint.Chapter07.Phase2Seq.toTargetFollowingSeq`
 `Constrained.IsTargetFollowingRun` with the factor $\theta$, the tolerance $\epsilon_0$ and the
 set $\mathcal{C}$.
 
-The run uses the corrected test $\|r(x_{k+1}, t_k)\| \le \theta \epsilon_0$ of Step 2(a). -/
+The run uses the corrected test $\|r(x_{k+1}, t_k)\| \le \theta \epsilon_0$ of Step 2(a).
+
+**Correction.** Projects the outer target-following recurrences and inner call behavior using the
+corrected branch partition.
+-/
 theorem toRun :
     Constrained.IsTargetFollowingRun f c P.θ ε₀ C x₁ (D.toTargetFollowingSeq f c C P ε₀ ε₁) where
   θ_pos := P.θ_pos
@@ -749,7 +810,11 @@ theorem toRun :
 
 /-- For a Phase-2 run and every reached outer iteration $K$, the outer iterates and targets form a
 target sequence (`Constrained.IsTargetSequence`) up to $K$, with $\mathcal{K}_a$ given by
-`CartisGouldToint.Chapter07.Phase2Seq.IsKa`. -/
+`CartisGouldToint.Chapter07.Phase2Seq.IsKa`.
+
+**Correction.** Packages the target and residual conditions for a reached finite prefix with
+corrected branches.
+-/
 theorem isTargetSequence {K : ℕ} (hK : D.Before f c C P ε₀ ε₁ K) :
     Constrained.IsTargetSequence f c P.θ ε₀ D.X D.t (D.IsKa f c P ε₀) K :=
   h.toRun.isTargetSequence hK
@@ -774,7 +839,10 @@ iteration $K$. Then:
 * if $k \in [1, K)$ is in $\mathcal{K}_b$, then $\|r(x_{k+1}, t_{k+1})\| = \|r(x_{k+1}, t_k)\|
   \le \epsilon_0$ ((7.2.28));
 * if f.B.Fb holds with parameter $\beta$ and constants $f_{\mathrm{low}}, f_{\mathrm{up}}$, then
-  $t_k \in [f_{\mathrm{low}} - 1, f_{\mathrm{up}}]$ for $k \in [1, K]$ ((7.2.31)). -/
+  $t_k \in [f_{\mathrm{low}} - 1, f_{\mathrm{up}}]$ for $k \in [1, K]$ ((7.2.31)).
+
+**Correction.** Matches the invariants along a reached prefix, with the corrected branch thresholds.
+-/
 theorem lemma_7_2_3 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D) {K : ℕ}
     (hK : D.Before f c C P ε₀ ε₁ K) :
     (∀ k, 1 ≤ k → k < K → D.t (k + 1) < D.t k) ∧
@@ -799,6 +867,11 @@ $f_{\mathrm{low}}, f_{\mathrm{up}}$. For a Phase-2 run of TPp-GC and every reach
 iteration $K \ge 1$, the number of outer iterations $k \in [1, K)$ in $\mathcal{K}_a$ satisfies
 $$|\mathcal{K}_a \cap [1, K)| \le \frac{f_{\mathrm{up}} - f_{\mathrm{low}} + 1}{(1 - \theta)
   \epsilon_0}.$$
+
+The bound is for the prefix before a reached outer iteration $K$. The source
+states a bound on the entire set $\mathcal{K}_a$.
+
+**Reading.** Uses the same bound for the case-a prefix rather than the entire set of case-a indices.
 -/
 theorem lemma_7_2_4 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D) {flow fup : ℝ}
     (hB : AssumptionBFb f c C P.β flow fup) {K : ℕ} (hK1 : 1 ≤ K)
@@ -852,7 +925,11 @@ $$\theta \epsilon_0 < \|r(x_\epsilon, t_\epsilon)\| \le \epsilon_0, \qquad f(x_\
   \|r(x_\epsilon, t_\epsilon)\|.$$
 
 The strict lower bound uses the corrected test of Step 2(a)
-(`CartisGouldToint.Chapter07.Phase2Seq.IsKa`). -/
+(`CartisGouldToint.Chapter07.Phase2Seq.IsKa`).
+
+**Reading.** At the final target obtains a strict residual lower bound by assigning equality to the
+reset case.
+-/
 theorem IsTPpGCPhase2.output_spec (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D) {kε : ℕ}
     (hend : D.IsEnd f c C P ε₀ ε₁ kε) :
     D.X (kε + 1) ∈ C ∧
@@ -887,7 +964,13 @@ The printed proof gives only $\|c(x_\epsilon)\| \ge \theta \epsilon_0$ in (7.2.1
 inequality follows from the corrected test of Step 2(a). The output also satisfies (7.2.17) and
 (7.2.20) (`CartisGouldToint.Chapter07.IsTPpGCPhase2.output_spec`). The approximate minimizer is
 `CartisGouldToint.Chapter07.IsApproxFirstOrderGC`, and the multiplier is
-`Constrained.targetMultiplier`. -/
+`Constrained.targetMultiplier`. The differentiation argument assumes differentiability of
+$f$ and $c$ on $\mathcal{C}$ directly. Smoothness of the squared merits alone allows
+nondifferentiable constraints, for example $c(x)=|x|$ with $f=0$ and $\ell=2$.
+
+**Correction.** Makes the differentiability used by the gradient argument explicit and obtains
+strict infeasible alternative with the corrected test.
+-/
 theorem lemma_7_2_1_phase2 (h : IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D)
     (hf : ∀ x ∈ C, DifferentiableAt ℝ f x) (hc : ∀ x ∈ C, DifferentiableAt ℝ c x) {kε : ℕ}
     (hend : D.IsEnd f c C P ε₀ ε₁ kε) :
@@ -946,13 +1029,19 @@ noncomputable def kappaSGC (P : TPpGCParams) (Lμ : ℝ) (p : ℕ) : ℝ :=
 /-- **Equation (7.2.39)** of [cartis2022evaluation]. The bound on the number of good inner
 iterations between two consecutive iterations of $\mathcal{K}_a$ is
 $$G = \kappa^S_{\mathrm{ARpGC}} (1 - \theta) \epsilon_0^{(p-1)/p} \epsilon_1^{-(p+1)/p}.$$
+
+**Generalization.** Extracts the per-reset bound for counted good steps using the strengthened
+coefficient.
 -/
 noncomputable def goodBound (P : TPpGCParams) (Lμ : ℝ) (p : ℕ) (ε₀ ε₁ : ℝ) : ℝ :=
   kappaSGC P Lμ p * (1 - P.θ) * ε₀ ^ (((p : ℝ) - 1) / p) * ε₁ ^ (-(((p : ℝ) + 1) / p))
 
 /-- The decrease of the residual on a good inner iteration:
 $$\delta = \kappa_1 \theta^{(p+1)/p} \epsilon_0^{1/p} \epsilon_1^{(p+1)/p}.$$
-It satisfies $G = (1 - \theta) \epsilon_0 / \delta$ (`CartisGouldToint.Chapter07.goodBound_eq`). -/
+It satisfies $G = (1 - \theta) \epsilon_0 / \delta$ (`CartisGouldToint.Chapter07.goodBound_eq`).
+
+**Reading.** Uses the improved uniform residual decrement for justified successful steps.
+-/
 noncomputable def goodDecr (P : TPpGCParams) (Lμ : ℝ) (p : ℕ) (ε₀ ε₁ : ℝ) : ℝ :=
   Chapter06.kappa1CC P.toARpCCParams Lμ p * P.θ ^ (((p : ℝ) + 1) / p) *
     (ε₀ ^ (((p : ℝ) + 1) / p - 1) * ε₁ ^ (((p : ℝ) + 1) / p))
@@ -965,7 +1054,11 @@ theorem goodDecr_pos {P : TPpGCParams} {Lμ ε₀ ε₁ : ℝ} (hL : 0 ≤ Lμ) 
   unfold goodDecr; positivity
 
 /-- If $L_\mu \ge 0$, $p \ge 1$, $\epsilon_0 > 0$ and $\epsilon_1 > 0$, then
-$G = (1 - \theta) \epsilon_0 / \delta$. -/
+$G = (1 - \theta) \epsilon_0 / \delta$.
+
+**Correction.** Expresses the corrected per-reset step bound as the residual budget divided by the
+guaranteed decrease.
+-/
 theorem goodBound_eq {P : TPpGCParams} {Lμ ε₀ ε₁ : ℝ} (hL : 0 ≤ Lμ) {p : ℕ}
     (hp : 1 ≤ p) (hε₀ : 0 < ε₀) (hε₁ : 0 < ε₁) :
     goodBound P Lμ p ε₀ ε₁ = (1 - P.θ) * ε₀ / goodDecr P Lμ p ε₀ ε₁ := by
@@ -1033,6 +1126,9 @@ $\omega_{\mu_2,\mathcal{C},1}(y, t_k) > e_1 \|r(y, t_k)\|$ and
 $\|r(y, t_k)\| \ge \theta \epsilon_0$. Then
 $$\|r(x_{k,i}, t_k)\| - \|r(y, t_k)\| \ge \kappa_1 \theta^{(p+1)/p} \epsilon_0^{1/p}
   e_1^{(p+1)/p}.$$
+
+**Reading.** Uses the actual ARp1-CC decrease under failed new-iterate criticality and a residual
+lower bound, allowing a weaker positive tolerance.
 -/
 theorem decrease_of_not_targetCrit (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) {k : ℕ}
     (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k) {i : ℕ} (hi : i < D.e k)
@@ -1083,7 +1179,11 @@ $$e_k \le A_1 |\{\text{successful iterations of run } k\}| + C_1, \qquad A_1 = 1
   \gamma_2}.$$
 
 The bound holds per run because the regularization parameter restarts at $\sigma_0$ in every
-inner run. -/
+inner run.
+
+**Reading.** Uses the logarithmic unsuccessful-iteration estimate separately for each fresh inner
+run.
+-/
 theorem e_le (hC : Chapter06.AssumptionCNe C) {k : ℕ} (hk1 : 1 ≤ k)
     (hk : D.Before f c C P ε₀ ε₁ k) :
     (D.e k : ℝ) ≤ (1 + |Real.log P.γ₁| / Real.log P.γ₂) * D.succCount f c p P k +
@@ -1120,7 +1220,11 @@ of the exemption test, a Phase-2 run satisfies `Constrained.TargetFollowingSeq.I
 for every reached outer iteration, $e_k \le A_1 |\{\text{successful iterations of run } k\}| +
 C_1$ (Lemma 2.4.1), unsuccessful inner iterations do not move, and every good iteration lowers
 the residual by at least $\kappa_1 \theta^{(p+1)/p} \epsilon_0^{1/p} e_1^{(p+1)/p}$ (Lemma
-6.2.4). -/
+6.2.4).
+
+**Reading.** Packages per-call iteration bounds and the smaller-tolerance decrease with explicit
+final-step exemptions.
+-/
 theorem toContract (hC : Chapter06.AssumptionCNe C) (hp : 1 ≤ p) {e₁ : ℝ} (he₁ : 0 < e₁)
     (he₁ε : e₁ ≤ ε₁) :
     (D.toTargetFollowingSeq f c C P ε₀ ε₁).IsInnerContract f c P.θ ε₀ (D.InnerSucc f c p P)
@@ -1154,7 +1258,11 @@ include h
 /-- The good iterations of Phase 2. For a Phase-2 run and a reached outer iteration $k \ge 1$, an
 inner iteration $(k, i)$ is good (`CartisGouldToint.Chapter07.Phase2Seq.IsGood`) if and only if
 $i < e_k$, iteration $i$ is successful, $x_{k,i+1}$ fails the third test of (7.2.10), and
-$\|r(x_{k,i+1}, t_k)\| > \theta \epsilon_0$. -/
+$\|r(x_{k,i+1}, t_k)\| > \theta \epsilon_0$.
+
+**Reading.** Characterizes exactly which successes admit the residual decrease using the failed
+next-point criticality test.
+-/
 theorem isGood_iff {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k) {i : ℕ} :
     D.IsGood f c C p P ε₀ ε₁ k i ↔ i < D.e k ∧ D.InnerSucc f c p P k i ∧
       ¬ targetCrit f c C ε₁ (D.t k) (D.xi k (i + 1)) ∧
@@ -1180,7 +1288,11 @@ theorem isGood_iff {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ 
 
 /-- For a Phase-2 run and a reached outer iteration $k \ge 1$ that is bad, the new iterate passes
 the third test of (7.2.10) for the old target: $\omega_{\mu_2,\mathcal{C},1}(x_{k+1}, t_k) \le
-\epsilon_1 \|r(x_{k+1}, t_k)\|$. -/
+\epsilon_1 \|r(x_{k+1}, t_k)\|$.
+
+**Reading.** Shows an otherwise uncounted reflecting call ends when the small old-target
+stationarity test holds.
+-/
 theorem isBad_targetCrit {k : ℕ} (hk1 : 1 ≤ k) (hk : D.Before f c C P ε₀ ε₁ k)
     (hbad : D.IsBad f c C p P ε₀ ε₁ k) : targetCrit f c C ε₁ (D.t k) (D.X (k + 1)) :=
   (h.toRun.exempt_of_isBad (fun _ hk1 hk _ hi hns => h.inner_stay hk1 hk hi hns) hk1 hk
@@ -1265,7 +1377,7 @@ iterations as a parameter. If $M$ does not depend on $\epsilon_0, \epsilon_1$, b
 $O(\max(\epsilon_0^{-1}, \epsilon_0^{-1/p} \epsilon_1^{-(p+1)/p}))$, the order of (7.2.50). The
 derivative count contains a term of order $\epsilon_0^{-1}$, since every iteration of
 $\mathcal{K}_a$ needs a successful inner iteration; the bound (7.2.53) of the source lacks this
-term, and whether (7.2.53) holds is open. A bound without the parameter is
+term. A bound without the bad-iteration parameter is
 `CartisGouldToint.Chapter07.theorem_7_2_7_phase2_of_gradient_le`.
 
 The output of Phase 2 satisfies Lemma 7.2.1 (`CartisGouldToint.Chapter07.lemma_7_2_1_phase2`). -/
@@ -1299,7 +1411,11 @@ $$\omega_{\mu_2,\mathcal{C},1}(x, t') \le \omega_{\mu_2,\mathcal{C},1}(x, t) + |
   \|\nabla f(x)\|.$$
 
 The derivatives of $\mu_2(\cdot, t)$ and $\mu_2(\cdot, t')$ at $x$ differ by
-$(t' - t) \nabla f(x)$. -/
+$(t' - t) \nabla f(x)$.
+
+**Correction.** Bounds the change in constrained merit criticality by the distance between targets
+times the gradient norm, for the corrected outer-count argument.
+-/
 theorem omega1_targetMerit_le_add {x : ℝⁿ} (hx : x ∈ C) (hf : ContDiffAt ℝ 1 f x)
     (hc : ContDiffAt ℝ 1 c x) (t t' : ℝ) :
     Chapter06.omega1 (Constrained.targetMerit f c t') C x ≤
@@ -1428,7 +1544,10 @@ index $e$, and the iterate at $e$ lies in $\mathcal{C}$.
 While the test fails, $\omega_{\mu_2,\mathcal{C},1} > \epsilon_1 \theta \epsilon_0 > 0$. Then a
 minimizer of the model over the feasible steps is an admissible step, and each successful
 iteration decreases $\mu_2(\cdot, \tau) \ge 0$ by at least $\kappa_1 (\epsilon_1 \theta
-\epsilon_0)^{(p+1)/p}$, as in Theorem 6.2.5. -/
+\epsilon_0)^{(p+1)/p}$, as in Theorem 6.2.5.
+
+**Reading.** Builds a finite inner ARp1-CC run terminating by one of the printed tests.
+-/
 theorem exists_innerRun (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpLC f c C p)
     (hp : 1 ≤ p) (htol : TPpGCTol P ε₀ ε₁) (τ : ℝ) {y : ℝⁿ} (hy : y ∈ C) :
     ∃ (xs ss : ℕ → ℝⁿ) (σs : ℕ → ℝ) (e : ℕ), xs 0 = y ∧
@@ -1498,7 +1617,11 @@ and $p \ge 1$, and let $\epsilon_0, \epsilon_1$ satisfy (7.2.8). For every $x_1 
 with $\|c(x_1)\| \le \theta \epsilon_0$ there are sequences that form a Phase-2 run from $x_1$.
 
 The outer sequence is built recursively from the inner runs of
-`CartisGouldToint.Chapter07.exists_innerRun`. -/
+`CartisGouldToint.Chapter07.exists_innerRun`.
+
+**Correction.** Constructs corrected outer data and finite inner calls; Phase 2 termination is a
+separate theorem.
+-/
 theorem exists_phase2 (hC : Chapter06.AssumptionCNe C) (hμ : AssumptionMu2DpLC f c C p)
     (hp : 1 ≤ p) (htol : TPpGCTol P ε₀ ε₁) {x₁ : ℝⁿ} (hx₁ : x₁ ∈ C)
     (hc₁ : ‖c x₁‖ ≤ P.θ * ε₀) : ∃ D : Phase2Seq n, IsTPpGCPhase2 f c C p P ε₀ ε₁ x₁ D := by
@@ -1575,7 +1698,11 @@ $x_1$.
 The test (7.2.9) is `CartisGouldToint.Chapter06.stopLE`. The evaluation counts of Phase 1 are
 `Optimization.funEvalCount k₁` and `Optimization.derivEvalCount` of its successful iterations;
 those of Phase 2 are `CartisGouldToint.Chapter07.Phase2Seq.funEvals` and
-`CartisGouldToint.Chapter07.Phase2Seq.derivEvals`. -/
+`CartisGouldToint.Chapter07.Phase2Seq.derivEvals`.
+
+**Correction.** Conditions Phase 2 on successful feasibility and uses the corrected inner rule and
+target-update threshold.
+-/
 structure algorithm_7_2_1 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (p ℓ : ℕ) (P : TPpGCParams)
     (ε₀ ε₁ : ℝ) (x₀ : ℝⁿ) (y s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (k₁ : ℕ) (D : Phase2Seq n) : Prop where
   /-- The tolerances satisfy (7.2.8). -/
@@ -1604,7 +1731,11 @@ of TPp-GC.
 
 Phase 1 exists by `CartisGouldToint.Chapter06.algorithm_6_3_1.exists_run` and terminates by
 `CartisGouldToint.Chapter06.theorem_6_3_1`; Phase 2 exists by
-`CartisGouldToint.Chapter07.exists_phase2`. -/
+`CartisGouldToint.Chapter07.exists_phase2`.
+
+**Correction.** Constructs a run with the corrected Phase 2 and permits any nonnegative first-order
+exponent iota.
+-/
 theorem algorithm_7_2_1_exists (hC : Chapter06.AssumptionCNe C) (hx₀ : x₀ ∈ C) (hp : 1 ≤ p)
     (hℓ : 2 ≤ ℓ) {i : ℕ} (hι : 0 ≤ ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) / p) {LΦ : ℝ}
     (hΦ : Chapter06.AssumptionPhiDpLC c ℓ C p LΦ) (hμ : AssumptionMu2DpLC f c C p)
@@ -1630,7 +1761,14 @@ every point of $\mathcal{C}$, and consider a run of TPp-GC.
   \epsilon_1 \|c(x_\epsilon)\|^{\ell-1}$ (7.2.14).
 * If it enters Phase 2 and Phase 2 terminates at outer iteration $k_\epsilon$, then
   $x_\epsilon = x_{k_\epsilon+1}$ satisfies (7.2.15) or (7.2.16), as in
-  `CartisGouldToint.Chapter07.lemma_7_2_1_phase2`, with $\Phi_2 = \frac{1}{2} \|c\|^2$. -/
+  `CartisGouldToint.Chapter07.lemma_7_2_1_phase2`, with $\Phi_2 = \frac{1}{2} \|c\|^2$.
+
+The smoothness hypotheses on the merits are replaced by the first derivatives of $f$
+and $c$ used in the Phase 2 case.
+
+**Correction.** Matches the two possible output phases under the corrected branch conditions,
+requiring the actual objective and constraint first derivatives directly.
+-/
 theorem lemma_7_2_1 (h : algorithm_7_2_1 f c C p ℓ P ε₀ ε₁ x₀ y s σ k₁ D)
     (hf : ∀ x ∈ C, DifferentiableAt ℝ f x) (hc : ∀ x ∈ C, DifferentiableAt ℝ c x) :
     (P.θ * ε₀ < ‖c (y k₁)‖ → y k₁ ∈ C ∧
@@ -1663,8 +1801,9 @@ $$\kappa \left(1 + \frac{|\log \gamma_1|}{\log \gamma_2}\right) R + \frac{|\log 
   \log(\sigma_{\Phi,\max} / \sigma_0)}{\log \gamma_2} + 2$$
 evaluations of $c$ (7.2.23) and at most $\kappa R + 2$ evaluations of its derivatives (7.2.24).
 
-**Correction.** The printed bound (7.2.24) lacks the term $+2$ of Theorem 6.3.1, which is
-restored.
+**Correction.** The residual alternative uses $\theta\epsilon_0$ from (7.2.9)
+instead of the weaker $\epsilon_0$ in this lemma. The derivative-evaluation
+bound (7.2.24) restores the $+2$ from Theorem 6.3.1.
 
 The number of evaluations of $c$ is `Optimization.funEvalCount k₁` $= k_1 + 1$, and the number
 of derivative evaluations counts the initial one and one per successful iteration before $k_1$.

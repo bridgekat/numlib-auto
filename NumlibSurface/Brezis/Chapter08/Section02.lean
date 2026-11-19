@@ -159,13 +159,39 @@ The proofs specialize the backbone modules `Numlib.Analysis.Sobolev.Interval.Bas
 
 ## Deviations from the source
 
-* **Lemma 8.3** (generalization). The source assumes $\eta = 1$ on $x < 1/4$ and $\eta = 0$ on
-  $x > 3/4$. Only the second condition is assumed. See `Brezis.Chapter08.lemma_8_3`.
+* **Sobolev definitions, norms, Proposition 8.1 and Remarks 2 and 4** (generalization). Several
+  results apply to any open subset of the line. The space and membership definitions accept
+  exponents below one, and the backbone uses the maximum norm at $p=\infty$.
+* **Piecewise $C^1$ example** (reading). The claim applies on any bounded interval. The
+  derivatives on the pieces need a uniform bound and may lack endpoint extensions. See
+  `Brezis.Chapter08.example_piecewise_contDiff`.
+* **Remark 5, Proposition 8.3 and Remark 8** (generalization). Invariance under a.e. equality,
+  the test-bound criterion and its $p=1$ forward direction apply on all open sets. See
+  `Brezis.Chapter08.remark_8_5_congr`, `Brezis.Chapter08.proposition_8_3` and
+  `Brezis.Chapter08.remark_8_8_one`.
+* **Remark 6 and Proposition 8.5** (generalization). The continuous-derivative criterion in
+  Remark 6 applies to exponents below one. The forward translation estimate in Proposition 8.5
+  includes $p=\infty$. See `Brezis.Chapter08.remark_8_6` and
+  `Brezis.Chapter08.proposition_8_5_const`.
+* **Lemma 8.3** (reading). The cutoff is smooth and may take values outside $[0,1]$ or differ
+  from $1$ near the left endpoint. See `Brezis.Chapter08.lemma_8_3`.
+* **Remark 10(a) and (b)** (reading). Noncompactness is given on $(0,1)$ using powers of $x$.
+  Pointwise subsequence convergence is given on bounded intervals including their endpoints.
+  See `Brezis.Chapter08.remark_8_10_a` and `Brezis.Chapter08.remark_8_10_b`.
 * **Remark 10(c)** (generalization). The source states the claim for $1 < p \le \infty$. It holds
   for every $1 \le p \le \infty$. See `Brezis.Chapter08.remark_8_10_c`.
+* **Remark 10(d)** (generalization). Local uniform convergence is stated on the closure of
+  bounded or unbounded intervals. See `Brezis.Chapter08.remark_8_10_d`.
 * **Corollary 8.11, the derivative** (generalization). The source assumes $G(0) = 0$. The formula
   $(G \circ u)' = (G' \circ u) u'$ holds without this assumption. See
   `Brezis.Chapter08.corollary_8_11_deriv`.
+* **Higher-order Sobolev spaces** (reading). The definitions, test characterization and norm
+  formulas allow arbitrary open sets and include orders zero and one. The test characterization
+  explicitly requires $u\in L^p$, and the embeddings include order one. See
+  `Brezis.Chapter08.MemSobolevSpaceHigher` and
+  `Brezis.Chapter08.memSobolevSpaceHigher_iff_forall_integral`.
+* **Higher-order interpolation** (reading). The estimate quantifies the constant after fixing
+  the interval, exponent and orders. See `Brezis.Chapter08.interpolationInequality`.
 
 ## Not formalized
 
@@ -195,10 +221,15 @@ the space of pairs $(u, u')$ in $L^p(I) \times L^p(I)$ such that $u'$ is the wea
 $u$ on $I$. It is a Banach space.
 
 The type is the backbone's `SobolevIntervalLp 1 p I`. The definition of the source as a
-condition on functions is `Brezis.Chapter08.MemSobolevSpace`. -/
+condition on functions is `Brezis.Chapter08.MemSobolevSpace`.
+
+**Generalization.** The type is available for every open subset of the line and every
+extended nonnegative exponent. The Banach space result assumes $p\ge 1$. -/
 abbrev sobolevSpace (p : ℝ≥0∞) (I : Opens ℝ) : Type := SobolevIntervalLp 1 p I
 
-/-- **Section 8.2** of [brezis2011functional], notation. The space $H^1(I)$ is $W^{1,2}(I)$. -/
+/-- **Section 8.2** of [brezis2011functional], notation. The space $H^1(I)$ is $W^{1,2}(I)$.
+
+**Generalization.** The notation applies to every open subset of the line. -/
 abbrev H1 (I : Opens ℝ) : Type := sobolevSpace 2 I
 
 /-- **Section 8.2** of [brezis2011functional], definition of $W^{1,p}(I)$ as a condition on
@@ -206,11 +237,14 @@ functions. Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$ and
 $u : \mathbb{R} \to \mathbb{R}$. Then $u \in W^{1,p}(I)$ means that $u \in L^p(I)$ and that
 there is $g \in L^p(I)$ with
 $$\int_I u \varphi' = -\int_I g \varphi \quad \text{for all } \varphi \in C_c^\infty(I).$$
-The function $g$ is the **weak derivative** $u'$. It is unique almost everywhere on $I$
+The function $g$ is the **weak derivative** $u'$. For $p\ge 1$ it is unique almost everywhere on $I$
 (`Brezis.Chapter08.memSobolevSpace_deriv_unique`).
 
 The source tests against $\varphi \in C_c^1(I)$. On an interval both classes of test functions
-give the same condition, by Remark 1 (`Brezis.Chapter08.remark_8_1`). -/
+give the same condition, by Remark 1 (`Brezis.Chapter08.remark_8_1`).
+
+**Generalization.** The predicate accepts every open subset of the line and every extended
+nonnegative exponent. -/
 def MemSobolevSpace (p : ℝ≥0∞) (I : Opens ℝ) (u : ℝ → ℝ) : Prop :=
   MemLp u p (volume.restrict I) ∧ ∃ g : ℝ → ℝ, MemLp g p (volume.restrict I) ∧
     ∀ φ : 𝓓(I, ℝ), ∫ x in (I : Set ℝ), u x * deriv φ x = -∫ x in (I : Set ℝ), g x * φ x
@@ -241,7 +275,9 @@ $$\int_I u \varphi' = -\int_I g_i \varphi \quad \text{for all } \varphi \in C_c^
 Then $g_1 = g_2$ almost everywhere on $I$.
 
 The source refers to its Corollary 4.24. The proof uses the uniqueness of weak derivatives,
-`HasWeakIteratedLineDerivOn.ae_eq`. -/
+`HasWeakIteratedLineDerivOn.ae_eq`.
+
+**Generalization.** The uniqueness statement applies to every open subset of the line. -/
 theorem memSobolevSpace_deriv_unique {u g₁ g₂ : ℝ → ℝ} (hu : MemLp u p (volume.restrict I))
     (hg₁ : MemLp g₁ p (volume.restrict I)) (hg₂ : MemLp g₂ p (volume.restrict I))
     (h₁ : ∀ φ : 𝓓(I, ℝ), ∫ x in (I : Set ℝ), u x * deriv φ x = -∫ x in (I : Set ℝ), g₁ x * φ x)
@@ -262,7 +298,9 @@ $1 \le p \le \infty$. If $u \in C^1(I)$, $u \in L^p(I)$ and the classical deriva
 in $L^p(I)$, then $u \in W^{1,p}(I)$.
 
 The weak derivative is the classical one, by `Brezis.Chapter08.remark_8_2_deriv`. The proof
-specializes `memSobolevIntervalLp_of_contDiffOn`. -/
+specializes `memSobolevIntervalLp_of_contDiffOn`.
+
+**Generalization.** The conclusion holds on every open subset of the line. -/
 theorem remark_8_2 {u : ℝ → ℝ} (hu : ContDiffOn ℝ 1 u I) (hup : MemLp u p (volume.restrict I))
     (hup' : MemLp (deriv u) p (volume.restrict I)) : MemSobolevSpace p I u :=
   memSobolevSpace_iff_memSobolevIntervalLp.2 (memSobolevIntervalLp_of_contDiffOn hu hup hup').1
@@ -270,7 +308,10 @@ theorem remark_8_2 {u : ℝ → ℝ} (hu : ContDiffOn ℝ 1 u I) (hup : MemLp u 
 /-- **Remark 2** in Chapter 8 of [brezis2011functional], consistency of the notation. Let
 $I \subseteq \mathbb{R}$ be open and $u \in C^1(I)$, with classical derivative $u'$. Then
 $$\int_I u \varphi' = -\int_I u' \varphi \quad \text{for all } \varphi \in C_c^\infty(I).$$
-So the classical derivative satisfies the defining identity of the weak derivative. -/
+So the classical derivative satisfies the defining identity of the weak derivative.
+
+**Generalization.** The test identity applies on every open subset of the line under the
+$C^1$ hypothesis alone. -/
 theorem remark_8_2_deriv {u : ℝ → ℝ} (hu : ContDiffOn ℝ 1 u I) (φ : 𝓓(I, ℝ)) :
     ∫ x in (I : Set ℝ), u x * deriv φ x = -∫ x in (I : Set ℝ), deriv u x * φ x := by
   have := (hasWeakDerivOn_of_contDiffOn hu).integral_deriv_mul φ
@@ -416,7 +457,10 @@ is one constant $C$ with $|g'| \le C$ on all these intervals. Then $g \in W^{1,p
 The source says that $g$ is piecewise $C^1$ on $[a, b]$; here this means that $g$ is $C^1$ on
 the open intervals of the partition with a common bound on $g'$. The partition is a strictly
 increasing `x : Fin (N + 2) → ℝ`. The proof specializes
-`memSobolevIntervalLp_of_piecewise_contDiffOn`. -/
+`memSobolevIntervalLp_of_piecewise_contDiffOn`.
+
+**Reading.** The source gives the piecewise example on $(-1,1)$. Here the interval is arbitrary
+and bounded derivative on each open piece suffices. -/
 theorem example_piecewise_contDiff {a b : ℝ} {N : ℕ} {x : Fin (N + 2) → ℝ} (hx : StrictMono x)
     (hxa : x 0 = a) (hxb : x (Fin.last (N + 1)) = b) {g : ℝ → ℝ} (hg : ContinuousOn g (Icc a b))
     (hg' : ∀ j : Fin (N + 1), ContDiffOn ℝ 1 g (Ioo (x j.castSucc) (x j.succ)))
@@ -441,7 +485,9 @@ source is
 $$\|u\|_{W^{1,p}} = \|u\|_{L^p} + \|u'\|_{L^p}.$$
 
 The norm of the type `SobolevIntervalLp 1 p I` is a different, equivalent norm
-(`Brezis.Chapter08.sobolevNorm_equiv`). -/
+(`Brezis.Chapter08.sobolevNorm_equiv`).
+
+**Generalization.** The formula applies on every open subset of the line. -/
 def sobolevNorm (u : SobolevIntervalLp 1 p I) : ℝ := ‖u.deriv 0‖ + ‖u.deriv 1‖
 
 /-- Let $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. The norm $\|u\|_{W^{1,p}}$ of
@@ -456,7 +502,10 @@ $\|u\| = (\|u\|_{L^p}^p + \|u'\|_{L^p}^p)^{1/p}$ for $p < \infty$ and $\|u\| =
 source:
 $$\|u\| \le \|u\|_{W^{1,p}} \le 2 \|u\| \quad \text{for all } u \in W^{1,p}(I).$$
 
-The formula for the norm of the type is `SobolevIntervalLp.norm_eq_sum`. -/
+The formula for the norm of the type is `SobolevIntervalLp.norm_eq_sum`.
+
+**Generalization.** The comparison applies on every open subset of the line and includes the
+endpoint norms. For $p=\infty$ the alternative uses the maximum of the two norms. -/
 theorem sobolevNorm_equiv (u : SobolevIntervalLp 1 p I) :
     ‖u‖ ≤ sobolevNorm u ∧ sobolevNorm u ≤ 2 * ‖u‖ := by
   refine ⟨(SobolevIntervalLp.norm_le_sum_norm_deriv u).trans_eq ?_, ?_⟩
@@ -478,7 +527,9 @@ theorem sobolevNorm_eq_norm_of_one (u : SobolevIntervalLp 1 1 I) : sobolevNorm u
 $I \subseteq \mathbb{R}$ be open. For $u, v \in H^1(I)$, the scalar product of the type is
 $$(u, v)_{H^1} = (u, v)_{L^2} + (u', v')_{L^2} = \int_I (u v + u' v').$$
 
-The proof specializes `SobolevIntervalLp.inner_eq_integral`. -/
+The proof specializes `SobolevIntervalLp.inner_eq_integral`.
+
+**Generalization.** The formula applies on every open subset of the line. -/
 theorem inner_H1 (u v : SobolevIntervalLp 1 2 I) :
     ⟪u, v⟫_ℝ = ∫ x in (I : Set ℝ), (u.fn x * v.fn x + u.deriv 1 x * v.deriv 1 x) :=
   SobolevIntervalLp.inner_eq_integral u v
@@ -487,7 +538,9 @@ theorem inner_H1 (u v : SobolevIntervalLp 1 2 I) :
 $I \subseteq \mathbb{R}$ be open. For $u \in H^1(I)$,
 $$\|u\|_{H^1}^2 = \|u\|_{L^2}^2 + \|u'\|_{L^2}^2.$$
 So for $p = 2$ the norm of the type is the norm of $H^1(I)$ in the source, the norm of the
-scalar product. -/
+scalar product.
+
+**Generalization.** The formula applies on every open subset of the line. -/
 theorem norm_H1_sq (u : SobolevIntervalLp 1 2 I) :
     ‖u‖ ^ 2 = ‖u.deriv 0‖ ^ 2 + ‖u.deriv 1‖ ^ 2 := by
   rw [← real_inner_self_eq_norm_sq, SobolevIntervalLp.inner_eq, Fin.sum_univ_two,
@@ -499,7 +552,9 @@ theorem norm_H1_sq (u : SobolevIntervalLp 1 2 I) :
 open and $1 \le p \le \infty$. Then $W^{1,p}(I)$ is complete, so it is a Banach space.
 
 Completeness is the instance `SobolevMultiIndex.instCompleteSpace`. The source proves it from
-the closedness of the weak derivative under limits in $L^p$, which is Remark 4. -/
+the closedness of the weak derivative under limits in $L^p$, which is Remark 4.
+
+**Generalization.** Completeness holds for every open subset of the line. -/
 theorem proposition_8_1_banach : CompleteSpace (SobolevIntervalLp 1 p I) := inferInstance
 
 /-- **Proposition 8.1** of [brezis2011functional], reflexivity. Let $I \subseteq \mathbb{R}$ be open
@@ -508,7 +563,9 @@ and $1 < p < \infty$. Then $W^{1,p}(I)$ is reflexive.
 The map $u \mapsto (u, u')$ embeds $W^{1,p}(I)$ isometrically as a closed subspace of the
 reflexive space $L^p(I) \times L^p(I)$. The factors are reflexive by Theorem 4.10
 (`Brezis.Chapter04.theorem_4_10`), and the closed subspace is reflexive by
-`SobolevMultiIndex.instIsReflexive`. -/
+`SobolevMultiIndex.instIsReflexive`.
+
+**Generalization.** Reflexivity holds for every open subset of the line. -/
 theorem proposition_8_1_reflexive (hp1 : 1 < p) (hp : p ≠ ∞) :
     NormedSpace.IsReflexive ℝ (SobolevIntervalLp 1 p I) :=
   have : NormedSpace.IsReflexive ℝ (Lp ℝ p (volume.restrict (I : Set ℝ))) :=
@@ -519,7 +576,9 @@ theorem proposition_8_1_reflexive (hp1 : 1 < p) (hp : p ≠ ∞) :
 open and $1 \le p < \infty$. Then $W^{1,p}(I)$ is separable.
 
 The factors $L^p(I)$ are separable by Theorem 4.13 (`Brezis.Chapter04.theorem_4_13`). The proof
-uses `SobolevMultiIndex.instSecondCountableTopology`. -/
+uses `SobolevMultiIndex.instSecondCountableTopology`.
+
+**Generalization.** Separability holds for every open subset of the line. -/
 theorem proposition_8_1_separable (hp : p ≠ ∞) :
     TopologicalSpace.SeparableSpace (SobolevIntervalLp 1 p I) :=
   have : Fact (p ≠ ∞) := ⟨hp⟩
@@ -533,7 +592,9 @@ $\|u\| = (u, u)_{H^1}^{1/2}$ for all $u \in H^1(I)$, and $H^1(I)$ is complete an
 $H^1(I)$ is a separable Hilbert space.
 
 Mathlib has no bundled class of Hilbert spaces. As in Chapter 5, a Hilbert space is a type with
-the instances `InnerProductSpace ℝ H` and `CompleteSpace H`. -/
+the instances `InnerProductSpace ℝ H` and `CompleteSpace H`.
+
+**Generalization.** The result holds for every open subset of the line. -/
 theorem proposition_8_1_hilbert :
     (∀ u : SobolevIntervalLp 1 2 I, ‖u‖ = √⟪u, u⟫_ℝ) ∧ CompleteSpace (SobolevIntervalLp 1 2 I) ∧
       TopologicalSpace.SeparableSpace (SobolevIntervalLp 1 2 I) :=
@@ -542,7 +603,9 @@ theorem proposition_8_1_hilbert :
 /-- **Proposition 8.1** of [brezis2011functional]. Let $I \subseteq \mathbb{R}$ be open and
 $1 \le p \le \infty$. The space $W^{1,p}(I)$ is a Banach space. It is reflexive for
 $1 < p < \infty$ and separable for $1 \le p < \infty$. The space $H^1(I)$ is a separable Hilbert
-space: its norm is $\|u\| = (u, u)_{H^1}^{1/2}$, and it is complete and separable. -/
+space: its norm is $\|u\| = (u, u)_{H^1}^{1/2}$, and it is complete and separable.
+
+**Generalization.** The results hold for every open subset of the line. -/
 theorem proposition_8_1 :
     CompleteSpace (SobolevIntervalLp 1 p I) ∧
       (1 < p → p ≠ ∞ → NormedSpace.IsReflexive ℝ (SobolevIntervalLp 1 p I)) ∧
@@ -562,7 +625,9 @@ Moreover there is $\bar v \in W^{1,p}(I)$ whose function is $v$ and whose deriva
 almost everywhere on $I$, and $u_n \to \bar v$ in $W^{1,p}(I)$.
 
 The proof specializes `hasWeakDerivOn_of_tendsto_eLpNorm` and
-`SobolevIntervalLp.tendsto_of_tendsto_deriv`. -/
+`SobolevIntervalLp.tendsto_of_tendsto_deriv`.
+
+**Generalization.** The convergence result holds on every open subset of the line. -/
 theorem remark_8_4_a {u : ℕ → SobolevIntervalLp 1 p I} {v w : ℝ → ℝ}
     (hv : MemLp v p (volume.restrict I)) (hw : MemLp w p (volume.restrict I))
     (hlv : Tendsto (fun n ↦ eLpNorm ((u n).fn - v) p (volume.restrict I)) atTop (𝓝 0))
@@ -591,7 +656,9 @@ $v \in W^{1,p}(I)$.
 
 The source refers to Exercise 8.2. The proof specializes
 `SobolevIntervalLp.memSobolevIntervalLp_of_tendsto_of_bounded_deriv`: the bound of Proposition
-8.3(ii) passes to the limit. -/
+8.3(ii) passes to the limit.
+
+**Generalization.** The convergence result holds on every open subset of the line. -/
 theorem remark_8_4_b (hp : 1 < p) {u : ℕ → SobolevIntervalLp 1 p I} {M : ℝ}
     (hM : ∀ n, ‖(u n).deriv 1‖ ≤ M) {v : ℝ → ℝ} (hv : MemLp v p (volume.restrict I))
     (hlv : Tendsto (fun n ↦ eLpNorm ((u n).fn - v) p (volume.restrict I)) atTop (𝓝 0)) :
@@ -606,7 +673,9 @@ $1 \le p \le \infty$, let $(u_n)$ be a sequence in $W^{1,p}(I)$, and let $v \in 
 $u_n \to v$ in $L^p(I)$. First, if $u_n' \to w$ in $L^p(I)$ for some $w \in L^p(I)$, then
 $v \in W^{1,p}(I)$, and $u_n \to \bar v$ in $W^{1,p}(I)$ for some $\bar v \in W^{1,p}(I)$ whose
 function is $v$ almost everywhere on $I$. Second, if $1 < p$ and $\|u_n'\|_{L^p} \le M$ for all
-$n$, then $v \in W^{1,p}(I)$. -/
+$n$, then $v \in W^{1,p}(I)$.
+
+**Generalization.** The convergence results hold on every open subset of the line. -/
 theorem remark_8_4 {u : ℕ → SobolevIntervalLp 1 p I} {v : ℝ → ℝ}
     (hv : MemLp v p (volume.restrict I))
     (hlv : Tendsto (fun n ↦ eLpNorm ((u n).fn - v) p (volume.restrict I)) atTop (𝓝 0)) :
@@ -638,7 +707,9 @@ theorem theorem_8_2 (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p
 
 /-- **Remark 5** in Chapter 8 of [brezis2011functional], first sentence. Let
 $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. If $u \in W^{1,p}(I)$ and $v = u$
-almost everywhere on $I$, then $v \in W^{1,p}(I)$. -/
+almost everywhere on $I$, then $v \in W^{1,p}(I)$.
+
+**Generalization.** The membership predicate is invariant under a.e. equality on any open set. -/
 theorem remark_8_5_congr {u v : ℝ → ℝ} (hu : MemSobolevSpace p I u)
     (hvu : v =ᵐ[volume.restrict I] u) : MemSobolevSpace p I v :=
   memSobolevSpace_iff_memSobolevIntervalLp.2
@@ -677,7 +748,9 @@ on $\bar I$. Then $\tilde u \in C^1(\bar I)$, and at every $x \in \bar I$ the fu
 $\tilde u$ has the derivative $g(x)$ within $\bar I$.
 
 Here $\tilde u$ is `SobolevIntervalLp.rep u`. The statement does not need $p \ge 1$. The proof
-specializes `SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`. -/
+specializes `SobolevIntervalLp.contDiffOn_rep_of_continuousOn_deriv`.
+
+**Generalization.** The conclusion applies to any extended nonnegative exponent. -/
 theorem remark_8_6 (hI : (I : Set ℝ).OrdConnected) (u : SobolevIntervalLp 1 p I) {g : ℝ → ℝ}
     (hg : ContinuousOn g (closure (I : Set ℝ))) (hu : ⇑(u.deriv 1) =ᵐ[volume.restrict I] g) :
     ContDiffOn ℝ 1 u.rep (closure (I : Set ℝ)) ∧
@@ -760,7 +833,9 @@ $$\left| \int_I u \varphi' \right| \le \|u'\|_{L^p(I)} \|\varphi\|_{L^{p'}(I)} \
   all } \varphi \in C_c^\infty(I).$$
 
 The statement includes $p = 1$, as Remark 8 says. The proof specializes
-`SobolevIntervalLp.abs_integral_mul_deriv_le`. -/
+`SobolevIntervalLp.abs_integral_mul_deriv_le`.
+
+**Generalization.** The bound applies on arbitrary open sets and includes $p=1$, as in Remark 8. -/
 theorem proposition_8_3_const {q : ℝ≥0∞} [p.HolderConjugate q] (u : SobolevIntervalLp 1 p I)
     (φ : 𝓓(I, ℝ)) :
     |∫ x in (I : Set ℝ), u.fn x * deriv φ x|
@@ -774,7 +849,9 @@ $$\left| \int_I u \varphi' \right| \le C \|\varphi\|_{L^{p'}(I)} \quad \text{for
   \in C_c^\infty(I).$$
 
 The proof specializes `memSobolevIntervalLp_iff_forall_abs_integral_mul_deriv_le`. The converse
-uses the Riesz representation theorem, as in the source. -/
+uses the Riesz representation theorem, as in the source.
+
+**Generalization.** The characterization applies on arbitrary open sets. -/
 theorem proposition_8_3 {q : ℝ≥0∞} [p.HolderConjugate q] (hp : 1 < p) {u : ℝ → ℝ}
     (hu : MemLp u p (volume.restrict I)) :
     MemSobolevSpace p I u ↔ ∃ C : ℝ, ∀ φ : 𝓓(I, ℝ),
@@ -788,7 +865,9 @@ $I \subseteq \mathbb{R}$ be open and $u \in W^{1,1}(I)$. Then
 $$\left| \int_I u \varphi' \right| \le \|u'\|_{L^1(I)} \|\varphi\|_{L^\infty(I)} \quad \text{for
   all } \varphi \in C_c^\infty(I).$$
 So the implication (i) $\Rightarrow$ (ii) of Proposition 8.3 holds for $p = 1$, with
-$p' = \infty$. -/
+$p' = \infty$.
+
+**Generalization.** The forward inequality applies on arbitrary open sets. -/
 theorem remark_8_8_one (u : SobolevIntervalLp 1 1 I) (φ : 𝓓(I, ℝ)) :
     |∫ x in (I : Set ℝ), u.fn x * deriv φ x|
       ≤ ‖u.deriv 1‖ * (eLpNorm φ ∞ (volume.restrict I)).toReal :=
@@ -815,7 +894,9 @@ Second, for all $a < b$, a function $u$ lies in $W^{1,1}((a, b))$ if and only if
 almost everywhere on $(a, b)$, a function that is absolutely continuous on $[a, b]$.
 
 The failure of the converse of (i) $\Rightarrow$ (ii) of Proposition 8.3 for $p = 1$, and the
-characterizations (a)–(c) of the functions of bounded variation, are not formalized. -/
+characterizations (a)–(c) of the functions of bounded variation, are not formalized.
+
+**Generalization.** The forward inequality applies on arbitrary open sets. -/
 theorem remark_8_8 :
     (∀ (u : SobolevIntervalLp 1 1 I) (φ : 𝓓(I, ℝ)), |∫ x in (I : Set ℝ), u.fn x * deriv φ x|
       ≤ ‖u.deriv 1‖ * (eLpNorm φ ∞ (volume.restrict I)).toReal) ∧
@@ -843,7 +924,10 @@ $$\|\tau_h u - u\|_{L^p(\mathbb{R})} \le |h| \, \|u'\|_{L^p(\mathbb{R})} \quad \
   \in \mathbb{R}.$$
 
 Here $u$ is its continuous representative `SobolevIntervalLp.rep u`. The statement includes
-$p = 1$. The proof specializes `SobolevIntervalLp.eLpNorm_translate_sub_le`. -/
+$p = 1$. The proof specializes `SobolevIntervalLp.eLpNorm_translate_sub_le`.
+
+**Generalization.** The estimate includes $p=\infty$, covered by the pointwise Lipschitz
+bound in Proposition 8.4. -/
 theorem proposition_8_5_const (u : SobolevIntervalLp 1 p ⊤) (h : ℝ) :
     eLpNorm (fun x ↦ u.rep (x + h) - u.rep x) p volume
       ≤ ENNReal.ofReal |h| * eLpNorm (u.deriv 1) p volume :=
@@ -948,7 +1032,10 @@ need this condition.
 Here $u$ is its continuous representative `SobolevIntervalLp.rep u`, and the extension by $0$ is
 `Set.indicator` of $(0, 1)$. The proof specializes
 `HasWeakDerivOn.indicator_mul_of_tsupport_inter_subset`. As in the source, it integrates by
-parts against $\eta \varphi \in C_c^1((0, 1))$. -/
+parts against $\eta \varphi \in C_c^1((0, 1))$.
+
+**Reading.** The printed cutoff is $C^1$, takes values in $[0,1]$, and equals $1$ for
+$x<1/4$. The library assumes smoothness and retains the cutoff condition at $x>3/4$. -/
 theorem lemma_8_3 (u : SobolevIntervalLp 1 p (Opens.Ioo 0 1)) {η : ℝ → ℝ}
     (hη : ContDiff ℝ (⊤ : ℕ∞) η) (hη0 : ∀ x, 3 / 4 < x → η x = 0) :
     MemSobolevSpace p (Opens.Ioi 0) ((Ioo 0 1).indicator fun x ↦ η x * u.rep x) ∧
@@ -1189,7 +1276,10 @@ The source says that the injection $W^{1,1}(I) \subseteq C(\bar I)$ is continuou
 compact, even if $I$ is a bounded interval; the statement here is the case $I = (0, 1)$. The
 functions $u_n(x) = x^n$ are bounded in $W^{1,1}((0, 1))$ and converge pointwise on $[0, 1]$ to
 the discontinuous indicator function of $\{1\}$, so no subsequence converges in $C([0, 1])$. The
-source leaves this argument to the reader or to Exercise 8.2. -/
+source leaves this argument to the reader or to Exercise 8.2.
+
+**Reading.** The source states noncompactness for arbitrary intervals. This theorem gives
+$(0,1)$ with the powers of $x$, the sequence also used in the hint to Exercise 8.5(2). -/
 theorem remark_8_10_a :
     ¬ IsCompactOperator (SobolevIntervalLp.toContinuousMap (p := 1) (zero_lt_one' ℝ)) := by
   intro hT
@@ -1408,7 +1498,10 @@ $x \in [a, b]$.
 The source allows an unbounded interval $I$. That case follows by a diagonal argument on
 $I \cap [-R, R]$ and is not formalized. Here $\tilde u_n$ is `SobolevIntervalLp.rep (u n)`, and
 $\|u_n\|$ is the norm of the type. The proof specializes
-`SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one`. -/
+`SobolevIntervalLp.exists_subseq_tendsto_of_bounded_one`.
+
+**Reading.** The result assumes a bounded interval and gives pointwise convergence at both
+endpoints as well. The source's Exercise 8.3 includes the endpoints on $(0,1)$. -/
 theorem remark_8_10_b {a b : ℝ} (hab : a < b) {u : ℕ → SobolevIntervalLp 1 1 (Opens.Ioo a b)}
     {M : ℝ} (hM : ∀ n, ‖u n‖ ≤ M) :
     ∃ φ : ℕ → ℕ, StrictMono φ ∧
@@ -1421,7 +1514,10 @@ $n$. Then there are a subsequence $(u_{n_k})$ and some $u \in W^{1,p}(I)$ such t
 $u_{n_k} \to u$ in $L^\infty(J)$ for every bounded subset $J$ of $I$: for every $R$,
 $\tilde u_{n_k} \to \tilde u$ uniformly on $\bar I \cap [-R, R]$.
 
-The proof specializes `SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded`. -/
+The proof specializes `SobolevIntervalLp.exists_subseq_tendsto_rep_of_bounded`.
+
+**Generalization.** The statement also covers bounded intervals. It gives uniform convergence
+of continuous representatives on bounded parts of the closure, including finite endpoints. -/
 theorem remark_8_10_d (hI : (I : Set ℝ).OrdConnected) (hp : 1 < p)
     {u : ℕ → SobolevIntervalLp 1 p I} {M : ℝ} (hM : ∀ n, ‖u n‖ ≤ M) :
     ∃ (v : SobolevIntervalLp 1 p I) (φ : ℕ → ℕ), StrictMono φ ∧
@@ -1557,7 +1653,10 @@ $$\int_I u \varphi' = -\int_I g \varphi \quad \text{for all } \varphi \in C_c^\i
 
 For $m = 1$ this is the condition `Brezis.Chapter08.MemSobolevSpace`
 (`Brezis.Chapter08.memSobolevSpaceHigher_one`). For $m \ge 2$ it is the definition of the
-source, $W^{m,p}(I) = \{u \in W^{m-1,p}(I) : u' \in W^{m-1,p}(I)\}$. -/
+source, $W^{m,p}(I) = \{u \in W^{m-1,p}(I) : u' \in W^{m-1,p}(I)\}$.
+
+**Generalization.** The definition gives explicit base cases and allows every open subset of
+the line and every extended nonnegative exponent. -/
 def MemSobolevSpaceHigher (p : ℝ≥0∞) (I : Opens ℝ) : ℕ → (ℝ → ℝ) → Prop
   | 0, u => MemLp u p (volume.restrict I)
   | m + 1, u => MemSobolevSpaceHigher p I m u ∧ ∃ g : ℝ → ℝ, MemSobolevSpaceHigher p I m g ∧
@@ -1610,11 +1709,16 @@ $I \subseteq \mathbb{R}$ be open, $m \in \mathbb{N}$ and $1 \le p \le \infty$. T
 $W^{m,p}(I)$ is the space of tuples $(u, Du, \dots, D^m u)$ in $L^p(I)$ in which $D^j u$ is the
 $j$-th weak derivative of $u$ on $I$.
 
-The type is the backbone's `SobolevIntervalLp m p I`. -/
+The type is the backbone's `SobolevIntervalLp m p I`.
+
+**Generalization.** The type allows orders zero and one, arbitrary open sets and all extended
+nonnegative exponents. -/
 abbrev sobolevSpaceHigher (m : ℕ) (p : ℝ≥0∞) (I : Opens ℝ) : Type := SobolevIntervalLp m p I
 
 /-- **Section 8.2** of [brezis2011functional], the Sobolev spaces $W^{m,p}$, notation. The space
-$H^m(I)$ is $W^{m,2}(I)$. -/
+$H^m(I)$ is $W^{m,2}(I)$.
+
+**Generalization.** The notation applies at orders zero and one and on arbitrary open sets. -/
 abbrev Hm (m : ℕ) (I : Opens ℝ) : Type := sobolevSpaceHigher m 2 I
 
 /-- **Section 8.2** of [brezis2011functional], the Sobolev spaces $W^{m,p}$, the characterization by
@@ -1625,7 +1729,10 @@ $$\int_I u \, D^j \varphi = (-1)^j \int_I g_j \varphi \quad \text{for all } \var
   C_c^\infty(I).$$
 
 The source says that this characterization is easily shown. The proof specializes
-`SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral`. -/
+`SobolevIntervalLp.memSobolevIntervalLp_iff_forall_integral`.
+
+**Reading.** The characterization explicitly assumes $u\in L^p$. Without this requirement, a
+nonzero constant on the line would meet the derivative tests at finite exponents. -/
 theorem memSobolevSpaceHigher_iff_forall_integral {m : ℕ} {u : ℝ → ℝ} :
     MemSobolevSpaceHigher p I m u ↔ MemLp u p (volume.restrict I) ∧ ∀ j ∈ Icc 1 m,
       ∃ g : ℝ → ℝ, MemLp g p (volume.restrict I) ∧ ∀ φ : 𝓓(I, ℝ),
@@ -1643,7 +1750,10 @@ where $D^j u$ is the component `SobolevIntervalLp.deriv u j` of $u$. So $D^j u$ 
 $g_j$ of the characterization: $u' = g_1$, $(u')' = g_2$, and so on.
 
 The statement does not need $p \ge 1$. The proof uses
-`SobolevIntervalLp.hasWeakDerivOn_deriv_succ`. -/
+`SobolevIntervalLp.hasWeakDerivOn_deriv_succ`.
+
+**Generalization.** The derivative identity applies to arbitrary open sets, all derivative orders
+including zero and all extended nonnegative exponents. -/
 theorem memSobolevSpaceHigher_deriv {m : ℕ} (u : SobolevIntervalLp m p I) (j : Fin (m + 1))
     (φ : 𝓓(I, ℝ)) :
     ∫ x in (I : Set ℝ), u.fn x * iteratedDeriv j φ x
@@ -1655,7 +1765,8 @@ theorem memSobolevSpaceHigher_deriv {m : ℕ} (u : SobolevIntervalLp m p I) (j :
 /-- **Section 8.2** of [brezis2011functional], the Sobolev spaces $W^{m,p}$, the norm. The norm of
 $u \in W^{m,p}(I)$ in the source is
 $$\|u\|_{W^{m,p}} = \|u\|_{L^p} + \sum_{\alpha = 1}^m \|D^\alpha u\|_{L^p}.$$
--/
+
+**Generalization.** The sum formula covers arbitrary open sets and orders zero and one. -/
 def sobolevNormHigher {m : ℕ} (u : SobolevIntervalLp m p I) : ℝ :=
   ‖u.deriv 0‖ + ∑ j : Fin m, ‖u.deriv j.succ‖
 
@@ -1678,7 +1789,10 @@ theorem sobolevNormHigher_equiv {m : ℕ} (u : SobolevIntervalLp m p I) :
 $H^m$. Let $I \subseteq \mathbb{R}$ be open and $m \in \mathbb{N}$. For $u, v \in H^m(I)$,
 $$(u, v)_{H^m} = (u, v)_{L^2} + \sum_{\alpha = 1}^m (D^\alpha u, D^\alpha v)_{L^2}.$$
 
-The proof specializes `SobolevIntervalLp.inner_eq`. -/
+The proof specializes `SobolevIntervalLp.inner_eq`.
+
+**Generalization.** The scalar product formula applies to arbitrary open sets and includes
+orders zero and one. -/
 theorem inner_Hm {m : ℕ} (u v : SobolevIntervalLp m 2 I) :
     ⟪u, v⟫_ℝ = ⟪u.deriv 0, v.deriv 0⟫_ℝ + ∑ j : Fin m, ⟪u.deriv j.succ, v.deriv j.succ⟫_ℝ := by
   rw [SobolevIntervalLp.inner_eq, Fin.sum_univ_succ]
@@ -1691,7 +1805,10 @@ $$\|D^j u\|_{L^p} \le \varepsilon \|D^m u\|_{L^p} + C \|u\|_{L^p} \quad \text{fo
 
 The source says that $C$ depends on $\varepsilon$ and $|I| \le \infty$, and refers to Adams and
 to Exercise 8.6 for the proof. The proof specializes
-`SobolevIntervalLp.eLpNorm_deriv_le_mul_add`, by a direct estimate on windows. -/
+`SobolevIntervalLp.eLpNorm_deriv_le_mul_add`, by a direct estimate on windows.
+
+**Reading.** The source describes dependence on $\varepsilon$ and interval length for fixed
+orders and exponent. The declaration quantifies the constant after fixing the interval. -/
 theorem interpolationInequality (hI : (I : Set ℝ).OrdConnected) {m : ℕ} (j : ℕ) (hj1 : 1 ≤ j)
     (hjm : j < m) {ε : ℝ} (hε : 0 < ε) :
     ∃ C : ℝ, ∀ u : SobolevIntervalLp m p I,
@@ -1709,7 +1826,9 @@ $$\|u\|_{L^p} + \|D^m u\|_{L^p} \le \|u\|_{W^{m,p}} \le C (\|u\|_{L^p} + \|D^m u
 
 The source states this consequence of the interpolation inequality before the inequality. The
 order $m \ge 1$ is written `m + 1` with `m : ℕ`. The proof specializes
-`SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`. -/
+`SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add`.
+
+**Generalization.** The comparison includes order one, where the two expressions coincide. -/
 theorem interpolationInequality_norm_equiv (hI : (I : Set ℝ).OrdConnected) (m : ℕ) :
     ∃ C : ℝ, ∀ u : SobolevIntervalLp (m + 1) p I,
       ‖u.deriv 0‖ + ‖u.deriv (Fin.last (m + 1))‖ ≤ sobolevNormHigher u ∧
@@ -1739,7 +1858,9 @@ maps every $u$ to a $C^m$ function on $[a, b]$ that equals $u$ almost everywhere
 
 The map sends $u$ to the continuous representatives of $u, u', \dots, u^{(m)}$. The space
 $C^m([a, b])$ is `ContDiffMapIcc hab.le m`, and a function on $[a, b]$ is read on $\mathbb{R}$
-through `ContDiffMapIcc.extend`. -/
+through `ContDiffMapIcc.extend`.
+
+**Generalization.** Order one is included, giving the continuous representative map. -/
 theorem sobolevSpaceHigher_subset_contDiff {a b : ℝ} (hab : a < b) {m : ℕ} :
     Function.Injective (SobolevIntervalLp.toContDiffMapIcc (p := p) (m := m) hab) ∧
       ∀ u : SobolevIntervalLp (m + 1) p (Opens.Ioo a b),
@@ -1757,7 +1878,9 @@ compactness. Let $a < b$, $1 < p \le \infty$ and $m \in \mathbb{N}$. The injecti
 $W^{m+1,p}((a, b)) \to C^m([a, b])$ is a compact operator. So
 $W^{m,p}(I) \subseteq C^{m-1}(\bar I)$ is compact for a bounded interval $I$.
 
-The proof specializes `SobolevIntervalLp.isCompactOperator_toContDiffMapIcc`. -/
+The proof specializes `SobolevIntervalLp.isCompactOperator_toContDiffMapIcc`.
+
+**Generalization.** Order one is included, recovering the compact injection in Theorem 8.8. -/
 theorem sobolevSpaceHigher_subset_contDiff_compact {a b : ℝ} (hab : a < b) {m : ℕ} (hp : 1 < p) :
     IsCompactOperator (SobolevIntervalLp.toContDiffMapIcc (p := p) (m := m) hab) :=
   SobolevIntervalLp.isCompactOperator_toContDiffMapIcc hab hp

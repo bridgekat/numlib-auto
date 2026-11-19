@@ -124,6 +124,26 @@ $E = \mathbb{R}$, and at $E = \mathbb{C}$ for the test problem),
 
 ## Deviations from the source
 
+* **Equations (11.11)–(11.14)** (generalization). The recurrences and truncation errors admit
+  implicit increments and arbitrary functions in place of the exact solution. The global error
+  uses a finite supremum, including the empty grid. Consistency and order use the limit as $h$
+  decreases to zero through positive steps.
+* **Definition 11.4, equation (11.18), and Theorem 11.1** (reading). Zero-stability concerns all
+  existing orbits, including implicit ones, on the finite grid prefix. The Lipschitz hypothesis
+  is uniform in all times of the interval and all old-state values. In its general form it also
+  quantifies independently over both new-state values, which forces independence of the new
+  state.
+* **Definition 11.5 and Theorem 11.2** (reading). The convergence statements concern all
+  existing orbits with fixed exact initial data, a special case of the printed hypothesis that
+  the initial discrepancy tends to zero or is $O(h^p)$. The algebraic error bound itself allows
+  an arbitrary initial discrepancy.
+* **Equation (11.22)** (reading). The Euler estimate assumes a uniform bound $M$ on the second
+  derivative of the exact solution, and its conclusions concern admissible grid points.
+* **Section 11.3.3, implicit method regions and Heun** (reading). The backward Euler region is
+  the strict exterior of the unit disk, as shown in Figure 11.3. The two implicit solution
+  formulas require their denominators to be nonzero. The Crank–Nicolson and Heun results give
+  exact complex regions. The Heun theorem gives equality of the real-axis restrictions with
+  forward Euler without comparing the two complex regions.
 * **Equation (11.13)** (reading). The condition "for all $t_n$" is read uniformly in
   $t \in [t_0, t_0 + T]$. See `QuarteroniSaccoSaleri.Chapter11.equation_11_13`.
 * **Definition 11.6** (reading). An absolutely stable method must also compute a sequence from every
@@ -166,13 +186,21 @@ $$u_{n+1} = u_n + h \Phi(t_n, u_n, f_n; h), \qquad n \ge 0.$$
 
 The sequence is an orbit of the step relation `ODE.OneStep.ofIncrement Φ` with step $h$ from
 $t_0$. The increment receives the new value $u_{n+1}$ as its third argument, so the definition
-also covers implicit methods. -/
+also covers implicit methods.
+
+**Generalization.** The step equation is used at all natural indices and permits arbitrary real
+steps. The base relation also permits implicit increments. The iteration characterization
+assumes explicitness. -/
 def equation_11_11 (Φ : ODE.OneStep.Increment ℝ) (h t₀ y₀ : ℝ) (u : ℕ → ℝ) : Prop :=
   IsOrbit (ofIncrement Φ) h t₀ u ∧ u 0 = y₀
 
 /-- **Equation (11.11)** of [quarteroni2000numerical], in explicit form. A sequence $(u_n)$ is
 computed by the method (11.11) if and only if $u_0 = y_0$ and
-$u_{n+1} = u_n + h \Phi(t_n, u_n, u_{n+1}; h)$ for every $n$. -/
+$u_{n+1} = u_n + h \Phi(t_n, u_n, u_{n+1}; h)$ for every $n$.
+
+**Generalization.** The step equation is used at all natural indices and permits arbitrary real
+steps. The base relation also permits implicit increments. The iteration characterization
+assumes explicitness. -/
 theorem equation_11_11_iff (u : ℕ → ℝ) :
     equation_11_11 Φ h t₀ y₀ u ↔
       u 0 = y₀ ∧ ∀ n, u (n + 1) = u n + h * Φ (grid t₀ h n) (u n) (u (n + 1)) h := by
@@ -184,7 +212,11 @@ explicit (Definition 11.3), a sequence $(u_n)$ is computed by the method (11.11)
 $u_n$ is the $n$-th value of the explicit iteration $u_{n+1} = u_n + h \Phi(t_n, u_n, u_n; h)$
 from $u_0 = y_0$.
 
-The explicit iteration is the second component of `ODE.OneStep.iterate Φ h t₀ y₀ n`. -/
+The explicit iteration is the second component of `ODE.OneStep.iterate Φ h t₀ y₀ n`.
+
+**Generalization.** The step equation is used at all natural indices and permits arbitrary real
+steps. The base relation also permits implicit increments. The iteration characterization
+assumes explicitness. -/
 theorem equation_11_11_iterate (hex : definition_11_3 Φ) (u : ℕ → ℝ) :
     equation_11_11 Φ h t₀ y₀ u ↔ ∀ n, u n = (iterate Φ h t₀ y₀ n).2 := by
   constructor
@@ -215,7 +247,10 @@ $$\tau_{n+1}(h) = \frac{y_{n+1} - y_n}{h} - \Phi(t_n, y_n, y_{n+1}; h), \qquad y
 so that $y_{n+1} = y_n + h \Phi(t_n, y_n, f(t_n, y_n); h) + h \tau_{n+1}(h)$.
 
 The definition is `ODE.OneStep.lte` at the node $t_n$. For $h = 0$ the quotient is $0$, by the
-convention $0^{-1} = 0$. -/
+convention $0^{-1} = 0$.
+
+**Generalization.** The residual is defined for any function and an explicit or implicit
+increment. Its residual identity holds for nonzero steps. -/
 noncomputable def equation_11_12 (Φ : ODE.OneStep.Increment ℝ) (h : ℝ) (y : ℝ → ℝ) (t₀ : ℝ)
     (n : ℕ) : ℝ :=
   lte Φ h y (grid t₀ h n)
@@ -223,7 +258,9 @@ noncomputable def equation_11_12 (Φ : ODE.OneStep.Increment ℝ) (h : ℝ) (y :
 /-- **Equation (11.12)** of [quarteroni2000numerical]. Let $h \neq 0$. For every function $y$, every
 increment $\Phi$ and every $n$,
 $$y_{n+1} = y_n + h \Phi(t_n, y_n, y_{n+1}; h) + h \tau_{n+1}(h).$$
--/
+
+**Generalization.** The residual is defined for any function and an explicit or implicit
+increment. Its residual identity holds for nonzero steps. -/
 theorem equation_11_12_spec (hh : h ≠ 0) (Φ : ODE.OneStep.Increment ℝ) (y : ℝ → ℝ) (t₀ : ℝ)
     (n : ℕ) :
     y (grid t₀ h (n + 1)) = y (grid t₀ h n) +
@@ -238,13 +275,17 @@ $h \in \mathbb{R}$. The **global truncation error** is
 $$\tau(h) = \max_{0 \le n \le N_h - 1} |\tau_{n+1}(h)|.$$
 
 The definition is `ODE.OneStep.globalLte`. If $N_h = 0$, the maximum is over the empty set, and
-$\tau(h) = 0$. -/
+$\tau(h) = 0$.
+
+**Generalization.** A finite supremum represents the maximum, including grid counts of zero. -/
 noncomputable def globalTruncationError (Φ : ODE.OneStep.Increment ℝ) (t₀ T : ℝ) (y : ℝ → ℝ)
     (h : ℝ) : ℝ :=
   globalLte Φ t₀ T y h
 
 /-- The global truncation error $\tau(h)$ is the supremum of $|\tau_{n+1}(h)|$ over the $N_h$
-indices $0 \le n < N_h$. -/
+indices $0 \le n < N_h$.
+
+**Generalization.** A finite supremum represents the maximum, including grid counts of zero. -/
 theorem globalTruncationError_eq (Φ : ODE.OneStep.Increment ℝ) (t₀ T : ℝ) (y : ℝ → ℝ) (h : ℝ) :
     globalTruncationError Φ t₀ T y h = ⨆ n : Fin (gridCount T h), |equation_11_12 Φ h y t₀ n| :=
   rfl
@@ -255,11 +296,17 @@ $y$ if its truncation error is infinitesimal with respect to $h$:
 $$\lim_{h \to 0^+} \tau(h) = 0.$$
 
 The definition is `ODE.OneStep.IsConsistentFor`. In the book, $y$ is the solution of the Cauchy
-problem. -/
+problem.
+
+**Reading.** The property concerns the supplied curve, with the limit taken through positive
+step sizes. -/
 def consistent (Φ : ODE.OneStep.Increment ℝ) (t₀ T : ℝ) (y : ℝ → ℝ) : Prop :=
   IsConsistentFor Φ t₀ T y
 
-/-- A method is consistent along $y$ if and only if $\tau(h) \to 0$ as $h \to 0^+$. -/
+/-- A method is consistent along $y$ if and only if $\tau(h) \to 0$ as $h \to 0^+$.
+
+**Reading.** The property concerns the supplied curve, with the limit taken through positive
+step sizes. -/
 theorem consistent_iff :
     consistent Φ t₀ T y ↔ Tendsto (globalTruncationError Φ t₀ T y) (𝓝[>] 0) (𝓝 0) :=
   Iff.rfl
@@ -269,11 +316,17 @@ increment function, $t_0, T \in \mathbb{R}$, $y : \mathbb{R} \to \mathbb{R}$ and
 $p \in \mathbb{N}$. The method **has order $p$** along $y$ if
 $$\tau(h) = O(h^p) \qquad \text{as } h \to 0^+.$$
 
-The definition is `ODE.OneStep.HasOrderFor`. -/
+The definition is `ODE.OneStep.HasOrderFor`.
+
+**Reading.** The property concerns the supplied curve, with the limit taken through positive
+step sizes. -/
 def equation_11_14 (Φ : ODE.OneStep.Increment ℝ) (t₀ T : ℝ) (y : ℝ → ℝ) (p : ℕ) : Prop :=
   HasOrderFor Φ t₀ T y p
 
-/-- A method has order $p$ along $y$ if and only if $\tau(h) = O(h^p)$ as $h \to 0^+$. -/
+/-- A method has order $p$ along $y$ if and only if $\tau(h) = O(h^p)$ as $h \to 0^+$.
+
+**Reading.** The property concerns the supplied curve, with the limit taken through positive
+step sizes. -/
 theorem equation_11_14_iff {p : ℕ} :
     equation_11_14 Φ t₀ T y p ↔ globalTruncationError Φ t₀ T y =O[𝓝[>] 0] fun h => h ^ p :=
   Iff.rfl
@@ -307,7 +360,10 @@ Then for every $h > 0$ and every $n < N_h$ the local truncation error of forward
 $$|\tau_{n+1}(h)| \le \frac{M}{2} h.$$
 
 The book writes $\tau_{n+1}(h) = \frac{h}{2} y''(\xi)$. The proof specializes
-`ODE.OneStep.norm_lte_forwardEuler_le`. -/
+`ODE.OneStep.norm_lte_forwardEuler_le`.
+
+**Reading.** Uses a uniform bound on the second derivative on the finite interval. The local
+lemma gives the magnitude estimate directly. -/
 theorem forwardEuler_order_one_lte (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y)
     (hy2 : ContDiffOn ℝ 2 y (Icc t₀ (t₀ + T))) {M : ℝ}
     (hM : ∀ s ∈ Icc t₀ (t₀ + T), |iteratedDerivWithin 2 y (Icc t₀ (t₀ + T)) s| ≤ M) (hh : 0 < h)
@@ -328,7 +384,10 @@ $y \in C^2([t_0, t_0 + T])$ solve the Cauchy problem $y' = f(t, y)$, $y(t_0) = y
 $[t_0, t_0 + T]$, and let $|y''(s)| \le M$ for all $s \in [t_0, t_0 + T]$. Then forward Euler
 has order $1$ along $y$ in the sense of (11.14).
 
-The proof specializes `ODE.OneStep.hasOrderFor_forwardEuler`. -/
+The proof specializes `ODE.OneStep.hasOrderFor_forwardEuler`.
+
+**Reading.** Uses a uniform bound on the second derivative on the finite interval. The local
+lemma gives the magnitude estimate directly. -/
 theorem forwardEuler_order_one (hT : 0 < T) (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y)
     (hy2 : ContDiffOn ℝ 2 y (Icc t₀ (t₀ + T))) {M : ℝ}
     (hM : ∀ s ∈ Icc t₀ (t₀ + T), |iteratedDerivWithin 2 y (Icc t₀ (t₀ + T)) s| ≤ M) :
@@ -354,7 +413,10 @@ $$|z_n - u_n| \le C \varepsilon, \qquad 0 \le n \le N_h.$$
 The definition is `ODE.OneStep.IsZeroStable` for the step relation `ODE.OneStep.ofIncrement Φ`.
 For an implicit $\Phi$, the new value in the perturbed recursion is $z_{n+1} - h\delta_{n+1}$;
 for an explicit $\Phi$ this argument does not matter (see
-`QuarteroniSaccoSaleri.Chapter11.definition_11_4_iff`). -/
+`QuarteroniSaccoSaleri.Chapter11.definition_11_4_iff`).
+
+**Reading.** Quantifies over all existing orbits, with the bound on the finite grid prefix. The
+underlying relation also permits implicit increments. -/
 def definition_11_4 (Φ : ODE.OneStep.Increment ℝ) (t₀ T y₀ : ℝ) : Prop :=
   IsZeroStable (ofIncrement Φ) t₀ T y₀
 
@@ -369,7 +431,10 @@ $$z_{n+1} = z_n + h \bigl(\Phi(t_n, z_n, f(t_n, z_n); h) + \delta_{n+1}\bigr), \
   y_0 + \delta_0,$$
 satisfy $|z_n - u_n| \le C\varepsilon$ for $0 \le n \le N_h$.
 
-In the Lean statement, $\Phi(t_n, u_n, f(t_n, u_n); h)$ is `Φ (grid t₀ h n) (u n) (u n) h`. -/
+In the Lean statement, $\Phi(t_n, u_n, f(t_n, u_n); h)$ is `Φ (grid t₀ h n) (u n) (u n) h`.
+
+**Reading.** Quantifies over all existing orbits, with the bound on the finite grid prefix. The
+underlying relation also permits implicit increments. -/
 theorem definition_11_4_iff (hex : definition_11_3 Φ) :
     definition_11_4 Φ t₀ T y₀ ↔
       ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ C : ℝ, 0 < C ∧ ∀ h ∈ Ioc 0 h₀, ∀ ε : ℝ, 0 ≤ ε → ∀ δ : ℕ → ℝ,
@@ -408,14 +473,22 @@ for all $h \in (0, h_0]$, all $t \in [t_0, t_0 + T]$ and all $u, v, w, w' \in \m
 The definition is `ODE.OneStep.LipschitzIncrement`. The constant $\Lambda$ does not depend on
 $h$, on the node $t$, or on the third argument $w$. For an explicit $\Phi$ the third argument is
 inert; for an implicit $\Phi$ the condition asks that the dependence on the new value be
-absorbed into $\Lambda$. -/
+absorbed into $\Lambda$.
+
+**Reading.** The Lipschitz estimate holds for all times of the interval and all old-state
+inputs. The general increment condition quantifies independently over its new-state arguments
+and therefore forces independence of those arguments. -/
 def equation_11_18 (Φ : ODE.OneStep.Increment ℝ) (t₀ T h₀ Λ : ℝ) : Prop :=
   LipschitzIncrement Φ t₀ T h₀ Λ
 
 /-- **Equation (11.18)** of [quarteroni2000numerical], for an explicit increment. If $\Phi$ is
 explicit (Definition 11.3), then $\Phi$ satisfies (11.18) if and only if $|\Phi(t, u, u; h) -
 \Phi(t, z, z; h)| \le \Lambda |u - z|$ for all $h \in (0, h_0]$, all $t \in [t_0, t_0 + T]$ and
-all $u, z \in \mathbb{R}$. -/
+all $u, z \in \mathbb{R}$.
+
+**Reading.** The Lipschitz estimate holds for all times of the interval and all old-state
+inputs. The general increment condition quantifies independently over its new-state arguments
+and therefore forces independence of those arguments. -/
 theorem equation_11_18_iff (hex : definition_11_3 Φ) :
     equation_11_18 Φ t₀ T h₀ Λ ↔ ∀ h ∈ Ioc 0 h₀, ∀ t ∈ Icc t₀ (t₀ + T), ∀ u z : ℝ,
       |Φ t u u h - Φ t z z h| ≤ Λ * |u - z| := by
@@ -433,7 +506,11 @@ $[t_0, t_0 + T]$ (Definition 11.4).
 The book states the theorem for the explicit method (11.11). The Lean statement has no
 explicitness hypothesis; for an implicit $\Phi$, (11.18) is uniform in the third argument. The
 constant of zero-stability is $C = (1 + T) e^{\Lambda T}$. The proof specializes
-`ODE.OneStep.isZeroStable_of_lipschitzIncrement`. -/
+`ODE.OneStep.isZeroStable_of_lipschitzIncrement`.
+
+**Reading.** The Lipschitz estimate holds for all times of the interval and all old-state
+inputs. The general increment condition quantifies independently over its new-state arguments
+and therefore forces independence of those arguments. -/
 theorem theorem_11_1 (hT : 0 ≤ T) (hh₀ : 0 < h₀) (hΛ : 0 < Λ) (hlip : equation_11_18 Φ t₀ T h₀ Λ)
     (y₀ : ℝ) : definition_11_4 Φ t₀ T y₀ :=
   isZeroStable_of_lipschitzIncrement hT hh₀ hlip hΛ.le y₀
@@ -447,7 +524,11 @@ $$|z_n - u_n| \le (1 + hn) \, \varepsilon \, e^{nh\Lambda}.$$
 
 The book writes $w_n^{(h)} = z_n^{(h)} - u_n^{(h)}$. The recursions are `ODE.OneStep.IsOrbit`
 and `ODE.OneStep.IsOrbitWith` for `ODE.OneStep.ofIncrement Φ`. The proof specializes
-`ODE.OneStep.norm_sub_le_of_lipschitzIncrement`. -/
+`ODE.OneStep.norm_sub_le_of_lipschitzIncrement`.
+
+**Reading.** The Lipschitz estimate holds for all times of the interval and all old-state
+inputs. The general increment condition quantifies independently over its new-state arguments
+and therefore forces independence of those arguments. -/
 theorem theorem_11_1_estimate (hΛ : 0 < Λ) (hlip : equation_11_18 Φ t₀ T h₀ Λ) (hh : h ∈ Ioc 0 h₀)
     {ε : ℝ} {δ : ℕ → ℝ} (hδ : ∀ k ≤ gridCount T h, |δ k| ≤ ε) {u z : ℕ → ℝ}
     (hu : IsOrbit (ofIncrement Φ) h t₀ u) (hu0 : u 0 = y₀)
@@ -487,7 +568,10 @@ $$|u_n - y_n| \le C(h), \qquad 0 \le n \le N_h.$$
 
 The definition is `ODE.OneStep.IsConvergentFor`. A step relation `S h t u v` says that $v$ is an
 admissible value at $t + h$ after the value $u$ at $t$; it covers both increment functions and
-implicit Runge–Kutta methods. -/
+implicit Runge–Kutta methods.
+
+**Reading.** The property is quantified over all existing orbits with the supplied initial
+datum and a sufficiently small positive step. -/
 def definition_11_5 (S : ODE.OneStep.StepRel ℝ) (t₀ T y₀ : ℝ) (y : ℝ → ℝ) : Prop :=
   IsConvergentFor S t₀ T y₀ y
 
@@ -498,13 +582,19 @@ order $p$** if there are $\mathcal{C} > 0$ and $h_0 > 0$ such that for every $h 
 every sequence $(u_n)$ computed by $S$ with step $h$ from $u_0 = y_0$ satisfies
 $$|u_n - y_n| \le \mathcal{C} h^p, \qquad 0 \le n \le N_h.$$
 
-The definition is `ODE.OneStep.IsConvergentWithOrderFor`. -/
+The definition is `ODE.OneStep.IsConvergentWithOrderFor`.
+
+**Reading.** The property is quantified over all existing orbits with the supplied initial
+datum and a sufficiently small positive step. -/
 def definition_11_5_order (S : ODE.OneStep.StepRel ℝ) (t₀ T y₀ : ℝ) (y : ℝ → ℝ) (p : ℕ) : Prop :=
   IsConvergentWithOrderFor S t₀ T y₀ y p
 
 /-- A method is convergent (Definition 11.5) if and only if there are $C(h) \to 0$ as $h \to 0^+$
 and $h_0 > 0$ such that for every $h \in (0, h_0]$, every orbit $u$ of the method with step $h$
-from $u_0 = y_0$ satisfies $|u_n - y(t_n)| \le C(h)$ for $0 \le n \le N_h$. -/
+from $u_0 = y_0$ satisfies $|u_n - y(t_n)| \le C(h)$ for $0 \le n \le N_h$.
+
+**Reading.** The property is quantified over all existing orbits with the supplied initial
+datum and a sufficiently small positive step. -/
 theorem definition_11_5_iff {S : ODE.OneStep.StepRel ℝ} :
     definition_11_5 S t₀ T y₀ y ↔ ∃ C : ℝ → ℝ, Tendsto C (𝓝[>] 0) (𝓝 0) ∧
       ∃ h₀ : ℝ, 0 < h₀ ∧ ∀ h ∈ Ioc 0 h₀, ∀ u : ℕ → ℝ, IsOrbit S h t₀ u → u 0 = y₀ →
@@ -513,7 +603,10 @@ theorem definition_11_5_iff {S : ODE.OneStep.StepRel ℝ} :
 
 /-- A method is convergent with order $p$ if and only if there are $\mathcal{C} > 0$ and $h_0 > 0$
 such that for every $h \in (0, h_0]$, every orbit $u$ of the method with step $h$ from
-$u_0 = y_0$ satisfies $|u_n - y(t_n)| \le \mathcal{C} h^p$ for $0 \le n \le N_h$. -/
+$u_0 = y_0$ satisfies $|u_n - y(t_n)| \le \mathcal{C} h^p$ for $0 \le n \le N_h$.
+
+**Reading.** The property is quantified over all existing orbits with the supplied initial
+datum and a sufficiently small positive step. -/
 theorem definition_11_5_order_iff {S : ODE.OneStep.StepRel ℝ} {p : ℕ} :
     definition_11_5_order S t₀ T y₀ y p ↔ ∃ C : ℝ, 0 < C ∧
       ∃ h₀ : ℝ, 0 < h₀ ∧ ∀ h ∈ Ioc 0 h₀, ∀ u : ℕ → ℝ, IsOrbit S h t₀ u → u 0 = y₀ →
@@ -528,7 +621,10 @@ $$|y_n - u_n| \le \bigl(|y_0 - u_0| + nh\,\tau(h)\bigr) e^{nh\Lambda},$$
 where $y_n = y(t_n)$ and $\tau(h)$ is the global truncation error along $y$.
 
 The estimate holds for every function $y$; in the book, $y$ is the solution of the Cauchy
-problem. The proof specializes `ODE.OneStep.norm_sub_le_globalLte`. -/
+problem. The proof specializes `ODE.OneStep.norm_sub_le_globalLte`.
+
+**Generalization.** The same algebraic error bound allows an arbitrary comparison curve and
+holds at index $0$ as well. -/
 theorem theorem_11_2 (hΛ : 0 < Λ) (hlip : equation_11_18 Φ t₀ T h₀ Λ) (hh : h ∈ Ioc 0 h₀)
     {u : ℕ → ℝ} (hu : IsOrbit (ofIncrement Φ) h t₀ u) (hn : n ≤ gridCount T h) :
     |y (grid t₀ h n) - u n| ≤
@@ -542,7 +638,10 @@ method be consistent along $y$. Then the method (11.11) is convergent for the da
 $y_0 = y(t_0)$ (Definition 11.5).
 
 Consistency is the consistency assumption (11.13) of the book. The proof specializes
-`ODE.OneStep.isConvergentFor_of_isConsistentFor`. -/
+`ODE.OneStep.isConvergentFor_of_isConsistentFor`.
+
+**Reading.** The orbit starts at the exact initial value. The source allows a vanishing or
+comparably small initial discrepancy. -/
 theorem theorem_11_2_convergent (hT : 0 ≤ T) (hh₀ : 0 < h₀) (hΛ : 0 < Λ)
     (hlip : equation_11_18 Φ t₀ T h₀ Λ) (hcons : consistent Φ t₀ T y) :
     definition_11_5 (ofIncrement Φ) t₀ T (y t₀) y :=
@@ -553,7 +652,10 @@ and $\Lambda > 0$, let $\Phi$ satisfy (11.18) with the constants $h_0$ and $\Lam
 the method have order $p$ along $y$ (11.14). Then the method (11.11) is convergent with order
 $p$ for the datum $y_0 = y(t_0)$.
 
-The proof specializes `ODE.OneStep.isConvergentWithOrderFor_of_hasOrderFor`. -/
+The proof specializes `ODE.OneStep.isConvergentWithOrderFor_of_hasOrderFor`.
+
+**Reading.** The orbit starts at the exact initial value. The source allows a vanishing or
+comparably small initial discrepancy. -/
 theorem theorem_11_2_order (hT : 0 ≤ T) (hh₀ : 0 < h₀) (hΛ : 0 < Λ)
     (hlip : equation_11_18 Φ t₀ T h₀ Λ) {p : ℕ} (hord : equation_11_14 Φ t₀ T y p) :
     definition_11_5_order (ofIncrement Φ) t₀ T (y t₀) y p :=
@@ -567,7 +669,10 @@ $s \in [t_0, t_0 + T]$. Let $h > 0$, and let $(u_n)$ be computed by forward Eule
 from $u_0 = y_0$. Then for every $n$ with $n + 1 \le N_h$,
 $$|e_{n+1}| = |y_{n+1} - u_{n+1}| \le \frac{e^{L(t_{n+1} - t_0)} - 1}{L} \, \frac{M}{2} \, h.$$
 
-The proof specializes `ODE.OneStep.norm_sub_le_forwardEuler`. -/
+The proof specializes `ODE.OneStep.norm_sub_le_forwardEuler`.
+
+**Reading.** The constant $M$ is a bound on the second derivative of the exact solution. The
+step index is required to remain on the discretization interval. -/
 theorem equation_11_22 {L : ℝ} (hL : 0 < L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) (hT : 0 < T)
     (hy : cauchyProblem f t₀ y₀ (Icc t₀ (t₀ + T)) y) (hy2 : ContDiffOn ℝ 2 y (Icc t₀ (t₀ + T)))
@@ -602,7 +707,9 @@ def testProblem (lam : ℂ) : ℝ → ℂ → ℂ := testField lam
 
 /-- **Equation (11.24)** of [quarteroni2000numerical], the solution of the test problem. For
 $\lambda \in \mathbb{C}$, the function $y(t) = e^{\lambda t}$ solves $y' = \lambda y$ on all of
-$\mathbb{R}$ with $y(0) = 1$. -/
+$\mathbb{R}$ with $y(0) = 1$.
+
+**Generalization.** The solution extends to all real times. -/
 theorem testProblem_solution (lam : ℂ) :
     ODE.IsSolutionOn (testProblem lam) 0 1 univ fun t : ℝ => Complex.exp (lam * t) :=
   ⟨by simp, fun t _ => (hasDerivAt_exp_testField lam t).hasDerivWithinAt⟩
@@ -658,7 +765,10 @@ def equation_11_26 (M : ODE.OneStep.Method ℂ) : Set ℂ := absStabilityRegion 
 
 /-- Let $M$ be a numerical method and $z \in \mathbb{C}$. Then $z$ lies in the region of absolute
 stability $\mathcal{A}$ of $M$ if and only if $M$ is absolutely stable for $\lambda = z/h$ and
-the step $h$, for every $h > 0$. -/
+the step $h$, for every $h > 0$.
+
+**Reading.** The condition concerns every positive-step factorization of $z$, with the all-
+orbits stability predicate. -/
 theorem mem_equation_11_26_iff {M : ODE.OneStep.Method ℂ} {z : ℂ} :
     z ∈ equation_11_26 M ↔ ∀ h : ℝ, 0 < h → definition_11_6 M (z / h) h :=
   Iff.rfl
@@ -721,7 +831,10 @@ $h \in \mathbb{R}$. Then:
 * the region of absolute stability of backward Euler is the exterior of the unit disc with
   centre $1$: $z \in \mathcal{A}$ if and only if $|1 - z| > 1$.
 
-The second part specializes `ODE.OneStep.mem_absStabilityRegion_backwardEuler_iff`. -/
+The second part specializes `ODE.OneStep.mem_absStabilityRegion_backwardEuler_iff`.
+
+**Reading.** The formula for the numerical solution excludes the singular denominator and the
+stability region is the strict exterior of the disk, as depicted in Figure 11.3. -/
 theorem backwardEuler_absStabilityRegion :
     (∀ {lam : ℂ} {u : ℕ → ℂ}, (h : ℂ) * lam ≠ 1 →
       IsOrbit (ofIncrement (backwardEuler (testProblem lam))) h 0 u → u 0 = 1 →
@@ -789,7 +902,10 @@ $$u_n = \left(\frac{1 + h\lambda/2}{1 - h\lambda/2}\right)^n;$$
 * the region of absolute stability of Crank–Nicolson is the open left half-plane:
   $z \in \mathcal{A}$ if and only if $\operatorname{Re} z < 0$.
 
-The second part specializes `ODE.OneStep.mem_absStabilityRegion_crankNicolson_iff`. -/
+The second part specializes `ODE.OneStep.mem_absStabilityRegion_crankNicolson_iff`.
+
+**Reading.** Excludes the singular denominator in the solution formula and states that the open
+left half-plane is the whole region. -/
 theorem crankNicolson_absStabilityRegion :
     (∀ {lam : ℂ} {u : ℕ → ℂ}, (h : ℂ) * lam ≠ 2 →
       IsOrbit (ofIncrement (crankNicolson (testProblem lam))) h 0 u → u 0 = 1 →
@@ -810,7 +926,10 @@ $h \in \mathbb{R}$. Then:
   forward Euler.
 
 By (11.27), the common restriction to the real axis is the interval $(-2, 0)$. The second part
-specializes `ODE.OneStep.mem_absStabilityRegion_heun_iff`. -/
+specializes `ODE.OneStep.mem_absStabilityRegion_heun_iff`.
+
+**Reading.** Gives the exact complex region and equality of the real-axis regions. The book
+also compares the sizes of the two complex regions. -/
 theorem heun_absStabilityRegion :
     (∀ {lam : ℂ} {u : ℕ → ℂ}, IsOrbit (ofIncrement (heun (testProblem lam))) h 0 u → u 0 = 1 →
       ∀ n, u n = (1 + h * lam + (h * lam) ^ 2 / 2) ^ n) ∧
@@ -866,7 +985,10 @@ is bounded.
 The book states that there are no explicit unconditionally absolutely stable schemes. The
 explicit Runge–Kutta methods of Section 11.8 are the explicit one-step schemes of this form. The
 remark for arbitrary explicit one-step schemes (Widlund's theorem) is not formalized. The first
-part specializes `ODE.ButcherTableau.not_isAStable_of_isExplicit`. -/
+part specializes `ODE.ButcherTableau.not_isAStable_of_isExplicit`.
+
+**Specialization.** The theorem applies to explicit Runge–Kutta tableaux with weights summing
+to one. The printed remark states the impossibility more generally for explicit schemes. -/
 theorem remark_11_2 {s : ℕ} (tab : ODE.ButcherTableau s) (hex : tab.IsExplicit)
     (hb : ∑ i, tab.b i = 1) :
     ¬ aStable tab.stepRel ∧ Bornology.IsBounded (equation_11_26 tab.stepRel) :=

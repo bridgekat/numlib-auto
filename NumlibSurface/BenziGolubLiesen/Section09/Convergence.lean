@@ -28,6 +28,15 @@ interval and for two equal-length intervals on opposite sides of zero.
 * `BenziGolubLiesen.galerkin_chebyshev_bound` and
   `BenziGolubLiesen.minResidual_equalLengthIntervals_bound`: (9.8) and (9.11).
 * `BenziGolubLiesen.tendsto_asymptoticResidualFactor`: existence of the limit in (9.13).
+
+## Deviations from the source
+
+* **Generalization.** Galerkin and SYMMLQ exactness is conditional on the existence of the
+  terminal iterate and holds with weaker matrix assumptions. The residual polynomial results
+  admit complex data, and the Chebyshev bounds use spectral enclosures and absolute norms.
+* **Generalization.** The minimax and root-limit constructions allow arbitrary real sets.
+* **Reading.** The prescribed GMRES curve is positive before termination and starts at one.
+  Its prescribed spectrum excludes zero, and the construction allows normal matrices.
 -/
 
 namespace BenziGolubLiesen
@@ -56,7 +65,9 @@ theorem minResidual_finiteTermination {A : Matrix ι ι ℝ} (hA : IsUnit A)
     (Function.LeftInverse.injective (A.toEuclideanLin_nonsing_inv_mul_apply hA)).injOn
 
 /-- **Section 9.2** of [benzi2005numerical]. The Galerkin projection, when it exists, is exact at
-the dimension of the terminal Krylov space. This includes case (C) in Theorem 9.1. -/
+the dimension of the terminal Krylov space. This includes case (C) in Theorem 9.1.
+
+**Generalization.** The conditional result applies without positive definiteness. -/
 theorem galerkin_finiteTermination {A : Matrix ι ι ℝ} {b x₀ x : EuclideanSpace ℝ ι}
     (hx : IsGalerkinIterate A.toEuclideanLin b x₀
       (Module.finrank ℝ (krylovSubspace A (b - A.toEuclideanLin x₀) (Fintype.card ι))) x) :
@@ -66,7 +77,9 @@ theorem galerkin_finiteTermination {A : Matrix ι ι ℝ} {b x₀ x : EuclideanS
   exact hx.apply_eq_of_grade_le le_rfl
 
 /-- **Section 9.2** of [benzi2005numerical]. The iterate (9.4) is exact at the dimension of
-the terminal Krylov space because its trial space is then contained in its test space. -/
+the terminal Krylov space because its trial space is then contained in its test space.
+
+**Generalization.** Given the terminal iterate, the result holds for arbitrary real $A$. -/
 theorem symmlq_finiteTermination {A : Matrix ι ι ℝ} {b x₀ x : EuclideanSpace ℝ ι}
     (hx : IsSYMMLQIterate A b x₀
       (Module.finrank ℝ (krylovSubspace A (b - A.toEuclideanLin x₀) (Fintype.card ι))) x) :
@@ -87,7 +100,10 @@ theorem symmlq_finiteTermination {A : Matrix ι ι ℝ} {b x₀ x : EuclideanSpa
   exact hg.apply_eq_of_grade_le le_rfl
 
 /-- **Equation (9.9)** of [benzi2005numerical], first equality. The minimal-residual norm is an
-attained minimum over the normalized polynomials of degree at most $k$. -/
+attained minimum over the normalized polynomials of degree at most $k$.
+
+**Generalization.** The equality applies over real or complex scalars without assuming
+invertibility or diagonalizability. -/
 theorem minResidual_residualPolynomial {A : Matrix ι ι 𝕜}
     {b x₀ x : EuclideanSpace 𝕜 ι} {k : ℕ}
     (hx : IsMinResidualIterate A.toEuclideanLin b x₀ k x) :
@@ -104,7 +120,10 @@ theorem minResidual_residualPolynomial {A : Matrix ι ι 𝕜}
 /-- **Equation (9.9)** of [benzi2005numerical]. For $A=X\operatorname{diag}(d)X^{-1}$, the
 relative minimal-residual norm is bounded by $\kappa_2(X)$ times the infimum over normalized
 polynomials of the maximum modulus on the diagonal entries $d_i$. The norm on `ι → 𝕜` is the
-supremum norm; the matrix norms are the Euclidean operator norms. -/
+supremum norm. The matrix norms are the Euclidean operator norms.
+
+**Generalization.** The bound admits complex data and singular diagonalizable matrices.
+The quotient is stated for a nonzero initial residual. -/
 theorem minResidual_norm_le_of_diagonalizable {A X : Matrix ι ι 𝕜} {d : ι → 𝕜}
     (hX : IsUnit X) (hA : A = X * diagonal d * X⁻¹) {b x₀ x : EuclideanSpace 𝕜 ι} {k : ℕ}
     (hr : b - A.toEuclideanLin x₀ ≠ 0) (hx : IsMinResidualIterate A.toEuclideanLin b x₀ k x) :
@@ -142,7 +161,10 @@ theorem minResidual_norm_le_of_diagonalizable {A X : Matrix ι ι 𝕜} {d : ι 
 
 /-- **Equation (9.8)** of [benzi2005numerical]. For a symmetric positive definite operator
 with Rayleigh quotients in $[l,u]$, the CG energy error decreases at the Chebyshev rate for
-the ratio $u/l$. -/
+the ratio $u/l$.
+
+**Generalization.** The endpoints may enclose the spectrum. The bound is stated in
+absolute form and applies also when the initial error vanishes. -/
 theorem galerkin_chebyshev_bound {A : Matrix ι ι ℝ} {l u : ℝ} (hl : 0 < l) (hlu : l ≤ u)
     (hA : A.toEuclideanLin.IsSymmetricBoundedBy l u) {b x₀ x xstar : EuclideanSpace ℝ ι}
     {k : ℕ} (hx : IsGalerkinIterate A.toEuclideanLin b x₀ k x)
@@ -154,7 +176,10 @@ theorem galerkin_chebyshev_bound {A : Matrix ι ι ℝ} {l u : ℝ} (hl : 0 < l)
 
 /-- **Equation (9.11)** of [benzi2005numerical]. If the spectrum of a symmetric matrix is in
 two nondegenerate equal-length intervals excluding zero, the MINRES norm is bounded at step $k$
-by the two-interval Chebyshev factor with exponent $\lfloor k/2\rfloor$. -/
+by the two-interval Chebyshev factor with exponent $\lfloor k/2\rfloor$.
+
+**Generalization.** The endpoints may enclose the eigenvalues. The absolute form also
+covers a zero initial residual. -/
 theorem minResidual_equalLengthIntervals_bound {A : Matrix ι ι ℝ} (hA : A.IsSymm)
     {a₁ b₁ a₂ b₂ : ℝ} (h₁ : a₁ < b₁) (hb₁ : b₁ < 0) (ha₂ : 0 < a₂) (h₂ : a₂ < b₂)
     (hlen : b₁ - a₁ = b₂ - a₂)
@@ -183,7 +208,8 @@ private theorem residualMinimaxBounds_bddBelow (E : Set ℝ) (k : ℕ) :
 
 /-- **Equation (9.10)** of [benzi2005numerical]. The residual minimax value on $E$ is the
 infimum of uniform nonnegative upper bounds for $|p(t)|$, where $\deg p\le k$ and $p(0)=1$.
-The infimum definition does not presume an optimizer. -/
+**Generalization.** This infimum extends the compact-interval minimax value to arbitrary
+real sets. -/
 noncomputable def residualMinimax (E : Set ℝ) (k : ℕ) : ℝ :=
   sInf (residualMinimaxBounds E k)
 
@@ -220,7 +246,9 @@ theorem submultiplicative_residualMinimax (E : Set ℝ) : Submultiplicative (res
   exact (ha_mul a ha).trans_eq (mul_comm _ _)
 
 /-- **Equation (9.11)** of [benzi2005numerical]. The two-interval Chebyshev estimate is a
-uniform bound on the whole pair of equal-length intervals, hence on any subset of the pair. -/
+uniform bound on the whole pair of equal-length intervals.
+
+**Generalization.** The same bound holds on any subset of the pair. -/
 theorem residualMinimax_le_of_equalLengthIntervals {E : Set ℝ} {a b c d : ℝ}
     (hab : a < b) (hb : b < 0) (hc : 0 < c) (hcd : c < d) (hlen : b - a = d - c)
     (hE : E ⊆ Set.Icc a b ∪ Set.Icc c d) (k : ℕ) :
@@ -234,7 +262,9 @@ theorem residualMinimax_le_of_equalLengthIntervals {E : Set ℝ} {a b c d : ℝ}
     hp.trans (WithBot.coe_le_coe.mpr hd), hp0, fun t ht => hbound t (hE ht)⟩
 
 /-- **Equation (9.12)** of [benzi2005numerical]. For intervals $[-1,-a]$ and $[a,1]$ with
-$0<a<1$, the bound has condition-number parameter $1/a$. -/
+$0<a<1$, the bound has condition-number parameter $1/a$.
+
+**Generalization.** The same bound holds on any subset of the pair. -/
 theorem residualMinimax_le_of_symmetricIntervals {E : Set ℝ} {a : ℝ} (ha : 0 < a) (ha₁ : a < 1)
     (hE : E ⊆ Set.Icc (-1) (-a) ∪ Set.Icc a 1) (k : ℕ) :
     residualMinimax E k ≤ 2 * ((1 / a - 1) / (1 / a + 1)) ^ (k / 2) := by
@@ -250,12 +280,16 @@ theorem residualMinimax_le_of_symmetricIntervals {E : Set ℝ} {a : ℝ} (ha : 0
   rwa [hf] at h
 
 /-- **Equation (9.13)** of [benzi2005numerical]. The asymptotic convergence factor is the
-infimum of the $k$-th roots of the polynomial minimax values over positive $k$. -/
+infimum of the $k$-th roots of the polynomial minimax values over positive $k$.
+
+**Generalization.** The factor is defined for any real set. -/
 noncomputable def asymptoticResidualFactor (E : Set ℝ) : ℝ :=
   (submultiplicative_residualMinimax E).lim
 
 /-- **Equation (9.13)** of [benzi2005numerical]. The roots of the minimax values converge to
-the asymptotic convergence factor by Fekete's lemma. -/
+the asymptotic convergence factor by Fekete's lemma.
+
+**Generalization.** This limit exists for any real set. -/
 theorem tendsto_asymptoticResidualFactor (E : Set ℝ) :
     Filter.Tendsto (fun k : ℕ => residualMinimax E k ^ (1 / (k : ℝ))) Filter.atTop
       (𝓝 (asymptoticResidualFactor E)) := by
@@ -264,7 +298,10 @@ theorem tendsto_asymptoticResidualFactor (E : Set ℝ) :
 
 /-- **Section 9.2** of [benzi2005numerical]. Any positive nonincreasing relative GMRES
 residual curve before the last step, normalized to start at one, can be realized with any
-prescribed multiset of nonzero complex eigenvalues. -/
+prescribed multiset of nonzero complex eigenvalues.
+
+**Reading.** The finite prefix consists of positive residual norms from a normalized start.
+The matrix is nonsingular and may be normal. -/
 theorem exists_minResidual_curve_and_charpoly (n : ℕ) (f : Fin (n + 1) → ℝ)
     (hf : Antitone f) (hpos : 0 < f (Fin.last n)) (hstart : f 0 = 1)
     (μ : Fin (n + 1) → ℂ) (hμ : ∀ i, μ i ≠ 0) :

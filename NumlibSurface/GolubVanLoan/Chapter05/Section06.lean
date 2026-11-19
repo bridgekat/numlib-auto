@@ -65,6 +65,15 @@ algorithms of §5.2 and §5.4.
 
 ## Deviations from the source
 
+* **§5.6.2, SVD minimum-norm solution** (generalization). The expansion applies to consistent
+  systems of any shape. See `GolubVanLoan.Chapter05.minNorm_svd_underdetermined`.
+* **Algorithm 5.6.1** (reading). Zero padding lets the program reuse square pivoted QR. The
+  source factors the input directly. See `GolubVanLoan.Chapter05.algorithm_5_6_1`.
+* **Theorem 5.6.1, rank preservation** (reading). The exact bound requires $\|\delta
+  A\|_2<\sigma_m(A)$. The first-order theorem chooses a sufficient relative-error threshold for
+  $A$. The printed comparison of dimensionless $\epsilon$ with $\sigma_m(A)$ does not by itself
+  imply this rank-preservation condition. See `GolubVanLoan.Chapter05.theorem_5_6_1` and
+  `GolubVanLoan.Chapter05.theorem_5_6_1_firstOrder`.
 * **Theorem 5.6.1** (reading). The source states a first-order bound with an implicit
   $O(\epsilon^2)$ term. The library reads the remainder as $K \epsilon^2$ for all perturbations with
   $\epsilon \le \epsilon_0$, and also proves a rigorous bound in which $\sigma_m(A)$ is replaced by
@@ -178,7 +187,10 @@ $$x = \sum_{i=1}^{r} \frac{u_i^T b}{\sigma_i} v_i$$
 solves $Ax = b$, and $\|x\|_2 \le \|y\|_2$ for every solution $y$.
 
 The SVD is `Matrix.IsSVD A U σ V`, and $u_i$, $v_i$ are the columns `U.col (i - 1)` and
-`V.col (i - 1)`. -/
+`V.col (i - 1)`.
+
+**Generalization.** The SVD expansion gives the minimum-norm solution for every consistent
+rectangular system. The source presents it for $m<n$. -/
 theorem minNorm_svd_underdetermined {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
     {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V) {b : Fin m → ℝ}
     (hb : ∃ x, A *ᵥ x = b) :
@@ -248,7 +260,10 @@ Algorithm 5.4.1, which the source writes for $m \ge n$, runs on $A$ padded with 
 (`Matrix.padRows`). The vector $Q^T b$ is formed from the stored Householder vectors with the
 returned $\beta$ (`GolubVanLoan.Chapter05.storedQTransposeMulVec`, convention 13 of
 `NumlibSurface.GolubVanLoan`). The triangular solve is Algorithm 3.1.2, and $\Pi [z_1; 0]$ is a
-permutation of coordinates. -/
+permutation of coordinates.
+
+**Reading.** The program pads $A$ and the right-hand side by zeros to call the square instance
+of the pivoted QR routine. The source factors the unpadded underdetermined matrix directly. -/
 noncomputable def algorithm_5_6_1 (hmn : m ≤ n) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) : M (Fin n → ℝ) := do
   let st ← algorithm_5_4_1 rnd le_rfl (Matrix.padRows A hmn)
@@ -458,7 +473,12 @@ where $x = A^+ b$, $\hat x = (A + \delta A)^+ (b + \delta b)$,
 $\epsilon_A = \|\delta A\|_2 / \|A\|_2$ and $\epsilon_b = \|\delta b\|_2 / \|b\|_2$.
 
 **Reading.** The source writes the remainder as $O(\epsilon^2)$. This statement reads it as a
-bound $K \epsilon^2$ for all perturbations of size at most $\epsilon_0$. -/
+bound $K \epsilon^2$ for all perturbations of size at most $\epsilon_0$.
+
+The smallness threshold is chosen for the fixed matrix $A$. The source compares
+the dimensionless relative error $\epsilon$ with $\sigma_m(A)$ and uses this in a rank-
+preservation argument. The exact bound uses the absolute operator norm of the matrix
+perturbation for that purpose. -/
 theorem theorem_5_6_1_firstOrder {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ A)
     {b : EuclideanSpace ℝ (Fin m)} (hb : b ≠ 0) :
     ∃ K ε₀ : ℝ, 0 < ε₀ ∧ ∀ (δA : Matrix (Fin m) (Fin n) ℝ) (δb : EuclideanSpace ℝ (Fin m)),

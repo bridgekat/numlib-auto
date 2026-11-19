@@ -88,6 +88,13 @@ $g^{++} = g$.
   proper convex $f$. See `Rockafellar.fenchel_inequality`.
 * **Theorem 12.3** (generalization). The function $h$ need not be convex. See
   `Rockafellar.theorem_12_3`.
+* **Section 12, symmetry** (generalization). `Rockafellar.SymmetricWrt` admits families of
+  arbitrary linear bijections. `Rockafellar.convexConj_comp_orthogonal` gives the forward
+  invariance implication for any function, without convexity.
+* **Section 12, monotone conjugate** (reading). The book defines the conjugate on the orthant.
+  `Rockafellar.monotoneConjOrthant` acts on ambient functions and extends the result by
+  $+\infty$ off the orthant. The book's formula holds when the input is also extended by
+  $+\infty$, without requiring closedness, convexity, or monotonicity of the input.
 -/
 
 namespace Rockafellar
@@ -320,14 +327,20 @@ theorem orthogonalEquiv_adjoint {A : Rn n ≃ₗ[ℝ] Rn n} (hA : IsOrthogonalEq
 
 /-- **Section 12** of [rockafellar1970convex], definition of symmetry (p. 109). Let $G$ be a set of
 linear bijections of $\mathbb{R}^n$. A function $f : \mathbb{R}^n \to [-\infty, +\infty]$ is
-**symmetric with respect to $G$** if $f(Ax) = f(x)$ for every $x$ and every $A \in G$. -/
+**symmetric with respect to $G$** if $f(Ax) = f(x)$ for every $x$ and every $A \in G$.
+
+**Generalization.** The book takes the members of $G$ to be orthogonal. This predicate admits
+all linear bijections. -/
 def SymmetricWrt (f : Rn n → EReal) (G : Set (Rn n ≃ₗ[ℝ] Rn n)) : Prop :=
   ∀ A ∈ G, ∀ x, f (A x) = f x
 
 /-- Let $A$ be an orthogonal linear transformation of $\mathbb{R}^n$, and let $f$ satisfy
 $f(Ax) = f(x)$ for every $x$. Then $f^*(Ax^*) = f^*(x^*)$ for every $x^*$. This is the half of
 Corollary 12.3.1 that needs no closedness. It is Theorem 12.3 with $h = f$, $a = a^* = 0$ and
-$\alpha = 0$, together with $A^{*-1} = A$. -/
+$\alpha = 0$, together with $A^{*-1} = A$.
+
+**Generalization.** The book derives this implication for a convex function. The formula
+holds for arbitrary functions. -/
 theorem convexConj_comp_orthogonal {A : Rn n ≃ₗ[ℝ] Rn n} (hA : IsOrthogonalEquiv A)
     (hfA : ∀ x, f (A x) = f x) (y : Rn n) :
     convexConj (pairing n) f (A y) = convexConj (pairing n) f y := by
@@ -487,8 +500,11 @@ theorem MonotoneOrthantFn.proper {f : Rn n → EReal}
 
 /-- **Section 12** of [rockafellar1970convex], the monotone conjugate (p. 111). The **monotone
 conjugate** $g^+$ of $g : \mathbb{R}^n \to [-\infty, +\infty]$ is $g^*$ on the non-negative
-orthant $K$ and $+\infty$ off $K$. The truncation makes the correspondence one between functions
-on $K$. -/
+orthant $K$ and $+\infty$ off $K$.
+
+**Reading.** The book uses functions defined on $K$. To obtain its conjugate, extend the input
+by $+\infty$ off $K$, as in `Rockafellar.MonotoneOrthantFn`. The Lean operator also admits
+general ambient functions, whose off-orthant values can affect their conjugate. -/
 noncomputable def monotoneConjOrthant (f : Rn n → EReal) : Rn n → EReal :=
   convexRestrict (nonnegOrthant n) (convexConj (pairing n) f)
 
@@ -496,6 +512,9 @@ noncomputable def monotoneConjOrthant (f : Rn n → EReal) : Rn n → EReal :=
 $g : \mathbb{R}^n \to [-\infty, +\infty]$ be $+\infty$ off the non-negative orthant $K$. Then
 for every $z^* \in K$,
 $$g^+(z^*) = \sup \{\langle z, z^* \rangle - g(z) \mid z \in K\}.$$
+
+**Generalization.** The book gives the formula for its class of closed convex non-decreasing
+functions finite at zero. The formula only needs the input to be $+\infty$ off $K$.
 -/
 theorem monotoneConjOrthant_apply {f : Rn n → EReal}
     (htop : ∀ ⦃z : Rn n⦄, z ∉ nonnegOrthant n → f z = ⊤) {y : Rn n} (hy : y ∈ nonnegOrthant n) :

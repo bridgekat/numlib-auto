@@ -61,6 +61,11 @@ used for Remark 20.
   $\sigma(E^\star, E)$ is the preimage of `closedBall 0 1` in `WeakDual ℝ E`, and $B_E$ with
   $\sigma(E, E^\star)$ is its image in `WeakSpace ℝ E`.
 
+## Deviations from the source
+
+* **Definition of separability** (generalization). The predicate applies to arbitrary topological
+  spaces. See `Brezis.Chapter03.IsSeparable`.
+
 ## Not formalized
 
 * **Remark 19, the spaces $L^1$ and $L^\infty$.** These claims are stated in Chapter 4.
@@ -77,7 +82,8 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- **Section 3.6** of [brezis2011functional], definition of a separable space. A topological space
 $E$ is **separable** if it has a countable dense subset $D$.
 
-The source makes the definition for a metric space. -/
+**Generalization.** The source makes the definition for a metric space. The predicate applies to
+any topological space. -/
 def IsSeparable (E : Type*) [TopologicalSpace E] : Prop :=
   ∃ D : Set E, D.Countable ∧ Dense D
 

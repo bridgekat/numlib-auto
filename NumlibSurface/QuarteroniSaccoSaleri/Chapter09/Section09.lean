@@ -94,6 +94,17 @@ Fubini's theorem (`MeasureTheory.integral_prod`).
 
 ## Deviations from the source
 
+* **(9.56)** (reading). `QuarteroniSaccoSaleri.Chapter09.equation_9_56` assumes a Lebesgue-
+  integrable integrand and allows coincident upper and lower boundary values. The source takes
+  strict separation for simplicity.
+* **(9.57)–(9.59)** (generalization). The formulae are weighted sums over arbitrary finite
+  triangle families. Affine maps and area are defined even for degenerate triangles. The change
+  of variables and error statements require nondegeneracy.
+* **Property 9.4** (precision). `QuarteroniSaccoSaleri.Chapter09.property_9_4_triangle` and
+  `QuarteroniSaccoSaleri.Chapter09.property_9_4` make the constant $2/(n+1)!$ explicit. They use
+  two anchored edge bounds for $h$ and an operator-norm bound on the Fréchet derivative.
+* **(9.61)** (generalization). `QuarteroniSaccoSaleri.Chapter09.equation_9_61` allows any common
+  sample distribution with the stated second moment and adds a Chebyshev probability estimate.
 * **Property 9.4** (generalization). The statement holds for any finite family of nondegenerate
   triangles that cover $\Omega$ and overlap only on null sets, not only for a triangulation. See
   `QuarteroniSaccoSaleri.Chapter09.property_9_4`.
@@ -114,6 +125,8 @@ namespace QuarteroniSaccoSaleri.Chapter09
 /-- **Section 9.9.1** of [quarteroni2000numerical] (Figure 9.5). For $a, b \in \mathbb{R}$ and
 functions $\varphi_1, \varphi_2$, the **domain normal to the $x$ axis** is
 $$\Omega = \{(x, y) : a \le x \le b,\ \varphi_1(x) \le y \le \varphi_2(x)\}.$$
+
+**Reading.** Allows equality of boundary functions and closed domain including sides.
 -/
 def normalDomain (a b : ℝ) (φ₁ φ₂ : ℝ → ℝ) : Set (ℝ × ℝ) :=
   {p | p.1 ∈ Icc a b ∧ φ₁ p.1 ≤ p.2 ∧ p.2 ≤ φ₂ p.1}
@@ -165,7 +178,10 @@ $$I(f) = \int_\Omega f(x, y)\,dx\,dy = \int_a^b \Bigl(\int_{\varphi_1(x)}^{\varp
   y)\,dy\Bigr) dx = \int_a^b F_f(x)\,dx.$$
 
 The proof is Fubini's theorem (`MeasureTheory.integral_prod`) for the indicator function of
-$\Omega$. -/
+$\Omega$.
+
+**Reading.** Uses Lebesgue integrability on the domain and nonstrict ordering of boundary functions.
+-/
 theorem equation_9_56 {a b : ℝ} (hab : a ≤ b) {φ₁ φ₂ : ℝ → ℝ} (h₁ : ContinuousOn φ₁ (Icc a b))
     (h₂ : ContinuousOn φ₂ (Icc a b)) (hφ : ∀ x ∈ Icc a b, φ₁ x ≤ φ₂ x) {f : ℝ × ℝ → ℝ}
     (hf : IntegrableOn f (normalDomain a b φ₁ φ₂)) :
@@ -196,25 +212,37 @@ $B_T = [a_2 - a_1 \mid a_3 - a_1]$ of the affine map (8.34) from the reference t
 triangle with vertices $a_1, a_2, a_3$. It is the linear map
 $$\hat x \mapsto \hat x_0 (a_2 - a_1) + \hat x_1 (a_3 - a_1).$$
 
-The vertices $a_1, a_2, a_3$ are `v 0`, `v 1`, `v 2`. -/
+The vertices $a_1, a_2, a_3$ are `v 0`, `v 1`, `v 2`.
+
+**Reading.** Defines the linear map for arbitrary vertices, including degenerate triangles.
+-/
 noncomputable def triangleLinear (v : Fin 3 → Fin 2 → ℝ) : (Fin 2 → ℝ) →ₗ[ℝ] (Fin 2 → ℝ) :=
   (LinearMap.proj 0).smulRight (v 1 - v 0) + (LinearMap.proj 1).smulRight (v 2 - v 0)
 
 /-- **Section 9.9.2** of [quarteroni2000numerical], the affine map (8.34)
 $$F_T(\hat x) = a_1 + \hat x_0 (a_2 - a_1) + \hat x_1 (a_3 - a_1)$$
 from the reference triangle onto the triangle $T$ with vertices $a_1, a_2, a_3$, which are
-`v 0`, `v 1` and `v 2`. -/
+`v 0`, `v 1` and `v 2`.
+
+**Reading.** Total affine map including degenerate images.
+-/
 noncomputable def triangleMap (v : Fin 3 → Fin 2 → ℝ) (x : Fin 2 → ℝ) : Fin 2 → ℝ :=
   triangleLinear v x + v 0
 
 /-- **Section 9.9.2** of [quarteroni2000numerical]. The **triangle** with vertices $a_1, a_2, a_3$
 is $T = F_T(\hat T)$, the image of the reference triangle $\hat T = \{\hat x : \hat x_0 \ge 0,\
-\hat x_1 \ge 0,\ \hat x_0 + \hat x_1 \le 1\}$. -/
+\hat x_1 \ge 0,\ \hat x_0 + \hat x_1 \le 1\}$.
+
+**Reading.** Affine image of the closed reference triangle, allowing degeneracy.
+-/
 noncomputable def triangle (v : Fin 3 → Fin 2 → ℝ) : Set (Fin 2 → ℝ) :=
   triangleMap v '' refTriangle
 
 /-- **Section 9.9.2** of [quarteroni2000numerical]. The **area** $|T|$ of the triangle with vertices
-$a_1, a_2, a_3$ is its Lebesgue measure. -/
+$a_1, a_2, a_3$ is its Lebesgue measure.
+
+**Reading.** Measure-based area, defined for degenerate vertices.
+-/
 noncomputable def area (v : Fin 3 → Fin 2 → ℝ) : ℝ :=
   (volume (triangle v)).toReal
 
@@ -243,7 +271,10 @@ $a_1, a_2, a_3$,
 $$|T| = \frac{|\det B_T|}{2},$$
 so the Jacobian $|\det B_T|$ of $F_T$ is $2|T|$.
 
-The proof uses `Quadrature.volume_affineImage_refTriangle`. A degenerate triangle has area $0$. -/
+The proof uses `Quadrature.volume_affineImage_refTriangle`. A degenerate triangle has area $0$.
+
+**Reading.** Determinant area formula including zero on degenerate triangles.
+-/
 theorem area_eq (v : Fin 3 → Fin 2 → ℝ) : area v = |LinearMap.det (triangleLinear v)| / 2 := by
   rw [area, triangle, show triangleMap v = fun y => triangleLinear v y + v 0 from rfl,
     volume_affineImage_refTriangle, ENNReal.toReal_ofReal (by positivity)]
@@ -259,7 +290,10 @@ In particular the local weights are $\alpha_T^{(j)} = \int_T l_{j,T} = 2|T| \int
 l_j$ for the basis functions $l_{j,T} = \hat l_j \circ F_T^{-1}$ of (8.38). The weight of the
 constant rule ($k = 0$) is $2|T| \int_{\hat T} 1 = |T|$, and the weights of the vertex rule
 ($k = 1$) are $2|T| \int_{\hat T} \lambda_j = |T|/3$, where $\lambda_0 = 1 - \hat x - \hat y$,
-$\lambda_1 = \hat x$ and $\lambda_2 = \hat y$ are the barycentric coordinates. -/
+$\lambda_1 = \hat x$ and $\lambda_2 = \hat y$ are the barycentric coordinates.
+
+**Reading.** General change of variables for every g plus four basis integrals.
+-/
 theorem triangleWeight_eq (v : Fin 3 → Fin 2 → ℝ) (hv : Function.Injective (triangleLinear v)) :
     (∀ g : (Fin 2 → ℝ) → ℝ, ∫ x in triangle v, g x
         = 2 * area v * ∫ x in refTriangle, g (triangleMap v x)) ∧
@@ -304,7 +338,10 @@ type, and let a reference rule on $\hat T$ have weights $\hat w_j$ and nodes $\h
 $$I_k^c(f) = \sum_T \sum_j \alpha_j^T f(\tilde z_j^T), \qquad \alpha_j^T = 2|T| \hat w_j, \qquad
   \tilde z_j^T = F_T(\hat z_j).$$
 
-The form of the local weights comes from `QuarteroniSaccoSaleri.Chapter09.triangleWeight_eq`. -/
+The form of the local weights comes from `QuarteroniSaccoSaleri.Chapter09.triangleWeight_eq`.
+
+**Generalization.** The weighted sum accepts an arbitrary finite triangle family and reference
+rule. The displayed source derives it using Lagrange interpolation on a triangulation. -/
 noncomputable def equation_9_57 {ι K : Type*} [Fintype ι] [Fintype K] (v : ι → Fin 3 → Fin 2 → ℝ)
     (w : K → ℝ) (z : K → Fin 2 → ℝ) (f : (Fin 2 → ℝ) → ℝ) : ℝ :=
   ∑ T, ∑ j, (2 * area (v T) * w j) * f (triangleMap (v T) (z j))
@@ -312,7 +349,10 @@ noncomputable def equation_9_57 {ι K : Type*} [Fintype ι] [Fintype K] (v : ι 
 /-- **Equation (9.58)** of [quarteroni2000numerical]. The **composite midpoint formula** on a finite
 family of triangles is
 $$I_0^c(f) = \sum_T |T| f(a_T),$$
-where $a_T = (a_1 + a_2 + a_3)/3$ is the centroid of $T$. -/
+where $a_T = (a_1 + a_2 + a_3)/3$ is the centroid of $T$.
+
+**Reading.** Exact centroid sum over arbitrary triangle family, beyond triangulations.
+-/
 noncomputable def equation_9_58 {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 → ℝ)
     (f : (Fin 2 → ℝ) → ℝ) : ℝ :=
   ∑ T, area (v T) * f ((v T 0 + v T 1 + v T 2) / 3)
@@ -320,7 +360,11 @@ noncomputable def equation_9_58 {ι : Type*} [Fintype ι] (v : ι → Fin 3 → 
 /-- **Equation (9.59)** of [quarteroni2000numerical]. The **composite trapezoidal formula** on a
 finite family of triangles is
 $$I_1^c(f) = \frac{1}{3} \sum_T |T| \sum_{j=1}^{3} f(a_T^{(j)}),$$
-where $a_T^{(j)}$ are the vertices of $T$. -/
+where $a_T^{(j)}$ are the vertices of $T$.
+
+**Generalization.** Exact sum of three vertex values per triangle as printed in PDF, extended to
+arbitrary families.
+-/
 noncomputable def equation_9_59 {ι : Type*} [Fintype ι] (v : ι → Fin 3 → Fin 2 → ℝ)
     (f : (Fin 2 → ℝ) → ℝ) : ℝ :=
   1 / 3 * ∑ T, area (v T) * ∑ j, f (v T j)
@@ -520,7 +564,11 @@ on $T$ (`QuarteroniSaccoSaleri.Chapter09.definition_9_1_transport`,
 $|f - P| \le M_{n+1} h^{n+1}/(n+1)!$ on $T$ (`norm_sub_taylorSum_segment_le`,
 `QuarteroniSaccoSaleri.Chapter09.triangleMap_segment_mem`). Finally
 $|E_T(g)| \le 2|T| \sup_T |g|$ for every $g$, because the nonnegative weights sum to $|T|$
-(`QuarteroniSaccoSaleri.Chapter09.sum_triangleWeight_eq_area`). -/
+(`QuarteroniSaccoSaleri.Chapter09.sum_triangleWeight_eq_area`).
+
+**Reading.** Single-triangle statement with explicit 2/(n+1)! factor, two anchored edge bounds and
+derivative operator norm.
+-/
 theorem property_9_4_triangle {K : Type*} [Fintype K] {w : K → ℝ} {z : K → Fin 2 → ℝ} {n : ℕ}
     (hexact : definition_9_1 w z n) (hw : ∀ j, 0 ≤ w j) (hz : ∀ j, z j ∈ refTriangle)
     {v : Fin 3 → Fin 2 → ℝ} (hv : Function.Injective (triangleLinear v)) {h : ℝ}
@@ -701,7 +749,11 @@ where $\mu(f)$ is the mean of $f(X_1)$.
 
 So the statistical error decays as $O(N^{-1/2})$, independently of the dimension. The statement
 needs only pairwise independence. The proof is the backbone's `MonteCarlo.variance_sampleMean`
-and `MonteCarlo.meas_ge_le_sampleMean`. -/
+and `MonteCarlo.meas_ge_le_sampleMean`.
+
+**Reading.** Applies to any identically distributed independent samples with second moment, adds
+variance and Chebyshev probability bound.
+-/
 theorem equation_9_61 [IsProbabilityMeasure μ] {f : (Fin d → ℝ) → ℝ} (hf : Measurable f)
     {X : ℕ → Ω' → (Fin d → ℝ)} (hL2 : MemLp (f ∘ X 0) 2 μ)
     (hindep : Pairwise ((· ⟂ᵢ[μ] ·) on X)) (hident : ∀ i, IdentDistrib (X i) (X 0) μ μ)

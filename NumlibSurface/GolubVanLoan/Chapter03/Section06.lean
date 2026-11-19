@@ -37,6 +37,12 @@ factorization with multipliers of modulus at most $1$. The proofs specialize the
 
 ## Deviations from the source
 
+* **Equation (3.6.2)** (reading). The rectangular step states existence with the multiplier
+  bound from partial pivoting. See `GolubVanLoan.Chapter03.equation_3_6_2`.
+* **Equations (3.6.3)–(3.6.5), and assembly** (generalization). The block identities allow
+  arbitrary combined trailing size. The Schur complement identity uses only the stated
+  product equations. See `GolubVanLoan.Chapter03.equation_3_6_5` and
+  `GolubVanLoan.Chapter03.blockLUPivoting`.
 * **§3.6.1, block column induction** (generalization). The source assumes $n = rN$; the last block
   column may be narrower. See `GolubVanLoan.Chapter03.exists_blockLUPivoting`.
 
@@ -61,9 +67,9 @@ $$P_1 W = L U_{11},$$
 where $L$ is unit lower trapezoidal with $|\ell_{ij}| \le 1$ for all $i, j$ and $U_{11}$ is
 upper triangular.
 
-The source obtains this factorization with "an obvious rectangular matrix version of Algorithm
-3.4.1". The permutation matrix is `σ.permMatrix ℝ` for a permutation `σ`, and the factorization
-is `Matrix.IsRectLU`. -/
+**Reading.** The source obtains the factors by rectangular partial pivoting on its first
+block column. The theorem states existence for any tall matrix, with the unit lower
+trapezoidal structure and multiplier bound resulting from partial pivoting. -/
 theorem equation_3_6_2 (W : Matrix (Fin (r + s)) (Fin r) ℝ) :
     ∃ (σ : Equiv.Perm (Fin (r + s))) (L : Matrix (Fin (r + s)) (Fin r) ℝ)
       (U : Matrix (Fin r) (Fin r) ℝ), IsRectLU (σ.permMatrix ℝ * W) L U ∧ ∀ i j, |L i j| ≤ 1 := by
@@ -81,9 +87,9 @@ $$\begin{bmatrix} \tilde A_{11} & \tilde A_{12} \\ \tilde A_{21} & \tilde A_{22}
   \end{bmatrix} \begin{bmatrix} U_{11} & U_{12} \\ 0 & I \end{bmatrix}, \qquad A^{new} = \tilde
   A_{22} - L_{21} U_{12}.$$
 
-In the source the blocks $\tilde A_{ij}$ are the blocks of $P_1 A$ (3.6.3); the theorem is
-stated for any four blocks. It is the Schur complement identity (3.2.9) applied to the permuted
-matrix. No triangularity of the factors is needed. -/
+**Generalization.** The source uses the blocks of $P_1A$ after the first pivoted step.
+The identity holds for any four compatible blocks satisfying the product equations,
+with arbitrary trailing size and arbitrary factors. -/
 theorem equation_3_6_5 {A₁₁ L₁₁ U₁₁ : Matrix (Fin r) (Fin r) ℝ}
     {A₁₂ U₁₂ : Matrix (Fin r) (Fin s) ℝ} {A₂₁ L₂₁ : Matrix (Fin s) (Fin r) ℝ}
     (A₂₂ : Matrix (Fin s) (Fin s) ℝ) (h₁₁ : A₁₁ = L₁₁ * U₁₁) (h₂₁ : A₂₁ = L₂₁ * U₁₁)
@@ -111,7 +117,10 @@ is an LU factorization of $PA$.
 
 The permutation of $P$ is `σ₁ * finSumFinEquiv.permCongr (Equiv.sumCongr (Equiv.refl (Fin r))
 σ)`. The block matrices on `Fin r ⊕ Fin s` are read on `Fin (r + s)` through `finSumFinEquiv`,
-and an LU factorization is `Matrix.IsLU`. -/
+and an LU factorization is `Matrix.IsLU`.
+
+**Generalization.** The source groups the trailing matrix into equal blocks. The
+assembly identity holds for every trailing size. -/
 theorem blockLUPivoting {A : Matrix (Fin (r + s)) (Fin (r + s)) ℝ}
     {σ₁ : Equiv.Perm (Fin (r + s))}
     {Ã₁₁ L₁₁ U₁₁ : Matrix (Fin r) (Fin r) ℝ} {Ã₁₂ U₁₂ : Matrix (Fin r) (Fin s) ℝ}

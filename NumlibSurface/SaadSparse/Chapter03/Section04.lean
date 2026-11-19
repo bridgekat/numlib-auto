@@ -56,9 +56,8 @@ arrays.
 * The array lengths are those of the source: twelve stored values in Example 3.7, $n + 1 + 7 = 13$
   positions in the modified sparse row arrays, and $n \times N_d = 5 \times 3$ in the diagonal and
   Ellpack-Itpack arrays.
-* The positions that the source marks $*$ are unused. The two definitions that contain such a
-  position take its value as a parameter, and the statements about them hold for every value, so no
-  proof can depend on it.
+* The positions that the source marks $*$ are unused by the decoders. In the diagonal format
+  a single parameter supplies all three unused entries.
 
 ## Implementation notes
 
@@ -68,6 +67,15 @@ arrays.
   stored, and no position is stored twice in a way that changes the sum. For the coordinate format,
   the further claim that the twelve stored positions are distinct, so that the array length is the
   number $N_z$ of nonzeros, is a separate clause.
+
+## Deviations from the source
+
+* **§3.4, compressed sparse rows** (typo). Row pointers replace the coordinate row-index
+  array $\mathrm{JR}$. The prose prints $\mathrm{JC}$ for that array.
+  See `SaadSparse.Chapter03.csrIA` and `SaadSparse.Chapter03.example_3_7_csr`.
+* **Example 3.8** (reading). The diagonal layout assigns a common value to all three
+  unused positions, and the decoder ignores them. See `SaadSparse.Chapter03.diag_3_8`
+  and `SaadSparse.Chapter03.example_3_8`.
 
 ## Not formalized
 
@@ -141,7 +149,10 @@ def csrJA : Fin 12 → Fin 5 := ![0, 3, 0, 1, 3, 0, 2, 3, 4, 2, 3, 4]
 
 /-- **Section 3.4** of [saad2003iterative], the array $\mathrm{IA}$ of the compressed sparse row
 format of the matrix of Example 3.7: the position at which each row starts, $0$-based, followed
-by the extra entry $\mathrm{IA}(n + 1) = \mathrm{IA}(1) + N_z$. -/
+by the extra entry $\mathrm{IA}(n + 1) = \mathrm{IA}(1) + N_z$.
+
+**Typo.** The source prose says to replace $\mathrm{JC}$ with pointers. The row-pointers
+array replaces $\mathrm{JR}$, while $\mathrm{JA}$ still stores the column indices. -/
 def csrIA : Fin 6 → ℕ := ![0, 2, 5, 9, 11, 12]
 
 /-- **Section 3.4** of [saad2003iterative], the compressed sparse row format of the matrix of
@@ -159,7 +170,10 @@ $\mathrm{IA}(n + 1) = \mathrm{IA}(1) + N_z$. The third says that $\mathrm{IA}$ i
 so the blocks that it cuts out are consecutive and disjoint.
 
 All arrays are $0$-based: row $i$ of the formula is `i.castSucc` in
-`SaadSparse.Chapter03.csrIA`, and row $i + 1$ is `i.succ`. -/
+`SaadSparse.Chapter03.csrIA`, and row $i + 1$ is `i.succ`.
+
+**Typo.** The source's row pointers replace the coordinate array $\mathrm{JR}$ even
+though the prose prints $\mathrm{JC}$. The decoder uses $\mathrm{JA}$ for columns. -/
 theorem example_3_7_csr :
     (∀ i j, matrix_3_7 i j =
         ∑ p : Fin 12, if csrIA i.castSucc ≤ (p : ℕ) ∧ (p : ℕ) < csrIA i.succ ∧ csrJA p = j
@@ -235,7 +249,10 @@ def ioff_3_8 : Fin 3 → ℤ := ![-1, 0, 2]
 /-- **Example 3.8** of [saad2003iterative], the array $\mathrm{DIAG}$ of the diagonal format: the
 three diagonals with offsets $-1$, $0$ and $2$, stored as the columns of an
 $n \times N_d = 5 \times 3$ array. The three positions that the source marks $*$ fall off the
-ends of the subdiagonal and the superdiagonal, and their value $*$ is a parameter. -/
+ends of the subdiagonal and the superdiagonal.
+
+**Reading.** The three unused positions can carry arbitrary data. The definition
+uses one common parameter for those positions. -/
 def diag_3_8 (star : ℝ) : Matrix (Fin 5) (Fin 3) ℝ :=
   !![star, 1, 2;
      3, 4, 5;
@@ -256,8 +273,10 @@ a_{i, i + \mathrm{IOFF}(j)}$ of the source: $a_{ic}$ is the value that $\mathrm{
 the stored diagonal through $(i, c)$, and $0$ when no stored diagonal passes through $(i, c)$.
 The second is the hypothesis of the format, that every nonzero entry lies on a stored diagonal,
 and it follows from the first. The third identifies the positions marked $*$: they are those
-where $i + \mathrm{IOFF}(j)$ is not a column of the matrix, and they carry no information. The
-statement holds for every value of $*$.
+where $i + \mathrm{IOFF}(j)$ is not a column of the matrix, and they carry no information.
+
+**Reading.** The statement uses one parameter for the source's three unused positions.
+Their shared value never enters the sums for valid columns.
 
 The column $i + \mathrm{IOFF}(j)$ is computed in $\mathbb{Z}$, with $0$-based indices. -/
 theorem example_3_8 (star : ℝ) :

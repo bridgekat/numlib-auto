@@ -125,6 +125,17 @@ Algorithm 5.1.3, `GolubVanLoan.Chapter05.algorithm_5_1_3`.
 
 ## Deviations from the source
 
+* **Equation (12.2.3)** (correction). The inverse blocks have rank at most one, allowing
+  vanishing blocks. See `GolubVanLoan.Chapter12.equation_12_2_3`.
+* **Equations (12.2.15)–(12.2.16)** (correction). The second term in (12.2.15) uses the strict
+  upper triangle, as in Algorithm 12.2.2, so the diagonal is included only once. See
+  `GolubVanLoan.Chapter12.equation_12_2_16`.
+* **§12.2.10, quasiseparability and Facts 1–2** (generalization). The rank bound holds for all
+  orthogonal upper Hessenberg matrices. The reflector product similarity and the even-order
+  spectral relation allow arbitrary angles. See
+  `GolubVanLoan.Chapter12.orthogonalHessenberg_isQuasiseparable`,
+  `GolubVanLoan.Chapter12.orthogonalHessenberg_fact_1`, and
+  `GolubVanLoan.Chapter12.orthogonalHessenberg_fact_2`.
 * **§12.2.3, $B(r)$ has no generator representation** (generalization). The source takes $r$ with
   nonzero entries; $r_1 \neq 0$ and $r_2 \neq 0$ suffice. See
   `GolubVanLoan.Chapter12.unitBidiagonal_not_generatorRepresentable`.
@@ -188,7 +199,10 @@ $r \in \mathbb{R}^{n-1}$. The inverse of $B(r)$ is upper triangular, with the en
 $$[B(r)^{-1}]_{ij} = r_i r_{i+1} \cdots r_{j-1} \qquad (i \le j),$$ in particular $1$ on the
 diagonal, and $B(r)^{-1}$ is semiseparable.
 
-The source leaves the proof to Problem P12.2.1. -/
+The source leaves the proof to Problem P12.2.1.
+
+**Correction.** The source says relevant blocks have unit rank. The definition uses rank at
+most one, so it covers rank-zero blocks, including blocks that vanish when some $r_k = 0$. -/
 theorem equation_12_2_3 (r : ℕ → ℝ) :
     (unitBidiagonal n r)⁻¹ =
         of (fun (i j : Fin n) => if i ≤ j then ∏ l ∈ Finset.Ico (i : ℕ) j, r l else 0) ∧
@@ -214,7 +228,11 @@ Then $$m_{ij} = \begin{cases} \gamma_j & \text{if } i = j + 1, \\ \delta_{i-1} \
 $\delta_0 = 1$ and $\alpha_n = 1$, and $M$ is quasiseparable.
 
 Here $n = N + 1$, and $M$ is `Matrix.givensChain N M`. The Lean statement is 0-based: the block
-$M_k$ is `M (k - 1)`. -/
+$M_k$ is `M (k - 1)`.
+
+**Generalization.** General entry formula extends the five-dimensional display to every positive
+order.
+-/
 theorem equation_12_2_4 {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2) ℝ) :
     (∀ i j : Fin (N + 1), givensChain N M i j =
       if (i : ℕ) = j + 1 then M j 1 0
@@ -418,7 +436,10 @@ section LU
 
 /-- One step of Algorithm 12.2.1, with the 0-based index $k$ for the source's $k + 1$:
 $\tau_k = t_k u_{k+1}/u_k$, with two roundings, and $\tilde p_{k+1} = p_{k+1} - p_k \tau_k r_k$,
-with three roundings from left to right. -/
+with three roundings from left to right.
+
+**Reading.** Makes arithmetic rounding explicit and uses total division.
+-/
 noncomputable def algorithm_12_2_1Step {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
     (u p : Fin n → ℝ) (t r : ℕ → ℝ) (k : Fin (n - 1)) : M (ℝ × ℝ) := do
   let τk ← rnd ((← rnd (t k * u ⟨k + 1, by omega⟩)) / u ⟨k, by omega⟩)
@@ -436,7 +457,11 @@ $\tilde p_1 = p_1$.
 Every arithmetic result passes through the rounding hook `rnd`. The loop stores the pair
 $(\tau_k, \tilde p_{k+1})$ of step $k$, computed by
 `GolubVanLoan.Chapter12.algorithm_12_2_1Step`. The vectors $v$ and $q$ enter only the
-specification. The returned $\tau$ is a sequence `ℕ → ℝ` that is zero after the index $n - 2$. -/
+specification. The returned $\tau$ is a sequence `ℕ → ℝ` that is zero after the index $n - 2$.
+
+**Reading.** Same descending loop with explicit rounding and total division; pads unused
+coefficients with zero.
+-/
 noncomputable def algorithm_12_2_1 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) (u p : Fin n → ℝ)
     (t r : ℕ → ℝ) : M ((Fin n → ℝ) × (ℕ → ℝ)) := do
   let st ← vecLoopOn (List.finRange (n - 1)).reverse (algorithm_12_2_1Step rnd u p t r)
@@ -635,7 +660,10 @@ $f_1 = \tilde f_1$.
 The program works on `Fin (N + 1)`, so $n = N + 1$, with 0-based indices. It returns
 $(c, s, f, g, h)$, with the pairs as sequences `ℕ → ℝ`, the form that `Matrix.givensChain`
 takes. The hypotheses on $u$, $v$, $p$ and $q$ belong to the specification
-`GolubVanLoan.Chapter12.algorithm_12_2_2_spec`. -/
+`GolubVanLoan.Chapter12.algorithm_12_2_2_spec`.
+
+**Reading.** Updated numerator and explicit rounded descending loop.
+-/
 noncomputable def algorithm_12_2_2 (u v p q : Fin (N + 1) → ℝ) :
     M ((ℕ → ℝ) × (ℕ → ℝ) × (Fin (N + 1) → ℝ) × (Fin (N + 1) → ℝ) × (Fin (N + 1) → ℝ)) := do
   let st ← (List.finRange N).reverse.foldlM (algorithm_12_2_2Step rnd u v p q)
@@ -706,7 +734,10 @@ private theorem givensFactor_of_lt {N : ℕ} (M : ℕ → Matrix (Fin 2) (Fin 2)
 /-- In exact arithmetic, one step of Algorithm 12.2.2 takes the rotation
 $\begin{bmatrix} c & s \\ -s & c \end{bmatrix}$ from Algorithm 5.1.3 on $(u_k, \tilde u_{k+1})$,
 with $s$ the sine of Algorithm 5.1.3 with the sign changed, and updates $\tilde u$, $\tilde f$,
-$c$, $s$, $f$, $g$ and $h$ by the formulas of the step, without rounding. -/
+$c$, $s$, $f$, $g$ and $h$ by the formulas of the step, without rounding.
+
+**Correction.** Unfolds the corrected numerator in exact arithmetic.
+-/
 theorem algorithm_12_2_2Step_pure {N : ℕ} (u v p q : Fin (N + 1) → ℝ)
     (st : SemiseparableQRState N) (a : Fin N) :
     Id.run (algorithm_12_2_2Step pure u v p q st a) =
@@ -906,7 +937,11 @@ generator representation (12.2.15). Then there are an orthogonal matrix $Q^T$ an
 $f, g, h \in \mathbb{R}^n$ with $$Q^T A = R = \operatorname{triu}(fg^T + hq^T).$$ So $R$ is the
 upper triangular part of a matrix of rank at most two.
 
-The matrix $Q^T$ is that of Algorithm 12.2.2, `GolubVanLoan.Chapter12.algorithm_12_2_2_spec`. -/
+The matrix $Q^T$ is that of Algorithm 12.2.2, `GolubVanLoan.Chapter12.algorithm_12_2_2_spec`.
+
+**Correction.** The second term in the printed (12.2.15) includes the diagonal, whereas
+Algorithm 12.2.2 uses $\operatorname{triu}(pq^T, 1)$. This statement follows the algorithm,
+which takes the diagonal from $uv^T$ alone. -/
 theorem equation_12_2_16 {N : ℕ} (u v p q : Fin (N + 1) → ℝ) (hu : u (Fin.last N) ≠ 0) :
     ∃ Qt ∈ orthogonalGroup (Fin (N + 1)) ℝ, ∃ f g h : Fin (N + 1) → ℝ,
       Qt * (of fun i j => if j ≤ i then u i * v j else p i * q j) =
@@ -970,7 +1005,11 @@ theorem equation_12_2_19 {m : ℕ} {H : Matrix (Fin (2 * m)) (Fin (2 * m)) ℝ}
 
 /-- **§12.2.10** of [golub2013matrix], quasiseparability. Every orthogonal upper Hessenberg matrix
 $H \in \mathbb{R}^{n \times n}$ is quasiseparable. The source derives this from (12.2.4) and
-(12.2.18). -/
+(12.2.18).
+
+**Generalization.** The statement imposes no parity, determinant, or sign restrictions on the
+subdiagonal. The rank bound follows directly from orthogonality and the upper Hessenberg
+structure. -/
 theorem orthogonalHessenberg_isQuasiseparable {H : Matrix (Fin n) (Fin n) ℝ}
     (hH : H ∈ orthogonalGroup (Fin n) ℝ) (hHess : H.IsUpperHessenberg) : H.IsQuasiseparable :=
   Matrix.orthogonalHessenberg_isQuasiseparable hH hHess
@@ -986,7 +1025,10 @@ R(\varphi_{n-2}), -1)$.
 The factors are `Matrix.reflectorFactor N φ`, with $n = N + 1$, and $H$ is
 `prodFwd (Matrix.reflectorFactor N φ) (N + 1)`. With 0-based indices, $H_o$ is the product
 `prodFwdEven` of the factors with even index and $H_e$ is the product `prodFwdOdd` of the
-factors with odd index. The statement holds for every order $n$ and all angles. -/
+factors with odd index. The statement holds for every order $n$ and all angles.
+
+**Reading.** Product similarity holds for arbitrary reflector angles.
+-/
 theorem orthogonalHessenberg_fact_1 {N : ℕ} (φ : ℕ → ℝ) :
     (prodFwd (reflectorFactor N φ) (N + 1)).IsSimilar
       (prodFwdEven (reflectorFactor N φ) (N + 1) * prodFwdOdd (reflectorFactor N φ) (N + 1)) :=
@@ -1004,7 +1046,11 @@ $\lambda(C) = \{\pm\cos(\theta_k/2)\}$ and $\lambda(S) = \{\pm\sin(\theta_k/2)\}
 
 The angles $\theta_k$ exist by (12.2.19), because $H$ is a product of $2m$ reflections and so
 special orthogonal (`Matrix.prodFwd_reflectorFactor_mem_specialOrthogonalGroup`). No condition
-on the angles $\varphi_k$ is needed. -/
+on the angles $\varphi_k$ is needed.
+
+**Reading.** Allows arbitrary angles and makes matching signed cosine and sine eigenvalues explicit
+via characteristic polynomials.
+-/
 theorem orthogonalHessenberg_fact_2 {N m : ℕ} (hNm : N + 1 = 2 * m) (φ : ℕ → ℝ) :
     ∃ θ : Fin m → ℝ,
       ((prodFwd (reflectorFactor N φ) (N + 1)).map (algebraMap ℝ ℂ)).charpoly =

@@ -70,6 +70,14 @@ interpolation projection `Lagrange.interpolateCLM`.
 * The interpolation property after Property 10.1 follows from the intermediate value theorem between
   consecutive alternation points. The backbone does not state it separately.
 * Property 10.1 needs $a < b$: on an interval of one point the best approximation is not unique.
+
+## Deviations from the source
+
+* **Property 10.1 and its interpolation consequence** (reading). `property_10_1_existsUnique`
+  and `property_10_1_equioscillates` assume $a<b$ and represent polynomials by their
+  restrictions. `property_10_1_interpolates` gives a node in each gap, at which the approximant
+  and $f$ agree. A polynomial of best approximation may have degree strictly below $n$, despite
+  the text's description of the resulting interpolant as degree $n$.
 -/
 
 open Set
@@ -124,7 +132,9 @@ theorem bestApproximationError_eq {f p : C(Icc a b, ℝ)} (hp : equation_10_47 a
 and uniqueness. Let $a < b$, $f \in C^0([a, b])$ and $n \ge 0$. Then the polynomial of best
 approximation $p_n^*$ of $f$ exists and is unique.
 
-The proof specializes the backbone's `existsUnique_isBestApprox_polyLE`. -/
+The proof specializes the backbone's `existsUnique_isBestApprox_polyLE`.
+
+**Reading.** Assumes $a<b$ and states uniqueness of a polynomial restriction on the interval. -/
 theorem property_10_1_existsUnique (hab : a < b) (n : ℕ) (f : C(Icc a b, ℝ)) :
     ∃! p, equation_10_47 a b n f p :=
   have : Infinite (Icc a b) := Set.Icc.infinite hab
@@ -138,7 +148,9 @@ $$f(x_j) - p_n^*(x_j) = \sigma (-1)^j E_n^*(f), \qquad j = 0, \dots, n + 1.$$
 The sign $\sigma$ depends on $f$ and $n$.
 
 The proof specializes the backbone's `IsBestApprox.equioscillates_of_polyLE`. The backbone also
-proves the converse, `isBestApprox_of_equioscillates`, which the book does not state. -/
+proves the converse, `isBestApprox_of_equioscillates`, which the book does not state.
+
+**Reading.** Assumes $a<b$ for the strictly ordered equioscillation nodes. -/
 theorem property_10_1_equioscillates (hab : a < b) {f p : C(Icc a b, ℝ)}
     (hp : equation_10_47 a b n f p) :
     ∃ (σ : ℝ) (x : Fin (n + 2) → Icc a b), (σ = 1 ∨ σ = -1) ∧
@@ -165,7 +177,10 @@ The proof applies the intermediate value theorem to $f - p_n^*$ between two cons
 alternation points, where it takes the values $\pm E_n^*(f)$. When $E_n^*(f) = 0$, $f$ is the
 polynomial $p_n^*$ and any point between two alternation points serves. Unlike Property 10.1,
 the statement needs no hypothesis $a < b$, because the alternation points are already $n + 2$
-distinct points of $[a, b]$. -/
+distinct points of $[a, b]$.
+
+**Reading.** The conclusion gives the $n+1$ interpolation nodes. The approximant is allowed to
+have degree below $n$. -/
 theorem property_10_1_interpolates {f p : C(Icc a b, ℝ)}
     (hp : equation_10_47 a b n f p) {σ : ℝ} (hσ : σ = 1 ∨ σ = -1) {x : Fin (n + 2) → Icc a b}
     (hmono : StrictMono fun i => (x i : ℝ))

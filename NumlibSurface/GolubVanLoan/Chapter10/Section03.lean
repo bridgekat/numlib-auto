@@ -78,6 +78,19 @@ Householder and QR programs of Chapter 5.
 
 ## Deviations from the source
 
+* **Equation (10.3.4)** (reading). The reflector program gives an exact orthogonal completion,
+  and the comparison with Lanczos vectors is restricted to indices below the grade. See
+  `GolubVanLoan.Chapter10.equation_10_3_4`.
+* **§10.3.4, good Ritz pairs** (reading). The predicate expresses the residual test alone. The
+  source applies the test to already computed Ritz pairs. See
+  `GolubVanLoan.Chapter10.IsGoodRitzPair`.
+* **Equations (10.3.7)–(10.3.9)** (generalization). The prefix identities do not need $n=rp$.
+  Global orthogonality and compression of a prefix use the full-rank residual condition in the
+  text. See `GolubVanLoan.Chapter10.equation_10_3_8` and
+  `GolubVanLoan.Chapter10.equation_10_3_9`.
+* **Theorem 10.3.2** (typo). The bound uses $\tan(\phi_p)$ for the angle defined by the smallest
+  singular value. The source prints $\tan(\theta_p)$. See
+  `GolubVanLoan.Chapter10.theorem_10_3_2`.
 * **Theorem 10.3.2** (reading). The source's $\rho_i$ is undefined when $\lambda_{p+1} = \lambda_n$;
   the statement takes $\rho_i = 0$ and needs no gap hypothesis. See
   `GolubVanLoan.Chapter10.theorem_10_3_2`.
@@ -129,7 +142,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- The in-place swap of (10.3.1): for $i = 1, \dots, n$, set $t = w_i$, $w_i = v_i / \beta$ and
 $v_i = -\beta t$, with one rounded quotient and one rounded product per entry. The negation is
-exact. The two vectors are carried as one vector of pairs. -/
+exact. The two vectors are carried as one vector of pairs.
+
+**Reading.** Same coordinate swap with rounding and total division.
+-/
 noncomputable def lanczosSwap (w v : Fin n → ℝ) (β : ℝ) : M ((Fin n → ℝ) × (Fin n → ℝ)) := do
   let p ← (List.finRange n).foldlM (fun (p : Fin n → ℝ × ℝ) i => do
       let t := (p i).1
@@ -143,7 +159,10 @@ noncomputable def lanczosSwap (w v : Fin n → ℝ) (β : ℝ) : M ((Fin n → �
 for i = 1:n: t = w_i, w_i = v_i/β_k, v_i = −β_k t
 v = v + A w,  k = k + 1,  α_k = wᵀv,  v = v − α_k w,  β_k = ‖v‖₂
 ```
-Once the flag `done` is set, a pass returns the state unchanged. -/
+Once the flag `done` is set, a pass returns the state unchanged.
+
+**Reading.** Same vector recurrence with rounded operations and stopped-state branch.
+-/
 noncomputable def twoVectorLanczosStep (A : Matrix (Fin n) (Fin n) ℝ) (s : TwoVectorState n) :
     M (TwoVectorState n) :=
   if s.done then pure s else do
@@ -175,7 +194,10 @@ end
 The program is generic in the monad `M` and the rounding hook `rnd`. The `while` loop is at most
 `fuel` passes of `GolubVanLoan.Chapter10.twoVectorLanczosStep`. The norm is
 `GolubVanLoan.Chapter10.vecNorm`. The program has no hypothesis on $A$ or $q_1$; its exact
-semantics is `GolubVanLoan.Chapter10.equation_10_3_1`. -/
+semantics is `GolubVanLoan.Chapter10.equation_10_3_1`.
+
+**Reading.** Compulsory first step then finite-fuel rounded passes.
+-/
 noncomputable def twoVectorLanczos (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) (fuel : ℕ) :
     M (TwoVectorState n) := do
   let v ← algorithm_1_1_3 rnd A q₁ 0
@@ -189,7 +211,10 @@ noncomputable def twoVectorLanczos (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin 
 end Program
 
 /-- In exact arithmetic, the swap `GolubVanLoan.Chapter10.lanczosSwap` returns the new vectors
-$w = \beta^{-1} v$ and $v = -\beta w$. -/
+$w = \beta^{-1} v$ and $v = -\beta w$.
+
+**Reading.** Exact signed vector swap with total beta reciprocal.
+-/
 theorem lanczosSwap_spec (w v : Fin n → ℝ) (β : ℝ) :
     Id.run (lanczosSwap pure w v β) = (β⁻¹ • v, -(β • w)) := by
   have h := List.idRun_foldlM_update_apply (fun (_ : Fin n) (q : ℝ × ℝ) =>
@@ -224,7 +249,10 @@ The last claim is the source's remark after the display. The coefficients are th
 `Lanczos.alpha` and `Lanczos.beta` at the 0-based index $j - 1$, and $q_k$ and $r_k$ are
 `Arnoldi.vec` and `Arnoldi.w` at the index $k - 1$. The program computes
 $\alpha_k = q_k^T (A q_k - \beta_{k-1} q_{k-1})$, which equals $q_k^T A q_k$ because
-$q_k^T q_{k-1} = 0$. -/
+$q_k^T q_{k-1} = 0$.
+
+**Reading.** Exact agreement at min of grade and fuel plus one, including residual.
+-/
 theorem equation_10_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) (fuel : ℕ) :
     let s := Id.run (twoVectorLanczos pure A q₁ fuel)
@@ -349,7 +377,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 /-- The application of a stored reflector $(v, \beta)$ to a vector $x \in \mathbb{R}^n$ in (10.3.4):
 the program computes $(I - \beta v v^T) x$ by `GolubVanLoan.Chapter05.householderApplyLeft` on
 the one-column matrix $x$, over all rows. The vector $v$ vanishes off the rows on which the
-reflector acts. -/
+reflector acts.
+
+**Reading.** Applies one stored reflector with rounded arithmetic.
+-/
 def reflectorApply (h : (Fin n → ℝ) × ℝ) (x : Fin n → ℝ) : M (Fin n → ℝ) := do
   let C ← householderApplyLeft rnd h.1 h.2 (List.finRange n) [(0 : Fin 1)]
     (Matrix.of fun i (_ : Fin 1) => x i)
@@ -361,7 +392,10 @@ q_k - \beta_{k-1} q_{k-1}$, with $\beta_0 q_0 \equiv 0$, and then $w = (H_{k-1} 
 by applying the stored reflectors in turn. It determines $H_k$ by
 `GolubVanLoan.Chapter05.houseOn` on the entries $k, \dots, n - 1$ (0-based) of $w$, sets
 $\beta_k$ to the entry $k$ of $H_k w$, and computes $q_{k+1} = H_0 \cdots H_k e_{k+1}$ by
-applying the reflectors in reverse order. -/
+applying the reflectors in reverse order.
+
+**Reading.** Same residual, forward and reverse reflector passes with rounding.
+-/
 noncomputable def householderLanczosStep (A : Matrix (Fin n) (Fin n) ℝ)
     (s : HouseholderLanczosState n) (k : Fin n) : M (HouseholderLanczosState n) := do
   let j := (k : ℕ) - 1
@@ -399,7 +433,10 @@ There is no early exit: the source notes that "it makes no difference if $\beta_
 The program is generic in the monad `M` and the rounding hook `rnd`. The reflector $H_0$ is
 `GolubVanLoan.Chapter05.houseOn` on all entries of $q_1$, and the passes are
 `GolubVanLoan.Chapter10.householderLanczosStep`. The program returns the reflector data that it
-applied. Its exact semantics is `GolubVanLoan.Chapter10.equation_10_3_4`. -/
+applied. Its exact semantics is `GolubVanLoan.Chapter10.equation_10_3_4`.
+
+**Reading.** Same n−1 pass structure with explicit rounding and finite-index implementation.
+-/
 noncomputable def householderLanczos (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : Fin n → ℝ) :
     M (HouseholderLanczosState n) := do
   let H₀ ← houseOn rnd (indexFrom n 0) q₁
@@ -721,7 +758,10 @@ $q_1$. Run (10.3.4) in exact arithmetic. Then the following hold.
 Past the grade, the computed vectors continue an orthonormal basis, so the program "may safely
 run until $k = n - 1$", as the source says. The Lanczos quantities are the backbone's
 `Arnoldi.vec`, `Lanczos.alpha` and `Lanczos.beta` at the 0-based index $j - 1$. In particular
-$\beta_j \ge 0$, since `house` maps $w$ to $+\|w\| e$. -/
+$\beta_j \ge 0$, since `house` maps $w$ to $+\|w\| e$.
+
+**Reading.** The exact reflector program continues after breakdown and gives an orthogonal
+completion. Its agreement with the ordinary Lanczos vectors is stated only before the grade. -/
 theorem equation_10_3_4 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {q₁ : Fin n → ℝ}
     (hq : ‖(WithLp.toLp 2 q₁ : EuclideanSpace ℝ (Fin n))‖ = 1) :
     let s := Id.run (householderLanczos pure A q₁)
@@ -832,7 +872,10 @@ computed Ritz pair $(\hat\theta, \hat y)$ is **good** if
 $$\|A \hat y - \hat\theta \hat y\|_2 \le \sqrt{u} \, \|A\|_2.$$
 
 The unit roundoff is `fp.u` of the rounding model `fp`, and $\|A\|_2$ is the operator 2-norm
-(`Matrix.Norms.L2Operator`). The definition puts no condition on $\hat y$ other than the bound. -/
+(`Matrix.Norms.L2Operator`). The definition puts no condition on $\hat y$ other than the bound.
+
+**Reading.** This predicate is just the residual threshold. The source applies it to already
+computed Ritz pairs. For example, the predicate alone accepts $y=0$. -/
 def IsGoodRitzPair (fp : RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (θ : ℝ)
     (y : EuclideanSpace ℝ (Fin n)) : Prop :=
   ‖Matrix.toEuclideanLin A y - θ • y‖ ≤
@@ -920,7 +963,10 @@ indices, the pass computes the residual block $R = A X_k - X_k M_k - X_{k-1} B_{
 Algorithm 1.1.5 (the last term is absent for $k = 0$), the QR factorization $X_{k+1} B_k = R$ by
 Algorithm 5.2.1 with backward accumulation of its reflector data, and
 $M_{k+1} = X_{k+1}^T A X_{k+1}$. The block $X_{k+1}$ is the first $p$ columns of the orthogonal
-factor and $B_k$ is the first $p$ rows of the triangular factor, which needs $p \le n$. -/
+factor and $B_k$ is the first $p$ rows of the triangular factor, which needs $p \le n$.
+
+**Reading.** Same residual and QR/update via specific rounded Householder routines.
+-/
 noncomputable def blockLanczosStep (hpn : p ≤ n) (A : Matrix (Fin n) (Fin n) ℝ)
     (s : BlockLanczosState n p) (k : ℕ) : M (BlockLanczosState n p) := do
   let AX ← algorithm_1_1_5 rnd A (s.X k) 0
@@ -954,7 +1000,11 @@ end
 
 The program is generic in the monad `M` and the rounding hook `rnd`. The loop is $r - 1$ passes
 of `GolubVanLoan.Chapter10.blockLanczosStep`. The program has no hypothesis other than
-$p \le n$; its exact semantics is `GolubVanLoan.Chapter10.equation_10_3_8`. -/
+$p \le n$; its exact semantics is `GolubVanLoan.Chapter10.equation_10_3_8`.
+
+**Generalization.** The program takes the number of blocks as an input. The block identities
+can be used for an attained prefix without the source's assumption $n=rp$ for a complete square
+basis. -/
 noncomputable def blockLanczos (hpn : p ≤ n) (A : Matrix (Fin n) (Fin n) ℝ)
     (X₁ : Matrix (Fin n) (Fin p) ℝ) (r : ℕ) : M (BlockLanczosState n p) := do
   let AX ← algorithm_1_1_5 rnd A X₁ 0
@@ -1230,7 +1280,11 @@ blocks; the statement is for $k + 1$ blocks, so that $\bar T_{k+1}$ is not empty
 hypothesis on $A$, on $X_1$ or on the ranks of the residual blocks, because each pass computes
 an exact QR factorization. The matrix $\bar T_{k+1}$ is `Matrix.blockTridiagonal`,
 $[X_1 | \cdots | X_{k+1}]$ is `GolubVanLoan.Chapter10.blockCols`, and $R_{k+1}$ is
-`GolubVanLoan.Chapter10.blockResidual` at the 0-based index $k$. -/
+`GolubVanLoan.Chapter10.blockResidual` at the 0-based index $k$.
+
+**Reading.** Same residual relation for every A, starting block, and attainable prefix, no n=rp
+assumption.
+-/
 theorem equation_10_3_9 (hpn : p ≤ n) (A : Matrix (Fin n) (Fin n) ℝ)
     (X₁ : Matrix (Fin n) (Fin p) ℝ) (r : ℕ) {k : ℕ} (hkr : k + 1 ≤ r) :
     let s := Id.run (blockLanczos pure hpn A X₁ r)
@@ -1343,7 +1397,11 @@ private theorem colE_mul_left (A : Matrix (Fin n) (Fin n) ℝ) (Y : Matrix (Fin 
   ext i
   simp [colE, Matrix.mul_apply, Matrix.mulVec, dotProduct]
 
-/-- The basis part of (10.3.8), for any number of blocks. -/
+/-- The basis part of (10.3.8), for any number of blocks.
+
+**Reading.** Global orthogonality and Krylov span for any attained prefix with full-rank residual
+predecessors.
+-/
 private theorem blockLanczos_basis (hpn : p ≤ n) {A : Matrix (Fin n) (Fin n) ℝ}
     (hA : A.IsSymm) {X₁ : Matrix (Fin n) (Fin p) ℝ} (hX₁ : X₁ᵀ * X₁ = 1) {r t : ℕ} (htr : t ≤ r)
     (hrank : ∀ b, b + 1 < t →
@@ -1484,7 +1542,11 @@ $\bar X_{k+1} = [X_1 | \cdots | X_{k+1}]$. Then the following hold.
 
 The full column rank of $R_b$ is the linear independence of the rows of $R_b^T$. The block
 Krylov subspace is `Krylov.blockSubspace`, the sum of the Krylov subspaces of the columns of
-$X_1$. -/
+$X_1$.
+
+**Reading.** Same compression, orthogonality and triangular factors for arbitrary block count and
+prefix under rank conditions.
+-/
 theorem equation_10_3_8 (hpn : p ≤ n) {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {X₁ : Matrix (Fin n) (Fin p) ℝ} (hX₁ : X₁ᵀ * X₁ = 1) {r k : ℕ} (hkr : k + 1 ≤ r)
     (hrank : ∀ b < k,
@@ -1758,7 +1820,10 @@ from the decomposition (`GolubVanLoan.Chapter10.isSymm_of_schur`). The eigenvalu
 `Matrix.colSingularValues`. By (10.3.8) the eigenvalues of $\bar T_{k+1}$ are those of the
 compression of $A$ to $\mathcal{K}_{k+1}(A, X_1)$, and the bound is the backbone's
 `BlockLanczos.kaniel_paige_saad` for the eigenbasis $z$, with $\tan\phi_p$ bounding the angle
-between $\operatorname{ran} X_1$ and $\operatorname{span}\{z_1, \dots, z_p\}$. -/
+between $\operatorname{ran} X_1$ and $\operatorname{span}\{z_1, \dots, z_p\}$.
+
+**Typo.** The lower bound uses the angle $\phi_p$ defined by the smallest singular value. The
+source prints $\tan(\theta_p)$ without defining $\theta_p$. -/
 theorem theorem_10_3_2 (hpn : p < n) {A Z : Matrix (Fin n) (Fin n) ℝ} {lam : Fin n → ℝ}
     (hZ : Z ∈ Matrix.orthogonalGroup (Fin n) ℝ) (hZA : Zᵀ * A * Z = Matrix.diagonal lam)
     (hlam : Antitone lam) {X₁ : Matrix (Fin n) (Fin p) ℝ} (hX₁ : X₁ᵀ * X₁ = 1) {r k : ℕ}

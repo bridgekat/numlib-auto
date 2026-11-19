@@ -84,6 +84,43 @@ use `NumlibSurface.SaadSparse.Chapter09.Section02` and `Numlib.Krylov.NormalEqua
 * The right- and split-preconditioned variants of Problem P-9.4 need no new algorithm: they are
   `SaadSparse.Chapter09.rightPcg` and `SaadSparse.Chapter09.splitPcg` applied to $A^H A$ and
   $A A^H$.
+
+## Deviations from the source
+
+* **Generalization.** The two normal operators are Hermitian over the complex field. See
+  `SaadSparse.Chapter09.isSymmetric_conjTranspose_mul`,
+  `SaadSparse.Chapter09.isSymmetric_mul_conjTranspose`.
+* **Generalization.** The normal-equation search spaces and optimality properties are transported by
+  the complex adjoint. See `SaadSparse.Chapter09.map_krylov_conjTranspose`,
+  `SaadSparse.Chapter09.isGalerkin_adjoint_comp_iff_isMinResidual`,
+  `SaadSparse.Chapter09.isMinError_of_isGalerkin_comp_adjoint`.
+* **Generalization.** The left-preconditioned normal-equation updates are total recurrences with
+  complex adjoints and a fixed count. See `SaadSparse.Chapter09.pcgnrStepAlpha`,
+  `SaadSparse.Chapter09.pcgnrStepR`, `SaadSparse.Chapter09.pcgnrStepBeta`,
+  `SaadSparse.Chapter09.pcgnrStep`, `SaadSparse.Chapter09.pcgnr`,
+  `SaadSparse.Chapter09.pcgneStepAlpha`, `SaadSparse.Chapter09.pcgneStepR`,
+  `SaadSparse.Chapter09.pcgneStepBeta`, `SaadSparse.Chapter09.pcgneStep`,
+  `SaadSparse.Chapter09.pcgne`.
+* **Generalization.** The reductions to PCG need symmetry of the inverse, and the NE comparison
+  needs a compatible start. See `SaadSparse.Chapter09.pcgnr_eq`, `SaadSparse.Chapter09.pcgnrX_eq`,
+  `SaadSparse.Chapter09.pcgne_eq`, `SaadSparse.Chapter09.pcgneX_eq`.
+* **Derivation.** The preconditioned optimality statements use explicit relative coercivity. See
+  `SaadSparse.Chapter09.pcgnr_isMinResidual`, `SaadSparse.Chapter09.pcgne_isMinError`.
+* **Generalization.** The four exercise variants include state equivalences and extend to complex
+  scalars with total inverses. See `SaadSparse.Chapter09.rightPcgnr_eq`,
+  `SaadSparse.Chapter09.splitPcgnr_eq`, `SaadSparse.Chapter09.rightPcgne_eq`,
+  `SaadSparse.Chapter09.splitPcgne_eq`.
+* **Generalization.** The centered operator formulas use adjoints and make the symmetry hypothesis
+  explicit. See `SaadSparse.Chapter09.isSymmetric_centredNR`,
+  `SaadSparse.Chapter09.isSymmetric_centredNE`, `SaadSparse.Chapter09.op_centredNR_apply`,
+  `SaadSparse.Chapter09.op_centredNE_apply`.
+* **Representation.** The exercise variants are given as CG on centered operators with separate
+  coordinate recovery formulas. See `SaadSparse.Chapter09.centredPcgnr`,
+  `SaadSparse.Chapter09.centredPcgne`, `SaadSparse.Chapter09.centredPcgneX`,
+  `SaadSparse.Chapter09.centredPcgnr_residual_eq`, `SaadSparse.Chapter09.centredPcgne_eq`.
+* **Derivation.** The centered NR operator has a coercivity theorem and a Galerkin characterization
+  under explicit hypotheses. See `SaadSparse.Chapter09.isSymmetricCoercive_centredNR`,
+  `SaadSparse.Chapter09.centredPcgnr_isGalerkinIterate`.
 -/
 
 open Matrix
@@ -101,7 +138,11 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-! ### Preliminaries: the two normal-equations operators -/
 
 /-- For every $A \in \mathbb{K}^{n \times n}$, the operator of $A^H A$ is symmetric. It is the
-coefficient operator of the system that Algorithm 9.7 of [saad2003iterative] preconditions. -/
+coefficient operator of the system that Algorithm 9.7 of [saad2003iterative] preconditions.
+
+**Generalization.** The two real symmetric normal operators become Hermitian over complex scalars
+via the adjoint. The symmetry statements require no rank assumption.
+-/
 theorem isSymmetric_conjTranspose_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (Aᴴ * A)).IsSymmetric := by
   intro x y
@@ -109,7 +150,11 @@ theorem isSymmetric_conjTranspose_mul (A : Matrix (Fin n) (Fin n) 𝕜) :
   rw [Chapter08.inner_op_conjTranspose, Chapter07.inner_op_conjTranspose]
 
 /-- For every $A \in \mathbb{K}^{n \times n}$, the operator of $A A^H$ is symmetric. It is the
-coefficient operator of the system that Algorithm 9.8 of [saad2003iterative] preconditions. -/
+coefficient operator of the system that Algorithm 9.8 of [saad2003iterative] preconditions.
+
+**Generalization.** The two real symmetric normal operators become Hermitian over complex scalars
+via the adjoint. The symmetry statements require no rank assumption.
+-/
 theorem isSymmetric_mul_conjTranspose (A : Matrix (Fin n) (Fin n) 𝕜) :
     (op (A * Aᴴ)).IsSymmetric := by
   intro x y
@@ -131,7 +176,11 @@ private theorem inner_mul_conjTranspose_self (A : Matrix (Fin n) (Fin n) 𝕜) (
 /-- For $A, M \in \mathbb{K}^{n \times n}$, $v \in \mathbb{K}^n$ and $m \in \mathbb{N}$,
 $$A^H \mathcal{K}_m(M^{-1} A A^H, v) = \mathcal{K}_m(A^H M^{-1} A, A^H v).$$
 This is the change of variables $x = A^H u$ of Algorithm 9.8 of [saad2003iterative], and it
-identifies the affine space that the algorithm searches. -/
+identifies the affine space that the algorithm searches.
+
+**Generalization.** The adjoint transports the left-preconditioned NE search space to the original
+variable. The Galerkin and optimum comparisons apply to arbitrary subspaces and complex scalars.
+-/
 theorem map_krylov_conjTranspose (A M : Matrix (Fin n) (Fin n) 𝕜)
     (v : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
     (Chapter06.krylov (M⁻¹ * (A * Aᴴ)) v m).map (op Aᴴ)
@@ -156,7 +205,11 @@ minimal-residual iterate of $Ax = b$ over $x_0 + K$. Both conditions say that $x
 and $b - Ax \perp AK$.
 
 This is `Krylov.isGalerkinIterate_adjoint_comp_iff_isMinResidual` with the Krylov subspace
-replaced by an arbitrary $K$. -/
+replaced by an arbitrary $K$.
+
+**Generalization.** The adjoint transports the left-preconditioned NE search space to the original
+variable. The Galerkin and optimum comparisons apply to arbitrary subspaces and complex scalars.
+-/
 theorem isGalerkin_adjoint_comp_iff_isMinResidual (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (K : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)))
     (x : EuclideanSpace 𝕜 (Fin n)) :
@@ -180,7 +233,11 @@ $x = x_0 + A^H(u - u_0)$ satisfies $x - x_0 \in A^H K$ and
 $$\|x_* - x\|_2 \le \|x_* - y\|_2 \quad \text{for all } y \in x_0 + A^H K.$$
 
 This is `Krylov.isMinError_of_isGalerkinIterate_comp_adjoint` with the Krylov subspace replaced
-by an arbitrary $K$. -/
+by an arbitrary $K$.
+
+**Generalization.** The adjoint transports the left-preconditioned NE search space to the original
+variable. The Galerkin and optimum comparisons apply to arbitrary subspaces and complex scalars.
+-/
 theorem isMinError_of_isGalerkin_comp_adjoint (A : Matrix (Fin n) (Fin n) 𝕜)
     {b x₀ u₀ u xstar : EuclideanSpace 𝕜 (Fin n)}
     {K : Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n))} (hx₀ : x₀ = op Aᴴ u₀)
@@ -210,24 +267,48 @@ variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- Line 4 of Algorithm 9.7 of [saad2003iterative]: the step length
 $\alpha_j = (z_j, \tilde r_j)/\|w_j\|_2^2$ on a state $(x_j, r_j, p_j)$, with
-$\tilde r_j = A^H r_j$, $z_j = M^{-1} \tilde r_j$ and $w_j = A p_j$ recomputed and not stored. -/
+$\tilde r_j = A^H r_j$, $z_j = M^{-1} \tilde r_j$ and $w_j = A p_j$ recomputed and not stored.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgnrStepAlpha (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (op Aᴴ s.r) (op M⁻¹ (op Aᴴ s.r)) / (‖op A s.p‖ : 𝕜) ^ 2
 
 /-- Line 6 of Algorithm 9.7 of [saad2003iterative]: the next residual
-$r_{j+1} = r_j - \alpha_j w_j$, with $w_j = A p_j$. -/
+$r_{j+1} = r_j - \alpha_j w_j$, with $w_j = A p_j$.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgnrStepR (s : Krylov.CGNR.State 𝔼 𝔼) : 𝔼 :=
   s.r - pcgnrStepAlpha A M s • op A s.p
 
 /-- Line 9 of Algorithm 9.7 of [saad2003iterative]: the coefficient $\beta_j = (z_{j+1}, \tilde
-r_{j+1})/(z_j, \tilde r_j)$. -/
+r_{j+1})/(z_j, \tilde r_j)$.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgnrStepBeta (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (op Aᴴ (pcgnrStepR A M s)) (op M⁻¹ (op Aᴴ (pcgnrStepR A M s))) /
     inner 𝕜 (op Aᴴ s.r) (op M⁻¹ (op Aᴴ s.r))
 
 /-- One pass through lines 3–10 of Algorithm 9.7 of [saad2003iterative]. It maps the state
 $(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \; r_{j+1}, \; z_{j+1} + \beta_j p_j)$, with
-$z_{j+1} = M^{-1} A^H r_{j+1}$. -/
+$z_{j+1} = M^{-1} A^H r_{j+1}$.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgnrStep (s : Krylov.CGNR.State 𝔼 𝔼) : Krylov.CGNR.State 𝔼 𝔼 :=
   { x := s.x + pcgnrStepAlpha A M s • s.p
     r := pcgnrStepR A M s
@@ -240,7 +321,13 @@ $$w_j = A p_j, \quad \alpha_j = \frac{(z_j, \tilde r_j)}{\|w_j\|_2^2}, \quad x_{
   \alpha_j p_j, \quad r_{j+1} = r_j - \alpha_j w_j,$$
 $$\tilde r_{j+1} = A^H r_{j+1}, \quad z_{j+1} = M^{-1} \tilde r_{j+1}, \quad \beta_j =
   \frac{(z_{j+1}, \tilde r_{j+1})}{(z_j, \tilde r_j)}, \quad p_{j+1} = z_{j+1} + \beta_j p_j.$$
-The value at $j$ is the state $(x_j, r_j, p_j)$ after $j$ steps. -/
+The value at $j$ is the state $(x_j, r_j, p_j)$ after $j$ steps.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNR.State 𝔼 𝔼 :=
   (pcgnrStep A M)^[j] { x := x₀, r := b - op A x₀, p := op M⁻¹ (op Aᴴ (b - op A x₀)) }
 
@@ -313,7 +400,12 @@ the triple $(x_j, A^H r_j, p_j)$ of Algorithm 9.7 is the triple $(x_j, r_j, p_j)
 
 The residual of Algorithm 9.1 is the normal-equations residual $\tilde r_j = A^H r_j$, and its
 denominator $(A^H A p_j, p_j)$ is $\|w_j\|_2^2$. The symmetry of $M^{-1}$ moves it across the
-inner products of lines 4 and 9. -/
+inner products of lines 4 and 9.
+
+**Generalization.** The state equivalences with PCG require symmetry of the inverse preconditioner,
+without positive definiteness or nonsingularity. The inverses and scalar quotients are total. The NE
+comparison uses a compatible initial auxiliary vector.
+-/
 theorem pcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     ((pcgnr A M b x₀ j).x, op Aᴴ (pcgnr A M b x₀ j).r, (pcgnr A M b x₀ j).p)
       = pcg (Aᴴ * A) M (op Aᴴ b) x₀ j := by
@@ -324,7 +416,12 @@ theorem pcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜
   | succ j ih => rw [pcgnr_succ, pcg_succ, ← ih, pcgnrStep_eq hMinv]
 
 /-- Let $M^{-1}$ be symmetric. The iterate $x_j$ of Algorithm 9.7 is the iterate of Algorithm 9.1
-for $A^H A x = A^H b$. -/
+for $A^H A x = A^H b$.
+
+**Generalization.** The state equivalences with PCG require symmetry of the inverse preconditioner,
+without positive definiteness or nonsingularity. The inverses and scalar quotients are total. The NE
+comparison uses a compatible initial auxiliary vector.
+-/
 theorem pcgnrX_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (pcgnr A M b x₀ j).x = pcgX (Aᴴ * A) M (op Aᴴ b) x₀ j := by
   rw [pcgX, ← pcgnr_eq hMinv b x₀ j]
@@ -338,7 +435,12 @@ $$\|b - A x_m\|_2 \le \|b - Ax\|_2 \quad \text{for all } x \in x_0 + \mathcal{K}
 
 The hypothesis is the generalized eigenvalue bound that makes $M^{-1} A^H A$ symmetric and
 coercive in the $M$-inner product. For a nonsingular $A$ and a symmetric positive definite $M$
-it holds with $c = \sigma_{\min}(A)^2/\lambda_{\max}(M)$. -/
+it holds with $c = \sigma_{\min}(A)^2/\lambda_{\max}(M)$.
+
+**Reading.** The book gives the preconditioned recurrences in §9.5. Lean derives their
+original-variable optimality from PCG, with explicit coercivity relative to the preconditioner, and
+for NE a compatible start and exact solution.
+-/
 theorem pcgnr_isMinResidual (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op A x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :
@@ -370,23 +472,47 @@ variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 /-- Line 4 of Algorithm 9.8 of [saad2003iterative]: the step length
 $\alpha_j = (z_j, r_j)/(p_j, p_j)$ on a state $(x_j, r_j, p_j)$, with $z_j = M^{-1} r_j$
 recomputed and not stored. The direction $p_j$ is $A^H q_j$ for the direction $q_j$ of Algorithm
-9.1 for $A A^H u = b$, so $(p_j, p_j)$ is the quantity $(A A^H q_j, q_j)$ of that algorithm. -/
+9.1 for $A A^H u = b$, so $(p_j, p_j)$ is the quantity $(A A^H q_j, q_j)$ of that algorithm.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgneStepAlpha (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 s.r (op M⁻¹ s.r) / inner 𝕜 s.p s.p
 
 /-- Line 6 of Algorithm 9.8 of [saad2003iterative]: the next residual
-$r_{j+1} = r_j - \alpha_j w_j$, with $w_j = A p_j$. -/
+$r_{j+1} = r_j - \alpha_j w_j$, with $w_j = A p_j$.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgneStepR (s : Krylov.CGNE.State 𝔼 𝔼) : 𝔼 :=
   s.r - pcgneStepAlpha M s • op A s.p
 
 /-- Line 8 of Algorithm 9.8 of [saad2003iterative]: the coefficient
-$\beta_j = (z_{j+1}, r_{j+1})/(z_j, r_j)$. -/
+$\beta_j = (z_{j+1}, r_{j+1})/(z_j, r_j)$.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgneStepBeta (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   inner 𝕜 (pcgneStepR A M s) (op M⁻¹ (pcgneStepR A M s)) / inner 𝕜 s.r (op M⁻¹ s.r)
 
 /-- One pass through lines 3–9 of Algorithm 9.8 of [saad2003iterative]. It maps the state
 $(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \; r_{j+1}, \; A^H z_{j+1} + \beta_j p_j)$, with
-$z_{j+1} = M^{-1} r_{j+1}$. -/
+$z_{j+1} = M^{-1} r_{j+1}$.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgneStep (s : Krylov.CGNE.State 𝔼 𝔼) : Krylov.CGNE.State 𝔼 𝔼 :=
   { x := s.x + pcgneStepAlpha M s • s.p
     r := pcgneStepR A M s
@@ -399,7 +525,13 @@ $$w_j = A p_j, \quad \alpha_j = \frac{(z_j, r_j)}{(p_j, p_j)}, \quad x_{j+1} = x
   p_j, \quad r_{j+1} = r_j - \alpha_j w_j,$$
 $$z_{j+1} = M^{-1} r_{j+1}, \quad \beta_j = \frac{(z_{j+1}, r_{j+1})}{(z_j, r_j)}, \quad
   p_{j+1} = A^H z_{j+1} + \beta_j p_j.$$
-The value at $j$ is the state $(x_j, r_j, p_j)$ after $j$ steps. -/
+The value at $j$ is the state $(x_j, r_j, p_j)$ after $j$ steps.
+
+**Generalization.** Lean extends the formulas to complex scalars through the adjoint and total
+inverses and quotients. The formulas accept arbitrary preconditioning matrices, with the source SPD
+assumption used for the intended CG interpretation. Intermediate products are recomputed from
+$(x,r,p)$ and the iteration count is fixed.
+-/
 noncomputable def pcgne (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : Krylov.CGNE.State 𝔼 𝔼 :=
   (pcgneStep A M)^[j] { x := x₀, r := b - op A x₀, p := op Aᴴ (op M⁻¹ (b - op A x₀)) }
 
@@ -452,7 +584,12 @@ satisfies, for all $j$,
 $$x_j = x_0 + A^H(u_j - u_0), \qquad r_j = r_j', \qquad p_j = A^H q_j.$$
 
 So no vector of the $u$-iteration has to be formed. The symmetry of $M^{-1}$ moves it across the
-inner products of lines 4 and 8. -/
+inner products of lines 4 and 8.
+
+**Generalization.** The state equivalences with PCG require symmetry of the inverse preconditioner,
+without positive definiteness or nonsingularity. The inverses and scalar quotients are total. The NE
+comparison uses a compatible initial auxiliary vector.
+-/
 theorem pcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (j : ℕ) :
     (pcgne A M b x₀ j).x = x₀ + op Aᴴ (pcgX (A * Aᴴ) M b u₀ j - u₀) ∧
@@ -487,7 +624,12 @@ theorem pcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜
 
 /-- Let $M^{-1}$ be symmetric and $A^H u_0 = x_0$. The iterate of Algorithm 9.8 is
 $x_j = x_0 + A^H(u_j - u_0)$, where $u_j$ is the iterate of Algorithm 9.1 for $A A^H u = b$
-started at $u_0$. -/
+started at $u_0$.
+
+**Generalization.** The state equivalences with PCG require symmetry of the inverse preconditioner,
+without positive definiteness or nonsingularity. The inverses and scalar quotients are total. The NE
+comparison uses a compatible initial auxiliary vector.
+-/
 theorem pcgneX_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (j : ℕ) :
     (pcgne A M b x₀ j).x = x₀ + op Aᴴ (pcgX (A * Aᴴ) M b u₀ j - u₀) :=
@@ -504,7 +646,12 @@ $$\|x_* - x_m\|_2 \le \|x_* - x\|_2 \quad \text{for all } x \in x_0 + \mathcal{K
 This space is not the one that Algorithm 9.7 searches: preconditioning separates the two normal
 equations. Only at $M = I$ do $\mathcal{K}_m(M^{-1} A^H A, M^{-1} A^H r_0)$ and
 $\mathcal{K}_m(A^H M^{-1} A, A^H M^{-1} r_0)$ coincide
-(`SaadSparse.Chapter08.subspace_adjoint_eq`). -/
+(`SaadSparse.Chapter08.subspace_adjoint_eq`).
+
+**Reading.** The book gives the preconditioned recurrences in §9.5. Lean derives their
+original-variable optimality from PCG, with explicit coercivity relative to the preconditioner, and
+for NE a compatible start and exact solution.
+-/
 theorem pcgne_isMinError (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ ‖op Aᴴ x‖ ^ 2)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {u₀ xstar : EuclideanSpace 𝕜 (Fin n)}
@@ -554,7 +701,13 @@ where $(x_j, r_j, p_j)$ is the state of Algorithm 9.7 started at $x_0 = M^{-1} u
 
 The $M^{-1}$-inner product keeps $(A^H A) M^{-1}$ self-adjoint. So in the variable
 $x = M^{-1} u$ the method is Algorithm 9.7, and the residual $\rho_j$ that it carries is the
-normal-equations residual $A^H r_j$. -/
+normal-equations residual $A^H r_j$.
+
+**Generalization.** The variants are composed from the general right and split PCG recurrences and
+compared with the left states after the indicated changes of variables. The algebraic
+correspondences permit total inverses; the right case assumes a symmetric inverse and the split case
+uses an adjoint factorization.
+-/
 theorem rightPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (op M⁻¹ (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).1,
         (rightPcg (Aᴴ * A) M (op Aᴴ b) u₀ j).2.1,
@@ -574,7 +727,13 @@ where $(x_j, r_j, p_j)$ is the state of Algorithm 9.7 started at $x_0$.
 Algorithm 9.2 runs the conjugate gradient method for $L^{-1} A^H A L^{-H} u = L^{-1} A^H b$ and
 already carries out the change of variables $x = L^{-H} u$, so its first component is $x_j$ and
 not $u_j$. The two algorithms have the same iterates and the same directions, and the split
-residual $\hat r_j = L^{-1} A^H r_j$ replaces $A^H r_j$. -/
+residual $\hat r_j = L^{-1} A^H r_j$ replaces $A^H r_j$.
+
+**Generalization.** The variants are composed from the general right and split PCG recurrences and
+compared with the left states after the indicated changes of variables. The algebraic
+correspondences permit total inverses; the right case assumes a symmetric inverse and the split case
+uses an adjoint factorization.
+-/
 theorem splitPcgnr_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     splitPcg (Aᴴ * A) L (op Aᴴ b) x₀ j
@@ -589,7 +748,13 @@ $(x_j, r_j, p_j)$ of Algorithm 9.8 satisfies, for all $j$,
 $$x_j = x_0 + A^H M^{-1}(w_j - w_0), \qquad r_j = \rho_j, \qquad p_j = A^H M^{-1} q_j.$$
 
 Two changes of variables are combined: $u = M^{-1} w$ undoes the right preconditioning, and
-$x = A^H u$ undoes the normal equations. -/
+$x = A^H u$ undoes the normal equations.
+
+**Generalization.** The variants are composed from the general right and split PCG recurrences and
+compared with the left states after the indicated changes of variables. The algebraic
+correspondences permit total inverses; the right case assumes a symmetric inverse and the split case
+uses an adjoint factorization.
+-/
 theorem rightPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (b x₀ : EuclideanSpace 𝕜 (Fin n))
     {w₀ : EuclideanSpace 𝕜 (Fin n)} (hw₀ : op Aᴴ (op M⁻¹ w₀) = x₀) (j : ℕ) :
     (pcgne A M b x₀ j).x
@@ -620,7 +785,13 @@ $$x_j = x_0 + A^H(u_j - u_0), \qquad L^{-1} r_j = \hat r_j, \qquad p_j = A^H q_j
 
 Algorithm 9.2 runs the conjugate gradient method for $L^{-1} A A^H L^{-H} v = L^{-1} b$ and
 carries out the change of variables $u = L^{-H} v$, so its first component is $u_j$. The
-remaining change of variables $x = A^H u$ gives the iterate of Algorithm 9.8. -/
+remaining change of variables $x = A^H u$ gives the iterate of Algorithm 9.8.
+
+**Generalization.** The variants are composed from the general right and split PCG recurrences and
+compared with the left states after the indicated changes of variables. The algebraic
+correspondences permit total inverses; the right case assumes a symmetric inverse and the split case
+uses an adjoint factorization.
+-/
 theorem splitPcgne_eq (hMinv : (op M⁻¹).IsSymmetric) (hM : M = L * Lᴴ)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀)
     (j : ℕ) :
@@ -652,7 +823,12 @@ when $M \neq I$.
 /-- **Problem P-9.5** of [saad2003iterative], symmetry of the centred NR matrix. Let
 $A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric. Then $A^H M^{-1} A$ is symmetric,
 for every $A$. It is the coefficient matrix of the centred NR system
-$A^H M^{-1} A x = A^H M^{-1} b$. -/
+$A^H M^{-1} A x = A^H M^{-1} b$.
+
+**Generalization.** The centered matrices use the adjoint. Their symmetry requires a symmetric
+inverse preconditioner, and their application formulas also hold with a singular preconditioner
+using the totalized inverse.
+-/
 theorem isSymmetric_centredNR (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetric) : (op (Aᴴ * (M⁻¹ * A))).IsSymmetric := by
   intro x y
@@ -661,7 +837,12 @@ theorem isSymmetric_centredNR (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin
 
 /-- **Problem P-9.5** of [saad2003iterative], symmetry of the centred NE matrix. Let
 $A, M \in \mathbb{K}^{n \times n}$ with $M^{-1}$ symmetric. Then $A M^{-1} A^H$ is symmetric. It
-is the coefficient matrix of the centred NE system $A M^{-1} A^H u = b$. -/
+is the coefficient matrix of the centred NE system $A M^{-1} A^H u = b$.
+
+**Generalization.** The centered matrices use the adjoint. Their symmetry requires a symmetric
+inverse preconditioner, and their application formulas also hold with a singular preconditioner
+using the totalized inverse.
+-/
 theorem isSymmetric_centredNE (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetric) : (op (A * (M⁻¹ * Aᴴ))).IsSymmetric := by
   intro x y
@@ -672,7 +853,12 @@ theorem isSymmetric_centredNE (A : Matrix (Fin n) (Fin n) 𝕜) {M : Matrix (Fin
 $A, M \in \mathbb{K}^{n \times n}$ and $y \in \mathbb{K}^n$,
 $$A^H M^{-1} A y = A^H (M^{-1} (A y)).$$
 So the product is one product with $A$, one solve with $M$ and one product with $A^H$; neither
-$A^H M^{-1} A$ nor $M^{-1}$ is formed. -/
+$A^H M^{-1} A$ nor $M^{-1}$ is formed.
+
+**Generalization.** The centered matrices use the adjoint. Their symmetry requires a symmetric
+inverse preconditioner, and their application formulas also hold with a singular preconditioner
+using the totalized inverse.
+-/
 theorem op_centredNR_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpace 𝕜 (Fin n)) :
     op (Aᴴ * (M⁻¹ * A)) y = op Aᴴ (op M⁻¹ (op A y)) := by
   rw [op_mul_apply, op_mul_apply]
@@ -680,7 +866,12 @@ theorem op_centredNR_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpa
 /-- **Problem P-9.5** of [saad2003iterative], the product in the centred NE step. For
 $A, M \in \mathbb{K}^{n \times n}$ and $y \in \mathbb{K}^n$,
 $$A M^{-1} A^H y = A (M^{-1} (A^H y)).$$
-So the product is one product with $A^H$, one solve with $M$ and one product with $A$. -/
+So the product is one product with $A^H$, one solve with $M$ and one product with $A$.
+
+**Generalization.** The centered matrices use the adjoint. Their symmetry requires a symmetric
+inverse preconditioner, and their application formulas also hold with a singular preconditioner
+using the totalized inverse.
+-/
 theorem op_centredNE_apply (A M : Matrix (Fin n) (Fin n) 𝕜) (y : EuclideanSpace 𝕜 (Fin n)) :
     op (A * (M⁻¹ * Aᴴ)) y = op A (op M⁻¹ (op Aᴴ y)) := by
   rw [op_mul_apply, op_mul_apply]
@@ -698,7 +889,12 @@ The coefficient matrix is symmetric (`SaadSparse.Chapter09.isSymmetric_centredNR
 conjugate gradient recurrence applies unchanged. The adaptation is that the matrix-vector
 product of each step is the three operations of `SaadSparse.Chapter09.op_centredNR_apply`. The
 unknown is $x$ itself, so no change of variables is needed. The recurrence is the backbone
-`CG.iterate`. -/
+`CG.iterate`.
+
+**Reading.** The definitions apply the standard CG recurrence to the centered operators. They expose
+the original-coordinate residual or iterate through separate identities. They accept complex and
+singular inputs using the totalized inverse and use a fixed step count.
+-/
 noncomputable def centredPcgnr (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : CG.State 𝔼 :=
   CG.iterate (op (Aᴴ * (M⁻¹ * A))) (op Aᴴ (op M⁻¹ b)) x₀ j
 
@@ -710,7 +906,12 @@ state after $j$ steps.
 The coefficient matrix is symmetric (`SaadSparse.Chapter09.isSymmetric_centredNE`), and the
 matrix-vector product of each step is the three operations of
 `SaadSparse.Chapter09.op_centredNE_apply`. The solution of $Ax = b$ is recovered by the change
-of variables $x = M^{-1} A^H u$ (`SaadSparse.Chapter09.centredPcgneX`). -/
+of variables $x = M^{-1} A^H u$ (`SaadSparse.Chapter09.centredPcgneX`).
+
+**Reading.** The definitions apply the standard CG recurrence to the centered operators. They expose
+the original-coordinate residual or iterate through separate identities. They accept complex and
+singular inputs using the totalized inverse and use a fixed step count.
+-/
 noncomputable def centredPcgne (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : CG.State 𝔼 :=
   CG.iterate (op (A * (M⁻¹ * Aᴴ))) b u₀ j
 
@@ -718,7 +919,12 @@ noncomputable def centredPcgne (b u₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) 
 centred CGNE. For $b, u_0, x_0 \in \mathbb{K}^n$ the iterate is
 $$x_j = x_0 + M^{-1} A^H (u_j - u_0),$$
 where $u_j$ is the iterate of the centred CGNE started at $u_0$. This incremental form keeps
-$x_0$ as given. -/
+$x_0$ as given.
+
+**Reading.** The definitions apply the standard CG recurrence to the centered operators. They expose
+the original-coordinate residual or iterate through separate identities. They accept complex and
+singular inputs using the totalized inverse and use a fixed step count.
+-/
 noncomputable def centredPcgneX (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : 𝔼 :=
   x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀))
 
@@ -727,7 +933,12 @@ $j$, the residual carried by the centred CGNR is the preconditioned normal-equat
 $$r_j = A^H M^{-1} (b - A x_j).$$
 
 So the true residual $b - A x_j$ is not available without extra work. This is the cost of
-centring, and one reason why the book prints Algorithm 9.7. -/
+centring, and one reason why the book prints Algorithm 9.7.
+
+**Reading.** The definitions apply the standard CG recurrence to the centered operators. They expose
+the original-coordinate residual or iterate through separate identities. They accept complex and
+singular inputs using the totalized inverse and use a fixed step count.
+-/
 theorem centredPcgnr_residual_eq (b x₀ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) :
     (centredPcgnr A M b x₀ j).r
       = op Aᴴ (op M⁻¹ (b - op A (centredPcgnr A M b x₀ j).x)) := by
@@ -741,7 +952,12 @@ $$x_j = x_0 + M^{-1} A^H (u_j - u_0), \qquad A x_j = (A M^{-1} A^H) u_j, \qquad 
   x_j.$$
 So the residual carried by the $u$-iteration is the true residual of $Ax = b$.
 
-This is for the centred system what `SaadSparse.Chapter09.pcgne_eq` is for $A A^H u = b$. -/
+This is for the centred system what `SaadSparse.Chapter09.pcgne_eq` is for $A A^H u = b$.
+
+**Reading.** The definitions apply the standard CG recurrence to the centered operators. They expose
+the original-coordinate residual or iterate through separate identities. They accept complex and
+singular inputs using the totalized inverse and use a fixed step count.
+-/
 theorem centredPcgne_eq (b u₀ x₀ : EuclideanSpace 𝕜 (Fin n)) (hx₀ : op M⁻¹ (op Aᴴ u₀) = x₀)
     (j : ℕ) :
     centredPcgneX A M b u₀ x₀ j = x₀ + op M⁻¹ (op Aᴴ ((centredPcgne A M b u₀ j).x - u₀)) ∧
@@ -764,7 +980,11 @@ $(A^H M^{-1} A x, x) = (M^{-1} A x, A x) > 0$ for $x \neq 0$.
 
 This is the hypothesis under which the centred NR system is well posed and the conjugate
 gradient method for it applies. In Lean, "nonsingular" is the injectivity of the operator of
-$A$, and "symmetric positive definite" is `LinearMap.IsSymmetricCoercive`. -/
+$A$, and "symmetric positive definite" is `LinearMap.IsSymmetricCoercive`.
+
+**Reading.** The exercise gives the symmetric centered NR operator. Lean also gives coercivity under
+injectivity of $A$ and coercivity of $M^{-1}$, and derives its Galerkin characterization.
+-/
 theorem isSymmetricCoercive_centredNR {A M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetricCoercive) (hA : Function.Injective (op A)) :
     (op (Aᴴ * (M⁻¹ * A))).IsSymmetricCoercive where
@@ -781,7 +1001,11 @@ Galerkin iterate of $A^H M^{-1} A x = A^H M^{-1} b$ over $x_0 + \mathcal{K}_m(A^
 M^{-1} r_0)$, with $r_0 = b - A x_0$.
 
 Hence $x_m$ minimizes the $A^H M^{-1} A$-norm of the error over that space. The space is the one
-of Algorithm 9.8, not of Algorithm 9.7. -/
+of Algorithm 9.8, not of Algorithm 9.7.
+
+**Reading.** The exercise gives the symmetric centered NR operator. Lean also gives coercivity under
+injectivity of $A$ and coercivity of $M^{-1}$, and derives its Galerkin characterization.
+-/
 theorem centredPcgnr_isGalerkinIterate {A M : Matrix (Fin n) (Fin n) 𝕜}
     (hMinv : (op M⁻¹).IsSymmetricCoercive) (hA : Function.Injective (op A))
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) :

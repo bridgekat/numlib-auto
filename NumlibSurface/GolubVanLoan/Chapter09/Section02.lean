@@ -81,10 +81,22 @@ bound).
 
 ## Deviations from the source
 
+* **Theorem 9.2.3** (reading). `GolubVanLoan.Chapter09.theorem_9_2_3` accepts any uniform bound
+  on the derivative norm. Its proof uses the integral remainder in place of the pointwise real
+  Taylor remainder printed for complex entries.
+* **Algorithm 9.2.1** (reading). `GolubVanLoan.Chapter09.algorithm_9_2_1` is total at degree
+  zero, where the printed start has an invalid coefficient index. The correctness theorem
+  assumes positive degree.
+* **Equation (9.2.5)** (reading). `GolubVanLoan.Chapter09.equation_9_2_5` proves the grouping
+  identity for semiring algebras and allows all natural block sizes, including the degenerate
+  size zero.
+* **Equation (9.2.8)** (reading). `GolubVanLoan.Chapter09.equation_9_2_8` identifies the primary
+  matrix function with the contour integral for circles. The source states the formula for a
+  general enclosing contour.
 * **Theorem 9.2.1** (typo). The source takes the maximum over $1 \le i \le p$. The intended range is
   $1 \le i \le q$, the blocks of the Jordan form. See `GolubVanLoan.Chapter09.theorem_9_2_1`.
-* **Equation (9.2.1) and Theorem 9.2.2** (reading). The source takes $\Omega$ closed and convex, but
-  the supremum $\delta_r$ is finite only for bounded $\Omega$. The statements take $\Omega$ compact
+* **Equation (9.2.1) and Theorem 9.2.2** (reading). The source takes $\Omega$ closed and convex.
+  The statements take $\Omega$ compact to guarantee that $\delta_r$ is finite
   and convex. See `GolubVanLoan.Chapter09.equation_9_2_1` and
   `GolubVanLoan.Chapter09.theorem_9_2_2`.
 * **Equation (9.2.7)** (correction). The source bounds the error by
@@ -152,8 +164,8 @@ compact, and let $h$ be analytic on a neighbourhood of $\Omega$. For nodes
 $\lambda_{s_0}, \dots, \lambda_{s_r} \in \Omega$, repeated or not,
 $$|h[\lambda_{s_0}, \dots, \lambda_{s_r}]| \le \frac{\sup_{z \in \Omega} |h^{(r)}(z)|}{r!}.$$
 
-**Reading.** The source takes $\Omega$ closed and convex. The supremum is finite only for
-bounded $\Omega$, so the statement takes $\Omega$ compact.
+**Reading.** The source takes $\Omega$ closed and convex. The statement takes $\Omega$ compact
+to guarantee a finite supremum.
 
 The nodes form a multiset of size $r + 1$, and the divided difference is `Hermite.divDiff`. -/
 theorem equation_9_2_1 {Ω : Set ℂ} (hΩ : Convex ℝ Ω) (hΩc : IsCompact Ω) {h : ℂ → ℂ}
@@ -222,9 +234,9 @@ $\Omega$. Then
 $$\|f(A) - g(A)\|_F \le \sum_{r=0}^{n-1} \delta_r \frac{\| |N|^r \|_F}{r!}, \qquad \delta_r =
   \sup_{z \in \Omega} |f^{(r)}(z) - g^{(r)}(z)|.$$
 
-**Reading.** The source takes $\Omega$ closed and convex. The supremum $\delta_r$ is finite only
-for bounded $\Omega$, so the statement takes $\Omega$ compact. For an unbounded $\Omega$ the
-supremum can be $+\infty$, and Lean's `sSup` of an unbounded set of reals is $0$.
+**Reading.** The source takes $\Omega$ closed and convex. The statement takes $\Omega$ compact
+to guarantee a finite $\delta_r$. On an unbounded $\Omega$, the set of norm values can be
+unbounded, in which case Lean's real `sSup` is $0$.
 
 The source's proof cites "Theorem 9.1.3" for Theorem 9.1.4, and sums $r$ up to $j - 1$ where the
 range is up to $j - i$; neither slip changes the statement. The proof specializes
@@ -263,7 +275,10 @@ of the power series. The source's proof applies the real mean-value form (9.2.4)
 remainder to complex-valued entries, where the intermediate points need not exist, and writes
 $f_{ij}^{(q-1)}$ for $f_{ij}^{(q+1)}$. The bound holds through the vector-valued integral form
 of the remainder, even without the factor $n$, as the source remarks after the proof with a
-citation of Mathias. -/
+citation of Mathias.
+
+**Reading.** The source uses the maximum of the derivative norm. The Lean theorem accepts any
+uniform upper bound on that norm, including the maximum. -/
 theorem theorem_9_2_3 {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ} {r : ℝ≥0∞}
     (hf : HasFPowerSeriesOnBall f p 0 r) {A : Matrix (Fin n) (Fin n) ℂ}
     (hA : ∀ μ ∈ spectrum ℂ A, μ ∈ Metric.eball 0 r) (q : ℕ) {M : ℝ}
@@ -339,7 +354,11 @@ end
 ```
 The first step rounds each product $b_q a_{ij}$ and then each diagonal sum
 $b_q a_{ii} + b_{q-1}$. Each update $F = AF + b_k I$ is Algorithm 1.1.5 of Chapter 1,
-$C \leftarrow C + AB$, with $C = b_k I$. -/
+$C \leftarrow C + AB$, with $C = b_k I$.
+
+**Reading.** The source start uses $b_{q-1}$, so its indexing presupposes $q\geq 1$. Lean
+natural-number subtraction gives the program a value at $q=0$, outside the domain of the
+correctness theorem. -/
 def algorithm_9_2_1 (A : Matrix (Fin n) (Fin n) ℝ) (q : ℕ) (b : ℕ → ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let F ← (List.finRange n).foldlM (fun F i =>
@@ -476,7 +495,11 @@ where $B_k = b_{sk+s-1} A^{s-1} + \dots + b_{sk+1} A + b_{sk} I$ for $k < r$ and
 A^{q-sr} + \dots + b_{sr+1} A + b_{sr} I$.
 
 The source chooses $s \le \sqrt{q}$, which only minimizes the number of multiplications; the
-identity holds for every $s$. For $s = 0$ the Lean division gives $r = 0$, and $B_0 = p(A)$. -/
+identity holds for every $s$. For $s = 0$ the Lean division gives $r = 0$, and $B_0 = p(A)$.
+
+**Reading.** The identity is stated in any algebra over a commutative semiring and does not
+require the source’s block-size limits. At block size zero, the identity reduces to the
+original sum. -/
 theorem equation_9_2_5 {K R : Type*} [CommSemiring K] [Semiring R] [Algebra K R] (b : ℕ → K)
     (A : R) (s q : ℕ) :
     ∑ k ∈ range (q + 1), b k • A ^ k =
@@ -705,7 +728,10 @@ complex differentiable on the closed disk $|z - c| \le R$, with $\lambda(A)$ con
 open disk $|z - c| < R$. Then
 $$f(A) = \frac{1}{2\pi i} \oint_{|z - c| = R} f(z) (zI - A)^{-1} \, dz.$$
 
-The contour of the statement is a circle. The integral is `circleIntegral`. -/
+The contour of the statement is a circle. The integral is `circleIntegral`.
+
+**Reading.** The source permits closed contours enclosing the spectrum. This theorem treats a
+circle and identifies its integral with the existing primary matrix function. -/
 theorem equation_9_2_8 {A : Matrix (Fin n) (Fin n) ℂ} {f : ℂ → ℂ} {c : ℂ} {R : ℝ}
     (hf : DifferentiableOn ℂ f (Metric.closedBall c R)) (hA : spectrum ℂ A ⊆ Metric.ball c R) :
     pfc f A = (2 * π * Complex.I)⁻¹ •

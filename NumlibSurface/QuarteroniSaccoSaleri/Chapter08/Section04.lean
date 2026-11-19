@@ -62,6 +62,17 @@ nodal polynomial `Hermite.nodal` and the error formula `Hermite.exists_sub_inter
   The data $f^{(k)}(x_i)$ are `iteratedDeriv k f (x i)`.
 * The nodal polynomial $\Omega_N$ is `Hermite.nodal x m`.
 
+## Deviations from the source
+
+* **Representation.** The Hermite basis is chosen by unisolvence and uses totalized derivatives for
+  the data. See `QuarteroniSaccoSaleri.Chapter08.hermiteBasis`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_32`.
+* **Specialization.** The Hermite remainder assumes global smoothness and places the intermediate
+  point in a containing interval. See `QuarteroniSaccoSaleri.Chapter08.equation_8_33`.
+* **Convention.** The osculating basis uses totalized Lagrange factors, with distinct nodes required
+  for interpolation. See `QuarteroniSaccoSaleri.Chapter08.example_8_6_A`,
+  `QuarteroniSaccoSaleri.Chapter08.example_8_6_B`, `QuarteroniSaccoSaleri.Chapter08.example_8_6`.
+
 ## Not formalized
 
 * **Section 8.4, the recursive formula for the $L_{ij}$** in terms of the $l_{ij}$. The book gives
@@ -99,7 +110,12 @@ for all $j$ and $p = 0, \ldots, m_j$.
 
 The definition takes the unique solution of
 `QuarteroniSaccoSaleri.Chapter08.hermite_existsUnique` for these data. For nodes that are not
-distinct, where the problem is in general not solvable, it is $0$. -/
+distinct, where the problem is in general not solvable, it is $0$.
+
+**Reading.** The basis is selected by interpolation uniqueness, without the source's constructive
+recursion, and is zero for repeated nodes. Interpolated derivative data use totalized iterated
+derivatives.
+-/
 noncomputable def hermiteBasis (x : Fin (n + 1) → ℝ) (m : Fin (n + 1) → ℕ) (i : Fin (n + 1))
     (k : ℕ) : ℝ[X] :=
   if hx : Function.Injective x then
@@ -143,7 +159,12 @@ $$H_{N-1}(x) = \sum_{i=0}^n \sum_{k=0}^{m_i} y_i^{(k)} L_{ik}(x), \qquad y_i^{(k
   f^{(k)}(x_i).$$
 
 Both sides have degree less than $N$ and the same derivative data at the nodes, so they are
-equal by the uniqueness `Hermite.eq_interpolate`. -/
+equal by the uniqueness `Hermite.eq_interpolate`.
+
+**Reading.** The basis is selected by interpolation uniqueness, without the source's constructive
+recursion, and is zero for repeated nodes. Interpolated derivative data use totalized iterated
+derivatives.
+-/
 theorem equation_8_32 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (m : Fin (n + 1) → ℕ)
     (f : ℝ → ℝ) :
     Hermite.interpolate x m f
@@ -184,7 +205,12 @@ The book states the formula for all $x \in \mathbb{R}$ with $\xi \in I(x; x_0, \
 the smallest interval that contains $x$ and the nodes. Here $[a, b]$ is any interval that
 contains the nodes and $t$, so the book's form is the case where $[a, b]$ is that smallest
 interval. The polynomial $\Omega_N$ is `Hermite.nodal x m`, with values given by
-`Hermite.eval_nodal`. The proof specializes `Hermite.exists_sub_interpolate_eq`. -/
+`Hermite.eval_nodal`. The proof specializes `Hermite.exists_sub_interpolate_eq`.
+
+**Reading.** The formula assumes global smoothness through order N and is stated on a chosen
+interval containing the nodes and evaluation point. Applied to the smallest such interval it gives
+the source's location for the intermediate point.
+-/
 theorem equation_8_33 {a b : ℝ} {f : ℝ → ℝ} {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hxmem : ∀ i, x i ∈ Icc a b) {m : Fin (n + 1) → ℕ} {N : ℕ} (hN : ∑ i, (m i + 1) = N)
     (hf : ContDiff ℝ (N : WithTop ℕ∞) f) {t : ℝ} (ht : t ∈ Icc a b) :
@@ -225,14 +251,22 @@ theorem example_8_6_deriv_basis {x : Fin (n + 1) → ℝ} (hx : Function.Injecti
 
 /-- **Example 8.6** of [quarteroni2000numerical], the osculatory basis polynomial $A_i(x) = (1 -
 2(x - x_i) l_i'(x_i)) \, l_i(x)^2$, where $l_i$ is the Lagrange characteristic polynomial of the
-nodes $x_0, \ldots, x_n$. -/
+nodes $x_0, \ldots, x_n$.
+
+**Reading.** The polynomials are defined for arbitrary node arrays by totalized Lagrange factors.
+The interpolation theorem assumes distinct nodes and uses totalized derivatives of the function.
+-/
 noncomputable def example_8_6_A (x : Fin (n + 1) → ℝ) (i : Fin (n + 1)) : ℝ[X] :=
   (1 - 2 * (X - C (x i)) * C ((derivative (Lagrange.basis Finset.univ x i)).eval (x i)))
     * Lagrange.basis Finset.univ x i ^ 2
 
 /-- **Example 8.6** of [quarteroni2000numerical], the osculatory basis polynomial
 $B_i(x) = (x - x_i) \, l_i(x)^2$, where $l_i$ is the Lagrange characteristic polynomial of the
-nodes $x_0, \ldots, x_n$. -/
+nodes $x_0, \ldots, x_n$.
+
+**Reading.** The polynomials are defined for arbitrary node arrays by totalized Lagrange factors.
+The interpolation theorem assumes distinct nodes and uses totalized derivatives of the function.
+-/
 noncomputable def example_8_6_B (x : Fin (n + 1) → ℝ) (i : Fin (n + 1)) : ℝ[X] :=
   (X - C (x i)) * Lagrange.basis Finset.univ x i ^ 2
 
@@ -313,7 +347,11 @@ Both sides have degree at most $2n + 1$ and the same values and derivatives at t
 `QuarteroniSaccoSaleri.Chapter08.example_8_6_B_eval` and
 `QuarteroniSaccoSaleri.Chapter08.example_8_6_B_deriv`. So they are equal by the uniqueness
 `Hermite.eq_interpolate`. The derivative $f'(x_i)$ is `deriv f (x i)`, which is $0$ where $f$ is
-not differentiable. -/
+not differentiable.
+
+**Reading.** The polynomials are defined for arbitrary node arrays by totalized Lagrange factors.
+The interpolation theorem assumes distinct nodes and uses totalized derivatives of the function.
+-/
 theorem example_8_6 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (f : ℝ → ℝ) :
     Hermite.interpolate x (fun _ => 1) f
       = ∑ i, (C (f (x i)) * example_8_6_A x i + C (deriv f (x i)) * example_8_6_B x i) := by

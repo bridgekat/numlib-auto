@@ -54,9 +54,11 @@ Sherman–Morrison–Woodbury formula).
 
 ## Deviations from the source
 
+* **Theorem 3.7** (reading). The labelling can omit indices for empty blocks. The leading
+  submatrices are tested only at attained labels.
 * **Section 3.8.3, the block Thomas factorization** (generalization). The source assumes the shape
-  of the factors and reads off the recurrence by equating blocks. The shape is proved here, and the
-  recurrences are stated for any block LU factorization of a block tridiagonal matrix. See
+  of the factors and reads off the recurrence by equating blocks. The recurrences follow
+  from block LU and the leading-minor assumptions, using a proof that derives the shape. See
   `QuarteroniSaccoSaleri.Chapter03.blockTridiagonal_lu`.
 
 ## Not formalized
@@ -116,7 +118,10 @@ submatrix $A(b < k)$ is nonsingular for every label $k$ that $b$ attains.
 
 The theorem extends Theorem 3.4, which is the case $m = N$ and $b = \mathrm{id}$
 (`Matrix.isBlockLU_id_iff`). The factorization is `Matrix.IsBlockLU b A L U`, and $A(b < k)$ is
-`A.toBlock (b · < k) (b · < k)`. The proof specializes `Matrix.existsUnique_isBlockLU_iff`. -/
+`A.toBlock (b · < k) (b · < k)`. The proof specializes `Matrix.existsUnique_isBlockLU_iff`.
+
+**Reading.** The label function need not use every block label. Leading blocks are tested
+only for attained labels, so empty blocks do not add constraints. -/
 theorem theorem_3_7 {N m : ℕ} (b : Fin N → Fin m) (A : Matrix (Fin N) (Fin N) ℝ) :
     (∃! LU : Matrix (Fin N) (Fin N) ℝ × Matrix (Fin N) (Fin N) ℝ, IsBlockLU b A LU.1 LU.2) ↔
       ∀ k ∈ Set.range b, IsUnit (A.toBlock (b · < k) (b · < k)) :=
@@ -163,7 +168,7 @@ The blocks are thus obtained sequentially for $i = 2, \ldots, m$.
 upper bidiagonal, and reads off the recurrence by equating blocks. Here the shape is proved:
 `Matrix.IsBlockLU.blockBidiagonal_of_blockTridiagonal` is the block form of Property 3.4, with
 the lower clause under the hypothesis of Theorem 3.7, as in Section 3.7. The recurrences hold
-for any block LU factorization of a block tridiagonal matrix.
+under the stated leading-block nonsingularity assumption.
 
 The book writes $L_{i-1}$ for the block $L_{i,i-1}$. The first block is the block of the
 smallest label, the one with $k \le b(i)$ for all indices $i$. The proof uses

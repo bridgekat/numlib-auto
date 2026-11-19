@@ -64,6 +64,9 @@ factorization, the envelope, the stages of Gaussian elimination and the growth f
 * **Exercise 3.11** (reading). "Fill-in" is read through (3.59) and (3.60): the factors have no
   nonzero entry where $A$ has none, and the envelope of $A$ is the whole strict lower triangle. See
   `QuarteroniSaccoSaleri.Chapter03.exercise_3_11`.
+* **Exercise 3.15** (scope). The formal result gives the exact weighted ratio, with a zero
+  value for the zero probe. The accuracy depends on the probe coefficients as well as the
+  singular values, even for an ill-conditioned matrix.
 
 ## Not formalized
 
@@ -619,7 +622,11 @@ $A^{-1} A^{-T} d$. For $d = 0$ both sides of the ratio are $0$ in Lean. The book
 used: the backbone `Matrix.exists_singularSystem` names the two families the other way round.
 The book then discusses when the ratio approximates $\sigma_n^{-1} = \|A^{-1}\|_2$, for a
 coefficient $\tilde d_n$ that is not too small and an ill-conditioned $A$; this discussion is
-prose and is not formalized. -/
+prose and is not formalized.
+
+**Reading.** Gives exact probe ratio and zero-probe convention without asserting heuristic
+closeness.
+-/
 theorem exercise_3_15 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) :
     A.rank = n ∧
     ∃ (σ : Fin A.rank → ℝ) (u v : Fin A.rank → EuclideanSpace ℝ (Fin n)),

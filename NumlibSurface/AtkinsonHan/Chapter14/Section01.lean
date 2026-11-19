@@ -50,6 +50,13 @@ minimax error is the distance to the copy `Approximation.mvPolyLE` of $\Pi_n^d$ 
 * The vocabulary of best approximation is that of the backbone, `IsBestApprox` and `Metric.infDist`,
   so `AtkinsonHan.Chapter14.minimaxError` is a distance and not a new notion.
 
+## Deviations from the source
+
+* **Exercise 14.1.1** (partial translation). The formalization proves the change of variables
+  for polynomial spaces and the diagonal image of the ball in arbitrary dimension. The book
+  asks for the approximation results on a planar ellipse, including the transferred rate of
+  Theorem 14.1.1. The definition of the ellipsoid uses totalized division at zero semiaxes.
+
 ## Not formalized
 
 * **Theorem 14.1.1** (Ragozin's multivariate Jackson theorem). For $f \in C^k(\mathbb{B}_d)$ there
@@ -129,13 +136,19 @@ theorem minimaxError_antitone {d : ℕ} {D : Set (Fin d → ℝ)} [CompactSpace 
 
 /-- Let $M$ be a real $d \times d$ matrix and $v \in \mathbb{R}^d$. For $1 \le i \le d$, the $i$-th
 coordinate polynomial of the affine map $x \mapsto M x + v$ is $v_i + \sum_j M_{ij} X_j$. It
-supports Exercise 14.1.1. -/
+supports Exercise 14.1.1.
+
+**Reading.** General affine coordinates rather than the stated diagonal planar change of variables.
+-/
 noncomputable def affineForm {d : ℕ} (M : Matrix (Fin d) (Fin d) ℝ) (v : Fin d → ℝ) (i : Fin d) :
     MvPolynomial (Fin d) ℝ :=
   MvPolynomial.C (v i) + ∑ j, MvPolynomial.C (M i j) * MvPolynomial.X j
 
 /-- The coordinate polynomial $v_i + \sum_j M_{ij} X_j$ evaluated at $x$ is the $i$-th coordinate of
-$M x + v$. -/
+$M x + v$.
+
+**Reading.** Evaluates each coordinate of a general affine substitution.
+-/
 @[simp]
 theorem eval_affineForm {d : ℕ} (M : Matrix (Fin d) (Fin d) ℝ) (v : Fin d → ℝ) (i : Fin d)
     (x : Fin d → ℝ) : MvPolynomial.eval x (affineForm M v i) = (M *ᵥ x + v) i := by
@@ -153,13 +166,19 @@ theorem totalDegree_affineForm_le {d : ℕ} (M : Matrix (Fin d) (Fin d) ℝ) (v 
 matrix and $v \in \mathbb{R}^d$. The **affine change of variables** is the algebra homomorphism
 on the polynomials in $d$ variables that maps $p$ to the polynomial $x \mapsto p(M x + v)$.
 
-It is `MvPolynomial.bind₁` of the coordinate polynomials `AtkinsonHan.Chapter14.affineForm M v`. -/
+It is `MvPolynomial.bind₁` of the coordinate polynomials `AtkinsonHan.Chapter14.affineForm M v`.
+
+**Reading.** Substitution for arbitrary affine maps in any dimension.
+-/
 noncomputable def affineSubst {d : ℕ} (M : Matrix (Fin d) (Fin d) ℝ) (v : Fin d → ℝ) :
     MvPolynomial (Fin d) ℝ →ₐ[ℝ] MvPolynomial (Fin d) ℝ :=
   MvPolynomial.bind₁ (affineForm M v)
 
 /-- The affine change of variables evaluates as $(p \circ (M \cdot + v))(x) = p(M x + v)$ for every
-polynomial $p$ and every $x \in \mathbb{R}^d$. -/
+polynomial $p$ and every $x \in \mathbb{R}^d$.
+
+**Reading.** Polynomial evaluation after arbitrary affine substitution.
+-/
 theorem eval_affineSubst {d : ℕ} (M : Matrix (Fin d) (Fin d) ℝ) (v : Fin d → ℝ)
     (p : MvPolynomial (Fin d) ℝ) (x : Fin d → ℝ) :
     MvPolynomial.eval x (affineSubst M v p) = MvPolynomial.eval (M *ᵥ x + v) p := by
@@ -200,7 +219,11 @@ This makes the results of Section 14.1 on the unit disk the same results on an e
 linear map that takes the disk onto the ellipse takes the polynomials of degree at most $n$ on
 the one to the polynomials of degree at most $n$ on the other. The bound on the degree is
 `MvPolynomial.totalDegree_bind₁_le` for the coordinate polynomials, each of total degree at most
-$1$; the surjectivity is the same bound for the inverse substitution. -/
+$1$; the surjectivity is the same bound for the inverse substitution.
+
+**Reading.** Proves degree-space invariance under any invertible affine change, without transporting
+the approximation rate itself.
+-/
 theorem exercise_14_1_1 {d n : ℕ} {M : Matrix (Fin d) (Fin d) ℝ} (hM : IsUnit M.det)
     (v : Fin d → ℝ) :
     (polySpace d n).map (affineSubst M v).toLinearMap = polySpace d n :=
@@ -215,13 +238,19 @@ $(x/\alpha)^2 + (y/\beta)^2 \le 1$ of Exercise 14.1.1, and for $a = (1, \dots, 1
 closed unit ball.
 
 If some $a_i = 0$, Lean's division gives $x_i / a_i = 0$, so the coordinate $x_i$ is not
-constrained. -/
+constrained.
+
+**Reading.** Arbitrary dimension and totalized division at zero semiaxes.
+-/
 def ellipsoid {d : ℕ} (a : Fin d → ℝ) : Set (Fin d → ℝ) := {x | ∑ i, (x i / a i) ^ 2 ≤ 1}
 
 /-- **Exercise 14.1.1** of [han2009theoretical], the change of variables. Let $a \in \mathbb{R}^d$
 with $a_i \neq 0$ for all $i$. Then the diagonal linear map $x \mapsto (a_i x_i)_i$ maps the
 closed unit ball onto the solid ellipsoid with semi-axes $a_i$. The map is invertible, so
-`AtkinsonHan.Chapter14.exercise_14_1_1` applies to it. -/
+`AtkinsonHan.Chapter14.exercise_14_1_1` applies to it.
+
+**Reading.** Diagonal image statement in any dimension with nonzero semiaxes.
+-/
 theorem image_mulVec_diagonal_ellipsoid {d : ℕ} {a : Fin d → ℝ} (ha : ∀ i, a i ≠ 0) :
     (fun x => Matrix.diagonal a *ᵥ x) '' ellipsoid 1 = ellipsoid a := by
   ext y

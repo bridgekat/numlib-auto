@@ -53,6 +53,14 @@ Theorem 13.10.2 transfers an ambient fraction-to-boundary test to the relative d
 
 ## Deviations from the source
 
+* **Correction.** The affine barrier trial adds strict feasibility to the unsigned boundary-distance
+  comparison. See `ConnGouldToint.Chapter13.AffineOrthantBarrierTrial`.
+* **Representation.** Affine boundary comparisons use explicit movable-coordinate weights and fixed
+  values for the other coordinates. See `ConnGouldToint.Chapter13.affineBarrierAmbientDistance`,
+  `ConnGouldToint.Chapter13.affineBarrierSliceDistance`,
+  `ConnGouldToint.Chapter13.affineBarrierNormalFactor`,
+  `ConnGouldToint.Chapter13.affineBarrier_normalFactor_mul_sliceDistance_le`,
+  `ConnGouldToint.Chapter13.lemma_13_10_1`, `ConnGouldToint.Chapter13.theorem_13_10_2`.
 * **Algorithm 13.10.1** (correction). The printed test compares unsigned distances to the boundary,
   which a point outside the feasible set can pass. The trial point must also be strictly feasible.
   See `ConnGouldToint.Chapter13.AffineOrthantBarrierTrial`.
@@ -73,7 +81,12 @@ and $s$ satisfies the given sufficient decrease condition.
 unsigned, so a point outside $C$ can also satisfy it. The definition therefore requires that
 $x + s$ lies in the interior of $C$.
 
-The interiority and distance conditions are `ConnGouldToint.Chapter13.BarrierAdmissibleTrial`. -/
+The interiority and distance conditions are `ConnGouldToint.Chapter13.BarrierAdmissibleTrial`.
+
+**Correction.** The trial must be strictly feasible, since an exterior point can have large unsigned
+distance to the frontier. The equality restriction is expressed by a step in the kernel and
+sufficient decrease is a supplied predicate.
+-/
 def AffineOrthantBarrierTrial {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [AddCommGroup F] [Module ℝ F] (A : E →ₗ[ℝ] F) (C : Set E) (σ Δ : ℝ)
     (x s : E) (sufficient : E → Prop) : Prop :=
@@ -119,7 +132,12 @@ variable {ι : Type*} [Fintype ι] [Nonempty ι]
 $\iota$ nonempty, the **ambient distance** is $\min_i x_i$.
 
 For $x > 0$ this is the Euclidean distance from $x$ to the boundary of the positive orthant. The
-definition is the minimum itself. -/
+definition is the minimum itself.
+
+**Reading.** The affine-slice geometry is abstracted into coordinate weights and fixed values for
+immovable bounds, with at least one movable bound. The final theorem transfers the ambient clearance
+ratio to the slice in the small-distance case.
+-/
 noncomputable def affineBarrierAmbientDistance (x : ι → ℝ) : ℝ :=
   Finset.univ.inf' Finset.univ_nonempty x
 
@@ -140,13 +158,23 @@ $$\min_{i : w_i > 0} \frac{x_i}{w_i},$$
 the minimum in (13.10.10) after each hyperplane distance is evaluated by (13.10.13).
 
 A coordinate with $w_i \le 0$ is constant on the slice and gives no hyperplane, so it does not
-enter the minimum. -/
+enter the minimum.
+
+**Reading.** The affine-slice geometry is abstracted into coordinate weights and fixed values for
+immovable bounds, with at least one movable bound. The final theorem transfers the ambient clearance
+ratio to the slice in the small-distance case.
+-/
 noncomputable def affineBarrierSliceDistance (w x : ι → ℝ) (hw : ∃ i, 0 < w i) : ℝ :=
   (movableBounds w).inf' (movableBounds_nonempty w hw) fun i ↦ x i / w i
 
 /-- **Equation (13.10.15)** of [conn2000trust], the geometric factor. Let $w \in \mathbb{R}^\iota$
 have at least one positive entry. The **normal factor** is $\omega = \min_{i : w_i > 0} w_i$,
-the least positive length of a coordinate normal projected onto the equality nullspace. -/
+the least positive length of a coordinate normal projected onto the equality nullspace.
+
+**Reading.** The affine-slice geometry is abstracted into coordinate weights and fixed values for
+immovable bounds, with at least one movable bound. The final theorem transfers the ambient clearance
+ratio to the slice in the small-distance case.
+-/
 noncomputable def affineBarrierNormalFactor (w : ι → ℝ) (hw : ∃ i, 0 < w i) : ℝ :=
   (movableBounds w).inf' (movableBounds_nonempty w hw) w
 
@@ -155,6 +183,10 @@ $w_i \le 1$ for all $i$ and $w_i > 0$ for some $i$. Suppose that some $i$ with $
 the ambient distance, $\min_j x_j = x_i$. Then the normal factor satisfies $0 < \omega \le 1$
 and
 $$\omega \min_{j : w_j > 0} \frac{x_j}{w_j} \le \min_j x_j.$$
+
+**Reading.** The affine-slice geometry is abstracted into coordinate weights and fixed values for
+immovable bounds, with at least one movable bound. The final theorem transfers the ambient clearance
+ratio to the slice in the small-distance case.
 -/
 theorem affineBarrier_normalFactor_mul_sliceDistance_le (w x : ι → ℝ) (hw : ∃ i, 0 < w i)
     (hx : ∀ i, 0 < x i) (hunit : ∀ i, w i ≤ 1)
@@ -188,7 +220,12 @@ $$d_A(x) \le d_S(x) \quad\text{and}\quad \sigma \min\{1, d_S(x)\} \le d_A(x).$$
 
 The lemma is stated in orthonormal coordinates on the slice. The weights $w_i$ are the lengths
 of the projected normals, so they are at most one. The comparison is uniform over the whole
-positive slice. A positive weight is needed for the boundary of the slice to be nonempty. -/
+positive slice. A positive weight is needed for the boundary of the slice to be nonempty.
+
+**Reading.** The affine-slice geometry is abstracted into coordinate weights and fixed values for
+immovable bounds, with at least one movable bound. The final theorem transfers the ambient clearance
+ratio to the slice in the small-distance case.
+-/
 theorem lemma_13_10_1 (w c : ι → ℝ) (hw : ∃ i, 0 < w i)
     (hunit : ∀ i, w i ≤ 1) (hc : ∀ i, w i ≤ 0 → 0 < c i) :
     ∃ σ ∈ Ioo (0 : ℝ) 1, ∀ x : ι → ℝ, (∀ i, 0 < x i) →
@@ -238,7 +275,12 @@ $x, y > 0$ satisfy $x_i = y_i = c_i$ whenever $w_i \le 0$. If $\sigma d_A(x) \le
 $d_S(x) \le 1$, then
 $$\theta\, d_S(x) \le d_S(y).$$
 So an ambient fraction-to-boundary test implies a relative one whenever the current relative
-distance is at most one. -/
+distance is at most one.
+
+**Reading.** The affine-slice geometry is abstracted into coordinate weights and fixed values for
+immovable bounds, with at least one movable bound. The final theorem transfers the ambient clearance
+ratio to the slice in the small-distance case.
+-/
 theorem theorem_13_10_2 (w c : ι → ℝ) (hw : ∃ i, 0 < w i)
     (hunit : ∀ i, w i ≤ 1) (hc : ∀ i, w i ≤ 0 → 0 < c i)
     {σ : ℝ} (hσ : σ ∈ Ioo (0 : ℝ) 1) :

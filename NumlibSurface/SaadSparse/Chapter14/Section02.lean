@@ -79,6 +79,21 @@ supplies.
 * Indices of the model recurrence are $0$-based: `SaadSparse.Chapter14.modelSchurEigen μ k` is the
   book's $\lambda_{k+1}$.
 
+## Deviations from the source
+
+* **(14.4), (14.5) and Algorithm 14.1** (representation and totalization).
+  `SaadSparse.Chapter14.blockGaussianElimination` expresses the source's block solves through
+  exact inverse actions. The definitions use total inverses, and the correctness theorem
+  requires nonsingular $A$ and $B$.
+* **(14.16)** (generalization). `SaadSparse.Chapter14.equation_14_16` needs a block diagonal
+  interior and a common interface index set on which the local $C_i$ sum. It does not require
+  the blocks to arise from finite-element assembly.
+* **(14.20) and §14.2.5** (scope and normalization). `SaadSparse.Chapter14.modelSchurEigen`
+  represents the scalar recurrence at an eigenvalue of $B$, starting at source index $1$.
+  `SaadSparse.Chapter14.modelSeq` omits the common factor $1/\sqrt{\mu^2-4}$, which cancels in
+  the ratio. The matrix recurrence and identification of its final term with the Schur
+  complement remain outside the statement.
+
 ## Not formalized
 
 * **The matrix form of Section 14.2.5.** To transport $\lambda_k$ back through the discrete sine
@@ -102,7 +117,10 @@ complement** associated with the interface variables is
 $$S = C - F B^{-1} E.$$
 
 The inverse is Mathlib's `Matrix.inv`, so for a singular $B$ the value is $C$ (since
-$B^{-1} = 0$ in Lean). -/
+$B^{-1} = 0$ in Lean).
+
+**Reading.** Formula translated with total inverse of B, including singular B.
+-/
 noncomputable def schurComplement (B : Matrix (Fin p) (Fin p) ℝ) (E : Matrix (Fin p) (Fin q) ℝ)
     (F : Matrix (Fin q) (Fin p) ℝ) (C : Matrix (Fin q) (Fin q) ℝ) : Matrix (Fin q) (Fin q) ℝ :=
   C - F * B⁻¹ * E
@@ -122,6 +140,8 @@ theorem schurComplement_eq (B : Matrix (Fin p) (Fin p) ℝ) (E : Matrix (Fin p) 
 $F \in \mathbb{R}^{q \times p}$ and right-hand sides $f \in \mathbb{R}^p$ and
 $g \in \mathbb{R}^q$, the right-hand side of the reduced system $Sy = g'$ is
 $$g' = g - F B^{-1} f.$$
+
+**Reading.** Right-hand side with total inverse of B.
 -/
 noncomputable def reducedRhs (B : Matrix (Fin p) (Fin p) ℝ) (F : Matrix (Fin q) (Fin p) ℝ)
     (f : Fin p → ℝ) (g : Fin q → ℝ) : Fin q → ℝ :=
@@ -135,7 +155,10 @@ theorem reducedRhs_def (B : Matrix (Fin p) (Fin p) ℝ) (F : Matrix (Fin q) (Fin
 variables is mapped to its interface block $y$. -/
 def interfaceRestrict (v : Fin p ⊕ Fin q → ℝ) : Fin q → ℝ := v ∘ Sum.inr
 
-/-- The interface unknown $y = S^{-1} g'$ that Algorithm 14.1 computes. -/
+/-- The interface unknown $y = S^{-1} g'$ that Algorithm 14.1 computes.
+
+**Reading.** Uses total inverse formula instead of a linear solver.
+-/
 noncomputable def interfaceSolution (B : Matrix (Fin p) (Fin p) ℝ) (E : Matrix (Fin p) (Fin q) ℝ)
     (F : Matrix (Fin q) (Fin p) ℝ) (C : Matrix (Fin q) (Fin q) ℝ) (f : Fin p → ℝ) (g : Fin q → ℝ) :
     Fin q → ℝ :=
@@ -147,7 +170,11 @@ forms $g' = g - F f'$ and $S = C - F E'$, solves $S y = g'$, and recovers $x = f
 output is the vector $(x, y)$.
 
 The algorithm is written as a function: $E' = B^{-1} E$, $f' = B^{-1} f$ and $y = S^{-1} g'$,
-with Mathlib's matrix inverse. -/
+with Mathlib's matrix inverse.
+
+**Reading.** The program is written as exact inverse actions. Algorithm 14.1 describes linear
+solves and shares the intermediate $B^{-1}E$ and $B^{-1}f$. The definition uses total inverses
+and its correctness theorem assumes nonsingularity. -/
 noncomputable def blockGaussianElimination (B : Matrix (Fin p) (Fin p) ℝ)
     (E : Matrix (Fin p) (Fin q) ℝ) (F : Matrix (Fin q) (Fin p) ℝ) (C : Matrix (Fin q) (Fin q) ℝ)
     (f : Fin p → ℝ) (g : Fin q → ℝ) : Fin p ⊕ Fin q → ℝ :=
@@ -248,7 +275,11 @@ discretization that produces it.
 
 The block diagonal matrix is `Matrix.blockDiagonal' B` over the index type
 `(i : Fin s) × Fin (d i)`, and $E_i$, $F_i$ are submatrices of $E$ and $F$. The proof
-specializes `Matrix.schurComplement_fromBlocks_blockDiagonal'`. -/
+specializes `Matrix.schurComplement_fromBlocks_blockDiagonal'`.
+
+**Reading.** Extracts the algebraic identity for arbitrary blocks with common interface coordinates
+and invertible interior blocks.
+-/
 theorem equation_14_16 {s : ℕ} {d : Fin s → ℕ} (B : ∀ i, Matrix (Fin (d i)) (Fin (d i)) ℝ)
     (E : Matrix ((i : Fin s) × Fin (d i)) (Fin q) ℝ)
     (F : Matrix (Fin q) ((i : Fin s) × Fin (d i)) ℝ) (C : Fin s → Matrix (Fin q) (Fin q) ℝ)
@@ -271,7 +302,10 @@ block $T_k$ acts as a number $\lambda_k$, and
 $$\lambda_1 = \mu, \qquad \lambda_{k+1} = \mu - \frac{1}{\lambda_k}.$$
 
 Indices are shifted: `SaadSparse.Chapter14.modelSchurEigen μ k` is the book's $\lambda_{k+1}$.
-Division by $0$ is $0$ in Lean, so the recurrence is defined for every $\mu$. -/
+Division by $0$ is $0$ in Lean, so the recurrence is defined for every $\mu$.
+
+**Reading.** Only scalar eigenvalue recurrence, shifted starts at source λ₁ and uses total inverse.
+-/
 noncomputable def modelSchurEigen (μ : ℝ) : ℕ → ℝ
   | 0 => μ
   | k + 1 => μ - 1 / modelSchurEigen μ k
@@ -282,7 +316,10 @@ of the characteristic equation $x^2 - \mu x + 1 = 0$ of the linearized recurrenc
 root is $1/\rho$.
 
 The square root is `Real.sqrt`, which is $0$ at a negative argument; the results use $\rho$ only
-for $\mu > 2$. -/
+for $\mu > 2$.
+
+**Reading.** Defines exact larger root on μ>2 and total real square root for all μ.
+-/
 noncomputable def modelRoot (μ : ℝ) : ℝ := (μ + √(μ ^ 2 - 4)) / 2
 
 /-- **Section 14.2.5** of [saad2003iterative]. The auxiliary sequence of the linearization of
@@ -292,7 +329,13 @@ whose ratios are the numbers $\lambda_k$. It satisfies the *linear* difference e
 $\eta_{k+1} = \mu \eta_k - \eta_{k-1}$.
 
 The book includes the normalizing factor $1/(\rho - \rho^{-1})$. It is left out here, since only
-the ratios are used. -/
+the ratios are used.
+
+**Normalization.** This sequence is the source's $\eta_k$ multiplied by $\sqrt{\mu^2-4}$. The
+factor cancels in successive-term ratios.
+
+**Reading.** Omits constant divisor sqrt(μ²−4), which cancels in ratios.
+-/
 noncomputable def modelSeq (μ : ℝ) (m : ℕ) : ℝ := modelRoot μ ^ (m + 1) - (modelRoot μ ^ (m + 1))⁻¹
 
 /-- If $\mu > 2$, then the root $\rho$ of $x^2 - \mu x + 1$ satisfies $\rho > 1$. -/
@@ -323,7 +366,10 @@ theorem modelRoot_add_inv (hμ : 2 < μ) : modelRoot μ + (modelRoot μ)⁻¹ = 
   linarith [hquad]
 
 /-- If $\mu > 2$, then every term $\eta_k = \rho^{k+1} - \rho^{-(k+1)}$ of the linearizing sequence
-is positive. -/
+is positive.
+
+**Reading.** Positivity for normalized sequence with common divisor removed.
+-/
 theorem modelSeq_pos (hμ : 2 < μ) (m : ℕ) : 0 < modelSeq μ m := by
   have hρ := one_lt_modelRoot hμ
   have h1 : 1 < modelRoot μ ^ (m + 1) := one_lt_pow₀ hρ (Nat.succ_ne_zero m)
@@ -332,13 +378,21 @@ theorem modelSeq_pos (hμ : 2 < μ) (m : ℕ) : 0 < modelSeq μ m := by
     _ < modelRoot μ ^ (m + 1) := h1
 
 /-- For every nonzero real $\rho$ and every $m \in \mathbb{N}$, $\rho^{m+3} - \rho^{-(m+3)} =
-(\rho + \rho^{-1})(\rho^{m+2} - \rho^{-(m+2)}) - (\rho^{m+1} - \rho^{-(m+1)})$. -/
+(\rho + \rho^{-1})(\rho^{m+2} - \rho^{-(m+2)}) - (\rho^{m+1} - \rho^{-(m+1)})$.
+
+**Reading.** Identity for arbitrary nonzero root-like scalar, without specifying μ or characteristic
+relation.
+-/
 private theorem exp_rec {ρ : ℝ} (hρ : ρ ≠ 0) (m : ℕ) :
     ρ ^ (m + 3) - (ρ ^ (m + 3))⁻¹
       = (ρ + ρ⁻¹) * (ρ ^ (m + 2) - (ρ ^ (m + 2))⁻¹) - (ρ ^ (m + 1) - (ρ ^ (m + 1))⁻¹) := by
   field_simp
   ring
 
+/-- **§14.2.5, initial conditions** of [saad2003iterative].
+
+**Generalization.** Extends the geometric identity to arbitrary nonzero scalar.
+-/
 private theorem exp_base {ρ : ℝ} (hρ : ρ ≠ 0) :
     ρ ^ (0 + 1 + 1) - (ρ ^ (0 + 1 + 1))⁻¹ = (ρ + ρ⁻¹) * (ρ ^ (0 + 1) - (ρ ^ (0 + 1))⁻¹) := by
   field_simp
@@ -352,6 +406,8 @@ private theorem exp_mul {ρ : ℝ} (hρ : ρ ≠ 0) (m : ℕ) :
 /-- **Section 14.2.5** of [saad2003iterative], the linear difference equation. If $\mu > 2$, then
 for every $k \ge 1$
 $$\eta_{k+1} = \mu \eta_k - \eta_{k-1}.$$
+
+**Reading.** Same recurrence for scaled η sequence and shifted indices.
 -/
 theorem modelSeq_succ_succ (hμ : 2 < μ) (m : ℕ) :
     modelSeq μ (m + 2) = μ * modelSeq μ (m + 1) - modelSeq μ m := by
@@ -409,7 +465,11 @@ theorem modelRoot_lt_modelSchurEigen (hμ : 2 < μ) (m : ℕ) :
   linarith
 
 /-- If $\mu > 2$, then every $\lambda_k$ is positive, and hence nonzero. This is the form of
-`SaadSparse.Chapter14.modelRoot_lt_modelSchurEigen` that the recurrence itself needs. -/
+`SaadSparse.Chapter14.modelRoot_lt_modelSchurEigen` that the recurrence itself needs.
+
+**Reading.** Verifies scalar nonzero denominators, without matrix recurrence or identification of
+local Schur complement.
+-/
 theorem modelSchurEigen_pos (hμ : 2 < μ) (m : ℕ) : 0 < modelSchurEigen μ m :=
   lt_trans (modelRoot_pos hμ) (modelRoot_lt_modelSchurEigen hμ m)
 

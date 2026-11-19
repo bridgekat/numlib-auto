@@ -169,6 +169,12 @@ extends continuously by $0$.
 
 ## Deviations from the source
 
+* **Definition 7.2.1** (generalization). The boundary class predicate allows unbounded open
+  sets. See `AtkinsonHan.Chapter07.definition_7_2_1`.
+* **Definition 7.2.2** (scope). The main membership predicate bundles multilinear derivatives,
+  while the equivalent multi-index version gives the source's scalar derivatives. The
+  unbundled predicates allow exponents below one. The explicit norm formula here is for
+  finite $p$.
 * **Example 7.2.5, the $L^p$ part** (generalization). The book takes $1 \le p < \infty$. The
   statement holds for every $0 < p < \infty$. See `AtkinsonHan.Chapter07.example_7_2_5_memLp`.
 * **Example 7.2.5, the equivalence for $W^{1,p}$** (correction). The book states $|x|^\lambda \in
@@ -181,8 +187,15 @@ extends continuously by $0$.
   `AtkinsonHan.Chapter07.example_7_2_5` and `AtkinsonHan.Chapter07.example_7_2_5_const`.
 * **Example 7.2.7** (reading). The class $C^k(\bar\Omega)$ is read as the functions that are $C^k$
   on an open set that contains $\bar\Omega$. See `AtkinsonHan.Chapter07.example_7_2_7`.
+* **Example 7.2.8** (scope). The formal result assumes finite $p$ and proves agreement of
+  continuous representatives along shared edges in the first-order case.
+* **Definitions 7.2.10–7.2.12** (scope). Fractional-order definitions take arbitrary real
+  $\sigma$ in place of $0 < \sigma < 1$. The bundled definitions also allow $p = \infty$.
+  The duals are indexed by the exponent of the primal space.
 * **Definition 7.2.13** (reading). The book asks $v \in L^2(\partial\Omega)$ for every $p$. The
-  definition asks $v \in L^p(\partial\Omega)$. See `AtkinsonHan.Chapter07.definition_7_2_13_atlas`.
+  definition asks $v \in L^p(\partial\Omega)$. It uses $C^1$ graph charts and a supplied
+  or chosen atlas. The source uses $C^{k,\alpha}$ charts with an upper bound on $s$.
+  See `AtkinsonHan.Chapter07.definition_7_2_13_atlas`.
 
 ## Not formalized
 
@@ -216,14 +229,15 @@ class $V$** if for each $x_0 \in \partial\Omega$ there are an $r > 0$ and a $g \
 after a transformation of the coordinate system if necessary, $$\Omega \cap B(x_0, r) = \{x \in
 B(x_0, r) : x_{d+1} > g(x_1, \dots, x_d)\}.$$
 
+**Generalization.** The book assumes that $\Omega$ is bounded. The predicate applies to any
+open set because its defining condition is local at each boundary point.
+
 The predicate is the backbone's `IsBoundaryOfClass`. A transformation of the coordinate system
 is an affine isometry of $\mathbb{R}^{d+1}$, that is, a rigid motion. The dimension of the
 ambient space is written $d + 1$, so that the graph functions are defined on $\mathbb{R}^d$
-without a truncated subtraction; the book's $d$ is $d + 1$ here. The book assumes throughout
-Section 7.2 that $\Omega$ is open and bounded. Openness is carried by the type
-`TopologicalSpace.Opens`. Boundedness is not part of the definition, and
-`AtkinsonHan.Chapter07.definition_7_2_1_finite_cover` assumes it. The two named classes of the
-definition are `AtkinsonHan.Chapter07.definition_7_2_1_lipschitzDomain` and
+without a truncated subtraction; the book's $d$ is $d + 1$ here. Openness is carried by the
+type `TopologicalSpace.Opens`. The finite covering result assumes boundedness. The two named
+classes of the definition are `AtkinsonHan.Chapter07.definition_7_2_1_lipschitzDomain` and
 `AtkinsonHan.Chapter07.definition_7_2_1_contDiffDomain`. -/
 def definition_7_2_1 (V : Set (EuclideanSpace ℝ (Fin d) → ℝ))
     (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) : Prop :=
@@ -236,7 +250,10 @@ motion $T$ of $\mathbb{R}^{d+1}$ and a $g \in V$ such that $$\Omega \cap B(x_0, 
 B(x_0, r) : g((Tx)_1, \dots, (Tx)_d) < (Tx)_{d+1}\}.$$
 
 The point $((Tx)_1, \dots, (Tx)_d)$ is `EuclideanSpace.init (T x)`, and $(Tx)_{d+1}$ is
-`T x (Fin.last d)`. -/
+`T x (Fin.last d)`.
+
+**Reading.** Unfolds the graph criterion with affine isometries and no boundedness assumption.
+-/
 theorem definition_7_2_1_iff (V : Set (EuclideanSpace ℝ (Fin d) → ℝ))
     (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
     definition_7_2_1 V Ω ↔ ∀ x₀ ∈ frontier (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))), ∃ r > 0,
@@ -249,7 +266,10 @@ theorem definition_7_2_1_iff (V : Set (EuclideanSpace ℝ (Fin d) → ℝ))
 $\Omega \subseteq \mathbb{R}^{d+1}$ is a **Lipschitz domain** if and only if $\partial\Omega$ is
 of class $V$ for $V$ the set of Lipschitz continuous functions on $\mathbb{R}^d$.
 
-The backbone predicate is `IsLipschitzDomain`. -/
+The backbone predicate is `IsLipschitzDomain`.
+
+**Reading.** Lipschitz graph class on arbitrary open domains.
+-/
 theorem definition_7_2_1_lipschitzDomain (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
     IsLipschitzDomain (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ↔
       definition_7_2_1 {g | ∃ K, LipschitzWith K g} Ω :=
@@ -260,7 +280,10 @@ $\infty$ or $\omega$. An open set $\Omega \subseteq \mathbb{R}^{d+1}$ is a **$C^
 and only if $\partial\Omega$ is of class $V$ for $V$ the set of $C^n$ functions on
 $\mathbb{R}^d$.
 
-The order $n$ is `n : WithTop ℕ∞`, and the backbone predicate is `IsContDiffDomain n`. -/
+The order $n$ is `n : WithTop ℕ∞`, and the backbone predicate is `IsContDiffDomain n`.
+
+**Reading.** Smooth graph class on arbitrary open domains.
+-/
 theorem definition_7_2_1_contDiffDomain (n : WithTop ℕ∞)
     (Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))) :
     IsContDiffDomain n (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ↔
@@ -305,7 +328,11 @@ multi-indices, so they are equivalent to, but not equal to, the norm and seminor
 The book's norm is `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex_norm`. The book's seminorm
 $|v|_{k,p,\Omega} = [\sum_{|\alpha| = k} \|\partial^\alpha v\|_{L^p(\Omega)}^p]^{1/p}$ is
 `SobolevMultiIndex.topSeminorm`, and `Numlib.Analysis.Sobolev.SeminormCompare` compares it with
-`sobolevSeminorm` in both directions, with constants that depend only on $k$ and $d$. -/
+`sobolevSeminorm` in both directions, with constants that depend only on $k$ and $d$.
+
+**Generalization.** Uses bundled multilinear derivatives and allows all extended nonnegative
+exponents.
+-/
 def definition_7_2_2 (k : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin d)))
     (v : EuclideanSpace ℝ (Fin d) → ℝ) : Prop :=
   MemSobolev v k p Ω volume
@@ -317,7 +344,11 @@ $v \in L^p(\Omega)$ and, for every $n \le k$, there is a weak derivative $w$ of 
 on $\Omega$, in the sense of Definition 7.1.3, with $w \in L^p(\Omega)$.
 
 The weak derivative is `AtkinsonHan.Chapter07.definition_7_1_3`, whose values are continuous
-$n$-linear maps on $\mathbb{R}^d$. -/
+$n$-linear maps on $\mathbb{R}^d$.
+
+**Generalization.** Unfolds membership with multilinear weak derivatives and all extended
+nonnegative exponents.
+-/
 theorem definition_7_2_2_iff (k : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin d)))
     (v : EuclideanSpace ℝ (Fin d) → ℝ) :
     definition_7_2_2 k p Ω v ↔ MemLp v p (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin d)))) ∧
@@ -332,7 +363,10 @@ an element $u$ of the normed space `Sobolev ℝ k p Ω volume` whose function ag
 almost everywhere on $\Omega$.
 
 The element $u$ is then unique, by `Sobolev.ext_of_fn_ae_eq`. The normed space carries the norm
-`sobolevNorm`, by `Sobolev.norm_eq`. -/
+`sobolevNorm`, by `Sobolev.norm_eq`.
+
+**Reading.** Represents membership by a bundled multilinear Sobolev function almost everywhere.
+-/
 theorem definition_7_2_2_iff_exists (k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) (v : EuclideanSpace ℝ (Fin d) → ℝ) :
     definition_7_2_2 k p Ω v ↔ ∃ u : Sobolev ℝ k p Ω volume,
@@ -349,7 +383,10 @@ This is the book's reading, with one function for each multi-index $\alpha$;
 `AtkinsonHan.Chapter07.definition_7_2_2` is the bundled reading. The norm of the definition sums
 over these multi-indices, so Theorem 7.2.3 and Corollary 7.2.4 are stated with the book's norm
 on this reading. The definition is `MemSobolevMultiIndex` for the standard basis
-`AtkinsonHan.Chapter07.stdBasis d` and the Lebesgue measure. -/
+`AtkinsonHan.Chapter07.stdBasis d` and the Lebesgue measure.
+
+**Generalization.** Same coordinate criteria and extends to exponents below one.
+-/
 def definition_7_2_2_multiIndex (k : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin d)))
     (v : EuclideanSpace ℝ (Fin d) → ℝ) : Prop :=
   MemSobolevMultiIndex (stdBasis d) v k p Ω volume
@@ -361,7 +398,10 @@ $v \in L^p(\Omega)$ and, for every multi-index $\alpha$ with $|\alpha| \le k$, t
 derivative $w = \partial^\alpha v$ on $\Omega$, in the sense of Definition 7.1.3, with
 $w \in L^p(\Omega)$.
 
-The weak derivative is `AtkinsonHan.Chapter07.definition_7_1_3_multiIndex`. -/
+The weak derivative is `AtkinsonHan.Chapter07.definition_7_1_3_multiIndex`.
+
+**Generalization.** Spells out the coordinate criteria for all extended nonnegative exponents.
+-/
 theorem definition_7_2_2_multiIndex_iff (k : ℕ) (p : ℝ≥0∞)
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) (v : EuclideanSpace ℝ (Fin d) → ℝ) :
     definition_7_2_2_multiIndex k p Ω v ↔
@@ -836,7 +876,10 @@ $0 > k - d/p$, and it fails as soon as $k \ge d/p$. So (7.2.1) is false as print
 the equivalence of first order that the book displays above it. The corrected statements are
 `AtkinsonHan.Chapter07.example_7_2_5_memW1p` and `AtkinsonHan.Chapter07.example_7_2_5`.
 Membership is in the book's reading, `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex`. The
-value at $x = 0$ is also $1$, because `Real.rpow` gives $0^0 = 1$. -/
+value at $x = 0$ is also $1$, because `Real.rpow` gives $0^0 = 1$.
+
+**Reading.** Constant-power case contradicts the unconditional printed strict threshold.
+-/
 theorem example_7_2_5_const (k : ℕ) (p : ℝ≥0∞) (t : ℝ) :
     definition_7_2_2_multiIndex k p ⟨ball 0 t, isOpen_ball⟩
       (fun x : EuclideanSpace ℝ (Fin d) ↦ ‖x‖ ^ (0 : ℝ)) := by
@@ -915,7 +958,10 @@ y_k) = c \, |x|^{\lambda - k}.$$ If $|x|^\lambda \in W^{k,p}(\Omega)$, then $\la
 The weak derivative tensor $W$ of order $k$ agrees almost everywhere off the origin with the
 classical $D^k |\cdot|^\lambda$. So $\|W(x)\| \ge |c| \, |x|^{\lambda - k}$ almost everywhere on
 the ball, and $|x|^{\lambda - k} \in L^p(\Omega)$ means $\lambda - k > -d/p$ by
-`AtkinsonHan.Chapter07.example_7_2_5_memLp`. -/
+`AtkinsonHan.Chapter07.example_7_2_5_memLp`.
+
+**Reading.** Necessary inequality assumes a nonzero homogeneous derivative component.
+-/
 theorem example_7_2_5_mp_of_forall_exists (hd : 0 < d) {lam : ℝ} {k : ℕ} {c : ℝ} (hc : c ≠ 0)
     (hy : ∀ x : 𝔼, x ≠ 0 → ∃ y : Fin k → 𝔼, (∀ i, ‖y i‖ = 1) ∧
       iteratedFDeriv ℝ k (fun z : 𝔼 ↦ ‖z‖ ^ lam) x y = c * ‖x‖ ^ (lam - k))
@@ -975,7 +1021,10 @@ The radial component of $D^k |\cdot|^\lambda$ is $D^k |\cdot|^\lambda(x)(x/|x|, 
 `AtkinsonHan.Chapter07.example_7_2_5_mp_of_forall_exists` applies. At the excluded values the
 radial component vanishes identically, and the proof needs another direction of differentiation;
 see `AtkinsonHan.Chapter07.example_7_2_5_mp_of_two_le` and
-`AtkinsonHan.Chapter07.example_7_2_5`. -/
+`AtkinsonHan.Chapter07.example_7_2_5`.
+
+**Reading.** Necessary direction under exclusion of integer powers below derivative order.
+-/
 theorem example_7_2_5_mp (hd : 0 < d) {lam : ℝ} {k : ℕ} (hlam : ∀ j : ℕ, j < k → lam ≠ j)
     (p : ℝ≥0∞) (hp1 : 1 ≤ p) (hpt : p ≠ ⊤)
     (h : definition_7_2_2_multiIndex k p ⟨ball 0 1, isOpen_ball⟩ (fun x : 𝔼 ↦ ‖x‖ ^ lam)) :
@@ -996,7 +1045,10 @@ The two directions are `AtkinsonHan.Chapter07.example_7_2_5_mpr` and
 `AtkinsonHan.Chapter07.example_7_2_5_mp`. For an excluded $\lambda$ that is even, $|x|^\lambda$
 is a polynomial and the equivalence can fail (`AtkinsonHan.Chapter07.example_7_2_5_const`). For
 an excluded $\lambda$ that is odd, the equivalence holds by another argument,
-`AtkinsonHan.Chapter07.example_7_2_5`. -/
+`AtkinsonHan.Chapter07.example_7_2_5`.
+
+**Reading.** Equivalent criterion excluding integers below derivative order.
+-/
 theorem example_7_2_5_of_forall_ne (hd : 0 < d) {lam : ℝ} {k : ℕ}
     (hlam : ∀ j : ℕ, j < k → lam ≠ j) (p : ℝ≥0∞) (hp1 : 1 ≤ p) (hpt : p ≠ ⊤) :
     definition_7_2_2_multiIndex k p ⟨ball 0 1, isOpen_ball⟩ (fun x : 𝔼 ↦ ‖x‖ ^ lam) ↔
@@ -1017,7 +1069,10 @@ $h$ at $0$ are products $\prod_i (2i + 1)(\lambda - 2i)$, which are nonzero. So 
 are $c \, |x|^{\lambda - k}$ with a constant $c \neq 0$, and
 `AtkinsonHan.Chapter07.example_7_2_5_mp_of_forall_exists` concludes. These derivatives work
 where the radial derivative of `AtkinsonHan.Chapter07.example_7_2_5_mp` vanishes, at the odd
-integers $\lambda < k$. -/
+integers $\lambda < k$.
+
+**Reading.** Necessary direction in dimension at least two, excluding nonnegative even powers.
+-/
 theorem example_7_2_5_mp_of_two_le (hd : 2 ≤ d) {lam : ℝ} (hlam : ∀ j : ℕ, lam ≠ 2 * j) {k : ℕ}
     (p : ℝ≥0∞) (hp1 : 1 ≤ p) (hpt : p ≠ ⊤)
     (h : definition_7_2_2_multiIndex k p ⟨ball 0 1, isOpen_ball⟩ (fun x : 𝔼 ↦ ‖x‖ ^ lam)) :
@@ -1689,7 +1744,10 @@ cancel in pairs on the interior edges and vanish on $\partial\Omega$. It is the 
 of `Triangulation` is needed, because a function that is continuous across a slit does not see
 it. The book's Lipschitz domain with Lipschitz sub-domains is replaced by a triangulated plane
 domain, and Sobolev membership is in the book's reading,
-`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex`. -/
+`AtkinsonHan.Chapter07.definition_7_2_2_multiIndex`.
+
+**Reading.** Restricts the glueing theorem to a planar triangulation.
+-/
 theorem example_7_2_7_continuous {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     {v : 𝔼₂ → ℝ} (hv : ContinuousOn v (closure (Ω : Set 𝔼₂)))
     (hT : ∀ T : 𝒯.elems, definition_7_2_2_multiIndex 1 p (𝒯.Kopens T) v) :
@@ -1768,7 +1826,11 @@ that the elements around each vertex are connected through shared edges. This fa
 vertex, where two elements meet only at a point, which the axioms of `Triangulation` allow and a
 Lipschitz boundary does not; this step is not formalized. The book's version for $C^k$ is the
 case $k = 0$ applied to the derivatives $\partial^\beta v$ with $|\beta| \le k$, as in Example
-7.2.7. -/
+7.2.7.
+
+**Reading.** Representative-based first-order continuity agreement on shared edges, with finite
+exponent.
+-/
 theorem example_7_2_8 {Ω : Opens 𝔼₂} {𝒯 : Triangulation Ω} (hI : 𝒯.InteriorEdgesSubset)
     {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤) {v : 𝔼₂ → ℝ}
     (hv : definition_7_2_2_multiIndex 1 p Ω v) {w : 𝒯.elems → 𝔼₂ → ℝ}
@@ -1831,7 +1893,11 @@ condition is imposed on every function $w$ that is a weak $\alpha$-th derivative
 `AtkinsonHan.Chapter07.definition_7_2_10_of_exists` this is the same as imposing it on one. The
 norm of the definition lives on the type `SobolevSlobodeckij ℝ (stdBasis d) k σ p Ω volume`. Its
 elements are these functions by `AtkinsonHan.Chapter07.definition_7_2_10_iff_exists`, and its
-norm is the displayed norm by `AtkinsonHan.Chapter07.definition_7_2_10_norm`. -/
+norm is the displayed norm by `AtkinsonHan.Chapter07.definition_7_2_10_norm`.
+
+**Generalization.** Same integrability of fractional differences and arbitrary real fractional
+parameter and extended exponent.
+-/
 def definition_7_2_10 (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin d)))
     (v : EuclideanSpace ℝ (Fin d) → ℝ) : Prop :=
   definition_7_2_2_multiIndex k p Ω v ∧
@@ -1847,7 +1913,10 @@ y|^{\sigma + d/p}}$$ on $\mathbb{R}^d \times \mathbb{R}^d$.
 
 The backbone writes the exponent with the dimension of the space, which is $d$ for
 $\mathbb{R}^d$, and writes the quotient as a scalar multiplication, which is a division for a
-real function $w$. -/
+real function $w$.
+
+**Generalization.** Signed quotient gives same Lp condition and extends the parameter range.
+-/
 theorem definition_7_2_10_quotient (σ : ℝ) (p : ℝ≥0∞) (w : EuclideanSpace ℝ (Fin d) → ℝ) :
     slobodeckijQuotient σ p w =
       fun z ↦ (w z.1 - w z.2) / ‖z.1 - z.2‖ ^ (σ + (d : ℝ) / p.toReal) := by
@@ -1862,7 +1931,10 @@ on $\Omega$ with $$\frac{w(x) - w(y)}{|x - y|^{\sigma + d/p}} \in L^p(\Omega \ti
 Then $v \in W^{s,p}(\Omega)$, with $s = k + \sigma$.
 
 Two weak $\alpha$-th derivatives agree almost everywhere on $\Omega$, so their difference
-quotients agree almost everywhere on $\Omega \times \Omega$, by `slobodeckijQuotient_congr_ae`. -/
+quotients agree almost everywhere on $\Omega \times \Omega$, by `slobodeckijQuotient_congr_ae`.
+
+**Reading.** Representative-invariant membership with unrestricted fractional parameter.
+-/
 theorem definition_7_2_10_of_exists {k : ℕ} {σ : ℝ} {p : ℝ≥0∞}
     {Ω : Opens (EuclideanSpace ℝ (Fin d))} {v : EuclideanSpace ℝ (Fin d) → ℝ}
     (h₁ : definition_7_2_2_multiIndex k p Ω v)
@@ -1884,7 +1956,11 @@ there is an element $U$ of the normed space `SobolevSlobodeckij ℝ (stdBasis d)
 whose function agrees with $v$ almost everywhere on $\Omega$.
 
 The element $U$ is then unique, by `SobolevSlobodeckij.ext_of_fn_ae_eq`. The normed space
-carries the norm of the definition, by `AtkinsonHan.Chapter07.definition_7_2_10_norm`. -/
+carries the norm of the definition, by `AtkinsonHan.Chapter07.definition_7_2_10_norm`.
+
+**Reading.** Bundled fractional representative characterization allows all real fractional
+parameters and p infinity.
+-/
 theorem definition_7_2_10_iff_exists (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) (v : EuclideanSpace ℝ (Fin d) → ℝ) :
     definition_7_2_10 d k σ p Ω v ↔
@@ -1927,7 +2003,10 @@ dx \, dy\Big]^{1/p}.$$
 The norm $\|v\|_{k,p,\Omega}$ is the norm of `SobolevSlobodeckij.toSobolevMultiIndex U`, which
 is the norm of Definition 7.2.2 in the book's reading by
 `AtkinsonHan.Chapter07.definition_7_2_2_multiIndex_norm`. The derivative $\partial^\alpha v$ is
-`SobolevMultiIndex.weakDeriv`, and the sum is over `MultiIndexEq (Fin d) k`. -/
+`SobolevMultiIndex.weakDeriv`, and the sum is over `MultiIndexEq (Fin d) k`.
+
+**Reading.** Same fractional norm formula for finite p with arbitrary real fractional parameter.
+-/
 theorem definition_7_2_10_norm {k : ℕ} {σ : ℝ} {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ⊤)
     {Ω : Opens (EuclideanSpace ℝ (Fin d))}
     (U : SobolevSlobodeckij ℝ (stdBasis d) k σ p Ω volume) :
@@ -1961,7 +2040,10 @@ everywhere with a test function on $\Omega$. The case of integer order correspon
 `AtkinsonHan.Chapter07.definition_7_2_9`, where the closure is taken in $W^{k,p}(\Omega)$. The
 book keeps the two definitions apart because $C_0^\infty(\Omega)$ need not be dense in
 $W^{s,p}(\Omega)$. That every test function lies in $W^{s,p}(\Omega)$ is not proved; see the
-implementation notes of `Numlib.Analysis.Sobolev.Slobodeckij`. -/
+implementation notes of `Numlib.Analysis.Sobolev.Slobodeckij`.
+
+**Reading.** Same closure operation on the totalized fractional parameters.
+-/
 noncomputable def definition_7_2_11 (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) :
     Submodule ℝ (SobolevSlobodeckij ℝ (stdBasis d) k σ p Ω volume) :=
@@ -1983,7 +2065,10 @@ book singles out is `AtkinsonHan.Chapter07.definition_7_2_12_hMinusOne`. The boo
 remarks are not formalized: that $L^2(\Omega)$ embeds in $H^{-1}(\Omega)$ by
 $\langle f, v \rangle = \int_\Omega f v$, and that every $\ell \in H^{-1}(\Omega)$ is
 $\ell_0 - \sum_i \partial_i \ell_i$ for functions $\ell_0, \dots, \ell_d \in L^2(\Omega)$. The
-book states the second without proof. -/
+book states the second without proof.
+
+**Reading.** Dual is indexed by primal exponent and allows its infinity case.
+-/
 noncomputable abbrev definition_7_2_12 (k : ℕ) (σ : ℝ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Type _ :=
   StrongDual ℝ (definition_7_2_11 d k σ p Ω)
@@ -1992,7 +2077,10 @@ variable (d) in
 /-- **Definition 7.2.12** of [han2009theoretical], the case of integer order. Let
 $\Omega \subseteq \mathbb{R}^d$ be open, let $k \ge 0$ be an integer and let $p \in [1, \infty]$
 with conjugate exponent $p'$. The space $W^{-k,p'}(\Omega)$ is the dual space of the space
-$W_0^{k,p}(\Omega)$ of Definition 7.2.9. -/
+$W_0^{k,p}(\Omega)$ of Definition 7.2.9.
+
+**Reading.** Integer-order dual allows infinite primal exponent.
+-/
 noncomputable abbrev definition_7_2_12_integerOrder (k : ℕ) (p : ℝ≥0∞) [Fact (1 ≤ p)]
     (Ω : Opens (EuclideanSpace ℝ (Fin d))) : Type _ :=
   StrongDual ℝ (definition_7_2_9 k p Ω)
@@ -2091,7 +2179,10 @@ noncomputable def definition_7_2_13_atlas {Ω : Opens (EuclideanSpace ℝ (Fin (
 be a bounded $C^1$ domain with a graph atlas $a$, let $k \ge 0$ be an integer, let $\sigma$ be
 real, let $p \in [1, \infty]$ and let $v \in L^p(\partial\Omega)$. Then
 $v \in W^{s,p}(\partial\Omega)$ for the atlas $a$ if and only if, for every chart $i$, the
-pull-back $v \circ \Phi_i$ lies in $W^{s,p}(D_i)$ in the sense of Definition 7.2.10. -/
+pull-back $v \circ \Phi_i$ lies in $W^{s,p}(D_i)$ in the sense of Definition 7.2.10.
+
+**Reading.** Pullback criterion in the Lp- and C1-based boundary space.
+-/
 theorem mem_definition_7_2_13_atlas_iff {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
@@ -2130,7 +2221,11 @@ variables. The same obstruction keeps out the fractional clauses of Section 7.3,
 clause of Theorem 7.3.10 and Theorem 7.3.11 as printed; the module doc comment of
 `NumlibSurface.AtkinsonHan.Chapter07.Section03` discusses it for all three. Nothing in the
 library uses $W^{s,p}(\partial\Omega)$ for a non-integer $s$: the space $H^{1/2}(\Gamma)$ was
-wanted only through those two clauses of Section 7.3. -/
+wanted only through those two clauses of Section 7.3.
+
+**Reading.** Chooses a C1 graph atlas and underlying Lp class without the source smoothness-range
+bounds.
+-/
 noncomputable def definition_7_2_13 {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ)
@@ -2141,7 +2236,10 @@ noncomputable def definition_7_2_13 {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)
 $\Omega \subseteq \mathbb{R}^{d+1}$ be a bounded $C^1$ domain, let $k \ge 0$ be an integer, let
 $\sigma$ be real and let $s = k + \sigma$. The space $H^s(\partial\Omega) \equiv
 W^{s,2}(\partial\Omega)$ is `AtkinsonHan.Chapter07.definition_7_2_13` at $p = 2$. The book's
-$H^{1/2}(\partial\Omega)$ is the case $k = 0$, $\sigma = 1/2$. -/
+$H^{1/2}(\partial\Omega)$ is the case $k = 0$, $\sigma = 1/2$.
+
+**Reading.** Uses the C1 atlas version at p=2 without the source's restriction on order.
+-/
 noncomputable abbrev definition_7_2_13_hs {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))) (k : ℕ) (σ : ℝ) :
@@ -2159,7 +2257,10 @@ This element is unique by `SobolevSlobodeckij.ext_of_fn_ae_eq`, and
 `AtkinsonHan.Chapter07.definition_7_2_13_norm_eq` computes the norm from any family of such
 elements. The definition is a supremum over the charts. There are finitely many charts, so the
 supremum is the book's maximum (`Finset.sup'_univ_eq_ciSup`). It is $0$ when the atlas has no
-charts, which happens exactly when $\partial\Omega$ is empty. -/
+charts, which happens exactly when $\partial\Omega$ is empty.
+
+**Reading.** Supremum over the finitely many chosen C1 chart representatives.
+-/
 noncomputable def definition_7_2_13_norm {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     {hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}
     {hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}
@@ -2173,6 +2274,8 @@ $k \ge 0$ be an integer, let $\sigma$ be real, let $p \in [1, \infty]$ and let
 $v \in W^{s,p}(\partial\Omega)$ relative to $a$. Let $U_i \in W^{s,p}(D_i)$, for each chart $i$,
 be elements whose functions agree almost everywhere on $D_i$ with the pull-backs
 $v \circ \Phi_i$. Then $$\|v\|_{W^{s,p}(\partial\Omega)} = \sup_i \|U_i\|.$$
+
+**Reading.** Same maximum formula for any equivalent chart representatives in the C1 atlas version.
 -/
 theorem definition_7_2_13_norm_eq {Ω : Opens (EuclideanSpace ℝ (Fin (d + 1)))}
     {hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))}

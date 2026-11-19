@@ -60,9 +60,13 @@ Proposition 7.6 and Remark 8 specialize the backbone module
 
 ## Deviations from the source
 
-* **Remark 8** (reading). The equivalence of the maximal monotonicity of $A$ and of $A^\star$ is
-  stated with the extra hypothesis that $D(A^\star)$ is dense, which gives $A^{\star\star} = A$. See
-  `Brezis.Chapter07.remark_7_8_adjoint`.
+* **Symmetry and self-adjointness definitions** (reading). Symmetry applies to any domain in
+  a real inner product space. Self-adjointness uses Mathlib's total adjoint, and equality with
+  the adjoint forces the domain to be dense. See `Brezis.Chapter07.IsSymmetricOperator` and
+  `Brezis.Chapter07.IsSelfAdjointOperator`.
+* **Remark 8** (reading). The equivalence with maximal monotonicity of $A^\star$ assumes $A$
+  closed. Density of $D(A^\star)$ then follows from Theorem 3.24 and appears as an explicit
+  premise. See `Brezis.Chapter07.remark_7_8_adjoint`.
 * **Theorem 7.7** (generalization). Uniqueness is proved among all solutions on $(0, +\infty)$ that
   are continuous on $[0, +\infty)$, a larger class than the class of the source. See
   `Brezis.Chapter07.theorem_7_7`.
@@ -90,7 +94,8 @@ variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] {A : H →
 /-- **Section 7.4** of [brezis2011functional], definition of a symmetric operator. A linear
 unbounded operator $A : D(A) \subseteq H \to H$ is **symmetric** if
 $$(Au, v) = (u, Av) \quad \text{for all } u, v \in D(A).$$
--/
+
+**Generalization.** The predicate allows nondense domains and incomplete inner product spaces. -/
 def IsSymmetricOperator (A : H →ₗ.[ℝ] H) : Prop :=
   ∀ u v : A.domain, ⟪A u, (v : H)⟫_ℝ = ⟪(u : H), A v⟫_ℝ
 
@@ -105,7 +110,11 @@ Hilbert space. A linear unbounded operator $A : D(A) \subseteq H \to H$ is **sel
 $D(A^\star) = D(A)$ and $A^\star = A$ on this domain.
 
 The adjoint $A^\star$ is Mathlib's `LinearPMap.adjoint`, written `A†`, which identifies
-$H^\star$ with $H$ as the source does. -/
+$H^\star$ with $H$ as the source does.
+
+**Reading.** The source starts with a dense domain. Mathlib uses zero adjoint values when the
+domain is nondense. In that case equality with the adjoint would force $A$ to vanish, whose
+adjoint has full domain, so the predicate itself entails density. -/
 def IsSelfAdjointOperator (A : H →ₗ.[ℝ] H) : Prop :=
   A†.domain = A.domain ∧ ∀ (u : A.domain) (v : A†.domain), (u : H) = v → A† v = A u
 
@@ -148,9 +157,10 @@ theorem proposition_7_6 (hA : IsMaximalMonotone A) (hs : IsSymmetricOperator A) 
 space and let $A$ be a closed linear unbounded operator with $D(A)$ dense, and with $D(A^\star)$
 dense. Then $A$ is maximal monotone if and only if $A^\star$ is maximal monotone.
 
-**Reading.** The hypothesis that $D(A^\star)$ is dense is added. It gives $A^{\star\star} = A$,
-which the argument uses. This hypothesis holds for every closed densely defined operator on a
-Hilbert space; here it is stated explicitly. -/
+**Reading.** The source assumes $D(A)$ dense. The equivalence with maximal monotonicity of
+$A^\star$ also needs closedness of $A$. For example, the zero operator on a proper dense domain
+has an everywhere-defined zero adjoint. Density of $D(A^\star)$ follows from closedness and
+density of $D(A)$ by Theorem 3.24, and is stated explicitly here. -/
 theorem remark_7_8_adjoint (hcl : A.IsClosed) (hd : Dense (A.domain : Set H))
     (hd' : Dense (A†.domain : Set H)) : IsMaximalMonotone A ↔ IsMaximalMonotone A† := by
   rw [isMaximalMonotone_iff, isMaximalMonotone_iff]
@@ -175,8 +185,8 @@ equivalent:
 * $A^\star$ is maximal monotone;
 * $A$ is closed, $D(A)$ is dense, and $A$ and $A^\star$ are monotone.
 
-**Reading.** The hypothesis that $D(A^\star)$ is dense is added, as in
-`Brezis.Chapter07.remark_7_8_adjoint`.
+**Reading.** The equivalence with the second clause assumes closedness and explicitly requires
+density of $D(A^\star)$, as in `Brezis.Chapter07.remark_7_8_adjoint`.
 
 The claim of the source that $A^\star$ need not be monotone when $A$ is merely symmetric and
 monotone is about a counterexample and is not formalized. The version for Banach spaces is

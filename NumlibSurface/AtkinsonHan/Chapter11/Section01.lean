@@ -106,9 +106,12 @@ the boundary (`BoundaryData.exists_bump_lt_integral_mul`).
 * **Example 11.1.2** (reading). The Lipschitz boundary of the source is replaced by boundary data
   with a trace, which exist for a bounded $C^1$ domain and for a polygon without slits. See
   `AtkinsonHan.Chapter11.example_11_1_2`.
+* **(11.1.13)** (correction). The load $\int_\Omega f(v-u)$ uses volume measure. The printed
+  formula labels this integral over $\Omega$ with $ds$, the boundary measure.
 * **(11.1.14)–(11.1.15)** (reading). The domain is a bounded $C^1$ domain, and a smooth solution is
   one with a representative in $C^2(\overline\Omega)$ whose gradient extends continuously to
-  $\overline\Omega$. The boundary conditions hold at every point of $\Gamma$, where the source has
+  $\overline\Omega$. The interior identity holds almost everywhere for the $L^2$ load.
+  The boundary conditions hold at every point of $\Gamma$, where the source has
   the points at which the normal is defined. See `AtkinsonHan.Chapter11.example_11_1_2_pointwise`.
 -/
 
@@ -417,7 +420,11 @@ $$\varepsilon \int_\Omega \tilde f \varphi \, dx \le \varepsilon \int_\Omega (-\
   \varphi \, dx.$$
 
 The proof tests the inequality with $v = u + \varepsilon\varphi$ and integrates by parts
-(`Elliptic.dirichletForm_eq_integral_neg_laplacian_mul`). -/
+(`Elliptic.dirichletForm_eq_integral_neg_laplacian_mul`).
+
+**Reading.** Makes the compact test perturbation and interior representatives explicit on an
+arbitrary open set.
+-/
 theorem obstacle_testFunction_step (ψ : SobolevEuclidean (d + 1) 1 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin (d + 1))))))
     {u : SobolevEuclideanZero (d + 1) 1 2 Ω}
@@ -634,11 +641,17 @@ the trace.
 
 The source writes $g \int_\Gamma |v| \, ds$. The trace is `𝒯.traceL 2` of the boundary data; it
 exists on a bounded $C^1$ domain (`IsContDiffDomain.traceFamily`) and on a polygon without slits
-(`Triangulation.traceFamily`). -/
+(`Triangulation.traceFamily`).
+
+**Reading.** Uses abstract boundary measure and trace in place of Lipschitz-domain boundary data.
+-/
 noncomputable def frictionFunctional (g : ℝ) (v : SobolevEuclidean N 1 2 Ω) : ℝ :=
   g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ
 
-/-- The friction functional is $j(v) = g \int |\gamma v| \, d\sigma$. -/
+/-- The friction functional is $j(v) = g \int |\gamma v| \, d\sigma$.
+
+**Reading.** Explicit trace version of the absolute-value boundary integral.
+-/
 theorem frictionFunctional_apply (g : ℝ) (v : SobolevEuclidean N 1 2 Ω) :
     frictionFunctional B 𝒯 g v = g * ∫ x, |(𝒯.traceL 2 ENNReal.ofNat_ne_top v : 𝔼 → ℝ) x| ∂B.σ :=
   rfl
@@ -682,14 +695,20 @@ theorem frictionFunctional_add_sub_le {g : ℝ} (hg : 0 ≤ g) (u w : SobolevEuc
 
 /-- The friction functional is continuous on $H^1(\Omega)$.
 
-The map $k \mapsto \int |k| \, d\sigma$ is Lipschitz on $L^2(\sigma)$, and the trace is bounded. -/
+The map $k \mapsto \int |k| \, d\sigma$ is Lipschitz on $L^2(\sigma)$, and the trace is bounded.
+
+**Reading.** Continuity with abstract boundary measure and trace.
+-/
 theorem continuous_frictionFunctional (g : ℝ) : Continuous (frictionFunctional B 𝒯 g) :=
   continuous_const.mul
     ((lipschitzWith_integral_abs B).continuous.comp (𝒯.traceL 2 ENNReal.ofNat_ne_top).continuous)
 
 /-- For $g \ge 0$, the friction functional is convex on $H^1(\Omega)$.
 
-The absolute value is convex and the trace is linear. -/
+The absolute value is convex and the trace is linear.
+
+**Reading.** Convexity with abstract boundary trace, also valid at zero friction.
+-/
 theorem convexOn_frictionFunctional {g : ℝ} (hg : 0 ≤ g) :
     ConvexOn ℝ univ (frictionFunctional B 𝒯 g) := by
   refine ⟨convex_univ, fun v _ w _ a b ha hb _ ↦ ?_⟩
@@ -723,7 +742,10 @@ $$E(v) = \int_\Omega \left( \frac12 (|\nabla v|^2 + v^2) - f v \right) dx + g \i
 It is the energy $\frac12 a(v, v) - \ell(v)$ of the form $a(u, v) = \int_\Omega (\nabla u \cdot
 \nabla v + u v) \, dx$ (`Elliptic.laplaceForm Ω`) and the functional
 $\ell(v) = \int_\Omega f v \, dx$, plus the friction functional $j$.
-`AtkinsonHan.Chapter11.frictionEnergy_apply` gives the integrals. -/
+`AtkinsonHan.Chapter11.frictionEnergy_apply` gives the integrals.
+
+**Reading.** Friction energy uses the given boundary measure and trace.
+-/
 noncomputable def frictionEnergy (g : ℝ)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) : SobolevEuclidean N 1 2 Ω → ℝ :=
   (Elliptic.laplaceForm Ω).energy (Elliptic.load Ω f) + frictionFunctional B 𝒯 g
@@ -731,6 +753,8 @@ noncomputable def frictionEnergy (g : ℝ)
 /-- The energy (11.1.12) is
 $$E(v) = \int_\Omega \left( \frac12 \Big( \sum_i (\partial_i v)^2 + v^2 \Big) - f v \right) dx +
   g \int |\gamma v| \, d\sigma \qquad \text{for } v \in H^1(\Omega).$$
+
+**Reading.** Printed energy with the boundary values interpreted by an abstract trace.
 -/
 theorem frictionEnergy_apply (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (v : SobolevEuclidean N 1 2 Ω) :
@@ -793,7 +817,10 @@ $f \in L^2(\Omega)$ and $u, v \in H^1(\Omega)$, the inequality
 $$\int_\Omega f (v - u) \, dx \le \int_\Omega \big( \nabla u \cdot \nabla(v - u) + u (v - u)
   \big) \, dx + g \int_\Gamma (|v| - |u|) \, ds$$
 holds if and only if $\ell(v - u) \le a(u, v - u) + j(v) - j(u)$. Here the form $a$ is
-`Elliptic.laplaceForm Ω`, and the functional is `Elliptic.load Ω f`. -/
+`Elliptic.laplaceForm Ω`, and the functional is `Elliptic.load Ω f`.
+
+**Reading.** Uses volume measure for the load and an abstract trace for the boundary term.
+-/
 theorem friction_ineq_iff (g : ℝ) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u v : SobolevEuclidean N 1 2 Ω) :
     (∫ x in (Ω : Set 𝔼), f x * SobolevMultiIndex.fn (v - u) x
@@ -862,7 +889,11 @@ where $a(u, W) = \int_\Omega (\nabla u \cdot \nabla W + u W) \, dx$ and $\nu$ is
 normal.
 
 The function $G$ gives the boundary values of $\nabla\tilde u$. The identity is
-`BoundaryData.integral_laplacian_mul_add_eq`. -/
+`BoundaryData.integral_laplacian_mul_add_eq`.
+
+**Generalization.** Integration by parts for a smooth representative on a bounded C¹ domain with
+extended gradient.
+-/
 theorem laplaceForm_eq_integral_add_of_contDiffOnClosure {u : SobolevEuclidean N 1 2 Ω}
     {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)
     (hũ2 : ContDiffOnClosure ℝ 2 ũ Ω) {G : 𝔼 → 𝔼 →L[ℝ] ℝ}
@@ -982,7 +1013,11 @@ Then $|h(x)| \le g$ for every $x \in \Gamma$.
 
 Where $|h(x_0)| > g$, a bump function on the boundary
 (`BoundaryData.exists_bump_lt_integral_mul`) contradicts
-`AtkinsonHan.Chapter11.abs_integral_mul_le_of_forall_le`. -/
+`AtkinsonHan.Chapter11.abs_integral_mul_le_of_forall_le`.
+
+**Reading.** Extracts the pointwise magnitude constraint using a continuous flux and full-support
+boundary measure.
+-/
 theorem abs_le_of_forall_le
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {g : ℝ} (hg : 0 ≤ g) {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
@@ -1019,7 +1054,11 @@ Then $h(x) \tilde u(x) + g |\tilde u(x)| = 0$ for every $x \in \Gamma$.
 
 The choices $v = 0$ and $v = 2u$ give $\int_\Gamma (h\tilde u + g |\tilde u|) \, d\sigma = 0$.
 The integrand is nonnegative because $|h| \le g$, and it is continuous, so a bump function shows
-that it vanishes on $\Gamma$. -/
+that it vanishes on $\Gamma$.
+
+**Reading.** Extracts complementarity at every boundary point for continuous representative and
+flux.
+-/
 theorem mul_add_abs_eq_zero_of_forall_le
     (hpos : ∀ U : Set 𝔼, IsOpen U → (U ∩ frontier (Ω : Set 𝔼)).Nonempty → 0 < B.σ U)
     {g : ℝ} {h : 𝔼 → ℝ} (hc : ContinuousOn h (frontier (Ω : Set 𝔼)))
@@ -1117,7 +1156,11 @@ $\ell(W) = \int_\Omega f W \, dx$.
 
 Green's formula (`AtkinsonHan.Chapter11.laplaceForm_eq_integral_add_of_contDiffOnClosure`) gives
 the identity for smooth $W$. Both sides are continuous in $W$, and smooth functions are dense in
-$H^1(\Omega)$ (`IsContDiffDomain.hasSmoothDensity`). -/
+$H^1(\Omega)$ (`IsContDiffDomain.hasSmoothDensity`).
+
+**Reading.** Boundary reduction uses a bounded C¹ domain and the interior equation almost
+everywhere.
+-/
 theorem laplaceForm_sub_load_eq_integral (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : SobolevEuclidean (d + 1) 1 2 Ω}
     {ũ : 𝔼 → ℝ} (hũ : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ)

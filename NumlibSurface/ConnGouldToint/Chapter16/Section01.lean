@@ -72,6 +72,22 @@ of the basic trust-region algorithm of `NumlibSurface.ConnGouldToint.Chapter06.S
 
 ## Deviations from the source
 
+* **Explicit global bounds.** Theorem 16.1.1 states the differentiability and Hessian bounds
+  explicitly on the whole space. See `ConnGouldToint.Chapter16.theorem_16_1_1`.
+* **Correction.** Theorem 16.1.2 explicitly bounds model values and Jacobians on the model domains,
+  with a counterexample for unbounded radii. See `ConnGouldToint.Chapter16.theorem_16_1_2`,
+  `ConnGouldToint.Chapter16.theorem_16_1_2_unbounded_radii_counterexample`.
+* **Generalization and scope.** Theorem 16.1.3 gives the Hessian limit from residual convergence and
+  a Hessian bound, independently of a BTR run. See `ConnGouldToint.Chapter16.theorem_16_1_3`,
+  `ConnGouldToint.Chapter16.theorem_16_1_3_of_tendsto_root`.
+* **Correction.** Theorem 16.1.4 requires injectivity for positive definiteness at a root. A
+  full-row-rank counterexample verifies the distinction. See
+  `ConnGouldToint.Chapter16.theorem_16_1_4_root_hessian_iff`,
+  `ConnGouldToint.Chapter16.theorem_16_1_4_surjective_counterexample`.
+* **Restricted conclusion and counterexample.** Theorem 16.1.4 proves eventual model roots
+  conditional on convergence and local regularity, and includes an exact-model counterexample to
+  convergence of the whole run. See `ConnGouldToint.Chapter16.theorem_16_1_4_eventually_model_root`,
+  `ConnGouldToint.Chapter16.theorem_16_1_4_exact_model_counterexample`.
 * **Theorem 16.1.2** (correction). The bounds on the model residuals and their Jacobians hold
   throughout the model regions, not only at the centers. See
   `ConnGouldToint.Chapter16.theorem_16_1_2_unbounded_radii_counterexample`.
@@ -204,7 +220,12 @@ for all $x \in E$ and all $i$. Then the least-squares objective $f = \frac{1}{2}
 twice continuously differentiable, $f(x) \ge 0$ for all $x$, and there is $C > 0$ with
 $\|\nabla^2 f(x)\| \le C$ for all $x$.
 
-The proof gives $C = 2 |\iota| K^2 + 1$, where $|\iota|$ is the number of residual components. -/
+The proof gives $C = 2 |\iota| K^2 + 1$, where $|\iota|$ is the number of residual components.
+
+**Reading.** The result uses global scalar bounds on the residual, its Jacobian and component
+Hessians. It gives global twice continuous differentiability, nonnegativity and a uniform Hessian
+bound.
+-/
 theorem theorem_16_1_1 [Fintype ι] {c : E → EuclideanSpace ℝ ι}
     (hc : ContDiff ℝ 2 c) {K : ℝ} (hK : 0 < K)
     (hval : ∀ x, ‖c x‖ ≤ K) (hjac : ∀ x, ‖fderiv ℝ c x‖ ≤ K)
@@ -318,7 +339,12 @@ least-squares models in unbounded trust regions; see
 `ConnGouldToint.Chapter16.theorem_16_1_2_unbounded_radii_counterexample`.
 
 In the last item, the stationarity test of assumption AM.5e uses the full residual vector, so it
-is exactly the test $\|\nabla f(x_k)\| \to 0$ on the least-squares gradient. -/
+is exactly the test $\|\nabla f(x_k)\| \to 0$ on the least-squares gradient.
+
+**Correction.** The residual models need uniform bounds on their values and Jacobians on the actual
+model domains. The counterexample has exact first-order agreement at zero and bounded residual-model
+curvature, yet the objective-model curvature is unbounded on growing balls.
+-/
 theorem theorem_16_1_2 [Fintype ι] {c : E → EuclideanSpace ℝ ι}
     {m : ℕ → E → EuclideanSpace ℝ ι} {x : ℕ → E} {B : ℕ → Set E}
     (hc : ∀ k, ContDiffAt ℝ 2 c (x k)) (hx : ∀ k, x k ∈ B k)
@@ -372,7 +398,12 @@ $$\|\nabla^2 f(x_k) - \nabla^2 f_k(x_k)\| \to 0.$$
 
 The result applies to a subsequence that approaches a root, as in (16.1.9). To conclude the
 full-sequence form of assumption AM.5 by this argument, the residuals must tend to zero along
-the whole sequence. The Gauss–Newton residual is `ConnGouldToint.Chapter16.gaussNewtonResidual`. -/
+the whole sequence. The Gauss–Newton residual is `ConnGouldToint.Chapter16.gaussNewtonResidual`.
+
+**Generalization.** For the Hessian difference it suffices that the residual tend to zero along the
+sequence and that residual Hessians be uniformly bounded there. A root-convergent version recovers
+the displayed limit without requiring a BTR run.
+-/
 theorem theorem_16_1_3 [Fintype ι] {c : E → EuclideanSpace ℝ ι} (hc : ContDiff ℝ 2 c)
     {x : ℕ → E} (hres : Tendsto (fun k ↦ c (x k)) atTop (𝓝 0)) {K : ℝ}
     (hhess : ∀ i k, ‖iteratedFDeriv ℝ 2 (fun y ↦ c y i) (x k)‖ ≤ K) :
@@ -420,7 +451,12 @@ differentiable, let $x_k \to x_*$ with $c(x_*) = 0$, and let $K$ be such that
 $\|\nabla^2 c_i(x_k)\| \le K$ for all $i$ and $k$. Then the Hessian error
 $\|\nabla^2 f(x_k) - \nabla^2 f_k(x_k)\|$ of the Gauss–Newton models $f_k$ tends to $0$.
 
-This follows from `ConnGouldToint.Chapter16.theorem_16_1_3`, because $c(x_k) \to c(x_*) = 0$. -/
+This follows from `ConnGouldToint.Chapter16.theorem_16_1_3`, because $c(x_k) \to c(x_*) = 0$.
+
+**Generalization.** For the Hessian difference it suffices that the residual tend to zero along the
+sequence and that residual Hessians be uniformly bounded there. A root-convergent version recovers
+the displayed limit without requiring a BTR run.
+-/
 theorem theorem_16_1_3_of_tendsto_root [Fintype ι] {c : E → EuclideanSpace ℝ ι}
     (hc : ContDiff ℝ 2 c) {x : ℕ → E} {xStar : E}
     (hx : Tendsto x atTop (𝓝 xStar)) (hroot : c xStar = 0) {K : ℝ}
@@ -437,7 +473,12 @@ theorem theorem_16_1_3_of_tendsto_root [Fintype ι] {c : E → EuclideanSpace �
 least-squares models, which shows the correction in Theorem 16.1.2 of [conn2000trust]. On
 $\mathbb{R}$, the residual $c = 0$ and the model residual $m(t) = t^2$ agree to first order at
 the center $0$, and $|m''(t)| \le 2$ for all $t$. But no $K$ bounds the Hessian of
-$\frac{1}{2} m^2$ on all the balls $[-k, k]$, $k \in \mathbb{N}$. -/
+$\frac{1}{2} m^2$ on all the balls $[-k, k]$, $k \in \mathbb{N}$.
+
+**Correction.** The residual models need uniform bounds on their values and Jacobians on the actual
+model domains. The counterexample has exact first-order agreement at zero and bounded residual-model
+curvature, yet the objective-model curvature is unbounded on growing balls.
+-/
 theorem theorem_16_1_2_unbounded_radii_counterexample :
     (fun t : ℝ ↦ t ^ 2) 0 = (fun _ : ℝ ↦ (0 : ℝ)) 0 ∧
     fderiv ℝ (fun t : ℝ ↦ t ^ 2) 0 = fderiv ℝ (fun _ : ℝ ↦ (0 : ℝ)) 0 ∧
@@ -505,7 +546,12 @@ $\nabla^2 f(x)(v, v) > 0$ for all $v \neq 0$ if and only if the Jacobian $J(x)$ 
 
 **Reading.** The theorem assumes that the Hessian of $f$ at the root is positive definite. At a
 root this assumption is exactly injectivity of $J(x)$. A surjective Jacobian, of full row rank,
-does not suffice; see `ConnGouldToint.Chapter16.theorem_16_1_4_surjective_counterexample`. -/
+does not suffice; see `ConnGouldToint.Chapter16.theorem_16_1_4_surjective_counterexample`.
+
+**Correction.** At a root the least-squares Hessian is positive definite exactly when the Jacobian
+is injective. Full row rank alone, illustrated by a surjective map with a nontrivial kernel, is
+insufficient.
+-/
 theorem theorem_16_1_4_root_hessian_iff [Fintype ι] {c : E → EuclideanSpace ℝ ι} {x : E}
     (hc : ContDiffAt ℝ 2 c x) (hroot : c x = 0) :
     (∀ v : E, v ≠ 0 → 0 < iteratedFDeriv ℝ 2 (leastSquaresObjective c) x (fun _ ↦ v)) ↔
@@ -528,7 +574,12 @@ theorem theorem_16_1_4_root_hessian_iff [Fintype ι] {c : E → EuclideanSpace �
 /-- A surjective Jacobian at a root does not make the least-squares Hessian positive definite, which
 supports the reading of Theorem 16.1.4 of [conn2000trust]. The residual
 $c : \mathbb{R}^2 \to \mathbb{R}^1$, $c(x) = x_1$, is twice continuously differentiable,
-$c(0) = 0$ and $J(0)$ is surjective, but $\nabla^2 f(0)(v, v) = 0$ for $v = (0, 1)$. -/
+$c(0) = 0$ and $J(0)$ is surjective, but $\nabla^2 f(0)(v, v) = 0$ for $v = (0, 1)$.
+
+**Correction.** At a root the least-squares Hessian is positive definite exactly when the Jacobian
+is injective. Full row rank alone, illustrated by a surjective map with a nontrivial kernel, is
+insufficient.
+-/
 theorem theorem_16_1_4_surjective_counterexample :
     ∃ c : ℝ × ℝ → EuclideanSpace ℝ (Fin 1), ContDiff ℝ 2 c ∧ c 0 = 0 ∧
       Function.Surjective (fderiv ℝ c 0) ∧
@@ -570,7 +621,13 @@ there is $y \in B(x_k, R)$ with $m_k(y) = 0$.
 $x_k \to x_*$ is a hypothesis, and the trust region must contain a ball of fixed radius $R$.
 
 A uniform bound on the second derivatives of the models gives the Lipschitz bound by the mean
-value theorem. -/
+value theorem.
+
+**Correction.** The eventual model-root conclusion assumes convergence, an invertible Jacobian and
+uniform local derivative control on a fixed-radius ball. The exact-model example has successful
+sufficient-decrease steps with distinct subsequential limits, refuting the unrestricted convergence
+claim.
+-/
 theorem theorem_16_1_4_eventually_model_root [CompleteSpace E] [Fintype ι]
     {c : E → EuclideanSpace ℝ ι} {m : ℕ → E → EuclideanSpace ℝ ι}
     {x : ℕ → E} {xStar : E} (hx : Tendsto x atTop (𝓝 xStar))
@@ -663,7 +720,13 @@ $$x_{2k} \to 0, \qquad x_{2k+1} \to \pi.$$
 The run is a `ConnGouldToint.Chapter06.BTRRun` with `ConnGouldToint.Chapter06.defaultBTRParams`,
 and AA.1 is `ConnGouldToint.Chapter06.HasSufficientModelDecrease`. In the construction the
 radius is fixed at $\pi$, the iterates alternate between the two branches of the inverse sine,
-and the residual is halved at each accepted step. -/
+and the residual is halved at each accepted step.
+
+**Correction.** The eventual model-root conclusion assumes convergence, an invertible Jacobian and
+uniform local derivative control on a fixed-radius ball. The exact-model example has successful
+sufficient-decrease steps with distinct subsequential limits, refuting the unrestricted convergence
+claim.
+-/
 theorem theorem_16_1_4_exact_model_counterexample :
     ContDiff ℝ 2 Real.sin ∧ (Real.sin 0 = 0 ∧ deriv Real.sin 0 = 1) ∧
     (∀ z : ℝ, |Real.sin z| ≤ 1 ∧ |deriv Real.sin z| ≤ 1 ∧

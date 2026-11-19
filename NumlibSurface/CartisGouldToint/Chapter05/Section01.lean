@@ -80,13 +80,24 @@ Lemmas 5.1.5 and 5.1.6 choose the exponents $\ell$ and $i$ so that the exponents
 
 ## Deviations from the source
 
+* **Equation (5.1.3) and the scaled measures** (generalization). The objective accepts any real
+  exponent, and the scaled measures are total at a zero residual. The formula for
+  $\mathcal{Z}_\epsilon$ allows an empty set. See `CartisGouldToint.Chapter05.Phi` and
+  `CartisGouldToint.Chapter05.zSet`.
 * **Algorithm 5.1.1, third-order test** (correction). The book requires
   $\mathcal{M}_k \neq \emptyset$ in the third-order branch of the test. With that requirement the
   proof of Theorem 5.1.7 fails when $\mathcal{M}_{k+1} = \emptyset$, so the condition "for all
   $d \in \mathcal{M}_k$" is read vacuously. See `CartisGouldToint.Chapter05.ARpLEStop`.
+* **Algorithm 5.1.1, input domain** (generalization). The run predicate allows any real
+  $\ell$ and leaves the order, exponent and tolerance restrictions to its callers.
+  See `CartisGouldToint.Chapter05.algorithm_5_1_1`.
 * **Algorithm 5.1.1, existence of runs** (reading). For $q = 3$ an admissible step need not exist
   when the test fails. The complexity theorems are statements about runs, and runs are shown to
   exist for $q \le 2$. See `CartisGouldToint.Chapter05.algorithm_5_1_1.exists_run`.
+* **Lemmas 5.1.2–5.1.4** (generalization). The residual-decrease bounds use total division.
+  The curvature estimate (5.1.18) already applies at order two. The cascading-differences
+  quotient in Lemma 5.1.3 is defined even when its denominator vanishes.
+  See `CartisGouldToint.Chapter05.lemma_5_1_2` and `CartisGouldToint.Chapter05.lemma_5_1_3`.
 * **Lemma 5.1.5** (reading). The book writes $p \in \mathbb{N}$. The statement needs $p \neq 0$. See
   `CartisGouldToint.Chapter05.lemma_5_1_5`.
 * **Theorem 5.1.7** (typo). The multiplier in (5.1.44) is $\kappa^A$ (printed $\kappa^C$). In
@@ -100,6 +111,10 @@ Lemmas 5.1.5 and 5.1.6 choose the exponents $\ell$ and $i$ so that the exponents
   holds for every order $q \le 3$ and all $\ell$, $i$ with $\iota_j \ge 0$ for $j \le q$, and it
   covers the first- and second-order variants that the book mentions after its proof. See
   `CartisGouldToint.Chapter05.theorem_5_1_7_of_iota_nonneg`.
+* **Equation (5.1.64)** (reading). The full-rank estimate assumes a uniform lower bound on
+  the adjoint of the Jacobian. For a tall matrix, a positive smallest singular value in
+  the usual list of $\min(m,n)$ singular values does not imply this adjoint bound. See
+  `CartisGouldToint.Chapter05.psiOne_ge_of_jacobian`.
 -/
 
 open Set Optimization
@@ -122,16 +137,25 @@ $$\Phi_\ell(x) = \frac{\|r(x)\|^\ell}{\ell}.$$
 For $\ell = 1$ it is the norm $\|r(x)\|$ of (5.1.1), and for $\ell = 2$ it is the least-squares
 objective $\frac12\|r(x)\|^2$ of (5.1.2).
 
-The definition is `Optimization.residualPow r ℓ`, with a real exponent. For $\ell = 0$, Lean's
-division gives $\Phi_0 = 0$. -/
+**Generalization.** The source introduces (5.1.3) for positive integral $\ell$ and uses
+real exponents in Lemma 5.1.1. The definition `Optimization.residualPow r ℓ` accepts any
+real exponent. For $\ell = 0$, Lean's division gives $\Phi_0 = 0$. -/
 noncomputable abbrev Phi (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) : ℝⁿ → ℝ :=
   residualPow r ℓ
 
-/-- For every $x$, $\Phi_\ell(x) = \|r(x)\|^\ell/\ell$ with the real power. -/
+/-- For every $x$, $\Phi_\ell(x) = \|r(x)\|^\ell/\ell$ with the real power, including the
+totalized cases in `CartisGouldToint.Chapter05.Phi`.
+
+**Generalization.** Pointwise equation extends to arbitrary real exponents by total division.
+-/
 theorem Phi_apply (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x : ℝⁿ) : Phi r ℓ x = ‖r x‖ ^ ℓ / ℓ :=
   rfl
 
-/-- For a natural exponent $\ell$, $\Phi_\ell(x) = \|r(x)\|^\ell/\ell$ with the natural power. -/
+/-- For a natural exponent $\ell$, $\Phi_\ell(x) = \|r(x)\|^\ell/\ell$ with the natural power.
+The Lean identity also holds at $\ell = 0$ by total division.
+
+**Reading.** Natural-power form includes the zero exponent by total division.
+-/
 theorem Phi_natCast (r : ℝⁿ → ℝᵐ) (ℓ : ℕ) (x : ℝⁿ) : Phi r ℓ x = ‖r x‖ ^ ℓ / ℓ :=
   residualPow_natCast r ℓ x
 
@@ -139,36 +163,49 @@ theorem Phi_natCast (r : ℝⁿ → ℝᵐ) (ℓ : ℕ) (x : ℝⁿ) : Phi r ℓ
 continuously differentiable, and let $\ell$ be either an even natural number or a real number
 with $\ell > 2p$. Then $\Phi_\ell$ is $p$ times continuously differentiable.
 
-An even natural number is written $\ell = 2k$ with $k \in \mathbb{N}$. The backbone proves the
-second case for $\ell \ge 2p$. -/
+An even natural number is written $\ell = 2k$ with $k \in \mathbb{N}$. This includes the
+totalized constant $\Phi_0$. The backbone proves the second case for $\ell \ge 2p$. -/
 theorem lemma_5_1_1 {r : ℝⁿ → ℝᵐ} {p : ℕ} {ℓ : ℝ} (hr : ContDiff ℝ p r)
     (hℓ : (∃ k : ℕ, ℓ = 2 * k) ∨ 2 * (p : ℝ) < ℓ) : ContDiff ℝ p (Phi r ℓ) :=
   contDiff_residualPow hr (hℓ.imp_right le_of_lt)
 
-/-- **Equations (5.1.6)–(5.1.7)** of [cartis2022evaluation], first-order part. The **scaled
-first-order measure** is
+/-- **Section 5.1.1** of [cartis2022evaluation], after (5.1.5). The **scaled first-order
+measure** is
 $$\psi_{\ell,1}(x) = \frac{\|\nabla\Phi_\ell(x)\|}{\|r(x)\|^{\ell-1}}.$$
 
-Where $r(x) = 0$ and $\ell \neq 1$, the denominator is $0$ and Lean's division gives
-$\psi_{\ell,1}(x) = 0$. For $\ell = 1$ the denominator is $0^0 = 1$. The test (5.1.9) excludes
-the case $r(x) = 0$ before termination. -/
+**Generalization.** The source uses this quotient for $r(x) \neq 0$. Where $r(x) = 0$
+and $\ell \neq 1$, Lean's division gives $\psi_{\ell,1}(x) = 0$. For $\ell = 1$ the
+denominator is $0^0 = 1$. At zero residual the algorithm stops by (5.1.9). -/
 noncomputable def psiOne (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x : ℝⁿ) : ℝ :=
   ‖gradient (Phi r ℓ) x‖ / ‖r x‖ ^ (ℓ - 1)
 
 /-- The scaled second-order measure $\psi_{\ell,2}(x) =
 \lambda_{\min}[\nabla^2\Phi_\ell(x)]/\|r(x)\|^{\ell-1}$ of Section 5.1.1 of
-[cartis2022evaluation]. -/
+[cartis2022evaluation]. Like `CartisGouldToint.Chapter05.psiOne`, it is total at a zero
+residual, where the source uses the global-minimizer test.
+
+**Reading.** Normalizes the least Hessian eigenvalue as in the source and uses total division at a
+zero residual.
+-/
 noncomputable def psiTwo (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x : ℝⁿ) : ℝ :=
   Chapter01.hessianMinEig (Phi r ℓ) x / ‖r x‖ ^ (ℓ - 1)
 
 /-- The scaled curvature along $d$, $\psi_{\ell,2}(x, d) =
 |\nabla^2\Phi_\ell(x)[d]^2|/\|r(x)\|^{\ell-1}$, of (5.1.7) of [cartis2022evaluation].
+The quotient is total at a zero residual as in `CartisGouldToint.Chapter05.psiOne`.
+
+**Reading.** Normalizes absolute directional curvature as in the source and uses total division at a
+zero residual.
 -/
 noncomputable def psiTwoDir (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x d : ℝⁿ) : ℝ :=
   |iteratedFDeriv ℝ 2 (Phi r ℓ) x (fun _ => d)| / ‖r x‖ ^ (ℓ - 1)
 
 /-- The scaled third-order measure along $d$, $\psi_{\ell,3}(x, d) =
 |\nabla^3\Phi_\ell(x)[d]^3|/\|r(x)\|^{\ell-1}$, of (5.1.6) of [cartis2022evaluation].
+The quotient is total at a zero residual as in `CartisGouldToint.Chapter05.psiOne`.
+
+**Reading.** Normalizes the absolute repeated third derivative as in the source and uses total
+division at a zero residual.
 -/
 noncomputable def psiThree (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x d : ℝⁿ) : ℝ :=
   |iteratedFDeriv ℝ 3 (Phi r ℓ) x (fun _ => d)| / ‖r x‖ ^ (ℓ - 1)
@@ -177,6 +214,9 @@ noncomputable def psiThree (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (x d : ℝⁿ) : 
 at $x$ is
 $$\mathcal{Z}_\epsilon = \{d \in \mathbb{R}^n : \|d\| = 1, \ \psi_{\ell,2}(x, d) \le
   \epsilon_2\}.$$
+
+**Generalization.** The Lean set may be empty. The source requires it to be nonempty
+when using it to define an approximate third-order minimizer.
 -/
 def zSet (r : ℝⁿ → ℝᵐ) (ℓ ε₂ : ℝ) (x : ℝⁿ) : Set ℝⁿ :=
   {d | ‖d‖ = 1 ∧ psiTwoDir r ℓ x d ≤ ε₂}
@@ -194,12 +234,22 @@ private theorem scale_pos (hx : r x ≠ 0) : 0 < ‖r x‖ ^ (ℓ - 1) :=
   Real.rpow_pos_of_pos (norm_pos_iff.2 hx) _
 
 /-- The measure $\psi_{\ell,1}(x)$ is the operator norm of the derivative $D\Phi_\ell(x)$ divided by
-$\|r(x)\|^{\ell-1}$. -/
+$\|r(x)\|^{\ell-1}$. At a zero residual this uses total division as in
+`CartisGouldToint.Chapter05.psiOne`.
+
+**Reading.** The derivative operator norm equals the gradient norm; normalization is total at a zero
+residual.
+-/
 theorem psiOne_eq : psiOne r ℓ x = ‖fderiv ℝ (Phi r ℓ) x‖ / ‖r x‖ ^ (ℓ - 1) := by
   rw [psiOne, norm_gradient_eq]
 
 /-- The measure $\psi_{\ell,2}(x)$ is the least curvature `minCurvature` of the second derivative of
-$\Phi_\ell$ at $x$, divided by $\|r(x)\|^{\ell-1}$. -/
+$\Phi_\ell$ at $x$, divided by $\|r(x)\|^{\ell-1}$. At a zero residual this uses total
+division as in `CartisGouldToint.Chapter05.psiTwo`.
+
+**Reading.** Uses the minimum Rayleigh value to express the least Hessian eigenvalue; normalization
+is total at zero residual.
+-/
 theorem psiTwo_eq :
     psiTwo r ℓ x = minCurvature (iteratedFDeriv ℝ 2 (Phi r ℓ) x) / ‖r x‖ ^ (ℓ - 1) :=
   rfl
@@ -380,8 +430,13 @@ model (5.1.8), the order $q$, the constants $P$, and the Step 1 test
 $\rho_k$ is the ratio (4.1.15) for $\Phi_\ell$.
 
 The ARp run is `Optimization.IsARpRun`, and $\rho_k$ is
-`Optimization.taylorRatio (Phi r ℓ) p x s k`. The test drops the book's requirement
-$\mathcal{M}_k \neq \emptyset$; see `CartisGouldToint.Chapter05.ARpLEStop`. -/
+`Optimization.taylorRatio (Phi r ℓ) p x s k`.
+
+**Generalization.** The source starts with $\ell \ge 2$ under the order, positive $\sigma_{\min}$
+and tolerance restrictions of ARp and §5.1.1. The run predicate leaves those hypotheses to its
+callers.
+The third-order branch accepts an empty $\mathcal{M}_k$ as explained in
+`CartisGouldToint.Chapter05.ARpLEStop`. -/
 def algorithm_5_1_1 (r : ℝⁿ → ℝᵐ) (ℓ : ℝ) (p : ℕ) (P : ARpParams) (q : ℕ)
     (ε₀ ε₁ ε₂ ε₃ : ℝ) (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) : Prop :=
   IsARpRun (Phi r ℓ) p P q
@@ -392,7 +447,11 @@ namespace algorithm_5_1_1
 variable {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} {p q : ℕ} {P : ARpParams} {ε₀ ε₁ ε₂ ε₃ : ℝ} {x s : ℕ → ℝⁿ}
   {σ : ℕ → ℝ}
 
-/-- A run of ARpLE is a run of the ARp method for $\Phi_\ell$ with the termination test of ARpLE. -/
+/-- A run of ARpLE is a run of the ARp method for $\Phi_\ell$ with the termination test of ARpLE.
+
+**Generalization.** Unfolds the generalized run predicate and passes its modified stopping test to
+ARp.
+-/
 theorem isARpRun (h : algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ) :
     IsARpRun (Phi r ℓ) p P q
       (fun k => ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (mdir r ℓ p P ε₂ x s σ k) (x k)) x s σ :=
@@ -529,7 +588,11 @@ private theorem div_mul_le_self {ω t : ℝ} (hω : 0 ≤ ω) (ht : 0 ≤ t) : �
   · rw [← ht, mul_zero]; exact hω
 
 /-- The decreases of Lemma 4.1.4 for $f = \Phi_\ell$, multiplied by $\ell$ and stated with the
-unscaled measures at $x_{k+1}$, together with the step-length bound (4.1.37) with (4.1.23). -/
+unscaled measures at $x_{k+1}$, together with the step-length bound (4.1.37) with (4.1.23).
+
+**Reading.** Specializes the ARp bounds before scaling and isolates an extra directional decrease
+inequality for the later proof.
+-/
 private theorem decrease_unscaled {ℓ : ℝ} (hℓ : 0 < ℓ)
     (h : algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ) (hΦ : AssumptionPhiDpL r ℓ p L)
     (hp : 1 ≤ p) (hqp : q ≤ p) {k : ℕ}
@@ -608,7 +671,13 @@ If $q \ge 2$, then for every $d \in \mathcal{M}_{k+1}$
 $$\psi_{\ell,2}(x_{k+1}, d) \, \|r(x_{k+1})\|^{\ell-1} \le \frac{\|s_k\|^{p-1}}{\kappa_{s2}}.
   \qquad (5.1.18)$$
 
-The proof applies Lemma 4.1.4 to $f = \Phi_\ell$ and undoes the scaling of the measures. -/
+The proof applies Lemma 4.1.4 to $f = \Phi_\ell$ and undoes the scaling of the measures.
+
+**Generalization.** The curvature estimate (5.1.18) holds already for $q \ge 2$ here.
+The source states it for the directions in the preceding third-order estimate.
+The estimates use totalized measures at $r(x_{k+1}) = 0$. The displayed constants
+$\kappa_j$ may vanish because the run predicate permits $\sigma_{\min} = 0$.
+The source requires $\sigma_{\min} > 0$ for ARp. -/
 theorem lemma_5_1_2 {ℓ : ℝ} (hℓ : 0 < ℓ) (h : algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ)
     (hΦ : AssumptionPhiDpL r ℓ p L) (hp : 1 ≤ p) (hqp : q ≤ p) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (mdir r ℓ p P ε₂ x s σ j) (x j))
@@ -662,7 +731,8 @@ numbers, and let $i \ge 0$ and $\ell \ge 1$ be integers. Then
 $$a^{1/2^i} - b^{1/2^i} \ge \frac{a^\ell - b^\ell}{2^i \, \ell \, a^{(2^i - 1)/2^i + \ell -
   1}}.$$
 
-When $a = 0$, both sides vanish, by Lean's convention $x/0 = 0$. -/
+**Reading.** At $a=b=0$, both sides vanish in Lean. If the denominator is zero,
+the right side uses Lean's convention $x/0 = 0$. -/
 theorem lemma_5_1_3 {a b : ℝ} (hb : 0 ≤ b) (hba : b ≤ a) (i : ℕ) {ℓ : ℕ} (hℓ : 1 ≤ ℓ) :
     (a ^ ℓ - b ^ ℓ) / (2 ^ i * ℓ * a ^ (((2 : ℝ) ^ i - 1) / 2 ^ i + ℓ - 1)) ≤
       a ^ (1 / 2 ^ i : ℝ) - b ^ (1 / 2 ^ i : ℝ) :=
@@ -673,11 +743,16 @@ theorem lemma_5_1_3 {a b : ℝ} (hb : 0 ≤ b) (hba : b ≤ a) (i : ℕ) {ℓ : 
 /-- **Equations (5.1.21), (5.1.23) and (5.1.25)** of [cartis2022evaluation]. For
 $j, p, i \in \mathbb{N}$ and $\ell \in \mathbb{R}$, the exponent is
 $$\iota_j(p, \ell, i) = \frac{2^i - 1}{2^i} - \frac{j(\ell - 1)}{p - j + 1}.$$
-The book uses $j = 1$ in (5.1.21), $j = 2$ in (5.1.23) and $j = 3$ in (5.1.25). -/
+**Generalization.** The book uses $j = 1$ in (5.1.21), $j = 2$ in (5.1.23) and $j = 3$
+in (5.1.25), for $p\ge j$. The Lean definition accepts arbitrary indices and real
+$\ell$ and uses total division. -/
 noncomputable def iota (j p : ℕ) (ℓ : ℝ) (i : ℕ) : ℝ :=
   ((2 : ℝ) ^ i - 1) / 2 ^ i - j * (ℓ - 1) / ((p : ℝ) - j + 1)
 
-/-- The exponent satisfies $\iota_j(p, \ell, i) = (2^i - 1)/2^i - j(\ell - 1)/(p - j + 1)$. -/
+/-- The exponent satisfies $\iota_j(p, \ell, i) = (2^i - 1)/2^i - j(\ell - 1)/(p - j + 1)$.
+
+**Generalization.** Unfolds the generalized any-index exponent formula.
+-/
 theorem iota_def (j p : ℕ) (ℓ : ℝ) (i : ℕ) :
     iota j p ℓ i = ((2 : ℝ) ^ i - 1) / 2 ^ i - j * (ℓ - 1) / ((p : ℝ) - j + 1) :=
   rfl
@@ -739,6 +814,8 @@ $\iota = (2^i - 1)/2^i - (\ell - 1)(\nu - 1)$, $\beta > 0$ and $\kappa, \psi \ge
 $0 \le b \le a$ with $b > \beta a$. If $a^\ell - b^\ell \ge \kappa \ell \psi^\nu
 b^{(\ell-1)\nu}$, which is the form of Lemma 5.1.2, then
 $$a^{1/2^i} - b^{1/2^i} \ge \frac{\kappa\beta^{(\ell-1)\nu}}{2^i} \, \frac{\psi^\nu}{a^\iota}.$$
+
+**Reading.** Isolates the decrease calculation for an abstract measure, exponent and scalar bound.
 -/
 theorem rpow_inv_two_pow_sub_ge_of_decrease {ℓ i : ℕ} (hℓ : 1 ≤ ℓ) {ν ι β κ ψ a b : ℝ}
     (hν : 0 < ν) (hι : ι = ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) * (ν - 1)) (hβ : 0 < β)
@@ -774,6 +851,9 @@ theorem rpow_inv_two_pow_sub_ge_of_decrease {ℓ i : ℕ} (hℓ : 1 ≤ ℓ) {ν
 and $b \le \beta a$ with $\beta \in [0, 1]$, then
 $$a^{1/2^i} - b^{1/2^i} \ge (1 - \beta^{1/2^i}) \, a^{1/2^i} \ge (1 - \beta^{1/2^i}) \,
   b^{1/2^i}.$$
+
+**Reading.** Isolates the comparison case for generic nonnegative values and admits the endpoints
+for beta.
 -/
 theorem rpow_inv_two_pow_sub_ge_of_le_mul {i : ℕ} {β a b : ℝ} (hβ : 0 ≤ β) (hβ1 : β ≤ 1)
     (hb : 0 ≤ b) (hba : b ≤ a) (h : b ≤ β * a) :
@@ -801,7 +881,13 @@ hypotheses of `CartisGouldToint.Chapter05.lemma_5_1_2`, if $q \ge 2$, then for e
 $d \in \mathcal{M}_{k+1}$
 $$\|r(x_k)\|^\ell - \|r(x_{k+1})\|^\ell \ge \kappa_2 \ell \, \psi_{\ell,2}(x_{k+1},
   d)^{(p+1)/(p-1)} \, \|r(x_{k+1})\|^{(\ell-1)(p+1)/(p-1)}.$$
-It follows from (4.1.37) and (5.1.18). -/
+It follows from (4.1.37) and (5.1.18). Equation (5.1.57) uses the tolerance
+$\epsilon_2$ and the comparison with $\beta$. This inequality isolates the
+directional curvature bound before those two substitutions.
+
+**Reading.** Extracts a directional-curvature bound before the source substitutions of the tolerance
+and beta.
+-/
 theorem decrease_psiTwoDir {ℓ : ℝ} (hℓ : 0 < ℓ) (h : algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ)
     (hΦ : AssumptionPhiDpL r ℓ p L) (hp : 1 ≤ p) (hqp : q ≤ p) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ (mdir r ℓ p P ε₂ x s σ j) (x j))
@@ -838,6 +924,12 @@ $$a^{1/2^i} - b^{1/2^i} \ge \kappa_{r3} \frac{\psi_{\ell,3}(x_{k+1},
 If $b \le \beta a$ (5.1.26), then with $\kappa_{r0} = 1 - \beta^{1/2^i}$ (5.1.28)
 $$a^{1/2^i} - b^{1/2^i} \ge \kappa_{r0} \, a^{1/2^i} \ge \kappa_{r0} \, b^{1/2^i}. \qquad
   (5.1.27)$$
+
+The hypotheses admit the generalized ARpLE parameter range and totalized measures
+of `CartisGouldToint.Chapter05.lemma_5_1_2`.
+
+**Generalization.** The displayed potential decreases agree for source inputs while generalized run
+parameters and totalized quotients are allowed.
 -/
 theorem lemma_5_1_4 {ℓ : ℕ} (hℓ : 1 ≤ ℓ) (h : algorithm_5_1_1 r ℓ p P q ε₀ ε₁ ε₂ ε₃ x s σ)
     (hΦ : AssumptionPhiDpL r ℓ p L) (hp : 1 ≤ p) (hqp : q ≤ p) {k : ℕ}
@@ -1056,17 +1148,29 @@ theorem lemma_5_1_5 {p : ℕ} (hp : p ≠ 0) : ∃! oi : ℕ × ℕ, Odd oi.1 �
   obtain ⟨h1, h2⟩ := eq_of_odd_mul_two_pow_eq ho' ho (by rw [← h, mul_comm])
   rw [h1, h2]
 
-/-- The exponent satisfies $\iota_1 = (2^i - 1)/2^i - (\ell - 1)/p$. -/
+/-- The exponent satisfies $\iota_1 = (2^i - 1)/2^i - (\ell - 1)/p$.
+The formula is total as in `CartisGouldToint.Chapter05.iota`.
+
+**Reading.** The printed first-order exponent formula is total even at a zero denominator.
+-/
 theorem iota_one_eq' {p : ℕ} (ℓ : ℝ) (i : ℕ) :
     iota 1 p ℓ i = ((2 : ℝ) ^ i - 1) / 2 ^ i - (ℓ - 1) / p := by
   rw [iota]; push_cast; rw [sub_add_cancel, one_mul]
 
-/-- The exponent satisfies $\iota_2 = (2^i - 1)/2^i - 2(\ell - 1)/(p - 1)$. -/
+/-- The exponent satisfies $\iota_2 = (2^i - 1)/2^i - 2(\ell - 1)/(p - 1)$.
+The formula is total as in `CartisGouldToint.Chapter05.iota`.
+
+**Reading.** The printed second-order exponent formula is total even at a zero denominator.
+-/
 theorem iota_two_eq' {p : ℕ} (ℓ : ℝ) (i : ℕ) :
     iota 2 p ℓ i = ((2 : ℝ) ^ i - 1) / 2 ^ i - 2 * (ℓ - 1) / ((p : ℝ) - 1) := by
   rw [iota]; push_cast; rw [show (p : ℝ) - 2 + 1 = p - 1 by ring]
 
-/-- The exponent satisfies $\iota_3 = (2^i - 1)/2^i - 3(\ell - 1)/(p - 2)$. -/
+/-- The exponent satisfies $\iota_3 = (2^i - 1)/2^i - 3(\ell - 1)/(p - 2)$.
+The formula is total as in `CartisGouldToint.Chapter05.iota`.
+
+**Reading.** The printed third-order exponent formula is total even at a zero denominator.
+-/
 theorem iota_three_eq' {p : ℕ} (ℓ : ℝ) (i : ℕ) :
     iota 3 p ℓ i = ((2 : ℝ) ^ i - 1) / 2 ^ i - 3 * (ℓ - 1) / ((p : ℝ) - 2) := by
   rw [iota]; push_cast; rw [show (p : ℝ) - 3 + 1 = p - 2 by ring]
@@ -1326,7 +1430,8 @@ $\mathcal{M}_{j+1}$ there is that of (4.1.14), where the book prints (4.1.9).
 the branches of `CartisGouldToint.Chapter05.ARpLEStop`.
 
 **Generalization.** The book's hypothesis $(\epsilon_0, \dots, \epsilon_3) \in (0, 1]^4$ is used
-only as $\epsilon_j > 0$. The general form is
+only as $\epsilon_j > 0$. Here the positivity of $\sigma_{\min}$ from Algorithm 4.1.1
+is a separate hypothesis. The general form is
 `CartisGouldToint.Chapter05.theorem_5_1_7_of_iota_nonneg`, from which this theorem follows with
 Lemma 5.1.6. -/
 theorem theorem_5_1_7 {ℓ i : ℕ} (hℓ : 1 < ℓ)
@@ -1470,7 +1575,12 @@ variable {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} {q : ℕ} {ε₀ ε₁ ε₂ ε₃ 
 $\psi_{\ell,3}(x, d) \le \epsilon_3$ and $\psi_{\ell,2}(x, d) \le \epsilon_2$ for all $d \in M$.
 Then $M \subseteq \mathcal{Z}_\epsilon$. At termination by the third-order branch of the test,
 this gives $\mathcal{M}_\epsilon \subseteq \mathcal{Z}_\epsilon$, as in the remark after
-Algorithm 5.1.1 and Theorem 5.1.7 of [cartis2022evaluation]. -/
+Algorithm 5.1.1 and Theorem 5.1.7 of [cartis2022evaluation]. The hypothesis also
+permits $M=\emptyset$, as in `CartisGouldToint.Chapter05.ARpLEStop`.
+
+**Reading.** The source subset guarantee is expressed for a generic unit-direction set, including
+the empty set.
+-/
 theorem subset_zSet_of_forall {M : Set ℝⁿ} {x : ℝⁿ} (hM : ∀ d ∈ M, ‖d‖ = 1)
     (h : ∀ d ∈ M, psiThree r ℓ x d ≤ ε₃ ∧ psiTwoDir r ℓ x d ≤ ε₂) : M ⊆ zSet r ℓ ε₂ x :=
   fun d hd => ⟨hM d hd, (h d hd).2⟩
@@ -1490,7 +1600,11 @@ $x_0 \in \mathbb{R}^n$ there is a run of ARpLE that starts at $x_0$.
 When the test fails at $x_k$, then $r(x_k) \neq 0$, and either
 $\psi_{\ell,1}(x_k) > \epsilon_1 \ge 0$ or, for $q = 2$,
 $\psi_{\ell,2}(x_k) < -\epsilon_2 \le 0$. So $x_k$ is not a second-order critical point of
-$\Phi_\ell$, and a global minimizer of the model is an admissible step. -/
+$\Phi_\ell$, and a global minimizer of the model is an admissible step.
+
+**Reading.** Proves unconditional existence only through order two, for nonnegative tolerances under
+the stated differentiability assumptions.
+-/
 theorem algorithm_5_1_1.exists_run (P : ARpParams) {p : ℕ} (hΦ : ContDiff ℝ p (Phi r ℓ))
     (hp : 1 ≤ p) (hq1 : 1 ≤ q) (hq : q ≤ 2) (hqp : q ≤ p) (hε₀ : 0 ≤ ε₀) (hε₁ : 0 ≤ ε₁)
     (hε₂ : 0 ≤ ε₂) (x₀ : ℝⁿ) :
@@ -1541,7 +1655,11 @@ fails for some direction set $M$. Then for every $x_0 \in \mathbb{R}^n$ there is
 that starts at $x_0$.
 
 For $q = 3$ the hypothesis can fail (see `Numlib.Optimization.ModelBased.ARpRun`). For $q \le 2$
-it holds, and `CartisGouldToint.Chapter05.algorithm_5_1_1.exists_run` applies. -/
+it holds, and `CartisGouldToint.Chapter05.algorithm_5_1_1.exists_run` applies.
+
+**Reading.** Constructs a run for general orders given an explicit admissible-step selection
+hypothesis.
+-/
 theorem algorithm_5_1_1.exists_run_of_step (P : ARpParams) {p : ℕ}
     (hstep : ∀ (M : Set ℝⁿ) (y : ℝⁿ) (σ : ℝ), P.σmin ≤ σ → 0 < σ →
       ¬ ARpLEStop r ℓ q ε₀ ε₁ ε₂ ε₃ M y → ∃ s, IsARpStep (Phi r ℓ) p P q y σ s)
@@ -1578,7 +1696,11 @@ theorem psiOne_eq_of_jacobian {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} (hℓ : 1 < �
 $r(x) \neq 0$, and let $\ell > 1$. Suppose that the adjoint of the Jacobian satisfies the
 full-rank condition
 $$\|J(x)^T v\| \ge s_0\|v\| \quad \text{for all } v \in \mathbb{R}^m,$$
-that is, its smallest singular value is at least $s_0$. Then $\psi_{\ell,1}(x) \ge s_0$.
+then $\psi_{\ell,1}(x) \ge s_0$.
+
+**Reading.** Equation (5.1.64) must be read as a lower bound on the adjoint. If
+$J:\mathbb{R}^n\to\mathbb{R}^m$ has $m>n$, its usual list of $\min(m,n)$ singular
+values can be positive although $J^T$ has a kernel.
 
 The adjoint $J(x)^T$ is `ContinuousLinearMap.adjoint (fderiv ℝ r x)`. -/
 theorem psiOne_ge_of_jacobian {r : ℝⁿ → ℝᵐ} {ℓ : ℝ} (hℓ : 1 < ℓ) {x : ℝⁿ}

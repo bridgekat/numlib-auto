@@ -59,6 +59,15 @@ book's normed form of contractivity and Mathlib's `LipschitzOnWith` and `Contrac
 * `AtkinsonHan.Chapter05.StronglyMonotoneWith` is the backbone predicate `IsStronglyMonotoneWith ℝ`
   by definition. For a bounded linear operator it is the coercivity `LinearMap.IsCoerciveWith`
   (`AtkinsonHan.Chapter05.stronglyMonotoneWith_iff_isCoerciveWith`).
+
+## Deviations from the source
+
+* **Equations (5.1.5)–(5.1.6)** (scope). The separate estimates assume a fixed point in
+  $K$ and use the self-map and contraction properties. Closedness is used in Theorem 5.1.3
+  to obtain the fixed point.
+* **Proof of Theorem 5.1.4** (typo). The contraction estimate after (5.1.11) interchanges
+  the monotonicity and Lipschitz constants. The coefficient is
+  $1 - 2c_1\theta + c_2^2\theta^2$ with the conventions in (5.1.8)–(5.1.9).
 -/
 
 open Filter Metric Set Topology
@@ -267,6 +276,8 @@ Banach space, let $K \subseteq V$, and let $T : V \to V$ map $K$ into $K$ and be
 $K$ with constant $\alpha$. Let $u \in K$ be a fixed point of $T$, let $u_0 \in K$, and let
 $u_n = T^n u_0$. Then for every $n \ge 0$,
 $$\|u_{n+1} - u\| \le \frac{\alpha}{1 - \alpha} \, \|u_n - u_{n+1}\|.$$
+
+**Reading.** Drops closedness by supplying the fixed point and uses shifted index.
 -/
 theorem equation_5_1_5 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :
@@ -279,6 +290,8 @@ Banach space, let $K \subseteq V$, and let $T : V \to V$ map $K$ into $K$ and be
 $K$ with constant $\alpha$. Let $u \in K$ be a fixed point of $T$, let $u_0 \in K$, and let
 $u_n = T^n u_0$. Then for every $n \ge 0$,
 $$\|u_{n+1} - u\| \le \alpha \, \|u_n - u\|.$$
+
+**Reading.** Drops closedness by supplying the fixed point and uses shifted index.
 -/
 theorem equation_5_1_6 (hT : MapsTo T K K) (hα : ContractiveOn T K α) {u : V} (hu : u ∈ K)
     (hfix : T u = u) {u₀ : V} (hu₀ : u₀ ∈ K) (n : ℕ) :

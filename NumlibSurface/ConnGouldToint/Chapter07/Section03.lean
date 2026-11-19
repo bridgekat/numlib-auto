@@ -35,7 +35,7 @@ multiplier alternatives for a nonzero gradient.
 
 ## Main definitions
 
-* Equation (7.3.1), `ConnGouldToint.Chapter07.shiftedStep`: the step
+* Section 7.3.1 after (7.3.1), `ConnGouldToint.Chapter07.shiftedStep`: the step
   $s(\lambda) = -(H + \lambda I)^{-1} g$.
 * Equation (7.3.6), `ConnGouldToint.Chapter07.phi`: the secular function $\phi(\lambda) = 1 /
   \|s(\lambda)\| - 1 / \Delta$.
@@ -130,6 +130,20 @@ multiplier alternatives for a nonzero gradient.
 
 ## Deviations from the source
 
+* **Shifted step, secular function and Algorithm 7.3.1** (reading). The inverse step in the
+  display after (7.3.1) uses total inversion. The secular residual and Newton map use total
+  division, and the factorization update accepts an injective operator factor and its adjoint.
+  The convergence statements impose the relevant nondegeneracy separately. See
+  `ConnGouldToint.Chapter07.shiftedStep` and `ConnGouldToint.Chapter07.algorithm_7_3_1_step`.
+* **Algorithm 7.3.4 and Theorem 7.3.4** (reading). The safeguarded recurrence is open and takes
+  explicit initial bracket and lower-bound estimates, with a separate zero-gradient branch. The
+  interior minimizer test also covers a compatible feasible solve with a semidefinite Hessian.
+  See `ConnGouldToint.Chapter07.moreSorensenSafeguardedIterates` and
+  `ConnGouldToint.Chapter07.moreSorensen_interior_solution_of_unshifted_solve`.
+* **Lemmas 7.3.5 and 7.3.6** (generalization). The model-value estimates compare against any
+  feasible step and require a nonnegative multiplier. The stopping-test declarations combine
+  those estimates with radius factors. See `ConnGouldToint.Chapter07.lemma_7_3_5` and
+  `ConnGouldToint.Chapter07.lemma_7_3_6`.
 * **Lemma 7.3.2** (correction). The secular values of the Newton iterates are nonpositive, not
   negative, because Newton's method can reach the root exactly. See
   `ConnGouldToint.Chapter07.lemma_7_3_2`.
@@ -154,11 +168,14 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
   [FiniteDimensional ℝ E] {g : E} {H : E →L[ℝ] E}
   {hH : (H : E →ₗ[ℝ] E).IsSymmetric}
 
-/-- **Equation (7.3.1)** of [conn2000trust]. For $g \in E$ and $\lambda \in \mathbb{R}$, the
-**shifted step** is $s(\lambda) = -(H + \lambda I)^{-1} g$.
+/-- **Section 7.3.1 after (7.3.1)** of [conn2000trust]. For $g \in E$ and $\lambda \in \mathbb{R}$,
+the **shifted step** is $s(\lambda) = -(H + \lambda I)^{-1} g$.
 
 It is `Subproblem.step g H λ`, defined with `Ring.inverse`, so it is $0$ when $H + \lambda I$ is
-singular. -/
+singular.
+
+**Reading.** The inverse formula is coordinate free and extends to singular shifts by total
+inversion. -/
 noncomputable abbrev shiftedStep (g : E) (H : E →L[ℝ] E) : ℝ → E := step g H
 
 /-- **Equation (7.3.6)** of [conn2000trust]. The **secular function** of Moré and Sorensen is
@@ -166,7 +183,10 @@ $$\phi(\lambda) = \|s(\lambda)\|^{-1} - \Delta^{-1}.$$
 
 It is `Subproblem.trSecular g H Δ (-1/2)`, the transformed secular function
 $\pi(\lambda)^\beta - \Delta^{2\beta}$ with $\pi(\lambda) = \|s(\lambda)\|^2$ and
-$\beta = -1/2$. -/
+$\beta = -1/2$.
+
+**Reading.** The reciprocal residual is defined by total operations even for degenerate radii
+and shifts. -/
 noncomputable abbrev phi (g : E) (H : E →L[ℝ] E) (Δ : ℝ) : ℝ → ℝ :=
   trSecular g H Δ (-1 / 2)
 
@@ -178,7 +198,10 @@ private theorem sq_rpow_neg_half (x : ℝ) (hx : 0 ≤ x) (k : ℕ) :
 omit [FiniteDimensional ℝ E] in
 /-- **Equation (7.3.6)** of [conn2000trust]. For all $\Delta, \lambda \in \mathbb{R}$,
 $$\phi(\lambda) = \frac{1}{\|s(\lambda)\|} - \frac{1}{\Delta},$$
-with the convention $1/0 = 0$. -/
+with the convention $1/0 = 0$.
+
+**Reading.** Unfolds the residual for all real radii and shifts.
+-/
 theorem phi_eq_inv_norm_sub_inv (g : E) (H : E →L[ℝ] E) (Δ lam : ℝ) :
     phi g H Δ lam = 1 / ‖shiftedStep g H lam‖ - 1 / Δ := by
   have h : secular g H lam ^ (-1 / 2 : ℝ) = ‖step g H lam‖⁻¹ := by
@@ -254,7 +277,9 @@ $\phi(\lambda) = 0$ is
 $$\lambda \mapsto \lambda - \frac{\phi(\lambda)}{\phi'(\lambda)}.$$
 
 It is `Newton.scalarStep` for $\phi$ and its derivative; the quotient is $0$ where
-$\phi'(\lambda) = 0$. -/
+$\phi'(\lambda) = 0$.
+
+**Reading.** The Newton map uses total division when the derivative is zero. -/
 noncomputable abbrev moreSorensenNewtonStep (g : E) (H : E →L[ℝ] E) (Δ : ℝ) : ℝ → ℝ :=
   Newton.scalarStep (phi g H Δ) (deriv (phi g H Δ))
 
@@ -263,7 +288,10 @@ Let $L$ be an injective operator with $L L^* = H + \lambda I$ (a nonsingular Cho
 and let $L w = s(\lambda)$. Then the Newton step (7.3.11) is
 $$\lambda + \frac{\|s(\lambda)\| - \Delta}{\Delta} \cdot \frac{\|s(\lambda)\|^2}{\|w\|^2}.$$
 
-So one triangular solve gives the Newton step without the full derivative of $s(\lambda)$. -/
+So one triangular solve gives the Newton step without the full derivative of $s(\lambda)$.
+
+**Generalization.** An injective operator factor and its adjoint suffice in place of a
+triangular matrix. -/
 theorem algorithm_7_3_1_step (hg : g ≠ 0) {Δ lam : ℝ} (hΔ : 0 < Δ)
     (hlam : -leftmost hH < lam) (L : E →L[ℝ] E) (hL : Function.Injective L)
     (hfac : L.comp L.adjoint = H + lam • 1) {w : E}
@@ -332,7 +360,10 @@ theorem existsUnique_secular_root_of_phi_neg (hg : g ≠ 0) {Δ x : ℝ} (hΔ : 
 
 /-- **Lemma 7.3.2** of [conn2000trust], exact arrival. Let $g \neq 0$ be an eigenvector of $H$,
 $\Delta > 0$, and $r > -\lambda_1$ with $\|s(r)\|^2 = \Delta^2$. Then $\phi$ is affine on
-$(-\lambda_1, \infty)$, and for every $x > -\lambda_1$ the Newton step from $x$ is exactly $r$. -/
+$(-\lambda_1, \infty)$, and for every $x > -\lambda_1$ the Newton step from $x$ is exactly $r$.
+
+**Reading.** Provides exact arrival example when the nonzero gradient is an eigenvector.
+-/
 theorem moreSorensenNewtonStep_eq_root_of_eigenvector (hg : g ≠ 0)
     (heig : ∃ c : ℝ, H g = c • g) {Δ r x : ℝ} (hΔ : 0 < Δ)
     (hr : -leftmost hH < r) (hroot : secular g H r = Δ ^ 2)
@@ -421,7 +452,10 @@ $\lambda$. Then $\lambda^+ < \lambda$, $\lambda^+ \le \lambda_*$, and either
 $$\lambda^+ > -\lambda_1 \text{ and } \phi(\lambda^+) \le 0, \qquad \text{or} \qquad \lambda^+
   \le -\lambda_1.$$
 
-The optimal multiplier may be the pole $-\lambda_1$, or $0$ at an interior solution. -/
+The optimal multiplier may be the pole $-\lambda_1$, or $0$ at an interior solution.
+
+**Reading.** The comparator is a certified optimizer multiplier, including when it is the
+spectral pole. -/
 theorem lemma_7_3_3 (hg : g ≠ 0) {Δ r x : ℝ} (hΔ : 0 < Δ)
     {sM : E} (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
     (hx : -leftmost hH < x) (hpos : 0 < phi g H Δ x) :
@@ -477,6 +511,11 @@ private theorem quadModel_eq_of_shifted_comparison (hH' : (H : E →ₗ[ℝ] E).
   rw [quadModel_eq_of_shifted hs, inner_eq_of_shifted hs] at hd
   linarith
 
+/-- **(7.3.24)** of [conn2000trust].
+
+**Generalization.** Lower bound holds for every feasible comparator, with nonnegative multiplier
+explicit.
+-/
 private theorem quadModel_lower_bound_of_shifted {μ Δ : ℝ} {s u : E}
     (hμ : 0 ≤ μ) (hlam : -leftmost hH < μ)
     (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hu : ‖u‖ ≤ Δ) :
@@ -491,7 +530,9 @@ private theorem quadModel_lower_bound_of_shifted {μ Δ : ℝ} {s u : E}
 model minimizer $s_M$ with coefficients $\kappa_{\mathrm{opt}}$ and $\kappa_{\mathrm{tr}}$ if
 $$q(s) \le \kappa_{\mathrm{opt}} \, q(s_M) \quad \text{and} \quad \|s\| \le \kappa_{\mathrm{tr}}
   \Delta.$$
--/
+
+**Reading.** The inequalities define a predicate for arbitrary real coefficients. Their admissible
+bounds are separate. -/
 def IsAcceptableModelStep (g : E) (H : E →L[ℝ] E) (Δ κopt κtr : ℝ) (s sM : E) : Prop :=
   quadModel g H s ≤ κopt * quadModel g H sM ∧ ‖s‖ ≤ κtr * Δ
 
@@ -517,7 +558,9 @@ theorem IsAcceptableModelStep.weaken {Δ κopt κtr κopt' κtr' : ℝ} {s sM : 
 $0 < \kappa < 1$. If $\bigl|\|s(\mu)\| - \Delta\bigr| \le \kappa \Delta$, then for every $u$
 with $\|u\| \le \Delta$,
 $$q(s(\mu)) \le (1 - \kappa)^2 q(u).$$
--/
+
+**Generalization.** The comparator may be any feasible step, with the nonnegative multiplier
+made explicit. -/
 theorem lemma_7_3_5 {μ Δ κ : ℝ} (hμ : 0 ≤ μ) (hlam : -leftmost hH < μ)
     (hΔ : 0 < Δ) (hκ : κ ∈ Ioo 0 1) {u : E} (hu : ‖u‖ ≤ Δ)
     (hnear : |‖shiftedStep g H μ‖ - Δ| ≤ κ * Δ) :
@@ -552,7 +595,9 @@ $$\langle v, (H + \mu I) v \rangle \le \kappa \bigl(\langle s(\mu), (H + \mu I) 
   \mu \Delta^2\bigr).$$
 Then for every $u$ with $\|u\| \le \Delta$,
 $$q(s(\mu) + v) \le (1 - \kappa) q(u).$$
--/
+
+**Generalization.** The comparator may be any feasible step, with the nonnegative multiplier
+made explicit. -/
 theorem lemma_7_3_6 {μ Δ κ : ℝ} (hμ : 0 ≤ μ) (hlam : -leftmost hH < μ)
     (hκ : κ ∈ Ioo 0 1) {u v : E} (hu : ‖u‖ ≤ Δ)
     (hboundary : ‖shiftedStep g H μ + v‖ = Δ)
@@ -584,7 +629,10 @@ $\Delta > 0$, $0 < \kappa < 1$, and let $s_M$ be a global minimizer of $q$ on th
 $\Delta$. If $\bigl|\|s(\mu)\| - \Delta\bigr| \le \kappa \Delta$,
 $\kappa_{\mathrm{opt}} \le (1 - \kappa)^2$ and $1 + \kappa \le \kappa_{\mathrm{tr}}$, then
 $s(\mu)$ is an acceptable approximation (7.3.19) to $s_M$ with coefficients
-$\kappa_{\mathrm{opt}}$ and $\kappa_{\mathrm{tr}}$. -/
+$\kappa_{\mathrm{opt}}$ and $\kappa_{\mathrm{tr}}$.
+
+**Correction.** Corrected model-coefficient inequality and explicit radius-factor bound.
+-/
 theorem acceptable_of_easy_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 ≤ μ)
     (hlam : -leftmost hH < μ) (hΔ : 0 < Δ) (hκ : κ ∈ Ioo 0 1)
     {sM : E} (hsM : ‖sM‖ ≤ Δ)
@@ -603,7 +651,10 @@ $$\langle v, (H + \mu I) v \rangle \le \kappa \bigl(\langle s(\mu), (H + \mu I) 
   \mu \Delta^2\bigr).$$
 If $\kappa_{\mathrm{opt}} \le 1 - \kappa$ and $1 \le \kappa_{\mathrm{tr}}$, then $s(\mu) + v$ is
 an acceptable approximation (7.3.19) to $s_M$ with coefficients $\kappa_{\mathrm{opt}}$ and
-$\kappa_{\mathrm{tr}}$. -/
+$\kappa_{\mathrm{tr}}$.
+
+**Correction.** Corrected model-coefficient inequality for the boundary correction.
+-/
 theorem acceptable_of_hard_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 ≤ μ)
     (hlam : -leftmost hH < μ) (hκ : κ ∈ Ioo 0 1) {sM v : E} (hsM : ‖sM‖ ≤ Δ)
     (hmin : IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) sM)
@@ -621,7 +672,9 @@ theorem acceptable_of_hard_stopping_rule {μ Δ κ κopt κtr : ℝ} (hμ : 0 �
 $[\lambda^L, \lambda^U]$, the **safeguarded trial multiplier** is
 $$\max\bigl\{\sqrt{\lambda^L \lambda^U}, \; \lambda^L + \theta (\lambda^U - \lambda^L)\bigr\}.$$
 
-It is `Subproblem.bracketEstimate 1 θ`. -/
+It is `Subproblem.bracketEstimate 1 θ`.
+
+**Reading.** The real square root extends the formula to arbitrary bracket endpoints. -/
 noncomputable abbrev moreSorensenTrial (θ lo hi : ℝ) : ℝ := bracketEstimate 1 θ lo hi
 
 /-- **Algorithm 7.3.4** of [conn2000trust], multiplier update with a factorization test. Let $P$ be
@@ -643,7 +696,10 @@ $\lambda^N$ is the Newton step (7.3.11) from $\lambda$:
   $\lambda^{L\prime\prime} = \max\{\lambda^{L\prime}, \lambda^N\}$.
 
 The estimate $b$ is supplied by the successful or partial factorization. A zero gradient skips
-the Newton formula, because both solves give $0$. -/
+the Newton formula, because both solves give $0$.
+
+**Reading.** This isolates the update with a supplied factorization predicate and lower
+estimate, before termination. -/
 noncomputable def moreSorensenSafeguardedStepBy (g : E) (H : E →L[ℝ] E)
     (positive : ℝ → Prop) [DecidablePred positive] (Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
   if positive x then
@@ -665,7 +721,10 @@ noncomputable def moreSorensenSafeguardedStepBy (g : E) (H : E →L[ℝ] E)
 
 /-- **Algorithm 7.3.4** of [conn2000trust], multiplier update with the pole. This is the update
 `ConnGouldToint.Chapter07.moreSorensenSafeguardedStepBy` with the factorization test
-$\lambda > \lambda_{\mathrm{pole}}$, which is exact for $\lambda_{\mathrm{pole}} = -\lambda_1$. -/
+$\lambda > \lambda_{\mathrm{pole}}$, which is exact for $\lambda_{\mathrm{pole}} = -\lambda_1$.
+
+**Reading.** Spectral-pole update takes lower estimate as an input.
+-/
 noncomputable def moreSorensenSafeguardedStep (g : E) (H : E →L[ℝ] E)
     (pole Δ θ lo hi x b : ℝ) : ℝ × ℝ × ℝ :=
   moreSorensenSafeguardedStepBy g H (pole < ·) Δ θ lo hi x b
@@ -675,7 +734,9 @@ from a triple $(\lambda^L_0, \lambda^U_0, \lambda_0)$, each state is obtained fr
 one by `ConnGouldToint.Chapter07.moreSorensenSafeguardedStep`, with the lower estimate $b_k$
 given as a function of the index $k$ and the current state.
 
-The state is the lower end, the upper end and the trial multiplier. -/
+The state is the lower end, the upper end and the trial multiplier.
+
+**Reading.** The recurrence starts at a supplied bracket, with stopping tests omitted. -/
 noncomputable def moreSorensenSafeguardedIterates (g : E) (H : E →L[ℝ] E)
     (pole Δ θ : ℝ) (estimate : ℕ → (ℝ × ℝ × ℝ) → ℝ)
     (initial : ℝ × ℝ × ℝ) : ℕ → ℝ × ℝ × ℝ
@@ -695,7 +756,11 @@ $$\lambda' = \lambda^N, \quad \lambda^N > -\lambda_1, \quad \phi(\lambda^N) \le 
   \lambda^N \le r,$$
 so the update enters the Newton interval, or $\lambda^N \le -\lambda_1$,
 $\lambda^N \le \lambda^{L\prime}$ and $\lambda' \in [\lambda^{L\prime}, \lambda^{U\prime}]$, so
-the failed candidate raises the lower end. -/
+the failed candidate raises the lower end.
+
+**Reading.** Preserves bracket under explicit multiplier and lower-bound hypotheses, without
+stopping.
+-/
 theorem moreSorensenSafeguardedStep_of_positive_phi (hg : g ≠ 0)
     {Δ θ lo hi x b r : ℝ} (hΔ : 0 < Δ)
     {sM : E} (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
@@ -723,7 +788,10 @@ omit [FiniteDimensional ℝ E] in
 /-- **Algorithm 7.3.4** of [conn2000trust], Steps 2, 3b and 5, zero gradient. If $g = 0$ and
 $\lambda > \lambda_{\mathrm{pole}}$, then the update returns
 $$\bigl(\max\{\lambda^L, b\}, \; \lambda, \; T(\max\{\lambda^L, b\}, \lambda)\bigr),$$
-so it lowers the upper end to $\lambda$ and takes a bracket trial instead of a Newton step. -/
+so it lowers the upper end to $\lambda$ and takes a bracket trial instead of a Newton step.
+
+**Reading.** Explicit zero-gradient branch bypasses the undefined numerical Newton quotient.
+-/
 theorem moreSorensenSafeguardedStep_zero_gradient {pole Δ θ lo hi x b : ℝ}
     (hx : pole < x) :
     moreSorensenSafeguardedStep (0 : E) H pole Δ θ lo hi x b =
@@ -784,7 +852,11 @@ $b_k \le \lambda_{\mathrm{pole}}$. If the triples $(\lambda^L_k, \lambda^U_k, \l
 the update with $g = 0$, then they form a bracketing run with pole and target
 $\lambda_{\mathrm{pole}}$, and $\lambda_k \to \lambda_{\mathrm{pole}}$.
 
-Certified pivot or curvature estimates may raise the lower end without changing the limit. -/
+Certified pivot or curvature estimates may raise the lower end without changing the limit.
+
+**Reading.** Separate zero-gradient multiplier convergence with valid bracket and abstract lower
+estimate.
+-/
 theorem moreSorensen_zero_gradient_run {pole Δ θ : ℝ} {lo hi x b : ℕ → ℝ}
     (hθ : θ ∈ Ioo 0 1) (hlo : 0 ≤ lo 0) (hlp : lo 0 ≤ pole) (hph : pole ≤ hi 0)
     (hx0 : x 0 ∈ Icc (lo 0) (hi 0)) (hb : ∀ k, b k ≤ pole)
@@ -814,7 +886,10 @@ $\lambda_k$ lies in $(-\lambda_1, r]$, and that the triples follow the update wi
 $-\lambda_1$. Then the triples form a bracketing run with pole $-\lambda_1$ and target $r$, and
 for every $k$ with $\lambda_k > r$ the Newton step from $\lambda_k$ is at most $-\lambda_1$.
 
-So each trial with a successful factorization also rejects its Newton candidate. -/
+So each trial with a successful factorization also rejects its Newton candidate.
+
+**Reading.** Pre-entry bracketing invariant under explicit secular sign and lower estimates.
+-/
 theorem moreSorensen_nonzero_bracket_run (hg : g ≠ 0)
     {Δ r θ : ℝ} {sM : E} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
     (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
@@ -870,7 +945,10 @@ theorem multiplier_bounds_of_boundary {μ Δ : ℝ} {s : E} (hΔ : 0 < Δ)
 /-- **Theorem 7.3.4** of [conn2000trust], finite entry into the Newton interval. Let
 $\theta \in (0, 1)$ and $r > \lambda_s$, where $\lambda_s = \max\{0, -\lambda_1\}$. If
 $(\lambda^L_k, \lambda^U_k, \lambda_k)$ is a bracketing run with pole $\lambda_s$ and target
-$r$, and $\lambda^L_0 < r$, then $\lambda_k \in (\lambda_s, r]$ for some $k$. -/
+$r$, and $\lambda^L_0 < r$, then $\lambda_k \in (\lambda_s, r]$ for some $k$.
+
+**Reading.** Finite entry is stated for an abstract bracket run and explicit initial lower bound.
+-/
 theorem moreSorensen_bracketing_enters_newton {r θ : ℝ} {lo hi lam : ℕ → ℝ}
     (hrun : IsBracketRun (shiftThreshold hH) r θ θ lo hi lam)
     (hr : shiftThreshold hH < r) (hlo : lo 0 < r) (hθ : θ ∈ Ioo 0 1) :
@@ -881,7 +959,10 @@ theorem moreSorensen_bracketing_enters_newton {r θ : ℝ} {lo hi lam : ℕ → 
 /-- **Theorem 7.3.4** of [conn2000trust], multiplier convergence when safeguarding continues. Let
 $\theta \in (0, 1)$ and $r \ge \lambda_s$. If $(\lambda^L_k, \lambda^U_k, \lambda_k)$ is a
 bracketing run with pole $\lambda_s$ and target $r$, and no $\lambda_k$ lies in
-$(\lambda_s, r]$, then $\lambda_k \to r$. -/
+$(\lambda_s, r]$, then $\lambda_k \to r$.
+
+**Reading.** Multiplier convergence if an abstract run never enters the Newton interval.
+-/
 theorem moreSorensen_bracketing_tendsto {r θ : ℝ} {lo hi lam : ℕ → ℝ}
     (hrun : IsBracketRun (shiftThreshold hH) r θ θ lo hi lam)
     (hr : shiftThreshold hH ≤ r) (hθ : θ ∈ Ioo 0 1)
@@ -893,7 +974,11 @@ theorem moreSorensen_bracketing_tendsto {r θ : ℝ} {lo hi lam : ℕ → ℝ}
 and let $r \ge 0$ with $r > -\lambda_1$ and $\|s(r)\|^2 = \Delta^2$. Let
 $\lambda_0 > -\lambda_1$ with $\phi(\lambda_0) < 0$, and let $\lambda_k$ be the Newton iterates
 from $\lambda_0$. Then $\lambda_k \to r$ with order $2$, $s(\lambda_k) \to s(r)$, and $s(r)$ is
-a global minimizer of $q$ on the ball of radius $\Delta$, with $\|s(r)\| \le \Delta$. -/
+a global minimizer of $q$ on the ball of radius $\Delta$, with $\|s(r)\| \le \Delta$.
+
+**Reading.** Isolates quadratic Newton tail under explicit root assumptions and confirms its step
+minimizes the model.
+-/
 theorem moreSorensen_easy_newton_convergence (hg : g ≠ 0) {Δ r x₀ : ℝ}
     (hΔ : 0 < Δ) (hr : -leftmost hH < r) (hr₀ : 0 ≤ r)
     (hroot : secular g H r = Δ ^ 2) (hx₀ : -leftmost hH < x₀) (hbelow : phi g H Δ x₀ < 0) :
@@ -917,7 +1002,10 @@ theorem moreSorensen_easy_newton_convergence (hg : g ≠ 0) {Δ r x₀ : ℝ}
 $\theta \in (0, 1)$, and $r > \lambda_s$ with $\|s(r)\|^2 = \Delta^2$. Let
 $(\lambda^L_k, \lambda^U_k, \lambda_k)$ be a bracketing run with pole $\lambda_s$ and target
 $r$, with $\lambda^L_0 < r$. Then there is $k$ such that either $\lambda_k = r$, or the Newton
-iterates from $\lambda_k$ converge to $r$ with order $2$ and their steps converge to $s(r)$. -/
+iterates from $\lambda_k$ converge to $r$ with order $2$ and their steps converge to $s(r)$.
+
+**Reading.** Separate abstract bracket proof followed by finite root hit or quadratic Newton tail.
+-/
 theorem moreSorensen_easy_bracket_then_newton (hg : g ≠ 0) {Δ r θ : ℝ}
     {lo hi lam : ℕ → ℝ} (hΔ : 0 < Δ) (hr : shiftThreshold hH < r)
     (hroot : secular g H r = Δ ^ 2) (hlo : lo 0 < r) (hθ : θ ∈ Ioo 0 1)
@@ -949,7 +1037,11 @@ $-\lambda_1$. Then:
 * there is $k$ with $\lambda_k \in (-\lambda_1, r]$, from which on the trial multipliers are the
   Newton iterates from $\lambda_k$.
 
-So the recurrence enters the Newton interval in finite time, and its tail may reach $r$ exactly. -/
+So the recurrence enters the Newton interval in finite time, and its tail may reach $r$ exactly.
+
+**Reading.** Actual update convergence from explicit input bracket and estimates, with a Newton
+tail.
+-/
 theorem moreSorensen_easy_safeguarded_run (hg : g ≠ 0)
     {Δ r θ : ℝ} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
     (hr : -leftmost hH < r) (hroot : secular g H r = Δ ^ 2)
@@ -1033,7 +1125,10 @@ theorem moreSorensen_easy_safeguarded_run (hg : g ≠ 0)
 
 /-- **Theorem 7.3.4** of [conn2000trust], finite interior convergence. If $H$ is positive definite
 ($-\lambda_1 < 0$) and $\|s(0)\| \le \Delta$, then $s(0)$ lies in the ball of radius $\Delta$
-and is a global minimizer of $q$ there. -/
+and is a global minimizer of $q$ there.
+
+**Reading.** Proves feasibility and optimality for a norm at most the radius, including equality.
+-/
 theorem moreSorensen_interior_solution {Δ : ℝ} (hHpos : -leftmost hH < 0)
     (hs : ‖shiftedStep g H 0‖ ≤ Δ) :
     shiftedStep g H 0 ∈ Metric.closedBall 0 Δ ∧
@@ -1047,7 +1142,10 @@ Hessian. If $H$ is positive semidefinite ($-\lambda_1 \le 0$), $H s = -g$ and
 $\|s\| \le \Delta$, then $s$ lies in the ball of radius $\Delta$ and is a global minimizer of
 $q$ there.
 
-The Hessian may be singular. -/
+The Hessian may be singular.
+
+**Generalization.** A compatible feasible unshifted solve suffices even for a positive-
+semidefinite Hessian. -/
 theorem moreSorensen_interior_solution_of_unshifted_solve {Δ : ℝ} {s : E}
     (hHpos : -leftmost hH ≤ 0) (hsolve : H s = -g) (hs : ‖s‖ ≤ Δ) :
     s ∈ Metric.closedBall 0 Δ ∧ IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) s := by
@@ -1060,7 +1158,10 @@ $\Delta \ge 0$. Then there is $s$ with $\|s\| \le \Delta$ for which
 $\lambda_s = \max\{0, -\lambda_1\}$ is an optimal multiplier.
 
 If $H$ is positive semidefinite, $s = 0$. If $\lambda_1 < 0$, $s$ is $\Delta$ times a unit
-eigenvector for $\lambda_1$, a boundary solution with multiplier equal to the pole. -/
+eigenvector for $\lambda_1$, a boundary solution with multiplier equal to the pole.
+
+**Reading.** Separate zero-gradient multiplier existence, allowing zero radius.
+-/
 theorem moreSorensen_zero_gradient_solution {Δ : ℝ} (hΔ : 0 ≤ Δ) :
     ∃ s : E, ‖s‖ ≤ Δ ∧ IsTrustRegionMultiplier (0 : E) H Δ s (shiftThreshold hH) := by
   by_cases hp : -leftmost hH ≤ 0
@@ -1089,7 +1190,11 @@ eigenvector of $H$ for $\lambda_1$, and let $\lambda_k \to -\lambda_1$. Then
 $$\langle u, (H + \lambda_k I) u \rangle \to 0.$$
 
 So an eigensolver gives directions with the vanishing shifted curvature of (7.3.16), as an
-alternative to that property of the LINPACK heuristic. -/
+alternative to that property of the LINPACK heuristic.
+
+**Reading.** Computes the limit for a supplied exact unit leftmost eigenvector without using the
+LINPACK direction.
+-/
 theorem moreSorensen_exact_leftmost_curvature_tendsto {u : E} (hu : ‖u‖ = 1)
     (heig : H u = leftmost hH • u) {lam : ℕ → ℝ}
     (hlam : Tendsto lam atTop (𝓝 (-leftmost hH))) :
@@ -1107,7 +1212,11 @@ u_k, (H + \lambda_k I) u_k \rangle \to 0$. Then
 $$\langle \alpha_k u_k, (H + \lambda_k I)(\alpha_k u_k) \rangle \to 0.$$
 
 The coefficients satisfy $|\alpha_k| \le 2 \Delta$, because both the raw and the corrected steps
-lie in the ball. -/
+lie in the ball.
+
+**Correction.** Shows vanishing correction energy for arbitrary unit directions with vanishing
+curvature and boundary corrections.
+-/
 theorem moreSorensen_hard_correction_curvature_tendsto {Δ : ℝ}
     (lam α : ℕ → ℝ) (u : ℕ → E) (hlam : ∀ k, -leftmost hH < lam k)
     (hraw : ∀ k, ‖shiftedStep g H (lam k)‖ ≤ Δ) (hunit : ∀ k, ‖u k‖ = 1)
@@ -1147,7 +1256,11 @@ $s_k = s(\lambda_k) + v_k$. Then:
 * if $s_M$ is the only global minimizer, then $s_k \to s_M$.
 
 In the hard case, a single vector limit needs more control of the correction directions or a
-unique minimizer. -/
+unique minimizer.
+
+**Reading.** Model-value convergence and optimality of every limit point; vector convergence
+requires uniqueness here.
+-/
 theorem moreSorensen_hard_model_convergence {Δ : ℝ} {sM : E} (hsM : ‖sM‖ ≤ Δ)
     (hmin : IsMinOn (quadModel g H) (Metric.closedBall 0 Δ) sM)
     (lam : ℕ → ℝ) (v : ℕ → E) (hlam₀ : ∀ k, 0 ≤ lam k)
@@ -1207,7 +1320,10 @@ theorem moreSorensen_hard_model_convergence {Δ : ℝ} {sM : E} (hsM : ‖sM‖ 
 /-- **Theorem 7.3.4** of [conn2000trust], positive definite subsequence. Let $\theta \in (0, 1)$. If
 $(\lambda^L_k, \lambda^U_k, \lambda_k)$ is a bracketing run with pole and target $-\lambda_1$
 and $\lambda^U_0 > -\lambda_1$, then $\lambda_k > -\lambda_1$ for infinitely many $k$: there is
-a sequence $k_j \to \infty$ with $\lambda_{k_j} > -\lambda_1$. -/
+a sequence $k_j \to \infty$ with $\lambda_{k_j} > -\lambda_1$.
+
+**Reading.** Explicit existence of above-pole subsequence in a certified bracket run.
+-/
 theorem moreSorensen_hard_bracketing_subsequence {θ : ℝ} {lo hi lam : ℕ → ℝ}
     (hθ : θ ∈ Ioo 0 1) (hrun : IsBracketRun (-leftmost hH) (-leftmost hH) θ θ lo hi lam)
     (hhi : -leftmost hH < hi 0) :
@@ -1222,7 +1338,10 @@ and let the triples follow the update with the pole $-\lambda_1$. Then they form
 run with pole and target $-\lambda_1$, and $\lambda_k \to -\lambda_1$.
 
 Every trial above the pole has a positive secular value and a Newton candidate that fails the
-factorization test, so the recurrence stays in the bracketing phase. -/
+factorization test, so the recurrence stays in the bracketing phase.
+
+**Reading.** Open hard recurrence with certified initial bracket and lower estimates.
+-/
 theorem moreSorensen_hard_safeguarded_run (hg : g ≠ 0)
     {Δ θ : ℝ} {sM : E} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
     (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM (-leftmost hH))
@@ -1263,7 +1382,10 @@ triples follow the update with the pole $-\lambda_1$. Then one of the following 
 
 The first case includes a singular positive semidefinite $H$, and the solution there is
 `Subproblem.particular hH g 0`. The vector conclusions in the hard case are in
-`ConnGouldToint.Chapter07.moreSorensen_hard_safeguarded_corrections`. -/
+`ConnGouldToint.Chapter07.moreSorensen_hard_safeguarded_corrections`.
+
+**Reading.** The conclusion separates the zero-multiplier minimizer, positive easy Newton
+phase, and hard pole convergence. -/
 theorem theorem_7_3_4_nonzero_gradient (hg : g ≠ 0)
     {Δ r θ : ℝ} {sM : E} {lo hi x b : ℕ → ℝ} (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
     (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
@@ -1314,7 +1436,10 @@ $s_j = s(\lambda_{k_j}) + \alpha_{k_j} u_{k_j}$ satisfy:
 * if $s_M$ is the only global minimizer, then $s_j \to s_M$.
 
 The indices with $\lambda_k > -\lambda_1$ are the successful factorizations. Both roots of the
-boundary equation are allowed for $\alpha_k$. -/
+boundary equation are allowed for $\alpha_k$.
+
+**Reading.** Gives model-value and cluster-point convergence for varying supplied directions.
+-/
 theorem moreSorensen_hard_safeguarded_corrections (hg : g ≠ 0)
     {Δ θ : ℝ} {sM : E} {lo hi x b α : ℕ → ℝ} {u : ℕ → E}
     (hΔ : 0 < Δ) (hθ : θ ∈ Ioo 0 1)
@@ -1360,7 +1485,10 @@ $$\alpha = \sqrt{\Delta^2 - \|s\|^2 + \langle s, u \rangle^2} - \langle s, u \ra
 of $\|s + \alpha u\| = \Delta$.
 
 The real square root is $0$ for a negative argument. Fixing this root makes the correction
-depend continuously on $s$ and $u$. -/
+depend continuously on $s$ and $u$.
+
+**Reading.** The formula fixes the plus-square-root branch. The model comparison of the two
+roots is a separate declaration. -/
 noncomputable def moreSorensenBoundaryCoefficient (Δ : ℝ) (s u : E) : ℝ :=
   √(Δ ^ 2 - ‖s‖ ^ 2 + ⟪s, u⟫ ^ 2) - ⟪s, u⟫
 
@@ -1391,7 +1519,11 @@ $$\|s + \alpha u\| = \|s - \alpha u\| = \Delta, \qquad s + \alpha u \neq s - \al
   q(s + \alpha u) = q(s - \alpha u).$$
 
 So the rule to choose the root with the smaller model value needs a tie convention to select a
-single step. -/
+single step.
+
+**Reading.** Distinct boundary steps can have equal model value, so deterministic selection needs a
+tie rule.
+-/
 theorem moreSorensen_boundary_correction_tie {Δ μ : ℝ} {s u : E}
     (hH' : (H : E →ₗ[ℝ] E).IsSymmetric)
     (hs : (H + μ • (1 : E →L[ℝ] E)) s = -g) (hraw : ‖s‖ < Δ)

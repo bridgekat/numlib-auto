@@ -28,6 +28,14 @@ projection by a normalized integral of the resolvent.
   the selected eigenvalues and zero at the remaining eigenvalues.
 * The parametrization is a finite concatenation of continuously differentiable paths
   (`Path.IsPiecewiseC1`).
+
+## Deviations from the source
+
+* **Equations (4.9.2) and (4.9.7)** (generalization). The spectral sum uses only eigenvalues,
+  and spectral idempotents are zero elsewhere.
+* **Theorem 4.9.1** (reading). The contour is piecewise $C^1$, and the eigenvalues are
+  selected by winding indices. The same formula permits self-intersecting contours with
+  the specified indices. See `LiesenStrakos.theorem_4_9_1`.
 -/
 
 open scoped Real Matrix.Norms.Operator
@@ -38,7 +46,9 @@ namespace LiesenStrakos
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
 
 /-- The projection in (4.9.2) of [liesen2013krylov] onto the sum of the selected generalized
-eigenspaces along the sum of the remaining generalized eigenspaces. -/
+eigenspaces along the sum of the remaining generalized eigenspaces.
+
+**Generalization.** Selected scalars outside the spectrum contribute nothing. -/
 noncomputable def rieszProjection (A : Matrix ι ι ℂ) (s : Finset ℂ) : Matrix ι ι ℂ := by
   classical
   exact ∑ w ∈ (minpoly ℂ A).roots.toFinset.filter (· ∈ s), spectralIdempotent A w
@@ -46,7 +56,12 @@ noncomputable def rieszProjection (A : Matrix ι ι ℂ) (s : Finset ℂ) : Matr
 /-- **Theorem 4.9.1** of [liesen2013krylov].
 If a piecewise $C^1$ loop avoids the spectrum and winds once around each selected eigenvalue and
 zero times around the others, the normalized contour integral of $(zI-A)^{-1}$ is the
-Riesz projection for that selection. -/
+Riesz projection for that selection.
+
+**Reading.** The source uses a simple, positively oriented closed curve and leaves the
+regularity for the integral implicit. The statement assumes piecewise $C^1$ regularity and
+uses the winding index at each eigenvalue to encode enclosure. These winding hypotheses
+also allow contours with self-intersections. -/
 theorem theorem_4_9_1 (A : Matrix ι ι ℂ) (s : Finset ℂ) {z₀ : ℂ} (γ : Path z₀ z₀)
     (hγ : γ.IsPiecewiseC1)
     (havoid : ∀ t ∈ unitInterval, γ.extend t ∉ (minpoly ℂ A).roots)
@@ -62,7 +77,10 @@ theorem theorem_4_9_1 (A : Matrix ι ι ℂ) (s : Finset ℂ) {z₀ : ℂ} (γ :
   split_ifs <;> simp
 
 /-- **Equation (4.9.7)** of [liesen2013krylov].
-Distinct spectral idempotents multiply to zero and their sum is the identity. -/
+Distinct spectral idempotents multiply to zero and their sum is the identity.
+
+**Generalization.** The pairwise product statement includes values outside the spectrum, where
+the spectral idempotent is zero. -/
 theorem spectral_idempotents_4_9_7 (A : Matrix ι ι ℂ) :
     (∀ u v : ℂ, u ≠ v → spectralIdempotent A u * spectralIdempotent A v = 0) ∧
       (∑ u ∈ (minpoly ℂ A).roots.toFinset, spectralIdempotent A u) = 1 := by

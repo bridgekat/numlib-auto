@@ -118,6 +118,13 @@ tuples.
 
 ## Deviations from the source
 
+* **Sections 12.4.2 and 12.4.9** (generalization). Equal slice modes give a fiber, inverted
+  colon bounds give an empty mode, and the contraction identity takes arbitrary typed outer mode
+  families. See `GolubVanLoan.Chapter12.slice`, `GolubVanLoan.Chapter12.subtensor` and
+  `GolubVanLoan.Chapter12.equation_12_4_13`.
+* **Equations (12.4.18)–(12.4.19)** (reading). The successive-product expressions use square
+  factors. The coordinate and Kronecker formulas allow rectangular factors. See
+  `GolubVanLoan.Chapter12.equation_12_4_19`.
 * **Equation (12.4.17)** (correction). The source prints $\mathcal{S} \times_k (FG)$. The correct
   right side is $\mathcal{S} \times_k (GF)$. See `GolubVanLoan.Chapter12.equation_12_4_17`.
 
@@ -166,7 +173,10 @@ def fiber {n : Fin d → ℕ} (A : RTensor n) (k : Fin d) (c : ∀ i : {i // ¬i
 \mathbb{R}^{n_1 \times \cdots \times n_d}$, let $k$ and $l$ be modes, and fix an index $c_i$ of
 every mode $i \notin \{k, l\}$. The **slice** of $\mathcal{A}$ at $c$ is the order-2 subtensor
 obtained by fixing every index except the $k$-th and the $l$-th to $c$. It is `Tensor.restrict`
-for the predicate $i = k \lor i = l$. -/
+for the predicate $i = k \lor i = l$.
+
+**Generalization.** Equal selected modes give a fiber. The source's order-two slice uses two
+distinct modes. -/
 def slice {n : Fin d → ℕ} (A : RTensor n) (k l : Fin d)
     (c : ∀ i : {i // ¬(i = k ∨ i = l)}, Fin (n i)) :
     Tensor (fun i : {i // i = k ∨ i = l} => Fin (n i)) ℝ :=
@@ -175,7 +185,9 @@ def slice {n : Fin d → ℕ} (A : RTensor n) (k l : Fin d)
 /-- **Section 12.4.2** of [golub2013matrix], the colon subtensor. For $\mathcal{A} \in
 \mathbb{R}^{n_1 \times \cdots \times n_d}$ and index tuples $L$ and $R$, the **subtensor**
 $\mathcal{A}(L{:}R)$ consists of the entries $\mathcal{A}(i)$ with $L_k \le i_k \le R_k$ for
-every $k$. Mode $k$ of the subtensor has no indices if $L_k > R_k$. -/
+every $k$. Mode $k$ of the subtensor has no indices if $L_k > R_k$.
+
+**Generalization.** The endpoints may be inverted in a mode, giving an empty index type. -/
 def subtensor {n : Fin d → ℕ} (A : RTensor n) (L R : ∀ k, Fin (n k)) :
     Tensor (fun k => {x : Fin (n k) // L k ≤ x ∧ x ≤ R k}) ℝ :=
   Tensor.of fun a => A fun k => a k
@@ -578,7 +590,10 @@ In the example of the source this is $\mathcal{A}_{[1\,2] \times [3\,4\,5]} =
 The contraction is `Tensor.contract B C`. The modes of each tensor are two blocks of a
 `Sum`-indexed family, the index $(x, y)$ is `(Equiv.sumPiEquivProdPi _).symm (x, y)`, and the
 unfoldings are the typed unfoldings `Tensor.sumUnfold`, whose rows and columns are index tuples.
-The unfolding identity is the backbone's `Tensor.sumUnfold_contract`. -/
+The unfolding identity is the backbone's `Tensor.sumUnfold_contract`.
+
+**Generalization.** The typed contraction permits arbitrary outer mode families and any finite
+shared block. -/
 theorem equation_12_4_13 {ι₁ ι₂ ι₃ : Type} [Fintype ι₂] [DecidableEq ι₂] {κ₁ : ι₁ → Type}
     {κ₂ : ι₂ → Type} {κ₃ : ι₃ → Type} [∀ j, Fintype (κ₂ j)]
     (B : Tensor (Sum.elim κ₁ κ₂) ℝ) (C : Tensor (Sum.elim κ₂ κ₃) ℝ) :
@@ -891,7 +906,10 @@ of the shape-preserving `Tensor.modeProd` over the list of modes. The Kronecker 
 positional `Matrix.kroneckerFin`, and the sizes are identified by `finCongr`. The source says
 that the mode products can be taken in any order; the statement gives the two orders above, and
 `GolubVanLoan.Chapter12.equation_12_4_16` gives the commutation of mode products in distinct
-modes. -/
+modes.
+
+**Reading.** The coordinate and vector formulas allow rectangular factors. The two successive-
+product expressions use square factors to keep the type of the intermediate tensor fixed. -/
 theorem equation_12_4_19 {n m : Fin 4 → ℕ} (M : ∀ k, Matrix (Fin (m k)) (Fin (n k)) ℝ)
     (S : RTensor n) :
     (∀ i, (Tensor.multilinearProd M S : RTensor m) i = ∑ j, S j * ∏ k, M k (i k) (j k)) ∧

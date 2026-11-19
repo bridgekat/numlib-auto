@@ -26,6 +26,16 @@ The correction formula specializes `Numlib.Preconditioner.HermitianSkewSplitting
   of the shifted skew-symmetric system.
 * Equation (10.31), `BenziGolubLiesen.hss_skew_schur_zero`: the pressure equation when $K=0$.
 
+## Deviations from the source
+
+* **Equations (10.23), (10.27)–(10.31)** (generalization). The formulas take arbitrary
+  stabilization in the diagonal block, total inverses in the factored response, and nonzero
+  real shifts in the Schur elimination.
+* **Section 10.3, HSS spectral disk** (correction). A trivial common kernel with $B$
+  does not suffice for the strict disk when $H$ is singular. The theorem requires
+  $H$ positive definite and also applies over $\mathbb C$. See
+  `BenziGolubLiesen.hss_saddle_spectrum_disk`.
+
 ## Not formalized
 
 * The optimal shift bound, small-shift spectral clustering, shifted condition-number estimate,
@@ -42,7 +52,10 @@ open Matrix
 
 variable {n m : Type*} [Fintype n] [Fintype m] [DecidableEq n] [DecidableEq m]
 
-/-- The block diagonal symmetric part in (10.23) of [benzi2005numerical]. -/
+/-- The block diagonal symmetric part in (10.23) of [benzi2005numerical].
+
+**Generalization.** The block formula accepts arbitrary $C$. It is the symmetric part of the
+sign-flipped system when $C$ is symmetric. -/
 noncomputable def hssSymmetricBlock (A : Matrix n n ℝ) (C : Matrix m m ℝ) :
     Matrix (n ⊕ m) (n ⊕ m) ℝ := fromBlocks ((2 : ℝ)⁻¹ • (A + Aᵀ)) 0 0 C
 
@@ -81,7 +94,10 @@ theorem hss_saddle_step {A : Matrix n n ℝ} {B : Matrix m n ℝ} {C : Matrix m 
   exact hssStep_eq (mul_ne_zero (by norm_num) hα.ne') hH hK hw hv
 
 /-- Equations (10.27)–(10.28) of [benzi2005numerical]. Applying the unnormalized HSS
-preconditioner means solving first with $H+\alpha I$ and then with $K+\alpha I$. -/
+preconditioner means solving first with $H+\alpha I$ and then with $K+\alpha I$.
+
+**Generalization.** The identity uses total inverses, so it holds also when either shifted factor
+is singular. -/
 theorem hss_saddle_apply (H K : Matrix (n ⊕ m) (n ⊕ m) ℝ) (α : ℝ) (r : n ⊕ m → ℝ) :
     (((H + α • 1) * (K + α • 1))⁻¹ *ᵥ r) =
       (K + α • 1)⁻¹ *ᵥ ((H + α • 1)⁻¹ *ᵥ r) := by
@@ -89,7 +105,9 @@ theorem hss_saddle_apply (H K : Matrix (n ⊕ m) (n ⊕ m) ℝ) (α : ℝ) (r : 
 
 /-- Equations (10.29)–(10.30) of [benzi2005numerical]. Let $Q=I+\alpha^{-1}K$.
 Eliminating the primal unknown $x$ from the shifted skew system leaves the pressure
-equation $(BQ^{-1}B^T+\alpha^2 I)y=BQ^{-1}f+\alpha g$. -/
+equation $(BQ^{-1}B^T+\alpha^2 I)y=BQ^{-1}f+\alpha g$.
+
+**Generalization.** The elimination works for any nonzero shift with invertible $Q$. -/
 theorem hss_skew_schur (K : Matrix n n ℝ) (B : Matrix m n ℝ) {α : ℝ}
     (hα : α ≠ 0) (hQ : IsUnit (1 + α⁻¹ • K)) {x f : n → ℝ} {y g : m → ℝ}
     (hx : (α • 1 + K) *ᵥ x + Bᵀ *ᵥ y = f) (hy : -(B *ᵥ x) + α • y = g) :
@@ -114,7 +132,9 @@ theorem hss_skew_schur (K : Matrix n n ℝ) (B : Matrix m n ℝ) {α : ℝ}
 
 omit [DecidableEq n] in
 /-- Equation (10.31) of [benzi2005numerical]. With zero primal skew block, the pressure
-equation is the shifted Gram system $(BB^T+\alpha^2 I)y=Bf+\alpha g$. -/
+equation is the shifted Gram system $(BB^T+\alpha^2 I)y=Bf+\alpha g$.
+
+**Generalization.** The identity also holds for negative shifts. -/
 theorem hss_skew_schur_zero (B : Matrix m n ℝ) {α : ℝ} (hα : α ≠ 0)
     {x f : n → ℝ} {y g : m → ℝ} (hx : α • x + Bᵀ *ᵥ y = f)
     (hy : -(B *ᵥ x) + α • y = g) :
@@ -125,11 +145,20 @@ theorem hss_skew_schur_zero (B : Matrix m n ℝ) {α : ℝ} (hα : α ≠ 0)
 
 
 open scoped ComplexOrder in
-/-- Under the saddle-point hypotheses of Section 10.3 of [benzi2005numerical], the
-normalized HSS-preconditioned eigenvalues lie strictly in the disk $|z-1|<1$.
+/-- **Section 10.3** of [benzi2005numerical], the HSS spectral disk. The normalized
+HSS-preconditioned eigenvalues lie strictly in the disk $|z-1|<1$.
 The primal Hermitian part $H$ is positive definite, $C$ is positive semidefinite,
-$K$ is skew-Hermitian, and $B^H$ is injective. The complex formulation also covers
-real blocks acting on complex eigenvectors. -/
+$K$ is skew-Hermitian, $B^H$ is injective, and the shift $\alpha$ is positive.
+
+**Correction.** The common-kernel condition mentioned for singular $H$ does not ensure
+the strict disk for the printed iteration. Take $H=\operatorname{diag}(0,1)$, $K=0$,
+$B=[1,0]$, $C=0$, and $\alpha=1$. On the first primal coordinate and the multiplier
+coordinate, the symmetric part is zero and the skew part is
+$\begin{bmatrix}0&1\\-1&0\end{bmatrix}$. The normalized preconditioned eigenvalues on
+this plane are $1+i$ and $1-i$. The theorem assumes $H$ positive definite.
+
+**Generalization.** The source treats real blocks. The same strict disk result holds
+for complex blocks with Hermitian and skew-Hermitian parts. -/
 theorem hss_saddle_spectrum_disk (H K : Matrix n n ℂ) (B : Matrix m n ℂ) (C : Matrix m m ℂ)
     (hH : H.PosDef) (hC : C.PosSemidef) (hK : Kᴴ = -K) (hB : Function.Injective Bᴴ.mulVec)
     {α : ℝ} (hα : 0 < α) {ell : ℂ}
@@ -175,7 +204,9 @@ theorem hss_saddle_spectrum_disk (H K : Matrix n n ℂ) (B : Matrix m n ℂ) (C 
 
 omit [DecidableEq n] [Fintype m] in
 /-- The shifted pressure Gram matrix in (10.31) is positive definite for any
-nonzero shift, without a rank assumption on $B$. -/
+nonzero shift, without a rank assumption on $B$.
+
+**Generalization.** The matrix is positive definite for every nonzero real shift. -/
 theorem hss_skew_schur_zero_posDef [Finite m] (B : Matrix m n ℝ) {α : ℝ} (hα : α ≠ 0) :
     (B * Bᵀ + α ^ 2 • 1).PosDef := by
   let := Fintype.ofFinite m

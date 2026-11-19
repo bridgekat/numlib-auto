@@ -90,6 +90,12 @@ class $\mathcal{F}(\Delta, p)$ gives the lower bound.
 * **Theorem 4.2.6** (correction). The proof gives $\#_\varepsilon \ge \bar k$ for both classes, not
   $\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \ge 2 \bar k$, and the form (4.2.7) with
   $c_0$ needs $\varepsilon$ small. See `CartisGouldToint.Chapter04.theorem_4_2_6_i`.
+  The dimension of an embedded hard instance can be $2\bar k$ while its proven
+  iteration bound remains $\bar k$.
+* **Theorem 4.2.6, Lipschitz constants** (reading). The growth estimate is for the
+  hard chain's Lipschitz constant. The scaled problem class may use any positive
+  Lipschitz constant. See `CartisGouldToint.Chapter04.lemma_4_2_5_iv_growth` and
+  `CartisGouldToint.Chapter04.theorem_4_2_6_i`.
 * **Theorem 4.2.6, tightness of (4.2.3)** (reading). Only the order in $\varepsilon$ is tight, and
   the upper bound uses $L_{f,p} = \max(1, L)$ and an integer part. See
   `CartisGouldToint.Chapter04.theorem_4_2_6_ii`.
@@ -97,8 +103,10 @@ class $\mathcal{F}(\Delta, p)$ gives the lower bound.
   See `CartisGouldToint.Chapter04.lemma_4_2_5_i`.
 * **Lemma 4.2.5 (iv)** (reading). The absolute constant of the growth bound is $c_1 = 20$. See
   `CartisGouldToint.Chapter04.lemma_4_2_5_iv_growth`.
-* **$\mathcal{F}(\Delta, p)$** (reading). The members are $C^\infty$, as in footnote 29, and the
-  Lipschitz constant is explicit. See `CartisGouldToint.Chapter04.functionClass`.
+* **$\mathcal{F}(\Delta, p)$** (reading). The Lipschitz constant is explicit and
+  may be below $1$, whereas the book defines the smooth function class using
+  f.DpL, with its normalization $L_{f,p}\ge 1$.
+  See `CartisGouldToint.Chapter04.functionClass`.
 * **(4.2.1), zero-respecting methods** (reading). Zero respect is defined through null directions of
   the derivative tensors. See `CartisGouldToint.Chapter04.methodClassZR`.
 * **Footnote 30 and Theorem 4.2.4** (reading). They assume $L \ge 0$. See
@@ -140,7 +148,11 @@ theorem functionClass_eq (Δ L : ℝ) (p : ℕ) : functionClass Δ L p = smoothC
 
 /-- A function $f : \mathbb{R}^n \to \mathbb{R}$ is in $\mathcal{F}(\Delta, p)$ if and only if it is
 $C^\infty$, its $p$-th derivative is $L$-Lipschitz on $\mathbb{R}^n$, it is bounded below, and
-$f(0) - \inf_x f(x) \le \Delta$. -/
+$f(0) - \inf_x f(x) \le \Delta$.
+
+**Reading.** Unfolds the smoothness, boundedness and objective-gap conditions for any given
+Lipschitz constant.
+-/
 theorem mem_functionClass {Δ L : ℝ} {F : Σ n, EuclideanSpace ℝ (Fin n) → ℝ} :
     F ∈ functionClass Δ L p ↔ ContDiff ℝ ∞ F.2 ∧ IteratedFDerivLipschitzOn F.2 p L univ ∧
       BddBelow (range F.2) ∧ F.2 0 - ⨅ x, F.2 x ≤ Δ :=
@@ -682,7 +694,11 @@ theorem firstStationaryIndex_arpOracleMethod_le {p : ℕ} (hp : 1 ≤ p) (P : AR
   · rw [funEvalCount_eq, hx0] at hF; exact_mod_cast hF
 
 /-- The bound $\kappa^A \Delta \varepsilon^{-(p+1)/p} + \kappa^C$ of (4.2.3), with the constants
-$\kappa^A$ and $\kappa^C$ of Theorem 4.1.5 in the first-order case for $L_{f,p} = \max(1, L)$. -/
+$\kappa^A$ and $\kappa^C$ of Theorem 4.1.5 in the first-order case for $L_{f,p} = \max(1, L)$.
+
+**Reading.** Makes the constant and additive term explicit using the normalized Lipschitz bound max
+of one and L.
+-/
 noncomputable def arpComplexityBound (P : ARpParams) (p : ℕ) (Δ L ε : ℝ) : ℝ :=
   kappaSARp P p (max 1 L) 1 * (1 + |Real.log P.γ₁| / Real.log P.γ₂) * Δ /
     ε ^ (((p : ℝ) + 1) / p) + kappaCARp P (max 1 L)
@@ -697,7 +713,10 @@ noncomputable def arpWorstCase (P : ARpParams) (p : ℕ) (Δ L ε : ℝ) : ℕ�
 $\varepsilon > 0$ and for every $f \in \mathcal{F}(\Delta, p)$, the index of the first query of
 ARp on $f$ with $\|\nabla f\| \le \varepsilon$ is at most $\lfloor \kappa^A \Delta
 \varepsilon^{-(p+1)/p} + \kappa^C \rfloor$, uniformly in the dimension. The constants are those
-of `CartisGouldToint.Chapter04.arpComplexityBound`. -/
+of `CartisGouldToint.Chapter04.arpComplexityBound`.
+
+**Reading.** Uses a natural floor of the explicit bound with normalized Lipschitz constant.
+-/
 theorem arpWorstCase_le_arpComplexityBound {p : ℕ} (hp : 1 ≤ p) (P : ARpParams) {Δ L ε : ℝ}
     (hε : 0 < ε) : arpWorstCase P p Δ L ε ≤ ((⌊arpComplexityBound P p Δ L ε⌋₊ : ℕ) : ℕ∞) := by
   refine iSup₂_le fun F hF => ?_
@@ -734,7 +753,10 @@ theorem complexity_le_arpWorstCase (P : ARpParams) {p : ℕ} (Δ L ε : ℝ) :
 $$\#_\varepsilon(\mathcal{M}(p), \mathcal{F}(\Delta, p)) \le \lfloor \kappa^A \Delta
   \varepsilon^{-(p+1)/p} + \kappa^C \rfloor,$$
 and ARp attains this bound. The constants are those of Theorem 4.1.5 in the first-order case for
-$L_{f,p} = \max(1, L)$ (`CartisGouldToint.Chapter04.arpComplexityBound`). -/
+$L_{f,p} = \max(1, L)$ (`CartisGouldToint.Chapter04.arpComplexityBound`).
+
+**Reading.** Gives the floor of the explicit ARp bound for the method class.
+-/
 theorem complexity_le_arpComplexityBound {p : ℕ} (hp : 1 ≤ p) (P : ARpParams) {Δ L ε : ℝ}
     (hε : 0 < ε) :
     complexity (methodClassM p) (functionClass Δ L p) ε ≤

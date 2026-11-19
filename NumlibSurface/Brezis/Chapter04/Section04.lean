@@ -90,6 +90,15 @@ support of a measurable function (Propositions 4.17 and 4.18, Remarks 9 and 10),
 * **Proposition 4.18 and Remark 10** (generalization). The source assumes $f \in L^1$ and
   $g \in L^p$. The formal statements assume no integrability. See
   `Brezis.Chapter04.proposition_4_18` and `Brezis.Chapter04.remark_4_10`.
+* **Definition of $L^p_{\mathrm{loc}}(\Omega)$** (generalization). The predicate allows any set
+  $\Omega$ and any exponent in $[0, +\infty]$. The inclusion into $L^1_{\mathrm{loc}}(\Omega)$
+  also applies to any subset for $p\ge 1$. See `Brezis.Chapter04.MemLpLoc` and
+  `Brezis.Chapter04.MemLpLoc.memLpLoc_one`.
+* **Proposition 4.20** (reading). The higher-derivative convolution identities assume smoothness.
+  See `Brezis.Chapter04.proposition_4_20`.
+* **Mollifier construction** (reading). The library normalizes a sequence of Mathlib bump
+  functions. The source rescales one nonnegative smooth function of compact support. See
+  `Brezis.Chapter04.isMollifierSeq_contDiffBump`.
 
 ## Not formalized
 
@@ -227,13 +236,15 @@ theorem remark_4_10 {f g : 𝔼 → ℝ} (hf : IsCompact (essSupport (volume : M
 /-! ### The spaces $L^p_{loc}$ -/
 
 /-- **Section 4.4** of [brezis2011functional], definition of $L^p_{loc}(\Omega)$. Let
-$\Omega \subseteq \mathbb{R}^N$ and $1 \le p \le \infty$. A function $f$ belongs to
+$\Omega \subseteq \mathbb{R}^N$ and $0 \le p \le \infty$. A function $f$ belongs to
 $L^p_{loc}(\Omega)$ if $f \chi_K \in L^p(\Omega)$ for every compact set $K \subseteq \Omega$.
 
-The source takes $\Omega$ open and $f : \Omega \to \mathbb{R}$. Here $f$ is defined on
-$\mathbb{R}^N$; only its values on $\Omega$ matter. The function $f \chi_K$ is `K.indicator f`,
-and $L^p(\Omega)$ is $L^p$ of `volume.restrict Ω`. The exponent is not restricted in the
-definition. -/
+**Generalization.** The source assumes that $\Omega$ is open and $1 \le p \le \infty$.
+Compact sets and Mathlib's $L^p$ membership are available for arbitrary $\Omega$ and every
+extended nonnegative exponent, so the predicate also applies there.
+
+The function $f$ has domain $\mathbb{R}^N$, and only its values on $\Omega$ enter the
+condition. The product $f \chi_K$ is `K.indicator f`, and the measure is `volume.restrict Ω`. -/
 def MemLpLoc (f : 𝔼 → ℝ) (p : ENNReal) (Ω : Set 𝔼) : Prop :=
   ∀ K ⊆ Ω, IsCompact K → MemLp (K.indicator f) p (volume.restrict Ω)
 
@@ -251,7 +262,9 @@ theorem memLpLoc_one_iff_locallyIntegrableOn {f : 𝔼 → ℝ} {Ω : Set 𝔼} 
 /-- **Section 4.4** of [brezis2011functional]. Let $\Omega \subseteq \mathbb{R}^N$ and
 $1 \le p \le \infty$. If $f \in L^p_{loc}(\Omega)$, then $f \in L^1_{loc}(\Omega)$.
 
-On a compact set $K$ the measure is finite, so $L^p(K) \subseteq L^1(K)$. -/
+On a compact set $K$ the measure is finite, so $L^p(K) \subseteq L^1(K)$.
+
+**Generalization.** The inclusion holds for arbitrary subsets $\Omega$. -/
 theorem MemLpLoc.memLpLoc_one {f : 𝔼 → ℝ} {p : ENNReal} [Fact (1 ≤ p)] {Ω : Set 𝔼}
     (hf : MemLpLoc f p Ω) : MemLpLoc f 1 Ω := by
   intro K hKΩ hK
@@ -288,7 +301,7 @@ $f \in C_c^k(\mathbb{R}^N)$ and let $g \in L^1_{loc}(\mathbb{R}^N)$. Then:
    of the $n$-th derivative of $f$ in these directions with $g$. In particular
    $D^\alpha(f \star g) = (D^\alpha f) \star g$ for every multi-index $\alpha$.
 
-The source states the formula $D^\alpha(f \star g) = (D^\alpha f) \star g$ for $|\alpha| \le k$
+**Reading.** The source states $D^\alpha(f \star g) = (D^\alpha f) \star g$ for $|\alpha| \le k$
 and $f \in C_c^k$. Here the formula for $|\alpha| \ge 2$ is stated only for smooth $f$, because
 the backbone's `MeasureTheory.LocallyIntegrable.iteratedFDeriv_convolution_left_apply` covers
 smooth $f$ only. The derivatives are Mathlib's `fderiv` and `iteratedFDeriv`; $D^\alpha$ along
@@ -326,9 +339,9 @@ sequence of smooth bump functions centred at $0$ (Mathlib's `ContDiffBump`) whos
 is at most $1/n$ for $n \ge 1$. Then their normalizations $\varphi_n / \int \varphi_n$ form a
 sequence of mollifiers.
 
-The source writes "it is easy to generate a sequence of mollifiers" and uses
-$\rho(x) = e^{1/(|x|^2 - 1)}$ for $|x| < 1$. Mathlib builds its bump functions in inner product
-spaces from a function of this kind. -/
+**Reading.** The source rescales one nonnegative, nonzero smooth function with support in the
+closed unit ball. The library normalizes a sequence of Mathlib bump functions with the indicated
+outer radii. -/
 theorem isMollifierSeq_contDiffBump (φ : ℕ → ContDiffBump (0 : 𝔼))
     (hφ : ∀ n : ℕ, 1 ≤ n → (φ n).rOut ≤ 1 / n) :
     IsMollifierSeq fun n => (φ n).normed volume := fun n hn =>

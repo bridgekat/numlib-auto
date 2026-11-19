@@ -29,6 +29,11 @@ interpolant `Hermite.interpolate` of `Numlib.Approximation.Hermite`.
   the nodes $0, 1$ is $f(0) \hat\varphi_0^{(0)} + f'(0) \hat\varphi_0^{(1)} + f(1)
   \hat\varphi_1^{(0)} + f'(1) \hat\varphi_1^{(1)}$.
 
+## Deviations from the source
+
+* **Convention.** The reference Hermite combination uses totalized endpoint derivatives. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_64_hermite`.
+
 ## Not formalized
 
 * **The variational problem (8.60).**
@@ -80,7 +85,12 @@ $$f(0) \hat\varphi_0^{(0)} + f'(0) \hat\varphi_0^{(1)} + f(1) \hat\varphi_1^{(0)
 
 The interpolant is `Hermite.interpolate ![0, 1] ![1, 1] f`, and $f'$ is `deriv f`. This is
 (8.32) on the reference interval with $m_i = 1$, and Example 8.6 at the nodes $0$ and $1$. The
-proof uses the uniqueness `Hermite.eq_interpolate`. -/
+proof uses the uniqueness `Hermite.eq_interpolate`.
+
+**Reading.** The combination of the four reference basis functions is stated for arbitrary real
+functions using totalized endpoint derivatives. The source's clamped-beam construction uses actual
+prescribed values and derivatives.
+-/
 theorem equation_8_64_hermite (f : ℝ → ℝ) :
     Hermite.interpolate ![0, 1] ![1, 1] f
       = C (f 0) * equation_8_64_basis 0 0 + C (deriv f 0) * equation_8_64_basis 0 1

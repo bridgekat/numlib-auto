@@ -29,9 +29,9 @@ The proofs specialize the backbone module `Numlib.Analysis.PDE.Elliptic.MaximumP
   bounds (71).
 * Theorem 9.27, footnote 35, `Brezis.Chapter09.theorem_9_27_of_mem_zero`: for $u \in H_0^1(\Omega)$,
   the bounds hold almost everywhere without the continuity of $u$.
-* Corollary 9.28, (73), `Brezis.Chapter09.corollary_9_28`: $u \ge 0$ on $\Gamma$ and $f \ge 0$ in
+* Corollary 9.28, (72), `Brezis.Chapter09.corollary_9_28`: $u \ge 0$ on $\Gamma$ and $f \ge 0$ in
   $\Omega$ give $u \ge 0$ in $\Omega$.
-* Corollary 9.28, (74), `Brezis.Chapter09.corollary_9_28_bound`: $\|u\|_{L^\infty(\Omega)} \le
+* Corollary 9.28, (73), `Brezis.Chapter09.corollary_9_28_bound`: $\|u\|_{L^\infty(\Omega)} \le
   \max\{\|u\|_{L^\infty(\Gamma)}, \|f\|_{L^\infty(\Omega)}\}$.
 * Corollary 9.28, the case $f = 0$, `Brezis.Chapter09.corollary_9_28_zero_load`:
   $\|u\|_{L^\infty(\Omega)} \le \|u\|_{L^\infty(\Gamma)}$.
@@ -87,9 +87,23 @@ The proofs specialize the backbone module `Numlib.Analysis.PDE.Elliptic.MaximumP
 
 ## Deviations from the source
 
+* **Theorem 9.27 and Corollary 9.28** (reading). The statements use finite pointwise bounds
+  on the boundary and finite essential bounds on the datum in the domain. See
+  `Brezis.Chapter09.theorem_9_27` and `Brezis.Chapter09.corollary_9_28_bound`.
+* **Remark 27** (reading). The classical results state the upper inequality. The general
+  operator has an explicitly symmetric principal matrix. See
+  `Brezis.Chapter09.remark_9_27` and `Brezis.Chapter09.remark_9_27_general`.
 * **Proposition 9.29 without first-order term** (reading). The source leaves the hypothesis
   $N \ge 1$ implicit; the constancy argument of footnote 39 needs it. See
   `Brezis.Chapter09.proposition_9_29_zero_drift` and the three variants that follow it.
+* **Proposition 9.29 with first-order term** (reading). The library treats $N \ge 3$. See
+  `Brezis.Chapter09.proposition_9_29`.
+* **Proposition 9.29, (81)** (typo). The source omits $u$ between the boundary bounds. See
+  `Brezis.Chapter09.proposition_9_29_sup_inf` and
+  `Brezis.Chapter09.proposition_9_29_sup_inf_zero_drift`.
+* **Proposition 9.30** (reading). The two-sided bound requires finite essential upper and
+  lower bounds at the same time, while the source's inequalities use possibly infinite
+  extrema. See `Brezis.Chapter09.proposition_9_30`.
 
 ## Not formalized
 
@@ -129,7 +143,9 @@ if and only if $a(u, \varphi) = \int_\Omega f \varphi$ for all $\varphi \in V$, 
 backbone's form `Elliptic.laplaceForm Ω` and the right-hand side is `Elliptic.load Ω f`.
 
 For $V = H_0^1(\Omega)$ this is the weak equation (70), and for $V = H^1(\Omega)$ it is the weak
-equation of Proposition 9.30. -/
+equation of Proposition 9.30.
+
+**Generalization.** The test space can be any submodule. The source uses $H_0^1$ and $H^1$. -/
 theorem forall_laplaceForm_eq_load_iff (u : hSpace N Ω) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (V : Submodule ℝ (hSpace N Ω)) :
     (∀ φ ∈ V, (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x)
@@ -191,7 +207,10 @@ The proof is the backbone's `Elliptic.le_max_of_isWeakSolution` and
 $H_0^1(\Omega)$ by Theorem 9.17, and it covers both cases $|\Omega| < \infty$ and
 $|\Omega| = \infty$ of the proof of the source. The proof of the source says "proceed as in the
 proof of Theorem 8.18"; the one-dimensional maximum principle is Theorem 8.19
-(`Brezis.Chapter08.theorem_8_19`). -/
+(`Brezis.Chapter08.theorem_8_19`).
+
+**Reading.** The boundary inequalities are pointwise. The domain forcing bounds are
+ essential. The statement quantifies over finite bounds for each side independently. -/
 theorem theorem_9_27 {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
     (hu : ∀ φ ∈ hZeroSpace N Ω,
       (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x)
@@ -218,7 +237,10 @@ $K \le f$ almost everywhere on $\Omega$, then $K \le u$ almost everywhere on $\O
 
 The boundary value $0$ of $u$ takes the place of $\sup_\Gamma u$ and of $\inf_\Gamma u$. The
 proof is the backbone's `Elliptic.le_of_mem_zero` and `Elliptic.ge_of_mem_zero`, where the
-truncations $G(u - K')$ lie in $H_0^1(\Omega)$ by the chain rule on $W_0^{1,p}$. -/
+truncations $G(u - K')$ lie in $H_0^1(\Omega)$ by the chain rule on $W_0^{1,p}$.
+
+**Reading.** The replacement for continuity is membership in $H_0^1$. Each bound is stated
+ for a real constant compatible with the zero boundary value. -/
 theorem theorem_9_27_of_mem_zero {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
     (hu0 : u ∈ hZeroSpace N Ω)
     (hu : ∀ φ ∈ hZeroSpace N Ω,
@@ -235,7 +257,7 @@ theorem theorem_9_27_of_mem_zero {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))
 
 /-! ### Corollary 9.28 -/
 
-/-- **Corollary 9.28** of [brezis2011functional], (73). Let $\Omega \subset \mathbb{R}^N$ be open,
+/-- **Corollary 9.28** of [brezis2011functional], (72). Let $\Omega \subset \mathbb{R}^N$ be open,
 and let $f \in L^2(\Omega)$ and $u \in H^1(\Omega) \cap C(\overline\Omega)$ satisfy (70). Then
 $$[u \ge 0 \text{ on } \Gamma \text{ and } f \ge 0 \text{ in } \Omega] \Rightarrow [u \ge 0
   \text{ in } \Omega].$$
@@ -254,7 +276,7 @@ theorem corollary_9_28 {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSp
     (hf : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ f x) : ∀ x ∈ Ω, 0 ≤ ũ x :=
   Elliptic.nonneg_of_nonneg_frontier ((forall_laplaceForm_eq_load_iff u f _).1 hu) hũ hc hΓ hf
 
-/-- **Corollary 9.28** of [brezis2011functional], (74). Let $\Omega \subset \mathbb{R}^N$ be open,
+/-- **Corollary 9.28** of [brezis2011functional], (73). Let $\Omega \subset \mathbb{R}^N$ be open,
 and let $f \in L^2(\Omega)$ and $u \in H^1(\Omega) \cap C(\overline\Omega)$ satisfy (70). Then
 $$\|u\|_{L^\infty(\Omega)} \le \max\bigl\{\|u\|_{L^\infty(\Gamma)},
   \|f\|_{L^\infty(\Omega)}\bigr\}.$$
@@ -263,7 +285,10 @@ If $|\tilde u| \le K_1$ on $\Gamma$ and $|f| \le K_2$ almost everywhere on $\Ome
 $|\tilde u| \le \max\{K_1, K_2\}$ on $\Omega$.
 
 The proof is the backbone's `Elliptic.abs_le_max_of_isWeakSolution`, from the two bounds of
-Theorem 9.27. -/
+Theorem 9.27.
+
+**Reading.** The norm estimate uses arbitrary finite pointwise bounds on the boundary and
+ finite essential bounds on the forcing. -/
 theorem corollary_9_28_bound {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
     (hu : ∀ φ ∈ hZeroSpace N Ω,
       (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x)
@@ -281,7 +306,9 @@ open, and let $u \in H^1(\Omega) \cap C(\overline\Omega)$ satisfy (70) with $f =
 $\tilde u$ be the representative of $u$ that is continuous on $\overline\Omega$. If $K \ge 0$
 and $|\tilde u| \le K$ on $\Gamma$, then $|\tilde u| \le K$ on $\Omega$.
 
-The proof is the backbone's `Elliptic.abs_le_of_load_eq_zero`. -/
+The proof is the backbone's `Elliptic.abs_le_of_load_eq_zero`.
+
+**Reading.** The norm on the boundary is represented by a finite nonnegative pointwise bound. -/
 theorem corollary_9_28_zero_load {u : hSpace N Ω}
     (hu : ∀ φ ∈ hZeroSpace N Ω,
       (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x)
@@ -300,7 +327,9 @@ Let $\tilde u$ be the representative of $u$ that is continuous on $\overline\Ome
 $\tilde u = 0$ on $\Gamma$. If $K \ge 0$ and $|f| \le K$ almost everywhere on $\Omega$, then
 $|\tilde u| \le K$ on $\Omega$.
 
-The proof is the backbone's `Elliptic.abs_le_of_eqOn_zero_frontier`. -/
+The proof is the backbone's `Elliptic.abs_le_of_eqOn_zero_frontier`.
+
+**Reading.** The forcing norm is represented by a finite nonnegative essential bound. -/
 theorem corollary_9_28_zero_boundary {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
     (hu : ∀ φ ∈ hZeroSpace N Ω,
       (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x)
@@ -326,7 +355,10 @@ maximum on $\overline\Omega$. If $x_0 \in \Gamma$, then $u(x_0) \le K$. If $x_0 
 then $\nabla u(x_0) = 0$ and $\frac{\partial^2 u}{\partial x_i^2}(x_0) \le 0$, so
 $\Delta u(x_0) \le 0$ and $u(x_0) = f(x_0) + \Delta u(x_0) \le f(x_0) \le K$. The proof is the
 backbone's `Elliptic.le_of_classical_laplacian` (with `IsLocalMax.laplacian_nonpos`). The class
-$C^2(\Omega)$ is `ContDiffOn ℝ 2 u Ω`. -/
+$C^2(\Omega)$ is `ContDiffOn ℝ 2 u Ω`.
+
+**Reading.** This classical argument states the upper inequality. The lower inequality
+ follows by applying it to $-u$. -/
 theorem remark_9_27 (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u f : 𝔼 → ℝ}
     (hc : ContinuousOn u (closure (Ω : Set 𝔼))) (hu : ContDiffOn ℝ 2 u Ω)
     (heq : ∀ x ∈ Ω, -Δ u x + u x = f x) {K : ℝ} (hΓ : ∀ x ∈ frontier (Ω : Set 𝔼), u x ≤ K)
@@ -351,7 +383,11 @@ u(x_0) \le f(x_0) \le K$. The source proves the inequality by "a change of coord
 reduces to the case of a diagonal matrix $(a_{ij}(x_0))$. The backbone's
 `Elliptic.le_of_classical` uses the square root of $(a_{ij}(x_0))$ instead. The coefficients
 $a_i$ are `b i`. The last sentence of the remark, the same for weak solutions of (77)
-(Gilbarg–Trudinger), is not formalized. -/
+(Gilbarg–Trudinger), is not formalized.
+
+**Reading.** This classical argument assumes the principal matrix is symmetric and gives
+ the upper inequality. The source uses diagonalization at the extremum without writing a
+ symmetry hypothesis in (77). -/
 theorem remark_9_27_general (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u f : 𝔼 → ℝ}
     (hc : ContinuousOn u (closure (Ω : Set 𝔼))) (hu : ContDiffOn ℝ 2 u Ω)
     {a : Fin N → Fin N → 𝔼 → ℝ} (ha : ∀ i j, ContDiffOn ℝ 1 (a i j) Ω)
@@ -445,7 +481,9 @@ stated.
 
 The proof is the backbone's `Elliptic.ge_of_ge_frontier_general_zero_drift`: it applies (79) to
 $u - K$, which satisfies (78) because $a_0 = 0$ and the constant $K$ lies in $H^1(\Omega)$ for a
-bounded $\Omega$. -/
+bounded $\Omega$.
+
+**Reading.** The conclusion uses an arbitrary finite pointwise lower bound on the boundary. -/
 theorem proposition_9_29_inf_zero_drift (hN : N ≠ 0) (hA : Elliptic.IsUniformlyElliptic Ω A α)
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
     {u : hSpace N Ω}
@@ -473,7 +511,9 @@ If $K_1 \le \tilde u \le K_2$ on $\Gamma$, then $K_1 \le \tilde u \le K_2$ on $\
 stated.
 
 This is (80) for $u$ and for $-u$. The proof is the backbone's
-`Elliptic.mem_Icc_of_frontier_general_zero_drift`. -/
+`Elliptic.mem_Icc_of_frontier_general_zero_drift`.
+
+**Typo.** In (81) the source omits $u$ between the boundary infimum and supremum. -/
 theorem proposition_9_29_sup_inf_zero_drift (hN : N ≠ 0) (hA : Elliptic.IsUniformlyElliptic Ω A α)
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : hSpace N Ω}
     (hu : ∀ φ ∈ hZeroSpace N Ω,
@@ -528,7 +568,9 @@ not formalized. The source proves only the case $a_i \equiv 0$
 (`Brezis.Chapter09.proposition_9_29_zero_drift`) and refers to Gilbarg–Trudinger, Theorem 8.1,
 for the general case. The backbone's `Elliptic.nonneg_of_nonneg_frontier_general` follows that
 proof: it tests (78) with the truncation $(u - l)^+$ and uses the Sobolev inequality of Remark
-20 on $W_0^{1,2}(\Omega)$, hence the hypothesis $N \ge 3$. The coefficients $a_i$ are `a₁ i`. -/
+20 on $W_0^{1,2}(\Omega)$, hence the hypothesis $N \ge 3$. The coefficients $a_i$ are `a₁ i`.
+
+**Reading.** This statement treats the first-order term in dimension $N \ge 3$. -/
 theorem proposition_9_29 (hN : 3 ≤ N) (hA : Elliptic.IsUniformlyElliptic Ω A α)
     (ha₀ : ∀ᵐ x ∂(volume.restrict (Ω : Set 𝔼)), 0 ≤ a₀ x)
     {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
@@ -556,7 +598,10 @@ $\Omega$.
 As in `Brezis.Chapter09.proposition_9_29`, the case $N \le 2$ is not formalized. The proof is
 the backbone's `Elliptic.ge_iInf_frontier_of_nonneg`: it applies (79) to $u - K$, which
 satisfies (78) because $a_0 = 0$ and the constant $K$ lies in $H^1(\Omega)$ for a bounded
-$\Omega$. -/
+$\Omega$.
+
+**Reading.** This statement uses a pointwise lower bound on the boundary and assumes
+ $N \ge 3$ when the first-order term is present. -/
 theorem proposition_9_29_inf (hN : 3 ≤ N) (hA : Elliptic.IsUniformlyElliptic Ω A α)
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
     {u : hSpace N Ω}
@@ -581,7 +626,11 @@ Precisely, let $\tilde u$ be the representative of $u$ that is continuous on $\o
 If $K_1 \le \tilde u \le K_2$ on $\Gamma$, then $K_1 \le \tilde u \le K_2$ on $\Omega$.
 
 As in `Brezis.Chapter09.proposition_9_29`, the case $N \le 2$ is not formalized. This is (80)
-for $u$ and for $-u$. The proof is the backbone's `Elliptic.mem_Icc_of_frontier_general`. -/
+for $u$ and for $-u$. The proof is the backbone's `Elliptic.mem_Icc_of_frontier_general`.
+
+**Typo.** In (81) the source omits $u$ between the two boundary bounds.
+
+**Reading.** The first-order term is treated in dimension $N \ge 3$. -/
 theorem proposition_9_29_sup_inf (hN : 3 ≤ N) (hA : Elliptic.IsUniformlyElliptic Ω A α)
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {u : hSpace N Ω}
     (hu : ∀ φ ∈ hZeroSpace N Ω,
@@ -611,7 +660,11 @@ Precisely, if $K_1 \le f \le K_2$ almost everywhere on $\Omega$, then $K_1 \le u
 everywhere on $\Omega$.
 
 The proof is the backbone's `Elliptic.le_of_neumann` and `Elliptic.ge_of_neumann`: the
-truncation method with the test space $H^1(\Omega)$, "analogous to the proof of Theorem 9.27". -/
+truncation method with the test space $H^1(\Omega)$, "analogous to the proof of Theorem 9.27".
+
+**Reading.** The source gives separate inequalities against the possibly infinite essential
+ extrema. The statement uses a pair of finite essential bounds and therefore applies to
+ essentially bounded data. -/
 theorem proposition_9_30 {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {u : hSpace N Ω}
     (hu : ∀ φ : hSpace N Ω,
       (∫ x in (Ω : Set 𝔼), ∑ i, partialDeriv u i x * partialDeriv φ i x)

@@ -74,10 +74,21 @@ The proofs specialize the backbone modules `Numlib.Analysis.InnerProductSpace.Hi
 
 ## Deviations from the source
 
+* **Definition of a Hilbert sum** (generalization). The predicate applies to arbitrary subspaces
+  of an inner product space. See `Brezis.Chapter05.IsHilbertSumOf`.
+* **Definition of an orthonormal basis** (generalization). The predicate applies to incomplete
+  inner product spaces. See `Brezis.Chapter05.IsOrthonormalBasis`.
+* **Remark 9** (generalization). Every sequence forming an orthonormal basis admits a vector
+  whose expansion fails absolute convergence. See `Brezis.Chapter05.remark_5_9`.
 * **Theorem 5.11** (reading). The source asserts an orthonormal basis $(e_n)_{n \ge 1}$, which
   cannot exist in finite dimension. The library states a countable Hilbert basis in every dimension,
   and the sequence form for infinite-dimensional $H$. See `Brezis.Chapter05.theorem_5_11` and
   `Brezis.Chapter05.theorem_5_11_nat`.
+* **Remark 10** (correction). The isometric isomorphism with $\ell^2$ requires infinite dimension.
+  See `Brezis.Chapter05.remark_5_10`.
+* **Remark 11** (reading). The library gives indexed basis existence in any Hilbert space.
+  The source singles out nonseparable spaces and states uncountability of the basis explicitly.
+  See `Brezis.Chapter05.remark_5_11`.
 -/
 
 open Filter Topology
@@ -98,9 +109,11 @@ $E_n$, written $H = \bigoplus_n E_n$, if (a) the $E_n$ are mutually orthogonal, 
 $(u, v) = 0$ for all $u \in E_m$ and $v \in E_n$ with $m \neq n$, and (b) the linear space
 spanned by $\bigcup_n E_n$ is dense in $H$.
 
-The source assumes that the $E_n$ are closed. Here closedness is a hypothesis of the theorems,
-not a part of the predicate. The span in (b) is the supremum `⨆ n, E n` of the submodules, as in
-footnote 3 of the source. -/
+**Generalization.** The source assumes that $H$ is a Hilbert space and the $E_n$ are closed.
+Orthogonality and density also make sense for arbitrary subspaces of an inner product space.
+The projection theorem assumes completeness and uses closed subspaces.
+
+The span in (b) is the supremum `⨆ n, E n` of the submodules, as in footnote 3 of the source. -/
 def IsHilbertSumOf (E : ℕ → Submodule ℝ H) : Prop :=
   (∀ m n, m ≠ n → ∀ u ∈ E m, ∀ v ∈ E n, ⟪u, v⟫_ℝ = 0) ∧
     Dense ((⨆ n, E n : Submodule ℝ H) : Set H)
@@ -194,8 +207,9 @@ $(e_n)$ in an inner product space $H$ is an **orthonormal basis** (or Hilbert ba
 spanned by the $e_n$ is dense in $H$.
 
 Condition (i) is Mathlib's `Orthonormal`. The bundled object is `HilbertBasis ℕ ℝ H`, see
-`Brezis.Chapter05.isOrthonormalBasis_iff`. Mathlib's `OrthonormalBasis` is the structure for
-finite dimension and is not used. -/
+`Brezis.Chapter05.isOrthonormalBasis_iff`.
+
+**Generalization.** The predicate applies to incomplete inner product spaces. -/
 def IsOrthonormalBasis (e : ℕ → H) : Prop :=
   Orthonormal ℝ e ∧ Dense ((Submodule.span ℝ (Set.range e) : Submodule ℝ H) : Set H)
 
@@ -252,8 +266,10 @@ converge absolutely: for every orthonormal basis $(e_n)$ of a Hilbert space $H$ 
 $u \in H$ such that the series $\sum_k |(u, e_k)|$ does not converge.
 
 The vector $u$ has the coefficients $\alpha_k = 1/(k+1)$, which are square-summable but not
-summable. The remark in the source is also about the series $\sum_n u_n$ of Theorem 5.9; that
-form is this statement for $E_k = \mathbb{R} e_k$. -/
+summable. Taking $E_k = \mathbb{R} e_k$ gives the counterexample for the Hilbert-sum expansion
+also mentioned in the source.
+
+**Generalization.** A witness is provided for every orthonormal basis indexed by $\mathbb{N}$. -/
 theorem remark_5_9 {e : ℕ → H} (he : IsOrthonormalBasis e) :
     ∃ u, ¬ Summable fun k => |⟪u, e k⟫_ℝ| := by
   have hsq : Summable fun k : ℕ => (1 / ((k : ℝ) + 1)) ^ 2 := by
@@ -300,6 +316,11 @@ theorem theorem_5_11_nat [TopologicalSpace.SeparableSpace H] (h : ¬ FiniteDimen
 spaces are isomorphic and isometric to $\ell^2$: for such a space $H$ there is a linear
 isometric isomorphism from $H$ onto $\ell^2$.
 
+**Correction.** The source asserts this for every separable Hilbert space. The declaration
+assumes infinite dimension, since even the one-dimensional Hilbert space $\mathbb{R}$ cannot
+be linearly isomorphic to $\ell^2$, which contains infinitely many linearly independent unit
+coordinate vectors.
+
 The space $\ell^2$ is `lp (fun _ : ℕ => ℝ) 2`. The isometry of the proof is the coordinate map
 $u \mapsto ((u, e_n))_n$ of an orthonormal basis $(e_n)$. -/
 theorem remark_5_10 [TopologicalSpace.SeparableSpace H] (h : ¬ FiniteDimensional ℝ H) :
@@ -311,7 +332,10 @@ theorem remark_5_10 [TopologicalSpace.SeparableSpace H] (h : ¬ FiniteDimensiona
 has an orthonormal basis $(e_i)_{i \in I}$, possibly uncountable: there is a set $w \subseteq H$
 and a Hilbert basis of $H$ indexed by $w$ whose vectors are the elements of $w$.
 
-The proof is Zorn's lemma, in the form of Mathlib's `exists_hilbertBasis`. -/
+The proof is Zorn's lemma, in the form of Mathlib's `exists_hilbertBasis`.
+
+**Reading.** The source states uncountability for a nonseparable $H$. The library states existence
+without an explicit cardinality requirement. A countable basis would imply separability. -/
 theorem remark_5_11 : ∃ (w : Set H) (b : HilbertBasis w ℝ H), ⇑b = ((↑) : w → H) :=
   exists_hilbertBasis ℝ H
 

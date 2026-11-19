@@ -14,8 +14,8 @@ $\Sigma = \Gamma \times (0, \infty)$. The wave equation is the problem
 $$\partial_{tt} u - \Delta u = 0 \text{ in } Q \ (27), \quad u = 0 \text{ on } \Sigma \ (28), \quad
   u(\cdot, 0) = u_0 \ (29), \quad \partial_t u(\cdot, 0) = v_0 \ (30).$$
 The source solves it as the first-order system $dU/dt + AU = 0$ for $U = (u, \partial_t u)$ in the
-phase space $H = H^1_0(\Omega) \times L^2(\Omega)$ with the scalar product (34), where
-$A(u, v) = (-v, -\Delta u)$ is the operator (35). Theorem 10.7 gives existence and uniqueness of a
+phase space $H = H^1_0(\Omega) \times L^2(\Omega)$ with the scalar product displayed after (35).
+The operator (35) is $A(u, v) = (-v, -\Delta u)$. Theorem 10.7 gives existence and uniqueness of a
 solution in the class (31) and the energy identity (32), which Remark 6 reads as a conservation law.
 Remark 7 uses the Dirichlet scalar product on a bounded $\Omega$, for which $A$ and $-A$ are maximal
 monotone and the solutions form a group of isometries. Remark 8 treats d'Alembert's formula on
@@ -55,10 +55,10 @@ The proofs specialize the backbone module `Numlib.Analysis.PDE.Wave`.
   and (32) holds for all $t \in \mathbb{R}$.
 * Remark 8, `Brezis.Chapter10.remark_10_8`: on $\Omega = \mathbb{R}$, d'Alembert's formula (40)
   gives the solution.
-* Remark 8, `Brezis.Chapter10.remark_10_8_characteristics`: for $v_0 = 0$, the solution (41) is
+* Remark 8, `Brezis.Chapter10.remark_10_8_characteristics`: for $v_0 = 0$, the solution is
   $C^\infty$ off the characteristics through a singular point of $u_0$.
-* Remark 9, `Brezis.Chapter10.remark_10_9`: the Fourier method, the coefficients of $u(t)$ in the
-  Dirichlet eigenbasis satisfy (42).
+* Remark 9, `Brezis.Chapter10.remark_10_9`: the coefficients of the Fourier series (41)
+  in the Dirichlet eigenbasis satisfy the stated oscillator equation.
 * Proof of Theorem 10.8, `Brezis.Chapter10.theorem_10_8_domain`: the description of $D(A^k)$, and
   $D(A^k) \subseteq H^{k+1}(\Omega) \times H^k(\Omega)$.
 * Proof of Theorem 10.8, `Brezis.Chapter10.theorem_10_8_domain_norm`: the injection $D(A^k)
@@ -85,7 +85,7 @@ The proofs specialize the backbone module `Numlib.Analysis.PDE.Wave`.
 ## Implementation notes
 
 * The phase space is the backbone space `Wave.phaseSpace Ω`, which is `WithLp 2 (H¹₀(Ω) × L²(Ω))`
-  with the scalar product (34).
+  with the scalar product displayed after (35).
 * The operator (35) of the source is `Brezis.Chapter10.waveOperator Ω`: the backbone operator
   `Wave.operator Ω`, whose domain is $D(-\Delta) \times H^1_0(\Omega)$ for the weak Dirichlet
   Laplacian, restricted to the pairs whose first component lies in $H^2(\Omega)$. On a $C^2$ domain
@@ -106,8 +106,12 @@ The proofs specialize the backbone module `Numlib.Analysis.PDE.Wave`.
   `Brezis.Chapter10.theorem_10_7_energy` and `Brezis.Chapter10.remark_10_9`.
 * **Remark 7, group of isometries** (generalization). The two-sided solvability and
   $|U(t)|_H = |U_0|_H$ for all $t \in \mathbb{R}$ are obtained by time reversal, which needs neither
-  the boundedness of $\Omega$ nor the Dirichlet scalar product. See
+  the boundedness of $\Omega$ nor the Dirichlet scalar product. The statement gives
+  trajectories for data in the operator domain and their energy conservation. See
   `Brezis.Chapter10.remark_10_7_group`.
+* **Remark 8** (reading). The $L^2$ d'Alembert solution uses $H^2$ displacement and $H^1$
+  velocity. The zero-velocity result asserts smoothness away from the characteristic lines.
+  See `Brezis.Chapter10.remark_10_8` and `Brezis.Chapter10.remark_10_8_characteristics`.
 * **Theorem 10.8** (reading). The compatibility conditions $\Delta^j u_0 = \Delta^j v_0 = 0$ on
   $\Gamma$ are read, as in the display of the proof, as $u_0, v_0 \in D_k$ for every $k$. The
   hypothesis $u_0, v_0 \in H^k(\Omega)$ for every $k$ is then a consequence and is not assumed. See
@@ -145,14 +149,16 @@ variable {Ω : Opens (EuclideanSpace ℝ (Fin N))}
 variable (Ω) in
 /-- **Equation (35)** in Chapter 10 of [brezis2011functional], the operator $A$. Let
 $\Omega \subset \mathbb{R}^N$ be open, and let $H = H^1_0(\Omega) \times L^2(\Omega)$ with the
-scalar product (34). The operator $A : D(A) \subset H \to H$ is defined by
+scalar product displayed after (35). The operator $A : D(A) \subset H \to H$ is defined by
 $$A(u, v) = (-v, -\Delta u), \qquad D(A) = (H^2(\Omega) \cap H^1_0(\Omega)) \times
   H^1_0(\Omega).$$
 As the source says, "the boundary condition (28) has been incorporated in the space $H$".
 
 The definition restricts the backbone operator `Wave.operator Ω`, whose domain is
 $D(-\Delta) \times H^1_0(\Omega)$ for the weak Dirichlet Laplacian, to the pairs $(u, v)$ whose
-first component is the function of an element of $H^2(\Omega)$, with `LinearPMap.domRestrict`. -/
+first component is the function of an element of $H^2(\Omega)$, with `LinearPMap.domRestrict`.
+
+**Generalization.** The restriction defining this operator is available on arbitrary open sets. -/
 noncomputable def waveOperator : Wave.phaseSpace Ω →ₗ.[ℝ] Wave.phaseSpace Ω :=
   (Wave.operator Ω).domRestrict ((LinearMap.range (fnL ℝ 𝔟 2 2 Ω volume).toLinearMap).comap
     ((SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume).comp (Wave.phaseSpace.fstL Ω)).toLinearMap)
@@ -166,7 +172,9 @@ theorem waveOperator_domain_le : (waveOperator Ω).domain ≤ (Wave.operator Ω)
 H^1_0(\Omega)) \times H^1_0(\Omega)$. Let $\Omega \subset \mathbb{R}^N$ be open and $U = (u, v)
 \in H^1_0(\Omega) \times L^2(\Omega)$. Then $U \in D(A)$ if and only if the function of $u$ is
 the function of an element of $H^2(\Omega)$ and $v$ is the function of an element of
-$H^1_0(\Omega)$. -/
+$H^1_0(\Omega)$.
+
+**Generalization.** The stated domain identity holds on every open set. -/
 theorem waveOperator_mem_domain_iff {U : Wave.phaseSpace Ω} :
     U ∈ (waveOperator Ω).domain ↔
       (∃ w : sobolevSpaceHigher N 2 2 Ω,
@@ -189,7 +197,9 @@ $\Omega \subset \mathbb{R}^N$ be open, let $U = (u, v) \in D(A)$, and let $w \in
 have the same function as $u$. Then the first component of $AU$ has the function $-v$ in
 $L^2(\Omega)$, and the second component is
 $$-\Delta u = -\sum_i \frac{\partial^2 w}{\partial x_i^2},$$
-where $\partial^2 w / \partial x_i^2$ is the weak derivative of $w$ at the multi-index $2 e_i$. -/
+where $\partial^2 w / \partial x_i^2$ is the weak derivative of $w$ at the multi-index $2 e_i$.
+
+**Generalization.** The component formula holds on every open set. -/
 theorem waveOperator_apply (U : (waveOperator Ω).domain) (w : sobolevSpaceHigher N 2 2 Ω)
     (hw : fnL ℝ 𝔟 2 2 Ω volume w
       = SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume (U : Wave.phaseSpace Ω).fst) :
@@ -212,7 +222,9 @@ $$(AU, U)_H + |U|^2_H = -\int_\Omega uv + \int_\Omega u^2 + \int_\Omega v^2 + \i
   |\nabla u|^2 \ge 0.$$
 
 The statement holds on every open set. The proof specializes
-`Wave.operator_add_id_inner_self_nonneg`. -/
+`Wave.operator_add_id_inner_self_nonneg`.
+
+**Generalization.** Monotonicity of $A+I$ holds on every open set. -/
 theorem waveOperator_add_id_inner_self_nonneg (U : (waveOperator Ω).domain) :
     0 ≤ ⟪waveOperator Ω U, (U : Wave.phaseSpace Ω)⟫_ℝ + ‖(U : Wave.phaseSpace Ω)‖ ^ 2 := by
   have h := Wave.operator_add_id_inner_self_nonneg
@@ -234,9 +246,11 @@ if
   equation (27), and
 * $u(0) = u_0$ and $\partial_t u(0) = v_0$, which are the initial conditions (29) and (30).
 
-The curve $u$ is the function $u(x, t)$ of the source, read as $t \mapsto u(\cdot, t)$. The
-derivatives at $t = 0$ are one-sided, and the values at negative times are not constrained. Here
-$A$ is the operator `Brezis.Chapter10.heatOperator` of Section 10.1. -/
+The curve $u$ is the function $u(x, t)$ of the source, read as $t \mapsto u(\cdot, t)$. Here
+$A$ is the operator `Brezis.Chapter10.heatOperator` of Section 10.1.
+
+**Reading.** The initial derivatives are one-sided, and the differential equation is also
+imposed at time zero by continuity. The predicate is available on every open set. -/
 structure IsWaveSolution (u₀ v₀ : hZeroSpace N Ω) (u : ℝ → Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) :
     Prop where
   /-- $u \in C([0, \infty); H^2(\Omega))$. -/
@@ -313,7 +327,9 @@ The statement holds on every open set, and $\partial_t u(t)$ is the right deriva
 The argument of the source: "multiply (27) by $\partial_t u$ and integrate on $\Omega$", with
 $\int_\Omega \partial_{tt} u \, \partial_t u = \frac12 \partial_t \int_\Omega |\partial_t u|^2$
 and $\int_\Omega (-\Delta u) \partial_t u = \frac12 \partial_t \int_\Omega |\nabla u|^2$. The
-proof specializes `Wave.IsSolution.energy_dirichletForm`. -/
+proof specializes `Wave.IsSolution.energy_dirichletForm`.
+
+**Generalization.** The same energy identity holds on every open set. -/
 theorem theorem_10_7_energy (hu : IsWaveSolution Ω u₀ v₀ u) {t : ℝ} (ht : 0 ≤ t)
     {w : hSpace N Ω} (hw : w ∈ hZeroSpace N Ω) (hwt : fnL ℝ 𝔟 1 2 Ω volume w = u t) :
     ‖derivWithin u (Ici 0) t‖ ^ 2 + ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv w i x ^ 2
@@ -334,7 +350,9 @@ energy $E(t) = |\partial_t u(t)|^2_{L^2} + |\nabla u(t)|^2_{L^2}$ of the system 
 time. Precisely, let $\Omega \subset \mathbb{R}^N$ be open, let $u$ be a solution of (27), (28),
 (29), (30) in the class (31), and let $E : \mathbb{R} \to \mathbb{R}$ be a function with $E(t) =
 |\partial_t u(t)|^2_{L^2} + \sum_i \int_\Omega |\partial_i u(x, t)|^2$ for $t \ge 0$, computed
-on an $H^1_0$-lift of $u(t)$. Then $E(t) = E(0)$ for every $t \ge 0$. -/
+on an $H^1_0$-lift of $u(t)$. Then $E(t) = E(0)$ for every $t \ge 0$.
+
+**Generalization.** Conservation holds on every open set. -/
 theorem remark_10_6 (hu : IsWaveSolution Ω u₀ v₀ u) {E : ℝ → ℝ}
     (hE : ∀ t, 0 ≤ t → ∃ w : hSpace N Ω, w ∈ hZeroSpace N Ω ∧ fnL ℝ 𝔟 1 2 Ω volume w = u t ∧
       E t = ‖derivWithin u (Ici 0) t‖ ^ 2 + ∑ i, ∫ x in (Ω : Set 𝔼), partialDeriv w i x ^ 2) :
@@ -347,7 +365,7 @@ theorem remark_10_6 (hu : IsWaveSolution Ω u₀ v₀ u) {E : ℝ → ℝ}
 /-! ### Remark 8: d'Alembert's formula, the characteristics -/
 
 /-- **Remark 8** in Chapter 10 of [brezis2011functional], the propagation of singularities. On
-$\Omega = \mathbb{R}$ with $v_0 = 0$, the solution (41) is
+$\Omega = \mathbb{R}$ with $v_0 = 0$, the solution is
 $$u(x, t) = \frac12 \big(u_0(x + t) + u_0(x - t)\big),$$
 and it is not more regular than $u_0$. Precisely, let $u_0 : \mathbb{R} \to \mathbb{R}$ and
 $x_0 \in \mathbb{R}$, and let $u_0$ be of class $C^\infty$ on $\mathbb{R} \setminus \{x_0\}$.
@@ -357,7 +375,10 @@ along the characteristics.
 
 The function $u$ is the backbone function `Wave.dAlembert u₀ 0`, and the first part of the
 statement is the formula for it. The proof specializes
-`Wave.dAlembert_contDiffOn_off_characteristics`. -/
+`Wave.dAlembert_contDiffOn_off_characteristics`.
+
+**Reading.** This proves smoothness off the two characteristics. It makes no assertion of
+ singularity at every point of either line. -/
 theorem remark_10_8_characteristics {u₀ : ℝ → ℝ} {x₀ : ℝ} (hu₀ : ContDiffOn ℝ ∞ u₀ {x₀}ᶜ) :
     (∀ t x, Wave.dAlembert u₀ 0 t x = (1 / 2) * (u₀ (x + t) + u₀ (x - t))) ∧
       ContDiffOn ℝ ∞ (fun p : ℝ × ℝ ↦ Wave.dAlembert u₀ 0 p.2 p.1)
@@ -405,7 +426,10 @@ $\Gamma$. Then $A + I$ is maximal monotone in $H = H^1_0(\Omega) \times L^2(\Ome
 
 Maximal monotonicity is `Brezis.Chapter07.IsMaximalMonotone`. On the weak domain, (ii) uses the
 Riesz representation on $H^1_0(\Omega)$. The proof specializes
-`Wave.operator_add_id_isMaximalMonotone` through `Brezis.Chapter10.waveOperator_eq`. -/
+`Wave.operator_add_id_isMaximalMonotone` through `Brezis.Chapter10.waveOperator_eq`.
+
+**Generalization.** For maximal monotonicity of the source operator plus identity, a
+ $C^2$ boundary suffices. -/
 theorem waveOperator_add_id_isMaximalMonotone (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     Brezis.Chapter07.IsMaximalMonotone
@@ -463,7 +487,10 @@ $u \in C([0, \infty); H^2 \cap H^1_0)$ of (31) is a consequence of $U \in C^1([0
 and the equation, not a separate output of Theorem 7.4. The proof specializes
 `Wave.existsUnique_isSolution`, on every open set for the weak class, through
 `Brezis.Chapter10.isWaveSolution_iff`. The energy identity (32) is
-`Brezis.Chapter10.theorem_10_7_energy`. -/
+`Brezis.Chapter10.theorem_10_7_energy`.
+
+**Reading.** Here uniqueness is equality of $L^2$-valued curves on nonnegative times.
+ The energy identity is stated separately. -/
 theorem theorem_10_7 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (u₀ v₀ : hZeroSpace (d + 1) Ω)
     (hu₀ : SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀ ∈ (heatOperator Ω).domain) :
@@ -491,7 +518,9 @@ Let $A(u, v) = (-v, -\Delta u)$ on this space. Then
 
 The space is `Wave.dirichletPhaseSpace Ω hb` and the operator is `Wave.operator' Ω hb`. Maximal
 monotonicity is `Brezis.Chapter07.IsMaximalMonotone`. The clause (ii) $A^* = -A$ is not
-formalized, because the backbone does not formalize the adjoint for this scalar product. -/
+formalized, because the backbone does not formalize the adjoint for this scalar product.
+
+**Generalization.** For these claims a bounded domain of class $C^2$ suffices. -/
 theorem remark_10_7 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hΩ : IsOfClassC 2 (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     (∀ U V : Wave.dirichletPhaseSpace Ω hb, ⟪U, V⟫_ℝ
@@ -535,7 +564,10 @@ product. Time reversal needs neither the boundedness of $\Omega$ nor the Dirichl
 product, so the statement assumes neither.
 
 For $t \le 0$ the time derivative $\partial_t u(t)$ is that of the reflected solution at $-t$.
-The proof specializes `Wave.existsUnique_isSolution_backward` and `Wave.IsSolution.energy_neg`. -/
+The proof specializes `Wave.existsUnique_isSolution_backward` and `Wave.IsSolution.energy_neg`.
+
+**Reading.** The statement gives two-sided solvability and energy conservation for data in
+ the operator domain. The source also describes the isometries as a group on the phase space. -/
 theorem remark_10_7_group (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (u₀ v₀ : hZeroSpace (d + 1) Ω)
     (hu₀ : SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀ ∈ (heatOperator Ω).domain) :
@@ -597,7 +629,7 @@ $u(t) = \sum_n a_n(t) e_n$. Then
 
 * $a_n'' + \lambda_n a_n = 0$ on $[0, \infty)$: $a_n' = (\partial_t u, e_n)$ and
   $(a_n')' = -\lambda_n a_n$, with one-sided derivatives at $t = 0$,
-* the coefficients are given by (42),
+* the coefficients are given by the oscillator formula,
 $$a_n(t) = a_n(0) \cos(\sqrt{\lambda_n}\, t) + \frac{a_n'(0)}{\sqrt{\lambda_n}}
   \sin(\sqrt{\lambda_n}\, t), \qquad a_n(0) = \int_\Omega u_0 e_n, \quad a_n'(0) = \int_\Omega
   v_0 e_n,$$
@@ -608,7 +640,10 @@ The eigenbasis is `Elliptic.dirichletEigenbasis` and the eigenvalues are
 `Elliptic.dirichletEigenvalue`. No regularity of $\Omega$ is needed. The proof specializes
 `Wave.IsSolution.hasDerivWithinAt_inner_eigenbasis`,
 `Wave.IsSolution.hasDerivWithinAt_inner_derivWithin_eigenbasis`,
-`Wave.IsSolution.inner_eigenfunction` and `Wave.IsSolution.hasSum_eigenfunction`. -/
+`Wave.IsSolution.inner_eigenfunction` and `Wave.IsSolution.hasSum_eigenfunction`.
+
+**Generalization.** No boundary regularity is needed on the bounded nonempty domain. The
+ series is shown to converge in $L^2$ at each nonnegative time. -/
 theorem remark_10_9 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty)
     (hu : IsWaveSolution Ω u₀ v₀ u) :
     (∀ n, ∀ t, 0 ≤ t →
@@ -673,7 +708,10 @@ $D(-\Delta) = H^2 \cap H^1_0$. The domain $D(A^k)$ is `Brezis.Chapter07.domainPo
 part is `Wave.mem_operator_powGraph_iff`, on every open set; the second is
 `Wave.MemLaplacianDomain.exists_sobolev`, Theorem 9.25 at every order. The operator $A$ of the
 source is `Wave.operator Ω` on a $C^2$ domain (`Brezis.Chapter10.waveOperator_eq`). The
-continuity of the injection is `Brezis.Chapter10.theorem_10_8_domain_norm`. -/
+continuity of the injection is `Brezis.Chapter10.theorem_10_8_domain_norm`.
+
+**Reading.** The boundary vanishing of successive Laplacians is represented by the recursive
+ weak domains $D_m$. -/
 theorem theorem_10_8_domain (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (k : ℕ) :
     (∀ U : Wave.phaseSpace Ω, U ∈ domainPow (waveOperator Ω) k ↔
@@ -768,7 +806,10 @@ $U \in C^{k - j}([0, \infty); D(A^j))$ for $0 \le j \le k$, so $u \in C^{k - j}(
 H^{j + 1}(\Omega))$ (`Brezis.Chapter10.theorem_10_8_domain_norm`), and Corollary 9.15 concludes.
 The proof specializes `Wave.IsSolution.contDiffOnThrough_of_powDomain` and
 `Wave.IsSolution.contDiffOnClosure_spaceTime`, through
-`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`. -/
+`Bochner.contDiffOnClosure_spaceTime_of_forall_contDiffOnThrough_Ici`.
+
+**Reading.** Smoothness is stated on the open cylinder with continuous extensions of the
+ derivatives to the closure. The representative is matched in $L^2$ even at time zero. -/
 theorem theorem_10_8 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼)))
     (hu₀ : ∀ k, Wave.MemLaplacianDomain Ω k (SobolevMultiIndexZero.fnL ℝ 𝔟 1 2 Ω volume u₀))
@@ -806,10 +847,13 @@ Then
   $[0, \infty)$, and
 * for every $t$, $u(t)$ agrees almost everywhere with the function given by the formula above.
 
-For $v_0 = 0$ the formula is (41). The curve $u$ is `Wave.dAlembertL2 u₀ v₀`, whose value is
+For $v_0 = 0$ the integral term vanishes. The curve $u$ is `Wave.dAlembertL2 u₀ v₀`, whose value is
 `Wave.dAlembert` read on the line through the coordinate $x \mapsto x_0$ and
 `Wave.lineEmbed : ℝ → ℝ¹`. The data are read in $H^1_0$ of the line through `Wave.toZeroTopL`.
-The proof specializes `Wave.isSolution_dAlembert` and `Wave.IsSolution.eqOn_dAlembertL2`. -/
+The proof specializes `Wave.isSolution_dAlembert` and `Wave.IsSolution.eqOn_dAlembertL2`.
+
+**Reading.** The d'Alembert formula is stated for $H^2$ initial displacement and $H^1$
+ velocity, with equality almost everywhere on each time slice. -/
 theorem remark_10_8 (u₀ : sobolevSpaceHigher 1 2 2 ⊤) (v₀ : hSpace 1 ⊤) :
     IsWaveSolution ⊤ (Wave.toZeroTopL (by simp) (Wave.dAlembertU₀ u₀))
         (Wave.toZeroTopL (by simp) v₀) (Wave.dAlembertL2 u₀ v₀) ∧
@@ -860,7 +904,10 @@ $\Gamma \times [0, \infty)$ by continuity, $\partial_t^{2j} u = \Delta^j u$ and
 $\partial_t^{2j+1} u = \Delta^j \partial_t u$ in $\overline{Q}$ by induction and continuity, and
 the two are compared on $\Gamma \times \{0\}$. The proof specializes
 `Wave.IsClassicalSolution.iteratedLaplacian_eq_zero_frontier`, on the cylinder
-$\Omega \times (0, 1)$. -/
+$\Omega \times (0, 1)$.
+
+**Reading.** This states the necessity of compatibility for a globally smooth solution.
+ Sufficiency under the Sobolev hypotheses is `Brezis.Chapter10.theorem_10_8`. -/
 theorem remark_10_10 {u : 𝔼 × ℝ → ℝ} (hu : ContDiff ℝ ∞ u)
     (heq : ∀ x ∈ Ω, ∀ t, 0 < t →
       deriv (deriv fun s ↦ u (x, s)) t = Δ (fun y ↦ u (y, t)) x)

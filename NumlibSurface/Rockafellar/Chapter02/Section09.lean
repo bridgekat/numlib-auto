@@ -24,9 +24,8 @@ recession function of the result. The proofs specialize
 `Numlib.Analysis.Convex.Recession.Closedness`, `Numlib.Analysis.Convex.Recession.ConeHull` and
 `Numlib.Analysis.Convex.Duality.Gauge`.
 
-The section introduces no new concepts. All 18 numbered results of §9 are formalized. Where the book
-states a result for $C_1, \dots, C_m$ or $f_1, \dots, f_m$ (Corollaries 9.1.1, 9.1.3 and 9.2.1,
-Theorem 9.3, and Theorem 9.8 with its corollaries), the module states the case $m = 2$.
+The section introduces no new concepts. The module covers all 18 numbered results of §9, with the
+omissions below.
 
 ## Main definitions
 
@@ -113,8 +112,11 @@ Theorem 9.3, and Theorem 9.8 with its corollaries), the module states the case $
 
 ## Deviations from the source
 
-* **Theorem 9.1**, first conclusion (generalization). The book assumes $C$ nonempty;
-  `Rockafellar.theorem_9_1_closure` does not.
+* **Theorem 9.1**, first and last conclusions (generalization). The book assumes $C$ nonempty.
+  `Rockafellar.theorem_9_1_closure` and `Rockafellar.theorem_9_1_isClosed` also apply to the
+  empty set.
+* **Theorem 9.3**, closure formula (generalization). The two-function formula also applies when
+  both functions are closed. See `Rockafellar.theorem_9_3_closure`.
 * **Theorem 9.4**, closed case (generalization). Neither convexity nor properness of the $f_i$ is
   needed; see `Rockafellar.theorem_9_4_closed`.
 * **Theorem 9.4**, second half (generalization). The formula is stated for lower semicontinuous
@@ -128,8 +130,26 @@ Theorem 9.3, and Theorem 9.8 with its corollaries), the module states the case $
   `Rockafellar.theorem_9_5_closed` needs only a closed epigraph.
 * **Theorem 9.5**, recession formula (generalization). The book assumes $g$ proper convex;
   `Rockafellar.theorem_9_5_recession` needs only convexity and a closed epigraph.
-* **Corollary 9.8.2** (generalization). The book assumes $C_1$ and $C_2$ nonempty and convex;
+* **Theorem 9.5**, closure formula (generalization). The formula applies to closed $g$ as well
+  as to nonclosed $g$. See `Rockafellar.theorem_9_5_closure`.
+* **Theorem 9.6 and Corollary 9.6.1** (reading). The generated cone includes zero. Its closure
+  agrees with the closure of the cone of positive multiples, and the closedness conclusion
+  for bounded $C$ uses the generator with zero adjoined.
+* **Section 9, extended coefficients** (reading). `Rockafellar.ExtCoeff.Nonneg` permits both
+  ordinary zero and the recession symbol. In `Rockafellar.theorem_9_8`, the recession choice
+  includes the contribution of ordinary zero, so the union is the one in the book.
+* **Corollary 9.8.2** (generalization). The book assumes the sets are convex.
   `Rockafellar.corollary_9_8_2` needs only that they are closed and bounded.
+
+## Not formalized
+
+* **Finite-family statements.** Corollaries 9.1.1, 9.1.3 and 9.2.1, Theorem 9.3, and Theorem 9.8
+  with its corollaries are stated for two inputs.
+* **Corollary 9.1.3 for cones excluding the origin.** The statement uses `PointedCone`.
+* **Theorem 9.2, recession formula.** The statement $(Ah)0^+ = A(h0^+)$ is omitted.
+* **Attainment at $+\infty$.** Corollaries 9.2.1, 9.2.2 and 9.8.3 and Theorem 9.7 assert
+  attainment for each input. Their attainment declarations give witnesses at real upper bounds,
+  which suffice on the effective domain.
 -/
 
 open Set Pointwise
@@ -154,7 +174,11 @@ inductive ExtCoeff where
 namespace ExtCoeff
 
 /-- **Section 9** of [rockafellar1970convex], the condition $\lambda \ge 0^+$. A real coefficient
-$\lambda$ satisfies it when $\lambda \ge 0$, and the symbol $0^+$ always satisfies it. -/
+$\lambda$ satisfies it when $\lambda \ge 0$, and the symbol $0^+$ always satisfies it.
+
+**Reading.** The book replaces zero dilation with the recession cone in the union in Theorem 9.8.
+This predicate allows literal zero as well. Its contribution $\{0\}$ is already included in
+the recession cone, so allowing both choices gives the same union. -/
 def Nonneg : ExtCoeff → Prop
   | ofReal t => 0 ≤ t
   | zeroPlus => True
@@ -248,7 +272,9 @@ theorem theorem_9_1_recession {C : Set (Rn n)} (hC : Convex ℝ C) (hne : C.None
 
 /-- **Theorem 9.1** of [rockafellar1970convex], the "in particular" clause. Let $C$ be a closed
 convex set in $\mathbb{R}^n$, and let $A$ be a linear transformation from $\mathbb{R}^n$ to
-$\mathbb{R}^m$. If $z = 0$ is the only $z \in 0^+ C$ with $Az = 0$, then $AC$ is closed. -/
+$\mathbb{R}^m$. If $z = 0$ is the only $z \in 0^+ C$ with $Az = 0$, then $AC$ is closed.
+
+**Generalization.** The book assumes $C$ nonempty. The Lean result includes the empty set. -/
 theorem theorem_9_1_isClosed {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C)
     (A : Rn n →ₗ[ℝ] Rn m) (h : ∀ z ∈ recessionCone C, A z = 0 → z = 0) :
     IsClosed (A '' C) := by
@@ -262,7 +288,10 @@ lineality space of $\operatorname{cl} C_1$ and $z_2$ is in the lineality space o
 $\operatorname{cl} C_2$. Then
 $$\operatorname{cl}(C_1 + C_2) = \operatorname{cl} C_1 + \operatorname{cl} C_2.$$
 
-The book states this for $m$ sets. -/
+The book states this for $m$ sets.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_1_1_closure {C D : Set (Rn n)} (hC : Convex ℝ C) (hCne : C.Nonempty)
     (hD : Convex ℝ D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone (closure C), ∀ w ∈ recessionCone (closure D), z + w = 0 →
@@ -274,6 +303,8 @@ theorem corollary_9_1_1_closure {C D : Set (Rn n)} (hC : Convex ℝ C) (hCne : C
 hypotheses of `Rockafellar.corollary_9_1_1_closure`,
 $$0^+(\operatorname{cl} C_1 + \operatorname{cl} C_2) = 0^+(\operatorname{cl} C_1) +
   0^+(\operatorname{cl} C_2).$$
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
 -/
 theorem corollary_9_1_1_recession {C D : Set (Rn n)} (hC : Convex ℝ C) (hCne : C.Nonempty)
     (hD : Convex ℝ D) (hDne : D.Nonempty)
@@ -286,7 +317,10 @@ theorem corollary_9_1_1_recession {C D : Set (Rn n)} (hC : Convex ℝ C) (hCne :
 /-- **Corollary 9.1.1** of [rockafellar1970convex], the "in particular" clause, for $m = 2$. Let
 $C_1$ and $C_2$ be nonempty closed convex sets in $\mathbb{R}^n$. Assume that whenever
 $z_1 \in 0^+ C_1$ and $z_2 \in 0^+ C_2$ satisfy $z_1 + z_2 = 0$, the vector $z_i$ is in the
-lineality space of $C_i$ for $i = 1, 2$. Then $C_1 + C_2$ is closed. -/
+lineality space of $C_i$ for $i = 1, 2$. Then $C_1 + C_2$ is closed.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_1_1_isClosed {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, ∀ w ∈ recessionCone D, z + w = 0 →
@@ -333,7 +367,11 @@ $$\operatorname{cl}(K_1 + K_2) = \operatorname{cl} K_1 + \operatorname{cl} K_2.$
 
 For a convex cone, the recession cone of the closure is the closure itself, so the hypothesis of
 Corollary 9.1.1 becomes this hypothesis on $\operatorname{cl} K_1$ and $\operatorname{cl} K_2$.
-The cones are Mathlib's `PointedCone`. -/
+The cones are Mathlib's `PointedCone`, so this version requires that they contain the origin.
+
+**Reading.** The source permits a finite family of nonempty cones. Lean covers two convex cones
+containing zero.
+-/
 theorem corollary_9_1_3 (K L : PointedCone ℝ (Rn n))
     (h : ∀ z ∈ closure (K : Set (Rn n)), ∀ w ∈ closure (L : Set (Rn n)), z + w = 0 →
       z ∈ linealitySpace (closure (K : Set (Rn n))) ∧
@@ -354,7 +392,9 @@ is a closed proper convex function.
 The function $h$ is `f`, and closedness of $h$ is stated as closedness of
 $\operatorname{epi} h$. The hypothesis is stated in the equivalent form: if $(h0^+)(z) \le 0$
 and $Az = 0$, then $z$ is in the constancy space of $h$, that is, also $(h0^+)(-z) \le 0$. The
-translation uses `ConvexAnalysis.mk_zero_mem_linealitySpace_epi_iff`. -/
+translation uses `ConvexAnalysis.mk_zero_mem_linealitySpace_epi_iff`. The book also states
+$(Ah)0^+ = A(h0^+)$. The declarations for this theorem cover closedness, properness, convexity
+and attainment. -/
 theorem theorem_9_2 {f : Rn n → EReal} (hconv : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (A : Rn n →ₗ[ℝ] Rn m)
     (hrec : ∀ z, recessionFn f z ≤ 0 → A z = 0 → z ∈ constancySpace f) :
@@ -395,7 +435,10 @@ Then the infimal convolution $f_1 \mathbin{\square} f_2$ is a closed proper conv
 
 The hypothesis is weaker than that of Corollary 9.2.2, which asks
 $(f_1 0^+)(z) + (f_2 0^+)(-z) > 0$ for every $z \neq 0$: for $n \ge 1$, the functions
-$f_1 = f_2 = 0$ satisfy this hypothesis but not that of Corollary 9.2.2. -/
+$f_1 = f_2 = 0$ satisfy this hypothesis but not that of Corollary 9.2.2.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_2_1 {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g)
     (h : ∀ z w : Rn n, recessionFn f z + recessionFn g w ≤ 0 →
@@ -407,6 +450,8 @@ theorem corollary_9_2_1 {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
 /-- **Corollary 9.2.1** of [rockafellar1970convex], the recession formula, for $m = 2$. Under the
 hypotheses of `Rockafellar.corollary_9_2_1`,
 $$(f_1 \mathbin{\square} f_2) 0^+ = f_1 0^+ \mathbin{\square} f_2 0^+.$$
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
 -/
 theorem corollary_9_2_1_recession {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g)
@@ -422,7 +467,11 @@ attained for each $x$: if $(f_1 \mathbin{\square} f_2)(x) \le \mu$ for a real $\
 are $y$ and reals $\nu, \rho$ with $\nu + \rho = \mu$, $f_1(y) \le \nu$ and
 $f_2(x - y) \le \rho$.
 
-The conclusion also contains the trivial condition $y + (x - y) = x$. -/
+The conclusion also contains the trivial condition $y + (x - y) = x$.
+
+**Reading.** The source allows a finite family and states attainment for each input. Lean gives a
+real upper-bound witness for two inputs.
+-/
 theorem corollary_9_2_1_attained {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g)
     (h : ∀ z w : Rn n, recessionFn f z + recessionFn g w ≤ 0 →
@@ -459,7 +508,10 @@ theorem corollary_9_2_2_recession {f g : Rn n → EReal} (hf : ClosedProperConve
 `Rockafellar.corollary_9_2_2`, the infimum that defines $(f_1 \mathbin{\square} f_2)(x)$ is
 attained for each $x$: if $(f_1 \mathbin{\square} f_2)(x) \le \mu$ for a real $\mu$, then there
 are $y$ and reals $\nu, \rho$ with $\nu + \rho = \mu$, $f_1(y) \le \nu$ and
-$f_2(x - y) \le \rho$. -/
+$f_2(x - y) \le \rho$.
+
+**Reading.** The source states attainment for each input. Lean gives a witness at real upper bounds.
+-/
 theorem corollary_9_2_2_attained {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g)
     (h : ∀ z : Rn n, z ≠ 0 → 0 < recessionFn f z + recessionFn g (-z)) {x : Rn n} {μ : ℝ}
@@ -472,7 +524,10 @@ theorem corollary_9_2_2_attained {f g : Rn n → EReal} (hf : ClosedProperConvex
 
 /-- **Theorem 9.3** of [rockafellar1970convex], for $m = 2$, the closed case. Let $f_1$ and $f_2$ be
 closed proper convex functions on $\mathbb{R}^n$ such that $f_1 + f_2$ is not identically
-$+\infty$. Then $f_1 + f_2$ is a closed proper convex function. -/
+$+\infty$. Then $f_1 + f_2$ is a closed proper convex function.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem theorem_9_3_closed {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) (hne : (convexDom (f + g)).Nonempty) :
     ClosedProperConvexFn (f + g) :=
@@ -482,6 +537,8 @@ theorem theorem_9_3_closed {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
 $f_2$ be closed proper convex functions on $\mathbb{R}^n$ such that $f_1 + f_2$ is not
 identically $+\infty$. Then
 $$(f_1 + f_2) 0^+ = f_1 0^+ + f_2 0^+.$$
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
 -/
 theorem theorem_9_3_recession {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) (hne : (convexDom (f + g)).Nonempty) :
@@ -493,6 +550,9 @@ proper convex functions on $\mathbb{R}^n$, not necessarily closed, such that
 $\operatorname{ri}(\operatorname{dom} f_1)$ and $\operatorname{ri}(\operatorname{dom} f_2)$ have
 a common point. Then
 $$\operatorname{cl}(f_1 + f_2) = \operatorname{cl} f_1 + \operatorname{cl} f_2.$$
+
+**Generalization.** The book states the formula when at least one summand is nonclosed. The
+two-function Lean formula applies when both summands are closed as well.
 -/
 theorem theorem_9_3_closure {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
     (hg : ConvexFn g) (hpg : ProperConvex g) {x : Rn n} (hxf : x ∈ ri (convexDom f))
@@ -597,6 +657,9 @@ $\mathbb{R}^m$, not necessarily closed, and let $A$ be a linear transformation f
 $\mathbb{R}^n$ to $\mathbb{R}^m$ such that $Ax \in \operatorname{ri}(\operatorname{dom} g)$ for
 some $x$. Then
 $$\operatorname{cl}(gA) = (\operatorname{cl} g) A.$$
+
+**Generalization.** The book states this clause for nonclosed $g$. The formula also applies to
+closed $g$ under the stated relative-interior hypothesis.
 -/
 theorem theorem_9_5_closure {g : Rn m → EReal} (hg : ConvexFn g) (hp : ProperConvex g)
     (A : Rn n →ₗ[ℝ] Rn m) {x : Rn n} (hx : A x ∈ ri (convexDom g)) :
@@ -609,8 +672,9 @@ theorem theorem_9_5_closure {g : Rn m → EReal} (hg : ConvexFn g) (hp : ProperC
 $\mathbb{R}^n$ not containing the origin, and let $K$ be the convex cone generated by $C$. Then
 $$\operatorname{cl} K = K \cup 0^+ C.$$
 
-The cone $K$ is `PointedCone.hull ℝ C`, which contains the origin; the origin is on the right
-side in any case, because $0 \in 0^+ C$. -/
+**Reading.** The cone $K$ is the cone of positive multiples with the origin adjoined, as in
+`PointedCone.hull ℝ C`. Both cones have the same closure, and the recession cone on the right
+contains zero. -/
 theorem theorem_9_6 {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) (hne : C.Nonempty)
     (h0 : (0 : Rn n) ∉ C) :
     closure (PointedCone.hull ℝ C : Set (Rn n))
@@ -622,7 +686,10 @@ hypotheses of `Rockafellar.theorem_9_6`,
 $$\operatorname{cl} K = \bigcup\{\lambda C \mid \lambda > 0 \text{ or } \lambda = 0^+\}.$$
 
 The union is indexed by `Rockafellar.ExtCoeff.Pos`, and `Rockafellar.ExtCoeff.smulSet` makes
-$\lambda = 0^+$ contribute $0^+ C$ rather than $\{0\}$. -/
+$\lambda = 0^+$ contribute $0^+ C$.
+
+**Reading.** The left side takes the closure of the generated cone with the origin adjoined,
+which gives the same closure as the cone of positive multiples. -/
 theorem theorem_9_6_iUnion {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C)
     (hne : C.Nonempty) (h0 : (0 : Rn n) ∉ C) :
     closure (PointedCone.hull ℝ C : Set (Rn n))
@@ -641,7 +708,9 @@ theorem theorem_9_6_iUnion {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed 
 /-- **Corollary 9.6.1** of [rockafellar1970convex]. Let $C$ be a nonempty closed bounded convex set
 in $\mathbb{R}^n$ not containing the origin. Then the convex cone generated by $C$ is closed.
 
-The cone is `PointedCone.hull ℝ C`, which contains the origin. -/
+**Reading.** The generated cone includes zero, as in `PointedCone.hull ℝ C`. The positive
+multiples alone need not form a closed set: for $C = \{1\}$ in $\mathbb{R}$, they give
+$(0,+\infty)$. -/
 theorem corollary_9_6_1 {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) (hne : C.Nonempty)
     (h0 : (0 : Rn n) ∉ C) (hb : Bornology.IsBounded C) :
     IsClosed (PointedCone.hull ℝ C : Set (Rn n)) :=
@@ -688,7 +757,10 @@ theorem theorem_9_7 {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
 $\mu$, then $(f\lambda)(x) \le \mu$ for some $\lambda > 0$ or $\lambda = 0^+$.
 
 The statement at each real bound $\mu$ expresses that the epigraph of $\operatorname{cl} k$ is
-the union of the epigraphs of the $f\lambda$, not only the epigraph of their infimum. -/
+the union of the epigraphs of the $f\lambda$, not only the epigraph of their infimum.
+
+**Reading.** The source states attainment for each input. Lean gives a witness at real upper bounds.
+-/
 theorem theorem_9_7_attained {f : Rn n → EReal} (hf : ConvexFn f) (hp : ProperConvex f)
     (hc : IsClosed (epi f)) (h0 : 0 < f 0) {x : Rn n} {μ : ℝ}
     (hμ : lscHull (posHomGen f) x ≤ (μ : EReal)) :
@@ -874,7 +946,11 @@ $C = \operatorname{conv}(C_1 \cup C_2)$. Then
 $$\operatorname{cl} C = \bigcup\{\lambda_1 C_1 + \lambda_2 C_2 \mid \lambda_i \ge 0^+,
   \lambda_1 + \lambda_2 = 1\},$$
 where $\lambda_i \ge 0^+$ means that $\lambda_i C_i$ is taken to be $0^+ C_i$ rather than
-$\{0\}$ when $\lambda_i = 0^+$. -/
+$\{0\}$ when $\lambda_i = 0^+$.
+
+**Reading.** The source allows a finite family. The binary formula's ordinary zero coefficient adds
+no points.
+-/
 theorem theorem_9_8 {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) (hCne : C.Nonempty)
     (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (h : ∀ z ∈ recessionCone C, ∀ w ∈ recessionCone D, z + w = 0 →
@@ -889,6 +965,8 @@ theorem theorem_9_8 {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) (h
 /-- **Theorem 9.8** of [rockafellar1970convex], second conclusion, for $m = 2$. Under the hypotheses
 of `Rockafellar.theorem_9_8`,
 $$0^+(\operatorname{cl} C) = 0^+ C_1 + 0^+ C_2.$$
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
 -/
 theorem theorem_9_8_recession {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
@@ -899,7 +977,10 @@ theorem theorem_9_8_recession {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsCl
 
 /-- **Corollary 9.8.1** of [rockafellar1970convex], for $m = 2$. Let $C_1$ and $C_2$ be nonempty
 closed convex sets in $\mathbb{R}^n$ with the same recession cone. Then
-$C = \operatorname{conv}(C_1 \cup C_2)$ is closed. -/
+$C = \operatorname{conv}(C_1 \cup C_2)$ is closed.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_8_1_isClosed {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (heq : recessionCone C = recessionCone D) :
@@ -908,7 +989,10 @@ theorem corollary_9_8_1_isClosed {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : I
 
 /-- **Corollary 9.8.1** of [rockafellar1970convex], second conclusion, for $m = 2$. Let $C_1$ and
 $C_2$ be nonempty closed convex sets in $\mathbb{R}^n$ with the same recession cone $K$. Then
-$K$ is the recession cone of $\operatorname{conv}(C_1 \cup C_2)$. -/
+$K$ is the recession cone of $\operatorname{conv}(C_1 \cup C_2)$.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_8_1_recession {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C)
     (hCne : C.Nonempty) (hD : Convex ℝ D) (hDc : IsClosed D) (hDne : D.Nonempty)
     (heq : recessionCone C = recessionCone D) :
@@ -918,8 +1002,8 @@ theorem corollary_9_8_1_recession {C D : Set (Rn n)} (hC : Convex ℝ C) (hCc : 
 /-- **Corollary 9.8.2** of [rockafellar1970convex], for $m = 2$. Let $C_1$ and $C_2$ be closed
 bounded sets in $\mathbb{R}^n$. Then $\operatorname{conv}(C_1 \cup C_2)$ is closed and bounded.
 
-**Generalization.** The book assumes that $C_1$ and $C_2$ are nonempty and convex. This is not
-needed; the proof of the book has to discard an empty $C_i$ separately. -/
+**Generalization.** The book assumes convexity and permits empty sets. The two-set Lean
+result also applies to nonconvex closed bounded sets. -/
 theorem corollary_9_8_2 {C D : Set (Rn n)} (hCc : IsClosed C) (hCb : Bornology.IsBounded C)
     (hDc : IsClosed D) (hDb : Bornology.IsBounded D) :
     IsClosed (convexHull ℝ (C ∪ D)) ∧ Bornology.IsBounded (convexHull ℝ (C ∪ D)) := by
@@ -934,7 +1018,10 @@ proper convex functions on $\mathbb{R}^n$ with the same recession function $k$. 
 $f = \operatorname{conv}\{f_1, f_2\}$ is a closed proper convex function.
 
 The function $\operatorname{conv}\{f_1, f_2\}$ is `ConvexAnalysis.convFn₂ f₁ f₂`, the greatest
-convex function below $f_1$ and $f_2$. -/
+convex function below $f_1$ and $f_2$.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_8_3 {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) (heq : recessionFn f = recessionFn g) :
     ClosedProperConvexFn (convFn₂ f g) :=
@@ -942,7 +1029,10 @@ theorem corollary_9_8_3 {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
 
 /-- **Corollary 9.8.3** of [rockafellar1970convex], second conclusion, for $m = 2$. Under the
 hypotheses of `Rockafellar.corollary_9_8_3`, the recession function of
-$f = \operatorname{conv}\{f_1, f_2\}$ is $k$. -/
+$f = \operatorname{conv}\{f_1, f_2\}$ is $k$.
+
+**Reading.** Agrees for two inputs. The source allows a finite family.
+-/
 theorem corollary_9_8_3_recession {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) (heq : recessionFn f = recessionFn g) :
     recessionFn (convFn₂ f g) = recessionFn f :=
@@ -957,7 +1047,11 @@ $$\lambda_1 f_1(x_1) + \lambda_2 f_2(x_2) \le \mu.$$
 
 The statement at a real bound is the faithful reading in $[-\infty, +\infty]$: $f(x)$ may be
 $+\infty$, and then there is nothing to attain. The products follow the convention
-$0 \cdot (+\infty) = 0$ of `EReal`. -/
+$0 \cdot (+\infty) = 0$ of `EReal`.
+
+**Reading.** The source allows a finite family and states attainment for each input. Lean gives a
+real upper-bound witness for two inputs.
+-/
 theorem corollary_9_8_3_attained {f g : Rn n → EReal} (hf : ClosedProperConvexFn f)
     (hg : ClosedProperConvexFn g) (heq : recessionFn f = recessionFn g) {x : Rn n} {μ : ℝ}
     (hμ : convFn₂ f g x ≤ (μ : EReal)) :

@@ -36,6 +36,11 @@ specialize `Numlib.Optimization.Subproblem.TrustRegion`.
 
 ## Deviations from the source
 
+* **Equation (7.2.1), Theorem 7.2.1 and Corollary 7.2.2** (generalization). The model and
+  multiplier conditions apply to a bounded symmetric operator on a real inner-product space. The
+  uniqueness clause uses coercivity, which agrees with positive definiteness in finite
+  dimensions. See `ConnGouldToint.Chapter07.theorem_7_2_1` and
+  `ConnGouldToint.Chapter07.corollary_7_2_2`.
 * **Theorem 7.2.1** (reading). The radius is assumed positive. See
   `ConnGouldToint.Chapter07.theorem_7_2_1`.
 * **Corollary 7.2.2** (reading). The radius is assumed positive. See
@@ -53,7 +58,10 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 the **quadratic model** of the trust-region subproblem is
 $$q(s) = \langle g, s \rangle + \tfrac12 \langle s, H s \rangle.$$
 
-It is `Subproblem.quadModel g H`. -/
+It is `Subproblem.quadModel g H`.
+
+**Generalization.** The quadratic model acts on a real inner-product space with a bounded
+operator. -/
 noncomputable abbrev q (g : E) (H : E →L[ℝ] E) : E → ℝ := quadModel g H
 
 /-- **Theorem 7.2.1** of [conn2000trust]. Let $E$ be a real inner product space, not necessarily
@@ -67,7 +75,10 @@ If moreover $H + \mu I$ is coercive, then $s$ is the only global minimizer of $q
 shifted system $(H + \mu I) 0 = -g$ has no solution when $g \neq 0$.
 
 Coercivity is `LinearMap.IsCoercive`, which is equivalent to positive definiteness in finite
-dimension. -/
+dimension.
+
+**Reading.** In the more general inner-product space, the uniqueness premise is coercivity. In
+finite dimensions this is positive definiteness. -/
 theorem theorem_7_2_1 {g : E} {H : E →L[ℝ] E} {Δ : ℝ} {s : E}
     (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hΔ : 0 < Δ)
     (hs : ‖s‖ = Δ) (hmin : IsMinOn (q g H) (sphere 0 Δ) s) :
@@ -88,7 +99,9 @@ If moreover $H + \mu I$ is coercive, then $s$ is the only global minimizer of $q
 **Reading.** The statement assumes $\Delta > 0$. For $\Delta = 0$ the only feasible point is
 $0$, and the shifted system has no solution when $g \neq 0$.
 
-The conditions on $\mu$ are `Subproblem.IsTrustRegionMultiplier g H Δ s μ`. -/
+The conditions on $\mu$ are `Subproblem.IsTrustRegionMultiplier g H Δ s μ`.
+
+**Reading.** Coercivity supplies uniqueness on the ball, as in the sphere version. -/
 theorem corollary_7_2_2 {g : E} {H : E →L[ℝ] E} {Δ : ℝ} {s : E}
     (hH : (H : E →ₗ[ℝ] E).IsSymmetric) (hΔ : 0 < Δ)
     (hs : ‖s‖ ≤ Δ) (hmin : IsMinOn (q g H) (closedBall 0 Δ) s) :

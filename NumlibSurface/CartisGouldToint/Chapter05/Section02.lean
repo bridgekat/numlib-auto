@@ -31,6 +31,11 @@ The proof uses the Taylor polynomial of a function composed with a linear map fr
 * The space $\mathbb{R}^n$ is `EuclideanSpace ℝ (Fin n)`. The matrices $U_i$ are continuous linear
   maps from $\mathbb{R}^n$ to $\mathbb{R}^{n_i}$, and $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`.
 
+## Deviations from the source
+
+* **Equation (5.2.2)** (reading). The text leaves Taylor-model smoothness implicit. Lean
+  assumes each element function is $C^p$ at its projected base point $U_i x$.
+
 ## Not formalized
 
 * The remark that partially separable models can be used in trust-region and adaptive-regularization
@@ -79,7 +84,10 @@ continuously differentiable at $U_i x$. Then for every $s \in \mathbb{R}^n$ the 
 polynomials of degree $p$ satisfy
 $$T_{f,p}(x, s) = \sum_{i=1}^m T_{f_i,p}(U_i x, U_i s).$$
 
-The Taylor polynomial $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`. -/
+The Taylor polynomial $T_{f,p}(x, s)$ is `taylorPolynomial f p x s`.
+
+**Reading.** The pointwise $C^p$ assumptions make explicit the smoothness implicit in the
+source Taylor polynomials. -/
 theorem taylorPolynomial_partiallySeparable {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {fᵢ : (i : Fin m) → EuclideanSpace ℝ (Fin (d i)) → ℝ}
     {U : (i : Fin m) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin (d i))}

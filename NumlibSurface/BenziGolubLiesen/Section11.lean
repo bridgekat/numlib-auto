@@ -64,6 +64,10 @@ multiplicative Vanka smoothing and two-level Schwarz corrections. The proofs use
   $\mathcal{A}^{-1}$ additionally requires that $\mathcal{A}$ is nonsingular.
 * **Pressure-scaled distribution** (reading). The printed $M=-BA^{-1}B^TQ$ is for $C=0$;
   retaining $C$ gives $M=(-BA^{-1}B^T-C)Q$.
+* **Smoothers and patch corrections** (reading). Matrix formulas use total inverses.
+  Vanka uses exact principal-patch responses when the patch matrices are invertible, with
+  fixed weights and a supplied sweep order. The two-level additive formula accepts arbitrary
+  linear local and coarse responses.
 * **Hybrid additive-local/coarse correction** (reading). The coarse update in this realization is
   applied after, and to the residual left by, the additive local update.
 
@@ -268,7 +272,9 @@ variable {idx n m : Type*} [Fintype idx] [DecidableEq idx]
 /-- **Equation (11.1)** of [benzi2005numerical]. For real matrices $\mathcal A$,
 $\mathcal B$ and $\mathcal S$, the **distributive relaxation** update is
 $u+\mathcal B\mathcal S^{-1}(b-\mathcal A u)$. The total inverse gives zero correction if
-$\mathcal S$ is singular. -/
+$\mathcal S$ is singular.
+
+**Generalization.** The definition uses the total inverse of the splitting matrix. -/
 noncomputable def distributiveRelaxation (A distribution splitting : Matrix idx idx ℝ)
     (rhs iterate : idx → ℝ) : idx → ℝ :=
   residualCorrection A.mulVecLin (distribution * splitting⁻¹).mulVecLin rhs iterate
@@ -352,7 +358,9 @@ theorem distributiveRelaxation_limit_eq (A distribution splitting : Matrix idx i
 variable [Fintype n] [DecidableEq n] [Fintype m]
 
 /-- **Section 11.1** of [benzi2005numerical]. Given real blocks $A,B,Q$, the **distributive
-transform** has blocks $I$, $-A^{-1}B^TQ$, $0$, and $Q$ in row order. -/
+transform** has blocks $I$, $-A^{-1}B^TQ$, $0$, and $Q$ in row order.
+
+**Generalization.** The total inverse makes the formula defined also for singular $A$. -/
 noncomputable def distributiveTransform (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (Q : Matrix m m ℝ) : Matrix (n ⊕ m) (n ⊕ m) ℝ :=
   fromBlocks 1 (-(A⁻¹ * Bᵀ * Q)) 0 Q
@@ -379,7 +387,10 @@ the diagonal of the real primal block $A$, and $\widehat S=-BD_A^{-1}B^T$. It us
 distribution $\left[\begin{smallmatrix}I&-D_A^{-1}B^T\\0&I\end{smallmatrix}\right]$ and the
 splitting matrix $\left[\begin{smallmatrix}D_A&0\\B&\widehat S\end{smallmatrix}\right]$
 in distributive relaxation for the unstabilized real saddle system. Inverse operations are
-totalized and give genuine inverses when the corresponding matrices are nonsingular. -/
+totalized and give genuine inverses when the corresponding matrices are nonsingular.
+
+**Generalization.** The diagonal and splitting inverses are total. They implement the original
+SIMPLE solves when the corresponding matrices are invertible. -/
 noncomputable def simpleSmoother (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (rhs iterate : n ⊕ m → ℝ) : n ⊕ m → ℝ :=
   let diagonalA := Matrix.diagonal A.diag
@@ -389,7 +400,10 @@ noncomputable def simpleSmoother (A : Matrix n n ℝ) (B : Matrix m n ℝ)
 /-- **Section 11.1** of [benzi2005numerical], referring to (10.18).
 The **Braess–Sarazin-type step** for the real unstabilized saddle system applies the inverse
 of $M=\left[\begin{smallmatrix}G&B^T\\B&0\end{smallmatrix}\right]$ to the residual and adds the
-result. When $M$ is singular the total inverse returns zero correction. -/
+result. When $M$ is singular the total inverse returns zero correction.
+
+**Generalization.** The definition uses the total inverse. Its equivalence with the splitting
+equation assumes an invertible preconditioner. -/
 noncomputable def braessSarazinStep (A G : Matrix n n ℝ) (B : Matrix m n ℝ)
     (rhs iterate : n ⊕ m → ℝ) : n ⊕ m → ℝ :=
   residualCorrection (saddlePointMatrix A B B 0).mulVecLin
@@ -427,7 +441,10 @@ variable {n m localPrimal localDual fine patch J : Type*}
 
 /-- The Vanka patch formed by embeddings of the primal and dual indices of a cell has a local
 saddle operator: the submatrix of the global saddle matrix is obtained by restricting each of
-its blocks to the corresponding local row and column indices. -/
+its blocks to the corresponding local row and column indices.
+
+**Generalization.** The local block identity allows separate coupling blocks and a nonzero
+stabilization block. -/
 theorem vankaPatch_saddlePoint (A : Matrix n n ℝ) (B₁ B₂ : Matrix m n ℝ) (C : Matrix m m ℝ)
     (primal : localPrimal ↪ n) (dual : localDual ↪ m) :
     (saddlePointMatrix A B₁ B₂ C).submatrix (primal.sumMap dual) (primal.sumMap dual) =
@@ -441,7 +458,10 @@ variable [Fintype fine] [DecidableEq fine]
 with index embedding $\iota$, its **patch response** is
 $$M_i=R_i^T(\mathcal A_{\iota,\iota})^{-1}R_i,$$
 where $R_i$ selects the patch coordinates. The response is zero for a singular patch matrix
-under the total inverse convention. -/
+under the total inverse convention.
+
+**Reading.** This realization uses an exact solve on a nonsingular principal patch. The total
+inverse assigns zero response to a singular patch. -/
 noncomputable def vankaPatchResponse [Fintype patch] [DecidableEq patch]
     (A : Matrix fine fine ℝ) (embed : patch ↪ fine) : Module.End ℝ (fine → ℝ) :=
   let R : Matrix patch fine ℝ := coordinateRestriction embed
@@ -484,7 +504,9 @@ variable {Cell : J → Type*} [∀ cell, Fintype (Cell cell)] [∀ cell, Decidab
 /-- **Sections 11.1–11.2** of [benzi2005numerical]. **Additive Vanka** for a finite collection
 of coordinate patches solves each local problem on the same old residual $b-\mathcal A u$
 and adds the sum of the extended corrections, each scaled by its patch weight $\omega_i$.
-The patch solve uses the total matrix inverse. -/
+The patch solve uses the total matrix inverse.
+
+**Reading.** The definition chooses exact responses with fixed real patch weights. -/
 noncomputable def additiveVanka [Fintype J] (A : Matrix fine fine ℝ)
     (embed : ∀ cell, Cell cell ↪ fine) (weight : J → ℝ) (rhs iterate : fine → ℝ) : fine → ℝ :=
   residualCorrection A.mulVecLin (additiveResponse (fun cell => vankaPatchResponse A (embed cell))
@@ -500,7 +522,10 @@ theorem additiveVanka_apply [Fintype J] (A : Matrix fine fine ℝ)
 
 /-- **Section 11.1** of [benzi2005numerical]. **Multiplicative Vanka** applies the extended,
 damped Vanka patch response to the current residual at each visit in the specified order.
-An empty order performs no corrections; repeated visits are permitted. -/
+An empty order performs no corrections; repeated visits are permitted.
+
+**Reading.** The definition chooses exact responses with fixed real patch weights. The ordered
+list may repeat or skip patches. -/
 noncomputable def multiplicativeVanka (A : Matrix fine fine ℝ)
     (embed : ∀ cell, Cell cell ↪ fine) (weight : J → ℝ) (order : List J)
     (rhs iterate : fine → ℝ) : fine → ℝ :=
@@ -526,7 +551,9 @@ variable {E J : Type*} [AddCommGroup E] [Module ℝ E] [Fintype J]
 /-- **Section 11.2** of [benzi2005numerical]. The **two-level additive Schwarz update** adds
 the correction from the lifted coarse response $M_0$ and the corrections from all the
 lifted local responses $M_i$ to the current iterate. They act on the same residual, so the
-response is $M_0+\sum_i\omega_i M_i$. The local subdomains may overlap. -/
+response is $M_0+\sum_i\omega_i M_i$. The local subdomains may overlap.
+
+**Generalization.** The algebraic update takes arbitrary linear local and coarse responses. -/
 noncomputable def twoLevelAdditiveSchwarz (A coarseResponse : Module.End ℝ E)
     (localResponse : J → Module.End ℝ E) (weight : J → ℝ) (rhs iterate : E) : E :=
   residualCorrection A (coarseResponse + additiveResponse localResponse weight) rhs iterate

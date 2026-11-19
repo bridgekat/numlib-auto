@@ -96,9 +96,20 @@ All 16 numbered results of §11 are formalized, in the vocabulary of the book.
 
 ## Deviations from the source
 
+* **Section 11, separation** (generalization). The book defines separation for two nonempty sets.
+  `Rockafellar.SeparatesRn`, `Rockafellar.SeparatesProperlyRn`, `Rockafellar.SeparatesStrictlyRn`,
+  `Rockafellar.SeparatesStronglyRn`, `Rockafellar.SeparableProperly` and
+  `Rockafellar.SeparableStrongly` also admit empty inputs.
+* **Theorem 11.5 and Corollary 11.5.1** (reading). The intersection includes the inequalities with
+  zero normal, so it contains the empty half-space when the input is empty. This gives the stated
+  identity even in dimension zero, where there are no genuine hyperplanes.
 * **Corollary 11.5.2** (correction). The book assumes only $C \neq \mathbb{R}^n$; the statement also
   needs $C \neq \emptyset$, since for $n = 0$ the empty set is a convex set other than
   $\mathbb{R}^0$ and there is no $b \neq 0$. See `Rockafellar.corollary_11_5_2`.
+* **Section 11, supporting half-space** (generalization). `Rockafellar.IsSupportingHalfSpace`
+  uses the same defining conditions on arbitrary sets.
+* **Corollary 11.7.2** (reading). The closure is that of the generated cone with zero adjoined.
+  For an empty generating set, the intersection contains the origin and equals $\{0\}$.
 * **Corollary 11.7.3** (correction). The book assumes only $K \neq \mathbb{R}^n$; the statement also
   needs $K \neq \emptyset$, for the same reason as in Corollary 11.5.2. See
   `Rockafellar.corollary_11_7_3`.
@@ -134,13 +145,18 @@ $\{x \mid \langle x, b \rangle \ge \beta\}$, and $C_2$ is contained in the oppos
 half-space $\{x \mid \langle x, b \rangle \le \beta\}$.
 
 The definition uses the backbone's `ConvexAnalysis.Separates`, whose two sets are in the other
-order. -/
+order.
+
+**Generalization.** The book defines separation for nonempty sets. The same containment
+conditions also apply to empty sets. -/
 def SeparatesRn (b : Rn n) (β : ℝ) (C₁ C₂ : Set (Rn n)) : Prop :=
   b ≠ 0 ∧ Separates (linFn b) β C₂ C₁
 
 /-- **Section 11** of [rockafellar1970convex], proper separation (page 95 of the book). The
 hyperplane $H = \{x \mid \langle x, b \rangle = \beta\}$ separates $C_1$ and $C_2$ **properly**
-if $b \neq 0$, $H$ separates $C_1$ and $C_2$, and $C_1$ and $C_2$ are not both contained in $H$. -/
+if $b \neq 0$, $H$ separates $C_1$ and $C_2$, and $C_1$ and $C_2$ are not both contained in $H$.
+
+**Generalization.** The predicate also admits empty inputs. -/
 def SeparatesProperlyRn (b : Rn n) (β : ℝ) (C₁ C₂ : Set (Rn n)) : Prop :=
   b ≠ 0 ∧ SeparatesProperly (linFn b) β C₂ C₁
 
@@ -150,7 +166,7 @@ if $b \neq 0$ and $C_1$ and $C_2$ belong to opposing open half-spaces:
 $$\langle x, b \rangle > \beta \text{ for every } x \in C_1, \qquad \langle x, b \rangle < \beta
   \text{ for every } x \in C_2.$$
 
-The book defines this notion but numbers no result about it. -/
+**Generalization.** The predicate also admits empty inputs. -/
 def SeparatesStrictlyRn (b : Rn n) (β : ℝ) (C₁ C₂ : Set (Rn n)) : Prop :=
   b ≠ 0 ∧ (∀ x ∈ C₂, pairing n x b < β) ∧ ∀ x ∈ C₁, β < pairing n x b
 
@@ -161,8 +177,9 @@ open half-space $\{x \mid \langle x, b \rangle > \beta\}$ and $C_2 + \varepsilon
 opposite open half-space $\{x \mid \langle x, b \rangle < \beta\}$, where $B$ is the closed
 Euclidean unit ball.
 
-This is the definition of the book. `Rockafellar.separatesStronglyRn_iff` identifies it with the
-backbone's definition by a gap, which is condition (c) of Theorem 11.1. -/
+`Rockafellar.separatesStronglyRn_iff` identifies this condition with the backbone's gap condition.
+
+**Generalization.** The predicate also admits empty inputs. -/
 def SeparatesStronglyRn (b : Rn n) (β : ℝ) (C₁ C₂ : Set (Rn n)) : Prop :=
   b ≠ 0 ∧ ∃ ε > 0, (∀ x ∈ C₂ + Metric.closedBall (0 : Rn n) ε, pairing n x b < β) ∧
     ∀ x ∈ C₁ + Metric.closedBall (0 : Rn n) ε, β < pairing n x b
@@ -180,12 +197,18 @@ theorem separatesStronglyRn_iff {b : Rn n} {β : ℝ} {C₁ C₂ : Set (Rn n)} :
   simp only [SeparatesStronglyRn, separatesStrongly_iff_exists_closedBall, linFn_apply]
 
 /-- **Section 11** of [rockafellar1970convex]. The sets $C_1, C_2 \subseteq \mathbb{R}^n$ **can be
-separated properly** if some hyperplane separates them properly. -/
+separated properly** if some hyperplane separates them properly.
+
+**Generalization.** The predicate allows empty inputs, as does `Rockafellar.SeparatesProperlyRn`.
+-/
 def SeparableProperly (C₁ C₂ : Set (Rn n)) : Prop :=
   ∃ (b : Rn n) (β : ℝ), SeparatesProperlyRn b β C₁ C₂
 
 /-- **Section 11** of [rockafellar1970convex]. The sets $C_1, C_2 \subseteq \mathbb{R}^n$ **can be
-separated strongly** if some hyperplane separates them strongly. -/
+separated strongly** if some hyperplane separates them strongly.
+
+**Generalization.** The predicate allows empty inputs, as does `Rockafellar.SeparatesStronglyRn`.
+-/
 def SeparableStrongly (C₁ C₂ : Set (Rn n)) : Prop :=
   ∃ (b : Rn n) (β : ℝ), SeparatesStronglyRn b β C₁ C₂
 
@@ -459,9 +482,9 @@ intersection of the closed half-spaces which contain it:
 $$C = \bigcap\{\{x \mid \langle x, b \rangle \le \beta\} \mid b \in \mathbb{R}^n, \beta \in
   \mathbb{R}, \langle y, b \rangle \le \beta \text{ for all } y \in C\}.$$
 
-The intersection runs over all vectors $b$, including $b = 0$. This is harmless:
-$\{x \mid \langle x, 0 \rangle \le \beta\}$ is $\mathbb{R}^n$ when $\beta \ge 0$, which is the
-only case in which it contains a nonempty $C$. -/
+**Reading.** The book uses genuine half-spaces. The Lean intersection also allows $b = 0$,
+giving the whole space for $\beta \ge 0$ and the empty set for $\beta < 0$. The empty inequality
+is admissible when $C = \emptyset$, giving the stated identity even in dimension zero. -/
 theorem theorem_11_5 {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) :
     ⋂ (b : Rn n) (β : ℝ) (_ : ∀ y ∈ C, pairing n y b ≤ β),
       {x : Rn n | pairing n x b ≤ β} = C := by
@@ -480,7 +503,8 @@ theorem theorem_11_5 {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) :
 $\operatorname{cl}(\operatorname{conv} S)$ is the intersection of all the closed half-spaces
 containing $S$.
 
-As in `Rockafellar.theorem_11_5`, the intersection runs over all vectors $b$, including $b = 0$. -/
+**Reading.** As in `Rockafellar.theorem_11_5`, the intersection includes inequalities with
+$b = 0$. The empty inequality ensures the identity for empty $S$ in dimension zero. -/
 theorem corollary_11_5_1 (S : Set (Rn n)) :
     ⋂ (b : Rn n) (β : ℝ) (_ : ∀ y ∈ S, pairing n y b ≤ β), {x : Rn n | pairing n x b ≤ β} =
       closure (convexHull ℝ S) := by
@@ -523,7 +547,10 @@ $b \in \mathbb{R}^n$, $\beta \in \mathbb{R}$ and $C \subseteq \mathbb{R}^n$. The
 half-space $\{x \mid \langle x, b \rangle \le \beta\}$ is a **supporting half-space** to $C$ if
 $b \neq 0$, it contains $C$, and it has a point of $C$ in its boundary:
 $\langle x, b \rangle = \beta$ for some $x \in C$. The boundary
-$\{x \mid \langle x, b \rangle = \beta\}$ is then a **supporting hyperplane** to $C$. -/
+$\{x \mid \langle x, b \rangle = \beta\}$ is then a **supporting hyperplane** to $C$.
+
+**Generalization.** The book introduces the definition for convex sets. The predicate also
+admits nonconvex sets. -/
 def IsSupportingHalfSpace (b : Rn n) (β : ℝ) (C : Set (Rn n)) : Prop :=
   b ≠ 0 ∧ (∀ x ∈ C, pairing n x b ≤ β) ∧ ∃ x ∈ C, pairing n x b = β
 
@@ -669,8 +696,9 @@ theorem corollary_11_7_1 {K : Set (Rn n)} (hconv : Convex ℝ K) (hcone : IsCone
 let $K$ be the closure of the convex cone generated by $S$. Then $K$ is the intersection of all
 the homogeneous closed half-spaces containing $S$.
 
-The cone generated by $S$ is `PointedCone.hull ℝ S`, which contains the origin. The proof of the
-book needs this, so no generality is lost. -/
+**Reading.** The generated cone is `PointedCone.hull ℝ S`, which contains the origin. Adding
+the origin leaves the closure of the generated cone unchanged for nonempty $S$. For empty $S$,
+the closure is $\{0\}$, which is the intersection on the left. -/
 theorem corollary_11_7_2 (S : Set (Rn n)) :
     ⋂ (b : Rn n) (_ : ∀ y ∈ S, pairing n y b ≤ 0), {x : Rn n | pairing n x b ≤ 0} =
       closure (PointedCone.hull ℝ S : Set (Rn n)) := by

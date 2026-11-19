@@ -54,6 +54,8 @@ factorizations $PA = LU$ and $PAQ = LU$) and `Numlib.LinearAlgebra.Matrix.LU.Eli
 * **(3.52)** (generalization). The source proves the factorization for nonsingular $A$. The
   existence of $PA = LU$ with $|l_{ij}| \le 1$ is also stated for every square matrix. See
   `QuarteroniSaccoSaleri.Chapter03.equation_3_52`.
+* **Complete pivoting** (reading). The theorem concludes existence with entrywise bounds
+  for both factors for every square matrix.
 
 ## Not formalized
 
@@ -310,7 +312,10 @@ $|u_{ij}| \le |u_{ii}|$ for all $i, j$.
 
 The factorization comes from exchanging, at each stage, the current row and column with those of
 an entry of largest modulus in the trailing block. No nonsingularity is needed. The proof
-specializes `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`. -/
+specializes `Matrix.exists_permMatrix_mul_mul_permMatrix_isLU`.
+
+**Reading.** The source describes the maximum-pivot algorithm. This gives an existence
+statement for all square matrices, with bounds on the entries of both triangular factors. -/
 theorem completePivoting :
     ∃ (σ τ : Equiv.Perm (Fin n)) (L U : Matrix (Fin n) (Fin n) ℝ),
       IsLU (σ.permMatrix ℝ * A * τ.permMatrix ℝ) L U ∧ (∀ i j, |L i j| ≤ 1) ∧
@@ -327,7 +332,10 @@ last stage of GEM without pivoting on $PA$.
 
 This is the remark of the source that the entries of $L$ coincide with the multipliers computed
 by the LU factorization without pivoting, when it is applied to $PA$. The proof uses
-`Matrix.IsLU.eq_of_permMatrix_mul`. -/
+`Matrix.IsLU.eq_of_permMatrix_mul`.
+
+**Reading.** The identification of the factors is stated under the nonzero proper leading
+minors of the permuted matrix, which ensure uniqueness. -/
 theorem pivoting_multipliers {σ : Equiv.Perm (Fin n)} {L U : Matrix (Fin n) (Fin n) ℝ}
     (h : IsLU (σ.permMatrix ℝ * A) L U)
     (hPA : ∀ k, IsUnit ((σ.permMatrix ℝ * A).strictLeadingPrincipalSubmatrix k)) :

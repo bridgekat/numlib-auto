@@ -87,12 +87,21 @@ The proofs specialize Mathlib's Hahn–Banach and Riesz theorems, the $L^p$ dual
 * **Example 2.5.1** (generalization). The book takes $\Omega \subseteq \mathbb{R}^d$ bounded and
   open. The identification $(L^p(\Omega))' = L^{p'}(\Omega)$ for $1 \le p < \infty$ holds for every
   set $\Omega$. See `AtkinsonHan.Chapter02.example_2_5_1`.
+* **Example 2.5.1, $p=\infty$** (generalization and reading). The real nonrepresentation result
+  allows unbounded open sets and explicitly assumes nonemptiness and positive spatial dimension.
+* **Example 2.5.3** (reading). The value identity is proved for globally continuous
+  representatives. The book asserts it when the representative is continuous at the evaluation
+  point. Lean also proves that none of the point-evaluation extensions has an $L^1$ density.
+* **Corollary 2.5.7** (reading). Lean gives the empty supremum value zero in the zero space.
+* **Example 2.5.9, $L^2$ case** (generalization). The representation theorem is stated for
+  the restricted measure on any Euclidean subset.
 
 ## Not formalized
 
 * **Example 2.5.3, further properties of $\hat\ell_c$.** The book states them without proof: the
   locality of $\hat\ell_c$, the bounds $m \le \hat\ell_c([v]) \le M$ in terms of the values of $v$
-  in a neighbourhood of $c$, and the value $v(c)$ when $v$ is continuous at $c$.
+  in a neighbourhood of $c$, and convergence of nearby extended evaluations to $v(c)$ when
+  $v$ is continuous at $c$. The value identity is stated for globally continuous functions.
 * **Example 2.5.9, the boundary value problem.** The book calls the representer $u$ the generalized
   solution of $-u'' + u = \delta(x - c)$ with $u'(a) = u'(b) = 0$.
 -/
@@ -167,7 +176,10 @@ theorem corollary_2_5_6 (v : V) (hv : v ≠ 0) : ∃ ℓ : StrongDual 𝕜 V, �
 $\mathbb{K}$ and let $v \in V$. Then
 $$\|v\| = \sup \{ |\ell(v)| : \ell \in V', \ \|\ell\| = 1 \}.$$
 On the zero space no functional has norm $1$, the set is empty, and both sides are $0$, because
-`sSup ∅ = 0`. -/
+`sSup ∅ = 0`.
+
+**Reading.** Defines the supremum of the empty norm-one dual sphere as zero on the zero space.
+-/
 theorem corollary_2_5_7 (v : V) :
     ‖v‖ = sSup {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖} := by
   have hbdd : ∀ r ∈ {r : ℝ | ∃ ℓ : StrongDual 𝕜 V, ‖ℓ‖ = 1 ∧ r = ‖ℓ v‖}, r ≤ ‖v‖ := by
@@ -218,7 +230,9 @@ $L^2(\Omega)$. Then there is a unique $u \in L^2(\Omega)$ with $\ell(v) = (v, u)
 $v \in L^2(\Omega)$. Thus $(L^2(\Omega))' = L^2(\Omega)$ through (2.5.5).
 
 This is `AtkinsonHan.Chapter02.theorem_2_5_8` for $H = L^2(\Omega)$. The set $\Omega$ is
-arbitrary, and the measure is Lebesgue measure restricted to $\Omega$. -/
+arbitrary, and the measure is Lebesgue measure restricted to $\Omega$.
+
+**Generalization.** The restricted measure may come from any Euclidean subset. -/
 theorem example_2_5_9_l2 {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin d)))
     (ℓ : StrongDual ℝ (Lp ℝ 2 (volume.restrict Ω))) :
     ∃! u : Lp ℝ 2 (volume.restrict Ω), ∀ v, ℓ v = inner ℝ u v :=
@@ -300,7 +314,10 @@ $L^1(\Omega)$.
 
 The proof is the backbone's `MeasureTheory.Lp.not_surjective_toDual_top`, a Hahn–Banach
 extension of a point evaluation as in Example 2.5.3. The dimension is written $d + 1$ in Lean,
-and the scalars are real. -/
+and the scalars are real.
+
+**Reading.** Lean assumes a nonempty open subset in positive spatial dimension and works with
+real scalars. Boundedness of the set is unnecessary. -/
 theorem example_2_5_1_top {d : ℕ} (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) (hΩ : IsOpen Ω)
     (hne : Ω.Nonempty) :
     ∃ ℓ : StrongDual ℝ (Lp ℝ ∞ (volume.restrict Ω)), ∀ u : Lp ℝ 1 (volume.restrict Ω),
@@ -438,7 +455,10 @@ theorem norm_evalCoset (c : Icc (0 : ℝ) 1) : ‖evalCoset c‖ = 1 := by
 
 /-- Let $c \in [0, 1]$ and let $\ell$ be a bounded linear functional on $L^\infty(0, 1)$ with
 $\ell([v]) = v(c)$ for every $v \in C[0, 1]$. Let $f : \mathbb{R} \to \mathbb{R}$ be continuous
-and essentially bounded on $(0, 1)$. Then $\ell$ maps the class of $f$ to $f(c)$. -/
+and essentially bounded on $(0, 1)$. Then $\ell$ maps the class of $f$ to $f(c)$.
+
+**Reading.** The source assumes continuity at the evaluation point. This statement uses a
+globally continuous representative. -/
 theorem apply_toLp_eq_of_forall_cosetLinfty (c : Icc (0 : ℝ) 1)
     (ℓ : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))))
     (hℓ : ∀ v : C(Icc (0 : ℝ) 1, ℝ), ℓ (cosetLinfty v) = v c) (f : ℝ → ℝ)
@@ -471,7 +491,10 @@ $L^\infty(0, 1)$ is larger than $L^1(0, 1)$, as in Example 2.5.1. The subspace $
 `AtkinsonHan.Chapter02.contCosets`, and the point evaluation is
 `AtkinsonHan.Chapter02.evalCoset`. The further properties of $\hat\ell_c$ that the book states
 without proof (the bounds $m \le \hat\ell_c([v]) \le M$ in terms of the values of $v$ in a
-neighbourhood of $c$, and the value $v(c)$ when $v$ is continuous at $c$) are not formalized. -/
+neighbourhood of $c$, and the value $v(c)$ when $v$ is continuous at $c$) are not formalized.
+
+**Reading.** For this construction Lean also rules out an $L^1$ density for every extension
+agreeing with point evaluation on continuous functions. -/
 theorem example_2_5_3 (c : Icc (0 : ℝ) 1) :
     ‖evalCoset c‖ = 1 ∧
     (∃ ℓhat : StrongDual ℝ (Lp ℝ ∞ (volume.restrict (Ioo (0 : ℝ) 1))),

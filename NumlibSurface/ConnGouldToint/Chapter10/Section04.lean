@@ -61,6 +61,9 @@ The proofs use the parameters and the radius update (6.1.5) of
 * **Equation (10.4.12)** (reading). The quadratic term uses the displacement of the argument from
   the center, as in (10.4.15), so it cancels from the ratio error (10.4.16). See
   `ConnGouldToint.Chapter10.quadraticAugmentedModel`.
+* **Theorems 10.4.2 and 10.4.3** (generalization). The convergence proofs use agreement,
+  decrease and trial-error bounds directly on a normed-space trace. Theorem 10.4.3 takes a
+  Lipschitz derivative and bounds the original and corrective steps separately.
 -/
 
 open Filter Topology
@@ -86,7 +89,10 @@ def magicalStepDecrease (f m : E → ℝ) (x s c : E) : ℝ :=
 $$\rho(x, s, c) = \frac{f(x) - f(x + s + c)}{\delta(x, s, c)},$$
 with $\delta$ the augmented predicted decrease `ConnGouldToint.Chapter10.magicalStepDecrease`.
 
-Division is the Lean division, so the ratio is $0$ when $\delta(x, s, c) = 0$. -/
+Division is the Lean division, so the ratio is $0$ when $\delta(x, s, c) = 0$.
+
+**Reading.** Augmented actual/predicted ratio with totalized division.
+-/
 noncomputable def magicalStepRatio (f m : E → ℝ) (x s c : E) : ℝ :=
   (f x - f (x + s + c)) / magicalStepDecrease f m x s c
 
@@ -99,7 +105,10 @@ rule (6.1.5) with the ratio $\rho_k$ of the corrected step.
 
 The structure contains neither the norm bound on the step $s_k$ nor the sufficient-decrease
 bound on the augmented decrease $\delta_k$; it requires only $m_k(x_k) - m_k(x_k + s_k) > 0$.
-The theorems that need these bounds take them as hypotheses. -/
+The theorems that need these bounds take them as hypotheses.
+
+**Reading.** Trace in an arbitrary normed additive group and explicit positive augmented prediction.
+-/
 structure MagicalStepRun (P : BTRParams) (f : E → ℝ) where
   /-- The iterates $x_k$. -/
   x : ℕ → E
@@ -228,7 +237,10 @@ $$\kappa \|Df(x_k)\| \min\left\{\frac{\|Df(x_k)\|}{C}, \Delta_k\right\} \le \del
 Then for every $\varepsilon > 0$ there are infinitely many $k$ with $\|Df(x_k)\| < \varepsilon$.
 
 The proof uses only these agreement and decrease estimates. Here $Df$ is `fderiv ℝ f`, which is
-$0$ at a point where $f$ is not differentiable. -/
+$0$ at a point where $f$ is not differentiable.
+
+**Reading.** Uses explicit augmented decrease and trial-error bounds for a normed-space trace.
+-/
 theorem theorem_10_4_2 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f)
     {κ C : ℝ} (hκ : 0 < κ) (hκ' : κ ≤ 1) (hC : 0 < C)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -305,7 +317,11 @@ theorem theorem_10_4_2 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f
 
 /-- **Theorem 10.4.3** of [conn2000trust]. Under the hypotheses of Theorem 10.4.2, assume in
 addition that $Df$ is Lipschitz with constant $L \ge 0$, and that $\|s_k\| \le K \Delta_k$ and
-$\|c_k\| \le M \Delta_k$ for constants $K, M \ge 0$. Then $\|Df(x_k)\| \to 0$. -/
+$\|c_k\| \le M \Delta_k$ for constants $K, M \ge 0$. Then $\|Df(x_k)\| \to 0$.
+
+**Correction.** Uses direct Lipschitz derivative and separate bounds on trial and corrective step
+lengths.
+-/
 theorem theorem_10_4_3 {P : BTRParams} {f : E → ℝ} (run : MagicalStepRun P f)
     {κ C K M L : ℝ} (hκ : 0 < κ) (hκ' : κ ≤ 1) (hC : 0 < C)
     (hK : 0 ≤ K) (hM : 0 ≤ M) (hL : 0 ≤ L)
@@ -375,6 +391,8 @@ subtracts the same quadratic term from the actual reduction as the augmented mod
 predicted reduction:
 $$\hat\rho(x, s) = \frac{f(x) - f(x + s) - \frac12 \langle s, M s \rangle}{\hat m(x) - \hat
   m(x + s)}.$$
+
+**Correction.** Same correction in numerator and denominator with totalized division.
 -/
 noncomputable def quadraticAugmentedRatio (f m : E → ℝ) (x s : E)
     (M : E →ₗ[ℝ] E) : ℝ :=

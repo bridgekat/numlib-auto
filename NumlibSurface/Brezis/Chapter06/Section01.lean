@@ -61,6 +61,19 @@ Theorem 6.1 and Proposition 6.3 are Mathlib's results on `IsCompactOperator`. Co
   `Brezis.Chapter03.IsReflexive`, as in Chapter 3.
 * Completeness of $E$ and $F$ is assumed only where a statement uses it.
 
+## Deviations from the source
+
+* **Compactness and finite rank** (generalization). Both definitions and the implication
+  from finite rank to compactness apply to incomplete normed spaces. See
+  `Brezis.Chapter06.compactOperator_iff`, `Brezis.Chapter06.IsFiniteRank` and
+  `Brezis.Chapter06.IsFiniteRank.isCompactOperator`.
+* **Theorem 6.1, Corollary 6.2 and Remark 1, linear approximation** (generalization). The results
+  allow incomplete domains. See `Brezis.Chapter06.theorem_6_1`,
+  `Brezis.Chapter06.theorem_6_1_submodule`, `Brezis.Chapter06.corollary_6_2` and
+  `Brezis.Chapter06.remark_6_1`.
+* **Proposition 6.3** (generalization). Either composition result holds on arbitrary normed
+  spaces. See `Brezis.Chapter06.proposition_6_3_left` and `Brezis.Chapter06.proposition_6_3_right`.
+
 ## Not formalized
 
 * **Remark 1, Enflo's counterexample and Schauder bases.** This part of the remark is
@@ -85,7 +98,9 @@ normed spaces. A bounded operator $T \in \mathcal{L}(E, F)$ is compact if and on
 $T(B_E)$ of the closed unit ball $B_E$ has compact closure in $F$ for the strong topology.
 
 Mathlib's definition `IsCompactOperator` says that $T$ maps some neighbourhood of $0$ into a
-compact set. This theorem reads it with the closed ball of radius $1$, as the source defines it. -/
+compact set. This theorem reads it with the closed ball of radius $1$, as the source defines it.
+
+**Generalization.** The equivalence applies to incomplete normed spaces. -/
 theorem compactOperator_iff (T : E →L[ℝ] F) :
     IsCompactOperator T ↔ IsCompact (closure (T '' Metric.closedBall 0 1)) := by
   have key := isCompactOperator_iff_isCompact_closure_image_closedBall (T : E →ₗ[ℝ] F) one_pos
@@ -93,7 +108,9 @@ theorem compactOperator_iff (T : E →L[ℝ] F) :
 
 /-- **Theorem 6.1** of [brezis2011functional], closedness. Let $E$ be a normed space and $F$ a
 Banach space. The set $\mathcal{K}(E, F)$ of compact operators is closed in $\mathcal{L}(E, F)$
-for the operator norm. -/
+for the operator norm.
+
+**Generalization.** The domain may be incomplete. -/
 theorem theorem_6_1 [CompleteSpace F] : IsClosed {T : E →L[ℝ] F | IsCompactOperator T} :=
   isClosed_setOfPred_isCompactOperator
 
@@ -102,7 +119,9 @@ $F$ a Banach space. The set $\mathcal{K}(E, F)$ of compact operators is a linear
 $\mathcal{L}(E, F)$, and this subspace is closed: it equals its topological closure.
 
 The subspace is Mathlib's `compactOperator (RingHom.id ℝ) E F`. The first part of the statement
-says that its carrier is the set of compact operators. -/
+says that its carrier is the set of compact operators.
+
+**Generalization.** The domain may be incomplete. -/
 theorem theorem_6_1_submodule [CompleteSpace F] :
     ((compactOperator (RingHom.id ℝ) E F : Submodule ℝ (E →L[ℝ] F)) : Set (E →L[ℝ] F)) =
         {T : E →L[ℝ] F | IsCompactOperator T} ∧
@@ -111,12 +130,16 @@ theorem theorem_6_1_submodule [CompleteSpace F] :
   ⟨rfl, compactOperator_topologicalClosure⟩
 
 /-- **Section 6.1** of [brezis2011functional], definition of an operator of finite rank. An operator
-$T \in \mathcal{L}(E, F)$ has **finite rank** if its range $R(T)$ is finite dimensional. -/
+$T \in \mathcal{L}(E, F)$ has **finite rank** if its range $R(T)$ is finite dimensional.
+
+**Generalization.** The definition applies to incomplete normed spaces. -/
 def IsFiniteRank (T : E →L[ℝ] F) : Prop :=
   FiniteDimensional ℝ (LinearMap.range (T : E →ₗ[ℝ] F))
 
 /-- Every operator $T \in \mathcal{L}(E, F)$ of finite rank is compact. The source states this in
-Section 6.1 with the words "clearly, any finite-rank operator is compact". -/
+Section 6.1 immediately after the definition of finite rank.
+
+**Generalization.** The implication applies to incomplete normed spaces. -/
 theorem IsFiniteRank.isCompactOperator {T : E →L[ℝ] F} (hT : IsFiniteRank T) :
     IsCompactOperator T :=
   haveI : FiniteDimensional ℝ (LinearMap.range (T : E →ₗ[ℝ] F)) := hT
@@ -124,7 +147,9 @@ theorem IsFiniteRank.isCompactOperator {T : E →L[ℝ] F} (hT : IsFiniteRank T)
 
 /-- **Corollary 6.2** of [brezis2011functional]. Let $E$ be a normed space and $F$ a Banach space.
 Let $(T_n)$ be a sequence of operators of finite rank in $\mathcal{L}(E, F)$ and let
-$T \in \mathcal{L}(E, F)$ with $\|T_n - T\| \to 0$. Then $T \in \mathcal{K}(E, F)$. -/
+$T \in \mathcal{L}(E, F)$ with $\|T_n - T\| \to 0$. Then $T \in \mathcal{K}(E, F)$.
+
+**Generalization.** The domain may be incomplete. -/
 theorem corollary_6_2 [CompleteSpace F] {T : ℕ → E →L[ℝ] F} (hT : ∀ n, IsFiniteRank (T n))
     {S : E →L[ℝ] F} (h : Tendsto (fun n => ‖T n - S‖) atTop (𝓝 0)) : IsCompactOperator S :=
   IsCompactOperator.of_tendsto (fun n => (hT n).isCompactOperator) h
@@ -136,7 +161,9 @@ rank with $\|T_\varepsilon - T\| < \varepsilon$.
 
 The source proves the bound $2\varepsilon$; the statement here is the same with $\varepsilon$
 halved. The operator is $T_\varepsilon = P_G T$, where $G$ is the span of a finite
-$\varepsilon/2$-net of $T(B_E)$. -/
+$\varepsilon/2$-net of $T(B_E)$.
+
+**Generalization.** The domain may be incomplete. -/
 theorem remark_6_1 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
     {T : E →L[ℝ] F} (hT : IsCompactOperator T) {ε : ℝ} (hε : 0 < ε) :
     ∃ S : E →L[ℝ] F, IsFiniteRank S ∧ ‖S - T‖ < ε :=
@@ -165,14 +192,18 @@ theorem remark_6_1_nonlinear {X : Type*} [TopologicalSpace X] {F : Type*} [Norme
 
 /-- **Proposition 6.3** of [brezis2011functional], first case. Let $E$, $F$, $G$ be normed spaces,
 let $T \in \mathcal{L}(E, F)$ and let $S \in \mathcal{K}(F, G)$. Then
-$S \circ T \in \mathcal{K}(E, G)$. -/
+$S \circ T \in \mathcal{K}(E, G)$.
+
+**Generalization.** The spaces may be incomplete. -/
 theorem proposition_6_3_left (T : E →L[ℝ] F) {S : F →L[ℝ] G} (hS : IsCompactOperator S) :
     IsCompactOperator (S ∘L T) :=
   hS.comp_clm T
 
 /-- **Proposition 6.3** of [brezis2011functional], second case. Let $E$, $F$, $G$ be normed spaces,
 let $T \in \mathcal{K}(E, F)$ and let $S \in \mathcal{L}(F, G)$. Then
-$S \circ T \in \mathcal{K}(E, G)$. -/
+$S \circ T \in \mathcal{K}(E, G)$.
+
+**Generalization.** The spaces may be incomplete. -/
 theorem proposition_6_3_right {T : E →L[ℝ] F} (hT : IsCompactOperator T) (S : F →L[ℝ] G) :
     IsCompactOperator (S ∘L T) :=
   hT.clm_comp S

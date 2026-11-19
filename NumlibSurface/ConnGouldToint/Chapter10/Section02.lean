@@ -115,6 +115,9 @@ The parameters and the error constant come from the basic trust-region algorithm
 
 ## Deviations from the source
 
+* **(10.2.1)–(10.2.4)** (generalization). Element functions in the separable sum may have
+  arbitrary domains. The projected element regions use seminorms on real inner-product
+  spaces. The convergence estimates assume the relevant uniform norm comparison.
 * **Equations (10.2.6)–(10.2.7)** (reading). The ratio test and the fit test are equivalent only for
   a positive predicted decrease. At zero predicted decrease they can disagree. The module uses the
   fit test. See `ConnGouldToint.Chapter10.elementRatio_zero_counterexample`.
@@ -139,7 +142,10 @@ variable {E ι : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- **Section 10.2.1** of [conn2000trust], invariant subspace. Let $N$ be a subspace of $E$ and $f$
 a function on $E$. Then $f$ is **invariant along** $N$ if $f(x + w) = f(x)$ for all $x \in E$
-and $w \in N$. -/
+and $w \in N$.
+
+**Generalization.** Translation invariance extends to any codomain and real inner-product space.
+-/
 def InvariantAlong {F : Type*} (N : Submodule ℝ E) (f : E → F) : Prop :=
   ∀ x w, w ∈ N → f (x + w) = f x
 
@@ -148,7 +154,11 @@ separable** with elements $f_i$ and invariant subspaces $N_i$, for $i$ in a fini
 $f(x) = \sum_i f_i(x)$ for all $x$, every $N_i$ is nonzero, and every $f_i$ is invariant along
 $N_i$.
 
-The range subspace of element $i$ is the orthogonal complement $N_i^\perp$. -/
+The range subspace of element $i$ is the orthogonal complement $N_i^\perp$.
+
+**Reading.** Parameterized by a supplied finite decomposition and nonzero invariant subspaces, in a
+general ambient space.
+-/
 structure PartiallySeparable [Fintype ι] (f : E → ℝ)
     (elements : ι → E → ℝ) (N : ι → Submodule ℝ E) : Prop where
   /-- Every $x$ satisfies $f(x) = \sum_i f_i(x)$. -/
@@ -159,7 +169,10 @@ structure PartiallySeparable [Fintype ι] (f : E → ℝ)
   invariant : ∀ i, InvariantAlong (N i) (elements i)
 
 /-- **Equation (10.2.1)** of [conn2000trust]. For element functions $f_i : X_i \to \mathbb{R}$ on
-the factors of a finite product, the **separable objective** is $f(x) = \sum_i f_i(x_i)$. -/
+the factors of a finite product, the **separable objective** is $f(x) = \sum_i f_i(x_i)$.
+
+**Reading.** Element domains may be arbitrary types rather than Euclidean factors.
+-/
 def separableObjective [Fintype ι] {X : ι → Type*} (elements : ∀ i, X i → ℝ)
     (x : ∀ i, X i) : ℝ :=
   ∑ i, elements i (x i)
@@ -167,14 +180,20 @@ def separableObjective [Fintype ι] {X : ι → Type*} (elements : ∀ i, X i �
 /-- **Equation (10.2.3)** of [conn2000trust]. For a seminorm $p$ on $E$, a subspace $N$, a center
 $x$ and a radius $\Delta$, the **element trust region** is the cylinder
 $$\{y \in E : p(P_{N^\perp}(y - x)) \le \Delta\},$$
-where $P_{N^\perp}$ is the orthogonal projection onto $N^\perp$. -/
+where $P_{N^\perp}$ is the orthogonal projection onto $N^\perp$.
+
+**Reading.** Orthogonal projection and seminorm on a real inner-product space.
+-/
 def elementTrustRegion (p : Seminorm ℝ E) (N : Submodule ℝ E)
     [Nᗮ.HasOrthogonalProjection] (x : E) (Δ : ℝ) : Set E :=
   {y | p (Nᗮ.starProjection (y - x)) ≤ Δ}
 
 /-- **Section 10.2.1** of [conn2000trust], the overall trust region. For a seminorm $p$, subspaces
 $N_i$, a center $x$ and radii $\Delta_i$, the **structured trust region** is the intersection
-over $i$ of the element trust regions (10.2.3) of $N_i$ with radius $\Delta_i$. -/
+over $i$ of the element trust regions (10.2.3) of $N_i$ with radius $\Delta_i$.
+
+**Reading.** Same intersection in a complete real inner-product space.
+-/
 def structuredTrustRegion [CompleteSpace E] (p : Seminorm ℝ E) (N : ι → Submodule ℝ E)
     (x : E) (Δ : ι → ℝ) : Set E :=
   ⋂ i, elementTrustRegion p (N i) x (Δ i)
@@ -184,6 +203,10 @@ the **minimum radius** is $\Delta_{\min} = \min_i \Delta_i$. -/
 noncomputable def minimumRadius [Fintype ι] [Nonempty ι] (Δ : ι → ℝ) : ℝ :=
   Finset.univ.inf' Finset.univ_nonempty Δ
 
+/-- **§10.2.1, structured region** of [conn2000trust].
+
+**Reading.** Convexity for intersections of pullbacks of seminorm balls.
+-/
 private theorem structuredTrustRegion_convex [CompleteSpace E]
     (p : Seminorm ℝ E) (N : ι → Submodule ℝ E) (x : E) (Δ : ι → ℝ) :
     Convex ℝ (structuredTrustRegion p N x Δ) := by
@@ -224,7 +247,10 @@ $a, d, \eta \in \mathbb{R}$ with $d > 0$. Then
 $$\eta \le \frac{a}{d} \iff d - (1 - \eta) |d| \le a.$$
 
 At $d = 0$ the ratio test has no such meaning; see
-`ConnGouldToint.Chapter10.elementRatio_zero_counterexample`. -/
+`ConnGouldToint.Chapter10.elementRatio_zero_counterexample`.
+
+**Reading.** Equivalence is restricted to strictly positive predicted element decrease.
+-/
 theorem elementRatio_iff_fit {a d η : ℝ} (hd : 0 < d) :
     η ≤ a / d ↔ d - (1 - η) * |d| ≤ a := by
   rw [le_div_iff₀ hd, abs_of_pos hd]
@@ -266,7 +292,10 @@ def elementFit (η : ℝ) (d a : ι → ℝ) (i : ι) : Prop :=
   d i - (1 - η) / Fintype.card ι * ∑ j, d j ≤ a i
 
 /-- **Equation (10.2.10)** of [conn2000trust]. The iteration is **successful** if
-$\eta_1 \sum_i d_i \le \sum_i a_i$. -/
+$\eta_1 \sum_i d_i \le \sum_i a_i$.
+
+**Reading.** Uses the cross-multiplied success test without division.
+-/
 def structuredSuccessful (η₁ : ℝ) (d a : ι → ℝ) : Prop :=
   η₁ * (∑ i, d i) ≤ ∑ i, a i
 
@@ -297,7 +326,10 @@ negligible elements taken for $\mu_1$:
 * a negligible element that passes the negligible fit test with $\mu_2$ has
   $\Delta'_i \ge \Delta_i$ if the iteration is successful, and $\Delta'_i = \Delta_i$ otherwise;
 * a negligible element that fails the negligible fit test has $\gamma_1 \Delta_i \le \Delta'_i
-  \le \gamma_2 \Delta_i$. -/
+  \le \gamma_2 \Delta_i$.
+
+**Reading.** Fit-based piecewise update with the cross-multiplied global criterion.
+-/
 structure StructuredRadiusUpdate (P : StructuredTRParams) (d a Δ Δ' : ι → ℝ) : Prop where
   /-- A meaningful element that passes the fit test with $\eta_3$ at a successful iteration does not
   shrink. -/
@@ -510,7 +542,10 @@ $$\kappa \|\nabla m(x)\| \min\left\{\frac{\|\nabla m(x)\|}{\beta}, \max\{\Delta_
   p(s)\}\right\} \le m(x) - m(x + s).$$
 
 For a nonzero step, $p(s)$ stands for the ratio of $\|s\|$ to the conversion factor between the
-norms in the source. -/
+norms in the source.
+
+**Reading.** Cauchy decrease with an arbitrary finite element index and a seminorm on the space.
+-/
 def structuredSufficientDecrease (model : E → ℝ) (x s : E) (p : Seminorm ℝ E)
     (Δ : ι → ℝ) (β κ : ℝ) : Prop :=
   κ * ‖gradient model x‖ * min (‖gradient model x‖ / β) (max (minimumRadius Δ) (p s)) ≤
@@ -530,7 +565,10 @@ for every $k$:
   $\sum_i m_{k,i}$, and $\sum_i (m_{k,i}(x_k) - m_{k,i}(x_k + s_k)) > 0$;
 * the radii $\Delta_{k+1,i}$ satisfy the structured radius update for the predicted decreases
   $m_{k,i}(x_k) - m_{k,i}(x_k + s_k)$ and the achieved decreases $f_i(x_k) - f_i(x_k + s_k)$;
-* $x_{k+1} = x_k + s_k$ if the iteration is successful (10.2.10), and $x_{k+1} = x_k$ otherwise. -/
+* $x_{k+1} = x_k + s_k$ if the iteration is successful (10.2.10), and $x_{k+1} = x_k$ otherwise.
+
+**Reading.** Structured iteration trace in an inner-product space using the fit-based update.
+-/
 structure StructuredTRRun (P : StructuredTRParams) (elements : ι → E → ℝ)
     (N : ι → Submodule ℝ E) (β : ℕ → ℝ) (κ : ℝ) where
   /-- The iterate $x_k$. -/
@@ -591,6 +629,10 @@ section Accuracy
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
+/-- **Argument before (10.2.18)** of [conn2000trust].
+
+**Reading.** Derivative inherits invariance for general domain and normed target.
+-/
 private theorem InvariantAlong.fderiv_invariant {F : Type*} [NormedAddCommGroup F]
     [NormedSpace ℝ F] {N : Submodule ℝ E} {f : E → F} (hf : InvariantAlong N f) :
     InvariantAlong N (fderiv ℝ f) := by
@@ -605,6 +647,10 @@ private theorem InvariantAlong.differentiableAt_add_iff {F : Type*} [NormedAddCo
   rw [← differentiableAt_comp_add_right]
   rw [show (fun y ↦ f (y + w)) = f from funext fun y ↦ hf y w hw]
 
+/-- **Proof of Theorem 10.2.3** of [conn2000trust].
+
+**Generalization.** Taylor inequality for a projected step in arbitrary inner-product geometry.
+-/
 private theorem element_taylor_bound {N : Submodule ℝ E} [N.HasOrthogonalProjection]
     {f : E → ℝ} {x s : E} {C : ℝ} (hf : InvariantAlong N f)
     (hd : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ f (x + t • s))
@@ -648,6 +694,11 @@ private theorem element_taylor_bound {N : Submodule ℝ E} [N.HasOrthogonalProje
   rw [Real.norm_eq_abs] at hbound
   rwa [hval]
 
+/-- **Argument preceding (10.2.3)** of [conn2000trust].
+
+**Reading.** Projection onto the orthogonal complement leaves values invariant, provided projection
+exists.
+-/
 private theorem InvariantAlong.value_at_projection {F : Type*}
     {N : Submodule ℝ E} [N.HasOrthogonalProjection] {f : E → F}
     (hf : InvariantAlong N f) (z : E) : f z = f (Nᗮ.starProjection z) := by
@@ -672,6 +723,10 @@ private theorem StructuredTRRun.segment_mem (run : StructuredTRRun P elements N 
     (structuredTrustRegion_convex (run.p k) N (run.x k) (run.Δ k)).add_smul_sub_mem
       hx (run.feasible k) ht
 
+/-- **Proof of Theorem 10.2.3** of [conn2000trust].
+
+**Reading.** Explicit projected-step norm bound from one-sided uniform norm comparison.
+-/
 private theorem StructuredTRRun.projected_step_le (run : StructuredTRRun P elements N β κ)
     {K : ℝ} (hK : 0 ≤ K) (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v) (k : ℕ) (i : ι) :
     ‖(N i)ᗮ.starProjection (run.s k)‖ ≤ K * run.Δ k i := by
@@ -692,7 +747,11 @@ $$|f_i(x_k + s_k) - m_{k,i}(x_k + s_k)| \le C \Delta_{k,i}^2.$$
 
 The constant is `ConnGouldToint.Chapter06.uniformHessianConstant`. The model Hessian bound is
 needed on the whole structured trust region. By translation invariance, the estimate uses the
-projected step without requiring the projected trial point to lie in that region. -/
+projected step without requiring the projected trial point to lie in that region.
+
+**Reading.** Element model error bound in general inner-product geometry with explicit comparison
+constant.
+-/
 theorem theorem_10_2_3 (run : StructuredTRRun P elements N β κ)
     {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -751,6 +810,9 @@ $\nabla m_{k,i}(x_k) = \nabla f_i(x_k)$. If $K \Delta_{k,i} \le 1$, then $K \Del
 for the radii of iteration $k$, and
 $$|m_{k,i}(x_k) - m_{k,i}(x_k + s_k)| \le K \left(\kappa_{fg} + \tfrac{1}{2} \kappa_m\right)
   \Delta_{k,i}.$$
+
+**Reading.** Small element radius bounds actual and predicted decreases with explicit comparison
+constants.
 -/
 theorem lemma_10_2_4 (run : StructuredTRRun P elements N β κ)
     {K κfg κm : ℝ} (hK : 1 ≤ K) (hκfg : 0 < κfg) (hκm : 1 ≤ κm)
@@ -826,18 +888,26 @@ noncomputable def StructuredTRRun.actualDrop (run : StructuredTRRun P elements N
   elements i (run.x k) - elements i (run.x k + run.s k)
 
 /-- The gradient $\nabla m_k(x_k)$ of the total model $m_k = \sum_i m_{k,i}$ at the current iterate.
+
+**Reading.** Gradient of the total model in a general real inner-product space.
 -/
 noncomputable def StructuredTRRun.modelGradient (run : StructuredTRRun P elements N β κ)
     (k : ℕ) : E :=
   gradient (fun x ↦ ∑ i, run.model k i x) (run.x k)
 
-/-- The gradient $\nabla f(x_k)$ of the total objective $f = \sum_i f_i$ at the current iterate. -/
+/-- The gradient $\nabla f(x_k)$ of the total objective $f = \sum_i f_i$ at the current iterate.
+
+**Reading.** Gradient of the summed objective in a general real inner-product space.
+-/
 noncomputable def StructuredTRRun.objectiveGradient (run : StructuredTRRun P elements N β κ)
     (k : ℕ) : E :=
   gradient (fun x ↦ ∑ i, elements i x) (run.x k)
 
 /-- The **successful iterations** of a structured run: the $k$ at which the total test (10.2.10)
-holds for the element decreases. -/
+holds for the element decreases.
+
+**Reading.** Success uses the ratio after clearing the predicted denominator.
+-/
 def StructuredTRRun.successful (run : StructuredTRRun P elements N β κ) : Set ℕ :=
   {k | structuredSuccessful P.η₁ (run.predictedDrop k) (run.actualDrop k)}
 
@@ -858,6 +928,10 @@ private theorem minimumRadius_pos (Δ : ι → ℝ) (h : ∀ i, 0 < Δ i) :
   simpa only [← hi] using h i
 
 omit [Nonempty ι] in
+/-- **Proof of Theorem 10.2.5** of [conn2000trust].
+
+**Reading.** A fit-error comparison gives a no-shrink statement for the fit-based update.
+-/
 private theorem StructuredRadiusUpdate.noncontract_of_scaled_error
     {d a Δ Δ' : ι → ℝ} (hu : StructuredRadiusUpdate P d a Δ Δ') (i : ι)
     (hgood : |a i - d i| ≤ (1 - P.η₃) / Fintype.card ι * ∑ j, d j)
@@ -1043,7 +1117,10 @@ $f = \sum_i f_i$.
 
 After the last successful iteration the iterate is constant. At every unsuccessful iteration at
 least one radius contracts and none grows. A nonzero gradient would give a positive floor on the
-radii, which contradicts the resulting uniform decrease of the sum of the radii. -/
+radii, which contradicts the resulting uniform decrease of the sum of the radii.
+
+**Reading.** Uses abstract element-error bounds on the rejected tail.
+-/
 theorem theorem_10_2_6_of_error_bound (run : StructuredTRRun P elements N β κ)
     {B C : ℝ} (hβ : ∀ k, β k ≤ B) (hC : 0 < C)
     (herr : ∀ k i, |run.actualDrop k i - run.predictedDrop k i| ≤ C * (run.Δ k i) ^ 2)
@@ -1118,7 +1195,10 @@ variable [∀ i, (N i).HasOrthogonalProjection]
 $$1 + \sup\{\|\nabla^2 m_k(z)\| : z \text{ in the structured trust region of iteration } k\},$$
 where $m_k = \sum_i m_{k,i}$.
 
-The supremum is `sSup`, which is $0$ for a set that is not bounded above. -/
+The supremum is `sSup`, which is $0$ for a set that is not bounded above.
+
+**Reading.** Curvature computed on the structured region for the aggregate model.
+-/
 noncomputable def StructuredTRRun.aggregateCurvature (run : StructuredTRRun P elements N β κ)
     (k : ℕ) : ℝ :=
   1 + sSup ((fun z ↦ ‖fderiv ℝ (fderiv ℝ (fun x ↦ ∑ i, run.model k i x)) z‖) ''
@@ -1130,7 +1210,10 @@ differentiable at every point of the structured trust region, with
 $\|\nabla^2 m_{k,i}(z)\| \le \kappa_m - 1$ there. Then the aggregate curvature at every
 iteration $k$ is at most $1 + p (\kappa_m - 1)$.
 
-The factor $p$ allows the Hessians of the elements to overlap. -/
+The factor $p$ allows the Hessians of the elements to overlap.
+
+**Reading.** Uses the sum of element Hessian bounds for the aggregate curvature.
+-/
 theorem StructuredTRRun.aggregateCurvature_le (run : StructuredTRRun P elements N β κ)
     {κm : ℝ}
     (hmodel : ∀ k i z, z ∈ structuredTrustRegion (run.p k) N (run.x k) (run.Δ k) →
@@ -1180,6 +1263,10 @@ private theorem StructuredTRRun.gradients_agree (run : StructuredTRRun P element
     fderiv_fun_sum (fun i _ ↦ (hf i).differentiable (by norm_num) _)]
   simp only [hgrad]
 
+/-- **Proof of Theorem 10.2.3** of [conn2000trust].
+
+**Reading.** Recasts generalized projected Taylor estimate as error in an element decrease.
+-/
 private theorem StructuredTRRun.drop_error (run : StructuredTRRun P elements N β κ)
     {K κf κm : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -1221,7 +1308,10 @@ iteration $k$. If $\varepsilon > 0$ and $\|\nabla m_k(x_k)\| \ge \varepsilon$ fo
 there is $\delta > 0$ with $\delta \le \Delta_{\min}$ at every iteration.
 
 The element error bound comes from Theorem 10.2.3, and the proof applies
-`ConnGouldToint.Chapter10.theorem_10_2_5_of_error_bound`. -/
+`ConnGouldToint.Chapter10.theorem_10_2_5_of_error_bound`.
+
+**Correction.** Uses corrected fit-based radius floor and aggregate curvature estimate.
+-/
 theorem theorem_10_2_5 (run : StructuredTRRun P elements N β κ)
     {K κf κm ε : ℝ} (hK : 1 ≤ K) (hκf : 1 ≤ κf) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -1501,7 +1591,11 @@ trust-region run with $\beta_k = 1$ and $\kappa = \pi / 2$, such that:
 So all trials are rejected at a fixed noncritical iterate, although the element and the models
 satisfy uniform smoothness and gradient bounds. This shows that the hypothesis AN.1 of
 `ConnGouldToint.Chapter10.theorem_10_2_6` is needed. The construction has $f(x) = \sin x_1$, the
-model $x \mapsto x_1$, the step $-\pi e_1$ and the seminorms $p_k = (2^{-k} / \pi) \|\cdot\|$. -/
+model $x \mapsto x_1$, the step $-\pi e_1$ and the seminorms $p_k = (2^{-k} / \pi) \|\cdot\|$.
+
+**Correction.** Constructed fixed noncritical iterate refutes the source's finite-success result
+without AN.1.
+-/
 theorem theorem_10_2_6_without_norm_bound_counterexample :
     ∃ (P : StructuredTRParams)
       (f : Unit → EuclideanSpace ℝ (Fin 2) → ℝ)

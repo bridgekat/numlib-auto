@@ -60,6 +60,13 @@ its preservation `Matrix.IsLU.envelope_eq`), `Numlib.LinearAlgebra.Matrix.Choles
 * The Schur complement of a two-block matrix `fromBlocks B E F C` is $C - FB^{-1}E$, which is
   `Matrix.schurComplement`.
 
+## Deviations from the source
+
+* **Adjacency graph** (scope). The source allows rectangular matrices. The graph and its edge
+  characterization here use square matrices.
+* **Remark 3.6** (scope). The condition-number comparison allows a general positive definite
+  matrix with the stated partition.
+
 ## Not formalized
 
 * **The Cuthill–McKee and nested dissection reorderings** (Sections 3.9.1 and 3.9.3), which state no
@@ -81,13 +88,18 @@ $A \in \mathbb{R}^{n \times n}$. Its vertices are the indices $1, \ldots, n$, an
 directed from $i$ to $j$ exists if and only if $a_{ij} \neq 0$. For $a_{ii} \neq 0$, the path
 from $i$ to itself is a loop.
 
-The graph is `Matrix.adjDigraph A`. -/
+The graph is `Matrix.adjDigraph A`.
+
+**Scope.** The source allows rectangular matrices and indexes the vertices up to the larger
+dimension. This definition treats square matrices. -/
 def adjacencyGraph (A : Matrix (Fin n) (Fin n) ℝ) : Digraph (Fin n) := adjDigraph A
 
 /-- **Section 3.9** of [quarteroni2000numerical]. Let $A \in \mathbb{R}^{n \times n}$. The graph
 $G(A)$ has an arrow from $i$ to $j$ if and only if $a_{ij} \neq 0$.
 
-The proof uses `Matrix.adjDigraph_adj`. -/
+The proof uses `Matrix.adjDigraph_adj`.
+
+**Scope.** This characterization is for the square-matrix version of the graph. -/
 theorem adjacencyGraph_adj (A : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
     (adjacencyGraph A).Adj i j ↔ A i j ≠ 0 :=
   adjDigraph_adj
@@ -100,14 +112,20 @@ $$E(A) = \{(i, j) : 0 < i - j \le m_i(A)\},$$
 the strictly lower positions of each row from its first nonzero entry to the diagonal.
 
 The envelope is `Matrix.envelope A`. The membership is spelled out in
-`QuarteroniSaccoSaleri.Chapter03.equation_3_59_iff`. -/
+`QuarteroniSaccoSaleri.Chapter03.equation_3_59_iff`.
+
+**Reading.** Empty lower row support contributes no envelope entries.
+-/
 def equation_3_59 (A : Matrix (Fin n) (Fin n) ℝ) : Set (Fin n × Fin n) := envelope A
 
 /-- **Equation (3.59)** of [quarteroni2000numerical], spelled out. Let
 $A \in \mathbb{R}^{n \times n}$. A pair $(i, j)$ is in $E(A)$ if and only if the set
 $\{j_0 < i : a_{ij_0} \neq 0\}$ is nonempty and
 $$0 < i - j \le m_i(A) = i - \min\{j_0 < i : a_{ij_0} \neq 0\}.$$
-A row whose strictly lower part is zero contributes nothing to the envelope. -/
+A row whose strictly lower part is zero contributes nothing to the envelope.
+
+**Reading.** Spells out the empty-support convention absent from the formula.
+-/
 theorem equation_3_59_iff (A : Matrix (Fin n) (Fin n) ℝ) (i j : Fin n) :
     (i, j) ∈ equation_3_59 A ↔
       ∃ h : (univ.filter fun j₀ => j₀ < i ∧ A i j₀ ≠ 0).Nonempty,
@@ -314,7 +332,10 @@ $A$ has the shape of Remark 3.6. The proof specializes
 `Matrix.PosDef.condNumber_schurComplement_le`, which is Axelsson's Lemma 3.12 without
 interlacing: $0 \le S \le A_{33}$ in the Loewner order gives $\|S\|_2 \le \|A\|_2$, and
 $S^{-1} = (A^{-1})_{33}$ gives $\|S^{-1}\|_2 \le \|A^{-1}\|_2$, because a principal submatrix
-has the smaller spectral norm. -/
+has the smaller spectral norm.
+
+**Scope.** The bound applies to any positive definite matrix with the indicated partition,
+including nonzero off-diagonal interactions between the first two blocks. -/
 theorem remark_3_6_cond
     {A : Matrix ((Fin m₁ ⊕ Fin m₂) ⊕ Fin m₃) ((Fin m₁ ⊕ Fin m₂) ⊕ Fin m₃) ℝ} (hA : A.PosDef) :
     NormedRing.condNumber A.schurComplement ≤ NormedRing.condNumber A := by

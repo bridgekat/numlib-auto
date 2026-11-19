@@ -87,8 +87,24 @@ backbone modules `Numlib.LinearAlgebra.Matrix.Order`, `Numlib.LinearAlgebra.Matr
   `SaadSparse.Chapter01.theorem_1_31_jacobi` identifies it with the iteration operator of the Jacobi
   splitting of `Numlib.Stationary.Splitting`, which is the form that §4.1 uses.
 
+## Deviations from the source
+
+* **Problem P-1.28** (reading). The theorem gives the norm conclusion of the exercise. See
+  `SaadSparse.Chapter01.problem_1_28`.
+* **Theorem 1.25** (reading). The existence and simplicity clauses require a positive matrix
+  dimension. See `SaadSparse.Chapter01.theorem_1_25` and
+  `SaadSparse.Chapter01.theorem_1_25_algSimple`.
+* **Proposition 1.26** (generalization). Only the multiplying matrix $C$ needs to be entrywise
+  nonnegative. See `SaadSparse.Chapter01.proposition_1_26`.
+
 ## Not formalized
 
+* **Definition 1.23, strict positivity and negativity.** The declaration gives the weak order
+  and the corresponding weak sign conditions.
+* **Problem P-1.28, the entrywise comparison of the Gram matrices.** The surface states the
+  norm comparison.
+* **Equation (1.47).** The Neumann series identity is available as
+  `Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one`.
 * **Problem P-1.33.** The problem asks whether clause (4) of Definition 1.30, the nonnegativity of
   the inverse, is redundant in the way that Theorem 1.32 shows clause (1) to be. It is not, and the
   answer is a counterexample rather than a theorem, so it has no declaration: the matrix
@@ -109,14 +125,14 @@ variable {n : ℕ}
 
 /-- **Definition 1.23** of [saad2003iterative]. Let $A, B \in \mathbb{R}^{m \times k}$. Then
 $A \le B$ means $a_{ij} \le b_{ij}$ for all $i, j$; the matrix $A$ is **nonnegative** when
-$O \le A$, that is $a_{ij} \ge 0$ for all $i, j$; and $A$ is **negative** in the sense of the
-book when $A \le O$, that is $-A$ is nonnegative. Moreover, $A \le B$ if and only if
+$O \le A$, that is $a_{ij} \ge 0$ for all $i, j$; and $A$ is **nonpositive** when $A \le O$,
+that is $-A$ is nonnegative. Moreover, $A \le B$ if and only if
 $-B \le -A$.
 
 The order is the entrywise order `Matrix.EntrywiseLE` (notation `≤ₑ`) of
 `Numlib.LinearAlgebra.Matrix.Order`. Nonnegativity is `Matrix.EntrywiseNonneg`. Mathlib's `≤` on
 matrices is the Loewner order. The five clauses of the statement are, in order: the order
-unfolded; nonnegativity as $O \le A$; nonnegativity unfolded; the definition of "negative"; and
+unfolded; nonnegativity as $O \le A$; nonnegativity unfolded; nonpositivity; and
 the reversal of the order under negation. The book remarks that $\le$ is a partial order and not
 a total one; the axioms of a partial order are clause 1 of
 `SaadSparse.Chapter01.proposition_1_24`.
@@ -175,6 +191,9 @@ open scoped Matrix.Norms.L2Operator in
 /-- **Problem P-1.28** of [saad2003iterative]. Let $A, B \in \mathbb{R}^{n \times n}$ with
 $O \le A \le B$ entrywise. Then $\|A\|_2 \le \|B\|_2$.
 
+**Reading.** The exercise first asks for $O \le A^T A \le B^T B$ entrywise and then asks for
+the norm conclusion. This declaration gives the norm conclusion.
+
 This is the $2$-norm form of clause 5 of Proposition 1.24. The norm is the scoped instance
 `Matrix.Norms.L2Operator`, and the proof is `Matrix.EntrywiseLE.l2_opNorm_le` of
 `Numlib.LinearAlgebra.Matrix.PerronFrobenius`. -/
@@ -185,6 +204,9 @@ theorem problem_1_28 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.EntrywiseNonneg)
 /-- **Proposition 1.26** of [saad2003iterative]. Let $A, B, C \in \mathbb{R}^{n \times n}$ with
 $C \ge O$ and $A \le B$ entrywise. Then
 $$CA \le CB \quad \text{and} \quad AC \le BC.$$
+
+**Generalization.** The book assumes that $A$, $B$ and $C$ are all nonnegative. Each comparison
+uses entrywise monotonicity of multiplication by $C$, so $A$ and $B$ only need to be ordered.
 
 The proof uses `Matrix.EntrywiseLE.mul_of_entrywiseNonneg_left` and its counterpart for the
 right side. -/
@@ -210,6 +232,9 @@ an eigenvalue of $A$, with an eigenvector $x \in \mathbb{R}^n$ all of whose entr
 positive:
 $$Ax = \rho(A) x, \qquad x_i > 0 \text{ for all } i.$$
 
+**Reading.** The text leaves the dimension implicit. The declaration requires $n \ge 1$, since
+the eigenvector must be nonzero and the zero-dimensional space has none.
+
 The book states the theorem without proof. The proof is
 `Matrix.IsIrreducible.exists_pos_hasEigenvector_complexSpectralRadius` of
 `Numlib.LinearAlgebra.Matrix.PerronFrobenius`. Irreducibility is Mathlib's
@@ -231,6 +256,9 @@ theorem theorem_1_25 [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrred
 $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$ be nonnegative and irreducible. Then the
 eigenspace of $A$ for the eigenvalue $\rho(A)$ has dimension $1$.
 
+**Reading.** The dimension is positive, as in `SaadSparse.Chapter01.theorem_1_25`. In dimension
+zero every eigenspace has dimension zero.
+
 The proof is `Matrix.IsIrreducible.finrank_eigenspace_complexSpectralRadius_eq_one`. -/
 theorem theorem_1_25_simple [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsIrreducible) :
     Module.finrank ℝ
@@ -240,6 +268,9 @@ theorem theorem_1_25_simple [NeZero n] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.
 /-- **Theorem 1.25** of [saad2003iterative], simplicity in the algebraic sense, which is the sense
 of the word in the book. Let $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$ be nonnegative and
 irreducible. Then $\rho(A)$ is a simple root of the characteristic polynomial of $A$.
+
+**Reading.** The dimension is positive, as in `SaadSparse.Chapter01.theorem_1_25`. The
+characteristic polynomial in dimension zero is constant and has no roots.
 
 The proof is `Matrix.IsIrreducible.rootMultiplicity_charpoly_complexSpectralRadius`. It derives
 the statement from the geometric simplicity: the positive left Perron eigenvector rules out a
@@ -271,7 +302,7 @@ theorem theorem_1_28 {A B : Matrix (Fin n) (Fin n) ℝ} (hA : A.EntrywiseNonneg)
     A.complexSpectralRadius ≤ B.complexSpectralRadius :=
   complexSpectralRadius_le_of_entrywiseLE hA hAB
 
-/-- **Theorem 1.29** of [saad2003iterative], with (1.47). Let $B \in \mathbb{R}^{n \times n}$ be
+/-- **Theorem 1.29** of [saad2003iterative]. Let $B \in \mathbb{R}^{n \times n}$ be
 nonnegative. Then $\rho(B) < 1$ if and only if $I - B$ is nonsingular and $(I - B)^{-1}$ is
 nonnegative.
 

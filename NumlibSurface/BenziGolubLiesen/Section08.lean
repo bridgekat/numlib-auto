@@ -38,6 +38,14 @@ of multipliers applies Uzawa to an equivalent augmented system. The algebraic pr
 
 ## Deviations from the source
 
+* **Equations (8.1)–(8.2)** (generalization). The update allows any real relaxation
+  parameter, and the splitting permits any nonzero one. The update uses the total inverse.
+  See `BenziGolubLiesen.uzawaStep` and `BenziGolubLiesen.uzawaSplitting`.
+* **Section 8.1, primal minimization** (correction). Invertibility of $A$ alone gives
+  a stationary point. The strict minimum result requires positive definiteness. See
+  `BenziGolubLiesen.uzawa_primal_lt`.
+* **Equation (8.11)** (generalization). The equivalence with the two penalty equations
+  holds for any nonzero $\gamma$. See `BenziGolubLiesen.penalty_regularized_iff`.
 * **Before (8.3)** (correction). Reality of the Uzawa spectrum requires a symmetry hypothesis;
   invertibility of $A$ alone is not enough.
 * **After (8.4)** (correction). Positive definiteness of $BA^{-1}B^T$ requires full row rank of $B$.
@@ -66,14 +74,21 @@ variable {n m : Type*} [Fintype n] [Fintype m] [DecidableEq n] [DecidableEq m]
 
 /-- **Equation (8.1)** of [benzi2005numerical]. For real blocks $A,B$, right-hand sides
 $f,g$ and relaxation parameter $\omega$, the **Uzawa step** from multiplier $y$ is
-$x^+=A^{-1}(f-B^Ty)$, $y^+=y+\omega(Bx^+-g)$. The matrix inverse is zero when $A$ is singular. -/
+$x^+=A^{-1}(f-B^Ty)$, $y^+=y+\omega(Bx^+-g)$.
+
+**Generalization.** The source assumes $\omega>0$ and invertible $A$. The definition
+allows any real $\omega$ and uses the total inverse, giving $x^+=0$ for singular $A$. -/
 noncomputable abbrev uzawaStep (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (ω : ℝ) (f : n → ℝ) (g y : m → ℝ) :=
   saddleUzawaStep A B ω f g y
 
 omit [DecidableEq m] in
 /-- **Equation (8.1)** of [benzi2005numerical]. For nonsingular $A$, a next pair equals
-the Uzawa step if and only if it satisfies both coupled update equations. -/
+the Uzawa step if and only if it satisfies both coupled update equations.
+
+**Reading.** The component update formulas are equivalent for invertible A and arbitrary ω, not just
+positive ω.
+-/
 theorem uzawaStep_eq_iff (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (hA : IsUnit A) (ω : ℝ) (f xNext : n → ℝ) (g y yNext : m → ℝ) :
     (xNext, yNext) = uzawaStep A B ω f g y ↔
@@ -109,7 +124,10 @@ private theorem neg_inv_neg_relaxation {ι : Type*} [Fintype ι] [DecidableEq ι
 
 /-- **Equation (8.2)** of [benzi2005numerical]. For nonsingular $A$ and $\omega\ne 0$,
 the **Uzawa splitting** has first factor
-$\mathcal{P}=\begin{bmatrix}A&0\\B&-\omega^{-1}I\end{bmatrix}$. -/
+$\mathcal{P}=\begin{bmatrix}A&0\\B&-\omega^{-1}I\end{bmatrix}$.
+
+**Generalization.** The source uses positive $\omega$. The splitting and its
+matrix identities only require nonzero $\omega$. -/
 noncomputable def uzawaSplitting (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     (hA : IsUnit A) {ω : ℝ} (hω : ω ≠ 0) :
     Splitting (fromBlocks A Bᵀ B (0 : Matrix m m ℝ)) :=
@@ -391,7 +409,11 @@ noncomputable abbrev saddleObjective (A : Matrix n n ℝ) (f x : n → ℝ) : �
 omit [DecidableEq m] in
 /-- **Section 8.1** of [benzi2005numerical], primal minimization. If $A$ is symmetric positive
 definite, the next Uzawa primal iterate uniquely minimizes the quadratic with linear term
-$f-B^Ty$. -/
+$f-B^Ty$.
+
+**Correction.** The standing hypothesis in the source is invertibility of $A$. With
+$A=[-1]$ and $f-B^Ty=0$, the Uzawa primal step is zero, a maximum of $-x^2/2$.
+The strict minimum requires the positive definite hypothesis used here. -/
 theorem uzawa_primal_lt (A : Matrix n n ℝ) (B : Matrix m n ℝ) (hA : A.PosDef)
     (ω : ℝ) (f z : n → ℝ) (g y : m → ℝ) (hz : z ≠ (uzawaStep A B ω f g y).1) :
     saddleObjective A (f - Bᵀ *ᵥ y) (uzawaStep A B ω f g y).1 <
@@ -429,7 +451,10 @@ noncomputable def penaltyStep (A : Matrix n n ℝ) (B : Matrix m n ℝ) (γ : �
 
 omit [DecidableEq n] [DecidableEq m] in
 /-- **Equation (8.11)** of [benzi2005numerical]. For $\gamma\ne0$ the penalty equation and
-the associated multiplier formula are equivalent to $Ax+B^Ty=f$, $Bx-\gamma^{-1}y=g$. -/
+the associated multiplier formula are equivalent to $Ax+B^Ty=f$, $Bx-\gamma^{-1}y=g$.
+
+**Generalization.** The source uses $\gamma>0$ for minimization. This equation
+equivalence only uses $\gamma\ne0$. -/
 theorem penalty_regularized_iff (A : Matrix n n ℝ) (B : Matrix m n ℝ)
     {γ : ℝ} (hγ : γ ≠ 0) (f x : n → ℝ) (g y : m → ℝ) :
     (saddleAugmentedPrimal A B γ *ᵥ x = saddleAugmentedRhs B γ f g ∧

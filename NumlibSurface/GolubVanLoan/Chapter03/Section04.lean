@@ -150,12 +150,44 @@ specialize `Numlib.FloatingPoint.LU`.
 
 ## Deviations from the source
 
-* **(3.4.8)** (correction). The source defines the growth factor on the computed stages
-  $\hat A^{(k)}$. The definition uses the exact stages, since only these admit bounds. See
-  `GolubVanLoan.Chapter03.growthFactorStages`.
-* **(3.4.9)** (reading). The source's $\rho$ bounds the computed $\hat U$ through
-  $|\hat u_{ij}| \le \rho \|A\|_\infty$. The theorem takes this bound as a hypothesis, with any
-  $\rho \ge 0$. See `GolubVanLoan.Chapter03.equation_3_4_9`.
+* **Reading.** The pivot encoding in §3.4.1 accepts full-length vectors with identity swaps in
+  unused positions. The algorithms take first maximizing rows for partial pivoting, and include the
+  final identity step in the outer-product loops. See `GolubVanLoan.Chapter03.pivPerm`,
+  `GolubVanLoan.Chapter03.applyPiv`, `GolubVanLoan.Chapter03.applyPivRev`,
+  `GolubVanLoan.Chapter03.partialPivotStage`, `GolubVanLoan.Chapter03.equation_3_4_2`,
+  `GolubVanLoan.Chapter03.algorithm_3_4_1` and `GolubVanLoan.Chapter03.algorithm_3_4_3`.
+* **Reading.** The gaxpy variant returns separate factors and uses rounded running differences for
+  the substitution and trailing update. See `GolubVanLoan.Chapter03.algorithm_3_4_2`.
+* **Reading.** The triangular solves are totalized at zero pivots. The column permutation for
+  complete pivoting follows Step 3, applying $Q^T$ where the following sentence prints $Q$. The
+  matrix-power solve also accepts exponent zero. See `GolubVanLoan.Chapter03.solvePLU`,
+  `GolubVanLoan.Chapter03.solveGEPP`, `GolubVanLoan.Chapter03.solvePLUQ`,
+  `GolubVanLoan.Chapter03.solveGECP`, `GolubVanLoan.Chapter03.solveMultipleRHS`,
+  `GolubVanLoan.Chapter03.solvePowerSystem` and `GolubVanLoan.Chapter03.equation_3_4_13`.
+* **Reading.** The rounding bridges use nonzero returned pivots before the last and the multiplier
+  bound $1+u$. The backward-error theorems use explicit $\gamma_{3n}$ bounds with $3nu<1$ and
+  nonzero pivots. See `GolubVanLoan.Chapter03.algorithm_3_4_1_rounds`,
+  `GolubVanLoan.Chapter03.algorithm_3_4_2_rounds`, `GolubVanLoan.Chapter03.equation_3_4_6`,
+  `GolubVanLoan.Chapter03.equation_3_4_6_gaxpy`, `GolubVanLoan.Chapter03.equation_3_4_7` and
+  `GolubVanLoan.Chapter03.equation_3_4_7_gaxpy`.
+* **Reading.** Equation (3.4.8) uses computed stages. The norm-scaled Lean growth factor uses exact
+  stages, and both backward-error versions of (3.4.9) assume a bound on the computed upper factor.
+  See `GolubVanLoan.Chapter03.growthFactorStages`, `GolubVanLoan.Chapter03.growthFactorStages_eq`,
+  `GolubVanLoan.Chapter03.growthFactor_le_two_pow`, `GolubVanLoan.Chapter03.equation_3_4_9` and
+  `GolubVanLoan.Chapter03.equation_3_4_9_gaxpy`.
+* **Correction.** The exact growth-example equality $2^{n-1}$ uses the maximum input entry modulus
+  in the denominator. With the norm denominator of (3.4.8), it is $2^{n-1}/n$. See
+  `GolubVanLoan.Chapter03.growthExample_noInterchange`.
+* **Reading.** The complete-pivoting factorization may still swap entries in a zero trailing block.
+  Its rank theorem describes the block structure of the factors of the full run. See
+  `GolubVanLoan.Chapter03.completePivoting_rank_factorization`.
+* **Correction.** The rook loop recomputes $\tau=|a_{\mu\lambda}|$ after a candidate change, which
+  the printed loop omits. It uses a sufficient explicit fuel bound. See
+  `GolubVanLoan.Chapter03.rookPivotSearch`, `GolubVanLoan.Chapter03.rookPivotSearch_spec`,
+  `GolubVanLoan.Chapter03.rookPivot` and `GolubVanLoan.Chapter03.isRookPivot_rookPivot`.
+* **Generalization.** The underdetermined factorization also permits square matrices and asserts
+  existence. The solve uses invertible $U_1$ and does not require its triangularity. See
+  `GolubVanLoan.Chapter03.equation_3_4_11` and `GolubVanLoan.Chapter03.underdetermined_solve`.
 * **(3.4.10)** (correction). The source prints the bound with $k$ in place of $k + 1$, which is
   false for $k = 1$ when $A^{(k)}$ is the matrix after $k$ steps. See
   `GolubVanLoan.Chapter03.equation_3_4_10`.
@@ -195,7 +227,11 @@ noncomputable def interchange (k l : Fin n) : Matrix (Fin n) (Fin n) ℝ :=
 
 /-- The permutation of the first $k$ interchanges encoded by $\mathrm{piv}$: $\operatorname{swap}(0,
 \mathrm{piv}(0)) \cdots \operatorname{swap}(k-1, \mathrm{piv}(k-1))$. Steps $j \ge n$ add no
-interchange. -/
+interchange.
+
+**Reading.** A request beyond the number of indices repeats the full permutation. The source only
+forms the product for a given finite list of valid interchanges.
+-/
 def pivPermUpTo (piv : Fin n → Fin n) : ℕ → Equiv.Perm (Fin n)
   | 0 => 1
   | k + 1 =>
@@ -209,7 +245,11 @@ $$\operatorname{swap}(0, \mathrm{piv}(0)) \cdots \operatorname{swap}(n-1, \mathr
 and its permutation matrix is the product of the interchange matrices in the reverse order.
 
 `Matrix.permMatrix_mul` reverses the order of a product, so `(pivPerm piv).permMatrix ℝ` is
-$\Pi_{n-1} \cdots \Pi_0$ in 0-based indices. -/
+$\Pi_{n-1} \cdots \Pi_0$ in 0-based indices.
+
+**Reading.** The source accepts a prefix of length $m$. Lean encodes it in a full-length pivot
+vector whose unused entries specify identity swaps.
+-/
 def pivPerm (piv : Fin n → Fin n) : Equiv.Perm (Fin n) :=
   pivPermUpTo piv n
 
@@ -232,12 +272,20 @@ theorem pivPermUpTo_succ {piv : Fin n → Fin n} (k : Fin n) :
   simp [pivPermUpTo, k.2]
 
 /-- **Section 3.4.1** of [golub2013matrix], the loop `for k = 1:m, x(k) ↔ x(piv(k))`, which
-overwrites $x$ with $Px$. -/
+overwrites $x$ with $Px$.
+
+**Reading.** The source accepts a prefix of length $m$. Lean encodes it in a full-length pivot
+vector whose unused entries specify identity swaps.
+-/
 def applyPiv (piv : Fin n → Fin n) (x : Fin n → ℝ) : Fin n → ℝ :=
   (List.finRange n).foldl (fun x k => x ∘ Equiv.swap k (piv k)) x
 
 /-- **Section 3.4.1** of [golub2013matrix], the loop `for k = m:-1:1, x(k) ↔ x(piv(k))`, which
-overwrites $x$ with $P^T x$. -/
+overwrites $x$ with $P^T x$.
+
+**Reading.** The source accepts a prefix of length $m$. Lean encodes it in a full-length pivot
+vector whose unused entries specify identity swaps.
+-/
 def applyPivRev (piv : Fin n → Fin n) (x : Fin n → ℝ) : Fin n → ℝ :=
   (List.finRange n).reverse.foldl (fun x k => x ∘ Equiv.swap k (piv k)) x
 
@@ -265,7 +313,11 @@ overwrites $x$ with
 $$P^T x = \Pi_1 \cdots \Pi_m x.$$
 
 The reverse loop computes $P^T x$ because each $\Pi_k$ is symmetric. The two loops are
-`GolubVanLoan.Chapter03.applyPiv` and `GolubVanLoan.Chapter03.applyPivRev`. -/
+`GolubVanLoan.Chapter03.applyPiv` and `GolubVanLoan.Chapter03.applyPivRev`.
+
+**Reading.** The source accepts a prefix of length $m$. Lean encodes it in a full-length pivot
+vector whose unused entries specify identity swaps.
+-/
 theorem applyPiv_eq (piv : Fin n → Fin n) (x : Fin n → ℝ) :
     applyPiv piv x = (pivPerm piv).permMatrix ℝ *ᵥ x ∧
       applyPivRev piv x = ((pivPerm piv).permMatrix ℝ)ᵀ *ᵥ x := by
@@ -314,7 +366,13 @@ $$A^{(k)} = M_k \Pi_k \cdots M_1 \Pi_1 A,$$
 computed in exact arithmetic.
 
 It is the backbone's pivoted stage `(Matrix.gemPivotStage A Matrix.partialPivotRow k).1`. For
-$k \ge n$ it is the last stage. -/
+$k \ge n$ it is the last stage.
+
+**Reading.** Lean takes the first maximizing row and adds a final identity step in the square case.
+The source stops at the penultimate row and leaves ties unspecified. Lean's totalized division gives
+the identity transformation when the column of a zero pivot vanishes, as the source specifies after
+Algorithm 3.4.1.
+-/
 noncomputable abbrev partialPivotStage (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     Matrix (Fin n) (Fin n) ℝ :=
   (gemPivotStage A partialPivotRow k).1
@@ -330,7 +388,13 @@ and the last matrix $A^{(n)} = M_{n-1} \Pi_{n-1} \cdots M_1 \Pi_1 A$ is upper tr
 The theorem holds for every $A$. A zero pivot comes with a zero column below it; the Gauss
 vector is then zero, by the convention $x / 0 = 0$, and $M_k = I$. The row $r$ is
 `Matrix.partialPivotRow`, and the Gauss transformation is
-`GolubVanLoan.Chapter03.gaussTransformation` of `GolubVanLoan.Chapter03.gaussVector`. -/
+`GolubVanLoan.Chapter03.gaussTransformation` of `GolubVanLoan.Chapter03.gaussVector`.
+
+**Reading.** Lean takes the first maximizing row and adds a final identity step in the square case.
+The source stops at the penultimate row and leaves ties unspecified. Lean's totalized division gives
+the identity transformation when the column of a zero pivot vanishes, as the source specifies after
+Algorithm 3.4.1.
+-/
 theorem equation_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ k : Fin n, partialPivotStage A (k + 1) =
       gaussTransformation (gaussVector
@@ -525,7 +589,11 @@ The program returns the packed matrix and the pivot vector.
 The search is `Matrix.partialPivotRow`, the first maximizing row, with exact comparisons. The
 updates are `GolubVanLoan.Chapter03.outerProductStep`, the step of Algorithm 3.2.1. The state is
 the pair of the matrix and $\mathrm{piv}$, with $\mathrm{piv}$ initially the identity. The last
-step $k = n$ is a trivial interchange with empty updates. -/
+step $k = n$ is a trivial interchange with empty updates.
+
+**Reading.** The pivot search takes the first maximizing row. The full-length pivot vector includes
+a final identity swap and empty update, where the source stops one iteration earlier.
+-/
 noncomputable def algorithm_3_4_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) k =>
@@ -656,7 +724,12 @@ $$|\hat\ell_{ij}| \le 1 + u \quad \text{for all } i, j.$$
 The computed factors of partial pivoting are the computed factors of elimination without
 pivoting on $PA$ ([higham2002accuracy] §9.3). The relational model bounds a rounded quotient of
 modulus at most one by $1 + u$, not by $1$. The factors are `GolubVanLoan.Chapter03.packedL F`
-and `GolubVanLoan.Chapter03.packedU F`, and $PA$ is `A.submatrix (pivPerm piv) id`. -/
+and `GolubVanLoan.Chapter03.packedU F`, and $PA$ is `A.submatrix (pivPerm piv) id`.
+
+**Reading.** The rounded-factor theorem uses an explicit rounding relation and assumes the returned
+pivots before the last are nonzero. That relation gives $|\hat\ell_{ij}|\le 1+u$, whereas the source
+states $|\hat\ell_{ij}|\le1$.
+-/
 theorem algorithm_3_4_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j : Fin n, (j : ℕ) + 1 < n → out.1 j j ≠ 0) →
       RoundsLU fp (A.submatrix (pivPerm out.2) id) (packedL out.1) (packedU out.1) ∧
@@ -773,7 +846,11 @@ $$PA = LU, \qquad |\ell_{ij}| \le 1 \text{ for all } i, j.$$
 The source notes that Algorithm 3.4.1 always runs to completion; the theorem has no hypothesis
 on $A$. The factors are `GolubVanLoan.Chapter03.packedL F` and
 `GolubVanLoan.Chapter03.packedU F`. The proof reads the invariant of the bridge at the exact
-model. -/
+model.
+
+**Reading.** The pivot search takes the first maximizing row. The full-length pivot vector includes
+a final identity swap and empty update, where the source stops one iteration earlier.
+-/
 theorem algorithm_3_4_1_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((pivPerm (Id.run (algorithm_3_4_1 pure A)).2).permMatrix ℝ * A)
         (packedL (Id.run (algorithm_3_4_1 pure A)).1)
@@ -799,14 +876,22 @@ program returns $x$.
 The vector $b$ is overwritten by $Pb$ with the loop `GolubVanLoan.Chapter03.applyPiv`, which
 does no arithmetic. Then the row-oriented substitutions of §3.1, Algorithms 3.1.1 and 3.1.2,
 solve with the packed factors; these are the solves of Theorem 3.3.2. Algorithm 3.1.1 performs
-the division by the unit diagonal of $L$, as the source writes it. -/
+the division by the unit diagonal of $L$, as the source writes it.
+
+**Reading.** Lean can run these triangular-substitution formulas at zero pivots because division is
+totalized. A nonsingular triangular system is needed for the source's intended solve.
+-/
 noncomputable def solvePLU {n : ℕ} (F : Matrix (Fin n) (Fin n) ℝ) (piv : Fin n → Fin n)
     (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let y ← algorithm_3_1_1 rnd (packedL F) (applyPiv piv b)
   algorithm_3_1_2 rnd (packedU F) y
 
 /-- Gaussian elimination with partial pivoting followed by the solve: Algorithm 3.4.1 on $A$, then
-`GolubVanLoan.Chapter03.solvePLU` with $b$. -/
+`GolubVanLoan.Chapter03.solvePLU` with $b$.
+
+**Reading.** Lean can run these triangular-substitution formulas at zero pivots because division is
+totalized. A nonsingular triangular system is needed for the source's intended solve.
+-/
 noncomputable def solveGEPP {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let out ← algorithm_3_4_1 rnd A
@@ -815,7 +900,11 @@ noncomputable def solveGEPP {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin 
 /-- **Equation (3.4.12)** of [golub2013matrix], the multiple right-hand side problem $AX = B$ for
 $B \in \mathbb{R}^{n \times p}$: compute $PA = LU$ by Algorithm 3.4.1; then for $k = 1{:}p$,
 solve $Ly = Pb_k$ and then $Ux_k = y$. The program returns $X = [x_1, \dots, x_p]$. With $B = I$
-the output approximates $A^{-1}$. -/
+the output approximates $A^{-1}$.
+
+**Reading.** Lean can run these triangular-substitution formulas at zero pivots because division is
+totalized. A nonsingular triangular system is needed for the source's intended solve.
+-/
 noncomputable def solveMultipleRHS {n p : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (B : Matrix (Fin n) (Fin p) ℝ) : M (Matrix (Fin n) (Fin p) ℝ) := do
   let out ← algorithm_3_4_1 rnd A
@@ -826,7 +915,12 @@ noncomputable def solveMultipleRHS {n p : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
 /-- **Equation (3.4.13)** of [golub2013matrix], the solve of $A^k x = b$ without forming $A^k$:
 compute $PA = LU$ by Algorithm 3.4.1; then for $j = 1{:}k$, overwrite $b$ with the solution of
 $Ly = Pb$, and then overwrite $b$ with the solution of $Ux = b$. The program returns the last
-$b$. -/
+$b$.
+
+**Generalization.** The source takes a positive power. Lean also permits exponent zero, when the
+right-hand side is returned unchanged after factorization. The program is totalized at zero pivots,
+and its correctness theorem assumes nonsingular input.
+-/
 noncomputable def solvePowerSystem {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ)
     (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let out ← algorithm_3_4_1 rnd A
@@ -898,6 +992,10 @@ theorem equation_3_4_12 {p : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit 
 $k \in \mathbb{N}$ and $b \in \mathbb{R}^n$. In exact arithmetic, the output $x$ of
 `GolubVanLoan.Chapter03.solvePowerSystem` satisfies
 $$A^k x = b.$$
+
+**Generalization.** The source takes a positive power. Lean also permits exponent zero, when the
+right-hand side is returned unchanged after factorization. The program is totalized at zero pivots,
+and its correctness theorem assumes nonsingular input.
 -/
 theorem equation_3_4_13 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) (k : ℕ) (b : Fin n → ℝ) :
     A ^ k *ᵥ Id.run (solvePowerSystem pure A k b) = b := by
@@ -929,7 +1027,12 @@ $(A + E)\hat x = b$ and $|E| \le \gamma_{3n} P^T |\hat L| |\hat U|$ entrywise.
 
 This is Theorem 3.3.2 for the system $(PA)x = Pb$, which is Theorem 9.4 of [higham2002accuracy].
 It serves both partial pivoting algorithms, 3.4.1 and 3.4.2. Here $Pb$ is `b ∘ σ`, and $P^T M$
-is `M.submatrix σ.symm id`. -/
+is `M.submatrix σ.symm id`.
+
+**Reading.** The source gives a first-order bound with an $O(u^2)$ remainder. Lean uses the explicit
+finite-roundoff bound $\gamma_{3n}P^T|\hat L||\hat U|$ with $3nu<1$ and nonzero pivots. The abstract
+factor-based version is shared by both partial-pivoting programs.
+-/
 theorem exists_backward_error_of_roundsLU (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     {A L U : Matrix (Fin n) (Fin n) ℝ} {σ : Equiv.Perm (Fin n)}
     (hR : RoundsLU fp (A.submatrix σ id) L U) (hpiv : ∀ j, U j j ≠ 0) {b y x : Fin n → ℝ}
@@ -960,7 +1063,12 @@ The source prints the first-order bound $|E| \le nu(2|A| + 4P^T|\hat L||\hat U|)
 which the rigorous bound implies. The permutation involves no rounding. The matrix $P^T M$ is
 $M$ with its rows permuted back, `M.submatrix (pivPerm piv).symm id`. The proof applies
 `GolubVanLoan.Chapter03.algorithm_3_4_1_rounds` and
-`GolubVanLoan.Chapter03.exists_backward_error_of_roundsLU`. -/
+`GolubVanLoan.Chapter03.exists_backward_error_of_roundsLU`.
+
+**Reading.** The source gives a first-order bound with an $O(u^2)$ remainder. Lean uses the explicit
+finite-roundoff bound $\gamma_{3n}P^T|\hat L||\hat U|$ with $3nu<1$ and nonzero pivots. The abstract
+factor-based version is shared by both partial-pivoting programs.
+-/
 theorem equation_3_4_6 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -1083,7 +1191,11 @@ end
 The program returns the packed matrix, $\mathrm{rowpiv}$ and $\mathrm{colpiv}$.
 
 Both pivot vectors are initially the identity. Each step is
-`GolubVanLoan.Chapter03.completePivotingStep`. -/
+`GolubVanLoan.Chapter03.completePivotingStep`.
+
+**Reading.** The pivot vectors include a final identity swap and empty update after the source loop.
+The pivot choice among maximizers is unspecified, and the factorization specification is exact.
+-/
 noncomputable def algorithm_3_4_3 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n) × (Fin n → Fin n)) :=
   (List.finRange n).foldlM (fun st k => completePivotingStep rnd k st) (A, fun k => k, fun k => k)
@@ -1198,7 +1310,11 @@ $$PAQ^T = LU, \qquad |\ell_{ij}| \le 1, \qquad |u_{ij}| \le |u_{ii}| \text{ for 
 The bound $|u_{ij}| \le |u_{ii}|$ is the property of P3.4.2. The source writes $PAQ^T$ in
 Algorithm 3.4.3 and $PAQ$ in §3.4.7. Here $P$ is `(pivPerm rowpiv).permMatrix ℝ`, $Q^T$ is
 `((pivPerm colpiv)⁻¹).permMatrix ℝ`, and the factors are `GolubVanLoan.Chapter03.packedL F` and
-`GolubVanLoan.Chapter03.packedU F`. -/
+`GolubVanLoan.Chapter03.packedU F`.
+
+**Reading.** The pivot vectors include a final identity swap and empty update after the source loop.
+The pivot choice among maximizers is unspecified, and the factorization specification is exact.
+-/
 theorem algorithm_3_4_3_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((pivPerm (Id.run (algorithm_3_4_3 pure A)).2.1).permMatrix ℝ * A *
           ((pivPerm (Id.run (algorithm_3_4_3 pure A)).2.2)⁻¹).permMatrix ℝ)
@@ -1226,7 +1342,12 @@ for $z$; Step 2, solve $Uy = z$ for $y$; Step 3, set $x = Q^T y$. Given the pack
 $\mathrm{rowpiv}$, $\mathrm{colpiv}$ and $b$, the program returns $x$.
 
 The solves are the row-oriented substitutions of §3.1, and the permutations are the loops
-`GolubVanLoan.Chapter03.applyPiv` and `GolubVanLoan.Chapter03.applyPivRev`. -/
+`GolubVanLoan.Chapter03.applyPiv` and `GolubVanLoan.Chapter03.applyPivRev`.
+
+**Reading.** Lean can run these triangular-substitution formulas at zero pivots because division is
+totalized. A nonsingular triangular system is needed for the source's intended solve. The reverse
+column swaps apply $Q^T$ as in Step 3. The following sentence prints $Qy$.
+-/
 noncomputable def solvePLUQ {n : ℕ} (F : Matrix (Fin n) (Fin n) ℝ) (rowpiv colpiv : Fin n → Fin n)
     (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let z ← algorithm_3_1_1 rnd (packedL F) (applyPiv rowpiv b)
@@ -1234,7 +1355,11 @@ noncomputable def solvePLUQ {n : ℕ} (F : Matrix (Fin n) (Fin n) ℝ) (rowpiv c
   pure (applyPivRev colpiv y)
 
 /-- Gaussian elimination with complete pivoting followed by the solve: Algorithm 3.4.3 on $A$, then
-`GolubVanLoan.Chapter03.solvePLUQ` with $b$. -/
+`GolubVanLoan.Chapter03.solvePLUQ` with $b$.
+
+**Reading.** Lean can run these triangular-substitution formulas at zero pivots because division is
+totalized. A nonsingular triangular system is needed for the source's intended solve.
+-/
 noncomputable def solveGECP {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let out ← algorithm_3_4_3 rnd A
@@ -1401,7 +1526,12 @@ $$PAQ^T = \begin{bmatrix} L_{11} & 0 \\ L_{21} & I_{n-r} \end{bmatrix} \begin{bm
   U_{12} \\ 0 & 0 \end{bmatrix}$$
 with $L_{11}$ and $U_{11}$ of order $r$ and $U_{11}$ nonsingular.
 
-The factors are those of `GolubVanLoan.Chapter03.algorithm_3_4_3_spec`. -/
+The factors are those of `GolubVanLoan.Chapter03.algorithm_3_4_3_spec`.
+
+**Reading.** The source stops after the last nonzero pivot and treats later permutations as
+identities. The Lean theorem describes the factors of the full run. An arbitrary maximizing choice
+may still permute a zero trailing block, while leaving the stated block form valid.
+-/
 theorem completePivoting_rank_factorization (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ i j : Fin n, A.rank ≤ (i : ℕ) → packedU (Id.run (algorithm_3_4_3 pure A)).1 i j = 0) ∧
       (∀ i j : Fin n, A.rank ≤ (j : ℕ) →
@@ -1837,7 +1967,12 @@ uses the exact stages, since only these admit bounds ([higham2002accuracy], afte
 
 The denominator is $\|A\|_\infty$, as in the source; Wilkinson's growth factor and the
 backbone's `Matrix.growthFactor` divide by $\max |a_{ij}|$. For $A = 0$ the value is $0$, by the
-convention $x / 0 = 0$. -/
+convention $x / 0 = 0$.
+
+**Reading.** The norm-scaled factor in Lean uses exact stage entries, while (3.4.8) uses computed
+stages. The exact bound also treats the standard factor normalized by $\max_{ij}|a_{ij}|$. Totalized
+division covers the zero matrix.
+-/
 noncomputable def growthFactorStages (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   (⨆ k : Fin (n + 1), (partialPivotStage A k).supAbs) / ‖A‖
 
@@ -1848,7 +1983,12 @@ $$\rho = g(PA) \frac{\max_{i,j} |a_{ij}|}{\|A\|_\infty}, \qquad \rho \le g(PA),$
 where $g$ is the growth factor `Matrix.growthFactor` of elimination without pivoting.
 
 The stages of elimination without pivoting on $PA$ are the pivoted stages with their rows
-permuted. The inequality holds because $\max |a_{ij}| \le \|A\|_\infty$. -/
+permuted. The inequality holds because $\max |a_{ij}| \le \|A\|_\infty$.
+
+**Reading.** The norm-scaled factor in Lean uses exact stage entries, while (3.4.8) uses computed
+stages. The exact bound also treats the standard factor normalized by $\max_{ij}|a_{ij}|$. Totalized
+division covers the zero matrix.
+-/
 theorem growthFactorStages_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     growthFactorStages A = growthFactor ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) *
         A.supAbs / ‖A‖ ∧
@@ -1911,7 +2051,12 @@ $A$. Then
 $$g(PA) \le 2^{n-1}, \qquad \rho \le 2^{n-1},$$
 where $g$ is the growth factor `Matrix.growthFactor` and $\rho$ is the growth factor (3.4.8).
 
-The proof follows the argument of P3.4.1. -/
+The proof follows the argument of P3.4.1.
+
+**Reading.** The norm-scaled factor in Lean uses exact stage entries, while (3.4.8) uses computed
+stages. The exact bound also treats the standard factor normalized by $\max_{ij}|a_{ij}|$. Totalized
+division covers the zero matrix.
+-/
 theorem growthFactor_le_two_pow (A : Matrix (Fin n) (Fin n) ℝ) :
     growthFactor ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ 2 ^ (n - 1) ∧
       growthFactorStages A ≤ 2 ^ (n - 1) :=
@@ -1981,7 +2126,12 @@ $$\|E\|_\infty \le n(1 + u)\gamma_{3n} \|\hat U\|_\infty.$$
 
 The computed multipliers are at most $1 + u$ in modulus, so $\|\hat L\|_\infty \le n(1 + u)$.
 The source prints the first-order bound $\|E\|_\infty \le nu(2\|A\|_\infty + 4n\|\hat
-U\|_\infty) + O(u^2)$, which the rigorous bound implies. -/
+U\|_\infty) + O(u^2)$, which the rigorous bound implies.
+
+**Reading.** The source uses the multiplier bound one and keeps only the first-order term. Lean uses
+$n(1+u)\gamma_{3n}\|\hat U\|_\infty$, extending the estimate to finite $u$ under $3nu<1$ and the
+stated nonzero-pivot assumptions.
+-/
 theorem equation_3_4_7 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -2007,7 +2157,12 @@ factor `GolubVanLoan.Chapter03.growthFactorStages` is defined on the exact stage
 bound the computed $\hat U$, so it cannot be used for $\rho$ here.
 
 The source prints $\|E\|_\infty \le 6n^3 \rho \|A\|_\infty u + O(u^2)$. Since
-$n^2 \gamma_{3n} = 3n^3 u + O(u^2)$, the theorem gives this bound with the better constant $3$. -/
+$n^2 \gamma_{3n} = 3n^3 u + O(u^2)$, the theorem gives this bound with the better constant $3$.
+
+**Reading.** Lean assumes the chosen $\rho$ bounds the entries of the computed upper factor in units
+of $\|A\|_\infty$, and uses an explicit $\gamma_{3n}$ bound. The exact growth factor alone cannot
+serve as that hypothesis for rounded runs.
+-/
 theorem equation_3_4_9 (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     ∀ out ∈ (algorithm_3_4_1 fp.round A).run, (∀ j, out.1 j j ≠ 0) →
@@ -2066,7 +2221,12 @@ The program returns $(L, U, \mathrm{piv})$.
 The interchanges recorded so far are applied to $A(:, j)$ by the loop
 `GolubVanLoan.Chapter03.applyPiv`; the entries of $\mathrm{piv}$ from $j$ on are still the
 identity. The triangular solve and the gaxpy are `GolubVanLoan.Chapter03.gaxpyColumn`, the
-column computation of Algorithm 3.2.2. The search is `GolubVanLoan.Chapter03.firstMaxIndex`. -/
+column computation of Algorithm 3.2.2. The search is `GolubVanLoan.Chapter03.firstMaxIndex`.
+
+**Reading.** The implementation returns separate triangular factors rather than overwriting a packed
+matrix. It chooses the first maximizing row. In rounded runs it computes the solve and trailing
+update by successive running differences, as in the Lean reading of Algorithm 3.2.2.
+-/
 noncomputable def algorithm_3_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM
@@ -2412,7 +2572,12 @@ $$|\hat\ell_{ij}| \le 1 + u \quad \text{for all } i, j.$$
 
 The proof is the gaxpy bridge `GolubVanLoan.Chapter03.algorithm_3_2_2_rounds` for $A$ with its
 rows permuted by the recorded interchanges, which move the finished rows of $L$ together with
-the rows of $A$. -/
+the rows of $A$.
+
+**Reading.** The rounded-factor theorem uses an explicit rounding relation and assumes the returned
+pivots before the last are nonzero. That relation gives $|\hat\ell_{ij}|\le 1+u$, whereas the source
+states $|\hat\ell_{ij}|\le1$.
+-/
 theorem algorithm_3_4_2_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run,
       (∀ j : Fin n, (j : ℕ) + 1 < n → out.2.1 j j ≠ 0) →
@@ -2450,7 +2615,12 @@ with $L$ unit lower triangular and $U$ upper triangular.
 
 The theorem has no hypothesis on $A$: a zero pivot comes with a zero $v(j{:}n)$, and the skipped
 division is then the division $0/0 = 0$. The proof reads the invariant of the bridge at the
-exact model. -/
+exact model.
+
+**Reading.** The implementation returns separate triangular factors rather than overwriting a packed
+matrix. It chooses the first maximizing row. In rounded runs it computes the solve and trailing
+update by successive running differences, as in the Lean reading of Algorithm 3.2.2.
+-/
 theorem algorithm_3_4_2_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     IsLU ((pivPerm (Id.run (algorithm_3_4_2 pure A)).2.2).permMatrix ℝ * A)
         (Id.run (algorithm_3_4_2 pure A)).1 (Id.run (algorithm_3_4_2 pure A)).2.1 ∧
@@ -2484,7 +2654,12 @@ entrywise.
 
 The vector $Pb$ is computed exactly by `GolubVanLoan.Chapter03.applyPiv`. The proof applies
 `GolubVanLoan.Chapter03.algorithm_3_4_2_rounds` and
-`GolubVanLoan.Chapter03.exists_backward_error_of_roundsLU`. -/
+`GolubVanLoan.Chapter03.exists_backward_error_of_roundsLU`.
+
+**Reading.** The source gives a first-order bound with an $O(u^2)$ remainder. Lean uses the explicit
+finite-roundoff bound $\gamma_{3n}P^T|\hat L||\hat U|$ with $3nu<1$ and nonzero pivots. The abstract
+factor-based version is shared by both partial-pivoting programs.
+-/
 theorem equation_3_4_6_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
@@ -2505,6 +2680,10 @@ open scoped Matrix.Norms.Operator
 `GolubVanLoan.Chapter03.equation_3_4_6_gaxpy`, the computed solution satisfies
 $(A + E)\hat x = b$ for some $E \in \mathbb{R}^{n \times n}$ with
 $$\|E\|_\infty \le n(1 + u)\gamma_{3n} \|\hat U\|_\infty.$$
+
+**Reading.** The source uses the multiplier bound one and keeps only the first-order term. Lean uses
+$n(1+u)\gamma_{3n}\|\hat U\|_\infty$, extending the estimate to finite $u$ under $3nu<1$ and the
+stated nonzero-pivot assumptions.
 -/
 theorem equation_3_4_7_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
@@ -2524,7 +2703,12 @@ $(A + E)\hat x = b$ for some $E \in \mathbb{R}^{n \times n}$ with
 $$\|E\|_\infty \le n^2 (1 + u)\gamma_{3n} \rho \|A\|_\infty.$$
 
 **Reading.** As in `GolubVanLoan.Chapter03.equation_3_4_9`, the bound on the computed $\hat U$,
-which the source derives from the growth factor, is a hypothesis. -/
+which the source derives from the growth factor, is a hypothesis.
+
+**Reading.** Lean assumes the chosen $\rho$ bounds the entries of the computed upper factor in units
+of $\|A\|_\infty$, and uses an explicit $\gamma_{3n}$ bound. The exact growth factor alone cannot
+serve as that hypothesis for rounded runs.
+-/
 theorem equation_3_4_9_gaxpy (hu : fp.u < 1) (hn : ((3 * n : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) {ρ : ℝ} (hρ : 0 ≤ ρ) :
     ∀ out ∈ (algorithm_3_4_2 fp.round A).run, (∀ j, out.2.1 j j ≠ 0) →
@@ -2565,7 +2749,12 @@ The function returns $(\mu, \lambda)$.
 
 The `while` loop is a loop of at most `fuel` passes with a flag that records the exit. The
 updates choose the first maximizing index (`GolubVanLoan.Chapter03.firstMaxIndex`). The
-comparisons are exact, and nothing is rounded. -/
+comparisons are exact, and nothing is rounded.
+
+**Correction.** The printed loop omits updating $\tau$ after changing the candidate row or column.
+Lean recomputes $|a_{\mu\lambda}|$ at each test. The loop has explicit fuel, and the default fuel
+suffices to find a row and column maximum.
+-/
 noncomputable def rookPivotSearch (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) (fuel : ℕ) :
     Fin n × Fin n :=
   let st := (List.range fuel).foldl (fun (st : Fin n × Fin n × ℕ × Bool) _ =>
@@ -2694,7 +2883,12 @@ The source notes that "the value of $\tau$ is monotone increasing and that ensur
 Every pass after the first strictly increases $\tau = |a_{\mu\lambda}|$ or exits. So after
 $(n - k)^2 + 1$ passes, the number of entries of the trailing block plus one, the loop has
 exited, and on exit $|a_{\mu\lambda}|$ is maximal in its column and in its row of the trailing
-block. -/
+block.
+
+**Correction.** The printed loop omits updating $\tau$ after changing the candidate row or column.
+Lean recomputes $|a_{\mu\lambda}|$ at each test. The loop has explicit fuel, and the default fuel
+suffices to find a row and column maximum.
+-/
 theorem rookPivotSearch_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) {fuel : ℕ}
     (hfuel : (n - k) ^ 2 + 1 ≤ fuel) :
     k ≤ (rookPivotSearch A k fuel).1 ∧ k ≤ (rookPivotSearch A k fuel).2 ∧
@@ -2715,14 +2909,24 @@ theorem rookPivotSearch_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) {fuel 
 
 /-- **Section 3.4.7** of [golub2013matrix], the rook pivoting strategy: the rook scan
 `GolubVanLoan.Chapter03.rookPivotSearch` from $(k, k)$ with $(n - k)^2 + 1$ passes, which are
-enough for the loop to exit (`GolubVanLoan.Chapter03.rookPivotSearch_spec`). -/
+enough for the loop to exit (`GolubVanLoan.Chapter03.rookPivotSearch_spec`).
+
+**Correction.** The printed loop omits updating $\tau$ after changing the candidate row or column.
+Lean recomputes $|a_{\mu\lambda}|$ at each test. The loop has explicit fuel, and the default fuel
+suffices to find a row and column maximum.
+-/
 noncomputable def rookPivot (M : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n × Fin n :=
   rookPivotSearch M k ((n - k) ^ 2 + 1)
 
 /-- **Section 3.4.7** of [golub2013matrix]. The rook scan is a rook pivoting strategy in the sense
 of the backbone: for every matrix and every $k$, `GolubVanLoan.Chapter03.rookPivot` returns
 indices at or after $k$ whose entry is maximal in modulus in its column and in its row of the
-trailing block. This is `Matrix.IsRookPivot`. -/
+trailing block. This is `Matrix.IsRookPivot`.
+
+**Correction.** The printed loop omits updating $\tau$ after changing the candidate row or column.
+Lean recomputes $|a_{\mu\lambda}|$ at each test. The loop has explicit fuel, and the default fuel
+suffices to find a row and column maximum.
+-/
 theorem isRookPivot_rookPivot : IsRookPivot (rookPivot (n := n)) :=
   fun A k => by
     simpa only [Real.norm_eq_abs, rookPivot] using rookPivotSearch_spec A k le_rfl
@@ -2935,7 +3139,12 @@ Matrix.partialPivotRow` is the identity. Its growth factor `Matrix.growthFactor`
 for $n \ge 1$.
 
 The stage $A^{(k)}$ has last column $2^{\min(i, k)}$, the entry $u_{nn} = 2^{n-1}$ is the
-largest, and the entries of $A$ are at most $1$ in modulus. -/
+largest, and the entries of $A$ are at most $1$ in modulus.
+
+**Correction.** The $2^{n-1}$ equality is for the exact factor normalized by $\max_{ij}|a_{ij}|=1$.
+With the printed denominator $\|A\|_\infty=n$, the exact example instead has factor $2^{n-1}/n$. The
+no-swap claim uses the first maximizer.
+-/
 theorem growthExample_noInterchange :
     (gemPivotStage (growthExample n) partialPivotRow n).2 = 1 ∧
       (0 < n → growthFactor (growthExample n) = 2 ^ (n - 1)) := by
@@ -2993,7 +3202,12 @@ The source assumes $m < n$; the theorem also allows $p = 0$. The matrix $PAQ^T$ 
 `A.submatrix σ ρ` for two permutations of the rows and the columns.
 The block matrix $[U_1 \mid U_2]$ is `fromCols U₁ U₂`, read on `Fin (m + p)`. The proof works
 with the specification: $m$ independent columns are moved first, and their square block has a
-pivoted LU factorization. -/
+pivoted LU factorization.
+
+**Generalization.** Lean also permits the square case. The factorization theorem proves existence
+without specifying a complete- or rook-pivoting run. The solve requires the factorization, unit
+lower $L$ and nonsingular $U_1$, and needs no triangularity of $U_1$.
+-/
 theorem equation_3_4_11 (A : Matrix (Fin m) (Fin (m + p)) ℝ) (hA : A.rank = m) :
     ∃ (σ : Equiv.Perm (Fin m)) (ρ : Equiv.Perm (Fin (m + p))) (L U₁ : Matrix (Fin m) (Fin m) ℝ)
       (U₂ : Matrix (Fin m) (Fin p) ℝ), L.IsUnitLowerTriangular ∧ U₁.IsUpperTriangular ∧
@@ -3050,7 +3264,12 @@ $$Ax = b.$$
 
 The source derives this from $Ax = b \iff L(U_1 z_1 + U_2 z_2) = c$ with $c = Pb$ and
 $[z_1; z_2] = Qx$, and notes that $z_2 = 0$ is a natural choice. In Lean, $Pb$ is `b ∘ σ`, and
-$x$ is `Fin.append z₁ z₂ ∘ ρ.symm`. -/
+$x$ is `Fin.append z₁ z₂ ∘ ρ.symm`.
+
+**Generalization.** Lean also permits the square case. The factorization theorem proves existence
+without specifying a complete- or rook-pivoting run. The solve requires the factorization, unit
+lower $L$ and nonsingular $U_1$, and needs no triangularity of $U_1$.
+-/
 theorem underdetermined_solve {A : Matrix (Fin m) (Fin (m + p)) ℝ} {σ : Equiv.Perm (Fin m)}
     {ρ : Equiv.Perm (Fin (m + p))} {L U₁ : Matrix (Fin m) (Fin m) ℝ} {U₂ : Matrix (Fin m) (Fin p) ℝ}
     (hL : L.IsUnitLowerTriangular) (hU₁ : IsUnit U₁)

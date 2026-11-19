@@ -98,6 +98,10 @@ theorem itself specializes `SesqForm.laxMilgram`.
 
 ## Deviations from the source
 
+* **Theorem 8.3.1** (scope). The bounded-form correspondence needs a normed space
+  in place of the Banach space in the source.
+* **Theorems 8.3.2–8.3.3** (scope). The pointwise minimizer characterizations use
+  convexity and membership. Closedness is used for existence in the main statements.
 * **Example 8.3.5** (generalization). The source assumes a Lipschitz boundary. The example here
   holds on every bounded open set. See `AtkinsonHan.Chapter08.example_8_3_5`.
 -/
@@ -192,7 +196,10 @@ bounded bilinear map `V →L[ℝ] V →L[ℝ] ℝ`.
 
 Over $\mathbb{R}$ this type is the backbone's `SesqForm ℝ V`, so every result on bounded
 sesquilinear forms applies to `a.toCLM hM`. The map is built with `LinearMap.mkContinuous₂` and
-the bound $M$. -/
+the bound $M$.
+
+**Reading.** Constructs a bounded operator into the dual in arbitrary normed space.
+-/
 noncomputable def toCLM (a : BilinForm V) (hM : a.IsBoundedWith M) : V →L[ℝ] V →L[ℝ] ℝ :=
   LinearMap.mkContinuous₂ a M fun u v => by rw [Real.norm_eq_abs]; exact hM u v
 
@@ -210,7 +217,10 @@ theorem norm_toCLM_le (hM0 : 0 ≤ M) (hM : a.IsBoundedWith M) : ‖a.toCLM hM�
 
 /-- **Theorem 8.3.1** of [han2009theoretical], from operators to forms. Let $V$ be a real normed
 space and $A \in \mathcal{L}(V, V')$. The **form of** $A$ is the bilinear form
-$a(u, v) = \langle Au, v \rangle$ on $V$. -/
+$a(u, v) = \langle Au, v \rangle$ on $V$.
+
+**Reading.** Defines the operator's evaluation form in an arbitrary normed space.
+-/
 noncomputable def ofCLM (A : V →L[ℝ] StrongDual ℝ V) : BilinForm V :=
   (ContinuousLinearMap.coeLM ℝ).comp (A : V →ₗ[ℝ] StrongDual ℝ V)
 
@@ -261,7 +271,10 @@ $A \in \mathcal{L}(V, V')$ and the bounded bilinear forms $a$ on $V$.
 The quantitative part of the theorem is `AtkinsonHan.BilinForm.isBoundedWith_opNorm`,
 $|a(u, v)| \le \|A\| \|u\| \|v\|$, together with `AtkinsonHan.BilinForm.norm_toCLM_le`,
 $\|A\| \le M$. The correspondence is a Lean equivalence from `V →L[ℝ] StrongDual ℝ V` to the
-subtype of bounded forms. -/
+subtype of bounded forms.
+
+**Reading.** One-to-one correspondence with bounded real forms does not require Banach completeness.
+-/
 noncomputable def theorem_8_3_1 : (V →L[ℝ] StrongDual ℝ V) ≃ {a : BilinForm V // a.IsBounded} where
   toFun A := ⟨ofCLM A, isBounded_ofCLM A⟩
   invFun a := a.1.toCLM a.2.choose_spec.2
@@ -555,6 +568,8 @@ theorem theorem_8_3_2 [CompleteSpace V] {K : Set V} (hne : K.Nonempty) (hcl : Is
 space, let $K \subseteq V$ be convex, let $\ell \in V'$ and let $u \in K$. Then $u$ minimizes
 $E(v) = \frac12 \|v\|^2 - \ell(v)$ on $K$ if and only if
 $$(u, v - u) \ge \ell(v - u) \quad \text{for all } v \in K.$$
+
+**Reading.** Pointwise variational characterization also works without closedness.
 -/
 theorem theorem_8_3_2_iff [CompleteSpace V] {K : Set V} (hconv : Convex ℝ K)
     (ℓ : StrongDual ℝ V) {u : V} (hu : u ∈ K) :
@@ -567,6 +582,8 @@ theorem theorem_8_3_2_iff [CompleteSpace V] {K : Set V} (hconv : Convex ℝ K)
 let $K$ be a subspace of $V$, let $\ell \in V'$ and let $u \in K$. Then $u$ minimizes
 $E(v) = \frac12 \|v\|^2 - \ell(v)$ on $K$ if and only if
 $$(u, v) = \ell(v) \quad \text{for all } v \in K.$$
+
+**Reading.** Minimizer characterization holds for a subspace with no closedness assumption.
 -/
 theorem theorem_8_3_2_subspace [CompleteSpace V] (K : Submodule ℝ V) (ℓ : StrongDual ℝ V) {u : V}
     (hu : u ∈ K) :
@@ -599,6 +616,8 @@ and $V$-elliptic with a constant $\alpha > 0$, and let $\ell \in V'$. Let $K \su
 convex and $u \in K$. Then $u$ minimizes the energy $E(v) = \frac12 a(v, v) - \ell(v)$ on $K$ if
 and only if $u$ solves the variational inequality
 $$a(u, v - u) \ge \ell(v - u) \quad \text{for all } v \in K.$$
+
+**Reading.** Pointwise minimizer equivalence drops closedness.
 -/
 theorem theorem_8_3_3_iff [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
@@ -614,7 +633,10 @@ $V$ and $u \in K$. Then $u$ minimizes the energy $E(v) = \frac12 a(v, v) - \ell(
 and only if $u$ solves the variational equation
 $$a(u, v) = \ell(v) \quad \text{for all } v \in K.$$
 
-The subspace $K$ need not be closed or finite-dimensional. -/
+The subspace $K$ need not be closed or finite-dimensional.
+
+**Reading.** Pointwise subspace variational characterization drops closedness.
+-/
 theorem theorem_8_3_3_subspace [CompleteSpace V] (hM : a.IsBoundedWith M) (hα : 0 < α)
     (ha : a.IsEllipticWith α) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     (K : Submodule ℝ V) {u : V} (hu : u ∈ K) :

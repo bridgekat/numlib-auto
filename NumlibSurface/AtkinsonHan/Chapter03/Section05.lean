@@ -16,8 +16,9 @@ degree at most $N$ (3.5.2). The two families stated here are the Legendre polyno
 weight $w = 1$, and the Chebyshev polynomials $T_n(x) = \cos(n \arccos x)$, with weight
 $(1 - x^2)^{-1/2}$.
 
-The section has no numbered theorem, so the declarations state the displayed formulas
-(3.5.1)–(3.5.9). The proofs specialize the backbone `Numlib.Approximation.OrthogonalPolynomial`,
+The section has no numbered theorem, so the declarations state selected displayed formulas
+from (3.5.1)–(3.5.9). The proofs specialize
+`Numlib.Approximation.OrthogonalPolynomial`,
 where the family of orthogonal polynomials of a measure is defined.
 
 ## Main definitions
@@ -41,14 +42,22 @@ where the family of orthogonal polynomials of a measure is defined.
 
 ## Conventions
 
-* The book's weight function, positive and integrable on $(-1, 1)$, is a measure here:
+* The book's weight function, positive almost everywhere and integrable, is a measure here:
   `AtkinsonHan.Chapter03.weightMeasure w` is $w(x)\, dx$ restricted to $(-1, 1)$. The backbone's
   standing hypothesis on such a measure is `OrthogonalPolynomial.IsWeight`: all moments are finite
   and no finite set carries the whole mass. `AtkinsonHan.Chapter03.isWeight_weightMeasure` derives
-  it from the book's hypotheses on $w$.
+  it from the pointwise-positive variant of the book's hypotheses on $w$.
 * The book's $L^2_w(-1, 1)$ is `Lp ℝ 2 (AtkinsonHan.Chapter03.weightMeasure w)`.
 
+## Deviations from the source
+
+* **Equations (3.5.1)–(3.5.2)** (reading). The weight measure truncates negative values at zero.
+  The sufficient criterion for a weight assumes positivity at every interior point, while the
+  book assumes it almost everywhere. The projection uses a monic orthogonal polynomial family.
+
 ## Not formalized
+
+* **The general Jacobi weight family (3.5.3).** The sheet treats the Legendre and Chebyshev cases.
 
 * **The Sobolev norm error estimates for $P_N u$ and $P_{1,N} u$ quoted after (3.5.2) and (3.5.7).**
   They need the Sobolev spaces $H^s(-1, 1)$, and the book refers the reader elsewhere for them.
@@ -67,7 +76,10 @@ the **weighted measure** $w(x)\, dx$ on the interval $(-1, 1)$. The book's weigh
 $L^2_w(-1, 1)$ is the $L^2$ space of this measure, `Lp ℝ 2 (weightMeasure w)`.
 
 The density is $\max\{w(x), 0\}$, through `ENNReal.ofReal`, so negative values of $w$ count as
-$0$. For a weight in the book's sense, $w > 0$ on $(-1, 1)$, this makes no difference. -/
+$0$. For a weight in the book's sense, $w > 0$ on $(-1, 1)$, this makes no difference.
+
+**Reading.** The definition extends the source's positive weights by truncating negative
+values to zero. For a source weight, the density agrees with $w$ almost everywhere. -/
 noncomputable def weightMeasure (w : ℝ → ℝ) : Measure ℝ :=
   (volume.restrict (Set.Ioo (-1 : ℝ) 1)).withDensity fun x => ENNReal.ofReal (w x)
 
@@ -75,7 +87,11 @@ noncomputable def weightMeasure (w : ℝ → ℝ) : Measure ℝ :=
 $w : \mathbb{R} \to \mathbb{R}$ be measurable, with $w(x) > 0$ for all $x \in (-1, 1)$ and $w$
 integrable on $(-1, 1)$. Then the measure $w(x)\, dx$ on $(-1, 1)$ satisfies the backbone's
 standing hypothesis `OrthogonalPolynomial.IsWeight`: all its moments are finite and no finite
-set carries all its mass. So the weight has a family of orthogonal polynomials. -/
+set carries all its mass. So the weight has a family of orthogonal polynomials.
+
+**Reading.** The book asks for positivity almost everywhere and integrability on the
+interval. This sufficient-condition theorem assumes pointwise positivity in the interior
+and global measurability. -/
 theorem isWeight_weightMeasure {w : ℝ → ℝ} (hmeas : Measurable w)
     (hpos : ∀ x ∈ Set.Ioo (-1 : ℝ) 1, 0 < w x)
     (hint : IntegrableOn w (Set.Ioo (-1 : ℝ) 1)) :
@@ -125,7 +141,11 @@ is a best approximation of $u$ from the polynomials of degree at most $N$.
 
 The book notes that this is an instance of (3.4.6), which is
 `AtkinsonHan.Chapter03.equation_3_4_6`. The polynomials $p_n$ are `OrthogonalPolynomial.family
-(weightMeasure w) n`, and $\|p_n\|_w^2$ is `OrthogonalPolynomial.normSq (weightMeasure w) n`. -/
+(weightMeasure w) n`, and $\|p_n\|_w^2$ is `OrthogonalPolynomial.normSq (weightMeasure w) n`.
+
+**Reading.** The declaration uses the backbone's measure hypotheses and the monic
+orthogonal polynomial family. The formula for the projection is independent of this
+normalization. -/
 theorem equation_3_5_2 {w : ℝ → ℝ} (hw : OrthogonalPolynomial.IsWeight (weightMeasure w)) (N : ℕ)
     (u : Lp ℝ 2 (weightMeasure w)) :
     CompleteSpace (Lp ℝ 2 (weightMeasure w)) ∧
@@ -175,17 +195,16 @@ theorem equation_3_5_5 (m n : ℕ) :
 $m, n \ge 0$ and let $T_n$ be the Chebyshev polynomial of the first kind. Then
 
 * $T_n(x) = \cos(n \arccos x)$ for $x \in [-1, 1]$;
-* $T_m$ and $T_n$ satisfy the orthogonality relation (3.5.9) below for the weight
+* $T_m$ and $T_n$ satisfy the unnumbered orthogonality relation below for the weight
   $(1 - x^2)^{-1/2}$;
-* $T_{n+2}(x) = 2x\, T_{n+1}(x) - T_n(x)$.
+* $T_{n+2}(x) = 2x\, T_{n+1}(x) - T_n(x)$, the recurrence (3.5.9).
 
 The orthogonality relation is
 $$\int_{-1}^{1} \frac{T_m(x) T_n(x)}{\sqrt{1 - x^2}}\, dx
-  = \begin{cases} 0, & m \neq n, \\ \pi, & m = n = 0, \\ \pi/2, & m = n \ge 1. \end{cases}
-  \qquad (3.5.9)$$
+  = \begin{cases} 0, & m \neq n, \\ \pi, & m = n = 0, \\ \pi/2, & m = n \ge 1. \end{cases}$$
 
-The book writes (3.5.9) as $(T_m, T_n)_w = (\pi/2)\, c_n \delta_{mn}$ with $c_0 = 2$ and
-$c_n = 1$ for $n \ge 1$. $T_n$ is Mathlib's `Polynomial.Chebyshev.T ℝ n`. -/
+The book writes the orthogonality relation as $(T_m, T_n)_w = (\pi/2)\, c_n \delta_{mn}$ with
+$c_0 = 2$ and $c_n = 1$ for $n \ge 1$. $T_n$ is Mathlib's `Polynomial.Chebyshev.T ℝ n`. -/
 theorem equation_3_5_9 (m n : ℕ) :
     (∀ x ∈ Set.Icc (-1 : ℝ) 1, (Chebyshev.T ℝ n).eval x = Real.cos (n * Real.arccos x)) ∧
       (∫ x in (-1 : ℝ)..1,

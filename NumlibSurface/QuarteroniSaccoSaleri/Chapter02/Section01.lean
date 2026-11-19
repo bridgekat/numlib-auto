@@ -98,8 +98,19 @@ $\mathbb{R}$ and on the concrete data of the book.
 
 ## Deviations from the source
 
+* **Example 2.1 and Definition 2.1** (reading). Roots are counted with multiplicity.
+  The condition-number definitions allow arbitrary perturbation sets and use extended
+  nonnegative values, with exceptional quotients totalized and zero perturbations excluded.
+* **Equation (2.3)** (correction). This bound characterizes a finite pointwise Lipschitz
+  constant. Ordinary continuity alone does not give the bound.
 * **Equations (2.7)–(2.11)** (reading). The book writes $\simeq$. The statements are equalities for
   the first-order condition numbers. See `QuarteroniSaccoSaleri.Chapter02.equation_2_7_abs`.
+* **Example 2.2, the resolvent** (reading). The real root formulas are extended to a total map
+  using the total real square root. See `QuarteroniSaccoSaleri.Chapter02.example_2_2_resolvent`.
+* **Example 2.2, the reparametrized problem** (reading). The first-order condition number equals
+  $1$ for $t \ne 0$. See `QuarteroniSaccoSaleri.Chapter02.example_2_2_reparam`.
+* **Example 2.2, the reparametrized root labels** (typo). The source swaps the labels of $t$ and
+  $1/t$. See `QuarteroniSaccoSaleri.Chapter02.example_2_2_reparam`.
 * **Example 2.4, multiple root** (reading). The book says that the problem is ill posed if $x$ is a
   multiple root. This is read as infinite conditioning, because the root may depend continuously on
   the datum (Remark 2.1). See `QuarteroniSaccoSaleri.Chapter02.example_2_4_multiple_root`.
@@ -125,7 +136,10 @@ $0 \le a < 1$, and $0$ if $a < 0$. The number changes discontinuously as $a$ var
 continuously, so finding the number of real roots of a polynomial is an ill-posed problem.
 
 The polynomial is $(x^2 - a)(x^2 - (a - 1))$. The count is the cardinality of the multiset
-`Polynomial.roots`. At $a = 1$ the roots are $\pm 1$ and the double root $0$. -/
+`Polynomial.roots`. At $a = 1$ the roots are $\pm 1$ and the double root $0$.
+
+**Reading.** The printed counts include multiplicity. In particular, the root $0$ is counted
+twice at both threshold parameters $a=0$ and $a=1$. -/
 theorem example_2_1 (a : ℝ) :
     Multiset.card (example_2_1_polynomial a).roots =
       if 1 ≤ a then 4 else if 0 ≤ a then 2 else 0 := by
@@ -150,7 +164,11 @@ $$K(d) = \sup_{\delta d \in N,\ \delta d \neq 0} \frac{\|\delta x\| / \|x\|}{\|\
 
 The value is in $[0, \infty]$, and the quotients are computed in `ℝ≥0∞`, where $a / 0 = \infty$
 for $a \neq 0$ and $0 / 0 = 0$. This is the backbone's `Conditioning.relCondNumberOn`
-(`QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel_eq`). -/
+(`QuarteroniSaccoSaleri.Chapter02.definition_2_1_rel_eq`).
+
+**Reading.** The book takes a neighborhood of zero as the perturbation set and switches to the
+absolute number at zero data or zero solution. The definition allows arbitrary perturbation
+sets and totalizes the exceptional quotients in $[0,\infty]$. -/
 noncomputable def definition_2_1_rel (G : D → X) (N : Set D) (d : D) : ℝ≥0∞ :=
   ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), (‖G (d + δd) - G d‖ₑ / ‖G d‖ₑ) / (‖δd‖ₑ / ‖d‖ₑ)
 
@@ -168,7 +186,10 @@ $$K_{abs}(d) = \sup_{\delta d \in N,\ \delta d \neq 0} \frac{\|\delta x\|}{\|\de
 The book introduces it as "necessary whenever $d = 0$ or $x = 0$".
 
 The value is in $[0, \infty]$. This is the backbone's `Conditioning.absCondNumberOn`
-(`QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs_eq`). -/
+(`QuarteroniSaccoSaleri.Chapter02.definition_2_1_abs_eq`).
+
+**Reading.** The perturbation set can be arbitrary. The zero perturbation is excluded to avoid
+an indeterminate quotient, and the value may be infinite. -/
 noncomputable def definition_2_1_abs (G : D → X) (N : Set D) (d : D) : ℝ≥0∞ :=
   ⨆ (δd : D) (_ : δd ∈ N) (_ : δd ≠ 0), ‖G (d + δd) - G d‖ₑ / ‖δd‖ₑ
 
@@ -184,7 +205,10 @@ factor. For $G : D \to X$, $N \subseteq D$ and $d \in D$,
 $$K(d) = K_{abs}(d) \, \frac{\|d\|}{\|G(d)\|}.$$
 
 In `ℝ≥0∞` the identity holds without hypotheses. It is meaningful when $d \neq 0$ and
-$G(d) \neq 0$, which is why the book uses the absolute number when $d = 0$ or $x = 0$. -/
+$G(d) \neq 0$, which is why the book uses the absolute number when $d = 0$ or $x = 0$.
+
+**Reading.** The scale relation extends to zero datum or solution via extended-real division.
+The text uses the absolute condition number in these cases. -/
 theorem definition_2_1_rel_eq_abs_mul (G : D → X) (N : Set D) (d : D) :
     definition_2_1_rel G N d = definition_2_1_abs G N d * (‖d‖ₑ / ‖G d‖ₑ) :=
   relCondNumberOn_eq G N d
@@ -199,7 +223,11 @@ size less than $\eta$ is finite.
 
 The book's condition (2.3) is this property for every $\eta > 0$. The condition number is
 `Conditioning.absCondNumberWithin G S d η`, which is `Conditioning.absCondNumberOn` over the set
-`Conditioning.perturbations S d η`. -/
+`Conditioning.perturbations S d η`.
+
+**Correction.** The book introduces (2.3) as a precise version of continuous dependence. A
+finite pointwise Lipschitz bound implies continuity at the datum but does not follow from mere
+continuity. The theorem characterizes the stronger bound at a given radius. -/
 theorem equation_2_3_iff (G : D → X) (S : Set D) (d : D) (η : ℝ) :
     (∃ K : ℝ, ∀ δd, ‖δd‖ < η → d + δd ∈ S → ‖G (d + δd) - G d‖ ≤ K * ‖δd‖) ↔
       absCondNumberWithin G S d η ≠ ⊤ :=
@@ -290,12 +318,15 @@ private theorem norm_fin_two (a b : ℝ) :
     ‖(!₂[a, b] : EuclideanSpace ℝ (Fin 2))‖ = √(a ^ 2 + b ^ 2) := by
   rw [EuclideanSpace.norm_eq]; simp [Fin.sum_univ_two]
 
-/-- **Example 2.2** of [quarteroni2000numerical], the resolvent. This is the map
-$G : \mathbb{R} \to \mathbb{R}^2$, $G(p) = (x_+, x_-)$ with $x_\pm = p \pm \sqrt{p^2 - 1}$, the
-roots of $x^2 - 2px + 1 = 0$.
+/-- **Example 2.2** of [quarteroni2000numerical], the resolvent. The map
+$G : \mathbb{R} \to \mathbb{R}^2$ is $G(p) = (p + \sqrt{p^2 - 1},\, p - \sqrt{p^2 - 1})$.
+For $p \ge 1$ these are the two roots of $x^2 - 2px + 1 = 0$ counted with multiplicity.
 
-It is a resolvent of the problem for $p \ge 1$. The map is total because `Real.sqrt` is $0$ on
-negative numbers. The values are in `EuclideanSpace ℝ (Fin 2)`, with the Euclidean norm. -/
+**Reading.** The book takes $p \ge 1$ when defining the root problem. The resolvent formula is a
+total map in Lean, with value $(p,p)$ if $|p| < 1$ because `Real.sqrt` is zero on negative real
+numbers.
+
+The values are in `EuclideanSpace ℝ (Fin 2)`, with the Euclidean norm. -/
 noncomputable def example_2_2_resolvent (p : ℝ) : EuclideanSpace ℝ (Fin 2) :=
   !₂[p + √(p ^ 2 - 1), p - √(p ^ 2 - 1)]
 
@@ -357,7 +388,10 @@ first-order relative condition number of Example 2.2 satisfies $K(p) \le \sqrt{2
 of the book, "in the case of separated roots (say, if $p \ge \sqrt{2}$) the problem is well
 conditioned".
 
-The bound holds because $|p| / \sqrt{p^2 - 1} \le \sqrt{2}$ if and only if $2 \le p^2$. -/
+The bound holds because $|p| / \sqrt{p^2 - 1} \le \sqrt{2}$ if and only if $2 \le p^2$.
+
+**Reading.** The source calls the problem well conditioned for $p\ge\sqrt{2}$. This gives the
+explicit bound $\sqrt{2}$ on the first-order relative condition number. -/
 theorem example_2_2_le_sqrt_two {p : ℝ} (hp : √2 ≤ p) :
     relCondNumber example_2_2_resolvent univ p ≤ ENNReal.ofReal (√2) := by
   have h2 : (1 : ℝ) < √2 := by rw [Real.lt_sqrt] <;> norm_num
@@ -377,8 +411,13 @@ $t \neq 0$, the map $t \mapsto (t, 1/t) \in \mathbb{R}^2$ has first-order relati
 number $1$ in the Euclidean norm. The transformed problem is well conditioned, and at $t = 1$
 the double root is no longer singular.
 
-**Reading.** The book writes $K(t) \simeq 1$ "for any value of $t$". Here (2.7) gives an
-equality: $\|G'(t)\| \, |t| / \|G(t)\| = \sqrt{1 + t^{-4}} \, |t| / \sqrt{t^2 + t^{-2}} = 1$. -/
+**Reading.** The book writes $K(t) \simeq 1$ "for any value of $t$". The formula $1/t$ requires
+$t \ne 0$, which holds for every admissible $p \ge 1$. Here (2.7) gives an
+equality: $\|G'(t)\| \, |t| / \|G(t)\| = \sqrt{1 + t^{-4}} \, |t| / \sqrt{t^2 + t^{-2}} = 1$.
+
+**Typo.** The book labels the reparametrized roots $x_- = t$ and $x_+ = 1/t$. Its earlier
+definition gives $x_+ = p + \sqrt{p^2 - 1} = t$. The declaration uses the order $(t, 1/t)$,
+since the product of the two roots is $1$. -/
 theorem example_2_2_reparam {t : ℝ} (ht : t ≠ 0) :
     relCondNumber (fun t : ℝ => (!₂[t, 1 / t] : EuclideanSpace ℝ (Fin 2))) univ t = 1 := by
   have hd : HasDerivAt (fun t : ℝ => (!₂[t, 1 / t] : EuclideanSpace ℝ (Fin 2)))
@@ -476,7 +515,11 @@ the condition number of $A$ in the Euclidean operator norm. In the words of the 
 well conditioned, solving the linear system $Ax = b$ is a stable problem with respect to
 perturbations of the right-hand side $b$".
 
-$K(A)$ is `NormedRing.condNumber A` for the scoped `Matrix.Norms.L2Operator` norm. -/
+$K(A)$ is `NormedRing.condNumber A` for the scoped `Matrix.Norms.L2Operator` norm.
+
+**Reading.** Same matrix-condition upper bound in the Euclidean norm for the first-order relative
+number.
+-/
 theorem example_2_3 (hA : IsUnit A) {b : EuclideanSpace ℝ (Fin n)} (hb : b ≠ 0) :
     relCondNumber (Matrix.toEuclideanCLM (n := Fin n) (𝕜 := ℝ) A⁻¹) univ b ≤
       ENNReal.ofReal (NormedRing.condNumber A) := by

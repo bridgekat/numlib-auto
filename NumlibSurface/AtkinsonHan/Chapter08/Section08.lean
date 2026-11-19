@@ -85,6 +85,9 @@ space, and Theorem 5.3.19 on the derivative at a minimizer.
 
 ## Deviations from the source
 
+* **Lemma 8.8.1** (reading). The lower bound uses a constant that includes the
+  equivalence between the gradient norm and the ambient Sobolev norm. Coercivity is
+  stated in the ambient norm.
 * **Lemma 8.8.2** (generalization). The section assumes $1 < p < \infty$. The continuity of $E$
   holds here for $1 \le p < \infty$. See `AtkinsonHan.Chapter08.lemma_8_8_2`.
 -/
@@ -239,7 +242,11 @@ $\|\cdot\|_{1,p}$, and $C$ is $\|f\|$ times the constant of the Poincaré inequa
 is `IsCoerciveFunctionalOn` on all of $V$ (Definition 3.3.9). It is stated for
 $\|\cdot\|_{1,p}$, and it holds for $\|\cdot\|_V$ as well, since the two norms are equivalent.
 The bound $\frac1p \int |\nabla v|^p \le \frac1p \int (1 + |\nabla v|^2)^{p/2}$ is
-`PLaplacian.integral_norm_rpow_le_energy`. -/
+`PLaplacian.integral_norm_rpow_le_energy`.
+
+**Reading.** Uses norm-equivalence factor with the load norm and coercivity in the full Sobolev
+norm.
+-/
 theorem lemma_8_8_1 (hp : 1 < p) (hp' : p ≠ ⊤) {R : ℝ} (hR : 0 ≤ R)
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (f : StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 p Ω)) :
@@ -335,7 +342,10 @@ $1 \le p < \infty$ and let $f \in V'$. Then the energy $E$ is convex on $V$.
 
 This is the non-strict half of Lemma 8.8.3 of [han2009theoretical]. The proof uses the convexity
 of $\xi \mapsto (1 + |\xi|^2)^{p/2}$ under the integral (`PLaplacian.energy_combo_le`) and the
-linearity of the gradient (`SobolevMultiIndex.gradFn_combo`). -/
+linearity of the gradient (`SobolevMultiIndex.gradFn_combo`).
+
+**Reading.** Separate convexity holds also at p=1.
+-/
 theorem convexOn_energyFunctional (hp' : p ≠ ⊤) {R : ℝ}
     (hΩ : (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))) ⊆ ball 0 R)
     (f : StrongDual ℝ (SobolevEuclideanZero (d + 1) 1 p Ω)) :

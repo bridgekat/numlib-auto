@@ -18,6 +18,12 @@ the full system to nonsingularity of $S$.
 * `BenziGolubLiesen.saddlePointMatrix_lower_upper` and
   `BenziGolubLiesen.saddlePointMatrix_unitLower_upper`: the LU variants (3.2) and (3.3).
 * `BenziGolubLiesen.saddlePointMatrix_inv_eq`: the block inverse (3.4).
+
+## Deviations from the source
+
+* **Section 3.1, Schur complement** (reading). The total matrix inverse gives $S=-C$
+  when $A$ is singular. The factorization identities require nonsingularity. See
+  `BenziGolubLiesen.saddleSchurComplement`.
 -/
 
 namespace BenziGolubLiesen
@@ -27,12 +33,19 @@ open Matrix
 variable {n m : Type*} [Fintype n] [Fintype m] [DecidableEq n] [DecidableEq m]
   {A : Matrix n n ℝ} {B₁ B₂ : Matrix m n ℝ} {C : Matrix m m ℝ}
 
-/-- **Section 3.1** of [benzi2005numerical]. The Schur complement of the leading block in (1.1). -/
+/-- **Section 3.1** of [benzi2005numerical]. The Schur complement of the leading block in
+(1.1) is $S=-(C+B_2A^{-1}B_1^T)$.
+
+**Reading.** The source defines the expression under nonsingularity of $A$. The total
+matrix inverse makes the definition equal $-C$ when $A$ is singular. -/
 noncomputable abbrev saddleSchurComplement (A : Matrix n n ℝ) (B₁ B₂ : Matrix m n ℝ)
     (C : Matrix m m ℝ) : Matrix m m ℝ := (saddlePointMatrix A B₁ B₂ C).schurComplement
 
 omit [Fintype m] [DecidableEq m] in
-/-- **Section 3.1** of [benzi2005numerical]. The sign convention is $S=-(C+B_2 A^{-1}B_1^T)$. -/
+/-- **Section 3.1** of [benzi2005numerical]. The sign convention is $S=-(C+B_2 A^{-1}B_1^T)$.
+
+**Reading.** The equation also holds for singular $A$ with the total inverse, as in
+`BenziGolubLiesen.saddleSchurComplement`. -/
 theorem saddleSchurComplement_eq : saddleSchurComplement A B₁ B₂ C = -(C + B₂ * A⁻¹ * B₁ᵀ) := by
   rw [saddleSchurComplement, schurComplement_fromBlocks, neg_add, sub_eq_add_neg]
 

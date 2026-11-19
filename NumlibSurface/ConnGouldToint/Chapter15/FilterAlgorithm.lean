@@ -61,6 +61,18 @@ the margin test and the radius rule are those of `NumlibSurface.ConnGouldToint.C
 
 ## Deviations from the source
 
+* **Correction.** The filter algorithms impose strict rejection shrinkage. See
+  `ConnGouldToint.Chapter15.FilterSQPParams`.
+* **Degenerate prediction convention.** The filter acceptance ratio explicitly handles the
+  nonpositive-prediction case. See `ConnGouldToint.Chapter15.filterSQPAccepted`,
+  `ConnGouldToint.Chapter15.filterSQPRatio`.
+* **One-step relation and corrected updates.** The filter algorithms use an abstract one-step
+  restoration relation, Pareto deletion and the completed radius update. See
+  `ConnGouldToint.Chapter15.FilterSQPStep`, `ConnGouldToint.Chapter15.FilterSQPStep.accepts_next`,
+  `ConnGouldToint.Chapter15.FilterSQPStep.compatible_of_restored`.
+* **Relational trial selection.** The composite and single-step algorithms give admissible trial
+  relations with explicit decrease tests and the corrected filter transition. See
+  `ConnGouldToint.Chapter15.compositeFilterSQPStep`, `ConnGouldToint.Chapter15.singleFilterSQPStep`.
 * **Algorithm 15.5.1, filter update** (correction). A new entry deletes only the entries that it
   Pareto-dominates. The printed margin-based deletion admits a bounded insertion stream with
   violations bounded away from zero. See `ConnGouldToint.Chapter15.FilterSQPStep` and
@@ -94,7 +106,11 @@ switching factor $\kappa \in (0, 1)$.
 **Correction.** The source allows $\gamma_1 = 1$. Then a rejected trial need not shrink the
 radius, and `ConnGouldToint.Chapter15.sqpFilter_unchanged_rejected_radius_counterexample` gives
 a smooth run that rejects the same trial at a nonstationary point forever. The strict bound
-$\gamma_1 < 1$ excludes this. -/
+$\gamma_1 < 1$ excludes this.
+
+**Correction.** The upper rejection factor is strictly less than one. The source allows equality,
+which can leave the same unsuccessful trial available indefinitely.
+-/
 structure FilterSQPParams where
   /-- The smallest radius factor $\gamma_0$, the lower end of the shrink interval. -/
   γ₀ : ℝ
@@ -186,12 +202,21 @@ $\kappa \theta^2 \le \mathrm{pred}$ of (15.5.8) holds, also $\mathrm{pred} > 0$ 
 $\rho \ge \eta_1$.
 
 **Reading.** The condition $\mathrm{pred} > 0$ is explicit. A zero or negative prediction does
-not certify an objective step. -/
+not certify an objective step.
+
+**Reading.** When switching is active, acceptance explicitly requires positive prediction as well as
+the ratio threshold. The ratio auxiliary is defined as zero for nonpositive predictions.
+-/
 def filterSQPAccepted (P : FilterSQPParams) (F : Set (ℝ × ℝ))
     (current trial : ℝ × ℝ) (pred ratio : ℝ) : Prop :=
   sqpFilterAccepts P.margin F trial ∧ sqpFilterAcceptsPair P.margin trial current ∧
     (sqpFilterSwitching P.switchFactor current.1 pred → 0 < pred ∧ P.η₁ ≤ ratio)
 
+/-- Objective reduction ratio in the switching test of Equation (15.5.9).
+
+**Reading.** When switching is active, acceptance explicitly requires positive prediction as well as
+the ratio threshold. The ratio auxiliary is defined as zero for nonpositive predictions.
+-/
 private noncomputable def filterSQPRatio (pair : E → ℝ × ℝ) (x s : E) (pred : ℝ) : ℝ :=
   if 0 < pred then ((pair x).2 - (pair (x + s)).2) / pred else 0
 
@@ -222,7 +247,12 @@ bounded insertion stream with violations bounded away from zero; see
 
 **Reading.** An accepted trial with $\rho < \eta_1$ can occur when the switching test fails. Its
 new radius lies in the shrink interval $[\gamma_0\Delta, \gamma_1\Delta]$, a case that the
-printed radius update does not cover. -/
+printed radius update does not cover.
+
+**Correction.** Restoration is specified by existence of a compatible, acceptable next state, with
+failure when none exists. A step uses Pareto filter deletion and the completed radius update. The
+successor lemmas establish acceptability and restored compatibility from these rules.
+-/
 inductive FilterSQPStep (P : FilterSQPParams) (pair : E → ℝ × ℝ)
     (compatible : FilterSQPState E ι → Prop)
     (trial : FilterSQPState E ι → E → Prop) (prediction : FilterSQPState E ι → E → ℝ)
@@ -289,7 +319,12 @@ where $\chi$ is the tangential criticality measure at $x + n$ and $H = B + \sum_
 predicted decrease is $m(0) - m(s)$.
 
 The criticality measure is `ConnGouldToint.Chapter15.sqpFilterCriticality`, evaluated with the
-gradient $\nabla f(x + n)$. -/
+gradient $\nabla f(x + n)$.
+
+**Reading.** The algorithms admit any trial satisfying the linearized constraints, radius and stated
+decrease test. The composite-step test supplies a compatible normal step and uses a positive
+curvature denominator. Both variants use the corrected shared transition relation.
+-/
 def compositeFilterSQPStep [Fintype ι] [CompleteSpace E]
     (P : FilterSQPParams) (f : E → ℝ) (c : ι → E → ℝ) (eq : ι → Bool)
     (κΔ κμ μ κT : ℝ) (state : FilterSQPState E ι) (next : Option (FilterSQPState E ι)) : Prop :=
@@ -307,7 +342,12 @@ filter algorithm. It has the same pair and the same transitions as Algorithm 15.
 iterate is compatible if TRQP$(x, \Delta)$ has a feasible step. A trial $s$ is feasible for
 TRQP$(x, \Delta)$ and satisfies (15.5.45),
 $$m(0) - m(s) \ge \varepsilon \min\{\pi(x), \Delta\},$$
-for a supplied criticality measure $\pi$. The predicted decrease is $m(0) - m(s)$. -/
+for a supplied criticality measure $\pi$. The predicted decrease is $m(0) - m(s)$.
+
+**Reading.** The algorithms admit any trial satisfying the linearized constraints, radius and stated
+decrease test. The composite-step test supplies a compatible normal step and uses a positive
+curvature denominator. Both variants use the corrected shared transition relation.
+-/
 def singleFilterSQPStep [Fintype ι] [CompleteSpace E]
     (P : FilterSQPParams) (f : E → ℝ) (c : ι → E → ℝ) (eq : ι → Bool)
     (π : E → ℝ) (ε : ℝ) (state : FilterSQPState E ι) (next : Option (FilterSQPState E ι)) : Prop :=
@@ -320,7 +360,12 @@ def singleFilterSQPStep [Fintype ι] [CompleteSpace E]
 /-- **Algorithms 15.5.1 and 15.5.2** of [conn2000trust]. If a transition goes from a state to a next
 state, and the pair of the current iterate is acceptable to the current filter, then the pair of
 the next iterate is acceptable to the next filter. Thus every iterate that continues the run is
-acceptable at the start of its iteration. -/
+acceptable at the start of its iteration.
+
+**Correction.** Restoration is specified by existence of a compatible, acceptable next state, with
+failure when none exists. A step uses Pareto filter deletion and the completed radius update. The
+successor lemmas establish acceptability and restored compatibility from these rules.
+-/
 theorem FilterSQPStep.accepts_next {P : FilterSQPParams} {pair : E → ℝ × ℝ}
     {compatible : FilterSQPState E ι → Prop} {trial : FilterSQPState E ι → E → Prop}
     {prediction : FilterSQPState E ι → E → ℝ} {state next : FilterSQPState E ι}
@@ -341,7 +386,12 @@ theorem FilterSQPStep.accepts_next {P : FilterSQPParams} {pair : E → ℝ × �
 
 /-- **Algorithms 15.5.1 and 15.5.2** of [conn2000trust]. If a transition goes from an incompatible
 state to a next state, then the next state is compatible. Thus the transition is a restoration,
-and a restoration is not followed directly by another restoration. -/
+and a restoration is not followed directly by another restoration.
+
+**Correction.** Restoration is specified by existence of a compatible, acceptable next state, with
+failure when none exists. A step uses Pareto filter deletion and the completed radius update. The
+successor lemmas establish acceptability and restored compatibility from these rules.
+-/
 theorem FilterSQPStep.compatible_of_restored {P : FilterSQPParams} {pair : E → ℝ × ℝ}
     {compatible : FilterSQPState E ι → Prop} {trial : FilterSQPState E ι → E → Prop}
     {prediction : FilterSQPState E ι → E → ℝ} {state next : FilterSQPState E ι}

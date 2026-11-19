@@ -21,6 +21,15 @@ Its dimension increases up to the grade and then stabilizes [liesen2013krylov].
 
 * `LiesenStrakos.lemma_2_2_2` gives dimension and invariance properties at the grade.
 * `LiesenStrakos.theorem_2_2_3` gives stabilization and finite termination.
+
+## Deviations from the source
+
+* **Section 2.2** (generalization). The finite Krylov span uses arbitrary scalar fields. The
+  stabilization theorem includes grade zero.
+* **Section 2.2, grade and vector minimal polynomial** (generalization). The definitions
+  extend to arbitrary vector spaces. An infinite-dimensional cyclic span gives grade $0$
+  and minimal polynomial $0$. See `LiesenStrakos.grade` and
+  `LiesenStrakos.krylovVectorMinimalPolynomial`.
 -/
 
 namespace LiesenStrakos
@@ -29,24 +38,37 @@ open Polynomial
 
 variable {𝕜 E : Type*} [Field 𝕜] [AddCommGroup E] [Module 𝕜 E]
 
-/-- The vector minimal polynomial of $v$ for $A$ is the monic generator of the ideal of
-polynomials $p$ with $p(A)v=0$. -/
+/-- The vector minimal polynomial of $v$ for $A$ is the normalized generator of the ideal of
+polynomials $p$ with $p(A)v=0$. It is monic if the ideal contains a nonzero polynomial.
+
+**Generalization.** The source takes a finite-dimensional space. This definition also
+allows an infinite-dimensional cyclic span, for which the ideal is zero and the generator
+is $0$. -/
 noncomputable abbrev krylovVectorMinimalPolynomial (A : E →ₗ[𝕜] E) (v : E) : 𝕜[X] :=
   Krylov.minpolyVec A v
 
-/-- The grade of $v$ for $A$ is the dimension of the full Krylov subspace. In finite dimension
-it is the degree of the vector minimal polynomial. -/
+/-- The grade of $v$ for $A$ is the finite rank of the full Krylov subspace. For a
+finite-dimensional Krylov subspace it is the degree of the vector minimal polynomial.
+
+**Generalization.** The source takes a finite-dimensional space. Here an infinite-dimensional
+Krylov subspace gives grade $0$ by the convention for finite rank. -/
 noncomputable abbrev grade (A : E →ₗ[𝕜] E) (v : E) : ℕ := Krylov.grade A v
 
 /-- The subspace in (2.2.2) is the span of $v,Av,\ldots,A^{n-1}v$ for $n>0$ and the zero
-subspace for $n=0$. -/
+subspace for $n=0$.
+
+**Generalization.** This finite span is defined over an arbitrary field and for an arbitrary
+ambient vector space. -/
 abbrev krylovSubspace (A : E →ₗ[𝕜] E) (v : E) (n : ℕ) : Submodule 𝕜 E :=
   Krylov.subspace A v n
 
 /-- **Lemma 2.2.2** of [liesen2013krylov].
 For a vector of positive grade $d$, $\dim \mathcal K_n=n$ through step $d$.
 The dimension of $A\mathcal K_d$ is between $d-1$ and $d$. If $A$ is injective, then
-$A\mathcal K_d=\mathcal K_d$, and this equality implies $v \in \operatorname{range}(A)$. -/
+$A\mathcal K_d=\mathcal K_d$, and this equality implies $v \in \operatorname{range}(A)$.
+
+**Generalization.** The scalar field is arbitrary, and the dimension formula includes step
+zero. -/
 theorem lemma_2_2_2 [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) (v : E)
     (hd : 0 < grade A v) :
     (∀ n ≤ grade A v, Module.finrank 𝕜 (krylovSubspace A v n) = n) ∧
@@ -100,7 +122,10 @@ variable {𝕜 H : Type*} [RCLike 𝕜] [NormedAddCommGroup H] [InnerProductSpac
 /-- **Theorem 2.2.3** of [liesen2013krylov].
 The residual belongs to the first Krylov subspace when the grade is positive. The Krylov spaces
 increase strictly up to the grade and stabilize there. If $A$ is injective and the grade step
-is well defined, the iterate at that step has zero residual. -/
+is well defined, the iterate at that step has zero residual.
+
+**Generalization.** The formalization includes grade zero and makes the first-space membership
+conditional on positive grade. -/
 theorem theorem_2_2_3 (A : H →ₗ[𝕜] H) (b x₀ : H) :
     let r₀ := b - A x₀
     let d := grade A r₀

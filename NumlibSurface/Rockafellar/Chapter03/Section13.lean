@@ -103,12 +103,26 @@ subadditivity of support functions, and the Euclidean norm as the support functi
 
 ## Deviations from the source
 
+* **Section 13, support and barrier cones** (generalization). The support formula, barrier cone,
+  infimum and containment formulas, closure invariance, additivity, and subadditivity are stated
+  for sets without a convexity hypothesis. The addition formula also admits empty sets.
+* **Section 8, rank** (generalization). `Rockafellar.rankFn` extends the dimension-minus-lineality
+  formula from proper convex functions to all ambient functions.
 * **Theorem 13.1**, interior clause (correction). The book omits the hypothesis $C \ne \emptyset$,
   and the clause is false without it. See `Rockafellar.theorem_13_1_int`.
 * **Theorem 13.1**, affine hull clause (generalization). The set $C$ need not be convex. See
   `Rockafellar.theorem_13_1_aff`.
 * **Theorem 13.2**, $\delta(\cdot \mid C)^* = \delta^*(\cdot \mid C)$ (generalization). This
   direction holds for every set $C$. See `Rockafellar.theorem_13_2_conj_indicator`.
+* **Corollary 13.2.2** (reading). The representing bounded set may be nonconvex, and the output
+  is explicitly closed. Taking the convex hull preserves the support function and boundedness,
+  and every finite convex function on $\mathbb{R}^n$ is closed.
+* **Corollary 13.3.1** (reading). The book assumes closed convexity and states finiteness of
+  $f^*$. The Lean result assumes properness of $f$ as well so that the condition
+  $\operatorname{dom} f^* = \mathbb{R}^n$ implies finiteness.
+* **Corollary 13.3.2**, affine characterization in proof (reading). The support-function
+  formulation assumes a nonempty convex set so its finite upper bounds correspond to finite
+  suprema. See `Rockafellar.affine_iff_forall_reversible`.
 * **Theorem 13.5** (generalization). The first assertion needs $f$ closed and convex but not proper,
   and the dual assertion needs no hypothesis. See `Rockafellar.theorem_13_5` and
   `Rockafellar.theorem_13_5_dual`.
@@ -116,6 +130,10 @@ subadditivity of support functions, and the Euclidean norm as the support functi
   of the homogenization `ConvexAnalysis.hom f`. See `Rockafellar.corollary_13_5_1`.
 * **Corollary 13.5.1** (generalization). The function $f$ need only be convex with non-empty
   effective domain. See `Rockafellar.corollary_13_5_1`.
+
+## Not formalized
+
+* **Corollary 13.3.3 for a nonclosed proper convex function.** The declarations assume $f$ closed.
 -/
 
 open Set Pointwise
@@ -132,24 +150,34 @@ variable {n : ℕ}
 $C \subseteq \mathbb{R}^n$ and $x^* \in \mathbb{R}^n$,
 $$\delta^*(x^* \mid C) = \sup \{\langle x, x^* \rangle \mid x \in C\}.$$
 
-The support function is `ConvexAnalysis.supportFn (Rockafellar.pairing n) C`, and this equation
-is its definition unfolded. -/
+The support function is `ConvexAnalysis.supportFn (Rockafellar.pairing n) C`.
+
+**Generalization.** The book introduces the formula for a convex set. The formula here
+applies to every set. -/
 theorem supportFn_apply_rn (C : Set (Rn n)) (y : Rn n) :
     supportFn (pairing n) C y = ⨆ x ∈ C, ((inner ℝ x y : ℝ) : EReal) :=
   supportFn_apply (pairing n) C y
 
 /-- **Section 13** of [rockafellar1970convex], the barrier cone (p. 112). The **barrier cone** of
 $C \subseteq \mathbb{R}^n$ is the effective domain of $\delta^*(\cdot \mid C)$: the set of $x^*$
-such that the linear function $\langle \cdot, x^* \rangle$ is bounded above on $C$. -/
+such that the linear function $\langle \cdot, x^* \rangle$ is bounded above on $C$.
+
+**Generalization.** The book introduces the barrier cone for convex $C$. This definition
+applies to arbitrary $C$. -/
 noncomputable def barrierCone (C : Set (Rn n)) : Set (Rn n) := convexDom (supportFn (pairing n) C)
 
 /-- The barrier cone of $C$ is the effective domain $\{x^* \mid \delta^*(x^* \mid C) < +\infty\}$ of
-the support function of $C$. -/
+the support function of $C$.
+
+**Generalization.** This also applies to the nonconvex inputs of `Rockafellar.barrierCone`. -/
 theorem barrierCone_eq_convexDom_supportFn (C : Set (Rn n)) :
     barrierCone C = convexDom (supportFn (pairing n) C) := rfl
 
 /-- A vector $x^*$ lies in the barrier cone of $C$ if and only if there is $c \in \mathbb{R}$ with
-$\langle x, x^* \rangle \le c$ for every $x \in C$. -/
+$\langle x, x^* \rangle \le c$ for every $x \in C$.
+
+**Generalization.** The book gives the characterization for convex sets. It also holds for
+arbitrary sets. -/
 theorem mem_barrierCone_iff (C : Set (Rn n)) (y : Rn n) :
     y ∈ barrierCone C ↔ ∃ c : ℝ, ∀ x ∈ C, inner ℝ x y ≤ c := by
   rw [barrierCone_eq_convexDom_supportFn, convexDom_supportFn]
@@ -170,9 +198,11 @@ $$\operatorname{rank} f = \dim f - \operatorname{lineality} f,$$
 where $\dim f$ is the dimension of $\operatorname{dom} f$ and $\operatorname{lineality} f$ is
 the dimension of the lineality space of $f$.
 
-The value is an integer, and $\dim \emptyset = -1$. The definition is in this module and not in
-Section 8 because it uses `Rockafellar.dim` of Section 1; Corollary 13.4.1 is the first result
-that uses it. -/
+The value is an integer, and $\dim \emptyset = -1$. The definition uses `Rockafellar.dim` of
+Section 1. Corollary 13.4.1 is the first result that uses it.
+
+**Generalization.** The book defines rank for proper convex functions. The Lean formula
+is defined on all extended-real functions. -/
 noncomputable def rankFn (f : Rn n → EReal) : ℤ := dim (convexDom f) - (linealityFn f : ℤ)
 
 /-!
@@ -187,6 +217,8 @@ that $f^*$ be proper. On $\mathbb{R}^n$ this follows from Theorem 12.2 and Theor
 /-- **Section 13** of [rockafellar1970convex], minimization of linear functions (p. 112). For
 $C \subseteq \mathbb{R}^n$ and $x^* \in \mathbb{R}^n$,
 $$\inf \{\langle x, x^* \rangle \mid x \in C\} = -\delta^*(-x^* \mid C).$$
+
+**Generalization.** The formula also applies to nonconvex sets.
 -/
 theorem infimum_eq_neg_supportFn_neg (C : Set (Rn n)) (y : Rn n) :
     ⨅ x ∈ C, ((inner ℝ x y : ℝ) : EReal) = -supportFn (pairing n) C (-y) := by
@@ -199,13 +231,19 @@ theorem infimum_eq_neg_supportFn_neg (C : Set (Rn n)) (y : Rn n) :
 /-- **Section 13** of [rockafellar1970convex], half-spaces that contain $C$ (p. 112). For
 $C \subseteq \mathbb{R}^n$, $x^* \in \mathbb{R}^n$ and $\beta \in \mathbb{R}$, one has $C
 \subseteq \{x \mid \langle x, x^* \rangle \le \beta\}$ if and only if
-$\delta^*(x^* \mid C) \le \beta$. -/
+$\delta^*(x^* \mid C) \le \beta$.
+
+**Generalization.** The formula also applies to nonconvex sets and to inequalities with
+zero normal. -/
 theorem subset_halfspace_iff (C : Set (Rn n)) (y : Rn n) (β : ℝ) :
     C ⊆ {x : Rn n | inner ℝ x y ≤ β} ↔ supportFn (pairing n) C y ≤ (β : EReal) :=
   ⟨fun h => supportFn_le_coe_iff.2 fun _ hx => h hx, fun h _ hx => supportFn_le_coe_iff.1 h _ hx⟩
 
 /-- **Section 13** of [rockafellar1970convex] (p. 112). For every $C \subseteq \mathbb{R}^n$,
-$\delta^*(\cdot \mid \operatorname{cl} C) = \delta^*(\cdot \mid C)$. -/
+$\delta^*(\cdot \mid \operatorname{cl} C) = \delta^*(\cdot \mid C)$.
+
+**Generalization.** The book assumes convexity. Closure invariance uses only continuity of
+the linear function. -/
 theorem supportFn_closure_rn (C : Set (Rn n)) :
     supportFn (pairing n) (closure C) = supportFn (pairing n) C :=
   supportFn_closure C
@@ -219,7 +257,9 @@ theorem supportFn_relint_rn {C : Set (Rn n)} (hC : Convex ℝ C) :
 /-- **Section 13** of [rockafellar1970convex] (p. 113). For all $C_1, C_2 \subseteq \mathbb{R}^n$,
 $\delta^*(\cdot \mid C_1 + C_2) = \delta^*(\cdot \mid C_1) + \delta^*(\cdot \mid C_2)$.
 
-The sum on the right is the pointwise sum in `EReal`. -/
+**Generalization.** The book assumes two nonempty convex sets. The Lean result applies to
+arbitrary sets. The sum uses `EReal`, where $-\infty$ is absorbing under addition, as required
+if one of the sets is empty. -/
 theorem supportFn_add_rn (C₁ C₂ : Set (Rn n)) :
     supportFn (pairing n) (C₁ + C₂) = supportFn (pairing n) C₁ + supportFn (pairing n) C₂ :=
   supportFn_add (pairing n) C₁ C₂
@@ -366,7 +406,9 @@ noncomputable def theorem_13_2_correspondence (n : ℕ) :
 /-- **Section 13** of [rockafellar1970convex], subadditivity of support functions (p. 115). Let
 $C \subseteq \mathbb{R}^n$ be non-empty. Then for all $y_1, y_2$,
 $$\delta^*(y_1 + y_2 \mid C) \le \delta^*(y_1 \mid C) + \delta^*(y_2 \mid C).$$
-The book draws this consequence immediately after Theorem 13.2. -/
+
+**Generalization.** The book draws this consequence for support functions of nonempty convex
+sets. The same inequality holds for nonempty sets without convexity. -/
 theorem theorem_13_2_subadditive {C : Set (Rn n)} (hne : C.Nonempty) (y₁ y₂ : Rn n) :
     supportFn (pairing n) C (y₁ + y₂) ≤
       supportFn (pairing n) C y₁ + supportFn (pairing n) C y₂ :=
@@ -391,11 +433,9 @@ theorem corollary_13_2_1 {f : Rn n → EReal} (hf : PosHomogeneous f) (hconv : C
 $g : \mathbb{R}^n \to [-\infty, +\infty]$ is the support function of a non-empty bounded set if
 and only if $g$ is finite everywhere, convex, closed and positively homogeneous.
 
-The book does not list closedness: on $\mathbb{R}^n$ a finite convex function is closed
-(Corollary 7.4.2), so the two statements are equivalent. The set $C$ on the left is not required
-to be convex, because the support function of a set is that of its closed convex hull. In a
-general space closedness cannot be dropped: a discontinuous linear functional is finite, convex
-and positively homogeneous, but it is not a support function. -/
+**Reading.** The book uses a convex representing set and does not list closedness of $g$.
+The convex hull of a bounded set has the same support function and is bounded. Closedness of
+$g$ follows from convexity and finiteness on $\mathbb{R}^n$ by Corollary 7.4.2. -/
 theorem corollary_13_2_2 (g : Rn n → EReal) :
     (∃ C : Set (Rn n), C.Nonempty ∧ Bornology.IsBounded C ∧ g = supportFn (pairing n) C) ↔
       ((∀ y, g y ≠ ⊥) ∧ (∀ y, g y ≠ ⊤) ∧ ConvexFn g ∧ ClosedConvex g ∧ PosHomogeneous g) := by
@@ -431,7 +471,12 @@ theorem theorem_13_3_dual {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
 $\mathbb{R}^n$. Then $f^*$ is finite everywhere, that is
 $\operatorname{dom} f^* = \mathbb{R}^n$, if and only if $f$ is co-finite.
 
-Co-finite is `ConvexAnalysis.Cofinite`; see `Rockafellar.cofinite_iff_rn`. -/
+Co-finite is `ConvexAnalysis.Cofinite`. See `Rockafellar.cofinite_iff_rn`.
+
+**Reading.** The book assumes closed convexity and states that $f^*$ is finite everywhere.
+The Lean result also assumes properness of $f$ so the full effective domain of $f^*$
+forces finiteness. For instance, $f \equiv +\infty$ has $f^* \equiv -\infty$, which has
+full effective domain without being finite. -/
 theorem corollary_13_3_1 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
     convexDom (convexConj (pairing n) f) = univ ↔ Cofinite f :=
   (cofinite_iff_convexDom_convexConj_eq_univ hf).symm
@@ -447,7 +492,11 @@ linear function that is bounded above on it is constant on it. This step is
 /-- The step of Corollary 13.3.2 that the book leaves as an exercise. Let $C \subseteq \mathbb{R}^n$
 be non-empty and convex. Then $C$ is affine, that is $\operatorname{aff} C = C$, if and only if
 every linear function that is bounded above on $C$ is constant on $C$:
-$-\delta^*(-x^* \mid C) = \delta^*(x^* \mid C)$ whenever $\delta^*(x^* \mid C) < +\infty$. -/
+$-\delta^*(-x^* \mid C) = \delta^*(x^* \mid C)$ whenever $\delta^*(x^* \mid C) < +\infty$.
+
+**Reading.** The book gives the criterion in terms of bounded and constant linear functions.
+The Lean formulation uses equality of the supremum and infimum, which requires nonemptiness.
+For the empty set the supremum and infimum are opposite infinities. -/
 theorem affine_iff_forall_reversible {C : Set (Rn n)} (hC : Convex ℝ C) (hne : C.Nonempty) :
     (affineSpan ℝ C : Set (Rn n)) = C ↔
       ∀ y : Rn n, supportFn (pairing n) C y ≠ ⊤ →
@@ -531,8 +580,13 @@ closed proper convex function on $\mathbb{R}^n$ and let $\alpha \ge 0$. Then
 $f(z) \le f(x) + \alpha |z - x|$ for all $x, z$ if and only if $\operatorname{dom} f^*$ is
 contained in the closed ball of radius $\alpha$ about the origin.
 
-This is the meaning of the statement of the book that the smallest such $\alpha$ is $\sup
-\{|x^*| \mid x^* \in \operatorname{dom} f^*\}$. -/
+The criterion identifies the admissible constants $\alpha$ as the upper bounds on the norms
+of elements of $\operatorname{dom} f^*$. When such constants exist, their least value is the
+supremum stated in the book. This declaration uses the closed case of the corollary.
+
+**Reading.** Assumes closedness. The radius equivalence determines the infimal admissible constant
+by the supremum of norms.
+-/
 theorem corollary_13_3_3_least {f : Rn n → EReal} (hf : ClosedProperConvexFn f) {α : ℝ}
     (hα : 0 ≤ α) :
     (∀ x z : Rn n, f z ≤ f x + ((α * ‖z - x‖ : ℝ) : EReal)) ↔
@@ -568,7 +622,12 @@ $$f(z) \le f(x) + \alpha |z - x| \quad \text{for all } x, z \in \mathbb{R}^n.$$
 The book states the Lipschitz condition as $|f(z) - f(x)| \le \alpha |z - x|$ for a function $f$
 that is finite everywhere. The one-sided inequality for all $x, z$ is equivalent: it makes $f$
 finite (`Rockafellar.corollary_13_3_3_finite`), and exchanging $x$ and $z$ gives the two-sided
-form. The inequality is in `EReal`. -/
+form. The inequality is in `EReal`. The book starts with a proper convex function and reduces
+to the closed case. This declaration states the closed case.
+
+**Reading.** Assumes closedness. The one-sided inequality over all ordered pairs forces finiteness
+and gives the two-sided Lipschitz bound.
+-/
 theorem corollary_13_3_3 {f : Rn n → EReal} (hf : ClosedProperConvexFn f) :
     Bornology.IsBounded (convexDom (convexConj (pairing n) f)) ↔
       ∃ α : ℝ, 0 ≤ α ∧ ∀ x z : Rn n, f z ≤ f x + ((α * ‖z - x‖ : ℝ) : EReal) := by

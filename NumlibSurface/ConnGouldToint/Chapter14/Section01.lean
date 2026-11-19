@@ -18,6 +18,12 @@ smoothness assumption AW.1 and the Lagrangian (14.1.4).
   differentiable.
 * Equation (14.1.4), `ConnGouldToint.Chapter14.lagrangian`: the Lagrangian
   $\ell(x, y) = f(x) - \langle y, c(x) \rangle$.
+
+## Deviations from the source
+
+* **Generalization.** The smoothness and Lagrangian are given for normed spaces with an
+  inner-product constraint space. See `ConnGouldToint.Chapter14.AW1`,
+  `ConnGouldToint.Chapter14.lagrangian`.
 -/
 
 open scoped RealInnerProductSpace
@@ -29,7 +35,11 @@ variable [NormedAddCommGroup E] [NormedSpace ℝ E]
 variable [NormedAddCommGroup F] [InnerProductSpace ℝ F]
 
 /-- **Assumption AW.1** of [conn2000trust]. The objective $f : E \to \mathbb{R}$ and the constraint
-map $c : E \to F$ are twice continuously differentiable. -/
+map $c : E \to F$ are twice continuously differentiable.
+
+**Generalization.** The objective and constraint map are defined between normed real spaces, with an
+inner product on the multiplier space. The source writes coordinate functions and a finite sum.
+-/
 def AW1 (f : E → ℝ) (c : E → F) : Prop :=
   ContDiff ℝ 2 f ∧ ContDiff ℝ 2 c
 
@@ -38,7 +48,11 @@ is
 $$\ell(x, y) = f(x) - \langle y, c(x) \rangle$$
 for $x \in E$ and a multiplier $y \in F$.
 
-The Lean argument order is `lagrangian f c y x`, with the multiplier before the point. -/
+The Lean argument order is `lagrangian f c y x`, with the multiplier before the point.
+
+**Generalization.** The objective and constraint map are defined between normed real spaces, with an
+inner product on the multiplier space. The source writes coordinate functions and a finite sum.
+-/
 def lagrangian (f : E → ℝ) (c : E → F) (y : F) (x : E) : ℝ :=
   f x - ⟪y, c x⟫
 

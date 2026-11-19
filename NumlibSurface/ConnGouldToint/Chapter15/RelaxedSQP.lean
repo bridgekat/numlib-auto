@@ -72,6 +72,27 @@ models and the penalty update are those of `NumlibSurface.ConnGouldToint.Chapter
 
 ## Deviations from the source
 
+* **Explicit admissibility data.** Algorithm 15.4.1 uses explicit admissibility and coordinate data,
+  including potentially nonorthonormal null-space coordinates. See
+  `ConnGouldToint.Chapter15.RelaxedSQPParams`, `ConnGouldToint.Chapter15.RelaxedSQPTrials`.
+* **Zero-decrease convention.** The penalty update explicitly handles a zero normal-model decrease.
+  See `ConnGouldToint.Chapter15.RelaxedSQPTrials.penalty`.
+* **Explicit prediction and ratio conditions.** The first two relaxed SQP algorithms expose positive
+  original predictions, totalized ratios and admissible run recurrences. See
+  `ConnGouldToint.Chapter15.RelaxedSQPTrials.ratio`, `ConnGouldToint.Chapter15.RelaxedSQPRun`.
+* **Explicit correction selection.** The corrected run makes original-trial priority and the
+  optional correction cap explicit, and measures merit decrease against the original prediction. See
+  `ConnGouldToint.Chapter15.relaxedSQPProbe`,
+  `ConnGouldToint.Chapter15.relaxedSQPProbe_of_successful_original`,
+  `ConnGouldToint.Chapter15.RelaxedSQPCorrectedRun`,
+  `ConnGouldToint.Chapter15.RelaxedSQPCorrectedRun.probe`,
+  `ConnGouldToint.Chapter15.RelaxedSQPCorrectedRun.merit_drop_of_successful`.
+* **Explicit correction and radius rules.** The structured relaxed SQP run exposes solvability
+  bounds, alternate correction conditions and the fixed-radius branch. See
+  `ConnGouldToint.Chapter15.RelaxedSQPStructuredRun`,
+  `ConnGouldToint.Chapter15.RelaxedSQPStructuredRun.radius_eq_of_original_moderate`.
+* **Explicit curvature data.** The second-order relaxed SQP variant makes the curvature and decrease
+  data explicit. See `ConnGouldToint.Chapter15.RelaxedSQPSecondOrderRun`.
 * **Algorithm 15.4.1, Step 2** (reading). When the normal model decrease is zero, the required
   penalty is the baseline value alone. See `ConnGouldToint.Chapter15.RelaxedSQPTrials.penalty`.
 * **Algorithm 15.4.1** (generalization). The null-space coordinates need not be orthonormal. See
@@ -102,7 +123,12 @@ extend those of the basic trust-region algorithm (`ConnGouldToint.Chapter06.BTRP
 fractions $\xi_N, \xi_T, \theta \in (0, 1]$ of the radius for the normal and tangential steps
 and the normal scaling, a fraction $\nu \in (0, 1)$ in the penalty threshold, penalty growth
 constants $\tau_1 > 1$ and $\tau_2 > 0$, a normal-step bound $\kappa_N > 0$ and a tangential
-decrease coefficient $\kappa_T \in (0, 1)$. -/
+decrease coefficient $\kappa_T \in (0, 1)$.
+
+**Reading.** The parameters include strict positivity and the basic trust-region bounds. Trial data
+allow injective, potentially nonorthonormal null-space coordinates with explicit kernel data and a
+symmetric Hessian.
+-/
 structure RelaxedSQPParams extends BTRParams where
   /-- The fraction $\xi_N$ of the radius available to the normal step. -/
   ξN : ℝ
@@ -156,7 +182,12 @@ and $q^T_k$ is the tangential model (15.4.5) after the normal step.
 
 The tangential model is `ConnGouldToint.Chapter15.sqpTangentialModel` and the scaling condition
 is `ConnGouldToint.Chapter15.IsSQPNormalScaling`. The runs built on these data require a
-strictly positive predicted decrease at every iteration. -/
+strictly positive predicted decrease at every iteration.
+
+**Reading.** The parameters include strict positivity and the basic trust-region bounds. Trial data
+allow injective, potentially nonorthonormal null-space coordinates with explicit kernel data and a
+symmetric Hessian.
+-/
 structure RelaxedSQPTrials [CompleteSpace E] [CompleteSpace F]
     (f : E → ℝ) (c : E → F) (P : RelaxedSQPParams) (W : Type*)
     [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W] where
@@ -244,7 +275,11 @@ $\max\{\sigma^{\mathrm{req}}_k, \tau_1 \sigma_{k-1}, \sigma_{k-1} + \tau_2\}$ ot
 baseline penalty is required.
 
 The update is `ConnGouldToint.Chapter15.sqpPenaltyUpdate` and the threshold is
-`ConnGouldToint.Chapter15.sqpPenaltyThreshold`. -/
+`ConnGouldToint.Chapter15.sqpPenaltyThreshold`.
+
+**Reading.** When the normal-model decrease is zero, the denominator-dependent threshold is skipped
+and the current penalty is retained.
+-/
 noncomputable def penalty (tr : RelaxedSQPTrials f c P W) (k : ℕ) : ℝ :=
   let x := tr.x k
   let A := fderiv ℝ c x
@@ -273,7 +308,12 @@ ratio** of a trial $s$ is
 $$\rho_k(s) = \frac{\phi_k(x_k) - \phi_k(x_k + s)}{m_k(0) - m_k(s_k)}, \qquad \phi_k(x) = f(x) +
   \sigma_k \|c(x)\|.$$
 The denominator is the predicted decrease of the original trial $s_k$, also when $s$ is a
-corrected trial. -/
+corrected trial.
+
+**Reading.** The ratio is totalized as a real number and always uses the original trial prediction,
+including when evaluated at a corrected point. The run explicitly requires positive predictions and
+encodes the update as recurrence conditions on admissible trials.
+-/
 noncomputable def ratio (tr : RelaxedSQPTrials f c P W) (k : ℕ) (s : E) : ℝ :=
   reductionRatio (sqpMerit f c (tr.penalty k)) (tr.x k) s (tr.prediction k)
 
@@ -285,7 +325,12 @@ variable [CompleteSpace E] [CompleteSpace F] [CompleteSpace W]
 algorithm consists of trial data in which the previous penalty of iteration $k + 1$ is the
 penalty $\sigma_k$, the predicted decrease is positive, $x_{k+1} = x_k + s_k$ if
 $\rho_k(s_k) \ge \eta_1$ and $x_{k+1} = x_k$ otherwise, and the radius $\Delta_{k+1}$ follows
-the basic trust-region update for the ratio $\rho_k(s_k)$. -/
+the basic trust-region update for the ratio $\rho_k(s_k)$.
+
+**Reading.** The ratio is totalized as a real number and always uses the original trial prediction,
+including when evaluated at a corrected point. The run explicitly requires positive predictions and
+encodes the update as recurrence conditions on admissible trials.
+-/
 structure RelaxedSQPRun (f : E → ℝ) (c : E → F) (P : RelaxedSQPParams)
     (W : Type*) [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W] where
   /-- The trial data of the run. -/
@@ -310,7 +355,12 @@ $s + u$ if $\rho < \eta$, the normal step is small and $\|u\| \le r$ when the bo
 Otherwise it is $s$.
 
 **Reading.** The norm cap (15.4.94) is checked before the correction is tried. A correction that
-violates it is not tried, and the original ratio is kept. -/
+violates it is not tried, and the original ratio is kept.
+
+**Correction.** A successful original trial is kept. A correction can replace a rejected trial
+subject to the prescribed admissibility and any supplied length cap, with successful merit reduction
+measured against the original prediction.
+-/
 noncomputable def relaxedSQPProbe (η ρ : ℝ) (smallNormal : Prop)
     (cap : Option ℝ) (s correction : E) : E :=
   open Classical in
@@ -320,7 +370,12 @@ noncomputable def relaxedSQPProbe (η ρ : ℝ) (smallNormal : Prop)
 
 omit [InnerProductSpace ℝ E] [CompleteSpace E] in
 /-- **Algorithm 15.4.2** of [conn2000trust], Step 3. If the original trial is successful,
-$\rho \ge \eta$, then the selected trial is the original trial $s$. -/
+$\rho \ge \eta$, then the selected trial is the original trial $s$.
+
+**Correction.** A successful original trial is kept. A correction can replace a rejected trial
+subject to the prescribed admissibility and any supplied length cap, with successful merit reduction
+measured against the original prediction.
+-/
 theorem relaxedSQPProbe_of_successful_original {η ρ : ℝ} (h : η ≤ ρ)
     (smallNormal : Prop) (cap : Option ℝ) (s correction : E) :
     relaxedSQPProbe η ρ smallNormal cap s correction = s := by
@@ -338,7 +393,12 @@ otherwise, and the radius follows the basic trust-region update for $\rho_k(\hat
 of the original step $s_k$.
 
 The cap is a function of the radius with values in `Option ℝ`. The default `fun _ ↦ none`
-imposes no cap. -/
+imposes no cap.
+
+**Correction.** A successful original trial is kept. A correction can replace a rejected trial
+subject to the prescribed admissibility and any supplied length cap, with successful merit reduction
+measured against the original prediction.
+-/
 structure RelaxedSQPCorrectedRun (f : E → ℝ) (c : E → F) (P : RelaxedSQPParams)
     (W : Type*) [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W]
     (cap : ℝ → Option ℝ := fun _ ↦ none) where
@@ -376,7 +436,12 @@ variable {f : E → ℝ} {c : E → F} {P : RelaxedSQPParams} {cap : ℝ → Opt
 
 /-- **Algorithm 15.4.2** of [conn2000trust], Step 3. The trial of iteration $k$ passed to the
 acceptance test: the original step $s_k$ or the corrected step $s_k + u_k$, as chosen by
-`ConnGouldToint.Chapter15.relaxedSQPProbe`. -/
+`ConnGouldToint.Chapter15.relaxedSQPProbe`.
+
+**Correction.** A successful original trial is kept. A correction can replace a rejected trial
+subject to the prescribed admissibility and any supplied length cap, with successful merit reduction
+measured against the original prediction.
+-/
 noncomputable def probe (run : RelaxedSQPCorrectedRun f c P W cap) (k : ℕ) : E :=
   let tr := run.trials
   relaxedSQPProbe P.η₁ (tr.ratio k (tr.step k)) (‖tr.normal k‖ ≤ run.χ * P.ξN * tr.radius k)
@@ -386,7 +451,12 @@ noncomputable def probe (run : RelaxedSQPCorrectedRun f c P W cap) (k : ℕ) : E
 run with corrections satisfies $\rho_k(\hat s_k) \ge \eta_1$, then
 $$\phi_k(x_k) - \phi_k(x_{k+1}) \ge \eta_1 \,(m_k(0) - m_k(s_k)),$$
 where $\phi_k = f + \sigma_k \|c\|$. The decrease is measured against the prediction of the
-original step, for both the original and the corrected trial. -/
+original step, for both the original and the corrected trial.
+
+**Correction.** A successful original trial is kept. A correction can replace a rejected trial
+subject to the prescribed admissibility and any supplied length cap, with successful merit reduction
+measured against the original prediction.
+-/
 theorem merit_drop_of_successful (run : RelaxedSQPCorrectedRun f c P W cap) (k : ℕ)
     (h : P.η₁ ≤ run.trials.ratio k (run.probe k)) :
     P.η₁ * run.trials.prediction k ≤
@@ -422,7 +492,12 @@ and $\bar g_k = 0$ otherwise (a partial correction).
 **Reading.** The source derives the correction estimates from a uniformly bounded inverse of the
 correction KKT matrix. Here unique solvability with the bound $K$ is a condition of the run.
 
-The norm on $E \times F$ is the maximum of the norms of the two components. -/
+The norm on $E \times F$ is the maximum of the norms of the two components.
+
+**Correction.** The correction is given by explicit systems and uniform inverse control, with a
+zero-gradient condition when the standard step is unavailable. A moderately successful original
+trial keeps the radius when its normal step is small enough.
+-/
 structure RelaxedSQPStructuredRun (f : E → ℝ) (c : E → F) (P : RelaxedSQPParams)
     (W : Type*) [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W] where
   /-- The factor $\kappa > 0$ of the correction norm cap $\|u_k\| \le \kappa \Delta_k$ in (15.4.94).
@@ -483,7 +558,12 @@ structure RelaxedSQPStructuredRun (f : E → ℝ) (c : E → F) (P : RelaxedSQPP
 
 /-- **Algorithm 15.4.3** of [conn2000trust], (15.4.95). In a run of Algorithm 15.4.3, if the
 original trial satisfies $\eta_1 \le \rho_k(s_k) < \eta_2$ and
-$\|n_k\| \le \chi \xi_N \Delta_k$, then $\Delta_{k+1} = \Delta_k$. -/
+$\|n_k\| \le \chi \xi_N \Delta_k$, then $\Delta_{k+1} = \Delta_k$.
+
+**Correction.** The correction is given by explicit systems and uniform inverse control, with a
+zero-gradient condition when the standard step is unavailable. A moderately successful original
+trial keeps the radius when its normal step is small enough.
+-/
 theorem RelaxedSQPStructuredRun.radius_eq_of_original_moderate
     {f : E → ℝ} {c : E → F} {P : RelaxedSQPParams} (run : RelaxedSQPStructuredRun f c P W)
     (k : ℕ) (h₁ : P.η₁ ≤ run.corrected.trials.ratio k (run.corrected.trials.step k))
@@ -511,7 +591,11 @@ the reduced Hessian $H^N_k = N_k^* H_k N_k$ over $w \ne 0$.
 condition AA.2d to the tangential step of Algorithm 15.4.3.
 
 The infimum is `ConnGouldToint.Chapter08.hilbertRayleighFloor`. It is $0$ when $W$ is the zero
-space. -/
+space.
+
+**Reading.** The run supplies a reduced Rayleigh-quotient bound and the associated quantitative
+threshold for invoking negative-curvature decrease.
+-/
 structure RelaxedSQPSecondOrderRun (f : E → ℝ) (c : E → F) (P : RelaxedSQPParams)
     (W : Type*) [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W] where
   /-- The underlying run of Algorithm 15.4.3. -/

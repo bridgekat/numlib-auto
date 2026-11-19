@@ -66,6 +66,8 @@ friction problem of Section 11.1. The abstract results specialize `isMinOn_add_i
 
 ## Deviations from the source
 
+* **Exercise 11.2.1** (reading). The load is the real part of a complex continuous linear
+  functional. This represents the book's real-valued continuous real-linear load.
 * **Example 11.2.3** (reading). The condition "$\psi \le 0$ on $\Gamma$" on the obstacle is read as:
   $\max\{\psi, 0\}$ is the function of an element of $H^1_0(\Omega)$. See
   `AtkinsonHan.Chapter11.example_11_2_3`.
@@ -180,7 +182,10 @@ conjugate-linear in its first argument. The proof applies Theorem 11.2.2 to the 
 form $b(u, v) = \operatorname{Re} a(u, v)$ on $V$ with the real inner product
 $\operatorname{Re} \langle \cdot, \cdot \rangle$. This form is symmetric and $V$-elliptic with
 the same constant, and it has the same energy as $a$. The real inner product structure is
-introduced inside the proof, because `InnerProductSpace.complexToReal` is not an instance. -/
+introduced inside the proof, because `InnerProductSpace.complexToReal` is not an instance.
+
+**Reading.** The real-linear load is expressed as the real part of a complex-linear functional.
+-/
 theorem exercise_11_2_1 {a : SesqForm ℂ V} (ha : a.IsHermitian) {α : ℝ} (hα : 0 < α)
     (hcoer : a.IsCoerciveWith α) (ℓ : V →L[ℂ] ℂ) {j : V → ℝ} {K : Set V} (hKne : K.Nonempty)
     (hKcl : IsClosed K) (hKcv : Convex ℝ K) (hj : ConvexOn ℝ K j)

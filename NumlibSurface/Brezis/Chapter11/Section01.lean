@@ -83,6 +83,14 @@ module `Numlib.Analysis.Normed.Module.FiniteCodim`, which is stated over `RCLike
 * The theorems carry the hypothesis `[CompleteSpace E]` of the source whether or not the proof uses
   it.
 
+## Deviations from the source
+
+* **Finite codimension** (generalization). Lean defines finite codimension and gives its quotient
+  and complement characterizations for normed spaces. The section assumes a Banach space.
+* **Codimension** (convention). The source takes the dimension of a finite-dimensional
+  complement. Lean uses natural-valued quotient dimension, which is zero when the quotient
+  is infinite-dimensional. The complement formula covers this case by the same convention.
+
 ## Not formalized
 
 * **The facts about $\mathbb{R}^p$ in the opening sentence** (completeness, equivalence of norms,
@@ -196,13 +204,17 @@ normed space. A subspace $M \subseteq E$ has **finite codimension** if there is 
 finite-dimensional subspace $X \subseteq E$ with $M + X = E$.
 
 The source states the definition for a Banach space $E$. The definition does not need
-completeness. -/
+completeness.
+
+**Reading.** The source works in a Banach space. This definition does not require completeness. -/
 def IsFiniteCodim (M : Submodule ℝ E) : Prop :=
   ∃ X : Submodule ℝ E, FiniteDimensional ℝ X ∧ M ⊔ X = ⊤
 
 /-- **Section 11.1** of [brezis2011functional], definition of finite codimension. A subspace $M$ of
 a normed space $E$ has finite codimension if and only if $E/M$ is finite-dimensional, that is,
-if and only if $M$ is `Submodule.CoFG`. -/
+if and only if $M$ is `Submodule.CoFG`.
+
+**Reading.** The quotient characterization extends to incomplete normed spaces. -/
 theorem isFiniteCodim_iff_coFG (M : Submodule ℝ E) : IsFiniteCodim M ↔ M.CoFG := by
   constructor
   · rintro ⟨X, hX, hsup⟩
@@ -213,7 +225,10 @@ theorem isFiniteCodim_iff_coFG (M : Submodule ℝ E) : IsFiniteCodim M ↔ M.CoF
 
 /-- **Section 11.1** of [brezis2011functional], "we may always assume that $M \cap X = \{0\}$". If a
 subspace $M$ of a normed space $E$ has finite codimension, then there is a finite-dimensional
-subspace $X$ with $M \cap X = \{0\}$ and $M + X = E$. -/
+subspace $X$ with $M \cap X = \{0\}$ and $M + X = E$.
+
+**Reading.** The source works in a Banach space. The complement statement is algebraic and also
+holds in incomplete normed spaces. -/
 theorem IsFiniteCodim.exists_finiteDimensional_isCompl {M : Submodule ℝ E}
     (h : IsFiniteCodim M) : ∃ X : Submodule ℝ E, FiniteDimensional ℝ X ∧ IsCompl M X := by
   have := (isFiniteCodim_iff_coFG M).1 h
@@ -226,7 +241,11 @@ $M$ of a normed space $E$ is $\operatorname{codim} M = \dim(E/M)$.
 The source defines $\operatorname{codim} M$ as the dimension of a finite-dimensional complement
 $X$ of $M$ and notes that "it coincides with $\dim (E/M)$"; the definition here takes the second
 form (see `Brezis.Chapter11.codim_eq_finrank_of_isCompl`). When $E/M$ is infinite-dimensional
-the value is $0$, as for `Module.finrank`. -/
+the value is $0$, as for `Module.finrank`.
+
+**Reading.** Natural-valued quotient finrank is zero on infinite-dimensional quotients and is
+available without completeness.
+-/
 noncomputable def codim (M : Submodule ℝ E) : ℕ :=
   finrank ℝ (E ⧸ M)
 
@@ -235,7 +254,11 @@ normed space $E$ with $M \cap X = \{0\}$ and $M + X = E$. Then
 $\operatorname{codim} M = \dim X$; so the codimension is "independent of the special choice of
 $X$".
 
-If $X$ is infinite-dimensional, both sides are $0$ by the convention of `Module.finrank`. -/
+If $X$ is infinite-dimensional, both sides are $0$ by the convention of `Module.finrank`.
+
+**Generalization.** Extends to incomplete spaces and to infinite-dimensional complements using the
+zero convention.
+-/
 theorem codim_eq_finrank_of_isCompl {M X : Submodule ℝ E} (h : IsCompl M X) :
     codim M = finrank ℝ X :=
   (M.quotientEquivOfIsCompl X h).finrank_eq

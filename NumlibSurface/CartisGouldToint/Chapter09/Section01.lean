@@ -33,14 +33,17 @@ rests on the derivative vectors of `CartisGouldToint.Chapter08.secularDerivVec`.
   D M g : ℕ → ℝ` and not a run predicate.
 * Solves with $L$, $D$ and $L^T$ are written with the matrix inverses, which are $0$ for a singular
   matrix.
-* The loop bound $k \le \lceil l_{\max}/2 \rceil$ of the source computes a few values past
-  $l_{\max}$. Here the output is defined for every $j$, and it is read for $j \le l_{\max}$.
 
 ## Deviations from the source
 
 * **Algorithm 9.1.1** (typo). The right-hand side $(k + 1) M s^{(k)}$ has the sign opposite to
   (8.2.29), so the vectors of the algorithm are $(-1)^k s^{(k)}$; the values $\pi^{(j)}$ are not
   affected. See `CartisGouldToint.Chapter09.algS_eq`.
+* **Algorithm 9.1.1, loop bound** (correction). The inclusive bound
+  $k \le \lceil l_{\max}/2 \rceil$ attempts an extra odd derivative. For odd $l_{\max}$,
+  its input vector has not been computed by the conditional solve. The formal sequence
+  defines each derivative by its order and can be read through $l_{\max}$.
+  See `CartisGouldToint.Chapter09.algorithm_9_1_1`.
 * **Remark after Algorithm 9.1.1, Cholesky factorization** (typo). The odd derivatives are
   $\pi^{(2k+1)} = -\beta_k \|y^{(k+1)}\|^2$, not $-2\beta_k \|y^{(k+1)}\|^2$. See
   `CartisGouldToint.Chapter09.corollary_9_1_1`.
@@ -60,7 +63,11 @@ $L, D, M \in \mathbb{R}^{n \times n}$ and $g \in \mathbb{R}^n$. The vector $s^{(
 by solving $L y = -g$, $D z = y$ and $L^T s^{(0)} = z$, and $s^{(k+1)}$ is obtained by solving
 $L y = (k + 1) M s^{(k)}$, $D z = y$ and $L^T s^{(k+1)} = z$.
 
-The solves are written with the matrix inverses, which are $0$ for a singular matrix. -/
+The solves are written with the matrix inverses, which are $0$ for a singular matrix.
+
+**Reading.** Implements the positive recurrence of the pseudocode; these are signed derivatives
+relative to (8.2.29), and inverses totalize singular factors.
+-/
 noncomputable def algS (L D M : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) :
     ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => toEuclideanLin Lᵀ⁻¹ (toEuclideanLin D⁻¹ (toEuclideanLin L⁻¹ (-g)))
@@ -102,8 +109,12 @@ opposite to (8.2.29). So the vectors of the algorithm are $(-1)^k s^{(k)}$
 
 The three cases are `CartisGouldToint.Chapter09.algorithm_9_1_1_zero`,
 `CartisGouldToint.Chapter09.algorithm_9_1_1_odd` and
-`CartisGouldToint.Chapter09.algorithm_9_1_1_even`. The output is defined for every $j$, and it
-is read for $j \le l_{\max}$. -/
+`CartisGouldToint.Chapter09.algorithm_9_1_1_even`.
+
+**Correction.** The printed loop includes $k=\lceil l_{\max}/2\rceil$, computing an odd
+derivative beyond $l_{\max}$. For instance, with $l_{\max}=1$, iteration $k=0$ skips
+$s^{(1)}$, which iteration $k=1$ then uses. The formal output is defined for every $j$ by
+recursion, and orders $j\le l_{\max}$ give the requested prefix. -/
 noncomputable def algorithm_9_1_1 (L D M : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) : ℕ → ℝ
   | 0 => ⟪algS L D M g 0, toEuclideanLin M (algS L D M g 0)⟫
@@ -182,7 +193,8 @@ $\pi^{(2k+1)} = -2\beta_k \|y^{(k+1)}\|^2$. The factor $2$ is spurious.
 
 **Typo.** The vectors of Algorithm 9.1.1 differ from those of (8.2.29) by the sign $(-1)^k$
 (`CartisGouldToint.Chapter09.algS_eq`). The alternative expression for the odd derivatives holds
-with the vectors of Theorem 8.2.6.
+with the vectors of Theorem 8.2.6. The appendix proof identifies the two vector recurrences
+without accounting for the alternating signs.
 
 The derivatives are `iteratedDeriv` of `CartisGouldToint.Chapter08.secularFn`, the derivative
 vectors are `CartisGouldToint.Chapter08.secularDerivVec`, and $D$ is `diagonal d`. -/

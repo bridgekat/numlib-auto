@@ -68,6 +68,12 @@ proofs use the subproblem theory of Chapter 8 and the backbone module
   $d_{ii} = \lambda_i / \delta \in (-1, 1)$ in the remaining case. See
   `CartisGouldToint.Chapter11.div_modifiedAbs` and
   `CartisGouldToint.Chapter11.idealScaling_transform`.
+* **§11.1.3, trust-region multiplier** (correction). A strictly interior solution forces
+  $\lambda_*=0$. A boundary solution can have a positive multiplier.
+  See `CartisGouldToint.Chapter11.diagonal_kkt_iff`.
+* **§11.1.3, all-positive diagonal** (typo). The regularization step is along $-g^D$,
+  which is the direction in (11.1.11). See
+  `CartisGouldToint.Chapter11.diagonal_regularization_solution`.
 * **§11.1.3, regularization** (typo). For $g^D_- \neq 0$ the secular equation has the right-hand
   side $(\lambda/\sigma)^{2/(r-2)}$ (printed $(\lambda^2/\sigma^2)^{2/(r-2)}$); the hard case occurs
   if and only if $\frac12 \|g^D\| \le \sigma^{-1/(r-2)}$ (printed $\ge$); and then $\sum
@@ -136,8 +142,8 @@ Moreover, for every $\Delta$, the vector $s$ is a global solution of the trust-r
 the Euclidean norm. For every $\sigma$ and $r$, the same holds for the regularization subproblem
 (8.1.3).
 
-The matrix $D$ need not be diagonal. The Euclidean problems are those of Chapter 8 with the
-scaling matrix $I$. -/
+**Generalization.** The congruence combines the two source transformations and allows a
+nondiagonal $D$. The Euclidean problems are those of Chapter 8 with the scaling matrix $I$. -/
 theorem transform_of_congruence (hW : IsUnit W) (hH : H = W * D * Wᵀ) (hM : M = W * Wᵀ)
     (hg : toEuclideanLin W gD = g) :
     (∀ s, model g H s = model gD D (toEuclideanLin Wᵀ s)) ∧
@@ -191,7 +197,13 @@ for every $s$:
 3. $s = F^{-T} |D^B_\delta|^{-1/2} s^D$.
 
 The entries of $D$ are those of (11.1.7), described by
-`CartisGouldToint.Chapter11.div_modifiedAbs`. -/
+`CartisGouldToint.Chapter11.div_modifiedAbs`. The regularization term uses $\|s^D\|^r$,
+as explained in `CartisGouldToint.Chapter11.idealScaling_transform`. The identities hold
+for any invertible $F$ in the displayed factorization.
+
+**Correction.** Exact transformed gradient, step and inverse map for arbitrary invertible F. Correct
+transformed norm applies to the regularization term.
+-/
 theorem indefiniteFactorization_transform {F : Matrix (Fin n) (Fin n) ℝ} (hF : IsUnit F)
     {β : Fin n → ℝ} {δ : ℝ} (hδ : 0 < δ) (hH : H = F * diagonal β * Fᵀ)
     (hM : M = F * diagonal (fun i => modifiedAbs δ (β i)) * Fᵀ) (g : EuclideanSpace ℝ (Fin n)) :
@@ -386,7 +398,11 @@ theorem diagonal_posSemidef_iff (lam : ℝ) :
 /-- For $D = \operatorname{diag}(d)$, a number $\lambda$ satisfies the multiplier conditions of
 Theorem 8.2.7 for the step $s$ and the data $(g, D, I)$ if and only if $\lambda \ge 0$,
 $(d_i + \lambda) s_i = -g_i$ and $d_i + \lambda \ge 0$ for every $i$, and
-$\lambda (\|s\|^2 - \Delta^2) = 0$. -/
+$\lambda (\|s\|^2 - \Delta^2) = 0$.
+
+**Correction.** Section 11.1.3 says the multiplier is zero if the step lies within
+$\|s\|\le\Delta$. The conclusion needs strict inequality. For $D=1$, $g=2$, and $\Delta=1$,
+the minimizer $s=-1$ has multiplier $1$. -/
 theorem diagonal_kkt_iff {g s : EuclideanSpace ℝ (Fin n)} {Δ lam : ℝ} :
     IsTrustRegionKKT g (diagonal d) 1 Δ s lam ↔
       0 ≤ lam ∧ (∀ i, (d i + lam) * s i = -g i) ∧ (∀ i, 0 ≤ d i + lam) ∧
@@ -570,7 +586,10 @@ solution of (11.1.5) for the data $(g, D)$ with a Lagrange multiplier $\lambda_*
    $\sum_i \alpha_i^2 = \Delta^2 - \frac14 \|g\|^2$.
 
 Here $g$ and $s$ stand for the book's $g^D$ and $s^D$. Conversely, every vector of the hard-case
-family is a solution: `CartisGouldToint.Chapter11.diagonal_trustRegion_hardCase`. -/
+family is a solution: `CartisGouldToint.Chapter11.diagonal_trustRegion_hardCase`. The
+branches with a negative diagonal entry cover the all-negative case as well. Then $g_+=0$,
+so for $g\ne 0$ the secular formula gives $s=-(\Delta/\|g\|)g$. For $g=0$ the hard-case
+family is the entire boundary sphere. -/
 theorem diagonal_trustRegion_solution (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {Δ : ℝ} (hΔ : 0 < Δ) {s : EuclideanSpace ℝ (Fin n)} {lam : ℝ}
     (hs : IsTrustRegionSolution g (diagonal d) 1 Δ s)
@@ -675,7 +694,13 @@ theorem diagonal_trustRegion_solution (hd : ∀ i, d i = 1 ∨ d i = -1)
 problem. Let $D = \operatorname{diag}(d)$ with every $d_i \in \{1, -1\}$, let $\Delta > 0$, and
 let $g_- = 0$. If $\alpha \in \mathbb{R}^n$ satisfies $\alpha_i = 0$ for every
 $i \in \mathcal{D}^+$ and $\|\alpha\|^2 = \Delta^2 - \frac14 \|g\|^2$, then
-$s = -\frac12 g_+ + \alpha$ is a global solution of (11.1.5) for the data $(g, D)$. -/
+$s = -\frac12 g_+ + \alpha$ is a global solution of (11.1.5) for the data $(g, D)$.
+At $\Delta=\|g\|/2$ the family consists of the single vector with $\alpha=0$.
+This also covers the all-positive diagonal when that equality holds.
+
+**Reading.** Sufficient norm and support constraints allow equality at the threshold and the
+corresponding degenerate all-positive case.
+-/
 theorem diagonal_trustRegion_hardCase (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {Δ : ℝ} (hΔ : 0 < Δ) (hgm : minusPart d g = 0)
     {α : EuclideanSpace ℝ (Fin n)} (hα1 : ∀ i, d i = 1 → α i = 0)
@@ -744,6 +769,9 @@ let $\lambda_* = \sigma \|s\|^{r-2}$.
 $(\lambda^2/\sigma^2)^{2/(r-2)}$, the condition for the hard case with $\ge$ in place of $\le$,
 and the sum $\sum_i \alpha_i^2$ as a product. The right-hand side is the regularization target
 $(\lambda/\sigma)^{2/(r-2)}$ of (8.2.9).
+
+**Typo.** For an all-positive diagonal the prose describes the step direction as $-s^D$.
+The step formula (11.1.11) gives the direction $-g^D$ when $g^D\ne 0$.
 
 Here $g$ and $s$ stand for the book's $g^D$ and $s^D$, and the right-hand side of the secular
 equation is `CartisGouldToint.Chapter08.regTarget`. Conversely, every vector of the hard-case
@@ -854,7 +882,8 @@ $r > 2$, and let $g_- = 0$. If $\alpha \in \mathbb{R}^n$ satisfies $\alpha_i = 0
 $i \in \mathcal{D}^+$ and $\|\alpha\|^2 = \sigma^{-2/(r-2)} - \frac14 \|g\|^2$, then
 $s = -\frac12 g_+ + \alpha$ is a global minimizer of (11.1.6) for the data $(g, D)$.
 
-**Typo.** The source prints the sum $\sum_i \alpha_i^2$ as a product. -/
+**Typo.** The source prints the sum $\sum_i \alpha_i^2$ as a product. When the corrected
+difference is zero, the family consists of the single vector with $\alpha=0$. -/
 theorem diagonal_regularization_hardCase (hd : ∀ i, d i = 1 ∨ d i = -1)
     {g : EuclideanSpace ℝ (Fin n)} {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r) (hgm : minusPart d g = 0)
     {α : EuclideanSpace ℝ (Fin n)} (hα1 : ∀ i, d i = 1 → α i = 0)

@@ -99,6 +99,12 @@ boundary theory of `Numlib.Analysis.Sobolev.Boundary.ContDiffDomain` and
 
 ## Deviations from the source
 
+* **Equations (12.91)–(12.92)** (reading). The stencil is total on natural indices and $N$. The
+  solution predicate imposes zero values on all four edges and leaves exterior values
+  unrestricted. See `QuarteroniSaccoSaleri.Chapter12.IsFivePointSolution`.
+* **Exercise 12.14** (generalization). The grid dimension and the positive scaling parameter may
+  be chosen independently. The source uses dimension $N-1$ in each coordinate. See
+  `QuarteroniSaccoSaleri.Chapter12.exercise_12_14`.
 * **(12.93)** (typo). The source prints the offsets $\pm(N + 1)$; for the $(N - 1)^2$ interior
   unknowns they are $\pm(N - 1)$. See `QuarteroniSaccoSaleri.Chapter12.equation_12_93`.
 * **Exercise 12.15** (reading). The domain and the functions that the source calls smooth enough are
@@ -132,7 +138,10 @@ $$L_h u_h(x_{i+1,j+1}) = h^{-2} (4 u_{i+1,j+1} - u_{i+2,j+1} - u_{i,j+1} - u_{i+
   u_{i+1,j}).$$
 
 It is the centred second difference (10.65) in each direction. The factor $h^{-2}$ is written
-$N^2$. -/
+$N^2$.
+
+**Reading.** The stencil is a total function of natural coordinates and $N$. The source
+evaluates it only at interior nodes of a nondegenerate grid. -/
 noncomputable def equation_12_92 (N : ℕ) (u : ℕ → ℕ → ℝ) (i j : ℕ) : ℝ :=
   (N : ℝ) ^ 2 * (4 * u (i + 1) (j + 1) - u (i + 2) (j + 1) - u i (j + 1)
     - u (i + 1) (j + 2) - u (i + 1) j)
@@ -140,7 +149,10 @@ noncomputable def equation_12_92 (N : ℕ) (u : ℕ → ℕ → ℝ) (i j : ℕ)
 /-- **Equation (12.91)** of [quarteroni2000numerical]. A grid function $u$ **solves the five-point
 problem** with the data $f$ if $u_{i,j} = 0$ at the boundary indices ($i, j \le N$ with
 $i \in \{0, N\}$ or $j \in \{0, N\}$), and $L_h u_h(x_{i,j}) = f_{i,j}$ at every interior node
-$x_{i,j}$, $1 \le i, j \le N - 1$. -/
+$x_{i,j}$, $1 \le i, j \le N - 1$.
+
+**Reading.** Zero values are imposed along all four grid edges. The predicate leaves exterior
+values unrestricted and permits $N=0$. -/
 def IsFivePointSolution (N : ℕ) (f : ℕ → ℕ → ℝ) (u : ℕ → ℕ → ℝ) : Prop :=
   (∀ i j, i ≤ N → j ≤ N → (i = 0 ∨ i = N ∨ j = 0 ∨ j = N) → u i j = 0) ∧
     ∀ i j, i + 2 ≤ N → j + 2 ≤ N → equation_12_92 N u i j = f (i + 1) (j + 1)
@@ -153,7 +165,10 @@ $$A = h^{-2} (T \oplus T) = h^{-2} (T \otimes I + I \otimes T), \qquad T =
   \operatorname{tridiag}(-1, 2, -1) \in \mathbb{R}^{m \times m}, \quad h = 1/N.$$
 
 The scheme has $m = N - 1$; the definition allows any $m$. The Kronecker sum is `⊕ₖ`, and $T$ is
-`Matrix.symmTridiagonalToeplitz m (-1) 2`. -/
+`Matrix.symmTridiagonalToeplitz m (-1) 2`.
+
+**Reading.** The scaling parameter $N$ and the common interior grid dimension $m$ are
+independent. The physical grid uses $m=N-1$. -/
 noncomputable def fivePointMatrix (N m : ℕ) : Matrix (Fin m × Fin m) (Fin m × Fin m) ℝ :=
   ((N : ℝ) ^ 2) • (Matrix.symmTridiagonalToeplitz m (-1) 2 ⊕ₖ
     Matrix.symmTridiagonalToeplitz m (-1) 2)
@@ -199,7 +214,10 @@ $T = \operatorname{tridiag}(-1, 2, -1)$ with itself. The M-matrix property follo
 Stieltjes criterion `Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`, since the off-diagonal
 entries are nonpositive. So the discrete solution satisfies the maximum principle
 $Au \ge 0 \Rightarrow u \ge 0$ of
-`QuarteroniSaccoSaleri.Chapter12.exercise_12_13_maximumPrinciple`. -/
+`QuarteroniSaccoSaleri.Chapter12.exercise_12_13_maximumPrinciple`.
+
+**Generalization.** The result allows an arbitrary square tensor-grid dimension and any
+positive scaling parameter $N$. -/
 theorem exercise_12_14 {N m : ℕ} (hN : N ≠ 0) :
     (fivePointMatrix N m).PosDef ∧ (fivePointMatrix N m).IsMMatrix := by
   have hc : (0 : ℝ) < (N : ℝ) ^ 2 := by
@@ -237,7 +255,10 @@ The proof follows the hint of the exercise: $\operatorname{div}(v \nabla u) = v 
 rectangle `MeasureTheory.integral_divergence_prod_Icc_of_hasFDerivAt_off_countable_of_le`
 applied to $(v \partial_1 u, v \partial_2 u)$. The partial derivatives are `fderiv ℝ w p (1, 0)`
 and `fderiv ℝ w p (0, 1)`, and the integral over $\Omega$ is over the closed rectangle
-`Icc a b`. -/
+`Icc a b`.
+
+**Reading.** Specialization to a rectangle with explicit four-edge integral.
+-/
 theorem exercise_12_15_rectangle {u v : ℝ × ℝ → ℝ} (hu : ContDiff ℝ 2 u) (hv : ContDiff ℝ 1 v)
     {a b : ℝ × ℝ} (hab : a ≤ b) :
     (∫ p in Icc a b,

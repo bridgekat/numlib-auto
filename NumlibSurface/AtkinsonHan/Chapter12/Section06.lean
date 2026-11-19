@@ -57,9 +57,14 @@ follows from the Poisson integral formula of Mathlib.
 
 ## Deviations from the source
 
+* **Equations (12.6.20)–(12.6.22) and (12.6.27)** (generalization). The formulas use bounded
+  operators and a chosen coarse inverse. The step definition uses the scalar inverse totalized
+  at zero, and the error identity assumes $\lambda \ne 0$ and identifies the coarse inverse.
 * **Theorem 12.6.1** (generalization). The book states the theorem for the Nyström operators of
   Section 12.4 on $C(D)$. It is stated for every collectively compact family that converges
   pointwise. See `AtkinsonHan.Chapter12.theorem_12_6_1`.
+* **Example 12.6.2** (reading). The eigenfunction statements are evaluations of the integrals
+  at each $x$. The sine identity also includes the zero function at frequency $j=0$.
 
 ## Not formalized
 
@@ -91,7 +96,10 @@ new iterate $$u + \frac{1}{\lambda} (r + \delta).$$
 The inverse $e^{-1}$ is the approximate inverse $C_n$ of the residual correction method
 (12.6.5)–(12.6.6), and it is the only inverse that the method forms. The definition is
 `SecondKind.twoGridStep`. It does not require `↑e = μ • 1 - K m`; the theorems that use it add
-this hypothesis. -/
+this hypothesis.
+
+**Reading.** Arbitrary bounded operator and explicit coarse inverse; the formula is total at λ=0.
+-/
 noncomputable abbrev twoGridStep (μ : 𝕜) (e : X ≃L[𝕜] X) (Kn : X →L[𝕜] X) (f u : X) : X :=
   SecondKind.twoGridStep μ e Kn f u
 
@@ -101,7 +109,10 @@ $f, u \in X$, the residual of the fine equation at $u$ is $$r = f - (\lambda - K
 two-grid step `AtkinsonHan.Chapter12.twoGridStep` maps $u$ to $$u + \lambda^{-1} \bigl(r +
 e^{-1} (K_n r)\bigr).$$
 
-The residual is `SecondKind.residual`. -/
+The residual is `SecondKind.residual`.
+
+**Correction.** Residual/correction formulas for a supplied coarse inverse and total scalar inverse.
+-/
 theorem equation_12_6_20 (μ : 𝕜) (e : X ≃L[𝕜] X) (Kn : X →L[𝕜] X) (f u : X) :
     SecondKind.residual μ Kn f u = f - (μ • 1 - Kn : X →L[𝕜] X) u ∧
       twoGridStep μ e Kn f u = u + μ⁻¹ • (SecondKind.residual μ Kn f u
@@ -115,7 +126,10 @@ $\lambda - K_m$. The **iteration operator** of the two-grid method is $$M_{m,n} 
 
 The factor $K_n - K_m$ appears composed with $K_n$. Collective compactness makes this product
 small, although $\|K_n - K_m\|$ need not tend to zero. The definition is
-`SecondKind.twoGridOperator`. -/
+`SecondKind.twoGridOperator`.
+
+**Reading.** Abstract map family and total scalar inverse away from the book's Nyström setting.
+-/
 noncomputable abbrev twoGridOperator (μ : 𝕜) (e : X ≃L[𝕜] X) (Km Kn : X →L[𝕜] X) : X →L[𝕜] X :=
   SecondKind.twoGridOperator μ e Km Kn
 
@@ -128,7 +142,10 @@ iterate $u^{(\kappa)}$ satisfies $$\|u^* - u^{(\kappa)}\| \le \|M_{m,n}\|^\kappa
 u\|.$$
 
 The identity is algebra: it uses no compactness, no completeness and no bound on $M_{m,n}$. The
-book writes the solution of the fine equation as $u_n$; it is `ustar` here. -/
+book writes the solution of the fine equation as $u_n$; it is `ustar` here.
+
+**Reading.** Same signed error identity for general bounded coarse and fine operators at nonzero λ.
+-/
 theorem equation_12_6_27 {μ : 𝕜} (hμ : μ ≠ 0) {e : X ≃L[𝕜] X} {Km Kn : X →L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - Km) {f ustar : X}
     (hstar : (μ • 1 - Kn : X →L[𝕜] X) ustar = f) (u : X) :
@@ -370,7 +387,11 @@ integral identities. The proof uses the periodicity of $k_\gamma$ to absorb the 
 and the addition formulas to split the integral into the cosine and sine coefficients of
 $k_\gamma$. Table 12.4 of the example, with the measured iteration counts and error reductions
 at $\gamma = 0.8$, is not formalized; the convergence it shows is
-`AtkinsonHan.Chapter12.theorem_12_6_1`. -/
+`AtkinsonHan.Chapter12.theorem_12_6_1`.
+
+**Reading.** States eigenfunction identities as scalar integrals and includes the trivial
+zero-frequency sine case.
+-/
 theorem example_12_6_2 (hγ0 : 0 ≤ γ) (hγ1 : γ < 1) (j : ℕ) (x : ℝ) :
     (∫ y in (0 : ℝ)..1, periodicPoissonKernel γ (x + y) * Real.cos (2 * j * π * y))
         = γ ^ j * Real.cos (2 * j * π * x) ∧

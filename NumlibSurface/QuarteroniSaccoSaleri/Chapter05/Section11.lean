@@ -57,6 +57,21 @@ specialize `Numlib.Eigen.MinMax`, `Numlib.Krylov.Lanczos`, `Numlib.Eigen.Rayleig
   $\mathcal{K}_m(A, q^{(1)})$ is `Krylov.subspace (toEuclideanLin A) q₁ m`. "Before breakdown" means
   $\dim \mathcal{K}_m(A, q^{(1)}) = m$.
 
+## Deviations from the source
+
+* **Totalization.** The Rayleigh quotient is totalized at the zero vector. See
+  `QuarteroniSaccoSaleri.Chapter05.rayleigh`.
+* **Totalization.** The Lanczos and Ritz arrays are defined beyond breakdown, with a full-prefix
+  requirement for the compression interpretation. See
+  `QuarteroniSaccoSaleri.Chapter05.lanczosTridiag`,
+  `QuarteroniSaccoSaleri.Chapter05.lanczosTridiag_apply`,
+  `QuarteroniSaccoSaleri.Chapter05.lanczosEigenvalues`.
+* **Reading.** The Ritz extrema use the Krylov trial space and its projected dimension. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_67`.
+* **Scope.** The extremal Ritz bounds make their angle, spectral gaps and full-rank prefix
+  hypotheses explicit. See `QuarteroniSaccoSaleri.Chapter05.property_5_12`,
+  `QuarteroniSaccoSaleri.Chapter05.property_5_12_min`.
+
 ## Not formalized
 
 * **Example 5.18.** It is numerical.
@@ -75,7 +90,11 @@ variable {n : ℕ}
 /-- **Section 5.11** of [quarteroni2000numerical]. For $A \in \mathbb{R}^{n \times n}$ and
 $x \in \mathbb{R}^n$, $x \neq 0$, the **Rayleigh quotient** is $$r(x) = \frac{x^T A x}{x^T x}.$$
 
-The Lean definition gives $r(0) = 0$, by the convention that division by zero gives zero. -/
+The Lean definition gives $r(0) = 0$, by the convention that division by zero gives zero.
+
+**Reading.** The quotient is defined on the zero vector by total division. Its variational
+interpretation uses only nonzero vectors.
+-/
 noncomputable def rayleigh (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) : ℝ :=
   (x ⬝ᵥ (A *ᵥ x)) / (x ⬝ᵥ x)
 
@@ -131,7 +150,12 @@ $m \in \mathbb{N}$, the matrix $H_m = V_m^T A V_m \in \mathbb{R}^{m \times m}$ o
 is the symmetric tridiagonal matrix of the coefficients $\alpha_j$, $\beta_j$ of the Lanczos
 recurrence.
 
-This is the backbone's `Lanczos.tridiag`. -/
+This is the backbone's `Lanczos.tridiag`.
+
+**Reading.** The arrays are defined for any matrix and step count using padded recurrence data. The
+intended symmetric compression interpretation requires symmetry, and the eigenvalue comparison
+requires a full-rank Krylov prefix.
+-/
 noncomputable def lanczosTridiag (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Lanczos.tridiag (toEuclideanLin A) q₁ m
@@ -141,7 +165,12 @@ Lanczos matrix $H_m = V_m^T A V_m$ of Section 5.11 of [quarteroni2000numerical] 
 $$(H_m)_{ij} = v_i^T A v_j,$$ where $v_i$ are the Lanczos vectors.
 
 The Lanczos vectors are `Arnoldi.vec (toEuclideanLin A) q₁ i`. The proof specializes
-`Lanczos.hessenbergSq_eq_map_tridiag`. -/
+`Lanczos.hessenbergSq_eq_map_tridiag`.
+
+**Reading.** The arrays are defined for any matrix and step count using padded recurrence data. The
+intended symmetric compression interpretation requires symmetry, and the eigenvalue comparison
+requires a full-rank Krylov prefix.
+-/
 theorem lanczosTridiag_apply {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {m : ℕ} (i j : Fin m) :
     lanczosTridiag A q₁ m i j = inner ℝ (Arnoldi.vec (toEuclideanLin A) q₁ i)
@@ -156,7 +185,12 @@ theorem lanczosTridiag_apply {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
 starting vector $q^{(1)}$, the eigenvalues $\eta_1 \ge \eta_2 \ge \dots \ge \eta_m$ of the
 Lanczos matrix $H_m$, sorted decreasingly.
 
-This is the backbone's list of Ritz values `Lanczos.ritzValues`, indexed by `Fin m` from $0$. -/
+This is the backbone's list of Ritz values `Lanczos.ritzValues`, indexed by `Fin m` from $0$.
+
+**Reading.** The arrays are defined for any matrix and step count using padded recurrence data. The
+intended symmetric compression interpretation requires symmetry, and the eigenvalue comparison
+requires a full-rank Krylov prefix.
+-/
 noncomputable def lanczosEigenvalues (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : EuclideanSpace ℝ (Fin n))
     (m : ℕ) : Fin m → ℝ :=
   Lanczos.ritzValues (toEuclideanLin A) q₁ m
@@ -196,7 +230,12 @@ $y$ in the Krylov subspace directly. The proof uses `Krylov.rayleighQuotient_com
 `LinearMap.IsSymmetric.rayleighQuotient_mem_Icc` and
 `LinearMap.IsSymmetric.rayleighQuotient_eigenvectorBasis` for the compression, and the Cauchy
 interlacing results `LinearMap.IsSymmetric.eigenvalues_compression_le` and
-`LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression` for the bounds. -/
+`LinearMap.IsSymmetric.eigenvalues_le_eigenvalues_compression` for the bounds.
+
+**Reading.** The variational extrema range over the nonzero vectors in the full-rank Krylov
+subspace, equivalently over coordinates in the projected dimension. The printed display writes
+ambient-dimensional coordinates in the projected quotient.
+-/
 theorem equation_5_67 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (q₁ : EuclideanSpace ℝ (Fin n)) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m) :
@@ -262,7 +301,12 @@ $(q^{(1)})^T u_1 \neq 0$ keeps $\tan\phi_1$ finite. The angle $\phi_1$ is `Submo
 the line through $q^{(1)}$ and $u_1$, and $T_{m-1}$ is `Polynomial.Chebyshev.T ℝ (m - 1)`. The
 proof specializes `Lanczos.kaniel_paige_saad` at the first index, where the deflation product is
 empty, through `QuarteroniSaccoSaleri.Chapter05.lanczosEigenvalues_eq`, and uses
-`Submodule.cosAngle_span_singleton` for $\cos\phi_1$. -/
+`Submodule.cosAngle_span_singleton` for $\cos\phi_1$.
+
+**Reading.** Lean assumes explicitly that the required spectral gaps are strict, the initial angle
+has nonzero cosine, and the Krylov prefix has full rank. These conditions keep the displayed tangent
+and gap quotients defined and make the Ritz interpretation valid.
+-/
 theorem property_5_12 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
     {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m)
@@ -326,7 +370,12 @@ of $A$ and $-A$ are the same (`Krylov.subspace_neg`), the compression is negated
 the largest eigenvalue of $-A$ is $-\lambda_n$. The strict inequalities keep $\rho_n$ finite and
 make $\lambda_n$ simple, so the eigenvector of $-A$ for $-\lambda_n$ is $u_n$ up to a scalar
 (`LinearMap.IsSymmetric.exists_smul_eigenvectorBasis_neg`); $(q^{(1)})^T u_n \neq 0$ keeps
-$\tan\phi_n$ finite. -/
+$\tan\phi_n$ finite.
+
+**Reading.** Lean assumes explicitly that the required spectral gaps are strict, the initial angle
+has nonzero cosine, and the Krylov prefix has full rank. These conditions keep the displayed tangent
+and gap quotients defined and make the Ritz interpretation valid.
+-/
 theorem property_5_12_min {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
     {q₁ : EuclideanSpace ℝ (Fin n)} (hq₁ : ‖q₁‖ = 1) {m : ℕ} (hm0 : 0 < m)
     (hm : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) q₁ m) = m)

@@ -102,6 +102,12 @@ fixed amount of memory. The run uses the radius update `ConnGouldToint.Chapter06
   the equality test. See `ConnGouldToint.Chapter10.ReferenceBuffer.step`.
 * **Equation (10.1.11)** (reading). The count of accepted iterations includes iteration $0$. See
   `ConnGouldToint.Chapter10.successful_count_le`.
+* **(10.1.3) and Lemma 10.1.1** (reading). The ratio definitions use totalized division.
+  The decrease proof only requires strictly positive predicted decrease at the trial.
+  The accumulated accepted decrease may be zero, including at $r(k)=k$.
+* **Theorems 10.1.2–10.1.4** (generalization). The small-radius result takes the trial model
+  error bound directly. The convergence results also have versions taking this bound as a
+  premise, and the derivative versions work in real normed spaces.
 -/
 
 open Filter Topology
@@ -138,7 +144,10 @@ $$\rho_k = \max\left\{ \frac{f_r - f^+_k}{\sum_{i=r}^{k-1} [i \in S]\, d_i + d_k
   \frac{f_k - f^+_k}{d_k} \right\},$$
 the maximum of the historical ratio and the current ratio.
 
-A quotient with zero denominator is $0$ in Lean. -/
+A quotient with zero denominator is $0$ in Lean.
+
+**Reading.** Same maximum of historical and current ratios with totalized division.
+-/
 noncomputable def nonmonotoneRatio (S : Set ℕ) (f trial d : ℕ → ℝ) (r k : ℕ) : ℝ :=
   max ((f r - trial k) / ((∑ i ∈ Finset.Ico r k, acceptedDecrease S d i) + d k))
     ((f k - trial k) / d k)
@@ -175,7 +184,10 @@ def ReferenceBuffer.initial (value : ℝ) : ReferenceBuffer where
 value $f^+$ and the predicted decrease $d$, the **buffered ratio** is
 $$\max\left\{ \frac{f_r - f^+}{\sigma_r + d}, \; \frac{f - f^+}{d} \right\}.$$
 
-The historical ratio uses the running sum $\sigma_r$ of the accepted decreases. -/
+The historical ratio uses the running sum $\sigma_r$ of the accepted decreases.
+
+**Reading.** Uses totalized division for the two buffered ratios.
+-/
 noncomputable def ReferenceBuffer.ratio (b : ReferenceBuffer) (value trial decrease : ℝ) : ℝ :=
   max ((b.referenceValue - trial) / (b.referenceDecrease + decrease))
     ((value - trial) / decrease)
@@ -352,7 +364,10 @@ $\Delta \le \kappa \|g\| (1 - \eta_2) / C$. If $\Delta'$ is a radius update (6.1
 for the ratio $\rho_k$, then $\rho_k \ge \eta_2$ and $\Delta \le \Delta'$.
 
 The nonmonotone ratio is at least the current ratio, so the estimate (6.4.12) for small radii,
-`ConnGouldToint.Chapter06.btrRatio_ge_eta₂_of_small_radius`, applies. -/
+`ConnGouldToint.Chapter06.btrRatio_ge_eta₂_of_small_radius`, applies.
+
+**Reading.** Takes the quadratic trial-error bound directly and uses a general normed group.
+-/
 theorem theorem_10_1_2 {E : Type*} [NormedAddCommGroup E] {P : BTRParams}
     {f m : E → ℝ} {x s g : E} {β Δ Δ' κ C : ℝ}
     (S : Set ℕ) (values trial d : ℕ → ℝ) (r k : ℕ)
@@ -387,7 +402,11 @@ that $\Delta_0 > 0$ and for every $k$:
 
 The set $S$ is part of the run. The acceptance condition determines whether $k \in S$ from the
 earlier accepted decreases and the current trial. The ratios are evaluated only for steps with
-positive predicted decrease. -/
+positive predicted decrease.
+
+**Correction.** A normed-space trace with the corrected reference schedule and explicit positive
+decrease.
+-/
 structure NonmonotoneRun {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (f : E → ℝ) (P : BTRParams) where
   /-- The iterate $x_k$. -/
@@ -442,7 +461,10 @@ noncomputable def predictedDecrease (run : NonmonotoneRun f P) (k : ℕ) : ℝ :
 
 /-- **Equation (10.1.3)** of [conn2000trust]. The **ratio** $\rho_k$ of a run is the nonmonotone
 ratio with the values $f(x_j)$, the trial values $f(x_j + s_j)$, the predicted decreases and the
-reference index $r_k$. Algorithm 10.1.1 uses it to update the iterate and the radius. -/
+reference index $r_k$. Algorithm 10.1.1 uses it to update the iterate and the radius.
+
+**Reading.** Real totalized ratio on an abstract trace.
+-/
 noncomputable def ratio (run : NonmonotoneRun f P) (k : ℕ) : ℝ :=
   nonmonotoneRatio run.successful (fun j ↦ f (run.x j)) (fun j ↦ f (run.x j + run.s j))
     run.predictedDecrease (run.reference k) k
@@ -724,7 +746,10 @@ $$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
 
 The quadratic model error bound follows from AF.1, AF.3, AN.1 and AM.1–AM.4 by Theorem 6.4.1;
 see `ConnGouldToint.Chapter10.theorem_10_1_3`. The proof excludes a positive lower bound on the
-gradient norms on every tail, which is the condition that the limit inferior needs. -/
+gradient norms on every tail, which is the condition that the limit inferior needs.
+
+**Reading.** Liminf-zero result with the trial-error estimate as a premise.
+-/
 theorem theorem_10_1_3_of_error_bound (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ C : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -757,7 +782,10 @@ $$\|\nabla f(x_k)\| \to 0.$$
 
 The bounded Hessian gives uniform continuity of the gradient. The proof bounds the motion of the
 iterates on stretches with large gradient by a tail of the summable accepted decreases, so it
-allows increases of the objective. -/
+allows increases of the objective.
+
+**Reading.** Quantitative trial-error and gradient-control hypotheses are explicit.
+-/
 theorem theorem_10_1_4_of_error_bound (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ C L K : ℝ} (hβ : ∀ k, 0 < β k) (hβC : ∀ k, β k ≤ C)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -857,6 +885,10 @@ theorem theorem_10_1_4_of_error_bound (run : NonmonotoneRun f P)
   exact hbound.not_ge ((mul_le_mul_of_nonneg_left hgap.le he.le).trans (htel j hj.1 le_rfl))
 
 omit [CompleteSpace E] in
+/-- **Theorem 6.4.1 used in §10.1.2** of [conn2000trust].
+
+**Reading.** Normed-space Taylor bound on the seminorm trust region.
+-/
 private theorem trial_error_of_uniform_hessian (run : NonmonotoneRun f P)
     {K κf κm : ℝ} (hK : 1 ≤ K) (hκm : 1 ≤ κm)
     (hnorm : ∀ k v, ‖v‖ ≤ K * run.p k v)
@@ -895,7 +927,10 @@ $$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
 
 The bound $\beta_k \le \kappa_m$ on the curvature constants is the one of (6.3.2) and AM.4. The
 model error bound comes from Theorem 6.4.1, and the proof applies
-`ConnGouldToint.Chapter10.theorem_10_1_3_of_error_bound`. -/
+`ConnGouldToint.Chapter10.theorem_10_1_3_of_error_bound`.
+
+**Correction.** Liminf-zero result for a normed-space trace with corrected reference schedule.
+-/
 theorem theorem_10_1_3 (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ K κf κm : ℝ} (hK : 1 ≤ K) (hκm : 1 ≤ κm)
     (hβ : ∀ k, 0 < β k) (hβm : ∀ k, β k ≤ κm)
@@ -921,7 +956,10 @@ theorem theorem_10_1_3 (run : NonmonotoneRun f P)
 $$\|\nabla f(x_k)\| \to 0.$$
 
 The bounded objective Hessian gives the uniform gradient estimate along the iterates. The proof
-applies `ConnGouldToint.Chapter10.theorem_10_1_4_of_error_bound`. -/
+applies `ConnGouldToint.Chapter10.theorem_10_1_4_of_error_bound`.
+
+**Correction.** Gradient convergence on the normed-space trace with corrected schedule.
+-/
 theorem theorem_10_1_4 (run : NonmonotoneRun f P)
     (β : ℕ → ℝ) {κ K κf κm : ℝ} (hK : 1 ≤ K) (hκm : 1 ≤ κm)
     (hβ : ∀ k, 0 < β k) (hβm : ∀ k, β k ≤ κm)

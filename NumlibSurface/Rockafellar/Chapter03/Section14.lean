@@ -102,21 +102,40 @@ half-space normalized to $1$.
 
 ## Deviations from the source
 
+* **Section 14, polar membership** (generalization). `Rockafellar.mem_polarCone_rn` and
+  `Rockafellar.mem_polarSet_rn` use the same inequalities for arbitrary sets. The book
+  introduces them for nonempty convex cones and nonempty convex sets, respectively.
+* **Section 14, compatibility of polars** (generalization). The set and cone polars agree
+  for any positively scale-invariant set. The book states this for convex cones.
+  See `Rockafellar.polarCone_eq_polarSet_rn`.
 * **Theorem 14.1**, first assertion (generalization). The polar of every set $K$ is a non-empty
   closed convex cone. See `Rockafellar.theorem_14_1_nonempty`, `Rockafellar.theorem_14_1_convex`,
   `Rockafellar.theorem_14_1_isCone` and `Rockafellar.theorem_14_1_isClosed`.
 * **Theorem 14.1**, $\delta(\cdot \mid K)^* = \delta(\cdot \mid K^\circ)$ (generalization). This
   direction holds for every convex cone containing the origin, closed or not. See
   `Rockafellar.theorem_14_1_conj`.
+* **Section 14, polar of the closure** (generalization). The closure leaves the cone polar
+  unchanged for every set. See `Rockafellar.polarCone_closure_rn`.
+* **Section 14, generated-cone examples** (generalization). The formulas also allow an empty
+  generator family, whose pointed cone hull is $\{0\}$. See `Rockafellar.polarCone_hull_range_rn`
+  and `Rockafellar.polarCone_setOf_forall_le_zero_rn`.
 * **Theorem 14.5**, first assertion (generalization). The polar of every set $C$ is closed, convex
   and contains the origin. See `Rockafellar.theorem_14_5_isClosed`,
   `Rockafellar.theorem_14_5_convex` and `Rockafellar.theorem_14_5_zero_mem`.
 * **Theorem 14.5**, gauge of $C^\circ$ (generalization). This assertion needs only $0 \in C$. See
   `Rockafellar.theorem_14_5_gauge_dual`.
+* **Section 8, rank of a set** (generalization). `Rockafellar.rankSet` uses the
+  dimension-minus-lineality formula on arbitrary sets.
 * **Theorem 14.7** (generalization). The two inclusions need $f$ non-negative and convex with
   $f(0) = 0$, but not closed; $f^* \ge 0$ needs only $f(0) = 0$; and $f^*(0) = 0$ needs only
   $f \ge 0$ and $f(0) = 0$. See `Rockafellar.theorem_14_7_left`, `Rockafellar.theorem_14_7_right`,
   `Rockafellar.theorem_14_7_conj_nonneg` and `Rockafellar.theorem_14_7_conj_zero`.
+
+## Not formalized
+
+* **Section 14, indicator conjugacy and the bipolar closure formula for cones excluding zero.**
+  The introductory statements allow any nonempty convex cone. `Rockafellar.theorem_14_1_conj`
+  and `Rockafellar.polarCone_polarCone_rn` use `PointedCone`.
 -/
 
 open Set Pointwise
@@ -133,8 +152,10 @@ variable {n : ℕ}
 $K \subseteq \mathbb{R}^n$, a vector $x^*$ lies in the **polar** $K^\circ$ if and only if
 $\langle x, x^* \rangle \le 0$ for every $x \in K$.
 
-The polar is `ConvexAnalysis.polarCone (Rockafellar.pairing n) K`, and this equivalence is its
-definition unfolded. -/
+The polar is `ConvexAnalysis.polarCone (Rockafellar.pairing n) K`.
+
+**Generalization.** The book introduces this polar for nonempty convex cones. The inequality
+defines the polar for arbitrary sets. -/
 theorem mem_polarCone_rn (K : Set (Rn n)) (y : Rn n) :
     y ∈ polarCone (pairing n) K ↔ ∀ x ∈ K, (inner ℝ x y : ℝ) ≤ 0 := Iff.rfl
 
@@ -142,8 +163,10 @@ theorem mem_polarCone_rn (K : Set (Rn n)) (y : Rn n) :
 $C \subseteq \mathbb{R}^n$, a vector $x^*$ lies in the **polar** $C^\circ$ if and only if
 $\langle x, x^* \rangle \le 1$ for every $x \in C$.
 
-The polar is `ConvexAnalysis.polarSet (Rockafellar.pairing n) C`, and this equivalence is its
-definition unfolded. -/
+The polar is `ConvexAnalysis.polarSet (Rockafellar.pairing n) C`.
+
+**Generalization.** The book introduces this polar for nonempty convex sets. The inequality
+also defines it for arbitrary sets. -/
 theorem mem_polarSet_rn (C : Set (Rn n)) (y : Rn n) :
     y ∈ polarSet (pairing n) C ↔ ∀ x ∈ C, (inner ℝ x y : ℝ) ≤ 1 := Iff.rfl
 
@@ -165,8 +188,8 @@ $K \subseteq \mathbb{R}^n$ satisfy $aK = K$ for every $a > 0$. Then the polar of
 equals the polar of $K$ as a set: a half-space $\{x \mid \langle x, x^* \rangle \le 1\}$
 contains $K$ if and only if $\{x \mid \langle x, x^* \rangle \le 0\}$ contains $K$.
 
-The book makes this remark after Corollary 14.5.1. The hypothesis is the definition of a cone in
-the book: closure under multiplication by positive scalars. Convexity is not needed. -/
+**Generalization.** The book states this for convex cones. The Lean hypothesis is the
+positive-scaling property of a cone, which also permits nonconvex cones. -/
 theorem polarCone_eq_polarSet_rn {K : Set (Rn n)} (hK : ∀ a : ℝ, 0 < a → a • K = K) :
     polarCone (pairing n) K = polarSet (pairing n) K :=
   polarCone_eq_polarSet_of_isCone (isCone_iff_smul_eq.2 hK)
@@ -244,7 +267,11 @@ be a convex cone in $\mathbb{R}^n$ containing the origin. Then $\delta(\cdot \mi
 direction does not need closedness; it is the computation with which Section 14 opens.
 
 The cone is a `PointedCone`. The proof specializes
-`ConvexAnalysis.convexConj_indicatorFn_eq_indicatorFn_polarCone`. -/
+`ConvexAnalysis.convexConj_indicatorFn_eq_indicatorFn_polarCone`.
+
+**Generalization.** The theorem's closedness hypothesis is dropped. The introductory
+calculation in the book applies to any nonempty convex cone, while the Lean declaration
+uses cones containing the origin. -/
 theorem theorem_14_1_conj (K : PointedCone ℝ (Rn n)) :
     convexConj (pairing n) (indicatorFn (K : Set (Rn n)))
       = indicatorFn (polarCone (pairing n) (K : Set (Rn n))) :=
@@ -260,14 +287,22 @@ theorem theorem_14_1_conj_dual (K : PointedCone ℝ (Rn n)) (hcl : IsClosed (K :
   simpa using convexConj_indicatorFn_polarCone_pointedCone (B := pairing n) K hcl
 
 /-- **Section 14** of [rockafellar1970convex]. For every $K \subseteq \mathbb{R}^n$,
-$(\operatorname{cl} K)^\circ = K^\circ$. This invariance lets Theorem 14.1 be stated for closed
-cones without loss. The proof specializes `ConvexAnalysis.polarCone_closure`. -/
+$(\operatorname{cl} K)^\circ = K^\circ$.
+
+**Generalization.** The book states this for nonempty convex cones. The Lean formula holds
+for arbitrary sets. -/
 theorem polarCone_closure_rn (K : Set (Rn n)) :
     polarCone (pairing n) (closure K) = polarCone (pairing n) K :=
   polarCone_closure K
 
 /-- **Section 14** of [rockafellar1970convex]. Let $K$ be a convex cone in $\mathbb{R}^n$ containing
-the origin, not necessarily closed. Then $K^{\circ\circ} = \operatorname{cl} K$. -/
+the origin. Then $K^{\circ\circ} = \operatorname{cl} K$.
+
+The book gives this formula for nonempty convex cones. The Lean declaration uses
+`PointedCone` to represent cones that contain zero.
+
+**Reading.** The source allows all nonempty convex cones. The Lean cone also contains zero.
+-/
 theorem polarCone_polarCone_rn (K : PointedCone ℝ (Rn n)) :
     polarCone (pairing n) (polarCone (pairing n) (K : Set (Rn n)))
       = closure (K : Set (Rn n)) := by
@@ -297,6 +332,9 @@ theorem polarCone_nonnegOrthant_rn (n : ℕ) :
 /-- **Section 14** of [rockafellar1970convex], polar of a generated cone. Let $(a_i)_{i \in I}$ be a
 family of vectors of $\mathbb{R}^n$, and let $K$ be the convex cone generated by the $a_i$. Then
 $$K^\circ = \{x^* \mid \langle a_i, x^* \rangle \le 0 \text{ for every } i\}.$$
+
+**Generalization.** The book assumes the generator family is nonempty. With an empty family,
+the pointed hull is $\{0\}$ and its polar is the whole space.
 -/
 theorem polarCone_hull_range_rn {ι : Sort*} (a : ι → Rn n) :
     polarCone (pairing n) (PointedCone.hull ℝ (Set.range a) : Set (Rn n))
@@ -305,7 +343,10 @@ theorem polarCone_hull_range_rn {ι : Sort*} (a : ι → Rn n) :
 
 /-- **Section 14** of [rockafellar1970convex], the dual statement. Let $(a_i)_{i \in I}$ be a family
 of vectors of $\mathbb{R}^n$. Then the polar of $\{y \mid \langle a_i, y \rangle \le 0 \text{
-for every } i\}$ is the closure of the convex cone generated by the $a_i$. -/
+for every } i\}$ is the closure of the convex cone generated by the $a_i$.
+
+**Generalization.** For the empty family, the inequalities describe the whole space and
+the pointed hull on the right is $\{0\}$. -/
 theorem polarCone_setOf_forall_le_zero_rn {ι : Sort*} (a : ι → Rn n) :
     polarCone (pairing n) {y : Rn n | ∀ i, (inner ℝ (a i) y : ℝ) ≤ 0}
       = closure (PointedCone.hull ℝ (Set.range a) : Set (Rn n)) := by
@@ -673,7 +714,10 @@ $$\operatorname{rank} C = \dim C - \operatorname{lineality} C,$$
 where $\operatorname{lineality} C$ is the dimension of the lineality space of $C$.
 
 The value is an integer, and $\dim \emptyset = -1$ (`Rockafellar.dim` of Section 1).
-`Rockafellar.rankFn` of Section 13 is the companion definition for convex functions. -/
+`Rockafellar.rankFn` of Section 13 is the companion definition for convex functions.
+
+**Generalization.** The book defines rank for nonempty convex sets. The dimension-minus-lineality
+formula is defined here for arbitrary sets. -/
 noncomputable def rankSet (C : Set (Rn n)) : ℤ := dim C - (lineality C : ℤ)
 
 /-- **Corollary 14.6.1** of [rockafellar1970convex], dimension of the polar. Let

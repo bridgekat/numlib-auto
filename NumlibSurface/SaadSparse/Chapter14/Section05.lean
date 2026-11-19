@@ -75,6 +75,14 @@ specialize `Numlib.DomainDecomposition.Schur`.
 
 ## Deviations from the source
 
+* **(14.55) and Proposition 14.12** (domain). `SaadSparse.Chapter14.blockPreconditioner` defines
+  the product using the total inverse of $B$. The correspondence theorems assume invertible
+  $B,L_S,U_S$. They need no separate approximate factorization remainder because $L_SU_S-S$ is
+  determined by those factors.
+* **Propositions 14.11 and 14.12** (generalization). `SaadSparse.Chapter14.proposition_14_11`
+  and `SaadSparse.Chapter14.proposition_14_12` also give the converse for a candidate in the
+  consistent form. The source states the direction from full-system iterates to reduced-system
+  iterates.
 * **Propositions 14.11 and 14.12** (reading). The book speaks of "the same Krylov subspace method",
   which is not a formal object. The propositions are stated for the minimal-residual and the
   Galerkin specifications, in the variables $u = U_A x$ and $w = U_S y$. See
@@ -127,7 +135,10 @@ the Schur complement. The **block preconditioner** of the full matrix is
 $$M_A = L_A U_A = \begin{pmatrix} I & 0 \\ F B^{-1} & L_S \end{pmatrix} \begin{pmatrix} B & E \\
   0 & U_S \end{pmatrix}.$$
 
-For $L_S = U_S = I$ it is the preconditioner (14.49). -/
+For $L_S = U_S = I$ it is the preconditioner (14.49).
+
+**Representation.** This defines the product of the two block factors for every input, using
+the total inverse of $B$ in the lower factor. -/
 noncomputable def blockPreconditioner (B : Matrix (Fin p) (Fin p) ℝ) (E : Matrix (Fin p) (Fin q) ℝ)
     (F : Matrix (Fin q) (Fin p) ℝ) (LS US : Matrix (Fin q) (Fin q) ℝ) :
     Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin q) ℝ :=
@@ -257,7 +268,10 @@ is the iterate at step $k$ of the same method on $S y = g'$ from $y_0$, and
 $$u = U_A \begin{pmatrix} B^{-1}(f - E y) \\ y \end{pmatrix}.$$
 
 So the preconditioned iteration *produces* iterates of the form (14.51).
-`SaadSparse.Chapter14.equation_14_51` recovers $x$ from $u$. -/
+`SaadSparse.Chapter14.equation_14_51` recovers $x$ from $u$.
+
+**Reading.** Book's forward form for minimal-residual iterates, stated in transformed unknowns.
+-/
 theorem proposition_14_11_form (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ : Fin q → ℝ) (k : ℕ)
     {u : EuclideanSpace ℝ (Fin p ⊕ Fin q)}
     (hu : Krylov.IsMinResidualIterate (toEuclideanLin (precondMatrix B E F C 1 1))
@@ -283,7 +297,11 @@ $$L_S^{-1} S U_S^{-1} w = L_S^{-1} g'$$
 from $U_S y_0$, and $u = U_A (B^{-1}(f - E y), y)^T$.
 
 So the iterates have the form (14.57), and their interface blocks are the iterates of the
-split-preconditioned reduced method. -/
+split-preconditioned reduced method.
+
+**Reading.** Forward form for minimal-residual iterates with invertible split factors and no
+explicit remainder variable.
+-/
 theorem proposition_14_12_form (hB : IsUnit B) (hLS : IsUnit LS) (hUS : IsUnit US) (f : Fin p → ℝ)
     (g y₀ : Fin q → ℝ) (k : ℕ) {u : EuclideanSpace ℝ (Fin p ⊕ Fin q)}
     (hu : Krylov.IsMinResidualIterate (toEuclideanLin (precondMatrix B E F C LS US))
@@ -302,7 +320,10 @@ $L_A$, $U_A$ and the consistent vectors $x(z)$ be as in
 the preconditioned full system $L_A^{-1} A U_A^{-1} u = L_A^{-1} (f, g)^T$ from $U_A x(y_0)$ if
 and only if $y$ is the Galerkin iterate at step $k$ of $S y = g'$ from $y_0$.
 
-The Galerkin specification `Krylov.IsGalerkinIterate` covers FOM, CG and the Lanczos method. -/
+The Galerkin specification `Krylov.IsGalerkinIterate` covers FOM, CG and the Lanczos method.
+
+**Reading.** Galerkin specification in transformed variables, stated as equivalence.
+-/
 theorem proposition_14_11_galerkin (hB : IsUnit B) (f : Fin p → ℝ) (g y₀ y : Fin q → ℝ) (k : ℕ) :
     Krylov.IsGalerkinIterate (toEuclideanLin (precondMatrix B E F C 1 1))
         (WithLp.toLp 2 ((blockLower B F 1)⁻¹ *ᵥ Sum.elim f g))
@@ -346,7 +367,10 @@ theorem proposition_14_12 (hB : IsUnit B) (hLS : IsUnit LS) (hUS : IsUnit US) (f
 nonsingular, and let $L_A$, $U_A$ and $x(z)$ be as in `SaadSparse.Chapter14.proposition_14_12`.
 Then $U_A x(y)$ is the Galerkin iterate at step $k$ of
 $L_A^{-1} A U_A^{-1} u = L_A^{-1} (f, g)^T$ from $U_A x(y_0)$ if and only if $U_S y$ is the
-Galerkin iterate at step $k$ of $L_S^{-1} S U_S^{-1} w = L_S^{-1} g'$ from $U_S y_0$. -/
+Galerkin iterate at step $k$ of $L_S^{-1} S U_S^{-1} w = L_S^{-1} g'$ from $U_S y_0$.
+
+**Reading.** Galerkin specification and converse with invertible factors and no specified remainder.
+-/
 theorem proposition_14_12_galerkin (hB : IsUnit B) (hLS : IsUnit LS) (hUS : IsUnit US)
     (f : Fin p → ℝ) (g y₀ y : Fin q → ℝ) (k : ℕ) :
     Krylov.IsGalerkinIterate (toEuclideanLin (precondMatrix B E F C LS US))

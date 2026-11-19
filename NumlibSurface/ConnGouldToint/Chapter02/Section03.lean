@@ -48,6 +48,11 @@ The proofs specialize the backbone modules `Numlib.Analysis.Matrix.OperatorNorm`
   largest column sum $\max_j \sum_i |a_{ij}|$, and $\|A\|_\infty$ is `Matrix.lpOpNorm ⊤ A`, the
   largest row sum $\max_i \sum_j |a_{ij}|$.
 * The Frobenius norm $\|A\|_F$ is the norm `‖A‖` of the scoped instance `Matrix.Norms.Frobenius`.
+
+## Deviations from the source
+
+* **Generalization.** Equation (2.3.1) uses suprema for the dual norm in general real normed spaces.
+  See `ConnGouldToint.Chapter02.dualNorm`, `ConnGouldToint.Chapter02.dualNorm_eq_iSup`.
 -/
 
 open scoped ENNReal Matrix.Norms.Frobenius
@@ -64,7 +69,11 @@ continuous linear functional $\varphi : E \to \mathbb{R}$ is its operator norm
 $$\|\varphi\|_D = \sup_{\|x\| \le 1} |\varphi(x)|.$$
 
 In coordinates, the functional associated with a vector $x$ sends $y$ to $x^T y$. The definition
-is the norm `‖φ‖` of `E →L[ℝ] ℝ`. -/
+is the norm `‖φ‖` of `E →L[ℝ] ℝ`.
+
+**Generalization.** The dual norm is the operator norm on continuous real functionals on any real
+normed space. The formula takes suprema, allowing the maximum to be unattained.
+-/
 noncomputable abbrev dualNorm (φ : E →L[ℝ] ℝ) : ℝ := ‖φ‖
 
 /-- **Equation (2.3.1)** of [conn2000trust]. Let $E$ be a real normed space, and let
@@ -74,7 +83,11 @@ $$\|\varphi\|_D = \sup_{\|x\| \le 1} |\varphi(x)| \quad \text{and} \quad \|\varp
 
 The suprema are `iSup` over the subtypes $\{x : \|x\| \le 1\}$ and $\{x : x \neq 0\}$. When
 $E = 0$ the second subtype is empty; its supremum is then $0$, by the Lean convention
-$\sup \emptyset = 0$ for real numbers, and $\|\varphi\|_D = 0$ as well. -/
+$\sup \emptyset = 0$ for real numbers, and $\|\varphi\|_D = 0$ as well.
+
+**Generalization.** The dual norm is the operator norm on continuous real functionals on any real
+normed space. The formula takes suprema, allowing the maximum to be unattained.
+-/
 theorem dualNorm_eq_iSup (φ : E →L[ℝ] ℝ) :
     dualNorm φ = (⨆ x : {x : E // ‖x‖ ≤ 1}, |φ x|) ∧
       dualNorm φ = ⨆ x : {x : E // x ≠ 0}, |φ x| / ‖(x : E)‖ := by

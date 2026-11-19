@@ -125,6 +125,19 @@ The proofs specialize the backbone convex analysis library, the modules
   $\varphi \equiv +\infty$ (`ConvexAnalysis.convexConj_eq_bot_iff`). The hypothesis
   $\varphi \not\equiv +\infty$ appears where it is needed.
 
+## Deviations from the source
+
+* **Domain, epigraph and lower semicontinuity** (generalization). The formulas also permit function
+  values of $-\infty$. See `Brezis.Chapter01.mem_domain_iff`, `Brezis.Chapter01.mem_epigraph_iff`
+  and `Brezis.Chapter01.lowerSemicontinuous_iff`.
+* **Conjugacy and biconjugacy** (generalization). The definitions accept every extended-real-valued
+  function, and the conjugate remains convex and lower semicontinuous. See
+  `Brezis.Chapter01.conjugate`, `Brezis.Chapter01.biconjugate`,
+  `Brezis.Chapter01.conjugate_convexFn` and `Brezis.Chapter01.conjugate_lowerSemicontinuous`.
+* **Example 2, indicator functions** (generalization). The convexity and lower semicontinuity
+  criteria include the empty set. See `Brezis.Chapter01.example_1_2_convexFn_iff` and
+  `Brezis.Chapter01.example_1_2_lowerSemicontinuous_iff`.
+
 ## Not formalized
 
 * **Remark 7, last clause (Exercise 1.18(h)).** Inequality (12) is the case $\varphi(t) = |t|^p/p$
@@ -139,8 +152,11 @@ namespace Brezis.Chapter01
 /-! ### Lower semicontinuous and convex functions -/
 
 /-- **Section 1.4** of [brezis2011functional], the domain. For a function
-$\varphi : E \to (-\infty, +\infty]$, the **domain** of $\varphi$ is
+$\varphi : E \to [-\infty, +\infty]$, the **domain** of $\varphi$ is
 $$D(\varphi) = \{x \in E : \varphi(x) < +\infty\}.$$
+
+**Generalization.** The source excludes values of $-\infty$. The comparison with $+\infty$
+also applies at those values, which are included in the domain.
 
 The domain is the backbone `ConvexAnalysis.convexDom φ`, and the theorem states its membership
 criterion. -/
@@ -148,9 +164,12 @@ theorem mem_domain_iff {E : Type*} (φ : E → EReal) (x : E) : x ∈ convexDom 
   mem_convexDom
 
 /-- **Section 1.4** of [brezis2011functional], the epigraph. For a function
-$\varphi : E \to (-\infty, +\infty]$, the **epigraph** of $\varphi$ is
+$\varphi : E \to [-\infty, +\infty]$, the **epigraph** of $\varphi$ is
 $$\operatorname{epi} \varphi = \{[x, \lambda] \in E \times \mathbb{R} : \varphi(x) \le
   \lambda\}.$$
+
+**Generalization.** The source excludes values of $-\infty$. For a point with value $-\infty$,
+every real height is in the epigraph above that point.
 
 The epigraph is the backbone `ConvexAnalysis.epi φ`, a subset of $E \times \mathbb{R}$: as in
 footnote 5 of the source, $\lambda$ does not take the value $+\infty$. -/
@@ -159,14 +178,13 @@ theorem mem_epigraph_iff {E : Type*} (φ : E → EReal) (x : E) (l : ℝ) :
   mk_mem_epi
 
 /-- **Section 1.4** of [brezis2011functional], definition of lower semicontinuity. Let $E$ be a
-topological space. A function $\varphi : E \to (-\infty, +\infty]$ is **lower semicontinuous**
+topological space. A function $\varphi : E \to [-\infty, +\infty]$ is **lower semicontinuous**
 if and only if for every $\lambda \in \mathbb{R}$ the sublevel set
 $$[\varphi \le \lambda] = \{x \in E : \varphi(x) \le \lambda\}$$
 is closed.
 
-The notion of the source is Mathlib's `LowerSemicontinuous`, which is the second of the
-elementary facts of the section: for every $x \in E$ and $\varepsilon > 0$,
-$\varphi(y) \ge \varphi(x) - \varepsilon$ for all $y$ near $x$. -/
+**Generalization.** The source excludes values of $-\infty$. Closedness of all real sublevel
+sets also characterizes lower semicontinuity for fully extended-real-valued functions. -/
 theorem lowerSemicontinuous_iff {E : Type*} [TopologicalSpace E] (φ : E → EReal) :
     LowerSemicontinuous φ ↔ ∀ l : ℝ, IsClosed {x | φ x ≤ (l : EReal)} :=
   lowerSemicontinuous_iff_isClosed_le
@@ -216,16 +234,17 @@ $f \in E^\star$ and $x \in E$ to $f(x)$. -/
 theorem flip_dualPairing : (dualPairing E).flip = topDualPairing ℝ E := rfl
 
 /-- **Section 1.4** of [brezis2011functional], definition of the conjugate function. Let $E$ be a
-real normed space and $\varphi : E \to (-\infty, +\infty]$. The **conjugate function**
-$\varphi^\star : E^\star \to (-\infty, +\infty]$ is
+real normed space and $\varphi : E \to [-\infty, +\infty]$. The **conjugate function**
+$\varphi^\star : E^\star \to [-\infty, +\infty]$ is
 $$\varphi^\star(f) = \sup_{x \in E} \{\langle f, x \rangle - \varphi(x)\}.$$
 
-The source assumes $\varphi \not\equiv +\infty$. The definition is the backbone
-`ConvexAnalysis.convexConj (dualPairing E) φ`, which is defined for every $\varphi$ with values
-in $[-\infty, +\infty]$; it gives $\varphi^\star \equiv -\infty$ exactly when
-$\varphi \equiv +\infty$ (`ConvexAnalysis.convexConj_eq_bot_iff`). The hypothesis
-$\varphi \not\equiv +\infty$ appears where it is needed, as in `Brezis.Chapter01.remark_1_7` and
-`Brezis.Chapter01.proposition_1_10`. -/
+**Generalization.** The source requires values in $(-\infty, +\infty]$ and at least one finite
+value. The supremum defines the conjugate for every extended-real-valued function. It is
+identically $-\infty$ when $\varphi$ is identically $+\infty$, and a value $\varphi(x) = -\infty$
+makes the conjugate identically $+\infty$.
+
+The definition is `ConvexAnalysis.convexConj (Brezis.Chapter01.dualPairing E) φ`. Later results
+assume $\varphi \not\equiv +\infty$ where needed. -/
 noncomputable def conjugate (φ : E → EReal) : StrongDual ℝ E → EReal :=
   convexConj (dualPairing E) φ
 
@@ -233,22 +252,31 @@ noncomputable def conjugate (φ : E → EReal) : StrongDual ℝ E → EReal :=
 `ConvexAnalysis.convexConj` with respect to the pairing `Brezis.Chapter01.dualPairing E`. -/
 theorem conjugate_eq_convexConj (φ : E → EReal) : conjugate φ = convexConj (dualPairing E) φ := rfl
 
-/-- For every $f \in E^\star$, $\varphi^\star(f) = \sup_{x \in E} \{f(x) - \varphi(x)\}$, with the
-supremum and the subtraction in $[-\infty, +\infty]$. -/
+/-- **Section 1.4** of [brezis2011functional], the conjugate formula. For every $f \in E^\star$,
+$\varphi^\star(f) = \sup_{x \in E} \{f(x) - \varphi(x)\}$, with the supremum and the subtraction
+in $[-\infty, +\infty]$.
+
+**Generalization.** The function may take either infinite value, as in
+`Brezis.Chapter01.conjugate`. -/
 theorem conjugate_apply (φ : E → EReal) (f : StrongDual ℝ E) :
     conjugate φ f = ⨆ x, ((f x : ℝ) : EReal) - φ x := rfl
 
 /-- **Section 1.4** of [brezis2011functional], convexity of the conjugate. For every function
-$\varphi : E \to [-\infty, +\infty]$, the conjugate $\varphi^\star$ is convex on $E^\star$. This
-is the first half of the sentence "Note that $\varphi^\star$ is convex and l.s.c. on $E^\star$"
-of the source. -/
+$\varphi : E \to [-\infty, +\infty]$, the conjugate $\varphi^\star$ is convex on $E^\star$.
+
+**Generalization.** The source assumes that $\varphi$ has a finite value and never takes
+$-\infty$. In the additional cases the conjugate is a constant infinite function, which still
+has a convex epigraph. -/
 theorem conjugate_convexFn (φ : E → EReal) : ConvexFn (conjugate φ) :=
   convexFn_convexConj _ _
 
 /-- **Section 1.4** of [brezis2011functional], lower semicontinuity of the conjugate. For every
 function $\varphi : E \to [-\infty, +\infty]$, the conjugate $\varphi^\star$ is lower
-semicontinuous in the norm topology of $E^\star$. This is the second half of the sentence "Note
-that $\varphi^\star$ is convex and l.s.c. on $E^\star$" of the source.
+semicontinuous in the norm topology of $E^\star$.
+
+**Generalization.** The source assumes that $\varphi$ has a finite value and never takes
+$-\infty$. In the additional cases the conjugate is a constant infinite function, which is
+also lower semicontinuous.
 
 As in the source, $\varphi^\star$ is the upper envelope of the continuous affine functions
 $f \mapsto \langle f, x \rangle - \varphi(x)$, and the fourth elementary fact of the section
@@ -310,6 +338,9 @@ restricted to $E$ as in the source before Theorem 1.11, is
 $$\varphi^{\star\star}(x) = \sup_{f \in E^\star} \{\langle f, x \rangle - \varphi^\star(f)\}
   \quad \text{for } x \in E.$$
 
+**Generalization.** The source starts with a conjugate of a function that never takes
+$-\infty$ and has a finite value. The same formula applies to every extended-real-valued input.
+
 It is the backbone `ConvexAnalysis.convexBiconj (dualPairing E) φ`, which is
 `ConvexAnalysis.convexConj (topDualPairing ℝ E) (Brezis.Chapter01.conjugate φ)`. To iterate the
 conjugate would give a function on $E^{\star\star}$. For this reason
@@ -324,8 +355,12 @@ $E^\star$ with $E$. -/
 theorem biconjugate_eq_convexConj (φ : E → EReal) :
     biconjugate φ = convexConj (topDualPairing ℝ E) (conjugate φ) := rfl
 
-/-- For every $x \in E$, $\varphi^{\star\star}(x) = \sup_{f \in E^\star} \{f(x) -
-\varphi^\star(f)\}$, with the supremum and the subtraction in $[-\infty, +\infty]$. -/
+/-- **Section 1.4** of [brezis2011functional], the biconjugate formula. For every $x \in E$,
+$\varphi^{\star\star}(x) = \sup_{f \in E^\star} \{f(x) - \varphi^\star(f)\}$, with the supremum
+and the subtraction in $[-\infty, +\infty]$.
+
+**Generalization.** The function may take either infinite value, as in
+`Brezis.Chapter01.biconjugate`. -/
 theorem biconjugate_apply (φ : E → EReal) (x : E) :
     biconjugate φ x = ⨆ f : StrongDual ℝ E, ((f x : ℝ) : EReal) - conjugate φ f := rfl
 
@@ -419,6 +454,9 @@ theorem example_1_1_biconj (x : E) :
 normed space and $K \subseteq E$. The indicator function $I_K$, equal to $0$ on $K$ and to
 $+\infty$ off $K$, is convex if and only if $K$ is convex.
 
+**Generalization.** The source assumes $K$ is nonempty. For the empty set both $K$ and the
+epigraph of its indicator are empty and hence convex.
+
 The indicator function is the backbone `ConvexAnalysis.indicatorFn K`. It is not the
 characteristic function $\chi_K$. -/
 theorem example_1_2_convexFn_iff (K : Set E) : ConvexFn (indicatorFn K) ↔ Convex ℝ K :=
@@ -427,7 +465,11 @@ theorem example_1_2_convexFn_iff (K : Set E) : ConvexFn (indicatorFn K) ↔ Conv
 omit [NormedSpace ℝ E] in
 /-- **Example 2** of [brezis2011functional], lower semicontinuity of an indicator function. Let $E$
 be a normed group and $K \subseteq E$. The indicator function $I_K$ is lower semicontinuous if
-and only if $K$ is closed. -/
+and only if $K$ is closed.
+
+**Generalization.** The source takes a nonempty set in a real normed space. The criterion
+uses only closedness of $K$ in the underlying topology. It also holds for the empty set,
+whose indicator is constantly $+\infty$. -/
 theorem example_1_2_lowerSemicontinuous_iff (K : Set E) :
     LowerSemicontinuous (indicatorFn K) ↔ IsClosed K := by
   refine ⟨fun hl => ?_, fun hK => (closedConvex_indicatorFn hK).lowerSemicontinuous⟩

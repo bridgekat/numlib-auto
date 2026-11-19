@@ -64,6 +64,34 @@ preconditioned vectors $M_j^{-1} v_j$. The proofs specialize `Numlib.Krylov.Quas
   includes $w_{m-1} \neq 0$. This gives $h_{m+1,m} = \|w_{m-1}\|_2 \neq 0$, so in this form the
   result states that the iterate $x_m$ is not exact. The direction from $h_{m+1,m} = 0$ to exactness
   is stated, for an exact inner solve, by `SaadSparse.Chapter09.fgmres_eq_of_apply_fgmresZ_eq`.
+
+## Deviations from the source
+
+* **Reading.** The flexible Arnoldi loop uses classical Gram–Schmidt and totalized normalization.
+  See `SaadSparse.Chapter09.fgmresV`, `SaadSparse.Chapter09.fgmresW`,
+  `SaadSparse.Chapter09.fgmresCoeff`, `SaadSparse.Chapter09.fgmresCoeff_of_le`.
+* **Scope.** Flexible directions are supplied through a family of matrix preconditioners. See
+  `SaadSparse.Chapter09.fgmresZ`.
+* **Generalization.** The flexible basis recurrence is defined for any initial vector and uses
+  totalized normalization. See `SaadSparse.Chapter09.fgmresV_zero`,
+  `SaadSparse.Chapter09.fgmresV_succ`.
+* **Generalization.** The flexible Arnoldi relation holds for the padded recurrence, including
+  breakdown. See `SaadSparse.Chapter09.equation_9_22`.
+* **Scope.** The flexible GMRES update uses a totalized Givens solve for one cycle. See
+  `SaadSparse.Chapter09.fgmresY`, `SaadSparse.Chapter09.fgmres`.
+* **Generalization.** The flexible residual factorization includes zero initial residual. See
+  `SaadSparse.Chapter09.residual_eq_smul_fgmresV`.
+* **Scope.** Proposition 9.2 uses the nonzero prefix and an invertible triangular factor. See
+  `SaadSparse.Chapter09.proposition_9_2`.
+* **Scope.** The formalized Proposition 9.3 excludes the final breakdown that the printed
+  equivalence allows. See `SaadSparse.Chapter09.proposition_9_3`.
+* **Scope.** The exact-inner-solve theorem includes invertibility of the chosen triangular factor.
+  See `SaadSparse.Chapter09.fgmres_eq_of_apply_fgmresZ_eq`.
+* **Scope.** Constant-preconditioner agreement is stated for a nonzero initial residual and
+  invertible preconditioner. See `SaadSparse.Chapter09.fgmres_eq_gmresRight`.
+* **Scope.** Flexible DQGMRES formalizes the update for supplied basis data and recovers standard
+  DQGMRES at identity preconditioning. See `SaadSparse.Chapter09.fdqgmres`,
+  `SaadSparse.Chapter09.fdqgmres_eq_dqgmres`.
 -/
 
 open Matrix Finset
@@ -87,7 +115,12 @@ $$v_{j+1} = \frac{w_j}{\|w_j\|_2}, \qquad w_j = A M_j^{-1} v_j - \sum_{i=0}^{j} 
 
 Indices are $0$-based, so $v_0$ is the first vector $v_1$ of the book. The stop "if
 $h_{j+1,j} = 0$" of the book is the Lean convention $x/0 = 0$: after a breakdown every later
-vector is $0$. -/
+vector is $0$.
+
+**Reading.** Lean uses classical Gram–Schmidt, computing all coefficients against the original
+$Az_j$. The source computes them after the earlier subtractions. These agree in exact arithmetic on
+an orthonormal prefix. Lean accepts arbitrary initial vectors and totalizes normalization.
+-/
 noncomputable def fgmresV (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ : EuclideanSpace 𝕜 (Fin n)) : ℕ → EuclideanSpace 𝕜 (Fin n)
   | 0 => v₁
@@ -100,13 +133,22 @@ noncomputable def fgmresV (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix 
   decreasing_by exact i.isLt
 
 /-- **Algorithm 9.6** of [saad2003iterative], line 3: the preconditioned direction
-$z_j = M_j^{-1} v_j$. FGMRES expands its iterate in these directions. -/
+$z_j = M_j^{-1} v_j$. FGMRES expands its iterate in these directions.
+
+**Reading.** The direction has the form $M_j^{-1}v_j$ for a supplied matrix sequence. The source
+also discusses supplying each direction directly. Singular matrix inverses give zero.
+-/
 noncomputable def fgmresZ (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   op (M j)⁻¹ (fgmresV M A v₁ j)
 
 /-- Lines 4–7 of Algorithm 9.6 of [saad2003iterative]: the vector
-$w_j = A z_j - \sum_{i=0}^{j} (A z_j, v_i) v_i$ before normalization. -/
+$w_j = A z_j - \sum_{i=0}^{j} (A z_j, v_i) v_i$ before normalization.
+
+**Reading.** Lean uses classical Gram–Schmidt, computing all coefficients against the original
+$Az_j$. The source computes them after the earlier subtractions. These agree in exact arithmetic on
+an orthonormal prefix. Lean accepts arbitrary initial vectors and totalizes normalization.
+-/
 noncomputable def fgmresW (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ : EuclideanSpace 𝕜 (Fin n)) (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   op A (fgmresZ M A v₁ j) -
@@ -115,7 +157,12 @@ noncomputable def fgmresW (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix 
 
 /-- **Algorithm 9.6** of [saad2003iterative], lines 6 and 9: the Hessenberg coefficients. For
 $i \le j$ the coefficient is $h_{ij} = (A z_j, v_i)$, the subdiagonal coefficient is
-$h_{j+1,j} = \|w_j\|_2$, and $h_{ij} = 0$ for $i > j + 1$. -/
+$h_{j+1,j} = \|w_j\|_2$, and $h_{ij} = 0$ for $i > j + 1$.
+
+**Reading.** Lean uses classical Gram–Schmidt, computing all coefficients against the original
+$Az_j$. The source computes them after the earlier subtractions. These agree in exact arithmetic on
+an orthonormal prefix. Lean accepts arbitrary initial vectors and totalizes normalization.
+-/
 noncomputable def fgmresCoeff (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ : EuclideanSpace 𝕜 (Fin n)) (i j : ℕ) : 𝕜 :=
   if i = j + 1 then (‖fgmresW M A v₁ j‖ : 𝕜)
@@ -125,11 +172,21 @@ noncomputable def fgmresCoeff (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Mat
 variable {M : ℕ → Matrix (Fin n) (Fin n) 𝕜} {A : Matrix (Fin n) (Fin n) 𝕜}
 variable {v₁ : EuclideanSpace 𝕜 (Fin n)}
 
-/-- Line 1 of Algorithm 9.6: the Arnoldi basis starts at the given vector $v_0$. -/
+/-- Line 1 of Algorithm 9.6: the Arnoldi basis starts at the given vector $v_0$.
+
+**Generalization.** These component identities accept arbitrary starting vectors and the
+normalization returns zero at a zero remainder. In the displayed full algorithm the first vector is
+the normalized starting residual.
+-/
 @[simp]
 theorem fgmresV_zero : fgmresV M A v₁ 0 = v₁ := by rw [fgmresV]
 
-/-- Line 9 of Algorithm 9.6: $v_{j+1} = w_j/\|w_j\|_2$, which is $0$ at a breakdown $w_j = 0$. -/
+/-- Line 9 of Algorithm 9.6: $v_{j+1} = w_j/\|w_j\|_2$, which is $0$ at a breakdown $w_j = 0$.
+
+**Generalization.** These component identities accept arbitrary starting vectors and the
+normalization returns zero at a zero remainder. In the displayed full algorithm the first vector is
+the normalized starting residual.
+-/
 theorem fgmresV_succ (j : ℕ) :
     fgmresV M A v₁ (j + 1) = ((‖fgmresW M A v₁ j‖ : 𝕜)⁻¹) • fgmresW M A v₁ j := by
   rw [fgmresV, fgmresW, fgmresZ]
@@ -138,7 +195,12 @@ theorem fgmresV_succ (j : ℕ) :
     (fun i => inner 𝕜 (fgmresV M A v₁ i) (op A (op (M j)⁻¹ (fgmresV M A v₁ j))) •
       fgmresV M A v₁ i) (j + 1)]
 
-/-- For $i \le j$ the Hessenberg coefficient of Algorithm 9.6 is $h_{ij} = (A z_j, v_i)$. -/
+/-- For $i \le j$ the Hessenberg coefficient of Algorithm 9.6 is $h_{ij} = (A z_j, v_i)$.
+
+**Reading.** Lean uses classical Gram–Schmidt, computing all coefficients against the original
+$Az_j$. The source computes them after the earlier subtractions. These agree in exact arithmetic on
+an orthonormal prefix. Lean accepts arbitrary initial vectors and totalizes normalization.
+-/
 theorem fgmresCoeff_of_le {i j : ℕ} (hij : i ≤ j) :
     fgmresCoeff M A v₁ i j = inner 𝕜 (fgmresV M A v₁ i) (op A (fgmresZ M A v₁ j)) := by
   rw [fgmresCoeff, ite_eq_right (by omega), ite_eq_left hij]
@@ -171,7 +233,12 @@ $\bar H_m$ upper Hessenberg.
 
 This two-family Hessenberg relation replaces the relation $(A M^{-1}) V_m = V_{m+1} \bar H_m$ of
 a fixed preconditioner. It holds without hypotheses, also after a breakdown $h_{j+1,j} = 0$. The
-conclusion is `Krylov.HessenbergRelation₂`. -/
+conclusion is `Krylov.HessenbergRelation₂`.
+
+**Generalization.** The column relation holds for arbitrary starts and every prefix, including after
+a zero normalization. When the final remainder vanishes, both its normalized term and its
+unnormalized correction vanish.
+-/
 theorem equation_9_22 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (v₁ : EuclideanSpace 𝕜 (Fin n)) :
     Krylov.HessenbergRelation₂ (op A) (fgmresZ M A v₁) (fgmresV M A v₁) (fgmresCoeff M A v₁) := by
@@ -261,7 +328,12 @@ theorem orthonormal_fgmresV (hv : ‖v₁‖ = 1) {m : ℕ}
 /-- Line 12 of Algorithm 9.6 of [saad2003iterative]: the minimizer $y_m$ of
 $\|\beta e_1 - \bar H_m y\|_2$, computed by the Givens rotations of Algorithm 6.9 as
 $y_m = R_m^{-1} g_m$. The Arnoldi process starts at $v_0 = r_0/\beta$ with $r_0 = b - A x_0$ and
-$\beta = \|r_0\|_2$. -/
+$\beta = \|r_0\|_2$.
+
+**Reading.** The fixed-length update chooses the Givens triangular solution, with totalized
+inversion. Its minimality is proved under invertibility of the triangular factor. The outer restart
+and stopping rule are outside this definition.
+-/
 noncomputable def fgmresY (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Fin m → 𝕜 :=
   (Chapter06.R (fgmresCoeff M A (Chapter06.v₁ A b x₀)) m)⁻¹ *ᵥ
@@ -275,13 +347,22 @@ iterate is
 $$x_m = x_0 + Z_m y_m = x_0 + \sum_{j=0}^{m-1} (y_m)_j \, z_j.$$
 
 The iterate is expanded in the preconditioned directions $z_j = M_j^{-1} v_j$, so the flexible
-algorithm has to store them. -/
+algorithm has to store them.
+
+**Reading.** The fixed-length update chooses the Givens triangular solution, with totalized
+inversion. Its minimality is proved under invertibility of the triangular factor. The outer restart
+and stopping rule are outside this definition.
+-/
 noncomputable def fgmres (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   x₀ + ∑ j : Fin m, fgmresY M A b x₀ m j • fgmresZ M A (Chapter06.v₁ A b x₀) (j : ℕ)
 
 /-- The initial residual is $r_0 = \beta v_0$, the starting relation of the Arnoldi process of
-Algorithm 9.6. -/
+Algorithm 9.6.
+
+**Generalization.** The normalized residual factorization also holds when the residual is zero
+because the normalization is totalized.
+-/
 private theorem residual_eq_smul_fgmresV (M : ℕ → Matrix (Fin n) (Fin n) 𝕜)
     (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     b - op A x₀ = (Chapter06.β A b x₀ : 𝕜) • fgmresV M A (Chapter06.v₁ A b x₀) 0 := by
@@ -311,7 +392,12 @@ $$\|b - A x_m\|_2 \le \|b - Ax\|_2 \quad \text{for all } x \in x_0 + \operatorna
 
 Unlike for GMRES, the space is not a Krylov subspace. The minimization uses only the two-family
 relation (9.22) and the orthonormality of $V_{m+1}$. The proof uses the hypothesis $w_j \neq 0$
-for the orthonormality of $V_{m+1}$, and the hypothesis on $R_m$ for the minimizer $y_m$. -/
+for the orthonormality of $V_{m+1}$, and the hypothesis on $R_m$ for the minimizer $y_m$.
+
+**Reading.** The source states minimality of an iterate chosen by reduced least squares. The Lean
+statement for its totalized triangular solve requires nonzero initial residual, a nonzero remainder
+at every step of the prefix, and an invertible triangular factor.
+-/
 theorem proposition_9_2 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Chapter06.r₀ A b x₀ ≠ 0)
     (hbreak : ∀ j, j < m → fgmresW M A (Chapter06.v₁ A b x₀) j ≠ 0)
@@ -336,7 +422,13 @@ hypothesis $w_{m-1} \neq 0$ gives $h_{m+1,m} = \|w_{m-1}\|_2 \neq 0$, so in this
 statement says that $x_m$ is not exact. The direction from $h_{m+1,m} = 0$ to exactness is
 stated, for an exact inner solve, by `SaadSparse.Chapter09.fgmres_eq_of_apply_fgmresZ_eq`. The
 proof specializes `Krylov.FGMRES.apply_eq_iff_coeff_eq_zero`. The matrix $H_m$ is
-`Krylov.hessenbergSqOf`. -/
+`Krylov.hessenbergSqOf`.
+
+**Reading.** The source requires that only the first $m-1$ steps succeed, permitting breakdown in
+the last step as one side of the equivalence. Lean also assumes $w_{m-1}\ne0$ and an invertible
+triangular factor. The last subdiagonal therefore cannot vanish under the Lean hypotheses, so this
+form gives nonexactness. The exact-inner-solve theorem covers one case of final breakdown.
+-/
 theorem proposition_9_3 (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ : EuclideanSpace 𝕜 (Fin n)) {m : ℕ} (hr : Chapter06.r₀ A b x₀ ≠ 0) (hm : 0 < m)
     (hsub : ∀ i, i + 1 < m → fgmresCoeff M A (Chapter06.v₁ A b x₀) (i + 1) i ≠ 0)
@@ -385,7 +477,12 @@ The book calls this a consequence of Proposition 9.3. Here $h_{j+1,j} = 0$ by
 makes the iterate exact by `Krylov.FGMRES.apply_eq_of_coeff_eq_zero`. So any inner solve that is
 exact on one vector ends the outer iteration. The statement
 `SaadSparse.Chapter09.proposition_9_3` cannot be used directly, because its hypothesis
-$w_j \neq 0$ fails at this step. -/
+$w_j \neq 0$ fails at this step.
+
+**Reading.** In addition to the nonzero starting residual and successful preceding steps, the proof
+for the selected solve requires invertibility of both the square Hessenberg block and the Givens
+triangular factor. The book mentions the Hessenberg assumption.
+-/
 theorem fgmres_eq_of_apply_fgmresZ_eq (M : ℕ → Matrix (Fin n) (Fin n) 𝕜)
     (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) {j : ℕ}
     (hr : Chapter06.r₀ A b x₀ ≠ 0)
@@ -514,7 +611,11 @@ $r_0 = b - A x_0 \neq 0$. Then FGMRES run with $M_j = M$ at every step gives the
 GMRES with right preconditioning (Algorithm 9.5): for every $m$, the two iterates $x_m$ are
 equal.
 
-So the flexible algorithm generalizes Algorithm 9.5. -/
+So the flexible algorithm generalizes Algorithm 9.5.
+
+**Reading.** Constant-preconditioner agreement compares the fixed-length definitions with an
+invertible preconditioner and a nonzero initial residual.
+-/
 theorem fgmres_eq_gmresRight (b x₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) (hM : IsUnit M)
     (hr : Chapter06.r₀ A b x₀ ≠ 0) :
     fgmres (fun _ => M) A b x₀ m = gmresRight M A b x₀ m := by
@@ -563,7 +664,11 @@ The preconditioned vector is used at once and need not be stored.
 
 The book states nothing about the method beyond the algorithm. The basis and the coefficients
 are inputs, as for `SaadSparse.Chapter06.dqgmres`. The identification with Algorithm 6.13 at
-$M_j = I$ is `SaadSparse.Chapter09.fdqgmres_eq_dqgmres`. -/
+$M_j = I$ is `SaadSparse.Chapter09.fdqgmres_eq_dqgmres`.
+
+**Reading.** The declarations cover the update given a basis and Hessenberg array. Generating the
+basis with flexible incomplete orthogonalization and analyzing storage are outside their scope.
+-/
 noncomputable def fdqgmres (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (x₀ : EuclideanSpace 𝕜 (Fin n))
     (v : ℕ → EuclideanSpace 𝕜 (Fin n)) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) :
     ℕ → EuclideanSpace 𝕜 (Fin n) :=
@@ -571,7 +676,11 @@ noncomputable def fdqgmres (M : ℕ → Matrix (Fin n) (Fin n) 𝕜) (x₀ : Euc
 
 /-- **Equation (9.28)** of [saad2003iterative]. With the identity preconditioner $M_j = I$ at every
 step, flexible DQGMRES gives the iterates of DQGMRES (Algorithm 6.13), for the same inputs
-$x_0$, $v_j$, $h_{ij}$, $\beta$ and $k$. -/
+$x_0$, $v_j$, $h_{ij}$, $\beta$ and $k$.
+
+**Reading.** The declarations cover the update given a basis and Hessenberg array. Generating the
+basis with flexible incomplete orthogonalization and analyzing storage are outside their scope.
+-/
 theorem fdqgmres_eq_dqgmres (x₀ : EuclideanSpace 𝕜 (Fin n)) (v : ℕ → EuclideanSpace 𝕜 (Fin n))
     (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) :
     fdqgmres (fun _ => (1 : Matrix (Fin n) (Fin n) 𝕜)) x₀ v h β k

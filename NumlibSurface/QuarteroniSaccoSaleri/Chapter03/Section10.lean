@@ -213,7 +213,10 @@ $$|a^{(k)}_{ij}| \le \rho_n \max_{i,j} |a_{ij}|.$$
 
 The maximum over the stages runs over the $0$-based stages $k = 0, \ldots, n - 1$ of
 `Matrix.gemStage`, which are the book's $A^{(1)}, \ldots, A^{(n)}$; the bound holds for every
-$k \in \mathbb{N}$. The proof uses `Matrix.abs_gemStage_le_growthFactor_mul_supAbs`. -/
+$k \in \mathbb{N}$. The proof uses `Matrix.abs_gemStage_le_growthFactor_mul_supAbs`.
+
+**Reading.** Spells out the exact-stage quotient and entry bounds.
+-/
 theorem equation_3_66_spec (A : Matrix (Fin n) (Fin n) ℝ) :
     equation_3_66 A =
       (⨆ p : Fin n × Fin n × Fin n, |gemStage A p.1 p.2.1 p.2.2|) /
@@ -268,7 +271,10 @@ pivoting, $\rho_n(PA) \le 2^{n-1}$.
 
 The matrix of Exercise 5 attains the bound. A zero pivot gives a zero multiplier in Lean. The
 proof uses `Matrix.growthFactor_le_two_pow` and
-`Matrix.growthFactor_le_two_pow_of_partialPivotRow`. -/
+`Matrix.growthFactor_le_two_pow_of_partialPivotRow`.
+
+**Reading.** Exact-stage bound assumes bounded multipliers, including partial pivoting.
+-/
 theorem growthFactor_le_two_pow :
     ((∀ (k : ℕ) (hk : k < n) (i : Fin n), ⟨k, hk⟩ < i →
       |gemStage A k i ⟨k, hk⟩ / gemStage A k ⟨k, hk⟩ ⟨k, hk⟩| ≤ 1) →
@@ -281,7 +287,10 @@ $A \in \mathbb{R}^{n \times n}$ be tridiagonal, and let $P$ be the permutation m
 with partial pivoting. Then $\rho_n(PA) \le 2$.
 
 This is the case $p = 1$ of Bohte's banded bound, which is not formalized. The proof uses
-`Matrix.growthFactor_le_two_of_isTridiagonal`. -/
+`Matrix.growthFactor_le_two_of_isTridiagonal`.
+
+**Reading.** The factor 2 bounds the exact-stage quotient.
+-/
 theorem growthFactor_tridiagonal (hA : A.IsTridiagonal) :
     equation_3_66 ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ 2 :=
   growthFactor_le_two_of_isTridiagonal hA
@@ -290,7 +299,11 @@ theorem growthFactor_tridiagonal (hA : A.IsTridiagonal) :
 $A \in \mathbb{R}^{n \times n}$ be upper Hessenberg, and let $P$ be the permutation matrix of
 GEM with partial pivoting. Then $\rho_n(PA) \le n$.
 
-The proof uses `Matrix.growthFactor_le_card_of_isUpperHessenberg`. -/
+The proof uses `Matrix.growthFactor_le_card_of_isUpperHessenberg`.
+
+**Reading.** The bound applies explicitly to upper Hessenberg matrices with partial pivoting on
+exact stages.
+-/
 theorem growthFactor_hessenberg (hA : A.IsUpperHessenberg) :
     equation_3_66 ((gemPivotStage A partialPivotRow n).2.permMatrix ℝ * A) ≤ n :=
   growthFactor_le_card_of_isUpperHessenberg hA
@@ -299,7 +312,10 @@ theorem growthFactor_hessenberg (hA : A.IsUpperHessenberg) :
 Let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, with $n \ge 1$. Then
 $\rho_n = 1$: Gaussian elimination without pivoting never increases the largest entry.
 
-The proof uses `Matrix.growthFactor_eq_one_of_posDef`. -/
+The proof uses `Matrix.growthFactor_eq_one_of_posDef`.
+
+**Reading.** Growth factor 1 is for exact stages in positive dimension.
+-/
 theorem growthFactor_posDef [NeZero n] (hA : A.PosDef) : equation_3_66 A = 1 :=
   growthFactor_eq_one_of_posDef hA (Nat.pos_of_ne_zero (NeZero.ne n))
 
@@ -309,7 +325,10 @@ for every column $j$. Then $\rho_n \le 2$ for Gaussian elimination without pivot
 
 The bound holds more generally for every nonsingular matrix that is weakly diagonally dominant
 by columns (`Matrix.growthFactor_le_two_of_isColDiagDominant`). Strict dominance gives both the
-weak dominance and the nonsingularity. -/
+weak dominance and the nonsingularity.
+
+**Reading.** The factor 2 bounds the exact-stage quotient.
+-/
 theorem growthFactor_colDiagDominant (hA : A.IsStrictColDiagDominant) : equation_3_66 A ≤ 2 :=
   growthFactor_le_two_of_isColDiagDominant hA.isUnit hA.isColDiagDominant
 
@@ -326,7 +345,10 @@ is one such strategy. The elimination stages of $PAQ$ are the pivoted ones up to
 the rows and of the columns. The product is written as $\prod_{t=0}^{n-2} (t + 2)^{1/(t+1)}$.
 The proof uses `Matrix.growthFactor_le_wilkinson_of_isCompletePivot`, which follows from
 `Matrix.growthFactor_le_of_completePivoting` under the stage dominance
-$|a^{(k)}_{ij}| \le |a^{(k)}_{kk}|$ that complete pivoting arranges. -/
+$|a^{(k)}_{ij}| \le |a^{(k)}_{kk}|$ that complete pivoting arranges.
+
+**Reading.** Same numerical bound for exactly pivoted stages.
+-/
 theorem growthFactor_completePivoting
     {piv : Matrix (Fin n) (Fin n) ℝ → Fin n → Fin n × Fin n} (hpiv : IsCompletePivot piv) :
     equation_3_66 ((gemFullPivotStage A piv n).2.1.permMatrix ℝ * A *
@@ -367,7 +389,11 @@ Then the system $Ax = b$ has the exact solution $x = (1, 1)^T$, and $A$ is well 
 $$A^{-1} = \begin{bmatrix} 0 & 1 \\ 1 & -\varepsilon \end{bmatrix}, \qquad \|A\|_\infty =
   \|A^{-1}\|_\infty = 1 + \varepsilon, \qquad K_\infty(A) = (1 + \varepsilon)^2.$$
 
-The norm $\|\cdot\|_\infty$ is `Matrix.lpOpNorm ⊤`. -/
+The norm $\|\cdot\|_\infty$ is `Matrix.lpOpNorm ⊤`.
+
+**Reading.** The text writes $(1+\varepsilon)^2$ after allowing any real $\varepsilon$ for
+the exact solution. The condition number for arbitrary real $\varepsilon$ is
+$(1+|\varepsilon|)^2$. The displayed form is used here with positive $\varepsilon$. -/
 theorem example_3_7_cond {ε : ℝ} (hε : 0 < ε) :
     !![ε, 1; 1, 0] *ᵥ ![1, 1] = ![1 + ε, 1] ∧ (!![ε, 1; 1, 0])⁻¹ = !![0, 1; 1, -ε] ∧
       lpOpNorm ⊤ !![ε, 1; 1, 0] = 1 + ε ∧ lpOpNorm ⊤ (!![ε, 1; 1, 0])⁻¹ = 1 + ε ∧
@@ -535,7 +561,10 @@ $$\frac{\|\delta x\|_\infty}{\|x\|_\infty} \le \frac{2uK_\infty(A)}{1 - uK_\inft
 
 This is (3.13) applied with $\gamma = u$, in the setting of Theorem 3.3 for the $\infty$-norm.
 The estimate $\simeq uK_\infty(A)$ of (3.69) and the count of $t - m$ exact digits are
-heuristics and are not formalized. -/
+heuristics and are not formalized.
+
+**Reading.** Formalizes the preceding perturbation bound with an explicit smallness threshold.
+-/
 theorem equation_3_69 {A δA : Matrix (Fin n) (Fin n) ℝ} {b δb x δx : Fin n → ℝ} (hA : IsUnit A)
     (hx : A *ᵥ x = b) (hb : b ≠ 0) (hδx : (A + δA) *ᵥ (x + δx) = b + δb) {u : ℝ} (hu : 0 ≤ u)
     (hδA : lpOpNorm ⊤ δA ≤ u * lpOpNorm ⊤ A) (hδb : ‖δb‖ ≤ u * ‖b‖)

@@ -79,6 +79,9 @@ the original problem.
 
 ## Deviations from the source
 
+* **Theorem 8.6.3** (scope). The alternative coercivity conditions use extended-real
+  suprema and infima. The separate uniqueness statements concern pairs of existing
+  saddle points and need only the corresponding strict convexity or concavity.
 * **Proposition 8.6.2** (reading). The source does not say whether the suprema and infima are
   finite. The proposition here assumes that $L(v, \cdot)$ is bounded above on $B$ for each $v \in A$
   and that $L(\cdot, q)$ is bounded below on $A$ for each $q \in B$. See
@@ -147,7 +150,10 @@ $L : A \times B \to \mathbb{R}$, the **primal objective** is $J(v) = \sup_{q \in
 The primal problem is to minimize $J$ over $A$.
 
 The supremum is the real `sSup`. It is $0$ when $B$ is empty or when $L(v, \cdot)$ is unbounded
-above on $B$. -/
+above on $B$.
+
+**Reading.** Real-valued supremum is total outside bounded slices.
+-/
 noncomputable def primalObjective (L : α → β → ℝ) (B : Set β) (v : α) : ℝ := sSup (L v '' B)
 
 /-- **Equation (8.6.13)** of [han2009theoretical], the dual objective. For
@@ -155,7 +161,10 @@ $L : A \times B \to \mathbb{R}$, the **dual objective** is $G(q) = \inf_{v \in A
 dual problem is to maximize $G$ over $B$.
 
 The infimum is the real `sInf`. It is $0$ when $A$ is empty or when $L(\cdot, q)$ is unbounded
-below on $A$. -/
+below on $A$.
+
+**Reading.** Real-valued infimum is total outside bounded slices.
+-/
 noncomputable def dualObjective (L : α → β → ℝ) (A : Set α) (q : β) : ℝ :=
   sInf ((fun v => L v q) '' A)
 
@@ -212,7 +221,10 @@ $A$ for every $q \in B$. If $L$ has a saddle point on $A \times B$, then the pri
 problem have the same value:
 $$\inf_{v \in A} \sup_{q \in B} L(v, q) = \sup_{q \in B} \inf_{v \in A} L(v, q).$$
 So there is no duality gap, and the common value is $L(u, p)$ by
-`AtkinsonHan.Chapter08.proposition_8_6_2`. -/
+`AtkinsonHan.Chapter08.proposition_8_6_2`.
+
+**Reading.** Equality of primal and dual optimal values assumes saddle point and bounded slices.
+-/
 theorem equation_8_6_14 (h : IsSaddlePoint L A B u p) (hbddA : ∀ v ∈ A, BddAbove (L v '' B))
     (hbddB : ∀ q ∈ B, BddBelow ((fun v => L v q) '' A)) :
     sInf (primalObjective L B '' A) = sSup (dualObjective L A '' B) :=
@@ -259,7 +271,10 @@ omit [NormedSpace ℝ V] [NormedAddCommGroup Q] [NormedSpace ℝ Q] in
 /-- Condition (f)' of Theorem 8.6.3 of [han2009theoretical] in the form of the backbone. Suppose
 that $A$ is bounded, or that $\sup_{q \in B} L(v, q) \to \infty$ as $\|v\| \to \infty$ in $A$,
 with the supremum taken in the extended reals. Then for every $M \in \mathbb{R}$ there is $R$
-such that every $v \in A$ with $\|v\| \ge R$ has some $q \in B$ with $L(v, q) \ge M$. -/
+such that every $v \in A$ with $\|v\| \ge R$ has some $q \in B$ with $L(v, q) \ge M$.
+
+**Generalization.** Extended-real supremum condition gives a pointwise choice outside a large ball.
+-/
 theorem forall_exists_le_of_bounded_or_biSup_tendsto
     (hf : IsBounded A ∨
       Tendsto (fun v => ⨆ q ∈ B, (L v q : EReal)) (comap norm atTop ⊓ 𝓟 A) atTop) :
@@ -281,7 +296,10 @@ omit [NormedAddCommGroup V] [NormedSpace ℝ V] [NormedSpace ℝ Q] in
 /-- Condition (g)' of Theorem 8.6.3 of [han2009theoretical] in the form of the backbone. Suppose
 that $B$ is bounded, or that $\inf_{v \in A} L(v, q) \to -\infty$ as $\|q\| \to \infty$ in $B$,
 with the infimum taken in the extended reals. Then for every $M \in \mathbb{R}$ there is $R$
-such that every $q \in B$ with $\|q\| \ge R$ has some $v \in A$ with $L(v, q) \le M$. -/
+such that every $q \in B$ with $\|q\| \ge R$ has some $v \in A$ with $L(v, q) \le M$.
+
+**Generalization.** Extended-real infimum condition gives a pointwise choice outside a large ball.
+-/
 theorem forall_exists_le_of_bounded_or_biInf_tendsto
     (hg : IsBounded B ∨
       Tendsto (fun q => ⨅ v ∈ A, (L v q : EReal)) (comap norm atTop ⊓ 𝓟 B) atBot) :
@@ -347,7 +365,10 @@ Then $L$ has a saddle point $(u, p) \in A \times B$.
 The supremum in (f)' is taken in `EReal`, since it can be $+\infty$. The proof specializes
 `exists_isSaddlePointOn_of_sup_coercive`: only $A$ is truncated, and the bound $L(u, q) \le
 L(v_0, p) \le \max_{q \in B} L(v_0, q)$ for the saddle point $(u, p)$ of the truncated problem
-keeps $u$ inside a fixed ball. -/
+keeps $u$ inside a fixed ball.
+
+**Generalization.** Alternative coercivity uses an extended-real supremum.
+-/
 theorem theorem_8_6_3_sup (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Convex ℝ A)
     (hBne : B.Nonempty) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hd : ∀ q ∈ B, ConvexOn ℝ A (fun v => L v q) ∧ LowerSemicontinuousOn (fun v => L v q) A)
@@ -372,7 +393,10 @@ Then $L$ has a saddle point $(u, p) \in A \times B$.
 The infimum in (g)' is taken in `EReal`. The proof specializes
 `exists_isSaddlePointOn_of_inf_coercive`, the transposed form of
 `AtkinsonHan.Chapter08.theorem_8_6_3_sup`. The conditions (f)' and (g)' cannot be assumed
-together; the module doc comment gives a counterexample. -/
+together; the module doc comment gives a counterexample.
+
+**Generalization.** Alternative coercivity uses an extended-real infimum.
+-/
 theorem theorem_8_6_3_inf (hAne : A.Nonempty) (hAcl : IsClosed A) (hAconv : Convex ℝ A)
     (hBne : B.Nonempty) (hBcl : IsClosed B) (hBconv : Convex ℝ B)
     (hd : ∀ q ∈ B, ConvexOn ℝ A (fun v => L v q) ∧ LowerSemicontinuousOn (fun v => L v q) A)
@@ -402,7 +426,11 @@ $v \mapsto L(v, q)$ is strictly convex on $A$ for every $q \in B$, and $(u, p)$ 
 are saddle points of $L$ on $A \times B$, then $u = u'$.
 
 The proof uses only the strict convexity of $L(\cdot, p)$
-(`IsSaddlePointOn.fst_eq_of_strictConvexOn`), and no topology. -/
+(`IsSaddlePointOn.fst_eq_of_strictConvexOn`), and no topology.
+
+**Reading.** Strict convexity alone suffices for equality of first components of existing saddle
+points.
+-/
 theorem theorem_8_6_3_unique_fst (hd : ∀ q ∈ B, StrictConvexOn ℝ A fun v => L v q)
     (h : IsSaddlePoint L A B u p) (h' : IsSaddlePoint L A B u' p') : u = u' := by
   obtain ⟨hu, hp, h⟩ := isSaddlePoint_iff_isSaddlePointOn.1 h
@@ -415,7 +443,11 @@ $A \subseteq V$, $B \subseteq Q$ and $L : V \times Q \to \mathbb{R}$. If $q \map
 strictly concave on $B$ for every $v \in A$, and $(u, p)$ and $(u', p')$ are saddle points of
 $L$ on $A \times B$, then $p = p'$.
 
-The proof is `IsSaddlePointOn.snd_eq_of_strictConcaveOn`, and no topology enters. -/
+The proof is `IsSaddlePointOn.snd_eq_of_strictConcaveOn`, and no topology enters.
+
+**Reading.** Strict concavity alone suffices for equality of second components of existing saddle
+points.
+-/
 theorem theorem_8_6_3_unique_snd (he : ∀ v ∈ A, StrictConcaveOn ℝ B (L v))
     (h : IsSaddlePoint L A B u p) (h' : IsSaddlePoint L A B u' p') : p = p' := by
   obtain ⟨hu, hp, h⟩ := isSaddlePoint_iff_isSaddlePointOn.1 h

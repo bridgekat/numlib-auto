@@ -89,6 +89,15 @@ The proofs use Mathlib's spectrum and characteristic polynomial, and the backbon
   $[0, \infty]$. The spectral radius of a real matrix is the backbone's
   `Matrix.complexSpectralRadius A`, the spectral radius of `Matrix.complexify A`, because the real
   spectrum `spectrum ℝ A` does not contain the nonreal eigenvalues that the book counts.
+
+## Deviations from the source
+
+* **The characteristic polynomial** (reading). Lean uses $\det(\lambda I-A)$. The book uses
+  $\det(A-\lambda I)$. The factor $(-1)^n$ leaves the roots and their multiplicities unchanged.
+* **Real matrices** (reading and generalization). The eigenvector characterization can be
+  applied to the complexification of a real matrix. The scaling and power laws are stated
+  separately for the resulting complex spectral radius of real matrices.
+* **Exercise 8** (generalization). Spectral mapping is stated for arbitrary polynomial degree.
 -/
 
 open Finset Matrix Polynomial
@@ -107,7 +116,10 @@ if there is a vector $x \in \mathbb{C}^n$ with $x \neq 0$ and $Ax = \lambda x$. 
 an **eigenvector** of $A$ for $\lambda$.
 
 The spectrum is Mathlib's `spectrum ℂ A`. The proof is the backbone theorem
-`Matrix.mem_spectrum_iff_exists_mulVec_eq_smul`. -/
+`Matrix.mem_spectrum_iff_exists_mulVec_eq_smul`.
+
+**Reading.** For a real matrix, apply the criterion to `Matrix.complexify` to retain all complex
+eigenvalues. -/
 theorem mem_spectrum_iff_exists_mulVec_eq_smul (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) :
     μ ∈ spectrum ℂ A ↔ ∃ x : Fin n → ℂ, x ≠ 0 ∧ A *ᵥ x = μ • x :=
   Matrix.mem_spectrum_iff_exists_mulVec_eq_smul A μ
@@ -143,7 +155,11 @@ multiplicity.
 
 The book defines $p_A(\lambda) = \det(A - \lambda I)$. Mathlib's `A.charpoly` is
 $\det(\lambda I - A)$, which differs by the sign $(-1)^n$ and has the same roots. The proof uses
-`Matrix.mem_spectrum_iff_isRoot_charpoly`. -/
+`Matrix.mem_spectrum_iff_isRoot_charpoly`.
+
+**Reading.** Uses the monic characteristic polynomial with the opposite determinant order. Roots and
+their multiplicities are unchanged.
+-/
 theorem mem_spectrum_iff_isRoot_charpoly (A : Matrix (Fin n) (Fin n) ℂ) (μ : ℂ) :
     (μ ∈ spectrum ℂ A ↔ A.charpoly.IsRoot μ) ∧ (μ ∈ spectrum ℂ A ↔ (A - μ • 1).det = 0) ∧
       A.charpoly.natDegree = n ∧ A.charpoly.roots.card = n := by
@@ -249,7 +265,10 @@ $B \in \mathbb{R}^{n \times n}$, the same identity $\rho(cB) = |c| \rho(B)$ hold
 spectral radius of $B$ regarded as a complex matrix.
 
 The proof uses the backbone theorems `spectralRadius_smul` and
-`Matrix.complexSpectralRadius_smul`. -/
+`Matrix.complexSpectralRadius_smul`.
+
+**Reading.** The scaling formula is also stated for real matrices using complexification.
+-/
 theorem spectralRadius_smul (α : ℂ) (A : Matrix (Fin n) (Fin n) ℂ) (c : ℝ)
     (B : Matrix (Fin n) (Fin n) ℝ) :
     spectralRadius ℂ (α • A) = ‖α‖₊ * spectralRadius ℂ A ∧
@@ -262,7 +281,10 @@ $$\rho(A^k) = \rho(A)^k, \qquad \rho(B^k) = \rho(B)^k,$$
 where $\rho(B)$ is the spectral radius of $B$ regarded as a complex matrix.
 
 This is the spectral mapping theorem for powers. The proof uses the backbone theorem
-`spectralRadius_pow_of_nonempty`. -/
+`spectralRadius_pow_of_nonempty`.
+
+**Reading.** The formula also applies to real matrices by complexification.
+-/
 theorem spectralRadius_pow [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) (B : Matrix (Fin n) (Fin n) ℝ)
     (k : ℕ) :
     spectralRadius ℂ (A ^ k) = spectralRadius ℂ A ^ k ∧
@@ -280,7 +302,10 @@ eigenvalues of $A$:
 $$\sigma(P(A)) = \{P(\lambda) : \lambda \in \sigma(A)\}.$$
 In particular $\rho(A^2) = \rho(A)^2$.
 
-The proof uses Mathlib's `spectrum.map_polynomial_aeval_of_nonempty`. -/
+The proof uses Mathlib's `spectrum.map_polynomial_aeval_of_nonempty`.
+
+**Generalization.** The book writes a polynomial through degree $n$, the matrix order. The
+formal statement allows arbitrary polynomial degree. -/
 theorem exercise_1_8 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) (P : ℂ[X]) :
     spectrum ℂ (aeval A P) = (fun μ => P.eval μ) '' spectrum ℂ A ∧
       spectralRadius ℂ (A ^ 2) = spectralRadius ℂ A ^ 2 :=

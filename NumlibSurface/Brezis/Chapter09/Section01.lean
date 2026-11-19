@@ -133,6 +133,26 @@ derivatives (`Brezis.Chapter09.exists_hasWeakFDerivOn_fn_gradient`).
 * **Remark 2, "in particular"** (reading). The space $C^1(\bar\Omega)$ is read as the functions that
   are of class $C^1$ on $\bar\Omega$ in the sense of `ContDiffOn`. See
   `Brezis.Chapter09.remark_9_2_closure`.
+* **Sobolev space definitions and norms** (reading and generalization). The type uses the
+  equivalent product norm and is available for all exponents. The higher-order family includes
+  orders zero and one. See `Brezis.Chapter09.sobolevSpace`, `Brezis.Chapter09.bookNorm_equiv` and
+  `Brezis.Chapter09.sobolevSpaceHigher`.
+* **Weak derivative identities** (generalization). The integration tests extend from coordinate
+  directions to arbitrary tuples of directions. See
+  `Brezis.Chapter09.integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn` and
+  `Brezis.Chapter09.hasWeakIteratedLineDerivOn_of_forall`.
+* **Remark 1** (typo). The definition uses smooth test functions. The remark exchanges the
+  original and alternative test classes in its prose. See `Brezis.Chapter09.remark_9_1_iff`.
+* **Remark 4(ii)** (reading). Both versions require smooth cutoffs, while the source uses
+  $C^1$ cutoffs. See `Brezis.Chapter09.remark_9_4_ii` and
+  `Brezis.Chapter09.remark_9_4_ii_cutoff`.
+* **Proposition 9.3** (reading and generalization). The distance is extended-valued, and the
+  translation bound on the whole space includes $p=1$. See `Brezis.Chapter09.edistFrontier`
+  and `Brezis.Chapter09.proposition_9_3_univ`.
+* **Remarks 5–7** (reading). The library gives the smooth density assertion, the endpoint
+  implications apart from (ii) ⇒ (iii), and the geodesic estimate for convex sets. See
+  `Brezis.Chapter09.remark_9_5`, `Brezis.Chapter09.remark_9_6` and
+  `Brezis.Chapter09.remark_9_7_convex`.
 
 ## Not formalized
 
@@ -173,7 +193,10 @@ $$\int_\Omega u \, D^n \varphi(x)(y_1, \dots, y_n) \, dx = (-1)^n \int_\Omega g 
 
 This is the defining identity of `HasWeakIteratedLineDerivOn` in the form of
 [brezis2011functional], Section 9.1, with the product written $u \cdot D^y \varphi$. The
-derivative $D^n \varphi(x)(y_1, \dots, y_n)$ is `iteratedFDeriv ℝ n φ x y`. -/
+derivative $D^n \varphi(x)(y_1, \dots, y_n)$ is `iteratedFDeriv ℝ n φ x y`.
+
+**Generalization.** The derivative can be taken along any tuple of directions. The defining
+ formulas in the source use coordinate directions. -/
 theorem integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn {u g : 𝔼 → ℝ} {n : ℕ}
     {y : Fin n → 𝔼} (h : HasWeakIteratedLineDerivOn y u g Ω volume) (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set 𝔼), u x * iteratedFDeriv ℝ n φ x y
@@ -198,7 +221,10 @@ $\Omega$.
 This is the converse of
 `Brezis.Chapter09.integral_mul_iteratedFDeriv_eq_of_hasWeakIteratedLineDerivOn`: it builds
 `HasWeakIteratedLineDerivOn` from the identity in the form of [brezis2011functional], Section
-9.1. -/
+9.1.
+
+**Generalization.** The converse test works for locally integrable functions and any tuple
+ of directions. The Sobolev definition uses $L^p$ functions and coordinate directions. -/
 theorem hasWeakIteratedLineDerivOn_of_forall {u g : 𝔼 → ℝ} {n : ℕ} {y : Fin n → 𝔼}
     (hu : LocallyIntegrableOn u Ω volume) (hg : LocallyIntegrableOn g Ω volume)
     (h : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set 𝔼), u x * iteratedFDeriv ℝ n φ x y
@@ -217,7 +243,9 @@ theorem hasWeakIteratedLineDerivOn_of_forall {u g : 𝔼 → ℝ} {n : ℕ} {y :
 /-- Let $\Omega \subseteq \mathbb{R}^N$ be open, $u, g : \mathbb{R}^N \to \mathbb{R}$ and
 $y \in \mathbb{R}^N$. If $g$ is a weak derivative of $u$ along $y$ on $\Omega$, then
 $\int_\Omega u \, \partial_y \varphi = -\int_\Omega g \varphi$ for every
-$\varphi \in C_c^\infty(\Omega)$, where $\partial_y \varphi(x) = D\varphi(x) y$. -/
+$\varphi \in C_c^\infty(\Omega)$, where $\partial_y \varphi(x) = D\varphi(x) y$.
+
+**Generalization.** This is the first-order test for an arbitrary direction $y$. -/
 theorem integral_mul_fderiv_eq_of_hasWeakIteratedLineDerivOn {u g : 𝔼 → ℝ} {y : 𝔼}
     (h : HasWeakIteratedLineDerivOn ![y] u g Ω volume) (φ : 𝓓(Ω, ℝ)) :
     ∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x y = -∫ x in (Ω : Set 𝔼), g x * φ x := by
@@ -228,7 +256,10 @@ theorem integral_mul_fderiv_eq_of_hasWeakIteratedLineDerivOn {u g : 𝔼 → ℝ
 integrable on $\Omega$, and let $y \in \mathbb{R}^N$. If $\int_\Omega u \, \partial_y \varphi =
 -\int_\Omega g \varphi$ for every $\varphi \in C_c^\infty(\Omega)$, where
 $\partial_y \varphi(x) = D\varphi(x) y$, then $g$ is a weak derivative of $u$ along $y$ on
-$\Omega$. -/
+$\Omega$.
+
+**Generalization.** This is the converse test for locally integrable functions in an arbitrary
+ direction $y$. -/
 theorem hasWeakIteratedLineDerivOn_single_of_forall {u g : 𝔼 → ℝ} {y : 𝔼}
     (hu : LocallyIntegrableOn u Ω volume) (hg : LocallyIntegrableOn g Ω volume)
     (h : ∀ φ : 𝓓(Ω, ℝ), ∫ x in (Ω : Set 𝔼), u x * fderiv ℝ φ x y = -∫ x in (Ω : Set 𝔼), g x * φ x) :
@@ -254,7 +285,11 @@ functions of these elements are the functions of the definition. The type is def
 exponent $p \in [0, \infty]$, and the results assume $p \ge 1$. For $p < \infty$ the norm of the
 type is $(\|u\|_p^p + \sum_i \|\partial u / \partial x_i\|_p^p)^{1/p}$
 (`SobolevMultiIndex.norm_eq_sum`), the equivalent norm of the source. The norm that the source
-puts on $W^{1,p}(\Omega)$ is `Brezis.Chapter09.bookNorm`. -/
+puts on $W^{1,p}(\Omega)$ is `Brezis.Chapter09.bookNorm`.
+
+**Reading.** The type is available for every exponent $p$. The Sobolev results impose
+ $1 \le p$ as needed. The ambient norm is the equivalent product norm, with a maximum at
+ $p = \infty$. The source's sum norm is `Brezis.Chapter09.bookNorm`. -/
 noncomputable abbrev sobolevSpace (N : ℕ) (p : ℝ≥0∞) (Ω : Opens (EuclideanSpace ℝ (Fin N))) :
     Type :=
   SobolevEuclidean N 1 p Ω
@@ -410,7 +445,10 @@ $$\int_\Omega u \frac{\partial \varphi}{\partial x_i} = -\int_\Omega \frac{\part
 This holds for every exponent $p$. The proof specializes
 `HasWeakIteratedLineDerivOn.integral_smul_eq_of_contDiff_one`, which uses a sequence of
 mollifiers as the source suggests. The resulting equivalence of the two definitions is
-`Brezis.Chapter09.remark_9_1_iff`. -/
+`Brezis.Chapter09.remark_9_1_iff`.
+
+**Typo.** Remark 1 presents $C_c^\infty$ as the alternative to $C_c^1$, though the preceding
+ definition already uses $C_c^\infty$. This direction enlarges the test class to $C_c^1$. -/
 theorem remark_9_1 (u : sobolevSpace N p Ω) (i : Fin N) {φ : 𝔼 → ℝ} (hφ : ContDiff ℝ 1 φ)
     (hφc : HasCompactSupport φ) (hφΩ : tsupport φ ⊆ Ω) :
     ∫ x in (Ω : Set 𝔼), SobolevMultiIndex.fn u x * fderiv ℝ φ x (EuclideanSpace.single i 1)
@@ -433,7 +471,10 @@ for every $\varphi$ of class $C^1$ with compact support contained in $\Omega$ an
 This is the definition of $W^{1,p}(\Omega)$ (`Brezis.Chapter09.sobolevSpace_iff`) with
 $C_c^1(\Omega)$ in place of $C_c^\infty(\Omega)$. Every function of $C_c^\infty(\Omega)$ is in
 $C_c^1(\Omega)$, and `Brezis.Chapter09.remark_9_1` gives the identities for $C_c^1(\Omega)$ from
-those for $C_c^\infty(\Omega)$. -/
+those for $C_c^\infty(\Omega)$.
+
+**Typo.** Remark 1 exchanges the roles of the original and alternative tests in the prose.
+ The equivalence holds with the order used here. -/
 theorem remark_9_1_iff (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpace N p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) ↔
       MemLp u p (volume.restrict (Ω : Set 𝔼)) ∧ ∃ g : Fin N → 𝔼 → ℝ,
@@ -535,7 +576,10 @@ where $\|u\|$ is the norm of the type.
 
 The norm of the type is the $\ell^p$ norm, and $\|u\|_{W^{1,p}}$ is the $\ell^1$ norm, of the
 $N + 1$ numbers $\|u\|_p, \|\partial u / \partial x_1\|_p, \dots, \|\partial u / \partial
-x_N\|_p$. -/
+x_N\|_p$.
+
+**Generalization.** The estimate gives explicit comparison constants and includes the
+ maximum product norm at $p = \infty$. -/
 theorem bookNorm_equiv (u : sobolevSpace N p Ω) :
     ‖u‖ ≤ bookNorm u ∧ bookNorm u ≤ (N + 1) * ‖u‖ := by
   refine ⟨bookNorm_eq_sum u ▸ SobolevMultiIndex.norm_le_sum_norm_weakDeriv u, ?_⟩
@@ -634,7 +678,10 @@ $$\|w\|_{L^p(\Omega)} = \|\nabla u\|_{L^p(\Omega)}.$$
 
 The weak derivative is in the sense of `HasWeakFDerivOn`, with the operator norm on
 $\mathcal{L}(\mathbb{R}^N, \mathbb{R})$. This connects the partial derivatives of the source to
-the backbone theorems, which are stated for this derivative. -/
+the backbone theorems, which are stated for this derivative.
+
+**Reading.** The library packages the coordinate derivatives as a field of real linear
+ functionals and identifies its norm with the Euclidean gradient norm. -/
 theorem exists_hasWeakFDerivOn_fn_gradient (u : sobolevSpace N p Ω) :
     ∃ w : 𝔼 → 𝔼 →L[ℝ] ℝ, HasWeakFDerivOn (SobolevMultiIndex.fn u) w Ω volume ∧
       MemLp w p (volume.restrict (Ω : Set 𝔼)) ∧
@@ -787,7 +834,10 @@ everywhere on $\Omega$. If the Sobolev norm of $v_n - u$ in the backbone formula
 
 The backbone norm $\operatorname{sobolevNorm} f = (\|f\|_p^p + \|Df\|_p^p)^{1/p}$ measures the
 weak derivative $Df$ as a field of linear maps. The proof compares the two norms by
-`SobolevMultiIndex.ofReal_norm_le_sobolevNorm`. -/
+`SobolevMultiIndex.ofReal_norm_le_sobolevNorm`.
+
+**Reading.** This direction translates convergence in the source's sum norm on raw
+ representatives into convergence in the bundled norm for finite $p$. -/
 theorem tendsto_of_tendsto_sobolevNorm (hp' : p ≠ ⊤) {w : ℕ → sobolevSpace N p Ω}
     {u : sobolevSpace N p Ω} {v : ℕ → 𝔼 → ℝ}
     (hw : ∀ n, SobolevMultiIndex.fn (w n) =ᵐ[volume.restrict (Ω : Set 𝔼)] v n)
@@ -922,7 +972,9 @@ almost everywhere, for each $i$.
 
 The hypothesis on $\alpha$ is the backbone's `IsSobolevCutoff Ω α`. The source asks for $\alpha
 \in C^1(\mathbb{R}^N) \cap L^\infty(\mathbb{R}^N)$ with $\nabla\alpha \in L^\infty$; the case of
-an $\alpha$ of class $C^1$ that is not of class $C^\infty$ is not formalized. -/
+an $\alpha$ of class $C^1$ that is not of class $C^\infty$ is not formalized.
+
+**Reading.** The cutoff is required to be smooth in the library. The source requires $C^1$. -/
 theorem remark_9_4_ii_cutoff (u : sobolevSpace N p Ω) {α : 𝔼 → ℝ} (hα : IsSobolevCutoff Ω α) :
     ∃ v : sobolevSpace N p ⊤,
       SobolevMultiIndex.fn v =ᵐ[volume]
@@ -952,7 +1004,9 @@ almost everywhere, for each $i$.
 
 The source asks for $\alpha \in C_c^1(\Omega)$; the case of an $\alpha$ of class $C^1$ that is
 not of class $C^\infty$ is not formalized. The proof specializes
-`Brezis.Chapter09.remark_9_4_ii_cutoff`. -/
+`Brezis.Chapter09.remark_9_4_ii_cutoff`.
+
+**Reading.** The cutoff is required to be smooth in the library. The source requires $C^1$. -/
 theorem remark_9_4_ii (u : sobolevSpace N p Ω) {α : 𝔼 → ℝ} (hα : ContDiff ℝ ∞ α)
     (hαc : HasCompactSupport α) (hαΩ : tsupport α ⊆ Ω) :
     ∃ v : sobolevSpace N p ⊤,
@@ -1091,7 +1145,10 @@ and $w_n \to u$.
 
 The second claim of the remark, that for a general $\Omega$ no sequence of functions of
 $C_c^1(\mathbb{R}^N)$ need converge to $u$ in $W^{1,p}(\Omega)$, is a counterexample and is not
-formalized. -/
+formalized.
+
+**Reading.** This is the density claim of the remark. The restriction on whole-space
+ approximants is a separate counterexample in the source. -/
 theorem remark_9_5 (hp' : p ≠ ⊤) (u : sobolevSpace N p Ω) :
     ∃ v : ℕ → 𝔼 → ℝ, (∀ n, ContDiffOn ℝ ∞ (v n) Ω) ∧
       ∃ w : ℕ → sobolevSpace N p Ω,
@@ -1176,7 +1233,10 @@ as an extended real number.
 
 The value is $\infty$ when $\partial\Omega = \emptyset$, which is the case
 $\Omega = \mathbb{R}^N$, where every translation makes sense, and also when
-$\omega = \emptyset$. -/
+$\omega = \emptyset$.
+
+**Reading.** The distance is extended-valued so the empty boundary and the empty inner set
+ have value $\infty$. -/
 noncomputable def edistFrontier (V Ω : Set 𝔼) : ℝ≥0∞ :=
   ⨅ x ∈ V, Metric.infEDist x (frontier Ω)
 
@@ -1185,7 +1245,10 @@ noncomputable def edistFrontier (V Ω : Set 𝔼) : ℝ≥0∞ :=
 
 This is the statement of the source that $\tau_h u(x) = u(x + h)$ makes sense for $x \in \omega$
 and $|h| < \operatorname{dist}(\omega, \partial\Omega)$, in Proposition 9.3. A segment that
-leaves the open set $\Omega$ meets its boundary at distance at most $|h|$ from $x$. -/
+leaves the open set $\Omega$ meets its boundary at distance at most $|h|$ from $x$.
+
+**Generalization.** The geometric assertion applies to any subset $\omega \subseteq \Omega$.
+ It states containment along the entire translating segment. -/
 theorem segment_subset_of_enorm_lt_edistFrontier {V : Set 𝔼} (hVΩ : V ⊆ Ω) {h : 𝔼}
     (hh : ‖h‖ₑ < edistFrontier V Ω) :
     ∀ x ∈ V, ∀ t ∈ Set.Icc (0 : ℝ) 1, x + t • h ∈ (Ω : Set 𝔼) := by
@@ -1244,7 +1307,9 @@ theorem proposition_9_3_i_iii (v : sobolevSpace N p Ω) {u : 𝔼 → ℝ}
 /-- **Proposition 9.3** of [brezis2011functional], the case $\Omega = \mathbb{R}^N$. Let
 $1 \le p \le \infty$ and $u \in W^{1,p}(\mathbb{R}^N)$. Then for every $h \in \mathbb{R}^N$
 $$\|\tau_h u - u\|_{L^p(\mathbb{R}^N)} \le |h| \, \|\nabla u\|_{L^p(\mathbb{R}^N)},$$
-where $\tau_h u(x) = u(x + h)$. -/
+where $\tau_h u(x) = u(x + h)$.
+
+**Generalization.** The estimate includes $p=1$. -/
 theorem proposition_9_3_univ (u : sobolevSpace N p ⊤) (h : 𝔼) :
     eLpNorm (fun x ↦ SobolevMultiIndex.fn u (x + h) - SobolevMultiIndex.fn u x) p volume
       ≤ ‖h‖ₑ * eLpNorm (gradient u) p volume := by
@@ -1367,7 +1432,10 @@ Proposition 9.3 at $p = 1$.
 The three implications of the backbone hold for every $1 \le p \le \infty$. The implication (ii)
 ⇒ (iii) at $p = 1$, that a function of bounded variation satisfies the estimate on translations,
 belongs to the theory of $BV$ functions and is not formalized. The discussion of $BV$ in the
-remark is not formalized either. -/
+remark is not formalized either.
+
+**Reading.** The statement gives the first and last implications of the source's chain,
+ together with (i) ⇒ (iii). The implication (ii) ⇒ (iii) is omitted. -/
 theorem remark_9_6 {u : 𝔼 → ℝ} (hu : MemLp u 1 (volume.restrict Ω)) :
     ((∃ v : sobolevSpace N 1 Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) →
       ∃ C : ℝ, ∀ (φ : 𝓓(Ω, ℝ)) (i : Fin N),
@@ -1410,7 +1478,9 @@ $$|\tilde u(x) - \tilde u(y)| \le \|\nabla u\|_{L^\infty(\Omega)} |x - y| \qquad
   x, y \in \Omega.$$
 
 The source states the estimate with the geodesic distance in $\Omega$, which is $|x - y|$ for a
-convex $\Omega$. The form with the geodesic distance on a nonconvex $\Omega$ is not formalized. -/
+convex $\Omega$. The form with the geodesic distance on a nonconvex $\Omega$ is not formalized.
+
+**Reading.** Only the convex case of the geodesic estimate is stated. -/
 theorem remark_9_7_convex (hΩ : Convex ℝ (Ω : Set 𝔼)) (u : sobolevSpace N ⊤ Ω) :
     ∃ ũ : 𝔼 → ℝ, SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] ũ ∧
       ∀ x ∈ (Ω : Set 𝔼), ∀ y ∈ (Ω : Set 𝔼),
@@ -1555,14 +1625,18 @@ $|\alpha| \le m$ lie in $L^p(\Omega)$. Equivalently, defined by induction, $W^{m
 
 The type is the backbone type `SobolevEuclidean N m p Ω`, and is defined for every $m \ge 0$.
 The multi-index definition is `Brezis.Chapter09.sobolevSpaceHigher_iff`, and the inductive one
-is `Brezis.Chapter09.sobolevSpaceHigher_iff_inductive`. -/
+is `Brezis.Chapter09.sobolevSpaceHigher_iff_inductive`.
+
+**Generalization.** The type includes $m=0$ and $m=1$, and is available for all exponents.
+ The source introduces these higher-order spaces for $m \ge 2$ and $1 \le p \le \infty$. -/
 noncomputable abbrev sobolevSpaceHigher (N m : ℕ) (p : ℝ≥0∞)
     (Ω : Opens (EuclideanSpace ℝ (Fin N))) : Type :=
   SobolevEuclidean N m p Ω
 
 omit [Fact (1 ≤ p)] in
 /-- The space $W^{1,p}(\Omega)$ is the case $m = 1$ of $W^{m,p}(\Omega)$: the two types are equal.
--/
+
+**Generalization.** Order one is included in the higher-order family in Lean. -/
 theorem sobolevSpaceHigher_one : sobolevSpaceHigher N 1 p Ω = sobolevSpace N p Ω :=
   rfl
 
@@ -1585,7 +1659,9 @@ $$\int_\Omega u \, D^\alpha \varphi = (-1)^{|\alpha|} \int_\Omega g_\alpha \varp
   \text{for every } \varphi \in C_c^\infty(\Omega).$$
 
 Here $D^\alpha \varphi$ is the iterated derivative of $\varphi$ along the $|\alpha|$ directions
-in which each $e_i$ is repeated $\alpha_i$ times (`multiIndexTuple`). -/
+in which each $e_i$ is repeated $\alpha_i$ times (`multiIndexTuple`).
+
+**Generalization.** The formula includes $m=0$ and $m=1$. -/
 theorem sobolevSpaceHigher_iff {m : ℕ} (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpaceHigher N m p Ω, SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u)
       ↔ MemLp u p (volume.restrict Ω) ∧ ∀ α : MultiIndexLE (Fin N) m,
@@ -1614,7 +1690,9 @@ lies in $W^{m,p}(\Omega)$.
 This is the description $W^{m,p} = \{u \in W^{m-1,p} : \partial u / \partial x_i \in W^{m-1,p}
 \text{ for all } i\}$ of the source, with $m + 1$ in place of $m$. Membership of a function in
 $W^{m,p}(\Omega)$ means that it equals the function of an element almost everywhere on $\Omega$.
-The statement holds for every exponent $p$. -/
+The statement holds for every exponent $p$.
+
+**Generalization.** The characterization includes the step from $m=0$ and all exponents. -/
 theorem sobolevSpaceHigher_iff_inductive {m : ℕ} (u : 𝔼 → ℝ) :
     (∃ v : sobolevSpaceHigher N (m + 1) p Ω,
         SobolevMultiIndex.fn v =ᵐ[volume.restrict (Ω : Set 𝔼)] u) ↔
@@ -1638,7 +1716,10 @@ noncomputable def bookNormHigher {m : ℕ} (u : sobolevSpaceHigher N m p Ω) : �
 /-- The two norms of $W^{m,p}(\Omega)$ are equivalent: for $u \in W^{m,p}(\Omega)$,
 $$\|u\| \le \|u\|_{W^{m,p}} \le K \|u\|,$$
 where $\|u\|$ is the norm of the type and $K$ is the number of multi-indices $\alpha$ with
-$|\alpha| \le m$. -/
+$|\alpha| \le m$.
+
+**Reading.** The source equips the space with the sum norm. The inequality compares it to
+ the library's product norm. -/
 theorem bookNormHigher_equiv {m : ℕ} (u : sobolevSpaceHigher N m p Ω) :
     ‖u‖ ≤ bookNormHigher u ∧
       bookNormHigher u ≤ Fintype.card (MultiIndexLE (Fin N) m) * ‖u‖ := by
@@ -1653,7 +1734,10 @@ $\sum_{|\alpha| \le m} \|D^\alpha u\|_p$ is a Banach space". Let $1 \le p \le \i
 $m \ge 0$. The space $W^{m,p}(\Omega)$ is complete, and for every $u \in W^{m,p}(\Omega)$
 $$\|u\| \le \|u\|_{W^{m,p}} \le K \|u\|,$$
 where $\|u\|$ is the norm of the type and $K$ is the number of multi-indices $\alpha$ with
-$|\alpha| \le m$. -/
+$|\alpha| \le m$.
+
+**Reading.** Completeness is stated using the equivalent ambient product norm, with an
+ explicit comparison to the source norm. The result also includes orders zero and one. -/
 theorem sobolevSpaceHigher_banach {m : ℕ} :
     CompleteSpace (sobolevSpaceHigher N m p Ω) ∧
       ∀ u : sobolevSpaceHigher N m p Ω, ‖u‖ ≤ bookNormHigher u ∧
@@ -1664,7 +1748,9 @@ theorem sobolevSpaceHigher_banach {m : ℕ} :
 with the scalar product $(u, v)_{H^m} = \sum_{|\alpha| \le m} (D^\alpha u, D^\alpha v)_{L^2}$ is
 a Hilbert space". Let $m \ge 0$. The inner product of $W^{m,2}(\Omega)$ is
 $$(u, v)_{H^m} = \sum_{|\alpha| \le m} \int_\Omega D^\alpha u \, D^\alpha v,$$
-and $W^{m,2}(\Omega)$ is complete. -/
+and $W^{m,2}(\Omega)$ is complete.
+
+**Generalization.** The same formula includes orders zero and one. -/
 theorem hSpaceHigher {m : ℕ} :
     (∀ u v : sobolevSpaceHigher N m 2 Ω, inner ℝ u v = ∑ α, ∫ x in (Ω : Set 𝔼),
       SobolevMultiIndex.weakDeriv u α x * SobolevMultiIndex.weakDeriv v α x) ∧

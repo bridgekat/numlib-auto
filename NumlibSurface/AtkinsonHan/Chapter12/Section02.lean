@@ -87,6 +87,10 @@ The proofs use `Numlib.Approximation.Interpolation`, `Numlib.Approximation.Jacks
 * **Equations (12.2.5) and (12.2.19)** (generalization). The source uses the uniform mesh
   $h = (b - a)/n$. The statements hold for every sequence of partitions whose mesh tends to zero.
   See `AtkinsonHan.Chapter12.equation_12_2_5` and `AtkinsonHan.Chapter12.equation_12_2_19`.
+* **Equations (12.2.24) and (12.2.25)** (reading). The periodic estimates use real coefficients
+  in an orthonormal sine and cosine system. The theorem for (12.2.24) states the full Sobolev
+  norm bound with constant $1$. The Galerkin estimates (12.2.19) and (12.2.25) assume compactness
+  of the operator directly, which the book obtains from its integral kernel.
 
 ## Not formalized
 
@@ -536,7 +540,11 @@ squared error of the partial sum is the tail $\sum_{|m| > n} c_m^2$ of Parseval'
 on that tail $c_m^2 \le n^{-2r} |m|^{2r} c_m^2$. The weight is `periodicSobolevWeight`, the
 weight of Definition 7.5.1 of the source, here on the real trigonometric system instead of the
 complex exponentials. The projection is `trigProjCLM` and the coefficients are
-`realFourierCoeff`. -/
+`realFourierCoeff`.
+
+**Reading.** Real orthonormal coefficient norm and sharp full-norm constant, omitting the separate
+tail inequality.
+-/
 theorem equation_12_2_24 {r : ℝ} (hr : 0 ≤ r) {n : ℕ} (hn : 1 ≤ n) (u : L²p) {S : ℝ}
     (hS0 : 0 ≤ S)
     (hS : HasSum (fun m : ℤ => periodicSobolevWeight r m ^ 2 *
@@ -600,7 +608,10 @@ pointwise (`tendsto_trigProjCLM`). Lemma 12.1.4 therefore gives $\|K - P_n K\| \
 12.1.2 applies, and the rate is `AtkinsonHan.Chapter12.equation_12_2_24` inserted into
 (12.1.24). Compactness of $K$ is a hypothesis: for an operator with a kernel on $L^2$ it is the
 Hilbert–Schmidt theorem, which the library does not have, and the source takes it from its
-Chapter 2. -/
+Chapter 2.
+
+**Reading.** Uses the real coefficient norm and assumes compactness of the operator directly.
+-/
 theorem equation_12_2_25 {K : L²p →L[ℝ] L²p} (hK : IsCompactOperator K) {μ : ℝ} (hμ : μ ≠ 0)
     {e : L²p ≃L[ℝ] L²p} (he : (e : L²p →L[ℝ] L²p) = μ • 1 - K) {r : ℝ} (hr : 0 ≤ r) :
     ∃ M : ℝ, ∀ᶠ n in atTop,

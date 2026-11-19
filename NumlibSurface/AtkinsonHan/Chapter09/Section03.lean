@@ -48,6 +48,13 @@ type in the conforming case. The proofs specialize `IsGeneralizedGalerkinSolutio
   `AtkinsonHan.Chapter09.theorem_9_3_1'` keeps the unused hypotheses of the source.
 * The supremum in the consistency term is `iSup` on $\mathbb{R}$, which is $0$ on an empty or
   unbounded set.
+
+## Deviations from the source
+
+* **Theorem 9.3.1** (scope). The abstract estimate allows any comparison point in
+  the ambient normed space. The version with an injected exact solution keeps the
+  source's continuous problem. Both statements use boundedness of the consistency
+  quotient only where needed.
 -/
 
 open Filter Topology
@@ -120,7 +127,10 @@ theorem le_consistencyError (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ 
 $V_N \subseteq W$ be finite-dimensional, and let $a_N(v, v) \ge \alpha_0 \|v\|^2$ for all
 $v \in V_N$, with $\alpha_0 > 0$. Then the problem (9.3.1) has exactly one solution $u_N$.
 
-The proof uses neither the boundedness of $a_N$ nor the bound on $\ell_N$. -/
+The proof uses neither the boundedness of $a_N$ nor the bound on $\ell_N$.
+
+**Reading.** Only finite dimension and coercivity are needed to solve the discrete equation.
+-/
 theorem theorem_9_3_1_existsUnique (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ)
     (VN : Submodule ℝ W) [FiniteDimensional ℝ VN] (hα₀ : 0 < α₀)
     (hcoer : ∀ v ∈ VN, α₀ * ‖v‖ ^ 2 ≤ aN v v) : ∃! uN, GeneralizedGalerkinProblem aN ℓN VN uN :=
@@ -136,7 +146,10 @@ v_N \in V_N} \frac{|a_N(u, v_N) - \ell_N(v_N)|}{\|v_N\|}.$$
 
 The first term is an approximation term of Céa type, and the second is the consistency term
 `AtkinsonHan.Chapter09.consistencyError`. The unique solvability of (9.3.1) is
-`AtkinsonHan.Chapter09.theorem_9_3_1_existsUnique`. -/
+`AtkinsonHan.Chapter09.theorem_9_3_1_existsUnique`.
+
+**Reading.** Same two error terms for any ambient comparison point.
+-/
 theorem theorem_9_3_1 (aN : W →ₗ[ℝ] W →ₗ[ℝ] ℝ) (ℓN : W →ₗ[ℝ] ℝ) (VN : Submodule ℝ W)
     [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M) (hα₀ : 0 < α₀)
     (hM : ∀ w, ∀ v ∈ VN, |aN w v| ≤ M * ‖w‖ * ‖v‖)

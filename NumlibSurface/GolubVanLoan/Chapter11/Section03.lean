@@ -194,12 +194,29 @@ The proofs specialize the backbone modules `Numlib.Krylov.CG`, `Numlib.Krylov.La
 
 ## Deviations from the source
 
+* **Equation (11.3.24)** (typo). The numerator is $p_{k-1}^TAg_{k-1}$, with a transpose missing
+  in print. See `GolubVanLoan.Chapter11.equation_11_3_24`.
+* **Algorithms 11.3.2–11.3.3 and (11.3.26)** (reading). The programs have bounded fuel. The
+  returned iterate may already solve the system before a subsequent pass records the failed loop
+  test. See `GolubVanLoan.Chapter11.algorithm_11_3_2_spec`,
+  `GolubVanLoan.Chapter11.algorithm_11_3_3_spec`, and `GolubVanLoan.Chapter11.equation_11_3_26`.
+* **Equation (11.3.28), CGNR and CGNE** (generalization). The rectangular CGNR criterion assumes
+  full column rank. The rectangular CGNE criterion assumes full row rank and a consistent right-
+  hand side, with $x_0=A^Ty_0$. See `GolubVanLoan.Chapter11.cgnr_isMinResidual_of_injective` and
+  `GolubVanLoan.Chapter11.cgne_isMinError_of_injective_transpose`.
+* **Algorithm 11.3.1** (reading). Exact termination at a sufficient finite fuel budget requires
+  positive tolerance. See `GolubVanLoan.Chapter11.algorithm_11_3_1_spec`.
+* **Equations (11.3.10)–(11.3.11) and the Krylov argument** (correction). The subspace contains
+  the affine displacement $x_k-x_0$ and the gradient $g_k=g_0+A(x_k-x_0)$. Nested spaces may
+  repeat. See `GolubVanLoan.Chapter11.equation_11_3_11` and
+  `GolubVanLoan.Chapter11.gradient_mem_krylov`.
 * **Corollary 11.3.2** (generalization). The source assumes that $D$ is symmetric and that $r < n$;
   neither is needed. See `GolubVanLoan.Chapter11.corollary_11_3_2`.
 * **Equation (11.3.14)** (correction). The source prints $x_k = Q_ky_k$, which holds only for
   $x_0 = 0$; the method computes $x_k = x_0 + Q_ky_k$. See `GolubVanLoan.Chapter11.preliminaryCG`.
-* **Equation (11.3.19)** (typo). The source prints the garbled
-  $v_k = [\nu_1; \dots; \nu_{k-1}/\nu_k]$ for $v_k = [v_{k-1}; \nu_k]$. See
+* **Equation (11.3.19)** (generalization). The source extends the solution vector for a positive
+  definite Lanczos tridiagonal matrix. The theorem gives the extension for arbitrary recurrence
+  coefficients and states each row identity under a local nonzero-pivot hypothesis. See
   `GolubVanLoan.Chapter11.equation_11_3_19`.
 * **Theorem 11.3.4** (generalization). The orthogonality $g_i^Tg_j = 0$ holds for $0 \le i < j$, not
   only for $1 \le i < j$. See `GolubVanLoan.Chapter11.theorem_11_3_4`.
@@ -417,7 +434,10 @@ $$\mu_0 = \mu_c = \frac{g_c^Tg_c}{g_c^TAg_c},$$
 and the point $x_c - \mu_cg_c$ is the steepest-descent step from $x_c$.
 
 The steepest-descent step is `Projection.steepestDescentStep (Matrix.toEuclideanLin A) b x`, the
-one-dimensional Galerkin step along the residual $r_c = -g_c$. -/
+one-dimensional Galerkin step along the residual $r_c = -g_c$.
+
+**Reading.** Unique minimizer asserted only for nonzero gradient, with scalar formula explicit.
+-/
 theorem steepestDescent_mu_eq (hA : A.PosDef) {b x g : 𝔼 n} (hg : toEuclideanLin A x - b = g)
     (hg0 : g ≠ 0) :
     (∀ μ₀ : ℝ, (∀ μ : ℝ, energyFunctional (toEuclideanLin A) b (x - μ₀ • g) ≤
@@ -666,7 +686,10 @@ structure SteepestDescentState (n : ℕ) where
 /-- One pass of the `while` body of Algorithm 11.3.1. It does nothing once `done` is set. Otherwise
 it computes $\mathrm{fl}(\sqrt{\mathrm{fl}(g^Tg)})$ and compares it exactly with $\tau$; if the
 norm is at most $\tau$ it sets `done`, and else it computes $\mu = (g^Tg)/(g^TAg)$,
-$x = x - \mu g$ and $g = Ax - b$. -/
+$x = x - \mu g$ and $g = Ax - b$.
+
+**Reading.** Same update with monadic rounding and explicit flag.
+-/
 noncomputable def steepestDescentBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (b : Fin n → ℝ) (τ : ℝ) (s : SteepestDescentState n) : M (SteepestDescentState n) :=
   if s.done then pure s else do
@@ -694,14 +717,20 @@ The dot products, the matrix-vector products and the vector updates are Algorith
 and 1.1.2, and every arithmetic result is rounded.
 
 The `while` loop runs at most `fuel` times, with the body
-`GolubVanLoan.Chapter11.steepestDescentBody`. The program makes no check on $A$. -/
+`GolubVanLoan.Chapter11.steepestDescentBody`. The program makes no check on $A$.
+
+**Reading.** Executes at most fuel passes and reports stop.
+-/
 noncomputable def algorithm_11_3_1 (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : Fin n → ℝ) (τ : ℝ) (fuel : ℕ) : M (SteepestDescentState n) := do
   let g₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A x₀ (-b)
   (List.range fuel).foldlM (fun s _ => steepestDescentBody rnd A b τ s) ⟨0, x₀, g₀, false⟩
 
 /-- The steepest-descent step of the backbone in coordinates: from $x$ it goes to $x - \mu g$, where
-$g = Ax - b$ and $\mu = g^Tg/g^TAg$. -/
+$g = Ax - b$ and $\mu = g^Tg/g^TAg$.
+
+**Reading.** Matches step in coordinates; total division leaves a stationary iterate fixed.
+-/
 private theorem steepestDescentStep_toLp (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) :
     Projection.steepestDescentStep (toEuclideanLin A) (WithLp.toLp 2 b) (WithLp.toLp 2 x) =
       WithLp.toLp 2 (x + (-((A *ᵥ x - b) ⬝ᵥ (A *ᵥ x - b) /
@@ -715,7 +744,10 @@ private theorem steepestDescentStep_toLp (A : Matrix (Fin n) (Fin n) ℝ) (b x :
   rw [mulVec_neg, neg_dotProduct, dotProduct_neg, neg_dotProduct, dotProduct_neg, neg_neg, neg_neg,
     smul_neg, neg_smul]
 
-/-- The exact run of one pass of the loop body of Algorithm 11.3.1. -/
+/-- The exact run of one pass of the loop body of Algorithm 11.3.1.
+
+**Reading.** Exact closed form with stop flag.
+-/
 private theorem steepestDescentBody_run (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (τ : ℝ)
     (s : SteepestDescentState n) :
     Id.run (steepestDescentBody pure A b τ s) =
@@ -800,7 +832,11 @@ that for every `fuel` at least $N$ the output satisfies $\|Ax - b\|_2 \le \tau$.
 
 The second part is the claim of the source that the algorithm produces $x$ with
 $\|Ax - b\|_2 \le \tau$. The exact run is the run with `M := Id` and `rnd := pure`, and the
-steepest-descent iterate is the $k$-fold iterate of `Projection.steepestDescentStep`. -/
+steepest-descent iterate is the $k$-fold iterate of `Projection.steepestDescentStep`.
+
+**Reading.** The eventual termination guarantee uses a strictly positive tolerance and
+sufficiently large fuel. The unbounded source loop can fail to terminate at zero tolerance even
+though the exact iterates converge. -/
 theorem algorithm_11_3_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     (τ : ℝ) :
     (∀ fuel : ℕ,
@@ -857,7 +893,11 @@ $k \ge 0$ let $x_k$ minimize $\phi$ over the affine space $\bar x + S_k$. Then:
 The source writes the starting point $\bar x$ as $x_0$ and states the chain from $\phi(x_1)$.
 Here the starting point is the argument `x₀`, and the minimizer $x_0$ over $\bar x + S_0$ is
 `x 0`; the two agree when $S_0 = \{0\}$. The last part is the remark of the source that, since
-$S_n = \mathbb{R}^n$, the method ultimately obtains $x_* = A^{-1}b$. -/
+$S_n = \mathbb{R}^n$, the method ultimately obtains $x_* = A^{-1}b$.
+
+**Correction.** For the affine trial set $x_0+S_{k+1}$, the subspace contains $x_k-x_0$ and
+$g_k$. The source writes that it contains $x_k$ and $g_k$. Nested spaces may repeat after the
+Krylov subspace reaches its grade. -/
 theorem equation_11_3_11 (hA : A.PosDef) (b x₀ : 𝔼 n) {S : ℕ → Submodule ℝ (𝔼 n)}
     (hS : Monotone S) {x : ℕ → 𝔼 n}
     (hx : ∀ k, x k - x₀ ∈ S k ∧ ∀ y, y - x₀ ∈ S k →
@@ -877,7 +917,11 @@ theorem equation_11_3_11 (hA : A.PosDef) (b x₀ : 𝔼 n) {S : ℕ → Submodul
 Let $A \in \mathbb{R}^{n \times n}$, $b, x_0 \in \mathbb{R}^n$ and $g_0 = Ax_0 - b$, and let
 $x_k \in \mathbb{R}^n$ satisfy $x_k - x_0 \in \mathcal{K}(A, g_0, k)$. Then the gradient
 $g_k = Ax_k - b$ lies in $\mathcal{K}(A, g_0, k + 1)$, and $x_k - \mu g_k - x_0 \in
-\mathcal{K}(A, g_0, k + 1)$ for every $\mu \in \mathbb{R}$. -/
+\mathcal{K}(A, g_0, k + 1)$ for every $\mu \in \mathbb{R}$.
+
+**Correction.** The gradient satisfies $g_k=g_0+A(x_k-x_0)$. The source's assertion that $g_k$
+belongs to the span of $x_k$ and $Ax_k$ does not account for $b$. The Krylov sequence is
+sufficient for the next search-space containment. -/
 theorem gradient_mem_krylov (b x₀ : 𝔼 n) {k : ℕ} {xk : 𝔼 n}
     (hxk : xk - x₀ ∈ Krylov.subspace (toEuclideanLin A) (toEuclideanLin A x₀ - b) k) :
     toEuclideanLin A xk - b ∈ Krylov.subspace (toEuclideanLin A) (toEuclideanLin A x₀ - b) (k + 1) ∧
@@ -979,7 +1023,10 @@ and $q_{k+2}$ is orthogonal to $q_1, \dots, q_{k+1}$.
 
 The vector $q_{j+1}$ is `Arnoldi.vec (Matrix.toEuclideanLin A) r₀ j`, and the matrix
 $T_{k+1}$ is `Lanczos.tridiag`. The number $\beta_{k+1}$ is
-`Lanczos.beta (Matrix.toEuclideanLin A) r₀ k`, so that $r_{k+1} = \beta_{k+1}q_{k+2}$. -/
+`Lanczos.beta (Matrix.toEuclideanLin A) r₀ k`, so that $r_{k+1} = \beta_{k+1}q_{k+2}$.
+
+**Reading.** Column-action identity with zero-padding beyond attained grade.
+-/
 theorem equation_11_3_13 (hA : A.IsSymm) (r₀ : 𝔼 n) (k : ℕ) (y : Fin (k + 1) → ℝ) :
     toEuclideanLin A (∑ j, y j • Arnoldi.vec (toEuclideanLin A) r₀ j) =
       ∑ i : Fin (k + 1), (Lanczos.tridiag (toEuclideanLin A) r₀ (k + 1) *ᵥ y) i •
@@ -1006,7 +1053,10 @@ private theorem tridiag_eq_hessenbergSq (hA : A.IsSymm) (r₀ : 𝔼 n) (k : ℕ
 /-- **Section 11.3.4** of [golub2013matrix], positive definiteness of $T_k$. Let
 $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $r_0 \in \mathbb{R}^n$, and
 let $k$ be at most the grade of $r_0$. Then the Lanczos tridiagonal matrix $T_k = Q_k^TAQ_k$ of
-$r_0$ is positive definite. -/
+$r_0$ is positive definite.
+
+**Reading.** Positive definiteness conditional on k≤grade.
+-/
 theorem lanczos_tridiag_posDef (hA : A.PosDef) (r₀ : 𝔼 n) {k : ℕ}
     (hk : k ≤ Krylov.grade (toEuclideanLin A) r₀) :
     (Lanczos.tridiag (toEuclideanLin A) r₀ k).PosDef := by
@@ -1053,7 +1103,10 @@ $\phi$ over $x_0 + \mathcal{K}(A, r_0, k)$ is minimizing $\phi(x_0 + Q_ky)$ over
 $y \in \mathbb{R}^k$, and that the minimizer $y_k$ satisfies $T_ky_k = Q_k^Tr_0 = \beta_0e_1$.
 The Galerkin iterate is `Krylov.IsGalerkinIterate`: $x \in x_0 + \mathcal{K}(A, r_0, k)$ and
 $b - Ax \perp \mathcal{K}(A, r_0, k)$. It is the minimizer of $\phi$ over
-$x_0 + \mathcal{K}(A, r_0, k)$ by `IsGalerkin.energyFunctional_le`. -/
+$x_0 + \mathcal{K}(A, r_0, k)$ by `IsGalerkin.energyFunctional_le`.
+
+**Correction.** Iff for Galerkin optimality with grade condition and correct x0 shift.
+-/
 theorem cg_lanczos_coordinates (hA : A.PosDef) (b x₀ : 𝔼 n) {k : ℕ}
     (hk : k ≤ Krylov.grade (toEuclideanLin A) (b - toEuclideanLin A x₀)) (y : Fin k → ℝ) :
     Krylov.IsGalerkinIterate (toEuclideanLin A) b x₀ k
@@ -1095,7 +1148,10 @@ variable {M : Type → Type} [Monad M]
 /-- The solve $T_ky = c$ of (11.3.14), for the symmetric tridiagonal $T_k$ with diagonal $\alpha$
 and off-diagonal $\beta$ (0-based). For $k \ge 1$ it is Algorithm 4.3.6,
 `GolubVanLoan.Chapter04.algorithm_4_3_6`; for $k = 0$ there is nothing to solve, and it returns
-$c$. -/
+$c$.
+
+**Reading.** Implements rounded tridiagonal solver with order-zero branch.
+-/
 noncomputable def tridiagSolve (rnd : ℝ → M ℝ) :
     (k : ℕ) → (α β : ℕ → ℝ) → (Fin k → ℝ) → M (Fin k → ℝ)
   | 0, _, _, c => pure c
@@ -1123,7 +1179,10 @@ theorem tridiagSolve_spec (k : ℕ) (α β : ℕ → ℝ)
 pass of the Lanczos loop of Algorithm 10.1.1 ($q_{k+1} = r_k/\beta_k$, $k = k + 1$,
 $\alpha_k = q_k^TAq_k$, $r_k = (A - \alpha_kI)q_k - \beta_{k-1}q_{k-1}$, $\beta_k = \|r_k\|_2$),
 then solves $T_ky_k = \beta_0e_1$ by Algorithm 4.3.6 (`GolubVanLoan.Chapter11.tridiagSolve`) and
-computes $x_k = x_0 + Q_ky_k$ by the gaxpy of Algorithm 1.1.3. -/
+computes $x_k = x_0 + Q_ky_k$ by the gaxpy of Algorithm 1.1.3.
+
+**Reading.** Retains x0 in update and guards stopped state.
+-/
 noncomputable def preliminaryCGBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (β₀ : ℝ) (x₀ : Fin n → ℝ) (s : PreliminaryCGState n) : M (PreliminaryCGState n) :=
   if s.lanczos.done then pure s else do
@@ -1169,7 +1228,10 @@ noncomputable def preliminaryCG (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n
 private noncomputable def pcgBeta₀ (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) : ℝ :=
   ‖(WithLp.toLp 2 (b - A *ᵥ x₀) : 𝔼 n)‖
 
-/-- The exact initial Lanczos state of (11.3.14). -/
+/-- The exact initial Lanczos state of (11.3.14).
+
+**Reading.** Initial normalized residual with explicit zero flag.
+-/
 private noncomputable def pcgInit (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) :
     GolubVanLoan.Chapter10.LanczosState n :=
   ⟨0, fun _ => 0, fun _ => 0, fun _ => 0, (pcgBeta₀ A b x₀)⁻¹ • (b - A *ᵥ x₀),
@@ -1202,7 +1264,10 @@ private theorem preliminaryCGBody_lanczos (A : Matrix (Fin n) (Fin n) ℝ)
     rfl
 
 /-- After an exact pass of (11.3.14), the iterate is $x_k = x_0 + Q_kT_k^{-1}(\beta_0e_1)$ for the
-new Lanczos state, computed by the tridiagonal solve; once `done` is set, it is unchanged. -/
+new Lanczos state, computed by the tridiagonal solve; once `done` is set, it is unchanged.
+
+**Reading.** Exact update uses x0+Qy and skips stopped state.
+-/
 private theorem preliminaryCGBody_x (A : Matrix (Fin n) (Fin n) ℝ)
     (β₀ : ℝ)
     (x₀ : Fin n → ℝ) (s : PreliminaryCGState n) :
@@ -1253,7 +1318,10 @@ private theorem algorithm_10_1_1_done (A : Matrix (Fin n) (Fin n) ℝ) (q₁ : F
 /-- For symmetric $A$, after the exact run of (11.3.14) the Lanczos state has made
 $k = \min(\mathrm{fuel}, k_*)$ steps, where $k_*$ is the grade of $r_0$; its vectors and
 coefficients are the Lanczos vectors and coefficients of $r_0$; and `done` is set if and only if
-$k_* \le k$. -/
+$k_* \le k$.
+
+**Reading.** Attained count min of fuel and grade and identifies actual vectors.
+-/
 private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (b x₀ : Fin n → ℝ)
     (fuel : ℕ) :
@@ -1347,7 +1415,10 @@ private theorem preliminaryCG_lanczos_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA 
         omega
 
 /-- After the exact run of (11.3.14), the iterate is $x_0 + Q_kT_k^{-1}(\beta_0e_1)$ for the final
-Lanczos state, computed by the tridiagonal solve. -/
+Lanczos state, computed by the tridiagonal solve.
+
+**Reading.** Returns shifted projected solution for all attainable stages.
+-/
 private theorem preliminaryCG_x (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (fuel : ℕ) :
     (Id.run (preliminaryCG pure A b x₀ fuel)).x =
@@ -1396,7 +1467,10 @@ The Lanczos vectors are `Arnoldi.vec (Matrix.toEuclideanLin A) r₀ j` and the c
 `Lanczos.alpha` and `Lanczos.beta`, all 0-based. The proof applies
 `GolubVanLoan.Chapter10.algorithm_10_1_1_spec` to $q_1 = r_0/\beta_0$,
 `GolubVanLoan.Chapter11.cg_lanczos_coordinates` to the iterate, and `Lanczos.beta_eq_zero_iff`
-to the test. -/
+to the test.
+
+**Reading.** Retains base iterate, gives attained grade and Galerkin characterization, bounded fuel.
+-/
 theorem equation_11_3_14 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     (fuel : ℕ) :
     let s := Id.run (preliminaryCG pure A b x₀ fuel)
@@ -1457,7 +1531,10 @@ passes, through its test, with $Ax = b$.
 
 The space $\mathcal{K}_\infty$ is `Krylov.fullSubspace (Matrix.toEuclideanLin A) r₀`, and the
 invariant subspaces are `Module.End.invtSubmodule`. The proof combines
-`GolubVanLoan.Chapter11.equation_11_3_14` with `Krylov.IsGalerkinIterate.apply_eq_of_grade_le`. -/
+`GolubVanLoan.Chapter11.equation_11_3_14` with `Krylov.IsGalerkinIterate.apply_eq_of_grade_le`.
+
+**Reading.** The claim concerns the stopped exact iteration. The formal program has a fuel
+argument, and the theorem assumes enough passes to reach the grade of the initial residual. -/
 theorem theorem_11_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     {fuel : ℕ}
     (hfuel : Module.finrank ℝ (Krylov.fullSubspace (toEuclideanLin A)
@@ -1497,7 +1574,10 @@ The definition returns the pair $(d, \ell)$ of sequences.
 The sequences are indexed by `ℕ` from $0$, and they do not depend on $k$. The pivots are the
 backbone's Thomas recurrence `Matrix.thomasAlpha` for the tridiagonal matrix with sub- and
 superdiagonal $\beta$. A zero pivot $d_{i-1}$ gives $\ell_{i-1} = 0$, by the convention
-$x/0 = 0$. -/
+$x/0 = 0$.
+
+**Generalization.** Same formula extended to arbitrary sequences via total division.
+-/
 noncomputable def ldlTridiag (α β : ℕ → ℝ) : (ℕ → ℝ) × (ℕ → ℝ) :=
   (Matrix.thomasAlpha α (fun i => β (i - 1)) β,
     fun i => β i / Matrix.thomasAlpha α (fun i => β (i - 1)) β i)
@@ -1510,7 +1590,10 @@ theorem ldlTridiag_fst_zero (α β : ℕ → ℝ) : (ldlTridiag α β).1 0 = α 
 theorem ldlTridiag_fst_succ (α β : ℕ → ℝ) (i : ℕ) :
     (ldlTridiag α β).1 (i + 1) = α (i + 1) - (ldlTridiag α β).2 i * β i := rfl
 
-/-- For every $i \ge 1$, the multipliers of (11.3.15) satisfy $\ell_i = \beta_i/d_i$. -/
+/-- For every $i \ge 1$, the multipliers of (11.3.15) satisfy $\ell_i = \beta_i/d_i$.
+
+**Reading.** Same scalar quotient with totalized division.
+-/
 theorem ldlTridiag_snd (α β : ℕ → ℝ) (i : ℕ) :
     (ldlTridiag α β).2 i = β i / (ldlTridiag α β).1 i := rfl
 
@@ -1528,7 +1611,11 @@ is `Matrix.symmTridiagonalOf α β k`, and the Lanczos $T_k$ is `Lanczos.tridiag
 with the Lanczos coefficients. The factorization is `Matrix.IsLDM`, and the proof is
 `GolubVanLoan.Chapter04.tridiagonal_ldlt` (§4.3.6, the same recurrence). For positive definite
 $T_k$ the pivots are positive (`Matrix.IsLDM.diag_pos_of_posDef`) and the factorization is
-unique (`Matrix.IsLDM.eq_of_isSymm`). -/
+unique (`Matrix.IsLDM.eq_of_isSymm`).
+
+**Reading.** Valid factorization under nonzero preceding pivots for general symmetric tridiagonal
+matrix.
+-/
 theorem equation_11_3_15 (α β : ℕ → ℝ) (k : ℕ)
     (hd : ∀ i, i + 1 < k → (ldlTridiag α β).1 i ≠ 0) :
     Matrix.IsLDM (Matrix.symmTridiagonalOf α β k)
@@ -1553,7 +1640,10 @@ theorem equation_11_3_15 (α β : ℕ → ℝ) (k : ℕ)
 
 /-- The entries $\nu_1, \nu_2, \dots$ of the vectors $v_k$, by the recurrence (11.3.20):
 $\nu_1 = \beta_0/d_1$, and $\nu_k = -d_{k-1}\ell_{k-1}\nu_{k-1}/d_k$ for $k > 1$. The sequence
-is indexed from $0$. -/
+is indexed from $0$.
+
+**Reading.** Retains ratio with totalized division for arbitrary sequences.
+-/
 noncomputable def cgLDLnu (α β : ℕ → ℝ) (β₀ : ℝ) : ℕ → ℝ
   | 0 => β₀ / (ldlTridiag α β).1 0
   | i + 1 => -((ldlTridiag α β).1 i * (ldlTridiag α β).2 i * cgLDLnu α β β₀ i) /
@@ -1577,8 +1667,9 @@ $$d_1\nu_1 = \beta_0 \text{ if } d_1 \neq 0, \qquad d_i\ell_i\nu_i + d_{i+1}\nu_
   if } d_{i+1} \neq 0 \quad (i \ge 1).$$
 Moreover, $v_{k+1} = [v_k; \nu_{k+1}]$ for every $k \ge 0$.
 
-**Typo.** The source prints the conclusion as $v_k = [\nu_1; \dots; \nu_{k-1}/\nu_k]$, which is
-garbled. The intended statement is $v_k = [v_{k-1}; \nu_k]$.
+**Generalization.** The source appends the new entry to the forward-substitution solution for
+a positive definite Lanczos tridiagonal matrix. The theorem allows arbitrary recurrence
+coefficients and requires a nonzero divisor only for the row identity that uses it.
 
 The source illustrates the system for $k = 4$. The extension $v_{k+1} = [v_k; \nu_{k+1}]$ holds
 because forward substitution does not change the earlier entries when the system grows. -/
@@ -1606,7 +1697,10 @@ $$\nu_k = \begin{cases} \beta_0/d_1 & k = 1, \\ -d_{k-1}\ell_{k-1}\nu_{k-1}/d_k 
 If moreover $d_{k-1} \neq 0$, then $\nu_k = -\beta_{k-1}\nu_{k-1}/d_k$, which is the form that
 Algorithm 11.3.2 uses.
 
-The last form follows from $d_{k-1}\ell_{k-1} = \beta_{k-1}$. -/
+The last form follows from $d_{k-1}\ell_{k-1} = \beta_{k-1}$.
+
+**Reading.** Recurrence for arbitrary coefficients with nonzero assumption on simplified version.
+-/
 theorem equation_11_3_20 (α β : ℕ → ℝ) (β₀ : ℝ) (k : ℕ) :
     cgLDLv α β β₀ (k + 1) (Fin.last k) = cgLDLnu α β β₀ k ∧
       cgLDLnu α β β₀ 0 = β₀ / (ldlTridiag α β).1 0 ∧
@@ -1621,7 +1715,10 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 
 /-- The columns $c_1, c_2, \dots$ of $C_k$, by the recurrence (11.3.22): $c_1 = q_1$, and
 $c_k = q_k - \ell_{k-1}c_{k-1}$ for $k > 1$. The sequence is indexed from $0$, and its vectors
-lie in any real vector space. -/
+lie in any real vector space.
+
+**Reading.** Same recursion for an arbitrary real vector space.
+-/
 noncomputable def cgLDLc (q : ℕ → E) (ℓ : ℕ → ℝ) : ℕ → E
   | 0 => q 0
   | i + 1 => q (i + 1) - ℓ i • cgLDLc q ℓ i
@@ -1633,7 +1730,10 @@ $C_kL_k^T = Q_k$, given as its family of columns $c_1, \dots, c_k$ from the recu
 The matrix $Q_k = [q_1 | \cdots | q_k]$ is given by its columns $q$, for CG the Lanczos vectors
 `Arnoldi.vec (Matrix.toEuclideanLin A) r₀`, and $L_k$ is given by its subdiagonal $\ell$. That
 the columns satisfy $C_kL_k^T = Q_k$, column by column $c_j + \ell_{j-1}c_{j-1} = q_j$, is
-`GolubVanLoan.Chapter11.equation_11_3_21`. -/
+`GolubVanLoan.Chapter11.equation_11_3_21`.
+
+**Reading.** Column family representation valid in any real vector space.
+-/
 noncomputable def cgLDLC (q : ℕ → E) (ℓ : ℕ → ℝ) (k : ℕ) : Fin k → E :=
   fun j => cgLDLc q ℓ j
 
@@ -1646,7 +1746,10 @@ where $(L_k^Ty)_j = y_j + \ell_jy_{j+1}$ for $j < k$ and $(L_k^Ty)_k = y_k$.
 The source states that if $C_kL_k^T = Q_k$, then $x_k = x_0 + Q_ky_k = x_0 + C_kL_k^Ty_k = x_0 +
 C_kv_k$. With $y = y_k$, the solution of $T_ky = \beta_0e_1$
 (`GolubVanLoan.Chapter11.cg_lanczos_coordinates`), and $v_k = L_k^Ty_k$, the left side is the
-Galerkin iterate. The products are finite sums over the indices $0, \dots, k - 1$. -/
+Galerkin iterate. The products are finite sums over the indices $0, \dots, k - 1$.
+
+**Reading.** Algebraic factor change with arbitrary coefficients, identifies v via Lᵀy entries.
+-/
 theorem equation_11_3_18 (q : ℕ → E) (ℓ : ℕ → ℝ) (x₀ : E) (y : ℕ → ℝ) (k : ℕ) :
     x₀ + ∑ j ∈ Finset.range k, y j • q j =
       x₀ + ∑ j ∈ Finset.range k,
@@ -1684,7 +1787,10 @@ Then $C_{k+1} = [C_k | c_{k+1}]$ for every $k \ge 0$, and the columns solve $C_k
 column by column:
 $$c_1 = q_1, \qquad c_{j+1} + \ell_jc_j = q_{j+1} \quad (j \ge 1).$$
 
-The source concludes from (11.3.21) that $C_k = [C_{k-1} | c_k]$. -/
+The source concludes from (11.3.21) that $C_k = [C_{k-1} | c_k]$.
+
+**Reading.** Exact column extension on arbitrary real vector space.
+-/
 theorem equation_11_3_21 (q : ℕ → E) (ℓ : ℕ → ℝ) (k : ℕ) :
     cgLDLC q ℓ (k + 1) = Fin.snoc (cgLDLC q ℓ k) (cgLDLc q ℓ k) ∧
       cgLDLc q ℓ 0 = q 0 ∧ ∀ j, cgLDLc q ℓ (j + 1) + ℓ j • cgLDLc q ℓ j = q (j + 1) := by
@@ -1697,6 +1803,8 @@ theorem equation_11_3_21 (q : ℕ → E) (ℓ : ℕ → ℝ) (k : ℕ) :
 /-- **Equation (11.3.22)** of [golub2013matrix]. Let $E$ be a real vector space, let
 $q_1, q_2, \dots \in E$, and let $\ell$ be a real sequence. The columns $c_k$ satisfy
 $$c_k = \begin{cases} q_1 & k = 1, \\ q_k - \ell_{k-1}c_{k-1} & k > 1. \end{cases}$$
+
+**Reading.** Exact recursion in an arbitrary real vector space.
 -/
 theorem equation_11_3_22 (q : ℕ → E) (ℓ : ℕ → ℝ) :
     cgLDLc q ℓ 0 = q 0 ∧ ∀ i, cgLDLc q ℓ (i + 1) = q (i + 1) - ℓ i • cgLDLc q ℓ i :=
@@ -1709,7 +1817,10 @@ and $x_0 \in E$, and let $x_k = x_0 + C_kv_k$, with $v_k$ from (11.3.16) and $C_
 $$x_{k+1} = x_k + \nu_{k+1}c_{k+1}.$$
 
 The source derives $x_k = x_0 + C_kv_k = x_0 + C_{k-1}v_{k-1} + \nu_kc_k = x_{k-1} + \nu_kc_k$
-from (11.3.19) and (11.3.21). The product $C_kv_k$ is the sum $\sum_{j \le k} \nu_jc_j$. -/
+from (11.3.19) and (11.3.21). The product $C_kv_k$ is the sum $\sum_{j \le k} \nu_jc_j$.
+
+**Generalization.** Same iterate update generalized to arbitrary real vector space and sequences.
+-/
 theorem cgLDL_x_succ (α β : ℕ → ℝ) (β₀ : ℝ) (q : ℕ → E) (x₀ : E) (k : ℕ) :
     x₀ + ∑ j ∈ Finset.range (k + 1),
         cgLDLnu α β β₀ j • cgLDLc q (ldlTridiag α β).2 j =
@@ -1763,7 +1874,10 @@ structure LanczosCGState (n : ℕ) where
 $d_{k-1}$, $\nu_{k-1}$, $c_{k-1}$ and $q_k$ it computes the new $(d_k, \nu_k, c_k)$: in the
 first step $d_1 = \alpha_1$, $\nu_1 = \beta_0/d_1$ and $c_1 = q_1$; otherwise
 $\ell_{k-1} = \beta_{k-1}/d_{k-1}$, $d_k = \alpha_k - \beta_{k-1}\ell_{k-1}$,
-$\nu_k = -\beta_{k-1}\nu_{k-1}/d_k$ and $c_k = q_k - \ell_{k-1}c_{k-1}$. -/
+$\nu_k = -\beta_{k-1}\nu_{k-1}/d_k$ and $c_k = q_k - \ell_{k-1}c_{k-1}$.
+
+**Reading.** Same first and later updates with explicit rounding.
+-/
 noncomputable def lanczosCGUpdate (rnd : ℝ → M ℝ) (first : Bool) (α β d ν : ℝ)
     (c q : Fin n → ℝ) : M (ℝ × ℝ × (Fin n → ℝ)) :=
   if first then do
@@ -1779,7 +1893,10 @@ noncomputable def lanczosCGUpdate (rnd : ℝ → M ℝ) (first : Bool) (α β d 
     pure (d', ν', c')
 
 /-- One pass of the `while` body of Algorithm 11.3.2. It does nothing once `done` is set, sets
-`done` if the computed $\beta_k$ is zero, and otherwise makes one step of the algorithm. -/
+`done` if the computed $\beta_k$ is zero, and otherwise makes one step of the algorithm.
+
+**Reading.** Same active updates with explicit stop flag and rounding.
+-/
 noncomputable def lanczosCGBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (s : LanczosCGState n) : M (LanczosCGState n) :=
   if s.done then pure s else
@@ -1821,7 +1938,10 @@ The norms and the divisions $r_k/\beta_k$ are Chapter 10's `GolubVanLoan.Chapter
 every arithmetic result is rounded.
 
 The `while` loop runs at most `fuel` times, with the body
-`GolubVanLoan.Chapter11.lanczosCGBody`. The program makes no check on $A$. -/
+`GolubVanLoan.Chapter11.lanczosCGBody`. The program makes no check on $A$.
+
+**Reading.** Finite fuel and rounding around literal recurrence.
+-/
 noncomputable def algorithm_11_3_2 (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : Fin n → ℝ) (fuel : ℕ) : M (LanczosCGState n) := do
   let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -1836,22 +1956,34 @@ private theorem lanczosCGUpdate_run (first : Bool) (α β d ν : ℝ) (c q : Fin
   cases first <;>
     simp [lanczosCGUpdate, GolubVanLoan.Chapter01.algorithm_1_1_2_spec]
 
-/-- The new Lanczos vector $q_{k+1} = r_k/\beta_k$ of an exact step. -/
+/-- The new Lanczos vector $q_{k+1} = r_k/\beta_k$ of an exact step.
+
+**Reading.** Same normalized coefficient with total division.
+-/
 private noncomputable def lcgQ (s : LanczosCGState n) : Fin n → ℝ := fun i => s.r i / s.β
 
 /-- The new coefficient $\alpha_{k+1} = q_{k+1}^TAq_{k+1}$ of an exact step. -/
 private noncomputable def lcgAlpha (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosCGState n) : ℝ :=
   lcgQ s ⬝ᵥ (A *ᵥ lcgQ s)
 
-/-- The new pivot $d_{k+1}$ of an exact step. -/
+/-- The new pivot $d_{k+1}$ of an exact step.
+
+**Reading.** Same pivot formula with total division.
+-/
 private noncomputable def lcgD (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosCGState n) : ℝ :=
   if s.k = 0 then lcgAlpha A s else lcgAlpha A s - s.β * (s.β / s.d)
 
-/-- The new coefficient $\nu_{k+1}$ of an exact step. -/
+/-- The new coefficient $\nu_{k+1}$ of an exact step.
+
+**Reading.** Same nu recurrence with total division.
+-/
 private noncomputable def lcgNu (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosCGState n) : ℝ :=
   if s.k = 0 then s.β / lcgAlpha A s else -(s.β * s.ν) / lcgD A s
 
-/-- The new direction $c_{k+1}$ of an exact step. -/
+/-- The new direction $c_{k+1}$ of an exact step.
+
+**Reading.** Same direction with total division.
+-/
 private noncomputable def lcgC (s : LanczosCGState n) : Fin n → ℝ :=
   if s.k = 0 then lcgQ s else lcgQ s + (-(s.β / s.d)) • s.c
 
@@ -1860,13 +1992,19 @@ private noncomputable def lcgR (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosCGSt
     Fin n → ℝ :=
   A *ᵥ lcgQ s + (-lcgAlpha A s) • lcgQ s + (-s.β) • s.q
 
-/-- One exact step of Algorithm 11.3.2, for $\beta_k \neq 0$. -/
+/-- One exact step of Algorithm 11.3.2, for $\beta_k \neq 0$.
+
+**Reading.** Exact totalized step with bundled count and stop.
+-/
 private noncomputable def lanczosCGStep (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosCGState n) :
     LanczosCGState n :=
   ⟨s.k + 1, s.x + lcgNu A s • lcgC s, lcgQ s, lcgR A s, √(lcgR A s ⬝ᵥ lcgR A s), lcgAlpha A s,
     lcgD A s, lcgNu A s, lcgC s, false⟩
 
-/-- The exact run of one pass of the body of Algorithm 11.3.2. -/
+/-- The exact run of one pass of the body of Algorithm 11.3.2.
+
+**Reading.** Exact update or flag-setting branch.
+-/
 private theorem lanczosCGBody_run (A : Matrix (Fin n) (Fin n) ℝ) (s : LanczosCGState n) :
     Id.run (lanczosCGBody pure A s) =
       if s.done then s else if s.β = 0 then { s with done := true } else lanczosCGStep A s := by
@@ -2148,7 +2286,11 @@ update $x^{CG}_{i+1} = x^{CG}_i + \alpha^{CG}_ip_i$. The CG states are `CG.itera
 the Lanczos vector is `Arnoldi.vec`, the Lanczos residual is `Arnoldi.w`, and the coefficients
 are `Lanczos.alpha` and `Lanczos.beta`. The identification uses the dictionary
 `CG.arnoldi_vec_eq`, `CG.lanczos_alpha_zero_eq`, `CG.lanczos_alpha_succ_eq` and
-`CG.lanczos_beta_eq`. -/
+`CG.lanczos_beta_eq`.
+
+**Reading.** Finite fuel yields exact attained iterate; identifies Lanczos/CG data and extra pass
+observes stop.
+-/
 theorem algorithm_11_3_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     (fuel : ℕ) :
     let s := Id.run (algorithm_11_3_2 pure A b x₀ fuel)
@@ -2316,7 +2458,11 @@ $c_{k+1}$ is the direction of Algorithm 11.3.2 after $k + 1$ steps.
 
 The source writes the recurrence as $p_k = g_{k-1} + \tau_{k-1}p_{k-1}$, and argues that $p_k$
 is a multiple of $c_k$ because $q_k$ is a multiple of $g_{k-1}$. The minus sign in
-$p_{j+1} = -p^{CG}_j$ appears because the backbone's directions carry the sign of the residual. -/
+$p_{j+1} = -p^{CG}_j$ appears because the backbone's directions carry the sign of the residual.
+
+**Reading.** Signed convention recovered by negation, links search directions with nonzero scalar
+before grade.
+-/
 theorem equation_11_3_23 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     {k : ℕ} (hk : k + 1 ≤ Krylov.grade (toEuclideanLin A) (cgR A b x₀)) :
     -(cgIt A b x₀ 0).p = toEuclideanLin A (cgIt A b x₀ 0).x - WithLp.toLp 2 b ∧
@@ -2351,7 +2497,10 @@ and $p_{j+2}^TAg_{j+1} = p_{j+2}^TAp_{j+2}$.
 
 The source obtains both from $Ap_k = Ag_{k-1} + \tau_{k-1}Ap_{k-1}$ and Theorem 11.3.5. In its
 indices they read $\tau_{k-1} = -p_{k-1}^TAg_{k-1}/p_{k-1}^TAp_{k-1}$ and
-$p_k^TAg_{k-1} = p_k^TAp_k$. The coefficient $\tau_{j+1}$ is `CG.beta` at step $j$. -/
+$p_k^TAg_{k-1} = p_k^TAp_k$. The coefficient $\tau_{j+1}$ is `CG.beta` at step $j$.
+
+**Typo.** The numerator printed in (11.3.24) omits the transpose on $p_{k-1}$. The inner
+product here gives $p_{k-1}^TAg_{k-1}$ with the source's indices. -/
 theorem equation_11_3_24 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     (j : ℕ) :
     ((cgIt A b x₀ j).r ≠ 0 → CG.beta (toEuclideanLin A) (cgIt A b x₀ j) =
@@ -2409,7 +2558,10 @@ In the indices of the source these are $x_k = x_{k-1} - \mu_kp_k$,
 $\mu_k = g_{k-1}^Tg_{k-1}/p_k^TAp_k$, $\tau_{k-1} = g_{k-1}^Tg_{k-1}/g_{k-2}^Tg_{k-2}$,
 $g_{k-1}^Tg_{k-1} = -\mu_{k-1}g_{k-1}^TAp_{k-1}$ and
 $g_{k-2}^Tg_{k-2} = \mu_{k-1}p_{k-1}^TAp_{k-1}$. The step length is `CG.alpha`, and the
-coefficient is `CG.beta`. -/
+coefficient is `CG.beta`.
+
+**Reading.** Equivalent signed recurrence with arbitrary index via totalized ratios.
+-/
 theorem hestenesStiefel_coeffs {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     (j : ℕ) :
     (cgIt A b x₀ (j + 1)).x =
@@ -2462,7 +2614,10 @@ variable {M : Type → Type} [Monad M]
 the first step also the previous $\rho_- = r_{k-2}^Tr_{k-2}$ and direction $p_{k-1}$, it forms
 the direction $p_k = r_{k-1}$ in the first step or $p_k = r_{k-1} + \tau_{k-1}p_{k-1}$ with
 $\tau_{k-1} = \rho/\rho_-$, then $w = Ap_k$, $\mu_k = \rho/p_k^Tw$, $x_k = x_{k-1} + \mu_kp_k$
-and $r_k = r_{k-1} - \mu_kw$. It returns $(x_k, r_k, p_k)$. -/
+and $r_k = r_{k-1} - \mu_kw$. It returns $(x_k, r_k, p_k)$.
+
+**Reading.** Same recurrence with rounding and total division.
+-/
 noncomputable def cgUpdate (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (first : Bool)
     (ρ ρprev : ℝ) (x r p : Fin n → ℝ) : M ((Fin n → ℝ) × (Fin n → ℝ) × (Fin n → ℝ)) := do
   let p ← if first then pure r else do
@@ -2475,11 +2630,17 @@ noncomputable def cgUpdate (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ
   let r ← GolubVanLoan.Chapter01.algorithm_1_1_2 rnd (-μ) w r
   pure (x, r, p)
 
-/-- The direction that `GolubVanLoan.Chapter11.cgUpdate` forms in exact arithmetic. -/
+/-- The direction that `GolubVanLoan.Chapter11.cgUpdate` forms in exact arithmetic.
+
+**Reading.** Same exact first and subsequent direction with total division.
+-/
 private noncomputable def cgDir (first : Bool) (ρ ρprev : ℝ) (r p : Fin n → ℝ) : Fin n → ℝ :=
   if first then r else r + (ρ / ρprev) • p
 
-/-- The exact run of `GolubVanLoan.Chapter11.cgUpdate`, in closed form. -/
+/-- The exact run of `GolubVanLoan.Chapter11.cgUpdate`, in closed form.
+
+**Reading.** Exact closed form for totalized ratios.
+-/
 private theorem cgUpdate_run_eq (A : Matrix (Fin n) (Fin n) ℝ) (first : Bool) (ρ ρprev : ℝ)
     (x r p : Fin n → ℝ) :
     Id.run (cgUpdate pure A first ρ ρprev x r p) =
@@ -2495,7 +2656,10 @@ private theorem cgUpdate_run_eq (A : Matrix (Fin n) (Fin n) ℝ) (first : Bool) 
 /-- The exact run of `GolubVanLoan.Chapter11.cgUpdate` is one step of the backbone CG recurrence.
 Suppose that $(x, r)$ is the CG iterate and residual after $j$ steps, that $\rho = r^Tr$, and
 that either the flag `first` is set and $j = 0$, or `first` is not set, $j = i + 1$, $p$ is the
-CG direction $p_i$ and $\rho_- = r_i^Tr_i$. Then the output is $(x_{j+1}, r_{j+1}, p_j)$. -/
+CG direction $p_i$ and $\rho_- = r_i^Tr_i$. Then the output is $(x_{j+1}, r_{j+1}, p_j)$.
+
+**Reading.** Exact identification with backbone, including after zero residual.
+-/
 theorem cgUpdate_run (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (j : ℕ) (first : Bool)
     (ρ ρprev : ℝ) (x r p : Fin n → ℝ) (hx : WithLp.toLp 2 x = (cgIt A b x₀ j).x)
     (hr : WithLp.toLp 2 r = (cgIt A b x₀ j).r) (hρ : ρ = r ⬝ᵥ r)
@@ -2548,7 +2712,10 @@ structure HestenesStiefelState (n : ℕ) where
 /-- One pass of the `while` body of Algorithm 11.3.3. It does nothing once `done` is set. Otherwise
 it computes $\rho = \mathrm{fl}(r_k^Tr_k)$; if $\rho = 0$ it sets `done`, which is the test
 $\|r_k\|_2 > 0$ on the computed value, and else it makes the update
-`GolubVanLoan.Chapter11.cgUpdate`. -/
+`GolubVanLoan.Chapter11.cgUpdate`.
+
+**Reading.** Rounded squared-norm test and explicit stop.
+-/
 noncomputable def hestenesStiefelBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (s : HestenesStiefelState n) : M (HestenesStiefelState n) :=
   if s.done then pure s else do
@@ -2577,7 +2744,10 @@ The dot products, the matrix-vector products and the vector updates are Algorith
 and every arithmetic result is rounded.
 
 The `while` loop runs at most `fuel` times, with the body
-`GolubVanLoan.Chapter11.hestenesStiefelBody`. The program makes no check on $A$. -/
+`GolubVanLoan.Chapter11.hestenesStiefelBody`. The program makes no check on $A$.
+
+**Reading.** Rounds and reports attained finite-fuel state.
+-/
 noncomputable def algorithm_11_3_3 (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : Fin n → ℝ) (fuel : ℕ) : M (HestenesStiefelState n) := do
   let r₀ ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -2591,7 +2761,10 @@ private theorem initial_residual (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin 
   rw [GolubVanLoan.Chapter01.algorithm_1_1_3_spec, mulVec_neg, ← sub_eq_add_neg, CG.iterate_zero,
     CG.init_r, toEuclideanLin_toLp, WithLp.toLp_sub]
 
-/-- The exact run of one pass of the body of Algorithm 11.3.3. -/
+/-- The exact run of one pass of the body of Algorithm 11.3.3.
+
+**Reading.** Closed form with explicit stop and squared norm.
+-/
 private theorem hestenesStiefelBody_run (A : Matrix (Fin n) (Fin n) ℝ)
     (s : HestenesStiefelState n) :
     Id.run (hestenesStiefelBody pure A s) =
@@ -2703,7 +2876,10 @@ steps; and if the loop exits through its test, then $Ax = b$.
 
 The CG states are `CG.iterate`, indexed from $0$: the direction $p_k$ of the source is the
 backbone's $p_{k-1}$. The backbone's `CG.alpha` and `CG.beta` are the coefficients $\mu$ and
-$\tau$ of the source. -/
+$\tau$ of the source.
+
+**Reading.** At bounded fuel returns attained iterate; exact solution when stop is observed.
+-/
 theorem algorithm_11_3_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (b x₀ : Fin n → ℝ)
     (fuel : ℕ) :
     let s := Id.run (algorithm_11_3_3 pure A b x₀ fuel)
@@ -2749,7 +2925,10 @@ structure PracticalCGState (n : ℕ) where
 /-- One pass of the `while` body of (11.3.26). It does nothing once `done` is set. Otherwise it
 computes $\mathrm{fl}(\sqrt{\rho_c})$ and compares it exactly with $\delta$; if the root is at
 most $\delta$ it sets `done`, and else it makes the update `GolubVanLoan.Chapter11.cgUpdate` and
-sets $\rho_- = \rho_c$ and $\rho_c = r^Tr$. -/
+sets $\rho_- = \rho_c$ and $\rho_c = r^Tr$.
+
+**Reading.** Exact same active update rounded with explicit stop state.
+-/
 noncomputable def practicalCGBody (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (δ : ℝ)
     (s : PracticalCGState n) : M (PracticalCGState n) :=
   if s.done then pure s else do
@@ -2778,7 +2957,10 @@ The arithmetic that feeds the test ($\|b\|_2 = \sqrt{b^Tb}$, $\delta$ and $\sqrt
 rounded, and the comparison is exact.
 
 The `while` loop runs at most `fuel` times, with the body
-`GolubVanLoan.Chapter11.practicalCGBody`. -/
+`GolubVanLoan.Chapter11.practicalCGBody`.
+
+**Reading.** Finite fuel, rounded stopping threshold, and stored residual recurrence.
+-/
 noncomputable def practicalCG (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ)
     (tol : ℝ) (fuel : ℕ) : M (PracticalCGState n) := do
   let r ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -2788,7 +2970,10 @@ noncomputable def practicalCG (rnd : ℝ → M ℝ) (A : Matrix (Fin n) (Fin n) 
   let δ ← rnd (tol * nb)
   (List.range fuel).foldlM (fun s _ => practicalCGBody rnd A δ s) ⟨0, x₀, r, r, ρ, 0, false⟩
 
-/-- The exact run of one pass of the body of (11.3.26). -/
+/-- The exact run of one pass of the body of (11.3.26).
+
+**Reading.** Same exact step or recorded termination.
+-/
 private theorem practicalCGBody_run (A : Matrix (Fin n) (Fin n) ℝ) (δ : ℝ)
     (s : PracticalCGState n) :
     Id.run (practicalCGBody pure A δ s) =
@@ -2893,7 +3078,11 @@ the following properties.
 * If $k <$ `fuel`, then the loop stopped through its test.
 * On exit through the test, $\|b - Ax\|_2 \le \mathrm{tol} \cdot \|b\|_2$.
 
-The statement has no hypothesis on $A$. The CG states are `CG.iterate`, indexed from $0$. -/
+The statement has no hypothesis on $A$. The CG states are `CG.iterate`, indexed from $0$.
+
+**Generalization.** The exact state and stopping-test identities hold for arbitrary real square
+matrices with Lean's total division. Positive definiteness is needed for the textbook's CG
+convergence argument. -/
 theorem equation_11_3_26 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : Fin n → ℝ) (tol : ℝ)
     (fuel : ℕ) :
     let s := Id.run (practicalCG pure A b x₀ tol fuel)
@@ -2933,7 +3122,10 @@ $$\|x_c - x_*\|_2 \le \mathrm{tol} \cdot \|A^{-1}\|_2\|b\|_2 \le \mathrm{tol} \c
   \kappa_2(A)\|x_*\|_2.$$
 
 The source applies this to the final iterate $x_c$ of (11.3.26), and writes the first step as
-$\|x_c - x_*\| = \|A^{-1}(b - Ax_c)\|_2$. The matrix norm is `Matrix.Norms.L2Operator`. -/
+$\|x_c - x_*\| = \|A^{-1}(b - Ax_c)\|_2$. The matrix norm is `Matrix.Norms.L2Operator`.
+
+**Reading.** Relative bound holds for any nonsingular A with nonnegative tolerance.
+-/
 theorem cg_relativeError_le (hA : IsUnit A) {b xs xc : 𝔼 n} (hxs : toEuclideanLin A xs = b)
     {tol : ℝ} (htol : 0 ≤ tol) (h : ‖b - toEuclideanLin A xc‖ ≤ tol * ‖b‖) :
     ‖xc - xs‖ ≤ tol * ‖A⁻¹‖ * ‖b‖ ∧ tol * ‖A⁻¹‖ * ‖b‖ ≤ tol * NormedRing.condNumber A * ‖xs‖ := by
@@ -2994,7 +3186,10 @@ $$\phi_{BB^T}(y) = \tfrac12 y^TBB^Ty - y^Tc = \tfrac12\|B^Ty - B^{-1}c\|_2^2 - \
   c^T(BB^T)^{-1}c.$$
 
 The source writes $A$ for the matrix $B$ of the second identity. The quadratic $\phi_M$ with
-right-hand side $d$ is `energyFunctional M d`. -/
+right-hand side $d$ is `energyFunctional M d`.
+
+**Generalization.** Same Gram-based completions; first identity extends to arbitrary rectangular A.
+-/
 theorem energyFunctional_normalEquations {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : 𝔼 m)
     (x : 𝔼 n) :
     energyFunctional (toEuclideanLin Aᵀ ∘ₗ toEuclideanLin A) (toEuclideanLin Aᵀ b) x =
@@ -3036,7 +3231,10 @@ $x_0 + \mathcal{K}(A^TA, A^Tr_0, k)$ of (11.3.28).
 This is the remark after Figure 11.3.1 that the CGNR method can be applied if $A$ is
 rectangular, and so provides a normal equation framework for sparse, full rank least squares
 problems. Full column rank is the injectivity of $x \mapsto Ax$, and the minimization is
-`IsMinResidual`. -/
+`IsMinResidual`.
+
+**Generalization.** Extends residual minimization to rectangular matrices of full column rank.
+-/
 theorem cgnr_isMinResidual_of_injective {m : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : Function.Injective (toEuclideanLin A)) (b : 𝔼 m) (x₀ : 𝔼 n) (k : ℕ) :
     IsMinResidual (toEuclideanLin A) b x₀
@@ -3074,7 +3272,10 @@ $r_0 = b - Ax_0$.
 This is the remark after Figure 11.3.1 that the CGNE method can also be applied to rectangular
 problems, but the underlying system must be consistent. Full row rank is the injectivity of
 $y \mapsto A^Ty$, which makes $AA^T$ positive definite, so that CG on the $y$-problem is the
-method of this section. The minimization is `IsMinError`. -/
+method of this section. The minimization is `IsMinError`.
+
+**Generalization.** Extends to consistent rectangular full-row-rank systems, x0=Aᵀy0.
+-/
 theorem cgne_isMinError_of_injective_transpose {m : ℕ} {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : Function.Injective (toEuclideanLin Aᵀ)) {b : 𝔼 m} {xs : 𝔼 n}
     (hxs : toEuclideanLin A xs = b) (y₀ : 𝔼 m) (k : ℕ) :
@@ -3134,7 +3335,10 @@ $$\mu = \frac{z_c^Tz_c}{(Ap_c)^T(Ap_c)}, \quad x_+ = x_c + \mu p_c, \quad r_+ = 
   \quad z_+ = A^Tr_+, \quad \tau = \frac{z_+^Tz_+}{z_c^Tz_c}, \quad p_+ = z_+ + \tau p_c.$$
 
 The matrix $A$ may be rectangular. The products and the updates are Algorithms 1.1.1–1.1.3, and
-every arithmetic result is rounded. The loop has no stopping test. -/
+every arithmetic result is rounded. The loop has no stopping test.
+
+**Reading.** Same recurrence with rounded operations, total division and fixed pass count.
+-/
 noncomputable def cgnr {m : ℕ} (rnd : ℝ → M ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     (x₀ : Fin n → ℝ) (fuel : ℕ) : M (CGNRState m n) := do
   let r ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -3152,7 +3356,10 @@ noncomputable def cgnr {m : ℕ} (rnd : ℝ → M ℝ) (A : Matrix (Fin m) (Fin 
     let p ← GolubVanLoan.Chapter01.algorithm_1_1_2 rnd τ s.p z
     pure (⟨x, r, z, p⟩ : CGNRState m n)) ⟨x₀, r, z, z⟩
 
-/-- One exact CGNR step. -/
+/-- One exact CGNR step.
+
+**Reading.** Closed-form update with total division.
+-/
 private noncomputable def cgnrStep {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (s : CGNRState m n) :
     CGNRState m n :=
   ⟨s.x + (s.z ⬝ᵥ s.z / ((A *ᵥ s.p) ⬝ᵥ (A *ᵥ s.p))) • s.p,
@@ -3187,7 +3394,10 @@ with $k$ passes returns the state of the backbone CGNR iteration after $k$ steps
 $A^Tr$.
 
 The backbone iteration is `Krylov.CGNR.iterate`, which makes one product with $A$ and one with
-$A^T$ per step. Its iterates are those of CG on the normal equations, as in (11.3.28). -/
+$A^T$ per step. Its iterates are those of CG on the normal equations, as in (11.3.28).
+
+**Reading.** Exact agreement with total backbone on arbitrary rectangular A.
+-/
 theorem cgnr_spec {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (x₀ : Fin n → ℝ)
     (k : ℕ) :
     let s := Id.run (cgnr pure A b x₀ k)
@@ -3250,7 +3460,11 @@ $$\mu = \frac{r_c^Tr_c}{p_c^Tp_c}, \quad x_+ = x_c + \mu p_c, \quad r_+ = r_c - 
   \tau = \frac{r_+^Tr_+}{r_c^Tr_c}, \quad p_+ = A^Tr_+ + \tau p_c.$$
 
 The matrix $A$ may be rectangular. The products and the updates are Algorithms 1.1.1–1.1.3, and
-every arithmetic result is rounded. The loop has no stopping test. -/
+every arithmetic result is rounded. The loop has no stopping test.
+
+**Reading.** Same recurrence with rounded operations, arbitrary x0, total division and fixed pass
+count.
+-/
 noncomputable def cgne {m : ℕ} (rnd : ℝ → M ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ)
     (x₀ : Fin n → ℝ) (fuel : ℕ) : M (CGNEState m n) := do
   let r ← GolubVanLoan.Chapter01.algorithm_1_1_3 rnd A (-x₀) b
@@ -3268,7 +3482,10 @@ noncomputable def cgne {m : ℕ} (rnd : ℝ → M ℝ) (A : Matrix (Fin m) (Fin 
     let p ← GolubVanLoan.Chapter01.algorithm_1_1_2 rnd τ s.p Atr
     pure (⟨x, r, p⟩ : CGNEState m n)) ⟨x₀, r, p⟩
 
-/-- One exact CGNE step. -/
+/-- One exact CGNE step.
+
+**Reading.** Exact scalar and vector update with total division.
+-/
 private noncomputable def cgneStep {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (s : CGNEState m n) :
     CGNEState m n :=
   ⟨s.x + (s.r ⬝ᵥ s.r / (s.p ⬝ᵥ s.p)) • s.p,
@@ -3301,7 +3518,10 @@ with $k$ passes returns the state of the backbone CGNE iteration after $k$ steps
 
 The backbone iteration is `Krylov.CGNE.iterate`, which is $A^T$ applied to CG on $AA^Ty = b$
 (`Krylov.CGNE.iterate_eq`). So for a consistent system $Ax = b$ its iterates are those of
-`GolubVanLoan.Chapter11.cgne_isMinError`. -/
+`GolubVanLoan.Chapter11.cgne_isMinError`.
+
+**Reading.** Exact agreement with total backbone on arbitrary rectangular A.
+-/
 theorem cgne_spec {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (x₀ : Fin n → ℝ)
     (k : ℕ) :
     let s := Id.run (cgne pure A b x₀ k)

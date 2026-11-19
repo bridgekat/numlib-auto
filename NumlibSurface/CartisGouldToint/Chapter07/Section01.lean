@@ -68,6 +68,12 @@ The Lagrangian is the backbone `Constrained.innerLagrangian`, and the measure is
 * **Theorem 7.1.1** (generalization). The source assumes that $\mathcal{S}$ is a closed subset of
   $\mathcal{C}$. Neither closedness nor $\mathcal{S} \subseteq \mathcal{C}$ is needed, and
   $\mathcal{C}$ does not occur in the statement. See `CartisGouldToint.Chapter07.theorem_7_1_1`.
+* **Text after Theorem 7.1.1** (correction). A local minimizer over the ambient
+  feasible set follows when $\mathcal{S}$ contains a relative neighborhood of $x_*$.
+  The printed exclusion of the artificial boundary alone is insufficient.
+* **Equation (7.1.2)** (generalization). The inherited measure is total outside
+  the source's differentiability and feasibility assumptions. Its supremum over
+  an empty feasible unit-ball set is zero. See `CartisGouldToint.Chapter07.omegaL`.
 * **Equations (7.1.3)–(7.1.4)** (typo). The source evaluates $\mathcal{C}(x)$ and the gradient at a
   free $x$; they are evaluated at $x_*$ and $x_\epsilon$. See
   `CartisGouldToint.Chapter07.IsFirstOrderMinimizerGC` and
@@ -132,10 +138,14 @@ theorem lagrangianVec_eq_lagrangian :
 $\mathcal{S} \subseteq \mathbb{R}^n$ and $c : \mathbb{R}^n \to \mathbb{R}^m$. The **feasible
 set** is
 $$\mathcal{F}(\mathcal{S}, c) = \{x \in \mathcal{S} \mid c(x) = 0\}.$$
+
+**Reading.** Same feasible-set comprehension for an arbitrary ambient set.
 -/
 def feasibleSet (S : Set ℝⁿ) (c : ℝⁿ → ℝᵐ) : Set ℝⁿ := {x ∈ S | c x = 0}
 
 /-- A point lies in $\mathcal{F}(\mathcal{S}, c)$ if and only if $x \in \mathcal{S}$ and $c(x) = 0$.
+
+**Reading.** Unfolds membership for an arbitrary ambient set.
 -/
 theorem mem_feasibleSet : x ∈ feasibleSet S c ↔ x ∈ S ∧ c x = 0 := Iff.rfl
 
@@ -151,7 +161,13 @@ $\mathcal{F}(\mathcal{S}, c)$.
 
 **Generalization.** The source assumes that $\mathcal{S}$ is a closed subset of $\mathcal{C}$.
 Neither closedness nor $\mathcal{S} \subseteq \mathcal{C}$ is needed, and $\mathcal{C}$ does not
-occur in the statement. -/
+occur in the statement.
+
+**Correction.** The subsequent local-optimality claim needs a relative neighborhood
+of $x_*$ in $\mathcal{C}$. With $\mathcal{C}=[0,1]$, $\mathcal{S}=\{0\}$, $c=0$ and
+$f(x)=-x$, the point $0$ lies outside $\partial\mathcal{S}\setminus\partial\mathcal{C}$.
+It minimizes the Lagrangian over $\mathcal{S}$ and fails to minimize $f$ locally in
+$\mathcal{F}(\mathcal{C},c)$. -/
 theorem theorem_7_1_1 (hx : x ∈ S) (hmin : IsMinOn (fun z => lagrangianVec f c z y) S x)
     (hc : c x = 0) : x ∈ feasibleSet S c ∧ IsMinOn f (feasibleSet S c) x :=
   ⟨⟨hx, hc⟩, Constrained.isMinOn_of_isMinOn_sub_inner hc hmin⟩
@@ -165,14 +181,22 @@ measure (7.1.2) of $h = \mathcal{L}(\cdot, y)$,
 $$\omega_{\mathcal{L},\mathcal{C},1}(x, y) = -\min_{d \in \mathcal{C}(x) \cap \mathcal{B}}
   \nabla_x^1 \mathcal{L}(x, y)[d].$$
 
-The measure is `CartisGouldToint.Chapter06.omega1` of $\mathcal{L}(\cdot, y)$, and it is defined
-for every $x$. As in the source, it is meaningful only for $x \in \mathcal{C}$; its
-nonnegativity `CartisGouldToint.Chapter07.omegaL_nonneg` needs $x \in \mathcal{C}$. -/
+The measure is `CartisGouldToint.Chapter06.omega1` of $\mathcal{L}(\cdot, y)$.
+The source evaluates it on feasible points for a differentiable Lagrangian.
+The Lean definition is total and gives zero when the feasible direction set inside
+the unit ball is empty. Its nonnegativity theorem assumes $x\in\mathcal{C}$.
+
+**Generalization.** Substitutes the Lagrangian for the objective and extends the supremum and
+derivative conventions beyond the source domain.
+-/
 noncomputable def omegaL (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (x : ℝⁿ) (y : ℝᵐ) : ℝ :=
   Chapter06.omega1 (fun z => lagrangianVec f c z y) C x
 
 /-- The measure $\omega_{\mathcal{L},\mathcal{C},1}(x, y)$ is the first-order measure
-$\omega_{h,\mathcal{C},1}(x)$ of (6.1.5) for $h = \mathcal{L}(\cdot, y)$. -/
+$\omega_{h,\mathcal{C},1}(x)$ of (6.1.5) for $h = \mathcal{L}(\cdot, y)$.
+
+**Reading.** Unfolds the same totalized first-order Lagrangian quantity.
+-/
 theorem omegaL_def :
     omegaL f c C x y = Chapter06.omega1 (fun z => lagrangianVec f c z y) C x := rfl
 
@@ -217,7 +241,10 @@ def IsFirstOrderMinimizerGC (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Se
   x ∈ C ∧ c x = 0 ∧ ∃ y, omegaL f c C x y = 0
 
 /-- The definition of a first-order minimizer, unfolded: $x \in \mathcal{C}$, $c(x) = 0$, and
-$\omega_{\mathcal{L},\mathcal{C},1}(x, y) = 0$ for some $y$. -/
+$\omega_{\mathcal{L},\mathcal{C},1}(x, y) = 0$ for some $y$.
+
+**Correction.** Unfolds the corrected first-order conditions.
+-/
 theorem isFirstOrderMinimizerGC_iff :
     IsFirstOrderMinimizerGC f c C x ↔ x ∈ C ∧ c x = 0 ∧ ∃ y, omegaL f c C x y = 0 :=
   Iff.rfl
@@ -234,14 +261,18 @@ $$\|c(x_\epsilon)\| \le \epsilon_0, \qquad \omega_{\mathcal{L},\mathcal{C},1}(x_
 **Typo.** The source evaluates $\mathcal{C}(x)$ and the gradient at a free $x$; here they are
 evaluated at $x_\epsilon$.
 
-The multiplier $y$ is an explicit argument. -/
+The multiplier $y$ is an explicit argument. Quantifying existentially over $y$
+gives the source condition. The real tolerance arguments also allow zero. -/
 def IsApproxFirstOrderGC (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (C : Set ℝⁿ) (ε₀ ε₁ : ℝ) (x : ℝⁿ)
     (y : ℝᵐ) : Prop :=
   x ∈ C ∧ ‖c x‖ ≤ ε₀ ∧ omegaL f c C x y ≤ ε₁ * √(‖y‖ ^ 2 + 1)
 
 /-- The definition of an approximate first-order minimizer, unfolded: $x \in \mathcal{C}$,
 $\|c(x)\| \le \epsilon_0$ and $\omega_{\mathcal{L},\mathcal{C},1}(x, y) \le \epsilon_1
-\sqrt{\|y\|^2 + 1}$. -/
+\sqrt{\|y\|^2 + 1}$.
+
+**Reading.** Unfolds the witness-specific feasibility and scaled stationarity inequalities.
+-/
 theorem isApproxFirstOrderGC_iff {ε₀ ε₁ : ℝ} :
     IsApproxFirstOrderGC f c C ε₀ ε₁ x y ↔
       x ∈ C ∧ ‖c x‖ ≤ ε₀ ∧ omegaL f c C x y ≤ ε₁ * √(‖y‖ ^ 2 + 1) :=

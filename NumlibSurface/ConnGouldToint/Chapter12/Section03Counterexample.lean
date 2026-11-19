@@ -24,6 +24,9 @@ instead of the empty active set of the limit.
 
 ## Deviations from the source
 
+* **Correction.** A convergent interval example with radii bounded below disproves eventual
+  identification at Cauchy points. See
+  `ConnGouldToint.Chapter12.theorem_12_3_8_nonvanishing_radius_counterexample`.
 * **Theorem 12.3.8** (correction). Eventual identification of the active set at the generalized
   Cauchy points fails for a scalar interval run whose radii alternate between $2$ and $1$. See
   `ConnGouldToint.Chapter12.theorem_12_3_8_nonvanishing_radius_counterexample`.
@@ -302,7 +305,12 @@ The run has $f(x) = (x - 1/2)^2/2$, $c_0(x) = x$ and $c_1(x) = 1 - x$, so the ac
 $1/2$ is empty and the multiplier and independence conditions hold trivially. At even $k$ the
 radius is $2$, the model is the linearization of $f$ at $x_k$, and the trial $0$ is rejected. At
 odd $k$ the radius is $1$, the model is $f$, and the trial halfway between $x_k$ and $1/2$ is
-accepted with ratio $1$. The step is the Cauchy step, so AA.5 holds with equality. -/
+accepted with ratio $1$. The step is the Cauchy step, so AA.5 holds with equality.
+
+**Correction.** With alternating positive radii and rejected trials on the boundary, the generalized
+Cauchy points can have the wrong active set infinitely often even when the iterates converge to an
+interior minimizer. The trial equals the Cauchy point and preserves all its active constraints.
+-/
 theorem theorem_12_3_8_nonvanishing_radius_counterexample :
     ∃ (f : ℝ → ℝ) (c : Fin 2 → ℝ → ℝ) (Q : GeneralizedCauchyParams) (κ : ℝ)
       (run : BTRRun f defaultBTRParams (fun _ _ _ _ ↦ True)),

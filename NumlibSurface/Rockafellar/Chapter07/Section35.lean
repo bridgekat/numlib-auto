@@ -100,17 +100,28 @@ and 35.8.1. The proofs specialize the backbone modules `Numlib.Analysis.Convex.S
 
 ## Deviations from the source
 
-* **Theorems 35.6–35.10** (reading). The book takes $K$ concave-convex on
-  $\mathbb{R}^m \times \mathbb{R}^n$ with values in $[-\infty, +\infty]$ and finite on the open set
-  $C \times D$. Here $K$ is real-valued and concave-convex on $C \times D$, and $\partial K$ is
-  tested against $C$ and $D$. The two readings agree after the simple extension of $K$ off
-  $C \times D$. See `Rockafellar.saddleSubdifferentialOn_univ_eq`.
-* **Theorem 35.7 and Corollary 35.7.1** (reading). The ball $B$ is the unit ball of the supremum
-  norm, not the Euclidean unit ball. The two norms differ by a factor of at most $\sqrt 2$, and
+* **Theorem 35.2** (reading). Lean assumes each sampling set is dense in its respective
+  domain. The source only requires the convex hull of the closure of the sampling
+  product to contain $C \times D$.
+* **Theorems 35.6–35.10** (reading). Lean uses a real-valued $K$ on an open product
+  $C \times D$ and tests subgradients against $C$ and $D$. The source formulates the
+  results through extended-real functions, with different local finiteness assumptions
+  in Theorem 35.8 and Corollary 35.8.1.
+* **Theorem 35.7 and Corollary 35.7.1** (reading). Lean's product norm is the maximum of
+  the norms of the two coordinates. The source uses the Euclidean product norm.
+  The two norms differ by a factor of at most $\sqrt 2$, and
   every statement holds for all $\varepsilon > 0$, so the statements are equivalent. The same
   applies to the balls $\varepsilon B$ of Theorems 35.9 and 35.10, which are stated here as
   continuity and convergence in the topology of the product. See `Rockafellar.theorem_35_7_subdiff`
   and `Rockafellar.corollary_35_7_1_subdiff`.
+* **Theorem 35.7** (generalization). The converging sequence of points can start outside
+  $C \times D$. Openness guarantees eventual membership.
+* **Theorem 35.8, converse, and Corollary 35.8.1, final clause** (correction). At the
+  origin the source's §34 example $K(u,v)$ equals $0$ on the axes and equals $\pm\infty$
+  with the sign of $uv$ elsewhere. Its saddle subdifferential is a singleton and both
+  coordinate derivatives are zero, but it is never finite on a neighborhood of the
+  origin. Lean assumes a finite open product in Theorem 35.8 and omits the final clause
+  of Corollary 35.8.1.
 * **Theorem 35.10** (generalization). The book assumes that the functions are differentiable on all
   of $C \times D$. `Rockafellar.theorem_35_10` needs differentiability only at the point in
   question.
@@ -220,7 +231,11 @@ D$. That weaker hypothesis is not formalized; the statement here drops the conve
 `Rockafellar.theorem_10_6_ab` does for Theorem 10.6.
 
 The index type $I$ is arbitrary, so the family can be empty. The norm on
-$\mathbb{R}^m \times \mathbb{R}^n$ is the supremum norm. -/
+$\mathbb{R}^m \times \mathbb{R}^n$ is the supremum norm.
+
+**Reading.** Replaces containment in the convex hull of the sampling-product closure with density of
+both sampling sets.
+-/
 theorem theorem_35_2 (hC : Convex ℝ C) (hCro : ri C = C) (hD : Convex ℝ D) (hDro : ri D = D)
     {K : ι → Rn m × Rn n → ℝ} (hK : ∀ i, ConcaveConvexOn C D (K i)) (hC'sub : C' ⊆ C)
     (hCdense : C ⊆ closure C') (hD'sub : D' ⊆ D) (hDdense : D ⊆ closure D')
@@ -510,7 +525,11 @@ $$K'(u, v; u', v') = K'(u, v; u', 0) + K'(u, v; 0, v').$$
 The proof does not use the convexity of $C$ and $D$; it uses only that $C$ and $D$ are open.
 
 $K'(u, v; q)$ is `ConvexAnalysis.dirDerivReal K (u, v) q`, the limit of the difference quotient
-as the step decreases to $0$. `Rockafellar.theorem_35_6_tendsto` shows that the limit exists. -/
+as the step decreases to $0$. `Rockafellar.theorem_35_6_tendsto` shows that the limit exists.
+
+**Reading.** The additive directional derivative formula uses a real-valued function concave-convex
+only on the open product.
+-/
 theorem theorem_35_6 (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen D) (_hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) (q : Rn m × Rn n) :
     dirDerivReal K (u, v) q
@@ -523,7 +542,10 @@ $C \subseteq \mathbb{R}^m$ and $D \subseteq \mathbb{R}^n$ be open convex sets, l
 \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}$ be concave-convex on $C \times D$, and let
 $u \in C$ and $v \in D$. Then for every $q \in \mathbb{R}^m \times \mathbb{R}^n$,
 $$\frac{K((u, v) + t q) - K(u, v)}{t} \to K'(u, v; q) \qquad \text{as } t \downarrow 0.$$
-The book calls this part of the theorem "problematical". -/
+The book calls this part of the theorem "problematical".
+
+**Reading.** States the right-hand difference quotient limit for the real-valued local model.
+-/
 theorem theorem_35_6_tendsto (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen D)
     (_hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
     (q : Rn m × Rn n) :
@@ -536,7 +558,10 @@ theorem theorem_35_6_tendsto (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen
 Let $C \subseteq \mathbb{R}^m$ and $D \subseteq \mathbb{R}^n$ be open convex sets, let $K :
 \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}$ be concave-convex on $C \times D$, and let
 $u \in C$ and $v \in D$. Then $K'(u, v; \cdot, \cdot)$ is a finite concave-convex function on
-all of $\mathbb{R}^m \times \mathbb{R}^n$. -/
+all of $\mathbb{R}^m \times \mathbb{R}^n$.
+
+**Reading.** The derivative is concave-convex as a real-valued function in the directions.
+-/
 theorem theorem_35_6_concaveConvex (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen D)
     (_hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) :
     ConcaveConvexOn (Set.univ : Set (Rn m)) (Set.univ : Set (Rn n))
@@ -547,7 +572,10 @@ theorem theorem_35_6_concaveConvex (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : 
 Let $C \subseteq \mathbb{R}^m$ and $D \subseteq \mathbb{R}^n$ be open convex sets, let $K :
 \mathbb{R}^m \times \mathbb{R}^n \to \mathbb{R}$ be concave-convex on $C \times D$, and let
 $u \in C$ and $v \in D$. Then $K'(u, v; c q) = c K'(u, v; q)$ for every $c > 0$ and every
-$q \in \mathbb{R}^m \times \mathbb{R}^n$. -/
+$q \in \mathbb{R}^m \times \mathbb{R}^n$.
+
+**Reading.** States positive homogeneity for the derivative in the real-valued local model.
+-/
 theorem theorem_35_6_posHom (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen D)
     (_hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) {c : ℝ}
     (hc : 0 < c) (q : Rn m × Rn n) :
@@ -574,7 +602,11 @@ The inequality is stated without extended values: for every real $\mu < K'(u, v;
 eventually $\mu < K_i'(u_i, v_i; u', 0)$.
 
 The proof needs a step that the book does not write out: finite concave-convex functions
-converge continuously, that is, $K_i(u_i, v_i) \to K(u, v)$. -/
+converge continuously, that is, $K_i(u_i, v_i) \to K(u, v)$.
+
+**Reading.** Uses an eventual strict lower-bound formulation, and the point sequence only has to
+belong to the open product eventually.
+-/
 theorem theorem_35_7_fst (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ p ∈ C ×ˢ D, Tendsto (fun i => Ks i p) atTop (𝓝 (K p))) (hu : u ∈ C) (hv : v ∈ D)
@@ -594,7 +626,10 @@ and $v_i \to v$. Then for every $v' \in \mathbb{R}^n$,
 $$\limsup_{i \to \infty} K_i'(u_i, v_i; 0, v') \le K'(u, v; 0, v').$$
 
 The inequality is stated without extended values: for every real $\mu > K'(u, v; 0, v')$,
-eventually $K_i'(u_i, v_i; 0, v') < \mu$. -/
+eventually $K_i'(u_i, v_i; 0, v') < \mu$.
+
+**Reading.** Uses an eventual strict upper-bound formulation with eventual product membership.
+-/
 theorem theorem_35_7_snd (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hKs : ∀ i, ConcaveConvexOn C D (Ks i)) (hK : ConcaveConvexOn C D K)
     (hconv : ∀ p ∈ C ×ˢ D, Tendsto (fun i => Ks i p) atTop (𝓝 (K p))) (hu : u ∈ C) (hv : v ∈ D)
@@ -635,7 +670,10 @@ $u \in C$ and $v \in D$. Then for every $u' \in \mathbb{R}^m$ the function
 $(x, y) \mapsto K'(x, y; u', 0)$ is lower semicontinuous at $(u, v)$.
 
 Here $K'(x, y; u', 0)$ is written as the directional derivative of $K(\cdot, y)$ at $x$ in the
-direction $u'$. The proof applies Theorem 35.7 to the constant sequence $K_i = K$. -/
+direction $u'$. The proof applies Theorem 35.7 to the constant sequence $K_i = K$.
+
+**Reading.** Gives lower semicontinuity at each open-product point for the real-valued local model.
+-/
 theorem corollary_35_7_1_fst (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) (u' : Rn m) :
     LowerSemicontinuousAt (fun p : Rn m × Rn n => dirDerivReal (fun w => K (w, p.2)) p.1 u')
@@ -649,7 +687,10 @@ $u \in C$ and $v \in D$. Then for every $v' \in \mathbb{R}^n$ the function
 $(x, y) \mapsto K'(x, y; 0, v')$ is upper semicontinuous at $(u, v)$.
 
 Here $K'(x, y; 0, v')$ is written as the directional derivative of $K(x, \cdot)$ at $y$ in the
-direction $v'$. -/
+direction $v'$.
+
+**Reading.** Gives upper semicontinuity at each open-product point for the real-valued local model.
+-/
 theorem corollary_35_7_1_snd (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) (v' : Rn n) :
     UpperSemicontinuousAt (fun p : Rn m × Rn n => dirDerivReal (fun x => K (p.1, x)) p.2 v')
@@ -694,7 +735,11 @@ differentiable at $(u, v)$ with gradient $\nabla K(u, v) = q$, then $\partial K(
 
 The gradient is a pair $q = (u^*, v^*)$, and `ConvexAnalysis.HasSaddleGradientAt K q (u, v)`
 says that $K$ has the Fréchet derivative $(u', v') \mapsto \langle u', u^* \rangle + \langle v',
-v^* \rangle$ at $(u, v)$. The subdifferential is relative to $C \times D$. -/
+v^* \rangle$ at $(u, v)$. The subdifferential is relative to $C \times D$.
+
+**Reading.** States the genuine gradient characterization for real-valued functions on the open
+product.
+-/
 theorem theorem_35_8_gradient (hCo : IsOpen C) (_hC : Convex ℝ C) (hDo : IsOpen D)
     (_hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D)
     (hd : HasSaddleGradientAt K q (u, v)) : saddleSubdifferentialOn C D K (u, v) = {q} :=
@@ -706,7 +751,12 @@ $D \subseteq \mathbb{R}^n$ be open convex sets, let $K : \mathbb{R}^m \times \ma
 differentiable at $(u, v)$ if and only if $\partial K(u, v)$ consists of a single point.
 
 The subdifferential is relative to $C \times D$. The converse direction is proved from Corollary
-35.7.1, which gives the estimate of Fréchet differentiability directly. -/
+35.7.1, which gives the estimate of Fréchet differentiability directly.
+
+**Correction.** The source assumes only a finite value at the point. For the non-simple
+saddle-function in §34 whose off-axis infinities have the sign of $uv$, the two coordinate
+slices at the origin are zero and the subdifferential is $\{(0,0)\}$. Joint differentiability
+fails because every neighborhood contains infinite values. -/
 theorem theorem_35_8 (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) :
     DifferentiableAt ℝ K (u, v) ↔ ∃ q, saddleSubdifferentialOn C D K (u, v) = {q} :=
@@ -719,7 +769,10 @@ differentiable at $(u, v)$ if and only if $K'(u, v; \cdot, \cdot)$ is a linear f
 $\mathbb{R}^m \times \mathbb{R}^n$.
 
 The last clause of the corollary, that finiteness of the $m + n$ two-sided partial derivatives
-at $(u, v)$ implies differentiability, is not formalized. -/
+at $(u, v)$ implies differentiability, is omitted.
+
+**Correction.** The §34 example described in `Rockafellar.theorem_35_8` has both finite
+two-sided partial derivatives at the origin and fails to be jointly differentiable. -/
 theorem corollary_35_8_1 (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) (hu : u ∈ C) (hv : v ∈ D) :
     DifferentiableAt ℝ K (u, v) ↔ IsLinearMap ℝ (dirDerivReal K (u, v)) :=
@@ -739,7 +792,11 @@ $C \subseteq \mathbb{R}^m$ and $D \subseteq \mathbb{R}^n$ be open convex sets, a
 of points of $C \times D$ at which $K$ is not differentiable has Lebesgue measure $0$.
 
 The measure is the product of the Lebesgue measures of $\mathbb{R}^m$ and $\mathbb{R}^n$. The
-proof combines Theorem 35.1 with Rademacher's theorem, as in Section 25. -/
+proof combines Theorem 35.1 with Rademacher's theorem, as in Section 25.
+
+**Reading.** The complement of differentiability points has zero product Lebesgue measure in the
+real-valued local model.
+-/
 theorem theorem_35_9_measure (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) :
     volume ((C ×ˢ D) \ {p : Rn m × Rn n | DifferentiableAt ℝ K p}) = 0 := by
@@ -750,7 +807,11 @@ theorem theorem_35_9_measure (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen 
 /-- **Theorem 35.9** of [rockafellar1970convex], density. Let $C \subseteq \mathbb{R}^m$ and
 $D \subseteq \mathbb{R}^n$ be open convex sets, and let $K : \mathbb{R}^m \times \mathbb{R}^n
 \to \mathbb{R}$ be concave-convex on $C \times D$. Then $C \times D$ is contained in the closure
-of the set of points at which $K$ is differentiable. -/
+of the set of points at which $K$ is differentiable.
+
+**Reading.** Uses closure of the differentiability set, which is equivalent to density of its
+intersection with the open product.
+-/
 theorem theorem_35_9_dense (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     (hK : ConcaveConvexOn C D K) : C ×ˢ D ⊆ closure {p : Rn m × Rn n | DifferentiableAt ℝ K p} :=
   subset_closure_differentiableAt_of_concaveConvexOn hCo hC hDo hD hK
@@ -765,7 +826,10 @@ to $S$.
 There is no canonical function $\nabla K$ without a choice of values off $S$, so the statement
 takes any $G$ that represents the gradient on $S$. The gradient is unique where it exists, so
 $G$ is determined on $S$. The case where $S$ is the set of points of differentiability in
-$C \times D$ is the statement of the book. -/
+$C \times D$ is the statement of the book.
+
+**Reading.** Continuity holds on any chosen subset where a gradient is given.
+-/
 theorem theorem_35_9_continuousOn (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D)
     (hD : Convex ℝ D) (hK : ConcaveConvexOn C D K) {S : Set (Rn m × Rn n)} (hS : S ⊆ C ×ˢ D)
     {G : Rn m × Rn n → Rn m × Rn n} (hG : ∀ p ∈ S, HasSaddleGradientAt K (G p) p) :
@@ -797,7 +861,11 @@ $C \subseteq \mathbb{R}^m$ and $D \subseteq \mathbb{R}^n$ be open convex sets, a
 $K_0, K_1, \dots$ and $K$ be real functions that are concave-convex on $C \times D$, with
 $K_i(p) \to K(p)$ for every $p \in C \times D$. Assume that each $K_i$ and $K$ are
 differentiable at every point of $C \times D$, with gradient mappings $G_i$ and $G$ on
-$C \times D$. Then $G_i \to G$ uniformly on every closed bounded subset of $C \times D$. -/
+$C \times D$. Then $G_i \to G$ uniformly on every closed bounded subset of $C \times D$.
+
+**Reading.** Uses the real-valued local model and the equivalent product-norm topology for uniform
+gradient convergence.
+-/
 theorem theorem_35_10_uniform (hCo : IsOpen C) (hC : Convex ℝ C) (hDo : IsOpen D) (hD : Convex ℝ D)
     {Ks : ℕ → Rn m × Rn n → ℝ} (hKs : ∀ i, ConcaveConvexOn C D (Ks i))
     (hK : ConcaveConvexOn C D K)

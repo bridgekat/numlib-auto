@@ -44,6 +44,14 @@ from injectivity, which is the backbone
 `MvPolynomial.eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero` of
 `Numlib.Analysis.HarmonicPolynomial`.
 
+## Deviations from the source
+
+* **(14.4.8) and Lemma 14.4.1** (generalization). The book defines the trial space on the unit
+  disk and prints $\Pi_n^2$ as the codomain in (14.4.9). The library works on polynomials in
+  any positive dimension $d$, with codomain $\Pi_n^d$.
+* **Example 14.4.2** (partial translation). The statement gives the spanning property of the
+  multiplied ridge polynomials. The book introduces them as a basis for the trial space.
+
 ## Not formalized
 
 * **(14.4.1)–(14.4.7)**, the boundary value problem, its weak formulation, and the boundedness and
@@ -71,7 +79,10 @@ namespace AtkinsonHan.Chapter14
 variable {d : ℕ}
 
 /-- The polynomial $1 - |x|^2 = 1 - x_1^2 - \cdots - x_d^2$ in $d$ variables, which vanishes exactly
-on the unit sphere. -/
+on the unit sphere.
+
+**Generalization.** Boundary factor generalized to d dimensions.
+-/
 noncomputable abbrev oneSubSumSq (d : ℕ) : MvPolynomial (Fin d) ℝ := 1 - sumSq (Fin d) ℝ
 
 /-- The polynomial $1 - |x|^2$ is not zero. -/
@@ -85,12 +96,18 @@ the Galerkin method is $$\mathcal{X}_n = \{(1 - x_1^2 - \cdots - x_d^2) \, p : p
 in $H^1_0(\mathbb{B}_d)$.
 
 The space is a subspace of the polynomials in $d$ variables, the image of $\Pi_n^d$ under
-multiplication by `AtkinsonHan.Chapter14.oneSubSumSq d`. -/
+multiplication by `AtkinsonHan.Chapter14.oneSubSumSq d`.
+
+**Reading.** Polynomial trial space in any dimension instead of just the disk.
+-/
 noncomputable def trialSpace (d n : ℕ) : Submodule ℝ (MvPolynomial (Fin d) ℝ) :=
   (polySpace d n).map (LinearMap.mulLeft ℝ (oneSubSumSq d))
 
 /-- A polynomial $q$ is in $\mathcal{X}_n$ if and only if $q = (1 - |x|^2) p$ for a polynomial $p$
-of total degree at most $n$. -/
+of total degree at most $n$.
+
+**Reading.** Factorized trial-space membership in any dimension.
+-/
 theorem mem_trialSpace_iff {n : ℕ} {q : MvPolynomial (Fin d) ℝ} :
     q ∈ trialSpace d n ↔ ∃ p, p.totalDegree ≤ n ∧ oneSubSumSq d * p = q := by
   simp only [trialSpace, Submodule.mem_map, mem_polySpace_iff, LinearMap.mulLeft_apply]
@@ -100,20 +117,30 @@ theorem mulLeft_oneSubSumSq_injective :
     Function.Injective (LinearMap.mulLeft ℝ (oneSubSumSq d)) :=
   mul_right_injective₀ oneSubSumSq_ne_zero
 
+/-- **(14.4.8) and dimensional remark** of [han2009theoretical].
+
+**Generalization.** Finite dimensionality in arbitrary dimension.
+-/
 instance finiteDimensional_trialSpace (n : ℕ) : FiniteDimensional ℝ (trialSpace d n) := by
   have : Module.Finite ℝ (polySpace d n) := inferInstance
   exact Module.Finite.map (polySpace d n) (LinearMap.mulLeft ℝ (oneSubSumSq d))
 
 /-- For all $d, n \in \mathbb{N}$, $$\dim \mathcal{X}_n = \dim \Pi_n^d = \binom{n + d}{d},$$ because
 multiplication by $1 - |x|^2$ is injective, so it maps $\Pi_n^d$ isomorphically onto
-$\mathcal{X}_n$. For $d = 2$ this is $(n + 1)(n + 2)/2$, the count of Section 14.1. -/
+$\mathcal{X}_n$. For $d = 2$ this is $(n + 1)(n + 2)/2$, the count of Section 14.1.
+
+**Reading.** General binomial dimension in place of the planar formula.
+-/
 theorem finrank_trialSpace (n : ℕ) :
     finrank ℝ (trialSpace d n) = (n + d).choose d := by
   rw [← finrank_polySpace d n]
   exact (LinearEquiv.finrank_eq
     (Submodule.equivMapOfInjective _ mulLeft_oneSubSumSq_injective _)).symm
 
-/-- Every element of $\mathcal{X}_n$ has total degree at most $n + 2$. -/
+/-- Every element of $\mathcal{X}_n$ has total degree at most $n + 2$.
+
+**Reading.** The trial polynomials have degree at most n+2 in any dimension.
+-/
 theorem totalDegree_le_of_mem_trialSpace {n : ℕ} {q : MvPolynomial (Fin d) ℝ}
     (hq : q ∈ trialSpace d n) : q.totalDegree ≤ n + 2 := by
   obtain ⟨p, hp, rfl⟩ := mem_trialSpace_iff.1 hq
@@ -124,7 +151,10 @@ theorem totalDegree_le_of_mem_trialSpace {n : ℕ} {q : MvPolynomial (Fin d) ℝ
 
 /-- The Laplacian maps $\mathcal{X}_n$ into $\Pi_n^d$: if $q \in \mathcal{X}_n$, then
 $\Delta q \in \Pi_n^d$. An element of $\mathcal{X}_n$ has degree at most $n + 2$, and the
-Laplacian lowers the degree by two. -/
+Laplacian lowers the degree by two.
+
+**Reading.** Codomain is the degree-n space in the same dimension d.
+-/
 theorem laplacian_mem_polySpace {n : ℕ} {q : MvPolynomial (Fin d) ℝ} (hq : q ∈ trialSpace d n) :
     laplacian q ∈ polySpace d n := by
   have h1 := totalDegree_laplacian_le q
@@ -135,12 +165,18 @@ theorem laplacian_mem_polySpace {n : ℕ} {q : MvPolynomial (Fin d) ℝ} (hq : q
 $\Delta$ as a linear map from the trial space $\mathcal{X}_n$ to $\Pi_n^d$.
 
 The Laplacian of polynomials is `MvPolynomial.laplacian`, and the map is well defined by
-`AtkinsonHan.Chapter14.laplacian_mem_polySpace`. -/
+`AtkinsonHan.Chapter14.laplacian_mem_polySpace`.
+
+**Reading.** The Laplacian map has d-dimensional polynomial codomain.
+-/
 noncomputable def laplacianOn (d n : ℕ) : trialSpace d n →ₗ[ℝ] polySpace d n :=
   laplacian.restrict fun _ hq => laplacian_mem_polySpace hq
 
 /-- The value of the Laplacian $\mathcal{X}_n \to \Pi_n^d$ at $q$, read as a polynomial, is
-$\Delta q$. -/
+$\Delta q$.
+
+**Reading.** The restriction computes the formal Laplacian in dimension d.
+-/
 @[simp]
 theorem laplacianOn_coe {n : ℕ} (q : trialSpace d n) :
     (laplacianOn d n q : MvPolynomial (Fin d) ℝ) = laplacian (q : MvPolynomial (Fin d) ℝ) := rfl
@@ -152,7 +188,10 @@ $\mathcal{X}_n$ is zero.
 For $q = (1 - |x|^2) p$, the backbone
 `MvPolynomial.eq_zero_of_laplacian_one_sub_sumSq_mul_eq_zero` gives $p = 0$. In analysis this is
 the uniqueness for the Dirichlet problem, that a harmonic function on the ball that vanishes on
-the sphere is zero, but the proof is algebraic. -/
+the sphere is zero, but the proof is algebraic.
+
+**Reading.** Injectivity in every positive dimension with d-dimensional codomain.
+-/
 theorem lemma_14_4_1_injective (hd : 0 < d) (n : ℕ) : Function.Injective (laplacianOn d n) := by
   rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
   rintro ⟨q, hq⟩ hker
@@ -167,7 +206,10 @@ theorem lemma_14_4_1_injective (hd : 0 < d) (n : ℕ) : Function.Injective (lapl
 a linear bijection $$\Delta : \mathcal{X}_n = (1 - |x|^2) \Pi_n^d \to \Pi_n^d.$$
 
 The surjectivity follows from the injectivity, because the two spaces have the same dimension.
-The lemma makes the Galerkin equations of Section 14.4 uniquely solvable. -/
+The lemma makes the Galerkin equations of Section 14.4 uniquely solvable.
+
+**Reading.** Bijection with Πₙᵈ, replacing the printed Πₙ² for general d.
+-/
 theorem lemma_14_4_1 (hd : 0 < d) (n : ℕ) : Function.Bijective (laplacianOn d n) := by
   refine ⟨lemma_14_4_1_injective hd n, ?_⟩
   refine (LinearMap.injective_iff_surjective_of_finrank_eq_finrank ?_).1
@@ -217,7 +259,10 @@ n,$$ span the trial space $\mathcal{X}_n$ of (14.4.8).
 There are $\dim \Pi_n^2 = (n + 1)(n + 2)/2$ of them, and $\dim \mathcal{X}_n$ is the same
 (`AtkinsonHan.Chapter14.finrank_trialSpace`), so they are a basis of $\mathcal{X}_n$. This makes
 the Galerkin equations of Section 14.4 a square system, uniquely solvable by Lemma 14.4.1. The
-rest of Example 14.4.2 is numerical and is not formalized. -/
+rest of Example 14.4.2 is numerical and is not formalized.
+
+**Reading.** Proves the spanning property, one part of the stated basis assertion.
+-/
 theorem example_14_4_2 (n : ℕ) :
     Submodule.span ℝ {q : MvPolynomial (Fin 2) ℝ |
         ∃ m ≤ n, ∃ k ≤ m, q = oneSubSumSq 2 * ridgePoly m (k * (π / (m + 1)))}

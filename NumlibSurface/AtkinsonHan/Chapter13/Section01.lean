@@ -30,7 +30,7 @@ parametrization $r(t) = (\xi(t), \eta(t))$ of the boundary, the double layer ope
 integral operator with the kernel (13.1.33), $$k(t, s) = \frac{\eta'(s) (\xi(t) - \xi(s)) - \xi'(s)
 (\eta(t) - \eta(s))}{|r(t) - r(s)|^2}.$$ This is a quotient $0/0$ on the diagonal: the numerator and
 the denominator both vanish to second order there. By (13.1.34) the quotient extends continuously,
-and $k(t, t)$ is minus half the signed curvature of the counterclockwise parametrization. With this
+and $k(t, t)$ is minus half the signed curvature times the parametrization speed. With this
 continuity, the double layer operator is compact, both on a parameter interval and on the space
 $C_p(L)$ of continuous $L$-periodic functions that Section 13.2 uses. The compactness is
 `IntegralOperator.isCompactOperator_fredholm` and `IntegralOperator.isCompactOperator_kernelCLM` of
@@ -89,8 +89,8 @@ $C_p(L)$ of continuous $L$-periodic functions that Section 13.2 uses. The compac
   `AtkinsonHan.Chapter13.equation_13_1_34` gives the diagonal value. Only the derivatives
   $\xi', \eta', \xi'', \eta''$ enter the definition.
 * The kernel on the torus is not the descent of a biperiodic function. The kernel on the line is not
-  separately $L$-periodic, because $k(t + L, t) = 0$ by (13.1.33), while $k(t, t)$ is minus half the
-  signed curvature. The kernel is invariant under the diagonal translation
+  separately $L$-periodic in general, because $k(t + L, t) = 0$ by (13.1.33), while $k(t, t)$ can
+  be nonzero. The kernel is invariant under the diagonal translation
   $(t, s) \mapsto (t + L, s + L)$ (`AtkinsonHan.Chapter13.doubleLayerKernel_add_period`). So the
   kernel on the torus takes the representative of the difference $s - t$ in $[-L/2, L/2)$. Its
   continuity rests on the seam identity $k(t, t - L/2) = k(t, t + L/2)$
@@ -103,13 +103,23 @@ $C_p(L)$ of continuous $L$-periodic functions that Section 13.2 uses. The compac
 
 ## Deviations from the source
 
-* **Remark after (13.1.34)** (typo). The prose of the book says that $k(t, t)$ is one-half the
-  curvature of $S$ at $r(t)$. The display (13.1.34) gives minus one-half the signed curvature, and
-  the module follows the display. See `AtkinsonHan.Chapter13.doubleLayerKernel_circle_self`.
+* **Remark after (13.1.34)** (correction). The module follows the display, whose diagonal value
+  is minus one-half the signed curvature times the speed $\|r'(t)\|$ of a regular parametrization.
+  The prose calls it one-half the curvature. See `AtkinsonHan.Chapter13.equation_13_1_34`.
+* **(13.1.33)–(13.1.37)** (reading). The real-parameter kernel totalizes division at vanishing
+  chords or tangents. Continuity is proved where the divided-difference denominator is nonzero.
+  The periodic kernel uses the representative of the parameter difference in $[-L/2,L/2)$,
+  giving continuity on the torus for a regular simple closed curve. The book also states higher
+  kernel differentiability under higher regularity of the curve.
 * **Theorem 13.1.1, Neumann clause** (reading). The book states the classical Neumann problem for
   continuous data on a $C^2$ boundary curve. The module states the weak Neumann problem with data in
-  $L^2(\sigma)$ on a bounded connected $C^1$ domain of $\mathbb{R}^{d+1}$. See
+  $L^2(\sigma)$ on a bounded connected $C^1$ domain of $\mathbb{R}^{d+1}$. Its load is the outward
+  normal datum, which corresponds to the negative of the book's inward normal datum. See
   `AtkinsonHan.Chapter13.theorem_13_1_1_neumann_weak`.
+* **Theorem 13.1.2** (restriction). The divergence identity is stated on bounded $C^1$ domains
+  and on triangulated polygons. The book includes general piecewise smooth noncuspidal curves.
+* **(13.1.13)** (partial translation). The Kelvin theorem states preservation of harmonicity.
+  The book also computes the precise factor multiplying the Laplacian.
 
 ## Not formalized
 
@@ -156,7 +166,11 @@ its numerator and denominator is cancelled. On the diagonal it is minus half the
 curvature (`AtkinsonHan.Chapter13.equation_13_1_34`). The definition takes the derivatives
 $\xi', \eta', \xi'', \eta''$ as arguments, and only they enter. Where the denominator vanishes,
 Lean's division gives the value $0$. The divided differences are `DividedDifference.firstOrder`
-and `DividedDifference.secondOrder`. -/
+and `DividedDifference.secondOrder`.
+
+**Reading.** A single totalized divided-difference formula includes the diagonal and zero
+denominators.
+-/
 noncomputable def doubleLayerKernel (ξ' η' ξ'' η'' : ℝ → ℝ) (t s : ℝ) : ℝ :=
   (η' s * secondOrder ξ'' s t - ξ' s * secondOrder η'' s t) /
     (firstOrder ξ' s t ^ 2 + firstOrder η' s t ^ 2)
@@ -170,7 +184,10 @@ $s \neq t$ the kernel is the double layer kernel of the book, $$k(t, s) = \frac{
 
 Both sides are the same quotient with the common factor $(t - s)^2$ cancelled. So no regularity
 or injectivity of the curve is needed, only $s \neq t$; where the chord $r(t) - r(s)$ vanishes,
-both sides are $0$. -/
+both sides are $0$.
+
+**Reading.** Off-diagonal formula applies even when distinct parameters have a vanishing chord.
+-/
 theorem equation_13_1_33 (hξ : ∀ x, HasDerivAt ξ (ξ' x) x) (hξ' : ∀ x, HasDerivAt ξ' (ξ'' x) x)
     (hη : ∀ x, HasDerivAt η (η' x) x) (hη' : ∀ x, HasDerivAt η' (η'' x) x)
     (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'') (hcη' : Continuous η')
@@ -212,7 +229,10 @@ regular simple closed curve the chord direction turns by $\pi$ in total, so
 $\int_0^L k(t, s) \, ds = -\pi$, the constant of the integral equation (13.1.32); and $|\int_0^L
 k(t, s) \, ds| = \int_0^L |k(t, s)| \, ds$ exactly when the region is convex. Mathlib has
 neither a continuous argument along a plane curve nor a turning number, and this is what
-Exercise 13.2.5 needs. -/
+Exercise 13.2.5 needs.
+
+**Reading.** Equivalent complex quotient with totalized division when the difference vanishes.
+-/
 theorem doubleLayerKernel_eq_neg_im_div (hξ : ∀ x, HasDerivAt ξ (ξ' x) x)
     (hξ' : ∀ x, HasDerivAt ξ' (ξ'' x) x) (hη : ∀ x, HasDerivAt η (η' x) x)
     (hη' : ∀ x, HasDerivAt η' (η'' x) x) (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'')
@@ -234,8 +254,8 @@ counterclockwise arclength parametrization the denominator is $2$, and the value
 $-\kappa(t)/2$, with $\kappa$ the signed curvature: on the unit circle $\kappa = 1$ and
 $k(t, t) = -1/2$.
 
-**Typo.** The prose of the book after (13.1.34) says that $k(t, t)$ is one-half the curvature,
-without the minus sign. The display (13.1.34), which is stated here, is the one that agrees with
+**Correction.** The prose of the book after (13.1.34) says that $k(t, t)$ is one-half the curvature.
+For a general regular parametrization, the display gives $-\kappa(t)\|r'(t)\|/2$. It agrees with
 (13.1.33) and with the inner normal $n = (-\eta', \xi') / \sqrt{\xi'^2 + \eta'^2}$ that Section
 13.1 fixes before (13.1.32). The sign matters: it makes the row integral
 $\int_0^L k(t, s) \, ds$ equal to $-\pi$, so that (13.1.32) reads $(-\pi + K) u = g$, the form
@@ -259,7 +279,11 @@ so the row integral over a period is $-\pi$, and (13.1.32) is $(-\pi + K) u = g$
 writes it. This computation fixes the sign of `AtkinsonHan.Chapter13.doubleLayerKernel`: the
 prose of the book after (13.1.34), "one-half the curvature", would give $+1/2$ here and the row
 integral $+\pi$. The derivatives are passed as $\xi' = -\sin$, $\eta' = \cos$, $\xi'' = -\cos$,
-$\eta'' = -\sin$. -/
+$\eta'' = -\sin$.
+
+**Correction.** Unit circle has diagonal value −1/2, agreeing with the display and correcting the
+prose.
+-/
 theorem doubleLayerKernel_circle_self (t : ℝ) :
     doubleLayerKernel (fun x => -Real.sin x) Real.cos (fun x => -Real.cos x)
       (fun x => -Real.sin x) t t = -(1 / 2) := by
@@ -280,7 +304,11 @@ $p(x)$ for every $x$, then $x \mapsto k(p(x))$ is continuous.
 The condition says that $|r(s) - r(t)|^2 / (s - t)^2$ is nonzero: on the diagonal it is the
 regularity $\xi'(t)^2 + \eta'(t)^2 > 0$, and off the diagonal it is $r(s) \neq r(t)$. For a
 regular simple closed curve of period $L$ it holds for all $s, t$ with $|s - t| < L$, and it
-fails where $s - t$ is a nonzero multiple of $L$. -/
+fails where $s - t$ is a nonzero multiple of $L$.
+
+**Reading.** Proves continuity on any parameter family with a nonvanishing denominator, in place of
+the full C^(κ−2) result.
+-/
 theorem continuous_doubleLayerKernel {X : Type*} [TopologicalSpace X] {p : X → ℝ × ℝ}
     (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'') (hcη' : Continuous η')
     (hcη'' : Continuous η'') (hp : Continuous p)
@@ -302,7 +330,11 @@ theorem continuous_doubleLayerKernel {X : Type*} [TopologicalSpace X] {p : X →
 /-- Let $a, b \in \mathbb{R}$, and let $\xi', \eta', \xi'', \eta''$ be continuous with
 $\xi[s, t]^2 + \eta[s, t]^2 \neq 0$ for all $s, t \in [a, b]$, that is, the curve is regular and
 simple on $[a, b]$. This is the parametrized double layer kernel $(t, s) \mapsto k(t, s)$ as a
-continuous function on $[a, b] \times [a, b]$, the form that `IntegralOperator.fredholm` takes. -/
+continuous function on $[a, b] \times [a, b]$, the form that `IntegralOperator.fredholm` takes.
+
+**Reading.** Continuous real-interval kernel requires the divided-difference denominator nonzero
+everywhere.
+-/
 noncomputable def doubleLayerKernelCM {a b : ℝ} (ξ' η' ξ'' η'' : ℝ → ℝ) (hcξ' : Continuous ξ')
     (hcξ'' : Continuous ξ'') (hcη' : Continuous η') (hcη'' : Continuous η'')
     (hD : ∀ p : Icc a b × Icc a b,
@@ -319,7 +351,10 @@ u(t) = \int_a^b k(t, s) \, u(s) \, ds$$ is a compact operator on $C[a, b]$.
 
 This is the last sentence of Section 13.1.3, "the integral operator $K$ is a compact operator
 from $C_p(L)$ to $C_p(L)$", on a parameter interval. Given the continuity of the kernel, which
-rests on (13.1.34), it is `IntegralOperator.isCompactOperator_fredholm`. -/
+rests on (13.1.34), it is `IntegralOperator.isCompactOperator_fredholm`.
+
+**Reading.** Compactness of the interval operator with explicit nonvanishing denominator.
+-/
 theorem isCompactOperator_doubleLayer {a b : ℝ} (hab : a ≤ b) (ξ' η' ξ'' η'' : ℝ → ℝ)
     (hcξ' : Continuous ξ') (hcξ'' : Continuous ξ'') (hcη' : Continuous η')
     (hcη'' : Continuous η'')
@@ -357,8 +392,8 @@ theorem secondOrder_add_period {f'' : ℝ → ℝ} (hp : Function.Periodic f'' L
 /-- Let $\xi', \eta', \xi'', \eta''$ have period $L$. Then the parametrized double layer kernel is
 invariant under the diagonal translation: $$k(t + L, s + L) = k(t, s)$$ for all $t, s$.
 
-The kernel is not separately $L$-periodic in either argument: $k(t + L, t) = 0$, while $k(t, t)$
-is minus half the signed curvature. The reason is that the divided differences divide by
+The kernel need not be separately $L$-periodic: $k(t + L, t) = 0$ can differ from $k(t, t)$.
+The reason is that the divided differences divide by
 $s - t$, and $s - t$ and $s - t - L$ are different divisors of the same vanishing chord. So the
 kernel on the circle chooses the representative of the difference $s - t$, and it is not the
 descent of a biperiodic function. -/
@@ -408,7 +443,11 @@ its value is $k(t, t + d)$.
 
 The choice of the representative of the difference makes this well defined, because the kernel
 is invariant under the diagonal translation
-(`AtkinsonHan.Chapter13.doubleLayerKernel_add_period`). -/
+(`AtkinsonHan.Chapter13.doubleLayerKernel_add_period`).
+
+**Reading.** Periodic representative of the difference repairs zero-chord seams of the raw real
+formula.
+-/
 noncomputable def doubleLayerKernelCPFun (L : ℝ) [Fact (0 < L)] (ξ' η' ξ'' η'' : ℝ → ℝ)
     (p : AddCircle L × AddCircle L) : ℝ :=
   doubleLayerKernel ξ' η' ξ'' η'' (AddCircle.equivIco L 0 p.1)
@@ -442,7 +481,10 @@ The hypothesis on the divided differences says that the curve is regular and sim
 diagonal it is $\xi'(t)^2 + \eta'(t)^2 > 0$, and off the diagonal it is the injectivity of the
 parametrization on a half period. This is the form that Section 13.2 uses: $C_p(L)$ is
 `C(AddCircle L, ℝ)`, and `IntegralOperator.kernelCLM` of this kernel is the compact operator $K$
-of (13.2.4). -/
+of (13.2.4).
+
+**Reading.** Gives a continuous torus kernel by a difference-coordinate quotient construction.
+-/
 noncomputable def doubleLayerKernelCP (L : ℝ) [Fact (0 < L)] {ξ η ξ' η' ξ'' η'' : ℝ → ℝ}
     (hξ : ∀ x, HasDerivAt ξ (ξ' x) x) (hξ' : ∀ x, HasDerivAt ξ' (ξ'' x) x)
     (hη : ∀ x, HasDerivAt η (η' x) x) (hη' : ∀ x, HasDerivAt η' (η'' x) x) (hcξ' : Continuous ξ')
@@ -572,7 +614,11 @@ The book computes $\Delta \hat u(\xi, \eta) = r^4 \Delta u(x, y)$, which turns t
 Dirichlet and Neumann problems on $D_e$ into interior problems on $T(D_e)$. Here
 $T z = \overline{z^{-1}}$ is anticonformal, and the proof is that harmonicity survives
 composition with an inversion and with a reflection:
-`InnerProductSpace.HarmonicAt.comp_analyticAt` and `InnerProductSpace.HarmonicAt.comp_conj`. -/
+`InnerProductSpace.HarmonicAt.comp_analyticAt` and `InnerProductSpace.HarmonicAt.comp_conj`.
+
+**Reading.** Proves harmonicity preservation at nonzero points, leaving out the general Laplacian
+scaling formula.
+-/
 theorem kelvin_harmonic {u : ℂ → ℝ} {x : ℂ} (hx : x ≠ 0)
     (hu : HarmonicAt u (x / ((‖x‖ ^ 2 : ℝ) : ℂ))) : HarmonicAt (kelvin u) x := by
   have hinv : AnalyticAt ℂ (fun z : ℂ => z⁻¹) x := (analyticAt_id (𝕜 := ℂ) (z := x)).inv hx
@@ -609,7 +655,10 @@ $d\Gamma$ is the measure `σ` of the boundary data `hΩ.boundaryData hb`, and th
 $n = -\nu$, with $\nu$ the outward normal `IsContDiffDomain.outwardNormal`. The proof is the
 field `BoundaryData.integral_div_eq` of the boundary data, read with the sign convention of the
 chapter. Green's identities (13.1.5)–(13.1.6) follow with $F = u \nabla w$
-(`BoundaryData.integral_laplacian_mul_add_eq`), as the chapter derives them. -/
+(`BoundaryData.integral_laplacian_mul_add_eq`), as the chapter derives them.
+
+**Reading.** Uses bounded C¹ domains, a subclass of the book's piecewise smooth regions.
+-/
 theorem theorem_13_1_2 {Ω : Opens (EuclideanSpace ℝ (Fin 2))}
     (hΩ : IsContDiffDomain 1 (Ω : Set (EuclideanSpace ℝ (Fin 2))))
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin 2))))
@@ -628,7 +677,10 @@ $F : \mathbb{R}^2 \to \mathbb{R}^2$ be continuous on $\bar\Omega$ and $C^1$ up t
 Then $$\int_\Omega \nabla \cdot F \, d\Omega = -\int_\Gamma F \cdot n \, d\Gamma.$$
 
 This is the polygonal case of the remark of the chapter that boundaries need not be smooth. The
-measure and the outward normal $\nu = -n$ are those of `Triangulation.boundaryData`. -/
+measure and the outward normal $\nu = -n$ are those of `Triangulation.boundaryData`.
+
+**Reading.** Same inward-normal divergence identity on the triangulated polygon subclass.
+-/
 theorem theorem_13_1_2_polygon {Ω : Opens (EuclideanSpace ℝ (Fin 2))} (𝒯 : Triangulation Ω)
     {F : EuclideanSpace ℝ (Fin 2) → EuclideanSpace ℝ (Fin 2)}
     (hF₀ : ContinuousOn F (closure (Ω : Set (EuclideanSpace ℝ (Fin 2)))))
@@ -741,7 +793,11 @@ almost everywhere on $\Omega$.
 
 It supports the uniqueness clause of Theorem 13.1.1. The proof is the Deny–Lions theorem at
 order one, `SobolevEuclidean.exists_mem_restrictTotalDegree_ae_eq_of_topSeminorm_eq_zero`, with
-the polynomials of degree $0$. -/
+the polynomials of degree $0$.
+
+**Reading.** Zero weak gradient implies constant Sobolev class on preconnected domains in arbitrary
+dimension.
+-/
 theorem exists_fn_ae_eq_const_of_gradNorm_eq_zero (hc : IsPreconnected (Ω : Set 𝔼))
     {w : SobolevEuclidean (d + 1) 1 2 Ω} (hw : SobolevMultiIndex.gradNorm w = 0) :
     ∃ c : ℝ, SobolevMultiIndex.fn w =ᵐ[volume.restrict (Ω : Set 𝔼)] fun _ ↦ c := by
@@ -810,7 +866,10 @@ It supports Theorem 13.1.1. The proof applies Lax–Milgram on the closed subspa
 with mean zero, where the Dirichlet form is coercive by the Poincaré–Wirtinger inequality
 (`AtkinsonHan.Chapter13.exists_norm_le_gradNorm_of_integral_eq_zero` and
 `AtkinsonHan.Chapter13.exists_forall_dirichletForm_eq_of_ker`), and the decomposition
-$v = v_0 + c \cdot 1$ with $c = (\int_\Omega v) / |\Omega|$. -/
+$v = v_0 + c \cdot 1$ with $c = (\int_\Omega v) / |\Omega|$.
+
+**Reading.** Abstract loads vanishing on one, on arbitrary bounded connected C¹ domains.
+-/
 theorem exists_forall_dirichletForm_eq (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hc : IsConnected (Ω : Set 𝔼))
     {one : SobolevEuclidean (d + 1) 1 2 Ω}

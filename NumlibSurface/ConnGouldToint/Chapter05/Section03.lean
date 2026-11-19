@@ -27,6 +27,12 @@ The proofs specialize the CGNR method of the backbone module `Numlib.Krylov.Norm
 
 * The backbone states carry the residual $b - Ax$ of the system that they solve. The residual
   $r_k = A^* y_k - g$ of Algorithm 5.3.1 is the negative of the CGNR residual.
+
+## Deviations from the source
+
+* **Theorem 5.3.1 and Algorithm 5.3.1** (generalization). The matrix and its transpose are
+  replaced by a bounded map between real Hilbert spaces and its adjoint. The iterates use
+  totalized division, so the recurrence identities include zero denominators.
 -/
 
 namespace ConnGouldToint.Chapter05
@@ -39,7 +45,10 @@ gradient method for the normal equations
 $$AA^* y = Ag$$
 from a starting point $y_0$ in the range of $A$. Then every $y_k$ lies in the range of $A$.
 
-The iterates are `Krylov.CG.iterate` for the operator $AA^*$ and the right-hand side $Ag$. -/
+The iterates are `Krylov.CG.iterate` for the operator $AA^*$ and the right-hand side $Ag$.
+
+**Reading.** Range invariance for a bounded map between Hilbert spaces.
+-/
 theorem theorem_5_3_1 {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [CompleteSpace E] [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
     (A : E →L[ℝ] F) (g : E) {y₀ : F} (hy₀ : y₀ ∈ LinearMap.range A.toLinearMap)
@@ -75,7 +84,10 @@ conjugate gradient method for $AA^* y = Ag$ from $y_0$.
 
 The CGNR states are `Krylov.CGNR.iterate` for the operator $A^*$ with adjoint $A$, and the
 conjugate gradient states are `Krylov.CG.iterate`. The divisions use Lean's convention
-$a / 0 = 0$. -/
+$a / 0 = 0$.
+
+**Reading.** Adjoints and totalized denominators in the least-squares recurrence.
+-/
 theorem algorithm_5_3_1 {E F : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [CompleteSpace E] [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
     (A : E →L[ℝ] F) (g : E) (y₀ : F) (k : ℕ) :

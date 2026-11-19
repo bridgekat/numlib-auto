@@ -95,6 +95,66 @@ Section 6.4 on.
 
 ## Deviations from the source
 
+* **Reading.** The Gram–Schmidt Arnoldi definitions pad exact breakdown with zeros and allow complex
+  scalars. See `SaadSparse.Chapter06.arnoldiCGS`, `SaadSparse.Chapter06.arnoldiCGS_succ`,
+  `SaadSparse.Chapter06.arnoldiMGS`, `SaadSparse.Chapter06.arnoldiMGS_succ`.
+* **Reading.** The Arnoldi coefficient and residual formulas use the complex inner product when
+  needed. See `SaadSparse.Chapter06.arnoldiCoeff`, `SaadSparse.Chapter06.arnoldiW`,
+  `SaadSparse.Chapter06.arnoldiMGSW`, `SaadSparse.Chapter06.arnoldiMGSCoeff`,
+  `SaadSparse.Chapter06.mgsW`, `SaadSparse.Chapter06.mgsW_succ`.
+* **Reading.** The zero tests on the padded sequence identify indices at or past breakdown. See
+  `SaadSparse.Chapter06.arnoldiCGS_eq_zero_iff`,
+  `SaadSparse.Chapter06.arnoldiCoeff_succ_self_eq_zero_iff`.
+* **Generalization.** The orthogonality and span formulas include complex scalars and describe the
+  stabilized span. See `SaadSparse.Chapter06.inner_arnoldiCGS_eq_zero`,
+  `SaadSparse.Chapter06.norm_arnoldiCGS`, `SaadSparse.Chapter06.orthonormal_arnoldiCGS`,
+  `SaadSparse.Chapter06.span_arnoldiCGS`.
+* **Generalization.** The Arnoldi recurrence and matrix relations hold for the totalized real or
+  complex sequence. See `SaadSparse.Chapter06.arnoldiCoeff_succ_self`,
+  `SaadSparse.Chapter06.arnoldiW_eq_smul`, `SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_lt`,
+  `SaadSparse.Chapter06.hessenbergRelation`, `SaadSparse.Chapter06.apply_arnoldiCGS`,
+  `SaadSparse.Chapter06.mul_V_eq`, `SaadSparse.Chapter06.mul_V_eq_add_vecMulVec`.
+* **Generalization.** The stopping, grade and invariance conditions are available for both scalar
+  fields. See `SaadSparse.Chapter06.NoBreakdownBefore`,
+  `SaadSparse.Chapter06.noBreakdownBefore_iff`, `SaadSparse.Chapter06.breakdown_iff_grade_eq`,
+  `SaadSparse.Chapter06.krylov_mem_invtSubmodule_of_breakdown`.
+* **Reading.** The matrices $V_m$, $H_m$ and the extended Hessenberg matrix also allow padded
+  prefixes. See `SaadSparse.Chapter06.V`, `SaadSparse.Chapter06.Hbar`, `SaadSparse.Chapter06.H`.
+* **Generalization.** The compression identity holds entrywise even for nonunit starts and after
+  breakdown. See `SaadSparse.Chapter06.conjTranspose_V_mul_mul_V`,
+  `SaadSparse.Chapter06.equation_6_8`.
+* **Generalization.** The real Arnoldi identities include the padded sequence after breakdown. See
+  `SaadSparse.Chapter06.equation_6_9`, `SaadSparse.Chapter06.equation_6_7`,
+  `SaadSparse.Chapter06.equation_6_6`.
+* **Reading.** The exact equivalence of CGS and MGS includes the padded tails. See
+  `SaadSparse.Chapter06.arnoldiMGS_eq_arnoldiCGS`,
+  `SaadSparse.Chapter06.arnoldiMGSCoeff_eq_arnoldiCoeff`,
+  `SaadSparse.Chapter06.algorithm_6_2_eq_alg_6_1`.
+* **Reading.** The Householder sign is chosen positive at a zero leading coordinate. See
+  `SaadSparse.Chapter06.householderBeta`.
+* **Correction.** The Householder direction uses the corrected pivot-coordinate entry. See
+  `SaadSparse.Chapter06.householderDir_coord`, `SaadSparse.Chapter06.householderDir_eq`.
+* **Reading.** Householder normalization and the reflector identities cover zero tails. See
+  `SaadSparse.Chapter06.householderVec`, `SaadSparse.Chapter06.norm_householderVec`,
+  `SaadSparse.Chapter06.householder_householder`, `SaadSparse.Chapter06.norm_householder_apply`,
+  `SaadSparse.Chapter06.householder_householderVec_apply`,
+  `SaadSparse.Chapter06.householder_householderVec_coord`.
+* **Generalization.** The elementary Householder map is defined even when its input direction is
+  zero. See `SaadSparse.Chapter06.householder`.
+* **Reading.** The Householder process uses identity reflectors on zero tails and can complete the
+  basis. See `SaadSparse.Chapter06.hhZ`, `SaadSparse.Chapter06.hhW`, `SaadSparse.Chapter06.Qhh`,
+  `SaadSparse.Chapter06.QhhT`, `SaadSparse.Chapter06.hhV`, `SaadSparse.Chapter06.hhH`,
+  `SaadSparse.Chapter06.hhZ_succ`, `SaadSparse.Chapter06.norm_hhW`.
+* **Correction.** The Householder factorization uses $Q_{m+1}$ for all $m+1$ columns. See
+  `SaadSparse.Chapter06.equation_6_12_zero`, `SaadSparse.Chapter06.equation_6_12`.
+* **Correction.** The Householder matrix relation uses consistent coordinate spaces in the reading
+  of P-6.1(d). See `SaadSparse.Chapter06.hh_hessenbergRelation`,
+  `SaadSparse.Chapter06.hh_arnoldi_relation`.
+* **Reading.** The Householder and Gram–Schmidt basis comparison is restricted to the prefix within
+  the grade. See `SaadSparse.Chapter06.span_hhV_eq`,
+  `SaadSparse.Chapter06.hh_eq_arnoldi_up_to_sign`.
+* **Reading.** Lucky-breakdown exactness explicitly needs the test space to separate trial vectors.
+  See `SaadSparse.Chapter06.lucky_breakdown`.
 * **Equation (1.25)** (typo). The source prints the $k$-th entry of the Householder direction as
   $\beta + x_{ii}$. It is $\beta + x_{kk}$, as Algorithm 1.3 needs. See
   `SaadSparse.Chapter06.householderDir`.
@@ -135,7 +195,12 @@ For $j = 1, 2, \dots$, compute $h_{ij} = (Av_j, v_i)$ for $i = 1, \dots, j$, the
 $$w_j = A v_j - \sum_{i=1}^{j} h_{ij} v_i, \qquad v_{j+1} = w_j / \|w_j\|_2.$$
 
 The index is $0$-based: `arnoldiCGS A v₁ j` is $v_{j+1}$. The book's "if $h_{j+1,j} = 0$ then
-Stop" is Lean's convention $w / 0 = 0$: all later vectors are $0$. -/
+Stop" is Lean's convention $w / 0 = 0$: all later vectors are $0$.
+
+**Reading.** Lean gives exact infinite sequences. Division by zero returns the zero vector, so the
+sequence is padded with zeros after the point where the printed algorithm stops. The definitions
+also allow complex scalars and a nonunit input; the Arnoldi properties use a unit starting vector.
+-/
 noncomputable def arnoldiCGS (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) : ℕ → 𝔼
   | 0 => v₁
   | j + 1 =>
@@ -150,14 +215,24 @@ noncomputable def arnoldiCGS (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) : �
 $h_{ij} = (Av_j, v_i)$.
 
 The indices are $0$-based: `arnoldiCoeff A v₁ i j` is $h_{i+1,j+1}$. The definition gives a
-value for all $i$, $j$; it is the inner product also for $i > j + 1$. -/
+value for all $i$, $j$; it is the inner product also for $i > j + 1$.
+
+**Reading.** The recurrences also act over complex scalars, with conjugate-linear first argument in
+Lean's inner-product convention. In the unit-start case they give the source's coefficients through
+breakdown, with the totalized extension thereafter.
+-/
 noncomputable def arnoldiCoeff (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (i j : ℕ) : 𝕜 :=
   inner 𝕜 (arnoldiCGS A v₁ i) (op A (arnoldiCGS A v₁ j))
 
 /-- **Algorithm 6.1** of [saad2003iterative], line 4. The **unnormalized vector**
 $w_j = Av_j - \sum_{i=1}^{j} h_{ij} v_i$.
 
-The index is $0$-based: `arnoldiW A v₁ j` is $w_{j+1}$. -/
+The index is $0$-based: `arnoldiW A v₁ j` is $w_{j+1}$.
+
+**Reading.** The recurrences also act over complex scalars, with conjugate-linear first argument in
+Lean's inner-product convention. In the unit-start case they give the source's coefficients through
+breakdown, with the totalized extension thereafter.
+-/
 noncomputable def arnoldiW (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (j : ℕ) : 𝔼 :=
   op A (arnoldiCGS A v₁ j) -
     ∑ i ∈ Finset.range (j + 1), arnoldiCoeff A v₁ i j • arnoldiCGS A v₁ i
@@ -169,7 +244,12 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : EuclideanSpace 𝕜 (Fin n))
 theorem arnoldiCGS_zero : arnoldiCGS A v₁ 0 = v₁ := by rw [arnoldiCGS]
 
 /-- **Algorithm 6.1** of [saad2003iterative], line 7. Each next Arnoldi vector is the normalized
-vector $v_{j+1} = w_j / \|w_j\|$, which is $0$ when $w_j = 0$. -/
+vector $v_{j+1} = w_j / \|w_j\|$, which is $0$ when $w_j = 0$.
+
+**Reading.** Lean gives exact infinite sequences. Division by zero returns the zero vector, so the
+sequence is padded with zeros after the point where the printed algorithm stops. The definitions
+also allow complex scalars and a nonunit input; the Arnoldi properties use a unit starting vector.
+-/
 theorem arnoldiCGS_succ (j : ℕ) :
     arnoldiCGS A v₁ (j + 1) = ((‖arnoldiW A v₁ j‖ : 𝕜)⁻¹) • arnoldiW A v₁ j := by
   rw [arnoldiCGS, arnoldiW]
@@ -232,7 +312,11 @@ theorem arnoldiW_eq (hv : ‖v₁‖ = 1) (j : ℕ) : arnoldiW A v₁ j = Arnold
   arnoldiW_eq_of_forall A v₁ fun i _ => arnoldiCGS_eq_vec A v₁ hv i
 
 /-- If $\|v_1\| = 1$, then the Arnoldi vectors are pairwise orthogonal: $(v_j, v_i) = 0$ for
-$i \neq j$. This holds also after the breakdown, where the vectors are $0$. -/
+$i \neq j$. This holds also after the breakdown, where the vectors are $0$.
+
+**Generalization.** The orthogonality and span formulas also allow complex scalars. Norm one is
+asserted before breakdown. The span remains the stabilized Krylov space even after zero padding.
+-/
 theorem inner_arnoldiCGS_eq_zero (hv : ‖v₁‖ = 1) {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (arnoldiCGS A v₁ i) (arnoldiCGS A v₁ j) = 0 := by
   rw [arnoldiCGS_eq_vec A v₁ hv, arnoldiCGS_eq_vec A v₁ hv]
@@ -240,24 +324,41 @@ theorem inner_arnoldiCGS_eq_zero (hv : ‖v₁‖ = 1) {i j : ℕ} (h : i ≠ j)
 
 /-- **Breakdown.** Let $\|v_1\| = 1$ and let $\mu$ be the grade of $v_1$. Then the Arnoldi vector
 $v_k$ is $0$ if and only if $k > \mu$. In Lean, `arnoldiCGS A v₁ j = 0` if and only if
-$\mu \le j$. -/
+$\mu \le j$.
+
+**Reading.** The padded recurrence has zeros at and after the first breakdown. The source stops at
+the first zero subdiagonal; an equality to zero at an arbitrary index of the continued sequence only
+bounds the grade above.
+-/
 theorem arnoldiCGS_eq_zero_iff (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiCGS A v₁ j = 0 ↔ grade A v₁ ≤ j := by
   rw [arnoldiCGS_eq_vec A v₁ hv, Arnoldi.vec_eq_zero_iff, grade_eq]
 
-/-- Let $\|v_1\| = 1$ and let $\mu$ be the grade of $v_1$. Then $\|v_k\| = 1$ for $k \le \mu$. -/
+/-- Let $\|v_1\| = 1$ and let $\mu$ be the grade of $v_1$. Then $\|v_k\| = 1$ for $k \le \mu$.
+
+**Generalization.** The orthogonality and span formulas also allow complex scalars. Norm one is
+asserted before breakdown. The span remains the stabilized Krylov space even after zero padding.
+-/
 theorem norm_arnoldiCGS (hv : ‖v₁‖ = 1) {j : ℕ} (h : j < grade A v₁) :
     ‖arnoldiCGS A v₁ j‖ = 1 := by
   rw [arnoldiCGS_eq_vec A v₁ hv]
   exact Arnoldi.norm_vec_eq_one_of_lt_grade _ _ (by rwa [← grade_eq])
 
 /-- **Algorithm 6.1** of [saad2003iterative], line 5. If $\|v_1\| = 1$, then $h_{j+1,j} = \|w_j\|_2$
-for every $j$. -/
+for every $j$.
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
+-/
 theorem arnoldiCoeff_succ_self (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiCoeff A v₁ (j + 1) j = (‖arnoldiW A v₁ j‖ : 𝕜) := by
   rw [arnoldiCoeff_eq A v₁ hv, arnoldiW_eq A v₁ hv, Arnoldi.coeff_succ_self]
 
-/-- If $\|v_1\| = 1$, then $w_j = h_{j+1,j} v_{j+1}$ for every $j$. -/
+/-- If $\|v_1\| = 1$, then $w_j = h_{j+1,j} v_{j+1}$ for every $j$.
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
+-/
 theorem arnoldiW_eq_smul (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiW A v₁ j = arnoldiCoeff A v₁ (j + 1) j • arnoldiCGS A v₁ (j + 1) := by
   rw [arnoldiCoeff_succ_self A v₁ hv, arnoldiCGS_succ, smul_smul]
@@ -265,7 +366,11 @@ theorem arnoldiW_eq_smul (hv : ‖v₁‖ = 1) (j : ℕ) :
   · rw [h, smul_zero]
   · rw [mul_inv_cancel₀ (by simpa using norm_ne_zero_iff.2 h), one_smul]
 
-/-- **Hessenberg structure.** If $\|v_1\| = 1$, then $h_{ij} = 0$ for $i > j + 1$. -/
+/-- **Hessenberg structure.** If $\|v_1\| = 1$, then $h_{ij} = 0$ for $i > j + 1$.
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
+-/
 theorem arnoldiCoeff_eq_zero_of_lt (hv : ‖v₁‖ = 1) {i j : ℕ} (h : j + 1 < i) :
     arnoldiCoeff A v₁ i j = 0 := by
   rw [arnoldiCoeff_eq A v₁ hv]
@@ -274,7 +379,11 @@ theorem arnoldiCoeff_eq_zero_of_lt (hv : ‖v₁‖ = 1) {i j : ℕ} (h : j + 1 
 /-- If $\|v_1\| = 1$, then the Arnoldi vectors and coefficients satisfy the backbone Hessenberg
 relation `Krylov.HessenbergRelation`: $A v_j = \sum_{i=1}^{j+1} h_{ij} v_i$ for every $j$, and
 $h_{ij} = 0$ for $i > j + 1$. This is the interface that the FOM, GMRES and Givens rotation
-results use. -/
+results use.
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
+-/
 theorem hessenbergRelation (hv : ‖v₁‖ = 1) :
     Krylov.HessenbergRelation (op A) (arnoldiCGS A v₁) (arnoldiCoeff A v₁) := by
   have hvec : arnoldiCGS A v₁ = Arnoldi.vec (op A) v₁ := funext (arnoldiCGS_eq_vec A v₁ hv)
@@ -289,13 +398,22 @@ theorem hessenbergRelation (hv : ‖v₁‖ = 1) :
 /-- **Section 6.3.1** of [saad2003iterative]. Algorithm 6.1 **does not stop before the $m$-th step**
 if $h_{j+1,j} \neq 0$ for $j = 1, \dots, m - 1$.
 
-In $0$-based indices the condition is `arnoldiCoeff A v₁ (j + 1) j ≠ 0` for $j + 1 < m$. -/
+In $0$-based indices the condition is `arnoldiCoeff A v₁ (j + 1) j ≠ 0` for $j + 1 < m$.
+
+**Generalization.** Lean formulates the stopping test and grade criterion over real or complex
+scalars. The invariance theorem also permits every index at or above the grade.
+-/
 def NoBreakdownBefore (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (m : ℕ) : Prop :=
   ∀ j, j + 1 < m → arnoldiCoeff A v₁ (j + 1) j ≠ 0
 
 /-- Let $\|v_1\| = 1$ and let $\mu$ be the grade of $v_1$. Then Algorithm 6.1 stops at step $j$,
 that is $h_{j+1,j} = 0$, if and only if $\mu \le j$. In Lean, `arnoldiCoeff A v₁ (j + 1) j = 0`
-if and only if $\mu \le j + 1$. -/
+if and only if $\mu \le j + 1$.
+
+**Reading.** The padded recurrence has zeros at and after the first breakdown. The source stops at
+the first zero subdiagonal; an equality to zero at an arbitrary index of the continued sequence only
+bounds the grade above.
+-/
 theorem arnoldiCoeff_succ_self_eq_zero_iff (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiCoeff A v₁ (j + 1) j = 0 ↔ grade A v₁ ≤ j + 1 := by
   rw [arnoldiCoeff_eq A v₁ hv, Arnoldi.coeff_succ_self_eq_zero_iff, grade_eq]
@@ -306,7 +424,11 @@ theorem grade_pos (hv : ‖v₁‖ = 1) : 0 < grade A v₁ := by
   exact Krylov.grade_pos_of_ne_zero _ _ (by rintro rfl; simp at hv)
 
 /-- Let $\|v_1\| = 1$ and let $\mu$ be the grade of $v_1$. Then Algorithm 6.1 does not stop before
-the $m$-th step if and only if $m \le \mu$. -/
+the $m$-th step if and only if $m \le \mu$.
+
+**Generalization.** Lean formulates the stopping test and grade criterion over real or complex
+scalars. The invariance theorem also permits every index at or above the grade.
+-/
 theorem noBreakdownBefore_iff (hv : ‖v₁‖ = 1) (m : ℕ) :
     NoBreakdownBefore A v₁ m ↔ m ≤ grade A v₁ := by
   constructor
@@ -327,7 +449,12 @@ noncomputable def colMatrix (u : ℕ → 𝔼) (m : ℕ) : Matrix (Fin n) (Fin m
   Matrix.of fun i j => u (j : ℕ) i
 
 /-- **Section 6.3.1** of [saad2003iterative]. The $n \times m$ matrix $V_m = [v_1, \dots, v_m]$
-whose columns are the Arnoldi vectors. -/
+whose columns are the Arnoldi vectors.
+
+**Reading.** The matrices can be formed at any requested size for the real or complex recurrence. At
+sizes beyond breakdown they use the padded vectors and coefficients. The source forms these matrices
+from the basis that was actually generated.
+-/
 noncomputable def V (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (m : ℕ) : Matrix (Fin n) (Fin m) 𝕜 :=
   colMatrix (arnoldiCGS A v₁) m
 
@@ -335,13 +462,23 @@ noncomputable def V (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (m : ℕ) : 
 $\bar H_m$ whose $(i, j)$ entry is the Arnoldi coefficient $h_{ij}$.
 
 All entries are the inner products $h_{ij} = (Av_j, v_i)$; those with $i > j + 1$ vanish for a
-unit $v_1$ (`SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_lt`). -/
+unit $v_1$ (`SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_lt`).
+
+**Reading.** The matrices can be formed at any requested size for the real or complex recurrence. At
+sizes beyond breakdown they use the padded vectors and coefficients. The source forms these matrices
+from the basis that was actually generated.
+-/
 noncomputable def Hbar (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (m : ℕ) :
     Matrix (Fin (m + 1)) (Fin m) 𝕜 :=
   Matrix.of fun i j => arnoldiCoeff A v₁ i j
 
 /-- **Section 6.3.1** of [saad2003iterative]. The $m \times m$ matrix $H_m$ obtained from $\bar H_m$
-by deleting its last row. -/
+by deleting its last row.
+
+**Reading.** The matrices can be formed at any requested size for the real or complex recurrence. At
+sizes beyond breakdown they use the padded vectors and coefficients. The source forms these matrices
+from the basis that was actually generated.
+-/
 noncomputable def H (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Matrix.of fun i j => arnoldiCoeff A v₁ i j
 
@@ -435,7 +572,11 @@ theorem Hbar_normalize {r : EuclideanSpace 𝕜 (Fin n)} (hr : r ≠ 0) (m : ℕ
 
 /-- Let $\|v_1\| = 1$, let $\mu$ be the grade of $v_1$, and let $m \le \mu$. Then the Arnoldi
 vectors $v_1, \dots, v_m$ are orthonormal. This is the first half of Proposition 6.4 of
-[saad2003iterative]. -/
+[saad2003iterative].
+
+**Generalization.** The orthogonality and span formulas also allow complex scalars. Norm one is
+asserted before breakdown. The span remains the stabilized Krylov space even after zero padding.
+-/
 theorem orthonormal_arnoldiCGS (hv : ‖v₁‖ = 1) {m : ℕ} (hm : m ≤ grade A v₁) :
     Orthonormal 𝕜 (fun i : Fin m => arnoldiCGS A v₁ (i : ℕ)) := by
   have hg : m ≤ Krylov.grade (op A) v₁ := by rwa [← grade_eq]
@@ -450,7 +591,11 @@ subspace $\mathcal{K}_m(A, v_1)$. This is the second half of Proposition 6.4 of
 [saad2003iterative].
 
 No bound on $m$ is needed: after the grade of $v_1$, the later vectors are $0$ and the Krylov
-subspaces stop growing. -/
+subspaces stop growing.
+
+**Generalization.** The orthogonality and span formulas also allow complex scalars. Norm one is
+asserted before breakdown. The span remains the stabilized Krylov space even after zero padding.
+-/
 theorem span_arnoldiCGS (hv : ‖v₁‖ = 1) (m : ℕ) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => arnoldiCGS A v₁ (i : ℕ)) = krylov A v₁ m := by
   have hfun : (fun i : Fin m => arnoldiCGS A v₁ (i : ℕ))
@@ -463,6 +608,9 @@ theorem span_arnoldiCGS (hv : ‖v₁‖ = 1) (m : ℕ) :
 /-- **Equation (6.9)** of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. If $\|v_1\| = 1$,
 then for every $j$,
 $$A v_j = \sum_{i=1}^{j+1} h_{ij} v_i.$$
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
 -/
 theorem apply_arnoldiCGS (hv : ‖v₁‖ = 1) (j : ℕ) :
     op A (arnoldiCGS A v₁ j)
@@ -508,7 +656,11 @@ theorem mul_colMatrix_eq {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
   exact Finset.sum_congr rfl fun l _ => mul_comm _ _
 
 /-- **Equation (6.7)** of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. If $\|v_1\| = 1$,
-then $A V_m = V_{m+1} \bar H_m$ for every $m$. -/
+then $A V_m = V_{m+1} \bar H_m$ for every $m$.
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
+-/
 theorem mul_V_eq (hv : ‖v₁‖ = 1) (m : ℕ) : A * V A v₁ m = V A v₁ (m + 1) * Hbar A v₁ m :=
   mul_colMatrix_eq A (hessenbergRelation A v₁ hv) m
 
@@ -517,7 +669,11 @@ then for every $m \ge 1$,
 $$A V_m = V_m H_m + w_m e_m^T.$$
 
 The Lean statement is for $m + 1$ steps, so that $w_{m+1}$ is `arnoldiW A v₁ m`, the last vector
-computed; $e_m^T$ is the row vector `Pi.single (Fin.last m) 1`. -/
+computed; $e_m^T$ is the row vector `Pi.single (Fin.last m) 1`.
+
+**Generalization.** The recurrence and matrix equations hold for the real or complex totalized
+sequence. They remain valid when a zero vector is used for the unavailable next basis vector.
+-/
 theorem mul_V_eq_add_vecMulVec (hv : ‖v₁‖ = 1) (m : ℕ) :
     A * V A v₁ (m + 1) = V A v₁ (m + 1) * H A v₁ (m + 1) +
       Matrix.vecMulVec (WithLp.ofLp (arnoldiW A v₁ m)) (Pi.single (Fin.last m) 1) := by
@@ -544,7 +700,11 @@ theorem mul_V_eq_add_vecMulVec (hv : ‖v₁‖ = 1) (m : ℕ) :
 and every $m$, $V_m^H A V_m = H_m$. This is the book's $V_m^T A V_m = H_m$ for real matrices.
 
 Neither a unit starting vector nor a bound on the number of Arnoldi steps is needed: both sides
-are the same inner products by definition, and both vanish after the breakdown. -/
+are the same inner products by definition, and both vanish after the breakdown.
+
+**Generalization.** Lean defines the projected matrix entrywise by inner products, so the
+compression identity does not need an orthonormal basis or a successful full run.
+-/
 theorem conjTranspose_V_mul_mul_V (m : ℕ) : (V A v₁ m)ᴴ * A * V A v₁ m = H A v₁ m := by
   ext i j
   rw [Matrix.mul_assoc, Matrix.mul_apply, H_apply, arnoldiCoeff, PiLp.inner_apply]
@@ -556,7 +716,11 @@ theorem conjTranspose_V_mul_mul_V (m : ℕ) : (V A v₁ m)ᴴ * A * V A v₁ m =
 
 /-- Let $\|v_1\| = 1$ and $j \ge 1$. Arnoldi's method breaks down at step $j$, that is, it does not
 stop before step $j$ and $h_{j+1,j} = 0$, if and only if the grade of $v_1$ is $j$. This is the
-first part of Proposition 6.6 of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. -/
+first part of Proposition 6.6 of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$.
+
+**Generalization.** Lean formulates the stopping test and grade criterion over real or complex
+scalars. The invariance theorem also permits every index at or above the grade.
+-/
 theorem breakdown_iff_grade_eq (hv : ‖v₁‖ = 1) {j : ℕ} (hj : 0 < j) :
     (NoBreakdownBefore A v₁ j ∧ arnoldiCoeff A v₁ j (j - 1) = 0) ↔ grade A v₁ = j := by
   obtain ⟨k, rfl⟩ : ∃ k, j = k + 1 := ⟨j - 1, by omega⟩
@@ -566,7 +730,11 @@ theorem breakdown_iff_grade_eq (hv : ‖v₁‖ = 1) {j : ℕ} (hj : 0 < j) :
 
 /-- If the grade of $v_1$ is at most $j$, in particular after a breakdown of Arnoldi's method at
 step $j$, then $\mathcal{K}_j(A, v_1)$ is invariant under $A$. This is the second part of
-Proposition 6.6 of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$. -/
+Proposition 6.6 of [saad2003iterative], over $\mathbb{R}$ or $\mathbb{C}$.
+
+**Generalization.** Lean formulates the stopping test and grade criterion over real or complex
+scalars. The invariance theorem also permits every index at or above the grade.
+-/
 theorem krylov_mem_invtSubmodule_of_breakdown {j : ℕ} (h : grade A v₁ ≤ j) :
     krylov A v₁ j ∈ Module.End.invtSubmodule (op A) := by
   rw [krylov_eq_of_grade_le A v₁ h]
@@ -578,11 +746,21 @@ theorem krylov_mem_invtSubmodule_of_breakdown {j : ℕ} (h : grade A v₁ ≤ j)
 $u_0, u_1, \dots$ and a vector $w^{(0)}$, the vector $w^{(k)}$ is obtained by subtracting the
 projections on $u_0, \dots, u_{k-1}$ one at a time.
 
-It is the backbone modified Gram–Schmidt sweep `InnerProductSpace.modifiedGramSchmidtSweep`. -/
+It is the backbone modified Gram–Schmidt sweep `InnerProductSpace.modifiedGramSchmidtSweep`.
+
+**Reading.** The recurrences also act over complex scalars, with conjugate-linear first argument in
+Lean's inner-product convention. In the unit-start case they give the source's coefficients through
+breakdown, with the totalized extension thereafter.
+-/
 noncomputable abbrev mgsW (v : ℕ → 𝔼) (w₀ : 𝔼) : ℕ → 𝔼 :=
   InnerProductSpace.modifiedGramSchmidtSweep 𝕜 v w₀
 
-/-- One step of the inner loop of Algorithm 6.2: $w^{(k+1)} = w^{(k)} - (w^{(k)}, u_k) u_k$. -/
+/-- One step of the inner loop of Algorithm 6.2: $w^{(k+1)} = w^{(k)} - (w^{(k)}, u_k) u_k$.
+
+**Reading.** The recurrences also act over complex scalars, with conjugate-linear first argument in
+Lean's inner-product convention. In the unit-start case they give the source's coefficients through
+breakdown, with the totalized extension thereafter.
+-/
 theorem mgsW_succ (v : ℕ → 𝔼) (w₀ : 𝔼) (k : ℕ) :
     mgsW v w₀ (k + 1) = mgsW v w₀ k - inner 𝕜 (v k) (mgsW v w₀ k) • v k :=
   InnerProductSpace.modifiedGramSchmidtSweep_succ 𝕜 v w₀ k
@@ -612,7 +790,12 @@ $w := w - h_{ij} v_i$; then $v_{j+1} = w / \|w\|_2$.
 
 The index is $0$-based: `arnoldiMGS A v₁ j` is $v_{j+1}$. The definition reads the earlier
 vectors through the clamp `min i j`; this does not matter, because the inner loop reads only
-$v_1, \dots, v_j$ (`SaadSparse.Chapter06.mgsW_congr`). -/
+$v_1, \dots, v_j$ (`SaadSparse.Chapter06.mgsW_congr`).
+
+**Reading.** Lean gives exact infinite sequences. Division by zero returns the zero vector, so the
+sequence is padded with zeros after the point where the printed algorithm stops. The definitions
+also allow complex scalars and a nonunit input; the Arnoldi properties use a unit starting vector.
+-/
 noncomputable def arnoldiMGS (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) : ℕ → 𝔼
   | 0 => v₁
   | j + 1 =>
@@ -622,7 +805,12 @@ noncomputable def arnoldiMGS (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) : �
   termination_by j => j
   decreasing_by exact Nat.lt_succ_of_le (Nat.min_le_right _ _)
 
-/-- The vector $w_j$ of Algorithm 6.2: what remains of $A v_j$ after the whole inner loop. -/
+/-- The vector $w_j$ of Algorithm 6.2: what remains of $A v_j$ after the whole inner loop.
+
+**Reading.** The recurrences also act over complex scalars, with conjugate-linear first argument in
+Lean's inner-product convention. In the unit-start case they give the source's coefficients through
+breakdown, with the totalized extension thereafter.
+-/
 noncomputable def arnoldiMGSW (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (j : ℕ) : 𝔼 :=
   mgsW (arnoldiMGS A v₁) (op A (arnoldiMGS A v₁ j)) (j + 1)
 
@@ -630,7 +818,12 @@ noncomputable def arnoldiMGSW (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (j
 product $(w, v_i)$ with the current $w$ of the inner loop; $h_{j+1,j} = \|w_j\|_2$; and
 $h_{ij} = 0$ for $i > j + 1$.
 
-The indices are $0$-based, as for `SaadSparse.Chapter06.arnoldiCoeff`. -/
+The indices are $0$-based, as for `SaadSparse.Chapter06.arnoldiCoeff`.
+
+**Reading.** The recurrences also act over complex scalars, with conjugate-linear first argument in
+Lean's inner-product convention. In the unit-start case they give the source's coefficients through
+breakdown, with the totalized extension thereafter.
+-/
 noncomputable def arnoldiMGSCoeff (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼) (i j : ℕ) : 𝕜 :=
   if i ≤ j then inner 𝕜 (arnoldiMGS A v₁ i) (mgsW (arnoldiMGS A v₁) (op A (arnoldiMGS A v₁ j)) i)
   else if i = j + 1 then (‖arnoldiMGSW A v₁ j‖ : 𝕜) else 0
@@ -640,7 +833,12 @@ noncomputable def arnoldiMGSCoeff (A : Matrix (Fin n) (Fin n) 𝕜) (v₁ : 𝔼
 theorem arnoldiMGS_zero : arnoldiMGS A v₁ 0 = v₁ := by rw [arnoldiMGS]
 
 /-- Each next vector of Algorithm 6.2 is the normalized vector $v_{j+1} = w_j / \|w_j\|$, which is
-$0$ when $w_j = 0$. -/
+$0$ when $w_j = 0$.
+
+**Reading.** Lean gives exact infinite sequences. Division by zero returns the zero vector, so the
+sequence is padded with zeros after the point where the printed algorithm stops. The definitions
+also allow complex scalars and a nonunit input; the Arnoldi properties use a unit starting vector.
+-/
 theorem arnoldiMGS_succ (j : ℕ) :
     arnoldiMGS A v₁ (j + 1) = ((‖arnoldiMGSW A v₁ j‖ : 𝕜)⁻¹) • arnoldiMGSW A v₁ j := by
   rw [arnoldiMGS, arnoldiMGSW]
@@ -656,13 +854,21 @@ theorem arnoldiMGS_eq_vec (hv : ‖v₁‖ = 1) : arnoldiMGS A v₁ = Arnoldi.ve
   rw [arnoldiMGS_succ, arnoldiMGSW]
 
 /-- **Section 6.3.2** of [saad2003iterative]. If $\|v_1\| = 1$, then in exact arithmetic Algorithm
-6.2 computes the same vectors as Algorithm 6.1. -/
+6.2 computes the same vectors as Algorithm 6.1.
+
+**Reading.** The equality compares the exact sequences for all indices, including the zeros after
+the stopping point. The general statements also admit complex scalars.
+-/
 theorem arnoldiMGS_eq_arnoldiCGS (hv : ‖v₁‖ = 1) (j : ℕ) :
     arnoldiMGS A v₁ j = arnoldiCGS A v₁ j := by
   rw [arnoldiMGS_eq_vec A v₁ hv, arnoldiCGS_eq_vec A v₁ hv]
 
 /-- **Section 6.3.2** of [saad2003iterative]. If $\|v_1\| = 1$, then in exact arithmetic Algorithm
-6.2 computes the same coefficients $h_{ij}$ as Algorithm 6.1. -/
+6.2 computes the same coefficients $h_{ij}$ as Algorithm 6.1.
+
+**Reading.** The equality compares the exact sequences for all indices, including the zeros after
+the stopping point. The general statements also admit complex scalars.
+-/
 theorem arnoldiMGSCoeff_eq_arnoldiCoeff (hv : ‖v₁‖ = 1) (i j : ℕ) :
     arnoldiMGSCoeff A v₁ i j = arnoldiCoeff A v₁ i j := by
   have hvec : arnoldiMGS A v₁ = arnoldiCGS A v₁ := funext (arnoldiMGS_eq_arnoldiCGS A v₁ hv)
@@ -706,7 +912,11 @@ noncomputable def householderTail (z : 𝔼) (k : ℕ) : 𝔼 :=
   WithLp.toLp 2 fun i => if k ≤ (i : ℕ) then z i else 0
 
 /-- **Equation (1.26)** of [saad2003iterative]. The scalar $\beta = \operatorname{sign}(z_k)
-\big(\sum_{i \ge k} z_i^2\big)^{1/2}$, with the convention $\operatorname{sign}(0) = 1$. -/
+\big(\sum_{i \ge k} z_i^2\big)^{1/2}$, with the convention $\operatorname{sign}(0) = 1$.
+
+**Reading.** The source does not specify the sign at zero. Lean takes positive sign there, so a zero
+leading coordinate with a nonzero tail still yields the stated reflector.
+-/
 noncomputable def householderBeta (z : 𝔼) (k : ℕ) : ℝ :=
   (if 0 ≤ coordAt z k then 1 else -1) * ‖householderTail z k‖
 
@@ -722,12 +932,20 @@ noncomputable def householderDir (z : 𝔼) (k : ℕ) : 𝔼 :=
 /-- **Equation (1.24)** of [saad2003iterative]. The **Householder vector** $w = z' / \|z'\|_2$ at
 position $k$.
 
-It is $0$ when $z' = 0$, which happens exactly when $z_i = 0$ for all $i \ge k$. -/
+It is $0$ when $z' = 0$, which happens exactly when $z_i = 0$ for all $i \ge k$.
+
+**Reading.** The normalized direction is zero when the tail is zero, and the reflection formula then
+acts as the identity. The source formula divides by the norm of the direction.
+-/
 noncomputable def householderVec (z : 𝔼) (k : ℕ) : 𝔼 :=
   (‖householderDir z k‖⁻¹ : ℝ) • householderDir z k
 
 /-- **Equation (1.23)** of [saad2003iterative]. The **Householder reflector** $P = I - 2 w w^T$ of a
-vector $w$, as a linear map of $\mathbb{R}^n$. It is the identity when $w = 0$. -/
+vector $w$, as a linear map of $\mathbb{R}^n$. It is the identity when $w = 0$.
+
+**Generalization.** The map formula is defined for any vector, including zero. Its orthogonality is
+proved separately under the unit-or-zero condition used by the Lean process.
+-/
 noncomputable def householder (w : 𝔼) : 𝔼 →ₗ[ℝ] 𝔼 :=
   LinearMap.id - (innerSL ℝ w).toLinearMap.smulRight ((2 : ℝ) • w)
 
@@ -741,7 +959,11 @@ theorem householderTail_coord (z : 𝔼) (k : ℕ) (i : Fin n) :
     householderTail z k i = if k ≤ (i : ℕ) then z i else 0 := rfl
 
 /-- The $i$-th entry of the Householder direction $z'$ at position $k$ is $0$ for $i < k$,
-$\beta + z_k$ for $i = k$, and $z_i$ for $i > k$. -/
+$\beta + z_k$ for $i = k$, and $z_i$ for $i > k$.
+
+**Correction.** Like the direction definition, these formulas use the entry at the pivot coordinate
+where (1.25) prints the diagonal subscript $x_{ii}$.
+-/
 @[simp]
 theorem householderDir_coord (z : 𝔼) (k : ℕ) (i : Fin n) :
     householderDir z k i =
@@ -751,7 +973,11 @@ private theorem inner_coord (x y : 𝔼) : (inner ℝ x y : ℝ) = ∑ i, x i * 
   simp [PiLp.inner_apply, RCLike.inner_apply, mul_comm]
 
 /-- The Householder direction is the tail plus a multiple of the standard basis vector: $z' = (0,
-\dots, 0, z_k, \dots, z_{n-1}) + \beta e_k$. -/
+\dots, 0, z_k, \dots, z_{n-1}) + \beta e_k$.
+
+**Correction.** Like the direction definition, these formulas use the entry at the pivot coordinate
+where (1.25) prints the diagonal subscript $x_{ii}$.
+-/
 theorem householderDir_eq (z : 𝔼) (k : ℕ) :
     householderDir z k = householderTail z k + householderBeta z k • stdVec k := by
   ext i
@@ -855,7 +1081,11 @@ theorem householder_apply_of_inner_eq_zero {w x : 𝔼} (h : (inner ℝ w x : �
   rw [householder_apply, h]
   simp
 
-/-- The Householder vector at position $k$ has norm $1$ or is $0$. -/
+/-- The Householder vector at position $k$ has norm $1$ or is $0$.
+
+**Reading.** The normalized direction is zero when the tail is zero, and the reflection formula then
+acts as the identity. The source formula divides by the norm of the direction.
+-/
 theorem norm_householderVec (z : 𝔼) (k : ℕ) :
     ‖householderVec z k‖ = 1 ∨ householderVec z k = 0 := by
   rcases eq_or_ne (householderDir z k) 0 with h | h
@@ -866,6 +1096,9 @@ theorem norm_householderVec (z : 𝔼) (k : ℕ) :
       inv_mul_cancel₀ (norm_ne_zero_iff.2 h)]
 
 /-- If $\|w\| = 1$ or $w = 0$, then the Householder reflector of $w$ is an involution: $P(Px) = x$.
+
+**Reading.** The normalized direction is zero when the tail is zero, and the reflection formula then
+acts as the identity. The source formula divides by the norm of the direction.
 -/
 theorem householder_householder {w : 𝔼} (hw : ‖w‖ = 1 ∨ w = 0) (x : 𝔼) :
     householder w (householder w x) = x := by
@@ -884,7 +1117,11 @@ theorem inner_householder (w x y : 𝔼) :
   ring
 
 /-- If $\|w\| = 1$ or $w = 0$, then the Householder reflector of $w$ preserves the norm:
-$\|Px\| = \|x\|$. -/
+$\|Px\| = \|x\|$.
+
+**Reading.** The normalized direction is zero when the tail is zero, and the reflection formula then
+acts as the identity. The source formula divides by the norm of the direction.
+-/
 theorem norm_householder_apply {w : 𝔼} (hw : ‖w‖ = 1 ∨ w = 0) (x : 𝔼) :
     ‖householder w x‖ = ‖x‖ := by
   have h : (inner ℝ (householder w x) (householder w x) : ℝ) = inner ℝ x x := by
@@ -900,7 +1137,11 @@ theorem householderVec_coord_of_lt {z : 𝔼} {k : ℕ} {i : Fin n} (h : (i : �
 
 /-- **Equations (1.23)–(1.26)** of [saad2003iterative]. The Householder reflector at position $k$
 maps $z$ to $z - z'$. It keeps the entries of $z$ before position $k$, puts $-\beta$ at position
-$k$, and zeros after it. -/
+$k$, and zeros after it.
+
+**Reading.** The normalized direction is zero when the tail is zero, and the reflection formula then
+acts as the identity. The source formula divides by the norm of the direction.
+-/
 theorem householder_householderVec_apply (z : 𝔼) (k : ℕ) :
     householder (householderVec z k) z = z - householderDir z k := by
   rcases eq_or_ne (householderDir z k) 0 with h | h
@@ -915,7 +1156,11 @@ theorem householder_householderVec_apply (z : 𝔼) (k : ℕ) :
     rw [householder_apply, householderVec, real_inner_smul_left, smul_smul, hone, one_smul]
 
 /-- The $i$-th entry of $Pz$, for the Householder reflector $P$ of $z$ at position $k$, is $z_i$ for
-$i < k$, $-\beta$ for $i = k$, and $0$ for $i > k$. -/
+$i < k$, $-\beta$ for $i = k$, and $0$ for $i > k$.
+
+**Reading.** The normalized direction is zero when the tail is zero, and the reflection formula then
+acts as the identity. The source formula divides by the norm of the direction.
+-/
 theorem householder_householderVec_coord (z : 𝔼) (k : ℕ) (i : Fin n) :
     householder (householderVec z k) z i =
       if (i : ℕ) < k then z i else if (i : ℕ) = k then -householderBeta z k else 0 := by
@@ -975,7 +1220,13 @@ from $z_1 = v$, and set $z_{j+1} = P_j P_{j-1} \cdots P_1 A v_j$, where $P_i$ is
 reflector at position $i$ for $z_i$.
 
 As in Algorithm 6.2, the clamp `min i j` does not matter, because only the first $j$ reflectors
-are used. The index is $0$-based: `hhZ A v j` is $z_{j+1}$. -/
+are used. The index is $0$-based: `hhZ A v j` is $z_{j+1}$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 noncomputable def hhZ (A : Matrix (Fin n) (Fin n) ℝ) (v : 𝔼) : ℕ → 𝔼
   | 0 => v
   | j + 1 =>
@@ -989,26 +1240,56 @@ variable (A : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n))
 /-- **Algorithm 6.3** of [saad2003iterative], lines 3–5. The Householder unit vector $w_j$, computed
 from $z_j$ at position $j$.
 
-The index is $0$-based: `hhW A v j` is $w_{j+1}$. -/
+The index is $0$-based: `hhW A v j` is $w_{j+1}$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 noncomputable def hhW (j : ℕ) : 𝔼 := householderVec (hhZ A v j) j
 
 /-- **Equation (6.10)** of [saad2003iterative]. The product of Householder reflectors
 $Q_j = P_j P_{j-1} \cdots P_1$.
 
-The index is $0$-based: `Qhh A v j` is $Q_{j+1}$. -/
+The index is $0$-based: `Qhh A v j` is $Q_{j+1}$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 noncomputable def Qhh (j : ℕ) : 𝔼 →ₗ[ℝ] 𝔼 := hhQAux (hhW A v) j
 
 /-- The transpose $Q_j^T = P_1 P_2 \cdots P_j$ of $Q_j$, which is its inverse (Exercise P-6.1(a),(b)
-of [saad2003iterative]). The index is $0$-based: `QhhT A v j` is $Q_{j+1}^T$. -/
+of [saad2003iterative]). The index is $0$-based: `QhhT A v j` is $Q_{j+1}^T$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 noncomputable def QhhT (j : ℕ) : 𝔼 →ₗ[ℝ] 𝔼 := hhQTAux (hhW A v) j
 
 /-- **Algorithm 6.3** of [saad2003iterative], line 7. The Householder Arnoldi vector
-$v_j = P_1 P_2 \cdots P_j e_j$. The index is $0$-based: `hhV A v j` is $v_{j+1}$. -/
+$v_j = P_1 P_2 \cdots P_j e_j$. The index is $0$-based: `hhV A v j` is $v_{j+1}$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 noncomputable def hhV (j : ℕ) : 𝔼 := QhhT A v j (stdVec j)
 
 /-- **Algorithm 6.3** of [saad2003iterative], line 6. The vector $h_{j-1} = P_j z_j$, the $j$-th
 column of the factorization (6.12). The index is shifted: `hhH A v j` is
-$h_j = P_{j+1} z_{j+1}$. -/
+$h_j = P_{j+1} z_{j+1}$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 noncomputable def hhH (j : ℕ) : 𝔼 := householder (hhW A v j) (hhZ A v j)
 
 /-- The first product of reflectors is $Q_1 = P_1$. -/
@@ -1027,7 +1308,13 @@ theorem QhhT_succ (j : ℕ) : QhhT A v (j + 1) = QhhT A v j ∘ₗ householder (
 @[simp]
 theorem hhZ_zero : hhZ A v 0 = v := by rw [hhZ]
 
-/-- The auxiliary vectors of Algorithm 6.3 satisfy $z_{j+1} = Q_j A v_j$. -/
+/-- The auxiliary vectors of Algorithm 6.3 satisfy $z_{j+1} = Q_j A v_j$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 theorem hhZ_succ (j : ℕ) : hhZ A v (j + 1) = Qhh A v j (op A (hhV A v j)) := by
   rw [hhZ]
   have hw : ∀ i ≤ j, householderVec (hhZ A v (min i j)) (min i j) = hhW A v i := by
@@ -1036,7 +1323,13 @@ theorem hhZ_succ (j : ℕ) : hhZ A v (j + 1) = Qhh A v j (op A (hhV A v j)) := b
   rw [hhQAux_congr (w' := hhW A v) hw, hhQTAux_congr (w' := hhW A v) hw]
   rfl
 
-/-- Each Householder vector $w_j$ of Algorithm 6.3 has norm $1$ or is $0$. -/
+/-- Each Householder vector $w_j$ of Algorithm 6.3 has norm $1$ or is $0$.
+
+**Reading.** Lean gives an exact recurrence without fixed iteration limit, permits a zero start, and
+uses the identity reflector for a zero tail. Where dependent Krylov vectors occur the reflectors can
+supply orthogonal completion vectors, and out-of-range coordinate vectors are zero. The source
+specifies a nonzero start and unit reflectors.
+-/
 theorem norm_hhW (j : ℕ) : ‖hhW A v j‖ = 1 ∨ hhW A v j = 0 := norm_householderVec _ _
 
 /-- The Householder vector $w_j$ of Algorithm 6.3 has zero entries before position $j$. -/
@@ -1139,7 +1432,12 @@ theorem equation_6_11 (j : ℕ) : hhH A v (j + 1) = Qhh A v (j + 1) (op A (hhV A
 /-- **Equation (6.12)** of [saad2003iterative], first column. For every $m$, $Q_{m+1} v = h_0$, that
 is, $Q_{m+1}$ maps the starting vector to the first column of the factorization.
 
-In Lean, `Qhh A v m` is $Q_{m+1}$. -/
+In Lean, `Qhh A v m` is $Q_{m+1}$.
+
+**Correction.** The source prints $Q_m$ even though the final column $h_m$ includes the $(m+1)$-st
+reflector. Lean uses enough reflectors to include that column, or any later product because later
+reflectors fix it.
+-/
 theorem equation_6_12_zero (m : ℕ) : Qhh A v m v = hhH A v 0 := by
   induction m with
   | zero => rw [Qhh_zero, hhH, hhZ_zero]
@@ -1151,7 +1449,12 @@ $$Q_{m+1} [v, Av_1, \dots, Av_m] = [h_0, h_1, \dots, h_m],$$
 and with `SaadSparse.Chapter06.hhH_coord_of_lt` it says that the right-hand side is upper
 triangular.
 
-In Lean, `Qhh A v m` is the book's $Q_{m+1}$. -/
+In Lean, `Qhh A v m` is the book's $Q_{m+1}$.
+
+**Correction.** The source prints $Q_m$ even though the final column $h_m$ includes the $(m+1)$-st
+reflector. Lean uses enough reflectors to include that column, or any later product because later
+reflectors fix it.
+-/
 theorem equation_6_12 {j m : ℕ} (h : j + 1 ≤ m) :
     Qhh A v m (op A (hhV A v j)) = hhH A v (j + 1) := by
   induction m, h using Nat.le_induction with
@@ -1173,7 +1476,13 @@ theorem hhCoeff_eq_zero_of_lt {i j : ℕ} (h : j + 1 < i) : hhCoeff A v i j = 0 
 
 /-- **Exercise P-6.1(d)** of [saad2003iterative]. The Householder Arnoldi vectors and coefficients
 satisfy the Hessenberg relation `Krylov.HessenbergRelation`: $A v_j$ is a combination of
-$v_1, \dots, v_{j+1}$ with the coefficients of $\bar H_m$. Hence $A V_m = V_{m+1} \bar H_m$. -/
+$v_1, \dots, v_{j+1}$ with the coefficients of $\bar H_m$. Hence $A V_m = V_{m+1} \bar H_m$.
+
+**Correction.** Lean proves the Arnoldi relation $AV_m=V_{m+1}\bar H_m$ from §6.3.2. The literal
+exercise display mixes the transformed left side with the Arnoldi basis and an extra coordinate
+matrix on the right. With $Q_{m+1}$ on the left, the right side uses the first $m+1$ coordinate
+vectors in place of $V_{m+1}$.
+-/
 theorem hh_hessenbergRelation :
     Krylov.HessenbergRelation (op A) (hhV A v) (hhCoeff A v) := by
   refine ⟨fun j => ?_, fun i j hij => hhCoeff_eq_zero_of_lt A v hij⟩
@@ -1200,7 +1509,13 @@ satisfies
 $$A V_m = V_{m+1} \bar H_m.$$
 
 No hypothesis on $v$ or $m$ is needed. The matrices are `SaadSparse.Chapter06.VHH` and
-`SaadSparse.Chapter06.HbarHH`. -/
+`SaadSparse.Chapter06.HbarHH`.
+
+**Correction.** Lean proves the Arnoldi relation $AV_m=V_{m+1}\bar H_m$ from §6.3.2. The literal
+exercise display mixes the transformed left side with the Arnoldi basis and an extra coordinate
+matrix on the right. With $Q_{m+1}$ on the left, the right side uses the first $m+1$ coordinate
+vectors in place of $V_{m+1}$.
+-/
 theorem hh_arnoldi_relation (m : ℕ) : A * VHH A v m = VHH A v (m + 1) * HbarHH A v m :=
   mul_colMatrix_eq A (hh_hessenbergRelation A v) m
 
@@ -1296,7 +1611,12 @@ theorem krylov_le_span_hhV (m : ℕ) :
   exact span_hhV_mono A v (by omega) (pow_apply_mem_span_hhV A v (i : ℕ))
 
 /-- **Equation (6.12)** of [saad2003iterative], span form. If $m \le n$ and the grade of $v$ is at
-least $m$, then the first $m$ Householder Arnoldi vectors span $\mathcal{K}_m(A, v)$. -/
+least $m$, then the first $m$ Householder Arnoldi vectors span $\mathcal{K}_m(A, v)$.
+
+**Reading.** Lean restricts the Krylov-basis and sign comparisons to the prefix within the grade.
+The source's comparison is stated for Arnoldi vectors that actually exist. After breakdown the
+Householder vectors can complete the basis.
+-/
 theorem span_hhV_eq {m : ℕ} (hmn : m ≤ n) (hmg : m ≤ grade A v) :
     Submodule.span ℝ (hhV A v '' Set.Iio m) = krylov A v m := by
   have hfin : Module.finrank ℝ (Submodule.span ℝ (hhV A v '' Set.Iio m)) = m := by
@@ -1311,7 +1631,12 @@ $\varepsilon_j \in \{1, -1\}$ such that, for $j = 1, \dots, m + 1$, the Househol
 vector $v_j$ is $\varepsilon_j$ times the $j$-th vector of Algorithm 6.1 started at $v / \|v\|$.
 
 In Lean, the conclusion is `hhV A v j = ε j • arnoldiCGS A (‖v‖⁻¹ • v) j` for $j \le m$,
-$0$-based. -/
+$0$-based.
+
+**Reading.** Lean restricts the Krylov-basis and sign comparisons to the prefix within the grade.
+The source's comparison is stated for Arnoldi vectors that actually exist. After breakdown the
+Householder vectors can complete the basis.
+-/
 theorem hh_eq_arnoldi_up_to_sign (hv : v ≠ 0) {m : ℕ} (hmn : m + 1 ≤ n)
     (hmg : m + 1 ≤ grade A v) :
     ∃ ε : ℕ → ℝ, (∀ j, ε j = 1 ∨ ε j = -1) ∧
@@ -1388,6 +1713,9 @@ theorem proposition_6_4 (hv : ‖v₁‖ = 1) {m : ℕ} (h : NoBreakdownBefore A
 /-- **Equation (6.9)** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ and let
 $v_1 \in \mathbb{R}^n$ have norm $1$. Then for every $j$,
 $$A v_j = \sum_{i=1}^{j+1} h_{ij} v_i.$$
+
+**Generalization.** The identities use the totalized exact sequence for every applicable order,
+including zeros after the point at which Algorithm 6.1 stops.
 -/
 theorem equation_6_9 (hv : ‖v₁‖ = 1) (j : ℕ) :
     op A (arnoldiCGS A v₁ j)
@@ -1398,6 +1726,9 @@ theorem equation_6_9 (hv : ‖v₁‖ = 1) (j : ℕ) :
 $A \in \mathbb{R}^{n \times n}$ and let $v_1 \in \mathbb{R}^n$ have norm $1$. Then for every
 $m$,
 $$A V_m = V_{m+1} \bar H_m.$$
+
+**Generalization.** The identities use the totalized exact sequence for every applicable order,
+including zeros after the point at which Algorithm 6.1 stops.
 -/
 theorem equation_6_7 (hv : ‖v₁‖ = 1) (m : ℕ) : A * V A v₁ m = V A v₁ (m + 1) * Hbar A v₁ m :=
   mul_V_eq A v₁ hv m
@@ -1408,7 +1739,11 @@ $m \ge 1$,
 $$A V_m = V_m H_m + w_m e_m^T.$$
 
 The Lean statement is for $m + 1$ steps: the last term is the outer product of
-`arnoldiW A v₁ m`, the book's $w_{m+1}$, with the last coordinate vector of $\mathbb{R}^{m+1}$. -/
+`arnoldiW A v₁ m`, the book's $w_{m+1}$, with the last coordinate vector of $\mathbb{R}^{m+1}$.
+
+**Generalization.** The identities use the totalized exact sequence for every applicable order,
+including zeros after the point at which Algorithm 6.1 stops.
+-/
 theorem equation_6_6 (hv : ‖v₁‖ = 1) (m : ℕ) :
     A * V A v₁ (m + 1) = V A v₁ (m + 1) * H A v₁ (m + 1) +
       Matrix.vecMulVec (WithLp.ofLp (arnoldiW A v₁ m)) (Pi.single (Fin.last m) 1) :=
@@ -1419,7 +1754,11 @@ $A \in \mathbb{R}^{n \times n}$ and $v_1 \in \mathbb{R}^n$. Then for every $m$,
 $$V_m^T A V_m = H_m.$$
 
 The identity holds for every $v_1$ and every $m$, also after a breakdown, because both sides are
-the same inner products. -/
+the same inner products.
+
+**Generalization.** Lean defines the projected matrix entrywise by inner products, so the
+compression identity does not need an orthonormal basis or a successful full run.
+-/
 theorem equation_6_8 (m : ℕ) : (V A v₁ m)ᵀ * A * V A v₁ m = H A v₁ m := by
   rw [← Matrix.conjTranspose_eq_transpose_of_trivial]
   exact conjTranspose_V_mul_mul_V A v₁ m
@@ -1453,7 +1792,12 @@ onto $\mathcal{K}_j(A, r_0)$ orthogonally to $L$, that is, $x - x_0 \in \mathcal
 and $b - Ax \perp L$, then $Ax = b$.
 
 This is Proposition 5.6 of [saad2003iterative] applied to the invariant subspace
-$\mathcal{K}_j$. The approximation is `IsPetrovGalerkin`. -/
+$\mathcal{K}_j$. The approximation is `IsPetrovGalerkin`.
+
+**Reading.** Exactness for a Petrov–Galerkin approximation needs $K_j\cap L^\perp=\{0\}$, the same
+transversality condition used in the Lean reading of Proposition 5.6. The grade inequality also
+allows using an already stabilized Krylov subspace.
+-/
 theorem lucky_breakdown {j : ℕ} (hj : 0 < j) {b x₀ x : EuclideanSpace ℝ (Fin n)}
     {L : Submodule ℝ (EuclideanSpace ℝ (Fin n))} (hbreak : grade A (b - op A x₀) ≤ j)
     (hKL : ∀ z ∈ krylov A (b - op A x₀) j, z ∈ Lᗮ → z = 0)
@@ -1467,7 +1811,11 @@ variable (A)
 /-- **Section 6.3.2** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$ and let
 $v_1 \in \mathbb{R}^n$ have norm $1$. Then **Algorithm 6.2 is mathematically equivalent to
 Algorithm 6.1**: in exact arithmetic the two produce the same vectors $v_j$ and the same
-coefficients $h_{ij}$. -/
+coefficients $h_{ij}$.
+
+**Reading.** The equality compares the exact sequences for all indices, including the zeros after
+the stopping point. The general statements also admit complex scalars.
+-/
 theorem algorithm_6_2_eq_alg_6_1 (hv : ‖v₁‖ = 1) :
     arnoldiMGS A v₁ = arnoldiCGS A v₁ ∧ arnoldiMGSCoeff A v₁ = arnoldiCoeff A v₁ :=
   ⟨funext (arnoldiMGS_eq_arnoldiCGS A v₁ hv),

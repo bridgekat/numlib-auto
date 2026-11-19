@@ -87,6 +87,25 @@ the biconjugate gradient method and the quasi-minimal residual method) and
 
 ## Deviations from the source
 
+* **Totalization.** Two-sided Lanczos uses a total recurrence and states the initial-pairing
+  requirement in its theorems. See `QuarteroniSaccoSaleri.Chapter04.biLanczosStep`,
+  `QuarteroniSaccoSaleri.Chapter04.biLanczos`, `QuarteroniSaccoSaleri.Chapter04.biLanczos_succ`,
+  `QuarteroniSaccoSaleri.Chapter04.blV`, `QuarteroniSaccoSaleri.Chapter04.blZ`,
+  `QuarteroniSaccoSaleri.Chapter04.blAlpha`, `QuarteroniSaccoSaleri.Chapter04.blBeta`,
+  `QuarteroniSaccoSaleri.Chapter04.blGamma`.
+* **Scope.** Biorthogonality is stated for an extra column beyond the two Krylov spans. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_67`.
+* **Totalization.** The tridiagonal and basis matrices also describe the padded recurrence. See
+  `QuarteroniSaccoSaleri.Chapter04.T`, `QuarteroniSaccoSaleri.Chapter04.That`,
+  `QuarteroniSaccoSaleri.Chapter04.Vmat`, `QuarteroniSaccoSaleri.Chapter04.Zmat`.
+* **Scope.** The tridiagonal compression requires the nonzero normalization for the extra column.
+  See `QuarteroniSaccoSaleri.Chapter04.biLanczos_tridiag`.
+* **Scope.** The nonsymmetric residual formula uses the common start of Program 25 and a successful
+  prefix. See `QuarteroniSaccoSaleri.Chapter04.lanczosUnsym_norm_residual`.
+* **Scope.** The BiCG result specifies Petrov–Galerkin optimality on the paired Krylov spaces. See
+  `QuarteroniSaccoSaleri.Chapter04.bicg_isPetrovGalerkin`.
+* **Scope.** The QMR statement gives the reduced residual bound for supplied coefficients. See
+  `QuarteroniSaccoSaleri.Chapter04.qmr_norm_residual_le`.
 * **Residual formula of the Lanczos method** (reading). The formula $\|r^{(m)}\|_2 = |\gamma_{m+1}
   e_m^T y_m| \|v_{m+1}\|_2$ is stated for a run of $m$ steps without breakdown, which the derivation
   of the book needs. See `QuarteroniSaccoSaleri.Chapter04.lanczosUnsym_norm_residual`.
@@ -126,7 +145,12 @@ If $\gamma_{k+1} = 0$, then $\beta_{k+1} = 0$ and $v_{k+1} = z_{k+1} = 0$.
 The book stops the algorithm when $\gamma_{k+1} = 0$. In Lean, division by zero gives zero, so
 all later vectors are $0$. The state is the backbone's record `BiLanczos.State`, in which the
 book's $z$ and $\gamma$ are the fields `w` and `delta`. The step is `BiLanczos.step` with
-$B = A^T$ (`QuarteroniSaccoSaleri.Chapter04.biLanczosStep_eq`). -/
+$B = A^T$ (`QuarteroniSaccoSaleri.Chapter04.biLanczosStep_eq`).
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def biLanczosStep (s : BiLanczos.State ℝ (EuclideanSpace ℝ (Fin n))) :
     BiLanczos.State ℝ (EuclideanSpace ℝ (Fin n)) :=
   let α := inner ℝ s.w (toEuclideanLin A s.v)
@@ -139,7 +163,12 @@ noncomputable def biLanczosStep (s : BiLanczos.State ℝ (EuclideanSpace ℝ (Fi
 /-- **Section 4.5** of [quarteroni2000numerical], the bi-orthogonalization algorithm. Let
 $A \in \mathbb{R}^{n \times n}$ and $v_1, z_1 \in \mathbb{R}^n$. This is the state of the
 algorithm after $k$ steps of `QuarteroniSaccoSaleri.Chapter04.biLanczosStep`, started from
-$(v_1, z_1, v_0, z_0, \beta_1, \gamma_1) = (v_1, z_1, 0, 0, 0, 0)$. -/
+$(v_1, z_1, v_0, z_0, \beta_1, \gamma_1) = (v_1, z_1, 0, 0, 0, 0)$.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def biLanczos (v₁ z₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     BiLanczos.State ℝ (EuclideanSpace ℝ (Fin n)) :=
   (biLanczosStep A)^[k] { v := v₁, w := z₁, vPrev := 0, wPrev := 0, beta := 0, delta := 0 }
@@ -149,36 +178,66 @@ variable (v₁ z₁ : EuclideanSpace ℝ (Fin n))
 /-- **Section 4.5** of [quarteroni2000numerical], the vectors $v_k$. This is the vector $v_{k+1}$ of
 the bi-orthogonalization algorithm started from $v_1$ and $z_1$.
 
-The index starts at $0$: `QuarteroniSaccoSaleri.Chapter04.blV A v₁ z₁ 0` is $v_1$. -/
+The index starts at $0$: `QuarteroniSaccoSaleri.Chapter04.blV A v₁ z₁ 0` is $v_1$.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def blV (k : ℕ) : EuclideanSpace ℝ (Fin n) := (biLanczos A v₁ z₁ k).v
 
 /-- **Section 4.5** of [quarteroni2000numerical], the vectors $z_k$. This is the vector $z_{k+1}$ of
 the bi-orthogonalization algorithm started from $v_1$ and $z_1$.
 
-The index starts at $0$: `QuarteroniSaccoSaleri.Chapter04.blZ A v₁ z₁ 0` is $z_1$. -/
+The index starts at $0$: `QuarteroniSaccoSaleri.Chapter04.blZ A v₁ z₁ 0` is $z_1$.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def blZ (k : ℕ) : EuclideanSpace ℝ (Fin n) := (biLanczos A v₁ z₁ k).w
 
 /-- **Section 4.5** of [quarteroni2000numerical], the coefficients $\alpha_k$. This is the
 coefficient $\alpha_{k+1} = z_{k+1}^T A v_{k+1}$ of the bi-orthogonalization algorithm.
 
-The index starts at $0$. -/
+The index starts at $0$.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def blAlpha (k : ℕ) : ℝ := inner ℝ (blZ A v₁ z₁ k) (toEuclideanLin A (blV A v₁ z₁ k))
 
 /-- **Section 4.5** of [quarteroni2000numerical], the coefficients $\beta_k$. This is the
 coefficient $\beta_{k+1}$ of the bi-orthogonalization algorithm, with $\beta_1 = 0$.
 
-The index starts at $0$. -/
+The index starts at $0$.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def blBeta (k : ℕ) : ℝ := (biLanczos A v₁ z₁ k).beta
 
 /-- **Section 4.5** of [quarteroni2000numerical], the coefficients $\gamma_k$. This is the
 coefficient $\gamma_{k+1}$ of the bi-orthogonalization algorithm, with $\gamma_1 = 0$. The value
 $\gamma_{k+2} = 0$ is a breakdown at step $k + 1$.
 
-The index starts at $0$. -/
+The index starts at $0$.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 noncomputable def blGamma (k : ℕ) : ℝ := (biLanczos A v₁ z₁ k).delta
 
 /-- The state of the bi-orthogonalization algorithm after $k + 1$ steps is
-`QuarteroniSaccoSaleri.Chapter04.biLanczosStep` applied to the state after $k$ steps. -/
+`QuarteroniSaccoSaleri.Chapter04.biLanczosStep` applied to the state after $k$ steps.
+
+**Reading.** The recurrence is defined for arbitrary starting vectors and step counts. The source
+requires the initial pairing to be one and stops at a vanishing normalization factor. Lean pads the
+recurrence with zero vectors at breakdown.
+-/
 theorem biLanczos_succ (k : ℕ) :
     biLanczos A v₁ z₁ (k + 1) = biLanczosStep A (biLanczos A v₁ z₁ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -271,7 +330,12 @@ $$\operatorname{span}\{v_1, \dots, v_m\} = K_m(A; v_1), \qquad \operatorname{spa
 
 By the biorthogonality, the two families are linearly independent, so they are bases of the two
 Krylov subspaces. The proof specializes the backbone's `BiLanczos.inner_dualVec_vec`,
-`BiLanczos.span_vec` and `BiLanczos.span_dualVec`. -/
+`BiLanczos.span_vec` and `BiLanczos.span_dualVec`.
+
+**Reading.** The result states biorthogonality through zero-based index $m$, so it requires that the
+normalization for the extra column be nonzero as well. The two span identities refer to the first
+$m$ columns.
+-/
 theorem equation_4_67 (hz : inner ℝ z₁ v₁ = 1) {m : ℕ}
     (hγ : ∀ j < m, blGamma A v₁ z₁ (j + 1) ≠ 0) :
     (∀ i j, i ≤ m → j ≤ m → inner ℝ (blZ A v₁ z₁ i) (blV A v₁ z₁ j) = if i = j then 1 else 0) ∧
@@ -288,7 +352,11 @@ $m \times m$ matrix with $(T_m)_{kk} = \alpha_k$, $(T_m)_{k+1,k} = \gamma_{k+1}$
 $(T_m)_{k,k+1} = \beta_{k+1}$, and with all other entries $0$.
 
 The entry $(i, j)$ of the Lean matrix has $0$-based indices: the diagonal entry $(i, i)$ is
-`QuarteroniSaccoSaleri.Chapter04.blAlpha A v₁ z₁ i`, which is $\alpha_{i+1}$. -/
+`QuarteroniSaccoSaleri.Chapter04.blAlpha A v₁ z₁ i`, which is $\alpha_{i+1}$.
+
+**Reading.** The selected matrices are built from any prefix of the total recurrence, including
+beyond breakdown. The book introduces them once the relevant basis has been generated.
+-/
 noncomputable def T (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then blAlpha A v₁ z₁ i
@@ -300,7 +368,11 @@ noncomputable def T (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
 matrix with the same entries as $T_m$ in its first $m$ rows and the last row
 $(0, \dots, 0, \gamma_{m+1})$. It is the matrix of the relation $A V_m = V_{m+1} \bar T_m$.
 
-The indices are $0$-based, as in `QuarteroniSaccoSaleri.Chapter04.T`. -/
+The indices are $0$-based, as in `QuarteroniSaccoSaleri.Chapter04.T`.
+
+**Reading.** The selected matrices are built from any prefix of the total recurrence, including
+beyond breakdown. The book introduces them once the relevant basis has been generated.
+-/
 noncomputable def That (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
   Matrix.of fun i j =>
     if (i : ℕ) = j then blAlpha A v₁ z₁ i
@@ -309,11 +381,19 @@ noncomputable def That (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
     else 0
 
 /-- **Section 4.5** of [quarteroni2000numerical], the matrix $V_m \in \mathbb{R}^{n \times m}$ whose
-columns are $v_1, \dots, v_m$. -/
+columns are $v_1, \dots, v_m$.
+
+**Reading.** The selected matrices are built from any prefix of the total recurrence, including
+beyond breakdown. The book introduces them once the relevant basis has been generated.
+-/
 noncomputable def Vmat (m : ℕ) : Matrix (Fin n) (Fin m) ℝ := Matrix.of fun i j => blV A v₁ z₁ j i
 
 /-- **Section 4.5** of [quarteroni2000numerical], the matrix $Z_m \in \mathbb{R}^{n \times m}$ whose
-columns are $z_1, \dots, z_m$. -/
+columns are $z_1, \dots, z_m$.
+
+**Reading.** The selected matrices are built from any prefix of the total recurrence, including
+beyond breakdown. The book introduces them once the relevant basis has been generated.
+-/
 noncomputable def Zmat (m : ℕ) : Matrix (Fin n) (Fin m) ℝ := Matrix.of fun i j => blZ A v₁ z₁ j i
 
 /-- The entries of $T_m$ are the backbone's tridiagonal coefficient array `BiLanczos.coeff` for the
@@ -346,7 +426,11 @@ $A \in \mathbb{R}^{n \times n}$ and $v_1, z_1 \in \mathbb{R}^n$ with $z_1^T v_1 
 $m \in \mathbb{N}$, and suppose that $\gamma_2, \dots, \gamma_{m+1} \neq 0$. Then
 $$Z_m^T A V_m = T_m.$$
 
-The proof specializes the backbone's `BiLanczos.inner_dualVec_apply_vec`. -/
+The proof specializes the backbone's `BiLanczos.inner_dualVec_apply_vec`.
+
+**Reading.** The equality assumes that the extra vector after the $m$ columns is available. Only
+pairings within the first $m$ columns appear in the displayed compression.
+-/
 theorem biLanczos_tridiag (hz : inner ℝ z₁ v₁ = 1) {m : ℕ}
     (hγ : ∀ j < m, blGamma A v₁ z₁ (j + 1) ≠ 0) :
     (Zmat A v₁ z₁ m)ᵀ * A * Vmat A v₁ z₁ m = T A v₁ z₁ m := by
@@ -409,7 +493,13 @@ $\|v_{m+1}\|_2$ because the bi-Lanczos basis is not normalized. The vector $V_m 
 $A V_m = V_{m+1} \bar T_m$ is a Hessenberg relation with a basis that is not orthonormal. It is
 the backbone's $m$-step relation `BiLanczos.NoBreakdown.hessenbergRelation₂`, which pads the
 relation with zeros beyond column $m$, and the proof applies
-`Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq` to it. -/
+`Krylov.HessenbergRelation₂.residual_eq_of_mulVec_eq` to it.
+
+**Reading.** The theorem uses the implementation's common primal and dual start and assumes a
+successful prefix including the extra vector. It is conditional on supplied coefficients solving the
+projected equation. The factor $\|v_{m+1}\|_2$ is retained because the primal basis is biorthogonal
+with its dual.
+-/
 theorem lanczosUnsym_norm_residual {b x₀ : EuclideanSpace ℝ (Fin n)}
     (hr : b - toEuclideanLin A x₀ ≠ 0) (hv₁ : v₁ = (‖b - toEuclideanLin A x₀‖ : ℝ)⁻¹ •
       (b - toEuclideanLin A x₀)) {m : ℕ} (hm : 0 < m)
@@ -465,7 +555,12 @@ The book says that the method "can be derived by the unsymmetric Lanczos method 
 as the conjugate gradient method is obtained from the FOM method". The iterate is the backbone's
 `BCG.iterate`, which is Algorithm 7.3 of [saad2003iterative], and the hypothesis is
 `BCG.NoBreakdown`. The proof specializes `BCG.isPetrovGalerkin`, which is Proposition 7.2 of
-[saad2003iterative]. -/
+[saad2003iterative].
+
+**Reading.** The declaration gives the BiCG iterate's Petrov–Galerkin condition under no breakdown.
+The book describes deriving BiCG from unsymmetric Lanczos; the theorem does not identify the
+implementation states of the two algorithms.
+-/
 theorem bicg_isPetrovGalerkin {b x₀ rs₀ : EuclideanSpace ℝ (Fin n)} {k : ℕ}
     (h : BCG.NoBreakdown (toEuclideanLin A) (toEuclideanLin Aᵀ) b x₀ rs₀ k) :
     remark_4_4 A b x₀ (krylovSubspace A (b - toEuclideanLin A x₀) k) (krylovSubspace Aᵀ rs₀ k)
@@ -491,7 +586,12 @@ for the map $w \mapsto V_{m+1} w$. The smallest such constant is $\|V_{m+1}\|_2$
 The quasi-residual $\|r^{(0)}\|_2 e_1 - \bar T_m y$ is what the method minimizes over $y$, in
 place of the residual that GMRES minimizes. The two differ because $V_{m+1}$ is not orthogonal.
 The proof specializes the backbone's `QMR.norm_residual_le_norm_quasiResidual`, which is
-Proposition 7.3 of [saad2003iterative]. -/
+Proposition 7.3 of [saad2003iterative].
+
+**Reading.** The declaration gives a residual identity and an inequality for any supplied projected
+coefficient vector, with an explicit operator bound on the basis. It does not choose the reduced
+least-squares minimizer described by the GMRES analogy.
+-/
 theorem qmr_norm_residual_le {b x₀ : EuclideanSpace ℝ (Fin n)}
     (hr : b - toEuclideanLin A x₀ ≠ 0) (hv₁ : v₁ = (‖b - toEuclideanLin A x₀‖ : ℝ)⁻¹ •
       (b - toEuclideanLin A x₀)) {m : ℕ} (hγ : ∀ j < m, blGamma A v₁ v₁ (j + 1) ≠ 0) {C : ℝ}

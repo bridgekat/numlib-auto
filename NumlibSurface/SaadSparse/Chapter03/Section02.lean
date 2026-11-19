@@ -37,11 +37,18 @@ diagonal the pattern of $AB$ contains that union. Everything specializes
 
 ## Deviations from the source
 
-* **§3.2.1 and Problems P-3.2, P-3.4 and P-3.5, the patterns of sums, powers and products**
-  (reading). The source assumes without saying so that no numerical cancellation occurs. The library
-  proves the containments without a hypothesis, and the equalities for entrywise nonnegative
-  matrices, where no cancellation can happen. See `SaadSparse.Chapter03.pattern_add_of_nonneg` and
-  `SaadSparse.Chapter03.problem_3_5`.
+* **§3.2.1, the adjacency graph** (reading). The directed relation includes loops, and the
+  simple graph used for symmetry records off-diagonal edges.
+  See `SaadSparse.Chapter03.adjDigraph_eq`.
+* **§3.2.1 and Problem P-3.4, powers** (correction). A nonzero entry gives a path of the
+  prescribed length. Cancellation can make the reverse implication false.
+  See `SaadSparse.Chapter03.pattern_pow`.
+* **Problem P-3.2, sums** (reading). Pattern containment always holds, and the equality is
+  stated for entrywise nonnegative matrices. See `SaadSparse.Chapter03.pattern_add` and
+  `SaadSparse.Chapter03.pattern_add_of_nonneg`.
+* **Problem P-3.5, products** (correction). The diagonal hypothesis alone permits cancellation.
+  The theorem imposes nonnegative entries and positive diagonals.
+  See `SaadSparse.Chapter03.problem_3_5`.
 
 ## Not formalized
 
@@ -68,7 +75,10 @@ $A \in \mathbb{R}^{n \times n}$. Then the following hold.
   arrow from $i$ to $j$.
 
 The symmetry hypothesis is what the source means by a "symmetric nonzero pattern". The directed
-graph is `Matrix.adjDigraph`, and the symmetrized loopless graph is `Matrix.adjGraph`. -/
+graph is `Matrix.adjDigraph`, and the symmetrized loopless graph is `Matrix.adjGraph`.
+
+**Reading.** The source represents the symmetric relation by unoriented edges. The simple
+graph here represents its off-diagonal part. The directed relation retains the diagonal loops. -/
 theorem adjDigraph_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     (∀ i j, A.adjDigraph.Adj i j ↔ A i j ≠ 0) ∧
       ((∀ i j, A i j ≠ 0 ↔ A j i ≠ 0) →
@@ -82,10 +92,11 @@ theorem adjDigraph_eq (A : Matrix (Fin n) (Fin n) ℝ) :
 $A \in \mathbb{R}^{n \times n}$ and $k \in \mathbb{N}$. If $(A^k)_{ij} \neq 0$, then there is a
 path of length $k$ from $i$ to $j$ in the adjacency graph of $A$.
 
-This direction needs no hypothesis. The converse is false because of cancellation. It is true
-for entrywise nonnegative matrices, where it is Mathlib's
-`Matrix.pow_apply_pos_iff_nonempty_path`. The path is a `Quiver.Path` in the quiver
-`Matrix.adjQuiver A`. -/
+**Correction.** The source claims the equivalence in §3.2.1. In
+$A=\begin{bmatrix}1&1\\-1&-1\end{bmatrix}$ there is a length-two path from vertex $1$ to
+itself, but $A^2=0$. The theorem gives the implication that holds for arbitrary entries.
+The converse for entrywise nonnegative matrices is `Matrix.pow_apply_pos_iff_nonempty_path`.
+Paths are `Quiver.Path` in `Matrix.adjQuiver A`, allowing repeated vertices as in the source. -/
 theorem pattern_pow (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) {i j : Fin n} (h : (A ^ k) i j ≠ 0) :
     letI := A.adjQuiver
     ∃ p : Quiver.Path i j, p.length = k :=
@@ -104,8 +115,8 @@ be entrywise nonnegative. Then for all $i, j$
 $$(A + B)_{ij} > 0 \iff a_{ij} > 0 \text{ or } b_{ij} > 0.$$
 So the pattern of $A + B$ is the union of the patterns of $A$ and of $B$.
 
-**Reading.** The source assumes that no cancellation occurs. Entrywise nonnegativity makes this
-precise, because then no cancellation can occur. -/
+**Reading.** Problem P-3.2 asks how the patterns are related. The unrestricted relation is
+containment. This equality states the case of nonnegative entries, which prevent cancellation. -/
 theorem pattern_add_of_nonneg {A B : Matrix (Fin n) (Fin n) ℝ} (hA : ∀ i j, 0 ≤ A i j)
     (hB : ∀ i j, 0 ≤ B i j) (i j : Fin n) :
     0 < (A + B) i j ↔ 0 < A i j ∨ 0 < B i j := by
@@ -124,10 +135,10 @@ nonnegative, with $a_{ii} > 0$ and $b_{ii} > 0$ for every $i$. If $a_{ij} > 0$ o
 then $(AB)_{ij} > 0$. So the pattern of $AB$ contains the union of the patterns of $A$ and of
 $B$.
 
-**Reading.** The source asks for nonzero diagonal entries, under its convention that no
-cancellation occurs. Here the matrices are entrywise nonnegative, and this cannot be dropped:
-the diagonal hypothesis alone leaves $a_{ij} b_{jj}$ free to cancel against the other terms of
-the sum.
+**Correction.** Problem P-3.5 gives only nonzero diagonal entries. The matrices
+$A=\begin{bmatrix}1&1\\0&1\end{bmatrix}$ and $B=\begin{bmatrix}1&-1\\0&1\end{bmatrix}$ both
+have nonzero diagonals and a nonzero entry at $(1,2)$, but $AB=I$. Nonnegative entries
+and positive diagonal entries give the stated containment.
 
 A nonzero $a_{ij}$ pairs with $b_{jj}$, and $a_{ii}$ pairs with a nonzero $b_{ij}$. The
 practical point of the source, that it is better to store $A$ and $B$ than their product, is a

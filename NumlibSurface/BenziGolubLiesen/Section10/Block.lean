@@ -44,10 +44,16 @@ The proofs use `Numlib.Preconditioner.BlockSaddle`.
 
 ## Deviations from the source
 
-* **Section 10.1.1** (qualification). The exact block diagonal spectrum is contained in the
-  three-point set; some points need not occur, for example when one block is empty or $B$ is square.
-* **Section 10.1.2** (qualification). The minimal polynomial divides $(X-1)^2$; its degree is not
-  always exactly two.
+* **Section 10.1.1** (correction). The exact block diagonal spectrum is contained in the three
+  listed values. When $A=B_1=B_2=[1]$, the eigenvalue $1$ is absent. See
+  `BenziGolubLiesen.blockDiagonalPreconditioned_eigenvalues`.
+* **Section 10.1.2** (generalization). The triangular result gives the annihilator $(X-1)^2$
+  even when the lower-left block vanishes. The minimal polynomial can then have degree one.
+  See `BenziGolubLiesen.blockTriangularPreconditioned_charpoly`.
+* **Equations (10.2), (10.4) and (10.7)** (generalization). The block identities admit
+  arbitrary invertible Schur blocks. The scaled definition accepts any real multipliers.
+* **Equations (10.12)–(10.14)** (generalization). The three approximation formulas use
+  total inverses and accept arbitrary input matrices of the stated sizes.
 * **Equation (10.8)** (correction). The sign in the lower block row must also multiply its
   right-hand side in the negative-sign variant.
 
@@ -76,7 +82,9 @@ abbrev blockDiagonalPreconditioner (A : Matrix n n R) (S : Matrix m m R) :
 variable {A D : Matrix n n R} {U : Matrix n m R} {B : Matrix m n R} {S : Matrix m m R}
 
 /-- Equation (10.2) of [benzi2005numerical]. With invertible $A$ and $S$, left preconditioning
-by $\operatorname{diag}(A,-S)$ gives $[I,A^{-1}U;-S^{-1}B,0]$. -/
+by $\operatorname{diag}(A,-S)$ gives $[I,A^{-1}U;-S^{-1}B,0]$.
+
+**Generalization.** The identity holds for any invertible $S$. -/
 theorem blockDiagonalPreconditioned_eq (hA : IsUnit A) (hS : IsUnit S) :
     (blockDiagonalPreconditioner A S)⁻¹ * fromBlocks A U B 0 =
       fromBlocks 1 (A⁻¹ * U) (-(S⁻¹ * B)) 0 := by
@@ -97,8 +105,12 @@ theorem blockDiagonalPreconditioned_cubic (hA : IsUnit A) (hS : IsUnit (-B * A�
   rw [blockDiagonalPreconditioned_eq hA hS]
   exact fromBlocks_one_zero_cubic (normalized_blocks_mul_eq_one hS)
 
-/-- In the real case the roots of the annihilating cubic are $1$ and $(1 \pm \sqrt{5})/2$.
-Only the values supported by the sizes of the two blocks need occur. -/
+/-- **Section 10.1.1** of [benzi2005numerical]. In the real case every real spectral value
+belongs to the roots of the annihilating cubic, $1$ and $(1 \pm \sqrt{5})/2$.
+
+**Correction.** The source lists three distinct eigenvalues. For $A=B_1=B_2=[1]$, the
+preconditioned matrix is $\begin{bmatrix}1&1\\1&0\end{bmatrix}$, with characteristic polynomial
+$X^2-X-1$. The Lean result states containment in the three-point set. -/
 theorem blockDiagonalPreconditioned_eigenvalues {A : Matrix n n ℝ} {U : Matrix n m ℝ}
     {B : Matrix m n ℝ} (hA : IsUnit A) (hS : IsUnit (-B * A⁻¹ * U)) {μ : ℝ}
     (hμ : μ ∈ spectrum ℝ
@@ -139,7 +151,9 @@ theorem inv_saddle_eq_blockDiagonalCorrection (hA : IsUnit A) (hS : IsUnit (-B *
 
 /-- Equation (10.4) of [benzi2005numerical]. If $A=D-E$, the approximate block diagonal
 preconditioning is the exact preconditioning with primal block $D$ minus the block containing
-$D^{-1}E$. The signed block $S$ can be any nonsingular Schur approximation. -/
+$D^{-1}E$. The signed block $S$ can be any nonsingular Schur approximation.
+
+**Generalization.** An arbitrary invertible $S$ gives the same splitting identity. -/
 theorem blockDiagonalSplit_eq (E : Matrix n n R) (hD : IsUnit D) (hS : IsUnit S) :
     (blockDiagonalPreconditioner D S)⁻¹ * fromBlocks (D - E) U B 0 =
       fromBlocks 1 (D⁻¹ * U) (-(S⁻¹ * B)) 0 - fromBlocks (D⁻¹ * E) 0 0 0 := by
@@ -150,7 +164,11 @@ theorem blockDiagonalSplit_eq (E : Matrix n n R) (hD : IsUnit D) (hS : IsUnit S)
 /-- Equations (10.5)–(10.6) of [benzi2005numerical]. With the matching Schur block
 $S=-BD^{-1}U$, the iteration matrix $P_1^{-1}P_2$ has zero second block column. Its upper-left
 block is $(I+D^{-1}US^{-1}B)D^{-1}E$, so subtracting it from the identity gives the reduced
-primal system matrix. -/
+primal system matrix.
+
+**Reading.** This is the explicit iteration matrix in (10.5). Its top-left block is the term
+subtracted from the identity in (10.6). The formal statement requires invertibility of the
+matching Schur block explicitly. -/
 theorem blockDiagonalSplit_iteration (E : Matrix n n R) (hS : IsUnit (-B * D⁻¹ * U)) :
     let S := -B * D⁻¹ * U
     (fromBlocks 1 (D⁻¹ * U) (-(S⁻¹ * B)) 0)⁻¹ * fromBlocks (D⁻¹ * E) 0 0 0 =
@@ -166,8 +184,13 @@ signed Schur block $S$. -/
 abbrev blockTriangularPreconditioner (A : Matrix n n R) (U : Matrix n m R) (S : Matrix m m R) :
     Matrix (n ⊕ m) (n ⊕ m) R := fromBlocks A U 0 S
 
-/-- With the exact Schur complement $S=C-BA^{-1}U$, the characteristic polynomial is
-$(X-1)^{n+m}$ and the square of the difference from the identity is zero. -/
+/-- **Section 10.1.2** of [benzi2005numerical]. With the exact Schur complement
+$S=C-BA^{-1}U$, the characteristic polynomial is $(X-1)^{n+m}$ and the square of the
+difference from the identity is zero.
+
+**Generalization.** The source describes a saddle-point matrix with a nonzero lower-left
+block, for which the minimal polynomial has degree two. The Lean identity also holds with
+$B=0$, in which case the preconditioned matrix is the identity. -/
 theorem blockTriangularPreconditioned_charpoly {C : Matrix m m R} (hA : IsUnit A)
     (hS : IsUnit (C - B * A⁻¹ * U)) :
     let M := (blockTriangularPreconditioner A U (C - B * A⁻¹ * U))⁻¹ * fromBlocks A U B C
@@ -194,18 +217,27 @@ theorem incompleteBlockLU_eq (hA : IsUnit A) :
     mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hA)]
 
 /-- Equation (10.12) of [benzi2005numerical]. Elman's approximation to the inverse
-of the positive-signed Schur block is $(BB^T)^{-1}BAB^T(BB^T)^{-1}$. -/
+of the positive-signed Schur block is $(BB^T)^{-1}BAB^T(BB^T)^{-1}$.
+
+**Generalization.** The formula uses the total inverse, so the definition also accepts rank-
+deficient $B$. -/
 noncomputable def elmanSchurInverse (A : Matrix n n R) (B : Matrix m n R) : Matrix m m R :=
   (B * Bᵀ)⁻¹ * B * A * Bᵀ * (B * Bᵀ)⁻¹
 
 /-- Equation (10.13) of [benzi2005numerical]. The scaled Elman approximation uses the
-two weighted Gram blocks $BM_2^{-2}B^T$ and $BM_1^{-2}B^T$. -/
+two weighted Gram blocks $BM_2^{-2}B^T$ and $BM_1^{-2}B^T$.
+
+**Generalization.** The definition accepts arbitrary scaling matrices and uses total inverses.
+The source uses invertible diagonal scalings. -/
 noncomputable def scaledElmanSchurInverse (A : Matrix n n R) (B : Matrix m n R)
     (M₁ M₂ : Matrix n n R) : Matrix m m R :=
   (B * (M₂⁻¹ ^ 2) * Bᵀ)⁻¹ * B * (M₂⁻¹ ^ 2) * A * M₁⁻¹ * Bᵀ * (B * (M₁⁻¹ ^ 2) * Bᵀ)⁻¹
 
 /-- Equation (10.14) of [benzi2005numerical]. The pressure convection-diffusion approximation
-is $M_p^{-1}A_p(BM_u^{-1}B^T)^{-1}$. -/
+is $M_p^{-1}A_p(BM_u^{-1}B^T)^{-1}$.
+
+**Generalization.** The definition accepts any input matrices of the stated sizes and uses total
+inverses. -/
 noncomputable def pressureConvectionDiffusionInverse (B : Matrix m n R)
     (Mₚ Aₚ : Matrix m m R) (Mᵤ : Matrix n n R) : Matrix m m R :=
   Mₚ⁻¹ * Aₚ * (B * Mᵤ⁻¹ * Bᵀ)⁻¹
@@ -213,7 +245,10 @@ noncomputable def pressureConvectionDiffusionInverse (B : Matrix m n R)
 
 /-- The signed, scaled block diagonal preconditioner in (10.7) of [benzi2005numerical].
 Use $\varepsilon=1$ for the positive definite version and $\varepsilon=-1$ for the
-indefinite version. -/
+indefinite version.
+
+**Generalization.** The scale and lower-block multiplier are arbitrary reals in the definition.
+The source takes a positive scale and a multiplier of $\pm 1$. -/
 noncomputable def scaledBlockDiagonalPreconditioner (A : Matrix n n ℝ) (S : Matrix m m ℝ)
     (η ε : ℝ) : Matrix (n ⊕ m) (n ⊕ m) ℝ := fromBlocks (η⁻¹ • A) 0 0 (ε • S)
 
@@ -221,9 +256,13 @@ noncomputable def scaledBlockDiagonalPreconditioner (A : Matrix n n ℝ) (S : Ma
 of the right-hand side. For $A=LL^T$, let $\widetilde B=M^{-1}BL^{-T}$ and transform
 the unknowns by $\operatorname{diag}(\eta^{-1}L^T,M^T)$. The left row scaling of the
 original equations is $\operatorname{diag}(L^{-1},\varepsilon\eta^{-1}M^{-1})$.
-The printed negative-sign variant omits $\varepsilon$ from the lower right-hand side.
-The row and unknown transformations give an equivalence of systems, not in general a
-similarity with the left-preconditioned matrix in (10.7). -/
+
+**Correction.** The printed negative-sign variant omits $\varepsilon$ from the lower
+right-hand side. Scaling an equation multiplies both sides by the same scalar. For
+$L=M=B=[1]$, $\eta=1$ and $g=1$, the lower equation $x=1$ becomes $-x=-1$.
+
+The matrix identity holds for arbitrary real $\varepsilon$. For $\varepsilon\neq 0$ the
+row and unknown transformations are invertible and give equivalent systems. -/
 theorem scaledBlockDiagonal_transform (L : Matrix n n ℝ) (M : Matrix m m ℝ)
     (B : Matrix m n ℝ) {η : ℝ} (hη : η ≠ 0) (ε : ℝ) (hL : IsUnit L) (hM : IsUnit M) :
     let B' := M⁻¹ * B * Lᵀ⁻¹
@@ -250,7 +289,9 @@ theorem scaledBlockDiagonal_transform (L : Matrix n n ℝ) (M : Matrix m m ℝ)
 omit [DecidableEq n] in
 /-- If $BB^T$ is invertible, the unweighted approximate commutator
 $X=(BB^T)^{-1}BAB^T$ satisfies the Frobenius least-squares normal equation
-$B(AB^T-B^TX)=0$. -/
+$B(AB^T-B^TX)=0$.
+
+**Reading.** This is the normal equation at the displayed unconstrained minimizer. -/
 theorem elmanCommutator_normalEquation (A : Matrix n n R) (B : Matrix m n R)
     (hB : IsUnit (B * Bᵀ)) :
     B * (A * Bᵀ - Bᵀ * ((B * Bᵀ)⁻¹ * B * A * Bᵀ)) = 0 := by
@@ -259,7 +300,9 @@ theorem elmanCommutator_normalEquation (A : Matrix n n R) (B : Matrix m n R)
 
 open Polynomial in
 /-- Exact block diagonal preconditioning bounds the dimension of the Krylov space by three
-for every initial residual. This is the algebraic basis for the three-step GMRES bound. -/
+for every initial residual. This is the algebraic basis for the three-step GMRES bound.
+
+**Generalization.** The grade bound holds over any field. -/
 theorem blockDiagonalPreconditioned_krylovGrade {K : Type*} [Field K]
     {A : Matrix n n K} {U : Matrix n m K} {B : Matrix m n K}
     (hA : IsUnit A) (hS : IsUnit (-B * A⁻¹ * U)) (r : n ⊕ m → K) :
@@ -292,7 +335,9 @@ theorem blockDiagonalPreconditioned_krylovGrade {K : Type*} [Field K]
 
 open Polynomial in
 /-- Exact upper block triangular preconditioning bounds the dimension of every Krylov space by two,
-because the preconditioned matrix is annihilated by $(X-1)^2$. -/
+because the preconditioned matrix is annihilated by $(X-1)^2$.
+
+**Generalization.** The grade bound holds over any field and allows a nonzero lower-right block. -/
 theorem blockTriangularPreconditioned_krylovGrade {K : Type*} [Field K]
     {A : Matrix n n K} {U : Matrix n m K} {B : Matrix m n K} {C : Matrix m m K}
     (hA : IsUnit A) (hS : IsUnit (C - B * A⁻¹ * U)) (r : n ⊕ m → K) :

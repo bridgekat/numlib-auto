@@ -80,10 +80,17 @@ criticality measures $\omega_1(x) = \|\nabla f(x)\|$ and $\omega_2(x) = \max(0,
 
 ## Deviations from the source
 
+* **Section 1.1.2.5, active set** (generalization). The same zero-constraint test also defines an
+  active set at infeasible points. See `CartisGouldToint.Chapter01.activeSet`.
+* **Equation (1.1.5) and Section 1.1.2.6** (generalization). The curvature and the criticality
+  measures are defined on the zero-dimensional space and for arbitrary objectives using Lean's
+  totalized derivatives. See `CartisGouldToint.Chapter01.hessianMinEig`,
+  `CartisGouldToint.Chapter01.omega₁` and `CartisGouldToint.Chapter01.omega₂`.
 * **Theorem 1.1.2, sufficient condition** (correction). The printed condition, strict curvature on
   the nonzero $d \in \mathcal{C}(x^*)$ with $\langle d, \nabla f(x^*)\rangle = 0$, is not
-  sufficient. The condition is stated on the tangent cone of $\mathcal{C}$ at $x^*$ instead; the two
-  coincide for polyhedral $\mathcal{C}$. See `CartisGouldToint.Chapter01.theorem_1_1_2_iv` and
+  sufficient. The condition is stated on the tangent cone of $\mathcal{C}$ at $x^*$. For a
+  polyhedral $\mathcal{C}$, each nonzero tangent direction is a positive multiple of a radial
+  direction, so the two conditions agree. See `CartisGouldToint.Chapter01.theorem_1_1_2_iv` and
   `CartisGouldToint.Chapter01.theorem_1_1_2_iv_counterexample`.
 * **Theorems 1.1.3 and 1.1.4, sufficient conditions (1.1.15) and (1.1.18)** (typo). The book
   quantifies over all $d$ of the relevant cone, including $d = 0$, for which the strict inequality
@@ -91,6 +98,10 @@ criticality measures $\omega_1(x) = \|\nabla f(x)\|$ and $\omega_2(x) = \max(0,
   `CartisGouldToint.Chapter01.theorem_1_1_3_iii` and `CartisGouldToint.Chapter01.theorem_1_1_4_iii`.
 * **Theorems 1.1.3 and 1.1.4, constraint qualification** (reading). The book leaves the constraint
   qualification unspecified; LICQ is used. See `CartisGouldToint.Chapter01.licq`.
+* **Theorems 1.1.3 and 1.1.4, first-order necessary conditions** (generalization). LICQ gives
+  uniqueness of the multiplier vector as well as existence. See
+  `CartisGouldToint.Chapter01.theorem_1_1_3_i` and
+  `CartisGouldToint.Chapter01.theorem_1_1_4_i`.
 * **Theorems 1.1.3 and 1.1.4, second-order necessary conditions** (generalization). The conditions
   (1.1.14) and (1.1.17) are proved for every multiplier vector that satisfies the first-order
   conditions; under LICQ there is exactly one. See `CartisGouldToint.Chapter01.theorem_1_1_3_ii` and
@@ -239,12 +250,18 @@ section Sets
 variable {c : Fin m → EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n)}
 
 /-- **Section 1.1.2.5** of [cartis2022evaluation], the active set. For constraints $c_1, \dots, c_m$
-and $x \in \mathbb{R}^n$, the **active set** is $\mathcal{A}(x) = \{i : c_i(x) = 0\}$. -/
+and $x \in \mathbb{R}^n$, the **active set** is $\mathcal{A}(x) = \{i : c_i(x) = 0\}$.
+
+**Generalization.** The book defines the active set at feasible points. The zero-constraint
+test also defines a set at infeasible points. -/
 def activeSet (c : Fin m → EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) :
     Set (Fin m) :=
   {i | c i x = 0}
 
-/-- An index $i$ is in the active set $\mathcal{A}(x)$ if and only if $c_i(x) = 0$. -/
+/-- An index $i$ is in the active set $\mathcal{A}(x)$ if and only if $c_i(x) = 0$.
+
+**Reading.** Membership is stated for arbitrary points rather than feasible points only.
+-/
 @[simp]
 theorem mem_activeSet {i : Fin m} : i ∈ activeSet c x ↔ c i x = 0 := Iff.rfl
 
@@ -374,11 +391,13 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x : EuclideanSpace ℝ (Fin n
 /-- **Equation (1.1.5)** of [cartis2022evaluation], the least eigenvalue of the Hessian. For
 $f : \mathbb{R}^n \to \mathbb{R}$ and $x \in \mathbb{R}^n$,
 $$\lambda_{\min}[\nabla^2 f(x)] = \inf_{\|d\| = 1} \langle d, \nabla^2 f(x) d\rangle,$$
-the least curvature of $f$ at $x$; it is $0$ when $n = 0$.
+the least curvature of $f$ at $x$. It is $0$ when $n = 0$.
 
-The definition is `minCurvature` of the second derivative, as in §A.5 of the book. If $f$ is
-twice continuously differentiable at $x$, it is the least eigenvalue of the symmetric Hessian
-matrix; see `CartisGouldToint.Chapter01.hessianMinEig_eq_iInf_eigenvalues`. -/
+**Generalization.** The book uses the leftmost eigenvalue of the symmetric Hessian matrix.
+The definition uses the unit-sphere curvature of Lean's `iteratedFDeriv` for every $f$ and takes
+the value $0$ on the empty unit sphere of $\mathbb{R}^0$. For $n > 0$ and $f$ twice continuously
+differentiable at $x$, the definitions agree by
+`CartisGouldToint.Chapter01.hessianMinEig_eq_iInf_eigenvalues`. -/
 noncomputable def hessianMinEig (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) : ℝ :=
   minCurvature (iteratedFDeriv ℝ 2 f x)
@@ -388,14 +407,22 @@ $x$. -/
 theorem hessianMinEig_def : hessianMinEig f x = minCurvature (iteratedFDeriv ℝ 2 f x) := rfl
 
 /-- $\lambda_{\min}[\nabla^2 f(x)] \ge 0$ if and only if $\langle d, \nabla^2 f(x) d\rangle \ge 0$
-for all $d$. -/
+for all $d$.
+
+**Reading.** Nonnegative leftmost curvature is equivalent to nonnegative quadratic form, with
+totalized derivatives.
+-/
 theorem hessianMinEig_nonneg_iff :
     0 ≤ hessianMinEig f x ↔ ∀ d, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d) :=
   minCurvature_nonneg_iff
 
 /-- If $f$ is twice continuously differentiable at $x$, then $\lambda_{\min}[\nabla^2 f(x)]$ is the
 least eigenvalue of the symmetric Hessian matrix `Optimization.hessianMatrix f x`
-([cartis2022evaluation], (1.1.5) and §A.5). Both sides are $0$ when $n = 0$. -/
+([cartis2022evaluation], (1.1.5) and §A.5). Both sides are $0$ when $n = 0$.
+
+**Reading.** Identifies the Rayleigh value with infimum of eigenvalues, including the empty spectrum
+in dimension zero.
+-/
 theorem hessianMinEig_eq_iInf_eigenvalues (hf : ContDiffAt ℝ 2 f x) :
     hessianMinEig f x = ⨅ i, (Optimization.hessianMatrix_isHermitian hf).eigenvalues i :=
   Optimization.minCurvature_iteratedFDeriv_two_eq_iInf_eigenvalues hf
@@ -403,14 +430,18 @@ theorem hessianMinEig_eq_iInf_eigenvalues (hf : ContDiffAt ℝ 2 f x) :
 /-- **Section 1.1.2.6** of [cartis2022evaluation], the first-order criticality measure. For
 $f : \mathbb{R}^n \to \mathbb{R}$ and $x \in \mathbb{R}^n$, $\omega_1(x) = \|\nabla f(x)\|$.
 
-The measure is meaningful only where $f$ is differentiable. Elsewhere `gradient` of Mathlib is
-$0$ by convention, so $\omega_1(x) = 0$ there. -/
+**Generalization.** The book defines the measure for differentiable objectives. The definition
+uses Mathlib's `gradient`, so it takes the value $0$ at a point of nondifferentiability. -/
 noncomputable def omega₁ (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) : ℝ :=
   ‖gradient f x‖
 
 /-- **Section 1.1.2.6** of [cartis2022evaluation], the second-order criticality measure. For
 $f : \mathbb{R}^n \to \mathbb{R}$ and $x \in \mathbb{R}^n$, $\omega_2(x) = \max(0,
--\lambda_{\min}[\nabla^2 f(x)])$. -/
+-\lambda_{\min}[\nabla^2 f(x)])$.
+
+**Generalization.** The book uses the least eigenvalue of the Hessian. The definition uses
+`CartisGouldToint.Chapter01.hessianMinEig`, which extends the curvature to arbitrary objectives
+and is $0$ when $n = 0$. -/
 noncomputable def omega₂ (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) : ℝ :=
   max 0 (-hessianMinEig f x)
 
@@ -418,17 +449,26 @@ noncomputable def omega₂ (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : Euclide
 `Optimization.criticality₂`. -/
 theorem omega₂_eq_criticality₂ : omega₂ f x = Optimization.criticality₂ f x := rfl
 
-/-- $\omega_1(x) \ge 0$. -/
+/-- $\omega_1(x) \ge 0$.
+
+**Generalization.** Nonnegativity extends from smooth objectives to the totalized gradient.
+-/
 theorem omega₁_nonneg : 0 ≤ omega₁ f x := norm_nonneg _
 
-/-- $\omega_2(x) \ge 0$. -/
+/-- $\omega_2(x) \ge 0$.
+
+**Generalization.** Nonnegativity extends from smooth objectives to the totalized Hessian measure.
+-/
 theorem omega₂_nonneg : 0 ≤ omega₂ f x := le_max_left _ _
 
 /-- **Equation (1.1.5)** of [cartis2022evaluation]. For $f : \mathbb{R}^n \to \mathbb{R}$ and
 $x \in \mathbb{R}^n$, $\omega_1(x) = 0$ and $\omega_2(x) = 0$ if and only if $\nabla f(x) = 0$
 and $\langle d, \nabla^2 f(x) d\rangle \ge 0$ for all $d$.
 
-The right-hand side consists of the first two conditions of Theorem 1.1.1. -/
+The right-hand side consists of the first two conditions of Theorem 1.1.1.
+
+**Reading.** The zero-measure equivalence is stated without smoothness hypotheses.
+-/
 theorem omega_eq_zero_iff :
     omega₁ f x = 0 ∧ omega₂ f x = 0 ↔
       gradient f x = 0 ∧ ∀ d, 0 ≤ iteratedFDeriv ℝ 2 f x (fun _ => d) := by
@@ -549,7 +589,10 @@ minimizer of $f$ in $\mathcal{C}$.
 
 The second-order hypothesis holds vacuously, since no nonzero $d \in \mathcal{C}(0)$ is
 orthogonal to $\nabla f(0)$. The point $0$ is not a local minimizer because $f(t, t^2) = -t^2$.
-The coordinates are indexed from $0$. -/
+The coordinates are indexed from $0$.
+
+**Correction.** Formal counterexample to the printed sufficient condition.
+-/
 theorem theorem_1_1_2_iv_counterexample :
     let C : Set (EuclideanSpace ℝ (Fin 2)) := {x | x 0 ^ 2 ≤ x 1}
     let f : EuclideanSpace ℝ (Fin 2) → ℝ := fun x => x 1 - 2 * x 0 ^ 2
@@ -647,7 +690,10 @@ $y^* \in \mathbb{R}^m$ with
 $$\nabla_x \mathcal{L}(x^*, y^*) = 0 \quad \text{and} \quad c(x^*) = 0.$$
 
 **Reading.** The book requires an unspecified constraint qualification; LICQ,
-`CartisGouldToint.Chapter01.licq`, is used. -/
+`CartisGouldToint.Chapter01.licq`, is used.
+
+**Generalization.** The book asserts existence of a multiplier vector. LICQ makes the constraint
+gradients linearly independent, so the multiplier vector is unique. -/
 theorem theorem_1_1_3_i (hS : IsOpen S) (hFS : {x | ∀ i, c i x = 0} ⊆ S)
     (hf : ContDiffOn ℝ 1 f S) (hc : ∀ i, ContDiffOn ℝ 1 (c i) S) (hx : ∀ i, c i x = 0)
     (hmin : IsLocalMinOn f {x | ∀ i, c i x = 0} x) (hcq : licq c x) :
@@ -784,7 +830,10 @@ $$\nabla_x \mathcal{L}(x^*, y^*) = 0, \quad c(x^*) \ge 0, \quad y^* \ge 0 \quad 
   \langle y^*, c(x^*)\rangle = 0.$$
 
 **Reading.** The book requires an unspecified constraint qualification; LICQ,
-`CartisGouldToint.Chapter01.licq`, is used. -/
+`CartisGouldToint.Chapter01.licq`, is used.
+
+**Generalization.** The book asserts existence of a multiplier vector. Inactive multipliers
+vanish by complementarity, and LICQ ensures uniqueness of the remaining multipliers. -/
 theorem theorem_1_1_4_i (hS : IsOpen S) (hFS : {x | ∀ i, 0 ≤ c i x} ⊆ S)
     (hf : ContDiffOn ℝ 1 f S) (hc : ∀ i, ContDiffOn ℝ 1 (c i) S) (hx : ∀ i, 0 ≤ c i x)
     (hmin : IsLocalMinOn f {x | ∀ i, 0 ≤ c i x} x) (hcq : licq c x) :

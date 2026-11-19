@@ -61,6 +61,9 @@ statements fail without it.
 
 ## Deviations from the source
 
+* **Lemma 6.5.1 and Theorem 6.5.2** (generalization). The curvature estimates use a lower bound
+  along the trial segment. The entry-radius argument uses Fréchet derivatives and takes the
+  relevant first-order limits as hypotheses.
 * **Lemma 6.5.3** (correction). The statement adds uniform vanishing of the objective and model
   Hessian variation along the trial segments. See `ConnGouldToint.Chapter06.lemma_6_5_3`.
 * **Lemma 6.5.4** (correction). The statement adds uniform vanishing of the objective and model
@@ -85,7 +88,10 @@ $$\|s\| \le \frac{2}{\varepsilon} \|Dm(x)\|.$$
 
 The Hessian bound (6.5.1) is stated only for the quadratic form in the direction of the step.
 The decrease condition of the basic trust-region algorithm supplies $m(x + s) \le m(x)$. The
-norm of the derivative $Dm(x)$ equals the gradient norm in a Euclidean space. -/
+norm of the derivative $Dm(x)$ equals the gradient norm in a Euclidean space.
+
+**Reading.** A lower bound along the accepted trial direction suffices for the step estimate.
+-/
 theorem lemma_6_5_1 {m : E → ℝ} {x s : E} {ε : ℝ} (hε : 0 < ε)
     (hm : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ m (x + t • s))
     (hDm : ∀ t ∈ Icc (0 : ℝ) 1, DifferentiableAt ℝ (fderiv ℝ m) (x + t • s))
@@ -140,6 +146,8 @@ theorem lemma_6_5_1 {m : E → ℝ} {x s : E} {ε : ℝ} (hε : 0 < ε)
 $m_k : E \to \mathbb{R}$ and centers $x_k \in E$. The models satisfy **Hessian agreement** if
 $$\lim_{k \to \infty} \|Df(x_k)\| = 0 \implies \lim_{k \to \infty} \|D^2 f(x_k) - D^2
   m_k(x_k)\| = 0.$$
+
+**Reading.** Abstract Fréchet Hessian comparison in operator norm.
 -/
 def ModelHessianAgreement (f : E → ℝ) (m : ℕ → E → ℝ) (x : ℕ → E) : Prop :=
   Tendsto (fun k ↦ ‖fderiv ℝ f (x k)‖) atTop (𝓝 0) →
@@ -151,7 +159,10 @@ vanishes** on the segments $[x_k, x_k + s_k]$ if for every $\varepsilon > 0$, fo
 $$\|D^2 m_k(x_k + t s_k) - D^2 m_k(x_k)\| \le \varepsilon \quad \text{for all } t \in [0, 1].$$
 
 This condition supports the corrected Lemmas 6.5.3 and 6.5.4. For a single function $f$ it is
-`HessianVariationVanishes (fun _ ↦ f) x s`. -/
+`HessianVariationVanishes (fun _ ↦ f) x s`.
+
+**Reading.** New uniform control on objective and model Hessian variation along trial segments.
+-/
 def HessianVariationVanishes (m : ℕ → E → ℝ) (x s : ℕ → E) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ k in atTop, ∀ t ∈ Icc (0 : ℝ) 1,
     ‖fderiv ℝ (fderiv ℝ (m k)) (x k + t • s k) - fderiv ℝ (fderiv ℝ (m k)) (x k)‖ ≤ ε
@@ -161,6 +172,8 @@ and $x, s \in E$, with $f$ twice continuously differentiable, $f(x) = m(x)$ and 
 Suppose that $m$ and $Dm$ are differentiable on the segment $[x, x + s]$, and that
 $\|D^2 f(z) - D^2 m(z)\| \le B$ for all $z$ in the segment. Then
 $$|f(x + s) - m(x + s)| \le \tfrac12 B \|s\|^2.$$
+
+**Reading.** Error bound assumes explicit Hessian variation estimates on the normed-space segment.
 -/
 theorem abs_model_error_le {f m : E → ℝ} {x s : E} {B : ℝ}
     (hf : ContDiff ℝ 2 f) (hval : f x = m x) (hgrad : fderiv ℝ f x = fderiv ℝ m x)
@@ -342,6 +355,8 @@ $f : E \to \mathbb{R}$ and $x_0 \in E$, with $Df$ differentiable at $x_0$ and $D
 $\sigma > 0$ with $\|D^2 f(x_0) v\| \ge \sigma \|v\|$ for all $v$. Then there is $R > 0$ such
 that
 $$\tfrac{\sigma}{2} \|x - x_0\| \le \|Df(x)\| \quad \text{whenever } \|x - x_0\| < R.$$
+
+**Reading.** Abstract normed-space derivative estimate with quantitative nonsingularity.
 -/
 theorem norm_fderiv_lower_bound {f : E → ℝ} {x₀ : E}
     (hf : DifferentiableAt ℝ (fderiv ℝ f) x₀) (hzero : fderiv ℝ f x₀ = 0)
@@ -387,7 +402,10 @@ omit [NormedSpace ℝ E] in
 $E$ be a normed group, $x_k, x_0 \in E$, and $u_k \to 0$ in $\mathbb{R}$. Let $R > 0$, $c > 0$
 and $C \in \mathbb{R}$. Suppose that a subsequence $x_{k_i}$ converges to $x_0$, that
 $c \|x_k - x_0\| \le u_k$ for every $k$ with $\|x_k - x_0\| < R$, and that, for all large $k$,
-$\|x_k - x_0\| < R$ implies $\|x_{k+1} - x_k\| \le C u_k$. Then $x_k \to x_0$. -/
+$\|x_k - x_0\| < R$ implies $\|x_{k+1} - x_k\| \le C u_k$. Then $x_k \to x_0$.
+
+**Reading.** Abstract neighborhood trapping argument with explicit local step control.
+-/
 theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
     {R C c : ℝ} (hR : 0 < R) (hc : 0 < c)
     (hu : Tendsto u atTop (𝓝 0))
@@ -428,6 +446,10 @@ theorem tendsto_of_local_step_bound {x : ℕ → E} {x₀ : E} {u : ℕ → ℝ}
   rw [dist_eq_norm]
   exact (hind d).trans_le (min_le_right _ _)
 
+/-- **Lemma 6.5.1 proof** of [conn2000trust].
+
+**Reading.** Fréchet Taylor estimate uses the curvature along the trial segment.
+-/
 private theorem step_norm_le_of_model_curvature {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     {k : ℕ} {μ : ℝ} (hμ : 0 < μ)
@@ -459,7 +481,10 @@ Then $x_k \to x_0$.
 
 The lower bound on $D^2 f(x_0)$ as a linear map is the finite-dimensional form of
 nonsingularity. The convexity of the models is needed only along the trial steps near $x_0$. For
-a run of the basic trust-region algorithm, Theorem 6.4.6 supplies the limit $\|Df(x_k)\| \to 0$. -/
+a run of the basic trust-region algorithm, Theorem 6.4.6 supplies the limit $\|Df(x_k)\| \to 0$.
+
+**Reading.** Explicit first-order limits and a model curvature hypothesis along trial segments.
+-/
 theorem theorem_6_5_2 {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     {x₀ : E} {j : ℕ → ℕ} (hj : Tendsto j atTop atTop)
@@ -491,6 +516,10 @@ theorem theorem_6_5_2 {P : BTRParams} {f : E → ℝ}
   · rw [run.iterate_eq_of_unsuccessful hs, sub_self, norm_zero]
     exact mul_nonneg (div_nonneg (by norm_num) hμ.le) (norm_nonneg _)
 
+/-- **Theorem 6.5.5 proof** of [conn2000trust].
+
+**Reading.** Abstract local convergence and continuity yield uniform objective Hessian variation.
+-/
 private theorem hessianVariationVanishes_of_tendsto {f : E → ℝ} (hf : ContDiff ℝ 2 f)
     {x s : ℕ → E} {x₀ : E} (hx : Tendsto x atTop (𝓝 x₀)) (hs : Tendsto s atTop (𝓝 0)) :
     HessianVariationVanishes (fun _ ↦ f) x s := by
@@ -726,7 +755,10 @@ variation on the trial segments does not vanish.
 
 The run has $x_k = 0$, $s_k = \Delta_k = 2^{-k}$ and $m_k(y) = -y^4 / \Delta_k^2$. Its
 sufficient decrease test is `ConnGouldToint.Chapter06.HasSufficientModelDecrease` with gradient
-$0$, which holds for every step that does not increase the model. -/
+$0$, which holds for every step that does not increase the model.
+
+**Correction.** Formal counterexample shows the printed assumptions alone are insufficient.
+-/
 theorem lemma_6_5_3_4_counterexample :
     ∃ run : BTRRun (fun _ : ℝ ↦ 0) defaultBTRParams
       (fun _ m x s ↦ HasSufficientModelDecrease m x s 0 13 s (1 / 2)),

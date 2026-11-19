@@ -89,13 +89,25 @@ result rests somewhere on Theorem 6.2, that a nonempty convex set has a nonempty
   change.
 * `Rockafellar.corollary_10_5_1` states the condition $\liminf_{\lambda \to \infty} f(\lambda
   y)/\lambda < \infty$ as: for some $c$, $f(\lambda y) \le c \lambda$ for arbitrarily large
-  $\lambda$. This avoids a convention for division in `EReal`. The two conditions agree because the
-  quotient is nondecreasing in $\lambda$ (Theorem 8.5).
+  $\lambda$. This gives the same condition because $\lambda$ is eventually positive and $c$
+  can be chosen strictly above the limit inferior.
 * `Rockafellar.theorem_10_2` has no extra hypothesis. The proof of the book triangulates a simplex
   around an interior point, a step that the book calls intuitively obvious and does not prove. Here
   upper semicontinuity relative to a simplex is proved at every point of the simplex by a direct
   estimate in barycentric coordinates, so no result that uses Theorem 10.2 depends on an unproved
   step.
+
+## Deviations from the source
+
+* **Theorem 10.3**, existence (reading). The Lean result assumes $C$ nonempty and gives the
+  closed proper convex ambient extension constructed in the proof. If $C$ is empty, its
+  restricted extension is the empty function.
+* **Theorem 10.3**, uniqueness (generalization). Agreement on $\operatorname{ri} C$ implies
+  agreement on $C$ for any two continuous restrictions, without convexity of the functions or
+  local simpliciality of $C$. See `Rockafellar.theorem_10_3_unique`.
+* **Theorem 10.6**, hypotheses (a) and (b) (generalization). Boundedness replaces finiteness of
+  the pointwise supremum and infimum, which also admits the empty family. Hypothesis (a) uses
+  density as described below. See `Rockafellar.theorem_10_6_ab`.
 
 ## Not formalized
 
@@ -296,7 +308,11 @@ A finite convex function on $\operatorname{ri} C$ is a convex
 $f : \mathbb{R}^n \to [-\infty, +\infty]$ with $f > -\infty$ everywhere and
 $\operatorname{dom} f = \operatorname{ri} C$; this is how §4 reads a function given only on a
 set. The proof takes $g = \operatorname{cl} f$. Uniqueness of the extension is
-`Rockafellar.theorem_10_3_unique`. -/
+`Rockafellar.theorem_10_3_unique`.
+
+**Reading.** The book allows arbitrary locally simplicial convex $C$. The Lean result assumes
+$C$ nonempty and gives the closed proper convex ambient extension constructed in the proof.
+For empty $C$, the extension restricted to $C$ is the empty function. -/
 theorem theorem_10_3 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) (hCls : LocallySimplicial C)
     (hne : C.Nonempty) {f : Rn n → EReal} (hf : ConvexFn f) (hbot : ∀ x, f x ≠ ⊥)
     (hdom : convexDom f = ri C)
@@ -309,8 +325,9 @@ theorem theorem_10_3 {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) (hCls : Loca
 $\mathbb{R}^n$, and let $g_1, g_2 : \mathbb{R}^n \to [-\infty, +\infty]$ be continuous relative
 to $C$ with $g_1 = g_2$ on $\operatorname{ri} C$. Then $g_1 = g_2$ on $C$.
 
-The reason is $C \subseteq \operatorname{cl}(\operatorname{ri} C)$. Neither local simpliciality
-of $C$ nor convexity of $g_1$ and $g_2$ is needed. -/
+**Generalization.** The book states uniqueness for finite convex extensions on a locally
+simplicial convex set. Here continuity relative to $C$ suffices because
+$C \subseteq \operatorname{cl}(\operatorname{ri} C)$. -/
 theorem theorem_10_3_unique {n : ℕ} {C : Set (Rn n)} (hC : Convex ℝ C) {g₁ g₂ : Rn n → EReal}
     (h₁ : ContinuousOn g₁ C) (h₂ : ContinuousOn g₂ C) (h : Set.EqOn g₁ g₂ (ri C)) :
     Set.EqOn g₁ g₂ C :=
@@ -430,8 +447,11 @@ Let $S$ be any closed bounded subset of $C$. Then $\{f_i \mid i \in I\}$ is unif
 $S$ and equi-Lipschitzian relative to $S$.
 
 The book's condition (a) asks only $\operatorname{conv}(\operatorname{cl} C') \supseteq C$,
-which is weaker than $\operatorname{cl} C' \supseteq C$. That form is not formalized. The book
-states (a) and (b) as finiteness of $\sup_i f_i(x)$ and $\inf_i f_i(x)$. -/
+while the Lean statement assumes $\operatorname{cl} C' \supseteq C$.
+
+**Generalization.** For both hypotheses, boundedness replaces finiteness of the corresponding
+pointwise supremum or infimum. These agree for nonempty families, and the Lean boundedness
+conditions also apply to the empty family. -/
 theorem theorem_10_6_ab {n : ℕ} {ι : Type*} {C C' : Set (Rn n)} (hC : Convex ℝ C)
     (hCro : ri C = C) {f : ι → Rn n → ℝ} (hf : ∀ i, ConvexOn ℝ C (f i)) (hC'sub : C' ⊆ C)
     (hdense : C ⊆ closure C') (hab : ∀ x ∈ C', BddAbove (Set.range fun i => f i x))

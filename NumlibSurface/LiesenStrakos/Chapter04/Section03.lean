@@ -25,6 +25,10 @@ matrix as the orthogonal basis.
 
 ## Deviations from the source
 
+* **Definitions 4.3.1 and 4.3.3** (generalization). The Hessenberg predicate is scalar
+  generic, and the recurrence predicates also apply over the reals. See
+  `LiesenStrakos.IsBandHessenberg`, `LiesenStrakos.AdmitsOptimalRecurrenceFor` and
+  `LiesenStrakos.AdmitsOptimalRecurrence`.
 * **Remark 4.3.2** (correction). The rank of the constructed matrix is full on the column space
   only when the companion matrix is invertible.
 -/
@@ -34,7 +38,10 @@ namespace LiesenStrakos
 /-- A rectangular matrix $H$ of size $(m+1)\times m$ is $(s+2)$-band Hessenberg when its
 subdiagonal has no zero entries, its entries below that subdiagonal or above the $s$-th
 superdiagonal vanish, and the $s$-th superdiagonal contains a nonzero entry.
-This is Definition 4.3.1 of [liesen2013krylov]. -/
+This is Definition 4.3.1 of [liesen2013krylov].
+
+**Generalization.** The source uses complex matrices. The zero-pattern criterion
+requires only a distinguished zero for the entries. -/
 def IsBandHessenberg {𝕜 : Type*} [Zero 𝕜] {m : ℕ} (H : Matrix (Fin (m + 1)) (Fin m) 𝕜)
     (s : ℕ) : Prop :=
   H.IsUpperHessenbergRect ∧ (∀ j : Fin m, H j.succ j ≠ 0) ∧ H.HasUpperBandwidthRect s ∧
@@ -44,14 +51,19 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-- For a start $v$ of grade $d$, the operator admits an optimal $(s+2)$-term recurrence if
 the $d\times(d-1)$ Arnoldi matrix has exact upper bandwidth $s$ and is unreduced.
-The definition assumes $s+2\le d_{\min}(A)$. This is Definition 4.3.3 (1) of [liesen2013krylov]. -/
+The definition assumes $s+2\le d_{\min}(A)$. This is Definition 4.3.3 (1) of [liesen2013krylov].
+
+**Generalization.** The source treats complex inner product spaces. The Arnoldi
+bandwidth predicate also applies to real inner product spaces. -/
 def AdmitsOptimalRecurrenceFor (A : Module.End 𝕜 E) (v : E) (s : ℕ) : Prop :=
   s + 2 ≤ operatorMinimalDegree A ∧
     IsBandHessenberg (Arnoldi.hessenberg A v (vectorGrade A v - 1)) s
 
 /-- An operator admits an optimal $(s+2)$-term recurrence if all its pre-breakdown rectangular
 Arnoldi matrices have upper bandwidth at most $s$, and there is a start giving exact upper
-bandwidth $s$. This is Definition 4.3.3 (2) of [liesen2013krylov]. -/
+bandwidth $s$. This is Definition 4.3.3 (2) of [liesen2013krylov].
+
+**Generalization.** The same two conditions define admissibility over the reals. -/
 def AdmitsOptimalRecurrence (A : Module.End 𝕜 E) (s : ℕ) : Prop :=
   (∀ v : E, Arnoldi.HasUpperBandwidth A v s) ∧
     ∃ v : E, AdmitsOptimalRecurrenceFor A v s

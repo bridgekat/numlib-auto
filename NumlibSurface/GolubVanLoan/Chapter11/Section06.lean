@@ -121,6 +121,12 @@ $A^h$-orthogonal coarse-grid correction `Multigrid.coarseCorrection` of the prol
 
 ## Deviations from the source
 
+* **Equations (11.6.11)–(11.6.12)** (generalization). The two algebraic identities hold for all
+  nonzero $\omega$. The restriction $0 < \omega \leq 1$ is used for the contraction bound. See
+  `GolubVanLoan.Chapter11.equation_11_6_11` and `GolubVanLoan.Chapter11.equation_11_6_12`.
+* **Theorem 11.6.2, proof** (typo). The coarse diagonal eigenvalue matrix is $(4/h^2) S^h C^h$.
+  The printed value $(1/(2h^2))(I_m - \sqrt{C^h})$ does not equal it. See
+  `GolubVanLoan.Chapter11.theorem_11_6_2`.
 * **Grid sizes** (generalization). The source takes $n = 2^k - 1$. Everything it proves uses only
   $n = 2m + 1$, and the results hold for every $m$. See `GolubVanLoan.Chapter11.modelA`.
 * **Equation (11.6.16)** (typo). The source updates $u_c$ instead of $u_{p_1}$ in the coarse-grid
@@ -161,14 +167,20 @@ The matrix is `(n + 1)^2 • GolubVanLoan.Chapter11.modelT n`. -/
 noncomputable def modelA (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   (((n : ℝ) + 1) ^ 2) • modelT n
 
-/-- The model matrix $A^h$ is $(n + 1)^2$ times `Matrix.symmTridiagonalToeplitz n (-1) 2`. -/
+/-- The model matrix $A^h$ is $(n + 1)^2$ times `Matrix.symmTridiagonalToeplitz n (-1) 2`.
+
+**Reading.** Exact Toeplitz form for arbitrary grid order.
+-/
 private theorem modelA_eq (n : ℕ) :
     modelA n = (((n : ℝ) + 1) ^ 2) • symmTridiagonalToeplitz n (-1) 2 := rfl
 
 /-- **Equation (11.6.5)** of [golub2013matrix]. The eigenvalues of $A^h$ are
 $$\lambda_j^h = \frac{4}{h^2} \sin^2\Big(\frac{j\pi}{2(n + 1)}\Big), \qquad j = 1{:}n.$$
 
-The index is 0-based: entry $j$ uses $j + 1$ in place of $j$. -/
+The index is 0-based: entry $j$ uses $j + 1$ in place of $j$.
+
+**Reading.** Same sine-square eigenvalues for all n.
+-/
 noncomputable def modelAEigenvalues (n : ℕ) : Fin n → ℝ := fun j =>
   4 * ((n : ℝ) + 1) ^ 2 * Real.sin ((((j : ℕ) : ℝ) + 1) * Real.pi / (2 * ((n : ℝ) + 1))) ^ 2
 
@@ -176,29 +188,44 @@ noncomputable def modelAEigenvalues (n : ℕ) : Fin n → ℝ := fun j =>
 $$q_j = \sqrt{\frac{2}{n + 1}}\, (\sin \theta_j, \sin 2\theta_j, \dots, \sin n\theta_j)^T,
   \qquad \theta_j = \frac{j\pi}{n + 1}.$$
 
-The index is 0-based, and the vector is a multiple of `Matrix.sineVec n j`. -/
+The index is 0-based, and the vector is a multiple of `Matrix.sineVec n j`.
+
+**Reading.** Same normalized sine eigenvector for all n.
+-/
 noncomputable def modelq (n : ℕ) (j : Fin n) : Fin n → ℝ :=
   Real.sqrt (2 / ((n : ℝ) + 1)) • sineVec n j
 
 /-- **Equation (11.6.6)** of [golub2013matrix]. The matrix $Q^h = [q_1 \cdots q_n] \in \mathbb{R}^{n
-\times n}$ of the normalized sine vectors. -/
+\times n}$ of the normalized sine vectors.
+
+**Reading.** Same column matrix for all n.
+-/
 noncomputable def modelQ (n : ℕ) : Matrix (Fin n) (Fin n) ℝ := Matrix.of fun i j => modelq n j i
 
 /-- **Equation (11.6.7)** of [golub2013matrix]. For $n = 2m + 1$, the diagonal matrix
 $$S^h = \mathrm{diag}(s_1^2, \dots, s_m^2), \qquad s_j = \sin\Big(\frac{j\pi}{2(n + 1)}\Big).$$
 
 The angle is half the fine mode angle `Multigrid.modeAngle m j`, which is $(j + 1)\pi/(2m + 2)$
-0-based. -/
+0-based.
+
+**Reading.** Same lower-mode sine squares for arbitrary m.
+-/
 noncomputable def modelS (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   diagonal fun j => Real.sin (modeAngle m j / 2) ^ 2
 
 /-- **Equation (11.6.8)** of [golub2013matrix]. For $n = 2m + 1$, the diagonal matrix
 $$C^h = \mathrm{diag}(c_1^2, \dots, c_m^2), \qquad c_j = \cos\Big(\frac{j\pi}{2(n + 1)}\Big).$$
-It is the twin of $S^h$: $S^h + C^h = I$. -/
+It is the twin of $S^h$: $S^h + C^h = I$.
+
+**Reading.** Same lower-mode cosine squares for arbitrary m.
+-/
 noncomputable def modelC (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   diagonal fun j => Real.cos (modeAngle m j / 2) ^ 2
 
-/-- The columns of $Q^h$ are orthonormal: $q_k^T q_l = 1$ if $k = l$ and $0$ otherwise. -/
+/-- The columns of $Q^h$ are orthonormal: $q_k^T q_l = 1$ if $k = l$ and $0$ otherwise.
+
+**Reading.** Column orthonormality for all n.
+-/
 private theorem modelq_dotProduct (n : ℕ) (k l : Fin n) :
     modelq n k ⬝ᵥ modelq n l = if k = l then 1 else 0 := by
   rw [modelq, modelq, smul_dotProduct, dotProduct_smul, dotProduct_sineVec, smul_eq_mul,
@@ -207,21 +234,33 @@ private theorem modelq_dotProduct (n : ℕ) (k l : Fin n) :
   · field_simp
   · simp
 
-/-- The matrix $Q^h$ satisfies $(Q^h)^T Q^h = I$. -/
+/-- The matrix $Q^h$ satisfies $(Q^h)^T Q^h = I$.
+
+**Reading.** QᵀQ=I for all n.
+-/
 theorem modelQ_transpose_mul (n : ℕ) : (modelQ n)ᵀ * modelQ n = 1 := by
   ext k l
   rw [Matrix.mul_apply, Matrix.one_apply, ← modelq_dotProduct]
   rfl
 
-/-- The matrix $Q^h$ satisfies $Q^h (Q^h)^T = I$. -/
+/-- The matrix $Q^h$ satisfies $Q^h (Q^h)^T = I$.
+
+**Reading.** QQᵀ=I for all n.
+-/
 private theorem modelQ_mul_transpose (n : ℕ) : modelQ n * (modelQ n)ᵀ = 1 :=
   mul_eq_one_comm.1 (modelQ_transpose_mul n)
 
-/-- The matrix $Q^h$ is nonsingular, with inverse $(Q^h)^T$. -/
+/-- The matrix $Q^h$ is nonsingular, with inverse $(Q^h)^T$.
+
+**Reading.** Orthogonal inverse for all n.
+-/
 private theorem inv_modelQ (n : ℕ) : (modelQ n)⁻¹ = (modelQ n)ᵀ :=
   inv_eq_left_inv (modelQ_transpose_mul n)
 
-/-- The matrix $Q^h$ is nonsingular. -/
+/-- The matrix $Q^h$ is nonsingular.
+
+**Reading.** Nonsingularity for all n.
+-/
 private theorem isUnit_modelQ (n : ℕ) : IsUnit (modelQ n) :=
   (isUnit_iff_isUnit_det _).2 (isUnit_det_of_left_inverse (modelQ_transpose_mul n))
 
@@ -229,7 +268,10 @@ private theorem isUnit_modelQ (n : ℕ) : IsUnit (modelQ n) :=
 $A^h q_j = \lambda_j^h q_j$.
 
 These are the scaled Dirichlet–Dirichlet eigenpairs of §4.8.6,
-`GolubVanLoan.Chapter04.dd_eigen`. -/
+`GolubVanLoan.Chapter04.dd_eigen`.
+
+**Reading.** Eigenvector relation for all n.
+-/
 theorem modelA_mulVec_modelq (n : ℕ) (j : Fin n) :
     modelA n *ᵥ modelq n j = modelAEigenvalues n j • modelq n j := by
   have h := (GolubVanLoan.Chapter04.dd_eigen n).1 j
@@ -241,7 +283,10 @@ theorem modelA_mulVec_modelq (n : ℕ) (j : Fin n) :
   ring
 
 /-- The matrix $A^h$ satisfies $A^h Q^h = Q^h \Lambda^h$ with $\Lambda^h =
-\mathrm{diag}(\lambda_1^h, \dots, \lambda_n^h)$. -/
+\mathrm{diag}(\lambda_1^h, \dots, \lambda_n^h)$.
+
+**Reading.** Equivalent eigensystem for all n.
+-/
 private theorem modelA_mul_modelQ (n : ℕ) :
     modelA n * modelQ n = modelQ n * diagonal (modelAEigenvalues n) := by
   ext i j
@@ -251,7 +296,10 @@ private theorem modelA_mul_modelQ (n : ℕ) :
 
 /-- **Equation (11.6.4)** of [golub2013matrix]. The matrix $A^h$ has the known Schur decomposition
 $$(Q^h)^T A^h Q^h = \Lambda^h = \mathrm{diag}(\lambda_1^h, \dots, \lambda_n^h),$$
-with $Q^h$ orthogonal: $(Q^h)^T Q^h = I$. -/
+with $Q^h$ orthogonal: $(Q^h)^T Q^h = I$.
+
+**Reading.** Orthogonal diagonalization for all n.
+-/
 theorem equation_11_6_4 (n : ℕ) :
     (modelQ n)ᵀ * modelQ n = 1 ∧
       (modelQ n)ᵀ * modelA n * modelQ n = diagonal (modelAEigenvalues n) := by
@@ -276,7 +324,10 @@ stated entry by entry: for $j = 1{:}m$, the eigenvalue at the fine mode $j$ is $
 the eigenvalue at the middle mode $m + 1$ is $(4/h^2) \cdot \frac12$, and the eigenvalue at the
 alias $n - j + 1$ is $(4/h^2) c_j^2$.
 
-The source leaves the proof to Problem P11.6.1. The alias is 0-based $2m - j$. -/
+The source leaves the proof to Problem P11.6.1. The alias is 0-based $2m - j$.
+
+**Reading.** Equivalent diagonal blocks for every n=2m+1.
+-/
 theorem equation_11_6_9 (m : ℕ) (j : Fin m) :
     modelAEigenvalues (2 * m + 1) (fineIndex j) =
         4 * (((2 * m + 1 : ℕ) : ℝ) + 1) ^ 2 * modelS m j j ∧
@@ -311,7 +362,10 @@ theorem equation_11_6_9 (m : ℕ) (j : Fin m) :
     rw [e, Real.sin_pi_div_two_sub]
 
 /-- The fine grid point of the coarse point $j$: the source's even fine point $2j$, which is
-$2j + 1$ 0-based. -/
+$2j + 1$ 0-based.
+
+**Reading.** The even fine rows or columns in zero-based coordinates for arbitrary m.
+-/
 def evenIndex {m : ℕ} (j : Fin m) : Fin (2 * m + 1) := ⟨2 * j + 1, by omega⟩
 
 /-- **Equation (11.6.10)** of [golub2013matrix]. Let $n = 2m + 1$. The even rows of $Q^h$ are scaled
@@ -322,7 +376,10 @@ stated entry by entry: for coarse indices $q$ and $l$, the entry of $Q^h$ in the
 is $Q^{2h}_{ql}/\sqrt{2}$ in the column of the fine mode $l$, $0$ in the column of the middle
 mode, and $-Q^{2h}_{ql}/\sqrt{2}$ in the column of the alias of $l$.
 
-The source leaves the proof to Problem P11.6.1. -/
+The source leaves the proof to Problem P11.6.1.
+
+**Reading.** Equivalent even rows of all fine modes for every n=2m+1.
+-/
 theorem equation_11_6_10 (m : ℕ) (q l : Fin m) :
     modelQ (2 * m + 1) (evenIndex q) (fineIndex l) = modelQ m q l / Real.sqrt 2 ∧
       modelQ (2 * m + 1) (evenIndex q) (middleIndex m) = 0 ∧
@@ -352,7 +409,10 @@ theorem equation_11_6_10 (m : ℕ) (q l : Fin m) :
 
 /-! ### Weighted Jacobi as a smoother -/
 
-/-- The diagonal of $A^h$ is $(2/h^2) I$. -/
+/-- The diagonal of $A^h$ is $(2/h^2) I$.
+
+**Reading.** Main-diagonal identity for all n.
+-/
 private theorem diagPart_modelA (n : ℕ) :
     diagPart (modelA n) = (2 * ((n : ℝ) + 1) ^ 2) • (1 : Matrix (Fin n) (Fin n) ℝ) := by
   ext i j
@@ -363,7 +423,10 @@ private theorem diagPart_modelA (n : ℕ) :
     ring
   · simp
 
-/-- The diagonal of the model matrix $A^h$ is nonsingular. -/
+/-- The diagonal of the model matrix $A^h$ is nonsingular.
+
+**Reading.** Diagonal inverse well-defined for arbitrary n.
+-/
 theorem isUnit_diagPart_modelA (n : ℕ) : IsUnit (diagPart (modelA n)) := by
   rw [isUnit_diagPart_iff]
   intro i
@@ -388,7 +451,10 @@ is the step of the splitting with $M = \omega^{-1} D$, where $L$ and $U$ are the
 and strictly upper parts of $A$. For the model matrix the iteration matrix is
 $$G^{h,\omega} = I - \frac{\omega h^2}{2} A^h, \qquad h = \frac{1}{n + 1}.$$
 
-The splitting is `Matrix.jorSplitting`, and its step is `Stationary.Splitting.mulVecStep`. -/
+The splitting is `Matrix.jorSplitting`, and its step is `Stationary.Splitting.mulVecStep`.
+
+**Generalization.** The source uses $0 < \omega \leq 1$ for convergence. These algebraic
+identities hold for every nonzero $\omega$ and a general matrix with nonsingular diagonal. -/
 theorem equation_11_6_11 {n : ℕ} {ω : ℝ} (hω : ω ≠ 0) :
     (∀ (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (diagPart A)) (b u : Fin n → ℝ),
       (jorSplitting A h hω).mulVecStep b u =
@@ -411,12 +477,18 @@ theorem equation_11_6_11 {n : ℕ} {ω : ℝ} (hω : ω ≠ 0) :
 /-- The eigenvalues of the weighted Jacobi iteration matrix $G^{h,\omega}$:
 $$\tau_j^{h,\omega} = 1 - 2\omega \sin^2\Big(\frac{j\pi}{2(n + 1)}\Big), \qquad j = 1{:}n.$$
 
-The index is 0-based: entry $j$ uses $j + 1$ in place of $j$. -/
+The index is 0-based: entry $j$ uses $j + 1$ in place of $j$.
+
+**Reading.** Same eigenvalue expression for arbitrary n and omega.
+-/
 noncomputable def weightedJacobiTau (n : ℕ) (ω : ℝ) : Fin n → ℝ := fun j =>
   1 - 2 * ω * Real.sin ((((j : ℕ) : ℝ) + 1) * Real.pi / (2 * ((n : ℝ) + 1))) ^ 2
 
 /-- The weighted Jacobi iteration matrix satisfies $G^{h,\omega} Q^h = Q^h
-\,\mathrm{diag}(\tau^{h,\omega})$. -/
+\,\mathrm{diag}(\tau^{h,\omega})$.
+
+**Reading.** Equivalent eigenvector identity for arbitrary n and nonzero omega.
+-/
 private theorem weightedJacobi_mul_modelQ (n : ℕ) {ω : ℝ} (hω : ω ≠ 0) :
     (jorSplitting (modelA n) (isUnit_diagPart_modelA n) hω).iterationOperator * modelQ n =
       modelQ n * diagonal (weightedJacobiTau n ω) := by
@@ -434,7 +506,10 @@ private theorem weightedJacobi_mul_modelQ (n : ℕ) {ω : ℝ} (hω : ω ≠ 0) 
     · simp [h, one_apply_ne h]
   rw [hd, Matrix.mul_sub, Matrix.mul_one, Matrix.mul_smul]
 
-/-- For every $p$, $(G^{h,\omega})^p Q^h = Q^h \,\mathrm{diag}(\tau^{h,\omega})^p$. -/
+/-- For every $p$, $(G^{h,\omega})^p Q^h = Q^h \,\mathrm{diag}(\tau^{h,\omega})^p$.
+
+**Reading.** Equivalent matrix power identity for arbitrary n and nonzero omega.
+-/
 private theorem weightedJacobi_pow_mul_modelQ (n : ℕ) {ω : ℝ} (hω : ω ≠ 0) (p : ℕ) :
     (jorSplitting (modelA n) (isUnit_diagPart_modelA n) hω).iterationOperator ^ p * modelQ n =
       modelQ n * diagonal fun j => weightedJacobiTau n ω j ^ p := by
@@ -448,7 +523,10 @@ private theorem weightedJacobi_pow_mul_modelQ (n : ℕ) {ω : ℝ} (hω : ω ≠
     ring
 
 /-- For every $p$ and $v$, $(G^{h,\omega})^p (Q^h v) = Q^h (\tau^p \odot v)$: weighted Jacobi
-multiplies the sine coefficient $j$ by $\tau_j^{h,\omega}$ per step. -/
+multiplies the sine coefficient $j$ by $\tau_j^{h,\omega}$ per step.
+
+**Reading.** Sine mode power identity for arbitrary n and nonzero omega.
+-/
 private theorem weightedJacobi_pow_mulVec_modelQ (n : ℕ) {ω : ℝ} (hω : ω ≠ 0) (p : ℕ)
     (v : Fin n → ℝ) :
     (jorSplitting (modelA n) (isUnit_diagPart_modelA n) hω).iterationOperator ^ p *ᵥ
@@ -465,7 +543,9 @@ Hence the error expansion after (11.6.12) holds: let $A^h u = b$, let
 $u_0 - u = \sum_j \alpha_j q_j$, and let $u_p$ be the iterates of weighted Jacobi for
 $A^h u = b$ from $u_0$. Then for every $p$,
 $$u_p - u = (G^{h,\omega})^p (u_0 - u) = \sum_j \alpha_j (\tau_j^{h,\omega})^p q_j.$$
--/
+
+**Generalization.** The sine diagonalization and error identity hold for all nonzero $\omega$.
+The interval $0 < \omega \leq 1$ in the source is used for the contraction bound. -/
 theorem equation_11_6_12 (n : ℕ) {ω : ℝ} (hω : ω ≠ 0) :
     (modelQ n)ᵀ * (jorSplitting (modelA n) (isUnit_diagPart_modelA n) hω).iterationOperator *
         modelQ n = diagonal (weightedJacobiTau n ω) ∧
@@ -510,7 +590,10 @@ private theorem complexSpectralRadius_diagonal_lt_one {n : ℕ} (d : Fin n → �
 Then
 $$-1 < \tau_n^{h,\omega} < \dots < \tau_1^{h,\omega} < 1,$$
 that is, the $\tau_j^{h,\omega}$ strictly decrease in $j$ and lie in $(-1, 1)$. Hence
-$\rho(G^{h,\omega}) < 1$. -/
+$\rho(G^{h,\omega}) < 1$.
+
+**Reading.** Same strict ordering and bounds, with radius criterion explicit for arbitrary n.
+-/
 theorem weightedJacobi_tau_mem (n : ℕ) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω ≤ 1) :
     StrictAnti (weightedJacobiTau n ω) ∧ (∀ j, -1 < weightedJacobiTau n ω j ∧
       weightedJacobiTau n ω j < 1) ∧
@@ -541,7 +624,10 @@ theorem weightedJacobi_tau_mem (n : ℕ) {ω : ℝ} (hω0 : 0 < ω) (hω1 : ω �
 /-- The high-frequency part of a vector of sine coefficients on the fine grid: it keeps the
 components $j \ge m + 1$ and sets the others to zero.
 
-The index is 0-based, so the kept components are $j \ge m$. -/
+The index is 0-based, so the kept components are $j \ge m$.
+
+**Reading.** High modes are the middle mode and above for any odd grid size.
+-/
 def highPart {m : ℕ} (v : Fin (2 * m + 1) → ℝ) : Fin (2 * m + 1) → ℝ :=
   fun j => if m ≤ (j : ℕ) then v j else 0
 
@@ -577,6 +663,8 @@ private theorem sin_sq_high_mem (m : ℕ) (j : Fin (2 * m + 1)) (hj : m ≤ (j :
   linarith
 
 /-- At the middle mode, $\tau_{m+1}^{h,\omega} = 1 - \omega$, because $s^2 = \sin^2(\pi/4) = 1/2$.
+
+**Reading.** Middle-mode value 1−omega at any odd order and all omega.
 -/
 private theorem weightedJacobiTau_middleIndex (m : ℕ) (ω : ℝ) :
     weightedJacobiTau (2 * m + 1) ω (middleIndex m) = 1 - ω := by
@@ -601,7 +689,10 @@ high-frequency damping factor of $\omega = 2/3$ is $1/3$:
 By `GolubVanLoan.Chapter11.equation_11_6_12`, if $u_0 - u = Q^h \alpha$, then
 $u_p - u = Q^h(\tau^p \odot \alpha)$. So the high-frequency part of the error after $p$ weighted
 Jacobi steps is at most $(1/3)^p$ times the initial one. The map $P_{\mathrm{high}}$ is
-`GolubVanLoan.Chapter11.highPart`. -/
+`GolubVanLoan.Chapter11.highPart`.
+
+**Reading.** Exact maximal factor 1/3 and quantified Euclidean bound for arbitrary m.
+-/
 theorem weightedJacobi_twoThirds (m : ℕ) :
     (∀ j : Fin (2 * m + 1), m ≤ (j : ℕ) → |weightedJacobiTau (2 * m + 1) (2 / 3) j| ≤ 1 / 3) ∧
       weightedJacobiTau (2 * m + 1) (2 / 3) (middleIndex m) = 1 / 3 ∧
@@ -647,7 +738,10 @@ theorem weightedJacobi_twoThirds (m : ℕ) :
 /-- **Section 11.6.2** of [golub2013matrix], the high-frequency damping factor. For $n = 2m + 1$,
 $$\mu(\omega) = \max\{|\tau_{m+1}^{h,\omega}|, \dots, |\tau_n^{h,\omega}|\}.$$
 
-The index is 0-based: the maximum is over the modes $j \ge m$. -/
+The index is 0-based: the maximum is over the modes $j \ge m$.
+
+**Reading.** Same finite maximum for arbitrary m.
+-/
 noncomputable def highFreqDamping (m : ℕ) (ω : ℝ) : ℝ :=
   (Finset.univ.filter fun j : Fin (2 * m + 1) => m ≤ (j : ℕ)).sup'
     ⟨middleIndex m, by simp [middleIndex]⟩ fun j => |weightedJacobiTau (2 * m + 1) ω j|
@@ -655,6 +749,8 @@ noncomputable def highFreqDamping (m : ℕ) (ω : ℝ) : ℝ :=
 /-- **Section 11.6.2** of [golub2013matrix], the minimizer of the high-frequency damping factor:
 $$\omega_* = \frac{2}{1 + 2 s_n^2}, \qquad s_n = \sin\Big(\frac{n\pi}{2(n + 1)}\Big), \quad n =
   2m + 1.$$
+
+**Reading.** Exact finite-size weight from balancing, tending to 2/3.
 -/
 noncomputable def optimalOmega (m : ℕ) : ℝ :=
   2 / (1 + 2 * Real.sin ((((2 * m : ℕ) : ℝ) + 1) * Real.pi / (2 * (((2 * m + 1 : ℕ) : ℝ) + 1))) ^ 2)
@@ -772,12 +868,17 @@ theorem weightedJacobi_optimalOmega :
 
 /-- **Equation (11.6.15)** of [golub2013matrix]. The matrix
 $$B^h = 4 I_n - h^2 A^h = \mathrm{tridiag}(1, 2, 1), \qquad h = \frac{1}{n + 1}.$$
+
+**Reading.** Same auxiliary matrix for all n.
 -/
 noncomputable def modelB (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   (4 : ℝ) • 1 - (1 / ((n : ℝ) + 1)) ^ 2 • modelA n
 
 /-- The matrix $B^h$ is `Matrix.symmTridiagonalToeplitz n 1 2`, that is,
-$\mathrm{tridiag}(1, 2, 1)$. -/
+$\mathrm{tridiag}(1, 2, 1)$.
+
+**Reading.** Specializes the defining expression to explicit entries for all n.
+-/
 private theorem modelB_eq (n : ℕ) : modelB n = symmTridiagonalToeplitz n 1 2 := by
   ext i j
   have hn : ((n : ℝ) + 1) ≠ 0 := by positivity
@@ -788,19 +889,28 @@ private theorem modelB_eq (n : ℕ) : modelB n = symmTridiagonalToeplitz n 1 2 :
 /-- **Equation (11.6.14)** of [golub2013matrix], the restriction. For $n = 2m + 1$,
 $$R^{2h}_h = \tfrac14 B^h(2{:}2{:}2m, :) \in \mathbb{R}^{m \times n}.$$
 
-It is the full weighting of the backbone (`GolubVanLoan.Chapter11.restrictionMatrix_eq`). -/
+It is the full weighting of the backbone (`GolubVanLoan.Chapter11.restrictionMatrix_eq`).
+
+**Reading.** Same even rows of B/4 for every m.
+-/
 noncomputable def restrictionMatrix (m : ℕ) : Matrix (Fin m) (Fin (2 * m + 1)) ℝ :=
   (1 / 4 : ℝ) • (modelB (2 * m + 1)).submatrix evenIndex id
 
 /-- **Equation (11.6.14)** of [golub2013matrix], the prolongation. For $n = 2m + 1$,
 $$P^h_{2h} = \tfrac12 B^h(:, 2{:}2{:}2m) \in \mathbb{R}^{n \times m}.$$
 
-It is the linear interpolation of the backbone (`GolubVanLoan.Chapter11.prolongationMatrix_eq`). -/
+It is the linear interpolation of the backbone (`GolubVanLoan.Chapter11.prolongationMatrix_eq`).
+
+**Reading.** Same even columns of B/2 for every m.
+-/
 noncomputable def prolongationMatrix (m : ℕ) : Matrix (Fin (2 * m + 1)) (Fin m) ℝ :=
   (1 / 2 : ℝ) • (modelB (2 * m + 1)).submatrix id evenIndex
 
 /-- **Equation (11.6.14)** of [golub2013matrix], the restriction is full weighting: $R^{2h}_h$ is
-`Multigrid.fullWeighting m`. -/
+`Multigrid.fullWeighting m`.
+
+**Reading.** Identifies matrix with full weighting for every m.
+-/
 theorem restrictionMatrix_eq (m : ℕ) : restrictionMatrix m = fullWeighting m := by
   ext q i
   rw [restrictionMatrix, Matrix.smul_apply, submatrix_apply, modelB_eq,
@@ -810,7 +920,10 @@ theorem restrictionMatrix_eq (m : ℕ) : restrictionMatrix m = fullWeighting m :
   split_ifs <;> first | (exfalso; omega) | norm_num
 
 /-- **Equation (11.6.14)** of [golub2013matrix], the prolongation is linear interpolation:
-$P^h_{2h}$ is `Multigrid.linearInterpolation m`. -/
+$P^h_{2h}$ is `Multigrid.linearInterpolation m`.
+
+**Reading.** Identifies matrix with linear interpolation for every m.
+-/
 theorem prolongationMatrix_eq (m : ℕ) : prolongationMatrix m = linearInterpolation m := by
   ext i q
   rw [prolongationMatrix, Matrix.smul_apply, submatrix_apply, modelB_eq,
@@ -820,7 +933,10 @@ theorem prolongationMatrix_eq (m : ℕ) : prolongationMatrix m = linearInterpola
   split_ifs <;> first | (exfalso; omega) | norm_num
 
 /-- **Equation (11.6.14)** of [golub2013matrix], the restriction is half the transpose of the
-prolongation: $R^{2h}_h = \frac12 (P^h_{2h})^T$. -/
+prolongation: $R^{2h}_h = \frac12 (P^h_{2h})^T$.
+
+**Reading.** Same transpose relation with arbitrary grid order.
+-/
 theorem restrictionMatrix_eq_half_transpose (m : ℕ) :
     restrictionMatrix m = (1 / 2 : ℝ) • (prolongationMatrix m)ᵀ := by
   rw [restrictionMatrix_eq, prolongationMatrix_eq]
@@ -836,7 +952,11 @@ and use the boundary values $v_0 = v_{m+1} = 0$ for a coarse vector $v$. Then:
 
 The indices above are those of the source. In 0-based indices, $(Ru)_i$ uses the fine points
 $2i, 2i + 1, 2i + 2$ around `GolubVanLoan.Chapter11.evenIndex i`, and the fine point $2q$,
-$q \le m$, gets the average of the coarse values $q - 1$ and $q$, a missing one counting as $0$. -/
+$q \le m$, gets the average of the coarse values $q - 1$ and $q$, a missing one counting as $0$.
+
+**Reading.** The interpolation formula uses both homogeneous Dirichlet endpoints. In the seven-
+point example, the last fine-grid entry is the average of the last interior coarse value and
+the zero right endpoint. -/
 theorem restriction_prolongation_apply (m : ℕ) :
     (∀ (u : Fin (2 * m + 1) → ℝ) (i : Fin m), (restrictionMatrix m *ᵥ u) i =
       (u ⟨2 * i, by omega⟩ + 2 * u (evenIndex i) + u ⟨2 * i + 2, by omega⟩) / 4) ∧
@@ -904,6 +1024,8 @@ theorem galerkin_coarse_eq (m : ℕ) :
 
 /-- **Equation (11.6.18)** of [golub2013matrix]. The two-grid error operator
 $$E^h = I_n - P^h_{2h} (A^{2h})^{-1} R^{2h}_h A^h, \qquad n = 2m + 1.$$
+
+**Reading.** Same product for all m.
 -/
 noncomputable def twoGridErrorOperator (m : ℕ) :
     Matrix (Fin (2 * m + 1)) (Fin (2 * m + 1)) ℝ :=
@@ -954,7 +1076,11 @@ $p_1$ smoothing steps, $u_{p_1} = \mathrm{WJ}(p_1, u_c)$; correct on the coarse 
 smoothing steps, $u_{++} = \mathrm{WJ}(p_2, u_+)$.
 
 The smoothing step is the routine argument `smooth`. Its exact semantics is one weighted Jacobi
-step (11.6.11) with $\omega = 2/3$. -/
+step (11.6.11) with $\omega = 2/3$.
+
+**Correction.** Uses supplied smoothing and coarse solve, correct pre-smoothed update and both
+smoothing counts.
+-/
 noncomputable def twoGridCycle {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {m : ℕ}
     (smooth : (Fin (2 * m + 1) → ℝ) → M (Fin (2 * m + 1) → ℝ))
     (coarseSolve : (Fin m → ℝ) → M (Fin m → ℝ)) (b uc : Fin (2 * m + 1) → ℝ) (p₁ p₂ : ℕ) :
@@ -969,6 +1095,8 @@ private theorem idRun_foldlM_range_const {α : Type} (f : α → α) (p : ℕ) (
   simp only [List.foldlM_pure, List.foldl_const, List.length_range, Id.run_pure]
 
 /-- The exact coarse-grid correction maps $v$ to $v + P^h_{2h} (A^{2h})^{-1} R^{2h}_h (b - A^h v)$.
+
+**Correction.** Exact corrected update for arbitrary m.
 -/
 private theorem coarseGridCorrection_id (m : ℕ) (b v : Fin (2 * m + 1) → ℝ) :
     Id.run (coarseGridCorrection pure (fun r => pure ((modelA m)⁻¹ *ᵥ r)) b v) =
@@ -987,6 +1115,8 @@ $A^h u = b^h$, and let $u_+$ be the result of the exact coarse-grid correction o
 $(A^{2h})^{-1}$. Then
 $$u_+ = u_{p_1} + P^h_{2h} (A^{2h})^{-1} R^{2h}_h A^h (u - u_{p_1}), \qquad u_+ - u = E^h
   (u_{p_1} - u).$$
+
+**Reading.** Equivalent coarse error identity and update for every m.
 -/
 theorem equation_11_6_17 (m : ℕ) {b u : Fin (2 * m + 1) → ℝ} (hu : modelA (2 * m + 1) *ᵥ u = b)
     (v : Fin (2 * m + 1) → ℝ) :
@@ -1005,7 +1135,10 @@ theorem equation_11_6_17 (m : ℕ) {b u : Fin (2 * m + 1) → ℝ} (hu : modelA 
   abel
 
 /-- The weighted Jacobi splitting of the model matrix $A^h$ with $\omega = 2/3$. Its iteration
-matrix is $G^h = G^{h,2/3}$. -/
+matrix is $G^h = G^{h,2/3}$.
+
+**Reading.** Same choice of relaxation with arbitrary grid size.
+-/
 noncomputable abbrev twoThirdsJacobi (n : ℕ) : Stationary.Splitting (modelA n) :=
   jorSplitting (modelA n) (isUnit_diagPart_modelA n) (by norm_num : (2 / 3 : ℝ) ≠ 0)
 
@@ -1014,6 +1147,8 @@ two-grid cycle in exact arithmetic with the weighted Jacobi step with $\omega = 
 and the exact coarse solve $(A^{2h})^{-1}$, from $u_c$ with $p_1$ pre-smoothing and $p_2$
 post-smoothing steps. Then the result $u_{++}$ satisfies
 $$u_{++} - u = (G^h)^{p_2} E^h (G^h)^{p_1} (u_c - u), \qquad G^h = G^{h,2/3}.$$
+
+**Correction.** Same product in correct order with arbitrary m.
 -/
 theorem equation_11_6_19 (m : ℕ) {b u : Fin (2 * m + 1) → ℝ} (hu : modelA (2 * m + 1) *ᵥ u = b)
     (uc : Fin (2 * m + 1) → ℝ) (p₁ p₂ : ℕ) :
@@ -1046,7 +1181,10 @@ with $s_j = \sin(\theta_j/2)$, $c_j = \cos(\theta_j/2)$ and $\theta_j$ =
 
 These are the columns of (11.6.21). In 0-based indices the vectors are the fine mode $j$, the
 middle mode $m$ and the alias $2m - j$. The identities are the mode identities of the exact
-coarse-grid correction of the backbone. -/
+coarse-grid correction of the backbone.
+
+**Reading.** Same three families of mode images for arbitrary m.
+-/
 theorem equation_11_6_22 (m : ℕ) (j : Fin m) :
     twoGridErrorOperator m *ᵥ modelq (2 * m + 1) (fineIndex j) =
         Real.sin (modeAngle m j / 2) ^ 2 •
@@ -1115,7 +1253,10 @@ private theorem sigma_middleIndex (m : ℕ) : twoGridSigma m (middleIndex m) = 1
 
 /-- Equation (11.6.22) for every fine mode at once: $E^h q_k = \sigma_k (q_k + q_{2m - k})$ for
 every 0-based $k$; at the middle mode $2m - m = m$ and $\sigma_m = 1/2$, which gives
-$E^h q_{m+1} = q_{m+1}$. -/
+$E^h q_{m+1} = q_{m+1}$.
+
+**Reading.** One formula for all mode families, at any odd order.
+-/
 private theorem twoGridErrorOperator_mulVec_modelq (m : ℕ) (k : Fin (2 * m + 1)) :
     twoGridErrorOperator m *ᵥ modelq (2 * m + 1) k =
       twoGridSigma m k • (modelq (2 * m + 1) k + modelq (2 * m + 1) (Fin.rev k)) := by
@@ -1140,7 +1281,10 @@ $$\begin{bmatrix} S^h & 0 & C^h \mathcal{E}_m \\ 0 & 1 & 0 \\ \mathcal{E}_m S^h 
 given column by column: the column of the fine mode $k$ carries $\sigma_k$ in the rows $k$ and
 $2m - k$ (0-based). So the column of a fine mode $j < m$ carries $s_j^2$ in the rows $j$ and
 $2m - j$, the column of its alias carries $c_j^2$ in the same two rows, and the middle column is
-the unit vector, since $2\sigma_m = 1$. -/
+the unit vector, since $2\sigma_m = 1$.
+
+**Reading.** General block matrix for all m.
+-/
 noncomputable def twoGridBlock (m : ℕ) : Matrix (Fin (2 * m + 1)) (Fin (2 * m + 1)) ℝ :=
   Matrix.of fun i k =>
     twoGridSigma m k * ((if i = k then 1 else 0) + (if i = Fin.rev k then 1 else 0))
@@ -1159,7 +1303,10 @@ The proof of the source prints the value $(Q^{2h})^T A^{2h} Q^{2h} = (1/(2h^2))(
 \sqrt{C^h})$, which is wrong: the coarse eigenvalues are $(4/h^2) S^h C^h$. The theorem itself
 is correct. Here it is the action of the exact coarse-grid correction of the backbone on the
 sine modes (`GolubVanLoan.Chapter11.equation_11_6_22`), assembled column by column. The source
-leaves this to Problem P11.6.2. The block matrix is `GolubVanLoan.Chapter11.twoGridBlock`. -/
+leaves this to Problem P11.6.2. The block matrix is `GolubVanLoan.Chapter11.twoGridBlock`.
+
+**Reading.** Exact same blocks for every m; coarse eigenvalues in book proof misprinted.
+-/
 theorem theorem_11_6_2 (m : ℕ) :
     twoGridErrorOperator m * modelQ (2 * m + 1) = modelQ (2 * m + 1) * twoGridBlock m := by
   ext i k
@@ -1173,13 +1320,19 @@ theorem theorem_11_6_2 (m : ℕ) :
 /-- **Equation (11.6.20)** of [golub2013matrix], the block matrix
 $$\begin{bmatrix} C^h \\ 0 \\ -\mathcal{E}_m S^h \end{bmatrix}$$
 of Lemma 11.6.1, given column by column: the column of the coarse mode $l$ carries $c_l^2$ in
-the row of the fine mode $l$ and $-s_l^2$ in the row of its alias $2m - l$ (0-based). -/
+the row of the fine mode $l$ and $-s_l^2$ in the row of its alias $2m - l$ (0-based).
+
+**Reading.** Same coarse-to-fine block coefficients for arbitrary m.
+-/
 noncomputable def transferBlock (m : ℕ) : Matrix (Fin (2 * m + 1)) (Fin m) ℝ :=
   Matrix.of fun i l =>
     Real.cos (modeAngle m l / 2) ^ 2 * (if i = fineIndex l then 1 else 0) -
       Real.sin (modeAngle m l / 2) ^ 2 * (if i = aliasIndex l then 1 else 0)
 
-/-- The prolongation satisfies $P^h_{2h} Q^{2h} = \sqrt{2}\, Q^h [C^h; 0; -\mathcal{E}_m S^h]$. -/
+/-- The prolongation satisfies $P^h_{2h} Q^{2h} = \sqrt{2}\, Q^h [C^h; 0; -\mathcal{E}_m S^h]$.
+
+**Reading.** Equivalent transfer identity for every m.
+-/
 private theorem prolongation_mul_modelQ (m : ℕ) :
     prolongationMatrix m * modelQ m = modelQ (2 * m + 1) * (Real.sqrt 2 • transferBlock m) := by
   ext i l
@@ -1198,7 +1351,10 @@ $$(Q^h)^T P^h_{2h} Q^{2h} = \sqrt{2} \begin{bmatrix} C^h \\ 0 \\ -\mathcal{E}_m 
 
 The block matrix is `GolubVanLoan.Chapter11.transferBlock m`. The proof of the source goes
 through $(Q^h)^T B^h Q^h$ and (11.6.10); the proof here reads the columns off the backbone's
-interpolation of a coarse sine mode. -/
+interpolation of a coarse sine mode.
+
+**Reading.** Both transfer identities for every m.
+-/
 theorem lemma_11_6_1 (m : ℕ) :
     (modelQ (2 * m + 1))ᵀ * prolongationMatrix m * modelQ m = Real.sqrt 2 • transferBlock m ∧
       (modelQ m)ᵀ * restrictionMatrix m * modelQ (2 * m + 1) =
@@ -1303,7 +1459,10 @@ $$\tilde\alpha_{n-j+1} = \big(\alpha_j \tau_j^{p_1} s_j^2 + \alpha_{n-j+1} \tau_
 $$\tilde\alpha_{m+1} = \alpha_{m+1} \tau_{m+1}^{p_1 + p_2}.$$
 
 In 0-based indices the three cases are the fine mode $j$, the alias $2m - j$ and the middle mode
-$m$. -/
+$m$.
+
+**Reading.** All fine, alias and middle output coefficients for arbitrary m.
+-/
 theorem twoGrid_error_coeffs (m : ℕ) {b u : Fin (2 * m + 1) → ℝ}
     (hu : modelA (2 * m + 1) *ᵥ u = b) (uc α : Fin (2 * m + 1) → ℝ)
     (hα : uc - u = modelQ (2 * m + 1) *ᵥ α) (p₁ p₂ : ℕ) :
@@ -1347,7 +1506,10 @@ and both bounds are independent of $n$. In `GolubVanLoan.Chapter11.twoGrid_error
 the two terms of $\tilde\alpha_j$ and of $\tilde\alpha_{n-j+1}$ carries a factor $s_j^2$ or
 $\tau_{n-j+1}^{p_1}$, and $\tilde\alpha_{m+1}$ carries the factor
 $\tau_{m+1}^{p_1 + p_2} = (1/3)^{p_1 + p_2}$: the smoother damps the high-frequency
-coefficients, and the coarse grid damps the low-frequency ones. -/
+coefficients, and the coarse grid damps the low-frequency ones.
+
+**Reading.** Same two uniform bounds for arbitrary m.
+-/
 theorem twoGrid_damping_bounds (m : ℕ) (j : Fin m) :
     |weightedJacobiTau (2 * m + 1) (2 / 3) (aliasIndex j)| ≤ 1 / 3 ∧
       Real.sin (modeAngle m j / 2) ^ 2 ≤ 1 / 2 := by

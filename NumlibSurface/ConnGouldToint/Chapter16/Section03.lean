@@ -62,6 +62,18 @@ the solutions as the regular critical points of the merit function. The scalar r
 
 ## Deviations from the source
 
+* **Selected coefficients.** Equations (16.3.5)–(16.3.6) use a particular disk-admissible selection
+  at a jointly zero component. See `ConnGouldToint.Chapter16.complementarityCoefficient`,
+  `ConnGouldToint.Chapter16.complementarityCoefficient_disk`.
+* **Orientation and differentiability.** Equation (16.3.4) uses the residual derivative orientation,
+  with differentiability stated away from jointly zero components. See
+  `ConnGouldToint.Chapter16.complementarityLinearization`,
+  `ConnGouldToint.Chapter16.hasFDerivAt_complementarityResidual`.
+* **Selected linearization and merit derivative.** Equations (16.3.8)–(16.3.9) use the selected
+  linearization and cover jointly zero components in the merit derivative. See
+  `ConnGouldToint.Chapter16.hasFDerivAt_complementarityMerit`,
+  `ConnGouldToint.Chapter16.complementarityModel`,
+  `ConnGouldToint.Chapter16.complementarityModel_expansion`.
 * **Equation (16.3.4)** (reading). The linearization maps a direction to the changes of the residual
   components. This transposes the printed matrix of column gradients and agrees with
   (16.3.8)–(16.3.9). See `ConnGouldToint.Chapter16.complementarityLinearization`.
@@ -120,7 +132,12 @@ It is the partial derivative of $\phi$ with respect to its first argument where
 $(\alpha, \beta) \neq (0, 0)$.
 
 At the origin the Lean division gives the value $-1$. Then both coefficients are $-1$, the
-center of the permitted disk (16.3.5). -/
+center of the permitted disk (16.3.5).
+
+**Reading.** Away from the joint zero the quotient gives the source coefficient. At the joint zero
+the formalization chooses both coefficients equal to minus one, an admissible disk member. The disk
+theorem concerns this selection.
+-/
 noncomputable def complementarityCoefficient (a b : ℝ) : ℝ :=
   a / √(a ^ 2 + b ^ 2) - 1
 
@@ -132,7 +149,12 @@ private theorem radicand_pos {a b : ℝ} (h : a ≠ 0 ∨ b ≠ 0) :
 
 /-- **Equation (16.3.5)** of [conn2000trust]. For all $\alpha, \beta \in \mathbb{R}$, the
 coefficients $\xi = \alpha / \sqrt{\alpha^2 + \beta^2} - 1$ and
-$\zeta = \beta / \sqrt{\alpha^2 + \beta^2} - 1$ satisfy $(\xi + 1)^2 + (\zeta + 1)^2 \le 1$. -/
+$\zeta = \beta / \sqrt{\alpha^2 + \beta^2} - 1$ satisfy $(\xi + 1)^2 + (\zeta + 1)^2 \le 1$.
+
+**Reading.** Away from the joint zero the quotient gives the source coefficient. At the joint zero
+the formalization chooses both coefficients equal to minus one, an admissible disk member. The disk
+theorem concerns this selection.
+-/
 theorem complementarityCoefficient_disk (a b : ℝ) :
     (complementarityCoefficient a b + 1) ^ 2 +
       (complementarityCoefficient b a + 1) ^ 2 ≤ 1 := by
@@ -186,7 +208,12 @@ $(b_i(x), a_i(x))$.
 **Reading.** The source writes the linearization with the matrix of column gradients of $a$ and
 $b$. With the Jacobian convention that maps input directions to output directions, this matrix
 is transposed, and the diagonal weights act on the output of each Jacobian. This form agrees
-with (16.3.8)–(16.3.9). -/
+with (16.3.8)–(16.3.9).
+
+**Reading.** The linearization maps displacements to residual components. The printed
+column-gradient display is its adjoint. The ordinary derivative theorem assumes every component pair
+is away from zero.
+-/
 noncomputable def complementarityLinearization {ι : Type*} (a b : E → ι → ℝ) (x : E) :
     E →L[ℝ] (ι → ℝ) :=
   ContinuousLinearMap.pi fun i ↦
@@ -196,7 +223,12 @@ noncomputable def complementarityLinearization {ι : Type*} (a b : E → ι → 
 /-- **Equation (16.3.4)** of [conn2000trust], derivative of the residual. Let
 $a, b : E \to \mathbb{R}^\iota$ have differentiable components at $x$, and suppose that
 $(a_i(x), b_i(x)) \neq (0, 0)$ for every $i$. Then the linearization is the derivative of
-$y \mapsto \Phi(a(y), b(y))$ at $x$. -/
+$y \mapsto \Phi(a(y), b(y))$ at $x$.
+
+**Reading.** The linearization maps displacements to residual components. The printed
+column-gradient display is its adjoint. The ordinary derivative theorem assumes every component pair
+is away from zero.
+-/
 theorem hasFDerivAt_complementarityResidual {ι : Type*} [Finite ι]
     {a b : E → ι → ℝ} {x : E}
     (ha : ∀ i, DifferentiableAt ℝ (a · i) x) (hb : ∀ i, DifferentiableAt ℝ (b · i) x)
@@ -259,7 +291,11 @@ where $\Phi_i = \phi(a_i(x), b_i(x))$ and $\xi_i, \zeta_i$ are the diagonal coef
 **Generalization.** The formula also holds where $a_i(x) = b_i(x) = 0$. There $\Phi_i = 0$, so
 the coefficient of that component does not matter.
 
-The derivative is a continuous linear functional, as the Jacobian convention gives. -/
+The derivative is a continuous linear functional, as the Jacobian convention gives.
+
+**Reading.** The model uses the selected residual linearization. The merit derivative and model
+expansion hold even at a jointly zero component because its residual factor is zero.
+-/
 theorem hasFDerivAt_complementarityMerit {ι : Type*} [Fintype ι]
     {a b : E → ι → ℝ} {x : E}
     (ha : ∀ i, DifferentiableAt ℝ (a · i) x) (hb : ∀ i, DifferentiableAt ℝ (b · i) x) :
@@ -274,7 +310,11 @@ theorem hasFDerivAt_complementarityMerit {ι : Type*} [Fintype ι]
 /-- **Equation (16.3.9)** of [conn2000trust]. For $a, b : E \to \mathbb{R}^\iota$ and $x \in E$, the
 **Gauss–Newton model** of the merit function is
 $$m(s) = \tfrac{1}{2} \sum_i \bigl(\Phi_i + (\Lambda s)_i\bigr)^2,$$
-where $\Phi_i = \phi(a_i(x), b_i(x))$ and $\Lambda$ is the linearization (16.3.4) at $x$. -/
+where $\Phi_i = \phi(a_i(x), b_i(x))$ and $\Lambda$ is the linearization (16.3.4) at $x$.
+
+**Reading.** The model uses the selected residual linearization. The merit derivative and model
+expansion hold even at a jointly zero component because its residual factor is zero.
+-/
 noncomputable def complementarityModel {ι : Type*} [Fintype ι]
     (a b : E → ι → ℝ) (x s : E) : ℝ :=
   (∑ i, (complementarityResidual (a x) (b x) i +
@@ -284,7 +324,11 @@ noncomputable def complementarityModel {ι : Type*} [Fintype ι]
 differentiable components at $x$. For every $s \in E$,
 $$m(s) = \psi(x) + \nabla \psi(x) s + \tfrac{1}{2} \|\Lambda s\|^2,$$
 where $\psi(y) = \frac{1}{2} \|\Phi(a(y), b(y))\|^2$ is the merit function and $\Lambda$ is the
-linearization at $x$. -/
+linearization at $x$.
+
+**Reading.** The model uses the selected residual linearization. The merit derivative and model
+expansion hold even at a jointly zero component because its residual factor is zero.
+-/
 theorem complementarityModel_expansion {ι : Type*} [Fintype ι]
     {a b : E → ι → ℝ} {x : E}
     (ha : ∀ i, DifferentiableAt ℝ (a · i) x) (hb : ∀ i, DifferentiableAt ℝ (b · i) x)

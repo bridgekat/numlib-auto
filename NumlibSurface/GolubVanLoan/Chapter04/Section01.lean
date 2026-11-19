@@ -80,6 +80,17 @@ backward error bound (4.1.4) of the solve. The proofs specialize
 
 ## Deviations from the source
 
+* **Reading.** Theorem 4.1.1 uses weak column dominance, with a weak inequality in the proof. See
+  `GolubVanLoan.Chapter04.theorem_4_1_1`.
+* **Generalization.** The inverse-norm bound uses any positive lower bound on the column margins.
+  See `GolubVanLoan.Chapter04.theorem_4_1_2`.
+* **Reading.** The LDLᵀ program uses running differences and describes rounded operations even at
+  zero pivots. See `GolubVanLoan.Chapter04.algorithm_4_1_1`,
+  `GolubVanLoan.Chapter04.algorithm_4_1_1_rounds`.
+* **Reading.** The LDLᵀ solve fixes the substitution order and totalizes division at zero diagonal
+  entries. See `GolubVanLoan.Chapter04.solveLDLT`.
+* **Reading.** Equation (4.1.4) uses an explicit finite-roundoff bound and nonzero computed pivots.
+  See `GolubVanLoan.Chapter04.equation_4_1_4`.
 * **Algorithm 4.1.1** (reading). The source assumes that $A$ has an LU factorization. The
   specification assumes the hypothesis of Theorem 4.1.3, nonsingular leading principal submatrices
   of orders $1, \dots, n-1$. See `GolubVanLoan.Chapter04.algorithm_4_1_1_spec`.
@@ -106,7 +117,12 @@ $L = (\ell_{ij})$ satisfy $|\ell_{ij}| \le 1$.
 Column diagonal dominance is the weak condition $\sum_{i \neq j} |a_{ij}| \le |a_{jj}|$,
 `Matrix.IsColDiagDominant`, and the factorization is `Matrix.IsLU`. The proof of the source
 writes a strict inequality in one step of its chain under this weak hypothesis; the backbone
-proof uses the weak inequality. -/
+proof uses the weak inequality.
+
+**Reading.** This uses the weak column convention analogous to (4.1.1). The proof in print uses a
+strict inequality in the Schur-complement estimate although its hypothesis gives a weak inequality.
+The Lean proof uses the weak inequality.
+-/
 theorem theorem_4_1_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hdom : A.IsColDiagDominant) : ∃ L U, IsLU A L U ∧ ∀ i j, |L i j| ≤ 1 := by
   simpa only [Real.norm_eq_abs] using exists_isLU_of_isColDiagDominant hA hdom
@@ -140,7 +156,11 @@ Then $A$ is nonsingular and $\|A^{-1}\|_1 \le 1/\delta$.
 
 The source defines $\delta = \min_j (|a_{jj}| - \sum_{i \neq j} |a_{ij}|)$ in (4.1.3) and
 assumes $\delta > 0$. The theorem takes any positive lower bound $\delta$ on these column
-margins. The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`. -/
+margins. The norm $\|\cdot\|_1$ is `Matrix.lpOpNorm 1`.
+
+**Generalization.** The source sets $\delta$ equal to the minimum column margin. Lean allows any
+positive lower bound on all the margins and makes the resulting nonsingularity explicit.
+-/
 theorem theorem_4_1_2 {A : Matrix (Fin n) (Fin n) ℝ} {δ : ℝ} (hδ : 0 < δ)
     (hA : ∀ j, δ ≤ |A j j| - ∑ i ∈ univ.erase j, |A i j|) :
     IsUnit A ∧ lpOpNorm 1 A⁻¹ ≤ 1 / δ := by
@@ -214,7 +234,13 @@ end
 ```
 
 The inner products are running differences from the entry of $A$ (`FloatingPoint.runningDiff`).
-The column $A(j{+}1{:}n, j)$ is computed entry by entry, since its entries are independent. -/
+The column $A(j{+}1{:}n, j)$ is computed entry by entry, since its entries are independent.
+
+**Reading.** Lean uses rounded running differences for the displayed differences of dot products.
+The program and its arithmetic-relation theorem apply to all real matrices, including zero divisors
+under totalized division. The factorization correctness theorem separately requires the leading
+minors and symmetry.
+-/
 noncomputable def algorithm_4_1_1 (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) => do
     let v ← ((List.finRange n).filter (· < j)).foldlM (fun (v : Fin n → ℝ) (i : Fin n) => do
@@ -383,7 +409,13 @@ $\hat\ell_{ij}$, $j < i$, is a rounding of $t / \hat d_j$ for a running differen
 $a_{ij}$ and rounded products $\hat\ell_{ik} v_k$, $k < j$.
 
 The relation is `FloatingPoint.RoundsLDL fp A (GolubVanLoan.Chapter03.packedL F)
-(Matrix.diagonal F.diag)`. It needs no hypothesis on $A$. -/
+(Matrix.diagonal F.diag)`. It needs no hypothesis on $A$.
+
+**Reading.** Lean uses rounded running differences for the displayed differences of dot products.
+The program and its arithmetic-relation theorem apply to all real matrices, including zero divisors
+under totalized division. The factorization correctness theorem separately requires the leading
+minors and symmetry.
+-/
 theorem algorithm_4_1_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_4_1_1 fp.round A).run,
       RoundsLDL fp A (Chapter03.packedL F) (diagonal F.diag) := by
@@ -543,7 +575,12 @@ diagonal of $F$.
 
 The system $Lz = b$ is solved by Algorithm 3.1.3, the diagonal system by the rounded quotients
 $y_i = \mathrm{fl}(z_i / f_{ii})$, and $L^T x = y$ by Algorithm 3.1.4. The factor $L$ is
-`GolubVanLoan.Chapter03.packedL F`. -/
+`GolubVanLoan.Chapter03.packedL F`.
+
+**Reading.** The source calls for three solves. Lean fixes the order to the column-oriented
+triangular programs and uses totalized scalar division for the diagonal solve, which in the source
+requires a nonzero diagonal for a unique result.
+-/
 noncomputable def solveLDLT (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let z ← Chapter03.algorithm_3_1_3 rnd (Chapter03.packedL F) b
   let y ← (List.finRange n).foldlM (fun (y : Fin n → ℝ) (i : Fin n) => do
@@ -567,7 +604,12 @@ The source states that the solution computed via Algorithm 4.1.1 and the triangu
 §3.1 satisfies $(A + E)\hat x = b$ with $|E| \le nu(2|A| + 4|\hat L||\hat D||\hat L^T|) +
 O(u^2)$. The rigorous bound implies it to first order for $n \ge 2$, since
 $\gamma_{3n+2} = (3n + 2)u + O(u^2)$ and $3n + 2 \le 4n$. The factors are
-`GolubVanLoan.Chapter03.packedL F` and `Matrix.diagonal F.diag`. -/
+`GolubVanLoan.Chapter03.packedL F` and `Matrix.diagonal F.diag`.
+
+**Reading.** Lean states a finite $\gamma_{3n+2}$ bound for an explicit rounding relation, subject
+to $(3n+2)u<1$ and nonzero computed pivots. The source gives a first-order estimate with an $O(u^2)$
+remainder.
+-/
 theorem equation_4_1_4 {fp : RoundingModel ℝ} (hn : ((3 * n + 2 : ℕ) : ℝ) * fp.u < 1)
     {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (b : Fin n → ℝ) :
     ∀ F ∈ (algorithm_4_1_1 fp.round A).run, (∀ j, F j j ≠ 0) →

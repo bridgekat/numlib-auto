@@ -33,6 +33,16 @@ subproblem theory of Chapter 8.
 * The source uses $r$ both for the residual vector and for the order of the regularization. Here the
   residual is $r$ and the order of the regularization is $p$.
 
+## Deviations from the source
+
+* **§11.3, secular root** (correction). The trust-region solution can be on the boundary
+  with zero multiplier. A regularization solution with $J^T r=0$ also has zero multiplier.
+  The positive-root statements apply in the positive-multiplier cases.
+  See `CartisGouldToint.Chapter11.leastSquares_structure`.
+* **Equation (11.3.3), augmented matrix** (correction). The system equivalence also holds
+  for degenerate data where the matrix lacks a positive eigenvalue.
+  See `CartisGouldToint.Chapter11.augmentedSystem_iff`.
+
 ## Not formalized
 
 * The remarks on Krylov and LSQR methods in §11.3.
@@ -91,7 +101,13 @@ Here $s(\lambda) = -(H + \lambda M)^{-1} g$ is `CartisGouldToint.Chapter08.stepO
 $\pi(\lambda) = \|s(\lambda)\|_M^2$ is `CartisGouldToint.Chapter08.secularFn`, and $\lambda_1$
 and $\lambda_{\mathrm{s}}$ are `CartisGouldToint.Chapter08.leftmostPencil` and
 `CartisGouldToint.Chapter08.lambdaS`. Part 5 is the absence of the hard case for the
-trust-region subproblem, and part 6 for the regularization subproblem. -/
+trust-region subproblem, and part 6 for the regularization subproblem.
+
+**Correction.** The prose infers a positive secular root when there is no interior
+trust-region minimizer. With scalar $J=r=M=1$ and $\Delta=1$, the unique minimizer is
+$s=-1$ with multiplier $0$. The secular function $(1+\lambda)^{-2}$ is strictly below
+$1$ for every positive shift. In the regularization case $J^T r=0$ gives the trivial
+minimizer $s=0$, so the positive-root assertion requires $J^T r\ne 0$. -/
 theorem leastSquares_structure (J : Matrix (Fin m) (Fin n) ℝ) (r : EuclideanSpace ℝ (Fin m))
     (hM : M.PosDef) :
     (∀ s, 1 / 2 * ‖r + toEuclideanLin J s‖ ^ 2 =
@@ -193,6 +209,10 @@ only if there is $z \in \mathbb{R}^m$ with
 $$\begin{bmatrix} \lambda M & J^T \\ J & -I \end{bmatrix} \begin{bmatrix} s \\ z \end{bmatrix} =
   -\begin{bmatrix} 0 \\ r \end{bmatrix}.$$
 The vector $z$ is then $z = J s + r$.
+
+**Correction.** The source calls the augmented matrix indefinite. With $\lambda=0$
+and $J=0$, it is negative semidefinite. The algebraic equivalence includes this case
+and allows an arbitrary matrix $M$.
 
 The block matrix is `Matrix.fromBlocks`, indexed by `Fin n ⊕ Fin m`. -/
 theorem augmentedSystem_iff (J : Matrix (Fin m) (Fin n) ℝ) (r : Fin m → ℝ)

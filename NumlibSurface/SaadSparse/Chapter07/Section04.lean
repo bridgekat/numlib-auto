@@ -119,6 +119,74 @@ Algorithm 6.12. The bound (7.83) then follows as Proposition 7.3 does.
   $g_m/\rho_m$, so the phase of $\alpha_m$ enters only through $\eta$.
 * `SaadSparse.Chapter07.equation_7_70` and `SaadSparse.Chapter07.equation_7_76` hold for an
   arbitrary column scaling $\Delta_{m+1}$, which is what exercise P-7.9 asks about.
+
+## Deviations from the source
+
+* **Representation.** TFQMR stores the quantities that carry over between half-steps. See
+  `SaadSparse.Chapter07.TFQMRState`.
+* **Generalization.** TFQMR accepts arbitrary shadows and complex input and initializes an extra
+  alpha field. See `SaadSparse.Chapter07.tfqmr`, `SaadSparse.Chapter07.tfqmr_zero`.
+* **Totalization.** TFQMR extends the real updates to complex scalars and totalizes their quotients.
+  See `SaadSparse.Chapter07.tfqmrStepAlpha`, `SaadSparse.Chapter07.tfqmrStepBeta`,
+  `SaadSparse.Chapter07.tfqmr_alpha_even`, `SaadSparse.Chapter07.tfqmr_succ_theta`,
+  `SaadSparse.Chapter07.tfqmr_succ_d`, `SaadSparse.Chapter07.tfqmr_succ_rho_odd`,
+  `SaadSparse.Chapter07.tfqmr_succ_u_odd`, `SaadSparse.Chapter07.tfqmr_succ_v_odd`.
+* **Scope.** TFQMR defines all half-steps independently of a stopping rule. See
+  `SaadSparse.Chapter07.tfqmrStep`, `SaadSparse.Chapter07.tfqmr_succ`.
+* **Correction.** The TFQMR coefficient array uses the terminal row indices implied by the product
+  in (7.81). See `SaadSparse.Chapter07.tfqmrCoeff`, `SaadSparse.Chapter07.tfqmrH`.
+* **Correction.** The TFQMR entry lemmas use the corrected zero-based scaling factors in (7.81). See
+  `SaadSparse.Chapter07.tfqmrCoeff_self`, `SaadSparse.Chapter07.tfqmrCoeff_succ_self`,
+  `SaadSparse.Chapter07.tfqmrH_self`, `SaadSparse.Chapter07.tfqmrH_succ_self`.
+* **Scope.** The continuation condition for (7.69) is phrased through the image direction. See
+  `SaadSparse.Chapter07.TFQMRNoSeriousBreakdown`.
+* **Generalization.** The TFQMR Hessenberg identity permits zero step lengths and zero scales under
+  explicit conditions. See `SaadSparse.Chapter07.equation_7_70`.
+* **Generalization.** The reduced TFQMR least-squares formulation permits any nonzero finite
+  scaling. See `SaadSparse.Chapter07.equation_7_76`.
+* **Scope.** The TFQMR equivalences use a nonzero prefix that includes index $m$. See
+  `SaadSparse.Chapter07.TFQMRNoBreakdown`.
+* **Totalization.** Norm-based scaling is defined for zero residuals, whose normalized columns are
+  then zero. See `SaadSparse.Chapter07.tfqmrDelta`.
+* **Convention.** The TFQMR residual recurrence identifies tau with the magnitude of the rotated
+  residual. See `SaadSparse.Chapter07.norm_gamma_eq_tfqmrTau`.
+* **Scope.** The proofs of equivalence with DQGMRES and the projected minimizer assume the nonzero
+  prefix. See `SaadSparse.Chapter07.tfqmr_eq_dqgmres`, `SaadSparse.Chapter07.tfqmr_eq_qgmres`,
+  `SaadSparse.Chapter07.tfqmr_isQuasiMinResidualIterate`.
+* **Scope.** The residual bound (7.83) has explicit finite and global no-breakdown hypotheses. See
+  `SaadSparse.Chapter07.equation_7_83`.
+* **Generalization.** The BCG residual and direction polynomial recurrences extend to totalized
+  complex coefficients. See `SaadSparse.Chapter07.bcgResidualPoly`,
+  `SaadSparse.Chapter07.bcgDirectionPoly`, `SaadSparse.Chapter07.bcgResidualPoly_succ`,
+  `SaadSparse.Chapter07.bcgDirectionPoly_succ`.
+* **Reading.** The BCG polynomial degree bounds allow vanishing leading coefficients. See
+  `SaadSparse.Chapter07.bcgResidualPoly_natDegree_le`,
+  `SaadSparse.Chapter07.bcgDirectionPoly_natDegree_le`.
+* **Generalization.** The BCG leading-term identities are valid even when those coefficients vanish.
+  See `SaadSparse.Chapter07.bcgDirectionPoly_coeff_self`,
+  `SaadSparse.Chapter07.bcgResidualPoly_coeff_succ`.
+* **Generalization.** The dual BCG polynomial formulas use conjugate coefficients with the adjoint.
+  See `SaadSparse.Chapter07.bcg_succ`, `SaadSparse.Chapter07.bcg_residual_eq_aeval`,
+  `SaadSparse.Chapter07.inner_aeval_conjTranspose_aeval`.
+* **Reading.** The CGS recurrence is defined for complex input and all indices with totalized
+  quotients. See `SaadSparse.Chapter07.cgsStep`, `SaadSparse.Chapter07.cgs`,
+  `SaadSparse.Chapter07.cgs_succ`, `SaadSparse.Chapter07.cgsAlpha`, `SaadSparse.Chapter07.cgsBeta`,
+  `SaadSparse.Chapter07.cgsQ`, `SaadSparse.Chapter07.cgs_succ_x`, `SaadSparse.Chapter07.cgs_succ_r`,
+  `SaadSparse.Chapter07.cgs_succ_u`, `SaadSparse.Chapter07.cgs_succ_p`.
+* **Generalization.** The squared polynomial identity holds for the totalized CGS and BCG
+  recurrences. See `SaadSparse.Chapter07.cgs_residual_eq`.
+* **Reading.** The BICGSTAB recurrence totalizes the quotients and uses the complex minimum-residual
+  coefficient. See `SaadSparse.Chapter07.bicgstabStep`, `SaadSparse.Chapter07.bicgstab`,
+  `SaadSparse.Chapter07.bicgstab_succ`, `SaadSparse.Chapter07.bicgstabAlpha`,
+  `SaadSparse.Chapter07.bicgstabS`, `SaadSparse.Chapter07.bicgstabOmega`,
+  `SaadSparse.Chapter07.bicgstabBeta`.
+* **Generalization.** The BICGSTAB update identities include the complex totalized recurrence. See
+  `SaadSparse.Chapter07.bicgstab_succ_x`, `SaadSparse.Chapter07.bicgstab_succ_r`,
+  `SaadSparse.Chapter07.bicgstab_succ_p`.
+* **Reading.** The BICGSTAB comparison makes the leading-coefficient nonvanishing conditions
+  explicit. See `SaadSparse.Chapter07.bicgstab_residual_eq`, `SaadSparse.Chapter07.equation_7_53`.
+* **Generalization.** The BICGSTAB minimum-residual half-step includes the case of zero matrix
+  image. See `SaadSparse.Chapter07.equation_7_55`.
 -/
 
 open Matrix Polynomial
@@ -147,7 +215,11 @@ degree at most $j$, it satisfies $\varphi_j(0) = 1$, and the BCG residual is
 $r_j = \varphi_j(A) r_0$ (`SaadSparse.Chapter07.bcg_residual_eq_aeval`). Its degree is exactly
 $j$ while no $\alpha_i$ vanishes.
 
-The definition is the backbone `BCG.residualPoly` for the operators $A$ and $A^H$. -/
+The definition is the backbone `BCG.residualPoly` for the operators $A$ and $A^H$.
+
+**Generalization.** The revised polynomials use totalized BCG coefficients over the real or complex
+field. They are defined after breakdown as well as during the source's active real recurrence.
+-/
 noncomputable def bcgResidualPoly (j : ℕ) : 𝕜[X] := BCG.residualPoly (op A) (op Aᴴ) b x₀ rs₀ j
 
 /-- **Equations (7.33) and (7.36)** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ and
@@ -155,7 +227,11 @@ $b, x_0, r^*_0 \in \mathbb{K}^n$. The **BCG direction polynomial** $\pi_j$ is de
 coefficients $\beta_j$ of Algorithm 7.3 by $$\pi_0 = 1, \qquad \pi_{j+1} = \varphi_{j+1} +
 \beta_j \pi_j.$$ It has degree at most $j$, and the BCG direction is $p_j = \pi_j(A) r_0$.
 
-The definition is the backbone `BCG.directionPoly` for the operators $A$ and $A^H$. -/
+The definition is the backbone `BCG.directionPoly` for the operators $A$ and $A^H$.
+
+**Generalization.** The revised polynomials use totalized BCG coefficients over the real or complex
+field. They are defined after breakdown as well as during the source's active real recurrence.
+-/
 noncomputable def bcgDirectionPoly (j : ℕ) : 𝕜[X] := BCG.directionPoly (op A) (op Aᴴ) b x₀ rs₀ j
 
 /-- The BCG residual polynomial starts with $\varphi_0 = 1$. -/
@@ -164,13 +240,21 @@ noncomputable def bcgDirectionPoly (j : ℕ) : 𝕜[X] := BCG.directionPoly (op 
 /-- The BCG direction polynomial starts with $\pi_0 = 1$. -/
 @[simp] theorem bcgDirectionPoly_zero : bcgDirectionPoly A b x₀ rs₀ 0 = 1 := rfl
 
-/-- Equation (7.35): $\varphi_{j+1}(t) = \varphi_j(t) - \alpha_j t \, \pi_j(t)$. -/
+/-- Equation (7.35): $\varphi_{j+1}(t) = \varphi_j(t) - \alpha_j t \, \pi_j(t)$.
+
+**Generalization.** The revised polynomials use totalized BCG coefficients over the real or complex
+field. They are defined after breakdown as well as during the source's active real recurrence.
+-/
 theorem bcgResidualPoly_succ (j : ℕ) : bcgResidualPoly A b x₀ rs₀ (j + 1) =
     bcgResidualPoly A b x₀ rs₀ j
       - C (bcgAlpha A b x₀ rs₀ j) * (X * bcgDirectionPoly A b x₀ rs₀ j) :=
   BCG.residualPoly_succ _ _ _ _ _ j
 
-/-- Equation (7.36): $\pi_{j+1} = \varphi_{j+1} + \beta_j \pi_j$. -/
+/-- Equation (7.36): $\pi_{j+1} = \varphi_{j+1} + \beta_j \pi_j$.
+
+**Generalization.** The revised polynomials use totalized BCG coefficients over the real or complex
+field. They are defined after breakdown as well as during the source's active real recurrence.
+-/
 theorem bcgDirectionPoly_succ (j : ℕ) : bcgDirectionPoly A b x₀ rs₀ (j + 1) =
     bcgResidualPoly A b x₀ rs₀ (j + 1)
       + C (bcgBeta A b x₀ rs₀ j) * bcgDirectionPoly A b x₀ rs₀ j :=
@@ -182,25 +266,43 @@ $\varphi_j(A) r_0$ a residual. -/
     (bcgResidualPoly A b x₀ rs₀ j).eval 0 = 1 :=
   BCG.residualPoly_eval_zero _ _ _ _ _ j
 
-/-- The BCG residual polynomial $\varphi_j$ has degree at most $j$. -/
+/-- The BCG residual polynomial $\varphi_j$ has degree at most $j$.
+
+**Reading.** The book calls these degree-$j$ polynomials. Lean gives upper degree bounds without
+assuming that the leading coefficients of the totalized recurrences are nonzero.
+-/
 theorem bcgResidualPoly_natDegree_le (j : ℕ) : (bcgResidualPoly A b x₀ rs₀ j).natDegree ≤ j :=
   BCG.residualPoly_natDegree_le _ _ _ _ _ j
 
-/-- The BCG direction polynomial $\pi_j$ has degree at most $j$. -/
+/-- The BCG direction polynomial $\pi_j$ has degree at most $j$.
+
+**Reading.** The book calls these degree-$j$ polynomials. Lean gives upper degree bounds without
+assuming that the leading coefficients of the totalized recurrences are nonzero.
+-/
 theorem bcgDirectionPoly_natDegree_le (j : ℕ) : (bcgDirectionPoly A b x₀ rs₀ j).natDegree ≤ j :=
   BCG.directionPoly_natDegree_le _ _ _ _ _ j
 
 /-- The coefficients of $t^j$ in $\pi_j$ and in $\varphi_j$ are equal, because $\pi_j$ differs from
 $\varphi_j$ only by a multiple of $\pi_{j-1}$, which has lower degree. This is the statement, in
 the derivation of (7.54), that the leading coefficients of $\varphi_j(A^H) r^*_0$ and
-$\pi_j(A^H) r^*_0$ are identical. -/
+$\pi_j(A^H) r^*_0$ are identical.
+
+**Generalization.** The identities concern the coefficients of the prescribed powers and hold even
+when those coefficients vanish. The source uses them as leading coefficients of nonbroken
+recurrences.
+-/
 theorem bcgDirectionPoly_coeff_self (j : ℕ) :
     (bcgDirectionPoly A b x₀ rs₀ j).coeff j = (bcgResidualPoly A b x₀ rs₀ j).coeff j :=
   BCG.directionPoly_coeff_self _ _ _ _ _ j
 
 /-- The coefficients $\gamma_1^{(j)}$ of $t^j$ in $\varphi_j$ satisfy
 $\gamma_1^{(j+1)} = -\alpha_j \gamma_1^{(j)}$. This is the first of the two relations that the
-derivation of (7.53) compares. -/
+derivation of (7.53) compares.
+
+**Generalization.** The identities concern the coefficients of the prescribed powers and hold even
+when those coefficients vanish. The source uses them as leading coefficients of nonbroken
+recurrences.
+-/
 theorem bcgResidualPoly_coeff_succ (j : ℕ) :
     (bcgResidualPoly A b x₀ rs₀ (j + 1)).coeff (j + 1) =
       -bcgAlpha A b x₀ rs₀ j * (bcgResidualPoly A b x₀ rs₀ j).coeff j :=
@@ -208,7 +310,12 @@ theorem bcgResidualPoly_coeff_succ (j : ℕ) :
 
 /-- Lines 6, 7, 9 and 10 of Algorithm 7.3, in the notation of the book:
 $r_{j+1} = r_j - \alpha_j A p_j$, $r^*_{j+1} = r^*_j - \bar\alpha_j A^H p^*_j$,
-$p_{j+1} = r_{j+1} + \beta_j p_j$ and $p^*_{j+1} = r^*_{j+1} + \bar\beta_j p^*_j$. -/
+$p_{j+1} = r_{j+1} + \beta_j p_j$ and $p^*_{j+1} = r^*_{j+1} + \bar\beta_j p^*_j$.
+
+**Generalization.** Lean conjugates the coefficients on the dual side so polynomial evaluation can
+be moved across the complex inner product using the adjoint. The real restriction gives the source's
+transpose relation.
+-/
 theorem bcg_succ (j : ℕ) :
     (bcg A b x₀ rs₀ (j + 1)).r
         = (bcg A b x₀ rs₀ j).r - bcgAlpha A b x₀ rs₀ j • op A (bcg A b x₀ rs₀ j).p ∧
@@ -234,7 +341,12 @@ $r^*_j = \varphi_j(A^T) r^*_0$.
 
 The starred recurrences are the unstarred ones with $A$ replaced by $A^H$ and every coefficient
 conjugated, and this gives the conjugate polynomials. No hypothesis is needed. The proof
-specializes `BCG.residual_eq_aeval`. -/
+specializes `BCG.residual_eq_aeval`.
+
+**Generalization.** Lean conjugates the coefficients on the dual side so polynomial evaluation can
+be moved across the complex inner product using the adjoint. The real restriction gives the source's
+transpose relation.
+-/
 theorem bcg_residual_eq_aeval (j : ℕ) :
     (bcg A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j) (b - op A x₀) ∧
       (bcg A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j) (b - op A x₀) ∧
@@ -261,7 +373,11 @@ abbrev CGSState (E : Type*) := CGS.State E
 computes $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, $q_j = u_j - \alpha_j A p_j$,
 $x_{j+1} = x_j + \alpha_j (u_j + q_j)$, $r_{j+1} = r_j - \alpha_j A (u_j + q_j)$,
 $\beta_j = (r_{j+1}, r^*_0)/(r_j, r^*_0)$, $u_{j+1} = r_{j+1} + \beta_j q_j$ and $p_{j+1} =
-u_{j+1} + \beta_j (q_j + \beta_j p_j)$. A division by zero gives $0$. -/
+u_{j+1} + \beta_j (q_j + \beta_j p_j)$. A division by zero gives $0$.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (s : CGSState (EuclideanSpace 𝕜 (Fin n))) : CGSState (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 rs₀ s.r / inner 𝕜 rs₀ (op A s.p)
@@ -275,7 +391,11 @@ noncomputable def cgsStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSp
 and $b, x_0, r^*_0 \in \mathbb{K}^n$, with $r^*_0$ arbitrary. The state after $0$ steps is
 $(x_0, r_0, r_0, r_0)$ with $r_0 = b - Ax_0$, which is $p_0 = u_0 = r_0$ of lines 1 and 2. The
 state after $k + 1$ steps is `SaadSparse.Chapter07.cgsStep` applied to the state after $k$
-steps. -/
+steps.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 noncomputable def cgs (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → CGSState (EuclideanSpace 𝕜 (Fin n))
   | 0 => { x := x₀, r := b - op A x₀, u := b - op A x₀, p := b - op A x₀ }
@@ -288,7 +408,11 @@ $r_0 = b - Ax_0$. -/
 @[simp] theorem cgs_zero :
     cgs A b x₀ rs₀ 0 = { x := x₀, r := b - op A x₀, u := b - op A x₀, p := b - op A x₀ } := rfl
 
-/-- Each step of Algorithm 7.6 is one application of `SaadSparse.Chapter07.cgsStep`. -/
+/-- Each step of Algorithm 7.6 is one application of `SaadSparse.Chapter07.cgsStep`.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 theorem cgs_succ (k : ℕ) : cgs A b x₀ rs₀ (k + 1) = cgsStep A rs₀ (cgs A b x₀ rs₀ k) := rfl
 
 /-- Algorithm 7.6 is the backbone CGS iteration: for every $k$, the state
@@ -299,17 +423,28 @@ theorem cgs_eq (k : ℕ) : cgs A b x₀ rs₀ k = CGS.iterate (op A) b x₀ rs�
   | succ k ih => rw [cgs_succ, ih, CGS.iterate_succ]; rfl
 
 /-- Line 4 of Algorithm 7.6: the step length $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, computed from
-the state of CGS after $j$ steps. -/
+the state of CGS after $j$ steps.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 noncomputable def cgsAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (cgs A b x₀ rs₀ j).r / inner 𝕜 rs₀ (op A (cgs A b x₀ rs₀ j).p)
 
 /-- Line 8 of Algorithm 7.6: the coefficient $\beta_j = (r_{j+1}, r^*_0)/(r_j, r^*_0)$, computed
-from the states of CGS after $j$ and $j + 1$ steps. -/
+from the states of CGS after $j$ and $j + 1$ steps.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 noncomputable def cgsBeta (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (cgs A b x₀ rs₀ (j + 1)).r / inner 𝕜 rs₀ (cgs A b x₀ rs₀ j).r
 
 /-- **Algorithm 7.6** of [saad2003iterative], line 5: the auxiliary vector $$q_j = u_j - \alpha_j A
 p_j.$$
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
 -/
 noncomputable def cgsQ (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   (cgs A b x₀ rs₀ j).u - cgsAlpha A b x₀ rs₀ j • op A (cgs A b x₀ rs₀ j).p
@@ -326,21 +461,37 @@ theorem cgsBeta_eq (j : ℕ) : cgsBeta A b x₀ rs₀ j = CGS.beta (op A) b x₀
 theorem cgsQ_eq (j : ℕ) : cgsQ A b x₀ rs₀ j = CGS.q (op A) b x₀ rs₀ j := by
   rw [cgsQ, CGS.q, cgsAlpha_eq, cgs_eq]
 
-/-- Line 6 of Algorithm 7.6: $x_{j+1} = x_j + \alpha_j (u_j + q_j)$. -/
+/-- Line 6 of Algorithm 7.6: $x_{j+1} = x_j + \alpha_j (u_j + q_j)$.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 theorem cgs_succ_x (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).x =
     (cgs A b x₀ rs₀ j).x
       + cgsAlpha A b x₀ rs₀ j • ((cgs A b x₀ rs₀ j).u + cgsQ A b x₀ rs₀ j) := rfl
 
-/-- Line 7 of Algorithm 7.6: $r_{j+1} = r_j - \alpha_j A (u_j + q_j)$. -/
+/-- Line 7 of Algorithm 7.6: $r_{j+1} = r_j - \alpha_j A (u_j + q_j)$.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 theorem cgs_succ_r (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).r =
     (cgs A b x₀ rs₀ j).r
       - cgsAlpha A b x₀ rs₀ j • op A ((cgs A b x₀ rs₀ j).u + cgsQ A b x₀ rs₀ j) := rfl
 
-/-- Line 9 of Algorithm 7.6: $u_{j+1} = r_{j+1} + \beta_j q_j$. -/
+/-- Line 9 of Algorithm 7.6: $u_{j+1} = r_{j+1} + \beta_j q_j$.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 theorem cgs_succ_u (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).u =
     (cgs A b x₀ rs₀ (j + 1)).r + cgsBeta A b x₀ rs₀ j • cgsQ A b x₀ rs₀ j := rfl
 
-/-- Line 10 of Algorithm 7.6: $p_{j+1} = u_{j+1} + \beta_j (q_j + \beta_j p_j)$. -/
+/-- Line 10 of Algorithm 7.6: $p_{j+1} = u_{j+1} + \beta_j (q_j + \beta_j p_j)$.
+
+**Reading.** The recurrence also applies over the complex field. Lean defines it at every index
+without a convergence test and returns zero for a quotient with zero denominator.
+-/
 theorem cgs_succ_p (j : ℕ) : (cgs A b x₀ rs₀ (j + 1)).p =
     (cgs A b x₀ rs₀ (j + 1)).u
       + cgsBeta A b x₀ rs₀ j • (cgsQ A b x₀ rs₀ j + cgsBeta A b x₀ rs₀ j • (cgs A b x₀ rs₀ j).p) :=
@@ -357,7 +508,12 @@ $q$ with conjugated coefficients. This is the step that removes the transpose fr
 coefficients: it turns $\alpha_j = (\varphi_j(A) r_0, \varphi_j(A^H) r^*_0)/(A \pi_j(A) r_0,
 \pi_j(A^H) r^*_0)$ into $(\varphi_j^2(A) r_0, r^*_0)/(A \pi_j^2(A) r_0, r^*_0)$.
 
-The proof specializes `BiLanczos.inner_aeval_map_eq` for the operators $A$ and $A^H$. -/
+The proof specializes `BiLanczos.inner_aeval_map_eq` for the operators $A$ and $A^H$.
+
+**Generalization.** Lean conjugates the coefficients on the dual side so polynomial evaluation can
+be moved across the complex inner product using the adjoint. The real restriction gives the source's
+transpose relation.
+-/
 theorem inner_aeval_conjTranspose_aeval (p q : 𝕜[X]) (v w : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 (aeval (op Aᴴ) (q.map (starRingEnd 𝕜)) w) (aeval (op A) p v)
       = inner 𝕜 w (aeval (op A) (q * p) v) := by
@@ -374,7 +530,12 @@ coefficients. Thus Algorithm 7.6 gives the residual $\varphi_j^2(A) r_0$ of (7.3
 product with $A^H$.
 
 No hypothesis is needed: the coefficients agree also where both are $0/0$, which Lean evaluates
-to $0$. The proof specializes `CGS.residual_eq_aeval_sq`. -/
+to $0$. The proof specializes `CGS.residual_eq_aeval_sq`.
+
+**Generalization.** The polynomial and coefficient identities relate both totalized recurrences,
+including steps whose projected quotient is zero by totalization. The text derives them for active
+real iterations.
+-/
 theorem cgs_residual_eq (j : ℕ) :
     (cgs A b x₀ rs₀ j).r = aeval (op A) (bcgResidualPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
       (cgs A b x₀ rs₀ j).p = aeval (op A) (bcgDirectionPoly A b x₀ rs₀ j ^ 2) (b - op A x₀) ∧
@@ -407,7 +568,13 @@ computes $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, $s_j = r_j - \alpha_j A p_j$,
 $\omega_j = (s_j, As_j)/(As_j, As_j)$, $x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$,
 $r_{j+1} = s_j - \omega_j A s_j$, $\beta_j = ((r_{j+1}, r^*_0)/(r_j, r^*_0))
 (\alpha_j/\omega_j)$ and $p_{j+1} = r_{j+1} + \beta_j (p_j - \omega_j A p_j)$. A division by
-zero gives $0$. -/
+zero gives $0$.
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
+-/
 noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (s : BICGSTABState (EuclideanSpace 𝕜 (Fin n))) : BICGSTABState (EuclideanSpace 𝕜 (Fin n)) :=
   let α : 𝕜 := inner 𝕜 rs₀ s.r / inner 𝕜 rs₀ (op A s.p)
@@ -421,7 +588,13 @@ noncomputable def bicgstabStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : Euclid
 $A \in \mathbb{K}^{n \times n}$ and $b, x_0, r^*_0 \in \mathbb{K}^n$, with $r^*_0$ arbitrary.
 The state after $0$ steps is $(x_0, r_0, r_0)$ with $r_0 = b - Ax_0$, which is $p_0 = r_0$ of
 lines 1 and 2. The state after $k + 1$ steps is `SaadSparse.Chapter07.bicgstabStep` applied to
-the state after $k$ steps. -/
+the state after $k$ steps.
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
+-/
 noncomputable def bicgstab (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → BICGSTABState (EuclideanSpace 𝕜 (Fin n))
   | 0 => { x := x₀, r := b - op A x₀, p := b - op A x₀ }
@@ -434,7 +607,13 @@ $r_0 = b - Ax_0$. -/
 @[simp] theorem bicgstab_zero :
     bicgstab A b x₀ rs₀ 0 = { x := x₀, r := b - op A x₀, p := b - op A x₀ } := rfl
 
-/-- Each step of Algorithm 7.7 is one application of `SaadSparse.Chapter07.bicgstabStep`. -/
+/-- Each step of Algorithm 7.7 is one application of `SaadSparse.Chapter07.bicgstabStep`.
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
+-/
 theorem bicgstab_succ (k : ℕ) :
     bicgstab A b x₀ rs₀ (k + 1) = bicgstabStep A rs₀ (bicgstab A b x₀ rs₀ k) := rfl
 
@@ -446,12 +625,23 @@ theorem bicgstab_eq (k : ℕ) : bicgstab A b x₀ rs₀ k = BiCGSTAB.iterate (op
   | succ k ih => rw [bicgstab_succ, ih, BiCGSTAB.iterate_succ]; rfl
 
 /-- Line 4 of Algorithm 7.7: the step length $\alpha_j = (r_j, r^*_0)/(Ap_j, r^*_0)$, computed from
-the state of BICGSTAB after $j$ steps. -/
+the state of BICGSTAB after $j$ steps.
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
+-/
 noncomputable def bicgstabAlpha (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r / inner 𝕜 rs₀ (op A (bicgstab A b x₀ rs₀ j).p)
 
 /-- **Algorithm 7.7** of [saad2003iterative], line 5: the half-step residual $$s_j = r_j - \alpha_j
 A p_j.$$
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
 -/
 noncomputable def bicgstabS (j : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   (bicgstab A b x₀ rs₀ j).r - bicgstabAlpha A b x₀ rs₀ j • op A (bicgstab A b x₀ rs₀ j).p
@@ -463,13 +653,25 @@ for which $\omega_j$ minimizes $\|s_j - \omega A s_j\|_2$
 (`SaadSparse.Chapter07.equation_7_55`).
 
 The numerator is `inner 𝕜 (A s) s`, which in the inner product $(x, y) = \sum_i x_i \bar y_i$ of
-the book is $(s_j, As_j)$. When $As_j = 0$, Lean's division by zero gives $\omega_j = 0$. -/
+the book is $(s_j, As_j)$. When $As_j = 0$, Lean's division by zero gives $\omega_j = 0$.
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
+-/
 noncomputable def bicgstabOmega (j : ℕ) : 𝕜 :=
   inner 𝕜 (op A (bicgstabS A b x₀ rs₀ j)) (bicgstabS A b x₀ rs₀ j) /
     inner 𝕜 (op A (bicgstabS A b x₀ rs₀ j)) (op A (bicgstabS A b x₀ rs₀ j))
 
 /-- Line 9 of Algorithm 7.7: the coefficient $\beta_j = ((r_{j+1}, r^*_0)/(r_j, r^*_0))
-(\alpha_j/\omega_j)$. -/
+(\alpha_j/\omega_j)$.
+
+**Reading.** The recurrence is defined at all indices with totalized divisions, including a
+vanishing stabilization step. For a complex half-step the numerator of omega uses the inner product
+linear in the residual to preserve the minimization formula. Over real scalars the printed order of
+the arguments is equivalent.
+-/
 noncomputable def bicgstabBeta (j : ℕ) : 𝕜 :=
   inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ (j + 1)).r / inner 𝕜 rs₀ (bicgstab A b x₀ rs₀ j).r
     * (bicgstabAlpha A b x₀ rs₀ j / bicgstabOmega A b x₀ rs₀ j)
@@ -488,16 +690,28 @@ theorem bicgstabOmega_eq (j : ℕ) :
     bicgstabOmega A b x₀ rs₀ j = BiCGSTAB.omega (op A) b x₀ rs₀ j := by
   rw [bicgstabOmega, BiCGSTAB.omega, bicgstabS_eq]
 
-/-- Line 7 of Algorithm 7.7: $x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$. -/
+/-- Line 7 of Algorithm 7.7: $x_{j+1} = x_j + \alpha_j p_j + \omega_j s_j$.
+
+**Generalization.** The forms hold over the complex field at every index of the totalized
+recurrence. The source describes the executed real iteration.
+-/
 theorem bicgstab_succ_x (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).x =
     (bicgstab A b x₀ rs₀ j).x + bicgstabAlpha A b x₀ rs₀ j • (bicgstab A b x₀ rs₀ j).p
       + bicgstabOmega A b x₀ rs₀ j • bicgstabS A b x₀ rs₀ j := rfl
 
-/-- Line 8 of Algorithm 7.7: $r_{j+1} = s_j - \omega_j A s_j$. -/
+/-- Line 8 of Algorithm 7.7: $r_{j+1} = s_j - \omega_j A s_j$.
+
+**Generalization.** The forms hold over the complex field at every index of the totalized
+recurrence. The source describes the executed real iteration.
+-/
 theorem bicgstab_succ_r (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).r =
     bicgstabS A b x₀ rs₀ j - bicgstabOmega A b x₀ rs₀ j • op A (bicgstabS A b x₀ rs₀ j) := rfl
 
-/-- Line 10 of Algorithm 7.7: $p_{j+1} = r_{j+1} + \beta_j (p_j - \omega_j A p_j)$. -/
+/-- Line 10 of Algorithm 7.7: $p_{j+1} = r_{j+1} + \beta_j (p_j - \omega_j A p_j)$.
+
+**Generalization.** The forms hold over the complex field at every index of the totalized
+recurrence. The source describes the executed real iteration.
+-/
 theorem bicgstab_succ_p (j : ℕ) : (bicgstab A b x₀ rs₀ (j + 1)).p =
     (bicgstab A b x₀ rs₀ (j + 1)).r + bicgstabBeta A b x₀ rs₀ j •
       ((bicgstab A b x₀ rs₀ j).p
@@ -556,7 +770,12 @@ where $\varphi_j$ and $\pi_j$ are the BCG polynomials for the same data.
 The proof is an induction that carries the identities of the coefficients
 (`SaadSparse.Chapter07.equation_7_53`) with it, because $\varphi_{j+1}$ and $\pi_{j+1}$ are
 built from the BCG coefficients while Algorithm 7.7 computes its own. It specializes
-`BiCGSTAB.residual_eq`. -/
+`BiCGSTAB.residual_eq`.
+
+**Reading.** The comparison specifies successful BCG steps and nonzero stabilization coefficients
+throughout the relevant prefix. These conditions make the leading coefficients and quotients used in
+the source's calculation nonzero. The comparison extends to complex scalars.
+-/
 theorem bicgstab_residual_eq {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) :
     ∀ j ≤ m, (bicgstab A b x₀ rs₀ j).r
@@ -581,7 +800,12 @@ The proof replaces $\psi_j(A^H) r^*_0$ and $\varphi_j(A^H) r^*_0$ by their leadi
 is correct because the BCG vectors $r_j$ and $Ap_j$ are orthogonal to $(A^H)^k r^*_0$ for
 $k < j$. It then compares the two leading coefficients,
 $\eta_1^{(j+1)} = -\omega_j \eta_1^{(j)}$ and $\gamma_1^{(j+1)} = -\alpha_j \gamma_1^{(j)}$. The
-proof specializes `BiCGSTAB.alpha_eq` and `BiCGSTAB.beta_eq`. -/
+proof specializes `BiCGSTAB.alpha_eq` and `BiCGSTAB.beta_eq`.
+
+**Reading.** The comparison specifies successful BCG steps and nonzero stabilization coefficients
+throughout the relevant prefix. These conditions make the leading coefficients and quotients used in
+the source's calculation nonzero. The comparison extends to complex scalars.
+-/
 theorem equation_7_53 {m : ℕ} (h : BCGNoBreakdown A b x₀ rs₀ m)
     (hω : ∀ i < m, bicgstabOmega A b x₀ rs₀ i ≠ 0) {j : ℕ} (hj : j < m) :
     bcgAlpha A b x₀ rs₀ j
@@ -609,7 +833,12 @@ $x_{j+1}$ minimizes $\|b - Ax\|_2$ over $x \in x_{j+1/2} + \operatorname{span}\{
 Equivalently, $\omega_j$ minimizes $\|(I - \omega A) s_j\|_2$ over $\omega \in \mathbb{K}$.
 
 The minimal residual step is `Projection.minResStep`, the one-dimensional projection step along
-the residual $r = b - Ax$ orthogonally to $Ar$. The minimization is `IsMinResidual`. -/
+the residual $r = b - Ax$ orthogonally to $Ar$. The minimization is `IsMinResidual`.
+
+**Generalization.** The exact result minimizes over complex scalar multiples as well as real ones.
+When $As_j=0$, the residual norm is constant along the trial line and Lean's totalized choice of
+zero is one minimizer.
+-/
 theorem equation_7_55 (j : ℕ) :
     (bicgstab A b x₀ rs₀ (j + 1)).x
         = Projection.minResStep (op A) b
@@ -641,7 +870,11 @@ section TFQMR
 of the vectors $x_m$, $w_m$, $u_m$, $v$ and $d_m$ and the scalars $\tau_m$, $\theta_m$,
 $\eta_m$, $\rho$ and $\alpha$. The book defines $v_m$, $\rho_m$ and $\beta_m$ only at even $m$,
 so the fields `v` and `ρ` carry the value from the last even index. The field `α` carries
-$\alpha_{m-1}$, which by (7.65) is $\alpha_m$ when $m$ is odd. -/
+$\alpha_{m-1}$, which by (7.65) is $\alpha_m$ when $m$ is odd.
+
+**Reading.** Lean stores the last even rho and v, and the last computed alpha, at every half-step.
+The printed algorithm gives new names to these quantities only at the steps that compute them.
+-/
 structure TFQMRState (𝕜 E : Type*) where
   /-- The iterate $x_m$. -/
   x : E
@@ -667,19 +900,29 @@ structure TFQMRState (𝕜 E : Type*) where
   /-- The step length $\alpha_{m-1}$. -/
   α : 𝕜
 
-/-- Line 5 of Algorithm 7.8 and (7.65): the step length $\alpha_m = \rho_m/(v_m, r^*_0)$ at even
-$m$, and $\alpha_m = \alpha_{m-1}$ at odd $m$. -/
+/-- Lines 5–8 of Algorithm 7.8 and (7.65): the step length $\alpha_m = \rho_m/(v_m, r^*_0)$ at even
+$m$, and $\alpha_m = \alpha_{m-1}$ at odd $m$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 noncomputable def tfqmrStepAlpha (rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ)
     (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) : 𝕜 :=
   if Even m then s.ρ / inner 𝕜 rs₀ s.v else s.α
 
-/-- Line 8 of Algorithm 7.8: $w_{m+1} = w_m - \alpha_m A u_m$. -/
+/-- Line 9 of Algorithm 7.8: $w_{m+1} = w_m - \alpha_m A u_m$. -/
 noncomputable def tfqmrStepW (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) : EuclideanSpace 𝕜 (Fin n) :=
   s.w - tfqmrStepAlpha rs₀ m s • op A s.u
 
 /-- Line 15 of Algorithm 7.8: $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$ with
-$\rho_{m+1} = (w_{m+1}, r^*_0)$, used at odd $m$ only. -/
+$\rho_{m+1} = (w_{m+1}, r^*_0)$, used at odd $m$ only.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 noncomputable def tfqmrStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) : 𝕜 :=
   inner 𝕜 rs₀ (tfqmrStepW A rs₀ m s) / s.ρ
@@ -691,7 +934,11 @@ $\tau_{m+1} = \tau_m \theta_{m+1} c_{m+1}$, $\eta_{m+1} = c_{m+1}^2 \alpha_m$ an
 $x_{m+1} = x_m + \eta_{m+1} d_{m+1}$. At even $m$ it sets $u_{m+1} = u_m - \alpha_m v_m$. At odd
 $m$ it sets $\rho_{m+1} = (w_{m+1}, r^*_0)$, $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$,
 $u_{m+1} = w_{m+1} + \beta_{m-1} u_m$ and $v_{m+1} = Au_{m+1} + \beta_{m-1}(Au_m + \beta_{m-1}
-v_{m-1})$. A division by zero gives $0$. -/
+v_{m-1})$. A division by zero gives $0$.
+
+**Reading.** Each call executes one half-step without a convergence test. The book repeats the
+half-steps until convergence. Lean also uses totalized division and complex shadow pairings.
+-/
 noncomputable def tfqmrStep (A : Matrix (Fin n) (Fin n) 𝕜) (rs₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) (s : TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))) :
     TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
@@ -718,7 +965,12 @@ Lines 1–3 set $w_0 = u_0 = r_0 = b - Ax_0$, $v_0 = Au_0$, $d_0 = 0$, $\tau_0 =
 $\theta_0 = \eta_0 = 0$ and $\rho_0 = (r_0, r^*_0)$. Each half-step is one application of
 `SaadSparse.Chapter07.tfqmrStep`.
 
-The field `α` of the initial state is $0$. -/
+The field `α` of the initial state is $0$.
+
+**Generalization.** The printed real initialization requires a nonzero shadow pairing. Lean accepts
+every shadow vector and extends the pairing to complex scalars, consistently using the shadow vector
+in the conjugate-linear slot. The extra initial alpha field is zero.
+-/
 noncomputable def tfqmr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) :
     ℕ → TFQMRState 𝕜 (EuclideanSpace 𝕜 (Fin n))
   | 0 =>
@@ -728,13 +980,22 @@ noncomputable def tfqmr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : Euclid
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- Lines 1–3 of Algorithm 7.8: the initial state of TFQMR. -/
+/-- Lines 1–3 of Algorithm 7.8: the initial state of TFQMR.
+
+**Generalization.** The printed real initialization requires a nonzero shadow pairing. Lean accepts
+every shadow vector and extends the pairing to complex scalars, consistently using the shadow vector
+in the conjugate-linear slot. The extra initial alpha field is zero.
+-/
 @[simp] theorem tfqmr_zero :
     tfqmr A b x₀ rs₀ 0 =
       { x := x₀, w := b - op A x₀, u := b - op A x₀, v := op A (b - op A x₀), d := 0,
         τ := ‖b - op A x₀‖, θ := 0, η := 0, ρ := inner 𝕜 rs₀ (b - op A x₀), α := 0 } := rfl
 
-/-- Each half-step of Algorithm 7.8 is one application of `SaadSparse.Chapter07.tfqmrStep`. -/
+/-- Each half-step of Algorithm 7.8 is one application of `SaadSparse.Chapter07.tfqmrStep`.
+
+**Reading.** Each call executes one half-step without a convergence test. The book repeats the
+half-steps until convergence. Lean also uses totalized division and complex shadow pairings.
+-/
 theorem tfqmr_succ (m : ℕ) :
     tfqmr A b x₀ rs₀ (m + 1) = tfqmrStep A rs₀ m (tfqmr A b x₀ rs₀ m) := rfl
 
@@ -765,17 +1026,27 @@ noncomputable abbrev tfqmrEta (m : ℕ) : 𝕜 := (tfqmr A b x₀ rs₀ m).η
 /-- The direction $d_m$ of (7.78). -/
 noncomputable abbrev tfqmrD (m : ℕ) : EuclideanSpace 𝕜 (Fin n) := (tfqmr A b x₀ rs₀ m).d
 
-/-- Line 8 of Algorithm 7.8: $w_{m+1} = w_m - \alpha_m A u_m$. -/
+/-- Line 9 of Algorithm 7.8: $w_{m+1} = w_m - \alpha_m A u_m$. -/
 theorem tfqmr_succ_w (m : ℕ) : tfqmrW A b x₀ rs₀ (m + 1) =
     tfqmrW A b x₀ rs₀ m - tfqmrAlpha A b x₀ rs₀ m • op A (tfqmrU A b x₀ rs₀ m) := rfl
 
-/-- Line 9 of Algorithm 7.8: $d_{m+1} = u_m + (\theta_m^2/\alpha_m) \eta_m d_m$. -/
+/-- Line 9 of Algorithm 7.8: $d_{m+1} = u_m + (\theta_m^2/\alpha_m) \eta_m d_m$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 theorem tfqmr_succ_d (m : ℕ) : tfqmrD A b x₀ rs₀ (m + 1) =
     tfqmrU A b x₀ rs₀ m
       + (((tfqmrTheta A b x₀ rs₀ m ^ 2 : ℝ) : 𝕜) / tfqmrAlpha A b x₀ rs₀ m
         * tfqmrEta A b x₀ rs₀ m) • tfqmrD A b x₀ rs₀ m := rfl
 
-/-- Line 10 of Algorithm 7.8: $\theta_{m+1} = \|w_{m+1}\|_2/\tau_m$. -/
+/-- Line 10 of Algorithm 7.8: $\theta_{m+1} = \|w_{m+1}\|_2/\tau_m$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 theorem tfqmr_succ_theta (m : ℕ) : tfqmrTheta A b x₀ rs₀ (m + 1) =
     ‖tfqmrW A b x₀ rs₀ (m + 1)‖ / tfqmrTau A b x₀ rs₀ m := rfl
 
@@ -791,7 +1062,12 @@ theorem tfqmr_succ_eta (m : ℕ) : tfqmrEta A b x₀ rs₀ (m + 1) =
 theorem tfqmr_succ_x (m : ℕ) : (tfqmr A b x₀ rs₀ (m + 1)).x =
     (tfqmr A b x₀ rs₀ m).x + tfqmrEta A b x₀ rs₀ (m + 1) • tfqmrD A b x₀ rs₀ (m + 1) := rfl
 
-/-- Line 5 of Algorithm 7.8 at even $m$: $\alpha_m = \rho_m/(v_m, r^*_0)$. -/
+/-- Line 6 of Algorithm 7.8 at even $m$: $\alpha_m = \rho_m/(v_m, r^*_0)$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 theorem tfqmr_alpha_even {m : ℕ} (hm : Even m) : tfqmrAlpha A b x₀ rs₀ m =
     (tfqmr A b x₀ rs₀ m).ρ / inner 𝕜 rs₀ (tfqmr A b x₀ rs₀ m).v := ite_eq_left hm
 
@@ -811,19 +1087,34 @@ theorem tfqmr_succ_v_even {m : ℕ} (hm : Even m) :
 theorem tfqmr_succ_rho_even {m : ℕ} (hm : Even m) :
     (tfqmr A b x₀ rs₀ (m + 1)).ρ = (tfqmr A b x₀ rs₀ m).ρ := ite_eq_left hm
 
-/-- Line 14 of Algorithm 7.8 at odd $m$: $\rho_{m+1} = (w_{m+1}, r^*_0)$. -/
+/-- Line 14 of Algorithm 7.8 at odd $m$: $\rho_{m+1} = (w_{m+1}, r^*_0)$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 theorem tfqmr_succ_rho_odd {m : ℕ} (hm : ¬ Even m) :
     (tfqmr A b x₀ rs₀ (m + 1)).ρ = inner 𝕜 rs₀ (tfqmrW A b x₀ rs₀ (m + 1)) := ite_eq_right hm
 
 /-- Line 16 of Algorithm 7.8 at odd $m$: $u_{m+1} = w_{m+1} + \beta_{m-1} u_m$, with
-$\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$. -/
+$\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 theorem tfqmr_succ_u_odd {m : ℕ} (hm : ¬ Even m) : tfqmrU A b x₀ rs₀ (m + 1) =
     tfqmrW A b x₀ rs₀ (m + 1)
       + (inner 𝕜 rs₀ (tfqmrW A b x₀ rs₀ (m + 1)) / (tfqmr A b x₀ rs₀ m).ρ)
         • tfqmrU A b x₀ rs₀ m := ite_eq_right hm
 
 /-- Line 17 of Algorithm 7.8 at odd $m$: $v_{m+1} = Au_{m+1} + \beta_{m-1}(Au_m + \beta_{m-1}
-v_{m-1})$, with $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$. -/
+v_{m-1})$, with $\beta_{m-1} = \rho_{m+1}/\rho_{m-1}$.
+
+**Reading.** The recurrence is a total identity, with division by zero returning zero where a
+quotient is used. Pairings involving the shadow vector are extended to complex scalars with
+conjugation on the shadow vector.
+-/
 theorem tfqmr_succ_v_odd {m : ℕ} (hm : ¬ Even m) : (tfqmr A b x₀ rs₀ (m + 1)).v =
     op A (tfqmrU A b x₀ rs₀ (m + 1))
       + (inner 𝕜 rs₀ (tfqmrW A b x₀ rs₀ (m + 1)) / (tfqmr A b x₀ rs₀ m).ρ)
@@ -931,16 +1222,32 @@ theorem cgsHalfIterate_two_mul (j : ℕ) :
 $\alpha_j$ and a column scaling $\delta_j$, this is the bidiagonal coefficient array
 $\bar H_m = \Delta_{m+1} \bar B_m$. In $0$-based indices its entry $(i, j)$ is
 $\delta_j/\alpha_j$ if $i = j$, $-\delta_{j+1}/\alpha_j$ if $i = j + 1$, and $0$ otherwise. A
-division by zero gives $0$. -/
+division by zero gives $0$.
+
+**Correction.** With the zero-based indexing used in the derivation, the diagonal in column $j$ is
+$\delta_j/\alpha_j$ and the subdiagonal is $-\delta_{j+1}/\alpha_j$. The printed last column of
+(7.81) labels the two scaling factors $\delta_m$ and $\delta_{m+1}$, one too high for the displayed
+$(m+1)\times m$ block. Lean also totalizes undefined quotients.
+-/
 noncomputable def tfqmrCoeff (α δ : ℕ → 𝕜) : ℕ → ℕ → 𝕜 := fun i j =>
   if i = j then δ j / α j else if i = j + 1 then -(δ i / α j) else 0
 
 variable (α δ : ℕ → 𝕜)
 
-/-- The diagonal entry $(j, j)$ of $\bar H_m$ is $\delta_j/\alpha_j$. -/
+/-- The diagonal entry $(j, j)$ of $\bar H_m$ is $\delta_j/\alpha_j$.
+
+**Correction.** The entry formula uses zero-based row scaling as given by the matrix product. The
+last column in the source display labels the scaling factors one index too high. The formula uses
+Lean's total division.
+-/
 @[simp] theorem tfqmrCoeff_self (j : ℕ) : tfqmrCoeff α δ j j = δ j / α j := ite_eq_left rfl
 
-/-- The subdiagonal entry $(j + 1, j)$ of $\bar H_m$ is $-\delta_{j+1}/\alpha_j$. -/
+/-- The subdiagonal entry $(j + 1, j)$ of $\bar H_m$ is $-\delta_{j+1}/\alpha_j$.
+
+**Correction.** The entry formula uses zero-based row scaling as given by the matrix product. The
+last column in the source display labels the scaling factors one index too high. The formula uses
+Lean's total division.
+-/
 @[simp] theorem tfqmrCoeff_succ_self (j : ℕ) :
     tfqmrCoeff α δ (j + 1) j = -(δ (j + 1) / α j) := by
   rw [tfqmrCoeff, ite_eq_right (Nat.succ_ne_self j), ite_eq_left rfl]
@@ -969,7 +1276,12 @@ breakdown, where $\rho_{2j}$ vanishes with $w_{2j} \neq 0$.
 
 This is the analogue of `SaadSparse.Chapter07.NoSeriousBreakdown` for Algorithm 7.1. Like that
 structure, it is a conditional hypothesis, because $\alpha_m \neq 0$ for all $m$ cannot hold in
-finite dimension: Algorithm 7.3 terminates. -/
+finite dimension: Algorithm 7.3 terminates.
+
+**Reading.** Lean defines a sufficient continuation condition for the divided identity: any zero
+step length must have zero image direction. It neither excludes every vanishing denominator nor
+asserts that a numerical run can continue through one.
+-/
 structure TFQMRNoSeriousBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) : Prop where
   /-- If the step length $\alpha_m$ is zero, then $Au_m = 0$. -/
@@ -989,7 +1301,13 @@ The iterates expand in the vectors $u_j$ and the residuals in the vectors $w_i$,
 has two families of vectors: it is `Krylov.HessenbergRelation₂`, with the coefficients
 `SaadSparse.Chapter07.tfqmrCoeff`. The scaling is arbitrary, which is what exercise P-7.9 asks
 about. The condition on $\delta$ holds for every nonzero scaling and for the normalization
-$\delta_i = \|w_i\|_2$ of (7.73). Lean's inverse gives $0^{-1} = 0$. -/
+$\delta_i = \|w_i\|_2$ of (7.73). Lean's inverse gives $0^{-1} = 0$.
+
+**Generalization.** The identity is extended to all steps under the explicit condition that a zero
+step length implies a zero image direction. The scaling can be any sequence whose zero entries occur
+only at zero residual vectors. The book first divides by step lengths and then uses the inverse of
+the norm-scaling diagonal.
+-/
 theorem equation_7_70 {δ : ℕ → 𝕜} (h : TFQMRNoSeriousBreakdown A b x₀ rs₀)
     (hδ : ∀ i, δ i = 0 → tfqmrW A b x₀ rs₀ i = 0) :
     (∀ i, op A (tfqmrU A b x₀ rs₀ i)
@@ -1045,7 +1363,12 @@ $\Delta_{m+1}$, which answers exercise P-7.9.
 
 In each row $i \ge 1$ of $H_m z_m$, the two products $h_{i,i-1} \alpha_{i-1} = -\delta_i$ and
 $h_{ii} \alpha_i = \delta_i$ cancel. The matrix $H_m$ is `Krylov.hessenbergSqOf` of
-`SaadSparse.Chapter07.tfqmrCoeff`. -/
+`SaadSparse.Chapter07.tfqmrCoeff`.
+
+**Generalization.** The theorem permits arbitrary nonzero scalars on the finite residual prefix and
+assumes nonzero step lengths for the preceding updates. The displayed derivation uses residual norms
+for the column scalings.
+-/
 theorem equation_7_76 {δ : ℕ → 𝕜} (m : ℕ) (hα : ∀ i < m, tfqmrAlpha A b x₀ rs₀ i ≠ 0)
     (hδ : ∀ i < m, δ i ≠ 0) :
     Krylov.hessenbergSqOf (tfqmrCoeff (tfqmrAlpha A b x₀ rs₀) δ) m
@@ -1109,7 +1432,12 @@ condition of the book on $r^*_0$ carried along the iteration. The second conditi
 possible to normalize the columns of $R_{m+1}$.
 
 The bound $m$ is necessary: $\alpha_i \neq 0$ for all $i$ cannot hold in finite dimension,
-because Algorithm 7.3 terminates with $\rho_j = 0$ from the grade on. -/
+because Algorithm 7.3 terminates with $\rho_j = 0$ from the grade on.
+
+**Reading.** The predicate requires nonzero residual vectors and step lengths through index $m$,
+inclusive. This can exclude a successful termination at $m$ and includes the length of the next
+update when applied to the iterate after $m$ half-steps.
+-/
 structure TFQMRNoBreakdown (A : Matrix (Fin n) (Fin n) 𝕜)
     (b x₀ rs₀ : EuclideanSpace 𝕜 (Fin n)) (m : ℕ) : Prop where
   /-- For every $i \le m$, the step length $\alpha_i$ is nonzero. -/
@@ -1127,11 +1455,21 @@ theorem TFQMRNoBreakdown.mono {A : Matrix (Fin n) (Fin n) 𝕜}
 variable (A b x₀ rs₀)
 
 /-- **Equation (7.73)** of [saad2003iterative]: the column scaling $\delta_i = \|w_i\|_2$, seen as a
-scalar. It gives the residual basis $R_{m+1} \Delta_{m+1}^{-1}$ unit columns. -/
+scalar. It gives the residual basis $R_{m+1} \Delta_{m+1}^{-1}$ unit columns.
+
+**Reading.** The norm is a scalar defined even when the residual is zero. The normalized column is a
+unit vector only for a nonzero residual; the book writes the inverse diagonal and uses unit columns.
+-/
 noncomputable def tfqmrDelta (i : ℕ) : 𝕜 := ((‖tfqmrW A b x₀ rs₀ i‖ : ℝ) : 𝕜)
 
 /-- Equation (7.81): the bidiagonal coefficient array $\bar H_m = \Delta_{m+1} \bar B_m$ for the
-step lengths of Algorithm 7.8 and the scaling $\delta_i = \|w_i\|_2$. -/
+step lengths of Algorithm 7.8 and the scaling $\delta_i = \|w_i\|_2$.
+
+**Correction.** With the zero-based indexing used in the derivation, the diagonal in column $j$ is
+$\delta_j/\alpha_j$ and the subdiagonal is $-\delta_{j+1}/\alpha_j$. The printed last column of
+(7.81) labels the two scaling factors $\delta_m$ and $\delta_{m+1}$, one too high for the displayed
+$(m+1)\times m$ block. Lean also totalizes undefined quotients.
+-/
 noncomputable abbrev tfqmrH : ℕ → ℕ → 𝕜 :=
   tfqmrCoeff (tfqmrAlpha A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀)
 
@@ -1143,12 +1481,22 @@ theorem norm_tfqmrDelta (i : ℕ) : ‖tfqmrDelta A b x₀ rs₀ i‖ = ‖tfqmr
 theorem tfqmrH_eq_zero_of_lt {i j : ℕ} (hij : i < j) : tfqmrH A b x₀ rs₀ i j = 0 :=
   tfqmrCoeff_eq_zero _ _ (by omega) (by omega)
 
-/-- The diagonal entry $(j, j)$ of $\bar H_m$ is $\delta_j/\alpha_j$. -/
+/-- The diagonal entry $(j, j)$ of $\bar H_m$ is $\delta_j/\alpha_j$.
+
+**Correction.** The entry formula uses zero-based row scaling as given by the matrix product. The
+last column in the source display labels the scaling factors one index too high. The formula uses
+Lean's total division.
+-/
 theorem tfqmrH_self (j : ℕ) :
     tfqmrH A b x₀ rs₀ j j = tfqmrDelta A b x₀ rs₀ j / tfqmrAlpha A b x₀ rs₀ j :=
   tfqmrCoeff_self _ _ j
 
-/-- The subdiagonal entry $(j + 1, j)$ of $\bar H_m$ is $-\delta_{j+1}/\alpha_j$. -/
+/-- The subdiagonal entry $(j + 1, j)$ of $\bar H_m$ is $-\delta_{j+1}/\alpha_j$.
+
+**Correction.** The entry formula uses zero-based row scaling as given by the matrix product. The
+last column in the source display labels the scaling factors one index too high. The formula uses
+Lean's total division.
+-/
 theorem tfqmrH_succ_self (j : ℕ) :
     tfqmrH A b x₀ rs₀ (j + 1) j = -(tfqmrDelta A b x₀ rs₀ (j + 1) / tfqmrAlpha A b x₀ rs₀ j) :=
   tfqmrCoeff_succ_self _ _ j
@@ -1369,7 +1717,12 @@ modulus $$|\gamma_{m+1}| = \tau_m.$$
 
 The identity holds in modulus: the backbone rotations differ from those of Algorithm 7.8 by the
 unimodular factor $\prod_{i<m} |\alpha_i|/\alpha_i$. The scalar $\gamma_{m+1}$ is `Krylov.gamma`
-at index `m`. -/
+at index `m`.
+
+**Reading.** The source identifies gamma with the nonnegative tau. In Lean's complex-capable Givens
+convention, gamma can carry a unit phase, even a sign over the reals, so Lean identifies its norm
+with tau.
+-/
 theorem norm_gamma_eq_tfqmrTau (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     ‖Krylov.gamma (tfqmrH A b x₀ rs₀) (tfqmrDelta A b x₀ rs₀ 0) m‖ = tfqmrTau A b x₀ rs₀ m := by
   rw [(tfqmr_rotation m h).1, norm_mul, RCLike.norm_ofReal, abs_of_pos (tfqmrTau_pos m h),
@@ -1520,7 +1873,12 @@ the right-hand side $\delta_0 e_1$, where $\delta_0 = \|r_0\|_2$. That is, the $
 $\tau$, $\eta$, $d$ recurrence of Algorithm 7.8 is the back-substitution of DQGMRES.
 
 The proof uses $\eta_{m+1} = g_m/\rho_m$ and the identification of the entry above the diagonal
-with $-(\theta_m^2/\alpha_m) g_{m-1}$. DQGMRES is `SaadSparse.Chapter06.dqgmres`. -/
+with $-(\theta_m^2/\alpha_m) g_{m-1}$. DQGMRES is `SaadSparse.Chapter06.dqgmres`.
+
+**Reading.** The equivalence with the reduced solution is asserted only under the explicit nonzero
+prefix through index $m$, including the next step length. DQGMRES uses memory one because the
+rotated bidiagonal array has only one superdiagonal.
+-/
 theorem tfqmr_eq_dqgmres : ∀ (m : ℕ), TFQMRNoBreakdown A b x₀ rs₀ m →
     (tfqmr A b x₀ rs₀ m).x
       = Chapter06.dqgmres x₀ (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
@@ -1604,7 +1962,12 @@ $x_m$ is the iterate $x_0 + U_m R_m^{-1} g_m$ of Algorithm 6.12 (QGMRES) for the
 right-hand side $\delta_0 e_1$. Because $\bar H_m$ is bidiagonal, the truncated Algorithm 6.13
 loses nothing.
 
-QGMRES is `SaadSparse.Chapter06.qgmres`. -/
+QGMRES is `SaadSparse.Chapter06.qgmres`.
+
+**Reading.** The equivalence with the reduced solution is asserted only under the explicit nonzero
+prefix through index $m$, including the next step length. DQGMRES uses memory one because the
+rotated bidiagonal array has only one superdiagonal.
+-/
 theorem tfqmr_eq_qgmres (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     (tfqmr A b x₀ rs₀ m).x
       = Chapter06.qgmres x₀ (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
@@ -1646,7 +2009,12 @@ $y \in \mathbb{K}^m$ that minimizes the quasi-residual norm $\|\delta_0 e_1 - \b
 over all of $\mathbb{K}^m$, with $\bar H_m$ of (7.81).
 
 This is Algorithm 6.12 on the two-family data of `SaadSparse.Chapter07.equation_7_70`, reached
-through Algorithm 6.13 with $k = 1$. The conclusion is `Krylov.IsQuasiMinResidualIterate`. -/
+through Algorithm 6.13 with $k = 1$. The conclusion is `Krylov.IsQuasiMinResidualIterate`.
+
+**Reading.** The equivalence with the reduced solution is asserted only under the explicit nonzero
+prefix through index $m$, including the next step length. DQGMRES uses memory one because the
+rotated bidiagonal array has only one superdiagonal.
+-/
 theorem tfqmr_isQuasiMinResidualIterate (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m) :
     Krylov.IsQuasiMinResidualIterate (tfqmrU A b x₀ rs₀) (tfqmrH A b x₀ rs₀)
       (tfqmrDelta A b x₀ rs₀ 0) x₀ m (tfqmr A b x₀ rs₀ m).x := by
@@ -1663,7 +2031,12 @@ $m$ and has no serious breakdown. Then its iterate satisfies $$\|b - Ax_m\|_2 \l
 
 The residual basis $R_{m+1} \Delta_{m+1}^{-1}$ has unit columns, so the constant of
 `Krylov.IsQuasiMinResidualIterate.norm_residual_le` is $\sqrt{m+1}$, and the quasi-residual norm
-is $|\gamma_{m+1}| = \tau_m$. -/
+is $|\gamma_{m+1}| = \tau_m$.
+
+**Reading.** Lean states the bound under both the nonzero prefix through index $m$ and the global
+condition that zero step lengths have zero image directions. The printed estimate uses the
+norm-scaled basis and its quasi-minimality at the indicated step.
+-/
 theorem equation_7_83 (m : ℕ) (h : TFQMRNoBreakdown A b x₀ rs₀ m)
     (hs : TFQMRNoSeriousBreakdown A b x₀ rs₀) :
     ‖b - op A (tfqmr A b x₀ rs₀ m).x‖

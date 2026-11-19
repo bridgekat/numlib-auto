@@ -69,6 +69,23 @@ pair of shifts. The proofs specialize `Numlib.Eigen.QRAlgorithm` and
 
 ## Deviations from the source
 
+* **Generalization.** The fixed-shift QR recurrence also accepts complex and non-Hessenberg input.
+  See `QuarteroniSaccoSaleri.Chapter05.shiftedQrStep`,
+  `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate`.
+* **Generalization.** The fixed-shift similarity holds for any initial matrix and identifies the
+  shifted sequence with ordinary QR. See `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_conj`,
+  `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_qrIterate`.
+* **Correction.** The fixed-shift rate requires strict spectral separation from neighboring shifted
+  values and the QR minor condition. See `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_rate`.
+* **Generalization.** The trailing-diagonal shift defines all iterates from any nonempty square
+  matrix. See `QuarteroniSaccoSaleri.Chapter05.equation_5_53`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_53_eq_conj`.
+* **Scope.** The double QR step takes an arbitrary supplied shift and proves unitary similarity. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_55`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_55_eq_conj`.
+* **Scope.** Trailing-diagonal quadratic convergence is local near a specified simple eigenvalue.
+  See `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic_iterate`.
 * **Convergence with a fixed shift, Section 5.7.1** (reading). The source orders the eigenvalues by
   $|\lambda_1 - \mu| \ge \dots \ge |\lambda_n - \mu|$; the theorem assumes the strict order,
   $\lambda_n \neq \mu$, and the general-position hypothesis of Property 5.9. See
@@ -111,7 +128,12 @@ variable {N : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 and $\mu \in \mathbb{K}$. One **step of the QR iteration with shift $\mu$** computes the QR
 factorization $QR = T - \mu I$ and returns $$T' = RQ + \mu I.$$
 
-The factors $Q$ and $R$ are `Matrix.qrQ (T - μ • 1)` and `Matrix.qrR (T - μ • 1)`. -/
+The factors $Q$ and $R$ are `Matrix.qrQ (T - μ • 1)` and `Matrix.qrR (T - μ • 1)`.
+
+**Generalization.** The fixed-shift recurrence is defined for real or complex scalars and arbitrary
+input matrices. It returns the requested iterate without a convergence test. The source presents
+real Hessenberg input.
+-/
 noncomputable def shiftedQrStep (μ : 𝕜) (T : Matrix (Fin N) (Fin N) 𝕜) : Matrix (Fin N) (Fin N) 𝕜 :=
   qrR (T - μ • 1) * qrQ (T - μ • 1) + μ • 1
 
@@ -119,7 +141,12 @@ noncomputable def shiftedQrStep (μ : 𝕜) (T : Matrix (Fin N) (Fin N) 𝕜) : 
 starts from $T^{(0)} = A$, and for $k = 1, 2, \dots$ computes
 $Q^{(k)} R^{(k)} = T^{(k-1)} - \mu I$ and sets $$T^{(k)} = R^{(k)} Q^{(k)} + \mu I.$$
 
-Each step is `QuarteroniSaccoSaleri.Chapter05.shiftedQrStep μ`. -/
+Each step is `QuarteroniSaccoSaleri.Chapter05.shiftedQrStep μ`.
+
+**Generalization.** The fixed-shift recurrence is defined for real or complex scalars and arbitrary
+input matrices. It returns the requested iterate without a convergence test. The source presents
+real Hessenberg input.
+-/
 noncomputable def shiftedQrIterate (A : Matrix (Fin N) (Fin N) 𝕜) (μ : 𝕜) :
     ℕ → Matrix (Fin N) (Fin N) 𝕜
   | 0 => A
@@ -151,7 +178,11 @@ $T - \mu I$ is orthogonal, and the shifted step is the similarity $$RQ + \mu I =
 basic QR iteration on $A - \mu I$ is orthogonal, and $$T^{(k)} = \tilde Q_k^T A \tilde Q_k.$$
 
 The product $\tilde Q_k$ is `Matrix.qrAccum (A - μ • 1) k`. The proof specializes
-`Matrix.shiftedQrStep_eq_conj` and `Matrix.shiftedQrIterate_eq_conj_qrAccum`. -/
+`Matrix.shiftedQrStep_eq_conj` and `Matrix.shiftedQrIterate_eq_conj_qrAccum`.
+
+**Generalization.** The starting matrix is arbitrary. Lean also identifies the entire sequence as
+ordinary QR of the shifted matrix plus the shift on the identity.
+-/
 theorem shiftedQrIterate_eq_conj (A : Matrix (Fin N) (Fin N) ℝ) (μ : ℝ) :
     (∀ T : Matrix (Fin N) (Fin N) ℝ, qrQ (T - μ • 1) ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
       shiftedQrStep μ T = (qrQ (T - μ • 1))ᵀ * T * qrQ (T - μ • 1)) ∧
@@ -168,7 +199,11 @@ of the QR iteration with fixed shift $\mu$ is $$T^{(k)} = \hat T^{(k)} + \mu I,$
 $\hat T^{(k)}$ is the $k$-th iterate of the basic QR iteration on $A - \mu I$.
 
 The basic iteration is `QuarteroniSaccoSaleri.Chapter05.qrIterate` of Section 5.4. The proof
-specializes `Matrix.shiftedQrIterate_eq_qrIterate_sub_add`. -/
+specializes `Matrix.shiftedQrIterate_eq_qrIterate_sub_add`.
+
+**Generalization.** The starting matrix is arbitrary. Lean also identifies the entire sequence as
+ordinary QR of the shifted matrix plus the shift on the identity.
+-/
 theorem shiftedQrIterate_eq_qrIterate (A : Matrix (Fin N) (Fin N) ℝ) (μ : ℝ) (k : ℕ) :
     shiftedQrIterate A μ k = qrIterate (A - μ • 1) k + μ • 1 := by
   rw [shiftedQrIterate_eq, qrIterate_eq, Matrix.shiftedQrIterate_eq_qrIterate_sub_add]
@@ -191,7 +226,12 @@ eigenvector matrix $X$, which the shift does not change.
 
 Indices are 0-based: the position $(j, j - 1)$ is `(i, j)` with `(i : ℕ) = j + 1`. The proof
 applies Property 5.9 and (5.37) to $A - \mu I$, whose eigenvalues are the $\lambda_i - \mu$ with
-the same eigenvectors, through `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_qrIterate`. -/
+the same eigenvectors, through `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_qrIterate`.
+
+**Correction.** The source uses non-strict ordering by distance to the shift. Lean requires strict
+gaps, all shifted eigenvalues nonzero, and the leading-minor condition from the corrected basic QR
+theorem. The result then bounds each first subdiagonal entry and gives its convergence to zero.
+-/
 theorem shiftedQrIterate_rate {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : Fin N → ℝ}
     (hD : X⁻¹ * A * X = diagonal lam) (μ : ℝ) (hne : ∀ i, lam i - μ ≠ 0)
     (hsep : ∀ i j, i < j → |lam j - μ| < |lam i - μ|)
@@ -220,7 +260,12 @@ $T^{(0)} = A$, and at every step takes the current last diagonal entry as the sh
 $$T^{(k+1)} = RQ + t_{nn}^{(k)} I, \qquad QR = T^{(k)} - t_{nn}^{(k)} I.$$
 
 Here $n = N + 1$, and the last index is `Fin.last N`. Each step is
-`QuarteroniSaccoSaleri.Chapter05.shiftedQrStep`. -/
+`QuarteroniSaccoSaleri.Chapter05.shiftedQrStep`.
+
+**Generalization.** The trailing-diagonal shift is defined for any nonempty square matrix and for a
+fixed step count. The recurrence also works over complex scalars; the exposed orthogonal similarity
+theorem is real.
+-/
 noncomputable def equation_5_53 (A : Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜) :
     ℕ → Matrix (Fin (N + 1)) (Fin (N + 1)) 𝕜
   | 0 => A
@@ -240,7 +285,12 @@ $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$. For every $k$ there is an orthog
 such that the iterate of (5.53) is $T^{(k)} = Q^T A Q$.
 
 Each step is the similarity of `QuarteroniSaccoSaleri.Chapter05.shiftedQrIterate_eq_conj`. The
-proof specializes `Matrix.exists_unitary_conj_rayleighShiftQrIterate`. -/
+proof specializes `Matrix.exists_unitary_conj_rayleighShiftQrIterate`.
+
+**Generalization.** The trailing-diagonal shift is defined for any nonempty square matrix and for a
+fixed step count. The recurrence also works over complex scalars; the exposed orthogonal similarity
+theorem is real.
+-/
 theorem equation_5_53_eq_conj (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) (k : ℕ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin (N + 1)) ℝ, equation_5_53 A k = Qᵀ * A * Q := by
   obtain ⟨Q, hQ, h⟩ := Matrix.exists_unitary_conj_rayleighShiftQrIterate A k
@@ -257,7 +307,12 @@ diagonal block cannot be reduced to triangular form: then the two eigenvalues of
 complex conjugate pair $\lambda, \bar\lambda$.
 
 The step is in complex arithmetic. The real-arithmetic Francis implementation is not defined,
-because the book only sketches it. -/
+because the book only sketches it.
+
+**Reading.** The pair of conjugate shifted steps takes the shift as input. The book selects it from
+the trailing block and interleaves double shifts with single shifts and deflation. Lean gives
+unitary similarity for the isolated double step.
+-/
 noncomputable def equation_5_55 (T : Matrix (Fin N) (Fin N) ℂ) (lam : ℂ) :
     Matrix (Fin N) (Fin N) ℂ :=
   shiftedQrStep (starRingEnd ℂ lam) (shiftedQrStep lam T)
@@ -272,7 +327,12 @@ $T \in \mathbb{C}^{n \times n}$ and $\lambda \in \mathbb{C}$. There is a unitary
 that the double-shift step gives $T' = Q^H T Q$.
 
 The matrix $Q$ is the product of the two unitary factors of the two steps. The proof specializes
-`Matrix.exists_unitary_conj_doubleShiftQrStep`. -/
+`Matrix.exists_unitary_conj_doubleShiftQrStep`.
+
+**Reading.** The pair of conjugate shifted steps takes the shift as input. The book selects it from
+the trailing block and interleaves double shifts with single shifts and deflation. Lean gives
+unitary similarity for the isolated double step.
+-/
 theorem equation_5_55_eq_conj (T : Matrix (Fin N) (Fin N) ℂ) (lam : ℂ) :
     ∃ Q ∈ Matrix.unitaryGroup (Fin N) ℂ, equation_5_55 T lam = Qᴴ * T * Q :=
   Matrix.exists_unitary_conj_doubleShiftQrStep T lam
@@ -315,7 +375,12 @@ a Hessenberg orthogonal conjugate $T^{(k)} = Q^T A Q$
 `Matrix.isUpperHessenberg_rayleighShiftQrIterate` gives the Hessenberg form of every iterate.
 The idea of that bound is that the last row of a shifted QR step is a step of Rayleigh quotient
 iteration on $T^T$ from $e_n$. The constant is $c = (|C| + 1) \|A\|_2$ for the constant $C$ of
-the backbone. -/
+the backbone.
+
+**Reading.** The quadratic bounds are local near a simple real eigenvalue, with the trailing
+diagonal close to that eigenvalue and all shifted matrices invertible. The hypotheses distinguish
+convergence to the selected eigenvalue from the source assertion based on a small subdiagonal alone.
+-/
 theorem equation_5_53_quadratic {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hA : A.IsUpperHessenberg) {lam : ℝ} (hlam : A.charpoly.rootMultiplicity lam = 1)
     (hreg : ∀ k, IsUnit (equation_5_53 A k -
@@ -385,7 +450,12 @@ the first iterate in the basin.
 
 The proof is an induction on $j$ from the one-step bound of
 `QuarteroniSaccoSaleri.Chapter05.equation_5_53_quadratic`, whose hypotheses propagate because
-$c \varepsilon_0 \le 1$. -/
+$c \varepsilon_0 \le 1$.
+
+**Reading.** The quadratic bounds are local near a simple real eigenvalue, with the trailing
+diagonal close to that eigenvalue and all shifted matrices invertible. The hypotheses distinguish
+convergence to the selected eigenvalue from the source assertion based on a small subdiagonal alone.
+-/
 theorem equation_5_53_quadratic_iterate {A : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hA : A.IsUpperHessenberg) {lam : ℝ} (hlam : A.charpoly.rootMultiplicity lam = 1)
     (hreg : ∀ k, IsUnit (equation_5_53 A k -

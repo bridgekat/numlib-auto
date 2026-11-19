@@ -96,6 +96,9 @@ calculation comes from `Numlib.Optimization.ModelBased.SupportDescent` and the m
 
 ## Deviations from the source
 
+* **(11.1.1)–(11.1.6) and Lemmas 11.1.1–11.1.2** (generalization). The definitions use an
+  arbitrary real inner-product space and parameter type. The minimum-norm subgradient
+  results work in a real Hilbert space with a local Lipschitz hypothesis.
 * **Equation (11.1.16)** (correction). The printed very-successful interval
   $[\gamma_3 \Delta, \Delta_{\max}]$ is empty when $\Delta = \Delta_{\max}$. The lower bound is
   capped at $\min\{\gamma_3 \Delta, \Delta_{\max}\}$. See
@@ -118,19 +121,28 @@ namespace ConnGouldToint.Chapter11
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- **Equation (11.1.1)** of [conn2000trust]. A family of models $m(x, p, \cdot)$ **matches the
-value** of $f$ if $m(x, p, 0) = f(x)$ for every base point $x$ and every parameter $p$. -/
+value** of $f$ if $m(x, p, 0) = f(x)$ for every base point $x$ and every parameter $p$.
+
+**Reading.** Center-value matching for models over an arbitrary parameter type and ambient space.
+-/
 def modelValueMatches {P : Type*} (f : E → ℝ) (m : E → P → E → ℝ) : Prop :=
   ∀ x p, m x p 0 = f x
 
 /-- **Equation (11.1.2)** of [conn2000trust]. A family of models $m(x, p, \cdot)$ **matches the
 Clarke derivative** of $f$ if
 $$m(x, p, \cdot)^\circ(0; d) = f^\circ(x; d)$$
-for every base point $x$, every parameter $p$ and every direction $d \neq 0$. -/
+for every base point $x$, every parameter $p$ and every direction $d \neq 0$.
+
+**Reading.** Clarke directional agreement on a general real inner-product space.
+-/
 def modelDerivativeMatches {P : Type*} (f : E → ℝ) (m : E → P → E → ℝ) : Prop :=
   ∀ x p d, d ≠ 0 → clarkeDerivative (m x p) 0 d = clarkeDerivative f x d
 
 /-- **Equation (11.1.3)** of [conn2000trust]. A vector $d$ is a **steepest-descent direction** of
-$f$ at $x$ if $\|d\| \le 1$ and $d$ minimizes $f^\circ(x; \cdot)$ on the closed unit ball. -/
+$f$ at $x$ if $\|d\| \le 1$ and $d$ minimizes $f^\circ(x; \cdot)$ on the closed unit ball.
+
+**Reading.** Minimizing direction on the closed unit ball of an arbitrary real inner-product space.
+-/
 def IsSteepestDirection (f : E → ℝ) (x d : E) : Prop :=
   ‖d‖ ≤ 1 ∧ IsMinOn (clarkeDerivative f x) (closedBall 0 1) d
 
@@ -138,19 +150,30 @@ def IsSteepestDirection (f : E → ℝ) (x d : E) : Prop :=
 $$\inf_{\|d\| \le 1} f^\circ(x; d).$$
 
 The infimum is the real `sInf`, which is $0$ for a set that is not bounded below. For a locally
-Lipschitz $f$ the set is bounded. -/
+Lipschitz $f$ the set is bounded.
+
+**Reading.** Infimum on a Hilbert-space ball, with attainment in the theorem under local Lipschitz
+hypotheses.
+-/
 noncomputable def steepestSlope (f : E → ℝ) (x : E) : ℝ :=
   sInf (clarkeDerivative f x '' closedBall 0 1)
 
 /-- **Equation (11.1.4)** of [conn2000trust]. The **minimum-norm subgradient** $g^*(x)$ is the
 metric projection of $0$ onto the Clarke subdifferential $\partial f(x)$.
 
-It is `bestApprox (clarkeSubgradient f x) 0`, which is $0$ when no nearest point exists. -/
+It is `bestApprox (clarkeSubgradient f x) 0`, which is $0$ when no nearest point exists.
+
+**Reading.** Metric projection onto the Clarke subgradient set in a Hilbert space.
+-/
 noncomputable def minimumNormSubgradient (f : E → ℝ) (x : E) : E :=
   bestApprox (clarkeSubgradient f x) 0
 
 /-- **Equation (11.1.6)** of [conn2000trust]. The selected **steepest-descent direction** is
-$d^*(x) = -g^*(x)/\|g^*(x)\|$, and $d^*(x) = 0$ when $g^*(x) = 0$. -/
+$d^*(x) = -g^*(x)/\|g^*(x)\|$, and $d^*(x) = 0$ when $g^*(x) = 0$.
+
+**Reading.** Normalized negative minimum-norm subgradient on a Hilbert space, with zero at
+stationarity.
+-/
 noncomputable def steepestDirection (f : E → ℝ) (x : E) : E :=
   negativeUnit (minimumNormSubgradient f x)
 
@@ -211,7 +234,10 @@ structure NonsmoothRadiusUpdate (P : NonsmoothTRParams) (ρ Δ Δ' : ℝ) : Prop
 
 /-- **Equation (11.1.16)** of [conn2000trust], printed form. At the radius cap there is no $\Delta'$
 with $\gamma_3 \Delta_{\max} \le \Delta' \le \Delta_{\max}$, so the printed very-successful
-interval is empty. -/
+interval is empty.
+
+**Reading.** Exposes the empty very-successful interval at the maximum radius.
+-/
 theorem printedNonsmoothExpansion_infeasible (P : NonsmoothTRParams) :
     ¬ ∃ Δ' : ℝ, P.γ₃ * P.Δmax ≤ Δ' ∧ Δ' ≤ P.Δmax := by
   rintro ⟨Δ', hlo, hhi⟩
@@ -220,7 +246,10 @@ theorem printedNonsmoothExpansion_infeasible (P : NonsmoothTRParams) :
   exact hgt.not_ge (hlo.trans hhi)
 
 /-- **Equation (11.1.16)** of [conn2000trust], corrected. For every ratio $\rho$ and every radius
-$\Delta \ge 0$ there is a legal update $\Delta'$ of $\Delta$ for $\rho$. -/
+$\Delta \ge 0$ there is a legal update $\Delta'$ of $\Delta$ for $\rho$.
+
+**Correction.** The corrected capped update exists for a nonnegative current radius.
+-/
 theorem nonsmoothRadiusUpdate_exists (P : NonsmoothTRParams) (ρ Δ : ℝ) (hΔ : 0 ≤ Δ) :
     ∃ Δ', NonsmoothRadiusUpdate P ρ Δ Δ' := by
   by_cases h₂ : P.η₂ ≤ ρ
@@ -246,7 +275,10 @@ $\rho_k$.
 
 The trust region is a Euclidean ball. The value and derivative matching and the
 sufficient-decrease condition are not part of the run; the theorems that need them take them as
-hypotheses. -/
+hypotheses.
+
+**Correction.** A general real inner-product trace with corrected capped update and totalized ratio.
+-/
 structure NonsmoothTRRun {I : Type*} (P : NonsmoothTRParams) (f : E → ℝ)
     (m : E → I → E → ℝ) where
   /-- The iterates $x_k$. -/
@@ -294,6 +326,8 @@ noncomputable def ratio (R : NonsmoothTRRun P f m) (k : ℕ) : ℝ :=
 decrease** near $x$ if there are $\varepsilon, \delta > 0$ and $\kappa \in (0, 1)$ such that
 every iterate $x_k$ in the open ball of radius $\varepsilon$ about $x$ satisfies
 $$\kappa \|g^*(x_k)\| \min\{\delta, \Delta_k\} \le m(x_k, p_k, 0) - m(x_k, p_k, s_k).$$
+
+**Reading.** Same local lower model decrease in a general inner-product space.
 -/
 def HasLocalSufficientDecrease (R : NonsmoothTRRun P f m) (x : E) : Prop :=
   ∃ ε δ κ : ℝ, 0 < ε ∧ 0 < δ ∧ 0 < κ ∧ κ < 1 ∧
@@ -313,7 +347,11 @@ let $f : E \to \mathbb{R}$ be Lipschitz on a neighborhood of $x$. Then:
 
 The proof uses the support representation (3.1.4) of the Clarke derivative, $f^\circ(x; d) =
 \max_{g \in \partial f(x)} \langle g, d \rangle$, and the metric projection onto the closed
-convex set $\partial f(x)$. -/
+convex set $\partial f(x)$.
+
+**Reading.** Proves minimal subgradient and steepest slope in any real Hilbert space under local
+Lipschitz continuity.
+-/
 theorem lemma_11_1_1 {f : E → ℝ} {x : E} {U : Set E} {L : NNReal}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
     (minimumNormSubgradient f x ∈ clarkeSubgradient f x ∧
@@ -350,7 +388,10 @@ theorem lemma_11_1_1 {f : E → ℝ} {x : E} {U : Set E} {L : NNReal}
 
 /-- **Section 11.1** of [conn2000trust], after Lemma 11.1.1. Let $f$ be Lipschitz on a neighborhood
 of $x$. The least slope of $f$ at $x$ is $0$ if and only if $x$ is Clarke stationary,
-$0 \in \partial f(x)$. -/
+$0 \in \partial f(x)$.
+
+**Reading.** Zero least slope is equivalent to Clarke stationarity in the Hilbert-space setting.
+-/
 theorem steepestSlope_eq_zero_iff {f : E → ℝ} {x : E} {U : Set E} {L : NNReal}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U) :
     steepestSlope f x = 0 ↔ (0 : E) ∈ clarkeSubgradient f x := by
@@ -365,7 +406,10 @@ theorem steepestSlope_eq_zero_iff {f : E → ℝ} {x : E} {U : Set E} {L : NNRea
     exact ⟨hzero, by simp⟩
 
 /-- **Equation (11.1.7)** of [conn2000trust]. A step $s$ is a **model minimizer** in radius $\Delta$
-if $\|s\| \le \Delta$ and $s$ minimizes $m$ on the closed ball of radius $\Delta$ about $0$. -/
+if $\|s\| \le \Delta$ and $s$ minimizes $m$ on the closed ball of radius $\Delta$ about $0$.
+
+**Reading.** Model minimization over the trust ball of a real inner-product space.
+-/
 def IsModelMinimizer (m : E → ℝ) (Δ : ℝ) (s : E) : Prop :=
   ‖s‖ ≤ Δ ∧ IsMinOn m (closedBall 0 Δ) s
 
@@ -393,7 +437,11 @@ there are $\varepsilon, \kappa > 0$ with $\|g^*(y)\| \ge \kappa$ for every $y$ i
 of radius $\varepsilon$ about $x$.
 
 The proof fixes one strict descent direction at $x$ and uses the upper semicontinuity of its
-Clarke derivative. -/
+Clarke derivative.
+
+**Reading.** The local positive slope bound holds on Hilbert spaces, via upper semicontinuity of the
+Clarke derivative.
+-/
 theorem lemma_11_1_2 {f : E → ℝ} {x : E} {U : Set E} {L : NNReal}
     (hU : U ∈ 𝓝 x) (hL : LipschitzOnWith L f U)
     (hx : (0 : E) ∉ clarkeSubgradient f x) :
@@ -426,7 +474,10 @@ $$m(y, p, t d) - m(y, p, 0) \le t \bigl(m(y, p, \cdot)^\circ(0; d) + \eta\bigr)$
 for every $y$ in the open ball of radius $\varepsilon$ about $x$, every parameter $p$, every $d$
 with $\|d\| \le 1$ and every $t \in (0, \delta]$.
 
-This is the hypothesis that the corrected Lemma 11.1.3 and Corollary 11.1.4 add. -/
+This is the hypothesis that the corrected Lemma 11.1.3 and Corollary 11.1.4 add.
+
+**Reading.** New uniform one-sided normalized model-error premise.
+-/
 def UniformModelUpperApproximationAt {P : Type*} (m : E → P → E → ℝ) (x : E) : Prop :=
   ∀ η : ℝ, 0 < η → ∃ ε δ : ℝ, 0 < ε ∧ 0 < δ ∧
     ∀ y ∈ ball x ε, ∀ (p : P) (d : E), ‖d‖ ≤ 1 → ∀ t ∈ Set.Ioc 0 δ,
@@ -632,7 +683,10 @@ private theorem oscillatoryObjective_steepest :
 $\delta > 0$ there are a frequency $p > 0$ and a step length $t \in (0, \delta]$ such that
 $$m(0, p, 0) - m(0, p, t d^*(0)) < \frac{\|g^*(0)\| t}{2}.$$
 So no uniform $\delta$ exists for the family `ConnGouldToint.Chapter11.oscillatoryModel`; the
-model decrease can even be zero. -/
+model decrease can even be zero.
+
+**Correction.** Counterexample refutes the printed uniform model decrease under pointwise matching.
+-/
 theorem oscillatoryModel_fails_uniform_decrease {δ : ℝ} (hδ : 0 < δ) :
     ∃ (p : {p : ℝ // 0 < p}) (t : ℝ), 0 < t ∧ t ≤ δ ∧
       oscillatoryModel 0 p 0 - oscillatoryModel 0 p
@@ -648,7 +702,10 @@ theorem oscillatoryModel_fails_uniform_decrease {δ : ℝ} (hδ : 0 < δ) :
 $1$. For every $\delta > 0$ there are a frequency $p > 0$ and a Cauchy length $t$ of
 $m(0, p, \cdot)$ along $d^*(0)$ in radius $1$ such that
 $$m(0, p, 0) - m(0, p, t d^*(0)) < \frac{\|g^*(0)\| \min\{\delta, 1\}}{2}.$$
-An exact Cauchy step exists, but its decrease tends to zero as the frequency grows. -/
+An exact Cauchy step exists, but its decrease tends to zero as the frequency grows.
+
+**Correction.** Counterexample refutes a uniform Cauchy decrease under pointwise matching.
+-/
 theorem oscillatoryModel_fails_cauchy_decrease {δ : ℝ} (hδ : 0 < δ) :
     ∃ (p : {p : ℝ // 0 < p}) (t : ℝ),
       IsCauchyLength (oscillatoryModel 0 p) (steepestDirection oscillatoryObjective 0) 1 t ∧

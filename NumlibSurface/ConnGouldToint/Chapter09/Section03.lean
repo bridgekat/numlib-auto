@@ -59,6 +59,10 @@ derivative is $\nabla^3 f$. The validity condition of Section 9.1 is
 
 ## Deviations from the source
 
+* **Theorem 9.3.1** (generalization). The Hessian estimate uses real normed spaces and a
+  centered Taylor difference. The proof variant assumes a Hessian bound relative to the
+  center in place of a bounded third derivative. Its constant includes the factor from
+  polarization in a normed space.
 * **Theorem 9.3.1** (correction). The radius of the ball must be positive. At radius $0$,
   second-order validity gives no Hessian bound. See
   `ConnGouldToint.Chapter09.second_order_zero_radius_counterexample`.
@@ -81,6 +85,8 @@ $\delta, \kappa_1, \kappa_2 \in \mathbb{R}$. The model $m$ is **second-order val
 $B(x, \delta)$ if it is valid on $B(x, \delta)$ with constant $\kappa_1$ (9.1.1)–(9.1.2) and
 $$|f(z) - m(z)| \le \kappa_2 \delta^3 \quad \text{for all } z \text{ with } \|z - x\| \le
   \delta.$$
+
+**Reading.** Same quadratic and cubic model error bounds on arbitrary real normed-space balls.
 -/
 def modelSecondOrderValidOnBall (f m : E → ℝ) (x : E) (δ κ₁ κ₂ : ℝ) : Prop :=
   modelValidOnBall f m x δ κ₁ ∧
@@ -250,7 +256,10 @@ then
 $$\|\nabla^2 f(x_k) - \nabla^2 m_k(x_k)\| \to 0.$$
 
 The modified acceptance test of the algorithm provides the eventual second-order validity on
-balls of positive radius at most a multiple of the model gradient norm. -/
+balls of positive radius at most a multiple of the model gradient norm.
+
+**Reading.** Uses explicit hypotheses for accepted positive radii and uniform normed-space bounds.
+-/
 theorem corollary_9_3_2 {f : E → ℝ} (hf : ContDiff ℝ 3 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k))
     (hDm₁ : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
@@ -363,7 +372,10 @@ theorem theorem_9_3_3 {f : E → ℝ} (hf : ContDiff ℝ 3 f) {m : ℕ → E →
 /-- Second-order validity on a ball of radius $0$ gives no control of the Hessian error. On
 $\mathbb{R}$, the model $m = 0$ is second-order valid for $f(x) = x^2$ on $B(0, 0)$ with
 constants $1$ and $1$, but $f''(0) \neq m''(0)$. This shows that the hypothesis $\delta > 0$ of
-Theorem 9.3.1 is necessary. -/
+Theorem 9.3.1 is necessary.
+
+**Reading.** At zero radius cubic validity can hold with different Hessians.
+-/
 theorem second_order_zero_radius_counterexample :
     modelSecondOrderValidOnBall (fun x : ℝ ↦ x ^ 2) (fun _ ↦ 0) 0 0 1 1 ∧
       fderiv ℝ (fderiv ℝ (fun x : ℝ ↦ x ^ 2)) 0 ≠
@@ -408,7 +420,10 @@ test at $x$, with constants $\kappa_1, \kappa_2, \mu$ and curvature bound $\lamb
 $\delta > 0$ with $\delta \le \mu \max\{\|\nabla m(x)\|, -\lambda\}$ such that $m$ is
 second-order valid for $f$ on $B(x, \delta)$ with constants $\kappa_1$ and $\kappa_2$.
 
-The certificate radius $\delta$ must be positive. -/
+The certificate radius $\delta$ must be positive.
+
+**Reading.** Test insists on strictly positive radius.
+-/
 def secondOrderModelPasses (f m : E → ℝ) (x : E) (κ₁ κ₂ μ curvature : ℝ) : Prop :=
   ∃ δ > 0, δ ≤ μ * secondOrderModelCriticality m x curvature ∧
     modelSecondOrderValidOnBall f m x δ κ₁ κ₂
@@ -434,7 +449,10 @@ with curvature bound $\lambda_k$; and $\delta_{k+1}$ is the refinement radius fo
 the criticality $\max\{\|\nabla m_k(x)\|, -\lambda_k\}$.
 
 The trace starts at a validity certificate of positive radius, and each model is tested again
-after the refinement. -/
+after the refinement.
+
+**Correction.** Abstract infinite trace for the corrected positive-radius loop.
+-/
 structure SecondOrderModelRefinement (f : E → ℝ) (x : E) (κ₁ κ₂ μ α ε : ℝ) where
   /-- The model $m_k$ after $k$ refinements. -/
   model : ℕ → E → ℝ
@@ -461,7 +479,10 @@ namespace SecondOrderModelRefinement
 
 variable {f : E → ℝ} {x : E} {κ₁ κ₂ μ α ε : ℝ}
 
-/-- A failed test gives $\mu \max\{\|\nabla m_k(x)\|, -\lambda_k\} < \delta_k$. -/
+/-- A failed test gives $\mu \max\{\|\nabla m_k(x)\|, -\lambda_k\} < \delta_k$.
+
+**Reading.** Failed test on a valid positive-radius trace yields a strict criticality bound.
+-/
 private theorem criticality_lt (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε) (k : ℕ) :
     μ * secondOrderModelCriticality (run.model k) x (run.leastCurvature k) < run.radius k :=
   lt_of_not_ge fun h ↦ run.test_fails k ⟨run.radius k, run.radius_pos k, h, run.valid k⟩
@@ -470,7 +491,10 @@ private theorem criticality_lt (run : SecondOrderModelRefinement f x κ₁ κ₂
 $\delta_k$ of a second-order model refinement tend to zero.
 
 Each refinement multiplies the radius by at most $\alpha$, also in the branch with zero
-criticality. -/
+criticality.
+
+**Correction.** Geometric radius decay for the corrected loop.
+-/
 theorem tendsto_radius (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε)
     (hα : 0 ≤ α) (hα₁ : α < 1) : Tendsto run.radius atTop (𝓝 0) := by
   have hstep (k : ℕ) : run.radius (k + 1) ≤ α * run.radius k := by
@@ -503,7 +527,10 @@ all $k$ and $z$. Then $\nabla f(x) = 0$ and $\nabla^2 f(x)[v, v] \ge 0$ for all 
 
 The proof applies `ConnGouldToint.Chapter09.theorem_9_3_3` with $\tau_k = \delta_k / \mu$. A
 failed test makes $\delta_k / \mu$ an upper bound on both the model gradient norm and the
-negative curvature. -/
+negative curvature.
+
+**Correction.** Second-order criticality derived from the corrected positive-radius loop.
+-/
 theorem theorem_9_3_3_of_refinement {f : E → ℝ} {x : E} {κ₁ κ₂ μ α ε Bf Bm Lf Lm : ℝ}
     (run : SecondOrderModelRefinement f x κ₁ κ₂ μ α ε)
     (hμ : 0 < μ) (hα : 0 ≤ α) (hα₁ : α < 1) (hf : ContDiff ℝ 3 f)

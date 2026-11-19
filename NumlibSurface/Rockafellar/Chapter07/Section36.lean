@@ -82,6 +82,12 @@ saddle-point condition (`Rockafellar.zero_mem_saddleSubdifferential_iff_isSaddle
   `Rockafellar.lemma_36_1_on` holds for arbitrary subsets.
 * **Corollary 36.3.1** (generalization). The book assumes a closed proper saddle-function. The
   statements here assume only that $K$ is proper. See `Rockafellar.corollary_36_3_1_mem_dom`.
+* **Theorem 36.4** (generalization). The equivalence of saddle values and saddle points,
+  and equality of the individual iterated extrema, hold whenever the partial closures
+  coincide. Lean omits the saddle-function hypothesis.
+* **Theorem 36.6**, multiplier characterization (generalization). For a given optimal
+  solution, the zero-subgradient test characterizes the multiplier vectors without
+  a constraint qualification.
 
 ## Not formalized
 
@@ -163,7 +169,10 @@ $\bar u$, the infimum in $\inf \sup$ is attained at $\bar v$, and the two extrem
 
 The book states the lemma for a function on a product $C \times D$. The statement here is the
 case $C \times D = \mathbb{R}^m \times \mathbb{R}^n$; the relative form is not formalized.
-`ConvexAnalysis.IsSaddlePointOn` gives the relative notion of saddle-point. -/
+`ConvexAnalysis.IsSaddlePointOn` gives the relative notion of saddle-point.
+
+**Reading.** Specializes the relative equivalence to the whole product of Euclidean spaces.
+-/
 theorem lemma_36_2 (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
     IsSaddlePoint K p ↔
       (⨅ v : Rn n, K (p.1, v)) = maximin K ∧ (⨆ u : Rn m, K (u, p.2)) = minimax K ∧
@@ -296,20 +305,29 @@ $\operatorname{cl}_2 K = \operatorname{cl}_2 L$. Then
 $$\sup_{u} \inf_{v} K(u, v) = \sup_{u} \inf_{v} L(u, v).$$
 
 The equivalence is `ConvexAnalysis.SaddleEquiv`; no concavity or convexity of $K$ and $L$ is
-assumed. The proof uses that two concave functions with the same closure have the same supremum. -/
+assumed. The proof uses that two concave functions with the same closure have the same supremum.
+
+**Reading.** Equal partial closures imply equal maximin for arbitrary functions.
+-/
 theorem theorem_36_4_maximin (h : SaddleEquiv K L) : maximin K = maximin L :=
   SaddleEquiv.maximin_eq h
 
 /-- **Theorem 36.4** of [rockafellar1970convex], the infimum of the supremum. Let $K, L :
 \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$ be equivalent. Then
 $$\inf_{v} \sup_{u} K(u, v) = \inf_{v} \sup_{u} L(u, v).$$
+
+**Reading.** Equal partial closures imply equal minimax for arbitrary functions.
 -/
 theorem theorem_36_4_minimax (h : SaddleEquiv K L) : minimax K = minimax L :=
   SaddleEquiv.minimax_eq h
 
 /-- **Theorem 36.4** of [rockafellar1970convex], the saddle-value. Let $K, L : \mathbb{R}^m \times
 \mathbb{R}^n \to [-\infty, +\infty]$ be equivalent. Then the saddle-value of $K$ exists if and
-only if the saddle-value of $L$ exists. -/
+only if the saddle-value of $L$ exists.
+
+**Reading.** Existence of a saddle value is preserved by equivalence even without a saddle-function
+hypothesis.
+-/
 theorem theorem_36_4_hasSaddleValue (h : SaddleEquiv K L) :
     HasSaddleValue K ↔ HasSaddleValue L :=
   SaddleEquiv.hasSaddleValue_iff h
@@ -319,7 +337,10 @@ theorem theorem_36_4_hasSaddleValue (h : SaddleEquiv K L) :
 saddle-points.
 
 So minimax theory is a theory of equivalence classes of saddle-functions, and by Theorem 36.5 a
-theory of convex programs. -/
+theory of convex programs.
+
+**Reading.** Saddle points are preserved by equivalence of arbitrary functions.
+-/
 theorem theorem_36_4_saddlePoint (h : SaddleEquiv K L) :
     IsSaddlePoint K p ↔ IsSaddlePoint L p :=
   SaddleEquiv.isSaddlePoint_iff h
@@ -530,7 +551,10 @@ theorem theorem_36_6_polyhedral (hF : PolyhedralBifun F) (hcl : ClosedConvexBifu
 associated with a closed proper convex bifunction $F$ from $\mathbb{R}^m$ to $\mathbb{R}^n$,
 with Lagrangian $L$, and let $\bar x$ be an optimal solution to $(P)$. Then for
 $\bar u^* \in \mathbb{R}^m$, $(0, 0) \in \partial L(\bar u^*, \bar x)$ if and only if $\bar u^*$
-is a Kuhn–Tucker vector for $(P)$. No constraint qualification is needed. -/
+is a Kuhn–Tucker vector for $(P)$. No constraint qualification is needed.
+
+**Reading.** No constraint qualification is needed once the primal point is known to be optimal.
+-/
 theorem theorem_36_6_kuhnTucker (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hx : IsOptimalSolution F x) (v : Rn m) :
     (0 : Rn m × Rn n) ∈ saddleSubdifferential (pairing m) (pairing n)

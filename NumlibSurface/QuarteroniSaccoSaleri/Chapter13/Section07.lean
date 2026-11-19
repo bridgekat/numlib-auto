@@ -69,6 +69,18 @@ stencils of `Numlib.FiniteDifference.Stencil`.
   `lp (fun _ : ℤ => ℝ) 2`, where $I + \frac{\lambda a}{2} D_0$ is invertible.
 * The schemes for the wave equation are relations between the levels of a function
   $\mathbb{N} \times \mathbb{Z} \to \mathbb{R}$, $(n, j) \mapsto u_j^n$, not stencils.
+
+## Deviations from the source
+
+* **Equations (13.36)–(13.42) and Exercise 13.5** (reading). The conservative predicate and
+  viscosity stencil allow arbitrary real parameters, with total division in the viscosity
+  definition. The exercise gives the viscosity identities, and the three numerical-flux theorems
+  encode the flux terms in Table 13.1. See `QuarteroniSaccoSaleri.Chapter13.exercise_13_5`.
+* **Equation (13.43)** (specialization). The implicit update is constructed on square-summable
+  sequences. Its pointwise equation and the skew-adjoint identity used for the energy estimate
+  are separate conclusions. See `QuarteroniSaccoSaleri.Chapter13.equation_13_43_spec`.
+* **Equation (13.45)** (generalization). The update accepts arbitrary real $\beta,\theta,\Delta
+  t$ and uses total division. See `QuarteroniSaccoSaleri.Chapter13.equation_13_45`.
 -/
 
 open FiniteDifference FiniteDifference.Hyperbolic
@@ -85,14 +97,20 @@ $$(Su)_j = u_j - \lambda \bigl(h(u_j, u_{j+1}) - h(u_{j-1}, u_j)\bigr).$$
 
 The definition is `FiniteDifference.IsConservativeForm`. For a linear flux
 $h(u, v) = \alpha u + \beta v$, the map in conservative form is the three-point stencil
-`FiniteDifference.Stencil.ofFlux lam α β`. -/
+`FiniteDifference.Stencil.ofFlux lam α β`.
+
+**Reading.** The two-point flux identity is stated for all grid functions with arbitrary
+$\lambda$, with mesh positivity left external. -/
 def equation_13_36 (lam : ℝ) (h : ℝ → ℝ → ℝ) (step : (ℤ → ℝ) → ℤ → ℝ) : Prop :=
   FiniteDifference.IsConservativeForm lam h step
 
 /-- **Equation (13.36)** of [quarteroni2000numerical], linear fluxes. Let
 $\lambda, \alpha, \beta \in \mathbb{R}$. The action of the stencil
 `FiniteDifference.Stencil.ofFlux lam α β` is in conservative form with the linear flux
-$h(u, v) = \alpha u + \beta v$. -/
+$h(u, v) = \alpha u + \beta v$.
+
+**Reading.** General linear-flux representation on any real coefficients.
+-/
 theorem equation_13_36_ofFlux (lam α β : ℝ) :
     equation_13_36 lam (fun u v => α * u + β * v) (Stencil.apply (Stencil.ofFlux lam α β)) :=
   Stencil.isConservativeForm_ofFlux lam α β
@@ -184,7 +202,10 @@ $a, \lambda, \Delta x, k \in \mathbb{R}$, it is the three-point scheme
 $$u_j^{n+1} = u_j^n - \frac{\lambda a}{2} (u_{j+1}^n - u_{j-1}^n) + \frac{k}{2}
   \frac{u_{j+1}^n - 2 u_j^n + u_{j-1}^n}{\Delta x^2}.$$
 
-The definition is `FiniteDifference.Hyperbolic.artificialViscosity`. -/
+The definition is `FiniteDifference.Hyperbolic.artificialViscosity`.
+
+**Reading.** The stencil accepts arbitrary real parameters and uses total division at $\Delta
+x=0$. -/
 noncomputable def equation_13_42 (a lam Δx k : ℝ) : Stencil := artificialViscosity a lam Δx k
 
 /-- **Exercise 5 of Chapter 13** and **Table 13.1** of [quarteroni2000numerical]. Let
@@ -192,7 +213,10 @@ $\Delta t \in \mathbb{R}$, $\Delta x \neq 0$, $\lambda = \Delta t / \Delta x$ an
 $a \in \mathbb{R}$. Then the Lax–Friedrichs, Lax–Wendroff and upwind schemes are the artificial
 viscosity scheme (13.42) with the coefficients
 $$k = \Delta x^2, \qquad k = a^2 \Delta t^2, \qquad k = |a| \Delta x \Delta t,$$
-respectively. -/
+respectively.
+
+**Reading.** This states the viscosity identities. The flux theorems give the corresponding
+linear flux formulas. -/
 theorem exercise_13_5 {Δt Δx lam : ℝ} (hΔx : Δx ≠ 0) (hlam : lam = Δt / Δx) (a : ℝ) :
     equation_13_39 a lam = equation_13_42 a lam Δx (Δx ^ 2) ∧
       equation_13_40 a lam = equation_13_42 a lam Δx (a ^ 2 * Δt ^ 2) ∧
@@ -210,7 +234,10 @@ $D_0$ is the centred difference $(D_0 u)_j = u_{j+1} - u_{j-1}$.
 
 The operator $B$ is invertible because $D_0$ is skew-adjoint, so that
 $\langle Bu, u \rangle = \|u\|^2$. The definition is
-`FiniteDifference.Hyperbolic.backwardEulerCentred`. -/
+`FiniteDifference.Hyperbolic.backwardEulerCentred`.
+
+**Specialization.** The implicit equation is realized as a unique bounded update on square-
+summable grids. -/
 noncomputable def equation_13_43 (a lam : ℝ) :
     lp (fun _ : ℤ => ℝ) 2 →L[ℝ] lp (fun _ : ℤ => ℝ) 2 := backwardEulerCentred a lam
 
@@ -222,7 +249,11 @@ so $w$ is the new level of the implicit scheme (13.43). Moreover the centred dif
 skew-adjoint on $\ell^2(\mathbb{Z})$: $\langle D_0 v, w \rangle = -\langle v, D_0 w \rangle$ for
 all $v, w$.
 
-The centred difference is `FiniteDifference.Hyperbolic.centredDiffCLM`. -/
+The centred difference is `FiniteDifference.Hyperbolic.centredDiffCLM`.
+
+**Reading.** Proves the specified update on ℓ² and separately gives the bilinear skew identity
+behind telescoping.
+-/
 theorem equation_13_43_spec (a lam : ℝ) (u : lp (fun _ : ℤ => ℝ) 2) (j : ℤ) :
     equation_13_43 a lam u j
         + lam * a / 2 * (equation_13_43 a lam u (j + 1) - equation_13_43 a lam u (j - 1)) = u j ∧
@@ -256,7 +287,10 @@ $$v_j^{n+1} - v_j^n = \frac{(\gamma \lambda)^2}{\Delta t} \bigl[\theta\, \delta^
   (1 - \theta)\, \delta^2 u_j^n\bigr].$$
 
 The source takes $0 \le \beta \le \frac{1}{2}$ and $0 \le \theta \le 1$. The definition,
-`FiniteDifference.Hyperbolic.IsNewmark`, does not restrict the parameters. -/
+`FiniteDifference.Hyperbolic.IsNewmark`, does not restrict the parameters.
+
+**Generalization.** The predicate omits the source's bounds on $\beta$ and $\theta$ and uses
+total division by $\Delta t$. -/
 def equation_13_45 (γ lam Δt β θ : ℝ) (u v : ℕ → ℤ → ℝ) : Prop := IsNewmark γ lam Δt β θ u v
 
 end QuarteroniSaccoSaleri.Chapter13

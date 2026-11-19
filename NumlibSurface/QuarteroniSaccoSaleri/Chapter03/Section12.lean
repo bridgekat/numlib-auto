@@ -201,7 +201,10 @@ $$x^{(i+1)} = x^{(i)} + C\,(b - A x^{(i)}).$$
 
 In the book $C = (\hat L \hat U)^{-1}$ is the solve with the computed LU factors of $A$. This
 definition is the matrix form of the backbone `Refinement.step`; see
-`QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep_eq`. -/
+`QuarteroniSaccoSaleri.Chapter03.iterativeRefinementStep_eq`.
+
+**Scope.** The correction operator $C$ is arbitrary here. The source obtains it by solving
+with the computed triangular factors. -/
 noncomputable def iterativeRefinementStep (x : Fin n → ℝ) : Fin n → ℝ :=
   x + C *ᵥ (b - A *ᵥ x)
 
@@ -214,7 +217,9 @@ operators of $C$ and $A$, and
 $$x + C(b - Ax) = (I - CA)\,x + Cb.$$
 
 The operators are `Matrix.lpCLM p C` and `Matrix.lpCLM p A` on `PiLp p (fun _ : Fin n => ℝ)`.
-The second equality specializes `Refinement.step_eq_stationary_step`. -/
+The second equality specializes `Refinement.step_eq_stationary_step`.
+
+**Scope.** The affine identity allows an arbitrary correction operator $C$. -/
 theorem iterativeRefinementStep_eq (x : Fin n → ℝ) :
     toLp p (iterativeRefinementStep C A b x) =
         Refinement.step (lpCLM p C) (lpCLM p A) (toLp p b) (toLp p x) ∧

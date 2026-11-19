@@ -87,13 +87,15 @@ results specialize `Numlib.Variational.Inequality.Approximation`, the multiplier
 
 ## Deviations from the source
 
-* **Theorem 11.4.2** (reading). Falk's lemma is stated in the squared form
-  $\frac{c_0}{2} \|u - u_h\|^2 \le \dots$ that its proof gives. The square-rooted form is
-  `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`, with the constant
-  $c = \max\{M/c_0, \sqrt{2/c_0}\}$ written out. See `AtkinsonHan.Chapter11.theorem_11_4_2`.
-* **Theorems 11.4.1 and 11.4.6** (reading). The weak-limit hypotheses are required along every
-  reindexing $\sigma \colon \mathbb{N} \to \mathbb{N}$ of the sequence, because the proof passes to
-  subsequences. See `AtkinsonHan.Chapter11.theorem_11_4_1`.
+* **Theorems 11.4.2 and 11.4.7** (reading). The square-root bounds give the explicit constant
+  $c = \max\{M/c_0, \sqrt{2/c_0}\}$. Theorem 11.4.7 allows any discrete admissible set;
+  the book uses a subspace. The squared estimate (11.4.7) retains the printed form.
+* **Exercise 11.4.3** (generalization). The regularization estimate uses a strongly monotone
+  operator in place of the elliptic bilinear form and assumes the uniform functional error bound.
+* **Theorems 11.4.1 and 11.4.6** (restriction). The weak-limit hypotheses are required along
+  every reindexing, including constant ones. The proofs need subsequences tending to infinity.
+  Constant reindexing forces $K_n \subseteq K$ in Theorem 11.4.1 and $j \le j_n$ on $V_n$ in
+  Theorem 11.4.6 for every $n$. See `AtkinsonHan.Chapter11.theorem_11_4_1`.
 * **Theorem 11.4.6** (reading). The condition $\liminf_h j_h(v_h) \ge j(v)$ is stated as: for every
   $\alpha < j(v)$, eventually $j_h(v_h) > \alpha$. See `AtkinsonHan.Chapter11.theorem_11_4_6`.
 * **Theorem 11.4.6** (generalization). The finite dimension of the spaces $V_h$ and the convexity
@@ -237,7 +239,7 @@ j(w) - (f, v - w)$,
 $$\frac{c_0}{2} \|u - u_h\|^2 \le \inf_{v \in K} R(v, u_h) + \inf_{v_h \in K_h} \Bigl[R(v_h,
   u) + \frac{M^2}{2 c_0} \|u - v_h\|^2\Bigr].$$
 
-**Reading.** The estimate is stated in the squared form that its proof gives. The square-rooted
+The displayed estimate is the book's squared form (11.4.7). The square-rooted
 form for $K_h \subseteq K$ is `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`.
 
 The proof adds the two variational inequalities to the strong monotonicity inequality and treats
@@ -277,7 +279,10 @@ $$\|u - u_h\| \le c \inf_{v_h \in K_h} \Bigl(\|u - v_h\| + |R(v_h, u)|^{1/2}\Big
   \max\Bigl\{\frac{M}{c_0}, \sqrt{\frac{2}{c_0}}\Bigr\}.$$
 
 The first residual of Falk's lemma vanishes at $v = u_h$. The source leaves the constant
-unnamed; it is written out here because taking the square root of a sum of two squares fixes it. -/
+unnamed; it is written out here because taking the square root of a sum of two squares fixes it.
+
+**Reading.** Writes out the previously unspecified constant in the square-root bound.
+-/
 theorem theorem_11_4_2_of_subset (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖) (hsub : Kh ⊆ K)
@@ -352,7 +357,11 @@ $$\|u - u_\varepsilon\| \le \sqrt{\frac{2 c_1 \varepsilon}{c_0}}.$$
 
 The constant is sharp for this argument. At $v = u_\varepsilon$ and $v_h = u$ the cross term of
 the core estimate vanishes, so neither a Lipschitz constant nor Young's inequality enters;
-Falk's lemma would lose a factor of two. -/
+Falk's lemma would lose a factor of two.
+
+**Reading.** General strongly monotone operator and already assumed uniform functional error; treats
+the bound part.
+-/
 theorem exercise_11_4_3 {jeps : V → ℝ} {c₁ ε : ℝ} {ueps : V} (hc₀ : 0 < c₀)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hu : IsVariationalInequalitySolution A j f univ u)
@@ -431,7 +440,11 @@ $$\|u - u_h\| \le c \inf_{v_h \in K_h} \Bigl(\|u - v_h\| + |R_h(v_h, u)|^{1/2}\B
 with $c = \max\{M/c_0, \sqrt{2/c_0}\}$ as in `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`.
 
 The numerical-integration construction (11.4.28) satisfies (11.4.26). The proof is that of
-Falk's lemma, with the inequality $j(u_h) \le j_h(u_h)$ inserted at $v = u_h$. -/
+Falk's lemma, with the inequality $j(u_h) \le j_h(u_h)$ inserted at $v = u_h$.
+
+**Reading.** Arbitrary admissible sets rather than linear subspaces and an explicit square-root
+error constant.
+-/
 theorem theorem_11_4_7 (hc₀ : 0 < c₀) (hM : 0 ≤ M)
     (hmono : Chapter05.StronglyMonotoneWith A c₀)
     (hlip : ∀ v₁ v₂ : V, ‖A v₁ - A v₂‖ ≤ M * ‖v₁ - v₂‖)
@@ -620,7 +633,11 @@ $H^1(\Omega)$, and zero on $\partial\Omega$. Then there is $w \in K = \{v \in H^
 
 The function is $v + (\psi' - v)^+ \in H^1(\Omega)$. It is continuous on $\overline\Omega$ and
 zero on $\partial\Omega$, hence in $H^1_0(\Omega)$ by Theorem 9.17 of [brezis2011functional],
-(i) implies (ii). -/
+(i) implies (ii).
+
+**Reading.** Maximum with the obstacle gives a feasible function using explicit trace and
+representative data.
+-/
 theorem exists_max_mem_obstacleSet {Ω : Opens 𝔼₂} {ψ : SobolevEuclidean 2 1 2 Ω} {ψ' : 𝔼₂ → ℝ}
     (hψ : SobolevMultiIndex.fn ψ =ᵐ[volume.restrict (Ω : Set 𝔼₂)] ψ')
     (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hψ1 : MemSobolev ψ' 1 2 Ω volume)
@@ -667,7 +684,11 @@ $v_h \in K_h$ whose function is almost everywhere equal to the linear interpolan
 
 The interpolant is continuous and piecewise linear, it vanishes on $\partial\Omega$ with $u'$ by
 `Triangulation.globalInterp_eqOn_frontier`, and at every node $x$ it takes the value
-$u'(x) \ge \psi'(x)$. -/
+$u'(x) \ge \psi'(x)$.
+
+**Reading.** Uses closure comparison and the boundary-edge covering assumption for the admissible
+interpolant.
+-/
 theorem exists_globalInterp_mem_discreteObstacleSet {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω)
     (hedge : 𝒯.FrontierSubsetEdges) {ψ' u' : 𝔼₂ → ℝ}
     (hψu : ∀ x ∈ closure (Ω : Set 𝔼₂), ψ' x ≤ u' x) (hu0 : EqOn u' 0 (frontier (Ω : Set 𝔼₂))) :
@@ -696,7 +717,10 @@ $$\int_\Omega \nabla u \cdot \nabla z \, dx - \int_\Omega f z \, dx \le \|g - f\
   \|z\|_{L^2(\Omega)}.$$
 
 With $z = v - w$, the left side is the residual $R(v, w) = a(u, v - w) - \ell(v - w)$ of the
-obstacle problem, which equals $\int_\Omega (g - f)(v - w)$. -/
+obstacle problem, which equals $\int_\Omega (g - f)(v - w)$.
+
+**Reading.** Residual bound assumes the weak Laplacian's load representation explicitly.
+-/
 theorem residual_le_of_eq_load {Ω : Opens 𝔼₂}
     (f g : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼₂))) {u : SobolevEuclideanZero 2 1 2 Ω}
     (hΔ : ∀ v : SobolevEuclideanZero 2 1 2 Ω,
@@ -736,7 +760,11 @@ $$\bigl\|\max\{v, \psi'\} - v\bigr\|_{L^2(\Omega)} \le \|\psi' - \Pi_h \psi'\|_{
 
 The proof uses $v = \Pi_h v \ge \Pi_h \psi'$ on $\overline\Omega$, by the monotonicity of the
 linear interpolant. So $0 \le \psi' - v \le \psi' - \Pi_h \psi'$ where $v < \psi'$, and
-$\max\{v, \psi'\} - v = 0$ elsewhere. -/
+$\max\{v, \psi'\} - v = 0$ elsewhere.
+
+**Reading.** The feasible maximum estimate uses explicit continuous representatives and their
+zero-boundary realization.
+-/
 theorem eLpNorm_max_sub_le {Ω : Opens 𝔼₂} (𝒯 : Triangulation Ω) {ψ' v : 𝔼₂ → ℝ}
     (hψc : ContinuousOn ψ' (closure (Ω : Set 𝔼₂))) (hvc : ContinuousOn v (closure (Ω : Set 𝔼₂)))
     (hvp : 𝒯.IsPiecewisePoly 1 v) (hψv : ∀ x ∈ 𝒯.vertices, ψ' x ≤ v x) :
@@ -1036,7 +1064,10 @@ all $v \in H^1(\Omega)$. This holds in particular for the restrictions of the sm
 supported functions, whose traces are their boundary values by
 `BoundaryData.TraceFamily.traceL_ae_eq`, so $\mu = 0$ almost everywhere on $\Gamma$ by
 `ae_eq_zero_of_integral_contDiff_smul_eq_zero`. The density of $H^{1/2}(\Gamma)$ in
-$L^2(\Gamma)$ is not needed. -/
+$L^2(\Gamma)$ is not needed.
+
+**Reading.** Multiplier uniqueness with abstract trace data.
+-/
 theorem theorem_11_4_5_unique {g : ℝ} (hg : 0 < g) (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))
     (u : SobolevEuclidean N 1 2 Ω) {l l' : Lp ℝ ⊤ B.σ}
     (hl : ∀ v : SobolevEuclidean N 1 2 Ω,
@@ -1140,7 +1171,10 @@ $$a(u, w) - \ell(w) = \int_\Gamma \frac{\partial u}{\partial \nu} \, \gamma w \,
 where $a(u, w) = \int_\Omega (\nabla u \cdot \nabla w + u w)$ and $\ell(w) = \int_\Omega f w$.
 
 The normal derivative is `BoundaryData.TraceFamily.normalTrace`. The form is
-`Elliptic.laplaceForm` and the load is `Elliptic.load`. -/
+`Elliptic.laplaceForm` and the load is `Elliptic.load`.
+
+**Reading.** Green's identity with the supplied boundary trace and weak normal trace.
+-/
 theorem laplaceForm_sub_load_eq_normalTrace_add (U : SobolevEuclidean N 2 2 Ω)
     (f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))) (w : SobolevEuclidean N 1 2 Ω) :
     Elliptic.laplaceForm Ω (toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) U) w
@@ -1217,7 +1251,10 @@ theorem laplaceForm_sub_load_eq_normalTrace_add (U : SobolevEuclidean N 2 2 Ω)
 
 /-- **Example 11.4.4** of [han2009theoretical], the normal derivative $\partial u / \partial \nu$ of
 $u \in H^2(\Omega)$ as an element of $L^2(\Gamma)$, so that
-$\|\partial u / \partial \nu\|_{L^2(\Gamma)}$ is a norm. -/
+$\|\partial u / \partial \nu\|_{L^2(\Gamma)}$ is a norm.
+
+**Reading.** Uses the boundary data's L² normal trace on the H² representative.
+-/
 noncomputable def normalTraceL (U : SobolevEuclidean N 2 2 Ω) : Lp ℝ 2 B.σ :=
   (𝒯.memLp_normalTrace U).toLp _
 
@@ -1235,7 +1272,11 @@ The left side is the residual $R(v, u)$ of Falk's lemma. The number
 $\sqrt{\operatorname{meas} \Gamma}$ is the $L^2$ norm of the constant $1$ for the surface
 measure. The proof uses `AtkinsonHan.Chapter11.laplaceForm_sub_load_eq_normalTrace_add`, the
 Cauchy–Schwarz inequality on $\Gamma$ and on $\Omega$, and $\bigl||\gamma v| - |\gamma u|\bigr|
-\le |\gamma (v - u)|$. -/
+\le |\gamma (v - u)|$.
+
+**Reading.** Volume and boundary residual bound using supplied trace data and Sobolev
+representative.
+-/
 theorem abs_residual_le {g : ℝ} (hg : 0 ≤ g) {U : SobolevEuclidean N 2 2 Ω}
     {u : SobolevEuclidean N 1 2 Ω}
     (hU : toLowerOrderL ℝ 𝔅 2 Ω volume (by norm_num : (1 : ℕ) ≤ 2) U = u)

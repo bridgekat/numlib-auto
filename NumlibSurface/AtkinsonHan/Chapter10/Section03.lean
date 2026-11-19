@@ -109,23 +109,30 @@ and the geometry of a triangle from `Numlib.Geometry.Euclidean.TriangleShape`.
   with $k > 0$. The library takes a bounded connected open set in $\mathbb{R}^d$ that is a Sobolev
   extension domain for every exponent, with $k + 1 > d/2$. The reference triangle and the unit
   square satisfy this hypothesis. See `AtkinsonHan.Chapter10.theorem_10_3_3`.
+* **Theorem 10.3.4** (reading). The bounds (10.3.5) and (10.3.6) use the Sobolev seminorm formed
+  with the tensor operator norm. This gives constant $1$ in place of the unspecified constant
+  for the book's multi-index seminorm.
 * **Theorems 10.3.3, 10.3.5 and 10.3.9, Corollary 10.3.7, Example 10.3.8** (reading). A function of
   $H^{k+1}$ is taken on its representative that is continuous up to the boundary, so that its values
   at the nodes are defined. See `AtkinsonHan.Chapter10.theorem_10_3_3`.
 * **Theorem 10.3.5, Definition 10.3.6** (reading). The source takes $\rho_K$ to be the diameter of
   the largest ball inscribed in $K$. The library uses the diameter of any inscribed closed ball. See
   `AtkinsonHan.Chapter10.IsRegularFamily`.
+* **Equation (10.3.9)** (generalization). Mesh size is defined by a real supremum for arbitrary
+  collections. This gives the book's maximum for a nonempty finite mesh.
 * **Definition 10.3.6** (reading). The source indexes the family by $h \to 0$. The library indexes
   it by any type, with a filter along which the mesh parameter tends to $0$, and a partition is a
   collection of sets. See `AtkinsonHan.Chapter10.IsRegularFamily`.
 * **Corollary 10.3.7, Example 10.3.8, Theorem 10.3.9** (reading). The source leaves implicit a bound
   $h_K \le H$ on the diameters of the elements, on which its constant depends. The library makes it
   a hypothesis. See `AtkinsonHan.Chapter10.corollary_10_3_7`.
-* **Example 10.3.8** (generalization). The estimate (10.3.11) is also proved for $m = 2$. See
-  `AtkinsonHan.Chapter10.example_10_3_8`.
-* **Theorem 10.3.9** (reading). The standing assumption $X_h \subseteq C(\overline\Omega)$ of the
-  source is the hypothesis that the element is conforming on each triangulation of the family. See
-  `AtkinsonHan.Chapter10.theorem_10_3_9`.
+* **Example 10.3.8** (generalization). The estimate (10.3.11) is also proved for $m = 2$ and for
+  the bilinear element on affine images of the reference square. See
+  `AtkinsonHan.Chapter10.example_10_3_8` and `AtkinsonHan.Chapter10.example_10_3_8_square`.
+* **Theorem 10.3.9** (restriction). The statement uses plane triangulations and $C^1$ shape
+  functions on the reference triangle. The source takes the reference element of Corollary
+  10.3.7. Conformity on each triangulation supplies the source's standing continuity assumption
+  $X_h \subseteq C(\overline\Omega)$. See `AtkinsonHan.Chapter10.theorem_10_3_9`.
 
 ## Not formalized
 
@@ -190,7 +197,10 @@ $$\sum_i \lambda_i(y) f(b_i) = f(y) \qquad \text{for all } y \in \mathbb{R}^d,$$
 that is, $\Pi_K f = f$.
 
 This is the case $k = 1$ of the polynomial invariance (10.3.4) for the linear element of Example
-10.3.2. It is $f$ applied to the barycentric representation $y = \sum_i \lambda_i(y) b_i$. -/
+10.3.2. It is $f$ applied to the barycentric representation $y = \sum_i \lambda_i(y) b_i$.
+
+**Reading.** Affine reproduction on any simplex in place of a plane triangle.
+-/
 theorem nodalInterp_coord_affineMap {ι : Type*} [Fintype ι]
     (b : AffineBasis ι ℝ (EuclideanSpace ℝ (Fin d))) (f : EuclideanSpace ℝ (Fin d) →ᵃ[ℝ] ℝ) :
     Approximation.nodalInterp (b : ι → EuclideanSpace ℝ (Fin d))
@@ -210,7 +220,11 @@ $$h = \sup_{K \in \mathcal{T}_h} \operatorname{diam} K.$$
 
 The source writes a maximum over a finite partition; for a finite collection the supremum is the
 maximum (`AtkinsonHan.Chapter10.diam_le_meshSize`). The value is `sSup` of the set of diameters,
-so it is $0$ for an empty collection and for a collection whose diameters are unbounded. -/
+so it is $0$ for an empty collection and for a collection whose diameters are unbounded.
+
+**Reading.** The supremum accepts arbitrary collections and gives the book's maximum on nonempty
+finite collections.
+-/
 noncomputable def meshSize (T : Set (Set (EuclideanSpace ℝ (Fin d)))) : ℝ :=
   sSup (Metric.diam '' T)
 
@@ -344,7 +358,11 @@ gives the factor $|\det T|^{-1/2}$. The bound (10.3.6) is (10.3.5) for $F^{-1}$.
 $H^m(K)$ is `AtkinsonHan.Chapter07.definition_7_2_2 m 2 K`. $\|T\|$ is the operator norm on
 Euclidean $\mathbb{R}^d$, and $\det T$ is `LinearMap.det`. The proof uses
 `memSobolev_comp_affine_iff`, `sobolevSeminorm_comp_affine_le_of_image` and
-`sobolevSeminorm_le_comp_affine_of_image`. -/
+`sobolevSeminorm_le_comp_affine_of_image`.
+
+**Reading.** Tensor operator seminorm gives exact factor 1 rather than the unspecified multi-index
+constant.
+-/
 theorem theorem_10_3_4 (T : 𝔼 ≃L[ℝ] 𝔼) (b : 𝔼) (Khat K : Opens 𝔼)
     (hK : (fun x ↦ T x + b) '' Khat = K) (m : ℕ) (v : 𝔼 → ℝ) :
     (Chapter07.definition_7_2_2 m 2 K v ↔
@@ -735,7 +753,11 @@ This is Corollary 10.3.7 with $k = 1$ and $d = 2$, so that $k + 1 = 2 > d/2$. Th
 a Sobolev extension domain (`isSobolevExtensionDomainAll_unitSquare`), bounded and convex, and
 contains the closed ball of radius $1/4$ about its centre. The vertices lie in its closure, the
 shape functions are smooth, and the interpolant reproduces $\mathbb{P}_1$
-(`AtkinsonHan.Chapter10.nodalInterp_q1_eval`). -/
+(`AtkinsonHan.Chapter10.nodalInterp_q1_eval`).
+
+**Reading.** Uses affine square images and Q₁ instead of triangles, continuous representative, m up
+to 2 and explicit mesh bound.
+-/
 theorem example_10_3_8_square {m : ℕ} (hm : m ≤ 2) {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Set (Set 𝔼₂)} (hreg : IsRegularFamily l 𝒯) {H : ℝ}
     (hH : ∀ i, ∀ K ∈ 𝒯 i, Metric.diam K ≤ H) :
@@ -906,7 +928,10 @@ of $\Omega \subseteq \mathbb{R}^2$, indexed by a type with a filter $l$, is regu
 * (a) there is a $\sigma \in \mathbb{R}$ such that every element $K$ of every $\mathcal{T}_i$
   contains a closed ball of some radius $r > 0$ with
   $\operatorname{diam} K \le \sigma \cdot 2r$, and
-* (b) the mesh parameters `Triangulation.meshSize` of the $\mathcal{T}_i$ tend to $0$ along $l$. -/
+* (b) the mesh parameters `Triangulation.meshSize` of the $\mathcal{T}_i$ tend to $0$ along $l$.
+
+**Reading.** Mesh-family clause uses filter limits and closed-ball shape witnesses.
+-/
 theorem isRegularFamily_iff {Ω : Opens 𝔼₂} {ι : Type*} (l : Filter ι) (𝒯 : ι → Triangulation Ω) :
     IsRegularFamily l (fun i ↦ Set.range (𝒯 i).K) ↔
       (∃ σ : ℝ, ∀ i, ∀ T : (𝒯 i).elems, ∃ (c : 𝔼₂) (r : ℝ), 0 < r ∧
@@ -966,7 +991,11 @@ that is continuous on $\overline\Omega$.
 The linear element is conforming on every triangulation
 (`Triangulation.isConformingElement_linear`, Example 10.2.3), and it reproduces $\mathbb{P}_1$
 (`AtkinsonHan.Chapter10.nodalInterp_baryCoord_eval`), so this is
-`AtkinsonHan.Chapter10.theorem_10_3_9` with $k = 1$. -/
+`AtkinsonHan.Chapter10.theorem_10_3_9` with $k = 1$.
+
+**Reading.** Linear plane-triangle specialization with explicit mesh bound and continuous
+representative.
+-/
 theorem theorem_10_3_9_linear {m : ℕ} (hm : m ≤ 1) {Ω : Opens 𝔼₂} {ι : Type*} {l : Filter ι}
     {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
     {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) :
@@ -992,7 +1021,11 @@ $v \in H^{k+1}(\Omega)$ that is continuous on $\overline\Omega$.
 
 The element is `LagrangeElement.node` and `LagrangeElement.shape`. It is conforming on every
 triangulation and reproduces $\mathbb{P}_k$ (Proposition 10.2.1). The statement is
-`LagrangeElement.sobolevNorm_sub_globalInterp_le`. -/
+`LagrangeElement.sobolevNorm_sub_globalInterp_le`.
+
+**Reading.** Plane-triangle principal-lattice specialization with explicit mesh bound and continuous
+representative.
+-/
 theorem theorem_10_3_9_lattice {k m : ℕ} (hm : m ≤ 1) (hk : 1 ≤ k) {Ω : Opens 𝔼₂} {ι : Type*}
     {l : Filter ι} {𝒯 : ι → Triangulation Ω} (hreg : IsRegularFamily l fun i ↦ Set.range (𝒯 i).K)
     {H : ℝ} (hH : ∀ i, (𝒯 i).meshSize ≤ H) :

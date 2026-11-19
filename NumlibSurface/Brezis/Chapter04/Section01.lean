@@ -45,6 +45,16 @@ this module restates them in the form of the source.
   `Continuous g ∧ HasCompactSupport g` on `EuclideanSpace ℝ (Fin N)`, with Lebesgue measure
   `volume`.
 * The $L^1$ distance $\|f - g\|_1$ is written as the integral $\int |f - g|$.
+
+## Deviations from the source
+
+* **Theorems 4.1 and 4.2 and Lemma 4.1** (generalization). The results apply to arbitrary
+  measures. See `Brezis.Chapter04.theorem_4_1`, `Brezis.Chapter04.theorem_4_2` and
+  `Brezis.Chapter04.lemma_4_1`.
+* **Theorem 4.4** (generalization). The product-space function can be merely a.e. measurable.
+  See `Brezis.Chapter04.theorem_4_4`.
+* **Theorem 4.29** (reading). The library assumes a measurable real-valued limit and allows
+  $\varepsilon = +\infty$. See `Brezis.Chapter04.theorem_4_29`.
 -/
 
 open Filter MeasureTheory Topology
@@ -62,7 +72,9 @@ $x \in \Omega$. Suppose that there is an integrable function $g$ with $|f_n(x)| 
 a.e. $x$ and every $n$. Then $f$ is integrable and
 $$\|f_n - f\|_1 = \int_\Omega |f_n - f| \, d\mu \to 0.$$
 
-In the Lean statement the limit is `g` and the dominating function is `bound`. -/
+In the Lean statement the limit is `g` and the dominating function is `bound`.
+
+**Generalization.** The theorem allows arbitrary measures. -/
 theorem theorem_4_2 {f : ℕ → α → ℝ} {g : α → ℝ} (hf : ∀ n, Integrable (f n) μ)
     (hlim : ∀ᵐ x ∂μ, Tendsto (fun n => f n x) atTop (𝓝 (g x))) {bound : α → ℝ}
     (hbound : Integrable bound μ) (hfb : ∀ n, ∀ᵐ x ∂μ, |f n x| ≤ bound x) :
@@ -94,7 +106,9 @@ $\sup_n \int f_n < \infty$. Then there is an integrable function $f$ such that $
 for a.e. $x \in \Omega$, and
 $$\|f_n - f\|_1 = \int_\Omega |f_n - f| \, d\mu \to 0.$$
 
-In the Lean statement the limit is `g`. -/
+In the Lean statement the limit is `g`.
+
+**Generalization.** The theorem allows arbitrary measures. -/
 theorem theorem_4_1 {f : ℕ → α → ℝ} (hf : ∀ n, Integrable (f n) μ)
     (hmono : ∀ᵐ x ∂μ, Monotone fun n => f n x)
     (hbdd : BddAbove (Set.range fun n => ∫ x, f n x ∂μ)) :
@@ -160,7 +174,9 @@ $$\int_\Omega f \, d\mu \le \liminf_{n \to \infty} \int_\Omega f_n \, d\mu.$$
 
 The limit inferior $f(x)$ is taken in $[0, +\infty]$, as the source allows, through
 `ENNReal.ofReal`. The function that is integrated is its real part `toReal`, which equals $f$
-where $f$ is finite. -/
+where $f$ is finite.
+
+**Generalization.** The lemma allows arbitrary measures. -/
 theorem lemma_4_1 {f : ℕ → α → ℝ} (hf : ∀ n, Integrable (f n) μ)
     (hnn : ∀ n, ∀ᵐ x ∂μ, 0 ≤ f n x) (hbdd : BddAbove (Set.range fun n => ∫ x, f n x ∂μ)) :
     (∀ᵐ x ∂μ, liminf (fun n => ENNReal.ofReal (f n x)) atTop < ∞) ∧
@@ -227,8 +243,9 @@ $F : \Omega_1 \times \Omega_2 \to \mathbb{R}$ be measurable. Suppose that
 Then $F$ is integrable on $\Omega_1 \times \Omega_2$.
 
 Clause (1) is the integrability of the section $y \mapsto F(x, y)$ for a.e. $x$, and clause (2)
-is the integrability of $x \mapsto \int |F(x, y)| \, d\mu_2$. Measurability of $F$ is
-`AEStronglyMeasurable` for the product measure. -/
+is the integrability of $x \mapsto \int |F(x, y)| \, d\mu_2$.
+
+**Generalization.** The product-space function can be merely a.e. measurable. -/
 theorem theorem_4_4 [SigmaFinite μ₁] [SigmaFinite μ₂] {F : α₁ × α₂ → ℝ}
     (hF : AEStronglyMeasurable F (μ₁.prod μ₂))
     (ha : ∀ᵐ x ∂μ₁, Integrable (fun y => F (x, y)) μ₂)
@@ -261,8 +278,9 @@ $(f_n)$ be a sequence of measurable functions that converges a.e. to a measurabl
 Then for every $\varepsilon > 0$ there is a measurable set $A \subseteq \Omega$ with
 $\mu(\Omega \setminus A) < \varepsilon$ such that $f_n \to f$ uniformly on $A$.
 
-The source states this theorem in the Comments on Chapter 4. The number $\varepsilon$ lies in
-$(0, +\infty]$. The measurability of the limit is a hypothesis, but the proof does not use it. -/
+**Reading.** The source requires a limit finite a.e. in the Comments on Chapter 4. The library
+takes a real-valued limit and adds a measurability hypothesis. It allows $\varepsilon$ in
+$(0, +\infty]$. -/
 theorem theorem_4_29 [IsFiniteMeasure μ] {f : ℕ → α → ℝ} {g : α → ℝ}
     (hf : ∀ n, StronglyMeasurable (f n)) (_hg : StronglyMeasurable g)
     (hfg : ∀ᵐ x ∂μ, Tendsto (fun n => f n x) atTop (𝓝 (g x))) {ε : ℝ≥0∞} (hε : 0 < ε) :

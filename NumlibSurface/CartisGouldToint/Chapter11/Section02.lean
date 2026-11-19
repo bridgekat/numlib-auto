@@ -41,6 +41,9 @@ use the multiplier theory of Chapter 8.
   derivation, the "fidelity" $\sigma \Delta^2 / \|g\|_{M^{-1}} \to 1$ of Table 11.2.1 and the rule
   (11.2.6) confirm. See `CartisGouldToint.Chapter11.trMultiplier_asymptotics` and
   `CartisGouldToint.Chapter11.radius_weight_correspondence`.
+* **(11.2.3)–(11.2.6), nonzero gradient** (correction). The ratio asymptotics require
+  $g\ne 0$. The trust-region product limit also holds at $g=0$.
+  See `CartisGouldToint.Chapter11.regMultiplier_asymptotics`.
 
 ## Not formalized
 
@@ -86,7 +89,9 @@ and therefore $\lambda(\Delta) \Delta \to \|g\|_{M^{-1}}$ as $\Delta \to 0^+$, t
 $\lambda \approx \|g\|_{M^{-1}} / \Delta$.
 
 **Typo.** The source prints $\lambda \approx \Delta / \|g\|_{M^{-1}}$, which is inverted. The
-derivation in the source gives $\|g\|_{M^{-1}} / \Delta$.
+derivation in the source gives $\|g\|_{M^{-1}} / \Delta$ for $g\ne 0$.
+The product limit also holds for $g=0$. In that case the multiplier need not grow as the
+radius shrinks. For $H=-1$ and $M=1$, it is exactly $1$ at every positive radius.
 
 The norm $\|M^{-1}H\|_2$ is the Euclidean operator norm of the matrix $M^{-1}H$. The multiplier
 conditions are `CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
@@ -147,7 +152,10 @@ and $r > 2$.
 
 **Typo.** The source prints (11.2.5) as $\sigma \approx \Delta^{r-1} / \|g\|_{M^{-1}}$, which is
 inverted. The derivation, Table 11.2.1 and the rule (11.2.6) all give
-$\|g\|_{M^{-1}} / \Delta^{r-1}$. -/
+$\|g\|_{M^{-1}} / \Delta^{r-1}$.
+
+The ratio limits require $g\ne 0$. Exact agreement of solutions uses the weight
+$\lambda/\Delta^{r-2}$, whose asymptotic equivalent gives the proposed update factor. -/
 theorem radius_weight_correspondence (hH : H.IsHermitian) (hM : M.PosDef) {r : ℝ} (hr : 2 < r) :
     (∀ {Δ lam : ℝ} {s : EuclideanSpace ℝ (Fin n)}, 0 < Δ → IsTrustRegionKKT g H M Δ s lam →
       mNorm M s ≤ Δ → 0 < lam → IsRegularizationSolution g H M (lam / Δ ^ (r - 2)) r s) ∧
@@ -220,6 +228,10 @@ minimizer of the regularization subproblem (8.1.3), with the multiplier
 $\lambda(\sigma) = \sigma \|s(\sigma)\|_M^{r-2}$. Then
 $$\frac{\lambda(\sigma)}{\sigma^{1/(r-1)} \|g\|_{M^{-1}}^{(r-2)/(r-1)}} \to 1 \qquad \text{as }
   \sigma \to \infty.$$
+
+**Correction.** The derivation in the source presumes that the multiplier grows large.
+For $g=0$, $H=-1$ and $M=1$, a minimizer has norm $\sigma^{-1/(r-2)}$ and its
+multiplier is $1$ for every positive weight. The normalized limit requires $g\ne 0$.
 -/
 theorem regMultiplier_asymptotics (hH : H.IsHermitian) (hM : M.PosDef) (hg : g ≠ 0) {r : ℝ}
     (hr : 2 < r) {s : ℝ → EuclideanSpace ℝ (Fin n)}

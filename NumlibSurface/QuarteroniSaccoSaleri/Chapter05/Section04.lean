@@ -60,6 +60,13 @@ accumulated orthogonal factor and the similarity of the iterates) and
 
 ## Deviations from the source
 
+* **Representation.** The basic QR recurrence selects an orthogonal completion even at singular
+  matrices. See `QuarteroniSaccoSaleri.Chapter05.qrIterate`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_32`.
+* **Scope.** The real Schur form is an existence result, and the unconditional QR-product limit is
+  false. See `QuarteroniSaccoSaleri.Chapter05.property_5_8`.
+* **Correction.** A three-cycle permutation matrix disproves the unconditional limit in (5.35). See
+  `QuarteroniSaccoSaleri.Chapter05.qrAccum_not_tendsto`.
 * **Property 5.8, the limit (5.35)** (correction). The book claims that the orthogonal matrix of the
   real Schur form is $\lim_k Q^{(0)} Q^{(1)} \cdots Q^{(k)}$ for the iteration (5.32) without
   shifts. This is false: for the cyclic permutation matrix of Exercise 14, the accumulated factors
@@ -91,7 +98,12 @@ and sets
 $$T^{(k)} = R^{(k)} Q^{(k)}.$$
 
 The factors are `Matrix.qrQ` and `Matrix.qrR`. For a general orthogonal $Q^{(0)}$, the iteration
-of the book starts from $T^{(0)} = Q^{(0)T} A Q^{(0)}$ and is `qrIterate (Q₀ᵀ * A * Q₀)`. -/
+of the book starts from $T^{(0)} = Q^{(0)T} A Q^{(0)}$ and is `qrIterate (Q₀ᵀ * A * Q₀)`.
+
+**Reading.** Lean selects the QR factor by a Gram–Schmidt basis with arbitrary completion at
+dependent columns, and with positive triangular diagonal for nonsingular input. The recurrence is
+defined in every size and does not have a stopping criterion.
+-/
 noncomputable def qrIterate (A : Matrix (Fin N) (Fin N) ℝ) : ℕ → Matrix (Fin N) (Fin N) ℝ
   | 0 => A
   | k + 1 => qrR (qrIterate A k) * qrQ (qrIterate A k)
@@ -112,7 +124,12 @@ $$T^{(k+1)} = R^{(k+1)} Q^{(k+1)}.$$
 
 The factor $Q^{(k+1)}$ is `qrQ (qrIterate A k)`, and the factor $R^{(k+1)}$ is
 `qrR (qrIterate A k)`. The proof uses the backbone's `Matrix.qrQ_mul_qrR`,
-`Matrix.qrQ_mem_unitaryGroup` and `Matrix.isUpperTriangular_qrR`. -/
+`Matrix.qrQ_mem_unitaryGroup` and `Matrix.isUpperTriangular_qrR`.
+
+**Reading.** Lean selects the QR factor by a Gram–Schmidt basis with arbitrary completion at
+dependent columns, and with positive triangular diagonal for nonsingular input. The recurrence is
+defined in every size and does not have a stopping criterion.
+-/
 theorem equation_5_32 (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     qrQ (qrIterate A k) * qrR (qrIterate A k) = qrIterate A k ∧
       qrQ (qrIterate A k) ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
@@ -162,7 +179,12 @@ with two indices, `(Qᵀ * A * Q).toBlock (p · = k) (p · = k)`, has no real ei
 specializes the backbone's
 `Matrix.exists_orthogonal_conj_quasiUpperTriangular_of_irreducible_blocks`. The limit clause
 (5.35) of Property 5.8 is false for the iteration without shifts and is not formalized
-(`QuarteroniSaccoSaleri.Chapter05.qrAccum_not_tendsto`). -/
+(`QuarteroniSaccoSaleri.Chapter05.qrAccum_not_tendsto`).
+
+**Reading.** The real Schur decomposition has contiguous blocks of size at most two, with no real
+eigenvalues in each two-by-two block. Only the existence assertion is proved. The unconditional
+QR-product limit in (5.35) fails.
+-/
 theorem property_5_8 (A : Matrix (Fin N) (Fin N) ℝ) :
     ∃ Q ∈ Matrix.orthogonalGroup (Fin N) ℝ, ∃ p : Fin N → ℕ, Monotone p ∧
       (∀ k, #{i | p i = k} ≤ 2) ∧ (Qᵀ * A * Q).BlockTriangular p ∧
@@ -189,7 +211,12 @@ the iterates converge, but to a quasi-triangular matrix that is not the real Sch
 starting matrix, as the text observes. Only the existence clause (5.34) of Property 5.8 is
 formalized. The convergence that the book has in mind is that of the iteration with shifts of
 Section 5.7, which the book describes as not settled in general. See also
-`QuarteroniSaccoSaleri.Chapter05.exercise_5_14`. -/
+`QuarteroniSaccoSaleri.Chapter05.exercise_5_14`.
+
+**Correction.** For the three-cycle permutation matrix the QR iterates are stationary and the
+accumulated orthogonal factors are powers of the permutation, which cycle. This contradicts the
+unconditional limit in the printed proposition.
+-/
 theorem qrAccum_not_tendsto :
     let A : Matrix (Fin 3) (Fin 3) ℝ := !![0, 0, 1; 1, 0, 0; 0, 1, 0]
     (∀ k, Matrix.qrAccum A k = A ^ k) ∧ ¬∃ Q, Tendsto (Matrix.qrAccum A) atTop (𝓝 Q) := by

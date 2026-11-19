@@ -79,6 +79,12 @@ restates `Numlib.Analysis.Normed.Module.WeakStarMetrizable`.
   as the source states it, although no proof in this section uses it.
 * Remark 4 is stated in Section 3.2 of the source, but its declaration `Brezis.Chapter03.remark_3_4`
   is in `NumlibSurface.Brezis.Chapter03.Section06`, with Theorem 3.29.
+
+## Deviations from the source
+
+* **Weak topology and weak convergence** (generalization). The definitions and comparison of
+  topologies work in incomplete normed spaces. See `Brezis.Chapter03.weakTopology`,
+  `Brezis.Chapter03.weakTopology_le` and `Brezis.Chapter03.WeakTendsto`.
 -/
 
 open Filter Metric Set Topology TopologicalSpace
@@ -93,6 +99,9 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 normed space. For $f \in E^\star$ let $\varphi_f : E \to \mathbb{R}$ be
 $\varphi_f(x) = \langle f, x \rangle$. The **weak topology** $\sigma(E, E^\star)$ on $E$ is the
 coarsest topology that makes every $\varphi_f$, $f \in E^\star$, continuous.
+
+**Generalization.** The source takes $E$ complete. The coarsest topology making the
+continuous dual's evaluations continuous is defined for any real normed space.
 
 This is the construction of Section 3.1 with $X = E$, $Y_i = \mathbb{R}$ and $I = E^\star$:
 `Brezis.Chapter03.weakestTopology`. -/
@@ -111,6 +120,9 @@ theorem weakTopology_eq :
 
 /-- **Section 3.2** of [brezis2011functional], "the weak topology is weaker than the usual
 topology". Every weakly open subset of a real normed space $E$ is open in the norm topology.
+
+**Generalization.** The source takes $E$ complete. The comparison follows from continuity
+of each dual functional and also holds in incomplete normed spaces.
 
 In Mathlib's order on topologies, the norm topology is finer:
 `(norm topology) ≤ weakTopology E`. -/
@@ -160,6 +172,9 @@ theorem proposition_3_4 [CompleteSpace E] (x₀ : E) :
 /-- **Section 3.2** of [brezis2011functional], the notation $x_n \rightharpoonup x$. Let $E$ be a
 real normed space. A sequence $(x_n)$ in $E$ **converges weakly** to $x$, written
 $x_n \rightharpoonup x$, if $x_n \to x$ in the weak topology $\sigma(E, E^\star)$.
+
+**Generalization.** The source takes $E$ complete. Weak convergence is defined in every
+normed space, since `Brezis.Chapter03.weakTopology` needs no completeness.
 
 Strong convergence $x_n \to x$ is Mathlib's `Tendsto x atTop (𝓝 u)`. The scoped notation is
 `x ⇀ u`. -/

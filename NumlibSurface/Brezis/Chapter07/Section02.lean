@@ -74,9 +74,17 @@ the source.
 
 ## Deviations from the source
 
+* **Solution of problem (6)** (generalization). The solution predicate also applies to incomplete
+  inner product spaces and to partially defined linear operators without monotonicity. See
+  `Brezis.Chapter07.IsSolution`.
 * **Lemma 7.1** (generalization). The source assumes $w \in C^1([0, +\infty); H)$. This follows from
   the equation, because $A_\lambda$ is bounded, and is not assumed. See
   `Brezis.Chapter07.lemma_7_1`.
+
+* **Remarks 4(a) and 6** (generalization). The approximate equation is stated for all real times,
+  with convergence uniform on bounded forward time intervals. The shifted problem includes its
+  solution formula and uniqueness in the class satisfying the differential equation. See
+  `Brezis.Chapter07.remark_7_4_a` and `Brezis.Chapter07.remark_7_6`.
 
 ## Not formalized
 
@@ -148,7 +156,10 @@ values $u(t)$, $t \ge 0$, lie in $D(A)$, the equation holds with the one-sided d
 $0$, and $u(0) = u_0$. The condition $u \in C([0, +\infty); D(A))$ is
 `LinearPMap.ContDiffOnPowDomain A 0 1 u (Set.Ici 0)`: $u$ lifts to a continuous map into $D(A)$
 with the graph norm $(|v|^2 + |Av|^2)^{1/2}$ of footnote 2, so $t \mapsto Au(t)$ is continuous
-as well. -/
+as well.
+
+**Generalization.** The predicate allows incomplete spaces and arbitrary partially defined
+linear operators. -/
 def IsSolution (A : H →ₗ.[ℝ] H) (u₀ : H) (u : ℝ → H) : Prop :=
   A.IsSolutionOn u₀ (Ici 0) u ∧ ContDiffOn ℝ 1 u (Ici 0) ∧ A.ContDiffOnPowDomain 0 1 u (Ici 0)
 
@@ -284,9 +295,10 @@ $u_\lambda(t) = e^{-tA_\lambda} u_0$. Then:
 * if $u$ is a solution of problem (6) in the sense of `Brezis.Chapter07.IsSolution`, then
   $u_\lambda \to u$ as $\lambda \to 0^+$, uniformly on $[0, T]$ for every $T$.
 
-The function $u_\lambda(t)$ is the backbone's `LinearPMap.expYosida A l t u₀`. The source adds
-that one can prove directly that the limit lies in $C^1([0, +\infty); H) \cap C([0, +\infty);
-D(A))$ and satisfies (6); this is the route of the backbone. -/
+The function $u_\lambda(t)$ is the backbone's `LinearPMap.expYosida A l t u₀`.
+
+**Generalization.** The approximate differential equation holds on the whole real line.
+Uniform convergence on bounded forward intervals follows from the estimate in Step 3. -/
 theorem remark_7_4_a (hA : IsMaximalMonotone A) (u₀ : A.domain) :
     (∀ (l : ℝ) (hl : 0 < l), A.expYosida l 0 u₀ = u₀ ∧
       ∀ t, HasDerivAt (fun t => A.expYosida l t u₀)
@@ -352,9 +364,11 @@ Then:
   and is $C^1$ on $[0, +\infty)$, and every solution of the problem agrees with it on
   $[0, +\infty)$.
 
-Both problems are stated with `LinearPMap.IsSolutionOn` on $[0, +\infty)$, which requires values
-in $D(A)$ but no regularity class. The operator $A + \lambda I$ is `(l • LinearMap.id) +ᵥ A`,
-with domain $D(A)$. The first part does not use the maximal monotonicity of $A$. -/
+The operator $A + \lambda I$ is `(l • LinearMap.id) +ᵥ A`, with domain $D(A)$.
+
+**Generalization.** The source gives the change of variables. The declaration adds the shifted
+solution formula and uniqueness in the class of `LinearPMap.IsSolutionOn`, which requires a
+derivative satisfying the equation and domain membership throughout the interval. -/
 theorem remark_7_6 (hA : IsMaximalMonotone A) (l : ℝ) :
     (∀ (u₀ : H) (u : ℝ → H),
       ((l • LinearMap.id : H →ₗ[ℝ] H) +ᵥ A).IsSolutionOn u₀ (Ici 0) u ↔

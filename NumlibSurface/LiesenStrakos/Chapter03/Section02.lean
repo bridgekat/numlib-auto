@@ -28,6 +28,17 @@ of [liesen2013krylov].
 * `LiesenStrakos.Chapter03.gaussChristoffel_tendsto_integral` gives convergence on continuous
   functions.
 
+## Deviations from the source
+
+* **Section 3.2** (generalization). The basic definitions are total. The hypotheses in the
+  orthogonal polynomial results permit measures that charge the left endpoint where the
+  displayed interval is closed.
+* **Theorem 3.2.7** (generalization). The error identities use total Hermite divided
+  differences, integrable data and multiset extra nodes.
+* **Theorem 3.2.8** (reading). The existence and uniqueness statement uses the rule
+  predicate with nodes in $(a,b]$. Interior location and the node and weight formulas
+  are treated separately. See `LiesenStrakos.Chapter03.theorem_3_2_8`.
+
 -/
 
 open Filter MeasureTheory OrthogonalPolynomial Polynomial Topology
@@ -38,24 +49,34 @@ namespace LiesenStrakos.Chapter03
 variable {μ : Measure ℝ} {n : ℕ}
 
 /-- The interpolatory weight at node $i$ is the integral of the corresponding Lagrange basis
-polynomial, as in (3.2.5) of [liesen2013krylov]. -/
+polynomial, as in (3.2.5) of [liesen2013krylov].
+
+**Generalization.** The formula uses total integration and accepts arbitrary nodes. -/
 noncomputable def interpolatoryWeight (μ : Measure ℝ) (x : Fin n → ℝ) (i : Fin n) : ℝ :=
   ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ
 
 /-- The monic orthogonal polynomial of degree $n$ for $\mu$ is the monic polynomial formed
 by Gram–Schmidt orthogonalization of the monomials with respect to the integral pairing.
-This is $\psi_n$ in (3.2.7) of [liesen2013krylov]. -/
+This is $\psi_n$ in (3.2.7) of [liesen2013krylov].
+
+**Generalization.** The Gram–Schmidt recurrence is total. Its orthogonality properties use
+integrability and sufficient support of the measure. -/
 noncomputable def monicOrthogonalPolynomial (μ : Measure ℝ) (n : ℕ) : ℝ[X] :=
   OrthogonalPolynomial.family μ n
 
 /-- The polynomial pairing induced by the distribution $\mu$ is $(p,q)=\int pq\,d\mu$.
-This is (3.2.8) of [liesen2013krylov]. -/
+This is (3.2.8) of [liesen2013krylov].
+
+**Generalization.** The integral pairing is defined even when it is degenerate. -/
 noncomputable def polynomialInner (μ : Measure ℝ) (p q : ℝ[X]) : ℝ :=
   ∫ t, p.eval t * q.eval t ∂μ
 
 /-- **Lemma 3.2.1** of [liesen2013krylov]. A rule on $n+1$ distinct nodes is exact through
 degree $n$ if and only if it is interpolatory. The basis polynomials are integrable, as holds
-for a finite measure supported on a closed bounded interval. -/
+for a finite measure supported on a closed bounded interval.
+
+**Generalization.** Integrability of the Lagrange basis suffices. The nodes and measure need no
+common compact interval. -/
 theorem lemma_3_2_1 {x w : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hint : ∀ i, Integrable (fun t => (Lagrange.basis Finset.univ x i).eval t) μ) :
     Quadrature.IsExactOnMeasure μ w x n ↔ ∀ i, w i = interpolatoryWeight μ x i :=
@@ -64,7 +85,10 @@ theorem lemma_3_2_1 {x w : Fin (n + 1) → ℝ} (hx : Function.Injective x)
 /-- **Lemma 3.2.2** of [liesen2013krylov]. The monic orthogonal polynomial uniquely minimizes
 the squared norm among monic polynomials of degree $n$ if the measure on $[a,b]$ is carried by
 no set of fewer than $n$ points. This includes the orthogonal polynomial of degree equal to
-the support size of a finite distribution. -/
+the support size of a finite distribution.
+
+**Generalization.** The strict comparison also applies at the terminal degree of a finite
+support. -/
 theorem lemma_3_2_2 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hm : ∀ s : Finset ℝ, s.card < n → μ (↑s : Set ℝ)ᶜ ≠ 0)
     {p : ℝ[X]} (hp : p.Monic) (hdeg : p.degree = n) (hne : p ≠ monicOrthogonalPolynomial μ n) :
@@ -107,7 +131,10 @@ theorem lemma_3_2_2 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)�
 /-- **Remark 3.2.3** of [liesen2013krylov]. For any symmetric positive definite polynomial
 pairing $B$, a monic degree-$n$ polynomial $q_n$ orthogonal to the preceding monic polynomials
 of degrees $0,\ldots,n-1$ uniquely minimizes $B(p,p)$ among monic polynomials of degree $n$.
-Positive definiteness is required only through degree $n$. -/
+Positive definiteness is required only through degree $n$.
+
+**Generalization.** Positivity is required only through degree $n$, and the orthogonality
+hypothesis concerns the $n$th polynomial and its predecessors. -/
 theorem remark_3_2_3 (B : ℝ[X] →ₗ[ℝ] ℝ[X] →ₗ[ℝ] ℝ)
     (hsym : ∀ u v, B u v = B v u) (hpos : ∀ u : ℝ[X], u.degree ≤ n → u ≠ 0 → 0 < B u u)
     (q : ℕ → ℝ[X]) (hq : ∀ i, (q i).Monic) (hdeg : ∀ i, (q i).degree = i)
@@ -136,7 +163,10 @@ theorem remark_3_2_3 (B : ℝ[X] →ₗ[ℝ] ℝ[X] →ₗ[ℝ] ℝ)
 
 /-- **Lemma 3.2.4** of [liesen2013krylov]. If the measure is carried by no set of at most $n$
 points, then the $n$ distinct zeros of its monic orthogonal polynomial are interior to the
-interval carrying the measure. -/
+interval carrying the measure.
+
+**Generalization.** The measure may charge the left endpoint and the statement also includes
+degree zero. -/
 theorem lemma_3_2_4 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hm : ∀ s : Finset ℝ, s.card ≤ n → μ (↑s : Set ℝ)ᶜ ≠ 0) :
     ∃ x : Fin n → ℝ, Function.Injective x ∧ (∀ i, x i ∈ Set.Ioo a b) ∧
@@ -149,7 +179,10 @@ theorem lemma_3_2_4 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)�
   exact Finset.prod_eq_zero (Finset.mem_univ i) (by simp)
 
 /-- **Lemma 3.2.4** of [liesen2013krylov], terminal case. If the support consists of exactly $n$
-points $x_i$, the $n$th monic orthogonal polynomial has precisely those points as its roots. -/
+points $x_i$, the $n$th monic orthogonal polynomial has precisely those points as its roots.
+
+**Generalization.** The support enumeration need no specified order and may include the left
+endpoint. -/
 theorem lemma_3_2_4_terminal [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     {x : Fin n → ℝ} (hx : μ (Set.range x)ᶜ = 0)
     (hm : ∀ s : Finset ℝ, s.card < n → μ (↑s : Set ℝ)ᶜ ≠ 0) :
@@ -174,7 +207,9 @@ def IsGaussChristoffel (μ : Measure ℝ) (x w : Fin (n + 1) → ℝ) : Prop :=
 
 /-- **Lemma 3.2.5** of [liesen2013krylov]. If the support has more than $n+1$ points, a rule with
 $n+1$ distinct nodes has exactness degree $2n+1$ if and only if it is interpolatory and its nodal
-polynomial is the monic orthogonal polynomial of degree $n+1$. -/
+polynomial is the monic orthogonal polynomial of degree $n+1$.
+
+**Generalization.** The measure may charge the left endpoint. -/
 theorem lemma_3_2_5 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hm : ∀ s : Finset ℝ, s.card ≤ n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0)
     {x w : Fin (n + 1) → ℝ} (hx : Function.Injective x) :
@@ -217,7 +252,11 @@ The error of an $n$-node Gauss rule is the integral of its nodal polynomial time
 difference at its nodes and the argument. Adding up to $n$ interpolation nodes leaves the integral
 unchanged when the extra factors are included and the divided difference uses all the nodes.
 Multisets give confluent divided differences at repeated nodes. The weighted remainder identity
-uses only integrability of $f$, since the interpolation jets at a node are total in Lean. -/
+uses only integrability of $f$, since the interpolation jets at a node are total in Lean.
+
+**Generalization.** The identities use total Hermite divided differences and require
+integrability of $f$. Extra nodes are supplied as a multiset, so repeats and coincidences with
+quadrature nodes are allowed. -/
 theorem theorem_3_2_7 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hn : 0 < n) {x w : Fin n → ℝ} (hexact : Quadrature.IsExactOnMeasure μ w x (2 * n - 1))
     {f : ℝ → ℝ} (hf : Integrable f μ) (extra : Multiset ℝ) (hm : extra.card ≤ n) :
@@ -237,7 +276,13 @@ theorem theorem_3_2_7 [IsFiniteMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)
 
 /-- **Theorem 3.2.8** of [liesen2013krylov]. A probability measure carried by $[a,b]$ with more
 than $n+1$ support points has a unique positive, normalized, strictly ordered rule with $n+1$
-nodes in $(a,b]$ matching its first $2(n+1)$ moments. Its nodes lie in $(a,b)$. -/
+nodes in $(a,b]$ matching its first $2(n+1)$ moments.
+
+**Reading.** The printed theorem also gives the strict interior location of the nodes and
+identifies the nodes and weights. The existence and uniqueness conclusion uses the predicate
+for Problem 3.1.1, which allows the right endpoint. The root description and interiority are
+given by `LiesenStrakos.Chapter03.lemma_3_2_5` and `LiesenStrakos.Chapter03.lemma_3_2_4`.
+The weights are the interpolatory weights from `LiesenStrakos.Chapter03.interpolatoryWeight`. -/
 theorem theorem_3_2_8 [IsProbabilityMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0)
     (hcard : ∀ s : Finset ℝ, s.card ≤ n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0) :
     ∃! rule : (Fin (n + 1) → ℝ) × (Fin (n + 1) → ℝ),
@@ -302,7 +347,10 @@ theorem theorem_3_2_8 [IsProbabilityMeasure μ] {a b : ℝ} (hsupp : μ (Set.Icc
 
 /-- A sequence of positive quadratures on $[a,b]$ whose degrees of exactness tend to infinity
 converges to the integral on every continuous function, as in Remark 3.2.9 of
-[liesen2013krylov]. -/
+[liesen2013krylov].
+
+**Generalization.** The convergence applies to nonnegative rules with increasing degrees of
+exactness for any finite measure carried by the interval. -/
 theorem gaussChristoffel_tendsto_integral [IsFiniteMeasure μ] {a b : ℝ}
     (hsupp : μ (Set.Icc a b)ᶜ = 0) {m d : ℕ → ℕ} {x w : ∀ k, Fin (m k) → ℝ}
     (hinj : ∀ k, Function.Injective (x k)) (hmem : ∀ k i, x k i ∈ Set.Icc a b)

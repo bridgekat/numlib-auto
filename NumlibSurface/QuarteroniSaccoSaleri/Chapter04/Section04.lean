@@ -131,6 +131,46 @@ method as a multiplicative projection process).
 
 ## Deviations from the source
 
+* **Generalization.** The Richardson residual polynomial has degree at most the iteration count. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_51`.
+* **Generalization.** The polynomial form characterizes the entire affine Krylov space, including
+  the zero-step case. See `QuarteroniSaccoSaleri.Chapter04.mem_krylovSubspace_iff`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_53`.
+* **Totalization.** The Arnoldi arrays use any start and continue by zero padding at breakdown. See
+  `QuarteroniSaccoSaleri.Chapter04.arnoldi`, `QuarteroniSaccoSaleri.Chapter04.arnoldiH`,
+  `QuarteroniSaccoSaleri.Chapter04.arnoldiW`, `QuarteroniSaccoSaleri.Chapter04.arnoldi_zero`,
+  `QuarteroniSaccoSaleri.Chapter04.arnoldi_succ`.
+* **Generalization.** The Arnoldi matrix relations and breakdown criterion include padded arrays.
+  See `QuarteroniSaccoSaleri.Chapter04.V`, `QuarteroniSaccoSaleri.Chapter04.H`,
+  `QuarteroniSaccoSaleri.Chapter04.Hhat`, `QuarteroniSaccoSaleri.Chapter04.equation_4_56`,
+  `QuarteroniSaccoSaleri.Chapter04.arnoldi_breakdown_iff`.
+* **Generalization.** The minimum-residual characterization adds existence and an
+  invertibility-based uniqueness result. See `QuarteroniSaccoSaleri.Chapter04.equation_4_58_iff`.
+* **Generalization.** The projected coordinate formulas include dimension zero. See
+  `QuarteroniSaccoSaleri.Chapter04.e₁`, `QuarteroniSaccoSaleri.Chapter04.V_mulVec`.
+* **Generalization.** The FOM projected equation includes a precise uniqueness criterion. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_62`.
+* **Generalization.** FOM exactness is stated at every step at or beyond the grade. See
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_13`.
+* **Scope.** The declaration named for (4.63) gives its residual formula before applying the
+  tolerance test. See `QuarteroniSaccoSaleri.Chapter04.equation_4_63`.
+* **Generalization.** The reduced GMRES identities extend through the grade using the padded basis.
+  See `QuarteroniSaccoSaleri.Chapter04.equation_4_65`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_66`.
+* **Generalization.** GMRES exactness is characterized by reaching the grade, with no strict
+  dimension bound. See `QuarteroniSaccoSaleri.Chapter04.property_4_8`.
+* **Scope.** The rotated residual yields the GMRES norm strictly before the grade. See
+  `QuarteroniSaccoSaleri.Chapter04.gmres_norm_residual_eq_norm_gamma`.
+* **Reading.** The projection predicate uses an affine trial space and arbitrary trial and test
+  dimensions. See `QuarteroniSaccoSaleri.Chapter04.remark_4_4`,
+  `QuarteroniSaccoSaleri.Chapter04.remark_4_4_iff`,
+  `QuarteroniSaccoSaleri.Chapter04.remark_4_4_krylov`.
+* **Generalization.** The symmetric Lanczos recurrence holds for the padded arrays. See
+  `QuarteroniSaccoSaleri.Chapter04.lanczos_tridiagonal`.
+* **Generalization.** The Arnoldi Galerkin residuals are mutually orthogonal without assuming
+  symmetry. See `QuarteroniSaccoSaleri.Chapter04.lanczos_residual_eq_smul`.
+* **Scope.** The CG and Lanczos comparison is stated through Galerkin iteration and the normalized
+  residuals. See `QuarteroniSaccoSaleri.Chapter04.remark_4_5`.
 * **Remark 4.4** (reading). The source writes $x^{(k)} \in Y_k$; for the Krylov instances the
   condition is $x^{(k)} \in x^{(0)} + Y_k$, as in (4.59). See
   `QuarteroniSaccoSaleri.Chapter04.remark_4_4`.
@@ -166,7 +206,12 @@ $$r^{(k)} = \prod_{j < k} (I - \alpha_j A) \, r^{(0)} = p_k(A) r^{(0)},$$
 where $p_k = \prod_{j < k} (1 - \alpha_j X)$ is a polynomial of degree at most $k$ with
 $p_k(0) = 1$.
 
-The proof is the backbone's `Richardson.residual_iterate_eq_prod`. -/
+The proof is the backbone's `Richardson.residual_iterate_eq_prod`.
+
+**Generalization.** The residual polynomial has degree at most $k$. The book calls its degree $k$,
+but a zero acceleration at any stage contributes a constant factor. Lean also records that its value
+at zero is one.
+-/
 theorem equation_4_51 (α : ℕ → ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
     b - A *ᵥ nonstationaryRichardson A 1 α b x₀ k =
         aeval A (∏ j ∈ range k, (1 - C (α j) * X)) *ᵥ (b - A *ᵥ x₀) ∧
@@ -201,7 +246,11 @@ theorem krylovSubspace_eq (v : EuclideanSpace ℝ (Fin n)) (m : ℕ) :
 $K_m(A; v)$ if and only if $u = p(A) v$ for a real polynomial $p$ of degree less than $m$, that
 is, $p = p_{m-1}$ of degree at most $m - 1$.
 
-The proof is the backbone's `Krylov.mem_subspace_iff_exists_aeval`. -/
+The proof is the backbone's `Krylov.mem_subspace_iff_exists_aeval`.
+
+**Generalization.** The polynomial representation characterizes the whole span and its affine
+translate, with a strict degree bound that also describes the zero-step case.
+-/
 theorem mem_krylovSubspace_iff (v u : EuclideanSpace ℝ (Fin n)) (m : ℕ) :
     u ∈ krylovSubspace A v m ↔ ∃ p : ℝ[X], p.degree < m ∧ aeval (toEuclideanLin A) p v = u := by
   rw [krylovSubspace_eq, Krylov.mem_subspace_iff_exists_aeval]
@@ -215,7 +264,11 @@ a real polynomial of degree at most $k - 1$. So a Krylov method looks for its it
 form.
 
 The first clause is the backbone's `Richardson.iterate_sub_mem_subspace`. The coordinate vectors
-are moved to `EuclideanSpace ℝ (Fin n)` by `WithLp.toLp 2`. -/
+are moved to `EuclideanSpace ℝ (Fin n)` by `WithLp.toLp 2`.
+
+**Generalization.** The polynomial representation characterizes the whole span and its affine
+translate, with a strict degree bound that also describes the zero-step case.
+-/
 theorem equation_4_53 (α : ℕ → ℝ) (b x₀ : Fin n → ℝ) (k : ℕ) :
     (toLp 2 (nonstationaryRichardson A 1 α b x₀ k) : EuclideanSpace ℝ (Fin n)) - toLp 2 x₀ ∈
         krylovSubspace A (toLp 2 (b - A *ᵥ x₀)) k ∧
@@ -395,7 +448,11 @@ and the next vector $v_{k+1} = w_k / \|w_k\|_2$.
 
 The Lean vectors are indexed from $0$: `arnoldi A v₁ 0` is $v_1$, and `arnoldi A v₁ (k - 1)` is
 the vector $v_k$ of the source. The source stops the process when $w_k = 0$ (a breakdown). Here
-Lean's convention $0^{-1} = 0$ makes all later vectors $0$. -/
+Lean's convention $0^{-1} = 0$ makes all later vectors $0$.
+
+**Reading.** The iteration starts from any supplied vector and divides by the norm with a zero
+result at breakdown. The book starts from a normalized nonzero vector and stops on breakdown.
+-/
 noncomputable def arnoldi : ℕ → EuclideanSpace ℝ (Fin n)
   | 0 => v₁
   | k + 1 =>
@@ -411,22 +468,38 @@ $h_{ik} = v_i^T A v_k$, in the 0-based indexing of `QuarteroniSaccoSaleri.Chapte
 They are defined for all $i$ and $k$. When $v_1$ is a unit vector, they vanish for $i > k + 1$
 (`QuarteroniSaccoSaleri.Chapter04.equation_4_56`).
 
-The value `arnoldiH A v₁ (i - 1) (k - 1)` is the coefficient $h_{ik}$ of the source. -/
+The value `arnoldiH A v₁ (i - 1) (k - 1)` is the coefficient $h_{ik}$ of the source.
+
+**Reading.** The iteration starts from any supplied vector and divides by the norm with a zero
+result at breakdown. The book starts from a normalized nonzero vector and stops on breakdown.
+-/
 noncomputable def arnoldiH (i k : ℕ) : ℝ :=
   inner ℝ (arnoldi A v₁ i) (toEuclideanLin A (arnoldi A v₁ k))
 
 /-- **Equation (4.55)** of [quarteroni2000numerical], the vector
 $w_k = A v_k - \sum_{i \le k} h_{ik} v_i$, in the 0-based indexing of
-`QuarteroniSaccoSaleri.Chapter04.arnoldi`. -/
+`QuarteroniSaccoSaleri.Chapter04.arnoldi`.
+
+**Reading.** The iteration starts from any supplied vector and divides by the norm with a zero
+result at breakdown. The book starts from a normalized nonzero vector and stops on breakdown.
+-/
 noncomputable def arnoldiW (k : ℕ) : EuclideanSpace ℝ (Fin n) :=
   toEuclideanLin A (arnoldi A v₁ k) - ∑ i ∈ range (k + 1), arnoldiH A v₁ i k • arnoldi A v₁ i
 
-/-- The Arnoldi algorithm starts at $v_1$: `arnoldi A v₁ 0 = v₁`. -/
+/-- The Arnoldi algorithm starts at $v_1$: `arnoldi A v₁ 0 = v₁`.
+
+**Reading.** The iteration starts from any supplied vector and divides by the norm with a zero
+result at breakdown. The book starts from a normalized nonzero vector and stops on breakdown.
+-/
 @[simp]
 theorem arnoldi_zero : arnoldi A v₁ 0 = v₁ := by rw [arnoldi]
 
 /-- **Equation (4.55)** of [quarteroni2000numerical]. The Arnoldi vectors satisfy
-$v_{k+1} = w_k / \|w_k\|_2$, with $v_{k+1} = 0$ when $w_k = 0$. -/
+$v_{k+1} = w_k / \|w_k\|_2$, with $v_{k+1} = 0$ when $w_k = 0$.
+
+**Reading.** The iteration starts from any supplied vector and divides by the norm with a zero
+result at breakdown. The book starts from a normalized nonzero vector and stops on breakdown.
+-/
 theorem arnoldi_succ (k : ℕ) :
     arnoldi A v₁ (k + 1) = ((‖arnoldiW A v₁ k‖ : ℝ)⁻¹) • arnoldiW A v₁ k := by
   rw [arnoldi, arnoldiW]
@@ -524,18 +597,33 @@ theorem arnoldi_basis (hv : ‖v₁‖ = 1) {m : ℕ} (hm : m ≤ degree A v₁)
   · rw [range_fin_eq_image_Iio, Arnoldi.span_vec, krylovSubspace_eq]
 
 /-- **Equation (4.56)** of [quarteroni2000numerical], the matrix $V_m \in \mathbb{R}^{n \times m}$
-whose columns are the Arnoldi vectors $v_1, \dots, v_m$. -/
+whose columns are the Arnoldi vectors $v_1, \dots, v_m$.
+
+**Generalization.** The coefficient and column arrays are defined through and beyond the breakdown
+using zero padding. For a unit start the compression identities hold at every size, and breakdown
+entries remain zero after the first zero. The book states the equalities at the stopped prefix.
+-/
 noncomputable def V (m : ℕ) : Matrix (Fin n) (Fin m) ℝ := Matrix.of fun i j => arnoldi A v₁ j i
 
 /-- **Equation (4.56)** of [quarteroni2000numerical], the matrix $H_m \in \mathbb{R}^{m \times m}$
 of the Arnoldi coefficients $h_{ij}$, $1 \le i, j \le m$. It consists of the first $m$ rows of
-$\hat H_m$. -/
+$\hat H_m$.
+
+**Generalization.** The coefficient and column arrays are defined through and beyond the breakdown
+using zero padding. For a unit start the compression identities hold at every size, and breakdown
+entries remain zero after the first zero. The book states the equalities at the stopped prefix.
+-/
 noncomputable def H (m : ℕ) : Matrix (Fin m) (Fin m) ℝ := Matrix.of fun i j => arnoldiH A v₁ i j
 
 /-- **Equation (4.56)** of [quarteroni2000numerical], the matrix
 $\hat H_m \in \mathbb{R}^{(m+1) \times m}$ of the Arnoldi coefficients $h_{ij}$,
 $1 \le i \le m + 1$, $1 \le j \le m$. It is upper Hessenberg
-(`QuarteroniSaccoSaleri.Chapter04.equation_4_56`). -/
+(`QuarteroniSaccoSaleri.Chapter04.equation_4_56`).
+
+**Generalization.** The coefficient and column arrays are defined through and beyond the breakdown
+using zero padding. For a unit start the compression identities hold at every size, and breakdown
+entries remain zero after the first zero. The book states the equalities at the stopped prefix.
+-/
 noncomputable def Hhat (m : ℕ) : Matrix (Fin (m + 1)) (Fin m) ℝ :=
   Matrix.of fun i j => arnoldiH A v₁ i j
 
@@ -558,7 +646,12 @@ of the first $m$ rows of $\hat H_m$. The matrices $H_m$ and $\hat H_m$ are the b
 
 The two products are the definition of the coefficients. The Hessenberg structure is the
 backbone's `Arnoldi.coeff_eq_zero_of_lt`, and it needs $v_1$ to be a unit vector. Upper
-Hessenberg form is `Matrix.IsUpperHessenbergRect`. -/
+Hessenberg form is `Matrix.IsUpperHessenbergRect`.
+
+**Generalization.** The coefficient and column arrays are defined through and beyond the breakdown
+using zero padding. For a unit start the compression identities hold at every size, and breakdown
+entries remain zero after the first zero. The book states the equalities at the stopped prefix.
+-/
 theorem equation_4_56 (hv : ‖v₁‖ = 1) (m : ℕ) :
     (V A v₁ m)ᵀ * A * V A v₁ m = H A v₁ m ∧ (V A v₁ (m + 1))ᵀ * A * V A v₁ m = Hhat A v₁ m ∧
       (Hhat A v₁ m).IsUpperHessenbergRect ∧
@@ -593,7 +686,12 @@ The Lean statement uses 0-based indices:
 * `arnoldi A v₁ k` is $v_{k+1}$.
 
 The proof uses the backbone's `Arnoldi.coeff_succ_self_eq_zero_iff` and
-`Arnoldi.vec_eq_zero_iff`. -/
+`Arnoldi.vec_eq_zero_iff`.
+
+**Generalization.** The coefficient and column arrays are defined through and beyond the breakdown
+using zero padding. For a unit start the compression identities hold at every size, and breakdown
+entries remain zero after the first zero. The book states the equalities at the stopped prefix.
+-/
 theorem arnoldi_breakdown_iff (hv : ‖v₁‖ = 1) (k : ℕ) :
     (arnoldiW A v₁ k = 0 ↔ degree A v₁ ≤ k + 1) ∧
       (arnoldiH A v₁ (k + 1) k = 0 ↔ degree A v₁ ≤ k + 1) ∧
@@ -661,7 +759,11 @@ def equation_4_58 (k : ℕ) (x : EuclideanSpace ℝ (Fin n)) : Prop :=
 and it is unique when $A$ is nonsingular.
 
 Existence is the backbone's `Krylov.exists_isMinResidualIterate`, and uniqueness is
-`Krylov.existsUnique_isMinResidualIterate_of_injective`. -/
+`Krylov.existsUnique_isMinResidualIterate_of_injective`.
+
+**Generalization.** Lean includes existence of an optimum for every matrix and uniqueness for an
+invertible matrix, separately from the equivalence of the two predicates.
+-/
 theorem equation_4_58_iff (k : ℕ) :
     (∀ x, equation_4_58 A b x₀ k x ↔ Krylov.IsMinResidualIterate (toEuclideanLin A) b x₀ k x) ∧
       (∃ x, equation_4_58 A b x₀ k x) ∧ (IsUnit A → ∃! x, equation_4_58 A b x₀ k x) := by
@@ -678,7 +780,11 @@ theorem equation_4_58_iff (k : ℕ) :
       (toEuclideanLin_injective_of_isUnit hA) b x₀ k
 
 /-- The first unit vector $e_1 = (1, 0, \dots, 0)$ of $\mathbb{R}^m$; for $m = 0$ it is the empty
-vector. -/
+vector.
+
+**Generalization.** The coordinate form is also defined when the projected space has dimension zero.
+The first-coordinate vector is then empty.
+-/
 def e₁ (m : ℕ) : Fin m → ℝ := fun i => if (i : ℕ) = 0 then 1 else 0
 
 /-- For $\beta \in \mathbb{R}$, the vector $\beta e_1 \in \mathbb{R}^m$ is the backbone's
@@ -689,7 +795,11 @@ theorem smul_e₁_eq_firstVec (β : ℝ) (m : ℕ) : β • e₁ m = Krylov.firs
   split_ifs <;> simp
 
 /-- **Equation (4.59)** of [quarteroni2000numerical]. For $z \in \mathbb{R}^k$, the product $V_k z$
-is $\sum_j z_j v_j$: the iterate $x^{(0)} + V_k z^{(k)}$ expanded in the Arnoldi basis. -/
+is $\sum_j z_j v_j$: the iterate $x^{(0)} + V_k z^{(k)}$ expanded in the Arnoldi basis.
+
+**Generalization.** The coordinate form is also defined when the projected space has dimension zero.
+The first-coordinate vector is then empty.
+-/
 theorem V_mulVec (v₁ : EuclideanSpace ℝ (Fin n)) (k : ℕ) (z : Fin k → ℝ) :
     toEuclideanLin (V A v₁ k) (toLp 2 z) = ∑ j, z j • arnoldi A v₁ j := by
   rw [toEuclideanLin_apply_eq_sum]
@@ -736,7 +846,12 @@ Moreover the FOM iterate at step $k$ exists and is unique if and only if $H_k$ i
 
 The source derives (4.62) from (4.60)–(4.61), $V_k^T r^{(k)} = V_k^T r^{(0)} - V_k^T A V_k
 z^{(k)} = 0$, with $V_k^T r^{(0)} = \|r^{(0)}\|_2 e_1$. The proof uses the backbone's
-`Krylov.isGalerkinIterate_iff_mulVec_eq` and `Krylov.existsUnique_isGalerkinIterate_iff_isUnit`. -/
+`Krylov.isGalerkinIterate_iff_mulVec_eq` and `Krylov.existsUnique_isGalerkinIterate_iff_isUnit`.
+
+**Generalization.** The projected equation is equivalent to the Galerkin condition up to the grade.
+Lean gives an explicit invertibility criterion for a unique Galerkin iterate rather than assuming
+the projected solve has a unique solution.
+-/
 theorem equation_4_62 (hr : b - toEuclideanLin A x₀ ≠ 0) {k : ℕ}
     (hk : k ≤ degree A (b - toEuclideanLin A x₀)) (z : Fin k → ℝ) :
     (equation_4_57 A b x₀ k (x₀ +
@@ -761,7 +876,12 @@ breakdown of the Arnoldi algorithm.
 The proof of the source inverts $H_m$ at the breakdown without justification. That $H_m$ is
 nonsingular at the degree of $r^{(0)}$ follows from the injectivity of $A$; this is the
 backbone's `Krylov.existsUnique_isGalerkinIterate_of_grade_le`, and
-`Krylov.IsGalerkinIterate.apply_eq_of_grade_le` gives the exactness. -/
+`Krylov.IsGalerkinIterate.apply_eq_of_grade_le` gives the exactness.
+
+**Generalization.** The theorem gives exactness and uniqueness of the Galerkin iterate at and beyond
+the grade, under invertibility of the original matrix. It does not claim that every earlier square
+projected system is invertible.
+-/
 theorem theorem_4_13 (hA : IsUnit A) :
     degree A (b - toEuclideanLin A x₀) ≤ n ∧
       ∀ k, degree A (b - toEuclideanLin A x₀) ≤ k →
@@ -788,7 +908,11 @@ indices:
 
 * `arnoldiH … k (k - 1)` is $h_{k+1,k}$,
 * `z ⟨k - 1, _⟩` is $e_k^T z$,
-* `arnoldi … k` is $v_{k+1}$. -/
+* `arnoldi … k` is $v_{k+1}$.
+
+**Reading.** The declaration gives the residual-vector formula and its norm before breakdown.
+Equation (4.63) itself is the normalized tolerance test and is not part of the Lean conclusion.
+-/
 theorem equation_4_63 (hr : b - toEuclideanLin A x₀ ≠ 0) {k : ℕ} (hk : 0 < k) (z : Fin k → ℝ)
     (hz : H A ((‖b - toEuclideanLin A x₀‖ : ℝ)⁻¹ • (b - toEuclideanLin A x₀)) k *ᵥ z =
       ‖b - toEuclideanLin A x₀‖ • e₁ k) :
@@ -831,7 +955,12 @@ $$r^{(k)} = r^{(0)} - A V_k z = V_{k+1} \big(\|r^{(0)}\|_2 \, e_1 - \hat H_k z\b
 because $r^{(0)} = \|r^{(0)}\|_2 v_1$ and (4.56) holds.
 
 The product with $V_{k+1}$ is written as the sum $\sum_{i \le k} (\cdot)_i v_{i+1}$. The proof
-uses the backbone's `Krylov.HessenbergRelation₂.residual_eq` for `Arnoldi.hessenbergRelation`. -/
+uses the backbone's `Krylov.HessenbergRelation₂.residual_eq` for `Arnoldi.hessenbergRelation`.
+
+**Generalization.** The residual identity allows arbitrary lengths in the padded recurrence. The
+norm equality and least-squares characterization apply through the grade, including the last-step
+case whose trailing residual coordinate is zero.
+-/
 theorem equation_4_65 (hr : b - toEuclideanLin A x₀ ≠ 0) (k : ℕ) (z : Fin k → ℝ) :
     b - toEuclideanLin A (x₀ +
         ∑ j, z j • arnoldi A ((‖b - toEuclideanLin A x₀‖ : ℝ)⁻¹ • (b - toEuclideanLin A x₀)) j) =
@@ -858,7 +987,12 @@ columns and does not change the Euclidean norm: $\|b - A(x^{(0)} + V_k z)\|_2 = 
 e_1 - \hat H_k z\|_2$.
 
 The proof uses the backbone's `Krylov.isMinResidualIterate_iff_isMinOn` and
-`Krylov.norm_residual_eq_norm_firstVec_sub_mulVec`. -/
+`Krylov.norm_residual_eq_norm_firstVec_sub_mulVec`.
+
+**Generalization.** The residual identity allows arbitrary lengths in the padded recurrence. The
+norm equality and least-squares characterization apply through the grade, including the last-step
+case whose trailing residual coordinate is zero.
+-/
 theorem equation_4_66 (hr : b - toEuclideanLin A x₀ ≠ 0) {k : ℕ}
     (hk : k ≤ degree A (b - toEuclideanLin A x₀)) (z : Fin k → ℝ) :
     (equation_4_58 A b x₀ k (x₀ +
@@ -887,7 +1021,11 @@ $m$, and at $m = n$ both sides are true.
 
 By `QuarteroniSaccoSaleri.Chapter04.arnoldi_breakdown_iff`, $\deg_A(r^{(0)}) \le m$ is the
 vanishing of $h_{m+1,m}$. The proof uses the backbone's
-`Krylov.IsMinResidualIterate.apply_eq_of_grade_le` and `Krylov.grade_le_of_apply_eq`. -/
+`Krylov.IsMinResidualIterate.apply_eq_of_grade_le` and `Krylov.grade_le_of_apply_eq`.
+
+**Generalization.** Exactness is characterized by reaching the grade, so the theorem includes $m=n$
+and later iterations. It asserts existence and uniqueness at every $m$ under invertibility.
+-/
 theorem property_4_8 (hA : IsUnit A) (m : ℕ) :
     (degree A (b - toEuclideanLin A x₀) ≤ m ↔
         ∀ x, equation_4_58 A b x₀ m x → toEuclideanLin A x = b) ∧
@@ -917,7 +1055,12 @@ $x^{(k)}$.
 
 The matrices are the backbone's `Krylov.givensQ` and `Krylov.hessenbergOf (Krylov.rotated …) k`.
 The three clauses are `Krylov.givensQ_mul_hessenbergOf`, `Krylov.givensQ_mulVec_firstVec` and
-`Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma`. -/
+`Krylov.IsMinResidualIterate.norm_residual_eq_norm_gamma`.
+
+**Reading.** The Givens factor and transformed right-hand-side identities are given for every length
+with nonzero initial residual. The reported norm identity is asserted only for a successful prefix
+strictly before the grade.
+-/
 theorem gmres_norm_residual_eq_norm_gamma (hr : b - toEuclideanLin A x₀ ≠ 0) (k : ℕ) :
     Krylov.givensQ (arnoldiH A ((‖b - toEuclideanLin A x₀‖ : ℝ)⁻¹ • (b - toEuclideanLin A x₀))) k *
         Hhat A ((‖b - toEuclideanLin A x₀‖ : ℝ)⁻¹ • (b - toEuclideanLin A x₀)) k =
@@ -965,14 +1108,24 @@ $x \in x^{(0)} + Y$ and with the residual $b - Ax$ orthogonal to $L$. The method
 $x \in x^{(0)} + Y$, as in (4.59).
 
 It is the backbone's Petrov–Galerkin specification `IsPetrovGalerkin`
-(`QuarteroniSaccoSaleri.Chapter04.remark_4_4_iff`). -/
+(`QuarteroniSaccoSaleri.Chapter04.remark_4_4_iff`).
+
+**Reading.** The iterate belongs to $x_0+Y$, equivalently the correction belongs to $Y$. The book
+writes membership of $x$ in $Y$; the affine convention is needed for its Krylov examples. Lean also
+allows trial and test spaces of different dimensions.
+-/
 def remark_4_4 (Y L : Submodule ℝ (EuclideanSpace ℝ (Fin n)))
     (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   x - x₀ ∈ Y ∧ b - toEuclideanLin A x ∈ Lᗮ
 
 /-- A projection method of Remark 4.4 is the backbone's Petrov–Galerkin specification
 `IsPetrovGalerkin`, and an orthogonal projection method ($L = Y$) is the Galerkin specification
-`IsGalerkin`. -/
+`IsGalerkin`.
+
+**Reading.** The iterate belongs to $x_0+Y$, equivalently the correction belongs to $Y$. The book
+writes membership of $x$ in $Y$; the affine convention is needed for its Krylov examples. Lean also
+allows trial and test spaces of different dimensions.
+-/
 theorem remark_4_4_iff (Y L : Submodule ℝ (EuclideanSpace ℝ (Fin n)))
     (x : EuclideanSpace ℝ (Fin n)) :
     (remark_4_4 A b x₀ Y L x ↔ IsPetrovGalerkin (toEuclideanLin A) b x₀ Y L x) ∧
@@ -983,7 +1136,12 @@ theorem remark_4_4_iff (Y L : Submodule ℝ (EuclideanSpace ℝ (Fin n)))
 and $Y_k = K_k(A; r^{(0)})$. The FOM iterate (4.57) is the orthogonal projection method with
 $L_k = Y_k$, and the GMRES iterate (4.58) is the oblique projection method with $L_k = A Y_k$.
 
-The second clause is the backbone's `IsMinResidual.iff_isPetrovGalerkin`. -/
+The second clause is the backbone's `IsMinResidual.iff_isPetrovGalerkin`.
+
+**Reading.** The iterate belongs to $x_0+Y$, equivalently the correction belongs to $Y$. The book
+writes membership of $x$ in $Y$; the affine convention is needed for its Krylov examples. Lean also
+allows trial and test spaces of different dimensions.
+-/
 theorem remark_4_4_krylov (k : ℕ) (x : EuclideanSpace ℝ (Fin n)) :
     (equation_4_57 A b x₀ k x ↔ remark_4_4 A b x₀
         (krylovSubspace A (b - toEuclideanLin A x₀) k)
@@ -1091,7 +1249,11 @@ All indices here are 0-based, as in `QuarteroniSaccoSaleri.Chapter04.arnoldi` an
 `QuarteroniSaccoSaleri.Chapter04.arnoldiH`. The proof uses
 `Lanczos.hessenbergSq_eq_map_tridiag`, `Lanczos.tridiag_isSymm`, `Lanczos.tridiag_isTridiagonal`
 and `Lanczos.apply_vec`. The backbone's `Lanczos.tridiag`, `Lanczos.alpha` and `Lanczos.beta`
-are $T_m$, $\alpha_i$ and $\beta_i$. -/
+are $T_m$, $\alpha_i$ and $\beta_i$.
+
+**Generalization.** The symmetric tridiagonal representation and three-term relation are stated for
+arbitrary array lengths from a unit start, using the padded recurrence after breakdown.
+-/
 theorem lanczos_tridiagonal (hA : A.IsSymm) (hv : ‖v₁‖ = 1) (m : ℕ) :
     H A v₁ m = Lanczos.tridiag (toEuclideanLin A) v₁ m ∧ (H A v₁ m).IsSymm ∧
       (H A v₁ m).IsTridiagonal ∧
@@ -1128,7 +1290,11 @@ iterates at different steps are mutually orthogonal.
 The scalar $\gamma_k$ is the one of `QuarteroniSaccoSaleri.Chapter04.equation_4_63`, and
 $v_{k+1}$ is `arnoldi … k`. The proof uses the backbone's
 `Krylov.IsGalerkinIterate.residual_mem_span` and
-`Krylov.IsGalerkinIterate.inner_residual_eq_zero`. -/
+`Krylov.IsGalerkinIterate.inner_residual_eq_zero`.
+
+**Generalization.** The residual collinearity and mutual orthogonality follow from the Galerkin
+condition alone with the Arnoldi basis. The book gives them in the symmetric Lanczos setting.
+-/
 theorem lanczos_residual_eq_smul (hr : b - toEuclideanLin A x₀ ≠ 0) {k : ℕ}
     {x : EuclideanSpace ℝ (Fin n)} (hx : equation_4_57 A b x₀ k x) :
     (∃ γ : ℝ, b - toEuclideanLin A x =
@@ -1156,7 +1322,12 @@ The first clause is the backbone's `CG.isGalerkinIterate` through
 `QuarteroniSaccoSaleri.Chapter04.cg_eq_CG`, the second is `CG.arnoldi_vec_eq`, and the third is
 `QuarteroniSaccoSaleri.Chapter04.equation_4_42`. The route of the source through the LU
 factorization $H_k = L_k U_k$ and $P_k = V_k U_k^{-1}$ is not restated: the content of the
-remark is the identification of the two iterates. -/
+remark is the identification of the two iterates.
+
+**Reading.** Lean identifies the CG and Galerkin iterates, the signed normalization of nonzero
+residuals, and conjugacy of the directions. The intermediate bidiagonal LU construction described in
+the book is outside the statement.
+-/
 theorem remark_4_5 (hA : A.PosDef) (k : ℕ) :
     equation_4_57 A b x₀ k (cgX A b x₀ k) ∧
       (b - toEuclideanLin A x₀ ≠ 0 → cgR A b x₀ k ≠ 0 →

@@ -85,18 +85,33 @@ The model is `Optimization.powRegularizedModel` with the generalized factorial
 
 ## Deviations from the source
 
+* **Algorithm 5.5.1, Step 0** (generalization). The shared parameters allow
+  $\gamma_2=\gamma_3$. The source takes $\gamma_2<\gamma_3$.
+  See `CartisGouldToint.Chapter05.ARpHParams`.
 * **Algorithm 5.5.1, Step 4** (typo). The third case reads "$\rho_k < \eta_1$ and (5.5.10) or
   (5.5.11) fails"; it must be the complement of the first two cases, "$\rho_k < \eta_1$, or (5.5.10)
-  fails, or (5.5.11) fails". See `CartisGouldToint.Chapter05.algorithm_5_5_1`.
-* **Lemma 5.5.2** (typo). The display writes $\nabla_s m_k(x_k + s_k)$ for the model gradient
-  $\nabla_s m_k(s_k)$. See `CartisGouldToint.Chapter05.lemma_5_5_2`.
+  fails, or (5.5.11) fails". The update uses a ratio set to zero when a length test fails.
+  See `CartisGouldToint.Chapter05.algorithm_5_5_1`.
+* **Lemmas 5.5.1 and 5.5.2** (reading). The translations concern trials before the stopping
+  test passes. The decrease in (5.5.12) is strict because (5.5.4) is strict.
+  In the proof of (5.5.13), the model gradient is at $s_k$, and the triangle inequality
+  yields an upper bound. See `CartisGouldToint.Chapter05.lemma_5_5_1` and
+  `CartisGouldToint.Chapter05.lemma_5_5_2`.
+* **Equation (5.5.26)** (correction). The displayed strict comparisons become
+  equalities when $H_{f,p}=0$. The proof uses the weak bound.
+  See `CartisGouldToint.Chapter05.div_holderFactorial_le_kappaBeta_two`.
 * **Lemma 5.5.4** (typo). In the proof of case (b), the conclusion is $\sigma_k < \kappa_{\beta,2}
   \epsilon_2^{(p+\beta-r)/(p+\beta-2)}$, printed with $\epsilon_1$. See
   `CartisGouldToint.Chapter05.lemma_5_5_4`.
-* **Theorem 5.5.7** (correction). The function and its derivatives are evaluated at $x_0$ and at
-  every trial point, that is, $k_\epsilon + 2$ times when the run terminates at the trial point of
-  iteration $k_\epsilon$, while Lemma 2.4.1 bounds $k_\epsilon + 1$. The constant $\kappa^C$ needs
-  an additional $+ 2$. See `CartisGouldToint.Chapter05.theorem_5_5_7`.
+* **Lemma 5.5.5** (generalization). The upper bounds include the regularization weight at
+  the terminating iterate and give a factored expression also in the first-order case.
+* **Lemma 5.5.6** (typo). The proof uses $1/\max(a,b)=\min(1/a,1/b)$ for positive $a,b$.
+  The leading reciprocal is missing in print. See `CartisGouldToint.Chapter05.lemma_5_5_6`.
+* **Theorem 5.5.7** (correction). The count $k_\epsilon+2$ includes the derivative test at
+  the terminal trial. The value of $f$ is requested only after a failed trial test, so its
+  count is at most $k_\epsilon+1$. The shared upper bound adds $2$ to the printed constant.
+  The second-order case explicitly assumes $p+\beta>2$, and the logarithmic coefficients
+  vanish when $r=p+\beta$. See `CartisGouldToint.Chapter05.theorem_5_5_7`.
 -/
 
 open Set Finset Optimization
@@ -150,7 +165,10 @@ $\theta_1, \theta_2 \in (0, 1]$, and the step-length constants
 $$\alpha_1 \in \left(0, \tfrac{1}{3} \min(1, (r-1)!)\right], \qquad \alpha_2 \in \left(0,
   \tfrac{1}{3} \min(1, (r-2)!)\right].$$
 
-The constants of adaptive regularization are `Optimization.ARParams`. -/
+The constants of adaptive regularization are `Optimization.ARParams`.
+
+**Generalization.** These parameters allow $\gamma_2=\gamma_3$. The source requires
+$\gamma_2<\gamma_3$. -/
 structure ARpHParams (r : ℝ) extends Optimization.ARParams where
   /-- The lower bound on the regularization weight is $\sigma_{\min} = 0$. -/
   σmin_eq_zero : σmin = 0
@@ -208,8 +226,10 @@ def arpHLengthTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : ARpHParams r) (
     (ε₂.isSome → -(P.α₂ * Chapter01.hessianMinEig f (y + s)) ≤ σ * ‖s‖ ^ (r - 2))
 
 open Classical in
-/-- The modified ratio of one iteration: the ratio (5.5.9) if the step-length tests
-(5.5.10)–(5.5.11) hold, and $0$ otherwise. -/
+/-- **Reading.** The Lean update uses the ratio (5.5.9) if the step-length tests
+(5.5.10)–(5.5.11) hold, and $0$ otherwise. This represents the combined acceptance
+test with a single threshold comparison. The source keeps (5.5.9) and the length
+tests separate. -/
 noncomputable def arpHRatioAt (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams r)
     (ε₂ : Option ℝ) (y : EuclideanSpace ℝ (Fin n)) (σ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
   if arpHLengthTest f P ε₂ y σ s then
@@ -217,7 +237,10 @@ noncomputable def arpHRatioAt (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ)
   else 0
 
 /-- The modified ratios $\tilde\rho_k$ of a run: the modified ratio of iteration $k$ at $x_k$ with
-weight $\sigma_k$ and step $s_k$. -/
+weight $\sigma_k$ and step $s_k$.
+
+**Reading.** The same modified ratio applied to the indexed trial, weight and iterate.
+-/
 noncomputable abbrev arpHRatio (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpHParams r)
     (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) (k : ℕ) : ℝ :=
   arpHRatioAt f p P ε₂ (x k) (σ k) (s k)
@@ -370,7 +393,11 @@ continuously differentiable, $p \ge 1$, $r > p$, $\epsilon_1 \in (0, 1]$,
 $\epsilon_2 \in (0, 1]$ if finite, and $p \ge 2$ if $\epsilon_2 < \infty$. Then for all ARp-H
 constants and every $x_0 \in \mathbb{R}^n$ there is a run of ARp-H that starts at $x_0$.
 
-Global minimizers of the model satisfy Step 1 (`CartisGouldToint.Chapter05.exists_arpHStep`). -/
+Global minimizers of the model satisfy Step 1 (`CartisGouldToint.Chapter05.exists_arpHStep`).
+
+**Correction.** Constructs the run under C^p in the generalized parameter class and with corrected
+update cases.
+-/
 theorem exists_algorithm_5_5_1 (hf : ContDiff ℝ p f) (P : ARpHParams r) (hp : 1 ≤ p)
     (hpr : (p : ℝ) < r) {ε₁ : ℝ} (hε₁ : 0 < ε₁) (hε₁1 : ε₁ ≤ 1) {ε₂ : Option ℝ}
     (hε₂ : ∀ e ∈ ε₂, 0 < e) (hε₂1 : ∀ e ∈ ε₂, e ≤ 1) (hp2 : ε₂.isSome → 2 ≤ p)
@@ -449,6 +476,10 @@ variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {P : ARpHParams r} {
 /-- **Lemma 5.5.1** of [cartis2022evaluation], sufficient decrease (5.5.12). Along a run of ARp-H,
 if the run does not terminate at any iteration $j \le k$, then
 $$T_{f,p}(x_k, 0) - T_{f,p}(x_k, s_k) > \frac{\sigma_k}{r!} \|s_k\|^r.$$
+
+**Generalization.** The strict decrease in (5.5.4) gives a strict bound here.
+The source writes a weak inequality for each computed step. The hypothesis here
+selects the steps whose stopping test has failed.
 -/
 theorem lemma_5_5_1 (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) :
@@ -474,7 +505,9 @@ $$-\lambda_{\min}[\nabla^2 f(x_k + s_k)] \le \frac{H}{(p+\beta-2)!} \|s_k\|^{p+\
   \frac{\sigma_k}{(r-2)!} \|s_k\|^{r-2} + \theta_2 \|s_k\|^{r-2} \quad \text{(5.5.14)}.$$
 
 **Typo.** The display of the source writes $\nabla_s m_k(x_k + s_k)$ for the model gradient
-$\nabla_s m_k(s_k)$.
+$\nabla_s m_k(s_k)$ and writes an equality where the triangle inequality
+gives an upper bound. The Lean statement gives the source estimates for trials
+whose termination test fails.
 
 The factorial $(p+\beta-j)!$ is `holderFactorial (p - j) β`, and $(r-j)!$ is
 `Optimization.realFactorial (r - j)`. -/
@@ -616,7 +649,11 @@ theorem div_holderFactorial_le_kappaBeta (hH : 0 ≤ H) (hβ : 0 ≤ β) (hr : 1
   nlinarith
 
 /-- If $H \ge 0$, $\beta \ge 0$, $p \ge 2$ and $p + \beta \le r$, then
-$H / (p+\beta-2)! \le \kappa_\beta / (r-2)!$, as in (5.5.26). -/
+$H / (p+\beta-2)! \le \kappa_\beta / (r-2)!$, as in (5.5.26).
+The weak inequality covers $H=0$, when both sides vanish.
+
+**Reading.** Uses a weak inequality, necessary when the allowed Hölder constant vanishes.
+-/
 theorem div_holderFactorial_le_kappaBeta_two (hH : 0 ≤ H) (hβ : 0 ≤ β) (hp : 2 ≤ p)
     (hr : (p : ℝ) + β ≤ r) :
     H / holderFactorial (p - 2) β ≤ kappaBeta P p H β / realFactorial (r - 2) := by
@@ -647,7 +684,10 @@ end Constants
 
 /-- The three-term bound behind (5.5.23)–(5.5.25): let $F > 0$, $T, U \ge 0$,
 $G \le c T + \sigma U / F + \theta U$, $\theta F \le \sigma$, $c \le \kappa / F$ and
-$\kappa T \le \sigma U$. Then $G \le 3 \sigma U / F$. -/
+$\kappa T \le \sigma U$. Then $G \le 3 \sigma U / F$.
+
+**Reading.** Isolates the source three-term estimate for arbitrary real variables.
+-/
 theorem le_three_mul_of_bound {G c κ F θ σ T U : ℝ} (hG : G ≤ c * T + σ / F * U + θ * U)
     (hF : 0 < F) (hθ : θ * F ≤ σ) (hc : c ≤ κ / F) (hκ : κ * T ≤ σ * U) (hT : 0 ≤ T)
     (hU : 0 ≤ U) : G ≤ 3 * (σ / F * U) := by
@@ -680,7 +720,11 @@ and, when $\epsilon_2 < \infty$, also $\sigma_k \ge \theta_2 (r-2)!$ (5.5.20), t
 $\rho_k \ge \eta_2$ and the step-length tests (5.5.10)–(5.5.11) hold, so iteration $k$ is very
 successful.
 
-The ratio $\rho_k$ is `Optimization.taylorRatio f p x s k`. -/
+The ratio $\rho_k$ is `Optimization.taylorRatio f p x s k`.
+
+**Reading.** Matches the raw-ratio and length conclusions under the combined thresholds, on
+iterations continuing to acceptance or rejection.
+-/
 theorem lemma_5_5_3 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) {k : ℕ} (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j)
     (h1 : P.θ₁ * realFactorial (r - 1) ≤ σ k)
@@ -767,7 +811,10 @@ theorem AssumptionDpH.one_lt_add {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : �
 
 /-- The real-power step of the proof of Lemma 5.5.4: let $\sigma, t, K, F, \epsilon > 0$ and
 $a, d > 0$. If $\sigma t^d < K$ and $\epsilon < 3 K t^a / F$, then $\sigma < (F/3)^{-d/a}
-K^{1+d/a} \epsilon^{-d/a}$. -/
+K^{1+d/a} \epsilon^{-d/a}$.
+
+**Reading.** Isolates the printed threshold contradiction as a generic real-power inequality.
+-/
 theorem lt_of_rpow_bounds {σ t K F ε a d : ℝ} (hσ : 0 < σ) (ht : 0 < t) (hK : 0 < K)
     (hF : 0 < F) (hε : 0 < ε) (ha : 0 < a) (hd : 0 < d) (h1 : σ * t ^ d < K)
     (h2 : ε < 3 * K / F * t ^ a) :
@@ -979,7 +1026,11 @@ For $\epsilon_2 = \infty$ the second bound reads $\sigma_k \le \sigma_{H,1}
 \epsilon_1^{(p+\beta-r)/(p+\beta-1)}$.
 
 The bound covers every iteration up to and including termination. The threshold $\bar\sigma$ is
-`CartisGouldToint.Chapter05.sigmaBar`. -/
+`CartisGouldToint.Chapter05.sigmaBar`.
+
+**Reading.** Includes the reached terminating index and states the factored cap also for first
+order.
+-/
 theorem lemma_5_5_5 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) {k : ℕ}
     (hk : ∀ j < k, ¬ arpHStop f ε₁ ε₂ x s j) :
@@ -1040,7 +1091,11 @@ end Lemma555
 
 /-- The real-power chain of the proof of Lemma 5.5.6: let $\sigma, \alpha, g, m, S, M > 0$,
 $t, \delta \ge 0$ and $m \le r$. If $\alpha g \le \sigma t^m$, $\sigma \le S M$ and
-$\delta^m M^{r-m} \le g^r$, then $(\alpha^r / S^{r-m})^{1/m} \delta \le \sigma t^r$. -/
+$\delta^m M^{r-m} \le g^r$, then $(\alpha^r / S^{r-m})^{1/m} \delta \le \sigma t^r$.
+
+**Reading.** Isolates the coefficient comparison after imposing a length test and a factored upper
+weight bound.
+-/
 theorem rpow_mul_le_mul_rpow {σ t α g m r S M δ : ℝ} (hσ : 0 < σ) (ht : 0 ≤ t) (hα : 0 < α)
     (hg : 0 < g) (hm : 0 < m) (hmr : m ≤ r) (hS : 0 < S) (hM : 0 < M) (hσS : σ ≤ S * M)
     (hδ : 0 ≤ δ) (hlen : α * g ≤ σ * t ^ m) (hδM : δ ^ m * M ^ (r - m) ≤ g ^ r) :
@@ -1156,7 +1211,11 @@ $\epsilon_2 < \infty$. Along a run of ARp-H, let $k$ be a successful iteration
   \min[\epsilon_1^{(p+\beta)/(p+\beta-1)}, \epsilon_2^{(p+\beta)/(p+\beta-2)}]$ (5.5.44).
 
 The constants $\kappa_{H,1}$ and $\kappa_{H,2}$ are `CartisGouldToint.Chapter05.kappaH` of
-(5.5.45). The condition $p + \beta > 1$ follows from f.DpH. -/
+(5.5.45). The condition $p + \beta > 1$ follows from f.DpH.
+
+**Typo.** The reciprocal identity before (5.5.48) is
+$1/\max(a,b)=\min(1/a,1/b)$ for positive $a,b$. The proof below uses an equivalent
+inequality for the powers of the tolerances. -/
 theorem lemma_5_5_6 (hf : AssumptionDpH f p H β) (h : algorithm_5_5_1 f p P ε₁ ε₂ x s σ)
     (hr : (p : ℝ) + β ≤ r) (hq2 : ε₂.isSome → 2 < (p : ℝ) + β) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ arpHStop f ε₁ ε₂ x s j) (hs : P.η₁ ≤ arpHRatio f p P ε₂ x s σ k) :
@@ -1289,13 +1348,20 @@ $\kappa^C = (|\log \gamma_1| + \log(\sigma_H / \sigma_0)) / \log \gamma_2 + 2$. 
 number of evaluations of the first (and second) derivatives that the termination test needs, at
 $x_0$ and at the trial points of iterations $0, \dots, k_\epsilon$, which is at most
 $k_\epsilon + 2$. It also bounds the number of evaluations of $f$, at $x_0$ and at the trial
-points of iterations $0, \dots, k_\epsilon - 1$, which is at most $k_\epsilon + 1$. Finally, the
-number of evaluations of the derivatives of orders up to $p$, at $x_0$ and after each successful
-iteration, is at most $\kappa^S (f(x_0) - f_{\mathrm{low}}) / \delta_\epsilon + 1$.
+points of iterations $0, \dots, k_\epsilon - 1$, which is at most $k_\epsilon + 1$.
+Evaluations of the remaining derivative orders up to $p$ occur at $x_0$ and after
+successful iterations, and are bounded by
+$\kappa^S (f(x_0) - f_{\mathrm{low}}) / \delta_\epsilon + 1$.
 
-**Correction.** The source counts $k_\epsilon + 1$ evaluations (Lemma 2.4.1), but the function
-and its derivatives are evaluated at $x_0$ and at every trial point, that is, $k_\epsilon + 2$
-times. The constant $\kappa^C$ of the source lacks the term $+ 2$.
+**Correction.** Step 2 evaluates the first derivative and, in the second-order case,
+the second derivative at the terminal trial. The update count used for (5.5.52) therefore
+needs the additional initial and terminal derivative evaluations. In the printed proof
+$\kappa^A N_S$ also includes $\kappa^S$ both in $\kappa^A$ and in $N_S$. The Lean estimate
+applies the iteration multiplier to the decrease bound once.
+
+**Reading.** The second-order hypothesis $p+\beta>2$ comes from the discussion before
+Lemma 5.5.2 and keeps the exponents defined. The displayed logarithmic coefficients are
+zero at $r=p+\beta$, a case allowed by the source assumptions.
 
 For $\epsilon_2 = \infty$ the terms with $\epsilon_2$ are absent. The logarithmic terms are
 `CartisGouldToint.Chapter05.epsLogTerm` divided by $\log \gamma_2$, and the last count is

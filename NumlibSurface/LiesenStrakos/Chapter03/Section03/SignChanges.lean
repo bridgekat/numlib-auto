@@ -12,6 +12,11 @@ import NumlibSurface.LiesenStrakos.Chapter03.Section01
 Moment matching forces the cumulative difference to alternate sign between its successive
 nodes. If a sign pattern had fewer changes, its switches would define a polynomial of
 too low a degree whose antiderivative gives a contradiction by summation by parts.
+
+## Deviations from the source
+
+* **Theorem 3.3.4** (generalization). The sign changes follow from disjoint positive node sets
+  with common moments through degree $2n-1$.
 -/
 
 open Polynomial
@@ -186,7 +191,10 @@ private theorem cumulative_mul_lt_zero_of_zero_moments {m : ℕ} (hm : 1 < m) (t
 /-- **Theorem 3.3.4** of [liesen2013krylov]. For consecutive positive Gauss rules with disjoint
 nodes, their cumulative distribution difference changes sign at each of the $2n-1$ interior
 boundaries between its $2n$ bounded gaps. The CDF value at the left endpoint of a gap is its
-constant value there. The cumulative difference is zero at the last node. -/
+constant value there. The cumulative difference is zero at the last node.
+
+**Generalization.** Disjointness of the node sets and exactness to degree $2n-1$ are
+hypotheses. The rules need no Gauss construction. -/
 theorem theorem_3_3_4 {μ : MeasureTheory.Measure ℝ} {n : ℕ} (hn : 0 < n)
     {x w : Fin n → ℝ} {y v : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (hy : Function.Injective y) (hxy : ∀ i j, x i ≠ y j)

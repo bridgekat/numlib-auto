@@ -52,8 +52,12 @@ proofs specialize the backbone module `Numlib.Nonlinear.CompletelyContinuous`.
 
 ## Deviations from the source
 
-* **Example 5.5.2** (correction). The book's condition $0 < t \le \sqrt{k^2 - 1}$ does not give
-  $T(K) \subseteq K$; the statement adds $t \le 1$. See `AtkinsonHan.Chapter05.example_5_5_2`.
+* **Example 5.5.2** (scope). The source requires $t < 1$ as well as
+  $0 < t \le \sqrt{k^2 - 1}$. Lean includes the endpoint $t = 1$, and its Lipschitz
+  estimate holds on the whole space. See `AtkinsonHan.Chapter05.example_5_5_2`.
+* **Definition 5.5.3 and Proposition 5.5.5** (scope). The definition uses a seminormed
+  domain and topological codomain. The derivative is compact for distinct domain and
+  codomain spaces, with completeness required of the codomain.
 
 ## Not formalized
 
@@ -75,7 +79,11 @@ space, $T : V \to W$ and $K \subseteq V$. Then $T$ is **completely continuous** 
 a compact map on $K$, which means that the closure of $T(B)$ is compact for every bounded set
 $B \subseteq K$, and $T$ is continuous on $K$.
 
-The compactness condition is the backbone's `IsCompactMap T K`. -/
+The compactness condition is the backbone's `IsCompactMap T K`.
+
+**Generalization.** Same compactness plus continuity condition in generalized domain and codomain
+spaces.
+-/
 def IsCompletelyContinuousOn {V W : Type*} [SeminormedAddCommGroup V] [TopologicalSpace W]
     (T : V → W) (K : Set V) : Prop :=
   IsCompactMap T K ∧ ContinuousOn T K
@@ -83,10 +91,13 @@ def IsCompletelyContinuousOn {V W : Type*} [SeminormedAddCommGroup V] [Topologic
 /-- **Proposition 5.5.5** of [han2009theoretical]. Let $V$ and $W$ be real normed spaces with $W$
 complete, let $K \subseteq V$ be open, and let $T : V \to W$ be completely continuous on $K$. If
 $T$ has the Fréchet derivative $A$ at a point $v_0 \in K$, then $A$ is a compact linear
-operator. So the Fredholm alternative applies to $I - T'(v_0)$.
+operator. For an endomorphism the Fredholm alternative applies to $I - T'(v_0)$.
 
 The space $V$ need not be complete. The proof does not use the continuity of $T$: the backbone
-proves the result from differentiability at $v_0$ and compactness on bounded sets alone. -/
+proves the result from differentiability at $v_0$ and compactness on bounded sets alone.
+
+**Reading.** Allows distinct normed domain and complete codomain spaces.
+-/
 theorem proposition_5_5_5 {V W : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V]
     [NormedAddCommGroup W] [NormedSpace ℝ W] [CompleteSpace W] {T : V → W} {K : Set V}
     (hT : IsCompletelyContinuousOn T K) (hK : IsOpen K) {v₀ : V} (hv₀ : v₀ ∈ K) {A : V →L[ℝ] W}
@@ -162,17 +173,26 @@ orthonormal basis $\{\varphi_j\}_{j \ge 0}$ and let $t \in \mathbb{R}$. The map 
 $$T(v) = t(1 - \|v\|) \varphi_0 + \sum_{j \ge 0} (v, \varphi_j) \varphi_{j+1}.$$
 
 The map is defined through the coordinate isomorphism `HilbertBasis.repr` of the basis, as
-`AtkinsonHan.Chapter05.prependLp` in coordinates. -/
+`AtkinsonHan.Chapter05.prependLp` in coordinates.
+
+**Generalization.** Extends the unit-ball shift formula to all input vectors and real parameters.
+-/
 noncomputable def shiftMap (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v : V) : V :=
   b.repr.symm (prependLp (t * (1 - ‖v‖)) (b.repr v))
 
-/-- The map $T$ of Example 5.5.2 satisfies $\|T(v)\|^2 = t^2 (1 - \|v\|)^2 + \|v\|^2$. -/
+/-- The map $T$ of Example 5.5.2 satisfies $\|T(v)\|^2 = t^2 (1 - \|v\|)^2 + \|v\|^2$.
+
+**Reading.** Same squared norm calculation on the entire space.
+-/
 theorem norm_shiftMap_sq (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v : V) :
     ‖shiftMap b t v‖ ^ 2 = (t * (1 - ‖v‖)) ^ 2 + ‖v‖ ^ 2 := by
   rw [shiftMap, LinearIsometryEquiv.norm_map, norm_prependLp_sq, LinearIsometryEquiv.norm_map]
 
 /-- The map $T$ of Example 5.5.2 satisfies $\|T(v) - T(w)\|^2 = t^2 (\|w\| - \|v\|)^2 + \|v -
-w\|^2$, because the shift is an isometry. -/
+w\|^2$, because the shift is an isometry.
+
+**Generalization.** Extends shift difference estimate to all vectors.
+-/
 theorem norm_shiftMap_sub_sq (b : HilbertBasis ℕ ℝ V) (t : ℝ) (v w : V) :
     ‖shiftMap b t v - shiftMap b t w‖ ^ 2 = (t * (‖w‖ - ‖v‖)) ^ 2 + ‖v - w‖ ^ 2 := by
   have hsub : prependLp (t * (1 - ‖v‖)) (b.repr v) - prependLp (t * (1 - ‖w‖)) (b.repr w)
@@ -196,13 +216,9 @@ Then $T$ maps $K$ into $K$, $\|T(v) - T(w)\| \le k \|v - w\|$ for all $v, w \in 
 $T(v) \neq v$ for every $v \in V$. So the hypotheses of Schauder's theorem cannot be weakened to
 a Lipschitz condition, and Theorem 5.1.3 needs a contraction constant less than $1$.
 
-**Correction.** The book assumes only $0 < t \le \sqrt{k^2 - 1}$. This does not give
-$T(K) \subseteq K$: for $k = 2$ and $t = \sqrt 3$ the condition holds, but
-$\|T(0)\|^2 = t^2 = 3 > 1$. The condition $t \le 1$ is what
-$\|T(v)\|^2 = t^2 (1 - \|v\|)^2 + \|v\|^2 \le 1$ for all $\|v\| \le 1$ requires, as $v = 0$
-shows. The condition $t \le \sqrt{k^2 - 1}$ is the separate condition that gives
-$\sqrt{1 + t^2} \le k$. Neither condition implies the other, and the example survives: $t = 1$
-gives a $\sqrt 2$-Lipschitz map of the ball into itself with no fixed point.
+**Scope.** The source assumes both $t < 1$ and $0 < t \le \sqrt{k^2-1}$. The proof
+includes $t = 1$ because $t \le 1$ is sufficient for the ball to be invariant. The
+Lipschitz estimate and absence of fixed points are proved on all of $V$.
 
 The map is `AtkinsonHan.Chapter05.shiftMap`. There is no fixed point in all of $V$, not only in
 $K$. -/

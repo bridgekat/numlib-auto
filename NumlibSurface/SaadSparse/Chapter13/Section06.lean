@@ -47,6 +47,16 @@ multigrid uses this to choose the coarse space.
 * The identity of `SaadSparse.Chapter13.equation_13_68_of_rowSum_zero` is the computation of
   Mathlib's `SimpleGraph.lapMatrix_toLinearMap₂'`, with weights in place of the unweighted edges.
 
+## Deviations from the source
+
+* **(13.68)** (source location). `SaadSparse.Chapter13.equation_13_68` and
+  `SaadSparse.Chapter13.equation_13_68_of_rowSum_zero` state the exact expansions in the
+  unnumbered displays after (13.69). Printed (13.68) is the heuristic that the $A$ quadratic
+  form is much smaller than the $D$ quadratic form on smooth errors.
+* **(13.69)** (reading). `SaadSparse.Chapter13.equation_13_69` gives the exact row identity
+  equivalent to zero residual in that row. The source presents an approximate relation for
+  smooth errors.
+
 ## Not formalized
 
 * **The smoothness criterion (13.70).** It comes from an averaging argument that the book does not
@@ -74,7 +84,14 @@ $$(As, s) = \frac{1}{2} \sum_{i,j} (-a_{ij}) (s_j - s_i)^2 + \sum_i \Big(\sum_j 
 The smoothness argument of Section 13.6.1 starts from this expansion. The identity is the
 elementary $-a_{ij} ((s_j - s_i)^2 - s_i^2 - s_j^2) = 2 a_{ij} s_i s_j$, summed over all pairs.
 The symmetry of $A$ is used once, to replace $\sum_i \sum_j a_{ij} s_j^2$ by
-$\sum_i \sum_j a_{ij} s_i^2$. The quadratic form $(As, s)$ is the dot product `(A *ᵥ s) ⬝ᵥ s`. -/
+$\sum_i \sum_j a_{ij} s_i^2$. The quadratic form $(As, s)$ is the dot product `(A *ᵥ s) ⬝ᵥ s`.
+
+**Source location.** The expansion appears in an unnumbered display after (13.69). Printed
+(13.68) gives a heuristic comparison of the $A$ and $D$ quadratic forms for smooth errors.
+
+**Reading.** Gives exact quadratic-form expansion under symmetry; printed (13.68) is the
+small-Rayleigh-quotient heuristic.
+-/
 theorem equation_13_68 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (s : Fin n → ℝ) :
     (A *ᵥ s) ⬝ᵥ s
       = (∑ i, ∑ j, -A i j * (s j - s i) ^ 2) / 2 + ∑ i, (∑ j, A i j) * s i ^ 2 := by
@@ -116,7 +133,10 @@ $$(As, s) = \frac{1}{2} \sum_{i,j} |a_{ij}| (s_j - s_i)^2.$$
 
 This is the weighted graph-Laplacian form of the quadratic form. It is the identity behind the
 algebraic multigrid reading of smoothness: $(As, s)$ is small exactly when $s$ varies little
-across the strong couplings. -/
+across the strong couplings.
+
+**Scope.** This is the exact zero-row-sum identity behind the subsequent heuristic smallness
+calculation. It uses nonpositive off-diagonal entries. -/
 theorem equation_13_68_of_rowSum_zero {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hrow : ∀ i, ∑ j, A i j = 0) (hoff : ∀ i j, i ≠ j → A i j ≤ 0) (s : Fin n → ℝ) :
     (A *ᵥ s) ⬝ᵥ s = (∑ i, ∑ j, |A i j| * (s j - s i) ^ 2) / 2 := by
@@ -138,7 +158,10 @@ only if
 $$a_{ii} s_i = -\sum_{j \ne i} a_{ij} s_j.$$
 
 The book uses the row equation as an approximate identity for a smooth error, where
-$(As, s) \approx 0$ forces $As \approx 0$, and it reads an interpolation formula from it. -/
+$(As, s) \approx 0$ forces $As \approx 0$, and it reads an interpolation formula from it.
+
+**Reading.** The source gives a heuristic approximate relation. The theorem characterizes
+equality in the row equation by exact vanishing of that residual component. -/
 theorem equation_13_69 (A : Matrix (Fin n) (Fin n) ℝ) (s : Fin n → ℝ) (i : Fin n) :
     (A *ᵥ s) i = 0 ↔ A i i * s i = -∑ j ∈ Finset.univ.erase i, A i j * s j := by
   rw [mulVec, dotProduct, ← Finset.add_sum_erase _ _ (Finset.mem_univ i)]

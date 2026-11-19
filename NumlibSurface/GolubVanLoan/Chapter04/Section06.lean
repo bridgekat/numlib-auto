@@ -77,6 +77,15 @@ Fourier transform matrix is a Vandermonde matrix uses `GolubVanLoan.Chapter01.fo
 * These loop orders make every step read only values that the same pass has not yet overwritten. The
   exact runs are therefore the products of the factors of §4.6.2.
 
+## Deviations from the source
+
+* **Generalization.** The nonsingularity criterion includes the converse. See
+  `GolubVanLoan.Chapter04.vandermonde_isUnit_iff`.
+* **Correction.** The Newton interpolant can have degree less than $n$. See
+  `GolubVanLoan.Chapter04.equation_4_6_2`.
+* **Reading.** The Björck–Pereyra programs totalize division and use a rounding hook. See
+  `GolubVanLoan.Chapter04.algorithm_4_6_1`, `GolubVanLoan.Chapter04.algorithm_4_6_2`.
+
 ## Not formalized
 
 * **Displays (4.6.3)–(4.6.4)** as separate results. They are the two stages of Algorithm 4.6.1,
@@ -143,7 +152,11 @@ theorem equation_4_6_1 (x a f : Fin (n + 1) → ℝ) :
 $x_0, \dots, x_n \in \mathbb{R}$. The Vandermonde matrix $V(x_0, \dots, x_n)$ is nonsingular if
 and only if the $x_i$ are distinct.
 
-The source states the "if" direction, as a consequence of (4.6.1). -/
+The source states the "if" direction, as a consequence of (4.6.1).
+
+**Generalization.** Lean proves both directions of the criterion. The text uses distinctness to
+obtain nonsingularity.
+-/
 theorem vandermonde_isUnit_iff (x : Fin (n + 1) → ℝ) :
     IsUnit (vandermondeCols x) ↔ Function.Injective x := by
   rw [isUnit_iff_isUnit_det, vandermondeCols, det_transpose, isUnit_iff_ne_zero,
@@ -158,7 +171,11 @@ $$g[x_0, \dots, x_k] = \sum_{i=0}^{k} \frac{g(x_i)}{\prod_{j \le k, j \neq i} (x
 
 The source computes this Newton representation as the first step of solving (4.6.1). The
 interpolant is `Lagrange.interpolate`, and the divided difference is
-`DividedDifference.newtonOn` over the index set $\{0, \dots, k\}$. -/
+`DividedDifference.newtonOn` over the index set $\{0, \dots, k\}$.
+
+**Correction.** The interpolant has degree at most $n$. The text describes it as having degree $n$,
+but the highest coefficient may vanish, for example for constant data when $n > 0$.
+-/
 theorem equation_4_6_2 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (g : ℝ → ℝ) :
     Lagrange.interpolate univ x (fun i => g (x i)) =
       ∑ k, C (DividedDifference.newtonOn (Iic k) x g) * ∏ i ∈ Iio k, (X - C (x i)) := by
@@ -227,7 +244,12 @@ end
 ```
 The program computes $f_i \leftarrow \mathrm{fl}(\mathrm{fl}(f_i - f_{i-1}) / \mathrm{fl}(x_i -
 x_{i-k-1}))$ in the first sweep and $f_i \leftarrow \mathrm{fl}(f_i - \mathrm{fl}(f_{i+1} x_k))$
-in the second. The differences of nodes are computed, hence rounded. -/
+in the second. The differences of nodes are computed, hence rounded.
+
+**Reading.** The program preserves the loop orders and rounds each arithmetic operation, including
+the node differences. Its type accepts repeated nodes using totalized division. The exact solve
+theorem assumes distinct nodes as in the source.
+-/
 noncomputable def algorithm_4_6_1 (x f : Fin (n + 1) → ℝ) : M (Fin (n + 1) → ℝ) := do
   let c ← (List.finRange n).foldlM (fun (f : Fin (n + 1) → ℝ) (k : Fin n) =>
     ((List.finRange n).filter (fun i : Fin n => k ≤ i)).reverse.foldlM
@@ -263,7 +285,12 @@ end
 ```
 The program computes $b_i \leftarrow \mathrm{fl}(b_i - \mathrm{fl}(x_k b_{i-1}))$ in the first
 sweep, and $b_i \leftarrow \mathrm{fl}(b_i / \mathrm{fl}(x_i - x_{i-k-1}))$ and then
-$b_i \leftarrow \mathrm{fl}(b_i - b_{i+1})$ in the second. -/
+$b_i \leftarrow \mathrm{fl}(b_i - b_{i+1})$ in the second.
+
+**Reading.** The program preserves the loop orders and rounds each arithmetic operation, including
+the node differences. Its type accepts repeated nodes using totalized division. The exact solve
+theorem assumes distinct nodes as in the source.
+-/
 noncomputable def algorithm_4_6_2 (x b : Fin (n + 1) → ℝ) : M (Fin (n + 1) → ℝ) := do
   let y ← (List.finRange n).foldlM (fun (b : Fin (n + 1) → ℝ) (k : Fin n) =>
     ((List.finRange n).filter (fun i : Fin n => k ≤ i)).reverse.foldlM

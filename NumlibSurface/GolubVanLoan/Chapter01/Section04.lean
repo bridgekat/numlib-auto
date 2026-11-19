@@ -87,9 +87,15 @@ matrices). This module also defines the rounded entrywise vector operations that
 
 ## Deviations from the source
 
-* **§1.4.3, the Haar matrix** (typo). The printed recursion for $W_{2m}$ lost its brackets, and the
-  printed $W_4$ and the sixth row of $W_8$ are garbled; the definition follows $W_2$ and the intact
-  rows of $W_8$. See `GolubVanLoan.Chapter01.haarMatrix`.
+* **Equations (1.4.3), (1.4.4), and (1.4.8)** (reading). The transform definitions extend to
+  $m=0$. The sine transform and its matrix product are empty, and the cosine transform is the
+  identity on one entry. See `GolubVanLoan.Chapter01.dstTransform`,
+  `GolubVanLoan.Chapter01.dctTransform` and `GolubVanLoan.Chapter01.equation_1_4_8`.
+* **Algorithm 1.4.1, twiddle factors** (reading). The program forms powers by successive rounded
+  products. See `GolubVanLoan.Chapter01.fftTwiddles`.
+* **Algorithms 1.4.2 and 1.4.3** (reading). The programs choose the radix-2 FFT, so $m$ is a power
+  of two. The rounded outputs are complex. See `GolubVanLoan.Chapter01.algorithm_1_4_2` and
+  `GolubVanLoan.Chapter01.algorithm_1_4_3`.
 * **Algorithm 1.4.4** (typo). The source writes $y(1{:}2{:}m)$ and $y(2{:}2{:}m)$ for $y(1{:}2{:}n)$
   and $y(2{:}2{:}n)$. See `GolubVanLoan.Chapter01.algorithm_1_4_4`.
 
@@ -265,7 +271,10 @@ variable {M : Type → Type} [Monad M] (rnd : ℂ → M ℂ)
 
 /-- The twiddle factors $d = [1, \omega, \dots, \omega^{m-1}]$ of Algorithm 1.4.1. Each power is
 formed from the previous one by a rounded multiplication: $d_0 = 1$ and
-$d_k = \mathrm{fl}(d_{k-1} \omega)$. -/
+$d_k = \mathrm{fl}(d_{k-1} \omega)$.
+
+**Reading.** The book writes powers of $\omega$ without fixing their evaluation order. The
+program computes each next power by multiplying the previous rounded value by $\omega$. -/
 def fftTwiddles (m : ℕ) (ω : ℂ) : M (Fin m → ℂ) := do
   let st ← (List.finRange m).foldlM (fun (st : (Fin m → ℂ) × ℂ) (k : Fin m) => do
     let c ← (if (k : ℕ) = 0 then pure 1 else rnd (st.2 * ω) : M ℂ)
@@ -560,6 +569,9 @@ end Theorem141
 $x_1, \dots, x_{m-1}$ is the vector $y$ with
 $$y_k = \sum_{j=1}^{m-1} \sin\left(\frac{kj\pi}{m}\right) x_j, \qquad k = 1, \dots, m - 1.$$
 
+**Reading.** The source takes $m$ positive. At $m=0$, the declaration has empty input and
+output vectors.
+
 In 0-based indices, the argument `x j` is the source's $x_{j+1}$, and the output entry with index
 $k$ is $y_{k+1}$. -/
 noncomputable def dstTransform (m : ℕ) (x : Fin (m - 1) → ℝ) : Fin (m - 1) → ℝ := fun k =>
@@ -570,7 +582,10 @@ $x_0, \dots, x_m$ is the vector $y$ with
 $$y_k = \frac{x_0}{2} + \sum_{j=1}^{m-1} \cos\left(\frac{kj\pi}{m}\right) x_j + (-1)^k
   \frac{x_m}{2}, \qquad k = 0, \dots, m.$$
 
-The three terms are as printed. The middle sum runs over `j : Fin (m - 1)`, shifted by one. -/
+**Reading.** The printed range assumes a positive $m$. At $m=0$, both endpoints are the same
+entry and the middle sum is empty. The transform returns that entry.
+
+The middle sum runs over `j : Fin (m - 1)`, shifted by one. -/
 noncomputable def dctTransform (m : ℕ) (x : Fin (m + 1) → ℝ) : Fin (m + 1) → ℝ := fun k =>
   x 0 / 2 + ∑ j : Fin (m - 1), Real.cos ((k : ℕ) * ((j : ℕ) + 1) * π / m) * x ⟨j + 1, by omega⟩ +
     (-1) ^ (k : ℕ) * x (Fin.last m) / 2
@@ -579,6 +594,9 @@ noncomputable def dctTransform (m : ℕ) (x : Fin (m + 1) → ℝ) : Fin (m + 1)
 discrete sine transform (1.4.3) is the matrix-vector product with the matrix $S_{m-1}$ of
 (1.4.6): $\mathrm{DST}(m - 1) = S_{m-1}$, that is,
 $$y = S_{m-1} x.$$
+
+**Reading.** The printed matrix product uses positive $m$. The theorem also includes $m=0$,
+where both sides are empty vectors.
 
 The matrix $S_{m-1}$ is `Matrix.dst1 (m - 1)`. -/
 theorem equation_1_4_8 (m : ℕ) (x : Fin (m - 1) → ℝ) : dstTransform m x = dst1 (m - 1) *ᵥ x := by
@@ -640,9 +658,11 @@ y = i · ỹ(2:m)/2
 Here $x_{\sin} = [0; x; 0; -Ex] \in \mathbb{R}^{2m}$. Each output entry is one rounding of
 $i \tilde y_k / 2$.
 
-Setting up $x_{\sin}$ needs no arithmetic except negation, which is exact. The output is
-complex, because in floating point $y$ acquires an imaginary part. The vector $x_{\sin}$ is
-`Matrix.oddExtensionVec x`. -/
+**Reading.** The book allows a choice of FFT. The program uses Algorithm 1.4.1 and therefore
+requires $m$ to be a power of two. The rounded result is complex because rounding may produce
+an imaginary component. The exact result is real by `GolubVanLoan.Chapter01.algorithm_1_4_2_spec`.
+
+Setting up $x_{\sin}$, which is `Matrix.oddExtensionVec x`, needs only exact negation. -/
 noncomputable def algorithm_1_4_2 (t : ℕ) (x : Fin (2 ^ t - 1) → ℝ) :
     M (Fin (2 ^ t - 1) → ℂ) := do
   let xsin : Fin (2 ^ (t + 1)) → ℂ := fun l =>
@@ -662,8 +682,12 @@ y = ỹ(1:m+1)/2
 Here $x_{\cos} = [x_0; \tilde x; x_m; E \tilde x]$ with $\tilde x = (x_1, \dots, x_{m-1})$. Each
 output entry is one rounding of $\tilde y_k / 2$.
 
-The output is complex, as for Algorithm 1.4.2. The vector $x_{\cos}$ is
-`Matrix.evenExtensionVec x`. -/
+**Reading.** The book allows a choice of FFT and specifies a real output. The program uses
+Algorithm 1.4.1, so $m$ is a power of two, and returns complex values to retain any imaginary
+components permitted by the rounding model. The exact result is real by
+`GolubVanLoan.Chapter01.algorithm_1_4_3_spec`.
+
+The vector $x_{\cos}$ is `Matrix.evenExtensionVec x`. -/
 noncomputable def algorithm_1_4_3 (t : ℕ) (x : Fin (2 ^ t + 1) → ℝ) :
     M (Fin (2 ^ t + 1) → ℂ) := do
   let xcos : Fin (2 ^ (t + 1)) → ℂ := fun l => (evenExtensionVec x (Fin.cast (pow_succ' 2 t) l) : ℂ)
@@ -717,11 +741,6 @@ So, in 0-based indices, column $j < m$ of $W_{2m}$ has the entries
 $W_m(\lfloor i/2 \rfloor, j)$, and column $m + j$ has the entry $(-1)^{i \bmod 2}$ in the rows
 $i$ with $\lfloor i/2 \rfloor = j$ and $0$ elsewhere
 (`GolubVanLoan.Chapter01.haarMatrix_succ_apply`).
-
-**Typo.** The printed recursion lost its brackets in conversion, and both printed examples
-beyond $W_2$ are partly garbled. The matrix $W_2$ and the intact rows of $W_8$, which agree with
-the recursion, fix the meaning. The printed $W_4$ and the sixth row of $W_8$ are not used as
-evidence.
 
 The Kronecker products are `Matrix.kroneckerFin`, and the two column blocks are joined by
 `GolubVanLoan.Chapter01.twoPowSplit`. -/

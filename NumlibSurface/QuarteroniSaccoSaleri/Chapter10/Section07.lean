@@ -75,6 +75,20 @@ solve the normal equations $B^T W B a = B^T W y$ (10.46) with $b_{ij} = \varphi_
 
 ## Deviations from the source
 
+* **Section 10.7, continuous approximation and discrete truncation** (generalization).
+  `leastSquaresPolynomial_isBestApprox` uses any measure weight in place of a density on
+  $(a,b)$. `discreteTruncation_eq_interpolate` uses distinct nodes, positive weights and
+  exactness through $2n-1$. The discrete interpolation identity in the source is presented for
+  Chebyshev and Legendre Lobatto rules.
+* **Equations (10.43)–(10.45)** (reading). `IsDiscreteLeastSquares` gives a minimization
+  predicate for arbitrary real node data and weights. The Euclidean objective identities also
+  allow zero weights. The uniqueness and definiteness conclusions in `equation_10_44` and
+  `exercise_10_7` use positive weights, distinct nodes, and $n\leq m$. If $n>m$, a nonzero
+  polynomial of degree $n$ or less can vanish at all the nodes.
+* **Section 10.7.1, normal equations and linear regression** (reading). The normal-equations
+  equivalence applies to a polynomial basis even for repeated nodes and $n>m$.
+  `linearRegression_coeff` uses the basis $1,x$ and proves its weighted Gram determinant
+  positive.
 * **Equation (10.46)** (generalization). The book prints $B^T B a = B^T y$, which omits the weight
   matrix that its display before (10.46) carries. The library states $B^T W B a = B^T W y$ with
   $W = \operatorname{diag}(w_j)$; the printed form is the case $w_j = 1$. See
@@ -104,7 +118,9 @@ and it is the truncation $f_n$ of order $n$ of the generalized Fourier series of
 
 The space $\mathbb{P}_n$ is its image in `Lp ℝ 2 μ`, and the minimum is `IsBestApprox`.
 Existence and the identification are `QuarteroniSaccoSaleri.Chapter10.equation_10_3`. Uniqueness
-is `IsBestApprox.unique`, because $L^2_w$ is strictly convex. -/
+is `IsBestApprox.unique`, because $L^2_w$ is strictly convex.
+
+**Generalization.** Uses any measure weight and the image of the polynomial space in $L^2$. -/
 theorem leastSquaresPolynomial_isBestApprox (hw : IsWeight μ) (n : ℕ) (f : Lp ℝ 2 μ) :
     (∃! r, IsBestApprox ((degreeLE ℝ n).map hw.toLpₗ : Set (Lp ℝ 2 μ)) f r) ∧
       ∀ r, IsBestApprox ((degreeLE ℝ n).map hw.toLpₗ : Set (Lp ℝ 2 μ)) f r →
@@ -128,7 +144,10 @@ $$\|f - f_n^*\|_n = 0.$$
 So (10.6) holds trivially.
 
 The Chebyshev case is (10.29) and the Legendre case is (10.38). The proof specializes
-`Quadrature.interpolate_eq_sum_discreteInner_smul`. -/
+`Quadrature.interpolate_eq_sum_discreteInner_smul`.
+
+**Generalization.** Applies to any positive rule with distinct nodes and exactness through
+$2n-1$. The source presents the equality for Chebyshev and Legendre Gauss–Lobatto rules. -/
 theorem discreteTruncation_eq_interpolate (hw : IsWeight μ) (hn : 1 ≤ n) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) {w : Fin (n + 1) → ℝ} (hwpos : ∀ i, 0 < w i)
     (hexact : IsExactOnMeasure μ w x (2 * n - 1)) (f : ℝ → ℝ) :
@@ -155,7 +174,10 @@ polynomial. Given $m + 1$ pairs of data $(x_i, y_i)$ and weights $w_j$, a polyno
 $$\sum_j w_j |p_n(x_j) - y_j|^2 \le \sum_j w_j |q_n(x_j) - y_j|^2 \quad \text{for all } q_n \in
   \mathbb{P}_n. \tag{10.44}$$
 
-The definition does not require $w_j > 0$; the theorems below assume it. -/
+The definition does not require $w_j > 0$; the theorems below assume it.
+
+**Generalization.** The minimization predicate is defined even for repeated nodes or weights
+that are not positive. The existence and uniqueness theorem uses the data conditions below. -/
 def IsDiscreteLeastSquares (x y w : Fin (m + 1) → ℝ) (n : ℕ) (p : ℝ[X]) : Prop :=
   p.degree ≤ n ∧ ∀ q : ℝ[X], q.degree ≤ n →
     ∑ j, w j * |p.eval (x j) - y j| ^ 2 ≤ ∑ j, w j * |q.eval (x j) - y j| ^ 2
@@ -189,7 +211,9 @@ theorem weightedData_apply (y w : Fin (m + 1) → ℝ) (j : Fin (m + 1)) :
     weightedData y w j = √(w j) * y j := rfl
 
 /-- Supports Section 10.7.1. If $w_j \ge 0$ for all $j$, then the inner product of the weighted
-evaluations of $p$ and $q$ is the discrete scalar product $\sum_j w_j p(x_j) q(x_j)$. -/
+evaluations of $p$ and $q$ is the discrete scalar product $\sum_j w_j p(x_j) q(x_j)$.
+
+**Generalization.** This identity for the weighted sum holds with zero weights, too. -/
 theorem inner_weightedEval (hw : ∀ j, 0 ≤ w j) (p q : ℝ[X]) :
     inner ℝ (weightedEval x w p) (weightedEval x w q) =
       ∑ j, w j * p.eval (x j) * q.eval (x j) := by
@@ -199,7 +223,9 @@ theorem inner_weightedEval (hw : ∀ j, 0 ≤ w j) (p q : ℝ[X]) :
   linear_combination (p.eval (x j) * q.eval (x j)) * this
 
 /-- Supports Section 10.7.1. If $w_j \ge 0$ for all $j$, then the inner product of the weighted
-evaluation of $p$ with the weighted data vector is $\sum_j w_j p(x_j) y_j$. -/
+evaluation of $p$ with the weighted data vector is $\sum_j w_j p(x_j) y_j$.
+
+**Generalization.** This identity for the weighted data sum holds with zero weights, too. -/
 theorem inner_weightedEval_weightedData (hw : ∀ j, 0 ≤ w j) (p : ℝ[X]) :
     inner ℝ (weightedEval x w p) (weightedData y w) = ∑ j, w j * p.eval (x j) * y j := by
   simp only [PiLp.inner_apply, weightedEval_apply, weightedData_apply, RCLike.inner_apply,
@@ -209,7 +235,9 @@ theorem inner_weightedEval_weightedData (hw : ∀ j, 0 ≤ w j) (p : ℝ[X]) :
   linear_combination (p.eval (x j) * y j) * this
 
 /-- Supports equation (10.45). If $w_j \ge 0$ for all $j$, then the squared norm of the weighted
-evaluation of $q$ is $\sum_j w_j q(x_j)^2$, the square of the seminorm (10.45). -/
+evaluation of $q$ is $\sum_j w_j q(x_j)^2$, the square of the seminorm (10.45).
+
+**Generalization.** The Euclidean norm identity holds for nonnegative weights, including zero. -/
 theorem norm_weightedEval_sq (hw : ∀ j, 0 ≤ w j) (q : ℝ[X]) :
     ‖weightedEval x w q‖ ^ 2 = ∑ j, w j * q.eval (x j) ^ 2 := by
   rw [EuclideanSpace.real_norm_sq_eq]
@@ -217,7 +245,9 @@ theorem norm_weightedEval_sq (hw : ∀ j, 0 ≤ w j) (q : ℝ[X]) :
   rw [weightedEval_apply, mul_pow, Real.sq_sqrt (hw j)]
 
 /-- Supports equation (10.44). If $w_j \ge 0$ for all $j$, then the squared distance between the
-weighted evaluation of $q$ and the weighted data vector is $\sum_j w_j |q(x_j) - y_j|^2$. -/
+weighted evaluation of $q$ and the weighted data vector is $\sum_j w_j |q(x_j) - y_j|^2$.
+
+**Generalization.** The objective identity holds for nonnegative weights, including zero. -/
 theorem norm_weightedEval_sub_weightedData_sq (hw : ∀ j, 0 ≤ w j) (q : ℝ[X]) :
     ‖weightedEval x w q - weightedData y w‖ ^ 2 = ∑ j, w j * |q.eval (x j) - y j| ^ 2 := by
   rw [EuclideanSpace.real_norm_sq_eq]
@@ -241,7 +271,10 @@ theorem weightedEval_eq_zero_iff (hw : ∀ j, 0 < w j) (q : ℝ[X]) :
 /-- Supports equation (10.45): the seminorm is a norm on $\mathbb{P}_n$ for $n \le m$. Let the nodes
 $x_0, \dots, x_m$ be distinct, let $w_j > 0$, and let $n \le m$. If $q \in \mathbb{P}_n$ and the
 weighted evaluation of $q$ is zero, then $q = 0$: a polynomial of degree at most $n \le m$ that
-vanishes at $m + 1$ distinct nodes is zero. -/
+vanishes at $m + 1$ distinct nodes is zero.
+
+**Reading.** Requires $n\leq m$ so that the $m+1$ distinct nodes determine a polynomial of
+degree at most $n$. -/
 theorem eq_zero_of_weightedEval_eq_zero (hx : Function.Injective x) (hw : ∀ j, 0 < w j)
     (hnm : n ≤ m) {q : ℝ[X]} (hq : q.degree ≤ n) (h : weightedEval x w q = 0) : q = 0 := by
   refine Polynomial.eq_zero_of_degree_lt_of_eval_index_eq_zero Finset.univ hx.injOn ?_
@@ -282,7 +315,10 @@ The proof uses the existence and uniqueness of the best approximation from the
 finite-dimensional subspace, the image of $\mathbb{P}_n$ in $\mathbb{R}^{m+1}$
 (`exists_isBestApprox_of_finiteDimensional`, `IsBestApprox.unique`). It pulls the result back
 along the weighted evaluation map, which is injective on $\mathbb{P}_n$
-(`QuarteroniSaccoSaleri.Chapter10.eq_zero_of_weightedEval_eq_zero`). -/
+(`QuarteroniSaccoSaleri.Chapter10.eq_zero_of_weightedEval_eq_zero`).
+
+**Reading.** Requires $n\leq m$ for uniqueness. When $n>m$, adding a multiple of the nodal
+polynomial leaves the objective unchanged. -/
 theorem equation_10_44 (hx : Function.Injective x) (hw : ∀ j, 0 < w j) (hnm : n ≤ m)
     (y : Fin (m + 1) → ℝ) :
     (∃! p, IsDiscreteLeastSquares x y w n p) ∧
@@ -334,7 +370,10 @@ $(\alpha, \beta) \neq (0, 0)$.
 The seminorm is the Euclidean norm pulled back along the weighted evaluation map. The
 essentially strict property is the equality case of the triangle inequality in the strictly
 convex space $\mathbb{R}^{m+1}$ (`sameRay_iff_norm_add`), which makes $(\sqrt{w_j} f(x_j))_j$
-and $(\sqrt{w_j} g(x_j))_j$ linearly dependent. -/
+and $(\sqrt{w_j} g(x_j))_j$ linearly dependent.
+
+**Reading.** The proof of definiteness on $\mathbb P_n$ uses $n\leq m$, since a polynomial of
+higher degree can vanish at every node. -/
 theorem exercise_10_7 (hx : Function.Injective x) (hw : ∀ j, 0 < w j) (hnm : n ≤ m) :
     (∀ q : ℝ[X], discreteNorm w x (fun t => q.eval t) = √(∑ j, w j * q.eval (x j) ^ 2)) ∧
       (∃ N : Seminorm ℝ ℝ[X], ∀ q, N q = discreteNorm w x fun t => q.eval t) ∧
@@ -388,7 +427,10 @@ $$\sum_k a_k \sum_j w_j \varphi_k(x_j) \varphi_i(x_j) = \sum_j w_j y_j \varphi_i
   \text{for all } i = 0, \dots, n.$$
 
 This is the characterization `isBestApprox_sum_iff` of best approximations from the span of the
-vectors $(\sqrt{w_j} \varphi_k(x_j))_j$, $k = 0, \dots, n$. -/
+vectors $(\sqrt{w_j} \varphi_k(x_j))_j$, $k = 0, \dots, n$.
+
+**Generalization.** States both directions of the criterion. The equivalence holds with a
+polynomial basis even when nodes repeat or $n>m$. -/
 theorem isDiscreteLeastSquares_sum_iff (hw : ∀ j, 0 < w j) {φ : Fin (n + 1) → ℝ[X]}
     (hdeg : ∀ j, (φ j).degree ≤ n) (hli : LinearIndependent ℝ φ) (a : Fin (n + 1) → ℝ) :
     IsDiscreteLeastSquares x y w n (∑ k, C (a k) * φ k) ↔
@@ -465,7 +507,10 @@ is the case $w_j = 1$.
 The proof applies Cramer's rule to the $2 \times 2$ normal equations
 `QuarteroniSaccoSaleri.Chapter10.isDiscreteLeastSquares_sum_iff`. The inequality $D > 0$ is the
 strict Cauchy–Schwarz inequality for $(\sqrt{w_j})_j$ and $(\sqrt{w_j} x_j)_j$, which are
-linearly independent when two nodes differ. -/
+linearly independent when two nodes differ.
+
+**Reading.** Uses the basis $1,x$ in the weighted two-by-two system. The source gives the
+formula for generic $\varphi_0,\varphi_1$. -/
 theorem linearRegression_coeff (hx : Function.Injective x) (hw : ∀ j, 0 < w j) (hm : 1 ≤ m)
     (Y : ℝ → ℝ) {a₀ a₁ : ℝ}
     (h : IsDiscreteLeastSquares x (fun j => Y (x j)) w 1 (C a₀ + C a₁ * X)) :

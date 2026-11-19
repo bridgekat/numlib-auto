@@ -93,9 +93,10 @@ inequalities after (3.5.16), and the constant $\kappa_r$ of (3.5.18), are not ne
 
 ## Deviations from the source
 
-* **Lemma 3.5.1** (typo). The printed constant $\kappa_\lambda = 2 \sqrt{\kappa_\lambda (1 +
-  \kappa_{rg})}$ is self-referential; the proof gives $\kappa_\lambda = 2 \sqrt{\bar\kappa_\lambda
-  (1 + \kappa_{rg})}$. See `CartisGouldToint.Chapter03.lemma_3_5_1`.
+* **The class $\mathcal M$ and Theorem 3.5.4** (reading). The method is a
+  deterministic oracle using values and the first two derivatives at its iterates.
+  Membership is tested along the run on the constructed objective up to first hit.
+  See `CartisGouldToint.Chapter03.IsMClassMethod`.
 * **Lemma 3.5.1** (generalization). The lemma holds without (3.5.3), without $\kappa_{rg} < 1$ and
   without $s \ne 0$. See `CartisGouldToint.Chapter03.lemma_3_5_1`.
 * **Lemma 3.5.2** (generalization). Assumptions f.Bb and f.gL are not needed, and the bound holds
@@ -114,6 +115,9 @@ inequalities after (3.5.16), and the constant $\kappa_r$ of (3.5.18), are not ne
   $\eta > 1/2$. The example is rescaled to $c G(x / c)$ with $c = \min(1, (2 \eta)^{-1/2})$, which
   keeps the gradients at the iterates and the termination index. See
   `CartisGouldToint.Chapter03.corollary_3_5_5_iii`.
+* **Corollary 3.5.5** (reading). The three statements exhibit runs with the lower
+  count and corresponding explicit upper bounds. The AR2 witness uses the
+  zero-Hessian data from Theorem 3.3.6. See `CartisGouldToint.Chapter03.corollary_3_5_5_i`.
 -/
 
 open Set Finset Optimization
@@ -184,7 +188,11 @@ is, satisfies (3.5.2)–(3.5.4).
 
 The iterates are `M.iterate (jetOracle f 2) k`, for the method `M : Optimization.OracleMethod ℝⁿ
 (Optimization.Jet ℝⁿ 2)` and the oracle `Optimization.jetOracle`. The class is a property of the
-method on one function and one tolerance. -/
+method on one function and one tolerance.
+
+**Reading.** Restricts methods to deterministic second-order oracles and tests membership on one
+objective and tolerance up to termination.
+-/
 def IsMClassMethod (κrg κrs κlam : ℝ)
     (M : OracleMethod (EuclideanSpace ℝ (Fin n)) (Jet (EuclideanSpace ℝ (Fin n)) 2))
     (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε : ℝ) : Prop :=
@@ -221,10 +229,7 @@ $\lambda \le \bar\kappa_\lambda \|s\|$ (3.5.6), then (3.5.4) holds with $\kappa_
 $$\lambda_{\min}[\nabla^2 f(x)] + \lambda \le 2 \sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}
   \max\left(|\lambda_{\min}[\nabla^2 f(x)]|, \|\nabla f(x)\|^{1/2}\right).$$
 
-**Typo.** The source prints the self-referential constant $\kappa_\lambda = 2
-\sqrt{\kappa_\lambda (1 + \kappa_{rg})}$; the proof in Appendix B gives
-$2 \sqrt{\bar\kappa_\lambda (1 + \kappa_{rg})}$, which is used here. **Generalization.** The
-lemma holds without (3.5.3), without $\kappa_{rg} < 1$ and without $s \ne 0$; only
+**Generalization.** The lemma holds without (3.5.3), $\kappa_{rg} < 1$, or $s \ne 0$. Only
 $\kappa_{rg} \ge 0$ and $\bar\kappa_\lambda \ge 1$ are used.
 
 No differentiability of $f$ is assumed: the proof uses (3.5.2) only as a relation between the
@@ -459,7 +464,11 @@ $G(x_k) = f_k$, $G'(x_k) = g_k$ and $G''(x_k) = H_k$ for $k \le k_\epsilon$.
 
 The construction follows the proof in Appendix B. The data are `Optimization.secondOrderK`,
 `Optimization.secondOrderF`, `Optimization.secondOrderG` and `Optimization.secondOrderH`. The
-example is also used for Corollary 3.5.5. -/
+example is also used for Corollary 3.5.5.
+
+**Correction.** Uses a uniform all-space bound and the corrected ceiling endpoint; interpolates any
+node sequence with factors in the stated interval.
+-/
 theorem exists_slowSecondOrder_ridge {a b : ℝ} (ha : 0 < a) (hab : a ≤ b) :
     ∃ L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ 0 ≤ B ∧ ∀ (ε : ℝ) (θ x : ℕ → ℝ), 0 < ε → ε ≤ 1 →
       (∀ k < secondOrderK ε, θ k ∈ Icc a b) →
@@ -808,7 +817,11 @@ $p = 2$ and $q = 1$, which have zero Hessians at the iterates, and steps that ar
 minimizers of the model with $\sigma_k = \sigma_0$. In the proof,
 $\kappa_\lambda = 1 + \sqrt{\sigma_0 / 2}$ and the multiplier is
 $\lambda_k = \sigma_0 \|s_k\| / 2$. The constants are `CartisGouldToint.Chapter03.kappaSAR2` and
-`CartisGouldToint.Chapter03.kappaCAR2`. -/
+`CartisGouldToint.Chapter03.kappaCAR2`.
+
+**Reading.** Uses the zero-Hessian Theorem 3.3.6 witness and gives explicit lower and upper
+evaluation counts.
+-/
 theorem corollary_3_5_5_i (P : AR2Params) :
     ∃ flow L₁ L₂ B κlam : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ 1 < κlam ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧
@@ -912,7 +925,11 @@ logarithmic term.
 The condition $\sqrt{\epsilon_1} < \Delta_0$ is the condition $\Delta_0 > \epsilon_*$ of TRε.
 The constants $f_{\mathrm{low}}$, $L_{f,1}$, $L_{f,2}$ and $B$ do not depend on the TRε
 constants. In the run the steps are interior, the radius is constant, and the multiplier is
-$\lambda_k = \epsilon_*$. The run is `CartisGouldToint.Chapter03.tre_slow_example`. -/
+$\lambda_k = \epsilon_*$. The run is `CartisGouldToint.Chapter03.tre_slow_example`.
+
+**Correction.** Exhibits a first-hit run and upper count for the source interior-step choice with
+corrected witness endpoint.
+-/
 theorem corollary_3_5_5_ii :
     ∃ flow L₁ L₂ B : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ (P : TREpsParams) (ε : ℝ), 0 < ε → ε < 1 →
       √ε < P.Δ₀ → ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧

@@ -20,6 +20,11 @@ The given positive definite inner product is the inner product of the ambient sp
   and nonzero line-search coefficients give successive error minimization.
 * Lemma 4.1.1 (2), `LiesenStrakos.lemma_4_1_1_backward`: successive error minimization
   and nonzero line-search numerators give the coefficients and orthogonality.
+
+## Deviations from the source
+
+* **Lemma 4.1.1** (generalization). The chosen error inner product is the ambient inner product.
+  The line-search equivalence takes a finite prefix and needs no separate linear system.
 -/
 
 open scoped InnerProductSpace
@@ -41,14 +46,20 @@ private theorem direction_mem_span (p : ℕ → E) {i j : ℕ} (h : i < j) :
   Submodule.subset_span ⟨i, h, rfl⟩
 
 /-- At step $j$, $u_j$ minimizes the distance to $x$ over the affine space obtained by translating
-the first $j$ search directions' span by $u_0$. -/
+the first $j$ search directions' span by $u_0$.
+
+**Reading.** The norm is the ambient norm and the definition compares its value to an infimum.
+The update hypotheses ensure that the iterate belongs to the affine trial space. -/
 def IsDirectionErrorMinimizer (x : E) (u p : ℕ → E) (j : ℕ) : Prop :=
   ‖x - u j‖ = ⨅ z : directionSpan (𝕜 := 𝕜) p j, ‖x - (u 0 + z)‖
 
 /-- A CG-like descent method updates $u_j$ along a nonzero direction $p_j$. The span of the
 first $j$ directions is the $j$-th Krylov subspace of $A$ at $b-Au_0$, and $u_j$ minimizes
 the error norm on the corresponding affine space. These are the conditions around (4.1.1)
-and (4.1.2) in [liesen2013krylov]. -/
+and (4.1.2) in [liesen2013krylov].
+
+**Generalization.** The property concerns a finite prefix in any real or complex inner product
+space, which carries the chosen error norm. -/
 def IsCGLikeDescent (A : Module.End 𝕜 E) (x b : E) (u p : ℕ → E) (α : ℕ → 𝕜)
     (n : ℕ) : Prop :=
   A x = b ∧
@@ -91,7 +102,10 @@ private theorem inner_error_step {x : E} {u p : ℕ → E} {α : ℕ → 𝕜} {
   rw [hstep, ← sub_sub, inner_sub_right, inner_smul_right]
 
 /-- Pairwise orthogonal nonzero directions with nonzero line-search coefficients yield minimal
-errors in every successive affine span. This is Lemma 4.1.1 (1) of [liesen2013krylov]. -/
+errors in every successive affine span. This is Lemma 4.1.1 (1) of [liesen2013krylov].
+
+**Generalization.** The relation uses any ambient inner product and requires no linear system.
+It also includes step zero. -/
 theorem lemma_4_1_1_forward {x : E} {u p : ℕ → E} {α : ℕ → 𝕜} {n : ℕ}
     (hstep : ∀ j < n, u (j + 1) = u j + α j • p j)
     (hp : ∀ j < n, p j ≠ 0)
@@ -114,7 +128,10 @@ theorem lemma_4_1_1_forward {x : E} {u p : ℕ → E} {α : ℕ → 𝕜} {n : �
 
 /-- Successive error minimization and nonzero line-search numerators give the nonzero
 line-search coefficients and pairwise orthogonality. This is Lemma 4.1.1 (2) of
-[liesen2013krylov]. -/
+[liesen2013krylov].
+
+**Generalization.** The relation uses any ambient inner product and requires no linear system.
+It also includes step zero. -/
 theorem lemma_4_1_1_backward {x : E} {u p : ℕ → E} {α : ℕ → 𝕜} {n : ℕ}
     (hstep : ∀ j < n, u (j + 1) = u j + α j • p j)
     (hp : ∀ j < n, p j ≠ 0)

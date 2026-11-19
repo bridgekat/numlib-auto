@@ -66,14 +66,27 @@ The proofs specialize the results on inverses in a normed ring of
 * In the integral examples the kernel is a continuous function on the square, and the kernel of
   Example 2.3.6 is described by a hypothesis on its values, not constructed.
 
+## Deviations from the source
+
+* **Examples 2.3.2 and 2.3.4** (generalization). The abstract versions apply to bounded
+  endomorphisms of any Banach space. The Fredholm specialization recovers the integral example.
+* **Example 2.3.4, Volterra operator** (generalization and reading). Lean uses any closed interval
+  and any nonzero scalar multiplying the identity. It assumes a kernel continuous on the square
+  and uses its norm there. The book uses continuity and the supremum on the integration triangle.
+* **Theorem 2.3.5** (reading). Lean's reciprocal is zero if the inverse has norm zero, so the
+  strict perturbation condition is false on the zero space.
+* **Example 2.3.6, (2.3.18)** (reading). The norm computation is bundled with invertibility, so
+  they are both stated under the sufficient condition on $|\lambda|$.
+
 ## Not formalized
 
 * **Example 2.3.6, second half.** The explicit inverse (2.3.20) of the degenerate kernel equation
   (2.3.19), the bound $\|L^{-1}\| \le \frac{1}{|\lambda|} \big(1 + \frac{1}{2 |\lambda - 1/3|}\big)$
   that follows from it, and the resulting condition (2.3.21) with its numerical root
-  $\lambda_0 \approx -0.0881$. The book leaves this analysis to the reader as Exercise 2.3.5, gives
-  the constants to two decimals only, and does not use them later. The two operator norms on which
-  the analysis rests, $\|K\|$ and $\|L - M\|$, are formalized.
+  $\lambda_0 \approx -0.0881$. The formalization gives the two operator norms on which the
+  analysis rests, $\|K\|$ and $\|L - M\|$.
+* **Example 2.3.4, iterated kernels.** The formalization gives the bound on the powers of the
+  operator instead of constructing the recursive kernels.
 -/
 
 open Filter Topology
@@ -200,7 +213,10 @@ $$\|(\lambda I - K)^{-1}\| \le \frac{1}{|\lambda| - \|K\|}.$$
 The resulting bound on the solution of $(\lambda I - K) u = f$ is
 `AtkinsonHan.Chapter02.example_2_3_2_bound`. The concrete part of the example, where $K$ is an
 integral operator on $C[a, b]$ with norm (2.2.8), is
-`AtkinsonHan.Chapter02.example_2_3_2_integral`. -/
+`AtkinsonHan.Chapter02.example_2_3_2_integral`.
+
+**Generalization.** The source states the result for the Fredholm operator of (2.3.6).
+This form accepts any bounded endomorphism of a Banach space. -/
 theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : ‖K‖ < ‖lam‖) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = lam • (1 : V →L[𝕜] V) - K ∧
       ‖(e.symm : V →L[𝕜] V)‖ ≤ 1 / (‖lam‖ - ‖K‖) := by
@@ -235,7 +251,8 @@ theorem example_2_3_2 [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : �
 over $\mathbb{K}$, let $K \in \mathcal{L}(V)$ and let $\lambda \in \mathbb{K}$ satisfy
 $\|K\| < |\lambda|$. If $(\lambda I - K) u = f$, then
 $$\|u\| \le \frac{\|f\|}{|\lambda| - \|K\|}.$$
--/
+
+**Generalization.** The solution bound applies to any bounded endomorphism of a Banach space. -/
 theorem example_2_3_2_bound [CompleteSpace V] (K : V →L[𝕜] V) {lam : 𝕜} (h : ‖K‖ < ‖lam‖)
     {u f : V} (hu : (lam • (1 : V →L[𝕜] V) - K) u = f) : ‖u‖ ≤ ‖f‖ / (‖lam‖ - ‖K‖) := by
   obtain ⟨e, he, hb⟩ := example_2_3_2 K h
@@ -274,7 +291,10 @@ $\mathbb{K}$ and let $L \in \mathcal{L}(V)$ satisfy $\|L^k\| \to 0$ as $k \to \i
 $I - L$ is a bijection of $V$ onto $V$ with bounded inverse.
 
 The hypothesis holds for the Volterra integral operator, whose iterated kernels give
-$\|L^k\| \le (MB)^k / k!$. This estimate is `AtkinsonHan.Chapter02.example_2_3_4_volterra`. -/
+$\|L^k\| \le (MB)^k / k!$. This estimate is `AtkinsonHan.Chapter02.example_2_3_4_volterra`.
+
+**Generalization.** The hypothesis on the power norms abstracts the source's argument for
+the Volterra operator. -/
 theorem example_2_3_4 [CompleteSpace V] (L : V →L[𝕜] V)
     (h : Tendsto (fun k : ℕ => ‖L ^ k‖) atTop (𝓝 0)) :
     ∃ e : V ≃L[𝕜] V, (e : V →L[𝕜] V) = 1 - L := by
@@ -304,7 +324,10 @@ and if $L v_1 = w$ and $M v_2 = w$ for some $w \in W$, then
 $$\|v_1 - v_2\| \le \|M^{-1}\| \, \|(L - M) v_1\|. \qquad (2.3.15)$$
 
 The operator $L$ is given as a continuous linear equivalence, and $L^{-1}$ is its inverse
-`L.symm`. -/
+`L.symm`.
+
+**Reading.** On the zero space the inverse has norm zero. Lean's reciprocal convention makes
+the strict perturbation hypothesis false in this case. -/
 theorem theorem_2_3_5 (hc : CompleteSpace V ∨ CompleteSpace W) (L : V ≃L[𝕜] W) (M : V →L[𝕜] W)
     (hM : ‖M - (L : V →L[𝕜] W)‖ < 1 / ‖(L.symm : W →L[𝕜] V)‖) :
     ∃ e : V ≃L[𝕜] W, (e : V →L[𝕜] W) = M ∧
@@ -466,7 +489,11 @@ onto itself with bounded inverse.
 
 By the bound, (2.3.10) holds for all large $m$. Thus a Volterra equation of the second kind is
 uniquely solvable for every kernel. The operator is `IntegralOperator.volterraCLM`, and
-$\|k\|_\infty$ is the supremum norm of the kernel. -/
+$\|k\|_\infty$ is the supremum norm of the kernel.
+
+**Reading.** The source uses a continuous kernel on the integration triangle. Lean uses a
+kernel on the square and bounds the powers using its supremum on that square. The interval and
+the nonzero identity coefficient are arbitrary. -/
 theorem example_2_3_4_volterra (hab : a ≤ b) (k : C(Icc a b × Icc a b, ℝ)) {lam : ℝ}
     (hlam : lam ≠ 0) :
     (∀ m : ℕ, ‖volterraCLM hab k ^ m‖ ≤ (‖k‖ * (b - a)) ^ m / m !) ∧
@@ -552,7 +579,10 @@ satisfies $\|u\| \le \|f\| / (|\lambda| - (1 - \cos 1))$.
 This is the part of the example that the book settles with Example 2.3.2. The row integral of
 (2.2.8) is largest at $x = 1$, because $\sin(xy) \le \sin y$ on the square. The kernel is a
 continuous function described by the hypothesis `hk` on its values, as
-`AtkinsonHan.Chapter01.example_1_1_12` describes its subspace. -/
+`AtkinsonHan.Chapter01.example_1_1_12` describes its subspace.
+
+**Reading.** The norm identity in the source is independent of the scalar. Here it is bundled
+with the unique-solvability result under the scalar bound. -/
 theorem example_2_3_6 (k : C(Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, ℝ))
     (hk : ∀ p : Icc (0 : ℝ) 1 × Icc (0 : ℝ) 1, k p = sin ((p.1 : ℝ) * (p.2 : ℝ))) {lam : ℝ}
     (hlam : 1 - cos 1 < |lam|) :

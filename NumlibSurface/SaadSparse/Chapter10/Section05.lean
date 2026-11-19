@@ -81,6 +81,19 @@ residual for $Cy = e_j$. The general Hilbert-space statements come from
 
 ## Deviations from the source
 
+* **Representation.** The gradient matrix of Proposition 10.9 represents the Fréchet derivative
+  through the Frobenius inner product. See `SaadSparse.Chapter10.proposition_10_9`.
+* **Scope.** Nonsingularity is shown in Frobenius norm without assuming $A$ nonsingular, and scales
+  may be arbitrary invertible matrices. See `SaadSparse.Chapter10.proposition_10_10`,
+  `SaadSparse.Chapter10.equation_10_54`.
+* **Generalization.** The equimodular support criterion permits any common bound on the column
+  residual norms. See `SaadSparse.Chapter10.corollary_10_12`.
+* **Scope.** The declaration named for Proposition 10.13 gives the preceding one-step identity,
+  using total division. See `SaadSparse.Chapter10.proposition_10_13`.
+* **Scope.** The global MR estimate uses an explicit minimizing-step hypothesis. See
+  `SaadSparse.Chapter10.proposition_10_14`.
+* **Generalization.** The positive pivot result is stated as positivity of the diagonal for an
+  arbitrary invertible congruence. See `SaadSparse.Chapter10.lemma_10_15`.
 * **Lemma 10.15** (reading). The pivot $\delta_{k+1}$ of (10.70) is read as the diagonal entry of
   $L A L^T$, and the positivity is proved for every nonsingular $L$. See
   `SaadSparse.Chapter10.lemma_10_15`.
@@ -206,7 +219,11 @@ theorem frobeniusInnerL_apply (X Y : Matrix (Fin n) (Fin n) ℝ) :
 /-- **Proposition 10.9** of [saad2003iterative]. Let $A, M \in \mathbb{R}^{n \times n}$ and let
 $R = I - AM$. The function $F(Z) = \|I - AZ\|_F^2$ has at $M$ the Fréchet derivative
 $$F'(M) Z = \langle -2 A^T R, Z \rangle.$$
-So the array representation of the gradient of $F$ at $M$ is $G = -2 A^T R$. -/
+So the array representation of the gradient of $F$ at $M$ is $G = -2 A^T R$.
+
+**Reading.** The gradient matrix is expressed as its associated continuous linear functional through
+the Frobenius product, giving the Fréchet derivative.
+-/
 theorem proposition_10_9 (A M : Matrix (Fin n) (Fin n) ℝ) :
     HasFDerivAt (fun Z : Matrix (Fin n) (Fin n) ℝ => ‖1 - A * Z‖ ^ 2)
       ((-2 : ℝ) • frobeniusInnerL (Aᵀ * (1 - A * M))) M := by
@@ -229,7 +246,12 @@ $$\|I - AM\|_F < 1.$$
 Then $M$ is nonsingular.
 
 The book allows any consistent matrix norm; the formal statement uses the Frobenius norm. The
-proof is the Neumann series: $AM$ is nonsingular, and hence so is $M$. -/
+proof is the Neumann series: $AM$ is nonsingular, and hence so is $M$.
+
+**Reading.** The source allows any consistent matrix norm and assumes $A$ nonsingular. Lean
+specializes to the Frobenius norm and derives nonsingularity of $M$ without assuming nonsingularity
+of $A$. In the scaled version, the two invertible scaling matrices need not be diagonal.
+-/
 theorem proposition_10_10 {A M : Matrix (Fin n) (Fin n) ℝ} (h : ‖1 - A * M‖ < 1) : IsUnit M := by
   have hAM := Preconditioner.isUnit_of_norm_one_sub_mul_lt_one h
   rw [Matrix.isUnit_iff_isUnit_det] at hAM ⊢
@@ -241,7 +263,12 @@ with $D_1$ and $D_2$ nonsingular, and let
 $$\|I - D_1 A M D_2\|_F < 1.$$
 Then $M$ is nonsingular.
 
-In the book, $D_1$ and $D_2$ are diagonal scalings that improve the conditioning. -/
+In the book, $D_1$ and $D_2$ are diagonal scalings that improve the conditioning.
+
+**Reading.** The source allows any consistent matrix norm and assumes $A$ nonsingular. Lean
+specializes to the Frobenius norm and derives nonsingularity of $M$ without assuming nonsingularity
+of $A$. In the scaled version, the two invertible scaling matrices need not be diagonal.
+-/
 theorem equation_10_54 {A M D₁ D₂ : Matrix (Fin n) (Fin n) ℝ} (hD₁ : IsUnit D₁) (hD₂ : IsUnit D₂)
     (h : ‖1 - D₁ * (A * M) * D₂‖ < 1) : IsUnit M := by
   have hAM := Preconditioner.isUnit_of_norm_one_sub_units_mul_lt_one
@@ -279,7 +306,11 @@ Then $(A^{-1})_{ij} \neq 0$ implies $m_{ij} \neq 0$: the pattern of $M$ contains
 $A^{-1}$.
 
 So an approximate inverse of a matrix whose inverse is dense with entries of comparable size
-must itself be dense. This is the practical limit of the approach. -/
+must itself be dense. This is the practical limit of the approach.
+
+**Generalization.** The bound $\tau$ is any common upper bound on the column residual norms. The
+source chooses the maximum of the individual tolerances.
+-/
 theorem corollary_10_12 {A M : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A.det) {τ : ℝ}
     (hτ : ∀ j, ∑ i, |(Pi.single j (1 : ℝ) : Fin n → ℝ) i - (A *ᵥ Mᵀ j) i| ≤ τ)
     (hequi : ∀ i j : Fin n, A⁻¹ i j ≠ 0 → τ * (⨆ (l : Fin n) (k : Fin n), |A⁻¹ l k|) < |A⁻¹ i j|)
@@ -295,7 +326,7 @@ theorem corollary_10_12 {A M : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A.det) {
 
 /-! ### Propositions 10.13 and 10.14: quadratic convergence of self-preconditioned MR -/
 
-/-- **Proposition 10.13** of [saad2003iterative], first part, the identity (10.58). Let
+/-- **Equation (10.58)** of [saad2003iterative], preceding Proposition 10.13. Let
 $A, M \in \mathbb{R}^{n \times n}$, let $C = AM$, let $b, x \in \mathbb{R}^n$ and let
 $r = b - Cx$. Let $x'$ be the result of one minimal-residual step for $Cy = b$ from $x$, and let
 $r' = b - Cx'$. Then
@@ -306,8 +337,13 @@ The self-preconditioned minimal-residual step for $Am = b$ with search direction
 plain minimal-residual step for $Cy = b$ with $m = My$, so the one-step identity of
 `Numlib.Projection.OneDimensional` applies to $C$. The minimal-residual step is
 `Projection.minResStep`. The book derives from the identity the bound (10.59),
-$\|r'\|_2 \le \|(I - AM) r\|_2$; this bound is not part of the formal statement. The second part
-of the proposition, (10.60), is `SaadSparse.Chapter10.proposition_10_14`. -/
+$\|r'\|_2 \le \|(I - AM) r\|_2$; this bound is outside the formal statement. The outer sweep
+estimate (10.60) concerns the column iteration. Proposition 10.14 gives a bound for the global step.
+
+**Reading.** Despite the declaration name, the statement gives the one-step residual identity
+preceding the proposition, in squared-norm form with a totalized quotient. It does not assert either
+the column bound (10.59) or the outer column-sweep bound (10.60).
+-/
 theorem proposition_10_13 (A M : Matrix (Fin n) (Fin n) ℝ) (b x : EuclideanSpace ℝ (Fin n)) :
     ‖b - ((A * M) ⬝ minResStep (Matrix.toEuclideanLin (A * M)) b x)‖ ^ 2 =
       ‖b - ((A * M) ⬝ x)‖ ^ 2 *
@@ -359,7 +395,11 @@ quadratically when it converges.
 
 The hypothesis is what a minimal-residual choice of the step length gives. The proof compares
 with the step length $t = 1$, whose residual is $R^2$ by (10.61), and uses
-$\|R^2\|_F \le \|R\|_F^2$. -/
+$\|R^2\|_F \le \|R\|_F^2$.
+
+**Reading.** A minimizing step length is supplied as a hypothesis. The conclusion is the one-step
+bound for the global update. The outer column-sweep bound (10.60) concerns a different iteration.
+-/
 theorem proposition_10_14 {A M : Matrix (Fin n) (Fin n) ℝ} {α : ℝ}
     (hmin : ∀ t : ℝ, ‖1 - A * (M + α • (M * (1 - A * M)))‖
       ≤ ‖1 - A * (M + t • (M * (1 - A * M)))‖) :
@@ -382,7 +422,12 @@ proves the positivity for every nonsingular $L$.
 
 The index $k$ is $0$-based, so the entry $(k, k)$ is the book's entry $(k+1, k+1)$. The entry is
 the value of the quadratic form of $A$ at the nonzero vector $L^T e_k$, so it is positive by
-positive definiteness alone. -/
+positive definiteness alone.
+
+**Generalization.** The statement identifies the pivot with the diagonal of a congruence as in the
+printed proof. It allows any invertible factor and any diagonal index, without modeling how the
+bordering linear system was solved.
+-/
 theorem lemma_10_15 {A L : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef) (hL : IsUnit L)
     (k : Fin n) : 0 < (L * A * Lᵀ) k k := by
   have hinj : Function.Injective L.vecMul := Matrix.vecMul_injective_iff_isUnit.2 hL

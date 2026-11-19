@@ -107,8 +107,8 @@ from `Numlib.Krylov.CG`. The modules `NumlibSurface.SaadSparse.Chapter06.Section
   positive definite case of the book. The results on Algorithms 6.16 and 6.17, and the results
   (6.99)–(6.103) that relate Algorithm 6.18 to the Lanczos data, are stated over $\mathbb{R}$, with
   $A$ symmetric or symmetric positive definite.
-* A division by $0$ gives $0$ in Lean, and the inverse of a singular matrix is $0$. This reproduces
-  the breakdown behaviour of the book. The results take the nonsingularity of $T_m$
+* A division by $0$ gives $0$ in Lean, and the inverse of a singular matrix is $0$. The results
+  take the nonsingularity of $T_m$
   (`IsUnit (T A (v₁ A b x₀) m).det`) and the nonvanishing of the pivots $\eta_i$ as hypotheses where
   the proofs need them.
 * Algorithms 6.16 and 6.17 start from the unit vector $v_1 = r_0/\|r_0\|_2$ of
@@ -118,6 +118,88 @@ from `Numlib.Krylov.CG`. The modules `NumlibSurface.SaadSparse.Chapter06.Section
 * The statement that D-Lanczos is DIOM(2) rests on the fact that for a symmetric matrix the
   incomplete orthogonalization of Algorithm 6.6 with $k = 2$ computes the same vectors and
   coefficients as Algorithm 6.1 (`SaadSparse.Chapter06.iop_two_eq_arnoldiCGS`).
+
+## Deviations from the source
+
+* **Reading.** The fixed-size Lanczos formulas use the totalized projected inverse. See
+  `SaadSparse.Chapter06.lanczosMethodY`, `SaadSparse.Chapter06.lanczosMethodY_def`,
+  `SaadSparse.Chapter06.lanczosMethodAt`, `SaadSparse.Chapter06.lanczosMethodAt_def`.
+* **Reading.** The Lanczos solve represents its stopping test by the grade and includes a zero
+  initial residual. See `SaadSparse.Chapter06.lanczosMethod`,
+  `SaadSparse.Chapter06.lanczosMethod_eq_lanczosMethodAt`.
+* **Reading.** The Galerkin and residual identities specify the conditions on the projected solve.
+  See `SaadSparse.Chapter06.equation_6_87`,
+  `SaadSparse.Chapter06.lanczosMethodAt_isGalerkinIterate`.
+* **Scope.** The two Lanczos residual formulas and the orthogonality assertion have separate
+  hypotheses. See `SaadSparse.Chapter06.proposition_6_20_1`,
+  `SaadSparse.Chapter06.inner_residual_lanczosMethodAt_eq_zero`,
+  `SaadSparse.Chapter06.residual_dLanczosX`.
+* **Reading.** D-Lanczos uses totalized pivots and has no convergence test in its recurrence. See
+  `SaadSparse.Chapter06.dlEta`, `SaadSparse.Chapter06.dlLambda`, `SaadSparse.Chapter06.dlZeta`,
+  `SaadSparse.Chapter06.dlP`, `SaadSparse.Chapter06.dLanczosX`,
+  `SaadSparse.Chapter06.dlLambda_succ`, `SaadSparse.Chapter06.dlEta_succ`,
+  `SaadSparse.Chapter06.dlZeta_succ`, `SaadSparse.Chapter06.dlP_zero`,
+  `SaadSparse.Chapter06.dlP_succ`, `SaadSparse.Chapter06.dLanczosX_succ`.
+* **Scope.** The main CG and Lanczos comparisons explicitly assume SPD and the requisite projection
+  conditions. See `SaadSparse.Chapter06.dLanczosX_eq_lanczosMethodAt`,
+  `SaadSparse.Chapter06.cgX_eq_dLanczosX`, `SaadSparse.Chapter06.cgX_eq_lanczosMethodAt`.
+* **Reading.** The Lanczos and FOM comparison uses the same grade-truncated length. See
+  `SaadSparse.Chapter06.lanczosMethod_eq_fom`.
+* **Reading.** D-Lanczos conjugacy explicitly assumes that the pivots used by the two directions are
+  nonzero. See `SaadSparse.Chapter06.proposition_6_20_2`.
+* **Reading.** The CG–Lanczos residual comparison gives a nonzero scale prior to convergence. See
+  `SaadSparse.Chapter06.equation_6_99`, `SaadSparse.Chapter06.lanczosV_eq_smul_cgR`.
+* **Generalization.** The A-conjugacy quotient for CG beta extends to a converged iterate. See
+  `SaadSparse.Chapter06.cgBeta_eq'`.
+* **Scope.** The two cases of (6.102) are proved in separate declarations. See
+  `SaadSparse.Chapter06.equation_6_102`.
+* **Scope.** The (6.103) declaration gives the off-diagonal entries of the displayed matrix. See
+  `SaadSparse.Chapter06.equation_6_103`.
+* **Generalization.** The exact IOM(2), DIOM(2) and Arnoldi comparisons extend to Hermitian
+  matrices. See `SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_isSymmetric`,
+  `SaadSparse.Chapter06.iop_two_eq_arnoldiCGS`, `SaadSparse.Chapter06.iop_two_eq`,
+  `SaadSparse.Chapter06.iopVecW_two_eq_arnoldiW`,
+  `SaadSparse.Chapter06.iopCoeff_two_eq_arnoldiCoeff`, `SaadSparse.Chapter06.VI_two_eq_V`,
+  `SaadSparse.Chapter06.HI_two_eq_H`, `SaadSparse.Chapter06.iomFixed_two_eq_fomFixed`,
+  `SaadSparse.Chapter06.diom_two_eq_fomFixed`.
+* **Reading.** The direct Lanczos and DIOM(2) comparison states the pivot and grade hypotheses. See
+  `SaadSparse.Chapter06.dLanczos_eq_diom2`.
+* **Generalization.** The CG recurrence and its components are totalized, with stationary converged
+  iterates on SPD input. See `SaadSparse.Chapter06.cgStepAlpha`, `SaadSparse.Chapter06.cgStepR`,
+  `SaadSparse.Chapter06.cgStepBeta`, `SaadSparse.Chapter06.cgStep`, `SaadSparse.Chapter06.cg`,
+  `SaadSparse.Chapter06.cgStepAlpha_def`, `SaadSparse.Chapter06.cgStepR_def`,
+  `SaadSparse.Chapter06.cgStepBeta_def`, `SaadSparse.Chapter06.cgX`, `SaadSparse.Chapter06.cgR`,
+  `SaadSparse.Chapter06.cgP`, `SaadSparse.Chapter06.cgAlpha`, `SaadSparse.Chapter06.cgBeta`,
+  `SaadSparse.Chapter06.cg_succ`, `SaadSparse.Chapter06.cgAlpha_eq`,
+  `SaadSparse.Chapter06.cgX_succ`, `SaadSparse.Chapter06.cgR_succ`,
+  `SaadSparse.Chapter06.cgBeta_eq`, `SaadSparse.Chapter06.cgP_succ`.
+* **Generalization.** The division-free form of (6.94) also holds at a zero step length. See
+  `SaadSparse.Chapter06.cgAlpha_smul_apply_cgP`.
+* **Generalization.** The CG residual identity and conjugacy extend to the Hermitian setting. See
+  `SaadSparse.Chapter06.cgR_eq_residual`, `SaadSparse.Chapter06.inner_cgR_eq_zero`,
+  `SaadSparse.Chapter06.inner_apply_cgP_eq_zero`.
+* **Generalization.** The alternative CG step-length and direction identities extend to Hermitian
+  systems. See `SaadSparse.Chapter06.inner_cgP_apply_cgP_eq`, `SaadSparse.Chapter06.cgAlpha_eq'`,
+  `SaadSparse.Chapter06.apply_cgP_eq`.
+* **Reading.** The exact scalar formulas can be read off the ordinary CG sequence. See
+  `SaadSparse.Chapter06.cgGamma`, `SaadSparse.Chapter06.cgGamma_def`, `SaadSparse.Chapter06.cgRho`,
+  `SaadSparse.Chapter06.cgRho_succ`.
+* **Generalization.** The three-term residual recurrence extends to Hermitian positive definite
+  systems. See `SaadSparse.Chapter06.equation_6_96`.
+* **Correction.** The three-term CG iterate update corrects the sign of the residual term. See
+  `SaadSparse.Chapter06.equation_6_98`, `SaadSparse.Chapter06.cg3Step`,
+  `SaadSparse.Chapter06.cg3Step_def`.
+* **Reading.** The three-term state realizes the first-step coefficient by totalized division. See
+  `SaadSparse.Chapter06.CG3State`, `SaadSparse.Chapter06.cg3Init`,
+  `SaadSparse.Chapter06.cg3StepRho`.
+* **Reading.** The three-term implementation formalizes all steps with totalized quotients and the
+  corrected sign. See `SaadSparse.Chapter06.cg3StepGamma`, `SaadSparse.Chapter06.cg3StepGamma_def`,
+  `SaadSparse.Chapter06.cg3StepRho_def`, `SaadSparse.Chapter06.cg3`,
+  `SaadSparse.Chapter06.cg3_succ`.
+* **Reading.** The three-term equivalence uses the corrected update and nonzero preceding residuals.
+  See `SaadSparse.Chapter06.cg3_eq`.
+* **Generalization.** The three-term scalar is uniquely characterized by the recurrence for
+  Hermitian systems. See `SaadSparse.Chapter06.equation_6_97_of_eq_6_96`.
 -/
 
 open scoped ComplexOrder Matrix
@@ -133,17 +215,32 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-! ### Algorithm 6.18: the conjugate gradient method -/
 
 /-- The step length $\alpha_j = (r_j, r_j)/(A p_j, p_j)$ of line 3 of Algorithm 6.18, computed from
-a triple $(x_j, r_j, p_j)$. -/
+a triple $(x_j, r_j, p_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgStepAlpha (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 s.2.1 s.2.1 / inner 𝕜 s.2.2 (op A s.2.2)
 
 /-- The next residual $r_{j+1} = r_j - \alpha_j A p_j$ of line 5 of Algorithm 6.18, computed from a
-triple $(x_j, r_j, p_j)$. -/
+triple $(x_j, r_j, p_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgStepR (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - cgStepAlpha A s • op A s.2.2
 
 /-- The coefficient $\beta_j = (r_{j+1}, r_{j+1})/(r_j, r_j)$ of line 6 of Algorithm 6.18, computed
-from a triple $(x_j, r_j, p_j)$. -/
+from a triple $(x_j, r_j, p_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (cgStepR A s) (cgStepR A s) / inner 𝕜 s.2.1 s.2.1
 
@@ -154,7 +251,12 @@ $$\alpha_j = \frac{(r_j, r_j)}{(A p_j, p_j)}, \quad x_{j+1} = x_j + \alpha_j p_j
   p_{j+1} = r_{j+1} + \beta_j p_j.$$
 
 The scalars are `SaadSparse.Chapter06.cgStepAlpha` and `SaadSparse.Chapter06.cgStepBeta`. A
-quotient with denominator $0$ is $0$. -/
+quotient with denominator $0$ is $0$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + cgStepAlpha A s • s.2.2, cgStepR A s, cgStepR A s + cgStepBeta A s • s.2.2)
 
@@ -165,46 +267,96 @@ $p_0 = r_0$.
 
 The iteration has no stopping test. A quotient with denominator $0$ is $0$, so for a positive
 definite $A$ the iterate stays fixed once a residual vanishes
-(`SaadSparse.Chapter06.cgP_eq_zero_of_cgR_eq_zero`). -/
+(`SaadSparse.Chapter06.cgP_eq_zero_of_cgR_eq_zero`).
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cg (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (cgStep A)^[j] (x₀, b - op A x₀, b - op A x₀)
 
-/-- The step length `SaadSparse.Chapter06.cgStepAlpha` is $(r_j, r_j)/(A p_j, p_j)$. -/
+/-- The step length `SaadSparse.Chapter06.cgStepAlpha` is $(r_j, r_j)/(A p_j, p_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgStepAlpha_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) :
     cgStepAlpha A s = inner 𝕜 s.2.1 s.2.1 / inner 𝕜 s.2.2 (op A s.2.2) := rfl
 
-/-- The residual `SaadSparse.Chapter06.cgStepR` is $r_j - \alpha_j A p_j$. -/
+/-- The residual `SaadSparse.Chapter06.cgStepR` is $r_j - \alpha_j A p_j$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgStepR_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) :
     cgStepR A s = s.2.1 - cgStepAlpha A s • op A s.2.2 := rfl
 
-/-- The coefficient `SaadSparse.Chapter06.cgStepBeta` is $(r_{j+1}, r_{j+1})/(r_j, r_j)$. -/
+/-- The coefficient `SaadSparse.Chapter06.cgStepBeta` is $(r_{j+1}, r_{j+1})/(r_j, r_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgStepBeta_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) :
     cgStepBeta A s = inner 𝕜 (cgStepR A s) (cgStepR A s) / inner 𝕜 s.2.1 s.2.1 := rfl
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- The iterate $x_j$ of Algorithm 6.18 after $j$ steps. -/
+/-- The iterate $x_j$ of Algorithm 6.18 after $j$ steps.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgX (j : ℕ) : 𝔼 := (cg A b x₀ j).1
 
-/-- The residual $r_j$ of Algorithm 6.18 after $j$ steps. -/
+/-- The residual $r_j$ of Algorithm 6.18 after $j$ steps.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgR (j : ℕ) : 𝔼 := (cg A b x₀ j).2.1
 
-/-- The search direction $p_j$ of Algorithm 6.18 after $j$ steps. -/
+/-- The search direction $p_j$ of Algorithm 6.18 after $j$ steps.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgP (j : ℕ) : 𝔼 := (cg A b x₀ j).2.2
 
 /-- **Algorithm 6.18** of [saad2003iterative], the step length. For $j \ge 0$, the scalar
 $$\alpha_j = \frac{(r_j, r_j)}{(A p_j, p_j)}$$
 computed on line 3 of Algorithm 6.18 at step $j$.
 
-It is $0$ when $(A p_j, p_j) = 0$. -/
+It is $0$ when $(A p_j, p_j) = 0$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgAlpha (j : ℕ) : 𝕜 := cgStepAlpha A (cg A b x₀ j)
 
 /-- The coefficient $\beta_j = (r_{j+1}, r_{j+1})/(r_j, r_j)$ computed on line 6 of Algorithm 6.18
-at step $j$. -/
+at step $j$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 noncomputable def cgBeta (j : ℕ) : 𝕜 := cgStepBeta A (cg A b x₀ j)
 
 /-- The triple after $j + 1$ steps of Algorithm 6.18 is one step applied to the triple after $j$
-steps. -/
+steps.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cg_succ (j : ℕ) : cg A b x₀ (j + 1) = cgStep A (cg A b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -217,17 +369,32 @@ theorem cg_succ (j : ℕ) : cg A b x₀ (j + 1) = cgStep A (cg A b x₀ j) :=
 /-- Algorithm 6.18, line 1: $p_0 = r_0$. -/
 @[simp] theorem cgP_zero : cgP A b x₀ 0 = cgR A b x₀ 0 := rfl
 
-/-- Equation (6.92): $\alpha_j = (r_j, r_j)/(A p_j, p_j)$. -/
+/-- Equation (6.92): $\alpha_j = (r_j, r_j)/(A p_j, p_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgAlpha_eq (j : ℕ) : cgAlpha A b x₀ j =
     inner 𝕜 (cgR A b x₀ j) (cgR A b x₀ j) / inner 𝕜 (cgP A b x₀ j) (op A (cgP A b x₀ j)) := rfl
 
-/-- Equation (6.90): $x_{j+1} = x_j + \alpha_j p_j$. -/
+/-- Equation (6.90): $x_{j+1} = x_j + \alpha_j p_j$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgX_succ (j : ℕ) :
     cgX A b x₀ (j + 1) = cgX A b x₀ j + cgAlpha A b x₀ j • cgP A b x₀ j := by
   rw [cgX, cg_succ]
   rfl
 
-/-- Equation (6.91): $r_{j+1} = r_j - \alpha_j A p_j$. -/
+/-- Equation (6.91): $r_{j+1} = r_j - \alpha_j A p_j$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgR_succ (j : ℕ) :
     cgR A b x₀ (j + 1) = cgR A b x₀ j - cgAlpha A b x₀ j • op A (cgP A b x₀ j) := by
   rw [cgR, cg_succ]
@@ -239,20 +406,34 @@ theorem cgR_succ_eq_cgStepR (j : ℕ) : cgR A b x₀ (j + 1) = cgStepR A (cg A b
   rw [cgR, cg_succ]
   rfl
 
-/-- Algorithm 6.18, line 6: $\beta_j = (r_{j+1}, r_{j+1})/(r_j, r_j)$. -/
+/-- Algorithm 6.18, line 6: $\beta_j = (r_{j+1}, r_{j+1})/(r_j, r_j)$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgBeta_eq (j : ℕ) : cgBeta A b x₀ j =
     inner 𝕜 (cgR A b x₀ (j + 1)) (cgR A b x₀ (j + 1)) /
       inner 𝕜 (cgR A b x₀ j) (cgR A b x₀ j) := by
   rw [cgBeta, cgStepBeta_def, cgR_succ_eq_cgStepR]
   rfl
 
-/-- Equation (6.93): $p_{j+1} = r_{j+1} + \beta_j p_j$. -/
+/-- Equation (6.93): $p_{j+1} = r_{j+1} + \beta_j p_j$.
+
+**Generalization.** The recurrence is defined for arbitrary real or complex input and for every
+step. The source works with real SPD systems and stops on convergence. Lean totalizes the quotients
+and a converged iterate is stationary on SPD input.
+-/
 theorem cgP_succ (j : ℕ) :
     cgP A b x₀ (j + 1) = cgR A b x₀ (j + 1) + cgBeta A b x₀ j • cgP A b x₀ j := by
   rw [cgP, cg_succ, cgR_succ_eq_cgStepR]
   rfl
 
-/-- Equation (6.94) without division: $\alpha_j A p_j = r_j - r_{j+1}$. -/
+/-- Equation (6.94) without division: $\alpha_j A p_j = r_j - r_{j+1}$.
+
+**Generalization.** The equation is multiplied by the step length. This form is valid even when the
+step length is zero and works over the complex field.
+-/
 theorem cgAlpha_smul_apply_cgP (j : ℕ) :
     cgAlpha A b x₀ j • op A (cgP A b x₀ j) = cgR A b x₀ j - cgR A b x₀ (j + 1) := by
   rw [cgR_succ]
@@ -319,7 +500,11 @@ theorem cgBeta_eq_CG (hA : (op A).IsSymmetric) (j : ℕ) :
   rw [cgBeta, cg_eq_CG A b x₀ hA, cgStepBeta_eq_CG A hA]
 
 /-- For a Hermitian $A$, the residual carried by Algorithm 6.18 is the true residual:
-$r_j = b - A x_j$. -/
+$r_j = b - A x_j$.
+
+**Generalization.** The source works with real systems. The residual identity and orthogonality
+results extend to the Hermitian setting and the totalized iterates.
+-/
 theorem cgR_eq_residual (hA : (op A).IsSymmetric) (j : ℕ) :
     cgR A b x₀ j = b - op A (cgX A b x₀ j) := by
   rw [cgR_eq_CG A b x₀ hA, cgX_eq_CG A b x₀ hA, CG.residual_eq]
@@ -335,7 +520,11 @@ theorem isSymmetricCoercive_op_of_posDef {A : Matrix (Fin n) (Fin n) 𝕜} (hA :
 variable {A b x₀}
 
 /-- For a Hermitian positive definite $A$, the residuals of Algorithm 6.18 are mutually orthogonal:
-$(r_i, r_j) = 0$ for $i \ne j$. -/
+$(r_i, r_j) = 0$ for $i \ne j$.
+
+**Generalization.** The source works with real systems. The residual identity and orthogonality
+results extend to the Hermitian setting and the totalized iterates.
+-/
 theorem inner_cgR_eq_zero (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (cgR A b x₀ i) (cgR A b x₀ j) = 0 := by
   rw [cgR_eq_CG A b x₀ (isSymmetricCoercive_op_of_posDef hA).isSymmetric,
@@ -343,7 +532,11 @@ theorem inner_cgR_eq_zero (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
   exact CG.inner_residual_eq_zero b x₀ (isSymmetricCoercive_op_of_posDef hA) h
 
 /-- For a Hermitian positive definite $A$, the search directions of Algorithm 6.18 are
-$A$-conjugate: $(A p_i, p_j) = 0$ for $i \ne j$. -/
+$A$-conjugate: $(A p_i, p_j) = 0$ for $i \ne j$.
+
+**Generalization.** The source works with real systems. The residual identity and orthogonality
+results extend to the Hermitian setting and the totalized iterates.
+-/
 theorem inner_apply_cgP_eq_zero (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (op A (cgP A b x₀ i)) (cgP A b x₀ j) = 0 := by
   rw [cgP_eq_CG A b x₀ (isSymmetricCoercive_op_of_posDef hA).isSymmetric,
@@ -394,7 +587,11 @@ theorem cgAlpha_ne_zero (hA : A.PosDef) {j : ℕ} (hr : cgR A b x₀ j ≠ 0) :
 
 /-- Equation (6.92), second form: for a Hermitian positive definite $A$,
 $(A p_j, p_j) = (A p_j, r_j)$, because $p_j - r_j$ is a multiple of $p_{j-1}$ and the directions
-are $A$-conjugate. -/
+are $A$-conjugate.
+
+**Generalization.** The identities hold in the Hermitian positive definite case. Dividing by the
+step length in (6.94) is justified when the residual is nonzero.
+-/
 theorem inner_cgP_apply_cgP_eq (hA : A.PosDef) (j : ℕ) :
     inner 𝕜 (cgP A b x₀ j) (op A (cgP A b x₀ j))
       = inner 𝕜 (cgR A b x₀ j) (op A (cgP A b x₀ j)) := by
@@ -409,13 +606,21 @@ theorem inner_cgP_apply_cgP_eq (hA : A.PosDef) (j : ℕ) :
     rw [inner_add_left, inner_smul_left, hconj, mul_zero, add_zero]
 
 /-- Equation (6.92): for a Hermitian positive definite $A$, $\alpha_j = (r_j, r_j)/(A p_j, r_j)$,
-the form that the derivation in the book produces. -/
+the form that the derivation in the book produces.
+
+**Generalization.** The identities hold in the Hermitian positive definite case. Dividing by the
+step length in (6.94) is justified when the residual is nonzero.
+-/
 theorem cgAlpha_eq' (hA : A.PosDef) (j : ℕ) : cgAlpha A b x₀ j =
     inner 𝕜 (cgR A b x₀ j) (cgR A b x₀ j) / inner 𝕜 (cgR A b x₀ j) (op A (cgP A b x₀ j)) := by
   rw [cgAlpha_eq, inner_cgP_apply_cgP_eq hA]
 
 /-- Equation (6.94): for a Hermitian positive definite $A$, if $r_j \ne 0$, then
-$A p_j = -\alpha_j^{-1} (r_{j+1} - r_j)$. -/
+$A p_j = -\alpha_j^{-1} (r_{j+1} - r_j)$.
+
+**Generalization.** The identities hold in the Hermitian positive definite case. Dividing by the
+step length in (6.94) is justified when the residual is nonzero.
+-/
 theorem apply_cgP_eq (hA : A.PosDef) {j : ℕ} (hr : cgR A b x₀ j ≠ 0) :
     op A (cgP A b x₀ j) =
       -((cgAlpha A b x₀ j)⁻¹ • (cgR A b x₀ (j + 1) - cgR A b x₀ j)) := by
@@ -440,11 +645,21 @@ $$\gamma_j = \frac{(r_j, r_j)}{(A r_j, r_j)}.$$
 
 The definition uses the residuals of Algorithm 6.18, not those of the three-term recurrence.
 `SaadSparse.Chapter06.cg3_eq` shows that the two agree. The scalar is $0$ when
-$(A r_j, r_j) = 0$. -/
+$(A r_j, r_j) = 0$.
+
+**Reading.** These scalars are computed from the sequence of Algorithm 6.18, with totalized
+quotients. In Algorithm 6.19 itself the scalars are computed from the separate three-term state. The
+equivalence theorem identifies these two interpretations before convergence.
+-/
 noncomputable def cgGamma (j : ℕ) : 𝕜 :=
   inner 𝕜 (cgR A b x₀ j) (cgR A b x₀ j) / inner 𝕜 (cgR A b x₀ j) (op A (cgR A b x₀ j))
 
-/-- The scalar `SaadSparse.Chapter06.cgGamma` is $(r_j, r_j)/(A r_j, r_j)$. -/
+/-- The scalar `SaadSparse.Chapter06.cgGamma` is $(r_j, r_j)/(A r_j, r_j)$.
+
+**Reading.** These scalars are computed from the sequence of Algorithm 6.18, with totalized
+quotients. In Algorithm 6.19 itself the scalars are computed from the separate three-term state. The
+equivalence theorem identifies these two interpretations before convergence.
+-/
 theorem cgGamma_def (j : ℕ) : cgGamma A b x₀ j =
     inner 𝕜 (cgR A b x₀ j) (cgR A b x₀ j) / inner 𝕜 (cgR A b x₀ j) (op A (cgR A b x₀ j)) := rfl
 
@@ -452,6 +667,10 @@ theorem cgGamma_def (j : ℕ) : cgGamma A b x₀ j =
 $\rho_0 = 1$ and, for $j \ge 1$, (6.97)
 $$\rho_j = \left(1 - \frac{\gamma_j}{\gamma_{j-1}} \cdot \frac{(r_j, r_j)}{(r_{j-1}, r_{j-1})}
   \cdot \frac{1}{\rho_{j-1}}\right)^{-1}.$$
+
+**Reading.** These scalars are computed from the sequence of Algorithm 6.18, with totalized
+quotients. In Algorithm 6.19 itself the scalars are computed from the separate three-term state. The
+equivalence theorem identifies these two interpretations before convergence.
 -/
 noncomputable def cgRho (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ → 𝕜
   | 0 => 1
@@ -463,7 +682,12 @@ noncomputable def cgRho (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ 
 @[simp] theorem cgRho_zero : cgRho A b x₀ 0 = 1 := rfl
 
 /-- Equation (6.97) with norms: $\rho_{j+1} = \left(1 - \frac{\gamma_{j+1}}{\gamma_j} \cdot
-\frac{\|r_{j+1}\|^2}{\|r_j\|^2} \cdot \frac{1}{\rho_j}\right)^{-1}$. -/
+\frac{\|r_{j+1}\|^2}{\|r_j\|^2} \cdot \frac{1}{\rho_j}\right)^{-1}$.
+
+**Reading.** These scalars are computed from the sequence of Algorithm 6.18, with totalized
+quotients. In Algorithm 6.19 itself the scalars are computed from the separate three-term state. The
+equivalence theorem identifies these two interpretations before convergence.
+-/
 theorem cgRho_succ (j : ℕ) : cgRho A b x₀ (j + 1) =
     (1 - cgGamma A b x₀ (j + 1) / cgGamma A b x₀ j *
       ((‖cgR A b x₀ (j + 1)‖ ^ 2 / ‖cgR A b x₀ j‖ ^ 2 : ℝ) : 𝕜) / cgRho A b x₀ j)⁻¹ := by
@@ -501,7 +725,12 @@ $$x_{m+1} = \rho_m (x_m + \gamma_m r_m) + (1 - \rho_m) x_{m-1}.$$
 
 For $m = 0$ the term $x_{m-1}$ is $x_0$, because the natural number $0 - 1$ is $0$ in Lean. This
 does no harm, because $\rho_0 = 1$. The scalars $\rho_m$ and $\gamma_m$ are
-`SaadSparse.Chapter06.cgRho` and `SaadSparse.Chapter06.cgGamma`. -/
+`SaadSparse.Chapter06.cgRho` and `SaadSparse.Chapter06.cgGamma`.
+
+**Correction.** The iterate update uses $x_j + \gamma_j r_j$. The source prints a minus sign in
+(6.98), its derivation and initial step, and line 5. The plus sign is forced by $r_j=b-Ax_j$ and the
+minus sign in the residual recurrence (6.96).
+-/
 theorem equation_6_98 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 0) :
     cgX A b x₀ (m + 1) = cgRho A b x₀ m • (cgX A b x₀ m + cgGamma A b x₀ m • cgR A b x₀ m) +
       (1 - cgRho A b x₀ m) • cgX A b x₀ (m - 1) := by
@@ -516,7 +745,12 @@ positive definite, and let the residuals $r_0, \dots, r_m$ of Algorithm 6.18 be 
 $$r_{m+1} = \rho_m (r_m - \gamma_m A r_m) + (1 - \rho_m) r_{m-1}.$$
 
 For $m = 0$ the term $r_{m-1}$ is $r_0$, because the natural number $0 - 1$ is $0$ in Lean. This
-does no harm, because $\rho_0 = 1$. -/
+does no harm, because $\rho_0 = 1$.
+
+**Generalization.** The residual recurrence extends to Hermitian positive definite systems, with the
+preceding residuals required to be nonzero. At index zero the coefficient of the previous residual
+vanishes.
+-/
 theorem equation_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m, cgR A b x₀ j ≠ 0) :
     cgR A b x₀ (m + 1) =
       cgRho A b x₀ m • (cgR A b x₀ m - cgGamma A b x₀ m • op A (cgR A b x₀ m)) +
@@ -534,7 +768,12 @@ variable (A b x₀)
 
 The initial state has $x_{-1} = 0$, as in the book, and $r_{-1} = 0$. With $r_{-1} = 0$ the
 quotient $(r_0, r_0)/(r_{-1}, r_{-1})$ is $0$ in Lean, so the formula of line 4 gives
-$\rho_0 = 1$, as line 1 of the book requires. -/
+$\rho_0 = 1$, as line 1 of the book requires.
+
+**Reading.** The state uses a zero previous residual and stores previous coefficients equal to one
+at initialization. Lean then applies its totalized scalar formula at the first step, which gives the
+prescribed value $\rho_0=1$.
+-/
 structure CG3State (n : ℕ) (𝕜 : Type*) [RCLike 𝕜] where
   /-- The current iterate $x_j$. -/
   x : EuclideanSpace 𝕜 (Fin n)
@@ -550,19 +789,34 @@ structure CG3State (n : ℕ) (𝕜 : Type*) [RCLike 𝕜] where
   gamma : 𝕜
 
 /-- The scalar $\gamma_j = (r_j, r_j)/(A r_j, r_j)$ of line 3 of Algorithm 6.19, computed from the
-state. -/
+state.
+
+**Reading.** The recurrence and step scalars are defined on real or complex states without a
+convergence test and use totalized quotients. The iterate component uses the corrected plus sign of
+the exact recurrence.
+-/
 noncomputable def cg3StepGamma (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) : 𝕜 :=
   inner 𝕜 s.r s.r / inner 𝕜 s.r (op A s.r)
 
 /-- The scalar $\rho_j$ of (6.97), line 4 of Algorithm 6.19, computed from the state: $\rho_j =
 \left(1 - \frac{\gamma_j}{\gamma_{j-1}} \cdot \frac{(r_j, r_j)}{(r_{j-1}, r_{j-1})} \cdot
-\frac{1}{\rho_{j-1}}\right)^{-1}$. -/
+\frac{1}{\rho_{j-1}}\right)^{-1}$.
+
+**Reading.** The state uses a zero previous residual and stores previous coefficients equal to one
+at initialization. Lean then applies its totalized scalar formula at the first step, which gives the
+prescribed value $\rho_0=1$.
+-/
 noncomputable def cg3StepRho (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) : 𝕜 :=
   (1 - cg3StepGamma A s / s.gamma * (inner 𝕜 s.r s.r / inner 𝕜 s.rPrev s.rPrev) / s.rho)⁻¹
 
 /-- One pass through lines 3–6 of Algorithm 6.19: with $\gamma_j$ and $\rho_j$ computed from the
 state, $x_{j+1} = \rho_j (x_j + \gamma_j r_j) + (1 - \rho_j) x_{j-1}$ and $r_{j+1} = \rho_j
-(r_j - \gamma_j A r_j) + (1 - \rho_j) r_{j-1}$. -/
+(r_j - \gamma_j A r_j) + (1 - \rho_j) r_{j-1}$.
+
+**Correction.** The iterate update uses $x_j + \gamma_j r_j$. The source prints a minus sign in
+(6.98), its derivation and initial step, and line 5. The plus sign is forced by $r_j=b-Ax_j$ and the
+minus sign in the residual recurrence (6.96).
+-/
 noncomputable def cg3Step (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) : CG3State n 𝕜 :=
   { x := cg3StepRho A s • (s.x + cg3StepGamma A s • s.r) + (1 - cg3StepRho A s) • s.xPrev,
     xPrev := s.x,
@@ -573,7 +827,12 @@ noncomputable def cg3Step (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜
 
 /-- The initial state of Algorithm 6.19, line 1: $x_0$, $x_{-1} = 0$, $r_0 = b - A x_0$ and
 $r_{-1} = 0$. The stored previous coefficients are both $1$; the value $\rho_0 = 1$ follows from
-$r_{-1} = 0$. -/
+$r_{-1} = 0$.
+
+**Reading.** The state uses a zero previous residual and stores previous coefficients equal to one
+at initialization. Lean then applies its totalized scalar formula at the first step, which gives the
+prescribed value $\rho_0=1$.
+-/
 noncomputable def cg3Init (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : CG3State n 𝕜 :=
   { x := x₀, xPrev := 0, r := b - op A x₀, rPrev := 0, rho := 1, gamma := 1 }
 
@@ -582,22 +841,42 @@ For $A \in \mathbb{K}^{n \times n}$, $b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, th
 of the algorithm after $j$ steps from the initial state of line 1.
 
 The initial state is `SaadSparse.Chapter06.cg3Init`, and one step is
-`SaadSparse.Chapter06.cg3Step`. A quotient with denominator $0$ is $0$. -/
+`SaadSparse.Chapter06.cg3Step`. A quotient with denominator $0$ is $0$.
+
+**Reading.** The recurrence and step scalars are defined on real or complex states without a
+convergence test and use totalized quotients. The iterate component uses the corrected plus sign of
+the exact recurrence.
+-/
 noncomputable def cg3 (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : CG3State n 𝕜 :=
   (cg3Step A)^[j] (cg3Init A b x₀)
 
-/-- The scalar `SaadSparse.Chapter06.cg3StepGamma` is $(r_j, r_j)/(A r_j, r_j)$. -/
+/-- The scalar `SaadSparse.Chapter06.cg3StepGamma` is $(r_j, r_j)/(A r_j, r_j)$.
+
+**Reading.** The recurrence and step scalars are defined on real or complex states without a
+convergence test and use totalized quotients. The iterate component uses the corrected plus sign of
+the exact recurrence.
+-/
 theorem cg3StepGamma_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) :
     cg3StepGamma A s = inner 𝕜 s.r s.r / inner 𝕜 s.r (op A s.r) := rfl
 
-/-- The scalar `SaadSparse.Chapter06.cg3StepRho` is given by the formula (6.97). -/
+/-- The scalar `SaadSparse.Chapter06.cg3StepRho` is given by the formula (6.97).
+
+**Reading.** The recurrence and step scalars are defined on real or complex states without a
+convergence test and use totalized quotients. The iterate component uses the corrected plus sign of
+the exact recurrence.
+-/
 theorem cg3StepRho_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) :
     cg3StepRho A s =
       (1 - cg3StepGamma A s / s.gamma * (inner 𝕜 s.r s.r / inner 𝕜 s.rPrev s.rPrev) / s.rho)⁻¹ :=
   rfl
 
 /-- One pass of Algorithm 6.19 gives the state $(x_{j+1}, x_j, r_{j+1}, r_j, \rho_j, \gamma_j)$ with
-the updates of lines 5 and 6. -/
+the updates of lines 5 and 6.
+
+**Correction.** The iterate update uses $x_j + \gamma_j r_j$. The source prints a minus sign in
+(6.98), its derivation and initial step, and line 5. The plus sign is forced by $r_j=b-Ax_j$ and the
+minus sign in the residual recurrence (6.96).
+-/
 theorem cg3Step_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) :
     cg3Step A s =
       { x := cg3StepRho A s • (s.x + cg3StepGamma A s • s.r) + (1 - cg3StepRho A s) • s.xPrev,
@@ -607,7 +886,12 @@ theorem cg3Step_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : CG3State n 𝕜) :
         rPrev := s.r, rho := cg3StepRho A s, gamma := cg3StepGamma A s } := rfl
 
 /-- The state after $j + 1$ steps of Algorithm 6.19 is one step applied to the state after $j$
-steps. -/
+steps.
+
+**Reading.** The recurrence and step scalars are defined on real or complex states without a
+convergence test and use totalized quotients. The iterate component uses the corrected plus sign of
+the exact recurrence.
+-/
 theorem cg3_succ (j : ℕ) : cg3 A b x₀ (j + 1) = cg3Step A (cg3 A b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -641,7 +925,12 @@ variable {A b x₀}
 Hermitian positive definite, and let the residuals $r_0, \dots, r_j$ of Algorithm 6.18 be
 nonzero. Then the state of Algorithm 6.19 after $j + 1$ steps is
 $(x_{j+1}, x_j, r_{j+1}, r_j, \rho_j, \gamma_j)$, with the iterates and residuals of Algorithm
-6.18. -/
+6.18.
+
+**Reading.** Lean proves equivalence of the corrected three-term variant for Hermitian positive
+definite input. The statement requires nonzero residuals through the input to the last compared
+transition.
+-/
 theorem cg3_eq (hA : A.PosDef) {j : ℕ} (hr : ∀ i ≤ j, cgR A b x₀ i ≠ 0) :
     cg3 A b x₀ (j + 1) =
       { x := cgX A b x₀ (j + 1), xPrev := cgX A b x₀ j, r := cgR A b x₀ (j + 1),
@@ -661,7 +950,12 @@ theorem cg3_eq (hA : A.PosDef) {j : ℕ} (hr : ∀ i ≤ j, cgR A b x₀ i ≠ 0
 positive definite, and let the residuals $r_0, \dots, r_{m+1}$ of Algorithm 6.18 be nonzero. If
 a scalar $\rho$ satisfies
 $$r_{m+2} = \rho (r_{m+1} - \gamma_{m+1} A r_{m+1}) + (1 - \rho) r_m,$$
-then $\rho = \rho_{m+1}$, the scalar of (6.97). -/
+then $\rho = \rho_{m+1}$, the scalar of (6.97).
+
+**Generalization.** The characterization works over the real or complex field for a Hermitian
+positive definite matrix, with nonzero residuals through the current step. It states uniqueness of
+the scalar satisfying the residual update.
+-/
 theorem equation_6_97_of_eq_6_96 (hA : A.PosDef) {m : ℕ} (hr : ∀ j ≤ m + 1, cgR A b x₀ j ≠ 0)
     {ρ : 𝕜}
     (h96 : cgR A b x₀ (m + 2) =
@@ -702,16 +996,31 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 
 /-- The vector $y_m = T_m^{-1}(\beta e_1) \in \mathbb{R}^m$ of (6.86), where $\beta = \|r_0\|_2$ and
 $T_m$ is computed from $v_1 = r_0/\beta$; if $T_m$ is singular, the Lean inverse is $0$ and
-$y_m = 0$. -/
+$y_m = 0$.
+
+**Reading.** These formulas are indexed by a requested size with no stopping rule. The program uses
+the totalized matrix inverse, producing zero projected coefficients if the projected system is
+singular. The source's solve presupposes an invertible $T_m$ and truncates the process at breakdown.
+-/
 noncomputable def lanczosMethodY (m : ℕ) : Fin m → ℝ :=
   (T A (v₁ A b x₀) m)⁻¹ *ᵥ Krylov.firstVec ‖b - op A x₀‖ m
 
-/-- The vector `SaadSparse.Chapter06.lanczosMethodY` is $T_m^{-1}(\beta e_1)$. -/
+/-- The vector `SaadSparse.Chapter06.lanczosMethodY` is $T_m^{-1}(\beta e_1)$.
+
+**Reading.** These formulas are indexed by a requested size with no stopping rule. The program uses
+the totalized matrix inverse, producing zero projected coefficients if the projected system is
+singular. The source's solve presupposes an invertible $T_m$ and truncates the process at breakdown.
+-/
 theorem lanczosMethodY_def (m : ℕ) : lanczosMethodY A b x₀ m =
     (T A (v₁ A b x₀) m)⁻¹ *ᵥ Krylov.firstVec ‖b - op A x₀‖ m := rfl
 
 /-- Equation (6.86): $x_m = x_0 + V_m y_m = x_0 + \sum_{j=1}^{m} (y_m)_j v_j$, the result of $m$
-steps of Algorithm 6.16 without the stopping test. -/
+steps of Algorithm 6.16 without the stopping test.
+
+**Reading.** These formulas are indexed by a requested size with no stopping rule. The program uses
+the totalized matrix inverse, producing zero projected coefficients if the projected system is
+singular. The source's solve presupposes an invertible $T_m$ and truncates the process at breakdown.
+-/
 noncomputable def lanczosMethodAt (m : ℕ) : 𝔼 :=
   x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • lanczosV A (v₁ A b x₀) (j : ℕ)
 
@@ -724,17 +1033,32 @@ $\beta_{j+1} = 0$ then set $m := j$ and Stop".
 
 The stopping rule replaces $m$ by $\min(m, \mu)$, where $\mu$ is the grade of $r_0$. The iterate
 for a fixed number of steps is `SaadSparse.Chapter06.lanczosMethodAt`. If $T_m$ is singular, the
-Lean inverse is $0$. -/
+Lean inverse is $0$.
+
+**Reading.** The stopping test is represented by the minimum of the requested length and the grade
+of the initial residual. The formula also accepts zero initial residual, for which the grade is zero
+and it returns the initial guess.
+-/
 noncomputable def lanczosMethod (m : ℕ) : 𝔼 :=
   lanczosMethodAt A b x₀ (min m (grade A (b - op A x₀)))
 
-/-- The iterate `SaadSparse.Chapter06.lanczosMethodAt` is $x_0 + \sum_{j=1}^{m} (y_m)_j v_j$. -/
+/-- The iterate `SaadSparse.Chapter06.lanczosMethodAt` is $x_0 + \sum_{j=1}^{m} (y_m)_j v_j$.
+
+**Reading.** These formulas are indexed by a requested size with no stopping rule. The program uses
+the totalized matrix inverse, producing zero projected coefficients if the projected system is
+singular. The source's solve presupposes an invertible $T_m$ and truncates the process at breakdown.
+-/
 theorem lanczosMethodAt_def (m : ℕ) : lanczosMethodAt A b x₀ m =
     x₀ + ∑ j : Fin m, lanczosMethodY A b x₀ m j • lanczosV A (v₁ A b x₀) (j : ℕ) :=
   rfl
 
 /-- If $m \le \mu$, the grade of $r_0$, the stopping rule of Algorithm 6.16 does not act, and the
-algorithm gives the iterate for exactly $m$ steps. -/
+algorithm gives the iterate for exactly $m$ steps.
+
+**Reading.** The stopping test is represented by the minimum of the requested length and the grade
+of the initial residual. The formula also accepts zero initial residual, for which the grade is zero
+and it returns the initial guess.
+-/
 theorem lanczosMethod_eq_lanczosMethodAt {m : ℕ} (hm : m ≤ grade A (b - op A x₀)) :
     lanczosMethod A b x₀ m = lanczosMethodAt A b x₀ m := by
   rw [lanczosMethod, min_eq_left hm]
@@ -794,7 +1118,12 @@ private theorem mulVec_hessenbergSq (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {
 /-- Equation (6.86): let $A \in \mathbb{R}^{n \times n}$ be symmetric, let $r_0 \ne 0$, let
 $m \le \mu$, the grade of $r_0$, and let $T_m$ be nonsingular. Then the iterate
 $x_m = x_0 + V_m T_m^{-1}(\beta e_1)$ is the Galerkin iterate on $\mathcal{K}_m(A, r_0)$:
-$x_m - x_0 \in \mathcal{K}_m(A, r_0)$ and $b - A x_m \perp \mathcal{K}_m(A, r_0)$. -/
+$x_m - x_0 \in \mathcal{K}_m(A, r_0)$ and $b - A x_m \perp \mathcal{K}_m(A, r_0)$.
+
+**Reading.** Lean states the projected-system invertibility and nonzero initial residual explicitly.
+The Galerkin theorem works up to the grade, and the residual formula uses a positive step count so
+that the last projected coordinate exists.
+-/
 theorem lanczosMethodAt_isGalerkinIterate (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ}
     (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     Krylov.IsGalerkinIterate (op A) b x₀ m (lanczosMethodAt A b x₀ m) := by
@@ -809,7 +1138,12 @@ $$b - A x_m = -\beta_{m+1} (e_m^T y_m) \, v_{m+1}.$$
 
 The quantities $e_m^T y_m$, $\beta_{m+1}$ and $v_{m+1}$ are the last entry of
 `lanczosMethodY A b x₀ m`, `lanczosBeta A (v₁ A b x₀) m` and `lanczosV A (v₁ A b x₀) m`. The
-statement does not assume $m \le \mu$. -/
+statement does not assume $m \le \mu$.
+
+**Reading.** Lean states the projected-system invertibility and nonzero initial residual explicitly.
+The Galerkin theorem works up to the grade, and the residual formula uses a positive step count so
+that the last projected coordinate exists.
+-/
 theorem equation_6_87 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
     (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     b - op A (lanczosMethodAt A b x₀ m) =
@@ -829,7 +1163,13 @@ $$b - A x_m = \sigma_m v_{m+1}.$$
 The case $m = 0$, where $r_0 = \beta v_1$, is not part of the statement. The iterate is
 `SaadSparse.Chapter06.lanczosMethodAt`, without the stopping test. The form for Algorithm 6.17
 is `SaadSparse.Chapter06.residual_dLanczosX`. The orthogonality of the residuals, which the book
-derives from part 1, is `SaadSparse.Chapter06.inner_residual_lanczosMethodAt_eq_zero`. -/
+derives from part 1, is `SaadSparse.Chapter06.inner_residual_lanczosMethodAt_eq_zero`.
+
+**Reading.** The numbered theorem proves the scalar-multiple claim for Algorithm 6.16 at a positive
+index with an invertible projected matrix. Separate results give pairwise orthogonality of those
+residuals and the D-Lanczos residual formula under nonzero elimination pivots. The source states
+both methods together.
+-/
 theorem proposition_6_20_1 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} (hm : 0 < m)
     (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     ∃ σ : ℝ, b - op A (lanczosMethodAt A b x₀ m) = σ • lanczosV A (v₁ A b x₀) m :=
@@ -838,7 +1178,13 @@ theorem proposition_6_20_1 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ} 
 /-- Proposition 6.20(1), second half: let $A \in \mathbb{R}^{n \times n}$ be symmetric and
 $r_0 \ne 0$. If $i, j \ge 1$, $i \ne j$, and $T_i$ and $T_j$ are nonsingular, then the residuals
 of the iterates $x_i$ and $x_j$ of Algorithm 6.16 are orthogonal, because each is a multiple of
-a Lanczos vector. -/
+a Lanczos vector.
+
+**Reading.** The numbered theorem proves the scalar-multiple claim for Algorithm 6.16 at a positive
+index with an invertible projected matrix. Separate results give pairwise orthogonality of those
+residuals and the D-Lanczos residual formula under nonzero elimination pivots. The source states
+both methods together.
+-/
 theorem inner_residual_lanczosMethodAt_eq_zero (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {i j : ℕ}
     (hi : 0 < i) (hj : 0 < j) (hij : i ≠ j)
     (hTi : IsUnit (T A (v₁ A b x₀) i).det)
@@ -855,7 +1201,12 @@ variable (A b x₀)
 
 /-- Equation (6.89): the diagonal entries of $U_m$ in the factorization $T_m = L_m U_m$ of (6.84),
 $\eta_1 = \alpha_1$ and $\eta_{m+1} = \alpha_{m+1} - \lambda_{m+1} \beta_{m+1}$ for $m \ge 1$.
-The value `dlEta A v₁ m` is $\eta_{m+1}$. -/
+The value `dlEta A v₁ m` is $\eta_{m+1}$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 noncomputable def dlEta (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → ℝ
   | 0 => lanczosAlpha A v₁ 0
   | m + 1 => lanczosAlpha A v₁ (m + 1) -
@@ -863,20 +1214,35 @@ noncomputable def dlEta (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ →
 
 /-- Equation (6.88): the subdiagonal entries of $L_m$, $\lambda_1 = 0$ and
 $\lambda_{m+1} = \beta_{m+1}/\eta_m$ for $m \ge 1$. The value `dlLambda A v₁ m` is
-$\lambda_{m+1}$. -/
+$\lambda_{m+1}$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 noncomputable def dlLambda (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → ℝ
   | 0 => 0
   | m + 1 => lanczosBeta A v₁ (m + 1) / dlEta A v₁ m
 
 /-- The entries of $z_m = L_m^{-1}(\beta e_1)$: $\zeta_1 = \beta$ and
 $\zeta_{m+1} = -\lambda_{m+1} \zeta_m$ for $m \ge 1$. The value `dlZeta A v₁ β m` is
-$\zeta_{m+1}$. -/
+$\zeta_{m+1}$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 noncomputable def dlZeta (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) (β : ℝ) : ℕ → ℝ
   | 0 => β
   | m + 1 => -dlLambda A v₁ (m + 1) * dlZeta A v₁ β m
 
 /-- The columns of $P_m = V_m U_m^{-1}$: $p_1 = \eta_1^{-1} v_1$ and $p_{m+1} =
-\eta_{m+1}^{-1}(v_{m+1} - \beta_{m+1} p_m)$ for $m \ge 1$. The vector `dlP A v₁ m` is $p_{m+1}$. -/
+\eta_{m+1}^{-1}(v_{m+1} - \beta_{m+1} p_m)$ for $m \ge 1$. The vector `dlP A v₁ m` is $p_{m+1}$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 noncomputable def dlP (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → 𝔼
   | 0 => (dlEta A v₁ 0)⁻¹ • lanczosV A v₁ 0
   | m + 1 => (dlEta A v₁ (m + 1))⁻¹ •
@@ -884,7 +1250,12 @@ noncomputable def dlP (A : Matrix (Fin n) (Fin n) ℝ) (v₁ : 𝔼) : ℕ → �
 
 /-- **Algorithm 6.17** of [saad2003iterative] (D-Lanczos). The iterates $x_0$ and
 $x_m = x_{m-1} + \zeta_m p_m$ for $m \ge 1$, where $\zeta_m$ and $p_m$ are computed from
-$v_1 = r_0/\beta$ and $\beta = \|r_0\|_2$. -/
+$v_1 = r_0/\beta$ and $\beta = \|r_0\|_2$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 noncomputable def dLanczosX (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 𝔼) : ℕ → 𝔼
   | 0 => x₀
   | m + 1 => dLanczosX A b x₀ m +
@@ -898,32 +1269,62 @@ theorem dlEta_zero (v₁ : 𝔼) : dlEta A v₁ 0 = lanczosAlpha A v₁ 0 := rfl
 /-- $\lambda_1 = 0$. -/
 theorem dlLambda_zero (v₁ : 𝔼) : dlLambda A v₁ 0 = 0 := rfl
 
-/-- Equation (6.88): $\lambda_{m+1} = \beta_{m+1}/\eta_m$ for $m \ge 1$. -/
+/-- Equation (6.88): $\lambda_{m+1} = \beta_{m+1}/\eta_m$ for $m \ge 1$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 theorem dlLambda_succ (v₁ : 𝔼) (m : ℕ) :
     dlLambda A v₁ (m + 1) = lanczosBeta A v₁ (m + 1) / dlEta A v₁ m := rfl
 
-/-- Equation (6.89): $\eta_{m+1} = \alpha_{m+1} - \lambda_{m+1} \beta_{m+1}$ for $m \ge 1$. -/
+/-- Equation (6.89): $\eta_{m+1} = \alpha_{m+1} - \lambda_{m+1} \beta_{m+1}$ for $m \ge 1$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 theorem dlEta_succ (v₁ : 𝔼) (m : ℕ) : dlEta A v₁ (m + 1) =
     lanczosAlpha A v₁ (m + 1) - dlLambda A v₁ (m + 1) * lanczosBeta A v₁ (m + 1) := rfl
 
 /-- $\zeta_1 = \beta$. -/
 theorem dlZeta_zero (v₁ : 𝔼) (β : ℝ) : dlZeta A v₁ β 0 = β := rfl
 
-/-- $\zeta_{m+1} = -\lambda_{m+1} \zeta_m$ for $m \ge 1$. -/
+/-- $\zeta_{m+1} = -\lambda_{m+1} \zeta_m$ for $m \ge 1$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 theorem dlZeta_succ (v₁ : 𝔼) (β : ℝ) (m : ℕ) :
     dlZeta A v₁ β (m + 1) = -dlLambda A v₁ (m + 1) * dlZeta A v₁ β m := rfl
 
-/-- $p_1 = \eta_1^{-1} v_1$. -/
+/-- $p_1 = \eta_1^{-1} v_1$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 theorem dlP_zero (v₁ : 𝔼) : dlP A v₁ 0 = (dlEta A v₁ 0)⁻¹ • lanczosV A v₁ 0 := rfl
 
-/-- $p_{m+1} = \eta_{m+1}^{-1}(v_{m+1} - \beta_{m+1} p_m)$ for $m \ge 1$. -/
+/-- $p_{m+1} = \eta_{m+1}^{-1}(v_{m+1} - \beta_{m+1} p_m)$ for $m \ge 1$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 theorem dlP_succ (v₁ : 𝔼) (m : ℕ) : dlP A v₁ (m + 1) = (dlEta A v₁ (m + 1))⁻¹ •
     (lanczosV A v₁ (m + 1) - lanczosBeta A v₁ (m + 1) • dlP A v₁ m) := rfl
 
 /-- The iterate $x_0$ of Algorithm 6.17 is the initial guess. -/
 @[simp] theorem dLanczosX_zero : dLanczosX A b x₀ 0 = x₀ := rfl
 
-/-- Algorithm 6.17: $x_m = x_{m-1} + \zeta_m p_m$ for $m \ge 1$. -/
+/-- Algorithm 6.17: $x_m = x_{m-1} + \zeta_m p_m$ for $m \ge 1$.
+
+**Reading.** The recurrences are defined for every index and use totalized division at a zero pivot.
+Their evaluation does not stop on convergence. The source treats the locally executed recurrence and
+warns of breakdown in the unpivoted elimination.
+-/
 theorem dLanczosX_succ (m : ℕ) : dLanczosX A b x₀ (m + 1) = dLanczosX A b x₀ m +
     dlZeta A (v₁ A b x₀) ‖b - op A x₀‖ m • dlP A (v₁ A b x₀) m := rfl
 
@@ -964,7 +1365,13 @@ theorem apply_dlP (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) :
 $A \in \mathbb{R}^{n \times n}$ be symmetric and $r_0 \ne 0$. For $m \ge 0$, if
 $\eta_1, \dots, \eta_m$ are nonzero, then the residual of the D-Lanczos iterate is
 $b - A x_m = \zeta_{m+1} v_{m+1}$. This is the reason why the algorithm computes the Galerkin
-iterate. -/
+iterate.
+
+**Reading.** The numbered theorem proves the scalar-multiple claim for Algorithm 6.16 at a positive
+index with an invertible projected matrix. Separate results give pairwise orthogonality of those
+residuals and the D-Lanczos residual formula under nonzero elimination pivots. The source states
+both methods together.
+-/
 theorem residual_dLanczosX (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) :
     ∀ m : ℕ, (∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0) →
       b - op A (dLanczosX A b x₀ m) =
@@ -1060,7 +1467,13 @@ theorem cgX_isGalerkinIterate (hA : A.PosDef) (m : ℕ) :
 /-- Section 6.7.1: the conjugate gradient algorithm is mathematically equivalent to D-Lanczos. Let
 $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and $r_0 \ne 0$. If
 $\eta_1, \dots, \eta_m$ are nonzero, then the iterates $x_m$ of Algorithms 6.18 and 6.17 are
-equal. -/
+equal.
+
+**Reading.** Lean proves the corresponding iterate equalities for SPD systems with nonzero initial
+residual and explicitly asks for the nonvanishing pivots, projected invertibility or grade bounds
+that each comparison uses. The source compares Algorithms 6.16 and 6.17 for a real symmetric matrix
+whenever both can execute.
+-/
 theorem cgX_eq_dLanczosX (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) (m : ℕ)
     (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0) :
     cgX A b x₀ m = dLanczosX A b x₀ m :=
@@ -1069,7 +1482,13 @@ theorem cgX_eq_dLanczosX (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) (m : ℕ)
 
 /-- Section 6.7.1: let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and
 $r_0 \ne 0$. If $\eta_1, \dots, \eta_m$ are nonzero, $m \le \mu$, the grade of $r_0$, and $T_m$
-is nonsingular, then the iterate of Algorithm 6.17 is the iterate of Algorithm 6.16. -/
+is nonsingular, then the iterate of Algorithm 6.17 is the iterate of Algorithm 6.16.
+
+**Reading.** Lean proves the corresponding iterate equalities for SPD systems with nonzero initial
+residual and explicitly asks for the nonvanishing pivots, projected invertibility or grade bounds
+that each comparison uses. The source compares Algorithms 6.16 and 6.17 for a real symmetric matrix
+whenever both can execute.
+-/
 theorem dLanczosX_eq_lanczosMethodAt (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {m : ℕ}
     (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0)
     (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
@@ -1086,7 +1505,11 @@ give the same approximation.
 Both are the Galerkin iterate on $\mathcal{K}_{m'}(A, r_0)$. The stopping rule "if
 $\beta_{j+1} = 0$ set $m := j$" of Algorithm 6.16 and the stopping rule of FOM,
 `SaadSparse.Chapter06.mEff`, stop at the same step, because $v_1$ and $r_0$ have the same grade.
-The hypothesis is `SaadSparse.Chapter06.FOMDefined A b x₀ (mEff A b x₀ m)`. -/
+The hypothesis is `SaadSparse.Chapter06.FOMDefined A b x₀ (mEff A b x₀ m)`.
+
+**Reading.** The theorem compares the effective-length iterates, with the FOM system defined at that
+length. The source identifies the two methods via the same orthogonal projection.
+-/
 theorem lanczosMethod_eq_fom (hA : A.IsSymm) {m : ℕ}
     (hH : FOMDefined A b x₀ (mEff A b x₀ m)) :
     lanczosMethod A b x₀ m = fom A b x₀ m := by
@@ -1105,7 +1528,13 @@ theorem lanczosMethod_eq_fom (hA : A.IsSymm) {m : ℕ}
 
 /-- Section 6.7.1: let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and
 $r_0 \ne 0$. If $m \le \mu$, the grade of $r_0$, and $T_m$ is nonsingular, then the iterate of
-Algorithm 6.18 is the iterate of Algorithm 6.16. -/
+Algorithm 6.18 is the iterate of Algorithm 6.16.
+
+**Reading.** Lean proves the corresponding iterate equalities for SPD systems with nonzero initial
+residual and explicitly asks for the nonvanishing pivots, projected invertibility or grade bounds
+that each comparison uses. The source compares Algorithms 6.16 and 6.17 for a real symmetric matrix
+whenever both can execute.
+-/
 theorem cgX_eq_lanczosMethodAt (hA : A.PosDef) (hb : b - op A x₀ ≠ 0) {m : ℕ}
     (hm : m ≤ grade A (b - op A x₀)) (hT : IsUnit (T A (v₁ A b x₀) m).det) :
     cgX A b x₀ m = lanczosMethodAt A b x₀ m :=
@@ -1135,7 +1564,12 @@ $$(A p_i, p_j) = 0.$$
 So the vectors $p_i$ form an $A$-conjugate set.
 
 The vectors are `SaadSparse.Chapter06.dlP`, indexed from $0$: `dlP A v₁ i` is $p_{i+1}$. The
-statement holds for every unit starting vector $v_1$, not only for $r_0/\|r_0\|_2$. -/
+statement holds for every unit starting vector $v_1$, not only for $r_0/\|r_0\|_2$.
+
+**Reading.** The required nonzero pivots through the later direction are explicit. The source
+assumes that the two directions were produced by the direct algorithm, whose update divides by these
+pivots.
+-/
 theorem proposition_6_20_2 (hA : A.IsSymm) {v₁ : 𝔼} (hv : ‖v₁‖ = 1) {i j : ℕ} (hij : i ≠ j)
     (hη : ∀ k ≤ max i j, dlEta A v₁ k ≠ 0) :
     inner ℝ (op A (dlP A v₁ i)) (dlP A v₁ j) = 0 := by
@@ -1170,7 +1604,11 @@ private theorem neg_one_pow_mul_self (k : ℕ) : ((-1 : ℝ) ^ k) * ((-1 : ℝ) 
 
 /-- Equation (6.99): let $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite and let
 $r_k \ne 0$. Then the Lanczos vector computed from $v_1 = r_0/\|r_0\|_2$ is
-$v_{k+1} = (-1)^k r_k / \|r_k\|_2$. -/
+$v_{k+1} = (-1)^k r_k / \|r_k\|_2$.
+
+**Reading.** The nonzero residual is explicit because a nonzero proportionality factor is asserted.
+The companion result specifies the sign and the Euclidean normalization for the Lanczos vector.
+-/
 theorem lanczosV_eq_smul_cgR (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
     lanczosV A (v₁ A b x₀) k =
       ((-1 : ℝ) ^ k * ‖cgR A b x₀ k‖⁻¹) • cgR A b x₀ k := by
@@ -1188,7 +1626,11 @@ $\sigma \ne 0$ with
 $$r_k = \sigma v_{k+1}.$$
 
 The explicit form $v_{k+1} = (-1)^k r_k / \|r_k\|_2$ is
-`SaadSparse.Chapter06.lanczosV_eq_smul_cgR`. -/
+`SaadSparse.Chapter06.lanczosV_eq_smul_cgR`.
+
+**Reading.** The nonzero residual is explicit because a nonzero proportionality factor is asserted.
+The companion result specifies the sign and the Euclidean normalization for the Lanczos vector.
+-/
 theorem equation_6_99 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ k ≠ 0) :
     ∃ σ : ℝ, σ ≠ 0 ∧ cgR A b x₀ k = σ • lanczosV A (v₁ A b x₀) k := by
   have hn : ‖cgR A b x₀ k‖ ≠ 0 := norm_ne_zero_iff.2 hr
@@ -1213,7 +1655,11 @@ theorem equation_6_100 (j : ℕ) :
   abel
 
 /-- Section 6.7.1: for a symmetric positive definite $A \in \mathbb{R}^{n \times n}$,
-$\beta_j = -(r_{j+1}, A p_j)/(p_j, A p_j)$, the form that the derivation in the book produces. -/
+$\beta_j = -(r_{j+1}, A p_j)/(p_j, A p_j)$, the form that the derivation in the book produces.
+
+**Generalization.** The alternative quotient formula is totalized and holds even at a converged
+iterate, where both quotients give zero. The source uses it in deriving the active iteration.
+-/
 theorem cgBeta_eq' (hA : A.PosDef) (j : ℕ) : cgBeta A b x₀ j =
     -(inner ℝ (op A (cgP A b x₀ j)) (cgR A b x₀ (j + 1)) /
       inner ℝ (op A (cgP A b x₀ j)) (cgP A b x₀ j)) := by
@@ -1259,7 +1705,11 @@ $$\delta_1 = \frac{1}{\alpha_0},$$
 where $\alpha_0$ is the first step length of Algorithm 6.18.
 
 The proof specializes `CG.lanczos_alpha_zero_eq`, and the entry is
-`lanczosAlpha A (v₁ A b x₀) 0`, the coefficient $\alpha_1$ of Algorithm 6.15. -/
+`lanczosAlpha A (v₁ A b x₀) 0`, the coefficient $\alpha_1$ of Algorithm 6.15.
+
+**Reading.** This declaration is the $j=0$ branch of the printed piecewise formula. The $j>0$ branch
+is the separate result for (6.101).
+-/
 theorem equation_6_102 (hA : A.PosDef) (hr : cgR A b x₀ 0 ≠ 0) :
     lanczosAlpha A (v₁ A b x₀) 0 = 1 / cgAlpha A b x₀ 0 := by
   have hs := isSymmetricCoercive_op_of_posDef hA
@@ -1294,7 +1744,11 @@ where $\alpha_j$ and $\beta_j$ are the coefficients of Algorithm 6.18.
 
 In Lean $j = k + 1$ with $k \ge 0$. The proof specializes `CG.lanczos_beta_eq`, and the entry is
 `lanczosBeta A (v₁ A b x₀) (k + 1)`, the coefficient $\beta_{j+1}$ of Algorithm 6.15. The proof
-uses $\sqrt{\beta_k} = \|r_{k+1}\| / \|r_k\|$. -/
+uses $\sqrt{\beta_k} = \|r_{k+1}\| / \|r_k\|$.
+
+**Reading.** The theorem gives the off-diagonal coefficient in the displayed matrix. The separate
+statements for (6.101) and (6.102) give its diagonal.
+-/
 theorem equation_6_103 (hA : A.PosDef) {k : ℕ} (hr : cgR A b x₀ (k + 1) ≠ 0) :
     lanczosBeta A (v₁ A b x₀) (k + 1) =
       Real.sqrt (cgBeta A b x₀ k) / cgAlpha A b x₀ k := by
@@ -1374,7 +1828,11 @@ private theorem iopW_of_le (u : ℕ → 𝔼) (lo : ℕ) (w₀ : 𝔼) :
 variable (M : Matrix (Fin n) (Fin n) 𝕜) (w₁ : EuclideanSpace 𝕜 (Fin n))
 
 /-- Let $M \in \mathbb{K}^{n \times n}$ be Hermitian and $\|w_1\| = 1$. Then the Arnoldi
-coefficients of $M$ and $w_1$ are tridiagonal: $h_{ij} = 0$ for $i + 1 < j$. -/
+coefficients of $M$ and $w_1$ are tridiagonal: $h_{ij} = 0$ for $i + 1 < j$.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem arnoldiCoeff_eq_zero_of_isSymmetric (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1)
     {i j : ℕ} (h : i + 1 < j) : arnoldiCoeff M w₁ i j = 0 := by
   rw [arnoldiCoeff_eq M w₁ hw]
@@ -1412,7 +1870,11 @@ private theorem iopCoeffOf_two (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (
     · exact (arnoldiCoeff_eq_zero_of_isSymmetric M w₁ hM hw (by omega)).symm
 
 /-- Algorithm 6.6 with $k = 2$ is Algorithm 6.1 for a Hermitian matrix: for a Hermitian $M$ and
-$\|w_1\| = 1$, the two algorithms compute the same vectors. -/
+$\|w_1\| = 1$, the two algorithms compute the same vectors.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem iop_two_eq_arnoldiCGS (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (j : ℕ) :
     iop M w₁ 2 j = arnoldiCGS M w₁ j := by
   induction j using Nat.strong_induction_on with
@@ -1434,13 +1896,21 @@ theorem iop_two_eq_arnoldiCGS (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (j
       rw [iop_succ, hW, arnoldiCGS_succ]
 
 /-- For a Hermitian $M$ and $\|w_1\| = 1$, the sequence of vectors of Algorithm 6.6 with $k = 2$ is
-the sequence of Algorithm 6.1. -/
+the sequence of Algorithm 6.1.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem iop_two_eq (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) :
     iop M w₁ 2 = arnoldiCGS M w₁ :=
   funext (iop_two_eq_arnoldiCGS M w₁ hM hw)
 
 /-- For a Hermitian $M$ and $\|w_1\| = 1$, the vectors $w_j$ of Algorithm 6.6 with $k = 2$ are those
-of Algorithm 6.1. -/
+of Algorithm 6.1.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem iopVecW_two_eq_arnoldiW (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (j : ℕ) :
     iopVecW M w₁ 2 j = arnoldiW M w₁ j := by
   rw [iopVecW, iop_two_eq M w₁ hM hw, iopW_eq_sub_sum, arnoldiW]
@@ -1448,7 +1918,11 @@ theorem iopVecW_two_eq_arnoldiW (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) 
     rw [iopCoeffOf_two M w₁ hM hw j (Finset.mem_range.1 hi)])
 
 /-- For a Hermitian $M$ and $\|w_1\| = 1$, the coefficients $h_{ij}$ of Algorithm 6.6 with $k = 2$
-are the Arnoldi coefficients, for all $i$ and $j$. -/
+are the Arnoldi coefficients, for all $i$ and $j$.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem iopCoeff_two_eq_arnoldiCoeff (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (i j : ℕ) :
     iopCoeff M w₁ 2 i j = arnoldiCoeff M w₁ i j := by
   rw [iopCoeff]
@@ -1459,13 +1933,21 @@ theorem iopCoeff_two_eq_arnoldiCoeff (hM : (op M).IsSymmetric) (hw : ‖w₁‖ 
   · exact (arnoldiCoeff_eq_zero_of_lt M w₁ hw (by omega)).symm
 
 /-- For a Hermitian $M$ and $\|w_1\| = 1$, the matrix $V_m$ of Algorithm 6.6 with $k = 2$ is the
-Arnoldi matrix $V_m$. -/
+Arnoldi matrix $V_m$.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem VI_two_eq_V (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (m : ℕ) :
     VI M w₁ 2 m = V M w₁ m := by
   rw [VI, V, iop_two_eq M w₁ hM hw]
 
 /-- For a Hermitian $M$ and $\|w_1\| = 1$, the matrix $H_m$ of Algorithm 6.6 with $k = 2$ is the
-Arnoldi matrix $H_m$. -/
+Arnoldi matrix $H_m$.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem HI_two_eq_H (hM : (op M).IsSymmetric) (hw : ‖w₁‖ = 1) (m : ℕ) :
     HI M w₁ 2 m = H M w₁ m := by
   ext i j
@@ -1475,7 +1957,11 @@ variable (c x₀ : EuclideanSpace 𝕜 (Fin n))
 
 /-- IOM(2) is FOM for a Hermitian matrix: if $M$ is Hermitian and $r_0 = c - M x_0 \ne 0$, then for
 every $m$ the iterate of IOM(2) (Algorithm 6.7 with $k = 2$) after $m$ steps is the iterate of
-FOM after $m$ steps. -/
+FOM after $m$ steps.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem iomFixed_two_eq_fomFixed (hM : (op M).IsSymmetric) (hr : r₀ M c x₀ ≠ 0) (m : ℕ) :
     iomFixed M c x₀ 2 m = fomFixed M c x₀ m := by
   have hw : ‖v₁ M c x₀‖ = 1 := norm_v₁ M c x₀ hr
@@ -1484,7 +1970,11 @@ theorem iomFixed_two_eq_fomFixed (hM : (op M).IsSymmetric) (hr : r₀ M c x₀ �
 /-- DIOM(2) is FOM for a Hermitian matrix wherever Algorithm 6.8 does not divide by $0$: if $M$ is
 Hermitian, $r_0 = c - M x_0 \ne 0$, and the pivots $u_{ll}$, $l < m$, of the factorization in
 Algorithm 6.8 with $k = 2$ are nonzero, then the iterate of DIOM(2) after $m$ steps is the
-iterate of FOM after $m$ steps. -/
+iterate of FOM after $m$ steps.
+
+**Generalization.** The source's symmetric-matrix comparison extends to Hermitian matrices. The
+identities compare the exact fixed-index data, with nonzero pivots required for the direct solve.
+-/
 theorem diom_two_eq_fomFixed (hM : (op M).IsSymmetric) (hr : r₀ M c x₀ ≠ 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff M (v₁ M c x₀) 2) l l ≠ 0) :
     diom M c x₀ 2 m = fomFixed M c x₀ m :=
@@ -1506,7 +1996,12 @@ book that the conjugate gradient algorithm is a variation of DIOM(2).
 Both iterates are the Galerkin iterate on $\mathcal{K}_m(A, r_0)$. For D-Lanczos this is
 `SaadSparse.Chapter06.dLanczosX_isGalerkinIterate`. For DIOM(2) it holds because for a symmetric
 $A$ the truncated orthogonalization of Algorithm 6.6 with $k = 2$ is the Arnoldi process, so
-DIOM(2) is FOM. The pivots are `dioU (iopCoeff A (v₁ A b x₀) 2) l l`. -/
+DIOM(2) is FOM. The pivots are `dioU (iopCoeff A (v₁ A b x₀) 2) l l`.
+
+**Reading.** The comparison explicitly bounds the index by the grade and requires nonzero pivots for
+both unpivoted factorizations and a nonzero initial residual. The source describes the relation
+between the two methods through their derivations.
+-/
 theorem dLanczos_eq_diom2 (hA : A.IsSymm) (hb : b - op A x₀ ≠ 0) {m : ℕ}
     (hm : m ≤ grade A (b - op A x₀))
     (hη : ∀ i < m, dlEta A (v₁ A b x₀) i ≠ 0)

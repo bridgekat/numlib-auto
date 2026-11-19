@@ -72,6 +72,17 @@ the estimate is needed from $t = 0$.
   `QuarteroniSaccoSaleri.Chapter13.IsHeatSolution`.
 * The source energy $F(t)$ is the energy of $f$, `QuarteroniSaccoSaleri.Chapter13.energy f t`.
 
+## Deviations from the source
+
+* **Equations (13.1)–(13.4)** (reading). The classical solution uses a closed finite time
+  interval and requires continuous partial derivatives and the PDE on the closed spatial
+  interval, including at time zero. See `QuarteroniSaccoSaleri.Chapter13.IsHeatSolutionWith`.
+* **Equation (13.5)** (specialization). The initial data and solution are finite sine sums. The
+  coefficient identity concerns the retained nonzero frequencies. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_5_coeff`.
+* **Equation (13.7)** (specialization). The finite-time estimate uses $\gamma=2\nu$ for the
+  Dirichlet problem. See `QuarteroniSaccoSaleri.Chapter13.equation_13_7`.
+
 ## Not formalized
 
 * **(13.5) for a general initial datum.** Only finite sine sums are treated; the infinite series for
@@ -98,7 +109,10 @@ source $f$, initial datum $u_0$ and partial derivatives $u_t$, $u_x$, $u_{xx}$ i
 * $u(x, 0) = u_0(x)$ for $x \in [0, 1]$.
 
 The derivatives within a closed interval are one-sided at its endpoints. The definition is
-`Heat.IsClassicalSolutionIccWith`. -/
+`Heat.IsClassicalSolutionIccWith`.
+
+**Reading.** The PDE and derivative continuity are required on the closed rectangle, including
+the spatial endpoints and initial time. -/
 abbrev IsHeatSolutionWith (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u ut ux uxx : ℝ → ℝ → ℝ) :
     Prop :=
   Heat.IsClassicalSolutionIccWith ν T f u₀ u ut ux uxx
@@ -109,7 +123,10 @@ $[0, 1] \times [0, T]$ with $u(0, t) = u(1, t) = 0$ and $u(x, 0) = u_0(x)$ if th
 derivatives $u_t$, $u_x$, $u_{xx}$ for which
 `QuarteroniSaccoSaleri.Chapter13.IsHeatSolutionWith` holds.
 
-The definition is `Heat.IsClassicalSolutionIcc`. -/
+The definition is `Heat.IsClassicalSolutionIcc`.
+
+**Reading.** The closed-rectangle interpretation is
+`QuarteroniSaccoSaleri.Chapter13.IsHeatSolutionWith` with existentially quantified derivatives. -/
 abbrev IsHeatSolution (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ) (u : ℝ → ℝ → ℝ) : Prop :=
   Heat.IsClassicalSolutionIcc ν T f u₀ u
 
@@ -119,14 +136,18 @@ abbrev IsHeatSolution (ν T : ℝ) (f : ℝ → ℝ → ℝ) (u₀ : ℝ → ℝ
 coefficients $c_n$, the finite sine sum
 $$u_0(x) = \sum_{n = 0}^{N - 1} c_n \sin(n\pi x).$$
 
-The term $n = 0$ vanishes. -/
+The term $n = 0$ vanishes.
+
+**Specialization.** The datum is assumed to be a finite sine expansion. -/
 noncomputable def sineDatum (N : ℕ) (c : ℕ → ℝ) (x : ℝ) : ℝ :=
   ∑ k ∈ Finset.range N, c k * Real.sin (k * π * x)
 
 /-- **Equation (13.5)** of [quarteroni2000numerical], the separated solution. For $N \in \mathbb{N}$
 and coefficients $c_n$, the finite sum
 $$u(x, t) = \sum_{n = 0}^{N - 1} c_n e^{-(n\pi)^2 t} \sin(n\pi x).$$
--/
+
+**Specialization.** The source uses an infinite expansion. The sum here retains finitely many
+terms and the zero-frequency term vanishes. -/
 noncomputable def sineSolution (N : ℕ) (c : ℕ → ℝ) (x t : ℝ) : ℝ :=
   ∑ k ∈ Finset.range N, c k * Real.exp (-((k : ℝ) * π) ^ 2 * t) * Real.sin (k * π * x)
 
@@ -136,7 +157,10 @@ $N \in \mathbb{N}$, let $c_n$ be real coefficients and let $T$ be real. Then $u(
 $[0, 1] \times [0, T]$ with $\nu = 1$, $f = 0$ and the initial datum
 $u_0(x) = \sum_{n < N} c_n \sin(n\pi x)$.
 
-The book gives the infinite series for a general datum; that case is not formalized. -/
+The book gives the infinite series for a general datum; that case is not formalized.
+
+**Specialization.** The result proves the classical solution property only for the finite
+expansion. -/
 theorem equation_13_5 (N : ℕ) (c : ℕ → ℝ) (T : ℝ) :
     IsHeatSolution 1 T (fun _ _ => 0) (sineDatum N c) (sineSolution N c) := by
   have hexp : ∀ a s : ℝ, HasDerivAt (fun r : ℝ => Real.exp (a * r)) (a * Real.exp (a * s)) s :=
@@ -234,7 +258,10 @@ theorem integral_sin_mul_sin (m : ℕ) {n : ℕ} (hn : n ≠ 0) :
 $u_0(x) = \sum_{k < N} c_k \sin(k\pi x)$ be a finite sine sum. Then for $1 \le n < N$,
 $$c_n = 2 \int_0^1 u_0(x) \sin(n\pi x) \, dx.$$
 
-The book states this formula for a general datum. -/
+The book states this formula for a general datum.
+
+**Specialization.** The coefficient formula is asserted for nonzero frequencies present in the
+finite expansion. -/
 theorem equation_13_5_coeff (N : ℕ) (c : ℕ → ℝ) {n : ℕ} (hn : n ≠ 0) (hnN : n < N) :
     c n = 2 * ∫ x in (0 : ℝ)..1, sineDatum N c x * Real.sin (n * π * x) := by
   have hint : ∀ k : ℕ, IntervalIntegrable
@@ -280,7 +307,10 @@ for $f = 0$ the energy decays exponentially.
 
 The proof is `Heat.IsClassicalSolutionIcc.energy_le`. It follows the steps of the book, with the
 interchange of differentiation and integration done in integrated form by Fubini's theorem. The
-factor $1/\gamma$ is written inside the integral. -/
+factor $1/\gamma$ is written inside the integral.
+
+**Specialization.** The result uses the closed-rectangle Dirichlet problem and the explicit
+constant $\gamma=2\nu$. -/
 theorem equation_13_7 {ν T : ℝ} (hν : 0 < ν) (hT : 0 ≤ T) {f : ℝ → ℝ → ℝ} {u₀ : ℝ → ℝ}
     {u : ℝ → ℝ → ℝ} (hu : IsHeatSolution ν T f u₀ u) {t : ℝ} (ht : t ∈ Icc 0 T) :
     energy u t ≤ Real.exp (-(2 * ν) * t) * energy u 0

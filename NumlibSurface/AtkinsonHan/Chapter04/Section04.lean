@@ -46,7 +46,7 @@ spaces $V_j$ and $W_j$ are `Haar.V j` and `Haar.W j`.
   and the density of $V_j \oplus W_j \oplus W_{j+1} \oplus \cdots$ in $L^2(\mathbb{R})$.
 * Equations (4.4.5)–(4.4.6), `AtkinsonHan.Chapter04.equation_4_4_6`: the fine scaling functions in
   terms of the coarse scaling function and wavelet.
-* Theorem 4.4.3 and equations (4.4.10)–(4.4.11), `AtkinsonHan.Chapter04.theorem_4_4_3`: the
+* Theorem 4.4.3 and equations (4.4.7)–(4.4.8), `AtkinsonHan.Chapter04.theorem_4_4_3`: the
   decomposition step $a_k^j = (a_{2k}^{j+1} + a_{2k+1}^{j+1})/2$,
   $b_k^j = (a_{2k}^{j+1} - a_{2k+1}^{j+1})/2$.
 * Equations (4.4.9)–(4.4.13) and (4.4.18), `AtkinsonHan.Chapter04.equation_4_4_18`: the multi-level
@@ -64,7 +64,7 @@ spaces $V_j$ and $W_j$ are `Haar.V j` and `Haar.W j`.
   normalized. Its members have $L^2$ norm $2^{-j/2}$. Therefore the book's coefficient is
   $a_k^j = 2^{j/2} (\phi_{j,k}, f)$, and the wavelet coefficient is
   $b_k^j = 2^{j/2} (\psi_{j,k}, f)$. Theorems 4.4.3 and 4.4.4 are stated with these coefficients.
-  The factor $1/2$ in (4.4.10)–(4.4.11) and its absence in (4.4.16)–(4.4.17) come from this
+  The factor $1/2$ in (4.4.7)–(4.4.8) and its absence in (4.4.16)–(4.4.17) come from this
   normalization. In the orthonormal basis both steps carry the same factor $2^{-1/2}$; these forms
   are `Haar.decomposition` and `Haar.reconstruction`.
 * The dilation of $f \in L^2(\mathbb{R})$ by $c \ne 0$ is the unitary map
@@ -75,6 +75,12 @@ spaces $V_j$ and $W_j$ are `Haar.V j` and `Haar.W j`.
 * **Definition of $V_j$** (reading). The book defines $V_j$ as the set of finite linear combinations
   of the $\phi(2^j x - k)$. Here $V_j$ is the closure of this set in $L^2(\mathbb{R})$. See
   `AtkinsonHan.Chapter04.equation_4_4_1`.
+* **Theorems 4.4.1(3) and 4.4.2** (reading). Nestedness is stated without the strictness in
+  Theorem 4.4.1(3). The description of $W_j$ uses a closed span and its $L^2$ coefficients.
+* **Theorems 4.4.3–4.4.4 and the multilevel formulas** (reading). The coefficient identities
+  refer to the orthogonal projections of a common $L^2$ input. The multilevel statement allows
+  any starting level, whereas the book's reconstruction also allows separately modified
+  coarse and detail coefficients.
 -/
 
 open MeasureTheory Real Submodule
@@ -119,7 +125,10 @@ theorem equation_4_4_1 (j k : ℤ) :
 
 /-- **Theorem 4.4.1(1)** of [han2009theoretical]. For every $j \in \mathbb{Z}$, the functions
 $\phi_{j,k}(x) = 2^{j/2} \phi(2^j x - k)$, $k \in \mathbb{Z}$, form an orthonormal basis of
-$V_j$: they are orthonormal in $L^2(\mathbb{R})$, and the closure of their span is $V_j$. -/
+$V_j$: they are orthonormal in $L^2(\mathbb{R})$, and the closure of their span is $V_j$.
+
+**Reading.** The orthonormal family spans the formal closed space, which includes the
+square-summable expansions discussed before the theorem. -/
 theorem theorem_4_4_1_1 (j : ℤ) :
     Orthonormal ℝ (Haar.scalingFun j) ∧
       (span ℝ (Set.range (Haar.scalingFun j))).topologicalClosure = Haar.V j :=
@@ -137,7 +146,10 @@ theorem theorem_4_4_1_2 (j : ℤ) :
   Haar.V_eq_map_dilation j
 
 /-- **Theorem 4.4.1(3)** of [han2009theoretical] (nesting). For every $j \in \mathbb{Z}$,
-$V_j \subseteq V_{j+1}$. -/
+$V_j \subseteq V_{j+1}$.
+
+**Reading.** The source gives a strict inclusion. This theorem states inclusion and does
+not separately prove that the next scale contains additional functions. -/
 theorem theorem_4_4_1_3 (j : ℤ) : Haar.V j ≤ Haar.V (j + 1) :=
   Haar.V_le_V_succ j
 
@@ -169,7 +181,10 @@ $f \in L^2(\mathbb{R})$. Then:
 In the book's form, an element $f = \sum_k a_k \phi(2^{j+1} x - k)$ of $V_{j+1}$ lies in $W_j$
 exactly when $a_{2k+1} = -a_{2k}$ for every $k$. The coefficients $a_k$ are a common multiple of
 the inner products $(\phi_{j+1,k}, f)$, so part 1 is this condition. In the backbone, $W_j$
-(`Haar.W j`) is defined as the closed span of part 4. -/
+(`Haar.W j`) is defined as the closed span of part 4.
+
+**Reading.** The coefficient characterization uses normalized inner products and applies
+to $L^2$ expansions. The source's finite combinations are dense in the wavelet space. -/
 theorem theorem_4_4_2 (j : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     (f ∈ Haar.W j ↔ f ∈ Haar.V (j + 1) ∧ ∀ k : ℤ,
         inner ℝ (Haar.scalingFun (j + 1) (2 * k + 1)) f
@@ -220,7 +235,11 @@ Then:
 By parts 2 and 3 the summands in parts 1 and 4 are pairwise orthogonal, so the sums are the
 orthogonal direct sums $V_j = V_i \oplus W_i \oplus \dots \oplus W_{j-1}$ and
 $V_j \oplus W_j \oplus W_{j+1} \oplus \cdots$ of the book. The sums are sums of subspaces,
-without closure; the closure is taken only in part 4. -/
+without closure; the closure is taken only in part 4.
+
+**Reading.** Equation (4.4.3) writes the finest-level scaling expansion. This declaration
+gives the finite orthogonal decomposition from the surrounding text, and expresses the
+infinite orthogonal sum as a dense algebraic sum. -/
 theorem equation_4_4_3 (j : ℤ) :
     (∀ i ≤ j, Haar.V j = Haar.V i ⊔ ⨆ l ∈ Set.Ico i j, Haar.W l) ∧
       Haar.V j ≤ (Haar.W j)ᗮ ∧
@@ -318,7 +337,7 @@ private theorem inv_sqrt_two : (√2 : ℝ)⁻¹ = √2 / 2 := by
 private theorem sqrt_zpow_succ (j : ℤ) : √((2 : ℝ) ^ (j + 1)) = √((2 : ℝ) ^ j) * √2 := by
   rw [zpow_add_one₀ (two_ne_zero' ℝ), Real.sqrt_mul (by positivity)]
 
-/-- **Theorem 4.4.3** and **equations (4.4.10)–(4.4.11)** of [han2009theoretical], the decomposition
+/-- **Theorem 4.4.3** and **equations (4.4.7)–(4.4.8)** of [han2009theoretical], the decomposition
 (analysis) step. Let $j, k \in \mathbb{Z}$ and $f \in L^2(\mathbb{R})$, and define the
 coefficients $a_k^j = 2^{j/2} (\phi_{j,k}, f)$ and $b_k^j = 2^{j/2} (\psi_{j,k}, f)$. Then
 $$a_k^j = \tfrac12 \bigl(a_{2k}^{j+1} + a_{2k+1}^{j+1}\bigr), \qquad b_k^j = \tfrac12
@@ -327,7 +346,10 @@ $$a_k^j = \tfrac12 \bigl(a_{2k}^{j+1} + a_{2k+1}^{j+1}\bigr), \qquad b_k^j = \tf
 For $f \in V_{j+1}$, the numbers $a_k^{j+1}$ are the book's coefficients of $f$ in the basis
 $\phi(2^{j+1} x - k)$, and $a_k^j$, $b_k^j$ are the coefficients of its components in $V_j$ and
 $W_j$. The identities hold for every $f \in L^2(\mathbb{R})$. In the orthonormal basis this is
-`Haar.decomposition`. -/
+`Haar.decomposition`.
+
+**Generalization.** The source decomposes a function of the finer scaling space. This version
+states the coefficient identities for the corresponding projections of every $L^2$ input. -/
 theorem theorem_4_4_3 (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     √((2 : ℝ) ^ j) * inner ℝ (Haar.scalingFun j k) f =
         (√((2 : ℝ) ^ (j + 1)) * inner ℝ (Haar.scalingFun (j + 1) (2 * k)) f +
@@ -345,7 +367,11 @@ $f \in L^2(\mathbb{R})$, with the coefficients $a_k^j = 2^{j/2} (\phi_{j,k}, f)$
 $b_k^j = 2^{j/2} (\psi_{j,k}, f)$ of `AtkinsonHan.Chapter04.theorem_4_4_3`. Then
 $$a_{2k}^{j+1} = a_k^j + b_k^j, \qquad a_{2k+1}^{j+1} = a_k^j - b_k^j.$$
 
-In the orthonormal basis this is `Haar.reconstruction`. -/
+In the orthonormal basis this is `Haar.reconstruction`.
+
+**Reading.** The source reconstructs from separately prescribed coarse and detail coefficients.
+This declaration specializes the sum and difference formulas to coefficients of a common
+$L^2$ function. -/
 theorem theorem_4_4_4 (j k : ℤ) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     √((2 : ℝ) ^ (j + 1)) * inner ℝ (Haar.scalingFun (j + 1) (2 * k)) f =
         √((2 : ℝ) ^ j) * inner ℝ (Haar.scalingFun j k) f +
@@ -377,7 +403,11 @@ with both series convergent in $L^2(\mathbb{R})$.
 This is the analysis step of Theorem 4.4.3 iterated from level $J$ down to level $i$. The book
 states it for $f \in V_J$, written $f_J = f_i + w_i + \dots + w_{J-1}$. That is the case
 $f \in V_J$ of this statement, since then $P_{V_J} f = f$. The series converge unconditionally
-(`HasSum`). -/
+(`HasSum`).
+
+**Reading.** This statement uses the orthogonal projections of a common $L^2$ function and any
+starting level. The source uses independently modified coefficients in the reconstruction
+(4.4.11)–(4.4.13) and (4.4.18). -/
 theorem equation_4_4_18 {i J : ℤ} (h : i ≤ J) (f : Lp ℝ 2 (volume : Measure ℝ)) :
     (Haar.V J).starProjection f
         = (Haar.V i).starProjection f

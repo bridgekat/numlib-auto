@@ -67,6 +67,15 @@ and `Numlib.Analysis.Wavelet.Haar`. The Heisenberg inequality comes from
 
 ## Deviations from the source
 
+* **Equations (10.85)–(10.87)** (generalization). The dilation and continuous transform
+  definitions use arbitrary real scales and arbitrary functions. `equation_10_86` uses positive
+  scale and the total Fourier integral. `continuousTransform_eq_integral_fourier` assumes
+  $h,f\in L^1\cap L^2$ to state the bank-of-filters integral in ordinary frequency.
+* **Section 10.12.2, dyadic wavelets and reconstruction** (reading). `discreteWavelet` admits a
+  total scale parameter and the transform remains a total integral. The dyadic identification
+  uses almost-everywhere equality and reverses the level index.
+  `orthonormalWavelet_reconstruction` uses the real $L^2$ wavelets of a multiresolution
+  analysis, with unconditional norm convergence.
 * **The bandwidth $\Delta\omega$ of Section 10.12.1** (typo). The book prints an outer square where
   a square root is meant. See `QuarteroniSaccoSaleri.Chapter10.freqResolution`.
 * **The resolution in time $\Delta t$ in (10.88)** (reading). The book uses $\Delta t$ without a
@@ -108,11 +117,17 @@ $$h_{s,\tau}(t) = s^{-1/2} h\Bigl(\frac{t - \tau}{s}\Bigr).$$
 
 The book takes $h \in L^2(\mathbb{R})$. The definition is the backbone's
 `Wavelet.dilateTranslate`, and it gives a value for every $s \in \mathbb{R}$, with the Lean
-conventions $\sqrt{s} = 0$ for $s < 0$ and $0^{-1} = 0$. -/
+conventions $\sqrt{s} = 0$ for $s < 0$ and $0^{-1} = 0$.
+
+**Generalization.** The real scale and the functions in the formula are unrestricted for these
+total expressions. The source uses positive scales and elementary wavelets in $L^2$. -/
 noncomputable def wavelet (h : ℝ → ℂ) (s τ : ℝ) : ℝ → ℂ := Wavelet.dilateTranslate h s τ
 
 /-- For $h : \mathbb{R} \to \mathbb{C}$ and $s, \tau, t \in \mathbb{R}$, the wavelet (10.85) is
-$h_{s,\tau}(t) = (\sqrt{s})^{-1} h((t - \tau)/s)$. -/
+$h_{s,\tau}(t) = (\sqrt{s})^{-1} h((t - \tau)/s)$.
+
+**Generalization.** The real scale and the functions in the formula are unrestricted for these
+total expressions. The source uses positive scales and elementary wavelets in $L^2$. -/
 theorem wavelet_apply (h : ℝ → ℂ) (s τ t : ℝ) :
     wavelet h s τ t = (Real.sqrt s : ℂ)⁻¹ * h ((t - τ) / s) := rfl
 
@@ -123,7 +138,10 @@ In the variable $\omega = 2\pi\nu$ of the book this is $H_{s,\tau}(\omega) = \sq
 e^{-i\omega\tau}$.
 
 A dilation $t/s$ in time is a contraction $s\omega$ in frequency, so $1/s$ plays the role of the
-frequency, and $s$ is called the scale. The proof specializes `Wavelet.fourier_dilateTranslate`. -/
+frequency, and $s$ is called the scale. The proof specializes `Wavelet.fourier_dilateTranslate`.
+
+**Generalization.** For $s>0$ the total Fourier identity applies to any $h$. Cyclic frequency
+$\nu$ corresponds to the printed angular frequency $\omega=2\pi\nu$. -/
 theorem equation_10_86 (h : ℝ → ℂ) {s : ℝ} (hs : 0 < s) (τ ν : ℝ) :
     𝓕 (wavelet h s τ) ν = Real.sqrt s * 𝓕 h (s * ν) * Complex.exp (-(2 * π * ν * τ) * I) :=
   Wavelet.fourier_dilateTranslate hs τ ν
@@ -137,7 +155,10 @@ $f$.
 
 The book takes $f \in L^2(\mathbb{R})$. The integral is the Bochner integral, which is $0$ when
 the integrand is not integrable. The definition is the backbone's `Wavelet.continuousTransform`
-by `QuarteroniSaccoSaleri.Chapter10.definition_10_4_eq_continuousTransform`. -/
+by `QuarteroniSaccoSaleri.Chapter10.definition_10_4_eq_continuousTransform`.
+
+**Generalization.** The real scale and the functions in the formula are unrestricted for these
+total expressions. The source uses positive scales and elementary wavelets in $L^2$. -/
 noncomputable def definition_10_4 (h f : ℝ → ℂ) (s τ : ℝ) : ℂ :=
   ∫ t : ℝ, f t * conj (wavelet h s τ t)
 
@@ -168,7 +189,9 @@ In the variable $\omega = 2\pi\nu$ this is the book's $\frac{\sqrt{s}}{2\pi} \in
 \overline{H(s\omega)} e^{i\omega\tau} \, d\omega$.
 
 The proof applies the identity of Plancherel to $h_{s,\tau}$ and $f$, with (10.86). It
-specializes `Wavelet.continuousTransform_eq_integral_fourier`. -/
+specializes `Wavelet.continuousTransform_eq_integral_fourier`.
+
+**Reading.** Requires $f,h\in L^1\cap L^2$ for the ordinary Fourier-integral representation. -/
 theorem continuousTransform_eq_integral_fourier {h f : ℝ → ℂ} (hh1 : MemLp h 1) (hh2 : MemLp h 2)
     (hf1 : MemLp f 1) (hf2 : MemLp f 2) {s : ℝ} (hs : 0 < s) (τ : ℝ) :
     definition_10_4 h f s τ
@@ -353,7 +376,9 @@ dt - \int_{1/2}^1 e^{-i\omega t} \, dt = (1 - e^{-i\omega/2})^2/(i\omega)$ and $
 e^{-i\omega/2})^2 = -2 e^{-i\omega/2}(1 - \cos(\omega/2))$.
 
 The proof integrates $e^{-2\pi i\nu t}$ over $(0, 1/2)$ and $(1/2, 1)$ and uses the formula of
-Euler for $\cos(\pi\nu)$. -/
+Euler for $\cos(\pi\nu)$.
+
+**Reading.** States the corrected fraction for $\nu\neq 0$. -/
 theorem example_10_10 {ν : ℝ} (hν : ν ≠ 0) :
     𝓕 haarWavelet ν
       = I * Complex.exp (-(π * ν) * I) * (1 - Real.cos (π * ν)) / (π * ν) := by
@@ -498,7 +523,10 @@ scale $s = s_0^j$ and the shift $\tau = k\tau_0 s_0^j$ give the **discrete wavel
 $$h_{j,k}(t) = h_{s_0^j, k\tau_0 s_0^j}(t) = s_0^{-j/2} h(s_0^{-j} t - k\tau_0).$$
 
 The book takes $s_0 > 1$. The definition is the backbone's `Wavelet.discrete`, and
-`Wavelet.discrete_apply` gives the second form. -/
+`Wavelet.discrete_apply` gives the second form.
+
+**Generalization.** Uses the total dilation and integral expressions for arbitrary real scale
+parameter $s_0$. The printed discrete construction requires $s_0>1$. -/
 noncomputable def discreteWavelet (h : ℝ → ℂ) (s₀ τ₀ : ℝ) (j k : ℤ) : ℝ → ℂ :=
   Wavelet.discrete h s₀ τ₀ j k
 
@@ -516,7 +544,10 @@ noncomputable def discreteWaveletTransform (h : ℝ → ℂ) (s₀ τ₀ : ℝ) 
 
 /-- **Section 10.12.2** of [quarteroni2000numerical]. For $h, f : \mathbb{R} \to \mathbb{C}$,
 $s_0, \tau_0 \in \mathbb{R}$ and $j, k \in \mathbb{Z}$, the discrete wavelet transform samples
-the continuous one: $W_f(j, k) = W_f(s_0^j, k\tau_0 s_0^j)$. -/
+the continuous one: $W_f(j, k) = W_f(s_0^j, k\tau_0 s_0^j)$.
+
+**Generalization.** Uses the total dilation and integral expressions for arbitrary real scale
+parameter $s_0$. The printed discrete construction requires $s_0>1$. -/
 theorem discreteWaveletTransform_eq (h : ℝ → ℂ) (s₀ τ₀ : ℝ) (f : ℝ → ℂ) (j k : ℤ) :
     discreteWaveletTransform h s₀ τ₀ f j k = definition_10_4 h f (s₀ ^ j) (k * τ₀ * s₀ ^ j) := rfl
 
@@ -528,7 +559,10 @@ wavelet $\psi_{j,k}$ of the book is equal almost everywhere to the element
 
 The level index is reversed between the two conventions. The statement holds for every
 $\varphi$; it is used for the scaling function of a multiresolution analysis. The proof
-specializes `Wavelet.discrete_two_one_eq_waveletSystem`. -/
+specializes `Wavelet.discrete_two_one_eq_waveletSystem`.
+
+**Reading.** The dyadic wavelet of a real $L^2$ scaling function agrees almost everywhere with
+the wavelet-system element at level $-j$. -/
 theorem discreteWavelet_two_one (φ : Lp ℝ 2 (volume : Measure ℝ)) (j k : ℤ) :
     discreteWavelet (fun t => ((mraWavelet φ : ℝ → ℝ) t : ℂ)) 2 1 j k
       =ᵐ[volume] fun t => ((waveletSystem φ (-j) k : ℝ → ℝ) t : ℂ) :=
@@ -550,7 +584,10 @@ Here $L^2(\mathbb{R})$ is the space of real functions `MeasureTheory.Lp ℝ 2`, 
 multiresolution analysis is `IsMultiresolutionAnalysis V φ`. The Haar wavelet is the instance
 `Haar.isMultiresolutionAnalysis`. The proof specializes
 `IsMultiresolutionAnalysis.orthonormal_waveletSystem_prod` and
-`IsMultiresolutionAnalysis.hasSum_inner_smul_waveletSystem`. -/
+`IsMultiresolutionAnalysis.hasSum_inner_smul_waveletSystem`.
+
+**Reading.** Uses a real $L^2$ multiresolution analysis and states convergence in the $L^2$
+norm. The printed discussion refers to an unspecified orthonormal wavelet basis. -/
 theorem orthonormalWavelet_reconstruction {V : ℤ → Submodule ℝ (Lp ℝ 2 (volume : Measure ℝ))}
     {φ : Lp ℝ 2 (volume : Measure ℝ)} (h : IsMultiresolutionAnalysis V φ) :
     Orthonormal ℝ (fun jk : ℤ × ℤ => waveletSystem φ jk.1 jk.2) ∧

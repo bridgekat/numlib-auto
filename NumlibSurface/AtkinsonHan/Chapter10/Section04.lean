@@ -132,7 +132,10 @@ $$a(v, \varphi) = (\iota v, g)_H \qquad \text{for all } v \in V.$$
 
 It is the variational problem for the transposed form $a(\cdot, \cdot)^T$. For a bounded,
 $V$-elliptic form on a complete $V$, the Lax–Milgram lemma (Theorem 8.3.4) applied to $a^T$
-gives a unique solution. -/
+gives a unique solution.
+
+**Reading.** Arbitrary continuous linear map V→H replaces the Sobolev inclusion.
+-/
 def DualProblem (a : BilinForm V) (ι : V →L[ℝ] H) (g : H) (φ : V) : Prop :=
   ∀ v : V, a v φ = inner ℝ (ι v) g
 
@@ -151,7 +154,11 @@ let $\iota : V \to H$ be continuous and linear, and let $\varphi_g$ solve the du
 $g \in H$. Then
 $$\|\varphi_g\| \le \frac{\|\iota\|}{c_0} \|g\|.$$
 
-This bound makes the supremum in (10.4.5) finite. -/
+This bound makes the supremum in (10.4.5) finite.
+
+**Reading.** Explicit bound uses the operator norm of an arbitrary continuous map instead of the
+inclusion.
+-/
 theorem norm_le_of_dualProblem (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀) (ι : V →L[ℝ] H) {g : H}
     {φ : V} (hφ : DualProblem a ι g φ) : ‖φ‖ ≤ ‖ι‖ / c₀ * ‖g‖ := by
   have hkey : c₀ * ‖φ‖ ^ 2 ≤ ‖ι‖ * ‖φ‖ * ‖g‖ := by
@@ -246,7 +253,10 @@ In the source, $\delta = c h$ follows from the $H^2$ regularity bound (10.4.9) a
 interpolation error estimate. The library does not have the regularity bound, so the
 approximation property is the hypothesis. The distance is `Metric.infDist`, as in the backbone's
 `norm_map_le_of_dual_approx`; `AtkinsonHan.Chapter09.iInf_norm_sub_eq_infDist` identifies it
-with $\inf_{v_h \in V_h} \|\varphi_g - v_h\|_V$. Ellipticity is not needed. -/
+with $\inf_{v_h \in V_h} \|\varphi_g - v_h\|_V$. Ellipticity is not needed.
+
+**Reading.** Takes uniform dual approximability directly instead of deriving it from H² regularity.
+-/
 theorem corollary_10_4_4_abstract (hM : a.IsBoundedWith M) (hδ : 0 ≤ δ) (ι : V →L[ℝ] H)
     (hu : ∀ v, a u v = ℓ v) (huh : GalerkinProblem a ℓ Vh uh)
     (hdual : ∀ g : H, ∃ φ : V, DualProblem a ι g φ ∧

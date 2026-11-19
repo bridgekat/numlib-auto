@@ -56,6 +56,12 @@ from a point just above the pole until the step norm is within a relative tolera
 
 ## Deviations from the source
 
+* **Algorithms 7.3.3 and 7.3.6** (reading). The bracket lemmas state the exact branch
+  inequalities needed to preserve a multiplier. The algorithm with a known leftmost eigenvalue
+  is a classical first-stop function, with an explicit perturbation-gap hypothesis for the
+  Newton branch and deterministic correction when the exact threshold is feasible. See
+  `ConnGouldToint.Chapter07.algorithm_7_3_3_preserves_multiplier` and
+  `ConnGouldToint.Chapter07.algorithm_7_3_6_returns_easy`.
 * **Algorithm 7.3.2** (reading). The bracket choices that the source leaves open are midpoints. See
   `ConnGouldToint.Chapter07.algorithm_7_3_2`.
 * **Algorithm 7.3.6** (correction). The terminal branch tests solvability and feasibility at the
@@ -101,7 +107,11 @@ noncomputable def algorithm_7_3_2 (g : E) (H : E →L[ℝ] E)
 $g \neq 0$, $\|s(\lambda)\| < \Delta$, and let the Newton step $\lambda^N$ from $\lambda$
 satisfy $\lambda^N \le \lambda_{\mathrm{pole}}$. If $\lambda^L < \lambda^U$ and
 $\lambda_{\mathrm{pole}} < \lambda^U$, then the algorithm returns the lower end
-$\max\{\lambda^L, \lambda^N\}$ and a next trial strictly between this lower end and $\lambda^U$. -/
+$\max\{\lambda^L, \lambda^N\}$ and a next trial strictly between this lower end and $\lambda^U$.
+
+**Reading.** Verifies the midpoint next trial and lower endpoint update under a failed
+positive-secular Newton trial.
+-/
 theorem algorithm_7_3_2_failed_newton {g : E} {H : E →L[ℝ] E} {pole Δ lo hi x : ℝ}
     (hx : pole < x) (hg : g ≠ 0) (hG : ‖shiftedStep g H x‖ < Δ)
     (hN : moreSorensenNewtonStep g H Δ x ≤ pole) (hlh : lo < hi) (hph : pole < hi) :
@@ -127,7 +137,10 @@ $\|s(\lambda)\| < \Delta$, and that $\lambda \le r$ otherwise. Then $r$ lies in 
 bracket.
 
 For the optimal multiplier, the comparison of the secular function supplies the two hypotheses;
-see `ConnGouldToint.Chapter07.algorithm_7_3_3_preserves_multiplier`. -/
+see `ConnGouldToint.Chapter07.algorithm_7_3_3_preserves_multiplier`.
+
+**Reading.** Abstract bracket invariant supplied explicit order premises for the two branches.
+-/
 theorem algorithm_7_3_3_preserves_bracket {g : E} {H : E →L[ℝ] E}
     {pole Δ lo hi x r : ℝ} (hr : r ∈ Icc lo hi)
     (hG : (pole < x ∧ ‖shiftedStep g H x‖ < Δ) → r ≤ x)
@@ -226,6 +239,9 @@ $\Delta > 0$, $\kappa > 0$, and let $r \ge 0$ with $r > -\lambda_1$ and $\|s(r)\
 Let $\lambda_0 > -\lambda_1$ with $\phi(\lambda_0) < 0$, and let $\lambda_k$ be the Newton
 iterates from $\lambda_0$. Then there is $k$ with
 $$\bigl|\|s(\lambda_k)\| - \Delta\bigr| \le \kappa \Delta.$$
+
+**Reading.** Finite radial stopping for positive tolerance and explicit root and strict starting
+secular value.
 -/
 theorem algorithm_7_3_6_easy_stop (hg : g ≠ 0) {Δ r x₀ κ : ℝ} (hΔ : 0 < Δ)
     (hr : -leftmost hH < r) (hr₀ : 0 ≤ r) (hroot : secular g H r = Δ ^ 2)
@@ -248,7 +264,10 @@ solution.
 
 So with $\Delta = 1$ and threshold $\lambda_s = 1$, a feasible step at the perturbed shift
 $1 + \varepsilon$ does not imply that the exact threshold system is solvable, however small
-$\varepsilon$ is. -/
+$\varepsilon$ is.
+
+**Reading.** Exhibits premature hard-case decision from a positive perturbation of the threshold.
+-/
 theorem algorithm_7_3_6_perturbation_counterexample {ε : ℝ} (hε : 0 < ε) :
     let H : ℝ →L[ℝ] ℝ := -(1 : ℝ →L[ℝ] ℝ)
     let g : ℝ := ε / 2
@@ -271,7 +290,10 @@ the kernel of $H + \lambda_s I$, or the minimum-norm solution of the threshold s
 greater than $\Delta$. Let $0 < \varepsilon < r - \lambda_s$, and let $\lambda_0 = 0$ if $H$ is
 positive definite and $\lambda_0 = -\lambda_1 + \varepsilon$ otherwise. Then
 $\lambda_0 > -\lambda_1$, $\phi(\lambda_0) < 0$, and the Newton iterates $\lambda_k$ from
-$\lambda_0$ satisfy $\bigl|\|s(\lambda_k)\| - \Delta\bigr| \le \kappa \Delta$ for some $k$. -/
+$\lambda_0$ satisfy $\bigl|\|s(\lambda_k)\| - \Delta\bigr| \le \kappa \Delta$ for some $k$.
+
+**Reading.** The Newton start uses a perturbation strictly smaller than the gap from the
+threshold to the solution multiplier. -/
 theorem algorithm_7_3_6_easy_start (hg : g ≠ 0) {Δ r ε κ : ℝ} (hΔ : 0 < Δ)
     {sM : E} (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
     (heasy : ¬ (g ∈ (LinearMap.ker ((H + shiftThreshold hH • 1 : E →L[ℝ] E) :
@@ -315,7 +337,10 @@ perturbation $\varepsilon$, tolerance $\kappa$ and direction $u$ returns:
   \Delta$, or no result if there is no such iterate.
 
 The result is an `Option`, so that a proposed perturbation for which the radius test is never
-met gives no step. -/
+met gives no step.
+
+**Reading.** This is a classical first-stop definition, with exact compatibility tested
+separately at the threshold. -/
 noncomputable def algorithm_7_3_6 (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (g : E) (Δ ε κ : ℝ) (u : E) : Option E := by
   classical
@@ -331,7 +356,10 @@ noncomputable def algorithm_7_3_6 (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
 
 /-- **Algorithm 7.3.6** of [conn2000trust], corrected terminal branch. Under the hypotheses of
 `ConnGouldToint.Chapter07.algorithm_7_3_6_exact_threshold`, the algorithm returns a step $s$
-with $\|s\| \le \Delta$ that is a global minimizer of $q$ on the ball of radius $\Delta$. -/
+with $\|s\| \le \Delta$ that is a global minimizer of $q$ on the ball of radius $\Delta$.
+
+**Reading.** Certified global minimizer for exact threshold compatibility and feasibility.
+-/
 theorem algorithm_7_3_6_returns_exact {Δ ε κ : ℝ}
     (hg : g ∈ (LinearMap.ker ((H + shiftThreshold hH • 1 : E →L[ℝ] E) : E →ₗ[ℝ] E))ᗮ)
     (hs : ‖particular hH g (shiftThreshold hH)‖ ≤ Δ) {u : E}
@@ -348,7 +376,10 @@ theorem algorithm_7_3_6_returns_exact {Δ ε κ : ℝ}
 
 /-- **Algorithm 7.3.6** of [conn2000trust], finite return in the easy branch. Under the hypotheses
 of `ConnGouldToint.Chapter07.algorithm_7_3_6_easy_start`, for every direction $u$ the algorithm
-returns a step $s$ with $\bigl|\|s\| - \Delta\bigr| \le \kappa \Delta$. -/
+returns a step $s$ with $\bigl|\|s\| - \Delta\bigr| \le \kappa \Delta$.
+
+**Correction.** Finite return under the corrected separate threshold and gap hypotheses.
+-/
 theorem algorithm_7_3_6_returns_easy (hg : g ≠ 0) {Δ r ε κ : ℝ} (hΔ : 0 < Δ)
     {sM : E} (hsM : ‖sM‖ ≤ Δ) (hmul : IsTrustRegionMultiplier g H Δ sM r)
     (heasy : ¬ (g ∈ (LinearMap.ker ((H + shiftThreshold hH • 1 : E →L[ℝ] E) :

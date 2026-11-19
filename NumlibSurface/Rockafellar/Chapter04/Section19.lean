@@ -110,8 +110,25 @@ printed without a proof.
 
 ## Deviations from the source
 
-* **Corollary 19.3.4** (generalization). The source assumes the two functions proper; this is not
-  needed. See `Rockafellar.corollary_19_3_4`.
+* **Section 19, polyhedral function normal form** (reading). The formula assumes that $f$
+  never takes the value $-\infty$. A polyhedral epigraph alone does not imply this, and
+  the printed affine-max representation can fail for such improper functions with `EReal`
+  addition. See `Rockafellar.polyhedralFn_iff_normalForm`.
+* **Corollary 19.3.4** (generalization). Neither polyhedrality of the infimal convolution
+  nor attainment of a finite infimum needs properness hypotheses. See
+  `Rockafellar.corollary_19_3_4` and `Rockafellar.corollary_19_3_4_attained`.
+* **Theorem 19.5**, scalar multiples (generalization). An empty polyhedral set is also
+  permitted. See `Rockafellar.theorem_19_5_smul`.
+* **Theorem 19.6**, finite-family formulas (reading). The set formula is stated as the sum
+  of the ordinary convex hull and the recession cones. This gives the same set as the
+  extended coefficient formula, whose binary version is also provided. Both finite-family
+  declarations allow an empty indexing family.
+
+## Not formalized
+
+* **Corollary 19.3.4, attainment at $+\infty$.** Under the source's properness hypotheses,
+  any decomposition outside the effective domain has value $+\infty$. The Lean attainment
+  declaration gives witnesses at finite values.
 -/
 
 namespace Rockafellar
@@ -270,9 +287,10 @@ theorem corollary_19_1_2 {f : Rn n → EReal} : PolyhedralFn f ↔ FinitelyGener
 /-- **Corollary 19.1.2** of [rockafellar1970convex], second sentence. A proper polyhedral convex
 function on $\mathbb{R}^n$ is closed.
 
-Properness cannot be omitted. The constant function $-\infty$ has the epigraph
-$\mathbb{R}^n \times \mathbb{R}$, which is polyhedral as the solution set of the empty system,
-but it is not closed in the sense of `ConvexAnalysis.ClosedConvex`. -/
+Polyhedrality alone does not suffice for closedness in the sense of
+`ConvexAnalysis.ClosedConvex`. In positive dimension, the function equal to $-\infty$ at zero
+and to $+\infty$ elsewhere has a polyhedral epigraph $\{0\}\times\mathbb{R}$, but its convex
+closure is identically $-\infty$. -/
 theorem corollary_19_1_2_closed {f : Rn n → EReal} (hf : PolyhedralFn f) (hp : ProperConvex f) :
     ClosedConvex f :=
   hf.closedConvex hp.ne_bot
@@ -397,7 +415,11 @@ theorem corollary_19_3_4 {f₁ f₂ : Rn n → EReal} (h₁ : PolyhedralFn f₁)
 convex functions on $\mathbb{R}^n$. If $(f_1 \mathbin{\square} f_2)(x) = \mu$ is finite, then
 there are $x_1, x_2$ with $x_1 + x_2 = x$ and $f_1(x_1) + f_2(x_2) \le \mu$, so the infimum in
 $$(f_1 \mathbin{\square} f_2)(x) = \inf \{f_1(x_1) + f_2(x_2) \mid x_1 + x_2 = x\}$$
-is attained. -/
+is attained.
+
+**Generalization.** The book assumes properness of both inputs and of the convolution and
+asserts attainment for every $x$. The Lean result needs no properness hypotheses and gives
+a witness at each finite value. -/
 theorem corollary_19_3_4_attained {f₁ f₂ : Rn n → EReal} (h₁ : PolyhedralFn f₁)
     (h₂ : PolyhedralFn f₂) {x : Rn n} {μ : ℝ} (hx : infConv f₁ f₂ x = (μ : EReal)) :
     ∃ x₁ x₂ : Rn n, x₁ + x₂ = x ∧ f₁ x₁ + f₂ x₂ ≤ (μ : EReal) := by
@@ -434,10 +456,11 @@ The source writes $C = \{x \mid \langle x, b_i \rangle \le \beta_i,\ i = k + 1, 
 a second family of pairs. The two families are the two kinds of closed half-space that can bound
 the epigraph in $\mathbb{R}^{n+1}$: epigraphs of affine functions, and vertical half-spaces.
 
-The hypothesis that $f$ never takes the value $-\infty$ cannot be omitted. In `EReal` the sum
-$(-\infty) + (+\infty)$ is $-\infty$, so a function of the form $h + \delta(\cdot \mid C)$ takes
-the value $-\infty$ only inside $C$, and the function that is $-\infty$ on a non-empty
-polyhedral set and $+\infty$ outside it is convex with a polyhedral epigraph. -/
+**Reading.** The source gives the normal form for polyhedral functions without excluding
+$-\infty$ values. In `EReal`, a nonempty affine family gives only real values for $h$.
+An empty family gives $h \equiv -\infty$, and $(-\infty) + (+\infty) = -\infty$.
+Thus the formula cannot represent a function that is $-\infty$ on a nonempty proper
+polyhedral set and $+\infty$ elsewhere. The Lean result assumes $f > -\infty$ everywhere. -/
 theorem polyhedralFn_iff_normalForm {f : Rn n → EReal} (hb : ∀ x, f x ≠ ⊥) :
     PolyhedralFn f ↔ ∃ (s : Finset (Rn n × ℝ)) (C : Set (Rn n)), Polyhedral C ∧
       ∀ x, f x = (⨆ q ∈ s, ((pairing n x q.1 - q.2 : ℝ) : EReal)) + indicatorFn C x := by
@@ -486,8 +509,8 @@ theorem polyhedralFn_iff_normalForm {f : Rn n → EReal} (hb : ∀ x, f x ≠ �
 /-- **Theorem 19.5** of [rockafellar1970convex], scalar multiples. If $C \subseteq \mathbb{R}^n$ is
 polyhedral convex, then $\lambda C$ is polyhedral for every real $\lambda$.
 
-One statement covers $\lambda > 0$, $\lambda = 0$ and $\lambda < 0$, so the case distinction of
-the source is not reproduced. -/
+**Generalization.** The book assumes $C$ nonempty. The dilation of the empty set is empty,
+which is polyhedral. -/
 theorem theorem_19_5_smul {C : Set (Rn n)} (hC : Polyhedral C) (l : ℝ) : Polyhedral (l • C) :=
   hC.smul l
 
@@ -564,7 +587,8 @@ theorem theorem_19_6_iUnion {C₁ C₂ : Set (Rn n)} (h₁ : Polyhedral C₁) (h
 $C_1, \dots, C_m \subseteq \mathbb{R}^n$ are non-empty polyhedral convex sets, then
 $\operatorname{cl}(\operatorname{conv}(C_1 \cup \cdots \cup C_m))$ is polyhedral.
 
-The sets are indexed by a `Finset`. The empty family is allowed, and then the set is empty. -/
+**Generalization.** The indexing `Finset` may be empty, in which case the resulting set is
+empty and polyhedral. -/
 theorem theorem_19_6_biUnion {ι : Type*} {s : Finset ι} {C : ι → Set (Rn n)}
     (hC : ∀ i ∈ s, Polyhedral (C i)) (hne : ∀ i ∈ s, (C i).Nonempty) :
     Polyhedral (closure (convexHull ℝ (⋃ i ∈ s, C i))) :=
@@ -575,8 +599,10 @@ If $C_1, \dots, C_m \subseteq \mathbb{R}^n$ are non-empty polyhedral convex sets
 $$\operatorname{cl}(\operatorname{conv}(C_1 \cup \cdots \cup C_m)) = \operatorname{conv}(C_1
   \cup \cdots \cup C_m) + (0^+ C_1 + \cdots + 0^+ C_m).$$
 
-The sum of the recession cones expresses what the union over the coefficients
-$\lambda_i \ge 0^+$ expresses in the source. -/
+**Reading.** For positive coefficients, recession directions can be added within the
+corresponding scaled set. For zero coefficients, the recession cone gives the entire
+contribution. This yields the source's extended-coefficient union. The Lean formula
+also allows an empty indexing family. -/
 theorem theorem_19_6_biUnion_add {ι : Type*} {s : Finset ι} {C : ι → Set (Rn n)}
     (hC : ∀ i ∈ s, Polyhedral (C i)) (hne : ∀ i ∈ s, (C i).Nonempty) :
     closure (convexHull ℝ (⋃ i ∈ s, C i))

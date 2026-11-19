@@ -141,9 +141,23 @@ and the integral operators from `Numlib.IntegralEquations.Basic` and
 
 ## Deviations from the source
 
-* **Equation (2.8.6)** (reading). The source writes a maximum over $x$. For a kernel that is only
-  integrable in $y$ the supremum need not be attained, so the statement uses a supremum. See
-  `AtkinsonHan.Chapter02.equation_2_8_6`.
+* **Equations (2.8.5) and (2.8.6)** (reading). The modulus estimate uses continuous inputs.
+  The norm formula uses a supremum and covers empty $D$. For nonempty compact $D$, (A₁) makes
+  the row integral continuous, so the supremum agrees with the source's maximum.
+* **Example 2.8.5** (reading). The kernel results use continuous factors on a compact measure
+  space. The book allows integrable second factors on a closed interval. See
+  `AtkinsonHan.Chapter02.example_2_8_5`.
+* **Examples 2.8.2, 2.8.8, and 2.8.9** (reading). The singular kernels take value zero on the
+  diagonal. The continuous-kernel result uses restricted ambient Lebesgue measure, including
+  for lower-dimensional sets. The source also discusses surface and curve domains.
+* **Definitions 2.8.3 and 2.8.11** (generalization). Finite rank is available over any division
+  ring, and the eigenvalue and eigenvector predicates over any field.
+* **Theorems 2.8.12–2.8.14** (generalization and reading). Some compact-operator results allow
+  incomplete spaces or scalars that are not eigenvalues. The adjoint results cover both real
+  and complex scalars. The case of a compact power gives the Fredholm alternative.
+* **Theorem 2.8.15, the basis** (correction). The nonzero eigenspaces span densely in the closure
+  of the range of $K$. The source prints the range of $\lambda I-K$. In finite dimension with
+  $K=I$, the printed range for $\lambda=1$ is zero, although the nonzero eigenvectors span $V$.
 * **Theorem 2.8.15, the reality of the eigenvalues, the index one and the closure of the range**
   (generalization). These three clauses are stated for every bounded self-adjoint operator, without
   compactness. See `AtkinsonHan.Chapter02.theorem_2_8_15_index`.
@@ -154,10 +168,13 @@ and the integral operators from `Numlib.IntegralEquations.Basic` and
   degenerate kernel to be only absolutely integrable. The continuous-kernel operator
   `IntegralOperator.kernelCLM` does not admit such kernels, so the example is stated for continuous
   $\gamma_i$.
-* **Theorem 2.8.15, the general enumeration.** The list (2.8.31) of the nonzero eigenvalues is
-  finite or infinite according to the rank of $K$. Only the case of an injective $K$ on an
-  infinite-dimensional space is stated; see `AtkinsonHan.Chapter02.theorem_2_8_15_enumeration` for
-  the reason.
+* **The general enumeration in Theorem 2.8.15.** Lean states the case of an injective $K$ on an
+  infinite-dimensional space. A general list of nonzero eigenvalues can be finite or infinite.
+* **Example 2.8.9, the truncation formula.** The printed rate is an upper bound in general.
+  For $b-a<2/n$, no integration row contains the full interval of distances $1/n$ on both
+  sides of the singularity. Lean states the compactness result.
+* **Theorem 2.8.12(6), extension of (1)–(5) to compact powers.** The corresponding surface
+  declaration states the Fredholm alternative for compact powers.
 * **Example 2.8.16.** On the unit sphere $D$ of $\mathbb{R}^3$ and $V = L^2(D)$, the single-layer
   operator $K v(x) = \int_D v(y) / \|x - y\| \, dS_y$ (2.8.33) is compact. Its eigenfunctions are
   the spherical harmonics: there are $2k + 1$ independent ones of each degree $k \ge 0$, with
@@ -245,7 +262,9 @@ the sense of Definition 1.1.9.
 
 The definition uses `AtkinsonHan.Chapter01.definition_1_1_9`. By
 `AtkinsonHan.Chapter02.definition_2_8_3_iff` it is `FiniteDimensional 𝕜 (LinearMap.range K)`,
-which is the hypothesis of `AtkinsonHan.Chapter02.proposition_2_8_4`. -/
+which is the hypothesis of `AtkinsonHan.Chapter02.proposition_2_8_4`.
+
+**Generalization.** The range criterion applies over any division ring. -/
 def definition_2_8_3 (𝕜 : Type*) {V W : Type*} [DivisionRing 𝕜] [AddCommGroup V] [Module 𝕜 V]
     [AddCommGroup W] [Module 𝕜 W] (K : V →ₗ[𝕜] W) : Prop :=
   ∃ (n : ℕ) (v : Fin n → LinearMap.range K), Chapter01.definition_1_1_9 𝕜 v
@@ -316,9 +335,13 @@ kernel**
 $$k(x, y) = \sum_{i=1}^n \beta_i(x) \gamma_i(y)$$
 has its range in the span of $\beta_1, \dots, \beta_n$.
 
-The source allows the $\gamma_i$ to be only absolutely integrable. The kernel is
-`IntegralOperator.degenerateKernel β γ` and the operator is `IntegralOperator.kernelCLM μ`,
-which takes a continuous kernel. -/
+**Reading.** The source works on a closed real interval with Lebesgue measure and allows
+absolutely integrable $\gamma_i$. The declaration admits general compact spaces with finite
+Borel measure and assumes each $\gamma_i$ is continuous, since the backbone operator takes a
+continuous kernel.
+
+The kernel is `IntegralOperator.degenerateKernel β γ` and the operator is
+`IntegralOperator.kernelCLM μ`. -/
 theorem example_2_8_5 (β γ : Fin n → C(X, ℝ)) :
     LinearMap.range (kernelCLM μ (degenerateKernel β γ) : C(X, ℝ) →ₗ[ℝ] C(X, ℝ)) ≤
       Submodule.span ℝ (Set.range β) :=
@@ -327,6 +350,9 @@ theorem example_2_8_5 (β γ : Fin n → C(X, ℝ)) :
 /-- **Example 2.8.5** of [han2009theoretical], compactness. With the notation of
 `AtkinsonHan.Chapter02.example_2_8_5`, the integral operator with a degenerate kernel is compact
 on $C(X)$.
+
+**Reading.** The ambient space and the continuity assumptions are those of
+`AtkinsonHan.Chapter02.example_2_8_5`.
 
 Its range is finite dimensional, so this follows from Proposition 2.8.4. -/
 theorem example_2_8_5_isCompactOperator (β γ : Fin n → C(X, ℝ)) :
@@ -338,7 +364,9 @@ theorem example_2_8_5_isCompactOperator (β γ : Fin n → C(X, ℝ)) :
 `AtkinsonHan.Chapter02.example_2_8_5`, the integral operator $K$ with a degenerate kernel
 satisfies
 $$\|K\| \le \sum_{i=1}^n \|\beta_i\|_\infty \int_X |\gamma_i(y)| \, d\mu(y).$$
--/
+
+**Reading.** The ambient space and the continuity assumptions are those of
+`AtkinsonHan.Chapter02.example_2_8_5`. -/
 theorem example_2_8_5_norm (β γ : Fin n → C(X, ℝ)) :
     ‖kernelCLM μ (degenerateKernel β γ)‖ ≤ ∑ i, ‖β i‖ * ∫ y, |γ i y| ∂μ :=
   norm_kernelCLM_degenerateKernel_le μ β γ
@@ -353,7 +381,10 @@ as the instance `CompactSpace ↥D`. The measure is `IntegralOperator.regionMeas
 Lebesgue measure on $D$, and the operator is `IntegralOperator.kernelCLM`. The proof applies the
 Arzelà–Ascoli theorem (Theorem 1.6.3) to the image of the unit ball, in the backbone, for any
 compact space with a finite Borel measure. The source instead approximates $k$ uniformly by
-degenerate kernels and uses Example 2.8.5 and Propositions 2.8.4 and 2.8.7. -/
+degenerate kernels and uses Example 2.8.5 and Propositions 2.8.4 and 2.8.7.
+
+**Reading.** Lean restricts the ambient Lebesgue measure, which is zero on a Lebesgue-null
+surface or curve. The source also discusses lower-dimensional domains. -/
 theorem example_2_8_8 {d : ℕ} {D : Set (EuclideanSpace ℝ (Fin d))} [CompactSpace D]
     (k : C(D × D, ℝ)) : IsCompactOperator (kernelCLM (regionMeasure D) k) :=
   isCompactOperator_kernelCLM _ k
@@ -409,7 +440,10 @@ where $\omega(h) = \sup_{\|x - z\| \le h} \int_D |k(x, y) - k(z, y)| \, dy$ is t
 continuity in the mean (2.8.3).
 
 The function $\omega$ is `IntegralOperator.kernelModulus`. This estimate makes the image of the
-unit ball equicontinuous. -/
+unit ball equicontinuous.
+
+**Reading.** The bound is stated for $v \in C(D)$. The source also allows bounded
+integrable inputs. -/
 theorem equation_2_8_5 (u : C(D, ℝ)) (x z : D) :
     |admissibleKernelCLM hk u x - admissibleKernelCLM hk u z|
       ≤ kernelModulus (regionMeasure D) k (dist x z) * ‖u‖ :=
@@ -430,8 +464,9 @@ $D \subseteq \mathbb{R}^d$ that satisfies the hypotheses of (2.8.2), with integr
 Then
 $$\|K\| = \sup_{x \in D} \int_D |k(x, y)| \, dy.$$
 
-**Reading.** The source writes a maximum over $x$. For a kernel that is only integrable in $y$
-the supremum need not be attained, so the statement uses a supremum.
+**Reading.** The source writes a maximum over $x$. Condition (A₁) makes the row integral
+continuous by bounding its change by $\omega(\|x-z\|)$. Thus the maximum exists for nonempty
+compact $D$. The supremum also covers the empty case.
 
 The supremum is the real `⨆`, which is a genuine supremum by (A₂). The proof of the lower bound
 tests $K$ against a continuous approximation to the sign of one row of the kernel, which exists
@@ -469,10 +504,16 @@ of (2.8.14) gives a compact integral operator on $C[a, b]$.
 
 The kernel takes the value $0$ on the diagonal $x = y$, because `Real.rpow` gives
 $0^{-\gamma} = 0$; this is a set of measure zero. The source truncates $k$ at height $n^\gamma$
-as in (2.8.15), computes $\|K - K_n\| = 2\gamma / ((1 - \gamma) n^{1 - \gamma})$ and applies
-Proposition 2.8.7. The backbone uses the same truncation inside the (A₁)–(A₂) framework of
+as in (2.8.15). The stated value $2\gamma / ((1 - \gamma) n^{1 - \gamma})$ for $\|K - K_n\|$
+is an upper bound for general intervals, with equality when a row contains the full interval
+of distances $1/n$ on both sides of the singularity. The backbone uses the truncation in the
+(A₁)–(A₂) framework of
 §2.8.1, so that the operator is the one of (2.8.2), and needs only that $\|K - K_n\| \to 0$. The
-admissibility is `IntegralOperator.isAdmissibleKernel_abs_sub_rpow`. -/
+admissibility is `IntegralOperator.isAdmissibleKernel_abs_sub_rpow`.
+
+**Reading.** Assigns zero on the measure-zero diagonal; proves the compactness conclusion without
+stating the printed truncation equality.
+-/
 theorem example_2_8_9 {a b γ : ℝ} (hab : a ≤ b) (hγ0 : 0 < γ) (hγ1 : γ < 1) :
     IsCompactOperator
       (admissibleKernelCLM (isAdmissibleKernel_abs_sub_rpow hab hγ0 hγ1)) :=
@@ -487,7 +528,11 @@ measure zero. The source writes $k(x, y) = |x - y|^{-1/2} \cdot \left(|x - y|^{1
 x - \cos y|\right)$ as in (2.8.10), with a continuous second factor, and applies the splitting
 rule (2.8.9). The backbone reads that factorization as the bound
 $|\log|\cos x - \cos y|| \le C |x - y|^{-1/2}$ instead, which
-`IntegralOperator.isAdmissibleKernel_log_cos_sub_cos` proves. -/
+`IntegralOperator.isAdmissibleKernel_log_cos_sub_cos` proves.
+
+**Reading.** Assigns zero on the measure-zero singular diagonal and proves the same compactness
+using a kernel bound.
+-/
 theorem example_2_8_2 :
     IsCompactOperator (admissibleKernelCLM isAdmissibleKernel_log_cos_sub_cos) :=
   isCompactOperator_admissibleKernelCLM _
@@ -566,7 +611,9 @@ $K u = \lambda u$ for some $u \neq 0$.
 
 The map $K$ need not be linear here. By `AtkinsonHan.Chapter02.definition_2_8_11_iff` the
 definition is Mathlib's `Module.End.HasEigenvalue` for a linear $K$, in which the theorems of
-this module are stated. -/
+this module are stated.
+
+**Generalization.** The eigenvalue condition is stated over any field. -/
 def definition_2_8_11 (𝕜 : Type*) {V : Type*} [Field 𝕜] [AddCommGroup V] [Module 𝕜 V]
     (K : V → V) (l : 𝕜) : Prop :=
   ∃ u : V, u ≠ 0 ∧ K u = l • u
@@ -576,7 +623,9 @@ field $\mathbb{K}$ and let $K : V \to V$. A vector $u$ is an **eigenvector** of 
 eigenvalue $\lambda$ if $u \neq 0$ and $K u = \lambda u$.
 
 By `AtkinsonHan.Chapter02.definition_2_8_11_eigenvector_iff` this is Mathlib's
-`Module.End.HasEigenvector` for a linear $K$. -/
+`Module.End.HasEigenvector` for a linear $K$.
+
+**Generalization.** The eigenvector condition is stated over any field. -/
 def definition_2_8_11_eigenvector (𝕜 : Type*) {V : Type*} [Field 𝕜] [AddCommGroup V] [Module 𝕜 V]
     (K : V → V) (l : 𝕜) (u : V) : Prop :=
   u ≠ 0 ∧ K u = l • u
@@ -613,7 +662,10 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace �
 
 /-- **Theorem 2.8.12(1)** of [han2009theoretical]. Let $V$ be a normed space and let $K : V \to V$
 be compact. For every $\varepsilon > 0$, the set of eigenvalues $\mu$ of $K$ with
-$|\mu| \ge \varepsilon$ is finite. Hence the eigenvalues of $K$ can accumulate only at $0$. -/
+$|\mu| \ge \varepsilon$ is finite. Hence the eigenvalues of $K$ can accumulate only at $0$.
+
+**Generalization.** Lean uses finiteness away from zero over either real or complex scalars
+without requiring completeness. -/
 theorem theorem_2_8_12_1 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {ε : ℝ} (hε : 0 < ε) :
     {μ : 𝕜 | HasEigenvalue (K : Module.End 𝕜 V) μ ∧ ε ≤ ‖μ‖}.Finite :=
   hK.finite_setOf_hasEigenvalue_norm_le hε
@@ -642,7 +694,9 @@ theorem theorem_2_8_12_2 [CompleteSpace V] {K : V →L[𝕜] V} (hK : IsCompactO
   rwa [← isCompactOperator_id_iff_finiteDimensional]
 
 /-- **Theorem 2.8.12(4)** of [han2009theoretical]. Let $V$ be a normed space, let $K : V \to V$ be
-compact and let $\lambda \neq 0$. Then the range $\mathcal{R}(\lambda - K)$ is closed in $V$. -/
+compact and let $\lambda \neq 0$. Then the range $\mathcal{R}(\lambda - K)$ is closed in $V$.
+
+**Generalization.** The closed-range conclusion does not require completeness. -/
 theorem theorem_2_8_12_4 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
     IsClosed ((LinearMap.range ((l • (1 : V →L[𝕜] V) - K) : V →ₗ[𝕜] V)) : Set V) :=
   hK.isClosed_range_smul_sub hl
@@ -667,7 +721,10 @@ $$\mathcal{N}((\lambda - K)^0) \subsetneq \mathcal{N}((\lambda - K)^1) \subsetne
   \subsetneq \mathcal{N}((\lambda - K)^{\nu}) = \mathcal{N}((\lambda - K)^{\nu + 1}) = \cdots.$$
 Moreover $\mathcal{N}((\lambda - K)^{\nu})$ is finite dimensional.
 
-The proof specializes the Riesz theory of `Numlib.Analysis.Normed.Operator.Riesz`. -/
+The proof specializes the Riesz theory of `Numlib.Analysis.Normed.Operator.Riesz`.
+
+**Generalization.** The index and its finite-dimensional generalized eigenspace are stated
+without completeness. -/
 theorem theorem_2_8_12_3 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0)
     (hev : HasEigenvalue (K : Module.End 𝕜 V) l) :
     ∃ ν : ℕ, 1 ≤ ν ∧
@@ -693,7 +750,10 @@ holds, with both summands invariant under $K$.
 The two chain conditions determine $\nu$, and they are those of
 `AtkinsonHan.Chapter02.theorem_2_8_12_3`, so for an eigenvalue $\lambda$ this $\nu$ is the index
 $\nu(\lambda)$. If $\lambda$ is not an eigenvalue, then $\nu = 0$. The direct sum is the
-algebraic one, `IsCompl`. -/
+algebraic one, `IsCompl`.
+
+**Generalization.** Completeness is unnecessary. The formula also holds for a nonzero scalar
+that is not an eigenvalue, with index zero. -/
 theorem theorem_2_8_12_5 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
     ∃ ν : ℕ,
       (∀ j < ν, ((l • (1 : V →L[𝕜] V) - K) ^ j).ker
@@ -713,7 +773,10 @@ theorem theorem_2_8_12_5 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : �
 /-- **Theorem 2.8.12(6)** of [han2009theoretical]. Let $V$ be a Banach space, let $K : V \to V$ be a
 bounded operator such that $K^m$ is compact for some $m$, and let $\lambda \neq 0$. Then the
 equation $(\lambda - K) u = f$ has a unique solution $u \in V$ for every $f \in V$ if and only
-if $(\lambda - K) u = 0$ has only the solution $u = 0$. -/
+if $(\lambda - K) u = 0$ has only the solution $u = 0$.
+
+**Reading.** The source takes $m>1$ and extends parts (1)–(5) as well. Lean gives the Fredholm
+alternative for any natural exponent with compact $K^m$. -/
 theorem theorem_2_8_12_6 [CompleteSpace V] {K : V →L[𝕜] V} {m : ℕ}
     (hK : IsCompactOperator (K ^ m)) {l : 𝕜}
     (hl : l ≠ 0) :
@@ -738,7 +801,9 @@ variable {𝕜 V W : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [InnerProductSp
   [NormedAddCommGroup W] [InnerProductSpace 𝕜 W] [CompleteSpace V] [CompleteSpace W]
 
 /-- **Lemma 2.8.13** of [han2009theoretical] (Schauder's theorem). Let $V$ and $W$ be Hilbert spaces
-and let $K : V \to W$ be compact. Then the adjoint $K^* : W \to V$ is compact. -/
+and let $K : V \to W$ be compact. Then the adjoint $K^* : W \to V$ is compact.
+
+**Generalization.** The real and complex cases and maps between two Hilbert spaces are included. -/
 theorem lemma_2_8_13 {K : V →L[𝕜] W} (hK : IsCompactOperator K) :
     IsCompactOperator (ContinuousLinearMap.adjoint K) :=
   hK.adjoint
@@ -750,7 +815,10 @@ that is, the equation $(\lambda - K) u = f$ has a solution if and only if $f$ is
 every solution $v$ of the homogeneous adjoint equation $(\bar\lambda - K^*) v = 0$.
 
 The adjoint $K^*$ is `ContinuousLinearMap.adjoint K`. The conjugate $\bar\lambda$ is
-`starRingEnd 𝕜 l`. -/
+`starRingEnd 𝕜 l`.
+
+**Generalization.** The formula holds for all nonzero scalars in real and complex Hilbert
+spaces. The source begins with a nonzero complex eigenvalue. -/
 theorem theorem_2_8_14 {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
     LinearMap.range ((l • (1 : V →L[𝕜] V) - K) : V →ₗ[𝕜] V) =
       (LinearMap.ker (((starRingEnd 𝕜) l • (1 : V →L[𝕜] V) -
@@ -762,7 +830,10 @@ space, let $K : V \to V$ be compact and let $\lambda \neq 0$. Then $V$ is the di
 $$V = \mathcal{N}(\bar\lambda - K^*) \oplus \mathcal{R}(\lambda - K).$$
 
 The direct sum is stated as `IsCompl`. By `AtkinsonHan.Chapter02.theorem_2_8_14` the two
-summands are orthogonal complements of each other. -/
+summands are orthogonal complements of each other.
+
+**Generalization.** The direct-sum formula also holds for real scalars and for a nonzero
+scalar that is not an eigenvalue. -/
 theorem theorem_2_8_14_isCompl {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
     IsCompl (LinearMap.ker (((starRingEnd 𝕜) l • (1 : V →L[𝕜] V) -
         ContinuousLinearMap.adjoint K : V →L[𝕜] V) : V →ₗ[𝕜] V))
@@ -783,7 +854,9 @@ If $\bar\lambda$ were not an eigenvalue, the Fredholm alternative for the compac
 would make $\bar\lambda - K^*$ bijective. But `AtkinsonHan.Chapter02.theorem_2_8_14` for $K^*$
 gives $\mathcal{R}(\bar\lambda - K^*) = \mathcal{N}(\lambda - K)^\perp$, a proper subspace
 because $\lambda$ is an eigenvalue of $K$. The equality of the dimensions is
-`AtkinsonHan.Chapter02.theorem_2_8_14_dim`. -/
+`AtkinsonHan.Chapter02.theorem_2_8_14_dim`.
+
+**Generalization.** The result also holds for real Hilbert spaces. -/
 theorem theorem_2_8_14_hasEigenvalue_adjoint {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜}
     (hl : l ≠ 0) (hev : HasEigenvalue (K : Module.End 𝕜 V) l) :
     HasEigenvalue ((ContinuousLinearMap.adjoint K : V →L[𝕜] V) : Module.End 𝕜 V)
@@ -825,7 +898,9 @@ Both null spaces are finite dimensional by Theorem 2.8.12(2), so `Module.finrank
 dimension. Equivalently, $\lambda - K$ has Fredholm index zero: the equation
 $(\lambda - K) u = f$ has as many independent homogeneous solutions as the adjoint equation,
 which is the number of conditions in the solvability criterion (2.8.29) of
-`AtkinsonHan.Chapter02.theorem_2_8_14`. -/
+`AtkinsonHan.Chapter02.theorem_2_8_14`.
+
+**Generalization.** The dimensions also agree for real scalars and for every nonzero scalar. -/
 theorem theorem_2_8_14_dim {K : V →L[𝕜] V} (hK : IsCompactOperator K) {l : 𝕜} (hl : l ≠ 0) :
     Module.finrank 𝕜 ((l • (1 : V →L[𝕜] V) - K).ker)
       = Module.finrank 𝕜 (((starRingEnd 𝕜) l • (1 : V →L[𝕜] V)
@@ -839,7 +914,11 @@ $$\Bigl(\bigvee_{\mu} \mathcal{N}(\mu - K)\Bigr)^\perp = \{0\}.$$
 So the eigenvectors of $K$ span a dense subspace of $V$, and $V$ has an orthonormal basis of
 eigenvectors of $K$.
 
-The proof is Mathlib's `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`. -/
+The proof is Mathlib's `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`.
+
+**Reading.** This clause gives density using all eigenspaces, including the kernel.
+The nonzero eigenvectors are dense in the closure of the range of $K$, the range used in the
+formal enumeration. -/
 theorem theorem_2_8_15 {K : V →L[𝕜] V} (hKc : IsCompactOperator K) (hK : IsSelfAdjoint K) :
     (⨆ μ, eigenspace (K : Module.End 𝕜 V) μ)ᗮ = ⊥ :=
   ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot hKc
@@ -895,15 +974,15 @@ $$|\lambda_0| \ge |\lambda_1| \ge \cdots > 0, \qquad \lambda_j \to 0,$$
 the family $(u_j)$ is orthonormal, $K u_j = \lambda_j u_j$ for every $j$, and the closed span of
 the $u_j$ is $\overline{\mathcal{R}(K)}$.
 
-The sequences are indexed from $0$. An enumeration by $\mathbb{N}$ needs both hypotheses,
-injectivity and infinite dimension; the backbone's
-`ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` explains why. If $K$ has infinitely
-many nonzero eigenvalues and a nontrivial kernel, a decreasing enumeration would have to place
-$0$ after infinitely many nonzero values, so no enumeration by $\mathbb{N}$ exists. If $K$ has
-finite rank, the list of the source is finite; that case is Mathlib's
-`LinearMap.IsSymmetric.eigenvalues`, indexed by `Fin n`. The general statement, a list that is
-finite or infinite according to the rank, is not stated here. Under the hypotheses,
-$\overline{\mathcal{R}(K)} = V$ by `AtkinsonHan.Chapter02.theorem_2_8_15_closure_range`. -/
+**Reading.** The sequence is indexed from $0$. The proof uses the backbone's enumeration of
+the full eigenbasis in the injective infinite-dimensional case. For a general operator,
+enumerating just the nonzero eigenvectors can give a finite or infinite list even when the
+kernel is nontrivial. Under the formal hypotheses,
+$\overline{\mathcal{R}(K)} = V$ by `AtkinsonHan.Chapter02.theorem_2_8_15_closure_range`.
+
+**Correction.** The source prints the closure of the range of $\lambda I-K$. For $K=I$ on a
+nonzero finite-dimensional space, that range at $\lambda=1$ is zero. The nonzero eigenvectors
+span the entire space, which is the closure of the range of $K$. -/
 theorem theorem_2_8_15_enumeration {K : V →L[𝕜] V} (hKc : IsCompactOperator K)
     (hK : IsSelfAdjoint K) (hinj : LinearMap.ker (K : V →ₗ[𝕜] V) = ⊥)
     (hfin : ¬ FiniteDimensional 𝕜 V) :

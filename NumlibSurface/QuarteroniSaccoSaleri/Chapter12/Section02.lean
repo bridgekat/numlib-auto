@@ -121,6 +121,25 @@ specializes `Numlib.Analysis.Sobolev.Interval`.
 
 ## Deviations from the source
 
+* **Section 12.2, grid and discrete scheme** (generalization). The grid size is indexed by the
+  number of interior nodes, with $N=0$ allowed. The matrix statements and estimates also cover a
+  grid with only the endpoints. Interior vectors are extended by zero when they enter the
+  discrete scalar product.
+* **Remarks 12.1–12.3 and Exercise 12.5** (reading). The Poincaré inequalities use
+  $(b-a)/\sqrt{2}$ and include an $L^2$ primitive based at the left endpoint. `remark_12_2`
+  assumes $C^3$ on the closed interval with a Lipschitz third derivative on its interior. The
+  remainder sum in (12.21) would carry a minus sign with the stencil of (12.18). The proof of
+  Exercise 12.5 uses two linear kernels consistent with the centered second difference, in place
+  of the printed difference of squared kernels.
+* **Equations (12.25)–(12.28)** (reading). The inverse acts on interior data. `equation_12_28`
+  bounds any homogeneous-boundary grid function by the maximum norm of its interior discrete
+  image. The error estimates also accept explicit derivative bounds.
+* **Equations (12.31)–(12.35)** (reading). The scheme and matrix properties depend on sampled
+  coefficient values. `equation_12_34` uses the $n-2$ internal faces in its off-diagonal, while
+  the printed vector $\mathbf a$ lists both boundary faces too. `equation_12_35` encodes the
+  boundary row after eliminating the ghost flux.
+* **Exercise 12.11** (reading). `exercise_12_11` and `exercise_12_11_apply` follow the displayed
+  solution $L_h\circ L_h$, which approximates $+u$. The exercise names $-u$.
 * **Remark 12.1, equation (12.16)** (generalization). The source states the Poincaré inequality for
   $v \in C^1([a, b])$ with $v(a) = v(b) = 0$; it is proved on $H_0^1(a, b)$. See
   `QuarteroniSaccoSaleri.Chapter12.remark_12_1`.
@@ -132,8 +151,10 @@ specializes `Numlib.Analysis.Sobolev.Interval`.
   enough. See `QuarteroniSaccoSaleri.Chapter12.exercise_12_5`.
 * **Equation (12.34)** (typo). The off-diagonal entries $a = (\alpha_{1/2}, \dots)$ of the source
   lack a minus sign. See `QuarteroniSaccoSaleri.Chapter12.equation_12_34`.
-* **Exercise 12.10** (typo). The source prints $u(0)$ for $u'(0)$ in the left Robin condition. See
-  `QuarteroniSaccoSaleri.Chapter12.exercise_12_10`.
+* **Exercise 12.10** (reading). The two printed conditions lack primes on the terms with $\mu_j$.
+  The Lean predicate encodes the two displayed solution rows. The left row's signs correspond to
+  using the outward derivative $-u'(0)$ there. The formulas involve division by $\mu_0$ and
+  $\mu_1$ and are totalized in Lean. See `QuarteroniSaccoSaleri.Chapter12.exercise_12_10`.
 
 ## Not formalized
 
@@ -153,28 +174,43 @@ variable {N : ℕ}
 $j = 0, \dots, n$, of $[0, 1]$ has the **mesh size** $h = 1/n$.
 
 The argument `N` is the number $n - 1$ of interior nodes, so the value is $1/(N + 1)$. The
-definition is `FiniteDifference.gridStep 0 1 N`. -/
+definition is `FiniteDifference.gridStep 0 1 N`.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 noncomputable def meshSize (N : ℕ) : ℝ := FiniteDifference.gridStep 0 1 N
 
 /-- The mesh size $h$ is `FiniteDifference.gridStep 0 1 N`. -/
 theorem meshSize_def (N : ℕ) : meshSize N = FiniteDifference.gridStep 0 1 N := rfl
 
-/-- The mesh size is $h = 1/n$, where $n = N + 1$ is the number of subintervals. -/
+/-- The mesh size is $h = 1/n$, where $n = N + 1$ is the number of subintervals.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem meshSize_eq (N : ℕ) : meshSize N = 1 / ((N : ℝ) + 1) := by
   simp [meshSize, FiniteDifference.gridStep]
 
-/-- The mesh size is positive: $h > 0$. -/
+/-- The mesh size is positive: $h > 0$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem meshSize_pos (N : ℕ) : 0 < meshSize N := gridStep_pos zero_lt_one
 
 /-- The mesh size is not zero: $h \neq 0$. -/
 theorem meshSize_ne_zero (N : ℕ) : meshSize N ≠ 0 := (meshSize_pos N).ne'
 
-/-- The $n$ subintervals fill $[0, 1]$: $nh = 1$. -/
+/-- The $n$ subintervals fill $[0, 1]$: $nh = 1$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem succ_mul_meshSize (N : ℕ) : ((N : ℝ) + 1) * meshSize N = 1 := by
   rw [meshSize_def]
   simpa using gridStep_mul_succ (a := (0 : ℝ)) (b := 1) (n := N)
 
-/-- The nodes of the grid are $x_j = jh$ for $j = 0, \dots, n$. -/
+/-- The nodes of the grid are $x_j = jh$ for $j = 0, \dots, n$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem uniformGrid_eq (N : ℕ) (j : Fin (N + 2)) :
     FiniteDifference.uniformGrid 0 1 N j = ((j : ℕ) : ℝ) * meshSize N := by
   simp [FiniteDifference.uniformGrid, meshSize]
@@ -192,7 +228,10 @@ $$A_{fd} = h^{-2} \operatorname{tridiag}_{n-1}(-1, 2, -1) \in \mathbb{R}^{(n-1) 
 the matrix of order $n - 1$ with $2/h^2$ on the diagonal and $-1/h^2$ on the two adjacent
 diagonals.
 
-The tridiagonal matrix is `Matrix.symmTridiagonalToeplitz N (-1) 2`. -/
+The tridiagonal matrix is `Matrix.symmTridiagonalToeplitz N (-1) 2`.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 noncomputable def finiteDifferenceMatrix (N : ℕ) : Matrix (Fin N) (Fin N) ℝ :=
   (meshSize N ^ 2)⁻¹ • Matrix.symmTridiagonalToeplitz N (-1) 2
 
@@ -207,13 +246,18 @@ theorem inv_meshSize_sq_pos (N : ℕ) : (0 : ℝ) < (meshSize N ^ 2)⁻¹ :=
   inv_pos.2 (pow_pos (meshSize_pos N) 2)
 
 /-- **Section 12.2** of [quarteroni2000numerical], after (12.8). The matrix $A_{fd}$ is symmetric.
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem finiteDifferenceMatrix_isSymm (N : ℕ) : (finiteDifferenceMatrix N).IsSymm := by
   change (finiteDifferenceMatrix N)ᵀ = finiteDifferenceMatrix N
   rw [finiteDifferenceMatrix, Matrix.transpose_smul, Matrix.symmTridiagonalToeplitz_isSymm]
 
 /-- **Section 12.2** of [quarteroni2000numerical], after (12.8). The matrix $A_{fd}$ is positive
-definite, so the linear system (12.7) has a unique solution. -/
+definite, so the linear system (12.7) has a unique solution.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem finiteDifferenceMatrix_posDef (N : ℕ) : (finiteDifferenceMatrix N).PosDef := by
   refine Matrix.posDef_iff_dotProduct_mulVec.2
     ⟨Matrix.isHermitian_iff_isSymm.2 (finiteDifferenceMatrix_isSymm N), fun x hx => ?_⟩
@@ -256,7 +300,9 @@ theorem sum_erase_norm_symmTridiagonalToeplitz_le (N : ℕ) (i : Fin N) :
 /-- **Section 12.2** of [quarteroni2000numerical], after (12.8). The matrix $A_{fd}$ is diagonally
 dominant by rows:
 $$\sum_{j \neq i} |(A_{fd})_{ij}| \le |(A_{fd})_{ii}| \qquad \text{for every } i.$$
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem finiteDifferenceMatrix_diagDominant (N : ℕ) :
     (finiteDifferenceMatrix N).IsDiagDominant := by
   intro i
@@ -276,7 +322,10 @@ theorem finiteDifferenceMatrix_diagDominant (N : ℕ) :
 **finite difference solution** with datum $f$ if $u_0 = u_n = 0$ and
 $$-\frac{u_{j+1} - 2u_j + u_{j-1}}{h^2} = f(x_j), \qquad j = 1, \dots, n - 1.$$
 
-In operator form this is (12.10), $L_h u_h = f$ at the interior nodes. -/
+In operator form this is (12.10), $L_h u_h = f$ at the interior nodes.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 def IsFiniteDifferenceSolution (N : ℕ) (f : ℝ → ℝ) (u : Fin (N + 2) → ℝ) : Prop :=
   u ∈ FiniteDifference.gridZero N ∧
     FiniteDifference.discreteLaplacian N (meshSize N) u
@@ -285,7 +334,9 @@ def IsFiniteDifferenceSolution (N : ℕ) (f : ℝ → ℝ) (u : Fin (N + 2) → 
 /-- **Equation (12.7)** of [quarteroni2000numerical]. Let $u_h \in V_h^0$. Then $u_h$ is a finite
 difference solution with datum $f$ if and only if its interior values solve the linear system
 $$A_{fd} \, (u_1, \dots, u_{n-1})^T = (f(x_1), \dots, f(x_{n-1}))^T.$$
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem isFiniteDifferenceSolution_iff_mulVec (N : ℕ) (f : ℝ → ℝ) {u : Fin (N + 2) → ℝ}
     (hu : u ∈ FiniteDifference.gridZero N) :
     IsFiniteDifferenceSolution N f u ↔
@@ -301,7 +352,10 @@ M-matrix.
 The source hints at a proof by the continuity of $(A_{fd} + \alpha I)^{-1}$ in $\alpha$. The
 proof here uses the Stieltjes criterion instead: $A_{fd}$ is positive definite and its
 off-diagonal entries are nonpositive (`Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos`).
-M-matrices are `Matrix.IsMMatrix`. -/
+M-matrices are `Matrix.IsMMatrix`.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem exercise_12_2 (N : ℕ) : (finiteDifferenceMatrix N).IsMMatrix :=
   Matrix.IsMMatrix.of_posDef_of_offDiag_nonpos (finiteDifferenceMatrix_posDef N) fun i j hij => by
     rw [finiteDifferenceMatrix_apply]
@@ -310,7 +364,10 @@ theorem exercise_12_2 (N : ℕ) : (finiteDifferenceMatrix N).IsMMatrix :=
 
 /-- **Section 12.2** of [quarteroni2000numerical], the discrete maximum principle. Let $u_h$ be a
 finite difference solution with datum $f$, and let $f(x_j) \ge 0$ for $j = 1, \dots, n - 1$.
-Then $u_j \ge 0$ for $j = 0, \dots, n$, as for the exact solution. -/
+Then $u_j \ge 0$ for $j = 0, \dots, n$, as for the exact solution.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem exercise_12_2_nonneg (N : ℕ) {f : ℝ → ℝ} {u : Fin (N + 2) → ℝ}
     (hu : IsFiniteDifferenceSolution N f u)
     (hf : ∀ j : Fin N, 0 ≤ f (FiniteDifference.uniformGrid 0 1 N j.succ.castSucc)) : 0 ≤ u :=
@@ -323,7 +380,10 @@ theorem exercise_12_2_nonneg (N : ℕ) {f : ℝ → ℝ} {u : Fin (N + 2) → �
 function $w = (w_0, \dots, w_n)$ to the function on the interior nodes
 $$(L_h w)(x_j) = -\frac{w_{j+1} - 2w_j + w_{j-1}}{h^2}, \qquad j = 1, \dots, n - 1.$$
 
-The operator is the linear map `FiniteDifference.discreteLaplacian N (meshSize N)`. -/
+The operator is the linear map `FiniteDifference.discreteLaplacian N (meshSize N)`.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 noncomputable def equation_12_9 (N : ℕ) : (Fin (N + 2) → ℝ) →ₗ[ℝ] (Fin N → ℝ) :=
   FiniteDifference.discreteLaplacian N (meshSize N)
 
@@ -335,7 +395,10 @@ theorem equation_12_9_apply (N : ℕ) (w : Fin (N + 2) → ℝ) (j : Fin N) :
 
 /-- **Equation (12.10)** of [quarteroni2000numerical]. A grid function $u_h$ is a finite difference
 solution with datum $f$ if and only if $u_h \in V_h^0$ and $(L_h u_h)(x_j) = f(x_j)$ for
-$j = 1, \dots, n - 1$. -/
+$j = 1, \dots, n - 1$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem equation_12_10 (N : ℕ) (f : ℝ → ℝ) (u : Fin (N + 2) → ℝ) :
     IsFiniteDifferenceSolution N f u ↔ u ∈ FiniteDifference.gridZero N ∧
       ∀ j : Fin N, equation_12_9 N u j
@@ -343,7 +406,10 @@ theorem equation_12_10 (N : ℕ) (f : ℝ → ℝ) (u : Fin (N + 2) → ℝ) :
   and_congr_right' funext_iff
 
 /-- The operator $L_h$ is injective on $V_h^0$: if $u, v \in V_h^0$ and $L_h u = L_h v$, then
-$u = v$. -/
+$u = v$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem eq_of_equation_12_9_eq (N : ℕ) {u v : Fin (N + 2) → ℝ}
     (hu : u ∈ FiniteDifference.gridZero N) (hv : v ∈ FiniteDifference.gridZero N)
     (h : equation_12_9 N u = equation_12_9 N v) : u = v := by
@@ -355,7 +421,10 @@ theorem eq_of_equation_12_9_eq (N : ℕ) {u v : Fin (N + 2) → ℝ}
 
 /-- The inner product $(L_h w, v)_h$ for $v \in V_h^0$: for every grid function $w$,
 $$(L_h w, v)_h = h \sum_{j=1}^{n-1} (L_h w)(x_j) \, v_j,$$
-because the endpoint weights of the trapezoidal rule meet only the zero values of the extension. -/
+because the endpoint weights of the trapezoidal rule meet only the zero values of the extension.
+
+**Generalization.** The interior image is extended by zero and the stated scalar-product
+formula permits arbitrary $w$. -/
 theorem discreteInner_equation_12_9 (N : ℕ) (w : Fin (N + 2) → ℝ) {v : Fin (N + 2) → ℝ}
     (hv : v ∈ FiniteDifference.gridZero N) :
     FiniteDifference.discreteInner N (meshSize N)
@@ -367,7 +436,9 @@ theorem discreteInner_equation_12_9 (N : ℕ) (w : Fin (N + 2) → ℝ) {v : Fin
 
 /-- **Lemma 12.1** of [quarteroni2000numerical], symmetry. For $w_h, v_h \in V_h^0$,
 $$(L_h w_h, v_h)_h = (w_h, L_h v_h)_h.$$
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem lemma_12_1_symm (N : ℕ) {w v : Fin (N + 2) → ℝ}
     (hw : w ∈ FiniteDifference.gridZero N) (hv : v ∈ FiniteDifference.gridZero N) :
     FiniteDifference.discreteInner N (meshSize N)
@@ -378,7 +449,9 @@ theorem lemma_12_1_symm (N : ℕ) {w v : Fin (N + 2) → ℝ}
 
 /-- **Equation (12.13)** of [quarteroni2000numerical]. For $v_h \in V_h^0$,
 $$(L_h v_h, v_h)_h = \|| v_h |\|_h^2.$$
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem equation_12_13 (N : ℕ) {v : Fin (N + 2) → ℝ} (hv : v ∈ FiniteDifference.gridZero N) :
     FiniteDifference.discreteInner N (meshSize N)
         (FiniteDifference.ofInterior N (equation_12_9 N v)) v
@@ -387,7 +460,10 @@ theorem equation_12_13 (N : ℕ) {v : Fin (N + 2) → ℝ} (hv : v ∈ FiniteDif
   exact FiniteDifference.discreteInner_discreteLaplacian_self (meshSize_pos N) hv
 
 /-- **Lemma 12.1** of [quarteroni2000numerical], positivity. For $v_h \in V_h^0$,
-$(L_h v_h, v_h)_h \ge 0$, and $(L_h v_h, v_h)_h = 0$ if and only if $v_h = 0$. -/
+$(L_h v_h, v_h)_h \ge 0$, and $(L_h v_h, v_h)_h = 0$ if and only if $v_h = 0$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem lemma_12_1_pos (N : ℕ) {v : Fin (N + 2) → ℝ} (hv : v ∈ FiniteDifference.gridZero N) :
     0 ≤ FiniteDifference.discreteInner N (meshSize N)
         (FiniteDifference.ofInterior N (equation_12_9 N v)) v ∧
@@ -407,14 +483,18 @@ Lemma 12.2. For $m \in \mathbb{N}$ and $p_0, \dots, p_{m-1} \in \mathbb{R}$,
 $$\Big(\sum_{k=0}^{m-1} p_k\Big)^2 \le m \sum_{k=0}^{m-1} p_k^2.$$
 
 The source calls this the Minkowski inequality. It is the Cauchy–Schwarz inequality against the
-constant vector. -/
+constant vector.
+
+**Generalization.** The sum inequality also includes $m=0$. -/
 theorem exercise_12_4 {m : ℕ} (p : Fin m → ℝ) : (∑ k, p k) ^ 2 ≤ m * ∑ k, p k ^ 2 := by
   simpa using sq_sum_le_card_mul_sum_sq (s := (Finset.univ : Finset (Fin m))) (f := p)
 
 /-- **Lemma 12.2** of [quarteroni2000numerical] (discrete Poincaré inequality, (12.14)). For every
 $v_h \in V_h^0$,
 $$\|v_h\|_h \le \frac{1}{\sqrt{2}} \|| v_h |\|_h.$$
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem lemma_12_2 (N : ℕ) {v : Fin (N + 2) → ℝ} (hv : v ∈ FiniteDifference.gridZero N) :
     FiniteDifference.discreteL2Norm N (meshSize N) v
       ≤ 1 / Real.sqrt 2 * FiniteDifference.discreteH1Seminorm N (meshSize N) v := by
@@ -427,7 +507,9 @@ theorem lemma_12_2 (N : ℕ) {v : Fin (N + 2) → ℝ} (hv : v ∈ FiniteDiffere
 every grid function $v_h$,
 $$\|| v_h |\|_h = \Big(h \sum_{j=0}^{n-1} \big(v_h^{(1)}\big)_j^2\Big)^{1/2},$$
 where $(v_h^{(1)})_j = (v_{j+1} - v_j)/h$ is the discrete derivative. This is the form in which
-Remark 12.1 reads (12.14). -/
+Remark 12.1 reads (12.14).
+
+**Generalization.** The seminorm formula applies without homogeneous boundary conditions. -/
 theorem lemma_12_2_discreteDeriv (N : ℕ) (v : Fin (N + 2) → ℝ) :
     FiniteDifference.discreteH1Seminorm N (meshSize N) v
       = Real.sqrt (meshSize N * ∑ j, FiniteDifference.discreteDeriv N (meshSize N) v j ^ 2) :=
@@ -453,7 +535,10 @@ theorem remark_12_1 {a b : ℝ} (hab : a < b) {u : SobolevInterval 1 a b}
 $w, g \in L^2(a, b)$ with $g(x) = \int_a^x w(t)\, dt$ for almost every $x \in (a, b)$. Then
 $$\|g\|_{L^2(a, b)} \le \frac{b - a}{\sqrt{2}} \|w\|_{L^2(a, b)}.$$
 
-Every $v \in C^1([a, b])$ with $v(a) = 0$ has this form, with $w = v'$. -/
+Every $v \in C^1([a, b])$ with $v(a) = 0$ has this form, with $w = v'$.
+
+**Generalization.** Gives the bound for an $L^2$ function that is a primitive based at $a$,
+without imposing a right endpoint condition. -/
 theorem remark_12_1_of_eq_integral {a b : ℝ} (hab : a ≤ b)
     {w g : Lp ℝ 2 (volume.restrict (Ioo a b))}
     (hg : g =ᵐ[volume.restrict (Ioo a b)] fun x => ∫ t in a..x, w t) :
@@ -466,7 +551,9 @@ theorem remark_12_1_of_eq_integral {a b : ℝ} (hab : a ≤ b)
 difference solution with datum $f$, and let $f_h = (f(x_0), \dots, f(x_n))$ be the grid function
 of the nodal values of $f$. Then
 $$\|u_h\|_h \le \frac{1}{2} \|f_h\|_h.$$
--/
+
+**Reading.** In the trapezoidal norm the datum includes its actual sampled endpoint values, and
+$N=0$ is allowed. -/
 theorem equation_12_17 (N : ℕ) {f : ℝ → ℝ} {u : Fin (N + 2) → ℝ}
     (hu : IsFiniteDifferenceSolution N f u) :
     FiniteDifference.discreteL2Norm N (meshSize N) u
@@ -480,7 +567,10 @@ theorem equation_12_17 (N : ℕ) {f : ℝ → ℝ} {u : Fin (N + 2) → ℝ}
 
 /-- **Section 12.2** of [quarteroni2000numerical], uniqueness of the finite difference solution, the
 consequence of (12.17). If $u_h$ and $v_h$ are finite difference solutions with the same datum
-$f$, then $u_h = v_h$. -/
+$f$, then $u_h = v_h$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem equation_12_17_unique (N : ℕ) {f : ℝ → ℝ} {u v : Fin (N + 2) → ℝ}
     (hu : IsFiniteDifferenceSolution N f u) (hv : IsFiniteDifferenceSolution N f v) : u = v :=
   eq_of_equation_12_9_eq N hu.1 hv.1 (hu.2.trans hv.2.symm)
@@ -491,7 +581,10 @@ theorem equation_12_17_unique (N : ℕ) {f : ℝ → ℝ} {u v : Fin (N + 2) →
 $f \in C^2([0, 1])$. The second derivative is taken within $[0, 1]$, so that it is defined at
 the endpoints too.
 
-The supremum is `sSup` of a set of reals, which is $0$ for a set that is not bounded above. -/
+The supremum is `sSup` of a set of reals, which is $0$ for a set that is not bounded above.
+
+**Reading.** The expression is defined using total within-interval derivatives and a supremum.
+It gives the stated derivative norm on $C^2$ data. -/
 noncomputable def normSecondDeriv (f : ℝ → ℝ) : ℝ :=
   sSup ((fun s => |iteratedDerivWithin 2 f (Icc 0 1) s|) '' Icc 0 1)
 
@@ -542,7 +635,10 @@ theorem equation_12_19 (N : ℕ) {f u : ℝ → ℝ} (hf : ContDiffOn ℝ 2 f (I
 /-- **Equation (12.20)** of [quarteroni2000numerical], with an explicit bound. Let
 $f \in C^2([0, 1])$ with $|f''(x)| \le M$ for $x \in (0, 1)$, and let $u$ solve the boundary
 value problem (12.1)–(12.2) with datum $f$. Then $|\tau_h(x_j)| \le (h^2/12) M$ for every
-$j = 1, \dots, n - 1$. -/
+$j = 1, \dots, n - 1$.
+
+**Generalization.** The estimate can use any uniform bound on the interior second derivative of
+the datum. -/
 theorem equation_12_20_of_forall_le (N : ℕ) {f u : ℝ → ℝ} {M : ℝ}
     (hf : ContDiffOn ℝ 2 f (Icc 0 1)) (hu : IsSolution f u)
     (hM : ∀ x ∈ Ioo (0 : ℝ) 1, |iteratedDeriv 2 f x| ≤ M) (j : Fin N) :
@@ -569,7 +665,10 @@ theorem equation_12_20 (N : ℕ) {f u : ℝ → ℝ} (hf : ContDiffOn ℝ 2 f (I
 
 /-- **Equation (12.20)** of [quarteroni2000numerical], in the discrete maximum norm. Let
 $f \in C^2([0, 1])$, and let $u$ solve the boundary value problem (12.1)–(12.2) with datum $f$.
-Then $\|\tau_h\|_{h,\infty} \le h^2 \|f''\|_\infty / 12$. -/
+Then $\|\tau_h\|_{h,\infty} \le h^2 \|f''\|_\infty / 12$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem equation_12_20_norm (N : ℕ) {f u : ℝ → ℝ} (hf : ContDiffOn ℝ 2 f (Icc 0 1))
     (hu : IsSolution f u) :
     ‖FiniteDifference.truncationError 0 1 N u f‖ ≤ meshSize N ^ 2 / 12 * normSecondDeriv f :=
@@ -587,7 +686,11 @@ $$|\tau_h(x_j)| \le \frac{M h^2}{12}.$$
 **Generalization.** The source gives the bound $M h^2$. The bound proved here is smaller by the
 factor $12$.
 
-The function $u$ need not satisfy the boundary conditions. -/
+The function $u$ need not satisfy the boundary conditions.
+
+**Reading.** Assumes $C^3$ on the closed interval and a Lipschitz third derivative on the
+interior. The printed remainder identity (12.21) has the opposite sign for the negative
+Laplacian stencil. -/
 theorem remark_12_2 (N : ℕ) {f u : ℝ → ℝ} {M : NNReal} (hu : ContDiffOn ℝ 3 u (Icc 0 1))
     (hM : LipschitzOnWith M (iteratedDeriv 3 u) (Ioo 0 1))
     (hu'' : ∀ x ∈ Ioo (0 : ℝ) 1, iteratedDeriv 2 u x = -f x) (j : Fin N) :
@@ -599,7 +702,9 @@ $u : \mathbb{R} \to \mathbb{R}$, and let $u_h$ be a finite difference solution w
 Then the discretization error $e = u - u_h$ at the nodes satisfies
 $$L_h e = L_h u - f_h = \tau_h.$$
 
-The function $u$ can be any function; $\tau_h$ is its truncation error (12.18). -/
+The function $u$ can be any function; $\tau_h$ is its truncation error (12.18).
+
+**Generalization.** The comparison function $u$ is arbitrary for this algebraic identity. -/
 theorem remark_12_3 (N : ℕ) {f : ℝ → ℝ} (u : ℝ → ℝ) {uh : Fin (N + 2) → ℝ}
     (hu : IsFiniteDifferenceSolution N f uh) :
     equation_12_9 N (u ∘ FiniteDifference.uniformGrid 0 1 N - uh)
@@ -730,7 +835,10 @@ let $h > 0$ and $x$ satisfy $0 \le x - h$ and $x + h \le 1$. Then
 $$u(x + h) - 2u(x) + u(x - h) = -\Big(\int_x^{x+h} f(t) (x + h - t)\, dt + \int_{x-h}^x f(t)
   (t - x + h)\, dt\Big).$$
 
-The two integrals are the Taylor remainders of $u'' = -f$. -/
+The two integrals are the Taylor remainders of $u'' = -f$.
+
+**Reading.** Uses two linear Taylor kernels for the centered second difference. The hint of
+Exercise 12.5 prints a difference of squared kernels. -/
 theorem secondDiff_eq_integral {f u : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1))
     (hu : IsSolution f u) {x h : ℝ} (hh : 0 < h) (hx0 : 0 ≤ x - h) (hx1 : x + h ≤ 1) :
     u (x + h) - 2 * u x + u (x - h)
@@ -784,7 +892,10 @@ $$h \tau^2 \le \int_{x-h}^{x+h} f(t)^2\, dt + 3h f(x)^2.$$
 
 The three terms of $\tau = h^{-2}(I^+ + I^-) - f(x)$ are squared with
 $(a + b + c)^2 \le 3(a^2 + b^2 + c^2)$, and the two integrals are bounded by the Cauchy–Schwarz
-inequality against the kernels, whose squares integrate to $h^3/3$. -/
+inequality against the kernels, whose squares integrate to $h^3/3$.
+
+**Reading.** Uses two linear Taylor kernels for the centered second difference. The hint of
+Exercise 12.5 prints a difference of squared kernels. -/
 theorem node_bound {f u : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolution f u)
     {x h : ℝ} (hh : 0 < h) (hx0 : 0 ≤ x - h) (hx1 : x + h ≤ 1) :
     h * (-(u (x + h) - 2 * u x + u (x - h)) / h ^ 2 - f x) ^ 2
@@ -824,7 +935,10 @@ theorem node_bound {f u : ℝ → ℝ} (hf : ContinuousOn f (Icc 0 1)) (hu : IsS
     hA2, hB2, hh.le, sq_nonneg h, hh3]
 
 
-/-- The nodes of the uniform grid of $[0, 1]$ are $x_j = jh$. -/
+/-- The nodes of the uniform grid of $[0, 1]$ are $x_j = jh$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem grid_eq_mul (N : ℕ) (j : Fin (N + 2)) :
     uniformGrid 0 1 N j = (j : ℕ) * meshSize N := by
   rw [uniformGrid_apply, meshSize_def, zero_add]
@@ -1019,11 +1133,17 @@ end Exercise125
 
 /-! ### The discrete Green's function (12.24)–(12.26) -/
 
-/-- The determinant of $A_{fd}$ is not zero. -/
+/-- The determinant of $A_{fd}$ is not zero.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem isUnit_det_finiteDifferenceMatrix (N : ℕ) : IsUnit (finiteDifferenceMatrix N).det :=
   (Matrix.isUnit_iff_isUnit_det _).1 (exercise_12_2 N).isUnit
 
-/-- The inverse of $A_{fd}$ is $h^2$ times the inverse of $\operatorname{tridiag}(-1, 2, -1)$. -/
+/-- The inverse of $A_{fd}$ is $h^2$ times the inverse of $\operatorname{tridiag}(-1, 2, -1)$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem inv_finiteDifferenceMatrix (N : ℕ) :
     (finiteDifferenceMatrix N)⁻¹
       = meshSize N ^ 2 • (Matrix.symmTridiagonalToeplitz N (-1) 2)⁻¹ := by
@@ -1048,12 +1168,17 @@ theorem discreteGreen_mem_gridZero (N : ℕ) (k : Fin N) :
 /-- **Equation (12.25)** of [quarteroni2000numerical]. The **discrete solution operator** maps a
 function $g$ on the interior nodes to the grid function
 $$T_h g = \sum_{k=1}^{n-1} g(x_k) G^k.$$
--/
+
+**Generalization.** The input consists of any interior values. The output has zero boundary
+values. -/
 noncomputable def discreteSolutionOperator (N : ℕ) (g : Fin N → ℝ) : Fin (N + 2) → ℝ :=
   ∑ k, g k • discreteGreen N k
 
 /-- The discrete solution operator applies $A_{fd}^{-1}$: $T_h g$ is $A_{fd}^{-1} g$ extended by
-zero at $x_0$ and $x_n$. -/
+zero at $x_0$ and $x_n$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem discreteSolutionOperator_eq (N : ℕ) (g : Fin N → ℝ) :
     discreteSolutionOperator N g
       = FiniteDifference.ofInterior N ((finiteDifferenceMatrix N)⁻¹ *ᵥ g) := by
@@ -1067,14 +1192,20 @@ theorem discreteSolutionOperator_eq (N : ℕ) (g : Fin N → ℝ) :
   funext j
   simp [Matrix.mulVec, dotProduct, mul_comm]
 
-/-- The discrete solution operator takes values in $V_h^0$. -/
+/-- The discrete solution operator takes values in $V_h^0$.
+
+**Generalization.** The input consists of any interior values. The output has zero boundary
+values. -/
 theorem discreteSolutionOperator_mem_gridZero (N : ℕ) (g : Fin N → ℝ) :
     discreteSolutionOperator N g ∈ FiniteDifference.gridZero N := by
   rw [discreteSolutionOperator_eq]
   exact FiniteDifference.ofInterior_mem_gridZero _
 
 /-- **Equation (12.25)** of [quarteroni2000numerical]. The operator $T_h$ inverts $L_h$: for every
-function $g$ on the interior nodes, $L_h (T_h g) = g$. -/
+function $g$ on the interior nodes, $L_h (T_h g) = g$.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem equation_12_25 (N : ℕ) (g : Fin N → ℝ) :
     equation_12_9 N (discreteSolutionOperator N g) = g := by
   have h1 : equation_12_9 N (discreteSolutionOperator N g)
@@ -1086,7 +1217,10 @@ theorem equation_12_25 (N : ℕ) (g : Fin N → ℝ) :
     Matrix.one_mulVec]
 
 /-- **Equation (12.26)** of [quarteroni2000numerical]. If $u_h$ is a finite difference solution with
-datum $f$, then $u_h = T_h f$, with $f$ evaluated at the interior nodes. -/
+datum $f$, then $u_h = T_h f$, with $f$ evaluated at the interior nodes.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem equation_12_26 (N : ℕ) {f : ℝ → ℝ} {u : Fin (N + 2) → ℝ}
     (hu : IsFiniteDifferenceSolution N f u) :
     u = discreteSolutionOperator N
@@ -1130,7 +1264,9 @@ theorem exercise_12_6 (N : ℕ) (j k : Fin N) :
 /-- **Exercise 12.7** of [quarteroni2000numerical], used in the proof of Theorem 12.1. For the
 constant function $1$ on the interior nodes,
 $$(T_h 1)(x_j) = \frac{x_j (1 - x_j)}{2}, \qquad j = 0, \dots, n.$$
--/
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem exercise_12_7 (N : ℕ) :
     discreteSolutionOperator N 1
       = fun j => FiniteDifference.uniformGrid 0 1 N j
@@ -1152,7 +1288,10 @@ inside Theorem 12.1. For every $e \in V_h^0$,
 $$\|e\|_{h,\infty} \le \frac{1}{8} \|L_h e\|_{h,\infty}.$$
 
 For a finite difference solution $u_h$ with datum $f$ this gives $\|u_h\|_{h,\infty} \le
-\frac{1}{8} \max_{1 \le j \le n-1} |f(x_j)|$, the discrete counterpart of (12.5). -/
+\frac{1}{8} \max_{1 \le j \le n-1} |f(x_j)|$, the discrete counterpart of (12.5).
+
+**Generalization.** The estimate applies to any zero-boundary grid function and uses only its
+interior load. -/
 theorem equation_12_28 (N : ℕ) {e : Fin (N + 2) → ℝ} (he : e ∈ FiniteDifference.gridZero N) :
     ‖e‖ ≤ 1 / 8 * ‖equation_12_9 N e‖ := by
   have h := FiniteDifference.norm_le_of_discreteLaplacian_eq (n := N) (a := 0) (b := 1)
@@ -1164,7 +1303,9 @@ theorem equation_12_28 (N : ℕ) {e : Fin (N + 2) → ℝ} (he : e ∈ FiniteDif
 with $|f''(x)| \le M$ for $x \in (0, 1)$, let $u$ solve the boundary value problem (12.1)–(12.2)
 with datum $f$, and let $u_h$ be the finite difference solution with datum $f$. Then
 $$\max_{0 \le j \le n} |u(x_j) - u_j| \le \frac{h^2}{96} M.$$
--/
+
+**Generalization.** The estimate can use any uniform bound on the interior second derivative of
+the datum. -/
 theorem theorem_12_1_of_forall_le (N : ℕ) {f u : ℝ → ℝ} {M : ℝ}
     (hf : ContDiffOn ℝ 2 f (Icc 0 1)) (hu : IsSolution f u)
     (hM : ∀ x ∈ Ioo (0 : ℝ) 1, |iteratedDeriv 2 f x| ≤ M) {uh : Fin (N + 2) → ℝ}
@@ -1185,7 +1326,10 @@ This is convergence of order two in the discrete maximum norm.
 
 The proof combines the stability (12.28) with the consistency (12.20). The nodal error is the
 grid function $(u(x_j) - u_j)_{j=0}^n$, and $\|f''\|_\infty$ is
-`QuarteroniSaccoSaleri.Chapter12.normSecondDeriv f`. -/
+`QuarteroniSaccoSaleri.Chapter12.normSecondDeriv f`.
+
+**Generalization.** The grid may have no interior nodes. The source starts with at least two
+subintervals. -/
 theorem theorem_12_1 (N : ℕ) {f u : ℝ → ℝ} (hf : ContDiffOn ℝ 2 f (Icc 0 1))
     (hu : IsSolution f u) {uh : Fin (N + 2) → ℝ} (huh : IsFiniteDifferenceSolution N f uh) :
     ‖u ∘ FiniteDifference.uniformGrid 0 1 N - uh‖
@@ -1203,14 +1347,20 @@ $$(L_h w)(x_j) = -\frac{J_{j+1/2}(w) - J_{j-1/2}(w)}{h} + \gamma(x_j) w_j, \qqua
 with the fluxes $J_{j+1/2}(w) = \alpha(x_{j+1/2}) (w_{j+1} - w_j)/h$ at the midpoints
 $x_{j+1/2} = (x_j + x_{j+1})/2$.
 
-The definition is `FiniteDifference.variableCoeffOperator 0 1 N α γ`. -/
+The definition is `FiniteDifference.variableCoeffOperator 0 1 N α γ`.
+
+**Generalization.** The formulas sample the coefficients without assuming continuity. The
+matrix sign hypotheses apply at the sampled faces and nodes. -/
 noncomputable def equation_12_32 (N : ℕ) (α γ : ℝ → ℝ) :
     (Fin (N + 2) → ℝ) →ₗ[ℝ] (Fin N → ℝ) :=
   FiniteDifference.variableCoeffOperator 0 1 N α γ
 
 /-- **Equation (12.31)** of [quarteroni2000numerical]. A grid function $u_h$ solves the **scheme
 with variable coefficients** and Dirichlet data $d_0$, $d_1$ if $u_0 = d_0$, $u_n = d_1$, and
-$(L_h u_h)(x_j) = f(x_j)$ for $j = 1, \dots, n - 1$, with the operator $L_h$ of (12.32)–(12.33). -/
+$(L_h u_h)(x_j) = f(x_j)$ for $j = 1, \dots, n - 1$, with the operator $L_h$ of (12.32)–(12.33).
+
+**Generalization.** The formulas sample the coefficients without assuming continuity. The
+matrix sign hypotheses apply at the sampled faces and nodes. -/
 def IsVariableCoeffSolution (N : ℕ) (α γ f : ℝ → ℝ) (d₀ d₁ : ℝ) (u : Fin (N + 2) → ℝ) : Prop :=
   u 0 = d₀ ∧ u (Fin.last (N + 1)) = d₁ ∧
     ∀ j : Fin N, equation_12_32 N α γ u j
@@ -1227,13 +1377,19 @@ $-\alpha_{j-1/2}/h^2$ and $-\alpha_{j+1/2}/h^2$.
 **Typo.** The source writes the off-diagonal vector as $a = (\alpha_{1/2}, \dots)$, without the
 minus sign.
 
-The definition is `FiniteDifference.variableCoeffMatrix 0 1 N α γ`. -/
+The definition is `FiniteDifference.variableCoeffMatrix 0 1 N α γ`.
+
+**Reading.** Uses the interior faces for off-diagonal entries and corrects their signs to match
+the negative flux difference. -/
 noncomputable def equation_12_34 (N : ℕ) (α γ : ℝ → ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   FiniteDifference.variableCoeffMatrix 0 1 N α γ
 
 /-- **Equation (12.34)** of [quarteroni2000numerical], positive definiteness. If
 $\alpha(x_{j+1/2}) > 0$ at every midpoint, $j = 0, \dots, n - 1$, and $\gamma(x_j) \ge 0$ at
-every interior node, then the matrix (12.34) is symmetric positive definite. -/
+every interior node, then the matrix (12.34) is symmetric positive definite.
+
+**Generalization.** The formulas sample the coefficients without assuming continuity. The
+matrix sign hypotheses apply at the sampled faces and nodes. -/
 theorem equation_12_34_posDef (N : ℕ) (α γ : ℝ → ℝ)
     (hα : ∀ j : Fin (N + 1), 0 < α (FiniteDifference.midGrid 0 1 N j))
     (hγ : ∀ i : Fin N, 0 ≤ γ (FiniteDifference.uniformGrid 0 1 N i.succ.castSucc)) :
@@ -1242,7 +1398,10 @@ theorem equation_12_34_posDef (N : ℕ) (α γ : ℝ → ℝ)
 
 /-- **Equation (12.34)** of [quarteroni2000numerical], diagonal dominance. If
 $\alpha(x_{j+1/2}) \ge 0$ at every midpoint and $\gamma(x_j) > 0$ at every interior node, then
-the matrix (12.34) is strictly diagonally dominant by rows. -/
+the matrix (12.34) is strictly diagonally dominant by rows.
+
+**Generalization.** The formulas sample the coefficients without assuming continuity. The
+matrix sign hypotheses apply at the sampled faces and nodes. -/
 theorem equation_12_34_diagDominant (N : ℕ) (α γ : ℝ → ℝ)
     (hα : ∀ j : Fin (N + 1), 0 ≤ α (FiniteDifference.midGrid 0 1 N j))
     (hγ : ∀ i : Fin N, 0 < γ (FiniteDifference.uniformGrid 0 1 N i.succ.castSucc)) :
@@ -1258,7 +1417,10 @@ $$-\frac{\alpha_{n-1/2}}{h^2} u_{n-1} + \Big(\frac{\alpha_{n-1/2}}{h^2} +
 holds, the discretization given by (12.35) and the display after it.
 
 The source calls this discretization second-order accurate without proof; this is not
-formalized. The definition is `FiniteDifference.IsNeumannSolution`. -/
+formalized. The definition is `FiniteDifference.IsNeumannSolution`.
+
+**Reading.** Encodes the endpoint row after eliminating the ghost flux. The statement does not
+assert the truncation order. -/
 def equation_12_35 (N : ℕ) (α γ f : ℝ → ℝ) (d₀ g₁ : ℝ) (u : Fin (N + 2) → ℝ) : Prop :=
   FiniteDifference.IsNeumannSolution 0 1 N α γ f d₀ g₁ u
 
@@ -1273,7 +1435,10 @@ $$\Big(\frac{\alpha_{n-1/2}}{h^2} + \frac{\gamma(1)}{2} + \frac{\alpha(1) \lambd
   h}\Big) u_n - \frac{\alpha_{n-1/2}}{h^2} u_{n-1} = \frac{\alpha(1) g_1}{\mu_1 h} +
   \frac{f(1)}{2}.$$
 
-**Typo.** The source prints the left condition with $u(0)$ in place of $u'(0)$.
+**Reading.** The printed boundary conditions lack primes on both terms with $\mu_j$. The scheme
+above matches the two printed solution rows. At the left endpoint, their signs agree with the
+condition using the outward derivative $-u'(0)$. Interpreting the left condition literally with
+the coordinate derivative $u'(0)$ would reverse both terms containing $1/(\mu_0 h)$.
 
 The definition is `FiniteDifference.IsRobinSolution`. -/
 def exercise_12_10 (N : ℕ) (α γ f : ℝ → ℝ) (lam₀ mu₀ g₀ lam₁ mu₁ g₁ : ℝ)
@@ -1287,14 +1452,19 @@ the nodes $j = 2, \dots, n$.
 
 The exercise names the operator $Lu = -u''''$. Since $L_h$ approximates $-u''$, the composition
 approximates $u''''$, so it discretizes $L$ up to the sign. The inner operator acts on $n + 1$
-interior nodes and the outer one on $n - 1$, both with the step $h = 1/n$. -/
+interior nodes and the outer one on $n - 1$, both with the step $h = 1/n$.
+
+**Reading.** Follows printed composition, whose sign approximates +u''''.
+-/
 noncomputable def exercise_12_11 (N : ℕ) : (Fin (N + 4) → ℝ) →ₗ[ℝ] (Fin N → ℝ) :=
   (FiniteDifference.discreteLaplacian N (meshSize N)).comp
     (FiniteDifference.discreteLaplacian (N + 2) (meshSize N))
 
 /-- The five-point stencil of $L_h \circ L_h$ in Exercise 12.11: at the node $j = 2, \dots, n$,
 $$(L_h L_h w)_j = \frac{w_{j+2} - 4w_{j+1} + 6w_j - 4w_{j-1} + w_{j-2}}{h^4}.$$
--/
+
+**Reading.** This is the stencil of the composition in the printed solution. Its leading
+differential operator is $+u$. -/
 theorem exercise_12_11_apply (N : ℕ) (w : Fin (N + 4) → ℝ) (i : Fin N) :
     exercise_12_11 N w i
       = (w ⟨(i : ℕ) + 4, by omega⟩ - 4 * w ⟨(i : ℕ) + 3, by omega⟩

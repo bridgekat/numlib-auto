@@ -29,6 +29,13 @@ complexified matrix.
 * Equation (11.86), `QuarteroniSaccoSaleri.Chapter11.one_le_stiffnessQuotient`: $r_s \ge 1$ when
   every eigenvalue has negative real part.
 
+## Deviations from the source
+
+* **Equation (11.86)** (reading). `stiffnessQuotient` takes $\sigma$ and $\tau$ to be the
+  infimum and supremum of the real parts of the complex spectrum. The text describes them as
+  bounds. `one_le_stiffnessQuotient` assumes a nonempty spectrum with strictly negative real
+  parts and permits repeated eigenvalues.
+
 ## Not formalized
 
 * **Definition 11.14**, Lambert's characterization of stiffness by the behaviour of methods with
@@ -52,7 +59,11 @@ where $\lambda_j$ runs over the complex eigenvalues of $A$.
 
 The definition is `ODE.stiffnessQuotient` of the complexified matrix, with the infimum and the
 supremum of the real parts of the spectrum. If $A$ has no eigenvalue ($n = 0$), both are $0$ and
-$r_s = 0$; if $\tau = 0$, then $r_s = 0$, because Lean sets $x / 0 = 0$. -/
+$r_s = 0$; if $\tau = 0$, then $r_s = 0$, because Lean sets $x / 0 = 0$.
+
+**Reading.** Takes the real-part infimum and supremum of the complex spectrum for the two
+bounds. The lower-bound theorem uses a nonempty, strictly negative real-part spectrum without
+assuming distinct eigenvalues. -/
 noncomputable def stiffnessQuotient (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
   ODE.stiffnessQuotient (A.map ((↑) : ℝ → ℂ))
 
@@ -60,7 +71,11 @@ noncomputable def stiffnessQuotient (A : Matrix (Fin n) (Fin n) ℝ) : ℝ :=
 $A \in \mathbb{R}^{n \times n}$,
 $$r_s = \frac{\inf \{\operatorname{Re} \lambda : \lambda \in \sigma(A)\}}{\sup
   \{\operatorname{Re} \lambda : \lambda \in \sigma(A)\}},$$
-where $\sigma(A) \subseteq \mathbb{C}$ is the spectrum of $A$ over $\mathbb{C}$. -/
+where $\sigma(A) \subseteq \mathbb{C}$ is the spectrum of $A$ over $\mathbb{C}$.
+
+**Reading.** Takes the real-part infimum and supremum of the complex spectrum for the two
+bounds. The lower-bound theorem uses a nonempty, strictly negative real-part spectrum without
+assuming distinct eigenvalues. -/
 theorem stiffnessQuotient_eq (A : Matrix (Fin n) (Fin n) ℝ) :
     stiffnessQuotient A =
       sInf (Complex.re '' spectrum ℂ (A.map ((↑) : ℝ → ℂ))) /
@@ -72,7 +87,11 @@ $A \in \mathbb{R}^{n \times n}$ have at least one eigenvalue, and let every eige
 have negative real part. Then $r_s \ge 1$.
 
 The proof specializes `ODE.one_le_stiffnessQuotient`: $\sigma \le \tau < 0$ gives
-$\sigma / \tau \ge 1$. -/
+$\sigma / \tau \ge 1$.
+
+**Reading.** Takes the real-part infimum and supremum of the complex spectrum for the two
+bounds. The lower-bound theorem uses a nonempty, strictly negative real-part spectrum without
+assuming distinct eigenvalues. -/
 theorem one_le_stiffnessQuotient (A : Matrix (Fin n) (Fin n) ℝ)
     (hne : (spectrum ℂ (A.map ((↑) : ℝ → ℂ))).Nonempty)
     (hneg : ∀ μ ∈ spectrum ℂ (A.map ((↑) : ℝ → ℂ)), μ.re < 0) : 1 ≤ stiffnessQuotient A :=

@@ -25,6 +25,11 @@ error and a coefficient error. The Galerkin problem also has a quadratic minimiz
 
 ## Deviations from the source
 
+* **Algorithm 2.5.1** (reading). The fixed-step recurrence uses total divisions. The quadratic
+  functional is defined in an arbitrary real inner product space.
+* **Theorem 2.5.3** (generalization). The quadratic minimization result applies on any
+  finite-dimensional affine Galerkin trial space with a symmetric coercive operator. See
+  `LiesenStrakos.theorem_2_5_3`.
 * **Theorem 2.5.2** (generalization). The identity is stated for a Galerkin synthesis map
   in an energy inner product, including the conforming finite-element space in the source.
 -/
@@ -34,7 +39,10 @@ namespace LiesenStrakos
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- Algorithm 2.5.1 of [liesen2013krylov], with the iterate, residual and direction as the
-state after $n$ steps of the conjugate gradient recurrence. -/
+state after $n$ steps of the conjugate gradient recurrence.
+
+**Reading.** This is a fixed number of recurrence steps using total divisions. The source
+algorithm takes an HPD matrix and stops according to a supplied criterion. -/
 noncomputable abbrev cgIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (n : ℕ) : CG.State E :=
   CG.iterate A b x₀ n
 
@@ -100,13 +108,20 @@ theorem theorem_2_5_2 {H V : Type*} [NormedAddCommGroup H] [InnerProductSpace �
     (C.adjoint_inner_left (x - y) (B (C (x - y)))).symm
 
 /-- The quadratic functional in (2.5.31) is one half of the quadratic energy minus the load
-applied to the trial vector. A real load functional is represented by its inner-product vector. -/
+applied to the trial vector. A real load functional is represented by its inner-product vector.
+
+**Generalization.** The same quadratic formula is defined on an arbitrary real inner product
+space. -/
 noncomputable abbrev quadraticFunctional {H : Type*} [NormedAddCommGroup H]
     [InnerProductSpace ℝ H] (A : H →ₗ[ℝ] H) (b : H) : H → ℝ := energyFunctional A b
 
 /-- **Theorem 2.5.3** of [liesen2013krylov].
-The affine Galerkin problem for a Hermitian positive definite operator and the minimization
-of its quadratic functional on the same space have the same unique solution. -/
+The affine Galerkin problem for a symmetric coercive operator and the minimization of its
+quadratic functional on the same finite-dimensional trial space have the same unique solution.
+
+**Generalization.** The source proves this equivalence for its conforming finite-element
+problem. The equivalence holds for any finite-dimensional affine trial space of a real inner
+product space with a symmetric coercive operator. -/
 theorem theorem_2_5_3 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     (A : H →ₗ[ℝ] H) (hA : A.IsSymmetricCoercive) (b x₀ : H) (K : Submodule ℝ H)
     [FiniteDimensional ℝ K] :

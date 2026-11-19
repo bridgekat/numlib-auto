@@ -40,6 +40,11 @@ operators, the backbone theorem `LinearPMap.IsClosed.exists_preimage_norm_le_of_
   are two `Norm V` structures that satisfy `NormedSpace.Core`, and the completeness hypotheses refer
   to the metrics that they induce. The proof puts each norm on a type synonym and applies Corollary
   2.7 to the identity map.
+
+## Deviations from the source
+
+* **Remark 6** (reading). The closed-graph property for continuous maps is stated for linear
+  operators between normed spaces. See `Brezis.Chapter02.remark_2_6`.
 -/
 
 open Metric
@@ -152,7 +157,10 @@ theorem theorem_2_9 [CompleteSpace E] [CompleteSpace F] (T : E →ₗ[ℝ] F)
 real normed spaces and let $T : E \to F$ be a continuous linear operator. Then the graph $G(T)$
 is closed in $E \times F$.
 
-The source calls the converse obvious. Completeness is not needed. -/
+**Reading.** The source gives the converse for arbitrary continuous maps between the Banach
+spaces of Theorem 2.9. The declaration keeps the linear-operator setting of that theorem and
+allows incomplete spaces, since closedness of the graph uses continuity and the Hausdorff
+property of the codomain. -/
 theorem remark_2_6 (T : E →ₗ[ℝ] F) (hT : Continuous T) : IsClosed (T.graph : Set (E × F)) := by
   have : (T.graph : Set (E × F)) = {p | p.2 = T p.1} := Set.ext fun p => T.mem_graph_iff p
   rw [this]

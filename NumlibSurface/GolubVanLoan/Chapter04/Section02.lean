@@ -150,6 +150,35 @@ Algorithm 4.2.2 and the block equations (4.2.18) and (4.2.19). The proofs specia
 
 ## Deviations from the source
 
+* **Reading.** Gaxpy Cholesky uses rounded running differences and a totalized recurrence. See
+  `GolubVanLoan.Chapter04.algorithm_4_2_1`, `GolubVanLoan.Chapter04.algorithm_4_2_1_rounds`,
+  `GolubVanLoan.Chapter04.algorithm_4_2_1_lower_eq_cholesky`.
+* **Reading.** The Cholesky solve uses column-oriented substitutions and totalized division. See
+  `GolubVanLoan.Chapter04.solveCholesky`.
+* **Reading.** The Cholesky backward-error theorem gives a finite bound for a completed run with
+  nonzero pivots. See `GolubVanLoan.Chapter04.cholesky_backward_error`.
+* **Reading.** The symmetric diagonal pivot chooses the first maximizer. See
+  `GolubVanLoan.Chapter04.diagPivot`, `GolubVanLoan.Chapter04.diagPivot_spec`.
+* **Reading.** The pivoted LDLᵀ programs totalize the displayed update at zero pivots. See
+  `GolubVanLoan.Chapter04.ldltPivotStep`, `GolubVanLoan.Chapter04.algorithm_4_2_2`,
+  `GolubVanLoan.Chapter04.pivotElim`, `GolubVanLoan.Chapter04.ldltPivotStep_id`.
+* **Reading.** Equation (4.2.11) states nonnegativity and a count rather than a formula for the
+  positions in sorted order. See `GolubVanLoan.Chapter04.equation_4_2_11`.
+* **Generalization.** The bundled semidefinite bounds include diagonal indices in (4.2.13). See
+  `GolubVanLoan.Chapter04.theorem_4_2_8`.
+* **Generalization.** The rank-revealing invariant covers all stages, including those beyond the
+  rank. See `GolubVanLoan.Chapter04.equation_4_2_16`.
+* **Reading.** The algorithmic reading of (4.2.17) specifies the pivot pattern used to truncate the
+  factors. See `GolubVanLoan.Chapter04.equation_4_2_17_algorithm`.
+* **Reading.** The block algorithms use the totalized gaxpy Cholesky implementation for diagonal
+  blocks. See `GolubVanLoan.Chapter04.choleskyLower`, `GolubVanLoan.Chapter04.choleskyLower_id`.
+* **Reading.** The block triangular solves use rowwise substitution with totalized division. See
+  `GolubVanLoan.Chapter04.solveRowsLower`, `GolubVanLoan.Chapter04.solveRowsLower_id`.
+* **Reading.** The block product differences use running subtractions in a chosen order. See
+  `GolubVanLoan.Chapter04.mulTransposeDiff`, `GolubVanLoan.Chapter04.mulTransposeDiff_id`.
+* **Reading.** The recursive and nonrecursive block programs are totalized and use a fixed order of
+  operations. See `GolubVanLoan.Chapter04.algorithm_4_2_3`,
+  `GolubVanLoan.Chapter04.algorithm_4_2_4`, `GolubVanLoan.Chapter04.blockCholeskyStep`.
 * **(4.2.7)** (generalization). The source prints a first-order bound with the extra term
   $2n \|A\|_F$. The library proves the rigorous bound $\|E\|_F \le \gamma_{3n} c n (\|T\|_2 + \|S
   T^{-1} S\|_2)$. See `GolubVanLoan.Chapter04.equation_4_2_7`.
@@ -596,7 +625,13 @@ The gaxpy is a running difference from each entry of $A(j{:}n, j)$ (`FloatingPoi
 empty for the first column). It reads the row $A(j, 1{:}j-1)$ of the state at the start of the
 column, which the column update does not change. The square root is rounded once, and the whole
 column, diagonal included, is divided by it. The strict upper triangle keeps the entries of $A$.
-The program has no hypothesis on $A$. -/
+The program has no hypothesis on $A$.
+
+**Reading.** The displayed column differences use individually rounded products and running
+subtractions. The program is totalized at nonpositive radicands and zero divisors. The
+rounded-factor bridge assumes nonzero returned diagonal, and the unconditional exact recurrence
+equality also compares these totalized values.
+-/
 noncomputable def algorithm_4_2_1 (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ) :=
   (List.finRange n).foldlM (fun (A : Matrix (Fin n) (Fin n) ℝ) (j : Fin n) => do
     let B ← ((List.finRange n).filter (j ≤ ·)).foldlM
@@ -731,7 +766,13 @@ $\hat g_{ik} \hat g_{jk}$, $k < j$.
 The relation is `FloatingPoint.RoundsCholeskyDiv fp A (F - F.strictUpper)`. The hypothesis is on
 the returned diagonal, not on the intermediate pivots, and it forces every computed pivot $t_j$
 to be positive: if $t_j \le 0$, then $\sqrt{t_j} = 0$, whose rounding is $0$, and then
-$\hat g_{jj} = \mathrm{fl}(t_j / 0) = 0$. -/
+$\hat g_{jj} = \mathrm{fl}(t_j / 0) = 0$.
+
+**Reading.** The displayed column differences use individually rounded products and running
+subtractions. The program is totalized at nonpositive radicands and zero divisors. The
+rounded-factor bridge assumes nonzero returned diagonal, and the unconditional exact recurrence
+equality also compares these totalized values.
+-/
 theorem algorithm_4_2_1_rounds (A : Matrix (Fin n) (Fin n) ℝ) :
     ∀ F ∈ (algorithm_4_2_1 fp.round A).run, (∀ j, F j j ≠ 0) →
       RoundsCholeskyDiv fp A (F - F.strictUpper) := by
@@ -790,7 +831,13 @@ of Algorithm 4.2.1 is the backbone Cholesky recurrence `Matrix.cholesky A`.
 
 Off the positive definite cone both compute the same values, because the square root of a
 negative number is $0$ and $x / 0 = 0$. The proof reads the relational invariant at the exact
-model, column by column. -/
+model, column by column.
+
+**Reading.** The displayed column differences use individually rounded products and running
+subtractions. The program is totalized at nonpositive radicands and zero divisors. The
+rounded-factor bridge assumes nonzero returned diagonal, and the unconditional exact recurrence
+equality also compares these totalized values.
+-/
 theorem algorithm_4_2_1_lower_eq_cholesky (A : Matrix (Fin n) (Fin n) ℝ) :
     Id.run (algorithm_4_2_1 pure A) - (Id.run (algorithm_4_2_1 pure A)).strictUpper =
       cholesky A := by
@@ -855,7 +902,11 @@ $b \in \mathbb{R}^n$. The program solves $\hat G y = b$ and then $\hat G^T x = y
 $x$.
 
 The two solves are the column-oriented substitutions of Chapter 3,
-`GolubVanLoan.Chapter03.algorithm_3_1_3` and `GolubVanLoan.Chapter03.algorithm_3_1_4`. -/
+`GolubVanLoan.Chapter03.algorithm_3_1_3` and `GolubVanLoan.Chapter03.algorithm_3_1_4`.
+
+**Reading.** The two triangular solves use the column-oriented programs of §3.1 and totalized
+division if supplied with singular triangular factors.
+-/
 noncomputable def solveCholesky (F : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     M (Fin n → ℝ) := do
   let y ← Chapter03.algorithm_3_1_3 rnd (F - F.strictUpper) b
@@ -876,7 +927,13 @@ $(A + E) \hat x = b$ with $\|E\|_2 \le c_n u \|A\|_2$, where $c_n$ is a small co
 depends on $n$. The theorem makes this constant explicit, $c_n \approx 3n^2$. The hypothesis on
 the returned diagonal forces every computed pivot to be positive
 (`GolubVanLoan.Chapter04.algorithm_4_2_1_rounds`). The claim of the source that the process runs
-to completion when $q_n u \kappa_2(A) \le 1$ is not formalized. -/
+to completion when $q_n u \kappa_2(A) \le 1$ is not formalized.
+
+**Reading.** Lean states a finite bound with two explicit small-roundoff conditions and nonzero
+returned diagonal. The source gives a bound proportional to $u$ with an unnamed constant, in the
+setting of symmetric positive definite matrices. The theorem itself needs symmetry and the
+assumptions on the completed run.
+-/
 theorem cholesky_backward_error {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ) : ℝ) * fp.u < 1)
     (hγ : n * gamma fp.u (n + 3) < 1) {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (b : Fin n → ℝ) :
@@ -905,7 +962,11 @@ section Programs
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- The pivot of step $k$ of Algorithm 4.2.2 of [golub2013matrix]: the first index $j \ge k$ with
-$a_{jj} = \max\{a_{kk}, \dots, a_{nn}\}$. The comparisons of the stored values are exact. -/
+$a_{jj} = \max\{a_{kk}, \dots, a_{nn}\}$. The comparisons of the stored values are exact.
+
+**Reading.** Lean chooses the first maximal diagonal, while the source leaves ties open. The
+comparison still uses the signed diagonal entries as in the source.
+-/
 noncomputable def diagPivot (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) : Fin n :=
   ((List.finRange n).filter (k ≤ ·)).foldl (fun (b i : Fin n) => if A b b < A i i then i else b) k
 
@@ -916,7 +977,12 @@ $v = A(k{+}1{:}n, k)$. It overwrites $a_{ik}$, $i > k$, with $\mathrm{fl}(v_i / 
 $a_{il}$, $i, l > k$, with $\mathrm{fl}(a_{il} - \mathrm{fl}(\mathrm{fl}(v_i v_l) / \alpha))$.
 It records $\mathrm{piv}(k) = j$.
 
-See `GolubVanLoan.Chapter04.algorithm_4_2_2` for the conventions. -/
+See `GolubVanLoan.Chapter04.algorithm_4_2_2` for the conventions.
+
+**Reading.** The source prints division by the pivot even for semidefinite input. Lean uses zero
+quotients at a zero pivot. In exact semidefinite elimination the trailing block is then zero, so the
+totalized update is well defined. Rounded runs update both triangles.
+-/
 noncomputable def ldltPivotStep (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) := do
   let j := diagPivot st.1 k
@@ -958,7 +1024,12 @@ The state is the matrix and the pivot vector, with $\mathrm{piv}(k) = j$; the pi
 starts as the identity. The interchanges act on whole rows and columns, and $v$ is a copy. The
 update $a_{il} \leftarrow \mathrm{fl}(a_{il} - \mathrm{fl}(\mathrm{fl}(v_i v_l) / \alpha))$ is
 in the order of the source. The program has no guard on $\alpha = 0$: for a semidefinite input
-the trailing block then vanishes, and $x / 0 = 0$. -/
+the trailing block then vanishes, and $x / 0 = 0$.
+
+**Reading.** The source prints division by the pivot even for semidefinite input. Lean uses zero
+quotients at a zero pivot. In exact semidefinite elimination the trailing block is then zero, so the
+totalized update is well defined. Rounded runs update both triangles.
+-/
 noncomputable def algorithm_4_2_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) :=
   (List.finRange n).foldlM (ldltPivotStep rnd) (A, fun i => i)
@@ -973,7 +1044,11 @@ of them are nonzero.
 
 The source orders the eigenvalues as $0 = \lambda_n = \dots = \lambda_{r+1} < \lambda_r \le
 \dots \le \lambda_1$. The eigenvalues `Matrix.IsHermitian.eigenvalues` of Mathlib are not
-ordered, so the ordering is a relabelling. -/
+ordered, so the ordering is a relabelling.
+
+**Reading.** Lean counts the nonzero eigenvalues and proves their nonnegativity. The source displays
+a sequence sorted in decreasing order with the zero eigenvalues at the end.
+-/
 theorem equation_4_2_11 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     (∀ i, 0 ≤ hA.1.eigenvalues i) ∧ Fintype.card {i // hA.1.eigenvalues i ≠ 0} = A.rank :=
   ⟨hA.eigenvalues_nonneg, hA.1.rank_eq_card_non_zero_eigs.symm⟩
@@ -1038,7 +1113,11 @@ $$a_{ii} = 0 \implies A(i, :) = 0, \ A(:, i) = 0. \qquad (4.2.15)$$
 
 The four parts are `GolubVanLoan.Chapter04.theorem_4_2_8_a`,
 `GolubVanLoan.Chapter04.theorem_4_2_8_b`, `GolubVanLoan.Chapter04.theorem_4_2_8_c` and
-`GolubVanLoan.Chapter04.theorem_4_2_8_d`. -/
+`GolubVanLoan.Chapter04.theorem_4_2_8_d`.
+
+**Generalization.** The bundled theorem includes the square-root bound on the diagonal. The printed
+form of (4.2.13) excludes equal indices.
+-/
 theorem theorem_4_2_8 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) :
     (∀ i j, |A i j| ≤ (A i i + A j j) / 2) ∧ (∀ i j, |A i j| ≤ Real.sqrt (A i i * A j j)) ∧
       ((∀ i j, |A i j| ≤ max (A i i) (A j j)) ∧
@@ -1280,7 +1359,11 @@ $A \in \mathbb{R}^{m \times m}$, the program runs Algorithm 4.2.1 on $A$ and ret
 triangle $F - \operatorname{strictUpper}(F)$ of its output $F$. The block algorithms store this
 lower triangle as the Cholesky factor.
 
-Setting the strict upper triangle to zero is exact. -/
+Setting the strict upper triangle to zero is exact.
+
+**Reading.** Lean uses gaxpy Cholesky and retains its lower triangle, including the totalized
+recurrence on inputs outside the positive definite case.
+-/
 noncomputable def choleskyLower {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
     M (Matrix (Fin m) (Fin m) ℝ) := do
   let F ← algorithm_4_2_1 rnd A
@@ -1291,7 +1374,11 @@ noncomputable def choleskyLower {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
 program overwrites each row $B(i, :)$, $i = 1, \dots, m$, with the solution $x$ of
 $Gx = B(i, :)^T$.
 
-Each row is solved by Algorithm 3.1.3 of Chapter 3, `GolubVanLoan.Chapter03.algorithm_3_1_3`. -/
+Each row is solved by Algorithm 3.1.3 of Chapter 3, `GolubVanLoan.Chapter03.algorithm_3_1_3`.
+
+**Reading.** Lean implements the multiple-right-hand-side solve by rowwise triangular substitution,
+including the totalized formulas when a supplied factor is singular.
+-/
 noncomputable def solveRowsLower {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
     (B : Matrix (Fin m) (Fin r) ℝ) : M (Matrix (Fin m) (Fin r) ℝ) :=
   (List.finRange m).foldlM (fun (X : Matrix (Fin m) (Fin r) ℝ) (i : Fin m) => do
@@ -1305,7 +1392,11 @@ $C \in \mathbb{R}^{m \times m'}$, matrices $X$ and $Y$ with $m$ and $m'$ rows an
 column index type, and a list $o$ of column indices, the entry $(i, j)$ of the result is the
 running difference of $c_{ij}$ and the rounded products $x_{ik} y_{jk}$, $k$ along $o$.
 
-The running difference is `FloatingPoint.runningDiff`. -/
+The running difference is `FloatingPoint.runningDiff`.
+
+**Reading.** Lean computes the product difference by successively subtracting rounded products in
+the specified order. The source gives a block product and does not fix its rounding order.
+-/
 noncomputable def mulTransposeDiff {m m' : ℕ} {ι : Type} (o : List ι)
     (C : Matrix (Fin m) (Fin m') ℝ) (X : Matrix (Fin m) ι ℝ) (Y : Matrix (Fin m') ι ℝ) :
     M (Matrix (Fin m) (Fin m') ℝ) :=
@@ -1335,7 +1426,12 @@ The Cholesky factorizations are Algorithm 4.2.1, whose lower triangle is returne
 3.1.3 (`GolubVanLoan.Chapter04.solveRowsLower`). The matrix $\tilde A$ is formed by running
 differences (`GolubVanLoan.Chapter04.mulTransposeDiff`), without use of its symmetry. The blocks
 are read along `finSumFinEquiv : Fin r ⊕ Fin (n - r) ≃ Fin (r + (n - r))` and $n = r + (n - r)$.
-The recursion is on $n$, which decreases because $r > 0$. -/
+The recursion is on $n$, which decreases because $r > 0$.
+
+**Reading.** The programs can be evaluated outside the SPD case through the underlying totalized
+operations. They fix the arithmetic order for each block update. The correctness theorems use
+positive definiteness as in the source.
+-/
 noncomputable def algorithm_4_2_3 (r : ℕ) (hr : 0 < r) :
     (n : ℕ) → Matrix (Fin n) (Fin n) ℝ → M (Matrix (Fin n) (Fin n) ℝ)
   | n, A =>
@@ -1354,14 +1450,22 @@ noncomputable def algorithm_4_2_3 (r : ℕ) (hr : 0 < r) :
 end Programs
 
 /-- In exact arithmetic, for every $A \in \mathbb{R}^{m \times m}$,
-`GolubVanLoan.Chapter04.choleskyLower` returns the Cholesky factor `Matrix.cholesky A`. -/
+`GolubVanLoan.Chapter04.choleskyLower` returns the Cholesky factor `Matrix.cholesky A`.
+
+**Reading.** Lean uses gaxpy Cholesky and retains its lower triangle, including the totalized
+recurrence on inputs outside the positive definite case.
+-/
 theorem choleskyLower_id {m : ℕ} (A : Matrix (Fin m) (Fin m) ℝ) :
     Id.run (choleskyLower (M := Id) pure A) = cholesky A := by
   rw [choleskyLower, Id.run_bind, Id.run_pure]
   exact algorithm_4_2_1_lower_eq_cholesky A
 
 /-- In exact arithmetic, `GolubVanLoan.Chapter04.solveRowsLower` replaces each row $B(i, :)$ by the
-forward substitution solution `Matrix.forwardSubst G (B i)`. -/
+forward substitution solution `Matrix.forwardSubst G (B i)`.
+
+**Reading.** Lean implements the multiple-right-hand-side solve by rowwise triangular substitution,
+including the totalized formulas when a supplied factor is singular.
+-/
 theorem solveRowsLower_id {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
     (B : Matrix (Fin m) (Fin r) ℝ) :
     Id.run (solveRowsLower (M := Id) pure G B) = of fun i => G.forwardSubst (B i) := by
@@ -1386,7 +1490,11 @@ theorem solveRowsLower_id {m r : ℕ} (G : Matrix (Fin r) (Fin r) ℝ)
     · by_cases hl : i ∈ l <;> simp [hl, hi]
 
 /-- In exact arithmetic, the entry $(i, j)$ of the result of
-`GolubVanLoan.Chapter04.mulTransposeDiff` is $c_{ij} - \sum_{k \in o} x_{ik} y_{jk}$. -/
+`GolubVanLoan.Chapter04.mulTransposeDiff` is $c_{ij} - \sum_{k \in o} x_{ik} y_{jk}$.
+
+**Reading.** Lean computes the product difference by successively subtracting rounded products in
+the specified order. The source gives a block product and does not fix its rounding order.
+-/
 theorem mulTransposeDiff_id {m m' : ℕ} {ι : Type} (o : List ι) (C : Matrix (Fin m) (Fin m') ℝ)
     (X : Matrix (Fin m) ι ℝ) (Y : Matrix (Fin m') ι ℝ) :
     Id.run (mulTransposeDiff (M := Id) pure o C X Y) =
@@ -1518,7 +1626,12 @@ $G_{ij} G_{jj}^T = S$ for $G_{ij}$. Then it overwrites $A_{ij}$ with $G_{ij}$.
 The matrix $S$ is formed by running differences over the pairs $(k, s)$ with $k < j$ of the
 block columns already overwritten (`GolubVanLoan.Chapter04.mulTransposeDiff`). The Cholesky
 factor is `GolubVanLoan.Chapter04.choleskyLower`, and the solve is row by row by Algorithm 3.1.3
-(`GolubVanLoan.Chapter04.solveRowsLower`) with the stored block $G_{jj}$. -/
+(`GolubVanLoan.Chapter04.solveRowsLower`) with the stored block $G_{jj}$.
+
+**Reading.** The programs can be evaluated outside the SPD case through the underlying totalized
+operations. They fix the arithmetic order for each block update. The correctness theorems use
+positive definiteness as in the source.
+-/
 noncomputable def blockCholeskyStep {N r : ℕ} (j i : Fin N)
     (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) : M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) := do
   let S ← mulTransposeDiff rnd ((List.finRange N).filter (· < j) ×ˢ List.finRange r)
@@ -1548,7 +1661,12 @@ end
 The input is `Matrix (Fin (N * r)) (Fin (N * r)) ℝ`, and its blocks
 `GolubVanLoan.Chapter04.blockOf A i j` are read along `finProdFinEquiv`. The loop body is
 `GolubVanLoan.Chapter04.blockCholeskyStep`. The diagonal blocks store the lower triangle of the
-factor, so their strict upper triangles are set to zero. -/
+factor, so their strict upper triangles are set to zero.
+
+**Reading.** The programs can be evaluated outside the SPD case through the underlying totalized
+operations. They fix the arithmetic order for each block update. The correctness theorems use
+positive definiteness as in the source.
+-/
 noncomputable def algorithm_4_2_4 (N r : ℕ) (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :
     M (Matrix (Fin (N * r)) (Fin (N * r)) ℝ) :=
   (List.finRange N).foldlM (fun (A : Matrix (Fin (N * r)) (Fin (N * r)) ℝ) (j : Fin N) =>
@@ -1772,7 +1890,12 @@ $$a_{il} - a_{ik} a_{lk} / a_{kk} \quad (i, l > k), \qquad a_{ik} / a_{kk} \quad
 and $a_{il}$ elsewhere.
 
 The step contains no interchange. If $a_{kk} = 0$, the quotients are $0$, by the convention
-$x / 0 = 0$. -/
+$x / 0 = 0$.
+
+**Reading.** The source prints division by the pivot even for semidefinite input. Lean uses zero
+quotients at a zero pivot. In exact semidefinite elimination the trailing block is then zero, so the
+totalized update is well defined. Rounded runs update both triangles.
+-/
 noncomputable def pivotElim (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i l => if k < i ∧ k < l then A i l - A i k * A l k / A k k
     else if l = k ∧ k < i then A i k / A k k else A i l
@@ -1839,7 +1962,12 @@ private theorem foldl_foldl_updateRow_sub (w : Fin n → Fin n → ℝ) {L : Lis
 
 /-- In exact arithmetic, step $k$ of Algorithm 4.2.2 interchanges rows and columns $k$ and $j$ of
 the state, where $j$ is `GolubVanLoan.Chapter04.diagPivot` of the state at $k$, then applies
-`GolubVanLoan.Chapter04.pivotElim` at $k$, and records $\mathrm{piv}(k) = j$. -/
+`GolubVanLoan.Chapter04.pivotElim` at $k$, and records $\mathrm{piv}(k) = j$.
+
+**Reading.** The source prints division by the pivot even for semidefinite input. Lean uses zero
+quotients at a zero pivot. In exact semidefinite elimination the trailing block is then zero, so the
+totalized update is well defined. Rounded runs update both triangles.
+-/
 theorem ldltPivotStep_id (st : Matrix (Fin n) (Fin n) ℝ × (Fin n → Fin n)) (k : Fin n) :
     Id.run (ldltPivotStep (M := Id) pure st k) =
       (pivotElim k (st.1.submatrix (Equiv.swap k (diagPivot st.1 k))
@@ -2048,7 +2176,11 @@ private theorem pivotedMiddle_eq (k : Fin n) (A : Matrix (Fin n) (Fin n) ℝ)
         ring
 
 /-- The pivot of step $k$ is at or after $k$, and its diagonal entry is the largest among the
-diagonal entries at or after $k$. -/
+diagonal entries at or after $k$.
+
+**Reading.** Lean chooses the first maximal diagonal, while the source leaves ties open. The
+comparison still uses the signed diagonal entries as in the source.
+-/
 private theorem diagPivot_spec (A : Matrix (Fin n) (Fin n) ℝ) (k : Fin n) :
     k ≤ diagPivot A k ∧ ∀ i, k ≤ i → A i i ≤ A (diagPivot A k) (diagPivot A k) := by
   have key : ∀ (l : List (Fin n)) (b : Fin n), k ≤ b → (∀ i ∈ l, k ≤ i) →
@@ -2244,7 +2376,12 @@ diagonal of $A_k$ is at most $d_k$. The last is the remark of the source that $A
 as $d_k = 0$; it follows from (4.2.15), because the pivot is the largest diagonal entry. The two
 factors are `GolubVanLoan.Chapter04.pivotedLower` and `GolubVanLoan.Chapter04.pivotedMiddle` of
 $S$. The matrix $\tilde P A \tilde P^T$ is `A.submatrix σ σ` with
-`σ = GolubVanLoan.Chapter03.pivPermUpTo piv k`, and indices are 0-based. -/
+`σ = GolubVanLoan.Chapter03.pivPermUpTo piv k`, and indices are 0-based.
+
+**Generalization.** The source discusses completed steps up to the rank. Lean states the invariant
+at all stages up to the order of the matrix, including the zero trailing block when the run has
+reached a zero pivot.
+-/
 theorem equation_4_2_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) {k : ℕ} (hk : k ≤ n) :
     let st := ((List.finRange n).take k).foldl
       (fun st i => Id.run (ldltPivotStep (M := Id) pure st i)) (A, fun i => i)
@@ -2365,7 +2502,12 @@ With `GolubVanLoan.Chapter04.algorithm_4_2_2_spec`, the computed $P$, $L(:, 1{:}
 $D_r = \operatorname{diag}(d_1, \dots, d_r)$ therefore realize (4.2.17):
 $PAP^T = L(:, 1{:}r) D_r L(:, 1{:}r)^T$. The proof uses that the rank of $PAP^T = LDL^T$ is the
 number of nonzero pivots, and that the pivots are nonnegative and nonincreasing. The Lean
-statement is 0-based: $d_i > 0$ for $i < r$ and $d_i = 0$ for $r \le i$. -/
+statement is 0-based: $d_i > 0$ for $i < r$ and $d_i = 0$ for $r \le i$.
+
+**Reading.** This declaration specifies the positive pivot prefix and zero tail of the exact run.
+The rank-truncated factorization itself is stated separately. It follows by retaining the factor
+columns belonging to that positive prefix.
+-/
 theorem equation_4_2_17_algorithm {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosSemidef) (i : Fin n) :
     ((i : ℕ) < A.rank → 0 < (Id.run (algorithm_4_2_2 pure A)).1 i i) ∧
       (A.rank ≤ i → (Id.run (algorithm_4_2_2 pure A)).1 i i = 0) := by

@@ -50,6 +50,13 @@ permutation $P$ of §1.2.11.
   $\rho^{-1}$ for the cyclic rotation $\rho$ = `finRotate N`. A product with it on the left, or with
   its transpose on the right, is a reindexing (`Matrix.submatrix`).
 
+## Deviations from the source
+
+* **§1.6.8 and Equation (1.6.16)** (generalization). The displays use four block rows and columns.
+  The definitions and identities use arbitrary positive order, as requested in Problem P1.6.6.
+  See `GolubVanLoan.Chapter01.cannonA`, `GolubVanLoan.Chapter01.cannonB`,
+  `GolubVanLoan.Chapter01.equation_1_6_16` and `GolubVanLoan.Chapter01.cannon_succ`.
+
 ## Not formalized
 
 All the items below are cost models or statements about processors, not about the computed matrices.
@@ -73,6 +80,9 @@ $A^{(k)}$ is the block matrix with the blocks
 $$A^{(k)}_{ij} = A_{i, i+j-k},$$
 with block indices 0-based and modulo $N$.
 
+**Generalization.** The source displays the skews for $N=4$. The modular formula gives the
+same skews at order four and defines them at arbitrary order for Problem P1.6.6.
+
 For $N = 4$ and $k = 0, 1, 2, 3$ these are the source's displayed $A^{(1)}, \dots, A^{(4)}$. The
 twin definition is `GolubVanLoan.Chapter01.cannonB`. -/
 def cannonA (A : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ)) (k : Fin N) :
@@ -84,6 +94,9 @@ $B$ be an $N \times N$ matrix of $n_1 \times n_1$ blocks and $k \in \{0, \dots, 
 $B^{(k)}$ is the block matrix with the blocks
 $$B^{(k)}_{ij} = B_{i+j-k, j},$$
 with block indices 0-based and modulo $N$.
+
+**Generalization.** The displayed skews are for $N=4$. The same cyclic indexing defines the
+skews at arbitrary order for Problem P1.6.6.
 
 This is the twin of `GolubVanLoan.Chapter01.cannonA`. -/
 def cannonB (B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ)) (k : Fin N) :
@@ -97,7 +110,10 @@ be $N \times N$ matrices of $n_1 \times n_1$ blocks, and let $C = AB$ be their b
 Then for all block indices $i$ and $j$,
 $$C_{ij} = \sum_{k=0}^{N-1} A^{(k)}_{ij} B^{(k)}_{ij}.$$
 So each block of $C$ is a sum of products of the blocks that the skewed matrices hold in the
-same position. -/
+same position.
+
+**Generalization.** The printed sum has four terms. The theorem gives the sum over all $N$
+skews, as requested in Problem P1.6.6, since each inner block index appears exactly once. -/
 theorem equation_1_6_16 (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ)) (i j : Fin N) :
     (A * B) i j = ∑ k, cannonA A k i j * cannonB B k i j := by
   rw [Matrix.mul_apply]
@@ -108,7 +124,10 @@ private theorem finRotate_symm_apply (j : Fin N) : (finRotate N).symm j = j - 1 
   rw [Equiv.symm_apply_eq, finRotate_apply, sub_add_cancel]
 
 /-- The shift relations as reindexings: from $A^{(k)}$ to $A^{(k+1)}$ the blocks move one column to
-the right, and from $B^{(k)}$ to $B^{(k+1)}$ they move one row down, with wraparound. -/
+the right, and from $B^{(k)}$ to $B^{(k+1)}$ they move one row down, with wraparound.
+
+**Generalization.** Section 1.6.8 illustrates the shifts at order four. Reindexing by the cyclic
+predecessor gives the same shifts at every positive order. -/
 private theorem cannon_succ_submatrix (A B : Matrix (Fin N) (Fin N) (Matrix (Fin n₁) (Fin n₁) ℝ))
     (k : Fin N) :
     cannonA A (k + 1) = (cannonA A k).submatrix id (finRotate N).symm ∧
@@ -126,6 +145,9 @@ $P$ … and observe that $A^{(k+1)} = A^{(k)} P^T$ and $B^{(k+1)} = P B^{(k)}$".
 $N \ge 1$, let $A$ and $B$ be $N \times N$ matrices of $n_1 \times n_1$ blocks, and let
 $k \in \{0, \dots, N - 1\}$, with $k + 1$ taken modulo $N$. Then
 $$A^{(k+1)} = A^{(k)} P^T, \qquad B^{(k+1)} = P B^{(k)}.$$
+
+**Generalization.** The source displays a four-block shift permutation. The same wraparound
+relations hold for any positive number of blocks.
 
 The matrix $P$ is the downshift $\mathcal{D}_N$ of §1.2.11 over the ring of $n_1 \times n_1$
 blocks, `Matrix.downshift N`: it has identity blocks at the cyclic positions $(j + 1, j)$ and

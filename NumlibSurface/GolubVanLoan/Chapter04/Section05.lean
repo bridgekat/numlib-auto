@@ -88,11 +88,19 @@ numbered algorithm. The proofs specialize the backbone modules
 
 ## Deviations from the source
 
+* **Reading.** The factorization and exact recurrence require only the pivots used in forming
+  multipliers. See `GolubVanLoan.Chapter04.equation_4_5_3`, `GolubVanLoan.Chapter04.equation_4_5_4`.
+* **Reading.** The block solve programs specify pivoting, rounding and singular-input behavior. See
+  `GolubVanLoan.Chapter04.blockTridiagonalLU`, `GolubVanLoan.Chapter04.blockTridiagonalSolve`.
+* **Generalization.** A single cyclic reduction step works with any odd block count. See
+  `GolubVanLoan.Chapter04.cyclicReduction_step`.
+* **Generalization.** The local back-substitution equations hold without commutativity. See
+  `GolubVanLoan.Chapter04.cyclicReduction_back`.
+* **Generalization.** The SPIKE scaling is stated for general invertible diagonal blocks. See
+  `GolubVanLoan.Chapter04.equation_4_5_14`, `GolubVanLoan.Chapter04.diagonal_inv_mul_tridiagonalOf`.
 * **(4.5.8)** (reading). The source prints $\|U_i\|_1 \le \|A_n\|_1$, whose right-hand side has no
   referent in the section. It is read as the $1$-norm of the whole matrix $A$. See
   `GolubVanLoan.Chapter04.equation_4_5_8`.
-* **The display for $N = 7$ in §4.5.3** (typo). The source prints $b_4 = Fx_5 + Dx_4 + Fx_5$ for
-  $b_4 = Fx_3 + Dx_4 + Fx_5$. See `GolubVanLoan.Chapter04.cyclicReduction_step`.
 
 ## Not formalized
 
@@ -124,7 +132,12 @@ blocks $F_0, \dots, F_{N-1}$. Moreover $L_i U_i = E_i$ for $i < N$.
 The source derives the recurrence by comparing blocks in $A = LU$ and remarks that the procedure
 is defined as long as the $U_i$ are nonsingular. The pivots and the multipliers are
 `Matrix.tridiagonalLUPivot` and `Matrix.tridiagonalLUMultiplier`, with the inverse
-`Ring.inverse`. The matrices $A$, $L$ and $U$ are flattened by `Matrix.blockTridiagonal`. -/
+`Ring.inverse`. The matrices $A$, $L$ and $U$ are flattened by `Matrix.blockTridiagonal`.
+
+**Reading.** Lean requires invertibility only for the pivots used when forming multipliers. The
+source describes the procedure as defined when the pivots are nonsingular, with no separate
+exception for the last pivot. Solving the full system still requires the last pivot.
+-/
 theorem equation_4_5_3 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hU : ∀ i < N, IsUnit (tridiagonalLUPivot E D F i)) :
     blockTridiagonal (N := N) (fun i => E i) (fun i => D i) (fun i => F i) =
@@ -158,7 +171,12 @@ side procedure (3.4.12) of Chapter 3 (`GolubVanLoan.Chapter03.solveMultipleRHS`,
 elimination with partial pivoting), sets $L_i = X^T$, and computes
 $U_{i+1} = D_{i+1} + (-L_i) F_i$ by Algorithm 1.1.5. The source says that each $U_i$ must be
 factored, for example by Gaussian elimination with pivoting. Transposition and negation are
-exact. -/
+exact.
+
+**Reading.** The programs select the source's suggested Gaussian elimination with pivoting, specify
+rounded block updates, and inherit the component solvers' totalized divisions for singular input.
+Each program factors the blocks in its own calls to the solvers.
+-/
 noncomputable def blockTridiagonalLU (N : ℕ) (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ) :
     M ((ℕ → Matrix (Fin q) (Fin q) ℝ) × (ℕ → Matrix (Fin q) (Fin q) ℝ)) :=
   (List.range N).foldlM
@@ -184,7 +202,12 @@ end
 The program is indexed from $0$, with $\mathbb{N}$-indexed block vectors; $y$ overwrites $b$,
 and the entries of $x$ beyond $N$ are $0$. The block updates are Algorithm 1.1.3 with the
 matrices $-L_{i-1}$ and $-F_i$, and each solve is Gaussian elimination with partial pivoting
-followed by the triangular solves (`GolubVanLoan.Chapter03.solveGEPP`). Negation is exact. -/
+followed by the triangular solves (`GolubVanLoan.Chapter03.solveGEPP`). Negation is exact.
+
+**Reading.** The programs select the source's suggested Gaussian elimination with pivoting, specify
+rounded block updates, and inherit the component solvers' totalized divisions for singular input.
+Each program factors the blocks in its own calls to the solvers.
+-/
 noncomputable def blockTridiagonalSolve (N : ℕ) (L U F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (b : ℕ → Fin q → ℝ) : M (ℕ → Fin q → ℝ) := do
   let y ← (List.range N).foldlM (fun (y : ℕ → Fin q → ℝ) (i : ℕ) => do
@@ -206,7 +229,12 @@ multipliers $L_i$ for $i < N$ and the pivots $U_i$ for $i \le N$.
 
 With `GolubVanLoan.Chapter04.equation_4_5_3`, the program therefore computes the factorization
 (4.5.3). The pivots and the multipliers are `Matrix.tridiagonalLUPivot` and
-`Matrix.tridiagonalLUMultiplier`. -/
+`Matrix.tridiagonalLUMultiplier`.
+
+**Reading.** Lean requires invertibility only for the pivots used when forming multipliers. The
+source describes the procedure as defined when the pivots are nonsingular, with no separate
+exception for the last pivot. Solving the full system still requires the last pivot.
+-/
 theorem equation_4_5_4 (E D F : ℕ → Matrix (Fin q) (Fin q) ℝ)
     (hU : ∀ i < N, IsUnit (tridiagonalLUPivot E D F i)) :
     (∀ i < N, (Id.run (blockTridiagonalLU pure N E D F)).1 i = tridiagonalLUMultiplier E D F i) ∧
@@ -428,16 +456,17 @@ neighbour is $0$.
    $D^{(k)}$ and $b^{(k)}$ are the diagonal block and the right-hand side after $k$ reduction
    steps.
 
-**Typo.** In the display for $N = 7$, the source prints $b_4 = Fx_5 + Dx_4 + Fx_5$; the intended
-equation is $b_4 = Fx_3 + Dx_4 + Fx_5$.
-
 The source obtains the reduced system by multiplying the equations $i - 1$, $i$ and $i + 1$ by
 $F$, $-D$ and $F$ and adding them, and it illustrates the step for $N = 7$. Indices start at
 $0$, so the source's even-indexed unknowns are the odd-indexed ones here. The operator is
 `CyclicReduction.constBlockTridiagonal`, the new data are `CyclicReduction.reducedDiag`,
 `CyclicReduction.reducedOff` and `CyclicReduction.reducedRhs`, and the data after $k$ steps are
 `CyclicReduction.diagIter` and `CyclicReduction.rhsIter`. The size $2^{k+1} - 1$ is
-`CyclicReduction.size (k + 1)`. -/
+`CyclicReduction.size (k + 1)`.
+
+**Generalization.** A single reduction applies to any odd block count. The iterated reduction to one
+block retains the source's power-of-two-minus-one size.
+-/
 theorem cyclicReduction_step {D F : Matrix (Fin q) (Fin q) ℝ} (hDF : D * F = F * D) :
     (∀ (M : ℕ) (x b : Fin (2 * M + 1) → Fin q → ℝ), constBlockTridiagonal D F x = b →
       constBlockTridiagonal (reducedDiag D F) (reducedOff F)
@@ -459,7 +488,11 @@ where $x_{-1}$ and $x_{2M+1}$ are read as $0$.
 Indices start at $0$, so these are the source's odd-indexed unknowns, which it computes last
 from the first, third, fifth and seventh equations of the original system. The missing
 neighbours are read through the zero extension `CyclicReduction.extend`. The statement needs no
-commutativity of $D$ and $F$. -/
+commutativity of $D$ and $F$.
+
+**Generalization.** Lean proves the local recovery equations at any odd block count, with no
+commutativity assumption. The equations hold of a solution even if the recovery block is singular.
+-/
 theorem cyclicReduction_back {D F : Matrix (Fin q) (Fin q) ℝ} {M : ℕ}
     {x b : Fin (2 * M + 1) → Fin q → ℝ} (h : constBlockTridiagonal D F x = b) (j : Fin (M + 1)) :
     D *ᵥ x ⟨2 * j, by omega⟩ =
@@ -470,7 +503,12 @@ theorem cyclicReduction_back {D F : Matrix (Fin q) (Fin q) ℝ} {M : ℕ}
 
 /-- In the block ring, $\operatorname{diag}(D_i^{-1}) \operatorname{tridiag}(E, D, F) =
 \operatorname{tridiag}(\tilde E, I, \tilde F)$ with $\tilde F_i = D_i^{-1} F_i$ and
-$\tilde E_i = D_{i+1}^{-1} E_i$. -/
+$\tilde E_i = D_{i+1}^{-1} E_i$.
+
+**Generalization.** This scaling identity uses any number of equal-sized blocks and requires only
+invertible diagonal blocks. The SPIKE example uses four blocks with banded diagonal blocks and
+sparse off-diagonal blocks.
+-/
 private theorem diagonal_inv_mul_tridiagonalOf (E F : Fin N → Matrix (Fin q) (Fin q) ℝ)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) ℝ) (hD : ∀ i, IsUnit (D i)) :
     diagonal (fun i => (D i)⁻¹) * tridiagonalOf E D F =
@@ -501,7 +539,12 @@ $\tilde A x = \tilde b$, where $\tilde b_i = D_i^{-1} b_i$.
 
 The source premultiplies by the inverse of $\operatorname{diag}(D_1, D_2, D_3, D_4)$ and writes
 $D_i \tilde b_i = b_i$, $D_i \tilde F_i = F_i$ and $D_{i+1} \tilde E_i = E_i$. The block
-diagonal matrix is the flattening of `Matrix.diagonal` over the block ring by `Matrix.comp`. -/
+diagonal matrix is the flattening of `Matrix.diagonal` over the block ring by `Matrix.comp`.
+
+**Generalization.** This scaling identity uses any number of equal-sized blocks and requires only
+invertible diagonal blocks. The SPIKE example uses four blocks with banded diagonal blocks and
+sparse off-diagonal blocks.
+-/
 theorem equation_4_5_14 (E F : Fin N → Matrix (Fin q) (Fin q) ℝ)
     (D : Fin (N + 1) → Matrix (Fin q) (Fin q) ℝ) (hD : ∀ i, IsUnit (D i)) :
     comp _ _ _ _ ℝ (diagonal fun i => (D i)⁻¹) * blockTridiagonal E D F =

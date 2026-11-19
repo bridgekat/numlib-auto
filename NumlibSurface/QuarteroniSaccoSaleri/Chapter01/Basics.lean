@@ -119,17 +119,34 @@ and Hessenberg shapes), and `Numlib.LinearAlgebra.Matrix.TridiagonalToeplitz`.
 
 ## Deviations from the source
 
+* **Example 1.3** (generalization). The dimension and coordinate basis statements hold over any
+  field. See `QuarteroniSaccoSaleri.Chapter01.example_1_3`.
 * **Definition 1.4** (typo). The book calls the selected rows and columns of a submatrix
   "contiguous"; only increasing indices are meant. Mathlib's `Matrix.submatrix` along strictly
   monotone maps is used.
 * **Example 1.4** (correction). The book calls $G(\theta)$ the counterclockwise rotation by
   $\theta$; as printed, $G(\theta)$ is the rotation by $-\theta$. See
   `QuarteroniSaccoSaleri.Chapter01.example_1_4`.
+* **Property 1.4** (reading and correction). Lean gives the two-by-two block case. For the
+  product only the inner block sizes have to match, and the block columns come from the right
+  factor. See `QuarteroniSaccoSaleri.Chapter01.property_1_4`.
+* **The inverse formula after (1.4)** (generalization). The formula also holds at a singular matrix
+  with Mathlib's total inverse. See `QuarteroniSaccoSaleri.Chapter01.equation_1_4`.
+* **Definition 1.12** (reading). The order-zero minor gives rank zero when all positive-order
+  minors vanish. See `QuarteroniSaccoSaleri.Chapter01.definition_1_12`.
+* **Section 1.6.2, triangular inverses and products** (reading). The inverse clauses assume
+  invertibility explicitly. See `QuarteroniSaccoSaleri.Chapter01.isTriangular_inv_mul`.
+* **Section 1.6.2, trapezoidal products** (generalization). The product property also holds for
+  lower trapezoidal factors. See `QuarteroniSaccoSaleri.Chapter01.isUpperTrapezoidal_mul`.
+* **Section 1.6.3, banded matrices** (reading). The bandwidth predicates and shape equivalences are
+  stated for square matrices. The text interchanges the upper and lower trapezoidal labels in
+  its band discussion. Lean uses the entrywise definitions from §1.6.2. See
+  `QuarteroniSaccoSaleri.Chapter01.hasBandwidth_iff_shape`.
 
 ## Not formalized
 
 * **Examples 1.1 and 1.2.** They are prose.
-* **Example 1.3, second clause.** The space $C^p([a, b])$ is infinite-dimensional.
+* **Example 1.3, the function-space clause.** The space $C^p([a, b])$ is infinite-dimensional.
 -/
 
 open Finset Matrix
@@ -177,9 +194,11 @@ end VectorSpaces
 $\mathbb{K}^n$ has dimension $n$, and its usual basis is the system of unit vectors
 $e_1, \dots, e_n$ with $(e_i)_j = \delta_{ij}$.
 
-The book states this for $\mathbb{R}^n$ and $\mathbb{C}^n$; here $\mathbb{K}$ is any field. The
-usual basis is Mathlib's `Pi.basisFun`. The book's other clause, that $C^p([a, b])$ is
-infinite-dimensional, is not formalized. -/
+**Generalization.** The book gives the dimension for real and complex scalars and the coordinate
+basis for real scalars. The same coordinate vectors give the basis and the dimension over any
+field.
+
+The usual basis is Mathlib's `Pi.basisFun`. -/
 theorem example_1_3 (𝕜 : Type*) [Field 𝕜] (n : ℕ) :
     Module.finrank 𝕜 (Fin n → 𝕜) = n ∧
       ∀ i j : Fin n, Pi.basisFun 𝕜 (Fin n) i j = if i = j then 1 else 0 :=
@@ -315,10 +334,13 @@ $B_{ij} \in \mathbb{C}^{l_i \times m_j}$, and let $c \in \mathbb{C}$. Then: (1) 
 blocks $c A_{ij}$, and $A^T$ has the blocks $(A^T)_{ij} = A_{ji}^T$; (2) $A + A'$ has the blocks
 $A_{ij} + A'_{ij}$; (3) $AB$ has the blocks $C_{ij} = \sum_s A_{is} B_{sj}$.
 
-The book states the property for a general $k \times l$ partition. The statement here is the
+**Reading.** The book states the property for a general $k \times l$ partition. Here it is in
 $2 \times 2$ block form `Matrix.fromBlocks`, to which the general partition reduces by
-induction. The equal partitions in (2) and the agreement of the column partition of $A$ with the
-row partition of $B$ in (3) are built into the block sizes. -/
+induction.
+
+**Correction.** For (3) the printed condition $k_i=n_i$ equates outer block sizes that need
+not agree. The product needs matching inner blocks and its block columns follow the right
+factor, with $C_{kn}$ in the lower-right corner of the general display. -/
 theorem property_1_4 {k₁ k₂ l₁ l₂ m₁ m₂ : ℕ} (c : ℂ)
     (A₁₁ : Matrix (Fin k₁) (Fin l₁) ℂ) (A₁₂ : Matrix (Fin k₁) (Fin l₂) ℂ)
     (A₂₁ : Matrix (Fin k₂) (Fin l₁) ℂ) (A₂₂ : Matrix (Fin k₂) (Fin l₂) ℂ)
@@ -347,9 +369,11 @@ where $A_{ij}$ is the matrix obtained from $A$ by deleting row $i$ and column $j
 $A^{-1} = (\det A)^{-1} C$, where $C$ is the adjugate of $A$, the matrix with the entries
 $c_{ji} = \Delta_{ij}$.
 
-Mathlib's inverse is $0$ for a singular matrix, and $(\det A)^{-1} = 0$ when $\det A = 0$, so
-the formula for $A^{-1}$ holds without the hypothesis that $A$ is invertible. The adjugate is
-`Matrix.adjugate`. The proof uses `Matrix.det_succ_row`, `Matrix.inv_def` and
+**Generalization.** The book states the adjugate formula for invertible matrices. It holds for
+singular matrices as well because Mathlib's matrix inverse and the inverse of the determinant
+both give zero in that case.
+
+The adjugate is `Matrix.adjugate`. The proof uses `Matrix.det_succ_row`, `Matrix.inv_def` and
 `Matrix.adjugate_fin_succ_eq_det_submatrix`. -/
 theorem equation_1_4 {𝕜 : Type*} [Field 𝕜] {n : ℕ} (A₀ : Matrix (Fin 1) (Fin 1) 𝕜)
     (A : Matrix (Fin (n + 1)) (Fin (n + 1)) 𝕜) (i : Fin (n + 1)) :
@@ -378,6 +402,10 @@ extracted from $A$, that is, the largest $k$ such that the square submatrix of $
 $k$ distinct rows and some $k$ distinct columns has nonzero determinant. Moreover, $A$ has
 **full rank**, $\operatorname{rank} A = \min(m, n)$, if and only if some determinant of order
 $\min(m, n)$ extracted from $A$ does not vanish.
+
+**Reading.** The book describes extracted determinants of positive order. The theorem includes
+the order-zero minor, whose determinant is $1$. This specifies rank zero when all positive-order
+minors vanish and also covers matrices with an empty dimension.
 
 The statement is a theorem about Mathlib's `Matrix.rank`, the dimension of the range of $A$. The
 proof specializes the backbone theorem `Matrix.rank_eq_sup_card_det_submatrix_ne_zero`. The rows
@@ -519,6 +547,10 @@ invertible, then $L^{-1}$ is lower triangular; if $U$ is upper triangular and in
 $U^{-1}$ is upper triangular. If $L$ and $L'$ are lower triangular, then $LL'$ is lower
 triangular; if $U$ and $U'$ are upper triangular, then $UU'$ is upper triangular.
 
+**Reading.** The source refers to the inverse of a triangular matrix without spelling out the
+invertibility assumption. The declaration requires invertibility for the inverse clauses so
+they describe the ordinary matrix inverse.
+
 The proof uses Mathlib's `Matrix.blockTriangular_inv_of_blockTriangular` and
 `Matrix.BlockTriangular.mul`. -/
 theorem isTriangular_inv_mul (L L' U U' : Matrix (Fin n) (Fin n) 𝕜) :
@@ -538,6 +570,10 @@ matrix $A \in \mathbb{K}^{m \times p}$ is **upper trapezoidal** if $a_{ij} = 0$ 
 $B \in \mathbb{K}^{p \times q}$ over a field $\mathbb{K}$. If $A$ and $B$ are upper trapezoidal,
 then $AB$ is upper trapezoidal. If $A$ and $B$ are lower trapezoidal, then $AB$ is lower
 trapezoidal.
+
+**Generalization.** The book pairs the product of upper trapezoidal matrices with that of lower
+triangular matrices. The lower statement also holds for rectangular factors because any
+nonzero term contributing to $(AB)_{ij}$ must have an intermediate index $k$ with $i \ge k \ge j$.
 
 The two shapes are stated directly by the vanishing of the entries, without a named predicate. -/
 theorem isUpperTrapezoidal_mul {m p q : ℕ} (A : Matrix (Fin m) (Fin p) 𝕜)
@@ -587,6 +623,12 @@ $j > i + q$. The named shapes are characterized by the bands as follows:
   (that is, $A$ is lower Hessenberg) if and only if $A$ has upper band $1$.
 
 Every matrix of order $n$ has lower band $n - 1$ and upper band $n - 1$.
+
+**Reading.** The book defines the two bands for rectangular real or complex matrices. This
+declaration states the shape equivalences for square matrices over a field, the domain of the
+backbone bandwidth predicates.
+The book reverses the trapezoidal labels in §1.6.3. The upper shape has lower band zero and
+the lower shape has upper band zero, by the entrywise definitions in §1.6.2.
 
 The bands are the backbone predicates `Matrix.HasLowerBandwidth` and `Matrix.HasUpperBandwidth`
 of `Numlib.LinearAlgebra.Matrix.Band`, read on `Fin n` through

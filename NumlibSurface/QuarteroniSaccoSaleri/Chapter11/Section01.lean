@@ -59,6 +59,22 @@ and the estimate `ODE.norm_sub_le_of_lipschitz`) and of `Numlib.Analysis.ODE.Gro
 
 ## Deviations from the source
 
+* **Equations (11.1) and (11.2), and global existence and uniqueness** (reading). The Cauchy
+  problem predicate uses a within-set derivative and imposes neither joint continuity of $f$ nor
+  $t_0\in I$. The integral equivalence and global existence theorem use the right closed
+  interval $[t_0,t_0+T]$. The equivalence assumes continuity of $y$ in advance. The global
+  theorem fixes $y=y_0$ outside the interval to express uniqueness as equality of total
+  functions.
+* **Section 11.1, item 1** (reading). `localExistenceUniqueness` uses an upper bound $M$ on the
+  rectangle. It states existence and uniqueness among solutions with values in the rectangle,
+  and compares those solutions only on the solution interval.
+* **Definition 11.1 and equations (11.4)–(11.6)** (reading). The Liapunov bound uses one
+  constant for every $\varepsilon>0$ and every pair of solutions that exists. The asymptotic
+  definition uses all forward bounded intervals and a single positive perturbation tolerance for
+  convergence on $[t_0,\infty)$. The Lipschitz stability results use forward closed finite
+  intervals.
+* **Lemma 11.1** (specialization). `lemma_11_1_continuous` gives the continuous-weight case with
+  a nonnegative weight on the closed interval.
 * **Section 11.1, item 1** (generalization). The book also requires $r_0 < 1/L$. This bound is not
   needed and is dropped. See `QuarteroniSaccoSaleri.Chapter11.localExistenceUniqueness`.
 -/
@@ -74,13 +90,21 @@ variable {f : ℝ → ℝ → ℝ} {t₀ y₀ T : ℝ} {I : Set ℝ} {y z : ℝ 
 $y : \mathbb{R} \to \mathbb{R}$ **solves the Cauchy problem** on $I$ if $y(t_0) = y_0$ and
 $y'(t) = f(t, y(t))$ for every $t \in I$, where the derivative is taken within $I$.
 
-The definition is `ODE.IsSolutionOn` at $E = \mathbb{R}$. The point $t_0$ need not lie in $I$. -/
+The definition is `ODE.IsSolutionOn` at $E = \mathbb{R}$. The point $t_0$ need not lie in $I$.
+
+**Generalization.** Uses the derivative within an arbitrary set and does not require joint
+continuity of the field or membership of $t_0$ in the set. The source introduces the problem on
+an interval containing $t_0$ with continuous field. -/
 def cauchyProblem (f : ℝ → ℝ → ℝ) (t₀ y₀ : ℝ) (I : Set ℝ) (y : ℝ → ℝ) : Prop :=
   ODE.IsSolutionOn f t₀ y₀ I y
 
 /-- **Equation (11.1)** of [quarteroni2000numerical], unfolded. A function $y$ solves the Cauchy
 problem on $I$ if and only if $y(t_0) = y_0$ and $y$ has the derivative $f(t, y(t))$ within $I$
-at every $t \in I$. -/
+at every $t \in I$.
+
+**Generalization.** Uses the derivative within an arbitrary set and does not require joint
+continuity of the field or membership of $t_0$ in the set. The source introduces the problem on
+an interval containing $t_0$ with continuous field. -/
 theorem cauchyProblem_iff :
     cauchyProblem f t₀ y₀ I y ↔ y t₀ = y₀ ∧ ∀ t ∈ I, HasDerivWithinAt y (f t (y t)) I t :=
   Iff.rfl
@@ -90,7 +114,10 @@ continuous on the strip $[t_0, t_0 + T] \times \mathbb{R}$, and let $y$ be conti
 $[t_0, t_0 + T]$. Then $y$ solves the Cauchy problem (11.1) on $[t_0, t_0 + T]$ if and only if
 $$y(t) - y_0 = \int_{t_0}^{t} f(\tau, y(\tau)) \, d\tau \qquad \text{for every } t \in [t_0,
   t_0 + T].$$
--/
+
+**Reading.** Uses a forward closed finite interval and assumes joint continuity of $f$ and
+continuity of the candidate $y$. The source's converse obtains continuity of $y$ from its
+integral representation. -/
 theorem equation_11_2 (hT : 0 ≤ T)
     (hf : ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T) ×ˢ univ))
     (hy : ContinuousOn y (Icc t₀ (t₀ + T))) :
@@ -111,7 +138,10 @@ agrees with it there.
 
 **Generalization.** The book also requires $r_0 < 1/L$. This bound is not needed.
 
-The proof specializes `ODE.exists_isSolutionOn_of_lipschitzOnWith`. -/
+The proof specializes `ODE.exists_isSolutionOn_of_lipschitzOnWith`.
+
+**Reading.** Uses a bound $M$ on the rectangle, and expresses uniqueness on the interval among
+solutions whose values are in that rectangle. -/
 theorem localExistenceUniqueness {rJ rS r₀ L M : ℝ} (hL : 0 < L) (hrS : 0 < rS)
     (hf : ContinuousOn (Function.uncurry f) (Icc (t₀ - rJ) (t₀ + rJ) ×ˢ Icc (y₀ - rS) (y₀ + rS)))
     (hlip : ∀ t ∈ Icc (t₀ - rJ) (t₀ + rJ), ∀ y₁ ∈ Icc (y₀ - rS) (y₀ + rS),
@@ -151,7 +181,10 @@ $J = [t_0, t_0 + T]$ and $\Sigma = \mathbb{R}$. Then the Cauchy problem has exac
 on $[t_0, t_0 + T]$.
 
 A solution is a function on $\mathbb{R}$, so for uniqueness the statement fixes it to be $y_0$
-outside $[t_0, t_0 + T]$. The proof specializes `ODE.existsUnique_isSolutionOn_of_lipschitz`. -/
+outside $[t_0, t_0 + T]$. The proof specializes `ODE.existsUnique_isSolutionOn_of_lipschitz`.
+
+**Reading.** Uses $[t_0,t_0+T]$ and makes the joint continuity assumption explicit. Solutions
+are extended by the same constant off the interval to express uniqueness. -/
 theorem globalExistenceUniqueness {L : ℝ} (hT : 0 ≤ T) (hL : 0 ≤ L)
     (hf : ContinuousOn (Function.uncurry f) (Icc t₀ (t₀ + T) ×ˢ univ))
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) :
@@ -173,7 +206,10 @@ satisfy (11.5), $|y(t) - z(t)| < C\varepsilon$ for all $t \in I$.
 
 The book takes $I$ bounded and restricts to $\varepsilon$ small enough for the perturbed
 solution to exist. The definition quantifies over the solutions that exist, so it has no such
-restriction. It is `ODE.IsLiapunovStable` at $E = \mathbb{R}$. -/
+restriction. It is `ODE.IsLiapunovStable` at $E = \mathbb{R}$.
+
+**Reading.** The positive constant is uniform over all positive tolerances and solution pairs
+satisfying the perturbation bounds. Existence of the solutions is a premise. -/
 def definition_11_1 (f : ℝ → ℝ → ℝ) (t₀ y₀ : ℝ) (I : Set ℝ) : Prop :=
   ODE.IsLiapunovStable f t₀ y₀ I
 
@@ -182,7 +218,10 @@ sense of Liapunov on $I$ if and only if there is $C > 0$ such that for all $\var
 all $\delta_0$ with $|\delta_0| < \varepsilon$, all $\delta$ continuous on $I$ with
 $|\delta(t)| < \varepsilon$ on $I$, every solution $y$ of (11.1) on $I$ and every solution $z$
 of the perturbed problem (11.4) on $I$, we have $|y(t) - z(t)| < C\varepsilon$ for all
-$t \in I$. -/
+$t \in I$.
+
+**Reading.** The positive constant is uniform over all positive tolerances and solution pairs
+satisfying the perturbation bounds. Existence of the solutions is a premise. -/
 theorem definition_11_1_iff :
     definition_11_1 f t₀ y₀ I ↔ ∃ C : ℝ, 0 < C ∧ ∀ ε : ℝ, 0 < ε → ∀ (δ₀ : ℝ) (δ : ℝ → ℝ),
       |δ₀| < ε → ContinuousOn δ I → (∀ t ∈ I, |δ t| < ε) →
@@ -199,7 +238,10 @@ $|\delta(t)| < \varepsilon$ there, every solution $y$ of (11.1) and every soluti
 on $[t_0, \infty)$ satisfy
 $$|y(t) - z(t)| \to 0 \qquad \text{as } t \to +\infty.$$
 
-The definition is `ODE.IsAsymptoticallyStable` at $E = \mathbb{R}$. -/
+The definition is `ODE.IsAsymptoticallyStable` at $E = \mathbb{R}$.
+
+**Reading.** Uses forward bounded intervals and makes a positive perturbation radius explicit
+for the right-half-line limit. -/
 def definition_11_1_asymptotic (f : ℝ → ℝ → ℝ) (t₀ y₀ : ℝ) : Prop :=
   ODE.IsAsymptoticallyStable f t₀ y₀
 
@@ -208,7 +250,10 @@ problem is asymptotically stable if and only if it is stable in the sense of Lia
 $[t_0, t_0 + T]$ for every $T > 0$, and there is $\varepsilon > 0$ such that for all $\delta_0$
 with $|\delta_0| < \varepsilon$, all $\delta$ continuous on $[t_0, \infty)$ with
 $|\delta(t)| < \varepsilon$ there, every solution $y$ of (11.1) and every solution $z$ of (11.4)
-on $[t_0, \infty)$, $|y(t) - z(t)| \to 0$ as $t \to +\infty$. -/
+on $[t_0, \infty)$, $|y(t) - z(t)| \to 0$ as $t \to +\infty$.
+
+**Reading.** Uses forward bounded intervals and makes a positive perturbation radius explicit
+for the right-half-line limit. -/
 theorem definition_11_1_asymptotic_iff :
     definition_11_1_asymptotic f t₀ y₀ ↔
       (∀ T : ℝ, 0 < T → definition_11_1 f t₀ y₀ (Icc t₀ (t₀ + T))) ∧
@@ -226,7 +271,10 @@ Let $y$ solve (11.1) and $z$ solve the perturbed problem (11.4) on $[t_0, t_0 + 
 every $t \in [t_0, t_0 + T]$
 $$|w(t)| = |z(t) - y(t)| \le (1 + |t - t_0|) \, \varepsilon \, e^{L|t - t_0|}.$$
 
-The proof specializes `ODE.norm_sub_le_of_lipschitz`. -/
+The proof specializes `ODE.norm_sub_le_of_lipschitz`.
+
+**Reading.** Uses the forward closed interval and the within-interval Cauchy problem. The
+numerical estimate also allows weak perturbation inequalities. -/
 theorem isLiapunovStable_of_lipschitz_estimate {L : ℝ} (hL : 0 ≤ L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     {δ₀ ε : ℝ} {δ : ℝ → ℝ} (hδ₀ : |δ₀| ≤ ε) (hδ : ∀ t ∈ Icc t₀ (t₀ + T), |δ t| ≤ ε)
@@ -249,7 +297,10 @@ to $y$ on $[t_0, t_0 + T]$ with the constant $L$. Then for every $y_0$ the Cauch
 stable in the sense of Liapunov on $[t_0, t_0 + T]$.
 
 The proof gives the constant $C = (1 + K_I) e^{L K_I}$ with
-$K_I = \max_{t \in I} |t - t_0| = T$. It specializes `ODE.isLiapunovStable_of_lipschitz`. -/
+$K_I = \max_{t \in I} |t - t_0| = T$. It specializes `ODE.isLiapunovStable_of_lipschitz`.
+
+**Reading.** Uses the forward closed interval and the within-interval Cauchy problem. The
+numerical estimate also allows weak perturbation inequalities. -/
 theorem isLiapunovStable_of_lipschitz {L : ℝ} (hT : 0 ≤ T) (hL : 0 ≤ L)
     (hlip : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) (y₀ : ℝ) :
     definition_11_1 f t₀ y₀ (Icc t₀ (t₀ + T)) :=
@@ -304,7 +355,10 @@ $\varphi(t) \le g(t) + \int_{t_0}^{t} p \varphi$ for all $t \in [t_0, t_0 + T]$,
 $\varphi(t) \le g(t) \exp\bigl(\int_{t_0}^{t} p\bigr)$ for all $t \in [t_0, t_0 + T]$.
 
 The continuity of $g$ is not used. The proof specializes
-`Gronwall.le_mul_exp_integral_of_continuousOn`. -/
+`Gronwall.le_mul_exp_integral_of_continuousOn`.
+
+**Specialization.** Assumes continuity and nonnegativity on the closed interval. The principal
+form `lemma_11_1` allows the integrable weight of the source. -/
 theorem lemma_11_1_continuous {p g φ : ℝ → ℝ} (hp : ContinuousOn p (Icc t₀ (t₀ + T)))
     (hp0 : ∀ t ∈ Icc t₀ (t₀ + T), 0 ≤ p t) (_hg : ContinuousOn g (Icc t₀ (t₀ + T)))
     (hgm : MonotoneOn g (Icc t₀ (t₀ + T))) (hφ : ContinuousOn φ (Icc t₀ (t₀ + T)))

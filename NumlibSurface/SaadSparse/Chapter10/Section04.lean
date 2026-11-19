@@ -48,6 +48,11 @@ ILUT, with this modification of the drop strategy, never meets a zero pivot. The
   describe one elimination step. Algorithm 10.6 is not written down: it would add a selection rule
   based on a heap, and Theorem 10.8 uses none of it.
 
+## Deviations from the source
+
+* **Reading.** The ILUT row invariants use an abstract recurrence with explicit pivot, sign and drop
+  hypotheses. See `SaadSparse.Chapter10.theorem_10_8`.
+
 ## Not formalized
 
 * **Algorithm 10.6.** Its data structures and selection rule have no mathematical content.
@@ -146,7 +151,14 @@ is the modification of Section 10.4.2: some position $j_0$ to the right of the d
 the computed value is smallest, that is, of largest modulus, is never dropped. This hypothesis
 is available only away from the last row, where there is no position to the right of the
 diagonal, and (10.27) is vacuous there for the same reason; that is why the last row gets only
-$u^k_n \ge 0$. -/
+$u^k_n \ge 0$.
+
+**Reading.** The finite ILUT inner loop is represented by an abstract row recurrence with explicit
+pivot cancellation, sign and row-sum hypotheses at every positive index. The retained most-negative
+entry can be chosen anew at each step, while the printed drop modification protects a fixed position
+from the original row. The statement proves the row invariants and does not construct the
+factorization or the drop rule.
+-/
 theorem theorem_10_8 {A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hA : Matrix.IsMHat.IsDiagDominant A) (i : Fin (n + 1))
     (u w : ℕ → Fin (n + 1) → ℝ) (l : ℕ → ℝ) (r : ℕ → Fin (n + 1) → ℝ) (p : ℕ → Fin (n + 1))

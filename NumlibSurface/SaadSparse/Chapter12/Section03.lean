@@ -62,7 +62,8 @@ Section 6.11.
 * Equation (12.7), `SaadSparse.Chapter12.equation_12_6`: $\rho_{k+1} = (2 \sigma_1 - \rho_k)^{-1}$.
 * Equation (12.8), `SaadSparse.Chapter12.equation_12_8`: the three-term recurrence of the residual
   polynomials.
-* Equation (12.9), `SaadSparse.Chapter12.equation_12_9`: the direction recurrence of Algorithm 12.1.
+* Algorithm 12.1, `SaadSparse.Chapter12.equation_12_9`: the direction recurrence derived from
+  (12.9).
 * Section 12.3.2, `SaadSparse.Chapter12.chebyshev_residual_eq`: $r_k = T_k(A) r_0$.
 * Section 12.3.2, `SaadSparse.Chapter12.norm_chebyshev_residual_le`: $\|r_k\| \le 2
   ((\sqrt{\kappa} - 1)/(\sqrt{\kappa} + 1))^k \|r_0\|$.
@@ -104,6 +105,36 @@ Section 6.11.
   `SaadSparse.Chapter12.equation_12_7` states the recurrence of $\sigma_k$, a display before (12.6)
   that has no number.
 
+## Deviations from the source
+
+* **(12.3)** (scope). `SaadSparse.Chapter12.equation_12_3` states the finite geometric
+  identity in the display after the approximate-inverse formula. It requires $\omega\ne0$ and
+  uses the total inverse of $D$. `SaadSparse.Chapter12.neumann_isSymmetric_withEnergy` uses any
+  real polynomial and any positive definite $D$.
+* **(12.4) and (12.5)** (scope). `SaadSparse.Chapter12.equation_12_4` gives a lower bound for
+  the interval objective of (12.5) on a positive nondegenerate interval. Printed (12.4) uses the
+  discrete spectrum. `SaadSparse.Chapter12.equation_12_5` bounds the operator error by the
+  interval objective.
+* **(12.6), (12.7), (12.9) and Algorithm 12.1** (source location and reading).
+  `SaadSparse.Chapter12.equation_12_6` gives the recurrence printed as (12.7), and
+  `SaadSparse.Chapter12.equation_12_7` gives the unnumbered $\sigma_k$ recurrence.
+  `SaadSparse.Chapter12.equation_12_9` gives the direction recurrence in Algorithm 12.1. The
+  printed (12.9) is the preceding scalar difference quotient.
+  `SaadSparse.Chapter12.chebyshevIterate` takes a fixed step count and starts with the
+  algorithm's $\rho_0=1/\sigma_1$.
+* **§12.3.2** (extensions). `SaadSparse.Chapter12.norm_chebyshev_residual_le` makes the
+  residual rate explicit using the Chebyshev interval bound, and
+  `SaadSparse.Chapter12.norm_residual_minRes_le_chebyshev` compares it to Krylov minimal
+  residuals.
+* **(12.10)–(12.14)** (generalizations). `SaadSparse.Chapter12.bilinFormOfWeight` admits
+  arbitrary integrable weights. The kernel optimality and orthogonality theorems use an abstract
+  bilinear form with explicit hypotheses. `SaadSparse.Chapter12.equation_12_13` gives the
+  polynomial identity $R_k=1-Xs_{k-1}$ and implements the quotient with `Polynomial.divX`, so
+  evaluation at zero is defined.
+* **(12.16)** (scope). `SaadSparse.Chapter12.equation_12_16` is the finite coefficient formula
+  for all real parameters. The assertion that it minimizes the weighted norm for the Jacobi
+  weight remains outside the statement.
+
 ## Not formalized
 
 * **Section 12.3.4** (the nonsymmetric case). Its results are Lemma 6.26 and Theorem 6.27, and the
@@ -138,7 +169,11 @@ iteration matrix of the underlying relaxation: it is $s + 1$ steps of that relax
 preconditioner.
 
 The sum $I + N + \dots + N^s$ is `Preconditioner.neumannPolyOf N s`. The inverse $D^{-1}$ is
-Mathlib's matrix inverse, and the identity holds even when $D$ is singular. -/
+Mathlib's matrix inverse, and the identity holds even when $D$ is singular.
+
+**Scope.** The theorem is the finite product identity in the display after (12.3). That
+equation introduces an approximate inverse, while the theorem needs only $\omega\ne0$ and uses
+the total matrix inverse for $D$. -/
 theorem equation_12_3 {ω : ℝ} (hω : ω ≠ 0) (A D : Matrix (Fin n) (Fin n) ℝ) (s : ℕ) :
     Preconditioner.neumannPolyOf (1 - ω • (D⁻¹ * A)) s * D⁻¹ * A =
       ω⁻¹ • (1 - (1 - ω • (D⁻¹ * A)) ^ (s + 1)) := by
@@ -153,7 +188,11 @@ $D$-inner product $(x, y)_D = (Dx, y)$, although it is not symmetric in general.
 conjugate gradient method can still be used with it.
 
 The book leaves the verification as Exercise 12.1. The $D$-inner product is that of
-`WithEnergy`, and the statement conjugates the operator by `WithEnergy.equiv`. -/
+`WithEnergy`, and the statement conjugates the operator by `WithEnergy.equiv`.
+
+**Reading.** Any real polynomial and any SPD D, rather than only the Neumann polynomial for a
+diagonal or block diagonal D.
+-/
 theorem neumann_isSymmetric_withEnergy {A D : Matrix (Fin n) (Fin n) ℝ} (hA : A.PosDef)
     (hD : D.PosDef) (s : Polynomial ℝ) :
     ((WithEnergy.equiv (Matrix.toEuclideanLin D)
@@ -178,7 +217,10 @@ $A \in \mathbb{R}^{n \times n}$ be symmetric with $\alpha \|x\|^2 \le (Ax, x) \l
 for all $x$, so that $[\alpha, \beta]$ contains the spectrum of $A$, and let $s$ be a real
 polynomial. Then for every $x \in \mathbb{R}^n$
 $$\|x - s(A) A x\| \le \max_{\lambda \in [\alpha, \beta]} |1 - \lambda s(\lambda)| \, \|x\|.$$
-So the design problem of a polynomial preconditioner is to make this maximum small. -/
+So the design problem of a polynomial preconditioner is to make this maximum small.
+
+**Scope.** Equation (12.5) gives the minimization objective. The theorem bounds the pointwise
+operator error by that objective for every polynomial under the symmetric interval hypothesis. -/
 theorem equation_12_5 {A : Matrix (Fin n) (Fin n) ℝ} {α β : ℝ}
     (hA : (Matrix.toEuclideanLin A).IsSymmetricBoundedBy α β) (s : Polynomial ℝ)
     (x : EuclideanSpace ℝ (Fin n)) :
@@ -195,7 +237,11 @@ $$\frac{1}{C_{k+1}\bigl((\beta + \alpha)/(\beta - \alpha)\bigr)} \le \max_{\lamb
 
 The residual polynomials $1 - \lambda s(\lambda)$ are exactly the polynomials of degree at most
 $k + 1$ with the value $1$ at $0$. The shifted Chebyshev polynomial of Theorem 6.25 attains the
-bound; the formal statement is the lower bound. -/
+bound; the formal statement is the lower bound.
+
+**Scope.** The printed (12.4) uses the discrete spectrum. This theorem concerns the interval
+replacement (12.5) and gives its lower bound. It does not state attainment by a particular
+iteration polynomial. -/
 theorem equation_12_4 {α β : ℝ} (hα : 0 < α) (hαβ : α < β) {k : ℕ} {s : Polynomial ℝ}
     (hs : s.degree ≤ (k : WithBot ℕ)) :
     1 / eval ((β + α) / (β - α)) (Chebyshev.T ℝ ((k + 1 : ℕ) : ℤ)) ≤
@@ -251,7 +297,11 @@ the method.
 
 The definition is `Preconditioner.Chebyshev.iterate` with $\theta = (\beta + \alpha)/2$ and
 $\delta = (\beta - \alpha)/2$. It is defined for all $\alpha, \beta$; the results below assume
-$0 < \alpha < \beta$ where they need it. -/
+$0 < \alpha < \beta$ where they need it.
+
+**Reading.** The state uses the startup $\rho_0=1/\sigma_1$ of Algorithm 12.1 and a prescribed
+number of steps. The discussion before the algorithm also gives $\rho_0=1/(2\sigma_1)$ when
+starting the polynomial recurrence with $T_{-1}=\rho_{-1}=0$. -/
 noncomputable abbrev chebyshevIterate (A : Matrix (Fin n) (Fin n) ℝ)
     (b x₀ : EuclideanSpace ℝ (Fin n)) (α β : ℝ) (k : ℕ) :
     Preconditioner.Chebyshev.State (EuclideanSpace ℝ (Fin n)) :=
@@ -264,7 +314,10 @@ $$\sigma_{k+2} = 2 \frac{\theta}{\delta} \sigma_{k+1} - \sigma_k.$$
 
 The display has no number. The equation (12.7) is the recurrence of $\rho_k$,
 `SaadSparse.Chapter12.equation_12_6`. The values $\sigma_k$ are
-`Preconditioner.Chebyshev.sigma`. -/
+`Preconditioner.Chebyshev.sigma`.
+
+**Reading.** Source (12.7) is the rho recurrence, not this sigma formula.
+-/
 theorem equation_12_7 (θ δ : ℝ) (k : ℕ) :
     Preconditioner.Chebyshev.sigma θ δ (k + 2) =
       2 * (θ / δ) * Preconditioner.Chebyshev.sigma θ δ (k + 1) -
@@ -277,7 +330,11 @@ $$\rho_{k+1} = (2 \sigma_1 - \rho_k)^{-1}, \qquad \sigma_1 = \theta/\delta.$$
 This recurrence removes the Chebyshev values from the implementation.
 
 The equation (12.6) is the definition of $\rho_k$, `Preconditioner.Chebyshev.rho`; the
-recurrence of the values $\sigma_k$ is `SaadSparse.Chapter12.equation_12_7`. -/
+recurrence of the values $\sigma_k$ is `SaadSparse.Chapter12.equation_12_7`.
+
+**Reading.** Uses rho recurrence with explicit positive interval hypotheses, while source (12.6) is
+the ratio definition.
+-/
 theorem equation_12_6 {θ δ : ℝ} (hδ : 0 < δ) (hθδ : δ < θ) (k : ℕ) :
     Preconditioner.Chebyshev.rho θ δ (k + 1) =
       (2 * (θ / δ) - Preconditioner.Chebyshev.rho θ δ k)⁻¹ :=
@@ -306,6 +363,11 @@ $A \in \mathbb{R}^{n \times n}$, $b, x_0 \in \mathbb{R}^n$, $\alpha, \beta \in \
 $k \in \mathbb{N}$,
 $$d_{k+1} = \rho_k \rho_{k+1} d_k + \frac{2 \rho_{k+1}}{\delta} r_{k+1}, \qquad \delta =
   (\beta - \alpha)/2.$$
+
+**Source location.** Printed (12.9) is the scalar difference-quotient identity for the residual
+polynomials. This theorem states the vector direction update derived from it in Algorithm 12.1.
+
+**Reading.** States recurrence for d, not the printed scalar difference quotient.
 -/
 theorem equation_12_9 (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
     (α β : ℝ) (k : ℕ) :
@@ -322,7 +384,11 @@ $A \in \mathbb{R}^{n \times n}$, let $b, x_0 \in \mathbb{R}^n$, let $0 < \alpha 
 $k \in \mathbb{N}$. Then the residual of Chebyshev acceleration is
 $$r_k = T_k(A) r_0, \qquad r_0 = b - A x_0,$$
 where $T_k$ is the shifted Chebyshev polynomial `Polynomial.Chebyshev.shifted k α β 0` of the
-interval $[\alpha, \beta]$. -/
+interval $[\alpha, \beta]$.
+
+**Reading.** Verifies actual initialized iteration under positive endpoints for arbitrary real
+matrix, no symmetry assumption needed.
+-/
 theorem chebyshev_residual_eq {A : Matrix (Fin n) (Fin n) ℝ} {b x₀ : EuclideanSpace ℝ (Fin n)}
     {α β : ℝ} (hα : 0 < α) (hαβ : α < β) (k : ℕ) :
     (chebyshevIterate A b x₀ α β k).r =
@@ -337,7 +403,10 @@ for all $x$, where $0 < \alpha < \beta$, and let $b, x_0 \in \mathbb{R}^n$. Then
 $k \in \mathbb{N}$
 $$\|r_k\| \le 2 \left(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\right)^k \|b - A x_0\|, \qquad
   \kappa = \beta/\alpha,$$
-where $\kappa$ is the condition number of the enclosing interval. -/
+where $\kappa$ is the condition number of the enclosing interval.
+
+**Reading.** Supplies explicit residual rate from positive real symmetric spectral bounds.
+-/
 theorem norm_chebyshev_residual_le {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ : EuclideanSpace ℝ (Fin n)} {α β : ℝ}
     (hA : (Matrix.toEuclideanLin A).IsSymmetricBoundedBy α β) (hα : 0 < α) (hαβ : α < β) (k : ℕ) :
@@ -354,7 +423,11 @@ where $r_k$ is the residual of $k$ steps of Chebyshev acceleration for $[\alpha,
 
 The Chebyshev residual polynomial is one competitor in the minimization. This comparison makes
 CG or GMRES preferable wherever inner products are affordable, and Chebyshev acceleration
-preferable where they are not. A minimal-residual iterate is `Krylov.IsMinResidualIterate`. -/
+preferable where they are not. A minimal-residual iterate is `Krylov.IsMinResidualIterate`.
+
+**Reading.** Combines iteration polynomial with Krylov minimal-residual optimality as an additional
+consequence.
+-/
 theorem norm_residual_minRes_le_chebyshev {A : Matrix (Fin n) (Fin n) ℝ}
     {b x₀ y : EuclideanSpace ℝ (Fin n)} {α β : ℝ} (hα : 0 < α) (hαβ : α < β) {k : ℕ}
     (hy : Krylov.IsMinResidualIterate (Matrix.toEuclideanLin A) b x₀ k y) :
@@ -377,7 +450,10 @@ $$\langle p, q \rangle_w = \int_\alpha^\beta p(\lambda) q(\lambda) w(\lambda) \,
 The form is a `LinearMap.BilinForm`, the shape of the statements of
 `Numlib.RingTheory.Polynomial.KernelPolynomial`. Bilinearity needs only that $w$ is integrable
 over the interval. The nonnegativity of $w$ is needed only where the form must be positive
-semidefinite (`SaadSparse.Chapter12.bilinFormOfWeight_le`). -/
+semidefinite (`SaadSparse.Chapter12.bilinFormOfWeight_le`).
+
+**Generalization.** The integral defines a symmetric bilinear form for any interval-integrable
+weight. The source uses a nonnegative weight on the polynomial space of degree at most $k$. -/
 noncomputable def bilinFormOfWeight (α β : ℝ) (w : ℝ → ℝ)
     (hw : IntervalIntegrable w volume α β) : LinearMap.BilinForm ℝ (Polynomial ℝ) :=
   LinearMap.mk₂ ℝ (fun p q => ∫ t in α..β, p.eval t * q.eval t * w t)
@@ -417,7 +493,10 @@ theorem bilinFormOfWeight_apply (hw : IntervalIntegrable w volume α β) (p q : 
     bilinFormOfWeight α β w hw p q = ∫ t in α..β, p.eval t * q.eval t * w t := rfl
 
 /-- **Equation (12.10)** of [saad2003iterative]. The weighted form $\langle p, q \rangle_w$ is
-symmetric. -/
+symmetric.
+
+**Generalization.** Symmetry of integral form extends to signed integrable weights.
+-/
 theorem bilinFormOfWeight_isSymm (hw : IntervalIntegrable w volume α β) :
     (bilinFormOfWeight α β w hw).IsSymm := by
   refine ⟨fun p q => ?_⟩
@@ -431,7 +510,11 @@ $[\alpha, \beta]$. Then for every real polynomial $p$
 $$\langle p, p \rangle_w \le \Bigl(\max_{\lambda \in [\alpha, \beta]} |p(\lambda)|\Bigr)^2
   \langle 1, 1 \rangle_w.$$
 This is the sense in which the form is supported on $[\alpha, \beta]$ that the geometric bound
-of Section 12.3.3 needs. -/
+of Section 12.3.3 needs.
+
+**Reading.** Abstract sup-norm comparison in squared form for all polynomials and explicit
+nonnegative integrable weight.
+-/
 theorem bilinFormOfWeight_le (hw : IntervalIntegrable w volume α β) (hαβ : α ≤ β)
     (hw0 : ∀ t ∈ Set.Icc α β, 0 ≤ w t) (p : Polynomial ℝ) :
     bilinFormOfWeight α β w hw p p ≤
@@ -468,7 +551,10 @@ $$B(R, R) \le B(p, p) \quad \text{for every admissible } p.$$
 
 An admissible polynomial is one of the form $R(\lambda) = 1 - \lambda s(\lambda)$ with
 $\deg s \le k - 1$, and the book's $s_{k-1}$ is $(1 - R)/\lambda$. For the weighted form of
-(12.10), $B(R, R) = \|R\|_w^2$. -/
+(12.10), $B(R, R) = \|R\|_w^2$.
+
+**Reading.** Treats arbitrary bilinear minimization and normalized residual degree at most k.
+-/
 def IsLeastSquaresResidual (B : LinearMap.BilinForm ℝ (Polynomial ℝ)) (k : ℕ)
     (R : Polynomial ℝ) : Prop :=
   R.degree ≤ (k : WithBot ℕ) ∧ R.eval 0 = 1 ∧
@@ -483,7 +569,11 @@ $$R_k(\lambda) = \frac{\sum_{i \le k} q_i(0) q_i(\lambda)}{\sum_{i \le k} q_i(0)
 is a least-squares residual polynomial of degree $k$ for $B$.
 
 The hypothesis on the sum says that some $q_i$ with $i \le k$ does not vanish at $0$. The
-polynomial $R_k$ is `Polynomial.kernelPolynomial q 0 k`. -/
+polynomial $R_k$ is `Polynomial.kernelPolynomial q 0 k`.
+
+**Generalization.** Extends kernel optimality to abstract bilinear form with degree-indexed
+orthonormal polynomials and explicit nonzero kernel denominator.
+-/
 theorem equation_12_12 {B : LinearMap.BilinForm ℝ (Polynomial ℝ)} {q : ℕ → Polynomial ℝ}
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
     {k : ℕ} (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0) :
@@ -499,7 +589,11 @@ the kernel polynomial $R_k$ of (12.12) is
 $$R_k(\lambda) = 1 - \lambda s_{k-1}(\lambda), \qquad s_{k-1} = \frac{\sum_{i \le k} q_i(0)
   t_i}{\sum_{i \le k} q_i(0)^2}.$$
 
-The polynomial $t_i$ is `-(q i).divX`. -/
+The polynomial $t_i$ is `-(q i).divX`.
+
+**Reading.** States polynomial identity for R=1−λs and interprets the quotient via divX even at
+zero.
+-/
 theorem equation_12_13 (q : ℕ → Polynomial ℝ) (k : ℕ)
     (hS : ∑ i ∈ Finset.range (k + 1), (q i).eval 0 ^ 2 ≠ 0) :
     kernelPolynomial q 0 k =
@@ -535,7 +629,11 @@ $$B(\lambda Q, R_k) = 0.$$
 
 These are the normal equations $\langle 1 - \lambda s_{k-1}(\lambda), \lambda Q(\lambda)
 \rangle_w = 0$: the admissible directions are exactly those that keep both the degree bound and
-the value $1$ at the origin. This is the second way of the book to the least-squares polynomial. -/
+the value $1$ at the origin. This is the second way of the book to the least-squares polynomial.
+
+**Reading.** Tests against all lower-degree polynomials using abstract bilinear form and explicit
+hypotheses.
+-/
 theorem leastSquaresResidual_orthogonal {B : LinearMap.BilinForm ℝ (Polynomial ℝ)}
     {q : ℕ → Polynomial ℝ} (hsymm : B.IsSymm)
     (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0) (hdeg : ∀ i, (q i).degree = i)
@@ -556,7 +654,11 @@ with $\theta = (\alpha + \beta)/2$ is an admissible competitor.
 The hypothesis on $B$ is what `SaadSparse.Chapter12.bilinFormOfWeight_le` gives for a
 nonnegative weight on $[\alpha, \beta]$. The case $\alpha = 0$, where the decay is only $1/k$
 and the constant is a ratio of Gamma functions of the Jacobi weights, is not stated: Mathlib has
-no Jacobi polynomials. -/
+no Jacobi polynomials.
+
+**Reading.** Geometric rate in squared form for an abstract bilinear form satisfying a sup-norm
+comparison.
+-/
 theorem norm_leastSquaresResidual_le {B : LinearMap.BilinForm ℝ (Polynomial ℝ)}
     {q : ℕ → Polynomial ℝ} (horth : ∀ i j, B (q i) (q j) = if i = j then 1 else 0)
     (hdeg : ∀ i, (q i).degree = i) {α β : ℝ} (hα : 0 < α) (hαβ : α < β)
@@ -573,7 +675,11 @@ $j, k \in \mathbb{N}$,
 $$\kappa_j^{(k)} = \binom{k}{j} \prod_{i < j} \frac{k - i + \nu}{i + 1 + \mu}.$$
 
 The book uses them for the Jacobi weight (12.15) with exponents $\mu > 0$ and $\nu \ge -1/2$;
-the definition accepts all real $\mu$ and $\nu$. -/
+the definition accepts all real $\mu$ and $\nu$.
+
+**Generalization.** Coefficient formula extends to all real parameters, including where a
+denominator vanishes.
+-/
 noncomputable def kappa_12_16 (mu nu : ℝ) (k j : ℕ) : ℝ :=
   (k.choose j : ℝ) * ∏ i ∈ Finset.range j, ((k : ℝ) - i + nu) / ((i : ℝ) + 1 + mu)
 
@@ -587,7 +693,11 @@ easily from the explicit expression of the Jacobi polynomials and the fact that 
 orthogonal with respect to the weight $\lambda w(\lambda)$". This derivation needs Jacobi
 polynomials and their orthogonality, which Mathlib does not have, so $R_k$ is not shown to
 satisfy `SaadSparse.Chapter12.IsLeastSquaresResidual`. What is stated is what the book computes
-from the formula, Example 12.1. -/
+from the formula, Example 12.1.
+
+**Scope.** The finite expression is defined for all real parameters. The source identifies it
+with the Jacobi least-squares residual only in its weight setting. This declaration gives the
+expression and leaves that characterization unproved. -/
 noncomputable def equation_12_16 (mu nu : ℝ) (k : ℕ) (l : ℝ) : ℝ :=
   ∑ j ∈ Finset.range (k + 1), kappa_12_16 mu nu k j * (1 - l) ^ (k - j) * (-l) ^ j
 

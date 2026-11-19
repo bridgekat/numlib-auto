@@ -124,8 +124,21 @@ The proofs specialize `Numlib.Analysis.Convex.Saddle.Minimax`,
 
 ## Deviations from the source
 
+* **Theorem 37.1**, lower conjugate (generalization). Its formula holds on $\Omega(F)$
+  without closedness of $F$.
+* **Corollary 37.1.1**, double conjugacy (reading). Lean gives the two conjugates of the
+  upper conjugate. The source allows any closed representative of that conjugate class.
+* **Corollary 37.1.2**, structural clauses (reading). The separate structural proposition
+  is stated for the upper conjugate. The two conjugates share the effective domain.
 * **Theorem 37.4** (generalization). The book assumes that $K$ is concave-convex.
-  `Rockafellar.theorem_37_4` has no hypothesis on $K$.
+  `Rockafellar.theorem_37_4` has no hypothesis on $K$. Properness alone gives
+  $\operatorname{dom}\partial K \subseteq \operatorname{dom} K$.
+* **Corollary 37.4.1** (reading). Lean assumes the first function is closed. The source
+  allows any two equivalent saddle-functions.
+* **Theorem 37.5 and Corollary 37.5.3** (reading). Lean chooses the upper conjugate
+  as representative. The source allows any conjugate representative. Except for the
+  relative-interior existence criterion, the corresponding declarations also allow
+  improper closed inputs.
 * **Corollaries 37.3.2 and 37.6.2** (reading). The hypotheses of concavity, convexity and continuity
   are read slice by slice: $K(\cdot, v)$ is concave and continuous on $C$ for each $v \in D$, and
   $K(u, \cdot)$ is convex and continuous on $D$ for each $u \in C$. Separate continuity is weaker
@@ -138,6 +151,9 @@ The proofs specialize `Numlib.Analysis.Convex.Saddle.Minimax`,
   `Rockafellar.theorem_37_2_dom₂`, and no later result depends on the formula for $C^*$.
 * **Corollary 37.4.1** for a function $K$ that is not closed. The book does not assume closedness;
   the statements here assume that $K$ is closed. See `Rockafellar.corollary_37_4_1_subdiff`.
+* **Corollary 37.5.3**, an explicit product-set equality for the saddle points. The
+  equality with the conjugate subdifferential is formalized, and `Rockafellar.subdiff_eq_prod`
+  gives its product form.
 -/
 
 namespace Rockafellar
@@ -250,7 +266,10 @@ where $F_*^* = (F^*)_*$ is the bifunction of the conjugate class.
 
 The statement does not need $F$ to be closed. $F_*^*$ is `ConvexAnalysis.inverseBifun
 (Rockafellar.dualProgram F)`, and the bracket $\langle G u^*, x \rangle$ is
-`Rockafellar.bifunBracket`. -/
+`Rockafellar.bifunBracket`.
+
+**Reading.** The lower formula holds without requiring the bifunction to be closed.
+-/
 theorem theorem_37_1_lower (hF : ConvexBifun F) (hK : K ∈ Ω F) :
     lowerConj K = bifunBracket (inverseBifun (dualProgram F)) := by
   have h := lowerConjSaddle_eq_bracket_lowerAdjointBifun (pairing m) (pairing n) hF
@@ -363,7 +382,11 @@ theorem lowerConj_mem_Ω (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : 
 
 /-- **Corollary 37.1.1** of [rockafellar1970convex], concave-convexity of the lower conjugate. Let
 $F$ be a convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega(F)$. Then
-$\underline{K}^*$ is concave-convex. -/
+$\underline{K}^*$ is concave-convex.
+
+**Reading.** The lower conjugate is concave-convex in the indicated interval even if F is not
+closed.
+-/
 theorem corollary_37_1_1_lower_concaveConvex (hF : ConvexBifun F) (hK : K ∈ Ω F) :
     ConcaveConvexFn (lowerConj K) :=
   concaveConvexFn_lowerConjSaddle (pairing m) (pairing n) hF (mem_bifunSaddleClass_of_mem_Ω hK)
@@ -426,7 +449,10 @@ theorem corollary_37_1_1_closed_upper (hF : ConvexBifun F) (hcl : ClosedConvexBi
 
 /-- **Corollary 37.1.1** of [rockafellar1970convex], the lower conjugate depends only on the class.
 Let $F$ be a convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K, L \in \Omega(F)$.
-Then $\underline{K}^* = \underline{L}^*$. -/
+Then $\underline{K}^* = \underline{L}^*$.
+
+**Reading.** The lower conjugate depends only on the same interval without closedness of F.
+-/
 theorem corollary_37_1_1_lower_class (hF : ConvexBifun F) (hK : K ∈ Ω F) (hL : L ∈ Ω F) :
     lowerConj K = lowerConj L :=
   (theorem_37_1_lower hF hK).trans (theorem_37_1_lower hF hL).symm
@@ -469,7 +495,10 @@ Then the lower conjugate of $\overline{K}^*$ is equivalent to $K$. So conjugacy 
 to equivalence.
 
 The lower conjugate of $\overline{K}^*$ is $\langle F u, x^* \rangle$, the lower end of
-$\Omega(F)$. -/
+$\Omega(F)$.
+
+**Reading.** Chooses the upper conjugate as the representative to conjugate back.
+-/
 theorem corollary_37_1_1_biconj_lower (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ Ω F) :
     SaddleEquiv (lowerConj (upperConj K)) K := by
@@ -481,7 +510,10 @@ $F$ be a closed convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \
 Then the upper conjugate of $\overline{K}^*$ is equivalent to $K$.
 
 The upper conjugate of $\overline{K}^*$ is $\langle u, F^* x^* \rangle$, the upper end of
-$\Omega(F)$. -/
+$\Omega(F)$.
+
+**Reading.** Chooses the upper conjugate as the representative to conjugate back.
+-/
 theorem corollary_37_1_1_biconj_upper (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ Ω F) :
     SaddleEquiv (upperConj (upperConj K)) K := by
@@ -535,7 +567,10 @@ $-\infty$ on $D^*$. The same holds for the concave slices $\overline{K}^*(\cdot,
 roles of the two arguments exchanged and with $+\infty$ in place of $-\infty$.
 
 The structure is `ConvexAnalysis.SaddleStructure`: `ConvexAnalysis.ConvexSliceStructure` for
-$\overline{K}^*$ and for the swapped function `ConvexAnalysis.saddleSwap`. -/
+$\overline{K}^*$ and for the swapped function `ConvexAnalysis.saddleSwap`.
+
+**Reading.** Gives a named structural equality for the upper conjugate only.
+-/
 theorem corollary_37_1_2_structure (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (hp : ProperSaddleFn K) : SaddleStructure (upperConj K) :=
   (theorem_34_3 (corollary_37_1_1_upper_concaveConvex hF hcl hK)
@@ -860,7 +895,10 @@ theorem theorem_37_4 (K : Rn m × Rn n → EReal) (p q : Rn m × Rn n) :
 
 /-- **Theorem 37.4** of [rockafellar1970convex], convexity. For every $K : \mathbb{R}^m \times
 \mathbb{R}^n \to [-\infty, +\infty]$ and every $(u, v)$, the set $\partial K(u, v)$ is convex,
-because it is a product of two convex sets. -/
+because it is a product of two convex sets.
+
+**Reading.** The subdifferential is convex for arbitrary functions.
+-/
 theorem theorem_37_4_convex (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
     Convex ℝ (subdiff K p) := convex_subdiff
 
@@ -878,7 +916,10 @@ private theorem isClosed_subdiff₁ (K : Rn m × Rn n → EReal) (p : Rn m × Rn
 
 The proof for the factor $\partial_1 K(u, v)$ uses
 `Rockafellar.mem_subdiff₁_iff_neg_mem_subdifferential_neg` and
-`ConvexAnalysis.isClosed_subdifferential`. -/
+`ConvexAnalysis.isClosed_subdifferential`.
+
+**Reading.** The subdifferential is closed for arbitrary functions.
+-/
 theorem theorem_37_4_isClosed (K : Rn m × Rn n → EReal) (p : Rn m × Rn n) :
     IsClosed (subdiff K p) :=
   (isClosed_subdiff₁ K p).prod (isClosed_subdifferential _ _)
@@ -901,7 +942,10 @@ theorem theorem_37_4_relint (hK : ConcaveConvexFn K) (hp : ProperSaddleFn K)
 $$\operatorname{dom} \partial K \subseteq \operatorname{dom} K.$$
 
 Only properness is used: a subgradient pair makes the point a saddle-point of the tilted
-function, and Corollary 36.3.1 puts that point in $\operatorname{dom} K$. -/
+function, and Corollary 36.3.1 puts that point in $\operatorname{dom} K$.
+
+**Reading.** Subdifferentiable points lie in the domain under properness alone.
+-/
 theorem theorem_37_4_dom (hp : ProperSaddleFn K) : domSubdiff K ⊆ domSaddle K :=
   domSaddleSubdifferential_subset_domSaddle hp
 
@@ -922,7 +966,10 @@ The book does not assume that $K$ is closed, and the corollary without this hypo
 formalized. The book tilts both functions and applies Theorem 36.4, which needs
 $\operatorname{cl}_1(K - \ell) = \operatorname{cl}_1 K - \ell$ for the linear function $\ell$.
 The proof here uses the equivalence of conditions (a) and (d) of Theorem 37.5 instead, and this
-route needs the closedness of $K$. -/
+route needs the closedness of $K$.
+
+**Reading.** Requires one of the two equivalent saddle-functions to be closed.
+-/
 theorem corollary_37_4_1_subdiff (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
     (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) : subdiff K = subdiff L := by
   obtain ⟨F, hFconv, hFcl, hKmem⟩ := exists_mem_Ω_of_closed hK hcl
@@ -943,7 +990,10 @@ closed. Then $K(u, v) = L(u, v)$ for every $(u, v) \in \operatorname{dom} \parti
 
 A subgradient pair at $(u, v)$ says that the conjugate of the convex slice is attained, and this
 conjugate is the same for every member of the class. The book does not assume that $K$ is
-closed. -/
+closed.
+
+**Reading.** Requires closure of the first function.
+-/
 theorem corollary_37_4_1_eq (hK : ConcaveConvexFn K) (hcl : ClosedSaddleFn K)
     (hL : ConcaveConvexFn L) (h : SaddleEquiv K L) {p : Rn m × Rn n} (hp : p ∈ domSubdiff K) :
     K p = L p := by
@@ -982,7 +1032,10 @@ $$f(u, v^*) = \sup_v \{\langle v, v^* \rangle - K(u, v)\}$$
 for all $u \in \mathbb{R}^m$ and $v^* \in \mathbb{R}^n$. It is the function of Theorem 34.2.
 
 The function $f$ is a closed convex function on $\mathbb{R}^{m+n}$, here read as a function on
-$\mathbb{R}^m \times \mathbb{R}^n$. -/
+$\mathbb{R}^m \times \mathbb{R}^n$.
+
+**Reading.** The same reconstruction works with a closed improper bifunction.
+-/
 theorem theorem_37_5_f (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F) (u : Rn m)
     (w : Rn n) : graphFn F (u, w) = ⨆ v : Rn n, (((pairing n v w : ℝ) : EReal) - K (u, v)) := by
   have hA : convexConj (pairing n).flip (fun v => K (u, v)) = F u :=
@@ -999,7 +1052,10 @@ $$(Fu)(v^*) - \langle v, v^* \rangle = (F^* v)(u^*) - \langle u, u^* \rangle.$$
 
 Condition (d) is `ConvexAnalysis.IsBifunSubgradientPair` for $p = (u, v)$ and $q = (u^*, v^*)$.
 It mentions only $F$, so this statement also says that $\partial K$ depends only on the
-equivalence class of $K$. -/
+equivalence class of $K$.
+
+**Reading.** The equivalence with the bifunction pairing equality does not require properness.
+-/
 theorem theorem_37_5_a (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (p q : Rn m × Rn n) :
     q ∈ subdiff K p ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q := by
@@ -1012,7 +1068,10 @@ closed convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega
 $(u, v) \in \partial \overline{K}^*(u^*, v^*)$ if and only if condition (d) holds.
 
 With condition (a), this says that the subdifferentials of two conjugate classes are inverse to
-each other, as $\partial f^* = (\partial f)^{-1}$ for a closed convex function $f$. -/
+each other, as $\partial f^* = (\partial f)^{-1}$ for a closed convex function $f$.
+
+**Reading.** Chooses the upper conjugate and allows an improper closed bifunction.
+-/
 theorem theorem_37_5_b (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (p q : Rn m × Rn n) :
     p ∈ subdiff (upperConj K) q ↔ IsBifunSubgradientPair (pairing m) (pairing n) F p q := by
@@ -1030,7 +1089,10 @@ of the subgradient are exchanged, and the first component of the subgradient is 
 transfers closedness, the parametrization of Minty and maximal monotonicity to $\partial K$, and
 it is the source of the asymmetry in Corollaries 37.5.1 and 37.5.2. The subdifferential
 $\partial f$ is taken with respect to the product pairing `Rockafellar.pairingProd`. No
-hypothesis on $F$ is needed. -/
+hypothesis on $F$ is needed.
+
+**Reading.** The graph subgradient equivalence works for arbitrary bifunctions.
+-/
 theorem theorem_37_5_c (F : Bifun (Rn m) (Rn n)) (p q : Rn m × Rn n) :
     IsBifunSubgradientPair (pairing m) (pairing n) F p q ↔
       (-q.1, p.2) ∈ subdifferential (pairingProd m n) (graphFn F) (p.1, q.2) :=
@@ -1044,7 +1106,10 @@ $$(Fu)(v^*) - \langle v, v^* \rangle = (F^* v)(u^*) - \langle u, u^* \rangle.$$
 It is the case of equality in the chain $\langle v, v^* \rangle - (Fu)(v^*) \le \langle F u, v
 \rangle \le K(u, v) \le \langle u, F^* v \rangle \le \langle u, u^* \rangle - (F^* v)(u^*)$ for
 $K \in \Omega(F)$. It mentions no member of the class, and conditions (a), (b) and (c) are
-stated against it. -/
+stated against it.
+
+**Reading.** The bifunction subgradient-pair predicate unfolds for arbitrary bifunctions.
+-/
 theorem theorem_37_5_d (F : Bifun (Rn m) (Rn n)) (p q : Rn m × Rn n) :
     IsBifunSubgradientPair (pairing m) (pairing n) F p q ↔
       F p.1 q.2 - ((pairing n q.2 p.2 : ℝ) : EReal)
@@ -1157,7 +1222,10 @@ $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega(F)$. Then
 $(u, v) \in \partial \overline{K}^*(0, 0)$ if and only if $(u, v)$ is a saddle-point of $K$.
 
 The proof is condition (b) of Theorem 37.5 at the origin, combined with Theorem 37.4, where the
-tilt by the origin is $K$ itself. -/
+tilt by the origin is $K$ itself.
+
+**Reading.** Chooses the upper conjugate and permits improper closed inputs.
+-/
 theorem corollary_37_5_3 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F)
     (p : Rn m × Rn n) : p ∈ subdiff (upperConj K) 0 ↔ IsSaddlePoint K p := by
   have h := mem_saddleSubdifferential_upperConjSaddle_zero_iff (pairing m) (pairing n) hF hcl
@@ -1167,14 +1235,20 @@ theorem corollary_37_5_3 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : 
 /-- **Corollary 37.5.3** of [rockafellar1970convex], convexity. Let $F$ be a closed convex
 bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega(F)$. Then the set of
 saddle-points of $K$ is convex. It is a product set, since it is $\partial
-\overline{K}^*(0, 0) = \partial_1 \overline{K}^*(0, 0) \times \partial_2 \overline{K}^*(0, 0)$. -/
+\overline{K}^*(0, 0) = \partial_1 \overline{K}^*(0, 0) \times \partial_2 \overline{K}^*(0, 0)$.
+
+**Reading.** The convex saddle-point set conclusion permits improper closed inputs.
+-/
 theorem corollary_37_5_3_convex (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F) :
     Convex ℝ {p : Rn m × Rn n | IsSaddlePoint K p} :=
   convex_setOf_isSaddlePoint (pairing m) (pairing n) hF hcl (mem_bifunSaddleClass_of_mem_Ω hK)
 
 /-- **Corollary 37.5.3** of [rockafellar1970convex], closedness. Let $F$ be a closed convex
 bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega(F)$. Then the set of
-saddle-points of $K$ is closed. -/
+saddle-points of $K$ is closed.
+
+**Reading.** The closed saddle-point set conclusion permits improper closed inputs.
+-/
 theorem corollary_37_5_3_isClosed (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K ∈ Ω F) :
     IsClosed {p : Rn m × Rn n | IsSaddlePoint K p} := by
   have hset : {p : Rn m × Rn n | IsSaddlePoint K p} = subdiff (upperConj K) 0 := by
@@ -1185,7 +1259,10 @@ theorem corollary_37_5_3_isClosed (hF : ConvexBifun F) (hcl : ClosedConvexBifun 
 
 /-- **Corollary 37.5.3** of [rockafellar1970convex], the last sentence. Let $F$ be a closed convex
 bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega(F)$. Then $K$ has a
-saddle-point if and only if $(0, 0) \in \operatorname{dom} \partial \overline{K}^*$. -/
+saddle-point if and only if $(0, 0) \in \operatorname{dom} \partial \overline{K}^*$.
+
+**Reading.** Chooses the upper conjugate and allows improper closed inputs.
+-/
 theorem corollary_37_5_3_exists_iff (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hK : K ∈ Ω F) :
     (∃ p, IsSaddlePoint K p) ↔ (0 : Rn m × Rn n) ∈ domSubdiff (upperConj K) := by
@@ -1196,7 +1273,10 @@ theorem corollary_37_5_3_exists_iff (hF : ConvexBifun F) (hcl : ClosedConvexBifu
 /-- **Corollary 37.5.3** of [rockafellar1970convex], the sufficient condition. Let $F$ be a closed
 proper convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ and $K \in \Omega(F)$. If $(0, 0)
 \in \operatorname{ri}(\operatorname{dom} \overline{K}^*)$, then $K$ has a saddle-point. The
-proof applies Theorem 37.4 to $\overline{K}^*$. -/
+proof applies Theorem 37.4 to $\overline{K}^*$.
+
+**Reading.** Chooses the upper conjugate for the relative-interior domain test.
+-/
 theorem corollary_37_5_3_exists_of_relint (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (hK : K ∈ Ω F)
     (h0 : (0 : Rn m × Rn n) ∈ ri (domSaddle (upperConj K))) : ∃ p, IsSaddlePoint K p := by
@@ -1232,7 +1312,10 @@ theorem theorem_37_6 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hK : K �
 
 /-- **Theorem 37.6** of [rockafellar1970convex], the parenthetical remark. Every saddle-point of a
 proper function $K : \mathbb{R}^m \times \mathbb{R}^n \to [-\infty, +\infty]$ lies in
-$C \times D = \operatorname{dom} K$. -/
+$C \times D = \operatorname{dom} K$.
+
+**Reading.** Domain membership needs only properness and saddle-point membership.
+-/
 theorem theorem_37_6_mem_dom (hp : ProperSaddleFn K) {q : Rn m × Rn n} (hq : IsSaddlePoint K q) :
     q ∈ domSaddle K :=
   IsSaddlePoint.mem_domSaddle hp hq

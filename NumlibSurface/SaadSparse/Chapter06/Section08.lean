@@ -49,8 +49,7 @@ recurrence `CR.iterate` (`SaadSparse.Chapter06.cr_eq_CR`). The GMRES approximati
 
 ## Implementation notes
 
-* Indices start at $0$, as in the book. A quotient with denominator $0$ is $0$ in Lean, which
-  reproduces the breakdown behaviour of the book.
+* Indices start at $0$, as in the book. The recurrence totalizes division at zero denominators.
 * The step length uses the inner product $(x, y) = \sum_i x_i \bar y_i$ of the book, so its
   numerator $(r_j, A r_j)$ is Mathlib's `inner 𝕜 (op A r_j) r_j`. The backbone `CR.iterate` writes
   the numerator as $\langle r_j, A r_j \rangle$. The two agree because $A$ is Hermitian, the
@@ -58,6 +57,31 @@ recurrence `CR.iterate` (`SaadSparse.Chapter06.cr_eq_CR`). The GMRES approximati
 * The definitions are polymorphic in the scalar field $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. The
   numbered results are stated over $\mathbb{R}$, with $A$ symmetric positive definite or symmetric,
   the generality of the source.
+
+## Deviations from the source
+
+* **Reading.** The CR step and its components are defined on arbitrary matrices and totalize the
+  quotients. See `SaadSparse.Chapter06.crStepAlpha`, `SaadSparse.Chapter06.crStepR`,
+  `SaadSparse.Chapter06.crStepBeta`, `SaadSparse.Chapter06.crStep`, `SaadSparse.Chapter06.cr`,
+  `SaadSparse.Chapter06.crStepAlpha_def`, `SaadSparse.Chapter06.crStepR_def`,
+  `SaadSparse.Chapter06.crStepBeta_def`, `SaadSparse.Chapter06.crX`, `SaadSparse.Chapter06.crR`,
+  `SaadSparse.Chapter06.crP`, `SaadSparse.Chapter06.crAp`, `SaadSparse.Chapter06.crAlpha`,
+  `SaadSparse.Chapter06.crBeta`, `SaadSparse.Chapter06.cr_succ`, `SaadSparse.Chapter06.crAlpha_eq`,
+  `SaadSparse.Chapter06.crX_succ`, `SaadSparse.Chapter06.crR_succ`,
+  `SaadSparse.Chapter06.crBeta_eq`, `SaadSparse.Chapter06.crP_succ`,
+  `SaadSparse.Chapter06.crAp_succ`.
+* **Scope.** Unconditional orthogonality of the totalized CR sequence is stated for positive
+  definite input. See `SaadSparse.Chapter06.inner_crAp_eq_zero`,
+  `SaadSparse.Chapter06.inner_apply_crR_eq_zero`,
+  `SaadSparse.Chapter06.algorithm_6_20_orthogonality`.
+* **Scope.** The CR minimal-residual property is unconditional under positive definiteness. See
+  `SaadSparse.Chapter06.crX_isMinResidualIterate`,
+  `SaadSparse.Chapter06.algorithm_6_20_isMinResidualIterate`.
+* **Reading.** The conditional CR minimization theorem makes the nonzero denominators explicit. See
+  `SaadSparse.Chapter06.crX_isMinResidualIterate_of_no_breakdown`,
+  `SaadSparse.Chapter06.algorithm_6_20_isMinResidualIterate_of_no_breakdown`.
+* **Scope.** The exact CR–GMRES equality compares fixed-length iterates up to the grade. See
+  `SaadSparse.Chapter06.crX_eq_gmresFixed`, `SaadSparse.Chapter06.algorithm_6_20_eq_alg_6_9`.
 -/
 
 open scoped ComplexOrder Matrix
@@ -73,17 +97,32 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-! ### Algorithm 6.20 -/
 
 /-- The step length $\alpha_j = (r_j, A r_j)/(A p_j, A p_j)$ of line 3 of Algorithm 6.20, computed
-from a quadruple $(x_j, r_j, p_j, A p_j)$. -/
+from a quadruple $(x_j, r_j, p_j, A p_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crStepAlpha (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op A s.2.1) s.2.1 / inner 𝕜 s.2.2.2 s.2.2.2
 
 /-- The next residual $r_{j+1} = r_j - \alpha_j A p_j$ of line 5 of Algorithm 6.20, computed from a
-quadruple $(x_j, r_j, p_j, A p_j)$. -/
+quadruple $(x_j, r_j, p_j, A p_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crStepR (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - crStepAlpha A s • s.2.2.2
 
 /-- The coefficient $\beta_j = (r_{j+1}, A r_{j+1})/(r_j, A r_j)$ of line 6 of Algorithm 6.20,
-computed from a quadruple $(x_j, r_j, p_j, A p_j)$. -/
+computed from a quadruple $(x_j, r_j, p_j, A p_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op A (crStepR A s)) (crStepR A s) / inner 𝕜 (op A s.2.1) s.2.1
 
@@ -96,7 +135,12 @@ $$\beta_j = \frac{(r_{j+1}, A r_{j+1})}{(r_j, A r_j)}, \quad p_{j+1} = r_{j+1} +
   \quad q_{j+1} = A r_{j+1} + \beta_j q_j.$$
 
 Line 8 updates $A p_{j+1}$ without a further matrix-vector product. A quotient with denominator
-$0$ is $0$. -/
+$0$ is $0$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + crStepAlpha A s • s.2.2.1, crStepR A s,
     crStepR A s + crStepBeta A s • s.2.2.1,
@@ -105,45 +149,100 @@ noncomputable def crStep (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 
 /-- **Algorithm 6.20** of [saad2003iterative] (conjugate residual). For
 $A \in \mathbb{K}^{n \times n}$, $b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the quadruple
 $(x_j, r_j, p_j, A p_j)$ after $j$ steps of the algorithm, started from $r_0 = b - A x_0$,
-$p_0 = r_0$ and $A p_0$. -/
+$p_0 = r_0$ and $A p_0$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def cr (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (crStep A)^[j] (x₀, b - op A x₀, b - op A x₀, op A (b - op A x₀))
 
-/-- The step length `SaadSparse.Chapter06.crStepAlpha` is $(r_j, A r_j)/(A p_j, A p_j)$. -/
+/-- The step length `SaadSparse.Chapter06.crStepAlpha` is $(r_j, A r_j)/(A p_j, A p_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crStepAlpha_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) :
     crStepAlpha A s = inner 𝕜 (op A s.2.1) s.2.1 / inner 𝕜 s.2.2.2 s.2.2.2 := rfl
 
-/-- The residual `SaadSparse.Chapter06.crStepR` is $r_j - \alpha_j A p_j$. -/
+/-- The residual `SaadSparse.Chapter06.crStepR` is $r_j - \alpha_j A p_j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crStepR_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) :
     crStepR A s = s.2.1 - crStepAlpha A s • s.2.2.2 := rfl
 
-/-- The coefficient `SaadSparse.Chapter06.crStepBeta` is $(r_{j+1}, A r_{j+1})/(r_j, A r_j)$. -/
+/-- The coefficient `SaadSparse.Chapter06.crStepBeta` is $(r_{j+1}, A r_{j+1})/(r_j, A r_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crStepBeta_def (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) :
     crStepBeta A s = inner 𝕜 (op A (crStepR A s)) (crStepR A s) / inner 𝕜 (op A s.2.1) s.2.1 :=
   rfl
 
 variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n))
 
-/-- The iterate $x_j$ of Algorithm 6.20 after $j$ steps. -/
+/-- The iterate $x_j$ of Algorithm 6.20 after $j$ steps.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crX (j : ℕ) : 𝔼 := (cr A b x₀ j).1
 
-/-- The residual $r_j$ of Algorithm 6.20 after $j$ steps. -/
+/-- The residual $r_j$ of Algorithm 6.20 after $j$ steps.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crR (j : ℕ) : 𝔼 := (cr A b x₀ j).2.1
 
-/-- The search direction $p_j$ of Algorithm 6.20 after $j$ steps. -/
+/-- The search direction $p_j$ of Algorithm 6.20 after $j$ steps.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crP (j : ℕ) : 𝔼 := (cr A b x₀ j).2.2.1
 
-/-- The vector $A p_j$ carried by line 8 of Algorithm 6.20 after $j$ steps. -/
+/-- The vector $A p_j$ carried by line 8 of Algorithm 6.20 after $j$ steps.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crAp (j : ℕ) : 𝔼 := (cr A b x₀ j).2.2.2
 
-/-- The step length $\alpha_j$ of Algorithm 6.20 at step $j$. -/
+/-- The step length $\alpha_j$ of Algorithm 6.20 at step $j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crAlpha (j : ℕ) : 𝕜 := crStepAlpha A (cr A b x₀ j)
 
-/-- The coefficient $\beta_j$ of Algorithm 6.20 at step $j$. -/
+/-- The coefficient $\beta_j$ of Algorithm 6.20 at step $j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 noncomputable def crBeta (j : ℕ) : 𝕜 := crStepBeta A (cr A b x₀ j)
 
 /-- The quadruple after $j + 1$ steps of Algorithm 6.20 is one step applied to the quadruple after
-$j$ steps. -/
+$j$ steps.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem cr_succ (j : ℕ) : cr A b x₀ (j + 1) = crStep A (cr A b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -159,18 +258,33 @@ theorem cr_succ (j : ℕ) : cr A b x₀ (j + 1) = crStep A (cr A b x₀ j) :=
 /-- The fourth component of the quadruple starts as $A p_0$. -/
 @[simp] theorem crAp_zero : crAp A b x₀ 0 = op A (crP A b x₀ 0) := rfl
 
-/-- Algorithm 6.20, line 3: $\alpha_j = (r_j, A r_j)/(A p_j, A p_j)$. -/
+/-- Algorithm 6.20, line 3: $\alpha_j = (r_j, A r_j)/(A p_j, A p_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crAlpha_eq (j : ℕ) : crAlpha A b x₀ j =
     inner 𝕜 (op A (crR A b x₀ j)) (crR A b x₀ j) /
       inner 𝕜 (crAp A b x₀ j) (crAp A b x₀ j) := rfl
 
-/-- Algorithm 6.20, line 4: $x_{j+1} = x_j + \alpha_j p_j$. -/
+/-- Algorithm 6.20, line 4: $x_{j+1} = x_j + \alpha_j p_j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crX_succ (j : ℕ) :
     crX A b x₀ (j + 1) = crX A b x₀ j + crAlpha A b x₀ j • crP A b x₀ j := by
   rw [crX, cr_succ]
   rfl
 
-/-- Algorithm 6.20, line 5: $r_{j+1} = r_j - \alpha_j A p_j$. -/
+/-- Algorithm 6.20, line 5: $r_{j+1} = r_j - \alpha_j A p_j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crR_succ (j : ℕ) :
     crR A b x₀ (j + 1) = crR A b x₀ j - crAlpha A b x₀ j • crAp A b x₀ j := by
   rw [crR, cr_succ]
@@ -182,20 +296,35 @@ theorem crR_succ_eq_crStepR (j : ℕ) : crR A b x₀ (j + 1) = crStepR A (cr A b
   rw [crR, cr_succ]
   rfl
 
-/-- Algorithm 6.20, line 6: $\beta_j = (r_{j+1}, A r_{j+1})/(r_j, A r_j)$. -/
+/-- Algorithm 6.20, line 6: $\beta_j = (r_{j+1}, A r_{j+1})/(r_j, A r_j)$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crBeta_eq (j : ℕ) : crBeta A b x₀ j =
     inner 𝕜 (op A (crR A b x₀ (j + 1))) (crR A b x₀ (j + 1)) /
       inner 𝕜 (op A (crR A b x₀ j)) (crR A b x₀ j) := by
   rw [crBeta, crStepBeta_def, crR_succ_eq_crStepR]
   rfl
 
-/-- Algorithm 6.20, line 7: $p_{j+1} = r_{j+1} + \beta_j p_j$. -/
+/-- Algorithm 6.20, line 7: $p_{j+1} = r_{j+1} + \beta_j p_j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crP_succ (j : ℕ) :
     crP A b x₀ (j + 1) = crR A b x₀ (j + 1) + crBeta A b x₀ j • crP A b x₀ j := by
   rw [crP, cr_succ, crR_succ_eq_crStepR]
   rfl
 
-/-- Algorithm 6.20, line 8: $A p_{j+1} = A r_{j+1} + \beta_j A p_j$. -/
+/-- Algorithm 6.20, line 8: $A p_{j+1} = A r_{j+1} + \beta_j A p_j$.
+
+**Reading.** The recurrence is defined at every index, without the source's convergence test, and
+totalizes zero denominators. Its input type also allows non-Hermitian matrices, while the source
+derives the method for Hermitian input.
+-/
 theorem crAp_succ (j : ℕ) :
     crAp A b x₀ (j + 1) = op A (crR A b x₀ (j + 1)) + crBeta A b x₀ j • crAp A b x₀ j := by
   rw [crAp, cr_succ, crR_succ_eq_crStepR]
@@ -268,7 +397,12 @@ theorem crR_eq_residual (hA : (op A).IsSymmetric) (j : ℕ) :
 variable {A b x₀}
 
 /-- Section 6.8: for a Hermitian positive definite $A$, the vectors $A p_i$ of Algorithm 6.20 are
-orthogonal, $(A p_i, A p_j) = 0$ for $i \ne j$. -/
+orthogonal, $(A p_i, A p_j) = 0$ for $i \ne j$.
+
+**Reading.** The theorem assumes positive definiteness and covers the totalized sequence. The source
+describes orthogonality for the Hermitian construction; an indefinite iteration can encounter a zero
+denominator.
+-/
 theorem inner_crAp_eq_zero (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (crAp A b x₀ i) (crAp A b x₀ j) = 0 := by
   have hs := (isSymmetricCoercive_op_of_posDef hA).isSymmetric
@@ -277,7 +411,12 @@ theorem inner_crAp_eq_zero (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
   exact CR.inner_apply_direction_eq_zero b x₀ (isSymmetricCoercive_op_of_posDef hA) h
 
 /-- Section 6.8: for a Hermitian positive definite $A$, the residuals of Algorithm 6.20 are
-$A$-orthogonal (conjugate), $(r_i, A r_j) = 0$ for $i \ne j$. -/
+$A$-orthogonal (conjugate), $(r_i, A r_j) = 0$ for $i \ne j$.
+
+**Reading.** The theorem assumes positive definiteness and covers the totalized sequence. The source
+describes orthogonality for the Hermitian construction; an indefinite iteration can encounter a zero
+denominator.
+-/
 theorem inner_apply_crR_eq_zero (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
     inner 𝕜 (crR A b x₀ i) (op A (crR A b x₀ j)) = 0 := by
   have hs := (isSymmetricCoercive_op_of_posDef hA).isSymmetric
@@ -306,7 +445,12 @@ theorem span_crP_eq (hA : A.PosDef) (m : ℕ) :
 /-- Algorithm 6.20 realizes the minimal-residual specification: for a Hermitian positive definite
 $A$ and every $j$, the iterate $x_j$ minimizes $\|b - A x\|$ over $x_0 + \mathcal{K}_j(A, r_0)$.
 This is the sense in which Section 6.8 obtains the conjugate residual algorithm from GMRES for a
-Hermitian $A$. -/
+Hermitian $A$.
+
+**Reading.** The unconditional result assumes positive definiteness. The source motivates the
+algorithm as the Hermitian case of GMRES. The separate conditional theorem covers indefinite systems
+up to the first zero denominator.
+-/
 theorem crX_isMinResidualIterate (hA : A.PosDef) (j : ℕ) :
     Krylov.IsMinResidualIterate (op A) b x₀ j (crX A b x₀ j) := by
   rw [crX_eq_CR A b x₀ (isSymmetricCoercive_op_of_posDef hA).isSymmetric]
@@ -314,7 +458,11 @@ theorem crX_isMinResidualIterate (hA : A.PosDef) (j : ℕ) :
 
 /-- The minimal-residual property for a Hermitian, possibly indefinite $A$: if $(r_i, A r_i) \ne 0$
 and $A p_i \ne 0$ for every $i < j$, so that Algorithm 6.20 does not divide by zero in its first
-$j$ steps, then $x_j$ minimizes $\|b - A x\|$ over $x_0 + \mathcal{K}_j(A, r_0)$. -/
+$j$ steps, then $x_j$ minimizes $\|b - A x\|$ over $x_0 + \mathcal{K}_j(A, r_0)$.
+
+**Reading.** The Hermitian minimal-residual assertion explicitly assumes that all denominators
+through the last executed step are nonzero. The real specialization uses symmetric matrices.
+-/
 theorem crX_isMinResidualIterate_of_no_breakdown (hA : (op A).IsSymmetric) {j : ℕ}
     (h1 : ∀ i < j, inner 𝕜 (op A (crR A b x₀ i)) (crR A b x₀ i) ≠ 0)
     (h2 : ∀ i < j, crAp A b x₀ i ≠ 0) :
@@ -329,7 +477,12 @@ theorem crX_isMinResidualIterate_of_no_breakdown (hA : (op A).IsSymmetric) {j : 
 /-- The conjugate residual algorithm coincides with GMRES: for a Hermitian positive definite $A$ and
 $j \le \mu$, the grade of $v_1 = r_0/\|r_0\|_2$, the iterate $x_j$ of Algorithm 6.20 is the
 approximation after $j$ steps of GMRES (Algorithm 6.9), since both are the minimal-residual
-iterate. -/
+iterate.
+
+**Reading.** The iterate equality is proved for positive definite input and at a fixed step count up
+to the grade. The source motivates CR for Hermitian input by the GMRES minimal-residual
+construction.
+-/
 theorem crX_eq_gmresFixed (hA : A.PosDef) {j : ℕ} (hj : j ≤ grade A (v₁ A b x₀)) :
     crX A b x₀ j = gmresFixed A b x₀ j := by
   obtain ⟨z, -, hz⟩ :=
@@ -350,6 +503,10 @@ $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let $b, x_0 \in 
 and let $i \ne j$. Then the residuals of Algorithm 6.20 are $A$-orthogonal and the vectors
 $A p_i$ are orthogonal:
 $$(r_i, A r_j) = 0, \qquad (A p_i, A p_j) = 0.$$
+
+**Reading.** The theorem assumes positive definiteness and covers the totalized sequence. The source
+describes orthogonality for the Hermitian construction; an indefinite iteration can encounter a zero
+denominator.
 -/
 theorem algorithm_6_20_orthogonality (hA : A.PosDef) {i j : ℕ} (h : i ≠ j) :
     inner ℝ (crR A b x₀ i) (op A (crR A b x₀ j)) = 0 ∧
@@ -365,7 +522,12 @@ Then for every $j \ge 0$ the iterate $x_j$ of Algorithm 6.20 satisfies
 $x_j \in x_0 + \mathcal{K}_j(A, r_0)$ and
 $$\|b - A x_j\|_2 \le \|b - A x\|_2 \quad \text{for every } x \in x_0 + \mathcal{K}_j(A, r_0).$$
 
-The property is `Krylov.IsMinResidualIterate`. -/
+The property is `Krylov.IsMinResidualIterate`.
+
+**Reading.** The unconditional result assumes positive definiteness. The source motivates the
+algorithm as the Hermitian case of GMRES. The separate conditional theorem covers indefinite systems
+up to the first zero denominator.
+-/
 theorem algorithm_6_20_isMinResidualIterate (hA : A.PosDef) (j : ℕ) :
     Krylov.IsMinResidualIterate (op A) b x₀ j (crX A b x₀ j) :=
   crX_isMinResidualIterate hA j
@@ -377,7 +539,11 @@ by zero in its first $j$ steps. Then the iterate $x_j$ of Algorithm 6.20 minimiz
 $\|b - A x\|_2$ over $x_0 + \mathcal{K}_j(A, r_0)$.
 
 The vector $A p_i$ of the hypothesis is the vector `SaadSparse.Chapter06.crAp` carried by
-line 8. The property is `Krylov.IsMinResidualIterate`. -/
+line 8. The property is `Krylov.IsMinResidualIterate`.
+
+**Reading.** The Hermitian minimal-residual assertion explicitly assumes that all denominators
+through the last executed step are nonzero. The real specialization uses symmetric matrices.
+-/
 theorem algorithm_6_20_isMinResidualIterate_of_no_breakdown (hA : A.IsSymm) {j : ℕ}
     (h1 : ∀ i < j, inner ℝ (op A (crR A b x₀ i)) (crR A b x₀ i) ≠ 0)
     (h2 : ∀ i < j, crAp A b x₀ i ≠ 0) :
@@ -390,7 +556,12 @@ and let $j \le \mu$, the grade of $v_1 = r_0/\|r_0\|_2$. Then the iterate $x_j$ 
 6.20 is the approximation after $j$ steps of GMRES (Algorithm 6.9).
 
 The GMRES approximation is `SaadSparse.Chapter06.gmresFixed`, GMRES run for exactly $j$ Arnoldi
-steps. Both iterates are the unique minimal-residual iterate on $x_0 + \mathcal{K}_j(A, r_0)$. -/
+steps. Both iterates are the unique minimal-residual iterate on $x_0 + \mathcal{K}_j(A, r_0)$.
+
+**Reading.** The iterate equality is proved for positive definite input and at a fixed step count up
+to the grade. The source motivates CR for Hermitian input by the GMRES minimal-residual
+construction.
+-/
 theorem algorithm_6_20_eq_alg_6_9 (hA : A.PosDef) {j : ℕ} (hj : j ≤ grade A (v₁ A b x₀)) :
     crX A b x₀ j = gmresFixed A b x₀ j :=
   crX_eq_gmresFixed hA hj

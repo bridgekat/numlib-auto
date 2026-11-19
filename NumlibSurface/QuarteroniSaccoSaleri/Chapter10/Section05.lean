@@ -71,6 +71,9 @@ carried by a convex set.
 
 ## Deviations from the source
 
+* **Equations (10.41) and (10.42), optimal degree** (partial). `equation_10_41` and
+  `equation_10_42` give the nodes and weights and exactness through $2n-1$. The book also
+  asserts that this degree is optimal.
 * **Equation (10.41), the remainder** (reading). The book assumes
   $\varphi \in C^{2n}([0, +\infty))$. The library assumes that $\varphi$ is $C^{2n}$ on all of
   $\mathbb{R}$, the form in which the backbone states the Hermite interpolation error. See
@@ -128,7 +131,13 @@ degree of exactness $2n - 1$.
 The zeros of $\mathcal{L}_n$ are those of the monic orthogonal polynomial of the weight $e^{-x}$
 (`OrthogonalPolynomial.family_laguerreMeasure_eq`). So exactness is (10.16) with the
 interpolatory weights, which `Quadrature.laguerreGaussWeight_eq` puts in closed form. The
-remainder term of (10.41) is `QuarteroniSaccoSaleri.Chapter10.equation_10_41_error`. -/
+remainder term of (10.41) is `QuarteroniSaccoSaleri.Chapter10.equation_10_41_error`.
+
+**Partial.** The exactness conclusion covers all degrees through $2n-1$. The text also states
+the optimality of that degree.
+
+**Reading.** Same weights and exactness through 2n−1, without optimality.
+-/
 theorem equation_10_41 (hn : 1 ≤ n) :
     (∃ x : Fin n → ℝ, Function.Injective x ∧ ∀ k, (Polynomial.laguerre n).eval (x k) = 0) ∧
       ∀ x : Fin n → ℝ, Function.Injective x → (∀ k, (Polynomial.laguerre n).eval (x k) = 0) →
@@ -247,7 +256,13 @@ degree of exactness $2n - 1$.
 
 The proof is as for (10.41), through `OrthogonalPolynomial.family_hermiteMeasure_eq`, (10.16)
 and `Quadrature.hermiteGaussWeight_eq`. The remainder term of (10.42) is
-`QuarteroniSaccoSaleri.Chapter10.equation_10_42_error`. -/
+`QuarteroniSaccoSaleri.Chapter10.equation_10_42_error`.
+
+**Partial.** The exactness conclusion covers all degrees through $2n-1$. The text also states
+the optimality of that degree.
+
+**Reading.** Same weights and exactness through 2n−1, without optimality.
+-/
 theorem equation_10_42 (hn : 1 ≤ n) :
     (∃ x : Fin n → ℝ, Function.Injective x ∧ ∀ k, (Polynomial.physHermite n).eval (x k) = 0) ∧
       ∀ x : Fin n → ℝ, Function.Injective x → (∀ k, (Polynomial.physHermite n).eval (x k) = 0) →

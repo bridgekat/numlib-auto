@@ -47,6 +47,17 @@ form of `NumlibSurface.ConnGouldToint.Chapter15.Section03`.
 
 ## Deviations from the source
 
+* **Explicit rate hypotheses.** Lemma 15.4.13 exposes the step-to-error and full-correction bounds
+  needed for the asymptotic estimate. See `ConnGouldToint.Chapter15.lemma_15_4_13`.
+* **Explicit correction estimates.** Lemma 15.4.14 and its asymptotic form give explicit Taylor and
+  multiplier-gap bounds for the two corrections. See `ConnGouldToint.Chapter15.lemma_15_4_14`,
+  `ConnGouldToint.Chapter15.sqp_partialCorrection_eventually_small_error`.
+* **Explicit trapping and local bounds.** Theorem 15.4.15 makes late visits, trapping, accepted
+  standard steps or corrections, and local error bounds explicit. See
+  `ConnGouldToint.Chapter15.theorem_15_4_15`.
+* **Compactness repair.** The proof of Theorem 15.4.16 uses compactness and continuity explicitly to
+  pass from cluster neighborhoods to a tail estimate. See
+  `ConnGouldToint.Chapter15.sqp_curvature_tail_of_compact`.
 * **Lemma 15.4.13** (reading). The bound of Lemma 15.3.6 and the comparison of the primal error with
   the step length are explicit hypotheses. See `ConnGouldToint.Chapter15.lemma_15_4_13`.
 * **Lemma 15.4.14** (reading). The two Taylor remainders, the residual bounds and the two correction
@@ -80,7 +91,11 @@ hypotheses.
 
 In the application, $\varphi_k$ is the merit value at the fully corrected trial, $m_k$ the model
 value, $e^x_k$ the primal error and $e_k$ the joint primal-dual error. The second bound is the
-conclusion of `ConnGouldToint.Chapter15.lemma_15_3_6`. -/
+conclusion of `ConnGouldToint.Chapter15.lemma_15_3_6`.
+
+**Reading.** The estimate uses an explicit comparison of primal error with step length and a
+quantitative full-correction error bound before taking the little-o limit.
+-/
 theorem lemma_15_4_13 (m φ e ex : ℕ → ℝ) (s : ℕ → E) {C K : ℝ}
     (hC : 0 ≤ C) (hex : ∀ k, 0 ≤ ex k) (he : ∀ k, 0 ≤ e k)
     (hlim : Tendsto e atTop (𝓝 0))
@@ -122,7 +137,12 @@ $\|y - y^{PC}\|$. In the application, $f_2 + \sigma\|c_z\|$ is the merit value a
 corrected trial, $m$ is the model value and $r$ is the step length, so the bound is $o(r^2)$
 when the coefficients tend to zero. The adjoint equations are stated weakly:
 $\langle Hu, w\rangle = \langle \ell, Aw\rangle$ and $\langle g + Hv, w\rangle = \langle y^{PC},
-Aw\rangle$ for all $w \in E$. -/
+Aw\rangle$ for all $w \in E$.
+
+**Correction.** The partial and full correction systems, Taylor residual bounds, and multiplier-gap
+coefficient are explicit. A separate asymptotic result makes the estimate arbitrarily small as that
+coefficient tends to zero.
+-/
 theorem lemma_15_4_14 (g u v : E) (H : E →L[ℝ] E) (A : E →L[ℝ] Z)
     (cs cz y yPC : Z) (m f₁ f₂ : ℝ) {σ r B L T R : ℝ}
     (hσ : 0 ≤ σ) (hH : H.toLinearMap.IsSymmetric)
@@ -173,7 +193,12 @@ the tail of the run in the neighborhood.
 
 The sequence $s_k$ is the SQP trial step, $u_k$ the full correction and $e^y_k$ the multiplier
 error. The rates are `ConnGouldToint.Chapter03.ConvergesQSuperlinearly` and
-`ConnGouldToint.Chapter03.ConvergesQQuadratically`. -/
+`ConnGouldToint.Chapter03.ConvergesQQuadratically`.
+
+**Reading.** The theorem assumes arbitrarily late neighborhood visits, trapping and eventual
+acceptance of the standard step or full correction. The multiplier gap tends to zero, with separate
+rate bounds for the quadratic conclusion.
+-/
 theorem theorem_15_4_15 (x s u : ℕ → E) (xstar : E) (ey : ℕ → ℝ)
     {M D r : ℝ} (hM : 0 ≤ M) (hD : 0 ≤ D) (hr : 0 < r)
     (hey : ∀ k, 0 ≤ ey k) (hylim : Tendsto ey atTop (𝓝 0))
@@ -264,7 +289,11 @@ that $\kappa$ is continuous at each $z^*_i$, and that $\kappa(z^*_i) < a$ for al
 $\kappa(z_k) \le a$ for all sufficiently large $k$.
 
 This gives the tail hypothesis of `ConnGouldToint.Chapter15.theorem_15_4_16` for a relatively
-compact run. Only continuity of the reduced curvature at the cluster points is needed. -/
+compact run. Only continuity of the reduced curvature at the cluster points is needed.
+
+**Reading.** Compactness, continuity and the local cluster-neighborhood estimates are explicit
+hypotheses for obtaining the uniform tail bound.
+-/
 theorem sqp_curvature_tail_of_compact {X ι : Type*} [TopologicalSpace X]
     (z : ℕ → X) (zstar : ι → X) (curvature : X → ℝ) {U : Set X}
     (hU : IsCompact U) (hmem : ∀ᶠ k in atTop, z k ∈ U)
@@ -287,7 +316,12 @@ for every $\varepsilon > 0$ and all sufficiently large $k$,
 $|\varphi_k - m_k| \le \varepsilon \|s_k\|^2$.
 
 In the application, $\varphi_k$ is the merit value at the accepted partially corrected trial,
-$m_k$ the model value, and $c_k$ the coefficient of `ConnGouldToint.Chapter15.lemma_15_4_14`. -/
+$m_k$ the model value, and $c_k$ the coefficient of `ConnGouldToint.Chapter15.lemma_15_4_14`.
+
+**Correction.** The partial and full correction systems, Taylor residual bounds, and multiplier-gap
+coefficient are explicit. A separate asymptotic result makes the estimate arbitrarily small as that
+coefficient tends to zero.
+-/
 theorem sqp_partialCorrection_eventually_small_error (φ m coeff : ℕ → ℝ) (s : ℕ → E)
     (hcoeff : Tendsto coeff atTop (𝓝 0))
     (herr : ∀ᶠ k in atTop, |φ k - m k| ≤ coeff k * ‖s k‖ ^ 2) :

@@ -91,6 +91,55 @@ basic trust-region algorithm of Chapter 6 (`ConnGouldToint.Chapter06.BTRRun`).
 
 ## Deviations from the source
 
+* **Reading.** A concrete ray-time cap guarantees the coordinatewise fraction-to-boundary bound. See
+  `ConnGouldToint.Chapter13.scaledRay_coordinate_lower_bound`.
+* **Reading.** The scaled and unscaled quadratic models coincide after the change of variables at a
+  strictly positive center. See `ConnGouldToint.Chapter13.unscaledCorrection`,
+  `ConnGouldToint.Chapter13.unscaledModel`, `ConnGouldToint.Chapter13.scaling_unscaledCorrection`,
+  `ConnGouldToint.Chapter13.scaledModel_eq_unscaledModel`.
+* **Generalization.** The criticality equivalences use arbitrary gradient and symmetric Hessian data
+  on the orthant. See `ConnGouldToint.Chapter13.theorem_13_12_1`,
+  `ConnGouldToint.Chapter13.theorem_13_12_2`.
+* **Correction.** The ray curvature includes the diagonal correction omitted from (13.12.12). See
+  `ConnGouldToint.Chapter13.unscaledModel_along_scaledRay`.
+* **Correction.** The Cauchy decrease bound needs a fraction-to-boundary ray-time cap; scalar and
+  matrix examples disprove the printed bound. See `ConnGouldToint.Chapter13.theorem_13_12_3`,
+  `ConnGouldToint.Chapter13.scaledCauchyTime_sufficientDecrease`,
+  `ConnGouldToint.Chapter13.theorem_13_12_3_counterexample`,
+  `ConnGouldToint.Chapter13.theorem_13_12_3_matrix_counterexample`.
+* **Correction.** The eigenpoint bound has the corrected trial and curvature sign and controls all
+  decreasing scaled coordinates. See `ConnGouldToint.Chapter13.theorem_13_12_5`.
+* **Representation.** The two acceptance formulas share a version flag and totalized ratio, with a
+  positive prediction required in the run. See `ConnGouldToint.Chapter13.colemanLiAcceptanceRatio`,
+  `ConnGouldToint.Chapter13.colemanLiAcceptanceRatio_sub_one`,
+  `ConnGouldToint.Chapter13.ColemanLiVersion`, `ConnGouldToint.Chapter13.colemanLiScaledNorm`,
+  `ConnGouldToint.Chapter13.colemanLiTrialRatio`, `ConnGouldToint.Chapter13.colemanLiAcceptedPoint`.
+* **Correction.** The Coleman–Li run adds strict trial positivity to boundary clearance, and the
+  scalar example shows why. See `ConnGouldToint.Chapter13.ColemanLiRun`,
+  `ConnGouldToint.Chapter13.ColemanLiRun.interior_iterate`,
+  `ConnGouldToint.Chapter13.ColemanLiRun.radius_pos`,
+  `ConnGouldToint.Chapter13.colemanLi_unsigned_clearance_counterexample`,
+  `ConnGouldToint.Chapter13.ColemanLiRun.objective_antitone`.
+* **Reading.** Version-one convergence uses the corrected Cauchy decrease and explicit norm, model
+  and compact-run hypotheses. See `ConnGouldToint.Chapter13.ColemanLiRun.toBTRRun`,
+  `ConnGouldToint.Chapter13.ColemanLiRun.toBTRRun_norm`,
+  `ConnGouldToint.Chapter13.ColemanLiRun.toBTRRun_model`,
+  `ConnGouldToint.Chapter13.norm_le_colemanLiScaledNorm`,
+  `ConnGouldToint.Chapter13.norm_scaledHessian_le`,
+  `ConnGouldToint.Chapter13.orthantFirstOrder_of_tendsto_scaledGradientNorm`,
+  `ConnGouldToint.Chapter13.theorem_13_12_4`.
+* **Reading.** The second-order conclusion is weak criticality on the active face, with explicit
+  curvature and version-two agreement hypotheses. See
+  `ConnGouldToint.Chapter13.colemanLi_curvature_transfer`,
+  `ConnGouldToint.Chapter13.theorem_13_12_6`, `ConnGouldToint.Chapter13.theorem_13_12_6_version2`.
+* **Correction.** The reduced TRAM model uses one trial displacement and preserves the original
+  radius when eliminating the slack. See `ConnGouldToint.Chapter13.tramSlackStep`,
+  `ConnGouldToint.Chapter13.tramCorrection`, `ConnGouldToint.Chapter13.tramModel`,
+  `ConnGouldToint.Chapter13.tramMetric`, `ConnGouldToint.Chapter13.tramNorm`,
+  `ConnGouldToint.Chapter13.tramSlackStep_unique`,
+  `ConnGouldToint.Chapter13.tramModel_eq_slackModel`,
+  `ConnGouldToint.Chapter13.tramNorm_le_iff_exists_slack`,
+  `ConnGouldToint.Chapter13.tramSubproblem_iff`.
 * **Equation (13.12.12)** (correction). The curvature along the scaled Cauchy ray is that of
   $\hat H = S H S + \bar G$, including the positive-gradient diagonal. See
   `ConnGouldToint.Chapter13.unscaledModel_along_scaledRay`.
@@ -193,6 +242,9 @@ theorem continuous_scaledResidual :
 $x \ge 0$, $t \ge 0$, $\sigma \le 1$ and $\kappa > 0$, and let $g_i \le \kappa$ for all $i$. If
 $t \le (1 - \sigma) / \kappa$, then for every $i$
 $$\sigma x_i \le x_i - t\, (S(x, g)^2 g)_i.$$
+
+**Reading.** The proof gives a coordinatewise fraction-to-boundary guarantee for all ray times up to
+the stated cap, using an upper bound on the gradient coordinates.
 -/
 theorem scaledRay_coordinate_lower_bound {x g : ι → ℝ} (hx : ∀ i, 0 ≤ x i)
     {t κ σ : ℝ} (ht : 0 ≤ t) (hσ : σ ≤ 1) (hκ : 0 < κ)
@@ -244,13 +296,22 @@ noncomputable def scaledModel (c : ℝ) (x g : ι → ℝ) (H : Matrix ι ι ℝ
 $$C(x, g) = \operatorname{diag}\Big(\frac{\max\{g_i, 0\}}{|v_i(x, g)|}\Big).$$
 
 At a coordinate with $v_i = 0$, Lean's division gives the entry $0$. The congruence
-$S C S = \bar G$ is used only at strictly positive points. -/
+$S C S = \bar G$ is used only at strictly positive points.
+
+**Reading.** The coefficient divides the positive gradient part by the magnitude of its scaling
+coordinate. Division is totalized in the definition; equivalence of the two models uses a strictly
+positive center.
+-/
 noncomputable def unscaledCorrection (x g : ι → ℝ) : Matrix ι ι ℝ :=
   Matrix.diagonal fun i ↦ max (g i) 0 / |scalingVector x g i|
 
 /-- **Equation (13.12.8)** of [conn2000trust]. The **corrected model** in the original displacement
 coordinates is the quadratic model with gradient $g$ and Hessian $H + C(x, g)$:
 $$c + g^T s + \tfrac12 s^T (H + C(x, g)) s.$$
+
+**Reading.** The coefficient divides the positive gradient part by the magnitude of its scaling
+coordinate. Division is totalized in the definition; equivalence of the two models uses a strictly
+positive center.
 -/
 noncomputable def unscaledModel (c : ℝ) (x g : ι → ℝ) (H : Matrix ι ι ℝ) (s : ι → ℝ) : ℝ :=
   affineQuadraticModel c g (H + unscaledCorrection x g) s
@@ -267,7 +328,12 @@ private theorem scaling_pullback_form (x g w : ι → ℝ) (A : Matrix ι ι ℝ
     vecMul_scalingMatrix]
 
 /-- **Equation (13.12.8)** of [conn2000trust]. If $x_i > 0$ for all $i$, then
-$S(x, g)\, C(x, g)\, S(x, g) = \bar G$. -/
+$S(x, g)\, C(x, g)\, S(x, g) = \bar G$.
+
+**Reading.** The coefficient divides the positive gradient part by the magnitude of its scaling
+coordinate. Division is totalized in the definition; equivalence of the two models uses a strictly
+positive center.
+-/
 theorem scaling_unscaledCorrection {x g : ι → ℝ} (hx : ∀ i, 0 < x i) :
     scalingMatrix x g * unscaledCorrection x g * scalingMatrix x g = scaledCorrection g := by
   unfold scalingMatrix unscaledCorrection scaledCorrection
@@ -284,7 +350,12 @@ theorem scaling_unscaledCorrection {x g : ι → ℝ} (hx : ∀ i, 0 < x i) :
 
 /-- **Equation (13.12.8)** of [conn2000trust]. If $x_i > 0$ for all $i$, the scaled and the
 corrected models agree under the change of variables $s = S w$: the scaled model at $w$ equals
-the corrected model at $S w$. -/
+the corrected model at $S w$.
+
+**Reading.** The coefficient divides the positive gradient part by the magnitude of its scaling
+coordinate. Division is totalized in the definition; equivalence of the two models uses a strictly
+positive center.
+-/
 theorem scaledModel_eq_unscaledModel (c : ℝ) {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
     (H : Matrix ι ι ℝ) (w : ι → ℝ) :
     scaledModel c x g H w = unscaledModel c x g H (scalingMatrix x g *ᵥ w) := by
@@ -359,6 +430,10 @@ private theorem scaledGradient_eq_zero_iff {x g : ι → ℝ} (hx : ∀ i, 0 ≤
 /-- **Theorem 13.12.1** of [conn2000trust]. Let $x \ge 0$. Then $x$ is first-order critical for $g$
 on the nonnegative orthant if and only if
 $$S(x, g)^2 g = 0 \quad\text{and}\quad S(x, g)\, g = 0.$$
+
+**Generalization.** The equivalences are algebraic for any gradient and symmetric Hessian data at a
+nonnegative point. Differentiability and boundedness assumptions on an objective are unnecessary
+once those data are supplied.
 -/
 theorem theorem_13_12_1 {x g : ι → ℝ} (hx : ∀ i, 0 ≤ x i) :
     OrthantFirstOrder x g ↔
@@ -405,7 +480,12 @@ if and only if $x$ is weakly second-order critical for $g$ and $H$.
 
 The diagonal $\bar G$ is nonnegative and acts only on the coordinates with $g_i > 0$. For a
 direction $d$ on the active face, the proof takes the preimage $w$ with $w_i = 0$ on the active
-coordinates, where $\bar G$ vanishes. -/
+coordinates, where $\bar G$ vanishes.
+
+**Generalization.** The equivalences are algebraic for any gradient and symmetric Hessian data at a
+nonnegative point. Differentiability and boundedness assumptions on an objective are unnecessary
+once those data are supplied.
+-/
 theorem theorem_13_12_2 {x g : ι → ℝ} (hx : ∀ i, 0 ≤ x i) {H : Matrix ι ι ℝ}
     (hH : H.IsSymm) :
     (scaledGradient x g = 0 ↔ OrthantFirstOrder x g) ∧
@@ -472,7 +552,13 @@ theorem continuous_scaledGradient :
 
 /-- **Theorem 13.12.4** of [conn2000trust], limit points. Let $x_k \to x_0$ and $g_k \to g_0$ along
 a nontrivial filter, let $x_k \ge 0$ eventually, and let $\|S(x_k, g_k)\, g_k\| \to 0$. Then
-$x_0$ is first-order critical for $g_0$ on the nonnegative orthant. -/
+$x_0$ is first-order critical for $g_0$ on the nonnegative orthant.
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
+-/
 theorem orthantFirstOrder_of_tendsto_scaledGradientNorm {α : Type*} {l : Filter α} [l.NeBot]
     {x g : α → ι → ℝ} {x₀ g₀ : ι → ℝ} (hx : Tendsto x l (𝓝 x₀))
     (hg : Tendsto g l (𝓝 g₀)) (hfeas : ∀ᶠ k in l, ∀ i, 0 ≤ x k i)
@@ -554,7 +640,11 @@ corrected model along the scaled Cauchy ray is
 $$m(-t S^2 g) = c - t \|S g\|^2 + \tfrac12 t^2 (S g)^T (S H S + \bar G)(S g).$$
 
 **Correction.** The curvature along the ray is that of the scaled Hessian
-$\hat H = S H S + \bar G$, which includes the positive-gradient diagonal $\bar G$. -/
+$\hat H = S H S + \bar G$, which includes the positive-gradient diagonal $\bar G$.
+
+**Correction.** Ray curvature includes the positive-gradient diagonal correction in addition to the
+scaled objective Hessian. The printed expression uses the scaled objective Hessian alone.
+-/
 theorem unscaledModel_along_scaledRay (c : ℝ) {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
     (H : Matrix ι ι ℝ) (t : ℝ) :
     unscaledModel c x g H ((-t) • ((scalingMatrix x g * scalingMatrix x g) *ᵥ g)) =
@@ -611,7 +701,13 @@ $(1 - \sigma)/\kappa$ limits the ray parameter, so it enters the minimum before 
 multiplication by $\|S g\|^2$.
 
 The curvature hypothesis is the upper bound along the ray supplied by (8.1.22). If $S g = 0$,
-Lean's division gives $\Delta / \|S g\| = 0$, and both sides are zero. -/
+Lean's division gives $\Delta / \|S g\| = 0$, and both sides are zero.
+
+**Correction.** The corrected estimate uses the full scaled curvature and a ray-time cap depending
+on the boundary fraction and a gradient upper bound. The counterexamples show that the printed
+capped criticality alone cannot give the claimed bound, even with a strictly feasible minimizing
+trial.
+-/
 theorem theorem_13_12_3 [Nonempty ι] (c : ℝ) {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
     (H : Matrix ι ι ℝ) {Δ σ κ β tC : ℝ} (hΔ : 0 ≤ Δ) (hσ₀ : 0 < σ) (hσ : σ < 1)
     (hκ : 0 < κ) (hg : ∀ i, g i ≤ κ) (hβ : 0 < β)
@@ -654,7 +750,13 @@ let $0 < \alpha \le 1$ with $\alpha \le (1 - \sigma) / \kappa$. Then
 $$c - m(-t_C S^2 g) \ge \frac\alpha2 \|S g\| \min\Big\{\frac{\|S g\|}{\beta}, \Delta\Big\}.$$
 
 This is the sufficient decrease condition AA.1b in the scaled gradient norm, with the
-coefficient $\alpha / 2$. -/
+coefficient $\alpha / 2$.
+
+**Correction.** The corrected estimate uses the full scaled curvature and a ray-time cap depending
+on the boundary fraction and a gradient upper bound. The counterexamples show that the printed
+capped criticality alone cannot give the claimed bound, even with a strictly feasible minimizing
+trial.
+-/
 theorem scaledCauchyTime_sufficientDecrease [Nonempty ι] (c : ℝ)
     {x g : ι → ℝ} (hx : ∀ i, 0 < x i) (H : Matrix ι ι ℝ) {Δ σ κ β tC α : ℝ}
     (hΔ : 0 ≤ Δ) (hσ₀ : 0 < σ) (hσ : σ < 1) (hκ : 0 < κ)
@@ -769,7 +871,12 @@ $$c - m(-t_C S z) \ge \tfrac12 (-\tau) \min\Big\{\Delta, \frac{(1 - \sigma)(-\ta
 The statement here uses the constrained scaled eigenpoint and gives a positive lower bound.
 
 The bound on the scaling weights is needed on every coordinate that decreases along the ray
-$-t S z$. It follows from the definition of $v$ on the coordinates with $g_i \ge 0$. -/
+$-t S z$. It follows from the definition of $v$ on the coordinates with $g_i \ge 0$.
+
+**Correction.** The decrease is at the eigenpoint, and uses minus the negative eigenvalue. The proof
+assumes explicit bounds on the objective Hessian action and the scaling weights for every coordinate
+that decreases along the eigenvector ray.
+-/
 theorem theorem_13_12_5 [Nonempty ι] (c : ℝ) {x g z : ι → ℝ} (hx : ∀ i, 0 < x i)
     {H : Matrix ι ι ℝ} {τ A K Δ σ tC : ℝ} (hτ : τ < 0) (hA : 0 < A) (hK : 0 < K)
     (hΔ : 0 ≤ Δ) (hσ₀ : 0 < σ) (hσ : σ < 1)
@@ -811,7 +918,12 @@ theorem theorem_13_12_5 [Nonempty ι] (c : ℝ) {x g z : ι → ℝ} (hx : ∀ i
 /-- **Equation (13.12.24)** of [conn2000trust], the acceptance ratio of Algorithm 13.12.2. With the
 corrected model $m$ of (13.12.8) at $x$,
 $$\rho = \frac{f(x) - f(x + s) - \frac12 s^T C(x, g)\, s}{m(0) - m(s)}.$$
-The numerator subtracts the same quadratic correction that the model adds. -/
+The numerator subtracts the same quadratic correction that the model adds.
+
+**Reading.** The version is a constructor controlling the numerator of the acceptance ratio. The
+ratios and scaled norm use totalized division, and the actual run supplies positivity and nonzero
+predicted decrease.
+-/
 noncomputable def colemanLiAcceptanceRatio (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ)
     (H : Matrix ι ι ℝ) : ℝ :=
   (f x - f (x + s) - (1 / 2) * (s ⬝ᵥ (unscaledCorrection x g *ᵥ s))) /
@@ -820,7 +932,12 @@ noncomputable def colemanLiAcceptanceRatio (f : (ι → ℝ) → ℝ) (x g s : �
 /-- **Equation (13.12.24)** of [conn2000trust]. If $m(0) - m(s) \neq 0$, then
 $$\rho - 1 = \frac{q(s) - f(x + s)}{m(0) - m(s)},$$
 where $q(s) = f(x) + g^T s + \frac12 s^T H s$ is the uncorrected model. So only the error of the
-uncorrected model enters the ratio. -/
+uncorrected model enters the ratio.
+
+**Reading.** The version is a constructor controlling the numerator of the acceptance ratio. The
+ratios and scaled norm use totalized division, and the actual run supplies positivity and nonzero
+predicted decrease.
+-/
 theorem colemanLiAcceptanceRatio_sub_one (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ)
     (H : Matrix ι ι ℝ)
     (hp : unscaledModel (f x) x g H 0 - unscaledModel (f x) x g H s ≠ 0) :
@@ -834,7 +951,12 @@ theorem colemanLiAcceptanceRatio_sub_one (f : (ι → ℝ) → ℝ) (x g s : ι 
 
 /-- **Algorithms 13.12.1 and 13.12.2** of [conn2000trust]. The two versions of the Coleman–Li
 algorithm. The second version changes the acceptance ratio to (13.12.24) and keeps the scaled
-model, the step tests and the radius rules of the first. -/
+model, the step tests and the radius rules of the first.
+
+**Reading.** The version is a constructor controlling the numerator of the acceptance ratio. The
+ratios and scaled norm use totalized division, and the actual run supplies positivity and nonzero
+predicted decrease.
+-/
 inductive ColemanLiVersion
   /-- Algorithm 13.12.1, with the ordinary ratio (13.12.10). -/
   | first
@@ -846,7 +968,12 @@ step $s$ is
 $$\|S(x, g)^{-1} s\|_2 = \Big(\sum_i \frac{s_i^2}{|v_i(x, g)|}\Big)^{1/2}.$$
 
 It is the Euclidean norm of the vector of quotients $s_i / |v_i|^{1/2}$, which is $S^{-1} s$ at
-a strictly positive point. -/
+a strictly positive point.
+
+**Reading.** The version is a constructor controlling the numerator of the acceptance ratio. The
+ratios and scaled norm use totalized division, and the actual run supplies positivity and nonzero
+predicted decrease.
+-/
 noncomputable def colemanLiScaledNorm (x g s : ι → ℝ) : ℝ :=
   ‖WithLp.toLp 2 (fun i ↦ s i / Real.sqrt |scalingVector x g i|)‖
 
@@ -854,7 +981,12 @@ noncomputable def colemanLiScaledNorm (x g s : ι → ℝ) : ℝ :=
 version. The first version uses
 $$\frac{f(x) - f(x + s)}{m(0) - m(s)},$$
 and the second uses the corrected ratio (13.12.24). The denominator is the same in both
-versions. -/
+versions.
+
+**Reading.** The version is a constructor controlling the numerator of the acceptance ratio. The
+ratios and scaled norm use totalized division, and the actual run supplies positivity and nonzero
+predicted decrease.
+-/
 noncomputable def colemanLiTrialRatio (version : ColemanLiVersion)
     (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ) (H : Matrix ι ι ℝ) : ℝ :=
   match version with
@@ -862,7 +994,12 @@ noncomputable def colemanLiTrialRatio (version : ColemanLiVersion)
   | .second => colemanLiAcceptanceRatio f x g s H
 
 /-- **Algorithms 13.12.1 and 13.12.2** of [conn2000trust], Step 3. The next iterate is $x + s$ if
-the trial ratio of the given version is at least $\eta_1$, and $x$ otherwise. -/
+the trial ratio of the given version is at least $\eta_1$, and $x$ otherwise.
+
+**Reading.** The version is a constructor controlling the numerator of the acceptance ratio. The
+ratios and scaled norm use totalized division, and the actual run supplies positivity and nonzero
+predicted decrease.
+-/
 noncomputable def colemanLiAcceptedPoint (version : ColemanLiVersion) (P : Chapter06.BTRParams)
     (f : (ι → ℝ) → ℝ) (x g s : ι → ℝ) (H : Matrix ι ι ℝ) : ι → ℝ :=
   if P.η₁ ≤ colemanLiTrialRatio version f x g s H then x + s else x
@@ -892,7 +1029,12 @@ orthant, since the distance is unsigned (see
 `ConnGouldToint.Chapter13.colemanLi_unsigned_clearance_counterexample`). The run therefore also
 requires that each trial point is strictly positive.
 
-The Rayleigh quotients for AA.1b and AA.2b use Euclidean unit directions after scaling. -/
+The Rayleigh quotients for AA.1b and AA.2b use Euclidean unit directions after scaling.
+
+**Correction.** The algorithms require a strictly positive trial in addition to the printed unsigned
+boundary-distance test. A scalar exterior point can pass the printed test. The run certifies strict
+feasibility, positive radii and monotone objective values.
+-/
 structure ColemanLiRun (version : ColemanLiVersion) (P : Chapter06.BTRParams)
     (f : (ι → ℝ) → ℝ) where
   /-- The iterates $x_k$. -/
@@ -972,7 +1114,12 @@ structure ColemanLiRun (version : ColemanLiVersion) (P : Chapter06.BTRParams)
     (colemanLiTrialRatio version f (x k) (g k) (s k) (H k)) (Δ k) (Δ (k + 1))
 
 /-- **Algorithms 13.12.1 and 13.12.2** of [conn2000trust], strict feasibility. Every iterate $x_k$
-of a Coleman–Li run is strictly positive. -/
+of a Coleman–Li run is strictly positive.
+
+**Correction.** The algorithms require a strictly positive trial in addition to the printed unsigned
+boundary-distance test. A scalar exterior point can pass the printed test. The run certifies strict
+feasibility, positive radii and monotone objective values.
+-/
 theorem ColemanLiRun.interior_iterate {version : ColemanLiVersion} {P : Chapter06.BTRParams}
     {f : (ι → ℝ) → ℝ} (r : ColemanLiRun version P f) (k : ℕ) :
     ∀ i, 0 < r.x k i := by
@@ -985,7 +1132,12 @@ theorem ColemanLiRun.interior_iterate {version : ColemanLiVersion} {P : Chapter0
     · exact ih
 
 /-- **Algorithm 13.12.1** of [conn2000trust], Step 4. Every radius $\Delta_k$ of a Coleman–Li run is
-positive. -/
+positive.
+
+**Correction.** The algorithms require a strictly positive trial in addition to the printed unsigned
+boundary-distance test. A scalar exterior point can pass the printed test. The run certifies strict
+feasibility, positive radii and monotone objective values.
+-/
 theorem ColemanLiRun.radius_pos {version : ColemanLiVersion} {P : Chapter06.BTRParams}
     {f : (ι → ℝ) → ℝ} (r : ColemanLiRun version P f) (k : ℕ) : 0 < r.Δ k := by
   induction k with
@@ -997,7 +1149,12 @@ imply strict feasibility. There are $x, s \in \mathbb{R}^1$ with $x > 0$ and
 $$\tfrac12 \operatorname{dist}(x, \partial \mathbb{R}_{\ge 0}) \le \operatorname{dist}(x + s,
   \partial \mathbb{R}_{\ge 0})$$
 for which $x + s$ is not positive. In dimension one, reflection through zero preserves the
-distance to the boundary. -/
+distance to the boundary.
+
+**Correction.** The algorithms require a strictly positive trial in addition to the printed unsigned
+boundary-distance test. A scalar exterior point can pass the printed test. The run certifies strict
+feasibility, positive radii and monotone objective values.
+-/
 theorem colemanLi_unsigned_clearance_counterexample :
     ∃ x s : Fin 1 → ℝ, (∀ i, 0 < x i) ∧
       (1 / 2 : ℝ) * orthantBoundaryDistance x ≤ orthantBoundaryDistance (x + s) ∧
@@ -1039,7 +1196,12 @@ private theorem colemanLiCorrection_nonneg (x g s : ι → ℝ) :
 $f(x_k)$ of a Coleman–Li run of either version are nonincreasing.
 
 In the second version, the nonnegative correction $\frac12 s^T C s$ is subtracted before the
-acceptance test, so an accepted step still decreases $f$. -/
+acceptance test, so an accepted step still decreases $f$.
+
+**Correction.** The algorithms require a strictly positive trial in addition to the printed unsigned
+boundary-distance test. A scalar exterior point can pass the printed test. The run certifies strict
+feasibility, positive radii and monotone objective values.
+-/
 theorem ColemanLiRun.objective_antitone {version : ColemanLiVersion} {P : Chapter06.BTRParams}
     {f : (ι → ℝ) → ℝ} (r : ColemanLiRun version P f) : Antitone (f ∘ r.x) := by
   apply antitone_nat_of_succ_le
@@ -1102,7 +1264,13 @@ with the scaled norm $\|S_k^{-1} \cdot\|$ as the trust-region norm, the correcte
 ordinary acceptance and radius rules.
 
 The sufficient decrease predicate of the resulting run is trivial. The decrease tests of the
-algorithm remain available on the original run. -/
+algorithm remain available on the original run.
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
+-/
 noncomputable def ColemanLiRun.toBTRRun {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
     (r : ColemanLiRun .first P f) :
     Chapter06.BTRRun (fun v : EuclideanSpace ℝ ι ↦ f v.ofLp) P (fun _ _ _ _ ↦ True) where
@@ -1138,7 +1306,13 @@ noncomputable def ColemanLiRun.toBTRRun {P : Chapter06.BTRParams} {f : (ι → �
     exact r.radius_update k
 
 /-- **Algorithm 13.12.1** of [conn2000trust]. The trust-region norm at iteration $k$ of the run of
-`ConnGouldToint.Chapter13.ColemanLiRun.toBTRRun` is the scaled norm $\|S_k^{-1} v\|$. -/
+`ConnGouldToint.Chapter13.ColemanLiRun.toBTRRun` is the scaled norm $\|S_k^{-1} v\|$.
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
+-/
 theorem ColemanLiRun.toBTRRun_norm {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
     (r : ColemanLiRun .first P f) (k : ℕ) (v : EuclideanSpace ℝ ι) :
     r.toBTRRun.p k v = colemanLiScaledNorm (r.x k) (r.g k) v.ofLp := by
@@ -1148,7 +1322,13 @@ theorem ColemanLiRun.toBTRRun_norm {P : Chapter06.BTRParams} {f : (ι → ℝ) �
 
 /-- **Algorithm 13.12.1** of [conn2000trust]. The model at iteration $k$ of the run of
 `ConnGouldToint.Chapter13.ColemanLiRun.toBTRRun`, evaluated at $x_k + v$, is the corrected model
-(13.12.8) at the displacement $v$. -/
+(13.12.8) at the displacement $v$.
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
+-/
 theorem ColemanLiRun.toBTRRun_model {P : Chapter06.BTRParams} {f : (ι → ℝ) → ℝ}
     (r : ColemanLiRun .first P f) (k : ℕ) (v : EuclideanSpace ℝ ι) :
     r.toBTRRun.model k (r.toBTRRun.x k + v) =
@@ -1177,7 +1357,13 @@ omit [DecidableEq ι] in
 [conn2000trust]. Let $x_i > 0$ and $x_i \le B$ for all $i$, with $B \ge 1$. Then for every $s$
 $$\|s\|_2 \le \sqrt{B}\, \|S(x, g)^{-1} s\|_2.$$
 
-The vector $S^{-1} s$ is written as the vector of quotients $s_i / |v_i|^{1/2}$. -/
+The vector $S^{-1} s$ is written as the vector of quotients $s_i / |v_i|^{1/2}$.
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
+-/
 theorem norm_le_colemanLiScaledNorm {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
     {B : ℝ} (hB : 1 ≤ B) (hbound : ∀ i, x i ≤ B) (s : ι → ℝ) :
     ‖WithLp.toLp 2 s‖ ≤ Real.sqrt B *
@@ -1203,6 +1389,11 @@ theorem norm_le_colemanLiScaledNorm {x g : ι → ℝ} (hx : ∀ i, 0 < x i)
 [conn2000trust]. Let $x \ge 0$ with $x_i \le B$ for all $i$, $B \ge 1$, let $g_i \le G$ for all
 $i$, with $G \ge 0$, and let $\|H\| \le K$. Then
 $$\|S H S + \bar G\| \le B K + G.$$
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
 -/
 theorem norm_scaledHessian_le {x g : ι → ℝ} (hx : ∀ i, 0 ≤ x i)
     {B K G : ℝ} (hB : 1 ≤ B) (hbound : ∀ i, x i ≤ B) (hG : 0 ≤ G)
@@ -1280,6 +1471,11 @@ private theorem scale_mulVec_div {x g : ι → ℝ} (hx : ∀ i, 0 < x i) (d : �
 /-- Curvature transfer, used in the proof of Theorem 13.12.6 of [conn2000trust]. Let
 $e \in \mathbb{R}$ and suppose that $w^T (S H S + \bar G) w \ge -e \|w\|^2$. Then
 $$(S w)^T A (S w) \ge -\big(e + \|S (A - H) S\|\big) \|w\|^2 - \sum_i \max\{g_i, 0\}\, w_i^2.$$
+
+**Reading.** The second-order conclusion is weak orthant criticality on the active face. The
+pointwise theorem takes vanishing scaled model curvature as an input. The version-two result uses
+explicit ratio, decrease and expansion hypotheses to transfer this property near a limit point, as
+well as the scaled gradient limit.
 -/
 theorem colemanLi_curvature_transfer (x g w : ι → ℝ) (A H : Matrix ι ι ℝ) {e : ℝ}
     (hmodel : -e * ‖WithLp.toLp 2 w‖ ^ 2 ≤ w ⬝ᵥ (scaledHessian x g H *ᵥ w)) :
@@ -1301,7 +1497,13 @@ Then $x_0$ is weakly second-order critical for $g_0$ and $A_0$.
 The hypothesis on $e_k$ says that the negative part of the scaled model curvature vanishes. For
 a direction $d$ on the active face at $x_0$, the proof bounds the preimages $S_k^{-1} d$
 uniformly and transfers the curvature by
-`ConnGouldToint.Chapter13.colemanLi_curvature_transfer`. -/
+`ConnGouldToint.Chapter13.colemanLi_curvature_transfer`.
+
+**Reading.** The second-order conclusion is weak orthant criticality on the active face. The
+pointwise theorem takes vanishing scaled model curvature as an input. The version-two result uses
+explicit ratio, decrease and expansion hypotheses to transfer this property near a limit point, as
+well as the scaled gradient limit.
+-/
 theorem theorem_13_12_6 {x g : ℕ → ι → ℝ} {A H : ℕ → Matrix ι ι ℝ}
     {x₀ g₀ : ι → ℝ} {A₀ : Matrix ι ι ℝ}
     (hx : Tendsto x atTop (𝓝 x₀)) (hg : Tendsto g atTop (𝓝 g₀))
@@ -1536,7 +1738,13 @@ $$\|S(x_k, g(x_k))\, g(x_k)\| \to 0,$$
 and every limit $z$ of $x_{j(n)}$ with $j(n) \to \infty$ is first-order critical for $g(z)$.
 
 The model decrease is compared with the constrained scaled Cauchy point through the corrected
-bound of Theorem 13.12.3. -/
+bound of Theorem 13.12.3.
+
+**Reading.** The shared trust-region conversion is for version one. The convergence statement uses a
+compact positive-iterate run, explicit norm and model bounds, an objective lower bound and
+sufficient decrease from the corrected constrained Cauchy estimate. The limit-point implication is
+also stated separately along a filter.
+-/
 theorem theorem_13_12_4 [Nonempty ι]
     {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     {sufficient : ℕ → (EuclideanSpace ℝ ι → ℝ) → EuclideanSpace ℝ ι → EuclideanSpace ℝ ι → Prop}
@@ -1683,7 +1891,13 @@ Then $z$ is weakly second-order critical for $g(z)$ and $A(z)$.
 The corrected ratio gives objective decrease, and the uncorrected model error makes small-radius
 trials very successful. The forced expansion then excludes a negative curvature direction on the
 active face at $z$. The first-order limit and the uniform small-radius agreement of the
-uncorrected model are hypotheses. -/
+uncorrected model are hypotheses.
+
+**Reading.** The second-order conclusion is weak orthant criticality on the active face. The
+pointwise theorem takes vanishing scaled model curvature as an input. The version-two result uses
+explicit ratio, decrease and expansion hypotheses to transfer this property near a limit point, as
+well as the scaled gradient limit.
+-/
 theorem theorem_13_12_6_version2
     {P : BTRParams} (f : (ι → ℝ) → ℝ) (g : EuclideanSpace ℝ ι → (ι → ℝ))
     (A : EuclideanSpace ℝ ι → Matrix ι ι ℝ) (H : ℕ → Matrix ι ι ℝ)
@@ -1961,7 +2175,13 @@ $$m(0) - m(-t x) < \tfrac12 \pi \min\Big\{\frac\pi2, 1\Big\}, \qquad \pi = \min\
 where $m(s) = s + \frac12 \frac1x s^2$.
 
 The right side is the printed bound with criticality cap $\kappa$, radius $1$ and curvature
-constant $2$. The trial point $x - t x$ is strictly positive and the fraction is $9/10$. -/
+constant $2$. The trial point $x - t x$ is strictly positive and the fraction is $9/10$.
+
+**Correction.** The corrected estimate uses the full scaled curvature and a ray-time cap depending
+on the boundary fraction and a gradient upper bound. The counterexamples show that the printed
+capped criticality alone cannot give the claimed bound, even with a strictly feasible minimizing
+trial.
+-/
 theorem theorem_13_12_3_counterexample (κmsd : ℝ) (hκ : 0 < κmsd) :
     ∃ x t : ℝ, 0 < x ∧ t ∈ scalarColemanLiTimes x ∧ 0 < x - t * x ∧
       IsMinOn (fun u ↦ scalarColemanLiModel x (-u * x)) (scalarColemanLiTimes x) t ∧
@@ -2003,7 +2223,13 @@ $$m(0) - m(-t S^2 g) < \tfrac12 \pi \min\Big\{\frac\pi2, 1\Big\}, \qquad \pi = \
   \kappa\},$$
 where $m$ is the corrected model (13.12.8) with value $0$.
 
-The curvature constant is $2$ by `ConnGouldToint.Chapter13.scalarColemanLiCurvature`. -/
+The curvature constant is $2$ by `ConnGouldToint.Chapter13.scalarColemanLiCurvature`.
+
+**Correction.** The corrected estimate uses the full scaled curvature and a ray-time cap depending
+on the boundary fraction and a gradient upper bound. The counterexamples show that the printed
+capped criticality alone cannot give the claimed bound, even with a strictly feasible minimizing
+trial.
+-/
 theorem theorem_13_12_3_matrix_counterexample (κmsd : ℝ) (hκ : 0 < κmsd) :
     ∃ x t : ℝ, 0 < x ∧
       let xv : Fin 1 → ℝ := fun _ ↦ x
@@ -2053,14 +2279,24 @@ variable {m : Type*} [Fintype ι] [DecidableEq ι] [Fintype m] [DecidableEq m]
 /-- **Equations (13.12.28) and (13.12.32)** of [conn2000trust]. For a matrix
 $A \in \mathbb{R}^{m \times \iota}$, slacks $c$ and a step $s$, the **slack step** is
 $$v_i = \frac{(A s)_i}{\sqrt{c_i}},$$
-the solution of $C^{1/2} v = A s$ when $c > 0$. -/
+the solution of $C^{1/2} v = A s$ when $c > 0$.
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 noncomputable def tramSlackStep (A : Matrix m ι ℝ) (c : m → ℝ) (s : ι → ℝ) : m → ℝ :=
   fun i ↦ (A *ᵥ s) i / Real.sqrt (c i)
 
 /-- **Equation (13.12.34)** of [conn2000trust]. The **model correction** is the matrix
 $A^T C^{-1} Y A$, where $C = \operatorname{diag}(c)$ and $Y = \operatorname{diag}(y)$.
 
-For the modified model, $y$ is the vector of absolute values of the multipliers. -/
+For the modified model, $y$ is the vector of absolute values of the multipliers.
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 noncomputable def tramCorrection (A : Matrix m ι ℝ) (c y : m → ℝ) : Matrix ι ι ℝ :=
   Aᵀ * Matrix.diagonal (fun i ↦ y i / c i) * A
 
@@ -2068,24 +2304,43 @@ noncomputable def tramCorrection (A : Matrix m ι ℝ) (c y : m → ℝ) : Matri
 $$m_f(s) + \tfrac12 s^T A^T C^{-1} Y A\, s.$$
 
 **Correction.** Both terms are evaluated at the trial displacement $s$, as the elimination of
-the slack step from (13.12.31) gives. -/
+the slack step from (13.12.31) gives.
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 noncomputable def tramModel (mf : (ι → ℝ) → ℝ) (A : Matrix m ι ℝ)
     (c y : m → ℝ) (s : ι → ℝ) : ℝ :=
   mf s + (1 / 2) * (s ⬝ᵥ (tramCorrection A c y *ᵥ s))
 
-/-- **Equation (13.12.35)** of [conn2000trust]. The **reduced metric** is $I + A^T C^{-1} A$. -/
+/-- **Equation (13.12.35)** of [conn2000trust]. The **reduced metric** is $I + A^T C^{-1} A$.
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 noncomputable def tramMetric (A : Matrix m ι ℝ) (c : m → ℝ) : Matrix ι ι ℝ :=
   1 + Aᵀ * Matrix.diagonal (fun i ↦ (c i)⁻¹) * A
 
 /-- **Equation (13.12.35)** of [conn2000trust]. The **reduced trust-region norm** of $s$ is
 $$\big(s^T (I + A^T C^{-1} A) s\big)^{1/2}.$$
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
 -/
 noncomputable def tramNorm (A : Matrix m ι ℝ) (c : m → ℝ) (s : ι → ℝ) : ℝ :=
   Real.sqrt (s ⬝ᵥ (tramMetric A c *ᵥ s))
 
 omit [DecidableEq ι] in
 /-- **Equation (13.12.32)** of [conn2000trust]. If $c_i > 0$ for all $i$, then for each step $s$ the
-slack step is the unique solution $v$ of $C^{1/2} v = A s$. -/
+slack step is the unique solution $v$ of $C^{1/2} v = A s$.
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 theorem tramSlackStep_unique (A : Matrix m ι ℝ) {c : m → ℝ} (hc : ∀ i, 0 < c i)
     (s : ι → ℝ) (v : m → ℝ) :
     Matrix.diagonal (fun i ↦ Real.sqrt (c i)) *ᵥ v = A *ᵥ s ↔
@@ -2118,6 +2373,10 @@ omit [DecidableEq ι] in
 /-- Reduction from (13.12.31) to (13.12.34) in [conn2000trust]. If $c_i > 0$ for all $i$, the
 reduced model is the model with slacks evaluated at the slack step $v$ of $s$:
 $$m_f(s) + \tfrac12 s^T A^T C^{-1} Y A\, s = m_f(s) + \tfrac12 \sum_i y_i v_i^2.$$
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
 -/
 theorem tramModel_eq_slackModel (mf : (ι → ℝ) → ℝ) (A : Matrix m ι ℝ) {c : m → ℝ}
     (hc : ∀ i, 0 < c i) (y : m → ℝ) (s : ι → ℝ) :
@@ -2142,7 +2401,12 @@ So the reduced bound is equivalent to the Euclidean trust-region bound (13.12.33
 step $(s, v)$.
 
 **Typo.** The printed display (13.12.35) contains a stray factor $n$. The reduced bound uses the
-radius $\Delta$ of (13.12.33). -/
+radius $\Delta$ of (13.12.33).
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 theorem tramNorm_le_iff_exists_slack (A : Matrix m ι ℝ) {c : m → ℝ} (hc : ∀ i, 0 < c i)
     (s : ι → ℝ) (Δ : ℝ) :
     tramNorm A c s ≤ Δ ↔ ∃ v : m → ℝ,
@@ -2156,7 +2420,12 @@ $i$, and let $v(s)$ be the slack step of $s$. Then $s$ minimizes the reduced mod
 $\{t : \|t\|_{I + A^T C^{-1} A} \le \Delta\}$ and lies in this set if and only if $(s, v(s))$
 minimizes
 $$M(t, w) = m_f(t) + \tfrac12 \sum_i y_i w_i^2$$
-over $\{(t, w) : C^{1/2} w = A t,\ (\|t\|^2 + \|w\|^2)^{1/2} \le \Delta\}$ and lies in this set. -/
+over $\{(t, w) : C^{1/2} w = A t,\ (\|t\|^2 + \|w\|^2)^{1/2} \le \Delta\}$ and lies in this set.
+
+**Correction.** The reduced model evaluates both terms at the trial displacement. Eliminating the
+uniquely determined slack uses the same radius as the joint Euclidean constraint, without the extra
+printed factor. The equivalences explicitly assume strictly positive slack coordinates.
+-/
 theorem tramSubproblem_iff (mf : (ι → ℝ) → ℝ) (A : Matrix m ι ℝ) {c : m → ℝ}
     (hc : ∀ i, 0 < c i) (y : m → ℝ) (s : ι → ℝ) (Δ : ℝ) :
     let S := {t | tramNorm A c t ≤ Δ}

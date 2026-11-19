@@ -97,12 +97,26 @@ Cholesky factor of §4.2.
 
 ## Deviations from the source
 
+* **Correction.** The first component of the Aasen recurrence uses the boundary rule in (4.4.14).
+  See `GolubVanLoan.Chapter04.aasenH`, `GolubVanLoan.Chapter04.hval`.
+* **Reading.** The rounded Aasen column updates use running subtractions. See
+  `GolubVanLoan.Chapter04.aasenColumn`.
+* **Reading.** The Aasen recurrence totalizes division at a zero subdiagonal pivot. See
+  `GolubVanLoan.Chapter04.aasenNoPivot`, `GolubVanLoan.Chapter04.ColDone`.
+* **Reading.** The no-pivot factorization assumes nonzero entries only where the program divides.
+  See `GolubVanLoan.Chapter04.equation_4_4_14`.
+* **Generalization.** The one-by-one growth bound needs only a positive entry bound and an
+  admissible pivot. See `GolubVanLoan.Chapter04.equation_4_4_16`.
+* **Generalization.** The two-by-two growth bound allows threshold equality at the selected diagonal
+  entries. See `GolubVanLoan.Chapter04.equation_4_4_17`.
+* **Scope.** The parameter theorem characterizes equality of the two factors. See
+  `GolubVanLoan.Chapter04.bunchParlett_alpha`.
+* **Scope.** The theorem for (4.4.5) gives the matrix identity and its Hessenberg support. See
+  `GolubVanLoan.Chapter04.equation_4_4_5`.
 * **(4.4.2)** (correction). The source says that $P$ is chosen so that $|\ell_{ij}| \le 1$. This is
   false for the Bunch–Parlett strategy of the section. The library proves
   $|\ell_{ij}| \le \max(1/\alpha, 1/(1 - \alpha))$. See
   `GolubVanLoan.Chapter04.equation_4_4_2_multipliers`.
-* **(4.4.9)** (typo). The vector $[0; \ell_{52}; \ell_{53}; \ell_{53}; \ell_{54}]$ should read
-  $[0; \ell_{52}; \ell_{53}; \ell_{54}; 1]$. See `GolubVanLoan.Chapter04.equation_4_4_14`.
 * **(4.4.10)** (typo). The loop starts at $k = 1$, which needs an undefined $\beta_0$. The program
   follows (4.4.14), whose loop starts at $k = 2$. See `GolubVanLoan.Chapter04.aasenNoPivot`.
 * **(4.4.15)** (generalization). The pivot block $E$ need not be symmetric for the displayed
@@ -239,7 +253,11 @@ $A \in \mathbb{R}^{n \times n}$, without pivoting. Then $H = TL^T$ is upper Hess
 $A = LH$.
 
 So $A(:, j) = LH(:, j) = \sum_{k \le j+1} L(:, k) h_k$. Aasen's method computes $L$ column by
-column from this relation. -/
+column from this relation.
+
+**Reading.** Lean states the Hessenberg property and the matrix identity underlying the source's
+column expansion. The display also writes out the truncated column sum up to $j+1$.
+-/
 theorem equation_4_4_5 {A L T : Matrix (Fin n) (Fin n) ℝ} (h : IsAasen A L T) :
     (T * Lᵀ).IsUpperHessenberg ∧ A = L * (T * Lᵀ) :=
   ⟨h.isUpperHessenberg_mul_transpose, h.eq_mul_mul_transpose⟩
@@ -253,7 +271,12 @@ computed from the state $(\alpha, \beta, L)$. With 0-based indices,
 $$h_0 = \beta_0 \ell_{j1}, \qquad h_k = \beta_{k-1} \ell_{j,k-1} + \alpha_k \ell_{jk} + \beta_k
   \ell_{j,k+1} \quad (0 < k < j),$$
 which is (4.4.10), and $h_j = a_{jj} - L(j, 0{:}j-1) \cdot h(0{:}j-1)$, which is (4.4.11), as a
-running difference. Every product and sum is rounded. -/
+running difference. Every product and sum is rounded.
+
+**Correction.** The first component uses the separately displayed boundary rule. In the earlier
+(4.4.10), the interior loop incorrectly begins at one and uses an undefined $\beta_0$. The final
+algorithm (4.4.14) correctly starts that loop at two.
+-/
 def aasenH {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (s : (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ))
     (j : Fin n) : M (ℕ → ℝ) := do
   let h ← (List.range j).foldlM (fun (h : ℕ → ℝ) (k : ℕ) => do
@@ -273,7 +296,12 @@ def aasenH {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (s : (ℕ → ℝ) × (ℕ
 program returns the diagonal entry $\alpha_j = h_j - \beta_{j-1} \ell_{j,j-1}$ and the vector
 $v(j{+}1{:}n) = A(j{+}1{:}n, j) - L(j{+}1{:}n, 1{:}j) \cdot h(1{:}j)$ of (4.4.7), a running
 difference from the entries $A(i, j)$. At $j = 1$ it returns $\alpha_1 = a_{11}$ and
-$v(2{:}n) = A(2{:}n, 1)$ without rounding. -/
+$v(2{:}n) = A(2{:}n, 1)$ without rounding.
+
+**Reading.** The dot-product differences are evaluated as rounded running subtractions. At the first
+step the program copies the diagonal and full column, of which only the entries below the diagonal
+are used as $v$.
+-/
 def aasenColumn {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (s : (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)) (j : Fin n) : M (ℝ × (ℕ → ℝ)) :=
   if (j : ℕ) = 0 then pure (A j j, fun i : ℕ => if h : i < n then A ⟨i, h⟩ j else 0) else do
@@ -316,7 +344,11 @@ triangular $L$, as arrays indexed by `ℕ`; the entries outside $0 \le i, k < n$
 The indices are 0-based. The column $h(1{:}j)$ is `GolubVanLoan.Chapter04.aasenH`, and
 $\alpha_j$ and $v$ are `GolubVanLoan.Chapter04.aasenColumn`. Every product, sum, difference and
 quotient is rounded; the copies $\alpha_1 = a_{11}$, $v = A(:, 1)$ and $\beta_j = v(j+1)$ are
-exact. -/
+exact.
+
+**Reading.** The recurrence is evaluated with Lean's totalized division when a divisor is zero. The
+exact factorization theorem requires every divisor used by this recurrence to be nonzero.
+-/
 noncomputable def aasenNoPivot {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) :
     M ((ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)) :=
   (List.finRange n).foldlM (fun (s : (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)) (j : Fin n) => do
@@ -337,7 +369,12 @@ end Programs
 -/
 private abbrev St := (ℕ → ℝ) × (ℕ → ℝ) × (ℕ → ℕ → ℝ)
 
-/-- The entries $h_k = H(k, j)$, $k < j$, computed exactly from the state by (4.4.10). -/
+/-- The entries $h_k = H(k, j)$, $k < j$, computed exactly by (4.4.10) and (4.4.14).
+
+**Correction.** The first component uses the separately displayed boundary rule. In the earlier
+(4.4.10), the interior loop incorrectly begins at one and uses an undefined $\beta_0$. The final
+algorithm (4.4.14) correctly starts that loop at two.
+-/
 private def hval (s : St) (j k : ℕ) : ℝ :=
   if k = 0 then s.2.1 0 * s.2.2 j 1 else
     s.2.1 (k - 1) * s.2.2 j (k - 1) + s.1 k * s.2.2 j k + s.2.1 k * s.2.2 j (k + 1)
@@ -359,8 +396,12 @@ private def vval (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j i : Fin n) : ℝ :
 private def αval (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) : ℝ :=
   if (j : ℕ) = 0 then A j j else hdiag A s j - s.2.1 (j - 1) * s.2.2 j (j - 1)
 
-/-- Column $j$ of the state is a finished column of Aasen's method: $\alpha_j$, $\beta_j$ and the
-new column $j + 1$ of $L$ have their exact values. -/
+/-- Column $j$ of the state is finished: $\alpha_j$, $\beta_j$ and the new column $j + 1$ of $L$
+have their exact values under the output recurrences in (4.4.14).
+
+**Reading.** The recurrence is evaluated with Lean's totalized division when a divisor is zero. The
+exact factorization theorem requires every divisor used by this recurrence to be nonzero.
+-/
 private def ColDone (A : Matrix (Fin n) (Fin n) ℝ) (s : St) (j : Fin n) : Prop :=
   s.1 j = αval A s j ∧
     (∀ h : (j : ℕ) + 1 < n, s.2.1 j = vval A s j ⟨j + 1, h⟩) ∧
@@ -585,16 +626,17 @@ $$A = LTL^T, \qquad T = \begin{bmatrix} \alpha_1 & \beta_1 & & \\ \beta_1 & \alp
   \\ & \ddots & \ddots & \beta_N \\ & & \beta_N & \alpha_{N+1} \end{bmatrix},$$
 with $L$ unit lower triangular and $L(:, 1) = e_1$.
 
-**Typo.** In the derivation, the vector $[0; \ell_{52}; \ell_{53}; \ell_{53}; \ell_{54}]$ of
-(4.4.9) should read $[0; \ell_{52}; \ell_{53}; \ell_{54}; 1]$. The theorem does not depend on
-the misprint.
-
 The numbers $\beta_1, \dots, \beta_{N-1}$ are the numbers $v(j+1)$ that the method uses as
 divisors; with 0-based indices the hypothesis is on $\beta_j$ for $j + 1 < N$. The source
 obtains the method by combining the equations of its derivation. The loop invariant is that
 derivation, (4.4.5)–(4.4.13): the columns up to $j$ of $A = LH$, with $H = TL^T$ upper
 Hessenberg, hold with $h(1{:}j)$ the column $j$ of $H$. The conclusion is `Matrix.IsAasen` with
-$T$ = `Matrix.tridiagonalOf β α β`. -/
+$T$ = `Matrix.tridiagonalOf β α β`.
+
+**Reading.** The program's exact factorization theorem explicitly assumes nonzero $v(j+1)$ for the
+iterations that divide by it. The final subdiagonal entry can be zero because it is never used as a
+divisor.
+-/
 theorem equation_4_4_14 {N : ℕ} {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} (hA : A.IsSymm)
     (hβ : ∀ j : ℕ, j + 1 < N → (Id.run (aasenNoPivot pure A)).2.1 j ≠ 0) :
     IsAasen A (of fun i k : Fin (N + 1) => (Id.run (aasenNoPivot pure A)).2.2 i k)
@@ -772,7 +814,12 @@ For a symmetric $A$, the matrix $\tilde A$ is the matrix $B - vv^T / a_{pp}$ of 
 $s = 1$; the theorem does not need the symmetry. In the Bunch–Parlett strategy,
 $\mu_0 = \max |a_{ij}|$ and $\mu_1 = \max |a_{ii}|$; when $\mu_1 \ge \alpha \mu_0$, the maximal
 diagonal entry is such a pivot. The source says that the bound is easy to verify from (4.4.15)
-for $s = 1$. The reduced matrix is `Matrix.schurComplementSingle A p`. -/
+for $s = 1$. The reduced matrix is `Matrix.schurComplementSingle A p`.
+
+**Generalization.** Lean permits any matrix, any positive uniform entry bound $\mu_0$, and any
+positive $\alpha$ for which the chosen diagonal entry meets the threshold. The source uses symmetric
+matrices, $0 < \alpha < 1$, and actual maximum entry and diagonal magnitudes.
+-/
 theorem equation_4_4_16 {A : Matrix (Fin n) (Fin n) ℝ} {p : Fin n} {α μ₀ : ℝ} (hα : 0 < α)
     (hμ₀ : 0 < μ₀) (hA : ∀ i j, |A i j| ≤ μ₀) (hp : α * μ₀ ≤ |A p p|)
     (i j : {i : Fin n // i ≠ p}) :
@@ -789,7 +836,12 @@ for all indices $i, j \notin \{p, q\}$.
 
 In the Bunch–Parlett strategy, the bounds on $a_{pp}$ and $a_{qq}$ follow from
 $\mu_1 < \alpha \mu_0$. The reduced matrix is `Matrix.schurComplement` of $A$ reindexed along
-`Sum.elim ![p, q] Subtype.val`, that is, along the pivot pair followed by the other indices. -/
+`Sum.elim ![p, q] Subtype.val`, that is, along the pivot pair followed by the other indices.
+
+**Generalization.** Only the two chosen diagonal entries need satisfy their upper bounds, which can
+be attained. The source uses the strict inequality for the largest diagonal entry to select the
+two-by-two branch.
+-/
 theorem equation_4_4_17 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : Fin n}
     {α μ₀ : ℝ} (hα₀ : 0 < α) (hα₁ : α < 1) (hμ₀ : 0 < μ₀) (hAμ : ∀ i j, |A i j| ≤ μ₀)
     (hqp : |A q p| = μ₀) (hpp : |A p p| ≤ α * μ₀) (hqq : |A q q| ≤ α * μ₀) :
@@ -805,7 +857,11 @@ $$(1 + \alpha^{-1})^2 = \frac{3 - \alpha}{1 - \alpha}.$$
 
 The left side is the growth factor of two $s = 1$ steps and the right side that of one $s = 2$
 step. By equating them, Bunch and Parlett conclude that this $\alpha$ is optimum from the
-standpoint of minimizing the bound on element growth. -/
+standpoint of minimizing the bound on element growth.
+
+**Reading.** Lean characterizes the unique intersection of the two growth factors. The source also
+identifies it as the minimizer of the worst growth factor.
+-/
 theorem bunchParlett_alpha :
     {α : ℝ | 0 < α ∧ α < 1 ∧ (1 + α⁻¹) ^ 2 = (3 - α) / (1 - α)} = {(1 + √17) / 8} :=
   BunchParlett.alpha_eq

@@ -97,6 +97,13 @@ The proofs specialize the CG and PCG methods of the backbone modules `Numlib.Kry
 
 ## Deviations from the source
 
+* **Algorithms 5.1.1–5.1.4** (reading). The recurrences are indexed by every natural number,
+  with scalar division totalized at zero. The defined-step predicate identifies the two
+  nonzero denominators of Algorithm 5.1.1. The transformed and preconditioned forms use
+  Hilbert-space operators in place of matrices.
+* **Lemmas 5.1.1 and 5.1.2** (generalization). Subspace minimization uses linear maps and
+  adjoints. The line update assumes a previous minimizer, nonnegative curvature on the
+  enlarged span and nonzero curvature in the added direction.
 * **Lemma 5.1.5** (correction). The gradient pairings $\langle p_j, r_j \rangle$ must be nonzero at
   all earlier directions, not only at the last. See `ConnGouldToint.Chapter05.lemma_5_1_5` and
   `ConnGouldToint.Chapter05.counterexample_5_1_5`.
@@ -116,7 +123,10 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 the **quadratic objective** is
 $$q(x) = \langle c, x \rangle + \tfrac{1}{2} \langle x, Hx \rangle.$$
 
-It is `Subproblem.quadModel c H`. -/
+It is `Subproblem.quadModel c H`.
+
+**Reading.** Quadratic with a bounded operator on a real inner-product space.
+-/
 noncomputable abbrev quadraticObjective (c : E) (H : E →L[ℝ] E) : E → ℝ :=
   Subproblem.quadModel c H
 
@@ -126,7 +136,10 @@ step** returns $(r', p')$ with
 $$\alpha = \frac{\|r\|^2}{\langle p, Hp \rangle}, \qquad r' = r + \alpha Hp, \qquad \beta =
   \frac{\|r'\|^2}{\|r\|^2}, \qquad p' = -r' + \beta p.$$
 
-The state does not contain the iterate. The divisions use Lean's convention $a / 0 = 0$. -/
+The state does not contain the iterate. The divisions use Lean's convention $a / 0 = 0$.
+
+**Reading.** Printed conjugate direction update with totalized scalar divisions.
+-/
 noncomputable def conjugateDirectionStep (H : E →ₗ[ℝ] E) (state : E × E) : E × E :=
   let Hp := H state.2
   let α := ‖state.1‖ ^ 2 / ⟪state.2, Hp⟫
@@ -138,7 +151,10 @@ noncomputable def conjugateDirectionStep (H : E →ₗ[ℝ] E) (state : E × E) 
 $r_0 \in E$, the $k$-th state $(r_k, p_k)$ is obtained from $(r_0, -r_0)$ by $k$ conjugate
 direction steps.
 
-The algorithm generates conjugate directions without computing the iterates of Algorithm 5.1.2. -/
+The algorithm generates conjugate directions without computing the iterates of Algorithm 5.1.2.
+
+**Reading.** Returns an iterate at every index, including past termination or division breakdown.
+-/
 noncomputable def algorithm_5_1_1 (H : E →ₗ[ℝ] E) (r₀ : E) (k : ℕ) : E × E :=
   (conjugateDirectionStep H)^[k] (r₀, -r₀)
 
@@ -154,7 +170,10 @@ $$\alpha_k = \frac{\|r_k\|^2}{\langle p_k, H p_k \rangle}, \quad r_{k+1} = r_k +
 
 The divisions use Lean's convention $a / 0 = 0$, so a step of the algorithm in exact arithmetic
 also needs both denominators to be nonzero; see
-`ConnGouldToint.Chapter05.ConjugateDirectionStepDefined`. -/
+`ConnGouldToint.Chapter05.ConjugateDirectionStepDefined`.
+
+**Reading.** The totalized recurrence also yields values when a denominator vanishes.
+-/
 theorem algorithm_5_1_1_succ (H : E →ₗ[ℝ] E) (r₀ : E) (k : ℕ) :
     let current := algorithm_5_1_1 H r₀ k
     let α := ‖current.1‖ ^ 2 / ⟪current.2, H current.2⟫
@@ -185,7 +204,10 @@ $\rho_k$ and $d_k$ are the residual and the direction of the conjugate gradient 
 $Hx = -r_0$ from $x_0 = 0$.
 
 The conjugate gradient states are `Krylov.CG.iterate`; their residual has the opposite sign to
-the gradient. -/
+the gradient.
+
+**Reading.** State-by-state relation in inner-product spaces and at all indices.
+-/
 theorem algorithm_5_1_1_eq_projectedCG (H : E →ₗ[ℝ] E) (r₀ : E) (k : ℕ) :
     algorithm_5_1_1 H r₀ k =
       (-(CG.iterate H (-r₀) 0 k).r, (CG.iterate H (-r₀) 0 k).p) := by
@@ -212,7 +234,10 @@ theorem conjugateDirectionStepDefined_iff (H : E →ₗ[ℝ] E) (state : E × E)
 
 /-- **Algorithm 5.1.1** of [conn2000trust], conjugacy. Let $H$ be symmetric positive definite, and
 let $r_0 \in E$. Then the directions of Algorithm 5.1.1 are conjugate:
-$\langle p_i, H p_j \rangle = 0$ for all $i \neq j$. -/
+$\langle p_i, H p_j \rangle = 0$ for all $i \neq j$.
+
+**Reading.** Conjugacy in a real inner-product space under symmetric coercivity.
+-/
 theorem algorithm_5_1_1_conjugate {H : E →ₗ[ℝ] E} (hH : H.IsSymmetricCoercive)
     (r₀ : E) {i j : ℕ} (hij : i ≠ j) :
     ⟪(algorithm_5_1_1 H r₀ i).2, H (algorithm_5_1_1 H r₀ j).2⟫ = 0 := by
@@ -221,7 +246,10 @@ theorem algorithm_5_1_1_conjugate {H : E →ₗ[ℝ] E} (hH : H.IsSymmetricCoerc
 
 /-- **Algorithm 5.1.1** of [conn2000trust], positive-curvature case. Let $H$ be symmetric positive
 definite, and let $r_0 \in E$. Then the state $(r_k, p_k)$ admits a defined step if and only if
-$r_k \neq 0$. -/
+$r_k \neq 0$.
+
+**Reading.** Coercivity means a nonzero residual is exactly the condition for another defined step.
+-/
 theorem algorithm_5_1_1_stepDefined_iff {H : E →ₗ[ℝ] E} (hH : H.IsSymmetricCoercive)
     (r₀ : E) (k : ℕ) :
     ConjugateDirectionStepDefined H (algorithm_5_1_1 H r₀ k) ↔
@@ -239,7 +267,10 @@ residual $-g_k = -(Hx_k + c)$ and the search direction $p_k$ of the conjugate gr
 for $Hx = -c$.
 
 The state is `Krylov.CG.iterate H (-c) x₀ k`. It stores the residual $-g_k$ in place of the
-gradient $g_k$ of the source. -/
+gradient $g_k$ of the source.
+
+**Reading.** Totalized CG state with reversed residual sign.
+-/
 noncomputable abbrev algorithm_5_1_2 (H : E →ₗ[ℝ] E) (c x₀ : E) (k : ℕ) : CG.State E :=
   CG.iterate H (-c) x₀ k
 
@@ -249,7 +280,10 @@ $E$ and $c \in E$. Algorithm 5.1.3 applies the conjugate gradient method (Algori
 $\bar{x}_0 \in F$ to the transformed quadratic
 $$\bar{q}(\bar{x}) = \langle S^* c, \bar{x} \rangle + \tfrac{1}{2} \langle \bar{x}, S^* H S
   \bar{x} \rangle,$$
-which is $q(S \bar{x})$. -/
+which is $q(S \bar{x})$.
+
+**Reading.** Transformation by a continuous linear equivalence between Hilbert spaces.
+-/
 noncomputable abbrev algorithm_5_1_3 {F : Type*}
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
     (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (c : E) (xbar₀ : F) (k : ℕ) : CG.State F :=
@@ -258,7 +292,10 @@ noncomputable abbrev algorithm_5_1_3 {F : Type*}
 
 /-- **Algorithm 5.1.3** of [conn2000trust], initialization. With $S = R^{-1}$ and the transformed
 gradient $\bar{g}_0 = S^*(H S \bar{x}_0 + c)$, the initial state is
-$(\bar{x}_0, -\bar{g}_0, -\bar{g}_0)$: the iterate, the residual and the direction. -/
+$(\bar{x}_0, -\bar{g}_0, -\bar{g}_0)$: the iterate, the residual and the direction.
+
+**Reading.** Uses the inverse map and its adjoint for transformed initialization.
+-/
 theorem algorithm_5_1_3_zero {F : Type*}
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
     (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (c : E) (xbar₀ : F) :
@@ -274,7 +311,10 @@ $$\alpha_k = \frac{\|\bar{g}_k\|^2}{\langle \bar{p}_k, \bar{H} \bar{p}_k \rangle
   \bar{g}_{k+1} = \bar{g}_k + \alpha_k \bar{H} \bar{p}_k, \qquad \beta_k =
   \frac{\|\bar{g}_{k+1}\|^2}{\|\bar{g}_k\|^2}.$$
 
-The gradients $\bar{g}_k$ have the sign of the source; the state stores $-\bar{g}_k$. -/
+The gradients $\bar{g}_k$ have the sign of the source; the state stores $-\bar{g}_k$.
+
+**Reading.** Transformed update via adjoints and totalized denominators.
+-/
 theorem algorithm_5_1_3_succ {F : Type*}
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
     (R : E ≃L[ℝ] F) (H : E →ₗ[ℝ] E) (c : E) (xbar₀ : F) (k : ℕ) :
@@ -311,7 +351,10 @@ theorem algorithm_5_1_3_succ {F : Type*}
     rw [hx, hr, hp]
 
 /-- **Equation (5.1.53)** of [conn2000trust]. For an isomorphism $R : E \to F$ of real Hilbert
-spaces, the **preconditioner induced by the transformation** is $M = R^* R$. -/
+spaces, the **preconditioner induced by the transformation** is $M = R^* R$.
+
+**Reading.** Uses the Hilbert-space adjoint factorization R*R.
+-/
 noncomputable def transformedCGPreconditioner {F : Type*}
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
     (R : E ≃L[ℝ] F) : E →L[ℝ] E :=
@@ -321,7 +364,10 @@ noncomputable def transformedCGPreconditioner {F : Type*}
 Hilbert spaces with $S = R^{-1}$, the operator $S S^* = R^{-1} R^{-*}$ inverts $M = R^* R$:
 $M(S S^* x) = x$ for all $x \in E$.
 
-Transformed conjugate gradients apply $M^{-1}$ in this form. -/
+Transformed conjugate gradients apply $M^{-1}$ in this form.
+
+**Reading.** Uses the inverse map and adjoint in the two-sided inverse identity.
+-/
 theorem transformedCGPreconditioner_apply_inverse {F : Type*}
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace E] [CompleteSpace F]
     (R : E ≃L[ℝ] F) (x : E) :
@@ -344,7 +390,10 @@ of the preconditioned conjugate gradient method for $Hx = -c$ with the inverse p
 $M^{-1}$.
 
 The state is `Krylov.PCG.iterate H Minv (-c) x₀ k`. It stores $-g_k$ in place of $g_k$, and it
-applies $M^{-1}$ to the residual when the preconditioned gradient is needed. -/
+applies $M^{-1}$ to the residual when the preconditioned gradient is needed.
+
+**Reading.** Total PCG state over arbitrary inner-product space with explicit inverse map.
+-/
 noncomputable abbrev algorithm_5_1_4 (H Minv : E →ₗ[ℝ] E) (c x₀ : E) (k : ℕ) : PCG.State E :=
   PCG.iterate H Minv (-c) x₀ k
 
@@ -361,7 +410,10 @@ Then
   $x + \operatorname{range} S$.
 
 The invertible operator $S^* H S$ is a continuous linear equivalence `B` with
-`B z = S.adjoint (H (S z))`. -/
+`B z = S.adjoint (H (S z))`.
+
+**Reading.** Reduced critical point and minimum use Hilbert-space maps and an explicit inverse.
+-/
 theorem lemma_5_1_1 [CompleteSpace E] {F : Type*}
     [NormedAddCommGroup F] [InnerProductSpace ℝ F] [CompleteSpace F]
     (H : E →L[ℝ] E) (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
@@ -419,7 +471,11 @@ $\langle p_i, Hx' + c \rangle = 0$ for all $i \le k$, and $x'$ minimizes $q$ ove
 $x_0 + V_{k+1}$.
 
 The quadratic form need only be nonnegative on $V_{k+1}$, with nonzero curvature in the new
-direction $p_k$. -/
+direction $p_k$.
+
+**Reading.** General line update assumes previous minimizer and positive curvature in the added
+direction, allowing semidefinite enlarged span.
+-/
 theorem lemma_5_1_2 (H : E →L[ℝ] E) (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
     (c x₀ xk : E) (p : ℕ → E) (k : ℕ)
     (hxk : xk - x₀ ∈ Submodule.span ℝ (p '' Set.Iio k))
@@ -491,7 +547,10 @@ theorem lemma_5_1_2 (H : E →L[ℝ] E) (hH : (H : E →ₗ[ℝ] E).IsSymmetric)
 $E$, and let $\beta_{j,i} \in \mathbb{R}$. Suppose that $p_0 = y_0$ and
 $$p_{j+1} = y_{j+1} + \sum_{i=0}^{j} \beta_{j,i} p_i \quad \text{for } j < k.$$
 If $r \in E$ satisfies $\langle p_i, r \rangle = 0$ for all $i \le k$, then
-$\langle y_i, r \rangle = 0$ for all $i \le k$. -/
+$\langle y_i, r \rangle = 0$ for all $i \le k$.
+
+**Reading.** Same orthogonality implication in an arbitrary real inner-product space.
+-/
 theorem lemma_5_1_3 (y p : ℕ → E) (β : ℕ → ℕ → ℝ) (k : ℕ) (r : E)
     (h₀ : p 0 = y 0)
     (hrec : ∀ j < k, p (j + 1) = y (j + 1) + ∑ i ∈ Finset.range (j + 1), β j i • p i)
@@ -517,7 +576,10 @@ $$r - \frac{\langle p, r \rangle}{\langle p, Hp \rangle} Hp.$$
 
 It is the gradient of $q$ at $x + \alpha p$ when $r$ is the gradient at $x$ and $\alpha =
 -\langle p, r \rangle / \langle p, Hp \rangle$ is the exact step. The division uses Lean's
-convention $a / 0 = 0$. -/
+convention $a / 0 = 0$.
+
+**Reading.** Residual line update totalized at zero curvature.
+-/
 noncomputable def residualLineStep (H : E →ₗ[ℝ] E) (p r : E) : E :=
   r + (-⟪p, r⟫ / ⟪p, H p⟫) • H p
 
@@ -530,7 +592,10 @@ $p_0, \dots, p_k$ and $r_0, \dots, r_{k+1}$ be vectors in $E$ such that
 
 Then $\langle p_i, r_{k+1} \rangle = 0$ for all $i \le k$.
 
-The curvatures $\langle p_j, H p_j \rangle$ must be nonzero for the quotients in (5.1.14). -/
+The curvatures $\langle p_j, H p_j \rangle$ must be nonzero for the quotients in (5.1.14).
+
+**Reading.** Uses inner-product space and assumes explicitly nonvanishing direction curvatures.
+-/
 theorem lemma_5_1_4 (H : E →ₗ[ℝ] E) (p r : ℕ → E) (k : ℕ)
     (hconj : ∀ i j, i < j → j ≤ k → ⟪p i, H (p j)⟫ = 0)
     (hnz : ∀ j ≤ k, ⟪p j, H (p j)⟫ ≠ 0)
@@ -600,7 +665,10 @@ $$\left\langle y + \frac{\langle y, r_2 \rangle}{\langle p_1, r_1 \rangle} p_1, 
 
 Here $H$ is positive definite and the last coefficient is defined, but
 $\langle p_0, r_0 \rangle = 0$. The first line step is zero, so orthogonality to the gradients
-gives no information about the first direction. -/
+gives no information about the first direction.
+
+**Correction.** Example with vanishing earlier pairing refutes the printed conclusion.
+-/
 theorem counterexample_5_1_5 :
     ∃ p₀ p₁ r₀ r₁ r₂ y : EuclideanSpace ℝ (Fin 3),
       ⟪p₀, p₁⟫ = 0 ∧ ⟪p₀, p₀⟫ ≠ 0 ∧ ⟪p₁, p₁⟫ ≠ 0 ∧
@@ -636,7 +704,11 @@ every eigenvalue of $H$. Then the conjugate gradient iterate $x_{|S|}$ from any 
 $x_*$.
 
 If $S$ is the set of eigenvalues, $|S|$ is the number of distinct eigenvalues of $H$. A larger
-set $S$ gives a weaker bound on the number of steps. -/
+set $S$ gives a weaker bound on the number of steps.
+
+**Reading.** Shows the totalized iterate is exact at the size of any finite set covering the
+spectrum.
+-/
 theorem theorem_5_1_6 [FiniteDimensional ℝ E] {H : E →ₗ[ℝ] E}
     (hH : H.IsSymmetricCoercive) {c x₀ xstar : E} (hstar : H xstar = -c)
     (S : Finset ℝ) (hS : ∀ μ, Module.End.HasEigenvalue H μ → μ ∈ S) :
@@ -703,7 +775,10 @@ theorem corollary_5_1_8 {H M Minv : E →ₗ[ℝ] E} (hM : IsPreconditioner M Mi
 positive definite with inverse $M^{-1}$, let $H$ be symmetric with $l \langle Mx, x \rangle \le
 \langle Hx, x \rangle$ for all $x$ and some $l > 0$, and let $Hx_* = -c$. Let
 $S \subset \mathbb{R}$ be a finite set that contains every eigenvalue of $M^{-1} H$. Then the
-preconditioned conjugate gradient iterate $x_{|S|}$ from any $x_0$ equals $x_*$. -/
+preconditioned conjugate gradient iterate $x_{|S|}$ from any $x_0$ equals $x_*$.
+
+**Reading.** Exact totalized iterate at the size of a set covering the preconditioned spectrum.
+-/
 theorem corollary_5_1_9 [FiniteDimensional ℝ E] {H M Minv : E →ₗ[ℝ] E}
     (hM : IsPreconditioner M Minv) (hH : H.IsSymmetric)
     {l : ℝ} (hl : 0 < l) (hlo : ∀ x : E, l * ⟪M x, x⟫ ≤ ⟪H x, x⟫)

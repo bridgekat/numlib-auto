@@ -60,9 +60,8 @@ modules `Numlib.Krylov.Subspace`, `Numlib.Krylov.Arnoldi` and `Numlib.Krylov.Lan
 
 * Lanczos indices are $0$-based in the definitions: `CartisGouldToint.Chapter10.lanczosVec hM H g j`
   is $q_{j+1}$.
-* Runs of Algorithm 10.1.1 are indexed as in the source, from $k = 1$. The stopping test
-  $\gamma_k = 0$ is modelled by the convention $x/0 = 0$ of Lean, under which every quantity
-  vanishes after the stop.
+* Runs of Algorithm 10.1.1 are indexed as in the source, from $k = 1$. Division by zero gives
+  a zero coefficient, and the recurrence has zero state from the iteration after breakdown.
 
 ## Deviations from the source
 
@@ -71,6 +70,20 @@ modules `Numlib.Krylov.Subspace`, `Numlib.Krylov.Arnoldi` and `Numlib.Krylov.Lan
 * **Section 10.1.1, nesting of the Krylov subspaces** (typo). $\mathcal{K}(A, b, k + 1)$ is the span
   of $\mathcal{K}(A, b, k) \cup \{A^k b\}$, not the union. See
   `CartisGouldToint.Chapter10.krylovSpace_succ`.
+* **Equation (10.1.2), reduced subproblems** (generalization). The columns may be dependent.
+  See `CartisGouldToint.Chapter10.subspaceSolution_iff_reduced`.
+* **Algorithm 10.1.1, preconditioning** (typo). Computing $M^{-1}t_k$ solves $M y_k=t_k$.
+  See `CartisGouldToint.Chapter10.algorithm_10_1_1.t_eq`.
+* **Algorithm 10.1.1, breakdown and grade** (correction). The grade counts the nonzero Lanczos
+  vectors. For grade $d<n$, breakdown is detected at $k=d+1$ by $\gamma_{d+1}=0$.
+  The formal recurrence also defines coefficients beyond the printed stopping index.
+  See `CartisGouldToint.Chapter10.algorithm_10_1_1_spec`.
+* **Equation (10.1.4), zero starting vector** (generalization). The reduced-gradient
+  identity includes $g=0$, when $\gamma_1=0$ and the process has grade zero.
+  See `CartisGouldToint.Chapter10.lanczosGrad_eq`.
+* **Section 10.1.2, hard-case Krylov space** (correction). Its elements lie in the span of the
+  remaining generalized eigenvectors. The result uses the orthogonality condition at any
+  leftmost eigenvalue. See `CartisGouldToint.Chapter10.krylov_hardCase_10_1_2`.
 -/
 
 open Matrix Set
@@ -93,7 +106,12 @@ $H, M \in \mathbb{R}^{n \times n}$, $g \in \mathbb{R}^n$ and $k \in \mathbb{N}$,
 $$\mathcal{K}_k = \mathcal{K}(M^{-1} H, M^{-1} g, k) = \operatorname{span}\{(M^{-1} H)^i M^{-1}
   g \mid i < k\}.$$
 
-The definition is `Krylov.subspace`, and $M^{-1}$ is the matrix inverse of Mathlib. -/
+The definition is `Krylov.subspace`, and $M^{-1}$ is the matrix inverse of Mathlib. It is
+zero for singular $M$, extending the source's positive definite scaling.
+
+**Reading.** Span of the first k powers of M inverse H applied to M inverse g; totalized when M is
+singular.
+-/
 noncomputable def krylovSpace (k : ℕ) : Submodule ℝ (EuclideanSpace ℝ (Fin n)) :=
   Krylov.subspace (toEuclideanLin (M⁻¹ * H)) (toEuclideanLin M⁻¹ g) k
 
@@ -268,7 +286,8 @@ $\bar s \in \mathbb{R}^k$. Then:
   $\mathcal{S}$ if and only if $\bar s$ is a global minimizer of the regularization subproblem
   (8.1.3) for the same reduced data.
 
-The columns of $S$ need not be linearly independent. -/
+**Generalization.** The source takes the columns of $S$ to be a basis. The equivalence holds
+for any matrix with the same column space, including dependent columns. -/
 theorem subspaceSolution_iff_reduced (S : Matrix (Fin n) (Fin k) ℝ)
     (sbar : EuclideanSpace ℝ (Fin k)) :
     (∀ Δ, IsTRSubspaceSolution g H M Δ (LinearMap.range (toEuclideanLin S))
@@ -298,7 +317,11 @@ $\mathbb{R}^n$. It is $0$ from the grade on.
 
 The index `j` is $0$-based. The vector is `Arnoldi.vec` of the scaled operator and the scaled
 gradient. Algorithm 10.1.1 computes it
-(`CartisGouldToint.Chapter10.algorithm_10_1_1.q_eq_lanczosVec`). -/
+(`CartisGouldToint.Chapter10.algorithm_10_1_1.q_eq_lanczosVec`).
+
+**Reading.** The scaled-space Arnoldi vectors match Lanczos on the source domain, with zero-based
+indexing and zeros from the grade on.
+-/
 noncomputable def lanczosVec {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.PosDef)
     (H : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) (j : ℕ) :
     EuclideanSpace ℝ (Fin n) :=
@@ -306,7 +329,13 @@ noncomputable def lanczosVec {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.PosDef)
     (Arnoldi.vec (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM) (scaledGrad hM g) j)
 
 /-- **Equation (10.1.3)** of [cartis2022evaluation], the **Lanczos basis matrix** $Q_k = (q_1,
-\dots, q_k) \in \mathbb{R}^{n \times k}$, whose columns are the Lanczos vectors. -/
+\dots, q_k) \in \mathbb{R}^{n \times k}$, whose columns are the Lanczos vectors.
+
+The source uses independent columns. The formal matrix is defined for all $k$ and contains
+zero columns beyond the grade.
+
+**Reading.** Column matrix agrees through the grade and has zero columns thereafter.
+-/
 noncomputable def lanczosBasis {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.PosDef)
     (H : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     Matrix (Fin n) (Fin k) ℝ :=
@@ -317,7 +346,11 @@ $T_k \in \mathbb{R}^{k \times k}$: the symmetric tridiagonal matrix with diagona
 $\rho_1, \dots, \rho_k$ and off-diagonal $\gamma_2, \dots, \gamma_k$, the Lanczos coefficients
 of $M^{-1} H$ in the $M$-inner product.
 
-The definition is `Lanczos.tridiag` of the scaled operator and the scaled gradient. -/
+The definition is `Lanczos.tridiag` of the scaled operator and the scaled gradient.
+
+**Correction.** Uses the diagonal and off-diagonal coefficients from the totalized process and the
+corrected nesting.
+-/
 noncomputable def lanczosTridiag {M : Matrix (Fin n) (Fin n) ℝ} (hM : M.PosDef)
     (H : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) (k : ℕ) :
     Matrix (Fin k) (Fin k) ℝ :=
@@ -467,7 +500,10 @@ theorem lanczosBasis_transpose_mul_H (hH : H.IsHermitian) :
   simpa [Arnoldi.hessenbergSq, lanczosTridiag] using h
 
 /-- **Equations (10.1.3)–(10.1.4)** of [cartis2022evaluation], the reduced gradient. For $k \ge 1$,
-$Q_k^T g = \gamma_1 e_1$ with $\gamma_1 = \|g\|_{M^{-1}}$. -/
+$Q_k^T g = \gamma_1 e_1$ with $\gamma_1 = \|g\|_{M^{-1}}$.
+
+**Generalization.** The source displays $\gamma_1>0$, which holds for $g\ne 0$. The identity
+also holds for the totalized process at $g=0$, when both sides vanish. -/
 theorem lanczosGrad_eq (hk : 0 < k) :
     lanczosGrad hM H g k = EuclideanSpace.single ⟨0, hk⟩ (mNorm M⁻¹ g) := by
   ext i
@@ -622,8 +658,11 @@ $$y_k = M^{-1} t_k, \quad \gamma_k = \sqrt{\langle t_k, y_k \rangle}, \quad w_k 
 $$t_{k+1} = H q_k - \rho_k w_k - \gamma_k w_{k-1}.$$
 
 The sequences are indexed as in the source, from $k = 1$; their values at $k = 0$ other than
-$w_0$ are not constrained. The stop at $\gamma_k = 0$ is built in through the convention
-$x/0 = 0$: from then on every quantity vanishes. -/
+$w_0$ are not constrained.
+
+**Generalization.** The source stops at $\gamma_k=0$ or $k=n$. The formal run gives an
+infinite recurrence, with a zero state after breakdown by $x/0=0$. This also makes the
+recurrence meaningful without invertibility assumptions. -/
 structure algorithm_10_1_1 (H M : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n))
     (t y w q : ℕ → EuclideanSpace ℝ (Fin n)) (γ ρ : ℕ → ℝ) : Prop where
   /-- The first vector is $t_1 = g$. -/
@@ -668,7 +707,11 @@ namespace algorithm_10_1_1
 variable {H M : Matrix (Fin n) (Fin n) ℝ} {g : EuclideanSpace ℝ (Fin n)}
   {t y w q : ℕ → EuclideanSpace ℝ (Fin n)} {γ ρ : ℕ → ℝ}
 
-/-- Algorithm 10.1.1 is well defined: for all $H$, $M$ and $g$ it has a run. -/
+/-- Algorithm 10.1.1 is well defined: for all $H$, $M$ and $g$ it has a run.
+
+**Reading.** Constructs an infinite run even for data outside the invertible source setting using
+totalization.
+-/
 theorem exists_run (H M : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (Fin n)) :
     ∃ t y w q γ ρ, algorithm_10_1_1 H M g t y w q γ ρ := by
   set T : ℕ → EuclideanSpace ℝ (Fin n) := fun k => (lanczosState H M g (k - 1)).1
@@ -692,7 +735,10 @@ theorem exists_run (H M : Matrix (Fin n) (Fin n) ℝ) (g : EuclideanSpace ℝ (F
 variable (h : algorithm_10_1_1 H M g t y w q γ ρ)
 include h
 
-/-- For a run of Algorithm 10.1.1 and $M$ positive definite, $t_k = M y_k$ for $k \ge 1$. -/
+/-- For a run of Algorithm 10.1.1 and $M$ positive definite, $t_k = M y_k$ for $k \ge 1$.
+
+**Typo.** The prose after the algorithm reverses $t_k$ and $y_k$ in this linear solve.
+The algorithm's formula $y_k=M^{-1}t_k$ gives the equation above. -/
 theorem t_eq (hM : M.PosDef) {k : ℕ} (hk : 1 ≤ k) : t k = toEuclideanLin M (y k) := by
   rw [h.y_eq k hk, toEuclideanLin_mul_nonsing_inv_apply hM.isUnit]
 
@@ -796,7 +842,11 @@ theorem toScaled_y (hH : H.IsHermitian) (hM : M.PosDef) (j : ℕ) :
 /-- **Algorithm 10.1.1** of [cartis2022evaluation] computes the Lanczos vectors. Let $H$ be
 symmetric and $M$ symmetric positive definite. In every run, the computed vector $q_k$ is the
 Lanczos vector $q_k$ of (10.1.3) for every $k \ge 1$, that is,
-`CartisGouldToint.Chapter10.lanczosVec hM H g (k - 1)`. -/
+`CartisGouldToint.Chapter10.lanczosVec hM H g (k - 1)`.
+
+**Reading.** Identifies run output with theoretical vectors at positive indices, including the
+totalized zero tail.
+-/
 theorem q_eq_lanczosVec (hH : H.IsHermitian) (hM : M.PosDef) {k : ℕ} (hk : 1 ≤ k) :
     q k = lanczosVec hM H g (k - 1) := by
   obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 := ⟨k - 1, by omega⟩
@@ -850,6 +900,10 @@ Then:
 
 **Typo.** The source prints the leading block of $T_k$ in (10.1.7) as $T_{k-1}^{-1}$. It is
 $T_{k-1}$.
+
+**Correction.** If the grade is $d<n$, the algorithm discovers breakdown when it tests
+$\gamma_{d+1}$, after $d$ successful basis steps. The printed description identifies
+the terminating iteration index directly with the grade.
 
 The grade is at most $n$ (`CartisGouldToint.Chapter10.gradeHM_le`), and at the grade
 $\mathcal{K}_k$ is invariant under $M^{-1} H$
@@ -955,8 +1009,9 @@ with $H v = \lambda_1 M v$. Then:
 * every global minimizer of the trust-region or the regularization subproblem (10.1.1) on
   $\mathcal{K}_k$ is $M$-orthogonal to the eigenspace of $\lambda_1$.
 
-So the Krylov subspaces lie in the span of the generalized eigenvectors for the other
-eigenvalues. -/
+**Correction.** The source gives containment in a set of individual generalized eigenvectors.
+The Krylov subspaces lie in their span. The orthogonality premise suffices for the conclusions
+even when $\lambda_1\ge 0$. -/
 theorem krylov_hardCase_10_1_2 (hH : H.IsHermitian) (hM : M.PosDef)
     (hhard : ∀ v, toEuclideanLin H v = leftmostPencil hH hM • toEuclideanLin M v → ⟪v, g⟫ = 0) :
     (∀ k, ∀ s ∈ krylovSpace H M g k, ∀ v,

@@ -75,6 +75,21 @@ decrease AA.1 of `NumlibSurface.ConnGouldToint.Chapter06.Section03`.
 
 ## Deviations from the source
 
+* **Equation (8.4.9) and Lemma 8.4.1** (generalization). The curvature envelope uses a supremum
+  over general model regions, with boundedness and nonemptiness explicit in its specification.
+  The gradient equivalence uses the abstract relative error bound with constant less than one.
+  See `ConnGouldToint.Chapter08.runningModelCurvature_spec` and
+  `ConnGouldToint.Chapter08.lemma_8_4_1`.
+* **Theorems 8.4.2–8.4.5** (reading). The results use explicit single-iteration error and
+  decrease bounds as algorithm inputs. The run theorems take a positive monotone envelope, a
+  positive success margin, and the radius-update bound as needed. See
+  `ConnGouldToint.Chapter08.theorem_8_4_2` and `ConnGouldToint.Chapter08.theorem_8_4_5`.
+* **Theorems 8.4.6–8.4.8** (reading). The first-order results take frequent small model
+  gradients as an input and use a representative of the objective gradient. The strong first-
+  order convergence result uses AM.4f and does not require infinitely many successful steps. The
+  local convergence theorem uses whole-run criticality, a lower bound on the Hessian at the
+  limit, and directional model curvature near the limit. See
+  `ConnGouldToint.Chapter08.theorem_8_4_7` and `ConnGouldToint.Chapter08.theorem_8_4_8`.
 * **Theorem 8.4.8** (correction). Eventual model convexity is required on every trial segment from
   iterates in a neighborhood of the limit point, not only along the convergent subsequence. See
   `ConnGouldToint.Chapter08.theorem_8_4_8`.
@@ -95,7 +110,10 @@ variable [NormedSpace ℝ E]
 
 /-- **Equation (8.4.9)** of [conn2000trust], model Hessian values. For models $m_j$ and sets
 $R_j \subseteq E$, this is the set of the norms $\|\nabla^2 m_j(z)\|$ with $j \le k$ and
-$z \in R_j$. -/
+$z \in R_j$.
+
+**Reading.** General model regions rather than the sequence of trust-region balls.
+-/
 def modelHessianNormsThrough (m : ℕ → E → ℝ) (R : ℕ → Set E) (k : ℕ) : Set ℝ :=
   {a | ∃ j ≤ k, ∃ z ∈ R j, a = ‖fderiv ℝ (fderiv ℝ (m j)) z‖}
 
@@ -104,7 +122,10 @@ model curvature** is
 $$\varphi_k = 1 + \sup\{\|\nabla^2 m_j(z)\| : j \le k, \ z \in R_j\}.$$
 
 The supremum also covers bounded Hessians on regions where the maximum of the source is not
-attained. If the set of norms is unbounded, the Lean supremum is $0$ and $\varphi_k = 1$. -/
+attained. If the set of norms is unbounded, the Lean supremum is $0$ and $\varphi_k = 1$.
+
+**Generalization.** The envelope uses a supremum over arbitrary prescribed regions. The source
+uses maxima over trust-region balls. -/
 noncomputable def runningModelCurvature (m : ℕ → E → ℝ) (R : ℕ → Set E) (k : ℕ) : ℝ :=
   1 + sSup (modelHessianNormsThrough m R k)
 
@@ -112,6 +133,9 @@ noncomputable def runningModelCurvature (m : ℕ → E → ℝ) (R : ℕ → Set
 and let the set of the Hessian norms through iteration $k$ be bounded above for every $k$. Then
 $\varphi_k$ is nondecreasing in $k$, $\varphi_k \ge 1$ for every $k$, and
 $$\|\nabla^2 m_j(z)\| \le \varphi_k \qquad \text{for all } j \le k \text{ and } z \in R_j.$$
+
+**Reading.** Makes nonemptiness and boundedness explicit and proves upper bounds for arbitrary
+regions.
 -/
 theorem runningModelCurvature_spec (m : ℕ → E → ℝ) (R : ℕ → Set E)
     (hne : (R 0).Nonempty) (hb : ∀ k, BddAbove (modelHessianNormsThrough m R k)) :
@@ -141,7 +165,10 @@ end CurvatureEnvelope
 $\kappa < 1$, and let $\|d_k - g_k\| \le \kappa \|g_k\|$ for every $k$. Then $g_k \to 0$ if and
 only if $d_k \to 0$.
 
-The index set may already be restricted to a subsequence. -/
+The index set may already be restricted to a subsequence.
+
+**Generalization.** The relative error bound with constant less than one suffices for arbitrary
+sequences in a normed space. -/
 theorem lemma_8_4_1 {g df : ℕ → E} {κ : ℝ} (hκ₁ : κ < 1)
     (herr : ∀ k, ‖df k - g k‖ ≤ κ * ‖g k‖) :
     Tendsto g atTop (𝓝 0) ↔ Tendsto df atTop (𝓝 0) := by
@@ -181,7 +208,10 @@ $$|f(x + s) - m(x + s)| \le \kappa_g K a \Delta + \frac{\kappa_f + 1}{2} K^2 \va
 
 The gradient mismatch contributes linearly in the radius, and the curvatures of the objective
 and the model contribute quadratically. The derivative mismatch is measured in the operator
-norm. -/
+norm.
+
+**Reading.** The estimate applies at one point and one trial step under the local derivative
+and comparison bounds used in the source's proof. -/
 theorem theorem_8_4_2 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
     {Δ κf φ κg K a : ℝ} (hΔ : 0 ≤ Δ) (hφ : 1 ≤ φ) (hκf : 0 ≤ κf)
     (hκg : 0 ≤ κg) (hK : 0 ≤ K) (ha : 0 ≤ a)
@@ -237,7 +267,10 @@ $\rho = (f(x) - f(x + s)) / (m(x) - m(x + s))$ satisfies $\rho \ge \eta_2$, and
 $\Delta' \ge \Delta$.
 
 The ratio is `ConnGouldToint.Chapter06.btrRatio`, and the radius update is
-`ConnGouldToint.Chapter06.BTRRadiusUpdate`. -/
+`ConnGouldToint.Chapter06.BTRRadiusUpdate`.
+
+**Reading.** The model-error and sufficient-decrease inequalities are premises for this one-
+step result. -/
 theorem theorem_8_4_3 {P : BTRParams} {f m : E → ℝ} {x s g : E}
     {φ Δ Δ' κ C e : ℝ} (hφ : 0 < φ) (hC : 1 ≤ C) (he : 0 ≤ e)
     (hΔ : 0 < Δ) (hg : g ≠ 0) (hval : f x = m x)
@@ -287,7 +320,10 @@ $$|f(x_k + s_k) - m_k(x_k + s_k)| \le e \|g_k\| \Delta_k + C \varphi_k \Delta_k^
 Then there is $r > 0$ with $\Delta_k \ge r / \varphi_k$ for every $k$.
 
 The constant $r$ in the proof also accounts for an initial radius that is smaller than the
-threshold of Theorem 8.4.3. -/
+threshold of Theorem 8.4.3.
+
+**Reading.** The run uses a monotone positive curvature envelope and an explicit positive
+margin in the threshold. -/
 theorem theorem_8_4_4 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (φ : ℕ → ℝ) {κ C e a : ℝ} (hC : 1 ≤ C) (he : 0 ≤ e)
@@ -343,6 +379,11 @@ theorem theorem_8_4_4 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
         _ ≤ P.γ₁ * run.Δ k := mul_le_mul_of_nonneg_left hrad.le P.gamma₁_pos.le
         _ ≤ _ := hstep
 
+/-- **§8.4.2.1 proof of Theorem 8.4.5** of [conn2000trust].
+
+**Generalization.** Abstracts successful-index summability into an arbitrary antitone weight and
+success set.
+-/
 private theorem summable_of_successful_summable {w Δ : ℕ → ℝ} {S : Set ℕ}
     [DecidablePred (· ∈ S)] {γ Γ r : ℝ}
     (hw : ∀ k, 0 ≤ w k) (hwmono : Antitone w)
@@ -463,7 +504,11 @@ private theorem summable_of_successful_summable {w Δ : ℕ → ℝ} {S : Set �
 Algorithm 6.1.1 satisfy the hypotheses of `ConnGouldToint.Chapter08.theorem_8_4_4` without the
 lower bound on $\|g_k\|$, let $f$ be bounded below, let $\sum_k 1 / \varphi_k = \infty$, and let
 $\Gamma \ge 1$ satisfy $\Delta_{k+1} \le \Gamma \Delta_k$ on every very successful iteration.
-Then for every $\varepsilon > 0$, $\|g_k\| < \varepsilon$ for infinitely many $k$. -/
+Then for every $\varepsilon > 0$, $\|g_k\| < \varepsilon$ for infinitely many $k$.
+
+**Reading.** Frequent-small-gradient formulation under explicit envelope, update, error and decrease
+hypotheses.
+-/
 theorem frequently_model_gradient_norm_lt [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (φ : ℕ → ℝ) {κ C e Γ : ℝ} (hC : 1 ≤ C) (he : 0 ≤ e)
@@ -547,7 +592,9 @@ theorem frequently_model_gradient_norm_lt [NormedSpace ℝ E] {P : BTRParams} {f
 /-- **Theorem 8.4.5** of [conn2000trust]. Under the hypotheses of
 `ConnGouldToint.Chapter08.frequently_model_gradient_norm_lt`,
 $$\liminf_{k \to \infty} \|g_k\| = 0.$$
--/
+
+**Reading.** The curvature-series divergence, radius bound, and stepwise error and decrease
+estimates are explicit inputs. -/
 theorem theorem_8_4_5 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (φ : ℕ → ℝ) {κ C e Γ : ℝ} (hC : 1 ≤ C) (he : 0 ≤ e)
@@ -580,7 +627,10 @@ $\nabla f$ satisfy $\|\nabla f(x_k) - g_k\| \le \kappa \|g_k\|$ for every $k$ (A
 every $\varepsilon > 0$ infinitely many $k$ have $\|g_k\| < \varepsilon$, then there is $x$ such
 that $x_k = x$ for all large $k$ and $\nabla f(x) = 0$.
 
-The small model gradients come from Theorem 8.4.5. -/
+The small model gradients come from Theorem 8.4.5.
+
+**Reading.** Frequent small model gradients are an input, and the gradient is an arbitrary
+representative satisfying the relative error inequality. -/
 theorem theorem_8_4_6 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (df : E → E) {κ : ℝ} (hκ : 0 ≤ κ)
@@ -625,7 +675,10 @@ Then $\|g_k\| \to 0$ and $\|\nabla f(x_k)\| \to 0$.
 
 Once the scaled objective decreases are small, every excursion with gradient bounded away from
 zero is too short to reach the next small gradient. The weak convergence input is Theorem 8.4.5.
-The gradient is given as a map `df : E → E`. -/
+The gradient is given as a map `df : E → E`.
+
+**Reading.** Weak convergence and AM.4f are inputs, and the true gradient is represented by a
+Lipschitz map. The number of successful iterations may be finite. -/
 theorem theorem_8_4_7 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (df : E → E) (φ : ℕ → ℝ) {κ e K L : ℝ}
@@ -760,13 +813,16 @@ theorem theorem_8_4_7 [NormedSpace ℝ E] {P : BTRParams} {f : E → ℝ}
 /-- **Equation (8.4.33)** of [conn2000trust]. For $\sigma, \kappa \in \mathbb{R}$, the **local
 Hessian tolerance** is
 $$\tau = \frac{\min\{1, \sigma, \kappa\}}{4}.$$
--/
+
+**Reading.** The formula is total for all real inputs. -/
 noncomputable def localHessianTolerance (σ κ : ℝ) : ℝ := min 1 (min σ κ) / 4
 
 /-- **Equation (8.4.35)** of [conn2000trust]. For $\sigma, \kappa, \delta \in \mathbb{R}$, the
 **entry radius** is
 $$\frac{\kappa \delta}{4 \tau + \kappa},$$
-where $\tau$ is the local Hessian tolerance (8.4.33). -/
+where $\tau$ is the local Hessian tolerance (8.4.33).
+
+**Reading.** The definition allows any real inputs and uses total division. -/
 noncomputable def localEntryRadius (σ κ δ : ℝ) : ℝ :=
   κ * δ / (4 * localHessianTolerance σ κ + κ)
 
@@ -778,7 +834,10 @@ $\tau \, r(\delta) < \delta$, and eventually
 $$\|y_i - x\| \le r(\delta) \qquad \text{and} \qquad \|g_i\| \le \tau \, r(\delta).$$
 
 With $H = \nabla^2 f$, these are the bounds on the objective Hessian, the iterates and the
-gradients that start the local regime. -/
+gradients that start the local regime.
+
+**Reading.** The bounds follow from local continuity and the given point and gradient limits.
+The curvature estimate (8.4.34) is separate. -/
 theorem exists_localHessianEntryBounds {F : Type*} [NormedAddCommGroup F]
     {H : E → F} {x : E} {y g : ℕ → E} {σ κ : ℝ}
     (hH : ContinuousAt H x) (hy : Tendsto y atTop (𝓝 x)) (hg : Tendsto g atTop (𝓝 0))

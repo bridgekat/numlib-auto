@@ -108,6 +108,14 @@ of the section. The proofs specialize the duality theory of bifunctions in
 
 ## Deviations from the source
 
+* **Section 30, adjoint formula** (generalization). The convex-to-concave adjoint is defined
+  for arbitrary bifunctions. Its concavity and closedness require no convexity of $F$.
+* **Theorem 30.1**, properness (reading). The source's properness equivalence applies to a
+  convex bifunction without closedness. Lean assumes closedness.
+* **Theorem 30.1**, injectivity (generalization). The adjoint is injective on all closed
+  convex bifunctions, including improper ones.
+* **Theorem 30.2**, first formula and weak duality (generalization). These formulas hold
+  for arbitrary bifunctions.
 * **Corollary 30.2.1**, first half (generalization). The book assumes $F$ closed. The statement does
   not. See `Rockafellar.corollary_30_2_1_dual`.
 * **Corollary 30.2.2**, first formula (generalization). The book assumes $F$ closed. The statement
@@ -116,15 +124,29 @@ of the section. The proofs specialize the duality theory of bifunctions in
   does not. See `Rockafellar.corollary_30_2_3_first`.
 * **Theorem 30.3**, (a) if and only if (c) (generalization). The book assumes $F$ closed. The
   statement does not. See `Rockafellar.theorem_30_3_a_iff_c`.
-* **Theorem 30.4(i)** (correction). The book obtains (i) from (g), which needs $F0$ proper. The
-  statement assumes that $F0$ is proper. See `Rockafellar.theorem_30_4_i`.
-* **Theorem 30.4(j)** (correction). The book obtains (j) from (h), which needs $F^* 0$ proper. The
-  statement assumes that $F^* 0$ is proper. See `Rockafellar.theorem_30_4_j`.
+* **Theorem 30.4(a), (c) and (e)** (generalization). Primal normality in these clauses needs
+  no closedness of $F$. In (c) and (d), existence of a Kuhn–Tucker vector already implies
+  the required finite optimal value.
+* **Theorem 30.4(i) and (j)** (reading). The source's optimal solutions have finite objective
+  values. Lean pairs the extended-real minimum or maximum set with properness of its
+  objective. See `Rockafellar.theorem_30_4_i` and `Rockafellar.theorem_30_4_j`.
+* **Gale–Kuhn–Tucker duality** (generalization). The value equality is stated for closed
+  polyhedral convex bifunctions. The source names the result in its linear-program example.
+* **Theorem 30.5** (reading). Lean states the equivalences using the extended-real minimum
+  and maximum sets and explicitly assumes finite values. The primal-to-dual direction
+  also drops closedness.
+* **Corollary 30.5.1**, equivalences involving (a) (correction). Lean assumes properness.
+  For $F \equiv -\infty$, the objective comparison and saddle conditions hold everywhere,
+  but neither program has a finite-valued optimum.
+* **Corollary 30.5.2**, dual attainment (generalization). Dual attainment under strong
+  primal consistency and dual consistency holds without closedness.
 
 ## Not formalized
 
-* **Convexity of the abnormal example.** The book calls `Rockafellar.abnormalBifun` a closed proper
-  convex bifunction. This is not proved here.
+* Closedness, convexity and properness of the abnormal example as named predicates.
+* The exact perturbation function of the normal example with no dual solution.
+  `Rockafellar.infBifun_noDualSolutionBifun_le` gives an upper bound at nonnegative inputs,
+  and the value at zero is exact.
 -/
 
 open Filter Set Topology
@@ -142,7 +164,10 @@ $$(F^* x^*)(u^*) = \inf_{u, x} \{(Fu)(x) - \langle x, x^* \rangle + \langle u, u
 It is the bifunction of the **dual program** $(P^*)$, the maximization of $F^* 0$.
 
 The definition is an `abbrev` for `ConvexAnalysis.convexAdjointBifun` at the two Euclidean
-pairings. -/
+pairings.
+
+**Generalization.** The source introduces this formula for convex bifunctions. Lean
+defines it for arbitrary bifunctions. -/
 noncomputable abbrev dualProgram {m n : ℕ} (F : Bifun (Rn m) (Rn n)) : Bifun (Rn n) (Rn m) :=
   convexAdjointBifun (pairing m) (pairing n) F
 
@@ -183,7 +208,10 @@ theorem concaveNormal_iff_concaveCl_supBifun_zero (G : Bifun (Rn n) (Rn m)) :
 $\mathbb{R}^m$ to $\mathbb{R}^n$, the adjoint $F^*$ is a concave bifunction from $\mathbb{R}^n$
 to $\mathbb{R}^m$.
 
-No hypothesis on $F$ is needed. -/
+No hypothesis on $F$ is needed.
+
+**Reading.** The convex-to-concave adjoint is concave for arbitrary inputs.
+-/
 theorem theorem_30_1_concave (F : Bifun (Rn m) (Rn n)) : ConcaveBifun (dualProgram F) :=
   concaveBifun_convexAdjointBifun (pairing m) (pairing n) F
 
@@ -191,13 +219,19 @@ theorem theorem_30_1_concave (F : Bifun (Rn m) (Rn n)) : ConcaveBifun (dualProgr
 $\mathbb{R}^m$ to $\mathbb{R}^n$, the adjoint $F^*$ is a closed concave bifunction: its graph
 function equals its concave closure.
 
-No hypothesis on $F$ is needed. -/
+No hypothesis on $F$ is needed.
+
+**Reading.** The convex-to-concave adjoint is closed for arbitrary inputs.
+-/
 theorem theorem_30_1_closed (F : Bifun (Rn m) (Rn n)) :
     ClosedConcave (graphFn (dualProgram F)) :=
   closedConcave_graphFn_convexAdjointBifun (Bu := pairing m) (Bx := pairing n) (F := F)
 
 /-- **Theorem 30.1** of [rockafellar1970convex], properness. Let $F$ be a closed convex bifunction
-from $\mathbb{R}^m$ to $\mathbb{R}^n$. Then $F^*$ is proper if and only if $F$ is proper. -/
+from $\mathbb{R}^m$ to $\mathbb{R}^n$. Then $F^*$ is proper if and only if $F$ is proper.
+
+**Reading.** Lean assumes closedness. The source's equivalence is stated for arbitrary
+convex bifunctions. -/
 theorem theorem_30_1_proper (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) :
     ProperConcave (graphFn (dualProgram F)) ↔ ProperConvex (graphFn F) :=
   properConcave_graphFn_convexAdjointBifun_iff (Bu := pairing m) (Bx := pairing n) hF hcl
@@ -225,7 +259,9 @@ $F_1 = F_2$.
 
 Together with `Rockafellar.theorem_30_1_surjective` this is the statement of the book that the
 adjoint operation is a one-to-one correspondence between the closed proper convex and the closed
-proper concave bifunctions. -/
+proper concave bifunctions.
+
+**Generalization.** Injectivity also holds on improper closed convex bifunctions. -/
 theorem theorem_30_1_injective {F₁ F₂ : Bifun (Rn m) (Rn n)} (hF₁ : ConvexBifun F₁)
     (hcl₁ : ClosedConvexBifun F₁) (hF₂ : ConvexBifun F₂) (hcl₂ : ClosedConvexBifun F₂)
     (h : dualProgram F₁ = dualProgram F₂) : F₁ = F₂ := by
@@ -343,8 +379,9 @@ $$(-\inf F)^* = F^* 0,$$
 where $(-\inf F)^*$ is the concave conjugate $u^* \mapsto \inf_u \{\langle u, u^* \rangle +
 (\inf F)(u)\}$ of the concave function $-\inf F$.
 
-The conjugate is `ConvexAnalysis.concaveConj`, not `ConvexAnalysis.convexConj`: for a concave
-$g$ the concave conjugate $g^*$ is not $-(-g)^*$. -/
+The conjugate is `ConvexAnalysis.concaveConj`.
+
+**Generalization.** The formula holds for arbitrary bifunctions. -/
 theorem theorem_30_2_first (F : Bifun (Rn m) (Rn n)) :
     concaveConj (pairing m) (fun u => -(infBifun F u)) = dualProgram F 0 :=
   (convexAdjointBifun_zero_eq_concaveConj (pairing m) (pairing n) F).symm
@@ -515,8 +552,8 @@ theorem corollary_30_2_2_second (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
 $\mathbb{R}^m$ to $\mathbb{R}^n$,
 $$\sup F^* 0 \le \inf F0.$$
 
-No hypothesis is needed: every value $(F^* 0)(u^*) = \inf_u \{\langle u, u^* \rangle + (\inf
-F)(u)\}$ is at most the value of the bracket at $u = 0$. -/
+**Generalization.** Every value $(F^* 0)(u^*) = \inf_u \{\langle u, u^* \rangle + (\inf
+F)(u)\}$ is at most the value of the bracket at $u = 0$, even for arbitrary $F$. -/
 theorem corollary_30_2_2_weak (F : Bifun (Rn m) (Rn n)) :
     supBifun (dualProgram F) 0 ≤ infBifun F 0 := by
   rw [supBifun_apply]
@@ -610,13 +647,17 @@ $0 \in \operatorname{ri}(\operatorname{dom} F)$, then $(P)$ is normal.
 
 The book proves this clause, by the argument used here: $0 \in
 \operatorname{ri}(\operatorname{dom}(\inf F))$ by Theorem 29.1, and a convex function agrees
-with its closure on the relative interior of its effective domain. -/
+with its closure on the relative interior of its effective domain.
+
+**Generalization.** Primal normality holds without closedness. -/
 theorem theorem_30_4_a (hs : StronglyConsistent F) (hF : ConvexBifun F) : Normal F :=
   StronglyConsistent.normal hs hF
 
 /-- **Theorem 30.4(a)** of [rockafellar1970convex], the strict form in parentheses. Let $F$ be a
 convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$. If $(P)$ is strictly consistent, that
-is, $0 \in \operatorname{int}(\operatorname{dom} F)$, then $(P)$ is normal. -/
+is, $0 \in \operatorname{int}(\operatorname{dom} F)$, then $(P)$ is normal.
+
+**Generalization.** Primal normality holds without closedness. -/
 theorem theorem_30_4_a' (hs : StrictlyConsistent F) (hF : ConvexBifun F) : Normal F :=
   StrictlyConsistent.normal hs hF
 
@@ -637,7 +678,9 @@ $\mathbb{R}^m$ to $\mathbb{R}^n$. If $(P)$ has a Kuhn–Tucker vector, then $(P)
 A Kuhn–Tucker vector is a $u^*$ with $\inf_u \{\langle u, u^* \rangle + (\inf F)(u)\} = (\inf
 F)(0)$, and by definition the optimal value $(\inf F)(0)$ is finite. The book proves this clause
 from Theorem 29.1 and Corollary 23.5.2. The proof here uses weak duality instead, which fixes
-the optimal value of $(P^*)$. -/
+the optimal value of $(P^*)$.
+
+**Generalization.** Primal normality holds without closedness. -/
 theorem theorem_30_4_c (hF : ConvexBifun F) (h : (KuhnTucker (pairing m) F).Nonempty) :
     Normal F :=
   normal_of_kuhnTucker_nonempty (Bu := pairing m) (pairing n) hF h
@@ -656,7 +699,9 @@ theorem theorem_30_4_d (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
 $\mathbb{R}^m$ to $\mathbb{R}^n$. If $(P)$ is consistent, then $(P)$ is normal.
 
 The book proves this clause: by Theorem 29.2 the function $\inf F$ is polyhedral, and a
-polyhedral convex function agrees with its closure on its effective domain. -/
+polyhedral convex function agrees with its closure on its effective domain.
+
+**Generalization.** Primal normality holds without closedness. -/
 theorem theorem_30_4_e (hF : PolyhedralBifun F) (hc : Consistent F) : Normal F :=
   PolyhedralBifun.normal hF hc
 
@@ -704,11 +749,10 @@ $\mathbb{R}^m$ to $\mathbb{R}^n$ such that $F0$ is proper. If the set of optimal
 $(P)$ is non-empty and bounded, then $(P)$ is normal. In particular this holds if $(P)$ has
 exactly one optimal solution.
 
-**Correction.** The book says that (i) is contained in (g). The containment needs $F0$ to be
-proper: if $F0 \equiv +\infty$ on $\mathbb{R}^0$, the set of optimal solutions is $\{0\}$, which
-is non-empty and bounded, but no level set $\{x \mid (F0)(x) \le \alpha\}$ is non-empty. The
-statement therefore assumes that $F0$ is proper. Then the set of optimal solutions is the level
-set of $F0$ at its minimum value, and (g) applies. -/
+**Reading.** The source defines an optimal solution by finite attainment. Lean assumes
+properness of $F0$ so a nonempty `argmin` consists of finite-valued solutions and is the
+level set at the minimum. For $F0 \equiv +\infty$, `argmin` includes every point even though
+there are no source optimal solutions. -/
 theorem theorem_30_4_i (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hp : ProperConvex (F 0))
     (hne : (argmin (F 0)).Nonempty) (hbd : Bornology.IsBounded (argmin (F 0))) : Normal F :=
   normal_of_argmin_nonempty_and_isBounded (Bu := pairing m) (Bx := pairing n) hF hcl hp hne hbd
@@ -717,8 +761,8 @@ theorem theorem_30_4_i (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hp : Pr
 $\mathbb{R}^m$ to $\mathbb{R}^n$ such that $F^* 0$ is a proper concave function. If the set of
 optimal solutions to $(P^*)$ is non-empty and bounded, then $(P)$ is normal.
 
-**Correction.** As in (i), the containment in (h) that the book asserts needs the dual objective
-$F^* 0$ to be proper. The statement assumes it.
+**Reading.** The source's optimal solutions have finite objective values. Lean requires
+properness of the dual objective to use its extended-real `argmax`.
 
 Properness of $F^* 0$ is stated as properness of the convex function
 $u^* \mapsto -(F^* 0)(u^*)$. -/
@@ -738,7 +782,11 @@ The book applies the argument to a particular dual pair of linear programs: "the
 polyhedral convex programs, so it follows". The statement here has the generality of the
 argument. Clause (e) of Theorem 30.4 covers a consistent $(P)$, and clause (f), with
 `Rockafellar.theorem_30_1_polyhedral`, covers a consistent $(P^*)$. In the application of the
-book closedness is automatic, because a proper polyhedral convex bifunction is closed. -/
+book closedness is automatic, because a proper polyhedral convex bifunction is closed.
+
+**Reading.** States the linear-program application for arbitrary closed polyhedral convex
+bifunctions with at least one consistent side.
+-/
 theorem gale_kuhn_tucker_duality (hF : PolyhedralBifun F) (hcl : ClosedConvexBifun F)
     (h : Consistent F ∨ ConcaveConsistent (dualProgram F)) :
     infBifun F 0 = supBifun (dualProgram F) 0 := by
@@ -752,7 +800,10 @@ theorem gale_kuhn_tucker_duality (hF : PolyhedralBifun F) (hcl : ClosedConvexBif
 /-- **Theorem 30.5** of [rockafellar1970convex], first assertion. Let $F$ be a convex bifunction
 from $\mathbb{R}^m$ to $\mathbb{R}^n$ such that $(P)$ is normal and its optimal value $\inf F0$
 is finite. Then $u^* \in \mathbb{R}^m$ is a Kuhn–Tucker vector for $(P)$ if and only if $u^*$ is
-an optimal solution to $(P^*)$. -/
+an optimal solution to $(P^*)$.
+
+**Reading.** Finiteness makes `argmax` represent the source's finite-valued optimal
+solutions. This direction applies without closedness. -/
 theorem theorem_30_5 (hF : ConvexBifun F) (hn : Normal F) (ht : infBifun F 0 ≠ ⊤)
     (hb : infBifun F 0 ≠ ⊥) (v : Rn m) :
     v ∈ KuhnTucker (pairing m) F ↔ v ∈ argmax (dualProgram F 0) := by
@@ -764,7 +815,8 @@ bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$ such that $(P)$ is normal and $
 finite. Then $x \in \mathbb{R}^n$ is a Kuhn–Tucker vector for $(P^*)$ if and only if $x$ is an
 optimal solution to $(P)$.
 
-The book says only that "the proof of the dual assertion of the theorem is parallel". -/
+**Reading.** Finiteness makes `argmin` represent the source's finite-valued optimal
+solutions. -/
 theorem theorem_30_5_dual (hF : ConvexBifun F) (hcl : ClosedConvexBifun F) (hn : Normal F)
     (ht : infBifun F 0 ≠ ⊤) (hb : infBifun F 0 ≠ ⊥) (x : Rn n) :
     x ∈ ConcaveKuhnTucker (pairing n) (dualProgram F) ↔ x ∈ argmin (F 0) := by
@@ -796,7 +848,10 @@ saddle-point of $L$ if and only if $(P)$ is normal, $\bar x$ is an optimal solut
 $\bar u^*$ is an optimal solution to $(P^*)$.
 
 The book's proof is "immediate from Theorem 29.3": the existence of a Kuhn–Tucker vector implies
-normality. -/
+normality.
+
+**Correction.** The source does not assume properness. If $F \equiv -\infty$, the
+Lagrangian is constant and every pair is a saddle point, with no finite-valued solutions. -/
 theorem corollary_30_5_1_a_iff_b (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (v : Rn m) (x : Rn n) :
     IsSaddlePoint (saddleLagrangian (pairing m) F) (v, x)
@@ -808,7 +863,9 @@ theorem corollary_30_5_1_a_iff_b (hF : ConvexBifun F) (hcl : ClosedConvexBifun F
 proper convex bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$, and let
 $\bar u^* \in \mathbb{R}^m$ and $\bar x \in \mathbb{R}^n$. Then $(P)$ is normal, $\bar x$ is an
 optimal solution to $(P)$ and $\bar u^*$ is an optimal solution to $(P^*)$, if and only if
-$(F0)(\bar x) \le (F^* 0)(\bar u^*)$. -/
+$(F0)(\bar x) \le (F^* 0)(\bar u^*)$.
+
+**Correction.** Lean requires properness, as in `Rockafellar.corollary_30_5_1_a_iff_b`. -/
 theorem corollary_30_5_1_a_iff_c (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F)) (v : Rn m) (x : Rn n) :
     (Normal F ∧ x ∈ argmin (F 0) ∧ v ∈ argmax (dualProgram F 0))
@@ -827,7 +884,9 @@ solution to $(P^*)$;
 (c) $(F0)(\bar x) \le (F^* 0)(\bar u^*)$.
 
 The saddle-point is `ConvexAnalysis.IsSaddlePoint` of `ConvexAnalysis.saddleLagrangian` at
-$(\bar u^*, \bar x)$. -/
+$(\bar u^*, \bar x)$.
+
+**Correction.** Lean requires properness, as in `Rockafellar.corollary_30_5_1_a_iff_b`. -/
 theorem corollary_30_5_1 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
     (hpr : ProperConvex (graphFn F))
     (v : Rn m) (x : Rn n) :
@@ -842,7 +901,10 @@ theorem corollary_30_5_1 (hF : ConvexBifun F) (hcl : ClosedConvexBifun F)
 $F$ from $\mathbb{R}^m$ to $\mathbb{R}^n$, if $(F0)(\bar x) \le (F^* 0)(\bar u^*)$, then
 $(F0)(\bar x) = (F^* 0)(\bar u^*)$.
 
-This is weak duality (Corollary 30.2.2) in the other direction. -/
+This is weak duality (Corollary 30.2.2) in the other direction.
+
+**Reading.** The reverse comparison forces equality even for arbitrary bifunctions.
+-/
 theorem corollary_30_5_1_eq (F : Bifun (Rn m) (Rn n)) (v : Rn m) (x : Rn n)
     (h : F 0 x ≤ dualProgram F 0 v) : F 0 x = dualProgram F 0 v :=
   le_antisymm h ((convexAdjointBifun_zero_le (pairing m) (pairing n) F v).trans
@@ -871,7 +933,9 @@ bifunction from $\mathbb{R}^m$ to $\mathbb{R}^n$. If $(P)$ is strongly consisten
 consistent, then $(P^*)$ has an optimal solution.
 
 Theorem 30.4(a) gives normality, so the common optimal value is finite. Corollary 29.1.4 then
-gives a Kuhn–Tucker vector, and Theorem 30.5 makes it an optimal solution to $(P^*)$. -/
+gives a Kuhn–Tucker vector, and Theorem 30.5 makes it an optimal solution to $(P^*)$.
+
+**Generalization.** This direction holds without closedness. -/
 theorem corollary_30_5_2_dual (hF : ConvexBifun F) (hs : StronglyConsistent F)
     (hc : ConcaveConsistent (dualProgram F)) : (argmax (dualProgram F 0)).Nonempty := by
   have hn : Normal F := theorem_30_4_a hs hF
@@ -1242,7 +1306,10 @@ theorem normal_noDualSolutionBifun : Normal noDualSolutionBifun :=
 $u \ge 0$.
 
 The value $-\sqrt u$ is attained at $x = -\sqrt u$, the left end point of
-$\{x \mid x^2 \le u\}$. Only this half of the formula of the book is needed. -/
+$\{x \mid x^2 \le u\}$.
+
+**Reading.** The book gives an exact value for each $u$, including $+\infty$ for $u < 0$.
+Lean states the upper bound used to exclude a Kuhn–Tucker vector. -/
 theorem infBifun_noDualSolutionBifun_le {t : ℝ} (ht : 0 ≤ t) :
     infBifun noDualSolutionBifun (coord1 t) ≤ ((-Real.sqrt t : ℝ) : EReal) := by
   have hcond : (coord1 (-Real.sqrt t) 0) ^ 2 ≤ coord1 t 0 := by

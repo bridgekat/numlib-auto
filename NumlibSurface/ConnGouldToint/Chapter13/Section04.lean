@@ -84,6 +84,57 @@ the printed hypotheses of Theorem 13.4.2, and a bounded-below version of the exa
 
 ## Deviations from the source
 
+* **Reading.** The Taylor-model identities and clearance bounds are separated from the corrected
+  boundary-divergence claim. See `ConnGouldToint.Chapter13.logBarrierModel`,
+  `ConnGouldToint.Chapter13.logBarrier_hessian`,
+  `ConnGouldToint.Chapter13.logBarrierModel_eq_taylor`,
+  `ConnGouldToint.Chapter13.logBarrierModel_fderiv_center`,
+  `ConnGouldToint.Chapter13.logBarrierModel_fderiv_fderiv`,
+  `ConnGouldToint.Chapter13.logBarrierModel_contDiff`,
+  `ConnGouldToint.Chapter13.logBarrierModel_zero`,
+  `ConnGouldToint.Chapter13.logBarrierModel_hessian_bounded`,
+  `ConnGouldToint.Chapter13.logBarrier_contDiffOn`,
+  `ConnGouldToint.Chapter13.logBarrier_hessian_bounded`.
+* **Representation.** The stopping tests use squared Euclidean residuals and homogeneous curvature
+  in place of the norm and eigenvalue notation. See
+  `ConnGouldToint.Chapter13.barrierCoordinateGradient`,
+  `ConnGouldToint.Chapter13.BarrierSecondOrderStop`,
+  `ConnGouldToint.Chapter13.barrierCoordinateGradient_logBarrierObjective`,
+  `ConnGouldToint.Chapter13.logBarrierObjective_hessian_apply`.
+* **Correction.** Primal finite stopping is conditional on inner limits, which follow under explicit
+  clearance, extension and model hypotheses. See
+  `ConnGouldToint.Chapter13.theorem_13_4_2_of_inner_limits`,
+  `ConnGouldToint.Chapter13.SecondPrimalBarrierInnerRun.toBTRRun`,
+  `ConnGouldToint.Chapter13.theorem_13_4_2_inner_of_extension`,
+  `ConnGouldToint.Chapter13.theorem_13_4_2_of_extension`,
+  `ConnGouldToint.Chapter13.theorem_13_4_2_of_local_extension`,
+  `ConnGouldToint.Chapter13.PrimalBarrierInnerRun.euclidean_clearance_of_global_lower`.
+* **Generalization.** Asymptotic and consistent activity are defined along filters. See
+  `ConnGouldToint.Chapter13.AsymptoticallyActive`, `ConnGouldToint.Chapter13.ConsistentlyActive`.
+* **Generalization.** The asymptotic and weak second-order conclusions apply to sequences satisfying
+  the stopping tests, including completed runs. See `ConnGouldToint.Chapter13.theorem_13_4_3`,
+  `ConnGouldToint.Chapter13.theorem_13_4_3_consistentlyActive`,
+  `ConnGouldToint.Chapter13.corollary_13_4_4`,
+  `ConnGouldToint.Chapter13.PrimalLogBarrierOuterRun.convergence`,
+  `ConnGouldToint.Chapter13.PrimalLogBarrierOuterRun.weakSecondOrder_limit`.
+* **Representation.** The outer run uses a finite guarded inner trace and permits stopping at its
+  start. See `ConnGouldToint.Chapter13.logBarrierEuclideanDomain`,
+  `ConnGouldToint.Chapter13.PrimalBarrierStepRule`,
+  `ConnGouldToint.Chapter13.PrimalLogBarrierInnerPrefix`,
+  `ConnGouldToint.Chapter13.PrimalLogBarrierOuterRun`,
+  `ConnGouldToint.Chapter13.PrimalLogBarrierOuterRun.toBarrierOuterRun`.
+* **Reading.** The quadratic example certifies the stopping tests and negative limiting curvature,
+  without the printed global-minimizer interpretation. See
+  `ConnGouldToint.Chapter13.logBarrierCounterObjective_stops_and_negative_direction`.
+* **Correction.** A bounded-below modification preserves the weak-versus-strong second-order
+  counterexample. See `ConnGouldToint.Chapter13.logBarrierCounterRegularized`,
+  `ConnGouldToint.Chapter13.logBarrierCounterRegularized_example`,
+  `ConnGouldToint.Chapter13.logBarrierCounterRegularized_convergent_stops`.
+* **Correction.** Unbounded runs of both inner algorithms with exact barrier models disprove the
+  unqualified finite-stopping theorem. See
+  `ConnGouldToint.Chapter13.theorem_13_4_2_unbounded_run_counterexample`,
+  `ConnGouldToint.Chapter13.theorem_13_4_2_unbounded_primal_inner_run`,
+  `ConnGouldToint.Chapter13.theorem_13_4_2_unbounded_constrained_primal_inner_run`.
 * **Algorithm 13.4.1** (generalization). An inner minimization may stop at index zero when its
   starting point already passes the stopping tests. See
   `ConnGouldToint.Chapter13.PrimalLogBarrierOuterRun`.
@@ -113,6 +164,11 @@ variable {ι : Type*} [Fintype ι]
 parameter $\mu$, the **logarithmic barrier model** is
 $$m^b(x, s) = -\mu \sum_i \log x_i - \mu \sum_i \frac{s_i}{x_i} + \frac{\mu}{2} \sum_i
   \frac{s_i^2}{x_i^2}.$$
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
 -/
 noncomputable def logBarrierModel (x s : ι → ℝ) (μ : ℝ) : ℝ :=
   logBarrier x μ - μ * (∑ i, (x i)⁻¹ * s i) +
@@ -121,6 +177,11 @@ noncomputable def logBarrierModel (x s : ι → ℝ) (μ : ℝ) : ℝ :=
 /-- **Equation (13.4.8)** of [conn2000trust]. Let $\mu \in \mathbb{R}$ and $x > 0$. The Hessian of
 the logarithmic barrier $b_\mu(y) = -\mu \sum_i \log y_i$ at $x$ is diagonal:
 $$\nabla^2 b_\mu(x)[d, e] = \mu \sum_i \frac{d_i e_i}{x_i^2} \quad \text{for all } d, e.$$
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
 -/
 theorem logBarrier_hessian (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) (d e : ι → ℝ) :
     fderiv ℝ (fderiv ℝ (fun y ↦ logBarrier y μ)) x d e =
@@ -128,7 +189,13 @@ theorem logBarrier_hessian (μ : ℝ) {x : ι → ℝ} (hx : ∀ i, 0 < x i) (d 
   Optimization.fderiv_fderiv_logBarrier_apply μ hx d e
 
 /-- **Lemma 13.4.1** of [conn2000trust], AC.1c. For every $\mu \in \mathbb{R}$, the logarithmic
-barrier $b_\mu$ is twice continuously differentiable on the interior of the nonnegative orthant. -/
+barrier $b_\mu$ is twice continuously differentiable on the interior of the nonnegative orthant.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 theorem logBarrier_contDiffOn (μ : ℝ) :
     ContDiffOn ℝ 2 (fun x : ι → ℝ ↦ logBarrier x μ)
       (interior (Optimization.nonnegativeOrthant ι)) := by
@@ -142,7 +209,13 @@ theorem logBarrier_contDiffOn (μ : ℝ) :
 There is $C \ge 1$ such that $\|\nabla^2 b_\mu(x)\| \le C$ for every $x > 0$ whose distance to
 the boundary of the nonnegative orthant is at least $\varepsilon$.
 
-The distance and the operator norm are those of the sup norm on `ι → ℝ`. -/
+The distance and the operator norm are those of the sup norm on `ι → ℝ`.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 theorem logBarrier_hessian_bounded (μ : ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ C ≥ (1 : ℝ), ∀ x : ι → ℝ, (∀ i, 0 < x i) →
       ε ≤ infDist x (frontier (Optimization.nonnegativeOrthant ι)) →
@@ -155,6 +228,11 @@ theorem logBarrier_hessian_bounded (μ : ℝ) {ε : ℝ} (hε : 0 < ε) :
 /-- The barrier model (13.4.2) of [conn2000trust] is the second-order Taylor model of the barrier:
 for $x > 0$, every $s$ and every $\mu$,
 $$m^b(x, s) = b_\mu(x) + D b_\mu(x) s + \frac12 \nabla^2 b_\mu(x)[s, s].$$
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
 -/
 theorem logBarrierModel_eq_taylor {x : ι → ℝ} (hx : ∀ i, 0 < x i) (s : ι → ℝ) (μ : ℝ) :
     logBarrierModel x s μ = logBarrier x μ + fderiv ℝ (fun y ↦ logBarrier y μ) x s +
@@ -212,7 +290,13 @@ private theorem logBarrierModel_fderiv {x : ι → ℝ} (hx : ∀ i, 0 < x i)
   exact (barrierQuadratic_hasFDerivAt hs s).fderiv
 
 /-- **Lemma 13.4.1** of [conn2000trust], AM.3. For $x > 0$ and every $\mu$, the derivative of the
-barrier model $s \mapsto m^b(x, s)$ at $s = 0$ is the derivative $D b_\mu(x)$ of the barrier. -/
+barrier model $s \mapsto m^b(x, s)$ at $s = 0$ is the derivative $D b_\mu(x)$ of the barrier.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 theorem logBarrierModel_fderiv_center {x : ι → ℝ} (hx : ∀ i, 0 < x i) (μ : ℝ) :
     fderiv ℝ (logBarrierModel x · μ) 0 = fderiv ℝ (Optimization.logBarrier μ) x := by
   rw [logBarrierModel_fderiv hx, map_zero, add_zero]
@@ -221,7 +305,13 @@ theorem logBarrierModel_fderiv_center {x : ι → ℝ} (hx : ∀ i, 0 < x i) (μ
 the Hessian of the barrier model $s \mapsto m^b(x, s)$ at $s$ is $\nabla^2 b_\mu(x)$.
 
 The model Hessian is constant and equal to the barrier Hessian at the center. So the barrier
-part of AM.5c is exact, and AC.6b holds with zero Hessian variation. -/
+part of AM.5c is exact, and AC.6b holds with zero Hessian variation.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 theorem logBarrierModel_fderiv_fderiv {x : ι → ℝ} (hx : ∀ i, 0 < x i)
     (μ : ℝ) (s : ι → ℝ) :
     fderiv ℝ (fderiv ℝ (logBarrierModel x · μ)) s =
@@ -233,21 +323,39 @@ theorem logBarrierModel_fderiv_fderiv {x : ι → ℝ} (hx : ∀ i, 0 < x i)
   exact ((fderiv ℝ (fderiv ℝ (Optimization.logBarrier μ)) x).hasFDerivAt.const_add _).fderiv
 
 /-- **Lemma 13.4.1** of [conn2000trust], AM.1. For $x > 0$ and every $\mu$, the barrier model
-$s \mapsto m^b(x, s)$ is twice continuously differentiable. -/
+$s \mapsto m^b(x, s)$ is twice continuously differentiable.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 theorem logBarrierModel_contDiff {x : ι → ℝ} (hx : ∀ i, 0 < x i) (μ : ℝ) :
     ContDiff ℝ 2 (logBarrierModel x · μ) := by
   simp only [logBarrierModel_eq_taylor hx]
   fun_prop
 
 /-- **Lemma 13.4.1** of [conn2000trust], AM.2. The barrier model interpolates the barrier at its
-center: $m^b(x, 0) = b_\mu(x)$ for all $x$ and $\mu$. -/
+center: $m^b(x, 0) = b_\mu(x)$ for all $x$ and $\mu$.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 @[simp] theorem logBarrierModel_zero (x : ι → ℝ) (μ : ℝ) :
     logBarrierModel x 0 μ = logBarrier x μ := by
   simp [logBarrierModel]
 
 /-- **Lemma 13.4.1** of [conn2000trust], AM.4h. Let $\mu \in \mathbb{R}$ and $\varepsilon > 0$.
 There is $C \ge 1$ such that $\|\nabla^2_s m^b(x, s)\| \le C$ for every $s$ and every $x > 0$
-whose distance to the boundary of the nonnegative orthant is at least $\varepsilon$. -/
+whose distance to the boundary of the nonnegative orthant is at least $\varepsilon$.
+
+**Reading.** The exact value, gradient and Hessian are expressed for the model displacement about a
+positive center with a fixed parameter. The lemmas prove the smoothness and clearance-dependent
+bounds independently of AC.8, which for this barrier needs the separate bounded-coordinate
+hypothesis.
+-/
 theorem logBarrierModel_hessian_bounded (μ : ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∃ C ≥ (1 : ℝ), ∀ x : ι → ℝ, (∀ i, 0 < x i) →
       ε ≤ infDist x (frontier (Optimization.nonnegativeOrthant ι)) →
@@ -266,7 +374,12 @@ variable [DecidableEq ι]
 /-- The partial derivative $\partial_i f(x) = D f(x) e_i$ of $f : \mathbb{R}^n \to \mathbb{R}$,
 where $e_i$ is the $i$-th unit vector.
 
-It is the directional Fréchet derivative, and it is $0$ when $f$ is not differentiable at $x$. -/
+It is the directional Fréchet derivative, and it is $0$ when $f$ is not differentiable at $x$.
+
+**Reading.** The tests use a sum of squared stationarity coordinates and a homogeneous Hessian
+inequality. These recover the Euclidean norm and smallest eigenvalue tests when the tolerances are
+positive and derivatives exist.
+-/
 noncomputable def barrierCoordinateGradient (f : (ι → ℝ) → ℝ) (x : ι → ℝ) (i : ι) : ℝ :=
   fderiv ℝ f x (Pi.single i 1)
 
@@ -278,7 +391,12 @@ $$\sum_i \left(\partial_i f(x) - \frac{\mu}{x_i}\right)^2 \le (\varepsilon^D)^2,
 where $\|d\|$ is the Euclidean norm.
 
 The Hessian test (13.4.5) is written as a quadratic-form inequality instead of a bound on the
-least eigenvalue. -/
+least eigenvalue.
+
+**Reading.** The tests use a sum of squared stationarity coordinates and a homogeneous Hessian
+inequality. These recover the Euclidean norm and smallest eigenvalue tests when the tolerances are
+positive and derivatives exist.
+-/
 def BarrierSecondOrderStop (f : (ι → ℝ) → ℝ) (x : ι → ℝ) (μ εD εE : ℝ) : Prop :=
   (∀ i, 0 < x i) ∧
   (∑ i, (barrierCoordinateGradient f x i - μ / x i) ^ 2) ≤ εD ^ 2 ∧
@@ -288,6 +406,10 @@ def BarrierSecondOrderStop (f : (ι → ℝ) → ℝ) (x : ι → ℝ) (μ εD �
 /-- The residual in (13.4.3) of [conn2000trust] is the gradient of the barrier objective. If $f$ is
 differentiable at $x > 0$, then for every $\mu$ and $i$,
 $$\partial_i (f + b_\mu)(x) = \partial_i f(x) - \frac{\mu}{x_i}.$$
+
+**Reading.** The tests use a sum of squared stationarity coordinates and a homogeneous Hessian
+inequality. These recover the Euclidean norm and smallest eigenvalue tests when the tolerances are
+positive and derivatives exist.
 -/
 theorem barrierCoordinateGradient_logBarrierObjective {f : (ι → ℝ) → ℝ} {x : ι → ℝ}
     (hf : DifferentiableAt ℝ f x) (hx : ∀ i, 0 < x i) (μ : ℝ) (i : ι) :
@@ -312,6 +434,10 @@ omit [DecidableEq ι] in
 objective. If $f$ is twice continuously differentiable and $x > 0$, then for every $\mu$ and
 $d$,
 $$\nabla^2 (f + b_\mu)(x)[d, d] = \nabla^2 f(x)[d, d] + \mu \sum_i \frac{d_i^2}{x_i^2}.$$
+
+**Reading.** The tests use a sum of squared stationarity coordinates and a homogeneous Hessian
+inequality. These recover the Euclidean norm and smallest eigenvalue tests when the tolerances are
+positive and derivatives exist.
 -/
 theorem logBarrierObjective_hessian_apply {f : (ι → ℝ) → ℝ} {x : ι → ℝ}
     (hf : ContDiff ℝ 2 f) (hx : ∀ i, 0 < x i) (μ : ℝ) (d : ι → ℝ) :
@@ -346,7 +472,13 @@ all $j$ and $d$. Then infinitely many $x_j$ pass the stopping tests (13.4.3)–(
 The inner analysis supplies the convergence of the squared residual and the nonnegative upper
 limit of the curvature. The second gives arbitrarily late indices that pass the Hessian test.
 Coboundedness from below is `Filter.IsCoboundedUnder (· ≤ ·)`, which makes the upper limit
-meaningful. -/
+meaningful.
+
+**Correction.** Finite stopping is obtained from an eventual gradient bound and frequent
+near-nonnegative curvature. To derive the inner limits the formalization requires uniform clearance,
+a compatible smooth extension, and uniform bounds and model agreement. A global lower bound on the
+objective and the larger barrier-parameter bound are used in the separate clearance lemma.
+-/
 theorem theorem_13_4_2_of_inner_limits {f : (ι → ℝ) → ℝ} {x : ℕ → ι → ℝ}
     {μ εD εE : ℝ} (hD : 0 < εD) (hE : 0 < εE)
     (hx : ∀ j i, 0 < x j i)
@@ -379,7 +511,13 @@ point $x_j + s_j$ of a run of Algorithm 13.3.1. Then the run is a run of the bas
 algorithm (Algorithm 6.1.1) for $F$, with the norm of $E$ and no extra decrease condition.
 
 Each step of Algorithm 13.3.1 already passes the fraction-to-boundary test, so the guarded ratio
-equals the ordinary ratio of $F$. The result is `ConnGouldToint.Chapter06.BTRRun`. -/
+equals the ordinary ratio of $F$. The result is `ConnGouldToint.Chapter06.BTRRun`.
+
+**Correction.** Finite stopping is obtained from an eventual gradient bound and frequent
+near-nonnegative curvature. To derive the inner limits the formalization requires uniform clearance,
+a compatible smooth extension, and uniform bounds and model agreement. A global lower bound on the
+objective and the larger barrier-parameter bound are used in the separate clearance lemma.
+-/
 noncomputable def SecondPrimalBarrierInnerRun.toBTRRun
     {P : BTRParams} {C : Set E} {σ : ℝ} {φ F : E → ℝ}
     (r : SecondPrimalBarrierInnerRun P C σ φ)
@@ -460,7 +598,13 @@ $\lambda(\nabla^2 F(x_j)) > -\varepsilon$.
 Here $\lambda(H)$ is the infimum of $H[u, u]$ over unit vectors $u$,
 `ConnGouldToint.Chapter06.leastUnitCurvature`, and AM.5 is
 `ConnGouldToint.Chapter06.ModelHessianAgreement`. The fixed clearance and the uniform bounds on
-the first- and second-order measures remove the caps of (13.3.2) at the cost of fixed factors. -/
+the first- and second-order measures remove the caps of (13.3.2) at the cost of fixed factors.
+
+**Correction.** Finite stopping is obtained from an eventual gradient bound and frequent
+near-nonnegative curvature. To derive the inner limits the formalization requires uniform clearance,
+a compatible smooth extension, and uniform bounds and model agreement. A global lower bound on the
+objective and the larger barrier-parameter bound are used in the separate clearance lemma.
+-/
 theorem theorem_13_4_2_inner_of_extension [Nontrivial E]
     {P : BTRParams} {C : Set E} {σ : ℝ} {φ F : E → ℝ}
     (r : SecondPrimalBarrierInnerRun P C σ φ)
@@ -656,7 +800,13 @@ $\lambda(\nabla^2 F(x_j)) > -\varepsilon$, then infinitely many $x_j$ pass the s
 (13.4.3)–(13.4.5).
 
 The two identities are the transformation of the gradient and the Hessian under the Euclidean
-coordinate map at the positive iterates. -/
+coordinate map at the positive iterates.
+
+**Correction.** Finite stopping is obtained from an eventual gradient bound and frequent
+near-nonnegative curvature. To derive the inner limits the formalization requires uniform clearance,
+a compatible smooth extension, and uniform bounds and model agreement. A global lower bound on the
+objective and the larger barrier-parameter bound are used in the separate clearance lemma.
+-/
 theorem theorem_13_4_2_of_extension {f : (ι → ℝ) → ℝ} {F : EuclideanSpace ℝ ι → ℝ}
     {x : ℕ → EuclideanSpace ℝ ι} {μ εD εE : ℝ} (hD : 0 < εD) (hE : 0 < εE)
     (hx : ∀ j i, 0 < (x j).ofLp i)
@@ -699,7 +849,13 @@ every $\varepsilon > 0$, infinitely many $j$ have $\lambda(\nabla^2 F(x_j)) > -\
 then infinitely many $x_j$ pass the stopping tests (13.4.3)–(13.4.5).
 
 Local agreement gives the two derivative identities of
-`ConnGouldToint.Chapter13.theorem_13_4_2_of_extension`. -/
+`ConnGouldToint.Chapter13.theorem_13_4_2_of_extension`.
+
+**Correction.** Finite stopping is obtained from an eventual gradient bound and frequent
+near-nonnegative curvature. To derive the inner limits the formalization requires uniform clearance,
+a compatible smooth extension, and uniform bounds and model agreement. A global lower bound on the
+objective and the larger barrier-parameter bound are used in the separate clearance lemma.
+-/
 theorem theorem_13_4_2_of_local_extension {f : (ι → ℝ) → ℝ} {F : EuclideanSpace ℝ ι → ℝ}
     {x : ℕ → EuclideanSpace ℝ ι} {μ εD εE : ℝ} (hD : 0 < εD) (hE : 0 < εE)
     (hf : ContDiff ℝ 2 f) (hF : ContDiff ℝ 2 F) (hx : ∀ j i, 0 < (x j).ofLp i)
@@ -736,7 +892,13 @@ there is $\varepsilon \in (0, 1)$ such that every iterate has Euclidean distance
 $\varepsilon$ from the boundary of the orthant.
 
 The hypotheses are a global lower bound on the objective, AF.3 and AW.2 at the larger parameter
-$\nu$. -/
+$\nu$.
+
+**Correction.** Finite stopping is obtained from an eventual gradient bound and frequent
+near-nonnegative curvature. To derive the inner limits the formalization requires uniform clearance,
+a compatible smooth extension, and uniform bounds and model agreement. A global lower bound on the
+objective and the larger barrier-parameter bound are used in the separate clearance lemma.
+-/
 theorem PrimalBarrierInnerRun.euclidean_clearance_of_global_lower
     {P : BTRParams} {f : (ι → ℝ) → ℝ} {σ μ ν L A H : ℝ}
     (r : PrimalBarrierInnerRun P
@@ -786,13 +948,21 @@ end EuclideanStopping
 
 
 /-- A coordinate $i$ is **asymptotically active** for a family $(x_k)$ along a filter if
-$x_{k,i} \to 0$. This is the definition before Theorem 13.4.3 of [conn2000trust]. -/
+$x_{k,i} \to 0$. This is the definition before Theorem 13.4.3 of [conn2000trust].
+
+**Generalization.** The sequence notion is expressed along any filter. An inactive coordinate is
+eventually bounded below by a positive number.
+-/
 def AsymptoticallyActive {α : Type*} (l : Filter α) (x : α → ι → ℝ) (i : ι) : Prop :=
   Tendsto (fun k ↦ x k i) l (𝓝 0)
 
 /-- A family $(x_k)$ is **consistently active** along a filter if each coordinate $i$ is either
 asymptotically active or eventually satisfies $x_{k,i} \ge \delta$ for some $\delta > 0$. This
-is the definition before Theorem 13.4.3 of [conn2000trust]. -/
+is the definition before Theorem 13.4.3 of [conn2000trust].
+
+**Generalization.** The sequence notion is expressed along any filter. An inactive coordinate is
+eventually bounded below by a positive number.
+-/
 def ConsistentlyActive {α : Type*} (l : Filter α) (x : α → ι → ℝ) : Prop :=
   ∀ i, AsymptoticallyActive l x i ∨ ∃ δ > 0, ∀ᶠ k in l, δ ≤ x k i
 
@@ -846,7 +1016,13 @@ $\varepsilon^E_k$ tend to $0$ along $l$ and that each $x_k$ passes the stopping 
 
 The lower-limit inequalities (13.4.9)–(13.4.11) are written in eventual form: each negative
 tolerance $-\eta$ is eventually a lower bound. This also covers sequences whose lower limit is
-$+\infty$. -/
+$+\infty$.
+
+**Generalization.** The limit statements require only the residual tests and convergence assumptions
+used in their proofs, with continuity of the derivatives for the finite-limit result. They do not
+rely on the printed unconditional existence of the inner stopping point. The outer-run versions use
+completed inner solves.
+-/
 theorem theorem_13_4_3 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     {x : α → ι → ℝ} {μ εD εE : α → ℝ}
     (hμ : Tendsto μ l (𝓝 0)) (hμpos : ∀ k, 0 ≤ μ k)
@@ -890,7 +1066,13 @@ asymptotically active, and for every $d$ with $d_i = 0$ on the asymptotically ac
 and every $\eta > 0$, eventually $\nabla^2 f(x_k)[d, d] \ge -\eta$.
 
 All coordinates outside the asymptotically active set are eventually separated from the
-boundary. -/
+boundary.
+
+**Generalization.** The limit statements require only the residual tests and convergence assumptions
+used in their proofs, with continuity of the derivatives for the finite-limit result. They do not
+rely on the printed unconditional existence of the inner stopping point. The outer-run versions use
+completed inner solves.
+-/
 theorem theorem_13_4_3_consistentlyActive {α : Type*} {l : Filter α}
     {f : (ι → ℝ) → ℝ} {x : α → ι → ℝ} (ha : ConsistentlyActive l x)
     {μ εD εE : α → ℝ} (hμ : Tendsto μ l (𝓝 0)) (hμpos : ∀ k, 0 ≤ μ k)
@@ -914,7 +1096,13 @@ $\partial_i f(x^*) \ge 0$, with $\partial_i f(x^*) = 0$ if $x^*_i > 0$. Moreover
 $\nabla^2 f(x^*)[d, d] \ge 0$ for every $d$ with $d_i = 0$ whenever $x^*_i = 0$.
 
 This is weak second-order criticality of the limit point: the Hessian is tested on the nullspace
-of all active bounds. -/
+of all active bounds.
+
+**Generalization.** The limit statements require only the residual tests and convergence assumptions
+used in their proofs, with continuity of the derivatives for the finite-limit result. They do not
+rely on the printed unconditional existence of the inner stopping point. The outer-run versions use
+completed inner solves.
+-/
 theorem corollary_13_4_4 {α : Type*} {l : Filter α} [l.NeBot]
     {f : (ι → ℝ) → ℝ} (hf : ContDiff ℝ 2 f)
     {x : α → ι → ℝ} {xstar : ι → ℝ} (hx : Tendsto x l (𝓝 xstar))
@@ -962,7 +1150,12 @@ open Chapter06 Set
 
 /-- The closed nonnegative orthant of the Euclidean space $\mathbb{R}^n$. Its interior, the set of
 positive vectors, is the domain of the logarithmic barrier in Algorithm 13.4.1 of
-[conn2000trust]. -/
+[conn2000trust].
+
+**Reading.** The choice of inner algorithm is recorded as a step rule and only the finite accepted
+prefix is required. The terminal index may be zero if the starting point already passes. The model
+and acceptance requirements are relative to the corrected inner runs.
+-/
 def logBarrierEuclideanDomain (ι : Type*) [Fintype ι] : Set (EuclideanSpace ℝ ι) :=
   WithLp.ofLp ⁻¹' Optimization.nonnegativeOrthant ι
 
@@ -976,7 +1169,12 @@ private theorem mem_interior_logBarrierEuclideanDomain (x : EuclideanSpace ℝ �
   simp only [Set.mem_pi, Set.mem_univ, true_implies, interior_Ici, Set.mem_Ioi]
 
 /-- The two step rules in Algorithm 13.4.1 of [conn2000trust]: the inner minimization uses either
-Algorithm 13.2.1 or Algorithm 13.3.1. -/
+Algorithm 13.2.1 or Algorithm 13.3.1.
+
+**Reading.** The choice of inner algorithm is recorded as a step rule and only the finite accepted
+prefix is required. The terminal index may be zero if the starting point already passes. The model
+and acceptance requirements are relative to the corrected inner runs.
+-/
 inductive PrimalBarrierStepRule
   /-- Algorithm 13.2.1: compute the trial, and reject it if it fails the fraction-to-boundary test.
   -/
@@ -1002,7 +1200,12 @@ every $j < J$:
 Moreover, the Hessians $\nabla^2 m^f_j$ are bounded on the positive points of the balls,
 uniformly in $j < J$, and the decrease constant $\kappa$ lies in $(0, 1)$. The rule of Algorithm
 13.2.1 uses the uncapped decrease and the guarded ratio; the rule of Algorithm 13.3.1 uses the
-feasible capped decrease. -/
+feasible capped decrease.
+
+**Reading.** The choice of inner algorithm is recorded as a step rule and only the finite accepted
+prefix is required. The terminal index may be zero if the starting point already passes. The model
+and acceptance requirements are relative to the corrected inner runs.
+-/
 structure PrimalLogBarrierInnerPrefix (P : BTRParams) (f : (ι → ℝ) → ℝ)
     (σ μ : ℝ) (x : ℕ → EuclideanSpace ℝ ι) (J : ℕ)
     extends PrimalBarrierInnerPrefix P (logBarrierEuclideanDomain ι) σ
@@ -1069,7 +1272,12 @@ terminal indices $J_k$, such that:
 its starting point passes the stopping tests.
 
 Each inner minimization starts at the current outer iterate and stops at the first point that
-passes the tests. -/
+passes the tests.
+
+**Reading.** The choice of inner algorithm is recorded as a step rule and only the finite accepted
+prefix is required. The terminal index may be zero if the starting point already passes. The model
+and acceptance requirements are relative to the corrected inner runs.
+-/
 structure PrimalLogBarrierOuterRun (P : BTRParams) (f : (ι → ℝ) → ℝ) where
   /-- The outer iterates $x_k$. -/
   x : ℕ → EuclideanSpace ℝ ι
@@ -1112,7 +1320,12 @@ structure PrimalLogBarrierOuterRun (P : BTRParams) (f : (ι → ℝ) → ℝ) wh
 log-barrier method is a run of the generic barrier method
 `ConnGouldToint.Chapter13.BarrierOuterRun` on the nonnegative orthant, where each inner
 minimization is a finite trust-region solve of the log-barrier objective with parameter $\mu_k$
-by Algorithm 13.2.1 or Algorithm 13.3.1. -/
+by Algorithm 13.2.1 or Algorithm 13.3.1.
+
+**Reading.** The choice of inner algorithm is recorded as a step rule and only the finite accepted
+prefix is required. The terminal index may be zero if the starting point already passes. The model
+and acceptance requirements are relative to the corrected inner runs.
+-/
 def PrimalLogBarrierOuterRun.toBarrierOuterRun {P : BTRParams} {f : (ι → ℝ) → ℝ}
     (r : PrimalLogBarrierOuterRun P f) :
     BarrierOuterRun (logBarrierEuclideanDomain ι)
@@ -1147,7 +1360,13 @@ run of the primal log-barrier method, the iterates $x_{k+1}$ satisfy the three c
 `ConnGouldToint.Chapter13.theorem_13_4_3` along $k \to \infty$.
 
 The shifted sequence $x_{k+1}$ uses the barrier parameter $\mu_k$ that produced each completed
-iterate. -/
+iterate.
+
+**Generalization.** The limit statements require only the residual tests and convergence assumptions
+used in their proofs, with continuity of the derivatives for the finite-limit result. They do not
+rely on the printed unconditional existence of the inner stopping point. The outer-run versions use
+completed inner solves.
+-/
 theorem PrimalLogBarrierOuterRun.convergence {P : BTRParams} {f : (ι → ℝ) → ℝ}
     (r : PrimalLogBarrierOuterRun P f) :
     (∀ i η, 0 < η → ∀ᶠ k in atTop, -η ≤ barrierCoordinateGradient f (r.x (k + 1)).ofLp i) ∧
@@ -1165,7 +1384,13 @@ $j_k \to \infty$ and $x_{j_k + 1} \to x^*$, then $x^* \ge 0$, $\partial_i f(x^*)
 $i$ with equality when $x^*_i > 0$, and $\nabla^2 f(x^*)[d, d] \ge 0$ for every $d$ with
 $d_i = 0$ whenever $x^*_i = 0$.
 
-The Hessian inequality is on the nullspace of all active bounds. -/
+The Hessian inequality is on the nullspace of all active bounds.
+
+**Generalization.** The limit statements require only the residual tests and convergence assumptions
+used in their proofs, with continuity of the derivatives for the finite-limit result. They do not
+rely on the printed unconditional existence of the inner stopping point. The outer-run versions use
+completed inner solves.
+-/
 theorem PrimalLogBarrierOuterRun.weakSecondOrder_limit {P : BTRParams}
     {f : (ι → ℝ) → ℝ} (r : PrimalLogBarrierOuterRun P f) (hf : ContDiff ℝ 2 f)
     {j : ℕ → ℕ} (hj : Tendsto j atTop atTop) {xstar : ι → ℝ}
@@ -1238,7 +1463,13 @@ $\nabla^2 q(0)[e_1, e_1] < 0$ for the feasible direction $e_1$.
 
 The points $(r, r, r, r)$ are exact stationary points of the barrier objective. The example
 concerns the stopping tests themselves, and its quadratic is unbounded below on the orthant. In
-Lean $e_1$ is `Pi.single 0 1`. -/
+Lean $e_1$ is `Pi.single 0 1`.
+
+**Reading.** The displayed points satisfy the exact first- and second-order stopping tests, and a
+feasible direction at the limit has negative curvature. They cannot be global minimizers of the
+unmodified barrier problem: the quadratic is negative along the first coordinate axis and remains
+negative along nearby positive directions.
+-/
 theorem logBarrierCounterObjective_stops_and_negative_direction :
     (∀ r > 0, BarrierSecondOrderStop logBarrierCounterObjective (fun _ ↦ r) (r ^ 2) 0 0) ∧
     fderiv ℝ (fderiv ℝ logBarrierCounterObjective) 0 (Pi.single 0 1) (Pi.single 0 1) < 0 := by
@@ -1287,7 +1518,12 @@ $$\tilde q(x) = \psi(x) q(x) + (1 - \psi(x)) \|x\|_2^2,$$
 where $q$ is the quadratic (13.4.13) and $\|x\|_2^2 = \sum_i x_i^2$.
 
 It agrees with (13.4.13) near the origin and with a positive quadratic outside a ball. The balls
-are those of the sup norm. -/
+are those of the sup norm.
+
+**Correction.** The source's quadratic example is modified outside a neighborhood of the origin to
+obtain a globally bounded-below objective. This preserves the stopping tests along a sequence and
+the negative critical-cone curvature at the limit.
+-/
 noncomputable def logBarrierCounterRegularized (x : Fin 4 → ℝ) : ℝ :=
   logBarrierCounterBump x * logBarrierCounterObjective x +
     (1 - logBarrierCounterBump x) * logBarrierCounterOuter x
@@ -1342,7 +1578,12 @@ objective $\tilde q + b_\mu$ is bounded below on the positive orthant. For every
 the point $(r, r, r, r)$ passes the stopping tests (13.4.3)–(13.4.5) with $\mu = r^2$ and zero
 tolerances. Finally $\nabla \tilde q(0) = 0$ and $\nabla^2 \tilde q(0)[e_1, e_1] < 0$.
 
-The exact inner stopping points converge to $0$, which fails strong second-order criticality. -/
+The exact inner stopping points converge to $0$, which fails strong second-order criticality.
+
+**Correction.** The source's quadratic example is modified outside a neighborhood of the origin to
+obtain a globally bounded-below objective. This preserves the stopping tests along a sequence and
+the negative critical-cone curvature at the limit.
+-/
 theorem logBarrierCounterRegularized_example :
     ContDiff ℝ 2 logBarrierCounterRegularized ∧
     (∃ M : ℝ, ∀ x, ‖fderiv ℝ (fderiv ℝ logBarrierCounterRegularized) x‖ ≤ M) ∧
@@ -1429,7 +1670,12 @@ $\nabla^2 \tilde q(0)[d, d] < 0$.
 
 Here $\tilde q$ is the bounded-below repair
 `ConnGouldToint.Chapter13.logBarrierCounterRegularized`, so a vanishing barrier sequence can
-converge to a limit with negative curvature in a feasible direction. -/
+converge to a limit with negative curvature in a feasible direction.
+
+**Correction.** The source's quadratic example is modified outside a neighborhood of the origin to
+obtain a globally bounded-below objective. This preserves the stopping tests along a sequence and
+the negative critical-cone curvature at the limit.
+-/
 theorem logBarrierCounterRegularized_convergent_stops :
     ∃ (x : ℕ → Fin 4 → ℝ) (μ : ℕ → ℝ),
       (∀ k, 0 < μ k) ∧ Tendsto μ atTop (𝓝 0) ∧ Tendsto x atTop (𝓝 0) ∧
@@ -1722,7 +1968,12 @@ below on the positive quadrant.
 
 The iterates are $(1/u_j, u_j + u_j^2)$, and the proof takes $u_j = 2^{-(j+1)}$. The radius
 doubles, the objective models have a uniform Hessian bound, and the second component of the
-barrier gradient stays above the stopping tolerance. -/
+barrier gradient stays above the stopping tolerance.
+
+**Correction.** A bilinear objective with exact positive-orthant log-barrier Taylor models has an
+unbounded admissible run for each inner algorithm. Acceptance ratios exceed the success threshold,
+but the first-order stopping condition keeps failing.
+-/
 theorem theorem_13_4_2_unbounded_run_counterexample :
     ∃ u : ℕ → ℝ,
       Tendsto u atTop (𝓝 0) ∧
@@ -2151,7 +2402,12 @@ run such that:
   and every guarded ratio is at least $2$.
 
 The ratios are computed from the true logarithmic barrier and the certified model, so every
-trial is very successful. -/
+trial is very successful.
+
+**Correction.** A bilinear objective with exact positive-orthant log-barrier Taylor models has an
+unbounded admissible run for each inner algorithm. Acceptance ratios exceed the success threshold,
+but the first-order stopping condition keeps failing.
+-/
 theorem theorem_13_4_2_unbounded_primal_inner_run :
     ∃ r : PrimalBarrierInnerRun Chapter06.defaultBTRParams escapeOrthant (1 / 4) escapeObjective,
       (∀ p ∈ interior escapeOrthant,
@@ -2302,7 +2558,12 @@ objectives are as there, and:
   $u_j \to 0$.
 
 The trials already pass the fraction-to-boundary test, and the capped decrease benchmarks can
-only be smaller. AM.5c holds because the model gradients stay away from zero. -/
+only be smaller. AM.5c holds because the model gradients stay away from zero.
+
+**Correction.** A bilinear objective with exact positive-orthant log-barrier Taylor models has an
+unbounded admissible run for each inner algorithm. Acceptance ratios exceed the success threshold,
+but the first-order stopping condition keeps failing.
+-/
 theorem theorem_13_4_2_unbounded_constrained_primal_inner_run :
     ∃ r : SecondPrimalBarrierInnerRun Chapter06.defaultBTRParams escapeOrthant
         (1 / 4) escapeObjective,

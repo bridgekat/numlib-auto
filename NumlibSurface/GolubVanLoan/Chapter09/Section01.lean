@@ -105,6 +105,23 @@ types) and `Numlib.Conditioning.Problem` (the scaled relative condition number).
 
 ## Deviations from the source
 
+* **Equations (9.1.3), (9.1.4), and (9.1.6)** (reading).
+  `GolubVanLoan.Chapter09.equation_9_1_3`, `GolubVanLoan.Chapter09.equation_9_1_4`, and
+  `GolubVanLoan.Chapter09.equation_9_1_6` apply to total primary functional calculus and total
+  iterated derivatives. The source assumes the required derivative evaluations exist.
+* **Equation (9.1.8)** (generalization). Along with correcting the similarity orientation,
+  `GolubVanLoan.Chapter09.equation_9_1_8` drops the Taylor-series restriction of the surrounding
+  text.
+* **Theorem 9.1.4** (reading). `GolubVanLoan.Chapter09.theorem_9_1_4` uses total primary
+  functional calculus and confluent divided differences, so it has no separate hypothesis that
+  $f(T)$ is defined.
+* **§9.1.5 and Equation (9.1.12)** (generalization). `GolubVanLoan.Chapter09.blockParlett_diag`
+  and `GolubVanLoan.Chapter09.equation_9_1_12` use an arbitrary block-upper-triangular matrix.
+  `GolubVanLoan.Chapter09.equation_9_1_12_unique` needs separation only for the particular two
+  diagonal blocks.
+* **§9.1.6** (reading). `GolubVanLoan.Chapter09.condRel` uses an extended nonnegative right
+  limsup on normed additive groups. `GolubVanLoan.Chapter09.condRel_eq_of_hasFDerivAt` states
+  the normalized derivative formula under explicit differentiability and nonzero conditions.
 * **§9.1.2, the logarithm series** (typo). The source prints $\log(I - A) = \sum_{k \ge 1} A^k / k$,
   which is the series of $-\log(I - A)$. See `GolubVanLoan.Chapter09.taylor_log_one_sub`.
 * **Equation (9.1.7)** (generalization). The source restricts the identity to functions given by a
@@ -146,7 +163,7 @@ private theorem pfc_affine (a b : ℂ) (A : Matrix (Fin n) (Fin n) ℂ) :
 
 /-! ### §9.1.1 The Jordan-based definition -/
 
-/-- **§9.1** of [golub2013matrix], rational examples of the introduction. Let
+/-- **Chapter 9 introduction and §9.1** of [golub2013matrix], rational examples. Let
 $A \in \mathbb{C}^{n \times n}$. Then:
 
 * for $p(z) = 1 + z$, $p(A) = I + A$;
@@ -212,7 +229,11 @@ $$f(A) = X \operatorname{diag}(F_1, \dots, F_q) X^{-1}, \qquad F_i = f(J_i).$$
 The matrices $F_i$ are given by (9.1.4), `GolubVanLoan.Chapter09.equation_9_1_4`.
 
 The Jordan form is `Matrix.jordanForm e μ`, with its rows and columns placed in `Fin n` by the
-bijection `σ`. The source takes this formula as the definition of $f(A)$. -/
+bijection `σ`. The source takes this formula as the definition of $f(A)$.
+
+**Reading.** The source defines $f(A)$ directly by Jordan blocks and assumes its required
+derivatives exist. Lean instead proves the Jordan formula for the existing primary matrix
+function, whose derivative operations are total. -/
 theorem equation_9_1_3 {q : ℕ} (e : Fin q → ℕ) (μ : Fin q → ℂ) (σ : (Σ i, Fin (e i)) ≃ Fin n)
     {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X)
     (h : X⁻¹ * A * X = Matrix.reindex σ σ (Matrix.jordanForm e μ)) (f : ℂ → ℂ) :
@@ -225,7 +246,10 @@ for $\mu \in \mathbb{C}$, and let $f : \mathbb{C} \to \mathbb{C}$. Then $f(J)$ i
 triangular Toeplitz:
 $$f(J)_{ij} = \begin{cases} f^{(j-i)}(\mu) / (j - i)! & i \le j, \\ 0 & i > j. \end{cases}$$
 
-The derivatives are `iteratedDeriv`, which is $0$ where $f$ is not differentiable. -/
+The derivatives are `iteratedDeriv`, which is $0$ where $f$ is not differentiable.
+
+**Reading.** The source assumes all derivatives used in a Jordan block exist. The Lean formula
+uses total iterated derivatives and holds for every function. -/
 theorem equation_9_1_4 (f : ℂ → ℂ) (m : ℕ) (μ : ℂ) (i j : Fin m) :
     pfc f (Matrix.jordanBlock m μ) i j =
       if i ≤ j then iteratedDeriv ((j : ℕ) - i) f μ / ((j : ℕ) - i)! else 0 :=
@@ -280,7 +304,10 @@ theorem lemma_9_1_1 {f : ℂ → ℂ} {p : FormalMultilinearSeries ℂ ℂ ℂ} 
 $m$ for $\lambda \in \mathbb{C}$, so that $E$ is the Jordan block for $0$. Then $(E^p)_{ij} = 1$
 if $i + p = j$ and $(E^p)_{ij} = 0$ otherwise, and for every $f : \mathbb{C} \to \mathbb{C}$
 $$f(B) = \sum_{p=0}^{m-1} \frac{f^{(p)}(\lambda)}{p!} E^p.$$
--/
+
+**Reading.** The Lean formula for powers of the nilpotent block applies to every $p$, and in
+particular gives zero at $p=m$. The source gives the nonzero-diagonal pattern up to $m-1$ and
+states vanishing for $p>m$. The matrix formula uses total iterated derivatives. -/
 theorem equation_9_1_6 (f : ℂ → ℂ) (m : ℕ) (c : ℂ) :
     Matrix.jordanBlock m c = c • 1 + Matrix.jordanBlock m 0 ∧
     (∀ (p : ℕ) (i j : Fin m),
@@ -418,7 +445,11 @@ $f : \mathbb{C} \to \mathbb{C}$,
 $$f(X^{-1} A X) = X^{-1} f(A) X.$$
 
 **Typo.** The source prints $X f(A) X^{-1}$ on the right, with $X$ and $X^{-1}$ exchanged. Its
-own use in §9.1.4, $f(A) = Q f(T) Q^H$ from $A = Q T Q^H$, is the corrected form. -/
+own use in §9.1.4, $f(A) = Q f(T) Q^H$ from $A = Q T Q^H$, is the corrected form.
+
+**Generalization.** The source restricts this discussion to functions with Taylor series
+representations. The Lean identity holds for every scalar function under the primary functional
+calculus. -/
 theorem equation_9_1_8 (f : ℂ → ℂ) {X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X)
     (A : Matrix (Fin n) (Fin n) ℂ) : pfc f (X⁻¹ * A * X) = X⁻¹ * pfc f A * X := by
   have hdet : IsUnit X.det := (Matrix.isUnit_iff_isUnit_det X).mp hX
@@ -451,7 +482,10 @@ at $j$, and $f[\cdot]$ is the divided difference, confluent where eigenvalues re
 
 A sequence in $S_{ij}$ is `Matrix.path i s j` for a set `s` of interior indices in
 `Finset.Ioo i j`. The product is `Matrix.pathProd`, and the divided difference is
-`Hermite.divDiff` of the multiset of diagonal entries along the path. -/
+`Hermite.divDiff` of the multiset of diagonal entries along the path.
+
+**Reading.** The source assumes $f(T)$ is defined. Lean uses total primary functional calculus
+and confluent divided differences for arbitrary scalar functions. -/
 theorem theorem_9_1_4 {T : Matrix (Fin n) (Fin n) ℂ} (hT : T.IsUpperTriangular) (f : ℂ → ℂ) :
     (∀ i j, j < i → pfc f T i j = 0) ∧ (∀ i, pfc f T i i = f (T i i)) ∧
     ∀ i j, i < j → pfc f T i j = ∑ s ∈ (Ioo i j).powerset,
@@ -729,7 +763,11 @@ conformally with $T$. Then $F_{ij} = 0$ for $i > j$ and $F_{ii} = f(T_{ii})$ for
 
 The block structure is `Matrix.BlockTriangular T b` for a block index `b : Fin n → Fin p`, and
 the block $(i, j)$ is `Matrix.toBlock` on the rows with block index $i$ and the columns with
-block index $j$. -/
+block index $j$.
+
+**Generalization.** The diagonal-block identity and vanishing below the block diagonal require
+only block triangularity. The source’s preceding construction uses a Schur form with pairwise
+disjoint diagonal-block spectra. -/
 theorem blockParlett_diag {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin n) ℂ}
     (hT : T.BlockTriangular b) (f : ℂ → ℂ) :
     (∀ i j : Fin p, j < i → (pfc f T).toBlock (b · = i) (b · = j) = 0) ∧
@@ -747,7 +785,11 @@ $i < j$,
 $$F_{ij} T_{jj} - T_{ii} F_{ij} = T_{ij} F_{jj} - F_{ii} T_{ij} + \sum_{k=i+1}^{j-1} (T_{ik}
   F_{kj} - F_{ik} T_{kj}).$$
 This is a Sylvester equation for the block $F_{ij}$ whose right side involves only blocks nearer
-the diagonal. -/
+the diagonal.
+
+**Generalization.** The block equation holds for any block-upper-triangular matrix,
+independently of how the diagonal-block spectra intersect. Spectral separation enters the
+uniqueness theorem. -/
 theorem equation_9_1_12 {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin n) ℂ}
     (hT : T.BlockTriangular b) (f : ℂ → ℂ) {i j : Fin p} (hij : i < j) :
     let F := pfc f T
@@ -768,7 +810,10 @@ if and only if $X = F_{ij}$. So the blocks of $F$ can be computed one superdiago
 
 The proof combines (9.1.12) with the injectivity of $X \mapsto T_{ii} X - X T_{jj}$ for disjoint
 spectra, the content of Lemma 7.1.5 of Chapter 7 (`Matrix.eq_zero_of_mul_sub_mul_eq_zero`), on
-the index types of the blocks. -/
+the index types of the blocks.
+
+**Generalization.** The source’s partition separates all diagonal-block spectra. This
+uniqueness statement uses only disjoint spectra of the two blocks in its Sylvester equation. -/
 theorem equation_9_1_12_unique {p : ℕ} {b : Fin n → Fin p} {T : Matrix (Fin n) (Fin n) ℂ}
     (hT : T.BlockTriangular b) (f : ℂ → ℂ) {i j : Fin p} (hij : i < j)
     (hdisj : spectrum ℂ (T.toBlock (b · = i) (b · = i)) ∩
@@ -809,7 +854,11 @@ $$\operatorname{cond}_{\mathrm{rel}}(F, A) = \lim_{\epsilon \to 0} \sup_{\|E\| \
 For $f(A)$ the map is $F = $ `pfc f` on $\mathbb{C}^{n \times n}$ with a chosen norm.
 
 The definition is the backbone's `Conditioning.scaledRelCondNumber F A`. The source's limit is
-made total as a `limsup` for $\epsilon \to 0^+$, with values in $[0, \infty]$. -/
+made total as a `limsup` for $\epsilon \to 0^+$, with values in $[0, \infty]$.
+
+**Generalization.** Uses right limsup in extended nonnegative reals and generalizes the domain to
+normed additive groups.
+-/
 noncomputable abbrev condRel {V : Type*} [NormedAddCommGroup V] (F : V → V) (A : V) : ℝ≥0∞ :=
   Conditioning.scaledRelCondNumber F A
 
@@ -821,7 +870,11 @@ have the Fréchet derivative $L$ at $A$, with $A \neq 0$ and $F(A) \neq 0$. Then
 $$\operatorname{cond}_{\mathrm{rel}}(F, A) = \frac{\|L\| \, \|A\|}{\|F(A)\|}.$$
 
 This is `Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt`. The norms are the extended norms
-in $[0, \infty]$. -/
+in $[0, \infty]$.
+
+**Reading.** The source describes a normalized Fréchet derivative informally. The Lean theorem
+gives the precise equality on real and complex normed spaces when the map is Fréchet
+differentiable and both the base point and its image are nonzero. -/
 theorem condRel_eq_of_hasFDerivAt {F : V → V} {L : V →L[𝕜] V} {A : V} (hF : HasFDerivAt F L A)
     (hA : A ≠ 0) (hFA : F A ≠ 0) : condRel F A = ‖L‖ₑ * ‖A‖ₑ / ‖F A‖ₑ :=
   Conditioning.scaledRelCondNumber_eq_of_hasFDerivAt hF hA hFA

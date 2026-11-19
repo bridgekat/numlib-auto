@@ -86,8 +86,16 @@ evaluations (Theorem 3.2.6), and a one-dimensional example attains the order $\e
 
 ## Deviations from the source
 
+* **Assumption f.HBa** (reading). The predicate includes continuous second
+  differentiability explicitly. The assumption box gives the Hessian norm bound,
+  and the surrounding argument invokes Theorem A.8.5 with its smoothness hypothesis.
+* **Equations (3.2.6) and (3.2.11)** (generalization). The pointwise optimality
+  predicate allows arbitrary real tolerances and uses total derivatives. The ratio
+  is $0$ at zero predicted decrease, and active iterations have positive predicted
+  decrease. See `CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer` and
+  `CartisGouldToint.Chapter03.tr2Ratio`.
 * **§3.2.1, trust-region constraints** (reading). The constraints $x_k - t g \in \mathcal{R}_k$ and
-  $x_k + t u \in \mathcal{B}_{\Delta_k}$ on the Cauchy and eigenpoint steps are read as
+  $x_k - t u \in \mathcal{B}_{\Delta_k}$ on the Cauchy and eigenpoint steps are read as
   $\|t g\| \le \Delta_k$ and $\|t u\| \le \Delta_k$. See `CartisGouldToint.Chapter03.tr2Step`.
 * **Step 1 of Algorithm 3.2.1** (reading). The source also stops at $\epsilon$-approximate strict
   local minimizers ($\|\nabla f\| \le \epsilon_1$, $\lambda_{\min} > \epsilon_2$). These satisfy
@@ -99,13 +107,21 @@ evaluations (Theorem 3.2.6), and a one-dimensional example attains the order $\e
   `CartisGouldToint.Chapter03.theorem_3_2_2`.
 * **Lemma 3.2.5** (reading). The bound is stated for every iteration up to and including the
   termination index. See `CartisGouldToint.Chapter03.lemma_3_2_5`.
+* **Lemma 3.2.3** (generalization). The eigenpoint inequality uses any unit direction
+  with negative Rayleigh quotient and nonpositive gradient pairing, in an arbitrary
+  real inner product space. The algorithm still uses a leftmost eigenvector.
 * **Theorem 3.2.6, $\kappa^F_{\mathrm{TR2}}$** (typo). The printed constant lacks a $|\log \cdot|$.
   The proof's constant is at most the printed one with $|\log \cdot|$ inserted. See
   `CartisGouldToint.Chapter03.kappaFTR2_le_book`.
-* **Theorem 3.2.6** (generalization). The hypothesis $\epsilon_1 \le 1$ is not used and is dropped.
-  See `CartisGouldToint.Chapter03.theorem_3_2_6`.
+* **Theorem 3.2.6** (reading). The source proof invokes $\epsilon_1 \le 1$ in (3.2.22).
+  Lean proves that bound for all positive $\epsilon_1$, as quantified in the printed
+  theorem. See `CartisGouldToint.Chapter03.theorem_3_2_6`.
 * **Theorem 3.2.7, (3.2.25)** (typo). The iterates are $x_k = k \epsilon$, not $(k - 1) \epsilon$,
   and "$s_1 = \epsilon$" means $s_0$. See `CartisGouldToint.Chapter03.theorem_3_2_7`.
+* **Theorem 3.2.7, range and counts** (correction). The ceiling in (3.2.23) gives
+  $\epsilon^3 k_\epsilon \ge 1$, so the printed $f_{k_\epsilon}\ge 0$ can fail.
+  The construction uses a uniform lower bound and takes $k_\epsilon$ steps with
+  $k_\epsilon+1$ evaluations of each quantity.
 -/
 
 open Set Finset Optimization Subproblem
@@ -122,7 +138,10 @@ $f : \mathbb{R}^n \to \mathbb{R}$ satisfies f.HBa with constant $\kappa_H$ if $f
 continuously differentiable, $\kappa_H \ge 1$, and the Hessian is uniformly bounded:
 $$\|\nabla^2 f(x)\| \le \kappa_H \quad \text{for all } x \in \mathbb{R}^n.$$
 
-The norm is the operator norm of the bilinear form `iteratedFDeriv ℝ 2 f x`. -/
+The norm is the operator norm of the bilinear form `iteratedFDeriv ℝ 2 f x`.
+
+**Reading.** Makes C2 explicit in addition to the printed global Hessian norm bound.
+-/
 structure AssumptionHBa (f : EuclideanSpace ℝ (Fin n) → ℝ) (κH : ℝ) : Prop where
   /-- The function $f$ is twice continuously differentiable. -/
   contDiff : ContDiff ℝ 2 f
@@ -161,13 +180,20 @@ $$\|\nabla f(x)\| \le \epsilon_1 \quad \text{and} \quad \lambda_{\min}[\nabla^2 
   -\epsilon_2.$$
 
 Here $\lambda_{\min}[\nabla^2 f(x)]$ is `CartisGouldToint.Chapter01.hessianMinEig f x`, the
-least value of $\nabla^2 f(x)[d, d]$ over unit vectors $d$. -/
+least value of $\nabla^2 f(x)[d, d]$ over unit vectors $d$.
+
+**Reading.** Uses total derivatives and permits arbitrary real tolerance arguments.
+-/
 def IsApproxSecondOrderMinimizer (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (ε₁ ε₂ : ℝ) : Prop :=
   ‖gradient f x‖ ≤ ε₁ ∧ -ε₂ ≤ Chapter01.hessianMinEig f x
 
 /-- A point is an $(\epsilon_1, \epsilon_2)$-approximate second-order minimizer if and only if
-$\|\nabla f(x)\| \le \epsilon_1$ and $\lambda_{\min}[\nabla^2 f(x)] \ge -\epsilon_2$. -/
+$\|\nabla f(x)\| \le \epsilon_1$ and $\lambda_{\min}[\nabla^2 f(x)] \ge -\epsilon_2$.
+
+**Reading.** Expands the totalized second-order test without positivity assumptions on the
+tolerances.
+-/
 theorem isApproxSecondOrderMinimizer_def {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} {ε₁ ε₂ : ℝ} :
     IsApproxSecondOrderMinimizer f x ε₁ ε₂ ↔
@@ -186,7 +212,10 @@ AR2. Let $f : \mathbb{R}^n \to \mathbb{R}$, $\epsilon_1 \in \mathbb{R}$, and let
 a real number or $+\infty$. A point $x$ passes the test if $\|\nabla f(x)\| \le \epsilon_1$ and,
 when $\epsilon_2 < \infty$, also $\lambda_{\min}[\nabla^2 f(x)] \ge -\epsilon_2$.
 
-The tolerance $\epsilon_2$ is an `Option ℝ`, and `none` stands for $\epsilon_2 = +\infty$. -/
+The tolerance $\epsilon_2$ is an `Option ℝ`, and `none` stands for $\epsilon_2 = +\infty$.
+
+**Reading.** Uses an optional curvature tolerance and a single finite-tolerance termination test.
+-/
 def stopTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε₁ : ℝ) (ε₂ : Option ℝ)
     (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   ‖gradient f x‖ ≤ ε₁ ∧ ∀ e ∈ ε₂, -e ≤ Chapter01.hessianMinEig f x
@@ -274,7 +303,11 @@ $u \in E$, and let $q(s) = \langle g, s \rangle + \frac12 \langle s, Hs \rangle$
 is an **eigenpoint step** along $u$ if $t \ge 0$, $t \|u\| \le \Delta$, and
 $$q(t u) \le q(\tau u) \quad \text{for all } \tau \ge 0 \text{ with } \tau \|u\| \le \Delta.$$
 
-The quadratic $q$ is `Subproblem.quadModel g H`. -/
+The quadratic $q$ is `Subproblem.quadModel g H`.
+
+**Reading.** Minimizes along the ray in a ball centered at zero with an arbitrary real inner product
+space.
+-/
 def IsEigenpointStep {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] (g : E)
     (H : E →L[ℝ] E) (Δ : ℝ) (u : E) (t : ℝ) : Prop :=
   0 ≤ t ∧ t * ‖u‖ ≤ Δ ∧ ∀ τ, 0 ≤ τ → τ * ‖u‖ ≤ Δ → quadModel g H (t • u) ≤ quadModel g H (τ • u)
@@ -284,7 +317,11 @@ $\lambda_{\min}[\nabla^2 f(x)] < 0$, the step $s$ satisfies $T_{f,2}(x, s) \le T
 for some unit eigenvector $u$ of $\nabla^2 f(x)$ for $\lambda_{\min}$ with
 $\langle u, \nabla f(x) \rangle \le 0$ (3.2.3) and some eigenpoint step $t$ along $u$ (3.2.5).
 If $\lambda_{\min}[\nabla^2 f(x)] \ge 0$, the eigenpoint is $s^E = 0$, and the condition is
-$T_{f,2}(x, s) \le T_{f,2}(x, 0)$. -/
+$T_{f,2}(x, s) \le T_{f,2}(x, 0)$.
+
+**Reading.** Imposes the leftmost eigenvector and sign conditions using step-ball feasibility in
+place of the printed point constraint.
+-/
 def tr2EigenCondition (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) (Δ : ℝ)
     (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   (Chapter01.hessianMinEig f x < 0 → ∃ u t, ‖u‖ = 1 ∧
@@ -296,14 +333,21 @@ def tr2EigenCondition (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpa
 /-- Step 2 of Algorithm 3.2.1 of [cartis2022evaluation]. A step $s$ is a **TR2 step** at $x$ with
 radius $\Delta$ if it is a TR1 step for $B = \nabla^2 f(x)$ (trust region and Cauchy decrease
 (2.3.4)–(2.3.5)) and, when $\epsilon_2 < \infty$, it satisfies the eigenpoint condition
-(3.2.10). -/
+(3.2.10).
+
+**Reading.** Combines Cauchy and finite-tolerance eigenpoint conditions with explicit centered-ball
+feasibility.
+-/
 def tr2Step (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε₂ : Option ℝ) (x : EuclideanSpace ℝ (Fin n))
     (Δ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   Chapter02.tr1Step f (hessianOperator f x) x Δ s ∧ (ε₂ ≠ none → tr2EigenCondition f x Δ s)
 
 /-- The ratio (3.2.11) of [cartis2022evaluation]:
 $$\rho = \frac{f(x) - f(x + s)}{T_{f,2}(x, 0) - T_{f,2}(x, s)}.$$
-Lean's division gives $\rho = 0$ when the denominator is $0$. -/
+Lean's division gives $\rho = 0$ when the denominator is $0$.
+
+**Reading.** Totalized ratio returns zero when the Taylor decrease is zero.
+-/
 noncomputable def tr2Ratio (f : EuclideanSpace ℝ (Fin n) → ℝ) (x s : EuclideanSpace ℝ (Fin n)) :
     ℝ :=
   Chapter02.tr1Ratio f x (hessianOperator f x) s
@@ -330,7 +374,11 @@ following holds at every iteration $k$ at which the test (3.2.9) has failed for 
 The run stops at the first $k$ at which $x_k$ passes the test (3.2.9). The structure is the
 generic run `Optimization.IsTRRun` with the termination test
 `CartisGouldToint.Chapter03.stopTest`, the step condition `CartisGouldToint.Chapter03.tr2Step`
-and the ratio `CartisGouldToint.Chapter03.tr2Ratio`. -/
+and the ratio `CartisGouldToint.Chapter03.tr2Ratio`.
+
+**Reading.** Uses the read-as-ball step constraints and a single stopping condition for finite
+tolerances.
+-/
 structure algorithm_3_2_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (P : Chapter02.TR1Params)
     (ε₁ : ℝ) (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (Δ : ℕ → ℝ) : Prop where
   /-- The first-order tolerance satisfies $\epsilon_1 > 0$. -/
@@ -360,7 +408,11 @@ $\Delta \ge 0$. Then:
 $$q(\Delta u) \le -\tfrac12 |\lambda| \Delta^2.$$
 
 The vector $u$ need not be an eigenvector; only its Rayleigh quotient
-$\langle u, Hu \rangle = \lambda$ is used. -/
+$\langle u, Hu \rangle = \lambda$ is used.
+
+**Generalization.** Generalizes the decrease and boundary minimizer to a negative Rayleigh
+direction, without an eigenvector hypothesis.
+-/
 theorem lemma_3_2_3 {g : E} {H : E →L[ℝ] E} {u : E} {lam Δ : ℝ} (hu : ‖u‖ = 1)
     (hHu : ⟪u, H u⟫ = lam) (hlam : lam < 0) (hgu : ⟪u, g⟫ ≤ 0) (hΔ : 0 ≤ Δ) :
     IsEigenpointStep g H Δ u Δ ∧ (∀ t, IsEigenpointStep g H Δ u t → t = Δ) ∧
@@ -660,7 +712,11 @@ noncomputable def kappaSTR2 (P : Chapter02.TR1Params) (κH g₀ : ℝ) : ℝ :=
 /-- The constant $\kappa^C_{\mathrm{TR2}}$ of Theorem 3.2.1 of [cartis2022evaluation],
 $$\kappa^C_{\mathrm{TR2}} = \frac{\left| \log\left( \frac{\gamma_1 (1 - \eta_2)}{4 \Delta_0
   \kappa_H} \min\left( 1, \frac{\Delta_0}{g_0} \right) \right) \right|}{|\log \gamma_2|} + 1,$$
-where $g_0$ stands for $\|\nabla f(x_0)\|$. -/
+where $g_0$ stands for $\|\nabla f(x_0)\|$.
+
+**Reading.** Matches the stated logarithmic constant away from zero initial gradient; uses totalized
+division and log at zero.
+-/
 noncomputable def kappaCTR2 (P : Chapter02.TR1Params) (κH g₀ : ℝ) : ℝ :=
   |Real.log (P.γ₁ * (1 - P.η₂) / (4 * P.Δ₀ * κH) * min 1 (P.Δ₀ / g₀))| / |Real.log P.γ₂| + 1
 
@@ -671,7 +727,10 @@ theorem kappaSTR2_eq (P : Chapter02.TR1Params) (κH g₀ : ℝ) :
   rw [kappaSTR2, Chapter02.kappaSTR1]; ring
 
 /-- The constant $\kappa^C_{\mathrm{TR2}}$ is the TR1 constant $\kappa^C_{\mathrm{TR1}}$ with
-$L = \kappa_B = \kappa_H$, as in (3.2.13). -/
+$L = \kappa_B = \kappa_H$, as in (3.2.13).
+
+**Reading.** Specializes the TR1 logarithmic constant including the totalized zero-gradient case.
+-/
 theorem kappaCTR2_eq (P : Chapter02.TR1Params) (κH g₀ : ℝ) :
     kappaCTR2 P κH g₀ = Chapter02.kappaCTR1 P κH κH g₀ := by
   rw [kappaCTR2, Chapter02.kappaCTR1]
@@ -1004,6 +1063,9 @@ noncomputable def kappaFTR2 (P : Chapter02.TR1Params) (κH L₂ : ℝ) : ℝ :=
 missing $|\log \cdot|$ inserted. Let $\kappa_H \ge 1$ and $u = \gamma_1 (1 - \eta_2)/\max(4
 \kappa_H, L_{f,2}/3)$. Then
 $$\kappa^F_{\mathrm{TR2}} \le \frac{|\log \min(u/\Delta_0, \Delta_0)|}{|\log \gamma_2|} + 1.$$
+
+**Reading.** Compares the implemented constant with the source expression after insertion of the
+missing logarithm.
 -/
 theorem kappaFTR2_le_book {P : Chapter02.TR1Params} {κH L₂ : ℝ} (hκ : 1 ≤ κH) :
     kappaFTR2 P κH L₂ ≤
@@ -1046,8 +1108,8 @@ $\kappa^F = \kappa^F_{\mathrm{TR2}}$.
 corrected constant `CartisGouldToint.Chapter03.kappaFTR2`, which is at most the printed one with
 $|\log \cdot|$ inserted (`CartisGouldToint.Chapter03.kappaFTR2_le_book`).
 
-**Generalization.** The source assumes $\epsilon_1 \le 1$. The bound holds for every
-$\epsilon_1 > 0$. -/
+**Reading.** The source theorem states $\epsilon_1>0$, while its proof invokes
+$\epsilon_1\le 1$ in (3.2.22). The Lean proof covers the stated range. -/
 theorem theorem_3_2_6 {flow : ℝ} (hb : Chapter02.AssumptionBb f flow)
     (hf : AssumptionHBa f κH) (hl : AssumptionHL f L₂)
     (h : algorithm_3_2_1 f P ε₁ (some e) x s Δ) (he1 : e ≤ 1) :
@@ -1150,8 +1212,10 @@ So the run uses $k_\epsilon + 1$ evaluations of $f$, $\nabla f$ and $\nabla^2 f$
 $x_k = k \epsilon$, and "$s_1 = \epsilon$" means $s_0$. The example has $g_k = 0$ and
 $H_k = -\epsilon (2 - k/k_\epsilon)$.
 
-The proof in the source claims $f_{k_\epsilon} \ge 0$, which needs $\epsilon^{-3}$ to be an
-integer. Only the boundedness of $f$ is used here. -/
+**Correction.** The source argues that $\epsilon^3k_\epsilon\le 1$, but the ceiling
+gives the opposite inequality. At $\epsilon=0.9$ there are two steps and
+$f_{k_\epsilon}=1-\tfrac74\epsilon^3<0$. The interpolation uses a uniform lower bound
+on the values. -/
 theorem theorem_3_2_7 :
     ∃ flow κH L₂ : ℝ, 1 ≤ κH ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧

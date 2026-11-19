@@ -86,6 +86,19 @@ The proofs specialize the backbone modules `Numlib.Eigen.Jacobi` and
   the loop exited on its test.
 * The players of §8.5.7 are numbered from $0$: the book's player $i + 1$ is `i`.
 
+## Deviations from the source
+
+* **Equation (8.5.1)** (generalization). `GolubVanLoan.Chapter08.equation_8_5_1` is a block
+  identity for every $c,s$ and any distinct $p,q$, before imposing orthogonality or an ordering.
+* **Equation (8.5.3) and the chosen root** (reading). `GolubVanLoan.Chapter08.equation_8_5_3`
+  follows the printed formula, which selects a root of smaller absolute value.
+* **Algorithms 8.5.2–8.5.3** (reading). `GolubVanLoan.Chapter08.algorithm_8_5_2` and
+  `GolubVanLoan.Chapter08.algorithm_8_5_3` take fuel and return a stop flag. The classical pivot
+  selects the first maximizer in the upper triangle. Their exact specifications make the
+  stopping guarantee conditional on the flag, and
+  `GolubVanLoan.Chapter08.algorithm_8_5_2_terminates` supplies a sufficient classical budget for
+  the output to meet tolerance.
+
 ## Not formalized
 
 * **Quadratic convergence of the classical and cyclic methods** (Henrici, Schönhage, van Kempen,
@@ -151,7 +164,10 @@ $$\begin{bmatrix} b_{pp} & b_{pq} \\ b_{qp} & b_{qq} \end{bmatrix} = \begin{bmat
 and, as the remark after (8.5.1) says, $b_{ij} = a_{ij}$ whenever neither $i$ nor $j$ is $p$ or
 $q$.
 
-The statement does not need $c^2 + s^2 = 1$. -/
+The statement does not need $c^2 + s^2 = 1$.
+
+**Generalization.** The block identity is stated for arbitrary entries $c,s$ and any distinct
+$p,q$. The source uses a cosine and sine with $p<q$. -/
 theorem equation_8_5_1 (A : Matrix (Fin n) (Fin n) ℝ) {p q : Fin n} (hpq : p ≠ q) (c s : ℝ) :
     !![((planeRotation p q c (-s))ᵀ * A * planeRotation p q c (-s)) p p,
         ((planeRotation p q c (-s))ᵀ * A * planeRotation p q c (-s)) p q;
@@ -207,7 +223,10 @@ $B = J(p, q, \theta)^T A J(p, q, \theta)$. Then:
 The pair $(c, s)$ is `(Matrix.jacobiCosSmall A p q, Matrix.jacobiSinSmall A p q)`, and the root
 is `Matrix.jacobiTanSmall A p q`. Explicitly, $t_{\min} = 1/(\tau + \sqrt{1 + \tau^2})$ for
 $\tau \ge 0$, $t_{\min} = -1/(-\tau + \sqrt{1 + \tau^2})$ for $\tau < 0$, and $t_{\min} = 0$ if
-$a_{pq} = 0$. -/
+$a_{pq} = 0$.
+
+**Reading.** The source calls $t_{\min}$ the smaller root. Its positive and negative branches
+select a root of smaller absolute value, as expressed by the Lean bound $|t_{\min}|\leq 1$. -/
 theorem equation_8_5_3 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : Fin n}
     (hpq : p ≠ q) :
     (∀ c s : ℝ, ((planeRotation p q c (-s))ᵀ * A * planeRotation p q c (-s)) p q =
@@ -452,14 +471,21 @@ noncomputable def jacobiUpdate (p q : Fin n) (A V : Matrix (Fin n) (Fin n) ℝ) 
 
 /-- The pivot of Algorithm 8.5.2, "choose $(p, q)$ so $|a_{pq}| = \max_{i \ne j} |a_{ij}|$": the
 first pair $(p, q)$ with $p < q$, row by row, at which $|a_{pq}|$ is maximal. The comparisons
-are exact. For $n \le 1$ there is no pair, and the value is `none`. -/
+are exact. For $n \le 1$ there is no pair, and the value is `none`.
+
+**Reading.** The source leaves ties among maximal off-diagonal entries unspecified. The Lean
+program searches the strict upper triangle and uses the first maximizing pair, which has the
+same absolute value as the largest off-diagonal entry for symmetric input. -/
 noncomputable def classicalPivot (A : Matrix (Fin n) (Fin n) ℝ) : Option (Fin n × Fin n) :=
   (cyclicPairs n).argmax fun pq => |A pq.1 pq.2|
 
 /-- One pass of the `while` loop of Algorithm 8.5.2 on the state $(A, V, \mathit{done})$. If the
 flag is set, the state is unchanged. Otherwise the pass computes $\operatorname{off}(A)$; if it
 is at most $\delta$, the loop stops and sets the flag, and if not, one Jacobi update is made at
-the classical pivot. If there is no pivot ($n \le 1$), the state is unchanged. -/
+the classical pivot. If there is no pivot ($n \le 1$), the state is unchanged.
+
+**Reading.** Same pass with explicit stop flag and empty-pair fallback.
+-/
 noncomputable def classicalJacobiStep (δ : ℝ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
@@ -486,7 +512,10 @@ end
 The `while` loop runs at most `fuel` passes of `GolubVanLoan.Chapter08.classicalJacobiStep`,
 with a flag `done`. The result is the triple of the final $A$, the final $V$ and the flag, which
 records that the loop exited on its test. The program makes no assumption on `tol` or on the
-symmetry of $A$; the specification theorems assume that $A$ is symmetric. -/
+symmetry of $A$; the specification theorems assume that $A$ is symmetric.
+
+**Reading.** The source repeats until the threshold test passes. The Lean program bounds the
+number of passes and returns a flag reporting whether it observed that test. -/
 noncomputable def algorithm_8_5_2 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
   let δ ← jacobiThreshold rnd tol A
@@ -500,7 +529,10 @@ noncomputable def cyclicSweep (A V : Matrix (Fin n) (Fin n) ℝ) :
 
 /-- One pass of the `while` loop of Algorithm 8.5.3 on the state $(A, V, \mathit{done})$. If the
 flag is set, the state is unchanged. Otherwise the pass computes $\operatorname{off}(A)$; if it
-is at most $\delta$, the loop stops and sets the flag, and if not, one sweep is made. -/
+is at most $\delta$, the loop stops and sets the flag, and if not, one sweep is made.
+
+**Reading.** Same threshold test and full sweep when needed with explicit status flag.
+-/
 noncomputable def cyclicJacobiStep (δ : ℝ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
@@ -523,7 +555,10 @@ end
 ```
 
 The `while` loop runs at most `fuel` sweeps, with a flag `done`. The result is the triple of the
-final $A$, the final $V$ and the flag, which records that the loop exited on its test. -/
+final $A$, the final $V$ and the flag, which records that the loop exited on its test.
+
+**Reading.** The source repeats full sweeps until the threshold test passes. The Lean program
+bounds the number of sweeps and returns a flag reporting whether it observed that test. -/
 noncomputable def algorithm_8_5_3 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
   let δ ← jacobiThreshold rnd tol A
@@ -741,7 +776,11 @@ where $\mathit{fuel}$ is the number of passes.
 
 The second bound is the linear rate of §8.5.3: each update is made at a largest off-diagonal
 entry and multiplies $\operatorname{off}^2$ by at most $1 - 1/N$. Every largest entry gives this
-bound, so the choice among several largest entries does not matter. -/
+bound, so the choice among several largest entries does not matter.
+
+**Reading.** The Lean result concerns exact arithmetic and a bounded number of passes. The
+threshold is guaranteed when the stop flag is true. Before then the program satisfies the
+source’s classical contraction bound. -/
 theorem algorithm_8_5_2_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (tol : ℝ)
     (fuel : ℕ) :
     (Id.run (algorithm_8_5_2 pure tol A fuel)).2.1 ∈ orthogonalGroup (Fin n) ℝ ∧
@@ -780,7 +819,11 @@ If the loop stopped, the bound is its test. Otherwise it follows from
 $\operatorname{off}(A^{(k)})^2 \le (1 - 1/N)^k \operatorname{off}(A)^2 \le (1 - 1/N)^k
 \|A\|_F^2$. The ceiling is the ceiling in $\mathbb{N}$, so a negative quotient gives $0$. For
 $N = 1$ the Lean value of $\log 0$ is $0$, so the bound reads $\mathit{fuel} \ge 1$; one update
-then diagonalizes $A$. -/
+then diagonalizes $A$.
+
+**Reading.** The Lean theorem quantifies the source’s linear exact-arithmetic estimate by a
+sufficient budget for the returned matrix to meet the tolerance. Meeting tolerance can occur on
+the last update before the program tests its flag again. -/
 theorem algorithm_8_5_2_terminates {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hn : 2 ≤ n)
     {tol : ℝ} (htol : 0 < tol) {fuel : ℕ}
     (hfuel : ⌈2 * Real.log tol / Real.log (1 - 1 / ((n : ℝ) * (n - 1) / 2))⌉₊ + 1 ≤ fuel) :
@@ -906,7 +949,10 @@ orthogonal, $A' = V^T A V$, $A'$ is symmetric, and $\operatorname{off}(A') \le
 \mathrm{tol} \cdot \|A\|_F$.
 
 Each rotation removes $2a_{pq}^2$ from $\operatorname{off}^2$ by (8.5.2). The source quotes the
-quadratic convergence of the cyclic method; it is not claimed here. -/
+quadratic convergence of the cyclic method; it is not claimed here.
+
+**Reading.** The Lean result concerns exact arithmetic and a bounded number of sweeps. The off-
+diagonal norm decreases weakly, and the threshold bound holds when the stop flag is true. -/
 theorem algorithm_8_5_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (tol : ℝ)
     (fuel : ℕ) :
     (Id.run (algorithm_8_5_3 pure tol A fuel)).2.1 ∈ orthogonalGroup (Fin n) ℝ ∧

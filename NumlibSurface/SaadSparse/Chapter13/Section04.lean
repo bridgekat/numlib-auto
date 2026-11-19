@@ -119,6 +119,25 @@ Section 2.2 and the spectrum of the model matrix from Section 13.2.
 
 ## Deviations from the source
 
+* **§13.4.1, after (13.42)** (convention). `SaadSparse.Chapter13.smootherStep_iterate_sub`
+  defines the error using the iterate minus the exact solution, reversing the sign convention in
+  (13.16). The residual convention is unchanged.
+* **(13.43) and Lemma 13.1** (scope and hypotheses). `SaadSparse.Chapter13.equation_13_43`
+  defines the full error composition in the preceding display. Printed (13.43) defines the
+  coarse correction alone. The inverse in the definitions is total. The projector and
+  orthogonality statements assume positive definiteness, injective prolongation and positive-
+  scaled transpose restriction.
+* **Algorithms 13.3–13.5** (representation). `SaadSparse.Chapter13.Hierarchy` uses natural-
+  number levels with an exact inverse-based solve at level zero on the nonsingular domain. The
+  $\gamma$-cycle repeats its coarse solver uniformly, which has the same effect as a single
+  direct solve at the bottom for $\gamma\ge1$. It also admits $\gamma=0$, when the coarse solver
+  is skipped.
+* **Theorem 13.2** (reading). `SaadSparse.Chapter13.theorem_13_2` uses Euclidean norms, assumes
+  a bound on actual cycle error in place of the linear operator norm, and states the solved
+  nonsingular base level explicitly. The argument needs $\xi\ge0$ and $c_2\xi^\mu<1$.
+* **Example 13.6, truncation error** (scope). `SaadSparse.Chapter13.example_13_6_truncation`
+  proves the componentwise inequality with $K$ bounding the absolute value of the fourth
+  derivative. The source gives a Taylor identity with a point between neighboring grid nodes.
 * **Example 13.2** (correction). The book's computation ends at
   $A_H e_j^H = -e_{j-1}^H + 2e_j^H - e_{j+1}^H$, which drops a factor $\frac14$; the Galerkin coarse
   matrix is $\frac14 \operatorname{tridiag}(-1, 2, -1)$. See `SaadSparse.Chapter13.example_13_2`.
@@ -192,7 +211,10 @@ theorem coarseOperator_transpose_eq_galerkinCoarse (A : Matrix (Fin n) (Fin n) �
   rw [hdef, adjoint_toEuclideanLin, coarseOperator, Matrix.toLpLin_mul_same,
     Matrix.toLpLin_mul_same, LinearMap.comp_assoc]
 
-/-- Rescaling the restriction rescales the coarse matrix: $(cR) A P = c \, (RAP)$. -/
+/-- Rescaling the restriction rescales the coarse matrix: $(cR) A P = c \, (RAP)$.
+
+**Reading.** Proves rescaling identity for every real scale and arbitrary restriction.
+-/
 theorem coarseOperator_smul (c : ℝ) (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) :
     coarseOperator (c • R) A P = c • coarseOperator R A P := by
@@ -205,7 +227,10 @@ operator:
 $$(c \, P^T) A P = c \, P^* A P.$$
 
 The book's restriction is $2^{-d}(I_H^h)^T$ by (13.37), so $c = 2^{-d}$ there. The operator
-$P^* A P$ is `Multigrid.galerkinCoarse`. -/
+$P^* A P$ is `Multigrid.galerkinCoarse`.
+
+**Reading.** Bridges the two operators with arbitrary real factor rather than fixed 2⁻ᵈ.
+-/
 theorem coarseOperator_eq_galerkinCoarse (c : ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) :
     toEuclideanLin (coarseOperator (c • Pᵀ) A P)
@@ -217,7 +242,11 @@ $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, let
 $P \in \mathbb{R}^{n \times m}$ be injective, and let $c > 0$. Then the Galerkin coarse matrix
 $(c \, P^T) A P$ is symmetric positive definite.
 
-So the coarse solve of Algorithm 13.2 makes sense. -/
+So the coarse solve of Algorithm 13.2 makes sense.
+
+**Reading.** Explicit positive-definite fine matrix, injective P and positive restriction factor
+ensure SPD coarse operator.
+-/
 theorem posDef_coarseOperator {A : Matrix (Fin n) (Fin n) ℝ} {P : Matrix (Fin n) (Fin m) ℝ}
     (hA : A.PosDef) (hP : Function.Injective (toEuclideanLin P)) {c : ℝ} (hc : 0 < c) :
     (coarseOperator (c • Pᵀ) A P).PosDef := by
@@ -374,7 +403,10 @@ theorem smootherStep_of_eq {A B : Matrix (Fin n) (Fin n) ℝ} {f x : EuclideanSp
   simp only [smootherStep_apply, smoother_def, sub_act, one_act, mul_act, hx]
   abel
 
-/-- One smoothing step multiplies the error by $S$: if $Ax = f$, then $(Su + Bf) - x = S(u - x)$. -/
+/-- One smoothing step multiplies the error by $S$: if $Ax = f$, then $(Su + Bf) - x = S(u - x)$.
+
+**Reading.** Uses iterate minus solution for the error.
+-/
 theorem smootherStep_sub {A B : Matrix (Fin n) (Fin n) ℝ} {f x : EuclideanSpace ℝ (Fin n)}
     (hx : (A ⬝ x) = f) (u : EuclideanSpace ℝ (Fin n)) :
     smootherStep A B f u - x = smoother A B ⬝ (u - x) := by
@@ -386,6 +418,8 @@ theorem smootherStep_sub {A B : Matrix (Fin n) (Fin n) ℝ} {f x : EuclideanSpac
 /-- **Equation (13.42)** of [saad2003iterative], the error. Let $Ax = f$. After $\nu$ smoothing
 steps from $u_0$, the error is
 $$d_\nu = S^\nu d_0, \qquad d_0 = u_0 - x.$$
+
+**Reading.** Power identity with iterate minus solution convention.
 -/
 theorem smootherStep_iterate_sub {A B : Matrix (Fin n) (Fin n) ℝ}
     {f x : EuclideanSpace ℝ (Fin n)} (hx : (A ⬝ x) = f) (u₀ : EuclideanSpace ℝ (Fin n)) (ν : ℕ) :
@@ -442,7 +476,10 @@ theorem example_13_3_gaussSeidel (A : Matrix (Fin n) (Fin n) ℝ) (h : IsUnit (d
 Richardson's smoother has $B = \omega I$, and its error propagation operator is $I - \omega A$,
 the iteration operator of `Stationary.Splitting.richardson`.
 
-The hypothesis $\omega \neq 0$ is needed to define the splitting. -/
+The hypothesis $\omega \neq 0$ is needed to define the splitting.
+
+**Reading.** B=omega I with nonzero omega to use backbone splitting.
+-/
 theorem example_13_3_richardson (A : Matrix (Fin n) (Fin n) ℝ) {ω : ℝ} (hω : ω ≠ 0) :
     smoother A (ω • 1) = (Stationary.Splitting.richardson A hω).iterationOperator := by
   rw [Stationary.Splitting.richardson_iterationOperator, smoother_def, Matrix.smul_mul,
@@ -458,7 +495,11 @@ definite, $P$ is injective, and $R = c \, P^T$ for some $c > 0$, as in (13.37).
 Under these hypotheses the Galerkin coarse matrix (13.39) is nonsingular, so the coarse solve of
 Algorithm 13.2 makes sense, and the coarse-grid correction (13.43) is the $A$-orthogonal
 projector of Lemma 13.1. The one-dimensional model problem of Sections 13.2–13.3 satisfies them
-(`SaadSparse.Chapter13.isCoarsening_model`). -/
+(`SaadSparse.Chapter13.isCoarsening_model`).
+
+**Reading.** Makes SPD and injectivity assumptions explicit and includes arbitrary positive scalar
+transpose relationship.
+-/
 structure IsCoarsening (A : Matrix (Fin n) (Fin n) ℝ) (R : Matrix (Fin m) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) : Prop where
   /-- The fine matrix $A$ is symmetric positive definite. -/
@@ -494,18 +535,27 @@ theorem isSymmetricCoercive (h : IsCoarsening A R P) : (toEuclideanLin A).IsSymm
   (Matrix.posDef_iff_isSymmetricCoercive A).1 h.posDef
 
 /-- If $(A, R, P)$ is a coarsening, then the Galerkin coarse matrix $RAP$ of (13.39) is symmetric
-positive definite. -/
+positive definite.
+
+**Reading.** Well-posed coarse problem given explicit rank, SPD and positive scaling conditions.
+-/
 theorem posDef_coarseOperator (h : IsCoarsening A R P) : (coarseOperator R A P).PosDef := by
   obtain ⟨c, hc, rfl⟩ := h.exists_smul
   exact _root_.SaadSparse.Chapter13.posDef_coarseOperator h.posDef h.injective hc
 
 /-- If $(A, R, P)$ is a coarsening, then the Galerkin coarse matrix $RAP$ of (13.39) is nonsingular,
-so $A_H^{-1}$ in (13.43) is a true inverse. -/
+so $A_H^{-1}$ in (13.43) is a true inverse.
+
+**Reading.** Invertibility of coarse matrix from the same additional hypotheses.
+-/
 theorem isUnit_coarseOperator (h : IsCoarsening A R P) : IsUnit (coarseOperator R A P) :=
   h.posDef_coarseOperator.isUnit
 
 /-- If $(A, R, P)$ is a coarsening, then $A_H A_H^{-1} = I$ for the Galerkin coarse matrix
-$A_H = RAP$. This makes the coarse solve of (13.43) exact. -/
+$A_H = RAP$. This makes the coarse solve of (13.43) exact.
+
+**Reading.** Exhibits inverse product under the specified coarsening predicates.
+-/
 theorem coarseOperator_mul_inv (h : IsCoarsening A R P) :
     coarseOperator R A P * (coarseOperator R A P)⁻¹ = 1 :=
   Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det _).1 h.isUnit_coarseOperator)
@@ -518,13 +568,18 @@ which restricts a fine residual, solves the coarse problem and interpolates the 
 Here $A_H$ is the Galerkin coarse matrix (13.39).
 
 The inverse is the Lean matrix inverse, which is $0$ for a singular matrix; under the hypotheses
-of `SaadSparse.Chapter13.IsCoarsening` the matrix $A_H$ is nonsingular. -/
+of `SaadSparse.Chapter13.IsCoarsening` the matrix $A_H$ is nonsingular.
+
+**Reading.** Source formula for invertible coarse operator, totalized at singular coarse operators.
+-/
 noncomputable def coarsePreconditioner (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   P * (coarseOperator R A P)⁻¹ * R
 
 /-- **Equation (13.43)** of [saad2003iterative]. The **coarse-grid projector**
 $$Q_h = I_H^h A_H^{-1} I_h^H A_h = B_h A_h.$$
+
+**Reading.** Uses QA coarse inverse product with total inverse beyond source domain.
 -/
 noncomputable def coarseProjector (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
@@ -532,7 +587,10 @@ noncomputable def coarseProjector (R : Matrix (Fin m) (Fin n) ℝ)
 
 /-- **Equation (13.43)** of [saad2003iterative]. The **coarse-grid correction operator**
 $$T_h^H = I - I_H^h A_H^{-1} I_h^H A_h,$$
-the error propagation operator of one coarse-grid correction. -/
+the error propagation operator of one coarse-grid correction.
+
+**Reading.** Formula I−P A_H⁻¹ R A with total inverse at singular coarse matrix.
+-/
 noncomputable def coarseCorrection (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   1 - coarseProjector R A P
@@ -546,7 +604,14 @@ theorem coarseCorrection_def (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n
 operator** with $\nu_1$ pre-smoothing and $\nu_2$ post-smoothing steps around one coarse-grid
 correction is
 $$M_H^h = S^{\nu_2} \left(I - I_H^h A_H^{-1} I_h^H A_h\right) S^{\nu_1},$$
-where $S$ is the error propagation operator of the smoother. -/
+where $S$ is the error propagation operator of the smoother.
+
+**Source location.** The source numbers only the middle coarse-grid correction as (13.43). The
+full composition with pre- and post-smoothing is the unnumbered display immediately before it.
+
+**Correction.** Defines full two-grid error operator for arbitrary arrays and smoother; (13.43)
+itself is only the middle correction.
+-/
 noncomputable def equation_13_43 (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) (S : Matrix (Fin n) (Fin n) ℝ) (ν₁ ν₂ : ℕ) :
     Matrix (Fin n) (Fin n) ℝ :=
@@ -559,7 +624,10 @@ variable {A : Matrix (Fin n) (Fin n) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
 coarsening, then $Q_h = P A_H^{-1} R A$ is the $A$-orthogonal projector onto the range of $P$:
 its linear map is `Multigrid.coarseProjection` of $A$ and $P$.
 
-The factor $c$ in $R = c \, P^T$ multiplies both sides of the coarse equation and so cancels. -/
+The factor $c$ in $R = c \, P^T$ multiplies both sides of the coarse equation and so cancels.
+
+**Reading.** Energy projector onto range P using explicit coarsening assumptions.
+-/
 theorem toEuclideanLin_coarseProjector (h : IsCoarsening A R P) :
     toEuclideanLin (coarseProjector R A P)
       = Multigrid.coarseProjection (toEuclideanLin A) h.isSymmetricCoercive
@@ -586,7 +654,10 @@ theorem toEuclideanLin_coarseProjector (h : IsCoarsening A R P) :
 
 /-- **Equation (13.43)** of [saad2003iterative], the coarse-grid correction. If $(A, R, P)$ is a
 coarsening, then the linear map of $T_h^H = I - Q_h$ is the backbone coarse-grid correction
-`Multigrid.coarseCorrection` of $A$ and $P$. -/
+`Multigrid.coarseCorrection` of $A$ and $P$.
+
+**Correction.** Identifies correction under explicit coarsening assumptions.
+-/
 theorem toEuclideanLin_coarseCorrection (h : IsCoarsening A R P) :
     toEuclideanLin (coarseCorrection R A P)
       = Multigrid.coarseCorrection (toEuclideanLin A) h.isSymmetricCoercive
@@ -604,7 +675,10 @@ coarsening, then for every matrix $S$ and all $\nu_1, \nu_2$ the linear map of
 $M_H^h = S^{\nu_2} T_h^H S^{\nu_1}$ is the backbone two-grid operator
 `Multigrid.twoGridOperator`.
 
-So the convergence theory of Section 13.5 applies to it. -/
+So the convergence theory of Section 13.5 applies to it.
+
+**Reading.** Identifies full error operator with backbone under explicit coarsening assumptions.
+-/
 theorem equation_13_43_eq (h : IsCoarsening A R P) (S : Matrix (Fin n) (Fin n) ℝ) (ν₁ ν₂ : ℕ) :
     toEuclideanLin (equation_13_43 R A P S ν₁ ν₂)
       = Multigrid.twoGridOperator (toEuclideanLin A) h.isSymmetricCoercive (toEuclideanLin P)
@@ -621,6 +695,8 @@ theorem equation_13_43_eq (h : IsCoarsening A R P) (S : Matrix (Fin n) (Fin n) �
 with the coarse matrix defined by (13.39), then the coarse-grid correction operator is a
 projector:
 $$(T_h^H)^2 = T_h^H.$$
+
+**Reading.** Idempotence with explicit positive-scaled-transpose and injectivity hypotheses.
 -/
 theorem lemma_13_1 (h : IsCoarsening A R P) :
     coarseCorrection R A P * coarseCorrection R A P = coarseCorrection R A P := by
@@ -640,7 +716,10 @@ $x, y \in \mathbb{R}^n$,
 $$(A T_h^H x, y) = (A x, T_h^H y).$$
 
 Together with `SaadSparse.Chapter13.lemma_13_1` this says that $T_h^H$ is an $A$-orthogonal
-projector. The $A$-inner product is `energyInner`. -/
+projector. The $A$-inner product is `energyInner`.
+
+**Reading.** Self-adjointness under the coarsening hypotheses needed to justify source proof.
+-/
 theorem lemma_13_1_energyInner (h : IsCoarsening A R P) (x y : EuclideanSpace ℝ (Fin n)) :
     energyInner (toEuclideanLin A) (coarseCorrection R A P ⬝ x) y
       = energyInner (toEuclideanLin A) x (coarseCorrection R A P ⬝ y) := by
@@ -687,7 +766,11 @@ Level $0$ is the coarsest, where the problem is solved exactly, and level $l + 1
 level $l$: the $p + 1$ levels $h_0 > h_1 > \dots > h_p$ of the book are the levels
 $0, \dots, p$. A hierarchy is indexed by all of $\mathbb{N}$, not by `Fin (p + 1)`, so that no
 bound has to be carried through the recursions; a cycle on level $l$ uses only the levels
-$0, \dots, l$. -/
+$0, \dots, l$.
+
+**Reading.** Uses levels indexed by all naturals with separate full-multigrid interpolation;
+shape-compatible data without enforced grid relationships.
+-/
 structure Hierarchy where
   /-- The number $n_l$ of unknowns of level $l$. -/
   size : ℕ → ℕ
@@ -711,7 +794,11 @@ abbrev Vec (H : Hierarchy) (l : ℕ) : Type := EuclideanSpace ℝ (Fin (H.size l
 /-- One $\gamma$-cycle on level $l + 1$, given a solver $\mathrm{mg}$ for level $l$: $\nu_1$
 pre-smoothing steps, a coarse-grid correction obtained by $\gamma$ applications of $\mathrm{mg}$
 from $0$ to the restricted residual, and $\nu_2$ post-smoothing steps. This is the body of
-Algorithm 13.4. -/
+Algorithm 13.4.
+
+**Reading.** Uses arbitrary coarse solver parameter; repeats even a level-zero solve γ times and
+permits γ=0.
+-/
 noncomputable def cycleStep (H : Hierarchy) (ν₁ ν₂ γ l : ℕ) (mg : H.Vec l → H.Vec l → H.Vec l)
     (u f : H.Vec (l + 1)) : H.Vec (l + 1) :=
   let S := smootherStep (H.matrix (l + 1)) (H.approxInverse (l + 1)) f
@@ -729,17 +816,27 @@ The book proves nothing about the cycles themselves, because their error propaga
 are composites of the two-grid operators of (13.43). So this is a definition only. What Section
 13.4 proves about the cycles is the cost estimate `SaadSparse.Chapter13.equation_13_44` and,
 through Algorithm 13.5, `SaadSparse.Chapter13.theorem_13_2`. The inverse on level $0$ is the
-Lean matrix inverse, which is $0$ for a singular matrix. -/
+Lean matrix inverse, which is $0$ for a singular matrix.
+
+**Reading.** Moves direct solve into a coarsest-level base case with total inverse; combines with
+γ=0 extension.
+-/
 noncomputable def cycle (H : Hierarchy) (ν₁ ν₂ γ : ℕ) : ∀ l : ℕ, H.Vec l → H.Vec l → H.Vec l
   | 0 => fun _ f => ((H.matrix 0)⁻¹ ⬝ f)
   | l + 1 => cycleStep H ν₁ ν₂ γ l (cycle H ν₁ ν₂ γ l)
 
-/-- On the coarsest level a cycle solves the system exactly: it returns $A_{h_0}^{-1} f$. -/
+/-- On the coarsest level a cycle solves the system exactly: it returns $A_{h_0}^{-1} f$.
+
+**Reading.** The equation uses total matrix inverse, no invertibility proof at definition.
+-/
 @[simp]
 theorem cycle_zero (H : Hierarchy) (ν₁ ν₂ γ : ℕ) (u f : H.Vec 0) :
     H.cycle ν₁ ν₂ γ 0 u f = ((H.matrix 0)⁻¹ ⬝ f) := rfl
 
-/-- On every finer level a cycle is one cycle step around $\gamma$ cycles of the level below. -/
+/-- On every finer level a cycle is one cycle step around $\gamma$ cycles of the level below.
+
+**Reading.** Passes to γ coarse cycles uniformly, including the exact base case.
+-/
 theorem cycle_succ (H : Hierarchy) (ν₁ ν₂ γ l : ℕ) :
     H.cycle ν₁ ν₂ γ (l + 1) = cycleStep H ν₁ ν₂ γ l (H.cycle ν₁ ν₂ γ l) := rfl
 
@@ -760,7 +857,11 @@ $\hat I \tilde u^{h_l}$ of the approximation of level $l$ as the initial guess f
 $\gamma$-cycles with the right-hand side $f^{h_{l+1}}$.
 
 The right-hand sides $f^{h_l}$ are the discretizations of the problem on each level, not
-restrictions of one another. -/
+restrictions of one another.
+
+**Reading.** Recursion on indexed levels with total base inverse; uses separate hatted interpolation
+and μ fine cycles.
+-/
 noncomputable def fullMultigrid (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l, H.Vec l) :
     ∀ l : ℕ, H.Vec l
   | 0 => ((H.matrix 0)⁻¹ ⬝ f 0)
@@ -768,7 +869,10 @@ noncomputable def fullMultigrid (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : �
       (H.fmgInterpolation l ⬝ fullMultigrid H ν₁ ν₂ γ μ f l)
 
 /-- Full multigrid solves the coarsest system exactly: it returns $A_{h_0}^{-1} f^{h_0}$ on level
-$0$. -/
+$0$.
+
+**Reading.** Uses total inverse at coarsest level.
+-/
 @[simp]
 theorem fullMultigrid_zero (H : Hierarchy) (ν₁ ν₂ γ μ : ℕ) (f : ∀ l, H.Vec l) :
     H.fullMultigrid ν₁ ν₂ γ μ f 0 = ((H.matrix 0)⁻¹ ⬝ f 0) := rfl
@@ -870,7 +974,12 @@ solution is recognized as a fixed point of the cycle, as in (13.55), and it is t
 that the proof uses. The assumption (13.48) of the book, that the discrete solution is within
 $c h^\kappa$ of the sampled continuous solution, motivates (13.49) but is not used in the proof,
 so it does not appear. For $l \ge 1$ the vectors $u^{h_l}$ enter only through (13.49) and
-(13.50). The proof specializes `Multigrid.norm_sub_fullMultigrid_le`. -/
+(13.50). The proof specializes `Multigrid.norm_sub_fullMultigrid_le`.
+
+**Reading.** The source permits an arbitrary level norm and bounds the linear iteration
+operator by $\xi<1$. The theorem uses Euclidean norms and assumes the bound directly for the
+implemented cycle's error relative to the selected solution. It requires $\xi\ge0$ and the
+stated product condition without a separate $\xi<1$ bound. -/
 theorem theorem_13_2 (H : Hierarchy) {ν₁ ν₂ γ μ : ℕ} {f u : ∀ l, H.Vec l} {hmesh : ℕ → ℝ}
     {c₁ c₂ ξ κ : ℝ} (hh : ∀ l, hmesh (l + 1) = hmesh l / 2) (hhpos : ∀ l, 0 < hmesh l)
     (hunit : IsUnit (H.matrix 0)) (hsolve : (H.matrix 0 ⬝ u 0) = f 0) (hc₁ : 0 ≤ c₁) (hξ : 0 ≤ ξ)
@@ -901,7 +1010,10 @@ open Real
 the vector of the values $u(x_i)$ at the interior grid points $x_i = ih$, $i = 1, \dots, n$. The
 book writes it $u$ again.
 
-The $0$-based index `i : Fin n` stands for the book's $i + 1$. -/
+The $0$-based index `i : Fin n` stands for the book's $i + 1$.
+
+**Reading.** Samples interior grid at arbitrary real h rather than fixed h=1/(n+1).
+-/
 noncomputable def gridSample (n : ℕ) (h : ℝ) (u : ℝ → ℝ) : EuclideanSpace ℝ (Fin n) :=
   WithLp.toLp 2 fun i : Fin n => u ((((i : ℕ) : ℝ) + 1) * h)
 
@@ -913,6 +1025,8 @@ theorem gridSample_apply (h : ℝ) (u : ℝ → ℝ) (i : Fin n) :
 /-- **Example 13.6** of [saad2003iterative]. The **discrete $L^2$ norm** on the grid with mesh size
 $h$ is
 $$\|v\|_h = h^{1/2} \|v\|_2.$$
+
+**Reading.** Definition is total for h outside positive mesh sizes.
 -/
 noncomputable def discreteL2Norm (h : ℝ) (v : EuclideanSpace ℝ (Fin n)) : ℝ := √h * ‖v‖
 
@@ -948,7 +1062,11 @@ $$|(f^h - A_h u)_i| \le \frac{K h^2}{12}.$$
 
 The proof uses (2.12) (`SaadSparse.Chapter02.equation_2_12`), which writes the component as
 $h^2/12$ times a value of $u^{(4)}$ in $(x_i - h, x_i + h)$. The matrix $A_h$ is
-`SaadSparse.Chapter02.laplacian1D n h`. -/
+`SaadSparse.Chapter02.laplacian1D n h`.
+
+**Reading.** Componentwise absolute bound with C⁴ on R and bound on absolute fourth derivatives,
+without exact ξ witness.
+-/
 theorem example_13_6_truncation {h : ℝ} (hh : h = 1 / ((n : ℝ) + 1)) {u f : ℝ → ℝ}
     (hu : ContDiff ℝ 4 u) (hu0 : u 0 = 0) (hu1 : u 1 = 0)
     (hf : ∀ x, f x = -iteratedDeriv 2 u x) {K : ℝ}

@@ -54,6 +54,14 @@ The proofs use the backbone module `Numlib.Optimization.ModelBased.RatioTest`.
   iteration, so that the ratio $\rho_k$ is defined.
 * The norms $\|\cdot\|_k$ are seminorms that vanish only at $0$, that is, norms. The rule (6.1.5)
   puts no upper bound on the expansion of the radius.
+
+## Deviations from the source
+
+* **Equations (6.1.2) and (6.1.7)** (generalization). A trust region can be defined by any seminorm
+  on a real vector space. A quadratic model can be defined on any real inner product space.
+* **Equation (6.1.4) and Algorithm 6.1.1** (convention). Division by zero gives zero in
+  `btrRatio`. A `BTRRun` separately requires strictly positive predicted decrease at each step,
+  including when the sufficient-decrease predicate alone allows zero.
 -/
 
 namespace ConnGouldToint.Chapter06
@@ -63,12 +71,17 @@ variable {E : Type*} [AddCommGroup E] [Module ℝ E]
 /-- **Equation (6.1.2)** of [conn2000trust]. For a seminorm $\|\cdot\|$ on $E$, a center $x \in E$
 and a radius $\Delta \in \mathbb{R}$, the **trust region** is
 $$\mathcal{B} = \{y \in E : \|y - x\| \le \Delta\}.$$
+
+**Reading.** Arbitrary seminorm on a real vector space.
 -/
 def trustRegion (p : Seminorm ℝ E) (x : E) (Δ : ℝ) : Set E :=
   {y | p (y - x) ≤ Δ}
 
 /-- A point $y$ lies in the trust region about $x$ of radius $\Delta$ if and only if
-$\|y - x\| \le \Delta$. -/
+$\|y - x\| \le \Delta$.
+
+**Reading.** Membership formula for an arbitrary seminorm.
+-/
 @[simp]
 theorem mem_trustRegion {p : Seminorm ℝ E} {x y : E} {Δ : ℝ} :
     y ∈ trustRegion p x Δ ↔ p (y - x) ≤ Δ :=
@@ -105,7 +118,10 @@ step $s$, the **reduction ratio** is
 $$\rho = \frac{f(x) - f(x + s)}{m(x) - m(x + s)}.$$
 
 It is `Optimization.reductionRatio` with the predicted decrease $m(x) - m(x + s)$. Division by a
-zero predicted decrease gives $0$ by Lean's convention. -/
+zero predicted decrease gives $0$ by Lean's convention.
+
+**Reading.** Totalized division assigns zero to a zero predicted decrease.
+-/
 noncomputable def btrRatio (f m : E → ℝ) (x s : E) : ℝ :=
   Optimization.reductionRatio f x s (m x - m (x + s))
 
@@ -157,6 +173,8 @@ noncomputable def defaultBTRParams : BTRParams where
 $c \in \mathbb{R}$, $g \in F$ and a linear operator $H$ on $F$, the **quadratic model** at the
 step $s \in F$ from its center is
 $$m(s) = c + \langle g, s \rangle + \tfrac{1}{2} \langle s, Hs \rangle.$$
+
+**Reading.** Real inner product space and bounded operator replace Euclidean coordinate matrices.
 -/
 noncomputable def quadraticModel {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     (c : ℝ) (g : F) (H : F →ₗ[ℝ] F) (s : F) : ℝ :=
@@ -175,7 +193,11 @@ $k \in \mathbb{N}$ such that
 * $\Delta_{k+1}$ follows the radius update (6.1.5) for $\rho_k$ and $\Delta_k$.
 
 The positivity of the predicted decrease makes the ratio $\rho_k$ defined. The source leaves the
-sufficient decrease test unspecified. -/
+sufficient decrease test unspecified.
+
+**Reading.** Abstract sufficient-decrease predicate and strictly positive predicted decrease at
+every trial.
+-/
 structure BTRRun (f : E → ℝ) (P : BTRParams)
     (sufficient : ℕ → (E → ℝ) → E → E → Prop) where
   /-- The iterates $x_k$. -/
@@ -234,7 +256,10 @@ $\Delta_k \le \theta$ is very successful. Then
 $$\Delta_k \ge \min\{\Delta_0, \gamma_1 \theta\} \quad \text{for all } k.$$
 
 The minimum includes the initial radius $\Delta_0$, which can be smaller than the constant
-displayed in the proof of the source. -/
+displayed in the proof of the source.
+
+**Reading.** Uniform bound includes the initial radius in its minimum.
+-/
 theorem delta_lower_bound (run : BTRRun f P sufficient) {θ : ℝ}
     (hforce : ∀ k, run.Δ k ≤ θ → k ∈ run.verySuccessful) (k : ℕ) :
     min (run.Δ 0) (P.γ₁ * θ) ≤ run.Δ k := by

@@ -66,6 +66,16 @@ symmetric-definite pencil (Theorem 5.7). The proofs specialize `Numlib.Eigen.Pen
 
 ## Deviations from the source
 
+* **Generalization.** The finite pencil spectrum is defined over an arbitrary field. See
+  `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum`, `QuarteroniSaccoSaleri.Chapter05.equation_5_58`,
+  `QuarteroniSaccoSaleri.Chapter05.pencilSpectrum_one`.
+* **Correction.** The first example pencil has the corrected determinant sign. See
+  `QuarteroniSaccoSaleri.Chapter05.example_5_14_conj`.
+* **Scope.** The complex generalized Schur theorem gives finite ratios and certifies nonzero
+  numerators for the infinite cases. See `QuarteroniSaccoSaleri.Chapter05.property_5_10`.
+* **Generalization.** Generalized real Schur form is available for all real square pencils. See
+  `QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur_of_isUnit`,
+  `QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur`.
 * **Example 5.14, first pencil** (typo). The source prints $p(z) = z^2 + 1$; the characteristic
   polynomial is $\det(A - zB) = -(z^2 + 1)$, with the same roots. See
   `QuarteroniSaccoSaleri.Chapter05.example_5_14_conj`.
@@ -112,7 +122,11 @@ $(A, B)$, and its **spectrum** is the set of its eigenvalues $$\sigma(A, B) = \{
 \det(A - \mu B) = 0\}.$$
 
 The source takes $K = \mathbb{C}$. This is the backbone's `Matrix.pencilSpectrum A B` by
-definition. -/
+definition.
+
+**Generalization.** The finite generalized spectrum and eigenvector equation are defined over any
+field. Infinity is tracked separately from this set.
+-/
 def pencilSpectrum {K : Type*} [Field K] (A B : Matrix (Fin n) (Fin n) K) : Set K :=
   {μ | (A - μ • B).det = 0}
 
@@ -122,7 +136,11 @@ and only if there is a vector $x \in K^n$, $x \neq 0$, with $$Ax = \mu Bx.$$ Suc
 $(\mu, x)$ is an eigenvalue and eigenvector of the pencil.
 
 The proof specializes `Matrix.mem_pencilSpectrum_iff_exists`. The pair is a
-`Matrix.HasPencilEigenvector` of the backbone. -/
+`Matrix.HasPencilEigenvector` of the backbone.
+
+**Generalization.** The finite generalized spectrum and eigenvector equation are defined over any
+field. Infinity is tracked separately from this set.
+-/
 theorem equation_5_58 {K : Type*} [Field K] (A B : Matrix (Fin n) (Fin n) K) (μ : K) :
     μ ∈ pencilSpectrum A B ↔ ∃ x : Fin n → K, x ≠ 0 ∧ A *ᵥ x = μ • (B *ᵥ x) :=
   Matrix.mem_pencilSpectrum_iff_exists A B μ
@@ -131,7 +149,11 @@ theorem equation_5_58 {K : Type*} [Field K] (A B : Matrix (Fin n) (Fin n) K) (μ
 $A \in K^{n \times n}$ over a field $K$, setting $B = I_n$ in (5.58) gives the standard
 eigenvalue problem: $\sigma(A, I) = \sigma(A)$.
 
-The proof specializes `Matrix.pencilSpectrum_one`. -/
+The proof specializes `Matrix.pencilSpectrum_one`.
+
+**Generalization.** The finite generalized spectrum and eigenvector equation are defined over any
+field. Infinity is tracked separately from this set.
+-/
 theorem pencilSpectrum_one {K : Type*} [Field K] (A : Matrix (Fin n) (Fin n) K) :
     pencilSpectrum A 1 = spectrum K A :=
   Matrix.pencilSpectrum_one A
@@ -193,7 +215,11 @@ characteristic polynomial is $p(z) = \det(A - zB) = -(z^2 + 1)$, and $\sigma(A, 
 So a symmetric pencil, unlike a symmetric matrix, can have complex conjugate eigenvalues.
 
 **Typo.** The source prints $p(z) = z^2 + 1$, which differs from $\det(A - zB)$ by the sign and
-has the same roots. -/
+has the same roots.
+
+**Correction.** For the two printed matrices the determinant is $-(z^2+1)$. The source omits the
+minus sign, which does not affect the two roots.
+-/
 theorem example_5_14_conj :
     Matrix.pencilPoly (!![-1, 0; 0, 1] : Matrix (Fin 2) (Fin 2) ℂ) !![0, 1; 1, 0] = -(X ^ 2 + 1) ∧
       pencilSpectrum (!![-1, 0; 0, 1] : Matrix (Fin 2) (Fin 2) ℂ) !![0, 1; 1, 0] =
@@ -279,7 +305,12 @@ s_{ii} : s_{ii} \neq 0\},$$ and $t_{ii} \neq 0$ for every $i$ with $s_{ii} = 0$.
 The proof specializes `Matrix.exists_unitary_pencil_isUpperTriangular` (a Schur form and a QR
 factorization), `Matrix.pencilSpectrum_eq_of_isUpperTriangular` and
 `Matrix.pencilSpectrum_mul_mul_of_isUnit`. A diagonal position with $t_{ii} = s_{ii} = 0$ would
-make every $\mu$ an eigenvalue, but the spectrum of a regular pencil is finite. -/
+make every $\mu$ an eigenvalue, but the spectrum of a regular pencil is finite.
+
+**Reading.** The result states the finite eigenvalue ratios and the nonzero numerator at each zero
+diagonal denominator. Infinite eigenvalues are not elements of the finite spectrum; the
+degree-deficit result is separate.
+-/
 theorem property_5_10 {A B : Matrix (Fin n) (Fin n) ℂ} (hreg : isRegularPencil A B) :
     ∃ U ∈ unitaryGroup (Fin n) ℂ, ∃ Z ∈ unitaryGroup (Fin n) ℂ,
       (Uᴴ * A * Z).IsUpperTriangular ∧ (Uᴴ * B * Z).IsUpperTriangular ∧
@@ -396,7 +427,12 @@ $\tilde Z^T B^{-1} A \tilde Z = T$ is upper quasi-triangular, and $\tilde U$ fro
 factorization $B \tilde Z = \tilde U R$ (Definition 3.1). Then $\tilde U^T B \tilde Z = R$ is
 upper triangular, and $\tilde U^T A \tilde Z = RT$ is upper quasi-triangular. The
 quasi-triangular shape is that of Property 5.8: `Matrix.BlockTriangular p` for a monotone
-`p : Fin n → ℕ` whose fibres have at most two elements. -/
+`p : Fin n → ℕ` whose fibres have at most two elements.
+
+**Generalization.** The generalized real Schur existence statement also applies to singular pencils,
+with no nonsingularity or regularity assumption. The declarations give the block forms and do not
+specify QZ iteration.
+-/
 theorem generalizedRealSchur_of_isUnit {A B : Matrix (Fin n) (Fin n) ℝ} (hB : IsUnit B.det) :
     ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
       Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧
@@ -434,7 +470,12 @@ The quasi-triangular shape is that of Property 5.8: `Matrix.BlockTriangular p` f
 `p : Fin n → ℕ` whose fibres have at most two elements. The proof specializes
 `Matrix.exists_orthogonal_pencil_isQuasiUpperTriangular`, which applies
 `QuarteroniSaccoSaleri.Chapter05.generalizedRealSchur_of_isUnit` to $(A, B + \varepsilon I)$ and
-takes the limit $\varepsilon \to 0$ in the compact orthogonal group. -/
+takes the limit $\varepsilon \to 0$ in the compact orthogonal group.
+
+**Generalization.** The generalized real Schur existence statement also applies to singular pencils,
+with no nonsingularity or regularity assumption. The declarations give the block forms and do not
+specify QZ iteration.
+-/
 theorem generalizedRealSchur (A B : Matrix (Fin n) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin n) ℝ, ∃ Z ∈ orthogonalGroup (Fin n) ℝ, ∃ p : Fin n → ℕ,
       Monotone p ∧ (∀ k, #{i | p i = k} ≤ 2) ∧

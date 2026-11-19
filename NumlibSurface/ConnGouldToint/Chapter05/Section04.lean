@@ -47,6 +47,14 @@ The proofs specialize the PCG method of the backbone module `Numlib.Krylov.Preco
 
 * The backbone PCG state carries the residual $b - Hx$. For the system $Hx = -c$ this is
   $-(Hx + c)$, the negative of the gradient $Hx + c$ that the source uses.
+
+## Deviations from the source
+
+* **Algorithms 5.4.1–5.4.2 and (5.4.1)–(5.4.7)** (generalization). The projected iterations
+  use Hilbert-space maps and an explicit reduced inverse. The null-space reduction only
+  assumes that the parametrization has the prescribed range. The augmented system (5.4.5)
+  uses finite-dimensional spaces for the constraint map and allows a right inverse of the
+  reduced operator.
 -/
 
 namespace ConnGouldToint.Chapter05
@@ -65,7 +73,10 @@ preconditioner $N B N^*$ in place of the inverse preconditioner. Its $k$-th stat
 the iterate $x_k$, the residual $-(Hx_k + c)$ and the search direction $p_k$.
 
 The state is `Krylov.PCG.iterate`. The map $B$ stands for the inverse of the reduced
-preconditioner. -/
+preconditioner.
+
+**Reading.** Uses abstract projected inverse on Hilbert spaces and the backbone residual sign.
+-/
 noncomputable abbrev projectedPCG (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B : F →ₗ[ℝ] F)
     (c : E) (u₀ : F) (k : ℕ) : PCG.State E :=
   PCG.iterate H (N.toLinearMap ∘ₗ B ∘ₗ N.adjoint.toLinearMap) (-c) (N u₀) k
@@ -76,6 +87,8 @@ method, Algorithm 5.4.1: preconditioned conjugate gradients for $N^* H N u = -N^
 with the inverse preconditioner $B$. Let $(x_k, r_k, p_k)$ be the states of Algorithm 5.4.2.
 Then for every $k$
 $$x_k = N u_k, \qquad N^* r_k = s_k, \qquad p_k = N d_k.$$
+
+**Reading.** State-by-state projection identity for Hilbert-space maps at all indices.
 -/
 theorem algorithm_5_4_2_eq_reduced (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B : F →ₗ[ℝ] F)
     (c : E) (u₀ : F) (k : ℕ) :
@@ -137,7 +150,10 @@ $$Av = 0 \quad \text{and} \quad Mv + A^* w = g \text{ for some } w \in Y,$$
 that is, $(v, w)$ solves the augmented system with the matrix
 $\begin{bmatrix} M & A^* \\ A & 0 \end{bmatrix}$ and the right-hand side $(g, 0)$.
 
-The hypothesis on $B$ says that $B$ is a right inverse of the reduced preconditioner $N^* M N$. -/
+The hypothesis on $B$ says that $B$ is a right inverse of the reduced preconditioner $N^* M N$.
+
+**Reading.** Augmented solve from a specified right inverse and exact kernel range.
+-/
 theorem projected_inverse_5_4_5 {Y : Type*} [NormedAddCommGroup Y] [InnerProductSpace ℝ Y]
     [CompleteSpace Y] [FiniteDimensional ℝ E] [FiniteDimensional ℝ Y]
     (A : E →L[ℝ] Y) (N : F →L[ℝ] E) (M : E →ₗ[ℝ] E) (B : F →ₗ[ℝ] F)
@@ -166,7 +182,10 @@ Then
 $$Av = 0 \text{ and } Mv + A^*(y + u) = g \iff Av = 0 \text{ and } Mv + A^* u = g - A^* y.$$
 
 Thus a shift of the right-hand side by $A^* y$ keeps the primal component $v$ and shifts the
-multiplier by $y$. -/
+multiplier by $y$.
+
+**Reading.** Same shift identity with Hilbert-space adjoint.
+-/
 theorem shifted_projected_system_5_4_7 {Y : Type*} [NormedAddCommGroup Y] [InnerProductSpace ℝ Y]
     [CompleteSpace Y] (A : E →L[ℝ] Y) (M : E →ₗ[ℝ] E) (g v : E) (u y : Y) :
     (A v = 0 ∧ M v + A.adjoint (y + u) = g) ↔
@@ -183,7 +202,10 @@ be bounded linear with $\operatorname{range} N = \ker A$. Let $c \in E$, and let
 $$q(x) = \tfrac{1}{2} \langle x, Hx \rangle + \langle c, x \rangle, \qquad q_N(z) = \tfrac{1}{2}
   \langle z, N^* H N z \rangle + \langle N^* c, z \rangle.$$
 Then for every $u \in F$, $q(Nu) = q_N(u)$, and $u$ minimizes $q_N$ over $F$ if and only if $Nu$
-minimizes $q$ over $\ker A$. -/
+minimizes $q$ over $\ker A$.
+
+**Reading.** Parametrization can be any map with range equal to the kernel.
+-/
 theorem null_space_quadratic_5_4_2 {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
     (A : E →ₗ[ℝ] Y) (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (c : E)
     (hN : LinearMap.range N.toLinearMap = LinearMap.ker A) (u : F) :
@@ -213,7 +235,10 @@ theorem null_space_quadratic_5_4_2 {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
 be as in `ConnGouldToint.Chapter05.projectedPCG`, let $Y$ be a real vector space, and let
 $A : E \to Y$ be linear with $A N u = 0$ for all $u \in F$. Then for every $k$ the iterate
 $x_k$, the direction $p_k$ and the preconditioned residual $N B N^* r_k$ of Algorithm 5.4.2 lie
-in the null space of $A$. -/
+in the null space of $A$.
+
+**Reading.** Feasibility from range inclusion alone, in abstract spaces.
+-/
 theorem projectedPCG_feasible {Y : Type*} [AddCommGroup Y] [Module ℝ Y]
     (A : E →ₗ[ℝ] Y) (H : E →ₗ[ℝ] E) (N : F →L[ℝ] E) (B : F →ₗ[ℝ] F)
     (hN : ∀ u, A (N u) = 0) (c : E) (u₀ : F) (k : ℕ) :

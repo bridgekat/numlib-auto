@@ -128,6 +128,20 @@ Chapter 3, and (9.3.6) uses the pseudospectra of Chapter 7.
 
 ## Deviations from the source
 
+* **§9.3.1, even and odd evaluation** (generalization). `GolubVanLoan.Chapter09.pade_even_odd`
+  proves the split for every diagonal Padé order. The source gives the example $q=8$.
+* **§9.3.1, the Padé fraction and Equation (9.3.1)** (reading).
+  `GolubVanLoan.Chapter09.pade_def` uses a total inverse when the denominator is singular, and
+  `GolubVanLoan.Chapter09.equation_9_3_1` makes the invertibility needed for the remainder
+  formula explicit.
+* **§9.3.2–§9.3.3, time domain** (reading). `GolubVanLoan.Chapter09.exp_perturbation_integral`,
+  `GolubVanLoan.Chapter09.exp_perturbation_schur`, and `GolubVanLoan.Chapter09.equation_9_3_4`
+  make the nonnegative time restriction on the norm results explicit.
+* **Equation (9.3.6)** (reading). `GolubVanLoan.Chapter09.equation_9_3_6` gives a lower bound on
+  every real uniform upper bound, expressing the source’s supremum bound without requiring a
+  finite supremum.
+* **§9.3.4, normal squaring** (reading). `GolubVanLoan.Chapter09.normal_squaring` includes the
+  zeroth power and uses totalized Padé evaluation.
 * **Algorithm 9.3.1** (correction). The printed exponent $j = \max\{0, 1 + \lfloor \log_2
   \|A\|_\infty \rfloor\}$ only guarantees $\|A/2^j\|_\infty < 1$, not the bound
   $\|A/2^j\|_\infty \le 1/2$ that the Moler–Van Loan bound needs. The library proves the claim of
@@ -170,7 +184,11 @@ For every $A \in \mathbb{R}^{n \times n}$, $R_{pq}(A) = D_{pq}(A)^{-1} N_{pq}(A)
 $R_{p0}(A) = I + A + \dots + A^p/p!$ is the Taylor polynomial of degree $p$.
 
 The statement gives the coefficients of `Pade.expNum ℝ p q` and `Pade.expDen ℝ p q`. The inverse
-is the Lean inverse, which is $0$ for a singular $D_{pq}(A)$. -/
+is the Lean inverse, which is $0$ for a singular $D_{pq}(A)$.
+
+**Reading.** The source defines an ordinary rational matrix function wherever its denominator
+is invertible. The Lean inverse is total and extends the formula by zero when $D_{pq}(A)$ is
+singular. -/
 theorem pade_def (p q : ℕ) :
     (∀ k, (Pade.expNum ℝ p q).coeff k = if k ≤ p then
       (((p + q - k)! * p ! : ℕ) / ((p + q)! * k ! * (p - k)! : ℕ) : ℝ) else 0) ∧
@@ -195,7 +213,9 @@ open scoped Matrix.Norms.Operator
 and suppose that $D_{pq}(A)$ is nonsingular. Then
 $$e^A = R_{pq}(A) + \frac{(-1)^q}{(p+q)!} A^{p+q+1} D_{pq}(A)^{-1} \int_0^1 u^p (1 - u)^q
   e^{A(1-u)} \, du.$$
--/
+
+**Reading.** The source leaves the invertibility required by $D_{pq}(A)^{-1}$ implicit. The
+Lean theorem assumes it. -/
 theorem equation_9_3_1 (p q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ)
     (hD : IsUnit (aeval A (Pade.expDen ℝ p q))) :
     exp A = Pade.expApprox ℝ p q A + ((-1) ^ q / (p + q)! : ℝ) • (A ^ (p + q + 1) *
@@ -248,7 +268,11 @@ $$U = \sum_{k=0}^{q} c_{2k} A^{2k}, \qquad V = \sum_{k=0}^{q} c_{2k+1} A^{2k}.$$
 Then $N_{qq}(A) = U + AV$ and $D_{qq}(A) = U - AV$.
 
 For $q = 8$ the source writes $U$ and $V$ explicitly and evaluates them by Horner's scheme in
-$A^2$. The coefficients $c_k$ vanish for $k > q$. -/
+$A^2$. The coefficients $c_k$ vanish for $k > q$.
+
+**Generalization.** The sums describe the even and odd parts for arbitrary diagonal Padé order.
+The source illustrates the splitting at order eight, with an evaluation scheme using powers of
+$A^2$. -/
 theorem pade_even_odd (q : ℕ) (A : Matrix (Fin n) (Fin n) ℝ) :
     let c := fun k => (Pade.expNum ℝ q q).coeff k
     let U := ∑ k ∈ range (q + 1), c (2 * k) • A ^ (2 * k)
@@ -303,7 +327,11 @@ program of Algorithm 9.3.1 with the scaling exponent $j = \max\{0, o + \lfloor \
 
 The source prints $o = 1$, which is `GolubVanLoan.Chapter09.algorithm_9_3_1`. The corrected
 choice $o = 2$, for which the claimed backward error holds, is
-`GolubVanLoan.Chapter09.algorithm_9_3_1_corrected`. -/
+`GolubVanLoan.Chapter09.algorithm_9_3_1_corrected`.
+
+**Reading.** Parameterizes the exponent offset and explicitly selects elimination with partial
+pivoting.
+-/
 noncomputable def scalingSquaring (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ) := do
   let s ← (List.finRange n).foldlM (fun (s : Fin n → ℝ) i => do
@@ -488,7 +516,10 @@ The loop computes $c_k = (2q-k)! \, q! / ((2q)! \, k! \, (q-k)!)$ by the recurre
 $c_k = c_{k-1} (q-k+1)/((2q-k+1)k)$, so $N = N_{qq}(A/2^j)$ and $D = D_{qq}(A/2^j)$ by
 `GolubVanLoan.Chapter09.pade_def`. The solve returns $D^{-1} N$, as in (3.4.12) of Chapter 3,
 and the squarings give the power $2^j$. The integer logarithm `Int.log 2` is $0$ at $\nu = 0$,
-and $q = 0$ if no $q$ has $\epsilon(q, q) \le \delta$. -/
+and $q = 0$ if no $q$ has $\epsilon(q, q) \le \delta$.
+
+**Reading.** Exact-arithmetic Padé result for any exponent offset and invertible denominator.
+-/
 theorem scalingSquaring_spec (o : ℤ) (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (o + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
     (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ})
@@ -533,7 +564,11 @@ then in exact arithmetic the algorithm returns
 $$R_{qq}(A/2^j)^{2^j}.$$
 
 For $A = 0$ the integer logarithm gives $j = 1$, which does not change the result. The proof
-specializes `GolubVanLoan.Chapter09.scalingSquaring_spec`. -/
+specializes `GolubVanLoan.Chapter09.scalingSquaring_spec`.
+
+**Reading.** Isolates the exact-arithmetic Padé output with an explicit invertible denominator
+hypothesis.
+-/
 theorem algorithm_9_3_1_spec (δ : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (1 + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
     (hq : q = sInf {q : ℕ | Pade.errorBound q q ≤ δ})
@@ -555,7 +590,11 @@ $$\|E\|_\infty \le \delta \|A\|_\infty.$$
 
 Under the hypothesis, $\|A/2^j\|_\infty < \log 2$, so $D_{qq}(A/2^j)$ is nonsingular
 (`Pade.isUnit_aeval_expDen`). The Moler–Van Loan bound with $\epsilon(q, q) \le \delta$ then
-gives the claim. -/
+gives the claim.
+
+**Reading.** Arbitrary offset, exact rounded operations, explicit tolerance feasibility and
+scaled-norm premise.
+-/
 theorem scalingSquaring_spec_backward [NeZero n] (o : ℤ) {δ : ℝ}
     (hδ : ∃ q, Pade.errorBound q q ≤ δ) (A : Matrix (Fin n) (Fin n) ℝ) {j q : ℕ}
     (hj : j = (o + Int.log 2 (⨆ i, ∑ l, |A i l|)).toNat)
@@ -606,7 +645,10 @@ private theorem norm_eq_iSup_sum_abs [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ)
   simp [Real.norm_eq_abs]
 
 /-- For every $\nu \ge 0$, the corrected exponent $j = \max\{0, 2 + \lfloor \log_2 \nu \rfloor\}$
-gives $\nu / 2^j \le 1/2$. -/
+gives $\nu / 2^j \le 1/2$.
+
+**Reading.** Proves the needed inequality for offset 2 and explicit zero case.
+-/
 private theorem div_two_pow_corrected_le {ν : ℝ} (hν : 0 ≤ ν) :
     ν / 2 ^ (2 + Int.log 2 ν).toNat ≤ 1 / 2 := by
   rcases hν.eq_or_lt with rfl | hν
@@ -670,7 +712,9 @@ $$e^{(A+E)t} - e^{At} = \int_0^t e^{A(t-s)} E e^{(A+E)s} \, ds,$$
 and for $t \ge 0$
 $$\frac{\|e^{(A+E)t} - e^{At}\|_2}{\|e^{At}\|_2} \le \frac{\|E\|_2}{\|e^{At}\|_2} \int_0^t
   \|e^{A(t-s)}\|_2 \|e^{(A+E)s}\|_2 \, ds.$$
--/
+
+**Reading.** The source leaves the time domain implicit. The Lean identity holds for all real
+$t$, while the relative norm estimate assumes $t\geq 0$. -/
 theorem exp_perturbation_integral (A E : Matrix (Fin n) (Fin n) ℝ) (t : ℝ) :
     exp (t • (A + E)) - exp (t • A) =
       ∫ s in (0 : ℝ)..t, exp ((t - s) • A) * E * exp (s • (A + E)) ∧
@@ -715,7 +759,9 @@ $Q^H A Q = \operatorname{diag}(\lambda_i) + N$ upper triangular, and let $M_S(t)
 (9.3.2). Then for $t \ge 0$
 $$\frac{\|e^{(A+E)t} - e^{At}\|_2}{\|e^{At}\|_2} \le t \|E\|_2 M_S(t)^2 \exp(t M_S(t)
   \|E\|_2).$$
--/
+
+**Reading.** The relative bound assumes $t\geq 0$, as required by its right-hand side and the
+integral estimate. -/
 theorem exp_perturbation_schur [NeZero n] {A Q : Matrix (Fin n) (Fin n) ℂ}
     (hQ : Q ∈ Matrix.unitaryGroup (Fin n) ℂ) (hT : (star Q * A * Q).IsUpperTriangular)
     (E : Matrix (Fin n) (Fin n) ℂ) {t : ℝ} (ht : 0 ≤ t) :
@@ -767,7 +813,9 @@ theorem expCondNumber_ge [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) {t : ℝ} (
 /-- **Equation (9.3.4)** of [golub2013matrix]. Let $A \in \mathbb{C}^{n \times n}$ be normal, with
 $n \ge 1$. Then for $t \ge 0$
 $$\|e^{At}\|_2 = e^{\alpha(A) t}.$$
--/
+
+**Reading.** The identity with the largest real part of an eigenvalue holds for nonnegative
+$t$. The Lean theorem makes that time restriction explicit. -/
 theorem equation_9_3_4 [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) {t : ℝ}
     (ht : 0 ≤ t) : ‖exp (t • A)‖ = Real.exp (spectralAbscissa A * t) :=
   Matrix.l2_opNorm_exp_smul_of_isStarNormal hA ht
@@ -891,7 +939,10 @@ is not normal, and yet $\nu(A, t) = t \|A\|_2$ for every $t \ge 0$. So the "only
 of the source's "equality holding for all nonnegative $t$ if and only if the matrix $A$ is
 normal" is false.
 
-The equality holds because $\|e^{sA}\|_2 = e^s$ for $s \ge 0$. -/
+The equality holds because $\|e^{sA}\|_2 = e^s$ for $s \ge 0$.
+
+**Correction.** Provides nonnormal counterexample to the claimed necessary direction.
+-/
 theorem expCondNumber_eq_iff_counterexample :
     ¬ IsStarNormal (!![1, 0, 0; 0, 0, 1; 0, 0, 0] : Matrix (Fin 3) (Fin 3) ℂ) ∧
     ∀ t : ℝ, 0 ≤ t → expCondNumber (!![1, 0, 0; 0, 0, 1; 0, 0, 0] : Matrix (Fin 3) (Fin 3) ℂ) t =
@@ -960,7 +1011,10 @@ open scoped Matrix.Norms.L2Operator
 
 /-- **§9.3.4** of [golub2013matrix], the normal case. Let $A \in \mathbb{C}^{n \times n}$ be normal,
 with $n \ge 1$, and let $q, j \ge 0$. Then $G = R_{qq}(A/2^j)$ is normal, and
-$\|G^m\|_2 = \|G\|_2^m$ for every $m \ge 0$. -/
+$\|G^m\|_2 = \|G\|_2^m$ for every $m \ge 0$.
+
+**Reading.** The Lean statement extends the power identity to $m=0$. Its Padé evaluation also
+uses a total inverse, so $G$ is defined as zero when the Padé denominator is singular. -/
 theorem normal_squaring [NeZero n] {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A)
     (q j : ℕ) :
     IsStarNormal (Pade.expApprox ℂ q q ((2⁻¹ : ℂ) ^ j • A)) ∧

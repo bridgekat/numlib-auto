@@ -109,14 +109,23 @@ singular values come from `Numlib.LinearAlgebra.Matrix.SVD`.
 
 ## Deviations from the source
 
+* **Equations (7.1.1)–(7.1.3)** (reading). The radius and abscissa use suprema and take value
+  zero in dimension zero, where the maxima in the source are undefined. See
+  `GolubVanLoan.Chapter07.spectralRadius`, `GolubVanLoan.Chapter07.spectralAbscissa` and
+  `GolubVanLoan.Chapter07.numericalRadius`.
+* **Lemma 7.1.1** (reading). The characteristic polynomial identity gives multiplicities and
+  establishes spectral equality without the source's counting argument for sets. See
+  `GolubVanLoan.Chapter07.lemma_7_1_1`.
+* **Corollary 7.1.7** (reading). The block-size data permit empty blocks. Removing these gives
+  the decomposition into eigenvalue blocks. See `GolubVanLoan.Chapter07.corollary_7_1_7`.
 * **Equation (7.1.3)** (typo). The source prints the maximum as $\max_{\lambda \in \lambda(A)}$. The
   maximum is over the unit vectors $x$. See `GolubVanLoan.Chapter07.numericalRadius`.
 * **Lemma 7.1.5, block diagonalization** (generalization). The source assumes that $\phi$ is
   nonsingular. The statement needs only a solution $Z$ of $\phi(Z) = -T_{12}$. See
   `GolubVanLoan.Chapter07.lemma_7_1_5_blockDiagonal`.
-* **Theorem 7.1.6** (typo). The source prints the hypothesis as $\lambda(T_{ij}) \cap
-  \lambda(T_{jj}) = \emptyset$. It means $\lambda(T_{ii}) \cap \lambda(T_{jj}) = \emptyset$. See
-  `GolubVanLoan.Chapter07.theorem_7_1_6`.
+* **Theorem 7.1.6** (generalization). The theorem uses a block upper triangular form whose
+  diagonal blocks can be arbitrary square matrices. The source assumes a Schur decomposition.
+  See `GolubVanLoan.Chapter07.theorem_7_1_6`.
 * **Equation (7.1.13)** (reading). The source says that the diagonalizing matrix has "a 2-norm
   condition of order $1/\varepsilon$". The statement gives the lower bound $1/(2\varepsilon)$ for
   every diagonalizing matrix and the upper bound $1/\varepsilon + 2\varepsilon$ for one of them. See
@@ -157,7 +166,10 @@ $A \in \mathbb{C}^{n \times n}$ is $$\rho(A) = \max_{\lambda \in \lambda(A)} |\l
 It is defined as the supremum of the moduli of the eigenvalues. For $n = 0$ the spectrum is
 empty and the value is $0$; for $n \ge 1$ the spectrum is finite and nonempty, so the supremum
 is a maximum. The agreement with Mathlib's `spectralRadius`, which takes values in `ℝ≥0∞`, is
-`GolubVanLoan.Chapter07.spectralRadius_eq`. -/
+`GolubVanLoan.Chapter07.spectralRadius_eq`.
+
+**Reading.** Supremum of spectral moduli agrees for positive size, takes zero on empty spectrum.
+-/
 noncomputable def spectralRadius (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   sSup ((‖·‖) '' spectrum ℂ A)
 
@@ -178,7 +190,10 @@ $A \in \mathbb{C}^{n \times n}$ is $$\alpha(A) = \max_{\lambda \in \lambda(A)}
 
 It is defined as a supremum, which is $0$ for $n = 0$ and is attained for $n \ge 1$
 (`GolubVanLoan.Chapter07.spectralAbscissa_mem`). It equals the backbone's `spectralAbscissa` of
-$A$ in the algebra of matrices (`GolubVanLoan.Chapter07.spectralAbscissa_eq`). -/
+$A$ in the algebra of matrices (`GolubVanLoan.Chapter07.spectralAbscissa_eq`).
+
+**Generalization.** Supremum of real components extends empty spectrum by zero.
+-/
 noncomputable def spectralAbscissa (A : Matrix (Fin n) (Fin n) ℂ) : ℝ :=
   sSup (Complex.re '' spectrum ℂ A)
 
@@ -314,8 +329,9 @@ $T_{12} \in \mathbb{C}^{p \times q}$ and $T_{22} \in \mathbb{C}^{q \times q}$. I
 \lambda(T_{11}) \cup \lambda(T_{22})$. With multiplicity, the characteristic polynomial of $T$
 is the product of the characteristic polynomials of $T_{11}$ and $T_{22}$.
 
-The second part is the multiset form of the counting argument ("same cardinality") in the proof
-of the source. -/
+**Reading.** The source appeals to equal cardinalities of spectral sets to prove the reverse
+inclusion. The Lean proof uses the characteristic polynomial product, which establishes the
+set equality and also gives the algebraic multiplicities. -/
 theorem lemma_7_1_1 {p q : ℕ} (T₁₁ : Matrix (Fin p) (Fin p) ℂ) (T₁₂ : Matrix (Fin p) (Fin q) ℂ)
     (T₂₂ : Matrix (Fin q) (Fin q) ℂ) :
     spectrum ℂ (fromBlocks T₁₁ T₁₂ 0 T₂₂) = spectrum ℂ T₁₁ ∪ spectrum ℂ T₂₂ ∧
@@ -573,8 +589,9 @@ blocks $T_{11}, \dots, T_{qq}$ (7.1.9). If $\lambda(T_{ii}) \cap \lambda(T_{jj})
 whenever $i \neq j$, then there is a nonsingular $Y \in \mathbb{C}^{n \times n}$ such that
 $$(QY)^{-1} A (QY) = \operatorname{diag}(T_{11}, \dots, T_{qq}) \qquad (7.1.10).$$
 
-**Typo.** The source prints the hypothesis as $\lambda(T_{ij}) \cap \lambda(T_{jj}) =
-\emptyset$. It means $\lambda(T_{ii}) \cap \lambda(T_{jj}) = \emptyset$.
+**Generalization.** Only block upper triangularity and disjoint spectra of the diagonal blocks
+are needed. The source assumes a Schur decomposition and states the same diagonal-block
+separation in the original PDF. The OCR incorrectly renders $T_{ii}$ as $T_{ij}$.
 
 The blocks are given by a block index `b : Fin n → Fin q`: $T$ is `Matrix.BlockTriangular b`,
 the block $T_{ii}$ is `Matrix.toSquareBlock b i`, and
@@ -613,7 +630,10 @@ strictly upper triangular, and $n_1 + \dots + n_q = n$.
 The blocks are laid out along `Fin n` by an equivalence `σ`. The proof reads off the Jordan form
 grouped by eigenvalue (`Matrix.exists_conj_blockDiagonal'_jordanForm`), whose block for
 $\lambda_i$ is $\lambda_i I$ plus a direct sum of nilpotent Jordan blocks. This route is shorter
-than the proof in the source, which applies Theorem 7.1.6 to an ordered Schur form. -/
+than the proof in the source, which applies Theorem 7.1.6 to an ordered Schur form.
+
+**Reading.** The existence theorem uses natural-number block sizes and permits empty blocks.
+These can be removed to obtain the source's partition into blocks associated with eigenvalues. -/
 theorem corollary_7_1_7 (A : Matrix (Fin n) (Fin n) ℂ) :
     ∃ (q : ℕ) (μ : Fin q → ℂ) (sz : Fin q → ℕ) (N : ∀ i, Matrix (Fin (sz i)) (Fin (sz i)) ℂ)
       (σ : ((i : Fin q) × Fin (sz i)) ≃ Fin n) (X : Matrix (Fin n) (Fin n) ℂ),

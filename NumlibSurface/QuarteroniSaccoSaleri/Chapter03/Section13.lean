@@ -88,11 +88,21 @@ solutions, the normal equations, the QR method and the solution of least norm) a
 ## Deviations from the source
 
 * **Equation (3.73)** (reading). The book writes $\Phi(x^*) \le \min_x \Phi(x)$. The definition
-  states $\Phi(x^*) \le \Phi(x)$ for all $x$. See `QuarteroniSaccoSaleri.Chapter03.equation_3_73`.
+  states $\Phi(x^*) \le \Phi(x)$ for all $x$ and allows all matrix shapes.
+  See `QuarteroniSaccoSaleri.Chapter03.equation_3_73`.
+* **Equation (3.74)** (scope). The normal equations characterize the minimizers in both
+  directions for all matrix shapes. The text derives them as a necessary condition in its
+  setup with $m \ge n$.
+* **Theorem 3.8** (scope). The residual decomposition and minimum objective value also hold
+  for a rank-deficient matrix. Only the solution formula requires full column rank.
+* **Theorem 3.9** (reading). The source starts with an SVD. The least-squares statements work
+  directly with the pseudoinverse, which is defined for every finite real matrix.
 * **Example 3.11** (reading). The book says that $\operatorname{rank}(A) = 1$ and that the perturbed
   matrix has full rank $2$. The statements give the rank together with the dependence or the
   independence of the columns. See `QuarteroniSaccoSaleri.Chapter03.example_3_11` and
   `QuarteroniSaccoSaleri.Chapter03.example_3_11_perturbed`.
+* **Underdetermined systems** (scope). The minimum-norm formula and transposed QR solve stated
+  here include the square, full-rank case.
 
 ## Not formalized
 
@@ -126,7 +136,10 @@ def equation_3_73 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (xs : Fin
 /-- **Equation (3.73)** of [quarteroni2000numerical], the backbone form. For
 $A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$ and $x^* \in \mathbb{R}^n$, the vector
 $x^*$ is a least-squares solution of $Ax = b$ if and only if
-`Matrix.IsLeastSquaresSolution A b x*` holds for the vectors viewed in `EuclideanSpace ℝ`. -/
+`Matrix.IsLeastSquaresSolution A b x*` holds for the vectors viewed in `EuclideanSpace ℝ`.
+
+**Generalization.** Equivalent backbone predicate on the generalized shape domain.
+-/
 theorem equation_3_73_iff (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (xs : Fin n → ℝ) :
     equation_3_73 A b xs ↔ IsLeastSquaresSolution A (toLp 2 b) (toLp 2 xs) := by
   simp only [equation_3_73, IsLeastSquaresSolution, toEuclideanLin_toLp, ← toLp_sub,
@@ -139,7 +152,10 @@ a least-squares solution of $Ax = b$ if and only if it solves the square system
 $$A^T A\, x^* = A^T b.$$
 
 The book derives (3.74) from the condition $\nabla \Phi(x^*) = 0$. The proof specializes
-`Matrix.isLeastSquaresSolution_iff_normalEquations`, which uses the projection theorem. -/
+`Matrix.isLeastSquaresSolution_iff_normalEquations`, which uses the projection theorem.
+
+**Reading.** Gives necessity and sufficiency for all shapes.
+-/
 theorem equation_3_74 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (xs : Fin n → ℝ) :
     equation_3_73 A b xs ↔ (Aᵀ * A) *ᵥ xs = Aᵀ *ᵥ b := by
   rw [equation_3_73_iff, isLeastSquaresSolution_iff_normalEquations,
@@ -225,7 +241,11 @@ $$\|Ax - b\|_2^2 = \|\tilde R x - \tilde Q^T b\|_2^2 + \sum_{i=n+1}^{m} \big((Q^
 
 The sums are over the $0$-based indices $n \le i < m$. The proof specializes
 `Matrix.IsQR.norm_sub_eq`, `Matrix.norm_sub_sq_eq_of_isQR` and
-`Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`. -/
+`Matrix.norm_sub_sq_eq_of_isQR_of_isLeastSquaresSolution`.
+
+**Reading.** The residual decomposition and attained minimum value hold without the full-rank
+assumption.
+-/
 theorem theorem_3_8_min (h : IsQR A Q R) (hnm : n ≤ m) (b : Fin m → ℝ) :
     (∀ x, ‖toLp 2 (A *ᵥ x - b)‖ = ‖toLp 2 (R *ᵥ x - Qᵀ *ᵥ b)‖) ∧
       (∀ x, ‖toLp 2 (A *ᵥ x - b)‖ ^ 2 =
@@ -293,7 +313,10 @@ is a least-squares solution of $Ax = b$ of minimal Euclidean norm, that is, a so
 The book assumes a singular value decomposition $A = U \Sigma V^T$. This is no hypothesis,
 because every matrix has one. The pseudoinverse is `Matrix.pinv`. The proof specializes
 `Matrix.isMinNormLeastSquaresSolution_pinv`. The solution is unique by
-`QuarteroniSaccoSaleri.Chapter03.theorem_3_9_unique`. -/
+`QuarteroniSaccoSaleri.Chapter03.theorem_3_9_unique`.
+
+**Reading.** Uses the pseudoinverse without a supplied SVD.
+-/
 theorem theorem_3_9 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
     equation_3_76 A b (A.pinv *ᵥ b) := by
   rw [equation_3_76_iff, ← toEuclideanLin_toLp]
@@ -302,7 +325,10 @@ theorem theorem_3_9 (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) :
 /-- **Theorem 3.9** of [quarteroni2000numerical], uniqueness. Let $A \in \mathbb{R}^{m \times n}$,
 $b \in \mathbb{R}^m$, and let $x^* \in \mathbb{R}^n$ solve (3.76). Then $x^* = A^+ b$.
 
-The proof specializes `Matrix.IsMinNormLeastSquaresSolution.eq_pinv`. -/
+The proof specializes `Matrix.IsMinNormLeastSquaresSolution.eq_pinv`.
+
+**Reading.** Splits out uniqueness without a supplied SVD.
+-/
 theorem theorem_3_9_unique {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ} {xs : Fin n → ℝ}
     (h : equation_3_76 A b xs) : xs = A.pinv *ᵥ b := by
   have := ((equation_3_76_iff A b xs).1 h).eq_pinv
@@ -420,7 +446,10 @@ and let $b \in \mathbb{R}^m$. Then:
 The book considers $m < n$. The statement needs only the independence of the rows, and so it
 includes the case $m = n$. The proof specializes
 `Matrix.pinv_eq_conjTranspose_mul_inv_self_mul_conjTranspose` and
-`Matrix.toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose`, together with Theorem 3.9. -/
+`Matrix.toEuclideanLin_conjTranspose_mul_inv_self_mul_conjTranspose`, together with Theorem 3.9.
+
+**Reading.** States explicit pseudoinverse and minimal-norm formulas and includes the square case.
+-/
 theorem underdetermined_minNorm {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ A)
     (b : Fin m → ℝ) :
     A.pinv = Aᵀ * (A * Aᵀ)⁻¹ ∧ A *ᵥ (Aᵀ *ᵥ ((A * Aᵀ)⁻¹ *ᵥ b)) = b ∧
@@ -449,7 +478,10 @@ $$A^T (A A^T)^{-1} b = \tilde Q\, \tilde R^{-T} b,$$
 and this vector is the solution of (3.76). It is obtained from one triangular solve with
 $\tilde R^T$.
 
-The book considers $m < n$. The statement includes the case $m = n$. -/
+The book considers $m < n$. The statement includes the case $m = n$.
+
+**Reading.** Spells out the transposed QR solve and includes the square case.
+-/
 theorem underdetermined_qr {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ A)
     {Q : Matrix (Fin n) (Fin n) ℝ} {R : Matrix (Fin n) (Fin m) ℝ} (h : IsQR Aᵀ Q R) (hmn : m ≤ n)
     (b : Fin m → ℝ) :

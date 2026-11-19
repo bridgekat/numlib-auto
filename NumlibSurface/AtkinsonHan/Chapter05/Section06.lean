@@ -89,9 +89,22 @@ modules `Numlib.Krylov.CG`, `Numlib.Krylov.Convergence.CG`, `Numlib.Krylov.Conve
 
 ## Deviations from the source
 
+* **Solvability of (5.6.1)** (scope). The theorem uses a uniform positive lower bound for
+  the energy norm and gives a corresponding inverse norm bound. Pointwise positive
+  definiteness alone does not imply bounded invertibility in infinite dimensions.
+* **Equation (5.6.2)** (scope). The quotients are totalized with zero inverses, so after
+  an exact zero residual the iterate stays fixed. The basic convergence results use
+  arbitrary real Hilbert spaces, without the source's standing separability assumption.
+* **Equations (5.6.8)–(5.6.10)** (scope). An explicit eigenbasis and bounds or defining
+  inequalities for the spectral endpoints replace the derivation from compactness.
+  The lower endpoint test uses uniform coercivity. The norm identity takes a supplied
+  inverse, and the one-step estimate uses any valid positive lower and upper bounds.
 * **Theorem 5.6.2** (generalization). The book's rate has the factor $(\Delta/\delta)^{3/(2k)}$; the
   statement proves the rate with the smaller factor $(\Delta/\delta)^{1/(2k)}$, which has the same
   limit $0$. See `AtkinsonHan.Chapter05.theorem_5_6_2`.
+* **Theorem 5.6.3** (scope). The integral kernel assumptions are represented by a sum of
+  squared eigenvalues in part (a) and an explicit eigenvalue decay bound in part (b).
+  Part (b) allows real $p \ge 1$.
 
 ## Not formalized
 
@@ -116,10 +129,16 @@ variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 section Energy
 
 /-- The $A$-inner product of Section 5.6 of [han2009theoretical]: for $A \in \mathcal{L}(V)$,
-$(v, u)_A = (Av, u)$. -/
+$(v, u)_A = (Av, u)$.
+
+**Reading.** Same bilinear form is defined for arbitrary bounded linear operator.
+-/
 noncomputable def innerA (A : V →L[ℝ] V) (v u : V) : ℝ := inner ℝ (A v) u
 
-/-- The $A$-norm of Section 5.6 of [han2009theoretical]: $\|v\|_A = \sqrt{(v, v)_A}$. -/
+/-- The $A$-norm of Section 5.6 of [han2009theoretical]: $\|v\|_A = \sqrt{(v, v)_A}$.
+
+**Reading.** Same square-root formula is defined for arbitrary bounded linear operator.
+-/
 noncomputable def normA (A : V →L[ℝ] V) (v : V) : ℝ := Real.sqrt (innerA A v v)
 
 /-- The $A$-inner product is the backbone's energy inner product: $(v, u)_A$ is `energyInner A v u`.
@@ -193,7 +212,10 @@ $A \in \mathcal{L}(V)$ self-adjoint, $m > 0$, and $\sqrt{m}\, \|v\| \le \|v\|_A 
 $u \in V$, and $A$ is invertible with $\|A^{-1}\| \le 1/m$.
 
 The book derives this from Theorem 5.1.4. Here it is the backbone's
-`ContinuousLinearMap.exists_equiv_of_isCoerciveWith`. -/
+`ContinuousLinearMap.exists_equiv_of_isCoerciveWith`.
+
+**Reading.** Uses uniform positive lower bound and adds quantitative inverse bound.
+-/
 theorem existsUnique_solution {A : V →L[ℝ] V} (hA : IsSelfAdjoint A) {m M : ℝ} (hm : 0 < m)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖) :
     (∀ f : V, ∃! u, A u = f) ∧
@@ -230,7 +252,10 @@ $$\alpha_k = \frac{\|r_k\|^2}{(As_k, s_k)}, \quad u_{k+1} = u_k + \alpha_k s_k, 
 
 Division by $0$ gives $0$ in Lean, so the step is defined for every state. After breakdown, when
 $r_k = 0$, both $\alpha_k$ and $\beta_k$ are $0$ and the iterate does not change. The backbone
-uses the same convention. -/
+uses the same convention.
+
+**Reading.** The same recurrence uses totalized denominators and is defined for arbitrary states.
+-/
 noncomputable def cgStep (A : V →L[ℝ] V) (f : V) (st : CGState V) : CGState V :=
   let α := ‖st.r‖ ^ 2 / inner ℝ (A st.s) st.s
   let u' := st.u + α • st.s
@@ -240,7 +265,10 @@ noncomputable def cgStep (A : V →L[ℝ] V) (f : V) (st : CGState V) : CGState 
 
 /-- **Equation (5.6.2)** of [han2009theoretical], the iteration. The $k$-th state of the conjugate
 gradient method for $Au = f$ is obtained by $k$ steps from $(u_0, r_0, s_0)$ with
-$r_0 = s_0 = f - Au_0$. -/
+$r_0 = s_0 = f - Au_0$.
+
+**Reading.** Repeats the totalized recurrence from the source initialization.
+-/
 noncomputable def cg (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) : CGState V :=
   (cgStep A f)^[k] ⟨u₀, f - A u₀, f - A u₀⟩
 
@@ -248,7 +276,10 @@ noncomputable def cg (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) : CGState V :=
 theorem cg_zero (A : V →L[ℝ] V) (f u₀ : V) :
     cg A f u₀ 0 = ⟨u₀, f - A u₀, f - A u₀⟩ := rfl
 
-/-- Each state of the conjugate gradient iteration is one step after the previous state. -/
+/-- Each state of the conjugate gradient iteration is one step after the previous state.
+
+**Reading.** Recurrence identity includes states after a zero denominator.
+-/
 theorem cg_succ (A : V →L[ℝ] V) (f u₀ : V) (k : ℕ) :
     cg A f u₀ (k + 1) = cgStep A f (cg A f u₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -329,7 +360,10 @@ This is stated in the backbone's terms because both `AtkinsonHan.Chapter05.equat
 good as one steepest descent step: the proof combines `IsGalerkin.energyNorm_le` (the conjugate
 gradient iterate is optimal in the energy norm over $x_0 + \mathcal{K}_{k+1}$) with the
 Kantorovich bound `Krylov.IsGalerkinIterate.energyNorm_error_succ_le` for one steepest descent
-step. -/
+step.
+
+**Reading.** Uses quadratic form hypotheses and does not require separability.
+-/
 theorem cg_energyNorm_error_step_le {A : V →ₗ[ℝ] V} {b x₀ xstar : V} {lmin lmax : ℝ}
     (hl : 0 < lmin) (hA : A.IsSymmetricBoundedBy lmin lmax) (hstar : A xstar = b) (k : ℕ) :
     energyNorm A (xstar - (CG.iterate A b x₀ (k + 1)).x)
@@ -386,7 +420,10 @@ $A \in \mathcal{L}(V)$ self-adjoint, $m > 0$, $\sqrt{m}\, \|v\| \le \|v\|_A \le 
 $$\|u^* - u_{k+1}\|_A \le \frac{M - m}{M + m} \|u^* - u_k\|_A.$$
 
 This is `AtkinsonHan.Chapter05.cg_energyNorm_error_step_le`, read through the identification
-`AtkinsonHan.Chapter05.cg_u` of the book's iteration with the backbone's. -/
+`AtkinsonHan.Chapter05.cg_u` of the book's iteration with the backbone's.
+
+**Reading.** Same one-step bound on arbitrary real Hilbert spaces.
+-/
 theorem equation_5_6_4 (hA : IsSelfAdjoint A) (hm : 0 < m)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) (k : ℕ) :
@@ -400,6 +437,8 @@ $A \in \mathcal{L}(V)$ self-adjoint, $m > 0$, $M > 0$, $\sqrt{m}\, \|v\| \le \|v
 \sqrt{M}\, \|v\|$ for all $v$, and $Au^* = f$. Then the conjugate gradient iterates $u_k$
 converge to $u^*$, and for every $k$
 $$\|u^* - u_{k+1}\|_A \le \frac{M - m}{M + m} \|u^* - u_k\|_A.$$
+
+**Reading.** Same convergence and rate without separability, given a solution.
 -/
 theorem theorem_5_6_1 (hA : IsSelfAdjoint A) (hm : 0 < m) (hM : 0 < M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
@@ -451,7 +490,10 @@ $$\|u^* - u_k\|_A \le 2 \left( \frac{\sqrt M - \sqrt m}{\sqrt M + \sqrt m} \righ
 The book quotes this bound from Patterson, *Iterative Methods for the Solution of a Linear
 Operator Equation in Hilbert Space — A Survey*, without proof. Here it is the backbone's
 `Krylov.IsGalerkinIterate.energyNorm_error_le`, whose rate is written with the condition number
-$\kappa = M/m$. -/
+$\kappa = M/m$.
+
+**Reading.** Same Chebyshev bound on arbitrary real Hilbert spaces with explicit endpoint ordering.
+-/
 theorem equation_5_6_5 (hA : IsSelfAdjoint A) (hm : 0 < m) (hmM : m ≤ M)
     (hbound : ∀ v, Real.sqrt m * ‖v‖ ≤ normA A v ∧ normA A v ≤ Real.sqrt M * ‖v‖)
     (hstar : A ustar = f) (k : ℕ) :
@@ -487,7 +529,10 @@ $$\delta \|v\|^2 \le (Av, v) \le \Delta \|v\|^2 \quad \text{for all } v \in V.$$
 So $A$ satisfies (5.6.3) with $m = \delta$ and $M = \Delta$ when $\delta > 0$.
 
 The conclusion is the backbone's `LinearMap.IsSymmetricBoundedBy A δ Δ`. The proof is Parseval's
-identity in the eigenbasis, `Krylov.isSymmetricBoundedBy_of_eq_one_sub`. -/
+identity in the eigenbasis, `Krylov.isSymmetricBoundedBy_of_eq_one_sub`.
+
+**Reading.** Quadratic form spectral endpoint bounds given an explicit eigenbasis.
+-/
 theorem isSymmetricBoundedBy_of_one_sub (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V))
     (hK : IsSelfAdjoint K) (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j)
     (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ) :
@@ -597,7 +642,11 @@ every $\varepsilon > 0$, $1 - \lambda_j < \delta + \varepsilon$ for some $j$. Po
 definiteness is the backbone's `LinearMap.IsCoerciveWith`. A coercivity constant is at most
 $1 - \lambda_j$ for every $j$, by the value at $\varphi_j$, so it is at most $\delta$.
 Conversely, $\delta > 0$ is a coercivity constant, by
-`AtkinsonHan.Chapter05.isSymmetricBoundedBy_of_one_sub`. -/
+`AtkinsonHan.Chapter05.isSymmetricBoundedBy_of_one_sub`.
+
+**Reading.** Explicit eigenbasis with lower-endpoint approximation and equivalence with uniform
+coercivity.
+-/
 theorem equation_5_6_8 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
     (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hlow : ∀ j, δ ≤ 1 - lam j)
     (hinf : ∀ ε > 0, ∃ j, 1 - lam j < δ + ε) (hupp : ∀ j, 1 - lam j ≤ Δ) :
@@ -626,7 +675,11 @@ The supremum and the infimum are each given by a bound and an approximation prop
 $\|A^{-1}\| \le 1/\delta$ follow from the bounds on the quadratic form in
 `AtkinsonHan.Chapter05.isSymmetricBoundedBy_of_one_sub`. The reverse inequalities follow from
 the values of $A$ and $A^{-1}$ at the unit eigenvectors $\varphi_j$, which come arbitrarily
-close to $\Delta$ and to $1/\delta$. -/
+close to $\Delta$ and to $1/\delta$.
+
+**Reading.** Norm formulas assume a supplied diagonalization, spectral extremes and inverse
+equivalence.
+-/
 theorem equation_5_6_9 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
     (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ)
     (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ)
@@ -685,7 +738,10 @@ $A = I - K$, let $0 < \delta \le 1 - \lambda_j \le \Delta$ for every $j$, and le
 Then for every $k$ the conjugate gradient iterates satisfy
 $$\|u^* - u_{k+1}\|_A \le \frac{\Delta - \delta}{\Delta + \delta} \|u^* - u_k\|_A.$$
 
-This is (5.6.4) with $m = \delta$ and $M = \Delta$. -/
+This is (5.6.4) with $m = \delta$ and $M = \Delta$.
+
+**Reading.** Uses supplied spectral bounds and an explicit eigenbasis.
+-/
 theorem equation_5_6_10 (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (hK : IsSelfAdjoint K)
     (φ : HilbertBasis ℕ ℝ V) (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ)
     (hlow : ∀ j, δ ≤ 1 - lam j) (hupp : ∀ j, 1 - lam j ≤ Δ) (hstar : A ustar = f) (k : ℕ) :
@@ -735,7 +791,10 @@ For the eigenvalues of $K$, this average makes the superlinear rate of Theorem 5
 $0$.
 
 The book indexes the eigenvalues from $1$. Here they are indexed from $0$, so the book's
-$\lambda_j$ is `lam (j - 1)`. For $\ell = 0$ the value is $0$. -/
+$\lambda_j$ is `lam (j - 1)`. For $\ell = 0$ the value is $0$.
+
+**Reading.** Same mean with zero-based indices and totalization at zero length.
+-/
 noncomputable def tau (lam : ℕ → ℝ) (ℓ : ℕ) : ℝ :=
   (ℓ : ℝ)⁻¹ * ∑ j ∈ Finset.range ℓ, |lam j| / (1 - lam j)
 
@@ -743,7 +802,10 @@ noncomputable def tau (lam : ℕ → ℝ) (ℓ : ℕ) : ℝ :=
 $$c_k = \left( \frac{\Delta}{\delta} \right)^{1/(2k)} \cdot 2 \tau_k.$$
 
 The book's rate (5.6.21) is $(\Delta/\delta)^{3/(2k)} \cdot 2 \tau_k$. The backbone proves the
-smaller rate with the exponent $1/(2k)$. -/
+smaller rate with the exponent $1/(2k)$.
+
+**Reading.** Uses smaller condition-factor exponent.
+-/
 theorem wintherRate_eq_tau (lam : ℕ → ℝ) (δ Δ : ℝ) (k : ℕ) :
     Krylov.wintherRate lam δ Δ k = (Δ / δ) ^ (1 / (2 * k : ℝ)) * (2 * tau lam k) := by
   simp only [Krylov.wintherRate, tau]
@@ -767,7 +829,10 @@ Hilbert–Schmidt norm for the integral operators on $C([a, b] \times [a, b])$ f
 derive it. No self-adjointness hypothesis on $K$ is needed. The upper bound is the
 Cauchy–Schwarz inequality for $\sum_{j < \ell} |\lambda_j|$, which is why the exponent is
 $-1/2$. The eigenvalues are indexed from $0$: the first eigenvalue $\lambda_0$, which is
-`lam 0`, is the book's $\lambda_1$. -/
+`lam 0`, is the book's $\lambda_1$.
+
+**Reading.** Abstract eigenvalue sum replaces integral Hilbert–Schmidt hypothesis.
+-/
 theorem theorem_5_6_3_a (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (φ : HilbertBasis ℕ ℝ V)
     (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ) (hlow : ∀ j, δ ≤ 1 - lam j) (e : V ≃L[ℝ] V)
     (he : (e : V →L[ℝ] V) = A) {S : ℝ} (hS : 0 ≤ S) (hHS : HasSum (fun j => lam j ^ 2) (S ^ 2))
@@ -835,7 +900,10 @@ The book quotes the decay from Fenyő and Stolle for a symmetric kernel with con
 derivatives up to the order $p$. Here it is the hypothesis `hdecay`, because Mathlib has no
 eigenvalue asymptotics for smooth kernels. In the indexing from $0$, the hypothesis reads
 $|\lambda_j| \le M (j + 1)^{-(p + 1/2)}$. The value $\zeta(p + 1/2)$ is written as the sum
-`∑' n, 1 / n ^ (p + 1 / 2)`, whose term at $n = 0$ is $0$. -/
+`∑' n, 1 / n ^ (p + 1 / 2)`, whose term at $n = 0$ is $0$.
+
+**Reading.** Abstract decay bound replaces smooth integral kernel and allows real order.
+-/
 theorem theorem_5_6_3_b (hAK : (A : V →ₗ[ℝ] V) = 1 - (K : V →ₗ[ℝ] V)) (φ : HilbertBasis ℕ ℝ V)
     (hlam : ∀ j, K (φ j) = lam j • φ j) (hδ : 0 < δ) (hlow : ∀ j, δ ≤ 1 - lam j) (e : V ≃L[ℝ] V)
     (he : (e : V →L[ℝ] V) = A) {p M : ℝ} (hp : 1 ≤ p) (hM : 0 ≤ M)

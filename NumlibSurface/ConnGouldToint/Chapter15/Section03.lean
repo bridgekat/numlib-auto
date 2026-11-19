@@ -79,6 +79,28 @@ of `NumlibSurface.ConnGouldToint.Chapter15.Section02`.
 
 ## Deviations from the source
 
+* **Correction.** The mixed quadratic estimate takes a quantitative KKT Taylor bound; a scalar
+  example shows that twice continuous differentiability is insufficient. See
+  `ConnGouldToint.Chapter15.lemma_15_3_3`, `ConnGouldToint.Chapter15.sqp_C2_newton_counterexample`.
+* **Reading.** Merit growth assumes local feasible restoration and a strict exactness margin. See
+  `ConnGouldToint.Chapter15.lemma_15_3_4`.
+* **Reading.** The correction model comparisons take explicit Taylor estimates and state the
+  resulting remainder constants. See `ConnGouldToint.Chapter15.sqp_model_target_error`,
+  `ConnGouldToint.Chapter15.lemma_15_3_5`, `ConnGouldToint.Chapter15.lemma_15_3_6`.
+* **Correction.** The acceptance-ratio estimate requires positive primal error and proves a positive
+  denominator. See `ConnGouldToint.Chapter15.theorem_15_3_7`.
+* **Representation.** The tests use abstract normal functionals and compare quadratic forms on
+  critical directions. See `ConnGouldToint.Chapter15.sqp_penalty_support_iff`,
+  `ConnGouldToint.Chapter15.theorem_15_3_2_first_order`,
+  `ConnGouldToint.Chapter15.theorem_15_3_2_second_order`.
+* **Generalization.** Merit and correction models use distance to the residual set and a supplied
+  optional correction. See `ConnGouldToint.Chapter15.infDist_eq_mixed_violation_norm`,
+  `ConnGouldToint.Chapter15.sqpDistanceMerit`, `ConnGouldToint.Chapter15.sqpDistanceModel`,
+  `ConnGouldToint.Chapter15.sqpDistanceCorrectionModel`,
+  `ConnGouldToint.Chapter15.algorithm_15_3_1`.
+* **Reading.** The global result is stated for a monotone run with explicit model agreement and a
+  Clarke chain-rule inclusion. See `ConnGouldToint.Chapter15.sqpDistanceModel_uniform_agreement`,
+  `ConnGouldToint.Chapter15.theorem_15_3_1`.
 * **Equations (15.3.3)–(15.3.4)** (generalization). The penalty is the distance of the constraint
   value to a set $C$ of feasible values. For Euclidean equality and one-sided inequality residuals,
   this is the norm of the violation vector. See `ConnGouldToint.Chapter15.sqpDistanceMerit` and
@@ -126,7 +148,12 @@ residual is a hypothesis.
 The residual is expanded at the solution multiplier $y_*$, which makes the defect proportional
 to the primal error times the joint error. $R$ and $K$ are
 `ConnGouldToint.Chapter15.sqpResidual` and `ConnGouldToint.Chapter15.sqpKKT`, and the
-invertibility is a continuous linear equivalence `B` equal to $K(x, y)$. -/
+invertibility is a continuous linear equivalence `B` equal to $K(x, y)$.
+
+**Correction.** The joint KKT Taylor remainder is assumed to have the displayed mixed quadratic
+bound. Twice continuous differentiability alone does not yield that bound, even for a scalar
+unconstrained objective.
+-/
 theorem lemma_15_3_3
     (g : E → E) (c : E → Y) (H : E × Y → E →L[ℝ] E)
     (A : E → E →L[ℝ] Y) (AT : E → Y →L[ℝ] E)
@@ -199,7 +226,12 @@ $$a \|x - x_*\|^2 \le f(x) + \sigma \|c(x)\| - f(x_*)$$
 for every $x$ with $\|x - x_*\| < r$.
 
 **Reading.** The hypotheses are a local feasible restoration with a linear residual bound and
-the strict exactness $LK < \sigma$ of the penalty, which controls the restoration displacement. -/
+the strict exactness $LK < \sigma$ of the penalty, which controls the restoration displacement.
+
+**Reading.** The quadratic growth argument uses an explicit local feasible restoration with linear
+residual bound and a strict exactness margin, together with quadratic growth on the feasible point
+set.
+-/
 theorem lemma_15_3_4 (f : E → ℝ) (c : E → Y) (xstar : E)
     {r κ K L σ : ℝ} (hκ : 0 < κ) (hK : 0 ≤ K)
     (hσ : L * K < σ)
@@ -251,7 +283,12 @@ $$\big|f_z - \langle y, c_z\rangle - \big(q(t) - \langle y, c_0 + A t\rangle\big
 Then
 $$|f_z + \sigma \|c_z\| - q(s)| \le T + \tfrac12 \|H\| \|t - s\|^2 + 2\sigma \|c_z\|.$$
 KKT stationarity at the model step $s$ cancels the linear part of the difference between $q(s)$
-and $q(t)$ at a nearby target $t$. -/
+and $q(t)$ at a nearby target $t$.
+
+**Reading.** The cancellation and reduction comparisons use explicit Taylor bounds, a linearized
+equality constraint, and an explicit error bound for the second-order correction. These give numeric
+factors for the source's asymptotic remainders.
+-/
 theorem sqp_model_target_error (f₀ fz : ℝ) (g s t : E) (H : E →L[ℝ] E)
     (A : E →L[ℝ] Z) (c₀ cz y : Z) {σ T : ℝ}
     (hH : H.toLinearMap.IsSymmetric) (hσ : ‖y‖ ≤ σ)
@@ -327,7 +364,12 @@ $$\big|(\varphi - \varphi_*) - (\varphi - q(s))\big| \le \big(T + \tfrac12 B D^2
 In the application, $\varphi$ is the merit value at the current point, $\varphi_*$ the merit
 value at the solution, $t$ the displacement to the solution, $e_x$ the primal error and $e$ the
 joint error. The conclusion compares the actual reduction $\varphi - \varphi_*$ with the
-predicted reduction $\varphi - q(s)$. -/
+predicted reduction $\varphi - q(s)$.
+
+**Reading.** The cancellation and reduction comparisons use explicit Taylor bounds, a linearized
+equality constraint, and an explicit error bound for the second-order correction. These give numeric
+factors for the source's asymptotic remainders.
+-/
 theorem lemma_15_3_5 (φ φstar f₀ : ℝ) (g s t : E) (H : E →L[ℝ] E)
     (A : E →L[ℝ] Z) (c₀ y : Z) {σ T D B ex e : ℝ}
     (hH : H.toLinearMap.IsSymmetric) (hσ : ‖y‖ ≤ σ)
@@ -367,7 +409,12 @@ $$\big|(\varphi - (f_z + \sigma\|c_z\|)) - (\varphi - q(s))\big| \le \big(T + \t
 
 The correction solves the linearized constraint at the trial with the Jacobian $A_p$, which
 differs from the Jacobian $A_s$ at the corrected point by $O(e_x)$. The value
-$f_z + \sigma\|c_z\|$ is the merit value at the corrected point. -/
+$f_z + \sigma\|c_z\|$ is the merit value at the corrected point.
+
+**Reading.** The cancellation and reduction comparisons use explicit Taylor bounds, a linearized
+equality constraint, and an explicit error bound for the second-order correction. These give numeric
+factors for the source's asymptotic remainders.
+-/
 theorem lemma_15_3_6 (φ f₀ fz : ℝ) (g s u : E) (H : E →L[ℝ] E)
     (A Ap As : E →L[ℝ] Z) (c₀ cs cz y : Z) {σ T D B R J ex e : ℝ}
     (hH : H.toLinearMap.IsSymmetric) (hσ : ‖y‖ ≤ σ)
@@ -425,7 +472,12 @@ reduction can vanish, and the ratio is then not controlled.
 In the application, $\varphi_c$ is the merit value at the corrected trial, $e_x$ the primal
 error and $e$ the joint error. The first hypothesis is a quadratic growth bound such as that of
 `ConnGouldToint.Chapter15.lemma_15_3_4`, and the other two have the form of the conclusions of
-`ConnGouldToint.Chapter15.lemma_15_3_5` and `ConnGouldToint.Chapter15.lemma_15_3_6`. -/
+`ConnGouldToint.Chapter15.lemma_15_3_5` and `ConnGouldToint.Chapter15.lemma_15_3_6`.
+
+**Correction.** The primal error must be positive so the predicted decrease is strictly positive and
+the ratio is meaningful. The theorem gives an explicit small-error inequality in place of big-O
+notation.
+-/
 theorem theorem_15_3_7 {φ φstar φcorrected predicted a K T ex e : ℝ}
     (ha : 0 < a) (hT : 0 ≤ T) (hex : 0 < ex) (he : 0 ≤ e)
     (hsmall : K * e ≤ a / 2)
@@ -455,7 +507,12 @@ and
 $$C x^2 < x - \frac{f'(x)}{f''(x)}.$$
 The error of the Newton step from $x$ to the minimizer $0$ is therefore not $O(x^2)$. With a
 zero-dimensional constraint space, this refutes the quadratic estimate of Lemma 15.3.3 under
-$C^2$ data. -/
+$C^2$ data.
+
+**Correction.** The joint KKT Taylor remainder is assumed to have the displayed mixed quadratic
+bound. Twice continuous differentiability alone does not yield that bound, even for a scalar
+unconstrained objective.
+-/
 theorem sqp_C2_newton_counterexample :
     ∃ f : ℝ → ℝ, ContDiff ℝ 2 f ∧ deriv f 0 = 0 ∧ deriv (deriv f) 0 = 1 ∧
       ∀ C δ : ℝ, 0 ≤ C → 0 < δ → ∃ x : ℝ, 0 < x ∧ x < δ ∧
@@ -538,7 +595,12 @@ omit [InnerProductSpace ℝ E] in
 feasible point. Let $Z$ be a real normed space, $C \subseteq Z$, $r \in C$, $\ell$ a continuous
 linear functional on $Z$ and $\sigma \ge 0$. Then $\ell(z - r) \le \sigma \operatorname{dist}(z,
 C)$ for all $z \in Z$ if and only if $\|\ell\| \le \sigma$ and $\ell(c - r) \le 0$ for all
-$c \in C$. -/
+$c \in C$.
+
+**Reading.** First-order conditions use normal functionals and a supplied radius normal. The
+second-order equivalence compares quadratic forms on critical directions of a linearized tangent set
+under a strict penalty threshold.
+-/
 theorem sqp_penalty_support_iff {C : Set Z} {r : Z} (hr : r ∈ C)
     (ell : Z →L[ℝ] ℝ) {σ : ℝ} (hσ : 0 ≤ σ) :
     (∀ z, ell (z - r) ≤ σ * Metric.infDist z C) ↔
@@ -589,7 +651,12 @@ $z \in Z$ and $g + \ell \circ A + \nu = 0$.
 
 **Reading.** The theorem is stated in normal-functional form. The set $C$ encodes the equality
 and inequality constraints, the distance to $C$ is the violation penalty, and $\nu$ is a normal
-of the trust-region constraint, common to the two systems. -/
+of the trust-region constraint, common to the two systems.
+
+**Reading.** First-order conditions use normal functionals and a supplied radius normal. The
+second-order equivalence compares quadratic forms on critical directions of a linearized tangent set
+under a strict penalty threshold.
+-/
 theorem theorem_15_3_2_first_order {C : Set Z} {r : Z} (hr : r ∈ C)
     (A : E →L[ℝ] Z) (g radiusNormal : E →L[ℝ] ℝ) {σ : ℝ} (hσ : 0 ≤ σ) :
     (∃ ell : Z →L[ℝ] ℝ, ‖ell‖ ≤ σ ∧ (∀ c ∈ C, ell (c - r) ≤ 0) ∧
@@ -614,7 +681,12 @@ for every $d \ne 0$ with $g(d) + \sigma \operatorname{dist}(A d, K) = 0$.
 **Reading.** The theorem is stated in tangent-cone form, for an inactive trust region, with $K$
 in the role of the tangent cone of the feasible constraint values. Strict exactness
 $\|\ell\| < \sigma$ makes the cone of directions with zero directional derivative of the penalty
-model equal to the critical cone, so the same Hessian is tested on both. -/
+model equal to the critical cone, so the same Hessian is tested on both.
+
+**Reading.** First-order conditions use normal functionals and a supplied radius normal. The
+second-order equivalence compares quadratic forms on critical directions of a linearized tangent set
+under a strict penalty threshold.
+-/
 theorem theorem_15_3_2_second_order {K : Set Z} (hK : IsClosed K) (h0 : (0 : Z) ∈ K)
     (A : E →L[ℝ] Z) (g : E →L[ℝ] ℝ) (H : E →L[ℝ] E)
     (ell : Z →L[ℝ] ℝ) {σ : ℝ} (hσ : ‖ell‖ < σ)
@@ -663,7 +735,12 @@ index set in which each index is marked as an equality or an inequality, and let
 $c \in \mathbb{R}^\iota$ with the Euclidean norm. Let
 $$C = \{z : z_i = 0 \text{ for equality } i, \ z_i \ge 0 \text{ otherwise}\}$$
 and let $r_i = c_i$ for an equality index and $r_i = \min\{c_i, 0\}$ otherwise. Then
-$\operatorname{dist}(c, C) = \|r\|$. -/
+$\operatorname{dist}(c, C) = \|r\|$.
+
+**Generalization.** The penalty and models use distance to a feasible residual set, with the
+Euclidean mixed violation norm recovered separately. The correction relation takes a proposal and
+tests it via the shared optional-correction rule.
+-/
 theorem infDist_eq_mixed_violation_norm {ι : Type*} [Fintype ι] (equality : ι → Bool)
     (c : EuclideanSpace ℝ ι) :
     let C : Set (EuclideanSpace ℝ ι) := {z | ∀ i, if equality i then z i = 0 else 0 ≤ z i}
@@ -712,7 +789,12 @@ $$\phi(x) = f(x) + \sigma \operatorname{dist}(c(x), C).$$
 
 **Generalization.** The source penalizes the norm of the violation vector. The distance to $C$
 is this norm for Euclidean equality and one-sided inequality residuals, by
-`ConnGouldToint.Chapter15.infDist_eq_mixed_violation_norm`. -/
+`ConnGouldToint.Chapter15.infDist_eq_mixed_violation_norm`.
+
+**Generalization.** The penalty and models use distance to a feasible residual set, with the
+Euclidean mixed violation norm recovered separately. The correction relation takes a proposal and
+tests it via the shared optional-correction rule.
+-/
 noncomputable def sqpDistanceMerit (f : E → ℝ) (c : E → Y) (C : Set Y) (σ : ℝ)
     (x : E) : ℝ := f x + σ * Metric.infDist (c x) C
 
@@ -722,7 +804,12 @@ $$m(s) = f(x) + \langle g(x), s\rangle + \tfrac12 \langle s, H s\rangle + \sigma
   \operatorname{dist}(c(x) + A(x) s, C).$$
 
 **Generalization.** As in `ConnGouldToint.Chapter15.sqpDistanceMerit`, the violation norm is
-replaced by the distance to $C$. -/
+replaced by the distance to $C$.
+
+**Generalization.** The penalty and models use distance to a feasible residual set, with the
+Euclidean mixed violation norm recovered separately. The correction relation takes a proposal and
+tests it via the shared optional-correction rule.
+-/
 noncomputable def sqpDistanceModel (f : E → ℝ) (g : E → E) (c : E → Y)
     (A : E → E →L[ℝ] Y) (C : Set Y) (σ : ℝ)
     (x : E) (H : E →L[ℝ] E) (s : E) : ℝ :=
@@ -734,7 +821,12 @@ correction gradient $g^{CS}$ and a correction Hessian $H^{CS}$, the **correction
 $$m^{CS}(d) = f(x) + \langle g^{CS}, d\rangle + \tfrac12 \langle d, H^{CS} d\rangle + \sigma
   \operatorname{dist}\big(c(x + s) + A(x + v) d, C\big).$$
 It linearizes the constraints at the shifted Jacobian point $x + v$ and uses the constraint
-value at the original trial. -/
+value at the original trial.
+
+**Generalization.** The penalty and models use distance to a feasible residual set, with the
+Euclidean mixed violation norm recovered separately. The correction relation takes a proposal and
+tests it via the shared optional-correction rule.
+-/
 noncomputable def sqpDistanceCorrectionModel (f : E → ℝ) (c : E → Y)
     (A : E → E →L[ℝ] Y) (C : Set Y) (σ : ℝ) (x s shift gCS : E)
     (HCS : E →L[ℝ] E) (d : E) : ℝ :=
@@ -749,7 +841,12 @@ $m^{CS}(d) \le m^{CS}(0)$ and $p(s + d) \le \tau \Delta$ for a proposed correcti
 correction is $d$ if $\phi(x + s + d) \le \phi(x + s)$, and $0$ if this fails or no correction
 is proposed.
 
-The step is `ConnGouldToint.Chapter11.OptionalCorrectionStep`. -/
+The step is `ConnGouldToint.Chapter11.OptionalCorrectionStep`.
+
+**Generalization.** The penalty and models use distance to a feasible residual set, with the
+Euclidean mixed violation norm recovered separately. The correction relation takes a proposal and
+tests it via the shared optional-correction rule.
+-/
 def algorithm_15_3_1 (f : E → ℝ) (g : E → E) (c : E → Y) (A : E → E →L[ℝ] Y)
     (C : Set Y) (σ : ℝ) (p : Seminorm ℝ E) (x s shift gCS : E)
     (H HCS : E →L[ℝ] E) (Δ τ required : ℝ) (proposal : Option E) (correction : E) : Prop :=
@@ -769,7 +866,13 @@ for all $y \in B(x_*, \varepsilon')$, all $H$ with $\|H\| \le B$ and all $s$ wit
 $\|s\| \le \Delta'$.
 
 This is `ConnGouldToint.Chapter11.UniformNormalizedModelAgreementAt`. The quotient is $0$ at
-$s = 0$. -/
+$s = 0$.
+
+**Reading.** The limit theorem uses a monotone nonsmooth trust-region run with explicit sufficient
+decrease, normalized model agreement and a Clarke chain-rule inclusion at a feasible cluster point.
+The agreement lemma takes quantitative Taylor bounds. The multiplier is obtained in the conclusion
+rather than assumed.
+-/
 theorem sqpDistanceModel_uniform_agreement (f : E → ℝ) (g : E → E) (c : E → Y)
     (A : E → E →L[ℝ] Y) (C : Set Y) {σ : ℝ} (hσ : 0 ≤ σ) {xstar : E}
     {ε Δ F K B : ℝ} (hε : 0 < ε) (hΔ : 0 < Δ)
@@ -854,7 +957,13 @@ Thus $x_*$ is a first-order critical point of the constrained problem.
 multiplier from stationarity of the penalty function, without assuming that a multiplier exists.
 
 The run is `ConnGouldToint.Chapter11.NonsmoothTRRun`, and the local sufficient decrease is
-`ConnGouldToint.Chapter11.NonsmoothTRRun.HasLocalSufficientDecrease`. -/
+`ConnGouldToint.Chapter11.NonsmoothTRRun.HasLocalSufficientDecrease`.
+
+**Reading.** The limit theorem uses a monotone nonsmooth trust-region run with explicit sufficient
+decrease, normalized model agreement and a Clarke chain-rule inclusion at a feasible cluster point.
+The agreement lemma takes quantitative Taylor bounds. The multiplier is obtained in the conclusion
+rather than assumed.
+-/
 theorem theorem_15_3_1 [CompleteSpace E] (f : E → ℝ) (g : E → E) (c : E → Y)
     (A : E → E →L[ℝ] Y) (C : Set Y) {σ B : ℝ} (hσ : 0 ≤ σ)
     {Q : Chapter11.NonsmoothTRParams}

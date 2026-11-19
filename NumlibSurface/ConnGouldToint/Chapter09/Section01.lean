@@ -58,6 +58,12 @@ and parts (i) and (iii) of Lemma 9.1.2. The proofs use the second-order Taylor e
 
 ## Deviations from the source
 
+* **(9.1.1)–(9.1.3)** (generalization). The model validity and slope estimate use a real
+  normed space and the norm of the Fréchet derivative. The source works in Euclidean space.
+* **(9.1.5)** (reading). The trial ratio is totalized at zero predicted decrease. The acceptance
+  comparison in Lemma 9.1.2(i) assumes a strictly positive denominator.
+* **Lemma 9.1.2(iii)** (restriction). The modeled refinement trace assumes strictly positive
+  model gradient norms, so the prescribed refinement radius is positive throughout the trace.
 * **Theorem 9.1.1** (correction). The radius of the ball must be positive. At radius $0$, validity
   at the center alone gives no gradient bound. See
   `ConnGouldToint.Chapter09.zero_radius_counterexample`.
@@ -74,10 +80,17 @@ $\delta, \kappa \in \mathbb{R}$. The model $m$ is **valid** for $f$ on the ball 
 with constant $\kappa$ if
 $$|f(z) - m(z)| \le \kappa \delta^2 \quad \text{for all } z \text{ with } \|z - x\| \le
   \delta.$$
+
+**Reading.** Quadratic model-error condition on a ball of an arbitrary real normed space.
 -/
 def modelValidOnBall (f m : E → ℝ) (x : E) (δ κ : ℝ) : Prop :=
   ∀ z ∈ Metric.closedBall x δ, |f z - m z| ≤ κ * δ ^ 2
 
+/-- **Proof of Theorem 9.1.1** of [conn2000trust].
+
+**Reading.** Taylor remainder uses bounded iterated Fréchet derivative on a general real normed
+space.
+-/
 private theorem abs_remainder_le {f : E → ℝ} (hf : Differentiable ℝ f)
     (hd : Differentiable ℝ (fderiv ℝ f)) {B : ℝ}
     (hB : ∀ z, ‖fderiv ℝ (fderiv ℝ f) z‖ ≤ B) (x s : E) :
@@ -141,7 +154,10 @@ theorem theorem_9_1_1 {f m : E → ℝ} (hf : ContDiff ℝ 2 f)
 /-- Validity on a ball of radius $0$ gives no control of the gradient error. On $\mathbb{R}$, the
 model $m = 0$ is valid for $f(x) = x$ on the ball $B(0, 0)$ with constant $1$, but
 $f'(0) \neq m'(0)$. This shows that the hypothesis $\delta > 0$ of Theorem 9.1.1
-(`ConnGouldToint.Chapter09.theorem_9_1_1`) is necessary. -/
+(`ConnGouldToint.Chapter09.theorem_9_1_1`) is necessary.
+
+**Reading.** Exhibits vanishing radius and differing derivatives, motivating the extra premise.
+-/
 theorem zero_radius_counterexample :
     modelValidOnBall (fun x : ℝ ↦ x) (fun _ ↦ 0) 0 0 1 ∧
       fderiv ℝ (fun x : ℝ ↦ x) 0 ≠ fderiv ℝ (fun _ : ℝ ↦ (0 : ℝ)) 0 := by
@@ -160,7 +176,10 @@ $x^+$ the original trial point and $\hat{x}$ the selected point. The **selected-
 $$\hat{\rho} = \frac{f(x) - f(\hat{x})}{m(x) - m(x^+)}.$$
 
 The decrease of $f$ is measured at the selected point, and the model decrease at the original
-trial point. The value is $0$ when $m(x) = m(x^+)$. -/
+trial point. The value is $0$ when $m(x) = m(x^+)$.
+
+**Reading.** Same selected-step numerator and model-trial denominator, with totalized division.
+-/
 noncomputable def selectedTrialRatio (f m : E → ℝ) (x trial selected : E) : ℝ :=
   (f x - f selected) / (m x - m trial)
 
@@ -219,7 +238,10 @@ Then $\nabla f(x) = 0$ and $\|\nabla m_k(x)\| \to 0$.
 
 The two conditions give $\|\nabla m_{k+1}(x)\| < \alpha \|\nabla m_k(x)\|$, so the model
 gradients shrink geometrically. The proof then applies Theorem 9.1.1 to each model at the radius
-at which it is valid. -/
+at which it is valid.
+
+**Reading.** Positive model derivative norms assumed along the infinite trace.
+-/
 theorem lemma_9_1_2_iii {f : E → ℝ} (hf : ContDiff ℝ 2 f) {m : ℕ → E → ℝ}
     (hm : ∀ k, Differentiable ℝ (m k)) (hDm : ∀ k, Differentiable ℝ (fderiv ℝ (m k)))
     {x : E} {α μ κ Bf Bm : ℝ} (hα : 0 < α) (hα₁ : α < 1) (hμ : 0 < μ)

@@ -113,6 +113,38 @@ The proofs specialize the backbone modules `Numlib.FloatingPoint.Model`,
   `…_mem_run`) turn runs into the backbone relations `FloatingPoint.RoundsDot` and
   `FloatingPoint.RoundsMul`.
 
+## Deviations from the source
+
+* **Section 2.7.2, rounding to nearest** (generalization). The error bound includes both tie
+  choices and every real value at least as close as any normalized double.
+  See `GolubVanLoan.Chapter02.ieeeDouble_round_nearest`.
+* **Equations (2.7.4) and (2.7.6)** (reading). The concrete rounding and arithmetic use
+  unbounded exponents. Equation (2.7.6) takes its operands from the normalized set with zero.
+  See `GolubVanLoan.Chapter02.equation_2_7_4_system` and `GolubVanLoan.Chapter02.equation_2_7_6`.
+* **Equation (2.7.5)** (reading). The gap above $1$ requires an exponent range containing the
+  binade of $1$ and at least two digits. See `GolubVanLoan.Chapter02.equation_2_7_5`.
+* **Equation (2.7.6)** (generalization). The arithmetic bound applies to every real binary
+  operation. See `GolubVanLoan.Chapter02.equation_2_7_6`.
+* **Equation (2.7.12)** (reading and generalization). The dot product bound has explicit
+  coefficient $\gamma_n$ when $nu<1$. A second bound allows inexact addition of the first
+  product to zero and uses $\gamma_{n+1}$. See `GolubVanLoan.Chapter02.equation_2_7_12`.
+* **Equations (2.7.17) and (2.7.18)** (reading). The remainder is an explicit quadratic term
+  in the unit roundoff. See `GolubVanLoan.Chapter02.equation_2_7_17` and
+  `GolubVanLoan.Chapter02.equation_2_7_18`.
+* **Equations (2.7.19) and (2.7.20), and the nonnegative product bound in §2.7.10** (reading).
+  The coefficient is $\gamma_r$ when $ru<1$, where $r$ is the inner dimension. The norm and
+  nonnegative product bounds use dot product multiplication.
+  See `GolubVanLoan.Chapter02.equation_2_7_19`, `GolubVanLoan.Chapter02.equation_2_7_19_saxpy`,
+  `GolubVanLoan.Chapter02.equation_2_7_19_outer`, `GolubVanLoan.Chapter02.equation_2_7_20` and
+  `GolubVanLoan.Chapter02.abs_sub_le_gamma_mul_abs_of_nonneg`.
+* **Section 2.7.9, triangular product** (reading). The backward error bounds use $\gamma_2$
+  when $2u<1$. See `GolubVanLoan.Chapter02.triangular_mul_two_backward`.
+* **Equation (2.7.21)** (reading). The result states the storage bounds. The perturbed
+  solution equation appears as a hypothesis in the next theorem.
+  See `GolubVanLoan.Chapter02.equation_2_7_21` and `GolubVanLoan.Chapter02.equation_2_7_22`.
+* **Equation (2.7.22)** (generalization). The estimate holds for all perturbations satisfying
+  the norm bounds. See `GolubVanLoan.Chapter02.equation_2_7_22`.
+
 ## Not formalized
 
 * **The IEEE bit layout (2.7.1).** It is notation.
@@ -340,8 +372,9 @@ double. Then
 $$\frac{|y - x|}{|x|} \le 2^{-53},$$
 so the relative error is at most half the machine epsilon.
 
-A nearest double to $x$ is such a $y$. The tie rule of the source, round half to even, chooses
-one nearest double. -/
+**Generalization.** The source chooses the nearest double with ties resolved toward the even
+significand. The bound holds for every real $y$ at least as close to $x$ as any normalized
+double. This includes both choices in a tie. -/
 theorem ieeeDouble_round_nearest {x y : ℝ} (h1 : System.ieeeDouble.xmin ℝ ≤ |x|)
     (h2 : |x| ≤ System.ieeeDouble.xmax ℝ) (hnear : ∀ z ∈ System.ieeeDouble.numbers ℝ,
       |y - x| ≤ |z - x|) :
@@ -367,8 +400,9 @@ number system with unit roundoff $u$, and let $\operatorname{fl}$ be its roundin
 Then for every $z \in \mathbb{R}$,
 $$\operatorname{fl}(z) = z(1 + \delta), \qquad |\delta| \le u.$$
 
-The rounding `FloatingPoint.System.round` puts no bound on the exponent, so no range hypothesis
-on $z$ is needed. -/
+**Reading.** The source invokes the relative-error model while treating range exceptions
+separately. Lean rounds to nearest with an unbounded exponent, so this representation
+formula applies to every real $z$ even outside the finite format's normal range. -/
 theorem equation_2_7_4_system (s : System) (z : ℝ) :
     ∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ s.round z = z * (1 + δ) :=
   s.exists_round_eq_mul_one_add z
@@ -382,8 +416,9 @@ that $1 + \delta$ is a floating point number. For the IEEE formats,
 $u = 2^{-24} \approx 10^{-7}$ in single precision and $u = 2^{-53} \approx 10^{-16}$ in double
 precision.
 
-The hypotheses $t \ge 2$ and $L \le 1 \le U$ make sure that $1$ and the next larger number are
-in the system. The IEEE formats are `FloatingPoint.System.ieeeSingle` and
+**Reading.** The source uses the gap above $1$. The hypotheses $t \ge 2$ and $L \le 1 \le U$
+ensure that $1$ and the next larger number are in the system. The IEEE formats are
+`FloatingPoint.System.ieeeSingle` and
 `FloatingPoint.System.ieeeDouble`. -/
 theorem equation_2_7_5 (s : System) (hL : s.L ≤ 1) (hU : 1 ≤ s.U) (ht : 2 ≤ s.t) :
     s.unitRoundoff ℝ = s.machineEps ℝ / 2 ∧
@@ -400,9 +435,12 @@ $$\operatorname{fl}(x \mathbin{op} y) = (x \mathbin{op} y)(1 + \delta), \qquad |
 Equivalently, if $x \mathbin{op} y \neq 0$, the relative error $|\operatorname{fl}(x
 \mathbin{op} y) - x \mathbin{op} y| / |x \mathbin{op} y|$ is at most $u$.
 
-The source states the axiom for $+$, $-$, $\times$ and $/$; the theorem holds for every function
-`f : ℝ → ℝ → ℝ`. The computed value is the machine operation `FloatingPoint.System.op`, which
-rounds the arguments and the result. -/
+**Generalization.** The source gives the axiom for $+$, $-$, $\times$ and $/$. The theorem
+applies to every real binary function with rounded output.
+
+**Reading.** The source treats range exceptions separately and refers to floating point
+operands. The statement takes operands from the normalized set with zero and rounds with an
+unbounded exponent, including when the exact result lies outside the finite range. -/
 theorem equation_2_7_6 (s : System) (f : ℝ → ℝ → ℝ) {x y : ℝ} (hx : x ∈ s.numbers ℝ)
     (hy : y ∈ s.numbers ℝ) :
     (∃ δ : ℝ, |δ| ≤ s.unitRoundoff ℝ ∧ s.op f x y = f x y * (1 + δ)) ∧
@@ -657,9 +695,12 @@ Without the hypothesis $\operatorname{fl}(0 + p) = p$, the first addition costs 
 rounding: if $(n + 1)u < 1$, then $|\operatorname{fl}(x^T y) - x^T y| \le \gamma_{n+1} |x|^T
 |y|$.
 
-The source states the first-order bound $nu |x|^T |y| + O(u^2)$, which follows because
-$\gamma_n = nu + O(u^2)$. The hypothesis $\operatorname{fl}(0 + p) = p$ is `fp.IsIdempotent`,
-and $\gamma_n$ is `FloatingPoint.gamma`. The second bound is
+**Reading.** The source states $nu |x|^T |y| + O(u^2)$. The exact coefficient $\gamma_n$ is
+used on $nu < 1$ and has the same first-order expansion. The hypothesis
+$\operatorname{fl}(0 + p) = p$ is `fp.IsIdempotent`.
+
+**Generalization.** The source uses exact addition of the first product to zero. An extra
+rounding factor gives the bound without that hypothesis. The second bound is
 `FloatingPoint.abs_sub_le_of_mem_run_dotAccum`. -/
 theorem equation_2_7_12 (fp : RoundingModel ℝ) {n : ℕ} (x y : Fin n → ℝ) {s : ℝ}
     (hs : s ∈ (Chapter01.algorithm_1_1_1 fp.round x y).run) :
@@ -709,8 +750,8 @@ $x, y \in \mathbb{R}^n$, and let $\hat y$ be a computed value of the saxpy $y + 
 1.1.2 in a rounding model with unit roundoff $u$. Then
 $$\operatorname{fl}(y + ax) = y + ax + z, \qquad |z| \le u |y| + (2u + u^2) |ax|.$$
 
-The source states the first-order bound $|z| \le u(|y| + 2|ax|) + O(u^2)$. Each entry is one
-rounded update, `FloatingPoint.abs_sub_le_of_rounds_add_mul`. -/
+**Reading.** The source states the first-order bound $|z| \le u(|y| + 2|ax|) + O(u^2)$.
+The statement replaces the remainder by $u^2 |ax|$. -/
 theorem equation_2_7_17 (fp : RoundingModel ℝ) (a : ℝ) (x y : Fin n → ℝ) {ŷ : Fin n → ℝ}
     (hŷ : ŷ ∈ (Chapter01.algorithm_1_1_2 fp.round a x y).run) :
     ∃ z : Fin n → ℝ, ŷ = y + a • x + z ∧
@@ -727,7 +768,8 @@ product update $C + uv^T$, with each entry computed as $\operatorname{fl}(c_{ij}
 $$\operatorname{fl}(C + uv^T) = C + uv^T + E, \qquad |E| \le \mathbf{u} |C| + (2\mathbf{u} +
   \mathbf{u}^2) |uv^T|.$$
 
-The source states the first-order bound $|E| \le \mathbf{u}(|C| + 2|uv^T|) + O(\mathbf{u}^2)$.
+**Reading.** The source states $|E| \le \mathbf{u}(|C| + 2|uv^T|) + O(\mathbf{u}^2)$.
+The statement replaces the remainder by $\mathbf{u}^2 |uv^T|$.
 The computed value is a run of Algorithm 1.1.8 with inner dimension $1$, applied to the
 $m \times 1$ matrix `replicateCol (Fin 1) u` and the $1 \times n$ matrix
 `replicateRow (Fin 1) v`. -/
@@ -771,8 +813,8 @@ $B \in \mathbb{R}^{r \times n}$ with $ru < 1$, and let $\hat C$ be a computed va
 the dot product matrix multiplication, Algorithm 1.1.6 started at $C = 0$. Then
 $$\operatorname{fl}(AB) = AB + E, \qquad |E| \le \gamma_r |A| |B|.$$
 
-The source states $|E| \le nu |A| |B| + O(u^2)$, where its $n$ is the inner dimension, here $r$;
-this follows because $\gamma_r = ru + O(u^2)$. The proof applies
+**Reading.** The source gives a first-order coefficient $ru + O(u^2)$, where $r$ is the inner
+dimension. The statement uses the explicit coefficient $\gamma_r$ when $ru < 1$. The proof applies
 `GolubVanLoan.Chapter01.algorithm_1_1_6_rounds` and
 `FloatingPoint.abs_sub_entrywiseLE_of_roundsMul`. -/
 theorem equation_2_7_19 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
@@ -788,7 +830,8 @@ $B \in \mathbb{R}^{r \times n}$ with $ru < 1$, and let $\hat C$ be a computed va
 the saxpy matrix multiplication, Algorithm 1.1.7 started at $C = 0$. Then
 $$|\hat C - AB| \le \gamma_r |A| |B|.$$
 
-Each entry is accumulated over $k = 1, \dots, r$ in order. -/
+**Reading.** The source extends its first-order bound to gaxpy multiplication. The statement
+uses the explicit coefficient $\gamma_r$ when $ru < 1$. -/
 theorem equation_2_7_19_saxpy (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
     {Ĉ : Matrix (Fin m) (Fin n) ℝ} (hĈ : Ĉ ∈ (Chapter01.algorithm_1_1_7 fp.round A B 0).run) :
@@ -801,6 +844,9 @@ $\operatorname{fl}(0 + p) = p$, let $A \in \mathbb{R}^{m \times r}$ and
 $B \in \mathbb{R}^{r \times n}$ with $ru < 1$, and let $\hat C$ be a computed value of $AB$ by
 the outer product matrix multiplication, Algorithm 1.1.8 started at $C = 0$. Then
 $$|\hat C - AB| \le \gamma_r |A| |B|.$$
+
+**Reading.** The source extends its first-order bound to outer product multiplication. The
+statement uses the explicit coefficient $\gamma_r$ when $ru < 1$.
 -/
 theorem equation_2_7_19_outer (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
@@ -812,8 +858,9 @@ theorem equation_2_7_19_outer (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {
 for Algorithm 1.1.6,
 $$\|\operatorname{fl}(AB) - AB\|_1 \le \gamma_r \|A\|_1 \|B\|_1.$$
 
-The source states $nu \|A\|_1 \|B\|_1 + O(u^2)$. The proof uses that the 1-norm is monotone in
-$|\cdot|$ and submultiplicative, and that $\| |A| \|_1 = \|A\|_1$. -/
+**Reading.** The source states $ru \|A\|_1 \|B\|_1 + O(u^2)$ for conventional multiplication.
+The theorem uses the explicit coefficient $\gamma_r$ when $ru < 1$ for the dot product
+implementation. -/
 theorem equation_2_7_20 (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent) {r : ℕ}
     (A : Matrix (Fin m) (Fin r) ℝ) (B : Matrix (Fin r) (Fin n) ℝ) (hr : (r : ℝ) * fp.u < 1)
     {Ĉ : Matrix (Fin m) (Fin n) ℝ} (hĈ : Ĉ ∈ (Chapter01.algorithm_1_1_6 fp.round A B 0).run) :
@@ -841,7 +888,9 @@ with $ru < 1$, and let $\hat C$ be a computed value of $C = AB$ by Algorithm 1.1
 $0$. Then
 $$|\hat C - C| \le \gamma_r |C|.$$
 
-The proof is (2.7.19) together with $|A| |B| = AB$. -/
+**Reading.** The source states an asymptotic bound for conventional multiplication. The
+statement uses the explicit coefficient $\gamma_r$ when $ru < 1$ for the dot product
+implementation. -/
 theorem abs_sub_le_gamma_mul_abs_of_nonneg (fp : RoundingModel ℝ) (hfp : fp.IsIdempotent)
     {r : ℕ} {A : Matrix (Fin m) (Fin r) ℝ} {B : Matrix (Fin r) (Fin n) ℝ}
     (hA : A.EntrywiseNonneg) (hB : B.EntrywiseNonneg) (hr : (r : ℝ) * fp.u < 1)
@@ -884,8 +933,10 @@ is the exact product of slightly perturbed factors.
 
 The left side is the form of $\operatorname{fl}(AB)$ in the source;
 `GolubVanLoan.Chapter02.triangular_mul_two_backward_run` shows that every computed product has
-this form. The source states the first-order bounds $2u|A| + O(u^2)$ and $2u|B| + O(u^2)$. The
-indices of $\epsilon$ are 0-based in Lean. -/
+this form. The indices of $\epsilon$ are 0-based in Lean.
+
+**Reading.** The source gives the first-order perturbation coefficients $2u+O(u^2)$. The
+statement uses the explicit coefficient $\gamma_2$ for $2u<1$. -/
 theorem triangular_mul_two_backward {u : ℝ} (hu : 0 ≤ u) (h2u : 2 * u < 1)
     (a₁₁ a₁₂ a₂₂ b₁₁ b₁₂ b₂₂ : ℝ) (ε : Fin 5 → ℝ) (hε : ∀ i, |ε i| ≤ u) :
     !![a₁₁ * b₁₁ * (1 + ε 0),
@@ -970,6 +1021,10 @@ theorem triangular_mul_two_backward_run (fp : RoundingModel ℝ) (hfp : fp.IsIde
 $b \in \mathbb{R}^n$, and let $\operatorname{fl}(A) = A + E$ and $\operatorname{fl}(b) = b + e$
 round each entry of $A$ and $b$ in a rounding model with unit roundoff $u$. Then
 $$\|E\|_\infty \le u \|A\|_\infty, \qquad \|e\|_\infty \le u \|b\|_\infty.$$
+
+**Reading.** Equation (2.7.21) includes the equation $(A+E)\hat x=b+e$ for the ideal solve.
+This theorem states the two storage bounds. The solution equation is a hypothesis of
+`GolubVanLoan.Chapter02.equation_2_7_22`.
 -/
 theorem equation_2_7_21 (fp : RoundingModel ℝ) {A Â : Matrix (Fin n) (Fin n) ℝ}
     {b bh : Fin n → ℝ} (hA : ∀ i j, fp.Rounds (A i j) (Â i j)) (hb : ∀ i, fp.Rounds (b i) (bh i)) :
@@ -992,8 +1047,8 @@ $\|E\|_\infty \le u \|A\|_\infty$ and $\|e\|_\infty \le u \|b\|_\infty$ as in (2
 $u \kappa_\infty(A) \le 1/2$, then
 $$\frac{\|x - \hat x\|_\infty}{\|x\|_\infty} \le 4 u \kappa_\infty(A).$$
 
-The proof is Theorem 2.6.2 with $\epsilon = u$. The perturbations $E$ and $e$ need only satisfy
-the norm bounds; they need not come from rounding. -/
+**Generalization.** The source uses perturbations from storing $A$ and $b$. The estimate
+holds for every pair of perturbations satisfying the stated norm bounds. -/
 theorem equation_2_7_22 (fp : RoundingModel ℝ) {A E : Matrix (Fin n) (Fin n) ℝ}
     {b e x xh : Fin n → ℝ} (hA : IsUnit A) (hx : A *ᵥ x = b) (hb : b ≠ 0)
     (hxh : (A + E) *ᵥ xh = b + e) (hE : lpOpNorm ∞ E ≤ fp.u * lpOpNorm ∞ A)

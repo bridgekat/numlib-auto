@@ -49,6 +49,17 @@ nevertheless minimize different quantities. The proofs are direct matrix algebra
 * "Nonsingular" is `IsUnit`. The inverse `M⁻¹` is Mathlib's matrix inverse, which is $0$ for a
   singular matrix. The three definitions accept any matrices; the results assume that $M_L$ and
   $M_R$ are nonsingular.
+
+## Deviations from the source
+
+* **Totalization.** The preconditioned matrices use total inverses; system equivalence uses
+  invertible factors. See `SaadSparse.Chapter09.leftPreconditioned`,
+  `SaadSparse.Chapter09.rightPreconditioned`, `SaadSparse.Chapter09.splitPreconditioned`.
+* **Scope.** A single theorem compares all three systems under a common invertible factorization.
+  See `SaadSparse.Chapter09.solution_iff`.
+* **Generalization.** The preconditioning spectral comparison includes explicit similarities and
+  characteristic polynomials. See `SaadSparse.Chapter09.problem_9_1`,
+  `SaadSparse.Chapter09.problem_9_1_charpoly`, `SaadSparse.Chapter09.problem_9_1_spectrum`.
 -/
 
 open Matrix
@@ -64,14 +75,24 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 /-- **Equation (9.1)** of [saad2003iterative]. For $M, A \in \mathbb{K}^{n \times n}$, the
 **left-preconditioned matrix** is $M^{-1} A$. The left-preconditioned system is
-$M^{-1} A x = M^{-1} b$, in the unknown $x$ itself. -/
+$M^{-1} A x = M^{-1} b$, in the unknown $x$ itself.
+
+**Reading.** The matrices are defined over real or complex scalars, including when a preconditioning
+factor is singular. A singular factor has inverse zero in Lean. Equivalence with the original system
+requires invertibility.
+-/
 noncomputable abbrev leftPreconditioned (M A : Matrix (Fin n) (Fin n) 𝕜) :
     Matrix (Fin n) (Fin n) 𝕜 := M⁻¹ * A
 
 /-- **Equation (9.2)** of [saad2003iterative]. For $M, A \in \mathbb{K}^{n \times n}$, the
 **right-preconditioned matrix** is $A M^{-1}$. The right-preconditioned system is
 $A M^{-1} u = b$ in the unknown $u = Mx$, and the solution of $Ax = b$ is recovered as
-$x = M^{-1} u$. -/
+$x = M^{-1} u$.
+
+**Reading.** The matrices are defined over real or complex scalars, including when a preconditioning
+factor is singular. A singular factor has inverse zero in Lean. Equivalence with the original system
+requires invertibility.
+-/
 noncomputable abbrev rightPreconditioned (M A : Matrix (Fin n) (Fin n) 𝕜) :
     Matrix (Fin n) (Fin n) 𝕜 := A * M⁻¹
 
@@ -80,7 +101,12 @@ noncomputable abbrev rightPreconditioned (M A : Matrix (Fin n) (Fin n) 𝕜) :
 in factored form $M = M_L M_R$. The split-preconditioned system is
 $M_L^{-1} A M_R^{-1} u = M_L^{-1} b$ in the unknown $u = M_R x$.
 
-The definition does not require $M = M_L M_R$; the results below take it as a hypothesis. -/
+The definition does not require $M = M_L M_R$; the results below take it as a hypothesis.
+
+**Reading.** The matrices are defined over real or complex scalars, including when a preconditioning
+factor is singular. A singular factor has inverse zero in Lean. Equivalence with the original system
+requires invertibility.
+-/
 noncomputable abbrev splitPreconditioned (ML MR A : Matrix (Fin n) (Fin n) 𝕜) :
     Matrix (Fin n) (Fin n) 𝕜 := ML⁻¹ * A * MR⁻¹
 
@@ -114,7 +140,12 @@ $$M^{-1} A x = M^{-1} b \iff Ax = b, \qquad A M^{-1} (Mx) = b \iff Ax = b,$$
 $$M_L^{-1} A M_R^{-1} (M_R x) = M_L^{-1} b \iff Ax = b.$$
 So each of the systems (9.1), (9.2) and (9.3) has exactly the solutions of $Ax = b$, through the
 change of variables $u = Mx$ for the right-preconditioned system and $u = M_R x$ for the split
-one. -/
+one.
+
+**Reading.** The single theorem covers all three systems under a common factorization $M=M_LM_R$
+with invertible factors. The book introduces the left and right systems for any nonsingular $M$ and
+mentions a factorization only for the split option.
+-/
 theorem solution_iff (hML : IsUnit ML) (hMR : IsUnit MR) (hM : M = ML * MR) (b x : 𝔼) :
     ((leftPreconditioned M A ⬝ x) = (M⁻¹ ⬝ b) ↔ (A ⬝ x) = b) ∧
       ((rightPreconditioned M A ⬝ (M ⬝ x)) = b ↔ (A ⬝ x) = b) ∧
@@ -133,7 +164,12 @@ theorem solution_iff (hML : IsUnit ML) (hMR : IsUnit MR) (hM : M = ML * MR) (b x
 $A, M_L, M_R \in \mathbb{K}^{n \times n}$, let $M_L$ and $M_R$ be nonsingular, and let
 $M = M_L M_R$. Then
 $$A M^{-1} = M (M^{-1} A) M^{-1}, \qquad M_L^{-1} A M_R^{-1} = M_L^{-1} (A M^{-1}) M_L.$$
-So the left-, right- and split-preconditioned matrices are conjugate to one another. -/
+So the left-, right- and split-preconditioned matrices are conjugate to one another.
+
+**Generalization.** The equivalence of spectra is proved by explicit similarity and is accompanied
+by equality of characteristic polynomials. The spectra are over the scalar field and the conclusions
+cover complex systems.
+-/
 theorem problem_9_1 (hML : IsUnit ML) (hMR : IsUnit MR) (hM : M = ML * MR) :
     rightPreconditioned M A = M * leftPreconditioned M A * M⁻¹ ∧
       splitPreconditioned ML MR A = ML⁻¹ * rightPreconditioned M A * ML := by
@@ -153,7 +189,12 @@ $A, M_L, M_R \in \mathbb{K}^{n \times n}$, let $M_L$ and $M_R$ be nonsingular, a
 $M = M_L M_R$. Then $A M^{-1}$ and $M_L^{-1} A M_R^{-1}$ have the same characteristic polynomial
 as $M^{-1} A$.
 
-The proof uses the conjugacy of `SaadSparse.Chapter09.problem_9_1`. -/
+The proof uses the conjugacy of `SaadSparse.Chapter09.problem_9_1`.
+
+**Generalization.** The equivalence of spectra is proved by explicit similarity and is accompanied
+by equality of characteristic polynomials. The spectra are over the scalar field and the conclusions
+cover complex systems.
+-/
 theorem problem_9_1_charpoly (hML : IsUnit ML) (hMR : IsUnit MR) (hM : M = ML * MR) :
     (rightPreconditioned M A).charpoly = (leftPreconditioned M A).charpoly ∧
       (splitPreconditioned ML MR A).charpoly = (leftPreconditioned M A).charpoly := by
@@ -172,7 +213,12 @@ $M = M_L M_R$. Then $A M^{-1}$ and $M_L^{-1} A M_R^{-1}$ have the same spectrum 
 as $M^{-1} A$.
 
 This is the reason of the chapter for expecting the three ways of preconditioning to behave
-alike. -/
+alike.
+
+**Generalization.** The equivalence of spectra is proved by explicit similarity and is accompanied
+by equality of characteristic polynomials. The spectra are over the scalar field and the conclusions
+cover complex systems.
+-/
 theorem problem_9_1_spectrum (hML : IsUnit ML) (hMR : IsUnit MR) (hM : M = ML * MR) :
     spectrum 𝕜 (rightPreconditioned M A) = spectrum 𝕜 (leftPreconditioned M A) ∧
       spectrum 𝕜 (splitPreconditioned ML MR A) = spectrum 𝕜 (leftPreconditioned M A) := by

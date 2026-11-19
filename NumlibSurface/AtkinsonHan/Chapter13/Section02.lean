@@ -71,6 +71,9 @@ for Section 13.2.2, the exterior Neumann problem, and for Section 13.3.
 * **(13.2.4)–(13.2.7)** (generalization). The book states the error analysis for the double layer
   kernel. The theorems hold for every continuous kernel on the torus. See
   `AtkinsonHan.Chapter13.equation_13_2_7`.
+* **Example 13.2.1** (reading). The real-parameter identity includes the diagonal and excludes
+  distinct congruent parameters, where the raw chord vanishes. It also accepts arbitrary real
+  semiaxes in the algebraic identity, with totalized division for degenerate inputs.
 
 ## Not formalized
 
@@ -125,7 +128,11 @@ $K_n \rho(t) = \sum_j w_j k(t, x_j) \rho(x_j)$, then for every point $t$ $$\rho_
 \frac{1}{\pi} \Bigl(\sum_j w_j k(t, x_j) \rho_n(x_j) - f(t)\Bigr).$$
 
 This is the equation solved for $\rho_n(t)$. It determines $\rho_n$ at every point from its
-values at the nodes, so the Nyström method gives a function and not only a table of values. -/
+values at the nodes, so the Nyström method gives a function and not only a table of values.
+
+**Reading.** Nodal evaluation of the discrete equation for an arbitrary continuous periodic kernel
+and quadrature.
+-/
 theorem equation_13_2_6 {m : ℕ} (w : Fin m → ℝ) (x : Fin m → AddCircle L)
     (k : C(AddCircle L × AddCircle L, ℝ)) (f ρn : C(AddCircle L, ℝ))
     (h : ((-π) • 1 + nystromCLM w x k : C(AddCircle L, ℝ) →L[ℝ] C(AddCircle L, ℝ)) ρn = f)
@@ -236,7 +243,10 @@ For the ellipse $r(t) = (a \cos t, b \sin t)$ the parametrized double layer kern
 $k(t, s) = \kappa((s + t)/2)$ (`AtkinsonHan.Chapter13.example_13_2_1`). On the circle $a = b$ it
 is the constant $-1/(2a)$, which for $a = 1$ is the value $-1/2$ of
 `AtkinsonHan.Chapter13.doubleLayerKernel_circle_self`. Where the denominator vanishes, Lean's
-division gives the value $0$. -/
+division gives the value $0$.
+
+**Reading.** Ellipse formula totalized for all real semiaxes.
+-/
 noncomputable def ellipseDoubleLayerKernel (a b θ : ℝ) : ℝ :=
   -(a * b) / (2 * (a ^ 2 * Real.sin θ ^ 2 + b ^ 2 * Real.cos θ ^ 2))
 
@@ -253,7 +263,10 @@ is a nonzero multiple of $2\pi$; there `AtkinsonHan.Chapter13.doubleLayerKernel`
 it divides the vanishing chord by $s - t$. This is the fact that
 `AtkinsonHan.Chapter13.doubleLayerKernel_add_period` records, and the reason why Section 13.2
 works on the circle and not on the line. The derivatives are passed as $\xi' = -a \sin$,
-$\eta' = b \cos$, $\xi'' = -a \cos$, $\eta'' = -b \sin$. -/
+$\eta' = b \cos$, $\xi'' = -a \cos$, $\eta'' = -b \sin$.
+
+**Reading.** Includes arbitrary real semiaxes but excludes distinct congruent raw parameters.
+-/
 theorem example_13_2_1 (a b : ℝ) {t s : ℝ} (hts : t = s ∨ Real.sin ((t - s) / 2) ≠ 0) :
     doubleLayerKernel (fun u => -(a * Real.sin u)) (fun u => b * Real.cos u)
         (fun u => -(a * Real.cos u)) (fun u => -(b * Real.sin u)) t s

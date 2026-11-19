@@ -263,25 +263,101 @@ why.
 
 **Chapter 1, Linear Spaces.**
 
+* **Section 1.1, scalars** (generalization). The abstract linear algebra uses any division ring
+  in place of real or complex scalars. See `AtkinsonHan.Chapter01.definition_1_1_1`.
+* **Example 1.1.2** (reading). The function-space clauses use real-valued functions and state
+  the differentiability clause on all of $\mathbb{R}^d$. See `AtkinsonHan.Chapter01.example_1_1_2`.
 * **Definition 1.1.3** (reading). The book requires a subspace to be a linear space, which excludes
   the empty set. The definition states only the two closure conditions, and its correspondence with
   `Submodule` assumes that the set is nonempty. See `AtkinsonHan.Chapter01.definition_1_1_3_iff`.
+* **Theorem 1.1.10** (generalization). The finite-cardinality identity also applies to infinite
+  bases, for which both natural-valued counts are zero. See `AtkinsonHan.Chapter01.theorem_1_1_10`.
+* **Example 1.1.12** (correction). The dimension drops by two for $n \ge 1$; at $n = 0$ it drops
+  by one. See `AtkinsonHan.Chapter01.example_1_1_12`.
+* **Example 1.1.15** (reading). Lean states the isomorphism on the polynomial type and gives the
+  coefficient map in the proof. See `AtkinsonHan.Chapter01.example_1_1_15`.
+* **Seminorms, balls, convergence, and continuity** (scope). The seminorm predicate assumes an
+  existing norm. Several ball, convergence, and continuity facts use only a normed additive
+  commutative group. See `AtkinsonHan.Chapter01.definition_1_2_2` and
+  `AtkinsonHan.Chapter01.definition_1_2_6`.
+* **Examples 1.2.3 and 1.2.5(a)** (scope). The norm formulas also cover zero coordinates and
+  empty intervals using the supremum convention.
+* **Example 1.2.15** (reading). A power function witnesses failure of each proposed norm bound
+  in place of the source's triangular sequence. See `AtkinsonHan.Chapter01.example_1_2_15`.
+* **Series, density, bases, and completeness in §1.2** (generalization). The series, density,
+  and Cauchy criteria need only a normed additive commutative group. Relative density allows
+  nonnested sets, and the basis predicates do not assume infinite dimension.
+* **Example 1.2.22** (reading). The supremum-norm completeness covers arbitrary compact sets.
+  The incompleteness for finite $p$ is stated on $[0,1]$, using one-sided ramps. See
+  `AtkinsonHan.Chapter01.example_1_2_22_incomplete`.
 * **Theorem 1.2.26** (generalization). The book states the dominated convergence theorem for
-  Lebesgue measure on an open subset of $\mathbb{R}^d$. The statement holds on every measure space.
-  See `AtkinsonHan.Chapter01.theorem_1_2_26`.
-* **Theorem 1.2.27** (generalization). The book states Fubini's theorem for Lebesgue measure on open
-  subsets of Euclidean spaces. The statement holds for two s-finite measure spaces. See
+  Lebesgue measure on a measurable set. Lean works on any measure space and assumes almost
+  everywhere strong measurability of the terms. See `AtkinsonHan.Chapter01.theorem_1_2_26`.
+* **Theorem 1.2.27** (generalization and reading). Lean allows two s-finite measure spaces and
+  gives integrability of almost every section and equality of the iterated integrals. The
+  source also states integrability of the inner integral functions and equality to the product
+  integral. See
   `AtkinsonHan.Chapter01.theorem_1_2_27`.
+* **Example 1.2.28(a), the norms** (reading). The completeness results use the sum of derivative
+  supremum norms, equivalent to the book's maximum norm. See
+  `AtkinsonHan.Chapter01.example_1_2_28_a` and `AtkinsonHan.Chapter01.example_1_2_28_a_periodic`.
+* **Example 1.2.28(b), the normed space** (generalization). The norm construction accepts
+  $p = \infty$. See `AtkinsonHan.Chapter01.ContDiffMapIccSobolevNorm`.
+* **Examples 1.3.6 and 1.3.7** (generalization and reading). The $L^2$ examples use an arbitrary
+  measure, and the Sobolev example uses the weak-derivative model on any interval. See
+  `AtkinsonHan.Chapter01.example_1_3_6` and `AtkinsonHan.Chapter01.example_1_3_7`.
+* **The identity following Definition 1.3.8** (reading). Lean gives the two-vector instance.
+  See `AtkinsonHan.Chapter01.definition_1_3_8_pythagoras`.
+* **Theorems 1.3.11 and 1.3.12** (generalization and reading). Lean uses unordered sums over
+  arbitrary index sets. Theorem 1.3.11 gives (a)–(c), and Theorem 1.3.12 combines the dense-span
+  clauses and gives the two Parseval identities.
+* **Theorem 1.3.13** (reading). Probability Haar measure on the circle changes the basis
+  factor by $\sqrt{2\pi}$. See `AtkinsonHan.Chapter01.theorem_1_3_13`.
 * **Lemmas 1.5.3 and 1.5.4 and Theorem 1.5.5** (generalization). The book works on
   $\Omega \subseteq \mathbb{R}^d$ with Lebesgue measure. The statements hold on every measure space,
   and Theorem 1.5.5(c) holds on every finite measure space without the assumption $p \ge 1$. See
   `AtkinsonHan.Chapter01.lemma_1_5_3`, `AtkinsonHan.Chapter01.lemma_1_5_4` and
   `AtkinsonHan.Chapter01.theorem_1_5_5_c`.
+* **Definition 1.6.1** (generalization). Compactness is stated for normed additive commutative
+  groups and precompactness for arbitrary topological spaces. See
+  `AtkinsonHan.Chapter01.definition_1_6_1` and `AtkinsonHan.Chapter01.definition_1_6_1_precompact`.
 
 **Chapter 2, Linear Operators on Normed Spaces.**
 
+* **Definitions 2.1.1 and 2.1.6 and Examples 2.1.2 and 2.1.3** (generalization). The map and
+  identity properties apply to arbitrary types, the matrix rank criteria to arbitrary fields,
+  and boundedness of total operators to seminormed additive groups. See
+  `AtkinsonHan.Chapter02.definition_2_1_1`, `AtkinsonHan.Chapter02.example_2_1_3`, and
+  `AtkinsonHan.Chapter02.IsBoundedOperator`.
+* **Example 2.1.7** (reading). Lean gives explicit witnesses to unbounded differentiation in
+  the supremum norm. See `AtkinsonHan.Chapter02.example_2_1_7`.
+* **Definition 2.2.1, (2.2.3), and Theorem 2.2.5** (generalization and reading). Linearity extends
+  to division rings. The Lipschitz estimate uses the operator norm, whose formulas use unit
+  radius and give zero for an empty supremum. See `AtkinsonHan.Chapter02.theorem_2_2_5`.
 * **Example 2.2.7** (reading). The book does not exclude the zero space, on which every operator
   norm is $0$. The statement assumes $V \neq \{0\}$. See `AtkinsonHan.Chapter02.example_2_2_7`.
+* **Example 2.2.8** (generalization and reading). The row and column formulas allow real
+  scalars and empty index sets. The spectral norm identity uses $A^*A$. See
+  `AtkinsonHan.Chapter02.example_2_2_8_l2`.
+* **Examples 2.3.2, 2.3.4, and 2.3.6** (generalization and reading). The abstract inverse bounds
+  apply to general Banach endomorphisms. The Volterra example uses a continuous square kernel
+  and arbitrary nonzero identity coefficient. The sine-kernel norm is bundled with the
+  solvability result. See `AtkinsonHan.Chapter02.example_2_3_4_volterra`.
+* **Theorem 2.3.5** (reading). A zero inverse norm makes the strict perturbation condition false
+  by Lean's reciprocal convention. See `AtkinsonHan.Chapter02.theorem_2_3_5`.
+* **Stability and the condition number in §2.4.2** (generalization and correction). Stability
+  assumes a bounded isomorphism, the relative bound assumes a nonzero exact solution, and the
+  condition number lower bound excludes the zero space. See `AtkinsonHan.Chapter02.one_le_cond`.
+* **Theorem 2.4.5, sufficiency** (generalization). The result uses any dense subset and needs
+  no completeness. See `AtkinsonHan.Chapter02.tendsto_of_tendsto_on_dense_of_bounded`.
+* **Examples 2.5.1, 2.5.3, and 2.5.9, and Corollary 2.5.7** (scope and reading). The real $L^\infty$
+  nonrepresentation theorem allows any nonempty open domain of positive dimension, the point
+  evaluation identity uses globally continuous functions, and the $L^2$ representation applies
+  to any Euclidean subset. The dual ball formula gives zero in the zero space.
+* **Example 2.6.1, Theorem 2.6.5, and Exercise 2.6.3** (reading). The kernel equalities are
+  almost everywhere. The norm formula and corresponding estimate use a nonzero space so the
+  unit sphere is nonempty. See `AtkinsonHan.Chapter02.example_2_6_1_isSelfAdjoint` and
+  `AtkinsonHan.Chapter02.theorem_2_6_5`.
 * **Section 2.4.4** (generalization). The book approximates the functional
   $Lv = \int_0^1 w(x) v(x) \, dx$. The statement holds for every bounded linear functional $L$ on
   $C[0, 1]$. See `AtkinsonHan.Chapter02.quadrature_convergence`.
@@ -291,25 +367,57 @@ why.
 * **Section 2.6** (generalization). The book restricts the section to real scalars. The statements
   about adjoint and self-adjoint operators hold over $\mathbb{R}$ and over $\mathbb{C}$. See
   `AtkinsonHan.Chapter02.equation_2_6_1`.
+* **Example 2.7.3 and Exercises 2.7.3–2.7.4** (reading and generalization). The sine example
+  uses Haar probability measure and scaled vectors. The exercises are stated over the reals,
+  and the uniformly convex result gives the sufficiency implication without completeness.
 * **Theorem 2.7.5** (generalization). The book assumes a Banach space. The statement holds for every
   normed space, because a reflexive normed space is complete. See
   `AtkinsonHan.Chapter02.theorem_2_7_5`.
-* **Equation (2.8.6)** (reading). The book writes a maximum over $x$. For a kernel that is only
-  integrable in $y$ the maximum need not be attained, so the statement uses a supremum. See
-  `AtkinsonHan.Chapter02.equation_2_8_6`.
+* **Equations (2.8.5) and (2.8.6)** (reading). The modulus estimate is for continuous inputs.
+  The operator norm uses a supremum, which agrees with the maximum on nonempty compact $D$
+  by condition (A₁). See `AtkinsonHan.Chapter02.equation_2_8_6`.
+* **Example 2.8.5** (reading). The kernel results use continuous factors on a compact measure
+  space. The book allows integrable second factors on a closed interval. See
+  `AtkinsonHan.Chapter02.example_2_8_5`.
+* **Examples 2.8.2, 2.8.8, and 2.8.9** (reading). The singular kernels take value zero on the
+  diagonal, and the continuous-kernel result uses restricted ambient Lebesgue measure.
+* **Definitions 2.8.3 and 2.8.11 and Theorems 2.8.12–2.8.14** (generalization). Some results
+  allow broader scalar fields, incomplete spaces, or nonzero scalars that are not eigenvalues.
+* **Theorem 2.8.15, the basis** (correction). The closed span of the nonzero eigenvectors is
+  the closure of the range of $K$. With $K=I$ on a nonzero finite-dimensional space, the
+  source's printed range of $\lambda I-K$ at $\lambda=1$ is zero. See
+  `AtkinsonHan.Chapter02.theorem_2_8_15_enumeration`.
 * **Theorem 2.8.15, the reality of the eigenvalues, the index one and the closed range**
   (generalization). The book assumes a compact operator. These three clauses are stated for every
   bounded self-adjoint operator. See `AtkinsonHan.Chapter02.theorem_2_8_15_index`.
 * **Definition 2.9.1** (generalization). The book works on a complex Banach space. The definition
   allows real or complex scalars and any normed space. See `AtkinsonHan.Chapter02.definition_2_9_1`.
+* **Lemma 2.9.2 and (2.9.3)** (generalization and reading). The perturbation bound assumes a
+  nonzero space and controls the resolvent on its domain. The local bounds and series expansion
+  work over the reals as well.
 
 **Chapter 3, Approximation Theory.**
 
+* **Theorems 3.1.1 and 3.1.2** (reading and generalization). The polynomial approximation
+  bound is strict with arbitrary tolerance, and Stone–Weierstrass allows any compact
+  topological space. See `AtkinsonHan.Chapter03.theorem_3_1_1` and
+  `AtkinsonHan.Chapter03.theorem_3_1_2`.
 * **Corollary 3.1.4** (generalization). The book takes the period $2\pi$. The statement holds for
   the continuous functions of every period $T > 0$. See `AtkinsonHan.Chapter03.corollary_3_1_4`.
+* **Section 3.2** (reading and generalization). The abstract interpolation problem allows
+  nontrivially normed fields, and the concrete interpolation statements spell out the node
+  conditions and regularity of the real data. See `NumlibSurface.AtkinsonHan.Chapter03.Section02`.
 * **Definition 3.3.4** (reading). The limit inferior $\liminf_n f(v_n)$ is taken in the extended
   reals. The real `liminf` of Lean is $0$ for a sequence that is not bounded below, and with it
   Theorem 3.3.8 would be false. See `AtkinsonHan.Chapter03.definition_3_3_4`.
+* **Theorems 3.3.8, 3.3.10 and 3.3.12–3.3.15** (correction). The minimization and best
+  approximation statements require a nonempty feasible set. The strict-convexity uniqueness
+  assertion of Theorems 3.3.12 and 3.3.13 is stated in
+  `AtkinsonHan.Chapter03.theorem_3_3_13_unique`.
+* **Section 3.3** (reading and generalization). Several statements use the underlying real
+  normed-space structure. The separation predicates also allow empty sets, and the Chebyshev
+  alternation theorem explicitly requires a nondegenerate interval. See
+  `NumlibSurface.AtkinsonHan.Chapter03.Section03`.
 * **Proposition 3.4.4** (generalization). The two inequalities hold for any two best approximations
   from a convex set, with no completeness of the space. See
   `AtkinsonHan.Chapter03.proposition_3_4_4`.
@@ -319,9 +427,22 @@ why.
 * **Theorem 3.4.7, display (3.4.5)** (correction). The book states $\|P_K\| = 1$. This fails for
   $K = \{0\}$, where $P_K = 0$. The library states $\|P_K\| \le 1$, with equality when
   $K \neq \{0\}$. See `AtkinsonHan.Chapter03.theorem_3_4_7`.
+* **Theorem 3.4.5** (correction). The finite-dimensional existence theorem requires a nonempty
+  feasible set. See `AtkinsonHan.Chapter03.theorem_3_4_5`.
+* **Example 3.4.9** (reading). The probability Haar normalization changes the individual
+  Fourier coefficients and basis vectors, while preserving the approximant. See
+  `AtkinsonHan.Chapter03.example_3_4_9`.
+* **Equations (3.5.1)–(3.5.2)** (reading). The criterion for a weight requires pointwise positivity
+  in the interior. The orthogonal projection uses a monic family. See
+  `AtkinsonHan.Chapter03.isWeight_weightMeasure` and `AtkinsonHan.Chapter03.equation_3_5_2`.
 * **Example 3.6.4** (reading). The book's $V_1$ is a general line through the origin of
   $\mathbb{R}^2$, drawn in Figure 3.4. The library states the displayed formula for $V_1$ the
   $x_1$-axis. See `AtkinsonHan.Chapter03.example_3_6_4`.
+* **Equations (3.7.15) and (3.7.17)** (correction). The projection kernel and its row norm must
+  be integrated against the weighted measure used to define the orthogonal expansion. See
+  `AtkinsonHan.Chapter03.equation_3_7_15` and `AtkinsonHan.Chapter03.equation_3_7_17`.
+* **Example 3.7.4** (correction). The norm formula integrates the absolute value of the
+  Dirichlet kernel, in agreement with (3.7.9). See `AtkinsonHan.Chapter03.example_3_7_4`.
 * **(3.7.20)** (correction). The book quotes the bound $\|\mathcal{I}_n\| \le 1 + (2/\pi) \log n$
   for $n \ge 1$. It is false at $n = 1$, where $\|\mathcal{I}_1\| \ge 5/3$. The library proves its
   negation and the bound $\|\mathcal{I}_n\| \le 2 + (2/\pi) \log(2n + 1)$. See
@@ -329,6 +450,9 @@ why.
 
 **Chapter 4, Fourier Analysis and Wavelets.**
 
+* **Equation (4.1.6)** (correction). Recovering sine and cosine coefficients from the real
+  and imaginary parts of the complex Fourier coefficients requires a real-valued input.
+  See `AtkinsonHan.Chapter04.equation_4_1_6_cos` and `AtkinsonHan.Chapter04.equation_4_1_6_sin`.
 * **Theorem 4.1.1** (generalization). The book assumes that $f$ is piecewise continuous. The library
   assumes only that $f$ is integrable over one period. See `AtkinsonHan.Chapter04.theorem_4_1_1`.
 * **Theorem 4.1.2** (generalization). The book states the theorem for the Fourier partial sum
@@ -339,12 +463,28 @@ why.
   continuous after a change on a set of measure zero" are read as the summability of $|a_j| + |b_j|$
   and the convergence of $S_n f(x)$ to $f(x)$ at every $x$. See
   `AtkinsonHan.Chapter04.equation_4_1_15`.
+* **Section 4.2** (reading and generalization). The integral inversion formula is pointwise
+  for continuous integrable data with integrable transform. The derivative and moment formulas
+  cover first order, and the $L^2$ transform is extended by continuity from Schwartz functions.
+  See `NumlibSurface.AtkinsonHan.Chapter04.Section02`.
 * **The spaces $V_j$ of §4.4** (reading). The book defines $V_j$ as the set of finite linear
   combinations of the functions $\phi(2^j x - k)$. Here $V_j$ is the closure of this set in
   $L^2(\mathbb{R})$. See `AtkinsonHan.Chapter04.equation_4_4_1`.
+* **Theorem 4.4.1(3) and the multilevel formulas** (reading). The nested inclusions are given
+  without strictness. The multilevel formulas use the coefficients of a common input, while
+  the book's reconstruction permits independently modified coefficients. See
+  `AtkinsonHan.Chapter04.theorem_4_4_1_3` and `AtkinsonHan.Chapter04.equation_4_4_18`.
+* **Section 4.5, density of the wavelet spaces** (correction). The wavelet spaces span a
+  dense subspace of $L^2(\mathbb R)$. Their set-theoretic union cannot be dense because the
+  spaces are mutually orthogonal. See `AtkinsonHan.Chapter04.theorem_wavelet_spaces`.
 
 **Chapter 5, Nonlinear Equations and Their Solution by Iteration.**
 
+* **Theorem 5.2.4** (scope). The Banach-space existence theorem uses a supplied field bound.
+  The separate weighted Picard convergence theorem treats a scalar equation on a one-sided
+  interval, with global Lipschitz continuity in the state variable.
+* **Example 5.3.10** (scope). Joint continuity of the partial derivative on the full product
+  replaces continuity along the graph of a single trial function.
 * **Theorem 5.3.19** (generalization). The book states that the minimization problem and the
   variational inequality (5.3.10) are equivalent as problems. Here they are equivalent at each point
   $u \in K$. See `AtkinsonHan.Chapter05.theorem_5_3_19`.
@@ -353,8 +493,11 @@ why.
   scalar majorant $p(t) = (L/2) t^2 - t/a + b/a$ satisfies every hypothesis at $u_0 = 0$ and has a
   second zero at distance exactly $t^{**}$. The statement uses the open ball. See
   `AtkinsonHan.Chapter05.theorem_5_4_2_unique`.
-* **Example 5.5.2** (correction). The condition $0 < t \le \sqrt{k^2 - 1}$ of the book does not give
-  $T(K) \subseteq K$. The statement adds $t \le 1$. See `AtkinsonHan.Chapter05.example_5_5_2`.
+* **Equations (5.4.8), (5.4.10) and (5.4.12)** (correction). The derivative of the residual
+  subtracts the integral operator derivative. The Newton correction equations use the
+  negative residual, which removes the extra factor $u_n(s)$ from both printed integrals.
+* **Example 5.5.2** (scope). The source requires $t < 1$ alongside the Lipschitz bound.
+  Lean includes $t = 1$. See `AtkinsonHan.Chapter05.example_5_5_2`.
 * **Theorem 5.6.2** (generalization). The rate of the book has the factor
   $(\Delta/\delta)^{3/(2k)}$. The statement proves the rate with the smaller factor
   $(\Delta/\delta)^{1/(2k)}$. See `AtkinsonHan.Chapter05.theorem_5_6_2`.
@@ -371,14 +514,17 @@ why.
 * **Definition 6.2.9** (reading). The limit is taken along every pair of sequences
   $(\Delta t_i, m_i)$ with $\Delta t_i \to 0$ and $m_i \Delta t_i \to t$, restricted to
   $m_i \Delta t_i \le T$. See `AtkinsonHan.Chapter06.IsConvergent`.
-* **Theorem 6.2.11** (reading). The uniform bound $\|C(\Delta t)\| \le c_1$, which the book assumes
-  silently when it introduces the family, is an explicit hypothesis. See
+* **Theorem 6.2.11** (reading). The uniform bound $\|C(\Delta t)\| \le c_1$ appears as a
+  theorem hypothesis. The source assumes it when introducing the family. See
   `AtkinsonHan.Chapter06.theorem_6_2_11`.
+* **Corollary 6.2.12** (correction). With local error constant $c$ and power bound $M_0$,
+  the global constant at time $t$ is $M_0 t c$. The proof uses stability.
 * **Exercise 6.2.3** (correction). The equality $\|C(\Delta t)\| = |1 - 2r| + 2r$ needs a small
   space step. The library assumes $\Delta x < \pi/2$. See
   `AtkinsonHan.Chapter06.norm_forwardScheme_eq`.
 * **Definition 6.3.1 and Theorem 6.3.2** (generalization). The book works in $\mathbb{R}^{N_x - 1}$
-  with a norm chosen for each example. The library states them for every real normed space. See
+  with a norm chosen for each example. The library uses a fixed real normed space for the
+  whole family. The global estimate uses the explicit constant $M_0 T c$. See
   `AtkinsonHan.Chapter06.theorem_6_3_2`.
 * **Definition 6.3.1** (reading). The limit "as $h_x, h_t \to 0$" is a limit along a filter on the
   index set of the family. See `AtkinsonHan.Chapter06.IsConsistentScheme`.
@@ -396,6 +542,8 @@ why.
   `AtkinsonHan.Chapter07.proposition_7_1_12`.
 * **Example 7.2.5, the $L^p$ part** (generalization). The book takes $1 \le p < \infty$. The
   statement holds for every $0 < p < \infty$. See `AtkinsonHan.Chapter07.example_7_2_5_memLp`.
+* **Definition 7.2.1** (generalization). The boundary class predicate allows unbounded open
+  sets. See `AtkinsonHan.Chapter07.definition_7_2_1`.
 * **Example 7.2.5, the equivalence for $W^{1,p}$** (correction). The book states $|x|^\lambda \in
   W^{1,p}(\Omega) \iff \lambda > 1 - d/p$ for every real $\lambda$. This fails at $\lambda = 0$ when
   $d \le p$. The statement assumes $\lambda \neq 0$. See
@@ -437,6 +585,8 @@ why.
 * **Example 7.4.3** (reading). The book assumes a Lipschitz domain and uses the universal extension
   operator of Stein. The statement assumes a bounded $C^{d+1}$ domain and uses the extension
   operator of order $d + 1$ with its $L^2$ bound. See `AtkinsonHan.Chapter07.example_7_4_3`.
+* **Theorem 7.5.7** (generalization). The interpolation bound uses a constant depending on $s$
+  alone, uniformly over $0 \le r \le s$. See `AtkinsonHan.Chapter07.theorem_7_5_7`.
 * **The classical Gauss–Green formula, Proposition 7.6.1 and (7.6.3)** (reading). The book assumes a
   Lipschitz domain. The statements assume a bounded $C^1$ domain, or a plane domain triangulated
   without slits. See `AtkinsonHan.Chapter07.proposition_7_6_1_classical`,
@@ -444,10 +594,9 @@ why.
 
 **Chapter 8, Weak Formulations of Elliptic Boundary Value Problems.**
 
-* **Examples 8.2.3 and 8.2.6** (generalization). The book assumes a Lipschitz boundary. The
-  statements hold on every bounded open set $\Omega \subseteq \mathbb{R}^{d+1}$, which for Example
-  8.2.3 must be nonempty. See `AtkinsonHan.Chapter08.example_8_2_3` and
-  `AtkinsonHan.Chapter08.example_8_2_6`.
+* **Example 8.2.3** (scope). The Lean example takes the Dirichlet realization of
+  $-\Delta$ on a nonempty bounded open domain. The source's closedness argument uses the
+  distributional Laplacian with no prescribed boundary condition.
 * **Example 8.2.6** (reading). The book takes the seminorm $|v|_{H^1}$ as the norm of
   $V = H_0^1(\Omega)$. The type of $V$ carries the norm of $H^1(\Omega)$, so $\|L\| = 1$ and
   $\langle Lv, v \rangle = \|v\|_V^2$ are stated through the seminorm, and the strong monotonicity
@@ -466,8 +615,8 @@ why.
   $L(\cdot, q)$ is bounded below on $A$ for each $q \in B$. See
   `AtkinsonHan.Chapter08.proposition_8_6_2`.
 * **Equation (8.7.3)** (reading). The book prints $\sup_{u \in U} a(u, v) > 0$ for $v \ne 0$. Read
-  literally, this says nothing, because the supremum of a nonzero linear functional is $+\infty$. It
-  is formalized as: for every $v \ne 0$ there is $u$ with $a(u, v) > 0$. See
+  as an extended-real supremum, it is positive exactly when a positive value is attained
+  for some $u$. Lean uses that witness directly. See
   `AtkinsonHan.Chapter08.theorem_8_7_1`.
 * **Lemma 8.8.2** (generalization). The section assumes $1 < p < \infty$. The continuity of $E$
   holds for $1 \le p < \infty$. See `AtkinsonHan.Chapter08.lemma_8_8_2`.
@@ -490,6 +639,8 @@ why.
 * **Exercise 10.1.3** (reading). The claim about a space of piecewise quadratic functions is stated
   as the fact about two neighbouring elements on which its proof rests. See
   `AtkinsonHan.Chapter10.exercise_10_1_3`.
+* **Lemma 10.2.2** (generalization). The diameters in the denominator can come from any inscribed
+  closed balls. The book takes the largest inscribed balls.
 * **Equation (10.2.23) and Exercises 10.2.1 and 10.2.3** (reading). The book quantifies over the
   functions of the local space that are "determined by" their values at the nodes. The statements
   quantify over the coefficients of a general polynomial of the space. See
@@ -504,23 +655,27 @@ why.
   and $k > 0$. The library takes a bounded connected open subset of $\mathbb{R}^d$ that is a Sobolev
   extension domain for every exponent, with $k + 1 > d/2$. See
   `AtkinsonHan.Chapter10.theorem_10_3_3`.
+* **Theorem 10.3.4** (reading). The tensor operator-norm Sobolev seminorm yields constant $1$ in
+  both bounds, in place of the unspecified constant for the book's multi-index seminorm.
 * **Theorems 10.3.3, 10.3.5 and 10.3.9, Corollary 10.3.7 and Example 10.3.8** (reading). A function
   of $H^{k+1}$ is taken on its representative that is continuous up to the boundary, so that its
   values at the nodes are defined. See `AtkinsonHan.Chapter10.theorem_10_3_3`.
 * **Theorem 10.3.5 and Definition 10.3.6** (reading). The book takes $\rho_K$ to be the diameter of
   the largest ball inscribed in $K$. The library uses the diameter of any inscribed closed ball. See
   `AtkinsonHan.Chapter10.IsRegularFamily`.
+* **Equation (10.3.9)** (generalization). Mesh size uses a real supremum on arbitrary collections.
+  On a nonempty finite mesh it agrees with the book's maximum.
 * **Definition 10.3.6** (reading). The book indexes the family by $h \to 0$. The library indexes it
   by any type, with a filter along which the mesh parameter tends to $0$. See
   `AtkinsonHan.Chapter10.IsRegularFamily`.
 * **Corollary 10.3.7, Example 10.3.8 and Theorem 10.3.9** (reading). The book leaves implicit a
   bound $h_K \le H$ on the diameters of the elements, on which its constant depends. The library
   makes it a hypothesis. See `AtkinsonHan.Chapter10.corollary_10_3_7`.
-* **Example 10.3.8** (generalization). The estimate (10.3.11) is also proved for $m = 2$. See
-  `AtkinsonHan.Chapter10.example_10_3_8`.
-* **Theorem 10.3.9** (reading). The standing assumption $X_h \subseteq C(\overline\Omega)$ of the
-  book is the hypothesis that the element is conforming on each triangulation of the family. See
-  `AtkinsonHan.Chapter10.theorem_10_3_9`.
+* **Example 10.3.8** (generalization). The estimate (10.3.11) is also proved for $m = 2$ and for
+  the bilinear element on affine images of the reference square.
+* **Theorem 10.3.9** (restriction). The statement uses plane triangulations and $C^1$ shape
+  functions on the reference triangle. Conformity on each triangulation supplies the book's
+  standing continuity assumption $X_h \subseteq C(\overline\Omega)$.
 * **Theorem 10.4.1** (reading). The constant depends on an upper bound $H$ on the mesh parameters,
   and $u \in H^{k+1}(\Omega)$ is taken on a representative that is continuous up to the boundary.
   See `AtkinsonHan.Chapter10.theorem_10_4_1`.
@@ -551,6 +706,12 @@ why.
 * **(11.1.9)** (generalization). The regularity (11.1.8) is stated on representatives of $f$, $\psi$
   and $u$ in $\Omega$, and the condition $u \in C(\overline\Omega)$ of the book is not needed. See
   `AtkinsonHan.Chapter11.example_11_1_1_pointwise`.
+* **(11.1.13)** (correction). The load integral over $\Omega$ uses volume measure, printed as $ds$
+  in the book. The interior identity (11.1.14) holds almost everywhere for the $L^2$ load.
+* **Exercise 11.2.1** (reading). The real-valued continuous real-linear load is represented by
+  the real part of a complex continuous linear functional.
+* **Lemma 11.3.5 and Theorem 11.3.7** (restriction). The book allows proper extended-real convex
+  functionals. The library uses real-valued functionals on the designated admissible set.
 * **Example 11.1.2, Example 11.2.4, Example 11.3.11 and Theorem 11.4.5** (reading). The Lipschitz
   domain of the book is a domain with a boundary trace in the sense of `BoundaryData.TraceFamily`,
   for example a bounded $C^1$ domain or a polygon without slits. See
@@ -563,13 +724,15 @@ why.
 * **Lemma 11.3.8** (generalization). The book assumes that $A$ is continuous on the
   finite-dimensional subspaces of $V$. The library assumes only that $A$ is right-continuous along
   the segments of $K$ that start at $u$. See `AtkinsonHan.Chapter11.lemma_11_3_8`.
-* **Theorems 11.4.1 and 11.4.6** (reading). The weak-limit hypotheses are required along every
-  reindexing $\sigma \colon \mathbb{N} \to \mathbb{N}$ of the sequence, because the proof passes to
-  subsequences. See `AtkinsonHan.Chapter11.theorem_11_4_1`.
-* **Theorem 11.4.2** (reading). Falk's lemma is stated in the squared form
-  $\frac{c_0}{2} \|u - u_h\|^2 \le \dots$ that its proof gives. The form with the square root and
-  the constant $c = \max\{M/c_0, \sqrt{2/c_0}\}$ is
-  `AtkinsonHan.Chapter11.theorem_11_4_2_of_subset`. See `AtkinsonHan.Chapter11.theorem_11_4_2`.
+* **The projection argument after Example 11.3.11** (correction). The test vector in
+  $a(w-u,v-u) \le 0$ ranges over $K$. The printed formula quantifies over $V$.
+* **Theorems 11.4.1 and 11.4.6** (restriction). The weak-limit hypotheses include constant
+  reindexings. These force $K_n \subseteq K$ and $j \le j_n$ on $V_n$, respectively, for every $n$.
+* **Theorems 11.4.2 and 11.4.7** (reading). The square-root bounds make the constant
+  $c = \max\{M/c_0, \sqrt{2/c_0}\}$ explicit. Theorem 11.4.7 takes any discrete admissible set
+  in place of the book's subspace. The squared estimate (11.4.7) retains the printed form.
+* **Exercise 11.4.3** (generalization). The regularization estimate uses a strongly monotone
+  operator in place of the elliptic bilinear form and assumes the uniform functional error bound.
 * **Exercise 11.4.2** (correction). The book asks only that the union of the subspaces $V_h$ be
   dense. This does not give a point of every $V_h$ near $u$, so the library also asks that the $V_h$
   be nested. See `AtkinsonHan.Chapter11.exercise_11_4_2`.
@@ -596,9 +759,15 @@ why.
 * **(12.1.24)** (reading). The book divides by $\|\lambda - P K\|$. The library states the lower
   bound in product form, so that no quotient by a norm that can vanish occurs. See
   `AtkinsonHan.Chapter12.equation_12_1_24`.
+* **Lemmas 12.1.3 and 12.1.4** (generalization). In the compact-set convergence lemma only the
+  domain needs to be complete. In the operator norm lemma the approximating maps need only
+  converge pointwise to the identity.
 * **(12.2.5) and (12.2.19)** (generalization). The book uses the uniform mesh $h = (b - a)/n$. The
   statements hold for every sequence of partitions whose mesh tends to zero. See
   `AtkinsonHan.Chapter12.equation_12_2_5` and `AtkinsonHan.Chapter12.equation_12_2_19`.
+* **(12.2.24) and (12.2.25)** (reading). The periodic estimates use an orthonormal real Fourier
+  system. The first gives the full Sobolev norm bound with constant $1$, and the second assumes
+  compactness of the operator directly.
 * **Lemma 12.3.1** (generalization). The book states the lemma on a Banach space. The statement
   holds on every normed space. See `AtkinsonHan.Chapter12.lemma_12_3_1`.
 * **(12.3.11)** (generalization). The book derives the bound for an orthogonal projection on a
@@ -616,16 +785,26 @@ why.
   `AtkinsonHan.Chapter12.exists_norm_inverse_le_of_isCollectivelyCompactFamily`.
 * **Lemma 12.4.7(3)** (generalization). The compact operator $M$ may have any normed space as its
   domain. See `AtkinsonHan.Chapter12.lemma_12_4_7_c`.
+* **(12.4.39), (12.4.44) and Example 12.4.6** (reading). The fourth-order remainder constants use
+  derivative bounds. The last clause of Example 12.4.6 assumes the second-order auxiliary
+  defect explicitly and uses the discrete auxiliary inverse.
 * **Theorem 12.5.1** (generalization). The book takes piecewise polynomial interpolation on
   $[a, b]$. The statement holds for every uniformly bounded sequence of operators that converges
   pointwise to the identity, on every compact metric space with a Borel measure. See
   `AtkinsonHan.Chapter12.theorem_12_5_1`.
+* **Example 12.5.2 and Lemma 12.5.5** (reading). The product trapezoidal estimate allows
+  nonuniform meshes. The graded-mesh estimates require panel endpoints as interpolation nodes,
+  and Lemma 12.5.5 gives the uniform estimate (12.5.35).
+* **(12.6.20)–(12.6.22) and (12.6.27)** (generalization). The two-grid formulas use arbitrary
+  bounded operators and a specified coarse inverse.
 * **Theorem 12.5.6** (reading). The book applies Theorem 12.5.4 to obtain the regularity of the
   solution. The statement assumes the regularity that the proof uses. See
   `AtkinsonHan.Chapter12.theorem_12_5_6`.
 * **Theorem 12.6.1** (generalization). The book states the theorem for the Nyström operators of
   §12.4. The statement holds for every collectively compact family that converges pointwise. See
   `AtkinsonHan.Chapter12.theorem_12_6_1`.
+* **Example 12.6.2** (reading). The eigenfunction formulas are pointwise integral identities.
+  The sine formula includes the zero function at frequency zero.
 * **Lemma 12.7.1** (generalization). The book asks that $T$ be twice continuously differentiable on
   an open set and works on a closed bounded convex set. The lemma assumes only derivatives at the
   points of a convex set and a bound on the second derivative there. See
@@ -638,11 +817,15 @@ why.
 
 * **Theorem 13.1.1, the Neumann clause** (reading). The book states the classical Neumann problem
   for continuous data on a $C^2$ boundary curve. The library states the weak Neumann problem with
-  data in $L^2(\sigma)$ on a bounded connected $C^1$ domain of $\mathbb{R}^{d+1}$. See
+  data in $L^2(\sigma)$ on a bounded connected $C^1$ domain of $\mathbb{R}^{d+1}$, using outward
+  normal data in place of the book's inward normal data. See
   `AtkinsonHan.Chapter13.theorem_13_1_1_neumann_weak`.
-* **The remark after (13.1.34)** (typo). The text says that $k(t, t)$ is one-half the curvature of
-  $S$ at $r(t)$. The display (13.1.34) gives minus one-half the signed curvature, and the library
-  follows the display. See `AtkinsonHan.Chapter13.doubleLayerKernel_circle_self`.
+* **The remark after (13.1.34)** (correction). The display gives minus one-half the signed
+  curvature times the parametrization speed. The library follows the display.
+* **Theorem 13.1.2** (restriction). The divergence identity covers bounded $C^1$ domains and
+  triangulated polygons. The book includes general piecewise smooth noncuspidal curves.
+* **(13.1.13)** (partial translation). The Kelvin theorem gives preservation of harmonicity.
+  The book also computes the factor relating the two Laplacians.
 * **(13.2.4)–(13.2.7)** (generalization). The book states the error analysis for the double layer
   kernel. The theorems hold for every continuous kernel on the torus. See
   `AtkinsonHan.Chapter13.equation_13_2_7`.
@@ -652,6 +835,9 @@ why.
 
 **Chapter 14, Multivariable Polynomial Approximations.**
 
+* **Exercise 14.1.1** (partial translation). The library proves the affine polynomial-space
+  identities, including the general-dimensional ellipsoid change of variables. The book also
+  asks for the approximation rates on the planar ellipse.
 * **The measure of §14.2** (generalization). The book works with the volume of $\mathbb{B}_d$ and
   with the weight of (14.2.11). The results hold for every measure that satisfies
   `Approximation.IsMvWeight`. See `AtkinsonHan.Chapter14.isMvWeight_ballVolume`.
@@ -659,6 +845,8 @@ why.
   of the recursion are unique. The theorem states that $x_j \varphi$ lies in $\mathcal{V}_{n-1}^d +
   \mathcal{V}_n^d + \mathcal{V}_{n+1}^d$ and that the three components are unique. See
   `AtkinsonHan.Chapter14.theorem_14_2_3`.
+* **Exercise 14.2.1** (partial translation). The library proves the inner-product identity for
+  coordinate multiplication. The book asks for the resulting three matrix formulas.
 * **(14.2.13)** (generalization). The book states the bound on $C(\mathbb{B}_d)$. It holds on $C(D)$
   for every compact $D \subseteq \mathbb{R}^d$. See `AtkinsonHan.Chapter14.equation_14_2_13`.
 * **(14.3.1)** (correction). The book states that the rule is exact on $\Pi_{2n+1}^2$. It is exact
@@ -667,24 +855,32 @@ why.
 * **(14.3.3)–(14.3.5)** (generalization). The book uses its rule (14.3.1) on the disk. The results
   hold for every quadrature rule that is exact on $\Pi_{2n}^d$, for every weight measure on
   $\mathbb{R}^d$. See `AtkinsonHan.Chapter14.equation_14_3_3`.
+* **(14.4.8) and Lemma 14.4.1** (generalization). The trial space and Laplacian bijection are
+  formalized in every positive dimension. The codomain is $\Pi_n^d$, where the book prints
+  $\Pi_n^2$. The theorem for Example 14.4.2 states the spanning part of the basis assertion.
 
 ## Not formalized
 
 **Chapter 1, Linear Spaces.**
 
-* **The exercises of §1.1, and the basis $x(1 - x), \dots, x^{n-1}(1 - x)$ of Example 1.1.12.** Only
-  the dimension count of Example 1.1.12 is stated.
+* **The exercises of §1.1.**
+* **Parts of Example 1.1.2.** The complex coordinate space, continuous extension to the closure,
+  boundedness on compact domains, and differentiable periodic spaces are outside the scope of the
+  statement.
+* **The bases in Example 1.1.12.** Lean states the dimension counts for both spaces.
 * **Example 1.2.5(b), the norm $\max_{j \le k} \|f^{(j)}\|_\infty$ of $C^k[a, b]$.** The backbone
   uses the equivalent norm $\sum_{j \le k} \|f^{(j)}\|_\infty$; the bound between the two norms is
   part of `AtkinsonHan.Chapter01.example_1_2_28_a`.
-* **Example 1.2.19.** It is Theorem 1.5.6 for a bounded open set,
-  `AtkinsonHan.Chapter01.theorem_1_5_6_open`.
+* **Example 1.2.19.** The compactly supported smooth density clause is covered by
+  `AtkinsonHan.Chapter01.theorem_1_5_6_open`. The example also states polynomial density.
 * **The closing remark of Example 1.2.28(b)**, on the continuity of the derivatives of
   $f \in W^{m,p}(a, b)$. It is an embedding of the backbone and is not restated.
 * **Example 1.3.15**, the convergence in $L^2$ of the real Fourier series. It is in the backbone and
   is not restated.
 * **The identity after Definition 1.3.8** for $n$ mutually orthogonal elements. Only the case
   $n = 2$ is stated.
+* **Theorem 1.3.11(d).** The convergence criterion for a general orthonormal series is outside the
+  surface theorem's three-part statement.
 * **Section 1.4**, spaces of continuously differentiable functions and Hölder spaces. It has no
   numbered result except Exercises 1.4.1–1.4.13, and its vocabulary is Mathlib's `ContDiff`,
   `HasCompactSupport`, `HolderWith` and `HolderOnWith`, which §3.7 and Theorem 1.5.6 use.
@@ -696,6 +892,8 @@ why.
 
 **Chapter 2, Linear Operators on Normed Spaces.**
 
+* **Parts of §2.1.** The inverse into the range for an arbitrary injection and continuity on a
+  partial domain are outside the surface statements.
 * **The bounded half of Example 2.1.7.** It is the backbone's `ContDiffMapIcc.derivCLM` and is not
   restated.
 * **Exercises 2.2.1, 2.2.2, 2.2.6, 2.2.7 and 2.2.8.** Exercise 2.2.6 is not used later, and the
@@ -710,6 +908,9 @@ why.
   2.7.4(b)**, the uniform convexity of $L^p$.
 * **Example 2.8.5 with integrable $\gamma_i$.** The continuous-kernel operator does not admit such
   kernels, so the example is stated for continuous $\gamma_i$.
+* **Example 2.8.9, the truncation error,** and **Theorem 2.8.12(6), extension of (1)–(5) to compact
+  powers.** Lean states compactness of the singular operator and the power-compact Fredholm
+  alternative, respectively.
 * **Theorem 2.8.15, the general enumeration (2.8.31).** Only the case of an injective $K$ on an
   infinite-dimensional space is stated.
 * **Example 2.8.16**, the single-layer operator on the unit sphere. Mathlib has no surface measure

@@ -59,6 +59,9 @@ and `Numlib.LinearAlgebra.Matrix.SaddlePoint.ScalarDiagonal`.
 
 ## Deviations from the source
 
+* **Equation (3.13)** (generalization). The matrix is defined with a real multiplier
+  on the lower coupling block, including the printed signs $+1$ and $-1$. See
+  `BenziGolubLiesen.scaledSaddlePointMatrix`.
 * **Paragraph after Theorem 3.8** (correction). The source calls the nonreal eigenvalues of the
   sign-flipped form purely imaginary. They have real part $\eta / 2$, as the formulas of Theorem 3.8
   give. See `BenziGolubLiesen.signFlipped_roots_re_of_lt`.
@@ -307,6 +310,9 @@ $\eta, \varepsilon \in \mathbb{R}$, the **scaled saddle-point matrix** is
 $$\begin{bmatrix} \eta I_n & B^T \\ \varepsilon B & 0 \end{bmatrix}.$$
 The value $\varepsilon = 1$ gives the symmetric form, and $\varepsilon = -1$ gives the
 sign-flipped form (3.10).
+
+**Generalization.** The source defines the two signs. Here $\varepsilon$ is any real
+scalar. The spectral theorem uses the two printed values.
 
 The dimensions are natural numbers: $m$ is `rows` and $n$ is `cols`, so $B$ is a
 `Matrix (Fin rows) (Fin cols) ℝ`, and the block matrix is indexed by `Fin cols ⊕ Fin rows`. -/

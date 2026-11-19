@@ -48,17 +48,19 @@ with the potential $\|r\|^{1/2^i}$ of (5.1.27).
 
 ## Deviations from the source
 
+* **Algorithm 6.3.1, input domain** (generalization). The run predicate accepts any natural
+  $\ell,p$ and any real tolerances. The theorem supplies the source's positive degree and
+  exponent restrictions. See `CartisGouldToint.Chapter06.algorithm_6_3_1`.
 * **Test (6.3.2)** (reading). The source writes the quotient $\omega_{\Phi_\ell,\mathcal{C},1}(x) /
   \|r(x)\|^{\ell - 1} \le \epsilon_1$. The test is written multiplicatively, which avoids division
   by zero; the two forms agree whenever (6.3.1) fails and $\epsilon_0 \ge 0$. See
   `CartisGouldToint.Chapter06.stopLE`.
-* **Display before (6.3.3)** (typo). The source multiplies the unscaled measure
+* **Equation (6.3.3) and the preceding display** (typo). The source multiplies the unscaled measure
   $\omega_{\Phi_\ell,\mathcal{C},1}(x_{k+1})^{(p+1)/p}$ by $\|r(x_{k+1})\|^{(\ell-1)(p+1)/p}$, which
   mixes the scaled and unscaled forms of (5.1.15). The decrease that holds is $\kappa_1 \ell \,
-  \omega_{\Phi_\ell,\mathcal{C},1}(x_{k+1})^{(p+1)/p}$. See
-  `CartisGouldToint.Chapter06.arpleCC_decrease`.
-* **Theorem 6.3.1** (typo). The source reads "(5.1.38) for (5.1.39)"; "or" is meant. See
-  `CartisGouldToint.Chapter06.theorem_6_3_1`.
+  \omega_{\Phi_\ell,\mathcal{C},1}(x_{k+1})^{(p+1)/p}$. The next estimate (6.3.3)
+  uses the normalized measure, with its denominator accounted for by the
+  multiplicative stopping inequality. See `CartisGouldToint.Chapter06.arpleCC_decrease`.
 * **Theorem 6.3.1** (generalization). Only $\iota_1(p, \ell, i) \ge 0$ is used, which (5.1.38) and
   (5.1.39) each imply, and the theorem assumes only this. The assumption
   $\epsilon_0, \epsilon_1 \le 1$ of the source is not needed. See
@@ -83,16 +85,27 @@ $$\Phi_\ell(x) = \frac{\|r(x)\|^\ell}{\ell}.$$
 
 For $\ell = 0$ the division by zero gives $\Phi_0 = 0$. This is the same function as
 `CartisGouldToint.Chapter05.Phi` of Chapter 5 with a real exponent
-(`CartisGouldToint.Chapter06.PhiEll_eq_Phi`), and it is the backbone `Optimization.residualPow`. -/
+(`CartisGouldToint.Chapter06.PhiEll_eq_Phi`), and it is the backbone `Optimization.residualPow`.
+
+**Generalization.** The same residual norm power is extended to the zero natural exponent by Lean
+division.
+-/
 noncomputable abbrev PhiEll (r : ℝⁿ → ℝᵐ) (ℓ : ℕ) : ℝⁿ → ℝ :=
   residualPow r ℓ
 
 /-- The objective $\Phi_\ell$ for a natural exponent $\ell$ is the objective
-`CartisGouldToint.Chapter05.Phi` of Chapter 5 with the exponent $\ell$ viewed as a real number. -/
+`CartisGouldToint.Chapter05.Phi` of Chapter 5 with the exponent $\ell$ viewed as a real number.
+
+**Reading.** Identifies the residual objective with the real-exponent Chapter 5 definition,
+including zero exponent.
+-/
 theorem PhiEll_eq_Phi (r : ℝⁿ → ℝᵐ) (ℓ : ℕ) : PhiEll r ℓ = Chapter05.Phi r ℓ :=
   rfl
 
-/-- The objective at a point: $\Phi_\ell(x) = \|r(x)\|^\ell / \ell$. -/
+/-- The objective at a point: $\Phi_\ell(x) = \|r(x)\|^\ell / \ell$.
+
+**Reading.** The natural-power quotient gives the formula for every exponent including zero.
+-/
 theorem PhiEll_apply (r : ℝⁿ → ℝᵐ) (ℓ : ℕ) (x : ℝⁿ) : PhiEll r ℓ x = ‖r x‖ ^ ℓ / ℓ :=
   residualPow_natCast r ℓ x
 
@@ -138,7 +151,10 @@ the step satisfies $x_k + s_k \in \mathcal{C}$, $m_k(s_k) < m_k(0)$ and (6.2.29)
 $\theta_1$, the ratio is (4.1.15), and $x_{k+1}$ and $\sigma_{k+1}$ follow the update (4.1.16).
 
 The run is `Optimization.IsARRun` with the step conditions `Optimization.IsFirstOrderCCStep`,
-the ratio `Optimization.taylorRatio`, and the test `CartisGouldToint.Chapter06.stopLE`. -/
+the ratio `Optimization.taylorRatio`, and the test `CartisGouldToint.Chapter06.stopLE`.
+
+**Generalization.** The source uses $\ell\ge2$, a positive Taylor degree and positive
+tolerances. The run predicate leaves these hypotheses to its callers. -/
 structure algorithm_6_3_1 (r : ℝⁿ → ℝᵐ) (ℓ : ℕ) (C : Set ℝⁿ) (p : ℕ) (P : ARpCCParams)
     (ε₀ ε₁ : ℝ) (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) : Prop where
   /-- The initial point $x_0$ lies in $\mathcal{C}$. -/
@@ -156,7 +172,11 @@ $\epsilon_0$ and every $x_0 \in \mathcal{C}$ there is a run of ARpLE-CC that sta
 
 When the test fails at $x_k$, then $\omega_{\Phi_\ell,\mathcal{C},1}(x_k) > 0$, so a global
 minimizer of the model over the feasible steps is an admissible step
-(`Optimization.exists_isFirstOrderCCStep`). -/
+(`Optimization.exists_isFirstOrderCCStep`).
+
+**Reading.** Constructs a run from local C^p at feasible points and a nonnegative first-order
+tolerance, allowing arbitrary norm tolerance.
+-/
 theorem algorithm_6_3_1.exists_run {r : ℝⁿ → ℝᵐ} {ℓ : ℕ} {C : Set ℝⁿ} {p : ℕ} (P : ARpCCParams)
     {ε₀ ε₁ : ℝ} (hC : AssumptionCNe C) (hΦ : ∀ y ∈ C, ContDiffAt ℝ p (PhiEll r ℓ) y)
     (hp : 1 ≤ p) (hε₁ : 0 ≤ ε₁) {x₀ : ℝⁿ} (hx₀ : x₀ ∈ C) :
@@ -200,7 +220,11 @@ theorem sigma_le (h : algorithm_6_3_1 r ℓ C p P ε₀ ε₁ x s σ) (hC : Assu
   arpcc_sigma_le h.run hC hΦ h.mem_zero (fun _ hstep => ⟨hstep.mem, hstep.decrease⟩) k hk
 
 /-- Let $\ell \ge 1$. Along a run of ARpLE-CC, if the test fails at all iterations $j \le k$, then
-$\|r(x_{k+1})\| \le \|r(x_k)\|$. -/
+$\|r(x_{k+1})\| \le \|r(x_k)\|$.
+
+**Reading.** Residual monotonicity follows on accepted or rejected iterations and includes the
+exponent-one case.
+-/
 theorem norm_succ_le (h : algorithm_6_3_1 r ℓ C p P ε₀ ε₁ x s σ) (hℓ : 1 ≤ ℓ) {k : ℕ}
     (hk : ∀ j ≤ k, ¬ stopLE r ℓ C ε₀ ε₁ (x j)) : ‖r (x (k + 1))‖ ≤ ‖r (x k)‖ := by
   have hℓpos : (0 : ℝ) < ℓ := by exact_mod_cast hℓ
@@ -217,7 +241,11 @@ theorem norm_succ_le (h : algorithm_6_3_1 r ℓ C p P ε₀ ε₁ x s σ) (hℓ 
   · rw [h.run.eq_of_not_succ (IsARRun.forall_le_not_stop_iff.2 hk) (not_le.1 hs)]
 
 /-- Let $\ell \ge 1$. Along a run of ARpLE-CC, if the test fails at all iterations $j < k$, then
-$\|r(x_k)\| \le \|r(x_0)\|$. -/
+$\|r(x_k)\| \le \|r(x_0)\|$.
+
+**Reading.** Bounds the active residual by the initial residual with the same exponent-one
+extension.
+-/
 theorem norm_le_norm_zero (h : algorithm_6_3_1 r ℓ C p P ε₀ ε₁ x s σ) (hℓ : 1 ≤ ℓ) :
     ∀ k, (∀ j < k, ¬ stopLE r ℓ C ε₀ ε₁ (x j)) → ‖r (x k)‖ ≤ ‖r (x 0)‖ := by
   intro k
@@ -251,8 +279,10 @@ where $\kappa_{r0} = 1 - \beta^{1/2^i}$ and $\kappa_{r1} = \kappa_1 \beta^{(\ell
 
 **Typo.** The display before (6.3.3) in the source multiplies the unscaled measure
 $\omega_{\Phi_\ell,\mathcal{C},1}(x_{k+1})^{(p+1)/p}$ by $\|r(x_{k+1})\|^{(\ell-1)(p+1)/p}$,
-which mixes the scaled and unscaled forms of (5.1.15). The first bound above is the decrease
-that holds, and the proof uses it.
+which mixes the scaled and unscaled forms of (5.1.15). Equation (6.3.3) then uses the
+unscaled measure where the normalized measure is needed for the exponent $\iota_1$.
+The Lean bound substitutes $\epsilon_1$ for the normalized measure when the next iterate
+fails the stopping test and uses the initial norm in its denominator.
 
 The first bound is Lemma 6.2.4 for $f = \Phi_\ell$. The constant $\kappa_1$ is
 `CartisGouldToint.Chapter06.kappa1CC`. -/
@@ -327,14 +357,13 @@ $\sigma_{\max} = \max(\sigma_0, \gamma_3 L / (1 - \eta_2))$ as in (5.1.60), $\ka
 (1 + |\log \gamma_1| / \log \gamma_2)$, and $\kappa^C = (|\log \gamma_1| + \log(\sigma_{\max} /
 \sigma_0)) / \log \gamma_2 + 2$ as in (5.1.61).
 
-**Typo.** The source reads "(5.1.38) for (5.1.39)"; "or" is meant.
-
 **Generalization.** The proof uses only $\iota_1 \ge 0$, which (5.1.38) and (5.1.39) each imply
-(`CartisGouldToint.Chapter05.lemma_5_1_6`), so the theorem assumes only $\iota_1 \ge 0$. The
-assumption $\epsilon_0, \epsilon_1 \le 1$ of the source is not needed.
+(`CartisGouldToint.Chapter05.lemma_5_1_6`). The tolerances need only be positive.
 
-The counts are `Optimization.funEvalCount` and `Optimization.derivEvalCount` of the successful
-iterations, and $r_0 = r(x_0)$. -/
+The counts are `Optimization.funEvalCount` and `Optimization.derivEvalCount` for the
+run of $\Phi_\ell$, and $r_0 = r(x_0)$. The source interprets the bounds as residual
+and residual-derivative evaluations. That interpretation uses the smooth residual
+of §6.3 and evaluates derivatives of $\Phi_\ell$ from those of $r$. -/
 theorem theorem_6_3_1 {i : ℕ} (hp : 1 ≤ p) (hℓ : 2 ≤ ℓ)
     (hι : 0 ≤ ((2 : ℝ) ^ i - 1) / 2 ^ i - ((ℓ : ℝ) - 1) / p) {β : ℝ} (hβ0 : 0 < β) (hβ1 : β < 1)
     (hC : AssumptionCNe C) (hΦ : AssumptionPhiDpLC r ℓ C p L)

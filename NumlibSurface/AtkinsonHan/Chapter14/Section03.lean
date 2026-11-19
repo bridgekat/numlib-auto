@@ -73,7 +73,11 @@ $\mathbb{R}^d$, and let a quadrature rule with weights $w_k$ and nodes $x_k$ be 
 on $\Pi_{2n}^d$. Then for all $p, q \in \Pi_n^d$, $$(p, q)_n = \sum_k w_k \, p(x_k) \, q(x_k) =
 \int p \, q \, d\mu = (p, q).$$
 
-The reason is that $p q \in \Pi_{2n}^d$. The section rests on this identity. -/
+The reason is that $p q \in \Pi_{2n}^d$. The section rests on this identity.
+
+**Reading.** Arbitrary quadrature exact to degree 2n for any admissible weight instead of the disk
+rule.
+-/
 theorem equation_14_3_3 (hw : IsMvWeight μ) (hex : IsExactOn μ w x (2 * n))
     {p q : MvPolynomial (Fin d) ℝ} (hp : p ∈ polySpace d n) (hq : q ∈ polySpace d n) :
     discreteInner w x p q = inner ℝ (hw.toL2 p) (hw.toL2 q) :=
@@ -87,25 +91,37 @@ operator** maps a function $f : \mathbb{R}^d \to \mathbb{R}$ to the polynomial $
 
 The book takes for $\varphi$ an orthonormal basis of $\Pi_n^d$, written $\{\varphi_{m,\ell}\}$;
 the definition takes any finite family, and the theorems add the hypotheses. The definition is
-`Approximation.hyperinterp`. -/
+`Approximation.hyperinterp`.
+
+**Reading.** Arbitrary finite samples and polynomial family, with a total function as input.
+-/
 noncomputable def hyperinterpolation (w : K → ℝ) (x : K → (Fin d → ℝ))
     (φ : Fin N → MvPolynomial (Fin d) ℝ) (f : (Fin d → ℝ) → ℝ) : MvPolynomial (Fin d) ℝ :=
   hyperinterp w x φ f
 
 /-- **Equation (14.3.4)** of [han2009theoretical]. If the family $\varphi$ spans $\Pi_n^d$, then
-$L_n f \in \Pi_n^d$ for every function $f$. -/
+$L_n f \in \Pi_n^d$ for every function $f$.
+
+**Reading.** Polynomial range follows from the supplied span for any quadrature family.
+-/
 theorem hyperinterpolation_mem (hspan : Submodule.span ℝ (Set.range φ) = polySpace d n)
     (f : (Fin d → ℝ) → ℝ) : hyperinterpolation w x φ f ∈ polySpace d n :=
   hspan ▸ hyperinterp_mem_span w x φ f
 
 /-- **Equation (14.3.4)** of [han2009theoretical]. The operator $L_n$ is additive:
-$L_n(f + g) = L_n f + L_n g$. -/
+$L_n(f + g) = L_n f + L_n g$.
+
+**Reading.** Additivity for the abstract quadrature construction.
+-/
 theorem hyperinterpolation_add (f g : (Fin d → ℝ) → ℝ) :
     hyperinterpolation w x φ (f + g) = hyperinterpolation w x φ f + hyperinterpolation w x φ g :=
   hyperinterp_add w x φ f g
 
 /-- **Equation (14.3.4)** of [han2009theoretical]. The operator $L_n$ is homogeneous:
-$L_n(c f) = c \, L_n f$ for every $c \in \mathbb{R}$. -/
+$L_n(c f) = c \, L_n f$ for every $c \in \mathbb{R}$.
+
+**Reading.** Homogeneity for the abstract quadrature construction.
+-/
 theorem hyperinterpolation_smul (c : ℝ) (f : (Fin d → ℝ) → ℝ) :
     hyperinterpolation w x φ (c • f) = c • hyperinterpolation w x φ f :=
   hyperinterp_smul w x φ c f
@@ -118,7 +134,10 @@ orthonormal in $L^2(\mu)$. Then $$L_n p = p \qquad \text{for every } p \in \Pi_n
 On $\Pi_n^d$ the discrete inner product is the continuous one by (14.3.3), so $L_n$ agrees there
 with the orthogonal projection $P_n$, which is the identity on $\Pi_n^d$. With
 `AtkinsonHan.Chapter14.hyperinterpolation_mem` and the linearity, $L_n$ is a linear projection
-onto $\Pi_n^d$. -/
+onto $\Pi_n^d$.
+
+**Reading.** Reproduction for exact degree-2n quadrature on an arbitrary admissible weight.
+-/
 theorem equation_14_3_5 (hw : IsMvWeight μ) (hex : IsExactOn μ w x (2 * n))
     (hspan : Submodule.span ℝ (Set.range φ) = polySpace d n)
     (horth : Orthonormal ℝ fun i => hw.toL2 (φ i)) {p : MvPolynomial (Fin d) ℝ}
@@ -131,7 +150,10 @@ theorem equation_14_3_5 (hw : IsMvWeight μ) (hex : IsExactOn μ w x (2 * n))
 /-- **Equation (14.3.5)** of [han2009theoretical], idempotence. Under the hypotheses of
 `AtkinsonHan.Chapter14.equation_14_3_5`, $L_n(L_n f) = L_n f$ for every function
 $f : \mathbb{R}^d \to \mathbb{R}$, where $L_n$ is applied to the values of the polynomial
-$L_n f$. -/
+$L_n f$.
+
+**Reading.** Idempotence on the abstract quadrature setting.
+-/
 theorem equation_14_3_5_idem (hw : IsMvWeight μ) (hex : IsExactOn μ w x (2 * n))
     (hspan : Submodule.span ℝ (Set.range φ) = polySpace d n)
     (horth : Orthonormal ℝ fun i => hw.toL2 (φ i)) (f : (Fin d → ℝ) → ℝ) :

@@ -42,6 +42,17 @@ from Lemma 14.2.1.
 
 ## Deviations from the source
 
+* **Convention.** The formula is totalized outside the full-rank locus. See
+  `ConnGouldToint.Chapter14.smoothExactPenalty`.
+* **Representation.** The smooth exact-penalty equivalence is at a feasible full-rank point and uses
+  the separately proved quadratic test. See
+  `ConnGouldToint.Chapter14.fderiv_smoothExactPenalty_at_feasible`,
+  `ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_at_feasible`,
+  `ConnGouldToint.Chapter14.theorem_14_6_1_quadratic_test`,
+  `ConnGouldToint.Chapter14.theorem_14_6_1`.
+* **Correction.** The smooth penalty Hessian includes the variable multiplier's second-derivative
+  term away from feasibility. See `ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq`,
+  `ConnGouldToint.Chapter14.smoothExactPenalty_printed_hessian_counterexample`.
 * **Equation (14.6.4)** (correction). Away from the feasible set, the Hessian contains the
   derivative of $z \mapsto y'(z)^* c(x)$, which the printed formula omits. A scalar cubic shows that
   this term can be nonzero. See `ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq` and
@@ -63,7 +74,11 @@ $$\phi(x, \sigma) = \ell\big(x, y(x)\big) + \frac\sigma2 \|c(x)\|^2 = f(x) - \la
   \rangle + \frac\sigma2 \|c(x)\|^2,$$
 where $y(x) = (c'(x) c'(x)^*)^{-1} c'(x) \nabla f(x)$ is the least-squares multiplier (14.2.8).
 
-The multiplier is evaluated at the same point $x$ as the objective and the constraints. -/
+The multiplier is evaluated at the same point $x$ as the objective and the constraints.
+
+**Reading.** The definition uses the totalized inverse of the multiplier Gram operator. It gives the
+intended smooth formula on the full-row-rank locus used by the derivative and equivalence theorems.
+-/
 noncomputable def smoothExactPenalty (f : G → ℝ) (c : G → F) (σ : ℝ) (x : G) : ℝ :=
   lagrangian f c (leastSquaresMultiplier (fderiv ℝ c x) (gradient f x)) x +
     σ / 2 * ‖c x‖ ^ 2
@@ -75,7 +90,12 @@ $$\phi'(x, \sigma) = \nabla_x \ell\big(x, y(x)\big),$$
 the derivative of the Lagrangian with the multiplier $y(x)$ held fixed.
 
 The derivative of the multiplier estimate and the derivative of the penalty term are both
-multiplied by the residual $c(x) = 0$. -/
+multiplied by the residual $c(x) = 0$.
+
+**Reading.** The pointwise derivative identities and positive-definiteness test are separated. The
+threshold theorem uses the least-squares multiplier at a feasible point with a surjective constraint
+derivative, and yields equivalence with the simultaneous first-order and tangent Hessian test.
+-/
 theorem fderiv_smoothExactPenalty_at_feasible [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hcx : c x = 0) (hA : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -105,7 +125,12 @@ $$\langle v, H v \rangle + \sigma \|A v\|^2 > 0 \text{ for all } v \neq 0$$
 if and only if $\langle v, L v \rangle > 0$ for all nonzero $v \in \ker A$.
 
 Terms of the Hessian that vanish on $\ker A$ do not change the reduced test, and a large penalty
-term gives positive curvature in the other directions. -/
+term gives positive curvature in the other directions.
+
+**Reading.** The pointwise derivative identities and positive-definiteness test are separated. The
+threshold theorem uses the least-squares multiplier at a feasible point with a surjective constraint
+derivative, and yields equivalence with the simultaneous first-order and tangent Hessian test.
+-/
 theorem theorem_14_6_1_quadratic_test [FiniteDimensional ℝ G]
     (A : G →L[ℝ] F) (H L : G →L[ℝ] G)
     (hker : ∀ v, A v = 0 → ⟪v, H v⟫ = ⟪v, L v⟫) :
@@ -230,7 +255,12 @@ where the residual $c(x)$ is held fixed in the last term.
 applied to the fixed residual. The term vanishes at a feasible point, but not in general; see
 `ConnGouldToint.Chapter14.smoothExactPenalty_printed_hessian_counterexample`.
 
-Off the feasible set, three continuous derivatives of the data are enough. -/
+Off the feasible set, three continuous derivatives of the data are enough.
+
+**Correction.** Away from feasibility, differentiation also acts on the derivative of the variable
+multiplier, giving a term proportional to the residual. The full formula assumes three continuous
+derivatives. The scalar example has a nonzero omitted term.
+-/
 theorem fderiv_gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 3 f) (hc : ContDiff ℝ 3 c)
     {x : G} (hfull : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -289,6 +319,10 @@ theorem fderiv_gradient_smoothExactPenalty_eq [FiniteDimensional ℝ F]
 $f(x) = x^3$ and $c(x) = x$ on $\mathbb{R}$, and $\sigma = 1$. At $x = 1$, where $c'(1)$ is
 surjective, the Hessian of $\phi$ differs from the printed expression
 $$\nabla_{xx} \ell\big(1, y(1) - c(1)\big) - A^* D - D^* A + A^* A.$$
+
+**Correction.** Away from feasibility, differentiation also acts on the derivative of the variable
+multiplier, giving a term proportional to the residual. The full formula assumes three continuous
+derivatives. The scalar example has a nonzero omitted term.
 -/
 theorem smoothExactPenalty_printed_hessian_counterexample :
     let f := fun z : ℝ ↦ z ^ 3
@@ -387,7 +421,12 @@ $$\nabla_{xx} \phi(x, \sigma) = \nabla_{xx} \ell\big(x, y(x)\big) - A^* D - D^* 
 
 The multiplier map needs only one continuous derivative here, since the factor $c(x)$ of its
 adjoint derivative vanishes. Away from the feasible set, the formula needs the extra term of
-`ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq`. -/
+`ConnGouldToint.Chapter14.fderiv_gradient_smoothExactPenalty_eq`.
+
+**Reading.** The pointwise derivative identities and positive-definiteness test are separated. The
+threshold theorem uses the least-squares multiplier at a feasible point with a surjective constraint
+derivative, and yields equivalence with the simultaneous first-order and tangent Hessian test.
+-/
 theorem fderiv_gradient_smoothExactPenalty_at_feasible [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hx : c x = 0) (hfull : Function.Surjective (fderiv ℝ c x)) (σ : ℝ) :
@@ -448,7 +487,12 @@ $\sigma > \sigma_{\min}$, the Hessian $\nabla_{xx} \phi(x, \sigma)$ is positive 
 only if
 $$\langle v, \nabla_{xx} \ell(x, y)\, v \rangle > 0 \quad\text{for all nonzero } v \in \ker A.$$
 
-The corresponding first-order statement is (14.6.6). -/
+The corresponding first-order statement is (14.6.6).
+
+**Reading.** The pointwise derivative identities and positive-definiteness test are separated. The
+threshold theorem uses the least-squares multiplier at a feasible point with a surjective constraint
+derivative, and yields equivalence with the simultaneous first-order and tangent Hessian test.
+-/
 theorem theorem_14_6_1 [FiniteDimensional ℝ G] [FiniteDimensional ℝ F]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hx : c x = 0) (hfull : Function.Surjective (fderiv ℝ c x)) :

@@ -101,6 +101,23 @@ they use Algorithms 1.1.2–1.1.3 of Chapter 1 and the results of §6.1.
 
 ## Deviations from the source
 
+* **§6.2.3, QR derivation** (generalization). Full row rank of $B$ suffices for the QR
+  construction given a reduced least-squares solution. Full column rank of $A$ suffices for
+  uniqueness. See `GolubVanLoan.Chapter06.isLSESolution_qr`.
+* **Equation (6.2.13)** (generalization). The stacked objective identity includes zero penalty
+  weight. For positive weight, the theorem also gives positive definiteness under the trivial
+  common-kernel condition. See `GolubVanLoan.Chapter06.equation_6_2_13`.
+* **Equation (6.2.1), solution predicate** (generalization). The closed-ball problem includes
+  radius zero. The source starts with a positive radius. See
+  `GolubVanLoan.Chapter06.IsSphereLSQISolution`.
+* **Algorithm 6.2.1** (reading). The program delegates the SVD and root steps. The supplied root
+  routine receives the exact secular function. See `GolubVanLoan.Chapter06.algorithm_6_2_1`.
+* **Equation (6.2.12)** (reading). The formula requires full row rank of $B$ to ensure nonzero
+  constraint denominators. See `GolubVanLoan.Chapter06.equation_6_2_12`.
+* **Equation (6.2.14) and penalty convergence** (generalization). Full row rank of $B$ and a
+  trivial common kernel suffice in place of full rank of both matrices. See
+  `GolubVanLoan.Chapter06.equation_6_2_14` and
+  `GolubVanLoan.Chapter06.tendsto_penaltyLSE_solution`.
 * **§6.2.1, the secular equation** (reading). The source's $f(0) > 0$ is read as
   $f(0^+) = \|x_{LS}\|_2^2 - \alpha^2 > 0$, because $x(\lambda)$ is $x_{LS}$ only in the limit. See
   `GolubVanLoan.Chapter06.secular_existsUnique`.
@@ -108,15 +125,15 @@ they use Algorithms 1.1.2–1.1.3 of Chapter 1 and the results of §6.1.
   holds for all $m$ and $n$. See `GolubVanLoan.Chapter06.algorithm_6_2_1_spec`.
 * **Equation (6.2.6)** (typo). The source cites "(6.2.23)" for (6.1.23). See
   `GolubVanLoan.Chapter06.equation_6_2_6`.
-* **Equation (6.2.7)** (reading). The source prints it in the block order of the GSVD of the third
-  edition, which is inconsistent with Theorem 6.1.1. The library uses the block order of Theorem
-  6.1.1. See `GolubVanLoan.Chapter06.equation_6_2_7`.
+* **Equation (6.2.7)** (generalization). The diagonal residual formula is stated for both tall and
+  wide rectangular matrices. For $m_1 \ge n_1$ it splits into the two sums printed in the source.
+  See `GolubVanLoan.Chapter06.equation_6_2_7`.
 * **Equation (6.2.8)** (correction). The source prints it in the block order of the third edition,
   and its second sum, over $\tilde d_i$ for $i = m_2 + 1, \dots, n_1$, is meaningless. See
   `GolubVanLoan.Chapter06.equation_6_2_8`.
-* **§6.2.3, non-uniqueness of the LSE solution** (reading). The printed sentence is garbled. The
-  library states that an LSE solution exists for $d \in \operatorname{ran}(B)$ and stays a solution
-  after adding a vector of $\operatorname{null}(A) \cap \operatorname{null}(B)$. See
+* **§6.2.3, non-uniqueness of the LSE solution** (generalization). The source gives a sufficient
+  condition for non-uniqueness. The theorem gives existence whenever $d \in \operatorname{ran}(B)$
+  and shows that every common null vector translates a solution to another solution. See
   `GolubVanLoan.Chapter06.isLSESolution_not_unique`.
 * **Algorithm 6.2.2** (generalization). The source assumes $m_2 < n_1$; the correctness statement
   allows $m_2 \le n_1$. See `GolubVanLoan.Chapter06.algorithm_6_2_2_spec`.
@@ -152,7 +169,10 @@ we consider the problem $\min_{\|x\|_2 \le \alpha} \|Ax - b\|_2$." A vector $x \
 with $\|y\|_2 \le \alpha$.
 
 The definition is `Matrix.IsLSQISolution` with $B = I$ and $d = 0$. It does not require
-$\alpha > 0$. -/
+$\alpha > 0$.
+
+**Reading.** Same constrained minimizer predicate also allows zero radius.
+-/
 def IsSphereLSQISolution (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) (α : ℝ)
     (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   Matrix.IsLSQISolution A b (1 : Matrix (Fin n) (Fin n) ℝ) 0 α x
@@ -306,7 +326,10 @@ The program does not assume $m \ge n$.
 "Compute the SVD" is the parameter `svd`, which returns $(U, \sigma, V)$. "Find $\lambda_+$" is
 the parameter `root`, which receives the secular function of the computed data. The indices
 $i = 1{:}r$ are the indices $i \le \min(m, n)$ with $\sigma_i \neq 0$; for sorted singular
-values these are the first $r$. -/
+values these are the first $r$.
+
+**Reading.** The caller supplies the SVD and positive-root routines. The root routine receives
+an exact scalar secular function. The rounding hook is used in the outer calculation. -/
 noncomputable def algorithm_6_2_1
     (svd : Matrix (Fin m) (Fin n) ℝ →
       M (Matrix (Fin m) (Fin m) ℝ × (ℕ → ℝ) × Matrix (Fin n) (Fin n) ℝ))
@@ -490,9 +513,8 @@ $$\|D_A y - \tilde b\|_2^2 = \sum_{i=1}^{\min(m_1, n_1)} (\alpha_i y_i - \tilde 
   \sum_{i=n_1+1}^{m_1} \tilde b_i^2.$$
 For $m_1 \ge n_1$ the first sum runs to $n_1$, as in the source.
 
-**Reading.** The source prints the equations of §6.2.2 in the block order of the GSVD of the
-third edition, which is inconsistent with Theorem 6.1.1. This statement uses the block order of
-Theorem 6.1.1.
+**Generalization.** This diagonal residual formula also holds for a wide matrix. In the tall
+case its in-range and extra-row terms give the two sums in the source.
 
 The matrix $D_A$ is `Matrix.rectDiagonal α`. -/
 theorem equation_6_2_7 {m₁ : ℕ} (α : ℕ → ℝ) (y : Fin n → ℝ) (bt : Fin m₁ → ℝ) :
@@ -577,7 +599,11 @@ $R^T y = d$ and the vector $z$ is obtained by solving the unconstrained LS probl
 $\min \|A_2 z - (b - A_1 y)\|_2$."
 
 The block $Q_1$ is `Matrix.firstColumns Q`, $Q_2$ is the remaining columns, and $R_1$ is
-`Matrix.firstRows R`. Full row rank of $B$ is `LinearIndependent ℝ B`. -/
+`Matrix.firstRows R`. Full row rank of $B$ is `LinearIndependent ℝ B`.
+
+**Reading.** Construction from full-row-rank B works without full column rank of A, still assuming
+it for uniqueness.
+-/
 theorem isLSESolution_qr {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {b : EuclideanSpace ℝ (Fin m₁)} {B : Matrix (Fin m₂) (Fin n) ℝ}
     {d : EuclideanSpace ℝ (Fin m₂)} (hpn : m₂ ≤ n) (hB : LinearIndependent ℝ B)
@@ -610,9 +636,10 @@ $z \in \operatorname{null}(A) \cap \operatorname{null}(B)$, then $x + z$ is also
 Hence the LSE solution is not unique if $\operatorname{null}(A) \cap \operatorname{null}(B) \neq
 \{0\}$.
 
-**Reading.** The sentence of the source about the non-uniqueness of the LSE solution when
-$\operatorname{null}(A) \cap \operatorname{null}(B) \neq \{0\}$ and
-$d \in \operatorname{ran}(B)$ is garbled in print. The statement fixes this reading of it. -/
+**Generalization.** The source concludes non-uniqueness when the common null space is nontrivial
+and $d \in \operatorname{ran}(B)$. The theorem gives existence whenever $d$ is in the range and
+exhibits the translations of each solution. Adding a common null vector preserves both the
+constraint $Bx = d$ and the residual $Ax - b$. -/
 theorem isLSESolution_not_unique {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {b : EuclideanSpace ℝ (Fin m₁)} {B : Matrix (Fin m₂) (Fin n) ℝ}
     {d : EuclideanSpace ℝ (Fin m₂)} (hd : d ∈ LinearMap.range (toEuclideanLin B)) :
@@ -644,7 +671,10 @@ In Lean, $m_1$ is `m` and $n_1$ is `n`. "Compute the QR factorization" is Househ
 that it returned. The triangular solve is forward substitution (Algorithm 3.1.1) on
 $R(1{:}m_2, 1{:}m_2)^T$, and the product $AQ$ is Algorithm 1.1.5. The residual
 $b - A(:, 1{:}m_2) y$ and the two products that form $x$ are gaxpys (Algorithm 1.1.3), and the
-negation is exact. "Find $z$" names no method, so it is the parameter `ls`. -/
+negation is exact. "Find $z$" names no method, so it is the parameter `ls`.
+
+**Reading.** Allows m₂=n and takes remaining least-squares computation as callback.
+-/
 noncomputable def algorithm_6_2_2 {m₂ : ℕ} (hpn : m₂ ≤ n)
     (ls : Matrix (Fin m) (Fin (n - m₂)) ℝ → (Fin m → ℝ) → M (Fin (n - m₂) → ℝ))
     (A : Matrix (Fin m) (Fin n) ℝ) (B : Matrix (Fin m₂) (Fin n) ℝ) (b : Fin m → ℝ)
@@ -811,7 +841,11 @@ which is inconsistent with Theorem 6.1.1. The formula here uses the block order 
 6.1.1.
 
 The sums are 0-based in Lean: the first is over $i < n_1 - m_2$, and the second is over
-$i \ge n_1 - m_2$ with $\tilde d_{i - (n_1 - m_2)}$. -/
+$i \ge n_1 - m_2$ with $\tilde d_{i - (n_1 - m_2)}$.
+
+**Reading.** The formulation requires $B$ to have full row rank, so all constraint denominators
+in the stated formula are nonzero. A trivial common kernel alone allows dependent constraint
+rows. -/
 theorem equation_6_2_12 {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {B : Matrix (Fin m₂) (Fin n) ℝ} {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ}
     {U₂ : Matrix (Fin m₂) (Fin m₂) ℝ} {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
@@ -838,7 +872,10 @@ $\|Ax - b\|_2^2 + \lambda \|Bx - d\|_2^2$. If $\lambda > 0$ and $\operatorname{n
 \operatorname{null}(B) = \{0\}$, then $A^T A + \lambda B^T B$ is positive definite.
 
 The solution $x(\lambda)$ of the normal equations $(A^T A + \lambda B^T B) x = A^T b + \lambda
-B^T d$ is `Matrix.penaltyLSE`. -/
+B^T d$ is `Matrix.penaltyLSE`.
+
+**Generalization.** For positive penalty weight the theorem also gives a positive definite
+normal matrix under the trivial common-kernel condition. -/
 theorem equation_6_2_13 {m₁ m₂ : ℕ} (A : Matrix (Fin m₁) (Fin n) ℝ) (B : Matrix (Fin m₂) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m₁)) (d : EuclideanSpace ℝ (Fin m₂)) {μ : ℝ} (hμ : 0 ≤ μ)
     (x : EuclideanSpace ℝ (Fin n)) :
@@ -877,7 +914,10 @@ $$x(\lambda) - x = \sum_{i=p+1}^{n_1} \frac{\alpha_i (\beta_i \tilde b_i - \alph
 block order of the third edition. It has $\lambda^2$ for $\lambda$, $u_i^T b$ and $v_i^T d$ for
 $\tilde b_i$ and $\tilde d_i$, and the range $1{:}p$.
 
-The vector $x(\lambda)$ is `Matrix.penaltyLSE A B b d μ`. -/
+The vector $x(\lambda)$ is `Matrix.penaltyLSE A B b d μ`.
+
+**Generalization.** Full row rank of $B$ and a trivial common kernel suffice. The source
+assumes full rank of both $A$ and $B$ for the penalty analysis. -/
 theorem equation_6_2_14 {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {B : Matrix (Fin m₂) (Fin n) ℝ} {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ}
     {U₂ : Matrix (Fin m₂) (Fin m₂) ℝ} {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
@@ -904,7 +944,11 @@ let $x$ solve the LSE problem $\min_{Bx = d} \|Ax - b\|_2$. Then "$x(\lambda) \t
 $\lambda \to \infty$", where $x(\lambda) = (A^T A + \lambda B^T B)^{-1} (A^T b + \lambda B^T
 d)$.
 
-The vector $x(\lambda)$ is `Matrix.penaltyLSE A B b d μ`. -/
+The vector $x(\lambda)$ is `Matrix.penaltyLSE A B b d μ`.
+
+**Reading.** Convergence as weight grows applies with trivial common kernel in place of full column
+rank A.
+-/
 theorem tendsto_penaltyLSE_solution {m₁ m₂ : ℕ} {A : Matrix (Fin m₁) (Fin n) ℝ}
     {B : Matrix (Fin m₂) (Fin n) ℝ} (hnm : n ≤ m₁) (hB : LinearIndependent ℝ B)
     (hAB : LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin = ⊥)

@@ -101,6 +101,25 @@ characterizations of the section.
 
 ## Deviations from the source
 
+* **Section 8, recession cone and lineality of sets** (generalization). The formulas for the
+  recession cone, lineality subspace and orthogonal decomposition apply to arbitrary sets.
+  Translation invariance characterizes lineality for every convex set, including the empty set.
+  See `Rockafellar.mem_recessionCone_iff`, `Rockafellar.mem_linealitySpace_iff`,
+  `Rockafellar.linealitySpace_eq_add_eq_surface`,
+  `Rockafellar.linealitySubmodule_isGreatest_surface` and
+  `Rockafellar.linealitySpace_add_inter_orthogonal`.
+* **Section 8, recession function and its epigraph** (generalization). The epigraph identities
+  hold for every $f$. The test at scale one holds for convex $f$, including the constant
+  $+\infty$. See `Rockafellar.epi_recessionFn_surface`,
+  `Rockafellar.mk_mem_recessionCone_epi_iff_surface` and
+  `Rockafellar.recessionFn_le_coe_iff_surface`.
+* **Section 8, recession cone and constancy space of functions** (generalization). The cone and
+  subspace identities hold for arbitrary functions. See `Rockafellar.recessionConeFn_eq_slice`,
+  `Rockafellar.recessionConeFn_cone`, `Rockafellar.mem_constancySpace_iff` and
+  `Rockafellar.constancySubmodule_isGreatest_surface`.
+* **Theorem 8.3** (generalization). The half-line condition also permits the zero direction, and
+  the existence of the half-line implies nonemptiness. See `Rockafellar.theorem_8_3` and
+  `Rockafellar.theorem_8_3_relint`.
 * **Theorem 8.1**, first assertion (generalization). The book assumes $C$ nonempty and convex;
   `Rockafellar.theorem_8_1_cone` holds for every set.
 * **Theorem 8.1**, second assertion (generalization). The book assumes $C$ nonempty;
@@ -124,6 +143,17 @@ characterizations of the section.
 * **Theorem 8.8**, (b) $\Leftrightarrow$ (c) and (a) $\Leftrightarrow$ (c) (generalization). The
   book assumes $f$ proper convex; `Rockafellar.theorem_8_8_b_iff_c` and
   `Rockafellar.theorem_8_8_a_iff_c` need only properness.
+* **Section 8, lineality space of a function** (generalization). The linear subspace and
+  projection formulas require properness without convexity. See
+  `Rockafellar.linealitySpaceFn_eq_image_surface` and
+  `Rockafellar.coe_linealitySubmoduleFn_surface`.
+
+## Not formalized
+
+* **Corollary 8.7.1 for an empty target sublevel.** The declaration uses the recession-cone
+  characterization for a nonempty target sublevel. The empty set is bounded directly.
+* **Closedness of the recession cone of an improper closed convex function.**
+  `Rockafellar.isClosed_recessionConeFn_surface` uses properness.
 -/
 
 open Bornology Filter Set Topology
@@ -148,6 +178,9 @@ recession cone $0^+ C$.
 $C \subseteq \mathbb{R}^n$ and $y \in \mathbb{R}^n$. Then $y \in 0^+ C$ if and only if
 $x + \lambda y \in C$ for every $x \in C$ and every $\lambda \ge 0$, that is, every half-line
 $\{x + \lambda y \mid \lambda \ge 0\}$ that starts at a point of $C$ lies in $C$.
+
+**Generalization.** The book defines the recession cone for nonempty convex sets. The same
+half-line condition defines it for arbitrary sets. For the empty set it holds for every $y$.
 
 This is the definition of `ConvexAnalysis.recessionCone`, unfolded. -/
 theorem mem_recessionCone_iff (C : Set (Rn n)) (y : Rn n) :
@@ -239,10 +272,8 @@ closed convex set, and let $y \in \mathbb{R}^n$. If there is a point $x$ such th
 $\{x + \lambda y \mid \lambda \ge 0\}$ lies in $C$, then $y \in 0^+ C$, so that every such
 half-line that starts in $C$ lies in $C$.
 
-The book's hypotheses $y \neq 0$ and $C \neq \emptyset$ are omitted. The first is the book's
-convention that the zero vector has no direction, and the second follows from the existence of
-the half-line. Closedness is essential: the book's example $C_4$ contains a half-line in the
-direction $(1, 0)$ but does not recede in this direction. -/
+**Generalization.** The book assumes $y \neq 0$ and $C \neq \emptyset$. The formula also covers
+the constant ray for $y = 0$, and its existence implies $C$ is nonempty. -/
 theorem theorem_8_3 {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) {y : Rn n}
     (h : ∃ x, ∀ l : ℝ, 0 ≤ l → x + l • y ∈ C) : y ∈ recessionCone C :=
   mem_recessionCone_of_exists_ray hC hCc h
@@ -253,7 +284,10 @@ $\{x + \lambda y \mid \lambda \ge 0\}$ lies in $C$, then $y \in 0^+(\operatornam
 each $x \in \operatorname{ri} C$, the half-line $\{x + \lambda y \mid \lambda \ge 0\}$ lies in
 $\operatorname{ri} C$.
 
-Finite dimension enters here, through Theorem 6.2. -/
+**Generalization.** The book assumes $y \neq 0$ and $C \neq \emptyset$. The constant ray for
+$y = 0$ satisfies the conclusion, and the ray hypothesis supplies a point of $C$.
+
+Finite dimension enters here through `Rockafellar.theorem_6_2_nonempty`. -/
 theorem theorem_8_3_relint {C : Set (Rn n)} (hC : Convex ℝ C) (hCc : IsClosed C) {y : Rn n}
     (h : ∃ x, ∀ l : ℝ, 0 ≤ l → x + l • y ∈ C) :
     y ∈ recessionCone (ri C) := by
@@ -363,7 +397,11 @@ $C \subseteq \mathbb{R}^n$ and $y \in \mathbb{R}^n$. Then $y$ is in the linealit
 $(-0^+ C) \cap 0^+ C$ of $C$ if and only if $y \in 0^+ C$ and $y \in -0^+ C$.
 
 The lineality space consists of the zero vector and the vectors $y \neq 0$ such that, for every
-$x \in C$, the whole line through $x$ in the direction of $y$ lies in $C$. -/
+$x \in C$, the whole line through $x$ in the direction of $y$ lies in $C$.
+
+**Generalization.** The book defines lineality for nonempty convex sets. The intersection of
+the recession cone with its negative applies to every set. For the empty set it is the whole
+space. -/
 theorem mem_linealitySpace_iff (C : Set (Rn n)) (y : Rn n) :
     y ∈ linealitySpace C ↔ y ∈ recessionCone C ∧ y ∈ -recessionCone C :=
   Iff.rfl
@@ -371,7 +409,8 @@ theorem mem_linealitySpace_iff (C : Set (Rn n)) (y : Rn n) :
 /-- **Section 8** of [rockafellar1970convex], the exercise on the lineality space. Let
 $C \subseteq \mathbb{R}^n$ be convex. Then the lineality space of $C$ is $\{y \mid C + y = C\}$.
 
-The book calls this an "elementary exercise". -/
+**Generalization.** The book discusses nonempty convex sets. For the empty set every translation
+fixes the set and every direction belongs to its lineality space. -/
 theorem linealitySpace_eq_add_eq_surface {C : Set (Rn n)} (hC : Convex ℝ C) :
     linealitySpace C = {y : Rn n | C + {y} = C} :=
   linealitySpace_eq_add_eq hC
@@ -379,6 +418,9 @@ theorem linealitySpace_eq_add_eq_surface {C : Set (Rn n)} (hC : Convex ℝ C) :
 /-- **Section 8** of [rockafellar1970convex], the lineality space as a subspace. For every
 $C \subseteq \mathbb{R}^n$, the lineality space of $C$ is the largest subspace of $\mathbb{R}^n$
 contained in $0^+ C$.
+
+**Generalization.** The book discusses lineality for nonempty convex sets. The recession cone
+is convex and contains zero for every set, which suffices for the largest-subspace assertion.
 
 This is Theorem 2.7 applied to the convex cone $0^+ C$. The dimension of the lineality space is
 the lineality of $C$, `ConvexAnalysis.lineality C`. -/
@@ -390,6 +432,10 @@ theorem linealitySubmodule_isGreatest_surface (C : Set (Rn n)) :
 /-- **Section 8** of [rockafellar1970convex], the direct-sum decomposition. Let
 $C \subseteq \mathbb{R}^n$, and let $L$ be its lineality space. Then
 $$C = L + (C \cap L^\perp).$$
+
+**Generalization.** The book assumes a nonempty convex set with nontrivial lineality space.
+The formula follows from the orthogonal decomposition and translation invariance along $L$,
+which hold for every set and its lineality subspace.
 
 Any complement of $L$ would do. The orthogonal complement is the only place where §8 would need
 an inner product. -/
@@ -445,9 +491,8 @@ variable {f : Rn n → EReal}
 $f : \mathbb{R}^n \to [-\infty, +\infty]$,
 $$\operatorname{epi}(f0^+) = 0^+(\operatorname{epi} f).$$
 
-No hypothesis is needed: the recession cone of an epigraph is an epigraph for every $f$. The
-book's hypothesis that $f$ is not identically $+\infty$ makes the interpretation interesting,
-but the identity does not need it. -/
+**Generalization.** The book assumes convex $f$ with nonempty epigraph. The recession cone of
+an epigraph is itself an epigraph even when $f$ is nonconvex or identically $+\infty$. -/
 theorem epi_recessionFn_surface (f : Rn n → EReal) : epi (recessionFn f) = recessionCone (epi f) :=
   epi_recessionFn f
 
@@ -456,7 +501,9 @@ $0^+(\operatorname{epi} f)$. Let $f : \mathbb{R}^n \to [-\infty, +\infty]$, $y \
 and $\nu \in \mathbb{R}$. Then $(y, \nu) \in 0^+(\operatorname{epi} f)$ if and only if
 $$f(x + \lambda y) \le f(x) + \lambda \nu \quad \text{for every } x \in \mathbb{R}^n \text{ and
   every } \lambda \ge 0.$$
--/
+
+**Generalization.** The book assumes convex $f$ with nonempty epigraph. The two inequalities
+are equivalent for every function by the definition of epigraph. -/
 theorem mk_mem_recessionCone_epi_iff_surface (y : Rn n) (ν : ℝ) :
     ((y, ν) : Rn n × ℝ) ∈ recessionCone (epi f) ↔
       ∀ (x : Rn n) (l : ℝ), 0 ≤ l → f (x + l • y) ≤ f x + ((l * ν : ℝ) : EReal) :=
@@ -466,6 +513,9 @@ theorem mk_mem_recessionCone_epi_iff_surface (y : Rn n) (ν : ℝ) :
 function on $\mathbb{R}^n$, $y \in \mathbb{R}^n$ and $\nu \in \mathbb{R}$. Then
 $(f0^+)(y) \le \nu$ if and only if
 $$f(x + y) \le f(x) + \nu \quad \text{for every } x \in \mathbb{R}^n.$$
+
+**Generalization.** The book assumes that the epigraph is nonempty. When $f$ is identically
+$+\infty$, every direction is in its recession cone and the inequality is true.
 
 So the inequality of the characterization holds for every $\lambda \ge 0$ as soon as it holds
 for $\lambda = 1$. -/
@@ -658,8 +708,10 @@ $f : \mathbb{R}^n \to [-\infty, +\infty]$, the recession cone $\{y \mid (f0^+)(y
 $f$ is the horizontal slice of $0^+(\operatorname{epi} f)$ at height $0$:
 $$\{y \mid (f0^+)(y) \le 0\} = \{y \mid (y, 0) \in 0^+(\operatorname{epi} f)\}.$$
 
-The book warns that the recession cone of $f$ is not $0^+(\operatorname{epi} f)$. The recession
-cone of $f$ is `ConvexAnalysis.recessionConeFn f`. -/
+**Generalization.** The book defines the recession cone for convex $f$. The height-zero slice
+of the epigraph recession cone gives the same description for every function.
+
+The recession cone of $f$ is `ConvexAnalysis.recessionConeFn f`. -/
 theorem recessionConeFn_eq_slice (f : Rn n → EReal) :
     recessionConeFn f = {y : Rn n | ((y, (0 : ℝ)) : Rn n × ℝ) ∈ recessionCone (epi f)} := by
   ext y
@@ -678,7 +730,10 @@ theorem recessionConeFn_subset_recessionCone_convexDom (f : Rn n → EReal) :
   mem_convexDom.2 (lt_of_le_of_lt (add_smul_le_of_recessionFn_nonpos hy x hl) (mem_convexDom.1 hx))
 
 /-- For every $f : \mathbb{R}^n \to [-\infty, +\infty]$, the recession cone of $f$ is a convex cone
-containing the origin, in the sense of `Rockafellar.IsCone`. -/
+containing the origin, in the sense of `Rockafellar.IsCone`.
+
+**Generalization.** The book gives the cone property for convex $f$. The height-zero slice of
+the recession cone of the epigraph is a convex cone containing zero for every $f$. -/
 theorem recessionConeFn_cone (f : Rn n → EReal) :
     IsCone (recessionConeFn f) ∧ Convex ℝ (recessionConeFn f) ∧
       (0 : Rn n) ∈ recessionConeFn f := by
@@ -686,7 +741,14 @@ theorem recessionConeFn_cone (f : Rn n → EReal) :
   exact Submodule.smul_mem (recessionPointedConeFn f) (⟨l, hl.le⟩ : {c : ℝ // 0 ≤ c}) hy
 
 /-- Let $f$ be a closed proper convex function on $\mathbb{R}^n$. Then the recession cone of $f$ is
-closed. -/
+closed.
+
+The book states closedness whenever a convex function is closed. This declaration uses the
+closed epigraph of a closed proper convex function.
+
+**Reading.** The Lean proposition uses the closed proper convex setting, whereas the source says the
+cone is closed whenever the convex function is closed.
+-/
 theorem isClosed_recessionConeFn_surface (hf : ClosedProperConvexFn f) :
     IsClosed (recessionConeFn f) :=
   isClosed_recessionConeFn hf.isClosed_epi
@@ -696,7 +758,8 @@ $f : \mathbb{R}^n \to [-\infty, +\infty]$ and $y \in \mathbb{R}^n$. Then $y$ is 
 space of $f$, the set of $y$ with $(f0^+)(y) \le 0$ and $(f0^+)(-y) \le 0$, if and only if
 $f(x + \lambda y) = f(x)$ for every $x \in \mathbb{R}^n$ and every $\lambda \in \mathbb{R}$.
 
-This is Corollary 8.6.1 read as a description of `ConvexAnalysis.constancySpace f`. -/
+**Generalization.** Corollary 8.6.1 states the constancy criterion for proper convex functions.
+The equivalence also describes `ConvexAnalysis.constancySpace f` for every function. -/
 theorem mem_constancySpace_iff (f : Rn n → EReal) (y : Rn n) :
     y ∈ constancySpace f ↔ ∀ (x : Rn n) (l : ℝ), f (x + l • y) = f x :=
   mem_constancySpace_iff_forall_eq
@@ -705,7 +768,9 @@ theorem mem_constancySpace_iff (f : Rn n → EReal) (y : Rn n) :
 $f : \mathbb{R}^n \to [-\infty, +\infty]$, the constancy space of $f$ is the largest subspace of
 $\mathbb{R}^n$ contained in the recession cone of $f$.
 
-This is Theorem 2.7 applied to the recession cone of $f$. -/
+**Generalization.** The book describes the constancy subspace in the convex setting. The
+recession cone of any function is a convex cone containing zero, so the largest-subspace
+characterization of Theorem 2.7 applies. -/
 theorem constancySubmodule_isGreatest_surface (f : Rn n → EReal) :
     IsGreatest {L : Submodule ℝ (Rn n) | (L : Set (Rn n)) ⊆ recessionConeFn f}
       (constancySubmodule f) :=
@@ -738,7 +803,12 @@ $\mathbb{R}^n$, and let $\alpha, \beta$ be real numbers. If the level set
 $\{x \mid f(x) \le \alpha\}$ is nonempty and bounded, and the level set
 $\{x \mid f(x) \le \beta\}$ is nonempty, then $\{x \mid f(x) \le \beta\}$ is bounded.
 
-This is the only place where finite dimension enters for functions in §8. -/
+The printed conclusion applies to every sublevel. The declaration gives the nonempty case,
+where the proof uses finite dimension. An empty sublevel is bounded directly.
+
+**Reading.** The target weak sublevel is assumed nonempty. Empty targets are also bounded, as the
+source states.
+-/
 theorem corollary_8_7_1 (hf : ClosedProperConvexFn f) {α β : ℝ}
     (hneα : {x : Rn n | f x ≤ (α : EReal)}.Nonempty)
     (hbα : IsBounded {x : Rn n | f x ≤ (α : EReal)})
@@ -815,6 +885,9 @@ function on $\mathbb{R}^n$. Then the lineality space of $f$, the set of $y$ with
 $(f0^+)(-y) = -(f0^+)(y)$, is the image of the lineality space of $\operatorname{epi} f$ under
 the projection $(y, \nu) \mapsto y$.
 
+**Generalization.** The book assumes proper convexity. The epigraph-lineality identity only
+needs properness, by `Rockafellar.theorem_8_8_b_iff_c`.
+
 This follows from Theorem 8.8. The dimension of the lineality space of $f$ is the lineality of
 $f$, `ConvexAnalysis.linealityFn f`. -/
 theorem linealitySpaceFn_eq_image_surface (hp : ProperConvex f) :
@@ -824,7 +897,8 @@ theorem linealitySpaceFn_eq_image_surface (hp : ProperConvex f) :
 /-- Let $f$ be a proper function on $\mathbb{R}^n$. Then the lineality space of $f$ is a subspace of
 $\mathbb{R}^n$: it is the carrier of `ConvexAnalysis.linealitySubmoduleFn f`.
 
-The proof is Theorem 8.8. -/
+**Generalization.** The book describes the lineality subspace for proper convex functions.
+Properness suffices to identify it with the image of the epigraph's lineality subspace. -/
 theorem coe_linealitySubmoduleFn_surface (hp : ProperConvex f) :
     (linealitySubmoduleFn f : Set (Rn n)) = linealitySpaceFn f :=
   coe_linealitySubmoduleFn hp

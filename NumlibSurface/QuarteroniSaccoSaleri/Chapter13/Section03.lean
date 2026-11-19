@@ -151,6 +151,30 @@ $\lambda_{\max} \ge c \nu N^4$ makes a condition of this form necessary.
 
 ## Deviations from the source
 
+* **Equations (13.12)–(13.17)** (reading). The weak solution has a strong $L^2$ within
+  derivative on a closed finite interval, including time zero. The discrete problems use
+  abstract real inner-product spaces, continuous forms, and bounded loads. The matrix statements
+  use Gram matrices and the one-step predicates use total scalar division. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_12` and
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_17`.
+* **Equations (13.18)–(13.21) and Exercises 13.3–13.4** (generalization). The energy identities
+  use an abstract form and dual load norm. The forced estimate gives explicit constants and one
+  dissipation term where the source uses twice that term and an unspecified $C(n)$. The unforced
+  and forced versions of Exercise 13.4 are stated separately. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_21` and
+  `QuarteroniSaccoSaleri.Chapter13.exercise_13_4`.
+* **Definition 13.1 and the modal analysis after (13.22)** (reading). An eigenvector must be
+  nonzero. The source drops the Kronecker delta in the last intermediate equality
+  $\lambda_h^j\delta_{ij}=\lambda_h^i$; testing a single mode gives the printed scalar
+  recursion. The conditional criterion uses nonexpansivity and includes the equality case. See
+  `QuarteroniSaccoSaleri.Chapter13.definition_13_1` and
+  `QuarteroniSaccoSaleri.Chapter13.thetaMethod_eigen_recursion`.
+* **Equations (13.23)–(13.24)** (reading). The displayed time-step theorems give sufficient
+  bounds with explicit constants. The lower eigenvalue bounds that establish the necessary order
+  are separate. The spectral estimate uses the Lobatto method on the reference interval
+  $[-1,1]$. See `QuarteroniSaccoSaleri.Chapter13.equation_13_23`,
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_24` and
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_24_lower`.
 * **Exercise 2, the hint** (typo). The hint prints $m_{ij} = (h/6) \cdot \{1/2 \ (i \neq j), 1 \
   (i = j)\}$. The exact integrals are $\int \varphi_i^2 = 2h/3$ and
   $\int \varphi_i \varphi_{i \pm 1} = h/6$, so $M = (h/6) \operatorname{tridiag}(1, 4, 1)$, which is
@@ -212,13 +236,19 @@ $$a(u, v) = \nu \int_0^1 u' v'$$
 on $H^1(0, 1)$, where $u'$ and $v'$ are the weak derivatives.
 
 It is the form (12.44) with $\alpha = \nu$ and $\beta = \gamma = 0$. The weak problem uses its
-restriction to $H^1_0(0, 1)$. -/
+restriction to $H^1_0(0, 1)$.
+
+**Generalization.** The derivative form acts on all of $H^1(0,1)$ and accepts any real
+diffusivity. -/
 def heatForm (ν : ℝ) : SesqForm ℝ (SobolevInterval 1 0 1) :=
   ν • ((((innerSL ℝ : SesqForm ℝ (Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))).comp
     (SobolevInterval.derivL 1 0 1 1)).flip.comp (SobolevInterval.derivL 1 0 1 1)).flip)
 
 /-- For $\nu \in \mathbb{R}$ and $u, v \in H^1(0, 1)$, the heat form is
-$a(u, v) = \nu (u', v')_{L^2(0,1)}$, the $L^2$ inner product of the weak derivatives. -/
+$a(u, v) = \nu (u', v')_{L^2(0,1)}$, the $L^2$ inner product of the weak derivatives.
+
+**Reading.** Same expression on the full Sobolev space.
+-/
 @[simp]
 theorem heatForm_apply (ν : ℝ) (u v : SobolevInterval 1 0 1) :
     heatForm ν u v = ν * ⟪SobolevInterval.deriv u 1, SobolevInterval.deriv v 1⟫ := rfl
@@ -226,7 +256,9 @@ theorem heatForm_apply (ν : ℝ) (u v : SobolevInterval 1 0 1) :
 /-- **Equation (13.18)** of [quarteroni2000numerical]. For $\nu \in \mathbb{R}$ and
 $v \in H^1(0, 1)$,
 $$a(v, v) = \nu \|\partial_x v\|^2_{L^2(0,1)}.$$
--/
+
+**Generalization.** The derivative energy identity holds for every $H^1$ function and real
+diffusivity. -/
 theorem equation_13_18 (ν : ℝ) (v : SobolevInterval 1 0 1) :
     heatForm ν v v = ν * ‖SobolevInterval.deriv v 1‖ ^ 2 := by
   rw [heatForm_apply, real_inner_self_eq_norm_sq]
@@ -262,7 +294,10 @@ within $[0, T]$, such that for every $t \in [0, T]$ and every $v \in H^1_0(0, 1)
 $$(\partial_t u(t), v)_{L^2} + a(u(t), v) = (f(t), v)_{L^2}.$$
 
 Only the definition is stated. The existence and uniqueness of weak solutions is Bochner-space
-theory (the theorem of Lions) and is not formalized. -/
+theory (the theorem of Lions) and is not formalized.
+
+**Reading.** A strong $L^2$ within derivative is required on the full closed time interval. The
+solution has zero traces also at time zero. -/
 def equation_13_12 (ν T : ℝ) (f : ℝ → Lp ℝ 2 (volume.restrict (Ioo (0 : ℝ) 1)))
     (u₀ : SobolevInterval 1 0 1) (u : ℝ → SobolevInterval 1 0 1) : Prop :=
   (∀ t ∈ Icc (0 : ℝ) T, u t ∈ SobolevIntervalZero 0 1) ∧ u 0 = u₀ ∧
@@ -285,7 +320,10 @@ function $u : \mathbb{R} \to V$ solves the problem if $u(0) = u_0$ and $u$ has a
 $\partial_t u$ within $[0, T]$ such that for every $t \in [0, T]$ and every $v \in V$
 $$(\partial_t u(t), v) + a(u(t), v) = F(t)(v).$$
 
-The definition is `Variational.IsSemidiscreteGalerkin` for a form that does not depend on time. -/
+The definition is `Variational.IsSemidiscreteGalerkin` for a form that does not depend on time.
+
+**Generalization.** The Galerkin equation allows abstract real inner-product spaces and
+continuous forms and loads. -/
 def equation_13_13 (a : SesqForm ℝ V) (F : ℝ → V →L[ℝ] ℝ) (u₀ : V) (T : ℝ) (u : ℝ → V) : Prop :=
   Variational.IsSemidiscreteGalerkin (fun _ => a) F u₀ T u
 
@@ -298,7 +336,10 @@ $$\|u(t)\|^2 \le e^{-\gamma t} \|u_0\|^2 + \frac{1}{\gamma} \int_0^t e^{\gamma(s
 
 This is $E_h(t) \le e^{-\gamma t} E_h(0) + \gamma^{-1} \int_0^t e^{\gamma(s - t)} F(s)\, ds$
 with $E_h(t) = \|u_h(t)\|^2_{L^2}$ and $F(t) = \varphi(t)^2 = \|f(t)\|^2_{L^2}$. For the heat
-equation $\gamma = \nu/C_P^2$ by `QuarteroniSaccoSaleri.Chapter13.heatForm_l2_coercive`. -/
+equation $\gamma = \nu/C_P^2$ by `QuarteroniSaccoSaleri.Chapter13.heatForm_l2_coercive`.
+
+**Generalization.** An abstract coercivity constant and a continuous bound for the norm of the
+load replace the heat-specific quantities. -/
 theorem equation_13_13_energy {a : SesqForm ℝ V} {F : ℝ → V →L[ℝ] ℝ} {u₀ : V} {T : ℝ} {u : ℝ → V}
     (h : equation_13_13 a F u₀ T u) {γ : ℝ} (hγ : 0 < γ) (hcoer : a.IsCoerciveWith γ)
     {φ : ℝ → ℝ} (hφ : ContinuousOn φ (Icc 0 T)) (hF : ∀ t ∈ Icc 0 T, ‖F t‖ ≤ φ t)
@@ -325,7 +366,10 @@ $(A_{fe})_{ij} = a(\varphi_j, \varphi_i)$, the load vector $(f_{fe})_i(t) = F(t)
 and the coordinate vector $\xi_0$ of $u_0$.
 
 The matrix system is `FiniteDifference.IsSemidiscrete`, and the Gram matrices are
-`SesqForm.gramMatrix`. -/
+`SesqForm.gramMatrix`.
+
+**Generalization.** The matrix equation applies to arbitrary finite bases, with the mass and
+stiffness represented by Gram matrices. -/
 theorem equation_13_14 (φ : Module.Basis ι ℝ V) (a : SesqForm ℝ V) (F : ℝ → V →L[ℝ] ℝ) (u₀ : V)
     (T : ℝ) (u : ℝ → V) :
     equation_13_13 a F u₀ T u ↔
@@ -338,7 +382,10 @@ set_option linter.unusedFintypeInType false in
 omit [FiniteDimensional ℝ V] in
 /-- **Section 13.3** of [quarteroni2000numerical], the mass matrix is nonsingular. For a basis
 $(\varphi_i)$ of $V$, the Gram matrix $M_{ij} = (\varphi_j, \varphi_i)$ of the inner product is
-symmetric positive definite. -/
+symmetric positive definite.
+
+**Generalization.** The Gram matrix of any finite basis is positive definite, which implies the
+source's nonsingularity conclusion. -/
 theorem massMatrix_gram_posDef (φ : Module.Basis ι ℝ V) :
     (SesqForm.gramMatrix (innerSL ℝ) φ).PosDef :=
   FiniteDifference.massMatrix_posDef φ.linearIndependent
@@ -347,7 +394,9 @@ theorem massMatrix_gram_posDef (φ : Module.Basis ι ℝ V) :
 positive definite, and let $A$, $f$, $\xi_0$, $T$ and $\xi$ be given. Then $\xi$ solves
 $M \dot\xi + A \xi = f$ with $\xi(0) = \xi_0$ on $[0, T]$ if and only if it solves
 $$\dot\xi = -M^{-1} A \xi + M^{-1} f, \qquad \xi(0) = \xi_0.$$
--/
+
+**Generalization.** The normal form takes an arbitrary positive-definite mass matrix and
+stiffness matrix on a closed finite time interval. -/
 theorem equation_13_15 [DecidableEq ι] {M : Matrix ι ι ℝ} (hM : M.PosDef) (A : Matrix ι ι ℝ)
     (f : ℝ → ι → ℝ) (ξ₀ : ι → ℝ) (T : ℝ) (ξ : ℝ → ι → ℝ) :
     FiniteDifference.IsSemidiscrete M A f ξ₀ T ξ ↔
@@ -360,14 +409,18 @@ iterates $\xi^k$, $\xi^{k+1}$, the relation is
 $$M \frac{\xi^{k+1} - \xi^k}{\Delta t} + A \bigl(\theta \xi^{k+1} + (1 - \theta) \xi^k\bigr) =
   \theta f^{k+1} + (1 - \theta) f^k.$$
 
-The arguments `f₀`, `f₁`, `ξ` and `ξ'` are $f^k$, $f^{k+1}$, $\xi^k$ and $\xi^{k+1}$. -/
+The arguments `f₀`, `f₁`, `ξ` and `ξ'` are $f^k$, $f^{k+1}$, $\xi^k$ and $\xi^{k+1}$.
+
+**Reading.** The one-step predicate is total in $\Delta t$, including zero. -/
 def equation_13_16 (M A : Matrix ι ι ℝ) (θ Δt : ℝ) (f₀ f₁ ξ ξ' : ι → ℝ) : Prop :=
   M *ᵥ (Δt⁻¹ • (ξ' - ξ)) + A *ᵥ (θ • ξ' + (1 - θ) • ξ) = θ • f₁ + (1 - θ) • f₀
 
 /-- Let $M$ be symmetric positive definite, let $A$ satisfy $x^T A x \ge 0$ for all $x$, and let
 $\theta \ge 0$ and $\Delta t > 0$. Then $\xi^{k+1}$ satisfies the $\theta$-method (13.16) if and
 only if it is `FiniteDifference.thetaStep` of $\xi^k$, the step with the system matrix
-$M + \theta \Delta t A$, which is invertible. -/
+$M + \theta \Delta t A$, which is invertible.
+
+**Generalization.** The matrices are abstract and $\theta$ may be any nonnegative real. -/
 theorem equation_13_16_iff [DecidableEq ι] {M A : Matrix ι ι ℝ} (hM : M.PosDef)
     (hA : ∀ x, 0 ≤ x ⬝ᵥ (A *ᵥ x)) {θ Δt : ℝ} (hθ : 0 ≤ θ) (hΔt : 0 < Δt) (f₀ f₁ ξ ξ' : ι → ℝ) :
     equation_13_16 M A θ Δt f₀ f₁ ξ ξ' ↔ ξ' = FiniteDifference.thetaStep M A θ Δt f₀ f₁ ξ :=
@@ -381,7 +434,10 @@ $\theta$-method. Let $M$ and $A$ be symmetric positive definite, $\theta \ge 0$ 
 $\Delta t > 0$. Then
 $$K = \Delta t^{-1} M + \theta A$$
 is symmetric positive definite. So its Cholesky factorization can be computed once for all time
-steps. -/
+steps.
+
+**Generalization.** The system matrix may use any positive-definite mass and stiffness
+matrices. -/
 theorem equation_13_16_posDef {M A : Matrix ι ι ℝ} (hM : M.PosDef)
     (hA : A.PosDef) {θ Δt : ℝ} (hθ : 0 ≤ θ) (hΔt : 0 < Δt) :
     (Δt⁻¹ • M + θ • A).PosDef :=
@@ -390,12 +446,19 @@ theorem equation_13_16_posDef {M A : Matrix ι ι ℝ} (hM : M.PosDef)
 /-- **Section 13.3** of [quarteroni2000numerical], the mass matrix of the piecewise linear finite
 element space (12.57) on the uniform mesh with $h = 1/n$. It is the matrix of order $n - 1$
 $$M = \frac{h}{6} \operatorname{tridiag}(1, 4, 1),$$
-with $2h/3$ on the diagonal and $h/6$ on the two neighbouring diagonals. -/
+with $2h/3$ on the diagonal and $h/6$ on the two neighbouring diagonals.
+
+**Correction.** Corrected uniform linear-element mass matrix has h/6 times tridiagonal (1,4,1).
+-/
 def massMatrix (n : ℕ) : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ :=
   (1 / (6 * (n : ℝ))) • Matrix.symmTridiagonalToeplitz (n - 1) 1 4
 
 /-- For $n \ge 1$, the mass matrix $M = (h/6) \operatorname{tridiag}(1, 4, 1)$ is symmetric positive
-definite, because $\operatorname{tridiag}(1, 4, 1)$ is strictly diagonally dominant. -/
+definite, because $\operatorname{tridiag}(1, 4, 1)$ is strictly diagonally dominant.
+
+**Correction.** Strengthens nonsingularity to positive definiteness for exact integration with
+corrected entries.
+-/
 theorem massMatrix_posDef {n : ℕ} (hn : 0 < n) : (massMatrix n).PosDef := by
   have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
   exact (Matrix.posDef_symmTridiagonalToeplitz (n - 1) (by norm_num)).smul
@@ -412,7 +475,10 @@ variable {n : ℕ} {x : ℕ → ℝ}
 /-- Let $0 = x_0 < x_1 < \cdots < x_n = 1$ be the uniform mesh, $n \ge 1$, with
 $x_{k+1} - x_k = 1/n$. Then the mass matrix $M = (h/6) \operatorname{tridiag}(1, 4, 1)$ is the
 Gram matrix `FiniteElement.massMatrix` of the interior hat functions
-$\varphi_1, \ldots, \varphi_{n-1}$ for the $L^2(0, 1)$ inner product. -/
+$\varphi_1, \ldots, \varphi_{n-1}$ for the $L^2(0, 1)$ inner product.
+
+**Correction.** Verifies corrected exact matrix against the hat basis Gram matrix.
+-/
 theorem massMatrix_eq_gram (hx : IsIntervalPartition 0 1 n x) (hn : 1 ≤ n)
     (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) :
     massMatrix n
@@ -538,7 +604,9 @@ open scoped Real
 uniform piecewise linear space with $h = 1/n$. For $\nu \in \mathbb{R}$ it is the matrix of
 order $n - 1$
 $$A_{fe} = \frac{\nu}{h} \operatorname{tridiag}(-1, 2, -1).$$
--/
+
+**Generalization.** The uniform interior matrix from Program 100 is expressed for arbitrary
+real diffusivity. -/
 noncomputable def heatStiffnessMatrix (ν : ℝ) (n : ℕ) :
     Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ :=
   (ν * (n : ℝ)) • Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2
@@ -546,7 +614,10 @@ noncomputable def heatStiffnessMatrix (ν : ℝ) (n : ℕ) :
 /-- Let $0 = x_0 < x_1 < \cdots < x_n = 1$ be the uniform mesh, $n \ge 1$, with
 $x_{k+1} - x_k = 1/n$, and let $\nu \in \mathbb{R}$. Then the stiffness matrix $A_{fe} = (\nu/h)
 \operatorname{tridiag}(-1, 2, -1)$ is the Gram matrix `FiniteElement.stiffnessMatrix` of the
-interior hat functions for the heat form $a(u, v) = \nu \int u' v'$. -/
+interior hat functions for the heat form $a(u, v) = \nu \int u' v'$.
+
+**Reading.** Verifies the matrix formula on a uniform linear mesh, even for arbitrary real ν.
+-/
 theorem heatStiffnessMatrix_eq_gram {n : ℕ} {x : ℕ → ℝ} (hx : IsIntervalPartition 0 1 n x)
     (hn : 1 ≤ n) (huni : ∀ k < n, x (k + 1) - x k = 1 / (n : ℝ)) (ν : ℝ) :
     heatStiffnessMatrix ν n
@@ -602,7 +673,10 @@ for some $i \in \{1, \ldots, n - 1\}$.
 
 Both matrices are symmetric tridiagonal Toeplitz matrices, so $A_{fe} - \lambda M$ is one too,
 and it is singular exactly when one of its cosine eigenvalues vanishes. In Lean the index
-`k : Fin (n - 1)` stands for $i = k + 1$. -/
+`k : Fin (n - 1)` stands for $i = k + 1$.
+
+**Reading.** This supplies the explicit spectrum for the uniform linear-element instance of the
+generalized eigenproblem. -/
 theorem pencil_hasEigenvalue_iff {n : ℕ} (hn : 1 ≤ n) (ν : ℝ) (lam : ℝ) :
     (∃ ξ : Fin (n - 1) → ℝ, ξ ≠ 0 ∧
         heatStiffnessMatrix ν n *ᵥ ξ = lam • (massMatrix n *ᵥ ξ))
@@ -719,7 +793,10 @@ $$\Bigl(\frac{u^{k+1} - u^k}{\Delta t}, v\Bigr) + a\bigl(\theta u^{k+1} + (1 - \
   v\bigr) = \theta F^{k+1}(v) + (1 - \theta) F^k(v).$$
 
 The method is a relation between consecutive iterates, so the implicit cases need no inverse.
-The definition is `Variational.IsThetaStep`. -/
+The definition is `Variational.IsThetaStep`.
+
+**Generalization.** This is one Galerkin update for an abstract real inner-product space and
+any real $\theta,\Delta t$. -/
 def equation_13_17 (a : SesqForm ℝ V) (θ Δt : ℝ) (F₀ F₁ : V →L[ℝ] ℝ) (u u' : V) : Prop :=
   Variational.IsThetaStep a θ Δt F₀ F₁ u u'
 
@@ -729,7 +806,11 @@ $\theta \ge 0$ and $\Delta t > 0$. Then $u^k, u^{k+1}$ satisfy (13.17) if and on
 coordinate vector of $u^{k+1}$ is the matrix $\theta$-step `FiniteDifference.thetaStep` of the
 coordinate vector of $u^k$, with the mass matrix $M_{ij} = (\varphi_j, \varphi_i)$, the
 stiffness matrix $a(\varphi_j, \varphi_i)$ and the load vectors $F^k(\varphi_i)$ and
-$F^{k+1}(\varphi_i)$. -/
+$F^{k+1}(\varphi_i)$.
+
+**Generalization.** Generalizes to finite-dimensional real inner-product spaces and nonnegative
+forms.
+-/
 theorem equation_13_17_iff_thetaStep [FiniteDimensional ℝ V] {ι : Type*} [Fintype ι]
     [DecidableEq ι] (φ : Module.Basis ι ℝ V) (a : SesqForm ℝ V) {θ Δt : ℝ} (hθ : 0 ≤ θ)
     (hΔt : 0 < Δt) (hpos : a.IsCoerciveWith 0) (F₀ F₁ : V →L[ℝ] ℝ) (u u' : V) :
@@ -741,7 +822,9 @@ theorem equation_13_17_iff_thetaStep [FiniteDimensional ℝ V] {ι : Type*} [Fin
 /-- **Exercise 3 of Chapter 13** of [quarteroni2000numerical], the inequality of its hint. For all
 $u, v$ in a real inner product space,
 $$(u - v, u) \ge \frac{1}{2} \bigl(\|u\|^2 - \|v\|^2\bigr).$$
-This inequality turns the backward Euler step, tested with $u^{k+1}$, into (13.19). -/
+This inequality turns the backward Euler step, tested with $u^{k+1}$, into (13.19).
+
+**Generalization.** The hint's $L^2$ inequality holds in every real inner-product space. -/
 theorem exercise_13_3 (u v : V) : (1 / 2 : ℝ) * (‖u‖ ^ 2 - ‖v‖ ^ 2) ≤ ⟪u - v, u⟫ :=
   Variational.half_norm_sq_sub_le_inner_sub u v
 
@@ -749,7 +832,10 @@ theorem exercise_13_3 (u v : V) : (1 / 2 : ℝ) * (‖u‖ ^ 2 - ‖v‖ ^ 2) �
 backward Euler step ($\theta = 1$) of (13.17) from $u^k$ without sources. Then
 $$\|u^{k+1}\|^2 + 2 \Delta t\, a(u^{k+1}, u^{k+1}) \le \|u^k\|^2.$$
 
-For the heat form the middle term is $2\nu \Delta t \|\partial_x u^{k+1}\|^2_{L^2}$ by (13.18). -/
+For the heat form the middle term is $2\nu \Delta t \|\partial_x u^{k+1}\|^2_{L^2}$ by (13.18).
+
+**Generalization.** The dissipation is given by the abstract form in place of the derivative
+energy. -/
 theorem equation_13_19 {a : SesqForm ℝ V} {Δt : ℝ} {u u' : V}
     (h : equation_13_17 a 1 Δt 0 0 u u') (hΔt : 0 < Δt) :
     ‖u'‖ ^ 2 + 2 * Δt * a u' u' ≤ ‖u‖ ^ 2 :=
@@ -758,7 +844,10 @@ theorem equation_13_19 {a : SesqForm ℝ V} {Δt : ℝ} {u u' : V}
 /-- **Equation (13.20)** of [quarteroni2000numerical]. Let $\Delta t > 0$, $n \in \mathbb{N}$, and
 let $u^0, \ldots, u^n$ be backward Euler iterates of (13.17) without sources. Then
 $$\|u^n\|^2 + 2 \Delta t \sum_{k=0}^{n-1} a(u^{k+1}, u^{k+1}) \le \|u^0\|^2.$$
-So the scheme is unconditionally stable. The estimate follows from (13.19) by telescoping. -/
+So the scheme is unconditionally stable. The estimate follows from (13.19) by telescoping.
+
+**Generalization.** The dissipation is given by the abstract form in place of the derivative
+energy. -/
 theorem equation_13_20 {a : SesqForm ℝ V} {Δt : ℝ} {u : ℕ → V} {n : ℕ} (hΔt : 0 < Δt)
     (h : ∀ k < n, equation_13_17 a 1 Δt 0 0 (u k) (u (k + 1))) :
     ‖u n‖ ^ 2 + 2 * Δt * ∑ k ∈ Finset.range n, a (u (k + 1)) (u (k + 1)) ≤ ‖u 0‖ ^ 2 :=
@@ -775,7 +864,11 @@ $h$ and $\Delta t$.
 
 The source has the factor $2$ on the terms of the form; here the factor is $1$, because the
 source term is absorbed by half of the coercive term. Since the constant $C$ of the source is
-not specified, this changes only $C$. -/
+not specified, this changes only $C$.
+
+**Reading.** This abstract estimate gives one dissipation term and an explicit dual-load
+coefficient. The source uses twice the dissipation with a common unspecified factor $C(n)$ on
+the right. -/
 theorem equation_13_21 {a : SesqForm ℝ V} {Δt : ℝ} {u : ℕ → V} {F : ℕ → V →L[ℝ] ℝ} {n : ℕ}
     (hΔt : 0 < Δt) {α : ℝ} (hα : 0 < α) (hcoer : a.IsCoerciveWith α)
     (h : ∀ k < n, equation_13_17 a 1 Δt (F k) (F (k + 1)) (u k) (u (k + 1))) :
@@ -789,7 +882,10 @@ $u^0, \ldots, u^n$ be backward Euler iterates of (13.17) without sources. Then
 $$\|u^n\|^2 + 2 \alpha \Delta t \sum_{k=0}^{n-1} \|u^{k+1}\|^2 \le \|u^0\|^2.$$
 So (13.20) holds for every form that is coercive in the $L^2$ norm, with
 $\nu \|\partial_x u^{k+1}\|^2$ replaced by $\alpha \|u^{k+1}\|^2$. The continuity of the form is
-not needed. -/
+not needed.
+
+**Reading.** This states the unforced estimate with the explicit coercivity constant. The
+forced counterpart is `QuarteroniSaccoSaleri.Chapter13.exercise_13_4`. -/
 theorem remark_13_1 {a : SesqForm ℝ V} {Δt : ℝ} {u : ℕ → V} {n : ℕ} (hΔt : 0 < Δt) {α : ℝ}
     (hcoer : a.IsCoerciveWith α)
     (h : ∀ k < n, equation_13_17 a 1 Δt 0 0 (u k) (u (k + 1))) :
@@ -809,7 +905,11 @@ $$\|u^n\|^2 + \alpha \Delta t \sum_{k=0}^{n-1} \|u^{k+1}\|^2 \le \|u^0\|^2 + \fr
   \sum_{k=0}^{n-1} \Delta t \|F^{k+1}\|^2.$$
 This is (13.21) for a form that is coercive in the $L^2$ norm, with
 $\nu \|\partial_x u^{k+1}\|^2$ replaced by $\alpha \|u^{k+1}\|^2$. Only the coercivity is used;
-the continuity (12.54) of the form is not needed. -/
+the continuity (12.54) of the form is not needed.
+
+**Reading.** Companion forced inequality uses abstract coercivity and dual load norm with explicit
+constant.
+-/
 theorem exercise_13_4 {a : SesqForm ℝ V} {Δt : ℝ} {u : ℕ → V} {F : ℕ → V →L[ℝ] ℝ} {n : ℕ}
     (hΔt : 0 < Δt) {α : ℝ} (hα : 0 < α) (hcoer : a.IsCoerciveWith α)
     (h : ∀ k < n, equation_13_17 a 1 Δt (F k) (F (k + 1)) (u k) (u (k + 1))) :
@@ -840,7 +940,10 @@ source).
 The definition is `Variational.IsFormEigenpair`. The sentence of the source after the
 definition, that a symmetric coercive form on $V = H^1_0$ has an unbounded sequence of positive
 eigenvalues whose eigenfunctions form a basis of $V$, is the spectral theorem for an operator
-with compact resolvent and is not formalized. Only the finite-dimensional case (13.22) is used. -/
+with compact resolvent and is not formalized. Only the finite-dimensional case (13.22) is used.
+
+**Reading.** The eigenvector must be nonzero. The inner product need not be an $L^2$ inner
+product. -/
 def definition_13_1 (a : SesqForm ℝ V) (lam : ℝ) (w : V) : Prop :=
   Variational.IsFormEigenpair a lam w
 
@@ -850,7 +953,10 @@ $\lambda \in \mathbb{R}$ and $\xi$ a coordinate vector. Then $(\lambda, \sum_j \
 is an eigenpair of $a$ if and only if $\xi \neq 0$ and
 $$A_{fe} \xi = \lambda M \xi,$$
 a generalized eigenvalue problem for the pencil $(A_{fe}, M)$ with
-$(A_{fe})_{ij} = a(\varphi_j, \varphi_i)$ and $M_{ij} = (\varphi_j, \varphi_i)$. -/
+$(A_{fe})_{ij} = a(\varphi_j, \varphi_i)$ and $M_{ij} = (\varphi_j, \varphi_i)$.
+
+**Generalization.** The equivalence uses Gram matrices of any finite basis and requires nonzero
+coordinates. -/
 theorem equation_13_22 {ι : Type*} [Fintype ι] (a : SesqForm ℝ V) (φ : Module.Basis ι ℝ V)
     (lam : ℝ) (ξ : ι → ℝ) :
     definition_13_1 a lam (∑ j, ξ j • φ j) ↔
@@ -859,7 +965,10 @@ theorem equation_13_22 {ι : Type*} [Fintype ι] (a : SesqForm ℝ V) (φ : Modu
 
 /-- **Section 13.3.1** of [quarteroni2000numerical], positivity of the eigenvalues. Let $c > 0$ with
 $a(v, v) \ge c \|v\|^2$ for all $v$. Then every eigenvalue $\lambda$ of $a$ satisfies
-$\lambda > 0$. -/
+$\lambda > 0$.
+
+**Reading.** Abstract strict positivity from coercivity.
+-/
 theorem equation_13_22_pos {a : SesqForm ℝ V} {c : ℝ} (hc : 0 < c) (hcoer : a.IsCoerciveWith c)
     {lam : ℝ} {w : V} (h : definition_13_1 a lam w) : 0 < lam :=
   Variational.IsFormEigenpair.pos_of_coercive hc hcoer h
@@ -867,7 +976,10 @@ theorem equation_13_22_pos {a : SesqForm ℝ V} {c : ℝ} (hc : 0 < c) (hcoer : 
 /-- **Section 13.3.1** of [quarteroni2000numerical], the eigenvectors form an orthonormal basis. Let
 $V$ be finite-dimensional and $a$ symmetric. Then there are numbers
 $\lambda_1, \ldots, \lambda_{N_h}$, with $N_h = \dim V$, and an orthonormal basis
-$w_1, \ldots, w_{N_h}$ of $V$ such that each $(\lambda_i, w_i)$ is an eigenpair of $a$. -/
+$w_1, \ldots, w_{N_h}$ of $V$ such that each $(\lambda_i, w_i)$ is an eigenpair of $a$.
+
+**Generalization.** The finite-dimensional orthonormal-eigenbasis conclusion uses symmetry
+alone. -/
 theorem equation_13_22_basis [FiniteDimensional ℝ V] {a : SesqForm ℝ V} (ha : a.IsHermitian) :
     ∃ (lam : Fin (Module.finrank ℝ V) → ℝ)
       (b : OrthonormalBasis (Fin (Module.finrank ℝ V)) ℝ V), ∀ i, definition_13_1 a (lam i) (b i) :=
@@ -880,7 +992,11 @@ sources, then
 $$(u^{k+1}, w) = \frac{1 - (1 - \theta) \lambda \Delta t}{1 + \theta \lambda \Delta t} (u^k,
   w).$$
 This is the recursion $u_i^{k+1} = u_i^k [1 - (1 - \theta) \lambda_h^i \Delta t]/[1 + \theta
-\lambda_h^i \Delta t]$ of the source. -/
+\lambda_h^i \Delta t]$ of the source.
+
+**Typo.** The last intermediate equality in the source drops $\delta_{ij}$. Testing against a
+single eigenvector gives the displayed recursion. The abstract formula permits any nonzero step
+and denominator. -/
 theorem thetaMethod_eigen_recursion {a : SesqForm ℝ V} {θ Δt : ℝ} {u u' : V}
     (h : equation_13_17 a θ Δt 0 0 u u') (ha : a.IsHermitian) {lam : ℝ} {w : V}
     (hw : definition_13_1 a lam w) (hΔt : Δt ≠ 0) (hden : 1 + θ * lam * Δt ≠ 0) :
@@ -907,7 +1023,10 @@ satisfies $\|u^{k+1}\| \le \|u^k\|$ for all $u^k$ and $u^{k+1}$ if and only if
 $$\Delta t \le \frac{2}{(1 - 2\theta) \lambda_{\max}}.$$
 
 The source derives strict inequalities and concludes with $\le$. The non-strict condition is the
-exact condition for $\|u^{k+1}\| \le \|u^k\|$. -/
+exact condition for $\|u^{k+1}\| \le \|u^k\|$.
+
+**Reading.** Stability means one-step nonexpansivity and permits equality in the step-size
+bound. The abstract criterion uses an attained upper bound on the Rayleigh quotient. -/
 theorem thetaMethod_stable_iff_of_lt_half [CompleteSpace V] {a : SesqForm ℝ V}
     (ha : a.IsHermitian) {c : ℝ} (hc : 0 < c) (hcoer : a.IsCoerciveWith c) {θ Δt : ℝ}
     (hθ0 : 0 ≤ θ) (hθ : θ < 1 / 2) (hΔt : 0 < Δt) {lmax : ℝ} {w₀ : V}
@@ -932,7 +1051,10 @@ and $u^{k+1}$.
 
 For piecewise linear elements on the uniform mesh, the bound $\lambda_{\max} \le 12\nu h^{-2}$
 is `QuarteroniSaccoSaleri.Chapter13.pencil_maxEigenvalue_bounds`. The proof uses the exact
-condition of `QuarteroniSaccoSaleri.Chapter13.thetaMethod_stable_iff_of_lt_half`. -/
+condition of `QuarteroniSaccoSaleri.Chapter13.thetaMethod_stable_iff_of_lt_half`.
+
+**Reading.** This is an explicit sufficient bound. Necessity of the order follows separately
+from the lower spectral bound. -/
 theorem equation_13_23 {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     [CompleteSpace V] {a : SesqForm ℝ V} (ha : a.IsHermitian) {c : ℝ} (hc : 0 < c)
     (hcoer : a.IsCoerciveWith c) {θ Δt : ℝ} (hθ0 : 0 ≤ θ) (hθ : θ < 1 / 2) (hΔt : 0 < Δt)
@@ -963,7 +1085,11 @@ $(\lambda, w)$ of $a$ satisfies
 $$a(v, v) \le \lambda \|v\|^2.$$
 
 In the orthonormal eigenbasis, $a(v, v) = \sum_i \lambda_i (w_i, v)^2 \le \max_i \lambda_i
-\|v\|^2$. -/
+\|v\|^2$.
+
+**Reading.** Gives an eigenvector/eigenvalue witness for any nonzero vector in a finite-dimensional
+space.
+-/
 theorem exists_definition_13_1_mul_norm_sq_le [FiniteDimensional ℝ V] {a : SesqForm ℝ V}
     (ha : a.IsHermitian) {v : V} (hv : v ≠ 0) :
     ∃ (lam : ℝ) (w : V), definition_13_1 a lam w ∧ a v v ≤ lam * ‖v‖ ^ 2 := by
@@ -1024,7 +1150,10 @@ of (12.37) in place of the $L^2$ inner product.
 
 The nodes and weights are parameters of the type, so that the inner product can be an instance.
 It is definite when they are the Legendre–Gauss–Lobatto nodes and weights, so the inner product
-space instance assumes `[Fact (QuarteroniSaccoSaleri.Chapter12.IsLegendreLobatto N x w)]`. -/
+space instance assumes `[Fact (QuarteroniSaccoSaleri.Chapter12.IsLegendreLobatto N x w)]`.
+
+**Reading.** The spectral realization uses the reference interval $[-1,1]$, with the quadrature
+data carried by the type. -/
 def SpectralSpace (N : ℕ) (x w : Fin (N + 1) → ℝ) : Type := spectralSubmodule N
 
 namespace SpectralSpace
@@ -1087,12 +1216,18 @@ instance : FiniteDimensional ℝ (SpectralSpace N x w) := by
     (S₂ := Polynomial.degreeLT ℝ (N + 1)) fun p hp => mem_degreeLT.2
       ((degree_le_of_natDegree_le hp.1).trans_lt (WithBot.coe_lt_coe.2 (Nat.lt_succ_self N)))
 
-/-- The Gauss–Lobatto inner product $(u, v)_N$ of (12.37) on the trial space $V_N$. -/
+/-- The Gauss–Lobatto inner product $(u, v)_N$ of (12.37) on the trial space $V_N$.
+
+**Reading.** Discrete inner formula on the trial space allows arbitrary quadrature data.
+-/
 instance : Inner ℝ (SpectralSpace N x w) :=
   ⟨fun u v => Chapter12.equation_12_37 N x w (fun t => u.poly.eval t) fun t => v.poly.eval t⟩
 
 /-- For $u, v \in V_N$, the inner product $(u, v)_N$ is the discrete scalar product (12.37) of their
-polynomials. -/
+polynomials.
+
+**Reading.** Same quadrature pairing even at data without positivity or distinctness.
+-/
 theorem inner_def (u v : SpectralSpace N x w) :
     ⟪u, v⟫ = Chapter12.equation_12_37 N x w (fun t => u.poly.eval t) fun t => v.poly.eval t := rfl
 
@@ -1140,7 +1275,10 @@ $$a_N(u, v) = \nu (u', v')_N$$
 on $V_N$, the discrete counterpart of $a(u, v) = \nu \int u' v'$.
 
 On $\mathbb{P}_N^0$ the Gauss–Lobatto rule is exact on $u' v' \in \mathbb{P}_{2N-2}$, so
-$a_N = a$ (`QuarteroniSaccoSaleri.Chapter13.SpectralSpace.spectralForm_apply_eq_integral`). -/
+$a_N = a$ (`QuarteroniSaccoSaleri.Chapter13.SpectralSpace.spectralForm_apply_eq_integral`).
+
+**Generalization.** The discrete derivative form allows arbitrary quadrature data and real
+diffusivity. -/
 def spectralBilin (N : ℕ) (x w : Fin (N + 1) → ℝ) (ν : ℝ) :
     SpectralSpace N x w →ₗ[ℝ] SpectralSpace N x w →ₗ[ℝ] ℝ :=
   LinearMap.mk₂ ℝ (fun u v => ν * Chapter12.equation_12_37 N x w
@@ -1163,13 +1301,20 @@ def spectralBilin (N : ℕ) (x w : Fin (N + 1) → ℝ) (ν : ℝ) :
       exact Finset.sum_congr rfl fun i _ => by ring)
 
 /-- For Legendre–Gauss–Lobatto nodes and weights and $\nu \in \mathbb{R}$, the pseudo-spectral form
-$a_N(u, v) = \nu (u', v')_N$ as a bounded bilinear form on $V_N$. -/
+$a_N(u, v) = \nu (u', v')_N$ as a bounded bilinear form on $V_N$.
+
+**Reading.** Packages the reference-interval form with admissible data and arbitrary real
+diffusivity.
+-/
 def spectralForm (N : ℕ) (x w : Fin (N + 1) → ℝ) [Fact (Chapter12.IsLegendreLobatto N x w)]
     (ν : ℝ) : SesqForm ℝ (SpectralSpace N x w) :=
   SesqForm.ofBilin (spectralBilin N x w ν)
 
 /-- For Legendre–Gauss–Lobatto nodes and weights, $\nu \in \mathbb{R}$ and $u, v \in V_N$, the
-pseudo-spectral form is $a_N(u, v) = \nu (u', v')_N$. -/
+pseudo-spectral form is $a_N(u, v) = \nu (u', v')_N$.
+
+**Reading.** Unfolds derivative quadrature with arbitrary real diffusivity.
+-/
 theorem spectralForm_apply [Fact (Chapter12.IsLegendreLobatto N x w)] (ν : ℝ)
     (u v : SpectralSpace N x w) :
     spectralForm N x w ν u v = ν * Chapter12.equation_12_37 N x w
@@ -1215,7 +1360,10 @@ $$\frac{\nu}{6} \|v\|_N^2 \le a_N(v, v) \quad \text{for all } v \in V_N.$$
 
 The Poincaré inequality (12.16) on $(-1, 1)$ gives $\int v^2 \le 2 \int (v')^2$ for
 $v \in \mathbb{P}_N^0$, and the norm equivalence $\|v\|_N^2 \le 3 \int v^2$ of
-`QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv` converts the discrete norm. -/
+`QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv` converts the discrete norm.
+
+**Reading.** Gives explicit ν/6 coercivity in the discrete norm on the reference interval.
+-/
 theorem spectralForm_coercive [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (hN : 1 ≤ N) {ν : ℝ}
     (hν : 0 < ν) : (spectralForm N x w ν).IsCoerciveWith (ν / 6) := by
   intro v
@@ -1236,7 +1384,10 @@ For an eigenvector $v$, $\lambda \|v\|_N^2 = a_N(v, v) = \nu \|v'\|^2_{L^2} \le 
 1)^2 \|v\|^2_{L^2} \le \nu N^2 (N + 1)^2 \|v\|_N^2$, by the $L^2$ Markov inequality
 `Polynomial.integral_derivative_sq_le` and the lower half of the norm equivalence
 `QuarteroniSaccoSaleri.Chapter12.equation_12_37_norm_equiv`. The matching lower bound is
-`QuarteroniSaccoSaleri.Chapter13.equation_13_24_lower`. -/
+`QuarteroniSaccoSaleri.Chapter13.equation_13_24_lower`.
+
+**Reading.** The source states the order of the largest eigenvalue. This bound gives an
+explicit constant for every eigenvalue. -/
 theorem spectralForm_eigenvalue_le [hx : Fact (Chapter12.IsLegendreLobatto N x w)] (hN : 1 ≤ N)
     {ν : ℝ} (hν : 0 ≤ ν) {lam : ℝ} {v : SpectralSpace N x w}
     (h : definition_13_1 (spectralForm N x w ν) lam v) :
@@ -1437,7 +1588,9 @@ the bound on the Christoffel function gives $w_j \le 2048/N^2$
 N^4/(5184 \pi^2)$.
 
 The statement needs $N \ge 2$: the space $\mathbb{P}_1^0 = \{0\}$ has no eigenvector, so the
-statement is false for $N = 1$. The $O(N^4)$ of the source is asymptotic. -/
+statement is false for $N = 1$. The $O(N^4)$ of the source is asymptotic.
+
+**Reading.** The estimate adds a matching lower-order bound to the source's stated upper order. -/
 theorem equation_13_24_lower {ν : ℝ} (hν : 0 ≤ ν) :
     ∃ c : ℝ, 0 < c ∧ ∀ N : ℕ, 2 ≤ N → ∀ (x w : Fin (N + 1) → ℝ)
       [Fact (Chapter12.IsLegendreLobatto N x w)], ∃ (lam : ℝ) (v : SpectralSpace N x w),

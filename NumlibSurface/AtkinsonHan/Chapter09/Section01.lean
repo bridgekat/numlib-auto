@@ -106,6 +106,10 @@ use `SobolevIntervalZero` of `Numlib.Analysis.Sobolev.Interval` and `EllipticInt
 
 ## Deviations from the source
 
+* **Equations (9.1.4) and (9.1.8), Proposition 9.1.3 and Corollary 9.1.4** (scope).
+  The Galerkin predicate and pointwise error estimates allow a subspace of any dimension.
+  The convergence corollary takes the sequence of Galerkin solutions as given and needs
+  nestedness and density. Finite dimensionality is used separately to obtain those solutions.
 * **Example 9.1.1** (correction). With the indexing of the source, the displayed formula for the
   stiffness matrix entries is off by one; it holds for the basis indexed from $0$. See
   `AtkinsonHan.Chapter09.example_9_1_1`.
@@ -127,6 +131,8 @@ variable {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
 space $V$, let $\ell \in V'$, and let $V_N \subseteq V$ be a subspace. An element $u_N \in V$
 **solves the Galerkin problem** if $u_N \in V_N$ and $$a(u_N, v) = \ell(v) \quad \text{for all }
 v \in V_N.$$
+
+**Reading.** Same variational equation and membership on subspaces of arbitrary dimension.
 -/
 def GalerkinProblem (a : BilinForm V) (ℓ : StrongDual ℝ V) (VN : Submodule ℝ V) (uN : V) : Prop :=
   uN ∈ VN ∧ ∀ v ∈ VN, a uN v = ℓ v
@@ -259,7 +265,10 @@ problem (9.1.4) if and only if $u_N \in V_N$ and $u_N$ minimizes the energy (9.1
 \tfrac12 a(v, v) - \ell(v)$$ over $V_N$.
 
 For $V_N = V$ this is the equivalence (9.1.6) of the variational problem with the minimization
-of $E$ over $V$. The energy is `AtkinsonHan.BilinForm.energy`. -/
+of $E$ over $V$. The energy is `AtkinsonHan.BilinForm.energy`.
+
+**Reading.** Pointwise variational/minimization equivalence for arbitrary subspaces.
+-/
 theorem galerkinProblem_iff_isMinOn [CompleteSpace V] (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀)
     (ha : a.IsEllipticWith c₀) (hs : LinearMap.BilinForm.IsSymm a) (ℓ : StrongDual ℝ V)
     (VN : Submodule ℝ V) (uN : V) :
@@ -394,7 +403,11 @@ Let $u \in V$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$, and let $u_n$ solve
 problem (9.1.4) on $V_n$ for each $n$. Then (9.1.14) holds: $$\|u - u_n\| \to 0 \quad \text{as }
 n \to \infty.$$
 
-The sequence of subspaces is indexed by $n \in \mathbb{N}$, starting at $0$. -/
+The sequence of subspaces is indexed by $n \in \mathbb{N}$, starting at $0$.
+
+**Reading.** Convergence uses a given sequence of Galerkin solutions without requiring
+finite-dimensional spaces.
+-/
 theorem corollary_9_1_4 (hM : a.IsBoundedWith M) (hc₀ : 0 < c₀) (ha : a.IsEllipticWith c₀)
     (ℓ : StrongDual ℝ V) (VN : ℕ → Submodule ℝ V) (hmono : Monotone VN)
     (hdense : Dense (⋃ n, (VN n : Set V))) (hu : ∀ v, a u v = ℓ v) (uN : ℕ → V)
@@ -792,6 +805,8 @@ theorem existsUnique_dirichletGalerkin {K : Submodule ℝ (SobolevInterval 1 0 1
 /-- For $i, j \in \mathbb{N}$, the stiffness matrix entry of Example 9.1.1 is $$\int_0^1 [x^{j+1}
 (1 - x)]' [x^{i+1} (1 - x)]' \, dx = \frac{(i+1)(j+1)}{i+j+1} + \frac{(i+2)(j+2)}{i+j+3} -
 \frac{(i+1)(j+2) + (i+2)(j+1)}{i+j+2}.$$
+
+**Reading.** The displayed stiffness formula requires the zero-based index used in Lean.
 -/
 theorem dirichletForm_polyBasis (i j : ℕ) :
     dirichletForm (polyBasis j) (polyBasis i)

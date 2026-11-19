@@ -30,6 +30,8 @@ degree $2n-1$. These are the operator forms of the identities of §3.7 of [liese
 
 ## Deviations from the source
 
+* **Theorems 3.7.1 and 3.7.4** (generalization). The operator forms allow nonunit starts and any
+  requested length where the orthogonal projection exists.
 * **Theorem 3.7.2** (generalization). The moment identity only uses the normalization
   $\langle w,v\rangle=1$ of the starting pair.
 -/
@@ -44,7 +46,10 @@ variable {A : E →ₗ[𝕜] E} {v : E} {n : ℕ}
 
 /-- The Vorobyev reduction of $A$ to its Krylov space $\mathcal K_n(A,v)$ maps each vector
 in the space to the orthogonal projection of its image under $A$. This is the operator of
-(3.7.2)–(3.7.3) of [liesen2013krylov]. -/
+(3.7.2)–(3.7.3) of [liesen2013krylov].
+
+**Generalization.** Orthogonal compression is defined whenever the orthogonal projection
+exists, including after the Krylov span has stabilized. -/
 noncomputable def vorobyevReduction (A : E →ₗ[𝕜] E) (v : E) (n : ℕ)
     [(Krylov.subspace A v n).HasOrthogonalProjection] :
     Krylov.subspace A v n →ₗ[𝕜] Krylov.subspace A v n :=
@@ -54,7 +59,10 @@ variable [(Krylov.subspace A v n).HasOrthogonalProjection]
 
 /-- **Theorem 3.7.1, equation (3.7.4)** of [liesen2013krylov]. For Hermitian $A$, the
 Vorobyev reduction to the Krylov space of order $n$ matches the moments
-$\langle v,A^kv\rangle$ for $0\le k<2n$. -/
+$\langle v,A^kv\rangle$ for $0\le k<2n$.
+
+**Generalization.** The operator identity does not require a unit vector or an $n$-dimensional
+Krylov span. -/
 theorem theorem_3_7_1 (hA : A.IsSymmetric) (hn : 0 < n) {k : ℕ} (hk : k < 2 * n) :
     inner 𝕜 v ((A ^ k) v) =
       inner 𝕜 (⟨v, Krylov.self_mem_subspace A v hn⟩ : Krylov.subspace A v n)
@@ -63,7 +71,10 @@ theorem theorem_3_7_1 (hA : A.IsSymmetric) (hn : 0 < n) {k : ℕ} (hk : k < 2 * 
 
 /-- **Theorem 3.7.4, operator form** of [liesen2013krylov]. The orthogonal compression to
 $\mathcal K_n(A,v)$ matches $\langle u,A^kv\rangle$ for any test vector $u$ when $k<n$.
-When $u=v$ this also holds for $k=n$. -/
+When $u=v$ this also holds for $k=n$.
+
+**Generalization.** The compression form allows a nonunit starting vector and a Krylov span
+whose dimension is less than $n$. -/
 theorem theorem_3_7_4 (hn : 0 < n) :
     (∀ (u : E) (k : ℕ), k < n →
       inner 𝕜 u ((A ^ k) v) =
@@ -171,7 +182,10 @@ through step $m+1$, its tridiagonal matrix agrees with the first $2(m+1)$ scalar
 the original operator for the starting pair.
 
 The normalization $\langle w,v\rangle=1$ is part of the no-breakdown hypothesis. The
-identity also holds when the norm of $v$ differs from one. -/
+identity also holds when the norm of $v$ differs from one.
+
+**Reading.** General left operator with no-breakdown identities, and paired normalization alone.
+-/
 theorem theorem_3_7_2 {B : E →ₗ[𝕜] E} {w : E} {m : ℕ}
     (h : BiLanczos.NoBreakdown A B v w (m + 1)) {k : ℕ} (hk : k < 2 * (m + 1)) :
     inner 𝕜 w ((A ^ k) v) =
@@ -181,7 +195,10 @@ theorem theorem_3_7_2 {B : E →ₗ[𝕜] E} {w : E} {m : ℕ}
 /-- The generalized Gauss–Christoffel quadrature of §3.7.4 of [liesen2013krylov] replaces
 $\langle w,p(A)v\rangle$ with the first diagonal entry of $p(T_{m+1})$. It is exact for
 polynomials of degree less than $2(m+1)$ when two-sided Lanczos runs without breakdown
-through step $m+1$. -/
+through step $m+1$.
+
+**Generalization.** The independent left operator is governed by the same no-breakdown
+conditions as the monomial identity. -/
 theorem bilanczos_quadrature {B : E →ₗ[𝕜] E} {w : E} {m : ℕ}
     (h : BiLanczos.NoBreakdown A B v w (m + 1)) {p : 𝕜[X]} (hp : p.natDegree < 2 * (m + 1)) :
     BiLanczos.moment A v w p =

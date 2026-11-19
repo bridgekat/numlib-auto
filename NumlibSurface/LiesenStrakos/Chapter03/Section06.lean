@@ -24,6 +24,10 @@ matrix, which increases the moment index by one.
 * `LiesenStrakos.Chapter03.theorem_3_6_1` gives each coefficient of the orthonormal polynomials
   as an entry of the inverse lower Cholesky factor.
 
+## Deviations from the source
+
+* **Theorem 3.6.1** (generalization). Polynomial integrability and positive earlier squared
+  norms replace compact normalized support.
 -/
 
 open Matrix MeasureTheory OrthogonalPolynomial Polynomial
@@ -32,20 +36,27 @@ open scoped Polynomial
 namespace LiesenStrakos.Chapter03
 
 /-- Given the moments $(\xi_k)$ of a distribution, the order-$(n+1)$ matrix of moments has
-entries $M_{ij}=\xi_{i+j}$. This is (3.6.1) of [liesen2013krylov]. -/
+entries $M_{ij}=\xi_{i+j}$. This is (3.6.1) of [liesen2013krylov].
+
+**Generalization.** The entries are defined for arbitrary measures by total integration. -/
 noncomputable def hankelMomentMatrix (μ : Measure ℝ) (n : ℕ) :
     Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
   fun i j => stieltjesMoment μ (i.val + j.val)
 
 /-- The shifted order-$(n+1)$ matrix of moments has entries $M'_{ij}=\xi_{i+j+1}$. This is
-(3.6.2) of [liesen2013krylov]. -/
+(3.6.2) of [liesen2013krylov].
+
+**Generalization.** The entries are defined for arbitrary measures by total integration. -/
 noncomputable def shiftedHankelMomentMatrix (μ : Measure ℝ) (n : ℕ) :
     Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
   fun i j => stieltjesMoment μ (i.val + j.val + 1)
 
 /-- **Theorem 3.6.1** of [liesen2013krylov]. Let $L$ be the lower Cholesky factor of
 the order-$(n+1)$ moment matrix. Entry $(i,j)$ of $L^{-1}$ is the coefficient of $X^j$
-in the orthonormal polynomial of degree $i$. Only the first $n+1$ norms need be positive. -/
+in the orthonormal polynomial of degree $i$. Only the first $n+1$ norms need be positive.
+
+**Generalization.** Polynomial integrability and positivity of the earlier squared norms
+suffice. The source takes a compactly supported probability distribution. -/
 theorem theorem_3_6_1 {μ : Measure ℝ}
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {n : ℕ}
     (hnorm : ∀ k < n + 1, 0 < normSq μ k)

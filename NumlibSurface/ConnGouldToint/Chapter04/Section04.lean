@@ -89,6 +89,9 @@ The proofs use the backbone modules `Numlib.LinearAlgebra.Matrix.LeastSquares`,
 
 ## Deviations from the source
 
+* **Equations (4.4.8)–(4.4.9)** (generalization). The block and eliminated linear systems are
+  equivalent for every invertible $H$. Positive definiteness is needed for the weighted
+  projection interpretation in (4.4.7).
 * **Equation (4.4.10)** (reading). The range-space component of the decomposition lies in the range
   of $A^T$, which is the orthogonal complement of the null space of $A$. See
   `ConnGouldToint.Chapter04.range_null_decomposition_4_4_10`.
@@ -263,7 +266,10 @@ $A \in \mathbb{R}^{m \times n}$, $x, g \in \mathbb{R}^n$ and $y, b \in \mathbb{R
 $$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bmatrix} =
   \begin{bmatrix} g \\ b \end{bmatrix} \iff Hx = g + A^T y \text{ and } Ax = b.$$
 
-The second block of the unknown is the negated multiplier $-y$. -/
+The second block of the unknown is the negated multiplier $-y$.
+
+**Reading.** Equivalent algebraic KKT equations for arbitrary square H.
+-/
 theorem projection_system_4_4_8 (H : Matrix (Fin n) (Fin n) ℝ)
     (A : Matrix (Fin m) (Fin n) ℝ) (x g : Fin n → ℝ) (y b : Fin m → ℝ) :
     Matrix.saddleMatrix H Aᵀ 0 *ᵥ Sum.elim x (-y) = Sum.elim g b ↔
@@ -432,7 +438,11 @@ Then $x$ minimizes $\frac{1}{2} z^T H z - z^T g$ subject to $Az = b$ if and only
 * $Hx = g + A^T y$ for some $y \in \mathbb{R}^m$, and
 * $d^T H d \ge 0$ for every $d$ with $Ad = 0$.
 
-The multiplier $y$ exists also when the rows of $A$ are linearly dependent. -/
+The multiplier $y$ exists also when the rows of $A$ are linearly dependent.
+
+**Reading.** Characterizes minimizers by stationarity and nonnegative reduced curvature, without the
+printed uniqueness implication.
+-/
 theorem quadratic_minimum_4_4_14_iff {H : Matrix (Fin n) (Fin n) ℝ} (hH : H.IsSymm)
     (A : Matrix (Fin m) (Fin n) ℝ) (g x : Fin n → ℝ) (b : Fin m → ℝ) :
     IsEqualityQuadraticMin H A g x b ↔
@@ -581,6 +591,9 @@ $$\begin{bmatrix} H & A^T \\ A & 0 \end{bmatrix} \begin{bmatrix} x \\ -y \end{bm
   \begin{bmatrix} g \\ b \end{bmatrix}$$
 if and only if
 $$x = H^{-1}(g + A^T y) \quad \text{and} \quad A H^{-1} A^T y = b - A H^{-1} g.$$
+
+**Reading.** Eliminated system is valid for any nonsingular H, independent of the projection
+interpretation.
 -/
 theorem projection_range_system_4_4_9 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsUnit H)
     (A : Matrix (Fin m) (Fin n) ℝ) (x g : Fin n → ℝ) (y b : Fin m → ℝ) :
@@ -607,7 +620,10 @@ theorem projection_range_system_4_4_9 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsU
 $m = 0$, $H = 0$ and $g = 0$, so that there are no constraints. Then $d^T H d \ge 0$ for all
 $d$, and there are two distinct minimizers of $\frac{1}{2} z^T H z - z^T g$.
 
-The witnesses are $x = 0$ and $z = 1$. -/
+The witnesses are $x = 0$ and $z = 1$.
+
+**Reading.** Zero quadratic gives nonunique minimizers despite nonnegative reduced curvature.
+-/
 theorem semidefinite_reduced_quadratic_not_unique :
     let H : Matrix (Fin 1) (Fin 1) ℝ := 0
     let A : Matrix (Fin 0) (Fin 1) ℝ := 0

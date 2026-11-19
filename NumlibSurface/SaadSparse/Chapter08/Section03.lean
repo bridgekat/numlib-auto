@@ -61,6 +61,28 @@ normal equations that the book points out at (8.8).
 * Division by zero is $0$ in Lean. A step length with a vanishing denominator is therefore $0$, and
   the iteration stays where it is.
 
+## Deviations from the source
+
+* **Generalization.** The two normal operators are Hermitian coercive for the corresponding
+  injective maps. See `SaadSparse.Chapter08.isSymmetricCoercive_normal`,
+  `SaadSparse.Chapter08.isSymmetricCoercive_normal'`.
+* **Totalization.** The CGNR and CGNE step coefficients are totalized squared-norm quotients. See
+  `SaadSparse.Chapter08.cgnrStepAlpha`, `SaadSparse.Chapter08.cgnrStepBeta`,
+  `SaadSparse.Chapter08.cgneStepAlpha`, `SaadSparse.Chapter08.cgneStepBeta`.
+* **Generalization.** The CGNR and CGNE states are defined at every index, use the adjoint, and omit
+  an explicit convergence test. See `SaadSparse.Chapter08.cgnrStepR`,
+  `SaadSparse.Chapter08.cgnrStep`, `SaadSparse.Chapter08.cgnr`, `SaadSparse.Chapter08.cgnr_succ`,
+  `SaadSparse.Chapter08.cgnr_zero_p`, `SaadSparse.Chapter08.cgneStepR`,
+  `SaadSparse.Chapter08.cgneStep`, `SaadSparse.Chapter08.cgne`, `SaadSparse.Chapter08.cgne_succ`,
+  `SaadSparse.Chapter08.cgne_zero_p`.
+* **Generalization.** The normal-equation CG identities include singular inputs and use a compatible
+  start for CGNE. See `SaadSparse.Chapter08.cgnr_eq`, `SaadSparse.Chapter08.cgne_eq`.
+* **Generalization.** The two normal-equation optimality properties and shared Krylov space extend
+  to complex scalars. See `SaadSparse.Chapter08.cgnr_isMinResidual`,
+  `SaadSparse.Chapter08.cgne_isMinError`, `SaadSparse.Chapter08.subspace_adjoint_eq`.
+* **Derivation.** An explicit CGNR residual bound is derived from the normal-equation identity and
+  the earlier CG bound. See `SaadSparse.Chapter08.cgnr_norm_residual_le`.
+
 ## Not formalized
 
 * **Example 8.1** (Table 8.1). It reports the iteration and operation counts of a floating-point run
@@ -106,14 +128,22 @@ theorem krylov_conjTranspose_mul (B C : Matrix (Fin n) (Fin n) 𝕜) (v : 𝔼) 
 
 /-- If $A \in \mathbb{K}^{n \times n}$ is nonsingular, then $A^H A$ is symmetric and coercive
 (`LinearMap.IsSymmetricCoercive`), that is, symmetric positive definite. This is the hypothesis
-under which CGNR is well defined. -/
+under which CGNR is well defined.
+
+**Generalization.** The real SPD statements extend to Hermitian coercivity over complex scalars with
+the adjoint in place of the transpose.
+-/
 theorem isSymmetricCoercive_normal {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : Function.Injective (op A)) : (op Aᴴ ∘ₗ op A).IsSymmetricCoercive :=
   Krylov.adjoint_comp_isSymmetricCoercive_of_injective (isAdjointPair_op A) hA
 
 /-- If $A^H$ is nonsingular, then $A A^H$ is symmetric and coercive
 (`LinearMap.IsSymmetricCoercive`), that is, symmetric positive definite. This is the hypothesis
-under which CGNE is well defined. -/
+under which CGNE is well defined.
+
+**Generalization.** The real SPD statements extend to Hermitian coercivity over complex scalars with
+the adjoint in place of the transpose.
+-/
 theorem isSymmetricCoercive_normal' {A : Matrix (Fin n) (Fin n) 𝕜}
     (hA : Function.Injective (op Aᴴ)) : (op A ∘ₗ op Aᴴ).IsSymmetricCoercive :=
   Krylov.adjoint_comp_isSymmetricCoercive_of_injective
@@ -127,24 +157,42 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- The step length of line 4 of Algorithm 8.4 of [saad2003iterative], computed from a state
 $(x_i, r_i, p_i)$: $\alpha_i = \|z_i\|_2^2 / \|w_i\|_2^2$ with $z_i = A^H r_i$ and
-$w_i = A p_i$. It is $0$ when $w_i = 0$. -/
+$w_i = A p_i$. It is $0$ when $w_i = 0$.
+
+**Reading.** The coefficients are quotients of squared Euclidean norms, including over complex
+scalars, with zero result for a zero denominator.
+-/
 noncomputable def cgnrStepAlpha (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   (‖op Aᴴ s.r‖ : 𝕜) ^ 2 / (‖op A s.p‖ : 𝕜) ^ 2
 
 /-- The new residual of line 6 of Algorithm 8.4 of [saad2003iterative]:
-$r_{i+1} = r_i - \alpha_i w_i$ with $w_i = A p_i$. -/
+$r_{i+1} = r_i - \alpha_i w_i$ with $w_i = A p_i$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 noncomputable def cgnrStepR (s : Krylov.CGNR.State 𝔼 𝔼) : 𝔼 :=
   s.r - cgnrStepAlpha A s • op A s.p
 
 /-- The coefficient of line 8 of Algorithm 8.4 of [saad2003iterative]:
-$\beta_i = \|z_{i+1}\|_2^2 / \|z_i\|_2^2$ with $z_j = A^H r_j$. It is $0$ when $z_i = 0$. -/
+$\beta_i = \|z_{i+1}\|_2^2 / \|z_i\|_2^2$ with $z_j = A^H r_j$. It is $0$ when $z_i = 0$.
+
+**Reading.** The coefficients are quotients of squared Euclidean norms, including over complex
+scalars, with zero result for a zero denominator.
+-/
 noncomputable def cgnrStepBeta (s : Krylov.CGNR.State 𝔼 𝔼) : 𝕜 :=
   (‖op Aᴴ (cgnrStepR A s)‖ : 𝕜) ^ 2 / (‖op Aᴴ s.r‖ : 𝕜) ^ 2
 
 /-- One pass through lines 3–9 of Algorithm 8.4 of [saad2003iterative], on the state
 $(x_i, r_i, p_i)$: $x_{i+1} = x_i + \alpha_i p_i$, $r_{i+1} = r_i - \alpha_i A p_i$ and
 $p_{i+1} = A^H r_{i+1} + \beta_i p_i$. The normal-equations residual $z_i = A^H r_i$ and the
-product $w_i = A p_i$ are recomputed rather than stored. -/
+product $w_i = A p_i$ are recomputed rather than stored.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 noncomputable def cgnrStep (s : Krylov.CGNR.State 𝔼 𝔼) : Krylov.CGNR.State 𝔼 𝔼 :=
   { x := s.x + cgnrStepAlpha A s • s.p
     r := cgnrStepR A s
@@ -159,14 +207,24 @@ $$z_{j+1} = A^H r_{j+1}, \quad \beta_j = \frac{\|z_{j+1}\|_2^2}{\|z_j\|_2^2}, \q
   z_{j+1} + \beta_j p_j.$$
 
 The state is the triple $(x_i, r_i, p_i)$ of type `Krylov.CGNR.State`, and a pass is
-`SaadSparse.Chapter08.cgnrStep`. A quotient with a vanishing denominator is $0$. -/
+`SaadSparse.Chapter08.cgnrStep`. A quotient with a vanishing denominator is $0$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 noncomputable def cgnr (b x₀ : 𝔼) (i : ℕ) : Krylov.CGNR.State 𝔼 𝔼 :=
   (cgnrStep A)^[i] { x := x₀, r := b - op A x₀, p := op Aᴴ (b - op A x₀) }
 
 variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
 
 /-- The state of Algorithm 8.4 after $i + 1$ steps is one pass of the algorithm applied to the state
-after $i$ steps. -/
+after $i$ steps.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 theorem cgnr_succ (i : ℕ) : cgnr A b x₀ (i + 1) = cgnrStep A (cgnr A b x₀ i) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -176,7 +234,12 @@ theorem cgnr_succ (i : ℕ) : cgnr A b x₀ (i + 1) = cgnrStep A (cgnr A b x₀ 
 /-- The residual of Algorithm 8.4 after $0$ steps is $r_0 = b - Ax_0$. -/
 @[simp] theorem cgnr_zero_r : (cgnr A b x₀ 0).r = b - op A x₀ := rfl
 
-/-- The search direction of Algorithm 8.4 after $0$ steps is $p_0 = z_0 = A^H r_0$. -/
+/-- The search direction of Algorithm 8.4 after $0$ steps is $p_0 = z_0 = A^H r_0$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 @[simp] theorem cgnr_zero_p : (cgnr A b x₀ 0).p = op Aᴴ (b - op A x₀) := rfl
 
 /-! ### The bridge to the backbone CGNR recurrence -/
@@ -222,7 +285,12 @@ $A^H A x = A^H b$ from $x_0$.
 So CGNR computes the conjugate gradient iterates of the normal equations without forming
 $A^H A$. Everything the backbone proves of `CG.iterate`, such as the orthogonality relations,
 finite termination and the Chebyshev bounds, therefore holds for CGNR. The proof goes through
-`SaadSparse.Chapter08.cgnr_eq_iterate` and the backbone module `Numlib.Krylov.NormalEquations`. -/
+`SaadSparse.Chapter08.cgnr_eq_iterate` and the backbone module `Numlib.Krylov.NormalEquations`.
+
+**Generalization.** The correspondence with CG is stated at every index for the totalized
+recurrences, without a nonsingularity requirement. CGNE uses the explicit compatible start
+$x_0=A^Hu_0$.
+-/
 theorem cgnr_eq (i : ℕ) :
     (cgnr A b x₀ i).x = (CG.iterate (op Aᴴ ∘ₗ op A) (op Aᴴ b) x₀ i).x := by
   rw [cgnr_eq_iterate]
@@ -243,23 +311,41 @@ section CGNE
 variable (A : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- The step length of line 3 of Algorithm 8.5 of [saad2003iterative], computed from a state
-$(x_i, r_i, p_i)$: $\alpha_i = (r_i, r_i)/(p_i, p_i)$. It is $0$ when $p_i = 0$. -/
+$(x_i, r_i, p_i)$: $\alpha_i = (r_i, r_i)/(p_i, p_i)$. It is $0$ when $p_i = 0$.
+
+**Reading.** The coefficients are quotients of squared Euclidean norms, including over complex
+scalars, with zero result for a zero denominator.
+-/
 noncomputable def cgneStepAlpha (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   (‖s.r‖ : 𝕜) ^ 2 / (‖s.p‖ : 𝕜) ^ 2
 
 /-- The new residual of line 5 of Algorithm 8.5 of [saad2003iterative]:
-$r_{i+1} = r_i - \alpha_i A p_i$. -/
+$r_{i+1} = r_i - \alpha_i A p_i$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 noncomputable def cgneStepR (s : Krylov.CGNE.State 𝔼 𝔼) : 𝔼 :=
   s.r - cgneStepAlpha s • op A s.p
 
 /-- The coefficient of line 6 of Algorithm 8.5 of [saad2003iterative]:
-$\beta_i = (r_{i+1}, r_{i+1})/(r_i, r_i)$. It is $0$ when $r_i = 0$. -/
+$\beta_i = (r_{i+1}, r_{i+1})/(r_i, r_i)$. It is $0$ when $r_i = 0$.
+
+**Reading.** The coefficients are quotients of squared Euclidean norms, including over complex
+scalars, with zero result for a zero denominator.
+-/
 noncomputable def cgneStepBeta (s : Krylov.CGNE.State 𝔼 𝔼) : 𝕜 :=
   (‖cgneStepR A s‖ : 𝕜) ^ 2 / (‖s.r‖ : 𝕜) ^ 2
 
 /-- One pass through lines 3–7 of Algorithm 8.5 of [saad2003iterative], on the state
 $(x_i, r_i, p_i)$: $x_{i+1} = x_i + \alpha_i p_i$, $r_{i+1} = r_i - \alpha_i A p_i$ and
-$p_{i+1} = A^H r_{i+1} + \beta_i p_i$. -/
+$p_{i+1} = A^H r_{i+1} + \beta_i p_i$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 noncomputable def cgneStep (s : Krylov.CGNE.State 𝔼 𝔼) : Krylov.CGNE.State 𝔼 𝔼 :=
   { x := s.x + cgneStepAlpha s • s.p
     r := cgneStepR A s
@@ -273,14 +359,24 @@ $$\alpha_j = \frac{(r_j, r_j)}{(p_j, p_j)}, \quad x_{j+1} = x_j + \alpha_j p_j, 
 $$\beta_j = \frac{(r_{j+1}, r_{j+1})}{(r_j, r_j)}, \quad p_{j+1} = A^H r_{j+1} + \beta_j p_j.$$
 
 The state is the triple $(x_i, r_i, p_i)$ of type `Krylov.CGNE.State`, and a pass is
-`SaadSparse.Chapter08.cgneStep`. A quotient with a vanishing denominator is $0$. -/
+`SaadSparse.Chapter08.cgneStep`. A quotient with a vanishing denominator is $0$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 noncomputable def cgne (b x₀ : 𝔼) (i : ℕ) : Krylov.CGNE.State 𝔼 𝔼 :=
   (cgneStep A)^[i] { x := x₀, r := b - op A x₀, p := op Aᴴ (b - op A x₀) }
 
 variable (b x₀ : EuclideanSpace 𝕜 (Fin n))
 
 /-- The state of Algorithm 8.5 after $i + 1$ steps is one pass of the algorithm applied to the state
-after $i$ steps. -/
+after $i$ steps.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 theorem cgne_succ (i : ℕ) : cgne A b x₀ (i + 1) = cgneStep A (cgne A b x₀ i) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -290,7 +386,12 @@ theorem cgne_succ (i : ℕ) : cgne A b x₀ (i + 1) = cgneStep A (cgne A b x₀ 
 /-- The residual of Algorithm 8.5 after $0$ steps is $r_0 = b - Ax_0$. -/
 @[simp] theorem cgne_zero_r : (cgne A b x₀ 0).r = b - op A x₀ := rfl
 
-/-- The search direction of Algorithm 8.5 after $0$ steps is $p_0 = A^H r_0$. -/
+/-- The search direction of Algorithm 8.5 after $0$ steps is $p_0 = A^H r_0$.
+
+**Generalization.** The state recurrence is defined for complex scalars with the adjoint replacing
+the transpose. It extends through zero denominators and has no convergence test. The CGNR state
+stores $(x,r,p)$ and computes the auxiliary $z$ and $w$ from these fields.
+-/
 @[simp] theorem cgne_zero_p : (cgne A b x₀ 0).p = op Aᴴ (b - op A x₀) := rfl
 
 /-! ### The bridge to the backbone CGNE recurrence -/
@@ -337,7 +438,12 @@ $$x_i = x_0 + A^H (u_i - u_0), \qquad r_i = \rho_i, \qquad p_i = A^H q_i.$$
 
 So Craig's method is the conjugate gradient method for $A A^H u = b$ read in the variable
 $x = A^H u$, and no vector of the $u$-iteration is formed. The conjugate gradient iteration is
-`CG.iterate` for the operator $A A^H$. -/
+`CG.iterate` for the operator $A A^H$.
+
+**Generalization.** The correspondence with CG is stated at every index for the totalized
+recurrences, without a nonsingularity requirement. CGNE uses the explicit compatible start
+$x_0=A^Hu_0$.
+-/
 theorem cgne_eq {u₀ : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (i : ℕ) :
     (cgne A b x₀ i).x = x₀ + op Aᴴ ((CG.iterate (op A ∘ₗ op Aᴴ) b u₀ i).x - u₀) ∧
       (cgne A b x₀ i).r = (CG.iterate (op A ∘ₗ op Aᴴ) b u₀ i).r ∧
@@ -365,7 +471,11 @@ $$\|b - Ax_m\|_2 \le \|b - Ay\|_2 \quad \text{for all } y \in x_0 + \mathcal{K}_
   r_0).$$
 
 This is the minimization that GMRES performs, over a different subspace. The conclusion is
-`IsMinResidual`. -/
+`IsMinResidual`.
+
+**Generalization.** The affine Krylov comparison and optimality statements extend to complex
+scalars, replacing transpose with adjoint and using Hermitian inner products.
+-/
 theorem cgnr_isMinResidual (hA : Function.Injective (op A)) (m : ℕ) :
     IsMinResidual (op A) b x₀ (Chapter06.krylov (Aᴴ * A) (op Aᴴ (b - op A x₀)) m)
       (cgnr A b x₀ m).x := by
@@ -382,7 +492,11 @@ $$\|x_* - x_m\|_2 \le \|x_* - y\|_2 \quad \text{for all } y \in x_0 + \mathcal{K
   r_0).$$
 
 This is the affine subspace over which CGNR minimizes the residual
-(`SaadSparse.Chapter08.subspace_adjoint_eq`). The conclusion is `IsMinError`. -/
+(`SaadSparse.Chapter08.subspace_adjoint_eq`). The conclusion is `IsMinError`.
+
+**Generalization.** The affine Krylov comparison and optimality statements extend to complex
+scalars, replacing transpose with adjoint and using Hermitian inner products.
+-/
 theorem cgne_isMinError (hA : Function.Injective (op Aᴴ))
     {u₀ xstar : EuclideanSpace 𝕜 (Fin n)} (hu₀ : op Aᴴ u₀ = x₀) (hstar : op A xstar = b)
     (m : ℕ) :
@@ -396,7 +510,11 @@ theorem cgne_isMinError (hA : Function.Injective (op Aᴴ))
 $A \in \mathbb{K}^{n \times n}$, $r_0 \in \mathbb{K}^n$ and every $m$,
 $$A^H \mathcal{K}_m(A A^H, r_0) = \mathcal{K}_m(A^H A, A^H r_0).$$
 So CGNR and CGNE take their iterates from the same affine subspace and differ only in what they
-minimize over it. -/
+minimize over it.
+
+**Generalization.** The affine Krylov comparison and optimality statements extend to complex
+scalars, replacing transpose with adjoint and using Hermitian inner products.
+-/
 theorem subspace_adjoint_eq (A : Matrix (Fin n) (Fin n) 𝕜) (r₀ : EuclideanSpace 𝕜 (Fin n))
     (m : ℕ) :
     (Chapter06.krylov (A * Aᴴ) r₀ m).map (op Aᴴ) = Chapter06.krylov (Aᴴ * A) (op Aᴴ r₀) m := by
@@ -413,7 +531,12 @@ $$\|b - Ax_m\|_2 \le 2 \left( \frac{\kappa - 1}{\kappa + 1} \right)^m \|b - Ax_0
 
 This is the conjugate gradient bound for the matrix $A^H A$, whose condition number is
 $\kappa^2$; its square root $\kappa = \kappa_2(A)$ therefore governs the rate. That is why the
-chapter prefers methods that do not pass through the normal equations. -/
+chapter prefers methods that do not pass through the normal equations.
+
+**Reading.** The chapter explains the squared condition number and identifies the minimized
+residual. This theorem combines those observations with the earlier CG bound and permits any
+positive lower and upper norm bounds for $A$.
+-/
 theorem cgnr_norm_residual_le {smin smax : ℝ} (hs : 0 < smin) (hss : smin ≤ smax)
     (hmin : ∀ x : EuclideanSpace 𝕜 (Fin n), smin * ‖x‖ ≤ ‖op A x‖)
     (hmax : ∀ x : EuclideanSpace 𝕜 (Fin n), ‖op A x‖ ≤ smax * ‖x‖)

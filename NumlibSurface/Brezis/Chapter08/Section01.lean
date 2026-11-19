@@ -63,6 +63,12 @@ identity extends to the endpoints by continuity (`eqOn_Icc_of_ae_eq`).
   `EllipticInterval.mem_sobolevInterval_two_of_forall_testFunction` together with
   `EllipticInterval.exists_contDiffMapIcc_of_continuous`, and Step D is
   `EllipticInterval.isClassicalSolution_of_contDiffMapIcc`.
+
+## Deviations from the source
+
+* **Classical and provisional weak solutions** (reading). The solution predicates accept an
+  arbitrary right-hand side. Step D retains the source's continuity assumption. See
+  `Brezis.Chapter08.IsClassicalSolution` and `Brezis.Chapter08.IsWeakSolution`.
 -/
 
 open Set MeasureTheory TopologicalSpace intervalIntegral
@@ -114,7 +120,10 @@ function $u \in C^2([a, b])$ with
 $$-u''(x) + u(x) = f(x) \quad \text{for all } x \in [a, b], \qquad u(a) = u(b) = 0.$$
 
 The second derivative $u''$ on $[a, b]$, with one-sided derivatives at the endpoints, is
-`ContDiffMapIcc.deriv u 2`. -/
+`ContDiffMapIcc.deriv u 2`.
+
+**Reading.** The predicate takes arbitrary $f$. A classical solution forces continuity of $f$
+on $[a,b]$ through the pointwise equation. -/
 def IsClassicalSolution (hab : a < b) (f : ℝ → ℝ) (u : ContDiffMapIcc hab.le 2) : Prop :=
   (∀ x : Icc a b, -u.deriv 2 x + u x = f x) ∧
     u ⟨a, left_mem_Icc.2 hab.le⟩ = 0 ∧ u ⟨b, right_mem_Icc.2 hab.le⟩ = 0
@@ -127,8 +136,10 @@ $$\int_a^b u' \varphi' + \int_a^b u \varphi = \int_a^b f \varphi \quad \text{for
 
 This is the provisional weak solution of the section. The source notes that (2) makes sense as
 soon as $u, u' \in L^1$, which leads to Section 8.2. The definitive weak solution, in $H_0^1$,
-is the one of Section 8.4, `Brezis.Chapter08.IsWeakSolutionDirichlet`. The function $f$ is
-arbitrary here; Step D assumes it continuous on $[a, b]$. -/
+is the one of Section 8.4, `Brezis.Chapter08.IsWeakSolutionDirichlet`.
+
+**Reading.** The predicate takes arbitrary $f$ and uses Lean's total interval integral. Step D
+assumes $f$ is continuous on $[a,b]$, as in the source. -/
 def IsWeakSolution (hab : a < b) (f : ℝ → ℝ) (u : ContDiffMapIcc hab.le 1) : Prop :=
   ∀ φ : ContDiffMapIcc hab.le 1, φ ⟨a, left_mem_Icc.2 hab.le⟩ = 0 →
     φ ⟨b, right_mem_Icc.2 hab.le⟩ = 0 →

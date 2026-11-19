@@ -94,6 +94,23 @@ Theorem 2.2; and the monotonicity Theorems 2.3, 2.4 and 2.5.
 * **Energy norm** (reading). Section 2.1 writes $\|v\|_A$ for $v^T A v$; here
   $\|v\|_A = (v^T A v)^{1/2}$, and every statement about it is unchanged by squaring. See
   `FongSaunders.energyNorm`.
+* **Table 2.1** (generalization). The stopped algorithms are extended by a constant state
+  after termination, with $\alpha_0=\beta_0=0$. See `FongSaunders.cg` and `FongSaunders.cr`.
+* **Theorem 2.3** (generalization). The source proves nondecrease. The strict form proves
+  a strict increase at every CR step with nonzero current residual. See
+  `FongSaunders.theorem_2_3_strict`.
+* **Equation (2.1)** (generalization). Residual minimization is defined even for a singular
+  or nonsymmetric matrix. The paper applies it to nonsingular symmetric systems. See
+  `FongSaunders.IsMINRESIterate`.
+* **Section 2.2, MINRES uniqueness** (reading). The declaration establishes uniqueness
+  for positive definite matrices, as needed to identify CR with MINRES. See
+  `FongSaunders.isMINRESIterate_unique`.
+* **Section 2.3, termination indices** (reading). The first zero residual defines the
+  termination index. The formal definition returns $0$ if there is no such residual.
+  See `FongSaunders.cgTerm` and `FongSaunders.crTerm`.
+* **Theorem 2.5** (reading). The strict decrease applies up to the first zero residual.
+  The extended sequence has zero error thereafter. See `FongSaunders.theorem_2_5_cr` and
+  `FongSaunders.theorem_2_5_minres`.
 -/
 
 namespace FongSaunders
@@ -181,9 +198,8 @@ noncomputable def cgInit (b : Vec n) : CGState n := { x := 0, r := b, ρ := ‖b
 $b \in \mathbb{R}^n$ and $k \in \mathbb{N}$, the state $(x_k^C, r_k^C, \rho_k, p_k^C)$ of
 Algorithm CG after $k$ iterations from the initialization `FongSaunders.cgInit`.
 
-The recurrence needs no partiality. Lean's convention $t / 0 = 0$ makes it stationary after
-termination: $r = 0$ gives $\rho = 0$, then $\alpha = \beta = 0$ and $p = 0$. This is the rule
-of the paper to stop when $r = 0$. -/
+**Generalization.** The source stops when $r=0$. Here a state is defined for every index.
+At termination $r=\rho=p=0$, and Lean's convention $t/0=0$ keeps the state constant. -/
 noncomputable def cg (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) : CGState n :=
   (cgStep A)^[k] (cgInit b)
 
@@ -198,7 +214,10 @@ theorem cg_succ (k : ℕ) : cg A b (k + 1) = cgStep A (cg A b k) :=
 /-- **Table 2.1** of [fong2012cg], the CG step length. For $k \ge 1$, the step length of iteration
 $k$ of Algorithm CG is $$\alpha_k = \rho_{k-1} / (p_{k-1}^C)^T A p_{k-1}^C.$$
 
-The value $\alpha_0 = 0$ is a convention, and the paper does not use it. -/
+The value $\alpha_0 = 0$ is a convention, and the paper does not use it.
+
+**Reading.** Matches the printed CG quotient and additionally defines the zeroth coefficient.
+-/
 noncomputable def cgAlpha (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ → ℝ
   | 0 => 0
   | k + 1 => (cg A b k).ρ / ⟪(cg A b k).p, A ⬝ (cg A b k).p⟫_ℝ
@@ -206,7 +225,10 @@ noncomputable def cgAlpha (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ →
 /-- **Table 2.1** of [fong2012cg], the CG direction coefficient. For $k \ge 1$, the coefficient of
 iteration $k$ of Algorithm CG is $\beta_k = \rho_k / \rho_{k-1}$.
 
-The value $\beta_0 = 0$ is a convention. -/
+The value $\beta_0 = 0$ is a convention.
+
+**Reading.** Matches the printed CG quotient and additionally defines the zeroth coefficient.
+-/
 noncomputable def cgBeta (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ → ℝ
   | 0 => 0
   | k + 1 => (cg A b (k + 1)).ρ / (cg A b k).ρ
@@ -214,8 +236,9 @@ noncomputable def cgBeta (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ → 
 /-- **Section 2.3** of [fong2012cg], termination of Algorithm CG. The termination step $\ell$ of
 Algorithm CG is the least $k$ with $r_k^C = 0$.
 
-If no residual is zero, the value is $0$, the infimum of the empty set of natural numbers in
-Lean. For positive definite $A$ this case does not occur (`FongSaunders.cg_residual_cgTerm`). -/
+**Reading.** The printed algorithm stops at a zero residual. For general $A$ the set of
+zero-residual indices can be empty, and the total definition then gives $0$. For positive
+definite $A$, `FongSaunders.cg_residual_cgTerm` establishes termination. -/
 noncomputable def cgTerm (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ :=
   sInf {k | (cg A b k).r = 0}
 
@@ -262,8 +285,8 @@ noncomputable def crInit (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : CRState 
 $b \in \mathbb{R}^n$ and $k \in \mathbb{N}$, the state $(x_k, r_k, s_k, \rho_k, p_k, q_k)$ of
 Algorithm CR after $k$ iterations from the initialization `FongSaunders.crInit`.
 
-As for `FongSaunders.cg`, Lean's convention $t / 0 = 0$ makes the recurrence stationary after
-termination. -/
+**Generalization.** The source stops when $r=0$. Here a state is defined for every index.
+Lean's convention $t/0=0$ keeps it constant from the first zero residual onward. -/
 noncomputable def cr (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) : CRState n :=
   (crStep A)^[k] (crInit A b)
 
@@ -278,7 +301,10 @@ theorem cr_succ (k : ℕ) : cr A b (k + 1) = crStep A (cr A b k) :=
 /-- **Table 2.1** of [fong2012cg], the CR step length. For $k \ge 1$, the step length of iteration
 $k$ of Algorithm CR is $\alpha_k = \rho_{k-1} / \|q_{k-1}\|^2$.
 
-The value $\alpha_0 = 0$ is a convention. -/
+The value $\alpha_0 = 0$ is a convention.
+
+**Reading.** Matches the source quotient and adds the value at zero.
+-/
 noncomputable def crAlpha (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ → ℝ
   | 0 => 0
   | k + 1 => (cr A b k).ρ / ‖(cr A b k).q‖ ^ 2
@@ -286,7 +312,10 @@ noncomputable def crAlpha (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ →
 /-- **Table 2.1** of [fong2012cg], the CR direction coefficient. For $k \ge 1$, the coefficient of
 iteration $k$ of Algorithm CR is $\beta_k = \rho_k / \rho_{k-1}$.
 
-The value $\beta_0 = 0$ is a convention. -/
+The value $\beta_0 = 0$ is a convention.
+
+**Reading.** Matches the source quotient and adds the value at zero.
+-/
 noncomputable def crBeta (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ → ℝ
   | 0 => 0
   | k + 1 => (cr A b (k + 1)).ρ / (cr A b k).ρ
@@ -294,8 +323,9 @@ noncomputable def crBeta (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ → 
 /-- **Section 2.3** of [fong2012cg], termination of Algorithm CR. The termination step $\ell$ of
 Algorithm CR is the least $k$ with $r_k = 0$.
 
-If no residual is zero, the value is $0$, the infimum of the empty set of natural numbers in
-Lean. For positive definite $A$ this case does not occur (`FongSaunders.cr_residual_crTerm`). -/
+**Reading.** The printed algorithm stops at a zero residual. For general $A$ the set of
+zero-residual indices can be empty, and the total definition then gives $0$. For positive
+definite $A$, `FongSaunders.cr_residual_crTerm` establishes termination. -/
 noncomputable def crTerm (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) : ℕ :=
   sInf {k | (cr A b k).r = 0}
 
@@ -443,7 +473,11 @@ $b \in \mathbb{R}^n$ and $k \in \mathbb{N}$, a vector $x$ is a **MINRES iterate*
 $x \in \mathcal{K}_k(A, b)$ and $$\|b - Ax\| \le \|b - Ay\| \quad \text{for all } y \in
 \mathcal{K}_k(A, b).$$
 
-This is (2.1) of the paper with $x_0 = 0$. The theorems "for MINRES" are stated for every
+**Generalization.** The source applies this minimization to nonsingular symmetric systems.
+The predicate takes any real matrix, so it also expresses residual minimization for
+singular and nonsymmetric systems.
+
+The theorems "for MINRES" are stated for every
 sequence $(x_k)$ of MINRES iterates. `FongSaunders.isMINRESIterate_iff` identifies the
 definition with the backbone `Krylov.IsMinResidualIterate`. -/
 def IsMINRESIterate (A : Matrix (Fin n) (Fin n) ℝ) (b : Vec n) (k : ℕ) (x : Vec n) : Prop :=
@@ -644,7 +678,10 @@ theorem cr_isMINRESIterate (hA : A.PosDef) (k : ℕ) : IsMINRESIterate A b k (cr
 
 /-- **Section 2.2** of [fong2012cg], uniqueness of MINRES iterates. Let
 $A \in \mathbb{R}^{n \times n}$ be positive definite. If $x$ and $y$ are both MINRES iterates at
-step $k$, then $x = y$. -/
+step $k$, then $x = y$.
+
+**Reading.** The source describes MINRES on nonsingular symmetric systems. This uniqueness
+result uses positive definiteness, the case used to identify MINRES with CR. -/
 theorem isMINRESIterate_unique (hA : A.PosDef) {k : ℕ} {x y : Vec n}
     (hx : IsMINRESIterate A b k x) (hy : IsMINRESIterate A b k y) : x = y := by
   rw [Krylov.IsMinResidualIterate.eq_CR_iterate (isSymmetricCoercive_of_posDef hA)
@@ -807,7 +844,10 @@ private theorem crStep_eq_self {st : CRState n} (hr : st.r = 0) (hs : st.s = 0) 
 /-- **Section 2.3** of [fong2012cg], stationarity after termination. Let
 $A \in \mathbb{R}^{n \times n}$ be positive definite, and let $\ell$ be the termination step of
 Algorithm CR. For every $k \ge \ell$, the state of Algorithm CR after $k$ iterations is the
-state after $\ell$ iterations. -/
+state after $\ell$ iterations.
+
+**Generalization.** The printed procedure ends at $\ell$. The totalized recurrence
+extends it by keeping the terminal state constant. -/
 theorem cr_stationary (hA : A.PosDef) {k : ℕ} (h : crTerm A b ≤ k) :
     cr A b k = cr A b (crTerm A b) := by
   obtain ⟨hr, hs, hρ, hp, hq, -⟩ := cr_term_state (A := A) (b := b) hA
@@ -960,6 +1000,10 @@ theorem theorem_2_3_minres (hA : A.PosDef) {x : ℕ → Vec n}
 
 /-- **Theorem 2.3** of [fong2012cg], strict form for CR. Let $A \in \mathbb{R}^{n \times n}$ be
 positive definite. If the CR residual satisfies $r_k \neq 0$, then $$\|x_k\| < \|x_{k+1}\|.$$
+
+**Generalization.** The source proves the nonstrict inequality. A nonzero residual
+ensures a nonzero step length and search direction, so the squared-norm increment has
+a strictly positive term $\alpha_{k+1}^2\|p_k\|^2$.
 -/
 theorem theorem_2_3_strict (hA : A.PosDef) {k : ℕ} (hk : (cr A b k).r ≠ 0) :
     ‖(cr A b k).x‖ < ‖(cr A b (k + 1)).x‖ := by
@@ -1001,6 +1045,9 @@ theorem theorem_2_4_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar 
 /-- **Theorem 2.5** of [fong2012cg], nonstrict form for CR. Let $A \in \mathbb{R}^{n \times n}$ be
 positive definite, and let $Ax^* = b$. Then the energy norm of the error of the CR iterates
 decreases monotonically: $$\|x^* - x_l\|_A \le \|x^* - x_k\|_A \quad \text{for } k \le l.$$
+
+**Reading.** The source gives strict decrease until termination. This statement gives the
+nonstrict inequality for the full extended sequence, whose error is zero after termination.
 -/
 theorem theorem_2_5_cr_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
     Antitone fun k => energyNorm A (xstar - (cr A b k).x) := by
@@ -1011,6 +1058,9 @@ theorem theorem_2_5_cr_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ x
 be positive definite, let $Ax^* = b$, and let $(x_k)$ be a sequence such that each $x_k$ is a
 MINRES iterate at step $k$. Then $$\|x^* - x_l\|_A \le \|x^* - x_k\|_A \quad \text{for } k \le
 l.$$
+
+**Reading.** The source gives strict decrease until termination. This statement gives the
+nonstrict inequality for the full extended sequence, whose error is zero after termination.
 -/
 theorem theorem_2_5_minres_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
     {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) :
@@ -1022,6 +1072,10 @@ theorem theorem_2_5_minres_antitone (hA : A.PosDef) {xstar : Vec n} (hstar : A �
 /-- **Theorem 2.5** of [fong2012cg], for CR. Let $A \in \mathbb{R}^{n \times n}$ be positive
 definite, and let $Ax^* = b$. If the CR residual satisfies $r_k \neq 0$, then $$\|x^* -
 x_{k+1}\|_A < \|x^* - x_k\|_A.$$
+
+**Reading.** The strict decrease in the source applies to the run that ends at the first zero
+residual. The extended sequence has zero error thereafter. The nonstrict statement for all
+steps is `FongSaunders.theorem_2_5_cr_antitone`.
 -/
 theorem theorem_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {k : ℕ}
     (hk : (cr A b k).r ≠ 0) :
@@ -1050,6 +1104,10 @@ theorem theorem_2_5_cr (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b)
 /-- **Theorem 2.5** of [fong2012cg], for MINRES. Let $A \in \mathbb{R}^{n \times n}$ be positive
 definite, let $Ax^* = b$, and let $(x_k)$ be a sequence such that each $x_k$ is a MINRES iterate
 at step $k$. If $b - A x_k \neq 0$, then $$\|x^* - x_{k+1}\|_A < \|x^* - x_k\|_A.$$
+
+**Reading.** The strict decrease in the source applies to the run that ends at the first zero
+residual. The extended sequence has zero error thereafter. The nonstrict statement for all
+steps is `FongSaunders.theorem_2_5_minres_antitone`.
 -/
 theorem theorem_2_5_minres (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) {x : ℕ → Vec n}
     (hx : ∀ k, IsMINRESIterate A b k (x k)) {k : ℕ} (hk : b - A ⬝ x k ≠ 0) :

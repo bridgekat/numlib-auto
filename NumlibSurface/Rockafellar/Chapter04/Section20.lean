@@ -84,6 +84,9 @@ function is closed, so Corollary 7.5.1 needs only a point of $\operatorname{dom}
 
 ## Deviations from the source
 
+* **Section 20, proper separation excluding containment** (generalization). The separation
+  predicate accepts arbitrary input sets. Theorem 20.2 uses it for the nonempty convex sets
+  of the book. See `Rockafellar.SeparableProperlyNotContaining`.
 * **Theorem 20.4** (generalization). The source assumes $C$ non-empty and convex; neither hypothesis
   is needed. See `Rockafellar.theorem_20_4`.
 -/
@@ -153,7 +156,10 @@ contain $C_2$.
 
 The sides are as in §11: $C_1$ lies in the closed half-space
 $\{x \mid \langle x, b \rangle \ge \beta\}$ and $C_2$ in the opposite one. Proper separation is
-`Rockafellar.SeparatesProperlyRn`, which includes $b \neq 0$. -/
+`Rockafellar.SeparatesProperlyRn`, which includes $b \neq 0$.
+
+**Generalization.** The book uses this condition for nonempty convex sets. The Lean predicate
+is defined for any pair of sets. -/
 def SeparableProperlyNotContaining (C₁ C₂ : Set (Rn n)) : Prop :=
   ∃ (b : Rn n) (β : ℝ), SeparatesProperlyRn b β C₁ C₂ ∧ ¬ C₂ ⊆ {x | pairing n x b = β}
 
@@ -438,8 +444,9 @@ and only if every $x^*$ with
 $$\delta^*(x^* \mid C_1) \le -\delta^*(-x^* \mid C_2)$$
 satisfies $\delta^*(x^* \mid C_1) = \delta^*(x^* \mid C_2)$.
 
-The hypothesis on $x^*$ says that some hyperplane orthogonal to $x^*$ separates the two sets,
-and the conclusion says that every such hyperplane contains $C_2$. -/
+For nonzero $x^*$ the hypothesis says that a hyperplane orthogonal to $x^*$ separates the two
+sets, and the conclusion says that every such hyperplane contains $C_2$. At $x^* = 0$ both
+support values are zero. -/
 theorem corollary_20_2_1 {C₁ C₂ : Set (Rn n)} (h₁ : IsPolyhedral C₁) (hne₁ : C₁.Nonempty)
     (h₂ : Convex ℝ C₂) (hne₂ : C₂.Nonempty) :
     (C₁ ∩ ri C₂).Nonempty ↔

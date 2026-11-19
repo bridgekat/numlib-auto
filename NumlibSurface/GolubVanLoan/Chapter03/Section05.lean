@@ -99,6 +99,30 @@ use `Numlib.Direct.Refinement` and `Numlib.Direct.ConditionEstimation`.
   `GolubVanLoan.Chapter03.equation_3_5_2`.
 * **(3.5.3)** (generalization). The source takes $D_1$ and $D_2$ diagonal. The theorem holds for any
   nonsingular $D_1$, $D_2$. See `GolubVanLoan.Chapter03.equation_3_5_3`.
+* **(3.5.3)** (reading). The exact scaled error identity uses totalized division.
+  See `GolubVanLoan.Chapter03.equation_3_5_3`.
+* **§3.5.2, equilibration** (reading). The interval test takes a real parameter in place
+  of the machine radix. See `GolubVanLoan.Chapter03.IsEquilibrated`.
+* **(3.5.4)–(3.5.5)** (reading). The residual is computed by rounded row dot products.
+  The mixed-precision loop takes two rounding operations and a pass count. Its
+  correctness statement treats the case where both operations are exact.
+  See `GolubVanLoan.Chapter03.iterativeImprovementStep`,
+  `GolubVanLoan.Chapter03.mixedPrecisionImprovement` and
+  `GolubVanLoan.Chapter03.equation_3_5_5`.
+* **§3.5.4, inverse-norm estimate** (generalization). The norm and condition bounds
+  allow $d=0$ by using the product form and totalized division.
+  See `GolubVanLoan.Chapter03.condEstimate_lowerBound`.
+* **(3.5.6) and §3.5.4, norm computation** (reading). The right-hand-side choice is a
+  function of the step and running vector. The rounded matrix norm uses a fixed
+  summation order. See `GolubVanLoan.Chapter03.backSubstChosenRHS` and
+  `GolubVanLoan.Chapter03.linftyNormRounded`.
+* **Algorithm 3.5.1, rounding** (reading). Look-ahead scores accumulate from the
+  absolute candidate solution entry. The program accepts an explicit rounding operation.
+  See `GolubVanLoan.Chapter03.algorithm_3_5_1`.
+* **§3.5.4, LU condition estimation** (reading). The lower triangular estimator is
+  invoked on reversed indices and passes its normalized vector to the next solve.
+  The common scale cancels in the exact norm ratio.
+  See `GolubVanLoan.Chapter03.luCondEstimate` and `GolubVanLoan.Chapter03.luCondEstimate_le`.
 * **Algorithm 3.5.1** (reading). The source says $\|Ty\|_\infty \approx 1/\|T^{-1}\|_\infty$ and
   $\kappa \approx \kappa_\infty(T)$. The theorem states the inequalities that hold in exact
   arithmetic. See `GolubVanLoan.Chapter03.algorithm_3_5_1_spec`.
@@ -141,8 +165,8 @@ $F$, $\mathrm{piv}$ and $b$ by `GolubVanLoan.Chapter03.solvePLU` satisfies
 $$\|b - A\hat x\|_\infty \le n^2 (1 + u) \gamma_{3n} \rho \|A\|_\infty \|\hat x\|_\infty.$$
 
 **Reading.** The source states $\|b - A\hat x\|_\infty \approx u \|A\|_\infty \|\hat
-x\|_\infty$. The theorem states the rigorous bound that this approximation rests on, under the
-hypotheses of (3.4.9).
+x\|_\infty$. The theorem gives a one-sided bound with dimension and growth factors under
+the hypotheses of (3.4.9).
 
 The upper factor is `GolubVanLoan.Chapter03.packedU F`, and $\gamma_{3n}$ is
 `FloatingPoint.gamma fp.u (3 * n)`. The proof combines `GolubVanLoan.Chapter03.equation_3_4_9`
@@ -166,8 +190,9 @@ $$\frac{\|y - x\|_\infty}{\|x\|_\infty} \le \frac{2\varepsilon}{1 - \varepsilon\
   \kappa_\infty(A).$$
 
 **Reading.** The source states $\|\hat x - x\|_\infty / \|x\|_\infty \approx u
-\kappa_\infty(A)$. The theorem is the rigorous form for a backward error of size $\varepsilon$;
-for $\varepsilon$ of order $u$ it gives the printed estimate to first order.
+\kappa_\infty(A)$. The theorem gives an upper bound under explicit backward-error
+and smallness hypotheses. Its leading term for small $\varepsilon$ is
+$2\varepsilon\kappa_\infty(A)$.
 
 The proof combines Theorem 2.6.2 with the backward error. -/
 theorem equation_3_5_2 {A E : Matrix (Fin n) (Fin n) ℝ} {b x y : Fin n → ℝ} (hA : IsUnit A)
@@ -194,9 +219,8 @@ $$\frac{\|D_2^{-1}(D_2 \hat y - D_2 y)\|_\infty}{\|D_2^{-1} D_2 y\|_\infty} = \f
 **Generalization.** The source takes $D_1$ and $D_2$ diagonal. The theorem holds for any
 nonsingular $D_1$ and $D_2$.
 
-The estimate "$\approx u \kappa_\infty(D_1^{-1} A D_2)$" of the source is (3.5.2) for the scaled
-system, `GolubVanLoan.Chapter03.equation_3_5_2`. Both quotients are $0$ when $y = 0$, by the
-convention $x / 0 = 0$. -/
+**Reading.** The source appends a heuristic condition estimate. The theorem states the
+exact identity, with both quotients equal to $0$ at $y=0$ by totalized division. -/
 theorem equation_3_5_3 {D₁ D₂ : Matrix (Fin n) (Fin n) ℝ} (h₁ : IsUnit D₁) (h₂ : IsUnit D₂)
     (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     (∀ x, A *ᵥ x = b ↔ (D₁⁻¹ * A * D₂) *ᵥ (D₂⁻¹ *ᵥ x) = D₁⁻¹ *ᵥ b) ∧
@@ -211,8 +235,9 @@ theorem equation_3_5_3 {D₁ D₂ : Matrix (Fin n) (Fin n) ℝ} (h₁ : IsUnit D
 $M \in \mathbb{R}^{n \times n}$ is **equilibrated** with parameter $\beta$ if the $\infty$-norm
 of each row and of each column of $M$ lies in the interval $[1/\beta, 1]$.
 
-The source asks to choose $D_1$ and $D_2$ so that $D_1^{-1} A D_2$ has this property. Row $i$ is
-`M i` and column $j$ is `Mᵀ j`, each with the sup norm. -/
+**Reading.** The source uses $M=D_1^{-1}AD_2$ and the floating point radix
+$\beta\ge2$. The predicate tests any matrix with a real parameter $\beta$.
+At $\beta=0$ the lower bound is $0$ by totalized division. -/
 def IsEquilibrated (β : ℝ) (M : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   (∀ i, 1 / β ≤ ‖M i‖ ∧ ‖M i‖ ≤ 1) ∧ ∀ j, 1 / β ≤ ‖Mᵀ j‖ ∧ ‖Mᵀ j‖ ≤ 1
 
@@ -234,9 +259,8 @@ x_new = x̂ + z
 Given $A$, a packed factor $F$ with pivot vector $\mathrm{piv}$, $b$ and $\hat x$, the program
 returns $x_{new}$.
 
-The residual is computed row by row, $r_i = \mathrm{fl}(b_i - \mathrm{fl}(A(i,:) \cdot \hat
-x))$, with the dot product `FloatingPoint.dotAccum` of Algorithm 1.1.1. The two solves are
-`GolubVanLoan.Chapter03.solvePLU`, and the update is rounded entry by entry. -/
+**Reading.** The source gives a residual formula and two triangular solves. The code
+chooses row-oriented dot products and solves and rounds the final update entrywise. -/
 noncomputable def iterativeImprovementStep (A F : Matrix (Fin n) (Fin n) ℝ) (piv : Fin n → Fin n)
     (b x : Fin n → ℝ) : M (Fin n → ℝ) := do
   let r ← (List.finRange n).foldlM (fun (r : Fin n → ℝ) i => do
@@ -257,9 +281,9 @@ x = x + z
 ```
 The program returns the last $x$.
 
-The residual is computed with the hook `rndHi`, which stands for the arithmetic with $2t$
-digits, and is stored in working precision by one more `rnd`. Every other operation uses the
-working hook `rnd`. -/
+**Reading.** The source describes a higher-precision residual, typically computed with
+$2t$ digits. The program takes two independent rounding operations and a pass count.
+It computes the residual with `rndHi` and rounds it with `rnd` before the solves. -/
 noncomputable def mixedPrecisionImprovement (rndHi : ℝ → M ℝ) (A F : Matrix (Fin n) (Fin n) ℝ)
     (piv : Fin n → Fin n) (b : Fin n → ℝ) (k : ℕ) : M (Fin n → ℝ) :=
   (List.range k).foldlM (fun (x : Fin n → ℝ) _ => do
@@ -338,7 +362,9 @@ and $k \ge 1$. If both hooks are exact, the output $x$ of $k$ passes of mixed pr
 iterative improvement satisfies
 $$Ax = b.$$
 
-The first pass reaches the solution by (3.5.4), and a pass from the solution stays there. -/
+**Reading.** The source describes mixed-precision passes and their accuracy heuristically.
+This theorem treats exact factors and both arithmetic operations exact, so the first pass
+reaches the solution and every later pass stays there. -/
 theorem equation_3_5_5 {A F : Matrix (Fin n) (Fin n) ℝ} {piv : Fin n → Fin n}
     (hLU : IsLU ((pivPerm piv).permMatrix ℝ * A) (packedL F) (packedU F))
     (hd : ∀ i, packedU F i i ≠ 0) (b : Fin n → ℝ) {k : ℕ} (hk : 1 ≤ k) :
@@ -370,10 +396,9 @@ $Ay = d$. Then
 $$\|y\|_\infty \le \|A^{-1}\|_\infty \|d\|_\infty, \qquad \frac{\|A\|_\infty
   \|y\|_\infty}{\|d\|_\infty} \le \kappa_\infty(A).$$
 
-The source writes the first inequality as $\|A^{-1}\|_\infty \ge \|y\|_\infty / \|d\|_\infty$.
-The second inequality says that the estimate $\hat\kappa_\infty = \|A\|_\infty \|y\|_\infty /
-\|d\|_\infty$ never exceeds $\kappa_\infty(A)$; it also holds for $d = 0$, where the quotient is
-$0$ by the convention $x / 0 = 0$. -/
+**Generalization.** The source writes the inverse-norm bound as a quotient. The product
+form applies also to $d=0$. The condition estimate uses totalized division and
+therefore gives $0$ in this case. -/
 theorem condEstimate_lowerBound {A : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A) {y d : Fin n → ℝ}
     (hy : A *ᵥ y = d) :
     ‖y‖ ≤ ‖A⁻¹‖ * ‖d‖ ∧ ‖A‖ * ‖y‖ / ‖d‖ ≤ condNumberLp ⊤ A := by
@@ -407,9 +432,9 @@ end
 ```
 The program returns $(y, d)$.
 
-The choice is a function `choose k p` of the step $k$ and of the running vector $p$. It is
-exact; examples are the sign of $p(k)$ and the look-ahead of Algorithm 3.5.1. Every difference,
-quotient, product and sum is rounded. -/
+**Reading.** The source leaves the right-hand-side choice open. Here it is an exact
+function of the step $k$ and running vector $p$. The arithmetic updates use the
+supplied rounding operation. -/
 noncomputable def backSubstChosenRHS (choose : Fin n → (Fin n → ℝ) → ℝ)
     (T : Matrix (Fin n) (Fin n) ℝ) : M ((Fin n → ℝ) × (Fin n → ℝ)) := do
   let st ← (List.finRange n).reverse.foldlM
@@ -571,10 +596,12 @@ section Estimator
 
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n : ℕ}
 
-/-- The $\infty$-norm of $A \in \mathbb{R}^{m \times n}$ computed as the largest rounded row sum of
-absolute values, the $O(n^2)$ formula (2.3.10). Each row sum $\mathrm{fl}(\cdots
-\mathrm{fl}(|a_{i1}| + |a_{i2}|) \cdots)$ is rounded at every addition, and the maximum of the
-row sums is exact. -/
+/-- The $\infty$-norm of $A \in \mathbb{R}^{m \times n}$ computed using rounded row sums of
+absolute values, by formula (2.3.10).
+
+**Reading.** The source invokes the row-sum formula without an evaluation order. Each row
+sum here is accumulated from zero by rounding each addition, and the maximum absolute
+row sum is taken exactly. -/
 noncomputable def linftyNormRounded {m : ℕ} (A : Matrix (Fin m) (Fin n) ℝ) : M ℝ := do
   let r ← (List.finRange m).foldlM (fun (r : Fin m → ℝ) i => do
     let s ← (List.finRange n).foldlM (fun (c : ℝ) j => rnd (c + |A i j|)) 0
@@ -603,9 +630,10 @@ y = y/‖y‖_∞
 ```
 The program returns $(\kappa, y)$.
 
-Every flop is rounded, including the flops of the look-ahead scores. The absolute values, the
-comparison and the maximum $\|y\|_\infty$ are exact, and $\|T\|_\infty$ is
-`GolubVanLoan.Chapter03.linftyNormRounded`. -/
+**Reading.** Every arithmetic operation has a rounding hook. The score in the source adds
+$|y(k)^\pm|$ to a $1$-norm. The code accumulates that norm's terms starting at
+$|y(k)^\pm|$, which has the same exact value and can round differently.
+The absolute values, comparisons and vector $\infty$-norms are exact. -/
 noncomputable def algorithm_3_5_1 (T : Matrix (Fin n) (Fin n) ℝ) : M (ℝ × (Fin n → ℝ)) := do
   let st ← (List.finRange n).reverse.foldlM (fun (st : (Fin n → ℝ) × (Fin n → ℝ)) k => do
     let tp ← rnd (1 - st.2 k)
@@ -633,17 +661,18 @@ noncomputable def algorithm_3_5_1 (T : Matrix (Fin n) (Fin n) ℝ) : M (ℝ × (
 
 /-- **Section 3.5.4** of [golub2013matrix], condition estimation from $PA = LU$:
 
-1. Apply the lower triangular version of Algorithm 3.5.1 to $U^T$ and obtain a large-norm
-   solution of $U^T y = d$.
+1. Apply the lower triangular version of Algorithm 3.5.1 to $U^T$ and obtain the normalized
+   direction of its triangular solution.
 2. Solve the triangular systems $L^T r = y$, $Lw = Pr$ and $Uz = w$.
 3. Set $\hat\kappa_\infty = \|A\|_\infty \|z\|_\infty / \|r\|_\infty$.
 
 The program takes $A$, the packed factor $F$ and the pivot vector $\mathrm{piv}$, and returns
 $\hat\kappa_\infty$.
 
-The lower triangular version of Algorithm 3.5.1 on $U^T$ is Algorithm 3.5.1 on $U^T$ with its
-rows and columns in reversed order, which is an upper triangular matrix. The system $L^T r = y$
-is solved by Algorithm 3.1.2, and $Lw = Pr$, $Uz = w$ by `GolubVanLoan.Chapter03.solvePLU`. -/
+**Reading.** The source passes a large-norm solution of $U^T y=d$ into Step 2. The code
+reverses rows and columns to call the upper triangular routine, then passes its normalized
+output, with the reversal undone. In exact arithmetic the scale cancels because the
+subsequent solves are linear and the estimate uses $\|z\|_\infty/\|r\|_\infty$. -/
 noncomputable def luCondEstimate (A F : Matrix (Fin n) (Fin n) ℝ) (piv : Fin n → Fin n) : M ℝ := do
   let out ← algorithm_3_5_1 rnd ((packedU F)ᵀ.submatrix Fin.rev Fin.rev)
   let r ← algorithm_3_1_2 rnd (packedL F)ᵀ (out.2 ∘ Fin.rev)
@@ -684,7 +713,9 @@ $u_{ii}$ nonzero. Then the exact estimate $\hat\kappa_\infty$ of
 `GolubVanLoan.Chapter03.luCondEstimate` satisfies
 $$\hat\kappa_\infty \le \kappa_\infty(A).$$
 
-The bound holds whatever Step 1 produced, because $Az = r$. -/
+**Reading.** The source notes $\|z\|_\infty\le\|A^{-1}\|_\infty\|r\|_\infty$. The theorem
+gives the corresponding condition-number lower bound for the exact program, which uses
+a normalized first direction and totalized division if $r=0$. -/
 theorem luCondEstimate_le {A F : Matrix (Fin n) (Fin n) ℝ} {piv : Fin n → Fin n} (hA : IsUnit A)
     (hLU : IsLU ((pivPerm piv).permMatrix ℝ * A) (packedL F) (packedU F))
     (hd : ∀ i, packedU F i i ≠ 0) :

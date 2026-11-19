@@ -82,10 +82,20 @@ stopping rule (9.3.14b) holds (Corollary 10.2.3). The proofs use the backbone mo
 
 ## Deviations from the source
 
+* **Algorithm 10.2.1, exit** (reading). The factorization returns failure when a pivot test
+  fails. It specifies the success result without an operation count or a first failing index.
+  See `CartisGouldToint.Chapter10.algorithm_10_2_1`.
+* **Algorithm 10.2.2, arithmetic count** (typo). For $k\ge 1$, the three printed loops use
+  $3k-2$ multiplications, while the prose gives $3k-1$. The formal result specifies the solve.
+  See `CartisGouldToint.Chapter10.algorithm_10_2_2`.
 * **Lemma 10.2.1** (typo). The source refers to "a global minimizer of (8.1.4)"; (8.1.4) is the
   model, and the problem is (8.1.3). See `CartisGouldToint.Chapter10.lemma_10_2_1`.
+* **Equation (10.2.7), root count** (correction). The admissible root is unique. There need
+  not be exactly two real roots for general $r$. See `CartisGouldToint.Chapter10.start_10_2_3`.
+* **Theorem 10.2.2, proof (B.10.1)** (typo). The residual includes $g$ on the left-hand
+  side. See `CartisGouldToint.Chapter10.theorem_10_2_2`.
 * **Corollary 10.2.3** (correction). The printed bound $\lceil \log A / \log((\sqrt{\kappa_*} +
-  1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$ cannot hold when $\log A < 0$ and is undefined for
+  1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$ can be below $1$ and is undefined for
   $\kappa_* = 1$. The ceiling is $\lceil \cdot \rceil_+$, the case $\kappa_* = 1$ gives some
   $k \le \min(2, \text{grade})$, and the hypothesis $g \neq 0$ is added. See
   `CartisGouldToint.Chapter10.corollary_10_2_3`.
@@ -200,7 +210,10 @@ with $l_{i+1} = \gamma_{i+1} r_i$.
 
 The index is $0$-based: the book's $r_{i+1}$, $\rho_{i+1}$ and $\gamma_{i+1}$ are
 `recipPivot ρ γ lam i`, `ρ i` and `γ i`. A vanishing denominator gives the value $0$, by the Lean
-convention $1/0 = 0$. -/
+convention $1/0 = 0$.
+
+**Reading.** Exact recurrence on successful pivots, with zero totalized at a vanishing denominator.
+-/
 noncomputable def recipPivot : ℕ → ℝ
   | 0 => 1 / (ρ 0 + lam)
   | i + 1 => 1 / (ρ (i + 1) + lam - γ (i + 1) * (γ (i + 1) * recipPivot i))
@@ -230,6 +243,10 @@ $\lambda \in \mathbb{R}$. The algorithm factorizes $T_k + \lambda I_k$. It exits
 positive definite" as soon as one of the tests `CartisGouldToint.Chapter10.pivotTest` fails for
 a row $i \le k$. Otherwise it returns the multipliers $l_i = \gamma_i r_{i-1}$ for
 $2 \le i \le k$ and the reciprocal pivots $r_i$ for $1 \le i \le k$.
+
+**Reading.** The formal function reports whether all pivot tests hold and returns the
+factors on success. It does not specify the order of evaluation or return the first failed
+row. The empty factorization succeeds for $k=0$.
 
 The exit "not positive definite" is `none`. The matrix $T_k$ is `Matrix.symTridiag ρ γ k`, with
 $0$-based indices: `ρ i` and `γ i` are $\rho_{i+1}$ and $\gamma_{i+1}$. The unused multiplier
@@ -349,7 +366,11 @@ theorem solveBackward_eq (k : ℕ) (l' z : ℕ → ℝ) (i : ℕ) :
 /-- **Algorithm 10.2.2** of [cartis2022evaluation]. Given the factors $l$ and $r$ that Algorithm
 10.2.1 returns for $T_k + \lambda I_k$ and a vector $b \in \mathbb{R}^k$, the algorithm computes
 $x$ by the forward substitution $x_i \leftarrow b_i - l_i x_{i-1}$, the scaling
-$x_i \leftarrow r_i x_i$, and the backward substitution $x_{i-1} \leftarrow x_{i-1} - l_i x_i$. -/
+$x_i \leftarrow r_i x_i$, and the backward substitution $x_{i-1} \leftarrow x_{i-1} - l_i x_i$.
+
+**Typo.** For $k\ge 1$, the printed loops use $k-1$, $k$, and $k-1$ multiplications,
+respectively. Their sum is $3k-2$, while the source prose gives $3k-1$.
+The formal function specifies the output, including an empty vector for $k=0$. -/
 noncomputable def algorithm_10_2_2 {k : ℕ} (l r b : Fin k → ℝ) : Fin k → ℝ :=
   fun i => solveBackward k (extendFin l) (fun j => extendFin r j * solveForward l b j) i
 
@@ -450,7 +471,11 @@ rearranged secular equation
 $$\lambda (\rho_1 + \lambda)^{r-2} = \sigma |\gamma_1|^{r-2},$$
 and it is the only root of this equation with $\lambda > \max(0, -\rho_1)$. For $r = 3$,
 $\lambda_1 = \bigl(-\rho_1 + \sqrt{\rho_1^2 + 4 \sigma |\gamma_1|}\bigr)/2$, the larger root of
-a quadratic. -/
+a quadratic.
+
+**Correction.** The prose calls this the larger of two roots for general $r$. For $r=4$,
+$\rho_1=-3$, $\sigma=1$ and $\gamma_1=1$, the equation $\lambda(\lambda-3)^2=1$ has
+three real roots. Only the root with $\lambda>3$ is admissible. -/
 theorem start_10_2_3 {γ₁ ρ₁ σ r : ℝ} (hγ : γ₁ ≠ 0) (hσ : 0 < σ) (hr : 2 < r) {s : ℝ}
     (hs : ∀ u : ℝ, γ₁ * s + 1 / 2 * ρ₁ * s ^ 2 + 1 / r * σ * |s| ^ r ≤
       γ₁ * u + 1 / 2 * ρ₁ * u ^ 2 + 1 / r * σ * |u| ^ r) :
@@ -521,7 +546,11 @@ eigenvalues of $T_k$. The source evaluates it at the multiplier $\lambda = \lamb
 
 The Ritz values are `Lanczos.ritzValues` of the operator $M^{-1}H$ in the $M$-inner product
 space and the vector $M^{-1}g$. A zero denominator gives the value $0$, by the Lean convention
-for division. For $k = 0$ the empty supremum and infimum are $0$. -/
+for division. For $k = 0$ the empty supremum and infimum are $0$.
+
+**Generalization.** Extends the Ritz quotient to arbitrary shifts and empty dimension, with
+totalized denominator and empty extrema.
+-/
 noncomputable def conditionNumber_10_2_8 (hM : M.PosDef) (H : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (k : ℕ) (lam : ℝ) : ℝ :=
   ((⨆ i, Lanczos.ritzValues (scaledOp H hM : ScaledSpace hM →ₗ[ℝ] ScaledSpace hM)
@@ -534,7 +563,11 @@ condition number** is
 $$\kappa_* = \max_{1 \le k \le \operatorname{grade}(M^{-1}H, M^{-1}g)} \kappa_k(\lambda_k).$$
 
 The multipliers are a sequence `lam : ℕ → ℝ`. If the grade is $0$, the supremum is over the
-empty set and equals $0$. -/
+empty set and equals $0$.
+
+**Reading.** Takes the maximum over positive indices through the grade; returns zero when there is
+no such index.
+-/
 noncomputable def kappaStar (hM : M.PosDef) (H : Matrix (Fin n) (Fin n) ℝ)
     (g : EuclideanSpace ℝ (Fin n)) (lam : ℕ → ℝ) : ℝ :=
   ⨆ k : Finset.Icc 1 (gradeHM H M g), conditionNumber_10_2_8 hM H g k (lam k)
@@ -570,7 +603,10 @@ $$\|\nabla_s m^R(s_k)\|_{M^{-1}} \le 2 \|M^{-1}H\| \, \kappa_k
   1}{\sqrt{\kappa_k} + 1}\Bigr)^{k-1}.$$
 
 The norm $\|M^{-1}H\|$ is the operator norm induced by $\|\cdot\|_M$, the norm of
-`Subproblem.scaledOp H hM`. -/
+`Subproblem.scaledOp H hM`.
+
+**Typo.** The left side of (B.10.1) in the source proof omits $g$. The projected equation
+and the Lanczos relation give the residual $g+(H+\lambda_k M)s_k$ used here. -/
 theorem theorem_10_2_2 (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ) (hr : 2 < r)
     {k : ℕ} (hk1 : 1 ≤ k) (hk : k ≤ gradeHM H M g) {sbar : EuclideanSpace ℝ (Fin k)}
     (hs : IsRegularizationSolution (lanczosGrad hM H g k) (lanczosTridiag hM H g k) 1 σ r sbar) :
@@ -613,8 +649,8 @@ If $\kappa_* = 1$, it holds for some $1 \le k \le \min(2, \operatorname{grade}(M
 M^{-1}g))$.
 
 **Correction.** The source prints the bound $\lceil \log A / \log((\sqrt{\kappa_*} +
-1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$. This bound cannot be met when $\log A < 0$, for example
-for a large $\theta_1$, and it is undefined for $\kappa_* = 1$. Here the ceiling is
+1)/(\sqrt{\kappa_*} - 1)) \rceil + 1$. It can be below $1$ for a sufficiently large $\theta_1$
+and is undefined for $\kappa_* = 1$. Here the ceiling is
 $\lceil x \rceil_+ = \max(\lceil x \rceil, 0)$, the case $\kappa_* = 1$ is stated separately,
 and the hypothesis $g \neq 0$, which the proof needs, is added.
 

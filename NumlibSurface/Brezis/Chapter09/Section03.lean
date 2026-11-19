@@ -110,10 +110,27 @@ length of the gradient.
 
 ## Deviations from the source
 
+* **Theorem 9.9 and Remark 10** (reading). The theorem states an existential embedding constant.
+  Remark 10 uses a finite Sobolev exponent and states the scaling conclusion in reciprocal form.
+  See `Brezis.Chapter09.theorem_9_9` and `Brezis.Chapter09.remark_9_10`.
+* **Theorem 9.12 and Corollaries 9.13–9.15** (reading). The Hölder estimates use continuous
+  representatives, and the higher-order estimates use the norm of the iterated Fréchet derivative.
+  See `Brezis.Chapter09.theorem_9_12_holder` and `Brezis.Chapter09.corollary_9_13_holder`.
+* **Corollary 9.14** (generalization). The subcritical embedding includes every exponent from
+  $p$ to $p^*$. See `Brezis.Chapter09.corollary_9_14_lt`.
+* **Corollary 9.14, Theorem 9.16 and Remark 15** (reading). The domain statements use finite
+  Sobolev exponents. See `Brezis.Chapter09.corollary_9_14`, `Brezis.Chapter09.theorem_9_16`
+  and `Brezis.Chapter09.remark_9_15`.
+* **Remarks 13–14** (reading). The library gives the positive $W^{N,1}$ embedding with a
+  continuous representative and proves noncompactness on the whole space. See
+  `Brezis.Chapter09.remark_9_13` and `Brezis.Chapter09.remark_9_14_i`.
 * **Corollary 9.11** (reading). The corollary is stated for $N \ge 2$, which the proof of the source
   uses. The case $N = 1$ is a case of Theorem 8.8. See `Brezis.Chapter09.corollary_9_11`.
 * **Corollary 9.13** (reading). The corollary is stated with the hypothesis $N \ge 2$ or $p > 1$,
   which the proof by repeated application of Theorem 9.9, Corollary 9.11 and Theorem 9.12 needs. See
+  `Brezis.Chapter09.corollary_9_13`.
+* **Corollary 9.13, Sobolev order** (generalization). The statement includes order $m = 0$,
+  for which the subcritical embedding is the identity on $L^p$. See
   `Brezis.Chapter09.corollary_9_13`.
 * **Corollary 9.14, case $p = N$** (reading). The case is stated for $N \ge 2$, as Corollary 9.11.
   See `Brezis.Chapter09.corollary_9_14_eq`.
@@ -394,7 +411,9 @@ The proof specializes `SobolevEuclidean.isContinuousEmbedding_toLp_of_eq` and
 `SobolevEuclidean.eLpNorm_fn_le_of_eq`. These follow from Mathlib's inequality for compactly
 supported $C^1$ functions, by density and Fatou's lemma. The constant is $N$ times
 `SobolevEuclidean.gnsConst`, the constant of the Mathlib inequality; the explicit constant
-$(N - 1)p/(N - p)$ of footnote 9 is not given. -/
+$(N - 1)p/(N - p)$ of footnote 9 is not given.
+
+**Reading.** Footnote 9 specifies a constant. The statement here uses an existential bound. -/
 theorem theorem_9_9 [Fact (1 ≤ (p' : ℝ≥0∞))] (hpN : p < N) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - (N : ℝ)⁻¹) :
     IsContinuousInjectionLp N 1 p p' ⊤ ∧ ∃ C : ℝ≥0, ∀ u : sobolevSpace N p ⊤,
       eLpNorm (SobolevMultiIndex.fn u) p' volume ≤ C * eLpNorm (gradient u) p volume := by
@@ -478,7 +497,10 @@ and hence $|u(x) - u(y)| \le C |x - y|^\alpha \|\nabla u\|_p$ for a.e. $x$ and a
 $\mathbb{R}^N$.
 
 The proof specializes `SobolevEuclidean.exists_continuous_ae_eq_of_lt`, which averages over
-balls, with the constant `MeasureTheory.morreyConst`. -/
+balls, with the constant `MeasureTheory.morreyConst`.
+
+**Reading.** The statement gives a pointwise estimate for a continuous representative,
+ together with the estimate for almost every $x$ and almost every $y$ for the original class. -/
 theorem theorem_9_12_holder (hp : (N : ℝ≥0) < p) :
     ∃ C : ℝ≥0, ∀ u : sobolevSpace N p ⊤, ∃ ũ : 𝔼 → ℝ, Continuous ũ ∧
       SobolevMultiIndex.fn u =ᵐ[volume] ũ ∧
@@ -518,7 +540,11 @@ $$|u(x) - u(y)| \le C' |x - y|^\alpha \|\nabla u\|_p \quad \text{for a.e. } x, y
 
 The source writes one constant $C$ that depends only on $p$ and $N$. The two parts are
 `Brezis.Chapter09.theorem_9_12_top_le` and `Brezis.Chapter09.theorem_9_12_holder`, and the case
-$p = \infty$ is `Brezis.Chapter09.theorem_9_12_top`. -/
+$p = \infty$ is `Brezis.Chapter09.theorem_9_12_top`.
+
+**Reading.** The finite-exponent case states (25) for almost every $x$ and almost every $y$.
+ The estimate on a common conull set follows from the continuous representative in
+ `Brezis.Chapter09.theorem_9_12_holder`. -/
 theorem theorem_9_12 (hp : (N : ℝ≥0) < p) :
     IsContinuousInjectionLp N 1 p ⊤ ⊤ ∧
     (∃ C : ℝ, ∀ u : sobolevSpace N p ⊤,
@@ -538,7 +564,10 @@ $$|\tilde u(x) - \tilde u(y)| \le \|\nabla u\|_\infty |x - y| \quad \text{for al
   \mathbb{R}^N.$$
 
 This is the inequality (25) with $\alpha = 1$. The second part is Remark 7
-(`Brezis.Chapter09.remark_9_7_convex`) for the convex set $\mathbb{R}^N$. -/
+(`Brezis.Chapter09.remark_9_7_convex`) for the convex set $\mathbb{R}^N$.
+
+**Reading.** The endpoint $p = \infty$ is stated as a global Lipschitz estimate for a
+ representative, with the gradient bound as the Lipschitz constant. -/
 theorem theorem_9_12_top :
     IsContinuousInjectionLp N 1 ⊤ ⊤ ⊤ ∧ ∀ u : sobolevSpace N ⊤ ⊤, ∃ ũ : 𝔼 → ℝ,
       SobolevMultiIndex.fn u =ᵐ[volume] ũ ∧
@@ -606,7 +635,10 @@ then $W^{m,p}(\mathbb{R}^N) \subset L^q(\mathbb{R}^N)$ with continuous injection
 of Theorem 9.9 and Corollary 9.11, and Corollary 9.11 needs $N \ge 2$; the chain of first-order
 embeddings stops at $W^{1,1}(\mathbb{R})$. The statement here assumes $N \ge 2$ or $p > 1$.
 
-The source assumes $m \ge 1$; the case $m = 0$ is trivial and is included. The proof specializes
+**Generalization.** The source assumes $m \ge 1$. The declaration includes $m = 0$, when
+$q = p$ and the embedding is the identity on $L^p$.
+
+The proof specializes
 `SobolevEuclidean.isContinuousEmbedding_toLp_of_order`, by induction on $m$. -/
 theorem corollary_9_13_lt [Fact (1 ≤ (q : ℝ≥0∞))] {m : ℕ} (hN : 2 ≤ N ∨ 1 < p)
     (hpos : 0 < (p : ℝ)⁻¹ - m / N) (hq : (q : ℝ)⁻¹ = p⁻¹ - m / N) :
@@ -667,7 +699,11 @@ representative.
 The source bounds the partial derivatives $D^\alpha \tilde u$ for $|\alpha| \le k$. Here
 $D^j \tilde u$ is the full $j$-th derivative `iteratedFDeriv ℝ j ũ`, which bounds every
 $D^\alpha \tilde u$ with $|\alpha| = j$. The estimates hold at every point, and hence almost
-everywhere. The proof specializes `SobolevEuclidean.exists_contDiff_ae_eq_of_order`. -/
+everywhere. The proof specializes `SobolevEuclidean.exists_contDiff_ae_eq_of_order`.
+
+**Reading.** The derivative bounds use the operator norm of the iterated Fréchet derivative
+ and hold at every point for a $C^k$ representative. The source bounds the coordinate derivatives
+ almost everywhere. -/
 theorem corollary_9_13_holder {m : ℕ} (hN : 2 ≤ N ∨ 1 < p) (hm : 0 < (m : ℝ) - N / p)
     (hint : ∀ j : ℕ, (m : ℝ) - N / p ≠ j) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : sobolevSpaceHigher N m p ⊤, ∃ ũ : 𝔼 → ℝ,
@@ -709,8 +745,10 @@ particular $W^{m,p}(\mathbb{R}^N) \subset C^k(\mathbb{R}^N)$.
 **Reading.** The hypothesis $N \ge 2$ or $p > 1$ is added; see
 `Brezis.Chapter09.corollary_9_13_lt`.
 
-The source assumes $m \ge 1$; the case $m = 0$ is included. The case $m = N$, $p = 1$ is Remark
-13, `Brezis.Chapter09.remark_9_13`. -/
+**Generalization.** The source assumes $m \ge 1$. The declaration includes $m = 0$, when the
+applicable embedding is the identity on $L^p$.
+
+The case $m = N$, $p = 1$ is Remark 13, `Brezis.Chapter09.remark_9_13`. -/
 theorem corollary_9_13 {m : ℕ} (hN : 2 ≤ N ∨ 1 < p) :
     (∀ q : ℝ≥0, ∀ [Fact (1 ≤ (q : ℝ≥0∞))], 0 < (p : ℝ)⁻¹ - m / N →
       (q : ℝ)⁻¹ = p⁻¹ - m / N → IsContinuousInjectionLp N m p q ⊤) ∧
@@ -738,7 +776,10 @@ $u \in C_c^\infty(\mathbb{R}^N)$ one has $u(x) = \int_{-\infty}^{x_1} \cdots
 \int_{-\infty}^{x_N} \partial^N u / \partial x_1 \cdots \partial x_N$, so $\|u\|_\infty \le
 \|\partial_1 \cdots \partial_N u\|_1 \le \|u\|_{W^{N,1}}$, and the general case follows by
 density. The negative clause of the remark, that in general $W^{m,p}(\mathbb{R}^N) \not\subset
-L^\infty(\mathbb{R}^N)$ for $p > 1$ and $m = N/p$, is not formalized. -/
+L^\infty(\mathbb{R}^N)$ for $p > 1$ and $m = N/p$, is not formalized.
+
+**Reading.** The positive embedding is stated with a continuous representative and constant
+ one. The source also describes the failure of the critical embedding with $p>1$. -/
 theorem remark_9_13 :
     IsContinuousInjectionLp N N 1 ⊤ ⊤ ∧ ∀ u : sobolevSpaceHigher N N 1 ⊤, ∃ ũ : 𝔼 → ℝ,
       Continuous ũ ∧ SobolevMultiIndex.fn u =ᵐ[volume] ũ ∧ ∀ x, |ũ x| ≤ bookNormHigher u := by
@@ -839,7 +880,10 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin N)
 /-- Scaling of the $L^q$ norm. Let $F$ be a normed group, $u : \mathbb{R}^N \to F$ almost everywhere
 strongly measurable, $t > 0$ and $q \in [0, \infty]$. Then
 $$\|u(t\,\cdot)\|_{L^q(\mathbb{R}^N)} = t^{-N/q} \|u\|_{L^q(\mathbb{R}^N)},$$
-where $N/q$ is read as $0$ for $q = \infty$ (and for $q = 0$). The proof uses $d(tx) = t^N dx$. -/
+where $N/q$ is read as $0$ for $q = \infty$ (and for $q = 0$). The proof uses $d(tx) = t^N dx$.
+
+**Generalization.** The norm change under scaling applies to a.e. strongly measurable
+ normed-group-valued functions and includes extended exponents. -/
 theorem eLpNorm_comp_smul_eq {F : Type*} [NormedAddCommGroup F] {u : 𝔼 → F}
     (hu : AEStronglyMeasurable u volume) {t : ℝ} (ht : 0 < t) (q : ℝ≥0∞) :
     eLpNorm (fun x ↦ u (t • x)) q volume
@@ -882,7 +926,10 @@ The source's argument applies the inequality to $u_\lambda(x) = u(\lambda x)$. T
 $\|u\|_q \le C \lambda^{1 + N/q - N/p} \|\nabla u\|_p$ for all $\lambda > 0$, which forces
 $1 + N/q - N/p = 0$ for a function $u$ that does not vanish identically. The constant $C$ is an
 element of `ℝ≥0∞` different from `⊤`, and $\nabla u$ is the vector of the partial derivatives
-`fderiv ℝ u x (EuclideanSpace.single i 1)`. -/
+`fderiv ℝ u x (EuclideanSpace.single i 1)`.
+
+**Reading.** The exponent $p$ is finite, as in the subcritical setting. The conclusion is
+ written as an identity for reciprocal exponents, with reciprocal of infinity equal to zero. -/
 theorem remark_9_10 {p : ℝ≥0} (hp : 1 ≤ p) {q : ℝ≥0∞} (hq : 1 ≤ q) {C : ℝ≥0∞} (hC : C ≠ ⊤)
     (h : ∀ u : 𝔼 → ℝ, ContDiff ℝ ∞ u → HasCompactSupport u →
       eLpNorm u q volume ≤ C * eLpNorm
@@ -1043,7 +1090,10 @@ $\varphi \in C_c^\infty(\mathbb{R}^N)$ that is not zero. They are bounded in
 $W^{1,p}(\mathbb{R}^N)$, and their supports are disjoint, so they are pairwise at $L^p$ distance
 at least $\|\varphi\|_p$, and no subsequence converges in $L^p(\mathbb{R}^N)$. This is the
 argument of Remark 12 of Chapter 4 (Exercise 4.33) in $N$ dimensions. Remark 14 (ii), that the
-injection into $L^{p^*}$ is never compact, is not formalized. -/
+injection into $L^{p^*}$ is never compact, is not formalized.
+
+**Reading.** The library gives the whole space of positive dimension as the counterexample to
+ compactness on unbounded domains. -/
 theorem remark_9_14_i (hN : 0 < N) : ¬ IsCompactInjectionLp N 1 p p ⊤ := by
   rintro ⟨h, hc⟩
   -- the bump and its translates
@@ -1185,7 +1235,10 @@ $1 \le q \le \infty$ there is an extension operator $W^{1,q}(\Omega) \to W^{1,q}
 
 The conclusion is `IsSobolevExtensionDomainAll`. For $\Omega$ of class $C^1$ with bounded
 boundary it is Theorem 9.7 (`IsSobolevExtensionDomainAll.of_isContDiffChartDomain`), and for the
-half space it is Lemma 9.2 (`IsSobolevExtensionDomain.upperHalfSpace`). -/
+half space it is Lemma 9.2 (`IsSobolevExtensionDomain.upperHalfSpace`).
+
+**Reading.** The extension property supplies an operator with a bound for each exponent.
+ The source specifies a constant depending only on the domain. -/
 theorem IsClassC1BoundedFrontierOrHalfSpace.isSobolevExtensionDomainAll {Ω : Opens 𝔼}
     (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω) : IsSobolevExtensionDomainAll (d + 1) Ω := by
   rcases hΩ with ⟨h1, h2⟩ | rfl
@@ -1211,7 +1264,10 @@ $W^{1,p}(\Omega) \subset L^q(\Omega)$ with continuous injection for every $q \in
 
 The source states the injection into $L^{p^*}(\Omega)$; the other exponents follow as in
 Corollary 9.10. The proof composes the extension operator of Theorem 9.7 with Theorem 9.9, and
-specializes `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt`. -/
+specializes `SobolevEuclidean.isContinuousEmbedding_toLp_of_hasSobolevExtension_of_lt`.
+
+**Generalization.** The subcritical injection covers all $q$ between $p$ and $p^*$ by
+ interpolation. The source displays the endpoint $p^*$. -/
 theorem corollary_9_14_lt [Fact (1 ≤ (q : ℝ≥0∞))] (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω)
     {p' : ℝ≥0} (hpN : p < ((d + 1 : ℕ) : ℝ≥0)) (hp' : (p' : ℝ)⁻¹ = p⁻¹ - ((d + 1 : ℕ) : ℝ)⁻¹)
     (hpq : p ≤ q) (hqp' : q ≤ p') : IsContinuousInjectionLp (d + 1) 1 p q Ω :=
@@ -1241,7 +1297,9 @@ satisfy the standing hypothesis of Section 9.3.B and let $N < p < \infty$. Then
 $W^{1,p}(\Omega) \subset L^\infty(\Omega)$ with continuous injection.
 
 The proof composes the extension operator with Theorem 9.12, and specializes
-`SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_of_lt`. -/
+`SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_of_lt`.
+
+**Reading.** This version assumes finite $p$. The endpoint $p=\infty$ embeds into itself. -/
 theorem corollary_9_14_gt (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω)
     (hp : ((d + 1 : ℕ) : ℝ≥0) < p) : IsContinuousInjectionLp (d + 1) 1 p ⊤ Ω :=
   ⟨_, SobolevEuclidean.isContinuousEmbedding_toLp_top_of_hasSobolevExtension_of_lt
@@ -1260,7 +1318,10 @@ representative (footnote 15).
 The function $\tilde u$ is defined on $\mathbb{R}^N$ and equals $u$ a.e. on $\Omega$. The proof
 specializes `SobolevEuclidean.exists_continuousOn_closure_holderWith_ae_eq`. Its representative
 is Morrey's representative of $Pu$, and is in fact continuous and Hölder continuous on all of
-$\mathbb{R}^N$. -/
+$\mathbb{R}^N$.
+
+**Reading.** For finite $p>N$ the estimate holds at all points of the closure for a
+ continuous representative, and is also stated almost everywhere for the original class. -/
 theorem corollary_9_14_holder (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω)
     (hp : ((d + 1 : ℕ) : ℝ≥0) < p) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ u : sobolevSpace (d + 1) p Ω, ∃ ũ : 𝔼 → ℝ,
@@ -1308,7 +1369,10 @@ particular $W^{1,p}(\Omega) \subset C(\bar\Omega)$.
 **Reading.** The case $p = N$ is stated for $N \ge 2$; see `Brezis.Chapter09.corollary_9_14_eq`.
 
 The source allows $1 \le p \le \infty$. The case $p = \infty$ is Theorem 9.12 on $\mathbb{R}^N$
-(`Brezis.Chapter09.theorem_9_12_top`) and is not restated on $\Omega$. -/
+(`Brezis.Chapter09.theorem_9_12_top`) and is not restated on $\Omega$.
+
+**Reading.** The bundled statement uses finite $p$ and includes intermediate exponents in
+ the subcritical case. The critical case requires $N \ge 2$. -/
 theorem corollary_9_14 (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω) :
     (∀ (q p' : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))], p < ((d + 1 : ℕ) : ℝ≥0) →
       (p' : ℝ)⁻¹ = p⁻¹ - ((d + 1 : ℕ) : ℝ)⁻¹ → p ≤ q → q ≤ p' →
@@ -1343,7 +1407,10 @@ $1/p - m/N < 0$.
 The proof is "by repeated application of Corollary 9.14" and uses no extension operator on
 $W^{m,p}(\Omega)$ (footnote 17). It specializes
 `SobolevEuclidean.isContinuousEmbedding_toLp_of_order_of_hasSobolevExtension` and
-`SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension`. -/
+`SobolevEuclidean.exists_forall_continuous_ae_eq_of_order_of_hasSobolevExtension`.
+
+**Generalization.** The subcritical clause includes zero order, when the injection is the
+ identity for $q=p$. -/
 theorem corollary_9_15_lp {m : ℕ} (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω)
     (hN : 2 ≤ d + 1 ∨ 1 < p) :
     (∀ q : ℝ≥0, ∀ [Fact (1 ≤ (q : ℝ≥0∞))], 0 < (p : ℝ)⁻¹ - m / (d + 1 : ℕ) →
@@ -1395,7 +1462,10 @@ $D^\alpha u$ has a continuous extension to $\bar\Omega$ for every $|\alpha| \le 
 The space $C^k(\bar\Omega)$ is `ContDiffOnClosure ℝ k · Ω` of the module
 `Numlib.Analysis.Calculus.ContDiffOnClosure`, and the derivative of order $j$ is
 `iteratedFDeriv ℝ j ũ`. The proof specializes
-`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`. -/
+`SobolevEuclidean.exists_contDiffOn_closure_ae_eq_of_order`.
+
+**Reading.** The statement uses continuous boundary extensions of the iterated Fréchet
+ derivatives and pointwise estimates on the open set. -/
 theorem corollary_9_15_ck {m : ℕ} (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω)
     (hN : 2 ≤ d + 1 ∨ 1 < p) (hm : 0 < (m : ℝ) - (d + 1 : ℕ) / p)
     (hint : ∀ j : ℕ, (m : ℝ) - (d + 1 : ℕ) / p ≠ j) :
@@ -1441,7 +1511,10 @@ $m - N/p > 0$ is not an integer, then $W^{m,p}(\Omega) \subset C^k(\bar\Omega)$ 
 $k = [m - N/p]$, with the bounds of `Brezis.Chapter09.corollary_9_15_ck`.
 
 **Reading.** The hypothesis $N \ge 2$ or $p > 1$ is added, as in
-`Brezis.Chapter09.corollary_9_13_lt`. -/
+`Brezis.Chapter09.corollary_9_13_lt`.
+
+**Generalization.** The subcritical clause includes zero order, when the injection is the
+ identity for $q=p$. -/
 theorem corollary_9_15 {m : ℕ} (hΩ : IsClassC1BoundedFrontierOrHalfSpace Ω)
     (hN : 2 ≤ d + 1 ∨ 1 < p) :
     ((∀ q : ℝ≥0, ∀ [Fact (1 ≤ (q : ℝ≥0∞))], 0 < (p : ℝ)⁻¹ - m / (d + 1 : ℕ) →
@@ -1482,7 +1555,10 @@ noncomputable def toContinuousMapClosure (hΩ : IsClassC1 (Ω : Set 𝔼))
 /-- Let $\Omega$ be a bounded open set of class $C^1$, $N < p < \infty$ and $u \in W^{1,p}(\Omega)$.
 There is a continuous function $\tilde u$ on $\mathbb{R}^N$ with $u = \tilde u$ a.e. on $\Omega$
 whose restriction to $\bar\Omega$ is the image of $u$ under
-`Brezis.Chapter09.toContinuousMapClosure`. -/
+`Brezis.Chapter09.toContinuousMapClosure`.
+
+**Reading.** The representative on the closure is realized as the restriction of a continuous
+ function on all of $\mathbb{R}^N$. -/
 theorem exists_continuous_ae_eq_toContinuousMapClosure (hΩ : IsClassC1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hp : ((d + 1 : ℕ) : ℝ≥0) < p)
     (u : sobolevSpace (d + 1) p Ω) :
@@ -1531,7 +1607,10 @@ $W^{1,p}(\Omega) \subset C(\bar\Omega)$, $u \mapsto \tilde u|_{\bar\Omega}$, is 
 The injection is `Brezis.Chapter09.toContinuousMapClosure`. By Corollary 9.14 the image of the
 unit ball is bounded and uniformly Hölder continuous in $C(\bar\Omega)$, so the Ascoli–Arzelà
 theorem applies. The proof specializes
-`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt`. -/
+`SobolevEuclidean.isCompactEmbedding_toContinuousMapL_of_gt`.
+
+**Reading.** This version of the compact embedding is stated for finite $p>N$. The source
+ does not state that upper restriction. -/
 theorem theorem_9_16_gt (hΩ : IsClassC1 (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hp : ((d + 1 : ℕ) : ℝ≥0) < p) :
     haveI : CompactSpace (closure (Ω : Set 𝔼)) := isCompact_iff_compactSpace.1 hb.isCompact_closure
@@ -1565,7 +1644,10 @@ $N \ge 2$.
 **Reading.** The case $p = N$ assumes $N \ge 2$, and the last sentence leaves out $N = p = 1$;
 see `Brezis.Chapter09.theorem_9_16_eq` and `Brezis.Chapter09.theorem_9_16_self`.
 
-The injection into $C(\bar\Omega)$ is `Brezis.Chapter09.toContinuousMapClosure`. -/
+The injection into $C(\bar\Omega)$ is `Brezis.Chapter09.toContinuousMapClosure`.
+
+**Reading.** The bundled compact embeddings use finite $p$. This leaves out $p=\infty$ as well
+ as the $p=N=1$ case of the final self-embedding assertion. -/
 theorem theorem_9_16 (hΩ : IsClassC1 (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼)) :
     (∀ (q p' : ℝ≥0) [Fact (1 ≤ (q : ℝ≥0∞))], p < ((d + 1 : ℕ) : ℝ≥0) →
       (p' : ℝ)⁻¹ = p⁻¹ - ((d + 1 : ℕ) : ℝ)⁻¹ → q < p' → IsCompactInjectionLp (d + 1) 1 p q Ω) ∧
@@ -1643,7 +1725,10 @@ $$\|u\|_{W^{1,p}} \le C_1 \big(\|\nabla u\|_{L^p(\Omega)} + \|u\|_{L^q(\Omega)}\
   \|\nabla u\|_{L^p(\Omega)} + \|u\|_{L^q(\Omega)} \le C_2 \|u\|_{W^{1,p}}$$
 for all $u \in W^{1,p}(\Omega)$.
 
-The proof specializes `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt`. -/
+The proof specializes `SobolevEuclidean.exists_norm_le_gradNorm_add_eLpNorm_and_le_of_gt`.
+
+**Reading.** The range $p>N$ is restricted to finite Sobolev exponents, while $q=\infty$
+ is included. -/
 theorem remark_9_15_gt (hΩ : IsClassC1 (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hp : ((d + 1 : ℕ) : ℝ≥0) < p) {q : ℝ≥0∞} (hq : 1 ≤ q) :
     ∃ C₁ C₂ : ℝ, ∀ u : sobolevSpace (d + 1) p Ω,
@@ -1667,7 +1752,9 @@ $$\|u\|_{W^{1,p}} \le C_1 \big(\|\nabla u\|_p + \|u\|_q\big), \qquad \|\nabla u\
 so long as $1 \le q \le p^*$ if $1 \le p < N$; $1 \le q < \infty$ if $p = N$ and $N \ge 2$; and
 $1 \le q \le \infty$ if $p > N$.
 
-**Reading.** The case $p = N$ assumes $N \ge 2$; see `Brezis.Chapter09.remark_9_15_eq`. -/
+**Reading.** The case $p = N$ assumes $N \ge 2$; see `Brezis.Chapter09.remark_9_15_eq`.
+
+**Reading.** The library handles finite Sobolev exponents. The critical clause has $N \ge 2$. -/
 theorem remark_9_15 (hΩ : IsClassC1 (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼))
     {q : ℝ≥0∞} (hq : 1 ≤ q)
     (hcase : (∃ p' : ℝ≥0, p < ((d + 1 : ℕ) : ℝ≥0) ∧ (p' : ℝ)⁻¹ = p⁻¹ - ((d + 1 : ℕ) : ℝ)⁻¹ ∧
@@ -1703,10 +1790,14 @@ Thus a function of $W^{1,N}(\Omega)$ need not be bounded.
 
 For $N = 1$ there is no admissible $\alpha$. The proof uses the backbone's
 `memSobolevMultiIndex_logRpow` and `eLpNorm_logRpow_top`. The weak gradient is
-$-\alpha (\log 1/|x|)^{\alpha - 1} x / |x|^2$ away from the origin, the origin is a removable
-singularity, and the radial integral $\int_0^{1/2} (\log 1/r)^{(\alpha - 1)N} r^{-1} \, dr$ is
-finite because $\alpha < 1 - 1/N$. Trudinger's inequality, which the source quotes without
-proof, is not restated. -/
+$-\alpha (\log 1/|x|)^{\alpha - 1} x / |x|^2$ away from the origin. The formula also gives the
+weak gradient on the ball, and the radial integral
+$\int_0^{1/2} (\log 1/r)^{(\alpha - 1)N} r^{-1} \, dr$ is finite because $\alpha < 1 - 1/N$.
+Trudinger's inequality, which the source quotes without
+proof, is not restated.
+
+**Reading.** The logarithmic example is stated as a failure of essential boundedness. The
+ dimension restriction $N\ge 2$ follows from the stated range for $\alpha$. -/
 theorem remark_9_16 (hN : 2 ≤ N) {α : ℝ} (hα : 0 < α) (hα1 : α < 1 - 1 / N) :
     (∃ u : sobolevSpace N N ⟨ball 0 (1 / 2), isOpen_ball⟩,
       SobolevMultiIndex.fn u =ᵐ[volume.restrict (ball (0 : 𝔼) (1 / 2))]

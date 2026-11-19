@@ -95,10 +95,21 @@ errors use Taylor bounds.
 ## Deviations from the source
 
 * **Definition 6.3.1 and Theorem 6.3.2** (generalization). The source works in
-  $\mathbb{R}^{N_x - 1}$ with a norm chosen per example. The library states them for an arbitrary
-  real normed space. See `AtkinsonHan.Chapter06.theorem_6_3_2`.
+  $\mathbb{R}^{N_x - 1}$ with a norm chosen per example. The abstract family has a single
+  real normed space for all mesh indices. Its recursions are supplied for all natural time
+  levels. See `AtkinsonHan.Chapter06.theorem_6_3_2`.
 * **Definition 6.3.1** (reading). The limit "as $h_x, h_t \to 0$" is a limit along a filter on the
   index set of the family. See `AtkinsonHan.Chapter06.IsConsistentScheme`.
+* **Theorem 6.3.2, error estimate** (reading). The conclusion uses the explicit global
+  factor $M_0 T c$ when $c$ is the local error constant.
+* **Examples 6.3.3 and 6.3.4** (scope). Bounds on the displayed derivatives replace their
+  continuity in the error hypotheses. The derivative data and the heat equation are supplied
+  on the closed rectangle, with one-sided derivatives at its edges. The error constants
+  are explicit. The backward forcing term is evaluated at the new time level, as in (6.1.15).
+* **Exercise 6.3.1, hint** (correction). The printed similarity formula uses a positive
+  coefficient in front of a tridiagonal matrix with positive off-diagonal entries.
+  If both off-diagonal entries of $Q$ are negative, the similarity has a negative coefficient.
+  The eigenvalue set stays the same because the listed cosine factors occur in opposite pairs.
 
 ## Not formalized
 
@@ -118,7 +129,11 @@ let a family of two-level schemes be indexed by $i \in \iota$, with time steps $
 truncation errors $\tau_i^m \in E$, refined along a filter $l$ on $\iota$. The family is
 **consistent** on $[0, T]$ if for every $\varepsilon > 0$, eventually along $l$,
 $\|\tau_i^m\| \le \varepsilon$ for all $m \in \mathbb{N}$ with $m h_t(i) \le T$. That is,
-$\sup_{m h_t \le T} \|\tau^m\| \to 0$ as the mesh is refined. -/
+$\sup_{m h_t \le T} \|\tau^m\| \to 0$ as the mesh is refined.
+
+**Reading.** Uniform-in-time truncation convergence is stated along a supplied filter in a fixed
+normed space.
+-/
 def IsConsistentScheme (l : Filter ι) (ht : ι → ℝ) (τ : ι → ℕ → E) (T : ℝ) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ i in l, ∀ m : ℕ, (m : ℝ) * ht i ≤ T → ‖τ i m‖ ≤ ε
 
@@ -129,14 +144,20 @@ $$\|\tau_i^m\| \le c \bigl(h_x(i)^{p_1} + h_t(i)^{p_2}\bigr)$$
 for every $i$ and every $m \in \mathbb{N}$ with $m h_t(i) \le T$.
 
 A family of some order is consistent as soon as $h_x^{p_1} + h_t^{p_2} \to 0$ along the
-refinement. -/
+refinement.
+
+**Reading.** Same uniform order inequality in an arbitrary fixed normed space.
+-/
 def IsSchemeOfOrder (hx ht : ι → ℝ) (τ : ι → ℕ → E) (T c : ℝ) (p₁ p₂ : ℕ) : Prop :=
   ∀ (i : ι) (m : ℕ), (m : ℝ) * ht i ≤ T → ‖τ i m‖ ≤ c * (hx i ^ p₁ + ht i ^ p₂)
 
 /-- **Definition 6.3.1** of [han2009theoretical], stability. A family of two-level schemes with
 iteration operators $Q_i \in \mathcal{L}(E)$ is **stable** on $[0, T]$ with constant $M_0$ if
 $\|Q_i^m\| \le M_0$ for every $i$ and every $m \in \mathbb{N}$ with $m h_t(i) \le T$. The single
-constant $M_0$ for all indices expresses that the bound does not depend on the mesh. -/
+constant $M_0$ for all indices expresses that the bound does not depend on the mesh.
+
+**Reading.** Same mesh-independent power bound for operators on a fixed normed space.
+-/
 def IsStableScheme (ht : ι → ℝ) (Q : ι → E →L[ℝ] E) (T M₀ : ℝ) : Prop :=
   ∀ (i : ι) (m : ℕ), (m : ℝ) * ht i ≤ T → ‖Q i ^ m‖ ≤ M₀
 
@@ -144,7 +165,10 @@ def IsStableScheme (ht : ι → ℝ) (Q : ι → E →L[ℝ] E) (T M₀ : ℝ) :
 and computed values $v_i^m$ is **convergent** on $[0, T]$ along the filter $l$ if for every
 $\varepsilon > 0$, eventually along $l$, $\|u_i^m - v_i^m\| \le \varepsilon$ for all
 $m \in \mathbb{N}$ with $m h_t(i) \le T$. That is, $\sup_{m h_t \le T} \|u^m - v^m\| \to 0$ as
-the mesh is refined. -/
+the mesh is refined.
+
+**Reading.** Uniform-in-time convergence is stated along a supplied refinement filter.
+-/
 def IsConvergentScheme (l : Filter ι) (ht : ι → ℝ) (u v : ι → ℕ → E) (T : ℝ) : Prop :=
   ∀ ε > (0 : ℝ), ∀ᶠ i in l, ∀ m : ℕ, (m : ℝ) * ht i ≤ T → ‖u i m - v i m‖ ≤ ε
 
@@ -153,7 +177,11 @@ section Theorem632
 variable {ht hx : ι → ℝ} {Q : ι → E →L[ℝ] E} {u v g τ : ι → ℕ → E} {T M₀ : ℝ}
 
 /-- At one mesh $i$ of a stable family, if $\|\tau_i^m\| \le \delta$ whenever $m h_t(i) \le T$, then
-$\|u_i^m - v_i^m\| \le M_0 T \delta$ for every $m$ with $m h_t(i) \le T$. -/
+$\|u_i^m - v_i^m\| \le M_0 T \delta$ for every $m$ with $m h_t(i) \le T$.
+
+**Reading.** Telescoping solution of the error recursion with a supplied bound in a fixed normed
+space.
+-/
 private theorem error_le (hht : ∀ i, 0 ≤ ht i)
     (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
@@ -174,7 +202,11 @@ h_t(i) g_i^m + h_t(i) \tau_i^m$, and let $u_i^0 = v_i^0$. If the family is stabl
 $M_0$ and consistent along a filter $l$, then it is convergent along $l$.
 
 The proof bounds the error at each mesh by $\sup_{m h_t \le T} \|u^m - v^m\| \le M_0 T \sup_{m
-h_t \le T} \|\tau^m\|$, by `FiniteDifference.norm_sub_le_of_stable`. -/
+h_t \le T} \|\tau^m\|$, by `FiniteDifference.norm_sub_le_of_stable`.
+
+**Reading.** Uses a fixed arbitrary normed space, a filter, and recurrence data at all natural time
+levels.
+-/
 theorem theorem_6_3_2 {l : Filter ι} (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
     (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
@@ -204,7 +236,10 @@ and every $m$ with $m h_t(i) \le T$,
 $$\|u_i^m - v_i^m\| \le M_0 T c \bigl(h_x(i)^{p_1} + h_t(i)^{p_2}\bigr).$$
 
 Consistency is not a separate hypothesis: the order condition (6.3.7) implies it once the mesh
-is refined. -/
+is refined.
+
+**Reading.** Makes the global constant M₀Tc explicit and uses arbitrary fixed normed space.
+-/
 theorem theorem_6_3_2' (hT : 0 ≤ T) (hht : ∀ i, 0 ≤ ht i)
     (hv : ∀ (i : ι) (m : ℕ), v i (m + 1) = Q i (v i m) + ht i • g i m)
     (hu : ∀ (i : ι) (m : ℕ), u i (m + 1) = Q i (u i m) + ht i • g i m + ht i • τ i m)
@@ -262,7 +297,11 @@ derivatives $u_t^{(m)}$ for $m \le 2$, if the following hold.
 The source assumes $u_{tt}$ and $u_{xxxx}$ continuous on the closed rectangle. The derivatives
 within the closed intervals are one-sided at the edges, and the two bounds are the constants
 that the error bounds depend on. The equation is asked for on the closed rectangle, which
-continuity of the derivatives gives from the open one. -/
+continuity of the derivatives gives from the open one.
+
+**Reading.** Uses explicit derivative bounds with one-sided derivatives and PDE data on the closed
+rectangle.
+-/
 structure IsRegularHeatSolution (ν T : ℝ) (f u : ℝ × ℝ → ℝ) (ux ut : ℕ → ℝ × ℝ → ℝ)
     (Mtt Mxxxx : ℝ) : Prop where
   /-- The derivative of order $0$ in $x$ is $u$. -/
@@ -298,6 +337,8 @@ include hu
 /-- The forward Taylor bound in time for a regular solution of the heat equation. For
 $x \in [0, \pi]$, $t \in [0, T]$, $k \ge 0$ and $t + k \le T$,
 $$|u(x, t + k) - u(x, t) - k \, u_t(x, t)| \le M_{tt} k^2 / 2.$$
+
+**Reading.** Gives explicit half-factor time remainder bound on the stencil.
 -/
 theorem abs_sub_forward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht : t ∈ Icc (0 : ℝ) T)
     (hk : 0 ≤ k) (htk : t + k ≤ T) :
@@ -316,6 +357,8 @@ theorem abs_sub_forward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht 
 /-- The backward Taylor bound in time for a regular solution of the heat equation. For
 $x \in [0, \pi]$, $t \in [0, T]$, $k \ge 0$ and $t + k \le T$,
 $$|u(x, t + k) - u(x, t) - k \, u_t(x, t + k)| \le M_{tt} k^2 / 2.$$
+
+**Reading.** Gives explicit half-factor time remainder bound around the later time.
 -/
 theorem abs_sub_backward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht : t ∈ Icc (0 : ℝ) T)
     (hk : 0 ≤ k) (htk : t + k ≤ T) :
@@ -338,6 +381,8 @@ theorem abs_sub_backward_time_le {x t k : ℝ} (hx : x ∈ Icc (0 : ℝ) π) (ht
 /-- The Taylor bound for the centred second difference in space, for a regular solution of the heat
 equation. For $h \ge 0$, $x - h, x + h \in [0, \pi]$ and $t \in [0, T]$,
 $$|u(x + h, t) - 2u(x, t) + u(x - h, t) - h^2 u_{xx}(x, t)| \le M_{xxxx} h^4 / 12.$$
+
+**Reading.** Gives explicit fourth-order remainder constant for the centered stencil.
 -/
 theorem abs_centred_sub_le {x t h : ℝ} (hxl : x - h ∈ Icc (0 : ℝ) π) (hxr : x + h ∈ Icc (0 : ℝ) π)
     (hh : 0 ≤ h) (ht : t ∈ Icc (0 : ℝ) T) :
@@ -435,7 +480,10 @@ private theorem gridValues_succ_forward (u f : ℝ × ℝ → ℝ) (m : ℕ) :
 
 include hν hT hNt hhx hht hr in
 /-- The truncation error of the forward scheme in Example 6.3.3 satisfies $|\tau^m_j| \le
-(M_{tt}/2 + \nu M_{xxxx}/12)(h_x^2 + h_t)$ for every time level $m < N_t$. -/
+(M_{tt}/2 + \nu M_{xxxx}/12)(h_x^2 + h_t)$ for every time level $m < N_t$.
+
+**Reading.** Provides explicit constant from second temporal and fourth spatial derivative bounds.
+-/
 private theorem abs_forwardTrunc_le (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx)
     {m : ℕ} (hm : m < Nt) (j : Fin (N + 1)) :
     |forwardTrunc N u f hx ht r m j| ≤ (Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht) := by
@@ -537,7 +585,10 @@ $$\max_j |u(x_j, t_m) - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{
 This is the order-$(2, 1)$ estimate of Theorem 6.3.2. For $r \le 1/2$, $\|Q\|_\infty \le 1$, so
 the scheme is stable with $M_0 = 1$, and Taylor expansion bounds the truncation error. The proof
 applies `FiniteDifference.norm_sub_le_of_stable` with the horizon cut at $N_t$, because $u$ is
-assumed regular only on $[0, T]$. -/
+assumed regular only on $[0, T]$.
+
+**Reading.** Makes the constant explicit under the formal bounded-derivative hypotheses.
+-/
 theorem example_6_3_3 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2) (hr2 : r ≤ 1 / 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -615,7 +666,10 @@ In $\|\cdot\|_{2, h_x}$ the induced matrix norm is the spectral norm. The eigenv
 $1 - 4r \sin^2(j\pi / (2 N_x))$ of $Q$ (Exercise 6.3.1) lie in $[-1, 1]$ for $r \le 1/2$, so
 $\|Q\|_2 \le 1$ and the scheme is stable with $M_0 = 1$. The factor $\sqrt{\pi}$ bounds
 $\sqrt{h_x (N_x - 1)}$, which converts the maximum-norm bound on $\tau^m$ into a bound in the
-weighted $2$-norm. -/
+weighted $2$-norm.
+
+**Reading.** Gives explicit weighted error constant under the bounded-derivative hypotheses.
+-/
 theorem example_6_3_3_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2) (hr2 : r ≤ 1 / 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -750,7 +804,10 @@ private theorem mulVec_gridValues_succ_backward (u f : ℝ × ℝ → ℝ) (m : 
 
 include hν hT hNt hhx hht hr in
 /-- The truncation error of the backward scheme in Example 6.3.4 satisfies $|\bar\tau^m_j| \le
-(M_{tt}/2 + \nu M_{xxxx}/12)(h_x^2 + h_t)$ for every time level $m < N_t$. -/
+(M_{tt}/2 + \nu M_{xxxx}/12)(h_x^2 + h_t)$ for every time level $m < N_t$.
+
+**Reading.** Provides explicit constant from second temporal and fourth spatial derivative bounds.
+-/
 private theorem abs_backwardTrunc_le (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx)
     {m : ℕ} (hm : m < Nt) (j : Fin (N + 1)) :
     |backwardTrunc N u f hx ht r m j| ≤ (Mtt / 2 + ν * Mxxxx / 12) * (hx ^ 2 + ht) := by
@@ -855,7 +912,10 @@ The scheme is the two-level scheme with $Q = Q_1^{-1}$ and $g^m = Q f^{m+1}$. Di
 gives $\|Q\|_\infty \le 1$, so the scheme is unconditionally stable with $M_0 = 1$. Its
 truncation error $\tau^m = Q \bar\tau^m$ satisfies
 $\|\tau^m\|_\infty \le \|\bar\tau^m\|_\infty$, and Taylor expansion at $(x_j, t_{m+1})$ bounds
-$\bar\tau^m$. As in `AtkinsonHan.Chapter06.example_6_3_3`, the horizon is cut at $N_t$. -/
+$\bar\tau^m$. As in `AtkinsonHan.Chapter06.example_6_3_3`, the horizon is cut at $N_t$.
+
+**Reading.** Explicit constant and bounded-derivative hypotheses, with forcing at the new time.
+-/
 theorem example_6_3_4 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -907,7 +967,10 @@ $$\sqrt{h_x} \, \|u^m - v^m\|_2 \le \sqrt{\pi} \Bigl(\frac{M_{tt}}{2} + \frac{\n
 
 The eigenvalues $1 + 4r \cos^2(j\pi / (2 N_x))$ of $Q_1$ (Exercise 6.3.1) are at least $1$. So
 the eigenvalues of $Q = Q_1^{-1}$ lie in $(0, 1]$, $\|Q\|_2 \le 1$, the scheme is
-unconditionally stable in $\|\cdot\|_{2, h_x}$, and $\|\tau^m\|_2 \le \|\bar\tau^m\|_2$. -/
+unconditionally stable in $\|\cdot\|_{2, h_x}$, and $\|\tau^m\|_2 \le \|\bar\tau^m\|_2$.
+
+**Reading.** Explicit weighted error constant under the bounded-derivative hypotheses.
+-/
 theorem example_6_3_4_l2 (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt) {hx ht r : ℝ}
     (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (hu : IsRegularHeatSolution ν T f u ux ut Mtt Mxxxx) {v : ℕ → Fin (N + 1) → ℝ}
@@ -1004,7 +1067,10 @@ $$\max_j |u^m_j - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{12}\Bi
 and the same bound times $\sqrt{\pi}$ holds for $\sqrt{h_x} \, \|u^m - v^m\|_2$.
 
 The regularity hypotheses are discharged by
-`AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`. -/
+`AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`.
+
+**Reading.** Supplies explicit forward error constant for the finite sine initial data.
+-/
 theorem example_6_3_3_sineSeries (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
     {hx ht r : ℝ} (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (hr2 : r ≤ 1 / 2) (n : ℕ) (b : ℕ → ℝ) {v : ℕ → Fin (N + 1) → ℝ}
@@ -1035,7 +1101,10 @@ $$\max_j |u^m_j - v^m_j| \le \Bigl(\frac{M_{tt}}{2} + \frac{\nu M_{xxxx}}{12}\Bi
 and the same bound times $\sqrt{\pi}$ holds for $\sqrt{h_x} \, \|u^m - v^m\|_2$.
 
 The regularity hypotheses are discharged by
-`AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`. -/
+`AtkinsonHan.Chapter06.sineSeries_isRegularHeatSolution`.
+
+**Reading.** Supplies explicit backward error constant for the finite sine initial data.
+-/
 theorem example_6_3_4_sineSeries (hν : 0 < ν) (hT : 0 < T) {N Nt : ℕ} (hNt : 0 < Nt)
     {hx ht r : ℝ} (hhx : hx = π / (N + 2)) (hht : ht = T / Nt) (hr : r = ν * ht / hx ^ 2)
     (n : ℕ) (b : ℕ → ℝ) {v : ℕ → Fin (N + 1) → ℝ}

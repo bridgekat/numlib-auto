@@ -51,9 +51,13 @@ The proofs use the backbone modules `Numlib.LinearAlgebra.Matrix.Cholesky`,
 
 ## Deviations from the source
 
+* **Equations (4.3.1)–(4.3.4)** (generalization). The perturbation estimates use continuous
+  linear maps on a real Banach space, with the inverses and nonzero right-hand side explicit.
 * **Conversion after (4.3.5)** (correction). The diagonal square root multiplies the unit lower
   triangular factor on the right, $L_C = L_L D^{1/2}$, not on the left as printed. See
   `ConnGouldToint.Chapter04.cholesky_of_ldl`.
+* **Equation (4.3.9)** (generalization). The block factorization holds for every real symmetric
+  matrix. The book presents it for the indefinite case.
 -/
 
 open Matrix
@@ -69,7 +73,10 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E
 a bounded linear operator on $E$ with $\|T\| < 1$. Then $I + T$ is invertible and
 $$\|(I + T)^{-1}\| \le \frac{1}{1 - \|T\|}.$$
 
-In the application, $T = A^{-1} \Delta A$ is the scaled perturbation. -/
+In the application, $T = A^{-1} \Delta A$ is the scaled perturbation.
+
+**Reading.** Neumann series bound for continuous linear maps on a real Banach space.
+-/
 theorem neumann_bound_4_3_3 {T : E →L[ℝ] E} (hT : ‖T‖ < 1) :
     IsUnit (1 + T) ∧ ‖Ring.inverse (1 + T)‖ ≤ 1 / (1 - ‖T‖) := by
   have hn : ‖-T‖ < 1 := by simpa using hT
@@ -83,7 +90,10 @@ $\Delta A$ be bounded linear operators on $E$ with $A$ invertible and $\|A^{-1} 
 If $Ax = b$ and $(A + \Delta A)(x + \Delta x) = b + \Delta b$, then
 $$\Delta x = (I + A^{-1} \Delta A)^{-1} A^{-1} (\Delta b - \Delta A\, x).$$
 
-The formula follows by subtracting the two equations. -/
+The formula follows by subtracting the two equations.
+
+**Reading.** Same perturbation identity for bounded operators on a Banach space.
+-/
 theorem perturbed_solution_4_3_1 {A dA : E →L[ℝ] E} (hA : IsUnit A)
     {x dx b db : E} (hx : A x = b) (hxd : (A + dA) (x + dx) = b + db)
     (hsmall : ‖Ring.inverse A * dA‖ < 1) :
@@ -113,7 +123,10 @@ If $Ax = b$ with $b \neq 0$ and $(A + \Delta A)(x + \Delta x) = b + \Delta b$, t
 $$\frac{\|\Delta x\|}{\|x\|} \le \frac{\kappa(A)}{1 - \|A^{-1} \Delta A\|} \left( \frac{\|\Delta
   A\|}{\|A\|} + \frac{\|\Delta b\|}{\|b\|} \right), \qquad \kappa(A) = \|A\| \|A^{-1}\|.$$
 
-The hypothesis $b \neq 0$ makes the relative errors defined; it gives $x \neq 0$ and $A \neq 0$. -/
+The hypothesis $b \neq 0$ makes the relative errors defined; it gives $x \neq 0$ and $A \neq 0$.
+
+**Reading.** Banach-space perturbation inequality under nonzero right-hand side.
+-/
 theorem relative_solution_error_4_3_4 {A dA : E →L[ℝ] E} (hA : IsUnit A)
     {x dx b db : E} (hx : A x = b) (hxd : (A + dA) (x + dx) = b + db)
     (hb : b ≠ 0) (hsmall : ‖Ring.inverse A * dA‖ < 1) :
@@ -295,7 +308,10 @@ $P^T A P = (a_{\sigma(i) \sigma(j)})$ equals $L B L^T$, where $L$ is unit lower 
 is block diagonal with diagonal blocks of order one and two, and $L$ is the identity on each
 diagonal block of order two.
 
-The factorization is `Matrix.IsBlockLDL (A.submatrix σ σ) L B`. -/
+The factorization is `Matrix.IsBlockLDL (A.submatrix σ σ) L B`.
+
+**Reading.** Block LDL with one- and two-dimensional blocks for all symmetric matrices.
+-/
 theorem indefinite_factorization_4_3_9 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ (σ : Equiv.Perm (Fin n)) (L B : Matrix (Fin n) (Fin n) ℝ),
       Matrix.IsBlockLDL (A.submatrix σ σ) L B :=

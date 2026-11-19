@@ -48,6 +48,18 @@ ingredients.
 
 ## Deviations from the source
 
+* **Representation.** The general barrier formulas use Fréchet derivatives and the positive barrier
+  quadratic term. See `ConnGouldToint.Chapter13.generalPrimalDualBarrierModel`,
+  `ConnGouldToint.Chapter13.generalBarrierDualResidual`,
+  `ConnGouldToint.Chapter13.generalBarrierLagrangianCurvature`.
+* **Reading.** The general stopping test uses componentwise complementarity, homogeneous curvature
+  and strict primal-dual positivity. See `ConnGouldToint.Chapter13.GeneralPrimalDualBarrierStop`.
+* **Representation.** The algorithms are presented as runs with an explicit slack-fraction guard and
+  stopping conditions. See `ConnGouldToint.Chapter13.generalBarrierAcceptanceRatio`,
+  `ConnGouldToint.Chapter13.GeneralPrimalDualBarrierInnerRun`,
+  `ConnGouldToint.Chapter13.GeneralPrimalDualBarrierOuterRun`.
+* **Generalization.** The curvature limit uses the unit ball and does not need the separate
+  multiplier-error condition. See `ConnGouldToint.Chapter13.theorem_13_9_1`.
 * **Equation (13.9.7)** (reading). The complementarity residual $C(x) y - \mu e$ is a vector, and
   the test bounds each component. See `ConnGouldToint.Chapter13.GeneralPrimalDualBarrierStop`.
 * **Theorem 13.9.1** (reading). The infimum in (13.9.11) is over unit directions, as in the proof.
@@ -72,7 +84,12 @@ $$-\mu \sum_i \log c_i(x) - \mu \sum_i \frac{c_i'(x) s}{c_i(x)} + \frac12 \sum_i
 
 The first three terms are `ConnGouldToint.Chapter13.primalDualBarrierModel` applied to the
 constraint values $c_i(x)$, the dual vector $y$ and the linearized steps $c_i'(x) s$.
-Derivatives are Fréchet derivatives `fderiv`. -/
+Derivatives are Fréchet derivatives `fderiv`.
+
+**Reading.** The residual and second derivative are expressed as a continuous linear functional and
+its quadratic form. The model uses the positive diagonal term of the corrected primal-dual barrier
+model, with the constraint-Hessian term subtracted.
+-/
 noncomputable def generalPrimalDualBarrierModel
     (c : ι → E → ℝ) (x s : E) (y : ι → ℝ) (μ : ℝ) : ℝ :=
   primalDualBarrierModel (fun i ↦ c i x) y (fun i ↦ fderiv ℝ (c i) x s) μ -
@@ -82,7 +99,12 @@ noncomputable def generalPrimalDualBarrierModel
 $$\nabla f(x) - \sum_i y_i \nabla c_i(x),$$
 the derivative of the Lagrangian $\ell(\cdot, y) = f - \sum_i y_i c_i$ at $x$.
 
-The residual is an element of the dual space `E →L[ℝ] ℝ`, and its norm is the operator norm. -/
+The residual is an element of the dual space `E →L[ℝ] ℝ`, and its norm is the operator norm.
+
+**Reading.** The residual and second derivative are expressed as a continuous linear functional and
+its quadratic form. The model uses the positive diagonal term of the corrected primal-dual barrier
+model, with the constraint-Hessian term subtracted.
+-/
 noncomputable def generalBarrierDualResidual
     (f : E → ℝ) (c : ι → E → ℝ) (x : E) (y : ι → ℝ) : E →L[ℝ] ℝ :=
   fderiv ℝ f x - ∑ i, y i • fderiv ℝ (c i) x
@@ -90,6 +112,10 @@ noncomputable def generalBarrierDualResidual
 /-- **Equation (13.9.8)** of [conn2000trust], Lagrangian Hessian. The quadratic form of the Hessian
 of the Lagrangian in the direction $d$ is
 $$f''(x)[d, d] - \sum_i y_i\, c_i''(x)[d, d].$$
+
+**Reading.** The residual and second derivative are expressed as a continuous linear functional and
+its quadratic form. The model uses the positive diagonal term of the corrected primal-dual barrier
+model, with the constraint-Hessian term subtracted.
 -/
 noncomputable def generalBarrierLagrangianCurvature
     (f : E → ℝ) (c : ι → E → ℝ) (x : E) (y : ι → ℝ) (d : E) : ℝ :=
@@ -106,7 +132,12 @@ $$f''(x)[d, d] - \sum_i y_i\, c_i''(x)[d, d] + \sum_i \frac{y_i}{c_i(x)} (c_i'(x
 
 **Reading.** In (13.9.7) the left side $C(x) y$ of the complementarity residual is a vector, so
 the right side is read as the vector $\mu e$. The test bounds each component of
-$C(x) y - \mu e$. -/
+$C(x) y - \mu e$.
+
+**Reading.** The printed complementarity expression is presented as a norm and mixes a vector with
+identity notation. The formal residual is a vector tested componentwise. Curvature is tested
+homogeneously on all directions and the current slack and multiplier are strictly positive.
+-/
 def GeneralPrimalDualBarrierStop (f : E → ℝ) (c : ι → E → ℝ) (x : E)
     (y : ι → ℝ) (μ εD εC εE : ℝ) : Prop :=
   (∀ i, 0 < c i x ∧ 0 < y i) ∧ ‖generalBarrierDualResidual f c x y‖ ≤ εD ∧
@@ -121,7 +152,12 @@ $$\rho = \frac{\phi(x) - \phi(x + s)}{m(x) - m(x + s)}$$
 if $c_i(x + s) \ge \sigma c_i(x)$ for every $i$, and $0$ otherwise.
 
 The value $0$ stands for rejection: it is below both acceptance thresholds, which are positive.
-The ratio is `ConnGouldToint.Chapter06.btrRatio`. -/
+The ratio is `ConnGouldToint.Chapter06.btrRatio`.
+
+**Reading.** The inner and outer algorithms are run predicates with explicit model, positivity and
+accepted update conditions. The acceptance ratio is zero when the componentwise slack fraction
+fails.
+-/
 noncomputable def generalBarrierAcceptanceRatio (c : ι → E → ℝ)
     (σ : ℝ) (φ m : E → ℝ) (x s : E) : ℝ :=
   open Classical in
@@ -143,7 +179,12 @@ accepted when the ratio of `ConnGouldToint.Chapter13.generalBarrierAcceptanceRat
 $\eta_1$, and the radius follows the update rule (6.1.5).
 
 Step 2 uses the ordinary sufficient decrease test, without a cap. The structure fixes no update
-rule for the dual iterates; it requires only that they are positive. -/
+rule for the dual iterates; it requires only that they are positive.
+
+**Reading.** The inner and outer algorithms are run predicates with explicit model, positivity and
+accepted update conditions. The acceptance ratio is zero when the componentwise slack fraction
+fails.
+-/
 structure GeneralPrimalDualBarrierInnerRun [InnerProductSpace ℝ E] [CompleteSpace E]
     (P : Chapter06.BTRParams) (f : E → ℝ) (c : ι → E → ℝ) (σ μ : ℝ) where
   /-- The primal iterates $x_j$. -/
@@ -232,7 +273,12 @@ iterate that passes the stopping tests (13.9.6)–(13.9.8) with tolerances $\eps
 $\epsilon_C(\mu_k)$ and $\epsilon_E(\mu_k)$. The tolerance functions are positive on
 $(0, \infty)$ and tend to zero as $\mu \to 0^+$.
 
-The barrier parameters are positive because each inner run requires it. -/
+The barrier parameters are positive because each inner run requires it.
+
+**Reading.** The inner and outer algorithms are run predicates with explicit model, positivity and
+accepted update conditions. The acceptance ratio is zero when the componentwise slack fraction
+fails.
+-/
 structure GeneralPrimalDualBarrierOuterRun [InnerProductSpace ℝ E] [CompleteSpace E]
     (P : Chapter06.BTRParams) (f : E → ℝ) (c : ι → E → ℝ) where
   /-- The outer iterates $x_k$. -/
@@ -300,7 +346,13 @@ needed: on the constraints outside $\mathcal{A}$, the complementarity test gives
 $y_{k,i} / c_i(x_k) \to 0$, so the barrier curvature term of the stopping test vanishes on the
 directions that the conclusion considers.
 
-The first-order limits follow directly from the stopping tests. -/
+The first-order limits follow directly from the stopping tests.
+
+**Generalization.** The theorem works along a filter for points passing the stopping tests. It omits
+the printed multiplier-error hypothesis and requires a bound on constraint derivatives. The uniform
+curvature condition is stated over the closed unit ball and tangent directions to the specified
+active constraints.
+-/
 theorem theorem_13_9_1 {α : Type*} {l : Filter α} {f : E → ℝ} {c : ι → E → ℝ}
     {x : α → E} {y : α → ι → ℝ} {μ εD εC εE : α → ℝ} {K : ℝ}
     (hμ : Tendsto μ l (𝓝 0)) (hD : Tendsto εD l (𝓝 0))

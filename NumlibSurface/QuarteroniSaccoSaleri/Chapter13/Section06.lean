@@ -56,6 +56,23 @@ The proofs specialize the backbone module `Numlib.Analysis.PDE.Transport`.
   `Transport.IsStrictlyHyperbolic`. Both ask for an invertible $T$ and a real diagonal $\Lambda$
   with $A = T \Lambda T^{-1}$; the strict form also asks that the diagonal entries are distinct.
 
+## Deviations from the source
+
+* **Equations (13.30)–(13.31)** (reading). The system holds at time zero and uses within
+  differentiability. The characteristic solution requires differentiable transformed data, and
+  the domain-of-dependence equality also covers repeated speeds. See
+  `QuarteroniSaccoSaleri.Chapter13.hyperbolicSystem_solution` and
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_31`.
+* **Remark 13.2** (reading). The predicate is pointwise and uses the total Fréchet derivative.
+  Differentiability at the relevant states and validity throughout the state range are supplied
+  separately. See `QuarteroniSaccoSaleri.Chapter13.remark_13_2`.
+* **Equations (13.33)–(13.35)** (correction). The first-order system printed for the forced wave
+  equation omits the vector $(0,f)$. The homogeneous reduction requires $f=0$ and uses the
+  closed spatial interval and nonnegative times, including the corner compatibility conditions.
+  The eigenvalues are distinct when $\gamma\ne0$. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_35` and
+  `QuarteroniSaccoSaleri.Chapter13.waveMatrix_isHyperbolic`.
+
 ## Not formalized
 
 * Remark 13.3, the classification of second-order equations by conic sections. It is heuristic
@@ -78,7 +95,9 @@ $$u_t + A u_x = 0 \quad \text{on } \mathbb{R} \times [0, \infty), \qquad u(x, 0)
 if every component of $u$ has partial derivatives on $\mathbb{R} \times [0, \infty)$, the vector
 equation holds at every point of that set, and the initial condition holds for all $x$.
 
-The definition is `Transport.IsSystemSolution`. -/
+The definition is `Transport.IsSystemSolution`.
+
+**Reading.** Classical solutions use within derivatives and the equation includes time zero. -/
 def equation_13_30 (A : Matrix (Fin p) (Fin p) ℝ) (u₀ : ℝ → Fin p → ℝ)
     (u : ℝ → ℝ → Fin p → ℝ) : Prop := Transport.IsSystemSolution A u₀ u
 
@@ -123,7 +142,10 @@ where $\omega^k$ is the $k$-th column of $T$, is a solution of (13.30), and ever
 (13.30) with the datum $u_0$ is equal to it at all $x$ and all $t \ge 0$.
 
 The coefficient $(T^{-1} u_0(x - \lambda_k t))_k$ is the characteristic variable
-$w_k(x - \lambda_k t, 0)$. The column $\omega^k$ is `Tᵀ k`. -/
+$w_k(x - \lambda_k t, 0)$. The column $\omega^k$ is `Tᵀ k`.
+
+**Reading.** The solution formula and uniqueness require differentiability of each transformed
+initial component. -/
 theorem hyperbolicSystem_solution {A T : Matrix (Fin p) (Fin p) ℝ} {lam : Fin p → ℝ}
     (hT : IsUnit T) (hA : A = T * diagonal lam * T⁻¹) {u₀ : ℝ → Fin p → ℝ}
     (hu₀ : ∀ k, Differentiable ℝ fun x => (T⁻¹ *ᵥ u₀ x) k) :
@@ -141,7 +163,10 @@ $$D(\bar x, \bar t) = \{\bar x - \lambda_k \bar t : k = 1, \ldots, p\},$$
 then $u(\bar x, \bar t) = v(\bar x, \bar t)$.
 
 The set $D(\bar x, \bar t)$ is `Transport.domainOfDependence`. Its points are the feet of the
-characteristics through $(\bar x, \bar t)$. -/
+characteristics through $(\bar x, \bar t)$.
+
+**Generalization.** Equality of initial data on the characteristic feet suffices even when
+speeds repeat. -/
 theorem equation_13_31 {A T : Matrix (Fin p) (Fin p) ℝ} {lam : Fin p → ℝ} (hT : IsUnit T)
     (hA : A = T * diagonal lam * T⁻¹) {u₀ v₀ : ℝ → Fin p → ℝ} {u v : ℝ → ℝ → Fin p → ℝ}
     (hu : equation_13_30 A u₀ u) (hv : equation_13_30 A v₀ v) {xb tb : ℝ} (htb : 0 ≤ tb)
@@ -154,7 +179,10 @@ flux function of the nonlinear system (13.32), $u_t + \partial_x g(u) = 0$. The 
 diagonalizable with real eigenvalues, in the sense of `Transport.IsHyperbolic`.
 
 The Jacobian is the matrix of `fderiv ℝ g u`. If $g$ is not differentiable at $u$, this
-derivative is $0$ in Lean, and the system counts as hyperbolic at $u$. -/
+derivative is $0$ in Lean, and the system counts as hyperbolic at $u$.
+
+**Reading.** This checks the Jacobian at one state, using the total Fréchet derivative. The
+differentiability and state-space hypotheses of the Jacobian interpretation are external. -/
 def remark_13_2 (g : (Fin p → ℝ) → (Fin p → ℝ)) (u : Fin p → ℝ) : Prop :=
   Transport.IsHyperbolic (LinearMap.toMatrix' (fderiv ℝ g u : (Fin p → ℝ) →ₗ[ℝ] (Fin p → ℝ)))
 
@@ -171,7 +199,10 @@ partial derivatives on the strip and these satisfy the equation and the conditio
 
 The definition is `Transport.IsWaveSolution`. It uses one function for the two mixed partial
 derivatives $\partial_{xt} u$ and $\partial_{tx} u$. This is no restriction for a $C^2$
-function. -/
+function.
+
+**Reading.** The PDE and derivatives are imposed on the closed spatial interval and at time
+zero, so the initial and boundary data must be compatible. -/
 def equation_13_33 (γ : ℝ) (f : ℝ → ℝ → ℝ) (u₀ v₀ : ℝ → ℝ) (α β : ℝ) (u : ℝ → ℝ → ℝ) : Prop :=
   Transport.IsWaveSolution γ f u₀ v₀ α β u
 
@@ -187,7 +218,10 @@ $x \in [\alpha, \beta]$.
 The function constructed in the proof is $\omega = (\partial_x u, \partial_t u)$, but the
 statement asserts only that $\omega$ exists. The derivative $u_0'$ is taken within
 $[\alpha, \beta]$. The matrix $A$ is `Transport.waveMatrix γ`, and the system on the strip is
-`Transport.IsSystemSolutionOn`. -/
+`Transport.IsSystemSolutionOn`.
+
+**Correction.** The printed first-order system is homogeneous even in the presence of a source
+term. The theorem requires $f=0$; the forced reduction would have right-hand side $(0,f)$. -/
 theorem equation_13_35 {γ : ℝ} {u₀ v₀ : ℝ → ℝ} {α β : ℝ} {u : ℝ → ℝ → ℝ}
     (hu : equation_13_33 γ 0 u₀ v₀ α β u) :
     ∃ w : ℝ → ℝ → Fin 2 → ℝ,
@@ -202,7 +236,9 @@ $\gamma \neq 0$. Then the matrix $A = \begin{bmatrix} 0 & -1 \\ -\gamma^2 & 0 \e
 
 The proof diagonalizes $A$ with the eigenvalues $\gamma$ and $-\gamma$, the propagation speeds
 of the wave, and the eigenvectors $(1, -\gamma)$ and $(1, \gamma)$. The statement does not name
-these eigenvalues. -/
+these eigenvalues.
+
+**Reading.** The strict conclusion requires the two speeds to be distinct, so $\gamma\ne0$. -/
 theorem waveMatrix_isHyperbolic {γ : ℝ} (hγ : γ ≠ 0) :
     Transport.IsStrictlyHyperbolic (Transport.waveMatrix γ) ∧
       Transport.IsHyperbolic (Transport.waveMatrix γ) :=

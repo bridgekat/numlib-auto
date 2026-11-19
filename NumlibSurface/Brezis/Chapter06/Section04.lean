@@ -75,9 +75,15 @@ are Mathlib's `LinearMap.IsSymmetric.orthogonalFamily_eigenspaces` and
 * **Theorem 6.11** (reading). The source's Hilbert basis is a sequence $(e_n)$. Here the basis is
   indexed by an arbitrary type, which also covers finite dimension. See
   `Brezis.Chapter06.theorem_6_11`.
+* **Proof of Theorem 6.11** (generalization). Orthogonality and density of the eigenspaces
+  apply without separability. Orthogonality also holds without compactness. See
+  `Brezis.Chapter06.theorem_6_11_orthogonal` and `Brezis.Chapter06.theorem_6_11_dense`.
 * **Remark 8** (reading). The source truncates the expansion after the first $k$ eigenvalues. Here
   the index set is not ordered, and the truncation keeps a finite set of indices that contains all
   $i$ with $|\mu_i| > \varepsilon$. See `Brezis.Chapter06.remark_6_8`.
+* **Multiplicity of eigenvalues** (generalization). The kernel stabilization identity holds
+  for any real shift of a bounded self-adjoint operator. See
+  `Brezis.Chapter06.multiplicity_eq_of_isSelfAdjoint`.
 -/
 
 open Filter Topology Module.End
@@ -169,7 +175,11 @@ and let $T \in \mathcal{L}(H)$ be self-adjoint, with $m = \inf_{|u| = 1} (Tu, u)
 $M = \sup_{|u| = 1} (Tu, u)$. Then
 $$\|T\| = \max\{|m|, |M|\}.$$
 
-The source states this with the word "moreover". -/
+The source states this with the word "moreover".
+
+**Reading.** Makes nonzero Hilbert space explicit so the extrema are taken over a nonempty unit
+sphere.
+-/
 theorem proposition_6_9_norm [Nontrivial H] {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) :
     ‖T‖ = max |⨅ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ|
       |⨆ u : Metric.sphere (0 : H) 1, ⟪T u, u⟫_ℝ| := by
@@ -218,7 +228,9 @@ and let $T \in \mathcal{L}(H)$ be self-adjoint. Then the eigenspaces
 $E(\lambda) = N(T - \lambda I)$, $\lambda \in \mathbb{R}$, are mutually orthogonal: they form an
 orthogonal family in the sense of Mathlib's `OrthogonalFamily`.
 
-The family includes $E(0) = N(T)$. Compactness of $T$ is not needed. -/
+The family includes $E(0) = N(T)$.
+
+**Generalization.** The eigenspaces are mutually orthogonal without compactness or separability. -/
 theorem theorem_6_11_orthogonal {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) :
     OrthogonalFamily ℝ (fun μ : ℝ => eigenspace (T : Module.End ℝ H) μ)
       fun μ => (eigenspace (T : Module.End ℝ H) μ).subtypeₗᵢ :=
@@ -231,7 +243,9 @@ and $F$ is dense in $H$.
 
 The argument of the source is the proof of Mathlib's
 `ContinuousLinearMap.orthogonalComplement_iSup_eigenspaces_eq_bot`: the restriction of $T$ to
-$F^\perp$ is compact and self-adjoint with spectrum $\{0\}$, so it is zero by Corollary 6.10. -/
+$F^\perp$ is compact and self-adjoint and has no nonzero spectral values, so it is zero.
+
+**Generalization.** The eigenspaces span a dense space without separability of $H$. -/
 theorem theorem_6_11_dense {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (hK : IsCompactOperator T) :
     (⨆ μ : ℝ, eigenspace (T : Module.End ℝ H) μ)ᗮ = ⊥ ∧
       Dense ((⨆ μ : ℝ, eigenspace (T : Module.End ℝ H) μ : Submodule ℝ H) : Set H) := by
@@ -359,7 +373,10 @@ of $\lambda$ are equal.
 
 This is also Problem 36 of the source. If $(T - \lambda I)^2 v = 0$, then $|(T - \lambda I)
 v|^2 = ((T - \lambda I)^2 v, v) = 0$. The proof specializes
-`IsSelfAdjoint.ker_sq_sub_smul_eq_ker` and `IsSelfAdjoint.ker_pow_sub_smul_eq_ker`. -/
+`IsSelfAdjoint.ker_sq_sub_smul_eq_ker` and `IsSelfAdjoint.ker_pow_sub_smul_eq_ker`.
+
+**Generalization.** The kernel identities hold for every real $\lambda$ and every bounded
+self-adjoint operator. The source discusses nonzero eigenvalues of compact operators. -/
 theorem multiplicity_eq_of_isSelfAdjoint {T : H →L[ℝ] H} (hT : IsSelfAdjoint T) (l : ℝ) :
     ((T - l • (1 : H →L[ℝ] H)) ^ 2).ker = (T - l • (1 : H →L[ℝ] H)).ker ∧
       ∀ k, 1 ≤ k → ((T - l • (1 : H →L[ℝ] H)) ^ k).ker = (T - l • (1 : H →L[ℝ] H)).ker :=

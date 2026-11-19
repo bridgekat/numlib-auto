@@ -51,8 +51,8 @@ $\omega_i$ are what Section 12.2 adds to Section 14.3.3.
   additive projection step on the subspaces $K_i$.
 * Section 12.2, `SaadSparse.Chapter12.additiveProjector_eq`: the projector of the pair $(K_i, K_i)$
   is $A V_i A_i^{-1} V_i^T$.
-* Equation (12.1), `SaadSparse.Chapter12.equation_12_1`: the residual of one weighted block-Jacobi
-  step.
+* Section 12.2, closing residual display, `SaadSparse.Chapter12.equation_12_1`: the residual of one
+  weighted block-Jacobi step.
 
 ## Conventions
 
@@ -64,6 +64,16 @@ $\omega_i$ are what Section 12.2 adds to Section 14.3.3.
   book's $V_S$ of this section is $R_S^T$.
 * The weights $\omega_i$ are scalars in $\mathbb{K}$, and the index sets are indexed by a finite
   type $\iota$.
+
+## Deviations from the source
+
+* **§12.2, overlapping blocks** (generalization). The coordinate sets are arbitrary finite
+  subsets. The source constructs overlapping intervals. `SaadSparse.Chapter12.blockJacobiStep`
+  uses scalar weights over the real or complex field. Its Galerkin and residual theorems take
+  $A$ positive definite to ensure well-posed local solves.
+* **(12.1)** (source location). `SaadSparse.Chapter12.equation_12_1` states the unnumbered
+  weighted residual identity at the end of §12.2. The printed number labels the local unweighted
+  correction, whose zero-extended version is `SaadSparse.Chapter12.pairStep_eq`.
 
 ## Not formalized
 
@@ -96,7 +106,10 @@ Its rows are the vectors $e_j^T$ for $j \in S$, so $R_S$ is the transpose of the
 $V_S = [e_j : j \in S]$.
 
 The product $R_S x$ is the subvector of $x$ indexed by $S$, and $R_S^T y = V_S y$ extends a
-vector on $S$ by zero. Section 14.3.1 calls the matrix $R_i$. -/
+vector on $S$ by zero. Section 14.3.1 calls the matrix $R_i$.
+
+**Reading.** Transposes the coordinate embedding and allows arbitrary finite subsets over R or C.
+-/
 def restrictSubset (𝕜 : Type*) [RCLike 𝕜] (S : Finset (Fin n)) : Matrix ↥S (Fin n) 𝕜 :=
   Matrix.of fun i j => if (i : Fin n) = j then 1 else 0
 
@@ -104,7 +117,10 @@ def restrictSubset (𝕜 : Type*) [RCLike 𝕜] (S : Finset (Fin n)) : Matrix �
 $$K_S = \operatorname{span}\{V_S\} = \operatorname{Ran}(R_S^T) = \operatorname{span}\{e_j : j
   \in S\} \subseteq \mathbb{K}^n$$
 consists of the vectors supported on $S$. The additive projection process projects onto it, and
-the subdomain problem of the Schwarz procedure of Section 14.3 is solved on it. -/
+the subdomain problem of the Schwarz procedure of Section 14.3 is solved on it.
+
+**Reading.** Spans an arbitrary finite subset, beyond the source's overlapping intervals.
+-/
 def subdomainSpace (𝕜 : Type*) [RCLike 𝕜] (S : Finset (Fin n)) :
     Submodule 𝕜 (EuclideanSpace 𝕜 (Fin n)) :=
   Submodule.span 𝕜 (Set.range fun j : ↥S => EuclideanSpace.single (j : Fin n) (1 : 𝕜))
@@ -173,7 +189,10 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜}
 /-- **Section 12.2** of [saad2003iterative], the local matrix. For $A \in \mathbb{K}^{n \times n}$
 and an index set $S$, the **local matrix** is
 $$A_S = V_S^T A V_S = R_S A R_S^T \in \mathbb{K}^{S \times S},$$
-the submatrix of $A$ on the rows and columns in $S$. Section 14.3.1 calls it $A_i$ too. -/
+the submatrix of $A$ on the rows and columns in $S$. Section 14.3.1 calls it $A_i$ too.
+
+**Reading.** Principal matrix VᵀAV on any finite subset over R or C.
+-/
 def localMatrix (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) : Matrix ↥S ↥S 𝕜 :=
   restrictSubset 𝕜 S * A * (restrictSubset 𝕜 S)ᵀ
 
@@ -184,7 +203,10 @@ restricts a residual to $S$, solves the local system there, and extends the corr
 It is the subdomain solve $T_i$ of (14.31).
 
 The inverse $A_S^{-1}$ is Mathlib's matrix inverse, which is $0$ for a singular matrix; the
-results below assume that $A$ is positive definite, so that $A_S$ is nonsingular. -/
+results below assume that $A$ is positive definite, so that $A_S$ is nonsingular.
+
+**Reading.** Uses inverse of arbitrary local matrix with total inverse outside invertible domain.
+-/
 noncomputable def subdomainInverse (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) :
     Matrix (Fin n) (Fin n) 𝕜 :=
   (restrictSubset 𝕜 S)ᵀ * (localMatrix A S)⁻¹ * restrictSubset 𝕜 S
@@ -192,7 +214,10 @@ noncomputable def subdomainInverse (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset
 /-- **Section 12.2** of [saad2003iterative], the subdomain projector. For
 $A \in \mathbb{K}^{n \times n}$ and an index set $S$, the **subdomain projector** is
 $$P_S = R_S^T A_S^{-1} R_S A = T_S A.$$
-It is $P_i$ of (14.24). -/
+It is $P_i$ of (14.24).
+
+**Reading.** Uses total matrix inverse and permits arbitrary finite subset over R or C.
+-/
 noncomputable def subdomainProjector (A : Matrix (Fin n) (Fin n) 𝕜) (S : Finset (Fin n)) :
     Matrix (Fin n) (Fin n) 𝕜 :=
   subdomainInverse A S * A
@@ -268,7 +293,11 @@ subdomain space $K_S = \operatorname{span}\{e_j : j \in S\}$.
 
 All results of Sections 12.2 and 14.3 follow from this identification and the abstract Schwarz
 theory; read in Section 14.3, it is (14.24). The $A$-orthogonal projector is
-`Schwarz.energyProjection`. -/
+`Schwarz.energyProjection`.
+
+**Reading.** Identifies each error projector with the backbone Hermitian energy projection over R or
+C.
+-/
 theorem subdomainProjector_eq_energyProjection (hA : A.PosDef) (S : Finset (Fin n)) :
     Matrix.toEuclideanLin (subdomainProjector A S)
       = Schwarz.energyProjection (Matrix.toEuclideanLin A)
@@ -292,7 +321,11 @@ theorem subdomainProjector_eq_energyProjection (hA : A.PosDef) (S : Finset (Fin 
     ← Matrix.toLpLin_mul_same]
   rw [subdomainProjector, subdomainInverse, Matrix.mul_assoc, Matrix.mul_assoc, Matrix.mul_assoc]
 
-/-- If $A$ is positive definite, then the subdomain projector is idempotent: $P_S^2 = P_S$. -/
+/-- If $A$ is positive definite, then the subdomain projector is idempotent: $P_S^2 = P_S$.
+
+**Reading.** Idempotence stated under positive definiteness, stronger than invertibility of local
+matrix.
+-/
 theorem subdomainProjector_mul_self (hA : A.PosDef) (S : Finset (Fin n)) :
     subdomainProjector A S * subdomainProjector A S = subdomainProjector A S := by
   refine (Matrix.toEuclideanLin (𝕜 := 𝕜)).injective ?_
@@ -316,12 +349,18 @@ iteration. For $A \in \mathbb{K}^{n \times n}$, index sets $S_i$ and weights
 $\omega_i \in \mathbb{K}$, $i \in \iota$, and vectors $b, x \in \mathbb{K}^n$, the step is
 $$x' = x + \sum_i \omega_i V_i A_i^{-1} V_i^T (b - Ax).$$
 All the corrections are computed from the same iterate and added at once. With $\omega_i = 1$
-this is the additive Schwarz procedure of Section 14.3.3. -/
+this is the additive Schwarz procedure of Section 14.3.3.
+
+**Reading.** Arbitrary finite subsets and complex weights, with total matrix inverse.
+-/
 noncomputable def blockJacobiStep (A : Matrix (Fin n) (Fin n) 𝕜) (S : ι → Finset (Fin n))
     (ω : ι → 𝕜) (b x : EuclideanSpace 𝕜 (Fin n)) : EuclideanSpace 𝕜 (Fin n) :=
   x + ∑ i, ω i • (subdomainInverse A (S i) ⬝ (b - (A ⬝ x)))
 
-/-- The block-Jacobi step, unfolded: $x' = x + \sum_i \omega_i T_{S_i} (b - Ax)$. -/
+/-- The block-Jacobi step, unfolded: $x' = x + \sum_i \omega_i T_{S_i} (b - Ax)$.
+
+**Reading.** Same relaxed update beyond covering families of overlapping real intervals.
+-/
 theorem blockJacobiStep_def (A : Matrix (Fin n) (Fin n) 𝕜) (S : ι → Finset (Fin n)) (ω : ι → 𝕜)
     (b x : EuclideanSpace 𝕜 (Fin n)) :
     blockJacobiStep A S ω b x
@@ -331,7 +370,11 @@ theorem blockJacobiStep_def (A : Matrix (Fin n) (Fin n) 𝕜) (S : ι → Finset
 be positive definite and let $S$ be an index set. Then the subspace
 $K_S = \operatorname{span}\{e_j : j \in S\}$ forms with itself a nondegenerate pair $(K_S, K_S)$
 for $A$ in the sense of `Projection.IsNondegeneratePair`, so the projection processes of the
-backbone apply. -/
+backbone apply.
+
+**Reading.** Explicit positive-definiteness condition establishing the Galerkin pairing for
+arbitrary subsets.
+-/
 theorem isNondegeneratePair_subdomainSpace (hA : A.PosDef) (S : Finset (Fin n)) :
     Projection.IsNondegeneratePair (Matrix.toEuclideanLin A) (subdomainSpace 𝕜 S)
       (subdomainSpace 𝕜 S) :=
@@ -345,7 +388,10 @@ $$x + V_S A_S^{-1} V_S^T (b - Ax).$$
 So the correction lands in $K_S$ and leaves a residual orthogonal to $K_S$, and Section 12.2 is
 an instance of the additive projection process of Section 5.4.
 
-The Petrov–Galerkin step is `Projection.pairStep`. -/
+The Petrov–Galerkin step is `Projection.pairStep`.
+
+**Correction.** Global zero-extended single block correction under positive definiteness.
+-/
 theorem pairStep_eq (hA : A.PosDef) (S : Finset (Fin n)) (b x : EuclideanSpace 𝕜 (Fin n)) :
     Projection.pairStep (Matrix.toEuclideanLin A) b (subdomainSpace 𝕜 S)
         (subdomainSpace 𝕜 S) (isNondegeneratePair_subdomainSpace hA S) x
@@ -372,7 +418,11 @@ overlapping block-Jacobi step from $x$ is the step of the additive projection pr
 5.4 with the weights $\omega_i$ on the pairs $(K_i, K_i)$,
 $K_i = \operatorname{span}\{e_j : j \in S_i\}$.
 
-The additive projection step is `Projection.additiveStep`. -/
+The additive projection step is `Projection.additiveStep`.
+
+**Reading.** Weighted additive-step equality for arbitrary subsets under positive definiteness and
+over R or C.
+-/
 theorem blockJacobiStep_eq_additiveStep (hA : A.PosDef) (S : ι → Finset (Fin n)) (ω : ι → 𝕜)
     (b x : EuclideanSpace 𝕜 (Fin n)) :
     blockJacobiStep A S ω b x
@@ -416,7 +466,7 @@ theorem additiveProjector_eq (hA : A.PosDef) (S : ι → Finset (Fin n)) (i : ι
             (subdomainSpace 𝕜 (S i)) (isNondegeneratePair_subdomainSpace hA (S i)) from
       rfl, ← hstep, ← LinearMap.comp_apply, ← Matrix.toLpLin_mul_same]
 
-/-- **Equation (12.1)** of [saad2003iterative], the residual of an overlapping block-Jacobi step.
+/-- **Section 12.2** of [saad2003iterative], the residual of an overlapping block-Jacobi step.
 Let $A \in \mathbb{K}^{n \times n}$ be positive definite, let $S_i$, $i \in \iota$, be index
 sets, let $\omega_i \in \mathbb{K}$, and let $b, x \in \mathbb{K}^n$. If $x'$ is the weighted
 block-Jacobi step from $x$, then
@@ -424,7 +474,15 @@ $$b - Ax' = \Bigl[I - \sum_i \omega_i A V_i (V_i^T A V_i)^{-1} V_i^T\Bigr] (b - 
 
 Here $V_i = R_i^T$, and $V_i (V_i^T A V_i)^{-1} V_i^T = T_i$ is the subdomain solve of (14.31).
 The identity is `Projection.residual_additiveStep`, equations (5.22)–(5.23) of the book, with
-$K_i = L_i$ the coordinate subspace of $S_i$. -/
+$K_i = L_i$ the coordinate subspace of $S_i$.
+
+**Source location.** Numbered (12.1) is the unweighted correction to the local coordinates.
+This theorem states the unnumbered residual identity at the end of §12.2 using the weighted
+global update.
+
+**Reading.** Name (12.1) instead points to a local unweighted coordinate update. Lean states global
+residual with full SPD assumption, arbitrary subsets and scalar weights.
+-/
 theorem equation_12_1 (hA : A.PosDef) (S : ι → Finset (Fin n)) (ω : ι → 𝕜)
     (b x : EuclideanSpace 𝕜 (Fin n)) :
     b - (A ⬝ blockJacobiStep A S ω b x)

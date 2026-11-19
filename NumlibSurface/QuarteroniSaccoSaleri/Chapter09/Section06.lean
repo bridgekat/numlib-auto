@@ -57,6 +57,13 @@ $A_m = \mathcal{A}(\delta^m h)$, which is what the algorithm (9.34) uses.
 
 ## Deviations from the source
 
+* **(9.33), (9.34) and (9.37)** (representation).
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_33` describes samples at $\delta^m h$. The table
+  recurrences are total in their indices, while the source computes only the triangular part.
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_37` specializes $\delta=1/2$.
+* **Property 9.3 and Romberg convergence** (reading). Smoothness is expressed on an open
+  neighbourhood. `QuarteroniSaccoSaleri.Chapter09.rombergConvergence` gives an explicit uniform
+  error bound in the valid part of the table.
 * **Property 9.2** (reading). The source prints $\mathcal{A}_{m,n} = \alpha_0 + O((\delta^m
   h)^{n+1})$ for $m = 0, \dots, n$, but (9.34) defines $\mathcal{A}_{m,q}$ only for $m \ge q$. The
   library states $\mathcal{A}_{m,q} = \alpha_0 + O((\delta^m h)^{q+1})$ for $q \le m$. See
@@ -84,13 +91,18 @@ $$A_m = \alpha_0 + \alpha_1 (\delta^m h) + \dots + \alpha_k (\delta^m h)^k +
   h)^{k+1}.$$
 
 The sequence is $A_m = \mathcal{A}(\delta^m h)$. The definition is the backbone's
-`Richardson.HasExpansion A δ h α k C`. -/
+`Richardson.HasExpansion A δ h α k C`.
+
+**Reading.** Models sequence of samples at δ^m h rather than an arbitrary function of step size.
+-/
 def equation_9_33 (A : ℕ → ℝ) (δ h : ℝ) (α : ℕ → ℝ) (k : ℕ) (C : ℝ) : Prop :=
   Richardson.HasExpansion A δ h α k C
 
 /-- **Equation (9.33)** of [quarteroni2000numerical], written out. The expansion holds if and only
 if for every $m$
 $$\Bigl|A_m - \sum_{i=0}^{k} \alpha_i (\delta^m h)^i\Bigr| \le C (\delta^m h)^{k+1}.$$
+
+**Reading.** Expands sampled error property as a uniform absolute inequality.
 -/
 theorem equation_9_33_iff (A : ℕ → ℝ) (δ h : ℝ) (α : ℕ → ℝ) (k : ℕ) (C : ℝ) :
     equation_9_33 A δ h α k C ↔
@@ -109,7 +121,11 @@ h)^{p+1}$ for every $m$. Moreover, for every $i \neq p$ the new coefficient $\ti
 The value $\mathcal{B}(\delta^m h)$ is `Richardson.step A δ p m`. The case $p = 1$ is the first
 display of the book, $\mathcal{B}(h) = \alpha_0 + \tilde\alpha_2 h^2 + \cdots$. The proof uses
 the backbone's `Richardson.hasExpansion_step`, whose expansion has
-$\tilde\alpha_1 = \dots = \tilde\alpha_p = 0$, and `Richardson.abs_sub_le_of_hasExpansion`. -/
+$\tilde\alpha_1 = \dots = \tilde\alpha_p = 0$, and `Richardson.abs_sub_le_of_hasExpansion`.
+
+**Reading.** Uses fixed sampled mesh, explicit missing low powers and remainder bound, and proves
+preservation of coefficient nonvanishing away from eliminated power.
+-/
 theorem richardsonStep {A : ℕ → ℝ} {δ h : ℝ} {α : ℕ → ℝ} {k : ℕ} {C : ℝ}
     (hA : equation_9_33 A δ h α k C) (hδ0 : 0 < δ) (hδ1 : δ < 1) (hh : 0 < h) {p : ℕ}
     (hp : 1 ≤ p) (hpk : p ≤ k) (hzero : ∀ i, 1 ≤ i → i < p → α i = 0) :
@@ -141,7 +157,11 @@ $$\mathcal{A}_{m,0} = A_m, \qquad \mathcal{A}_{m,q+1} = \frac{\mathcal{A}_{m,q} 
 
 The book restricts the recursion to the triangle $m = q + 1, \dots, n$ and
 $q = 0, \dots, n - 1$. The entries with $m < q$ have no meaning. The index $m - 1$ is truncated
-subtraction on $\mathbb{N}$, so it is $0$ at $m = 0$. -/
+subtraction on $\mathbb{N}$, so it is $0$ at $m = 0$.
+
+**Generalization.** Extends table recurrence to arbitrary natural indices and real δ, with
+saturating predecessor and total division.
+-/
 theorem equation_9_34 (A : ℕ → ℝ) (δ : ℝ) (m q : ℕ) :
     Richardson.table A δ m 0 = A m ∧
       Richardson.table A δ m (q + 1)
@@ -180,7 +200,11 @@ where $B_{2j}$ are the Bernoulli numbers.
 
 The Bernoulli numbers are Mathlib's `bernoulli`;
 `QuarteroniSaccoSaleri.Chapter09.bernoulliNumber_eq` gives the definition of the book. The proof
-is the backbone's `EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul`. -/
+is the backbone's `EulerMaclaurin.trapezoidSum_eq_integral_add_sum_add_mul`.
+
+**Reading.** Exact Euler–Maclaurin coefficients and interior witness with open-neighborhood
+regularity hypothesis.
+-/
 theorem property_9_3 (hab : a < b) {k : ℕ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * k + 2 : ℕ) : WithTop ℕ∞) f U) {m : ℕ} (hm : 1 ≤ m) :
     ∃ η ∈ Ioo a b, Quadrature.trapezoidSum f a ((b - a) / m) m
@@ -213,7 +237,10 @@ $$\mathcal{A}_{m,q+1} = \frac{\mathcal{A}_{m,q} - (1/2)^{2(q+1)} \mathcal{A}_{m-
   \mathcal{A}_{m,q} - \mathcal{A}_{m-1,q}}{4^{q+1} - 1}.$$
 
 The first recursion is (9.34) applied to the expansion (9.36) in the parameter $h_m^2$, with
-$h = b - a$ and $\delta = 1/2$. The second is the form of the Romberg algorithm. -/
+$h = b - a$ and $\delta = 1/2$. The second is the form of the Romberg algorithm.
+
+**Reading.** Specializes δ=1/2 and totalizes recurrence outside the triangular table.
+-/
 theorem equation_9_37 (f : ℝ → ℝ) (a b : ℝ) (m q : ℕ) :
     Romberg.table f a b m 0 = Quadrature.trapezoidSum f a ((b - a) / 2 ^ m) (2 ^ m) ∧
       Romberg.table f a b m (q + 1)
@@ -235,7 +262,11 @@ $$\Bigl|\mathcal{A}_{m,n} - \int_a^b f(x)\,dx\Bigr| \le C h_s^{2(n+1)}, \qquad h
 for every $m \ge n$.
 
 The proof applies Property 9.2 to the Euler–Maclaurin expansion of Property 9.3 in the parameter
-$h_m^2$. It is the backbone's `Romberg.exists_abs_table_sub_integral_le`. -/
+$h_m^2$. It is the backbone's `Romberg.exists_abs_table_sub_integral_le`.
+
+**Reading.** Explicit remainder bound with open-neighborhood regularity and valid m≥n to justify
+stated rate.
+-/
 theorem rombergConvergence (hab : a < b) {n : ℕ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * n + 2 : ℕ) : WithTop ℕ∞) f U) :
     ∃ C, ∀ m, n ≤ m →

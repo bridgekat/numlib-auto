@@ -77,13 +77,22 @@ specialize the oblique projection theory of
 
 ## Deviations from the source
 
+* **Definitions 3.6.1 and 3.6.3** (reading). The direct sum is stated for normed spaces.
+  A bounded projection can be orthogonal even if the inner product space is incomplete.
+* **Proposition 3.6.2 and Exercises 3.6.1 and 3.6.7** (reading). The component formula
+  follows from the direct-sum characterization. The complementary idempotent and the
+  norm lower bound hold before assuming completeness.
 * **Example 3.6.4** (reading). The book's $V_1$ is a general line through the origin of
   $\mathbb{R}^2$, drawn in Figure 3.4. The library states the displayed formula, for $V_1$ the
   $x_1$-axis. See `AtkinsonHan.Chapter03.example_3_6_4`.
+* **Examples 3.6.5–3.6.8** (reading). Lagrange nodes need not include the endpoints.
+  The interpolation examples state the operator norms from Exercise 3.6.8. Example 3.6.7
+  concludes orthogonal idempotence, with the span identified in the proof. The Fourier
+  residual for continuous periodic data uses probability Haar measure.
 
 ## Not formalized
 
-All numbered items of §3.6 are formalized.
+The section states the numbered definitions, examples and propositions, and selected exercises.
 -/
 
 namespace AtkinsonHan.Chapter03
@@ -97,7 +106,10 @@ variable {𝕜 V : Type*} [RCLike 𝕜] [NormedAddCommGroup V] [NormedSpace 𝕜
 /-- **Definition 3.6.1** of [han2009theoretical]. Let $V_1$ and $V_2$ be subspaces of a normed space
 $V$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $V$ is the **direct sum**
 $V = V_1 \oplus V_2$ if every $v \in V$ can be written in exactly one way as $v = v_1 + v_2$
-with $v_1 \in V_1$ and $v_2 \in V_2$. -/
+with $v_1 \in V_1$ and $v_2 \in V_2$.
+
+**Reading.** The source uses a linear space. The declaration is stated for a real or complex
+normed space, although the unique decomposition is algebraic. -/
 def IsDirectSum (V₁ V₂ : Submodule 𝕜 V) : Prop :=
   ∀ v : V, ∃! p : V × V, p.1 ∈ V₁ ∧ p.2 ∈ V₂ ∧ v = p.1 + p.2
 
@@ -133,7 +145,10 @@ space $V$ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. Then $V = V_1 \oplus V
 if there is a linear map $P : V \to V$ with $P^2 = P$, $P(V) = V_1$ and $(I - P)(V) = V_2$.
 
 The statement does not include the book's formulas $v_1 = Pv$ and $v_2 = (I - P)v$ for the
-components of $v$. -/
+components of $v$.
+
+**Reading.** The source also identifies the components as $Pv$ and $(I-P)v$ explicitly. They
+follow from the range conditions and uniqueness of the direct-sum decomposition. -/
 theorem proposition_3_6_2 (V₁ V₂ : Submodule 𝕜 V) :
     IsDirectSum V₁ V₂ ↔ ∃ P : V →ₗ[𝕜] V, P ∘ₗ P = P ∧ LinearMap.range P = V₁ ∧
       LinearMap.range (LinearMap.id - P) = V₂ := by
@@ -171,7 +186,10 @@ theorem isProjectionOperator_iff [CompleteSpace V] (P : V →L[𝕜] V) :
 
 /-- **Exercise 3.6.1** of [han2009theoretical]. Let $P$ be a bounded linear operator on a normed
 space $V$ with $P^2 = P$. Then $(I - P)^2 = I - P$, $\ker P = (I - P)(V)$ and
-$P(V) = \ker(I - P)$. -/
+$P(V) = \ker(I - P)$.
+
+**Reading.** The operator identity and range/kernel statements apply to bounded idempotents
+without completeness. The orthogonal case of the exercise is included in `proposition_3_6_9_d`. -/
 theorem exercise_3_6_1 {P : V →L[𝕜] V} (hP : IsIdempotentElem P) :
     IsIdempotentElem ((1 : V →L[𝕜] V) - P) ∧
       LinearMap.ker (P : V →ₗ[𝕜] V) = LinearMap.range (1 - (P : V →ₗ[𝕜] V)) ∧
@@ -182,7 +200,10 @@ theorem exercise_3_6_1 {P : V →L[𝕜] V} (hP : IsIdempotentElem P) :
     LinearMap.IsIdempotentElem.range_eq_ker_one_sub hlin⟩
 
 /-- **Exercise 3.6.7** of [han2009theoretical]. Let $P$ be a bounded linear operator on a normed
-space $V$ with $P^2 = P$ and $P \neq 0$. Then $\|P\| \ge 1$. -/
+space $V$ with $P^2 = P$ and $P \neq 0$. Then $\|P\| \ge 1$.
+
+**Reading.** The norm lower bound holds without completeness. The orthogonal norm equality
+from the exercise is in `proposition_3_6_9_b`. -/
 theorem exercise_3_6_7 (P : V →L[𝕜] V) (hP : IsIdempotentElem P) (h0 : P ≠ 0) : 1 ≤ ‖P‖ :=
   one_le_norm_of_isIdempotentElem hP h0
 
@@ -200,14 +221,21 @@ over $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$. A bounded linear operator $P : H
 $$(Pv, (I - P)w) = 0 \quad \text{for all } v, w \in H. \qquad (3.6.2)$$
 
 The Lean condition is `inner 𝕜 (P v) ((1 - P) w) = 0`, the complex conjugate of the book's inner
-product, so it is the same condition. -/
+product, so it is the same condition.
+
+**Generalization.** The definition uses a bounded operator on an inner product space.
+The book introduces it for Hilbert spaces. -/
 def IsOrthogonalProjectionOperator (P : H →L[𝕜] H) : Prop :=
   IsIdempotentElem P ∧ ∀ v w : H, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0
 
 /-- **Proposition 3.6.9(a)** of [han2009theoretical]. Let $H$ be an inner product space over
 $\mathbb{K} = \mathbb{R}$ or $\mathbb{C}$, and let $P$ be a bounded linear operator on $H$ with
 $P^2 = P$. Then $P$ satisfies the orthogonality condition (3.6.2) if and only if $P$ is
-self-adjoint: $(Pu, v) = (u, Pv)$ for all $u, v \in H$. -/
+self-adjoint: $(Pu, v) = (u, Pv)$ for all $u, v \in H$.
+
+**Reading.** This version starts from a bounded idempotent and identifies (3.6.2) with
+symmetry. Completeness is unnecessary, and the full projection equivalence is in
+`isOrthogonalProjectionOperator_iff`. -/
 theorem proposition_3_6_9_a (P : H →L[𝕜] H) (hP : IsIdempotentElem P) :
     (∀ v w : H, inner 𝕜 (P v) (((1 : H →L[𝕜] H) - P) w) = 0) ↔ (P : H →ₗ[𝕜] H).IsSymmetric := by
   have hPP : ∀ x : H, P (P x) = P x := fun x => DFunLike.congr_fun hP x
@@ -239,7 +267,10 @@ theorem proposition_3_6_9_a (P : H →L[𝕜] H) (hP : IsIdempotentElem P) :
 
 /-- A bounded linear operator on an inner product space is an orthogonal projection operator in the
 sense of Definition 3.6.3 if and only if it is a symmetric idempotent map (Mathlib's
-`LinearMap.IsSymmetricProjection`). -/
+`LinearMap.IsSymmetricProjection`).
+
+**Generalization.** The equivalence holds for bounded maps on incomplete inner product spaces,
+whereas Proposition 3.6.9(a) is in a Hilbert space. -/
 theorem isOrthogonalProjectionOperator_iff (P : H →L[𝕜] H) :
     IsOrthogonalProjectionOperator P ↔ (P : H →ₗ[𝕜] H).IsSymmetricProjection := by
   constructor
@@ -256,7 +287,10 @@ $$Pv = \sum_{i=1}^{n} (v, \varphi_i)\, \varphi_i$$
 is an orthogonal projection operator.
 
 The operator is the sum of the rank-one operators `InnerProductSpace.rankOne 𝕜 (u i) (u i)`, and
-the family $\varphi_i$ is `u`. -/
+the family $\varphi_i$ is `u`.
+
+**Reading.** The displayed sum is an orthogonal projection. Its range is the span of the
+orthonormal family, used in the proof; the declaration concludes orthogonal idempotence. -/
 theorem example_3_6_7 [CompleteSpace H] {n : ℕ} {u : Fin n → H} (hu : Orthonormal 𝕜 u) :
     IsOrthogonalProjectionOperator (∑ i, InnerProductSpace.rankOne 𝕜 (u i) (u i)) := by
   classical
@@ -302,7 +336,10 @@ theorem proposition_3_6_9_c' [CompleteSpace H] (V₁ : Submodule 𝕜 H) (h : Is
 
 /-- Let $V_1$ be a subspace of an inner product space $H$ that has an orthogonal projection, and let
 $P$ be an orthogonal projection operator in the sense of Definition 3.6.3 with range $V_1$. Then
-$P$ is Mathlib's orthogonal projection `V₁.starProjection` onto $V_1$. -/
+$P$ is Mathlib's orthogonal projection `V₁.starProjection` onto $V_1$.
+
+**Generalization.** The uniqueness part applies whenever the subspace admits orthogonal
+projection, without the ambient completeness and closedness assumptions of the source. -/
 theorem eq_starProjection_of_isOrthogonalProjectionOperator (V₁ : Submodule 𝕜 H)
     [V₁.HasOrthogonalProjection] {P : H →L[𝕜] H} (hP : IsOrthogonalProjectionOperator P)
     (hr : LinearMap.range (P : H →ₗ[𝕜] H) = V₁) : P = V₁.starProjection := by
@@ -451,7 +488,10 @@ $$\|P_n\| = \sup_{t \in [a, b]} \sum_{i=0}^{n} |\ell_i(t)|.$$
 
 The basis polynomial $\ell_i$ is `Lagrange.basisCM x i`, and the operator is
 `Lagrange.interpolateCLM x`. The interval $[a, b]$ is compact and nonempty, so the supremum is
-attained. -/
+attained.
+
+**Generalization.** The nodes need only be distinct points of the interval, without including
+both endpoints. The operator norm is the answer to Exercise 3.6.8(a). -/
 theorem example_3_6_5 {a b : ℝ} {n : ℕ} {x : Fin (n + 1) → Set.Icc a b}
     (hx : Function.Injective x) :
     IsProjectionOperator (Lagrange.interpolateCLM x) ∧
@@ -469,7 +509,10 @@ operator on $C[a, b]$ of norm $1$.
 
 On each subinterval the interpolant is a convex combination of two values of the function, and
 the interpolation of a constant is the constant itself. The operator is
-`piecewiseLinearInterpCLM n x`, where only the first $n + 2$ terms of the sequence `x` are used. -/
+`piecewiseLinearInterpCLM n x`, where only the first $n + 2$ terms of the sequence `x` are used.
+
+**Reading.** The theorem states idempotence and the norm asked for in Exercise 3.6.8(b).
+The nodal interpolation formulas are given in Section 3.2. -/
 theorem example_3_6_6 {a b : ℝ} {n : ℕ} {x : ℕ → Set.Icc a b}
     (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) :
@@ -506,7 +549,10 @@ The inner product is that of $L^2$ for the probability Haar measure of the circl
 $\varphi_m$ is `trigLp (2 * π) m`. The Fourier projection is not orthogonal for the uniform norm
 of $C_p(2\pi)$: its norm is $L_n$, which grows like $\log n$
 (`PeriodicCont.log_le_lebesgueConstant`), whereas an orthogonal projection has norm $1$ by
-Proposition 3.6.9(b). -/
+Proposition 3.6.9(b).
+
+**Reading.** The theorem gives the residual orthogonality for continuous periodic inputs,
+using probability Haar measure. The full $L^2$ statement is `example_3_4_9`. -/
 theorem example_3_6_8_l2 {n : ℕ} (f : PeriodicCont) {m : ℤ} (hm : m.natAbs ≤ n) :
     inner ℝ (trigLp (2 * π) m)
         (ContinuousMap.toLp 2 AddCircle.haarAddCircle ℝ f -

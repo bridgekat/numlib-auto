@@ -253,18 +253,146 @@ step $m+1$ is $c_{m+1}^2$, and (6.58) is then the QMRS residual recurrence.
 
 ## Deviations from the source
 
-* **Proposition 6.9** (reading). The statement assumes that $m$ Arnoldi steps have been completed,
-  $m \le \operatorname{grade}(v_1)$, in addition to the printed $m \le n$, because the proof uses
-  it. See `SaadSparse.Chapter06.proposition_6_9`.
+* **Reading.** The residual-smoothing update leaves the state fixed when its direction vanishes. See
+  `SaadSparse.Chapter06.smoothEta`, `SaadSparse.Chapter06.smoothEta_eq`, `SaadSparse.Chapter06.mrs`,
+  `SaadSparse.Chapter06.mrsX`, `SaadSparse.Chapter06.mrsR`, `SaadSparse.Chapter06.mrsEta`,
+  `SaadSparse.Chapter06.mrsX_succ`, `SaadSparse.Chapter06.mrsR_succ`.
+* **Reading.** The quasi-minimal smoothing recurrence totalizes reciprocal norms. See
+  `SaadSparse.Chapter06.qmrsTau`, `SaadSparse.Chapter06.qmrsEta`, `SaadSparse.Chapter06.qmrs`,
+  `SaadSparse.Chapter06.qmrs_succ`.
+* **Reading.** The one-step reciprocal identity states the nonzero residual assumptions explicitly.
+  See `SaadSparse.Chapter06.equation_6_76`, `SaadSparse.Chapter06.equation_6_77`,
+  `SaadSparse.Chapter06.lemma_6_18`.
+* **Correction.** The accumulated reciprocal formula uses the summation index in each denominator.
+  See `SaadSparse.Chapter06.inv_qmrsTau_sq`, `SaadSparse.Chapter06.qmrsTau_sq`,
+  `SaadSparse.Chapter06.inv_sq_norm_mrsR`.
+* **Correction.** The weighted MRS and QMRS residual formulas include the initial residual. See
+  `SaadSparse.Chapter06.qmrs_eq_6_79`, `SaadSparse.Chapter06.residual_mrs_eq`.
+* **Reading.** The weighted update and agreement of the two smoothing procedures state their nonzero
+  conditions. See `SaadSparse.Chapter06.qmrs_eq_6_78`, `SaadSparse.Chapter06.equation_6_78`,
+  `SaadSparse.Chapter06.norm_mrsR_eq_qmrsTau`, `SaadSparse.Chapter06.mrs_eq_qmrs`.
+* **Reading.** The smoothing comparison is with fixed IOM and QGMRES and uses the cosine ratio from
+  (6.57). See `SaadSparse.Chapter06.qmrs_iomOfBasis_eq_qgmres`.
+* **Reading.** The GMRES equality uses uniqueness and explicit hypotheses for the FOM prefix. See
+  `SaadSparse.Chapter06.mrs_isMinResidualIterate`, `SaadSparse.Chapter06.mrs_fom_eq_gmres`.
+* **Reading.** The smoothing exercise gives orthogonality for Krylov Galerkin iterates. See
+  `SaadSparse.Chapter06.problem_6_26`.
+* **Reading.** The residual norms use the fixed-size, totalized iterates. See
+  `SaadSparse.Chapter06.ρG`, `SaadSparse.Chapter06.ρF`.
+* **Generalization.** The data before the last rotation support complex scalars and totalized
+  inversion. See `SaadSparse.Chapter06.Rtilde`, `SaadSparse.Chapter06.gtilde`,
+  `SaadSparse.Chapter06.ξ`, `SaadSparse.Chapter06.ytilde`, `SaadSparse.Chapter06.Rtilde_apply`,
+  `SaadSparse.Chapter06.gtilde_last`, `SaadSparse.Chapter06.gtilde_castSucc`.
+* **Reading.** The best FOM residual includes the initial residual at index zero. See
+  `SaadSparse.Chapter06.ρFmin`, `SaadSparse.Chapter06.ρFmin_le`, `SaadSparse.Chapter06.le_ρFmin`.
+* **Reading.** The product formula is certified strictly before the grade without assuming
+  nonsingularity of the system. See `SaadSparse.Chapter06.ρG_succ`,
+  `SaadSparse.Chapter06.equation_6_62`.
+* **Reading.** The residual ratio has a complex-modulus version. See
+  `SaadSparse.Chapter06.ρF_eq_div_norm_c`, `SaadSparse.Chapter06.equation_6_63`.
+* **Reading.** The consecutive-residual identities make the nonzero denominator hypotheses explicit.
+  See `SaadSparse.Chapter06.equation_6_65`, `SaadSparse.Chapter06.proposition_6_13`.
+* **Reading.** The accumulated reciprocal identities require defined FOM iterates throughout the
+  prefix. See `SaadSparse.Chapter06.equation_6_66`, `SaadSparse.Chapter06.corollary_6_14`.
+* **Reading.** The FOM–GMRES combination formulas require a nonsingular system and nonzero later
+  residual. See `SaadSparse.Chapter06.equation_6_74`, `SaadSparse.Chapter06.equation_6_75`,
+  `SaadSparse.Chapter06.problem_6_14`.
+* **Reading.** The triangular-coordinate relation makes the reached step and nonsingularity
+  explicit. See `SaadSparse.Chapter06.lemma_6_16`.
+* **Reading.** QGMRES uses a fixed reduced solve under an abstract Hessenberg relation. See
+  `SaadSparse.Chapter06.qgmresY`, `SaadSparse.Chapter06.qgmres`,
+  `SaadSparse.Chapter06.qgmresY_isMinOn`, `SaadSparse.Chapter06.qgmres_isQuasiMinResidualIterate`.
+* **Generalization.** The QGMRES residual-direction recurrence uses the adjoint in the complex case.
+  See `SaadSparse.Chapter06.Z`, `SaadSparse.Chapter06.z`, `SaadSparse.Chapter06.z_eq`,
+  `SaadSparse.Chapter06.z_eq_sum`, `SaadSparse.Chapter06.equation_6_53`.
+* **Generalization.** The QGMRES and IOM residual identities extend to an abstract real or complex
+  Hessenberg relation. See `SaadSparse.Chapter06.equation_6_50`,
+  `SaadSparse.Chapter06.equation_6_55`, `SaadSparse.Chapter06.equation_6_56`,
+  `SaadSparse.Chapter06.equation_6_58`.
+* **Generalization.** The residual-direction norm estimate retains the norm of an arbitrary next
+  vector. See `SaadSparse.Chapter06.equation_6_54`.
+* **Generalization.** The IOM comparison formulas use an arbitrary basis and make nonsingularity
+  explicit for the residual. See `SaadSparse.Chapter06.iomOfBasisY`,
+  `SaadSparse.Chapter06.iomOfBasis`, `SaadSparse.Chapter06.residual_iomOfBasis`.
+* **Reading.** The quasi-residual and IOM norm comparison explicitly assumes a unit next vector. See
+  `SaadSparse.Chapter06.equation_6_57`.
+* **Reading.** The quasi-residual estimate uses an explicit base bound and nonzero radii. See
+  `SaadSparse.Chapter06.problem_6_25`, `SaadSparse.Chapter06.problem_6_25_le`,
+  `SaadSparse.Chapter06.equation_6_51`.
+* **Reading.** The QGMRES residual bound uses explicit upper and lower basis constants. See
+  `SaadSparse.Chapter06.theorem_6_11`.
+* **Reading.** The fixed-length DQGMRES recurrence uses rotated coefficients and totalized division.
+  See `SaadSparse.Chapter06.dqgmresP`, `SaadSparse.Chapter06.dqgmresP_eq`,
+  `SaadSparse.Chapter06.dqgmres`, `SaadSparse.Chapter06.dqgmres_eq_sum`.
+* **Reading.** The certified DQGMRES–QGMRES equivalence requires a full window. See
+  `SaadSparse.Chapter06.sum_R_smul_dqgmresP`, `SaadSparse.Chapter06.dqgmres_eq_qgmres`.
+* **Reading.** The Givens data extend the rotation formulas to zero radii by totalized division. See
+  `SaadSparse.Chapter06.c`, `SaadSparse.Chapter06.s`, `SaadSparse.Chapter06.Ω`,
+  `SaadSparse.Chapter06.Qrot`.
+* **Reading.** Givens unitarity and norm preservation explicitly require nonzero active radii. See
+  `SaadSparse.Chapter06.norm_c_sq_add_norm_s_sq`, `SaadSparse.Chapter06.Ω_mem_unitaryGroup`,
+  `SaadSparse.Chapter06.Qrot_mem_unitaryGroup`, `SaadSparse.Chapter06.norm_toLp_Qrot_mulVec`,
+  `SaadSparse.Chapter06.equation_6_35`, `SaadSparse.Chapter06.equation_6_38`,
+  `SaadSparse.Chapter06.equation_6_80_unitary`.
+* **Generalization.** The triangular pattern of the rotated matrix also holds at a degenerate
+  rotation. See `SaadSparse.Chapter06.Rbar_eq_zero_of_lt`, `SaadSparse.Chapter06.Rbar_last_row`,
+  `SaadSparse.Chapter06.R_isUpperTriangular`, `SaadSparse.Chapter06.R_diag`,
+  `SaadSparse.Chapter06.equation_6_39`.
+* **Reading.** The rotated least-squares norm identities explicitly require nonzero radii. See
+  `SaadSparse.Chapter06.norm_firstVec_sub_mulVec_eq_norm_gbar_sub`,
+  `SaadSparse.Chapter06.norm_sq_firstVec_sub_mulVec`, `SaadSparse.Chapter06.equation_6_43`,
+  `SaadSparse.Chapter06.sq_J_eq`.
+* **Reading.** The triangular least-squares minimizer is certified when its triangular factor is
+  nonsingular. See `SaadSparse.Chapter06.isMinOn_lsq`, `SaadSparse.Chapter06.proposition_6_9_2`,
+  `SaadSparse.Chapter06.gmresFixed_isGMRESIterate`,
+  `SaadSparse.Chapter06.gmresFixed_isMinResidualIterate`, `SaadSparse.Chapter06.lsq_eq_norm_gamma`.
+* **Reading.** The complex rotation matrix is defined entrywise, including out-of-range row indices.
+  See `SaadSparse.Chapter06.equation_6_80`.
+* **Reading.** The evolving last component is real. Earlier entries of the rotated right-hand side
+  can be complex. See `SaadSparse.Chapter06.exists_real_gamma_arnoldiCoeff`,
+  `SaadSparse.Chapter06.equation_6_81`.
+* **Reading.** The objective named $J$ is defined in the projected coordinates. See
+  `SaadSparse.Chapter06.J`, `SaadSparse.Chapter06.J_eq`, `SaadSparse.Chapter06.J_eq_lsq`.
+* **Generalization.** The Arnoldi residual vector identity includes the padded sequence. See
+  `SaadSparse.Chapter06.equation_6_27`, `SaadSparse.Chapter06.residual_eq_6_27`.
+* **Reading.** The residual norm equality includes the first breakdown step. See
+  `SaadSparse.Chapter06.equation_6_28`, `SaadSparse.Chapter06.residual_eq_6_28`.
+* **Reading.** The GMRES specification separates existence and uniqueness of least-squares
+  minimizers. See `SaadSparse.Chapter06.IsGMRESIterate`, `SaadSparse.Chapter06.isGMRESIterate_iff`,
+  `SaadSparse.Chapter06.gmres_isMinResidualIterate_iff`,
+  `SaadSparse.Chapter06.exists_isGMRESIterate`.
+* **Reading.** The uniqueness theorem makes matrix nonsingularity and the grade bound explicit. See
+  `SaadSparse.Chapter06.existsUnique_isGMRESIterate`, `SaadSparse.Chapter06.gmres_unique`.
+* **Reading.** The concrete GMRES algorithm uses a triangular inverse whose singular value is
+  totalized. See `SaadSparse.Chapter06.gmresY`, `SaadSparse.Chapter06.gmresFixed`,
+  `SaadSparse.Chapter06.gmres`.
+* **Reading.** Restarted GMRES takes the cycle count as an input. See
+  `SaadSparse.Chapter06.gmresCycle`, `SaadSparse.Chapter06.gmresRestarted`.
+* **Reading.** The GMRES residual formulas state the nonsingularity and valid-prefix hypotheses
+  explicitly. See `SaadSparse.Chapter06.equation_6_41`, `SaadSparse.Chapter06.equation_6_42`.
+* **Generalization.** The reached-step characterization of GMRES breakdown also covers complex
+  scalars. See `SaadSparse.Chapter06.proposition_6_10`.
+* **Reading.** Householder GMRES uses the signed first reflected entry as its right-hand side. See
+  `SaadSparse.Chapter06.βHH`, `SaadSparse.Chapter06.βHH_eq`, `SaadSparse.Chapter06.abs_βHH`,
+  `SaadSparse.Chapter06.βHH_smul_hhV_zero`.
+* **Reading.** Householder GMRES uses a totalized triangular inverse for the least-squares solve.
+  See `SaadSparse.Chapter06.gmresHHY`, `SaadSparse.Chapter06.gmresHH`.
+* **Reading.** The Householder GMRES correctness results require the extended basis to fit and the
+  reduced factor to be nonsingular. See `SaadSparse.Chapter06.gmresHH_isMinResidualIterate`,
+  `SaadSparse.Chapter06.gmresHH_eq`, `SaadSparse.Chapter06.algorithm_6_10`.
+* **Proposition 6.9** (reading). The statement assumes a nonsingular $A$ and replaces the
+  printed $m \le n$ with $m \le \operatorname{grade}(v_1)$. It proves the nonsingularity
+  consequence of part (1). See `SaadSparse.Chapter06.proposition_6_9`.
 * **Proposition 6.10** (reading). The implicit hypothesis that the first $j$ steps were taken is
   explicit: $r_0 \neq 0$ and no breakdown before step $j$. See
   `SaadSparse.Chapter06.proposition_6_10_book`.
-* **Propositions 6.12, 6.13 and 6.17, Lemma 6.16** (reading). The statements make explicit the
-  nonsingularity of $H_m$ and the condition $\rho^G_m \neq 0$ that the proofs need. See
-  `SaadSparse.Chapter06.proposition_6_12`, `SaadSparse.Chapter06.proposition_6_13`,
-  `SaadSparse.Chapter06.proposition_6_17` and `SaadSparse.Chapter06.lemma_6_16`.
+* **Proposition 6.17** (reading). The stagnation equivalence assumes a reached prefix, a
+  nonzero GMRES residual and nonsingularity of $A$ for both directions. See
+  `SaadSparse.Chapter06.proposition_6_17`.
 * **Proposition 6.15** (correction). The book prints the upper bound $\sqrt{m}\,\rho^G_m$ in (6.68).
-  The bound is $\sqrt{m+1}\,\rho^G_m$. See `SaadSparse.Chapter06.proposition_6_15`.
+  The bound is $\sqrt{m+1}\,\rho^G_m$ because the minimum includes the initial residual.
+  Lean assumes every FOM reduced system is nonsingular, while the source permits skipping
+  undefined iterates. See `SaadSparse.Chapter06.proposition_6_15`.
 * **Equation (6.79)** (correction). The book prints both sums from $j = 1$. They run from $j = 0$.
   See `SaadSparse.Chapter06.equation_6_79`.
 -/
@@ -293,7 +421,12 @@ $c_{i+1} = 0$.
 The definition is `Krylov.givensC`. The Lean index $i$ is the book's $i + 1$. The Lean terms
 `Krylov.rotated h i i i` and `Krylov.givensRho h i` are $h^{(i)}_{i+1,i+1}$ and $\rho_{i+1}$.
 The first $i$ rotations do not change row $i + 2$, so $h^{(i)}_{i+2,i+1} = h_{i+2,i+1}$. The
-value $0$ at $\rho_{i+1} = 0$ comes from the convention $x / 0 = 0$. -/
+value $0$ at $\rho_{i+1} = 0$ comes from the convention $x / 0 = 0$.
+
+**Reading.** Lean assigns both parameters zero when the rotation radius is zero. The displayed
+source formulas divide by that radius, and an active block is unitary only for nonzero radius. The
+real and complex cases use a single conjugate-transpose convention.
+-/
 noncomputable abbrev c (h : ℕ → ℕ → 𝕜) (i : ℕ) : 𝕜 := Krylov.givensC h i
 
 /-- **Equations (6.37) and (6.81)** of [saad2003iterative]. The **sine** of the rotation
@@ -301,7 +434,12 @@ $\Omega_{i+1}$ is $s_{i+1} = h_{i+2,i+1} / \rho_{i+1}$, with $\rho_{i+1}$ as for
 `SaadSparse.Chapter06.c`. If $\rho_{i+1} = 0$, then $s_{i+1} = 0$.
 
 The definition is `Krylov.givensS`. Its numerator is the entry `Krylov.rotated h i (i + 1) i`,
-which the first $i$ rotations leave equal to $h_{i+2,i+1}$ (`SaadSparse.Chapter06.s_eq_div`). -/
+which the first $i$ rotations leave equal to $h_{i+2,i+1}$ (`SaadSparse.Chapter06.s_eq_div`).
+
+**Reading.** Lean assigns both parameters zero when the rotation radius is zero. The displayed
+source formulas divide by that radius, and an active block is unitary only for nonzero radius. The
+real and complex cases use a single conjugate-transpose convention.
+-/
 noncomputable abbrev s (h : ℕ → ℕ → 𝕜) (i : ℕ) : 𝕜 := Krylov.givensS h i
 
 /-- **Equations (6.34) and (6.80)** of [saad2003iterative]. The **Givens rotation** $\Omega_{i+1}$
@@ -311,7 +449,12 @@ $$\begin{bmatrix} \bar c_{i+1} & \bar s_{i+1} \\ -s_{i+1} & c_{i+1} \end{bmatrix
 
 Over $\mathbb{R}$ the conjugates have no effect and this is (6.34); over $\mathbb{C}$ it is
 (6.80). The rows and columns are `0`-based in Lean, so the block is in rows `i` and `i + 1`. The
-definition is `Krylov.givensMatrix`. -/
+definition is `Krylov.givensMatrix`.
+
+**Reading.** Lean assigns both parameters zero when the rotation radius is zero. The displayed
+source formulas divide by that radius, and an active block is unitary only for nonzero radius. The
+real and complex cases use a single conjugate-transpose convention.
+-/
 noncomputable abbrev Ω (h : ℕ → ℕ → 𝕜) (i m : ℕ) : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 :=
   Krylov.givensMatrix h i m
 
@@ -319,7 +462,12 @@ noncomputable abbrev Ω (h : ℕ → ℕ → 𝕜) (i m : ℕ) : Matrix (Fin (m 
 $Q_m = \Omega_m \Omega_{m-1} \cdots \Omega_1$ of the first $m$ rotations, an
 $(m+1) \times (m+1)$ matrix.
 
-The definition is `Krylov.givensQ`. The matrix $Q_0$ is the identity. -/
+The definition is `Krylov.givensQ`. The matrix $Q_0$ is the identity.
+
+**Reading.** Lean assigns both parameters zero when the rotation radius is zero. The displayed
+source formulas divide by that radius, and an active block is unitary only for nonzero radius. The
+real and complex cases use a single conjugate-transpose convention.
+-/
 noncomputable abbrev Qrot (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜 :=
   Krylov.givensQ h m
@@ -443,25 +591,41 @@ theorem mulVec_R_inv_mulVec_g {m : ℕ} (hR : IsUnit (R h m)) :
 /-! ### Equations (6.35), (6.36) and (6.80): the rotations are unitary -/
 
 /-- If $\rho_{i+1} \neq 0$, then $|c_{i+1}|^2 + |s_{i+1}|^2 = 1$. This is (6.35) and (6.80) of
-[saad2003iterative]; at a breakdown $\rho_{i+1} = 0$, and then $c_{i+1} = s_{i+1} = 0$. -/
+[saad2003iterative]; at a breakdown $\rho_{i+1} = 0$, and then $c_{i+1} = s_{i+1} = 0$.
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem norm_c_sq_add_norm_s_sq {i : ℕ} (hρ : Krylov.givensRho h i ≠ 0) :
     ‖c h i‖ ^ 2 + ‖s h i‖ ^ 2 = 1 :=
   Krylov.norm_givensC_sq_add_norm_givensS_sq h i hρ
 
 /-- If $i < m$ and $\rho_{i+1} \neq 0$, then the rotation $\Omega_{i+1}$ of size $m + 1$ is unitary.
-This is (6.34) and (6.80) of [saad2003iterative]. -/
+This is (6.34) and (6.80) of [saad2003iterative].
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem Ω_mem_unitaryGroup {i m : ℕ} (hi : i < m) (hρ : Krylov.givensRho h i ≠ 0) :
     Ω h i m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 :=
   Krylov.givensMatrix_mem_unitaryGroup h i m hi hρ
 
 /-- If $\rho_1, \dots, \rho_m$ are all nonzero, then $Q_m = \Omega_m \cdots \Omega_1$ is unitary.
-This is (6.38) of [saad2003iterative]. -/
+This is (6.38) of [saad2003iterative].
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem Qrot_mem_unitaryGroup (m : ℕ) (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0) :
     Qrot h m ∈ Matrix.unitaryGroup (Fin (m + 1)) 𝕜 :=
   Krylov.givensQ_mem_unitaryGroup h m hρ
 
 /-- If $\rho_1, \dots, \rho_m$ are all nonzero, then $\|Q_m z\|_2 = \|z\|_2$ for every
-$z \in \mathbb{K}^{m+1}$. This is the only property of the rotations that (6.43) uses. -/
+$z \in \mathbb{K}^{m+1}$. This is the only property of the rotations that (6.43) uses.
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem norm_toLp_Qrot_mulVec {m : ℕ} (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0)
     (z : Fin (m + 1) → 𝕜) :
     ‖(WithLp.toLp 2 (Qrot h m *ᵥ z) : EuclideanSpace 𝕜 (Fin (m + 1)))‖ =
@@ -474,18 +638,33 @@ variable (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0)
 include hh
 
 /-- Let $h$ be upper Hessenberg. Then $\bar R_m$ is upper triangular: its entry $(i, j)$ is $0$ for
-$j < i$. This is part of (6.39) of [saad2003iterative]. -/
+$j < i$. This is part of (6.39) of [saad2003iterative].
+
+**Generalization.** The zero pattern of the rotated Hessenberg matrix and the diagonal computation
+are valid even if a radius vanishes. The source describes the pattern after genuine unitary
+rotations.
+-/
 theorem Rbar_eq_zero_of_lt {m : ℕ} {i : Fin (m + 1)} {j : Fin m} (hij : (j : ℕ) < (i : ℕ)) :
     Rbar h m i j = 0 := by
   rw [Rbar_apply]
   exact Krylov.rotated_eq_zero_of_lt h (Matrix.isUpperHessenberg_iff_nat.2 hh) m i j j.isLt hij
 
 /-- Let $h$ be upper Hessenberg. Then the last row of $\bar R_m$ is zero. This is part of (6.39) of
-[saad2003iterative]. -/
+[saad2003iterative].
+
+**Generalization.** The zero pattern of the rotated Hessenberg matrix and the diagonal computation
+are valid even if a radius vanishes. The source describes the pattern after genuine unitary
+rotations.
+-/
 theorem Rbar_last_row {m : ℕ} (j : Fin m) : Rbar h m (Fin.last m) j = 0 :=
   Rbar_eq_zero_of_lt h hh (by simp)
 
-/-- Let $h$ be upper Hessenberg. Then $R_m$ is upper triangular. -/
+/-- Let $h$ be upper Hessenberg. Then $R_m$ is upper triangular.
+
+**Generalization.** The zero pattern of the rotated Hessenberg matrix and the diagonal computation
+are valid even if a radius vanishes. The source describes the pattern after genuine unitary
+rotations.
+-/
 theorem R_isUpperTriangular (m : ℕ) : (R h m).IsUpperTriangular := by
   rw [R_eq]
   exact Krylov.hessenbergSqOf_rotated_isUpperTriangular h (Matrix.isUpperHessenberg_iff_nat.2 hh)
@@ -493,7 +672,12 @@ theorem R_isUpperTriangular (m : ℕ) : (R h m).IsUpperTriangular := by
 
 /-- Let $h$ be upper Hessenberg. Then the diagonal entry $r_{i+1,i+1}$ of $R_m$ is the nonnegative
 real number $\rho_{i+1}$, as in (6.37) of [saad2003iterative]. Over $\mathbb{C}$ this is the
-statement of Section 6.5.9 that the diagonal of $R_m$ is real and nonnegative. -/
+statement of Section 6.5.9 that the diagonal of $R_m$ is real and nonnegative.
+
+**Generalization.** The zero pattern of the rotated Hessenberg matrix and the diagonal computation
+are valid even if a radius vanishes. The source describes the pattern after genuine unitary
+rotations.
+-/
 theorem R_diag {m : ℕ} (i : Fin m) : R h m i i = ((Krylov.givensRho h i : ℝ) : 𝕜) := by
   rw [R_apply]
   exact Krylov.rotated_diag h (Matrix.isUpperHessenberg_iff_nat.2 hh) i.isLt
@@ -548,7 +732,11 @@ theorem gbar_sub_Rbar_mulVec {m : ℕ} {y : Fin m → 𝕜} (hy : R h m *ᵥ y =
 omit hh in
 /-- If $\rho_1, \dots, \rho_m$ are all nonzero, then $\|\beta e_1 - \bar H_m y\|_2 = \|\bar g_m -
 \bar R_m y\|_2$ for every $y \in \mathbb{K}^m$, because $Q_m$ is unitary. This is the first
-equality of (6.43) of [saad2003iterative]. -/
+equality of (6.43) of [saad2003iterative].
+
+**Reading.** The norm decomposition requires the active rotations to be unitary. Lean states nonzero
+radii explicitly, and the general versions also allow complex coefficients.
+-/
 theorem norm_firstVec_sub_mulVec_eq_norm_gbar_sub {m : ℕ}
     (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) (y : Fin m → 𝕜) :
     ‖(WithLp.toLp 2 (Krylov.firstVec β (m + 1) - Krylov.hessenbergOf h m *ᵥ y) :
@@ -564,7 +752,11 @@ theorem norm_firstVec_sub_mulVec_eq_norm_gbar_sub {m : ℕ}
 $y \in \mathbb{K}^m$,
 $$\|\beta e_1 - \bar H_m y\|_2^2 = |\gamma_{m+1}|^2 + \|g_m - R_m y\|_2^2.$$
 This is (6.43) of [saad2003iterative]: the rotations split the least-squares problem into a part
-that the triangular system $R_m y = g_m$ can make zero and a fixed remainder. -/
+that the triangular system $R_m y = g_m$ can make zero and a fixed remainder.
+
+**Reading.** The norm decomposition requires the active rotations to be unitary. Lean states nonzero
+radii explicitly, and the general versions also allow complex coefficients.
+-/
 theorem norm_sq_firstVec_sub_mulVec {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0)
     (y : Fin m → 𝕜) :
     ‖(WithLp.toLp 2 (Krylov.firstVec β (m + 1) - Krylov.hessenbergOf h m *ᵥ y) :
@@ -578,7 +770,12 @@ theorem norm_sq_firstVec_sub_mulVec {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho
 Hessenberg and let $R_m$ be nonsingular. Then $y = R_m^{-1} g_m$ minimizes
 $\|\beta e_1 - \bar H_m y\|_2$ over $y \in \mathbb{K}^m$, and every minimizer equals
 $R_m^{-1} g_m$. The proof uses (6.43): the second term of
-$|\gamma_{m+1}|^2 + \|g_m - R_m y\|_2^2$ is zero exactly at $y = R_m^{-1} g_m$. -/
+$|\gamma_{m+1}|^2 + \|g_m - R_m y\|_2^2$ is zero exactly at $y = R_m^{-1} g_m$.
+
+**Reading.** The inverse formula gives the unique minimizer when the triangular factor is
+nonsingular. Lean makes that assumption explicit, as used in the source proof. The same argument
+also applies to complex least squares.
+-/
 theorem isMinOn_lsq {m : ℕ} (hR : IsUnit (R h m)) :
     IsMinOn (lsq h β m) Set.univ ((R h m)⁻¹ *ᵥ g h β m) ∧
       ∀ y, IsMinOn (lsq h β m) Set.univ y → y = (R h m)⁻¹ *ᵥ g h β m := by
@@ -632,7 +829,12 @@ theorem firstVec_sub_mulVec_eq {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k 
 /-- Let $h$ be upper Hessenberg and let $R_m$ be nonsingular. Then
 $\|\beta e_1 - \bar H_m y\|_2 = |\gamma_{m+1}|$ at $y = R_m^{-1} g_m$, so the minimum of the
 least-squares function is $|\gamma_{m+1}|$. This is (6.42) of [saad2003iterative] for a
-coefficient function. -/
+coefficient function.
+
+**Reading.** The inverse formula gives the unique minimizer when the triangular factor is
+nonsingular. Lean makes that assumption explicit, as used in the source proof. The same argument
+also applies to complex least squares.
+-/
 theorem lsq_eq_norm_gamma {m : ℕ} (hR : IsUnit (R h m)) :
     lsq h β m ((R h m)⁻¹ *ᵥ g h β m) = ‖γ h β m‖ := by
   have hρ := (isUnit_R_iff h hh).1 hR
@@ -767,7 +969,12 @@ theorem s_arnoldiCoeff_nonneg (hv : ‖v₁‖ = 1) (i : ℕ) :
 
 /-- Let $v_1$ be a unit vector and let $\beta = t$ be real. Then for the Arnoldi coefficients of $A$
 and $v_1$ every $\gamma_{i+1}$ is real, because every $s_{i+1}$ is real
-(`SaadSparse.Chapter06.s_arnoldiCoeff_nonneg`). -/
+(`SaadSparse.Chapter06.s_arnoldiCoeff_nonneg`).
+
+**Reading.** The real-valued $\gamma_i$ is the evolving last component before the next rotation. An
+earlier component stored in the final rotated right-hand side is $\overline c_i\gamma_i$ and can be
+complex. The sine coefficient and the diagonal are nonnegative real values.
+-/
 theorem exists_real_gamma_arnoldiCoeff (hv : ‖v₁‖ = 1) (t : ℝ) (i : ℕ) :
     ∃ u : ℝ, γ (arnoldiCoeff A v₁) ((t : ℝ) : 𝕜) i = (u : 𝕜) := by
   induction i with
@@ -795,7 +1002,11 @@ $i \ge 0$ with $\rho_{i+1} \neq 0$. Then
 $$c_{i+1}^2 + s_{i+1}^2 = 1.$$
 
 The hypothesis $\rho_{i+1} \neq 0$ excludes a breakdown, where $c_{i+1} = s_{i+1} = 0$. The
-proof specializes `SaadSparse.Chapter06.norm_c_sq_add_norm_s_sq`. -/
+proof specializes `SaadSparse.Chapter06.norm_c_sq_add_norm_s_sq`.
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem equation_6_35 {i : ℕ} (hρ : Krylov.givensRho h i ≠ 0) : c h i ^ 2 + s h i ^ 2 = 1 := by
   have := norm_c_sq_add_norm_s_sq h hρ
   rwa [Real.norm_eq_abs, Real.norm_eq_abs, sq_abs, sq_abs] at this
@@ -805,7 +1016,11 @@ let $m \ge 0$, and let $\rho_1, \dots, \rho_m$ be nonzero. Then each rotation $\
 with $i < m$ is an orthogonal $(m+1) \times (m+1)$ matrix, and so is the product
 $Q_m = \Omega_m \cdots \Omega_1$.
 
-Orthogonality is membership in `Matrix.unitaryGroup (Fin (m + 1)) ℝ`. -/
+Orthogonality is membership in `Matrix.unitaryGroup (Fin (m + 1)) ℝ`.
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem equation_6_38 (m : ℕ) (hρ : ∀ i < m, Krylov.givensRho h i ≠ 0) :
     (∀ i < m, Ω h i m ∈ Matrix.unitaryGroup (Fin (m + 1)) ℝ) ∧
       Qrot h m ∈ Matrix.unitaryGroup (Fin (m + 1)) ℝ :=
@@ -815,7 +1030,12 @@ include hh
 
 /-- **Equation (6.39)** of [saad2003iterative]. Let $h$ be a real upper Hessenberg coefficient
 function. Then $\bar R_m = Q_m \bar H_m$ is upper triangular, $(\bar R_m)_{ij} = 0$ for $i > j$,
-and the last row of $\bar R_m$ is zero. -/
+and the last row of $\bar R_m$ is zero.
+
+**Generalization.** The zero pattern of the rotated Hessenberg matrix and the diagonal computation
+are valid even if a radius vanishes. The source describes the pattern after genuine unitary
+rotations.
+-/
 theorem equation_6_39 (m : ℕ) :
     (∀ (i : Fin (m + 1)) (j : Fin m), (j : ℕ) < (i : ℕ) → Rbar h m i j = 0) ∧
       ∀ j : Fin m, Rbar h m (Fin.last m) j = 0 :=
@@ -825,6 +1045,9 @@ theorem equation_6_39 (m : ℕ) :
 function with $\rho_1, \dots, \rho_m$ nonzero, and let $\beta \in \mathbb{R}$. Then for every
 $y \in \mathbb{R}^m$,
 $$\|\beta e_1 - \bar H_m y\|_2^2 = |\gamma_{m+1}|^2 + \|g_m - R_m y\|_2^2.$$
+
+**Reading.** The norm decomposition requires the active rotations to be unitary. Lean states nonzero
+radii explicitly, and the general versions also allow complex coefficients.
 -/
 theorem equation_6_43 {m : ℕ} (hρ : ∀ k < m, Krylov.givensRho h k ≠ 0) (y : Fin m → ℝ) :
     ‖(WithLp.toLp 2 (Krylov.firstVec β (m + 1) - Krylov.hessenbergOf h m *ᵥ y) :
@@ -879,7 +1102,12 @@ $$(\Omega_{i+1})_{pq} = \begin{cases}
   \delta_{pq} & \text{otherwise}.
 \end{cases}$$
 
-The indices $p$ and $q$ are `0`-based in Lean, so the cases read `p = i`, `q = i + 1` and so on. -/
+The indices $p$ and $q$ are `0`-based in Lean, so the cases read `p = i`, `q = i + 1` and so on.
+
+**Reading.** The formula acts on the intended two-row block for an in-range rotation. Lean defines
+the matrix entrywise for any natural index, including when the complete two-row block is outside its
+dimensions.
+-/
 theorem equation_6_80 (h : ℕ → ℕ → ℂ) (i m : ℕ) (p q : Fin (m + 1)) :
     Ω h i m p q =
       if (p : ℕ) = i ∧ (q : ℕ) = i then starRingEnd ℂ (c h i)
@@ -890,7 +1118,11 @@ theorem equation_6_80 (h : ℕ → ℕ → ℂ) (i m : ℕ) (p q : Fin (m + 1)) 
 
 /-- **Equation (6.80)** of [saad2003iterative], unitarity. Let $h$ be a complex coefficient
 function, let $i < m$ and let $\rho_{i+1} \neq 0$. Then $|c_{i+1}|^2 + |s_{i+1}|^2 = 1$, and the
-rotation $\Omega_{i+1}$ of size $m + 1$ is unitary. -/
+rotation $\Omega_{i+1}$ of size $m + 1$ is unitary.
+
+**Reading.** The normalizing radius must be nonzero for every active rotation. This is explicit in
+Lean because the definitions also allow a degenerate zero-radius block.
+-/
 theorem equation_6_80_unitary (h : ℕ → ℕ → ℂ) {i m : ℕ} (hi : i < m)
     (hρ : Krylov.givensRho h i ≠ 0) :
     ‖c h i‖ ^ 2 + ‖s h i‖ ^ 2 = 1 ∧ Ω h i m ∈ Matrix.unitaryGroup (Fin (m + 1)) ℂ :=
@@ -902,7 +1134,12 @@ Arnoldi coefficients of $A$ and $v_1$, and let $t \in \mathbb{R}$ and $m \ge 0$.
 $s_{i+1}$ is a nonnegative real number, the diagonal entries of $R_m$ are the real numbers
 $\rho_1, \dots, \rho_m$, and for $\beta = t$ every $\gamma_{i+1}$ is real.
 
-The Arnoldi coefficients are `SaadSparse.Chapter06.arnoldiCoeff A v₁`. -/
+The Arnoldi coefficients are `SaadSparse.Chapter06.arnoldiCoeff A v₁`.
+
+**Reading.** The real-valued $\gamma_i$ is the evolving last component before the next rotation. An
+earlier component stored in the final rotated right-hand side is $\overline c_i\gamma_i$ and can be
+complex. The sine coefficient and the diagonal are nonnegative real values.
+-/
 theorem equation_6_81 (hv : ‖v₁‖ = 1) (t : ℝ) (m : ℕ) :
     (∀ i, ∃ u : ℝ, 0 ≤ u ∧ s (arnoldiCoeff A v₁) i = (u : ℂ)) ∧
       (∀ i : Fin m, R (arnoldiCoeff A v₁) m i i =
@@ -954,14 +1191,24 @@ GMRES minimizes $J$.
 
 The book defines $J$ by the residual norm $\|b - A(x_0 + V_m y)\|_2$. The Lean definition uses
 the Hessenberg form, and `SaadSparse.Chapter06.equation_6_28` shows that the two agree when $m$
-is at most the grade of $v_1$. -/
+is at most the grade of $v_1$.
+
+**Reading.** The source introduces $J$ as the original-space residual norm. Lean defines it as the
+Hessenberg least-squares objective and proves equality with the original norm for prefixes at most
+the grade.
+-/
 noncomputable def J (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) (y : Fin m → 𝕜) : ℝ :=
   ‖(WithLp.toLp 2 ((β A b x₀ : 𝕜) • e₁ (m + 1) - Hbar A (v₁ A b x₀) m *ᵥ y) :
     EuclideanSpace 𝕜 (Fin (m + 1)))‖
 
 /-- The function $J$ in the terms of the backbone: $J(y) = \| \, \|r_0\|_2 e_1 - \bar H_m y \|_2$,
 where $\bar H_m$ is `Arnoldi.hessenberg (op A) r₀ m`, the Hessenberg matrix of the Arnoldi
-process started at $r_0$. -/
+process started at $r_0$.
+
+**Reading.** The source introduces $J$ as the original-space residual norm. Lean defines it as the
+Hessenberg least-squares objective and proves equality with the original norm for prefixes at most
+the grade.
+-/
 theorem J_eq (m : ℕ) :
     J A b x₀ m = fun y : Fin m → 𝕜 =>
       ‖(WithLp.toLp 2 (Krylov.firstVec (‖r₀ A b x₀‖ : 𝕜) (m + 1) -
@@ -974,7 +1221,11 @@ $b, x_0 \in \mathbb{K}^n$ and $m \ge 0$. For every $y \in \mathbb{K}^m$,
 $$b - A(x_0 + V_m y) = V_{m+1} (\beta e_1 - \bar H_m y).$$
 
 The identity needs no hypothesis on $m$: after a breakdown the Arnoldi vectors and coefficients
-are $0$, and the identity stays true. It holds over $\mathbb{R}$ and over $\mathbb{C}$. -/
+are $0$, and the identity stays true. It holds over $\mathbb{R}$ and over $\mathbb{C}$.
+
+**Generalization.** The identity also holds with the zero-padded sequence, including zero initial
+residual. The general version applies to complex scalars.
+-/
 theorem equation_6_27 {m : ℕ} (y : Fin m → 𝕜) :
     b - op A (krylovIterate A b x₀ m y) =
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
@@ -991,7 +1242,12 @@ every $y \in \mathbb{K}^m$,
 $$\|b - A(x_0 + V_m y)\|_2 = J(y).$$
 
 The hypothesis $m \le \operatorname{grade}(v_1)$ says that the Arnoldi process has completed $m$
-steps. -/
+steps.
+
+**Reading.** Lean permits the step at the grade, where the next basis vector is zero. Its
+coefficient in the residual vanishes, so the norm equality still holds even though the source's
+proof describes all the columns of the extended basis as orthonormal.
+-/
 theorem equation_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin m → 𝕜) :
     ‖b - op A (krylovIterate A b x₀ m y)‖ = J A b x₀ m y := by
   rw [krylovIterate_eq_sum, J_eq]
@@ -1004,7 +1260,12 @@ theorem equation_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin m 
 that minimizes $J$ over $\mathbb{K}^m$, as in (6.29)–(6.30).
 
 The definition does not require the minimizer to be unique. For nonsingular $A$ the
-approximation is unique (`SaadSparse.Chapter06.existsUnique_isGMRESIterate`). -/
+approximation is unique (`SaadSparse.Chapter06.existsUnique_isGMRESIterate`).
+
+**Reading.** The minimizer predicate describes all minimizers. Lean separates existence from
+uniqueness and makes the valid-prefix hypothesis explicit in its equivalence with minimization of
+the original residual.
+-/
 def IsGMRESIterate (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) (x : 𝔼) : Prop :=
   ∃ y : Fin m → 𝕜, IsMinOn (J A b x₀ m) Set.univ y ∧ x = krylovIterate A b x₀ m y
 
@@ -1013,7 +1274,12 @@ if $x$ is the minimal-residual iterate on $\mathcal{K}_m(A, r_0)$
 (`Krylov.IsMinResidualIterate`): $x - x_0 \in \mathcal{K}_m(A, r_0)$, and
 $\|b - Ax\|_2 \le \|b - Ax'\|_2$ for every $x' \in x_0 + \mathcal{K}_m(A, r_0)$. This is
 (6.29)–(6.30) of [saad2003iterative], and most other results about GMRES in this module follow
-from it. -/
+from it.
+
+**Reading.** The minimizer predicate describes all minimizers. Lean separates existence from
+uniqueness and makes the valid-prefix hypothesis explicit in its equivalence with minimization of
+the original residual.
+-/
 theorem isGMRESIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) {x : 𝔼} :
     IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResidualIterate (op A) b x₀ m x := by
   have hm' : m ≤ Krylov.grade (op A) (r₀ A b x₀) := by rwa [← grade_v₁]
@@ -1027,7 +1293,12 @@ theorem isGMRESIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) {x : �
     rw [J_eq]
     exact (Krylov.isMinResidualIterate_iff_isMinOn hm' y).1 (by rwa [← hxe])
 
-/-- Let $m$ be at most the grade of $v_1$. Then a GMRES approximation at step $m$ exists. -/
+/-- Let $m$ be at most the grade of $v_1$. Then a GMRES approximation at step $m$ exists.
+
+**Reading.** The minimizer predicate describes all minimizers. Lean separates existence from
+uniqueness and makes the valid-prefix hypothesis explicit in its equivalence with minimization of
+the original residual.
+-/
 theorem exists_isGMRESIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) :
     ∃ x, IsGMRESIterate A b x₀ m x := by
   obtain ⟨x, hx⟩ := Krylov.exists_isMinResidualIterate (op A) b x₀ m
@@ -1045,7 +1316,11 @@ theorem injective_op_of_isUnit {A : Matrix (Fin n) (Fin n) 𝕜} (hA : IsUnit A)
 
 /-- Let $m$ be at most the grade of $v_1$ and let $A$ be nonsingular. Then there is exactly one
 GMRES approximation at step $m$: the unique vector of $x_0 + \mathcal{K}_m(A, r_0)$ that
-minimizes $\|b - Ax\|_2$, as in (6.29)–(6.30) of [saad2003iterative]. -/
+minimizes $\|b - Ax\|_2$, as in (6.29)–(6.30) of [saad2003iterative].
+
+**Reading.** The source calls the minimizer unique. Lean requires a nonsingular system matrix and
+the grade bound, ensuring injectivity of the system operator on the search space.
+-/
 theorem existsUnique_isGMRESIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
     ∃! x, IsGMRESIterate A b x₀ m x := by
   obtain ⟨x, hx, huniq⟩ :=
@@ -1061,7 +1336,13 @@ $$y_m = R_m^{-1} g_m \in \mathbb{K}^m,$$
 where $R_m$ and $g_m$ are the Givens data of the Arnoldi coefficients of $v_1$, with
 $\beta = \|r_0\|_2$.
 
-If $R_m$ is singular, the Lean inverse is $0$, and then $y_m = 0$. -/
+If $R_m$ is singular, the Lean inverse is $0$, and then $y_m = 0$.
+
+**Reading.** Lean uses the triangular inverse implementation from §6.5.3 and totalizes it at a
+singular triangular factor. The source defines the update by an arbitrary least-squares minimizer.
+In Lean's singular case the inverse can return zero coefficients even when zero does not minimize
+the residual.
+-/
 noncomputable def gmresY (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : Fin m → 𝕜 :=
   (R (arnoldiCoeff A (v₁ A b x₀)) m)⁻¹ *ᵥ g (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m
 
@@ -1070,7 +1351,13 @@ approximation
 $$x_m = x_0 + V_m y_m, \qquad y_m = R_m^{-1} g_m.$$
 
 This definition does not test for a breakdown. `SaadSparse.Chapter06.gmres` adds the stopping
-rule. -/
+rule.
+
+**Reading.** Lean uses the triangular inverse implementation from §6.5.3 and totalizes it at a
+singular triangular factor. The source defines the update by an arbitrary least-squares minimizer.
+In Lean's singular case the inverse can return zero coefficients even when zero does not minimize
+the residual.
+-/
 noncomputable def gmresFixed (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   krylovIterate A b x₀ m (gmresY A b x₀ m)
 
@@ -1079,13 +1366,24 @@ $m := j$". It is the approximation $x_{m'}$ of `SaadSparse.Chapter06.gmresFixed`
 $m' = \min(m, \operatorname{grade}(v_1))$.
 
 The number $m'$ is `SaadSparse.Chapter06.mEff`: the Arnoldi process stops exactly at the grade
-of $v_1$. -/
+of $v_1$.
+
+**Reading.** Lean uses the triangular inverse implementation from §6.5.3 and totalizes it at a
+singular triangular factor. The source defines the update by an arbitrary least-squares minimizer.
+In Lean's singular case the inverse can return zero coefficients even when zero does not minimize
+the residual.
+-/
 noncomputable def gmres (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   gmresFixed A b x₀ (mEff A b x₀ m)
 
 /-- **Algorithm 6.11** of [saad2003iterative] (GMRES(m)), one cycle. From the initial guess $x_0$ it
 returns the approximation of Algorithm 6.9 after at most $m$ steps, which is the initial guess
-of the next cycle. -/
+of the next cycle.
+
+**Reading.** Lean takes a fixed restart size and a specified number of cycles, using the exact
+totalized GMRES step each time. The printed loop stops according to satisfaction of the convergence
+check.
+-/
 noncomputable def gmresCycle (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : ℕ) (x₀ : 𝔼) : 𝔼 :=
   gmres A b x₀ m
 
@@ -1093,7 +1391,12 @@ noncomputable def gmresCycle (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : �
 of length $m$ started from $x_0$, that is the $k$-th iterate of the map
 `SaadSparse.Chapter06.gmresCycle A b m` applied to $x_0$.
 
-The algorithm has no convergence test here; for $k = 0$ the value is $x_0$. -/
+The algorithm has no convergence test here; for $k = 0$ the value is $x_0$.
+
+**Reading.** Lean takes a fixed restart size and a specified number of cycles, using the exact
+totalized GMRES step each time. The printed loop stops according to satisfaction of the convergence
+check.
+-/
 noncomputable def gmresRestarted (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : ℕ) (x₀ : 𝔼)
     (k : ℕ) : 𝔼 :=
   (gmresCycle A b m)^[k] x₀
@@ -1103,7 +1406,11 @@ theorem J_nonneg {m : ℕ} (y : Fin m → 𝕜) : 0 ≤ J A b x₀ m y := norm_n
 
 /-- If $\rho_1, \dots, \rho_m$ of the Arnoldi coefficients of $v_1$ are nonzero, then $J(y)^2 =
 |\gamma_{m+1}|^2 + \|g_m - R_m y\|_2^2$ for every $y \in \mathbb{K}^m$. This is (6.43) of
-[saad2003iterative] for GMRES. -/
+[saad2003iterative] for GMRES.
+
+**Reading.** The norm decomposition requires the active rotations to be unitary. Lean states nonzero
+radii explicitly, and the general versions also allow complex coefficients.
+-/
 theorem sq_J_eq {m : ℕ}
     (hρ : ∀ k < m, Krylov.givensRho (arnoldiCoeff A (v₁ A b x₀)) k ≠ 0) (y : Fin m → 𝕜) :
     J A b x₀ m y ^ 2 = ‖γ (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m‖ ^ 2 +
@@ -1113,7 +1420,12 @@ theorem sq_J_eq {m : ℕ}
   exact norm_sq_firstVec_sub_mulVec _ _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hρ y
 
 /-- The function $J$ is the least-squares function `SaadSparse.Chapter06.lsq` of the Arnoldi
-coefficients of $v_1$, with $\beta = \|r_0\|_2$. -/
+coefficients of $v_1$, with $\beta = \|r_0\|_2$.
+
+**Reading.** The source introduces $J$ as the original-space residual norm. Lean defines it as the
+Hessenberg least-squares objective and proves equality with the original norm for prefixes at most
+the grade.
+-/
 theorem J_eq_lsq (m : ℕ) : J A b x₀ m = lsq (arnoldiCoeff A (v₁ A b x₀)) (β A b x₀ : 𝕜) m := by
   funext y
   rw [J, smul_e₁_eq_firstVec, Hbar_eq_hessenbergOf, lsq]
@@ -1130,7 +1442,12 @@ nonsingular. Then $y_m = R_m^{-1} g_m$ minimizes $J$ over $\mathbb{K}^m$, and ev
 $J$ equals $y_m$.
 
 The proof specializes `SaadSparse.Chapter06.isMinOn_lsq` through
-`SaadSparse.Chapter06.J_eq_lsq`. -/
+`SaadSparse.Chapter06.J_eq_lsq`.
+
+**Reading.** The inverse formula gives the unique minimizer when the triangular factor is
+nonsingular. Lean makes that assumption explicit, as used in the source proof. The same argument
+also applies to complex least squares.
+-/
 theorem proposition_6_9_2 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     IsMinOn (J A b x₀ m) Set.univ (gmresY A b x₀ m) ∧
       ∀ y, IsMinOn (J A b x₀ m) Set.univ y → y = gmresY A b x₀ m := by
@@ -1138,13 +1455,23 @@ theorem proposition_6_9_2 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x�
   exact isMinOn_lsq _ _ (arnoldiCoeff_v₁_eq_zero_of_lt A b x₀) hR
 
 /-- If $R_m$ is nonsingular, then the vector $x_m$ of Algorithm 6.9 is a GMRES approximation at step
-$m$. -/
+$m$.
+
+**Reading.** The inverse formula gives the unique minimizer when the triangular factor is
+nonsingular. Lean makes that assumption explicit, as used in the source proof. The same argument
+also applies to complex least squares.
+-/
 theorem gmresFixed_isGMRESIterate {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     IsGMRESIterate A b x₀ m (gmresFixed A b x₀ m) :=
   ⟨gmresY A b x₀ m, (proposition_6_9_2 A b x₀ hR).1, rfl⟩
 
 /-- If $m$ is at most the grade of $v_1$ and $R_m$ is nonsingular, then the vector $x_m$ of
-Algorithm 6.9 is the minimal-residual iterate on $\mathcal{K}_m(A, r_0)$. -/
+Algorithm 6.9 is the minimal-residual iterate on $\mathcal{K}_m(A, r_0)$.
+
+**Reading.** The inverse formula gives the unique minimizer when the triangular factor is
+nonsingular. Lean makes that assumption explicit, as used in the source proof. The same argument
+also applies to complex least squares.
+-/
 theorem gmresFixed_isMinResidualIterate {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (gmresFixed A b x₀ m) :=
@@ -1188,7 +1515,12 @@ $$b - Ax_m = V_{m+1} Q_m^H (\gamma_{m+1} e_{m+1}),$$
 where $e_{m+1}$ is the last coordinate vector of $\mathbb{K}^{m+1}$.
 
 Over $\mathbb{R}$, $Q_m^H = Q_m^T$ as in the book. The identity needs no hypothesis on the grade
-of $v_1$. -/
+of $v_1$.
+
+**Reading.** The residual formulas require a nonsingular triangular factor, and the original
+residual norm formula also requires the valid-prefix bound. For complex scalars the inverse rotation
+is the conjugate transpose.
+-/
 theorem equation_6_41 {m : ℕ} (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     b - op A (gmresFixed A b x₀ m) =
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
@@ -1211,7 +1543,12 @@ $b, x_0 \in \mathbb{K}^n$, let $m$ be at most the grade of $v_1$, and let $R_m$ 
 Then the approximation $x_m$ of Algorithm 6.9 satisfies
 $$\|b - Ax_m\|_2 = |\gamma_{m+1}|.$$
 
-So the residual norm can be read off the rotated right-hand side. -/
+So the residual norm can be read off the rotated right-hand side.
+
+**Reading.** The residual formulas require a nonsingular triangular factor, and the original
+residual norm formula also requires the valid-prefix bound. For complex scalars the inverse rotation
+is the conjugate transpose.
+-/
 theorem equation_6_42 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hR : IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m)) :
     ‖b - op A (gmresFixed A b x₀ m)‖ =
@@ -1269,7 +1606,12 @@ $$h_{j+1,j} = 0 \iff A x_j = b.$$
 
 The coefficient $h_{j+1,j}$ is `arnoldiCoeff A (v₁ A b x₀) j (j - 1)`. The hypothesis
 $j \le \operatorname{grade}(v_1)$ stands for the book's assumption that the first $j$ steps were
-taken; `SaadSparse.Chapter06.proposition_6_10_book` states the result in the book's form. -/
+taken; `SaadSparse.Chapter06.proposition_6_10_book` states the result in the book's form.
+
+**Generalization.** The exactness and breakdown equivalence is stated for a step within the grade
+and also applies over the complex scalars. The source implicitly uses a step that the algorithm
+reaches.
+-/
 theorem proposition_6_10 (hA : IsUnit A) {j : ℕ} (hj : 0 < j) (hjg : j ≤ grade A (v₁ A b x₀)) :
     arnoldiCoeff A (v₁ A b x₀) j (j - 1) = 0 ↔ op A (gmresFixed A b x₀ j) = b := by
   have hj1 : j - 1 + 1 = j := by omega
@@ -1362,25 +1704,44 @@ theorem hornerAccumulate_eq_sum (v : 𝔼) (η : ℕ → ℝ) (m : ℕ) :
     exact add_comm _ _
 
 /-- Algorithm 6.10 of [saad2003iterative], line 1: the scalar $\beta = e_1^T h_0$, the first
-coordinate of the first Householder column $h_0$ for the starting vector $r_0$. -/
+coordinate of the first Householder column $h_0$ for the starting vector $r_0$.
+
+**Reading.** Lean uses the signed first reflected entry. It is $-\beta$ for the separate Householder
+convention in (1.26); its absolute value is the initial residual norm. The coordinate function
+returns zero for a missing first coordinate.
+-/
 noncomputable def βHH (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 𝔼) : ℝ :=
   coordAt (hhH A (r₀ A b x₀) 0) 0
 
 /-- If $n \ge 1$, the Householder scalar $\beta$ of Algorithm 6.10 is the negative of the scalar
 $\beta$ of (1.25) of [saad2003iterative] for $r_0$ at the first position
-(`SaadSparse.Chapter06.householderBeta`). -/
+(`SaadSparse.Chapter06.householderBeta`).
+
+**Reading.** Lean uses the signed first reflected entry. It is $-\beta$ for the separate Householder
+convention in (1.26); its absolute value is the initial residual norm. The coordinate function
+returns zero for a missing first coordinate.
+-/
 theorem βHH_eq (hn : 0 < n) : βHH A b x₀ = -householderBeta (r₀ A b x₀) 0 := by
   rw [βHH, hhH_zero, coordAt, dite_eq_left hn]
   simp [stdVec_coord]
 
 /-- If $n \ge 1$, the Householder scalar $\beta$ of Algorithm 6.10 satisfies $|\beta| = \|r_0\|_2$.
+
+**Reading.** Lean uses the signed first reflected entry. It is $-\beta$ for the separate Householder
+convention in (1.26); its absolute value is the initial residual norm. The coordinate function
+returns zero for a missing first coordinate.
 -/
 theorem abs_βHH (hn : 0 < n) : |βHH A b x₀| = ‖r₀ A b x₀‖ := by
   rw [βHH_eq A b x₀ hn, abs_neg, abs_householderBeta_zero]
 
 /-- If $n \ge 1$, then $r_0 = \beta v_1$ for the Householder scalar $\beta$ and the first
 Householder Arnoldi vector $v_1$. This is the hypothesis of the residual formula for a
-Hessenberg relation. -/
+Hessenberg relation.
+
+**Reading.** Lean uses the signed first reflected entry. It is $-\beta$ for the separate Householder
+convention in (1.26); its absolute value is the initial residual norm. The coordinate function
+returns zero for a missing first coordinate.
+-/
 theorem βHH_smul_hhV_zero (hn : 0 < n) :
     b - op A x₀ = βHH A b x₀ • hhV A (r₀ A b x₀) 0 := by
   rw [βHH_eq A b x₀ hn]
@@ -1412,7 +1773,12 @@ theorem norm_residual_hh {m : ℕ} (hn : m + 1 ≤ n) (y : Fin m → ℝ) :
     norm_sum_smul_of_orthonormal (hh_orthonormal A (r₀ A b x₀) hn), lsq]
 
 /-- Algorithm 6.10 of [saad2003iterative], line 12: the coordinates $y_m = R_m^{-1} g_m$ for the
-Givens data of the Householder Hessenberg coefficients, with the Householder scalar $\beta$. -/
+Givens data of the Householder Hessenberg coefficients, with the Householder scalar $\beta$.
+
+**Reading.** The fixed-size Householder program uses the triangular least-squares inverse, which is
+zero at a singular reduced factor, instead of the abstract minimization in line 11. The underlying
+reflector recurrence uses identity reflectors for zero tails.
+-/
 noncomputable def gmresHHY (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 𝔼) (m : ℕ) : Fin m → ℝ :=
   (R (hhCoeff A (r₀ A b x₀)) m)⁻¹ *ᵥ g (hhCoeff A (r₀ A b x₀)) (βHH A b x₀) m
 
@@ -1422,7 +1788,12 @@ where $z$ is accumulated by (6.31)–(6.33) from the Householder reflectors of $
 coefficients $\eta_j$, the entries of $y_m$ (`SaadSparse.Chapter06.gmresHHY`).
 
 The coefficients $\eta_j$ with $j \ge m$ are $0$. `SaadSparse.Chapter06.gmresHH_eq` proves that
-the result is the approximation of Algorithm 6.9. -/
+the result is the approximation of Algorithm 6.9.
+
+**Reading.** The fixed-size Householder program uses the triangular least-squares inverse, which is
+zero at a singular reduced factor, instead of the abstract minimization in line 11. The underlying
+reflector recurrence uses identity reflectors for zero tails.
+-/
 noncomputable def gmresHH (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : 𝔼) (m : ℕ) : 𝔼 :=
   x₀ + hornerAccumulate (fun i => householder (hhW A (r₀ A b x₀) i))
     (fun i => if h : i < m then gmresHHY A b x₀ m ⟨i, h⟩ else 0) 0 m
@@ -1441,7 +1812,12 @@ theorem gmresHH_eq_add_sum (m : ℕ) :
 /-- Let $m + 1 \le n$, let $m$ be at most the grade of $r_0$, and let $R_m$ of the Householder
 Hessenberg coefficients be nonsingular. Then Algorithm 6.10 computes the minimal-residual
 iterate on $\mathcal{K}_m(A, r_0)$. The Householder basis is orthonormal and spans the same
-Krylov subspaces, so the least-squares problem is the same problem in another orthonormal basis. -/
+Krylov subspaces, so the least-squares problem is the same problem in another orthonormal basis.
+
+**Reading.** The specification uses an extended basis fitting in the ambient dimension, a prefix
+within the grade, and a nonsingular triangular factor. The comparison with Gram–Schmidt GMRES uses
+nonsingularity of the system for uniqueness.
+-/
 theorem gmresHH_isMinResidualIterate {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (r₀ A b x₀))
     (hR : IsUnit (R (hhCoeff A (r₀ A b x₀)) m)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (gmresHH A b x₀ m) := by
@@ -1474,7 +1850,12 @@ computes the GMRES approximation of Algorithm 6.9:
 $$x^{HH}_m = x_m.$$
 
 The proof combines `SaadSparse.Chapter06.gmresHH_isMinResidualIterate` with the uniqueness of
-the minimal-residual iterate for nonsingular $A$. -/
+the minimal-residual iterate for nonsingular $A$.
+
+**Reading.** The specification uses an extended basis fitting in the ambient dimension, a prefix
+within the grade, and a nonsingular triangular factor. The comparison with Gram–Schmidt GMRES uses
+nonsingularity of the system for uniqueness.
+-/
 theorem gmresHH_eq {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hR : IsUnit (R (hhCoeff A (r₀ A b x₀)) m)) :
     gmresHH A b x₀ m = gmresFixed A b x₀ m := by
@@ -1495,7 +1876,11 @@ section BookResultsGMRES
 variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ (Fin n))
 
 /-- Equation (6.27) of [saad2003iterative] over $\mathbb{R}$: for $A \in \mathbb{R}^{n \times n}$
-and every $y \in \mathbb{R}^m$, $b - A(x_0 + V_m y) = V_{m+1}(\beta e_1 - \bar H_m y)$. -/
+and every $y \in \mathbb{R}^m$, $b - A(x_0 + V_m y) = V_{m+1}(\beta e_1 - \bar H_m y)$.
+
+**Generalization.** The identity also holds with the zero-padded sequence, including zero initial
+residual. The general version applies to complex scalars.
+-/
 theorem residual_eq_6_27 {m : ℕ} (y : Fin m → ℝ) :
     b - op A (krylovIterate A b x₀ m y) =
       Matrix.toEuclideanLin (V A (v₁ A b x₀) (m + 1))
@@ -1504,14 +1889,24 @@ theorem residual_eq_6_27 {m : ℕ} (y : Fin m → ℝ) :
 
 /-- Equation (6.28) of [saad2003iterative] over $\mathbb{R}$: if $m$ is at most the grade of $v_1$,
 then $\|b - A(x_0 + V_m y)\|_2 = J(y) = \|\beta e_1 - \bar H_m y\|_2$ for every
-$y \in \mathbb{R}^m$. -/
+$y \in \mathbb{R}^m$.
+
+**Reading.** Lean permits the step at the grade, where the next basis vector is zero. Its
+coefficient in the residual vanishes, so the norm equality still holds even though the source's
+proof describes all the columns of the extended basis as orthonormal.
+-/
 theorem residual_eq_6_28 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (y : Fin m → ℝ) :
     ‖b - op A (krylovIterate A b x₀ m y)‖ = J A b x₀ m y :=
   equation_6_28 A b x₀ hm y
 
 /-- Equations (6.29)–(6.30) of [saad2003iterative] over $\mathbb{R}$: if $m$ is at most the grade of
 $v_1$, then $x$ is a GMRES approximation at step $m$ if and only if $x$ is the minimal-residual
-iterate on $\mathcal{K}_m(A, r_0)$. -/
+iterate on $\mathcal{K}_m(A, r_0)$.
+
+**Reading.** The minimizer predicate describes all minimizers. Lean separates existence from
+uniqueness and makes the valid-prefix hypothesis explicit in its equivalence with minimization of
+the original residual.
+-/
 theorem gmres_isMinResidualIterate_iff {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     {x : EuclideanSpace ℝ (Fin n)} :
     IsGMRESIterate A b x₀ m x ↔ Krylov.IsMinResidualIterate (op A) b x₀ m x :=
@@ -1522,7 +1917,11 @@ $A \in \mathbb{R}^{n \times n}$ be nonsingular, $b, x_0 \in \mathbb{R}^n$, and l
 most the grade of $v_1$. Then there is exactly one GMRES approximation at step $m$.
 
 So "the" GMRES approximation is well defined. `SaadSparse.Chapter06.gmresFixed_isGMRESIterate`
-identifies it with the vector that Algorithm 6.9 computes. -/
+identifies it with the vector that Algorithm 6.9 computes.
+
+**Reading.** The source calls the minimizer unique. Lean requires a nonsingular system matrix and
+the grade bound, ensuring injectivity of the system operator on the search space.
+-/
 theorem gmres_unique {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
     ∃! x, IsGMRESIterate A b x₀ m x :=
   existsUnique_isGMRESIterate A b x₀ hm hA
@@ -1533,13 +1932,12 @@ $y_m = R_m^{-1} g_m$ is the unique minimizer of $J$ over $\mathbb{R}^m$, and the
 $x_m$ of Algorithm 6.9 satisfies
 $$\|b - Ax_m\|_2 = |\gamma_{m+1}|.$$
 
-**Reading.** The book assumes $m \le n$. The statement here assumes in addition that $m$ Arnoldi
-steps have been completed, $m \le \operatorname{grade}(v_1)$, because the proof uses it.
+The residual vector (6.41) is `SaadSparse.Chapter06.equation_6_41`.
 
-Part (1) is stated in the direction that the book uses: since $A$ is nonsingular, $R_m$ is
-nonsingular, so a zero diagonal entry of $R_m$ forces $A$ to be singular. Of part (3), the
-statement contains the residual norm (6.42); the residual vector (6.41) is
-`SaadSparse.Chapter06.equation_6_41`. -/
+**Reading.** The source prints $m \le n$. Lean requires $m \le \operatorname{grade}(v_1)$ so the
+first $m$ basis vectors are available. Part (1) is represented by the implication that $R_m$ is
+nonsingular when $A$ is nonsingular. The source states a general rank equality for $AV_m$ and $R_m$.
+-/
 theorem proposition_6_9 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A) :
     IsUnit (R (arnoldiCoeff A (v₁ A b x₀)) m) ∧
       (IsMinOn (J A b x₀ m) Set.univ (gmresY A b x₀ m) ∧
@@ -1584,7 +1982,12 @@ nonsingular. Then the scalar $\beta$ of line 1 satisfies $|\beta| = \|r_0\|_2$, 
 (6.31)–(6.33) gives
 $$x^{HH}_m = x_0 + \sum_{j=1}^m (y_m)_j v^{HH}_j$$
 with the Householder Arnoldi vectors $v^{HH}_j$, and $x^{HH}_m$ is the approximation $x_m$ of
-Algorithm 6.9. -/
+Algorithm 6.9.
+
+**Reading.** The specification uses an extended basis fitting in the ambient dimension, a prefix
+within the grade, and a nonsingular triangular factor. The comparison with Gram–Schmidt GMRES uses
+nonsingularity of the system for uniqueness.
+-/
 theorem algorithm_6_10 {m : ℕ} (hn : m + 1 ≤ n) (hm : m ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hR : IsUnit (R (hhCoeff A (r₀ A b x₀)) m)) :
     |βHH A b x₀| = ‖r₀ A b x₀‖ ∧
@@ -1624,7 +2027,13 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 
 /-- The coordinates $y_m = R_m^{-1} g_m$ of Algorithm 6.12 (QGMRES) for a coefficient function $h$
 and a scalar $\beta$: the formula of Proposition 6.9(2) applied to the coefficients of the
-basis. -/
+basis.
+
+**Reading.** The definitions allow an arbitrary Hessenberg relation and real or complex
+coefficients, and evaluate a fixed prefix. The source uses incomplete orthogonalization and a
+least-squares minimizer. The Lean inverse is zero at singular R; the minimizer specifications
+require nonsingular R.
+-/
 noncomputable def qgmresY (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : Fin m → 𝕜 :=
   (R h m)⁻¹ *ᵥ g h β m
 
@@ -1635,17 +2044,31 @@ where $V_m = [v_1, \dots, v_m]$ and $R_m$, $g_m$ are the Givens data of $h$ and 
 
 The book's QGMRES uses the basis and the coefficients of Algorithm 6.6, that is
 `u := SaadSparse.Chapter06.iop A v₁ k` and `h := SaadSparse.Chapter06.iopCoeff A v₁ k`. If $R_m$
-is singular, then $y_m = 0$. -/
+is singular, then $y_m = 0$.
+
+**Reading.** The definitions allow an arbitrary Hessenberg relation and real or complex
+coefficients, and evaluate a fixed prefix. The source uses incomplete orthogonalization and a
+least-squares minimizer. The Lean inverse is zero at singular R; the minimizer specifications
+require nonsingular R.
+-/
 noncomputable def qgmres (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : 𝔼 :=
   x₀ + Matrix.toEuclideanLin (colMatrix u m) (WithLp.toLp 2 (qgmresY h β m))
 
 /-- **Equation (6.52)** of [saad2003iterative]. The $n \times (m+1)$ matrix
-$Z_{m+1} = V_{m+1} Q_m^H$. -/
+$Z_{m+1} = V_{m+1} Q_m^H$.
+
+**Generalization.** Lean uses the adjoint and the conjugates of the real update coefficients, so the
+last-column formulas also hold for complex coefficients and arbitrary vector sequences.
+-/
 noncomputable def Z (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin n) (Fin (m + 1)) 𝕜 :=
   colMatrix u (m + 1) * (Qrot h m)ᴴ
 
 /-- **Equation (6.52)** of [saad2003iterative]. The vector $z_{m+1} = Z_{m+1} e_{m+1}$, the last
-column of $Z_{m+1}$. -/
+column of $Z_{m+1}$.
+
+**Generalization.** Lean uses the adjoint and the conjugates of the real update coefficients, so the
+last-column formulas also hold for complex coefficients and arbitrary vector sequences.
+-/
 noncomputable def z (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) : 𝔼 :=
   Matrix.toEuclideanLin (Z u h m) (WithLp.toLp 2 (Pi.single (Fin.last m) 1))
 
@@ -1656,7 +2079,11 @@ noncomputable def ζ (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) : �
 QGMRES and DQGMRES monitor, for a coefficient function $h$ and a scalar $\beta$. -/
 noncomputable def quasiResidualNorm (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : ℝ := ‖γ h β m‖
 
-/-- $z_{m+1} = V_{m+1} (Q_m^H e_{m+1})$. -/
+/-- $z_{m+1} = V_{m+1} (Q_m^H e_{m+1})$.
+
+**Generalization.** Lean uses the adjoint and the conjugates of the real update coefficients, so the
+last-column formulas also hold for complex coefficients and arbitrary vector sequences.
+-/
 theorem z_eq (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     z u h m = Matrix.toEuclideanLin (colMatrix u (m + 1))
       (WithLp.toLp 2 ((Qrot h m)ᴴ *ᵥ Pi.single (Fin.last m) 1)) := by
@@ -1665,7 +2092,13 @@ theorem z_eq (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
 /-- Let $h$ be upper Hessenberg and let $R_m$ be nonsingular. Then $y_m = R_m^{-1} g_m$ minimizes
 the quasi-residual norm $\|\beta e_1 - \bar H_m y\|_2$ over $y \in \mathbb{K}^m$, and the
 minimum is $|\gamma_{m+1}|$, as in (6.49) of [saad2003iterative]. If the basis is not
-orthogonal, this is not the residual norm. -/
+orthogonal, this is not the residual norm.
+
+**Reading.** The definitions allow an arbitrary Hessenberg relation and real or complex
+coefficients, and evaluate a fixed prefix. The source uses incomplete orthogonalization and a
+least-squares minimizer. The Lean inverse is zero at singular R; the minimizer specifications
+require nonsingular R.
+-/
 theorem qgmresY_isMinOn (h : ℕ → ℕ → 𝕜) (β : 𝕜) (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) {m : ℕ}
     (hR : IsUnit (R h m)) :
     IsMinOn (lsq h β m) Set.univ (qgmresY h β m) ∧
@@ -1680,7 +2113,12 @@ satisfies
 $$b - Ax_m = \gamma_{m+1} z_{m+1}.$$
 
 Equation (6.41) stays true without orthogonality, because its proof uses only the Hessenberg
-relation and the unitarity of the rotations. -/
+relation and the unitarity of the rotations.
+
+**Generalization.** These identities use an abstract Hessenberg relation over real or complex
+scalars. The relevant reduced matrices must be nonsingular. In the complex residual combination,
+squared moduli replace the real coefficient squares.
+-/
 theorem equation_6_50 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
     (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hR : IsUnit (R h m)) :
@@ -1716,7 +2154,11 @@ backbone does not have: the last row of a rotation, the rows of $Q^{(k)}_m$ beyo
 the identity, and the leading block of $Q^{(k)}_{m+1}$ is $Q^{(k)}_m$.
 -/
 
-/-- $z_{m+1} = \sum_{k=1}^{m+1} \overline{(Q_m)_{m+1,k}} \, v_k$. -/
+/-- $z_{m+1} = \sum_{k=1}^{m+1} \overline{(Q_m)_{m+1,k}} \, v_k$.
+
+**Generalization.** Lean uses the adjoint and the conjugates of the real update coefficients, so the
+last-column formulas also hold for complex coefficients and arbitrary vector sequences.
+-/
 theorem z_eq_sum (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     z u h m = ∑ k : Fin (m + 1), starRingEnd 𝕜 (Qrot h m (Fin.last m) k) • u (k : ℕ) := by
   rw [z_eq, toEuclideanLin_colMatrix_apply]
@@ -1782,7 +2224,11 @@ and any coefficient function $h$,
 $$z_{m+2} = -\bar s_{m+1} z_{m+1} + \bar c_{m+1} v_{m+2}.$$
 
 Over $\mathbb{R}$ this is the book's $z_{m+1} = -s_m z_m + c_m v_{m+1}$, with the index shifted
-by one. No hypothesis on the basis is needed. -/
+by one. No hypothesis on the basis is needed.
+
+**Generalization.** Lean uses the adjoint and the conjugates of the real update coefficients, so the
+last-column formulas also hold for complex coefficients and arbitrary vector sequences.
+-/
 theorem equation_6_53 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     z u h (m + 1) = starRingEnd 𝕜 (-(s h m)) • z u h m
       + starRingEnd 𝕜 (c h m) • u (m + 1) := by
@@ -1797,7 +2243,11 @@ and any coefficient function $h$,
 $$\zeta_{m+2} \le |s_{m+1}| \, \zeta_{m+1} + |c_{m+1}| \, \|v_{m+2}\|_2.$$
 
 For unit vectors $v_i$ this is the book's $\zeta_{m+1} \le |s_m| \zeta_m + |c_m|$, with the
-index shifted by one. -/
+index shifted by one.
+
+**Generalization.** Lean retains the factor giving the norm of the next basis vector in the triangle
+inequality. The source assumes a unit next vector and drops that factor.
+-/
 theorem equation_6_54 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (m : ℕ) :
     ζ u h (m + 1) ≤ ‖s h m‖ * ζ u h m + ‖c h m‖ * ‖u (m + 1)‖ := by
   rw [ζ, ζ, equation_6_53]
@@ -1812,7 +2262,12 @@ approximations satisfy
 $$r_{m+1} = |s_{m+1}|^2 r_m + \bar c_{m+1} \gamma_{m+2} v_{m+2}.$$
 
 Over $\mathbb{R}$ this is the book's $r_m = s_m^2 r_{m-1} + c_m \gamma_{m+1} v_{m+1}$, with the
-index shifted by one. -/
+index shifted by one.
+
+**Generalization.** These identities use an abstract Hessenberg relation over real or complex
+scalars. The relevant reduced matrices must be nonsingular. In the complex residual combination,
+squared moduli replace the real coefficient squares.
+-/
 theorem equation_6_55 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
     (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hR : IsUnit (R h m)) (hR' : IsUnit (R h (m + 1))) :
@@ -1838,7 +2293,12 @@ is the Arnoldi basis. This approximation is `SaadSparse.Chapter06.iomOfBasis`.
 -/
 
 /-- The coordinates $y^I_m = H_m^{-1} (\beta e_1)$ of the Galerkin approximation in the basis, where
-$H_m$ is the $m \times m$ Hessenberg matrix of $h$. If $H_m$ is singular, then $y^I_m = 0$. -/
+$H_m$ is the $m \times m$ Hessenberg matrix of $h$. If $H_m$ is singular, then $y^I_m = 0$.
+
+**Generalization.** The IOM expressions use an arbitrary Hessenberg relation rather than the
+incomplete Arnoldi basis. Their definitions totalize matrix inversion. The residual formula requires
+nonsingularity of the reduced system.
+-/
 noncomputable def iomOfBasisY (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : Fin m → 𝕜 :=
   (Krylov.hessenbergSqOf h m)⁻¹ *ᵥ Krylov.firstVec β m
 
@@ -1850,7 +2310,12 @@ where $H_m$ is the $m \times m$ Hessenberg matrix of $h$.
 
 On the incomplete orthogonalization basis this is Algorithm 6.7
 (`SaadSparse.Chapter06.iomOfBasis_eq_iomFixed`), and on the Arnoldi basis it is Algorithm 6.4,
-FOM (`SaadSparse.Chapter06.iomOfBasis_eq_fomFixed`). If $H_m$ is singular, then $x^I_m = x_0$. -/
+FOM (`SaadSparse.Chapter06.iomOfBasis_eq_fomFixed`). If $H_m$ is singular, then $x^I_m = x_0$.
+
+**Generalization.** The IOM expressions use an arbitrary Hessenberg relation rather than the
+incomplete Arnoldi basis. Their definitions totalize matrix inversion. The residual formula requires
+nonsingularity of the reduced system.
+-/
 noncomputable def iomOfBasis (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (m : ℕ) : 𝔼 :=
   x₀ + Matrix.toEuclideanLin (colMatrix u m) (WithLp.toLp 2 (iomOfBasisY h β m))
 
@@ -1883,7 +2348,12 @@ $\beta$, the vectors $v_i$ and the coefficient function $h$ be as in
 $$b - Ax^I_{m+1} = -h_{m+2,m+1} \, (e_{m+1}^T y^I_{m+1}) \, v_{m+2}.$$
 
 Like (6.50), this uses only the Hessenberg relation, so the loss of orthogonality does not
-matter. This is the remark of Section 6.4.2 that the result of Proposition 6.7 stays valid. -/
+matter. This is the remark of Section 6.4.2 that the result of Proposition 6.7 stays valid.
+
+**Generalization.** The IOM expressions use an arbitrary Hessenberg relation rather than the
+incomplete Arnoldi basis. Their definitions totalize matrix inversion. The residual formula requires
+nonsingularity of the reduced system.
+-/
 theorem residual_iomOfBasis {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
     {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
@@ -1903,7 +2373,12 @@ In the book's indexing, both sides are the scalar $-r^{(m-1)}_{mm} h_{m+1,m} (e_
 \rho_m$ times $v_{m+1}$, because $c_m = r^{(m-1)}_{mm} / \rho_m$ and $s_m = h_{m+1,m} / \rho_m$
 have the same denominator. The book reads the relation off
 $h_{m+1,m} / h^{(m)}_{mm} = \tan \theta_m$, which divides by $h^{(m)}_{mm}$. The identity here
-needs no hypothesis $h^{(m)}_{mm} \neq 0$, and at a breakdown both sides are $0$. -/
+needs no hypothesis $h^{(m)}_{mm} \neq 0$, and at a breakdown both sides are $0$.
+
+**Generalization.** These identities use an abstract Hessenberg relation over real or complex
+scalars. The relevant reduced matrices must be nonsingular. In the complex residual combination,
+squared moduli replace the real coefficient squares.
+-/
 theorem equation_6_56 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
     {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
@@ -1927,7 +2402,11 @@ In the book's indexing this is $\rho^Q_m = |c_m| \rho_m$: the quasi-residual nor
 against the residual norm of IOM.
 
 This is (6.56) in norms, so it needs only that $v_{m+2}$ is a unit vector, which the incomplete
-orthogonalization gives. -/
+orthogonalization gives.
+
+**Reading.** The identity explicitly requires the next basis vector to be a unit vector and the IOM
+reduced system to be nonsingular. Lean also allows complex scalars.
+-/
 theorem equation_6_57 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
     {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hnorm : ‖u (m + 1)‖ = 1) (hH : IsUnit (Krylov.hessenbergSqOf h (m + 1))) :
@@ -1945,7 +2424,12 @@ $$r^Q_{m+1} = |s_{m+1}|^2 r^Q_m + |c_{m+1}|^2 r^I_{m+1}.$$
 In the book's indexing this is $r^Q_m = s_m^2 r^Q_{m-1} + c_m^2 r^I_m$, the residual recurrence
 of QGMRES and DQGMRES.
 
-This is (6.55) with (6.56) substituted for $\gamma_{m+2} v_{m+2}$. -/
+This is (6.55) with (6.56) substituted for $\gamma_{m+2} v_{m+2}$.
+
+**Generalization.** These identities use an abstract Hessenberg relation over real or complex
+scalars. The relevant reduced matrices must be nonsingular. In the complex residual combination,
+squared moduli replace the real coefficient squares.
+-/
 theorem equation_6_58 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
     {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hR : IsUnit (R h m)) (hR' : IsUnit (R h (m + 1)))
@@ -1965,7 +2449,13 @@ $$\zeta_{k+j+1} \le \sqrt{j + 1}.$$
 By (6.54), $\zeta$ grows by at most one square root per step. The hypothesis $\zeta_{k+1} \le 1$
 is what the truncation gives: the first $k + 1$ vectors of the incomplete orthogonalization are
 orthonormal, so $z_{k+1}$, their combination with the coefficients of a unit vector, has norm
-$1$. This bound is sharper than (6.51). -/
+$1$. This bound is sharper than (6.51).
+
+**Reading.** The source derives the bound from local orthogonality and the unit Arnoldi vectors, and
+uses the full-prefix case when the window covers all steps. Lean proves the bound for an abstract
+sequence using the base bound, norms at most one and nonzero rotation radii at every index. The
+order in the bound is at or above the base index.
+-/
 theorem problem_6_25 (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
     (hρ : ∀ i, Krylov.givensRho h i ≠ 0) {k : ℕ} (hbase : ζ u h k ≤ 1) (j : ℕ) :
     ζ u h (k + j) ≤ Real.sqrt ((j : ℝ) + 1) := by
@@ -2003,6 +2493,11 @@ $v_1, v_2, \dots \in \mathbb{K}^n$ satisfy $\|v_i\|_2 \le 1$ for all $i$, let $h
 coefficient function with $\rho_i \neq 0$ for all $i \ge 1$, and let $k \le m$ with
 $\zeta_{k+1} \le 1$. Then
 $$\zeta_{m+1} \le \sqrt{m - k + 1}.$$
+
+**Reading.** The source derives the bound from local orthogonality and the unit Arnoldi vectors, and
+uses the full-prefix case when the window covers all steps. Lean proves the bound for an abstract
+sequence using the base bound, norms at most one and nonzero rotation radii at every index. The
+order in the bound is at or above the base index.
 -/
 theorem problem_6_25_le (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (hu : ∀ i, ‖u i‖ ≤ 1)
     (hρ : ∀ i, Krylov.givensRho h i ≠ 0) {k m : ℕ} (hbase : ζ u h k ≤ 1) (hkm : k ≤ m) :
@@ -2020,7 +2515,13 @@ So the quasi-residual norm $|\gamma_{m+1}|$ underestimates the residual norm by 
 factor $\sqrt{m - k + 1}$.
 
 The proof derives the bound from the sharper P-6.25 and (6.50), not from the book's direct
-splitting of $Q_m^T e_{m+1}$. -/
+splitting of $Q_m^T e_{m+1}$.
+
+**Reading.** The source derives the bound from local orthogonality and the unit Arnoldi vectors, and
+uses the full-prefix case when the window covers all steps. Lean proves the bound for an abstract
+sequence using the base bound, norms at most one and nonzero rotation radii at every index. The
+order in the bound is at or above the base index.
+-/
 theorem equation_6_51 {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜}
     (hA : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0)
     (hu : ∀ i, ‖u i‖ ≤ 1) (hρ : ∀ i, Krylov.givensRho h i ≠ 0) {k m : ℕ}
@@ -2043,7 +2544,13 @@ $x_m = x_0 + \sum_{j=1}^m (y_m)_j v_j$, where $y_m$ minimizes the quasi-residual
 $\|\beta e_1 - \bar H_m y\|_2$.
 
 This brings the quasi-minimal-residual theory of `Numlib.Krylov.QuasiMinRes`, which QMR, TFQMR
-and FGMRES also use, to Algorithms 6.12 and 6.13. -/
+and FGMRES also use, to Algorithms 6.12 and 6.13.
+
+**Reading.** The definitions allow an arbitrary Hessenberg relation and real or complex
+coefficients, and evaluate a fixed prefix. The source uses incomplete orthogonalization and a
+least-squares minimizer. The Lean inverse is zero at singular R; the minimizer specifications
+require nonsingular R.
+-/
 theorem qgmres_isQuasiMinResidualIterate (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜)
     (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) {m : ℕ} (hR : IsUnit (R h m)) :
     Krylov.IsQuasiMinResidualIterate u h β x₀ m (qgmres x₀ u h β m) :=
@@ -2069,7 +2576,12 @@ factors $V_{m+1} = WS$ with $W$ orthonormal, which needs $V_{m+1}$ to have full 
 backbone result `Krylov.IsQuasiMinResidualIterate.norm_residual_le_mul` needs only the two-sided
 bound, and gives the same estimate against every point of
 $x_0 + \operatorname{span}\{v_1, \dots, v_m\}$; the GMRES approximation is the point that makes
-it sharpest. -/
+it sharpest.
+
+**Reading.** Lean takes two-sided basis bounds with positive lower constant and gives their ratio in
+place of the source's spectral condition number. It works directly with QGMRES, requires both
+reduced factors nonsingular, and makes the common search span explicit.
+-/
 theorem theorem_6_11 {A : Matrix (Fin n) (Fin n) 𝕜} (b x₀ : 𝔼) {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜}
     {β : 𝕜} (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0) {m : ℕ}
     (hR : IsUnit (R h m)) (hm : m ≤ grade A (v₁ A b x₀))
@@ -2103,7 +2615,13 @@ where the Lean terms `u m` and `Krylov.rotated h (m + 1) i m` are $v_m$ and $r_{
 of column $m$ of the triangular factor after the rotations with indices $0, \dots, m$. The
 rotation with index $m$ changes only rows $m$ and $m + 1$, so for $i < m$ the entry $r_{im}$ is
 the entry after the earlier rotations, and $r_{mm}$ is the updated diagonal entry, the norm
-`Krylov.givensRho h m`. Division by $0$ gives $0$, the book's convention at a breakdown. -/
+`Krylov.givensRho h m`. Division by $0$ gives $0$, the book's convention at a breakdown.
+
+**Reading.** The recurrence uses the full rotated Hessenberg coefficients restricted to the
+specified window, with an arbitrary basis and real or complex coefficients. It is evaluated for a
+fixed number of steps and totalizes division by a zero diagonal. The source gives an incremental
+band rotation and stops using a quasi-residual test.
+-/
 noncomputable def dqgmresP (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (k : ℕ) : ℕ → 𝔼
   | m =>
     let p : Fin m → 𝔼 := fun i => dqgmresP u h k (i : ℕ)
@@ -2114,7 +2632,13 @@ noncomputable def dqgmresP (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (k : �
   decreasing_by exact i.isLt
 
 /-- The recurrence of `SaadSparse.Chapter06.dqgmresP`, with the sum over $i < m$ written over
-`Finset.range m`. -/
+`Finset.range m`.
+
+**Reading.** The recurrence uses the full rotated Hessenberg coefficients restricted to the
+specified window, with an arbitrary basis and real or complex coefficients. It is evaluated for a
+fixed number of steps and totalizes division by a zero diagonal. The source gives an incremental
+band rotation and stops using a quasi-residual test.
+-/
 theorem dqgmresP_eq (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (k m : ℕ) :
     dqgmresP u h k m = ((Krylov.rotated h (m + 1) m m)⁻¹) •
       (u m - ∑ i ∈ Finset.range m,
@@ -2133,13 +2657,25 @@ is the entry $g_m$ of the rotated right-hand side. The book writes this product 
 $\gamma_m$.
 
 The Lean terms `dqgmresP u h k m` and `Krylov.gvec h β m` are the book's $p_{m+1}$ and
-$\bar c_{m+1} \gamma_{m+1}$. -/
+$\bar c_{m+1} \gamma_{m+1}$.
+
+**Reading.** The recurrence uses the full rotated Hessenberg coefficients restricted to the
+specified window, with an arbitrary basis and real or complex coefficients. It is evaluated for a
+fixed number of steps and totalizes division by a zero diagonal. The source gives an incremental
+band rotation and stops using a quasi-residual test.
+-/
 noncomputable def dqgmres (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k : ℕ) : ℕ → 𝔼
   | 0 => x₀
   | m + 1 => dqgmres x₀ u h β k m + Krylov.gvec h β m • dqgmresP u h k m
 
 /-- The DQGMRES approximation is $x_m = x_0 + \sum_{j=1}^m \bar c_j \gamma_j \, p_j$, in the book's
-indexing. -/
+indexing.
+
+**Reading.** The recurrence uses the full rotated Hessenberg coefficients restricted to the
+specified window, with an arbitrary basis and real or complex coefficients. It is evaluated for a
+fixed number of steps and totalizes division by a zero diagonal. The source gives an incremental
+band rotation and stops using a quasi-residual test.
+-/
 theorem dqgmres_eq_sum (x₀ : 𝔼) (u : ℕ → 𝔼) (h : ℕ → ℕ → 𝕜) (β : 𝕜) (k m : ℕ) :
     dqgmres x₀ u h β k m
       = x₀ + ∑ j : Fin m, Krylov.gvec h β (j : ℕ) • dqgmresP u h k (j : ℕ) := by
@@ -2177,7 +2713,12 @@ private theorem R_apply_eq_rotated_succ {h : ℕ → ℕ → 𝕜} (hh : ∀ i j
 /-- Let $h$ be upper Hessenberg, let $m \le k$ (no truncation), and let the entries
 `Krylov.rotated h (j + 1) j j` be nonzero for $j < m$. Then the DQGMRES directions satisfy
 $P_m R_m = V_m$: $\sum_i (R_m)_{ij} \, p_i = v_j$ for each column $j$. So the recurrence without
-truncation is back substitution for the triangular system. -/
+truncation is back substitution for the triangular system.
+
+**Reading.** The factor relation and equality with QGMRES require a window covering the whole
+prefix. The source derives the same equivalence with a short window from bandedness of the rotated
+triangular factor.
+-/
 theorem sum_R_smul_dqgmresP {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {k m : ℕ}
     (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) (hk : m ≤ k)
     (hd : ∀ j < m, Krylov.rotated h (j + 1) j j ≠ 0) (j : Fin m) :
@@ -2211,7 +2752,12 @@ theorem sum_R_smul_dqgmresP {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {k m :
 
 /-- Algorithm 6.13 computes Algorithm 6.12. Let $h$ be upper Hessenberg, let $m \le k$ (no
 truncation), and let $R_m$ be nonsingular. Then the DQGMRES approximation with parameter $k$ and
-the QGMRES approximation at step $m$ are equal. -/
+the QGMRES approximation at step $m$ are equal.
+
+**Reading.** The factor relation and equality with QGMRES require a window covering the whole
+prefix. The source derives the same equivalence with a short window from bandedness of the rotated
+triangular factor.
+-/
 theorem dqgmres_eq_qgmres {x₀ : 𝔼} {u : ℕ → 𝔼} {h : ℕ → ℕ → 𝕜} {β : 𝕜} {k m : ℕ}
     (hh : ∀ i j : ℕ, j + 1 < i → h i j = 0) (hk : m ≤ k) (hR : IsUnit (R h m)) :
     dqgmres x₀ u h β k m = qgmres x₀ u h β m := by
@@ -2286,7 +2832,12 @@ local notation "𝔼" => EuclideanSpace 𝕜 (Fin n)
 /-! ### The two residual norms and the data of Freund -/
 
 /-- **Section 6.5.7** of [saad2003iterative]. The GMRES residual norm $\rho^G_m = \|b - Ax^G_m\|_2$
-after $m$ steps, where $x^G_m$ is the approximation of Algorithm 6.9. -/
+after $m$ steps, where $x^G_m$ is the approximation of Algorithm 6.9.
+
+**Reading.** Lean takes exact fixed-size formulas over real or complex scalars. The definitions
+therefore have values at a singular reduced system by totalized inversion. In the source an iterate
+requiring a nonexistent reduced inverse is undefined.
+-/
 noncomputable abbrev ρG (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : ℝ :=
   ‖b - op A (gmresFixed A b x₀ m)‖
 
@@ -2294,7 +2845,12 @@ noncomputable abbrev ρG (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : 
 after $m$ steps, where $x^F_m$ is the approximation of Algorithm 6.4.
 
 The book's $\rho^F_m$ has a meaning exactly when $H_m$ is nonsingular
-(`SaadSparse.Chapter06.FOMDefined`). The Lean definition gives a value in all cases. -/
+(`SaadSparse.Chapter06.FOMDefined`). The Lean definition gives a value in all cases.
+
+**Reading.** Lean takes exact fixed-size formulas over real or complex scalars. The definitions
+therefore have values at a singular reduced system by totalized inversion. In the source an iterate
+requiring a nonexistent reduced inverse is undefined.
+-/
 noncomputable abbrev ρF (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : ℝ :=
   ‖b - op A (fomFixed A b x₀ m)‖
 
@@ -2302,13 +2858,23 @@ noncomputable abbrev ρF (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : 
 the diagonal entry $(m, m)$ of $Q_{m-1} \bar H_m$, which the first $m - 1$ rotations leave.
 
 The definition is `Krylov.rotated h (m - 1) (m - 1) (m - 1)`. At $m = 0$ the natural subtraction
-gives $h_{11}$. -/
+gives $h_{11}$.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
+-/
 noncomputable def ξ (h : ℕ → ℕ → 𝕜) (m : ℕ) : 𝕜 := Krylov.rotated h (m - 1) (m - 1) (m - 1)
 
 /-- **Lemma 6.16** of [saad2003iterative]. The $m \times m$ matrix $\tilde R_m$, the leading block
 of $Q_{m-1} \bar H_m$. It is the triangular factor one rotation short of $R_m$.
 
-The definition is `Krylov.hessenbergSqOf (Krylov.rotated h (m - 1)) m`. -/
+The definition is `Krylov.hessenbergSqOf (Krylov.rotated h (m - 1)) m`.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
+-/
 noncomputable def Rtilde (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (Fin m) 𝕜 :=
   Krylov.hessenbergSqOf (Krylov.rotated h (m - 1)) m
 
@@ -2316,28 +2882,52 @@ noncomputable def Rtilde (h : ℕ → ℕ → 𝕜) (m : ℕ) : Matrix (Fin m) (
 entries of $Q_{m-1} (\beta e_1)$:
 $$\tilde g_m = (\bar c_1 \gamma_1, \dots, \bar c_{m-1} \gamma_{m-1}, \gamma_m).$$
 
-The scalar $\beta$ is the argument `c` of the definition. -/
+The scalar $\beta$ is the argument `c` of the definition.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
+-/
 noncomputable def gtilde (h : ℕ → ℕ → 𝕜) (c : 𝕜) (m : ℕ) : Fin m → 𝕜 :=
   fun i => if (i : ℕ) < m - 1 then Krylov.gvec h c (i : ℕ) else Krylov.gamma h c (m - 1)
 
 /-- **Lemma 6.16** of [saad2003iterative]. The vector $\tilde y_m = \tilde R_m^{-1} \tilde g_m$, the
 coordinates of the FOM approximation in the Givens description of Section 6.5.3.
 
-If $\tilde R_m$ is singular, then $\tilde y_m = 0$. -/
+If $\tilde R_m$ is singular, then $\tilde y_m = 0$.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
+-/
 noncomputable def ytilde (h : ℕ → ℕ → 𝕜) (c : 𝕜) (m : ℕ) : Fin m → 𝕜 :=
   (Rtilde h m)⁻¹ *ᵥ gtilde h c m
 
-/-- The entry $(i, j)$ of $\tilde R_m$ is `Krylov.rotated h (m - 1) i j`. -/
+/-- The entry $(i, j)$ of $\tilde R_m$ is `Krylov.rotated h (m - 1) i j`.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
+-/
 theorem Rtilde_apply (h : ℕ → ℕ → 𝕜) {m : ℕ} (i j : Fin m) :
     Rtilde h m i j = Krylov.rotated h (m - 1) (i : ℕ) (j : ℕ) := rfl
 
-/-- The last entry of $\tilde g_{m+1}$ is $\gamma_{m+1}$. -/
+/-- The last entry of $\tilde g_{m+1}$ is $\gamma_{m+1}$.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
+-/
 theorem gtilde_last (h : ℕ → ℕ → 𝕜) (c : 𝕜) (m : ℕ) :
     gtilde h c (m + 1) (Fin.last m) = Krylov.gamma h c m := by
   rw [gtilde, Nat.add_sub_cancel]
   exact ite_eq_right (by simp)
 
 /-- For a `0`-based index $i < m$, the entry $i$ of $\tilde g_{m+1}$ is $\bar c_{i+1} \gamma_{i+1}$.
+
+**Generalization.** The preceding-rotation data are defined over real or complex scalars, using the
+totalized matrix inverse for the coefficient solve. The source uses the real triangular system with
+the last rotation omitted.
 -/
 theorem gtilde_castSucc (h : ℕ → ℕ → 𝕜) (c : 𝕜) {m : ℕ} (i : Fin m) :
     gtilde h c (m + 1) i.castSucc = Krylov.gvec h c (i : ℕ) := by
@@ -2407,7 +2997,12 @@ The steps where $H_i$ is singular are left out.
 
 The minimum runs over the $m + 1$ indices $0, \dots, m$, as the sum of (6.66) does. Step $0$ is
 always included and gives the initial residual norm, which the book writes
-$\rho^F_0 = \rho^G_0$. -/
+$\rho^F_0 = \rho^G_0$.
+
+**Reading.** The minimum is taken over the initial residual and the defined FOM iterates through
+step $m$. The source refers to the first $m$ steps, while its preceding sum also includes index
+zero.
+-/
 noncomputable def ρFmin (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (m : ℕ) : ℝ :=
   ((Finset.range (m + 1)).filter (FOMDefined A b x₀)).inf'
     ⟨0, Finset.mem_filter.2 ⟨Finset.mem_range.2 (Nat.succ_pos m), fomDefined_zero A b x₀⟩⟩
@@ -2559,14 +3154,24 @@ theorem R_mulVec_snoc (h : ℕ → ℕ → 𝕜) (hh : ∀ i j : ℕ, j + 1 < i 
     rw [hval, g_apply, g_apply]
 
 open scoped Classical in
-/-- If $i \le m$ and $H_i$ is nonsingular, then $\rho^F_{m*} \le \rho^F_i$. -/
+/-- If $i \le m$ and $H_i$ is nonsingular, then $\rho^F_{m*} \le \rho^F_i$.
+
+**Reading.** The minimum is taken over the initial residual and the defined FOM iterates through
+step $m$. The source refers to the first $m$ steps, while its preceding sum also includes index
+zero.
+-/
 theorem ρFmin_le {m i : ℕ} (hi : i ≤ m) (hH : FOMDefined A b x₀ i) :
     ρFmin A b x₀ m ≤ ρF A b x₀ i := by
   rw [ρFmin]
   exact Finset.inf'_le _ (Finset.mem_filter.2 ⟨Finset.mem_range.2 (by omega), hH⟩)
 
 open scoped Classical in
-/-- If $r \le \rho^F_i$ for every $i \le m$ with $H_i$ nonsingular, then $r \le \rho^F_{m*}$. -/
+/-- If $r \le \rho^F_i$ for every $i \le m$ with $H_i$ nonsingular, then $r \le \rho^F_{m*}$.
+
+**Reading.** The minimum is taken over the initial residual and the defined FOM iterates through
+step $m$. The source refers to the first $m$ steps, while its preceding sum also includes index
+zero.
+-/
 theorem le_ρFmin {m : ℕ} {r : ℝ} (h : ∀ i ≤ m, FOMDefined A b x₀ i → r ≤ ρF A b x₀ i) :
     r ≤ ρFmin A b x₀ m := by
   rw [ρFmin]
@@ -2592,6 +3197,10 @@ variable {n : ℕ} (A : Matrix (Fin n) (Fin n) ℝ) (b x₀ : EuclideanSpace ℝ
 /-- **Equation (6.62)** of [saad2003iterative], one step. Let $m + 1 < \operatorname{grade}(v_1)$.
 Then
 $$\rho^G_{m+1} = |s_{m+1}| \, \rho^G_m.$$
+
+**Reading.** Lean uses a prefix strictly below grade so the triangular factors are nonsingular
+without a hypothesis on the system matrix. This excludes the final breakdown step of a nonsingular
+problem, where the source product formula still holds. The Lean formulas allow complex scalars.
 -/
 theorem ρG_succ {m : ℕ} (hm : m + 1 < grade A (v₁ A b x₀)) :
     ρG A b x₀ (m + 1) = ‖s (arnoldiCoeff A (v₁ A b x₀)) m‖ * ρG A b x₀ m := by
@@ -2602,6 +3211,10 @@ theorem ρG_succ {m : ℕ} (hm : m + 1 < grade A (v₁ A b x₀)) :
 
 /-- **Equation (6.62)** of [saad2003iterative]. Let $m < \operatorname{grade}(v_1)$. Then
 $$\rho^G_m = |s_1 s_2 \cdots s_m| \, \beta.$$
+
+**Reading.** Lean uses a prefix strictly below grade so the triangular factors are nonsingular
+without a hypothesis on the system matrix. This excludes the final breakdown step of a nonsingular
+problem, where the source product formula still holds. The Lean formulas allow complex scalars.
 -/
 theorem equation_6_62 {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
     ρG A b x₀ m
@@ -2612,7 +3225,12 @@ theorem equation_6_62 {m : ℕ} (hm : m < grade A (v₁ A b x₀)) :
 /-! ### Proposition 6.12 (Brown) and (6.63) -/
 
 /-- Proposition 6.12 of [saad2003iterative], first form: if $m + 1 \le \operatorname{grade}(v_1)$
-and $H_{m+1}$ is nonsingular, then $\rho^F_{m+1} = \rho^G_{m+1} / |c_{m+1}|$. -/
+and $H_{m+1}$ is nonsingular, then $\rho^F_{m+1} = \rho^G_{m+1} / |c_{m+1}|$.
+
+**Reading.** The two clauses give the source ratio and its square-root form. The first also works
+over complex scalars, using the modulus of the rotation coefficient. The valid-prefix hypothesis
+specifies that the Arnoldi steps were reached.
+-/
 theorem ρF_eq_div_norm_c {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (hH : FOMDefined A b x₀ (m + 1)) :
     ρF A b x₀ (m + 1) = ρG A b x₀ (m + 1) / ‖c (arnoldiCoeff A (v₁ A b x₀)) m‖ := by
@@ -2629,6 +3247,10 @@ private theorem rotated_succ_row (h : ℕ → ℕ → ℝ) (m : ℕ) :
 /-- **Equation (6.63)** of [saad2003iterative]. Let $m + 1 \le \operatorname{grade}(v_1)$ and let
 $H_{m+1}$ be nonsingular. Then
 $$\rho^F_{m+1} = \rho^G_{m+1} \sqrt{1 + \frac{h_{m+2,m+1}^2}{\xi_{m+1}^2}}.$$
+
+**Reading.** The two clauses give the source ratio and its square-root form. The first also works
+over complex scalars, using the modulus of the rotation coefficient. The valid-prefix hypothesis
+specifies that the Arnoldi steps were reached.
 -/
 theorem equation_6_63 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (hH : FOMDefined A b x₀ (m + 1)) :
@@ -2685,6 +3307,10 @@ theorem proposition_6_12 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hm0 : 0
 /-- **Equation (6.65)** of [saad2003iterative]. Let $m + 1 \le \operatorname{grade}(v_1)$, let
 $H_{m+1}$ be nonsingular, and let $\rho^G_{m+1} \neq 0$. Then
 $$\frac{1}{(\rho^F_{m+1})^2} + \frac{1}{(\rho^G_m)^2} = \frac{1}{(\rho^G_{m+1})^2}.$$
+
+**Reading.** The formula assumes the later GMRES residual norm is nonzero. Nonsingularity of the FOM
+projected matrix and the reached-prefix hypothesis are also stated, as in the printed proposition.
+The reciprocal identity uses norms over either scalar field.
 -/
 theorem equation_6_65 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
@@ -2701,7 +3327,12 @@ $\rho^G_{m+1} \neq 0$. Then
 $$\rho^F_{m+1} = \frac{\rho^G_{m+1}}{\sqrt{1 - (\rho^G_{m+1} / \rho^G_m)^2}}.$$
 
 **Reading.** The hypotheses that $H_{m+1}$ is nonsingular and that $\rho^G_{m+1} \neq 0$ are
-explicit, because the proof needs them. -/
+explicit, because the proof needs them.
+
+**Reading.** The formula assumes the later GMRES residual norm is nonzero. Nonsingularity of the FOM
+projected matrix and the reached-prefix hypothesis are also stated, as in the printed proposition.
+The reciprocal identity uses norms over either scalar field.
+-/
 theorem proposition_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH : FOMDefined A b x₀ (m + 1))
     (h0 : ρG A b x₀ (m + 1) ≠ 0) :
     ρF A b x₀ (m + 1)
@@ -2750,7 +3381,12 @@ theorem proposition_6_13 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hH 
 nonsingular for every $i \le m$, and let $\rho^G_m \neq 0$. Then
 $$\sum_{i=0}^m \frac{1}{(\rho^F_i)^2} = \frac{1}{(\rho^G_m)^2}.$$
 
-The term $i = 0$ is the initial residual norm $\rho^F_0 = \|r_0\|_2$. -/
+The term $i = 0$ is the initial residual norm $\rho^F_0 = \|r_0\|_2$.
+
+**Reading.** Lean assumes every FOM reduced system in the prefix is nonsingular and the final GMRES
+residual is nonzero. This is the regime in which the proof uses the reciprocals of actual residual
+norms. The identities are also available for complex systems.
+-/
 theorem equation_6_66 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i)
     (h0 : ρG A b x₀ m ≠ 0) :
     ∑ i ∈ Finset.range (m + 1), 1 / ρF A b x₀ i ^ 2 = 1 / ρG A b x₀ m ^ 2 :=
@@ -2763,6 +3399,10 @@ theorem equation_6_66 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i
 $m \le \operatorname{grade}(v_1)$, let $H_i$ be nonsingular for every $i \le m$, and let
 $\rho^G_m \neq 0$. Then
 $$\rho^G_m = \frac{1}{\sqrt{\sum_{i=0}^m (\rho^F_i)^{-2}}}.$$
+
+**Reading.** Lean assumes every FOM reduced system in the prefix is nonsingular and the final GMRES
+residual is nonzero. This is the regime in which the proof uses the reciprocals of actual residual
+norms. The identities are also available for complex systems.
 -/
 theorem corollary_6_14 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀)) (hH : ∀ i ≤ m, FOMDefined A b x₀ i)
     (h0 : ρG A b x₀ m ≠ 0) :
@@ -2784,7 +3424,11 @@ it, $1/(\rho^G_m)^2 = \sum_{i=0}^m 1/(\rho^F_i)^2 \le (m+1)/(\rho^F_{m*})^2$, wh
 $\rho^F_0$ the initial residual norm. The printed constant fails already at $m = 1$: if
 $|c_1| = |s_1| = 1/\sqrt{2}$, then (6.62) and Proposition 6.12 give
 $\rho^F_0 = \rho^F_1 = \beta$ and $\rho^G_1 = \beta / \sqrt{2}$, so
-$\rho^F_{1*} = \sqrt{2} \, \rho^G_1$. -/
+$\rho^F_{1*} = \sqrt{2} \, \rho^G_1$.
+
+**Reading.** Lean assumes that all FOM reduced systems in the prefix are nonsingular. The source
+permits skipping an undefined FOM step.
+-/
 theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hH : ∀ i ≤ m, FOMDefined A b x₀ i) :
     ρG A b x₀ m ≤ ρFmin A b x₀ m ∧
@@ -2807,6 +3451,10 @@ theorem proposition_6_15 {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
 $m + 1 \le \operatorname{grade}(v_1)$, let $H_{m+1}$ be nonsingular, and let
 $\rho^G_{m+1} \neq 0$. Then
 $$x^G_{m+1} = s_{m+1}^2 \, x^G_m + c_{m+1}^2 \, x^F_{m+1}.$$
+
+**Reading.** Lean assumes a nonsingular system and FOM reduced matrix, a reached prefix and a
+nonzero later GMRES residual. The source derives these identities after its triangular systems
+without listing all these hypotheses.
 -/
 theorem equation_6_74 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hH : FOMDefined A b x₀ (m + 1)) (h0 : ρG A b x₀ (m + 1) ≠ 0) :
@@ -2847,6 +3495,10 @@ private theorem residual_combination {N : ℕ}
 $m + 1 \le \operatorname{grade}(v_1)$, let $H_{m+1}$ be nonsingular, and let
 $\rho^G_{m+1} \neq 0$. Then the residuals $r^G_m = b - Ax^G_m$ and $r^F_m = b - Ax^F_m$ satisfy
 $$r^G_{m+1} = s_{m+1}^2 \, r^G_m + c_{m+1}^2 \, r^F_{m+1}.$$
+
+**Reading.** Lean assumes a nonsingular system and FOM reduced matrix, a reached prefix and a
+nonzero later GMRES residual. The source derives these identities after its triangular systems
+without listing all these hypotheses.
 -/
 theorem equation_6_75 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hH : FOMDefined A b x₀ (m + 1)) (h0 : ρG A b x₀ (m + 1) ≠ 0) :
@@ -2865,6 +3517,10 @@ $m + 1 \le \operatorname{grade}(v_1)$, let $H_{m+1}$ be nonsingular, and let
 $\rho^G_{m+1} \neq 0$. Then the two residuals on the right of (6.75) are orthogonal,
 $(r^G_m, r^F_{m+1}) = 0$, and so
 $$(\rho^G_{m+1})^2 = s_{m+1}^4 (\rho^G_m)^2 + c_{m+1}^4 (\rho^F_{m+1})^2.$$
+
+**Reading.** Lean assumes a nonsingular system and FOM reduced matrix, a reached prefix and a
+nonzero later GMRES residual. The source derives these identities after its triangular systems
+without listing all these hypotheses.
 -/
 theorem problem_6_14 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀)) (hA : IsUnit A)
     (hH : FOMDefined A b x₀ (m + 1)) (h0 : ρG A b x₀ (m + 1) ≠ 0) :
@@ -3096,7 +3752,12 @@ it.
 
 The lemma is about coordinates, not approximations, so it is proved here by the book's
 computation (6.72)–(6.73): $\tilde R_{m+1}$ and $R_{m+1}$ differ only in the entry $(m+1, m+1)$,
-where the former has $\xi_{m+1}$ and the latter $\rho_{m+1} = \xi_{m+1} / c_{m+1}$. -/
+where the former has $\xi_{m+1}$ and the latter $\rho_{m+1} = \xi_{m+1} / c_{m+1}$.
+
+**Reading.** Lean explicitly assumes the prefix is reached and the FOM reduced matrix is
+nonsingular. The source uses these conditions in the triangular solves without listing them in the
+statement.
+-/
 theorem lemma_6_16 {m : ℕ} (hm : m + 1 ≤ grade A (v₁ A b x₀))
     (hH : FOMDefined A b x₀ (m + 1)) :
     gmresY A b x₀ (m + 1) - (Fin.snoc (gmresY A b x₀ m) (0 : ℝ) : Fin (m + 1) → ℝ)
@@ -3132,11 +3793,21 @@ local notation "𝔼" => EuclideanSpace ℝ (Fin n)
 /-- Algorithm 6.14 of [saad2003iterative], line 3: for the previous smoothed residual
 $s = r^S_{m-1}$ and the new residual $r = r^O_m$,
 $$\eta_m = -\frac{(r^S_{m-1}, r^O_m - r^S_{m-1})}{\|r^O_m - r^S_{m-1}\|_2^2},$$
-which is $0$ when $r^O_m = r^S_{m-1}$. The book's inner product $(x, y)$ is `inner ℝ y x`. -/
+which is $0$ when $r^O_m = r^S_{m-1}$. The book's inner product $(x, y)$ is `inner ℝ y x`.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 noncomputable def smoothEta (s r : 𝔼) : ℝ := -inner ℝ (r - s) s / ‖r - s‖ ^ 2
 
 /-- The coefficient $\eta_m$ of Algorithm 6.14 is the residual-minimizing smoothing coefficient
-`Krylov.smoothingCoeff` of the backbone. -/
+`Krylov.smoothingCoeff` of the backbone.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 theorem smoothEta_eq (s r : 𝔼) : smoothEta s r = Krylov.smoothingCoeff s r := by
   rw [smoothEta, Krylov.smoothingCoeff, inner_neg_right]
   simp [RCLike.ofReal_real_eq_id]
@@ -3150,7 +3821,12 @@ where $\eta_m$ is the coefficient of line 3 (`SaadSparse.Chapter06.smoothEta`) f
 and $r^O_m$.
 
 The two input sequences are independent arguments. If $r^O_m = b - Ax^O_m$ for all $m$, then
-$r^S_m = b - Ax^S_m$ (`SaadSparse.Chapter06.mrs_eq`). -/
+$r^S_m = b - Ax^S_m$ (`SaadSparse.Chapter06.mrs_eq`).
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 noncomputable def mrs (xO rO : ℕ → 𝔼) : ℕ → 𝔼 × 𝔼
   | 0 => (xO 0, rO 0)
   | m + 1 =>
@@ -3158,16 +3834,31 @@ noncomputable def mrs (xO rO : ℕ → 𝔼) : ℕ → 𝔼 × 𝔼
     let η := smoothEta p.2 (rO (m + 1))
     (p.1 + η • (xO (m + 1) - p.1), p.2 + η • (rO (m + 1) - p.2))
 
-/-- The smoothed approximations $x^S_m$ of Algorithm 6.14. -/
+/-- The smoothed approximations $x^S_m$ of Algorithm 6.14.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 noncomputable abbrev mrsX (xO rO : ℕ → 𝔼) (m : ℕ) : 𝔼 := (mrs xO rO m).1
 
-/-- The smoothed residuals $r^S_m$ of Algorithm 6.14. -/
+/-- The smoothed residuals $r^S_m$ of Algorithm 6.14.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 noncomputable abbrev mrsR (xO rO : ℕ → 𝔼) (m : ℕ) : 𝔼 := (mrs xO rO m).2
 
 /-- **Algorithm 6.14** of [saad2003iterative], line 3. The coefficient $\eta_{m+1}$ of step $m + 1$,
 computed from $r^S_m$ and $r^O_{m+1}$.
 
-The Lean value `mrsEta xO rO m` is the book's $\eta_{m+1}$. -/
+The Lean value `mrsEta xO rO m` is the book's $\eta_{m+1}$.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 noncomputable abbrev mrsEta (xO rO : ℕ → 𝔼) (m : ℕ) : ℝ :=
   smoothEta (mrsR xO rO m) (rO (m + 1))
 
@@ -3177,30 +3868,55 @@ theorem mrsX_zero (xO rO : ℕ → 𝔼) : mrsX xO rO 0 = xO 0 := rfl
 /-- $r^S_0 = r^O_0$. -/
 theorem mrsR_zero (xO rO : ℕ → 𝔼) : mrsR xO rO 0 = rO 0 := rfl
 
-/-- $x^S_{m+1} = x^S_m + \eta_{m+1} (x^O_{m+1} - x^S_m)$. -/
+/-- $x^S_{m+1} = x^S_m + \eta_{m+1} (x^O_{m+1} - x^S_m)$.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 theorem mrsX_succ (xO rO : ℕ → 𝔼) (m : ℕ) :
     mrsX xO rO (m + 1) = mrsX xO rO m + mrsEta xO rO m • (xO (m + 1) - mrsX xO rO m) := rfl
 
-/-- $r^S_{m+1} = r^S_m + \eta_{m+1} (r^O_{m+1} - r^S_m)$. -/
+/-- $r^S_{m+1} = r^S_m + \eta_{m+1} (r^O_{m+1} - r^S_m)$.
+
+**Reading.** The original approximations and residuals are independent inputs to the recurrence; the
+residual-consistency theorem separately ties them to a system. At equal residuals Lean uses zero for
+the undefined quotient, leaving the smoothed state fixed.
+-/
 theorem mrsR_succ (xO rO : ℕ → 𝔼) (m : ℕ) :
     mrsR xO rO (m + 1) = mrsR xO rO m + mrsEta xO rO m • (rO (m + 1) - mrsR xO rO m) := rfl
 
 /-- The scale factors of QMRS (Section 6.5.8): $\tau_0 = \rho_0$ and
 $$\frac{1}{\tau_m^2} = \frac{1}{\tau_{m-1}^2} + \frac{1}{\rho_m^2}, \qquad \rho_j =
   \|r^O_j\|_2,$$
-where $\tau_m \ge 0$ and $1/0 = 0$. -/
+where $\tau_m \ge 0$ and $1/0 = 0$.
+
+**Reading.** Lean extends the reciprocal and normalization formulas to zero denominators by
+totalized division. The source recurrences for the scale are interpreted with nonzero norms. The
+consistency between an input approximation and residual is separate.
+-/
 noncomputable def qmrsTau (rO : ℕ → 𝔼) : ℕ → ℝ
   | 0 => ‖rO 0‖
   | m + 1 => Real.sqrt (1 / (1 / qmrsTau rO m ^ 2 + 1 / ‖rO (m + 1)‖ ^ 2))
 
-/-- The coefficient of QMRS in step $m + 1$: $\eta_{m+1} = \tau_m^2 / (\tau_m^2 + \rho_{m+1}^2)$. -/
+/-- The coefficient of QMRS in step $m + 1$: $\eta_{m+1} = \tau_m^2 / (\tau_m^2 + \rho_{m+1}^2)$.
+
+**Reading.** Lean extends the reciprocal and normalization formulas to zero denominators by
+totalized division. The source recurrences for the scale are interpreted with nonzero norms. The
+consistency between an input approximation and residual is separate.
+-/
 noncomputable def qmrsEta (rO : ℕ → 𝔼) (m : ℕ) : ℝ :=
   qmrsTau rO m ^ 2 / (qmrsTau rO m ^ 2 + ‖rO (m + 1)‖ ^ 2)
 
 /-- **Section 6.5.8** of [saad2003iterative], **QMRS** (quasi-minimal residual smoothing). Algorithm
 6.14 with the coefficient $\eta_m$ replaced by $\tau_{m-1}^2 / (\tau_{m-1}^2 + \rho_m^2)$, where
 $\rho_m = \|r^O_m\|_2$ and $\tau_m$ are the scale factors of `SaadSparse.Chapter06.qmrsTau`. It
-starts from $(x^O_0, r^O_0)$. -/
+starts from $(x^O_0, r^O_0)$.
+
+**Reading.** Lean extends the reciprocal and normalization formulas to zero denominators by
+totalized division. The source recurrences for the scale are interpreted with nonzero norms. The
+consistency between an input approximation and residual is separate.
+-/
 noncomputable def qmrs (xO rO : ℕ → 𝔼) : ℕ → 𝔼 × 𝔼
   | 0 => (xO 0, rO 0)
   | m + 1 =>
@@ -3212,7 +3928,12 @@ theorem qmrs_zero (xO rO : ℕ → 𝔼) : qmrs xO rO 0 = (xO 0, rO 0) := rfl
 
 /-- Step $m + 1$ of QMRS: $x_{m+1} = x_m + \eta_{m+1} (x^O_{m+1} - x_m)$ and
 $r_{m+1} = r_m + \eta_{m+1} (r^O_{m+1} - r_m)$, with $\eta_{m+1} = \tau_m^2 / (\tau_m^2 +
-\rho_{m+1}^2)$. -/
+\rho_{m+1}^2)$.
+
+**Reading.** Lean extends the reciprocal and normalization formulas to zero denominators by
+totalized division. The source recurrences for the scale are interpreted with nonzero norms. The
+consistency between an input approximation and residual is separate.
+-/
 theorem qmrs_succ (xO rO : ℕ → 𝔼) (m : ℕ) :
     qmrs xO rO (m + 1) =
       ((qmrs xO rO m).1 + qmrsEta rO m • (xO (m + 1) - (qmrs xO rO m).1),
@@ -3260,7 +3981,12 @@ theorem inner_mrsR_eq_zero (xO rO : ℕ → 𝔼) (w : 𝔼) :
 $r^O_{m+1} \neq 0$ with $(r^O_{m+1}, r^S_m) = 0$. Then
 $$\frac{1}{\|r^S_{m+1}\|_2^2} = \frac{1}{\|r^S_m\|_2^2} + \frac{1}{\|r^O_{m+1}\|_2^2}.$$
 
-The proof specializes `Krylov.inv_sq_norm_smoothing`. -/
+The proof specializes `Krylov.inv_sq_norm_smoothing`.
+
+**Reading.** Lean states a one-step orthogonality condition. The reciprocal norm identity requires
+both residuals used in the step to be nonzero. The coefficient formula alone also holds for zero
+residuals under totalized division.
+-/
 theorem equation_6_76 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0) (h1 : rO (m + 1) ≠ 0)
     (horth : inner ℝ (rO (m + 1)) (mrsR xO rO m) = 0) :
     1 / ‖mrsR xO rO (m + 1)‖ ^ 2 = 1 / ‖mrsR xO rO m‖ ^ 2 + 1 / ‖rO (m + 1)‖ ^ 2 := by
@@ -3272,7 +3998,12 @@ theorem equation_6_76 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0)
 then
 $$\eta_{m+1} = \frac{\|r^S_m\|_2^2}{\|r^S_m\|_2^2 + \|r^O_{m+1}\|_2^2}.$$
 
-No vector needs to be nonzero: if $r^S_m = r^O_{m+1} = 0$, then both sides are $0$. -/
+No vector needs to be nonzero: if $r^S_m = r^O_{m+1} = 0$, then both sides are $0$.
+
+**Reading.** Lean states a one-step orthogonality condition. The reciprocal norm identity requires
+both residuals used in the step to be nonzero. The coefficient formula alone also holds for zero
+residuals under totalized division.
+-/
 theorem equation_6_77 (xO rO : ℕ → 𝔼) {m : ℕ}
     (horth : inner ℝ (rO (m + 1)) (mrsR xO rO m) = 0) :
     mrsEta xO rO m
@@ -3359,7 +4090,12 @@ theorem qmrsTau_pos (rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
     linarith
 
 /-- If $r^O_0, \dots, r^O_m$ are nonzero, then $1/\tau_m^2 = \sum_{j=0}^m 1/\rho_j^2$, the defining
-relation of QMRS. -/
+relation of QMRS.
+
+**Correction.** The summation index in the displayed recurrence is $i$, but the source prints
+$1/\rho_j^2$ in each summand. Lean uses $1/\rho_i^2$ for the successive original residual norms and
+requires them to be nonzero.
+-/
 theorem inv_qmrsTau_sq (rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0) :
     1 / qmrsTau rO m ^ 2 = ∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2 := by
   induction m with
@@ -3374,6 +4110,10 @@ theorem inv_qmrsTau_sq (rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠
       Finset.sum_range_succ, ← hk]
 
 /-- If $r^O_0, \dots, r^O_m$ are nonzero, then $\tau_m^2 = \big(\sum_{j=0}^m 1/\rho_j^2\big)^{-1}$.
+
+**Correction.** The summation index in the displayed recurrence is $i$, but the source prints
+$1/\rho_j^2$ in each summand. Lean uses $1/\rho_i^2$ for the successive original residual norms and
+requires them to be nonzero.
 -/
 theorem qmrsTau_sq (rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0) :
     qmrsTau rO m ^ 2 = (∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2)⁻¹ := by
@@ -3384,7 +4124,11 @@ the QMRS residual is the weighted average of the original residuals:
 $$r_m = \Big( \sum_{j=0}^m \frac{1}{\rho_j^2} \Big)^{-1} \sum_{j=0}^m \frac{1}{\rho_j^2} \,
   r^O_j, \qquad \rho_j = \|r^O_j\|_2.$$
 
-The sums run from $j = 0$; see `SaadSparse.Chapter06.equation_6_79`. -/
+The sums run from $j = 0$; see `SaadSparse.Chapter06.equation_6_79`.
+
+**Correction.** The weighted sum includes the initial residual at index zero. The source prints both
+sums starting at one. The Lean formulas assume nonzero original residuals.
+-/
 theorem qmrs_eq_6_79 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0) :
     (qmrs xO rO m).2 = (∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2)⁻¹ •
       ∑ j ∈ Finset.range (m + 1), (1 / ‖rO j‖ ^ 2) • rO j := by
@@ -3395,6 +4139,10 @@ theorem qmrs_eq_6_79 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j �
 $\rho = \|r^O_{m+1}\|_2$ the QMRS residual satisfies
 $$r_{m+1} = \frac{\rho^2}{\rho^2 + \tau_m^2} \, r_m + \frac{\tau_m^2}{\rho^2 + \tau_m^2} \,
   r^O_{m+1}.$$
+
+**Reading.** Lean makes the nonzero assumptions needed for the exact coefficient comparison
+explicit. The QMRS weighted update uses its scalar from the reciprocal-norm recursion, while
+agreement with MRS assumes the indicated orthogonality.
 -/
 theorem qmrs_eq_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : rO (m + 1) ≠ 0) :
     (qmrs xO rO (m + 1)).2
@@ -3417,7 +4165,12 @@ theorem qmrs_eq_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : rO (m + 1) ≠ 0) :
 /-! ### Algorithm 6.14 under the orthogonality hypothesis of Lemma 6.18 -/
 
 /-- Let $r^O_0, \dots, r^O_m$ be nonzero, and let $(r^O_{j+1}, r^S_j) = 0$ for every $j < m$. Then
-$1/\|r^S_m\|_2^2 = \sum_{j=0}^m 1/\rho_j^2$. -/
+$1/\|r^S_m\|_2^2 = \sum_{j=0}^m 1/\rho_j^2$.
+
+**Correction.** The summation index in the displayed recurrence is $i$, but the source prints
+$1/\rho_j^2$ in each summand. Lean uses $1/\rho_i^2$ for the successive original residual norms and
+requires them to be nonzero.
+-/
 theorem inv_sq_norm_mrsR (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
     (horth : ∀ j < m, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
     1 / ‖mrsR xO rO m‖ ^ 2 = ∑ j ∈ Finset.range (m + 1), 1 / ‖rO j‖ ^ 2 := by
@@ -3435,7 +4188,12 @@ theorem inv_sq_norm_mrsR (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO 
       Finset.sum_range_succ (fun j => 1 / ‖rO j‖ ^ 2) (k + 1)]
 
 /-- Let $r^O_0, \dots, r^O_m$ be nonzero, and let $(r^O_{j+1}, r^S_j) = 0$ for every $j < m$. Then
-$\|r^S_m\|_2 = \tau_m$: the smoothed residual norms are the QMRS scale factors. -/
+$\|r^S_m\|_2 = \tau_m$: the smoothed residual norms are the QMRS scale factors.
+
+**Reading.** Lean makes the nonzero assumptions needed for the exact coefficient comparison
+explicit. The QMRS weighted update uses its scalar from the reciprocal-norm recursion, while
+agreement with MRS assumes the indicated orthogonality.
+-/
 theorem norm_mrsR_eq_qmrsTau (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
     (horth : ∀ j < m, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
     ‖mrsR xO rO m‖ = qmrsTau rO m := by
@@ -3456,7 +4214,12 @@ theorem norm_mrsR_eq_qmrsTau (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m,
 
 /-- Section 6.5.8 of [saad2003iterative]. Let $r^O_0, \dots, r^O_m$ be nonzero, and let
 $(r^O_{j+1}, r^S_j) = 0$ for every $j < m$. Then Algorithm 6.14 and QMRS give the same pair at
-step $m$. -/
+step $m$.
+
+**Reading.** Lean makes the nonzero assumptions needed for the exact coefficient comparison
+explicit. The QMRS weighted update uses its scalar from the reciprocal-norm recursion, while
+agreement with MRS assumes the indicated orthogonality.
+-/
 theorem mrs_eq_qmrs (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m, rO j ≠ 0)
     (horth : ∀ j < m, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
     mrs xO rO m = qmrs xO rO m := by
@@ -3479,6 +4242,10 @@ $(r^O_{j+1}, r^S_j) = 0$ for every $j \le m$. Then with $\rho = \|r^O_{m+1}\|_2$
 $\tau_m = \|r^S_m\|_2$,
 $$r^S_{m+1} = \frac{\rho^2}{\rho^2 + \tau_m^2} \, r^S_m + \frac{\tau_m^2}{\rho^2 + \tau_m^2} \,
   r^O_{m+1}.$$
+
+**Reading.** Lean makes the nonzero assumptions needed for the exact coefficient comparison
+explicit. The QMRS weighted update uses its scalar from the reciprocal-norm recursion, while
+agreement with MRS assumes the indicated orthogonality.
 -/
 theorem equation_6_78 (xO rO : ℕ → 𝔼) {m : ℕ} (hr : ∀ j ≤ m + 1, rO j ≠ 0)
     (horth : ∀ j < m + 1, inner ℝ (rO (j + 1)) (mrsR xO rO j) = 0) :
@@ -3516,6 +4283,10 @@ $(r^O_{m+1}, r^S_m) = 0$. Then the smoothed residual norms satisfy (6.76) and th
 satisfies (6.77):
 $$\frac{1}{\|r^S_{m+1}\|_2^2} = \frac{1}{\|r^S_m\|_2^2} + \frac{1}{\|r^O_{m+1}\|_2^2}, \qquad
   \eta_{m+1} = \frac{\|r^S_m\|_2^2}{\|r^S_m\|_2^2 + \|r^O_{m+1}\|_2^2}.$$
+
+**Reading.** Lean states a one-step orthogonality condition. The reciprocal norm identity requires
+both residuals used in the step to be nonzero. The coefficient formula alone also holds for zero
+residuals under totalized division.
 -/
 theorem lemma_6_18 (xO rO : ℕ → 𝔼) {m : ℕ} (h0 : mrsR xO rO m ≠ 0)
     (h1 : rO (m + 1) ≠ 0)
@@ -3552,7 +4323,13 @@ book's statement that QMRS applied to IOM or DIOM gives, in exact arithmetic, th
 as QGMRES or DQGMRES. The hypothesis $\gamma_j \neq 0$ is the algorithm's own termination test;
 it gives $c_j \neq 0$ and $s_j \neq 0$ through (6.57) and (6.47), and so makes $\tau_m$ and the
 coefficients well defined. It is stated for $j \le m + 1$ and not for all $j$, which would be
-impossible in finite dimension. The hypothesis on $H_j$ says that IOM is defined at every step. -/
+impossible in finite dimension. The hypothesis on $H_j$ says that IOM is defined at every step.
+
+**Reading.** Lean proves the identity for fixed IOM and QGMRES on a common Hessenberg relation, with
+unit vectors, nonzero rotated residual components and nonsingular reduced systems. The source also
+names the direct variants. It prints the cosine ratio with $\rho_m^2$ in the denominator. The
+argument uses $\rho_m$ as in (6.57).
+-/
 theorem qmrs_iomOfBasis_eq_qgmres (hA : IsUnit A)
     (hu : Krylov.HessenbergRelation (op A) u h) (hr : b - op A x₀ = β • u 0)
     (hnorm : ∀ i, ‖u i‖ = 1) {m : ℕ} (hγ : ∀ j ≤ m, γ h β j ≠ 0)
@@ -3659,7 +4436,12 @@ theorem mrsX_sub_mem (xO rO : ℕ → 𝔼) {m : ℕ}
 /-- Section 6.5.8 of [saad2003iterative]. Let $r^O_j = b - Ax^O_j$ for all $j$, and let $x^O_i$ be
 the Galerkin iterate on $\mathcal{K}_i(A, r_0)$ for every $i \le m$. Then $x^S_m$ is the
 minimal-residual iterate on $\mathcal{K}_m(A, r_0)$. The book assumes $A$ nonsingular in all of
-Chapter 6; this statement does not need it. -/
+Chapter 6; this statement does not need it.
+
+**Reading.** The minimizing property works for any sequence of exact Galerkin iterates. The specific
+equality with computed GMRES assumes a nonsingular system, defined FOM iterates, a reached prefix
+and nonzero GMRES residual.
+-/
 theorem mrs_isMinResidualIterate (xO rO : ℕ → 𝔼)
     (hr : ∀ j, rO j = b - op A (xO j)) (m : ℕ)
     (hO : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (xO i)) :
@@ -3672,7 +4454,12 @@ $m \le \operatorname{grade}(v_1)$, let $H_i$ be nonsingular for every $i \le m$,
 $\rho^G_m \neq 0$. Then minimal residual smoothing of the FOM approximations gives the GMRES
 approximation: $x^S_m = x^G_m$. The FOM residuals are mutually orthogonal, so Lemma 6.18 applies
 at every step and the smoothed residual norms satisfy (6.66)–(6.67); GMRES minimizes over the
-same subspace, so the two sequences agree. -/
+same subspace, so the two sequences agree.
+
+**Reading.** The minimizing property works for any sequence of exact Galerkin iterates. The specific
+equality with computed GMRES assumes a nonsingular system, defined FOM iterates, a reached prefix
+and nonzero GMRES residual.
+-/
 theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
     (hr : ∀ j, rO j = b - op A (fomFixed A b x₀ j)) {m : ℕ} (hm : m ≤ grade A (v₁ A b x₀))
     (hH : ∀ i ≤ m, FOMDefined A b x₀ i) (h0 : ρG A b x₀ m ≠ 0) :
@@ -3727,7 +4514,11 @@ theorem mrs_fom_eq_gmres (hA : IsUnit A) (rO : ℕ → 𝔼)
 $j$, let $x^O_i$ be the Galerkin iterate on $\mathcal{K}_i(A, r_0)$ for every $i \le m$, and let
 $r^O_0, \dots, r^O_m$ be nonzero. Then $r^S_m = \big(\sum_{j=0}^m \rho_j^{-2}\big)^{-1}
 \sum_{j=0}^m \rho_j^{-2} r^O_j$. The book assumes $A$ nonsingular in all of Chapter 6; this
-statement does not need it. -/
+statement does not need it.
+
+**Correction.** The weighted sum includes the initial residual at index zero. The source prints both
+sums starting at one. The Lean formulas assume nonzero original residuals.
+-/
 theorem residual_mrs_eq (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
     {m : ℕ} (hO : ∀ i ≤ m, Krylov.IsGalerkinIterate (op A) b x₀ i (xO i))
     (h0 : ∀ j ≤ m, rO j ≠ 0) :
@@ -3746,7 +4537,13 @@ $$\big( A(x^O_{i+1} - x^S_i), \ A(x^O_{j+1} - x^S_j) \big) = 0.$$
 So the directions $x^O_{j+1} - x^S_j$ of Algorithm 6.14 are $A^T A$-orthogonal, which is the
 hypothesis of Lemma 6.21 (`SaadSparse.Chapter06.lemma_6_21`), the lemma behind GCR and ORTHOMIN.
 
-The book assumes $A$ nonsingular in all of Chapter 6; this statement does not need it. -/
+The book assumes $A$ nonsingular in all of Chapter 6; this statement does not need it.
+
+**Reading.** Lean obtains the requested orthogonality of the directions from the stronger hypothesis
+of Galerkin iterates on the Krylov sequence, rather than from pairwise orthogonality of arbitrary
+original residuals. Equality with GMRES is treated separately. The exercise's reference to Algorithm
+7.5 means Algorithm 6.14.
+-/
 theorem problem_6_26 (xO rO : ℕ → 𝔼) (hr : ∀ j, rO j = b - op A (xO j))
     (hO : ∀ m, Krylov.IsGalerkinIterate (op A) b x₀ m (xO m)) {i j : ℕ} (hij : i ≠ j) :
     inner ℝ (op A (xO (i + 1) - mrsX xO rO i)) (op A (xO (j + 1) - mrsX xO rO j)) = 0 := by

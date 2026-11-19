@@ -85,9 +85,18 @@ examples on $\ell^2$ use the backbone module `Numlib.Analysis.Normed.Lp.Sequence
 
 ## Deviations from the source
 
+* **Definition of eigenvalue** (generalization). The kernel criterion also applies to incomplete
+  spaces. See `Brezis.Chapter06.hasEigenvalue_iff_ker_ne_bot`.
+* **Remark 6** (reading). The right-shift result gives the witness $0$ for strict inclusion.
+  The empty-spectrum criterion applies to every real operator with $T^2=-I$. See
+  `Brezis.Chapter06.remark_6_6_rightShift` and
+  `Brezis.Chapter06.remark_6_6_spectrum_eq_empty_of_sq_eq_neg_one`.
 * **Theorem 6.8(b) and (c)** (generalization). The source assumes $\dim E = \infty$ for all of
   Theorem 6.8. Parts (b) and (c) are stated without this hypothesis. See
   `Brezis.Chapter06.theorem_6_8_b` and `Brezis.Chapter06.theorem_6_8_c`.
+* **Remark 7** (generalization). The spectrum calculation includes the eigenvalue of each
+  coordinate and an exact criterion for when $0$ is an eigenvalue. See
+  `Brezis.Chapter06.remark_6_7_spectrum`.
 
 ## Not formalized
 
@@ -128,7 +137,9 @@ theorem mem_spectrum_iff_not_bijective [CompleteSpace E] (T : E →L[ℝ] E) (μ
 space and $T \in \mathcal{L}(E)$. A real number $\lambda$ is an eigenvalue of $T$, written
 $\lambda \in EV(T)$, if and only if $N(T - \lambda I) \neq \{0\}$.
 
-The eigenspace $N(T - \lambda I)$ is Mathlib's `Module.End.eigenspace T λ`. -/
+The eigenspace $N(T - \lambda I)$ is Mathlib's `Module.End.eigenspace T λ`.
+
+**Generalization.** The equivalence holds in incomplete normed spaces. -/
 theorem hasEigenvalue_iff_ker_ne_bot (T : E →L[ℝ] E) (μ : ℝ) :
     HasEigenvalue (T : Module.End ℝ E) μ ↔ (T - μ • (1 : E →L[ℝ] E)).ker ≠ ⊥ := by
   have h : eigenspace (T : Module.End ℝ E) μ = (T - μ • (1 : E →L[ℝ] E)).ker := by
@@ -188,7 +199,10 @@ theorem norm_rightShift_apply (x : lp (fun _ : ℕ => ℝ) 2) : ‖rightShift x�
 on $\ell^2$, $0 \in \sigma(S_r)$ but $0 \notin EV(S_r)$. So the inclusion
 $EV(T) \subseteq \sigma(T)$ can be strict: here $N(S_r) = \{0\}$ and $R(S_r) \neq \ell^2$.
 
-Equivalently, as Remark 5 of the source says, $S_r$ is injective but not surjective. -/
+Equivalently, as Remark 5 of the source says, $S_r$ is injective but not surjective.
+
+**Reading.** The declaration gives the witness $0$. The source additionally calculates the
+entire spectrum and the entire set of eigenvalues in Exercise 6.18. -/
 theorem remark_6_6_rightShift :
     (0 : ℝ) ∈ spectrum ℝ rightShift ∧
       ¬ HasEigenvalue (rightShift : Module.End ℝ (lp (fun _ : ℕ => ℝ) 2)) 0 := by
@@ -209,9 +223,9 @@ theorem remark_6_6_rightShift :
 /-- **Remark 6** in Chapter 6 of [brezis2011functional], empty spectrum. Let $E$ be a Banach space
 and let $T \in \mathcal{L}(E)$ satisfy $T^2 = -I$. Then $\sigma(T) = \emptyset$.
 
-The source says that "it may happen that $EV(T) = \sigma(T) = \emptyset$". This statement is the
-fact behind both of its examples: $(T - \lambda I)(T + \lambda I) = -(1 + \lambda^2) I$ is
-invertible for every real $\lambda$. See also Exercise 6.16 of the source. -/
+**Generalization.** The source gives a planar rotation and a block rotation on $\ell^2$. The
+criterion covers both examples because $(T - \lambda I)(T + \lambda I) = -(1 + \lambda^2) I$
+is invertible for every real $\lambda$. -/
 theorem remark_6_6_spectrum_eq_empty_of_sq_eq_neg_one [CompleteSpace E] {T : E →L[ℝ] E}
     (hT : T * T = -1) : spectrum ℝ T = ∅ := by
   rw [Set.eq_empty_iff_forall_notMem]
@@ -415,9 +429,9 @@ $$\sigma(T) = \{\alpha_n : n \in \mathbb{N}\} \cup \{0\},$$
 every $\alpha_n$ is an eigenvalue of $T$, and $0$ is an eigenvalue of $T$ if and only if
 $\alpha_n = 0$ for some $n$.
 
-So $0$ may or may not belong to $EV(T)$. The eigenvector for $\alpha_n$ is the unit vector
-$e_n$. The further claim of the source that $N(T)$ may be finite or infinite dimensional is not
-stated. -/
+**Generalization.** The source notes that $0$ can occur or fail to occur as an eigenvalue. The
+library gives an exact criterion for this and records the eigenvalue $\alpha_n$ of each coordinate
+vector $e_n$. -/
 theorem remark_6_7_spectrum {α : ℕ → ℝ} (hα : Tendsto α atTop (𝓝 0)) {C : ℝ}
     (hC : ∀ n, |α n| ≤ C) :
     spectrum ℝ (multiplicationOperator α hC) = Set.range α ∪ {0} ∧

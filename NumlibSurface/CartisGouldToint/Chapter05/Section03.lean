@@ -93,16 +93,33 @@ $\alpha = \tau - 1 = (\nu - \mu)/\mu$. The classes are those of
 
 ## Deviations from the source
 
-* **Domination** (generalization). Domination is assumed only at the iterates, as the book remarks
-  after Lemma 5.3.1. See `CartisGouldToint.Chapter05.IsDominated.range`.
-* **Theorems 5.3.3–5.3.5** (generalization). The book assumes $\Gamma_0 > 0$; the theorems hold
-  without it. See `CartisGouldToint.Chapter05.theorem_5_3_3`.
+* **Domination** (generalization). The global predicate uses the infimum and leaves the
+  restrictions on $\mu$, $\kappa_\psi$ and $\psi$ to theorems. The run settings need domination
+  only at the iterates and permit any reference lower bound there, as motivated after
+  Lemma 5.3.1. See `CartisGouldToint.Chapter05.IsDominated` and
+  `CartisGouldToint.Chapter05.ARSetting`.
+* **Run classes** (generalization). The predicates leave sign and exponent restrictions to their
+  callers. A TR run may continue after a zero measure, since (5.3.28) then asks only for
+  nonnegative decrease. See `CartisGouldToint.Chapter05.IsTRpsiNuRun`.
+* **Lemmas 5.3.1 and 5.3.6, Theorems 5.3.5, 5.3.9 and 5.3.11** (correction). The
+  $\nu>\mu$ estimates give polynomial upper bounds. The conditions permit faster convergence,
+  so the successive-error ratio need not tend to $1$ as in the definition in §A.3.
+  See `CartisGouldToint.Chapter05.lemma_5_3_1` and `CartisGouldToint.Chapter05.lemma_5_3_6`.
+* **Theorems 5.3.2–5.3.5 and 5.3.7–5.3.12** (reading). The abstract bounds count iterations
+  and successful iterations. Objective and derivative evaluation counts require a concrete
+  algorithm with the corresponding evaluation schedule.
+* **Theorems 5.3.3–5.3.5** (generalization). The appendix's formulas use $\Gamma_0 > 0$.
+  Lean also handles $\Gamma_0 = 0$. See `CartisGouldToint.Chapter05.theorem_5_3_3`.
+* **Theorems 5.3.7–5.3.9** (specialization). The Lean statements explicitly require
+  $\Gamma_0 > 0$, the nondegenerate case treated by Lemma 5.3.6 and used in their formulas.
 * **Theorem 5.3.3** (reading). The bounds of the form $\log|\log\epsilon|$ are stated with
   $\log\max(1, |\log\epsilon|)$; the book's footnote to Theorem 5.3.10 assumes
   $|\log\epsilon| \ge 1$. See `CartisGouldToint.Chapter05.theorem_5_3_3`.
 * **Theorem 5.3.3, constant $\kappa^F$** (typo). The constant of Appendix B is corrected to
   `Optimization.superlinearCountConst`, because the second phase must reach
   $\omega \le c^{1/\alpha}\epsilon$. See `CartisGouldToint.Chapter05.theorem_5_3_3`.
+* **Theorem 5.3.4, convergence factor** (typo). Appendix B omits the reciprocal
+  on $1+\kappa_\nu/\kappa_\psi$. See `CartisGouldToint.Chapter05.theorem_5_3_4`.
 * **Theorem 5.3.5, constant $\kappa^E$** (typo). It uses $\min(1, \alpha)$ in place of $\alpha$,
   because (B.5.12) holds only for $\alpha \le 1$, and $\Gamma_0^{-\alpha}$ in place of the printed
   $\kappa_\psi^{\nu/\mu}/\kappa_\nu$. The halving argument gives $2M + 2$ successful iterations. See
@@ -111,6 +128,9 @@ $\alpha = \tau - 1 = (\nu - \mu)/\mu$. The classes are those of
   \mu)\kappa_\nu)$, where the book prints the exponent $\mu/\nu$, and
   $\kappa^F = -\kappa^E\Gamma_0^{-\alpha}$, where the book prints $\kappa^B$. See
   `CartisGouldToint.Chapter05.theorem_5_3_9`.
+* **Theorem 5.3.9, optimality measure** (correction). Equation (5.3.28) controls the
+  running minimum of the measures. The individual measures at successful iterates need
+  not converge, and the Lean theorem gives complexity for finding one small measure.
 * **Measure versions of Theorems 5.3.3–5.3.5 and 5.3.7–5.3.9** (reading). Since the gap counts are
   real numbers, reaching an iteration with a small measure takes up to two successful iterations
   more than the gap count, where the book adds one. See
@@ -155,14 +175,18 @@ $\mu, \kappa_\psi \in \mathbb{R}$, and let $f_* = \inf_x f(x)$. The function $f$
 $x \in \mathbb{R}^n$, $f_* \le f(x)$ and
 $$f(x) - f_* \le \kappa_\psi \psi(x)^\mu.$$
 
-The book also requires $\mu \ge 1$ and $\kappa_\psi > 0$; these are hypotheses of the results.
-The definition is `Optimization.IsMeasureDominated` on the whole space with $f_*$ = `⨅ x, f x`.
-If $f$ is not bounded below, this infimum is $0$ by Lean's convention. -/
+**Generalization.** The source uses a global minimum and assumes a nonnegative measure,
+$\mu \ge 1$ and $\kappa_\psi > 0$. The predicate uses `Optimization.IsMeasureDominated`
+on the whole space with the infimum `⨅ x, f x` and leaves the measure and parameter
+restrictions to the results. Its lower-bound conjunct excludes objectives unbounded below. -/
 def IsDominated (f ψ : ℝⁿ → ℝ) (μ κψ : ℝ) : Prop :=
   IsMeasureDominated f ψ (⨅ x, f x) μ κψ univ
 
 /-- The function $f$ is $\psi$-dominated of level $\mu$ with constant $\kappa_\psi$ if and only if
-$\inf f \le f(x)$ and $f(x) - \inf f \le \kappa_\psi \psi(x)^\mu$ for all $x$. -/
+$\inf f \le f(x)$ and $f(x) - \inf f \le \kappa_\psi \psi(x)^\mu$ for all $x$.
+
+**Generalization.** Expands the generalized global inequality with its infimum lower bound.
+-/
 theorem isDominated_iff {f ψ : ℝⁿ → ℝ} {μ κψ : ℝ} :
     IsDominated f ψ μ κψ ↔ ∀ x, (⨅ y, f y) ≤ f x ∧ f x - ⨅ y, f y ≤ κψ * ψ x ^ μ :=
   isMeasureDominated_univ_iff
@@ -182,9 +206,15 @@ every unsuccessful iteration keeps the iterate, $x_{k+1} = x_k$, and the success
 are dense: $k \le \kappa_R |\mathcal{S}_k| + \kappa_A$ for every $k$ (5.3.9), where
 $\mathcal{S}_k$ is the set of successful iterations $j \le k$.
 
-The definition is `Optimization.IsARLikeRun`. Runs of ARp without termination are members
+The definition is `Optimization.IsARLikeRun`. The sign and exponent conditions of §5.3.2
+are separate hypotheses. The density condition implies infinitely many successes.
+Runs of ARp without termination are members
 (`Optimization.isARLikeRun_of_isARpRun`, (5.3.6)–(5.3.7)), and
-`Optimization.exists_isARpRun_softplus` is a complete example. -/
+`Optimization.exists_isARpRun_softplus` is a complete example.
+
+**Reading.** Matches the structural rules and inclusive success count; sign and exponent
+restrictions are separate hypotheses.
+-/
 def IsARpsiNuRun (f ψ : ℝⁿ → ℝ) (κν ν κR κA : ℝ) (x : ℕ → ℝⁿ) (S : ℕ → Prop) : Prop :=
   IsARLikeRun f ψ κν ν κR κA x S
 
@@ -196,18 +226,31 @@ $$f(x_k) - f(x_{k+1}) \ge \kappa_\nu \left(\min_{i \le k} \psi(x_i)\right)^\nu, 
 every unsuccessful iteration keeps the iterate, and the successful iterations are dense (5.3.9),
 as in the class $\mathrm{AR}_{\psi,\nu}$.
 
-The definition is `Optimization.IsTRLikeRun`. A member is `Optimization.isTRLikeRun_halving`. -/
+The definition is `Optimization.IsTRLikeRun`. The sign and exponent conditions of §5.3.3
+are separate hypotheses. The source stops at a zero measure. The Lean run can continue
+because (5.3.28) then requires only nonnegative decrease. A member is
+`Optimization.isTRLikeRun_halving`.
+
+**Reading.** Matches the running-minimum decrease and density; no automatic exit on a zero measure
+and parameter domains are separate.
+-/
 def IsTRpsiNuRun (f ψ : ℝⁿ → ℝ) (κν ν κR κA : ℝ) (x : ℕ → ℝⁿ) (S : ℕ → Prop) : Prop :=
   IsTRLikeRun f ψ κν ν κR κA x S
 
 /-- A run is in the class $\mathrm{AR}_{\psi,\nu}$ if and only if it satisfies
-`Optimization.IsARLikeRun`. -/
+`Optimization.IsARLikeRun`.
+
+**Generalization.** Unfolds the generalized AR run class.
+-/
 theorem isARpsiNuRun_iff {f ψ : ℝⁿ → ℝ} {κν ν κR κA : ℝ} {x : ℕ → ℝⁿ} {S : ℕ → Prop} :
     IsARpsiNuRun f ψ κν ν κR κA x S ↔ IsARLikeRun f ψ κν ν κR κA x S :=
   Iff.rfl
 
 /-- A run is in the class $\mathrm{TR}_{\psi,\nu}$ if and only if it satisfies
-`Optimization.IsTRLikeRun`. -/
+`Optimization.IsTRLikeRun`.
+
+**Generalization.** Unfolds the generalized TR run class.
+-/
 theorem isTRpsiNuRun_iff {f ψ : ℝⁿ → ℝ} {κν ν κR κA : ℝ} {x : ℕ → ℝⁿ} {S : ℕ → Prop} :
     IsTRpsiNuRun f ψ κν ν κR κA x S ↔ IsTRLikeRun f ψ κν ν κR κA x S :=
   Iff.rfl
@@ -216,7 +259,11 @@ theorem isTRpsiNuRun_iff {f ψ : ℝⁿ → ℝ} {κν ν κR κA : ℝ} {x : �
 $\psi$ is nonnegative, $f$ is $\psi$-dominated of level $\mu \ge 1$ with constant
 $\kappa_\psi > 0$ and reference value $f_*$ at the iterates, and $x$ is a run in
 $\mathrm{AR}_{\psi,\nu}$ with the success predicate $S$ and constants $\kappa_\nu > 0$,
-$\nu \ge 1$, $\kappa_R \ge 1$ and $\kappa_A \ge 0$. -/
+$\nu \ge 1$, $\kappa_R \ge 1$ and $\kappa_A \ge 0$.
+
+**Reading.** Uses domination on the iterates with a reference lower bound that need not be attained
+or global.
+-/
 structure ARSetting (f ψ : ℝⁿ → ℝ) (fstar μ κψ κν ν κR κA : ℝ) (x : ℕ → ℝⁿ) (S : ℕ → Prop) :
     Prop where
   /-- The measure $\psi$ is nonnegative. -/
@@ -239,7 +286,11 @@ structure ARSetting (f ψ : ℝⁿ → ℝ) (fstar μ κψ κν ν κR κA : ℝ
   kappaA_nonneg : 0 ≤ κA
 
 /-- The standing hypotheses of Section 5.3.3 of [cartis2022evaluation]: the same as those of Section
-5.3.2 (`CartisGouldToint.Chapter05.ARSetting`), for a run in $\mathrm{TR}_{\psi,\nu}$. -/
+5.3.2 (`CartisGouldToint.Chapter05.ARSetting`), for a run in $\mathrm{TR}_{\psi,\nu}$.
+
+**Generalization.** Applies local-to-the-run domination and arbitrary reference lower bound to the
+generalized TR run.
+-/
 structure TRSetting (f ψ : ℝⁿ → ℝ) (fstar μ κψ κν ν κR κA : ℝ) (x : ℕ → ℝⁿ) (S : ℕ → Prop) :
     Prop where
   /-- The measure $\psi$ is nonnegative. -/
@@ -266,7 +317,11 @@ structure TRSetting (f ψ : ℝⁿ → ℝ) (fstar μ κψ κν ν κR κA : ℝ
 reference value $f_* = \inf f$: if $\psi \ge 0$, $\mu \ge 1$, $\kappa_\psi > 0$, $f$ is
 $\psi$-dominated of level $\mu$ with constant $\kappa_\psi$, and $x$ is a run in
 $\mathrm{AR}_{\psi,\nu}$ with $\kappa_\nu > 0$, $\nu \ge 1$, $\kappa_R \ge 1$ and
-$\kappa_A \ge 0$. -/
+$\kappa_A \ge 0$.
+
+**Reading.** Packages global domination using the infimum and explicit positivity rather than an
+attained minimum.
+-/
 theorem ARSetting.of_isDominated {f ψ : ℝⁿ → ℝ} {μ κψ κν ν κR κA : ℝ} {x : ℕ → ℝⁿ}
     {S : ℕ → Prop} (hψ : ∀ y, 0 ≤ ψ y) (hμ : 1 ≤ μ) (hκψ : 0 < κψ) (hdom : IsDominated f ψ μ κψ)
     (hrun : IsARpsiNuRun f ψ κν ν κR κA x S) (hκν : 0 < κν) (hν : 1 ≤ ν) (hκR : 1 ≤ κR)
@@ -275,7 +330,10 @@ theorem ARSetting.of_isDominated {f ψ : ℝⁿ → ℝ} {μ κψ κν ν κR κ
 
 /-- The standing hypotheses of Section 5.3.3 follow from the global domination (5.3.1), with the
 reference value $f_* = \inf f$, for a run in $\mathrm{TR}_{\psi,\nu}$ with the same conditions
-on the constants as in `CartisGouldToint.Chapter05.ARSetting.of_isDominated`. -/
+on the constants as in `CartisGouldToint.Chapter05.ARSetting.of_isDominated`.
+
+**Generalization.** Packages global domination using the infimum and the generalized TR run.
+-/
 theorem TRSetting.of_isDominated {f ψ : ℝⁿ → ℝ} {μ κψ κν ν κR κA : ℝ} {x : ℕ → ℝⁿ}
     {S : ℕ → Prop} (hψ : ∀ y, 0 ≤ ψ y) (hμ : 1 ≤ μ) (hκψ : 0 < κψ) (hdom : IsDominated f ψ μ κψ)
     (hrun : IsTRpsiNuRun f ψ κν ν κR κA x S) (hκν : 0 < κν) (hν : 1 ≤ ν) (hκR : 1 ≤ κR)
@@ -304,7 +362,11 @@ theorem c_pos : 0 < κν / κψ ^ (ν / μ) :=
 $\Gamma_k = f(x_k) - f_*$ satisfy the implicit recurrence with
 $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$ and $\tau = \nu/\mu$: $\Gamma_k \ge 0$,
 $\Gamma_{k+1} = \Gamma_k$ at the unsuccessful iterations, and $\Gamma_k - \Gamma_{k+1} \ge
-c\,\Gamma_{k+1}^\tau$ at the successful ones. -/
+c\,\Gamma_{k+1}^\tau$ at the successful ones.
+
+**Generalization.** Packages the same recurrence, including the generalized reference value and
+domination at iterates.
+-/
 theorem gap :
     IsImplicitGapDecrease (fun k => f (x k) - fstar) S (κν / κψ ^ (ν / μ)) (ν / μ) :=
   isImplicitGapDecrease_of_isARLikeRun h.run h.psi_nonneg h.kappaPsi_pos h.mu_pos
@@ -335,7 +397,11 @@ theorem measure_le {k : ℕ} (hk : S k) {ε : ℝ} (hε : 0 ≤ ε)
 $\epsilon \ge 0$ and $N \in \mathbb{R}$, and suppose that
 $\Gamma_{k+1} \le \kappa_\nu \epsilon^\nu$ whenever $N \le |\mathcal{S}_k|$. Then some
 successful iteration $k$ has $\psi(x_{k+1}) \le \epsilon$, $|\mathcal{S}_k| \le \max(N, 0) + 2$
-and $k \le \kappa_R(\max(N, 0) + 2) + \kappa_A$. -/
+and $k \le \kappa_R(\max(N, 0) + 2) + \kappa_A$.
+
+**Reading.** Converts a real gap count into a measure count with allowance for rounding and one
+following success.
+-/
 theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
     (hcount : ∀ k, N ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
     ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧ ((successSet S k).card : ℝ) ≤ max N 0 + 2 ∧
@@ -356,7 +422,11 @@ theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
 $\epsilon \ge 0$ and $n \in \mathbb{N}$, and suppose that
 $\Gamma_{k+1} \le \kappa_\nu \epsilon^\nu$ whenever $n \le |\mathcal{S}_k|$. Then some
 successful iteration $k$ has $\psi(x_{k+1}) \le \epsilon$, $|\mathcal{S}_k| \le \max(n, 1) + 1$
-and $k \le \kappa_R(\max(n, 1) + 1) + \kappa_A$. -/
+and $k \le \kappa_R(\max(n, 1) + 1) + \kappa_A$.
+
+**Reading.** Converts the same gap-to-measure argument to an explicit integer threshold with a floor
+at one.
+-/
 theorem exists_measure_le_nat {ε : ℝ} {n : ℕ} (hε : 0 ≤ ε)
     (hcount : ∀ k, n ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
     ∃ k, S k ∧ ψ (x (k + 1)) ≤ ε ∧ (successSet S k).card ≤ max n 1 + 1 ∧
@@ -417,9 +487,14 @@ and $\Gamma_k \to 0$. Moreover:
   $k \ge K$;
 * (ii) if $\nu = \mu$, they converge linearly: $\Gamma_{k+1} \le (1 +
   \kappa_\nu/\kappa_\psi)^{-1}\Gamma_k$ for every successful $k$;
-* (iii) if $\nu > \mu$ and $\Gamma_0 > 0$, they converge sublinearly: $\Gamma_{k+1} \le
+* (iii) if $\nu > \mu$ and $\Gamma_0 > 0$, they satisfy the polynomial bound $\Gamma_{k+1} \le
   (\Gamma_0^{-\alpha} + c\,\kappa_{\rm dom}|\mathcal{S}_k|)^{-1/\alpha}$ for every $k$, with
   $\alpha = (\nu - \mu)/\mu$.
+
+**Correction.** The source describes (iii) as sublinear convergence. Its ratio definition
+in §A.3 requires $\Gamma_{k+1}/\Gamma_k \to 1$ along successive successes.
+For $\mu=1$ and $\nu=2$, both (5.3.1) and (5.3.5) permit
+$\Gamma_k=\psi(x_k)=2^{-k}$ with $\kappa_\psi=\kappa_\nu=1$ and every iteration successful.
 
 The constant $\kappa_{\rm dom} = \min(\Gamma_0^{-\alpha}c^{-1}(2^\alpha - 1), \min(1,
 \alpha)/2)$ is `Optimization.IsImplicitGapDecrease.kappaDom`. -/
@@ -455,7 +530,12 @@ where $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$. Then $\Gamma_{k+1} \le \epsilon$ f
 with $N \le |\mathcal{S}_k|$ (5.3.14), and for every $k \ge \kappa_R N + \kappa_A$ (5.3.15).
 
 The index $N$ is the value of `Optimization.implicitGapHitIndex` at
-$(c, \nu/\mu, \Gamma_0, \epsilon)$. -/
+$(c, \nu/\mu, \Gamma_0, \epsilon)$. The Lean statement counts iterations and
+successful iterations. The corresponding number of evaluations depends on the algorithm.
+
+**Reading.** Same implicit threshold at the stated c and tau, including zero initial gap; counts
+iterations rather than evaluations.
+-/
 theorem theorem_5_3_2 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) {ε : ℝ} (hε : 0 < ε) :
     (∀ k, implicitGapHitIndex (κν / κψ ^ (ν / μ)) (ν / μ) (f (x 0) - fstar) ε ≤
         (successSet S k).card → f (x (k + 1)) - fstar ≤ ε) ∧
@@ -487,8 +567,8 @@ must reach $\omega \le c^{1/\alpha}\epsilon$, which gives `Optimization.superlin
 **Reading.** The book's bounds $\log|\log\epsilon|$ are stated with
 $\log\max(1, |\log\epsilon|)$.
 
-**Generalization.** The book assumes $\Gamma_0 > 0$. When $\Gamma_0 = 0$, every gap vanishes,
-and the first successful iteration satisfies the measure bound. -/
+**Generalization.** The appendix's constants use $\Gamma_0 > 0$. When $\Gamma_0 = 0$, every gap
+vanishes, and the first successful iteration satisfies the measure bound. -/
 theorem theorem_5_3_3 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν < μ) :
     (∀ η, 0 < η → ∃ K, ∀ k ≥ K, S k → f (x (k + 1)) - fstar ≤ η * (f (x k) - fstar)) ∧
     (∀ ε, 0 < ε → ∀ k, 1 / (Real.log μ - Real.log ν) * Real.log (max 1 |Real.log ε|) +
@@ -581,9 +661,12 @@ $\kappa^F = \log\Gamma_0/\log(1 + \kappa_\nu/\kappa_\psi) + 1$. Then:
   \max(\nu\kappa^E|\log\epsilon| + \kappa^E|\log\kappa_\nu| + \kappa^F, 1) + 1$
   ((5.3.22)–(5.3.23)).
 
-**Generalization.** The book assumes $\Gamma_0 > 0$. When $\Gamma_0 = 0$, every gap vanishes,
+**Generalization.** The appendix takes $\log\Gamma_0$. When $\Gamma_0 = 0$, every gap vanishes,
 the bounds hold with the convention $\log 0 = 0$, and the first successful iteration satisfies
-the measure bound. -/
+the measure bound.
+
+**Typo.** The proof in Appendix B prints $1+\kappa_\nu/\kappa_\psi$ as the convergence
+factor. The reciprocal in the main statement is the factor used here. -/
 theorem theorem_5_3_4 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : ν = μ) :
     (∀ k, S k → f (x (k + 1)) - fstar ≤ (1 + κν / κψ)⁻¹ * (f (x k) - fstar)) ∧
     (∀ ε, 0 < ε → ∀ k, 1 / Real.log (1 + κν / κψ) * |Real.log ε| +
@@ -684,7 +767,7 @@ $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$ and
 $$D = \min\left(\Gamma_0^{-\alpha}(2^\alpha - 1), \ \min(1, \alpha)\,c/2\right),$$
 and let $\kappa^E = 1/D$ and $\kappa^F = -\kappa^E\Gamma_0^{-\alpha}$. Then:
 
-* the gaps converge sublinearly: $\Gamma_{k+1} \le (\Gamma_0^{-\alpha} +
+* the gaps satisfy $\Gamma_{k+1} \le (\Gamma_0^{-\alpha} +
   D|\mathcal{S}_k|)^{-1/\alpha}$ for every $k$;
 * for every $\epsilon > 0$, $\Gamma_{k+1} \le \epsilon$ for every $k$ with $|\mathcal{S}_k| \ge
   \kappa^E\epsilon^{-\alpha} + \kappa^F$ (5.3.25);
@@ -702,9 +785,12 @@ $\alpha$, because (B.5.12) holds only for $\alpha \le 1$, and $\Gamma_0^{-\alpha
 the printed $\kappa_\psi^{\nu/\mu}/\kappa_\nu$. The corrected halving argument gives $2M + 2$
 successful iterations.
 
-**Generalization.** The book assumes $\Gamma_0 > 0$. When $\Gamma_0 = 0$, every gap vanishes,
-the bounds hold with the convention $0^{-\alpha} = 0$ (so $D = 0$), and the first successful
-iteration satisfies the measure bound. -/
+**Correction.** The rate bound and the stated convergence of the measures allow faster
+convergence than the source's sublinear rate, as in `CartisGouldToint.Chapter05.lemma_5_3_1`.
+
+**Generalization.** The appendix's constants use $\Gamma_0 > 0$. When $\Gamma_0 = 0$, every gap
+vanishes, the bounds hold with the convention $0^{-\alpha} = 0$ (so $D = 0$), and the first
+successful iteration satisfies the measure bound. -/
 theorem theorem_5_3_5 (h : ARSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : μ < ν) :
     (∀ k, f (x (k + 1)) - fstar ≤ ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) +
       min ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) * (2 ^ ((ν - μ) / μ) - 1))
@@ -878,7 +964,10 @@ theorem c_pos : 0 < κν / κψ ^ (ν / μ) :=
 $\Gamma_k = f(x_k) - f_*$ satisfy the explicit recurrence with
 $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$ and $\tau = \nu/\mu$: $\Gamma_k \ge 0$,
 $\Gamma_{k+1} = \Gamma_k$ at the unsuccessful iterations, and
-$\Gamma_k - \Gamma_{k+1} \ge c\,\Gamma_k^\tau$ at the successful ones. -/
+$\Gamma_k - \Gamma_{k+1} \ge c\,\Gamma_k^\tau$ at the successful ones.
+
+**Generalization.** Packages the same explicit recurrence under generalized run-local domination.
+-/
 theorem gap :
     IsExplicitGapDecrease (fun k => f (x k) - fstar) S (κν / κψ ^ (ν / μ)) (ν / μ) :=
   isExplicitGapDecrease_of_isTRLikeRun h.run h.psi_nonneg h.kappaPsi_pos h.mu_pos
@@ -898,7 +987,11 @@ theorem le_card {N : ℝ} {k : ℕ} (hk : κR * N + κA ≤ k) : N ≤ (successS
 let $\epsilon \ge 0$ and $N \in \mathbb{R}$, and suppose that
 $\Gamma_{k+1} \le \kappa_\nu \epsilon^\nu$ whenever $N \le |\mathcal{S}_k|$. Then there are
 $i \le k$ with $k$ successful, $\psi(x_i) \le \epsilon$, $|\mathcal{S}_k| \le \max(N, 0) + 2$
-and $k \le \kappa_R(\max(N, 0) + 2) + \kappa_A$. -/
+and $k \le \kappa_R(\max(N, 0) + 2) + \kappa_A$.
+
+**Reading.** Uses a past iterate attaining the minimum measure and includes the rounding allowance
+for a real gap threshold.
+-/
 theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
     (hcount : ∀ k, N ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
     ∃ i k, i ≤ k ∧ S k ∧ ψ (x i) ≤ ε ∧ ((successSet S k).card : ℝ) ≤ max N 0 + 2 ∧
@@ -923,7 +1016,11 @@ theorem exists_measure_le {ε N : ℝ} (hε : 0 ≤ ε)
 5.3.3, let $\epsilon \ge 0$ and $n \in \mathbb{N}$, and suppose that
 $\Gamma_{k+1} \le \kappa_\nu \epsilon^\nu$ whenever $n \le |\mathcal{S}_k|$. Then there are
 $i \le k$ with $k$ successful, $\psi(x_i) \le \epsilon$, $|\mathcal{S}_k| \le \max(n, 1) + 1$
-and $k \le \kappa_R(\max(n, 1) + 1) + \kappa_A$. -/
+and $k \le \kappa_R(\max(n, 1) + 1) + \kappa_A$.
+
+**Reading.** Uses a past iterate attaining the minimum measure, with a natural-number threshold and
+one further success.
+-/
 theorem exists_measure_le_nat {ε : ℝ} {n : ℕ} (hε : 0 ≤ ε)
     (hcount : ∀ k, n ≤ (successSet S k).card → f (x (k + 1)) - fstar ≤ κν * ε ^ ν) :
     ∃ i k, i ≤ k ∧ S k ∧ ψ (x i) ≤ ε ∧ (successSet S k).card ≤ max n 1 + 1 ∧
@@ -969,6 +1066,11 @@ Moreover:
   $\Gamma_0 = \Gamma_\square$, the gap vanishes after every successful iteration;
   $\Gamma_k \to 0$; and $\Gamma_{k+1} \le (\Gamma_0^{-\alpha} + \alpha
   c|\mathcal{S}_k|)^{-1/\alpha}$ for every $k$.
+
+**Correction.** Part (iii) gives a polynomial upper bound. The decrease condition
+also permits faster convergence. For instance, with $\mu=1$, $\nu=2$ and every
+iteration successful, $\Gamma_k=\psi(x_k)=2^{-k}$ satisfies (5.3.1) and (5.3.28)
+with $\kappa_\psi=1$ and $\kappa_\nu=1/2$.
 
 **Typo.** In (ii) the book writes "a final value $\Gamma_{k_\square} \ge 1$". This means
 $\Gamma_{k_\square} \ge \Gamma_\square$, that is, $\omega \ge 1$ for the scaled gap
@@ -1210,7 +1312,7 @@ of Section 5.3.3, $\nu > \mu$ and $\Gamma_0 > 0$, and let $\alpha = (\nu - \mu)/
 $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$. Let $\kappa^E = \mu\kappa_\psi^{\nu/\mu}/((\nu -
 \mu)\kappa_\nu) = 1/(\alpha c)$ and $\kappa^F = -\kappa^E\Gamma_0^{-\alpha}$. Then:
 
-* the gaps converge sublinearly, as in Lemma 5.3.6 (iii): $\Gamma_{k+1} \le
+* the gaps have the polynomial upper bound from Lemma 5.3.6 (iii): $\Gamma_{k+1} \le
   (\Gamma_0^{-\alpha} + \alpha c|\mathcal{S}_k|)^{-1/\alpha}$ for every $k$;
 * for every $\epsilon > 0$, $\Gamma_{k+1} \le \epsilon$ for every $k$ with $|\mathcal{S}_k| \ge
   \kappa^E\epsilon^{-\alpha} + \kappa^F$ (5.3.43);
@@ -1225,7 +1327,12 @@ $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$. Let $\kappa^E = \mu\kappa_\psi^{\nu/\mu}
 $\kappa^F$.
 
 **Correction.** The book writes the measure bound for $x_k$; here the iterate is $x_i$ with
-$i \le j$. -/
+$i \le j$. The source also asserts sublinear convergence of the individual measures at
+successful iterates. The decrease controls only their running minimum, which can tend
+to zero while individual measures fail to converge. For example, take every iteration
+successful, $\Gamma_k=2^{-k}$, $\psi(x_k)=2^{-k}$ at even $k$ and $\psi(x_k)=1$ at odd $k$.
+These values satisfy (5.3.1) and (5.3.28) with $\mu=1$, $\nu=2$, $\kappa_\psi=1$ and
+$\kappa_\nu=1/4$. -/
 theorem theorem_5_3_9 (h : TRSetting f ψ fstar μ κψ κν ν κR κA x S) (hνμ : μ < ν)
     (hΓ0 : 0 < f (x 0) - fstar) :
     (∀ k, f (x (k + 1)) - fstar ≤ ((f (x 0) - fstar) ^ (-((ν - μ) / μ)) +
@@ -1342,6 +1449,11 @@ theorem Phi_isMeasureDominated {ℓ ψmin : ℝ} {A : Set ℝⁿ} (hℓ : 1 < �
 private theorem one_le_div_sub_one {ℓ : ℝ} (hℓ : 1 < ℓ) : 1 ≤ ℓ / (ℓ - 1) := by
   rw [le_div_iff₀ (by linarith)]; linarith
 
+/-- **§5.3.4, application preceding Theorem 5.3.10** of [cartis2022evaluation].
+
+**Reading.** Packages the domination and AR assumptions for a reference value zero, without evenness
+or a minimizer premise.
+-/
 private theorem arSetting_Phi {ℓ ψmin κν ν κR κA : ℝ} {x : ℕ → ℝⁿ} {S : ℕ → Prop}
     (hℓ : 1 < ℓ) (hψ : 0 < ψmin)
     (hrun : IsARpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν ν κR κA x S)
@@ -1359,6 +1471,11 @@ private theorem arSetting_Phi {ℓ ψmin κν ν κR κA : ℝ} {x : ℕ → ℝ
   one_le_kappaR := hκR
   kappaA_nonneg := hκA
 
+/-- **§5.3.4, application preceding Theorem 5.3.11** of [cartis2022evaluation].
+
+**Reading.** Packages the domination and TR assumptions for a reference value zero, without evenness
+or a minimizer premise.
+-/
 private theorem trSetting_Phi {ℓ ψmin κν ν κR κA : ℝ} {x : ℕ → ℝⁿ} {S : ℕ → Prop}
     (hℓ : 1 < ℓ) (hψ : 0 < ψmin)
     (hrun : IsTRpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν ν κR κA x S)
@@ -1396,7 +1513,11 @@ private theorem abs_log_pow_div {ℓ : ℕ} (hℓ : 1 ≤ ℓ) {ε₀ : ℝ} (h�
   field_simp
   ring
 
-/-- For $\ell \ge 1$, $\log\max(1, \ell y) \le \log\ell + \log\max(1, y)$. -/
+/-- For $\ell \ge 1$, $\log\max(1, \ell y) \le \log\ell + \log\max(1, y)$.
+
+**Reading.** Moves the power coefficient into an additive term while clipping the log argument at
+one.
+-/
 private theorem log_max_mul_le {ℓ y : ℝ} (hℓ : 1 ≤ ℓ) :
     Real.log (max 1 (ℓ * y)) ≤ Real.log ℓ + Real.log (max 1 y) := by
   rw [← Real.log_mul (by positivity) (by positivity)]
@@ -1424,7 +1545,11 @@ be the constants of Theorem 5.3.3. Then:
   $k \ge \kappa_R N + \kappa_A$ (5.3.44).
 
 **Generalization.** The book takes $\ell$ even. This matters only for the smoothness of
-$\Phi_\ell$ and is not needed here. -/
+$\Phi_\ell$. The Lean bound holds for any integral $\ell$ in the stated range.
+
+**Reading.** The count is stated for $0<\epsilon_0<1$, with the logarithm clipped as in
+`CartisGouldToint.Chapter05.theorem_5_3_3`. The class decrease uses the first-order ARp
+exponent $(p+1)/p$ from the discussion preceding the source theorem. -/
 theorem theorem_5_3_10 {ℓ p : ℕ} (hℓ2 : 2 ≤ ℓ) (hℓp : ℓ ≤ p)
     {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin) {x : ℕ → ℝⁿ} {S : ℕ → Prop}
     (hrun : IsARpsiNuRun (Phi r ℓ) (fun y => ‖gradient (Phi r ℓ) y‖) κν (((p : ℝ) + 1) / p) κR
@@ -1525,7 +1650,8 @@ $c = \kappa_\nu/\kappa_\psi^{\nu/\mu}$ and $\alpha = (\nu - \mu)/\mu = (\ell - 2
 $\kappa^E = \mu\kappa_\psi^{\nu/\mu}/((\nu - \mu)\kappa_\nu)$ and
 $\kappa^F = -\kappa^E\Phi_\ell(x_0)^{-\alpha}$ be the constants of Theorem 5.3.9. Then:
 
-* $\|r(x_k)\| \to 0$, with the sublinear rate of Lemma 5.3.6 (iii): $\Phi_\ell(x_{k+1}) \le
+* $\|r(x_k)\| \to 0$, with the polynomial upper bound from Lemma 5.3.6 (iii):
+  $\Phi_\ell(x_{k+1}) \le
   (\Phi_\ell(x_0)^{-\alpha} + \alpha c|\mathcal{S}_k|)^{-1/\alpha}$ for every $k$;
 * for every $\epsilon_0 > 0$, $\|r(x_{k+1})\| \le \epsilon_0$ for every $k$ with
   $|\mathcal{S}_k| \ge N$, where $N = \ell^{(\ell-2)/\ell}\kappa^E\epsilon_0^{-(\ell-2)} +
@@ -1533,7 +1659,12 @@ $\kappa^F = -\kappa^E\Phi_\ell(x_0)^{-\alpha}$ be the constants of Theorem 5.3.9
 * for every $\epsilon_0 > 0$, $\|r(x_{k+1})\| \le \epsilon_0$ for every
   $k \ge \kappa_R N + \kappa_A$.
 
-**Generalization.** The book takes $\ell$ even. This is not needed here.
+**Generalization.** The book takes $\ell$ even. The bound applies to all integral $\ell>2$.
+
+**Correction.** The source calls the residual sequence sublinear. Linear residual
+convergence is possible under the same hypotheses, for example with $r(x)=x$,
+$\ell=4$, $x_k=2^{-k}$ and every iteration successful. The gradient norm is
+$|x_k|^3$ and (5.3.28) holds with $\kappa_\nu=(1-2^{-4})/4$ and $\nu=2$.
 
 The counts are those of Theorem 5.3.9 for $\epsilon = \epsilon_0^\ell/\ell$. -/
 theorem theorem_5_3_11 {ℓ : ℕ} (hℓ2 : 2 < ℓ) {ψmin κν κR κA : ℝ} (hψ : 0 < ψmin)
@@ -1626,6 +1757,10 @@ the constants of Theorem 5.3.8. Then:
 
 **Typo.** The book's display mixes $\kappa^C_{\mathrm{TR1,FRLS}}$ and
 $\kappa^C_{\mathrm{TR,FRLS}}$; one constant is meant.
+
+**Reading.** The count is stated for $0<\epsilon_0<1$. The factor $2$ and the
+additive $\log 2$ in the count come from using $\epsilon=\epsilon_0^2/2$
+in Theorem 5.3.8.
 
 The counts are those of Theorem 5.3.8 for $\epsilon = \epsilon_0^2/2$. If $r(x_0) = 0$, the
 residual vanishes along the run. -/

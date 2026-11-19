@@ -71,6 +71,15 @@ generalized rectangle $I_1 \times \dots \times I_{n+m}$ of real intervals. The p
 * A matrix $A \in \mathbb{R}^{m \times n}$ is a linear map `Rn n →ₗ[ℝ] Rn m`, and its transpose
   $A^*$ is `LinearMap.adjoint A`.
 
+## Deviations from the source
+
+* **Theorem 22.2** (generalization). The book requires at least one strict inequality.
+  The Lean alternative also allows an empty strict family, in which case consistency
+  of the weak subsystem gives feasibility.
+* **Section 22, interval data** (generalization). The generalized rectangle, the set of
+  weighted sums and the positivity condition are defined for arbitrary real subsets.
+  Their use with intervals is the one in the book.
+
 ## Not formalized
 
 * **Lemmas 22.4 and 22.5, Corollary 22.4.1, and Theorems 22.6 and 22.7 (Tucker's complementarity
@@ -128,7 +137,10 @@ $$\sum_i \lambda_i a_i + \sum_j \mu_j b_j = 0, \qquad \sum_i \lambda_i \alpha_i 
 
 The source uses one index range $1, \dots, m$ and puts the strict inequalities first, up to $k$.
 Here the strict and the weak inequalities are two separate families, indexed by `Fin p` and
-`Fin q`. "Exactly one" is the equivalence of (a) with the negation of (b). -/
+`Fin q`. "Exactly one" is the equivalence of (a) with the negation of (b).
+
+**Generalization.** The book requires $k \ge 1$. An empty strict family is also allowed
+here, with feasibility supplied by the hypothesis on the weak subsystem. -/
 theorem theorem_22_2 {p q : ℕ} (a : Fin p → Rn n) (α : Fin p → ℝ) (b : Fin q → Rn n)
     (β : Fin q → ℝ) (hcons : ∃ x : Rn n, ∀ j, pairing n (b j) x ≤ β j) :
     (∃ x : Rn n, (∀ i, pairing n (a i) x < α i) ∧ ∀ j, pairing n (b j) x ≤ β j) ↔
@@ -291,7 +303,10 @@ $I_1, \dots, I_N$ of $\mathbb{R}$, the **generalized rectangle** is
 $$C = \{(\zeta_1, \dots, \zeta_N) \mid \zeta_j \in I_j, \ j = 1, \dots, N\} \subseteq
   \mathbb{R}^N.$$
 
-Theorem 22.6 is about whether a subspace $L$ meets this set or is separated from it. -/
+Theorem 22.6 is about whether a subspace $L$ meets this set or is separated from it.
+
+**Generalization.** The book uses intervals for the coordinate sets. The construction
+also applies to nonconvex coordinate sets. -/
 def rectangle {N : ℕ} (I : Fin N → Set ℝ) : Set (Rn N) := {z : Rn N | ∀ j, z j ∈ I j}
 
 /-- A vector $z \in \mathbb{R}^N$ lies in the generalized rectangle of $I_1, \dots, I_N$ if and only
@@ -310,6 +325,9 @@ theorem convex_rectangle {N : ℕ} {I : Fin N → Set ℝ} (h : ∀ j, IsRealInt
 sets $I_j$ is the set
 $$\zeta_1^* I_1 + \dots + \zeta_N^* I_N = \{\zeta_1^* \zeta_1 + \dots + \zeta_N^* \zeta_N \mid
   \zeta_j \in I_j\} \subseteq \mathbb{R}.$$
+
+**Generalization.** The book uses this expression for intervals. The same set operation
+accepts arbitrary coordinate sets.
 -/
 def intervalCombo {N : ℕ} (z : Rn N) (I : Fin N → Set ℝ) : Set ℝ := ∑ j, z j • I j
 
@@ -318,6 +336,8 @@ $z^* \in \mathbb{R}^N$ and subsets $I_1, \dots, I_N$ of $\mathbb{R}$, the condit
 $\sum_j \zeta_j^* I_j > 0$ means $\zeta_1^* \zeta_1 + \dots + \zeta_N^* \zeta_N > 0$ for every
 choice of $\zeta_j \in I_j$, that is,
 $$\zeta_1^* I_1 + \dots + \zeta_N^* I_N \subseteq (0, +\infty).$$
+
+**Generalization.** The condition accepts any coordinate sets, including nonconvex ones.
 -/
 def posIntervalCombo {N : ℕ} (z : Rn N) (I : Fin N → Set ℝ) : Prop :=
   intervalCombo z I ⊆ Set.Ioi 0

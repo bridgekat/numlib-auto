@@ -58,13 +58,50 @@ The proofs specialize `Krylov.isMinResidualIterate_of_orthogonal_directions` of 
 * The truncated and restarted variants ORTHOMIN(k) and GCR(m) satisfy no global minimization
   property, and the book proves none.
 * Indices start at $0$, as in the book: `gcrP A b x₀ j` is $p_j$. A quotient with denominator $0$ is
-  $0$ in Lean, which reproduces the breakdown behaviour of the book.
+  $0$ in Lean.
 * The definitions and the general lemmas are over the scalar field $\mathbb{K} = \mathbb{R}$ or
   $\mathbb{C}$, where $A^T A$-orthogonality becomes $A^H A$-orthogonality. The numbered results are
   stated over $\mathbb{R}$, the generality of the source.
 
 ## Deviations from the source
 
+* **Generalization.** The minimal-residual proof uses the final span and explicit nonzero images.
+  See `SaadSparse.Chapter06.isMinResidualIterate_of_orthogonalDirections`.
+* **Generalization.** The closed form is valid without a spanning hypothesis or nonzero
+  denominators. See `SaadSparse.Chapter06.equation_6_104`.
+* **Reading.** The exact GCR recurrence totalizes division and does not model cached operation
+  counts. See `SaadSparse.Chapter06.gcrBody`, `SaadSparse.Chapter06.gcrAux`,
+  `SaadSparse.Chapter06.gcrX`, `SaadSparse.Chapter06.gcrR`, `SaadSparse.Chapter06.gcrP`,
+  `SaadSparse.Chapter06.gcrAlpha`, `SaadSparse.Chapter06.gcrBeta`,
+  `SaadSparse.Chapter06.gcrAlpha_eq`, `SaadSparse.Chapter06.gcrX_succ`,
+  `SaadSparse.Chapter06.gcrR_succ`, `SaadSparse.Chapter06.gcrP_succ`.
+* **Generalization.** The GCR step formulas extend to complex vectors and totalized division. See
+  `SaadSparse.Chapter06.gcrStepAlpha`, `SaadSparse.Chapter06.gcrStepR`,
+  `SaadSparse.Chapter06.gcrStepBeta`.
+* **Reading.** ORTHODIR combines the source direction recurrence with the GCR state updates. See
+  `SaadSparse.Chapter06.orthodirBody`, `SaadSparse.Chapter06.orthodirAux`,
+  `SaadSparse.Chapter06.orthodirX`, `SaadSparse.Chapter06.orthodirR`,
+  `SaadSparse.Chapter06.orthodirP`, `SaadSparse.Chapter06.orthodirAlpha`,
+  `SaadSparse.Chapter06.orthodirBeta`, `SaadSparse.Chapter06.orthodirAlpha_eq`,
+  `SaadSparse.Chapter06.orthodirX_succ`, `SaadSparse.Chapter06.orthodirR_succ`,
+  `SaadSparse.Chapter06.orthodirP_succ`.
+* **Reading.** ORTHOMIN clips the window to the available directions and allows an empty window. See
+  `SaadSparse.Chapter06.orthominBody`, `SaadSparse.Chapter06.orthominAux`,
+  `SaadSparse.Chapter06.orthominX`, `SaadSparse.Chapter06.orthominR`,
+  `SaadSparse.Chapter06.orthominP`.
+* **Reading.** Restarted GCR uses fixed cycle lengths and recomputes the initial residual at each
+  restart. See `SaadSparse.Chapter06.gcrCycle`, `SaadSparse.Chapter06.gcrRestarted`,
+  `SaadSparse.Chapter06.gcrRestarted_succ`.
+* **Reading.** The GCR and ORTHODIR basis properties make the no-breakdown and grade conditions
+  explicit. See `SaadSparse.Chapter06.inner_apply_gcrP_eq_zero`,
+  `SaadSparse.Chapter06.inner_apply_orthodirP_eq_zero`, `SaadSparse.Chapter06.span_gcrP_eq`,
+  `SaadSparse.Chapter06.span_orthodirP_eq`.
+* **Reading.** The GCR and ORTHODIR minimal-residual specifications apply to prefixes without
+  breakdown. See `SaadSparse.Chapter06.gcrX_isMinResidualIterate`,
+  `SaadSparse.Chapter06.orthodirX_isMinResidualIterate`.
+* **Scope.** The GMRES equivalence is stated for nonsingular systems before breakdown. See
+  `SaadSparse.Chapter06.gcrX_eq_gmresFixed`, `SaadSparse.Chapter06.orthodirX_eq_gmresFixed`,
+  `SaadSparse.Chapter06.algorithm_6_21_eq_gmres`, `SaadSparse.Chapter06.orthodir_eq_gmres`.
 * **Lemma 6.21** (reading). The source asks that $\{p_0, \dots, p_{j-1}\}$ be a basis of
   $\mathcal{K}_j(A, r_0)$ for each $j \le m$. The library asks that $p_0, \dots, p_{m-1}$ span
   $\mathcal{K}_m(A, r_0)$ and that $A p_i \ne 0$. See `SaadSparse.Chapter06.lemma_6_21`.
@@ -97,7 +134,12 @@ private theorem apply_mem_krylov_succ {v x : 𝔼} {m : ℕ} (h : x ∈ krylov A
 $(A p_i, A p_l) = 0$ for $i \ne l$ and $A p_i \ne 0$, for $i, l < m$, such that
 $p_0, \dots, p_{m-1}$ span $\mathcal{K}_m(A, r_0)$. If $x_0$ is the initial guess and $x_{j+1} =
 x_j + \frac{(r_j, A p_j)}{(A p_j, A p_j)} p_j$ with $r_j = b - A x_j$ for every $j$, then $x_m$
-minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$. -/
+minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$.
+
+**Generalization.** The minimal-residual statement works over the real or complex field. It requires
+the final span equality and nonzero matrix images, without requiring that each intermediate prefix
+span its Krylov space.
+-/
 theorem isMinResidualIterate_of_orthogonalDirections {m : ℕ} (p : ℕ → 𝔼)
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (p i)) (op A (p l)) = 0)
     (hne : ∀ i < m, op A (p i) ≠ 0)
@@ -131,7 +173,12 @@ $$x_m = x_0 + \sum_{i=0}^{m-1} \frac{(r_0, A p_i)}{(A p_i, A p_i)} p_i.$$
 
 The proof shows $(r_j, A p_j) = (r_0, A p_j)$ from the orthogonality. No hypothesis
 $A p_i \ne 0$ is needed, because a quotient with denominator $0$ is $0$ on both sides. The real
-form is part of `SaadSparse.Chapter06.lemma_6_21`. -/
+form is part of `SaadSparse.Chapter06.lemma_6_21`.
+
+**Generalization.** The closed-form identity follows from orthogonality and the recurrence alone,
+over the real or complex field. Since division is totalized, it also holds when some images vanish
+and requires no span equality.
+-/
 theorem equation_6_104 {m : ℕ} (p : ℕ → 𝔼)
     (horth : ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (p i)) (op A (p l)) = 0)
     (x : ℕ → 𝔼) (hx0 : x 0 = x₀)
@@ -166,25 +213,46 @@ theorem equation_6_104 {m : ℕ} (p : ℕ → 𝔼)
 /-! ### The generic step and the orthogonality it produces -/
 
 /-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of line 3 of Algorithm 6.21, computed
-from a triple $(x_j, r_j, p_j)$; GCR, ORTHOMIN(k) and ORTHODIR share it. -/
+from a triple $(x_j, r_j, p_j)$; GCR, ORTHOMIN(k) and ORTHODIR share it.
+
+**Generalization.** The scalar and residual formulas also apply over the complex field, using
+Mathlib's conjugate-linear first argument in the reversed order from the book. A zero matrix image
+gives a totalized zero quotient.
+-/
 noncomputable def gcrStepAlpha (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op A s.2.2) s.2.1 / inner 𝕜 (op A s.2.2) (op A s.2.2)
 
 /-- The next residual $r_{j+1} = r_j - \alpha_j A p_j$ of line 5 of Algorithm 6.21, computed from a
-triple $(x_j, r_j, p_j)$; GCR, ORTHOMIN(k) and ORTHODIR share it. -/
+triple $(x_j, r_j, p_j)$; GCR, ORTHOMIN(k) and ORTHODIR share it.
+
+**Generalization.** The scalar and residual formulas also apply over the complex field, using
+Mathlib's conjugate-linear first argument in the reversed order from the book. A zero matrix image
+gives a totalized zero quotient.
+-/
 noncomputable def gcrStepR (A : Matrix (Fin n) (Fin n) 𝕜) (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - gcrStepAlpha A s • op A s.2.2
 
 /-- The coefficient $-(A z, A p_i)/(A p_i, A p_i)$ for vectors $p_i$ and $z$. With $z = r_{j+1}$ it
 is the coefficient $\beta_{ij}$ of line 6 of Algorithm 6.21 (GCR and ORTHOMIN(k)), and with
-$z = A p_j$ it is the coefficient of (6.107) (ORTHODIR). -/
+$z = A p_j$ it is the coefficient of (6.107) (ORTHODIR).
+
+**Generalization.** The scalar and residual formulas also apply over the complex field, using
+Mathlib's conjugate-linear first argument in the reversed order from the book. A zero matrix image
+gives a totalized zero quotient.
+-/
 noncomputable def gcrStepBeta (A : Matrix (Fin n) (Fin n) 𝕜) (pi z : 𝔼) : 𝕜 :=
   -(inner 𝕜 (op A pi) (op A z) / inner 𝕜 (op A pi) (op A pi))
 
 /-- Lines 3–7 of Algorithm 6.21 (GCR), applied to the history of triples $(x_i, r_i, p_i)$,
 $i \le j$. The result is $x_{j+1} = x_j + \alpha_j p_j$, $r_{j+1} = r_j - \alpha_j A p_j$ and
 $p_{j+1} = r_{j+1} + \sum_{i=0}^{j} \beta_{ij} p_i$ with $\beta_{ij} = -(A r_{j+1}, A p_i)/(A
-p_i, A p_i)$. -/
+p_i, A p_i)$.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 noncomputable def gcrBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
@@ -195,7 +263,12 @@ noncomputable def gcrBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
 
 /-- Lines 3–5 of Algorithm 6.21 with the direction update (6.107) of ORTHODIR, applied to the
 history of triples $(x_i, r_i, p_i)$, $i \le j$. The new direction is $p_{j+1} = A p_j +
-\sum_{i=0}^{j} \beta_{ij} p_i$ with $\beta_{ij} = -(A^2 p_j, A p_i)/(A p_i, A p_i)$. -/
+\sum_{i=0}^{j} \beta_{ij} p_i$ with $\beta_{ij} = -(A^2 p_j, A p_i)/(A p_i, A p_i)$.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
@@ -206,7 +279,12 @@ noncomputable def orthodirBody (A : Matrix (Fin n) (Fin n) 𝕜) {j : ℕ}
 
 /-- Lines 3–5 of Algorithm 6.21 with the truncated lines 6a–7a of ORTHOMIN(k), applied to the
 history of triples $(x_i, r_i, p_i)$, $i \le j$. The direction update of GCR uses only the
-directions $p_i$ with $j - k + 1 \le i \le j$. -/
+directions $p_i$ with $j - k + 1 \le i \le j$.
+
+**Reading.** The starting index of the window is clipped to zero. The parameter may also be zero,
+giving an empty orthogonalization sum. The definition uses the totalized GCR update and does not
+enforce convergence.
+-/
 noncomputable def orthominBody (A : Matrix (Fin n) (Fin n) 𝕜) (k : ℕ) {j : ℕ}
     (s : Fin (j + 1) → 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   ((s (Fin.last j)).1 + gcrStepAlpha A (s (Fin.last j)) • (s (Fin.last j)).2.2,
@@ -318,26 +396,61 @@ private theorem residual_eq_of_recur (x r p : ℕ → 𝔼) (c : ℕ → 𝕜) (
 
 /-- **Algorithm 6.21** of [saad2003iterative] (GCR). For $A \in \mathbb{K}^{n \times n}$,
 $b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the triple $(x_j, r_j, p_j)$ after $j$ steps,
-started from $r_0 = b - A x_0$ and $p_0 = r_0$; each step is `SaadSparse.Chapter06.gcrBody`. -/
+started from $r_0 = b - A x_0$ and $p_0 = r_0$; each step is `SaadSparse.Chapter06.gcrBody`.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 noncomputable def gcrAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
   | j + 1 => gcrBody A fun i : Fin (j + 1) => gcrAux A b x₀ (i : ℕ)
   termination_by j => j
   decreasing_by exact i.isLt
 
-/-- The iterate $x_j$ of Algorithm 6.21 after $j$ steps. -/
+/-- The iterate $x_j$ of Algorithm 6.21 after $j$ steps.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 noncomputable def gcrX (j : ℕ) : 𝔼 := (gcrAux A b x₀ j).1
 
-/-- The residual $r_j$ of Algorithm 6.21 after $j$ steps. -/
+/-- The residual $r_j$ of Algorithm 6.21 after $j$ steps.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 noncomputable def gcrR (j : ℕ) : 𝔼 := (gcrAux A b x₀ j).2.1
 
-/-- The direction $p_j$ of Algorithm 6.21 after $j$ steps. -/
+/-- The direction $p_j$ of Algorithm 6.21 after $j$ steps.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 noncomputable def gcrP (j : ℕ) : 𝔼 := (gcrAux A b x₀ j).2.2
 
-/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of line 3 of Algorithm 6.21. -/
+/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of line 3 of Algorithm 6.21.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 noncomputable def gcrAlpha (j : ℕ) : 𝕜 := gcrStepAlpha A (gcrAux A b x₀ j)
 
 /-- The coefficient $\beta_{ij} = -(A r_{j+1}, A p_i)/(A p_i, A p_i)$ of line 6 of Algorithm 6.21.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
 -/
 noncomputable def gcrBeta (i j : ℕ) : 𝕜 :=
   gcrStepBeta A (gcrP A b x₀ i) (gcrR A b x₀ (j + 1))
@@ -351,24 +464,48 @@ noncomputable def gcrBeta (i j : ℕ) : 𝕜 :=
 /-- Algorithm 6.21, line 1: $p_0 = r_0$. -/
 @[simp] theorem gcrP_zero : gcrP A b x₀ 0 = gcrR A b x₀ 0 := by rw [gcrP, gcrR, gcrAux]
 
-/-- Algorithm 6.21, line 3: $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$. -/
+/-- Algorithm 6.21, line 3: $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 theorem gcrAlpha_eq (j : ℕ) : gcrAlpha A b x₀ j =
     inner 𝕜 (op A (gcrP A b x₀ j)) (gcrR A b x₀ j) /
       inner 𝕜 (op A (gcrP A b x₀ j)) (op A (gcrP A b x₀ j)) := rfl
 
-/-- Algorithm 6.21, line 4: $x_{j+1} = x_j + \alpha_j p_j$. -/
+/-- Algorithm 6.21, line 4: $x_{j+1} = x_j + \alpha_j p_j$.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 theorem gcrX_succ (j : ℕ) :
     gcrX A b x₀ (j + 1) = gcrX A b x₀ j + gcrAlpha A b x₀ j • gcrP A b x₀ j := by
   rw [gcrX, gcrAux]
   rfl
 
-/-- Algorithm 6.21, line 5: $r_{j+1} = r_j - \alpha_j A p_j$. -/
+/-- Algorithm 6.21, line 5: $r_{j+1} = r_j - \alpha_j A p_j$.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 theorem gcrR_succ (j : ℕ) :
     gcrR A b x₀ (j + 1) = gcrR A b x₀ j - gcrAlpha A b x₀ j • op A (gcrP A b x₀ j) := by
   rw [gcrR, gcrAux]
   rfl
 
-/-- Algorithm 6.21, line 7: $p_{j+1} = r_{j+1} + \sum_{i=0}^{j} \beta_{ij} p_i$. -/
+/-- Algorithm 6.21, line 7: $p_{j+1} = r_{j+1} + \sum_{i=0}^{j} \beta_{ij} p_i$.
+
+**Reading.** Lean uses exact finite sums and totalized quotients for every step over the real or
+complex field, with no convergence test. It carries the history of iterates, residuals and
+directions. The source separately describes caching the matrix images to use one matrix-vector
+product per step.
+-/
 theorem gcrP_succ (j : ℕ) : gcrP A b x₀ (j + 1) =
     gcrR A b x₀ (j + 1) + ∑ i ∈ Finset.range (j + 1), gcrBeta A b x₀ i j • gcrP A b x₀ i := by
   rw [← Fin.sum_univ_eq_sum_range (fun i => gcrBeta A b x₀ i j • gcrP A b x₀ i) (j + 1)]
@@ -397,14 +534,24 @@ theorem gcrP_mem_krylov (j : ℕ) : gcrP A b x₀ j ∈ krylov A (r₀ A b x₀)
   exact hr (j + 1) le_rfl
 
 /-- Section 6.9: if $A p_i \ne 0$ for every $i < m$, then the vectors $A p_i$, $i < m$, built by
-Algorithm 6.21 are orthogonal. This is the hypothesis of Lemma 6.21. -/
+Algorithm 6.21 are orthogonal. This is the hypothesis of Lemma 6.21.
+
+**Reading.** The proofs explicitly require nonzero matrix images in the prefix. The span conclusions
+also require the prefix length to be at most the grade. The source motivates the recurrences using
+those directions as Krylov bases.
+-/
 theorem inner_apply_gcrP_eq_zero {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0) :
     ∀ i < m, ∀ l < m, i ≠ l → inner 𝕜 (op A (gcrP A b x₀ i)) (op A (gcrP A b x₀ l)) = 0 :=
   inner_apply_eq_zero_of_recur A (gcrP A b x₀) (fun j => gcrR A b x₀ (j + 1))
     (gcrP_succ A b x₀) hne
 
 /-- If $A p_i \ne 0$ for every $i < m$ and $m$ is at most the grade of $r_0$, then the directions
-$p_0, \dots, p_{m-1}$ of Algorithm 6.21 span $\mathcal{K}_m(A, r_0)$. -/
+$p_0, \dots, p_{m-1}$ of Algorithm 6.21 span $\mathcal{K}_m(A, r_0)$.
+
+**Reading.** The proofs explicitly require nonzero matrix images in the prefix. The span conclusions
+also require the prefix length to be at most the grade. The source motivates the recurrences using
+those directions as Krylov bases.
+-/
 theorem span_gcrP_eq {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => gcrP A b x₀ (i : ℕ))
@@ -414,7 +561,12 @@ theorem span_gcrP_eq {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
 
 /-- GCR is mathematically equivalent to full GMRES: if $A p_i \ne 0$ for every $i < m$ and $m$ is at
 most the grade of $r_0$, then the iterate $x_m$ of Algorithm 6.21 minimizes the residual norm
-over $x_0 + \mathcal{K}_m(A, r_0)$, by Lemma 6.21. -/
+over $x_0 + \mathcal{K}_m(A, r_0)$, by Lemma 6.21.
+
+**Reading.** The conclusion requires a prefix up to the grade with nonzero matrix images for every
+direction. This ensures that the source's orthogonal direction construction gives the intended
+Krylov space.
+-/
 theorem gcrX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (gcrX A b x₀ m) := by
@@ -428,26 +580,56 @@ theorem gcrX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x�
 /-- **ORTHODIR** ([saad2003iterative], Section 6.9). For $A \in \mathbb{K}^{n \times n}$,
 $b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the triple $(x_j, r_j, p_j)$ after $j$ steps,
 started from $r_0 = b - A x_0$ and $p_0 = r_0$, with the direction update (6.107), $p_{j+1} = A
-p_j + \sum_{i=0}^{j} \beta_{ij} p_i$, and the iterate update (6.105). -/
+p_j + \sum_{i=0}^{j} \beta_{ij} p_i$, and the iterate update (6.105).
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) : ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
   | j + 1 => orthodirBody A fun i : Fin (j + 1) => orthodirAux A b x₀ (i : ℕ)
   termination_by j => j
   decreasing_by exact i.isLt
 
-/-- The iterate $x_j$ of ORTHODIR after $j$ steps. -/
+/-- The iterate $x_j$ of ORTHODIR after $j$ steps.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirX (j : ℕ) : 𝔼 := (orthodirAux A b x₀ j).1
 
-/-- The residual $r_j$ of ORTHODIR after $j$ steps. -/
+/-- The residual $r_j$ of ORTHODIR after $j$ steps.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirR (j : ℕ) : 𝔼 := (orthodirAux A b x₀ j).2.1
 
-/-- The direction $p_j$ of ORTHODIR after $j$ steps. -/
+/-- The direction $p_j$ of ORTHODIR after $j$ steps.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirP (j : ℕ) : 𝔼 := (orthodirAux A b x₀ j).2.2
 
-/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of (6.105) in ORTHODIR. -/
+/-- The step length $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$ of (6.105) in ORTHODIR.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirAlpha (j : ℕ) : 𝕜 := gcrStepAlpha A (orthodirAux A b x₀ j)
 
-/-- The coefficient $\beta_{ij} = -(A^2 p_j, A p_i)/(A p_i, A p_i)$ of (6.107). -/
+/-- The coefficient $\beta_{ij} = -(A^2 p_j, A p_i)/(A p_i, A p_i)$ of (6.107).
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 noncomputable def orthodirBeta (i j : ℕ) : 𝕜 :=
   gcrStepBeta A (orthodirP A b x₀ i) (op A (orthodirP A b x₀ j))
 
@@ -462,24 +644,44 @@ noncomputable def orthodirBeta (i j : ℕ) : 𝕜 :=
 @[simp] theorem orthodirP_zero : orthodirP A b x₀ 0 = orthodirR A b x₀ 0 := by
   rw [orthodirP, orthodirR, orthodirAux]
 
-/-- The step length of ORTHODIR is $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$. -/
+/-- The step length of ORTHODIR is $\alpha_j = (r_j, A p_j)/(A p_j, A p_j)$.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 theorem orthodirAlpha_eq (j : ℕ) : orthodirAlpha A b x₀ j =
     inner 𝕜 (op A (orthodirP A b x₀ j)) (orthodirR A b x₀ j) /
       inner 𝕜 (op A (orthodirP A b x₀ j)) (op A (orthodirP A b x₀ j)) := rfl
 
-/-- Equation (6.105) for ORTHODIR: $x_{j+1} = x_j + \alpha_j p_j$. -/
+/-- Equation (6.105) for ORTHODIR: $x_{j+1} = x_j + \alpha_j p_j$.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 theorem orthodirX_succ (j : ℕ) : orthodirX A b x₀ (j + 1) =
     orthodirX A b x₀ j + orthodirAlpha A b x₀ j • orthodirP A b x₀ j := by
   rw [orthodirX, orthodirAux]
   rfl
 
-/-- The residual update of ORTHODIR: $r_{j+1} = r_j - \alpha_j A p_j$. -/
+/-- The residual update of ORTHODIR: $r_{j+1} = r_j - \alpha_j A p_j$.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 theorem orthodirR_succ (j : ℕ) : orthodirR A b x₀ (j + 1) =
     orthodirR A b x₀ j - orthodirAlpha A b x₀ j • op A (orthodirP A b x₀ j) := by
   rw [orthodirR, orthodirAux]
   rfl
 
-/-- Equation (6.107): $p_{j+1} = A p_j + \sum_{i=0}^{j} \beta_{ij} p_i$. -/
+/-- Equation (6.107): $p_{j+1} = A p_j + \sum_{i=0}^{j} \beta_{ij} p_i$.
+
+**Reading.** The source gives the direction and coefficient update. Lean supplies the GCR initial
+data and residual and iterate updates, uses complex inner products when needed, and defines the
+recurrence at all indices with totalized division.
+-/
 theorem orthodirP_succ (j : ℕ) : orthodirP A b x₀ (j + 1) = op A (orthodirP A b x₀ j) +
     ∑ i ∈ Finset.range (j + 1), orthodirBeta A b x₀ i j • orthodirP A b x₀ i := by
   rw [← Fin.sum_univ_eq_sum_range (fun i => orthodirBeta A b x₀ i j • orthodirP A b x₀ i)
@@ -500,7 +702,12 @@ theorem orthodirP_mem_krylov (j : ℕ) :
     (fun j hp => apply_mem_krylov_succ A (hp j le_rfl)) j
 
 /-- Section 6.9: if $A p_i \ne 0$ for every $i < m$, then ORTHODIR builds $A^H A$-orthogonal
-directions: $(A p_i, A p_l) = 0$ for $i \ne l < m$. -/
+directions: $(A p_i, A p_l) = 0$ for $i \ne l < m$.
+
+**Reading.** The proofs explicitly require nonzero matrix images in the prefix. The span conclusions
+also require the prefix length to be at most the grade. The source motivates the recurrences using
+those directions as Krylov bases.
+-/
 theorem inner_apply_orthodirP_eq_zero {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) :
     ∀ i < m, ∀ l < m, i ≠ l →
       inner 𝕜 (op A (orthodirP A b x₀ i)) (op A (orthodirP A b x₀ l)) = 0 :=
@@ -508,7 +715,12 @@ theorem inner_apply_orthodirP_eq_zero {m : ℕ} (hne : ∀ i < m, op A (orthodir
     (orthodirP_succ A b x₀) hne
 
 /-- If $A p_i \ne 0$ for every $i < m$ and $m$ is at most the grade of $r_0$, then the directions
-$p_0, \dots, p_{m-1}$ of ORTHODIR span $\mathcal{K}_m(A, r_0)$. -/
+$p_0, \dots, p_{m-1}$ of ORTHODIR span $\mathcal{K}_m(A, r_0)$.
+
+**Reading.** The proofs explicitly require nonzero matrix images in the prefix. The span conclusions
+also require the prefix length to be at most the grade. The source motivates the recurrences using
+those directions as Krylov bases.
+-/
 theorem span_orthodirP_eq {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Submodule.span 𝕜 (Set.range fun i : Fin m => orthodirP A b x₀ (i : ℕ))
@@ -518,7 +730,12 @@ theorem span_orthodirP_eq {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i
 
 /-- ORTHODIR is mathematically equivalent to full GMRES: if $A p_i \ne 0$ for every $i < m$ and $m$
 is at most the grade of $r_0$, then the iterate $x_m$ of ORTHODIR minimizes the residual norm
-over $x_0 + \mathcal{K}_m(A, r_0)$, by Lemma 6.21. -/
+over $x_0 + \mathcal{K}_m(A, r_0)$, by Lemma 6.21.
+
+**Reading.** The conclusion requires a prefix up to the grade with nonzero matrix images for every
+direction. This ensures that the source's orthogonal direction construction gives the intended
+Krylov space.
+-/
 theorem orthodirX_isMinResidualIterate {m : ℕ} (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     Krylov.IsMinResidualIterate (op A) b x₀ m (orthodirX A b x₀ m) := by
@@ -534,7 +751,12 @@ $b, x_0 \in \mathbb{K}^n$ and $j \ge 0$, this is the triple $(x_j, r_j, p_j)$ af
 Algorithm 6.21 with lines 6–7 truncated to the last $k$ directions.
 
 Because of the truncation the method satisfies no global minimization property, and the book
-proves none. The only statement about it is `SaadSparse.Chapter06.orthomin_eq_gcr`. -/
+proves none. The only statement about it is `SaadSparse.Chapter06.orthomin_eq_gcr`.
+
+**Reading.** The starting index of the window is clipped to zero. The parameter may also be zero,
+giving an empty orthogonalization sum. The definition uses the totalized GCR update and does not
+enforce convergence.
+-/
 noncomputable def orthominAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) (k : ℕ) :
     ℕ → 𝔼 × 𝔼 × 𝔼
   | 0 => (x₀, b - op A x₀, b - op A x₀)
@@ -542,13 +764,28 @@ noncomputable def orthominAux (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : 𝔼) 
   termination_by j => j
   decreasing_by exact i.isLt
 
-/-- The iterate $x_j$ of ORTHOMIN(k) after $j$ steps. -/
+/-- The iterate $x_j$ of ORTHOMIN(k) after $j$ steps.
+
+**Reading.** The starting index of the window is clipped to zero. The parameter may also be zero,
+giving an empty orthogonalization sum. The definition uses the totalized GCR update and does not
+enforce convergence.
+-/
 noncomputable def orthominX (k j : ℕ) : 𝔼 := (orthominAux A b x₀ k j).1
 
-/-- The residual $r_j$ of ORTHOMIN(k) after $j$ steps. -/
+/-- The residual $r_j$ of ORTHOMIN(k) after $j$ steps.
+
+**Reading.** The starting index of the window is clipped to zero. The parameter may also be zero,
+giving an empty orthogonalization sum. The definition uses the totalized GCR update and does not
+enforce convergence.
+-/
 noncomputable def orthominR (k j : ℕ) : 𝔼 := (orthominAux A b x₀ k j).2.1
 
-/-- The direction $p_j$ of ORTHOMIN(k) after $j$ steps. -/
+/-- The direction $p_j$ of ORTHOMIN(k) after $j$ steps.
+
+**Reading.** The starting index of the window is clipped to zero. The parameter may also be zero,
+giving an empty orthogonalization sum. The definition uses the totalized GCR update and does not
+enforce convergence.
+-/
 noncomputable def orthominP (k j : ℕ) : 𝔼 := (orthominAux A b x₀ k j).2.2
 
 /-- The iterate $x_0$ of ORTHOMIN(k) is the initial guess. -/
@@ -588,7 +825,12 @@ theorem orthominX_eq_gcrX {k m : ℕ} (hk : m ≤ k) : orthominX A b x₀ k m = 
   rw [orthominX, gcrX, orthomin_eq_gcr A b x₀ m hk]
 
 /-- One cycle of GCR(m): the iterate $x_m$ after $m$ steps of Algorithm 6.21 from the initial guess
-$x_0$. -/
+$x_0$.
+
+**Reading.** The source names the restarted variant. Lean defines it as a specified number of cycles
+of a fixed length, recomputing the residual from the output iterate at each restart. It also permits
+cycles of length zero.
+-/
 noncomputable def gcrCycle (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : ℕ) (x₀ : 𝔼) : 𝔼 :=
   gcrX A b x₀ m
 
@@ -598,7 +840,12 @@ after $k$ cycles, where each cycle runs $m$ steps of Algorithm 6.21 from the res
 previous cycle, and the first cycle starts from $x_0$.
 
 The restarted method satisfies no global minimization property, and the book proves none. One
-cycle is `SaadSparse.Chapter06.gcrCycle`. -/
+cycle is `SaadSparse.Chapter06.gcrCycle`.
+
+**Reading.** The source names the restarted variant. Lean defines it as a specified number of cycles
+of a fixed length, recomputing the residual from the output iterate at each restart. It also permits
+cycles of length zero.
+-/
 noncomputable def gcrRestarted (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m : ℕ) (x₀ : 𝔼)
     (k : ℕ) : 𝔼 :=
   (gcrCycle A b m)^[k] x₀
@@ -606,7 +853,12 @@ noncomputable def gcrRestarted (A : Matrix (Fin n) (Fin n) 𝕜) (b : 𝔼) (m :
 /-- GCR(m) after $0$ cycles gives the initial guess $x_0$. -/
 @[simp] theorem gcrRestarted_zero (m : ℕ) : gcrRestarted A b m x₀ 0 = x₀ := rfl
 
-/-- GCR(m) after $k + 1$ cycles is one cycle applied to the iterate after $k$ cycles. -/
+/-- GCR(m) after $k + 1$ cycles is one cycle applied to the iterate after $k$ cycles.
+
+**Reading.** The source names the restarted variant. Lean defines it as a specified number of cycles
+of a fixed length, recomputing the residual from the output iterate at each restart. It also permits
+cycles of length zero.
+-/
 theorem gcrRestarted_succ (m k : ℕ) :
     gcrRestarted A b m x₀ (k + 1) = gcrCycle A b m (gcrRestarted A b m x₀ k) :=
   Function.iterate_succ_apply' _ _ _
@@ -621,7 +873,12 @@ theorem grade_r₀_eq_grade_v₁ : grade A (r₀ A b x₀) = grade A (v₁ A b x
 /-- GCR computes the GMRES approximation, so it is "mathematically equivalent to the full GMRES
 algorithm" (Section 6.9). If $A$ is nonsingular, $A p_i \ne 0$ for every $i < m$, and $m$ is at
 most the grade of $r_0$, then the iterate $x_m$ of Algorithm 6.21 is the approximation after $m$
-steps of GMRES (Algorithm 6.9). -/
+steps of GMRES (Algorithm 6.9).
+
+**Reading.** Lean compares the fixed-length iterates up to the grade, with nonsingularity ensuring
+uniqueness of the minimizer and nonzero direction images preventing division by zero. The book
+describes the equivalence in terms of the underlying orthogonal Krylov basis.
+-/
 theorem gcrX_eq_gmresFixed (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) : gcrX A b x₀ m = gmresFixed A b x₀ m := by
   have hm' : m ≤ grade A (v₁ A b x₀) := by rwa [← grade_r₀_eq_grade_v₁]
@@ -632,7 +889,12 @@ theorem gcrX_eq_gmresFixed (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcr
 
 /-- ORTHODIR computes the GMRES approximation (Section 6.9). If $A$ is nonsingular, $A p_i \ne 0$
 for every $i < m$, and $m$ is at most the grade of $r_0$, then the iterate $x_m$ of ORTHODIR is
-the approximation after $m$ steps of GMRES (Algorithm 6.9). -/
+the approximation after $m$ steps of GMRES (Algorithm 6.9).
+
+**Reading.** Lean compares the fixed-length iterates up to the grade, with nonsingularity ensuring
+uniqueness of the minimizer and nonzero direction images preventing division by zero. The book
+describes the equivalence in terms of the underlying orthogonal Krylov basis.
+-/
 theorem orthodirX_eq_gmresFixed (hA : IsUnit A) {m : ℕ}
     (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) (hm : m ≤ grade A (r₀ A b x₀)) :
     orthodirX A b x₀ m = gmresFixed A b x₀ m := by
@@ -690,7 +952,12 @@ the iterate $x_m$ minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$
 the approximation after $m$ steps of GMRES (Algorithm 6.9).
 
 The GMRES approximation is `SaadSparse.Chapter06.gmresFixed`. The nonsingularity of $A$ is used
-only for the last conclusion. -/
+only for the last conclusion.
+
+**Reading.** Lean compares the fixed-length iterates up to the grade, with nonsingularity ensuring
+uniqueness of the minimizer and nonzero direction images preventing division by zero. The book
+describes the equivalence in terms of the underlying orthogonal Krylov basis.
+-/
 theorem algorithm_6_21_eq_gmres (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A (gcrP A b x₀ i) ≠ 0)
     (hm : m ≤ grade A (r₀ A b x₀)) :
     (∀ i < m, ∀ l < m, i ≠ l → inner ℝ (op A (gcrP A b x₀ i)) (op A (gcrP A b x₀ l)) = 0) ∧
@@ -703,7 +970,12 @@ theorem algorithm_6_21_eq_gmres (hA : IsUnit A) {m : ℕ} (hne : ∀ i < m, op A
 $A \in \mathbb{R}^{n \times n}$ be nonsingular, let $m$ be at most the grade of $r_0$, and let
 the ORTHODIR directions satisfy $A p_i \ne 0$ for $i < m$. Then $(A p_i, A p_l) = 0$ for
 $i \ne l < m$, the iterate $x_m$ minimizes the residual norm over $x_0 + \mathcal{K}_m(A, r_0)$,
-and $x_m$ is the approximation after $m$ steps of GMRES. -/
+and $x_m$ is the approximation after $m$ steps of GMRES.
+
+**Reading.** Lean compares the fixed-length iterates up to the grade, with nonsingularity ensuring
+uniqueness of the minimizer and nonzero direction images preventing division by zero. The book
+describes the equivalence in terms of the underlying orthogonal Krylov basis.
+-/
 theorem orthodir_eq_gmres (hA : IsUnit A) {m : ℕ}
     (hne : ∀ i < m, op A (orthodirP A b x₀ i) ≠ 0) (hm : m ≤ grade A (r₀ A b x₀)) :
     (∀ i < m, ∀ l < m, i ≠ l →

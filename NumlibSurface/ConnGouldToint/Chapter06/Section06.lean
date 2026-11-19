@@ -100,9 +100,20 @@ amount. Both contradict a lower bound on $f$.
 
 ## Deviations from the source
 
+* **Theorems 6.6.1–6.6.2** (generalization). The eigenstep decrease uses a quadratic ray with
+  explicit slope and curvature. The line-search estimate uses a bound on the ray or objective
+  Taylor data along the trial segment in a real normed space.
+* **Theorem 6.6.3** (correction). The decrease guarantee assumes a nonzero model gradient or
+  negative model curvature at the current iterate. The source tests objective second-order
+  criticality. Assumption AM.5 is asymptotic and does not ensure the sign of the current model
+  curvature. The decrease predicate allows any positive decrease constant.
 * **Theorem 6.6.4** (reading). The model error estimate on small radii is an explicit hypothesis. It
   follows from uniform variation of the objective and model Hessians on small trial segments. See
   `ConnGouldToint.Chapter06.theorem_6_6_4`.
+* **Theorems 6.6.5–6.6.8 and Lemma 6.6.6** (generalization). The convergence lemmas work with real
+  normed spaces and abstract curvature functions. They carry the required model error, compactness
+  or local radius expansion as explicit hypotheses. The Hessian specialization takes the infimum
+  of the Hessian quadratic form over the unit sphere.
 -/
 
 open Filter Set Topology
@@ -126,6 +137,8 @@ def EigenTrialAccepted (ray : ℝ → ℝ) (q b τ U : ℝ) (j : ℕ) : Prop :=
 be a quadratic $r(t) = r(0) + t g + t^2 h / 2$ with $g \le 0$. Let $\kappa > 0$, $\tau < 0$ and
 $U > 0$ with $h \le \kappa \tau U^2$. Then $t = 1$ minimizes $r$ on $(0, 1]$, and
 $$r(0) - r(1) \ge -\tfrac12 \kappa \tau U^2.$$
+
+**Reading.** Scalar quadratic ray with supplied slope and negative curvature.
 -/
 theorem theorem_6_6_1 {ray : ℝ → ℝ} {g h κ τ U : ℝ}
     (hg : g ≤ 0) (hκ : 0 < κ) (hτ : τ < 0) (hU : 0 < U)
@@ -154,7 +167,10 @@ $$c - q(u) \ge -\tfrac12 \kappa \tau \, \nu(u)^2 \Delta^2,$$
 where $\nu(u) = \|u\| / p(u)$ is the ratio (6.4.2).
 
 The ratio converts the trust-region radius to the Euclidean length of the eigenpoint step, as in
-(6.6.2). -/
+(6.6.2).
+
+**Reading.** Abstract quadratic model and seminorm-scaled boundary.
+-/
 theorem theorem_6_6_1_quadraticModel {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     (p : Seminorm ℝ F) (H : F →ₗ[ℝ] F) (c : ℝ) (g u : F) {κ τ Δ : ℝ}
     (hκ : 0 < κ) (hτ : τ < 0) (hΔ : 0 < Δ) (hp : p u = Δ)
@@ -183,6 +199,9 @@ theorem theorem_6_6_1_quadraticModel {F : Type*} [NormedAddCommGroup F] [InnerPr
 $0 < q < 1$, $a > 0$, $U \in \mathbb{R}$, and let $A$ be a set of indices that contains every
 $j$ with $q^j U \le a$. Then there is a first index $j \in A$ (no $i < j$ lies in $A$), and
 $$\min\{U, q a\} \le q^j U.$$
+
+**Reading.** Backtracking argument takes an abstract acceptance predicate from a sufficient length
+bound.
 -/
 theorem exists_first_eigenTrial_of_small_length {q U a : ℝ}
     (hq : 0 < q) (hq' : q < 1) (ha : 0 < a) {accept : ℕ → Prop}
@@ -214,6 +233,8 @@ $$r(t) \le r(0) + t g + \tfrac12 t^2 h + R (t U)^3 \quad \text{for all } t \in (
 Then there is a first trial $j$ accepted by the test (6.6.9), and
 $$r(0) - r(q^j) \ge b \min\Bigl\{1, \frac{q (\kappa / 2 - b)}{R}\Bigr\}^2 |\tau| \min\{\tau^2,
   U^2\}.$$
+
+**Reading.** Explicit ray Taylor bound suffices for the backtracking estimate.
 -/
 theorem theorem_6_6_2_of_taylor_bound {ray : ℝ → ℝ} {q b κ τ U R g h : ℝ}
     (hq : 0 < q) (hq' : q < 1) (hb : 0 < b) (hbκ : b < κ / 2)
@@ -281,7 +302,10 @@ $$m(x) - m(x + q^j u) \ge b \min\Bigl\{1, \frac{q (\kappa / 2 - b)}{\gamma / 6}\
   \min\{\tau^2, \|u\|^2\}.$$
 
 The Lipschitz bound on the Hessian gives the cubic Taylor remainder $(\gamma / 6) \|t u\|^3$ of
-`ConnGouldToint.Chapter06.theorem_6_6_2_of_taylor_bound`. -/
+`ConnGouldToint.Chapter06.theorem_6_6_2_of_taylor_bound`.
+
+**Reading.** Uses Fréchet derivatives and objective Taylor data along the trial segment.
+-/
 theorem theorem_6_6_2 {S : Set E} (hS : IsOpen S) {m : E → ℝ} (hm : ContDiffOn ℝ 2 m S)
     {x u : E} {q b κ τ γ : ℝ} (hq : 0 < q) (hq' : q < 1) (hb : 0 < b)
     (hbκ : b < κ / 2) (hτ : τ < 0) (hu : u ≠ 0) (hγ : 0 < γ)
@@ -312,6 +336,8 @@ omit [NormedSpace ℝ E] in
 give a **negative-curvature decrease** with curvature $\tau$, radius $\Delta$ and constant
 $\kappa$ if $\kappa > 0$ and
 $$\tau < 0 \implies \kappa |\tau| \min\{\tau^2, \Delta^2\} \le m(x) - m(x + s).$$
+
+**Reading.** Supplied curvature measure and an arbitrary positive decrease constant.
 -/
 def HasNegativeCurvatureDecrease (m : E → ℝ) (x s : E) (τ Δ κ : ℝ) : Prop :=
   0 < κ ∧ (τ < 0 → κ * |τ| * min (τ ^ 2) (Δ ^ 2) ≤ m x - m (x + s))
@@ -321,7 +347,11 @@ omit [NormedSpace ℝ E] in
 and $\Delta > 0$. Suppose that $g \neq 0$ or $\tau < 0$, that the step satisfies the sufficient
 decrease condition $\kappa_1 \|g\| \min\{\|g\| / \beta, \Delta\} \le m(x) - m(x + s)$ with
 $0 < \kappa_1 < 1$, and that it satisfies AA.2 with curvature $\tau$ and constant $\kappa_2$.
-Then $m(x + s) < m(x)$ and $s \neq 0$. -/
+Then $m(x + s) < m(x)$ and $s \neq 0$.
+
+**Reading.** Assumes nonzero model gradient or negative model curvature directly at the current
+iterate.
+-/
 theorem theorem_6_6_3 {m : E → ℝ} {x s g : E} {β Δ τ κ₁ κ₂ : ℝ}
     (hβ : 0 < β) (hΔ : 0 < Δ) (hcrit : g ≠ 0 ∨ τ < 0)
     (hfirst : HasSufficientModelDecrease m x s g β Δ κ₁)
@@ -398,6 +428,8 @@ theorem objective_drop_floor_of_successful_between (run : BTRRun f P sufficient)
 basic trust-region algorithm has **small-radius model agreement** if for every $\varepsilon > 0$
 there is $\delta > 0$ such that, for all large $k$,
 $$\Delta_k \le \delta \implies |f(x_k + s_k) - m_k(x_k + s_k)| \le \varepsilon \Delta_k^2.$$
+
+**Reading.** Makes uniform small-radius trial error a separate hypothesis.
 -/
 def smallRadiusModelAgreement (run : BTRRun f P sufficient) : Prop :=
   ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ᶠ k in atTop, run.Δ k ≤ δ →
@@ -411,7 +443,10 @@ $\|Df(x_k)\| \to 0$, that the models satisfy AM.5, and that $\|s_k\| \le K \Delt
 with $K > 0$. Suppose finally that for every $\varepsilon > 0$ there is $\delta > 0$ such that,
 for every $k$ with $\Delta_k \le \delta$ and every $z \in [x_k, x_k + s_k]$,
 $$\|D^2 f(z) - D^2 f(x_k)\| + \|D^2 m_k(z) - D^2 m_k(x_k)\| \le \varepsilon.$$
-Then the run has small-radius model agreement. -/
+Then the run has small-radius model agreement.
+
+**Reading.** Uses uniform Hessian variation on small trial segments.
+-/
 theorem smallRadiusModelAgreement_of_hessians (run : BTRRun f P sufficient)
     (hf : ContDiff ℝ 2 f)
     (hm : ∀ k z, z ∈ segment ℝ (run.x k) (run.x k + run.s k) →
@@ -463,6 +498,10 @@ private theorem objective_drop_tendsto_zero (run : BTRRun f P sufficient)
     (hlower.mono (show range (f ∘ run.x) ⊆ range f from fun _ ⟨k, hk⟩ ↦ ⟨run.x k, hk⟩))
   simpa only [Function.comp_apply, sub_self] using ht.sub (ht.comp (tendsto_add_atTop_nat 1))
 
+/-- **Theorem 6.6.4 proof** of [conn2000trust].
+
+**Reading.** Uses explicit uniform small-radius model agreement.
+-/
 private theorem eventually_small_radius_very_successful (run : BTRRun f P sufficient)
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
     (herr : smallRadiusModelAgreement run) {τ : ℕ → ℝ} {κ a : ℝ} (hκ : 0 < κ) (ha : 0 < a)
@@ -569,6 +608,9 @@ continuous, and suppose that $\|Df(x_k)\| \to 0$ and that for every $\varepsilon
 $\lambda(x_k) > -\varepsilon$ for infinitely many $k$. Then there are $z \in K$ and a
 subsequence $x_{k_i} \to z$ with
 $$Df(z) = 0 \quad \text{and} \quad \lambda(z) \ge 0.$$
+
+**Reading.** Abstract continuous curvature on a real normed space and explicit first-order and
+frequent curvature bounds.
 -/
 theorem theorem_6_6_5 (run : BTRRun f P sufficient) {curv : E → ℝ} (hcurv : Continuous curv)
     {K : Set E} (hK : IsCompact K) (hx : ∀ k, run.x k ∈ K)
@@ -600,7 +642,11 @@ theorem theorem_6_6_5 (run : BTRRun f P sufficient) {curv : E → ℝ} (hcurv : 
 the basic trust-region algorithm for $f$ bounded below. Let $\kappa > 0$, $a > 0$, and suppose
 that every iteration satisfies AA.2 with curvature $\tau_k$ and constant $\kappa$. Then for
 every $\varepsilon > 0$, for all large $k$: if $k$ is successful and $\tau_k \le -a$, then
-$\Delta_k < \varepsilon$. -/
+$\Delta_k < \varepsilon$.
+
+**Reading.** States the successful-subsequence case of the proof separately with explicit error
+control.
+-/
 theorem lemma_6_6_6_successful (run : BTRRun f P sufficient) (hlower : BddBelow (range f))
     {τ : ℕ → ℝ} {κ a : ℝ} (hκ : 0 < κ) (ha : 0 < a)
     (hsecond : ∀ k, HasNegativeCurvatureDecrease (run.model k) (run.x k) (run.s k)
@@ -625,6 +671,10 @@ private theorem stationary_of_subsequence (run : BTRRun f P sufficient) {z : E}
   exact norm_eq_zero.mp (tendsto_nhds_unique (hgrad.norm.continuousAt.tendsto.comp hz)
     (hcrit.comp hj.tendsto_atTop))
 
+/-- **Theorem 6.6.7 proof** of [conn2000trust].
+
+**Reading.** Uses abstract continuous objective curvature and vanishing model discrepancy.
+-/
 private theorem eventually_modelCurvature_negative_near (run : BTRRun f P sufficient)
     {curv : E → ℝ} {τ : ℕ → ℝ} {z : E} (hcurv : ContinuousAt curv z)
     (hagree : Tendsto (fun k ↦ |curv (run.x k) - τ k|) atTop (𝓝 0))
@@ -674,7 +724,10 @@ $$\Delta_{k_i} \to 0 \quad \text{and} \quad \tau_{k_i} \le \lambda(z) / 2 \text{
 
 The subsequence may contain rejected trials. For a rejected trial, the proof follows the
 unchanged iterate to its first successful trial. The radius at that trial cannot be smaller than
-the small-radius acceptance threshold by more than the contraction factor of one step. -/
+the small-radius acceptance threshold by more than the contraction factor of one step.
+
+**Reading.** Abstract model curvature and explicit uniform model error.
+-/
 theorem lemma_6_6_6 (run : BTRRun f P sufficient) {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
     {curv : E → ℝ} (hcurv : ContinuousAt curv z) (hneg : curv z < 0) {τ : ℕ → ℝ}
@@ -759,7 +812,10 @@ for all $k$ with $K > 0$, and small-radius model agreement. Suppose that every i
 satisfies AA.2 with curvature $\tau_k$ and a constant $\kappa > 0$. Let $x_{k_i} \to z$ for a
 strictly increasing sequence $(k_i)$, and suppose that $z$ is an isolated limit point: there is
 $r > 0$ such that every limit $y$ of a subsequence with $\|y - z\| < r$ equals $z$. Then there
-are no $a > 0$ and $r' > 0$ such that $\tau_k \le -a$ for all large $k$ with $\|x_k - z\| < r'$. -/
+are no $a > 0$ and $r' > 0$ such that $\tau_k \le -a$ for all large $k$ with $\|x_k - z\| < r'$.
+
+**Reading.** Abstract curvature and properness of the ambient normed space.
+-/
 theorem not_negative_curvature_near_isolated_limit [ProperSpace E] (run : BTRRun f P sufficient)
     {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
@@ -835,7 +891,10 @@ such that every limit $y$ of a subsequence with $\|y - z\| < r$ equals $z$. Let
 $\lambda : E \to \mathbb{R}$ be continuous at $z$ with $|\lambda(x_k) - \tau_k| \to 0$. Then
 $$Df(z) = 0 \quad \text{and} \quad \lambda(z) \ge 0.$$
 
-The small-radius conclusion of Lemma 6.6.6 is needed only for the successful steps. -/
+The small-radius conclusion of Lemma 6.6.6 is needed only for the successful steps.
+
+**Reading.** Uses proper normed spaces, abstract curvature, and explicit model error control.
+-/
 theorem theorem_6_6_7 [ProperSpace E] (run : BTRRun f P sufficient) {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
     (hiso : ∃ r > (0 : ℝ), ∀ y, dist y z < r → ∀ i : ℕ → ℕ,
@@ -997,7 +1056,11 @@ together:
   $\Delta_k < \varepsilon$.
 
 So a neighborhood cannot force acceptance at small radii, force small radii on accepted trials,
-and force geometric expansion of small radii at the same time. -/
+and force geometric expansion of small radii at the same time.
+
+**Reading.** Abstract forced-expansion argument with explicit local acceptability and curvature
+premises.
+-/
 theorem false_of_local_radius_expansion {x : ℕ → E} {Δ : ℕ → ℝ} {S : Set ℕ}
     {z : E} {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (x ∘ j) atTop (𝓝 z))
     {γ γ₃ γ₄ cap K r δ : ℝ} (hγ : 0 < γ) (hγ₁ : γ < 1)
@@ -1109,7 +1172,10 @@ run of the basic trust-region algorithm for $f$ bounded below with forced radius
 $f(x_k) = m_k(x_k)$, $\|s_k\| \le K \Delta_k$ for all $k$ with $K > 0$, and small-radius model
 agreement. Suppose that every iteration satisfies AA.2 with curvature $\tau_k$ and a constant
 $\kappa > 0$, and let $x_{k_i} \to z$ for a strictly increasing sequence $(k_i)$. Then there are
-no $a > 0$ and $r > 0$ such that $\tau_k \le -a$ for all large $k$ with $\|x_k - z\| < r$. -/
+no $a > 0$ and $r > 0$ such that $\tau_k \le -a$ for all large $k$ with $\|x_k - z\| < r$.
+
+**Reading.** Uses abstract curvature and an explicit small-radius model error estimate.
+-/
 theorem not_negative_curvature_near_limit_of_forced_expansion (run : BTRRun f P sufficient) {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
     {τ : ℕ → ℝ} {a κ K : ℝ} (ha : 0 < a) (hκ : 0 < κ) (hK : 0 < K)
@@ -1147,7 +1213,10 @@ $|\lambda(x_k) - \tau_k| \to 0$. Then
 $$Df(z) = 0 \quad \text{and} \quad \lambda(z) \ge 0.$$
 
 Near a limit with negative curvature, consecutive very successful trials have displacements
-controlled by the growth of the radius, which gives a fixed decrease of the objective. -/
+controlled by the growth of the radius, which gives a fixed decrease of the objective.
+
+**Reading.** Uses abstract curvature, explicit error control, and explicit radius expansion.
+-/
 theorem theorem_6_6_8 (run : BTRRun f P sufficient) {z : E}
     {j : ℕ → ℕ} (hj : StrictMono j) (hz : Tendsto (run.x ∘ j) atTop (𝓝 z))
     {curv : E → ℝ} (hcurv : ContinuousAt curv z) {τ : ℕ → ℝ}
@@ -1178,7 +1247,10 @@ $[x_k, x_k + s_k]$, and suppose that $D^2 f$ is uniformly continuous on $S$. Let
 $\|s_k\| \le K \Delta_k$ and
 $$\|D^2 m_k(z) - D^2 m_k(x_k)\| \le L \|z - x_k\| \quad \text{for all } z \in [x_k, x_k +
   s_k].$$
-Then the run has small-radius model agreement. -/
+Then the run has small-radius model agreement.
+
+**Reading.** Uniform objective and model Hessian variation plus center agreement suffice.
+-/
 theorem smallRadiusModelAgreement_of_uniformHessians (run : BTRRun f P sufficient)
     (hf : ContDiff ℝ 2 f) (hm : ∀ k, ContDiff ℝ 2 (run.model k))
     (hval : ∀ k, f (run.x k) = run.model k (run.x k))
@@ -1227,7 +1299,11 @@ form $H$ on $E$, such as a Hessian, the **least unit curvature** is
 $$\inf_{\|u\| = 1} H(u, u).$$
 
 In a finite-dimensional Euclidean space it is the least eigenvalue of the Hessian. Its value is
-$0$ when $E = 0$, where the unit sphere is empty. -/
+$0$ when $E = 0$, where the unit sphere is empty.
+
+**Reading.** Infimum over the abstract normed sphere replaces the least Euclidean Hessian
+eigenvalue.
+-/
 noncomputable def leastUnitCurvature (H : E →L[ℝ] E →L[ℝ] ℝ) : ℝ :=
   ⨅ u : Metric.sphere (0 : E) 1, H u u
 
@@ -1246,6 +1322,8 @@ private theorem bddBelow_hessian_apply_unit (H : E →L[ℝ] E →L[ℝ] ℝ) :
 /-- **Proof of Theorem 6.6.4** of [conn2000trust], spectral comparison from AM.5. Let $E$ be a
 nontrivial real normed space and $H, M$ continuous bilinear forms on $E$. Then
 $$\Bigl|\inf_{\|u\| = 1} H(u, u) - \inf_{\|u\| = 1} M(u, u)\Bigr| \le \|H - M\|.$$
+
+**Reading.** Operator perturbation estimate for Rayleigh infima instead of least eigenvalues.
 -/
 theorem abs_sub_leastUnitCurvature_le [Nontrivial E] (H M : E →L[ℝ] E →L[ℝ] ℝ) :
     |leastUnitCurvature H - leastUnitCurvature M| ≤ ‖H - M‖ := by
@@ -1265,7 +1343,11 @@ theorem abs_sub_leastUnitCurvature_le [Nontrivial E] (H M : E →L[ℝ] E →L[�
 
 /-- **Proof of Theorem 6.6.5** of [conn2000trust], second-order criticality. Let $E$ be a nontrivial
 real normed space and $H$ a continuous bilinear form on $E$. Then
-$\inf_{\|u\| = 1} H(u, u) \ge 0$ if and only if $H(v, v) \ge 0$ for all $v \in E$. -/
+$\inf_{\|u\| = 1} H(u, u) \ge 0$ if and only if $H(v, v) \ge 0$ for all $v \in E$.
+
+**Reading.** Nonnegative infimum is equivalent to nonnegative Hessian quadratic form in an abstract
+space.
+-/
 theorem leastUnitCurvature_nonneg_iff [Nontrivial E] (H : E →L[ℝ] E →L[ℝ] ℝ) :
     0 ≤ leastUnitCurvature H ↔ ∀ v : E, 0 ≤ H v v := by
   let : Nonempty (Metric.sphere (0 : E) 1) :=
@@ -1289,7 +1371,10 @@ theorem leastUnitCurvature_nonneg_iff [Nontrivial E] (H : E →L[ℝ] E →L[ℝ
 
 /-- **Proofs of Theorems 6.6.5 and 10.3.1** of [conn2000trust], continuity of the curvature. On a
 nontrivial real normed space $E$, the least unit curvature $H \mapsto \inf_{\|u\| = 1} H(u, u)$
-is continuous for the operator norm on continuous bilinear forms. -/
+is continuous for the operator norm on continuous bilinear forms.
+
+**Reading.** Continuity of the Rayleigh infimum on any nontrivial real normed space.
+-/
 theorem continuous_leastUnitCurvature [Nontrivial E] :
     Continuous (leastUnitCurvature (E := E)) := by
   have h : LipschitzWith 1 (leastUnitCurvature (E := E)) := by
@@ -1310,7 +1395,11 @@ $x_{k_i} \to z$,
 $$Df(z) = 0 \quad \text{and} \quad D^2 f(z)(v, v) \ge 0 \text{ for all } v \in E.$$
 
 AM.5 controls the difference of the least curvatures by
-`ConnGouldToint.Chapter06.abs_sub_leastUnitCurvature_le`. -/
+`ConnGouldToint.Chapter06.abs_sub_leastUnitCurvature_le`.
+
+**Reading.** Abstract Hessian specialization uses a small-radius error hypothesis and curvature
+infima.
+-/
 theorem theorem_6_6_5_of_hessians [Nontrivial E] (run : BTRRun f P sufficient)
     {K : Set E} (hK : IsCompact K) (hx : ∀ k, run.x k ∈ K) (hf : ContDiff ℝ 2 f)
     (hcrit : Tendsto (fun k ↦ ‖fderiv ℝ f (run.x k)‖) atTop (𝓝 0))

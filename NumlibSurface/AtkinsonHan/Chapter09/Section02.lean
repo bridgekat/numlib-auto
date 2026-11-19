@@ -62,6 +62,10 @@ convergence under the uniform inf–sup condition (9.2.13). The proofs specializ
 
 ## Deviations from the source
 
+* **Theorem 9.2.1** (scope). The discrete existence result uses the discrete
+  inf–sup bound and equal dimensions. The estimates assume a solution of the
+  continuous problem directly. The source obtains that solution first from its
+  continuous inf–sup and nondegeneracy hypotheses.
 * **Remark 9.2.2** (correction). The bound $\|u - u_N\| \le (M / \alpha_N) \inf_{w_N \in U_N} \|u -
   w_N\|$ needs $U_N \ne \{0\}$, which the source does not state. See
   `AtkinsonHan.Chapter09.remark_9_2_2`.
@@ -176,7 +180,10 @@ constant $\alpha_N > 0$. Then for every $\ell \in V'$ the Petrov–Galerkin prob
 exactly one solution $u_N$.
 
 The proof does not use the completeness of $U$ and $V$, nor the conditions (9.2.3) and (9.2.4)
-on $a$ over the whole spaces. -/
+on $a$ over the whole spaces.
+
+**Reading.** Discrete-only existence hypotheses isolate the equal-dimensional finite problem.
+-/
 theorem theorem_9_2_1_existsUnique [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN]
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (ℓ : StrongDual ℝ V) :
@@ -190,6 +197,8 @@ finite-dimensional with $\dim U_N = \dim V_N$, and let $a$ satisfy the discrete 
 condition (9.2.6) with a constant $\alpha_N > 0$. Let $u_N$ solve the Petrov–Galerkin problem
 (9.2.5), and let $u \in U$ satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Then $$\|u - u_N\| \le
 \Big(1 + \frac{M}{\alpha_N}\Big) \|u - w_N\| \quad \text{for every } w_N \in U_N.$$
+
+**Reading.** Pointwise estimate takes exact solution as a hypothesis.
 -/
 theorem theorem_9_2_1_le [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
@@ -207,7 +216,10 @@ satisfy $a(u, v) = \ell(v)$ for all $v \in V$. Then $$\|u - u_N\| \le \Big(1 +
 \frac{M}{\alpha_N}\Big) \inf_{w_N \in U_N} \|u - w_N\|.$$
 
 The unique solvability of (9.2.5) is `AtkinsonHan.Chapter09.theorem_9_2_1_existsUnique`, and
-`AtkinsonHan.Chapter09.theorem_9_2_1_le` is the bound for a single $w_N \in U_N$. -/
+`AtkinsonHan.Chapter09.theorem_9_2_1_le` is the bound for a single $w_N \in U_N$.
+
+**Reading.** Same error constant under the supplied continuous solution hypothesis.
+-/
 theorem theorem_9_2_1 [FiniteDimensional ℝ UN] [FiniteDimensional ℝ VN] (hM0 : 0 ≤ M)
     (hM : a.IsBoundedWith M) (hdim : Module.finrank ℝ UN = Module.finrank ℝ VN) (hαN : 0 < αN)
     (hinfsup : DiscreteInfSup a UN VN αN) (huN : PetrovGalerkinProblem a ℓ UN VN uN)
@@ -277,7 +289,10 @@ Then $a$ satisfies the discrete inf–sup condition (9.2.6) on $U_N \times V_N$ 
 $\alpha_0$ if and only if $\alpha_0$ is at most the inf–sup value (9.2.14) of $U_N \times V_N$.
 
 Applied to each $N$, this says that the uniform inf–sup condition (9.2.13) with constant
-$\alpha_0$ holds if and only if all the values (9.2.14) are at least $\alpha_0$. -/
+$\alpha_0$ holds if and only if all the values (9.2.14) are at least $\alpha_0$.
+
+**Reading.** Makes the nontrivial trial space and bounded form assumptions explicit.
+-/
 theorem discreteInfSup_iff_le_infSupValue (hM : a.IsBoundedWith M) (hUN : UN ≠ ⊥) :
     DiscreteInfSup a UN VN α₀ ↔ α₀ ≤ infSupValue a UN VN := by
   have hnn : ∀ w : U, 0 ≤ ⨆ vN : {v : VN // v ≠ 0}, a w ((vN : VN) : V) / ‖((vN : VN) : V)‖ :=

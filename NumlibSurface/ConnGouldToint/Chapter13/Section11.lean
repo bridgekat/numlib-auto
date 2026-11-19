@@ -44,6 +44,19 @@ $\pi(x_k) \to 0$ for bounded iterates under uniform curvature bounds.
   field.
 * The uniform bound on the curvature constants $\beta_k$ (assumption AM.4b) is a hypothesis of
   Theorem 13.11.1.
+
+## Deviations from the source
+
+* **Convention.** The affine scaling norm uses totalized division outside the positive orthant. See
+  `ConnGouldToint.Chapter13.affineScalingPrimalNorm`,
+  `ConnGouldToint.Chapter13.affineScalingGradientNorm`.
+* **Representation.** Affine scaling is represented by a trust-region run whose radius cap gives
+  strict feasibility. See `ConnGouldToint.Chapter13.AffineScalingRun`,
+  `ConnGouldToint.Chapter13.AffineScalingRun.iterate_positive`,
+  `ConnGouldToint.Chapter13.affineScaling_trial_positive`.
+* **Reading.** The gradient limit makes the uniform scalar model, variation and lower-bound
+  assumptions explicit. See `ConnGouldToint.Chapter13.theorem_13_11_1_of_uniform_estimates`,
+  `ConnGouldToint.Chapter13.theorem_13_11_1`.
 -/
 
 open Filter Set
@@ -60,13 +73,21 @@ a point $x$ is
 $$\|s\|_x = \Big(\sum_i \Big(\frac{s_i}{x_i}\Big)^2\Big)^{1/2},$$
 the norm whose unit ball is the Dikin ellipsoid centered at $x$.
 
-At a coordinate with $x_i = 0$, Lean's division gives $s_i / x_i = 0$. -/
+At a coordinate with $x_i = 0$, Lean's division gives $s_i / x_i = 0$.
+
+**Reading.** The scaled primal norm and dual gradient norm are their Euclidean coordinate formulas.
+The primal formula uses totalized division and gives the intended norm on positive coordinates.
+-/
 noncomputable def affineScalingPrimalNorm (x s : EuclideanSpace ℝ ι) : ℝ :=
   Real.sqrt (∑ i, (s i / x i) ^ 2)
 
 /-- **Equation (13.11.3)** of [conn2000trust]. The **scaled gradient norm** of $g$ at $x$ is
 $$\|X g\| = \Big(\sum_i (x_i g_i)^2\Big)^{1/2},$$
-the dual norm of $g$ for the Dikin norm at $x > 0$. -/
+the dual norm of $g$ for the Dikin norm at $x > 0$.
+
+**Reading.** The scaled primal norm and dual gradient norm are their Euclidean coordinate formulas.
+The primal formula uses totalized division and gives the intended norm on positive coordinates.
+-/
 noncomputable def affineScalingGradientNorm (x g : EuclideanSpace ℝ ι) : ℝ :=
   Real.sqrt (∑ i, (x i * g i) ^ 2)
 
@@ -82,7 +103,12 @@ $$\kappa \max\Big\{ \pi_k \min\Big\{\frac{\pi_k}{\beta_k}, \Delta_k\Big\},\ -\ta
 where $\pi_k = \|X_k \nabla f(x_k)\|$ is the scaled gradient norm.
 
 The constants $\beta_k$ and $\tau_k$ are data of the run. The structure does not tie them to the
-curvature of the model. -/
+curvature of the model.
+
+**Reading.** The shared trust-region run supplies the transitions. The norm and radius cap enforce
+strict positivity at all trials and iterates; the models are represented as symmetric quadratic
+forms.
+-/
 structure AffineScalingRun (f : EuclideanSpace ℝ ι → ℝ) (P : BTRParams) where
   /-- The underlying run of the basic trust-region algorithm, with a trivial sufficient decrease
   predicate. -/
@@ -129,7 +155,12 @@ structure AffineScalingRun (f : EuclideanSpace ℝ ι → ℝ) (P : BTRParams) w
 $x \in \mathbb{R}^\iota$ with $x_i > 0$ for all $i$, and let $\|s\|_x < 1$. Then $(x + s)_i > 0$
 for all $i$.
 
-Since the radius cap is below one, this applies to every trial point of the method. -/
+Since the radius cap is below one, this applies to every trial point of the method.
+
+**Reading.** The shared trust-region run supplies the transitions. The norm and radius cap enforce
+strict positivity at all trials and iterates; the models are represented as symmetric quadratic
+forms.
+-/
 theorem affineScaling_trial_positive {x s : EuclideanSpace ℝ ι}
     (hx : ∀ i, 0 < x i) (hs : affineScalingPrimalNorm x s < 1) :
     ∀ i, 0 < (x + s) i := by
@@ -150,7 +181,12 @@ theorem affineScaling_trial_positive {x s : EuclideanSpace ℝ ι}
   linarith
 
 /-- **Algorithm 13.11.1** of [conn2000trust], strict feasibility. Every iterate $x_k$ of an
-affine-scaling run satisfies $(x_k)_i > 0$ for all $i$. -/
+affine-scaling run satisfies $(x_k)_i > 0$ for all $i$.
+
+**Reading.** The shared trust-region run supplies the transitions. The norm and radius cap enforce
+strict positivity at all trials and iterates; the models are represented as symmetric quadratic
+forms.
+-/
 theorem AffineScalingRun.iterate_positive {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     (r : AffineScalingRun f P) (k : ℕ) : ∀ i, 0 < r.run.x k i := by
   induction k with
@@ -199,7 +235,13 @@ that $\beta_k \le C$ for all $k$,
 $$|f(x_k + s_k) - m_k(x_k + s_k)| \le C \Delta_k^2, \qquad \pi_k - \pi_{k+1} \le L \Delta_k$$
 for all $k$, and $\{f(x_k)\}$ is bounded below. Then $\pi_k \to 0$.
 
-The variation bound is needed only between successive iterates. -/
+The variation bound is needed only between successive iterates.
+
+**Reading.** The scalar version assumes bounded curvature surrogates, uniform model-error and
+variation estimates, and a lower bound along the run. The smooth version derives these error and
+variation controls from bounded iterates and global Hessian bounds for the objective and quadratic
+models.
+-/
 theorem theorem_13_11_1_of_uniform_estimates {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     (r : AffineScalingRun f P) {C L : ℝ}
     (hC : ∀ k, r.β k ≤ C) (hL : 0 ≤ L)
@@ -355,7 +397,13 @@ $$\|X_k \nabla f(x_k)\| \to 0.$$
 
 The uniform bound on the curvature constants $\beta_k$ is assumption AM.4b. The proof derives
 the estimates of `ConnGouldToint.Chapter13.theorem_13_11_1_of_uniform_estimates` from the bounds
-on $x_k$, $\nabla^2 f$ and $H_k$. -/
+on $x_k$, $\nabla^2 f$ and $H_k$.
+
+**Reading.** The scalar version assumes bounded curvature surrogates, uniform model-error and
+variation estimates, and a lower bound along the run. The smooth version derives these error and
+variation controls from bounded iterates and global Hessian bounds for the objective and quadratic
+models.
+-/
 theorem theorem_13_11_1 {f : EuclideanSpace ℝ ι → ℝ} {P : BTRParams}
     (r : AffineScalingRun f P) (hf : ContDiff ℝ 2 f) {R L B Cβ : ℝ}
     (hR : 0 ≤ R) (hL : 0 ≤ L) (hB : 0 ≤ B)

@@ -76,6 +76,19 @@ construction of `Numlib.Approximation.GaussLobatto`.
 
 ## Deviations from the source
 
+* **Equations (10.13)–(10.16), Theorem 10.1, and Corollary 10.1** (generalization). The
+  exactness definition, interpolation criterion, Jacobi criterion, sharp bound, and Gauss node
+  characterization use measure weights in place of the density on $(-1,1)$. These statements
+  permit real nodes outside the interval. `gauss_weights_pos_nodes_mem_Ioo` recovers interiority
+  and positivity for measure weights supported on $[-1,1]$.
+* **Equations (10.17)–(10.19)** (reading). `equation_10_18` makes $n\geq 1$ explicit and states
+  exactness through $2n-1$ for its Lobatto rule. The printed discussion also claims maximality
+  among rules containing both endpoints. `equation_10_19` extends the identity to any rule whose
+  coefficients are integrals of the Lagrange basis polynomials.
+* **Section 10.2, convergence of Gaussian integration** (generalization). `gauss_tendsto`
+  permits a general measure weight on $[-1,1]$. `gaussLobatto_tendsto` states the result for
+  positive rules with interval nodes and the Lobatto exactness bound, without requiring that the
+  nodes include the endpoints.
 * **Remark 10.2** (typo). The book prints the Jacobi weight as $(1 - x)^\alpha (1 - x)^\beta$. The
   library uses $(1 - x)^\alpha (1 + x)^\beta$. See `QuarteroniSaccoSaleri.Chapter10.remark_10_2`.
 * **Remark 10.3** (typo). The book prints the map $\varphi(\xi) = \frac{a + b}{2} \xi + \frac{b -
@@ -100,7 +113,10 @@ $$E_{n,w}(p) = I_w(p) - I_{n,w}(p)$$
 vanishes for every $p \in \mathbb{P}_r$.
 
 The left side is `Quadrature.IsExactOnMeasure μ α x r`, the form of the degree of exactness used
-in the whole chapter. -/
+in the whole chapter.
+
+**Generalization.** Uses measure integration and permits real nodes on the full line. The
+source starts with a weight density and nodes on $[-1,1]$. -/
 theorem isExactOnMeasure_iff_forall_sub_eq_zero {m : ℕ} (α x : Fin m → ℝ) (r : ℕ) :
     IsExactOnMeasure μ α x r ↔
       ∀ p : ℝ[X], p.degree ≤ r → (∫ t, p.eval t ∂μ) - ∑ i, α i * p.eval (x i) = 0 :=
@@ -116,7 +132,10 @@ interpolant (8.4) of $f$.
 
 The book states the sufficiency. The converse is the remark of Section 9.1 that a formula on
 $n + 1$ distinct nodes that is exact on $\mathbb{P}_n$ is interpolatory. The proof specializes
-`Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure`. -/
+`Quadrature.isInterpolatoryMeasure_iff_isExactOnMeasure`.
+
+**Generalization.** Uses measure integration and permits real nodes on the full line. The
+source starts with a weight density and nodes on $[-1,1]$. -/
 theorem equation_10_14 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (α : Fin (n + 1) → ℝ) :
     ((∀ i, α i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ) ↔ IsExactOnMeasure μ α x n) ∧
@@ -135,7 +154,10 @@ and the nodal polynomial $\omega_{n+1}$ (8.6) of the nodes satisfies
 $$\int_{-1}^1 \omega_{n+1}(x) p(x) w(x) \, dx = 0 \quad \text{for all } p \in \mathbb{P}_{m-1}.
   \tag{10.15}$$
 
-The proof specializes `Quadrature.isExactOnMeasure_add_iff`. -/
+The proof specializes `Quadrature.isExactOnMeasure_add_iff`.
+
+**Generalization.** Uses measure integration and permits real nodes on the full line. The
+source starts with a weight density and nodes on $[-1,1]$. -/
 theorem theorem_10_1 (hw : IsWeight μ) {m : ℕ} (hm : 0 < m) {x : Fin (n + 1) → ℝ}
     (hx : Function.Injective x) (α : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ α x (n + m) ↔
@@ -150,7 +172,10 @@ exactness of a quadrature formula (10.13) with $n + 1$ distinct nodes is $2n + 1
 The maximum is stated with `IsGreatest` over the set of degrees $r$ for which such a rule
 exists. No rule with $n + 1$ distinct nodes is exact on $\mathbb{P}_{2n+2}$
 (`Quadrature.not_isExactOnMeasure_two_mul_add_two`), and the Gauss rule
-(`Quadrature.exists_gauss`) attains $2n + 1$. -/
+(`Quadrature.exists_gauss`) attains $2n + 1$.
+
+**Generalization.** Uses measure integration and permits real nodes on the full line. The
+source starts with a weight density and nodes on $[-1,1]$. -/
 theorem corollary_10_1 (hw : IsWeight μ) (n : ℕ) :
     IsGreatest {r | ∃ x α : Fin (n + 1) → ℝ, Function.Injective x ∧ IsExactOnMeasure μ α x r}
       (2 * n + 1) := by
@@ -167,7 +192,10 @@ theorem corollary_10_1 (hw : IsWeight μ) (n : ℕ) :
 weight. Then the orthogonal polynomial $p_{n+1}$ has $n + 1$ distinct real zeros
 $x_0, \dots, x_n$, the abscissae of (10.16).
 
-The proof specializes `OrthogonalPolynomial.exists_injective_family_eq_prod`. -/
+The proof specializes `OrthogonalPolynomial.exists_injective_family_eq_prod`.
+
+**Generalization.** Uses measure integration and permits real nodes on the full line. The
+source starts with a weight density and nodes on $[-1,1]$. -/
 theorem exists_gauss_nodes (hw : IsWeight μ) (n : ℕ) :
     ∃ x : Fin (n + 1) → ℝ, Function.Injective x ∧ ∀ j, (family μ (n + 1)).eval (x j) = 0 := by
   obtain ⟨x, hx, hprod⟩ := exists_injective_family_eq_prod hw (n + 1)
@@ -183,7 +211,10 @@ and its weights are given by (10.14). This rule is the **Gauss quadrature formul
 
 The proof specializes `Quadrature.isExactOnMeasure_two_mul_add_one_iff`. Its condition
 $\omega_{n+1} = p_{n+1}$ is equivalent, for distinct nodes, to $p_{n+1}(x_j) = 0$ for all $j$
-(`Quadrature.nodal_eq_family_of_forall_eval_eq_zero`). -/
+(`Quadrature.nodal_eq_family_of_forall_eval_eq_zero`).
+
+**Generalization.** Uses measure integration and permits real nodes on the full line. The
+source starts with a weight density and nodes on $[-1,1]$. -/
 theorem equation_10_16 (hw : IsWeight μ) {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (α : Fin (n + 1) → ℝ) :
     IsExactOnMeasure μ α x (2 * n + 1) ↔
@@ -201,7 +232,10 @@ degree of exactness $2n + 1$. Then $\alpha_i > 0$ and $x_i \in (-1, 1)$ for ever
 The book refers for this fact to Canuto, Hussaini, Quarteroni and Zang (1988), p. 56. The
 positivity follows from exactness on $l_i^2$. The location of the nodes is
 `OrthogonalPolynomial.root_family_mem_Ioo`, because the nodes are the zeros of $p_{n+1}$ by
-(10.16). -/
+(10.16).
+
+**Generalization.** Uses an arbitrary measure weight carried by $[-1,1]$ in place of a density
+on that interval. -/
 theorem gauss_weights_pos_nodes_mem_Ioo (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {x α : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (hexact : IsExactOnMeasure μ α x (2 * n + 1)) :
@@ -233,7 +267,10 @@ This is the **Gauss–Lobatto formula** with $n + 1$ nodes.
 The proof specializes `Quadrature.exists_gaussLobatto`, with
 `Quadrature.lobattoNodal_eq_add_smul` and `Quadrature.eq_lobattoNodal_of_eval_eq_zero` for the
 form (10.17) of the nodal polynomial. The polynomial $p_{n-1}$ is `family μ (n - 1)` with
-natural subtraction. -/
+natural subtraction.
+
+**Reading.** Requires $n\geq 1$ for the two endpoint nodes and states exactness through $2n-1$.
+The book also claims maximality over rules including the endpoints. -/
 theorem equation_10_18 (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0) (hn : 1 ≤ n) :
     ∃ x α : Fin (n + 1) → ℝ, Function.Injective x ∧ x 0 = -1 ∧ x (Fin.last n) = 1 ∧
       (∀ i, x i ∈ Icc (-1 : ℝ) 1) ∧
@@ -268,7 +305,10 @@ and the rule is its integral,
 $$I^{GL}_{n,w}(f) = \int_{-1}^1 \Pi^{GL}_{n,w} f(x) w(x) \, dx.$$
 
 The statement holds for any rule with interpolatory weights. The Gauss–Lobatto rule of
-`QuarteroniSaccoSaleri.Chapter10.equation_10_18` has such weights. -/
+`QuarteroniSaccoSaleri.Chapter10.equation_10_18` has such weights.
+
+**Generalization.** The two identities hold for a general measure weight whenever the weights
+equal the integrated Lagrange basis polynomials. This includes the Gauss–Lobatto construction. -/
 theorem equation_10_19 (hw : IsWeight μ) {x α : Fin (n + 1) → ℝ}
     (hint : ∀ i, α i = ∫ t, (Lagrange.basis Finset.univ x i).eval t ∂μ) (f : ℝ → ℝ) :
     (Lagrange.interpolate Finset.univ x fun i => f (x i)) =
@@ -334,7 +374,10 @@ $$\lim_{k \to \infty} \left| \int_{-1}^1 f(x) w(x) \, dx - \sum_j \alpha_j^{(k)}
 The book refers for this fact to Atkinson (1989), Chapter 5. The proof uses the Szegő–Pólya
 criterion `Quadrature.tendsto_of_isExactOnMeasure`. Its hypotheses hold because the weights are
 positive and the nodes are interior
-(`QuarteroniSaccoSaleri.Chapter10.gauss_weights_pos_nodes_mem_Ioo`). -/
+(`QuarteroniSaccoSaleri.Chapter10.gauss_weights_pos_nodes_mem_Ioo`).
+
+**Generalization.** Uses an arbitrary measure weight carried by $[-1,1]$ in place of a density
+on that interval. -/
 theorem gauss_tendsto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {x α : ∀ k : ℕ, Fin (k + 1) → ℝ} (hx : ∀ k, Function.Injective (x k))
     (hexact : ∀ k, IsExactOnMeasure μ (α k) (x k) (2 * k + 1)) {f : ℝ → ℝ}
@@ -358,7 +401,10 @@ $$\lim_{n \to \infty} \left| \int_{-1}^1 f(x) w(x) \, dx - \sum_j \bar\alpha_j^{
   x_j^{(n)}) \right| = 0.$$
 
 The sequence of rules is indexed by $k = n - 1 \ge 0$, so the rule of index $k$ has $k + 2$
-nodes and degree of exactness $2(k + 1) - 1$. -/
+nodes and degree of exactness $2(k + 1) - 1$.
+
+**Generalization.** Uses positive weights, interval nodes and exactness through $2n-1$ for
+$n+1$ nodes. The hypotheses permit rules other than those that include both endpoints. -/
 theorem gaussLobatto_tendsto (hw : IsWeight μ) (hsupp : μ (Icc (-1 : ℝ) 1)ᶜ = 0)
     {x α : ∀ k : ℕ, Fin (k + 2) → ℝ} (hx : ∀ k, Function.Injective (x k))
     (hmem : ∀ k i, x k i ∈ Icc (-1 : ℝ) 1) (hα : ∀ k i, 0 < α k i)

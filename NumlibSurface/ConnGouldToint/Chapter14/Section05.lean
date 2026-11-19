@@ -43,6 +43,14 @@ derivative is surjective. Counterexamples show that both hypotheses are needed.
 
 ## Deviations from the source
 
+* **Generalization.** The exact penalty uses distance to an arbitrary feasible residual set. See
+  `ConnGouldToint.Chapter14.nonsmoothExactPenalty`.
+* **Correction.** The second-order test equivalence uses a strict weight threshold, and a scalar
+  example shows failure at equality. See `ConnGouldToint.Chapter14.theorem_14_5_1`,
+  `ConnGouldToint.Chapter14.theorem_14_5_1_threshold_counterexample`.
+* **Correction.** The small-weight obstruction assumes surjectivity; the redundant-constraint
+  example shows why. See `ConnGouldToint.Chapter14.theorem_14_5_2`,
+  `ConnGouldToint.Chapter14.theorem_14_5_2_redundant_constraint_counterexample`.
 * **Theorem 14.5.1** (correction). The penalty weight must be strictly larger than the threshold
   (14.5.2). At the nonstrict threshold the equivalence fails. See
   `ConnGouldToint.Chapter14.theorem_14_5_1` and
@@ -66,7 +74,11 @@ and $\sigma \in \mathbb{R}$ the penalty weight. The **nonsmooth exact penalty fu
 $$\phi(x, \sigma) = f(x) + \sigma \operatorname{dist}(c(x), C).$$
 
 The set $C$ encodes equalities and inequalities. For a monotonic norm and the orthant of
-feasible coordinate residuals, the distance is the norm of the clipped residual. -/
+feasible coordinate residuals, the distance is the norm of the clipped residual.
+
+**Generalization.** The penalty charges distance to a supplied feasible residual set. The norm of
+the equality and negative inequality parts is the source's Euclidean projection-to-cone case.
+-/
 noncomputable def nonsmoothExactPenalty
     (f : E → ℝ) (c : E → Z) (C : Set Z) (σ : ℝ) (x : E) : ℝ :=
   f x + σ * Metric.infDist (c x) C
@@ -86,7 +98,13 @@ fails; see `ConnGouldToint.Chapter14.theorem_14_5_1_threshold_counterexample`. H
 is strictly larger than $\|\ell\|$.
 
 Here $H$ stands for the Hessian of the Lagrangian, $K$ for the tangent cone to the residual set
-at $c(x)$, $g$ for $f'(x)$ and $A$ for $c'(x)$. -/
+at $c(x)$, $g$ for $f'(x)$ and $A$ for $c'(x)$.
+
+**Correction.** The main result formulates the second-order criteria directly in terms of
+derivative, cone and Hessian data and uses a strictly larger penalty weight than the dual multiplier
+norm. At equality a constrained strict local solution can fail even to be a local minimizer of the
+penalty.
+-/
 theorem theorem_14_5_1 {K : Set Z} (hK : IsClosed K) (h0 : (0 : Z) ∈ K)
     (A : E →L[ℝ] Z) (g : E →L[ℝ] ℝ) (H : E →L[ℝ] E) (ell : Z →L[ℝ] ℝ)
     {σ : ℝ} (hσ : ‖ell‖ < σ) (hnormal : ∀ z ∈ K, ell z ≤ 0)
@@ -110,7 +128,13 @@ theorem theorem_14_5_1 {K : Set Z} (hK : IsClosed K) (h0 : (0 : Z) ∈ K)
 problem of minimizing $x - x^2$ subject to $x = 0$ on $\mathbb{R}$, the point $0$ with
 multiplier $1$ satisfies the first-order conditions (14.2.3), and there is no nonzero critical
 direction $d$ with $c'(0) d = 0$. But $0$ is not a local minimizer of the penalty function
-$x - x^2 + |x|$ with weight $1$, which equals $-x^2 < 0$ for every $x < 0$. -/
+$x - x^2 + |x|$ with weight $1$, which equals $-x^2 < 0$ for every $x < 0$.
+
+**Correction.** The main result formulates the second-order criteria directly in terms of
+derivative, cone and Hessian data and uses a strictly larger penalty weight than the dual multiplier
+norm. At equality a constrained strict local solution can fail even to be a local minimizer of the
+penalty.
+-/
 theorem theorem_14_5_1_threshold_counterexample :
     IsEqualityKKT (fun x : ℝ ↦ x - x ^ 2) id 0 (1 : ℝ) ∧
       (∀ d : ℝ, d ≠ 0 → fderiv ℝ (id : ℝ → ℝ) 0 d = 0 → False) ∧
@@ -143,7 +167,12 @@ theorem theorem_14_5_1_threshold_counterexample :
 /-- Counterexample to the printed Theorem 14.5.2 of [conn2000trust] with a nonunique multiplier. For
 the problem of minimizing $x^2$ subject to the redundant constraint $0 = 0$ on $\mathbb{R}$, the
 point $0$ with multiplier $2$ satisfies the first-order conditions (14.2.3), and $1 < |2|$. But
-$0$ is a local minimizer of the penalty function with weight $1$, which is $x^2$. -/
+$0$ is a local minimizer of the penalty function with weight $1$, which is $x^2$.
+
+**Correction.** The constraint derivative is surjective, so the multiplier is uniquely fixed by
+stationarity. A redundant constraint admits a multiplier larger than the penalty weight even though
+the point still minimizes the penalty.
+-/
 theorem theorem_14_5_2_redundant_constraint_counterexample :
     IsEqualityKKT (fun x : ℝ ↦ x ^ 2) (fun _ ↦ 0) 0 (2 : ℝ) ∧
       (1 : ℝ) < ‖(2 : ℝ)‖ ∧
@@ -173,7 +202,12 @@ the multiplier is not unique and can be arbitrarily large; see
 `ConnGouldToint.Chapter14.theorem_14_5_2_redundant_constraint_counterexample`.
 
 If $A$ is surjective, a direction $d$ with $\ell(A d)$ close to $\|\ell\| \|A d\|$ is a descent
-direction of the penalty function. -/
+direction of the penalty function.
+
+**Correction.** The constraint derivative is surjective, so the multiplier is uniquely fixed by
+stationarity. A redundant constraint admits a multiplier larger than the penalty weight even though
+the point still minimizes the penalty.
+-/
 theorem theorem_14_5_2 [NormedSpace ℝ E] {f : E → ℝ} {c : E → Z} {C : Set Z} {x : E}
     (hx : c x ∈ C) {g : E →L[ℝ] ℝ} {A : E →L[ℝ] Z}
     (hf : HasFDerivAt f g x) (hc : HasFDerivAt c A x) (hA : Function.Surjective A)

@@ -56,6 +56,8 @@ vector by zeros gives a nearby eigenvalue of the full matrix. These results are 
 
 ## Deviations from the source
 
+* **Theorem 3.4.11** (correction). The weight identities evaluate a polynomial quotient, giving
+  the removable value at a shared eigenvalue.
 * **Theorem 3.4.6** (counterexample). The printed arithmetic restriction is false for the
   off-diagonal entries themselves. Already at order two, addition, multiplication and
   division of rational inputs and constants cannot recover the off-diagonal entry exactly.
@@ -79,7 +81,10 @@ namespace LiesenStrakos.Chapter03
 
 /-- **Corollary 3.4.2** of [liesen2013krylov]. The discrete Gauss pairing is positive
 definite on polynomials of degree less than $n$, and the first $n$ orthonormal polynomials for
-the original measure stay orthonormal for this pairing. -/
+the original measure stay orthonormal for this pairing.
+
+**Generalization.** Any positive exact rule with the stated polynomial integrability and norms
+gives orthonormality. -/
 theorem corollary_3_4_2 {μ : Measure ℝ}
     (hint : ∀ p : ℝ[X], Integrable (fun t => p.eval t) μ) {n : ℕ}
     (hnorm : ∀ k < n, 0 < normSq μ k) {x w : Fin n → ℝ}
@@ -246,7 +251,10 @@ def HasJacobiSpectralData {n : ℕ} (T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ)
 more than $n+1$ support points, the $n+1$ Gauss–Christoffel nodes are the roots of the
 orthonormal polynomial of degree $n+1$ and lie in the open interval carrying the measure.
 They are also the eigenvalues of the Jacobi matrix. An orthonormal eigenbasis can be chosen
-with first components equal to the positive square roots of the Gauss weights. -/
+with first components equal to the positive square roots of the Gauss weights.
+
+**Generalization.** The theorem starts from arbitrary distinct exact nodes and allows the
+measure to charge the left endpoint. -/
 theorem theorem_3_4_1 {μ : Measure ℝ} [IsProbabilityMeasure μ]
     {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) {n : ℕ}
     (hcard : ∀ s : Finset ℝ, s.card ≤ n + 1 → μ (↑s : Set ℝ)ᶜ ≠ 0)
@@ -590,7 +598,11 @@ column of $W=Z^\mathsf{T}VQ$ corresponding to $\theta_j$ gives weights
 $W_{ij}^2$ of sum one, and $\theta_j=\sum_i W_{ij}^2\lambda_i$.
 
 The statement applies to all orthogonally diagonalizable real matrices with orthogonally
-diagonalizable leading blocks. In the Jacobi case the Lanczos basis matrix is $V$. -/
+diagonalizable leading blocks. In the Jacobi case the Lanczos basis matrix is $V$.
+
+**Reading.** Works for any matrix and leading block with real orthogonal diagonalizations, including
+equal size.
+-/
 theorem proposition_3_4_8 {m n : ℕ} (h : m ≤ n) (T : Matrix (Fin n) (Fin n) ℝ)
     {Z : Matrix (Fin n) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
     (hZ : Zᵀ * Z = 1) (hQ : Qᵀ * Q = 1) {e : Fin n → ℝ} {θ : Fin m → ℝ}
@@ -642,7 +654,10 @@ of $\theta$, where $z$ is the unit eigenvector of the leading block. This is Def
 of [liesen2013krylov], with zero-based indices.
 
 The printed second clause joins the tolerance and the existence of a nearby eigenvalue with
-"and". It is read as specifying the distance criterion for stabilisation. -/
+"and". It is read as specifying the distance criterion for stabilisation.
+
+**Reading.** Encodes distance inequality independently of the Jacobi and eigenpair hypotheses.
+-/
 def IsStabilisedJacobiEigenvalue {m n : ℕ} (T : Matrix (Fin n) (Fin n) ℝ)
     (h : m + 1 < n) (θ : ℝ) (z : EuclideanSpace ℝ (Fin (m + 1))) : Prop :=
   ∃ μ ∈ spectrum ℝ T, |μ - θ| ≤ T ⟨m + 1, h⟩ ⟨m, by omega⟩ * |z (Fin.last m)|
@@ -662,7 +677,13 @@ Let the corresponding full-matrix eigenvalues and weights be $\lambda_i$ and $w_
 $$v_j=\sum_i w_i \ell_j(\lambda_i)=\sum_i w_i \ell_j(\lambda_i)^2,$$
 where $\ell_j(X)=(\psi(X)/(X-\theta_j))/\psi'(\theta_j)$ for the characteristic polynomial
 $\psi$ of $S$. The quotient is a polynomial, including when a full spectral node equals
-$\theta_j$. -/
+$\theta_j$.
+
+**Correction.** The displayed scalar quotient in the source has a removable singularity when a
+larger eigenvalue equals the smaller eigenvalue. For example, the order-three Jacobi matrix
+with zero diagonal and unit subdiagonal shares eigenvalue $0$ with its first leading block. The
+polynomial quotient evaluates at the shared eigenvalue by continuation. The result also permits
+the two blocks to have equal size. -/
 theorem theorem_3_4_11 {m n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     (hT : T.IsJacobiMatrix) (hm : m + 1 ≤ n + 1) (j : Fin (m + 1)) :
     let S := T.submatrix (Fin.castLE hm) (Fin.castLE hm)
@@ -716,7 +737,10 @@ theorem theorem_3_4_11 {m n : ℕ} {T : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ}
     simpa [mul_ite, v] using hh.symm
 
 /-- The minimal adjacent gap in a list of at least two increasing eigenvalues. For a strictly
-increasing list, it is the least distance between two distinct entries. -/
+increasing list, it is the least distance between two distinct entries.
+
+**Reading.** Adjacent gaps suffice for the source's minimum pairwise distance on strictly
+increasing spectra. -/
 noncomputable def minimalJacobiGap {n : ℕ} (e : Fin (n + 2) → ℝ) : ℝ :=
   Finset.univ.inf' Finset.univ_nonempty fun j : Fin (n + 1) => e j.succ - e j.castSucc
 

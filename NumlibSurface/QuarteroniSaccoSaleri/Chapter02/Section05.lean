@@ -114,8 +114,8 @@ of associativity of $\oplus$) have descriptive names.
 
 * **Section 2.5.2, the smallest de-normalized number** (reading). The statement assumes $t \ge 2$,
   which the book leaves implicit. See `QuarteroniSaccoSaleri.Chapter02.denormalizedMin`.
-* **Section 2.5.3, the spacing** (reading). The statement uses the mantissa convention (2.29), where
-  the book's sentence uses the convention $a_1.a_2 \dots \times \beta^e$. See
+* **Section 2.5.3, the spacing** (correction). The printed interval $[\beta^e,\beta^{e+1})$
+  is one exponent higher than the printed spacing $\beta^{e-t}$ under convention (2.29). See
   `QuarteroniSaccoSaleri.Chapter02.spacing`.
 * **Section 2.5.3, the machine epsilon** (reading). "The smallest number of $\mathbb{F}$ such that
   $1 + \varepsilon_M > 1$" is read as the least $\delta > 0$ with $1 + \delta \in \mathbb{F}$, and
@@ -127,6 +127,11 @@ of associativity of $\oplus$) have descriptive names.
 * **Equation (2.36)** (reading). The additional assumption on the round digit that the book requires
   for the subtraction holds automatically, because the exact result is rounded. See
   `QuarteroniSaccoSaleri.Chapter02.equation_2_36`.
+* **Equations (2.29)–(2.32) and the error bounds** (reading). The number set is total in
+  its parameters. The magnitude lower bound applies to nonzero numbers. Digit rounding handles
+  carries and keeps the full exponent range, extending the rounding error bounds.
+* **Machine operations** (reading). The operation has real-valued output without imposing
+  closure in the finite system. A two-digit decimal example witnesses nonassociativity.
 
 ## Not formalized
 
@@ -163,7 +168,10 @@ with $a_1 \neq 0$, and an exponent $L \le e \le U$.
 The digits are a function `a : ℕ → ℕ`, of which only $a_1, \dots, a_t$ matter. The sign is a
 `Bool`. The definition makes no hypothesis on the parameters;
 `QuarteroniSaccoSaleri.Chapter02.floatingPointNumbers_eq` identifies it with the backbone's set
-for a floating-point system. -/
+for a floating-point system.
+
+**Reading.** The definition is total on arbitrary parameters. The source supposes a valid
+base, positive precision and nonempty exponent range, represented separately by `System`. -/
 def floatingPointNumbers (β t : ℕ) (L U : ℤ) : Set ℝ :=
   {0} ∪ {x | ∃ (s : Bool) (e : ℤ) (a : ℕ → ℕ), (∀ i ∈ Icc 1 t, a i ≤ β - 1) ∧ a 1 ≠ 0 ∧
     L ≤ e ∧ e ≤ U ∧
@@ -299,7 +307,8 @@ theorem floatingPointNumbers_eq (s : System) :
 
 /-- **Equation (2.30)** of [quarteroni2000numerical]. Every nonzero $x \in \mathbb{F}$ satisfies
 $$x_{min} = \beta^{L-1} \le |x| \le \beta^U (1 - \beta^{-t}) = x_{max}.$$
--/
+
+**Reading.** The lower magnitude bound requires $x\ne 0$, since the set also contains zero. -/
 theorem equation_2_30 (s : System) {x : ℝ} (hx : x ∈ s.numbers ℝ) (h0 : x ≠ 0) :
     (s.β : ℝ) ^ (s.L - 1) ≤ |x| ∧ |x| ≤ (s.β : ℝ) ^ s.U * (1 - (s.β : ℝ) ^ (-(s.t : ℤ))) :=
   ⟨s.xmin_le_abs hx h0, s.abs_le_xmax hx⟩
@@ -460,11 +469,11 @@ where $\varepsilon_M = \beta^{1-t}$ is the machine epsilon. The book says that "
 between a number $x \in \mathbb{F}$ and its next nearest $y \in \mathbb{F}$ … is at least
 $\beta^{-1} \varepsilon_M |x|$ and at most $\varepsilon_M |x|$".
 
-**Reading.** Both statements use the mantissa convention (2.29),
+**Correction.** Both statements use the mantissa convention (2.29),
 $x = \pm (0.a_1 \dots a_t) \times \beta^e$, in which the numbers of exponent $e$ fill
 $[\beta^{e-1}, \beta^e)$. The book's sentence "having fixed an interval of the form
-$[\beta^e, \beta^{e+1}]$ … distance equal to $\beta^{e-t}$" uses the other convention
-$a_1.a_2 \dots \times \beta^e$.
+$[\beta^e, \beta^{e+1}]$ … distance equal to $\beta^{e-t}$" shifts the exponent in the interval
+but does not shift it in the spacing. The spacing there is $\beta^{e+1-t}$.
 
 The exponent of $x$ is `FloatingPoint.System.exponent x`. The second statement holds for every
 nonzero real $x$, not only for $x \in \mathbb{F}$. -/
@@ -486,7 +495,10 @@ $$\frac{\Delta x}{|x|} = \frac{1}{m},$$
 which depends only on the mantissa.
 
 The book writes $\Delta x / x$. The exponent $e$ is not restricted to $[L, U]$, and $\Delta x$
-is written with `FloatingPoint.System.exponent x`, which equals $e$. -/
+is written with `FloatingPoint.System.exponent x`, which equals $e$.
+
+**Reading.** The signed relative step is written with unsigned spacing and $|x|$, and the
+exponent need not be in the system's representable range. -/
 theorem equation_2_31 (s : System) {σ : ℤˣ} {m : ℕ} {e : ℤ} (hm1 : s.β ^ (s.t - 1) ≤ m)
     (hm2 : m ≤ s.β ^ s.t - 1) {x : ℝ} (hx : x = ((σ : ℤ) : ℝ) * m * (s.β : ℝ) ^ (e - s.t)) :
     (s.β : ℝ) ^ (s.exponent x - s.t) / |x| = 1 / m :=
@@ -538,7 +550,9 @@ that is, $fl(x) = \operatorname{sign}(x) \, (\lfloor \mu \rfloor + [a_{t+1} \ge 
 The hypothesis that $\beta$ is even is the standing assumption of the book from Section 2.5.1.
 For odd $\beta$ the digit rule is not rounding to nearest. The number $\mu$ is
 `FloatingPoint.System.mantissa x`, and $fl$ is the rounding to nearest `FloatingPoint.System.round`.
--/
+
+**Reading.** The digit increment applies to the integer mantissa, so carrying is automatic.
+Rounding is total even when the result is outside the bounded exponent range. -/
 theorem equation_2_32 (s : System) (hβ : Even s.β) (x : ℝ) :
     s.round x = (SignType.sign x : ℝ) *
       ((⌊s.mantissa x⌋ + if (s.β : ℤ) / 2 ≤ ⌊s.mantissa x * s.β⌋ % s.β then 1 else 0 : ℤ) : ℝ) *
@@ -597,7 +611,10 @@ $$\operatorname{chop}(x) = x (1 + \delta), \qquad |\delta| \le \beta^{1-t} = \va
 so $\varepsilon_M$ is the unit roundoff of chopping.
 
 Chopping is `FloatingPoint.System.chop`, which truncates the mantissa. The bound is Theorem 2.2
-of [higham2002accuracy]. -/
+of [higham2002accuracy].
+
+**Generalization.** The book defines chopping in the preceding prose. The analogue of
+Property 2.1 gives a bound for it with the full machine epsilon and arbitrary real input. -/
 theorem property_2_1_chop (s : System) (x : ℝ) :
     ∃ δ : ℝ, |δ| ≤ (s.β : ℝ) ^ (1 - (s.t : ℤ)) ∧ s.chop x = x * (1 + δ) :=
   s.exists_chop_eq_mul_one_add x
@@ -605,7 +622,9 @@ theorem property_2_1_chop (s : System) (x : ℝ) :
 /-- **Equation (2.35)** of [quarteroni2000numerical], the relative error of rounding. For
 $x \neq 0$,
 $$E_{rel}(x) = \frac{|x - fl(x)|}{|x|} \le u = \tfrac{1}{2} \beta^{1-t}.$$
--/
+
+**Generalization.** The relative error bound is stated for all nonzero reals, because
+idealized nearest rounding here keeps the full exponent range. -/
 theorem equation_2_35 (s : System) {x : ℝ} (hx : x ≠ 0) :
     |x - s.round x| / |x| ≤ (1 / 2 : ℝ) * (s.β : ℝ) ^ (1 - (s.t : ℤ)) := by
   rw [div_le_iff₀ (abs_pos.2 hx), abs_sub_comm]
@@ -616,7 +635,9 @@ $E(x) \le \frac{1}{2} \beta^{-t+e}$ that closes the section. For every $x \in \m
 exponent $e$,
 $$E(x) = |x - fl(x)| \le \tfrac{1}{2} \beta^{e-t}.$$
 
-The exponent is `FloatingPoint.System.exponent x`. For $x = 0$ the left side is $0$. -/
+The exponent is `FloatingPoint.System.exponent x`. For $x = 0$ the left side is $0$.
+
+**Generalization.** The absolute error bound holds for all real inputs under total rounding. -/
 theorem roundAbsError (s : System) (x : ℝ) :
     |x - s.round x| ≤ (1 / 2 : ℝ) * (s.β : ℝ) ^ (s.exponent x - s.t) :=
   s.abs_sub_round_le x
@@ -627,7 +648,9 @@ theorem roundAbsError (s : System) (x : ℝ) :
 operation $\circ : \mathbb{R} \times \mathbb{R} \to \mathbb{R}$, the corresponding machine
 operation maps $x, y$ to
 $$fl\bigl(fl(x) \circ fl(y)\bigr).$$
--/
+
+**Reading.** The source gives the idealized formula with codomain $\mathbb F$. The Lean
+operation returns a real number, which can fall outside the system's exponent range. -/
 noncomputable def machineOp (s : System) (f : ℝ → ℝ → ℝ) (x y : ℝ) : ℝ :=
   s.round (f (s.round x) (s.round y))
 
@@ -666,7 +689,10 @@ theorem machineOp_comm (s : System) (x y : ℝ) :
 /-- The two-digit decimal system $\mathbb{F}(10, 2, -1, 2)$, in which
 `QuarteroniSaccoSaleri.Chapter02.machineAdd_not_assoc` shows the failure of associativity of
 Section 2.5.6 of [quarteroni2000numerical]. Its base and precision are those of the example of
-the round digit in Section 2.5.6. -/
+the round digit in Section 2.5.6.
+
+**Reading.** The source specifies the base and precision for its subtraction example. The
+counterexample to associativity chooses the exponent range $[-1,2]$ explicitly. -/
 def decimalSystem : System := ⟨10, 2, -1, 2, by norm_num, by norm_num, by norm_num⟩
 
 /-- **Section 2.5.6** of [quarteroni2000numerical], associativity is lost: "in general $x \oplus (y
@@ -676,7 +702,10 @@ $$(x \oplus y) \oplus z = fl(fl(1.04) + 0.04) = fl(1.0 + 0.04) = 1.0,$$
 while
 $$x \oplus (y \oplus z) = fl(1 + fl(0.08)) = fl(1.08) = 1.1.$$
 
-The values are computed over $\mathbb{Q}$ with `FloatingPoint.System.add`. -/
+The values are computed over $\mathbb{Q}$ with `FloatingPoint.System.add`.
+
+**Reading.** The book asserts failure of associativity in general. The theorem witnesses it
+with a specific two-digit decimal system and exact rational operands. -/
 theorem machineAdd_not_assoc :
     (1 : ℚ) ∈ decimalSystem.numbers ℚ ∧ (4 / 100 : ℚ) ∈ decimalSystem.numbers ℚ ∧
       decimalSystem.add (decimalSystem.add (1 : ℚ) (4 / 100)) (4 / 100) = 1 ∧

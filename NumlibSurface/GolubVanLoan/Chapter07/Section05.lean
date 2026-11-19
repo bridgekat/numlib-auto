@@ -139,6 +139,19 @@ the programs use the Householder and Givens helpers of §5.1.
 
 ## Deviations from the source
 
+* **§7.5.4, real double shift** (reading). The canonical QR factors give a real result for a
+  nonsingular conjugate pair of shifts. Arbitrary factors give diagonal unitary similarity. The
+  source also allows two distinct real shifts. See `GolubVanLoan.Chapter07.double_shift_real`.
+* **Algorithm 7.5.1** (generalization). The program takes a consecutive window and returns its
+  Householder data. Windows with fewer than three indices are left unchanged. See
+  `GolubVanLoan.Chapter07.algorithm_7_5_1`.
+* **§7.5.5, essential uniqueness** (reading). The comparison with the explicit step assumes a
+  nonsingular shift polynomial and takes its canonical QR factors. The source assumes that both
+  output Hessenberg matrices are unreduced and that the orthogonal factors share their first
+  column. See `GolubVanLoan.Chapter07.algorithm_7_5_1_essential`.
+* **Algorithm 7.5.2** (reading). The program always returns $Q$ and exposes a pass budget and
+  completion flag. The source also describes an eigenvalues-only mode that skips transformations
+  outside the active diagonal block. See `GolubVanLoan.Chapter07.algorithm_7_5_2`.
 * **(7.5.3) and (7.5.6)–(7.5.7)** (generalization). The source takes the factorizations to be QR
   factorizations. The identities hold for any second factor $R$, $R_1$, $R_2$. See
   `GolubVanLoan.Chapter07.equation_7_5_3` and `GolubVanLoan.Chapter07.equation_7_5_7`.
@@ -147,9 +160,6 @@ the programs use the Householder and Givens helpers of §5.1.
   assumes a diagonalizable $A$ with real eigenvalues, distinct nonzero $|\lambda_i - \mu|$ and a
   general-position condition, and it gives the bound $C (r / |\lambda_p - \mu|)^k$ for every
   $r > |\lambda_{p+1} - \mu|$. See `GolubVanLoan.Chapter07.shiftedQr_rate`.
-* **Theorem 7.5.1** (generalization). The source concludes $\tilde h_{n,n-1} = 0$ and
-  $\tilde h_{nn} = \mu$. The theorem shows that the whole last row of $\tilde H$ is $\mu e_n^T$. See
-  `GolubVanLoan.Chapter07.theorem_7_5_1`.
 * **§7.5.3, the quadratic convergence** (reading). The source says that if $h_{n,n-1}$ converges to
   zero, it is likely to do so at a quadratic rate. The theorem is a local bound near an
   algebraically simple real eigenvalue. See `GolubVanLoan.Chapter07.single_shift_quadratic`.
@@ -291,8 +301,7 @@ $H - \mu I = UR$ with $U \in \mathbb{C}^{n \times n}$ unitary and $R$ upper tria
 $\tilde H = RU + \mu I$. Then the last row of $\tilde H$ is $\mu e_n^T$. In particular
 $\tilde h_{n,n-1} = 0$ and $\tilde h_{nn} = \mu$.
 
-**Generalization.** The source concludes $\tilde h_{n,n-1} = 0$ and $\tilde h_{nn} = \mu$. The
-theorem shows that all the other entries of the last row vanish too.
+The formulation uses the full last-row identity from the proof in the source.
 
 The statement is over $\mathbb{C}$, as in the source, because the eigenvalue $\mu$ of the real
 $H$ can be complex; $H$ enters as `H.complexify`. The size is $n = N + 1$, and the last row is
@@ -432,7 +441,12 @@ factorization of $M$ by Gram–Schmidt. Then:
 
 $Z$ is `Matrix.qrQ M`, and the canonical double-shift step is
 `Matrix.doubleShiftQrStep H.complexify a`. The second statement says that this step is the
-complexification of $Z^T H Z$. -/
+complexification of $Z^T H Z$.
+
+**Reading.** This formulation treats conjugate shifts and assumes the shifted matrix is
+nonsingular. It identifies the real result for the canonical QR factors and gives diagonal
+unitary similarity for arbitrary QR factors. The source allows two distinct real shifts as
+well. -/
 theorem double_shift_real (H : Matrix (Fin n) (Fin n) ℝ) {a : ℂ}
     (ha : a ∉ spectrum ℂ H.complexify) :
     qrQ (H * H - (2 * a.re) • H + Complex.normSq a • 1) ∈ orthogonalGroup (Fin n) ℝ ∧
@@ -608,7 +622,10 @@ The step $k$ works on the triple $o_k = (a, a+1, a+2)$ of window indices
 $a - 1$ of $H$ on $o_k$, which `GolubVanLoan.Chapter05.houseOn` reads in place. With 0-based
 indices, the column range $q{:}n$ is the window indices $j$ with $a \le j + 1$, and the row
 range $1{:}r$ is the window indices $i$ with $i \le a + 3$. The program has no hypothesis on
-$H$. Its exact semantics is `GolubVanLoan.Chapter07.algorithm_7_5_1_spec`. -/
+$H$. Its exact semantics is `GolubVanLoan.Chapter07.algorithm_7_5_1_spec`.
+
+**Generalization.** The source runs on the whole matrix. This program also supports consecutive
+windows, returns the reflector data, and leaves windows of length less than three alone. -/
 noncomputable def algorithm_7_5_1 (w : List (Fin n)) (H : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) :=
   match francisTriples w with
@@ -1921,7 +1938,11 @@ step of $H$ with the shifts $a$ and $\bar a$ of (7.5.6)–(7.5.7).
 
 $Z$ is `Matrix.qrQ M`, and $H_2$ is the canonical step
 `Matrix.doubleShiftQrStep H.complexify a`. The proof applies
-`Matrix.IsFrancisStep.eq_diagonal_conj`, which rests on the implicit Q theorem. -/
+`Matrix.IsFrancisStep.eq_diagonal_conj`, which rests on the implicit Q theorem.
+
+**Reading.** The comparison uses nonsingularity of the shift polynomial and the canonical QR
+factorization. The source instead assumes both resulting Hessenberg matrices are unreduced and
+takes matching first columns of the orthogonal factors. -/
 theorem algorithm_7_5_1_essential {H H' : Matrix (Fin (N + 3)) (Fin (N + 3)) ℝ}
     {data : List ((Fin (N + 3) → ℝ) × ℝ)} (hH : IsUnreduced H)
     (h : Id.run (algorithm_7_5_1 pure (List.finRange (N + 3)) H) = (H', data)) :
@@ -2377,7 +2398,11 @@ Algorithm 7.4.2 returns. The `until` loop is at most `fuel` passes of
 $(Q, T, \mathrm{done})$.
 
 The program has no hypothesis on tol. Its exact semantics is
-`GolubVanLoan.Chapter07.algorithm_7_5_2_spec`. -/
+`GolubVanLoan.Chapter07.algorithm_7_5_2_spec`.
+
+**Reading.** This program always accumulates $Q$ and runs at most the supplied number of
+passes. A Boolean reports whether the source's stopping condition was reached. The source also
+provides an eigenvalues-only mode that can skip accumulation. -/
 noncomputable def algorithm_7_5_2 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
   let r ← algorithm_7_4_2 rnd A

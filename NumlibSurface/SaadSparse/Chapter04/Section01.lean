@@ -92,6 +92,32 @@ specialize `Numlib.Stationary.Splitting`, `Numlib.Stationary.Sweep` and `Numlib.
 * The steps act on plain vectors `Fin n → ℝ` with `Matrix.mulVec`. The block results of §5.4 pass to
   `EuclideanSpace ℝ (Fin n)` through `WithLp.toLp 2`.
 
+## Deviations from the source
+
+* **Correction.** Equation (4.3) prints the residual of the completed iterate. The coordinate
+  equation of `SaadSparse.Chapter04.jacobiStep_spec` uses the new value in coordinate $i$ and
+  the old values elsewhere, as in (4.4).
+* **Reading.** The source assumes nonzero diagonal entries. Scalar division totalizes
+  `SaadSparse.Chapter04.jacobiStep` at zeros. Matrix inversion totalizes
+  `SaadSparse.Chapter04.gsStep`, `SaadSparse.Chapter04.backwardGsStep`,
+  `SaadSparse.Chapter04.symmetricGsStep`, `SaadSparse.Chapter04.sorStep`,
+  `SaadSparse.Chapter04.backwardSORStep`, `SaadSparse.Chapter04.ssorStep`,
+  `SaadSparse.Chapter04.sorStep_one`, `SaadSparse.Chapter04.G_ssor`,
+  `SaadSparse.Chapter04.f_ssor` and `SaadSparse.Chapter04.ssorStep_eq_affine`.
+* **Reading.** The forward and backward SOR equation specifications
+  `SaadSparse.Chapter04.sorStep_spec` and `SaadSparse.Chapter04.backwardSORStep_spec`
+  exclude $\omega=0$ even though (4.12) and its backward analogue give the identity sweep there.
+  The preconditioners `SaadSparse.Chapter04.M_sor` and `SaadSparse.Chapter04.M_ssor` totalize
+  reciprocals at the undefined parameters in (4.26)–(4.27), and SSOR totalizes the inverse of $D$.
+* **Reading.** The block sweeps `SaadSparse.Chapter04.blockJacobiStep` and
+  `SaadSparse.Chapter04.blockGaussSeidelStep` use disjoint blocks and totalized inverses.
+  Jacobi assembles corrections from every block as in (4.17). Line 4 of Algorithm 4.1 literally
+  assigns the full iterate anew at each block. The restricted block scope also applies to
+  `SaadSparse.Chapter04.equation_4_17`, `SaadSparse.Chapter04.blockJacobiStep_eq`,
+  `SaadSparse.Chapter04.blockGaussSeidelStep_eq`,
+  `SaadSparse.Chapter04.blockJacobiStep_eq_additiveStep` and
+  `SaadSparse.Chapter04.blockGaussSeidelStep_eq_multiplicativeStep`.
+
 ## Not formalized
 
 * **Algorithm 4.1 with overlapping blocks.** The book proves no theorem about the overlapping case.
@@ -241,7 +267,7 @@ theorem Splitting.step_eq_of_mulVec (s : Splitting A) (b x y : Fin n → ℝ)
   rw [Splitting.step_eq, nonsing_inv_mulVec_eq s.isUnit h]
   abel
 
-/-- Equation (4.20) of [saad2003iterative]: the iteration operator of a splitting is
+/-- Equation (4.23) of [saad2003iterative]: the iteration operator of a splitting is
 $G = I - M^{-1}A$. -/
 theorem iterationOperator_eq_one_sub (s : Splitting A) :
     s.iterationOperator = 1 - s.m⁻¹ * A := by
@@ -283,12 +309,21 @@ $$x'_i = \frac{1}{a_{ii}} \Big( b_i - \sum_{j \neq i} a_{ij} x_j \Big), \qquad i
 It annihilates the $i$-th component of the residual while all other components of $x$ keep their
 previous values.
 
-If $a_{ii} = 0$, the component $x'_i$ is $0$, because division by zero is zero in Lean. -/
+If $a_{ii} = 0$, the component $x'_i$ is $0$, because division by zero is zero in Lean.
+
+**Reading.** The source assumes every diagonal entry is nonzero. Lean uses totalized scalar
+division, so a coordinate with zero diagonal is assigned zero.
+-/
 noncomputable def jacobiStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   fun i => (b i - ∑ j ∈ univ.erase i, A i j * x j) / A i i
 
 /-- Equation (4.3) of [saad2003iterative]: if every $a_{ii} \neq 0$, the Jacobi step satisfies
-$a_{ii} x'_i + \sum_{j \neq i} a_{ij} x_j = b_i$ for every $i$. -/
+$a_{ii} x'_i + \sum_{j \neq i} a_{ij} x_j = b_i$ for every $i$.
+
+**Correction.** As printed, (4.3) uses the completed iterate in the residual. Following the
+component formula (4.4), Lean uses the new value only in coordinate $i$ and keeps the old values in
+every other coordinate.
+-/
 theorem jacobiStep_spec (hd : ∀ i, A i i ≠ 0) (b x : Fin n → ℝ) (i : Fin n) :
     A i i * jacobiStep A b x i + ∑ j ∈ univ.erase i, A i j * x j = b i := by
   rw [jacobiStep, mul_div_cancel₀ _ (hd i)]
@@ -334,18 +369,31 @@ theorem jacobiStep_eq_vec (h : IsUnit (diagPart A)) (b x : Fin n → ℝ) :
 
 /-- **Equation (4.8)** of [saad2003iterative]. The **Gauss–Seidel step** from $x$ is
 $$x' = (D - E)^{-1}(Fx + b).$$
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
 -/
 noncomputable def gsStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   (D A - E A)⁻¹ *ᵥ (F A *ᵥ x + b)
 
 /-- **Equation (4.9)** of [saad2003iterative]. The **backward Gauss–Seidel step** from $x$ is
 $$x' = (D - F)^{-1}(Ex + b).$$
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
 -/
 noncomputable def backwardGsStep (A : Matrix (Fin n) (Fin n) ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   (D A - F A)⁻¹ *ᵥ (E A *ᵥ x + b)
 
 /-- **Section 4.1** of [saad2003iterative], symmetric Gauss–Seidel. The **symmetric Gauss–Seidel
-step** is a forward Gauss–Seidel step followed by a backward Gauss–Seidel step. -/
+step** is a forward Gauss–Seidel step followed by a backward Gauss–Seidel step.
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
+-/
 noncomputable def symmetricGsStep (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     (Fin n → ℝ) → (Fin n → ℝ) := backwardGsStep A b ∘ gsStep A b
 
@@ -413,6 +461,10 @@ theorem backwardGsStep_eq (h : IsUnit (diagPart A)) (b : Fin n → ℝ) :
 /-- **Equation (4.12)** of [saad2003iterative]. The **SOR step** with relaxation parameter
 $\omega \in \mathbb{R}$ from $x$ is
 $$x' = (D - \omega E)^{-1} \big( (\omega F + (1 - \omega) D) x + \omega b \big).$$
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
 -/
 noncomputable def sorStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) : Fin n → ℝ :=
   (D A - ω • E A)⁻¹ *ᵥ ((ω • F A + (1 - ω) • D A) *ᵥ x + ω • b)
@@ -420,13 +472,22 @@ noncomputable def sorStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin
 /-- **Section 4.1** of [saad2003iterative], backward SOR. The **backward SOR step** with parameter
 $\omega$ from $x$ is
 $$x' = (D - \omega F)^{-1} \big( (\omega E + (1 - \omega) D) x + \omega b \big).$$
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
 -/
 noncomputable def backwardSORStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     Fin n → ℝ :=
   (D A - ω • F A)⁻¹ *ᵥ ((ω • E A + (1 - ω) • D A) *ᵥ x + ω • b)
 
 /-- **Section 4.1** of [saad2003iterative], SSOR. The **SSOR step** with parameter $\omega$ is a
-forward SOR step followed by a backward SOR step. -/
+forward SOR step followed by a backward SOR step.
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
+-/
 noncomputable def ssorStep (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b : Fin n → ℝ) :
     (Fin n → ℝ) → (Fin n → ℝ) := backwardSORStep A ω b ∘ sorStep A ω b
 
@@ -466,18 +527,31 @@ theorem isUnit_D_sub_smul_F (h : IsUnit (diagPart A)) (_hω : ω ≠ 0) :
   exact Finset.prod_ne_zero_iff.mpr fun i _ => by simpa using hd i
 
 /-- Equation (4.12) of [saad2003iterative]: if $D$ is nonsingular and $\omega \neq 0$, the SOR step
-solves $(D - \omega E)x' = (\omega F + (1 - \omega) D)x + \omega b$. -/
+solves $(D - \omega E)x' = (\omega F + (1 - \omega) D)x + \omega b$.
+
+**Reading.** Lean requires $\omega \ne 0$. The triangular equation also makes sense at $\omega=0$
+with a nonsingular diagonal, and then it reduces to $x'=x$.
+-/
 theorem sorStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
     (D A - ω • E A) *ᵥ sorStep A ω b x = (ω • F A + (1 - ω) • D A) *ᵥ x + ω • b :=
   mulVec_nonsing_inv_mulVec (isUnit_D_sub_smul_E h hω) _
 
 /-- §4.1 of [saad2003iterative]: if $D$ is nonsingular and $\omega \neq 0$, the backward SOR step
-solves $(D - \omega F)x' = (\omega E + (1 - \omega) D)x + \omega b$. -/
+solves $(D - \omega F)x' = (\omega E + (1 - \omega) D)x + \omega b$.
+
+**Reading.** Lean requires $\omega \ne 0$. The triangular equation also makes sense at $\omega=0$
+with a nonsingular diagonal, and then it reduces to $x'=x$.
+-/
 theorem backwardSORStep_spec (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (b x : Fin n → ℝ) :
     (D A - ω • F A) *ᵥ backwardSORStep A ω b x = (ω • E A + (1 - ω) • D A) *ᵥ x + ω • b :=
   mulVec_nonsing_inv_mulVec (isUnit_D_sub_smul_F h hω) _
 
-/-- §4.1 of [saad2003iterative]: SOR with $\omega = 1$ is Gauss–Seidel. -/
+/-- §4.1 of [saad2003iterative]: SOR with $\omega = 1$ is Gauss–Seidel.
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
+-/
 theorem sorStep_one (A : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) :
     sorStep A 1 b = gsStep A b := by
   funext x
@@ -526,7 +600,11 @@ is
 $$M_{SOR} = \frac{1}{\omega} (D - \omega E).$$
 
 Theorem 4.16 of the book uses the name $M_{SOR}$ for the SOR iteration matrix instead. Here the
-name is used only for the preconditioner. -/
+name is used only for the preconditioner.
+
+**Reading.** Lean totalizes the reciprocal at $\omega=0$, where the source's preconditioner formula
+is undefined. The same symbol in Theorem 4.16 denotes a different matrix in the book.
+-/
 noncomputable def M_sor (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   ω⁻¹ • (D A - ω • E A)
 
@@ -541,6 +619,9 @@ theorem M_sor_eq (h : IsUnit (diagPart A)) (hω : ω ≠ 0) :
 /-- **Equation (4.27)** of [saad2003iterative]. The **SSOR preconditioner** with parameter $\omega$
 is
 $$M_{SSOR} = \frac{1}{\omega (2 - \omega)} (D - \omega E) D^{-1} (D - \omega F).$$
+
+**Reading.** Lean totalizes the reciprocal at $\omega=0,2$ and the inverse at singular $D$, where
+the source's preconditioner formula is undefined.
 -/
 noncomputable def M_ssor (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (ω * (2 - ω))⁻¹ • ((D A - ω • E A) * (D A)⁻¹ * (D A - ω • F A))
@@ -570,6 +651,10 @@ theorem ssorStep_eq (h : IsUnit (diagPart A)) (hω : ω ≠ 0) (hω2 : ω ≠ 2)
 $\omega$ is
 $$G_\omega = (D - \omega F)^{-1} (\omega E + (1 - \omega) D) (D - \omega E)^{-1} (\omega F +
   (1 - \omega) D).$$
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
 -/
 noncomputable def G_ssor (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (D A - ω • F A)⁻¹ * (ω • E A + (1 - ω) • D A) * (D A - ω • E A)⁻¹ *
@@ -579,13 +664,22 @@ noncomputable def G_ssor (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) : Matrix (F
 is
 $$f_\omega = \omega (D - \omega F)^{-1} \big( I + (\omega E + (1 - \omega) D)(D - \omega E)^{-1}
   \big) b.$$
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
 -/
 noncomputable def f_ssor (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b : Fin n → ℝ) : Fin n → ℝ :=
   ω • ((D A - ω • F A)⁻¹ *ᵥ
     ((1 + (ω • E A + (1 - ω) • D A) * (D A - ω • E A)⁻¹) *ᵥ b))
 
 /-- Equations (4.13)–(4.14) of [saad2003iterative]: for every $A$ and $\omega$, the SSOR step is the
-affine map $x \mapsto G_\omega x + f_\omega$. -/
+affine map $x \mapsto G_\omega x + f_\omega$.
+
+**Reading.** The source assumes a nonsingular diagonal. Lean extends the formula using the matrix
+inverse that is zero at singular matrices, so these sweeps and affine formulae are defined even when
+a triangular solve from the source is undefined.
+-/
 theorem ssorStep_eq_affine (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) (b x : Fin n → ℝ) :
     ssorStep A ω b x = G_ssor A ω *ᵥ x + f_ssor A ω b := by
   simp only [ssorStep, Function.comp_apply, backwardSORStep, sorStep, G_ssor, f_ssor,
@@ -651,7 +745,12 @@ theorem isUnit_blockD_sub_blockE (h : IsUnit (blockD π A)) : IsUnit (blockD π 
 from $x$ is
 $$x' = D^{-1} \big( (E + F) x + b \big),$$
 with $D$, $E$, $F$ the block parts for the labelling $\pi$. Every block is updated from the same
-previous iterate. -/
+previous iterate.
+
+**Reading.** Lean specializes to disjoint blocks with unit weights. It assembles all block updates
+from the old iterate, as in (4.17), whereas a literal reading of line 4 of Algorithm 4.1 would
+overwrite earlier corrections. The inverse formula gives zero when $D$ is singular.
+-/
 noncomputable def blockJacobiStep (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ)
     (b x : Fin n → ℝ) : Fin n → ℝ :=
   (blockD π A)⁻¹ *ᵥ ((blockE π A + blockF π A) *ᵥ x + b)
@@ -660,7 +759,11 @@ noncomputable def blockJacobiStep (π : Fin n → Fin p) (A : Matrix (Fin n) (Fi
 sweep** from $x$ is
 $$x' = (D - E)^{-1} (Fx + b),$$
 with $D$, $E$, $F$ the block parts for the labelling $\pi$. Each block uses the blocks that are
-updated before it. -/
+updated before it.
+
+**Reading.** Lean specializes to disjoint blocks with unit weights. Its inverse formula gives zero
+when the block lower triangular matrix is singular.
+-/
 noncomputable def blockGaussSeidelStep (π : Fin n → Fin p) (A : Matrix (Fin n) (Fin n) ℝ)
     (b x : Fin n → ℝ) : Fin n → ℝ :=
   (blockD π A - blockE π A)⁻¹ *ᵥ (blockF π A *ᵥ x + b)
@@ -668,7 +771,11 @@ noncomputable def blockGaussSeidelStep (π : Fin n → Fin p) (A : Matrix (Fin n
 /-- **Equation (4.17)** of [saad2003iterative]. If the block diagonal $D$ is nonsingular, the block
 Jacobi sweep satisfies
 $$x' = x + D^{-1}(b - Ax).$$
-On block $i$ this is the update $\xi_i \leftarrow \xi_i + A_{ii}^{-1}(b - Ax)_i$ of the book. -/
+On block $i$ this is the update $\xi_i \leftarrow \xi_i + A_{ii}^{-1}(b - Ax)_i$ of the book.
+
+**Reading.** Lean uses disjoint blocks with unit weights. The source also describes overlapping
+blocks and weighted restrictions.
+-/
 theorem equation_4_17 (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
     blockJacobiStep π A b x = x + (blockD π A)⁻¹ *ᵥ (b - A *ᵥ x) := by
   rw [blockJacobiStep, blockE_add_blockF, sub_mulVec, mulVec_add, mulVec_sub, mulVec_sub,
@@ -678,7 +785,11 @@ theorem equation_4_17 (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
 /-- **Equations (4.16)–(4.17)** of [saad2003iterative]. If the block diagonal $D$ is nonsingular,
 the block Jacobi sweep is the step of the splitting with $M = D$.
 
-The splitting is `Matrix.blockJacobiSplitting`. -/
+The splitting is `Matrix.blockJacobiSplitting`.
+
+**Reading.** Lean uses disjoint blocks with unit weights. The source also describes overlapping
+blocks and weighted restrictions.
+-/
 theorem blockJacobiStep_eq (h : IsUnit (blockD π A)) (b : Fin n → ℝ) :
     blockJacobiStep π A b = Splitting.step (blockJacobiSplitting π A h) b := by
   funext x
@@ -688,7 +799,11 @@ theorem blockJacobiStep_eq (h : IsUnit (blockD π A)) (b : Fin n → ℝ) :
 /-- **Algorithm 4.2** of [saad2003iterative]. If the block diagonal $D$ is nonsingular, the block
 Gauss–Seidel sweep is the step of the splitting with $M = D - E$, the block lower part of $A$.
 
-The splitting is `Matrix.blockGaussSeidelSplitting`. -/
+The splitting is `Matrix.blockGaussSeidelSplitting`.
+
+**Reading.** Lean uses disjoint blocks, each visited once in label order. The source also describes
+overlapping blocks.
+-/
 theorem blockGaussSeidelStep_eq (h : IsUnit (blockD π A)) (b : Fin n → ℝ) :
     blockGaussSeidelStep π A b = Splitting.step (blockGaussSeidelSplitting π A h) b := by
   funext x
@@ -706,7 +821,11 @@ all weights equal to $1$. This is the reading of (4.17) as (5.7) that §5.4 give
 
 The process is `Projection.additiveStep` for `Matrix.toEuclideanLin A`, and the subspaces are
 `EuclideanSpace.blockSubspace ℝ π`. The vectors pass to `EuclideanSpace ℝ (Fin n)` through
-`WithLp.toLp 2`. -/
+`WithLp.toLp 2`.
+
+**Reading.** Lean uses disjoint blocks with unit weights. The source also describes overlapping
+blocks and weighted restrictions.
+-/
 theorem blockJacobiStep_eq_additiveStep (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
     WithLp.toLp 2 (blockJacobiStep π A b x) =
       Projection.additiveStep (toEuclideanLin A) (WithLp.toLp 2 b)
@@ -722,7 +841,11 @@ the multiplicative projection process over the blocks, with $K_k = L_k$ the coor
 of the block $\pi^{-1}(k)$, taken in increasing order of the label $k$.
 
 The process is `Projection.multiplicativeStep` for `Matrix.toEuclideanLin A`, over the sorted
-list of the labels. -/
+list of the labels.
+
+**Reading.** Lean uses disjoint blocks, each visited once in label order. The source also describes
+overlapping blocks.
+-/
 theorem blockGaussSeidelStep_eq_multiplicativeStep (h : IsUnit (blockD π A)) (b x : Fin n → ℝ) :
     WithLp.toLp 2 (blockGaussSeidelStep π A b x) =
       Projection.multiplicativeStep (toEuclideanLin A) (WithLp.toLp 2 b)

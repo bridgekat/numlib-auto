@@ -67,6 +67,33 @@ concerns it. The proofs specialize `Numlib.Nonlinear.Order` and `Numlib.Nonlinea
 
 ## Deviations from the source
 
+* **Convention.** The ratio and extrapolation are totalized at small indices and zero denominators.
+  See `QuarteroniSaccoSaleri.Chapter06.equation_6_33`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_36`.
+* **Generalization.** The Aitken ratio limit allows a zero derivative and assumes a converging orbit
+  avoiding the fixed point. See `QuarteroniSaccoSaleri.Chapter06.equation_6_34`.
+* **Representation.** The delta-squared identity uses shifted forward differences and totalized
+  division. See `QuarteroniSaccoSaleri.Chapter06.equation_6_37`.
+* **Correction.** The extension at a zero denominator fixes its input. Fixed-point equivalence is
+  restricted accordingly, with the local limit requiring a derivative different from one. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_38`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_38_fixedPoints`.
+* **Reading.** The quadratic bound uses local twice continuous differentiability and a derivative
+  different from one. See `QuarteroniSaccoSaleri.Chapter06.property_6_7_one`.
+* **Generalization.** The higher-order Aitken bound uses derivatives through order p instead of 2p.
+  See `QuarteroniSaccoSaleri.Chapter06.property_6_7_higher`.
+* **Reading.** Steffensen's rule uses totalized division and its local order bound assumes a smooth
+  simple root. See `QuarteroniSaccoSaleri.Chapter06.steffensen`,
+  `QuarteroniSaccoSaleri.Chapter06.exercise_6_5`.
+* **Correction.** The multiple-root factor applies to Steffensen's map, with the orbit limit
+  conditional on convergence without exact hits. See
+  `QuarteroniSaccoSaleri.Chapter06.property_6_7_multiple`.
+* **Reading.** The multiplicity estimate is totalized and its limit theorem applies to a converging
+  ordinary Newton orbit avoiding the root. See `QuarteroniSaccoSaleri.Chapter06.equation_6_40`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_40_eq_div`,
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_40_tendsto`.
+* **Convention.** Adaptive Newton starts its index at the third input and takes a supplied
+  derivative. See `QuarteroniSaccoSaleri.Chapter06.equation_6_39`.
 * **Equation (6.34)** (generalization). The source assumes linear convergence; the limit holds
   whenever $\varphi'(\alpha) \neq 1$. See `QuarteroniSaccoSaleri.Chapter06.equation_6_34`.
 * **Equation (6.34)** (reading). The limit is stated for orbits that never equal $\alpha$. See
@@ -97,7 +124,11 @@ variable {φ : ℝ → ℝ} {α : ℝ}
 $$\lambda^{(k)} = \frac{x^{(k)} - x^{(k-1)}}{x^{(k-1)} - x^{(k-2)}}$$
 of a real sequence $x^{(k)}$, for $k \ge 2$.
 
-For $k < 2$ the subtractions of indices truncate at $0$, and the value is $0$. -/
+For $k < 2$ the subtractions of indices truncate at $0$, and the value is $0$.
+
+**Reading.** The natural-number definition is total at indices below two and uses totalized division
+at a zero denominator. At valid indices with a nonzero denominator the formula is the displayed one.
+-/
 noncomputable def equation_6_33 (x : ℕ → ℝ) (k : ℕ) : ℝ :=
   (x k - x (k - 1)) / (x (k - 1) - x (k - 2))
 
@@ -118,7 +149,11 @@ and the limit is $0$.
 **Reading.** The source does not say that the orbit must avoid $\alpha$; without this condition
 the ratios are $0/0$ from some index on.
 
-The proof specializes `tendsto_aitkenRatio` with `tendsto_sub_div_sub_of_hasDerivAt`. -/
+The proof specializes `tendsto_aitkenRatio` with `tendsto_sub_div_sub_of_hasDerivAt`.
+
+**Generalization.** The limit needs a converging orbit that avoids the fixed point and a derivative
+different from one. The derivative may vanish, so linear convergence is unnecessary.
+-/
 theorem equation_6_34 (hφ : DifferentiableAt ℝ φ α) (hα : φ α = α) (h1 : deriv φ α ≠ 1)
     {x : ℕ → ℝ} (hx : ∀ k, x (k + 1) = φ (x k)) (hne : ∀ k, x k ≠ α)
     (hlim : Tendsto x atTop (𝓝 α)) : Tendsto (equation_6_33 x) atTop (𝓝 (deriv φ α)) := by
@@ -133,7 +168,11 @@ $$\hat{x}^{(k)} = x^{(k)} - \frac{(x^{(k)} - x^{(k-1)})^2}{(x^{(k)} - x^{(k-1)})
 for a real sequence $x^{(k)}$ and $k \ge 2$.
 
 For $k < 2$ the subtractions of indices truncate at $0$, and the value has no meaning. If the
-denominator is $0$, the value is $x^{(k)}$, because division by $0$ gives $0$ in Lean. -/
+denominator is $0$, the value is $x^{(k)}$, because division by $0$ gives $0$ in Lean.
+
+**Reading.** The natural-number definition is total at indices below two and uses totalized division
+at a zero denominator. At valid indices with a nonzero denominator the formula is the displayed one.
+-/
 noncomputable def equation_6_36 (x : ℕ → ℝ) (k : ℕ) : ℝ :=
   x k - (x k - x (k - 1)) ^ 2 / ((x k - x (k - 1)) - (x (k - 1) - x (k - 2)))
 
@@ -149,7 +188,11 @@ $$\hat{x}^{(k)} = x^{(k)} - \frac{(\Delta x^{(k)})^2}{\Delta^2 x^{(k-1)}}.$$
 
 The source uses backward differences. The statement uses Mathlib's forward difference `fwdDiff`
 with step $1$: its value at $k - 1$ is $\Delta x^{(k)}$, and the value of its second iterate at
-$k - 2$ is $\Delta^2 x^{(k-1)}$. The proof specializes `aitkenExtrapolation_eq_sub_div_fwdDiff`. -/
+$k - 2$ is $\Delta^2 x^{(k-1)}$. The proof specializes `aitkenExtrapolation_eq_sub_div_fwdDiff`.
+
+**Reading.** Lean expresses the book's backward first difference as a shifted forward difference and
+the second difference with its corresponding shift. The quotient uses totalized division.
+-/
 theorem equation_6_37 (x : ℕ → ℝ) {k : ℕ} (hk : 2 ≤ k) :
     equation_6_36 x k = x k - (Δ_[1] x (k - 1)) ^ 2 / (Δ_[1]^[2] x (k - 2)) := by
   obtain ⟨j, rfl⟩ : ∃ j, k = j + 2 := ⟨k - 2, by omega⟩
@@ -164,7 +207,12 @@ iteration $x^{(k+1)} = \varphi_\Delta(x^{(k)})$ of Program 55.
 
 The definition is the backbone's `aitkenIterationFunction`. The value $x$ where the denominator
 vanishes makes every fixed point of $\varphi$, where the quotient is $0/0$, a fixed point of
-$\varphi_\Delta$. -/
+$\varphi_\Delta$.
+
+**Correction.** The accelerated function returns its input if the second-difference denominator
+vanishes. Fixed-point equivalence is proved away from the exceptional denominator, and the
+continuous extension at the chosen root assumes a derivative different from one.
+-/
 noncomputable def equation_6_38 (φ : ℝ → ℝ) : ℝ → ℝ := aitkenIterationFunction φ
 
 /-- **Section 6.6.1** of [quarteroni2000numerical], the two remarks after (6.38). Let
@@ -180,7 +228,12 @@ $\alpha = \varphi(\alpha)$ with $\varphi'(\alpha) \neq 1$. Then:
 The first item is the L'Hôpital argument of the source, and the last item says that, where the
 denominator does not vanish, $\varphi_\Delta$ and $\varphi$ have the same fixed points. The
 proof specializes `hasDerivAt_aitkenIterationFunction_zero`,
-`aitkenIterationFunction_apply_self` and `aitkenIterationFunction_eq_self_iff`. -/
+`aitkenIterationFunction_apply_self` and `aitkenIterationFunction_eq_self_iff`.
+
+**Correction.** The accelerated function returns its input if the second-difference denominator
+vanishes. Fixed-point equivalence is proved away from the exceptional denominator, and the
+continuous extension at the chosen root assumes a derivative different from one.
+-/
 theorem equation_6_38_fixedPoints (hφ : DifferentiableAt ℝ φ α) (hα : φ α = α)
     (h1 : deriv φ α ≠ 1) :
     Tendsto (equation_6_38 φ) (𝓝 α) (𝓝 α) ∧ HasDerivAt (equation_6_38 φ) 0 α ∧
@@ -205,7 +258,11 @@ fixed-point method is not" convergent, as the source says.
 
 The proof specializes `hasIterationOrder_aitkenIterationFunction_two`. The asymptotic constant
 is $\varphi'(\alpha) \varphi''(\alpha) / (2 (\varphi'(\alpha) - 1))$, by
-`tendsto_aitkenIterationFunction_sub_div_sq`. -/
+`tendsto_aitkenIterationFunction_sub_div_sq`.
+
+**Reading.** The quadratic bound assumes local $C^2$ regularity and a derivative different from one.
+It does not require the original fixed-point map to be attractive.
+-/
 theorem property_6_7_one (hφ : ContDiffAt ℝ 2 φ α) (hα : φ α = α) (h1 : deriv φ α ≠ 1) :
     ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, definition_6_1 (fun k => (equation_6_38 φ)^[k] x₀) α 2 := by
   obtain ⟨ε, hε, h⟩ := hasIterationOrder_aitkenIterationFunction_two hφ hα h1
@@ -223,7 +280,11 @@ order $2p - 1$ in the sense of Definition 6.1.
 $\varphi \in C^p$ is enough.
 
 The source states this case without proof, after Isaacson and Keller. The proof specializes
-`hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero`. -/
+`hasIterationOrder_aitkenIterationFunction_of_iteratedDeriv_eq_zero`.
+
+**Generalization.** The order $2p-1$ bound assumes local $C^p$ regularity and specifies the order of
+the first nonzero derivative. The source uses $C^{2p}$ regularity in its proof.
+-/
 theorem property_6_7_higher {p : ℕ} (hp : 2 ≤ p) (hφ : ContDiffAt ℝ p φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i < p → iteratedDeriv i φ α = 0) (hp' : iteratedDeriv p φ α ≠ 0) :
     ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε,
@@ -247,7 +308,11 @@ $$x^{(k+1)} = x^{(k)} - \frac{f(x^{(k)})}{\phi(x^{(k)})}, \qquad \phi(x) = \frac
   f(x)}{f(x)}.$$
 
 The value at $k$ is the $k$-th iterate of the backbone's `steffensenStep` from $x^{(0)}$. Where
-$f(x) = 0$ the step returns $x$, because division by $0$ gives $0$ in Lean. -/
+$f(x) = 0$ the step returns $x$, because division by $0$ gives $0$ in Lean.
+
+**Reading.** The algorithm is totalized at zero denominators. The quadratic bound is local at a
+simple root of a twice continuously differentiable function.
+-/
 noncomputable def steffensen (f : ℝ → ℝ) (x₀ : ℝ) (k : ℕ) : ℝ := (steffensenStep f)^[k] x₀
 
 /-- **Exercise 6.5** of [quarteroni2000numerical]. Let $f(\alpha) = 0$, let $f$ be of class $C^2$ on
@@ -257,7 +322,11 @@ method converge to $\alpha$ with order $2$ in the sense of Definition 6.1.
 
 Steffensen's method is Aitken's method for the iteration function $x + f(x)$, by
 `steffensenStep_eq_aitkenIterationFunction`. The proof specializes
-`hasIterationOrder_steffensenStep_two`. -/
+`hasIterationOrder_steffensenStep_two`.
+
+**Reading.** The algorithm is totalized at zero denominators. The quadratic bound is local at a
+simple root of a twice continuously differentiable function.
+-/
 theorem exercise_6_5 (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) :
     ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, definition_6_1 (steffensen f x₀) α 2 := by
   obtain ⟨ε, hε, h⟩ := hasIterationOrder_steffensenStep_two hα hf hf'
@@ -282,7 +351,13 @@ method for this $\varphi$ is Steffensen's method, and the statement here is the 
 Steffensen's method.
 
 The step $\psi$ is `steffensenStep f`. The proof specializes
-`tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity`. -/
+`tendsto_steffensenStep_sub_div_of_isRootOfMultiplicity`.
+
+**Correction.** The multiple-root factor is established for the Steffensen step, obtained by
+accelerating $x+f(x)$, not an arbitrary first-order iteration for a function having such a root. The
+assertion is stated as a punctured step ratio and as an orbit limit conditional on convergence
+without exact hits.
+-/
 theorem property_6_7_multiple {m : ℕ} (hm : 2 ≤ m) (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => (steffensenStep f x - α) / (x - α)) (𝓝[≠] α) (𝓝 (1 - 1 / m)) ∧
@@ -307,7 +382,12 @@ variable {f : ℝ → ℝ} {α : ℝ}
 $$m^{(k)} = \frac{1}{1 - \lambda^{(k)}},$$
 with $\lambda^{(k)}$ the increment ratio (6.33) of a real sequence $x^{(k)}$.
 
-If $\lambda^{(k)} = 1$, the value is $0$, because division by $0$ gives $0$ in Lean. -/
+If $\lambda^{(k)} = 1$, the value is $0$, because division by $0$ gives $0$ in Lean.
+
+**Reading.** The multiplicity estimate is totalized. The algebraic alternative requires a nonzero
+preceding increment. Its convergence theorem uses a converging ordinary Newton sequence that does
+not hit the root.
+-/
 noncomputable def equation_6_40 (x : ℕ → ℝ) (k : ℕ) : ℝ := 1 / (1 - equation_6_33 x k)
 
 /-- The multiplicity estimate (6.40) at $k + 2$ is the backbone's `Newton.multiplicityEstimate` at
@@ -320,7 +400,12 @@ theorem equation_6_40_eq (x : ℕ → ℝ) (k : ℕ) :
 sequence, let $k \ge 2$, and let $x^{(k-1)} - x^{(k-2)} \neq 0$. Then
 $$m^{(k)} = \frac{x^{(k-1)} - x^{(k-2)}}{2 x^{(k-1)} - x^{(k)} - x^{(k-2)}}.$$
 
-The proof specializes `Newton.multiplicityEstimate_eq`. -/
+The proof specializes `Newton.multiplicityEstimate_eq`.
+
+**Reading.** The multiplicity estimate is totalized. The algebraic alternative requires a nonzero
+preceding increment. Its convergence theorem uses a converging ordinary Newton sequence that does
+not hit the root.
+-/
 theorem equation_6_40_eq_div (x : ℕ → ℝ) {k : ℕ} (hk : 2 ≤ k) (h : x (k - 1) - x (k - 2) ≠ 0) :
     equation_6_40 x k = (x (k - 1) - x (k - 2)) / (2 * x (k - 1) - x k - x (k - 2)) := by
   obtain ⟨j, rfl⟩ : ∃ j, k = j + 2 := ⟨k - 2, by omega⟩
@@ -335,7 +420,12 @@ satisfy
 $$\lim_{k \to \infty} m^{(k)} = m.$$
 
 The limit follows from (6.34), since $\varphi_{\mathrm{Newt}}'(\alpha) = 1 - 1/m$ by (6.22). The
-proof specializes `Newton.tendsto_multiplicityEstimate`. -/
+proof specializes `Newton.tendsto_multiplicityEstimate`.
+
+**Reading.** The multiplicity estimate is totalized. The algebraic alternative requires a nonzero
+preceding increment. Its convergence theorem uses a converging ordinary Newton sequence that does
+not hit the root.
+-/
 theorem equation_6_40_tendsto {m : ℕ} (hm : 1 ≤ m) (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) {x : ℕ → ℝ}
     (hx : ∀ k, x (k + 1) = Newton.scalarStep f (deriv f) (x k)) (hne : ∀ k, x k ≠ α)
@@ -355,7 +445,11 @@ The value at $k$ is the last component of the $k$-th iterate of the backbone's
 `Newton.adaptiveStep` on triples, from $(x_0, x_1, x_2)$; so the value at $0$ is $x_2$. Where
 the denominator of $m^{(k)}$ vanishes, $m^{(k)} = 0$, because division by $0$ gives $0$ in Lean;
 Program 56 instead keeps the previous estimate. This is a definition only: the source proves
-nothing about the adaptive method. -/
+nothing about the adaptive method.
+
+**Reading.** The adaptive rule is indexed from the stored third starting value. It takes the
+derivative as a supplied function and uses totalized division.
+-/
 noncomputable def equation_6_39 (f f' : ℝ → ℝ) (x₀ x₁ x₂ : ℝ) (k : ℕ) : ℝ :=
   ((Newton.adaptiveStep f f')^[k] (x₀, x₁, x₂)).2.2
 

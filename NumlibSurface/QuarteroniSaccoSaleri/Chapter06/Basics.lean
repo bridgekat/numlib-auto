@@ -38,6 +38,11 @@ avoid $\alpha$.
 
 ## Deviations from the source
 
+* **Convention.** At an exact root the totalized quotient is zero and does not constrain the next
+  iterate. See `QuarteroniSaccoSaleri.Chapter06.definition_6_1`.
+* **Correction.** A uniform factor below one suffices for convergence, and convergent errors can
+  have ratios tending to one. See
+  `QuarteroniSaccoSaleri.Chapter06.definition_6_1_convergenceFactor`.
 * **Remark after Definition 6.1** (correction). The source says that for $p = 1$ a factor $C < 1$ is
   necessary for convergence; it is sufficient, and a bound (6.2) with $p = 1$ and $C \ge 1$ says
   nothing about convergence. See `QuarteroniSaccoSaleri.Chapter06.definition_6_1_convergenceFactor`.
@@ -54,7 +59,11 @@ if $x^{(k)} \to \alpha$ and there are $C > 0$ and $k_0$ such that $$\frac{|x^{(k
 displayed condition (6.2).
 
 The condition $p \ge 1$ is part of the Lean definition. At a term with $x^{(k)} = \alpha$ the
-quotient is $0$, by the convention that division by zero gives zero. -/
+quotient is $0$, by the convention that division by zero gives zero.
+
+**Reading.** The quotient is defined as zero when an iterate equals the root. Unlike the product
+inequality this places no restriction on the next iterate.
+-/
 def definition_6_1 (x : ℕ → ℝ) (α : ℝ) (p : ℝ) : Prop :=
   1 ≤ p ∧ Tendsto x atTop (𝓝 α) ∧
     ∃ C > 0, ∃ k₀ : ℕ, ∀ k ≥ k₀, |x (k + 1) - α| / |x k - α| ^ p ≤ C
@@ -103,7 +112,11 @@ factor.
 The condition is sufficient, as stated here. A bound (6.2) with $p = 1$ and $C \ge 1$ holds for
 many sequences that do not converge, so it says nothing about convergence.
 
-The proof uses `tendsto_of_eventually_norm_sub_succ_le` for the convergence. -/
+The proof uses `tendsto_of_eventually_norm_sub_succ_le` for the convergence.
+
+**Correction.** An eventual factor below one is sufficient. It cannot be necessary for convergence:
+the errors $1/(k+1)$ tend to zero with ratios tending to one.
+-/
 theorem definition_6_1_convergenceFactor {x : ℕ → ℝ} {α C : ℝ} {k₀ : ℕ} (hC0 : 0 < C)
     (hC : C < 1) (h : ∀ k ≥ k₀, |x (k + 1) - α| ≤ C * |x k - α|) : definition_6_1 x α 1 :=
   definition_6_1_of_convergesWithOrder le_rfl

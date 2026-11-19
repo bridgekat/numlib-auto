@@ -67,10 +67,22 @@ interpolates the data (3.1.4)–(3.1.6) with the smooth gluing construction of
 
 ## Deviations from the source
 
-* **Theorem 3.1.1** (correction). For the data (3.1.4) the claim $\|\nabla f(x_k)\| > \epsilon_1$
-  can fail at $k = k_\epsilon$. The example prescribes $\nabla f(x_{k_\epsilon}) = 0$, so that every
+* **Algorithm 3.1.1** (reading). The run predicate states the linear equation and
+  iterate update up to the gradient test. The source introduces it under f.C2 and
+  presumes positive Hessians and sufficient objective decrease in its discussion.
+  Those conditions are outside the run predicate.
+* **Theorem 3.1.1** (correction). At $k=k_\epsilon$ the printed data can give both
+  $f_k<1$ and $\|g_k\|\le\epsilon_1$, contrary to (3.1.5). The Lean example prescribes
+  $\nabla f(x_{k_\epsilon}) = 0$, so that every
   Newton run from the origin stops exactly at $k_\epsilon = \lceil \epsilon_1^{-2} \rceil$. See
   `CartisGouldToint.Chapter03.theorem_3_1_1`.
+* **Theorem 3.1.1, evaluation counts** (reading). Lean gives the first-hit iteration
+  $k_\epsilon$. Algorithm 3.1.1 performs $k_\epsilon+1$ gradient tests and
+  $k_\epsilon$ Hessian evaluations, with no prescribed objective evaluation.
+  The printed statement claims more than $k_\epsilon$ evaluations of each.
+* **Equation (3.1.7)** (reading). The example uses an existence theorem for smooth
+  interpolation of separated jets in place of the particular piecewise formula.
+  The pairwise separation bound used by that construction is $\ge 1/2$.
 -/
 
 open Set Finset Optimization
@@ -197,6 +209,9 @@ theorem assumptions_of_bounded {f : EuclideanSpace ℝ (Fin n) → ℝ} {B : ℝ
 at $x$ if $\nabla^2 f(x) s = -\nabla f(x)$, written with the Hessian as a bilinear form:
 $$\nabla^2 f(x)[s, v] = -\langle \nabla f(x), v \rangle \quad \text{for all } v \in
   \mathbb{R}^n.$$
+
+**Reading.** The totalized Newton equation can be formed outside the source differentiability
+setting.
 -/
 def IsNewtonStep (f : EuclideanSpace ℝ (Fin n) → ℝ) (x s : EuclideanSpace ℝ (Fin n)) : Prop :=
   ∀ v, iteratedFDeriv ℝ 2 f x ![s, v] = -⟪gradient f x, v⟫
@@ -292,7 +307,11 @@ Newton equation (3.1.1) at $x_k$ and $x_{k+1} = x_k + s_k$.
 
 The source presumes that the Hessians are positive definite; then $s_k$ is the unique minimizer
 of $T_{f,2}(x_k, \cdot)$ (`CartisGouldToint.Chapter03.isNewtonStep_iff_isMinOn`). The run
-predicate does not require positive definiteness. -/
+predicate does not require positive definiteness.
+
+**Reading.** The predicate requires a solution of each active Newton equation but does not impose
+the source discussion's smoothness, positivity or objective decrease conditions.
+-/
 structure algorithm_3_1_1 (f : EuclideanSpace ℝ (Fin n) → ℝ) (ε : ℝ)
     (x s : ℕ → EuclideanSpace ℝ (Fin n)) : Prop where
   /-- The accuracy level satisfies $\epsilon > 0$. -/
@@ -373,7 +392,10 @@ noncomputable def kε (ε : ℝ) : ℕ := ⌈(ε ^ 2)⁻¹⌉₊
 noncomputable def fval (ε : ℝ) (k : ℕ) : ℝ := 2 - k * ε ^ 2
 
 /-- The Newton steps $s_k = f_k^{-1} (1, \epsilon)$ of (3.1.5) for $k < k_\epsilon$, and $s_k = 0$
-for $k \ge k_\epsilon$. -/
+for $k \ge k_\epsilon$.
+
+**Reading.** Matches the printed step before the first hit and sets it to zero from the hit onward.
+-/
 noncomputable def step (ε : ℝ) (k : ℕ) : EuclideanSpace ℝ (Fin 2) :=
   if k < kε ε then (fval ε k)⁻¹ • (e₁ + ε • e₂) else 0
 
@@ -381,7 +403,11 @@ noncomputable def step (ε : ℝ) (k : ℕ) : EuclideanSpace ℝ (Fin 2) :=
 noncomputable def iter (ε : ℝ) (k : ℕ) : EuclideanSpace ℝ (Fin 2) := ∑ j ∈ range k, step ε j
 
 /-- The gradients $g_k = -(\epsilon^2 f_k, \epsilon f_k)$ of (3.1.4) for $k < k_\epsilon$, and
-$g_k = 0$ for $k \ge k_\epsilon$. -/
+$g_k = 0$ for $k \ge k_\epsilon$.
+
+**Reading.** Retains the printed gradient before the target index and sets the terminal gradient to
+zero.
+-/
 noncomputable def grad (ε : ℝ) (k : ℕ) : EuclideanSpace ℝ (Fin 2) :=
   if k < kε ε then -((ε ^ 2 * fval ε k) • e₁) - (ε * fval ε k) • e₂ else 0
 
@@ -419,14 +445,21 @@ theorem kε_mul_lt (hε : 0 < ε) (hε1 : ε < 1) : (kε ε : ℝ) * ε ^ 2 < 2 
   have : ε ^ 2 < 1 := by nlinarith
   linarith
 
-/-- For $0 < \epsilon < 1$ and $k \le k_\epsilon$, the function value satisfies $f_k > 0$. -/
+/-- For $0 < \epsilon < 1$ and $k \le k_\epsilon$, the function value satisfies $f_k > 0$.
+
+**Reading.** The objective remains positive through termination; the printed lower bound of one can
+fail at the terminal index.
+-/
 theorem fval_pos (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k ≤ kε ε) : 0 < fval ε k := by
   have h := kε_mul_lt hε hε1
   have : (k : ℝ) * ε ^ 2 ≤ kε ε * ε ^ 2 :=
     mul_le_mul_of_nonneg_right (by exact_mod_cast hk) (by positivity)
   unfold fval; linarith
 
-/-- For $\epsilon > 0$ and $k < k_\epsilon$, the function value satisfies $f_k > 1$. -/
+/-- For $\epsilon > 0$ and $k < k_\epsilon$, the function value satisfies $f_k > 1$.
+
+**Reading.** The printed lower bound of one is proved strictly before termination.
+-/
 theorem one_lt_fval (hε : 0 < ε) {k : ℕ} (hk : k < kε ε) : 1 < fval ε k := by
   have h2 : 0 < ε ^ 2 := by positivity
   have : (k : ℝ) < (ε ^ 2)⁻¹ := Nat.lt_ceil.1 hk
@@ -456,7 +489,11 @@ theorem inner_e₂_step {k : ℕ} (hk : k < kε ε) : ⟪e₂, step ε k⟫ = ε
   ring
 
 /-- For $0 < \epsilon < 1$ and $i < j \le k_\epsilon$, the iterates satisfy $\|x_j - x_i\| \ge 1/2$,
-because their first coordinates increase by $1/f_k \ge 1/2$ at each step. -/
+because their first coordinates increase by $1/f_k \ge 1/2$ at each step.
+
+**Reading.** Gives a weak separation bound of one-half for all distinct nodes; the printed
+first-coordinate strict bound can be an equality at the initial step.
+-/
 theorem half_le_norm_iter_sub (hε : 0 < ε) (hε1 : ε < 1) {i j : ℕ} (hij : i < j) (hj : j ≤ kε ε) :
     1 / 2 ≤ ‖iter ε j - iter ε i‖ := by
   have hsum : iter ε j - iter ε i = ∑ l ∈ Finset.Ico i j, step ε l := by
@@ -536,7 +573,10 @@ theorem hess_step_apply (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k < kε �
   field_simp
   ring
 
-/-- For $0 < \epsilon < 1$ and $k < k_\epsilon$, the gradients satisfy $\|g_k\| > \epsilon$. -/
+/-- For $0 < \epsilon < 1$ and $k < k_\epsilon$, the gradients satisfy $\|g_k\| > \epsilon$.
+
+**Reading.** Gradient norm exceeds the tolerance strictly before the target index.
+-/
 theorem lt_norm_grad (hε : 0 < ε) (hε1 : ε < 1) {k : ℕ} (hk : k < kε ε) : ε < ‖grad ε k‖ := by
   have hf := one_lt_fval hε hk
   have hsq : ‖grad ε k‖ ^ 2 = ε ^ 2 * fval ε k ^ 2 * (ε ^ 2 + 1) := by
@@ -589,7 +629,11 @@ $$f(x_k) = f_k, \quad \nabla f(x_k) = g_k, \quad \nabla^2 f(x_k) = H_k \quad \te
 
 The data are those of (3.1.4)–(3.1.6), except that $g_{k_\epsilon} = 0$. The function replaces
 the book's piecewise-polynomial $f_{SN}$ of (3.1.7); it comes from
-`Optimization.exists_contDiff_interpolating_separated_jets`. -/
+`Optimization.exists_contDiff_interpolating_separated_jets`.
+
+**Reading.** Uses smooth separated-jet interpolation rather than the printed cutoff formula and
+interpolates a zero final gradient.
+-/
 theorem exists_example :
     ∃ B : ℝ, 0 ≤ B ∧ ∀ ε : ℝ, 0 < ε → ε < 1 → ∃ f : EuclideanSpace ℝ (Fin 2) → ℝ,
       ContDiff ℝ 3 f ∧ (∀ y, |f y| ≤ B ∧ ∀ j ≤ 3, ‖iteratedFDeriv ℝ j f y‖ ≤ B) ∧
@@ -633,7 +677,10 @@ $k_\epsilon$.
 
 The function is `CartisGouldToint.Chapter03.NewtonSlow.exists_example`. Every Newton run from
 the origin follows the iterates of (3.1.6), because the Newton equation has a unique solution at
-each of them. -/
+each of them.
+
+**Reading.** The first-hit iteration gives $k_\epsilon+1$ gradient tests and $k_\epsilon$
+Hessian evaluations in Algorithm 3.1.1. The pseudocode prescribes no objective evaluation. -/
 theorem theorem_3_1_1 :
     ∃ flow L₁ L₂ : ℝ, 1 ≤ L₁ ∧ 1 ≤ L₂ ∧ ∀ ε : ℝ, 0 < ε → ε < 1 →
       ∃ f : EuclideanSpace ℝ (Fin 2) → ℝ, Chapter02.AssumptionBb f flow ∧

@@ -87,6 +87,9 @@ dimension) and `Numlib.Analysis.Matrix.ToEuclideanLin`.
 * **Property 1.11** (generalization). The book states the square case $m = n$; the statement here
   allows $A \in \mathbb{R}^{m \times n}$, as in Exercise 15. See
   `QuarteroniSaccoSaleri.Chapter01.property_1_11`.
+* **Equation (1.12) and Property 1.8** (generalization). The identities hold also over the reals.
+* **Definition 1.18, equation (1.15), and Property 1.12** (reading). The equivalence of norms and
+  the convergence statements are proved for real finite-dimensional normed spaces.
 -/
 
 open Filter Finset Matrix Topology WithLp
@@ -139,7 +142,10 @@ $$(Ax, y) = (x, A^H y).$$
 In particular $(Qx, Qy) = (x, Q^H Q y)$.
 
 The proof uses Mathlib's `Matrix.toEuclideanLin_conjTranspose_eq_adjoint`: $A^H$ acts as the
-adjoint of $A$. -/
+adjoint of $A$.
+
+**Generalization.** The source gives the two identities over the complex numbers.
+They also apply to real matrices and vectors. -/
 theorem equation_1_12 {n : ℕ} (A Q : Matrix (Fin n) (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 y (toEuclideanLin A x) = inner 𝕜 (toEuclideanLin Aᴴ y) x ∧
       inner 𝕜 (toEuclideanLin Q y) (toEuclideanLin Q x) =
@@ -151,7 +157,9 @@ theorem equation_1_12 {n : ℕ} (A Q : Matrix (Fin n) (Fin n) 𝕜) (x y : Eucli
 product: if $Q \in \mathbb{K}^{n \times n}$ is unitary, with $\mathbb{K} = \mathbb{R}$ or
 $\mathbb{C}$, then $(Qx, Qy) = (x, y)$ for all $x, y \in \mathbb{K}^n$.
 
-The proof uses the backbone theorem `Matrix.inner_toLp_mulVec_of_mem_unitaryGroup`. -/
+The proof uses the backbone theorem `Matrix.inner_toLp_mulVec_of_mem_unitaryGroup`.
+
+**Generalization.** The orthogonal real case is included. -/
 theorem property_1_8 {n : ℕ} {Q : Matrix (Fin n) (Fin n) 𝕜} (hQ : Q ∈ unitaryGroup (Fin n) 𝕜)
     (x y : EuclideanSpace 𝕜 (Fin n)) :
     inner 𝕜 (toEuclideanLin Q y) (toEuclideanLin Q x) = inner 𝕜 y x :=
@@ -324,7 +332,9 @@ norms on $V$. Then $\|\cdot\|_p$ is equivalent to the norm of $V$, and $\|\cdot\
 $\|\cdot\|_q$ are equivalent.
 
 The two norms are definite seminorms. The proof uses the backbone theorem
-`Seminorm.exists_bounds`. -/
+`Seminorm.exists_bounds`.
+
+**Reading.** The formal equivalence uses real finite-dimensional spaces. -/
 theorem definition_1_18 (p q : Seminorm ℝ V) (hp : ∀ x, p x = 0 → x = 0)
     (hq : ∀ x, q x = 0 → x = 0) :
     (∃ c C : ℝ, 0 < c ∧ 0 < C ∧ ∀ x, c * ‖x‖ ≤ p x ∧ p x ≤ C * ‖x‖) ∧
@@ -373,7 +383,9 @@ unique.
 Here $V$ is a finite-dimensional real normed space, and convergence is convergence in its
 topology. The components are `b.repr (x k) i`. The coordinate map `b.repr` is a homeomorphism in
 finite dimension. The case $V = \mathbb{R}^n$ uses `tendsto_pi_nhds`, and the uniqueness uses
-`tendsto_nhds_unique`. -/
+`tendsto_nhds_unique`.
+
+**Reading.** The arbitrary-basis result is stated over the real numbers. -/
 theorem equation_1_15 {n : ℕ} (b : Module.Basis (Fin n) ℝ V) (x : ℕ → V) (y : V)
     (u : ℕ → (Fin n → ℝ)) (v w : Fin n → ℝ) :
     (Tendsto x atTop (𝓝 y) ↔
@@ -394,7 +406,9 @@ Moreover, $|||x^{(k)}||| \to 0$ if and only if $\|x^{(k)}\| \to 0$.
 
 The norms are definite seminorms. The topological equivalence of norms is the backbone theorem
 `Seminorm.tendsto_apply_iff_tendsto_norm`: a sequence tends to $0$ in a norm if and only if it
-tends to $0$ in the norm of $V$. -/
+tends to $0$ in the norm of $V$.
+
+**Reading.** The comparison of convergence in the two norms is over real spaces. -/
 theorem property_1_12 (p q : Seminorm ℝ V) (hp : ∀ x, p x = 0 → x = 0)
     (hq : ∀ x, q x = 0 → x = 0) (x : ℕ → V) (y : V) :
     (Tendsto x atTop (𝓝 y) ↔ Tendsto (fun k => p (y - x k)) atTop (𝓝 0)) ∧

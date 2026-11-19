@@ -86,6 +86,14 @@ The proofs specialize the backbone modules `Numlib.Analysis.Sobolev.Interval.Zer
 
 ## Deviations from the source
 
+* **Definitions of $W_0^{1,p}(I)$ and its dual** (generalization). The definitions include
+  $p = \infty$ and apply to arbitrary open sets. See `Brezis.Chapter08.sobolevSpaceZero` and
+  `Brezis.Chapter08.sobolevSpaceDual`.
+* **Basic Banach and Hilbert properties and Remark 14(i)** (generalization). The results apply
+  on arbitrary open sets. Completeness and smooth density include $p=\infty$.
+* **Proposition 8.13 and Remark 17** (generalization). Poincaré's inequality includes $p=\infty$,
+  and the estimates give explicit constants. See `Brezis.Chapter08.proposition_8_13_const` and
+  `Brezis.Chapter08.remark_8_17`.
 * **Remark 18** (generalization). The source states the characterization of $W_0^{m,p}(I)$ for
   $m \ge 2$. It is stated for every $m \ge 1$, and the case $m = 1$ is Theorem 8.12. See
   `Brezis.Chapter08.remark_8_18` and `Brezis.Chapter08.remark_8_18_of_bounded`.
@@ -93,6 +101,12 @@ The proofs specialize the backbone modules `Numlib.Analysis.Sobolev.Interval.Zer
   \|f_1\|_{L^{p'}})$ for the norm $\|u\|_{L^p} + \|u'\|_{L^p}$ on $W^{1,p}$. The statement uses the
   norm of the type, whose dual norm is the $\ell^{p'}$ norm of the pair $(f_0, f_1)$. See
   `Brezis.Chapter08.proposition_8_14`.
+* **Proposition 8.14, bounded interval** (reading). The source's proof switches to the
+  equivalent derivative norm. The library states existence of the one-term representation.
+  See `Brezis.Chapter08.proposition_8_14_bounded`.
+* **Remarks 19 and 21** (generalization). The representation statements allow arbitrary open
+  sets. The nonuniqueness identity includes $p=\infty$. See `Brezis.Chapter08.remark_8_19` and
+  `Brezis.Chapter08.remark_8_21`.
 
 ## Not formalized
 
@@ -116,22 +130,28 @@ $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. The space $W_0^{1,p}(
 closure of the test functions $C_c^\infty(I)$ in $W^{1,p}(I)$. It is a closed subspace of
 $W^{1,p}(I)$, with the norm of $W^{1,p}(I)$.
 
-The source defines $W_0^{1,p}(I)$ for $1 \le p < \infty$, as the closure of $C_c^1(I)$. By
-Remark 1 (`Brezis.Chapter08.remark_8_1`) both closures are the same space. The subspace also
-exists for $p = \infty$, but Theorem 8.12 needs $p < \infty$. It is the backbone's
-`SobolevIntervalLpZero 1 p I`. -/
+**Generalization.** The source assumes $p < \infty$ and an interval. The closure defining the
+subspace also applies to arbitrary open sets and at $p = \infty$.
+
+The source takes the closure of $C_c^1(I)$. Mollification gives the same closure by Remark 14(i).
+The subspace is `SobolevIntervalLpZero 1 p I`. -/
 abbrev sobolevSpaceZero (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) :
     Submodule ℝ (SobolevIntervalLp 1 p I) :=
   SobolevIntervalLpZero 1 p I
 
 /-- **Section 8.3** of [brezis2011functional], notation. The space $H_0^1(I)$ is $W_0^{1,2}(I)$,
-with the scalar product of $H^1(I)$. -/
+with the scalar product of $H^1(I)$.
+
+**Generalization.** The notation applies on arbitrary open sets. -/
 abbrev H10 (I : Opens ℝ) : Submodule ℝ (SobolevIntervalLp 1 2 I) := sobolevSpaceZero 2 I
 
 /-- Let $I \subseteq \mathbb{R}$ be open, $1 \le p \le \infty$ and $u \in W^{1,p}(I)$. Then
 $u \in W_0^{1,p}(I)$ if and only if $u$ lies in the closure, in $W^{1,p}(I)$, of the set of
 elements whose function equals a test function in $C_c^\infty(I)$ almost everywhere on $I$. This
-unfolds the definition of Section 8.3 of [brezis2011functional]. -/
+unfolds the definition of Section 8.3 of [brezis2011functional].
+
+**Generalization.** The smooth closure characterization applies on arbitrary open sets and
+includes $p=\infty$. -/
 theorem mem_sobolevSpaceZero_iff_mem_closure (u : SobolevIntervalLp 1 p I) :
     u ∈ sobolevSpaceZero p I ↔
       u ∈ closure {v : SobolevIntervalLp 1 p I | ∃ φ : 𝓓(I, ℝ), v.fn =ᵐ[volume.restrict I] φ} := by
@@ -146,14 +166,18 @@ theorem mem_sobolevSpaceZero_iff_mem_closure (u : SobolevIntervalLp 1 p I) :
 $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. Then $W_0^{1,p}(I)$ is complete, as a
 closed subspace of $W^{1,p}(I)$.
 
-Completeness is the instance `SobolevMultiIndexZero.instCompleteSpace`. -/
+Completeness is the instance `SobolevMultiIndexZero.instCompleteSpace`.
+
+**Generalization.** Completeness holds on arbitrary open sets and at $p=\infty$. -/
 theorem sobolevSpaceZero_banach : CompleteSpace (sobolevSpaceZero p I) := inferInstance
 
 /-- **Section 8.3** of [brezis2011functional], $W_0^{1,p}$ is separable. Let
 $I \subseteq \mathbb{R}$ be open and $1 \le p < \infty$. Then $W_0^{1,p}(I)$ is separable, as a
 subspace of the separable space $W^{1,p}(I)$ (Proposition 8.1).
 
-The source refers to its Proposition 3.25. -/
+The source refers to its Proposition 3.25.
+
+**Generalization.** Separability holds on arbitrary open sets for finite $p$. -/
 theorem sobolevSpaceZero_separable (hp : p ≠ ∞) :
     TopologicalSpace.SeparableSpace (sobolevSpaceZero p I) :=
   have : Fact (p ≠ ∞) := ⟨hp⟩
@@ -166,7 +190,9 @@ $I \subseteq \mathbb{R}$ be open and $1 < p < \infty$. Then $W_0^{1,p}(I)$ is re
 closed subspace of the reflexive space $W^{1,p}(I)$ (Proposition 8.1).
 
 The source refers to its Proposition 3.20. The proof uses
-`SobolevMultiIndexZero.instIsReflexive` and Theorem 4.10 (`Brezis.Chapter04.theorem_4_10`). -/
+`SobolevMultiIndexZero.instIsReflexive` and Theorem 4.10 (`Brezis.Chapter04.theorem_4_10`).
+
+**Generalization.** Reflexivity holds on arbitrary open sets for $1<p<\infty$. -/
 theorem sobolevSpaceZero_reflexive (hp1 : 1 < p) (hp : p ≠ ∞) :
     NormedSpace.IsReflexive ℝ (sobolevSpaceZero p I) :=
   have : NormedSpace.IsReflexive ℝ (Lp ℝ p (volume.restrict (I : Set ℝ))) :=
@@ -175,7 +201,9 @@ theorem sobolevSpaceZero_reflexive (hp1 : 1 < p) (hp : p ≠ ∞) :
 
 /-- **Section 8.3** of [brezis2011functional], $H_0^1$ is a separable Hilbert space. Let
 $I \subseteq \mathbb{R}$ be open. The scalar product of $H_0^1(I)$ is the scalar product of
-$H^1(I)$, $(u, v)_{H_0^1} = (u, v)_{H^1}$, and $H_0^1(I)$ is complete and separable. -/
+$H^1(I)$, $(u, v)_{H_0^1} = (u, v)_{H^1}$, and $H_0^1(I)$ is complete and separable.
+
+**Generalization.** The separable Hilbert structure applies on arbitrary open sets. -/
 theorem sobolevSpaceZero_hilbert :
     (∀ u v : H10 I, ⟪u, v⟫_ℝ = ⟪(u : SobolevIntervalLp 1 2 I), (v : SobolevIntervalLp 1 2 I)⟫_ℝ) ∧
       CompleteSpace (H10 I) ∧ TopologicalSpace.SeparableSpace (H10 I) :=
@@ -196,7 +224,9 @@ theorem remark_8_13 (hp : p ≠ ∞) : sobolevSpaceZero p ⊤ = ⊤ := sobolevIn
 and $1 \le p \le \infty$. The elements of $W_0^{1,p}(I)$ whose function equals a test function
 in $C_c^\infty(I)$ almost everywhere form a dense subset of $W_0^{1,p}(I)$.
 
-This holds by the definition of $W_0^{1,p}(I)$, since a set is dense in its closure. -/
+This holds by the definition of $W_0^{1,p}(I)$, since a set is dense in its closure.
+
+**Generalization.** Smooth density holds on arbitrary open sets and includes $p=\infty$. -/
 theorem remark_8_14_i :
     Dense {v : sobolevSpaceZero p I |
       ∃ φ : 𝓓(I, ℝ), (v : SobolevIntervalLp 1 p I).fn =ᵐ[volume.restrict I] φ} := by
@@ -336,7 +366,10 @@ in the norm of the source. For $p = \infty$ the factor is $(b - a) + 1$.
 
 The proof of the source gives the factor $1 + (b - a)$. For $p = 2$ the $L^2$ part of the factor
 is $(b - a)/\sqrt{2}$, as in `SobolevIntervalZero.norm_deriv_zero_le`. The proof specializes
-`SobolevIntervalLpZero.norm_deriv_zero_le`. -/
+`SobolevIntervalLpZero.norm_deriv_zero_le`.
+
+**Generalization.** The explicit factor improves the bound from the source's proof at
+$1<p<\infty$. The estimate also applies at $p=\infty$. -/
 theorem proposition_8_13_const {a b : ℝ} (hab : a < b) {u : SobolevIntervalLp 1 p (Opens.Ioo a b)}
     (hu : u ∈ sobolevSpaceZero p (Opens.Ioo a b)) :
     sobolevNorm u ≤ ((b - a) / p.toReal ^ p.toReal⁻¹ + 1) * ‖u.deriv 1‖ := by
@@ -351,7 +384,9 @@ $$\|u\|_{W^{1,p}(I)} \le C \|u'\|_{L^p(I)} \quad \text{for all } u \in W_0^{1,p}
 The source says that $C$ depends on $|I| < \infty$. A value of $C$ is in
 `Brezis.Chapter08.proposition_8_13_const`. The norm on the left is the norm of the source,
 `Brezis.Chapter08.sobolevNorm`. The statement includes $p = \infty$, for the closure of the test
-functions in $W^{1,\infty}(I)$. -/
+functions in $W^{1,\infty}(I)$.
+
+**Generalization.** The inequality applies at $p=\infty$. -/
 theorem proposition_8_13 {a b : ℝ} (hab : a < b) :
     ∃ C : ℝ, ∀ u ∈ sobolevSpaceZero p (Opens.Ioo a b), sobolevNorm u ≤ C * ‖u.deriv 1‖ :=
   ⟨_, fun _ hu ↦ proposition_8_13_const hab hu⟩
@@ -362,7 +397,9 @@ $$\|u'\|_{L^p} \le \|u\| \le C \|u'\|_{L^p},$$
 and $\|u'\|_{L^p} = 0$ if and only if $u = 0$. So $\|u'\|_{L^p}$ is a norm on
 $W_0^{1,p}((a, b))$, equivalent to the norm of $W^{1,p}$.
 
-Here $\|u\|$ is the norm of the type. -/
+Here $\|u\|$ is the norm of the type.
+
+**Generalization.** The derivative norm equivalence applies at $p=\infty$. -/
 theorem proposition_8_13_equiv {a b : ℝ} (hab : a < b) :
     ∃ C : ℝ, ∀ u ∈ sobolevSpaceZero p (Opens.Ioo a b),
       ‖u.deriv 1‖ ≤ ‖u‖ ∧ ‖u‖ ≤ C * ‖u.deriv 1‖ ∧ (‖u.deriv 1‖ = 0 ↔ u = 0) :=
@@ -379,7 +416,10 @@ $$\|u'\|_{L^2} \le \|u\|_{H^1} \le \sqrt{1 + (b - a)^2/2} \, \|u'\|_{L^2} \quad 
   u \in H_0^1(I).$$
 
 The proof specializes `SobolevIntervalZero.norm_le_seminorm` and
-`SobolevIntervalZero.seminorm_eq_zero_iff`. -/
+`SobolevIntervalZero.seminorm_eq_zero_iff`.
+
+**Generalization.** The integral identity applies to $H^1(I)$, and the norm equivalence on
+$H_0^1(I)$ includes the displayed upper bound. -/
 theorem remark_8_17 {a b : ℝ} (hab : a < b) :
     (∀ u v : SobolevIntervalLp 1 2 (Opens.Ioo a b),
       ⟪u.deriv 1, v.deriv 1⟫_ℝ = ∫ x in Ioo a b, u.deriv 1 x * v.deriv 1 x) ∧
@@ -444,7 +484,10 @@ is an element $u \in W^{2,p}(I)$ with function $x(1 - x)$ almost everywhere that
 $W_0^{1,p}(I)$, as an element of $W^{1,p}(I)$, but not in $W_0^{2,p}(I)$: its derivative at $0$
 is $1$.
 
-The element of $W^{1,p}(I)$ is `SobolevIntervalLp.derivOne u 0`, the pair $(u, u')$. -/
+The element of $W^{1,p}(I)$ is `SobolevIntervalLp.derivOne u 0`, the pair $(u, u')$.
+
+**Reading.** The polynomial on $(0,1)$ gives an explicit witness for the distinction of
+the two spaces in the source. -/
 theorem remark_8_18_ne (hp : p ≠ ∞) :
     ∃ u : SobolevIntervalLp 2 p (Opens.Ioo 0 1),
       (u.fn =ᵐ[volume.restrict (Ioo (0 : ℝ) 1)] fun x ↦ x * (1 - x)) ∧
@@ -504,12 +547,19 @@ theorem remark_8_18_ne (hp : p ≠ ∞) :
 $I \subseteq \mathbb{R}$ be open and $1 \le p \le \infty$. The dual space of $W_0^{1,p}(I)$, the
 space of continuous linear functionals on $W_0^{1,p}(I)$, is denoted by $W^{-1,p'}(I)$.
 
-The source uses this notation for $1 \le p < \infty$. The type is the backbone's
-`SobolevIntervalLpDual p I`, the strong dual of `SobolevIntervalLpZero 1 p I`. -/
+**Generalization.** The source assumes $p < \infty$. The strong dual also exists at
+$p = \infty$, since `Brezis.Chapter08.sobolevSpaceZero` includes that exponent.
+
+The type is the backbone's `SobolevIntervalLpDual p I`, the strong dual of
+`SobolevIntervalLpZero 1 p I`.
+
+**Generalization.** The dual is defined on arbitrary open sets and includes $p=\infty$. -/
 abbrev sobolevSpaceDual (p : ℝ≥0∞) [Fact (1 ≤ p)] (I : Opens ℝ) : Type := SobolevIntervalLpDual p I
 
 /-- **Section 8.3** of [brezis2011functional], notation. The dual space of $H_0^1(I)$ is denoted by
-$H^{-1}(I)$. -/
+$H^{-1}(I)$.
+
+**Generalization.** The notation applies on arbitrary open sets. -/
 abbrev Hneg1 (I : Opens ℝ) : Type := sobolevSpaceDual 2 I
 
 /-- **Section 8.3** of [brezis2011functional], the inclusions
@@ -535,7 +585,7 @@ $L^2((a, b)) \to W^{-1,p'}((a, b))$, $f \mapsto (u \mapsto \int_a^b f u)$, are c
 injective. For $1 < p < \infty$ both maps have dense range.
 
 The maps are `SobolevIntervalLpZero.toL2OfBounded` and `SobolevIntervalLpDual.ofL2OfBounded`.
-The proof does not use the hypothesis $p < \infty$. -/
+The finite-exponent assumption is used to obtain density in the dual. -/
 theorem inclusions_W1p_L2_of_bounded {a b : ℝ} (hab : a < b) (_hp : p ≠ ∞) :
     Function.Injective (SobolevIntervalLpZero.toL2OfBounded p hab) ∧
       Function.Injective (SobolevIntervalLpDual.ofL2OfBounded p hab) ∧
@@ -578,7 +628,9 @@ agree for $p = 1$.
 
 The pair is an element `f` of `PiLp q`, with $f_0$ = `f 0` and $f_1$ = `f 1`. The proof
 specializes `SobolevIntervalLpDual.exists_repr`, by the Hahn–Banach and the Riesz representation
-theorems as in the source. -/
+theorems as in the source.
+
+**Generalization.** The representation applies on arbitrary open sets. -/
 theorem proposition_8_14 {q : ℝ≥0∞} [p.HolderConjugate q] (hp : p ≠ ∞)
     (F : sobolevSpaceDual p I) :
     ∃ f : PiLp q (fun _ : Fin 2 ↦ Lp ℝ q (volume.restrict (I : Set ℝ))),
@@ -595,7 +647,10 @@ $$\langle F, u \rangle = \int_a^b f_1 u' \quad \text{for all } u \in W_0^{1,p}((
 So when $I$ is bounded one can take $f_0 = 0$.
 
 Poincaré's inequality makes $u \mapsto u'$ an isomorphism onto its range. The proof specializes
-`SobolevIntervalLpDual.exists_repr_of_bounded`. -/
+`SobolevIntervalLpDual.exists_repr_of_bounded`.
+
+**Reading.** The printed proof changes to the equivalent derivative-only norm. The library
+concludes existence of the derivative-only representation with the original dual norm in use. -/
 theorem proposition_8_14_bounded {q : ℝ≥0∞} [p.HolderConjugate q] (hp : p ≠ ∞) {a b : ℝ}
     (hab : a < b) (F : sobolevSpaceDual p (Opens.Ioo a b)) :
     ∃ f₁ : Lp ℝ q (volume.restrict (Ioo a b)), ∀ u : sobolevSpaceZero p (Opens.Ioo a b),
@@ -610,7 +665,9 @@ So the pairs $(f_0 + g', f_1 + g)$ and $(f_0, f_1)$ represent the same functiona
 functions $f_0$ and $f_1$ of Proposition 8.14 are not uniquely determined by $F$.
 
 The identity holds since $\int_I g' u = -\int_I g u'$ for $u \in W_0^{1,p}(I)$. The proof
-specializes `SobolevIntervalLpDual.repr_not_unique`. -/
+specializes `SobolevIntervalLpDual.repr_not_unique`.
+
+**Generalization.** The identity applies on arbitrary open sets and includes $p=\infty$. -/
 theorem remark_8_19 {q : ℝ≥0∞} [p.HolderConjugate q] {f₀ f₁ : ℝ → ℝ}
     (hf₀ : MemLp f₀ q (volume.restrict I)) (hf₁ : MemLp f₁ q (volume.restrict I)) (g : 𝓓(I, ℝ))
     (u : sobolevSpaceZero p I) :
@@ -626,7 +683,9 @@ on $W^{1,p}(I)$. Then there are $f_0, f_1 \in L^{p'}(I)$ with
 $$\langle F, u \rangle = \int_I f_0 u + \int_I f_1 u' \quad \text{for all } u \in W^{1,p}(I).$$
 So the first assertion of Proposition 8.14 also holds for functionals on $W^{1,p}(I)$.
 
-The proof specializes `SobolevIntervalLp.exists_repr_strongDual`. -/
+The proof specializes `SobolevIntervalLp.exists_repr_strongDual`.
+
+**Generalization.** The representation applies on arbitrary open sets. -/
 theorem remark_8_21 {q : ℝ≥0∞} [p.HolderConjugate q] (hp : p ≠ ∞)
     (F : StrongDual ℝ (SobolevIntervalLp 1 p I)) :
     ∃ f : PiLp q (fun _ : Fin 2 ↦ Lp ℝ q (volume.restrict (I : Set ℝ))),

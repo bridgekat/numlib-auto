@@ -53,10 +53,18 @@ $M^{-1} g$ and $M^{-1} H$, and the two subproblems are the operator subproblems.
 
 ## Implementation notes
 
+* The solution predicates describe the exact subproblems. The source studies exact
+  solutions in this chapter to justify tests for approximate steps.
+
+## Deviations from the source
+
 * The definitions take arbitrary square matrices $H$ and $M$. The hypotheses "$H$ symmetric" and
-  "$M$ positive definite" appear in the theorems that need them.
+  "$M$ positive definite" appear in the theorems that need them. The source also discusses
+  uniform definiteness of the sequence of weights $M_k$, while the declarations here take
+  a single matrix.
 * The power $\|s\|_M^r$ in (8.1.4) is the real power `Real.rpow`, and $r$ is any real number. The
-  source takes $r \ge 2$.
+  source takes $r \ge 2$, $\Delta>0$ and $\sigma>0$, and the Lean solution predicates accept
+  arbitrary real radii, powers and regularization weights.
 -/
 
 open Matrix Set Metric
@@ -76,13 +84,21 @@ The source defines it after (8.1.4) for a symmetric positive definite $M$. The d
 accepts every square matrix; where $\langle v, M v \rangle < 0$, the real square root gives $0$.
 For a positive definite $M$ it is the norm of the $M$-inner product space
 (`CartisGouldToint.Chapter08.mNorm_eq_norm_toScaled`). The dual norm $\|v\|_{M^{-1}}$ is
-`CartisGouldToint.Chapter08.mNorm M⁻¹ v`. -/
+`CartisGouldToint.Chapter08.mNorm M⁻¹ v`.
+
+**Reading.** The printed square root matches on positive definite weights; arbitrary matrices are
+admitted with square root totalized.
+-/
 noncomputable def mNorm (M : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) : ℝ :=
   √⟪v, toEuclideanLin M v⟫
 
 /-- **Equation (8.1.1)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$ and
 $H \in \mathbb{R}^{n \times n}$. The **quadratic model** is
 $$m(s) = \langle g, s \rangle + \tfrac{1}{2} \langle s, H s \rangle.$$
+
+The source assumes $H$ symmetric. The scalar model also accepts nonsymmetric matrices.
+
+**Reading.** Same quadratic model with the symmetry of H left to downstream theorems.
 -/
 noncomputable def model (g : EuclideanSpace ℝ (Fin n)) (H : Matrix (Fin n) (Fin n) ℝ)
     (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
@@ -94,7 +110,12 @@ $$m^R(s, \sigma, r) = m(s) + \frac{1}{r} \sigma \|s\|_M^r,$$
 with $m$ the quadratic model (8.1.1) and $\|\cdot\|_M$ the scaled norm.
 
 The factor $1/r$ is the normalization of footnote 59 of the source. The power is the real power
-`Real.rpow`, and $r$ is any real number; the source takes $r \ge 2$. -/
+`Real.rpow`. The definition accepts any real $r,\sigma$, while the source takes
+$r\ge2$ and $\sigma>0$. At $r=0$ the regularization term vanishes by total division.
+
+**Generalization.** The same factor 1/r and scaled norm power extend to arbitrary regularization
+weights and real exponents including zero.
+-/
 noncomputable def regModel (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (σ r : ℝ) (s : EuclideanSpace ℝ (Fin n)) : ℝ :=
   model g H s + (1 / r) * σ * mNorm M s ^ r
@@ -102,7 +123,12 @@ noncomputable def regModel (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n
 /-- **Equation (8.1.2)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$,
 $H, M \in \mathbb{R}^{n \times n}$ and $\Delta \in \mathbb{R}$. A vector $s$ is a **global
 minimizer of the trust-region subproblem** if $\|s\|_M \le \Delta$ and $m(s) \le m(u)$ for every
-$u$ with $\|u\|_M \le \Delta$. -/
+$u$ with $\|u\|_M \le \Delta$. The predicate accepts all real radii. The source uses
+$\Delta>0$.
+
+**Reading.** Same exact global trust-region solution condition, with arbitrary real radii and matrix
+inputs.
+-/
 def IsTrustRegionSolution (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (Δ : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   mNorm M s ≤ Δ ∧ ∀ u, mNorm M u ≤ Δ → model g H s ≤ model g H u
@@ -110,7 +136,12 @@ def IsTrustRegionSolution (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n)
 /-- **Equation (8.1.3)** of [cartis2022evaluation]. Let $g \in \mathbb{R}^n$,
 $H, M \in \mathbb{R}^{n \times n}$ and $\sigma, r \in \mathbb{R}$. A vector $s$ is a **global
 minimizer of the regularization subproblem** if $m^R(s, \sigma, r) \le m^R(u, \sigma, r)$ for
-every $u \in \mathbb{R}^n$. -/
+every $u \in \mathbb{R}^n$. The model parameters have the generalized domain of
+`CartisGouldToint.Chapter08.regModel`.
+
+**Generalization.** Same exact unconstrained global minimizer condition for the extended model
+parameter domain.
+-/
 def IsRegularizationSolution (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (σ r : ℝ) (s : EuclideanSpace ℝ (Fin n)) : Prop :=
   ∀ u, regModel g H M σ r s ≤ regModel g H M σ r u
@@ -118,41 +149,64 @@ def IsRegularizationSolution (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin
 variable {g s : EuclideanSpace ℝ (Fin n)} {H M : Matrix (Fin n) (Fin n) ℝ}
 
 /-- The definition of a global minimizer of (8.1.2), unfolded: $\|s\|_M \le \Delta$, and
-$m(s) \le m(u)$ for every $u$ with $\|u\|_M \le \Delta$. -/
+$m(s) \le m(u)$ for every $u$ with $\|u\|_M \le \Delta$.
+
+**Generalization.** Unfolds the exact trust-region solution predicate over its generalized parameter
+domain.
+-/
 theorem isTrustRegionSolution_iff {Δ : ℝ} :
     IsTrustRegionSolution g H M Δ s ↔
       mNorm M s ≤ Δ ∧ ∀ u, mNorm M u ≤ Δ → model g H s ≤ model g H u :=
   Iff.rfl
 
 /-- The definition of a global minimizer of (8.1.3), unfolded:
-$m^R(s, \sigma, r) \le m^R(u, \sigma, r)$ for every $u$. -/
+$m^R(s, \sigma, r) \le m^R(u, \sigma, r)$ for every $u$.
+
+**Generalization.** Unfolds the same exact global minimization for generalized parameters.
+-/
 theorem isRegularizationSolution_iff {σ r : ℝ} :
     IsRegularizationSolution g H M σ r s ↔ ∀ u, regModel g H M σ r s ≤ regModel g H M σ r u :=
   Iff.rfl
 
-/-- The definition of the scaled norm, unfolded: $\|v\|_M = \sqrt{\langle v, M v \rangle}$. -/
+/-- The definition of the scaled norm, unfolded: $\|v\|_M = \sqrt{\langle v, M v \rangle}$.
+
+**Reading.** The formula is unconditional, including non-positive-definite weights.
+-/
 theorem mNorm_def (M : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     mNorm M v = √⟪v, toEuclideanLin M v⟫ := rfl
 
 /-- The definition of the quadratic model, unfolded: $m(s) = \langle g, s \rangle + \frac{1}{2}
-\langle s, H s \rangle$. -/
+\langle s, H s \rangle$.
+
+**Reading.** Unfolds the model without a Hessian symmetry premise.
+-/
 theorem model_def (g : EuclideanSpace ℝ (Fin n)) (H : Matrix (Fin n) (Fin n) ℝ)
     (s : EuclideanSpace ℝ (Fin n)) : model g H s = ⟪g, s⟫ + (1 / 2) * ⟪s, toEuclideanLin H s⟫ :=
   rfl
 
 /-- The definition of the regularized model, unfolded: $m^R(s, \sigma, r) = m(s) + \frac{1}{r}
-\sigma \|s\|_M^r$. -/
+\sigma \|s\|_M^r$.
+
+**Reading.** Unfolds the regularized model for all real weights and powers.
+-/
 theorem regModel_def (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ) (σ r : ℝ)
     (s : EuclideanSpace ℝ (Fin n)) :
     regModel g H M σ r s = model g H s + (1 / r) * σ * mNorm M s ^ r :=
   rfl
 
-/-- The scaled norm of the zero vector is $0$: $\|0\|_M = 0$. -/
+/-- The scaled norm of the zero vector is $0$: $\|0\|_M = 0$.
+
+**Reading.** The zero vector identity continues to hold for arbitrary matrices.
+-/
 @[simp]
 theorem mNorm_zero (M : Matrix (Fin n) (Fin n) ℝ) : mNorm M 0 = 0 := by
   rw [mNorm_def, inner_zero_left, Real.sqrt_zero]
 
-/-- The scaled norm is nonnegative: $\|v\|_M \ge 0$ for every matrix $M$ and every $v$. -/
+/-- The scaled norm is nonnegative: $\|v\|_M \ge 0$ for every matrix $M$ and every $v$.
+
+**Reading.** Nonnegativity follows from totalized square root even outside the positive definite
+source domain.
+-/
 theorem mNorm_nonneg (M : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     0 ≤ mNorm M v :=
   Real.sqrt_nonneg _
@@ -179,14 +233,21 @@ theorem mNorm_inv_eq_norm_scaledGrad (hM : M.PosDef) (v : EuclideanSpace ℝ (Fi
 
 /-- Let $M$ be positive definite. The quadratic model satisfies $m(s) = \langle M^{-1} g, s
 \rangle_M + \frac{1}{2} \langle s, M^{-1} H s \rangle_M$: it is the operator model
-`Subproblem.quadModel` of $M^{-1} g$ and $M^{-1} H$ in the $M$-inner product space. -/
+`Subproblem.quadModel` of $M^{-1} g$ and $M^{-1} H$ in the $M$-inner product space.
+
+**Reading.** The same model is expressed using inverse-scaled operators, also for nonsymmetric H.
+-/
 theorem model_eq_quadModel (hM : M.PosDef) (s : EuclideanSpace ℝ (Fin n)) :
     model g H s = quadModel (scaledGrad hM g) (scaledOp H hM) (toScaled hM s) :=
   quadModel_scaled g s
 
 /-- Let $M$ be positive definite and $\sigma, r \in \mathbb{R}$. The regularized model
 $m^R(s, \sigma, r)$ is the operator regularized model `Subproblem.regModel` of $M^{-1} g$ and
-$M^{-1} H$ in the $M$-inner product space, with weight $\sigma$ and exponent $r$. -/
+$M^{-1} H$ in the $M$-inner product space, with weight $\sigma$ and exponent $r$.
+
+**Reading.** Reexpresses the regularized model in the scaled space while allowing arbitrary real
+weight and exponent.
+-/
 theorem regModel_eq_regModel (hM : M.PosDef) (σ r : ℝ) (s : EuclideanSpace ℝ (Fin n)) :
     regModel g H M σ r s =
       Subproblem.regModel (scaledGrad hM g) (scaledOp H hM) σ r (toScaled hM s) := by
@@ -199,7 +260,10 @@ if and only if, in the $M$-inner product space, $\|s\|_M \le \Delta$ and $s$ min
 operator model of $M^{-1} g$ and $M^{-1} H$ on the closed ball of radius $\Delta$ about $0$.
 
 This is the bridge from (8.1.2) to the operator backbone. The vector $s$ is carried into the
-$M$-inner product space by `Subproblem.toScaled`, the identity map of $\mathbb{R}^n$. -/
+$M$-inner product space by `Subproblem.toScaled`, the identity map of $\mathbb{R}^n$.
+
+**Generalization.** Reexpresses the exact problem on a closed ball with generalized real radius.
+-/
 theorem isTrustRegionSolution_iff_scaled (hM : M.PosDef) {Δ : ℝ} :
     IsTrustRegionSolution g H M Δ s ↔
       ‖toScaled hM s‖ ≤ Δ ∧
@@ -216,7 +280,11 @@ $\sigma, r \in \mathbb{R}$. Then $s$ is a global minimizer of the regularization
 model of $M^{-1} g$ and $M^{-1} H$ over the whole space.
 
 This is the bridge from (8.1.3) to the operator backbone. The vector $s$ is carried into the
-$M$-inner product space by `Subproblem.toScaled`, the identity map of $\mathbb{R}^n$. -/
+$M$-inner product space by `Subproblem.toScaled`, the identity map of $\mathbb{R}^n$.
+
+**Generalization.** Reexpresses exact global minimization in the scaled space with generalized real
+parameters.
+-/
 theorem isRegularizationSolution_iff_scaled (hM : M.PosDef) {σ r : ℝ} :
     IsRegularizationSolution g H M σ r s ↔
       IsMinOn (Subproblem.regModel (scaledGrad hM g) (scaledOp H hM) σ r) univ

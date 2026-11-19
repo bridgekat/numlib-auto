@@ -129,11 +129,21 @@ mathematical content are formalized as well.
 * **Corollary 32.3.2**, finiteness of the supremum (correction). The book states that the supremum
   is finite. This fails for the improper function $f \equiv -\infty$. Both declarations of the
   corollary assume that $f$ is proper. See `Rockafellar.corollary_32_3_2_finite`.
+* **Corollary 32.3.2**, supremum comparison (generalization). The two suprema agree
+  without relative-interior containment or properness. See `Rockafellar.corollary_32_3_2_iSup`.
 * **Theorem 32.4**, normality of subgradients (generalization). Neither the convexity of $f$, nor
   the convexity of $C$, nor $x \in \operatorname{ri}(\operatorname{dom} f)$ is needed. See
   `Rockafellar.theorem_32_4_normal`.
 * **Corollary 32.4.1** (generalization). The function $f$ is assumed proper but not convex. See
-  `Rockafellar.corollary_32_4_1`.
+  `Rockafellar.corollary_32_4_1`. The comparison also allows $x$ outside $S$.
+* **Remark after Theorem 32.4** (correction). The unit-ball normal cone includes zero,
+  so its full ray uses $\lambda \ge 0$. Maximizing subgradients are nonzero and use
+  $\lambda > 0$ under the hypotheses of the remark.
+
+## Not formalized
+
+* The exact supremum $1$ in the first counterexample to a weaker Corollary 32.3.2.
+  The declarations give the strict upper bound, boundary formula and failure of attainment.
 -/
 
 open scoped Pointwise
@@ -160,7 +170,9 @@ theorem theorem_32_1 (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : Rn n} (h
 
 /-- **Theorem 32.1** of [rockafellar1970convex], constancy form. Let $f$ be convex on $\mathbb{R}^n$
 and let $C \subseteq \operatorname{dom} f$. If $f$ attains its supremum relative to $C$ at a
-point of $\operatorname{ri} C$, then $f$ is constant on $C$: $f(x) = f(y)$ for all $x, y \in C$. -/
+point of $\operatorname{ri} C$, then $f$ is constant on $C$: $f(x) = f(y)$ for all $x, y \in C$.
+
+**Generalization.** Lean allows arbitrary $C$ as in `Rockafellar.theorem_32_1`. -/
 theorem theorem_32_1_const (hf : ConvexFn f) (hCdom : C ⊆ convexDom f) {z : Rn n} (hz : z ∈ ri C)
     (hmax : ∀ w ∈ C, f w ≤ f z) {x y : Rn n} (hx : x ∈ C) (hy : y ∈ C) : f x = f y := by
   rw [theorem_32_1 hf hCdom hz hmax hx, theorem_32_1 hf hCdom hz hmax hy]
@@ -458,7 +470,11 @@ equals its supremum over the extreme points of $C$.
 
 This is Minkowski's theorem (Corollary 18.5.1) combined with Theorem 32.2. It needs neither $C
 \subseteq \operatorname{ri}(\operatorname{dom} f)$ nor properness; only the attainment clause
-does. -/
+does.
+
+**Reading.** Supremum equality holds without properness or containment in the domain relative
+interior.
+-/
 theorem corollary_32_3_2_iSup (hf : ConvexFn f) (hCcl : IsClosed C)
     (hCbdd : Bornology.IsBounded C) (hCconv : Convex ℝ C) :
     (⨆ x ∈ C, f x) = ⨆ x ∈ C.extremePoints ℝ, f x :=
@@ -573,7 +589,10 @@ $x^* \in \partial f(x)$ is non-zero.
 
 The book argues that $\inf f < f(x)$ because $f$ is not constant on $C$, so
 $0 \notin \partial f(x)$. Here the point $z_0$ that shows that $f$ is not constant on $C$ is a
-hypothesis, and $x$ need not lie in $C$. -/
+hypothesis.
+
+**Generalization.** The argument uses only the strict value comparison and the
+subgradient inequality. Lean allows $x$ outside $C$. -/
 theorem theorem_32_4_ne_zero {x : Rn n} (hmax : ∀ z ∈ C, f z ≤ f x) {z₀ : Rn n} (hz₀ : z₀ ∈ C)
     (hne : f z₀ ≠ f x) {y : Rn n} (hy : y ∈ subdifferential (pairing n) f x) : y ≠ 0 :=
   ne_zero_of_mem_subdifferential_of_isMaxOn (isMaxOn_iff.2 hmax) hz₀ hne hy
@@ -586,8 +605,8 @@ $$\langle z, x^* \rangle \le \langle x, x^* \rangle \quad \text{for all } z \in 
 When $x \in S$, this says that the linear function $\langle \cdot, x^* \rangle$ attains its
 supremum relative to $S$ at $x$.
 
-**Generalization.** The book assumes that $f$ is proper convex. The statement here does not
-assume that $f$ is convex.
+**Generalization.** The book assumes a proper convex $f$ and attainment at a point of $S$.
+The comparison holds for any proper $f$ and allows $x$ outside $S$.
 
 The book passes to $C = \operatorname{conv} S$ so that Theorem 32.4 applies to a convex set.
 This is not necessary: `Rockafellar.theorem_32_4_normal` needs no hypothesis on the set, so it
@@ -606,6 +625,9 @@ theorem corollary_32_4_1 (hp : ProperConvex f) {S : Set (Rn n)} {x : Rn n}
 with $|x| = 1$. The vectors normal to the Euclidean unit ball $\{z \mid |z| \le 1\}$ at $x$ are
 exactly the vectors $\lambda x$ with $\lambda \ge 0$.
 
+**Correction.** The source prints $\lambda > 0$ for the full cone. The normal cone
+also contains zero. The maximizing subgradients in the source are nonzero.
+
 Since `Rockafellar.pairing n` is the inner product `innerₗ (Rn n)`, this is the backbone theorem
 `ConvexAnalysis.normalCone_innerₗ_closedBall`, which holds in every real inner product space. -/
 theorem normalCone_closedBall {x : Rn n} (hx : ‖x‖ = 1) :
@@ -620,7 +642,10 @@ Then every $x^* \in \partial f(x)$ has the form $x^* = \lambda x$ with $\lambda 
 maximization over $B$ leads to the "eigenvalue" condition $\lambda x \in \partial f(x)$,
 $|x| = 1$.
 
-The non-constancy is given by a point $z_0 \in B$ with $f(z_0) \neq f(x)$. -/
+The non-constancy is given by a point $z_0 \in B$ with $f(z_0) \neq f(x)$.
+
+**Generalization.** The conclusion for any given subgradient needs no convexity of $f$
+or relative-interior condition at $x$. -/
 theorem theorem_32_4_ball {x : Rn n} (hx : ‖x‖ = 1)
     (hfin : ∀ z ∈ Metric.closedBall (0 : Rn n) 1, f z ≠ ⊥ ∧ f z ≠ ⊤)
     (hmax : ∀ z ∈ Metric.closedBall (0 : Rn n) 1, f z ≤ f x) {z₀ : Rn n}

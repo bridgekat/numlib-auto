@@ -210,7 +210,10 @@ Then there is $C > 0$ such that for all $v \in H^1(\Omega)$,
 $$\|v\|_1 \le C \left( |v|_1 + |\ell(v)| \right).$$
 
 This is `AtkinsonHan.Chapter07.theorem_7_3_12` with $k = 1$, $p = 2$ and the one seminorm
-$f_1(v) = |\ell(v)|$. Connectedness is the hypothesis `IsPreconnected`. -/
+$f_1(v) = |\ell(v)|$. Connectedness is the hypothesis `IsPreconnected`.
+
+**Reading.** Mean norm estimate assumes a bounded connected extension domain.
+-/
 theorem exists_norm_le_topSeminorm_add_abs_integral (hΩ : IsSobolevExtensionDomain (d + 1) 𝟚 Ω)
     (hb : Bornology.IsBounded (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))
     (hc : IsPreconnected (Ω : Set (EuclideanSpace ℝ (Fin (d + 1)))))

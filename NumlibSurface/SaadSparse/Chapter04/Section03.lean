@@ -17,8 +17,8 @@ Algorithm 4.3 with parameter $r$ solves the two half-steps
 $$(H + rI) u_{k+1/2} = (rI - V) u_k + b, \qquad (V + rI) u_{k+1} = (rI - H) u_{k+1/2} + b.$$
 The sweep is the affine map $u \mapsto G_r u + f_r$ of (4.50)–(4.51), and it is the stationary
 iteration of the splitting $A = M - N$ with $M = (H + rI)(V + rI)/(2r)$ of (4.52); Problem P-4.5
-gives the closed form $f_r = 2r(V + rI)^{-1}(H + rI)^{-1}b$. These identities are matrix algebra and
-hold for every $H$, $V$ and $r$.
+gives the closed form $f_r = 2r(V + rI)^{-1}(H + rI)^{-1}b$. The affine identity is total.
+The splitting and the two linear solve identities use the corresponding nonsingularity conditions.
 
 The section states no numbered result. It claims in prose that the sweep converges when $H$ and $V$
 are symmetric positive definite and $r > 0$ is a constant. The module proves this claim, from every
@@ -65,6 +65,28 @@ applies it to the five-point matrix of §2.2.5. The proofs specialize `Numlib.St
   the book only cites. It is not needed for the convergence with a constant parameter, and it is not
   assumed.
 
+## Deviations from the source
+
+* **Algorithm 4.3 and Equations (4.50)–(4.51)** (reading). The sweep takes the current
+  parameter as input, and its inverse formulas are totalized at singular shifts.
+  The solve identities require the corresponding shift to be nonsingular.
+  See `SaadSparse.Chapter04.adiHalfStep`, `SaadSparse.Chapter04.adiStep`,
+  `SaadSparse.Chapter04.adiHalfStep_spec`, `SaadSparse.Chapter04.adiStep_spec`,
+  `SaadSparse.Chapter04.G_adi`, `SaadSparse.Chapter04.f_adi` and
+  `SaadSparse.Chapter04.equation_4_50`.
+* **Equation (4.52) and Problem P-4.5** (generalization). For the splitting, nonzero
+  parameters of either sign are allowed when both shifts are nonsingular. The simplification
+  of the affine term uses only the horizontal shift's nonsingularity.
+  See `SaadSparse.Chapter04.adiSplitting`, `SaadSparse.Chapter04.adiSplitting_m`,
+  `SaadSparse.Chapter04.equation_4_52`, `SaadSparse.Chapter04.adiSplitting_iterationOperator`,
+  `SaadSparse.Chapter04.f_adi_eq` and `SaadSparse.Chapter04.f_adi_eq_m_inv_mulVec`.
+* **Equation (4.49), model split and convergence** (reading). The concrete split uses
+  the constant-coefficient negative Laplacean of §2.2.5. The abstract ADI convergence
+  theorem applies to any two symmetric positive definite matrices.
+  See `SaadSparse.Chapter04.modelH`, `SaadSparse.Chapter04.modelV`,
+  `SaadSparse.Chapter04.laplacian2D_eq_modelH_add_modelV` and
+  `SaadSparse.Chapter04.adi_model_problem`.
+
 ## Not formalized
 
 * **The optimal parameter $r$ and the cyclic parameter sequences.** The book states no formula,
@@ -101,8 +123,11 @@ private theorem splitting_n_eq {R : Type*} [Ring R] {a : R} (s : Stationary.Spli
 /-- **Algorithm 4.3** of [saad2003iterative], the half-step. For
 $H, V \in \mathbb{R}^{\iota \times \iota}$ and $r \in \mathbb{R}$, the **intermediate vector**
 of one Peaceman–Rachford sweep from $u_k$ is
-$$u_{k+1/2} = (H + rI)^{-1} \big( (rI - V) u_k + b \big),$$
-the solution of $(H + rI) u_{k+1/2} = (rI - V) u_k + b$ when $H + rI$ is nonsingular. -/
+$$u_{k+1/2} = (H + rI)^{-1} \big( (rI - V) u_k + b \big).$$
+
+**Reading.** The source gives a linear solve with the current positive parameter $\rho_k$.
+The definition takes the current parameter $r$ as input and returns zero when $H+rI$
+is singular, by totalized inversion. For an invertible shift it gives the source's solve. -/
 noncomputable def adiHalfStep (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) : ι → ℝ :=
   (H + r • 1)⁻¹ *ᵥ ((r • 1 - V) *ᵥ x + b)
 
@@ -111,13 +136,18 @@ $r$ from $u_k$ is the horizontal half-step $(H + rI) u_{k+1/2} = (rI - V) u_k + 
 the vertical half-step
 $$(V + rI) u_{k+1} = (rI - H) u_{k+1/2} + b.$$
 
-Both half-steps are written with the matrix inverse, which is $0$ at a singular matrix. -/
+**Reading.** The source gives both solves in a loop over positive parameters. The definition
+is one sweep with the supplied parameter $r$, using inverses totalized to zero at singular
+shifts. Iterating it at fixed $r$ gives the stationary case. -/
 noncomputable def adiStep (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) : ι → ℝ :=
   (V + r • 1)⁻¹ *ᵥ ((r • 1 - H) *ᵥ adiHalfStep H V r b x + b)
 
 /-- **Algorithm 4.3** of [saad2003iterative], first half-step. If $H + rI$ is nonsingular, the
 intermediate vector satisfies
 $$(H + rI) u_{k+1/2} = (rI - V) u_k + b.$$
+
+**Reading.** The source requests a solve. Invertibility of the horizontal shift ensures
+that the totalized inverse formula implements that solve.
 -/
 theorem adiHalfStep_spec (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b x : ι → ℝ) :
     (H + r • 1) *ᵥ adiHalfStep H V r b x = (r • 1 - V) *ᵥ x + b :=
@@ -126,6 +156,9 @@ theorem adiHalfStep_spec (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b x :
 /-- **Algorithm 4.3** of [saad2003iterative], second half-step. If $V + rI$ is nonsingular, the
 sweep satisfies
 $$(V + rI) u_{k+1} = (rI - H) u_{k+1/2} + b.$$
+
+**Reading.** The source requests a solve. Invertibility of the vertical shift ensures that
+the totalized inverse formula implements that solve for the given intermediate vector.
 -/
 theorem adiStep_spec (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) (b x : ι → ℝ) :
     (V + r • 1) *ᵥ adiStep H V r b x = (r • 1 - H) *ᵥ adiHalfStep H V r b x + b :=
@@ -136,6 +169,9 @@ theorem adiStep_spec (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) (b x : ι 
 /-- **Equation (4.50)** of [saad2003iterative]. The **iteration matrix** of one Peaceman–Rachford
 sweep with parameter $r$ is
 $$G_r = (V + rI)^{-1} (H - rI) (H + rI)^{-1} (V - rI).$$
+
+**Reading.** The source uses ordinary inverses on nonsingular shifts. The totalized
+definition is zero if either shift is singular.
 -/
 noncomputable def G_adi (H V : Matrix ι ι ℝ) (r : ℝ) : Matrix ι ι ℝ :=
   (V + r • 1)⁻¹ * (H - r • 1) * (H + r • 1)⁻¹ * (V - r • 1)
@@ -143,6 +179,9 @@ noncomputable def G_adi (H V : Matrix ι ι ℝ) (r : ℝ) : Matrix ι ι ℝ :=
 /-- **Equation (4.51)** of [saad2003iterative]. The **affine part** of one Peaceman–Rachford sweep
 with parameter $r$ is
 $$f_r = (V + rI)^{-1} \big( I - (H - rI)(H + rI)^{-1} \big) b.$$
+
+**Reading.** The shifted inverses are totalized to zero at singular matrices. The
+formula agrees with the source when both shifts are nonsingular.
 -/
 noncomputable def f_adi (H V : Matrix ι ι ℝ) (r : ℝ) (b : ι → ℝ) : ι → ℝ :=
   (V + r • 1)⁻¹ *ᵥ ((1 - (H - r • 1) * (H + r • 1)⁻¹) *ᵥ b)
@@ -151,8 +190,9 @@ noncomputable def f_adi (H V : Matrix ι ι ℝ) (r : ℝ) (b : ι → ℝ) : ι
 sweep of Algorithm 4.3 is
 $$u \mapsto G_r u + f_r.$$
 
-The identity is matrix algebra and needs no nonsingularity: both sides use the value $0$ of the
-inverse of a singular matrix. -/
+**Reading.** The source rewrites the two linear solves when the shifted matrices are
+nonsingular. The affine identity holds for the totalized sweep at all shifts, including
+singular ones. -/
 theorem equation_4_50 (H V : Matrix ι ι ℝ) (r : ℝ) (b x : ι → ℝ) :
     adiStep H V r b x = G_adi H V r *ᵥ x + f_adi H V r b := by
   simp only [adiStep, adiHalfStep, G_adi, f_adi, ← mulVec_mulVec, mulVec_add, sub_mulVec,
@@ -198,6 +238,9 @@ theorem toLp_f_adi (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ)))
 /-- **Equation (4.52)** of [saad2003iterative], the splitting. Let $r \neq 0$, and let $H + rI$ and
 $V + rI$ be nonsingular. The **ADI splitting** of $A = H + V$ is the splitting $A = M - N$ with
 $$M = \frac{1}{2r} (H + rI)(V + rI).$$
+
+**Generalization.** Equation (4.52) uses a positive parameter. A nonzero parameter
+of either sign gives the same splitting when the shifted factors are nonsingular.
 -/
 noncomputable def adiSplitting (H V : Matrix ι ι ℝ) {r : ℝ} (hr : r ≠ 0)
     (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))) :
@@ -206,7 +249,10 @@ noncomputable def adiSplitting (H V : Matrix ι ι ℝ) {r : ℝ} (hr : r ≠ 0)
     isUnit_smul_matrix (inv_ne_zero (mul_ne_zero two_ne_zero hr)) (hH.mul hV)⟩
 
 /-- **Equation (4.52)** of [saad2003iterative]. The matrix of the ADI splitting is
-$M = (H + rI)(V + rI)/(2r)$. -/
+$M = (H + rI)(V + rI)/(2r)$.
+
+**Generalization.** The formula holds for the splitting defined with any nonzero
+parameter and invertible shifted factors. -/
 theorem adiSplitting_m {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))}
     {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} :
     (adiSplitting H V hr hH hV).m = (2 * r)⁻¹ • ((H + r • 1) * (V + r • 1)) := rfl
@@ -231,7 +277,8 @@ private theorem toEuclideanCLM_adiSplitting_n {hr : r ≠ 0}
 $$N = \frac{1}{2r} (H - rI)(V - rI),$$
 so that $M - N = H + V$.
 
-The products $HV$ cancel in $M - N$, so the identity needs no commutativity of $H$ and $V$. -/
+**Generalization.** The source gives the positive-parameter case. The complementary
+matrix has this form for any nonzero parameter with nonsingular shifts. -/
 theorem equation_4_52 {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))}
     {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} :
     (adiSplitting H V hr hH hV).n = (2 * r)⁻¹ • ((H - r • 1) * (V - r • 1)) := by
@@ -241,7 +288,10 @@ theorem equation_4_52 {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι �
   norm_num
 
 /-- **Equation (4.52)** of [saad2003iterative], the iteration matrix. The iteration matrix
-$I - M^{-1}A$ of the ADI splitting is the matrix $G_r$ of (4.50). -/
+$I - M^{-1}A$ of the ADI splitting is the matrix $G_r$ of (4.50).
+
+**Generalization.** The source uses a positive parameter. The identification holds
+for any nonzero parameter when both shifted factors are nonsingular. -/
 theorem adiSplitting_iterationOperator {hr : r ≠ 0}
     {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))} {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} :
     (adiSplitting H V hr hH hV).iterationOperator = G_adi H V r := by
@@ -256,6 +306,10 @@ theorem adiSplitting_iterationOperator {hr : r ≠ 0}
 /-- **Problem P-4.5** of [saad2003iterative], the closed form. If $H + rI$ is nonsingular, the
 affine part (4.51) of the sweep is
 $$f_r = 2r (V + rI)^{-1} (H + rI)^{-1} b.$$
+
+**Generalization.** Problem P-4.5 uses the positive-parameter splitting with both shifted
+factors invertible. The affine identity needs only invertibility of $H+rI$ because
+both sides are zero when $V+rI$ is singular under totalized inversion.
 -/
 theorem f_adi_eq (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b : ι → ℝ) :
     f_adi H V r b = (2 * r) • ((V + r • 1)⁻¹ *ᵥ ((H + r • 1)⁻¹ *ᵥ b)) := by
@@ -270,7 +324,10 @@ theorem f_adi_eq (hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))) (b : ι → �
 
 /-- **Problem P-4.5** of [saad2003iterative], the splitting form. Let $r \neq 0$, and let $H + rI$
 and $V + rI$ be nonsingular. The affine part (4.51) is $f_r = M^{-1}b$ for the matrix $M$ of the
-splitting (4.52). So one sweep of Algorithm 4.3 is the stationary iteration of that splitting. -/
+splitting (4.52). So one sweep of Algorithm 4.3 is the stationary iteration of that splitting.
+
+**Generalization.** Problem P-4.5 uses the positive-parameter splitting. The same
+identity holds for every nonzero parameter with both shifted factors invertible. -/
 theorem f_adi_eq_m_inv_mulVec {hr : r ≠ 0} {hH : IsUnit (H + r • (1 : Matrix ι ι ℝ))}
     {hV : IsUnit (V + r • (1 : Matrix ι ι ℝ))} (b : ι → ℝ) :
     f_adi H V r b = (adiSplitting H V hr hH hV).m⁻¹ *ᵥ b := by
@@ -368,14 +425,20 @@ sizes $n_1, n_2$ and spacing $h_1$, the matrix $H = T_1 \otimes I_{n_2}$, where 
 \operatorname{tridiag}(-1, 2, -1)$ of order $n_1$ is the one-dimensional Laplacian in the first
 coordinate.
 
-$T_1$ is `SaadSparse.Chapter02.laplacian1D n₁ h₁`. -/
+**Reading.** The source describes a horizontal difference operator with variable
+coefficients. This definition is the constant-coefficient negative second difference
+used by the positive definite model problem in §2.2.5. -/
 noncomputable def modelH (n₁ n₂ : ℕ) (h₁ : ℝ) : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ :=
   laplacian1D n₁ h₁ ⊗ₖ (1 : Matrix (Fin n₂) (Fin n₂) ℝ)
 
 /-- **Equation (4.49)** of [saad2003iterative], the vertical part for the model problem. For mesh
 sizes $n_1, n_2$ and spacing $h_2$, the matrix $V = I_{n_1} \otimes T_2$, where $T_2 = h_2^{-2}
 \operatorname{tridiag}(-1, 2, -1)$ of order $n_2$ is the one-dimensional Laplacian in the second
-coordinate. -/
+coordinate.
+
+**Reading.** The source describes a vertical difference operator with variable
+coefficients. This definition is the constant-coefficient negative second difference
+used by the positive definite model problem in §2.2.5. -/
 noncomputable def modelV (n₁ n₂ : ℕ) (h₂ : ℝ) : Matrix (Fin n₁ × Fin n₂) (Fin n₁ × Fin n₂) ℝ :=
   (1 : Matrix (Fin n₁) (Fin n₁) ℝ) ⊗ₖ laplacian1D n₂ h₂
 
@@ -384,7 +447,10 @@ noncomputable def modelV (n₁ n₂ : ℕ) (h₂ : ℝ) : Matrix (Fin n₁ × Fi
 horizontal and vertical one-dimensional Laplacians.
 
 The five-point matrix is `SaadSparse.Chapter02.laplacian2D`. The identity is
-`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as the sum of its two Kronecker factors. -/
+`SaadSparse.Chapter02.laplacian2D_eq_kroneckerSum` read as the sum of its two Kronecker factors.
+
+**Reading.** Equation (4.49) gives the split system with variable coefficients. This identity
+states the operator decomposition for the constant-coefficient $-\Delta$ model problem. -/
 theorem laplacian2D_eq_modelH_add_modelV (n₁ n₂ : ℕ) (h₁ h₂ : ℝ) :
     laplacian2D n₁ n₂ h₁ h₂ = modelH n₁ n₂ h₁ + modelV n₁ n₂ h₂ :=
   laplacian2D_eq_kroneckerSum n₁ n₂ h₁ h₂
@@ -428,7 +494,11 @@ theorem modelV_posDef (n₁ n₂ : ℕ) {h₂ : ℝ} (h₂0 : h₂ ≠ 0) : (mod
 /-- **Section 4.3** of [saad2003iterative], the model problem. Let $h_1, h_2 \neq 0$, let $r > 0$,
 and let $x$ solve $Ax = b$ for the five-point matrix $A$ of §2.2.5 on an $n_1 \times n_2$ grid.
 Then Algorithm 4.3 for the splitting $A = H + V$ into the horizontal and vertical
-one-dimensional Laplacians converges to $x$ from every starting vector. -/
+one-dimensional Laplacians converges to $x$ from every starting vector.
+
+**Reading.** This instance uses the constant-coefficient $-\Delta$ discretization of §2.2.5.
+The result concerns convergence at each fixed positive parameter. The source's asymptotic
+rate comparison concerns the optimal parameter. -/
 theorem adi_model_problem (n₁ n₂ : ℕ) {h₁ h₂ : ℝ} (h₁0 : h₁ ≠ 0) (h₂0 : h₂ ≠ 0) {r : ℝ}
     (hr : 0 < r) (b x₀ : Fin n₁ × Fin n₂ → ℝ) {x : Fin n₁ × Fin n₂ → ℝ}
     (hx : laplacian2D n₁ n₂ h₁ h₂ *ᵥ x = b) :

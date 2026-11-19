@@ -28,6 +28,9 @@ The rotation contribution in two dimensions is skew and has zero quadratic energ
 
 ## Deviations from the source
 
+* **Equation (2.13)** (generalization). The Stokes energy takes an abstract bilinear
+  form and load. The printed functional is the case of the Dirichlet form and body load.
+  See `BenziGolubLiesen.stokesEnergy`.
 * **Stokes variational interpretation** (reading). The equivalence concerns the weak algebraic
   equations, with an algebraic pressure functional, not equivalence of Sobolev or strong PDEs.
 
@@ -53,8 +56,9 @@ variable {V Q : Type*} [AddCommGroup V] [Module ℝ V] [AddCommGroup Q] [Module 
 
 /-- **Equation (2.13)** of [benzi2005numerical]. For a bilinear Dirichlet form $a$ on the space
 of admissible velocities and a linear load $\ell$, the **Stokes energy** is $J(u)=a(u,u)/2-\ell(u)$.
-In the Stokes model $a(u,v)=\int_\Omega \nabla u:\nabla v$ and
-$\ell(v)=\int_\Omega f\cdot v$. The form and load are taken as parameters. -/
+
+**Generalization.** The source gives $a(u,v)=\int_\Omega \nabla u:\nabla v$ and
+$\ell(v)=\int_\Omega f\cdot v$. The definition takes the form and load as parameters. -/
 noncomputable abbrev stokesEnergy (a : V →ₗ[ℝ] V →ₗ[ℝ] ℝ) (load : Module.Dual ℝ V) :
     V → ℝ :=
   LinearMap.quadraticEnergy a load

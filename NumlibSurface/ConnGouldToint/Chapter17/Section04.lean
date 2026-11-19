@@ -41,6 +41,11 @@ corrected projected Lagrangian residual (17.4.9). The projection is `bestApprox`
 
 ## Deviations from the source
 
+* **Correction.** Equation (17.4.9) corrects the multiplier sign in the projected trial point and
+  supplies a counterexample to the printed sign. See
+  `ConnGouldToint.Chapter17.projectedLagrangianResidual`,
+  `ConnGouldToint.Chapter17.projectedLagrangianResidual_eq_zero_iff`,
+  `ConnGouldToint.Chapter17.printedProjectionSign_counterexample`.
 * **Equation (17.4.9)** (correction). The trial point subtracts the Lagrangian gradient $g - a$; the
   printed sign of the multiplier term subtracts $g + a$. See
   `ConnGouldToint.Chapter17.printedProjectionSign_counterexample`.
@@ -112,7 +117,13 @@ $$P_C\bigl(x - (g - a)\bigr) - x.$$
 **Correction.** The printed sign of the multiplier term gives the trial point $x - g - a$, which
 subtracts the term $a$ twice relative to stationarity of the Lagrangian gradient $g - a$. At a
 stationary point the printed residual can be nonzero; see
-`ConnGouldToint.Chapter17.printedProjectionSign_counterexample`. -/
+`ConnGouldToint.Chapter17.printedProjectionSign_counterexample`.
+
+**Correction.** The projection uses the trial point obtained by subtracting the Lagrangian gradient.
+With the source convention that this gradient is the objective gradient minus the
+multiplier-weighted constraint gradients, the multiplier term has a plus sign in the trial point.
+The counterexample separates the two signs.
+-/
 noncomputable def projectedLagrangianResidual (C : Set E) (x g a : E) : E :=
   projectedStationarityResidual C x (g - a)
 
@@ -120,6 +131,11 @@ noncomputable def projectedLagrangianResidual (C : Set E) (x g a : E) : E :=
 $C \subseteq E$ be closed and convex, and let $x \in C$ and $g, a \in E$. Then the corrected
 projected Lagrangian residual is $0$ if and only if
 $$\langle g - a, y - x \rangle \ge 0 \quad \text{for all } y \in C.$$
+
+**Correction.** The projection uses the trial point obtained by subtracting the Lagrangian gradient.
+With the source convention that this gradient is the objective gradient minus the
+multiplier-weighted constraint gradients, the multiplier term has a plus sign in the trial point.
+The counterexample separates the two signs.
 -/
 theorem projectedLagrangianResidual_eq_zero_iff {C : Set E} (hc : IsClosed C)
     (hconv : Convex ℝ C) {x g a : E} (hx : x ∈ C) :
@@ -128,7 +144,13 @@ theorem projectedLagrangianResidual_eq_zero_iff {C : Set E} (hc : IsClosed C)
 
 /-- The printed sign in equation (17.4.9) of [conn2000trust] is wrong. On $C = \mathbb{R}$ at
 $x = 0$, with $g = a = 1$, the Lagrangian gradient $g - a$ vanishes and the corrected residual
-is $0$, but the printed residual $P_C(x - g - a) - x = -2$ is nonzero. -/
+is $0$, but the printed residual $P_C(x - g - a) - x = -2$ is nonzero.
+
+**Correction.** The projection uses the trial point obtained by subtracting the Lagrangian gradient.
+With the source convention that this gradient is the objective gradient minus the
+multiplier-weighted constraint gradients, the multiplier term has a plus sign in the trial point.
+The counterexample separates the two signs.
+-/
 theorem printedProjectionSign_counterexample :
     projectedLagrangianResidual Set.univ (0 : ℝ) 1 1 = 0 ∧
       bestApprox Set.univ ((0 : ℝ) - 1 - 1) - 0 ≠ 0 := by

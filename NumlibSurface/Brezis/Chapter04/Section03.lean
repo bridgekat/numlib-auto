@@ -90,8 +90,7 @@ theorem), and `MeasureTheory.Lp.not_surjective_toDual_top`. Theorem 4.13 is Math
   `EuclideanSpace ℝ (Fin N)`.
 * The negative results (Remarks 6 and 8, and the non-reflexivity and the functional of case C) are
   stated for a nonempty open set $\Omega \subseteq \mathbb{R}^N$ with $N \ge 1$, with Lebesgue
-  measure. This is the case that the source proves in full. For $N = 0$ every $L^p$ is
-  one-dimensional and these statements are false.
+  measure. For $N = 0$ the spaces are finite-dimensional and these statements are false.
 
 ## Implementation notes
 
@@ -104,12 +103,28 @@ theorem), and `MeasureTheory.Lp.not_surjective_toDual_top`. Theorem 4.13 is Math
 
 ## Deviations from the source
 
+* **Theorem 4.10, Steps 1–3, and Remarks 3 and 4** (generalization). The Clarkson inequalities
+  and uniform convexity apply to arbitrary measures. The dual isometry in Step 3 includes
+  $p=1,\infty$, and the identification in Remark 4 includes $p=1$.
+* **Separable measure space example** (reading). The argument for Euclidean space uses its Borel
+  σ-algebra, whereas the opening of Chapter 4 uses the completed Lebesgue σ-algebra. The example
+  for separable metric spaces extends to second countable spaces with their Borel σ-algebra.
+  See `Brezis.Chapter04.separableMeasureSpace_of_secondCountable`.
 * **Theorem 4.11** (generalization). The source states the theorem for $1 < p < \infty$. The formal
   statement holds for $1 \le p < \infty$, and Theorem 4.14 is its case $p = 1$. See
   `Brezis.Chapter04.theorem_4_11`.
 * **Remark after Theorem 4.13** (generalization). The source assumes that
   $\Omega \subseteq \mathbb{R}^N$ is measurable. The formal statement holds for every subset. See
   `Brezis.Chapter04.theorem_4_13_subset`.
+* **Study of $L^\infty$, part (ii)** (generalization). Weak-star sequential compactness is stated
+  for the restriction of volume to any subset. See
+  `Brezis.Chapter04.lInfty_exists_subseq_weakStar_tendsto`.
+* **Remarks 6 and 8 and nonreflexivity of $L^\infty$** (reading). The formal conclusions are
+  restricted to nonempty open subsets of positive-dimensional Euclidean space. See
+  `Brezis.Chapter04.remark_4_6`, `Brezis.Chapter04.remark_4_8` and
+  `Brezis.Chapter04.lInfty_not_isReflexive`.
+* **Point evaluation in the dual of $L^\infty$** (reading). The example assumes $N\ge 1$.
+  See `Brezis.Chapter04.exists_strongDual_lInfty_not_integral`.
 * **Lemma 4.2** (generalization). The source states the lemma for a Banach space. The formal
   statement holds for every topological space. See `Brezis.Chapter04.lemma_4_2`.
 
@@ -153,7 +168,7 @@ $$\Bigl|\frac{a + b}{2}\Bigr|^p + \Bigl|\frac{a - b}{2}\Bigr|^p \le \frac12 \big
   |b|^p\bigr), \qquad (9)$$
 which is also stated.
 
-The measure space need not be σ-finite. -/
+**Generalization.** The inequalities hold for any measure. -/
 theorem theorem_4_10_clarkson (hp : 2 ≤ p) (hp' : p ≠ ∞) :
     (∀ f g : Lp ℝ p μ, ‖(2 : ℝ)⁻¹ • (f + g)‖ ^ p.toReal + ‖(2 : ℝ)⁻¹ • (f - g)‖ ^ p.toReal ≤
       (‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) / 2) ∧
@@ -168,8 +183,10 @@ $\|f\|_p \le 1$, $\|g\|_p \le 1$ and $\|f - g\|_p > \varepsilon$,
 $$\Bigl\|\frac{f + g}{2}\Bigr\|_p < 1 - \delta, \qquad \delta = 1 - \Bigl[1 -
   \Bigl(\frac{\varepsilon}{2}\Bigr)^p\Bigr]^{1/p}.$$
 
-The bound follows from Clarkson's first inequality. The conclusion of the source, "and thus
-reflexive by Theorem 3.31", is the Milman–Pettis theorem of Chapter 3 applied to this space. -/
+The bound follows from Clarkson's first inequality. The reflexivity conclusion is stated in
+`Brezis.Chapter04.theorem_4_10` under σ-finiteness.
+
+**Generalization.** The bound and uniform convexity hold for any measure. -/
 theorem theorem_4_10_uniformConvex [Fact (1 ≤ p)] (hp : 2 ≤ p) (hp' : p ≠ ∞) :
     UniformConvexSpace (Lp ℝ p μ) ∧
     ∀ ε > 0, ∀ f g : Lp ℝ p μ, ‖f‖ ≤ 1 → ‖g‖ ≤ 1 → ε < ‖f - g‖ →
@@ -202,7 +219,10 @@ closed in $(L^{p'})^\star$.
 
 The operator is the backbone's `MeasureTheory.Lp.toDual ℝ q p μ`. The last sentence of the step
 in the source, that $L^p$ is reflexive for $1 < p \le 2$ by Corollary 3.21 and Proposition 3.20,
-is not needed here, because `Brezis.Chapter04.theorem_4_10` uses the backbone instance. -/
+is stated in `Brezis.Chapter04.theorem_4_10`.
+
+**Generalization.** The closed isometric embedding includes both conjugate endpoints, $p=1$
+and $p=\infty$. -/
 theorem theorem_4_10_isometry [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)]
     [p.HolderConjugate q] :
     (∀ u : Lp ℝ p μ, ‖Lp.toDual ℝ q p μ u‖ = ‖u‖) ∧
@@ -217,8 +237,9 @@ $$\Bigl\|\frac{f + g}{2}\Bigr\|_p^{p'} + \Bigl\|\frac{f - g}{2}\Bigr\|_p^{p'} \l
   \bigl(\|f\|_p^p + \|g\|_p^p\bigr)\Bigr]^{1/(p - 1)}.$$
 Consequently $L^p(\Omega)$ is uniformly convex for $1 < p \le 2$ as well.
 
-The inequality is inequality (6) of Problem 20 of the source, divided by $2^{p'}$. The measure
-space need not be σ-finite. -/
+The inequality is inequality (6) of Problem 20 of the source, divided by $2^{p'}$.
+
+**Generalization.** The conclusions hold for any measure. -/
 theorem remark_4_3 [Fact (1 ≤ p)] [p.HolderConjugate q] (hp : 1 < p) (hp2 : p ≤ 2) :
     (∀ f g : Lp ℝ p μ, ‖(2 : ℝ)⁻¹ • (f + g)‖ ^ q.toReal + ‖(2 : ℝ)⁻¹ • (f - g)‖ ^ q.toReal ≤
       ((‖f‖ ^ p.toReal + ‖g‖ ^ p.toReal) / 2) ^ (1 / (p.toReal - 1))) ∧
@@ -283,7 +304,9 @@ $1 \le p < \infty$ with conjugate exponent $p'$. The map $u \mapsto (f \mapsto \
 linear surjective isometry from $L^{p'}(\Omega)$ onto $(L^p(\Omega))^\star$. This identifies
 $(L^p)^\star$ with $L^{p'}$.
 
-The isometry is the backbone's `MeasureTheory.Lp.dualEquiv`. -/
+The isometry is the backbone's `MeasureTheory.Lp.dualEquiv`.
+
+**Generalization.** The identification includes $p=1$, given separately in Remark 5. -/
 theorem remark_4_4 [SigmaFinite μ] [Fact (1 ≤ p)] [Fact (1 ≤ q)] [p.HolderConjugate q]
     (hp' : p ≠ ∞) :
     ∃ e : Lp ℝ q μ ≃ₗᵢ[ℝ] StrongDual ℝ (Lp ℝ p μ),
@@ -319,8 +342,9 @@ by a countable family of sets; this is Mathlib's `MeasurableSpace.CountablyGener
 example states that $\mathbb{R}^N$ is a separable measure space, and more generally that every
 separable metric space $X$ with its Borel σ-algebra is one.
 
-The Lean statement takes $X$ to be a second countable topological space with its Borel
-σ-algebra. A separable metric space is second countable. -/
+**Reading.** The argument for $\mathbb{R}^N$ uses the Borel σ-algebra. The introduction to the
+chapter uses the completed Lebesgue σ-algebra. The result for $X$ applies to any second countable
+topological space with its Borel σ-algebra. -/
 theorem separableMeasureSpace_of_secondCountable (N : ℕ) (X : Type*) [TopologicalSpace X]
     [SecondCountableTopology X] [MeasurableSpace X] [BorelSpace X] :
     MeasurableSpace.CountablyGenerated (EuclideanSpace ℝ (Fin N)) ∧
@@ -372,9 +396,9 @@ theorem remark_4_5 [SigmaFinite μ] :
 /-- **Remark 6** in Chapter 4 of [brezis2011functional]. Let $N \ge 1$ and let
 $\Omega \subseteq \mathbb{R}^N$ be open and nonempty. Then $L^1(\Omega)$ is not reflexive.
 
-This is the case that the source proves in full. The general claim, for every measure space that
-does not consist of finitely many atoms, is not formalized. The proof is not the weak
-compactness argument of the source. If $L^1$ were reflexive, then through
+**Reading.** The source treats σ-finite measure spaces beyond the finite-atom case. The library
+specializes to nonempty open subsets of positive-dimensional Euclidean space. If $L^1$ were
+reflexive, then through
 $(L^1)^\star = L^\infty$ every continuous linear functional on $L^\infty$ would have the form
 $f \mapsto \int uf$ with $u \in L^1$. But $(L^\infty)^\star$ is strictly larger than $L^1$, by
 `MeasureTheory.Lp.not_surjective_toDual_top` (see also
@@ -434,7 +458,9 @@ $$\int_\Omega f_{n_k} g \to \int_\Omega f g \quad \text{for every } g \in L^1(\O
 The proof is Corollary 3.30, the sequential Banach–Alaoglu theorem for the dual of the separable
 space $L^1(\Omega)$, in the transported form `LinearIsometryEquiv.exists_subseq_tendsto_apply`,
 applied through the identification $L^\infty = (L^1)^\star$ of Remark 5. In the Lean statement
-the limit is `g` and the test function is `h`. -/
+the limit is `g` and the test function is `h`.
+
+**Generalization.** The statement uses the restriction of volume to any subset $\Omega$. -/
 theorem lInfty_exists_subseq_weakStar_tendsto {N : ℕ} {Ω : Set (EuclideanSpace ℝ (Fin N))}
     (f : ℕ → Lp ℝ ∞ (volume.restrict Ω)) {C : ℝ} (hf : ∀ n, ‖f n‖ ≤ C) :
     ∃ (φ : ℕ → ℕ) (g : Lp ℝ ∞ (volume.restrict Ω)), StrictMono φ ∧
@@ -453,7 +479,10 @@ $\Omega \subseteq \mathbb{R}^N$ be open and nonempty. Then $L^\infty(\Omega)$ is
 
 Since $L^\infty = (L^1)^\star$ by Remark 5, reflexivity of $L^\infty$ would make $L^1$ reflexive
 by Corollary 3.21 (`NormedSpace.isReflexive_of_isReflexive_strongDual`), which contradicts
-Remark 6. -/
+Remark 6.
+
+**Reading.** The source treats σ-finite measure spaces beyond the finite-atom case. The library
+specializes to nonempty open subsets of positive-dimensional Euclidean space. -/
 theorem lInfty_not_isReflexive {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace ℝ (Fin N))}
     (hΩ : IsOpen Ω) (hne : Ω.Nonempty) :
     ¬ NormedSpace.IsReflexive ℝ (Lp ℝ ∞ (volume.restrict Ω)) := by
@@ -472,7 +501,9 @@ $$\langle \varphi, f \rangle = \int_{\mathbb{R}^N} u f \quad \text{for all } f \
 So $(L^\infty)^\star$ is strictly larger than $L^1$.
 
 The functional is a Hahn–Banach extension of $f \mapsto f(0)$. It is the backbone's
-`MeasureTheory.Lp.exists_strongDual_top_apply_eq` at the point $0$. -/
+`MeasureTheory.Lp.exists_strongDual_top_apply_eq` at the point $0$.
+
+**Reading.** The example assumes $N\ge 1$, so the singleton $\{0\}$ has measure zero. -/
 theorem exists_strongDual_lInfty_not_integral {N : ℕ} [NeZero N] :
     ∃ φ : StrongDual ℝ (Lp ℝ ∞ (volume : Measure (EuclideanSpace ℝ (Fin N)))),
       (∀ (f : EuclideanSpace ℝ (Fin N) → ℝ) (hf : MemLp f ∞ volume), Continuous f →
@@ -503,11 +534,12 @@ theorem lemma_4_2 {E : Type*} [TopologicalSpace E] {ι : Type*} [Uncountable ι]
 /-- **Remark 8** in Chapter 4 of [brezis2011functional]. Let $N \ge 1$ and let
 $\Omega \subseteq \mathbb{R}^N$ be open and nonempty. Then $L^\infty(\Omega)$ is not separable.
 
-This is the case that the source proves in full. The general claim, for every measure space that
-does not consist of finitely many atoms, is not formalized. For a ball
-$B(x_0, r_0) \subseteq \Omega$, the classes of the indicator functions of the balls $B(x_0, r)$,
-$0 < r < r_0$, are at mutual distance $1$ in $L^\infty$. So the balls of radius $1/2$ around
-them form an uncountable family of pairwise disjoint nonempty open sets, and Lemma 4.2 applies. -/
+**Reading.** The source states a result for σ-finite measure spaces beyond the finite-atom case.
+The library gives the case of nonempty open subsets of positive-dimensional Euclidean space.
+For a ball $B(x_0, r_0) \subseteq \Omega$, the classes of the indicator functions of the balls
+$B(x_0, r)$ with $0 < r < r_0$ are at mutual distance $1$ in $L^\infty$. The balls of radius $1/2$
+around them form an uncountable family of pairwise disjoint nonempty open sets, so Lemma 4.2
+applies. -/
 theorem remark_4_8 {N : ℕ} [NeZero N] {Ω : Set (EuclideanSpace ℝ (Fin N))} (hΩ : IsOpen Ω)
     (hne : Ω.Nonempty) : ¬ TopologicalSpace.SeparableSpace (Lp ℝ ∞ (volume.restrict Ω)) := by
   obtain ⟨x₀, hx₀⟩ := hne

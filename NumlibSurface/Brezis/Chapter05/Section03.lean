@@ -69,6 +69,17 @@ Stampacchia's theorem uses `existsUnique_isVariationalInequalitySolution_of_isCo
 * `Brezis.Chapter05.BilinForm` is an abbreviation, so that the predicates on it can be used with dot
   notation.
 
+## Deviations from the source
+
+* **Bilinear form, continuity and coercivity** (generalization). The definitions allow incomplete
+  inner product spaces. The coercivity bound accepts any real $\alpha$, and the variational
+  theorems require $\alpha>0$. See `Brezis.Chapter05.BilinForm`,
+  `Brezis.Chapter05.BilinForm.IsContinuousWith` and `Brezis.Chapter05.BilinForm.IsCoerciveWith`.
+* **Corollary 5.8, symmetric characterization, and Remarks 6–7** (generalization). These results
+  apply in incomplete spaces. The derivative formula in Remark 7 also drops coercivity. See
+  `Brezis.Chapter05.corollary_5_8_symm`, `Brezis.Chapter05.remark_5_6` and
+  `Brezis.Chapter05.remark_5_7`.
+
 ## Not formalized
 
 * **Theorem 5.16 (Minty–Browder), from the Comments on Chapter 5.**
@@ -87,7 +98,9 @@ variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H] [CompleteS
 /-- **Section 5.3** of [brezis2011functional]. The bilinear forms $a : H \times H \to \mathbb{R}$ of
 the source are Mathlib's `LinearMap.BilinForm ℝ H`.
 
-This is an abbreviation, so that the predicates below can be used with dot notation. -/
+This is an abbreviation, so that the predicates below can be used with dot notation.
+
+**Generalization.** The abbreviation applies to incomplete inner product spaces. -/
 abbrev BilinForm (H : Type*) [NormedAddCommGroup H] [InnerProductSpace ℝ H] :=
   LinearMap.BilinForm ℝ H
 
@@ -97,7 +110,8 @@ omit [CompleteSpace H] in
 /-- **Section 5.3** of [brezis2011functional], definition (i). A bilinear form $a$ on $H$ is
 **continuous** with constant $C$ if
 $$|a(u, v)| \le C |u| |v| \quad \text{for all } u, v \in H.$$
--/
+
+**Generalization.** The bound applies to incomplete inner product spaces. -/
 def IsContinuousWith (a : BilinForm H) (C : ℝ) : Prop :=
   ∀ u v, |a u v| ≤ C * ‖u‖ * ‖v‖
 
@@ -106,7 +120,10 @@ omit [CompleteSpace H] in
 **coercive** with constant $\alpha$ if
 $$a(v, v) \ge \alpha |v|^2 \quad \text{for all } v \in H.$$
 
-The source requires $\alpha > 0$. Here $0 < \alpha$ is a separate hypothesis of the theorems. -/
+**Generalization.** The source calls $a$ coercive when the inequality holds for some
+$\alpha > 0$. The predicate records the inequality for a specified real $\alpha$, including
+nonpositive values, and applies in incomplete spaces. The variational theorems require
+positivity separately. -/
 def IsCoerciveWith (a : BilinForm H) (α : ℝ) : Prop :=
   ∀ v, α * ‖v‖ ^ 2 ≤ a v v
 
@@ -245,7 +262,7 @@ only if
 $$\frac12 a(u, u) - \langle \varphi, u \rangle = \min_{v \in H} \Bigl\{\frac12 a(v, v) - \langle
   \varphi, v \rangle\Bigr\}. \qquad (18)$$
 
-Completeness of $H$ is not needed for this equivalence. -/
+**Generalization.** This equivalence also holds in incomplete inner product spaces. -/
 theorem corollary_5_8_symm {a : BilinForm H} {C α : ℝ} (hC : a.IsContinuousWith C) (hα : 0 < α)
     (ha : a.IsCoerciveWith α) (hs : LinearMap.BilinForm.IsSymm a) (φ : StrongDual ℝ H) (u : H) :
     (∀ v, a u v = φ v) ↔ IsMinOn (fun v => 1 / 2 * a v v - φ v) Set.univ u := by
@@ -264,8 +281,10 @@ omit [CompleteSpace H] in
 /-- **Remark 6** in Chapter 5 of [brezis2011functional]. Let $a$ be a bilinear form on $H$ with
 $a(v, v) \ge 0$ for all $v \in H$. Then the function $v \mapsto a(v, v)$ is convex on $H$.
 
-Neither symmetry nor continuity is needed. For $s + t = 1$ one has $a(su + tv, su + tv) =
-s\,a(u, u) + t\,a(v, v) - st\,a(u - v, u - v)$. -/
+For $s + t = 1$ one has $a(su + tv, su + tv) =
+s\,a(u, u) + t\,a(v, v) - st\,a(u - v, u - v)$.
+
+**Generalization.** The conclusion also holds in incomplete inner product spaces. -/
 theorem remark_5_6 (a : BilinForm H) (hpos : ∀ v, 0 ≤ a v v) :
     ConvexOn ℝ Set.univ fun v => a v v := by
   refine ⟨convex_univ, fun x _ y _ s t hs ht hst => ?_⟩
@@ -287,7 +306,10 @@ Then for every $u \in H$, $F$ is Fréchet differentiable at $u$ with derivative 
 $v \mapsto a(u, v) - \langle \varphi, v \rangle$. Moreover $u$ satisfies (17) if and only if
 $F'(u) = 0$. So (17) is the Euler equation of the minimization problem (18).
 
-The derivative is written `a.toSesqForm hC u - φ`. -/
+The derivative is written `a.toSesqForm hC u - φ`.
+
+**Generalization.** The formula applies in incomplete inner product spaces and to forms that
+need only be continuous and symmetric. -/
 theorem remark_5_7 {a : BilinForm H} {C : ℝ} (hC : a.IsContinuousWith C)
     (hs : LinearMap.BilinForm.IsSymm a) (φ : StrongDual ℝ H) (u : H) :
     HasFDerivAt (fun v => 1 / 2 * a v v - φ v) (a.toSesqForm hC u - φ) u ∧

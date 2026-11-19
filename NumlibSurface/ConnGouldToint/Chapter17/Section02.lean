@@ -66,6 +66,21 @@ number of objective evaluations. The interpolation factors come from
 
 ## Deviations from the source
 
+* **Correction.** Equation (17.2.2) multiplies the printed ray parameter by the gradient norm to
+  obtain the radius. See `ConnGouldToint.Chapter17.cauchyInitialRadius`,
+  `ConnGouldToint.Chapter17.cauchyInitialRadius_spec`.
+* **Totalized ratio.** Equation (17.2.4) has a totalized ratio and the probe loop handles zero
+  prediction explicitly. See `ConnGouldToint.Chapter17.initialProbeRatio`.
+* **Completed shrink safeguard.** The poor-prediction safeguard strictly contracts the radius,
+  including when both interpolation factors equal one. See
+  `ConnGouldToint.Chapter17.safeguardedProbeFactor`,
+  `ConnGouldToint.Chapter17.safeguardedProbeFactor_mem`,
+  `ConnGouldToint.Chapter17.probeRadiusUpdate`.
+* **Corrected finite probing.** Algorithm 17.2.1 enforces the advertised budgets, takes only
+  improving restarts and handles zero gradient and zero prediction. See
+  `ConnGouldToint.Chapter17.chooseInitialRadius`,
+  `ConnGouldToint.Chapter17.chooseInitialRadius_evaluations_le`,
+  `ConnGouldToint.Chapter17.chooseInitialRadius_value_spec`.
 * **Equation (17.2.2)** (correction). The printed right-hand side $\|g\|^2 / \langle g, H g \rangle$
   is the ray parameter of the minimizer; the radius is this parameter times $\|g\|$. See
   `ConnGouldToint.Chapter17.cauchyInitialRadius_spec`.
@@ -105,7 +120,12 @@ the Cauchy ray parameter times $\|g\|$.
 **Correction.** The source prints $\Delta_0 = \|g\|^2 / \langle g, H g \rangle$. This is the
 parameter of the minimizer on the unnormalized ray $-u g$, not the length of the minimizing
 step. The length is this parameter times $\|g\|$; see
-`ConnGouldToint.Chapter17.cauchyInitialRadius_spec`. -/
+`ConnGouldToint.Chapter17.cauchyInitialRadius_spec`.
+
+**Correction.** The printed right-hand side is the minimizing ray parameter. The initial radius is
+its product with the gradient norm, which is the length of the minimizing displacement when the ray
+curvature is positive.
+-/
 noncomputable def cauchyInitialRadius (g : E) (H : E →L[ℝ] E) : ℝ :=
   cauchyRayParameter g H * ‖g‖
 
@@ -115,7 +135,12 @@ $t = \|g\|^2 / \langle g, H g \rangle$ and let $q(s) = \langle g, s \rangle + \f
 \langle s, H s \rangle$. Then $\|-t g\| = \Delta_0$, the Cauchy initial radius, and
 $$q(-t g) \le q(-u g) \quad \text{for all } u \in \mathbb{R}.$$
 
-The model $q$ is `Subproblem.quadModel`. -/
+The model $q$ is `Subproblem.quadModel`.
+
+**Correction.** The printed right-hand side is the minimizing ray parameter. The initial radius is
+its product with the gradient norm, which is the length of the minimizing displacement when the ray
+curvature is positive.
+-/
 theorem cauchyInitialRadius_spec {g : E} {H : E →L[ℝ] E} (hH : 0 < ⟪g, H g⟫) :
     let t := cauchyRayParameter g H
     ‖-(t • g)‖ = cauchyInitialRadius g H ∧
@@ -147,7 +172,11 @@ the model $m$ agrees with $f$ at $x$. The **probe ratio** is
 $$\rho = \frac{f(x) - f(x - d)}{f(x) - m(x - d)}.$$
 
 The value $f(x)$ replaces $m(x)$ in the denominator, so the definition assumes $m(x) = f(x)$.
-When the denominator is $0$, the Lean division gives $\rho = 0$. -/
+When the denominator is $0$, the Lean division gives $\rho = 0$.
+
+**Reading.** The algebraic formula is evaluated in Lean's totalized real division, so the standalone
+ratio is zero at zero predicted decrease. The probing procedure guards this case separately.
+-/
 noncomputable def initialProbeRatio (f m : E → ℝ) (x d : E) : ℝ :=
   (f x - f (x - d)) / (f x - m (x - d))
 
@@ -226,7 +255,12 @@ $t_1, t_2$ the interpolation factors. The **safeguarded factor** is chosen as fo
 
 **Reading.** The first branch of (17.2.7) requires a factor in $[\gamma_1, 1)$. Therefore a
 candidate equal to $1$ is not admissible on the shrink branch, and if both candidates are at
-least $1$ the factor is the fallback $\gamma_2 < 1$. -/
+least $1$ the factor is the fallback $\gamma_2 < 1$.
+
+**Correction.** A poor-prediction factor is always strictly below one. If both proposed factors are
+at least one, the fallback is the interior shrink factor, including at equality where the printed
+cases may return one.
+-/
 noncomputable def safeguardedProbeFactor (P : ProbeRadiusParams) (ρ t₁ t₂ : ℝ) : ℝ :=
   if probePredictsBadly P ρ then
     if t₁ ∈ Set.Ico P.γ₁ 1 then
@@ -240,7 +274,12 @@ noncomputable def safeguardedProbeFactor (P : ProbeRadiusParams) (ρ t₁ t₂ :
 /-- **Equation (17.2.7)** of [conn2000trust], the safeguard intervals. For all probe parameters,
 $\rho$, $t_1$ and $t_2$, the safeguarded factor lies in $[\gamma_1, 1)$ if the probe predicts
 badly, in $[1, \gamma_4]$ if it does not predict badly but predicts well, and in
-$[\gamma_2, \gamma_3]$ otherwise. -/
+$[\gamma_2, \gamma_3]$ otherwise.
+
+**Correction.** A poor-prediction factor is always strictly below one. If both proposed factors are
+at least one, the fallback is the interior shrink factor, including at equality where the printed
+cases may return one.
+-/
 theorem safeguardedProbeFactor_mem (P : ProbeRadiusParams) (ρ t₁ t₂ : ℝ) :
     safeguardedProbeFactor P ρ t₁ t₂ ∈
       (if probePredictsBadly P ρ then Set.Ico P.γ₁ 1
@@ -271,7 +310,12 @@ theorem safeguardedProbeFactor_mem (P : ProbeRadiusParams) (ρ t₁ t₂ : ℝ) 
 
 /-- **Equation (17.2.7)** of [conn2000trust]. The **probe radius update** is
 $\Delta^+ = \gamma \Delta$, where $\gamma$ is the safeguarded factor for the probe ratio $\rho$
-and the interpolation factors $t_1, t_2$. -/
+and the interpolation factors $t_1, t_2$.
+
+**Correction.** A poor-prediction factor is always strictly below one. If both proposed factors are
+at least one, the fallback is the interior shrink factor, including at equality where the printed
+cases may return one.
+-/
 noncomputable def probeRadiusUpdate (P : ProbeRadiusParams) (ρ t₁ t₂ Δ : ℝ) : ℝ :=
   safeguardedProbeFactor P ρ t₁ t₂ * Δ
 
@@ -385,7 +429,13 @@ evaluations is bounded; see `ConnGouldToint.Chapter17.chooseInitialRadius_evalua
 
 The probe at a zero predicted decrease cannot be adequate, and the next probe uses the strict
 shrink fallback $\gamma_2$. The probe parameters are
-`ConnGouldToint.Chapter17.ProbeRadiusParams`. -/
+`ConnGouldToint.Chapter17.ProbeRadiusParams`.
+
+**Correction.** Each pass tests at most the declared number of radii, the restart budget is carried
+between passes, and only strict objective improvement restarts the pass. A zero gradient stops
+probing and a zero prediction uses fallback shrinkage. The evaluation bound counts only trial
+evaluations.
+-/
 noncomputable def chooseInitialRadius (P : ProbeRadiusParams) (f : E → ℝ)
     (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax jMax : ℕ) (x : E) :
     InitialRadiusResult E :=
@@ -411,7 +461,13 @@ private theorem radiusProbeRestarts_evaluations_le (P : ProbeRadiusParams) (f : 
 /-- **Algorithm 17.2.1** of [conn2000trust], evaluation bound. For all probe parameters, objectives,
 models, gradients, seed radii, limits $i_{\max}, j_{\max}$ and starting points, the corrected
 algorithm uses at most $(i_{\max} + 1)(j_{\max} + 1)$ objective evaluations after the evaluation
-of $f$ at the starting point. -/
+of $f$ at the starting point.
+
+**Correction.** Each pass tests at most the declared number of radii, the restart budget is carried
+between passes, and only strict objective improvement restarts the pass. A zero gradient stops
+probing and a zero prediction uses fallback shrinkage. The evaluation bound counts only trial
+evaluations.
+-/
 theorem chooseInitialRadius_evaluations_le (P : ProbeRadiusParams) (f : E → ℝ)
     (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax jMax : ℕ) (x : E) :
     (chooseInitialRadius P f m g seed iMax jMax x).evaluations ≤ (iMax + 1) * (jMax + 1) :=
@@ -469,7 +525,13 @@ private theorem radiusProbeRestarts_value_spec (P : ProbeRadiusParams) (f : E �
 /-- **Algorithm 17.2.1** of [conn2000trust], returned value. For all probe parameters, objectives,
 models, gradients, seed radii, limits and starting points $x$, the value returned by the
 corrected algorithm is the objective value at the returned point, and it is at most $f(x)$. Thus
-restarts can only improve the objective value. -/
+restarts can only improve the objective value.
+
+**Correction.** Each pass tests at most the declared number of radii, the restart budget is carried
+between passes, and only strict objective improvement restarts the pass. A zero gradient stops
+probing and a zero prediction uses fallback shrinkage. The evaluation bound counts only trial
+evaluations.
+-/
 theorem chooseInitialRadius_value_spec (P : ProbeRadiusParams) (f : E → ℝ)
     (m : E → E → ℝ) (g : E → E) (seed : E → ℝ) (iMax jMax : ℕ) (x : E) :
     let result := chooseInitialRadius P f m g seed iMax jMax x

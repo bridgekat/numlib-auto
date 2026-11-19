@@ -73,6 +73,32 @@ root (6.22), and the modified Newton method (6.23) with Exercise 6.2. The proofs
 
 ## Deviations from the source
 
+* **Reading.** The fixed-point error ratio limit is stated for orbits that do not hit the fixed
+  point. See `QuarteroniSaccoSaleri.Chapter06.theorem_6_1_limit`.
+* **Correction.** The rate is minus the logarithm of the absolute factor, correcting the printed
+  sign. See `QuarteroniSaccoSaleri.Chapter06.equation_6_20`.
+* **Generalization.** The local attraction theorem replaces continuous differentiability by
+  differentiability near the fixed point. See `QuarteroniSaccoSaleri.Chapter06.property_6_3`.
+* **Correction.** The repulsion conclusion excludes orbits landing exactly at the fixed point. See
+  `QuarteroniSaccoSaleri.Chapter06.remark_6_2`.
+* **Specialization.** For the plus-cube example the theorem rules out convergence to zero. See
+  `QuarteroniSaccoSaleri.Chapter06.example_6_6_not_tendsto`.
+* **Correction.** The vanishing derivative range starts at one, and the limiting ratio is
+  conditional when order one is at issue. See `QuarteroniSaccoSaleri.Chapter06.property_6_4`.
+* **Convention.** The chord derivative formula is extended to zero slopes by totalized division. See
+  `QuarteroniSaccoSaleri.Chapter06.chordIterationFunction`,
+  `QuarteroniSaccoSaleri.Chapter06.chordIterationFunction_deriv`.
+* **Reading.** Chord convergence is local under the displayed derivative-ratio criterion. See
+  `QuarteroniSaccoSaleri.Chapter06.chord_tendsto`.
+* **Reading.** Newton's quadratic bound includes faster or finite convergence, and its signed ratio
+  limit avoids exact hits. See `QuarteroniSaccoSaleri.Chapter06.newtonIterationFunction_deriv`,
+  `QuarteroniSaccoSaleri.Chapter06.newton_order_two`.
+* **Reading.** The Newton factor at a multiple root is formulated as a punctured limit with an
+  accompanying local bound. See `QuarteroniSaccoSaleri.Chapter06.equation_6_22`.
+* **Convention.** Modified Newton uses a supplied derivative and totalized division. See
+  `QuarteroniSaccoSaleri.Chapter06.equation_6_23`.
+* **Generalization.** Exercise 6.2 is allowed for multiplicity one as well as multiple roots. See
+  `QuarteroniSaccoSaleri.Chapter06.exercise_6_2`.
 * **Theorem 6.1, limit (6.18)** (reading). The limit of the error ratios is stated for orbits that
   never equal $\alpha$. See `QuarteroniSaccoSaleri.Chapter06.theorem_6_1_limit`.
 * **Equation (6.20)** (typo). The source prints $R = -\log(1/|\varphi'(\alpha)|)$; the rate is
@@ -130,7 +156,11 @@ $$\lim_{k \to \infty} \frac{x^{(k+1)} - \alpha}{x^{(k)} - \alpha} = \varphi'(\al
 the quotient is $0/0$ from some index on.
 
 At an endpoint $\alpha \in \{a, b\}$ the orbit approaches $\alpha$ from inside $[a, b]$, and
-$\varphi'(\alpha)$ is the one-sided derivative within $[a, b]$. -/
+$\varphi'(\alpha)$ is the one-sided derivative within $[a, b]$.
+
+**Reading.** The ratio limit requires that the orbit avoid the fixed point, since once it lands
+there the real quotient is undefined.
+-/
 theorem theorem_6_1_limit (hab : a ≤ b) (hmaps : MapsTo φ (Icc a b) (Icc a b))
     (hφ : ∀ x ∈ Icc a b, HasDerivWithinAt φ (φ' x) (Icc a b) x) (hφ' : ContinuousOn φ' (Icc a b))
     (hK : ∃ K < 1, ∀ x ∈ Icc a b, |φ' x| ≤ K) {α : ℝ} (hα : α ∈ Icc a b) (hfix : φ α = α)
@@ -149,7 +179,12 @@ method. The intended quantity, by analogy with the rate $R(B) = -\log \rho(B)$ o
 $-\log|\varphi'(\alpha)|$.
 
 The definition takes the derivative $\varphi'$ as a function. If $\varphi'(\alpha) = 0$, the
-value is $0$, because `Real.log 0 = 0`. -/
+value is $0$, because `Real.log 0 = 0`.
+
+**Correction.** The positive decay rate for a contractive nonzero factor is minus the logarithm of
+its magnitude. The printed minus sign on the logarithm of the reciprocal reverses that rate. A zero
+factor uses the totalized real logarithm.
+-/
 noncomputable def equation_6_20 (φ' : ℝ → ℝ) (α : ℝ) : ℝ := -Real.log |φ' α|
 
 end Theorem61
@@ -166,7 +201,12 @@ $|x^{(0)} - \alpha| < \delta$.
 
 The source also assumes that $\varphi$ is continuous near $\alpha$, which follows from
 differentiability. The proof specializes `tendsto_iterate_of_abs_deriv_lt_one`, which needs
-differentiability at $\alpha$ only. -/
+differentiability at $\alpha$ only.
+
+**Generalization.** Local convergence only needs the differentiability used at the fixed point, with
+nearby differentiability harmlessly retained. The statement supplies a radius and all starting
+points in that radius.
+-/
 theorem property_6_3 (hα : φ α = α) (hJ : ∀ᶠ x in 𝓝 α, DifferentiableAt ℝ φ x)
     (h : |deriv φ α| < 1) :
     ∃ δ > 0, ∀ x₀, |x₀ - α| < δ → Tendsto (fun k => φ^[k] x₀) atTop (𝓝 α) :=
@@ -179,7 +219,11 @@ $x^{(k+1)} = \varphi(x^{(k)})$ satisfies $x^{(k)} \neq \alpha$ for all $k$. Then
 not converge to $\alpha$.
 
 Near $\alpha$ the error grows at every step. The case $|\varphi'(\alpha)| = 1$ is undecided, as
-Example 6.6 shows. The proof specializes `not_tendsto_iterate_of_one_lt_abs_deriv`. -/
+Example 6.6 shows. The proof specializes `not_tendsto_iterate_of_one_lt_abs_deriv`.
+
+**Correction.** A repelling derivative rules out asymptotic convergence for orbits avoiding the
+fixed point. An orbit that lands exactly at the fixed point remains there.
+-/
 theorem remark_6_2 (hα : φ α = α) (hφ : DifferentiableAt ℝ φ α) (h : 1 < |deriv φ α|) {x₀ : ℝ}
     (hne : ∀ k, φ^[k] x₀ ≠ α) : ¬ Tendsto (fun k => φ^[k] x₀) atTop (𝓝 α) :=
   not_tendsto_iterate_of_one_lt_abs_deriv hα hφ.hasDerivAt h
@@ -276,7 +320,11 @@ the fixed point $\alpha = 0$ with $\varphi'(0) = 1$. For every $x^{(0)} \neq 0$,
 $x^{(k)} = \varphi^k(x^{(0)})$ does not converge to $0$.
 
 Since $|x + x^3| \ge |x|$, the orbit satisfies $|x^{(k)}| \ge |x^{(0)}| > 0$ for all $k$. In
-fact the orbit diverges. -/
+fact the orbit diverges.
+
+**Reading.** The source states divergence for the plus-cube map. This declaration rules out
+convergence to zero for every nonzero initial value.
+-/
 theorem example_6_6_not_tendsto {x₀ : ℝ} (hx₀ : x₀ ≠ 0) :
     ¬ Tendsto (fun k => (fun x : ℝ => x + x ^ 3)^[k] x₀) atTop (𝓝 0) := by
   set φ : ℝ → ℝ := fun x => x + x ^ 3 with hφ
@@ -332,7 +380,12 @@ which the source does not say.
 The hypothesis $\varphi^{(p+1)}(\alpha) \neq 0$ is part of the statement of the source. It makes
 the order exactly $p + 1$, and the proof of the order bound and of the limit does not use it.
 The order is `QuarteroniSaccoSaleri.Chapter06.definition_6_1`. The proof specializes
-`hasIterationOrder_of_iteratedDeriv_eq_zero` and `tendsto_sub_div_pow_of_iteratedDeriv_eq_zero`. -/
+`hasIterationOrder_of_iteratedDeriv_eq_zero` and `tendsto_sub_div_pow_of_iteratedDeriv_eq_zero`.
+
+**Correction.** The derivative vanishing range starts at one, because the zeroth derivative is the
+fixed-point value. The ratio is a limit for a convergent orbit that avoids the fixed point. Local
+convergence follows for positive p, while p = 0 alone gives no local convergence guarantee.
+-/
 theorem property_6_4 {p : ℕ} (hφ : ContDiffAt ℝ (p + 1 : ℕ) φ α) (hα : φ α = α)
     (hzero : ∀ i, 1 ≤ i → i ≤ p → iteratedDeriv i φ α = 0) (hp' : iteratedDeriv (p + 1) φ α ≠ 0) :
     (1 ≤ p → ∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, definition_6_1 (fun k => φ^[k] x₀) α (p + 1)) ∧
@@ -362,7 +415,11 @@ $f : \mathbb{R} \to \mathbb{R}$ and $a, b \in \mathbb{R}$, it is
 $$\varphi_{\mathrm{chord}}(x) = x - \frac{b - a}{f(b) - f(a)} f(x).$$
 
 Its iteration is the chord method `QuarteroniSaccoSaleri.Chapter06.chord`. If $f(b) = f(a)$, the
-quotient is $0$ and $\varphi_{\mathrm{chord}}$ is the identity. -/
+quotient is $0$ and $\varphi_{\mathrm{chord}}$ is the identity.
+
+**Reading.** The slope and inverse are totalized. For nonzero chord slope the derivative and
+contraction criterion agree with the formula in the source.
+-/
 noncomputable def chordIterationFunction (f : ℝ → ℝ) (a b : ℝ) (x : ℝ) : ℝ :=
   x - (b - a) / (f b - f a) * f x
 
@@ -392,7 +449,11 @@ $q = (f(b) - f(a))/(b - a)$. Then
 
 The last condition says that $q$ has the sign of $f'(\alpha)$ and $|q| > |f'(\alpha)|/2$. In the
 source $\alpha$ is the root of $f$; the statement holds at every point. The proof specializes
-`Chord.hasDerivAt_step` and `Chord.abs_one_sub_div_lt_one_iff`. -/
+`Chord.hasDerivAt_step` and `Chord.abs_one_sub_div_lt_one_iff`.
+
+**Reading.** The slope and inverse are totalized. For nonzero chord slope the derivative and
+contraction criterion agree with the formula in the source.
+-/
 theorem chordIterationFunction_deriv (hf : HasDerivAt f f' α) :
     HasDerivAt (chordIterationFunction f a b) (1 - f' / ((f b - f a) / (b - a))) α ∧
       (f' = 0 → 1 - f' / ((f b - f a) / (b - a)) = 1) ∧
@@ -413,7 +474,12 @@ that for every $x^{(0)}$ with $|x^{(0)} - \alpha| < \delta$ the chord iterates $
 
 The convergence factor $|1 - f'(\alpha)/q|$ is $0$ in the case $f'(\alpha) = q$. The theorem is
 Ostrowski's theorem for $\varphi_{\mathrm{chord}}$; the proof specializes
-`Chord.tendsto_iterate` and `Chord.tendsto_sub_div_sub`. -/
+`Chord.tendsto_iterate` and `Chord.tendsto_sub_div_sub`.
+
+**Reading.** The local convergence theorem uses the strict contraction criterion in the source and
+gives an order-one bound even when the limiting ratio is zero. The ratio is stated for orbits
+missing the root.
+-/
 theorem chord_tendsto (hα : f α = 0) (hf : HasDerivAt f f' α)
     (h0 : 0 < f' / ((f b - f a) / (b - a))) (h2 : f' / ((f b - f a) / (b - a)) < 2) :
     ∃ δ > 0, ∀ x₀, |x₀ - α| < δ →
@@ -450,7 +516,12 @@ If moreover $f$ is of class $C^3$ on a neighbourhood of $\alpha$, then
 $$\varphi_{\mathrm{Newt}}''(\alpha) = \frac{f''(\alpha)}{f'(\alpha)}.$$
 
 The iteration function $\varphi_{\mathrm{Newt}}$ is `Newton.scalarStep f (deriv f)`. The proof
-specializes `Newton.hasDerivAt_scalarStep` and `Newton.deriv2_scalarStep_root`. -/
+specializes `Newton.hasDerivAt_scalarStep` and `Newton.deriv2_scalarStep_root`.
+
+**Reading.** At a smooth simple root, the quadratic bound permits vanishing second derivative and
+finite termination. The signed quotient limit requires an orbit avoiding the root. The separate
+second derivative identity assumes one additional derivative of the function.
+-/
 theorem newtonIterationFunction_deriv (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α)
     (hf' : deriv f α ≠ 0) :
     HasDerivAt (Newton.scalarStep f (deriv f)) 0 α ∧
@@ -478,7 +549,12 @@ Here $f \in C^2$ is enough.
 
 The Newton iterates are `QuarteroniSaccoSaleri.Chapter06.newton f (deriv f)`. The proof
 specializes `Newton.hasIterationOrder_scalarStep_two` and
-`Newton.tendsto_scalarStep_sub_div_sq`. -/
+`Newton.tendsto_scalarStep_sub_div_sq`.
+
+**Reading.** At a smooth simple root, the quadratic bound permits vanishing second derivative and
+finite termination. The signed quotient limit requires an orbit avoiding the root. The separate
+second derivative identity assumes one additional derivative of the function.
+-/
 theorem newton_order_two (hα : f α = 0) (hf : ContDiffAt ℝ 2 f α) (hf' : deriv f α ≠ 0) :
     (∃ ε > 0, ∀ x₀ ∈ Metric.ball α ε, definition_6_1 (newton f (deriv f) x₀) α 2) ∧
       ∀ x₀, (∀ k, newton f (deriv f) x₀ k ≠ α) → Tendsto (newton f (deriv f) x₀) atTop (𝓝 α) →
@@ -506,7 +582,12 @@ method is then no longer of order $2$, and converges linearly with factor $1 - 1
 multiplicity is `IsRootOfMultiplicity`: $f^{(i)}(\alpha) = 0$ for $i < m$ and
 $f^{(m)}(\alpha) \neq 0$. The proof specializes
 `Newton.tendsto_scalarStep_sub_div_of_isRootOfMultiplicity` and
-`Newton.hasIterationOrder_scalarStep_one_of_isRootOfMultiplicity`. -/
+`Newton.hasIterationOrder_scalarStep_one_of_isRootOfMultiplicity`.
+
+**Reading.** The derivative at a multiple root is first expressed as a punctured limit for the
+continuously extended Newton step. The theorem uses smoothness through order one above the
+multiplicity and adds the consequent local order-one bound.
+-/
 theorem equation_6_22 {m : ℕ} (hm : 1 < m) (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => (Newton.scalarStep f (deriv f) x - α) / (x - α)) (𝓝[≠] α)
@@ -521,7 +602,11 @@ known multiplicity $m$:
 $$x^{(k+1)} = x^{(k)} - m \frac{f(x^{(k)})}{f'(x^{(k)})}.$$
 
 The value at $k$ is the $k$-th iterate of `Newton.modifiedScalarStep f f' m` from $x^{(0)}$. The
-derivative $f'$ is passed as a function. -/
+derivative $f'$ is passed as a function.
+
+**Reading.** The rule accepts a supplied derivative function and uses totalized division, fixing a
+point when its denominator is zero.
+-/
 noncomputable def equation_6_23 (f f' : ℝ → ℝ) (m : ℕ) (x₀ : ℝ) (k : ℕ) : ℝ :=
   (Newton.modifiedScalarStep f f' m)^[k] x₀
 
@@ -536,7 +621,11 @@ of $f$, converges to $\alpha$ with order $2$ in the sense of Definition 6.1.
 
 The hint of the exercise, $f(x) = (x - \alpha)^m h(x)$ with $h(\alpha) \neq 0$, is
 `IsRootOfMultiplicity.exists_eq_pow_mul`. The proof of the order specializes
-`Newton.hasIterationOrder_modifiedScalarStep_two`. -/
+`Newton.hasIterationOrder_modifiedScalarStep_two`.
+
+**Generalization.** The theorem states both conclusions using a punctured limit and a local order
+bound, and also allows multiplicity one.
+-/
 theorem exercise_6_2 {m : ℕ} (hm : 1 ≤ m) (hf : ContDiffAt ℝ (m + 1 : ℕ) f α)
     (hα : IsRootOfMultiplicity f α m) :
     Tendsto (fun x => (Newton.scalarStep f (deriv f) x - α) / (x - α)) (𝓝[≠] α)

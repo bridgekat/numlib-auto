@@ -20,6 +20,16 @@ error, and the minimal-residual iterate minimizes the Euclidean residual.
 * `LiesenStrakos.theorem_2_3_1_symmlq` characterizes the SYMMLQ projection.
 * `LiesenStrakos.theorem_2_3_1_minres` characterizes the minimal-residual projection.
 * `LiesenStrakos.theorem_2_3_2` gives the weighted best-approximation criterion.
+
+## Deviations from the source
+
+* **Theorem 2.3.2** (generalization). The weighted best approximation property holds in general
+  inner product spaces.
+* **Theorem 2.3.1** (generalization). The CG, SYMMLQ and minimal-residual characterizations
+  include step zero, zero initial residual, and steps after the grade. See
+  `LiesenStrakos.theorem_2_3_1_cg`,
+  `LiesenStrakos.theorem_2_3_1_symmlq`,
+  `LiesenStrakos.theorem_2_3_1_minres`.
 -/
 
 namespace LiesenStrakos
@@ -29,7 +39,12 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-- **Theorem 2.3.1(1)** of [liesen2013krylov].
 For Hermitian positive definite $A$, the Galerkin iterate exists uniquely, is characterized
-equivalently by energy-orthogonality or energy-error minimization, and is exact at the grade. -/
+equivalently by energy-orthogonality or energy-error minimization, and is exact at and after the
+grade.
+
+**Generalization.** The source assumes positive grade $d$ and considers steps $1$ through $d$.
+The characterization here also covers zero initial residual and all natural step indices.
+After step $d$, the Krylov space has stabilized and the iterate remains exact. -/
 theorem theorem_2_3_1_cg (A : E →ₗ[𝕜] E) (hA : A.IsSymmetricCoercive)
     (b x₀ xstar : E) (hstar : A xstar = b) (n : ℕ) :
     let K := krylovSubspace A (b - A x₀) n
@@ -75,7 +90,10 @@ private theorem symmlq_projection_iff (A : E →ₗ[𝕜] E) (hA : A.IsSymmetric
 /-- **Theorem 2.3.1(2)** of [liesen2013krylov].
 For Hermitian nonsingular $A$, the projection with trial space $AK$ and constraint space $K$
 exists uniquely, is characterized equivalently by error orthogonality or Euclidean-error
-minimization on $x_0+AK$, and is exact at the grade. -/
+minimization on $x_0+AK$, and is exact at and after the grade.
+
+**Generalization.** The source assumes positive grade and considers steps up to termination.
+The characterization also covers step zero, zero initial residual, and steps after the grade. -/
 theorem theorem_2_3_1_symmlq (A : E →ₗ[𝕜] E) (hA : A.IsSymmetric)
     (hAi : Function.Bijective A) (b x₀ xstar : E) (hstar : A xstar = b) (n : ℕ) :
     let K := krylovSubspace A (b - A x₀) n
@@ -127,7 +145,10 @@ theorem theorem_2_3_1_symmlq (A : E →ₗ[𝕜] E) (hA : A.IsSymmetric)
 /-- **Theorem 2.3.1(3)** of [liesen2013krylov].
 For nonsingular $A$, the projection with trial space $K$ and constraint space $AK$ exists
 uniquely, minimizes the residual norm or, equivalently, the $A^*A$-norm of the error on
-$x_0+K$, and is exact at the grade. -/
+$x_0+K$, and is exact at and after the grade.
+
+**Generalization.** The source assumes positive grade and considers steps up to termination.
+The characterization also covers step zero, zero initial residual, and steps after the grade. -/
 theorem theorem_2_3_1_minres (A : E →ₗ[𝕜] E) (hA : Function.Bijective A)
     (b x₀ xstar : E) (hstar : A xstar = b) (n : ℕ) :
     let K := krylovSubspace A (b - A x₀) n
@@ -169,7 +190,10 @@ theorem theorem_2_3_1_minres (A : E →ₗ[𝕜] E) (hA : Function.Bijective A)
 
 /-- **Theorem 2.3.2** of [liesen2013krylov].
 A vector $z_n \in U$ is a best approximation to $z$ in the $B$-norm if and only if its
-error is $B$-orthogonal to every vector of $U$. -/
+error is $B$-orthogonal to every vector of $U$.
+
+**Generalization.** The equivalence holds on arbitrary inner product spaces for symmetric
+coercive $B$. -/
 theorem theorem_2_3_2 (B : E →ₗ[𝕜] E) (hB : B.IsSymmetricCoercive)
     (U : Submodule 𝕜 E) (z zₙ : E) (hzₙ : zₙ ∈ U) :
     (∀ w ∈ U, EnergyOrthogonal B (z - zₙ) w) ↔

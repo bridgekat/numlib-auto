@@ -29,6 +29,12 @@ $x$ from $Ax=f-B_1^Ty$. The proofs use the block elimination identities of
 * Equation (3.14), `BenziGolubLiesen.posDef_augmentedTopBlock`: a positive scalar
   augmentation gives a nonsingular primal block under the kernel condition.
 
+## Deviations from the source
+
+* **Equations (5.1)–(5.2)** (generalization). The reduced equations are equivalent to the
+  original equations even when the full saddle matrix is singular, provided $A$ is
+  invertible. See `BenziGolubLiesen.saddlePointMatrix_mulVec_iff_schurReduction`.
+
 ## Not formalized
 
 * Sparse storage, fill growth, and numerical stability of forming the Schur complement are not
@@ -47,7 +53,11 @@ variable {A : Matrix n n ℝ} {B₁ B₂ : Matrix m n ℝ} {C : Matrix m m ℝ}
 /-- **Section 5** of [benzi2005numerical]. For the real saddle-point matrix with blocks $A$,
 $B_1^T$, $B_2$ and $-C$, its **negative Schur complement** is $-S=B_2A^{-1}B_1^T+C$.
 It is defined through `Matrix.schurComplement`; the totalized inverse is zero for singular
-$A$, although Schur reduction assumes $A$ is nonsingular. -/
+$A$, although Schur reduction assumes $A$ is nonsingular.
+
+**Reading.** Uses the signed formula, with total inverse at singular A documented in the
+declaration.
+-/
 abbrev negativeSchurComplement (A : Matrix n n ℝ) (B₁ B₂ : Matrix m n ℝ)
     (C : Matrix m m ℝ) : Matrix m m ℝ :=
   -(saddlePointMatrix A B₁ B₂ C).schurComplement
@@ -73,7 +83,9 @@ omit [DecidableEq m] in
 nonsingular. For real vectors $x,f$ on the primal coordinates and $y,g$ on the constraint
 coordinates, the coupled saddle-point system holds if and only if
 $$(-S)y=B_2A^{-1}f-g \quad\text{and}\quad Ax=f-B_1^Ty.$$
-The coupled matrix need not be nonsingular for the equivalence. -/
+
+**Generalization.** The source assumes a nonsingular full saddle matrix. The equation
+equivalence needs only invertibility of $A$, since it is a row operation. -/
 theorem saddlePointMatrix_mulVec_iff_schurReduction (hA : IsUnit A)
     (x f : n → ℝ) (y g : m → ℝ) :
     saddlePointMatrix A B₁ B₂ C *ᵥ Sum.elim x y = Sum.elim f g ↔

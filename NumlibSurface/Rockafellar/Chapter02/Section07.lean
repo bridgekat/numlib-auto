@@ -94,21 +94,19 @@ convex functions are the constants $+\infty$ and $-\infty$ (`Rockafellar.closed_
 
 ## Deviations from the source
 
-* **Definition of $\operatorname{cl} f$** (correction). The book asserts
-  $\operatorname{epi}(\operatorname{cl} f) = \operatorname{cl}(\operatorname{epi} f)$ "by
-  definition". This fails for improper $f$: if a convex $f$ takes the value $-\infty$, then
-  $\operatorname{cl} f$ is the constant $-\infty$ and $\operatorname{epi}(\operatorname{cl} f) =
-  \mathbb{R}^{n+1}$, while $\operatorname{cl}(\operatorname{epi} f) =
-  \operatorname{cl}(\operatorname{dom} f) \times \mathbb{R}$, which is smaller when
-  $\operatorname{dom} f$ is not dense. The identity holds for the lower semicontinuous hull without
-  hypothesis (`ConvexAnalysis.epi_lscHull`), and for $\operatorname{cl} f$ whenever $f$ is proper.
-  No statement of this module uses the false identity.
+* **Definition of $\operatorname{cl} f$** (generalization). The book defines closure for convex
+  functions and gives the epigraph-closure identity for proper convex functions. The Lean
+  closure extends to arbitrary functions by testing whether the lower semicontinuous hull takes
+  the value $-\infty$. See `ConvexAnalysis.convexCl`.
 * **Closedness of a proper convex function** (generalization). The book states that closedness is
   lower semicontinuity for a proper convex function; convexity is not needed. See
   `Rockafellar.closedConvex_iff_lowerSemicontinuous_of_properConvex`.
 * **Closed improper convex functions** (generalization). The book states that the only closed
   improper convex functions are the constants $+\infty$ and $-\infty$; convexity is not needed. See
   `Rockafellar.closed_improper_eq_const`.
+* **Theorem 7.6, dimension argument** (generalization). The strict sublevel set restricted to
+  the relative interior of the effective domain has the same affine hull as that domain
+  without properness. See `Rockafellar.affineSpan_relint_convexDom_lt`.
 -/
 
 open Set Filter Topology
@@ -448,6 +446,9 @@ theorem corollary_7_5_1 (hf : ClosedProperConvexFn f) {x : Rn n} (hx : x ∈ con
 /-- Let $f$ be a convex function on $\mathbb{R}^n$, and let $\alpha$ be a real number with
 $\inf f < \alpha$. Then the set $\{x \in \operatorname{ri}(\operatorname{dom} f) \mid f(x) <
 \alpha\}$ has the same affine hull as $\operatorname{dom} f$.
+
+**Generalization.** The dimension argument of Theorem 7.6 is for proper convex $f$. The affine
+hull equality, which implies the dimension equality, holds for every convex $f$.
 
 This gives the dimension clause of Theorem 7.6. The book obtains that clause by counting the
 dimensions of slices; this proof uses the line segment principle. -/

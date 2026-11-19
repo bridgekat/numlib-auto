@@ -105,12 +105,15 @@ matrix) and `Numlib.FloatingPoint.LU` (the bounds (3.40)–(3.41)).
 ## Deviations from the source
 
 * **The remark after (3.36)** (correction). The source says that $(m_i e_i^T)(m_j e_j^T) = 0$ if
-  $i \neq j$. The product is zero for $i < j$ only. See
+  $i \neq j$. For distinct indices, only $i < j$ guarantees a zero product. See
   `QuarteroniSaccoSaleri.Chapter03.equation_3_36`.
-* **Property 3.2** (correction). The source does not assume that $A$ is nonsingular. The statement
-  is false without this hypothesis, which is added. See
-  `QuarteroniSaccoSaleri.Chapter03.property_3_2_row` and
-  `QuarteroniSaccoSaleri.Chapter03.property_3_2_col`.
+* **Property 3.2** (correction and reading). The row-dominance theorem adds the necessary
+  nonsingularity hypothesis. The column-dominance theorem uses the same sufficient hypothesis
+  for elimination with nonzero pivots. See `QuarteroniSaccoSaleri.Chapter03.property_3_2_row`
+  and `QuarteroniSaccoSaleri.Chapter03.property_3_2_col`.
+* **Elimination, rounding and compact recurrences** (reading). The algebraic recurrences
+  are total even at zero pivots. The factorization and rounding theorems specify their
+  nonzero-pivot and roundoff assumptions separately.
 
 ## Not formalized
 
@@ -138,7 +141,10 @@ $$m_{ik} = \frac{a^{(k)}_{ik}}{a^{(k)}_{kk}} \quad (i > k), \qquad m_{ik} = 0 \q
 where $a^{(k)}_{ij}$ are the entries of the stage $A^{(k)}$ of Gaussian elimination.
 
 The stage $A^{(k)}$ is `Matrix.gemStage A k`, with $0$-based $k$. If the pivot $a^{(k)}_{kk}$ is
-zero, the division in Lean gives $m_{ik} = 0$. -/
+zero, the division in Lean gives $m_{ik} = 0$.
+
+**Reading.** The multipliers use Lean's total division. They are zero when the pivot is
+zero, where the book's elimination stops. -/
 noncomputable def gemMultipliers (k : Fin n) : Fin n → ℝ :=
   fun i => if k < i then gemStage A k i k / gemStage A k k k else 0
 
@@ -150,7 +156,10 @@ $$b^{(k+1)}_i = b^{(k)}_i - m_{ik} b^{(k)}_k \quad (i > k), \qquad b^{(k+1)}_i =
 with the multipliers $m_{ik}$ of `QuarteroniSaccoSaleri.Chapter03.gemMultipliers`. For
 $k \ge n$, $b^{(k+1)} = b^{(k)}$.
 
-The index $k$ is $0$-based. As for `Matrix.gemStage`, nothing happens after the stage $n$. -/
+The index $k$ is $0$-based. As for `Matrix.gemStage`, nothing happens after the stage $n$.
+
+**Reading.** The recurrence uses the totalized elimination stages. Once no row remains,
+further stages leave the right-hand side unchanged. -/
 noncomputable def gemRhs (b : Fin n → ℝ) : ℕ → Fin n → ℝ
   | 0 => b
   | k + 1 =>
@@ -178,7 +187,11 @@ and $a^{(k+1)}_{ij} = a^{(k)}_{ij}$, $b^{(k+1)}_i = b^{(k)}_i$ for $i \le k$.
 
 The index $k$ is $0$-based, so the stage $k + 1$ here is the stage $k + 2$ of the book. The
 proof uses `Matrix.gemStage_succ_of_lt`, `Matrix.elimStep_apply_of_lt` and
-`Matrix.elimStep_apply_of_not_lt`. -/
+`Matrix.elimStep_apply_of_not_lt`.
+
+**Reading.** The same update is stated for all columns and every indexed stage, with zero
+pivots totalized. In the book the proper elimination step needs a nonzero pivot, and the
+earlier columns have already been eliminated. -/
 theorem equation_3_31 (b : Fin n → ℝ) (k : Fin n) :
     (∀ i j, k < i →
       gemStage A (k + 1) i j = gemStage A k i j - gemMultipliers A k i * gemStage A k k j) ∧
@@ -206,7 +219,10 @@ So all the systems that Gaussian elimination produces are equivalent to the orig
 No hypothesis on the pivots is needed: a zero pivot gives zero multipliers, and the stage is
 then unchanged. The proof uses $b^{(k+1)} = M_k b^{(k)}$ for the invertible Gaussian
 transformation $M_k$ of (3.35), with `Matrix.gemStage_succ_eq_gaussTransform_mul` and
-`Matrix.gaussTransform_mul_elimMul`. -/
+`Matrix.gaussTransform_mul_elimMul`.
+
+**Reading.** Every formal stage preserves the solution set. With a zero pivot the formal
+update does nothing, while the book stops the algorithm. -/
 theorem equation_3_29 (b : Fin n → ℝ) (k : ℕ) (x : Fin n → ℝ) :
     gemStage A k *ᵥ x = gemRhs A b k ↔ A *ᵥ x = b := by
   induction k with
@@ -293,7 +309,10 @@ the identity matrix with the negated multipliers of stage $k$ in column $k$ belo
 
 The matrix $M_k$ is `Matrix.gaussTransform (gemStage A k) k`, and $m_k e_k^T$ is
 `vecMulVec (gemMultipliers A k) (Pi.single k 1)`. The proof uses
-`Matrix.gemStage_succ_eq_gaussTransform_mul`. -/
+`Matrix.gemStage_succ_eq_gaussTransform_mul`.
+
+**Reading.** The identity applies to totalized stages, including the identity transformation
+at a zero pivot. -/
 theorem equation_3_35 (k : Fin n) :
     gemStage A (k + 1) = gaussTransform (gemStage A k) k * gemStage A k ∧
       gaussTransform (gemStage A k) k = 1 - vecMulVec (gemMultipliers A k) (Pi.single k 1) := by
@@ -556,10 +575,10 @@ nonsingular and diagonally dominant by columns, that is, $\sum_{i \neq j} |a_{ij
 for every $j$. Then $A$ has an LU factorization $A = LU$ with unit lower triangular factor, and
 $|l_{ij}| \le 1$ for all $i, j$.
 
-**Correction.** The source does not assume that $A$ is nonsingular. The hypothesis is added for
-the same reason as in `QuarteroniSaccoSaleri.Chapter03.property_3_2_row`: the source uses the
-weak diagonal dominance of Definition 1.24, and the theorem that it cites, Theorem 9.9 of
-[higham2002accuracy], assumes nonsingularity.
+**Reading.** The source does not assume nonsingularity in the column case. The declaration
+includes it to use ordinary elimination with nonzero pivots. With weak column dominance, a
+zero pivot forces its remaining column to vanish, so the broader existence assertion can
+instead proceed by choosing zero multipliers there.
 
 Diagonal dominance by columns is `Matrix.IsColDiagDominant`. The proof specializes
 `Matrix.exists_isLU_of_isColDiagDominant`. -/
@@ -588,7 +607,10 @@ where the absolute values and the inequality are entrywise.
 The computed factors are an admissible `FloatingPoint.RoundsLU m A L U` for the rounding model
 `m`, whose unit roundoff is `m.u`. The entrywise absolute value is `Matrix.abs`, and the
 entrywise order is `≤ₑ`. The proof uses `FloatingPoint.exists_roundsLU_mul_eq_add`, which is
-Theorem 9.3 of [higham2002accuracy]. -/
+Theorem 9.3 of [higham2002accuracy].
+
+**Reading.** The theorem states the exact bound under $nu<1$ for factors admitted by the
+rounding model, with nonzero computed pivots. -/
 theorem equation_3_40 [NeZero n] (hn : (n : ℝ) * m.u < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) :
     ∃ δA : Matrix (Fin n) (Fin n) ℝ,
@@ -610,7 +632,9 @@ entrywise.
 
 For nonnegative factors, $|\hat L| |\hat U| = |\hat L \hat U| = |A + \delta A| \le |A| + |\delta
 A|$, and this turns (3.40) into a bound in terms of $A$ alone. The proof uses
-`FloatingPoint.abs_le_of_roundsLU_of_entrywiseNonneg`. -/
+`FloatingPoint.abs_le_of_roundsLU_of_entrywiseNonneg`.
+
+**Reading.** The bound in terms of $|A|$ makes the sufficient condition $2nu<1$ explicit. -/
 theorem equation_3_41 [NeZero n] (hn : 2 * ((n : ℝ) * m.u) < 1) (h : RoundsLU m A L U)
     (hd : ∀ j, U j j ≠ 0) (hL : L.EntrywiseNonneg) (hU : U.EntrywiseNonneg) :
     ∃ δA : Matrix (Fin n) (Fin n) ℝ,
@@ -664,7 +688,10 @@ multiplier matrix and $U = A^{(n)}$.
 The last statement is the remark of the source that the Doolittle factorization is the $ijk$
 version of GEM. The factors are `Matrix.luLower A` and `Matrix.luUpper A`, read off the packed
 recurrence `Matrix.luPacked A`. If $u_{kk} = 0$, the division in Lean gives $l_{ik} = 0$. The
-proof uses `Matrix.isLU_luLower_luUpper` and `Matrix.luLower_eq_gemLower`. -/
+proof uses `Matrix.isLU_luLower_luUpper` and `Matrix.luLower_eq_gemLower`.
+
+**Reading.** The recurrence is total, with zero division giving zero below a zero pivot.
+The statement separately supplies hypotheses ensuring an LU factorization. -/
 theorem equation_3_43 :
     (∀ k j, k ≤ j → luUpper A k j = A k j - ∑ r with r < k, luLower A k r * luUpper A r j) ∧
     (∀ i k, k < i →
@@ -697,7 +724,10 @@ with $L$ lower triangular and $U$ unit upper triangular.
 The factors are `Matrix.croutLower A` and `Matrix.croutUpper A`, which are the transposed
 Doolittle factors of $A^T$. The hypothesis of Theorem 3.4 for $A^T$ is the same as for $A$. That
 $U$ is unit upper triangular is stated as `(croutUpper A)ᵀ.IsUnitLowerTriangular`. The proof
-uses `Matrix.croutLower_mul_croutUpper`. -/
+uses `Matrix.croutLower_mul_croutUpper`.
+
+**Reading.** The recurrence uses total division, and the factorization theorem makes the
+leading-minor condition explicit. -/
 theorem crout :
     (∀ i k, k ≤ i →
       croutLower A i k = A i k - ∑ r with r < k, croutLower A i r * croutUpper A r k) ∧

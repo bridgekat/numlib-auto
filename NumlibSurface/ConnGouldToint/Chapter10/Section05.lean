@@ -144,7 +144,10 @@ and steps $s_j$ such that:
 
 Index $0$ is the initial trial of Step 2. A budget $N$ allows $N + 1$ enlarged probes, and
 without a budget the loop is the printed one. The model and the seminorm are the same for every
-probe. If the final probe is rejected, the preceding probe is retained. -/
+probe. If the final probe is rejected, the preceding probe is retained.
+
+**Reading.** Trace assumes termination and can cap the number of enlarged probes.
+-/
 structure InternalDoublingTrace (P : InternalDoublingParams) (f m : E → ℝ)
     (x : E) (p : Seminorm ℝ E) (previousRatio : ℝ) (sufficient : ℝ → E → Prop)
     (budget : Option ℕ := none) where
@@ -188,7 +191,10 @@ variable {P : InternalDoublingParams} {f m : E → ℝ} {x : E} {p : Seminorm �
 final probe is acceptable, $\rho(s_J) \ge \eta_1$, and $J - 1$ otherwise.
 
 The subtraction is in the natural numbers, so the index is $0$ when $J = 0$. Thus without an
-inner loop the initial trial is retained even if it fails the acceptance test. -/
+inner loop the initial trial is retained even if it fails the acceptance test.
+
+**Reading.** Selects last accepted enlarged probe through the terminating trace.
+-/
 noncomputable def storedIndex
     (trace : InternalDoublingTrace P f m x p previousRatio sufficient budget) : ℕ :=
   if P.η₁ ≤ btrRatio f m x (trace.step trace.last) then trace.last else trace.last - 1
@@ -275,7 +281,10 @@ theorem storedIndex_is_latest_acceptable
 /-- **Algorithm 10.5.1** of [conn2000trust], Step 3. Let the preceding iteration be very successful,
 $\rho_{\mathrm{prev}} \ge \eta_2$, and let $(t_j)_{j \ge 0}$ be trial steps with
 $\rho(t_j) \ge \eta_2$ and $\|t_j\| < \|t_{j+1}\|$ for all $j$. Then no terminating trace
-without a budget has the steps $s_j = t_j$ for all $j \le J$. -/
+without a budget has the steps $s_j = t_j$ for all $j \le J$.
+
+**Reading.** With growth guard permanently true the uncapped trace cannot terminate.
+-/
 theorem no_termination_of_always_continue
     (trace : InternalDoublingTrace P f m x p previousRatio sufficient)
     (hprevious : P.η₂ ≤ previousRatio) (trials : ℕ → E)
@@ -302,7 +311,10 @@ initial radius is obtained from the stored radius by the update (6.1.5) with the
 (Step 5).
 
 For a successful but not very successful iteration, the next initial radius is strictly smaller
-than the stored radius. -/
+than the stored radius.
+
+**Reading.** Run uses finite inner traces and optionally caps the probing budget.
+-/
 structure InternalDoublingRun (f : E → ℝ) (P : InternalDoublingParams)
     (sufficient : ℕ → (E → ℝ) → E → ℝ → E → Prop)
     (budget : Option ℕ := none) where
@@ -347,7 +359,10 @@ the run at the stored radius.
 
 The enlargement at iteration $k + 1$ is absorbed into the radius update at iteration $k$. This
 is possible because the enlargement occurs only when that update follows a very successful
-trial. -/
+trial.
+
+**Reading.** Reduction to basic trust-region iteration is formalized for terminating traces.
+-/
 noncomputable def InternalDoublingRun.toBTRRun {f : E → ℝ} {P : InternalDoublingParams}
     {sufficient : ℕ → (E → ℝ) → E → ℝ → E → Prop} {budget : Option ℕ}
     (run : InternalDoublingRun f P sufficient budget) :
@@ -390,7 +405,10 @@ whose steps are $s_j$.
 
 So the inner loop terminates whenever the prescribed probes can be computed. The retained trial
 satisfies the same acceptance rule, so a run with this budget also has the representation
-`ConnGouldToint.Chapter10.InternalDoublingRun.toBTRRun`. -/
+`ConnGouldToint.Chapter10.InternalDoublingRun.toBTRRun`.
+
+**Reading.** Finite budget guarantees a terminal trace.
+-/
 theorem exists_cappedInternalDoublingTrace {P : InternalDoublingParams} {f m : E → ℝ}
     {x : E} {p : Seminorm ℝ E} {previousRatio : ℝ} {sufficient : ℝ → E → Prop}
     (N : ℕ) (radius : ℕ → ℝ) (step : ℕ → E) (hpos : 0 < radius 0)
@@ -613,7 +631,10 @@ terminating trace without a budget, with preceding ratio $1$, has the steps $s_j
 $j \le J$.
 
 So without a limit on the inner loop, the printed stopping rule can continue forever, even for a
-smooth objective bounded below and exact models. -/
+smooth objective bounded below and exact models.
+
+**Reading.** An exact-model construction demonstrates an infinite enlarged-probe loop.
+-/
 theorem internalDoubling_unbounded_inner_counterexample :
     let f : ℝ → ℝ := fun x ↦ Real.exp (-x)
     let r : ℕ → ℝ := fun j ↦ 2 ^ j

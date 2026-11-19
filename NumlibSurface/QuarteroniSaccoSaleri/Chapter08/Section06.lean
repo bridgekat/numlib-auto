@@ -137,6 +137,66 @@ divided-difference form `BSpline.nform` and the B-spline basis).
 
 ## Deviations from the source
 
+* **Representation.** The spline subspace uses continuous restrictions and applies the dimension
+  theorem on positive-degree partitions. See `QuarteroniSaccoSaleri.Chapter08.definition_8_1`,
+  `QuarteroniSaccoSaleri.Chapter08.mem_definition_8_1_iff`.
+* **Convention.** Endpoints use within-interval derivatives; the natural condition has a separate
+  degree parameter. See `QuarteroniSaccoSaleri.Chapter08.equation_8_44`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_45`.
+* **Reading.** The twice-integrated moment formula includes the final panel. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_46`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_46_integrated`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_47`.
+* **Reading.** The spline closure system makes the endpoint coefficient range and panel count
+  explicit, with uniqueness on the interval. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_48_iff`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_48`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_48_spline`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_48_prolonged`.
+* **Reading.** Closure uniqueness is on the spline interval. Periodic and not-a-knot cases specify
+  endpoint data and panel-count requirements. See
+  `QuarteroniSaccoSaleri.Chapter08.naturalCubicSpline_existsUnique`,
+  `QuarteroniSaccoSaleri.Chapter08.clampedCubicSpline_existsUnique`,
+  `QuarteroniSaccoSaleri.Chapter08.periodicCubicSpline_existsUnique`,
+  `QuarteroniSaccoSaleri.Chapter08.notAKnotSpline_existsUnique`.
+* **Reading.** The second-derivative best approximation property uses the derivative-matched clamped
+  spline. See `QuarteroniSaccoSaleri.Chapter08.clampedSpline_bestApprox_deriv2`.
+* **Specialization.** The clamped estimate gives weaker constants for orders zero through two, with
+  the second derivative estimated at the knots. See
+  `QuarteroniSaccoSaleri.Chapter08.property_8_3_weak`.
+* **Convention.** The raw divided-difference form uses totalized division and agrees with the
+  recursive B-spline for distinct knots and positive degree. See
+  `QuarteroniSaccoSaleri.Chapter08.definition_8_2`,
+  `QuarteroniSaccoSaleri.Chapter08.definition_8_2_apply`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_53`,
+  `QuarteroniSaccoSaleri.Chapter08.definition_8_2_eq_bspline`.
+* **Reading.** Minimal support is unique up to scalar, and the support and nonnegativity theorems
+  allow repeated knots. See `QuarteroniSaccoSaleri.Chapter08.bSpline_support`,
+  `QuarteroniSaccoSaleri.Chapter08.bSpline_nonneg`, `QuarteroniSaccoSaleri.Chapter08.bSpline_pos`,
+  `QuarteroniSaccoSaleri.Chapter08.bSpline_minimalSupport`,
+  `QuarteroniSaccoSaleri.Chapter08.bSpline_minimalSupport_eq_zero`.
+* **Convention.** The degree-zero B-spline uses a half-open rather than closed interval. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_54_zero`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_54`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_54_definition_8_2`.
+* **Correction.** The confluent difference at m+1 identical nodes uses derivative order m. See
+  `QuarteroniSaccoSaleri.Chapter08.remark_8_3_confluent`,
+  `QuarteroniSaccoSaleri.Chapter08.remark_8_3_confluent_of_lt`,
+  `QuarteroniSaccoSaleri.Chapter08.remark_8_3_confluent_const`,
+  `QuarteroniSaccoSaleri.Chapter08.remark_8_3_confluent_eq`.
+* **Generalization.** The repeated-knot formulas drop exterior inequalities and use half-open
+  support. See `QuarteroniSaccoSaleri.Chapter08.remark_8_3_left`,
+  `QuarteroniSaccoSaleri.Chapter08.remark_8_3_right`.
+* **Representation.** The explicit cubic uses half-open branches with the same values at all knots.
+  See `QuarteroniSaccoSaleri.Chapter08.example_8_9`.
+* **Specialization.** The B-spline basis uses a shifted zero-based index and strictly increasing
+  extended knots. See `QuarteroniSaccoSaleri.Chapter08.equation_8_56`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_56_repr`.
+* **Convention.** The final B-spline coefficient is the left-hand limit at the right endpoint. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_57`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_57_right`.
+* **Correction.** Knot insertion corrects the previous-coefficient index and the refined sum's term
+  count, and uses strict interior insertion. See `QuarteroniSaccoSaleri.Chapter08.remark_8_4`.
 * **(8.46), integrated form** (generalization). The source states the formula for
   $i = 1, \ldots, n - 1$. It holds on every panel. See
   `QuarteroniSaccoSaleri.Chapter08.equation_8_46_integrated`.
@@ -200,7 +260,13 @@ The space $\mathcal{S}_k$ consists of these splines.
 
 The space is `Spline.splineSpace a b n x k (k - 1)`, a submodule of `C(Icc a b, ℝ)`. The
 definition does not assume that the nodes increase; the theorems that need it assume
-`IsIntervalPartition a b n x`. -/
+`IsIntervalPartition a b n x`.
+
+**Reading.** The spline space consists of continuous restrictions to the interval that have a
+representative with the required panel polynomials and smoothness. The definition accepts arbitrary
+knot arrays and uses truncated natural subtraction at degree zero; dimension and basis theorems
+assume a positive degree and a partition.
+-/
 noncomputable def definition_8_1 (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (k : ℕ) :
     Submodule ℝ C(Icc a b, ℝ) :=
   Spline.splineSpace a b n x k (k - 1)
@@ -209,7 +275,13 @@ noncomputable def definition_8_1 (a b : ℝ) (n : ℕ) (x : ℕ → ℝ) (k : �
 $a, b \in \mathbb{R}$, let $x_0, x_1, \ldots$ be real numbers, and let $v$ be a continuous
 function on $[a, b]$. Then $v \in \mathcal{S}_k$ if and only if $v$ is the restriction to
 $[a, b]$ of a function $g : \mathbb{R} \to \mathbb{R}$ of class $C^{k-1}$ on $[a, b]$ that
-agrees on every panel $[x_j, x_{j+1}]$, $j < n$, with a polynomial of degree at most $k$. -/
+agrees on every panel $[x_j, x_{j+1}]$, $j < n$, with a polynomial of degree at most $k$.
+
+**Reading.** The spline space consists of continuous restrictions to the interval that have a
+representative with the required panel polynomials and smoothness. The definition accepts arbitrary
+knot arrays and uses truncated natural subtraction at degree zero; dimension and basis theorems
+assume a positive degree and a partition.
+-/
 theorem mem_definition_8_1_iff (v : C(Icc a b, ℝ)) :
     v ∈ definition_8_1 a b n x k ↔ ∃ g : ℝ → ℝ, ContDiffOn ℝ (k - 1 : ℕ) g (Icc a b) ∧
       (∀ t : Icc a b, v t = g t) ∧
@@ -236,7 +308,12 @@ $s : \mathbb{R} \to \mathbb{R}$ and $k \in \mathbb{N}$. The function $s$ satisfi
 $$s^{(m)}(a) = s^{(m)}(b), \qquad m = 0, 1, \ldots, k - 1,$$
 with the derivatives taken within $[a, b]$.
 
-For $k = 0$ the natural subtraction gives $k - 1 = 0$, so the condition is $s(a) = s(b)$. -/
+For $k = 0$ the natural subtraction gives $k - 1 = 0$, so the condition is $s(a) = s(b)$.
+
+**Reading.** Endpoint derivatives are taken within the closed interval. The natural-end predicate is
+parameterized by l independently of spline degree. The book uses it for l at least two and odd
+degree $2l-1$, avoiding the truncated bounds at smaller parameters.
+-/
 def equation_8_44 (a b : ℝ) (k : ℕ) (s : ℝ → ℝ) : Prop :=
   ∀ m ≤ k - 1, iteratedDerivWithin m s (Icc a b) a = iteratedDerivWithin m s (Icc a b) b
 
@@ -264,7 +341,12 @@ $$s^{(l+j)}(a) = s^{(l+j)}(b) = 0, \qquad j = 0, 1, \ldots, l - 2,$$
 with the derivatives taken within $[a, b]$.
 
 The source takes $l \ge 2$. For $l \le 1$ the natural subtraction gives $l - 2 = 0$, so the
-definition still imposes the condition with $j = 0$. -/
+definition still imposes the condition with $j = 0$.
+
+**Reading.** Endpoint derivatives are taken within the closed interval. The natural-end predicate is
+parameterized by l independently of spline degree. The book uses it for l at least two and odd
+degree $2l-1$, avoiding the truncated bounds at smaller parameters.
+-/
 def equation_8_45 (a b : ℝ) (l : ℕ) (s : ℝ → ℝ) : Prop :=
   ∀ j ≤ l - 2, iteratedDerivWithin (l + j) s (Icc a b) a = 0 ∧
     iteratedDerivWithin (l + j) s (Icc a b) b = 0
@@ -378,7 +460,11 @@ $$s_3''(x) = M_{i-1} \frac{x_i - x}{h_i} + M_i \frac{x - x_{i-1}}{h_i}, \qquad x
 
 The second derivative is taken within $[a, b]$. On each panel the spline is the panel cubic of
 its moments (`Spline.IsCubicInterp.eqOn_panelCubic`), whose second derivative is
-`Spline.panelCubicD2_apply`. -/
+`Spline.panelCubicD2_apply`.
+
+**Reading.** Endpoint derivatives are taken within the interval and the integrated expression is
+stated on every panel, including the final panel omitted in the source's integrated formula range.
+-/
 theorem equation_8_46 (hs : IsCubicInterpSpline a b n x f s) {i : ℕ} (hi1 : 1 ≤ i) (hin : i ≤ n)
     {t : ℝ} (ht : t ∈ Icc (x (i - 1)) (x i)) :
     iteratedDerivWithin 2 s (Icc a b) t
@@ -402,7 +488,11 @@ $$\tilde C_{i-1} = f_{i-1} - M_{i-1} \frac{h_i^2}{6}, \qquad C_{i-1} = \frac{f_i
   f_{i-1}}{h_i} - \frac{h_i}{6} (M_i - M_{i-1}).$$
 
 **Generalization.** The source states the formula for $i = 1, \ldots, n - 1$. It holds on every
-panel, $i = 1, \ldots, n$. -/
+panel, $i = 1, \ldots, n$.
+
+**Reading.** Endpoint derivatives are taken within the interval and the integrated expression is
+stated on every panel, including the final panel omitted in the source's integrated formula range.
+-/
 theorem equation_8_46_integrated (hs : IsCubicInterpSpline a b n x f s) {i : ℕ} (hi1 : 1 ≤ i)
     (hin : i ≤ n) {t : ℝ} (ht : t ∈ Icc (x (i - 1)) (x i)) :
     s t = iteratedDerivWithin 2 s (Icc a b) (x (i - 1)) * (x i - t) ^ 3 / (6 * (x i - x (i - 1)))
@@ -426,7 +516,11 @@ $$\mu_i = \frac{h_i}{h_i + h_{i+1}}, \qquad \lambda_i = \frac{h_{i+1}}{h_i + h_{
   \right).$$
 
 The equations express the continuity of $s_3'$ at the internal nodes. The proof is
-`Spline.IsCubicInterp.isMomentEq`. -/
+`Spline.IsCubicInterp.isMomentEq`.
+
+**Reading.** Endpoint derivatives are taken within the interval and the integrated expression is
+stated on every panel, including the final panel omitted in the source's integrated formula range.
+-/
 theorem equation_8_47 (hs : IsCubicInterpSpline a b n x f s) {i : ℕ} (hi1 : 1 ≤ i) (hin : i < n) :
     (x i - x (i - 1)) / ((x i - x (i - 1)) + (x (i + 1) - x i))
         * iteratedDerivWithin 2 s (Icc a b) (x (i - 1))
@@ -452,7 +546,12 @@ holds if and only if the equations (8.47) hold for $i = 1, \ldots, n - 1$,
 $2 M_0 + \lambda_0 M_1 = d_0$, and $\mu_n M_{n-1} + 2 M_n = d_n$.
 
 The system is `Spline.momentMatrix n h lam0 mun *ᵥ M = Spline.momentRhs n h f d0 dn` with $h$ =
-`Spline.panelLength x`. The proof is `Spline.momentMatrix_mulVec_eq_iff`. -/
+`Spline.panelLength x`. The proof is `Spline.momentMatrix_mulVec_eq_iff`.
+
+**Reading.** Spline uniqueness means equality on the spline interval. Matrix solvability uses
+endpoint off-diagonal coefficients in the unit interval; the prolongation needs at least two panels
+so that the adjacent interior expressions are defined.
+-/
 theorem equation_8_48_iff (hn : 1 ≤ n) (lam0 mun d0 dn : ℝ) (M : ℕ → ℝ) :
     (Spline.momentMatrix n (Spline.panelLength x) lam0 mun).mulVec
         (fun i : Fin (n + 1) => M i) = Spline.momentRhs n (Spline.panelLength x) f d0 dn ↔
@@ -476,7 +575,12 @@ $a = x_0 < x_1 < \cdots < x_n = b$, let $0 \le \lambda_0 \le 1$ and $0 \le \mu_n
 $f_0, \ldots, f_n$ and $d_0, d_n$ be real numbers. Then the tridiagonal system (8.48) has
 exactly one solution $M = (M_0, \ldots, M_n)$.
 
-The matrix is strictly diagonally dominant, hence nonsingular (`Spline.isUnit_momentMatrix`). -/
+The matrix is strictly diagonally dominant, hence nonsingular (`Spline.isUnit_momentMatrix`).
+
+**Reading.** Spline uniqueness means equality on the spline interval. Matrix solvability uses
+endpoint off-diagonal coefficients in the unit interval; the prolongation needs at least two panels
+so that the adjacent interior expressions are defined.
+-/
 theorem equation_8_48 {lam0 mun : ℝ} (hl0 : 0 ≤ lam0) (hl1 : lam0 ≤ 1) (hm0 : 0 ≤ mun)
     (hm1 : mun ≤ 1) (f : ℕ → ℝ) (d0 dn : ℝ) :
     ∃! M : Fin (n + 1) → ℝ, (Spline.momentMatrix n (Spline.panelLength x) lam0 mun).mulVec M
@@ -495,7 +599,12 @@ $M_i = s''(x_i)$ satisfy
 $$2 M_0 + \lambda_0 M_1 = d_0, \qquad \mu_n M_{n-1} + 2 M_n = d_n,$$
 and any two such splines agree on $[a, b]$.
 
-The proof is `Spline.existsUnique_isCubicInterp_of_closure`. -/
+The proof is `Spline.existsUnique_isCubicInterp_of_closure`.
+
+**Reading.** Spline uniqueness means equality on the spline interval. Matrix solvability uses
+endpoint off-diagonal coefficients in the unit interval; the prolongation needs at least two panels
+so that the adjacent interior expressions are defined.
+-/
 theorem equation_8_48_spline (hn : 1 ≤ n) {lam0 mun : ℝ} (hl0 : 0 ≤ lam0) (hl1 : lam0 ≤ 1)
     (hm0 : 0 ≤ mun) (hm1 : mun ≤ 1) (f : ℕ → ℝ) (d0 dn : ℝ) :
     (∃ s, IsCubicInterpSpline a b n x f s ∧
@@ -524,7 +633,12 @@ $$2 M_0 + M_1 = d_1, \qquad M_{n-1} + 2 M_n = d_{n-1},$$
 with $d_1$ and $d_{n-1}$ as in (8.47), and any two such splines agree on $[a, b]$.
 
 The book calls this the popular choice, which "corresponds to prolongating the spline outside
-the end points of the interval $[a, b]$ and treating $a$ and $b$ as internal points". -/
+the end points of the interval $[a, b]$ and treating $a$ and $b$ as internal points".
+
+**Reading.** Spline uniqueness means equality on the spline interval. Matrix solvability uses
+endpoint off-diagonal coefficients in the unit interval; the prolongation needs at least two panels
+so that the adjacent interior expressions are defined.
+-/
 theorem equation_8_48_prolonged (hn : 2 ≤ n) (f : ℕ → ℝ) :
     (∃ s, IsCubicInterpSpline a b n x f s ∧
         2 * iteratedDerivWithin 2 s (Icc a b) (x 0) + 1 * iteratedDerivWithin 2 s (Icc a b) (x 1)
@@ -566,7 +680,12 @@ Then there is a cubic spline $s$ interpolating the values $f_i$ with the natural
 $s''(a) = s''(b) = 0$ of (8.45), and any two such splines agree on $[a, b]$.
 
 The book obtains the natural spline by setting $\lambda_0 = \mu_n = d_0 = d_n = 0$ in (8.48).
-The spline is `Spline.naturalInterp n x f` on $[a, b]$. -/
+The spline is `Spline.naturalInterp n x f` on $[a, b]$.
+
+**Reading.** Uniqueness is on the spline interval. The periodic result assumes matching endpoint
+data and at least two panels. The not-a-knot conditions require at least three panels to be
+distinct, since with two panels both conditions use the same knot.
+-/
 theorem naturalCubicSpline_existsUnique (hn : 1 ≤ n) (f : ℕ → ℝ) :
     (∃ s, IsCubicInterpSpline a b n x f s ∧ equation_8_45 a b 2 s) ∧
       ∀ s₁ s₂, IsCubicInterpSpline a b n x f s₁ → equation_8_45 a b 2 s₁ →
@@ -592,7 +711,12 @@ with $s'(a) = f'_0$ and $s'(b) = f'_n$, and any two such splines agree on $[a, b
 
 The derivatives are taken within $[a, b]$. The book describes this closure as one of the form
 (8.48) with $\lambda_0 = \mu_n = 1$, used when the derivatives $f'(a)$ and $f'(b)$ are
-available; see also Exercise 11. The spline is `Spline.clampedInterp n x f f'0 f'n` on $[a, b]$. -/
+available; see also Exercise 11. The spline is `Spline.clampedInterp n x f f'0 f'n` on $[a, b]$.
+
+**Reading.** Uniqueness is on the spline interval. The periodic result assumes matching endpoint
+data and at least two panels. The not-a-knot conditions require at least three panels to be
+distinct, since with two panels both conditions use the same knot.
+-/
 theorem clampedCubicSpline_existsUnique (hn : 1 ≤ n) (f : ℕ → ℝ) (f'0 f'n : ℝ) :
     (∃ s, IsCubicInterpSpline a b n x f s ∧ derivWithin s (Icc a b) a = f'0 ∧
         derivWithin s (Icc a b) b = f'n) ∧
@@ -633,7 +757,12 @@ $$s(a) = s(b), \qquad s'(a) = s'(b), \qquad s''(a) = s''(b),$$
 and any two such splines agree on $[a, b]$.
 
 The uniqueness needs only the two conditions on the derivatives. The proof is
-`Spline.existsUnique_isCubicInterp_periodic`. -/
+`Spline.existsUnique_isCubicInterp_periodic`.
+
+**Reading.** Uniqueness is on the spline interval. The periodic result assumes matching endpoint
+data and at least two panels. The not-a-knot conditions require at least three panels to be
+distinct, since with two panels both conditions use the same knot.
+-/
 theorem periodicCubicSpline_existsUnique (hn : 2 ≤ n) (hf : f 0 = f n) :
     (∃ s, IsCubicInterpSpline a b n x f s ∧ equation_8_44 a b 3 s) ∧
       ∀ s₁ s₂, IsCubicInterpSpline a b n x f s₁ → equation_8_44 a b 3 s₁ →
@@ -654,7 +783,12 @@ the two conditions coincide, and they do not determine the spline.
 The closure enforces the continuity of $s_3'''$ at $x_1$ and at $x_{n-1}$. Since $s_3'''$ is
 constant on each panel, this means that the cubic pieces on the first two and on the last two
 panels coincide, so the active knots are $x_0, x_2, \ldots, x_{n-2}, x_n$. The closure is
-`Spline.IsNotAKnot n x s`, and the proof is `Spline.existsUnique_isCubicInterp_notAKnot`. -/
+`Spline.IsNotAKnot n x s`, and the proof is `Spline.existsUnique_isCubicInterp_notAKnot`.
+
+**Reading.** Uniqueness is on the spline interval. The periodic result assumes matching endpoint
+data and at least two panels. The not-a-knot conditions require at least three panels to be
+distinct, since with two panels both conditions use the same knot.
+-/
 theorem notAKnotSpline_existsUnique (hn : 3 ≤ n) (f : ℕ → ℝ) :
     (∃ s, IsCubicInterpSpline a b n x f s ∧ Spline.IsNotAKnot n x s) ∧
       ∀ s₁ s₂, IsCubicInterpSpline a b n x f s₁ → Spline.IsNotAKnot n x s₁ →
@@ -882,7 +1016,12 @@ $$\int_a^b [f''(x) - s_f''(x)]^2 \, dx \le \int_a^b [f''(x) - s''(x)]^2 \, dx.$$
 Here $s \in \mathcal{S}_3$ means `Spline.IsCubicSpline a b n x s` (see
 `QuarteroniSaccoSaleri.Chapter08.mem_definition_8_1_three_iff`). The proof is
 `Spline.integral_sq_sub_deriv2_clampedInterp_le` for $s_f$ = `Spline.clampedInterp`, which
-agrees with every such $s_f$ on $[a, b]$. -/
+agrees with every such $s_f$ on $[a, b]$.
+
+**Reading.** The best approximation property is for the clamped interpolant of F with matching
+boundary slopes. It minimizes squared second-derivative error over the entire cubic spline space on
+that partition.
+-/
 theorem clampedSpline_bestApprox_deriv2 {sf : ℝ → ℝ}
     (hsf : IsCubicInterpSpline a b n x (fun i => F (x i)) sf)
     (h0 : derivWithin sf (Icc a b) a = derivWithin F (Icc a b) a)
@@ -933,7 +1072,13 @@ diagonal dominance, and uses the sharp Hermite constant $1/384$. The spline is
 `QuarteroniSaccoSaleri.Chapter08.IsCubicInterpSpline.eqOn_clampedInterp` identifies every
 clamped interpolatory cubic spline with it on $[a, b]$. The proof uses
 `Spline.norm_sub_clampedInterp_le`, `Spline.norm_deriv_sub_clampedInterp_le` and
-`Spline.norm_deriv2_sub_clampedInterp_le`. -/
+`Spline.norm_deriv2_sub_clampedInterp_le`.
+
+**Reading.** The interpolant is clamped and the function is globally four times continuously
+differentiable. The theorem gives weaker constants for orders zero, one and two, evaluates order two
+only at the nodes, and does not give the printed third-derivative estimate. The printed rates can
+fail for natural end conditions, for instance for a quadratic with nonzero second derivative.
+-/
 theorem property_8_3_weak {f : ℝ → ℝ} {K hm : ℝ} (hx : IsIntervalPartition a b n x) (hn : 1 ≤ n)
     (hf : ContDiff ℝ 4 f) (hK : ∀ y ∈ Icc a b, |iteratedDeriv 4 f y| ≤ K)
     (hmesh : ∀ i, 1 ≤ i → i ≤ n → Spline.panelLength x i ≤ hm) :
@@ -965,14 +1110,26 @@ difference of Section 8.2.
 The book takes the nodes distinct. The truncated power $(t - x)_+^k$ is
 `Quadrature.truncPow k t x`. The definition is the divided-difference form `BSpline.nform`, and
 `QuarteroniSaccoSaleri.Chapter08.definition_8_2_eq_bspline` identifies it with the Cox–de Boor
-B-spline `BSpline.bspline x k i`. -/
+B-spline `BSpline.bspline x k i`.
+
+**Reading.** The nonconfluent divided-difference expression uses total division at repeated knots,
+unlike the confluent extension in Remark 8.3. Its equivalence to the Cox–de Boor recursion is proved
+for strictly increasing knots and positive degrees, where the degree-zero endpoint convention is
+irrelevant.
+-/
 noncomputable def definition_8_2 (x : ℕ → ℝ) (k i : ℕ) : ℝ → ℝ :=
   BSpline.nform x k i
 
 /-- **Definition 8.2** of [quarteroni2000numerical], the formulas (8.51)–(8.52). For all
 $x_0, x_1, \ldots$, $k$, $i$ and $t$,
 $$B_{i,k+1}(t) = (x_{i+k+1} - x_i) \, g[x_i, \ldots, x_{i+k+1}], \qquad g(s) = (s - t)_+^k,$$
-with the Newton divided difference `DividedDifference.newton`. -/
+with the Newton divided difference `DividedDifference.newton`.
+
+**Reading.** The nonconfluent divided-difference expression uses total division at repeated knots,
+unlike the confluent extension in Remark 8.3. Its equivalence to the Cox–de Boor recursion is proved
+for strictly increasing knots and positive degrees, where the degree-zero endpoint convention is
+irrelevant.
+-/
 theorem definition_8_2_apply (x : ℕ → ℝ) (k i : ℕ) (t : ℝ) :
     definition_8_2 x k i t = (x (i + k + 1) - x i) *
       DividedDifference.newton (fun s => Quadrature.truncPow k s t)
@@ -985,7 +1142,13 @@ Definition 8.2 equals the B-spline `BSpline.bspline x k i` of the Cox–de Boor 
 
 For $k = 0$ the two differ at the knots: Definition 8.2 gives the indicator function of
 $(x_i, x_{i+1}]$, and the recursion gives that of $[x_i, x_{i+1})$. The proof is
-`BSpline.nform_eq_bspline`. -/
+`BSpline.nform_eq_bspline`.
+
+**Reading.** The nonconfluent divided-difference expression uses total division at repeated knots,
+unlike the confluent extension in Remark 8.3. Its equivalence to the Cox–de Boor recursion is proved
+for strictly increasing knots and positive degrees, where the degree-zero endpoint convention is
+irrelevant.
+-/
 theorem definition_8_2_eq_bspline (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) :
     definition_8_2 x k i = BSpline.bspline x k i :=
   BSpline.nform_eq_bspline hx hk i
@@ -998,7 +1161,13 @@ where the product runs over $l \in \{0, \ldots, k + 1\}$, $l \neq j$.
 
 The book obtains it by substituting (8.18) into (8.51). It is the definition of the divided
 difference, unfolded. For coincident nodes a denominator is zero, and the division in Lean gives
-$0$ for that term. -/
+$0$ for that term.
+
+**Reading.** The nonconfluent divided-difference expression uses total division at repeated knots,
+unlike the confluent extension in Remark 8.3. Its equivalence to the Cox–de Boor recursion is proved
+for strictly increasing knots and positive degrees, where the degree-zero endpoint convention is
+irrelevant.
+-/
 theorem equation_8_53 (x : ℕ → ℝ) (k i : ℕ) (t : ℝ) :
     definition_8_2 x k i t = (x (i + k + 1) - x i) * ∑ j : Fin (k + 2),
       Quadrature.truncPow k (x (i + j)) t / ∏ l ∈ Finset.univ.erase j, (x (i + j) - x (i + l)) :=
@@ -1009,7 +1178,12 @@ nondecreasing. Then $B_{i,k+1}(t) = 0$ for $t \notin [x_i, x_{i+k+1}]$: "$B_{i,k
 null only within the interval $[x_i, x_{i+k+1}]$".
 
 The B-spline is `BSpline.bspline x k i`. The proof is `BSpline.bspline_eq_zero_of_notMem`, which
-gives the smaller support $[x_i, x_{i+k+1})$. -/
+gives the smaller support $[x_i, x_{i+k+1})$.
+
+**Reading.** Support and nonnegativity allow repeated knots in a monotone sequence. Strict
+positivity uses distinct knots on the open support interval. Minimal support at positive degree
+means uniqueness up to scalar, with smaller support forcing the zero spline.
+-/
 theorem bSpline_support (hx : Monotone x) {i : ℕ} {t : ℝ} (ht : t ∉ Icc (x i) (x (i + k + 1))) :
     BSpline.bspline x k i t = 0 :=
   BSpline.bspline_eq_zero_of_notMem hx fun h => ht (Ico_subset_Icc_self h)
@@ -1017,7 +1191,12 @@ theorem bSpline_support (hx : Monotone x) {i : ℕ} {t : ℝ} (ht : t ∉ Icc (x
 /-- **Section 8.6.2** of [quarteroni2000numerical], positivity (quoted by the book from de Boor).
 Let $x_0 \le x_1 \le \cdots$ be nondecreasing. Then $B_{i,k+1}(t) \ge 0$ for all $i$ and $t$.
 
-The proof is `BSpline.bspline_nonneg`. -/
+The proof is `BSpline.bspline_nonneg`.
+
+**Reading.** Support and nonnegativity allow repeated knots in a monotone sequence. Strict
+positivity uses distinct knots on the open support interval. Minimal support at positive degree
+means uniqueness up to scalar, with smaller support forcing the zero spline.
+-/
 theorem bSpline_nonneg (hx : Monotone x) (i : ℕ) (t : ℝ) : 0 ≤ BSpline.bspline x k i t :=
   BSpline.bspline_nonneg hx
 
@@ -1025,7 +1204,12 @@ theorem bSpline_nonneg (hx : Monotone x) (i : ℕ) (t : ℝ) : 0 ≤ BSpline.bsp
 $x_0 < x_1 < \cdots$ be strictly increasing. Then $B_{i,k+1}(t) > 0$ for
 $t \in (x_i, x_{i+k+1})$.
 
-The proof is `BSpline.bspline_pos`. -/
+The proof is `BSpline.bspline_pos`.
+
+**Reading.** Support and nonnegativity allow repeated knots in a monotone sequence. Strict
+positivity uses distinct knots on the open support interval. Minimal support at positive degree
+means uniqueness up to scalar, with smaller support forcing the zero spline.
+-/
 theorem bSpline_pos (hx : StrictMono x) {i : ℕ} {t : ℝ} (ht : t ∈ Ioo (x i) (x (i + k + 1))) :
     0 < BSpline.bspline x k i t :=
   BSpline.bspline_pos hx ht
@@ -1041,7 +1225,12 @@ minimum support relative to the nodes $x_i, \ldots, x_{i+k+1}$". The proof is
 `BSpline.exists_eq_smul_bspline`: both $s$ and $B_{i,k+1}$ are combinations of the powers
 $(x - x_j)^k$ whose jump coefficients lie in the kernel of
 $c \mapsto \sum_{j=i}^{i+k+1} c_j (x - x_j)^k$, which has dimension one by a Vandermonde
-argument. -/
+argument.
+
+**Reading.** Support and nonnegativity allow repeated knots in a monotone sequence. Strict
+positivity uses distinct knots on the open support interval. Minimal support at positive degree
+means uniqueness up to scalar, with smaller support forcing the zero spline.
+-/
 theorem bSpline_minimalSupport (hx : StrictMono x) (hk : 1 ≤ k) {i : ℕ} {s : ℝ → ℝ}
     (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
     (h0 : ∀ t ∉ Icc (x i) (x (i + k + 1)), s t = 0)
@@ -1057,7 +1246,12 @@ polynomial of degree at most $k$ on each $[x_j, x_{j+1}]$, $i \le j < i + k$. Th
 no nonzero spline of degree $k$ has support in fewer than $k + 2$ consecutive nodes.
 
 By `QuarteroniSaccoSaleri.Chapter08.bSpline_minimalSupport`, $s$ is a multiple of $B_{i,k+1}$,
-and $B_{i,k+1}$ is positive on $(x_{i+k}, x_{i+k+1})$, where $s$ vanishes. -/
+and $B_{i,k+1}$ is positive on $(x_{i+k}, x_{i+k+1})$, where $s$ vanishes.
+
+**Reading.** Support and nonnegativity allow repeated knots in a monotone sequence. Strict
+positivity uses distinct knots on the open support interval. Minimal support at positive degree
+means uniqueness up to scalar, with smaller support forcing the zero spline.
+-/
 theorem bSpline_minimalSupport_eq_zero (hx : StrictMono x) (hk : 1 ≤ k) {i : ℕ} {s : ℝ → ℝ}
     (hs : ContDiff ℝ ((k - 1 : ℕ) : WithTop ℕ∞) s)
     (h0 : ∀ t ∉ Icc (x i) (x (i + k)), s t = 0)
@@ -1097,7 +1291,12 @@ and $t$, $B_{i,1}(t) = 1$ if $t \in [x_i, x_{i+1})$ and $B_{i,1}(t) = 0$ otherwi
 two consecutive B-splines of degree zero would both be $1$ at a shared knot, and the partition
 of unity would fail. The half-open interval is used.
 
-This is the definition `BSpline.bspline_zero`. -/
+This is the definition `BSpline.bspline_zero`.
+
+**Reading.** The zero-degree indicator is left-closed and right-open so neighboring panels do not
+both count a shared endpoint. The recurrence for the divided-difference representation is identified
+in positive degree on strictly increasing knots.
+-/
 theorem equation_8_54_zero (x : ℕ → ℝ) (i : ℕ) (t : ℝ) :
     BSpline.bspline x 0 i t = if t ∈ Ico (x i) (x (i + 1)) then 1 else 0 :=
   BSpline.bspline_zero x i t
@@ -1109,7 +1308,12 @@ $$B_{i,k+2}(t) = \frac{t - x_i}{x_{i+k+1} - x_i} B_{i,k+1}(t) + \frac{x_{i+k+2} 
 
 This is the second line of (8.54) for the degree $k + 1$; the index $k \ge 1$ of the book is the
 order. The proof is `BSpline.bspline_succ`, whose weights `BSpline.weight` are the displayed
-quotients when the knots are distinct. -/
+quotients when the knots are distinct.
+
+**Reading.** The zero-degree indicator is left-closed and right-open so neighboring panels do not
+both count a shared endpoint. The recurrence for the divided-difference representation is identified
+in positive degree on strictly increasing knots.
+-/
 theorem equation_8_54 (hx : StrictMono x) (k i : ℕ) (t : ℝ) :
     BSpline.bspline x (k + 1) i t
       = (t - x i) / (x (i + k + 1) - x i) * BSpline.bspline x k i t
@@ -1135,7 +1339,12 @@ satisfy the Cox–de Boor recursion: for all $i$ and $t$,
 $$B_{i,k+2}(t) = \frac{t - x_i}{x_{i+k+1} - x_i} B_{i,k+1}(t) + \frac{x_{i+k+2} - t}{x_{i+k+2} -
   x_{i+1}} B_{i+1,k+1}(t).$$
 
-The book says that the recursion "is usually preferred to (8.53) when evaluating a B-spline". -/
+The book says that the recursion "is usually preferred to (8.53) when evaluating a B-spline".
+
+**Reading.** The zero-degree indicator is left-closed and right-open so neighboring panels do not
+both count a shared endpoint. The recurrence for the divided-difference representation is identified
+in positive degree on strictly increasing knots.
+-/
 theorem equation_8_54_definition_8_2 (hx : StrictMono x) (hk : 1 ≤ k) (i : ℕ) (t : ℝ) :
     definition_8_2 x (k + 1) i t
       = (t - x i) / (x (i + k + 1) - x i) * definition_8_2 x k i t
@@ -1157,7 +1366,12 @@ $f^{(n)}(x_0)/n!$; for example $f[x_0, x_0] = f'(x_0)$.
 The definition is `DividedDifference.confluent`. It applies to every family of nodes
 $x_0, \ldots, x_n$: $f[x_0] = f(x_0)$, and for $n \ge 1$ the derivative value is used whenever
 $x_0 = x_n$ and the quotient otherwise. For nondecreasing nodes, $x_0 = x_n$ means that all
-nodes coincide. -/
+nodes coincide.
+
+**Correction.** For m+1 equal nodes the value uses the derivative of order m divided by m factorial.
+The source prints derivative and factorial one order too high. The equivalence with the raw formula
+is stated for distinct nodes.
+-/
 noncomputable def remark_8_3_confluent (f : ℝ → ℝ) {m : ℕ} (v : Fin (m + 1) → ℝ) : ℝ :=
   DividedDifference.confluent f v
 
@@ -1165,6 +1379,10 @@ noncomputable def remark_8_3_confluent (f : ℝ → ℝ) {m : ℕ} (v : Fin (m +
 and let $v_0, \ldots, v_{m+1}$ be nodes with $v_0 < v_{m+1}$. Then
 $$f[v_0, \ldots, v_{m+1}] = \frac{f[v_1, \ldots, v_{m+1}] - f[v_0, \ldots, v_m]}{v_{m+1} -
   v_0}.$$
+
+**Correction.** For m+1 equal nodes the value uses the derivative of order m divided by m factorial.
+The source prints derivative and factorial one order too high. The equivalence with the raw formula
+is stated for distinct nodes.
 -/
 theorem remark_8_3_confluent_of_lt (f : ℝ → ℝ) {m : ℕ} {v : Fin (m + 2) → ℝ}
     (h : v 0 < v (Fin.last (m + 1))) :
@@ -1179,7 +1397,12 @@ $f : \mathbb{R} \to \mathbb{R}$, $m \in \mathbb{N}$ and $x_0 \in \mathbb{R}$. At
 of the node $x_0$,
 $$f[x_0, \ldots, x_0] = \frac{f^{(m)}(x_0)}{m!}.$$
 
-The proof is `DividedDifference.confluent_const`. -/
+The proof is `DividedDifference.confluent_const`.
+
+**Correction.** For m+1 equal nodes the value uses the derivative of order m divided by m factorial.
+The source prints derivative and factorial one order too high. The equivalence with the raw formula
+is stated for distinct nodes.
+-/
 theorem remark_8_3_confluent_const (f : ℝ → ℝ) (m : ℕ) (x₀ : ℝ) :
     remark_8_3_confluent f (fun _ : Fin (m + 1) => x₀) = iteratedDeriv m f x₀ / m.factorial :=
   DividedDifference.confluent_const f x₀
@@ -1188,7 +1411,12 @@ theorem remark_8_3_confluent_const (f : ℝ → ℝ) (m : ℕ) (x₀ : ℝ) :
 and let $v_0, \ldots, v_m$ be distinct nodes. Then the confluent divided difference
 $f[v_0, \ldots, v_m]$ is the Newton divided difference of Section 8.2.
 
-The proof is `DividedDifference.confluent_eq_newton`. -/
+The proof is `DividedDifference.confluent_eq_newton`.
+
+**Correction.** For m+1 equal nodes the value uses the derivative of order m divided by m factorial.
+The source prints derivative and factorial one order too high. The equivalence with the raw formula
+is stated for distinct nodes.
+-/
 theorem remark_8_3_confluent_eq (f : ℝ → ℝ) {m : ℕ} {v : Fin (m + 1) → ℝ}
     (hv : Function.Injective v) : remark_8_3_confluent f v = DividedDifference.newton f v :=
   DividedDifference.confluent_eq_newton f hv
@@ -1202,7 +1430,12 @@ and $B_{i,k+1}(t) = 0$ otherwise.
 **Generalization.** The source also assumes $x_{i-1} < x_i$, which is not needed. The source
 prints the closed interval $[x_i, x_{i+k+1}]$; the formula gives $0$ at the right end anyway.
 
-The proof is `BSpline.bspline_apply_of_coincident_left`. -/
+The proof is `BSpline.bspline_apply_of_coincident_left`.
+
+**Generalization.** The neighboring exterior strict inequalities are omitted. The formula is given
+on a half-open support, so the right-repeated case uses zero at the right endpoint instead of its
+left-hand limit.
+-/
 theorem remark_8_3_left {i : ℕ} (hcoin : ∀ j, i ≤ j → j ≤ i + k → x j = x i)
     (hlt : x i < x (i + k + 1)) (t : ℝ) :
     BSpline.bspline x k i t = if t ∈ Ico (x i) (x (i + k + 1)) then
@@ -1217,7 +1450,12 @@ and $B_{i,k+1}(t) = 0$ otherwise.
 
 **Generalization.** The source also assumes $x_{i+k+1} < x_{i+k+2}$, which is not needed.
 
-The proof is `BSpline.bspline_apply_of_coincident_right`. -/
+The proof is `BSpline.bspline_apply_of_coincident_right`.
+
+**Generalization.** The neighboring exterior strict inequalities are omitted. The formula is given
+on a half-open support, so the right-repeated case uses zero at the right endpoint instead of its
+left-hand limit.
+-/
 theorem remark_8_3_right (hx : Monotone x) {i : ℕ}
     (hcoin : ∀ j, i + 1 ≤ j → j ≤ i + k + 1 → x j = x (i + k + 1)) (hlt : x i < x (i + k + 1))
     (t : ℝ) :
@@ -1235,7 +1473,11 @@ $h > 0$ and $x_j = x_0 + jh$ for all $j$. Then $6 h^3 B_{i,4}(t)$ equals
 * $(x_{i+4} - t)^3$ for $t \in [x_{i+3}, x_{i+4})$;
 * $0$ otherwise.
 
-The proof is `BSpline.bspline_uniform_cubic`. -/
+The proof is `BSpline.bspline_uniform_cubic`.
+
+**Reading.** The branches use half-open intervals to make a single-valued case split. The adjacent
+polynomial formulas agree at the knots and the value at the rightmost knot is zero.
+-/
 theorem example_8_9 {x₀ h : ℝ} (hh : 0 < h) (hx : ∀ j, x j = x₀ + j * h) (i : ℕ) (t : ℝ) :
     6 * h ^ 3 * BSpline.bspline x 3 i t =
       if t ∈ Ico (x i) (x (i + 1)) then (t - x i) ^ 3
@@ -1261,7 +1503,12 @@ In the shifted indexing the knots $x_0, \ldots, x_{k-1}$ are the fictitious knot
 $x_{-k}, \ldots, x_{-1}$ of the book, and the index $i$ is the book's $i - k$, so the book's sum
 runs over $i = -k, \ldots, n - 1$. The coefficients are
 `QuarteroniSaccoSaleri.Chapter08.equation_8_56_repr`. The proof is
-`BSpline.exists_basis_bspline`. -/
+`BSpline.exists_basis_bspline`.
+
+**Reading.** The basis and expansion assume all extended knots are strictly increasing, while the
+text also permits repeating artificial knots. Indices are shifted by k so that the first B-spline
+has index zero.
+-/
 theorem equation_8_56 (hx : StrictMono x) (hn : 1 ≤ n) (hk : 1 ≤ k) (hxa : x k = a)
     (hxb : x (n + k) = b) :
     ∃ B : Module.Basis (Fin (n + k)) ℝ (definition_8_1 a b n (fun j => x (j + k)) k),
@@ -1274,6 +1521,10 @@ and let $x_0 < x_1 < \cdots$ be strictly increasing knots with $x_k = a$ and $x_
 every $s_k$ in the space $\mathcal{S}_k$ on the nodes $x_k < \cdots < x_{n+k}$ has unique
 coefficients $c_0, \ldots, c_{n+k-1}$ with
 $$s_k(t) = \sum_{i=0}^{n+k-1} c_i B_{i,k+1}(t), \qquad t \in [a, b].$$
+
+**Reading.** The basis and expansion assume all extended knots are strictly increasing, while the
+text also permits repeating artificial knots. Indices are shifted by k so that the first B-spline
+has index zero.
 -/
 theorem equation_8_56_repr (hx : StrictMono x) (hn : 1 ≤ n) (hk : 1 ≤ k) (hxa : x k = a)
     (hxb : x (n + k) = b) (v : C(Icc a b, ℝ))
@@ -1301,7 +1552,12 @@ $x_k < x_{k+1}$, and let $c_0, c_1, \ldots$ be real numbers. Then
 $s_k = \sum_{i=0}^{n+k-1} c_i B_{i,k+1}$ satisfies $s_k(x_k) = c_0$.
 
 In the indexing of the book the hypothesis is $x_{-k} = \cdots = x_0 = a$, and the conclusion is
-$s_k(a) = c_{-k}$. The proof is `BSpline.sum_smul_bspline_left`. -/
+$s_k(a) = c_{-k}$. The proof is `BSpline.sum_smul_bspline_left`.
+
+**Reading.** The repeated left endpoint has the first coefficient as its value. At the repeated
+right endpoint the half-open B-splines vanish, so the last coefficient is obtained as the one-sided
+limit from inside the interval.
+-/
 theorem equation_8_57 (hx : Monotone x) (hn : 1 ≤ n) (hcoin : ∀ j ≤ k, x j = x k)
     (hlt : x k < x (k + 1)) (c : ℕ → ℝ) :
     ∑ i ∈ Finset.range (n + k), c i * BSpline.bspline x k i (x k) = c 0 :=
@@ -1317,7 +1573,12 @@ $$\lim_{t \to x_{n+k}^-} s_k(t) = c_{n+k-1}.$$
 every B-spline vanishes at $b$, so the value at $b$ is read as the limit from the left.
 
 In the indexing of the book the hypothesis is $x_n = \cdots = x_{n+k} = b$, and $c_{n+k-1}$ here
-is the book's $c_{n-1}$. The proof is `BSpline.sum_smul_bspline_right`. -/
+is the book's $c_{n-1}$. The proof is `BSpline.sum_smul_bspline_right`.
+
+**Reading.** The repeated left endpoint has the first coefficient as its value. At the repeated
+right endpoint the half-open B-splines vanish, so the last coefficient is obtained as the one-sided
+limit from inside the interval.
+-/
 theorem equation_8_57_right (hx : Monotone x) (hn : 1 ≤ n)
     (hcoin : ∀ j, n + k ≤ j → j ≤ n + 2 * k → x j = x (n + k)) (hlt : x (n + k - 1) < x (n + k))
     (c : ℕ → ℝ) :
@@ -1345,7 +1606,12 @@ apply. The condition $k \le j < n + k$ says that the new knot falls in a panel o
 range; this makes the two end coefficients right.
 
 The refined knots are `BSpline.insertKnot x j xt`, and the coefficients $d_i$ are
-`BSpline.insertKnotCoeff x k j xt c i`. The proof is `BSpline.sum_smul_bspline_insertKnot`. -/
+`BSpline.insertKnotCoeff x k j xt c i`. The proof is `BSpline.sum_smul_bspline_insertKnot`.
+
+**Correction.** The second coefficient in the refinement formula is the preceding old coefficient.
+The refined sum also has one more term. The theorem handles insertion strictly inside a panel of
+strictly increasing knots.
+-/
 theorem remark_8_4 (hx : StrictMono x) (hk : 1 ≤ k) {j : ℕ} (hkj : k ≤ j) (hjn : j < n + k)
     {xt : ℝ} (hxt : xt ∈ Ioo (x j) (x (j + 1))) (c : ℕ → ℝ) (t : ℝ) :
     ∑ i ∈ Finset.range (n + k + 1),

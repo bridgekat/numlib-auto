@@ -67,10 +67,20 @@ of $x$ from $M$ (Theorem 1.38 and Corollary 1.39). The proofs specialize the bac
 
 ## Deviations from the source
 
+* **Equation (1.66)** (reading). The matrix formula is total and returns zero for a singular
+  cross-Gram matrix. See `Matrix.obliqueProj`.
+* **§1.12.2, nonsingularity of the cross-Gram matrix** (generalization). The criterion for
+  nonsingularity is an equivalence. See `SaadSparse.Chapter01.isUnit_conjTranspose_mul_iff`.
+* **Equations (1.69)–(1.70)** (generalization). The identities apply to arbitrary square matrices.
+  See `SaadSparse.Chapter01.ker_conjTranspose_eq_orthogonal_range` and
+  `SaadSparse.Chapter01.ker_eq_orthogonal_range_conjTranspose`.
 * **§1.12.4, $\|P\|_2 = 1$ for an orthogonal projector** (reading). The claim needs $P \neq 0$,
   because the zero matrix is the orthogonal projector onto $\{0\}$. The module states the bound
   $\|Px\|_2 \le \|x\|_2$, which holds for every orthogonal projector. See
   `SaadSparse.Chapter01.norm_apply_le`.
+* **§1.12.4, projector eigenvalues and fixed vectors** (generalization). Idempotence suffices
+  for both properties. See `SaadSparse.Chapter01.spectrum_subset_pair` and
+  `SaadSparse.Chapter01.mem_range_iff_eigen_one`.
 * **Corollary 1.39** (reading). The book's "$\min_{y \in M}$" is read with $y$ ranging over $M$, so
   $y \in M$ is a hypothesis and the statement is about the least element of the set of distances.
   See `SaadSparse.Chapter01.corollary_1_39`.
@@ -158,7 +168,8 @@ $$P = V (W^H V)^{-1} W^H.$$
 When the columns of $V$ and $W$ are bases of $M$ and $L$ and $W^H V$ is nonsingular, $P$ is the
 projector onto $M$ orthogonally to $L$ (`SaadSparse.Chapter01.obliqueProj_isProjOnto`).
 
-If $W^H V$ is singular, the inverse is Mathlib's `Matrix.inv`, which is $0$. -/
+**Reading.** The formula in the book uses an invertible cross-Gram matrix. The total Lean
+definition returns zero when $W^H V$ is singular, by the convention for `Matrix.inv`. -/
 noncomputable def obliqueProj (V W : Matrix (Fin n) (Fin m) 𝕜) : Matrix (Fin n) (Fin n) 𝕜 :=
   V * (Wᴴ * V)⁻¹ * Wᴴ
 
@@ -391,9 +402,12 @@ theorem isProjOnto_iff_conjTranspose_mulVec_eq_zero (hV : V.IsBasisOf M) (hW : W
   rw [IsProjOnto, ← conjTranspose_mulVec_eq_zero_iff hW (x - (V ⬝ y)), hsub]
   simp [hmem]
 
-/-- **Section 1.12.3** of [saad2003iterative]. Let $V$ be a basis of $M$ and $W$ a basis of $L$,
+/-- **Section 1.12.2** of [saad2003iterative]. Let $V$ be a basis of $M$ and $W$ a basis of $L$,
 both in $\mathbb{K}^{n \times m}$. Then $W^H V$ is nonsingular if and only if no nonzero vector
-of $M$ is orthogonal to $L$, which is the hypothesis of Lemma 1.36. -/
+of $M$ is orthogonal to $L$, which is the hypothesis of Lemma 1.36.
+
+**Generalization.** The text gives sufficiency. For the converse, a vector in $M \cap L^\perp$
+has coordinates in the kernel of $W^H V$, so nonsingularity forces the vector to vanish. -/
 theorem isUnit_conjTranspose_mul_iff (hV : V.IsBasisOf M) (hW : W.IsBasisOf L) :
     IsUnit (Wᴴ * V) ↔ ∀ v ∈ M, v ∈ Lᗮ → v = 0 := by
   have hzero : ∀ y : Fin m → 𝕜, (Wᴴ * V) *ᵥ y = 0 ↔
@@ -450,13 +464,19 @@ theorem isProjector_conjTranspose {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsPr
   rw [← conjTranspose_mul, show P * P = P from hP]
 
 /-- **Equation (1.69)** of [saad2003iterative]. For every $P \in \mathbb{K}^{n \times n}$,
-$\operatorname{Null}(P^H) = \operatorname{Ran}(P)^\perp$. -/
+$\operatorname{Null}(P^H) = \operatorname{Ran}(P)^\perp$.
+
+**Generalization.** The book applies the identity to projectors. The adjoint identity gives it
+for every matrix. -/
 theorem ker_conjTranspose_eq_orthogonal_range (P : Matrix (Fin n) (Fin n) 𝕜) :
     LinearMap.ker (toEuclideanLin Pᴴ) = (LinearMap.range (toEuclideanLin P))ᗮ := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.orthogonal_range]
 
 /-- **Equation (1.70)** of [saad2003iterative]. For every $P \in \mathbb{K}^{n \times n}$,
-$\operatorname{Null}(P) = \operatorname{Ran}(P^H)^\perp$. -/
+$\operatorname{Null}(P) = \operatorname{Ran}(P^H)^\perp$.
+
+**Generalization.** The book applies the identity to projectors. The adjoint identity gives it
+for every matrix. -/
 theorem ker_eq_orthogonal_range_conjTranspose (P : Matrix (Fin n) (Fin n) 𝕜) :
     LinearMap.ker (toEuclideanLin P) = (LinearMap.range (toEuclideanLin Pᴴ))ᗮ := by
   rw [toEuclideanLin_conjTranspose_eq_adjoint, LinearMap.orthogonal_range,
@@ -567,7 +587,10 @@ theorem norm_apply_le {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsOrthogonalProj
   nlinarith [norm_nonneg ((1 - P) ⬝ x), norm_nonneg (P ⬝ x), norm_nonneg x]
 
 /-- **Section 1.12.4** of [saad2003iterative]. The eigenvalues of a projector
-$P \in \mathbb{C}^{n \times n}$ are in $\{0, 1\}$. -/
+$P \in \mathbb{C}^{n \times n}$ are in $\{0, 1\}$.
+
+**Generalization.** The source considers orthogonal projectors. Idempotence alone forces
+every eigenvalue to satisfy $\lambda^2=\lambda$. -/
 theorem spectrum_subset_pair {P : Matrix (Fin n) (Fin n) ℂ} (hP : P.IsProjector) :
     spectrum ℂ P ⊆ {0, 1} := by
   intro μ hμ
@@ -593,7 +616,11 @@ theorem spectrum_subset_pair {P : Matrix (Fin n) (Fin n) ℂ} (hP : P.IsProjecto
       simpa using mul_left_cancel₀ h0 this)
 
 /-- **Section 1.12.4** of [saad2003iterative]. Let $P$ be a projector. Then $x$ is in the range of
-$P$ if and only if $Px = x$, that is $x$ is fixed by $P$. -/
+$P$ if and only if $Px = x$, that is $x$ is fixed by $P$.
+
+**Generalization.** The source describes the range of an orthogonal projector by its
+eigenvectors at $1$. The theorem uses the fixed-vector equation, including at zero, and holds
+for every idempotent because it fixes its own image. -/
 theorem mem_range_iff_eigen_one {P : Matrix (Fin n) (Fin n) 𝕜} (hP : P.IsProjector)
     (x : EuclideanSpace 𝕜 (Fin n)) :
     x ∈ LinearMap.range (toEuclideanLin P) ↔ (P ⬝ x) = x :=

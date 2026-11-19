@@ -65,6 +65,25 @@ P-1.18. The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.
   `Matrix.isPositiveReal_iff_isCoercive` carries every result over.
 * The numbers $\lambda_{\min}$ and $\lambda_{\max}$ of a Hermitian matrix are `SaadSparse.lambdaMin`
   and `SaadSparse.lambdaMax`, which need $n \ge 1$.
+
+## Deviations from the source
+
+* **Theorem 1.34, the bound from its proof** (generalization). The lower bound by
+  $\lambda_{\min}((A+A^T)/2)$ holds for every real square matrix of positive order. See
+  `SaadSparse.Chapter01.theorem_1_34'` and `SaadSparse.Chapter01.isCoerciveWith_lambdaMin`.
+* **Equation (1.57)** (generalization). The formula defines a sesquilinear form for every $B$.
+  See `Matrix.energyInner` and `Matrix.IsSelfAdjointWrt`.
+* **Equation (1.57), inner-product properties** (reading). The surface states the properties
+  separately for real matrices. See `Matrix.energyInner_comm`, `Matrix.energyInner_add_left`,
+  `Matrix.energyInner_smul_left`, and `Matrix.energyInner_self_pos`.
+* **Problem P-1.18** (reading and generalization). The self-adjointness results use real
+  matrices. For $CB$, symmetry of $B$ suffices. See `Matrix.isSelfAdjointWrt_inv_mul` and
+  `Matrix.isSelfAdjointWrt_mul`.
+
+## Not formalized
+
+* **Problem P-1.18, ordinary Hermitian symmetry.** The declarations give the conclusions for
+  the $B$-form only.
 -/
 
 open Matrix Finset
@@ -132,8 +151,11 @@ $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$, the **$B$-inner product** of
 $x, y \in \mathbb{K}^n$ is
 $$(x, y)_B = (Bx, y).$$
 
-The book uses it for a symmetric positive definite $B$; the definition takes any $B$. In the
-convention of Mathlib it is `inner 𝕜 y (B ⬝ x)`. -/
+**Generalization.** The book introduces the inner product for positive definite $B$. The
+definition takes any $B$, since the formula defines a sesquilinear form without a positivity
+condition. It is an inner product when $B$ is Hermitian positive definite.
+
+In the convention of Mathlib it is `inner 𝕜 y (B ⬝ x)`. -/
 noncomputable def energyInner (B : Matrix (Fin n) (Fin n) 𝕜) (x y : EuclideanSpace 𝕜 (Fin n)) :
     𝕜 := inner 𝕜 y (B ⬝ x)
 
@@ -141,7 +163,9 @@ noncomputable def energyInner (B : Matrix (Fin n) (Fin n) 𝕜) (x y : Euclidean
 $A, B \in \mathbb{K}^{n \times n}$, the matrix $A$ is **self-adjoint with respect to the
 $B$-inner product** if
 $$(Ax, y)_B = (x, Ay)_B \quad \text{for all } x, y \in \mathbb{K}^n.$$
--/
+
+**Generalization.** The book uses a Hermitian positive definite $B$. The predicate states the
+same identity for the sesquilinear form with arbitrary $B$. -/
 def IsSelfAdjointWrt (B A : Matrix (Fin n) (Fin n) 𝕜) : Prop :=
   ∀ x y : EuclideanSpace 𝕜 (Fin n), energyInner B (A ⬝ x) y = energyInner B x (A ⬝ y)
 
@@ -163,27 +187,37 @@ section BInner
 variable {B : Matrix (Fin n) (Fin n) ℝ}
 
 /-- For a symmetric positive definite $B \in \mathbb{R}^{n \times n}$, the $B$-inner product is
-symmetric: $(x, y)_B = (y, x)_B$. This is axiom (i) of an inner product in §1.4 over
-$\mathbb{R}$. -/
+symmetric: $(x, y)_B = (y, x)_B$.
+
+**Reading.** The book asserts a complex inner product in (1.57). The declaration gives the
+real form of conjugate symmetry for symmetric positive definite $B$. -/
 theorem energyInner_comm (hB : B.IsSPD) (x y : EuclideanSpace ℝ (Fin n)) :
     energyInner B x y = energyInner B y x := by
   rw [energyInner, energyInner, real_inner_comm (B ⬝ x) y,
     hB.isSymmetricCoercive.isSymmetric x y]
 
 /-- For $B \in \mathbb{R}^{n \times n}$, the $B$-inner product is additive in its first argument:
-$(x + y, z)_B = (x, z)_B + (y, z)_B$. -/
+$(x + y, z)_B = (x, z)_B + (y, z)_B$.
+
+**Reading.** The book asserts the inner-product properties over $\mathbb{C}$ for positive
+definite $B$. This real additivity identity holds for arbitrary $B$ by linearity. -/
 theorem energyInner_add_left (x y z : EuclideanSpace ℝ (Fin n)) :
     energyInner B (x + y) z = energyInner B x z + energyInner B y z := by
   simp [energyInner, inner_add_right]
 
 /-- For $B \in \mathbb{R}^{n \times n}$, the $B$-inner product is homogeneous in its first argument:
-$(cx, y)_B = c (x, y)_B$ for $c \in \mathbb{R}$. -/
+$(cx, y)_B = c (x, y)_B$ for $c \in \mathbb{R}$.
+
+**Reading.** The book asserts the inner-product properties over $\mathbb{C}$ for positive
+definite $B$. This real homogeneity identity holds for arbitrary $B$ by linearity. -/
 theorem energyInner_smul_left (c : ℝ) (x y : EuclideanSpace ℝ (Fin n)) :
     energyInner B (c • x) y = c * energyInner B x y := by
   simp [energyInner, inner_smul_right]
 
 /-- For a symmetric positive definite $B \in \mathbb{R}^{n \times n}$, the $B$-inner product is
-positive definite: $(x, x)_B > 0$ for $x \neq 0$. -/
+positive definite: $(x, x)_B > 0$ for $x \neq 0$.
+
+**Reading.** The declaration gives the positivity property in the real case of (1.57). -/
 theorem energyInner_self_pos (hB : B.IsSPD) {x : EuclideanSpace ℝ (Fin n)} (hx : x ≠ 0) :
     0 < energyInner B x x := by
   have h := hB.isSymmetricCoercive.isCoercive.inner_self_pos hx
@@ -219,8 +253,8 @@ theorem isSelfAdjointWrt_of_isSymm_mul {A : Matrix (Fin n) (Fin n) ℝ} (hB : B.
 with $B$ symmetric positive definite and nonsingular, and $C$ symmetric. Then $A = B^{-1} C$ is
 self-adjoint for the $B$-inner product.
 
-The nonsingularity of $B$ is a separate hypothesis in the statement, although it follows from
-positive definiteness. -/
+**Reading.** The book allows Hermitian $B$ and $C$ over $\mathbb{C}$. The declaration uses real
+matrices. It takes nonsingularity of $B$ explicitly, a consequence of positive definiteness. -/
 theorem isSelfAdjointWrt_inv_mul {C : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSPD) (hBu : IsUnit B)
     (hC : C.IsSymm) : B.IsSelfAdjointWrt (B⁻¹ * C) := by
   refine isSelfAdjointWrt_of_isSymm_mul hB.1 ?_
@@ -228,7 +262,13 @@ theorem isSelfAdjointWrt_inv_mul {C : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSPD)
   exact hC
 
 /-- **Problem P-1.18** of [saad2003iterative], second case. Let $B, C \in \mathbb{R}^{n \times n}$
-be symmetric. Then $A = CB$ is self-adjoint for the $B$-inner product. -/
+be symmetric. Then $A = CB$ is self-adjoint for the $B$-form.
+
+**Reading.** The book states the result for complex Hermitian matrices. The declaration treats
+real symmetric matrices.
+
+**Generalization.** The book assumes that $B$ is positive definite. Symmetry suffices for the
+identity with respect to the form, because $BCB$ is symmetric. -/
 theorem isSelfAdjointWrt_mul {C : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm) (hC : C.IsSymm) :
     B.IsSelfAdjointWrt (C * B) := by
   refine isSelfAdjointWrt_of_isSymm_mul hB ?_
@@ -271,8 +311,9 @@ $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $H = (A + A^T)/2$ be its
 Then for every $u \in \mathbb{R}^n$,
 $$(Au, u) \ge \lambda_{\min}(H) \|u\|_2^2.$$
 
-The statement holds for every real matrix $A$. When $A$ is positive definite,
-$\lambda_{\min}(H) > 0$, and this gives the constant $\alpha = \lambda_{\min}(H)$ of the book. -/
+**Generalization.** The book derives this bound for positive definite $A$. The bound applies to
+every real $A$ by the Rayleigh quotient of $H$, whose smallest eigenvalue can now be nonpositive.
+When $A$ is positive definite this recovers the positive constant used in the book. -/
 theorem theorem_1_34' [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) (u : Fin n → ℝ) :
     SaadSparse.lambdaMin (hermitianPart_isHermitian A) * (u ⬝ᵥ u) ≤ (A *ᵥ u) ⬝ᵥ u := by
   have hb := SaadSparse.isSymmetricBoundedBy_toEuclideanLin (hermitianPart_isHermitian A)
@@ -286,8 +327,8 @@ $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $H$ be its Hermitian par
 operator $u \mapsto Au$ satisfies $(Au, u) \ge \lambda_{\min}(H) \|u\|_2^2$ for all $u$
 (`LinearMap.IsCoerciveWith`).
 
-The statement holds for every real matrix $A$; the constant is positive when $A$ is positive
-definite. -/
+**Generalization.** The source derives the bound for positive definite $A$. The declaration
+allows every real $A$ by using the smallest eigenvalue of its symmetric part. -/
 theorem isCoerciveWith_lambdaMin [NeZero n] (A : Matrix (Fin n) (Fin n) ℝ) :
     (toEuclideanLin A).IsCoerciveWith (SaadSparse.lambdaMin (hermitianPart_isHermitian A)) := by
   intro x

@@ -91,6 +91,12 @@ Mathlib's `WeakDual.isCompact_closedBall`, and the backbone modules
   So "$\sigma(E^\star, E)$ is coarser than $\sigma(E^\star, E^{\star\star})$" is `weakTopology
   (StrongDual ℝ E) ≤ weakStarTopology E`.
 
+## Deviations from the source
+
+* **Weak-$\star$ topology and convergence** (generalization). The definitions and comparison
+  of topologies apply in incomplete normed spaces. See `Brezis.Chapter03.weakStarTopology`,
+  `Brezis.Chapter03.weakStarTopology_eq` and `Brezis.Chapter03.WeakStarTendsto`.
+
 ## Not formalized
 
 * **Remarks 8 and 12.** They are discussion.
@@ -109,6 +115,9 @@ normed space. The **weak-∗ topology** $\sigma(E^\star, E)$ on $E^\star$ is the
 for which every map $\varphi_x : E^\star \to \mathbb{R}$, $\varphi_x(f) = \langle f, x \rangle$
 with $x \in E$, is continuous.
 
+**Generalization.** The source works with $E$ complete. The evaluations on the continuous
+dual determine this topology for every real normed space.
+
 This is the construction of Section 3.1 with $X = E^\star$, $Y_i = \mathbb{R}$ and index set
 $I = E$, that is, `Brezis.Chapter03.weakestTopology` of the family of evaluations. -/
 @[instance_reducible]
@@ -123,6 +132,9 @@ a real normed space. Then:
    onto Mathlib's `WeakDual ℝ E`;
 2. $\sigma(E^\star, E)$ is coarser than the weak topology $\sigma(E^\star, E^{\star\star})$;
 3. $\sigma(E^\star, E^{\star\star})$ is coarser than the strong topology of $E^\star$.
+
+**Generalization.** The comparison is also valid in incomplete normed spaces. The inclusions
+of the families of continuous evaluation maps do not require completeness.
 
 In Mathlib's order on topologies, $\le$ means "finer", so (2) is `weakTopology (StrongDual ℝ E)
 ≤ weakStarTopology E`. The map onto `WeakDual ℝ E` is `StrongDual.toWeakDual`. -/
@@ -198,6 +210,9 @@ theorem proposition_3_12 [CompleteSpace E] (f₀ : StrongDual ℝ E) :
 $f_n \overset{\star}{\rightharpoonup} f$. A sequence $(f_n)$ in $E^\star$ **converges weakly-∗**
 to $f \in E^\star$, written $f_n \overset{\star}{\rightharpoonup} f$, if it converges to $f$ in
 the weak-∗ topology $\sigma(E^\star, E)$.
+
+**Generalization.** The sequence convergence definition applies to the dual of any normed
+space, using `Brezis.Chapter03.weakStarTopology` without a completeness assumption.
 
 The scoped notation is `f ⇀* g`. Weak convergence $f_n \rightharpoonup f$ in
 $\sigma(E^\star, E^{\star\star})$ is `Brezis.Chapter03.WeakTendsto` on the normed space

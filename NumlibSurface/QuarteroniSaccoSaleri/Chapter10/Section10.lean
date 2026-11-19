@@ -81,6 +81,18 @@ differentiation matrix `Lagrange.derivMatrix` with `Lagrange.eval_derivative_int
 
 ## Deviations from the source
 
+* **Equations (10.57), (10.59)–(10.64)** (generalization). The stencil can be placed at any
+  integer index on an infinite grid. The Taylor remainder results assume positive spacing and
+  explicit smoothness on the stencil. The one-sided formulas also assume differentiability at
+  the endpoint where Lean uses the unrestricted derivative.
+* **Equations (10.68)–(10.69)** (reading). `equation_10_68` and `equation_10_69` use $C^7$ near
+  the expansion point for their sixth-order remainder statements. The printed Taylor argument
+  starts with $C^5([a,b])$.
+* **Section 10.10.3 and equation (10.72)** (generalization). The pseudo-spectral derivative and
+  its matrix formula allow arbitrary nodal data and $n=0$. The degree bound for positive $n$ is
+  $\leq n-1$. The last clause of `equation_10_72` states matrix associativity for $D^2v=D(Dv)$,
+  without identifying either side with direct evaluation of the second derivative of the
+  interpolation polynomial.
 * **The expansion of the consistency error in Section 10.10.2** (typo). The printed expansion has a
   spurious factor $1/2$ on both $h^2$ terms. The order conditions that the book derives from it are
   correct. See `QuarteroniSaccoSaleri.Chapter10.equation_10_68`.
@@ -89,8 +101,6 @@ differentiation matrix `Lagrange.derivMatrix` with `Lagrange.eval_derivative_int
 * **Equations (10.65)–(10.66)** (generalization). The book assumes $f \in C^4([a, b])$. The library
   assumes only that $f$ is of class $C^4$ on $[x_{i-1}, x_{i+1}]$. See
   `QuarteroniSaccoSaleri.Chapter10.equation_10_66`.
-* **Equation (10.73)** (correction). The book prints $D_{nn} = (2n^2 + 1)/3$. The correct value is
-  $(2n^2 + 1)/6$, because $D$ has trace zero. See `QuarteroniSaccoSaleri.Chapter10.equation_10_73`.
 
 ## Not formalized
 
@@ -120,7 +130,10 @@ scheme** at the index $i \in \mathbb{Z}$ if
 $$h \sum_{k=-m}^{m} \alpha_k u_{i-k} = \sum_{k=-m'}^{m'} \beta_k f(x_{i-k}).$$
 
 The predicate is stated at one index $i$, where the whole stencil is available. If $m \neq 0$,
-the values $u_i$ are the solution of a linear system. -/
+the values $u_i$ are the solution of a linear system.
+
+**Generalization.** The stencil is defined at any integer index and real spacing. The source
+starts with a finite positive-spacing grid. -/
 def equation_10_57 (m m' : ℕ) (α β : ℤ → ℝ) (f : ℝ → ℝ) (a h : ℝ) (u : ℤ → ℝ) (i : ℤ) : Prop :=
   h * ∑ k ∈ Finset.Icc (-(m : ℤ)) (m : ℤ), α k * u (i - k)
     = ∑ k ∈ Finset.Icc (-(m' : ℤ)) (m' : ℤ), β k * f (a + ((i - k : ℤ) : ℝ) * h)
@@ -147,7 +160,10 @@ $\xi_i \in (x_i, x_{i+1})$ with
 $$f'(x_i) - u^{FD}_i = -\frac{h}{2} f''(\xi_i).$$
 
 The coefficients $\alpha_k$ and $\beta_k$ that the statement does not list are $0$. The quotient
-is `FiniteDifference.forwardDiff`. -/
+is `FiniteDifference.forwardDiff`.
+
+**Reading.** The theorem uses positive spacing, smoothness on the one-sided stencil, and
+differentiability at the endpoint of that stencil to use the ordinary derivative there. -/
 theorem equation_10_60 (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (a + i * h) (a + i * h + h)))
     (hd : DifferentiableAt ℝ f (a + i * h)) :
     equation_10_57 0 1 (fun k => if k = 0 then 1 else 0)
@@ -174,7 +190,10 @@ $$f'(x_i) - u^{CD}_i = -\frac{h^2}{6} f'''(\xi_i),$$
 so the centred difference is a second-order approximation of $f'(x_i)$.
 
 The coefficients $\alpha_k$ and $\beta_k$ that the statement does not list are $0$. The quotient
-is `FiniteDifference.centredDiff`. -/
+is `FiniteDifference.centredDiff`.
+
+**Reading.** The smoothness assumption applies on the local two-sided stencil, and the mean-
+value point lies in its interior. -/
 theorem equation_10_62 (hh : 0 < h)
     (hf : ContDiffOn ℝ 3 f (Icc (a + i * h - h) (a + i * h + h))) :
     equation_10_57 0 1 (fun k => if k = 0 then 1 else 0)
@@ -201,7 +220,10 @@ Moreover there is $\xi_i \in (x_{i-1}, x_i)$ with
 $$f'(x_i) - u^{BD}_i = \frac{h}{2} f''(\xi_i).$$
 
 The coefficients $\alpha_k$ and $\beta_k$ that the statement does not list are $0$. The quotient
-is `FiniteDifference.backwardDiff`. -/
+is `FiniteDifference.backwardDiff`.
+
+**Reading.** The theorem uses positive spacing, smoothness on the one-sided stencil, and
+differentiability at the endpoint of that stencil to use the ordinary derivative there. -/
 theorem equation_10_64 (hh : 0 < h) (hf : ContDiffOn ℝ 2 f (Icc (a + i * h - h) (a + i * h)))
     (hd : DifferentiableAt ℝ f (a + i * h)) :
     equation_10_57 0 1 (fun k => if k = 0 then 1 else 0)
@@ -260,7 +282,10 @@ conditions that the book derives from the expansion are correct.
 
 The consistency error is `FiniteDifference.compactError`. At $h = 0$ the quotients use the Lean
 convention $0^{-1} = 0$. The expansion is `FiniteDifference.compactError_expansion`, stated with
-`Asymptotics.IsBigO` along the punctured neighbourhood of $0$. -/
+`Asymptotics.IsBigO` along the punctured neighbourhood of $0$.
+
+**Reading.** The sixth-order error bound uses $C^7$ near the expansion point. The source starts
+its Taylor argument with $C^5([a,b])$. -/
 theorem equation_10_68 {α β γ x : ℝ} (hf : ContDiffAt ℝ 7 f x) :
     (∀ h : ℝ, FiniteDifference.compactError α β γ f x h
         = α * deriv f (x - h) + deriv f x + α * deriv f (x + h)
@@ -291,7 +316,10 @@ hypotheses of the whole theorem.
 
 The book also remarks that there are infinitely many schemes of order 2 and of order 4, and that
 the traditional finite differences are the case $\alpha = 0$. These remarks are not stated here
-beyond the two schemes above. -/
+beyond the two schemes above.
+
+**Reading.** The sixth-order error bound uses $C^7$ near the expansion point. The source starts
+its Taylor argument with $C^5([a,b])$. -/
 theorem equation_10_69 {α β γ x : ℝ} (h₁ : 2 * α + 1 = β + γ) (h₂ : 6 * α = β + 4 * γ)
     (h₃ : 10 * α = β + 16 * γ) (hf : ContDiffAt ℝ 7 f x) :
     ((fun h => FiniteDifference.compactError α β γ f x h) =O[𝓝[≠] 0] fun h => h ^ 6) ∧
@@ -315,14 +343,20 @@ of (10.21).
 
 The book takes $f \in C^0([-1, 1])$. The definition uses only the values of $f$ at the nodes.
 The interpolant is `Lagrange.interpolate` at the nodes
-`QuarteroniSaccoSaleri.Chapter10.chebyshevLobattoNode n j`. -/
+`QuarteroniSaccoSaleri.Chapter10.chebyshevLobattoNode n j`.
+
+**Generalization.** Extends the algebraic derivative of the interpolant to all nodal data and
+$n=0$. -/
 noncomputable def pseudoSpectralDerivative (n : ℕ) (f : ℝ → ℝ) : ℝ[X] :=
   derivative (Lagrange.interpolate Finset.univ (fun j : Fin (n + 1) => chebyshevLobattoNode n j)
     fun j => f (chebyshevLobattoNode n j))
 
 /-- **Section 10.10.3** of [quarteroni2000numerical], the degree of the pseudo-spectral derivative.
 For $n \ge 1$ and $f : \mathbb{R} \to \mathbb{R}$, the polynomial $\mathcal{D}_n f$ has degree
-less than $n$, that is $\mathcal{D}_n f \in \mathbb{P}_{n-1}$. -/
+less than $n$, that is $\mathcal{D}_n f \in \mathbb{P}_{n-1}$.
+
+**Reading.** The degree is at most $n-1$ and can be lower. The source calls it a polynomial of
+degree $n-1$. -/
 theorem degree_pseudoSpectralDerivative_lt (hn : n ≠ 0) (f : ℝ → ℝ) :
     (pseudoSpectralDerivative n f).degree < (n : ℕ) := by
   have hdq : (Lagrange.interpolate Finset.univ (fun j : Fin (n + 1) => chebyshevLobattoNode n j)
@@ -355,7 +389,11 @@ With the matrix $D_{ij} = \bar l_j'(\bar x_i)$ this is $f' = Df$, where $f$ and 
 vectors of the nodal values of $f$ and of $\mathcal{D}_n f$. The second-order pseudo-spectral
 derivative is $D^2 f = D(Df)$ for every vector $f$.
 
-The matrix $D$ is `Lagrange.derivMatrix` at the nodes. -/
+The matrix $D$ is `Lagrange.derivMatrix` at the nodes.
+
+**Generalization.** The first-derivative formula holds for all nodal data and includes $n=0$.
+The final identity uses matrix associativity. It does not identify the result with the nodal
+values of the second derivative of the interpolant. -/
 theorem equation_10_72 (n : ℕ) (f : ℝ → ℝ) (i : Fin (n + 1)) :
     (pseudoSpectralDerivative n f).eval (chebyshevLobattoNode n i)
         = ∑ j : Fin (n + 1), f (chebyshevLobattoNode n j)
@@ -388,11 +426,6 @@ $d_j = 1$ for $0 < j < n$ be the factors of Section 10.3. Then for $0 \le l, j \
 $$D_{lj} = \begin{cases} \dfrac{d_l}{d_j} \dfrac{(-1)^{l+j}}{\bar x_l - \bar x_j} & l \neq j,
   \\[1ex] -\dfrac{\bar x_j}{2(1 - \bar x_j^2)} & 1 \le l = j \le n - 1, \\[1ex] -\dfrac{2n^2 +
   1}{6} & l = j = 0, \\[1ex] \dfrac{2n^2 + 1}{6} & l = j = n. \end{cases}$$
-
-**Correction.** The book prints $D_{nn} = (2n^2 + 1)/3$. The value is $(2n^2 + 1)/6$, because
-$D$ has trace zero: the interior diagonal is odd under $j \mapsto n - j$, and the only
-eigenvalue of $D$ is $0$ (Example 5.13 of the book). The value here is the entry of Canuto,
-Hussaini, Quarteroni and Zang (1988), p. 69, with the order of the nodes reversed.
 
 The factor $d_j$ is `Polynomial.Chebyshev.lobattoFactor n j`. The proof specializes
 `Lagrange.chebyshevLobattoDerivMatrix_apply`. -/

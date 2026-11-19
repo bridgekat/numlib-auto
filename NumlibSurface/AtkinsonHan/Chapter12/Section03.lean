@@ -85,6 +85,8 @@ $\|u - \hat u_n\| = O(h^4)$. The proofs specialize `Numlib.IntegralEquations.Sec
 
 ## Deviations from the source
 
+* **Equations (12.3.2) and (12.3.3)** (generalization). The iterated projection identities hold
+  for any bounded idempotent projection, including those with infinite-dimensional range.
 * **Lemma 12.3.1** (generalization). The source states the lemma on a Banach space. Completeness is
   not used, and the statement holds on every normed space. See `AtkinsonHan.Chapter12.lemma_12_3_1`.
 * **Equation (12.3.11)** (generalization). The source derives the bound for an orthogonal projection
@@ -128,6 +130,8 @@ noncomputable abbrev iteratedSolution (μ : 𝕜) (K : X →L[𝕜] X) (f un : X
 /-- **Equation (12.3.2)** of [han2009theoretical]. Let $\lambda \neq 0$, let $K$ and $P$ be bounded
 operators with $P^2 = P$, and let $u_n$ be a projection solution of $(\lambda - K) u = f$. Then
 the iterated solution satisfies $$P \hat u_n = u_n.$$
+
+**Reading.** Holds for any bounded idempotent instead of finite-dimensional projections.
 -/
 theorem equation_12_3_2 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (hun : IsProjectionSolution μ K P f un) :
@@ -139,7 +143,10 @@ operators with $P^2 = P$, and let $u_n$ be a projection solution of $(\lambda - 
 the iterated solution satisfies $$(\lambda - K P) \hat u_n = f.$$
 
 This is the counterpart, under Jacobson's identity `AtkinsonHan.Chapter12.lemma_12_3_1`, of the
-projection equations $(\lambda - P K) u_n = P f$. -/
+projection equations $(\lambda - P K) u_n = P f$.
+
+**Reading.** Iterated equation for any bounded idempotent instead of finite-dimensional projections.
+-/
 theorem equation_12_3_3 {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (hun : IsProjectionSolution μ K P f un) :
     (μ • 1 - K ∘L P : X →L[𝕜] X) (iteratedSolution μ K f un) = f :=
@@ -171,7 +178,10 @@ $\lambda - P K$ be invertible. Then $\lambda - K P$ is invertible, $$(\lambda - 
 
 A uniform bound on $\|(\lambda - P_n K)^{-1}\|$, which `AtkinsonHan.Chapter12.theorem_12_1_2`
 supplies, therefore gives a uniform bound on $\|(\lambda - K P_n)^{-1}\|$. This makes
-`AtkinsonHan.Chapter12.equation_12_3_11` an error estimate. -/
+`AtkinsonHan.Chapter12.equation_12_3_11` an error estimate.
+
+**Reading.** Inverse identity for bounded maps on general normed spaces.
+-/
 theorem lemma_12_3_1_projection {μ : 𝕜} (hμ : μ ≠ 0) (K P : X →L[𝕜] X) {e' : X ≃L[𝕜] X}
     (he' : (e' : X →L[𝕜] X) = μ • 1 - P ∘L K) :
     ∃ e'' : X ≃L[𝕜] X, (e'' : X →L[𝕜] X) = μ • 1 - K ∘L P ∧
@@ -502,7 +512,10 @@ $\|u - P_n u\| \le E$. Then for every $x$ and every panel $[x_{2j}, x_{2j+2}]$ w
 $$\left| \int_{x_{2j}}^{x_{2j+2}} k(x, y) (u - P_n u)(y)\, dy \right| \le \frac{\|k\|_\infty M_4
 h^5}{90} + 4 L h^2 E.$$ The proof writes $k(x, y) = k(x, x_{2j}) + (k(x, y) - k(x, x_{2j}))$ and
 reads the first part as the error of Simpson's rule on the panel
-(`Quadrature.abs_integral_mul_sub_eval_le`). -/
+(`Quadrature.abs_integral_mul_sub_eval_le`).
+
+**Reading.** Local cancellation estimate with a Lipschitz kernel bound.
+-/
 private theorem abs_panel_integral_le (hab : a < b) {k : C(Set.Icc a b × Set.Icc a b, ℝ)} {L : ℝ}
     (hL0 : 0 ≤ L) (hL : ∀ x y z : Set.Icc a b, |k (x, y) - k (x, z)| ≤ L * |(y : ℝ) - (z : ℝ)|)
     {G : ℝ → ℝ} (hG : ContDiff ℝ ((4 : ℕ) : WithTop ℕ∞) G) {u : C(Set.Icc a b, ℝ)}

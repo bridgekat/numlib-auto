@@ -86,6 +86,27 @@ eigenvector along a branch and the condition number of an eigenvector).
 
 ## Deviations from the source
 
+* **Scope.** Bauer–Fike and its normal-matrix specialization are stated in the Euclidean operator
+  norm. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_3`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_9`.
+* **Generalization.** The simple-eigenvalue perturbation bound does not need the full matrix to be
+  diagonalizable. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_4`,
+  `QuarteroniSaccoSaleri.Chapter05.theorem_5_4_branch`,
+  `QuarteroniSaccoSaleri.Chapter05.theorem_5_4_inner_ne_zero`.
+* **Totalization.** The eigenvalue condition number is represented by a total reciprocal. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_11`.
+* **Generalization.** The eigenvalue condition formula is invariant under unitary changes of
+  coordinates. See `QuarteroniSaccoSaleri.Chapter05.eigenvalueCondNumber_conj_unitary`.
+* **Scope.** The perturbation estimate uses a simple Hermitian eigenpair, a phase-fixing
+  normalization, and a first-order remainder. See `QuarteroniSaccoSaleri.Chapter05.property_5_5`.
+* **Scope.** The Hermitian residual bound takes a real candidate eigenvalue and arbitrary nonzero
+  vector. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_5`.
+* **Generalization.** The eigenspace error bound only requires separation from the omitted spectrum.
+  See `QuarteroniSaccoSaleri.Chapter05.property_5_6`.
+* **Generalization.** The diagonalizable residual bound includes the zero-tolerance case. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_7`.
+* **Theorem 5.3** (reading). The Bauer–Fike estimate is given in the induced $2$-norm. See
+  `QuarteroniSaccoSaleri.Chapter05.theorem_5_3`.
 * **Theorem 5.4** (generalization). The book assumes that $A$ is diagonalizable. The statement needs
   only the differentiable branch, which `QuarteroniSaccoSaleri.Chapter05.theorem_5_4_branch`
   supplies at a simple eigenvalue. See `QuarteroniSaccoSaleri.Chapter05.theorem_5_4`.
@@ -101,6 +122,8 @@ eigenvector along a branch and the condition number of an eigenvector).
 * **Property 5.6** (generalization). The hypothesis $|\lambda_i - \hat\lambda| \le \|\hat r\|_2$ for
   $i = 1, \dots, m$ plays no role and is dropped. See
   `QuarteroniSaccoSaleri.Chapter05.property_5_6`.
+* **Property 5.7** (generalization). The residual bound also holds at $\varepsilon = 0$. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_7`.
 
 ## Not formalized
 
@@ -138,11 +161,19 @@ eigenvalue of $A + E$. Then
 $$\min_{\lambda \in \sigma(A)} |\lambda - \mu| \le K_2(X) \, \|E\|_2,$$
 where $K_2(X) = \|X\|_2 \|X^{-1}\|_2$ is the condition number of the eigenvalue problem for $A$.
 
+**Reading.** The source states the bound for every induced matrix $p$-norm. This declaration
+uses $p = 2$, the norm of the backbone theorem `Matrix.bauer_fike`.
+
 The minimum is stated as the existence of $\lambda \in \sigma(A)$ with
 $|\lambda - \mu| \le K_2(X) \|E\|_2$. The proof specializes the backbone's `Matrix.bauer_fike`:
 the eigenvalue that attains the minimum is a diagonal entry of $D$, and $\sigma(A) = \sigma(D)$
-by similarity. The book states the theorem for any matrix $p$-norm, and only $p = 2$ is
-formalized. -/
+by similarity.
+
+**Reading.** The bounds use the induced Euclidean norm. The book states Bauer–Fike in any induced
+$p$-norm and also writes the normal-matrix specialization with factor one for that norm. The
+unitary-diagonalization argument gives factor one for the Euclidean norm. A unitary similarity need
+not have condition number one in a different induced norm.
+-/
 theorem theorem_5_3 {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {d : Fin n → ℂ}
     (hD : X⁻¹ * A * X = diagonal d) (E : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ (A + E)) :
@@ -166,7 +197,13 @@ error.
 
 For a normal $A$, the matrix $X$ of Theorem 5.3 is unitary, so $K_2(X) = 1$. The proof applies
 `QuarteroniSaccoSaleri.Chapter05.theorem_5_3` with the spectral theorem for normal matrices
-(`Matrix.IsStarNormal.spectral_theorem`) and `Matrix.condNumber_l2_of_mem_unitaryGroup`. -/
+(`Matrix.IsStarNormal.spectral_theorem`) and `Matrix.condNumber_l2_of_mem_unitaryGroup`.
+
+**Reading.** The bounds use the induced Euclidean norm. The book states Bauer–Fike in any induced
+$p$-norm and also writes the normal-matrix specialization with factor one for that norm. The
+unitary-diagonalization argument gives factor one for the Euclidean norm. A unitary similarity need
+not have condition number one in a different induced norm.
+-/
 theorem equation_5_9 {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A)
     (E : Matrix (Fin n) (Fin n) ℂ) {μ : ℂ} (hμ : μ ∈ spectrum ℂ (A + E)) :
     ∃ lam ∈ spectrum ℂ A, ‖lam - μ‖ ≤ ‖E‖ := by
@@ -197,7 +234,12 @@ the statement needs only the differentiable branch, which
 The parameter $\varepsilon$ is complex. The proof specializes the backbone's
 `Module.End.norm_deriv_eigenvalue_perturbation_le`, with `Module.End.eigenvalueCondNumber ℂ x y`
 $= 1 / |y^H x|$ for unit vectors, and $y^H x \neq 0$ by
-`QuarteroniSaccoSaleri.Chapter05.theorem_5_4_inner_ne_zero`. -/
+`QuarteroniSaccoSaleri.Chapter05.theorem_5_4_inner_ne_zero`.
+
+**Generalization.** Only algebraic simplicity of the chosen eigenvalue is required. The local
+complex differentiable branch and the nonzero pairing are supplied by separate theorems, without
+diagonalizability of the whole matrix.
+-/
 theorem theorem_5_4 {A E : Matrix (Fin n) (Fin n) ℂ} (hE : ‖E‖ = 1) {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1) (hy : ‖y‖ = 1)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -233,7 +275,12 @@ This is the identity that the proof of the book derives.
 The proof specializes the backbone's
 `Module.End.hasDerivAt_eigenvalue_perturbation_of_finrank_eq_one`, which builds the branch by
 the inverse function theorem rather than by the continuity of the roots of the characteristic
-polynomial. -/
+polynomial.
+
+**Generalization.** Only algebraic simplicity of the chosen eigenvalue is required. The local
+complex differentiable branch and the nonzero pairing are supplied by separate theorems, without
+diagonalizability of the whole matrix.
+-/
 theorem theorem_5_4_branch {A : Matrix (Fin n) (Fin n) ℂ} (E : Matrix (Fin n) (Fin n) ℂ) {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0) (hy : y ≠ 0)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -259,7 +306,12 @@ left eigenvector $y \neq 0$. Then $y^H x \neq 0$.
 
 The proof specializes the backbone's
 `Module.End.inner_ne_zero_of_finrank_maxGenEigenspace_eq_one`, which needs no diagonalizability.
-The book argues through the biorthogonality of the columns of $X$ and $Y = X^{-H}$. -/
+The book argues through the biorthogonality of the columns of $X$ and $Y = X^{-H}$.
+
+**Generalization.** Only algebraic simplicity of the chosen eigenvalue is required. The local
+complex differentiable branch and the nonzero pairing are supplied by separate theorems, without
+diagonalizability of the whole matrix.
+-/
 theorem theorem_5_4_inner_ne_zero {A : Matrix (Fin n) (Fin n) ℂ} {lam : ℂ}
     {x y : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0) (hy : y ≠ 0)
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y)
@@ -275,7 +327,11 @@ left eigenvectors of an eigenvalue $\lambda$. The **condition number** of $\lamb
 $$\kappa(\lambda) = \frac{1}{|y^H x|} = \frac{1}{|\cos \theta_\lambda|},$$
 where $\theta_\lambda$ is the angle between $y$ and $x$.
 
-The definition takes any two vectors $x$ and $y$. Its value is $0$ when $y^H x = 0$. -/
+The definition takes any two vectors $x$ and $y$. Its value is $0$ when $y^H x = 0$.
+
+**Reading.** The reciprocal of the pairing magnitude is defined even at zero, where Lean returns
+zero. The intended interpretation uses unit eigenvectors with a nonzero pairing.
+-/
 noncomputable def equation_5_11 (x y : EuclideanSpace ℂ (Fin n)) : ℝ := 1 / ‖inner ℂ y x‖
 
 /-- For unit vectors $x, y \in \mathbb{C}^n$, the condition number $\kappa(\lambda) = 1 / |y^H x|$
@@ -329,7 +385,11 @@ $U^H x$ and $U^H y$ are right and left eigenvectors of $\tilde A$ for $\lambda$,
 condition number does not change:
 $$\tilde\kappa(\lambda) = |y^H U U^H x|^{-1} = \kappa(\lambda).$$
 
-A unitary matrix changes neither Euclidean lengths nor the angles between vectors. -/
+A unitary matrix changes neither Euclidean lengths nor the angles between vectors.
+
+**Generalization.** The invariance under unitary conjugation is stated explicitly for arbitrary left
+and right eigenvectors satisfying the given equations, without normalization or simplicity.
+-/
 theorem eigenvalueCondNumber_conj_unitary {A U : Matrix (Fin n) (Fin n) ℂ}
     (hU : U ∈ unitaryGroup (Fin n) ℂ) {lam : ℂ} {x y : EuclideanSpace ℂ (Fin n)}
     (hAx : toEuclideanLin A x = lam • x) (hAy : toEuclideanLin Aᴴ y = star lam • y) :
@@ -381,7 +441,13 @@ by zero to zero, the bound says that the derivative is $0$. The proof specialize
 spectral-projector normalization $P x_k(\varepsilon) = x_k$
 (`Module.End.spectralProjector_apply_of_finrank_eq_one`), with
 `Module.End.eigenvectorCondNumber_eq_inv_dist_of_isSymmetric` for the constant. The
-$o(\varepsilon)$ form is `HasDerivAt.isLittleO`. -/
+$o(\varepsilon)$ form is `HasDerivAt.isLittleO`.
+
+**Reading.** Lean assumes a Hermitian unperturbed matrix and a simple eigenvalue. It requires a
+differentiable branch normalized by pairing with the initial eigenvector, which fixes the phase
+locally. The printed unit-norm condition leaves the phase free. The differentiability hypothesis
+gives a little-oh remainder rather than the displayed quadratic remainder.
+-/
 theorem property_5_5 {A E : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) {lam : ℝ}
     {x : EuclideanSpace ℂ (Fin n)} (hx : ‖x‖ = 1) (hAx : toEuclideanLin A x = (lam : ℂ) • x)
     (hsimple : A.charpoly.rootMultiplicity (lam : ℂ) = 1) {δ : ℝ}
@@ -447,7 +513,11 @@ $$\min_{\lambda_i \in \sigma(A)} |\hat\lambda - \lambda_i| \le \frac{\|\hat r\|_
 The minimum is stated as the existence of an eigenvalue that satisfies the bound. The
 approximation $\hat\lambda$ of the book is real, as a Rayleigh quotient of a Hermitian matrix.
 The proof specializes the backbone's `LinearMap.IsSymmetric.exists_hasEigenvalue_dist_le` for
-`Matrix.toEuclideanLin A`, whose eigenvalues are the spectrum of $A$. -/
+`Matrix.toEuclideanLin A`, whose eigenvalues are the spectrum of $A$.
+
+**Reading.** The approximate eigenvalue is real in the Lean statement. It quantifies over any
+nonzero approximate vector and needs no closeness assumption on the candidate pair.
+-/
 theorem theorem_5_5 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) (lam : ℝ)
     {x : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0) :
     ∃ μ ∈ spectrum ℂ A, ‖(lam : ℂ) - μ‖ ≤ ‖toEuclideanLin A x - (lam : ℂ) • x‖ / ‖x‖ := by
@@ -470,7 +540,12 @@ Theorem 5.5 is not needed either.
 The book takes $s = \{1, \dots, m\}$. The eigenvectors and eigenvalues are Mathlib's
 `Matrix.IsHermitian.eigenvectorBasis` and `Matrix.IsHermitian.eigenvalues`. The proof
 specializes the backbone's `LinearMap.IsSymmetric.dist_eigenvectorSpan_le_norm_residual_div`;
-the distance is attained at the orthogonal projection (`Submodule.starProjection_minimal`). -/
+the distance is attained at the orthogonal projection (`Submodule.starProjection_minimal`).
+
+**Generalization.** The approximate eigenspace can be indexed by any subset. Separation is required
+for the omitted eigenvalues, while the book also bounds the errors of the selected eigenvalues by
+the residual norm.
+-/
 theorem property_5_6 {A : Matrix (Fin n) (Fin n) ℂ} (hA : A.IsHermitian) (lam : ℝ)
     (x : EuclideanSpace ℂ (Fin n)) (s : Finset (Fin n)) {δ : ℝ} (hδ : 0 < δ)
     (hsep : ∀ i ∉ s, δ ≤ |hA.eigenvalues i - lam|) :
@@ -506,9 +581,14 @@ then
 $$\min_{\lambda_i \in \sigma(A)} |\hat\lambda - \lambda_i| \le \varepsilon \, \|X^{-1}\|_2
   \|X\|_2.$$
 
-The book takes $\varepsilon > 0$. The hypothesis is not needed, because the bound on the
-residual forces $\varepsilon \ge 0$. The proof applies the backbone's
-`Matrix.bauer_fike_residual` to the unit vector $\hat x / \|\hat x\|_2$. -/
+**Generalization.** The book assumes $\varepsilon > 0$. The residual inequality already forces
+$\varepsilon \ge 0$ for a nonzero $\hat x$, and the conclusion holds also at zero.
+
+The proof applies `Matrix.bauer_fike_residual` to the unit vector $\hat x / \|\hat x\|_2$.
+
+**Generalization.** The same residual bound applies at zero tolerance because the residual condition
+then forces an exact eigenpair.
+-/
 theorem property_5_7 {A X : Matrix (Fin n) (Fin n) ℂ} (hX : IsUnit X) {d : Fin n → ℂ}
     (hD : X⁻¹ * A * X = diagonal d) (lam : ℂ) {x : EuclideanSpace ℂ (Fin n)} (hx : x ≠ 0)
     {ε : ℝ} (hr : ‖toEuclideanLin A x - lam • x‖ ≤ ε * ‖x‖) :

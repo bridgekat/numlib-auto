@@ -28,6 +28,8 @@ describes a Lanczos recurrence using both an operator and its adjoint.
 
 ## Deviations from the source
 
+* **Algorithms 4.8.1 and 4.8.2** (reading). The predicates state the recurrences, with empty
+  layers after generalized Lanczos termination.
 * **Theorem 4.8.1 (1)** (generalization). Rational interpolation on the eigenvalues
   gives the conclusion for any finite-dimensional operator with the stated spectrum.
 
@@ -49,7 +51,10 @@ $v_0=\widetilde v_0=b/\|b\|$. For $j+1<d(U,b)$ it sets
 $\gamma_j=-\langle\widetilde v_j,Uv_j\rangle$, $\sigma_j=(1-|\gamma_j|^2)^{1/2}>0$, and updates
 $v_{j+1}=(Uv_j+\gamma_j\widetilde v_j)/\sigma_j$ and
 $\widetilde v_{j+1}=\sigma_j\widetilde v_j+\overline{\gamma_j}v_{j+1}$.
-This is Algorithm 4.8.1 of [liesen2013krylov]. -/
+This is Algorithm 4.8.1 of [liesen2013krylov].
+
+**Reading.** The predicate describes initialization and recurrence through the grade. Its
+conclusion as a Krylov basis is separate. -/
 def IsIsometricArnoldi (U : E ≃ₗᵢ[ℂ] E) (b : E) (v w : ℕ → E) : Prop :=
   b ≠ 0 ∧ v 0 = ((‖b‖ : ℂ)⁻¹) • b ∧ w 0 = v 0 ∧
     ∀ j, j + 1 < Krylov.grade U.toLinearEquiv.toLinearMap b →
@@ -71,7 +76,10 @@ is the least $\max(\deg p,\deg q)$ for coprime numerator and denominator polynom
 $p,q$ with $q\ne0$ and $q(\lambda)\ne0$ at every eigenvalue, with
 $p(\lambda)=\overline\lambda q(\lambda)$ at each eigenvalue.
 Degrees use natural numbers with the convention $\deg 0=0$ for the numerator, which
-leaves the maximum unchanged. This is the definition in Section 4.8.2 of [liesen2013krylov]. -/
+leaves the maximum unchanged. This is the definition in Section 4.8.2 of [liesen2013krylov].
+
+**Generalization.** Rational interpolation on the spectrum is defined also for
+nondiagonalizable operators. -/
 noncomputable def mcmillanDegree [FiniteDimensional ℂ V] (A : Module.End ℂ V) : ℕ :=
   sInf {d : ℕ | ∃ p q : ℂ[X], q ≠ 0 ∧ IsCoprime p q ∧ max p.natDegree q.natDegree = d ∧
     ∀ z : ℂ, A.HasEigenvalue z →
@@ -84,6 +92,8 @@ This is Theorem 4.8.1 (1) of [liesen2013krylov].
 The book states the result for diagonalizable matrices. The degree here depends only
 on the set of eigenvalues, so the proof applies to every finite-dimensional operator
 with the stated spectrum.
+
+**Reading.** No diagonalizability assumption for the spectral interpolation criterion.
 -/
 theorem theorem_4_8_1_one [FiniteDimensional ℂ V] (A : Module.End ℂ V)
     (hcard : 4 ≤ (finite_hasEigenvalue A).toFinset.card)
@@ -193,7 +203,10 @@ noncomputable def generalizedLanczosLayer (A : Module.End 𝕜 E) (previous curr
 /-- The generalized Lanczos process starts with the single nonzero vector $b$ and builds each
 next layer by orthogonalizing $Ay$ and $A^*y$ for vectors $y$ in the current layer.
 Layer zero is empty and an empty new layer ends the process. This is Algorithm 4.8.2
-of [liesen2013krylov]. -/
+of [liesen2013krylov].
+
+**Reading.** The layer predicate records the recurrence and extends the sequence by empty
+layers upon termination. -/
 def IsGeneralizedLanczos (A : Module.End 𝕜 E) (b : E) (layer : ℕ → List E) : Prop :=
   b ≠ 0 ∧ layer 0 = [] ∧ layer 1 = [b] ∧
     ∀ n : ℕ, layer (n + 2) = generalizedLanczosLayer A (layer n) (layer (n + 1))

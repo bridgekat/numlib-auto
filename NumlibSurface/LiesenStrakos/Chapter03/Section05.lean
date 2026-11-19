@@ -24,6 +24,12 @@ gives the squared CG energy error, scaled by the squared initial residual norm.
 * `LiesenStrakos.Chapter03.remark_3_5_1` relates the first moment to the Rayleigh quotient.
 * `LiesenStrakos.Chapter03.theorem_3_5_2` identifies the normalized CG error with the reciprocal
   quadrature error.
+
+## Deviations from the source
+
+* **Section 3.5** (reading). The spectral measure normalizes arbitrary nonzero inputs and takes
+  the zero measure at zero. The tridiagonal sum extends algebraically beyond the Hermitian
+  Lanczos setting.
 -/
 
 open MeasureTheory Polynomial
@@ -36,7 +42,10 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-- The measure in (3.5.3) of [liesen2013krylov] has weight
 $|\langle y_j,v\rangle|^2/\|v\|^2$ at each eigenvalue $\lambda_j$, for $v\ne0$.
-Weights at repeated eigenvalues add. -/
+Weights at repeated eigenvalues add.
+
+**Generalization.** The definition normalizes a nonzero input by its squared norm and assigns
+zero measure to a zero input. -/
 noncomputable def normalizedSpectralMeasure {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) :
     Measure ℝ :=
   ENNReal.ofReal (‖v‖ ^ 2)⁻¹ • Krylov.spectralMeasure hA rfl v
@@ -51,7 +60,10 @@ theorem integral_normalizedSpectralMeasure {A : E →ₗ[𝕜] E} (hA : A.IsSymm
     ENNReal.toReal_ofReal (by positivity), smul_eq_mul]
 
 /-- The Gauss–Christoffel rule of the Lanczos tridiagonal matrix $T_n$ for $n>0$:
-$\sum_j |(z_j)_1|^2 f(\theta_j)$, where $(\theta_j,z_j)$ are its orthonormal eigenpairs. -/
+$\sum_j |(z_j)_1|^2 f(\theta_j)$, where $(\theta_j,z_j)$ are its orthonormal eigenpairs.
+
+**Generalization.** The algebraic sum is defined for arbitrary $A$ and lengths, using the
+tridiagonal model. Hermitian $A$ through the grade gives the quadrature in the source. -/
 noncomputable def lanczosGaussRule (A : E →ₗ[𝕜] E) (v : E) {n : ℕ} (hn : 0 < n)
     (f : ℝ → ℝ) : ℝ :=
   ∑ j, ((Lanczos.tridiag_isHermitian A v n).eigenvectorBasis j ⟨0, hn⟩) ^ 2 *
@@ -80,7 +92,10 @@ theorem lanczos_moment_matching {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric)
 
 /-- **Remark 3.5.1** of [liesen2013krylov].
 The first moment of the normalized spectral measure is the Rayleigh quotient of the
-starting vector. -/
+starting vector.
+
+**Generalization.** The first moment uses the Rayleigh quotient of an arbitrary starting
+vector. For $v=0$, the integral and the total quotient are both zero. -/
 theorem remark_3_5_1 {A : E →ₗ[𝕜] E} (hA : A.IsSymmetric) (v : E) :
     ∫ t, t ∂(normalizedSpectralMeasure hA v) =
       RCLike.re (inner 𝕜 v (A v)) / ‖v‖ ^ 2 := by

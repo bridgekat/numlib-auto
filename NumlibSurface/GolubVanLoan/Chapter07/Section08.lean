@@ -83,10 +83,26 @@ columns. The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix
   block-cyclic theorems index the factors by `Fin 3`, with `A 0` for $A_1$, `A 1` for $A_2$ and
   `A 2` for $A_3$.
 
+## Deviations from the source
+
+* **Figure 7.8.1, orthogonal-symplectic row** (reading).
+  `GolubVanLoan.Chapter07.figure_7_8_1_orthogonalSymplectic` takes orthogonality explicitly when
+  characterizing symplecticity by $JQ=QJ$.
+* **§7.8.1, structured vector reduction** (generalization).
+  `GolubVanLoan.Chapter07.symplectic_householder_givens` allows any repeated orthogonal block
+  and any target coordinate in the first block.
+* **Equations (7.8.1)–(7.8.2)** (reading). `GolubVanLoan.Chapter07.equation_7_8_1` includes the
+  stable ordering of $T$ specified in the Riccati discussion.
+  `GolubVanLoan.Chapter07.equation_7_8_2` derives symmetry from the cross Gram identity and uses
+  the block transformation without assuming symmetry of $F$ and $G$.
+* **§7.8.2, perfect shuffle display** (typo). The source repeats the same permutation matrix on
+  both sides. `GolubVanLoan.Chapter07.blockCyclic_shuffle_isUpperHessenberg` uses simultaneous
+  row and column reindexing, equivalent to a permutation similarity.
+
 ## Not formalized
 
-* **Display (7.8.7).** It says that the iterates stay in Hessenberg–triangular–triangular form; the
-  source makes no convergence statement.
+* **Display (7.8.7).** It describes convergence of product iterates that remain in
+  Hessenberg–triangular–triangular form, without specifying convergence hypotheses.
 * **The remark that a structure-preserving QR iteration has yet to be devised, and the quality of
   the eigenvalues computed from $M^2$.** The source makes no precise claims.
 * **Rectangular and inverted factors in the product problem.** The source only mentions them.
@@ -117,7 +133,11 @@ $JQ = QJ$. Also, $Q$ is symplectic if and only if there are
 $Q_1, Q_2 \in \mathbb{R}^{n \times n}$ with $$Q = \begin{bmatrix} Q_1 & Q_2 \\ -Q_2 & Q_1
 \end{bmatrix}, \qquad Q_1^T Q_2 \text{ symmetric}, \qquad Q_1^T Q_1 + Q_2^T Q_2 = I.$$
 
-The commutation $JQ = QJ$ is `Commute (Matrix.J (Fin n) ℝ) Q`. -/
+The commutation $JQ = QJ$ is `Commute (Matrix.J (Fin n) ℝ) Q`.
+
+**Reading.** The source places $JQ=QJ$ in the definition column for the orthogonal-symplectic
+family. Lean states commutation as a characterization under the standing assumption that $Q$ is
+orthogonal. -/
 theorem figure_7_8_1_orthogonalSymplectic {Q : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ) :
     (Q ∈ symplecticGroup (Fin n) ℝ ↔ Commute (J (Fin n) ℝ) Q) ∧
@@ -132,7 +152,10 @@ is Hamiltonian, then $S^{-1} M S$ is Hamiltonian, and if $N$ is skew-Hamiltonian
 $S^{-1} N S$ is skew-Hamiltonian.
 
 The source states "Symplectic similarity transformations preserve Hamiltonian structure"; it
-remarks the skew-Hamiltonian case before (7.8.4). -/
+remarks the skew-Hamiltonian case before (7.8.4).
+
+**Reading.** Fact (1) states Hamiltonian preservation. Lean also includes the skew-Hamiltonian
+counterpart mentioned in the discussion before (7.8.4). -/
 theorem hamiltonian_symplectic_conj {S : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ}
     (hS : S ∈ symplecticGroup (Fin n) ℝ) :
     (∀ M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ, M.IsHamiltonian →
@@ -223,7 +246,11 @@ following hold.
 
 The third part is the result of the source's Householder–Givens–Householder sequence; the source
 takes $i_0 = 1$. The Givens rotation is `Matrix.planeRotation (Sum.inl i) (Sum.inr i) c s`, and
-$e_{i_0}$ is `Pi.single (Sum.inl i₀) 1`. -/
+$e_{i_0}$ is `Pi.single (Sum.inl i₀) 1`.
+
+**Generalization.** The source gives a block-diagonal Householder example and illustrates the
+vector reduction to the first coordinate. Lean allows any orthogonal matrix in the diagonal
+pair and any coordinate in the first block for the vector reduction. -/
 theorem symplectic_householder_givens :
     (∀ P : Matrix (Fin n) (Fin n) ℝ, P ∈ orthogonalGroup (Fin n) ℝ →
       fromBlocks P 0 0 P ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ ∧
@@ -308,7 +335,10 @@ there are $Q_1, Q_2, T, R \in \mathbb{R}^{n \times n}$ such that $Q = \begin{bma
 0 & -T^T \end{bmatrix},$$ $T$ is upper quasi-triangular, and every eigenvalue of $T$ has
 negative real part.
 
-The hypothesis is that every complex eigenvalue of $M$ has nonzero real part. -/
+The hypothesis is that every complex eigenvalue of $M$ has nonzero real part.
+
+**Reading.** The source adds left-half-plane ordering of $T$ in the Riccati discussion after
+(7.8.2). The Lean existence theorem includes that ordering in the decomposition. -/
 theorem equation_7_8_1 {M : Matrix (Fin n ⊕ Fin n) (Fin n ⊕ Fin n) ℝ} (hM : M.IsHamiltonian)
     (hre : ∀ μ ∈ spectrum ℂ M.complexify, μ.re ≠ 0) :
     ∃ Q₁ Q₂ T R : Matrix (Fin n) (Fin n) ℝ,
@@ -330,7 +360,12 @@ $A - FX = Q_1 T Q_1^{-1}$, and therefore $\lambda(A - FX) = \lambda(T)$.
 If $T$ is chosen as in (7.8.1), the eigenvalues of $A - FX$ lie in the open left half-plane. The
 source derives the symmetry of $X$ "from $I_n = Q_1^T Q_1 + Q_2^T Q_2$"; it follows from the
 symmetry of $Q_1^T Q_2$. The theorem assumes neither that $F$ and $G$ are symmetric nor that $Q$
-is symplectic. -/
+is symplectic.
+
+**Reading.** The source attributes the symmetry of $Q_2Q_1^{-1}$ to the diagonal Gram identity
+alone. The proof uses symmetry of the cross Gram block $Q_1^TQ_2$, which follows from the block
+orthogonality. The stated conclusions use the block transformation without assuming $F$ and $G$
+symmetric. -/
 theorem equation_7_8_2 {A F G T R Q₁ Q₂ : Matrix (Fin n) (Fin n) ℝ}
     (hQ : fromBlocks Q₁ Q₂ (-Q₂) Q₁ ∈ orthogonalGroup (Fin n ⊕ Fin n) ℝ)
     (hS : (fromBlocks Q₁ Q₂ (-Q₂) Q₁)ᵀ * fromBlocks A F G (-Aᵀ) * fromBlocks Q₁ Q₂ (-Q₂) Q₁ =
@@ -493,7 +528,11 @@ The source says that "$\mathcal{P} \tilde H \mathcal{P}^T$ is a highly structure
 Hessenberg matrix" and displays the case $n = 4$; the theorem holds for every $n$. The factors
 are `A 0` $= T_1$, `A 1` $= T_2$ and `A 2` $= H_3$. The shuffle is the reindexing of
 `Matrix.blockCyclic A` by `finProdFinEquiv.symm`, which puts row $i$ of block $k$ at position
-$3i + k$ (0-based). -/
+$3i + k$ (0-based).
+
+**Typo.** The source prints the same perfect shuffle on both sides of $\widetilde H$. The
+displayed Hessenberg pattern comes from a simultaneous row and column reindexing, which uses
+the inverse permutation factor on one side. -/
 theorem blockCyclic_shuffle_isUpperHessenberg {A : Fin 3 → Matrix (Fin n) (Fin n) ℝ}
     (hA : ∀ i : Fin 2, (A i.castSucc).IsUpperTriangular) (hH : (A 2).IsUpperHessenberg) :
     ((blockCyclic A).submatrix finProdFinEquiv.symm finProdFinEquiv.symm).IsUpperHessenberg :=

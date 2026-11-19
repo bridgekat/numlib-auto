@@ -59,6 +59,11 @@ and $\lambda_{\max}(H)$ of a Hermitian matrix, and prove the quadratic-form boun
   and `SaadSparse.lambdaMax`, the extreme values of `Matrix.IsHermitian.eigenvalues`.
 * A real matrix is viewed as a complex matrix through `Matrix.complexify`, and the spectral radius
   $\rho(A)$ is `Matrix.complexSpectralRadius A`.
+
+## Deviations from the source
+
+* **Scope.** The common Hermitian estimate gives the inequalities from the extremal Rayleigh
+  quotient formulas. See `SaadSparse.isSymmetricBoundedBy_toEuclideanLin`.
 -/
 
 namespace SaadSparse
@@ -170,7 +175,12 @@ $$\lambda_{\min}(H) \|x\|^2 \le \operatorname{Re} (Hx, x) \le \lambda_{\max}(H) 
 The two halves are the extremal characterizations (1.38) and (1.40) of Section 1.9.2 of
 [saad2003iterative], with the denominator $(x, x)$ cleared. The statement is
 `LinearMap.IsSymmetricBoundedBy` for `Matrix.toEuclideanLin H`, the form of a spectral
-hypothesis that the backbone takes. -/
+hypothesis that the backbone takes.
+
+**Reading.** The theorem gives the two quadratic-form bounds, after clearing the denominators,
+including at the zero vector. The original displays identify the extrema of the Rayleigh quotient
+and hence include attainment.
+-/
 theorem isSymmetricBoundedBy_toEuclideanLin :
     (toEuclideanLin H).IsSymmetricBoundedBy (lambdaMin hH) (lambdaMax hH) :=
   hH.isSymmetricBoundedBy_toEuclideanLin fun i =>

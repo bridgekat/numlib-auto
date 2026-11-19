@@ -39,6 +39,14 @@ constraints, and continuous constraints give a closed feasible set.
 * The equality and inequality constraints are two families `cEq : ι → E → ℝ` and `cIneq : κ → E → ℝ`
   with separate index types. The index sets $\mathcal{E}$ and $\mathcal{I}$ of the source are `ι`
   and `κ`.
+
+## Deviations from the source
+
+* **Generalization.** The mixed and equality problems use arbitrary index types and an explicit
+  global feasibility condition. See `ConnGouldToint.Chapter15.nonlinearFeasibleSet`,
+  `ConnGouldToint.Chapter15.IsMixedNonlinearSolution`,
+  `ConnGouldToint.Chapter15.IsEqualityNonlinearSolution`,
+  `ConnGouldToint.Chapter15.isMixedNonlinearSolution_iff_isEqualityNonlinearSolution`.
 -/
 
 namespace ConnGouldToint.Chapter15
@@ -51,20 +59,35 @@ the mixed program is
 $$\{x \in E : c_i(x) = 0 \text{ for all } i \in \mathcal{E}, \ c_j(x) \ge 0 \text{ for all } j
   \in \mathcal{I}\}.$$
 
-The two constraint families are indexed by separate types `ι` and `κ`. -/
+The two constraint families are indexed by separate types `ι` and `κ`.
+
+**Generalization.** These definitions use arbitrary index types and objective domain. They express
+global minimization with feasibility separately. The equality restriction is proved by making the
+inequality index type empty.
+-/
 def nonlinearFeasibleSet (cEq : ι → E → ℝ) (cIneq : κ → E → ℝ) : Set E :=
   {x | (∀ i, cEq i x = 0) ∧ ∀ j, 0 ≤ cIneq j x}
 
 /-- **Equation (15.1.1)** of [conn2000trust]. A point $x \in E$ **solves the mixed program** if $x$
 lies in the feasible set of `ConnGouldToint.Chapter15.nonlinearFeasibleSet` and $f(x) \le f(y)$
-for every feasible $y$. -/
+for every feasible $y$.
+
+**Generalization.** These definitions use arbitrary index types and objective domain. They express
+global minimization with feasibility separately. The equality restriction is proved by making the
+inequality index type empty.
+-/
 def IsMixedNonlinearSolution (f : E → ℝ) (cEq : ι → E → ℝ)
     (cIneq : κ → E → ℝ) (x : E) : Prop :=
   x ∈ nonlinearFeasibleSet cEq cIneq ∧ IsMinOn f (nonlinearFeasibleSet cEq cIneq) x
 
 /-- **Equation (15.1.2)** of [conn2000trust]. A point $x \in E$ **solves the equality program** if
 $c_i(x) = 0$ for all $i \in \mathcal{E}$ and $f(x) \le f(y)$ for every $y$ with $c_i(y) = 0$ for
-all $i \in \mathcal{E}$. -/
+all $i \in \mathcal{E}$.
+
+**Generalization.** These definitions use arbitrary index types and objective domain. They express
+global minimization with feasibility separately. The equality restriction is proved by making the
+inequality index type empty.
+-/
 def IsEqualityNonlinearSolution (f : E → ℝ) (cEq : ι → E → ℝ) (x : E) : Prop :=
   (∀ i, cEq i x = 0) ∧ IsMinOn f {y | ∀ i, cEq i y = 0} x
 
@@ -73,7 +96,12 @@ empty, then $x$ solves the mixed program (15.1.1) if and only if $x$ solves the 
 (15.1.2).
 
 The empty index set is the hypothesis `[IsEmpty κ]`; the inequality functions `cIneq` are then
-arbitrary. -/
+arbitrary.
+
+**Generalization.** These definitions use arbitrary index types and objective domain. They express
+global minimization with feasibility separately. The equality restriction is proved by making the
+inequality index type empty.
+-/
 theorem isMixedNonlinearSolution_iff_isEqualityNonlinearSolution [IsEmpty κ]
     (f : E → ℝ) (cEq : ι → E → ℝ) (cIneq : κ → E → ℝ) (x : E) :
     IsMixedNonlinearSolution f cEq cIneq x ↔ IsEqualityNonlinearSolution f cEq x := by

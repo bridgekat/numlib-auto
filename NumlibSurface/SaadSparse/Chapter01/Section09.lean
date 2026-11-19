@@ -107,6 +107,29 @@ Mathlib's `Matrix.IsHermitian.spectral_theorem`.
   that the book states without proof, is the backbone's `LinearMap.convex_numericalRange`.
 * The power inequality (1.36), Berger's inequality, which the book attributes to the literature, is
   proved over the backbone's `LinearMap.norm_inner_pow_le`.
+
+## Deviations from the source
+
+* **Lemma 1.13** (reading). The declaration gives the upper triangular case used in the proof.
+  See `SaadSparse.Chapter01.lemma_1_13`.
+* **Equation (1.33)** (reading). The book defines the Rayleigh quotient at nonzero vectors. The
+  Lean function extends it by zero at the zero vector. See `SaadSparse.Chapter01.rayleigh`.
+* **§1.9.1, the numerical radius** (correction). The disk in the geometric description must be
+  centered at zero, as required by the printed formula. See `SaadSparse.Chapter01.numericalRadius`.
+* **Equation (1.36)** (reading). The declaration takes the exponent to be a positive integer.
+  See `SaadSparse.Chapter01.equation_1_36`.
+* **Equations (1.37) and (1.39)** (reading). The variational identities use infima and suprema.
+  See `SaadSparse.Chapter01.theorem_1_21`.
+* **Theorems 1.19–1.22 and Equations (1.38) and (1.40)** (generalization). The Hermitian
+  statements also cover real symmetric matrices. See `SaadSparse.Chapter01.theorem_1_19`,
+  `SaadSparse.Chapter01.theorem_1_20`, `SaadSparse.Chapter01.theorem_1_21`,
+  `SaadSparse.Chapter01.theorem_1_22`, `SaadSparse.Chapter01.equation_1_38`, and
+  `SaadSparse.Chapter01.equation_1_40`.
+
+## Not formalized
+
+* **Equation (1.35), the lower bound.** The surface proves the upper bound in
+  `SaadSparse.Chapter01.numericalRadius_le_l2_opNorm`.
 -/
 
 open Matrix Finset Module.End Polynomial
@@ -147,6 +170,9 @@ private theorem blockTriangular_aeval (hA : A.BlockTriangular id) (p : ℂ[X]) :
 
 /-- **Lemma 1.13** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ be normal and upper
 triangular. Then $A$ is diagonal.
+
+**Reading.** The book says triangular. The declaration uses upper triangularity, since taking
+the adjoint reduces the lower triangular case to this one.
 
 Upper triangular is `Matrix.BlockTriangular A id`. The conjugate transpose of a normal matrix is
 a polynomial in it (Problem P-1.19, the backbone's
@@ -294,6 +320,9 @@ $A \in \mathbb{C}^{n \times n}$ at $x \in \mathbb{C}^n$ is the complex number
 $$\mu(x) = \frac{(Ax, x)}{(x, x)}.$$
 At $x = 0$ its value is $0$, since division by $0$ gives $0$.
 
+**Reading.** The printed quotient is defined for $x \neq 0$. The total Lean function extends it
+by zero at $x = 0$, and the field of values still uses only nonzero vectors.
+
 The backbone's `LinearMap.rayleighQuotient` is the real part of $\mu(x)$. -/
 noncomputable def rayleigh (A : Matrix (Fin n) (Fin n) ℂ) (x : EuclideanSpace ℂ (Fin n)) : ℂ :=
   inner ℂ x (A ⬝ x) / inner ℂ x x
@@ -308,6 +337,10 @@ def fieldOfValues (A : Matrix (Fin n) (Fin n) ℂ) : Set ℂ :=
 /-- **Section 1.9.1** of [saad2003iterative], numerical radius. The **numerical radius** of
 $A \in \mathbb{C}^{n \times n}$ is
 $$\nu(A) = \max_{x \neq 0} |\mu(x)|.$$
+
+**Correction.** The book describes the smallest disk containing the field of values. The formula
+requires the disk to be centered at zero. For $A = I$ in positive dimension, the field of values
+is $\{1\}$ and the smallest unrestricted disk has radius zero, whereas $\nu(I) = 1$.
 
 The supremum in the definition runs over every $x$, including $x = 0$, and this gives the same
 number: $\mu(0) = 0$, and every value $|\mu(x)|$ is nonnegative, so $x = 0$ cannot raise the
@@ -433,6 +466,9 @@ theorem norm_inner_le_numericalRadius (A : Matrix (Fin n) (Fin n) ℂ)
 /-- **Equation (1.36)** of [saad2003iterative] (power inequality for the numerical radius). Let
 $A \in \mathbb{C}^{n \times n}$ and $k \ge 1$. Then
 $$\nu(A^k) \le \nu(A)^k.$$
+
+**Reading.** The source prints the power inequality without an exponent range. The declaration
+uses $k \ge 1$, the range of the underlying resolvent argument.
 
 The book attributes this inequality to the literature and does not prove it. It is Berger's
 inequality, and it is a real theorem: the numerical radius is not submultiplicative, since
@@ -626,7 +662,10 @@ variable {𝕜 : Type*} [RCLike 𝕜] {A : Matrix (Fin n) (Fin n) 𝕜}
 
 /-- **Theorem 1.19** of [saad2003iterative]. Let $A \in \mathbb{K}^{n \times n}$ be Hermitian, where
 $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. Then every eigenvalue of $A$ is real: the spectrum
-of $A$ over $\mathbb{K}$ is contained in $\mathbb{R}$. -/
+of $A$ over $\mathbb{K}$ is contained in $\mathbb{R}$.
+
+**Generalization.** The chapter works over $\mathbb{C}$. The declaration also permits the real
+field. -/
 theorem theorem_1_19 (hA : A.IsHermitian) : spectrum 𝕜 A ⊆ Set.range ((↑) : ℝ → 𝕜) := by
   rw [hA.spectrum_eq_image_range]
   rintro _ ⟨r, _, rfl⟩
@@ -637,6 +676,9 @@ $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. Then there are a unitary
 $Q \in \mathbb{K}^{n \times n}$ and a real vector $d \in \mathbb{R}^n$ with
 $$Q^H A Q = \operatorname{diag}(d).$$
 So $A$ has an orthonormal basis of eigenvectors.
+
+**Generalization.** The chapter works over $\mathbb{C}$. The real case gives orthogonal
+diagonalization of a real symmetric matrix.
 
 The proof uses Mathlib's `Matrix.IsHermitian.spectral_theorem` and
 `Matrix.IsHermitian.eigenvectorUnitary`. -/
@@ -709,6 +751,11 @@ $$\lambda_k = \min_{\dim S = n - k + 1} \ \max_{x \in S, \, x \neq 0} \frac{(Ax,
   \max_{\dim S = k} \ \min_{x \in S, \, x \neq 0} \frac{(Ax, x)}{(x, x)},$$
 where $S$ ranges over the subspaces of $\mathbb{K}^n$ of the given dimension.
 
+**Reading.** The book writes minima and maxima. The declaration expresses the identities using
+infima and suprema, so the statement gives the values without separately asserting attainment.
+
+**Generalization.** The same identities also hold on the real space for a real symmetric matrix.
+
 The index is $0$-based in Lean: for `k : Fin n`, the subspaces have dimension `n - k` and
 `k + 1`. The minima and maxima are the infimum and the supremum, and the Rayleigh quotient is
 the real number `LinearMap.rayleighQuotient`. The proof specializes the backbone's
@@ -731,6 +778,8 @@ with $n \ge 1$. Then the largest eigenvalue $\lambda_1$ of $A$ is the greatest v
 Rayleigh quotient:
 $$\lambda_1 = \max_{x \neq 0} \frac{(Ax, x)}{(x, x)}.$$
 
+**Generalization.** The formula also applies to real symmetric matrices and real vectors.
+
 The dimension is written $n = m + 1$. -/
 theorem equation_1_38 {m : ℕ} {A : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜} (hA : A.IsHermitian) :
     IsGreatest {c : ℝ | ∃ x : EuclideanSpace 𝕜 (Fin (m + 1)), x ≠ 0 ∧
@@ -743,6 +792,8 @@ theorem equation_1_38 {m : ℕ} {A : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜} (h
 with $n \ge 1$. Then the smallest eigenvalue $\lambda_n$ of $A$ is the least value of the
 Rayleigh quotient:
 $$\lambda_n = \min_{x \neq 0} \frac{(Ax, x)}{(x, x)}.$$
+
+**Generalization.** The formula also applies to real symmetric matrices and real vectors.
 
 The dimension is written $n = m + 1$. -/
 theorem equation_1_40 {m : ℕ} {A : Matrix (Fin (m + 1)) (Fin (m + 1)) 𝕜} (hA : A.IsHermitian) :
@@ -763,6 +814,9 @@ $\lambda_k$ is the greatest value of the Rayleigh quotient on the nonzero vector
 $q_1, \dots, q_{k-1}$:
 $$\lambda_k = \max \left\{ \frac{(Ax, x)}{(x, x)} : x \neq 0, \ (x, q_j) = 0 \text{ for } j < k
   \right\}.$$
+
+**Generalization.** The orthogonal-complement characterization covers real symmetric matrices
+as well as complex Hermitian matrices.
 
 The index is $0$-based in Lean. The eigenvectors are
 `SaadSparse.Chapter01.eigenvectorBasisDesc`. The proof is the backbone's

@@ -87,6 +87,13 @@ real trigonometric system of `Numlib.Analysis.Fourier.TrigonometricBasis`.
 
 ## Deviations from the source
 
+* **Equations (4.1.2)–(4.1.6)** (reading and correction). The separate normalized-basis
+  formulas use the probability measure on the circle. The complex coefficient integral
+  is stated for real-valued input, and recovering sine and cosine coefficients by real
+  and imaginary parts requires this real-valuedness.
+* **Examples 4.1.4–4.1.5** (reading). These statements give the pointwise convergence.
+  The general Parseval formula gives the $L^2$ result mentioned in Example 4.1.4.
+  Example 4.1.5 states endpoint matching instead of packaging global $C^2$ regularity.
 * **Theorem 4.1.1** (generalization). The book assumes $f$ piecewise continuous. The library assumes
   only that $f$ is integrable over one period, which is all the proof uses. See
   `AtkinsonHan.Chapter04.theorem_4_1_1`.
@@ -101,7 +108,8 @@ real trigonometric system of `Numlib.Analysis.Fourier.TrigonometricBasis`.
 
 ## Not formalized
 
-* **The Gibbs phenomenon beside Example 4.1.3.** The book asserts the overshoot
+* **The Gibbs phenomenon beside Example 4.1.3.** The book gives the span from undershoot to
+  overshoot
   $(2/\pi) \operatorname{Si}(\pi) |f(x+) - f(x-)|$, with
   $(2/\pi) \operatorname{Si}(\pi) \approx 1.17898$, without proof and refers the reader elsewhere.
 * **The $L^p$ boundedness (4.1.12) of the partial sum operators for $1 < p < \infty$.** It is the M.
@@ -121,7 +129,11 @@ $g : \mathbb{R}/2\pi\mathbb{Z} \to \mathbb{R}$, the integral of $g$ for the prob
 measure of the circle is
 $$\int g\, d\mu = \frac{1}{2\pi} \int_{-\pi}^{\pi} g(x)\, dx,$$
 where on the right $g$ is read as a $2\pi$-periodic function on $\mathbb{R}$. All statements of
-this module that mix the book's normalization with the backbone's use this identity. -/
+this module that mix the book's normalization with the backbone's use this identity.
+
+**Reading.** Identifies integration over one period with probability Haar integration and explicitly
+accounts for the scaling factor.
+-/
 theorem integral_intervalIntegral_eq (g : AddCircle (2 * π) → ℝ) :
     ∫ b : AddCircle (2 * π), g b ∂AddCircle.haarAddCircle
       = (2 * π)⁻¹ * ∫ x in -π..π, g ↑x := by
@@ -145,7 +157,10 @@ against the constant member $\varphi_0 = 1$ of the orthonormal system:
 $$a_0 = 2 \int g\, \varphi_0\, d\mu,$$
 for the probability Haar measure $\mu$ of the circle.
 
-The coefficient against $\varphi_m$ is `realFourierCoeff g m`. -/
+The coefficient against $\varphi_m$ is `realFourierCoeff g m`.
+
+**Reading.** This compares the printed coefficient with the normalized real-basis coefficient.
+The probability measure yields the factor $2$ for the constant term. -/
 theorem equation_4_1_3_const (g : AddCircle (2 * π) → ℝ) :
     fourierCoeffCos (fun x : ℝ => g ↑x) 0 = 2 * realFourierCoeff g 0 := by
   have h1 : ∀ t : ℝ, g ↑t * Real.cos (((0 : ℕ) : ℝ) * t) = g ↑t := by
@@ -166,7 +181,10 @@ orthonormal system:
 $$a_j = \sqrt 2 \int g\, \varphi_j\, d\mu,$$
 for the probability Haar measure $\mu$ of the circle.
 
-The member $\varphi_j$ is `trigFun (2 * π) j`. -/
+The member $\varphi_j$ is `trigFun (2 * π) j`.
+
+**Reading.** This compares the printed coefficient with the normalized real-basis coefficient.
+The probability measure and basis scaling yield the factor $\sqrt 2$. -/
 theorem equation_4_1_3_cos (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
     fourierCoeffCos (fun x : ℝ => g ↑x) j = √2 * realFourierCoeff g j := by
   have hj' : (0 : ℤ) < (j : ℤ) := by exact_mod_cast hj
@@ -191,7 +209,10 @@ the orthonormal system:
 $$b_j = \sqrt 2 \int g\, \varphi_{-j}\, d\mu,$$
 for the probability Haar measure $\mu$ of the circle.
 
-The member $\varphi_{-j}$ is `trigFun (2 * π) (-j)`. -/
+The member $\varphi_{-j}$ is `trigFun (2 * π) (-j)`.
+
+**Reading.** This compares the printed coefficient with the normalized real-basis coefficient.
+The negative index represents the sine, and the factor is $\sqrt 2$. -/
 theorem equation_4_1_3_sin (g : AddCircle (2 * π) → ℝ) {j : ℕ} (hj : 0 < j) :
     fourierCoeffSin (fun x : ℝ => g ↑x) j = √2 * realFourierCoeff g (-j) := by
   have hj' : (-(j : ℤ)) < 0 := by exact_mod_cast Int.neg_neg_of_pos (by exact_mod_cast hj)
@@ -217,7 +238,10 @@ $j \in \mathbb{Z}$. Then the complex Fourier coefficient of $g$ is
 $$c_j = \frac{1}{2\pi} \int_{-\pi}^{\pi} g(x) e^{-ijx}\, dx.$$
 
 Here $c_j$ is Mathlib's `fourierCoeff` on `AddCircle (2 * π)`, whose character
-$e^{2\pi i j x / T}$ is $e^{ijx}$ at $T = 2\pi$. -/
+$e^{2\pi i j x / T}$ is $e^{ijx}$ at $T = 2\pi$.
+
+**Reading.** The displayed formula also defines coefficients of complex-valued functions.
+This declaration states the case of real-valued data embedded in $\mathbb C$. -/
 theorem equation_4_1_5 (g : AddCircle (2 * π) → ℝ) (j : ℤ) :
     fourierCoeff (fun b => ((g b : ℝ) : ℂ)) j
       = ((2 * π)⁻¹ : ℝ) • ∫ x in -π..π, Complex.exp (-(j * x) * Complex.I) * (g ↑x : ℂ) := by
@@ -236,7 +260,10 @@ theorem equation_4_1_5 (g : AddCircle (2 * π) → ℝ) (j : ℤ) :
 circle $\mathbb{R}/2\pi\mathbb{Z}$ that is integrable for its Haar measure. Then
 $a_0 = 2 \operatorname{Re} c_0$.
 
-The book writes $a_0 = 2 c_0$; the coefficient $c_0$ is real for a real $g$. -/
+The book writes $a_0 = 2 c_0$; the coefficient $c_0$ is real for a real $g$.
+
+**Reading.** For real integrable input, c₀ is real and the declaration projects it to its real part.
+-/
 theorem equation_4_1_6_const {g : AddCircle (2 * π) → ℝ}
     (hg : Integrable g AddCircle.haarAddCircle) :
     fourierCoeffCos (fun x : ℝ => g ↑x) 0 = 2 * (fourierCoeff (fun b => ((g b : ℝ) : ℂ)) 0).re := by
@@ -245,7 +272,11 @@ theorem equation_4_1_6_const {g : AddCircle (2 * π) → ℝ}
 
 /-- **Equation (4.1.6)** of [han2009theoretical], cosine coefficients. Let $g$ be a real function on
 the circle $\mathbb{R}/2\pi\mathbb{Z}$ that is integrable for its Haar measure, and let
-$j \ge 1$. Then $a_j = 2 \operatorname{Re} c_j$. -/
+$j \ge 1$. Then $a_j = 2 \operatorname{Re} c_j$.
+
+**Correction.** The preceding text discusses real and complex data, but taking the real part
+of $c_j$ gives $a_j/2$ only for real-valued data. For complex data the formula is
+$a_j=c_j+c_{-j}$. -/
 theorem equation_4_1_6_cos {g : AddCircle (2 * π) → ℝ}
     (hg : Integrable g AddCircle.haarAddCircle) {j : ℕ} (hj : 0 < j) :
     fourierCoeffCos (fun x : ℝ => g ↑x) j = 2 * (fourierCoeff (fun b => ((g b : ℝ) : ℂ)) j).re := by
@@ -255,7 +286,10 @@ theorem equation_4_1_6_cos {g : AddCircle (2 * π) → ℝ}
 
 /-- **Equation (4.1.6)** of [han2009theoretical], sine coefficients. Let $g$ be a real function on
 the circle $\mathbb{R}/2\pi\mathbb{Z}$ that is integrable for its Haar measure, and let
-$j \ge 1$. Then $b_j = -2 \operatorname{Im} c_j$. -/
+$j \ge 1$. Then $b_j = -2 \operatorname{Im} c_j$.
+
+**Correction.** Taking the imaginary part of $c_j$ recovers $b_j$ only for real-valued data.
+For complex data the formula is $b_j=i(c_j-c_{-j})$. -/
 theorem equation_4_1_6_sin {g : AddCircle (2 * π) → ℝ}
     (hg : Integrable g AddCircle.haarAddCircle) {j : ℕ} (hj : 0 < j) :
     fourierCoeffSin (fun x : ℝ => g ↑x) j
@@ -427,7 +461,10 @@ theorem theorem_4_1_1 {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
 
 /-- **Theorem 4.1.1** of [han2009theoretical], at points of differentiability. Let
 $f : \mathbb{R} \to \mathbb{R}$ be $2\pi$-periodic and integrable on $[-\pi, \pi]$, and let $f$
-be differentiable at $x$. Then $S_n f(x) \to f(x)$ as $n \to \infty$. -/
+be differentiable at $x$. Then $S_n f(x) \to f(x)$ as $n \to \infty$.
+
+**Generalization.** As in `theorem_4_1_1`, integrability on one period replaces the source's
+piecewise continuity. This variant uses an ordinary derivative at the evaluation point. -/
 theorem theorem_4_1_1_continuous {f : ℝ → ℝ} (hf : Function.Periodic f (2 * π))
     (hfi : IntervalIntegrable f volume (-π) π) {x c : ℝ} (hd : HasDerivAt f c x) :
     Tendsto (fun n : ℕ => fourierPartialSum f n x) atTop (𝓝 (f x)) :=
@@ -877,8 +914,8 @@ indexes the sum from $j = 1$ to $n$ with terms $\sin((2j - 1)x)/(2j - 1)$, which
 sum. The last part is the book's $F(x) = f(x)$, with the series convergence of Definition
 1.2.17. The convergence is Theorem 4.1.1.
 
-The Gibbs phenomenon that the book discusses beside this example is not stated: the book asserts
-the overshoot $(2/\pi) \operatorname{Si}(\pi) |f(x+) - f(x-)|$, with
+The Gibbs phenomenon that the book discusses beside this example is not stated. The book gives
+the span from undershoot to overshoot as $(2/\pi) \operatorname{Si}(\pi) |f(x+) - f(x-)|$, with
 $(2/\pi) \operatorname{Si}(\pi) \approx 1.17898$, without proof. Note that
 `AtkinsonHan.Chapter04.equation_4_1_3_const`, `AtkinsonHan.Chapter04.equation_4_1_3_cos` and
 `AtkinsonHan.Chapter04.equation_4_1_3_sin` are the book's displayed equations (4.1.2)–(4.1.3) on
@@ -1105,7 +1142,10 @@ with terms $\cos((2j - 1)x)/(2j - 1)^2$, which is the same sum. The extension is
 off the multiples of $\pi$ and has equal one-sided difference quotients at the corners, so the
 series converges everywhere by Theorem 4.1.1. The last part is the book's $F(x) = f(x)$, with
 the series convergence of Definition 1.2.17. The book's other claim here, convergence in
-$L^2(-\pi, \pi)$, is `AtkinsonHan.Chapter04.equation_4_1_14` for this $f$. -/
+$L^2(-\pi, \pi)$, is `AtkinsonHan.Chapter04.equation_4_1_14` for this $f$.
+
+**Reading.** The statement gives pointwise convergence of the printed series. The separate
+general Parseval tail formula yields the $L^2$ convergence mentioned in the example. -/
 theorem example_4_1_4 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = |x| / π) :
     (∀ j : ℕ, fourierCoeffSin f j = 0) ∧
@@ -1333,7 +1373,11 @@ The endpoint conditions are stated for the polynomial $p$, which is how the book
 not for the extension $f$. The condition fails for $l = 3$, which matches the book's $k = 4$ for
 this example. The sums are written over $i < n$ with $j = i + 1$, so that $(-1)^{j+1}$ is
 $(-1)^i$. Note that `AtkinsonHan.Chapter04.equation_4_1_5` is the book's displayed equation
-(4.1.5) on the complex Fourier coefficient, and is not about this example. -/
+(4.1.5) on the complex Fourier coefficient, and is not about this example.
+
+**Reading.** The endpoint derivative equalities for the polynomial and convergence of the
+periodic extension are stated explicitly. Global $C^2$ regularity of the extension is a
+consequence of the endpoint equalities, without a separate clause here. -/
 theorem example_4_1_5 {f : ℝ → ℝ} (hper : Function.Periodic f (2 * π))
     (hval : ∀ x ∈ Set.Icc (-π) π, f x = (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) :
     (∀ l ≤ 2, iteratedDeriv l (fun x : ℝ => (π ^ 2 - x ^ 2) ^ 2 / π ^ 4) (-π)

@@ -33,8 +33,8 @@ Hessian, the gradient norms tend to zero (Theorem 6.4.6). The run is
 
 ## Main results
 
-* Theorem 6.4.1, `ConnGouldToint.Chapter06.theorem_6_4_1`: second-order agreement at the center
-  gives a model error of order $\Delta^2$ in the trust region.
+* Theorem 6.4.1, `ConnGouldToint.Chapter06.theorem_6_4_1`: agreement of the value and first
+  derivative at the center gives a model error of order $\Delta^2$ in the trust region.
 * Theorem 6.4.2, `ConnGouldToint.Chapter06.theorem_6_4_2`: an iteration with a small enough radius
   is very successful, and its radius does not decrease.
 * Equation (6.4.12), `ConnGouldToint.Chapter06.btrRatio_ge_eta₂_of_small_radius`: the ratio estimate
@@ -69,6 +69,16 @@ Hessian, the gradient norms tend to zero (Theorem 6.4.6). The run is
 * The explicit lower bound on the radius in the proof of Theorem 6.4.3 is
   $\min\{\Delta_0, \gamma_1 \theta\}$. It includes the initial radius, which the constant displayed
   in the source omits.
+
+## Deviations from the source
+
+* **Equation (6.4.2)** (convention). The step-norm ratio is zero when its denominator is zero.
+* **Theorems 6.4.1–6.4.6** (generalization). The Taylor estimate uses Fréchet derivatives and bounds
+  along the trial segment. The convergence statements use real inner product spaces and explicit
+  model-error and curvature bounds. The criticality-measure variants use an abstract nonnegative
+  measure, with uniform continuity for the full-sequence result.
+* **Theorem 6.4.3** (correction). The lower bound takes the minimum with the initial radius. A
+  uniform lower bound independent of that radius cannot apply from the first iterate.
 -/
 
 open Filter Topology
@@ -80,7 +90,10 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 /-- **Equation (6.4.2)** of [conn2000trust]. For a seminorm $p$ on $E$ (a trust-region norm) and a
 step $s \in E$, the **step norm ratio** is $\|s\| / p(s)$.
 
-Its value is $0$ when $p(s) = 0$. -/
+Its value is $0$ when $p(s) = 0$.
+
+**Reading.** Totalized division defines the ratio at a zero denominator.
+-/
 noncomputable def stepNormRatio (p : Seminorm ℝ E) (s : E) : ℝ :=
   ‖s‖ / p s
 
@@ -102,7 +115,10 @@ $$|f(x + s) - m(x + s)| \le K^2 \max\{\kappa_f, \kappa_m\} \Delta^2.$$
 
 The ratio is `ConnGouldToint.Chapter06.stepNormRatio` and the second constant is
 `ConnGouldToint.Chapter06.uniformHessianConstant`. The second derivatives are
-`fderiv ℝ (fderiv ℝ f)`, with the operator norm. -/
+`fderiv ℝ (fderiv ℝ f)`, with the operator norm.
+
+**Reading.** Uses Fréchet derivatives and estimates along the trial segment.
+-/
 theorem theorem_6_4_1 {f m : E → ℝ} {x s : E} (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ κf κm : ℝ} (hΔ : 0 ≤ Δ) (hκm : 1 ≤ κm)
     (hs : p s ≤ Δ) (hf : ContDiff ℝ 2 f)
@@ -164,7 +180,10 @@ that $|f(x + s) - m(x + s)| \le C \Delta^2$, and that $\Delta \le \kappa a (1 - 
 Then the reduction ratio satisfies $\rho \ge \eta_2$.
 
 The number $a$ is any positive criticality measure; Theorem 6.4.2 takes $a = \|g\|$. The ratio
-is `ConnGouldToint.Chapter06.btrRatio f m x s`. -/
+is `ConnGouldToint.Chapter06.btrRatio f m x s`.
+
+**Reading.** Explicit quadratic error and positive criticality decrease suffice.
+-/
 theorem btrRatio_ge_eta₂_of_small_radius_of_decrease {P : BTRParams}
     {f m : E → ℝ} {x s : E} {β Δ κ C a : ℝ}
     (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (ha : 0 < a)
@@ -206,7 +225,10 @@ with $0 < \kappa < 1$, that $|f(x + s) - m(x + s)| \le C \Delta^2$, and that
 $$\Delta \le \frac{\kappa \|g\| (1 - \eta_2)}{C}.$$
 Then the reduction ratio satisfies $\rho \ge \eta_2$.
 
-The decrease condition is `ConnGouldToint.Chapter06.HasSufficientModelDecrease m x s g β Δ κ`. -/
+The decrease condition is `ConnGouldToint.Chapter06.HasSufficientModelDecrease m x s g β Δ κ`.
+
+**Reading.** Abstract step model with explicit error bound.
+-/
 theorem btrRatio_ge_eta₂_of_small_radius {P : BTRParams} {f m : E → ℝ} {x s g : E}
     {β Δ κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
     (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
@@ -227,7 +249,10 @@ the update (6.1.5) for the ratio $\rho$, then $\rho \ge \eta_2$ and $\Delta \le 
 iteration is very successful and the radius does not decrease.
 
 The bound $\beta \le C$ follows in the source from (6.3.2) and (6.4.4); here it is a hypothesis.
-The update is `ConnGouldToint.Chapter06.BTRRadiusUpdate`. -/
+The update is `ConnGouldToint.Chapter06.BTRRadiusUpdate`.
+
+**Reading.** Acceptance under explicit model-error and curvature estimates in an abstract space.
+-/
 theorem theorem_6_4_2 {P : BTRParams} {f m : E → ℝ} {x s g : E}
     {β Δ Δ' κ C : ℝ} (hβ : 0 < β) (hβC : β ≤ C) (hΔ : 0 < Δ) (hg : g ≠ 0)
     (hval : f x = m x) (hdec : HasSufficientModelDecrease m x s g β Δ κ)
@@ -250,7 +275,10 @@ Then there is $r > 0$ with $\Delta_k \ge r$ for all $k$.
 The proof gives the bound $r = \min\{\Delta_0, \gamma_1 \theta\}$, where
 $\theta = \kappa g_{\min} (1 - \eta_2) / C$. The constant displayed in the proof of the source
 omits the initial radius $\Delta_0$. The bound comes from
-`ConnGouldToint.Chapter06.BTRRun.delta_lower_bound`. -/
+`ConnGouldToint.Chapter06.BTRRun.delta_lower_bound`.
+
+**Reading.** The uniform lower bound includes the initial radius in its minimum.
+-/
 theorem theorem_6_4_3 {P : BTRParams} {f : E → ℝ}
     {sufficient : ℕ → (E → ℝ) → E → E → Prop} (run : BTRRun f P sufficient)
     (g : ℕ → E) (β : ℕ → ℝ) {κ C gmin : ℝ} (hgmin : 0 < gmin)
@@ -286,7 +314,10 @@ iterations are successful, then there is $x \in F$ with $x_k = x$ for all large 
 $\nabla f(x) = 0$.
 
 The gradient $\nabla f(x)$ is `gradient f x`, which is $0$ at a point where $f$ is not
-differentiable. -/
+differentiable.
+
+**Reading.** Stationarity conclusion for an abstract model and explicit error bounds.
+-/
 theorem theorem_6_4_4 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -350,7 +381,10 @@ $$\kappa u_k \min\{u_k / \beta_k, \Delta_k\} \le m_k(x_k) - m_k(x_k + s_k),$$
 and $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$. If the values $f(x_k)$ are bounded
 below, then $u_k < \varepsilon$ for infinitely many $k$.
 
-The measure $u_k$ need not be a norm, and it need not depend continuously on the iterate. -/
+The measure $u_k$ need not be a norm, and it need not depend continuously on the iterate.
+
+**Reading.** Abstract nonnegative criticality measure and quantitative model decrease.
+-/
 theorem frequently_criticality_lt_of_model_decrease
     {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     {P : BTRParams} {f : F → ℝ} {sufficient : ℕ → (F → ℝ) → F → F → Prop}
@@ -425,6 +459,10 @@ theorem frequently_criticality_lt_of_model_decrease
   obtain ⟨n, hn⟩ := (hlim.eventually (gt_mem_nhds hr)).exists
   exact hn.not_ge ((hrad _ ((le_max_left N J).trans (Nat.le_add_right M n))).trans (hgeom n))
 
+/-- **Theorem 6.4.5 proof** of [conn2000trust].
+
+**Generalization.** Frequent small gradient norms in an arbitrary real inner product space.
+-/
 private theorem frequently_gradient_norm_lt {F : Type*} [NormedAddCommGroup F]
     [InnerProductSpace ℝ F] [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -452,7 +490,10 @@ below on $F$, then
 $$\liminf_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
 
 The gradient $\nabla f(x)$ is `gradient f x`, which is $0$ at a point where $f$ is not
-differentiable. -/
+differentiable.
+
+**Reading.** Real inner product formulation with quantitative model-error and decrease hypotheses.
+-/
 theorem theorem_6_4_5 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)
@@ -488,7 +529,10 @@ and $|f(x_k + s_k) - m_k(x_k + s_k)| \le B \Delta_k^2$. If the values $f(x_k)$ a
 below, then $u(x_k) \to 0$.
 
 On an excursion of $u(x_k)$ away from zero, the decrease of the objective bounds the length of
-the path of iterates until the next small value of $u$. -/
+the path of iterates until the next small value of $u$.
+
+**Reading.** Abstract nonnegative uniformly continuous criticality measure.
+-/
 theorem tendsto_criticality_zero_of_uniformContinuousOn
     {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     {P : BTRParams} {f : F → ℝ} {sufficient : ℕ → (F → ℝ) → F → F → Prop}
@@ -599,7 +643,10 @@ $k$ and $v$. Then
 $$\lim_{k \to \infty} \|\nabla f(x_k)\| = 0.$$
 
 The norm comparison is AN.1 of the source. The Hessian bound gives the global Lipschitz bound on
-$\nabla f$ that AF.3 states. -/
+$\nabla f$ that AF.3 states.
+
+**Reading.** Abstract inner product space and explicit Lipschitz gradient estimate on run iterates.
+-/
 theorem theorem_6_4_6 {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     [CompleteSpace F] {P : BTRParams} {f : F → ℝ}
     {sufficient : ℕ → (F → ℝ) → F → F → Prop} (run : BTRRun f P sufficient)

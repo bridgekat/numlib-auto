@@ -98,6 +98,14 @@ specialize the backbone module `Numlib.Algebra.LinearRecurrence`, which extends 
 
 ## Deviations from the source
 
+* **Equations (11.28)–(11.32), (11.34)–(11.37), and (11.42)** (generalization). These
+  recurrence, characteristic polynomial, solution, and Vandermonde declarations permit
+  coefficients over an arbitrary field, including when the constant coefficient vanishes.
+  Several also permit order zero. The recurrence record stores constant coefficients. Variable
+  coefficients of (11.28) occur only in the separate example statement.
+* **Equation (11.33)** (reading). `equation_11_33_isSolution` gives individual power modes over
+  an arbitrary field, allowing a zero root. `equation_11_33` gives the spanning formula over
+  $\mathbb C$ with the source's standing $\alpha_0\ne 0$ assumption.
 * **Example 11.5** (reading). The book writes $r_2$ for the root $4$ that Example 11.4 calls $r_1$.
   The matrix is the one printed. See `QuarteroniSaccoSaleri.Chapter11.example_11_5_matrix`.
 * **Equation (11.33)** (reading). The general solution needs the standing assumption
@@ -128,7 +136,11 @@ A sequence $u$ solves the equation with right-hand side $\varphi$ if and only if
 `(equation_11_28 α).IsSolutionWith φ u` (`QuarteroniSaccoSaleri.Chapter11.equation_11_28_iff`),
 and it solves the homogeneous equation (11.29) if and only if `(equation_11_28 α).IsSolution u`
 (`QuarteroniSaccoSaleri.Chapter11.equation_11_29_iff`). The variable coefficients of (11.38) are
-not formalized beyond Example 11.6. -/
+not formalized beyond Example 11.6.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 def equation_11_28 (α : Fin k → K) : LinearRecurrence K :=
   ⟨k, fun i => -α i⟩
 
@@ -146,7 +158,10 @@ theorem equation_11_28_coeffs (α : Fin k → K) (i : Fin k) : (equation_11_28 �
 let $\varphi, u : \mathbb{N} \to K$. Then $u$ solves (11.28) with right-hand side $\varphi$ if
 and only if
 $$u_{n+k} + \sum_{i=0}^{k-1} \alpha_i u_{n+i} = \varphi_{n+k} \qquad \text{for every } n.$$
--/
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_28_iff (α : Fin k → K) (φ u : ℕ → K) :
     (equation_11_28 α).IsSolutionWith φ u ↔
       ∀ n, u (n + k) + ∑ i : Fin k, α i * u (n + i) = φ (n + k) := by
@@ -157,7 +172,10 @@ theorem equation_11_28_iff (α : Fin k → K) (φ u : ℕ → K) :
 $\alpha_0, \dots, \alpha_{k-1} \in K$ and $u : \mathbb{N} \to K$. Then $u$ solves the
 homogeneous equation if and only if
 $$u_{n+k} + \sum_{i=0}^{k-1} \alpha_i u_{n+i} = 0 \qquad \text{for every } n.$$
--/
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_29_iff (α : Fin k → K) (u : ℕ → K) :
     (equation_11_28 α).IsSolution u ↔ ∀ n, u (n + k) + ∑ i : Fin k, α i * u (n + i) = 0 := by
   rw [← isSolutionWith_zero_iff, equation_11_28_iff]
@@ -168,7 +186,11 @@ The **characteristic polynomial** of the difference equation (11.28) is
 $$\Pi(r) = r^k + \alpha_{k-1} r^{k-1} + \dots + \alpha_1 r + \alpha_0.$$
 
 It is the characteristic polynomial `LinearRecurrence.charPoly` of the recurrence
-(`QuarteroniSaccoSaleri.Chapter11.equation_11_30_eq`). -/
+(`QuarteroniSaccoSaleri.Chapter11.equation_11_30_eq`).
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 noncomputable def equation_11_30 (α : Fin k → K) : K[X] :=
   X ^ k + ∑ i : Fin k, C (α i) * X ^ (i : ℕ)
 
@@ -180,13 +202,21 @@ theorem equation_11_30_eq (α : Fin k → K) : equation_11_30 α = (equation_11_
   simp only [equation_11_30, ← C_mul_X_pow_eq_monomial, C_1, one_mul, C_neg, neg_mul,
     sum_neg_distrib, sub_neg_eq_add]
 
-/-- The characteristic polynomial $\Pi$ has degree $k$. -/
+/-- The characteristic polynomial $\Pi$ has degree $k$.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_30_degree (α : Fin k → K) : (equation_11_30 α).degree = k := by
   rw [equation_11_30_eq, charPoly_degree_eq_order, equation_11_28_order]
 
 /-- **Equation (11.30)** of [quarteroni2000numerical], the constant term. If $k \ge 1$, then
 $\Pi(0) = \alpha_0$. So the standing assumption $\alpha_0 \neq 0$ of the book says that $0$ is
-not a root of $\Pi$. -/
+not a root of $\Pi$.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_30_eval_zero (α : Fin k → K) (hk : 0 < k) :
     (equation_11_30 α).eval 0 = α ⟨0, hk⟩ := by
   simp only [equation_11_30, eval_add, eval_pow, eval_X, zero_pow hk.ne', eval_finsetSum, eval_mul,
@@ -199,7 +229,11 @@ theorem equation_11_30_eval_zero (α : Fin k → K) (hk : 0 < k) :
 
 /-- **Equation (11.31)** of [quarteroni2000numerical]. Let $\alpha_0, \dots, \alpha_{k-1} \in K$ and
 $r \in K$. The sequence $u_n = r^n$ solves the homogeneous equation (11.29) if and only if $r$
-is a root of the characteristic polynomial $\Pi$. -/
+is a root of the characteristic polynomial $\Pi$.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_31 (α : Fin k → K) (r : K) :
     ((equation_11_28 α).IsSolution fun n => r ^ n) ↔ (equation_11_30 α).IsRoot r := by
   rw [equation_11_30_eq, geom_sol_iff_root_charPoly]
@@ -207,7 +241,11 @@ theorem equation_11_31 (α : Fin k → K) (r : K) :
 /-- **Equation (11.32)** of [quarteroni2000numerical]. Let $r_0, \dots, r_{k-1} \in K$ be roots of
 $\Pi$, not necessarily distinct, and let $\gamma_0, \dots, \gamma_{k-1} \in K$. Then
 $$u_n = \sum_{j=0}^{k-1} \gamma_j r_j^n$$
-solves the homogeneous equation (11.29), since the equation is linear. -/
+solves the homogeneous equation (11.29), since the equation is linear.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_32 (α : Fin k → K) {r : Fin k → K}
     (hroot : ∀ j, (equation_11_30 α).IsRoot (r j)) (γ : Fin k → K) :
     (equation_11_28 α).IsSolution fun n => ∑ j, γ j * r j ^ n := by
@@ -224,7 +262,11 @@ $$u_n = \sum_{j=0}^{k-1} \gamma_j r_j^n \qquad \text{for every } n$$
 for a unique $\gamma = (\gamma_0, \dots, \gamma_{k-1}) \in K^k$.
 
 The coefficients $\gamma$ are fixed by the initial values $u_0, \dots, u_{k-1}$ through the
-Vandermonde system of (11.37). -/
+Vandermonde system of (11.37).
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient when there is one. The source considers $k\geq 1$ and starts with
+$\alpha_0\ne 0$. -/
 theorem equation_11_32_existsUnique (α : Fin k → K) {r : Fin k → K} (hr : Function.Injective r)
     (hroot : ∀ j, (equation_11_30 α).IsRoot (r j)) {u : ℕ → K}
     (hu : (equation_11_28 α).IsSolution u) :
@@ -237,7 +279,10 @@ theorem equation_11_32_existsUnique (α : Fin k → K) {r : Fin k → K} (hr : F
 /-- **Equation (11.33)** of [quarteroni2000numerical], the fundamental solutions of a multiple root.
 Let $r \in K$ be a root of $\Pi$ of multiplicity $m$, and let $s < m$. Then the sequence
 $u_n = n^s r^n$ solves the homogeneous equation (11.29). So $r^n, n r^n, \dots, n^{m-1} r^n$ are
-solutions. -/
+solutions.
+
+**Generalization.** Individual root modes solve the recurrence over any field, including a root
+at zero. The spanning theorem has the stronger hypotheses of the source. -/
 theorem equation_11_33_isSolution (α : Fin k → K) {r : K} {s : ℕ}
     (hs : s < (equation_11_30 α).rootMultiplicity r) :
     (equation_11_28 α).IsSolution fun n => (n : K) ^ s * r ^ n :=
@@ -338,23 +383,35 @@ $0 \le j \le k - 1$. The **fundamental solution** $\psi_j$ is the solution of th
 equation (11.29) with the initial values
 $$\psi_j^{(i)} = \delta_{ij}, \qquad i = 0, \dots, k - 1.$$
 
-The definition is `LinearRecurrence.kroneckerSol`. -/
+The definition is `LinearRecurrence.kroneckerSol`.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient. -/
 noncomputable def equation_11_34 (α : Fin k → K) (j : Fin k) : ℕ → K :=
   (equation_11_28 α).kroneckerSol j
 
-/-- The fundamental solutions $\psi_j$ of (11.34) solve the homogeneous equation (11.29). -/
+/-- The fundamental solutions $\psi_j$ of (11.34) solve the homogeneous equation (11.29).
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient. -/
 theorem equation_11_34_isSolution (α : Fin k → K) (j : Fin k) :
     (equation_11_28 α).IsSolution (equation_11_34 α j) :=
   (equation_11_28 α).isSolution_kroneckerSol j
 
 /-- **Equation (11.34)** of [quarteroni2000numerical], the initial values for a natural number
-index. For every natural number $i < k$ and every $j$, $\psi_j^{(i)} = \delta_{ij}$. -/
+index. For every natural number $i < k$ and every $j$, $\psi_j^{(i)} = \delta_{ij}$.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient. -/
 theorem equation_11_34_apply_of_lt (α : Fin k → K) (j : Fin k) {i : ℕ} (hi : i < k) :
     equation_11_34 α j i = if i = j then 1 else 0 :=
   (equation_11_28 α).kroneckerSol_apply_of_lt j hi
 
 /-- **Equation (11.34)** of [quarteroni2000numerical], the initial values. For all
-$i, j \in \{0, \dots, k - 1\}$, $\psi_j^{(i)} = \delta_{ij}$. -/
+$i, j \in \{0, \dots, k - 1\}$, $\psi_j^{(i)} = \delta_{ij}$.
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient. -/
 theorem equation_11_34_apply (α : Fin k → K) (i j : Fin k) :
     equation_11_34 α j i = if i = j then 1 else 0 := by
   rw [equation_11_34_apply_of_lt α j i.is_lt]
@@ -363,7 +420,9 @@ theorem equation_11_34_apply (α : Fin k → K) (i j : Fin k) :
 /-- **Equation (11.35)** of [quarteroni2000numerical]. Let $u$ solve the homogeneous equation
 (11.29). Then for every $n$,
 $$u_n = \sum_{j=0}^{k-1} u_j \psi_j^{(n)}.$$
--/
+
+**Generalization.** Uses constant recurrence coefficients over any field and allows a vanishing
+constant coefficient. -/
 theorem equation_11_35 (α : Fin k → K) {u : ℕ → K} (hu : (equation_11_28 α).IsSolution u) (n : ℕ) :
     u n = ∑ j : Fin k, u j * equation_11_34 α j n :=
   (equation_11_28 α).eq_sum_kroneckerSol hu n
@@ -373,7 +432,10 @@ the matrix $R \in K^{k \times k}$ has the entries
 $$r_{im} = r_m^i, \qquad i, m = 0, \dots, k - 1.$$
 
 It is the transpose of Mathlib's Vandermonde matrix `Matrix.vandermonde r`, whose entries are
-$r_i^m$. -/
+$r_i^m$.
+
+**Generalization.** Uses arbitrary field coefficients. Matrix nonsingularity needs only
+distinct arguments, and the matrix equation itself follows from the displayed expansion. -/
 def equation_11_37_matrix (r : Fin k → K) : Matrix (Fin k) (Fin k) K :=
   Matrix.of fun i m => r m ^ (i : ℕ)
 
@@ -383,7 +445,10 @@ theorem equation_11_37_matrix_eq (r : Fin k → K) :
 
 /-- **Equation (11.37)** of [quarteroni2000numerical], nonsingularity (Exercise 5 of Chapter 11). If
 $r_0, \dots, r_{k-1} \in K$ are distinct, for example the roots of $\Pi$ when they are all
-simple, then $\det R \neq 0$. -/
+simple, then $\det R \neq 0$.
+
+**Generalization.** Uses arbitrary field coefficients. Matrix nonsingularity needs only
+distinct arguments, and the matrix equation itself follows from the displayed expansion. -/
 theorem equation_11_37_det_ne_zero {r : Fin k → K} (hr : Function.Injective r) :
     (equation_11_37_matrix r).det ≠ 0 :=
   det_vandermonde_transpose_ne_zero hr
@@ -392,7 +457,9 @@ theorem equation_11_37_det_ne_zero {r : Fin k → K} (hr : Function.Injective r)
 distinct roots of $\Pi$, and let $0 \le j \le k - 1$. Then there is a unique row
 $b_j = (\beta_{j,0}, \dots, \beta_{j,k-1})$ with
 $$\psi_j^{(n)} = \sum_{m=0}^{k-1} \beta_{j,m} r_m^n \qquad \text{for every } n.$$
--/
+
+**Generalization.** Uses arbitrary field coefficients. Matrix nonsingularity needs only
+distinct arguments, and the matrix equation itself follows from the displayed expansion. -/
 theorem equation_11_36 (α : Fin k → K) {r : Fin k → K} (hr : Function.Injective r)
     (hroot : ∀ j, (equation_11_30 α).IsRoot (r j)) (j : Fin k) :
     ∃! β : Fin k → K, ∀ n, equation_11_34 α j n = ∑ m, β m * r m ^ n :=
@@ -405,7 +472,10 @@ $$R b_j = e_j,$$
 where $R = (r_m^i)$ and $e_j$ is the $j$-th unit vector.
 
 The statement has no hypothesis on the $r_m$: the system follows from the initial values (11.34)
-alone. -/
+alone.
+
+**Generalization.** Uses arbitrary field coefficients. Matrix nonsingularity needs only
+distinct arguments, and the matrix equation itself follows from the displayed expansion. -/
 theorem equation_11_37 (α : Fin k → K) (r : Fin k → K) (j : Fin k) (β : Fin k → K)
     (hβ : ∀ n, equation_11_34 α j n = ∑ m, β m * r m ^ n) :
     (equation_11_37_matrix r).mulVec β = Pi.single j 1 := by
@@ -535,7 +605,11 @@ $$u_n = \sum_{j=0}^{k-1} u_j \psi_j^{(n)} + \sum_{l=k}^{n} \varphi_l \,
 
 The book uses the conventions $\psi_{k-1}^{(i)} = 0$ for $i < 0$ and $\varphi_j = 0$ for
 $j < k$. Here the second sum runs over $k \le l \le n$ only, so that every index is a natural
-number, and the values $\varphi_j$, $j < k$, are never read. -/
+number, and the values $\varphi_j$, $j < k$, are never read.
+
+**Generalization.** Uses arbitrary field coefficients and allows a vanishing constant
+coefficient. Values of the forcing at indices before $k$ do not enter the recurrence or the
+sum. -/
 theorem equation_11_42 (α : Fin k → K) (hk : 0 < k) {φ u : ℕ → K}
     (hu : (equation_11_28 α).IsSolutionWith φ u) (n : ℕ) :
     u n = (∑ j : Fin k, u j * equation_11_34 α j n) +

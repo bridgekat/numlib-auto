@@ -56,6 +56,11 @@ operator results `ConnGouldToint.Chapter07.moreSorensen_hard_safeguarded_run` an
 
 ## Deviations from the source
 
+* **Equation (7.3.16) and Theorem 7.3.4** (reading). The Euclidean curvature convergence uses
+  explicit eventual Cholesky and greedy sign certificates. The abstract hard-case matrix run
+  gives model-value convergence and optimality of limit points. See
+  `ConnGouldToint.Chapter07.linpackEuclideanCurvature_tendsto` and
+  `ConnGouldToint.Chapter07.moreSorensen_hard_matrix_run`.
 * **Section 7.3.7, LINPACK sign rule** (correction). The certificates use the rule $\sigma$, which
   compares the magnitudes $|1 - b|$ and $|-1 - b|$. The printed comparison of the signed candidates
   always selects $v_i = 1$. See `ConnGouldToint.Chapter07.linpackSign`.
@@ -69,7 +74,10 @@ open scoped RealInnerProductSpace Topology
 /-- **Section 7.3.7** of [conn2000trust], unit back-solve direction. For $y \in \mathbb{R}^n$, the
 **LINPACK direction** is the vector $u = \|y\|^{-1} y$ of the Euclidean space $\mathbb{R}^n$.
 
-For $y = 0$ the definition gives $u = 0$, because `‖0‖⁻¹ = 0`. -/
+For $y = 0$ the definition gives $u = 0$, because `‖0‖⁻¹ = 0`.
+
+**Reading.** Same normalized direction, with zero sent to zero by total inversion.
+-/
 noncomputable def linpackEuclideanDirection {n : ℕ} (y : Fin n → ℝ) :
     EuclideanSpace ℝ (Fin n) :=
   ‖(toLp 2 y : EuclideanSpace ℝ (Fin n))‖⁻¹ • toLp 2 y
@@ -84,7 +92,10 @@ $$u^T (L L^T) u = \frac{y^T L L^T y}{y^T y}.$$
 The hypotheses force $v \neq 0$, and hence $y \neq 0$. The sign $\sigma$ is
 `ConnGouldToint.Chapter07.linpackSign`, the direction is
 `ConnGouldToint.Chapter07.linpackEuclideanDirection y`, and the right side is
-`ConnGouldToint.Chapter07.linpackCurvature (L * Lᵀ) y`. -/
+`ConnGouldToint.Chapter07.linpackCurvature (L * Lᵀ) y`.
+
+**Correction.** Unit direction and Rayleigh transport with the corrected sign rule.
+-/
 theorem linpackEuclideanDirection_spec {n : ℕ} (hn : 0 < n)
     {L : Matrix (Fin n) (Fin n) ℝ} {v w y : Fin n → ℝ}
     (hw : L *ᵥ w = v) (hy : Lᵀ *ᵥ y = w)
@@ -159,7 +170,9 @@ $$u_k^T (M + x_k I) u_k \to 0$$
 along $f$.
 
 The directions are `ConnGouldToint.Chapter07.linpackEuclideanDirection (y k)`, and $M$ acts
-through `Matrix.toEuclideanCLM`. -/
+through `Matrix.toEuclideanCLM`.
+
+**Reading.** The claim holds along a general filter with eventual corrected certificates. -/
 theorem linpackEuclideanCurvature_tendsto {n : ℕ} (hn : 0 < n)
     {M : Matrix (Fin n) (Fin n) ℝ}
     (hM : (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M :
@@ -194,7 +207,10 @@ of `ConnGouldToint.Chapter07.linpackSign`, then
 $$x - \frac{y^T L L^T y}{y^T y} \le -\lambda_1.$$
 
 The quotient is `ConnGouldToint.Chapter07.linpackCurvature (L * Lᵀ) y`, and $\lambda_1$ is
-`Subproblem.leftmost hM`. The factor $L$ need not be triangular. -/
+`Subproblem.leftmost hM`. The factor $L$ need not be triangular.
+
+**Correction.** Certifies the pole bound with normalized direction from the corrected sign rule.
+-/
 theorem linpackEuclidean_lower_bound {n : ℕ} (hn : 0 < n)
     {M L : Matrix (Fin n) (Fin n) ℝ}
     (hM : (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M :
@@ -243,7 +259,10 @@ $\sigma$ is `ConnGouldToint.Chapter07.linpackSign`, the multiplier condition is
 the model is `Subproblem.quadModel`, and the update is
 `ConnGouldToint.Chapter07.moreSorensenSafeguardedStep`. The proof feeds the three preceding
 results into `ConnGouldToint.Chapter07.moreSorensen_hard_safeguarded_run` and
-`ConnGouldToint.Chapter07.moreSorensen_hard_safeguarded_corrections`. -/
+`ConnGouldToint.Chapter07.moreSorensen_hard_safeguarded_corrections`.
+
+**Reading.** The run uses explicit matrix certificates. For general correction directions the
+conclusion is model-value convergence and minimizer optimality of limit points. -/
 theorem moreSorensen_hard_matrix_run {n : ℕ} (hn : 0 < n)
     {M : Matrix (Fin n) (Fin n) ℝ}
     (hM : (toEuclideanCLM (n := Fin n) (𝕜 := ℝ) M :

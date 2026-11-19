@@ -104,11 +104,14 @@ book states without proof. The proofs specialize `Numlib.Analysis.Convex.Extremu
 
 ## Deviations from the source
 
+* **Theorem 31.1 and Theorem 31.3**, weak duality (generalization). The pointwise
+  inequalities hold for arbitrary functions under Lean's extended-real arithmetic.
 * **Theorem 31.1**, finiteness (generalization). The book assumes (a) and (b). The statement assumes
   only a point of $\operatorname{dom} f \cap \operatorname{dom} g$ and a point of
   $\operatorname{dom} g^* \cap \operatorname{dom} f^*$. See `Rockafellar.theorem_31_1_finite`.
-* **Theorem 31.2**, properness (generalization). The statement needs no relative-interior
-  hypothesis. See `Rockafellar.theorem_31_2_proper`.
+* **Theorem 31.2**, properness (generalization). The properness clause uses no convexity
+  or concavity hypothesis beyond the domain and value conditions in the properness
+  predicates. See `Rockafellar.theorem_31_2_proper`.
 * **Corollary 31.2.1** under (a) (generalization). The book assumes $f$ closed. The statement does
   not. See `Rockafellar.corollary_31_2_1_a`.
 * **Theorem 31.3** (generalization). The book assumes $f$ and $g$ closed. The statement does not,
@@ -119,6 +122,9 @@ book states without proof. The proofs specialize `Numlib.Analysis.Convex.Extremu
   `Rockafellar.corollary_31_3_1`.
 * **Theorem 31.4** under (a) (generalization). The book assumes $f$ and $K$ closed. The statement
   does not. See `Rockafellar.theorem_31_4_a`.
+* **Theorem 31.4 and Corollaries 31.4.1 and 31.4.2**, optimality (reading). Lean supplies
+  feasibility of the two test points explicitly. Under feasibility, pointwise value
+  equality yields both attained extrema and the complementary subgradient condition.
 * **Corollary 31.4.1** under (a) (generalization). The book assumes $f$ closed. The statement does
   not. See `Rockafellar.corollary_31_4_1_a`.
 * **Corollary 31.4.2** under (a) (generalization). The book assumes $f$ closed. The statement does
@@ -126,6 +132,17 @@ book states without proof. The proofs specialize `Numlib.Analysis.Convex.Extremu
 * **Corollary 31.4.3** (generalization). The book assumes $K$ closed. Only the attainment of the
   first infimum needs it. See `Rockafellar.corollary_31_4_3` and
   `Rockafellar.corollary_31_4_3_attained`.
+* **Theorem 31.5**, gradient formulas (reading). The declarations use Mathlib's total
+  gradient of the real-valued trace. Differentiability is used in their proofs.
+
+## Not formalized
+
+* Under the polyhedral refinements of Theorem 31.1(b), the separate primal attainment
+  statements. The value equalities are formalized.
+* Under the polyhedral refinements of Corollary 31.2.1, attainment under (a) and the
+  specialized statements under (b).
+* Corollary 31.4.2(b) as a separate value equality. Theorem 31.4(b) gives it by
+  specialization to a subspace, and primal attainment has a named declaration.
 -/
 
 open Set Pointwise
@@ -178,7 +195,10 @@ $$g^*(x^*) - f^*(x^*) \le f(x) - g(x).$$
 
 This is Fenchel's inequality, used twice. No hypothesis is needed: with the convention
 $\infty - \infty = -\infty$, both cases of $\infty - \infty$ fall on the correct side of the
-inequality. -/
+inequality.
+
+**Generalization.** The pointwise inequality holds for arbitrary extended-real functions.
+-/
 theorem theorem_31_1_weak (f g : Rn n → EReal) (x y : Rn n) :
     concaveConj (pairing n) g y - convexConj (pairing n) f y ≤ f x - g x :=
   concaveConj_sub_convexConj_le_sub (pairing n) f g x y
@@ -485,7 +505,10 @@ theorem corollary_31_2_1_a {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n �
 `Rockafellar.corollary_31_2_1_a`, some $u^*$ satisfies $g^*(u^*) - f^*(A^* u^*) = \inf_x
 \{f(x) - g(Ax)\}$: the supremum is attained.
 
-This specializes `ConvexAnalysis.exists_concaveConj_sub_convexConj_comp_eq`. -/
+This specializes `ConvexAnalysis.exists_concaveConj_sub_convexConj_comp_eq`.
+
+**Reading.** Closedness of f is unnecessary for dual attainment.
+-/
 theorem corollary_31_2_1_a_attained {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
     (hf : ConvexFn f) (hpf : ProperConvex f) (hg : ClosedProperConcaveFn g) {x₀ : Rn n}
     (hxf : x₀ ∈ ri (convexDom f)) (hxg : A x₀ ∈ ri (concaveDom g)) :
@@ -507,7 +530,10 @@ is actually polyhedral. However, the proof will not be given here." Both parts o
 have polyhedral forms. Since $-(g \circ A)$ is polyhedral, Theorem 20.1 replaces Theorem 16.4
 for the sum, and `ConvexAnalysis.IsExactImage.of_polyhedral` (Corollary 19.3.1 in place of
 Theorem 16.3) gives the pullback. Neither needs a relative interior on the side of $g$, and $g$
-is closed automatically. -/
+is closed automatically.
+
+**Reading.** Uses the full domain of g. Closedness of f is unnecessary.
+-/
 theorem corollary_31_2_1_a_polyhedral_right {f : Rn n → EReal} {g : Rn m → EReal}
     (A : Rn n →ₗ[ℝ] Rn m) (hf : ConvexFn f) (hpf : ProperConvex f)
     (hg : PolyhedralFn fun w => -(g w)) (hpg : ProperConcave g) {x₀ : Rn n}
@@ -556,6 +582,8 @@ theorem corollary_31_2_1_a_polyhedral_left {f : Rn n → EReal} {g : Rn m → ER
 proof. For all functions $f$ on $\mathbb{R}^n$ and $g$ on $\mathbb{R}^m$, every linear
 $A : \mathbb{R}^n \to \mathbb{R}^m$, and all $x \in \mathbb{R}^n$, $u^* \in \mathbb{R}^m$,
 $$g^*(u^*) - f^*(A^* u^*) \le f(x) - g(Ax).$$
+
+**Reading.** The pointwise inequality holds for arbitrary f and g.
 -/
 theorem theorem_31_3_weak {f : Rn n → EReal} {g : Rn m → EReal} (A : Rn n →ₗ[ℝ] Rn m)
     (x : Rn n) (z : Rn m) :
@@ -633,7 +661,10 @@ somewhere and never $+\infty$) on $\mathbb{R}^n$. Then $f(x) - g(x) = g^*(x^*) -
 and only if $x^* \in \partial f(x)$ and $-x^* \in \partial(-g)(x)$.
 
 For closed $g$ the second condition is the condition $x \in \partial g^*(x^*)$ of the book. This
-specializes `ConvexAnalysis.sub_eq_concaveConj_sub_convexConj_iff`. -/
+specializes `ConvexAnalysis.sub_eq_concaveConj_sub_convexConj_iff`.
+
+**Reading.** Uses the subgradient of the negative of g and drops closedness.
+-/
 theorem theorem_31_3_id {f g : Rn n → EReal} (hpf : ProperConvex f) (hpg : ProperConcave g)
     {x y : Rn n} :
     f x - g x = concaveConj (pairing n) g y - convexConj (pairing n) f y ↔
@@ -667,7 +698,10 @@ function on $\mathbb{R}^n$ with $\operatorname{ri}(\operatorname{dom} f) \cap
 \operatorname{ri}(\operatorname{dom} g) \neq \emptyset$. Then $x$ minimizes $f - g$ if and only
 if there is an $x^*$ with $x^* \in \partial f(x)$ and $-x^* \in \partial(-g)(x)$.
 
-This specializes `ConvexAnalysis.iInf_sub_eq_iff_exists_kuhnTucker`. -/
+This specializes `ConvexAnalysis.iInf_sub_eq_iff_exists_kuhnTucker`.
+
+**Reading.** Neither f nor g needs closedness in this qualification for a common domain.
+-/
 theorem corollary_31_3_1_id {f g : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
     (hg : ConcaveFn g) (hpg : ProperConcave g) {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f))
     (hxg : x₀ ∈ ri (concaveDom g)) (x : Rn n) :
@@ -749,7 +783,10 @@ theorem theorem_31_4_a {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f) (
 /-- **Theorem 31.4** of [rockafellar1970convex], attainment under (a). Under the hypotheses of
 `Rockafellar.theorem_31_4_a`, the infimum of $f^*$ over $K^*$ is attained at some $x^* \in K^*$.
 
-This specializes `ConvexAnalysis.exists_mem_neg_polarCone_convexConj_eq_iInf`. -/
+This specializes `ConvexAnalysis.exists_mem_neg_polarCone_convexConj_eq_iInf`.
+
+**Reading.** Dual attainment does not require closedness of either f or K.
+-/
 theorem theorem_31_4_a_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
     (hpf : ProperConvex f) (hK : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
     {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxK : x₀ ∈ ri K) :
@@ -763,7 +800,10 @@ theorem theorem_31_4_a_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : Conv
 $\operatorname{ri} K$ and $\operatorname{ri} K^*$ can be replaced by $K$ and $K^*$ in (a) and
 (b)". Let $f$ be a proper convex function on $\mathbb{R}^n$ and $K$ a non-empty polyhedral
 convex cone. If $\operatorname{ri}(\operatorname{dom} f) \cap K \neq \emptyset$, then $\inf
-\{f(x) \mid x \in K\} = -\inf \{f^*(x^*) \mid x^* \in K^*\}$. -/
+\{f(x) \mid x \in K\} = -\inf \{f^*(x^*) \mid x^* \in K^*\}$.
+
+**Reading.** Uses membership in polyhedral K and drops closedness of f.
+-/
 theorem theorem_31_4_a_polyhedral {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
     (hpf : ProperConvex f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K)
         (hne : K.Nonempty)
@@ -775,7 +815,10 @@ theorem theorem_31_4_a_polyhedral {f : Rn n → EReal} {K : Set (Rn n)} (hf : Co
 
 /-- **Theorem 31.4** of [rockafellar1970convex], attainment under the polyhedral form of (a). Under
 the hypotheses of `Rockafellar.theorem_31_4_a_polyhedral`, the infimum of $f^*$ over $K^*$ is
-attained. -/
+attained.
+
+**Reading.** The dual attains its value under the relaxed qualification without closedness of f.
+-/
 theorem theorem_31_4_a_polyhedral_attained {f : Rn n → EReal} {K : Set (Rn n)} (hf : ConvexFn f)
     (hpf : ProperConvex f) (hK : Polyhedral K) (hcone : ∀ a : ℝ, 0 < a → a • K = K)
         (hne : K.Nonempty)
@@ -873,7 +916,10 @@ if and only if $x^* \in \partial f(x)$ and $\langle x, x^* \rangle = 0$.
 The book reads this off the Kuhn–Tucker conditions of Theorem 31.3 for
 $g = -\delta(\cdot \mid K)$, where $x \in \partial g^*(x^*)$ unfolds into the three conditions
 $x \in K$, $x^* \in K^*$ and $\langle x, x^* \rangle = 0$. This specializes
-`ConvexAnalysis.add_convexConj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero`. -/
+`ConvexAnalysis.add_convexConj_eq_zero_iff_mem_subdifferential_and_pairing_eq_zero`.
+
+**Reading.** Both test points are assumed feasible. Pointwise equality then gives
+optimality in both problems by weak duality. -/
 theorem theorem_31_4_optimality {f : Rn n → EReal} {K : Set (Rn n)} (hpf : ProperConvex f)
     {x y : Rn n}
     (hxK : x ∈ K) (hyK : y ∈ -(polarCone (pairing n) K)) :
@@ -989,7 +1035,10 @@ theorem corollary_31_4_1_a {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperC
 
 /-- **Corollary 31.4.1** of [rockafellar1970convex], attainment under (a). Under the hypotheses of
 `Rockafellar.corollary_31_4_1_a`, the infimum of $f^*$ over $\{x^* \mid x^* \ge 0\}$ is
-attained. -/
+attained.
+
+**Reading.** Dual attainment does not require closedness of f.
+-/
 theorem corollary_31_4_1_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
     {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hx₀ : x₀ ∈ nonnegOrthant n) :
     ∃ y ∈ nonnegOrthant n, convexConj (pairing n) f y
@@ -1030,7 +1079,11 @@ attained at $x$ and $x^*$, if and only if $x^* \in \partial f(x)$ and $\xi_j \xi
 every $j$.
 
 The condition $\langle x, x^* \rangle = 0$ of Theorem 31.4 becomes the condition on coordinates
-because both vectors are non-negative. -/
+because both vectors are non-negative.
+
+**Reading.** Assumes orthant membership explicitly and characterizes equality by subgradient
+membership and zero coordinate products.
+-/
 theorem corollary_31_4_1_optimality {f : Rn n → EReal} (hpf : ProperConvex f) {x y : Rn n}
     (hx : x ∈ nonnegOrthant n) (hy : y ∈ nonnegOrthant n) :
     f x + convexConj (pairing n) f y = 0 ↔
@@ -1070,7 +1123,10 @@ theorem corollary_31_4_2_a {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperC
   rwa [polarCone_coe_submodule_eq_orthogonal] at h
 
 /-- **Corollary 31.4.2** of [rockafellar1970convex], attainment under (a). Under the hypotheses of
-`Rockafellar.corollary_31_4_2_a`, the infimum of $f^*$ over $L^\perp$ is attained. -/
+`Rockafellar.corollary_31_4_2_a`, the infimum of $f^*$ over $L^\perp$ is attained.
+
+**Reading.** Dual attainment does not require closedness of f.
+-/
 theorem corollary_31_4_2_a_attained {f : Rn n → EReal} (hf : ConvexFn f) (hpf : ProperConvex f)
     {M : Submodule ℝ (Rn n)} {x₀ : Rn n} (hxf : x₀ ∈ ri (convexDom f)) (hxM : x₀ ∈ M) :
     ∃ y ∈ ((Mᗮ : Submodule ℝ (Rn n)) : Set (Rn n)), convexConj (pairing n) f y
@@ -1097,7 +1153,10 @@ that is proper in the convex sense on $\mathbb{R}^n$ (finite somewhere and never
 $L$ be a subspace, and let $x \in L$ and $x^* \in L^\perp$. Then $f(x) + f^*(x^*) = 0$ if and
 only if $x^* \in \partial f(x)$.
 
-Over a subspace the condition $\langle x, x^* \rangle = 0$ of Theorem 31.4 holds automatically. -/
+Over a subspace the condition $\langle x, x^* \rangle = 0$ of Theorem 31.4 holds automatically.
+
+**Reading.** Assumes the two subspace memberships explicitly.
+-/
 theorem corollary_31_4_2_optimality {f : Rn n → EReal} (hpf : ProperConvex f)
     {M : Submodule ℝ (Rn n)} {x y : Rn n} (hxM : x ∈ M) (hyM : y ∈ Mᗮ) :
     f x + convexConj (pairing n) f y = 0 ↔ y ∈ subdifferential (pairing n) f x := by
@@ -1134,7 +1193,10 @@ theorem corollary_31_4_3 {h : Rn n → EReal} (hcof : Cofinite h) (hdom : convex
 
 /-- **Corollary 31.4.3** of [rockafellar1970convex]: under the hypotheses of
 `Rockafellar.corollary_31_4_3`, the first infimum $\inf_{x \in K} \{h(z + x) - \langle x, z^*
-\rangle\}$ is a real number. -/
+\rangle\}$ is a real number.
+
+**Reading.** The primal infimum is finite without closedness of the cone.
+-/
 theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
     (hdom : convexDom h = univ)
     {K : Set (Rn n)} (hconv : Convex ℝ K) (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty)
@@ -1144,7 +1206,10 @@ theorem corollary_31_4_3_iInf_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
 
 /-- **Corollary 31.4.3** of [rockafellar1970convex]: under the hypotheses of
 `Rockafellar.corollary_31_4_3`, the second infimum $\inf_{x^* \in K^*} \{h^*(z^* + x^*) -
-\langle z, x^* \rangle\}$ is a real number. -/
+\langle z, x^* \rangle\}$ is a real number.
+
+**Reading.** The dual infimum is finite without closedness of the cone.
+-/
 theorem corollary_31_4_3_iInf_dual_eq_coe {h : Rn n → EReal} (hcof : Cofinite h)
     (hdom : convexDom h = univ) {K : Set (Rn n)} (hconv : Convex ℝ K)
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z z' : Rn n) :
@@ -1169,7 +1234,10 @@ theorem corollary_31_4_3_attained {h : Rn n → EReal} (hcof : Cofinite h) (hdom
 `Rockafellar.corollary_31_4_3`, the second infimum is attained at some $x^* \in K^*$.
 
 Closedness of $K$ is not needed. The statement carries the co-finiteness of $h$, although the
-attainment of this infimum does not need it. -/
+attainment of this infimum does not need it.
+
+**Reading.** Closedness of the primal cone is unnecessary for dual attainment.
+-/
 theorem corollary_31_4_3_dual_attained {h : Rn n → EReal} (hcof : Cofinite h)
     (hdom : convexDom h = univ) {K : Set (Rn n)} (hconv : Convex ℝ K)
     (hcone : ∀ a : ℝ, 0 < a → a • K = K) (hne : K.Nonempty) (z z' : Rn n) :
@@ -1315,7 +1383,10 @@ $u \mapsto (f \mathbin{\square} w)(u)$, read through `EReal.toReal`. Mathlib's `
 defined at every point, so the formula alone does not state differentiability. The
 subdifferential of $f \mathbin{\square} w$ at $z$ is the single point
 $\operatorname{prox}(z \mid f^*)$, and the converse of Theorem 25.1 makes it a gradient. This
-specializes `ConvexAnalysis.gradient_infConv_quadFn`. -/
+specializes `ConvexAnalysis.gradient_infConv_quadFn`.
+
+**Reading.** The source's formula identifies a genuine gradient. The declaration gives
+the equality for Mathlib's total gradient function. -/
 theorem theorem_31_5_gradient {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
     gradient (fun u => (infConv f (quadFn (pairing n)) u).toReal) z
       = z - prox (pairing n) f z :=
@@ -1328,7 +1399,9 @@ $$\nabla (f^* \mathbin{\square} w)(z) = \operatorname{prox}(z \mid f),$$
 which is the vector $x$ of the book.
 
 The gradient is read through `EReal.toReal`, as in `Rockafellar.theorem_31_5_gradient`. This
-specializes `ConvexAnalysis.gradient_infConv_convexConj_quadFn`. -/
+specializes `ConvexAnalysis.gradient_infConv_convexConj_quadFn`.
+
+**Reading.** The declaration gives the equality using Mathlib's total gradient. -/
 theorem theorem_31_5_gradient_conj {f : Rn n → EReal} (hf : ClosedProperConvexFn f) (z : Rn n) :
     gradient (fun u => (infConv (convexConj (pairing n) f) (quadFn (pairing n)) u).toReal) z
       = prox (pairing n) f z :=
@@ -1476,9 +1549,9 @@ theorem theorem_31_2_convex (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g 
 $+\infty$), and $A : \mathbb{R}^n \to \mathbb{R}^m$ linear. Then the Fenchel bifunction $F$ is
 proper.
 
-**Generalization.** Properness needs no relative-interior hypothesis, only a point of
-$\operatorname{dom} f$ and a point of $\operatorname{dom} g$, which the properness of $f$ and
-$g$ gives. -/
+**Generalization.** The source assumes convexity of $f$ and concavity of $g$. The
+properness conclusion only needs a finite point of each function and exclusion of
+$-\infty$ for $f$ and $+\infty$ for $g$. -/
 theorem theorem_31_2_proper (A : Rn n →ₗ[ℝ] Rn m) {f : Rn n → EReal} {g : Rn m → EReal}
     (hpf : ProperConvex f)
         (hpg : ProperConcave g) : ProperConvex (graphFn (fenchelBifun A f g)) := by

@@ -10,8 +10,8 @@ import NumlibSurface.SaadSparse.Chapter14.Section03
 /-!
 # Saad, Section 14.6: Graph partitioning
 
-This module formalizes Section 14.6 of [saad2003iterative]. Only Section 14.6.3, spectral bisection,
-carries a theorem, and it is a short one about Mathlib's graph Laplacian $L$. For a partition vector
+This module formalizes the partition and overlap definitions and the spectral analysis of
+Section 14.6 of [saad2003iterative]. It uses Mathlib's graph Laplacian $L$. For a partition vector
 $p$ with entries $\pm 1$, the quadratic form $p^T L p$ counts the edges that the partition cuts: it
 is $4 n_c$, where $n_c$ is the number of cut edges. So bisection of a graph is the minimization of a
 quadratic form over the vectors $p \in \{\pm 1\}^n$ with $(p, e) = 0$, where $e$ is the constant
@@ -58,6 +58,24 @@ geometric separator theorem.
   of $m + 2$ eigenvalues has the index $m$.
 * The vertex set of Definition 14.13 is the index set of the unknowns, so a map is a condition on
   the family $S$ of subsets of Section 14.3.1.
+
+## Deviations from the source
+
+* **§14.6.3, Laplacian sign** (correction). `SaadSparse.Chapter14.inner_lapOperator_self_nonneg`
+  proves positive semidefiniteness for the displayed sign convention. The source says negative
+  semidefinite, although its smallest-eigenvalue statement and Exercise 14.11 use the positive
+  sign.
+* **§14.6.3, Fiedler vector** (scope). `SaadSparse.Chapter14.fiedlerVector` characterizes the
+  second smallest eigenvalue as the least Rayleigh quotient orthogonal to constants for a
+  connected graph on at least two vertices. The statement makes no claim about the balance or
+  output of the sign partition.
+* **Definitions 14.13–14.15** (domain). `SaadSparse.Chapter14.IsMap` and
+  `SaadSparse.Chapter14.IsProperMap` permit arbitrary families of subsets of a finite vertex
+  set. `SaadSparse.Chapter14.definition_14_14` uses open balls for strict interior, and the
+  equivalence with topological interiors of closed balls is stated for nonzero radii.
+  `SaadSparse.Chapter14.definition_14_15` constructs a loopless graph for all $\alpha$ and ball
+  families. The source assumes $\alpha\ge1$ and $k$-ply data and leaves distinctness implicit in
+  the edge display.
 
 ## Not formalized
 
@@ -130,7 +148,11 @@ notation of the book, where $n_c$ is the number of cut edges. The minimization o
 cut edges subject to $(p, e) = 0$, the condition that the two parts have the same size, is
 therefore the minimization of a quadratic form over a discrete set. Its continuous relaxation is
 `SaadSparse.Chapter14.fiedlerVector`. The quadratic form is
-`Matrix.toLinearMap₂' ℝ (G.lapMatrix ℝ) p p`. -/
+`Matrix.toLinearMap₂' ℝ (G.lapMatrix ℝ) p p`.
+
+**Reading.** Specializes quadratic form to sign vectors and counts ordered pairs, yielding four per
+undirected cut edge.
+-/
 theorem lapMatrix_quadratic_partition {p : V → ℝ} (hp : ∀ i, p i = 1 ∨ p i = -1) :
     Matrix.toLinearMap₂' ℝ (G.lapMatrix ℝ) p p
       = 2 * ({q ∈ (Finset.univ : Finset (V × V)) | G.Adj q.1 q.2 ∧ p q.1 ≠ p q.2}.card : ℝ) := by
@@ -193,7 +215,10 @@ theorem constVector_ne_zero (V : Type*) [Fintype V] [Nonempty V] : constVector V
   simp [constVector] at this
 
 /-- For every $x \in \mathbb{R}^V$, the Laplacian quadratic form is nonnegative: $(Lx, x) \ge 0$. It
-is a sum of squares over the edges. -/
+is a sum of squares over the edges.
+
+**Correction.** For the printed Laplacian, degree on the diagonal and $-1$ on edges give a
+nonnegative quadratic form. The text describes it as negative semidefinite. -/
 theorem inner_lapOperator_self_nonneg (x : EuclideanSpace ℝ V) :
     0 ≤ inner ℝ (lapOperator G x) x := by
   have h : inner ℝ (lapOperator G x) x
@@ -212,7 +237,11 @@ the second smallest eigenvalue of $L$. A minimizer is a **Fiedler vector**.
 This is the continuous relaxation of graph bisection, and Algorithm 14.7 computes it before it
 sorts the entries and splits at the median. The eigenvalues of
 `LinearMap.IsSymmetric.eigenvalues` are in decreasing order, so $\lambda_2(L)$ is the one with
-index $m$. The number of vertices is given as `Module.finrank ℝ (EuclideanSpace ℝ V) = m + 2`. -/
+index $m$. The number of vertices is given as `Module.finrank ℝ (EuclideanSpace ℝ V) = m + 2`.
+
+**Scope.** The theorem gives the least Rayleigh quotient orthogonal to the constant vector on a
+connected graph with at least two vertices. It does not formalize a sign partition or claim
+that sign counts are balanced. -/
 theorem fiedlerVector (hconn : G.Connected) {m : ℕ}
     (hn : Module.finrank ℝ (EuclideanSpace ℝ V) = m + 2) :
     IsLeast {c : ℝ | ∃ x : EuclideanSpace ℝ V, x ≠ 0 ∧ inner ℝ (constVector V) x = 0 ∧
@@ -287,7 +316,11 @@ $\{1, \dots, n\}$ is a **map** of the vertex set if its union is the whole set: 
 in some $S_i$.
 
 The vertex set of the book is the index set of the unknowns, so the family is the family $S$ of
-Section 14.3.1, and the definition is the covering condition on it. -/
+Section 14.3.1, and the definition is the covering condition on it.
+
+**Reading.** Cover via arbitrary index type of finite subsets of Fin n rather than an explicitly
+finite list.
+-/
 def IsMap (S : ι → Finset (Fin n)) : Prop := ∀ j : Fin n, ∃ i, j ∈ S i
 
 /-- **Definition 14.13** of [saad2003iterative], second part. A map $S_i$, $i \in \iota$, is a
@@ -295,7 +328,10 @@ def IsMap (S : ι → Finset (Fin n)) : Prop := ∀ j : Fin n, ∃ i, j ∈ S i
 partition.
 
 The Schwarz procedures of Section 14.3 are stated for the overlapping case. For a proper
-partition they are block Jacobi and block Gauss–Seidel of Chapter 4. -/
+partition they are block Jacobi and block Gauss–Seidel of Chapter 4.
+
+**Reading.** Coverage plus pairwise disjointness for arbitrary index type.
+-/
 def IsProperMap (S : ι → Finset (Fin n)) : Prop :=
   IsMap S ∧ ∀ i i', i ≠ i' → Disjoint (S i) (S i')
 
@@ -309,7 +345,10 @@ This connects the combinatorial definition to the analytic hypotheses of Section
 that is not a map leaves some unknown untouched by every subdomain solve. So no Schwarz
 procedure built on it can converge, and Assumption 1
 (`SaadSparse.Chapter14.IsStableDecomposition`) fails. The subdomain space is
-`SaadSparse.Chapter12.subdomainSpace`. -/
+`SaadSparse.Chapter12.subdomainSpace`.
+
+**Reading.** Additional consequence for algebraic coordinate subspaces of a cover.
+-/
 theorem iSup_subdomainSpace_eq_top {S : ι → Finset (Fin n)} (h : IsMap S) :
     ⨆ i, subdomainSpace 𝕜 (S i) = ⊤ := by
   refine top_unique ?_
@@ -340,7 +379,10 @@ interior to more than $k$ of them.
 
 The disk $D_i$ is given by its centre $c_i$ and its radius $r_i$. "Strictly interior to $D_i$"
 is membership in the open ball of centre $c_i$ and radius $r_i$, which is the interior of the
-closed disk when $r_i \ne 0$; see `SaadSparse.Chapter14.definition_14_14_iff`. -/
+closed disk when $r_i \ne 0$; see `SaadSparse.Chapter14.definition_14_14_iff`.
+
+**Reading.** Uses open balls for strict interior and total definition covering degenerate radii.
+-/
 def definition_14_14 (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ) : Prop :=
   ∀ x : EuclideanSpace ℝ (Fin d), {i | x ∈ Metric.ball (c i) (r i)}.ncard ≤ k
 
@@ -350,7 +392,11 @@ the disks form a $k$-ply neighborhood system if and only if no point of $\mathbb
 the interior of more than $k$ of the closed disks $\bar{B}(c_i, r_i)$.
 
 For a disk of nonzero radius, the open ball is the interior of the closed ball, so the two
-readings of the condition agree. -/
+readings of the condition agree.
+
+**Reading.** Equates open balls and topological interiors of closed balls with explicit nonzero
+radii.
+-/
 theorem definition_14_14_iff (k : ℕ) (c : Fin n → EuclideanSpace ℝ (Fin d)) {r : Fin n → ℝ}
     (hr : ∀ i, r i ≠ 0) :
     definition_14_14 k c r ↔
@@ -370,7 +416,11 @@ radius.
 The book assumes $\alpha \ge 1$ and that the disks form a $k$-ply neighborhood system. Neither
 condition enters the construction: they are the standing hypotheses under which Theorem 14.16
 bounds the separator, and `SaadSparse.Chapter14.definition_14_14` states the second of them. The
-graph is built with `SimpleGraph.fromRel`, so it has no loops. -/
+graph is built with `SimpleGraph.fromRel`, so it has no loops.
+
+**Reading.** Defines undirected loopless overlap graph for all α and arbitrary balls, without α≥1 or
+k-ply prerequisites.
+-/
 def definition_14_15 (α : ℝ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ) :
     SimpleGraph (Fin n) :=
   SimpleGraph.fromRel fun i j =>
@@ -384,7 +434,10 @@ $D_i \cap \alpha \cdot D_j \ne \emptyset$ and $D_j \cap \alpha \cdot D_i \ne \em
 The edge set of the book is a subset of $V \times V$, and the condition that defines it is
 already symmetric in $i$ and $j$. `SimpleGraph.fromRel` symmetrizes the condition and drops the
 loops that it has at every $i$ whose disk is nonempty. So it adds nothing but the convention of
-Section 3.3.2 that an adjacency graph has no loops. -/
+Section 3.3.2 that an adjacency graph has no loops.
+
+**Reading.** Makes the distinct-vertex condition explicit in addition to both printed intersections.
+-/
 theorem definition_14_15_adj (α : ℝ) (c : Fin n → EuclideanSpace ℝ (Fin d)) (r : Fin n → ℝ)
     (i j : Fin n) :
     (definition_14_15 α c r).Adj i j ↔ i ≠ j ∧

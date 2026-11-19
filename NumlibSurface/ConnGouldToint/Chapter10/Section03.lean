@@ -78,6 +78,13 @@ applies the convergence results of `NumlibSurface.ConnGouldToint.Chapter06.Secti
 
 ## Deviations from the source
 
+* **Theorem 10.3.1** (partial translation). The convergence statements take an iterate trace
+  satisfying quantitative decrease bounds. They use compact containment of the initial level
+  set. The local result gives convergence under coercive segment curvature and a nonsingular
+  limit Hessian. The theorem in the book also refers to the local rate conclusions of Chapter 6.
+* **Theorem 10.3.2** (reading). The two-sided norm comparison and the Cauchy length lower
+  bound enter explicitly. The correction $w$ satisfies the nonascending sign condition
+  (10.3.7), which the text calls ascent.
 * **Theorem 10.3.4** (correction). The source states the angle bound for a trust region in a norm
   that is uniformly equivalent to the Euclidean norm. The bound fails for the $\ell_1$ ball, and the
   formal statement uses a Euclidean ball. See
@@ -104,7 +111,10 @@ $$\kappa e \min\left\{\frac{e \|g\|}{B K D}, \frac{1}{K^2}\right\} \|g\| \|s\| \
 
 The constants $K$ and $\nu$ compare the trust-region norm with the Euclidean norm on both sides.
 With them, the statement does not assume that the Euclidean Cauchy radius bounds the norm of the
-final step $s$. -/
+final step $s$.
+
+**Reading.** Signed bound with explicit two-sided norm controls and Cauchy length lower bound.
+-/
 theorem theorem_10_3_2 {g d w s : E} {t κ e β B ν Δ D K : ℝ}
     (hd : 0 < ‖d‖) (hκ : 0 < κ) (he : 0 < e) (hβ : 0 < β) (hβB : β ≤ B)
     (hΔ : 0 < Δ) (hΔD : Δ ≤ D) (hK : 0 < K) (hν : 1 / K ≤ ν)
@@ -242,7 +252,10 @@ $\langle g, (0, 1) \rangle = 0$. So the angle bound of Theorem 10.3.4 fails for 
 norm, although this norm is uniformly equivalent to the Euclidean norm.
 
 The Lean statement records the last two facts as the identities $0/2 = 0$ (the inner product
-$\langle g, (0, 1) \rangle$) and $1/2 \neq 0$ (the first component of $g$). -/
+$\langle g, (0, 1) \rangle$) and $1/2 \neq 0$ (the first component of $g$).
+
+**Reading.** An ℓ₁ trust region has a minimizer perpendicular to the gradient.
+-/
 theorem theorem_10_3_4_general_norm_counterexample :
     IsMinOn (fun p : ℝ × ℝ ↦ p.1 / 2 - p.2 ^ 2) {p | |p.1| + |p.2| ≤ 1} (0, 1) ∧
       (0 : ℝ) / 2 = 0 ∧ (1 / 2 : ℝ) ≠ 0 := by
@@ -475,7 +488,10 @@ $f(x_{k+1}) < f(x_k)$ for all $k$. This is the run of the basic trust-region alg
 radius $R$ in the Euclidean norm, and the objective $f$ itself as the model at every iteration.
 
 Every reduction ratio equals $1$, so every iteration is very successful, and the run reproduces
-the given iterates. The sufficient-decrease condition of the run is the trivial one. -/
+the given iterates. The sufficient-decrease condition of the run is the trivial one.
+
+**Reading.** Encodes a supplied monotone trace as an exact-model BTR run with fixed radius.
+-/
 noncomputable def exactModelBTRRun {P : BTRParams} {f : E → ℝ} (x : ℕ → E)
     (R : ℝ) (hR : 0 < R) (hstep : ∀ k, ‖x (k + 1) - x k‖ ≤ R)
     (hdrop : ∀ k, 0 < f (x k) - f (x (k + 1))) :
@@ -527,7 +543,11 @@ The certificates come from `ConnGouldToint.Chapter10.doubleLineSearch_first_orde
 `ConnGouldToint.Chapter10.doubleLineSearch_negative_curvature_decrease`. The compact sublevel
 set bounds every displacement, so the sequence is the exact-model run
 `ConnGouldToint.Chapter10.exactModelBTRRun` with a constant radius, and the convergence results
-of Chapter 6 apply. -/
+of Chapter 6 apply.
+
+**Reading.** Derives global results from a supplied decrease trace, using a compact rather than
+merely bounded level set.
+-/
 theorem theorem_10_3_1 [CompleteSpace E] [Nontrivial E]
     {f : E → ℝ} (x : ℕ → E) (hf : ContDiff ℝ 2 f)
     (hcompact : IsCompact {y | f y ≤ f (x 0)}) (hlower : BddBelow (range f))
@@ -625,7 +645,11 @@ Then $x_k \to z$.
 
 These are the local convexity and nonsingularity assumptions of Theorem 6.5.2. The proof
 represents the sequence as the exact-model run `ConnGouldToint.Chapter10.exactModelBTRRun` with
-the positive constant radius $D$, in which every iteration is very successful. -/
+the positive constant radius $D$, in which every iteration is very successful.
+
+**Reading.** Gives convergence from an explicit local Hessian margin and segment coercivity, without
+the source's rate results.
+-/
 theorem theorem_10_3_1_local_convergence {f : E → ℝ} (x : ℕ → E)
     (hf : ContDiff ℝ 2 f) {D : ℝ} (hD : 0 < D)
     (hstep : ∀ k, ‖x (k + 1) - x k‖ ≤ D)

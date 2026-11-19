@@ -57,6 +57,17 @@ of this chapter it is the relation `ODE.OneStep.ofIncrement Φ` of an increment 
 * A sequence $u : \mathbb{N} \to \mathbb{R}$ produced by an increment function is an orbit,
   `ODE.OneStep.IsOrbit (ODE.OneStep.ofIncrement Φ) h t₀ u`. The explicit iteration from $y_0$ is
   `ODE.OneStep.iterate Φ h t₀ y₀`, whose second component is $u_n$.
+
+## Deviations from the source
+
+* **Section 11.2, grid and equations (11.7)–(11.10)** (generalization). The grid expression and
+  recurrence identities extend to all natural indices and real steps. The positive-step grid
+  maximality claims also hold for $T=0$. The orbit predicate gives the recursion without fixing
+  the starting value, while `iterate` starts from $y_0$.
+* **Definitions 11.2 and 11.3** (reading). `definition_11_2` constructs a one-step relation from
+  a supplied increment. `definition_11_3` tests whether this increment depends on the new state.
+  The backward Euler and Crank–Nicolson results exhibit $f(t,y)=y$ as a dependence witness.
+  Particular fields independent of $y$ can give explicit increments.
 -/
 
 open Set ODE ODE.OneStep
@@ -70,10 +81,14 @@ variable {f : ℝ → ℝ → ℝ} {t₀ T h y₀ : ℝ} {n : ℕ}
 /-- **Section 11.2** of [quarteroni2000numerical], the discretization nodes. For
 $t_0, h \in \mathbb{R}$ and $n \in \mathbb{N}$ the **node** is $t_n = t_0 + nh$.
 
-The definition is `ODE.node`. -/
+The definition is `ODE.node`.
+
+**Generalization.** The node formula uses all natural indices and arbitrary real spacing. -/
 def grid (t₀ h : ℝ) (n : ℕ) : ℝ := ODE.node t₀ h n
 
-/-- For $t_0, h \in \mathbb{R}$ and $n \in \mathbb{N}$, the node is $t_n = t_0 + nh$. -/
+/-- For $t_0, h \in \mathbb{R}$ and $n \in \mathbb{N}$, the node is $t_n = t_0 + nh$.
+
+**Generalization.** The node formula uses all natural indices and arbitrary real spacing. -/
 theorem grid_eq (t₀ h : ℝ) (n : ℕ) : grid t₀ h n = t₀ + n * h := rfl
 
 /-- **Section 11.2** of [quarteroni2000numerical], the number of steps. For $T, h \in \mathbb{R}$
@@ -82,16 +97,25 @@ is $0$ when $T/h < 0$. For $T \ge 0$ and $h > 0$ it is the largest integer $n$ w
 $t_n \le t_0 + T$, by `QuarteroniSaccoSaleri.Chapter11.grid_gridCount_le` and
 `QuarteroniSaccoSaleri.Chapter11.lt_grid_gridCount_succ`.
 
-The definition is `ODE.gridCount`. -/
+The definition is `ODE.gridCount`.
+
+**Generalization.** The count is the natural floor of $T/h$. Its maximality properties allow
+$T=0$ for $h>0$. -/
 noncomputable def gridCount (T h : ℝ) : ℕ := ODE.gridCount T h
 
 /-- **Section 11.2** of [quarteroni2000numerical]. Let $T \ge 0$ and $h > 0$. Then
-$t_{N_h} \le t_0 + T$. -/
+$t_{N_h} \le t_0 + T$.
+
+**Generalization.** The count is the natural floor of $T/h$. Its maximality properties allow
+$T=0$ for $h>0$. -/
 theorem grid_gridCount_le (hT : 0 ≤ T) (hh : 0 < h) : grid t₀ h (gridCount T h) ≤ t₀ + T :=
   (node_mem_Icc hT hh le_rfl).2
 
 /-- **Section 11.2** of [quarteroni2000numerical], maximality of $N_h$. Let $T \ge 0$ and $h > 0$.
-Then $t_0 + T < t_{N_h + 1}$. -/
+Then $t_0 + T < t_{N_h + 1}$.
+
+**Generalization.** The count is the natural floor of $T/h$. Its maximality properties allow
+$T=0$ for $h>0$. -/
 theorem lt_grid_gridCount_succ (hT : 0 ≤ T) (hh : 0 < h) :
     t₀ + T < grid t₀ h (gridCount T h + 1) := by
   have : ¬ ((gridCount T h + 1 : ℕ) : ℝ) * h ≤ T := fun hle =>
@@ -108,7 +132,10 @@ given by an increment function $\Phi$ built from the field $f$, through the rule
 $$u_{n+1} = u_n + h \Phi(t_n, u_n, u_{n+1}; h).$$
 
 The method is the map that sends $f$ to the step relation `ODE.OneStep.ofIncrement (Φ f)`. It is
-an `ODE.OneStep.Method ℝ`. -/
+an `ODE.OneStep.Method ℝ`.
+
+**Reading.** Constructs a one-step relation from a supplied increment. The orbit equation is
+required at all indices and leaves the initial value free. -/
 def definition_11_2 (Φ : (ℝ → ℝ → ℝ) → ODE.OneStep.Increment ℝ) : ODE.OneStep.Method ℝ :=
   fun f => ODE.OneStep.ofIncrement (Φ f)
 
@@ -116,7 +143,10 @@ def definition_11_2 (Φ : (ℝ → ℝ → ℝ) → ODE.OneStep.Increment ℝ) :
 function from the field $f$, and let $u : \mathbb{N} \to \mathbb{R}$. Then $u$ is an orbit of
 the one-step method with step $h$ from $t_0$ if and only if for every $n \in \mathbb{N}$
 $$u_{n+1} = u_n + h \Phi(t_n, u_n, u_{n+1}; h).$$
-So $u_{n+1}$ is determined by $u_n$, $t_n$, $h$ and $f$. -/
+So $u_{n+1}$ is determined by $u_n$, $t_n$, $h$ and $f$.
+
+**Reading.** Constructs a one-step relation from a supplied increment. The orbit equation is
+required at all indices and leaves the initial value free. -/
 theorem definition_11_2_iff (Φ : (ℝ → ℝ → ℝ) → ODE.OneStep.Increment ℝ) (u : ℕ → ℝ) :
     IsOrbit (definition_11_2 Φ f) h t₀ u ↔
       ∀ n, u (n + 1) = u n + h * Φ f (grid t₀ h n) (u n) (u (n + 1)) h :=
@@ -132,7 +162,10 @@ def equation_11_7 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increment ℝ := forwa
 \mathbb{R} \times \mathbb{R} \to \mathbb{R}$, $h, t_0, y_0 \in \mathbb{R}$ and
 $n \in \mathbb{N}$, the values $u_n$ of the iteration from $u_0 = y_0$ satisfy
 $$u_{n+1} = u_n + h f(t_n, u_n).$$
--/
+
+**Generalization.** The recursion holds at every natural index with any real step. An orbit
+predicate leaves the initial value free, whereas the explicit iteration starts from its
+supplied value. -/
 theorem equation_11_7_iterate (f : ℝ → ℝ → ℝ) (h t₀ y₀ : ℝ) (n : ℕ) :
     (iterate (equation_11_7 f) h t₀ y₀ (n + 1)).2 =
       (iterate (equation_11_7 f) h t₀ y₀ n).2 +
@@ -150,7 +183,10 @@ def equation_11_8 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increment ℝ := backw
 $u : \mathbb{N} \to \mathbb{R}$ is an orbit of the backward Euler method with step $h$ from
 $t_0$ if and only if for every $n \in \mathbb{N}$
 $$u_{n+1} = u_n + h f(t_{n+1}, u_{n+1}).$$
--/
+
+**Generalization.** The recursion holds at every natural index with any real step. An orbit
+predicate leaves the initial value free, whereas the explicit iteration starts from its
+supplied value. -/
 theorem equation_11_8_orbit (u : ℕ → ℝ) :
     IsOrbit (ofIncrement (equation_11_8 f)) h t₀ u ↔
       ∀ n, u (n + 1) = u n + h * f (grid t₀ h (n + 1)) (u (n + 1)) := by
@@ -170,7 +206,10 @@ noncomputable def equation_11_9 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Incremen
 $u : \mathbb{N} \to \mathbb{R}$ is an orbit of the Crank–Nicolson method with step $h$ from
 $t_0$ if and only if for every $n \in \mathbb{N}$
 $$u_{n+1} = u_n + \frac{h}{2}\bigl(f(t_n, u_n) + f(t_{n+1}, u_{n+1})\bigr).$$
--/
+
+**Generalization.** The recursion holds at every natural index with any real step. An orbit
+predicate leaves the initial value free, whereas the explicit iteration starts from its
+supplied value. -/
 theorem equation_11_9_orbit (u : ℕ → ℝ) :
     IsOrbit (ofIncrement (equation_11_9 f)) h t₀ u ↔
       ∀ n, u (n + 1) =
@@ -192,7 +231,10 @@ noncomputable def equation_11_10 (f : ℝ → ℝ → ℝ) : ODE.OneStep.Increme
 \mathbb{R} \to \mathbb{R}$, $h, t_0, y_0 \in \mathbb{R}$ and $n \in \mathbb{N}$, the values
 $u_n$ of the iteration from $u_0 = y_0$ satisfy
 $$u_{n+1} = u_n + \frac{h}{2}\bigl(f(t_n, u_n) + f(t_{n+1}, u_n + h f(t_n, u_n))\bigr).$$
--/
+
+**Generalization.** The recursion holds at every natural index with any real step. An orbit
+predicate leaves the initial value free, whereas the explicit iteration starts from its
+supplied value. -/
 theorem equation_11_10_iterate (f : ℝ → ℝ → ℝ) (h t₀ y₀ : ℝ) (n : ℕ) :
     (iterate (equation_11_10 f) h t₀ y₀ (n + 1)).2 =
       (iterate (equation_11_10 f) h t₀ y₀ n).2 +
@@ -208,7 +250,10 @@ method with increment function $\Phi$ is **explicit** if $u_{n+1}$ can be comput
 $u_n$, that is, if $\Phi(t, u, v; h)$ does not depend on its third argument $v = u_{n+1}$.
 Otherwise the method is **implicit**, and $u_{n+1}$ depends on itself through $f$.
 
-The definition is `ODE.OneStep.IsExplicit`. -/
+The definition is `ODE.OneStep.IsExplicit`.
+
+**Reading.** For the supplied one-step increment, explicitness means independence of its new-
+state argument for all choices of the other arguments. -/
 def definition_11_3 (Φ : ODE.OneStep.Increment ℝ) : Prop := ODE.OneStep.IsExplicit Φ
 
 /-- **Definition 11.3** of [quarteroni2000numerical], forward Euler. For every field $f$, the
@@ -222,14 +267,20 @@ theorem definition_11_3_heun (f : ℝ → ℝ → ℝ) : definition_11_3 (equati
   isExplicit_heun f
 
 /-- **Definition 11.3** of [quarteroni2000numerical], backward Euler. The backward Euler method
-(11.8) is implicit: for the field $f(t, y) = y$ its increment function depends on $u_{n+1}$. -/
+(11.8) is implicit: for the field $f(t, y) = y$ its increment function depends on $u_{n+1}$.
+
+**Reading.** The statement establishes dependence for the witness field $f(t,y)=y$. A field
+independent of $y$ gives an increment independent of the new state. -/
 theorem definition_11_3_backwardEuler : ¬ definition_11_3 (equation_11_8 fun _ y => y) := by
   intro hex
   have := hex 0 0 0 1 0
   simp [equation_11_8, backwardEuler] at this
 
 /-- **Definition 11.3** of [quarteroni2000numerical], Crank–Nicolson. The Crank–Nicolson method
-(11.9) is implicit: for the field $f(t, y) = y$ its increment function depends on $u_{n+1}$. -/
+(11.9) is implicit: for the field $f(t, y) = y$ its increment function depends on $u_{n+1}$.
+
+**Reading.** The statement establishes dependence for the witness field $f(t,y)=y$. A field
+independent of $y$ gives an increment independent of the new state. -/
 theorem definition_11_3_crankNicolson : ¬ definition_11_3 (equation_11_9 fun _ y => y) := by
   intro hex
   have := hex 0 0 0 1 0

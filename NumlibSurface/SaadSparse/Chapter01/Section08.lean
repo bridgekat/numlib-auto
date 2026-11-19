@@ -91,6 +91,36 @@ The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.Similar`
   matrix norm, as the book states it with the proof deferred to Problem P-1.10. The second form
   follows from the first because all norms on a finite-dimensional space are equivalent and the
   equivalence constants disappear under a $k$-th root. No consistency condition on the norm is used.
+
+## Deviations from the source
+
+* **Theorem 1.6 and the corollary to Proposition 1.7** (generalization). Both statements also
+  cover real eigenvalues and vectors over the real field. See `SaadSparse.Chapter01.theorem_1_6`
+  and `SaadSparse.Chapter01.diagonalizable_of_injective_eigenvalues`.
+* **Theorem 1.8, the sentence after the block display** (correction). Individual Jordan blocks
+  can have different sizes. The index bounds every block size. See
+  `SaadSparse.Chapter01.theorem_1_8_index`.
+* **§1.8.3, partial Schur decomposition** (reading). The declaration states invariance of the
+  column span. If $k>n$, the index condition selects all columns. See
+  `SaadSparse.Chapter01.theorem_1_9_partial`.
+* **§1.8.3, real Schur form** (reading). The declaration asserts the block shape only. See
+  `SaadSparse.Chapter01.realSchur`.
+* **Theorem 1.10** (reading). The chapter works over $\mathbb{C}$ by default. This declaration
+  treats real matrices using their complex spectral radius. See `SaadSparse.Chapter01.theorem_1_10`.
+* **Theorem 1.11** (reading). The summability equivalence uses positive dimension. The separate
+  nonsingularity theorem treats real matrices. See `SaadSparse.Chapter01.theorem_1_11` and
+  `SaadSparse.Chapter01.theorem_1_11_isUnit`.
+* **Theorem 1.12** (reading and generalization). The statement concerns real matrices and allows
+  every norm on that space. See `SaadSparse.Chapter01.theorem_1_12_norm` and its Euclidean case
+  `SaadSparse.Chapter01.theorem_1_12`.
+
+## Not formalized
+
+* **§1.8.3, the spectra of the $2 \times 2$ real Schur blocks.** The theorem records only the
+  block sizes and the vanishing entries below the blocks.
+* **Theorem 1.11, the value of the sum.** The surface states summability and nonsingularity
+  separately. The real-matrix identity is available as
+  `Matrix.hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one`.
 -/
 
 open Matrix Filter Topology
@@ -108,6 +138,9 @@ matrix $\operatorname{diag}(d)$ with $d \in \mathbb{K}^n$, if and only if there 
 $d \in \mathbb{K}^n$ and linearly independent vectors $v_1, \dots, v_n \in \mathbb{K}^n$ with
 $$A v_j = d_j v_j \quad \text{for all } j.$$
 
+**Generalization.** The chapter works over $\mathbb{C}$ by default. The same basis criterion
+also holds over $\mathbb{R}$, with eigenvalues in the field of the vectors.
+
 Both directions read the relation $AX = XD$ column by column: the columns of the transforming
 matrix $X$ are the eigenvectors, and $X$ is nonsingular exactly when they are linearly
 independent. The proof is the backbone's
@@ -123,6 +156,9 @@ $A \in \mathbb{K}^{n \times n}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{
 $d_1, \dots, d_n \in \mathbb{K}$ be pairwise distinct, and let
 $v_1, \dots, v_n \in \mathbb{K}^n$ be nonzero vectors with $A v_j = d_j v_j$ for every $j$. Then
 $A$ is diagonalizable.
+
+**Generalization.** The chapter states the corollary over $\mathbb{C}$. The declaration also uses
+real scalars when the eigenvalues and eigenvectors are real.
 
 Eigenvectors that belong to distinct eigenvalues are linearly independent, so this follows from
 `SaadSparse.Chapter01.theorem_1_6`. -/
@@ -282,9 +318,9 @@ $$\operatorname{Null}((A - \lambda_i I)^{L+1}) = \operatorname{Null}((A - \lambd
 the **index** of $\lambda_i$, and every Jordan block for $\lambda_i$ has size $l_{ik} \le L$,
 and $L \le m_i = \sum_k l_{ik}$.
 
-This is the book's "of size not exceeding $l_i \le m_i$". The index $L$ is in fact the size of
-the largest Jordan block for $\lambda_i$, so the bound is attained; the statement records only
-the bound. -/
+**Correction.** The sentence after the block display assigns the index to each individual block.
+For $A = J_2(0) \oplus J_1(0)$, the index at zero is $2$ and one block has size $1$. The theorem
+states the upper bound on each size, as in the numbered statement. -/
 theorem theorem_1_8_index {A : Matrix (Fin n) (Fin n) ℂ} {p : ℕ} {lam : Fin p → ℂ} {γ : Fin p → ℕ}
     {l : ∀ i : Fin p, Fin (γ i) → ℕ}
     {σ : ((i : Fin p) × (k : Fin (γ i)) × Fin (l i k)) ≃ Fin n} (hinj : Function.Injective lam)
@@ -330,8 +366,11 @@ theorem theorem_1_9 (A : Matrix (Fin n) (Fin n) ℂ) :
 /-- **Theorem 1.9** of [saad2003iterative], partial Schur decomposition. Let
 $A, Q \in \mathbb{C}^{n \times n}$ with $Q$ unitary and $Q^H A Q$ upper triangular, and let
 $k \ge 0$. Then the span of the first $k$ Schur vectors, the first $k$ columns $q_1, \dots, q_k$
-of $Q$, is invariant under $A$: if $v$ is in this span, then so is $Av$. This is the partial
-Schur decomposition $A Q_k = Q_k R_k$. For $k = 1$ it says that $q_1$ is an eigenvector of $A$.
+of $Q$, is invariant under $A$: if $v$ is in this span, then so is $Av$.
+
+**Reading.** The text gives the explicit identity $A Q_k = Q_k R_k$ for $k \le n$. This
+declaration gives its span-invariance consequence. For $k>n$ its index set selects all columns,
+whose span is the entire space.
 
 The quasi-Schur (real Schur) form with $2 \times 2$ diagonal blocks is
 `SaadSparse.Chapter01.realSchur`. -/
@@ -373,6 +412,10 @@ theorem theorem_1_9_partial {A Q : Matrix (Fin n) (Fin n) ℂ}
 /-- **Theorem 1.10** of [saad2003iterative]. Let $A \in \mathbb{R}^{n \times n}$. Then $A^k \to 0$
 as $k \to \infty$ if and only if $\rho(A) < 1$.
 
+**Reading.** The chapter assumes complex matrices by default. This declaration treats real inputs,
+using their complex eigenvalues to compute the spectral radius for the stationary iterations that
+use the result.
+
 The spectral radius is `Matrix.complexSpectralRadius`, computed from the complex eigenvalues of
 $A$. The book proves the difficult direction with the Jordan form. The backbone proves it with
 Gelfand's formula, in `Numlib.LinearAlgebra.Matrix.Complexify`. Theorem 4.1 uses this result. -/
@@ -384,6 +427,10 @@ open scoped Matrix.Norms.L2Operator in
 /-- **Theorem 1.11** of [saad2003iterative]. Let $A \in \mathbb{C}^{n \times n}$ with $n \ge 1$.
 Then the series $\sum_{k=0}^\infty A^k$ converges if and only if $\rho(A) < 1$.
 
+**Reading.** The book gives no explicit lower bound on $n$. The declaration assumes $n \ge 1$ to use
+the unital Banach algebra convergence criterion. The book also identifies the sum as $(I-A)^{-1}$.
+The declaration states the convergence criterion only.
+
 The statement is over $\mathbb{C}$, with the Euclidean operator norm `Matrix.Norms.L2Operator`,
 which is where the Banach algebra results of Mathlib apply. The spectral radius is Mathlib's
 `spectralRadius ℂ A`, and convergence is `Summable`. -/
@@ -393,6 +440,10 @@ theorem theorem_1_11 [NeZero n] (A : Matrix (Fin n) (Fin n) ℂ) :
 
 /-- **Theorem 1.11** of [saad2003iterative], second part. Let $A \in \mathbb{R}^{n \times n}$ with
 $\rho(A) < 1$. Then $I - A$ is nonsingular.
+
+**Reading.** The book asserts nonsingularity and identifies the sum for complex matrices. This
+declaration gives the nonsingularity conclusion for real matrices, as needed for the stationary
+iteration argument in §4.1.2.
 
 For a real matrix, the spectral radius that decides is the one of the complex eigenvalues,
 `Matrix.complexSpectralRadius`, because `spectrum ℝ` can miss the eigenvalues altogether.
@@ -406,9 +457,11 @@ open scoped Matrix.Norms.L2Operator in
 Let $A \in \mathbb{R}^{n \times n}$. Then
 $$\lim_{k \to \infty} \|A^k\|_2^{1/k} = \rho(A).$$
 
-The norm is `Matrix.Norms.L2Operator`, for which the backbone proves the formula. The statement
-of the book, for an arbitrary matrix norm, is `SaadSparse.Chapter01.theorem_1_12_norm`. Theorem
-1.28 and §4.2.1 use this result. -/
+**Reading.** The chapter assumes complex matrices by default and states the formula for any
+induced matrix norm. This declaration uses the Euclidean operator norm of real matrices. The
+companion `SaadSparse.Chapter01.theorem_1_12_norm` covers all norms on the real matrix space.
+
+The norm is `Matrix.Norms.L2Operator`. Theorem 1.28 and §4.2.1 use this result. -/
 theorem theorem_1_12 (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => ‖A ^ k‖ ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
   Matrix.tendsto_pow_rpow_complexSpectralRadius A
@@ -417,12 +470,16 @@ open scoped Matrix.Norms.L2Operator in
 /-- **Theorem 1.12** of [saad2003iterative] (Gelfand's formula), for an arbitrary matrix norm. Let
 $p$ be a norm on $\mathbb{R}^{n \times n}$ and let $A \in \mathbb{R}^{n \times n}$. Then
 $$\lim_{k \to \infty} p(A^k)^{1/k} = \rho(A).$$
-This is the form in which the book states the theorem; it defers the proof to Problem P-1.10.
 
-A matrix norm in the sense of (1.7)–(1.9) is a `Seminorm ℝ` (nonnegative, absolutely homogeneous
-and subadditive) that is definite, and the hypothesis `hp` gives the definiteness. The
-consistency condition (1.11) is not needed: all matrix norms are equivalent, so the limit is the
-same for each of them, by `Seminorm.tendsto_rpow_one_div`. -/
+**Reading.** The chapter assumes complex matrices by default. The declaration quantifies over
+norms of real matrices, using their complex spectral radius. The Euclidean operator norm case
+is `SaadSparse.Chapter01.theorem_1_12`.
+
+**Generalization.** The convention in §1.5 restricts matrix norms to induced norms. The theorem
+allows every norm on the real matrix space because the equivalence constants between norms
+disappear under the $k$-th root.
+
+The norm is a `Seminorm ℝ` with the definiteness hypothesis `hp`. -/
 theorem theorem_1_12_norm (p : Seminorm ℝ (Matrix (Fin n) (Fin n) ℝ))
     (hp : ∀ M : Matrix (Fin n) (Fin n) ℝ, p M = 0 → M = 0) (A : Matrix (Fin n) (Fin n) ℝ) :
     Tendsto (fun k : ℕ => p (A ^ k) ^ (1 / k : ℝ)) atTop (𝓝 A.complexSpectralRadius.toReal) :=
@@ -433,9 +490,8 @@ Let $A \in \mathbb{R}^{n \times n}$. Then there is an orthogonal $Q \in \mathbb{
 such that $Q^T A Q$ is quasi upper triangular: block upper triangular, with diagonal blocks of
 consecutive indices of size $1 \times 1$ or $2 \times 2$.
 
-The book gives this form without proof, as a "slight variation" on Theorem 1.9, and illustrates
-it only by the decimal matrices of Example 1.2. In the book, the $2 \times 2$ blocks carry the
-pairs of complex conjugate eigenvalues; the statement here does not assert this.
+**Reading.** The book also associates each $2 \times 2$ block with a pair of complex conjugate
+eigenvalues. The declaration supplies the block shape and size bounds.
 
 The block structure is a monotone index map $p$ from the indices to $\mathbb{N}$: monotonicity
 makes each block an interval of consecutive indices, the bound on the size of each fibre of $p$

@@ -41,6 +41,8 @@ eigenvectors of the reduced pencil $(Z^TAZ, Z^TGZ)$. The proofs specialize resul
 * **Theorem 10.1** (correction). The eigenvalue $1$ of $\mathcal{P}^{-1}\mathcal{A}$ can have
   multiplicity greater than $2m$, because the reduced pencil can also have the eigenvalue $1$. See
   `BenziGolubLiesen.theorem_10_1` and `BenziGolubLiesen.theorem_10_1_multiplicity_example`.
+* **Theorem 10.1** (reading). The source's nonsingularity condition is on the full saddle
+  matrix $\mathcal A$. The formal statement retains this condition.
 -/
 
 open Matrix Polynomial
@@ -72,6 +74,9 @@ $(\lambda - 1)^{2m}$ is always present, but the reduced pencil can supply furthe
 For $A = \operatorname{diag}(2, 1)$, $G = I$ and $B = [1, 0]$, the characteristic polynomial is
 $(\lambda - 1)^3$; see `BenziGolubLiesen.theorem_10_1_multiplicity_example`. The statement
 therefore gives the factorization of the characteristic polynomial.
+
+The source assumes nonsingularity of the full saddle matrix $\mathcal A$. The declaration
+retains that assumption, although its proof does not use it.
 
 In the original coordinates, the eigenvector lifted from a reduced eigenvector $z_j$ has primal
 component $Zz_j$. The vectors $e_l$ are the coordinate vectors of $\mathbb{R}^m$, written

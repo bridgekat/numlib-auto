@@ -76,6 +76,15 @@ mass matrix $I$ and the stiffness matrix $\nu A_{fd}$, and use the Taylor bounds
 
 ## Deviations from the source
 
+* **Equations (13.8)–(13.11)** (reading). The semidiscrete equation uses within derivatives on a
+  closed finite time interval. The $\theta$-step is a total one-step map using matrix inverse,
+  and equivalence with the difference equation is proved for $\theta\ge0$, positive diffusion,
+  and positive time step. The homogeneous spectral-radius criterion explicitly quantifies over
+  all initial vectors. See `QuarteroniSaccoSaleri.Chapter13.equation_13_8_iff` and
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_11`.
+* **Exercise 13.1** (reading). The residual is that of the space-time heat scheme, as indicated
+  by the $h^2$ term in the exercise. The bound supplies explicit constants under global fourth-
+  order derivative bounds. See `QuarteroniSaccoSaleri.Chapter13.exercise_13_1`.
 * **Stability condition after (13.11)** (correction). The source states that forward Euler is
   asymptotically stable if and only if $\Delta t < h^2/(2\nu)$. This condition is sufficient but not
   necessary; the exact condition is $\Delta t \nu \mu_{\max} < 2$ with $\mu_{\max} < 4/h^2$. See
@@ -98,7 +107,9 @@ matrix of order $n - 1$
 $$A_{fd} = h^{-2} \operatorname{tridiag}(-1, 2, -1),$$
 with $2/h^2$ on the diagonal, $-1/h^2$ on the two off-diagonals, and $0$ elsewhere.
 
-The definition is $n^2$ times `Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2`. -/
+The definition is $n^2$ times `Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2`.
+
+**Reading.** The matrix definition also gives the empty matrix at $n=0$. -/
 noncomputable def laplacianFD (n : ℕ) : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ :=
   ((n : ℝ) ^ 2) • Matrix.symmTridiagonalToeplitz (n - 1) (-1) 2
 
@@ -131,7 +142,10 @@ that satisfies the equation. This is the system of ordinary differential equatio
 three-point discretization in space leaves.
 
 The definition is `FiniteDifference.IsSemidiscrete` with the mass matrix $I$ and the stiffness
-matrix $\nu A_{fd}$. -/
+matrix $\nu A_{fd}$.
+
+**Reading.** The system is stated on a closed finite time interval with vector inputs for the
+sampled data. -/
 def equation_13_8 (n : ℕ) (ν T : ℝ) (f : ℝ → Fin (n - 1) → ℝ) (u₀ : Fin (n - 1) → ℝ)
     (u : ℝ → Fin (n - 1) → ℝ) : Prop :=
   FiniteDifference.IsSemidiscrete 1 (ν • laplacianFD n) f u₀ T u
@@ -142,6 +156,8 @@ $u : \mathbb{R} \to \mathbb{R}^{n-1}$. Then $u$ solves (13.8) if and only if $u(
 there is a function $\dot u$ such that, for every $t \in [0, T]$, $\dot u(t)$ is the derivative
 of $u$ within $[0, T]$ at $t$ and
 $$\dot u(t) = -\nu A_{fd} u(t) + f(t).$$
+
+**Reading.** Equivalent normal form with within derivatives at both endpoints.
 -/
 theorem equation_13_8_iff (ν T : ℝ) (f : ℝ → Fin (n - 1) → ℝ) (u₀ : Fin (n - 1) → ℝ)
     (u : ℝ → Fin (n - 1) → ℝ) :
@@ -167,7 +183,10 @@ $$u^{k+1} = (I + \nu \theta \Delta t A_{fd})^{-1} \bigl((I - \nu (1 - \theta) \D
 The definition is `FiniteDifference.thetaStep` with the mass matrix $I$ and the stiffness matrix
 $\nu A_{fd}$. The arguments `f₀`, `f₁` and `u` are $f^k$, $f^{k+1}$ and $u^k$. If the system
 matrix is singular, the Lean inverse is $0$; this does not happen under the hypotheses of
-`QuarteroniSaccoSaleri.Chapter13.equation_13_9_iff`. -/
+`QuarteroniSaccoSaleri.Chapter13.equation_13_9_iff`.
+
+**Reading.** This is one update using total matrix inversion. The initial value is supplied
+separately. -/
 noncomputable def equation_13_10 (n : ℕ) (ν θ Δt : ℝ) (f₀ f₁ u : Fin (n - 1) → ℝ) :
     Fin (n - 1) → ℝ :=
   FiniteDifference.thetaStep 1 (ν • laplacianFD n) θ Δt f₀ f₁ u
@@ -180,7 +199,10 @@ $$\frac{u^{k+1} - u^k}{\Delta t} = -\nu A_{fd} \bigl(\theta u^{k+1} + (1 - \thet
 which is the recursion (13.9).
 
 The system matrix $I + \nu \theta \Delta t A_{fd}$ is invertible because $A_{fd}$ is positive
-definite. -/
+definite.
+
+**Generalization.** The one-step equivalence permits all $\theta\ge0$ under positive diffusion
+and time step. -/
 theorem equation_13_9_iff (hn : 0 < n) {ν θ Δt : ℝ} (hν : 0 < ν) (hθ : 0 ≤ θ) (hΔt : 0 < Δt)
     (f₀ f₁ u u' : Fin (n - 1) → ℝ) :
     u' = equation_13_10 n ν θ Δt f₀ f₁ u ↔
@@ -198,7 +220,10 @@ theorem equation_13_9_iff (hn : 0 < n) {ν θ Δt : ℝ} (hν : 0 < ν) (hθ : 0
 
 /-- For $\nu, \Delta t \in \mathbb{R}$, the amplification matrix
 `FiniteDifference.thetaAmplification` of forward Euler ($\theta = 0$) with the mass matrix $I$
-and the stiffness matrix $\nu A_{fd}$ is $I - \nu \Delta t A_{fd}$. -/
+and the stiffness matrix $\nu A_{fd}$ is $I - \nu \Delta t A_{fd}$.
+
+**Reading.** Same amplification matrix defined for arbitrary real ν and Δt.
+-/
 theorem thetaAmplification_forwardEuler (ν Δt : ℝ) :
     FiniteDifference.thetaAmplification (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)
         (ν • laplacianFD n) 0 Δt = 1 - (ν * Δt) • laplacianFD n := by
@@ -209,6 +234,8 @@ theorem thetaAmplification_forwardEuler (ν Δt : ℝ) :
 (13.11)). Let $\nu, \Delta t \in \mathbb{R}$ and $u^0 \in \mathbb{R}^{n-1}$. For $\theta = 0$
 and $f = 0$, the $k$-th iterate of the step (13.10) is
 $$u^k = (I - \nu \Delta t A_{fd})^k u^0.$$
+
+**Reading.** Same homogeneous iteration for all real ν and Δt and k including zero.
 -/
 theorem equation_13_11_iterate (ν Δt : ℝ) (u₀ : Fin (n - 1) → ℝ) (k : ℕ) :
     (fun u => equation_13_10 n ν 0 Δt 0 0 u)^[k] u₀
@@ -225,7 +252,10 @@ forward Euler iterates $(I - \nu \Delta t A_{fd})^k u^0$ tend to $0$ as $k \to \
 $u^0 \in \mathbb{R}^{n-1}$ if and only if
 $$\rho(I - \nu \Delta t A_{fd}) < 1.$$
 
-The spectral radius $\rho$ is computed over $\mathbb{C}$, by `Matrix.complexSpectralRadius`. -/
+The spectral radius $\rho$ is computed over $\mathbb{C}$, by `Matrix.complexSpectralRadius`.
+
+**Reading.** The asymptotic stability criterion is for convergence from every initial vector.
+The matrix equivalence admits arbitrary real coefficients. -/
 theorem equation_13_11 (ν Δt : ℝ) :
     (∀ u₀ : Fin (n - 1) → ℝ,
         Tendsto (fun k : ℕ => ((1 - (ν * Δt) • laplacianFD n) ^ k) *ᵥ u₀) atTop (𝓝 0)) ↔
@@ -260,7 +290,9 @@ theorem laplacianFD_hasEigenvalue_iff (hn : 0 < n) (μ : ℝ) :
 $n \in \mathbb{N}$ and $h = 1/n$, it is
 $$\mu_{\max} = \frac{4}{h^2} \sin^2\Bigl(\frac{(n - 1) \pi h}{2}\Bigr).$$
 
-The definition is $4 n^2 \sin^2((n - 1) \pi / (2n))$. At $n = 0$ it is $0$. -/
+The definition is $4 n^2 \sin^2((n - 1) \pi / (2n))$. At $n = 0$ it is $0$.
+
+**Reading.** At $n=1$ the empty interior matrix is assigned the sentinel value zero. -/
 noncomputable def laplacianFDMaxEigenvalue (n : ℕ) : ℝ :=
   4 * (n : ℝ) ^ 2 * Real.sin (((n : ℝ) - 1) * π / (2 * n)) ^ 2
 
@@ -301,6 +333,8 @@ theorem smul_laplacianFD_eq (hn : 0 < n) (ν Δt : ℝ) :
 Let $n \ge 1$, $\nu > 0$ and $\Delta t > 0$, and let $\mu_{\max}$ be the largest eigenvalue of
 $A_{fd}$. Then
 $$\rho(I - \nu \Delta t A_{fd}) < 1 \iff \Delta t\, \nu\, \mu_{\max} < 2.$$
+
+**Correction.** Corrects alleged iff using the exact finite-grid eigenvalue.
 -/
 theorem equation_13_11_iff (hn : 0 < n) {ν Δt : ℝ} (hν : 0 < ν) (hΔt : 0 < Δt) :
     Matrix.complexSpectralRadius (1 - (ν * Δt) • laplacianFD n) < 1 ↔
@@ -387,7 +421,11 @@ The family $D$ is `HasPartialDerivs u D`. The proof splits $R$ into a time part 
 part. The heat equation at the two time levels turns the source terms into $\nu$ times the
 defects $\delta_x^2 u - u_{xx}$, which are $O(\Delta x^2)$ by
 `FiniteDifference.Hyperbolic.abs_secondDiff_fst_sub_le`. The time part is $O(\Delta t)$ in
-general, and for $\theta = 1/2$ it is the defect of the trapezoidal rule, $O(\Delta t^2)$. -/
+general, and for $\theta = 1/2$ it is the defect of the trapezoidal rule, $O(\Delta t^2)$.
+
+**Reading.** The exercise mentions the scalar Cauchy problem but its requested $h^2$ term is
+spatial. The statement analyzes the full heat-scheme residual under explicit global smoothness
+and derivative bounds. -/
 theorem exercise_13_1 {u f : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {ν θ M Δt Δx : ℝ}
     (hD : HasPartialDerivs u D) (hΔt : 0 < Δt) (hΔt1 : Δt ≤ 1) (hΔx : 0 < Δx)
     (hheat : ∀ y s, D 0 1 y s - ν * D 2 0 y s = f y s)

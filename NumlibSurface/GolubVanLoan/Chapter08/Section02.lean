@@ -83,9 +83,25 @@ The proofs specialize the backbone modules `Numlib.Eigen.PowerMethod`,
 
 ## Deviations from the source
 
+* **§8.2.1, residual error estimate** (reading).
+  `GolubVanLoan.Chapter08.powerMethod_residual_bound` proves the factor-one estimate as well as
+  the printed $\sqrt2$ estimate.
+* **§8.2.2–§8.2.3** (reading). `GolubVanLoan.Chapter08.inverseIteration_expansion` requires a
+  shift outside the spectrum. `GolubVanLoan.Chapter08.rayleighQuotientIteration` is total at a
+  singular shifted solve. The residual minimizer theorem applies to nonsymmetric real $A$ as
+  well.
+* **Theorem 8.2.2, final line of the proof** (typo). The theorem's bound and Lean both contain
+  $1/\sqrt{1-d_0^2}$. The source proof's final line omits the square root.
+* **§8.2.5, subspace and diagonal convergence** (reading).
+  `GolubVanLoan.Chapter08.orthogonalIteration_gap_le_of_forall` gives the explicit finite-step
+  gap estimate. `GolubVanLoan.Chapter08.qrIterate_tendsto_diagonal` uses canonical QR from the
+  identity basis, assumes nonzero eigenvalues, and specifies each diagonal limit.
 * **Equations (8.2.1)–(8.2.2)** (generalization). The source takes $U_0$ orthogonal. The similarity
   $T_k = (U_0 \cdots U_k)^T A (U_0 \cdots U_k)$ and the symmetry of $T_k$ hold for every $U_0$, and
   the $R_k$ need not be upper triangular. See `GolubVanLoan.Chapter08.equation_8_2_2`.
+* **Proof of Theorem 8.2.1** (typo). The final bound uses the maximum of $|\lambda_1-\lambda_i|$,
+  as in (8.2.5). The proof prints $\lambda_n$ inside that maximum. See
+  `GolubVanLoan.Chapter08.theorem_8_2_1_b`.
 * **Equation (8.2.7)** (correction). The source omits the hypothesis $c_k s_k \neq 0$; without it
   $\mu_k$ is an eigenvalue and the step is not defined. See `GolubVanLoan.Chapter08.equation_8_2_7`.
 * **Equation (8.2.7)** (typo). The source loses the minus sign: the next iterate is
@@ -214,9 +230,11 @@ $\lambda^{(k)} = q^{(k)T} A q^{(k)}$ of the power method satisfy
 $$|\lambda^{(k)} - \lambda_1| \le \max_{2 \le i \le n} |\lambda_1 - \lambda_i| \,
   \tan(\theta_0)^2 \left|\frac{\lambda_2}{\lambda_1}\right|^{2k}.$$
 
-The estimate $\lambda^{(k)}$ is the second component of `GolubVanLoan.Chapter07.powerMethod`. In
-the proof of the source the first sum is garbled, and $|\lambda_1 - \lambda_n|$ is written where
-$\max_i |\lambda_1 - \lambda_i|$ is needed. -/
+**Typo.** The last line of the proof prints $\lambda_n$ in place of $\lambda_i$ inside the
+maximum. The theorem uses $\max_{2 \le i \le n}|\lambda_1-\lambda_i|$, as printed in (8.2.5).
+Ordering by absolute value does not make $\lambda_n$ farthest from $\lambda_1$.
+
+The estimate $\lambda^{(k)}$ is the second component of `GolubVanLoan.Chapter07.powerMethod`. -/
 theorem theorem_8_2_1_b {N : ℕ} {A Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 2)) ℝ) {lam : Fin (N + 2) → ℝ}
     (hQA : Qᵀ * A * Q = diagonal lam) (h01 : |lam 1| < |lam 0|) (hlam : Antitone fun i => |lam i|)
@@ -259,7 +277,10 @@ $\delta = \|A q - (q^T A q) q\|_2$. Then there is an eigenvalue $\lambda$ of $A$
 $$|q^T A q - \lambda| \le \delta, \qquad \text{hence} \qquad |q^T A q - \lambda| \le \sqrt{2} \,
   \delta.$$
 
-The second bound is the one of the source, the case $r = 1$ of Theorem 8.1.13. -/
+The second bound is the one of the source, the case $r = 1$ of Theorem 8.1.13.
+
+**Reading.** The source gives the residual estimate with factor $\sqrt2$. Lean proves the
+sharper estimate with factor one and gives the source inequality as a consequence. -/
 theorem powerMethod_residual_bound {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {q : Fin n → ℝ} (hq : q ⬝ᵥ q = 1) :
     ∃ l ∈ spectrum ℝ A, |q ⬝ᵥ A *ᵥ q - l| ≤ ‖WithLp.toLp 2 (A *ᵥ q - (q ⬝ᵥ A *ᵥ q) • q)‖ ∧
@@ -298,7 +319,10 @@ for every $x = \sum_i a_i q_i$,
 $$(A - \lambda I)^{-1} x = \sum_{i=1}^n \frac{a_i}{\lambda_i - \lambda} \, q_i.$$
 
 The vector $x$ is $Q a$. Inverse iteration is the power method applied to
-$(A - \lambda I)^{-1}$, which is `Krylov.inverseIterate`. -/
+$(A - \lambda I)^{-1}$, which is `Krylov.inverseIterate`.
+
+**Reading.** The source assumes the inverse exists in its expansion. Lean explicitly excludes
+every eigenvalue as a possible shift. -/
 theorem inverseIteration_expansion {A Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {l : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal l)
     {c : ℝ} (hc : ∀ i, l i ≠ c) (a : Fin n → ℝ) :
@@ -323,7 +347,10 @@ theorem inverseIteration_expansion {A Q : Matrix (Fin n) (Fin n) ℝ}
 $x \in \mathbb{R}^n$ with $x \neq 0$. Then the Rayleigh quotient $r(x) = x^T A x / x^T x$
 minimizes $\|(A - \mu I) x\|_2$ over $\mu \in \mathbb{R}$.
 
-The matrix $A$ need not be symmetric. -/
+The matrix $A$ need not be symmetric.
+
+**Generalization.** The residual minimizer is the same Rayleigh quotient for nonsymmetric real
+$A$. The source assumes symmetric $A$. -/
 theorem rayleighQuotient_isMinOn (A : Matrix (Fin n) (Fin n) ℝ) {x : Fin n → ℝ} (hx : x ≠ 0) :
     IsMinOn (fun μ : ℝ => ‖WithLp.toLp 2 ((A - μ • 1) *ᵥ x)‖) Set.univ (rayleighQuotient A x) := by
   have hxx : 0 < x ⬝ᵥ x := by
@@ -357,7 +384,11 @@ $$\mu_k = r(x_k), \qquad (A - \mu_k I) z_{k+1} = x_k, \qquad x_{k+1} = z_{k+1} /
 
 The solve is the product with the matrix inverse `Matrix.inv`. If $A - \mu_k I$ is singular, the
 inverse is $0$ in Lean, so that $z_{k+1} = 0$ and $x_{k+1} = 0$; statements about the iteration
-carry the hypotheses that exclude this. -/
+carry the hypotheses that exclude this.
+
+**Reading.** The source starts at nonzero $x_0$ and performs a shifted solve when it is
+available. The Lean recurrence is total and gives a zero next iterate when the shifted
+coefficient matrix is singular. -/
 noncomputable def rayleighQuotientIteration (A : Matrix (Fin n) (Fin n) ℝ) (x₀ : Fin n → ℝ) :
     ℕ → Fin n → ℝ
   | 0 => x₀
@@ -520,7 +551,11 @@ $$\left|\frac{s_k}{c_k}\right| = \left|\frac{s_0}{c_0}\right|^{3^k}.$$
 So the iterates converge cubically to $\operatorname{span}\{e_1\}$ if $|c_0| > |s_0|$, and to
 $\operatorname{span}\{e_2\}$ if $|c_0| < |s_0|$.
 
-The proof applies `GolubVanLoan.Chapter08.equation_8_2_7` at each step. -/
+The proof applies `GolubVanLoan.Chapter08.equation_8_2_7` at each step.
+
+**Reading.** The Lean theorem gives the exact cubic evolution of the absolute component ratio
+at every step, under the nonzero component hypotheses. The source states the ensuing projective
+convergence when the component magnitudes are distinct. -/
 theorem equation_8_2_7_cubic {l₁ l₂ : ℝ} (hl : l₂ < l₁) {c₀ s₀ : ℝ}
     (hcs : c₀ ^ 2 + s₀ ^ 2 = 1) (hc : c₀ ≠ 0) (hs : s₀ ≠ 0) (k : ℕ) :
     let x := rayleighQuotientIteration (diagonal ![l₁, l₂]) ![c₀, s₀] k
@@ -637,7 +672,10 @@ The matrix $A$ is symmetric because $Q^T A Q$ is diagonal. Orthogonal iteration 
 `GolubVanLoan.Chapter02.subspaceDist`. The proof of the source prints the factor $1/(1 - d_0^2)$
 instead of $1/\sqrt{1 - d_0^2}$. The argument of the source through (8.2.13) and the thin CS
 decomposition is replaced by the graph argument of
-`LinearMap.IsSymmetric.gap_subspaceIterate_le`. -/
+`LinearMap.IsSymmetric.gap_subspaceIterate_le`.
+
+**Typo.** The theorem's displayed bound uses the square root of $1-d_0^2$, as in Lean. The last
+line of the source proof omits that square root. -/
 theorem theorem_8_2_2 {A Q : Matrix (Fin n) (Fin n) ℝ} (hQ : Q ∈ orthogonalGroup (Fin n) ℝ)
     {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam) (hlam : Antitone fun i => |lam i|)
     {r : ℕ} (hr0 : 0 < r) (hrn : r < n) (hgap : |lam ⟨r, hrn⟩| < |lam ⟨r - 1, by omega⟩|)
@@ -737,7 +775,10 @@ $$\operatorname{dist}(\operatorname{span}\{q^{(k)}_1, \dots, q^{(k)}_i\}, D_i(A)
 
 The source states the rate as $O(|\lambda_{i+1}/\lambda_i|^k)$; the constant here is explicit.
 The leading $i$ columns of $Q_k$ form an orthogonal iteration of their own, because the factors
-$R_k$ are upper triangular, and Theorem 8.2.2 applies to them. -/
+$R_k$ are upper triangular, and Theorem 8.2.2 applies to them.
+
+**Reading.** The source gives an asymptotic order for the gap of each leading subspace. Lean
+retains the explicit initial-gap coefficient and gives a bound for every iteration. -/
 theorem orthogonalIteration_gap_le_of_forall {A Q : Matrix (Fin n) (Fin n) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {lam : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal lam)
     (hlam : StrictAnti fun i => |lam i|) {Qk : ℕ → Matrix (Fin n) (Fin n) ℝ}
@@ -784,7 +825,12 @@ of the QR iteration from $T_0 = A$ converge to $\operatorname{diag}(\lambda_1, \
 to $\lambda_j$.
 
 The QR iteration is `Matrix.qrIterate`, with the canonical QR factorization. The condition on
-$Q^T$ is the general-position condition (8.2.15) for $Q_0 = I$. -/
+$Q^T$ is the general-position condition (8.2.15) for $Q_0 = I$.
+
+**Reading.** The source allows a general initial orthogonal basis and states convergence to
+diagonal form. This theorem treats canonical QR iteration from $A$ itself, so the initial basis
+is the identity, and assumes all eigenvalues are nonzero. Its conclusion identifies the
+diagonal limits individually. -/
 theorem qrIterate_tendsto_diagonal {A Q : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hQ : Q ∈ orthogonalGroup (Fin n) ℝ) {l : Fin n → ℝ} (hQA : Qᵀ * A * Q = diagonal l)
     (hsep : ∀ j k : Fin n, j < k → |l k| < |l j|) (hl0 : ∀ j, l j ≠ 0)

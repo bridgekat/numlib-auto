@@ -18,6 +18,12 @@ decomposition of the initial residual.
   and gives the two terms of the corresponding oblique decomposition.
 * `LiesenStrakos.Chapter03.remark_3_8_2` gives the three equivalent projection
   characterizations of the CG iterate.
+
+## Deviations from the source
+
+* **Remark 3.8.2** (correction). The error and residual descriptions use the complementary
+  projections specified by the decompositions, and the residual formula uses its polynomial
+  scaling.
 -/
 
 open Krylov Polynomial
@@ -30,7 +36,10 @@ orthogonal projection onto $\mathcal K_n(A,r_0)$, and assume CG has yet to termi
 step $n$. There is a monic polynomial $p$ of degree $n$ with $\alpha_0=p(0)\ne0$ such that
 $P A^n r_0=-(p-X^n)(A)r_0$. The CG residual is then
 $r_n=\alpha_0^{-1}(A^nr_0-P A^nr_0)$, and $r_0-r_n$ is the image under $A$ of the step-$n$
-correction in $\mathcal K_n(A,r_0)$, equal to $-\alpha_0^{-1}(p-\alpha_0)(A)r_0$. -/
+correction in $\mathcal K_n(A,r_0)$, equal to $-\alpha_0^{-1}(p-\alpha_0)(A)r_0$.
+
+**Generalization.** The decomposition holds on any inner product space with a finite-
+dimensional cyclic span. -/
 theorem theorem_3_8_1 {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
     {A : E →ₗ[𝕜] E} (b x₀ : E) {n : ℕ} (hA : A.IsSymmetricCoercive)
     [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] (hn : n < grade A (b - A x₀)) :
@@ -103,7 +112,12 @@ determined by any of three projection formulas. Its error is the projection of t
 error onto the energy-orthogonal complement of the Krylov space. Its residual is the component
 of the initial residual along the orthogonal complement of the Krylov space in the oblique
 decomposition. It is also the orthogonal component of $A^n r_0$ scaled by the reciprocal of
-the constant term of the monic residual polynomial. -/
+the constant term of the monic residual polynomial.
+
+**Correction.** The error is the $A$-orthogonal projection onto the orthogonal complement of
+the trial space. The residual is in the complementary summand of the oblique decomposition. Its
+orthogonal formula uses the complementary projection of $A^n r_0$ scaled by $1/p(0)$, as in
+Theorem 3.8.1. -/
 theorem remark_3_8_2 {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
     {A : E →ₗ[𝕜] E} (b x₀ : E) {n : ℕ} (hA : A.IsSymmetricCoercive)
     [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))] (hn : n < grade A (b - A x₀))

@@ -68,8 +68,18 @@ converse of Corollary 4.27 (`MeasureTheory.Lp.uniform_translate_of_isCompact_clo
 
 ## Deviations from the source
 
-* **Theorem 4.26** (generalization). The source assumes that $\Omega$ is measurable. The formal
-  statement holds for every set of finite outer measure. See `Brezis.Chapter04.theorem_4_26`.
+* **Theorem 4.26 and Corollary 4.28** (generalization). Restriction may be to any set of finite
+  outer measure. See `Brezis.Chapter04.theorem_4_26` and `Brezis.Chapter04.corollary_4_28`.
+* **Translation invariance in the proof of Lemma 4.3** (generalization). The seminorm identity
+  allows all extended nonnegative exponents and a.e. measurable functions. See
+  `Brezis.Chapter04.eLpNorm_comp_add_right` and `Brezis.Chapter04.eLpNorm_comp_add_right_real`.
+* **Remark 12 and Exercise 4.33** (reading). The counterexample uses translates of an interval
+  indicator. The exercise treats any nonzero compactly supported continuous seed. See
+  `Brezis.Chapter04.remark_4_12`.
+* **Exercise 4.34** (reading). The results apply to sets with compact closure. The tightness
+  statement gives a bounded measurable set, which can be enlarged to an open ball. See
+  `Brezis.Chapter04.uniform_translate_of_isCompact_closure` and
+  `Brezis.Chapter04.tight_of_isCompact_closure`.
 -/
 
 open Filter MeasureTheory Metric Topology
@@ -181,7 +191,9 @@ $\Omega \subseteq \mathbb{R}^N$ of finite measure, the closure of $\mathcal{F}|_
 $L^p(\Omega)$ is compact.
 
 The convolution with $G$ is the backbone's bounded operator `MeasureTheory.Lp.convolutionCLM`,
-whose values are a.e. the convolutions $G \star u$ (`MeasureTheory.Lp.coeFn_convolutionCLM`). -/
+whose values are a.e. the convolutions $G \star u$ (`MeasureTheory.Lp.coeFn_convolutionCLM`).
+
+**Generalization.** The restriction may be to any set of finite outer measure. -/
 theorem corollary_4_28 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) {G : 𝔼 → ℝ}
     (hG : Integrable G volume) {B : Set (Lp ℝ p (volume : Measure 𝔼))} (hB : Bornology.IsBounded B)
     {Ω : Set 𝔼} (hΩ : volume Ω < ∞) :
@@ -193,7 +205,8 @@ theorem corollary_4_28 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) {G : �
 /-- Translation preserves the $L^p$ norm on $\mathbb{R}$: for an a.e. strongly measurable
 $f : \mathbb{R} \to \mathbb{R}$ and $h \in \mathbb{R}$, $\|f(\cdot + h)\|_p = \|f\|_p$.
 
-This is the backbone's `MeasureTheory.eLpNorm_comp_add_right` on $\mathbb{R}$. -/
+**Generalization.** The $L^p$ norm identity used in the proof of Lemma 4.3 extends to the seminorm
+of an a.e. measurable function and any extended nonnegative exponent. -/
 theorem eLpNorm_comp_add_right_real {f : ℝ → ℝ} {p : ℝ≥0∞} (hf : AEStronglyMeasurable f volume)
     (h : ℝ) : eLpNorm (fun x => f (x + h)) p volume = eLpNorm f p volume :=
   MeasureTheory.eLpNorm_comp_add_right hf h
@@ -206,7 +219,10 @@ satisfies (22) and does not have compact closure in $L^p(\mathbb{R})$.
 The example is the set of the translates $\varphi(\cdot + n)$, $n \in \mathbb{N}$, of the
 indicator function $\varphi$ of $[0, 1)$. It satisfies (22) because translation is an isometry
 of $L^p$ and $\varphi$ satisfies Lemma 4.3. Its closure is not compact, because the translates
-are at mutual distance at least $1$. -/
+are at mutual distance at least $1$.
+
+**Reading.** The exercise gives a family for an arbitrary nonzero continuous seed with compact
+support. The interval indicator supplies an alternative witness for the existential claim. -/
 theorem remark_4_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
     ∃ F : Set (Lp ℝ p (volume : Measure ℝ)), Bornology.IsBounded F ∧
       (∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : ℝ, ‖h‖ < δ →
@@ -290,7 +306,8 @@ theorem remark_4_12 {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞) :
 /-- Translation preserves the $L^p$ norm on $\mathbb{R}^N$: for an a.e. strongly measurable
 $f : \mathbb{R}^N \to \mathbb{R}$ and $h \in \mathbb{R}^N$, $\|f(\cdot + h)\|_p = \|f\|_p$.
 
-This is the backbone's `MeasureTheory.eLpNorm_comp_add_right` on $\mathbb{R}^N$. -/
+**Generalization.** The $L^p$ norm identity used in the proof of Lemma 4.3 extends to the seminorm
+of an a.e. measurable function and any extended nonnegative exponent. -/
 theorem eLpNorm_comp_add_right {f : 𝔼 → ℝ} {p : ℝ≥0∞} (hf : AEStronglyMeasurable f volume)
     (h : 𝔼) : eLpNorm (fun x => f (x + h)) p volume = eLpNorm f p volume :=
   MeasureTheory.eLpNorm_comp_add_right hf h
@@ -300,7 +317,10 @@ $1 \le p < \infty$ and let $\mathcal{F} \subseteq L^p(\mathbb{R}^N)$ have compac
 $\mathcal{F}$ satisfies (22).
 
 This is the backbone's `MeasureTheory.Lp.uniform_translate_of_isCompact_closure`, with a real
-$\varepsilon$ as in the source. -/
+$\varepsilon$ as in the source.
+
+**Generalization.** The exercise assumes that $\mathcal{F}$ itself is compact. The statement
+applies the result to its compact closure. -/
 theorem uniform_translate_of_isCompact_closure {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : IsCompact (closure F)) :
     ∀ ε > (0 : ℝ), ∃ δ > (0 : ℝ), ∀ f ∈ F, ∀ h : 𝔼, ‖h‖ < δ →
@@ -314,7 +334,11 @@ $\Omega \subseteq \mathbb{R}^N$ with $\|f\|_{L^p(\mathbb{R}^N \setminus \Omega)}
 for all $f \in \mathcal{F}$.
 
 This is the backbone's `MeasureTheory.Lp.tight_of_isCompact_closure`, with a real $\varepsilon$
-as in the source. -/
+as in the source.
+
+**Reading.** The exercise assumes a compact $\mathcal{F}$ and gives a bounded open set $\Omega$.
+The library assumes a compact closure and gives a bounded measurable set, which can be enlarged
+to an open ball while preserving the tail bound. -/
 theorem tight_of_isCompact_closure {p : ℝ≥0∞} [Fact (1 ≤ p)] (hp : p ≠ ∞)
     {F : Set (Lp ℝ p (volume : Measure 𝔼))} (hF : IsCompact (closure F)) :
     ∀ ε > (0 : ℝ), ∃ Ω : Set 𝔼, Bornology.IsBounded Ω ∧ MeasurableSet Ω ∧

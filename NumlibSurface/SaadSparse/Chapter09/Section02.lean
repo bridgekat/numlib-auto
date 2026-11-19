@@ -114,6 +114,60 @@ diagonal $D_0 - 2D$. The proofs specialize the backbone recurrences `Krylov.PCG.
 * Example 9.1 is arithmetic on the two operation counts of Section 9.2.2. The library does not count
   operations, so the counts are hypotheses of the statement.
 
+## Deviations from the source
+
+* **Generalization.** The weighted self-adjointness arguments extend to Hermitian data and separate
+  the symmetry hypotheses. See `SaadSparse.Chapter09.isPreconditioner`,
+  `SaadSparse.Chapter09.isSymmetric_energy`, `SaadSparse.Chapter09.energyInner_leftPreconditioned`,
+  `SaadSparse.Chapter09.energyInner_inv`, `SaadSparse.Chapter09.isSymmetric_energyA`,
+  `SaadSparse.Chapter09.isSymmetric_energyInv`.
+* **Generalization.** The PCG recurrence uses totalized operations and a fixed step count with the
+  preconditioned residual derived from the state. See `SaadSparse.Chapter09.pcgStepAlpha`,
+  `SaadSparse.Chapter09.pcgStepR`, `SaadSparse.Chapter09.pcgStepBeta`,
+  `SaadSparse.Chapter09.pcgStep`, `SaadSparse.Chapter09.pcg`,
+  `SaadSparse.Chapter09.pcgStepAlpha_def`, `SaadSparse.Chapter09.pcgStepR_def`,
+  `SaadSparse.Chapter09.pcgStepBeta_def`, `SaadSparse.Chapter09.pcgAlpha`,
+  `SaadSparse.Chapter09.pcgBeta`, `SaadSparse.Chapter09.pcgAlpha_eq`,
+  `SaadSparse.Chapter09.pcgBeta_eq`.
+* **Generalization.** The PCG Galerkin characterization uses explicit coercivity relative to the
+  preconditioner. See `SaadSparse.Chapter09.pcg_isGalerkinIterate`.
+* **Scope.** The PCG error bound uses relative quadratic-form constants and the
+  weighted-inner-product proof. See `SaadSparse.Chapter09.problem_9_6`.
+* **Generalization.** The split PCG recurrence uses the complex adjoint and totalized operations.
+  See `SaadSparse.Chapter09.splitPcgStepAlpha`, `SaadSparse.Chapter09.splitPcgStepR`,
+  `SaadSparse.Chapter09.splitPcgStepBeta`, `SaadSparse.Chapter09.splitPcgStep`,
+  `SaadSparse.Chapter09.splitPcg`, `SaadSparse.Chapter09.splitPcg_succ`.
+* **Generalization.** Split preconditioning compares full states, with invertibility required for
+  the ordinary CG coordinate change. See `SaadSparse.Chapter09.splitPcg_eq_pcg`,
+  `SaadSparse.Chapter09.splitPcg_eq_cg`.
+* **Generalization.** The right-preconditioned recurrence extends to complex data, with symmetry
+  sufficient for the state comparison. See `SaadSparse.Chapter09.rightPcgStepAlpha`,
+  `SaadSparse.Chapter09.rightPcgStepR`, `SaadSparse.Chapter09.rightPcgStepBeta`,
+  `SaadSparse.Chapter09.rightPcgStep`, `SaadSparse.Chapter09.rightPcg`,
+  `SaadSparse.Chapter09.rightPcg_succ`, `SaadSparse.Chapter09.rightPcg_eq_pcg`.
+* **Representation.** The solution to P-9.2 records the two auxiliary images and states algebraic
+  updates. See `SaadSparse.Chapter09.pcgEnergyAStepAlpha`, `SaadSparse.Chapter09.pcgEnergyAStepZ`,
+  `SaadSparse.Chapter09.pcgEnergyAStepW`, `SaadSparse.Chapter09.pcgEnergyAStepBeta`,
+  `SaadSparse.Chapter09.pcgEnergyAStep`, `SaadSparse.Chapter09.pcgEnergyA`,
+  `SaadSparse.Chapter09.pcgEnergyA_succ`.
+* **Derivation.** The energy-A recurrence has a transformed-state equivalence and a Galerkin
+  characterization. See `SaadSparse.Chapter09.pcgEnergyA_eq`,
+  `SaadSparse.Chapter09.pcgEnergyA_isGalerkinIterate`.
+* **Generalization.** The preconditioned CR recurrence gives total updates and their energy-space
+  interpretation. See `SaadSparse.Chapter09.pcrStepAlpha`, `SaadSparse.Chapter09.pcrStepZ`,
+  `SaadSparse.Chapter09.pcrStepBeta`, `SaadSparse.Chapter09.pcrStep`, `SaadSparse.Chapter09.pcr`,
+  `SaadSparse.Chapter09.pcr_succ`, `SaadSparse.Chapter09.pcr_eq`,
+  `SaadSparse.Chapter09.pcr_residual_eq`.
+* **Generalization.** The inverse-sum formula allows a general matrix in place of the diagonal. See
+  `SaadSparse.Chapter09.equation_9_8`.
+* **Scope.** The Eisenstat product uses the unscaled formula preceding Algorithm 9.3. See
+  `SaadSparse.Chapter09.eisenstat`, `SaadSparse.Chapter09.eisenstat_def`,
+  `SaadSparse.Chapter09.eisenstat_eq`.
+* **Scope.** The split Eisenstat exercise gives the matrix identity and the SSOR simplification. See
+  `SaadSparse.Chapter09.problem_9_8c`, `SaadSparse.Chapter09.problem_9_8c_ssor`.
+* **Scope.** Example 9.1 formalizes the arithmetic of the stated counts. See
+  `SaadSparse.Chapter09.example_9_1`.
+
 ## Not formalized
 
 * Problem P-9.7.
@@ -162,7 +216,12 @@ the sense of the backbone: the operator of $M$ is symmetric and coercive, and th
 $M^{-1}$ is its inverse.
 
 The conclusion is `Krylov.IsPreconditioner (op M) (op M⁻¹)`. Coercivity comes from
-`Matrix.posDef_iff_isSymmetricCoercive`. -/
+`Matrix.posDef_iff_isSymmetricCoercive`.
+
+**Generalization.** The self-adjointness and inner-product identities extend to complex Hermitian
+data. The proofs distinguish the positive definiteness needed for an energy inner product from
+symmetry of the operator acting in it.
+-/
 theorem isPreconditioner {M : Matrix (Fin n) (Fin n) 𝕜} (hM : M.PosDef) :
     Krylov.IsPreconditioner (op M) (op M⁻¹) where
   isSymmetricCoercive := (Matrix.posDef_iff_isSymmetricCoercive M).1 hM
@@ -184,7 +243,12 @@ $$(M^{-1} A x, y)_M = (x, M^{-1} A y)_M \quad \text{for all } x, y.$$
 This is why the conjugate gradient method can be run on the preconditioned system, although
 $M^{-1} A$ is not symmetric for the Euclidean inner product. The statement is the symmetry of
 `hM.energyEnd (op M⁻¹ ∘ₗ op A)`, the operator $M^{-1} A$ on the space with the $M$-inner
-product. -/
+product.
+
+**Generalization.** The self-adjointness and inner-product identities extend to complex Hermitian
+data. The proofs distinguish the positive definiteness needed for an energy inner product from
+symmetry of the operator acting in it.
+-/
 theorem isSymmetric_energy (hA : (op A).IsSymmetric)
     (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) :
     (hM.energyEnd (op M⁻¹ ∘ₗ op A)).IsSymmetric := by
@@ -194,14 +258,24 @@ theorem isSymmetric_energy (hA : (op A).IsSymmetric)
   rw [hM.inner_energyEnd_left (op A), hM.inner_energyEnd_right (op A), hA]
 
 /-- Let $M$ be a preconditioner. Then $(M^{-1} A x, y)_M = (Ax, y)$ for all $x, y \in \mathbb{K}^n$.
-This identity keeps the $M$-inner products out of Algorithm 9.1 of [saad2003iterative]. -/
+This identity keeps the $M$-inner products out of Algorithm 9.1 of [saad2003iterative].
+
+**Generalization.** The self-adjointness and inner-product identities extend to complex Hermitian
+data. The proofs distinguish the positive definiteness needed for an energy inner product from
+symmetry of the operator acting in it.
+-/
 theorem energyInner_leftPreconditioned (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (x y : 𝔼) :
     energyInner (op M) (op M⁻¹ (op A x)) y = inner 𝕜 (op A x) y := by
   rw [energyInner, hM.apply_inv]
 
 /-- Let $M$ be a preconditioner. Then $(M^{-1} x, M^{-1} y)_M = (x, M^{-1} y)$ for all
 $x, y \in \mathbb{K}^n$. With $x = y = r_j$ this is $(z_j, z_j)_M = (r_j, z_j)$, the numerator
-of the step length in line 3 of Algorithm 9.1 of [saad2003iterative]. -/
+of the step length in line 3 of Algorithm 9.1 of [saad2003iterative].
+
+**Generalization.** The self-adjointness and inner-product identities extend to complex Hermitian
+data. The proofs distinguish the positive definiteness needed for an energy inner product from
+symmetry of the operator acting in it.
+-/
 theorem energyInner_inv (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (x y : 𝔼) :
     energyInner (op M) (op M⁻¹ x) (op M⁻¹ y) = inner 𝕜 x (op M⁻¹ y) := by
   rw [energyInner, hM.apply_inv]
@@ -212,7 +286,12 @@ self-adjoint for the $A$-inner product $(x, y)_A = (Ax, y)$.
 
 The hypothesis that $A$ is symmetric positive definite is
 `Krylov.IsPreconditioner (op A) (op A⁻¹)`; the separate hypothesis that $A$ is symmetric is also
-present. This observation is the basis of `SaadSparse.Chapter09.pcgEnergyA`. -/
+present. This observation is the basis of `SaadSparse.Chapter09.pcgEnergyA`.
+
+**Generalization.** The self-adjointness and inner-product identities extend to complex Hermitian
+data. The proofs distinguish the positive definiteness needed for an energy inner product from
+symmetry of the operator acting in it.
+-/
 theorem isSymmetric_energyA (hA : (op A).IsSymmetric)
     (hMinv : (op M⁻¹).IsSymmetric) (hAp : Krylov.IsPreconditioner (op A) (op A⁻¹)) :
     (hAp.energyEnd (op M⁻¹ ∘ₗ op A)).IsSymmetric := by
@@ -230,7 +309,12 @@ is self-adjoint for the $M^{-1}$-inner product $(x, y)_{M^{-1}} = (M^{-1} x, y)$
 
 So right preconditioning in the $M^{-1}$-inner product is as legitimate as left preconditioning
 in the $M$-inner product. By `SaadSparse.Chapter09.rightPcg_eq_pcg` the two give the same
-method. The hypothesis on $M^{-1}$ is `Krylov.IsPreconditioner (op M⁻¹) (op M)`. -/
+method. The hypothesis on $M^{-1}$ is `Krylov.IsPreconditioner (op M⁻¹) (op M)`.
+
+**Generalization.** The self-adjointness and inner-product identities extend to complex Hermitian
+data. The proofs distinguish the positive definiteness needed for an energy inner product from
+symmetry of the operator acting in it.
+-/
 theorem isSymmetric_energyInv (hA : (op A).IsSymmetric)
     (hMi : Krylov.IsPreconditioner (op M⁻¹) (op M)) :
     (hMi.energyEnd (op A ∘ₗ op M⁻¹)).IsSymmetric := by
@@ -248,21 +332,41 @@ variable (A M : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- The step length $\alpha_j = (r_j, z_j)/(A p_j, p_j)$ of line 3 of Algorithm 9.1 of
 [saad2003iterative], on a state $(x_j, r_j, p_j)$, with $z_j = M^{-1} r_j$. The vector $z_j$ is
-recomputed from $r_j$ and is not stored. -/
+recomputed from $r_j$ and is not stored.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcgStepAlpha (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op M⁻¹ s.2.1) s.2.1 / inner 𝕜 s.2.2 (op A s.2.2)
 
 /-- The next residual $r_{j+1} = r_j - \alpha_j A p_j$ of line 5 of Algorithm 9.1 of
-[saad2003iterative], on a state $(x_j, r_j, p_j)$. -/
+[saad2003iterative], on a state $(x_j, r_j, p_j)$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcgStepR (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 := s.2.1 - pcgStepAlpha A M s • op A s.2.2
 
 /-- The coefficient $\beta_j = (r_{j+1}, z_{j+1})/(r_j, z_j)$ of line 7 of Algorithm 9.1 of
-[saad2003iterative], on a state $(x_j, r_j, p_j)$, with $z = M^{-1} r$. -/
+[saad2003iterative], on a state $(x_j, r_j, p_j)$, with $z = M^{-1} r$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcgStepBeta (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op M⁻¹ (pcgStepR A M s)) (pcgStepR A M s) / inner 𝕜 (op M⁻¹ s.2.1) s.2.1
 
 /-- One pass through lines 3–8 of Algorithm 9.1 of [saad2003iterative]. It maps the state
-$(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \; r_{j+1}, \; M^{-1} r_{j+1} + \beta_j p_j)$. -/
+$(x_j, r_j, p_j)$ to $(x_j + \alpha_j p_j, \; r_{j+1}, \; M^{-1} r_{j+1} + \beta_j p_j)$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcgStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + pcgStepAlpha A M s • s.2.2, pcgStepR A M s,
     op M⁻¹ (pcgStepR A M s) + pcgStepBeta A M s • s.2.2)
@@ -277,21 +381,41 @@ $$z_{j+1} = M^{-1} r_{j+1}, \quad \beta_j = \frac{(r_{j+1}, z_{j+1})}{(r_j, z_j)
 The value at $j$ is the triple $(x_j, r_j, p_j)$ after $j$ steps.
 
 The definition accepts any matrices $A$ and $M$. The results below assume that $A$ is symmetric
-and that $M$ is a preconditioner. A division by $0$ gives $0$. -/
+and that $M$ is a preconditioner. A division by $0$ gives $0$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcg (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (pcgStep A M)^[j] (x₀, b - op A x₀, op M⁻¹ (b - op A x₀))
 
-/-- The step length of Algorithm 9.1 on a state $(x, r, p)$ is $(r, M^{-1} r)/(Ap, p)$. -/
+/-- The step length of Algorithm 9.1 on a state $(x, r, p)$ is $(r, M^{-1} r)/(Ap, p)$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 theorem pcgStepAlpha_def (s : 𝔼 × 𝔼 × 𝔼) :
     pcgStepAlpha A M s = inner 𝕜 (op M⁻¹ s.2.1) s.2.1 / inner 𝕜 s.2.2 (op A s.2.2) := rfl
 
 /-- The next residual of Algorithm 9.1 on a state $(x, r, p)$ is $r - \alpha A p$, with $\alpha$ the
-step length. -/
+step length.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 theorem pcgStepR_def (s : 𝔼 × 𝔼 × 𝔼) :
     pcgStepR A M s = s.2.1 - pcgStepAlpha A M s • op A s.2.2 := rfl
 
 /-- The coefficient $\beta$ of Algorithm 9.1 on a state $(x, r, p)$ is
-$(r', M^{-1} r')/(r, M^{-1} r)$, with $r'$ the next residual. -/
+$(r', M^{-1} r')/(r, M^{-1} r)$, with $r'$ the next residual.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 theorem pcgStepBeta_def (s : 𝔼 × 𝔼 × 𝔼) : pcgStepBeta A M s =
     inner 𝕜 (op M⁻¹ (pcgStepR A M s)) (pcgStepR A M s) / inner 𝕜 (op M⁻¹ s.2.1) s.2.1 := rfl
 
@@ -310,10 +434,20 @@ noncomputable def pcgP (j : ℕ) : 𝔼 := (pcg A M b x₀ j).2.2
 [saad2003iterative]. -/
 noncomputable def pcgZ (j : ℕ) : 𝔼 := op M⁻¹ (pcgR A M b x₀ j)
 
-/-- The step length $\alpha_j$ of Algorithm 9.1 of [saad2003iterative] at step $j$. -/
+/-- The step length $\alpha_j$ of Algorithm 9.1 of [saad2003iterative] at step $j$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcgAlpha (j : ℕ) : 𝕜 := pcgStepAlpha A M (pcg A M b x₀ j)
 
-/-- The coefficient $\beta_j$ of Algorithm 9.1 of [saad2003iterative] at step $j$. -/
+/-- The coefficient $\beta_j$ of Algorithm 9.1 of [saad2003iterative] at step $j$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 noncomputable def pcgBeta (j : ℕ) : 𝕜 := pcgStepBeta A M (pcg A M b x₀ j)
 
 /-- The state of Algorithm 9.1 after $j + 1$ steps is one step applied to the state after $j$ steps.
@@ -330,7 +464,12 @@ theorem pcg_succ (j : ℕ) : pcg A M b x₀ (j + 1) = pcgStep A M (pcg A M b x�
 /-- Line 1 of Algorithm 9.1: $p_0 = z_0$. -/
 @[simp] theorem pcgP_zero : pcgP A M b x₀ 0 = pcgZ A M b x₀ 0 := rfl
 
-/-- Line 3 of Algorithm 9.1: $\alpha_j = (r_j, z_j)/(A p_j, p_j)$. -/
+/-- Line 3 of Algorithm 9.1: $\alpha_j = (r_j, z_j)/(A p_j, p_j)$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 theorem pcgAlpha_eq (j : ℕ) : pcgAlpha A M b x₀ j =
     inner 𝕜 (pcgZ A M b x₀ j) (pcgR A M b x₀ j) /
       inner 𝕜 (pcgP A M b x₀ j) (op A (pcgP A M b x₀ j)) := rfl
@@ -349,7 +488,12 @@ private theorem pcgR_succ_eq_pcgStepR (j : ℕ) :
     pcgR A M b x₀ (j + 1) = pcgStepR A M (pcg A M b x₀ j) := by
   rw [pcgR, pcg_succ]; rfl
 
-/-- Line 7 of Algorithm 9.1: $\beta_j = (r_{j+1}, z_{j+1})/(r_j, z_j)$. -/
+/-- Line 7 of Algorithm 9.1: $\beta_j = (r_{j+1}, z_{j+1})/(r_j, z_j)$.
+
+**Generalization.** The formulas use totalized inverses and quotients over complex scalars and are
+available outside the source's SPD setting. The recurrences specify fixed step counts and compute
+$z_j$ from the residual in the stored state.
+-/
 theorem pcgBeta_eq (j : ℕ) : pcgBeta A M b x₀ j =
     inner 𝕜 (pcgZ A M b x₀ (j + 1)) (pcgR A M b x₀ (j + 1)) /
       inner 𝕜 (pcgZ A M b x₀ j) (pcgR A M b x₀ j) := by
@@ -442,7 +586,12 @@ $$x_j - x_0 \in \mathcal{K}_j(M^{-1} A, M^{-1} r_0), \qquad b - A x_j \perp \mat
 
 For symmetric positive definite $A$ this is the condition that $x_j$ minimizes the $A$-norm of
 the error over that affine space. The Krylov subspace is `SaadSparse.Chapter06.krylov`, and the
-conclusion is `IsGalerkin`. -/
+conclusion is `IsGalerkin`.
+
+**Generalization.** The Galerkin property is formalized over complex scalars with explicit
+coercivity relative to the preconditioner, in the affine space generated by the left-preconditioned
+operator.
+-/
 theorem pcg_isGalerkinIterate (hM : Krylov.IsPreconditioner (op M) (op M⁻¹))
     (hA : (op A).IsSymmetric) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op M x) x) ≤ RCLike.re (inner 𝕜 (op A x) x))
@@ -465,7 +614,12 @@ The number $\kappa$ is a bound on the condition number of the generalized eigenv
 $Ax = \lambda Mx$, that is, of $M^{-1} A$ in the $M$-inner product. Preconditioning changes only
 which condition number appears in the bound. The numbers $\lambda_{\min}$ and $\lambda_{\max}$
 are bounds on the quadratic forms and need not be eigenvalues. The norm $\|\cdot\|_A$ is
-`energyNorm (op A)`. -/
+`energyNorm (op A)`.
+
+**Reading.** Lean gives the energy-norm bound using arbitrary positive relative quadratic-form
+bounds, which need not be eigenvalues. The proof uses the weighted-inner-product argument. The
+exercise also asks for a second derivation using the split recurrence.
+-/
 theorem problem_9_6 (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (hA : (op A).IsSymmetric)
     {lmin lmax : ℝ} (hl : 0 < lmin) (hll : lmin ≤ lmax)
     (hmin : ∀ x : 𝔼, lmin * RCLike.re (inner 𝕜 (op M x) x) ≤ RCLike.re (inner 𝕜 (op A x) x))
@@ -482,23 +636,43 @@ theorem problem_9_6 (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (hA : (op 
 variable (A) (L : Matrix (Fin n) (Fin n) 𝕜)
 
 /-- The step length $\alpha_j = (\hat r_j, \hat r_j)/(A p_j, p_j)$ of line 3 of Algorithm 9.2 of
-[saad2003iterative], on a state $(x_j, \hat r_j, p_j)$. -/
+[saad2003iterative], on a state $(x_j, \hat r_j, p_j)$.
+
+**Generalization.** An adjoint replaces the transpose and the recurrence accepts any factor over
+complex scalars. Total inverses and quotients give fixed-length iterates even when a source solve or
+quotient is undefined.
+-/
 noncomputable def splitPcgStepAlpha (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 s.2.1 s.2.1 / inner 𝕜 s.2.2 (op A s.2.2)
 
 /-- The next split residual $\hat r_{j+1} = \hat r_j - \alpha_j L^{-1} A p_j$ of line 5 of Algorithm
-9.2 of [saad2003iterative]. -/
+9.2 of [saad2003iterative].
+
+**Generalization.** An adjoint replaces the transpose and the recurrence accepts any factor over
+complex scalars. Total inverses and quotients give fixed-length iterates even when a source solve or
+quotient is undefined.
+-/
 noncomputable def splitPcgStepR (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - splitPcgStepAlpha A s • op L⁻¹ (op A s.2.2)
 
 /-- The coefficient $\beta_j = (\hat r_{j+1}, \hat r_{j+1})/(\hat r_j, \hat r_j)$ of line 6 of
-Algorithm 9.2 of [saad2003iterative]. -/
+Algorithm 9.2 of [saad2003iterative].
+
+**Generalization.** An adjoint replaces the transpose and the recurrence accepts any factor over
+complex scalars. Total inverses and quotients give fixed-length iterates even when a source solve or
+quotient is undefined.
+-/
 noncomputable def splitPcgStepBeta (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (splitPcgStepR A L s) (splitPcgStepR A L s) / inner 𝕜 s.2.1 s.2.1
 
 /-- One pass through lines 3–7 of Algorithm 9.2 of [saad2003iterative]. It maps the state
 $(x_j, \hat r_j, p_j)$ to $(x_j + \alpha_j p_j, \; \hat r_{j+1}, \; L^{-H} \hat r_{j+1} +
-\beta_j p_j)$. -/
+\beta_j p_j)$.
+
+**Generalization.** An adjoint replaces the transpose and the recurrence accepts any factor over
+complex scalars. Total inverses and quotients give fixed-length iterates even when a source solve or
+quotient is undefined.
+-/
 noncomputable def splitPcgStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + splitPcgStepAlpha A s • s.2.2, splitPcgStepR A L s,
     op (Lᴴ)⁻¹ (splitPcgStepR A L s) + splitPcgStepBeta A L s • s.2.2)
@@ -512,11 +686,20 @@ $$\beta_j = \frac{(\hat r_{j+1}, \hat r_{j+1})}{(\hat r_j, \hat r_j)}, \quad p_{
   \hat r_{j+1} + \beta_j p_j.$$
 The value at $j$ is the triple $(x_j, \hat r_j, p_j)$ after $j$ steps.
 
-The definition accepts any matrices $A$ and $L$. The inverse $L^{-H}$ is `(Lᴴ)⁻¹`. -/
+The definition accepts any matrices $A$ and $L$. The inverse $L^{-H}$ is `(Lᴴ)⁻¹`.
+
+**Generalization.** An adjoint replaces the transpose and the recurrence accepts any factor over
+complex scalars. Total inverses and quotients give fixed-length iterates even when a source solve or
+quotient is undefined.
+-/
 noncomputable def splitPcg (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (splitPcgStep A L)^[j] (x₀, op L⁻¹ (b - op A x₀), op (Lᴴ)⁻¹ (op L⁻¹ (b - op A x₀)))
 
 /-- The state of Algorithm 9.2 after $j + 1$ steps is one step applied to the state after $j$ steps.
+
+**Generalization.** An adjoint replaces the transpose and the recurrence accepts any factor over
+complex scalars. Total inverses and quotients give fixed-length iterates even when a source solve or
+quotient is undefined.
 -/
 theorem splitPcg_succ (b x₀ : 𝔼) (j : ℕ) :
     splitPcg A L b x₀ (j + 1) = splitPcgStep A L (splitPcg A L b x₀ j) :=
@@ -558,7 +741,13 @@ where $r_j$ is the residual of Algorithm 9.1.
 
 The change of variables $\hat r_j = L^{-1} r_j$ turns one recurrence into the other. Nothing is
 assumed of $A$ or $L$ beyond $M = L L^H$. Problem P-9.3 is the same statement, read from
-Algorithm 9.2 to Algorithm 9.1. -/
+Algorithm 9.2 to Algorithm 9.1.
+
+**Generalization.** Lean compares three-component states rather than only the original-coordinate
+iterates. The equality of the two PCG states uses the factorization and total inverses even for
+singular factors. The identification with ordinary CG on the split matrix requires an invertible
+factor and a symmetric operator.
+-/
 theorem splitPcg_eq_pcg {M : Matrix (Fin n) (Fin n) 𝕜} (hM : M = L * Lᴴ) (b x₀ : 𝔼) (j : ℕ) :
     splitPcg A L b x₀ j =
       ((pcg A M b x₀ j).1, op L⁻¹ (pcg A M b x₀ j).2.1, (pcg A M b x₀ j).2.2) := by
@@ -576,7 +765,13 @@ $(x_j, \hat r_j, p_j)$ of Algorithm 9.2 satisfies, for all $j$,
 $$L^H x_j = u_j, \qquad \hat r_j = \rho_j, \qquad L^H p_j = q_j.$$
 
 With `SaadSparse.Chapter09.splitPcg_eq_pcg`, Algorithm 9.1 for $M = L L^H$ also computes these
-iterates. The conjugate gradient method is the backbone `CG.iterate`. -/
+iterates. The conjugate gradient method is the backbone `CG.iterate`.
+
+**Generalization.** Lean compares three-component states rather than only the original-coordinate
+iterates. The equality of the two PCG states uses the factorization and total inverses even for
+singular factors. The identification with ordinary CG on the split matrix requires an invertible
+factor and a symmetric operator.
+-/
 theorem splitPcg_eq_cg (hA : (op A).IsSymmetric) (hL : IsUnit L) (b x₀ : 𝔼) (j : ℕ) :
     op Lᴴ (splitPcg A L b x₀ j).1
         = (CG.iterate (op (L⁻¹ * A * (Lᴴ)⁻¹)) (op L⁻¹ b) (op Lᴴ x₀) j).x ∧
@@ -640,24 +835,44 @@ variable (A M)
 
 /-- The step length $\alpha_j = (\rho_j, M^{-1} \rho_j)/(q_j, M^{-1} A M^{-1} q_j)$ of the conjugate
 gradient method for the right-preconditioned system $A M^{-1} u = b$ in the $M^{-1}$-inner
-product $(x, y)_{M^{-1}} = (M^{-1} x, y)$, on a state $(u_j, \rho_j, q_j)$. -/
+product $(x, y)_{M^{-1}} = (M^{-1} x, y)$, on a state $(u_j, \rho_j, q_j)$.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 noncomputable def rightPcgStepAlpha (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op M⁻¹ s.2.1) s.2.1 / inner 𝕜 (op M⁻¹ (op A (op M⁻¹ s.2.2))) s.2.2
 
 /-- The next residual $\rho_{j+1} = \rho_j - \alpha_j A M^{-1} q_j$ of the right-preconditioned
-conjugate gradient method. -/
+conjugate gradient method.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 noncomputable def rightPcgStepR (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - rightPcgStepAlpha A M s • op A (op M⁻¹ s.2.2)
 
 /-- The coefficient $\beta_j = (\rho_{j+1}, M^{-1} \rho_{j+1})/(\rho_j, M^{-1} \rho_j)$ of the
 right-preconditioned conjugate gradient method, that is, $(\rho_{j+1},
-\rho_{j+1})_{M^{-1}}/(\rho_j, \rho_j)_{M^{-1}}$ when $M^{-1}$ is symmetric. -/
+\rho_{j+1})_{M^{-1}}/(\rho_j, \rho_j)_{M^{-1}}$ when $M^{-1}$ is symmetric.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 noncomputable def rightPcgStepBeta (s : 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (op M⁻¹ (rightPcgStepR A M s)) (rightPcgStepR A M s) / inner 𝕜 (op M⁻¹ s.2.1) s.2.1
 
 /-- One step of the conjugate gradient method for $A M^{-1} u = b$ in the $M^{-1}$-inner product. It
 maps the state $(u_j, \rho_j, q_j)$ to $(u_j + \alpha_j q_j, \; \rho_{j+1}, \; \rho_{j+1} +
-\beta_j q_j)$. -/
+\beta_j q_j)$.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 noncomputable def rightPcgStep (s : 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + rightPcgStepAlpha A M s • s.2.2, rightPcgStepR A M s,
     rightPcgStepR A M s + rightPcgStepBeta A M s • s.2.2)
@@ -670,12 +885,22 @@ $$\alpha_j = \frac{(\rho_j, M^{-1} \rho_j)}{(q_j, M^{-1} A M^{-1} q_j)}, \quad u
   \alpha_j q_j, \quad \rho_{j+1} = \rho_j - \alpha_j A M^{-1} q_j,$$
 $$\beta_j = \frac{(\rho_{j+1}, M^{-1} \rho_{j+1})}{(\rho_j, M^{-1} \rho_j)}, \quad q_{j+1} =
   \rho_{j+1} + \beta_j q_j.$$
-The value at $j$ is the triple $(u_j, \rho_j, q_j)$ after $j$ steps. -/
+The value at $j$ is the triple $(u_j, \rho_j, q_j)$ after $j$ steps.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 noncomputable def rightPcg (b u₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 :=
   (rightPcgStep A M)^[j] (u₀, b - op A (op M⁻¹ u₀), b - op A (op M⁻¹ u₀))
 
 /-- The state of the right-preconditioned conjugate gradient method after $j + 1$ steps is one step
-applied to the state after $j$ steps. -/
+applied to the state after $j$ steps.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 theorem rightPcg_succ (b u₀ : 𝔼) (j : ℕ) :
     rightPcg A M b u₀ (j + 1) = rightPcgStep A M (rightPcg A M b u₀ j) :=
   Function.iterate_succ_apply' _ _ _
@@ -705,7 +930,12 @@ Algorithm 9.1 started at $x_0 = M^{-1} u_0$, for all $j$.
 
 So in the variables $x = M^{-1} u$ and $p = M^{-1} q$ the right-preconditioned method is
 Algorithm 9.1. Left preconditioning in the $M$-inner product and right preconditioning in the
-$M^{-1}$-inner product are the same method. -/
+$M^{-1}$-inner product are the same method.
+
+**Generalization.** The recurrence is stated in the transformed coordinate and uses total operations
+over complex scalars. State equivalence uses symmetry of $A$ and $M^{-1}$ without the SPD
+assumptions of the source derivation.
+-/
 theorem rightPcg_eq_pcg (hA : (op A).IsSymmetric) (hMinv : (op M⁻¹).IsSymmetric) (b u₀ : 𝔼)
     (j : ℕ) :
     (op M⁻¹ (rightPcg A M b u₀ j).1, (rightPcg A M b u₀ j).2.1,
@@ -722,23 +952,43 @@ variable (A M)
 /-- The step length $\alpha_j = (z_j, A z_j)/(p_j, A M^{-1} A p_j)$ of
 `SaadSparse.Chapter09.pcgEnergyA`, on a state $(x_j, z_j, w_j, p_j, q_j)$ with $w_j = A z_j$ and
 $q_j = A p_j$. It is computed as $(z_j, w_j)/(p_j, A M^{-1} q_j)$, so both $A$-inner products
-are Euclidean ones and the denominator reuses the one matrix-vector product of the step. -/
+are Euclidean ones and the denominator reuses the one matrix-vector product of the step.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 noncomputable def pcgEnergyAStepAlpha (s : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 s.2.2.1 s.2.1 / inner 𝕜 (op A (op M⁻¹ s.2.2.2.2)) s.2.2.2.1
 
 /-- The next preconditioned residual $z_{j+1} = z_j - \alpha_j M^{-1} q_j$ of
-`SaadSparse.Chapter09.pcgEnergyA`, with $q_j = A p_j$. -/
+`SaadSparse.Chapter09.pcgEnergyA`, with $q_j = A p_j$.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 noncomputable def pcgEnergyAStepZ (s : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - pcgEnergyAStepAlpha A M s • op M⁻¹ s.2.2.2.2
 
 /-- The vector $w_{j+1} = w_j - \alpha_j A M^{-1} q_j$ of `SaadSparse.Chapter09.pcgEnergyA`, which
 equals $A z_{j+1}$. It uses the single matrix-vector product of the step: $A$ is applied to
-$M^{-1} q_j$ and to nothing else. -/
+$M^{-1} q_j$ and to nothing else.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 noncomputable def pcgEnergyAStepW (s : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.2.1 - pcgEnergyAStepAlpha A M s • op A (op M⁻¹ s.2.2.2.2)
 
 /-- The coefficient $\beta_j = (z_{j+1}, w_{j+1})/(z_j, w_j)$ of `SaadSparse.Chapter09.pcgEnergyA`,
-that is, $(A z_{j+1}, z_{j+1})/(A z_j, z_j)$ when $A$ is symmetric. -/
+that is, $(A z_{j+1}, z_{j+1})/(A z_j, z_j)$ when $A$ is symmetric.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 noncomputable def pcgEnergyAStepBeta (s : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (pcgEnergyAStepW A M s) (pcgEnergyAStepZ A M s) / inner 𝕜 s.2.2.1 s.2.1
 
@@ -747,7 +997,12 @@ maps $(x_j, z_j, w_j, p_j, q_j)$ to
 $$(x_j + \alpha_j p_j, \; z_{j+1}, \; w_{j+1}, \; z_{j+1} + \beta_j p_j, \; w_{j+1} + \beta_j
   q_j).$$
 The state carries $w_j = A z_j$ and $q_j = A p_j$, so that the step applies $A$ once and
-$M^{-1}$ once. -/
+$M^{-1}$ once.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 noncomputable def pcgEnergyAStep (s : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + pcgEnergyAStepAlpha A M s • s.2.2.2.1, pcgEnergyAStepZ A M s, pcgEnergyAStepW A M s,
     pcgEnergyAStepZ A M s + pcgEnergyAStepBeta A M s • s.2.2.2.1,
@@ -762,13 +1017,23 @@ $$\beta_j = \frac{(z_{j+1}, w_{j+1})}{(z_j, w_j)}, \quad p_{j+1} = z_{j+1} + \be
   q_{j+1} = w_{j+1} + \beta_j q_j.$$
 The value at $j$ is the state $(x_j, z_j, w_j, p_j, q_j)$ after $j$ steps. The vectors $w_j$ and
 $q_j$ equal $A z_j$ and $A p_j$ (see `SaadSparse.Chapter09.pcgEnergyA_eq`), so each step needs
-one product with $A$. -/
+one product with $A$.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 noncomputable def pcgEnergyA (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (pcgEnergyAStep A M)^[j] (x₀, op M⁻¹ (b - op A x₀), op A (op M⁻¹ (b - op A x₀)),
     op M⁻¹ (b - op A x₀), op A (op M⁻¹ (b - op A x₀)))
 
 /-- The state of `SaadSparse.Chapter09.pcgEnergyA` after $j + 1$ steps is one step applied to the
-state after $j$ steps. -/
+state after $j$ steps.
+
+**Reading.** The recurrence carries $Az_j$ and $Ap_j$ and expresses the updates in terms of the
+common image $AM^{-1}(Ap_j)$. The noncomputable definitions state the algebraic recurrence without
+an evaluation or cost model. They use total operations over complex scalars.
+-/
 theorem pcgEnergyA_succ (b x₀ : 𝔼) (j : ℕ) :
     pcgEnergyA A M b x₀ (j + 1) = pcgEnergyAStep A M (pcgEnergyA A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
@@ -794,7 +1059,11 @@ all $j$, the state $(x_j, z_j, w_j, p_j, q_j)$ of `SaadSparse.Chapter09.pcgEnerg
 
 The recurrence is `Krylov.PCG.iterate (op (A * M⁻¹ * A)) (op A⁻¹) (op (A * M⁻¹) b) x₀ j`. The
 invariants $w_j = A z_j$ and $q_j = A p_j$ are kept by the recurrence, which is why one
-matrix-vector product per step suffices. -/
+matrix-vector product per step suffices.
+
+**Reading.** Lean identifies the recurrence with PCG on the symmetric transformed system and derives
+Galerkin orthogonality under explicit inversion, symmetry and coercivity assumptions.
+-/
 theorem pcgEnergyA_eq (hAinv : ∀ y : 𝔼, op A⁻¹ (op A y) = y)
     (b x₀ : 𝔼) (j : ℕ) :
     (pcgEnergyA A M b x₀ j).1
@@ -852,7 +1121,11 @@ $r_0 = b - A x_0$.
 Hence $x_j$ minimizes the $A M^{-1} A$-norm of the error over that space when $A M^{-1} A$ is
 positive definite, and the algorithm is the preconditioned conjugate residual method. The
 hypotheses on $A$ are `(op A).IsSymmetric`, `Krylov.IsPreconditioner (op A) (op A⁻¹)` and
-`IsUnit A`. -/
+`IsUnit A`.
+
+**Reading.** Lean identifies the recurrence with PCG on the symmetric transformed system and derives
+Galerkin orthogonality under explicit inversion, symmetry and coercivity assumptions.
+-/
 theorem pcgEnergyA_isGalerkinIterate (hA : (op A).IsSymmetric)
     (hAp : Krylov.IsPreconditioner (op A) (op A⁻¹)) (hAu : IsUnit A) {c : ℝ} (hc : 0 < c)
     (hcoer : ∀ x : 𝔼, c * RCLike.re (inner 𝕜 (op A x) x)
@@ -904,24 +1177,48 @@ variable (A M)
 residual method (Problem P-9.12 of [saad2003iterative]), on a state $(x_j, z_j, p_j, q_j)$ with
 $q_j = A p_j$. As in Algorithm 9.1, both $M$-inner products of the underlying method are
 Euclidean ones: $(M^{-1} A z_j, z_j)_M = (A z_j, z_j)$ and $(M^{-1} A p_j, M^{-1} A p_j)_M = (A
-p_j, M^{-1} A p_j)$. -/
+p_j, M^{-1} A p_j)$.
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 noncomputable def pcrStepAlpha (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 s.2.1 (op A s.2.1) / inner 𝕜 (op M⁻¹ s.2.2.2) s.2.2.2
 
 /-- The next preconditioned residual $z_{j+1} = z_j - \alpha_j M^{-1} q_j$ of Problem P-9.12 of
-[saad2003iterative]. -/
+[saad2003iterative].
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 noncomputable def pcrStepZ (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 :=
   s.2.1 - pcrStepAlpha A M s • op M⁻¹ s.2.2.2
 
 /-- The coefficient $\beta_j = (A z_{j+1}, z_{j+1})/(A z_j, z_j)$ of Problem P-9.12 of
-[saad2003iterative]. -/
+[saad2003iterative].
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 noncomputable def pcrStepBeta (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝕜 :=
   inner 𝕜 (pcrStepZ A M s) (op A (pcrStepZ A M s)) / inner 𝕜 s.2.1 (op A s.2.1)
 
 /-- One step of **Problem P-9.12** of [saad2003iterative], the analogue of Algorithm 9.1 for the
 conjugate residual method. It maps $(x_j, z_j, p_j, q_j)$ to
 $$(x_j + \alpha_j p_j, \; z_{j+1}, \; z_{j+1} + \beta_j p_j, \; A z_{j+1} + \beta_j q_j).$$
-It applies $A$ once, to the new preconditioned residual, and $M^{-1}$ once, to $q_j = A p_j$. -/
+It applies $A$ once, to the new preconditioned residual, and $M^{-1}$ once, to $q_j = A p_j$.
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 noncomputable def pcrStep (s : 𝔼 × 𝔼 × 𝔼 × 𝔼) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (s.1 + pcrStepAlpha A M s • s.2.2.1, pcrStepZ A M s,
     pcrStepZ A M s + pcrStepBeta A M s • s.2.2.1,
@@ -934,13 +1231,25 @@ $$\alpha_j = \frac{(A z_j, z_j)}{(q_j, M^{-1} q_j)}, \quad x_{j+1} = x_j + \alph
   z_{j+1} = z_j - \alpha_j M^{-1} q_j,$$
 $$\beta_j = \frac{(A z_{j+1}, z_{j+1})}{(A z_j, z_j)}, \quad p_{j+1} = z_{j+1} + \beta_j p_j,
   \quad q_{j+1} = A z_{j+1} + \beta_j q_j.$$
-The value at $j$ is the state $(x_j, z_j, p_j, q_j)$ after $j$ steps. -/
+The value at $j$ is the state $(x_j, z_j, p_j, q_j)$ after $j$ steps.
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 noncomputable def pcr (b x₀ : 𝔼) (j : ℕ) : 𝔼 × 𝔼 × 𝔼 × 𝔼 :=
   (pcrStep A M)^[j] (x₀, op M⁻¹ (b - op A x₀), op M⁻¹ (b - op A x₀),
     op A (op M⁻¹ (b - op A x₀)))
 
 /-- The state of Problem P-9.12 after $j + 1$ steps is one step applied to the state after $j$
-steps. -/
+steps.
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 theorem pcr_succ (b x₀ : 𝔼) (j : ℕ) : pcr A M b x₀ (j + 1) = pcrStep A M (pcr A M b x₀ j) :=
   Function.iterate_succ_apply' _ _ _
 
@@ -956,7 +1265,13 @@ $$x_j = \xi_j, \qquad z_j = \rho_j, \qquad p_j = \pi_j, \qquad M^{-1} q_j = \sig
 
 This is the same reading as `SaadSparse.Chapter09.pcg_eq` for Algorithm 9.1. The recurrence is
 `CR.iterate (hM.energyEnd (op M⁻¹ ∘ₗ op A))`, and each vector is moved to the $M$-inner product
-space by `hM.toEnergy`. -/
+space by `hM.toEnergy`.
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 theorem pcr_eq (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (b x₀ : 𝔼) (j : ℕ) :
     hM.toEnergy (pcr A M b x₀ j).1
         = (CR.iterate (hM.energyEnd (op M⁻¹ ∘ₗ op A)) (hM.toEnergy (op M⁻¹ b))
@@ -1013,7 +1328,13 @@ theorem pcr_eq (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (b x₀ : 𝔼)
 
 /-- **Problem P-9.12** of [saad2003iterative]. Let $M$ be a preconditioner. Then the second
 component of the state of `SaadSparse.Chapter09.pcr` is the preconditioned true residual:
-$z_j = M^{-1}(b - A x_j)$. So the stopping test of Algorithm 9.1 reads the same way here. -/
+$z_j = M^{-1}(b - A x_j)$. So the stopping test of Algorithm 9.1 reads the same way here.
+
+**Generalization.** The recurrence is conjugate residual in the preconditioner energy inner product,
+storing the preconditioned residual and unpreconditioned image of the search direction. The formulas
+are total and accept complex data; the identification with energy-space CR assumes a valid
+preconditioner.
+-/
 theorem pcr_residual_eq (hM : Krylov.IsPreconditioner (op M) (op M⁻¹)) (b x₀ : 𝔼) (j : ℕ) :
     (pcr A M b x₀ j).2.1 = op M⁻¹ (b - op A (pcr A M b x₀ j).1) := by
   obtain ⟨hx, hr, -, -⟩ := pcr_eq hM b x₀ j
@@ -1094,7 +1415,11 @@ $$\hat A = (D - E)^{-1} D_1 (D - E^T)^{-1} + (D - E)^{-1} + (D - E^T)^{-1}, \qqu
 This identity is the content of Eisenstat's implementation: $\hat A v$ costs one product with
 the diagonal matrix $D_1$ and the two triangular solves that applying $M^{-1}$ needs anyway. The
 statement holds for any matrix $D$ with these two invertibility conditions; the book takes $D$
-diagonal. -/
+diagonal.
+
+**Generalization.** The inverse-sum identity holds for arbitrary $D$ with both indicated factors
+invertible. The source takes $D$ diagonal.
+-/
 theorem equation_9_8 (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
     (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) :
     (D - Chapter04.E A)⁻¹ * A * (D - (Chapter04.E A)ᵀ)⁻¹
@@ -1115,14 +1440,24 @@ The value is $w$.
 
 This is the procedure that Section 9.2.2 states just before Algorithm 9.3. The printed algorithm
 is its rescaling by $D^{-1}$, which saves one product with the diagonal and computes the same
-vector $\hat A v$. -/
+vector $\hat A v$.
+
+**Reading.** Lean uses the three-operation formula preceding the algorithm. The printed Algorithm
+9.3 further rescales by $D^{-1}$ to save a diagonal operation. Lean proves equality of the product
+under the factor invertibility conditions and uses totalized inverses in its definition.
+-/
 noncomputable def eisenstat (A D : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   let z := op (D - (Chapter04.E A)ᵀ)⁻¹ v
   op (D - Chapter04.E A)⁻¹ (v + op (Chapter04.D A - (2 : ℝ) • D) z) + z
 
 /-- The value of `SaadSparse.Chapter09.eisenstat` at $v$ is $(D - E)^{-1}(v + D_1 (D - E^T)^{-1}
-v) + (D - E^T)^{-1} v$, with $D_1 = D_0 - 2D$. -/
+v) + (D - E^T)^{-1} v$, with $D_1 = D_0 - 2D$.
+
+**Reading.** Lean uses the three-operation formula preceding the algorithm. The printed Algorithm
+9.3 further rescales by $D^{-1}$ to save a diagonal operation. Lean proves equality of the product
+under the factor invertibility conditions and uses totalized inverses in its definition.
+-/
 theorem eisenstat_def (A D : Matrix (Fin n) (Fin n) ℝ) (v : EuclideanSpace ℝ (Fin n)) :
     eisenstat A D v = op (D - Chapter04.E A)⁻¹
         (v + op (Chapter04.D A - (2 : ℝ) • D) (op (D - (Chapter04.E A)ᵀ)⁻¹ v))
@@ -1141,7 +1476,12 @@ symmetric, and let $D \in \mathbb{R}^{n \times n}$ be such that $D - E$ and $D -
 nonsingular. Then for every $v$, Eisenstat's implementation returns
 $$(D - E)^{-1} A (D - E^T)^{-1} v = \hat A v,$$
 the product with the matrix $\hat A$ of (9.8). It uses two triangular solves and one product
-with the diagonal $D_1$, and no product with $A$. -/
+with the diagonal $D_1$, and no product with $A$.
+
+**Reading.** Lean uses the three-operation formula preceding the algorithm. The printed Algorithm
+9.3 further rescales by $D^{-1}$ to save a diagonal operation. Lean proves equality of the product
+under the factor invertibility conditions and uses totalized inverses in its definition.
+-/
 theorem eisenstat_eq (hA : A.IsSymm) (h1 : IsUnit (D - Chapter04.E A))
     (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) (v : EuclideanSpace ℝ (Fin n)) :
     eisenstat A D v = op ((D - Chapter04.E A)⁻¹ * A * (D - (Chapter04.E A)ᵀ)⁻¹) v := by
@@ -1200,7 +1540,12 @@ $$C = (I - \hat E)^{-1} D_2 (I - \hat E)^{-T} + (I - \hat E)^{-1} + (I - \hat E)
 The matrix $D_2$ is the conjugate of the matrix $D_1$ of `SaadSparse.Chapter09.equation_9_8`.
 After the scaling, the two triangular factors are transposes of each other and have a unit
 diagonal, which is the point of the exercise. The matrix $(I - \hat E)^{-T}$ is
-`((1 - S⁻¹ * E * S⁻¹)ᵀ)⁻¹`. -/
+`((1 - S⁻¹ * E * S⁻¹)ᵀ)⁻¹`.
+
+**Reading.** The formula takes a symmetric invertible square root as input, with no diagonal
+restriction, and identifies the middle factor. The SSOR specialization gives the negative identity.
+The procedure and operation-count comparison requested by the exercise are outside these statements.
+-/
 theorem problem_9_8c {S : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (hSs : S.IsSymm)
     (hSu : IsUnit S) (hSD : S * S = D) (h1 : IsUnit (D - Chapter04.E A))
     (h2 : IsUnit (D - (Chapter04.E A)ᵀ)) :
@@ -1232,7 +1577,12 @@ with $S^2 = D_0$. Then
 $$S^{-1} (D_0 - 2 D_0) S^{-1} = -I.$$
 So the matrix $D_2$ of `SaadSparse.Chapter09.problem_9_8c` is $-I$, the scaled identity reads
 $C = -(I - \hat E)^{-1} (I - \hat E)^{-T} + (I - \hat E)^{-1} + (I - \hat E)^{-T}$, and no
-diagonal remains. -/
+diagonal remains.
+
+**Reading.** The formula takes a symmetric invertible square root as input, with no diagonal
+restriction, and identifies the middle factor. The SSOR specialization gives the negative identity.
+The procedure and operation-count comparison requested by the exercise are outside these statements.
+-/
 theorem problem_9_8c_ssor {S : Matrix (Fin n) (Fin n) ℝ} (hSu : IsUnit S)
     (hSD : S * S = Chapter04.D A) :
     S⁻¹ * (Chapter04.D A - (2 : ℝ) • Chapter04.D A) * S⁻¹ = -1 := by
@@ -1254,7 +1604,12 @@ $23n$.
 This is arithmetic on the two counts of the book, not a statement about the algorithms. The
 library does not count operations, so the counts are hypotheses of the statement, and neither
 `SaadSparse.Chapter09.eisenstat` nor `SaadSparse.Chapter09.pcg` appears in it. The numbers $n$
-and $N_z$ are real. -/
+and $N_z$ are real.
+
+**Reading.** The theorem checks arithmetic for an exact input count $N_z=5n$, over real numbers. The
+source uses $5n$ as an approximate stencil count. Lean does not prove the operation-count formulas
+or model a stencil implementation.
+-/
 theorem example_9_1 {n Nz : ℝ} (hn : 0 < n) (hNz : Nz = 5 * n) :
     4 * Nz - n = 19 * n ∧
       3 * n + 2 * Nz = 13 * n ∧

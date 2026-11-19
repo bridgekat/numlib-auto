@@ -74,9 +74,22 @@ of `Numlib.Nonlinear.Nemytskii`.
 
 ## Deviations from the source
 
+* **Equations (5.4.2) and (5.4.5)** (scope). The iteration uses a totalized inverse and the
+  separate quadratic estimate supplies the current inverse and its bound. The estimate
+  applies in normed spaces.
+* **Theorem 5.4.2, convergence and error estimates** (scope). The main convergence theorem
+  and the separate sharp error estimate use controls on a closed ball around $u_0$.
+  The separate first-step version uses the ball around $u_1$ from the source, with an
+  ambient derivative on a convex domain.
 * **Theorem 5.4.2, uniqueness** (correction). The book states uniqueness of the root on the closed
   ball of radius $t^{**} = (1 + \sqrt{1 - 2h})/(aL)$ about $u_0$. This is false for $h < 1/2$; the
   statement uses the open ball. See `AtkinsonHan.Chapter05.theorem_5_4_2_unique`.
+* **Equations (5.4.8), (5.4.10) and (5.4.12)** (correction and scope). The derivative
+  of $F(u) = u - \mathcal{K}(u)$ has a minus sign before the integral. The two linear
+  correction equations use $-F(u_n)$, so their right-hand-side integrals drop the printed
+  extra factor $u_n(s)$. These results allow any nonempty closed interval $[a,b]$.
+* **Exercise 5.4.5** (scope). The fixed invertible operator can satisfy the stated
+  contraction condition even if it differs from the initial derivative.
 -/
 
 open Filter Metric Topology
@@ -90,13 +103,19 @@ variable {U W : Type*} [NormedAddCommGroup U] [NormedSpace ℝ U] [NormedAddComm
 $$u_{n+1} = u_n - [F'(u_n)]^{-1} F(u_n).$$
 
 The iterates are `Newton.iterate F F' u₀`, and the step is `Newton.step`. Where $F'(u_n)$ is not
-invertible, the inverse is $0$ and the step leaves $u_n$ unchanged. -/
+invertible, the inverse is $0$ and the step leaves $u_n$ unchanged.
+
+**Reading.** Uses a totalized operator inverse to define every step.
+-/
 theorem equation_5_4_2 (F : U → W) (F' : U → U →L[ℝ] W) (u₀ : U) (n : ℕ) :
     Newton.iterate F F' u₀ (n + 1) = Newton.step F F' (Newton.iterate F F' u₀ n) :=
   Newton.iterate_succ F F' u₀ n
 
 /-- A root of $F$ is a fixed point of the Newton step: if $F(u) = 0$, then
-$u - [F'(u)]^{-1} F(u) = u$. -/
+$u - [F'(u)]^{-1} F(u) = u$.
+
+**Reading.** A root is fixed even for a noninvertible supplied derivative under totalization.
+-/
 theorem newtonStep_eq_self {F : U → W} (F' : U → U →L[ℝ] W) {u : U} (hu : F u = 0) :
     Newton.step F F' u = u :=
   Newton.step_eq_self_of_eq_zero F F' hu
@@ -144,7 +163,10 @@ $T(u) = u - [F'(u)]^{-1} F(u)$ satisfies
 $$\|T(u) - u^*\| \le \frac{c_0 L}{2} \|u - u^*\|^2.$$
 
 The spaces need not be complete. The proof is the Taylor estimate
-`AtkinsonHan.Chapter05.norm_sub_sub_fderiv_le_half_mul_sq` of Section 5.3. -/
+`AtkinsonHan.Chapter05.norm_sub_sub_fderiv_le_half_mul_sq` of Section 5.3.
+
+**Reading.** Uses explicit pointwise inverse bound and does not need completeness.
+-/
 theorem equation_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
     {r L c₀ : ℝ}
     (hF : ∀ z ∈ ball ustar r, HasFDerivAt F (F' z) z)
@@ -311,7 +333,10 @@ The hypotheses $a > 0$ and $L > 0$ make $t^*$ well defined. The completeness of 
 because the book states the theorem for Banach spaces; it follows from the completeness of $U$,
 since $F'(u_0)$ is an isomorphism. The proof is the backbone's `Newton.kantorovich`. The finer
 clauses of the book are `AtkinsonHan.Chapter05.theorem_5_4_2_step`,
-`AtkinsonHan.Chapter05.theorem_5_4_2_unique` and `AtkinsonHan.Chapter05.theorem_5_4_2_sharp`. -/
+`AtkinsonHan.Chapter05.theorem_5_4_2_unique` and `AtkinsonHan.Chapter05.theorem_5_4_2_sharp`.
+
+**Reading.** Main compact statement uses a ball around the initial point and a coarser bound.
+-/
 theorem theorem_5_4_2 {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
@@ -339,7 +364,11 @@ let $F$ have the Fréchet derivative $F'(u)$ at every $u \in D$, and let
 $\|F'(u) - F'(v)\| \le L \|u - v\|$ for all $u, v \in D$. Then there is a root $u^*$ of $F$ in
 $\bar B(u_1, t^* - b)$, and the Newton iterates converge to $u^*$.
 
-This is the form in which the theorem is applied when no ball around $u_0$ is known in advance. -/
+This is the form in which the theorem is applied when no ball around $u_0$ is known in advance.
+
+**Reading.** The first-step ball and existence agree, using ambient derivatives on a convex domain
+without requiring openness.
+-/
 theorem theorem_5_4_2_step {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {D : Set U} {a b L : ℝ}
     (ha : 0 < a) (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b) (hD : Convex ℝ D)
@@ -394,7 +423,10 @@ $$\|u_n - u^*\| \le \frac{[1 - \sqrt{1 - 2h}]^{2^n}}{2^n a L}.$$
 
 This is the finer form of the last conclusion of `AtkinsonHan.Chapter05.theorem_5_4_2`. With
 `AtkinsonHan.Chapter05.theorem_5_4_2_step` and `AtkinsonHan.Chapter05.theorem_5_4_2_unique`, it
-completes Theorem 5.4.2. -/
+completes Theorem 5.4.2.
+
+**Reading.** Same sharp estimate under the separate initial-point ball hypotheses.
+-/
 theorem theorem_5_4_2_sharp {F : U → W} {F' : U → U →L[ℝ] W} {u₀ : U} {r a b L : ℝ} (ha : 0 < a)
     (hLpos : 0 < L) (hb : 0 ≤ b) (e : U ≃L[ℝ] W) (he : (e : U →L[ℝ] W) = F' u₀)
     (ha' : ‖(e.symm : W →L[ℝ] U)‖ ≤ a) (hb' : ‖e.symm (F u₀)‖ ≤ b)
@@ -438,7 +470,10 @@ and converge to $u^*$.
 The convergence is linear and not quadratic: the fixed derivative costs an order of convergence.
 The book's choice $A = F'(u_0)$ satisfies the hypothesis when $u_0$ is close enough to $u^*$, by
 the perturbation theorem. The Lipschitz condition is needed only at the point $u^*$, and the
-spaces need not be complete. -/
+spaces need not be complete.
+
+**Reading.** A contraction criterion gives linear convergence with a general fixed inverse.
+-/
 theorem exercise_5_4_5 {F : U → W} {F' : U → U →L[ℝ] W} {ustar : U} (hroot : F ustar = 0)
     {r L : ℝ} (hr : 0 < r) (A : U ≃L[ℝ] W)
     (hF : ∀ u ∈ closedBall ustar r, HasFDerivAt F (F' u) u)
@@ -481,7 +516,11 @@ the operator $F(v) = v - \mathcal{K}(v)$ has, at every $u \in C[a, b]$, the Fré
 $$F'(u) = I - \mathcal{K}'(u),$$
 where $\mathcal{K}'(u)$ is the Fredholm operator with the kernel $k_z(t, s, u(s))$.
 
-This is `AtkinsonHan.Chapter05.example_5_3_10` together with the derivative of the identity. -/
+This is `AtkinsonHan.Chapter05.example_5_3_10` together with the derivative of the identity.
+
+**Correction.** The last line of the source's calculation prints a plus sign before the
+integral. The residual subtracts the integral operator, so its derivative subtracts the
+Fredholm term. -/
 theorem equation_5_4_8 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     (hk : ∀ (x y : Icc a b) (z : ℝ), HasDerivAt (fun t => k (x, y, t)) (kz (x, y, z)) z)
     (u : C(Icc a b, ℝ)) :
@@ -507,7 +546,10 @@ for every $t \in [a, b]$. So each Newton step for the nonlinear integral equatio
 solution of one linear one.
 
 The book also assumes that $F'(u_n)$ is invertible. Here this is the equivalence `e`, as in
-`AtkinsonHan.Chapter05.equation_5_4_7`. -/
+`AtkinsonHan.Chapter05.equation_5_4_7`.
+
+**Correction.** In the negative residual on the right, the kernel is evaluated at the current
+iterate. The printed additional factor $u_n(s)$ would change the equation. -/
 theorem equation_5_4_10 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     {F : C(Icc a b, ℝ) → C(Icc a b, ℝ)} (hF : ∀ v, F v = v - urysohn hab k v)
     {F' : C(Icc a b, ℝ) → C(Icc a b, ℝ) →L[ℝ] C(Icc a b, ℝ)}
@@ -531,7 +573,10 @@ $A = I - \mathcal{K}'(u_0)$ be invertible. Let $\delta = u_+ - u$ be the increme
 modified Newton step $u_+ = u - A^{-1} F(u)$ from any $u$. Then for every $t \in [a, b]$
 $$\delta(t) - \int_a^b k_z(t, s, u_0(s))\, \delta(s)\, ds = -F(u)(t).$$
 So every step solves a linear integral equation with the same kernel. This makes the modified
-method cheap, and by `AtkinsonHan.Chapter05.exercise_5_4_5` only linearly convergent. -/
+method cheap, and by `AtkinsonHan.Chapter05.exercise_5_4_5` only linearly convergent.
+
+**Correction.** In the negative residual the kernel is evaluated at $u_n(s)$, and the printed
+additional factor $u_n(s)$ is omitted. -/
 theorem equation_5_4_12 (hab : a ≤ b) {k kz : C(Icc a b × Icc a b × ℝ, ℝ)}
     {F : C(Icc a b, ℝ) → C(Icc a b, ℝ)} (hF : ∀ v, F v = v - urysohn hab k v)
     (u₀ : C(Icc a b, ℝ)) (A : C(Icc a b, ℝ) ≃L[ℝ] C(Icc a b, ℝ))

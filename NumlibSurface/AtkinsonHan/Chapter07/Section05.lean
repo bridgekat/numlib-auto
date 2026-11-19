@@ -100,6 +100,21 @@ spherical polynomials use `Numlib.Approximation.MvPolynomial`.
   polynomials on $[-1, 1]$ (`Numlib.Approximation.OrthogonalPolynomial`), but no associated Legendre
   functions and no surface measure on the sphere $S^2$.
 
+## Deviations from the source
+
+* **Equations (7.5.1)–(7.5.2)** (scope). The Fourier expansion is realized by a totalized
+  series, with value zero when the series is not summable. The source allows coefficients
+  representing distributions for which ordinary pointwise evaluation is unavailable.
+  The formal Fourier norm equivalence with the classical derivative norm is stated at
+  integer orders.
+* **Proposition 7.5.4** (scope). Regularity is established in the case of continuity
+  ($k=0$). The source also states higher continuous derivatives.
+* **Theorem 7.5.7** (generalization). The interpolation bound uses a constant depending on $s$
+  alone, uniformly over $0 \le r \le s$. See `AtkinsonHan.Chapter07.theorem_7_5_7`.
+* **Exercises 7.5.3 and 7.5.4** (scope). The Simpson estimate gives an explicit error
+  constant. The dual pairing allows all real orders, with complex conjugation in the
+  second argument as in the printed formula.
+
 ## Not formalized
 
 * **Equations (7.5.3)–(7.5.5), the distributional derivative $\mathcal{D}$.** Its description
@@ -174,14 +189,20 @@ $$\varphi(x) = (2\pi)^{-1/2} \sum_{m \in \mathbb{Z}} a_m e^{imx}.$$
 
 This is the backbone sum `PeriodicSobolev.eval (2 * π) φ x` times $(2\pi)^{-1/2}$. The sum is a
 `tsum`, so it is $0$ when the series is not summable; for $s > 1/2$ the series converges
-absolutely. -/
+absolutely.
+
+**Reading.** Uses a totalized sum even for coefficients defining distributions.
+-/
 noncomputable def eval (φ : PeriodicSobolev s) (x : ℝ) : ℂ :=
   (√(2 * π))⁻¹ * PeriodicSobolev.eval (2 * π) φ x
 
 /-- **Equation (7.5.1)** of [han2009theoretical]. For $\varphi \in H^s(2\pi)$ and real $x$,
 $$\varphi(x) = \sum_{m \in \mathbb{Z}} a_m \psi_m(x),$$
 where $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x` and $a_m$ are the coefficients of
-$\varphi$. -/
+$\varphi$.
+
+**Reading.** Expansion is unconditional in the totalized sum sense.
+-/
 theorem eval_eq_tsum (φ : PeriodicSobolev s) (x : ℝ) :
     eval φ x = ∑' m : ℤ, φ.coeff m * psi m x := by
   rw [eval, PeriodicSobolev.eval, ← tsum_mul_left]
@@ -299,7 +320,10 @@ let $\varphi \in H^k(2\pi)$. Then
 $$\|\varphi\|_{*,k}^2 \le \|\varphi\|_{H^k}^2 \le (k + 1) \|\varphi\|_{*,k}^2,$$
 where $\|\varphi\|_{H^k}$ is the classical norm `AtkinsonHan.Chapter07.classicalNormSq`.
 
-The proof sums the inequality `AtkinsonHan.Chapter07.weight_sq_le_sum_le` against $|a_m|^2$. -/
+The proof sums the inequality `AtkinsonHan.Chapter07.weight_sq_le_sum_le` against $|a_m|^2$.
+
+**Reading.** The explicit standard norm comparison is only at integer order.
+-/
 theorem theorem_7_5_2_norm_equiv (k : ℕ) (φ : PeriodicSobolev (k : ℝ)) :
     ‖φ‖ ^ 2 ≤ classicalNormSq k φ ∧ classicalNormSq k φ ≤ ((k : ℝ) + 1) * ‖φ‖ ^ 2 := by
   have hns := PeriodicSobolev.hasSum_norm_sq φ
@@ -350,7 +374,11 @@ $$\|\varphi\|_{*,k}^2 \le \frac{1}{2\pi} \|f\|_{H^k}^2 \le (k + 1) \|\varphi\|_{
 
 The sequence $\varphi$ is `PeriodicSobolev.ofSmooth hf hd`, and $\|f\|_{H^k}^2$ is
 `PeriodicSobolev.derivNormSq k f`. The factor $1/(2\pi)$ comes from the coefficients against
-$e^{imx}$; see `AtkinsonHan.Chapter07.classicalNormSq_ofSmooth`. -/
+$e^{imx}$; see `AtkinsonHan.Chapter07.classicalNormSq_ofSmooth`.
+
+**Reading.** Explicit equivalence with the classical derivative norm on smooth functions at integer
+order.
+-/
 theorem theorem_7_5_2_smooth {f : ℝ → ℂ} (hf : Function.Periodic f (2 * π)) {k : ℕ}
     (hd : ContDiff ℝ k f) :
     ‖PeriodicSobolev.ofSmooth hf hd‖ ^ 2 ≤ (2 * π)⁻¹ * PeriodicSobolev.derivNormSq k f ∧
@@ -382,7 +410,10 @@ $s > 1/2$ and $\varphi \in H^s(2\pi)$. Then the series (7.5.1) converges to a co
 function of period $2\pi$, and for every real $x$,
 $$|\varphi(x)| \le \big[1 + \sqrt{2\zeta(2s)}\big] \|\varphi\|_{*,s}.$$
 
-Here $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x`, and `zetaReal` is the function $\zeta$. -/
+Here $\varphi(x)$ is `AtkinsonHan.Chapter07.eval φ x`, and `zetaReal` is the function $\zeta$.
+
+**Reading.** Proves only the continuous case with the same explicit uniform bound.
+-/
 theorem proposition_7_5_4 (hs : 1 / 2 < s) (φ : PeriodicSobolev s) :
     Continuous (eval φ) ∧ Function.Periodic (eval φ) (2 * π) ∧
       ∀ x, ‖eval φ x‖ ≤ (1 + √(2 * zetaReal (2 * s))) * ‖φ‖ := by
@@ -498,13 +529,15 @@ $\mathcal{I}_n \varphi(t_j) = \varphi(t_j)$ for $0 \le j < 2n + 1$, and
 $$\|\varphi - \mathcal{I}_n \varphi\|_{*,r} \le \sqrt{1 + 2\zeta(2s)} \, n^{r-s}
   \|\varphi\|_{*,s}.$$
 
+**Generalization.** The book allows the constant to depend on $s$ and $r$. The explicit
+constant $\sqrt{1 + 2\zeta(2s)}$ works uniformly over $0 \le r \le s$.
+
 The interpolant $\mathcal{I}_n \varphi$ is `PeriodicSobolev.trigInterp r n φ`, an element of
 $H^r(2\pi)$, and $\varphi$ is read in $H^r(2\pi)$ through `PeriodicSobolev.incl`. The source
 refers to Kress for the proof. The proof here is the aliasing argument of
 `Numlib.Analysis.Fourier.Aliasing`: the coefficients of $\mathcal{I}_n \varphi$ on the window
 $-n, \dots, n$ are $a_m + \sum_{j \neq 0} a_{m + j(2n+1)}$, they vanish outside it, and the
-Cauchy–Schwarz inequality against $\sum_{j \neq 0} |m + j(2n+1)|^{-2s}$ bounds the tails. The
-constant of the source depends on $s$ and $r$; the constant here depends on $s$ alone. -/
+Cauchy–Schwarz inequality against $\sum_{j \neq 0} |m + j(2n+1)|^{-2s}$ bounds the tails. -/
 theorem theorem_7_5_7 (hs : 1 / 2 < s) {r : ℝ} (hr : 0 ≤ r) (hrs : r ≤ s) {n : ℕ} (hn : 1 ≤ n)
     (φ : PeriodicSobolev s) :
     (∀ j < 2 * n + 1, eval (PeriodicSobolev.trigInterp r n φ) (angleNode (2 * n + 1) j)
@@ -573,7 +606,10 @@ $$|I(\varphi) - S_{2k}(\varphi)| \le \frac{5}{3} \sqrt{4\pi\zeta(2s)} \, k^{-s}
   \|\varphi\|_{*,s}.$$
 
 Since $S_{2k} = (4 T_{2k} - T_k) / 3$, the error is $(4 (I - T_{2k}) - (I - T_k)) / 3$, and
-$(2k)^{-s} \le k^{-s}$. Here $S_{2k}$ is `AtkinsonHan.Chapter07.simpson k`. -/
+$(2k)^{-s} \le k^{-s}$. Here $S_{2k}$ is `AtkinsonHan.Chapter07.simpson k`.
+
+**Reading.** Gives explicit error constant at rate k to the power minus s.
+-/
 theorem exercise_7_5_3 (hs : 1 / 2 < s) {k : ℕ} (hk : 0 < k) (φ : PeriodicSobolev s) :
     ‖integral φ - simpson k φ‖ ≤ 5 / 3 * √(4 * π * zetaReal (2 * s)) * (k : ℝ) ^ (-s) * ‖φ‖ := by
   have hspos : (0 : ℝ) < s := by linarith
@@ -613,7 +649,10 @@ $$\ell[\varphi] = \sum_{m \in \mathbb{Z}} a_m \overline{b_m}$$
 for $\varphi \in H^t(2\pi)$ with coefficients $a_m$, is a bounded linear functional on
 $H^t(2\pi)$ with $\|\ell\| \le \|\eta\|_{*,-t}$.
 
-The functional is `PeriodicSobolev.dualPairing t η`. The statement holds for every real $t$. -/
+The functional is `PeriodicSobolev.dualPairing t η`. The statement holds for every real $t$.
+
+**Reading.** Allows every real order while proving boundedness of the same conjugated pairing.
+-/
 theorem exercise_7_5_4 (t : ℝ) (η : PeriodicSobolev (-t)) :
     (∀ φ : PeriodicSobolev t,
         PeriodicSobolev.dualPairing t η φ = ∑' m : ℤ, φ.coeff m * conj (η.coeff m)) ∧

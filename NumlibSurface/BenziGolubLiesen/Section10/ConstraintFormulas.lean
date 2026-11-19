@@ -32,8 +32,18 @@ to a reduced pressure eigenproblem.
 
 ## Deviations from the source
 
-* **Section 10.2** (qualification). With square invertible $B$, the degree of the minimal
-  polynomial is at most two, since the difference from the identity can vanish.
+* **Equations (10.16)–(10.17)** (reading). Invertibility conditions are stated directly.
+  The projector definition uses total inverses.
+* **Equation (10.22)** (generalization). The pencil congruences allow any $W$ satisfying
+  $W^TGW=I$.
+* **Section 10.2, regularized preconditioning** (reading). The triangular form and
+  characteristic polynomial give explicit block identities under invertibility assumptions.
+* **Section 10.2, square constraint block** (generalization). The square-zero identity
+  includes $G=A$, where the preconditioned matrix is the identity. See
+  `BenziGolubLiesen.constraintPreconditioned_square_case`.
+* **End of Section 10.2** (correction). The printed strict lower endpoint $\beta$ can be
+  attained. The spectrum result gives the weaker universal interval $(0,1]$. See
+  `BenziGolubLiesen.regularizedConstraintPreconditioned_spectrum`.
 
 ## Not formalized
 
@@ -58,7 +68,9 @@ variable {A G : Matrix n n R} {B : Matrix m n R} {C : Matrix m m R}
 
 /-- Equation (10.16) of [benzi2005numerical]. With invertible $G$, the inverse of the
 unstabilized constraint preconditioner factors into two block elimination matrices and the
-inverse block diagonal matrix. -/
+inverse block diagonal matrix.
+
+**Generalization.** Invertibility of $G$ and the preconditioner suffices for the factorization. -/
 theorem inv_constraintPreconditioner_zero (hG : IsUnit G)
     (hP : IsUnit (constraintPreconditioner G B 0)) :
     (constraintPreconditioner G B 0)⁻¹ =
@@ -70,11 +82,15 @@ theorem inv_constraintPreconditioner_zero (hG : IsUnit G)
   simp [fromBlocks_multiply, Matrix.mul_assoc, nonsing_inv_neg_eq_neg]
 
 /-- For invertible $G$ and $BG^{-1}B^T$, the constraint projector is
-$\Pi=G^{-1}B^T(BG^{-1}B^T)^{-1}B$. -/
+$\Pi=G^{-1}B^T(BG^{-1}B^T)^{-1}B$.
+
+**Generalization.** The definition uses total inverses. -/
 noncomputable def constraintProjector (G : Matrix n n R) (B : Matrix m n R) : Matrix n n R :=
   G⁻¹ * Bᵀ * (B * G⁻¹ * Bᵀ)⁻¹ * B
 
-/-- The constraint projector leaves $B$ unchanged on its right and is idempotent. -/
+/-- The constraint projector leaves $B$ unchanged on its right and is idempotent.
+
+**Generalization.** Invertibility of $BG^{-1}B^T$ suffices for both identities. -/
 theorem constraintProjector_mul_self (hT : IsUnit (B * G⁻¹ * Bᵀ)) :
     B * constraintProjector G B = B ∧
       constraintProjector G B * constraintProjector G B = constraintProjector G B := by
@@ -87,7 +103,10 @@ theorem constraintProjector_mul_self (hT : IsUnit (B * G⁻¹ * Bᵀ)) :
   rfl
 
 /-- Equation (10.17) of [benzi2005numerical]. The blocks of the left-preconditioned matrix
-are $(I-\Pi)G^{-1}A+\Pi$, $0$, $(BG^{-1}B^T)^{-1}B(G^{-1}A-I)$ and $I$. -/
+are $(I-\Pi)G^{-1}A+\Pi$, $0$, $(BG^{-1}B^T)^{-1}B(G^{-1}A-I)$ and $I$.
+
+**Reading.** The required inverses are given by explicit invertibility hypotheses on $G$ and
+$BG^{-1}B^T$. -/
 theorem constraintPreconditioned_blocks (hG : IsUnit G)
     (hT : IsUnit (B * G⁻¹ * Bᵀ)) :
     (constraintPreconditioner G B 0)⁻¹ * constraintPreconditioner A B 0 =
@@ -117,8 +136,13 @@ theorem constraintPreconditioned_preserves (hP : IsUnit (constraintPreconditione
   rw [← Matrix.mul_assoc, mul_nonsing_inv _ ((isUnit_iff_isUnit_det _).mp hP), Matrix.one_mul]
   exact ⟨toBlocks_fromBlocks₂₁ _ _ _ _, toBlocks_fromBlocks₂₂ _ _ _ _⟩
 
-/-- For square invertible $B$, the projection $\Pi$ in (10.17) equals the identity and
-the left-preconditioned matrix is annihilated by $(X-1)^2$. -/
+/-- **Section 10.2** of [benzi2005numerical], square constraint block. For square invertible
+$B$ and invertible $G$, the projection $\Pi$ in (10.17) equals the identity and the
+left-preconditioned matrix is annihilated by $(X-1)^2$.
+
+**Generalization.** The source assumes $G\ne A$ and states that the minimal polynomial has
+degree two. The square-zero identity includes $G=A$, where the preconditioned matrix is
+the identity. -/
 theorem constraintPreconditioned_square_case {B : Matrix n n R} (hG : IsUnit G)
     (hB : IsUnit B) :
     ((constraintPreconditioner G B 0)⁻¹ * constraintPreconditioner A B 0 - 1) ^ 2 = 0 := by
@@ -136,7 +160,10 @@ theorem constraintPreconditioned_square_case {B : Matrix n n R} (hG : IsUnit G)
 
 omit [DecidableEq n] [DecidableEq m] in
 /-- A pencil eigenvalue $\lambda$ for the same stabilization on both sides corresponds
-to the eigenvalue $\lambda-1$ for the difference pencil used in (10.22). -/
+to the eigenvalue $\lambda-1$ for the difference pencil used in (10.22).
+
+**Generalization.** The affine shift of the pencil holds over any field without invertibility
+hypotheses. -/
 theorem constraintPencil_shift {K : Type*} [Field K] (A G : Matrix n n K) (B : Matrix m n K)
     (C : Matrix m m K) (μ : K) (v : n ⊕ m → K) :
     HasPencilEigenvector (constraintPreconditioner A B C) (constraintPreconditioner G B C) μ v ↔
@@ -150,7 +177,10 @@ theorem constraintPencil_shift {K : Type*} [Field K] (A G : Matrix n n K) (B : M
 
 /-- For regularized constraint preconditioning with unchanged $A$, the preconditioned
 matrix is upper block triangular. With $T=BA^{-1}B^T$ its lower diagonal block is
-$I-(C+T)^{-1}C$. The upper-right block is $A^{-1}B^T(C+T)^{-1}C$. -/
+$I-(C+T)^{-1}C$. The upper-right block is $A^{-1}B^T(C+T)^{-1}C$.
+
+**Generalization.** The block identity only needs the primal block and preconditioner to be
+invertible. -/
 theorem regularizedConstraintPreconditioned_eq (hA : IsUnit A)
     (hP : IsUnit (constraintPreconditioner A B C)) :
     let T := B * A⁻¹ * Bᵀ
@@ -166,7 +196,11 @@ theorem regularizedConstraintPreconditioned_eq (hA : IsUnit A)
   simp [← fromBlocks_one, fromBlocks_multiply, fromBlocks_add, sub_eq_add_neg]
 
 /-- The characteristic polynomial of the regularized system separates the primal
-factor $(X-1)^n$ and the characteristic polynomial of the reduced pressure block. -/
+factor $(X-1)^n$ and the characteristic polynomial of the reduced pressure block.
+
+**Reading.** The characteristic polynomial separates the compulsory factor at $1$ from the
+reduced factor. The source states the full multiplicity under its definiteness and rank
+hypotheses. -/
 theorem regularizedConstraintPreconditioned_charpoly (hA : IsUnit A)
     (hP : IsUnit (constraintPreconditioner A B C)) :
     ((constraintPreconditioner A B C)⁻¹ * constraintPreconditioner A B 0).charpoly =
@@ -178,7 +212,9 @@ theorem regularizedConstraintPreconditioned_charpoly (hA : IsUnit A)
 /-- Equation (10.22) of [benzi2005numerical]. Let $W=G^{-1/2}$, or more generally
 any matrix with $W^T G W=I$. Applying the congruence with
 $\operatorname{diag}(W,I)$ to both sides of the shifted pencil gives the normalized
-constraint blocks $\widehat B=BW$ and $\widehat E=W^T A W-I$. -/
+constraint blocks $\widehat B=BW$ and $\widehat E=W^T A W-I$.
+
+**Generalization.** The two congruences allow any $W$ satisfying $W^TGW=I$. -/
 theorem constraintPencil_normalize (A G W : Matrix n n R) (B : Matrix m n R) (C : Matrix m m R)
     (hW : Wᵀ * G * W = 1) :
     let Q := fromBlocks W 0 0 (1 : Matrix m m R)
@@ -195,8 +231,9 @@ open scoped ComplexOrder in
 /-- For the regularization considered in Section 10.2 of [benzi2005numerical],
 with $A$ positive definite, $B^H$ injective, and $C$ positive semidefinite, every
 eigenvalue of $[A,B^H;B,-C]^{-1}[A,B^H;B,0]$ is real and belongs to $(0,1]$.
-The survey's stronger interval $(\beta,1]$ can exclude an attained endpoint: for
-$A=B=C=[1]$, the eigenvalue $1/2$ equals $\beta$. -/
+
+**Correction.** The survey gives the interval $(\beta,1]$. For $A=B=C=[1]$, the eigenvalue
+$1/2$ equals $\beta$. The Lean result proves the weaker interval $(0,1]$. -/
 theorem regularizedConstraintPreconditioned_spectrum {A : Matrix n n ℂ} {B : Matrix m n ℂ}
     {C : Matrix m m ℂ} (hA : A.PosDef) (hB : Function.Injective Bᴴ.mulVec) (hC : C.PosSemidef)
     {ell : ℂ} (hell : ell ∈ spectrum ℂ ((fromBlocks A Bᴴ B (-C))⁻¹ * fromBlocks A Bᴴ B 0)) :

@@ -108,7 +108,20 @@ the traces on a bounded $C^1$ domain of `Numlib.Analysis.Sobolev.Boundary.ContDi
   The statement holds for every open $\omega \subseteq \Omega$. See
   `Brezis.Chapter09.remark_9_25_local`.
 
+* **Lemmas 9.6–9.8** (generalization, reading and typo). The difference quotient includes zero
+  displacement, the differentiated equation assumes $f \in H^1$, and the transformed
+  coefficients are $C^1$ on $Q$. The source omits a minus sign in the proof of Lemma 9.7.
+  See `Brezis.Chapter09.lemma_9_6`, `Brezis.Chapter09.lemma_9_7` and
+  `Brezis.Chapter09.lemma_9_8`.
+* **Theorem 9.26** (reading). The higher-order half-space statement gives Sobolev
+  membership, while the normal derivative statement assumes $H^2$ and gives the trace identity.
+  See `Brezis.Chapter09.theorem_9_26_upperHalfSpace_higher` and
+  `Brezis.Chapter09.theorem_9_26_normalDeriv`.
+
 ## Not formalized
+
+* **Theorem 9.25, higher-order estimates on the half space.** The backbone proves these as
+  `Elliptic.regularity_upperHalfSpace_higher`.
 
 * **Theorem 9.26 on a general domain.** The conclusions of Theorem 9.25 for the Neumann problem (49)
   on $\Omega$ of class $C^2$ with $\Gamma$ bounded. The source says only that "the proof of Theorem
@@ -393,7 +406,10 @@ $U$ has $\|U\|_{H^{m+2}} \le C \|f\|_{H^m}$. The datum of (48) is the function o
 element of $L^2(\Omega)$, `SobolevMultiIndex.fnL ℝ 𝔟 m 2 Ω volume f`. The proof is the
 backbone's `Elliptic.regularity_dirichlet_higher`: induction on $m$ in the cases A, B and C,
 which differentiates the equation (Lemma 9.7 and (58)) instead of using the Leibniz rule of
-order $m$ as the source does, with the constant from the closed graph theorem. -/
+order $m$ as the source does, with the constant from the closed graph theorem.
+
+**Reading.** This clause uses the bounded-frontier hypothesis. The half-space higher-order
+ result is available in the backbone as `Elliptic.regularity_upperHalfSpace_higher`. -/
 theorem theorem_9_25_higher (m : ℕ) (hΩ : IsOfClassC (m + 2) (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (f : sobolevSpaceHigher (d + 1) m 2 Ω) (u : hSpace (d + 1) Ω),
@@ -420,7 +436,9 @@ Here $\tilde u \in C^2(\overline\Omega)$ has the meaning of footnote 16 of Secti
 combines the $H^{m+2}$ clause with Corollary 9.15 (`Elliptic.regularity_dirichlet_contDiffOn`,
 whose representative is continuous on $\mathbb{R}^N$, with derivatives of order at most $2$ that
 extend continuously from $\Omega$ to $\mathbb{R}^N$). The condition $m > N/2$ is the condition
-$2 + N/2 < m + 2$ of Corollary 9.15. -/
+$2 + N/2 < m + 2$ of Corollary 9.15.
+
+**Reading.** This closure-regularity clause is stated under the bounded-frontier hypothesis. -/
 theorem theorem_9_25_contDiffOn (m : ℕ) (hΩ : IsOfClassC (m + 2) (Ω : Set 𝔼))
     (hΓ : Bornology.IsBounded (frontier (Ω : Set 𝔼))) (hm : ((d + 1 : ℕ) : ℝ) / 2 < m)
     (f : sobolevSpaceHigher (d + 1) m 2 Ω) {u : hSpace (d + 1) Ω}
@@ -448,7 +466,11 @@ $\Omega$, $f \in C^\infty(\overline\Omega)$ gives $f \in H^m(\Omega)$ for every 
 (`ContDiffOnClosure.memSobolevMultiIndex_of_isBounded_of_le`). The backbone's
 `Elliptic.regularity_dirichlet_smooth` is the $C^2(\overline\Omega)$ clause at every order, with
 one representative for all orders. For an unbounded $\Omega$ with bounded $\Gamma$, see
-`Brezis.Chapter09.theorem_9_25_smooth_of_forall_mem`. -/
+`Brezis.Chapter09.theorem_9_25_smooth_of_forall_mem`.
+
+**Reading.** The domain is bounded here. This makes the smooth datum belong to every $H^m$.
+ For the bounded-frontier version this membership is assumed in
+ `Brezis.Chapter09.theorem_9_25_smooth_of_forall_mem`. -/
 theorem theorem_9_25_smooth (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼))
     {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {f₀ : 𝔼 → ℝ} (hf : ContDiffOnClosure ℝ ∞ f₀ Ω)
     (hff : (f : 𝔼 → ℝ) =ᵐ[volume.restrict (Ω : Set 𝔼)] f₀) {u : hSpace (d + 1) Ω}
@@ -507,7 +529,10 @@ source starts with $v \in C_c^1(\mathbb{R}^N)$ as in Proposition 9.3 and argues 
 backbone's `Elliptic.eLpNorm_diffQuot_le_of_tangential` is Proposition 9.3, (i) ⇒ (iii), on the
 half space, which is invariant under these translations. Its bound is the $\ell^2$ norm of the
 gradient, which for $p = 2$ equals the Euclidean one
-(`Brezis.Chapter09.gradNorm_eq_toReal_eLpNorm_gradient_two`). -/
+(`Brezis.Chapter09.gradNorm_eq_toReal_eLpNorm_gradient_two`).
+
+**Generalization.** The totalized quotient also gives the inequality for $h=0$, with value zero
+ on the left. -/
 theorem lemma_9_6 {h : 𝔼} (hh : h (Fin.last d) = 0) (v : hSpace (d + 1) ℝ₊) :
     eLpNorm (Elliptic.diffQuot h (SobolevMultiIndex.fn v)) 2
         (volume.restrict ((ℝ₊ : Opens 𝔼) : Set 𝔼))
@@ -532,7 +557,13 @@ indices are $0$-based, so the tangential directions are `j ≠ Fin.last d`. The 
 difference quotients in $H_0^1(\Omega)$). The identity (58) "is derived from (48) by choosing
 $D\varphi$ instead of $\varphi$ (with $\varphi \in C_c^\infty(\Omega)$) and then arguing by
 density" (`Elliptic.forall_testFunction_deriv` and
-`Elliptic.apply_eq_zero_of_forall_testFunctions`). -/
+`Elliptic.apply_eq_zero_of_forall_testFunctions`).
+
+**Reading.** The lemma makes $f \in H^1$ explicit, as required to use $Df$ as an $L^2$ datum
+in the induction.
+
+**Typo.** The finite-difference integration by parts in the source's proof omits a minus
+sign before $\int u D_{-h}\varphi$. -/
 theorem lemma_9_7 {f u : hSpace (d + 1) ℝ₊}
     (hu2 : ∃ U : sobolevSpaceHigher (d + 1) 2 2 ℝ₊,
       SobolevMultiIndex.fn U =ᵐ[volume.restrict ((ℝ₊ : Opens 𝔼) : Set 𝔼)] SobolevMultiIndex.fn u)
@@ -663,7 +694,10 @@ $U \cap \Omega$ and `unitChartCubePos d`; $Q$ is `unitChartCube d`. The datum $\
 `Elliptic.chartCoeff H J k ℓ`. The proof is the backbone's `Elliptic.transfer_chart_ae_eq` (the
 change of variables of Proposition 9.6 and Mathlib's
 `MeasureTheory.integral_image_eq_integral_abs_det_fderiv_smul`), with
-`Elliptic.contDiffOn_chartCoeff` and `Elliptic.chartCoeff_elliptic` for the coefficients. -/
+`Elliptic.contDiffOn_chartCoeff` and `Elliptic.chartCoeff_elliptic` for the coefficients.
+
+**Generalization.** The transformed coefficients are proved $C^1$ on $Q$. The source's
+ statement asks for $C^1$ regularity on $Q_+$. -/
 theorem lemma_9_8 (c : ContDiffChart 2 (Ω : Set 𝔼)) {Ω₁ Qp : Opens 𝔼}
     (hΩ₁ : (Ω₁ : Set 𝔼) = c.U ∩ Ω) (hQp : (Qp : Set 𝔼) = unitChartCubePos d)
     {v : hSpace (d + 1) Ω₁} (hv : v ∈ hZeroSpace (d + 1) Ω₁)
@@ -771,7 +805,10 @@ $H_0^1(\Omega)$. The proof is case B at every order
 a Neumann solution are Neumann solutions with the differentiated data; this Neumann analogue of
 Lemma 9.7 is proved by a tangential integration by parts against the test functions of
 $\mathbb{R}^N$, not by the weak compactness of the source. The second normal derivative is then
-read off the equation. -/
+read off the equation.
+
+**Reading.** This statement includes the Sobolev membership on the half space. The source
+ also asserts a norm bound. -/
 theorem theorem_9_26_upperHalfSpace_higher (m : ℕ) (f : sobolevSpaceHigher (d + 1) m 2 ℝ₊)
     {u : hSpace (d + 1) ℝ₊}
     (hu : IsWeakSolutionNeumann ℝ₊ (SobolevMultiIndex.fnL ℝ 𝔟 m 2 ℝ₊ volume f) u) :
@@ -803,7 +840,10 @@ and the field `hΩ.outwardNormal hb` is the normal $n$. The normal derivative is
 9, 7(iii). The element $U$ of $H^2(\Omega)$, read in $H^1(\Omega)$, is
 `SobolevMultiIndex.toLowerOrderL ℝ 𝔟 2 Ω volume _ U₂`. The proof is the backbone's
 `BoundaryData.TraceFamily.normalTrace_eq_zero_of_forall_laplaceForm_eq` through
-`Brezis.Chapter09.isWeakSolutionNeumann_iff`. -/
+`Brezis.Chapter09.isWeakSolutionNeumann_iff`.
+
+**Reading.** This statement assumes $H^2$ membership and gives the homogeneous normal
+ condition as an almost-everywhere trace identity. -/
 theorem theorem_9_26_normalDeriv (hΩ : IsContDiffDomain 1 (Ω : Set 𝔼))
     (hb : Bornology.IsBounded (Ω : Set 𝔼)) {f : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))}
     (U₂ : SobolevEuclidean (d + 1) 2 2 Ω)

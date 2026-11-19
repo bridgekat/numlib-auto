@@ -114,6 +114,30 @@ rotations and the Givens pair), `Numlib.Eigen.Deflation` (Householder deflation)
 
 ## Deviations from the source
 
+* **Totalization.** The Householder formula extends by the identity at a zero axis. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_38`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_38_zero`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_38_isSymm`.
+* **Reading.** Householder reduction uses a specified sign and extends to a zero trailing vector.
+  See `QuarteroniSaccoSaleri.Chapter05.equation_5_40`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_41`.
+* **Correction.** The annihilating rotation uses the sine and cosine, avoiding the branch
+  restriction of the printed arctangent. See `QuarteroniSaccoSaleri.Chapter05.equation_5_51`.
+* **Correction.** Householder deflation sends the eigenvector to the first coordinate axis. See
+  `QuarteroniSaccoSaleri.Chapter05.remark_5_3`.
+* **Generalization.** The exact Hessenberg reduction uses total reflectors and includes small
+  dimensions. See `QuarteroniSaccoSaleri.Chapter05.householderStepMatrix`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergStep`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergIter`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergQIter`,
+  `QuarteroniSaccoSaleri.Chapter05.hessenbergReduce`, `QuarteroniSaccoSaleri.Chapter05.hessenbergQ`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_45`.
+* **Reading.** The Hessenberg backward-error estimate uses an explicit rounding model and a roundoff
+  smallness condition. See `QuarteroniSaccoSaleri.Chapter05.equation_5_46`.
+* **Scope.** The Hessenberg preservation theorem for the chosen basic QR factors assumes
+  nonsingularity. See `QuarteroniSaccoSaleri.Chapter05.isUpperHessenberg_qrIterate`.
+* **Totalization.** The two Householder product formulas include the zero reflection axis. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_49`.
 * **Remark 5.3** (typo). The book prints $H x_1 = \alpha x_1$ for the reflector $H$. It should read
   $H x_1 = \alpha e_1$, which is what $v = x_1 \pm \|x_1\|_2 e_1$ and (5.40) give and what the block
   form of $HAH$ needs. See `QuarteroniSaccoSaleri.Chapter05.remark_5_3`.
@@ -146,7 +170,11 @@ $$P = I - \frac{2 v v^T}{\|v\|_2^2},$$
 the reflection across the hyperplane $\operatorname{span}\{v\}^\perp$.
 
 For $v = 0$, where the formula of the book is undefined, Lean divides by zero to zero, and
-$P = I$. -/
+$P = I$.
+
+**Reading.** The displayed reflection quotient is undefined at a zero vector in the book. Lean gives
+the identity matrix there and so extends the symmetry assertion.
+-/
 noncomputable def equation_5_38 (v : Fin N → ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   1 - (2 / ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖ ^ 2) • vecMulVec v v
 
@@ -156,7 +184,11 @@ theorem norm_toLp_sq_eq_dotProduct (v : Fin N → ℝ) :
   rw [EuclideanSpace.norm_sq_eq]
   simp [dotProduct, sq]
 
-/-- The Householder matrix of the zero vector is the identity. -/
+/-- The Householder matrix of the zero vector is the identity.
+
+**Reading.** The displayed reflection quotient is undefined at a zero vector in the book. Lean gives
+the identity matrix there and so extends the symmetry assertion.
+-/
 @[simp]
 theorem equation_5_38_zero : equation_5_38 (0 : Fin N → ℝ) = 1 := by
   simp [equation_5_38]
@@ -173,7 +205,11 @@ theorem equation_5_38_eq_householder {v : Fin N → ℝ} (hv : v ≠ 0) :
   congr 2
   field_simp
 
-/-- A Householder matrix is symmetric. -/
+/-- A Householder matrix is symmetric.
+
+**Reading.** The displayed reflection quotient is undefined at a zero vector in the book. Lean gives
+the identity matrix there and so extends the symmetry assertion.
+-/
 theorem equation_5_38_isSymm (v : Fin N → ℝ) : (equation_5_38 v).IsSymm := by
   rw [IsSymm, equation_5_38, transpose_sub, transpose_one, transpose_smul, transpose_vecMulVec]
 
@@ -229,7 +265,12 @@ and the remaining entry has modulus $\|x\|_2$.
 The book writes $v = x \pm \|x\|_2 e_m$ and $Px = [0, \dots, 0, \mp\|x\|_2, 0, \dots, 0]^T$. The
 sign is `Matrix.phase (x m)`, with $\operatorname{sign} 0 = 1$, and $v$ is
 `Matrix.householderAxis x m`. The proof specializes the backbone's
-`Matrix.householder_mulVec_eq_smul_single`. -/
+`Matrix.householder_mulVec_eq_smul_single`.
+
+**Reading.** Lean fixes the sign by the leading coordinate, taking sign zero to be one. The tail
+formula works with the zero tail via the identity reflection. The displayed book formulas use an
+unspecified plus or minus sign.
+-/
 theorem equation_5_40 {x : Fin N → ℝ} (hx : x ≠ 0) (m : Fin N) :
     let v := householderAxis x m
     v = x + (phase (x m) * ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin N))‖) •
@@ -259,7 +300,12 @@ $y = P_{(k)} x$. Then:
 
 The indices start at $0$. The book writes $w^{(k)} = x^{(n-k)} \pm \|x^{(n-k)}\|_2 e_1^{(n-k)}$
 and $y_k = \pm\|x^{(n-k)}\|_2$. The proof specializes the backbone's
-`Matrix.householder_tail_mulVec` and `Matrix.householderTail_apply_of_lt`. -/
+`Matrix.householder_tail_mulVec` and `Matrix.householderTail_apply_of_lt`.
+
+**Reading.** Lean fixes the sign by the leading coordinate, taking sign zero to be one. The tail
+formula works with the zero tail via the identity reflection. The displayed book formulas use an
+unspecified plus or minus sign.
+-/
 theorem equation_5_41 (x : Fin N → ℝ) {k : ℕ} (hk : k < N) :
     let t : Fin N → ℝ := fun r => if k ≤ (r : ℕ) then x r else 0
     let w := householderAxis t ⟨k, hk⟩
@@ -353,7 +399,12 @@ $$\begin{bmatrix} c & -s \\ s & c \end{bmatrix} \begin{bmatrix} x_i \\ x_k \end{
 The book writes the angle as $\theta = \arctan(-x_k / x_i)$. This formula gives the right angle
 only when $x_i > 0$; the statement gives $\theta$ by its cosine and sine. The pair $(c, -s)$ is
 the backbone's `Matrix.givensPair (x i) (x k)`, and the annihilation is
-`Matrix.transpose_planeRotation_givensPair_mulVec`. -/
+`Matrix.transpose_planeRotation_givensPair_mulVec`.
+
+**Correction.** The annihilating rotation is chosen by its sine and cosine. The arctangent quoted
+after (5.44) gives that branch only when the first coordinate is positive. The formula assumes at
+least one of the two coordinates is nonzero.
+-/
 theorem equation_5_51 {i k : Fin N} (hik : i ≠ k) (x : Fin N → ℝ) (hx : ¬ (x i = 0 ∧ x k = 0)) :
     let α := √(x i ^ 2 + x k ^ 2)
     ∃ θ : ℝ, Real.cos θ = x i / α ∧ Real.sin θ = -(x k / α) ∧
@@ -394,7 +445,12 @@ what $v = x_1 \pm \|x_1\|_2 e_1$ and (5.40) give and what the block form of $HAH
 
 The matrix has order $N + 1$ in Lean, and $A_2$ is `A₁.submatrix Fin.succ Fin.succ`. The proof
 specializes the backbone's `Matrix.householder_conj_eigenvector_apply` and
-`Matrix.charpoly_householder_conj_eigenvector`. -/
+`Matrix.charpoly_householder_conj_eigenvector`.
+
+**Correction.** The reflector maps the input eigenvector to a multiple of the first coordinate
+vector, as needed to obtain the deflated block form. The source prints a multiple of the original
+eigenvector.
+-/
 theorem remark_5_3 {A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ} {x₁ : Fin (N + 1) → ℝ} {lam₁ : ℝ}
     (hx : A *ᵥ x₁ = lam₁ • x₁) (hx0 : x₁ ≠ 0) :
     let H := equation_5_38 (householderAxis x₁ 0)
@@ -421,7 +477,12 @@ $k$-th column of $A$ with pivot $k + 1$, so that it sets to zero the entries of 
 after the pivot. It is the identity when there is nothing to set to zero, $k + 1 \ge n$.
 
 The indices start at $0$: the book counts from $1$, and here the column is $k$ and the pivot is
-$k + 1$. -/
+$k + 1$.
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 noncomputable def householderStepMatrix (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     Matrix (Fin N) (Fin N) ℝ :=
   if h : k + 1 < N then
@@ -430,20 +491,35 @@ noncomputable def householderStepMatrix (A : Matrix (Fin N) (Fin N) ℝ) (k : �
   else 1
 
 /-- **Equation (5.45)** of [quarteroni2000numerical], one step of the Householder method:
-$A \mapsto P_{(k)}^T A P_{(k)}$. -/
+$A \mapsto P_{(k)}^T A P_{(k)}$.
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 noncomputable def hessenbergStep (A : Matrix (Fin N) (Fin N) ℝ) (k : ℕ) :
     Matrix (Fin N) (Fin N) ℝ :=
   (householderStepMatrix A k)ᵀ * A * householderStepMatrix A k
 
 /-- **Section 5.6.2** of [quarteroni2000numerical], the Householder method (5.45). For
 $A \in \mathbb{R}^{n \times n}$, it is the sequence of matrices $A^{(0)} = A$ and
-$A^{(k)} = P_{(k)}^T A^{(k-1)} P_{(k)}$, which are orthogonally similar to $A$. -/
+$A^{(k)} = P_{(k)}^T A^{(k-1)} P_{(k)}$, which are orthogonally similar to $A$.
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 noncomputable def hessenbergIter (A : Matrix (Fin N) (Fin N) ℝ) : ℕ → Matrix (Fin N) (Fin N) ℝ
   | 0 => A
   | k + 1 => hessenbergStep (hessenbergIter A k) k
 
 /-- **Equation (5.45)** of [quarteroni2000numerical], the accumulated orthogonal matrix
-$Q_{(k)} = P_{(1)} \cdots P_{(k)}$ of the Householder method, with $Q_{(0)} = I$. -/
+$Q_{(k)} = P_{(1)} \cdots P_{(k)}$ of the Householder method, with $Q_{(0)} = I$.
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 noncomputable def hessenbergQIter (A : Matrix (Fin N) (Fin N) ℝ) : ℕ → Matrix (Fin N) (Fin N) ℝ
   | 0 => 1
   | k + 1 => hessenbergQIter A k * householderStepMatrix (hessenbergIter A k) k
@@ -451,12 +527,22 @@ noncomputable def hessenbergQIter (A : Matrix (Fin N) (Fin N) ℝ) : ℕ → Mat
 /-- **Section 5.6.2** of [quarteroni2000numerical], the Hessenberg form $H = A^{(n-2)}$ produced by
 the $n - 2$ steps of the Householder method (Program 29).
 
-For $n < 2$ there are no steps, and $H = A$. -/
+For $n < 2$ there are no steps, and $H = A$.
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 noncomputable def hessenbergReduce (A : Matrix (Fin N) (Fin N) ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   hessenbergIter A (N - 2)
 
 /-- **Section 5.6.2** of [quarteroni2000numerical], the orthogonal matrix
-$Q = P_{(1)} \cdots P_{(n-2)}$ of the Householder method, with $H = Q^T A Q$ (Program 29). -/
+$Q = P_{(1)} \cdots P_{(n-2)}$ of the Householder method, with $H = Q^T A Q$ (Program 29).
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 noncomputable def hessenbergQ (A : Matrix (Fin N) (Fin N) ℝ) : Matrix (Fin N) (Fin N) ℝ :=
   hessenbergQIter A (N - 2)
 
@@ -509,7 +595,12 @@ form $H = A^{(n-2)}$, which is the output of Program 29.
 
 The proof specializes the backbone's `Matrix.hessenbergIter_eq_conj`,
 `Matrix.hessenbergQIter_mem_unitaryGroup`, `Matrix.hessenbergReduce_eq_conj` and
-`Matrix.hessenbergQ_mem_orthogonalGroup`. -/
+`Matrix.hessenbergQ_mem_orthogonalGroup`.
+
+**Generalization.** The reflectors use the specified sign and identity on zero or out-of-range
+tails. The recurrence is defined for every natural step count, with no reduction steps for sizes
+below two.
+-/
 theorem equation_5_45 (A : Matrix (Fin N) (Fin N) ℝ) :
     (∀ k, hessenbergQIter A k ∈ Matrix.orthogonalGroup (Fin N) ℝ ∧
       hessenbergIter A k = (hessenbergQIter A k)ᵀ * A * hessenbergQIter A k) ∧
@@ -587,7 +678,13 @@ matrices $\hat A^{(k-1)}$. It specializes the backbone's
 `FloatingPoint.exists_roundsHessenbergReduce_eq`, which applies Lemmas 19.1–19.3 of
 [higham2002accuracy] to the two sweeps of every step. Its explicit bound $\|E\|_F \le
 \gamma_{2(n-2)}(3 \gamma_{13n+27}) \|A\|_F$ becomes $c n^2 u$ by $\gamma_k \le 2 k u$ for
-$2 k u \le 1$. -/
+$2 k u \le 1$.
+
+**Reading.** The rounding-error theorem specifies a model for the actual two-sided sweeps and a
+smallness condition on the product of the constant, squared size and unit roundoff. The proof
+provides a numerical witness for the constant. Its Householder sign convention differs from the
+listing in Program 32.
+-/
 theorem equation_5_46 :
     ∃ c : ℝ, 0 < c ∧ ∀ (n : ℕ) (m : FloatingPoint.RoundingModel ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
       (Hhat : ℕ → Matrix (Fin n) (Fin n) ℝ), c * n ^ 2 * m.u ≤ 1 →
@@ -718,7 +815,12 @@ $Q^{(k+1)}$ of each step (Section 5.6.3).
 The iterate $T^{(k+1)} = R Q$ is an upper triangular matrix times an upper Hessenberg matrix.
 The iterate is `QuarteroniSaccoSaleri.Chapter05.qrIterate A k` and the factor is
 `qrQ (qrIterate A k)`. The proof specializes the backbone's `Matrix.isUpperHessenberg_qrIterate`
-and `Matrix.isUpperHessenberg_qrQ`. -/
+and `Matrix.isUpperHessenberg_qrQ`.
+
+**Reading.** This theorem concerns the normalized basic QR factors, whose matching to the Givens
+factors uses invertibility. The existence of the Givens factorization in the source does not require
+a nonsingular Hessenberg matrix.
+-/
 theorem isUpperHessenberg_qrIterate {A : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsUpperHessenberg)
     (hdet : IsUnit A.det) (k : ℕ) :
     (qrIterate A k).IsUpperHessenberg ∧ (qrQ (qrIterate A k)).IsUpperHessenberg := by
@@ -739,7 +841,11 @@ formed.
 
 For $v = 0$, $\beta = 0$ and both identities are trivial. The backbone's
 `Matrix.householder_mul_eq_sub_vecMulVec` and `Matrix.mul_householder_eq_sub_vecMulVec` are the
-same identities for the normalized axis; here they follow from (5.38) directly. -/
+same identities for the normalized axis; here they follow from (5.38) directly.
+
+**Reading.** The outer-product formulas include the zero-vector case, where the reflector is the
+identity and the coefficient is zero.
+-/
 theorem equation_5_49 (v : Fin N → ℝ) (M : Matrix (Fin N) (Fin N) ℝ) :
     let β := 2 / ‖(WithLp.toLp 2 v : EuclideanSpace ℝ (Fin N))‖ ^ 2
     equation_5_38 v * M = M - β • vecMulVec v (Mᵀ *ᵥ v) ∧

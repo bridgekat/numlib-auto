@@ -83,6 +83,27 @@ eigenvalues, and reduces it modulo the characteristic polynomial.
 
 ## Deviations from the source
 
+* **Generalization.** The band property following (6.108) is stated with the adjoint. See
+  `SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_adjoint_mem`.
+* **Generalization.** The IOP and Arnoldi arrays agree under a band condition for the given starting
+  vector. See `SaadSparse.Chapter06.iop_eq_arnoldiMGS_of_band`,
+  `SaadSparse.Chapter06.iopCoeff_eq_arnoldiCoeff_of_band`, `SaadSparse.Chapter06.VI_eq_V`,
+  `SaadSparse.Chapter06.HI_eq_H`.
+* **Reading.** The DIOM–FOM comparison makes the projected elimination conditions explicit. See
+  `SaadSparse.Chapter06.iomFixed_eq_fomFixed_of_band`,
+  `SaadSparse.Chapter06.diom_eq_fomFixed_of_band`, `SaadSparse.Chapter06.proposition_6_22`.
+* **Reading.** The least-degree function uses a totalized infimum on nonnormal matrices. See
+  `SaadSparse.Chapter06.ν`.
+* **Reading.** The CG(s) definition fixes the Euclidean inner product and includes the last basis
+  column. See `SaadSparse.Chapter06.IsCGs`.
+* **Correction.** The proof of Lemma 6.23 bounds the adjoint polynomial degree directly. See
+  `SaadSparse.Chapter06.lemma_6_23`.
+* **Scope.** The formalized part of Theorem 6.24 is the Euclidean sufficiency direction. See
+  `SaadSparse.Chapter06.isCGs_of_natDegree_minpoly_le`,
+  `SaadSparse.Chapter06.isCGs_of_isStarNormal`,
+  `SaadSparse.Chapter06.isCGs_of_natDegree_minpoly_le_or_isStarNormal`.
+* **Generalization.** The degree-one classification includes its converse for normal matrices. See
+  `SaadSparse.Chapter06.nu_le_one_iff`.
 * **Lemma 6.23** (generalization). The book assumes that $A$ is nonsingular. The proof here does not
   use this, and the hypothesis is omitted. See `SaadSparse.Chapter06.lemma_6_23`.
 * **Lemma 6.23** (reading). The book leaves $s \ge 1$ implicit. The statement assumes $0 < s$, which
@@ -120,7 +141,12 @@ $h_{ij} = 0$ whenever $i + s \le j$.
 Here $A^H$ is the adjoint `LinearMap.adjoint (SaadSparse.Chapter06.op A)`, and the coefficients
 are `SaadSparse.Chapter06.arnoldiCoeff`. This is the backbone theorem
 `Arnoldi.coeff_eq_zero_of_adjoint_mem`. Its case $s = 2$ is the tridiagonality of the symmetric
-Lanczos process. -/
+Lanczos process.
+
+**Generalization.** Lean states the resulting zero-coefficient property, while (6.108) itself writes
+the preceding inner-product chain. The proof uses the adjoint in the real or complex field,
+extending the real transpose case in the book.
+-/
 theorem arnoldiCoeff_eq_zero_of_adjoint_mem {s : ℕ}
     (hs : ∀ w : 𝔼, LinearMap.adjoint (op A) w ∈ krylov A w s) (hv : ‖v‖ = 1) {i j : ℕ}
     (h : i + s ≤ j) : arnoldiCoeff A v i j = 0 := by
@@ -175,7 +201,12 @@ private theorem inner_mgsW_arnoldiMGS_eq_zero {s : ℕ} (hv : ‖v‖ = 1)
 $v$ satisfy the band condition (6.108), $h_{ij} = 0$ for $i + s \le j$. Then the incomplete
 orthogonalization process of Algorithm 6.6 with window $s$ produces the same vectors as the
 modified Gram–Schmidt Arnoldi process of Algorithm 6.2, because the terms that it drops are
-zero. This is the algorithmic content of Proposition 6.22 of [saad2003iterative]. -/
+zero. This is the algorithmic content of Proposition 6.22 of [saad2003iterative].
+
+**Generalization.** These statements assume the resulting band condition for the given unit starting
+vector, rather than the global condition on every adjoint image. They also apply over the complex
+field and include the totalized indices.
+-/
 theorem iop_eq_arnoldiMGS_of_band {s : ℕ} (hv : ‖v‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A v i j = 0) (j : ℕ) :
     iop A v s j = arnoldiMGS A v j := by
@@ -200,7 +231,12 @@ private theorem iop_eq_arnoldiMGS_fun {s : ℕ} (hv : ‖v‖ = 1)
 /-- Let $v$ be a unit vector, and suppose that the Arnoldi coefficients of $A$ with starting vector
 $v$ satisfy $h_{ij} = 0$ for $i + s \le j$. Then the coefficients
 `SaadSparse.Chapter06.iopCoeff A v s i j` of Algorithm 6.6 with window $s$ equal the Arnoldi
-coefficients $h_{ij}$ for all $i$ and $j$. -/
+coefficients $h_{ij}$ for all $i$ and $j$.
+
+**Generalization.** These statements assume the resulting band condition for the given unit starting
+vector, rather than the global condition on every adjoint image. They also apply over the complex
+field and include the totalized indices.
+-/
 theorem iopCoeff_eq_arnoldiCoeff_of_band {s : ℕ} (hv : ‖v‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A v i j = 0) (i j : ℕ) :
     iopCoeff A v s i j = arnoldiCoeff A v i j := by
@@ -229,7 +265,12 @@ variable {A : Matrix (Fin n) (Fin n) 𝕜} {b x₀ : EuclideanSpace 𝕜 (Fin n)
 
 /-- Suppose that $\|v_1\| = 1$ and that the Arnoldi coefficients of $A$ with starting vector
 $v_1 = r_0 / \|r_0\|$ satisfy $h_{ij} = 0$ for $i + s \le j$. Then Algorithm 6.6 with window $s$
-and Algorithm 6.1 build the same basis matrix $V_m$, for every $m$. -/
+and Algorithm 6.1 build the same basis matrix $V_m$, for every $m$.
+
+**Generalization.** These statements assume the resulting band condition for the given unit starting
+vector, rather than the global condition on every adjoint image. They also apply over the complex
+field and include the totalized indices.
+-/
 theorem VI_eq_V (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) (m : ℕ) :
     VI A (v₁ A b x₀) s m = V A (v₁ A b x₀) m := by
@@ -238,7 +279,12 @@ theorem VI_eq_V (hv : ‖v₁ A b x₀‖ = 1)
 
 /-- Suppose that $\|v_1\| = 1$ and that the Arnoldi coefficients of $A$ with starting vector
 $v_1 = r_0 / \|r_0\|$ satisfy $h_{ij} = 0$ for $i + s \le j$. Then Algorithm 6.6 with window $s$
-and Algorithm 6.1 build the same Hessenberg matrix $H_m$, for every $m$. -/
+and Algorithm 6.1 build the same Hessenberg matrix $H_m$, for every $m$.
+
+**Generalization.** These statements assume the resulting band condition for the given unit starting
+vector, rather than the global condition on every adjoint image. They also apply over the complex
+field and include the totalized indices.
+-/
 theorem HI_eq_H (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) (m : ℕ) :
     HI A (v₁ A b x₀) s m = H A (v₁ A b x₀) m := by
@@ -249,7 +295,12 @@ theorem HI_eq_H (hv : ‖v₁ A b x₀‖ = 1)
 coefficients of $A$ with starting vector $v_1 = r_0 / \|r_0\|$ satisfy $h_{ij} = 0$ for
 $i + s \le j$. Then, for every $m$, the iterate $x_m$ of IOM(s) (Algorithm 6.7) equals the
 iterate $x_m$ of FOM (Algorithm 6.4), both with exactly $m$ steps: the two methods solve the
-same system in the same basis. -/
+same system in the same basis.
+
+**Reading.** The comparison is between fixed-length iterates using a normalized initial residual.
+For DIOM it explicitly assumes that the unpivoted elimination divisors are nonzero. The book
+describes equivalence of the two generated approximations without stating these input conditions.
+-/
 theorem iomFixed_eq_fomFixed_of_band (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) (m : ℕ) :
     iomFixed A b x₀ s m = fomFixed A b x₀ m := by
@@ -263,7 +314,12 @@ of DIOM(s) (Algorithm 6.8) equals the iterate $x_m$ of FOM with exactly $m$ step
 conclusion of Proposition 6.22 of [saad2003iterative].
 
 The pivots are `SaadSparse.Chapter06.dioU`. DIOM divides by them, so the algorithm is defined
-only when they are nonzero. -/
+only when they are nonzero.
+
+**Reading.** The comparison is between fixed-length iterates using a normalized initial residual.
+For DIOM it explicitly assumes that the unpivoted elimination divisors are nonzero. The book
+describes equivalence of the two generated approximations without stating these input conditions.
+-/
 theorem diom_eq_fomFixed_of_band (hv : ‖v₁ A b x₀‖ = 1)
     (hband : ∀ i j : ℕ, i + s ≤ j → arnoldiCoeff A (v₁ A b x₀) i j = 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) s) l l ≠ 0) :
@@ -302,7 +358,12 @@ The hypothesis $r_0 \neq 0$ makes $v_1 = r_0 / \|r_0\|$ a unit vector. The pivot
 `SaadSparse.Chapter06.dioU`, by which DIOM divides; the book does not mention them. The proof
 applies `SaadSparse.Chapter06.arnoldiCoeff_eq_zero_of_adjoint_mem`,
 `SaadSparse.Chapter06.iomFixed_eq_fomFixed_of_band` and
-`SaadSparse.Chapter06.diom_eq_fomFixed_of_band`. -/
+`SaadSparse.Chapter06.diom_eq_fomFixed_of_band`.
+
+**Reading.** The comparison is between fixed-length iterates using a normalized initial residual.
+For DIOM it explicitly assumes that the unpivoted elimination divisors are nonzero. The book
+describes equivalence of the two generated approximations without stating these input conditions.
+-/
 theorem proposition_6_22 {s : ℕ} (hs : ∀ w : EuclideanSpace ℝ (Fin n), op Aᵀ w ∈ krylov A w s)
     (b x₀ : EuclideanSpace ℝ (Fin n)) (hr : r₀ A b x₀ ≠ 0) {m : ℕ}
     (hpiv : ∀ l, l < m → dioU (iopCoeff A (v₁ A b x₀) s) l l ≠ 0) :
@@ -338,7 +399,12 @@ matrix $A$, $\nu(A)$ is the least degree of a polynomial $q$ with $q(A) = A^H$.
 If no polynomial in $A$ equals $A^H$, the set of degrees is empty and $\nu(A) = 0$, because the
 infimum of the empty set of natural numbers is $0$ in Lean. This happens exactly when $A$ is not
 normal (`SaadSparse.Chapter06.isStarNormal_of_exists_aeval` and
-`SaadSparse.Chapter06.exists_aeval_eq_conjTranspose`). -/
+`SaadSparse.Chapter06.exists_aeval_eq_conjTranspose`).
+
+**Reading.** Lean takes a natural-number infimum over polynomial natural degrees. For nonnormal
+matrices that set is empty and the infimum is zero, whereas there is no adjoint polynomial of least
+degree in the source definition.
+-/
 noncomputable def ν (A : Matrix (Fin n) (Fin n) ℂ) : ℕ :=
   sInf {d : ℕ | ∃ q : ℂ[X], q.natDegree = d ∧ aeval A q = Aᴴ}
 
@@ -348,7 +414,13 @@ coefficients satisfy $h_{ij} = 0$ for all $i + s \le j \le \mu - 1$, where $\mu$
 $v_1$ with respect to $A$. Then the Arnoldi process is an $s$-term recurrence up to the grade of
 $v_1$.
 
-The indices are $0$-based, and the grade is `SaadSparse.Chapter06.grade`. -/
+The indices are $0$-based, and the grade is `SaadSparse.Chapter06.grade`.
+
+**Reading.** Lean uses the standard Euclidean inner product on the complex space and quantifies over
+unit starting vectors. The source also allows a different inner product. The Lean bound $j+1\le\mu$
+is on a zero-based column, including the last basis column. With one-based indices the printed bound
+$j\le\mu-1$ would omit that column.
+-/
 def IsCGs (A : Matrix (Fin n) (Fin n) ℂ) (s : ℕ) : Prop :=
   ∀ v₁ : ℂ𝔼, ‖v₁‖ = 1 → ∀ i j : ℕ, i + s ≤ j → j + 1 ≤ grade A v₁ → arnoldiCoeff A v₁ i j = 0
 
@@ -444,7 +516,13 @@ $w = \sum_i x_i$ with one nonzero $x_i$ from each eigenspace. The $x_i$ are pair
 so the polynomial $q$ of degree at most $s - 1$ given by $A^H w \in \mathcal{K}_s(A, w)$
 satisfies $q(\lambda_i) = \bar\lambda_i$ at every eigenvalue, hence $q(A) = A^H$ and
 $\nu(A) \le s - 1$. This route needs neither a maximal vector nor the equality of the degree of
-the minimal polynomial with the number of distinct eigenvalues. -/
+the minimal polynomial with the number of distinct eigenvalues.
+
+**Correction.** The printed proof tries to force the degree of the minimal polynomial to be at most
+$s$. This fails, for example for a nonsingular diagonal Hermitian matrix with more than two distinct
+eigenvalues and $s=2$. Lean instead uses the local adjoint polynomial at a sum of eigenvectors to
+show that the degree of an adjoint polynomial is at most $s-1$.
+-/
 theorem lemma_6_23 {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s) :
     (∀ v : ℂ𝔼, op Aᴴ v ∈ krylov A v s) ↔ IsStarNormal A ∧ ν A ≤ s - 1 := by
   have hadj : op Aᴴ = LinearMap.adjoint (op A) := Matrix.toEuclideanLin_conjTranspose_eq_adjoint A
@@ -518,7 +596,11 @@ theorem lemma_6_23 {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s) :
 $n \times n$ matrix whose minimal polynomial has degree at most $s$. Then $A \in CG(s)$.
 
 The condition of $CG(s)$ is vacuous here: every starting vector has grade at most the degree of
-the minimal polynomial, so no pair $i + s \le j \le \mu - 1$ exists. -/
+the minimal polynomial, so no pair $i + s \le j \le \mu - 1$ exists.
+
+**Reading.** Lean proves sufficiency for its Euclidean version of the class. The book states both
+directions. The normal branch and the combined theorem make the positive window length explicit.
+-/
 theorem isCGs_of_natDegree_minpoly_le {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ}
     (h : (minpoly ℂ A).natDegree ≤ s) : IsCGs A s := by
   intro v₁ _ i j hij hjg
@@ -532,7 +614,11 @@ theorem isCGs_of_natDegree_minpoly_le {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ}
 $n \times n$ matrix and $s \ge 1$ with $\nu(A) \le s - 1$. Then $A \in CG(s)$.
 
 Lemma 6.23 gives $A^H v \in \mathcal{K}_s(A, v)$ for every $v$, and (6.108) then gives the band
-condition for all $j$, without the restriction $j \le \mu - 1$ that $CG(s)$ allows. -/
+condition for all $j$, without the restriction $j \le \mu - 1$ that $CG(s)$ allows.
+
+**Reading.** Lean proves sufficiency for its Euclidean version of the class. The book states both
+directions. The normal branch and the combined theorem make the positive window length explicit.
+-/
 theorem isCGs_of_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ} (hs : 0 < s)
     (hA : IsStarNormal A) (hν : ν A ≤ s - 1) : IsCGs A s := by
   have hmem : ∀ w : EuclideanSpace ℂ (Fin n), LinearMap.adjoint (op A) w ∈ krylov A w s := by
@@ -546,7 +632,11 @@ and $s \ge 1$. If the minimal polynomial of $A$ has degree at most $s$, or $A$ i
 $\nu(A) \le s - 1$, then $A \in CG(s)$.
 
 The converse, that $A \in CG(s)$ implies one of the two conditions, is the Faber–Manteuffel
-theorem proper. The book states it without proof, and it is not formalized. -/
+theorem proper. The book states it without proof, and it is not formalized.
+
+**Reading.** Lean proves sufficiency for its Euclidean version of the class. The book states both
+directions. The normal branch and the combined theorem make the positive window length explicit.
+-/
 theorem isCGs_of_natDegree_minpoly_le_or_isStarNormal {A : Matrix (Fin n) (Fin n) ℂ} {s : ℕ}
     (hs : 0 < s) (h : (minpoly ℂ A).natDegree ≤ s ∨ (IsStarNormal A ∧ ν A ≤ s - 1)) :
     IsCGs A s := by
@@ -570,7 +660,11 @@ defines $\nu(A)$ is empty, so $\nu(A) = 0 \le 1$ although none of the three case
 three cases are those of the book, and they are not disjoint: the third contains the other two.
 A scalar matrix $cI$ is $e^{i \arg c}(|c| I + 0)$, and a Hermitian $A$ is
 $e^{i\pi/2}(0 \cdot I + (-iA))$ with $-iA$ skew-Hermitian. The backbone theorem
-`Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff` is that sharper equivalence. -/
+`Matrix.exists_natDegree_le_one_aeval_eq_conjTranspose_iff` is that sharper equivalence.
+
+**Generalization.** The text gives the three cases as necessary when an adjoint polynomial has
+degree at most one. Lean states the converse as well under normality.
+-/
 theorem nu_le_one_iff {A : Matrix (Fin n) (Fin n) ℂ} (hA : IsStarNormal A) :
     ν A ≤ 1 ↔
       (∃ c : ℂ, A = c • (1 : Matrix (Fin n) (Fin n) ℂ)) ∨ A.IsHermitian ∨

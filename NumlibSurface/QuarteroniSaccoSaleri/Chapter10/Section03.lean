@@ -109,6 +109,20 @@ inverse transform (10.30). The proofs specialize Mathlib's Chebyshev–Gauss rul
 
 ## Deviations from the source
 
+* **Equations (10.20), (10.21), (10.28), and (10.31)** (generalization). The node functions
+  accept arbitrary natural indices, including $n=0$ for Lobatto nodes. The finite scalar product
+  and coefficient functions also accept $n=0$. The theorems about Lobatto quadrature and
+  inversion use $n\geq 1$.
+* **Equations (10.23) and (10.35)** (generalization). `equation_10_23` extends the derivative
+  formula to an arbitrary measure, $s\geq 0$, and any real function by using total iterated
+  derivatives and integrals. The source uses those formulas on the functions whose required
+  derivatives belong to the stated weighted or unweighted $L^2$ space.
+* **Equation (10.25)** (weaker bound). `equation_10_25_interpolation_error` retains the estimate
+  with the actual Lebesgue constant. `equation_10_25` uses the upper bound $2+(2/\pi)\log(2n+2)$
+  in place of the printed $1+(2/\pi)\log(n+1)$.
+* **Section 10.3, convergence of the Lobatto formula** (reading). `lobatto_tendsto` requires
+  continuity on $[-1,1]$. A finite weighted integral alone does not control the nodal values on
+  the countable union of the quadrature grids.
 * **Equations (10.30)–(10.31)** (correction). The book prints $\cos(kj\pi / n)$, which is
   $T_k(\bar x_{n-j})$ and not $T_k(\bar x_j)$ for the increasing nodes of (10.21). The library uses
   $\cos(k(n - j)\pi / n) = T_k(\bar x_j)$. See
@@ -143,7 +157,9 @@ variable {n : ℕ}
 /-- **Equation (10.20)** of [quarteroni2000numerical], the Chebyshev–Gauss nodes. For
 $0 \le j \le n$, the **Chebyshev–Gauss node** is
 $$x_j = -\cos\left(\frac{(2j + 1)\pi}{2(n + 1)}\right).$$
--/
+
+**Generalization.** The node expression is total in $j$. The Gaussian rule uses the range
+$0\leq j\leq n$. -/
 noncomputable def chebyshevGaussNode (n j : ℕ) : ℝ := -cos ((2 * j + 1) * π / (2 * (n + 1)))
 
 /-- Supports equation (10.20). For $j \le n$, the Gauss node $x_j$ of the book is
@@ -205,7 +221,10 @@ theorem equation_10_20 (n : ℕ) :
     dsimp only
     rw [chebyshevGaussNode_eq (Nat.lt_succ_iff.mp j.2), Nat.add_sub_cancel, Nat.cast_succ]
 
-/-- The Chebyshev–Gauss nodes lie in $[-1, 1]$. -/
+/-- The Chebyshev–Gauss nodes lie in $[-1, 1]$.
+
+**Generalization.** This interval inclusion holds for every real value produced by the cosine
+formula, including indices beyond the Gaussian rule. -/
 theorem chebyshevGaussNode_mem_Icc (n j : ℕ) : chebyshevGaussNode n j ∈ Icc (-1 : ℝ) 1 :=
   ⟨neg_le_neg (cos_le_one _), by
     rw [chebyshevGaussNode, neg_le]
@@ -282,7 +301,10 @@ The bound on $\Lambda_n$ is the backbone's `Lagrange.norm_interpolateCLM_chebysh
 $\Lambda_n = \|\Pi^G_n\|$ (`Lagrange.norm_interpolateCLM`) and the nodes of the book are the
 backbone's `Lagrange.chebNodeIcc n` in the opposite order
 (`QuarteroniSaccoSaleri.Chapter10.chebyshevGaussNodeIcc_eq`,
-`Lagrange.interpolateCLM_comp_equiv`). -/
+`Lagrange.interpolateCLM_comp_equiv`).
+
+**Reading.** Proves a weaker logarithmic bound than Rivlin's.
+-/
 theorem equation_10_25 (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
     sSup (Set.range fun t : Icc (-1 : ℝ) 1 =>
         ∑ i, |Lagrange.basisCM (chebyshevGaussNodeIcc n) i t|) ≤
@@ -303,7 +325,10 @@ theorem equation_10_25 (n : ℕ) (f : C(Icc (-1 : ℝ) 1, ℝ)) :
 
 /-- **Equation (10.21)** of [quarteroni2000numerical], the Chebyshev–Gauss–Lobatto nodes. For
 $n \ge 1$ and $0 \le j \le n$, the **Chebyshev–Gauss–Lobatto node** is
-$\bar x_j = -\cos(\pi j / n)$. -/
+$\bar x_j = -\cos(\pi j / n)$.
+
+**Generalization.** The node expression is total even when $n=0$ or $j>n$. The Lobatto rule
+uses $n\geq 1$ and $0\leq j\leq n$. -/
 noncomputable def chebyshevLobattoNode (n j : ℕ) : ℝ := -cos (j * π / n)
 
 /-- Supports equation (10.21). Let $n \ge 1$ and $j \le n$. The Gauss–Lobatto node $\bar x_j$ of the
@@ -447,7 +472,11 @@ $\mu$ = `OrthogonalPolynomial.legendreMeasure`.
 
 The derivatives are `iteratedDeriv`, and an integral that does not exist counts as $0$. The
 definition serves to state the estimates of the book, which are not formalized; no results about
-it are proved. -/
+it are proved.
+
+**Generalization.** Uses any measure, allows $s=0$, and defines the expression by total
+iterated derivatives and integrals. The source's norm applies when the derivatives have the
+stated weighted or unweighted $L^2$ regularity. -/
 noncomputable def equation_10_23 (μ : Measure ℝ) (s : ℕ) (f : ℝ → ℝ) : ℝ :=
   √(∑ k ∈ Finset.range (s + 1), ∫ x, (iteratedDeriv k f x) ^ 2 ∂μ)
 
@@ -461,7 +490,10 @@ $$\int_{-1}^1 f(x) (1 - x^2)^{-1/2} \, dx = \lim_{n \to \infty} I^{GL}_{n,w}(f),
 The book states the limit for every $f$ whose weighted integral is finite, and refers to Szegő
 (1967), p. 342. Only continuous $f$ are treated here. The proof uses the Szegő–Pólya criterion
 `Quadrature.tendsto_of_isExactOnMeasure`: the weights $\pi / (d_j n)$ are positive, and the
-degree of exactness $2n - 1$ is unbounded. -/
+degree of exactness $2n - 1$ is unbounded.
+
+**Reading.** Requires continuity on $[-1,1]$. The finite-integral condition in the book alone
+leaves the values at the countable union of the nodes unrestricted. -/
 theorem lobatto_tendsto {f : ℝ → ℝ} (hf : ContinuousOn f (Icc (-1 : ℝ) 1)) :
     Tendsto (fun n => ∑ j : Fin (n + 1), Chebyshev.lobattoWeight n j * f (chebyshevLobattoNode n j))
       atTop (𝓝 (∫ x in (-1 : ℝ)..1, f x / √(1 - x ^ 2))) := by
@@ -487,13 +519,18 @@ theorem lobatto_tendsto {f : ℝ → ℝ} (hf : ContinuousOn f (Icc (-1 : ℝ) 1
 Chebyshev–Gauss–Lobatto formula:
 $$(f, g)_n = \sum_{j=0}^n \bar\alpha_j f(\bar x_j) g(\bar x_j) = I^{GL}_{n,w}(fg).$$
 
-The definition is `Quadrature.discreteInner` at the weights and nodes (10.21). -/
+The definition is `Quadrature.discreteInner` at the weights and nodes (10.21).
+
+**Generalization.** The finite expression allows all real functions and $n=0$. The source's
+Lobatto rule requires $n\geq 1$. -/
 noncomputable def equation_10_28 (n : ℕ) (f g : ℝ → ℝ) : ℝ :=
   discreteInner (fun j : Fin (n + 1) => Chebyshev.lobattoWeight n j)
     (fun j : Fin (n + 1) => chebyshevLobattoNode n j) f g
 
 /-- Supports equation (10.28). The discrete scalar product is $(f, g)_n = \sum_j \bar\alpha_j f(\bar
-x_j) g(\bar x_j)$, and it is also $\sum_j \bar\alpha_j (fg)(\bar x_j) = I^{GL}_{n,w}(fg)$. -/
+x_j) g(\bar x_j)$, and it is also $\sum_j \bar\alpha_j (fg)(\bar x_j) = I^{GL}_{n,w}(fg)$.
+
+**Generalization.** The equalities hold for the total finite expression, including $n=0$. -/
 theorem equation_10_28_eq (n : ℕ) (f g : ℝ → ℝ) :
     equation_10_28 n f g =
         ∑ j : Fin (n + 1), Chebyshev.lobattoWeight n j * f (chebyshevLobattoNode n j) *
@@ -526,7 +563,10 @@ equal those of the backbone's `Polynomial.Chebyshev.interpolate_eq_sum_cdt` at t
 $\cos(j\pi / n)$:
 $$\tilde f_k = \frac{2}{n d_k} \sum_{j=0}^n \frac{1}{d_j} \cos\left(\frac{kj\pi}{n}\right)
   f(\cos(j\pi / n)).$$
-The two sums agree under $j \mapsto n - j$. -/
+The two sums agree under $j \mapsto n - j$.
+
+**Reading.** With the printed cosine angle, use $f$ at the reversed Lobatto nodes. The identity
+is algebraic for all $k$. -/
 theorem chebyshevDiscreteCoeff_eq (hn : n ≠ 0) (f : ℝ → ℝ) (k : ℕ) :
     chebyshevDiscreteCoeff n f k = 2 / (n * Chebyshev.lobattoFactor n k) *
       ∑ j ∈ Finset.range (n + 1), (Chebyshev.lobattoFactor n j)⁻¹ *

@@ -94,6 +94,22 @@ dual pair, by the Cauchy–Schwarz inequality in the $D$-inner product.
 
 ## Deviations from the source
 
+* **Example 13.7** (scope). `SaadSparse.Chapter13.example_13_7` proves the exact pointwise
+  formula for every fine mode. `SaadSparse.Chapter13.example_13_7_smul` identifies the same-
+  index coarse mode only within the coarse index range.
+  `SaadSparse.Chapter13.example_13_7_le_half` gives a uniform bound over the oscillatory half.
+* **(13.62) and (13.63)** (reading). The predicates express one level at a time, so level-
+  independent constants are supplied by their applications.
+  `SaadSparse.Chapter13.equation_13_63` uses a coarse witness for the minimum bound and uses the
+  same variable under the prolongation.
+* **Theorem 13.3** (hypotheses and generalization). `SaadSparse.Chapter13.theorem_13_3_le`
+  requires strictly fewer coarse unknowns to ensure a nonzero oscillatory subspace. The norm
+  bound is stated pointwise with $\alpha\ge0$. `SaadSparse.Chapter13.theorem_13_3_cycle` extends
+  the bound to arbitrary pre-smoothing and at least one post-smoothing step.
+* **Example 13.8** (generalization). `SaadSparse.Chapter13.example_13_8_of_le` uses any relative
+  quadratic-form upper bound. `SaadSparse.Chapter13.example_13_8` gives the inequality for all
+  real $\omega$, with `SaadSparse.Chapter13.example_13_8_pos` separately establishing $\alpha>0$
+  in the source's range.
 * **Equation (13.61)** (correction). The book's last equality reads
   $\mathcal{T}_h = \operatorname{Null}(I_h^H)$, without the factor $A_h$; this is false, and
   $\mathcal{T}_h = \operatorname{Null}(I_h^H A_h)$. See `SaadSparse.Chapter13.equation_13_61` and
@@ -139,7 +155,10 @@ variable {A : Matrix (Fin n) (Fin n) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
 $\mathcal{S}_h = \operatorname{Ran}(Q_h)$ is the range of the coarse-grid projector
 $Q_h = I_H^h A_H^{-1} I_h^H A_h$.
 
-By `SaadSparse.Chapter13.equation_13_60` it is the range of the prolongation. -/
+By `SaadSparse.Chapter13.equation_13_60` it is the range of the prolongation.
+
+**Reading.** Uses range of Q on arbitrary arrays via total coarse inverse.
+-/
 noncomputable def smoothSubspace (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) (Fin n) ℝ)
     (P : Matrix (Fin n) (Fin m) ℝ) : Submodule ℝ (EuclideanSpace ℝ (Fin n)) :=
   LinearMap.range (toEuclideanLin (coarseProjector R A P))
@@ -151,7 +170,10 @@ theorem smoothSubspace_def (R : Matrix (Fin m) (Fin n) ℝ) (A : Matrix (Fin n) 
 
 /-- **Equation (13.58)** of [saad2003iterative]. The **oscillatory subspace**
 $\mathcal{T}_h = \operatorname{Ran}(T_h^H)$ is the range of the coarse-grid correction operator
-$T_h^H = I - Q_h$: the errors that a coarse-grid correction can leave. -/
+$T_h^H = I - Q_h$: the errors that a coarse-grid correction can leave.
+
+**Reading.** Uses range of T on arbitrary arrays via total coarse inverse.
+-/
 noncomputable def oscillatorySubspace (R : Matrix (Fin m) (Fin n) ℝ)
     (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) :
     Submodule ℝ (EuclideanSpace ℝ (Fin n)) :=
@@ -229,7 +251,10 @@ end Subspaces
 /-! ### The last equality of (13.61) is false -/
 
 /-- The prolongation from a one-point coarse grid to a two-point fine grid that sets the first
-component and leaves the second one zero, the matrix $\begin{bmatrix} 1 \\ 0 \end{bmatrix}$. -/
+component and leaves the second one zero, the matrix $\begin{bmatrix} 1 \\ 0 \end{bmatrix}$.
+
+**Correction.** Explicit example refuting printed ker(R) equality.
+-/
 private def counterProlongation : Matrix (Fin 2) (Fin 1) ℝ := !![1; 0]
 
 private theorem laplacian1D_two : laplacian1D 2 = !![2, -1; -1, 2] := by
@@ -265,7 +290,10 @@ the coarse space. The argument of Section 13.5.1 compares the decompositions $\O
 \operatorname{Ran}(Q_h) \oplus \operatorname{Null}(Q_h)$ and $\Omega_h =
 \operatorname{Ran}(I_H^h) \oplus \operatorname{Null}((I_H^h)^T)$. They have the same first
 summand but need not have the same second summand: the first decomposition is $A_h$-orthogonal
-and the second is Euclidean orthogonal. -/
+and the second is Euclidean orthogonal.
+
+**Correction.** Formal counterexample to last printed equality.
+-/
 theorem oscillatorySubspace_ne_ker_of_restriction :
     ∃ (A : Matrix (Fin 2) (Fin 2) ℝ) (R : Matrix (Fin 1) (Fin 2) ℝ)
       (P : Matrix (Fin 2) (Fin 1) ℝ), IsCoarsening A R P ∧
@@ -324,6 +352,8 @@ theorem example_13_7 (m : ℕ) (k : Fin (2 * m + 1)) (q : Fin m) :
 of a coarse mode is mapped by full weighting to that coarse mode, damped by
 $\cos^2(\theta_k^h/2)$:
 $$I_h^{2h} w_k^h = \cos^2\frac{\theta_k^h}{2} \, w_k^{2h}.$$
+
+**Reading.** Identifies same-index coarse vector only within coarse index range.
 -/
 theorem example_13_7_smul (m : ℕ) (k : Fin m) :
     restriction1D m *ᵥ sineVec (2 * m + 1) (coarseIndex m k)
@@ -338,7 +368,11 @@ points, if $k > n/2$, then the damping factor of full weighting satisfies
 $$\cos^2\frac{\theta_k}{2} \le \frac12.$$
 So an oscillatory mode is close to the null space of $I_h^{2h}$.
 
-With the $0$-based index `k`, the condition is `2 * m + 2 ≤ 2 * (k + 1)`. -/
+With the $0$-based index `k`, the condition is `2 * m + 2 ≤ 2 * (k + 1)`.
+
+**Reading.** Adds a uniform bound for the full oscillatory half instead of qualitative high-mode
+damping.
+-/
 theorem example_13_7_le_half (m : ℕ) {k : Fin (2 * m + 1)}
     (hk : 2 * m + 2 ≤ 2 * ((k : ℕ) + 1)) :
     Real.cos (theta (2 * m + 1) k / 2) ^ 2 ≤ 1 / 2 := by
@@ -357,7 +391,11 @@ the diagonal of $A$, is
 $$\|x\|_D = (Dx, x)^{1/2} = \|D^{1/2}x\|_2.$$
 
 The definition is `energyNorm` at $D$. For a matrix $A$ with a nonpositive diagonal entry this
-is not a norm; the results below assume that $A$ is positive definite. -/
+is not a norm; the results below assume that $A$ is positive definite.
+
+**Reading.** Defines energy function of arbitrary diagonal matrix, genuine norm on positive-definite
+domain.
+-/
 noncomputable def normD (A : Matrix (Fin n) (Fin n) ℝ) (x : EuclideanSpace ℝ (Fin n)) : ℝ :=
   energyNorm (toEuclideanLin (diagPart A)) x
 
@@ -366,7 +404,10 @@ $D$ the diagonal of $A$, is
 $$\|y\|_{D^{-1}} = (D^{-1}y, y)^{1/2} = \|D^{-1/2}y\|_2.$$
 For a residual $y = Ae$ it is the norm that the book writes $\|Ae\|_{D^{-1}}$.
 
-The definition is `energyNorm` at the Lean matrix inverse of $D$. -/
+The definition is `energyNorm` at the Lean matrix inverse of $D$.
+
+**Reading.** Defines energy function of total diagonal inverse on all A.
+-/
 noncomputable def normDinv (A : Matrix (Fin n) (Fin n) ℝ) (y : EuclideanSpace ℝ (Fin n)) : ℝ :=
   energyNorm (toEuclideanLin (diagPart A)⁻¹) y
 
@@ -445,7 +486,11 @@ the **smoothing property** with constant $\alpha$ if
 $$\|Se\|_A^2 \le \|e\|_A^2 - \alpha \|Ae\|_{D^{-1}}^2 \quad \text{for every error } e.$$
 
 It is a property of the smoother and cannot be proved by linear algebra alone; Example 13.8
-verifies it for weighted Jacobi. The definition is `Multigrid.IsSmootherWith`. -/
+verifies it for weighted Jacobi. The definition is `Multigrid.IsSmootherWith`.
+
+**Reading.** Single-level inequality predicate for arbitrary A and α, positivity and uniformity
+handled by applications.
+-/
 def equation_13_62 (A S : Matrix (Fin n) (Fin n) ℝ) (α : ℝ) : Prop :=
   Multigrid.IsSmootherWith (toEuclideanLin A) (normDinv A) (toEuclideanLin S) α
 
@@ -464,12 +509,20 @@ $$\min_{u_H \in \Omega_H} \|e - I_H^h u_H\|_D^2 \le \beta \|e\|_A^2 \quad \text{
 
 The definition is `Multigrid.IsApproximationWith`, which asks for some $u_H$ with this bound. On
 a finite-dimensional coarse space the minimum is attained, so this is the same statement
-(`SaadSparse.Chapter13.equation_13_63_iff`). -/
+(`SaadSparse.Chapter13.equation_13_63_iff`).
+
+**Reading.** The coarse variable occurs as both the quantified witness and the argument of the
+prolongation. The printed formula names different variables in those positions. The finite-
+dimensional positive definite setting makes the existential bound equivalent to the attained
+minimum. -/
 def equation_13_63 (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) (β : ℝ) : Prop :=
   Multigrid.IsApproximationWith (toEuclideanLin A) (normD A) (LinearMap.range (toEuclideanLin P)) β
 
 /-- The approximation property (13.63) written out: for every $e$ there is a coarse vector $u$ with
-$\|e - I_H^h u\|_D^2 \le \beta\|e\|_A^2$. -/
+$\|e - I_H^h u\|_D^2 \le \beta\|e\|_A^2$.
+
+**Reading.** Explicit quantifiers use one coarse vector both as witness and in norm.
+-/
 theorem equation_13_63_iff (A : Matrix (Fin n) (Fin n) ℝ) (P : Matrix (Fin n) (Fin m) ℝ) (β : ℝ) :
     equation_13_63 A P β ↔ ∀ e : EuclideanSpace ℝ (Fin n), ∃ u : EuclideanSpace ℝ (Fin m),
       normD A (e - (P ⬝ u)) ^ 2 ≤ β * energyNorm (toEuclideanLin A) e ^ 2 := by
@@ -490,7 +543,11 @@ variable {A : Matrix (Fin n) (Fin n) ℝ} {R : Matrix (Fin m) (Fin n) ℝ}
 vector.
 
 This is why the inequality $\alpha \le \beta$ of Theorem 13.3 holds. For $m = n$ the coarse-grid
-correction is zero and every pair of constants is admissible. -/
+correction is zero and every pair of constants is admissible.
+
+**Reading.** Makes the strict coarse-dimension reduction sufficient for a nonzero oscillatory
+vector.
+-/
 theorem exists_ne_zero_mem_oscillatorySubspace (h : IsCoarsening A R P) (hmn : m < n) :
     ∃ e ∈ oscillatorySubspace R A P, e ≠ 0 := by
   refine (Submodule.ne_bot_iff _).1 fun hbot => absurd hmn (not_lt.2 ?_)
@@ -517,7 +574,10 @@ $\beta$, then
 $$\alpha \le \beta.$$
 
 The hypothesis $m < n$, a coarse grid with fewer points, is needed: see
-`SaadSparse.Chapter13.exists_ne_zero_mem_oscillatorySubspace`. -/
+`SaadSparse.Chapter13.exists_ne_zero_mem_oscillatorySubspace`.
+
+**Reading.** The strict size reduction guarantees that the range of the coarse correction has a
+nonzero element. Without such an element, the argument for $\alpha\le\beta$ can fail. -/
 theorem theorem_13_3_le (h : IsCoarsening A R P) (hmn : m < n) (hsm : equation_13_62 A S α)
     (happ : equation_13_63 A P β) : α ≤ β := by
   obtain ⟨e, hmem, he0⟩ := exists_ne_zero_mem_oscillatorySubspace h hmn
@@ -532,7 +592,11 @@ $\beta > 0$. Then for all $\nu_1 \ge 0$ and $\nu_2 \ge 1$ the two-grid operator
 $M_H^h = S^{\nu_2} T_h^H S^{\nu_1}$ of (13.43) satisfies
 $$\|M_H^h v\|_A \le \sqrt{1 - \alpha/\beta} \, \|v\|_A \quad \text{for every } v.$$
 
-If $\alpha > \beta$, the square root of the negative number is $0$ in Lean. -/
+If $\alpha > \beta$, the square root of the negative number is $0$ in Lean.
+
+**Generalization.** The source bounds one post-smoothing step after the coarse correction. With
+nonnegative $\alpha$, the smoothing inequality also makes extra pre- or post-smoothing steps
+nonexpansive. -/
 theorem theorem_13_3_cycle (h : IsCoarsening A R P) (hsm : equation_13_62 A S α)
     (happ : equation_13_63 A P β) (hα : 0 ≤ α) (hβ : 0 < β) {ν₁ ν₂ : ℕ} (hν : 1 ≤ ν₂)
     (v : EuclideanSpace ℝ (Fin n)) :
@@ -553,7 +617,10 @@ $\beta > 0$. Then one coarse-grid correction followed by one smoothing step cont
 $A$-norm of the error:
 $$\|S T_h^H e\|_A \le \sqrt{1 - \alpha/\beta} \, \|e\|_A \quad \text{for every } e.$$
 
-If $\alpha > \beta$, the square root of the negative number is $0$ in Lean. -/
+If $\alpha > \beta$, the square root of the negative number is $0$ in Lean.
+
+**Reading.** Pointwise A-norm bound and α≥0 rather than α>0 required for convergence.
+-/
 theorem theorem_13_3 (h : IsCoarsening A R P) (hsm : equation_13_62 A S α)
     (happ : equation_13_63 A P β) (hα : 0 ≤ α) (hβ : 0 < β) (v : EuclideanSpace ℝ (Fin n)) :
     energyNorm (toEuclideanLin A) ((S * coarseCorrection R A P) ⬝ v)
@@ -587,7 +654,10 @@ the error propagation operator
 $$S(\omega) = I - \omega D^{-1} A,$$
 with $D$ the diagonal of $A$.
 
-The inverse is the Lean matrix inverse, which is $0$ if $D$ is singular. -/
+The inverse is the Lean matrix inverse, which is $0$ if $D$ is singular.
+
+**Reading.** Total definition for all weights and diagonals, including singular D.
+-/
 noncomputable def weightedJacobiSmoother (A : Matrix (Fin n) (Fin n) ℝ) (ω : ℝ) :
     Matrix (Fin n) (Fin n) ℝ :=
   1 - ω • ((diagPart A)⁻¹ * A)
@@ -621,7 +691,11 @@ Then for every $\omega \in \mathbb{R}$ the weighted Jacobi smoother $S(\omega)$ 
 smoothing property (13.62) with the constant $\alpha = \omega(2 - \omega\gamma)$.
 
 The computation is (13.65): the expansion of $\|S(\omega)e\|_A^2$ leaves $\|e\|_A^2 -
-(\omega(2I - \omega D^{-1/2} A D^{-1/2}) D^{-1/2} A e, D^{-1/2} A e)$. -/
+(\omega(2I - \omega D^{-1/2} A D^{-1/2}) D^{-1/2} A e, D^{-1/2} A e)$.
+
+**Reading.** Any upper bound for the quadratic form suffices and no positivity is imposed on
+resulting α.
+-/
 theorem example_13_8_of_le (hA : A.PosDef) {γ : ℝ}
     (hγ : ∀ x : EuclideanSpace ℝ (Fin n),
       inner ℝ (A ⬝ x) x ≤ γ * inner ℝ (diagPart A ⬝ x) x) (ω : ℝ) :
@@ -639,7 +713,10 @@ noncomputable def diagSqrt (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fi
 
 /-- The matrix $D^{-1/2} = \operatorname{diag}(1/\sqrt{a_{ii}})$ of the inverse square roots of the
 diagonal entries of $A$. An entry with $a_{ii} \le 0$ gives $0$, because the Lean square root of
-a nonpositive number is $0$ and $0^{-1} = 0$. -/
+a nonpositive number is $0$ and $0^{-1} = 0$.
+
+**Reading.** Totalized reciprocal square roots beyond SPD diagonal.
+-/
 noncomputable def diagInvSqrt (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   diagonal fun i => (Real.sqrt (A i i))⁻¹
 
@@ -647,7 +724,10 @@ noncomputable def diagInvSqrt (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) 
 scaled matrix** is
 $$\hat A = D^{-1/2} A D^{-1/2}.$$
 For a matrix with a positive diagonal, its diagonal entries are $1$. Its spectral radius is the
-constant $\gamma$ of Example 13.8. -/
+constant $\gamma$ of Example 13.8.
+
+**Reading.** Uses scaled matrix for arbitrary input, with total reciprocal square roots.
+-/
 noncomputable def diagScaled (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   diagInvSqrt A * A * diagInvSqrt A
 
@@ -738,7 +818,11 @@ smoothing property (13.62) with the constant
 $$\alpha = \omega(2 - \omega\gamma).$$
 
 The constant is positive for $0 < \omega < 2/\gamma$ (`SaadSparse.Chapter13.example_13_8_pos`),
-but the inequality holds for every $\omega$. -/
+but the inequality holds for every $\omega$.
+
+**Generalization.** The inequality is meaningful for every real weight, with the displayed
+$\alpha$ possibly nonpositive. `SaadSparse.Chapter13.example_13_8_pos` verifies positivity in
+the source's weight range. -/
 theorem example_13_8 [NeZero n] (hA : A.PosDef) (ω : ℝ) :
     equation_13_62 A (weightedJacobiSmoother A ω) (ω * (2 - ω * gammaJacobi hA)) :=
   example_13_8_of_le hA (le_gammaJacobi hA) ω

@@ -41,6 +41,13 @@ negative-curvature condition `ConnGouldToint.Chapter06.HasNegativeCurvatureDecre
 * Lemma 10.6.1 is stated for a sequence of refinements $j$ with tolerances that tend to zero. At a
   first-order critical center, the negative curvature is given as an eventual margin
   $\tau_j \le -a < 0$ on the model curvatures.
+
+## Deviations from the source
+
+* **Lemma 10.6.1** (reading). The first-order clause uses a relative bound on the model gradient
+  error. For the second-order clause, the statement takes an eventual negative model curvature
+  margin in place of deriving it from Hessian agreement. The tolerances are assumed to tend
+  to zero in the abstract form, and the geometric refinement theorem supplies this premise.
 -/
 
 open Filter Topology
@@ -103,7 +110,11 @@ with $\eta$ and the predicted decrease $m_j(x) - m_j(x + s_j)$.
 During refinement the center and the radius stay fixed. At a first-order noncritical center, the
 gradient agreement gives a positive floor for $\|g_j\|$; at a first-order critical center, the
 curvature margin gives a positive floor for the predicted decrease. In either case the vanishing
-tolerances eventually pass the test. The curvature margin is a hypothesis of the statement. -/
+tolerances eventually pass the test. The curvature margin is a hypothesis of the statement.
+
+**Reading.** Uses vanishing tolerances and directly assumes eventual negative model curvature at a
+critical center.
+-/
 theorem lemma_10_6_1 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     (g : E) (gModel : ℕ → E) (τ : ℕ → ℝ) (m : ℕ → E → ℝ) (x : E) (s : ℕ → E)
     (β : ℕ → ℝ) (centerTol trialTol : ℕ → ℝ) {η Δ B κ₁ κ₂ : ℝ}
@@ -144,7 +155,10 @@ theorem lemma_10_6_1 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 and $0 \le q < 1$. Let the tolerances satisfy $\max\{\delta^c_j, \delta^t_j\} \ge 0$ and
 $\max\{\delta^c_{j+1}, \delta^t_{j+1}\} \le q \max\{\delta^c_j, \delta^t_j\}$ for all $j$, and
 let the predicted decreases satisfy $\delta^m_j \ge d$ for all large $j$. Then the accuracy
-condition (10.6.2) holds with $\eta$ for some $j$. -/
+condition (10.6.2) holds with $\eta$ for some $j$.
+
+**Reading.** Abstract geometric tolerance refinement with a uniform positive prediction floor.
+-/
 theorem lemma_10_6_1_of_geometric_refinement {η d q : ℝ} (hη : 0 < η) (hd : 0 < d)
     (hq : 0 ≤ q) (hq' : q < 1) {predicted centerTol trialTol : ℕ → ℝ}
     (ht₀ : ∀ j, 0 ≤ max (centerTol j) (trialTol j))

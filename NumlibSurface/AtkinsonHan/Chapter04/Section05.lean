@@ -102,6 +102,17 @@ systems `scalingSystem` and `waveletSystem`, the wavelet `mraWavelet` and the Ha
   Mallat's theorem does not need it either; the backbone proves it from the algebra of quadrature
   mirror filters in `Numlib.Analysis.Wavelet.QuadratureMirror`.
 
+## Deviations from the source
+
+* **Definition 4.5.1 and Equation (4.5.3)** (reading). The equivalent scale-invariance axiom
+  uses unitary dilation. The dilated expansion writes the shifted coefficients as inner products.
+* **The fourth property of the wavelet spaces** (correction). The closed span of the $W_j$
+  is all of $L^2(\mathbb R)$. The set-theoretic union of the mutually orthogonal spaces
+  is not dense. See `AtkinsonHan.Chapter04.theorem_wavelet_spaces`.
+* **Exercises 4.5.5–4.5.6** (reading). The point values need only vanishing outside the
+  support interval together with the equation and normalization. The wavelet support is
+  proved to be contained in $[-1,2]$.
+
 ## Not formalized
 
 * The existence half of the construction (4.5.1)–(4.5.3), which the book leaves to Daubechies: that
@@ -200,7 +211,10 @@ Both series converge unconditionally in $L^2(\mathbb{R})$.
 
 The proof expands $\phi \in V_0 \subseteq V_1$, and $\phi_{j,l} \in V_j \subseteq V_{j+1}$, in
 the orthonormal basis of the finer space. The book writes the coefficients of the second series
-as $p_{k-2l}$; this form is `IsMultiresolutionAnalysis.hasSum_scalingSystem_low`. -/
+as $p_{k-2l}$; this form is `IsMultiresolutionAnalysis.hasSum_scalingSystem_low`.
+
+**Reading.** The dilated coefficients are expressed as inner products of neighboring scale
+functions. These are the shifted coefficients $p_{k-2l}$ of (4.5.3). -/
 theorem equation_4_5_2 (h : IsMultiresolutionAnalysis V φ) :
     HasSum (fun k : ℤ => scalingCoeff φ k • scalingSystem φ 1 k) φ ∧
       ∀ j l : ℤ, HasSum (fun k : ℤ =>
@@ -256,7 +270,12 @@ The book lists these properties without proof and refers to Daubechies, whose pr
 Fourier transform. The backbone proves them without the Fourier transform, from the algebra of
 quadrature mirror filters. The book's property $f \in W_j \iff f(2^{-j} \, \cdot) \in W_0$ is
 not stated; it holds by construction, because $W_j$ (`waveletSpace V j`) is defined from $V_j$
-and $V_{j+1}$. The function $\psi_{j,k}$ is `waveletSystem φ j k`. -/
+and $V_{j+1}$. The function $\psi_{j,k}$ is `waveletSystem φ j k`.
+
+**Correction.** The source's fourth property says the union of the wavelet spaces is dense.
+For two nonzero orthogonal components in different spaces, their sum stays a positive
+distance from the entire union. The algebraic span of the spaces is dense, as follows from
+the full orthonormal expansion. -/
 theorem theorem_wavelet_spaces (h : IsMultiresolutionAnalysis V φ) :
     mraWavelet φ ∈ V 1 ∧
       Orthonormal ℝ (translates (mraWavelet φ)) ∧
@@ -369,7 +388,10 @@ The values at the endpoints are not assumed. They follow from the scaling equati
 coefficients $(1+\sqrt3)/4$ and $(1-\sqrt3)/4$ of the two end terms are not $1$. The statement
 does not assume that such a function exists; its existence is
 `AtkinsonHan.Chapter04.equation_4_5_6`, and `AtkinsonHan.Chapter04.exists_daubechies_values`
-combines the two. -/
+combines the two.
+
+**Generalization.** Continuity and exact support are unnecessary for the stated values.
+Vanishing outside $[0,3]$ suffices with the refinement equation and normalization. -/
 theorem exercise_4_5_5 {φ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0)
     (hscal : ∀ x : ℝ, φ x = (1 + √3) / 4 * φ (2 * x) + (3 + √3) / 4 * φ (2 * x - 1)
       + (3 - √3) / 4 * φ (2 * x - 2) + (1 - √3) / 4 * φ (2 * x - 3))
@@ -433,7 +455,10 @@ $[-1, 2]$.
 The statement holds for every $\phi$ that vanishes outside $[0, 3]$. The book asks for the
 equality $\operatorname{supp} \psi = [-1, 2]$. This is a statement about the $D_4$ function, and
 it needs the counterpart for $\psi$ of `Daubechies.scalingFun_support`: that $\psi$ does not
-vanish identically on any nondegenerate subinterval of $[-1, 2]$. The equality is not proved. -/
+vanish identically on any nondegenerate subinterval of $[-1, 2]$. The equality is not proved.
+
+**Reading.** The declaration proves only inclusion of the topological support. The reverse
+inclusion for the specific Daubechies wavelet is not stated. -/
 theorem exercise_4_5_6_subset {φ ψ : ℝ → ℝ} (hsupp : ∀ x : ℝ, x < 0 ∨ 3 < x → φ x = 0)
     (hpsi : ∀ x : ℝ, ψ x = -((1 + √3) / 4) * φ (2 * x - 1) + (3 + √3) / 4 * φ (2 * x)
       - (3 - √3) / 4 * φ (2 * x + 1) + (1 - √3) / 4 * φ (2 * x + 2))

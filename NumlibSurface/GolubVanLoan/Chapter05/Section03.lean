@@ -137,6 +137,20 @@ programs and rounding results of §3.1, §4.2, §5.1 and §5.2.
 
 ## Deviations from the source
 
+* **Equation (5.3.5)** (generalization). The QR residual split is independent of rank. The
+  inverse formula for the minimizer uses full column rank. See
+  `GolubVanLoan.Chapter05.equation_5_3_5`.
+* **§5.3.5, augmented modified Gram–Schmidt** (reading). The exact theorem requires independent
+  columns of $[A\mid b]$ to justify the final normalization. See
+  `GolubVanLoan.Chapter05.mgs_augmented`.
+* **Equation (5.3.9)** (reading). The projector norm identities assume $0<n<m$. A full-rank
+  square matrix has zero residual projector. See `GolubVanLoan.Chapter05.equation_5_3_9`.
+* **§5.3.8, iterative improvement** (reading). The program takes an iteration count and two
+  rounding functions. The exact theorem gives a solution after any positive number of
+  iterations. See `GolubVanLoan.Chapter05.lsIterativeImprovement` and
+  `GolubVanLoan.Chapter05.lsIterativeImprovement_spec`.
+* **Equation (5.3.25)** (reading). The normalized inner product requires nonzero vectors. See
+  `GolubVanLoan.Chapter05.equation_5_3_25`.
 * **Equation (5.3.3)** (typo). The source prints the upper summation limit as $2$; it is $m$. See
   `GolubVanLoan.Chapter05.equation_5_3_3`.
 * **Equation (5.3.4)** (reading). The source estimates the relative error as
@@ -400,7 +414,10 @@ As in the source, no roundoff errors occur in the formation of $C = A^TA$ and $d
 triangular solves are `GolubVanLoan.Chapter04.solveCholesky`, the solve stage of
 `GolubVanLoan.Chapter05.algorithm_5_3_1`. The proof gives the backward error
 $(A^TA + E)\hat x = A^Tb$ with $\|E\|_2 \le \eta\|A^TA\|_2$ of §4.2.6
-(`GolubVanLoan.Chapter04.cholesky_backward_error`) to `GolubVanLoan.Chapter05.equation_5_3_4`. -/
+(`GolubVanLoan.Chapter04.cholesky_backward_error`) to `GolubVanLoan.Chapter05.equation_5_3_4`.
+
+**Reading.** Exact Gram and RHS as in source, with quantitative gamma assumptions and conclusion.
+-/
 theorem equation_5_3_4_rounding {fp : RoundingModel ℝ} (hn : ((3 * n + 3 : ℕ) : ℝ) * fp.u < 1)
     (hγ : n * gamma fp.u (n + 3) < 1) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) {η : ℝ}
@@ -511,7 +528,10 @@ has the residual $\rho_{LS}^2 = \|d\|_2^2$.
 The QR factorization is `Matrix.IsQR A Q R`. The block $R_1$ is `R.firstRows hnm`, and
 $c = Q_1^Tb$ for the first $n$ columns $Q_1$ of $Q$, `Q.firstColumns hnm`. The number
 $\|d\|_2^2$ is the sum of the squares of the entries $(Q^Tb)_i$ with $n \le i$, in 0-based
-indices. -/
+indices.
+
+**Generalization.** The residual split uses the QR factorization alone. Full column rank is
+needed for the inverse-based solution formula. -/
 theorem equation_5_3_5 {A : Matrix (Fin m) (Fin n) ℝ} {Q : Matrix (Fin m) (Fin m) ℝ}
     {R : Matrix (Fin m) (Fin n) ℝ} (h : IsQR A Q R) (hnm : n ≤ m) (b : EuclideanSpace ℝ (Fin m)) :
     (∀ x, ‖toEuclideanLin A x - b‖ ^ 2 =
@@ -550,7 +570,11 @@ $|\rho| = \|Ax - b\|_2 = \rho_{LS}$.
 
 The factors are the output of `GolubVanLoan.Chapter05.algorithm_5_2_6` at `Id` on
 `GolubVanLoan.Chapter05.augmentCol A b`. The blocks $R_1$, $z$ and $\rho$ of its triangular
-factor are indexed through `Fin.castSucc` and `Fin.last n`. -/
+factor are indexed through `Fin.castSucc` and `Fin.last n`.
+
+**Reading.** The exact modified Gram–Schmidt theorem assumes full column rank of $[A\mid b]$.
+When $b$ is already in the range of $A$, the final normalization of the augmented factorization
+would divide by zero. -/
 theorem mgs_augmented {A : Matrix (Fin m) (Fin n) ℝ} {b : Fin m → ℝ}
     (hA : LinearIndependent ℝ (augmentCol A b)ᵀ) :
     (fun j => (Id.run (algorithm_5_2_6 pure (augmentCol A b))).2 j.castSucc (Fin.last n)) =
@@ -875,7 +899,10 @@ not minimize $\|I_2x - b\|_2$.
 
 Every Householder step of Algorithm 5.2.1 meets $\sigma = 0$ and $x_1 \ge 0$, so `house` returns
 $\beta = 0$ and leaves $A$ unchanged. The printed recomputation $\beta = 2/v^Tv = 2$ then flips
-the sign of $b_1$. The exact solution is $(1, 0)^T$. -/
+the sign of $b_1$. The exact solution is $(1, 0)^T$.
+
+**Reading.** Identity example proves recomputed coefficient can give wrong result.
+-/
 theorem algorithm_5_3_2_counterexample :
     (Id.run (algorithm_5_2_1 pure (1 : Matrix (Fin 2) (Fin 2) ℝ))).2 = 0 ∧
       Id.run (algorithm_5_3_2 pure le_rfl (1 : Matrix (Fin 2) (Fin 2) ℝ) ![1, 0]) = ![-1, 0] ∧
@@ -1640,7 +1667,10 @@ $$\|A(A^TA)^{-1}A^T\|_2 = 1, \quad \|(A^TA)^{-1}A^T\|_2 = \frac{1}{\sigma_n(A)},
   A(A^TA)^{-1}A^T\|_2 = 1, \quad \|(A^TA)^{-1}\|_2 = \frac{1}{\sigma_n(A)^2}.$$
 
 The source says that these facts are easily verified using the SVD. The matrix $(A^TA)^{-1}A^T$
-is the pseudoinverse $A^+$. The condition $n \ge 1$ is `[NeZero n]`. -/
+is the pseudoinverse $A^+$. The condition $n \ge 1$ is `[NeZero n]`.
+
+**Reading.** The two projector norms are both one when $0<n<m$ and $A$ has full column rank. In
+the square full-rank case the residual projector is zero. -/
 theorem equation_5_3_9 [NeZero n] {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     (hmn : n < m) :
     ‖A * (Aᵀ * A)⁻¹ * Aᵀ‖ = 1 ∧ ‖(Aᵀ * A)⁻¹ * Aᵀ‖ = 1 / ⨅ i, A.colSingularValues i ∧
@@ -1761,7 +1791,11 @@ that is, $r + Ax = b$ and $A^Tr = 0$, then $x$ minimizes $\|Ax - b\|_2$. The aug
 nonsingular if and only if $\operatorname{rank}(A) = n$.
 
 The condition $\operatorname{rank}(A) = n$ is `LinearIndependent ℝ Aᵀ`, and nonsingularity is
-`IsUnit`. -/
+`IsUnit`.
+
+**Reading.** Same augmented system implies least squares, with nonsingularity characterized by full
+column rank.
+-/
 theorem equation_5_3_20 (A : Matrix (Fin m) (Fin n) ℝ) :
     (∀ (b r : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)),
         r + toEuclideanLin A x = b → toEuclideanLin Aᵀ r = 0 → IsLeastSquaresSolution A b x) ∧
@@ -1916,7 +1950,10 @@ end
 The source requires that the residuals $f^{(k)}$ and $g^{(k)}$ be computed in higher precision;
 the program has a second rounding hook `rndHi` for them. The augmented systems are solved
 through the QR factorization of Algorithm 5.2.1, computed once and stored in factored form
-(`GolubVanLoan.Chapter05.lsImprovementStep`). The argument `fuel` is the number of iterations. -/
+(`GolubVanLoan.Chapter05.lsImprovementStep`). The argument `fuel` is the number of iterations.
+
+**Reading.** The program takes a finite iteration count and separate rounding functions for the
+ordinary and higher-precision operations. The source describes an open-ended loop. -/
 noncomputable def lsIterativeImprovement (rndHi : ℝ → M ℝ) (hnm : n ≤ m)
     (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) (fuel : ℕ) :
     M ((Fin m → ℝ) × (Fin n → ℝ)) := do
@@ -1968,7 +2005,10 @@ $b \in \mathbb{R}^m$. Then the output of `GolubVanLoan.Chapter05.householderLS` 
 arithmetic minimizes $\|Ax - b\|_2$.
 
 No condition on the Householder steps is needed, in contrast to
-`GolubVanLoan.Chapter05.algorithm_5_3_2_spec`. -/
+`GolubVanLoan.Chapter05.algorithm_5_3_2_spec`.
+
+**Correction.** Corrected program is exact for any full-column-rank input.
+-/
 theorem householderLS_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) :
     IsLeastSquaresSolution A (toLp 2 b) (toLp 2 (Id.run (householderLS pure hnm A b))) := by
@@ -2059,7 +2099,10 @@ private theorem lsImprovementStep_pure (hnm : n ≤ m) {A : Matrix (Fin m) (Fin 
 /-- Iterative improvement of §5.3.8 of [golub2013matrix] in exact arithmetic. Let
 $A \in \mathbb{R}^{m \times n}$ have full column rank, with $n \le m$, let $b \in \mathbb{R}^m$,
 and run at least one iteration. Then the output $(r, x)$ solves the augmented system (5.3.20),
-that is, $r + Ax = b$ and $A^Tr = 0$, and so $x$ minimizes $\|Ax - b\|_2$. -/
+that is, $r + Ax = b$ and $A^Tr = 0$, and so $x$ minimizes $\|Ax - b\|_2$.
+
+**Reading.** Finite implementation yields exact augmented solution for a positive budget.
+-/
 theorem lsIterativeImprovement_spec (hnm : n ≤ m) {A : Matrix (Fin m) (Fin n) ℝ}
     (hA : LinearIndependent ℝ Aᵀ) (b : Fin m → ℝ) {fuel : ℕ} (hfuel : 0 < fuel) :
     let out := Id.run (lsIterativeImprovement pure pure hnm A b fuel)
@@ -2149,7 +2192,9 @@ theorem equation_5_3_24 (p : Fin 3 → ℝ) :
 /-- **Equation (5.3.25)** of [golub2013matrix]. For nonzero $p, q \in \mathbb{R}^3$,
 $$\|p^cq\|_2^2 = \|p\|_2^2\|q\|_2^2\left(1 -
   \left(\frac{p^Tq}{\|p\|_2\|q\|_2}\right)^2\right).$$
--/
+
+**Reading.** The normalized inner product in the displayed formula requires both vectors to be
+nonzero. -/
 theorem equation_5_3_25 {p q : Fin 3 → ℝ} (hp : p ≠ 0) (hq : q ≠ 0) :
     ‖(toLp 2 (crossMatrix p *ᵥ q) : EuclideanSpace ℝ (Fin 3))‖ ^ 2 =
       ‖(toLp 2 p : EuclideanSpace ℝ (Fin 3))‖ ^ 2 * ‖(toLp 2 q : EuclideanSpace ℝ (Fin 3))‖ ^ 2 *

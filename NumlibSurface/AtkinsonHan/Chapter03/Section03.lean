@@ -159,9 +159,20 @@ The existence theorems specialize `Numlib.Variational.Minimization` and
 
 ## Deviations from the source
 
+* **Section 3.3** (reading). The book permits real and complex spaces unless it specifies a
+  field. Several formal statements use the underlying real normed-space structure, including
+  the convexity definitions and the statements on weak convergence and strict convexity.
 * **Definition 3.3.4** (reading). The limit inferior $\liminf_n f(v_n)$ is taken in the extended
   reals `EReal`. Lean's real `liminf` is $0$ for a sequence that is not bounded below, and with it
   Theorem 3.3.8 would be false. See `AtkinsonHan.Chapter03.definition_3_3_4`.
+* **Theorems 3.3.8, 3.3.10 and 3.3.12–3.3.15** (correction). Minimization and best
+  approximation require a nonempty feasible set. The strict-convexity uniqueness clause
+  common to Theorems 3.3.12 and 3.3.13 is stated in `theorem_3_3_13_unique`.
+* **Definition 3.3.6 and Equation (3.3.3)** (generalization). The separation predicates
+  also apply to empty sets, and the equivalence for a best approximation uses only a
+  seminormed additive commutative group.
+* **Theorems 3.3.18 and 3.3.19** (reading). The uniqueness conclusion of Theorem 3.3.18 is
+  conditional on existence. The alternation theorem uses an explicitly nondegenerate interval.
 
 ## Not formalized
 
@@ -182,7 +193,9 @@ variable {V : Type*} [SeminormedAddCommGroup V]
 let $u, v \in V$. Then $v$ is a best approximation of $u$ from $K$ in the sense of the
 backbone's `IsBestApprox` if and only if
 $$v \in K \quad \text{and} \quad \|u - v\| = \inf_{w \in K} \|u - w\|.$$
--/
+
+**Generalization.** The source minimizes distance in a normed space. The equivalence needs only
+a seminormed additive commutative group. -/
 theorem isBestApprox_iff_norm_eq_iInf (K : Set V) (u v : V) :
     IsBestApprox K u v ↔ v ∈ K ∧ ‖u - v‖ = ⨅ w : K, ‖u - (w : V)‖ := by
   constructor
@@ -210,7 +223,10 @@ $$\lambda u + (1 - \lambda) v \in K \quad \text{for all } u, v \in K \text{ and 
 
 Mathlib's `Convex ℝ K` uses the closed interval $[0, 1]$; the two conditions agree by
 `AtkinsonHan.Chapter03.definition_3_3_1_iff`. The convex-combination statement (3.3.1) is
-`AtkinsonHan.Chapter03.definition_3_3_1_sum`. -/
+`AtkinsonHan.Chapter03.definition_3_3_1_sum`.
+
+**Reading.** The source allows a real or complex linear space. The declaration uses its real
+normed-space structure because convexity uses real coefficients. -/
 def definition_3_3_1 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V) : Prop :=
   ∀ u ∈ K, ∀ v ∈ K, ∀ lam : ℝ, 0 < lam → lam < 1 → lam • u + (1 - lam) • v ∈ K
 
@@ -245,7 +261,11 @@ $$f(\lambda u + (1 - \lambda) v) \le \lambda f(u) + (1 - \lambda) f(v) \quad \te
 
 The source defines $f$ on a convex set $K$ only; here $f$ is defined on all of $V$ and its
 values outside $K$ play no part. Mathlib's `ConvexOn ℝ K f` also contains the convexity of $K$;
-`AtkinsonHan.Chapter03.definition_3_3_2_iff` is the identification for a convex $K$. -/
+`AtkinsonHan.Chapter03.definition_3_3_2_iff` is the identification for a convex $K$.
+
+**Reading.** The source starts with a convex set and a function defined on it. Here the function
+is defined on the whole space and convexity of the set is a separate hypothesis in the
+comparison with `ConvexOn`. -/
 def definition_3_3_2 {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
     (f : V → ℝ) : Prop :=
   ∀ u ∈ K, ∀ v ∈ K, ∀ lam : ℝ, 0 ≤ lam → lam ≤ 1 →
@@ -257,7 +277,11 @@ $$f(\lambda u + (1 - \lambda) v) < \lambda f(u) + (1 - \lambda) f(v) \quad \text
   \in K \text{ with } u \neq v \text{ and } \lambda \in (0, 1).$$
 
 By `AtkinsonHan.Chapter03.definition_3_3_2_strict_iff` this is Mathlib's `StrictConvexOn ℝ K f`
-for a convex $K$. -/
+for a convex $K$.
+
+**Reading.** The source starts with a convex set and a function defined on it. Here the function
+is defined on the whole space and convexity of the set is a separate hypothesis in the
+comparison with `StrictConvexOn`. -/
 def definition_3_3_2_strict {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] (K : Set V)
     (f : V → ℝ) : Prop :=
   ∀ u ∈ K, ∀ v ∈ K, u ≠ v → ∀ lam : ℝ, 0 < lam → lam < 1 →
@@ -304,7 +328,9 @@ normed space $E$ are **separated** if there are a nonzero bounded linear functio
 $E$ and a number $\alpha \in \mathbb{R}$ with
 $$\ell(u) \le \alpha \quad \text{for all } u \in A, \qquad \ell(v) \ge \alpha \quad \text{for
   all } v \in B.$$
--/
+
+**Generalization.** The book defines separation for nonempty sets. This predicate also makes
+sense on empty sets. -/
 def AreSeparated (A B : Set E) : Prop :=
   ∃ (ℓ : StrongDual ℝ E) (α : ℝ), ℓ ≠ 0 ∧ (∀ u ∈ A, ℓ u ≤ α) ∧ ∀ v ∈ B, α ≤ ℓ v
 
@@ -313,7 +339,9 @@ of a real normed space $E$ are **strictly separated** if there are a nonzero bou
 functional $\ell$ on $E$ and a number $\alpha \in \mathbb{R}$ with
 $$\ell(u) < \alpha \quad \text{for all } u \in A, \qquad \ell(v) > \alpha \quad \text{for all }
   v \in B.$$
--/
+
+**Generalization.** The book defines strict separation for nonempty sets. This predicate also
+makes sense on empty sets. -/
 def AreStrictlySeparated (A B : Set E) : Prop :=
   ∃ (ℓ : StrongDual ℝ E) (α : ℝ), ℓ ≠ 0 ∧ (∀ u ∈ A, ℓ u < α) ∧ ∀ v ∈ B, α < ℓ v
 
@@ -582,7 +610,10 @@ hypothesis of its own, since a reflexive space is complete by
 `NormedSpace.completeSpace_of_isReflexive`; the proof does not use completeness in any case.
 Weakly closed is `IsWeakSeqClosed`, the sequential Definition 3.3.3, and the minimizer is
 `IsMinOn f K u`. The proof uses reflexivity only through Theorem 2.7.5, by way of the class
-`WeaklySeqCompactSpace` and the instance `WeaklySeqCompactSpace.of_isReflexive`. -/
+`WeaklySeqCompactSpace` and the instance `WeaklySeqCompactSpace.of_isReflexive`.
+
+**Correction.** The source omits nonemptiness of $K$. The theorem requires it, since an empty
+set has no minimizer. -/
 theorem theorem_3_3_8 [NormedSpace.IsReflexive ℝ V] {K : Set V} {f : V → ℝ}
     (hne : K.Nonempty) (hbd : IsBounded K) (hKc : IsWeakSeqClosed K)
     (hf : WeakSeqLowerSemicontinuousOn f K) : ∃ u ∈ K, IsMinOn f K u :=
@@ -623,7 +654,10 @@ $$f(u) = \inf_{v \in K} f(v).$$
 
 The hypotheses on $V$ and $K$ are read as in `AtkinsonHan.Chapter03.theorem_3_3_8`. The proof
 restricts the problem to the sublevel set $\{v \in K : f(v) \le f(v_0)\}$, which is bounded
-because $f$ is coercive. -/
+because $f$ is coercive.
+
+**Correction.** The source omits nonemptiness of $K$. The theorem requires it, since an empty
+set has no minimizer. -/
 theorem theorem_3_3_10 [NormedSpace.IsReflexive ℝ V] {K : Set V} {f : V → ℝ}
     (hne : K.Nonempty) (hKc : IsWeakSeqClosed K) (hf : WeakSeqLowerSemicontinuousOn f K)
     (hcoer : IsCoerciveFunctionalOn f K) : ∃ u ∈ K, IsMinOn f K u :=
@@ -671,7 +705,11 @@ $$f(u) = \inf_{v \in K} f(v).$$
 All hypotheses are for the norm topology. The two corollaries of Mazur's lemma convert them to
 the weak hypotheses of Theorems 3.3.8 and 3.3.10. `AtkinsonHan.Chapter03.theorem_3_3_13` is the
 finite-dimensional counterpart, and `AtkinsonHan.Chapter03.theorem_3_3_13_unique` is the
-uniqueness clause of both. -/
+uniqueness clause of both.
+
+**Correction.** The theorem requires the feasible set to be nonempty. This declaration gives
+existence; the separate strict-convexity theorem `theorem_3_3_13_unique` also gives the uniqueness
+clause of Theorem 3.3.12. -/
 theorem theorem_3_3_12 [NormedSpace.IsReflexive ℝ V] {K : Set V} {f : V → ℝ}
     (hne : K.Nonempty) (hcl : IsClosed K) (hconv : Convex ℝ K) (hf : ConvexOn ℝ K f)
     (hlsc : LowerSemicontinuousOn f K)
@@ -685,7 +723,10 @@ $\hat u$ from $K$.
 The function $v \mapsto \|u - v\|$ is convex, continuous and coercive, so this is the coercive
 case of Theorem 3.3.12. The finite-dimensional counterpart is
 `AtkinsonHan.Chapter03.theorem_3_3_15`, and in a Hilbert space the result is
-`AtkinsonHan.Chapter03.theorem_3_4_3`. -/
+`AtkinsonHan.Chapter03.theorem_3_4_3`.
+
+**Correction.** The source omits nonemptiness of $K$. The theorem requires it for existence of
+a best approximation. -/
 theorem theorem_3_3_14 [NormedSpace.IsReflexive ℝ V] {K : Set V} (hne : K.Nonempty)
     (hcl : IsClosed K) (hconv : Convex ℝ K) (u : V) : ∃ uhat, IsBestApprox K u uhat :=
   exists_isBestApprox_of_convex hne hcl hconv u
@@ -707,7 +748,10 @@ $$f(u) = \inf_{v \in K} f(v).$$
 
 The convexity hypotheses on $K$ and $f$ are kept as in the source; neither the proof of the
 source nor this proof uses them. Convexity is over $\mathbb{R}$, so $V$ is also a real normed
-space, through `[NormedSpace ℝ V]` and `[IsScalarTower ℝ 𝕜 V]`. -/
+space, through `[NormedSpace ℝ V]` and `[IsScalarTower ℝ 𝕜 V]`.
+
+**Correction.** The theorem requires the feasible set to be nonempty. Its strict-convexity
+uniqueness clause is stated separately in `theorem_3_3_13_unique`. -/
 theorem theorem_3_3_13 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hcl : IsClosed K) (hconv : Convex ℝ K)
     (hne : K.Nonempty) (f : V → ℝ) (hf : ConvexOn ℝ K f) (hlsc : LowerSemicontinuousOn f K)
@@ -737,7 +781,10 @@ be a finite-dimensional subspace of $V$, and let $K \subseteq S$ be nonempty, cl
 Then every $u \in V$ has a best approximation $\hat u$ from $K$.
 
 The convexity of $K$ is kept as in the source and is not used. Convexity is over $\mathbb{R}$,
-as in `AtkinsonHan.Chapter03.theorem_3_3_13`. -/
+as in `AtkinsonHan.Chapter03.theorem_3_3_13`.
+
+**Correction.** The source omits nonemptiness of $K$. The theorem requires it for existence of
+a best approximation. -/
 theorem theorem_3_3_15 [NormedSpace ℝ V] [IsScalarTower ℝ 𝕜 V] {K : Set V} (S : Submodule 𝕜 V)
     [FiniteDimensional 𝕜 S] (hKS : K ⊆ S) (hK : IsClosed K) (hconv : Convex ℝ K)
     (hne : K.Nonempty) (u : V) : ∃ uhat, IsBestApprox K u uhat :=
@@ -781,7 +828,10 @@ theorem rho_eq_norm_sub_of_isBestApprox {a b : ℝ} {n : ℕ} {f p : C(Set.Icc a
 $f \in C[a, b]$. Then $f$ has a best uniform approximation from $\mathcal{P}_n$.
 
 $\mathcal{P}_n$ is a finite-dimensional subspace of $C[a, b]$, so Theorem 3.3.16 applies. The
-case of $L^p(a, b)$ in the source is not formalized. -/
+case of $L^p(a, b)$ in the source is not formalized.
+
+**Reading.** Formalizes C[a,b] with the supremum norm. The Lᵖ cases are omitted, as documented.
+-/
 theorem example_3_3_17 (a b : ℝ) (n : ℕ) (f : C(Set.Icc a b, ℝ)) :
     ∃ p, IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p :=
   exists_isBestApprox_of_finiteDimensional (polyLE a b n) f
@@ -797,7 +847,10 @@ uniqueness. Let $a < b$, $n \ge 0$ and $f \in C[a, b]$. Then $f$ has exactly one
 approximation $\hat p_n$ from $\mathcal{P}_n$:
 $$\|f - \hat p_n\|_\infty = \min_{p \in \mathcal{P}_n} \|f - p\|_\infty = \rho_n(f).$$
 
-The proof is in the backbone module `Numlib.Approximation.Chebyshev`. -/
+The proof is in the backbone module `Numlib.Approximation.Chebyshev`.
+
+**Reading.** The interval is explicitly required to be nondegenerate, as needed for the
+alternation statement with $n+2$ distinct points. -/
 theorem theorem_3_3_19 {a b : ℝ} (hab : a < b) (n : ℕ) (f : C(Set.Icc a b, ℝ)) :
     ∃! p : C(Set.Icc a b, ℝ), IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p := by
   have : Infinite (Set.Icc a b) := Set.Icc.infinite hab
@@ -810,7 +863,10 @@ if and only if there are points $a \le x_0 < x_1 < \cdots < x_{n+1} \le b$ and a
 $\sigma \in \{1, -1\}$ with
 $$f(x_j) - p(x_j) = \sigma (-1)^j \|f - p\|_\infty, \qquad j = 0, \dots, n + 1.$$
 
-The condition on the right is the backbone's `Equioscillates (f - p) (n + 2)`. -/
+The condition on the right is the backbone's `Equioscillates (f - p) (n + 2)`.
+
+**Reading.** The declaration makes the characterization an explicit equivalence and requires
+$a<b$ so that the interval has $n+2$ distinct points. -/
 theorem theorem_3_3_19_equioscillates {a b : ℝ} (hab : a < b) {n : ℕ} {f p : C(Set.Icc a b, ℝ)}
     (hp : p ∈ polyLE a b n) :
     IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p ↔ Equioscillates (f - p) (n + 2) := by
@@ -823,7 +879,9 @@ $a < b$, $f \in C[a, b]$, and let $\hat p_n$ be a best uniform approximation of 
 $\mathcal{P}_n$. Then there are points $a \le x_0 < x_1 < \cdots < x_{n+1} \le b$ and a sign
 $\sigma \in \{1, -1\}$ with
 $$f(x_j) - \hat p_n(x_j) = \sigma (-1)^j \rho_n(f), \qquad j = 0, \dots, n + 1.$$
--/
+
+**Reading.** The interval is explicitly required to be nondegenerate, so $n+2$ distinct
+alternation points can exist. -/
 theorem theorem_3_3_19_alternation {a b : ℝ} (hab : a < b) {n : ℕ} {f p : C(Set.Icc a b, ℝ)}
     (h : IsBestApprox (polyLE a b n : Set C(Set.Icc a b, ℝ)) f p) :
     ∃ (σ : ℝ) (x : Fin (n + 2) → Set.Icc a b), (σ = 1 ∨ σ = -1) ∧
@@ -869,7 +927,10 @@ $v \mapsto \|v\|^p$ is strictly convex on $E$ for some $p \ge 1$, and let $K \su
 convex. Then every $u \in E$ has at most one best approximation from $K$.
 
 The power is the real power `‖v‖ ^ p`. The proof shows that $E$ is strictly convex, by
-`StrictConvexSpace.of_strictConvexOn_norm_rpow`, and applies `IsBestApprox.unique`. -/
+`StrictConvexSpace.of_strictConvexOn_norm_rpow`, and applies `IsBestApprox.unique`.
+
+**Reading.** The source concerns uniqueness conditional on existence, as stated in the following
+paragraph. The declaration compares two best approximations without asserting existence. -/
 theorem theorem_3_3_18 {p : ℝ} (hp : 1 ≤ p)
     (hconv : StrictConvexOn ℝ (Set.univ : Set E) fun v : E => ‖v‖ ^ p) {K : Set E}
     (hK : Convex ℝ K) {u v₁ v₂ : E} (h₁ : IsBestApprox K u v₁) (h₂ : IsBestApprox K u v₂) :
@@ -900,18 +961,27 @@ variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
 $v \mapsto \|v\|^2$ is strictly convex. Indeed, for $a + b = 1$,
 $$a \|x\|^2 + b \|y\|^2 - \|a x + b y\|^2 = a b \|x - y\|^2.$$
 With Theorem 3.3.18 this gives the uniqueness of best approximations from convex sets (Corollary
-3.4.2). -/
+3.4.2).
+
+**Reading.** The exercise says inner product space. The declaration uses a real inner product
+space, which is also the real restriction of a complex inner product space. -/
 theorem exercise_3_3_8 : StrictConvexOn ℝ (Set.univ : Set H) fun v : H => ‖v‖ ^ 2 :=
   strictConvexOn_norm_sq
 
 /-- **Exercise 3.3.8** of [han2009theoretical], with a real exponent. In a real inner product space
 $H$, the function $v \mapsto \|v\|^2$, with the real power `‖v‖ ^ (2 : ℝ)`, is strictly convex.
-This is the form that Theorem 3.3.18 uses, with $p = 2$. -/
+This is the form that Theorem 3.3.18 uses, with $p = 2$.
+
+**Reading.** The real-inner-product statement also follows by restricting scalars from a
+complex inner product space. -/
 theorem exercise_3_3_8_rpow :
     StrictConvexOn ℝ (Set.univ : Set H) fun v : H => ‖v‖ ^ (2 : ℝ) :=
   strictConvexOn_norm_rpow_two
 
-/-- **Exercise 3.3.9** of [han2009theoretical]. A real inner product space is strictly normed. -/
+/-- **Exercise 3.3.9** of [han2009theoretical]. A real inner product space is strictly normed.
+
+**Reading.** The declaration uses a real inner product space. The result also applies to a
+complex inner product space after restricting scalars. -/
 theorem exercise_3_3_9 : IsStrictlyNormed H :=
   isStrictlyNormed_iff_strictConvexSpace.2 inferInstance
 

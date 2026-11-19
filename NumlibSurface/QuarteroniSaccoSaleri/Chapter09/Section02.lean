@@ -65,6 +65,26 @@ the discrete mean value theorem is `ContinuousOn.exists_sum_mul_eq_mul_sum` of
 * The composite mesh is $H = (b - a)/m$ with $m \ge 1$ panels, as the book writes it.
 * Exercise 9.k is Exercise k of Chapter 9.
 
+## Deviations from the source
+
+* **Theorem 9.1** (reading). `QuarteroniSaccoSaleri.Chapter09.theorem_9_1` reads common sign as
+  all nonnegative or all nonpositive, allowing zero weights.
+* **(9.6), (9.8), (9.12) and the composite errors** (reading). Smoothness is expressed on an
+  open neighbourhood of the integration interval.
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_8`,
+  `QuarteroniSaccoSaleri.Chapter09.compositeTrapezoidalError` and
+  `QuarteroniSaccoSaleri.Chapter09.compositeSimpsonError` give witnesses in the closed interval.
+  The source gives interior witnesses.
+* **(9.7), (9.13)–(9.14) and (9.17)** (generalization). The algebraic quadrature sums accept
+  arbitrary real panel widths. The midpoint identity also allows no panels and gives an empty
+  sum.
+* **Exercise 9.1** (scope). `QuarteroniSaccoSaleri.Chapter09.exercise_9_1` proves the two kernel
+  constants and the exact signed error ratio on polynomials of degree at most two. The source
+  asks for an approximate ratio on general inputs.
+* **Equation (9.16)** (reading). Smoothness is expressed on an open neighbourhood of $[a,b]$,
+  and the error formula supplies $\xi \in [a,b]$. See
+  `QuarteroniSaccoSaleri.Chapter09.equation_9_16`.
+
 ## Not formalized
 
 * **Example 9.1.** It is a numerical table.
@@ -112,7 +132,11 @@ Then there exists $\eta \in [a, b]$ such that
 $$\sum_{j=0}^{s} \delta_j u(x_j) = u(\eta) \sum_{j=0}^{s} \delta_j. \qquad (9.9)$$
 
 The proof applies the backbone's `ContinuousOn.exists_sum_mul_eq_mul_sum` for nonnegative
-weights, to $-\delta$ when the weights are nonpositive. -/
+weights, to $-\delta$ when the weights are nonpositive.
+
+**Reading.** Interprets same sign as all weakly nonnegative or all weakly nonpositive, explicitly
+allowing zeros.
+-/
 theorem theorem_9_1 (hab : a ≤ b) {u : ℝ → ℝ} (hu : ContinuousOn u (Icc a b)) {s : ℕ}
     {x : Fin (s + 1) → ℝ} (hx : ∀ j, x j ∈ Icc a b) {δ : Fin (s + 1) → ℝ}
     (hδ : (∀ j, 0 ≤ δ j) ∨ ∀ j, δ j ≤ 0) :
@@ -135,7 +159,11 @@ for some $\xi \in (a, b)$.
 
 The proof uses the Peano identity `Quadrature.sub_midpoint_eq_integral_peanoKernel` with the
 nonnegative kernel `Quadrature.midpointKernel`, whose integral is $(b - a)^3/24 = h^3/3$, and
-the weighted mean value theorem on the open interval. -/
+the weighted mean value theorem on the open interval.
+
+**Reading.** Uses C² on open neighborhood and states the same midpoint constant with interior
+witness.
+-/
 theorem equation_9_6 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - (b - a) * f ((a + b) / 2)
@@ -189,7 +217,10 @@ $$E_{0,m}(f) = \int_a^b f(x)\,dx - I_{0,m}(f) = \frac{b - a}{24} H^2 f''(\xi)$$
 for some $\xi \in [a, b]$.
 
 The composite formula is `Quadrature.midpointSum f a H m`. The proof applies (9.6) on each panel
-and Theorem 9.1 with $u = f''$ and $\delta_j = 1$. -/
+and Theorem 9.1 with $u = f''$ and $\delta_j = 1$.
+
+**Reading.** The derivative is taken on an open neighbourhood of $[a,b]$. The composite error
+theorem gives its witness in $[a,b]$, while the printed formula places it in $(a,b)$. -/
 theorem equation_9_8 (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.midpointSum f a ((b - a) / m) m
@@ -203,6 +234,8 @@ theorem equation_9_8 (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U) (hUa
 $H \in \mathbb{R}$ and $m \in \mathbb{N}$, the composite midpoint sum
 `Quadrature.midpointSum f a H m` is
 $$I_{0,m}(f) = H \sum_{k=0}^{m-1} f(x_k), \qquad x_k = a + \frac{(2k + 1) H}{2}.$$
+
+**Reading.** Algebraic identity for any real step H and zero allowed panels as empty sum.
 -/
 theorem equation_9_7 (H : ℝ) (m : ℕ) :
     Quadrature.midpointSum f a H m = H * ∑ k ∈ Finset.range m, f (a + (2 * k + 1) * H / 2) := by
@@ -219,7 +252,11 @@ for some $\xi \in (a, b)$.
 
 The proof uses the Peano identity `Quadrature.sub_trapezoid_eq_integral_peanoKernel` with the
 nonpositive kernel $(t - a)(t - b)/2$, whose integral is $-(b - a)^3/12$, and the weighted mean
-value theorem on the open interval. -/
+value theorem on the open interval.
+
+**Reading.** Uses C² on open neighborhood with unchanged trapezoidal coefficient and interior
+witness.
+-/
 theorem equation_9_12 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Ioo a b, (∫ x in a..b, f x) - (b - a) / 2 * (f a + f b)
@@ -254,7 +291,10 @@ $$I_{1,m}(f) = H \Bigl[\frac{f(x_0)}{2} + f(x_1) + \dots + f(x_{m-1}) + \frac{f(
   \qquad (9.14)$$
 
 The second form counts each interior node twice in the first form. The book takes
-$H = (b - a)/m$; the identities hold for every $H$. -/
+$H = (b - a)/m$; the identities hold for every $H$.
+
+**Reading.** Algebraic identities for arbitrary real H with m≥1.
+-/
 theorem equation_9_14 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
     (Quadrature.trapezoidSum f a H m
         = ∑ k ∈ Finset.range m, H / 2 * (f (a + k * H) + f (a + (k + 1) * H))) ∧
@@ -266,7 +306,10 @@ theorem equation_9_14 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
 let $m \ge 1$, let $H = (b - a)/m$, and let $f \in C^2([a, b])$. The composite trapezoidal
 formula (9.14) has the error
 $$E_{1,m}(f) = \int_a^b f(x)\,dx - I_{1,m}(f) = -\frac{b - a}{12} H^2 f''(\xi)$$
-for some $\xi \in [a, b]$. -/
+for some $\xi \in [a, b]$.
+
+**Reading.** Open-neighborhood smoothness and closed witness in place of interior.
+-/
 theorem compositeTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ 2 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.trapezoidSum f a ((b - a) / m) m
@@ -281,14 +324,19 @@ theorem compositeTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : I
 /-! ### The Cavalieri–Simpson formula (9.15)–(9.17) -/
 
 /-- **Equation (9.16)** of [quarteroni2000numerical], the Cavalieri–Simpson error. Let $a < b$ and
-$f \in C^4([a, b])$. The error of the Cavalieri–Simpson formula (9.15), $I_2(f) = \frac{b -
+let $f$ be four times continuously differentiable on an open neighbourhood of $[a,b]$.
+The error of the Cavalieri–Simpson formula (9.15), $I_2(f) = \frac{b -
 a}{6} (f(a) + 4 f(\frac{a + b}{2}) + f(b))$, is
 $$E_2(f) = \int_a^b f(x)\,dx - I_2(f) = -\frac{h^5}{90} f^{(4)}(\xi), \qquad h = \frac{b -
   a}{2},$$
 for some $\xi \in [a, b]$.
 
-The book puts $\xi$ in $(a, b)$; the statement here gives the closed interval. The proof is the
-backbone's `Quadrature.sub_composite_simpson_eq` on one panel, with $-(b - a)^5/2880 = -h^5/90$. -/
+**Reading.** The book assumes $f \in C^4([a,b])$ and gives $\xi \in (a,b)$. The theorem uses
+smoothness on a neighbourhood so that ordinary derivatives are available at the endpoints.
+The backbone's error theorem gives $\xi \in [a,b]$.
+
+The proof uses `Quadrature.sub_composite_simpson_eq` on one panel, with
+$-(b - a)^5/2880 = -h^5/90$. -/
 theorem equation_9_16 (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - (b - a) / 6 * (f a + 4 * f ((a + b) / 2) + f b)
@@ -331,7 +379,10 @@ $$E_{2,m}(f) = \int_a^b f(x)\,dx - I_{2,m}(f) = -\frac{b - a}{180} \Bigl(\frac{H
   f^{(4)}(\xi)$$
 for some $\xi \in [a, b]$.
 
-The composite formula is the backbone's `Quadrature.simpsonSum f a H m`. -/
+The composite formula is the backbone's `Quadrature.simpsonSum f a H m`.
+
+**Reading.** Open-neighborhood smoothness and closed witness in place of interior.
+-/
 theorem compositeSimpsonError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.simpsonSum f a ((b - a) / m) m
@@ -351,7 +402,10 @@ composite Simpson sum `Quadrature.simpsonSum f a H m` is
 $$I_{2,m}(f) = \frac{H}{6} \Bigl[f(x_0) + 2 \sum_{r=1}^{m-1} f(x_{2r}) + 4 \sum_{s=0}^{m-1}
   f(x_{2s+1}) + f(x_{2m})\Bigr].$$
 
-The book takes $H = (b - a)/m$; the identity holds for every $H$. -/
+The book takes $H = (b - a)/m$; the identity holds for every $H$.
+
+**Reading.** Algebraic weights for arbitrary real H and positive panel count.
+-/
 theorem equation_9_17 {m : ℕ} (hm : 1 ≤ m) (H : ℝ) :
     Quadrature.simpsonSum f a H m
       = H / 6 * (f a + 2 * ∑ r ∈ Finset.Ico 1 m, f (a + (2 * r) * (H / 2))
@@ -401,7 +455,11 @@ the ratio $-2$. Hence for every polynomial $p$ of degree at most $2$, whose seco
 constant, the trapezoidal and midpoint errors satisfy $E_1(p) = -2 E_0(p)$.
 
 The exercise is cited in Example 9.4, and the book writes the result as
-$|E_1(f)| \simeq 2 |E_0(f)|$. -/
+$|E_1(f)| \simeq 2 |E_0(f)|$.
+
+**Scope.** The exact signed relation is for polynomial inputs with a constant second
+derivative. For general smooth inputs, the two error formulas can evaluate the derivative at
+different points. -/
 theorem exercise_9_1 (hab : a < b) :
     ((∫ t in a..b, (t - a) * (t - b) / 2) = -(b - a) ^ 3 / 12 ∧
       (∫ t in a..b, Quadrature.midpointKernel a b t) = (b - a) ^ 3 / 24) ∧

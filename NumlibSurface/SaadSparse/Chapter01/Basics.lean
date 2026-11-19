@@ -80,9 +80,24 @@ The proofs use Mathlib and the backbone module `Numlib.Analysis.Matrix.OperatorN
 
 ## Deviations from the source
 
+* **Propositions 1.2 and 1.4, Equations (1.2) and (1.5)** (generalization). The book uses complex
+  scalars. The declarations also cover real scalars. See `SaadSparse.Chapter01.proposition_1_2`,
+  `SaadSparse.Chapter01.proposition_1_4`, `SaadSparse.Chapter01.equation_1_2` and
+  `SaadSparse.Chapter01.equation_1_5`.
+* **§1.2, trace as a sum of eigenvalues** (generalization). The theorem also identifies the
+  determinant as the product of the same eigenvalues. See
+  `SaadSparse.Chapter01.trace_eq_sum_eigenvalues`.
+* **Proposition 1.3** (generalization). The book gives one implication for the eigenvalues. The
+  theorem identifies the two spectra by conjugation. See `SaadSparse.Chapter01.proposition_1_3`.
+* **Equations (1.12)–(1.16), the norm formulas** (reading). The book states the formulas for
+  rectangular matrices. The surface declarations use square matrices. See
+  `SaadSparse.Chapter01.equation_1_14`, `SaadSparse.Chapter01.equation_1_15` and
+  `SaadSparse.Chapter01.equation_1_16`.
 * **Equation (1.18)** (typo). The book prints $\mathbb{C}^n = \operatorname{Ran}(A) \oplus
   \operatorname{Null}(A^T)$ in a complex setting, where $A^H$ is meant. See
   `SaadSparse.Chapter01.equation_1_18`.
+* **Equation (1.18)** (reading). The book uses rectangular matrices. The declaration uses square
+  matrices. See `SaadSparse.Chapter01.equation_1_18`.
 -/
 
 open Matrix Finset Polynomial
@@ -99,6 +114,9 @@ variable {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
 $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. Then $\det A \neq 0$ if and only if there is a
 matrix $B$ with $AB = I$ and $BA = I$.
 
+**Generalization.** The book works over $\mathbb{C}$ by default. The determinant and inverse
+criterion also holds over $\mathbb{R}$.
+
 The inverse is then `A⁻¹`, by `Matrix.nonsing_inv_mul` and `Matrix.mul_nonsing_inv`. -/
 theorem proposition_1_2 (A : Matrix (Fin n) (Fin n) 𝕜) :
     A.det ≠ 0 ↔ ∃ B, A * B = 1 ∧ B * A = 1 := by
@@ -109,9 +127,11 @@ $A \in \mathbb{C}^{n \times n}$. The trace of $A$ is the sum, and the determinan
 product, of the roots of the characteristic polynomial of $A$, counted with multiplicity:
 $$\operatorname{tr} A = \sum_i \lambda_i, \qquad \det A = \prod_i \lambda_i.$$
 
-The book states the trace formula. It uses the determinant formula from §1.2 on, but does not
-state it explicitly. The roots are `A.charpoly.roots`, a multiset that counts each eigenvalue
-with its algebraic multiplicity. -/
+**Generalization.** The source states the trace formula in this passage. The theorem adds the
+determinant formula, which follows by taking the constant term of the characteristic polynomial.
+
+The roots are `A.charpoly.roots`, a multiset that counts each eigenvalue with its algebraic
+multiplicity. -/
 theorem trace_eq_sum_eigenvalues (A : Matrix (Fin n) (Fin n) ℂ) :
     A.trace = A.charpoly.roots.sum ∧ A.det = A.charpoly.roots.prod :=
   ⟨A.trace_eq_sum_roots_charpoly, A.det_eq_prod_roots_charpoly⟩
@@ -144,6 +164,9 @@ $\sigma(A^H) = \{\bar\mu : \mu \in \sigma(A)\}$. Moreover, for every $\mu \in \m
 $v \in \mathbb{C}^n$, if $A^H v = \bar\mu v$, then $v$ is a **left eigenvector** of $A$ for
 $\mu$:
 $$v^H A = \mu v^H.$$
+
+**Generalization.** The book says that each eigenvalue of $A$ gives a conjugate eigenvalue of
+$A^H$. The theorem also gives the converse, since $(A^H)^H = A$.
 
 The spectra correspond under conjugation because the characteristic polynomial of $A^H$ is the
 conjugate of the characteristic polynomial of $A$. The row vector $v^H A$ is `star v ᵥ* A`. -/
@@ -180,6 +203,9 @@ $Q \in \mathbb{K}^{n \times n}$ be unitary, where $\mathbb{K}$ is $\mathbb{R}$ o
 Then for all $x, y \in \mathbb{K}^n$,
 $$(Qx, Qy) = (x, y) \quad \text{and} \quad \|Qx\|_2 = \|x\|_2.$$
 
+**Generalization.** The book gives the complex identity and deduces preservation of the norm.
+The theorem covers those facts over both scalar fields.
+
 A unitary matrix is an element of `Matrix.unitaryGroup (Fin n) 𝕜`. The book's inner product
 $(x, y)$ is `inner 𝕜 y x`. -/
 theorem proposition_1_4 {Q : Matrix (Fin n) (Fin n) 𝕜}
@@ -195,9 +221,8 @@ product space over $\mathbb{K}$, where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{
 all $x, y \in E$,
 $$|(x, y)| \le \|x\| \|y\|.$$
 
-The book writes the right-hand side as $(x, x)^{1/2} (y, y)^{1/2}$, which is $\|x\| \|y\|$ by
-(1.3). The statement is for an arbitrary inner product space, which is the generality of the
-book: an arbitrary inner product on a complex vector space. -/
+**Generalization.** The book states the inequality for complex inner products. This theorem
+also covers real inner products, with the same induced norm. -/
 theorem equation_1_2 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] (x y : E) :
     ‖(inner 𝕜 y x : 𝕜)‖ ≤ ‖x‖ * ‖y‖ := by
   rw [mul_comm]
@@ -207,6 +232,9 @@ theorem equation_1_2 {E : Type*} [NormedAddCommGroup E] [InnerProductSpace 𝕜 
 $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. For the Euclidean inner product $(x, y) = y^H x$
 and all $x, y \in \mathbb{K}^n$,
 $$(Ax, y) = (x, A^H y).$$
+
+**Generalization.** The book states the identity for complex matrices. The declaration includes
+real matrices, for which the conjugate transpose is the transpose.
 
 The formula $(x, y) = y^H x$ is `EuclideanSpace.inner_eq_star_dotProduct`. The book's $(x, y)$
 is `inner 𝕜 y x`. -/
@@ -228,6 +256,9 @@ $\|A^T\|_\infty$:
 $$\|A\|_\infty = \max_i \sum_j |a_{ij}|, \qquad \|A\|_1 = \|A^T\|_\infty.$$
 Together, $\|A\|_1$ is the largest absolute column sum. For $n = 0$ the maximum is $0$.
 
+**Reading.** The book states both formulas for rectangular matrices. The declaration specializes
+them to square matrices and takes an empty maximum to be zero.
+
 The norm $\|\cdot\|_\infty$ is the scoped instance `Matrix.Norms.Operator`, and $\|\cdot\|_1$ is
 `Matrix.lpOpNorm 1`. The proof uses the column-sum formula
 `Matrix.lpOpNorm_one_eq_sup_sum_norm`. -/
@@ -247,6 +278,9 @@ open scoped Matrix.Norms.L2Operator
 $$\rho(A^H A) = \|A\|_2^2 = \rho(A A^H).$$
 The square roots of the eigenvalues of $A^H A$ are the singular values of $A$, so $\|A\|_2$ is
 the largest singular value of $A$.
+
+**Reading.** The book allows distinct row and column dimensions. The declaration uses a square
+matrix, so both products have the same dimension.
 
 The norm $\|\cdot\|_2$ is the scoped instance `Matrix.Norms.L2Operator`, and $\rho$ is Mathlib's
 `spectralRadius ℂ`, with values in $[0, \infty]$. The matrices $A^H A$ and $A A^H$ are
@@ -286,6 +320,9 @@ open scoped Matrix.Norms.Frobenius
 where $\mathbb{K}$ is $\mathbb{R}$ or $\mathbb{C}$. The Frobenius norm satisfies
 $$\|A\|_F^2 = \sum_{i,j} |a_{ij}|^2, \qquad \|A\|_F^2 = \operatorname{tr}(A^H A) =
   \operatorname{tr}(A A^H).$$
+
+**Reading.** The source defines and evaluates the Frobenius norm for rectangular matrices. The
+declaration states those identities for square matrices.
 
 The norm $\|\cdot\|_F$ is the scoped instance `Matrix.Norms.Frobenius`, and the two trace
 identities are stated in $\mathbb{K}$. The Frobenius norm is consistent (Problem P-1.5) by
@@ -383,6 +420,9 @@ $$\mathbb{K}^n = \operatorname{Ran}(A) \oplus \operatorname{Null}(A^H) = \operat
   \oplus \operatorname{Null}(A).$$
 
 **Typo.** The book prints $\operatorname{Null}(A^T)$ in a complex setting, where $A^H$ is meant.
+
+**Reading.** The book gives the two decompositions in the row and column ambient spaces of a
+rectangular matrix. The declaration uses square matrices, so these spaces have the same dimension.
 
 The direct sums are `IsCompl` of subspaces. The kernel of the adjoint is the orthogonal
 complement of the range, and a subspace and its orthogonal complement are complementary. -/

@@ -96,6 +96,21 @@ Lanczos polynomials, and the quadrature rules that the Lanczos process computes)
 
 ## Deviations from the source
 
+* **Equations (10.2.7)–(10.2.10), quadrature existence** (reading). The weight hypothesis
+  requires finite moments of every order and infinite support. The Gauss existence theorem gives
+  distinct real nodes but does not state their location in a prescribed interval. See
+  `GolubVanLoan.Chapter10.equation_10_2_7`.
+* **Gauss–Radau and Gauss–Lobatto remainders, §10.2.2** (specialization). The mean-value point
+  is asserted in $[a,b]$. The printed statement places it in $(a,b)$. See
+  `GolubVanLoan.Chapter10.gaussRadau_remainder` and
+  `GolubVanLoan.Chapter10.gaussLobatto_remainder`.
+* **Fact 1, §10.2.3** (correction). The constant polynomial is normalized by the reciprocal
+  square root of the total mass. The printed $p_0=1$ requires a unit-mass weight. See
+  `GolubVanLoan.Chapter10.orthonormalPolynomials_threeTerm`.
+* **§10.2.5, Radau exactness by Lanczos** (generalization). The special node for polynomial
+  exactness need not be a spectral endpoint. The shifted tridiagonal matrix must be invertible
+  and the Krylov prefix must have full dimension. See
+  `GolubVanLoan.Chapter10.gaussRadau_via_lanczos`.
 * **Remainder of the Gauss rule, §10.2.2** (typo). The source prints $(2n)!$; the rule has $k$ nodes
   and the factor is $(2k)!$. See `GolubVanLoan.Chapter10.gauss_remainder`.
 * **Remainder of the Gauss–Lobatto rule, §10.2.2** (typo). The source's list prints this remainder
@@ -176,7 +191,11 @@ $$\int p \, d\mu = \sum_{i=1}^k w_i p(t_i)$$
 for every polynomial $p$ of degree at most $2k - 1$.
 
 The weight hypothesis is `OrthogonalPolynomial.IsWeight μ`. The proof specializes
-`Quadrature.exists_gauss`. -/
+`Quadrature.exists_gauss`.
+
+**Scope.** The theorem uses a measure with all moments finite and no finite support. It gives
+distinct real nodes and positive weights. The statement has no interval parameter for locating
+those nodes. -/
 theorem equation_10_2_7 (hw : IsWeight μ) (k : ℕ) :
     ∃ t w : Fin k → ℝ, Function.Injective t ∧ (∀ i, 0 < w i) ∧
       ∀ p : ℝ[X], p.degree < ((2 * k : ℕ) : WithBot ℕ) →
@@ -191,7 +210,11 @@ that
 $$\int p \, d\mu = w_0 p(a) + \sum_{i=1}^k w_i p(t_i)$$
 for every polynomial $p$ of degree at most $2k$.
 
-The prescribed node is the first node. The proof specializes `Quadrature.exists_gaussRadau`. -/
+The prescribed node is the first node. The proof specializes `Quadrature.exists_gaussRadau`.
+
+**Reading.** Explicit support and infinite-support weight conditions, prescribed left endpoint,
+distinct nodes and positive weights.
+-/
 theorem equation_10_2_8 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 1) → ℝ, Function.Injective t ∧ t 0 = a ∧
       (∀ i, i ≠ 0 → t i ∈ Set.Ioc a b) ∧ (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w t (2 * k) := by
@@ -209,7 +232,11 @@ for every polynomial $p$ of degree at most $2k$.
 
 The prescribed node is the first node. The proof specializes
 `Quadrature.exists_gaussRadau_right`, which is the rule of (10.2.8) for the reflected weight,
-transported back. -/
+transported back.
+
+**Reading.** Explicit support and infinite-support weight conditions, prescribed right endpoint and
+positive weights.
+-/
 theorem equation_10_2_9 (hw : IsWeight μ) {a b : ℝ} (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 1) → ℝ, Function.Injective t ∧ t 0 = b ∧
       (∀ i, i ≠ 0 → t i ∈ Set.Ico a b) ∧ (∀ i, 0 < w i) ∧ IsExactOnMeasure μ w t (2 * k) := by
@@ -228,7 +255,11 @@ for every polynomial $p$ of degree at most $2k + 1$.
 Since the nodes are distinct, the $k$ interior nodes lie in $(a, b)$. The proof specializes
 `Quadrature.exists_gaussLobatto` on $[-1, 1]$, with $k + 1$ in place of its $n$, for the image
 of $\mu$ under the affine map from $[a, b]$ onto $[-1, 1]$, and transports the rule back
-(`Quadrature.isExactOnMeasure_map_affine`). -/
+(`Quadrature.isExactOnMeasure_map_affine`).
+
+**Reading.** Explicit strict endpoint separation and weight conditions, distinct nodes and positive
+weights.
+-/
 theorem equation_10_2_10 (hw : IsWeight μ) {a b : ℝ} (hab : a < b)
     (hsupp : μ (Set.Icc a b)ᶜ = 0) (k : ℕ) :
     ∃ t w : Fin (k + 2) → ℝ, Function.Injective t ∧ t 0 = a ∧ t (Fin.last (k + 1)) = b ∧
@@ -336,7 +367,10 @@ The nodal polynomial $(\lambda - t_0) \prod_{i \ge 1} (\lambda - t_i)^2$ has con
 $[a, b]$. The source has $a < \eta < b$. The statement gives only $\eta \in [a, b]$, which is
 what the mean value argument of the backbone gives. The proof specializes
 `Quadrature.exists_error_eq_of_hermite`, with multiplicity one at the prescribed node and two at
-the other nodes. -/
+the other nodes.
+
+**Reading.** Joint endpoint statement allows mean-value point at an endpoint.
+-/
 theorem gaussRadau_remainder (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ} {t w : Fin (k + 1) → ℝ}
     (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b) (h0 : t 0 = a ∨ t 0 = b)
     (hex : IsExactOnMeasure μ w t (2 * k)) {f : ℝ → ℝ}
@@ -446,7 +480,11 @@ Gauss–Radau rule (10.2.8).
 
 The derivatives of $\lambda^{-2}$ alternate in sign on $(0, \infty)$: $f^{(2k)} > 0$ and
 $f^{(2k+1)} < 0$. The proof specializes `Quadrature.gauss_le_integral_le_gaussRadau`, in which
-the rules are given by their exactness. -/
+the rules are given by their exactness.
+
+**Reading.** Same two-sided bound for exact rules with explicit support and nodes; only lower
+endpoint needs strict positivity.
+-/
 theorem gauss_le_integral_le_gaussRadau (ha : 0 < a) (hsupp : μ (Set.Icc a b)ᶜ = 0) {k : ℕ}
     (hk : 1 ≤ k) {t w : Fin k → ℝ} (ht : Function.Injective t) (hmem : ∀ i, t i ∈ Set.Icc a b)
     (hex : IsExactOnMeasure μ w t (2 * k - 1)) {t' w' : Fin (k + 1) → ℝ}
@@ -558,7 +596,11 @@ $\lambda_\mu \le \lambda < \lambda_{\mu-1}$, and $w(\lambda) = w_1$ for $\lambda
 The source also has $w_{N+1} \ge 0$. In Lean $N$ is `n + 1`: the points are
 `lam : Fin (n + 1) → ℝ`, with `lam 0` the largest, and the values are `w : Fin (n + 2) → ℝ`. The
 jump $\max(w_\mu - w_{\mu+1}, 0)$ is `Real.toNNReal`, and it is $w_\mu - w_{\mu+1}$ when $w$ is
-decreasing. -/
+decreasing.
+
+**Reading.** Same right-continuous step for antitone weights, with nonnegative jump clipping on
+other data.
+-/
 noncomputable def stepWeight {n : ℕ} (lam : Fin (n + 1) → ℝ) (w : Fin (n + 2) → ℝ) :
     StieltjesFunction ℝ :=
   StieltjesFunction.const ℝ (w (Fin.last (n + 1))) +
@@ -572,7 +614,11 @@ $$\int_a^b f \, dw = \sum_{\mu=1}^{N} (w_\mu - w_{\mu+1}) f(\lambda_\mu).$$
 The integral is over the closed interval $[a, b]$, against the measure of
 `GolubVanLoan.Chapter10.stepWeight lam w`. That measure is $\sum_\mu (w_\mu - w_{\mu+1})
 \delta_{\lambda_\mu}$ (by `StieltjesFunction.measure_Ioc` on the jumps), and all its atoms lie
-in $[a, b]$. -/
+in $[a, b]$.
+
+**Reading.** Same finite sum via Lebesgue–Stieltjes measure on closed interval; valid for arbitrary
+integrand on finite atoms.
+-/
 theorem equation_10_2_3 {n : ℕ} {lam : Fin (n + 1) → ℝ} (hlam : StrictAnti lam)
     {w : Fin (n + 2) → ℝ} (hw : Antitone w) (f : ℝ → ℝ) :
     ∫ x in Set.Icc (lam (Fin.last n)) (lam 0), f x ∂(stepWeight lam w).measure =
@@ -618,7 +664,12 @@ The source writes $w_k$ for $\omega_k$. The proof specializes
 `OrthogonalPolynomial.orthonormalFamily_recurrence` and
 `OrthogonalPolynomial.eq_orthonormalFamily_or_eq_neg`. In Lean, $p_k$ is
 `OrthogonalPolynomial.orthonormalFamily μ k`, the norm of the monic polynomial of degree $k$ is
-`OrthogonalPolynomial.normOf μ k`, and `OrthogonalPolynomial.alpha μ (k - 1)` is $\omega_k$. -/
+`OrthogonalPolynomial.normOf μ k`, and `OrthogonalPolynomial.alpha μ (k - 1)` is $\omega_k$.
+
+**Correction.** The source's constant polynomial $p_0=1$ has unit norm only when the weight has
+total mass one. The normalized constant is the reciprocal square root of that mass. The all-
+degree construction assumes that the measure has all moments and is not carried by a finite
+set. -/
 theorem orthonormalPolynomials_threeTerm (hw : IsWeight μ) :
     (∀ k, (orthonormalFamily μ k).degree = k) ∧
     (∀ i j, ∫ x, (orthonormalFamily μ i).eval x * (orthonormalFamily μ j).eval x ∂μ =
@@ -662,7 +713,11 @@ the roots of the characteristic polynomial of $T_k$ are both $\{x_1, \dots, x_k\
 The Jacobi matrix is `OrthogonalPolynomial.jacobiMatrix μ k`. The source proves Fact 2 with
 Theorem 8.4.1. The proof here is the orthogonal-polynomial argument: the characteristic
 polynomial of $T_k$ is the monic $\pi_k$ (`OrthogonalPolynomial.charpoly_jacobiMatrix`), whose
-roots are real and simple (`OrthogonalPolynomial.exists_injective_family_eq_prod`). -/
+roots are real and simple (`OrthogonalPolynomial.exists_injective_family_eq_prod`).
+
+**Reading.** Same eigenvalue-root coincidence and simplicity, explicitly assumes a full all-degree
+weight.
+-/
 theorem roots_orthonormalPolynomial_eq_eigenvalues (hw : IsWeight μ) (k : ℕ) :
     ∃ x : Fin k → ℝ, Function.Injective x ∧
       (orthonormalFamily μ k).roots = Finset.univ.val.map x ∧
@@ -696,7 +751,10 @@ The eigenvectors and eigenvalues are Mathlib's `LinearMap.IsSymmetric.eigenvecto
 `LinearMap.IsSymmetric.eigenvalues` of `toEuclideanLin A`. When the eigenvalues are distinct,
 $w$ is the step weight (10.2.2) with the source's $w_\mu = [X^T u]_\mu^2 + \dots + [X^T u]_n^2$;
 this definition does not need distinct eigenvalues. Its measure is the backbone's
-`Krylov.spectralMeasure` (`GolubVanLoan.Chapter10.spectralWeight_measure`). -/
+`Krylov.spectralMeasure` (`GolubVanLoan.Chapter10.spectralWeight_measure`).
+
+**Reading.** Weighted jumps directly, merges repeated eigenvalues through sum.
+-/
 noncomputable def spectralWeight {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) : StieltjesFunction ℝ :=
   StieltjesFunction.const ℝ 0 +
@@ -795,7 +853,10 @@ where $w$ is the spectral weight of $A$ and $u$. So the Lanczos polynomials, nor
 $p_0 = 1/\|u\|$, are the orthonormal polynomials of $w$.
 
 The Lean statement is the equality of the outer terms. The proof specializes
-`Lanczos.polyInner_poly` and `Krylov.polyInner_eq_integral`. -/
+`Lanczos.polyInner_poly` and `Krylov.polyInner_eq_integral`.
+
+**Reading.** States both diagonal and off-diagonal cases only below grade with p0=1/∥u∥.
+-/
 theorem lanczosPolynomials_orthonormal {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {i j : ℕ} (hi : i < grade (toEuclideanLin A) u)
     (hj : j < grade (toEuclideanLin A) u) :
@@ -882,7 +943,10 @@ theorem lanczos_gaussRule {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
 
 /-- If $T_k - aI$ is nonsingular, then the Gauss–Radau matrix satisfies
 $\tilde T_{k+1} [x; -1] = a [x; -1]$ for $x = \beta_k (T_k - aI)^{-1} e_k$, which is empty for
-$k = 0$. -/
+$k = 0$.
+
+**Correction.** Corrected beta-index and symmetric augmentation with invertible shifted matrix.
+-/
 private theorem radauTridiag_mulVec_snoc {A : Matrix (Fin n) (Fin n) ℝ}
     (u : EuclideanSpace ℝ (Fin n)) (k : ℕ) {a : ℝ}
     (ha : IsUnit (Lanczos.tridiag (toEuclideanLin A) u k - a • 1).det) :
@@ -994,7 +1058,11 @@ for every polynomial $p$ of degree at most $2k$, where $w$ is the spectral weigh
 has the node $a$ and the exactness of the Gauss–Radau rule (10.2.8).
 
 The eigenvalues and eigenvectors are those of `Lanczos.radauTridiag_isHermitian`. The proof
-specializes `Lanczos.radau_quadrature`. -/
+specializes `Lanczos.radau_quadrature`.
+
+**Generalization.** The fixed node need not be an endpoint of a spectral enclosure for
+polynomial exactness. The shifted tridiagonal matrix must be invertible and the requested
+Krylov prefix must have full dimension. -/
 theorem gaussRadau_via_lanczos {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {k : ℕ}
     (hk : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) u (k + 1)) = k + 1) {a : ℝ}
@@ -1025,7 +1093,11 @@ $$b_k \le u^T f(A) u \le B_k.$$
 
 An example is $f(\lambda) = 1/\lambda^2$ with $0 < a$. The source does not claim that
 $B_k - b_k \to 0$, and the statement does not either. The proof specializes
-`Lanczos.gauss_le_integral_le_radau` with (10.2.6). -/
+`Lanczos.gauss_le_integral_le_radau` with (10.2.6).
+
+**Reading.** Explicit smoothness and derivative bounds with full finite prefix and shifted
+invertibility; finite numeric bounds, no adaptive termination result.
+-/
 theorem lanczos_quadrature_bounds {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (u : EuclideanSpace ℝ (Fin n)) {k : ℕ} (hk0 : 0 < k)
     (hk : Module.finrank ℝ (Krylov.subspace (toEuclideanLin A) u (k + 1)) = k + 1) {a b : ℝ}

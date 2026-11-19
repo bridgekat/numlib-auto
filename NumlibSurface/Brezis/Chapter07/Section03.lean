@@ -54,6 +54,10 @@ uniqueness of Theorem 7.4 transfers the result to every solution $u$.
 
 ## Deviations from the source
 
+* **Definition of the domains of powers** (generalization). The recursion applies to arbitrary
+  partially defined linear operators on real inner product spaces, and the graph-norm formulas
+  include $k=0,1$. See `Brezis.Chapter07.domainPow`, `Brezis.Chapter07.mem_domainPow_succ_iff`
+  and `Brezis.Chapter07.domainPow_hilbert`.
 * **Theorem 7.5** (generalization). The source states the theorem for $k \ge 2$. It holds for every
   $k$. See `Brezis.Chapter07.theorem_7_5`.
 -/
@@ -76,7 +80,10 @@ In particular $D(A^1) = D(A)$, and for $k \ge 2$ this is the source's definition
 \in D(A^{k-1}) : Av \in D(A^{k-1})\}$.
 
 As a submodule of $H$, the second condition is the image under the inclusion $D(A) \subseteq H$
-of the preimage of $D(A^k)$ under $A$. -/
+of the preimage of $D(A^k)$ under $A$.
+
+**Generalization.** The recursion applies to arbitrary partially defined linear operators on
+real inner product spaces. The domain requirement $v\in D(A)$ is explicit in each step. -/
 def domainPow (A : H →ₗ.[ℝ] H) : ℕ → Submodule ℝ H
   | 0 => ⊤
   | k + 1 => domainPow A k ⊓ (Submodule.comap A.toFun (domainPow A k)).map A.domain.subtype
@@ -89,7 +96,10 @@ theorem domainPow_zero : domainPow A 0 = ⊤ :=
   rfl
 
 /-- A vector $v$ lies in $D(A^{k+1})$ if and only if $v \in D(A^k)$, $v \in D(A)$ and
-$Av \in D(A^k)$. -/
+$Av \in D(A^k)$.
+
+**Generalization.** The membership recursion includes $k=0$ and applies to arbitrary partially
+defined linear operators on real inner product spaces. -/
 theorem mem_domainPow_succ_iff {k : ℕ} {v : H} :
     v ∈ domainPow A (k + 1) ↔
       v ∈ domainPow A k ∧ ∃ h : v ∈ A.domain, A ⟨v, h⟩ ∈ domainPow A k := by
@@ -143,7 +153,9 @@ $$(u, v)_{D(A^k)} = \sum_{j=0}^k (A^j u, A^j v), \qquad |u|_{D(A^k)} = \Big(\sum
 The source says "it is easily seen" that $D(A^k)$ is a Hilbert space. The space is the
 backbone's `LinearPMap.PowDomain A k` of tuples $(u, Au, \dots, A^k u)$, whose first coordinates
 form $D(A^k)$ by `Brezis.Chapter07.mem_domainPow_iff`; $A^j u$ is the coordinate
-`LinearPMap.PowDomain.applyL A k j`. The completeness holds for every closed operator $A$. -/
+`LinearPMap.PowDomain.applyL A k j`. The completeness holds for every closed operator $A$.
+
+**Generalization.** The theorem includes $k=0,1$. -/
 theorem domainPow_hilbert [CompleteSpace H] (hA : IsMaximalMonotone A) (k : ℕ) :
     CompleteSpace (A.PowDomain k) ∧
       (∀ x y : A.PowDomain k, ⟪x, y⟫_ℝ = ∑ j, ⟪applyL A k j x, applyL A k j y⟫_ℝ) ∧

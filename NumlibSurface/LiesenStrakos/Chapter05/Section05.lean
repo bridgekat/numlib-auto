@@ -20,6 +20,8 @@ Chebyshev residual polynomial suited to the spectral interval of a positive defi
 
 ## Deviations from the source
 
+* **Sections 5.5.1–5.5.2** (generalization). Rates use total logarithms and powers. The
+  iteration formulas accept enclosing intervals and the equal-endpoint case.
 * **Theorem 5.5.1** (generalization). The spectral endpoints may be any positive bounds on the
   quadratic form, and the operator need not be finite dimensional.
 -/
@@ -31,21 +33,30 @@ namespace LiesenStrakos.Chapter05
 /-- **Equation (5.5.1)** of [liesen2013krylov]. Given the true solution $x$ and approximations
 $x_0$ and $x_n$, the **average reduction factor** at step $n$ is
 $(\|x-x_n\|/\|x-x_0\|)^{1/n}$. Lean evaluates this as $1$ for $n=0$. For a zero initial error and
-$n>0$, Lean evaluates the ratio as $0$. -/
+$n>0$, Lean evaluates the ratio as $0$.
+
+**Generalization.** The expression uses a seminormed group and total division, including at
+step zero or for a zero initial error. -/
 noncomputable def stationaryErrorReductionFactor {E : Type*} [SeminormedAddCommGroup E]
     (x x₀ xn : E) (n : ℕ) : ℝ :=
   (‖x - xn‖ / ‖x - x₀‖) ^ (1 / (n : ℝ))
 
 /-- **Section 5.5.1** of [liesen2013krylov]. For a continuous linear iteration operator $M$ on
 an inner product space over $\mathbb R$ or $\mathbb C$, the **average rate** after $n$ iterations
-is $-n^{-1}\log\|M^n\|$. The Lean expression is $0$ if $n=0$ or $\|M^n\|=0$. -/
+is $-n^{-1}\log\|M^n\|$. The Lean expression is $0$ if $n=0$ or $\|M^n\|=0$.
+
+**Generalization.** The definition uses the total logarithm and is defined at all operator
+powers and indices. The source introduces the rate for contractive powers. -/
 noncomputable abbrev stationaryAverageConvergenceRate {𝕜 E : Type*} [RCLike 𝕜]
     [NormedAddCommGroup E] [InnerProductSpace 𝕜 E] (M : E →L[𝕜] E) (n : ℕ) : ℝ :=
   Stationary.averageConvergenceRate M n
 
 /-- **Section 5.5.1** of [liesen2013krylov]. For a complex continuous linear iteration operator
 $M$, the **asymptotic rate of convergence** is $-\log\rho(M)$, where $\rho$ is the spectral radius.
-The Lean expression is $0$ at $\rho(M)=0$. -/
+The Lean expression is $0$ at $\rho(M)=0$.
+
+**Generalization.** The logarithmic expression uses the spectral radius of a bounded operator.
+At radius zero the total logarithm yields zero. -/
 noncomputable abbrev stationaryAsymptoticConvergenceRate {E : Type*}
     [NormedAddCommGroup E] [NormedSpace ℂ E] (M : E →L[ℂ] E) : ℝ :=
   Stationary.asymptoticConvergenceRate M
@@ -54,7 +65,10 @@ variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- **Section 5.5.2** of [liesen2013krylov]. **Stationary Richardson iteration** with initial
 approximation $x_0$ uses the constant step size $1/((\alpha+\beta)/2)$ for spectral endpoints
-$\alpha,\beta$. At a zero midpoint the step size is $0$. -/
+$\alpha,\beta$. At a zero midpoint the step size is $0$.
+
+**Generalization.** The midpoint update accepts arbitrary endpoints. The source uses distinct
+positive extreme eigenvalues. -/
 noncomputable abbrev stationaryRichardson (A : E →ₗ[ℝ] E) (b x₀ : E)
     (α β : ℝ) (n : ℕ) : E :=
   Richardson.iterate A 1 (fun _ => ((α + β) / 2)⁻¹) b x₀ n
@@ -62,7 +76,10 @@ noncomputable abbrev stationaryRichardson (A : E →ₗ[ℝ] E) (b x₀ : E)
 /-- **Section 5.5.2** of [liesen2013krylov]. The **Chebyshev semi-iterative approximation**
 starts at $x_0$ and uses the Chebyshev recurrence for a spectral interval $[\alpha,\beta]$.
 For a singleton interval, its positive-index approximation is
-$x_0+\alpha^{-1}(b-Ax_0)$. This equals the solution for a positive scalar operator. -/
+$x_0+\alpha^{-1}(b-Ax_0)$. This equals the solution for a positive scalar operator.
+
+**Generalization.** The recurrence uses enclosing endpoints, and an equal-endpoint interval is
+handled by one reciprocal-step update. -/
 noncomputable def chebyshevSemiIterate (A : E →ₗ[ℝ] E) (b x₀ : E) (α β : ℝ) (n : ℕ) : E :=
   if n = 0 then x₀
   else if α = β then x₀ + α⁻¹ • (b - A x₀)

@@ -14,9 +14,16 @@ gives an obstruction to short recurrences, including the sharp obstruction
 of Theorem 4.7.1 for $s=2$. The general deduction uses the sharp harmonic
 root bound as a hypothesis.
 
+## Deviations from the source
+
+* **Theorem 4.7.1** (reading). The unconditional result covers $s=2$ over the complex
+  numbers. The general bound assumes the sharp harmonic root bound. Both statements
+  deduce diagonalizability from the recurrence. See `LiesenStrakos.theorem_4_7_1_two` and
+  `LiesenStrakos.theorem_4_7_1_of_harmonic_root_bound`.
+
 ## Not formalized
 
-* The $3s-2$ bound for the harmonic equation when $s>2$ remains open.
+* The sharp $3s-2$ root bound for the harmonic equation is used as a hypothesis when $s>2$.
 -/
 
 open Matrix Polynomial
@@ -108,7 +115,10 @@ private theorem no_optimalWeightedRecurrence_of_rootBound {A : Matrix n n ℂ}
 /-- The square-degree obstruction in §4.7 of [liesen2013krylov]. If the
 noncollinear spectrum has minimal-polynomial degree greater than $s^2$,
 then no positive definite metric admits an optimal recurrence of length
-at most $s+2$. -/
+at most $s+2$.
+
+**Reading.** The threshold is $s^2$, which can exceed the sharp $3s-2$ threshold in the source.
+Diagonalizability is a consequence of the assumed recurrence in the contradiction proof. -/
 theorem no_optimalWeightedRecurrence_of_squareDegree {A : Matrix n n ℂ}
     {s : ℕ} (hs : 1 < s) (hdegree : s ^ 2 < (minpoly ℂ A).natDegree)
     (hline : ¬ ∃ z w : ℂ, w ≠ 0 ∧
@@ -127,8 +137,11 @@ theorem no_optimalWeightedRecurrence_of_squareDegree {A : Matrix n n ℂ}
 
 /-- **Theorem 4.7.1** of [liesen2013krylov] for $s=2$. If the spectrum is
 noncollinear and the minimal-polynomial degree exceeds four, no positive
-definite metric admits an optimal recurrence of four terms or fewer. The
-recurrence characterization supplies the diagonalization used in the proof. -/
+definite metric admits an optimal recurrence of four terms or fewer.
+
+**Reading.** The source gives $d_{\min}(A)>3s-2$ for all $s>1$ and assumes that $A$ is
+diagonalizable. Here $s=2$ makes the square-degree bound sufficient, and the short
+recurrence characterization supplies the diagonalization. -/
 theorem theorem_4_7_1_two {A : Matrix n n ℂ}
     (hdegree : 4 < (minpoly ℂ A).natDegree)
     (hline : ¬ ∃ z w : ℂ, w ≠ 0 ∧
@@ -140,7 +153,11 @@ theorem theorem_4_7_1_two {A : Matrix n n ℂ}
 /-- Conditional deduction of **Theorem 4.7.1** of [liesen2013krylov] from the
 sharp bound on the number of distinct roots of $p(z)=\overline z$. If
 $d_{\min}(A)>3s-2$ and the spectrum is noncollinear, no positive definite
-metric admits an optimal recurrence of length at most $s+2$. -/
+metric admits an optimal recurrence of length at most $s+2$.
+
+**Reading.** The source cites the harmonic root bound to give an unconditional result.
+Here that bound is an explicit hypothesis, and the short recurrence characterization
+supplies the diagonalization of the complex matrix. -/
 theorem theorem_4_7_1_of_harmonic_root_bound
     (hroot : ∀ p : ℂ[X], 1 < p.natDegree →
       {z : ℂ | p.eval z = star z}.ncard ≤ 3 * p.natDegree - 2)

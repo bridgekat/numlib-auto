@@ -111,6 +111,24 @@ The proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.LeastSqu
 
 ## Deviations from the source
 
+* **Equation (6.1.1)** (generalization). The weighted objective and its minimizers allow zero
+  weights. See `GolubVanLoan.Chapter06.IsWeightedLeastSquaresSolution` and
+  `GolubVanLoan.Chapter06.equation_6_1_1`.
+* **After (6.1.4)** (typo). The positive definite weighted Gram matrix uses the squared weight
+  matrix $D(\delta)^2$, as in the derivative formula. See
+  `GolubVanLoan.Chapter06.equation_6_1_4`.
+* **§6.1.4, ridge limits and monotonicity** (reading). The positive-parameter limit selects the
+  minimum-norm solution. The norm is nonincreasing, with strict decrease when $A^Tb$ is nonzero.
+  See `GolubVanLoan.Chapter06.tendsto_ridge_leastSquares` and
+  `GolubVanLoan.Chapter06.norm_ridge_antitoneOn`.
+* **§6.1.4, cross-validation** (reading). The sum accepts signed weights. Equation (6.1.18) uses
+  the full ridge residual for both the numerator and derivative, with (6.1.17) giving the
+  quotient as the leave-one-out residual. See `GolubVanLoan.Chapter06.crossValidationError` and
+  `GolubVanLoan.Chapter06.equation_6_1_18`.
+* **Theorem 6.1.1 and §6.1.6** (reading). The full GSVD theorem includes the normalization from
+  the CS construction. The generalized eigenvalue relation is homogeneous, with a finite ratio
+  when $\beta_i$ is nonzero. See `GolubVanLoan.Chapter06.theorem_6_1_1_b` and
+  `GolubVanLoan.Chapter06.gsvd_generalizedEigen`.
 * **Remark after (6.1.4)** (correction). The source derives the monotonicity of $|r_k(\delta)|$ from
   $\frac{d}{d\delta} [r_k(\delta)^2] < 0$, which fails when $a_k = 0$ or $r_k(\delta) = 0$. The
   library states the non-strict monotonicity. See
@@ -159,12 +177,18 @@ solution of $DAx = Db$. As the source notes, "if $x_D$ minimizes this summation,
 minimizes $\|\tilde A x - \tilde b\|_2$ where $\tilde A = DA$ and $\tilde b = Db$".
 
 The definition is `Matrix.IsLeastSquaresSolution` for `diagonal d * A` and $Db$. It puts no
-condition on the weights. -/
+condition on the weights.
+
+**Reading.** Least-squares minimizer of DA and Db, also allows singular D.
+-/
 def IsWeightedLeastSquaresSolution (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   IsLeastSquaresSolution (diagonal d * A) (toEuclideanLin (diagonal d) b) x
 
-/-- The weighted objective in coordinates: $\|D(Ax - b)\|_2^2 = \sum_i d_i^2 (a_i^T x - b_i)^2$. -/
+/-- The weighted objective in coordinates: $\|D(Ax - b)\|_2^2 = \sum_i d_i^2 (a_i^T x - b_i)^2$.
+
+**Reading.** Sum of squared weighted residuals holds for all weights including zeros.
+-/
 private theorem norm_sq_weighted_eq (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     ‖toEuclideanLin (diagonal d * A) x - toEuclideanLin (diagonal d) b‖ ^ 2 =
@@ -182,7 +206,10 @@ $D = \operatorname{diag}(d_1, \dots, d_m)$. Then
 $$\|D(Ax - b)\|_2^2 = \sum_{i=1}^{m} d_i^2 (a_i^T x - b_i)^2,$$
 and $x$ is a weighted least-squares solution if and only if it minimizes this sum.
 
-The row $a_i^T$ is `A i`. -/
+The row $a_i^T$ is `A i`.
+
+**Generalization.** The objective identity and minimizer equivalence allow zero weights. The
+source introduces the problem with nonsingular $D$. -/
 theorem equation_6_1_1 (d : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     (‖toEuclideanLin (diagonal d * A) x - toEuclideanLin (diagonal d) b‖ ^ 2 =
@@ -304,7 +331,10 @@ $$\frac{d}{d\delta} r_k(\delta) = -d_k^2 \left(a_k^T (A^T D(\delta)^2 A)^{-1} a_
 
 The residual $r_k(\delta)$ is `Matrix.weightedResidual A b w k` at the weights $w$ on the
 diagonal of $D(\delta)^2$: $w_i = d_i^2$ for $i \neq k$ and $w_k = d_k^2 (1 + \delta)$. Its
-weighted solution is $x(\delta) = (A^T D(\delta)^2 A)^{-1} A^T D(\delta)^2 b$. -/
+weighted solution is $x(\delta) = (A^T D(\delta)^2 A)^{-1} A^T D(\delta)^2 b$.
+
+**Typo.** After the derivative display the source invokes positive definiteness with a single
+factor of $D(\delta)$. The weighted Gram matrix throughout the calculation uses $D(\delta)^2$. -/
 theorem equation_6_1_4 {A : Matrix (Fin m) (Fin n) ℝ} (hA : LinearIndependent ℝ Aᵀ)
     {d : Fin m → ℝ} (hd : ∀ i, d i ≠ 0) (b : Fin m → ℝ) (k : Fin m) {δ : ℝ} (hδ : -1 < δ) :
     HasDerivAt
@@ -559,7 +589,10 @@ theorem equation_6_1_14 {A : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fi
 /-- **§6.1.4** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$,
 the ridge solution $x(\lambda)$ tends to the minimum-norm least-squares solution
 $x_{LS} = A^+ b$ as $\lambda \to 0^+$: "by inspection, it is clear that
-$\lim_{\lambda \to 0} x(\lambda) = x_{LS}$". -/
+$\lim_{\lambda \to 0} x(\lambda) = x_{LS}$".
+
+**Reading.** The limit is taken from positive ridge parameters and is the minimum-norm least-
+squares solution, which also specifies the rank-deficient case. -/
 theorem tendsto_ridge_leastSquares (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) :
     Tendsto (fun μ => toEuclideanLin (A.tikhonov μ) b) (𝓝[>] 0)
       (𝓝 (toEuclideanLin A.pinv b)) := by
@@ -571,7 +604,10 @@ theorem tendsto_ridge_leastSquares (A : Matrix (Fin m) (Fin n) ℝ) (b : Euclide
 /-- **§6.1.4** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$ and $b \in \mathbb{R}^m$,
 "$\|x(\lambda)\|_2$ is a monotone decreasing function of $\lambda$": the map
 $\lambda \mapsto \|x(\lambda)\|_2$ is nonincreasing on $\lambda > 0$, and it is strictly
-decreasing there if $A^T b \neq 0$. -/
+decreasing there if $A^T b \neq 0$.
+
+**Reading.** The norm is nonincreasing for arbitrary data. It is strictly decreasing when $A^T
+b\ne 0$, and is identically zero when $A^T b=0$. -/
 theorem norm_ridge_antitoneOn (A : Matrix (Fin m) (Fin n) ℝ) (b : EuclideanSpace ℝ (Fin m)) :
     AntitoneOn (fun μ => ‖toEuclideanLin (A.tikhonov μ) b‖) (Set.Ioi 0) ∧
       (toEuclideanLin Aᵀ b ≠ 0 →
@@ -646,7 +682,10 @@ $w \in \mathbb{R}^m$, $A \in \mathbb{R}^{m \times n}$, $b \in \mathbb{R}^m$ and
 $\lambda \in \mathbb{R}$. The **cross-validation weighted square error** is
 $$C(\lambda) = \frac{1}{m} \sum_{k=1}^{m} w_k (a_k^T x_k(\lambda) - b_k)^2.$$
 In the source, "$w_1, \dots, w_m$ are nonnegative weights"; the definition does not need this
-condition. -/
+condition.
+
+**Reading.** Same weighted mean allows signed weights.
+-/
 noncomputable def crossValidationError (w : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ)
     (b : Fin m → ℝ) (μ : ℝ) : ℝ :=
   (1 / m : ℝ) * ∑ k, w k * (A k ⬝ᵥ ridgeDeleted A b μ k - b k) ^ 2
@@ -679,7 +718,11 @@ $$C(\lambda) = \frac{1}{m} \sum_{k=1}^{m} w_k \left(\frac{r_k}{\partial r_k / \p
   b_k}\right)^2.$$
 
 The partial derivative is the derivative at $t = b_k$ of the $k$-th entry of $(I - H) b'$, where
-$b'$ is $b$ with its $k$-th entry replaced by $t$. -/
+$b'$ is $b$ with its $k$-th entry replaced by $t$.
+
+**Reading.** The residual in the numerator and derivative here is the full ridge residual. The
+source also uses $r_k$ in (6.1.17) for the leave-one-out residual, which already equals the
+quotient. -/
 theorem equation_6_1_18 (w : Fin m → ℝ) (A : Matrix (Fin m) (Fin n) ℝ) (b : Fin m → ℝ) {μ : ℝ}
     (hμ : 0 < μ) :
     (∀ k, HasDerivAt
@@ -880,7 +923,10 @@ $\alpha_i \ge 0$ and $\beta_i \ge 0$ for all $i$, and $\alpha_i^2 + \beta_i^2 = 
 $p < i \le r$.
 
 The pairs $(\alpha_i, \beta_i)$ for $p < i \le r$ are the cosine–sine pairs of the CS
-decomposition (6.1.25) in the proof. The conclusion is the full specification `Matrix.IsGSVD`. -/
+decomposition (6.1.25) in the proof. The conclusion is the full specification `Matrix.IsGSVD`.
+
+**Reading.** Fully normalized GSVD adds active alpha-beta unit sum of squares.
+-/
 theorem theorem_6_1_1_b {m₁ m₂ n₁ : ℕ} (hmn : n₁ ≤ m₁) (A : Matrix (Fin m₁) (Fin n₁) ℝ)
     (B : Matrix (Fin m₂) (Fin n₁) ℝ) : ∃ U₁ U₂ X α β, IsGSVD A B U₁ U₂ X α β :=
   exists_isGSVD hmn A B
@@ -909,7 +955,10 @@ $A^T A x = \mu^2 B^T B x$": let $U_1^T A X = D_A$, $U_2^T B X = D_B$ be a GSVD o
 $m_1 \ge n_1$, and let $x_i$ be the $i$-th column of $X$. Then
 $$\beta_i^2 A^T A x_i = \alpha_i^2 B^T B x_i,$$
 and if $\beta_i \neq 0$, then $A^T A x_i = (\alpha_i / \beta_i)^2 B^T B x_i$, so $x_i$ is a
-generalized eigenvector with $\mu_i = \alpha_i / \beta_i$. -/
+generalized eigenvector with $\mu_i = \alpha_i / \beta_i$.
+
+**Reading.** The homogeneous identity allows zero $\beta_i$. The ratio gives the finite
+generalized eigenvalue only for $\beta_i\ne 0$. -/
 theorem gsvd_generalizedEigen {m₁ m₂ n₁ : ℕ} {A : Matrix (Fin m₁) (Fin n₁) ℝ}
     {B : Matrix (Fin m₂) (Fin n₁) ℝ} {U₁ : Matrix (Fin m₁) (Fin m₁) ℝ}
     {U₂ : Matrix (Fin m₂) (Fin m₂) ℝ} {X : Matrix (Fin n₁) (Fin n₁) ℝ} {α β : ℕ → ℝ}

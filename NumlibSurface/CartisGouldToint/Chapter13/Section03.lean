@@ -89,6 +89,13 @@ proofs specialize `Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqE
 
 ## Deviations from the source
 
+* **Algorithms 13.3.1 and 13.3.2, Step 3** (correction and generalization). The source permits
+  reusing the immediately preceding trial value, which may be at a different point if the trial
+  was rejected. The run instead permits reusing any prior trial value evaluated at the current
+  point that meets the required accuracy. See `Optimization.EDAStep3`.
+* **Algorithms 13.3.1 and 13.3.2** (inherited changes). The shared iteration rules include the
+  TRqIDA initialization and Step 4 readings and the ARqpIDA Step 2 accuracy correction described
+  in Section 13.1.
 * **Theorem 13.3.4** (typo). The printed constants $\kappa^B_{\rm TRqEDA} = \frac{6!}{2! \, 2!} 2
   \kappa^B_{\rm TRqIDA}$ and $\kappa^C_{\rm TRqEDA} = \frac{6!}{2} 2 \kappa^C_{\rm TRqIDA}$ are
   garbled; the proof gives the factor $2$ only. See `CartisGouldToint.Chapter13.theorem_13_3_4`.
@@ -101,8 +108,9 @@ proofs specialize `Numlib.Optimization.ModelBased.HighOrder.DynamicAccuracy.TRqE
   13.1.16–13.1.17, whose hypothesis that $x_{k+1}$ is not approximately optimal does not follow from
   non-termination. The corrected argument needs $\theta < \varsigma / 2$, has $\varsigma/2 - \theta$
   in place of $1 - \theta$ and $4 \kappa_s$ in place of $3 \kappa_{\nabla,\max} \kappa_s$ in the
-  constants, and counts the successful iterations that are followed by an accuracy-improving
-  iteration; the orders in $\epsilon$ are unchanged. See `CartisGouldToint.Chapter13.lemma_13_3_7`,
+  constants. The count also includes short successful steps followed by a Step 1 pass with
+  unchanged radii but insufficient accuracy to stop. See
+  `CartisGouldToint.Chapter13.lemma_13_3_7`,
   `CartisGouldToint.Chapter13.theorem_13_3_8_i`, `CartisGouldToint.Chapter13.theorem_13_3_8_ii`.
 -/
 
@@ -144,7 +152,11 @@ and it returns $x_\epsilon = x_k$ and $\delta_\epsilon = \min(\Delta_k, \varthet
 The predicate is `Optimization.IsTRqEDARun` with the feasible set $X = \mathbb{R}^n$. The
 termination test is `Optimization.edaStopTR`, Step 3 is `Optimization.EDAStep3`, and the ratio
 is `Optimization.edaRatio`. An iteration $k$ is reached when the termination test fails at all
-iterations before $k$. -/
+iterations before $k$.
+
+**Correction and generalization.** A reused value must come from an earlier trial at the
+current point and satisfy (13.3.1). The preceding trial in the printed reuse rule may have
+been rejected, leaving its value at a different point. -/
 abbrev algorithm_13_3_1 (f : ℝⁿ → ℝ) (P : TRqIDAParams) (ε : ℕ → ℝ) (x₀ : ℝⁿ)
     (x : ℕ → ℝⁿ) (Δ : ℕ → ℝ) (h : ℕ → ℕ → ℝ) (D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ)
     (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ) (acc : ℕ → Prop) (fx fxs h₀ : ℕ → ℝ)
@@ -177,6 +189,9 @@ $$\overline{\Delta T}_{f,j_k}(x_k, s_k) \ge \frac{(\varsigma \kappa_\delta)^{q+1
 and if moreover $k \in \mathcal{S}$, then
 $$f(x_k) - f(x_{k+1}) \ge \eta_1 \frac{(\varsigma \kappa_\delta)^{q+1}}{2 \, q!}
   \epsilon_{\min}^{q+1}. \qquad (13.1.35)$$
+
+**Reading.** Same model and successful actual decreases, with any admissible kappa_Delta instead of
+the inherited explicit recipe.
 -/
 theorem lemma_13_3_2 (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_3_1 f P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
@@ -207,7 +222,11 @@ with $\kappa_{\nabla,\max} = 1$, and let $\kappa_\delta = \kappa_\Delta / 2$. Le
 iteration that a TRqEDA run reaches, at which (13.3.7) fails at every order, and let
 $$h_{k,i} \le \frac{\varsigma^{q+1} \kappa_\delta^q}{4 q!} \epsilon_{\min}^{q+1} \quad \text{for
   } i \in [1, q]. \qquad (13.1.37)$$
-Then (13.3.8) holds: the method terminates at $k$ (Step 1.4.1) and does not branch to Step 5. -/
+Then (13.3.8) holds: the method terminates at $k$ (Step 1.4.1) and does not branch to Step 5.
+
+**Reading.** Same requested-accuracy bound after all witnesses fail, with arbitrary admissible
+kappa_Delta.
+-/
 theorem lemma_13_3_3_ii (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_3_1 f P ε x₀ x Δ h D dd jk s acc fx fxs h₀ R) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) 1 κΔ)
@@ -273,7 +292,11 @@ positive accuracies. Then there is a TRqEDA run whose derivative estimates are $
 
 No smoothness of $f$ is assumed. The constructed run uses the exact function values
 $\bar f = f$, recomputed at every trial iteration, and the value accuracies $h_{k,0} = \kappa_s
-\overline{\Delta T}_{f,j_k}(x_k, s_k)$; the oracle is used only with positive accuracies. -/
+\overline{\Delta T}_{f,j_k}(x_k, s_k)$; the oracle is used only with positive accuracies.
+
+**Reading.** Realizes the repaired run for an admissible derivative oracle, with exact objective
+values as an allowed explicit-accuracy oracle.
+-/
 theorem exists_algorithm_13_3_1 {f : ℝⁿ → ℝ} {P : TRqIDAParams} {ε : ℕ → ℝ}
     (hκs : P.κs ≤ min P.η₁ (1 - P.η₂) / 4) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
     (hϑ : epsMin P.q ε ≤ P.ϑ) (x₀ : ℝⁿ) (O : ℝⁿ → (ℕ → ℝ) → FormalMultilinearSeries ℝ ℝⁿ ℝ)
@@ -328,7 +351,12 @@ $$\sum_{i=1}^j h_{k,i} \frac{(\delta^{(1)}_{k,j})^i}{i!} \le \frac12 \varsigma \
 and it returns $x_\epsilon = x_k$ and $\delta_\epsilon = \delta^{(1)}_k$.
 
 The predicate is `Optimization.IsARqpEDARun` with the feasible set $X = \mathbb{R}^n$. The
-termination test is `Optimization.edaStopAR`, and Step 1 is `Optimization.ARqpStep1`. -/
+termination test is `Optimization.edaStopAR`, and Step 1 is `Optimization.ARqpStep1`.
+
+**Correction and generalization.** Step 3 can reuse any earlier trial value evaluated at
+the current point that meets (13.3.1), as for `CartisGouldToint.Chapter13.algorithm_13_3_1`.
+Step 2 checks derivative accuracy at all orders through $p$ for both step lengths, as in
+`CartisGouldToint.Chapter13.algorithm_13_1_2`. -/
 abbrev algorithm_13_3_2 (f : ℝⁿ → ℝ) (P : ARqpIDAParams) (ε : ℕ → ℝ) (x₀ : ℝⁿ)
     (x : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ δ₁ δs : ℕ → ℕ → ℝ) (h : ℕ → ℕ → ℝ)
     (D : ℕ → FormalMultilinearSeries ℝ ℝⁿ ℝ) (dd : ℕ → ℕ → ℝⁿ) (jk : ℕ → ℕ) (s : ℕ → ℝⁿ)
@@ -371,7 +399,11 @@ iteration that an ARqpEDA run reaches, at which (13.3.15) holds at every order, 
 $$h_{k,i} \le \frac{\varsigma \kappa^{(1)}_\delta(\sigma_{\max})^q}{4 q!} \epsilon_{\min}^{q+1}
   \quad \text{for } i \in [1, p],$$
 which is (13.1.78) with $\kappa_{\nabla,\max} = 1$. Then (13.3.17) holds, and the method
-terminates at $k$. -/
+terminates at $k$.
+
+**Correction.** Makes passage of the Step 1 witness tests explicit and uses weaker radii control and
+the corrected sigma bound.
+-/
 theorem lemma_13_3_6_ii (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_3_2 f P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hrc : ∀ i, RadiiControl P ε (lipMax L P.p + P.κh) σ δs s acc i)
@@ -396,7 +428,11 @@ Step 1 at $k + 1$ provides a displacement in the ball of radius $\delta$ with a 
 decrement. Since the accuracies are inherited from iteration $k$, this gives
 $\phi^\delta_{f,j}(x_{k+1}) > \frac12 \varsigma \epsilon_j \delta^j / j! - \kappa_s \sum_\ell
 \delta^\ell / \ell! \, \|s_k\|^{p-\ell+1}$, and the model-optimality conditions (13.1.57) at
-$s_k$ give the inequality. -/
+$s_k$ give the inequality.
+
+**Correction.** Uses the failure of a Step 1 pass at unchanged radii in place of true nonoptimality,
+and the corrected coefficient.
+-/
 theorem eda_radius_inequality (hf : AssumptionD0pL f P.p L)
     (hrun : algorithm_13_3_2 f P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
     (hk : ∀ j ≤ k, ¬ edaStopAR P ε D δ₁ h dd j) (ha : ¬ acc k)
@@ -464,7 +500,11 @@ estimates.
 
 The number $M$ bounds the number of accuracy-improving iterations. The successful iterations
 that the decrease hypothesis does not cover are followed by an accuracy-improving iteration, so
-there are at most $M$ of them. -/
+there are at most $M$ of them.
+
+**Reading.** Counts from an arbitrary positive decrease for covered steps, charging the remaining
+successful steps to later accuracy improvements.
+-/
 theorem arqpEDA_complexity (hf : AssumptionD0pL f P.p L) {flow : ℝ}
     (hb : Chapter02.AssumptionBb f flow)
     (hrun : algorithm_13_3_2 f P ε x₀ x σ δ δ₁ δs h D dd jk s acc fx fxs h₀ R)
@@ -685,7 +725,11 @@ iteration.
 The constructed run uses the exact function values $\bar f = f$, recomputed at every trial
 iteration, and the value accuracies $h_{k,0} = \kappa_s \overline{\Delta T}_{f,p}(x_k, s_k)$.
 The proof specializes `CartisGouldToint.Chapter13.exists_algorithm_13_1_2` with
-$\kappa_{\nabla,i} = 1$. -/
+$\kappa_{\nabla,i} = 1$.
+
+**Reading.** Produces a run of the revised scheme for an admissible derivative oracle and certifies
+the sufficient radii control.
+-/
 theorem exists_algorithm_13_3_2 {f : ℝⁿ → ℝ} {P : ARqpIDAParams} {ε : ℕ → ℝ} {L : ℕ → ℝ}
     (hf : AssumptionD0pL f P.p L) (hκs : P.κs ≤ min P.η₁ (1 - P.η₂) / 4)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1) (hεδ : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j)

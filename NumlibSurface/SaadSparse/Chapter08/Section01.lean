@@ -47,6 +47,17 @@ use the projection specifications of `Numlib.Projection.Basic` and the condition
 
 ## Deviations from the source
 
+* **Generalization.** The first normal equations use the adjoint, with full column rank required
+  only for positive definiteness. See `SaadSparse.Chapter08.equation_8_1`,
+  `SaadSparse.Chapter08.isSymmetricCoercive_conjTranspose_mul_self`.
+* **Generalization.** Exercise P-8.10 holds for all aspect ratios and identifies the whole minimizer
+  set. See `SaadSparse.Chapter08.problem_8_10_residual`, `SaadSparse.Chapter08.problem_8_10`.
+* **Generalization.** The second normal equations require solvability of the stated equation in
+  place of full row rank. See `SaadSparse.Chapter08.equation_8_3`.
+* **Scope.** The augmented-system theorem gives the residual and least-squares equivalence, with the
+  multiplier interpretation in prose. See `SaadSparse.Chapter08.equation_8_5`.
+* **Generalization.** The squared condition-number identity uses the adjoint and holds for singular
+  square matrices with the totalized inverse. See `SaadSparse.Chapter08.equation_8_8`.
 * **Equation (8.8)** (generalization). The source states the identity for a nonsingular $A$. It
   holds for every square $A$, because Lean's inverse of a singular matrix is $0$ and both sides
   vanish. See `SaadSparse.Chapter08.equation_8_8`.
@@ -110,7 +121,12 @@ Both directions are the characterization of a best approximation from $\operator
 the orthogonality of its error, so no rank assumption on $A$ is needed. When the columns of $A$
 are independent, $A^H A$ is in addition symmetric positive definite
 (`SaadSparse.Chapter08.isSymmetricCoercive_conjTranspose_mul_self`), and the minimizer is
-unique. -/
+unique.
+
+**Generalization.** The normal equations and least-squares equivalence hold over complex scalars and
+without a rank hypothesis. Positive definiteness is stated separately under injectivity, which is
+the full-column-rank condition implicit in the book's positive-definiteness claim.
+-/
 theorem equation_8_1 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     (x : EuclideanSpace 𝕜 (Fin m)) :
     ((Aᴴ * A) ⬝ x) = (Aᴴ ⬝ b) ↔ ∀ y, ‖b - (A ⬝ x)‖ ≤ ‖b - (A ⬝ y)‖ := by
@@ -135,7 +151,12 @@ injective. Then $A^H A$ is Hermitian, and there is $c > 0$ with $$c \|x\|_2^2 \l
 equations have a unique solution. This is the hypothesis under which CGNR (Section 8.3) is well
 defined.
 
-The conclusion is `LinearMap.IsSymmetricCoercive` for the operator of $A^H A$. -/
+The conclusion is `LinearMap.IsSymmetricCoercive` for the operator of $A^H A$.
+
+**Generalization.** The normal equations and least-squares equivalence hold over complex scalars and
+without a rank hypothesis. Positive definiteness is stated separately under injectivity, which is
+the full-column-rank condition implicit in the book's positive-definiteness claim.
+-/
 theorem isSymmetricCoercive_conjTranspose_mul_self (A : Matrix (Fin n) (Fin m) 𝕜)
     (hA : Function.Injective (toEuclideanLin A)) :
     (toEuclideanLin (Aᴴ * A)).IsSymmetricCoercive where
@@ -150,7 +171,12 @@ theorem isSymmetricCoercive_conjTranspose_mul_self (A : Matrix (Fin n) (Fin m) �
 /-- **Exercise P-8.10** of [saad2003iterative], the residual. Let $A \in \mathbb{K}^{n \times m}$,
 $b \in \mathbb{K}^n$, $x_* \in \mathbb{K}^m$ and $\alpha \in \mathbb{K}$, and let
 $r = b - Ax_*$. Then the residual of $x_*$ for the right-hand side $b + \alpha r$ is
-$(b + \alpha r) - Ax_* = (1 + \alpha) r$. -/
+$(b + \alpha r) - Ax_* = (1 + \alpha) r$.
+
+**Generalization.** The result allows any aspect ratio and complex perturbation scalars. The
+minimizer theorem gives equality of the full sets of minimizers; the residual identity holds at
+every point used to define the perturbation.
+-/
 theorem problem_8_10_residual (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     (xstar : EuclideanSpace 𝕜 (Fin m)) (α : 𝕜) :
     (b + α • (b - (A ⬝ xstar))) - (A ⬝ xstar) = (1 + α) • (b - (A ⬝ xstar)) := by
@@ -167,7 +193,12 @@ minimizes the perturbed problem, and its residual is $(1 + \alpha) r$
 The reason is (8.1): $r$ is orthogonal to $\operatorname{Ran} A$, so
 $A^H (b + \alpha r) = A^H b$, and the two problems have the same normal equations. No rank
 assumption is needed. The answer is $x_*$ and not $(1 + \alpha) x_*$: a scaling of the minimizer
-would scale $Ax$, but not the component of $b$ orthogonal to $\operatorname{Ran} A$. -/
+would scale $Ax$, but not the component of $b$ orthogonal to $\operatorname{Ran} A$.
+
+**Generalization.** The result allows any aspect ratio and complex perturbation scalars. The
+minimizer theorem gives equality of the full sets of minimizers; the residual identity holds at
+every point used to define the perturbation.
+-/
 theorem problem_8_10 (A : Matrix (Fin n) (Fin m) 𝕜) (b : EuclideanSpace 𝕜 (Fin n))
     {xstar : EuclideanSpace 𝕜 (Fin m)} (hstar : ∀ y, ‖b - (A ⬝ xstar)‖ ≤ ‖b - (A ⬝ y)‖) (α : 𝕜)
     (x : EuclideanSpace 𝕜 (Fin m)) :
@@ -193,7 +224,12 @@ $b, u \in \mathbb{K}^n$ with $A A^H u = b$, and let $x = A^H u$. Then:
 
 The third clause is the form that Section 8.3 uses for CGNE. It shows that the choice of the
 solution $x_*$ does not change the minimizer. The minimization is `IsMinError xstar 0` over the
-range of $A^H$. -/
+range of $A^H$.
+
+**Generalization.** The book assumes full row rank for its underdetermined derivation. Lean only
+assumes a solution of the second normal equation, allows any aspect ratio, and states minimal norm
+among solutions explicitly. The transpose becomes the adjoint.
+-/
 theorem equation_8_3 (A : Matrix (Fin n) (Fin m) 𝕜) {b u : EuclideanSpace 𝕜 (Fin n)}
     (hu : ((A * Aᴴ) ⬝ u) = b) :
     (A ⬝ (Aᴴ ⬝ u)) = b ∧ (∀ y, (A ⬝ y) = b → ‖(Aᴴ ⬝ u)‖ ≤ ‖y‖) ∧
@@ -230,7 +266,12 @@ $y \in \mathbb{K}^m$. The second block equation $A^H r = 0$ is the constraint of
 multipliers.
 
 The block matrix is `Matrix.fromBlocks 1 A Aᴴ 0`, indexed by `Fin n ⊕ Fin m`, and the pair
-$(r, x)$ is `Sum.elim` of the two coordinate vectors. -/
+$(r, x)$ is `Sum.elim` of the two coordinate vectors.
+
+**Reading.** The block equation is characterized by the residual and least-squares optimality, using
+the complex adjoint. The interpretation of the second block as a Lagrange multiplier of the
+constrained problem is described in prose.
+-/
 theorem equation_8_5 (A : Matrix (Fin n) (Fin m) 𝕜) (b r : EuclideanSpace 𝕜 (Fin n))
     (x : EuclideanSpace 𝕜 (Fin m)) :
     Matrix.fromBlocks 1 A Aᴴ 0 *ᵥ Sum.elim (WithLp.ofLp r) (WithLp.ofLp x)
@@ -275,7 +316,11 @@ projection methods of Section 8.2, and for running CG on $A^H A$ without forming
 **Generalization.** The source states the identity for a nonsingular $A$. Here there is no
 hypothesis: for a singular $A$, Lean's inverse is $0$, so both sides are $0$.
 
-The condition number is `Matrix.condNumberLp 2`. -/
+The condition number is `Matrix.condNumberLp 2`.
+
+**Generalization.** The equation also holds for singular square matrices: Lean's singular inverse is
+zero and hence its condition number is zero. It uses the adjoint over complex scalars.
+-/
 theorem equation_8_8 (A : Matrix (Fin n) (Fin n) 𝕜) :
     Matrix.condNumberLp 2 (Aᴴ * A) = Matrix.condNumberLp 2 A ^ 2 := by
   have hinv : (Aᴴ * A)⁻¹ = A⁻¹ * (A⁻¹)ᴴ := by

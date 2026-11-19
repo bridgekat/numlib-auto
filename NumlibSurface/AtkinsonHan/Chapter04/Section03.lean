@@ -44,6 +44,11 @@ Mathlib's `ZMod.dft` in matrix form. All results of the section specialize that 
 * Indices are elements of `Fin n`, that is, $0, \dots, n - 1$, and $\omega_n^{-kj}$ is written as
   the inverse $(\omega_n^{kj})^{-1}$.
 
+## Deviations from the source
+
+* **Definition 4.3.1 and Exercise 4.3.2** (generalization). Lean also allows order zero in
+  these formulas, with vacuous entrywise assertions and empty sums.
+
 ## Not formalized
 
 * The fast Fourier transform as an algorithm, and its operation count $O(n \log n)$. This part is an
@@ -67,7 +72,10 @@ $$\hat y_k = \sum_{j=0}^{n-1} \omega_n^{-kj} y_j, \qquad 0 \le k \le n - 1.$$
 
 The matrix $F_n$ is `Matrix.dft n`. The book's $\overline{F_n}$ is its conjugate transpose
 `(Matrix.dft n)ᴴ`; the two agree because $F_n$ is symmetric. The power $\omega_n^{-kj}$ is
-written as $(\omega_n^{kj})^{-1}$. -/
+written as $(\omega_n^{kj})^{-1}$.
+
+**Generalization.** The book assumes positive order. The entrywise formulas are vacuous at
+order zero, which Lean permits here. -/
 theorem definition_4_3_1 {n : ℕ} (y : Fin n → ℂ) :
     (∀ j k : Fin n, dft n j k = Complex.exp (2 * π * I / n) ^ ((j : ℕ) * (k : ℕ))) ∧
       ∀ k : Fin n, ((dft n)ᴴ *ᵥ y) k
@@ -143,7 +151,9 @@ satisfies
 $$\sum_{k=0}^{n-1} |\hat y_k|^2 = n \sum_{j=0}^{n-1} |y_j|^2.$$
 
 So the transform is $\sqrt n$ times an isometry. This is the orthogonality of the rows of $F_n$,
-$F_n \overline{F_n}^T = nI$. -/
+$F_n \overline{F_n}^T = nI$.
+
+**Generalization.** The equality also holds at order zero, when both sums are empty. -/
 theorem exercise_4_3_2 {n : ℕ} (y : Fin n → ℂ) :
     ∑ k : Fin n, ‖((dft n)ᴴ *ᵥ y) k‖ ^ 2 = n * ∑ j : Fin n, ‖y j‖ ^ 2 := by
   have hsq : ∀ v : Fin n → ℂ, ((∑ k : Fin n, ‖v k‖ ^ 2 : ℝ) : ℂ) = star v ⬝ᵥ v := by

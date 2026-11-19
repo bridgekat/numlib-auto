@@ -181,7 +181,10 @@ theorem infSup_iff_infSupWith (hM : a.IsBoundedWith M) :
 /-- Let $U$ and $V$ be real inner product spaces, and let $a : U \times V \to \mathbb{R}$ be
 bilinear and bounded with constant $M$. If for every $v \ne 0$ there is $u$ with $a(u, v) > 0$,
 as in (8.7.3), then the bundled form is nondegenerate in the sense of the backbone's
-`SesqForm₂.IsNondegenerate`. -/
+`SesqForm₂.IsNondegenerate`.
+
+**Reading.** Uses a positive witness rather than a possibly infinite supremum.
+-/
 theorem isNondegenerate_toCLM (hM : a.IsBoundedWith M) (h : ∀ v, v ≠ 0 → ∃ u, 0 < a u v) :
     SesqForm₂.IsNondegenerate (𝕜 := ℝ) (U := U) (V := V) (a.toCLM hM) :=
   fun v hv => (exists_pos_iff_exists_ne_zero a v).mp (h v hv)

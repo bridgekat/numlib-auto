@@ -114,6 +114,29 @@ $E = \mathbb{C}$ for the test problem, with `Numlib.Analysis.LinearRecurrence` f
 
 ## Deviations from the source
 
+* **Theorem 11.3** (reading). The consistency and order equivalences concern all sufficiently
+  smooth curves. For a single exact curve such as $y=0$, a residual can vanish without the
+  coefficient conditions.
+* **Equations (11.54)–(11.57) and Definition 11.12** (reading). The normalized recurrence in
+  `equation_11_54` requires $1-h\lambda b_{-1}\ne 0$. The strong root condition permits $1$ as a
+  boundary root but does not assert its existence unless consistency supplies it. The absolute
+  root condition quantifies over positive steps.
+* **Definition 11.13, Lemma 11.3 and equation (11.65)** (reading). Stability compares orbits
+  with arbitrary initial data and does not prescribe how the unperturbed startup values were
+  obtained. The recurrence bound in Lemma 11.3 also allows a vanishing constant coefficient and
+  is stated over both $\mathbb R$ and $\mathbb C$. The estimate (11.65) keeps a uniform constant
+  existential and takes uniform bounds on the startup and forcing errors over the horizon.
+* **Theorem 11.5 and Corollary 11.1** (reading). The convergence bound is a modulus that tends
+  to zero jointly with step size and startup error. It quantifies over uniformly Lipschitz
+  fields, and Corollary 11.1 imposes continuity of the field along the solution curve. The order
+  bound gives a constant times the sum of the startup error and $h^q$.
+* **Section 11.6.4, absolute and angular stability and Property 11.2** (reading). The absolute
+  stability region excludes a zero leading coefficient and asks for decay of all orbits.
+  `thetaStable` describes the sector by $|\arg(-z)|<\vartheta$ and accepts all real angles. The
+  explicit part of Property 11.2 assumes $\sum_j a_j=1$ and $\vartheta>0$ for the angular claim.
+* **Remark 11.3** (reading). The boundedness region excludes a zero leading coefficient and
+  quantifies over all orbits. `remark_11_3_iff` proves inclusion of the decay region and the
+  equivalent root test. The source also discusses the closure of the decay region.
 * **Theorem 11.4** (generalization). The book states the theorem for consistent methods. Consistency
   is not needed. See `QuarteroniSaccoSaleri.Chapter11.theorem_11_4`.
 * **Remark 11.3, the midpoint method** (correction). The book prints $\mathcal{A}^* = \{i\alpha :
@@ -158,7 +181,11 @@ $p + 1$ steps is consistent (Definition 11.9) if and only if
 $$\sum_{j=0}^{p} a_j = 1, \qquad -\sum_{j=0}^{p} j a_j + \sum_{j=-1}^{p} b_j = 1. \qquad
   \text{(11.52)}$$
 
-The proof specializes `ODE.LinearMultistep.isConsistent_iff`. -/
+The proof specializes `ODE.LinearMultistep.isConsistent_iff`.
+
+**Reading.** The equivalence concerns the properties of the method quantified over sufficiently
+smooth curves. The coefficient conditions need not hold when the residual vanishes along one
+curve. -/
 theorem theorem_11_3 (M : LinearMultistep) :
     definition_11_9_method M ↔
       ∑ j, M.a j = 1 ∧ -∑ j : Fin (M.p + 1), (j : ℝ) * M.a j + (M.bm1 + ∑ j, M.b j) = 1 := by
@@ -172,7 +199,11 @@ $$\sum_{j=0}^{p} (-j)^i a_j + i \sum_{j=-1}^{p} (-j)^{i-1} b_j = 1, \qquad i = 2
   \qquad \text{(11.53)}$$
 
 In the Lean statement, the term of $b_{-1}$ in the second sum is $b_{-1}$ itself, since
-$(-(-1))^{i-1} = 1$. The proof specializes `ODE.LinearMultistep.hasOrder_iff`. -/
+$(-(-1))^{i-1} = 1$. The proof specializes `ODE.LinearMultistep.hasOrder_iff`.
+
+**Reading.** The equivalence concerns the properties of the method quantified over sufficiently
+smooth curves. The coefficient conditions need not hold when the residual vanishes along one
+curve. -/
 theorem theorem_11_3_order (M : LinearMultistep) {q : ℕ} (hq : 1 ≤ q) :
     definition_11_9_order_method M q ↔
       (∑ j, M.a j = 1 ∧ -∑ j : Fin (M.p + 1), (j : ℝ) * M.a j + (M.bm1 + ∑ j, M.b j) = 1) ∧
@@ -262,7 +293,10 @@ $$u_{n+1} = \sum_{j=0}^{p} a_j u_{n-j} + h\lambda \Bigl(\sum_{j=0}^{p} b_j u_{n-
 The recurrence is `ODE.LinearMultistep.toLinearRecurrence M (h * lam)`, with the coefficients
 $(a_{p-i} + h\lambda b_{p-i})/(1 - h\lambda b_{-1})$. The proof uses
 `ODE.LinearMultistep.isOrbit_testField_iff` and
-`ODE.LinearMultistep.charPoly_toLinearRecurrence`. -/
+`ODE.LinearMultistep.charPoly_toLinearRecurrence`.
+
+**Reading.** The test recurrence can be normalized to monic form when its leading coefficient
+$1-h\lambda b_{-1}$ is nonzero. -/
 theorem equation_11_54 (M : LinearMultistep) (lam : ℂ) (u : ℕ → ℂ) :
     (M.IsOrbit (testProblem lam) h 0 u ↔ ∀ n, M.p ≤ n → u (n + 1) =
       ∑ j : Fin (M.p + 1), (M.a j : ℂ) * u (n - j) +
@@ -321,13 +355,21 @@ multistep method satisfies the **strong root condition** (11.57) if it satisfies
 condition and $r_0 = 1$ is the only root of $\rho$ of modulus one, that is $|r_j| < 1$ for
 $j = 1, \dots, p$.
 
-The definition is `ODE.LinearMultistep.SatisfiesStrongRootCondition`. -/
+The definition is `ODE.LinearMultistep.SatisfiesStrongRootCondition`.
+
+**Reading.** The root $1$ is the sole allowed boundary root. The definition also accepts
+polynomials with all roots strictly in the disk. Consistency supplies the root $1$ when
+assumed. -/
 def definition_11_11 (M : LinearMultistep) : Prop :=
   M.SatisfiesStrongRootCondition
 
 /-- **Definition 11.11** of [quarteroni2000numerical]. A linear multistep method satisfies the
 strong root condition if and only if it satisfies the root condition and every root $r \neq 1$
-of $\rho$ has $|r| < 1$. -/
+of $\rho$ has $|r| < 1$.
+
+**Reading.** The root $1$ is the sole allowed boundary root. The definition also accepts
+polynomials with all roots strictly in the disk. Consistency supplies the root $1$ when
+assumed. -/
 theorem definition_11_11_iff (M : LinearMultistep) :
     definition_11_11 M ↔ definition_11_10 M ∧
       ∀ r : ℂ, ((characteristicPolynomials M).1.map (algebraMap ℝ ℂ)).IsRoot r → r ≠ 1 → ‖r‖ < 1 :=
@@ -338,13 +380,17 @@ $\lambda \in \mathbb{C}$. A linear multistep method satisfies the **absolute roo
 for $\lambda$ if there is $h_0 > 0$ such that the roots $r_j(h\lambda)$ of $\Pi$ satisfy
 $$|r_j(h\lambda)| < 1 \qquad \text{for all } j \text{ and all } h \in (0, h_0].$$
 
-The definition is `ODE.LinearMultistep.SatisfiesAbsRootCondition`. -/
+The definition is `ODE.LinearMultistep.SatisfiesAbsRootCondition`.
+
+**Reading.** Uses $0<h\leq h_0$, as appropriate for the positive step size. -/
 def definition_11_12 (M : LinearMultistep) (lam : ℂ) : Prop :=
   M.SatisfiesAbsRootCondition lam
 
 /-- **Definition 11.12** of [quarteroni2000numerical]. A linear multistep method satisfies the
 absolute root condition for $\lambda$ if and only if there is $h_0 > 0$ such that for every
-$h \in (0, h_0]$, every root $r$ of $\Pi$ at $z = h\lambda$ has $|r| < 1$. -/
+$h \in (0, h_0]$, every root $r$ of $\Pi$ at $z = h\lambda$ has $|r| < 1$.
+
+**Reading.** Uses $0<h\leq h_0$, as appropriate for the positive step size. -/
 theorem definition_11_12_iff (M : LinearMultistep) (lam : ℂ) :
     definition_11_12 M lam ↔ ∃ h₀ : ℝ, 0 < h₀ ∧ ∀ h ∈ Ioc 0 h₀,
       ∀ r : ℂ, (equation_11_55 M (h * lam)).IsRoot r → ‖r‖ < 1 :=
@@ -360,7 +406,10 @@ $$z_{n+1} = \sum_{j=0}^{p} a_j z_{n-j} + h \Bigl[\sum_{j=0}^{p} b_j f(t_{n-j}, z
   f(t_{n+1}, z_{n+1}) + \delta_{n+1}\Bigr].$$
 
 The definition is `ODE.LinearMultistep.IsOrbitWith`. The starting values $z_0, \dots, z_p$ are
-free. -/
+free.
+
+**Generalization.** The equation describes all later steps of an orbit. Perturbed startup
+conditions and the upper grid cutoff are separate. -/
 def equation_11_59 (M : LinearMultistep) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ) (δ z : ℕ → ℝ) : Prop :=
   M.IsOrbitWith f h t₀ δ z
 
@@ -368,7 +417,9 @@ def equation_11_59 (M : LinearMultistep) (f : ℝ → ℝ → ℝ) (h t₀ : ℝ
 and only if for every $n \ge p$
 $$z_{n+1} = \sum_{j=0}^{p} a_j z_{n-j} + h \Bigl(\sum_{j=0}^{p} b_j f(t_{n-j}, z_{n-j}) + b_{-1}
   f(t_{n+1}, z_{n+1}) + \delta_{n+1}\Bigr).$$
--/
+
+**Generalization.** The equation describes all later steps of an orbit. Perturbed startup
+conditions and the upper grid cutoff are separate. -/
 theorem equation_11_59_iff (M : LinearMultistep) (δ z : ℕ → ℝ) :
     equation_11_59 M f h t₀ δ z ↔ ∀ n, M.p ≤ n → z (n + 1) =
       ∑ j : Fin (M.p + 1), M.a j * z (n - j) +
@@ -395,7 +446,10 @@ $0 \le k \le N_h$, let $u$ solve the method (11.60), and let $z$ solve the pertu
 $$|z_n - u_n| \le C\varepsilon, \qquad 0 \le n \le N_h.$$
 
 The definition is `ODE.LinearMultistep.IsZeroStable`. The book writes the starting values as
-$w_k + \delta_k$ and $w_k$. -/
+$w_k + \delta_k$ and $w_k$.
+
+**Reading.** The estimate concerns all existing perturbed and unperturbed orbits with the
+declared difference of starting values. The unperturbed startup method is left unspecified. -/
 def definition_11_13 (M : LinearMultistep) (f : ℝ → ℝ → ℝ) (t₀ T : ℝ) : Prop :=
   M.IsZeroStable f t₀ T
 
@@ -403,7 +457,10 @@ def definition_11_13 (M : LinearMultistep) (f : ℝ → ℝ → ℝ) (t₀ T : �
 $f$ on $[t_0, t_0 + T]$ if and only if there are $h_0 > 0$ and $C > 0$ such that for all
 $h \in (0, h_0]$, all $\varepsilon \ge 0$ and all $\delta$ with $|\delta_k| \le \varepsilon$ for
 $k \le N_h$, every solution $u$ of (11.45) and every solution $z$ of (11.59) with
-$z_k = u_k + \delta_k$ for $k \le p$ satisfy $|z_n - u_n| \le C\varepsilon$ for $n \le N_h$. -/
+$z_k = u_k + \delta_k$ for $k \le p$ satisfy $|z_n - u_n| \le C\varepsilon$ for $n \le N_h$.
+
+**Reading.** The estimate concerns all existing perturbed and unperturbed orbits with the
+declared difference of starting values. The unperturbed startup method is left unspecified. -/
 theorem definition_11_13_iff (M : LinearMultistep) :
     definition_11_13 M f t₀ T ↔
       ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ C : ℝ, 0 < C ∧ ∀ h ∈ Ioc 0 h₀, ∀ ε : ℝ, 0 ≤ ε → ∀ δ : ℕ → ℝ,
@@ -444,7 +501,10 @@ satisfy the root condition, let $T \ge 0$, and let $|f(t, y_1) - f(t, y_2)| \le 
 for all $t \in [t_0, t_0 + T]$ and $y_1, y_2 \in \mathbb{R}$. Then the method is zero-stable for
 $f$ on $[t_0, t_0 + T]$.
 
-The proof specializes `ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition`. -/
+The proof specializes `ODE.LinearMultistep.isZeroStable_of_satisfiesRootCondition`.
+
+**Generalization.** These implications do not require consistency. Sufficiency uses a Lipschitz
+field, and the necessity proof uses only the zero field on a positive horizon. -/
 theorem theorem_11_4_mpr (M : LinearMultistep) (hroot : definition_11_10 M) (hT : 0 ≤ T) {L : ℝ}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) :
     definition_11_13 M f t₀ T :=
@@ -457,7 +517,10 @@ theorem theorem_11_4_mpr (M : LinearMultistep) (hroot : definition_11_10 M) (hT 
 method is zero-stable on $[t_0, t_0 + T]$ for the problem $y' = 0$, then it satisfies the root
 condition.
 
-The proof specializes `ODE.LinearMultistep.satisfiesRootCondition_of_isZeroStable`. -/
+The proof specializes `ODE.LinearMultistep.satisfiesRootCondition_of_isZeroStable`.
+
+**Generalization.** These implications do not require consistency. Sufficiency uses a Lipschitz
+field, and the necessity proof uses only the zero field on a positive horizon. -/
 theorem theorem_11_4_mp (M : LinearMultistep) (hT : 0 < T)
     (hzs : definition_11_13 M (fun _ _ => 0) t₀ T) : definition_11_10 M :=
   M.satisfiesRootCondition_of_isZeroStable hT hzs
@@ -470,7 +533,10 @@ $$|u_n| \le M \Bigl(\max_{0 \le j < k} |u_j| + \sum_{l=k}^{n} |\varphi_l|\Bigr) 
 if and only if the characteristic polynomial (11.30) satisfies the root condition.
 
 The book cites the lemma without proof. The proof specializes
-`LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition`. -/
+`LinearRecurrence.exists_forall_norm_le_iff_satisfiesRootCondition`.
+
+**Generalization.** A single constant works for every forcing and solution of the supplied
+constant-coefficient recurrence. The statement also allows a vanishing constant coefficient. -/
 theorem lemma_11_3_complex {k : ℕ} (hk : 0 < k) (α : Fin k → ℂ) :
     (∃ M : ℝ, 0 < M ∧ ∀ φ u : ℕ → ℂ, (equation_11_28 α).IsSolutionWith φ u → ∀ n,
       ‖u n‖ ≤ M * ((⨆ j : Fin k, ‖u j‖) + ∑ l ∈ Finset.Icc k n, ‖φ l‖)) ↔
@@ -488,7 +554,10 @@ root condition.
 
 The bound follows from the complex case applied to the real sequences viewed as complex ones.
 The converse uses the real unbounded solution of
-`LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`. -/
+`LinearRecurrence.exists_isSolution_real_not_bddAbove_of_not_satisfiesRootCondition`.
+
+**Generalization.** A single constant works for every forcing and solution of the supplied
+constant-coefficient recurrence. The statement also allows a vanishing constant coefficient. -/
 theorem lemma_11_3 {k : ℕ} (hk : 0 < k) (α : Fin k → ℝ) :
     (∃ M : ℝ, 0 < M ∧ ∀ φ u : ℕ → ℝ, (equation_11_28 α).IsSolutionWith φ u → ∀ n,
       |u n| ≤ M * ((⨆ j : Fin k, |u j|) + ∑ l ∈ Finset.Icc k n, |φ l|)) ↔
@@ -528,7 +597,10 @@ $$|z_n - u_n| \le K (\varepsilon_0 + T\varepsilon_1), \qquad 0 \le n \le N_h.$$
 
 The book gives the constant explicitly, $2M e^{TQ} \{(p + 1)\Delta_{[0,p]} +
 T\Delta_{[p+1,n]}\}$ with $h_0 = 1/Q$. The proof specializes
-`ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition`. -/
+`ODE.LinearMultistep.norm_sub_le_of_satisfiesRootCondition`.
+
+**Reading.** Gives a uniform constant and independent bounds for the startup errors and later
+forcing over the finite horizon. -/
 theorem equation_11_65 (M : LinearMultistep) (hroot : definition_11_10 M) (hT : 0 ≤ T) {L : ℝ}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) :
     ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ K : ℝ, 0 < K ∧ ∀ h ∈ Ioc 0 h₀, ∀ ε₀ ε₁ : ℝ, 0 ≤ ε₀ → 0 ≤ ε₁ →
@@ -555,7 +627,10 @@ theorem equation_11_65 (M : LinearMultistep) (hroot : definition_11_10 M) (hT : 
   $u_{n+1} = u_n + h(b_0 f_n + b_{-1} f_{n+1})$ has $\rho(r) = r - 1$.
 
 The proof uses `ODE.LinearMultistep.satisfiesRootCondition_of_p_eq_zero` and
-`ODE.LinearMultistep.rho_ofOneStep`. -/
+`ODE.LinearMultistep.rho_ofOneStep`.
+
+**Generalization.** Only the first consistency condition is needed for the characteristic root
+and stability for uniformly Lipschitz fields. -/
 theorem oneStep_zeroStable :
     (∀ M : LinearMultistep, M.p = 0 → ∑ j, M.a j = 1 → definition_11_10 M ∧
       ∀ (t₀ T : ℝ) (f : ℝ → ℝ → ℝ) (L : ℝ), 0 ≤ T →
@@ -626,7 +701,10 @@ of the rows $p = 0, 1, 2$ of Table 11.2 satisfy the root condition. The polynomi
 the roots $1$ and $1/3$ for $p = 1$, and $1$ and $(7 \pm i\sqrt{39})/22$ for $p = 2$.
 
 The proof uses `ODE.LinearMultistep.bdf_satisfiesRootCondition`. The rows $p = 3, 4, 5$ are in
-`QuarteroniSaccoSaleri.Chapter11.bdf_zeroStable`. -/
+`QuarteroniSaccoSaleri.Chapter11.bdf_zeroStable`.
+
+**Specialization.** The declaration gives the root condition for the first three rows.
+`bdf_zeroStable` covers all six. -/
 theorem bdf_zeroStable_of_le_two (k : Fin 6) (hk : k ≤ 2) : definition_11_10 (bdf k) :=
   LinearMultistep.bdf_satisfiesRootCondition k hk
 
@@ -653,7 +731,11 @@ $$|u_n - y_n| \le C\Bigl(\max_{0 \le k \le p} |u_k - y_k|, h\Bigr), \qquad 0 \le
 So the error tends to zero when the error of the starting values does.
 
 The limit of $C$ is taken along `𝓝[≥] 0 ×ˢ 𝓝[>] 0`. The proof specializes
-`ODE.LinearMultistep.isConvergentFor_of_satisfiesRootCondition`. -/
+`ODE.LinearMultistep.isConvergentFor_of_satisfiesRootCondition`.
+
+**Reading.** The error is controlled jointly by the step size and the maximum startup error.
+The orbit estimates are uniform over all startup values. The necessity argument uses the zero
+field. -/
 theorem theorem_11_5_mpr (M : LinearMultistep) (hroot : definition_11_10 M) (hT : 0 ≤ T) {L : ℝ}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) (hcons : definition_11_9 M t₀ T y) :
@@ -677,7 +759,11 @@ $$|u_n - y_n| \le K \Bigl(\max_{0 \le k \le p} |u_k - y_k| + h^q\Bigr), \qquad 0
   N_h.$$
 So starting errors of size $O(h^q)$ give a global error of size $O(h^q)$.
 
-The proof specializes `ODE.LinearMultistep.isConvergentWithOrderFor_of_satisfiesRootCondition`. -/
+The proof specializes `ODE.LinearMultistep.isConvergentWithOrderFor_of_satisfiesRootCondition`.
+
+**Reading.** The error is controlled jointly by the step size and the maximum startup error.
+The orbit estimates are uniform over all startup values. The necessity argument uses the zero
+field. -/
 theorem theorem_11_5_order (M : LinearMultistep) (hroot : definition_11_10 M) (hT : 0 ≤ T) {L : ℝ}
     (hf : ∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|)
     (hy : ∀ t ∈ Icc t₀ (t₀ + T), HasDerivAt y (f t (y t)) t) {q : ℕ}
@@ -698,7 +784,11 @@ every $h \in (0, h_0]$ every sequence $u$ computed by the method for $f = 0$ sat
 $|u_n| \le C(\max_{k \le p} |u_k|, h)$ for $0 \le n \le N_h$. Then the method satisfies the root
 condition.
 
-The proof specializes `ODE.LinearMultistep.satisfiesRootCondition_of_isConvergentFor`. -/
+The proof specializes `ODE.LinearMultistep.satisfiesRootCondition_of_isConvergentFor`.
+
+**Reading.** The error is controlled jointly by the step size and the maximum startup error.
+The orbit estimates are uniform over all startup values. The necessity argument uses the zero
+field. -/
 theorem theorem_11_5_mp (M : LinearMultistep) (hT : 0 < T)
     (hconv : ∃ h₀ : ℝ, 0 < h₀ ∧ ∃ C : ℝ → ℝ → ℝ,
       Tendsto (fun p : ℝ × ℝ => C p.1 p.2) (𝓝[≥] 0 ×ˢ 𝓝[>] 0) (𝓝 0) ∧
@@ -717,7 +807,11 @@ multistep method with $p + 1$ steps be consistent. Then the following are equiva
   the method is convergent in the sense of `QuarteroniSaccoSaleri.Chapter11.theorem_11_5_mpr`:
   there are $h_0 > 0$ and $C(\varepsilon, h) \to 0$ with $|u_n - y_n| \le C(\max_{k \le p}
   |u_k - y_k|, h)$ for $h \in (0, h_0]$ and $n \le N_h$;
-* the method satisfies the root condition. -/
+* the method satisfies the root condition.
+
+**Reading.** The error is controlled jointly by the step size and the maximum startup error.
+The orbit estimates are uniform over all startup values. The necessity argument uses the zero
+field. -/
 theorem theorem_11_5 (M : LinearMultistep) (hcons : definition_11_9_method M) (hT : 0 < T) :
     (∀ (f : ℝ → ℝ → ℝ) (L : ℝ) (y : ℝ → ℝ),
       (∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) →
@@ -745,7 +839,11 @@ condition, by Theorems 11.4 and 11.5.
 
 A $C^1$ solution is a function $y$ with $y'(t) = f(t, y(t))$ on $[t_0, t_0 + T]$ such that
 $t \mapsto f(t, y(t))$ is continuous there. The proof specializes
-`ODE.LinearMultistep.isConvergentFor_iff_isZeroStable`. -/
+`ODE.LinearMultistep.isConvergentFor_iff_isZeroStable`.
+
+**Reading.** The error is controlled jointly by the step size and the maximum startup error.
+The orbit estimates are uniform over all startup values. The necessity argument uses the zero
+field. -/
 theorem corollary_11_1 (M : LinearMultistep) (hcons : definition_11_9_method M) (hT : 0 < T) :
     (∀ (f : ℝ → ℝ → ℝ) (L : ℝ) (y : ℝ → ℝ),
       (∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) →
@@ -782,7 +880,11 @@ stable** for $\lambda$ and $h$ if $1 - h\lambda b_{-1} \neq 0$, so that the meth
 its solution, and every sequence that it computes on the test problem (11.24) with step $h$ from
 $t_0 = 0$ tends to $0$.
 
-This is Definition 11.6 for the method (11.45). -/
+This is Definition 11.6 for the method (11.45).
+
+**Reading.** Fixed-step stability excludes a zero leading coefficient and asks for decay of
+every orbit. The equivalence for sufficiently small positive steps can shrink the step bound to
+avoid this singularity. -/
 def absolutelyStable (M : LinearMultistep) (lam : ℂ) (h : ℝ) : Prop :=
   1 - (h : ℂ) * lam * M.bm1 ≠ 0 ∧
     ∀ u : ℕ → ℂ, M.IsOrbit (testProblem lam) h 0 u → Tendsto u atTop (𝓝 0)
@@ -791,7 +893,11 @@ def absolutelyStable (M : LinearMultistep) (lam : ℂ) (h : ℝ) : Prop :=
 multistep method: the set $\mathcal{A}$ of the $z \in \mathbb{C}$ with $1 - zb_{-1} \neq 0$ such
 that every solution of the recurrence (11.54) at $z$ tends to $0$.
 
-The definition is `ODE.LinearMultistep.absStabilityRegion`. -/
+The definition is `ODE.LinearMultistep.absStabilityRegion`.
+
+**Reading.** Fixed-step stability excludes a zero leading coefficient and asks for decay of
+every orbit. The equivalence for sufficiently small positive steps can shrink the step bound to
+avoid this singularity. -/
 def equation_11_26_multistep (M : LinearMultistep) : Set ℂ :=
   M.absStabilityRegion
 
@@ -808,7 +914,11 @@ linear multistep method:
 
 The proof uses `ODE.LinearMultistep.isAbsStable_iff_mem`,
 `ODE.LinearMultistep.mem_absStabilityRegion_iff` and
-`ODE.LinearMultistep.satisfiesAbsRootCondition_iff`. -/
+`ODE.LinearMultistep.satisfiesAbsRootCondition_iff`.
+
+**Reading.** Fixed-step stability excludes a zero leading coefficient and asks for decay of
+every orbit. The equivalence for sufficiently small positive steps can shrink the step bound to
+avoid this singularity. -/
 theorem absoluteStability (M : LinearMultistep) :
     (∀ (lam : ℂ) (h : ℝ), absolutelyStable M lam h ↔ (h : ℂ) * lam ∈ equation_11_26_multistep M) ∧
     (∀ z : ℂ, z ∈ equation_11_26_multistep M ↔
@@ -836,7 +946,10 @@ $$\{z \in \mathbb{C} : z \neq 0, \ -\vartheta < \pi - \arg z < \vartheta\},$$
 written $|\arg(-z)| < \vartheta$.
 
 The book takes $\vartheta \in (0, \pi/2)$; the definition accepts every real $\vartheta$. It is
-`ODE.LinearMultistep.IsThetaStable`. -/
+`ODE.LinearMultistep.IsThetaStable`.
+
+**Generalization.** Uses $|\arg(-z)|<\vartheta$ for $z\ne 0$. The definition accepts angles
+outside the open interval $(0,\pi/2)$ of the source. -/
 def thetaStable (M : LinearMultistep) (ϑ : ℝ) : Prop :=
   M.IsThetaStable ϑ
 
@@ -847,7 +960,10 @@ $\vartheta \in \mathbb{R}$:
   $\mathcal{A}$;
 * the method is $\vartheta$-stable if and only if every $z \neq 0$ with $|\arg(-z)| < \vartheta$
   lies in $\mathcal{A}$;
-* if the method is A-stable and $\vartheta \le \pi/2$, it is $\vartheta$-stable. -/
+* if the method is A-stable and $\vartheta \le \pi/2$, it is $\vartheta$-stable.
+
+**Generalization.** Uses $|\arg(-z)|<\vartheta$ for $z\ne 0$. The definition accepts angles
+outside the open interval $(0,\pi/2)$ of the source. -/
 theorem thetaStable_iff (M : LinearMultistep) (ϑ : ℝ) :
     (aStableMultistep M ↔ ∀ z : ℂ, z.re < 0 → z ∈ equation_11_26_multistep M) ∧
     (thetaStable M ϑ ↔
@@ -895,7 +1011,13 @@ $2^{p+1}$ on the closed disc, and $|\rho(x_0) + t\sigma(x_0)| \ge t|\sigma(x_0)|
 at a point $x_0 \in [0, 1]$ with $\sigma(x_0) \neq 0$. The proof specializes
 `ODE.LinearMultistep.not_isAStable_of_bm1_eq_zero` and
 `ODE.LinearMultistep.not_isThetaStable_of_bm1_eq_zero`. The other clauses of Property 11.2 are
-not formalized. -/
+not formalized.
+
+**Partial.** Treats the explicit clause assuming $\sum_j a_j=1$ and positive sector angle. The
+remaining order and existence statements are separate.
+
+**Reading.** Explicit impossibility with ∑ a_j=1 and positive θ; omits later clauses.
+-/
 theorem property_11_2_explicit (M : LinearMultistep) (hex : ¬ M.IsImplicit)
     (h0 : ∑ j, M.a j = 1) :
     ¬ aStableMultistep M ∧ ∀ ϑ : ℝ, 0 < ϑ → ¬ thetaStable M ϑ := by
@@ -909,7 +1031,10 @@ method, $\mathcal{A}^*$ is the set of $z = h\lambda \in \mathbb{C}$ with $1 - zb
 such that every solution of the recurrence (11.54) at $z$ is bounded: there is $C > 0$ with
 $|u_n| \le C$ for all $n \ge 0$.
 
-The definition is `ODE.LinearMultistep.absStabilityRegionStar`. -/
+The definition is `ODE.LinearMultistep.absStabilityRegionStar`.
+
+**Reading.** Requires boundedness of every recurrence solution at nonsingular parameters. The
+general closure claim in the remark is not included. -/
 def remark_11_3 (M : LinearMultistep) : Set ℂ :=
   M.absStabilityRegionStar
 
@@ -923,7 +1048,10 @@ def remark_11_3 (M : LinearMultistep) : Set ℂ :=
 * $z \in \mathcal{A}^*$ if and only if $1 - zb_{-1} \neq 0$ and $\Pi$ at $z$ satisfies the root
   condition.
 
-The last part follows from Lemma 11.3, in `ODE.LinearMultistep.mem_absStabilityRegionStar_iff`. -/
+The last part follows from Lemma 11.3, in `ODE.LinearMultistep.mem_absStabilityRegionStar_iff`.
+
+**Reading.** Requires boundedness of every recurrence solution at nonsingular parameters. The
+general closure claim in the remark is not included. -/
 theorem remark_11_3_iff (M : LinearMultistep) :
     (∀ z : ℂ, z ∈ remark_11_3 M ↔ 1 - z * M.bm1 ≠ 0 ∧ ∀ u : ℕ → ℂ,
       (M.toLinearRecurrence z).IsSolution u → BddAbove (Set.range fun n => ‖u n‖)) ∧
@@ -960,7 +1088,10 @@ field $f$ that is Lipschitz in $y$ on $[t_0, t_0 + T]$.
 
 At $z = 0$, $\Pi = \rho$, so $0 \in \mathcal{A}^*$ is the root condition, which is
 zero-stability by Theorem 11.4. The proof uses
-`ODE.LinearMultistep.zero_mem_absStabilityRegionStar_iff`. -/
+`ODE.LinearMultistep.zero_mem_absStabilityRegionStar_iff`.
+
+**Reading.** The equivalence concerns zero-stability for every uniformly Lipschitz field on a
+positive finite horizon. -/
 theorem remark_11_3_zeroStable (M : LinearMultistep) (hT : 0 < T) :
     (0 : ℂ) ∈ remark_11_3 M ↔ ∀ (f : ℝ → ℝ → ℝ) (L : ℝ),
       (∀ t ∈ Icc t₀ (t₀ + T), ∀ y₁ y₂ : ℝ, |f t y₁ - f t y₂| ≤ L * |y₁ - y₂|) →

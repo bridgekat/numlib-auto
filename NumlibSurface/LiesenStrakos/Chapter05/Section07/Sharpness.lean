@@ -9,6 +9,12 @@ import Numlib.Krylov.Convergence.GMRES.Sharpness
 
 For each fixed step, there is an initial approximation for which the
 relative GMRES residual equals the spectral polynomial minimax value.
+
+## Deviations from the source
+
+* **Theorem 5.7.4, sharpness** (generalization). The normal-matrix bound is attained for every
+  step, including step zero and steps at or beyond the grade. See
+  `LiesenStrakos.Chapter05.theorem_5_7_4_normal_sharp`.
 -/
 
 open Krylov Polynomial
@@ -19,7 +25,10 @@ namespace LiesenStrakos.Chapter05
 Let $A$ be invertible and unitarily diagonalizable, with an orthonormal
 eigenbasis and eigenvalues $\mu_i$. At each fixed step $n$, some initial
 approximation $x_0$ with nonzero residual attains the normal-matrix bound.
-This includes the steps through one less than the grade in the source. -/
+
+**Generalization.** The source states sharpness for steps $1,\ldots,d-1$. The result here holds
+at every natural step index. In particular the normalized minimax value is $1$ at step zero,
+and it becomes $0$ once a normalized polynomial can vanish at every eigenvalue. -/
 theorem theorem_5_7_4_normal_sharp
     {𝕜 E ι : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
     [Fintype ι] [Nonempty ι] {A : E →ₗ[𝕜] E}

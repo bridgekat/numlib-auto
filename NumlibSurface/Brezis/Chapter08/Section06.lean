@@ -75,6 +75,14 @@ the spectral theorem `ContinuousLinearMap.IsSymmetric.eigenvectorHilbertBasis` o
   `Brezis.Chapter08.theorem_8_22_tendsto` and `Brezis.Chapter08.theorem_8_22_operator` are stated
   for $q \ge 0$, the normalization of the backbone.
 
+## Deviations from the source
+
+* **Sine example** (generalization and reading). The differential equation for the sine
+  extensions holds on the line. The library identifies the range and injectivity of the
+  abstract eigenvalue enumeration, and gives a converse for nonzero classical eigenfunctions.
+  See `Brezis.Chapter08.sineEigenfunctions` and
+  `Brezis.Chapter08.sineEigenfunctions_classical`.
+
 ## Not formalized
 
 * **Remark 29.** The eigenvalues of $-u''$ under the boundary conditions of Examples 3, 5, 6 and 7
@@ -210,7 +218,10 @@ $n = 1, 2, \dots$. For every $n \ge 0$, the function $s_n(x) = \sqrt2 \sin((n + 
 $C^2(\mathbb{R})$, satisfies $s_n(0) = s_n(1) = 0$, and
 $$-s_n'' = (n + 1)^2\pi^2 s_n \text{ on } \mathbb{R}.$$
 
-The function $s_n$ is `sinUnitFun n`. -/
+The function $s_n$ is `sinUnitFun n`.
+
+**Generalization.** The displayed eigenfunction equation is checked on the whole line for
+ the sine extension. -/
 theorem sineEigenfunctions_eigen (n : ℕ) :
     ContDiff ℝ 2 (sinUnitFun n) ∧ sinUnitFun n 0 = 0 ∧ sinUnitFun n 1 = 0 ∧
       ∀ x, -deriv (deriv (sinUnitFun n)) x = ((n + 1) * Real.pi) ^ 2 * sinUnitFun n x :=
@@ -240,7 +251,10 @@ $\{(n + 1)^2\pi^2 : n \in \mathbb{N}\}$, and $n \mapsto \lambda_n$ is injective.
 
 The eigenvalues are `EllipticInterval.SturmLiouville.eigenvalue hypotheses_one_zero`. The proof
 specializes `EllipticInterval.SturmLiouville.eigenvalue_eq_sq_pi_sq`, which expands an
-eigenvector of $T$ in the sine basis. -/
+eigenvector of $T$ in the sine basis.
+
+**Reading.** The source labels the eigenvalues in the order $n^2\pi^2$. The statement gives
+ the range and injectivity of the abstract enumeration. -/
 theorem sineEigenfunctions_eigenvalue :
     range (eigenvalue hypotheses_one_zero) = range (fun n : ℕ ↦ ((n + 1) * Real.pi) ^ 2) ∧
       Function.Injective (eigenvalue hypotheses_one_zero) :=
@@ -252,7 +266,10 @@ $$-e'' = \lambda e \text{ on } [0, 1], \qquad e(0) = e(1) = 0.$$
 Then there is $n \ge 0$ with $\lambda = (n + 1)^2\pi^2$, and there is $c \neq 0$ with
 $e(x) = c \sin((n + 1)\pi x)$ for all $x \in [0, 1]$.
 
-The proof specializes `EllipticInterval.SturmLiouville.eq_smul_sin_of_dirichlet`. -/
+The proof specializes `EllipticInterval.SturmLiouville.eq_smul_sin_of_dirichlet`.
+
+**Reading.** The library gives the converse classification among nonzero classical
+ eigenfunctions and allows an arbitrary nonzero scalar multiple. -/
 theorem sineEigenfunctions_classical (e : ContDiffMapIcc (zero_le_one' ℝ) 2) {l : ℝ}
     (hode : ∀ x : Icc (0 : ℝ) 1, -e.deriv 2 x = l * e x)
     (h0 : e ⟨0, left_mem_Icc.2 zero_le_one⟩ = 0) (h1 : e ⟨1, right_mem_Icc.2 zero_le_one⟩ = 0)
@@ -270,7 +287,11 @@ $n \ge 0$ and $s_n(x) = \sqrt2 \sin((n + 1)\pi x)$:
   $Ts_n = ((n + 1)^2\pi^2)^{-1} s_n$ for the solution operator $T$
   (`Brezis.Chapter08.sineEigenfunctions_hilbertBasis`);
 * the eigenvalues of Theorem 8.22 are exactly the numbers $(n + 1)^2\pi^2$, each simple
-  (`Brezis.Chapter08.sineEigenfunctions_eigenvalue`). -/
+  (`Brezis.Chapter08.sineEigenfunctions_eigenvalue`).
+
+**Reading.** The library separates the explicit sine enumeration from the abstract
+ enumeration and identifies the range of the latter, including injectivity. The sine
+ differential equation is stated on the whole line. -/
 theorem sineEigenfunctions :
     (∀ n : ℕ, ContDiff ℝ 2 (sinUnitFun n) ∧ sinUnitFun n 0 = 0 ∧ sinUnitFun n 1 = 0 ∧
       ∀ x, -deriv (deriv (sinUnitFun n)) x = ((n + 1) * Real.pi) ^ 2 * sinUnitFun n x) ∧

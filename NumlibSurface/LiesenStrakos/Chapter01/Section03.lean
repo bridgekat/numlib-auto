@@ -17,17 +17,28 @@ The inner product defines a norm on vectors and an induced operator norm.
 * `LiesenStrakos.energyVectorNorm`: the norm induced by the $B$-inner product.
 * `LiesenStrakos.energyOperatorNorm`: the induced operator norm.
 * `LiesenStrakos.EnergyOrthogonal`: orthogonality for the $B$-inner product.
+
+## Deviations from the source
+
+* **Section 1.3** (generalization). The vector formulas are defined for arbitrary linear $B$.
+  Symmetric coercivity gives the inner product and norm assumed by the source.
 -/
 
 namespace LiesenStrakos
 
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
-/-- The $B$-inner product in §1.3 of [liesen2013krylov] is $(v,w)_B = w^*Bv$. -/
+/-- The $B$-inner product in §1.3 of [liesen2013krylov] is $(v,w)_B = w^*Bv$.
+
+**Generalization.** The pairing is defined for any linear $B$ on an inner product space. It is
+an inner product for symmetric coercive $B$. -/
 noncomputable abbrev energyInnerProduct (B : E →ₗ[𝕜] E) (v w : E) : 𝕜 :=
   inner 𝕜 w (B v)
 
-/-- The $B$-norm of a vector is $\|v\|_B = \sqrt{\operatorname{Re}(v^*Bv)}$. -/
+/-- The $B$-norm of a vector is $\|v\|_B = \sqrt{\operatorname{Re}(v^*Bv)}$.
+
+**Generalization.** The real square-root formula accepts arbitrary $B$. It defines a norm when
+$B$ is symmetric coercive. -/
 noncomputable abbrev energyVectorNorm (B : E →ₗ[𝕜] E) : E → ℝ :=
   energyNorm B
 
@@ -38,7 +49,9 @@ noncomputable def energyOperatorNorm [FiniteDimensional 𝕜 E] (B M : E →ₗ[
   letI : FiniteDimensional 𝕜 (WithEnergy B hB) := e.finiteDimensional
   exact ‖((e : E →ₗ[𝕜] WithEnergy B hB).comp (M.comp e.symm.toLinearMap)).toContinuousLinearMap‖
 
-/-- Vectors $v$ and $w$ are $B$-orthogonal when $w^*Bv=0$. -/
+/-- Vectors $v$ and $w$ are $B$-orthogonal when $w^*Bv=0$.
+
+**Generalization.** The zero-pairing relation is defined for arbitrary $B$. -/
 abbrev EnergyOrthogonal (B : E →ₗ[𝕜] E) (v w : E) : Prop :=
   energyInnerProduct B v w = 0
 

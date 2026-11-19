@@ -10,6 +10,14 @@ import Numlib.Conditioning.LinearSystem
 For a fixed approximate solution, the relative normwise backward error measures the least
 simultaneous perturbation to the operator and right-hand side. If only the right-hand side is
 perturbed, the relative residual norm is the corresponding perturbation size.
+
+## Deviations from the source
+
+* **Section 5.8.3** (generalization). The relative backward error and the condition-number bound
+  allow bounded operators on general inner product spaces.
+* **Equation (5.8.16)** (reading). The Hegedüs scaling is stated over the reals. Over
+  the complex numbers the printed numerator must be conjugated to minimize the residual.
+  See `LiesenStrakos.Chapter05.hegedusScale`.
 -/
 
 namespace LiesenStrakos.Chapter05
@@ -18,14 +26,19 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
 
 /-- **Section 5.8.3** of [liesen2013krylov]. The **relative normwise backward error** of $y$
 for $Ax=b$ is the ratio $\|b-Ay\|/(\|A\|\|y\|+\|b\|)$, with the operator norm on $A$. A zero
-denominator gives value zero. -/
+denominator gives value zero.
+
+**Generalization.** The quotient is defined on arbitrary real or complex inner product spaces
+and uses total division. -/
 noncomputable abbrev relativeNormwiseBackwardError (A : E →L[𝕜] E) (b y : E) : ℝ :=
   backwardError A b y 1 1
 
 /-- **Equation (5.8.17)** of [liesen2013krylov], minimality. If $\|A\|\|y\|+\|b\|>0$, then
 the relative normwise backward error is the least $\xi$ for which $(A+\Delta A)y=b+\Delta b$
 for a bounded operator $\Delta A$ and a vector $\Delta b$ with
-$\|\Delta A\|\le \xi\|A\|$ and $\|\Delta b\|\le \xi\|b\|$. -/
+$\|\Delta A\|\le \xi\|A\|$ and $\|\Delta b\|\le \xi\|b\|$.
+
+**Generalization.** The perturbations are bounded linear maps on a general inner product space. -/
 theorem relativeNormwiseBackwardError_isLeast (A : E →L[𝕜] E) (b y : E)
     (hpos : 0 < ‖A‖ * ‖y‖ + ‖b‖) :
     IsLeast {ξ : ℝ | ∃ (ΔA : E →L[𝕜] E) (Δb : E), (A + ΔA) y = b + Δb ∧
@@ -35,7 +48,10 @@ theorem relativeNormwiseBackwardError_isLeast (A : E →L[𝕜] E) (b y : E)
 
 /-- **Equation (5.8.15)** of [liesen2013krylov]. If $A$ is an invertible bounded operator,
 $Ax=b \ne 0$, and $y$ is an approximate solution, then
-$$\frac{\|x-y\|}{\|x\|}\le\kappa(A)\frac{\|b-Ay\|}{\|b\|}.$$ -/
+$$\frac{\|x-y\|}{\|x\|}\le\kappa(A)\frac{\|b-Ay\|}{\|b\|}.$$
+
+**Generalization.** The condition-number bound holds for bounded linear isomorphisms of
+arbitrary inner product spaces. -/
 theorem relativeError_le_cond_mul_relativeResidual (A : E ≃L[𝕜] E) {b x y : E}
     (hx : A x = b) (hb : b ≠ 0) :
     ‖x - y‖ / ‖x‖ ≤ NormedRing.condNumber (A : E →L[𝕜] E) * (‖b - A y‖ / ‖b‖) :=
@@ -43,7 +59,11 @@ theorem relativeError_le_cond_mul_relativeResidual (A : E ≃L[𝕜] E) {b x y :
 
 /-- **Equation (5.8.16)** of [liesen2013krylov]. For real $A,b,x_p$, the **Hegedüs scaling** of a
 preliminary approximation $x_p$ uses the coefficient $(b^TAx_p)/\|Ax_p\|^2$. Its value is $0$
-when $Ax_p=0$. -/
+when $Ax_p=0$.
+
+**Reading.** The printed numerator is $b^* A x_p$. It gives the minimizing coefficient for
+the real systems treated here. With complex data and a complex scaling coefficient, minimizing
+$\|b-\zeta Ax_p\|$ instead gives the numerator $(Ax_p)^* b$ when $Ax_p\ne 0$. -/
 noncomputable def hegedusScale {F : Type*} [NormedAddCommGroup F] [InnerProductSpace ℝ F]
     (A : F →ₗ[ℝ] F) (b xp : F) : ℝ :=
   inner ℝ b (A xp) / ‖A xp‖ ^ 2

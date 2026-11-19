@@ -118,6 +118,40 @@ the Karush–Kuhn–Tucker theorem, the penalty and augmented Lagrangian methods
 
 ## Deviations from the source
 
+* **Generalization.** The variational inequality uses pointwise differentiability rather than a
+  continuously differentiable neighborhood. See
+  `QuarteroniSaccoSaleri.Chapter07.property_7_9_necessary`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_9_sufficient`.
+* **Correction.** Existence of the unique minimizer requires a nonempty feasible set and lower
+  semicontinuity. See `QuarteroniSaccoSaleri.Chapter07.property_7_10`.
+* **Representation.** Regularity uses constraint gradients directly, with smoothness stated in the
+  multiplier theorems. See `QuarteroniSaccoSaleri.Chapter07.definition_7_2`,
+  `QuarteroniSaccoSaleri.Chapter07.definition_7_3`.
+* **Correction.** The necessary multiplier theorem requires regularity as in Definition 7.2. See
+  `QuarteroniSaccoSaleri.Chapter07.property_7_11`.
+* **Correction.** Mixed-constraint stationarity is in the primal variable; inequality multipliers
+  satisfy signs and complementarity. See `QuarteroniSaccoSaleri.Chapter07.property_7_12`.
+* **Representation.** The feasible set uses zero-based finite indices with natural cutoffs. See
+  `QuarteroniSaccoSaleri.Chapter07.feasibleRegion`,
+  `QuarteroniSaccoSaleri.Chapter07.mem_feasibleRegion`.
+* **Correction.** The necessary Kuhn–Tucker conditions assume independence of all active constraint
+  gradients. See `QuarteroniSaccoSaleri.Chapter07.IsRegularNLP`,
+  `QuarteroniSaccoSaleri.Chapter07.exists_kuhnTucker`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_13`.
+* **Correction.** The fourth Kuhn–Tucker condition uses the multiplier vector and assumes
+  regularity. See `QuarteroniSaccoSaleri.Chapter07.property_7_14`.
+* **Correction.** Kuhn–Tucker sufficiency includes multiplier signs and uses a convex set containing
+  the feasible region. See `QuarteroniSaccoSaleri.Chapter07.property_7_15`.
+* **Correction.** Penalty and augmented-penalty cluster points are constrained minimizers;
+  whole-sequence convergence is conditional. See `QuarteroniSaccoSaleri.Chapter07.property_7_16`,
+  `QuarteroniSaccoSaleri.Chapter07.property_7_16_augmented`.
+* **Correction.** A constrained minimizer minimizes the augmented objective on the constraint set;
+  the unrestricted claim can fail. See `QuarteroniSaccoSaleri.Chapter07.equation_7_55`.
+* **Reading.** The augmented quartic has no global minimizer, but zero is a strict local minimizer
+  for positive penalty and zero multiplier. See `QuarteroniSaccoSaleri.Chapter07.example_7_7`,
+  `QuarteroniSaccoSaleri.Chapter07.example_7_7_isLocalMin`.
+* **Specialization.** The declaration proves the implication from tangent positivity to
+  large-penalty Hessian positivity. See `QuarteroniSaccoSaleri.Chapter07.property_7_17_debreu`.
 * **Property 7.9(1)** (generalization). The book assumes $f$ of class $C^1$ on a ball around $x^*$;
   differentiability at $x^*$ suffices. See `QuarteroniSaccoSaleri.Chapter07.property_7_9_necessary`.
 * **Property 7.10** (correction). The statement needs $f$ lower semicontinuous on $\Omega$. See
@@ -197,7 +231,12 @@ $$\nabla f(x^*)^T (x - x^*) \ge 0 \quad \text{for all } x \in \Omega.$$
 **Generalization.** The book assumes $f$ of class $C^1$ on a ball around $x^*$.
 Differentiability at $x^*$ suffices.
 
-The proof specializes `Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`. -/
+The proof specializes `Descent.fderiv_apply_sub_nonneg_of_isLocalMinOn`.
+
+**Generalization.** The necessary condition needs differentiability only at the minimizer. The
+sufficient condition uses differentiability at points of the feasible set and the
+convexity/supporting inequality there, without requiring continuous differentiability on a ball.
+-/
 theorem property_7_9_necessary (hΩ : Convex ℝ Ω) (hx : xstar ∈ Ω) (hf : DifferentiableAt ℝ f xstar)
     (hmin : IsLocalMinOn f Ω xstar) : ∀ x ∈ Ω, 0 ≤ ⟪gradient f xstar, x - xstar⟫_ℝ :=
     fun x hxΩ => by
@@ -210,7 +249,12 @@ point of $\Omega$. If $x^* \in \Omega$ satisfies (7.48), $\nabla f(x^*)^T (x - x
 all $x \in \Omega$, then $x^*$ is a global minimizer of $f$ on $\Omega$.
 
 The proof is the sufficiency half of `isMinOn_iff_forall_lineDeriv_nonneg` in
-`Numlib.Analysis.Convex.Gateaux`. -/
+`Numlib.Analysis.Convex.Gateaux`.
+
+**Generalization.** The necessary condition needs differentiability only at the minimizer. The
+sufficient condition uses differentiability at points of the feasible set and the
+convexity/supporting inequality there, without requiring continuous differentiability on a ball.
+-/
 theorem property_7_9_sufficient (hconv : ConvexOn ℝ Ω f) (hf : ∀ y ∈ Ω, DifferentiableAt ℝ f y)
     (hx : xstar ∈ Ω) (h48 : ∀ x ∈ Ω, 0 ≤ ⟪gradient f xstar, x - xstar⟫_ℝ) : IsMinOn f Ω xstar := by
   refine (isMinOn_iff_forall_lineDeriv_nonneg (f' := fderiv ℝ f) hconv
@@ -260,7 +304,12 @@ one local minimizer on $\Omega$.
 assumption the statement is false: $f(x) = (x - 1)^2$ on $[0, 1)$ with $f(1) = 5$ is strongly
 convex on $[0, 1]$ and has no minimizer. The examples of the book are continuous.
 
-The second part is Mathlib's `IsMinOn.of_isLocalMinOn_of_convexOn`. -/
+The second part is Mathlib's `IsMinOn.of_isLocalMinOn_of_convexOn`.
+
+**Correction.** The closed convex set must be nonempty, and the objective is assumed lower
+semicontinuous on it. For example, $f(0)=1$ and $f(x)=x^2$ on $0<x\le1$ is strongly convex on
+$[0,1]$ but fails to attain its infimum. Every local minimizer is global.
+-/
 theorem property_7_10 (hΩc : IsClosed Ω) (hΩ : Convex ℝ Ω) (hne : Ω.Nonempty) {ρ : ℝ}
     (hf : IsStronglyConvexOn f Ω ρ) (hlsc : LowerSemicontinuousOn f Ω) :
     (∃! xstar, xstar ∈ Ω ∧ IsMinOn f Ω xstar) ∧
@@ -308,7 +357,12 @@ $h_1, \ldots, h_m : \mathbb{R}^n \to \mathbb{R}$. A point $x$ is **regular** if 
 the column vectors $\nabla h_i(x)$ of the Jacobian matrix $J_h(x)$ are linearly independent.
 
 The book assumes the $h_i$ of class $C^1$ near $x$. The definition does not include this
-assumption; the theorems that use it assume it. -/
+assumption; the theorems that use it assume it.
+
+**Reading.** Regularity is feasibility plus linear independence of the constraint gradients, using
+the text's Jacobian column convention and active inequality gradients. For Definition 7.3 the local
+smoothness assumption is supplied at use sites, rather than included in the predicate.
+-/
 def definition_7_2 (h : Fin m → EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) :
     Prop :=
   (∀ i, h i x = 0) ∧ LinearIndependent ℝ fun i => gradient (h i) x
@@ -366,7 +420,12 @@ $$\nabla f(x^*) + \sum_{i=1}^m \lambda^*_i \nabla h_i(x^*) = 0.$$
 just before the property. Without regularity the statement is false: for $\min x$ subject to
 $x^2 = 0$, no multiplier exists.
 
-The proof specializes `Constrained.existsUnique_multipliers_of_isLocalMinOn`. -/
+The proof specializes `Constrained.existsUnique_multipliers_of_isLocalMinOn`.
+
+**Correction.** The theorem requires regularity of the feasible point. Without it, minimizing $x$
+under $x^2=0$ at zero admits no multiplier. Multiplier stationarity in the constraint variables is
+represented by feasibility.
+-/
 theorem property_7_11 (hreg : definition_7_2 h xstar)
     (hmin : IsLocalMinOn f {x | ∀ i, h i x = 0} xstar) (hf : ContDiffAt ℝ 1 f xstar)
     (hh : ∀ i, ContDiffAt ℝ 1 (h i) xstar) :
@@ -438,7 +497,12 @@ inequality constraints at $x$. A point $x$ is **regular** if $h(x) = 0$, $g(x) \
 vectors $\nabla h_i(x)$, $i = 1, \ldots, m$, together with the vectors $\nabla g_j(x)$,
 $j \in \mathcal{J}(x)$, are linearly independent.
 
-The active set is `Constrained.activeSet g x`. -/
+The active set is `Constrained.activeSet g x`.
+
+**Reading.** Regularity is feasibility plus linear independence of the constraint gradients, using
+the text's Jacobian column convention and active inequality gradients. For Definition 7.3 the local
+smoothness assumption is supplied at use sites, rather than included in the predicate.
+-/
 def definition_7_3 (h : Fin m → EuclideanSpace ℝ (Fin n) → ℝ)
     (g : Fin r → EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   (∀ i, h i x = 0) ∧ (∀ j, g j x ≤ 0) ∧
@@ -471,7 +535,13 @@ $$J_\mathcal{M}(x^*, \lambda^*, \mu^*) = \nabla f(x^*) + \sum_{i=1}^m \lambda^*_
 $\mu^*_j \ge 0$ and $\mu^*_j g_j(x^*) = 0$ for all $j$.
 
 Existence is `Constrained.exists_kkt_of_isLocalMinOn`, which uses the implicit function theorem
-and Farkas' lemma. Uniqueness is `Constrained.kkt_multipliers_unique`. -/
+and Farkas' lemma. Uniqueness is `Constrained.kkt_multipliers_unique`.
+
+**Correction.** The literal total gradient of the printed Lagrangian in the inequality multiplier
+variables would force every inequality active. The theorem uses stationarity in x and keeps
+feasibility, signs and complementarity for inequality variables. The resulting multiplier pair is
+unique under regularity.
+-/
 theorem property_7_12 (hreg : definition_7_3 h g xstar)
     (hmin : IsLocalMinOn f {x | (∀ i, h i x = 0) ∧ ∀ j, g j x ≤ 0} xstar)
     (hf : ContDiffAt ℝ 1 f xstar) (hh : ∀ i, ContDiffAt ℝ 1 (h i) xstar)
@@ -525,7 +595,12 @@ solutions is the **feasible region**.
 The book's index $i$ is $1$-based, and `i : Fin m` is $0$-based, so the book's $i \le l$ is
 `(i : ℕ) < l`. The index sets of Section 7.3.1, $I_= = \{i : g_i(x) = b_i\}$, its complement
 $I_{\neq}$, $J_= = \{j : x_j = 0\}$ and $J_> = \{j : x_j > 0\}$, have no Lean definitions; the
-statements write out the conditions where they occur. -/
+statements write out the conditions where they occur.
+
+**Reading.** The three index blocks are expressed in zero-based finite indices, with natural
+cutoffs. They agree with the source ranges for $l\le k\le m$, while the definitions also accept
+other cutoffs.
+-/
 def feasibleRegion (g : Fin m → EuclideanSpace ℝ (Fin n) → ℝ) (b : Fin m → ℝ) (l k : ℕ) :
     Set (EuclideanSpace ℝ (Fin n)) :=
   {x | (∀ i : Fin m, (i : ℕ) < l → g i x ≤ b i) ∧
@@ -534,7 +609,12 @@ def feasibleRegion (g : Fin m → EuclideanSpace ℝ (Fin n) → ℝ) (b : Fin m
 
 /-- **Equation (7.52)** of [quarteroni2000numerical], membership. A vector $x$ is in the feasible
 region if and only if $g_i(x) \le b_i$ for $i \le l$, $g_i(x) \ge b_i$ for $l < i \le k$,
-$g_i(x) = b_i$ for $i > k$, and $x_j \ge 0$ for all $j$. -/
+$g_i(x) = b_i$ for $i > k$, and $x_j \ge 0$ for all $j$.
+
+**Reading.** The three index blocks are expressed in zero-based finite indices, with natural
+cutoffs. They agree with the source ranges for $l\le k\le m$, while the definitions also accept
+other cutoffs.
+-/
 @[simp] theorem mem_feasibleRegion {x : EuclideanSpace ℝ (Fin n)} :
     x ∈ feasibleRegion g b l k ↔ (∀ i : Fin m, (i : ℕ) < l → g i x ≤ b i) ∧
       (∀ i : Fin m, l ≤ (i : ℕ) → (i : ℕ) < k → b i ≤ g i x) ∧
@@ -703,7 +783,12 @@ gradients $\nabla g_i(x)$ of the equality constraints $k < i \le m$ and of the a
 constraints $i \le k$, together with the vectors $-e_j$ of the active sign constraints
 $x_j = 0$, are linearly independent.
 
-The book alludes to a constraint qualification after Property 7.14 and does not state it. -/
+The book alludes to a constraint qualification after Property 7.14 and does not state it.
+
+**Correction.** The necessary conditions assume active-gradient independence, including active lower
+coordinate bounds. The multiplier existence theorem gives full primal stationarity with separate
+coordinate multipliers and includes signs and individual complementarity.
+-/
 def IsRegularNLP (g : Fin m → EuclideanSpace ℝ (Fin n) → ℝ) (b : Fin m → ℝ) (l k : ℕ)
     (x : EuclideanSpace ℝ (Fin n)) : Prop :=
   Constrained.IsRegularPointIneq (standardEq g b k) (standardEqDeriv g k) (standardIneq g b l k)
@@ -736,7 +821,12 @@ $\lambda^*_{2,j} x^*_j = 0$ for all $i$ and $j$.
 
 Properties 7.13 and 7.14 follow from this result. The book does not list the signs among the
 Kuhn–Tucker conditions, but Property 7.15 needs them. The proof applies
-`Constrained.exists_kkt_of_isLocalMinOn` to the minimization of $-f$ in the standard form. -/
+`Constrained.exists_kkt_of_isLocalMinOn` to the minimization of $-f$ in the standard form.
+
+**Correction.** The necessary conditions assume active-gradient independence, including active lower
+coordinate bounds. The multiplier existence theorem gives full primal stationarity with separate
+coordinate multipliers and includes signs and individual complementarity.
+-/
 theorem exists_kuhnTucker (hlk : l ≤ k) (hreg : IsRegularNLP g b l k xstar)
     (hmax : IsLocalMaxOn f (feasibleRegion g b l k) xstar) (hf : ContDiff ℝ 1 f)
     (hg : ∀ i, ContDiff ℝ 1 (g i)) :
@@ -834,7 +924,12 @@ Property 7.14. Without one, the multiplier need not exist. The formal statement 
 `QuarteroniSaccoSaleri.Chapter07.IsRegularNLP`.
 
 In fact $\nabla_x \mathcal{L}(x^*, \lambda^*) = 0$ by
-`QuarteroniSaccoSaleri.Chapter07.exists_kuhnTucker`, which is stronger than the first condition. -/
+`QuarteroniSaccoSaleri.Chapter07.exists_kuhnTucker`, which is stronger than the first condition.
+
+**Correction.** The necessary conditions assume active-gradient independence, including active lower
+coordinate bounds. The multiplier existence theorem gives full primal stationarity with separate
+coordinate multipliers and includes signs and individual complementarity.
+-/
 theorem property_7_13 (hlk : l ≤ k) (hreg : IsRegularNLP g b l k xstar)
     (hmax : IsLocalMaxOn f (feasibleRegion g b l k) xstar) (hf : ContDiff ℝ 1 f)
     (hg : ∀ i, ContDiff ℝ 1 (g i)) :
@@ -858,7 +953,12 @@ $$(\nabla_\lambda \mathcal{L}(x^*, \lambda^*))^T \lambda^* = \sum_{i=1}^m \lambd
 **Typo.** The book prints the fourth condition as $(\nabla_\lambda \mathcal{L})^T x^* = 0$. This
 cannot be read as it stands, because $\nabla_\lambda \mathcal{L} \in \mathbb{R}^{m+n}$ and
 $x^* \in \mathbb{R}^n$ have different lengths. The complementarity condition of the Kuhn–Tucker
-conditions is $(\nabla_\lambda \mathcal{L})^T \lambda^* = 0$. -/
+conditions is $(\nabla_\lambda \mathcal{L})^T \lambda^* = 0$.
+
+**Correction.** The fourth Kuhn–Tucker condition pairs the multiplier gradient with the multiplier
+vector. The printed primal vector has the wrong dimension. The theorem also uses the regularity
+required for Property 7.13.
+-/
 theorem property_7_14 (hlk : l ≤ k) (hreg : IsRegularNLP g b l k xstar)
     (hmax : IsLocalMaxOn f (feasibleRegion g b l k) xstar) (hf : ContDiff ℝ 1 f)
     (hg : ∀ i, ContDiff ℝ 1 (g i)) :
@@ -903,7 +1003,12 @@ presupposes that the feasible region is convex. The formal statement uses a conv
 contains the feasible region and lies in the nonnegative orthant: $C$ is the feasible region
 when it is convex, and otherwise the orthant on which (7.52) is posed.
 
-The proof applies `Constrained.isMinOn_of_lagrangian_convexOn` to $-f$. -/
+The proof applies `Constrained.isMinOn_of_lagrangian_convexOn` to $-f$.
+
+**Correction.** The theorem requires the multiplier signs left unstated in the listed book
+conditions. Convexity and concavity are imposed on a convex subset of the nonnegative orthant
+containing the feasible region, which itself need not be convex.
+-/
 theorem property_7_15 {C : Set (EuclideanSpace ℝ (Fin n))}
     {lam : (Fin m → ℝ) × EuclideanSpace ℝ (Fin n)} (hsub : feasibleRegion g b l k ⊆ C)
     (hCnonneg : ∀ y ∈ C, ∀ j, 0 ≤ y j) (hfeas : xstar ∈ feasibleRegion g b l k)
@@ -1053,7 +1158,13 @@ when the constrained problem has several minimizers.
 
 The two parts are `Constrained.penalty_clusterPt` and `Constrained.tendsto_penalty_of_unique`.
 The proof uses only $\alpha_k \to \infty$; the hypotheses $\alpha_k > 0$ and monotonicity follow
-the book. -/
+the book.
+
+**Correction.** Global optimality of the limit follows for any cluster point of penalty minimizers.
+Full convergence for the ordinary penalty method additionally assumes boundedness and a unique
+constrained minimizer. The augmented result with bounded multipliers states the cluster-point
+conclusion.
+-/
 theorem property_7_16 {Ω : Set (EuclideanSpace ℝ (Fin n))} (hΩ : IsClosed Ω)
     (hf : ContinuousOn f Ω) (hh : ContinuousOn h Ω) {α : ℕ → ℝ} (hpos : ∀ k, 0 < α k)
     (hmono : Monotone α) (hdiv : Tendsto α atTop atTop) {xstar : EuclideanSpace ℝ (Fin n)}
@@ -1077,7 +1188,12 @@ on $\{x : h(x) = 0\}$, then $x^*$ minimizes $\mathcal{G}_\alpha(\cdot, \lambda)$
 $\{x : h(x) = 0\}$ for every $\alpha$ and $\lambda$, because
 $\mathcal{G}_\alpha(\cdot, \lambda) = f$ there.
 
-The augmented Lagrangian is the backbone's `Constrained.augmented f h α λ`. -/
+The augmented Lagrangian is the backbone's `Constrained.augmented f h α λ`.
+
+**Correction.** The augmented objective equals the original objective on the feasible set, so a
+constrained minimizer still minimizes it on that set. It need not minimize the augmented objective
+on the full search region for arbitrary multipliers.
+-/
 theorem equation_7_55 (α : ℝ) (l : EuclideanSpace ℝ (Fin m)) (x : EuclideanSpace ℝ (Fin n)) :
     Constrained.augmented f h α l x = f x + ⟪l, h x⟫_ℝ + 1 / 2 * α * ‖h x‖ ^ 2 ∧
       Constrained.augmented f h α 0 = Constrained.penalized f h α ∧
@@ -1098,7 +1214,13 @@ $x^*_k \in \Omega$ be a global minimizer of $\mathcal{G}_{\alpha_k}(\cdot, \lamb
 $\Omega$. Then every cluster point $\bar x$ of $(x^*_k)$ lies in $\Omega$, satisfies
 $h(\bar x) = 0$, and is a global minimizer of $f$ on $\{x \in \Omega : h(x) = 0\}$.
 
-The proof specializes `Constrained.augmented_clusterPt`. -/
+The proof specializes `Constrained.augmented_clusterPt`.
+
+**Correction.** Global optimality of the limit follows for any cluster point of penalty minimizers.
+Full convergence for the ordinary penalty method additionally assumes boundedness and a unique
+constrained minimizer. The augmented result with bounded multipliers states the cluster-point
+conclusion.
+-/
 theorem property_7_16_augmented {Ω : Set (EuclideanSpace ℝ (Fin n))} (hΩ : IsClosed Ω)
     (hf : ContinuousOn f Ω) (hh : ContinuousOn h Ω) {α : ℕ → ℝ} (hdiv : Tendsto α atTop atTop)
     {xstar : EuclideanSpace ℝ (Fin n)} (hstar : xstar ∈ Ω ∧ h xstar = 0)
@@ -1125,7 +1247,12 @@ has no solution.
 **Reading.** The book says that $\mathcal{G}_\alpha$ "no longer admits a minimum at $x = 0$" for
 any $\alpha_k \neq 0$. This is read as the absence of a global minimizer: for $\lambda = 0$ and
 $\alpha > 0$ the point $0$ is a strict local minimizer, by
-`QuarteroniSaccoSaleri.Chapter07.example_7_7_isLocalMin`. -/
+`QuarteroniSaccoSaleri.Chapter07.example_7_7_isLocalMin`.
+
+**Reading.** For every parameter and multiplier the augmented quartic has no global minimizer. With
+zero multiplier and positive penalty, zero is a strict local minimizer despite the source's
+unqualified statement.
+-/
 theorem example_7_7 (α l : ℝ) :
     IsMinOn (fun x : ℝ => -x ^ 4) {x | x = 0} 0 ∧
       (∀ x, Constrained.augmented (fun x : ℝ => -x ^ 4) (fun x : ℝ => x) α l x
@@ -1181,7 +1308,12 @@ $\delta > 0$ with $\mathcal{G}_\alpha(0, 0) < \mathcal{G}_\alpha(x, 0)$ for all 
 $0 < |x| < \delta$.
 
 The reason is $\mathcal{G}_\alpha''(0) = \alpha > 0$. What fails at $0$ is the global
-minimality, by `QuarteroniSaccoSaleri.Chapter07.example_7_7`. -/
+minimality, by `QuarteroniSaccoSaleri.Chapter07.example_7_7`.
+
+**Reading.** For every parameter and multiplier the augmented quartic has no global minimizer. With
+zero multiplier and positive penalty, zero is a strict local minimizer despite the source's
+unqualified statement.
+-/
 theorem example_7_7_isLocalMin {α : ℝ} (hα : 0 < α) :
     ∃ δ > 0, ∀ x : ℝ, |x| < δ → x ≠ 0 →
       Constrained.augmented (fun x : ℝ => -x ^ 4) (fun x : ℝ => x) α 0 0
@@ -1225,7 +1357,12 @@ At a zero of $h$ the Hessian is $H_{\mathcal{G}_\alpha}(x^*, \lambda^*) = H_{\ma
 $\nabla h_i(x^*)$, and the result is Debreu's lemma (Lemma 1.25 of Bertsekas) applied to this
 sum. The proof specializes `Constrained.exists_forall_pos_fderiv_fderiv_augmented`, through
 `Constrained.exists_forall_pos_add_mul_sq_norm_of_pos_on_ker` and
-`Constrained.fderiv_fderiv_augmented_apply`. -/
+`Constrained.fderiv_fderiv_augmented_apply`.
+
+**Reading.** The theorem establishes that condition 2 implies condition 3 for all sufficiently large
+penalty parameters. It does not establish the subsequent local minimizer, its dependence on
+parameters or the convergence statements.
+-/
 theorem property_7_17_debreu {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {h : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)} {xstar : EuclideanSpace ℝ (Fin n)}
     {l : EuclideanSpace ℝ (Fin m)} (hfeas : h xstar = 0) (hf : ContDiffAt ℝ 2 f xstar)

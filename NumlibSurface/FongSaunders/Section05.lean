@@ -58,6 +58,10 @@ monotone for MINRES.
 
 ## Deviations from the source
 
+* **Example (4.2)** (reading). The statements express failure of monotonicity by existence,
+  with the printed matrix and right-hand side as witnesses. See
+  `FongSaunders.minres_norm_iterate_not_monotone` and
+  `FongSaunders.minres_backwardError_not_antitoneOn`.
 * **The blank CG entries of Table 5.1** (reading). A blank entry is read as the existence of a
   symmetric positive definite system on which the row fails to be monotone. See
   `FongSaunders.cg_norm_residual_not_antitone` and `FongSaunders.cg_backwardError_not_antitoneOn`.
@@ -138,7 +142,10 @@ theorem cg_profile (hA : A.PosDef) {xstar : Vec n} (hstar : A ⬝ xstar = b) :
 positive definite, let $b \neq 0$ and $Ax^* = b$, and let $(x_k)$ be a sequence such that each
 $x_k$ is a MINRES iterate at step $k$. Then $(x_k)$ has the MINRES profile of all five rows:
 $\|x_k\|$ increases; $\|x^* - x_k\|$, $\|x^* - x_k\|_A$ and $\|r_k\|$ decrease; and
-$\|r_k\| / \|x_k\|$ decreases for $k \ge 1$. -/
+$\|r_k\| / \|x_k\|$ decreases for $k \ge 1$.
+
+**Reading.** The ratio requires nonzero b and starts at step 1.
+-/
 theorem minres_profile (hA : A.PosDef) (hb : b ≠ 0) {xstar : Vec n} (hstar : A ⬝ xstar = b)
     {x : ℕ → Vec n} (hx : ∀ k, IsMINRESIterate A b k (x k)) : MINRESProfile A b xstar x where
   norm_iterate := theorem_2_3_minres hA hx
@@ -527,7 +534,9 @@ nonsingular $A \in \mathbb{R}^{3 \times 3}$ and $b \in \mathbb{R}^3$ such that f
 sequence $(x_k)$ in which each $x_k$ is a MINRES iterate at step $k$, the norms $\|x_k\|$ are
 not monotonically increasing.
 
-The witness is the system (4.2). Its MINRES iterates are $x_1 = (0, 2/7, 2/7)^T$ and
+**Reading.** The source asserts nonmonotonicity for the particular system (4.2). The
+declaration packages it as an existence statement with that system as its witness.
+Its MINRES iterates are $x_1 = (0, 2/7, 2/7)^T$ and
 $x_2 = (2/19, 3/19, 5/19)^T$, with $\|x_1\|^2 = 8/49 > 2/19 = \|x_2\|^2$. So Theorem 2.3 fails
 when the assumption $A \succ 0$ is dropped. -/
 theorem minres_norm_iterate_not_monotone :
@@ -545,7 +554,9 @@ nonsingular $A \in \mathbb{R}^{3 \times 3}$ and $b \in \mathbb{R}^3$ such that f
 sequence $(x_k)$ in which each $x_k$ is a MINRES iterate at step $k$, the ratios
 $\|r_k\| / \|x_k\|$ with $r_k = b - A x_k$ are not monotonically decreasing on $k \ge 1$.
 
-The witness is the system (4.2), with $(\|r_1\| / \|x_1\|)^2 = 21/4 < 8 = (\|r_2\| /
+**Reading.** The source asserts nonmonotonicity for the particular system (4.2). The
+declaration packages it as an existence statement with that system as its witness.
+Its ratios satisfy $(\|r_1\| / \|x_1\|)^2 = 21/4 < 8 = (\|r_2\| /
 \|x_2\|)^2$. So Theorem 3.1 also fails when the assumption $A \succ 0$ is dropped. This is the
 content of Figure 4.6. -/
 theorem minres_backwardError_not_antitoneOn :

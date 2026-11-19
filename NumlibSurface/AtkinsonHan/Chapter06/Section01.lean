@@ -49,6 +49,8 @@ use only Mathlib's calculus.
 
 ## Deviations from the source
 
+* **Equations (6.1.1)–(6.1.4)** (reading). The asymptotic errors are stated with explicit
+  constants and derivative bounds on the respective stencil intervals.
 * **Example 6.1.1, (6.1.19)** (typo). The book prints $u_{j \pm 1}^{m-1}$ where it means
   $v_{j \pm 1}^{m-1}$. See `AtkinsonHan.Chapter06.example_6_1_1`.
 
@@ -98,6 +100,8 @@ private theorem abs_le_of_abs_deriv_le_mul_pow {g g' : ℝ → ℝ} {b C D : ℝ
 /-- **Equation (6.1.1)** of [han2009theoretical], the forward difference quotient. Let $h > 0$, and
 let $f$ have the derivatives $f'$ and $f''$ on $[x, x + h]$ with $|f''(y)| \le M$ there. Then
 $$\left| f'(x) - \frac{f(x + h) - f(x)}{h} \right| \le \frac{h}{2} M.$$
+
+**Reading.** Forward difference error has explicit h/2 times second derivative bound.
 -/
 theorem equation_6_1_1 (hh : 0 < h) (hf : ∀ y ∈ Icc x (x + h), HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc x (x + h), HasDerivAt f' (f'' y) y)
@@ -131,6 +135,8 @@ theorem equation_6_1_1 (hh : 0 < h) (hf : ∀ y ∈ Icc x (x + h), HasDerivAt f 
 /-- **Equation (6.1.2)** of [han2009theoretical], the backward difference quotient. Let $h > 0$, and
 let $f$ have the derivatives $f'$ and $f''$ on $[x - h, x]$ with $|f''(y)| \le M$ there. Then
 $$\left| f'(x) - \frac{f(x) - f(x - h)}{h} \right| \le \frac{h}{2} M.$$
+
+**Reading.** Backward difference error has explicit h/2 times second derivative bound.
 -/
 theorem equation_6_1_2 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) x, HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc (x - h) x, HasDerivAt f' (f'' y) y)
@@ -175,7 +181,10 @@ $$\left| f'(x) - \frac{f(x + h) - f(x - h)}{2h} \right| \le \frac{h^2}{6} M.$$
 
 The third derivative is needed: the Taylor expansions of $f(x + h)$ and $f(x - h)$ have the same
 second-order terms, which cancel in the difference, so the leading error is the third-order
-term. -/
+term.
+
+**Reading.** Centered first difference error has explicit h²/6 times third derivative bound.
+-/
 theorem equation_6_1_3 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f' (f'' y) y)
     (hf'' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f'' (f''' y) y)
@@ -235,7 +244,10 @@ $|f''''(y)| \le M$ there. Then
 $$\left| f''(x) - \frac{f(x + h) - 2 f(x) + f(x - h)}{h^2} \right| \le \frac{h^2}{12} M.$$
 
 The odd-order terms of the two Taylor expansions cancel, which turns the order $h$ of a naive
-count into $h^2$. -/
+count into $h^2$.
+
+**Reading.** Centered second difference error has explicit h²/12 times fourth derivative bound.
+-/
 theorem equation_6_1_4 (hh : 0 < h) (hf : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f (f' y) y)
     (hf' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f' (f'' y) y)
     (hf'' : ∀ y ∈ Icc (x - h) (x + h), HasDerivAt f'' (f''' y) y)

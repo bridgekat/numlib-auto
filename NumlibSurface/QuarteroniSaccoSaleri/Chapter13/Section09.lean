@@ -69,6 +69,17 @@ proofs specialize `Numlib.FiniteDifference.Hyperbolic`.
 
 ## Deviations from the source
 
+* **Equations (13.54)–(13.55)** (specialization). The formula concerns one Fourier mode. The
+  dispersion definition uses the principal argument and total division, so its exact value of
+  one is proved only for nonzero phases of modulus less than $\pi$. See
+  `QuarteroniSaccoSaleri.Chapter13.dispersionError` and
+  `QuarteroniSaccoSaleri.Chapter13.amplificationError_exact`.
+* **Equations (13.56)–(13.63) and Exercise 13.8** (reading). The modified equation uses
+  classical derivatives on all of space-time. The truncation statements give explicit residual
+  bounds under global derivative hypotheses, and the exact Fourier mode identities permit all
+  real diffusion coefficients and times. See `QuarteroniSaccoSaleri.Chapter13.equation_13_59`,
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_63` and
+  `QuarteroniSaccoSaleri.Chapter13.exercise_13_8`.
 * **Equation (13.58)** (typo). The source prints the term $a (v_x + (\Delta x / 2) v_{xx})$; the
   backward difference gives $a (v_x - (\Delta x / 2) v_{xx})$. See
   `QuarteroniSaccoSaleri.Chapter13.equation_13_57`.
@@ -97,7 +108,10 @@ where $\varphi_k = k \Delta x$ is the phase angle.
 
 The factor $g_k$ is `FiniteDifference.Hyperbolic.exactAmplification a Δt k`, which is defined as
 $e^{-iak\Delta t}$, so the first clause holds by definition. The phase angle is
-`FiniteDifference.Hyperbolic.phaseAngle k Δx`. -/
+`FiniteDifference.Hyperbolic.phaseAngle k Δx`.
+
+**Specialization.** The exact factor and powers are stated for one mode. The infinite Fourier
+expansion is outside this statement. -/
 theorem equation_13_54 {Δt Δx lam : ℝ} (hΔx : Δx ≠ 0) (hlam : lam = Δt / Δx) (a : ℝ) (k : ℤ) :
     Hyperbolic.exactAmplification a Δt k = Complex.exp (-(Complex.I * a * k * Δt)) ∧
       (∀ n : ℕ, Hyperbolic.exactAmplification a Δt k ^ n
@@ -124,7 +138,10 @@ speed $a$.
 
 Here $\arg$ is the principal argument `Complex.arg`, with values in $(-\pi, \pi]$. When
 $a \lambda \varphi = 0$ the value is $0$, by the convention for division by zero. The definition
-is `FiniteDifference.Hyperbolic.dispersionError`. -/
+is `FiniteDifference.Hyperbolic.dispersionError`.
+
+**Reading.** The numerical phase uses the principal argument, and total division assigns zero
+when the exact phase vanishes. -/
 noncomputable def dispersionError (a lam phi : ℝ) (γ : ℂ) : ℝ :=
   Hyperbolic.dispersionError a lam phi γ
 
@@ -137,7 +154,9 @@ $$|g_k| = 1, \qquad \varepsilon_a(g_k) = 1, \qquad \varepsilon_d(g_k) = 1.$$
 
 The condition $|a \lambda \varphi_k| < \pi$ makes the phase of $g_k$ unambiguous, so that
 $\arg g_k = -a \lambda \varphi_k$, and the condition $a \lambda \varphi_k \neq 0$ excludes the
-division by zero. The first two clauses hold without these conditions. -/
+division by zero. The first two clauses hold without these conditions.
+
+**Reading.** The principal-phase equality uses nonzero exact phase of modulus less than $\pi$. -/
 theorem amplificationError_exact {a lam Δt Δx : ℝ} {k : ℤ} (hΔx : Δx ≠ 0)
     (hlam : lam = Δt / Δx) (h0 : a * lam * Hyperbolic.phaseAngle k Δx ≠ 0)
     (hpi : |a * lam * Hyperbolic.phaseAngle k Δx| < Real.pi) :
@@ -159,7 +178,10 @@ point $(x, t)$.
 
 The term $\mu v_{xx}$ is dissipative and the term $\nu v_{xxx}$ is dispersive. The definition is
 `FiniteDifference.Hyperbolic.IsModifiedSolution`, where the derivatives are functions given with
-`Transport.HasPartialsOn Set.univ`. -/
+`Transport.HasPartialsOn Set.univ`.
+
+**Reading.** The classical solution definition imposes the derivative conditions and identity
+on all of space-time. -/
 def equation_13_56 (a mu nu : ℝ) (v : ℝ → ℝ → ℝ) : Prop :=
   Hyperbolic.IsModifiedSolution a mu nu v
 
@@ -178,7 +200,10 @@ the speed of propagation from $a$ to $a + \nu k^2$. For $\mu = \nu = 0$ the mode
 $e^{ik(x - at)}$ (13.62).
 
 The theorem states the algebraic relation for $\sigma$; it does not state that $v$ solves
-(13.56) in the sense of `QuarteroniSaccoSaleri.Chapter13.equation_13_56`. -/
+(13.56) in the sense of `QuarteroniSaccoSaleri.Chapter13.equation_13_56`.
+
+**Generalization.** The mode identities hold for every real diffusion coefficient and time,
+including negative values. -/
 theorem equation_13_63 (a mu nu : ℝ) (k : ℤ) :
     -(mu * (k : ℂ) ^ 2) - Complex.I * k * (a + nu * (k : ℂ) ^ 2)
           + a * (Complex.I * k)
@@ -259,7 +284,10 @@ $$|R(x, t)| \le M (1 + a)^3 (\Delta t^2 + \Delta t \Delta x + \Delta x^2).$$
 
 A solution of the transport equation itself leaves the upwind scheme a residual of order
 $O(\Delta t + \Delta x)$ (Table 13.1). So the upwind scheme solves the equation with the
-dissipative term $\mu v_{xx}$ to second order. -/
+dissipative term $\mu v_{xx}$ to second order.
+
+**Reading.** The exact modified equation is a premise. The conclusion is the explicit residual
+estimate, including the mixed mesh term. -/
 theorem equation_13_59 {v : ℝ → ℝ → ℝ} {D : ℕ → ℕ → ℝ → ℝ → ℝ} {a mu M Δt Δx lam : ℝ}
     (hD : HasPartialDerivs v D) (ha : 0 < a) (hΔt : 0 < Δt) (hΔx : 0 < Δx)
     (hlam : lam = Δt / Δx) (hmu : mu = a * Δx / 2 - a ^ 2 * Δt / 2)
@@ -321,7 +349,10 @@ For fixed $\lambda$ both bounds are $O(\Delta x^3)$.
 The Lax–Wendroff scheme is second-order accurate, so its equivalent equation has no dissipative
 term: its coefficient $\mu$ is $0$. The schemes are
 `QuarteroniSaccoSaleri.Chapter13.equation_13_39` and
-`QuarteroniSaccoSaleri.Chapter13.equation_13_40`. -/
+`QuarteroniSaccoSaleri.Chapter13.equation_13_40`.
+
+**Reading.** The coefficient choices from Table 13.2 are premises in two quantitative residual
+estimates. -/
 theorem exercise_13_8 {v w : ℝ → ℝ → ℝ} {D E : ℕ → ℕ → ℝ → ℝ → ℝ}
     {a mu nu nu' M Δt Δx lam : ℝ} (hD : HasPartialDerivs v D) (hE : HasPartialDerivs w E)
     (hΔt : 0 < Δt) (hΔx : 0 < Δx) (hlam : lam = Δt / Δx)

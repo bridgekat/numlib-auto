@@ -129,9 +129,21 @@ Corollaries 28.2.2, 28.3.1 and 28.4.1 with no proof. The proofs specialize the b
 
 ## Deviations from the source
 
+* **Section 28, affine extension** (generalization). The ordinary-program structure requires
+  global affine extensions for equality constraints. The source also chooses these
+  extensions for every inequality constraint that is affine on $C$.
+* **Section 28, optimal solutions** (generalization). The infimum-attainment definition also
+  applies to infeasible programs, for which every point attains the objective value $+\infty$.
+  See `Rockafellar.OrdinaryConvexProgram.optimalSolutions`.
+* **Section 28, Lagrangian recovery** (reading). The source's recovery formulas determine
+  the functions on $C$. Lean states equality on $C$ because constraint extensions can
+  differ outside $C$. See `Rockafellar.OrdinaryConvexProgram.eq_of_programLagrangian_eq`.
 * **Corollary 28.3.1** (generalization). The book assumes the hypotheses of Theorem 28.2. The
   statement assumes only the conclusion of Theorem 28.2, that a Kuhn–Tucker vector exists. See
   `Rockafellar.OrdinaryConvexProgram.corollary_28_3_1`.
+* **Section 28, decomposition principle** (generalization). The product results start from
+  a separable $h$ and allow any linear block coordinates. Decomposition of the minimum set
+  needs no Kuhn–Tucker hypothesis on the multiplier.
 -/
 
 open Set Pointwise
@@ -155,10 +167,13 @@ $i = r + 1, \dots, m$, $f_i$ is a real-valued affine function on all of $\mathbb
 program is to minimize $f_0(x)$ over the $x \in C$ with $f_i(x) \le 0$ for $i = 1, \dots, r$ and
 $f_i(x) = 0$ for $i = r + 1, \dots, m$.
 
-The conditions on the domains are the extension conventions (a), (b), (c) of the book. The set
+The conditions on the domains are extension conventions (a) and (b) of the book. The set
 $C$ is convex and nonempty because it is the effective domain of a proper convex function
 (`Rockafellar.OrdinaryConvexProgram.convex_C`, `Rockafellar.OrdinaryConvexProgram.nonempty_C`).
-The constraint functions are indexed by `Fin m`, starting at $0$. -/
+The constraint functions are indexed by `Fin m`, starting at $0$.
+
+**Generalization.** The source's convention (c) extends each constraint that is affine on
+$C$ to a globally affine function. Lean requires this only for equality constraints. -/
 structure OrdinaryConvexProgram (n m : ℕ) where
   /-- The set $C$ over which the objective is minimized. -/
   C : Set (Rn n)
@@ -187,7 +202,7 @@ structure OrdinaryConvexProgram (n m : ℕ) where
   /-- Extension convention (b) of the book, second half: $\operatorname{ri} C \subseteq
   \operatorname{ri}(\operatorname{dom} f_i)$ for $i = 1, \dots, r$. -/
   relint_subset : ∀ i : Fin m, (i : ℕ) < r → ri C ⊆ ri (convexDom (f i))
-  /-- Extension convention (c) of the book: for $i = r + 1, \dots, m$, the function $f_i$ is a
+  /-- The equality-constraint case of convention (c): each $f_i$ for $i = r + 1, \dots, m$ is a
   real-valued affine function on all of $\mathbb{R}^n$. -/
   exists_affine :
     ∀ i : Fin m, r ≤ (i : ℕ) → ∃ a : Rn n →ᵃ[ℝ] ℝ, ∀ x, f i x = ((a x : ℝ) : EReal)
@@ -366,13 +381,17 @@ theorem optimalValue_le {x : Rn n} (hx : x ∈ P.feasibleSet) : P.optimalValue �
 solutions** to $(P)$ are the points at which the objective function $f$ attains its infimum over
 $\mathbb{R}^n$.
 
-The book adds the proviso "provided that $f$ is not identically $+\infty$". Here the set is
-defined in all cases: if $(P)$ has no feasible solution, every point of $\mathbb{R}^n$ is an
-optimal solution. Each theorem about optimal solutions has a hypothesis that excludes this case.
+**Generalization.** The book defines optimal solutions only when the program has a feasible point.
+Here the infimum-attainment definition applies to every program. For an infeasible program the
+objective is identically $+\infty$, so every point attains the infimum.
+
 The set is `ConvexAnalysis.argmin` of `Rockafellar.OrdinaryConvexProgram.objective`. -/
 noncomputable def optimalSolutions : Set (Rn n) := argmin P.objective
 
-/-- A point $x$ is an optimal solution if and only if $f(x)$ equals the optimal value. -/
+/-- A point $x$ is an optimal solution if and only if $f(x)$ equals the optimal value.
+
+**Generalization.** This uses the same convention for infeasible programs as
+`Rockafellar.OrdinaryConvexProgram.optimalSolutions`. -/
 theorem mem_optimalSolutions_iff {x : Rn n} :
     x ∈ P.optimalSolutions ↔ P.objective x = P.optimalValue :=
   ⟨fun hx => (iInf_eq_of_mem_argmin hx).symm, fun hx z => by
@@ -395,8 +414,8 @@ theorem mem_optimalSolutions_iff_of_ne_top (h : P.optimalValue ≠ ⊤) {x : Rn 
 /-- **Section 28** of [rockafellar1970convex], the function $h$. For $\lambda = (\lambda_1, \dots,
 \lambda_m) \in \mathbb{R}^m$ it is
 $$h(x) = f_0(x) + \lambda_1 f_1(x) + \dots + \lambda_m f_m(x), \qquad x \in \mathbb{R}^n.$$
-A Kuhn–Tucker vector is a vector $\lambda$ for which the infimum of $h$ is the optimal value in
-$(P)$.
+A Kuhn–Tucker vector has nonnegative inequality multipliers and makes the infimum of $h$
+finite and equal to the optimal value in $(P)$.
 
 The sum and the products are taken in `EReal`, where $0 \cdot (\pm\infty) = 0$. The function $h$
 is not the Lagrangian of $(P)$, which is `Rockafellar.OrdinaryConvexProgram.programLagrangian`. -/
@@ -1275,7 +1294,8 @@ ordinary convex programs and their Lagrangians." If two ordinary convex programs
 variables and $m$ constraints have the same Lagrangian, then they have the same set $C$ and the
 same number $r$, and their functions $f_0, f_1, \dots, f_m$ agree on $C$.
 
-The values of $f_i$ off $C$ do not matter for $(P)$, so this is all the data of the tuple. -/
+**Reading.** The source's formulas recover the values on $C$. In Lean the tuple stores global
+functions, whose extensions beyond $C$ can differ without changing $L$. -/
 theorem eq_of_programLagrangian_eq {P₁ P₂ : OrdinaryConvexProgram n m}
     (h : P₁.programLagrangian = P₂.programLagrangian) :
     P₁.C = P₂.C ∧ P₁.r = P₂.r ∧ (∀ x ∈ P₁.C, P₁.f₀ x = P₂.f₀ x) ∧
@@ -1746,7 +1766,10 @@ theorem corollary_28_3_1 (hkt : ∃ u : Rn m, P.IsKuhnTuckerVector u) {x : Rn n}
 /-- **Corollary 28.3.1** of [rockafellar1970convex], second form. Let $(P)$ have at least one
 Kuhn–Tucker vector. Then $\bar x$ is an optimal solution to $(P)$ if and only if there are
 numbers $\lambda_1, \dots, \lambda_m$ that satisfy the Kuhn–Tucker conditions (a), (b), (c) of
-Theorem 28.3 together with $\bar x$. -/
+Theorem 28.3 together with $\bar x$.
+
+**Generalization.** Existence of a Kuhn–Tucker vector replaces the hypotheses of
+Theorem 28.2, as in `Rockafellar.OrdinaryConvexProgram.corollary_28_3_1`. -/
 theorem corollary_28_3_1_kuhnTucker (hkt : ∃ u : Rn m, P.IsKuhnTuckerVector u) {x : Rn n} :
     x ∈ P.optimalSolutions ↔
       ∃ u : Rn m,
@@ -1954,7 +1977,10 @@ the product of the sets $C^k = \operatorname{dom} h_k$:
 $e^{-1}(C) = C^1 \times \dots \times C^s$.
 
 This is `ConvexAnalysis.convexDom_sepSum` read through $e$, together with
-`Rockafellar.OrdinaryConvexProgram.convexDom_lagrangeFn`. The $h_k$ need not be proper. -/
+`Rockafellar.OrdinaryConvexProgram.convexDom_lagrangeFn`.
+
+**Generalization.** The source starts from the block decomposition of every $f_i$. Lean
+starts from a decomposition of $h$ and permits any linear block coordinates. -/
 theorem decomposition_C (e : (∀ k, Rn (nk k)) ≃ₗ[ℝ] Rn n) {u : Rn m}
     (hu : ∀ i : Fin m, (i : ℕ) < P.r → 0 ≤ u i) {h : ∀ k, Rn (nk k) → EReal}
     (hb : ∀ k (z : Rn (nk k)), h k z ≠ ⊥)
@@ -1974,7 +2000,11 @@ With `Rockafellar.theorem_28_1`, this is the statement about $(P)$: the optimal 
 $(P)$ are the minimizers of $h$ that satisfy the complementary slackness conditions, and the set
 of minimizers of $h$ is a product. Each factor is a problem in $\mathbb{R}^{n_k}$, while by
 Corollary 28.4.1 the search for $\lambda$ is a problem in $\mathbb{R}^m$. This is the reduction
-in dimension that the passage of the book is about. -/
+in dimension that the passage of the book is about.
+
+**Generalization.** The minimum-set identity only requires the separated form of $h$ with
+proper factors. The source obtains this form by decomposing each $f_i$ and choosing a
+Kuhn–Tucker vector. -/
 theorem decomposition_argmin_lagrangeFn (e : (∀ k, Rn (nk k)) ≃ₗ[ℝ] Rn n) {u : Rn m}
     {h : ∀ k, Rn (nk k) → EReal} (hp : ∀ k, ProperConvex (h k))
     (hsep : ∀ x, P.lagrangeFn u (e x) = ∑ k, h k (x k)) :

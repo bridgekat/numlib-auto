@@ -56,6 +56,17 @@ The proofs use the backbone modules `Numlib.Analysis.Calculus.Taylor`,
   segment is the condition $x + ts \in S$ for all $t \in [0, 1]$.
 * The Lipschitz conditions of Theorems 3.1.4–3.1.6 compare the derivative at each point $z \in S$
   with the derivative at the expansion point $x$ only.
+
+## Deviations from the source
+
+* **Generalization.** The segment Taylor formulas and bounds apply to real normed spaces using
+  Fréchet derivatives. See `ConnGouldToint.Chapter03.theorem_3_1_1`,
+  `ConnGouldToint.Chapter03.theorem_3_1_2`, `ConnGouldToint.Chapter03.theorem_3_1_4`,
+  `ConnGouldToint.Chapter03.theorem_3_1_5`, `ConnGouldToint.Chapter03.theorem_3_1_6`.
+* **Generalization.** Theorem 3.1.3 extends the integral mean-value formula to complete normed
+  codomains. See `ConnGouldToint.Chapter03.theorem_3_1_3`.
+* **Scope.** Equation (3.1.7) gives the decomposition in the project's general direction-cone
+  formulation. See `ConnGouldToint.Chapter03.moreau_normal_tangent`.
 -/
 
 open Set Filter Topology
@@ -69,6 +80,10 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 open, and let $f : E \to \mathbb{R}$ be continuously differentiable on $S$. Let $x, s \in E$
 with $x + ts \in S$ for all $t \in [0, 1]$. Then there is $t \in [0, 1]$ with
 $$f(x + s) = f(x) + \langle g(x + ts), s \rangle.$$
+
+**Generalization.** The segment Taylor formulas and remainder estimates use Fréchet derivatives on
+real normed spaces. Each Lipschitz estimate compares the derivative at the base to its value
+throughout the displayed set.
 -/
 theorem theorem_3_1_1 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiffOn ℝ 1 f S)
     {x s : E} (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S) :
@@ -90,6 +105,10 @@ theorem theorem_3_1_1 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiff
 open, and let $f : E \to \mathbb{R}$ be twice continuously differentiable on $S$. Let
 $x, s \in E$ with $x + ts \in S$ for all $t \in [0, 1]$. Then there is $t \in [0, 1]$ with
 $$f(x + s) = f(x) + \langle g(x), s \rangle + \tfrac{1}{2} \langle s, H(x + ts) s \rangle.$$
+
+**Generalization.** The segment Taylor formulas and remainder estimates use Fréchet derivatives on
+real normed spaces. Each Lipschitz estimate compares the derivative at the base to its value
+throughout the displayed set.
 -/
 theorem theorem_3_1_2 {S : Set E} (hS : IsOpen S) {f : E → ℝ} (hf : ContDiffOn ℝ 2 f S)
     {x s : E} (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S) :
@@ -136,7 +155,11 @@ continuously differentiable on $S$. Let $x, s \in E$ with $x + ts \in S$ for all
 Then
 $$f(x + s) = f(x) + \int_0^1 J(x + ts) s \, dt.$$
 
-The completeness of $F$ is needed for the Bochner integral `intervalIntegral`. -/
+The completeness of $F$ is needed for the Bochner integral `intervalIntegral`.
+
+**Generalization.** The integral mean-value formula takes values in a complete real normed space,
+using the Bochner integral of the derivative applied along the segment.
+-/
 theorem theorem_3_1_3 [CompleteSpace F] {S : Set E} (hS : IsOpen S) {f : E → F}
     (hf : ContDiffOn ℝ 1 f S) {x s : E}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S) :
@@ -163,7 +186,12 @@ $\|g(z) - g(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
 $$|f(x + s) - f(x) - \langle g(x), s \rangle| \le \tfrac{1}{2} \gamma \|s\|^2.$$
 
 The norm of $g(z) - g(x)$ is the dual norm of the norm on $E$, that is, the operator norm of
-`fderiv ℝ f z - fderiv ℝ f x`. -/
+`fderiv ℝ f z - fderiv ℝ f x`.
+
+**Generalization.** The segment Taylor formulas and remainder estimates use Fréchet derivatives on
+real normed spaces. Each Lipschitz estimate compares the derivative at the base to its value
+throughout the displayed set.
+-/
 theorem theorem_3_1_4 {S : Set E} (hS : IsOpen S) {f : E → ℝ}
     (hf : ContDiffOn ℝ 1 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
@@ -178,7 +206,12 @@ $\|H(z) - H(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
 $$\left| f(x + s) - f(x) - \langle g(x), s \rangle - \tfrac{1}{2} \langle s, H(x) s \rangle
   \right| \le \tfrac{1}{6} \gamma \|s\|^3.$$
 
-The norm of $H(z) - H(x)$ is the operator norm of the second derivative `fderiv ℝ (fderiv ℝ f)`. -/
+The norm of $H(z) - H(x)$ is the operator norm of the second derivative `fderiv ℝ (fderiv ℝ f)`.
+
+**Generalization.** The segment Taylor formulas and remainder estimates use Fréchet derivatives on
+real normed spaces. Each Lipschitz estimate compares the derivative at the base to its value
+throughout the displayed set.
+-/
 theorem theorem_3_1_5 {S : Set E} (hS : IsOpen S) {f : E → ℝ}
     (hf : ContDiffOn ℝ 2 f S) {x s : E} {γ : ℝ}
     (hseg : ∀ t ∈ Icc (0 : ℝ) 1, x + t • s ∈ S)
@@ -192,6 +225,10 @@ be open, and let $f : E \to F$ be continuously differentiable on $S$ with Jacobi
 $x, s \in E$ with $x + ts \in S$ for all $t \in [0, 1]$, and let $\gamma \in \mathbb{R}$ satisfy
 $\|J(z) - J(x)\| \le \gamma \|z - x\|$ for all $z \in S$. Then
 $$\|f(x + s) - f(x) - J(x) s\| \le \tfrac{1}{2} \gamma \|s\|^2.$$
+
+**Generalization.** The segment Taylor formulas and remainder estimates use Fréchet derivatives on
+real normed spaces. Each Lipschitz estimate compares the derivative at the base to its value
+throughout the displayed set.
 -/
 theorem theorem_3_1_6 {S : Set E} (hS : IsOpen S) {f : E → F}
     (hf : ContDiffOn ℝ 1 f S) {x s : E} {γ : ℝ}
@@ -249,7 +286,11 @@ $$v = P_T(v) + P_N(v) \quad \text{and} \quad \langle P_T(v), P_N(v) \rangle = 0.
 
 The cones are `Optimization.normalDirections C x` and `Optimization.tangentDirections C x`, and
 the projections are `bestApprox`. The set $C$ need not be convex, because $N$ is a closed convex
-cone for every $C$. -/
+cone for every $C$.
+
+**Reading.** The theorem gives the orthogonal decomposition using the project's normal and tangent
+direction cones for a general set. Closed convex feasible sets recover the source cones.
+-/
 theorem moreau_normal_tangent (C : Set V) (x v : V) :
     let n := bestApprox (normalDirections C x) v
     let t := bestApprox (tangentDirections C x) v

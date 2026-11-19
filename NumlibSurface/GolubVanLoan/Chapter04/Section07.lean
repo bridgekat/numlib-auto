@@ -130,8 +130,37 @@ proofs specialize the backbone modules `Numlib.LinearAlgebra.Matrix.Toeplitz`,
 
 ## Deviations from the source
 
-* **(4.7.6), lower bound** (generalization). The source prints the two lower bounds with an extra
-  factor $1/(n - 1)$. The bounds hold without it. See `GolubVanLoan.Chapter04.equation_4_7_6_lower`.
+* **Generalization.** The persymmetry results include the totalized inverse of a singular matrix.
+  See `GolubVanLoan.Chapter04.isPersymmetric_inv`,
+  `GolubVanLoan.Chapter04.isPersymmetric_inv_of_isToeplitz`.
+* **Generalization.** The Durbin and Levinson bordering identities require only a nonzero
+  denominator. See `GolubVanLoan.Chapter04.durbin_step`, `GolubVanLoan.Chapter04.equation_4_7_3`.
+* **Reading.** The beta recurrence explicitly assumes the previous denominator is nonzero. See
+  `GolubVanLoan.Chapter04.durbin_beta_succ`.
+* **Reading.** The rounded Durbin and Levinson programs totalize division at zero pivots. See
+  `GolubVanLoan.Chapter04.durbinStep`, `GolubVanLoan.Chapter04.algorithm_4_7_1`,
+  `GolubVanLoan.Chapter04.algorithm_4_7_2`.
+* **Reading.** The Trench program returns zeros for the uncomputed entries. See
+  `GolubVanLoan.Chapter04.algorithm_4_7_3`.
+* **Generalization.** The secular identity and Newton convergence also apply to indefinite Toeplitz
+  matrices. See `GolubVanLoan.Chapter04.secular_lambdaMin`,
+  `GolubVanLoan.Chapter04.equation_4_7_10`.
+* **Generalization.** The derivative formulas and shifted Newton step require only symmetry of the
+  trailing block. See `GolubVanLoan.Chapter04.secular_deriv`,
+  `GolubVanLoan.Chapter04.newton_step_eq`.
+* **Generalization.** The definiteness criteria include converses and the bisection index is
+  antitone. See `GolubVanLoan.Chapter04.durbin_beta_pos_iff`,
+  `GolubVanLoan.Chapter04.bisectionIndex_spec`.
+* **Reading.** The normalized Toeplitz data are total at shift one. See
+  `GolubVanLoan.Chapter04.shiftedToeplitzSeq`.
+* **Reading.** The exact bisection index uses the matrix size when every denominator is positive.
+  See `GolubVanLoan.Chapter04.bisectionIndex`, `GolubVanLoan.Chapter04.durbinIndex_spec`.
+* **Reading.** The bisection index tests the denominator after the full Durbin step. See
+  `GolubVanLoan.Chapter04.durbinIndex`.
+* **Scope.** The Toeplitz bisection returns a bracket and an explicit stopping flag. See
+  `GolubVanLoan.Chapter04.durbinBisection`.
+* **Generalization.** The unsymmetric Toeplitz bordering implication uses cross-multiplied scalar
+  equations. See `GolubVanLoan.Chapter04.equation_4_7_13`.
 * **The bracket of §4.7.7** (reading). The source writes $\lambda_{\min}(T) < \lambda_{\min}(B)$,
   which is the hypothesis (4.7.8). The theorem proves $\lambda_{\min}(T) \le \lambda_{\min}(B)$
   without it. See `GolubVanLoan.Chapter04.lambdaMin_bracket`.
@@ -183,7 +212,11 @@ $$\mathcal{E}_n B^{-1} \mathcal{E}_n = (\mathcal{E}_n B \mathcal{E}_n)^{-1} = (B
   (B^{-1})^T.$$
 
 The inverse is Mathlib's matrix inverse, which is $0$ for a singular matrix; the statement
-therefore holds for singular $B$ as well. -/
+therefore holds for singular $B$ as well.
+
+**Generalization.** Lean's matrix inverse is total. The theorem also applies to singular matrices,
+whose Lean inverse is zero. The source's inverse requires nonsingularity.
+-/
 theorem isPersymmetric_inv {B : Matrix (Fin n) (Fin n) ℝ} (hB : IsPersymmetricExchange B) :
     IsPersymmetricExchange B⁻¹ :=
   isPersymmetric_iff.2 (isPersymmetric_iff.1 hB).inv
@@ -193,7 +226,11 @@ $A^{-1}$ is persymmetric.
 
 The source states this for nonsingular $A$. With Mathlib's inverse, which is $0$ for a singular
 matrix, it holds for every Toeplitz $A$. "Toeplitz" is `Matrix.IsToeplitz`: $A$ is
-`Matrix.toeplitz` of a two-sided sequence. -/
+`Matrix.toeplitz` of a two-sided sequence.
+
+**Generalization.** Lean's matrix inverse is total. The theorem also applies to singular matrices,
+whose Lean inverse is zero. The source's inverse requires nonsingularity.
+-/
 theorem isPersymmetric_inv_of_isToeplitz {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsToeplitz) :
     IsPersymmetricExchange A⁻¹ :=
   isPersymmetric_inv (isPersymmetric_iff.2 hA.isPersymmetric)
@@ -233,6 +270,9 @@ $$\alpha = -\frac{r_{k+1} + r^T \mathcal{E}_k y}{1 + r^T y}, \qquad z = y + \alp
   y.$$
 Then $(z, \alpha)$ solves the Yule–Walker system of order $k + 1$:
 $$T_{k+1} \begin{bmatrix} z \\ \alpha \end{bmatrix} = -(r_1, \dots, r_{k+1})^T.$$
+
+**Generalization.** The solution step assumes the bordered denominator is nonzero. The source works
+with positive definite leading blocks, which guarantee that the denominator is positive.
 -/
 theorem durbin_step {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {y : Fin k → ℝ}
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1))
@@ -345,7 +385,11 @@ $r$ and every $k$ with $\beta_k \neq 0$,
 $$\beta_{k+1} = (1 - \alpha_k^2) \beta_k.$$
 
 The source writes $\beta_k = (1 - \alpha_{k-1}^2) \beta_{k-1}$ before Algorithm 4.7.1. The
-scalars are `Durbin.beta` and `Durbin.alpha`. -/
+scalars are `Durbin.beta` and `Durbin.alpha`.
+
+**Reading.** The nonzero previous denominator is explicit because the reflection coefficient is
+defined by division. The source obtains this nonvanishing from positive definiteness.
+-/
 theorem durbin_beta_succ {r : ℕ → ℝ} {k : ℕ} (h : Durbin.beta r k ≠ 0) :
     Durbin.beta r (k + 1) = (1 - Durbin.alpha r k ^ 2) * Durbin.beta r k :=
   Durbin.beta_succ h
@@ -370,7 +414,12 @@ adds $r_{k+1}$ with one rounding, and then divides with one rounding; the negati
 entries are $z_i = \mathrm{fl}(y_i + \mathrm{fl}(\alpha y_{k-1-i}))$, indexed from $0$.
 
 The same pass computes the index $m(\lambda)$ of (4.7.11) in
-`GolubVanLoan.Chapter04.durbinIndex`. -/
+`GolubVanLoan.Chapter04.durbinIndex`.
+
+**Reading.** The functions are defined without the source's normalization and definiteness
+preconditions, totalize division, and round each arithmetic operation. The exact solve theorems
+impose the source's input conditions.
+-/
 noncomputable def durbinStep (r : ℕ → ℝ) (st : (ℕ → ℝ) × ℝ × ℝ) (p : ℕ) :
     M ((ℕ → ℝ) × ℝ × ℝ) := do
   let a ← rnd (st.2.1 * st.2.1)
@@ -399,7 +448,12 @@ end
 ```
 Pass $p$ of the loop is the source's $k = p + 1$, and it is `GolubVanLoan.Chapter04.durbinStep`.
 The state $(y, \alpha, \beta)$ holds $y(1{:}k)$ in the entries $0, \dots, k - 1$ of `y : ℕ → ℝ`,
-and the output is the first $n$ entries of $y$. -/
+and the output is the first $n$ entries of $y$.
+
+**Reading.** The functions are defined without the source's normalization and definiteness
+preconditions, totalize division, and round each arithmetic operation. The exact solve theorems
+impose the source's input conditions.
+-/
 noncomputable def algorithm_4_7_1 (n : ℕ) (r : ℕ → ℝ) : M (Fin n → ℝ) := do
   let st ← (List.range (n - 1)).foldlM (fun st p => durbinStep rnd r st p)
     (Function.update 0 0 (-r 1), -r 1, 1)
@@ -523,7 +577,11 @@ $$\begin{bmatrix} T_k & \mathcal{E}_k r \\ r^T \mathcal{E}_k & 1 \end{bmatrix} \
   \\ \mu \end{bmatrix} = \begin{bmatrix} b \\ b_{k+1} \end{bmatrix}.$$
 
 The source remarks that the transition from (4.7.2) to (4.7.3) costs $O(k)$ flops. The block
-matrix is $T_{k+1}$. -/
+matrix is $T_{k+1}$.
+
+**Generalization.** The solution step assumes the bordered denominator is nonzero. The source works
+with positive definite leading blocks, which guarantee that the denominator is positive.
+-/
 theorem equation_4_7_3 {r : ℕ → ℝ} (hr : r 0 = 1) {k : ℕ} {x y b : Fin k → ℝ} (b' : ℝ)
     (hx : symmToeplitz k r *ᵥ x = b)
     (hy : symmToeplitz k r *ᵥ y = fun i : Fin _ => -r ((i : ℕ) + 1))
@@ -561,7 +619,12 @@ $y(1{:}k)$ in the entries $0, \dots, k - 1$ of $\mathbb{N}$-indexed vectors, as 
 `GolubVanLoan.Chapter04.algorithm_4_7_1`. The inner product $r(1{:}k)^T x(k{:}{-1}{:}1)$ is
 accumulated from $0$ (`FloatingPoint.dotAccum`) and then subtracted from $b_{k+1}$ with one
 rounding. The inner product in $\alpha$ is accumulated from $0$ and then added to $r_{k+1}$ with
-one rounding. -/
+one rounding.
+
+**Reading.** The functions are defined without the source's normalization and definiteness
+preconditions, totalize division, and round each arithmetic operation. The exact solve theorems
+impose the source's input conditions.
+-/
 noncomputable def algorithm_4_7_2 (n : ℕ) (r : ℕ → ℝ) (b : Fin n → ℝ) : M (Fin n → ℝ) := do
   let bv : ℕ → ℝ := fun j => if h : j < n then b ⟨j, h⟩ else 0
   let st ← (List.range (n - 1)).foldlM
@@ -856,7 +919,12 @@ end
 ```
 The program is indexed from $0$, and holds $B$ as $\mathbb{N}$-indexed entries. The first row is
 copied, not computed. The entries outside the upper wedge are $0$. The inner product $r^T y$ is
-accumulated from $0$ (`FloatingPoint.dotAccum`) and then added to $1$ with one rounding. -/
+accumulated from $0$ (`FloatingPoint.dotAccum`) and then added to $1$ with one rounding.
+
+**Reading.** The program returns a full matrix with zero placeholders outside the computed upper
+wedge. The source leaves those entries uncomputed. Arithmetic is rounded and division is totalized;
+exact correctness assumes the stated input conditions.
+-/
 noncomputable def algorithm_4_7_3 (n : ℕ) (r : ℕ → ℝ) : M (Matrix (Fin n) (Fin n) ℝ) := do
   let y ← algorithm_4_7_1 rnd (n - 1) r
   let yv : ℕ → ℝ := fun j => if h : j < n - 1 then y ⟨j, h⟩ else 0
@@ -1096,9 +1164,6 @@ $\alpha_1, \dots, \alpha_{n-1}$. Then
 $$\max\left\{ \frac{1}{\prod_{j=1}^{n-1} (1 - \alpha_j^2)}, \; \frac{1}{\prod_{j=1}^{n-1} (1 -
   \alpha_j)} \right\} \le \|T_n^{-1}\|_1.$$
 
-**Generalization.** The source prints both lower bounds with an extra factor $1/(n - 1)$. The
-bounds hold without it, and the printed bounds follow.
-
 Cybenko's $\alpha_j$ is `Durbin.alpha r (j - 1)`, and the norm is `Matrix.lpOpNorm 1`. -/
 theorem equation_4_7_6_lower {r : ℕ → ℝ} (hr : r 0 = 1) {m : ℕ}
     (hT : (symmToeplitz (m + 1) r).PosDef) :
@@ -1186,7 +1251,13 @@ $$f(\lambda) = 1 - \lambda - r^T (B - \lambda I)^{-1} r.$$
 Under the hypothesis (4.7.8), $\lambda_{\min}(T) < \lambda_{\min}(B)$, the eigenvalue
 $\lambda_{\min}(T)$ satisfies the condition on $\lambda$. The symmetry of $B$ is
 `Matrix.IsHermitian`, its eigenvalues are `Matrix.IsHermitian.eigenvalues`, and $f$ is
-`Matrix.borderedSecularFunction`. -/
+`Matrix.borderedSecularFunction`.
+
+**Generalization.** The target is any supplied eigenvalue of the normalized symmetric Toeplitz
+matrix strictly below the spectrum of the trailing block, with a corresponding nonzero eigenvector.
+This singles out the least eigenvalue when it exists, and the hypotheses allow the matrix to be
+indefinite.
+-/
 theorem secular_lambdaMin {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) {m : ℕ}
     (hB : (symmToeplitz m ρ).IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i)
     {x : Fin (m + 1) → ℝ} (hx0 : x ≠ 0) (hx : symmToeplitz (m + 1) ρ *ᵥ x = t • x) :
@@ -1224,7 +1295,11 @@ $$f'(\lambda) = -1 - \|(B - \lambda I)^{-1} r\|_2^2 \le -1, \qquad f''(\lambda) 
   \lambda I)^{-3} r \le 0.$$
 
 The statement uses neither the Toeplitz structure nor positive definiteness. The function $f$ is
-`Matrix.borderedSecularFunction r B`, and $f''$ is the derivative of `deriv f`. -/
+`Matrix.borderedSecularFunction r B`, and $f''$ is the derivative of `deriv f`.
+
+**Generalization.** The formulas hold for an arbitrary symmetric trailing block and vector. The
+source derives them for the bordered positive definite Toeplitz system.
+-/
 theorem secular_deriv {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) :
     HasDerivAt (borderedSecularFunction r B)
@@ -1251,7 +1326,13 @@ $k$, and $\lambda^{(k)} \to \lambda$.
 The source states that the iteration converges to $\lambda_{\min}(T)$ monotonically from the
 right. Under the hypothesis (4.7.8), $\lambda_{\min}(T)$ is the only eigenvalue of $T$ below the
 spectrum of $B$, so $\lambda = \lambda_{\min}(T)$. The Newton step is `Newton.scalarStep` with
-$f'$ given by `deriv`, and $f$ is `Matrix.borderedSecularFunction`. -/
+$f'$ given by `deriv`, and $f$ is `Matrix.borderedSecularFunction`.
+
+**Generalization.** The target is any supplied eigenvalue of the normalized symmetric Toeplitz
+matrix strictly below the spectrum of the trailing block, with a corresponding nonzero eigenvector.
+This singles out the least eigenvalue when it exists, and the hypotheses allow the matrix to be
+indefinite.
+-/
 theorem equation_4_7_10 {ρ : ℕ → ℝ} (hρ : ρ 0 = 1) {m : ℕ}
     (hB : (symmToeplitz m ρ).IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i)
     {x : Fin (m + 1) → ℝ} (hx0 : x ≠ 0) (hx : symmToeplitz (m + 1) ρ *ᵥ x = t • x) {x₀ : ℝ}
@@ -1278,7 +1359,11 @@ secular function $f(\lambda) = 1 - \lambda - r^T (B - \lambda I)^{-1} r$ is
 $$\lambda - \frac{f(\lambda)}{f'(\lambda)} = \lambda + \frac{1 + r^T w - \lambda}{1 + w^T w}.$$
 
 The Newton step is `Newton.scalarStep` with $f'$ given by `deriv`, and $f$ is
-`Matrix.borderedSecularFunction r B`. -/
+`Matrix.borderedSecularFunction r B`.
+
+**Generalization.** The formulas hold for an arbitrary symmetric trailing block and vector. The
+source derives them for the bordered positive definite Toeplitz system.
+-/
 theorem newton_step_eq {m : ℕ} {r : Fin m → ℝ} {B : Matrix (Fin m) (Fin m) ℝ}
     (hB : B.IsHermitian) {t : ℝ} (ht : ∀ i, t < hB.eigenvalues i) {w : Fin m → ℝ}
     (hw : (B - t • 1) *ᵥ w = -r) :
@@ -1307,7 +1392,11 @@ is positive definite and $T_{k+1}$ is not.
 The source applies this to $T_\lambda$: "if $\beta_k \le 0$ and $\beta_1, \dots, \beta_{k-1}$
 are all positive, then $T(1{:}k, 1{:}k)$ is positive definite but $T(1{:}k{+}1, 1{:}k{+}1)$ is
 not". Here $T_k$ is the leading $k \times k$ block $T(1{:}k, 1{:}k)$, and $\beta_j$ is
-`Durbin.beta r j`. -/
+`Durbin.beta r j`.
+
+**Generalization.** Lean includes converses for the definiteness criteria and proves that the index
+of the first nonpositive denominator is antitone for shifts below one.
+-/
 theorem durbin_beta_pos_iff {r : ℕ → ℝ} (hr : r 0 = 1) (k : ℕ) :
     ((symmToeplitz (k + 1) r).PosDef ↔ ∀ j ≤ k, 0 < Durbin.beta r j) ∧
       ((∀ j < k, 0 < Durbin.beta r j) → Durbin.beta r k ≤ 0 →
@@ -1322,7 +1411,11 @@ $T = (r_{|i-j|})$ with $r_0 = 1$ and a scalar $\lambda$, the matrix
 $T_\lambda = (T - \lambda I)/(1 - \lambda)$ is again symmetric Toeplitz with unit diagonal. This
 is its sequence of data: $1$ at index $0$, and $r_j/(1 - \lambda)$ at index $j \ge 1$.
 
-At $\lambda = 1$ the division by zero gives $0$. -/
+At $\lambda = 1$ the division by zero gives $0$.
+
+**Reading.** At shift one the off-diagonal values are zero by totalized division and the diagonal is
+fixed at one. The normalized shift in the source requires a nonzero denominator.
+-/
 noncomputable def shiftedToeplitzSeq (r : ℕ → ℝ) (t : ℝ) (j : ℕ) : ℝ :=
   if j = 0 then 1 else r j / (1 - t)
 
@@ -1367,7 +1460,12 @@ no such $k$.
 
 The source defines $m(\lambda)$ as the index of the first nonpositive $\beta$. The data of
 $T_\lambda$ are `GolubVanLoan.Chapter04.shiftedToeplitzSeq r λ`. Since $\beta_0 = 1$,
-$m(\lambda) \ge 1$ when $n \ge 1$. -/
+$m(\lambda) \ge 1$ when $n \ge 1$.
+
+**Reading.** Lean returns the matrix size when there is no nonpositive denominator among the
+computed indices. The source defines the index as the first failure, and its comparison uses the
+no-failure case without giving it a numerical value.
+-/
 noncomputable def bisectionIndex (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : ℕ :=
   if h : ∃ k, k < n ∧ Durbin.beta (shiftedToeplitzSeq r t) k ≤ 0 then Nat.find h else n
 
@@ -1416,7 +1514,11 @@ $\lambda_{\min}(T) \le \lambda^{(0)} < \lambda_{\min}(B)$. Part 3 shows that the
 (4.7.11) keeps $m(R) \le n - 1 \le m(L)$; see `GolubVanLoan.Chapter04.equation_4_7_11` for the
 invariant that the source prints. The matrix $B$ is the leading block of $T$; by persymmetry it
 is also the trailing block of the source's partition $T = \begin{bmatrix} 1 & r^T \\ r & B
-\end{bmatrix}$. -/
+\end{bmatrix}$.
+
+**Generalization.** Lean includes converses for the definiteness criteria and proves that the index
+of the first nonpositive denominator is antitone for shifts below one.
+-/
 theorem bisectionIndex_spec {r : ℕ → ℝ} (hr : r 0 = 1) {n : ℕ} (hn : 1 ≤ n) {t : ℝ} (ht : t < 1) :
     (n - 1 ≤ bisectionIndex n r t ↔
       (symmToeplitz (n - 1) r - t • (1 : Matrix (Fin (n - 1)) (Fin (n - 1)) ℝ)).PosDef) ∧
@@ -1521,7 +1623,12 @@ then runs the passes of Algorithm 4.7.1 (`GolubVanLoan.Chapter04.durbinStep`) on
 The first pass $p$ whose $\beta_{p+1}$ is nonpositive records the index $p + 1$ and stops the
 loop.
 
-The state holds $n$ while no $\beta$ has been nonpositive, and $\beta_0 = 1$. -/
+The state holds $n$ while no $\beta$ has been nonpositive, and $\beta_0 = 1$.
+
+**Reading.** Lean precomputes the rounded normalized entries and executes the whole Durbin step
+before testing the updated denominator. The first failed step therefore still performs its division
+and vector updates. The index uses that step's denominator, and no later step is executed.
+-/
 noncomputable def durbinIndex (n : ℕ) (r : ℕ → ℝ) (t : ℝ) : M ℕ := do
   let c ← rnd (1 - t)
   let ρ ← (List.range n).foldlM (fun (ρ : ℕ → ℝ) (j : ℕ) => do
@@ -1552,7 +1659,11 @@ The loop runs on the state $(L, R, \mu, \mathit{done})$ for at most `fuel` passe
 convention 3 of the library index. Each pass computes $m(\mu)$ once, by
 `GolubVanLoan.Chapter04.durbinIndex`. The value $\lambda^{(0)}$ is the component $\mu$ of the
 returned state. Every arithmetic result is rounded: $1 - |r_1|$, each sum $L + R$ and each
-halving. -/
+halving.
+
+**Reading.** The source uses a while loop that exits on the desired index. Lean bounds the number of
+passes, returns the current bracket and midpoint, and marks whether the stopping test succeeded.
+-/
 noncomputable def durbinBisection (n : ℕ) (r : ℕ → ℝ) (fuel : ℕ) : M (ℝ × ℝ × ℝ × Bool) := do
   let R ← rnd (1 - |r 1|)
   let s ← rnd (0 + R)
@@ -1602,7 +1713,12 @@ private theorem durbinExactStep_sol {r : ℕ → ℝ} {p : ℕ} (hβ : ∀ j < p
 
 /-- **Equation (4.7.11)** of [golub2013matrix], the exact index $m(\lambda)$. For every $n$, every
 sequence $r$ and every $\lambda$, the exact run of `GolubVanLoan.Chapter04.durbinIndex` is
-$m(\lambda)$, `GolubVanLoan.Chapter04.bisectionIndex n r λ`. -/
+$m(\lambda)$, `GolubVanLoan.Chapter04.bisectionIndex n r λ`.
+
+**Reading.** Lean returns the matrix size when there is no nonpositive denominator among the
+computed indices. The source defines the index as the first failure, and its comparison uses the
+no-failure case without giving it a numerical value.
+-/
 theorem durbinIndex_spec (n : ℕ) (r : ℕ → ℝ) (t : ℝ) :
     Id.run (durbinIndex pure n r t) = bisectionIndex n r t := by
   obtain ⟨ρ, hρ⟩ : ∃ ρ : ℕ → ℝ,
@@ -1795,7 +1911,12 @@ $$T_{k+1}^T \begin{bmatrix} y + \alpha \mathcal{E}_k w \\ \alpha \end{bmatrix} =
 
 The source states that the transition "can be shown" to cost $O(k)$ flops; the formulas are its
 Problem P4.7.11. The matrix $T_k$ is `Matrix.toeplitz ρ` on `Fin k`. The scalars are given by
-the equations above rather than as quotients, so that no denominator needs to be nonzero. -/
+the equations above rather than as quotients, so that no denominator needs to be nonzero.
+
+**Generalization.** The bordered systems hold for any supplied solutions of the smaller systems and
+scalars satisfying the cross-multiplied equations. This algebraic result requires no nonsingularity
+or existence of a solution for the coefficients.
+-/
 theorem equation_4_7_13 {ρ : ℤ → ℝ} (hρ : ρ 0 = 1) {k : ℕ} {y w x b : Fin k → ℝ} (b' : ℝ)
     (hy : (toeplitz ρ)ᵀ *ᵥ y = fun i : Fin k => -ρ ((i : ℤ) + 1))
     (hw : toeplitz ρ *ᵥ w = fun i : Fin k => -ρ (-((i : ℤ) + 1))) (hx : toeplitz ρ *ᵥ x = b)

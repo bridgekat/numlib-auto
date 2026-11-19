@@ -26,6 +26,15 @@ process in [liesen2013krylov] and the condition for exact termination.
 * `LiesenStrakos.isProjectionIterate_projectedIterate` verifies the coordinate formula.
 * `LiesenStrakos.theorem_2_1_6` gives the three sufficient conditions for well-definedness.
 * `LiesenStrakos.lemma_2_1_7` gives exactness on an invariant search space.
+
+## Deviations from the source
+
+* **Projection conditions** (generalization). The projection predicate, its orthogonal and
+  oblique cases, and the termination criterion apply to general inner product spaces.
+* **Equations (2.1.6) and (2.1.10)** (reading). The direct-sum predicate can be used without
+  matching dimensions for the search and constraint spaces. The coordinate formula returns
+  $x_0$ for a singular projected matrix. See `LiesenStrakos.ProjectionWellDefined` and
+  `LiesenStrakos.projectedIterate`.
 -/
 
 namespace LiesenStrakos
@@ -33,11 +42,19 @@ namespace LiesenStrakos
 variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 /-- The projection condition (2.1.1)–(2.1.4) of [liesen2013krylov] is $x_n \in x_0+S$
-and $b-Ax_n \perp C$. -/
+and $b-Ax_n \perp C$.
+
+**Generalization.** Membership in the affine trial space and residual orthogonality are defined
+for arbitrary trial and test subspaces. -/
 abbrev IsProjectionIterate (A : E →ₗ[𝕜] E) (b x₀ : E) (S C : Submodule 𝕜 E) (x : E) : Prop :=
   IsPetrovGalerkin A b x₀ S C x
 
-/-- The well-definedness condition (2.1.6) is the direct sum $E = AS \oplus C^\perp$. -/
+/-- The well-definedness condition (2.1.6) is the direct sum $E = AS \oplus C^\perp$.
+
+**Reading.** The source works with search and constraint spaces of the same dimension.
+The predicate expresses the direct-sum condition alone. Without matching dimensions it can
+hold even when the iterate is nonunique, for example when $A=0$, $S=E\ne 0$ and $C=0$.
+`LiesenStrakos.theorem_2_1_2` supplies matching dimensions through the two bases. -/
 abbrev ProjectionWellDefined (A : E →ₗ[𝕜] E) (S C : Submodule 𝕜 E) : Prop :=
   IsCompl (S.map A) Cᗮ
 
@@ -55,7 +72,11 @@ theorem theorem_2_1_2 [FiniteDimensional 𝕜 E] {ι : Type*} [Fintype ι] [Deci
   isUnit_crossGram_map_iff_isCompl A s c
 
 /-- The projected iterate in (2.1.10) is $x_0+S(C^*AS)^{-1}C^*(b-Ax_0)$,
-where the columns of $S$ and $C$ are bases of the search and constraint spaces. -/
+where the columns of $S$ and $C$ are bases of the search and constraint spaces.
+
+**Reading.** The source gives the formula for a nonsingular projected matrix. The total
+matrix inverse sends a singular matrix to zero, so the definition gives $x_0$ in that case.
+`LiesenStrakos.isProjectionIterate_projectedIterate` assumes nonsingularity. -/
 noncomputable def projectedIterate {ι : Type*} [Fintype ι] [DecidableEq ι]
     {S C : Submodule 𝕜 E} (A : E →ₗ[𝕜] E) (s : Module.Basis ι 𝕜 S) (c : Module.Basis ι 𝕜 C)
     (b x₀ : E) : E :=
@@ -73,12 +94,16 @@ theorem isProjectionIterate_projectedIterate {ι : Type*} [Fintype ι] [Decidabl
   exact Matrix.mulVec_nonsing_inv_mulVec h _
 
 /-- **Definition 2.1.3** of [liesen2013krylov], orthogonal case.
-A well-defined projection process is orthogonal when $AS = C$. -/
+A well-defined projection process is orthogonal when $AS = C$.
+
+**Generalization.** The same predicate applies to arbitrary inner product spaces. -/
 def IsOrthogonalProjectionProcess (A : E →ₗ[𝕜] E) (S C : Submodule 𝕜 E) : Prop :=
   ProjectionWellDefined A S C ∧ S.map A = C
 
 /-- **Definition 2.1.3** of [liesen2013krylov], oblique case.
-A well-defined projection process is oblique when $AS \ne C$. -/
+A well-defined projection process is oblique when $AS \ne C$.
+
+**Generalization.** The same predicate applies to arbitrary inner product spaces. -/
 def IsObliqueProjectionProcess (A : E →ₗ[𝕜] E) (S C : Submodule 𝕜 E) : Prop :=
   ProjectionWellDefined A S C ∧ S.map A ≠ C
 
@@ -94,7 +119,9 @@ theorem theorem_2_1_6 [FiniteDimensional 𝕜 E] (A : E →ₗ[𝕜] E) (S : Sub
     fun _ => (S.map A).isCompl_orthogonal⟩
 
 /-- **Lemma 2.1.7** of [liesen2013krylov].
-At a well-defined projection step with $b-Ax_0 \in S$ and $AS=S$, the residual $b-Ax_n$ is zero. -/
+At a well-defined projection step with $b-Ax_0 \in S$ and $AS=S$, the residual $b-Ax_n$ is zero.
+
+**Generalization.** This criterion holds in arbitrary inner product spaces. -/
 theorem lemma_2_1_7 {A : E →ₗ[𝕜] E} {S C : Submodule 𝕜 E} {b x₀ x : E}
     (h : ProjectionWellDefined A S C) (hx : IsProjectionIterate A b x₀ S C x)
     (hr : b - A x₀ ∈ S) (hS : S.map A = S) : b - A x = 0 := by

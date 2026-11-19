@@ -26,6 +26,12 @@ Arnoldi vectors is established in `Numlib.Krylov.ShortRecurrence`.
 
 * Theorem 4.5.4, `LiesenStrakos.theorem_4_5_4`: an optimal short recurrence forces the adjoint
   to be a polynomial of the corresponding degree in the operator.
+
+## Deviations from the source
+
+* **Theorem 4.5.1** (reading). The prescribed degree is part of the interpolation condition on
+  the eigenvalues. An orthonormal eigenbasis and distinct-eigenvalue count alone do not specify
+  the degree.
 -/
 
 namespace LiesenStrakos
@@ -109,7 +115,12 @@ private theorem aeval_eq_adjoint_iff_eval_eq {A : Module.End ℂ E} (hA : IsStar
 /-- An operator is normal of degree $s$ if and only if it admits an orthonormal eigenbasis,
 the number of its distinct eigenvalues is $d_{\min}(A)$, and the conjugation values on
 those eigenvalues have a unique least-degree interpolating polynomial of degree $s$.
-This is Theorem 4.5.1 of [liesen2013krylov]. -/
+This is Theorem 4.5.1 of [liesen2013krylov].
+
+**Reading.** For the prescribed degree $s$, the spectral condition includes the minimal
+conjugation interpolation degree. The eigenbasis and eigenvalue count alone do not determine
+equality to a given $s$. For example, the identity on a nonzero space has an orthonormal
+eigenbasis and one distinct eigenvalue, and its degree is zero. -/
 theorem theorem_4_5_1 (A : Module.End ℂ E) (s : ℕ) :
     IsNormalOfDegree A s ↔
       ∃ (b : OrthonormalBasis (Fin (Module.finrank ℂ E)) ℂ E)
@@ -187,6 +198,12 @@ private theorem exists_natDegree_aeval_of_mem {A : Module.End ℂ E} {v w : E} {
   · rw [degree_eq_natDegree h0] at hp
     exact Nat.lt_succ_iff.mp (WithBot.coe_lt_coe.mp hp)
 
+/-- The commutation step in Lemma 4.5.2 holds for any operator satisfying the stated local
+Krylov membership. The source uses the adjoint for this operator.
+
+**Reading.** The commutation step works for any operator preserving the indicated local Krylov
+spans.
+-/
 private theorem commute_of_fullGrade_mem_subspace (A B : Module.End ℂ E) {s : ℕ}
     (hs : s + 2 ≤ operatorMinimalDegree A)
     (hB : ∀ v, vectorGrade A v = operatorMinimalDegree A →

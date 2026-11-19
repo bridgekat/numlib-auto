@@ -109,12 +109,27 @@ $H^m(a, b)$ and the Legendre polynomials come from the backbone modules
   definition. The two agree because $C^m[a, b]$ is dense in $H^m(a, b)$. For this type the density
   is proved only for $m = 1$ on $(0, 1)$, as `AtkinsonHan.Chapter02.example_2_4_2_dense`.
 
+## Deviations from the source
+
+* **Examples 1.3.6 and 1.3.7** (generalization and reading). A single arbitrary measure covers
+  the interval, Euclidean, and weighted $L^2$ spaces. For the Sobolev inner product, Lean uses
+  weak derivatives and permits a degenerate interval.
+* **Identity following Definition 1.3.8** (reading). Lean states the two-vector case of the
+  finite orthogonal-sum identity.
+* **Theorems 1.3.11 and 1.3.12** (generalization and reading). Lean admits arbitrary index sets
+  and unordered sums. Theorem 1.3.11 states (a)–(c). Theorem 1.3.12 uses dense span for (a) and
+  (d), and its statement includes the two Parseval identities. Its proof uses (e).
+* **Theorem 1.3.13** (reading). Lean works with probability Haar measure on the circle, so the
+  basis functions are the source's Lebesgue-normalized functions multiplied by $\sqrt{2\pi}$.
+
 ## Not formalized
 
 * **Example 1.3.15**, the convergence in $L^2$ of the real Fourier series. It is not restated here;
   the backbone states it as `hasSum_trigSeries`.
 * **The identity after Definition 1.3.8** for $n$ mutually orthogonal elements, $\|u_1 + \dots +
   u_n\|^2 = \|u_1\|^2 + \dots + \|u_n\|^2$. Only the case $n = 2$ is stated.
+* **Theorem 1.3.11(d).** The surface theorem omits the equivalence of convergence of a general
+  orthonormal series and square-summability of its coefficients.
 -/
 
 open Filter InnerProductSpace MeasureTheory Submodule Topology
@@ -243,7 +258,9 @@ $(u, v) = \int u \, \overline{v} \, d\mu$.
 The spaces $L^2(0, 1)$, $L^2(\Omega)$ and the weighted space $L^2_w(\Omega)$ of the book are
 instances of $L^2(\mu)$; the weighted space is the case `μ = ν.withDensity w`. The space
 $\mathbb{C}^d$ is `EuclideanSpace ℂ (Fin d)`. The sequence space is `lp (fun _ : ℕ => ℂ) 2`,
-indexed from $0$. -/
+indexed from $0$.
+
+**Generalization.** The function-space formula and completeness apply to an arbitrary measure. -/
 theorem example_1_3_6 (d : ℕ) {α : Type*} [MeasurableSpace α] (μ : Measure α) :
     ((∀ x y : EuclideanSpace ℂ (Fin d), inner ℂ y x = ∑ i, x i * starRingEnd ℂ (y i)) ∧
         CompleteSpace (EuclideanSpace ℂ (Fin d))) ∧
@@ -267,7 +284,10 @@ g)_{H^m} = \sum_{j=0}^m \big(f^{(j)}, g^{(j)}\big)_{L^2(a, b)}.$$
 
 The space is the backbone's `SobolevInterval m a b`, and $f^{(j)}$ is the weak derivative
 `SobolevInterval.deriv f j`. The embedding $H^1(a, b) \subseteq C[a, b]$ that the book recalls
-from Exercise 1.2.20 is the backbone's `SobolevInterval.toContinuousMap`. -/
+from Exercise 1.2.20 is the backbone's `SobolevInterval.toContinuousMap`.
+
+**Reading.** Lean uses the weak-derivative Sobolev model, which is defined even for a degenerate
+interval. The source takes the completion of $C^m[a,b]$ for $a<b$. -/
 theorem example_1_3_7 (m : ℕ) (a b : ℝ) :
     (∀ f g : SobolevInterval m a b, inner ℝ g f =
         ∑ j : Fin (m + 1), inner ℝ (SobolevInterval.deriv g j) (SobolevInterval.deriv f j)) ∧
@@ -288,7 +308,11 @@ def definition_1_3_8 (𝕜 : Type*) {E : Type*} [RCLike 𝕜] [NormedAddCommGrou
 
 /-- Pythagoras' theorem: if $u$ and $v$ are orthogonal in the sense of Definition 1.3.8 of
 [han2009theoretical], then $\|u + v\|^2 = \|u\|^2 + \|v\|^2$. This is the case of two terms of
-the identity that the book records after Definition 1.3.8. -/
+the identity that the book records after Definition 1.3.8.
+
+**Reading.** The formal statement covers two mutually orthogonal vectors; the source has an
+arbitrary finite sum.
+-/
 theorem definition_1_3_8_pythagoras {u v : E} (h : definition_1_3_8 𝕜 u v) :
     ‖u + v‖ ^ 2 = ‖u‖ ^ 2 + ‖v‖ ^ 2 := by
   have h' : inner 𝕜 u v = (0 : 𝕜) := by rw [← inner_conj_symm u v, h, map_zero]
@@ -374,8 +398,11 @@ $\{v_j\}_{j \in \iota}$ be an orthonormal system in $V$, and let $u \in V$. Then
 
 (c) if $u = \sum_j a_j v_j$ for scalars $a_j$, then $a_j = (u, v_j)$ for every $j$.
 
-The index set $\iota$ is arbitrary, and the series are unordered sums (`tsum`, `Summable` and
-`HasSum`). -/
+**Generalization.** The source uses sequences. The index set $\iota$ is arbitrary, and the
+series are unordered sums (`tsum`, `Summable` and `HasSum`).
+
+**Reading.** The statement stops at (c). The source adds (d), which characterizes convergence
+of a general orthonormal series by square-summability of its coefficients. -/
 theorem theorem_1_3_11 (hv : Orthonormal 𝕜 v) (u : E) :
     ∑' i, ‖inner 𝕜 (v i) u‖ ^ 2 ≤ ‖u‖ ^ 2 ∧
       Summable (fun i => inner 𝕜 (v i) u • v i) ∧
@@ -407,9 +434,12 @@ $u, w \in V$;
 
 (c) Parseval's equality $\|w\|^2 = \sum_j |(w, v_j)|^2$ holds for all $w \in V$.
 
-Clause (a) is stated as the density of the span,
-`(span 𝕜 (Set.range v)).topologicalClosure = ⊤`, and not through Definition 1.3.10. The index
-set $\iota$ is arbitrary, and the series are unordered sums (`HasSum`). -/
+**Generalization.** The source uses sequences. The index set $\iota$ is arbitrary, and the
+series are unordered sums (`HasSum`).
+
+**Reading.** Dense span expresses both the source's orthonormal-basis clause (a) and its density
+clause (d). The proof uses the orthogonality criterion of (e), without a separate conclusion
+for that criterion. -/
 theorem theorem_1_3_12 (hv : Orthonormal 𝕜 v) :
     List.TFAE
       [(span 𝕜 (Set.range v)).topologicalClosure = ⊤,
@@ -457,7 +487,10 @@ $L^2$ on `AddCircle (2 * π)` with its probability Haar measure. Its members are
 the continuous functions `trigFun (2 * π) n`: the constant for $n = 0$, the cosine for
 $n = j > 0$ and the sine for $n = -j < 0$. The probability measure is Lebesgue measure on
 $(-\pi, \pi)$ divided by $2\pi$, so these are the book's functions $1/\sqrt{2\pi}$,
-$\cos(jx)/\sqrt\pi$ and $\sin(jx)/\sqrt\pi$, multiplied by $\sqrt{2\pi}$. -/
+$\cos(jx)/\sqrt\pi$ and $\sin(jx)/\sqrt\pi$, multiplied by $\sqrt{2\pi}$.
+
+**Reading.** The source uses unnormalized Lebesgue measure. The probability Haar normalization
+multiplies each listed function by $\sqrt{2\pi}$. -/
 theorem theorem_1_3_13 :
     Orthonormal ℝ (trigBasis (2 * π)) ∧
       (span ℝ (Set.range ⇑(trigBasis (2 * π)))).topologicalClosure = ⊤ ∧

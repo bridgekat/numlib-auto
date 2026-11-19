@@ -96,6 +96,19 @@ trace-min principle specializes `Numlib.Eigen.SymmetricPencil`.
 
 ## Deviations from the source
 
+* **Equations (10.6.4)–(10.6.5)** (correction). The linear constraint fixes $w^Tx=1$. Taking
+  $w=x_c$ does not force the next vector to have unit norm. See
+  `GolubVanLoan.Chapter10.equation_10_6_4`.
+* **Equations (10.6.6)–(10.6.10)** (reading). The formulas assume the shifted matrix and scalar
+  denominator used in them are invertible. See `GolubVanLoan.Chapter10.equation_10_6_7` and
+  `GolubVanLoan.Chapter10.equation_10_6_10`.
+* **Davidson and Jacobi–Davidson correctness** (limitation). Five specifications ask for unit
+  Ritz vectors in every projected dimension, including dimension zero, where none exist. The
+  iteration requests Ritz pairs only in positive dimension. See
+  `GolubVanLoan.Chapter10.subspaceExpansion_spec`, `GolubVanLoan.Chapter10.equation_10_6_16`,
+  `GolubVanLoan.Chapter10.subspaceExpansion_ritzValue_mono`,
+  `GolubVanLoan.Chapter10.davidson_ritzValue_mono`, and
+  `GolubVanLoan.Chapter10.jacobiDavidson_spec`.
 * **Equation (10.6.13)** (typo). The source prints $\alpha + + c^T z_c$ in the right-hand side; the
   intended term is $\alpha + c^T z_c$. See `GolubVanLoan.Chapter10.equation_10_6_13`.
 * **Trace-min principle, §10.6.5** (correction). The source says that every minimizer
@@ -136,7 +149,11 @@ theorem equation_10_6_1 (A : Matrix (Fin n) (Fin n) ℝ) {x δx : Fin n → ℝ}
 
 /-- **Equation (10.6.4)** of [golub2013matrix]. Let $w, x_c, \delta x \in \mathbb{R}^n$, and let
 $x_+ = x_c + \delta x$ as in (10.6.3). If $w^T x_+ = 1$ and $w^T x_c = 1$, then
-$w^T \delta x = 0$. -/
+$w^T \delta x = 0$.
+
+**Correction.** The source says that choosing $w=x_c$ forces the next vector to have unit norm.
+If $x_c$ has unit norm and $x_c^T\delta x=0$, the new squared norm is $1+\|\delta x\|_2^2$. The
+linear constraint preserves $w^Tx=1$. -/
 theorem equation_10_6_4 {w x δx : Fin n → ℝ} (hplus : w ⬝ᵥ (x + δx) = 1) (hc : w ⬝ᵥ x = 1) :
     w ⬝ᵥ δx = 0 := by
   rw [dotProduct_add, hc] at hplus
@@ -188,7 +205,10 @@ private theorem ringInverse_toLin' {M : Matrix (Fin n) (Fin n) ℝ} (hM : IsUnit
 
 /-- If $M - \lambda I$ is nonsingular and $w^T (M - \lambda I)^{-1} x \neq 0$, then
 $(M - \lambda I)\delta x - \delta l\, x = -r$ and $w^T \delta x = 0$ hold if and only if
-$\delta l$ and $\delta x$ are given by the formulas of (10.6.7) with $M$ in place of $A$. -/
+$\delta l$ and $\delta x$ are given by the formulas of (10.6.7) with $M$ in place of $A$.
+
+**Reading.** General residual vector with invertible shifted block and nonzero scalar denominator.
+-/
 private theorem bordered_iff {M : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ} (hM : IsUnit (M - μ • 1))
     {w x : Fin n → ℝ} (hx : w ⬝ᵥ ((M - μ • 1)⁻¹ *ᵥ x) ≠ 0) (r δx : Fin n → ℝ) (δμ : ℝ) :
     ((M - μ • 1) *ᵥ δx - δμ • x = -r ∧ w ⬝ᵥ δx = 0) ↔
@@ -220,7 +240,10 @@ $$\delta l = \frac{w^T (A - \lambda_c I)^{-1} r_c}{w^T (A - \lambda_c I)^{-1} x_
   \delta x = -(A - \lambda_c I)^{-1}(r_c - \delta l\, x_c).$$
 In particular the system has exactly one solution.
 
-The proof specializes `JacobiDavidson.newtonCorrection_eq`. -/
+The proof specializes `JacobiDavidson.newtonCorrection_eq`.
+
+**Reading.** The two quotient formulas apply when the shifted matrix is nonsingular and the
+scalar denominator is nonzero. -/
 theorem equation_10_6_7 {A : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ} (hA : IsUnit (A - μ • 1))
     {w x : Fin n → ℝ} (hx : w ⬝ᵥ ((A - μ • 1)⁻¹ *ᵥ x) ≠ 0) (δx : Fin n → ℝ) (δμ : ℝ) :
     ((A - μ • 1) *ᵥ δx - δμ • x = -(A *ᵥ x - μ • x) ∧ w ⬝ᵥ δx = 0) ↔
@@ -238,7 +261,10 @@ $$\delta l = \frac{w^T (M - \lambda_c I)^{-1} r_c}{w^T (M - \lambda_c I)^{-1} x_
 
 The matrix $M$ approximates $A$. With $N = M - A$, the system (10.6.8) is the bordered system
 (10.6.5) with $M$ in the operator block and the term $N \delta x$ dropped; the right-hand side
-keeps the residual $r_c$ of $A$. The proof specializes `JacobiDavidson.newtonCorrection_eq`. -/
+keeps the residual $r_c$ of $A$. The proof specializes `JacobiDavidson.newtonCorrection_eq`.
+
+**Reading.** The inverse-based formulas require a nonsingular shifted $M$ and a nonzero scalar
+denominator. The residual is computed with $A$. -/
 theorem equation_10_6_10 (A : Matrix (Fin n) (Fin n) ℝ) {M : Matrix (Fin n) (Fin n) ℝ} {μ : ℝ}
     (hM : IsUnit (M - μ • 1)) {w x : Fin n → ℝ} (hx : w ⬝ᵥ ((M - μ • 1)⁻¹ *ᵥ x) ≠ 0)
     (δx : Fin n → ℝ) (δμ : ℝ) :
@@ -253,7 +279,10 @@ theorem equation_10_6_10 (A : Matrix (Fin n) (Fin n) ℝ) {M : Matrix (Fin n) (F
 and $A_1 \in \mathbb{R}^{n \times n}$, the **bordered matrix** is
 $$A = \begin{bmatrix} \alpha & c^T \\ c & A_1 \end{bmatrix} \in \mathbb{R}^{(n+1) \times
   (n+1)}.$$
-The first row and column have the index `0` of `Fin (n + 1)`. -/
+The first row and column have the index `0` of `Fin (n + 1)`.
+
+**Reading.** Same border arrangement, defined for arbitrary trailing blocks.
+-/
 def borderedMatrix (α : ℝ) (c : Fin n → ℝ) (A₁ : Matrix (Fin n) (Fin n) ℝ) :
     Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
   Matrix.of fun i j => Fin.cases (Fin.cases α c j) (fun i' => Fin.cases (c i') (A₁ i') j) i
@@ -275,6 +304,8 @@ theorem borderedMatrix_mulVec_cons (α : ℝ) (c : Fin n → ℝ) (A₁ : Matrix
 matrix (10.6.11), let $z_k \in \mathbb{R}^n$, and let $\lambda_k = \alpha + c^T z_k$ and
 $x_k = [1; z_k]$. Then the residual $r_k = (A - \lambda_k I) x_k$ has first component zero:
 $$r_k = \begin{bmatrix} 0 \\ (A_1 - \lambda_k I) z_k + c \end{bmatrix}.$$
+
+**Generalization.** Same zero-first residual, extends to all trailing blocks.
 -/
 theorem equation_10_6_15 (α : ℝ) (c : Fin n → ℝ) (A₁ : Matrix (Fin n) (Fin n) ℝ)
     (z : Fin n → ℝ) :
@@ -369,7 +400,10 @@ $$(I - x_k x_k^T)(M - \lambda_k I)(I - x_k x_k^T)\, \delta v = -r_k.$$
 The factor $I - x_k x_k^T$ is encoded as the orthogonal projection onto the orthogonal
 complement of $x_k$, `(ℝ ∙ x)ᗮ.starProjection`. The two agree when $\|x_k\|_2 = 1$, which is the
 case in which the source uses the equation; the definition does not assume it. The matrix $M$
-acts through `Matrix.toEuclideanLin`. -/
+acts through `Matrix.toEuclideanLin`.
+
+**Reading.** The source's projector $I-xx^T$ equals the orthogonal projection used here when
+$x$ is a unit vector. The definition uses the true orthogonal projection for other inputs. -/
 def IsJDCorrection (M : Matrix (Fin n) (Fin n) ℝ) (x : EuclideanSpace ℝ (Fin n)) (μ : ℝ)
     (r δv : EuclideanSpace ℝ (Fin n)) : Prop :=
   ⟪x, δv⟫_ℝ = 0 ∧
@@ -520,7 +554,10 @@ section Jocc
 variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- One entry of the solve step of (10.6.14): the program returns $\mathrm{fl}(\mathrm{fl}(w_i -
-c_i) / \mathrm{fl}((A_1)_{ii} - \lambda))$. -/
+c_i) / \mathrm{fl}((A_1)_{ii} - \lambda))$.
+
+**Reading.** Rounded division and totalized zero denominator.
+-/
 noncomputable def joccEntry (A₁ : Matrix (Fin n) (Fin n) ℝ) (w c : Fin n → ℝ) (l : ℝ)
     (i : Fin n) : M ℝ := do
   let num ← rnd (w i - c i)
@@ -530,7 +567,10 @@ noncomputable def joccEntry (A₁ : Matrix (Fin n) (Fin n) ℝ) (w c : Fin n →
 /-- The solve step of (10.6.14), $(M_1 - \lambda I) z = w - c$ with $M_1$ the diagonal of $A_1$. The
 program computes $z_i = (w_i - c_i)/((A_1)_{ii} - \lambda)$ for each $i$ by
 `GolubVanLoan.Chapter10.joccEntry`, with one rounded difference, one rounded shifted diagonal
-entry and one rounded quotient per entry. -/
+entry and one rounded quotient per entry.
+
+**Reading.** Same componentwise solve with rounded arithmetic.
+-/
 noncomputable def joccSolve (A₁ : Matrix (Fin n) (Fin n) ℝ) (w c : Fin n → ℝ) (l : ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (z : Fin n → ℝ) i => do
@@ -543,7 +583,10 @@ $(M_1 - \lambda_k I) z_{k+1} = w - c$ entrywise by `GolubVanLoan.Chapter10.joccS
 $\lambda_{k+1} = \alpha + c^T z_{k+1}$ with the dot product of Algorithm 1.1.1. It then
 increases $k$ and sets $\rho_k = \|A_1 z_k - \lambda_k z_k + c\|_2$, where the residual comes
 from Algorithms 1.1.3 and 1.1.2 and `GolubVanLoan.Chapter01.vecAdd`, and the norm from
-`GolubVanLoan.Chapter10.vecNorm`. The loop stops when $\rho_k \le \mathrm{tol}$. -/
+`GolubVanLoan.Chapter10.vecNorm`. The loop stops when $\rho_k \le \mathrm{tol}$.
+
+**Reading.** Same active update with total division, rounding and observed stop.
+-/
 noncomputable def joccStep (α : ℝ) (c : Fin n → ℝ) (A₁ : Matrix (Fin n) (Fin n) ℝ) (tol : ℝ)
     (s : JoccState n) : M (JoccState n) :=
   if s.done then pure s else do
@@ -576,7 +619,10 @@ where $M_1$ is the diagonal of $A_1$ and $N_1 = M_1 - A_1$.
 
 The `while` loop runs at most `fuel` passes (algorithm convention 3). Each pass is
 `GolubVanLoan.Chapter10.joccStep`, and the result is a `GolubVanLoan.Chapter10.JoccState` with
-0-based indices. The norm $\|c\|_2$ is computed by `GolubVanLoan.Chapter10.vecNorm`. -/
+0-based indices. The norm $\|c\|_2$ is computed by `GolubVanLoan.Chapter10.vecNorm`.
+
+**Reading.** Adds finite fuel and stores initialized stop state.
+-/
 noncomputable def joccIteration (α : ℝ) (c : Fin n → ℝ) (A₁ : Matrix (Fin n) (Fin n) ℝ)
     (tol : ℝ) (fuel : ℕ) : M (JoccState n) := do
   let ρ ← vecNorm rnd c
@@ -588,7 +634,10 @@ end Jocc
 
 /-- In exact arithmetic the solve step of (10.6.14) returns
 $z_i = (w_i - c_i)/((A_1)_{ii} - \lambda)$ for every $i$, with the convention $z_i = 0$ when the
-denominator is $0$. -/
+denominator is $0$.
+
+**Reading.** Exact component formula computed even at zero denominator.
+-/
 theorem joccSolve_spec (A₁ : Matrix (Fin n) (Fin n) ℝ) (w c : Fin n → ℝ) (l : ℝ) :
     Id.run (joccSolve pure A₁ w c l) = fun i => (w i - c i) / (A₁ i i - l) := by
   funext i
@@ -623,7 +672,11 @@ $r_j = (A_1 - \lambda_j I) z_j + c$, and the corrections $x_{j+1} - x_j = [0; z_
 are orthogonal to $e_1$, which gives the method its name.
 
 The matrix $N_1$ is `GolubVanLoan.Chapter10.joccN A₁`, and $M_1$ is
-`Matrix.diagonal fun i => A₁ i i`. -/
+`Matrix.diagonal fun i => A₁ i i`.
+
+**Reading.** Same recurrence at attained count, algebraic solve conditional on nonzero shifted
+diagonal.
+-/
 theorem equation_10_6_14 (α : ℝ) (c : Fin n → ℝ) (A₁ : Matrix (Fin n) (Fin n) ℝ) (tol : ℝ)
     (fuel : ℕ) :
     let s := Id.run (joccIteration pure α c A₁ tol fuel)
@@ -760,14 +813,20 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 $s = (I - V_p V_p^T)\, \delta v$. The source says that "the transition from $V_k$ to $V_{k+1}$
 can be effectively carried out by a modified Gram–Schmidt process". The program starts from
 $s = \delta v$ and runs $s \leftarrow s - (v_j^T s)\, v_j$ for $j = 0, \dots, p - 1$ in order,
-with the dot product of Algorithm 1.1.1 and the saxpy of Algorithm 1.1.2. -/
+with the dot product of Algorithm 1.1.1 and the saxpy of Algorithm 1.1.2.
+
+**Correction.** Rounded modified Gram–Schmidt for projected correction.
+-/
 noncomputable def mgsExpand (v : ℕ → Fin n → ℝ) (p : ℕ) (δ : Fin n → ℝ) : M (Fin n → ℝ) :=
   (List.range p).foldlM (fun s j => do
     let h ← algorithm_1_1_1 rnd (v j) s
     algorithm_1_1_2 rnd (-h) (v j) s) δ
 
 /-- One entry of Davidson's correction: the program returns $\mathrm{fl}(-r_i / \mathrm{fl}(a_{ii} -
-\lambda))$. The negation is exact. -/
+\lambda))$. The negation is exact.
+
+**Reading.** Same entry ratio with rounding and total division.
+-/
 noncomputable def davidsonEntry (A : Matrix (Fin n) (Fin n) ℝ) (l : ℝ) (r : Fin n → ℝ)
     (i : Fin n) : M ℝ := do
   let d ← rnd (A i i - l)
@@ -775,7 +834,10 @@ noncomputable def davidsonEntry (A : Matrix (Fin n) (Fin n) ℝ) (l : ℝ) (r : 
 
 /-- Davidson's correction equation $(M - \lambda I)\, \delta v = -r$, where $M$ is the diagonal of
 $A$. The program computes $\delta v_i = -r_i / (a_{ii} - \lambda)$ for each $i$ by
-`GolubVanLoan.Chapter10.davidsonEntry`. -/
+`GolubVanLoan.Chapter10.davidsonEntry`.
+
+**Reading.** Rounded diagonal solve for every coordinate.
+-/
 noncomputable def davidsonCorrection (A : Matrix (Fin n) (Fin n) ℝ) (l : ℝ) (r : Fin n → ℝ) :
     M (Fin n → ℝ) :=
   (List.finRange n).foldlM (fun (z : Fin n → ℝ) i => do
@@ -789,7 +851,10 @@ by `GolubVanLoan.Chapter10.mgsExpand`, $v_{k+1} = s_{k+1} / \|s_{k+1}\|_2$, and
 $H = V_{k+1}^T A V_{k+1}$ by two matrix products of Algorithm 1.1.5. It takes the Ritz pair
 $(\theta, t) = \mathrm{ritz}(H)$, sets $\lambda_{k+1} = \theta$ and $x_{k+1} = V_{k+1} t$, and
 computes $r_{k+1} = A x_{k+1} - \lambda_{k+1} x_{k+1}$ and its norm. The loop stops when
-$\|r_{k+1}\|_2 \le \mathrm{tol}$. -/
+$\|r_{k+1}\|_2 \le \mathrm{tol}$.
+
+**Reading.** Generic callback, rounded expansion, explicit stopping and total division.
+-/
 noncomputable def subspaceExpansionStep (A : Matrix (Fin n) (Fin n) ℝ)
     (correct : (Fin n → ℝ) → ℝ → (Fin n → ℝ) → M (Fin n → ℝ))
     (ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → M (ℝ × (Fin p → ℝ))) (tol : ℝ)
@@ -825,7 +890,11 @@ $\|r_k\|_2 > \mathrm{tol}$, it runs the pass `GolubVanLoan.Chapter10.subspaceExp
 the correction step `correct` and the Ritz pair selector `ritz`.
 
 The loop runs at most `fuel` passes (algorithm convention 3). The initial products are
-Algorithms 1.1.3, 1.1.1 and 1.1.2. -/
+Algorithms 1.1.3, 1.1.1 and 1.1.2.
+
+**Correction.** Explicit finite fuel, supplied correction and Ritz selection and arbitrary initial
+vector.
+-/
 noncomputable def subspaceExpansion (A : Matrix (Fin n) (Fin n) ℝ)
     (correct : (Fin n → ℝ) → ℝ → (Fin n → ℝ) → M (Fin n → ℝ))
     (ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → M (ℝ × (Fin p → ℝ))) (x₁ : Fin n → ℝ)
@@ -855,7 +924,11 @@ where $M$ is the diagonal of $A$.
 The orthogonalization is modified Gram–Schmidt, as the source remarks. The source leaves the
 choice of the Ritz pair of $V_{k+1}^T A V_{k+1}$ open, so the program takes it from the selector
 `ritz` that the caller supplies. The program is `GolubVanLoan.Chapter10.subspaceExpansion` with
-the correction `GolubVanLoan.Chapter10.davidsonCorrection` and the start $e_1$. -/
+the correction `GolubVanLoan.Chapter10.davidsonCorrection` and the start $e_1$.
+
+**Correction.** Source's first coordinate start and diagonal correction with rounded fixed fuel and
+Ritz callback.
+-/
 noncomputable def davidson (A : Matrix (Fin n) (Fin n) ℝ)
     (ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → M (ℝ × (Fin p → ℝ))) (tol : ℝ) (fuel : ℕ) :
     M (DavidsonState n) :=
@@ -873,7 +946,10 @@ The source says that various Chapter 11 iterative solvers can be applied to the 
 equation. The program therefore takes the solver `solve` as an argument, called as
 `solve x_k λ_k r_k` (algorithm convention 5). The program is
 `GolubVanLoan.Chapter10.subspaceExpansion` with the correction `solve`. The specification
-`GolubVanLoan.Chapter10.jacobiDavidson_spec` assumes that $x_1$ is a unit vector. -/
+`GolubVanLoan.Chapter10.jacobiDavidson_spec` assumes that $x_1$ is a unit vector.
+
+**Correction.** Arbitrary starting vector, supplied correction and Ritz callback, finite fuel.
+-/
 noncomputable def jacobiDavidson (A : Matrix (Fin n) (Fin n) ℝ)
     (solve : (Fin n → ℝ) → ℝ → (Fin n → ℝ) → M (Fin n → ℝ))
     (ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → M (ℝ × (Fin p → ℝ))) (x₁ : Fin n → ℝ)
@@ -914,7 +990,10 @@ theorem mgsExpand_spec {v : ℕ → Fin n → ℝ} {p : ℕ}
 /-- In exact arithmetic Davidson's correction is $\delta v_i = -r_i / (a_{ii} - \lambda)$ for every
 $i$, with the convention $\delta v_i = 0$ when the denominator is $0$. Hence
 $(M - \lambda I)\, \delta v = -r$ when $a_{ii} \neq \lambda$ for all $i$, where $M$ is the
-diagonal of $A$. -/
+diagonal of $A$.
+
+**Reading.** Exact quotient is totalized at zero diagonal shift.
+-/
 theorem davidsonCorrection_spec (A : Matrix (Fin n) (Fin n) ℝ) (l : ℝ) (r : Fin n → ℝ) :
     Id.run (davidsonCorrection pure A l r) = fun i => -r i / (A i i - l) := by
   funext i
@@ -1024,7 +1103,14 @@ The correction step plays no role in these claims.
 
 A Ritz pair is `Krylov.IsRitzPair` for `Matrix.toEuclideanLin A` on a span in
 `EuclideanSpace ℝ (Fin n)`. The norms of the orthogonalized corrections are the field `sNorm` of
-the state. -/
+the state.
+
+**Limitation.** The unit Ritz-vector hypothesis is quantified over all dimensions `p`. At `p =
+0`, the only vector has squared norm zero, so the hypothesis cannot be satisfied. The iteration
+only requests Ritz pairs of positive order.
+
+**Reading.** Ritz extractor axiom also requires a unit vector in dimension zero and is impossible.
+-/
 theorem subspaceExpansion_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (correct : (Fin n → ℝ) → ℝ → (Fin n → ℝ) → Id (Fin n → ℝ))
     {ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → Id (ℝ × (Fin p → ℝ))}
@@ -1215,7 +1301,14 @@ the residual $r$ and its norm $\rho$. Then:
 
 The hypothesis $n \ge 1$ makes the start $e_1$ a unit vector. A Ritz pair is
 `Krylov.IsRitzPair`. The proof combines `GolubVanLoan.Chapter10.subspaceExpansion_spec` and
-`GolubVanLoan.Chapter10.davidsonCorrection_spec`. -/
+`GolubVanLoan.Chapter10.davidsonCorrection_spec`.
+
+**Limitation.** The unit Ritz-vector hypothesis is quantified over all dimensions `p`. At `p =
+0`, the only vector has squared norm zero, so the hypothesis cannot be satisfied. The iteration
+only requests Ritz pairs of positive order.
+
+**Reading.** Exact semantics vacuous under unit Ritz-vector requirement in dimension zero.
+-/
 theorem equation_10_6_16 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → Id (ℝ × (Fin p → ℝ))}
     (hritz : ∀ p (H : Matrix (Fin p) (Fin p) ℝ), H.IsSymm →
@@ -1339,7 +1432,15 @@ private theorem exists_coeffs_of_mem_span {v : ℕ → Fin n → ℝ} {k : ℕ} 
 `ritz` return, for every symmetric $H$, a pair $(\theta, t)$ with $Ht = \theta t$, $t^T t = 1$,
 and $y^T H y \le \theta$ for every $y$ with $y^T y = 1$. If no orthogonalized correction of the
 exact subspace expansion loop has norm $0$, then for any correction step its Ritz values satisfy
-$\lambda_j \le \lambda_{j+1}$ for every $j < k$. -/
+$\lambda_j \le \lambda_{j+1}$ for every $j < k$.
+
+**Limitation.** The unit Ritz-vector hypothesis is quantified over all dimensions `p`. At `p =
+0`, the only vector has squared norm zero, so the hypothesis cannot be satisfied. The iteration
+only requests Ritz pairs of positive order.
+
+**Reading.** Adds largest Ritz selection monotonicity; unit Ritz-vector premise at dimension zero
+impossible.
+-/
 theorem subspaceExpansion_ritzValue_mono {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (correct : (Fin n → ℝ) → ℝ → (Fin n → ℝ) → Id (Fin n → ℝ))
     {ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → Id (ℝ × (Fin p → ℝ))}
@@ -1404,7 +1505,14 @@ satisfy $\lambda_j \le \lambda_{j+1}$ for every $j < k$.
 
 The source does not state this result. It holds because $x_k \in \operatorname{ran} V_k
 \subseteq \operatorname{ran} V_{k+1}$ and $\lambda_k = x_k^T A x_k$. The proof specializes
-`GolubVanLoan.Chapter10.subspaceExpansion_ritzValue_mono`. -/
+`GolubVanLoan.Chapter10.subspaceExpansion_ritzValue_mono`.
+
+**Limitation.** The unit Ritz-vector hypothesis is quantified over all dimensions `p`. At `p =
+0`, the only vector has squared norm zero, so the hypothesis cannot be satisfied. The iteration
+only requests Ritz pairs of positive order.
+
+**Reading.** Largest Ritz monotonicity specialization retains impossible zero-order premise.
+-/
 theorem davidson_ritzValue_mono {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {ritz : (p : ℕ) → Matrix (Fin p) (Fin p) ℝ → Id (ℝ × (Fin p → ℝ))}
     (hritz : ∀ p (H : Matrix (Fin p) (Fin p) ℝ), H.IsSymm →
@@ -1449,7 +1557,15 @@ The last claim is the remark of the source that "the Jacobi–Davidson method in
 $\delta x_c$ be orthogonal to the current eigenvector approximation".
 
 The proof applies `GolubVanLoan.Chapter10.subspaceExpansion_spec`. Its Ritz conditions give
-$x_j^T x_j = 1$ and $x_j^T r_j = 0$, so the hypothesis on the solver applies at every pass. -/
+$x_j^T x_j = 1$ and $x_j^T r_j = 0$, so the hypothesis on the solver applies at every pass.
+
+**Limitation.** The unit Ritz-vector hypothesis is quantified over all dimensions `p`. At `p =
+0`, the only vector has squared norm zero, so the hypothesis cannot be satisfied. The iteration
+only requests Ritz pairs of positive order.
+
+**Correction.** Symmetric case, with global correction solver and impossible unit Ritz-vector
+premise at dimension zero.
+-/
 theorem jacobiDavidson_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     {M : Matrix (Fin n) (Fin n) ℝ} {solve : (Fin n → ℝ) → ℝ → (Fin n → ℝ) → Id (Fin n → ℝ)}
     (hsolve : ∀ x l r, x ⬝ᵥ x = 1 → x ⬝ᵥ r = 0 →

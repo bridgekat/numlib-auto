@@ -98,19 +98,29 @@ subproblems, the hard case $\lambda^* = -\lambda_1$ included, by the minimum-nor
   `CartisGouldToint.Chapter08.setL_tr_union_setG_tr`.
 * **Section 8.3.1, the transformed target** (typo). The target is $(\lambda/\sigma)^{2\beta/(r-2)}$,
   not $(\lambda/\sigma)^{\beta/(r-2)}$, and the ranges of $\beta$ are $(0, (r-2)/2]$ and
-  $[-1/2, 0)$. See `CartisGouldToint.Chapter08.regSecularFn`.
+  $[-1/2, 0)$. The first term in the defining difference is $\pi(\lambda)^\beta$, while the
+  displayed right-hand side repeats $\theta$. See `CartisGouldToint.Chapter08.regSecularFn`.
 * **Algorithm 8.3.1** (correction). The Newton correction (8.2.25) is undefined at $\beta = 0$; the
-  exponents satisfy $\beta_j \neq 0$. See `CartisGouldToint.Chapter08.algorithm_8_3_1`.
+  exponents satisfy $\beta_j \neq 0$. Repeated exponents are allowed.
+  See `CartisGouldToint.Chapter08.algorithm_8_3_1`.
+* **Section 8.3.2, transformed trust-region target** (correction). The printed target $\Delta^2$
+  applies to the Taylor corrections with $\beta = 1$. The Newton correction uses $\beta=-1/2$
+  and target $1/\Delta$. See `CartisGouldToint.Chapter08.candidates832`.
+* **Sections 8.3.1–8.3.2, convergence rates** (partial). The combined-algorithm theorems omit
+  the Q-order claim for individual Taylor iterations and the secant variants.
+  See `CartisGouldToint.Chapter08.algorithm_8_3_1_terminates` and
+  `CartisGouldToint.Chapter08.algorithm_8_3_2_terminates`.
 * **Corollaries 8.3.1 and 8.3.2** (correction). When $\lambda_1$ is multiple, one fixed eigenvector
   $v_1$ does not parametrize all minimizers; the statements allow any nonzero generalized
   eigenvector for $\lambda_1$. See `CartisGouldToint.Chapter08.corollary_8_3_1` and
   `CartisGouldToint.Chapter08.corollary_8_3_2`.
-* **Equation (8.3.2)** (reading). The minimum-norm solution is taken in the $M$-norm, which makes it
-  the limit of $s(\lambda)$ as $\lambda \downarrow \lambda_s$. See
+* **Equation (8.3.2)** (correction). The $M$-norm solution agrees with the stated
+  trajectory limit, whereas the Euclidean pseudoinverse of Appendix A.5 can differ. See
   `CartisGouldToint.Chapter08.minNormSolution`.
 * **Corollary 8.3.2, boundary condition** (correction). For $\lambda^* = 0$ the minimizer need not
   lie on the boundary; $\|s_s + \alpha v\|_M = \Delta$ is stated for $\lambda^* > 0$ only. See
   `CartisGouldToint.Chapter08.corollary_8_3_2`.
+  The preceding hard-case paragraph adds the exponent $r-2$ to the norm equation.
 -/
 
 open Matrix Set Filter Topology
@@ -143,9 +153,8 @@ $\lambda > \lambda_s$ with
 $$\|s(\lambda)\|_M \ge (\lambda/\sigma)^{1/(r-2)}.$$
 
 **Correction.** The source describes $\mathcal{L}$ by the conditions $H + \lambda M \succ 0$ and
-$\|s(\lambda)\|_M \ge (\lambda/\sigma)^{1/(r-2)}$. When $\lambda_1 > 0$ this set contains points
-$\lambda \in (-\lambda_1, 0]$ outside $(\lambda_s, \infty)$; the definition requires
-$\lambda > \lambda_s$.
+$\|s(\lambda)\|_M \ge (\lambda/\sigma)^{1/(r-2)}$. When $\lambda_1 > 0$ this set includes
+$\lambda=0$, which is outside $(\lambda_s,\infty)$. The definition requires $\lambda > \lambda_s$.
 
 If $s^*$ is a global minimizer with multiplier $\lambda^* = \sigma \|s^*\|_M^{r-2}$, then
 $\mathcal{L} = (\lambda_s, \lambda^*]$ (`CartisGouldToint.Chapter08.setL_reg_eq_Ioc`). The power
@@ -160,9 +169,9 @@ $\lambda > \lambda_s$ with
 $$\|s(\lambda)\|_M < (\lambda/\sigma)^{1/(r-2)}.$$
 
 **Correction.** The source describes $\mathcal{G}$ by the conditions $H + \lambda M \succ 0$ and
-$\|s(\lambda)\|_M < (\lambda/\sigma)^{1/(r-2)}$. When $\lambda_1 > 0$ this set contains points
-outside $(\lambda_s, \infty)$, for example $\lambda = -1/2$ for $H = M = I$; the definition
-requires $\lambda > \lambda_s$.
+$\|s(\lambda)\|_M < (\lambda/\sigma)^{1/(r-2)}$. When $\lambda_1 > 0$ this set can include
+negative points, for example $\lambda=-1/2$ with $H=M=I$, $g=0$, $\sigma=1$ and $r=5/2$.
+The definition requires $\lambda > \lambda_s$.
 
 If $s^*$ is a global minimizer with multiplier $\lambda^*$, then
 $\mathcal{G} = (\lambda^*, \infty)$ (`CartisGouldToint.Chapter08.setL_reg_eq_Ioc`). -/
@@ -258,8 +267,9 @@ $\mathcal{L} \cap \mathcal{G} = \emptyset$, $\mathcal{F} = \mathcal{L} \cup \mat
 $\mathcal{N} \cup \mathcal{F} = \mathbb{R}$. So $\mathcal{N}$, $\mathcal{L}$ and $\mathcal{G}$
 partition $\mathbb{R}$.
 
-**Correction.** The partition holds for the interval forms of the sets, not for the set-builder
-forms of the source (see `CartisGouldToint.Chapter08.setN`). -/
+**Correction.** The interval partition has threshold $\lambda_s$. When $\lambda_1>0$, the
+printed positive-definiteness builders instead change region at $-\lambda_1$, wherever the
+power is defined (see `CartisGouldToint.Chapter08.setN`). -/
 theorem setF_reg_eq_Ioi (σ r : ℝ) :
     Disjoint (setL_reg hH hM g σ r) (setG_reg hH hM g σ r) ∧
       setF_reg hH hM g σ r = Ioi (lambdaS hH hM) ∧
@@ -277,8 +287,9 @@ $H$ be symmetric, $M$ symmetric positive definite, and $\Delta \in \mathbb{R}$. 
 $\mathcal{L} \cap \mathcal{G} = \emptyset$ and $\mathcal{L} \cup \mathcal{G} = (\lambda_s,
 \infty)$.
 
-**Correction.** The partition holds for the interval forms of the sets, not for the set-builder
-forms of the source (see `CartisGouldToint.Chapter08.setN`). -/
+**Correction.** The interval partition has threshold $\lambda_s$. When $\lambda_1>0$, the
+printed positive-definiteness builders instead change region at $-\lambda_1$
+(see `CartisGouldToint.Chapter08.setN`). -/
 theorem setL_tr_union_setG_tr (Δ : ℝ) :
     Disjoint (setL_tr hH hM g Δ) (setG_tr hH hM g Δ) ∧
       setL_tr hH hM g Δ ∪ setG_tr hH hM g Δ = Ioi (lambdaS hH hM) := by
@@ -382,7 +393,11 @@ defined as the supremum of the set of roots.
 
 The supremum is the value `sSup` of Mathlib, which is $0$ when the set of roots is empty or
 unbounded above. For odd $k$ and $\lambda_c \in \mathcal{L}$ the set is nonempty and bounded
-above (`Subproblem.taylorCorrection_mem`). -/
+above (`Subproblem.taylorCorrection_mem`).
+
+**Reading.** Uses supremum for rightmost root and is totalized when no rightmost root exists; in the
+valid odd-order cases the maximum is attained.
+-/
 noncomputable def taylorCorrectionFn (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (τ : ℝ → ℝ) (k : ℕ) (lamc : ℝ) : ℝ :=
   sSup {δ | secularTaylorPoly g H M k lamc δ = τ (lamc + δ)}
@@ -393,7 +408,9 @@ $$\theta(\lambda; \beta) = \pi(\lambda)^{\beta} - (\lambda/\sigma)^{2\beta/(r-2)
 where $\pi$ is the secular function and the powers are real powers.
 
 **Typo.** Section 8.3.1 writes the transformed target as $(\lambda/\sigma)^{\beta/(r-2)}$. It is
-$(\lambda/\sigma)^{2\beta/(r-2)}$, consistent with (8.2.25). For the same reason the prose
+$(\lambda/\sigma)^{2\beta/(r-2)}$, consistent with (8.2.25). Its defining difference also
+replaces the repeated $\theta$ on the printed right-hand side with $\pi(\lambda)^\beta$.
+The prose
 ranges $\beta \in (0, r - 2]$ and $\beta \in [-1, 0)$ should read $(0, (r-2)/2]$ and
 $[-1/2, 0)$. -/
 noncomputable def regSecularFn (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
@@ -408,7 +425,11 @@ where $\theta$ is the transformed regularization secular function
 `CartisGouldToint.Chapter08.regSecularFn`.
 
 The derivative is `deriv`, which is $0$ where $\theta$ is not differentiable, and division by
-$0$ gives $0$. -/
+$0$ gives $0$.
+
+**Reading.** Preserves the Newton quotient when defined; totalized derivative and division return
+zero on degenerate data.
+-/
 noncomputable def regNewtonCorrectionFn (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (σ r β lamc : ℝ) : ℝ :=
   -regSecularFn g H M σ r β lamc / deriv (regSecularFn g H M σ r β) lamc
@@ -420,7 +441,11 @@ $$\delta^N = \frac{2\pi(\lambda_c)}{\pi^{(1)}(\lambda_c)} \Bigl(1 -
 where $\pi$ is the secular function.
 
 The derivative is `deriv`, which is $0$ where $\pi$ is not differentiable, and division by $0$
-gives $0$. -/
+gives $0$.
+
+**Reading.** Preserves the Newton quotient when defined; totalized derivative and division return
+zero on degenerate data.
+-/
 noncomputable def trNewtonCorrectionFn (g : EuclideanSpace ℝ (Fin n))
     (H M : Matrix (Fin n) (Fin n) ℝ) (Δ lamc : ℝ) : ℝ :=
   2 * secularFn g H M lamc / deriv (secularFn g H M) lamc * (1 - mNorm M (stepOf g H M lamc) / Δ)
@@ -539,7 +564,10 @@ first iteration at which $K \ge 1$ and $|\lambda_K - \lambda_{K-1}| \le \varepsi
 is $\lambda_K$.
 
 **Correction.** The source allows any $\beta_j \in [-1/2, (r-2)/2]$, but the Newton correction
-(8.2.25) is undefined at $\beta = 0$. The run requires $\beta_j \neq 0$. -/
+(8.2.25) is undefined at $\beta = 0$. The run requires $\beta_j \neq 0$. The prose introduces
+distinct exponents, while the run allows repetitions, which leave the set of candidates unchanged.
+The run records the resulting candidates and exit test, with no prescribed implementation for
+computing the derivatives. -/
 structure algorithm_8_3_1 (hH : H.IsHermitian) (hM : M.PosDef) (g : EuclideanSpace ℝ (Fin n))
     (σ r : ℝ) (iMax jMax : ℕ) (β : Fin jMax → ℝ) (ε : ℝ) (lam : ℕ → ℝ) (K : ℕ) : Prop where
   /-- The number of Taylor corrections satisfies $i_{\max} \ge 1$. -/
@@ -573,7 +601,15 @@ $\lambda_0 \in \mathcal{L}$. Then:
 
 The hypothesis $\lambda_0 \in \mathcal{L}$ implies the easy case $\lambda^* > \lambda_s$
 (`CartisGouldToint.Chapter08.setL_reg_eq_Ioc`). Q-superlinear convergence is
-`ConvergesSuperlinearly`. -/
+`ConvergesSuperlinearly`.
+
+**Partial.** The accompanying prose also states an eventual Q-order for the individual
+Taylor iteration and discusses a secant variant. This theorem gives the convergence claims
+above for the combined algorithm.
+
+**Reading.** Formalizes convergence and finite termination for the combined iteration with valid
+exponents; leaves out individual Taylor order and secant claims.
+-/
 theorem algorithm_8_3_1_terminates (hH : H.IsHermitian) (hM : M.PosDef) {σ r : ℝ} (hσ : 0 < σ)
     (hr : 2 < r) {s : EuclideanSpace ℝ (Fin n)} (hs : IsRegularizationSolution g H M σ r s)
     {iMax jMax : ℕ} (hi : 1 ≤ iMax) {β : Fin jMax → ℝ}
@@ -675,7 +711,12 @@ $\lambda_c$ are the finite set of the numbers
 $$\lambda_c + \delta^T_{2i-1}(\lambda_c) \quad (i = 1, \dots, i_{\max}), \qquad \lambda_c +
   \delta^N,$$
 where $\delta^T_{2i-1}$ is the Taylor correction of odd order $2i - 1$ for the constant target
-$\Delta^2$, and $\delta^N$ is the Newton correction (8.2.24). -/
+$\Delta^2$, and $\delta^N$ is the Newton correction (8.2.24).
+
+**Correction.** The introductory prose gives the target $\Delta^2$ beside the transformed
+function $\pi(\lambda;\beta)$. The transformed target is $\Delta^{2\beta}$, so $\Delta^2$ applies
+to the Taylor candidates with $\beta = 1$. The Newton candidate uses $\beta = -1/2$ and
+target $1/\Delta$. -/
 noncomputable def candidates832 (g : EuclideanSpace ℝ (Fin n)) (H M : Matrix (Fin n) (Fin n) ℝ)
     (Δ : ℝ) (iMax : ℕ) (lamc : ℝ) : Finset ℝ :=
   insert (lamc + trNewtonCorrectionFn g H M Δ lamc)
@@ -719,7 +760,15 @@ of Theorem 8.2.7. Let $i_{\max} \ge 1$, $\varepsilon > 0$ and $\lambda_0 \in \ma
 
 The hypothesis $\lambda_0 \in \mathcal{L}$ implies the easy case $\lambda^* > \lambda_s$
 (`CartisGouldToint.Chapter08.setL_tr_eq_Ioc`). The multiplier conditions are
-`CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/
+`CartisGouldToint.Chapter08.IsTrustRegionKKT`.
+
+**Partial.** The accompanying prose also states an eventual Q-order for the individual
+Taylor iteration and compares other Newton exponents and secant corrections. This theorem
+gives the convergence claims above for the combined algorithm using (8.2.24).
+
+**Correction.** Formalizes the combined iteration and its termination; leaves out the individual
+Taylor order, secant correction, and comparisons among Newton exponents.
+-/
 theorem algorithm_8_3_2_terminates (hH : H.IsHermitian) (hM : M.PosDef) {Δ : ℝ} (hΔ : 0 < Δ)
     {s : EuclideanSpace ℝ (Fin n)} (hs : IsTrustRegionSolution g H M Δ s) {lamStar : ℝ}
     (hkkt : IsTrustRegionKKT g H M Δ s lamStar) {iMax : ℕ} (hi : 1 ≤ iMax) {ε : ℝ} (hε : 0 < ε)
@@ -802,13 +851,17 @@ be generalized eigenvectors of the pencil $(H, M)$, orthonormal in the $M$-inner
 eigenvalues $\lambda_1, \dots, \lambda_n$. Then
 $$s_s = -(H + \lambda M)^{+} g = -\sum_{i \,:\, \lambda + \lambda_i \neq 0} \frac{b_i^T
   g}{\lambda + \lambda_i} \, b_i.$$
-Here $(H + \lambda M)^{+}$ is the pseudoinverse with respect to the $M$-inner product. When
+The formula applies the pseudoinverse of $M^{-1}H + \lambda I$ in the $M$-inner product
+to $-M^{-1}g$. When
 $g \perp \ker(H + \lambda M)$, $s_s$ is the solution of $(H + \lambda M) x = -g$ that is
 $M$-orthogonal to $\ker(H + \lambda M)$, and the solution of least $M$-norm
 (`CartisGouldToint.Chapter08.minNormSolution_spec`).
 
-**Reading.** The source does not say in which norm the solution is minimal. The $M$-norm is
-used, because with it $s_s$ is the limit of $s(\lambda')$ as $\lambda' \downarrow -\lambda_1$
+**Correction.** The trajectory limit stated in Section 8.3.1 gives the least $M$-norm
+solution, while Appendix A.5 defines the displayed pseudoinverse in Euclidean coordinates.
+For $H=\operatorname{diag}(1,0)$, $g=(-1,0)$, and $M$ with rows $(2,1)$ and $(1,2)$, the
+trajectory approaches $(1,-1/2)$ as $\lambda'\downarrow 0$, and $-H^+g=(1,0)$.
+The formal definition agrees with the trajectory limit
 (`CartisGouldToint.Chapter08.tendsto_stepOf_minNormSolution`).
 
 The definition transports `Subproblem.particular` for the scaled operator $M^{-1} H$ back from
@@ -832,7 +885,11 @@ $\|s_s\|_M \le \|y\|_M$ for every solution $y$ of $(H + \lambda M) y = -g$. More
 the only solution $x$ of $(H + \lambda M) x = -g$ with $\langle M x, v \rangle = 0$ for all
 $v \in \ker(H + \lambda M)$.
 
-The orthogonality $g \perp \ker(H + \lambda M)$ is in the Euclidean inner product. -/
+The orthogonality $g \perp \ker(H + \lambda M)$ is in the Euclidean inner product.
+
+**Reading.** Makes the norm and associated kernel orthogonality explicit and requires consistency of
+the shifted linear system.
+-/
 theorem minNormSolution_spec (hH : H.IsHermitian) (hM : M.PosDef) {lam : ℝ}
     (hg : g ∈ (LinearMap.ker (toEuclideanLin (H + lam • M)))ᗮ) :
     toEuclideanLin (H + lam • M) (minNormSolution hH hM g lam) = -g ∧
@@ -914,10 +971,10 @@ In all cases the optimal value (8.3.3) is
 $$m^R(s^*) = \tfrac12 \Bigl(\langle g, s_s \rangle - \frac{r-2}{r} \lambda^*
   (\lambda^*/\sigma)^{2/(r-2)}\Bigr).$$
 
-**Correction.** The source writes $s^* = s_s + \alpha v_1$ for a fixed eigenvector $v_1$ for
-$\lambda_1$. When $\lambda_1$ is multiple, one fixed eigenvector does not parametrize all
-minimizers. The statement gives some nonzero generalized eigenvector $v$ for $\lambda_1$, which
-is equivalent to $s^* - s_s \in \ker(H + \lambda^* M)$.
+**Correction.** The source describes $v_1$ in $s^* = s_s + \alpha v_1$ as any eigenvector for
+$\lambda_1$. A single chosen direction gives a solution, and representing every minimizer
+requires allowing the direction to depend on $s^*$ when $\lambda_1$ is multiple. The
+existential direction is equivalent to $s^* - s_s \in \ker(H + \lambda^* M)$.
 
 The regularized model $m^R$ is `CartisGouldToint.Chapter08.regModel`, and $\lambda_1$ is
 `CartisGouldToint.Chapter08.leftmostPencil`. -/
@@ -976,14 +1033,14 @@ $\lambda^* \ge -\lambda_1$, and:
 In all cases the optimal value (8.3.5) is
 $$m(s^*) = \tfrac12 \bigl(\langle g, s_s \rangle - \lambda^* \Delta^2\bigr).$$
 
-**Correction.** The source writes $s^* = s_s + \alpha v_1$ for a fixed eigenvector $v_1$ for
-$\lambda_1$. When $\lambda_1$ is multiple, one fixed eigenvector does not parametrize all
-minimizers; the statement gives some nonzero generalized eigenvector $v$ for $\lambda_1$.
+**Correction.** The source describes $v_1$ in $s^* = s_s + \alpha v_1$ as any eigenvector for
+$\lambda_1$. The existential direction allows $v$ to depend on $s^*$ when $\lambda_1$ is multiple.
 
 **Correction.** The source requires $\|s_s + \alpha v_1\|_M = \Delta$. When $\lambda^* = 0$ (so
 $\lambda_1 = 0$, an interior solution) this fails: for $n = 1$, $H = 0$, $g = 0$, $M = 1$ and
 $\Delta = 1$, the minimizer $s^* = 0$ is not on the boundary. The boundary condition is stated
-for $\lambda^* > 0$ only.
+for $\lambda^* > 0$ only. Its norm is to the first power, as displayed in the corollary.
+The hard-case paragraph preceding the corollary adds the exponent $r-2$.
 
 The model $m$ is `CartisGouldToint.Chapter08.model`, and the multiplier conditions are
 `CartisGouldToint.Chapter08.IsTrustRegionKKT`. -/

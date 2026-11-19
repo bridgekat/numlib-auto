@@ -111,13 +111,19 @@ hypothesis into that compactness.
 
 ## Deviations from the source
 
+* **Example 2.7.3** (reading and generalization). Lean uses normalized Haar measure and scaled
+  sine vectors of norm one. A separate theorem shows weak convergence to zero for sequences of
+  distinct vectors from any orthonormal family in a real Hilbert space.
 * **Theorem 2.7.5** (generalization). The book assumes that $V$ is a Banach space. The statement
   holds for every normed space, because a reflexive normed space is complete. See
   `AtkinsonHan.Chapter02.theorem_2_7_5`.
+* **Exercises 2.7.3 and 2.7.4(c)** (reading and generalization). Lean states the Hilbert result
+  over the reals and with completeness. For uniformly convex real spaces it states the implication
+  from weak convergence and convergence of norms, allowing incomplete spaces.
 
 ## Not formalized
 
-* **Example 2.7.3, the uniform integrability criterion** (Dunford–Pettis).
+* **The uniform integrability criteria after Theorem 2.7.5**, including Dunford–Pettis.
 * **Exercise 2.7.4 (b)**, the uniform convexity of $L^p$ by the Clarkson inequalities.
 -/
 
@@ -207,7 +213,10 @@ theorem weakSeqTendsto_iff_inner {H : Type*} [NormedAddCommGroup H] [InnerProduc
 and let $g : \mathbb{N} \to I$ be injective. Then $\varphi_{g(n)} \rightharpoonup 0$.
 
 By Bessel's inequality the inner products of the $\varphi_{g(n)}$ with a fixed vector are square
-summable, so they tend to $0$. -/
+summable, so they tend to $0$.
+
+**Generalization.** The source uses the sine sequence. The orthonormal-family argument
+applies to any sequence of distinct members of such a family in a real Hilbert space. -/
 theorem weakSeqTendsto_zero_of_orthonormal {ι H : Type*} [NormedAddCommGroup H]
     [InnerProductSpace ℝ H] [CompleteSpace H] {φ : ι → H} (hφ : Orthonormal ℝ φ) {g : ℕ → ι}
     (hg : Function.Injective g) : WeakSeqTendsto ℝ (fun n => φ (g n)) 0 := by
@@ -231,7 +240,10 @@ inequality. Since the weak limit is $0$ and every term has norm $1$, the inequal
 `AddCircle (2 * π)` with the probability Haar measure, and $\varphi_{n+1}$ is
 `trigLp (2 * π) (-(n + 1))`, the function `trigFun (2 * π) (-(n + 1))` of Theorem 1.3.13. The
 factor $\sqrt{2}$ and the normalized measure make the sequence orthonormal; they do not change
-the conclusion of the book about $\sin(nx)$. -/
+the conclusion of the book about $\sin(nx)$.
+
+**Reading.** The source uses unnormalized Lebesgue measure and the functions $\sin(nx)$.
+Lean uses Haar probability measure and multiplies the functions by $\sqrt{2}$. -/
 theorem example_2_7_3 :
     WeakSeqTendsto ℝ (fun n : ℕ => trigLp (2 * π) (-(n + 1) : ℤ)) 0 ∧
       (∀ n : ℕ, ‖trigLp (2 * π) (-(n + 1) : ℤ)‖ = 1) ∧
@@ -252,7 +264,9 @@ end Example
 /-! ### The Radon–Riesz property -/
 
 /-- **Exercise 2.7.3** of [han2009theoretical]. Let $H$ be a real Hilbert space, and let
-$v_n, u \in H$. Then $v_n \to u$ if and only if $v_n \rightharpoonup u$ and $\|v_n\| \to \|u\|$. -/
+$v_n, u \in H$. Then $v_n \to u$ if and only if $v_n \rightharpoonup u$ and $\|v_n\| \to \|u\|$.
+
+**Reading.** Lean assumes a real Hilbert space. The source names inner-product spaces. -/
 theorem exercise_2_7_3 {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℝ H]
     [CompleteSpace H] {v : ℕ → H} {u : H} :
     Tendsto v atTop (𝓝 u) ↔
@@ -265,7 +279,11 @@ Then $v_n \to u$.
 
 A Hilbert space is uniformly convex by Mathlib's `InnerProductSpace.toUniformConvexSpace`.
 Completeness of $E$ is not assumed. The proof is the backbone's
-`tendsto_of_forall_dual_tendsto_of_tendsto_norm`. -/
+`tendsto_of_forall_dual_tendsto_of_tendsto_norm`.
+
+**Generalization.** The implication holds without completeness. The source states an
+ equivalence in Banach spaces. This declaration gives the implication from the weak and norm
+convergences. -/
 theorem exercise_2_7_4 {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [UniformConvexSpace E]
     {v : ℕ → E} {u : E} (hweak : WeakSeqTendsto ℝ v u)
     (hnorm : Tendsto (fun n => ‖v n‖) atTop (𝓝 ‖u‖)) : Tendsto v atTop (𝓝 u) :=

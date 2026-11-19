@@ -116,6 +116,17 @@ are proved with explicit constants. The proofs specialize `Numlib.Analysis.PDE.T
 
 ## Deviations from the source
 
+* **Equations (13.64)–(13.65)** (reading). The classical problem uses the closed rectangle,
+  requires corner compatibility, and permits any advection coefficient. The continuous Galerkin
+  problem covers homogeneous inflow with a piecewise polynomial representative of the load. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_64` and
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_65`.
+* **Equation (13.68)** (reading). The discontinuous problem retains the time dependence of the
+  reaction coefficient and writes the inflow term on the load side. It uses a piecewise
+  polynomial volume-load representative. See `QuarteroniSaccoSaleri.Chapter13.equation_13_68`.
+* **Equation (13.70)** (specialization). The one-step equation covers homogeneous inflow with
+  initial data passed separately. The norm estimate assumes explicit nonnegative bulk and
+  outflow dissipation. See `QuarteroniSaccoSaleri.Chapter13.equation_13_70_norm_le`.
 * **(13.66) and (13.67)** (reading). The source prints the boundary term as
   $a(\beta) \int_0^t u_h^2(\tau) \, d\tau$; it is read as
   $a(\beta) \int_0^t u_h(\beta, \tau)^2 \, d\tau$. See
@@ -131,8 +142,9 @@ are proved with explicit constants. The proofs specialize `Numlib.Analysis.PDE.T
 * **Error estimate for continuous elements in §13.10.1** (reading). The source prints the boundary
   term at the inflow end $\alpha$, where it vanishes; the statement has it at the outflow end
   $\beta$. See `QuarteroniSaccoSaleri.Chapter13.cG_convergence`.
-* **Convergence estimate for discontinuous elements in §13.10.1** (reading). The printed left side
-  has a garbled integral $\int_{j=0}^{T_{n-1}}$, read as $\int_0^T \sum_{j=0}^{n-1}$. See
+* **Convergence estimate for discontinuous elements in §13.10.1** (reading). The source uses the
+  maximum in time and integrals up to $T$. The statement bounds the error at each $t \le T$ and
+  its accumulated terms up to $t$, with explicit dependence on the mesh ratio. See
   `QuarteroniSaccoSaleri.Chapter13.dG_convergence`.
 * **Display after (13.70)** (correction). The source prints the term $a(\beta)(u_h^{n+1}(\beta))^2$;
   the derivation gives $\frac12 a(\beta)(u_h^{n+1}(\beta))^2$, and the printed inequality does not
@@ -176,7 +188,11 @@ $$u(\alpha, t) = \varphi(t) \quad (t \in [0, T]), \qquad u(x, 0) = u_0(x) \quad 
 
 The source assumes $a(x) > 0$ on $[\alpha, \beta]$, which makes $x = \alpha$ the inflow
 boundary. This positivity is not part of the definition; it is a hypothesis of the results that
-need it. The definition is `Transport.IsInflowSolution`. -/
+need it. The definition is `Transport.IsInflowSolution`.
+
+**Reading.** The solution identity holds on the closed rectangle and includes corner
+compatibility. Positivity of the transport speed is a separate hypothesis for results that need
+it. -/
 def equation_13_64 (a : ℝ → ℝ) (a₀ f : ℝ → ℝ → ℝ) (φ u₀ : ℝ → ℝ) (α β T : ℝ)
     (u : ℝ → ℝ → ℝ) : Prop :=
   Transport.IsInflowSolution a a₀ f φ u₀ α β T u
@@ -186,7 +202,10 @@ omit hx in
 functions $u_x$ and $u_t$ that are the partial derivatives of $u$ on
 $[\alpha, \beta] \times [0, T]$, in the sense of `Transport.HasPartialsOn`, such that
 $u_t + a u_x + a_0 u = f$ on the strip, $u(\alpha, t) = \varphi(t)$ for $t \in [0, T]$, and
-$u(x, 0) = u_0(x)$ for $x \in [\alpha, \beta]$. -/
+$u(x, 0) = u_0(x)$ for $x \in [\alpha, \beta]$.
+
+**Reading.** Unfolds the stronger closed-rectangle classical solution predicate.
+-/
 theorem equation_13_64_def (a : ℝ → ℝ) (a₀ f : ℝ → ℝ → ℝ) (φ u₀ : ℝ → ℝ) (α β T : ℝ)
     (u : ℝ → ℝ → ℝ) :
     equation_13_64 a a₀ f φ u₀ α β T u ↔
@@ -207,7 +226,9 @@ end $\alpha$.
 
 It is a submodule of `BrokenPolynomial x r`: the intersection of
 `BrokenPolynomial.continuous x r`, which is $V_h = X_h^r$, with the kernel of the trace
-$v \mapsto v^+(x_0)$. -/
+$v \mapsto v^+(x_0)$.
+
+**Generalization.** The continuous vanishing-trace space permits a single panel. -/
 def inflowSpace (x : Fin (n + 1) → ℝ) (r : ℕ) (hn : 0 < n) :
     Submodule ℝ (BrokenPolynomial x r) :=
   BrokenPolynomial.continuous x r ⊓ LinearMap.ker (BrokenPolynomial.traceRightₗ x r ⟨0, hn⟩)
@@ -229,14 +250,20 @@ $$b_t(u, v) = \sum_{j=0}^{n-1} \int_{x_j}^{x_{j+1}} \bigl(a u_j' + a_0(\cdot, t)
 where $u_j$ and $v_j$ are the polynomials of $u$ and $v$ on the panel $[x_j, x_{j+1}]$. It is a
 bounded bilinear form for the $L^2(\alpha, \beta)$ inner product.
 
-The form is `Variational.transportForm` with the reaction coefficient $a_0(\cdot, t)$. -/
+The form is `Variational.transportForm` with the reaction coefficient $a_0(\cdot, t)$.
+
+**Generalization.** The panel integrals define a continuous bilinear form on the whole broken-
+polynomial space. -/
 def transportForm (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n))) (t : ℝ) :
     SesqForm ℝ (BrokenPolynomial x r) :=
   Variational.transportForm x r ha (ha₀ t)
 
 /-- The transport form is the sum of the panel integrals: $b_t(u, v) = \sum_j \int_{x_j}^{x_{j+1}}
-(a u_j' + a_0(\cdot, t) u_j) v_j$. -/
+(a u_j' + a_0(\cdot, t) u_j) v_j$.
+
+**Reading.** Sum over broken panels, including discontinuous trial and test functions.
+-/
 theorem transportForm_apply (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n))) (t : ℝ)
     (u v : BrokenPolynomial x r) :
@@ -257,7 +284,10 @@ $$(\partial_t u_h(t), v_h)_{L^2} + b_t(u_h(t), v_h) = (f(t), v_h)_{L^2}
 The case of a nonzero datum $u_h(\alpha, t) = \varphi_h(t)$ is the same equation on the affine
 space $\varphi_h(t) + V_h^{in}$ and is not stated separately. The definition is
 `Variational.IsSemidiscreteGalerkin` for the restriction of
-`QuarteroniSaccoSaleri.Chapter13.transportForm` to $V_h^{in}$. -/
+`QuarteroniSaccoSaleri.Chapter13.transportForm` to $V_h^{in}$.
+
+**Specialization.** The inflow value is zero, the volume load is represented by a broken
+polynomial, and the time interval is closed. -/
 def equation_13_65 (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (f : ℝ → BrokenPolynomial x r) (u₀h : inflowSpace x r hn) (T : ℝ)
@@ -275,7 +305,10 @@ $$b_t(v, v) = \tfrac12 a(\beta) v(\beta)^2 - \tfrac12 a(\alpha) v(\alpha)^2 + \i
 
 The proof integrates by parts on each panel; the boundary terms telescope because $v$ has no
 interior jumps. Here $v(\beta)$ is `BrokenPolynomial.traceLeft v (Fin.last n)`, $v(\alpha)$ is
-`BrokenPolynomial.traceRight v ⟨0, hn⟩`, and the integral is a sum of panel integrals. -/
+`BrokenPolynomial.traceRight v ⟨0, hn⟩`, and the integral is a sum of panel integrals.
+
+**Generalization.** The energy identity retains both endpoint traces before enforcing
+homogeneous inflow. -/
 theorem transportForm_apply_self (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -296,7 +329,10 @@ $$c \|v\|_{L^2}^2 + \tfrac12 a(\beta) v(\beta)^2 \le b_t(v, v).$$
 The choice $c = \mu_0 > 0$ gives (13.66), and the choice $c = -\mu^*(t)$ gives (13.67).
 
 The inflow term of `QuarteroniSaccoSaleri.Chapter13.transportForm_apply_self` vanishes on
-$V_h^{in}$. The theorem is `Variational.le_transportForm_restrict` at the time $t$. -/
+$V_h^{in}$. The theorem is `Variational.le_transportForm_restrict` at the time $t$.
+
+**Reading.** States coercivity with a general lower coefficient bound and explicit outflow trace.
+-/
 theorem le_transportForm_restrict (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -420,7 +456,10 @@ is read as $a(\beta) \int_0^t u_h(\beta, \tau)^2 \, d\tau$.
 The source writes $\mu$ for $a_0 - a'/2$, and $\mu^*(t)$ is any bound for $\max_{x \in [\alpha,
 \beta]} |a_0(x, t) - a'(x)/2|$. The proof uses Gronwall's lemma, through
 `Variational.IsSemidiscreteGalerkin.norm_sq_add_integral_le_exp`, with the coercivity
-`QuarteroniSaccoSaleri.Chapter13.le_transportForm_restrict` at $c = -\mu^*(t)$. -/
+`QuarteroniSaccoSaleri.Chapter13.le_transportForm_restrict` at $c = -\mu^*(t)$.
+
+**Reading.** The Gronwall exponent uses a continuous nonnegative bound for the absolute
+reaction-minus-half-derivative, allowing a bound larger than the source maximum. -/
 theorem equation_13_67 (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -449,7 +488,10 @@ $$\|u_h(t)\|_{L^2}^2 + a(\beta) \int_0^t u_h(\beta, \tau)^2 \, d\tau
   \exp \int_0^t \bigl(1 + 2\mu^*(\tau)\bigr) \, d\tau.$$
 
 The statement is that of `QuarteroniSaccoSaleri.Chapter13.equation_13_67`, recorded under the
-name of the exercise. -/
+name of the exercise.
+
+**Correction.** Same explicit hypotheses and energy bound as the corrected version of (13.67).
+-/
 theorem exercise_13_9 (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -482,7 +524,10 @@ with the convention $u^-(x_0) = 0$.
 
 The source writes the inflow value as $U_h^-(x_0, t) = \varphi(t)$; here it is carried by the
 source term on the right. The space $W_h = Y_h^r$ is `BrokenPolynomial x r`, and the form is
-`Variational.dgUpwindForm`. -/
+`Variational.dgUpwindForm`.
+
+**Reading.** The reaction retains its time dependence, and the prescribed inflow enters as a
+separate trace functional on the load side. -/
 def equation_13_68 (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (φ : ℝ → ℝ) (f : ℝ → BrokenPolynomial x r) (u₀h : BrokenPolynomial x r) (T : ℝ)
@@ -499,7 +544,10 @@ $$b_t^{DG}(v, v) = \tfrac12 a(\beta) v^-(\beta)^2 + \tfrac12 \sum_{j=0}^{n-1} a(
 with $[v]_0 = v^+(\alpha)$.
 
 The proof integrates by parts on each panel and then uses, at each node, $\frac12 a (v^-)^2 -
-\frac12 a (v^+)^2 + a [v] v^+ = \frac12 a [v]^2$. -/
+\frac12 a (v^+)^2 + a [v] v^+ = \frac12 a [v]^2$.
+
+**Reading.** Makes the outflow term and zero-exterior first jump explicit for the form.
+-/
 theorem dgUpwindForm_apply_self (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -518,7 +566,10 @@ $c \le a_0(x, t) - a'(x)/2$ for all $x \in [\alpha, \beta]$. Then for every $v \
 $$c \|v\|_{L^2}^2 + \tfrac12 a(\beta) v^-(\beta)^2 + \tfrac12 \sum_{j=0}^{n-1} a(x_j) [v]_j^2
   \le b_t^{DG}(v, v).$$
 
-The theorem is `Variational.le_dgUpwindForm` at the time $t$. -/
+The theorem is `Variational.le_dgUpwindForm` at the time $t$.
+
+**Reading.** Explicit coercivity and boundary/jump terms under a general lower reaction bound.
+-/
 theorem le_dgUpwindForm (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)
@@ -769,10 +820,11 @@ $$\|u(t) - u_h(t)\| + \Bigl(\int_0^t \Bigl(\|u(\tau) - u_h(\tau)\|^2 + \sum_{j=1
 with the $L^2(\alpha, \beta)$ norm, where $C$ is the explicit constant
 `Variational.dgConst r A A' A₀ μ₀ T M h hmin`.
 
-**Reading.** The printed left side of the source has a garbled integral $\int_{j=0}^{T_{n-1}}$,
-read as $\int_0^T \sum_{j=0}^{n-1}$. The jumps of $u - u_h$ are those of $-u_h$ at the interior
-nodes, because $u$ is continuous. At $x_0 = \alpha$ the jump is $\varphi - u_h^+(\alpha)$, by
-the convention $U_h^-(x_0, t) = \varphi(t)$ of (13.68).
+**Reading.** The original PDF integrates the jump sum over $[0,T]$. Here the bound is stated
+for each $t \le T$, with integrals up to $t$ and a constant that depends on $h/h_{\min}$. The
+jumps of $u - u_h$ are those of $-u_h$ at the interior nodes, because $u$ is continuous. At
+$x_0 = \alpha$ the jump is $\varphi - u_h^+(\alpha)$, by the convention
+$U_h^-(x_0, t) = \varphi(t)$ of (13.68).
 
 The source quotes this estimate from [quarteroni1994numerical], §14.3.3, without proof, as
 $O(\|u_0 - u_{0,h}\| + h^{r+1/2})$ for a smooth solution $u$. Here the regularity is a
@@ -846,7 +898,10 @@ Here $t_1 = t^{n+1}$ is the new time and $f_1 = f^{n+1}$ is the source at that t
 
 The definition is the θ-step `Variational.IsThetaStep` with $\theta = 1$ for the restriction of
 the transport form at the time $t_1$ to $V_h^{in}$, with zero source at the old time. For
-$\Delta t = 0$ the factor $1 / \Delta t$ is $0$, by the convention for division by zero. -/
+$\Delta t = 0$ the factor $1 / \Delta t$ is $0$, by the convention for division by zero.
+
+**Specialization.** This is one update for homogeneous inflow with a polynomial representative
+of the load. -/
 def equation_13_70 (hn : 0 < n) (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (Δt t₁ : ℝ) (f₁ : BrokenPolynomial x r) (un un1 : inflowSpace x r hn) : Prop :=
@@ -951,7 +1006,10 @@ $\mu_0 \ge 0$ and $a(\beta) \ge 0$. Let $\tau_0, \tau_1, \dots$ be times with
 $\mu_0 \le a_0(x, \tau_k) - a'(x)/2$ for all $k$ and all $x \in [\alpha, \beta]$, and let
 $u_h^0, \dots, u_h^m \in V_h^{in}$, where each $u_h^{k+1}$ is a step of (13.70) from $u_h^k$ at
 the time $\tau_k$ with $f = 0$. Then $\|u_h^m\|_{L^2} \le \|u_h^0\|_{L^2}$, for every $m \ge 0$
-and every time step $\Delta t > 0$. -/
+and every time step $\Delta t > 0$.
+
+**Reading.** The conclusion uses explicit nonnegativity of the bulk lower bound and the outflow
+speed. -/
 theorem equation_13_70_norm_le (ha : IntervalIntegrable a volume (x 0) (x (Fin.last n)))
     (ha₀ : ∀ t, IntervalIntegrable (fun s => a₀ s t) volume (x 0) (x (Fin.last n)))
     (hd : ∀ s ∈ Icc (x 0) (x (Fin.last n)), DifferentiableAt ℝ a s)

@@ -93,6 +93,19 @@ proofs use the backbone modules `Numlib.Eigen.Sturm`, `Numlib.Eigen.DivideConque
 
 ## Deviations from the source
 
+* **Lemma 8.4.2 and Theorem 8.4.3(a), (c)** (generalization).
+  `GolubVanLoan.Chapter08.lemma_8_4_2` and `GolubVanLoan.Chapter08.theorem_8_4_3` need distinct
+  diagonal entries, without sorting them. The secular roots are taken away from the poles of the
+  source formula.
+* **§8.4.3, final line of Theorem 8.4.3's proof** (typo). The rank-one update is $D+\rho zz^T$,
+  where the source writes $D+\rho vv^T$.
+* **Equations (8.4.10)–(8.4.11)** (reading). `GolubVanLoan.Chapter08.equation_8_4_10` states the
+  general resolvent and determinant identities for points outside the spectrum of $T$. The
+  source uses the special case where the trailing principal block has the point as an
+  eigenvalue.
+* **§8.4.6, inverse eigenvalue construction** (reading).
+  `GolubVanLoan.Chapter08.inverseTridiagonal_exists` states existence with the two
+  characteristic polynomials and their multiplicities. The source gives construction steps.
 * **§8.4.1, bisection loop** (reading). In exact arithmetic the first bisection loop need not
   terminate when the bracketed zero is $0$. The declaration states one step of the loop. See
   `GolubVanLoan.Chapter08.bisection_bracket`.
@@ -353,7 +366,10 @@ theorem equation_8_4_4 (d : Fin n → ℝ) (ρ : ℝ) (z v : Fin n → ℝ) (t :
 /-- **Lemma 8.4.2** of [golub2013matrix]. Let $D = \operatorname{diag}(d_1, \dots, d_n)$ with
 distinct $d_i$, let $\rho \ne 0$, and let $z \in \mathbb{R}^n$ have no zero component. If
 $v \in \mathbb{R}^n$ is nonzero and $(D + \rho zz^T) v = \lambda v$, then $z^T v \ne 0$ and
-$D - \lambda I$ is nonsingular. -/
+$D - \lambda I$ is nonsingular.
+
+**Generalization.** The source assumes strictly decreasing diagonal entries. Only distinctness
+is needed for the two conclusions. -/
 theorem lemma_8_4_2 {d : Fin n → ℝ} (hd : Function.Injective d) {ρ : ℝ} (hρ : ρ ≠ 0)
     {z : Fin n → ℝ} (hz : ∀ i, z i ≠ 0) {v : Fin n → ℝ} (hv : v ≠ 0) {t : ℝ}
     (h : (diagonal d + ρ • vecMulVec z z) *ᵥ v = t • v) :
@@ -373,7 +389,10 @@ $$f(\lambda) = 1 + \rho z^T (D - \lambda I)^{-1} z = 1 + \rho \sum_{i=1}^n \frac
 
 The definition is the sum, `Matrix.secularFunction`. At a pole $\lambda = d_i$ the Lean value
 uses $z_i^2 / 0 = 0$ and has no meaning; the statements about $f$ assume
-$\lambda \notin \{d_1, \dots, d_n\}$. -/
+$\lambda \notin \{d_1, \dots, d_n\}$.
+
+**Reading.** The source defines a meromorphic rational function away from its poles. The Lean
+sum has a total value at each pole because scalar division by zero is zero. -/
 noncomputable def secularFunction (d : Fin n → ℝ) (ρ : ℝ) (z : Fin n → ℝ) (t : ℝ) : ℝ :=
   Matrix.secularFunction d ρ z t
 
@@ -405,7 +424,11 @@ $V \in \mathbb{R}^{n \times n}$ be orthogonal with $V^T (D + \rho zz^T) V =
   of $f$ outside $\{d_1, \dots, d_n\}$ is one of the $\lambda_i$;
 * (c) each column $V(:, i)$ is a multiple of $(D - \lambda_i I)^{-1} z$.
 
-The $\lambda_i$ need not be sorted. Part (b) is `GolubVanLoan.Chapter08.theorem_8_4_3_b`. -/
+The $\lambda_i$ need not be sorted. Part (b) is `GolubVanLoan.Chapter08.theorem_8_4_3_b`.
+
+**Generalization.** Parts (a) and (c) use distinct $d_i$ with no ordering assumed for either
+$d_i$ or $\lambda_i$. The root condition concerns only points away from the poles.  **Typo.**
+The final sentence of the source proof writes $D+\rho vv^T$ for $D+\rho zz^T$. -/
 theorem theorem_8_4_3 {d : Fin n → ℝ} (hd : Function.Injective d) {ρ : ℝ} (hρ : ρ ≠ 0)
     {z : Fin n → ℝ} (hz : ∀ i, z i ≠ 0) {V : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) {l : Fin n → ℝ}
@@ -602,7 +625,11 @@ $$e_1^T (T - \lambda I)^{-1} e_1 = \sum_{i=1}^n \frac{d_i^2}{\lambda_i - \lambda
 
 The second equality is Cramer's rule. The source reads off from it that the zeros of the sum are
 the eigenvalues of $T(2{:}n, 2{:}n)$ that are not eigenvalues of $T$. The scalar $\lambda$ is `c`
-in Lean, and the order $n$ is `N + 1`. -/
+in Lean, and the order $n$ is `N + 1`.
+
+**Reading.** The source specializes the resolvent sum to a zero at a trailing-submatrix
+eigenvalue. Lean states the sum and the corresponding determinant ratio at every point outside
+the spectrum of $T$. -/
 theorem equation_8_4_10 {N : ℕ} {T Q : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup _ ℝ) {l : Fin (N + 1) → ℝ} (hT : T = Qᵀ * diagonal l * Q) {c : ℝ}
     (hc : ∀ i, l i ≠ c) :
@@ -695,7 +722,10 @@ multiplicity.
 
 The source attributes the result to Golub (1973). The two spectra are stated as characteristic
 polynomials, $\det(xI - T) = \prod_i (x - \lambda_i)$ and $\det(xI - T(2{:}n, 2{:}n)) = \prod_j
-(x - \tilde\lambda_j)$. The order $n$ is `N + 1` in Lean. -/
+(x - \tilde\lambda_j)$. The order $n$ is `N + 1` in Lean.
+
+**Reading.** The source gives construction steps for a tridiagonal matrix. The Lean declaration
+gives existence and records both spectra with multiplicity via characteristic polynomials. -/
 theorem inverseTridiagonal_exists {N : ℕ} {l : Fin (N + 1) → ℝ} {μ : Fin N → ℝ}
     (h₁ : ∀ j, μ j < l j.castSucc) (h₂ : ∀ j, l j.succ < μ j) :
     ∃ T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ, T.IsSymm ∧ T.IsTridiagonal ∧

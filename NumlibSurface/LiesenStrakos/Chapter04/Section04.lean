@@ -21,6 +21,13 @@ upper bound is sharp. The bandwidth arguments are in `Numlib.Krylov.ShortRecurre
   recurrence length for starts of sufficiently high grade.
 * Theorem 4.4.3, `LiesenStrakos.theorem_4_4_3_admits`: a normal operator of the given degree
   admits the corresponding optimal recurrence.
+
+## Deviations from the source
+
+* **Definition 4.4.1, Lemma 4.4.2 and Theorem 4.4.3** (generalization). The degree
+  of normality and its sufficient conditions for the recurrence also apply over the reals.
+  See `LiesenStrakos.IsNormalOfDegree`, `LiesenStrakos.lemma_4_4_2` and
+  `LiesenStrakos.theorem_4_4_3`.
 -/
 
 namespace LiesenStrakos
@@ -29,13 +36,18 @@ variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpac
   [FiniteDimensional 𝕜 E]
 
 /-- An endomorphism is normal of degree $s$ if its adjoint is a polynomial in it of least degree
-$s$. This is Definition 4.4.1 of [liesen2013krylov]. -/
+$s$. This is Definition 4.4.1 of [liesen2013krylov].
+
+**Generalization.** The source uses complex scalars. The same polynomial condition
+defines the degree of normality for real operators. -/
 def IsNormalOfDegree (A : Module.End 𝕜 E) (s : ℕ) : Prop :=
   Polynomial.IsMinDegreeRepresentation (R := 𝕜) A A.adjoint s
 
 /-- If $A$ is normal of degree $s$, $s+2<d_{\min}(A)$, and the starting vector has grade at
 least $s+2$, then its rectangular Arnoldi matrix is $(s+2)$-band Hessenberg.
-This is Lemma 4.4.2 of [liesen2013krylov]. -/
+This is Lemma 4.4.2 of [liesen2013krylov].
+
+**Generalization.** The sufficient condition extends to real inner product spaces. -/
 theorem lemma_4_4_2 (A : Module.End 𝕜 E) (v : E) {s : ℕ}
     (hs : s + 2 < operatorMinimalDegree A) (hgrade : s + 2 ≤ vectorGrade A v)
     (hA : IsNormalOfDegree A s) : AdmitsOptimalRecurrenceFor A v s := by
@@ -54,7 +66,10 @@ theorem lemma_4_4_2 (A : Module.End 𝕜 E) (v : E) {s : ℕ}
 
 /-- If $A$ is normal of degree $s$ and $s+2<d_{\min}(A)$, then every starting vector has
 pre-breakdown Arnoldi upper bandwidth at most $s$. Each start of grade at least $s+2$ gives
-an optimal $(s+2)$-term recurrence. This is Theorem 4.4.3 of [liesen2013krylov]. -/
+an optimal $(s+2)$-term recurrence. This is Theorem 4.4.3 of [liesen2013krylov].
+
+**Generalization.** The source states the result over the complex numbers. The bandwidth
+and exact-length conclusions also hold over the reals. -/
 theorem theorem_4_4_3 (A : Module.End 𝕜 E) {s : ℕ}
     (hs : s + 2 < operatorMinimalDegree A) (hA : IsNormalOfDegree A s) :
     (∀ v : E, Arnoldi.HasUpperBandwidth A v s) ∧
@@ -65,7 +80,10 @@ theorem theorem_4_4_3 (A : Module.End 𝕜 E) {s : ℕ}
 
 /-- Normality of degree $s$ implies uniform admissibility of an optimal $(s+2)$-term recurrence
 when $s+2<d_{\min}(A)$. A full-grade starting vector attains the bound. This is the conclusion
-of Theorem 4.4.3 of [liesen2013krylov]. -/
+of Theorem 4.4.3 of [liesen2013krylov].
+
+**Generalization.** The existence of a starting vector attaining the length holds over
+the reals as well as the complex numbers. -/
 theorem theorem_4_4_3_admits (A : Module.End 𝕜 E) {s : ℕ}
     (hs : s + 2 < operatorMinimalDegree A) (hA : IsNormalOfDegree A s) :
     AdmitsOptimalRecurrence A s := by

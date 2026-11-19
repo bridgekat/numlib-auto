@@ -27,9 +27,15 @@ used without dropping.
 
 ## Deviations from the source
 
-* **Equation (10.34)** (qualification). The symmetric case requires both diagonal blocks of $G$
-  to be symmetric. The algebraic identity only requires symmetry of $G_{11}$; if $G_{22}$ is
-  not symmetric, neither the pivot block nor the reconstructed matrix is symmetric.
+* **Absolute pivot and signed Cholesky formulas** (reading). The formulas are stated as
+  algebraic identities for supplied factors. The SPD construction supplies an invertible
+  signed Cholesky factor and the exact split gives the signature matrix.
+* **Equation (10.34)** (correction). The transpose-congruence formula requires symmetric
+  $G_{11}$ and $G_{21}=G_{12}^T$. The algebraic identity here still permits nonsymmetric
+  $G_{22}$. See `BenziGolubLiesen.schilders_factorization`.
+* **Equation (10.35)** (generalization). The congruence needs symmetry of $G_{11}$ and
+  transposed off-diagonal blocks, but $G_{22}$ may be nonsymmetric. See
+  `BenziGolubLiesen.saunders_factorization`.
 
 ## Not formalized
 
@@ -45,7 +51,10 @@ variable {n m k R : Type*} [Fintype n] [Fintype m] [Fintype k]
   [DecidableEq n] [DecidableEq m] [DecidableEq k] [CommRing R]
 
 /-- If the symmetric pivot factor is diagonalized into orthonormal eigenvectors $V$
-and pivot eigenvalues $d$, replace $d_i$ by $|d_i|$ and retain the congruence factors. -/
+and pivot eigenvalues $d$, replace $d_i$ by $|d_i|$ and retain the congruence factors.
+
+**Generalization.** The algebraic definition accepts arbitrary matrices. The absolute pivot
+construction in the source uses an orthonormal pivot eigenbasis. -/
 noncomputable def absolutePivotPreconditioner (Q L V : Matrix n n ℝ) (d : n → ℝ) :
     Matrix n n ℝ :=
   Qᵀ * L * (V * diagonal (fun i ↦ |d i|) * Vᵀ) * Lᵀ * Q
@@ -58,7 +67,11 @@ def repartitionedDiagonalPreconditioner (A₁₁ : Matrix n n R) (A₂₂ : Matr
 /-- Equation (10.35) of [benzi2005numerical]. If the first constraint block $B_1$ is
 nonsingular, put $W=B_1^{-1}B_2$ and $Z=[-W;I]$. The constraint matrix is the
 congruence of a matrix with a zero second constraint block and middle block $Z^TGZ$.
-Its middle/first off-diagonal block is the transpose of $G_{12}-G_{11}W$. -/
+Its middle/first off-diagonal block is the transpose of $G_{12}-G_{11}W$.
+
+**Generalization.** The source assumes symmetric $G$. The formula continues to hold for
+nonsymmetric $G_{22}$ because that block contributes only to the congruence-compressed
+block $Z^TGZ$. -/
 theorem saunders_factorization (G₁₁ : Matrix m m R) (G₁₂ : Matrix m k R) (G₂₂ : Matrix k k R)
     (B₁ : Matrix m m R) (B₂ : Matrix m k R) (hB : IsUnit B₁) (hG : G₁₁ᵀ = G₁₁) :
     let G := fromBlocks G₁₁ G₁₂ G₁₂ᵀ G₂₂
@@ -85,7 +98,13 @@ theorem saunders_factorization (G₁₁ : Matrix m m R) (G₁₂ : Matrix m k R)
 
 /-- Equation (10.34) of [benzi2005numerical]. For invertible $B_1$ and $L_2$ and symmetric
 $G_{11}$, the Schilders factorization has a pivot block $[D_1,0,I;0,D_2,0;I,0,0]$.
-The displayed formula for $D_1$ is grouped with the inverse factors on the outside. -/
+The displayed formula for $D_1$ is grouped with the inverse factors on the outside.
+
+**Correction.** The printed partition lists $G_{12}$ and $G_{21}$ separately. The formula
+computes $E$ from $G_{21}$ and uses $E^T$ on the other side, which requires transposed
+off-diagonal blocks and symmetric $G_{11}$. With scalar blocks $B_1=L_2=1$,
+$B_2=L_1=G_{11}=G_{22}=G_{21}=0$ and $G_{12}=1$, the printed factors reconstruct
+$G_{12}=0$. The Lean formula makes the required equalities explicit. -/
 theorem schilders_factorization {G₁₁ : Matrix m m R} (G₁₂ : Matrix m k R)
     (G₂₂ : Matrix k k R) {B₁ : Matrix m m R} (B₂ : Matrix m k R)
     (L₁ : Matrix m m R) {L₂ : Matrix k k R}
@@ -140,7 +159,10 @@ theorem schilders_factorization {G₁₁ : Matrix m m R} (G₁₂ : Matrix m k R
 omit [DecidableEq n] [DecidableEq m] in
 /-- Equation (10.36) of [benzi2005numerical]. If $A=L_{11}L_{11}^T$,
 $B=L_{21}L_{11}^T$ and $C+L_{21}L_{21}^T=L_{22}L_{22}^T$, the two displayed
-triangular factors multiply to the symmetric saddle-point matrix. -/
+triangular factors multiply to the symmetric saddle-point matrix.
+
+**Generalization.** The identity needs only the prescribed diagonal-block relation for the
+supplied factors. -/
 theorem signedCholesky_factorization (L₁₁ : Matrix n n R) (L₂₁ : Matrix m n R)
     (L₂₂ C : Matrix m m R) (hC : C + L₂₁ * L₂₁ᵀ = L₂₂ * L₂₂ᵀ) :
     fromBlocks (L₁₁ * L₁₁ᵀ) (L₂₁ * L₁₁ᵀ)ᵀ (L₂₁ * L₁₁ᵀ) (-C) =
@@ -183,7 +205,10 @@ theorem exists_signedCholesky (A : Matrix n n ℝ) (B : Matrix m n ℝ) (C : Mat
   simpa [hAA, hLB] using signedCholesky_factorization L₁₁ L₂₁ L₂₂ C hSS.symm
 
 /-- Exact split preconditioning by the signed Cholesky lower factor leaves only the
-signature diagonal $\operatorname{diag}(I,-I)$. -/
+signature diagonal $\operatorname{diag}(I,-I)$.
+
+**Reading.** The declaration gives the signature matrix obtained by exact congruence with an
+invertible factor. -/
 theorem signedCholesky_split (L₁₁ : Matrix n n R) (L₂₁ : Matrix m n R)
     (L₂₂ C : Matrix m m R) (hC : C + L₂₁ * L₂₁ᵀ = L₂₂ * L₂₂ᵀ)
     (hL : IsUnit (fromBlocks L₁₁ 0 L₂₁ L₂₂)) :

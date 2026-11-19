@@ -50,6 +50,20 @@ At a lucky breakdown of Algorithm 7.1 the iterate is exact. The proofs use
   what remains when the basis is only biorthogonal.
 * The other half of the lucky-breakdown claim of Section 7.1.2, that the Krylov subspace is
   invariant, is `SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`.
+
+## Deviations from the source
+
+* **Generalization.** The scaled starting-vector identity includes the zero residual. See
+  `SaadSparse.Chapter07.smul_v₁_eq_r₀`.
+* **Reading.** The two-sided Lanczos solve is total and returns the initial guess for a singular
+  projected matrix. See `SaadSparse.Chapter07.lanczosSolveY`, `SaadSparse.Chapter07.lanczosSolve`,
+  `SaadSparse.Chapter07.lanczosSolve_eq_add_sum`.
+* **Generalization.** The two-sided Lanczos projection extends to complex systems under the explicit
+  solve hypotheses. See `SaadSparse.Chapter07.lanczosSolve_isPetrovGalerkin`.
+* **Reading.** The residual identities require the projected solve and the global primal recurrence.
+  See `SaadSparse.Chapter07.residual_lanczosSolve`, `SaadSparse.Chapter07.equation_7_9`.
+* **Reading.** Exactness at primal lucky breakdown requires a nonsingular projected system. See
+  `SaadSparse.Chapter07.lanczosSolve_eq_of_bilanczosVhat_eq_zero`.
 -/
 
 open Matrix
@@ -66,7 +80,12 @@ variable {n : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-- For every $A$, $b$ and $x_0$, $\beta v_1 = r_0$ with $\beta = \|r_0\|_2$ and $r_0 = b - Ax_0$:
 the normalization of line 1 of Algorithm 6.4. No hypothesis is needed, since $r_0 = 0$ makes
-both sides $0$. -/
+both sides $0$.
+
+**Generalization.** The scaled normalization identity holds even for a zero initial residual because
+Lean totalizes the reciprocal. The source describes normalization where the residual norm is
+nonzero.
+-/
 theorem smul_v₁_eq_r₀ (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ : EuclideanSpace 𝕜 (Fin n)) :
     (Chapter06.β A b x₀ : 𝕜) • Chapter06.v₁ A b x₀ = b - op A x₀ := by
   rw [Chapter06.v₁, smul_smul]
@@ -86,7 +105,13 @@ variable (A : Matrix (Fin n) (Fin n) 𝕜) (b x₀ w₁ : EuclideanSpace 𝕜 (F
 $T_m$ is the tridiagonal matrix of Algorithm 7.1 started from $v_1 = r_0/\beta$ and $w_1$.
 
 If $T_m$ is singular, which is the breakdown case of the book, `Matrix.inv` gives $0$ and so
-$y_m = 0$. -/
+$y_m = 0$.
+
+**Reading.** The iterate formula is defined for any requested size and uses totalized Lanczos
+vectors and matrix inversion. A singular projected matrix gives zero coordinates and returns the
+original guess. The source constructs a normalized basis and presupposes a defined tridiagonal
+solve.
+-/
 noncomputable def lanczosSolveY (m : ℕ) : Fin m → 𝕜 :=
   (T A (Chapter06.v₁ A b x₀) w₁ m)⁻¹ *ᵥ ((Chapter06.β A b x₀ : 𝕜) • Chapter06.e₁ m)
 
@@ -100,12 +125,24 @@ $\beta = \|r_0\|_2$.
 
 If $T_m$ is singular, the inverse is $0$ in Lean and $x_m = x_0$. The dual vector $w_1$ is used
 as given; the normalization $(v_1, w_1) = 1$ is part of the hypothesis
-`SaadSparse.Chapter07.NoBreakdown` of the results below. -/
+`SaadSparse.Chapter07.NoBreakdown` of the results below.
+
+**Reading.** The iterate formula is defined for any requested size and uses totalized Lanczos
+vectors and matrix inversion. A singular projected matrix gives zero coordinates and returns the
+original guess. The source constructs a normalized basis and presupposes a defined tridiagonal
+solve.
+-/
 noncomputable def lanczosSolve (m : ℕ) : EuclideanSpace 𝕜 (Fin n) :=
   x₀ + Matrix.toEuclideanLin (V A (Chapter06.v₁ A b x₀) w₁ m)
     (WithLp.toLp 2 (lanczosSolveY A b x₀ w₁ m))
 
-/-- The iterate of Algorithm 7.2 is $x_m = x_0 + V_m y_m = x_0 + \sum_j (y_m)_j v_j$. -/
+/-- The iterate of Algorithm 7.2 is $x_m = x_0 + V_m y_m = x_0 + \sum_j (y_m)_j v_j$.
+
+**Reading.** The iterate formula is defined for any requested size and uses totalized Lanczos
+vectors and matrix inversion. A singular projected matrix gives zero coordinates and returns the
+original guess. The source constructs a normalized basis and presupposes a defined tridiagonal
+solve.
+-/
 theorem lanczosSolve_eq_add_sum (m : ℕ) :
     lanczosSolve A b x₀ w₁ m
       = x₀ + ∑ j, lanczosSolveY A b x₀ w₁ m j • bilanczosV A (Chapter06.v₁ A b x₀) w₁ (j : ℕ) :=
@@ -148,7 +185,11 @@ approximation onto $\mathcal{K}_m(A, v_1)$ orthogonally to $\mathcal{K}_m(A^H, w
 $$x_m - x_0 \in \mathcal{K}_m(A, v_1), \qquad b - Ax_m \perp \mathcal{K}_m(A^H, w_1).$$
 
 This is the projection process from which the section derives the algorithm. The predicate is
-the backbone `IsPetrovGalerkin`. -/
+the backbone `IsPetrovGalerkin`.
+
+**Generalization.** The projection uses the adjoint and a complex inner product. Lean makes the
+no-breakdown and tridiagonal invertibility hypotheses explicit.
+-/
 theorem lanczosSolve_isPetrovGalerkin (h : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) :
     IsPetrovGalerkin (op A) b x₀ (Chapter06.krylov A (Chapter06.v₁ A b x₀) m)
@@ -201,6 +242,10 @@ from $v_1 = r_0/\beta$ and $w_1$, has no serious breakdown, that $m \ge 1$, and 
 nonsingular. Then the residual of the iterate of Algorithm 7.2 is a multiple of the next Lanczos
 vector:
 $$b - Ax_m = -\delta_{m+1} (e_m^T y_m)\, v_{m+1}.$$
+
+**Reading.** The vector and norm identities use a positive iteration index, an invertible projected
+matrix, and the global primal no-serious-breakdown predicate for the recurrence. The book gives the
+norm formula for the iterate computed by the algorithm.
 -/
 theorem residual_lanczosSolve (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
@@ -230,7 +275,12 @@ $$\|b - Ax_m\|_2 = |\delta_{m+1} (e_m^T y_m)|\, \|v_{m+1}\|_2,$$
 so it is available without forming the iterate.
 
 This is the analogue of (6.18) for FOM and of (6.87) for the symmetric Lanczos method. The
-factor $\|v_{m+1}\|_2$, which is $1$ there, is what a basis that is only biorthogonal leaves. -/
+factor $\|v_{m+1}\|_2$, which is $1$ there, is what a basis that is only biorthogonal leaves.
+
+**Reading.** The vector and norm identities use a positive iteration index, an invertible projected
+matrix, and the global primal no-serious-breakdown predicate for the recurrence. The book gives the
+norm formula for the iterate computed by the algorithm.
+-/
 theorem equation_7_9 (h : NoSeriousBreakdown A (Chapter06.v₁ A b x₀) w₁)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ m)) (hm : 0 < m) :
     ‖b - op A (lanczosSolve A b x₀ w₁ m)‖
@@ -259,7 +309,12 @@ of the book, that $\mathcal{K}_k(A, v_1)$ is then invariant under $A$, is
 `SaadSparse.Chapter07.krylov_mem_invtSubmodule_of_bilanczosVhat_eq_zero`. Nothing of this kind
 holds at a serious breakdown, which is the distinction that Section 7.1.2 draws. The dual lucky
 breakdown $\hat w_{k+1} = 0$ makes the span of $w_1, \dots, w_k$ invariant under $A^H$ and the
-iterate of the transposed system exact, but says nothing about $Ax = b$. -/
+iterate of the transposed system exact, but says nothing about $Ax = b$.
+
+**Reading.** Lean explicitly requires an invertible projected tridiagonal system, because exactness
+refers to its solved iterate. The source states exactness at primal lucky breakdown without this
+explicit condition.
+-/
 theorem lanczosSolve_eq_of_bilanczosVhat_eq_zero (h : NoBreakdown A (Chapter06.v₁ A b x₀) w₁ m)
     (hT : IsUnit (T A (Chapter06.v₁ A b x₀) w₁ (m + 1)))
     (hv : bilanczosVhat A (Chapter06.v₁ A b x₀) w₁ m = 0) :

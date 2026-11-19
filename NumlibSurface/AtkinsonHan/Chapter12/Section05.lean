@@ -80,6 +80,11 @@ module specializes one of these.
   interpolation on $[a, b]$. The statement holds for every uniformly bounded sequence of operators
   that converges pointwise to the identity, on every compact metric space with a measure on its
   Borel sets. See `AtkinsonHan.Chapter12.theorem_12_5_1`.
+* **Example 12.5.2** (generalization). The product trapezoidal estimate uses any sequence of
+  partitions whose mesh size tends to zero, including the source's equally spaced meshes.
+* **Lemma 12.5.5 and Theorem 12.5.6** (restriction). The interpolation nodes include both ends
+  of each panel, so the interpolant is continuous. Lemma 12.5.5 gives the uniform error estimate
+  (12.5.35). The book also allows interior-only nodes and gives the $L^p$ estimate (12.5.37).
 * **Theorem 12.5.6** (reading). The source applies Theorem 12.5.4 to obtain the regularity of the
   solution. The statement assumes the regularity that the proof uses: each function
   $y \mapsto l(x, y) u(y)$ is of type $(\gamma, m + 1)$ at both endpoints, with constants
@@ -133,7 +138,11 @@ A1 is part of the type of the operators. A2 is `IntegralOperator.tendsto_product
 Exercise 12.5.1, and A3 is `IntegralOperator.isCollectivelyCompact_productCLM`, translated to
 the form (12.4.53) by
 `AtkinsonHan.Chapter12.isCollectivelyCompactFamily_of_isCollectivelyCompact`. The limit $K$ is
-`productCLM hg l 1`, the case $P_n = I$. -/
+`productCLM hg l 1`, the case $P_n = I$.
+
+**Reading.** Arbitrary strongly convergent uniformly bounded interpolation operators on a compact
+measured metric space.
+-/
 theorem isCollectivelyCompactFamily_productCLM (hg : IsAdmissibleKernel ν g) (l : C(X × X, ℝ))
     {P : ℕ → C(X, ℝ) →L[ℝ] C(X, ℝ)} {Cp : ℝ} (hCp : ∀ n, ‖P n‖ ≤ Cp)
     (hP : ∀ v : C(X, ℝ), Tendsto (fun n => P n v) atTop (𝓝 v)) :
@@ -222,7 +231,10 @@ pointwise. The interpolation error $\|z - P_n z\| \le h^2 \|z''\|/8$ is
 `norm_sub_piecewiseLinearInterpCLM_le`, and
 `IntegralOperator.norm_admissibleKernelCLM_sub_productCLM_le` turns it into a bound on the
 consistency error $\|K u - K_n u\|$. The constant $c$ contains the uniform bound on
-$\|(\lambda - K_n)^{-1}\|$ and the bound on $\int |g(x, y)|\, dy$. -/
+$\|(\lambda - K_n)^{-1}\|$ and the bound on $\int |g(x, y)|\, dy$.
+
+**Reading.** Allows nonuniform meshes tending to zero and uses explicit derivative witnesses.
+-/
 theorem example_12_5_2 {g : Set.Icc a b × Set.Icc a b → ℝ}
     (hg : IsAdmissibleKernel (iccMeasure a b) g) (l : C(Set.Icc a b × Set.Icc a b, ℝ))
     {N : ℕ → ℕ} {y : ℕ → ℕ → Set.Icc a b} {h : ℕ → ℝ}
@@ -298,7 +310,10 @@ $q \ge (m + 1)/\gamma$, then there is a constant $C$ with $$\|u - P_n u\|_\infty
 
 The source states the lemma without proof and cites Rice and Atkinson. The statement is
 `norm_sub_piecewisePolyInterpCLM_le_graded`. The Lean index $N$ counts $N + 1 = n$ panels, so
-the bound reads $C / (N + 1)^{m+1}$. -/
+the bound reads $C / (N + 1)^{m+1}$.
+
+**Reading.** Only the uniform bound is stated, with panel endpoints required as interpolation nodes.
+-/
 theorem lemma_12_5_5 {m : ℕ} {γ q H c : ℝ} (hγ0 : 0 < γ) (hγ1 : γ < 1)
     (hq : ((m : ℝ) + 1) / γ ≤ q) {μ : Fin (m + 1) → ℝ}
     (hμ0 : μ 0 = 0) (hμ1 : μ (Fin.last m) = 1) (hμmono : StrictMono μ)

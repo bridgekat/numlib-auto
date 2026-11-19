@@ -83,7 +83,10 @@ noncomputable def backtrackingTRDirection (p : Seminorm ℝ E) (Δ : ℝ) (g pre
 
 /-- **Algorithm 10.3.2** of [conn2000trust], properties of the direction. Let $p$ be a seminorm on
 $E$ that vanishes only at $0$, let $\Delta > 0$, and let $g \neq 0$. For every rejected step
-$s$, the backtracking direction $d$ satisfies $p(d) = \Delta$ and $\langle g, d \rangle < 0$. -/
+$s$, the backtracking direction $d$ satisfies $p(d) = \Delta$ and $\langle g, d \rangle < 0$.
+
+**Correction.** Corrected direction has the prescribed trust norm and negative slope.
+-/
 theorem backtrackingTRDirection_spec (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ : ℝ} {g previous : E}
     (hΔ : 0 < Δ) (hg : g ≠ 0) :
@@ -120,7 +123,11 @@ def backtrackingTRArmijo (f : E → ℝ) (x d : E) (q b slope : ℝ) (j : ℕ) :
 $b < 1$, $\sigma < 0$ and $L > 0$, and suppose that
 $$f(x + t d) \le f(x) + t \sigma + L t^2 \quad \text{for all } t \in (0, 1].$$
 Then there is an exponent $j$ that passes the Armijo test (10.3.5), while no exponent $i < j$
-passes it. -/
+passes it.
+
+**Correction.** Termination of the corrected Armijo condition under explicit descent and Taylor
+bound.
+-/
 theorem exists_backtrackingTRArmijo {f : E → ℝ} {x d : E}
     {q b slope L : ℝ} (hq : q ∈ Set.Ioo 0 1) (hb : b < 1)
     (hs : slope < 0) (hL : 0 < L)
@@ -160,7 +167,10 @@ $$f(x + t d) - f(x) \le t \sigma + L t^2 \quad \text{and} \quad m(x + t d) - m(x
 Then there is an exponent $j$ that passes the trial test, while no exponent $i < j$ passes it.
 
 The objective and the model have the same slope $\sigma$, as when the model gradient agrees with
-the objective gradient. -/
+the objective gradient.
+
+**Reading.** Model gradient agreement and differentiability ensure the additional positivity test.
+-/
 theorem exists_backtrackingTRTrial {f m : E → ℝ} {x d : E}
     {q b slope L : ℝ} (hq : q ∈ Set.Ioo 0 1) (hb : b ∈ Set.Ioo 0 1)
     (hs : slope < 0) (hL : 0 < L)
@@ -289,7 +299,10 @@ so no positive multiple of the rejected step passes the Armijo test with $b = 1/
 
 The step points uphill, and still satisfies the printed absolute angle condition $|\langle
 \nabla f(0), s \rangle| = \|\nabla f(0)\| \|s\|$. The default parameters are
-`ConnGouldToint.Chapter06.defaultBTRParams`. -/
+`ConnGouldToint.Chapter06.defaultBTRParams`.
+
+**Reading.** Exhibits uphill reuse despite the printed absolute-angle condition.
+-/
 theorem backtrackingTR_ascent_reuse_counterexample :
     let f : ℝ → ℝ := fun x ↦ x + x ^ 2
     let m : ℝ → ℝ := fun x ↦ x - 2 * x ^ 2

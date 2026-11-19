@@ -112,6 +112,27 @@ bound (8.40) is (8.39) on the element that contains the point.
 
 ## Deviations from the source
 
+* **Generalization.** The tensor-product formulas work on the plane with injective node arrays in
+  arbitrary order. See `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp`,
+  `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp_isNodalBasis`,
+  `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp_apply_node`,
+  `QuarteroniSaccoSaleri.Chapter08.tensorProductInterp_mem_span`.
+* **Generalization.** The affine formula is defined for degenerate triangles, and bijectivity is
+  equivalent to nonzero determinant. See `QuarteroniSaccoSaleri.Chapter08.equation_8_34`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_34_matrix`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_34_apply`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_34_vertex`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_34_bijective`.
+* **Generalization.** The polynomial dimension formula holds on any set with nonempty interior. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_35_finrank`.
+* **Generalization.** Affine transport works for arbitrary finite node and shape data with a left
+  inverse. See `QuarteroniSaccoSaleri.Chapter08.equation_8_38_comp`.
+* **Generalization.** The local estimate takes a nodal spanning family as input, gives an explicit
+  constant, and proves the linear case with constant two. See
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_39`,
+  `QuarteroniSaccoSaleri.Chapter08.equation_8_39_linear`.
+* **Generalization.** The global sup-norm estimate uses a conforming nodal family and does not
+  require shape regularity. See `QuarteroniSaccoSaleri.Chapter08.equation_8_40`.
 * **(8.39)** (generalization). The reference Lagrange basis of $\mathbb{P}_k(\hat T)$ is a
   hypothesis: any nodal basis with nodes in $\hat T$ that spans $\mathbb{P}_k(\hat T)$, and $h_T$ is
   any bound on the two edges at $a_1$. The constant is explicit. See
@@ -145,7 +166,11 @@ polynomials of the nodes $x_0, \ldots, x_n$ and $y_0, \ldots, y_m$.
 
 The polynomial $l_i$ is `Lagrange.basis Finset.univ x i`. The interpolant is the nodal
 interpolation operator `Approximation.nodalInterp` with the nodes $(x_i, y_j)$ and the product
-shape functions. -/
+shape functions.
+
+**Generalization.** The function is defined on the whole plane. The grid nodes need not be ordered,
+while nodal and span theorems use injective node arrays separately along each axis.
+-/
 noncomputable def tensorProductInterp (x : Fin (n + 1) → ℝ) (y : Fin (m + 1) → ℝ)
     (f : ℝ × ℝ → ℝ) : ℝ × ℝ → ℝ :=
   Approximation.nodalInterp (fun p : Fin (n + 1) × Fin (m + 1) => (x p.1, y p.2))
@@ -158,7 +183,11 @@ shape functions $l_i(x) l_j(y)$ form a nodal basis for the grid nodes $(x_i, y_j
 with index $(i, j)$ takes the value $1$ at $(x_i, y_j)$ and the value $0$ at every other grid
 node.
 
-This is (8.3) in each variable. The nodal property is `Approximation.IsNodalBasis`. -/
+This is (8.3) in each variable. The nodal property is `Approximation.IsNodalBasis`.
+
+**Generalization.** The function is defined on the whole plane. The grid nodes need not be ordered,
+while nodal and span theorems use injective node arrays separately along each axis.
+-/
 theorem tensorProductInterp_isNodalBasis {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {y : Fin (m + 1) → ℝ} (hy : Function.Injective y) :
     Approximation.IsNodalBasis (fun p : Fin (n + 1) × Fin (m + 1) => (x p.1, y p.2))
@@ -176,7 +205,11 @@ $x_0, \ldots, x_n$ be distinct real numbers, let $y_0, \ldots, y_m$ be distinct 
 and let $f : \mathbb{R}^2 \to \mathbb{R}$. Then for all $i$ and $j$,
 $$\Pi_{n,m} f(x_i, y_j) = f(x_i, y_j).$$
 
-The proof is `Approximation.IsNodalBasis.nodalInterp_apply_node`. -/
+The proof is `Approximation.IsNodalBasis.nodalInterp_apply_node`.
+
+**Generalization.** The function is defined on the whole plane. The grid nodes need not be ordered,
+while nodal and span theorems use injective node arrays separately along each axis.
+-/
 theorem tensorProductInterp_apply_node {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {y : Fin (m + 1) → ℝ} (hy : Function.Injective y) (f : ℝ × ℝ → ℝ) (i : Fin (n + 1))
     (j : Fin (m + 1)) : tensorProductInterp x y f (x i, y j) = f (x i, y j) :=
@@ -201,7 +234,11 @@ private theorem eval_mem_span_monomials {P : ℝ[X]} (hP : P.natDegree ≤ n) :
 distinct real numbers, let $y_0, \ldots, y_m$ be distinct real numbers, and let
 $f : \mathbb{R}^2 \to \mathbb{R}$. Then $\Pi_{n,m} f$ is a polynomial of degree at most $n$ in
 $x$ and at most $m$ in $y$: it lies in the span of the monomials $x^p y^q$ with $p \le n$ and
-$q \le m$. -/
+$q \le m$.
+
+**Generalization.** The function is defined on the whole plane. The grid nodes need not be ordered,
+while nodal and span theorems use injective node arrays separately along each axis.
+-/
 theorem tensorProductInterp_mem_span {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     {y : Fin (m + 1) → ℝ} (hy : Function.Injective y) (f : ℝ × ℝ → ℝ) :
     tensorProductInterp x y f ∈ Submodule.span ℝ
@@ -328,7 +365,12 @@ reference triangle with vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ onto the triangle 
 vertices $a_1, a_2, a_3$ has $B_T = [a_2 - a_1 \mid a_3 - a_1]$ and $b_T = a_1$, that is,
 $$F_T(\hat x, \hat y) = a_1 + \hat x (a_2 - a_1) + \hat y (a_3 - a_1).$$
 
-The map is defined for any three points, also for collinear ones. -/
+The map is defined for any three points, also for collinear ones.
+
+**Generalization.** The affine map and its vertex identities also hold for collinear or repeated
+image vertices. The theorem isolates precisely the nonzero determinant condition needed for
+bijectivity.
+-/
 noncomputable def equation_8_34 (a₁ a₂ a₃ : ℝ × ℝ) : ℝ × ℝ →ᵃ[ℝ] ℝ × ℝ :=
   ((LinearMap.fst ℝ ℝ ℝ).smulRight (a₂ - a₁)
     + (LinearMap.snd ℝ ℝ ℝ).smulRight (a₃ - a₁)).toAffineMap + AffineMap.const ℝ (ℝ × ℝ) a₁
@@ -336,6 +378,10 @@ noncomputable def equation_8_34 (a₁ a₂ a₃ : ℝ × ℝ) : ℝ × ℝ →�
 /-- **Equation (8.34)** of [quarteroni2000numerical], the matrix. Let
 $a_i = (x_i, y_i) \in \mathbb{R}^2$ for $i = 1, 2, 3$. The matrix of the affine map $F_T$ is
 $$B_T = \begin{bmatrix} x_2 - x_1 & x_3 - x_1 \\ y_2 - y_1 & y_3 - y_1 \end{bmatrix}.$$
+
+**Generalization.** The affine map and its vertex identities also hold for collinear or repeated
+image vertices. The theorem isolates precisely the nonzero determinant condition needed for
+bijectivity.
 -/
 def equation_8_34_matrix (a₁ a₂ a₃ : ℝ × ℝ) : Matrix (Fin 2) (Fin 2) ℝ :=
   !![a₂.1 - a₁.1, a₃.1 - a₁.1; a₂.2 - a₁.2, a₃.2 - a₁.2]
@@ -343,6 +389,10 @@ def equation_8_34_matrix (a₁ a₂ a₃ : ℝ × ℝ) : Matrix (Fin 2) (Fin 2) 
 /-- **Equation (8.34)** of [quarteroni2000numerical], the value. Let
 $a_1, a_2, a_3, p \in \mathbb{R}^2$. Then
 $$F_T(p) = p_1 (a_2 - a_1) + p_2 (a_3 - a_1) + a_1.$$
+
+**Generalization.** The affine map and its vertex identities also hold for collinear or repeated
+image vertices. The theorem isolates precisely the nonzero determinant condition needed for
+bijectivity.
 -/
 theorem equation_8_34_apply (a₁ a₂ a₃ : ℝ × ℝ) (p : ℝ × ℝ) :
     equation_8_34 a₁ a₂ a₃ p = p.1 • (a₂ - a₁) + p.2 • (a₃ - a₁) + a₁ := by
@@ -350,7 +400,12 @@ theorem equation_8_34_apply (a₁ a₂ a₃ : ℝ × ℝ) (p : ℝ × ℝ) :
 
 /-- **Equation (8.34)** of [quarteroni2000numerical], the vertices. Let
 $a_1, a_2, a_3 \in \mathbb{R}^2$. Then $F_T(0, 0) = a_1$, $F_T(1, 0) = a_2$ and
-$F_T(0, 1) = a_3$. -/
+$F_T(0, 1) = a_3$.
+
+**Generalization.** The affine map and its vertex identities also hold for collinear or repeated
+image vertices. The theorem isolates precisely the nonzero determinant condition needed for
+bijectivity.
+-/
 theorem equation_8_34_vertex (a₁ a₂ a₃ : ℝ × ℝ) :
     equation_8_34 a₁ a₂ a₃ (0, 0) = a₁ ∧ equation_8_34 a₁ a₂ a₃ (1, 0) = a₂ ∧
       equation_8_34 a₁ a₂ a₃ (0, 1) = a₃ := by
@@ -369,7 +424,12 @@ theorem toMatrix_equation_8_34_linear (a₁ a₂ a₃ : ℝ × ℝ) :
 
 /-- **Equation (8.34)** of [quarteroni2000numerical], invertibility. Let
 $a_1, a_2, a_3 \in \mathbb{R}^2$. The affine map $F_T$ is a bijection of the plane if and only
-if $\det B_T \neq 0$, that is, if and only if the three vertices are not collinear. -/
+if $\det B_T \neq 0$, that is, if and only if the three vertices are not collinear.
+
+**Generalization.** The affine map and its vertex identities also hold for collinear or repeated
+image vertices. The theorem isolates precisely the nonzero determinant condition needed for
+bijectivity.
+-/
 theorem equation_8_34_bijective (a₁ a₂ a₃ : ℝ × ℝ) :
     Function.Bijective (equation_8_34 a₁ a₂ a₃) ↔ (equation_8_34_matrix a₁ a₂ a₃).det ≠ 0 := by
   set L := (equation_8_34 a₁ a₂ a₃).linear with hL
@@ -390,7 +450,11 @@ $$d_k = \dim \mathbb{P}_k(T) = \frac{(k+1)(k+2)}{2}.$$
 
 The space is `Approximation.mvPolyLE T k`, and the proof specializes
 `Approximation.finrank_mvPolyLE`. The division in Lean is division of natural numbers, which is
-exact here. -/
+exact here.
+
+**Generalization.** The dimension statement works for restrictions to any planar set with nonempty
+interior, with total degree bounded by k.
+-/
 theorem equation_8_35_finrank {T : Set (Fin 2 → ℝ)} (hT : (interior T).Nonempty) (k : ℕ) :
     Module.finrank ℝ (Approximation.mvPolyLE T k) = (k + 1) * (k + 2) / 2 := by
   rw [Approximation.finrank_mvPolyLE hT, Fintype.card_fin, Nat.choose_two_right,
@@ -406,7 +470,11 @@ $\hat\Pi^k g = \sum_m g(\hat z_m) \hat l_m$. Then
 $$(\Pi_T^k f) \circ F_T = \hat\Pi^k (f \circ F_T).$$
 
 This is the identity behind $l_{j,T} = \hat l_j \circ F_T^{-1}$ in (8.38), with $G$ in the role
-of $F_T^{-1}$. The proof is `Approximation.nodalInterp_comp`. -/
+of $F_T^{-1}$. The proof is `Approximation.nodalInterp_comp`.
+
+**Generalization.** The transport identity applies to arbitrary finite nodes and shape functions and
+needs only a left inverse of the affine map. The source uses the local Lagrange nodal basis.
+-/
 theorem equation_8_38_comp {ι : Type*} [Fintype ι] (a₁ a₂ a₃ : ℝ × ℝ) {G : ℝ × ℝ → ℝ × ℝ}
     (hG : Function.LeftInverse G (equation_8_34 a₁ a₂ a₃)) (zhat : ι → ℝ × ℝ)
     (lhat : ι → ℝ × ℝ → ℝ) (f : ℝ × ℝ → ℝ) :
@@ -524,7 +592,12 @@ polynomial of $f$ of degree $k$ at $a_1$, $f - \Pi_T^k f = (f - P) - \Pi_T^k (f 
 $\Pi_T^k$ reproduces $P$
 (`QuarteroniSaccoSaleri.Chapter08.exists_mvPolynomial_taylor_equation_8_34`), and
 $|f - P| \le M h^{k+1}/(k+1)!$ on $T$ by `norm_sub_taylorSum_segment_le` along the segments from
-$a_1$ (`QuarteroniSaccoSaleri.Chapter08.equation_8_34_segment_mem`). -/
+$a_1$ (`QuarteroniSaccoSaleri.Chapter08.equation_8_34_segment_mem`).
+
+**Generalization.** The reference shape functions are assumed nodal and spanning, and their
+individual bounds enter an explicit constant. Any bound on the two emanating edges suffices. The
+linear case supplies concrete reference functions and constant two.
+-/
 theorem equation_8_39 {ι : Type*} [Fintype ι] {k : ℕ} {G : ℝ × ℝ → ℝ × ℝ}
     (hG : Function.LeftInverse G F_T)
     {zhat : ι → ℝ × ℝ} (hz : ∀ m, zhat m ∈ referenceTriangle) {lhat : ι → ℝ × ℝ → ℝ}
@@ -680,7 +753,12 @@ with $\|f''(x)\| \le M$ for all $x \in T$. Then for every $x \in T$,
 $$|f(x) - \Pi_T^1 f(x)| \le 2 h^2 M.$$
 
 This is `QuarteroniSaccoSaleri.Chapter08.equation_8_39` with the barycentric coordinates as the
-reference basis. Since $\|\lambda_m\|_{\infty,\hat T} \le 1$, the constant is $(3 + 1)/2! = 2$. -/
+reference basis. Since $\|\lambda_m\|_{\infty,\hat T} \le 1$, the constant is $(3 + 1)/2! = 2$.
+
+**Generalization.** The reference shape functions are assumed nodal and spanning, and their
+individual bounds enter an explicit constant. Any bound on the two emanating edges suffices. The
+linear case supplies concrete reference functions and constant two.
+-/
 theorem equation_8_39_linear {G : ℝ × ℝ → ℝ × ℝ} (hG : Function.LeftInverse G F_T)
     {h : ℝ} (hh₂ : ‖a₂ - a₁‖ ≤ h) (hh₃ : ‖a₃ - a₁‖ ≤ h) {f : ℝ × ℝ → ℝ}
     (hf : ∀ x ∈ F_T '' referenceTriangle, ContDiffAt ℝ 2 f x) {M : ℝ}
@@ -823,7 +901,12 @@ the Euclidean plane along `QuarteroniSaccoSaleri.Chapter08.planeEquiv`; the fact
 $\|\mathtt{planeEquiv}^{-1}\|^{k+1}$ goes into $C$, and $\Pi_h^k f = \Pi_T^k f$ on $T$. The
 $\mathbb{P}_k$ Lagrange element on the principal lattice satisfies the hypotheses on the
 reference data, by `LagrangeElement.isNodalBasis`, `LagrangeElement.nodalInterp_eval` and
-`LagrangeElement.isConformingElement`. -/
+`LagrangeElement.isConformingElement`.
+
+**Generalization.** The uniform error estimate on the closure uses a conforming nodal family on a
+reference triangle and a derivative bound. No shape-regularity bound on diameter divided by inradius
+is needed for this sup-norm estimate.
+-/
 theorem equation_8_40 {I : ℕ} {k : ℕ} {xhat : Fin I → 𝔼₂}
     (hx : ∀ i, xhat i ∈ closure (EuclideanSpace.referenceTriangle : Set 𝔼₂))
     {φhat : Fin I → 𝔼₂ → ℝ} (hnodal : Approximation.IsNodalBasis xhat φhat)

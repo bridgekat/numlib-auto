@@ -45,6 +45,14 @@ Chapter 1 and Mathlib's orthogonal complement `Submodule.orthogonal`.
 * The orthogonal complement $M^\perp = \{u \in H : (u, v) = 0 \text{ for all } v \in M\}$ is
   Mathlib's `Mᗮ`, and the orthogonal projection $P_M$ is `Submodule.starProjection M`.
 
+## Deviations from the source
+
+* **Remark 3** (generalization). The dual restriction result drops completeness. The pairing
+  formula holds for arbitrary continuous linear maps from normed spaces into $H$. See
+  `Brezis.Chapter05.remark_5_3` and `Brezis.Chapter05.remark_5_3_pairing`.
+* **Remark 5** (reading). The intersection identity is grouped with the conclusions for closed
+  subspaces and shares their closedness hypothesis. See `Brezis.Chapter05.remark_5_5`.
+
 ## Not formalized
 
 * **Remark 3, the example with a weighted space $\ell^2$.** It is not stated.
@@ -94,9 +102,10 @@ $T : H^\star \to V^\star$ be the restriction map, $\langle T\varphi, v \rangle =
 2. $T$ is injective;
 3. if $V$ is reflexive, then the range $R(T)$ is dense in $V^\star$.
 
-The map $T$ is the Banach adjoint `i.strongDualMap` of Chapter 2. The completeness of $V$ and
-$H$ is not used: reflexivity of $V$ is the hypothesis of (3), and $H$ enters only through its
-dual. -/
+The map $T$ is the Banach adjoint `i.strongDualMap` of Chapter 2.
+
+**Generalization.** The conclusions apply to incomplete spaces. In (3), reflexivity itself
+implies completeness of $V$. -/
 theorem remark_5_3 (i : V →L[ℝ] H) (hi : Function.Injective i) (hd : DenseRange i) :
     (∀ φ : StrongDual ℝ H, ‖i.strongDualMap φ‖ ≤ ‖i‖ * ‖φ‖) ∧
       Function.Injective i.strongDualMap ∧
@@ -140,7 +149,9 @@ omit [CompleteSpace V] in
 be a real normed space and $i : V \to H$ a continuous linear map. Read $f \in H$ as an element
 of $H^\star$ by the Riesz–Fréchet isometry, and then as an element of $V^\star$ by $T$. Then
 $$\langle f, v \rangle_{V^\star, V} = (f, i v) \quad \text{for all } f \in H,\ v \in V.$$
--/
+
+**Generalization.** The pairing formula applies to any continuous linear map from a normed
+space $V$. The source takes a dense embedding of a Banach space. -/
 theorem remark_5_3_pairing (i : V →L[ℝ] H) (f : H) (v : V) :
     i.strongDualMap (toDual ℝ H f) v = ⟪f, i v⟫_ℝ := by
   rw [ContinuousLinearMap.strongDualMap_apply, toDual_apply_apply]
@@ -162,7 +173,10 @@ $$f - P_M f = P_{M^\perp} f,$$
 and $M$ has a complement in the sense of Section 2.4.
 
 The last property is Mathlib's `Submodule.ClosedComplemented`: there is a continuous linear
-projection of $H$ onto $M$. -/
+projection of $H$ onto $M$.
+
+**Reading.** The source states the intersection identity for every subspace. Here it is grouped
+with the three conclusions that require closedness. -/
 theorem remark_5_5 (M : Submodule ℝ H) (hM : IsClosed (M : Set H)) (f : H) :
     M ⊓ Mᗮ = ⊥ ∧ M ⊔ Mᗮ = ⊤ ∧
       (haveI := hM.completeSpace_coe; f - M.starProjection f = Mᗮ.starProjection f) ∧

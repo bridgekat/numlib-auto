@@ -165,9 +165,17 @@ set of trial iterations. The proofs specialize
 * **Lemma 13.1.4** (generalization). The lemma holds for every admissible $\kappa_\Delta$; the value
   (13.1.31) is admissible when its denominator is positive. See
   `CartisGouldToint.Chapter13.lemma_13_1_4`.
-* **Lemma 13.1.6** (reading). The source uses $\bar L_f$, which it defines only in (13.1.63); the
-  statement reads it as $L_f + \kappa_{\nabla,\max} \kappa_h$. See
+* **Lemma 13.1.5** (generalization). The decrease bounds hold for every trial iteration and every
+  admissible $\kappa_\Delta$. See `CartisGouldToint.Chapter13.lemma_13_1_5`.
+* **Lemma 13.1.6** (reading). The source bounds the branch from Step 2 to Step 5. The Lean
+  conclusion assumes Step 1 advanced to Step 2, since Step 1 can also branch directly to Step 5.
+  The inexact derivative bound $\bar L_f$ is defined in (13.1.24). See
   `CartisGouldToint.Chapter13.lemma_13_1_6`.
+* **Lemmas 13.1.7 and 13.1.15 and Theorems 13.1.8 and 13.1.19** (zero-error case). With
+  $\kappa_{\nabla,\max}=0$ the Step 1 accuracy condition holds for every requested accuracy.
+  The Lean statements multiply through by $\kappa_{\nabla,\max}$ and the complexity constants use
+  only the Step 2 restriction in this case. See `Optimization.trKappaAcc` and
+  `Optimization.arKappaAcc`.
 * **Theorem 13.1.8** (correction). The bound (13.1.39) omits the initial derivative estimate and the
   last accuracy-improving iteration; the constant is $\kappa^F + 2$. See
   `CartisGouldToint.Chapter13.theorem_13_1_8`.
@@ -179,8 +187,13 @@ set of trial iterations. The proofs specialize
   for short steps; Lemmas 13.1.14 and 13.1.16 need $i \in [1, p]$, and the constant $\sigma_{\max}$
   of Lemma 13.1.14 needs $\max(\kappa_s, \kappa_h)$ in place of $\kappa_s$. See
   `Optimization.ARqpDAStep`, `CartisGouldToint.Chapter13.lemma_13_1_14`.
-* **Lemma 13.1.12** (generalization). The lemma holds for every bound $\bar\sigma \ge \sigma_i$,
-  $i \le k$; the source takes $\bar\sigma = \sigma_{k,\max}$. See
+* **Lemmas 13.1.10 and 13.1.11** (proof typos). The regularization term in the model decrement
+  has a minus sign, and the proof of (13.1.66) needs only the strict witness inequality in
+  (13.1.67). See `CartisGouldToint.Chapter13.lemma_13_1_10` and
+  `CartisGouldToint.Chapter13.lemma_13_1_11`.
+* **Lemma 13.1.12** (correction and generalization). The conclusion $k \in \mathcal{T}$ also
+  requires Step 1 to advance to Step 2. The lemma holds for every bound $\bar\sigma \ge \sigma_i$,
+  $i \le k$, including the source's $\sigma_{k,\max}$. See
   `CartisGouldToint.Chapter13.lemma_13_1_12`.
 * **Radii control (13.1.69)–(13.1.70)** (generalization). The results assume the weaker condition
   `Optimization.RadiiControl`: after a trial iteration with $\|s_k\| < 1$, $\delta_{s_k,j} = 1$ for
@@ -441,7 +454,11 @@ $$\overline{\Delta T}_{f,j_k}(x_k, s_k) \ge \frac{\hat\phi_{f,k} \, \delta_k^{j_
   \qquad (13.1.27)$$
 
 The hypothesis is one iteration `Optimization.TRqDAStep` on any feasible set, with any value of
-the ratio. -/
+the ratio.
+
+**Generalization.** Gives the pointwise form underlying the printed minimum and extends to trial
+steps of TRqEDA on any feasible set.
+-/
 theorem lemma_13_1_2 (hs : TRqDAStep X P ε x Δ h D dd jk s acc ρ k) (hk : ¬ acc k)
     (hΔ : 0 < Δ k) :
     P.ς * epsMin P.q ε / 2 ≤ phiHat (D k) (jk k) (trqDARadius P Δ k) (dd k (jk k)) ∧
@@ -470,7 +487,11 @@ with $\delta_0 = \min(\Delta_0, \vartheta)$.
 
 The analysis uses only $0 < \kappa_\Delta \le \min(1, \gamma_1 (1 - \eta_2) / (L_f + 4 (q+1)!
 \kappa_s \kappa_{\nabla,\max}))$ (`CartisGouldToint.Chapter13.trKappaDelta_spec`), and the
-results are stated for every such $\kappa_\Delta$. A division by zero gives the value $0$. -/
+results are stated for every such $\kappa_\Delta$. A division by zero gives the value $0$.
+
+**Reading.** Reproduces the displayed factors when the denominator is positive and totalizes
+division by zero otherwise.
+-/
 noncomputable def trKappaDelta (f : ℝⁿ → ℝ) (P : TRqIDAParams) (L κg : ℕ → ℝ) (x₀ : ℝⁿ) : ℝ :=
   min 1 (P.γ₁ * (1 - P.η₂) / (lipMax L P.q + 4 * (P.q + 1)! * P.κs * ordMax P.q κg)) *
     min P.ϑ (P.Δ₀ * epsMin P.q (fun j => min P.Δ₀ P.ϑ ^ j) /
@@ -548,8 +569,11 @@ and if moreover $k \in \mathcal{S}$, then
 $$f(x_k) - f(x_{k+1}) \ge \eta_1 \frac{(\varsigma \kappa_\delta)^{q+1}}{2 \, q!}
   \epsilon_{\min}^{q+1}. \qquad (13.1.35)$$
 
-The statement needs no hypothesis that $x_k$ is not approximately optimal. The admissibility of
-$\kappa_\Delta$ is `Optimization.IsTRKappaDelta`. -/
+**Generalization.** The source states the bounds before reaching approximate optimality and
+uses the particular constant from (13.1.33). The trial-iteration conditions suffice for the
+bounds with every admissible $\kappa_\Delta$.
+
+The admissibility of $\kappa_\Delta$ is `Optimization.IsTRKappaDelta`. -/
 theorem lemma_13_1_5 (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ) (hk : ¬ acc k) :
@@ -569,9 +593,9 @@ $$h_{k,i} \le \kappa_s \left(\frac{\varsigma^{q+1} \kappa_\delta^q}{4 q! \bar L_
   \epsilon_{\min}^{q(q+1)} \quad \text{for all } i \in [1, q], \qquad (13.1.36)$$
 then Step 2 does not branch to Step 5, that is, $k \in \mathcal{T}$.
 
-**Reading.** The source uses $\bar L_f$ here, but defines it only in (13.1.63). The statement
-reads $\bar L_f$ as $L_f + \kappa_{\nabla,\max} \kappa_h$, the bound (13.1.24) on the inexact
-derivatives. -/
+**Reading.** The hypothesis that a Step 1 witness passes (13.1.14) ensures that Step 2 is
+performed. Otherwise Step 1 can branch directly to Step 5. Equation (13.1.24) defines
+$\bar L_f$ as $L_f + \kappa_{\nabla,\max} \kappa_h$. -/
 theorem lemma_13_1_6 (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
@@ -592,7 +616,10 @@ then $\phi^{\delta_k}_{f,j}(x_k) \le \epsilon_j \delta_k^j / j!$ for all $j \in 
 is, $x_k$ passes the test `CartisGouldToint.Chapter13.trTest`.
 
 The condition (13.1.37) is written without a division, so that $\kappa_{\nabla,\max} = 0$ is
-allowed. -/
+allowed.
+
+**Reading.** Writes the threshold as a product so the case of exact oracle constants is included.
+-/
 theorem lemma_13_1_7 (hf : AssumptionD0qL f P.q L)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
     (hκΔ : IsTRKappaDelta P (lipMax L P.q) (ordMax P.q κg) κΔ)
@@ -632,7 +659,9 @@ $\phi^\delta_{f,j}$ for each $j \in [1, q]$.
 The function values are counted as the initial value and one per trial iteration, and the
 derivative estimates as the initial estimate and one per successful or accuracy-improving
 iteration. The constant $\kappa^S$ is `Optimization.trKappaS`, and $\kappa_{\rm acc}$ is
-`Optimization.trKappaAcc` with $\bar L_f = L_f + \kappa_{\nabla,\max} \kappa_h$. -/
+`Optimization.trKappaAcc` with $\bar L_f = L_f + \kappa_{\nabla,\max} \kappa_h$. For
+$\kappa_{\nabla,\max}=0$ it uses just the Step 2 restriction (13.1.36), since (13.1.37) then
+holds in its multiplicative form for every requested accuracy. -/
 theorem theorem_13_1_8 (hf : AssumptionD0qL f P.q L) {flow : ℝ}
     (hb : Chapter02.AssumptionBb f flow)
     (hrun : algorithm_13_1_1 f κg P ε x₀ x Δ h D dd jk s acc) {κΔ : ℝ}
@@ -733,9 +762,17 @@ $$\delta^{(0)}_{k,j} \ge \delta^{(1)}_{k,j} \ge \min\left(\frac{\varsigma \epsil
   \max(\bar L, \sigma_k)}, \delta^{(0)}_{k,j}\right). \qquad (13.1.66)$$
 
 The printed lemma also states that the halving loop of Step 1 stops. This existence half is a
-property of the algorithm, `Optimization.exists_arqpDA_halving`: the same estimate shows that
+property of the algorithm, `Optimization.exists_arqpDA_halving`. The same estimate shows that
 the loop stops once the radius is below $\varsigma \epsilon_j / (8 \max(\bar L, \sigma_k))$. The
-hypothesis is Step 1 on any feasible set, `Optimization.ARqpStep1`. -/
+hypothesis is Step 1 on any feasible set, `Optimization.ARqpStep1`.
+
+**Proof typo.** Equation (13.1.67) identifies the witness decrement with the maximum decrement.
+Equation (13.1.52) only bounds the witness below by a fraction of that maximum. The strict
+inequality in (13.1.67) follows directly from failure of (13.1.53).
+
+**Generalization.** States the radius bound in the generalized feasible-set setting; halving
+existence is separate and the proof only uses the witness inequality in (13.1.67).
+-/
 theorem lemma_13_1_11 (hs : ARqpStep1 X P ε x σ δ δ₁ D dd k) {Lb : ℝ}
     (hLb : 0 < Lb) (hD : ∀ i ∈ Finset.Icc 1 P.p, ‖D k i‖ ≤ Lb) (hσ : 0 ≤ σ k)
     (hδ1 : ∀ j ∈ Finset.Icc 1 P.q, δ k j ≤ 1) {j : ℕ} (hj : j ∈ Finset.Icc 1 P.q) :
@@ -746,7 +783,11 @@ theorem lemma_13_1_11 (hs : ARqpStep1 X P ε x σ δ δ₁ D dd k) {Lb : ℝ}
 (or ARqpEDA) with $\epsilon_j > 0$ for $j \in [1, q]$ and $\sigma_k \ge 0$,
 $$\overline{\Delta T}_{f,p}(x_k, s_k) \ge \frac{\sigma_k}{(p+1)!} \|s_k\|^{p+1} \qquad
   (13.1.76)$$
-and $\overline{\Delta T}_{f,p}(x_k, s_k) > 0$, so that the ratio (13.1.58) is well defined. -/
+and $\overline{\Delta T}_{f,p}(x_k, s_k) > 0$, so that the ratio (13.1.58) is well defined.
+
+**Reading.** The displayed lower bound and positive ratio denominator hold for the shared trial-step
+predicate, including ARqpEDA.
+-/
 theorem lemma_13_1_13 (hs : ARqpDAStep X P ε x σ δ δ₁ δs h D dd jk s acc ρ k) (hk : ¬ acc k)
     (hε : ∀ j ∈ Finset.Icc 1 P.q, 0 < ε j) (hσ : 0 ≤ σ k) :
     σ k / ((P.p + 1)! : ℝ) * ‖s k‖ ^ (P.p + 1) ≤ (D k).taylorDecrement P.p (s k) ∧
@@ -763,8 +804,12 @@ some $j \in [1, p]$. Then the regularized model $\bar m(v) = \overline{T}_{f,p}(
 \|v\|^{p+1} / (p+1)!$ satisfies
 $$\bar m(0) - \bar m(d) \ge \frac{\alpha}{2} \frac{\delta^j}{j!}. \qquad (13.1.65)$$
 
-The source assumes $\alpha > 0$; for $\alpha \le 0$ no $\delta$ satisfies (13.1.64), so the
-hypothesis is not needed. The model is `Optimization.regularizedModel`. -/
+**Generalization.** The source restricts $j$ to $[1,q]$, and the estimate holds through degree
+$p$. The radius hypothesis (13.1.64) already implies $\alpha > 0$.
+
+**Proof typo.** The first equality in the printed proof has plus signs before the higher-order
+Taylor sum and the regularizer. The decrement of `Optimization.regularizedModel` subtracts both
+terms from $\overline{\Delta T}_{f,j}(x,d)$. -/
 theorem lemma_13_1_10 {f : ℝⁿ → ℝ} {p : ℕ} {L κg hh : ℕ → ℝ} {κh : ℝ} {x : ℝⁿ}
     {D : FormalMultilinearSeries ℝ ℝⁿ ℝ} (hf : AssumptionD0pL f p L)
     (hD : JetApprox (ftaylorSeries ℝ f x) D p (fun i => κg i * hh i))
@@ -851,8 +896,12 @@ $\sigma_i \le \bar\sigma$ for $i \le k$. Write $\kappa^{(1)}_\delta(\bar\sigma) 
   \epsilon_{\min}^{p(q+1)}$ for $i \in [1, p]$ (13.1.73), then iteration $k$ is not
   accuracy-improving.
 
-**Generalization.** The source takes $\bar\sigma = \sigma_{k,\max}$; the lemma holds for every
-bound $\bar\sigma$.
+**Correction.** The printed conclusion $k \in \mathcal{T}$ under (13.1.73) also requires Step 2
+to be performed. For a constant objective with exact estimates, Step 1 satisfies (13.1.53) at
+every order and branches to Step 5 even when the requested accuracies are arbitrarily small.
+
+**Generalization.** The lemma holds for every bound $\bar\sigma$, including the source's
+$\sigma_{k,\max}$.
 
 Only the radii control at the iterations before $k$ enters the radius bound at $k$. The printed
 lemma also states that Step 2 is well defined; this is part of the existence of runs,
@@ -1029,7 +1078,11 @@ $$\frac{f(x_0) - f_{\rm low}}{c} + \frac{p (q+1)}{|\log \gamma_h|} |\log \epsilo
 derivative estimates.
 
 The constant $\kappa_{\rm acc}$ is `Optimization.arKappaAcc` with
-$\kappa = \kappa^{(1)}_\delta(\sigma_{\max})$. -/
+$\kappa = \kappa^{(1)}_\delta(\sigma_{\max})$.
+
+**Correction.** Generalizes to arbitrary uniform successful-step decrease with the corrected
+first-hit test and counts.
+-/
 theorem arqpIDA_complexity (hf : AssumptionD0pL f P.p L) {flow : ℝ}
     (hb : Chapter02.AssumptionBb f flow)
     (hrun : algorithm_13_1_2 f κg P ε x₀ x σ δ δ₁ δs h D dd jk s acc)
@@ -1237,7 +1290,11 @@ $h \in (0, \kappa_h]^p$. Then there is an ARqpIDA run whose derivative estimates
 $O(x_k, h_k)$ and which satisfies the radii control (13.1.69)–(13.1.70) at every iteration.
 
 In the construction, Step 2 uses a global minimizer of the model (Lemma 12.2.9). The proof
-specializes `Optimization.exists_arqpDA_steps`. -/
+specializes `Optimization.exists_arqpDA_steps`.
+
+**Reading.** Packages halving and step existence for a uniform oracle with positive initial requests
+and weaker radii control.
+-/
 theorem exists_algorithm_13_1_2 {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {L : ℕ → ℝ}
     (hf : AssumptionD0pL f P.p L) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
     (hεδ : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j) (hκg : ∀ i ∈ Finset.Icc 1 P.p, 0 ≤ κg i)
@@ -1260,7 +1317,11 @@ theorem exists_algorithm_13_1_2 {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {L : �
 /-- ARqpIDA runs with exact derivatives and the radii control exist: under the hypotheses of
 `CartisGouldToint.Chapter13.exists_algorithm_13_1_2`, there is an ARqpIDA run whose derivative
 estimates are the exact derivatives of $f$ at the iterates and which satisfies the radii control
-at every iteration. -/
+at every iteration.
+
+**Reading.** Exact derivatives instantiate the relational run with the revised rules and weaker
+radii condition.
+-/
 theorem exists_algorithm_13_1_2_exact {f : ℝⁿ → ℝ} {κg : ℕ → ℝ} {L : ℕ → ℝ}
     (hf : AssumptionD0pL f P.p L) (hε : ∀ j ∈ Finset.Icc 1 P.q, ε j ∈ Set.Ioc 0 1)
     (hεδ : ∀ j ∈ Finset.Icc 1 P.q, ε j ≤ P.δ₀ j) (hκg : ∀ i ∈ Finset.Icc 1 P.p, 0 ≤ κg i)

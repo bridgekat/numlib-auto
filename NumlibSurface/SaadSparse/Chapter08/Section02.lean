@@ -98,6 +98,25 @@ $A^T A x = A^T b$, so by Theorem 4.10 it converges for $0 < \omega < 2$ when $A$
 
 ## Deviations from the source
 
+* **Representation.** The SOR sweeps retain only the iterate and use zero corrections for zero
+  denominators. See `SaadSparse.Chapter08.neSORStep`, `SaadSparse.Chapter08.neSORSweep`,
+  `SaadSparse.Chapter08.nrSORStep`, `SaadSparse.Chapter08.nrSORSweep`.
+* **Scope.** Cimmino-NR defines a single update with totalized coordinate corrections. See
+  `SaadSparse.Chapter08.cimmino`.
+* **Correction.** The normalized Cimmino-NR update uses column norms in the reading of P-8.2. See
+  `SaadSparse.Chapter08.cimmino_eq_richardson`.
+* **Generalization.** The convergence interval is an equivalence for nonzero Richardson parameters
+  under explicit positive spectral endpoints. See `SaadSparse.Chapter08.equation_8_22`.
+* **Totalization.** The preconditioned Cimmino identities use an entrywise reciprocal that permits
+  zero row or column norms. See `SaadSparse.Chapter08.colNormDiagInv`,
+  `SaadSparse.Chapter08.cimmino_eq_richardson_diag`, `SaadSparse.Chapter08.cimminoNE`,
+  `SaadSparse.Chapter08.cimminoNE_eq_jacobi`.
+* **Generalization.** The block update allows arbitrary basis matrices and uses zero corrections at
+  singular block Gram matrices. See `SaadSparse.Chapter08.blockCimmino`,
+  `SaadSparse.Chapter08.blockCimmino_eq_additiveStep`,
+  `SaadSparse.Chapter08.blockCimmino_isMinResidual`.
+* **Scope.** The SOR convergence theorem concerns NR-SOR on the first normal equations. See
+  `SaadSparse.Chapter08.sorSweep_tendsto`.
 * **Problem P-8.2** (typo). The problem writes the normalization $\|A^T e_i\|_2 = 1$ of the rows;
   the hypothesis that makes Cimmino's step Richardson's is the normalization $\|A e_i\|_2 = 1$ of
   the columns, as in Algorithm 8.3 and the text of Section 8.2.2. See
@@ -251,12 +270,22 @@ $$x + \delta_i A^T e_i, \qquad \delta_i = \omega \frac{\beta_i - (Ax)_i}{\|A^T e
 where $A^T e_i$ is the $i$-th row of $A$ and $\beta_i$ is the $i$-th component of $b$.
 
 The numerator $\beta_i - (Ax)_i$ is written $(e_i, b - Ax)$, which equals
-$\beta_i - (x, A^T e_i)$. If the $i$-th row of $A$ vanishes, then $\delta_i = 0$. -/
+$\beta_i - (x, A^T e_i)$. If the $i$-th row of $A$ vanishes, then $\delta_i = 0$.
+
+**Reading.** The sweep returns only the new iterate. NR recomputes $b-Ax$ at each coordinate instead
+of storing the updated residual from line 5. Scalar division is total, so any zero row or column
+used by the update contributes no change.
+-/
 noncomputable def neSORStep (i : Fin n) (x : E n) : E n :=
   x + (ω * inner ℝ (coordVec i) (b - (A ⬝ x)) / ‖Aᵀ ⬝ coordVec i‖ ^ 2) • (Aᵀ ⬝ coordVec i)
 
 /-- One forward sweep of Algorithm 8.1 of [saad2003iterative]: the NE-SOR relaxations of index
-$i = 1, \dots, n$, applied in this order. -/
+$i = 1, \dots, n$, applied in this order.
+
+**Reading.** The sweep returns only the new iterate. NR recomputes $b-Ax$ at each coordinate instead
+of storing the updated residual from line 5. Scalar division is total, so any zero row or column
+used by the update contributes no change.
+-/
 noncomputable def neSORSweep (x : E n) : E n :=
   (List.finRange n).foldl (fun y i => neSORStep A b ω i y) x
 
@@ -267,12 +296,22 @@ $$x + \delta_i e_i, \qquad \delta_i = \omega \frac{(r, Ae_i)}{\|Ae_i\|_2^2}, \qq
   Ax,$$
 where $Ae_i$ is the $i$-th column of $A$.
 
-If the $i$-th column of $A$ vanishes, then $\delta_i = 0$. -/
+If the $i$-th column of $A$ vanishes, then $\delta_i = 0$.
+
+**Reading.** The sweep returns only the new iterate. NR recomputes $b-Ax$ at each coordinate instead
+of storing the updated residual from line 5. Scalar division is total, so any zero row or column
+used by the update contributes no change.
+-/
 noncomputable def nrSORStep (i : Fin n) (x : E n) : E n :=
   x + (ω * inner ℝ (A ⬝ coordVec i) (b - (A ⬝ x)) / ‖A ⬝ coordVec i‖ ^ 2) • coordVec i
 
 /-- One forward sweep of Algorithm 8.2 of [saad2003iterative]: the NR-SOR relaxations of index
-$i = 1, \dots, n$, applied in this order. -/
+$i = 1, \dots, n$, applied in this order.
+
+**Reading.** The sweep returns only the new iterate. NR recomputes $b-Ax$ at each coordinate instead
+of storing the updated residual from line 5. Scalar division is total, so any zero row or column
+used by the update contributes no change.
+-/
 noncomputable def nrSORSweep (x : E n) : E n :=
   (List.finRange n).foldl (fun y i => nrSORStep A b ω i y) x
 
@@ -413,7 +452,12 @@ $$x + \sum_{i=1}^n \delta_i e_i, \qquad \delta_i = \omega \frac{(r, Ae_i)}{\|Ae_
   r = b - Ax.$$
 Every $\delta_i$ is computed from the same residual $r$, and the corrections are added at once.
 
-If the $i$-th column of $A$ vanishes, then $\delta_i = 0$. -/
+If the $i$-th column of $A$ vanishes, then $\delta_i = 0$.
+
+**Reading.** Lean gives one update with the residual computed from the input iterate and uses zero
+corrections for vanishing columns. The source also updates a stored residual and repeats until
+convergence.
+-/
 noncomputable def cimmino (x : E n) : E n :=
   x + ∑ i, (ω * inner ℝ (A ⬝ coordVec i) (b - (A ⬝ x)) / ‖A ⬝ coordVec i‖ ^ 2) • coordVec i
 
@@ -542,7 +586,11 @@ Algorithm 8.3 and in the text of Section 8.2.2 ("if the columns are not normaliz
 The second conclusion states the same equation in plain coordinates, as
 `SaadSparse.Chapter04.richardsonStep`. Without the normalization, Cimmino's step is Richardson's
 iteration preconditioned by the diagonal of $A^T A$, whose $i$-th entry is $\|Ae_i\|_2^2$; see
-`SaadSparse.Chapter08.cimmino_eq_richardson_diag`. -/
+`SaadSparse.Chapter08.cimmino_eq_richardson_diag`.
+
+**Correction.** The problem cites row normalization. The source derivation for Algorithm 8.3 uses
+column normalization, which is the hypothesis in Lean.
+-/
 theorem cimmino_eq_richardson (h : ∀ i : Fin n, ‖A ⬝ coordVec i‖ = 1) (x : E n) :
     cimmino A b ω x = x + ω • ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x)) ∧
       WithLp.ofLp (cimmino A b ω x)
@@ -575,7 +623,13 @@ With normalized columns, Cimmino's method is this iteration with $c = A^T b$
 and its optimal parameter. The proof is Example 4.1 applied to the symmetric positive definite
 matrix $A^T A$. The positivity of $\lambda_{\min}$, which nonsingularity of $A$ provides, is a
 hypothesis. The hypothesis $\omega \neq 0$ excludes $\omega = 0$, for which the iteration is
-constant and converges trivially. The spectral radius is `Matrix.complexSpectralRadius`. -/
+constant and converges trivially. The spectral radius is `Matrix.complexSpectralRadius`.
+
+**Generalization.** The convergence interval becomes an if-and-only-if for all initial states and
+right-hand sides of Richardson's iteration under explicit positive spectral endpoints and nonzero
+relaxation. The theorem does not assume normalized columns; that assumption connects the result to
+the Cimmino iterate.
+-/
 theorem equation_8_22 {lmin lmax : ℝ} (hsub : spectrum ℝ (Aᵀ * A) ⊆ Set.Icc lmin lmax)
     (hmin : lmin ∈ spectrum ℝ (Aᵀ * A)) (hmax : lmax ∈ spectrum ℝ (Aᵀ * A)) (hpos : 0 < lmin)
     (hω : ω ≠ 0) :
@@ -627,7 +681,11 @@ entry $0$ where a column of $A$ vanishes. It is the inverse $D^{-1}$ of
 (`SaadSparse.Chapter08.colNormDiag_mul_colNormDiagInv`).
 
 It is written entrywise rather than as the matrix inverse, so that a vanishing column gives $0$
-in its place, as the division by zero of the algorithm does. -/
+in its place, as the division by zero of the algorithm does.
+
+**Reading.** The diagonal reciprocal is taken entrywise with a zero reciprocal for a zero norm. This
+preserves the other coordinate corrections when a row or column vanishes.
+-/
 noncomputable def colNormDiagInv (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   Matrix.diagonal fun i => (‖A ⬝ coordVec i‖ ^ 2)⁻¹
 
@@ -649,7 +707,11 @@ the diagonal of $A^T A$.
 No hypothesis is needed: $D^{-1}$ is the entrywise inverse
 `SaadSparse.Chapter08.colNormDiagInv`, so a vanishing column makes the $\delta_i$ of the book
 and the corresponding entry of $D^{-1}$ zero alike. The special case $D = I$, which Section
-8.2.2 states in the text, is `SaadSparse.Chapter08.cimmino_eq_richardson`. -/
+8.2.2 states in the text, is `SaadSparse.Chapter08.cimmino_eq_richardson`.
+
+**Reading.** The diagonal reciprocal is taken entrywise with a zero reciprocal for a zero norm. This
+preserves the other coordinate corrections when a row or column vanishes.
+-/
 theorem cimmino_eq_richardson_diag (x : E n) :
     cimmino A b ω x = x + ω • (colNormDiagInv A ⬝ ((Aᵀ ⬝ b) - ((Aᵀ * A) ⬝ x))) := by
   rw [cimmino, normal_residual, colNormDiagInv, diagonal_apply_eq_sum, Finset.smul_sum]
@@ -670,7 +732,11 @@ Each correction $\delta_i A^T e_i$ is the Kaczmarz relaxation of
 `SaadSparse.Chapter08.neSORStep`, computed from the same residual, and the corrections are added
 at once.
 
-If the $i$-th row of $A$ vanishes, then $\delta_i = 0$. -/
+If the $i$-th row of $A$ vanishes, then $\delta_i = 0$.
+
+**Reading.** The diagonal reciprocal is taken entrywise with a zero reciprocal for a zero norm. This
+preserves the other coordinate corrections when a row or column vanishes.
+-/
 noncomputable def cimminoNE (x : E n) : E n :=
   x + ∑ i, (ω * inner ℝ (coordVec i) (b - (A ⬝ x)) / ‖Aᵀ ⬝ coordVec i‖ ^ 2) • (Aᵀ ⬝ coordVec i)
 
@@ -710,7 +776,11 @@ that is, $A^T$ applied to one step of the relaxed Jacobi iteration for $A A^T u 
 This is the derivation that the problem asks for: the row version of
 `SaadSparse.Chapter08.cimmino_eq_richardson_diag`, and Cimmino's own method. The inverse
 $D'^{-1}$ is the entrywise inverse `SaadSparse.Chapter08.colNormDiagInv` of $A^T$, with the
-entry $0$ where a row of $A$ vanishes. -/
+entry $0$ where a row of $A$ vanishes.
+
+**Reading.** The diagonal reciprocal is taken entrywise with a zero reciprocal for a zero norm. This
+preserves the other coordinate corrections when a row or column vanishes.
+-/
 theorem cimminoNE_eq_jacobi (u : E n) :
     cimminoNE A b ω (Aᵀ ⬝ u)
       = (Aᵀ ⬝ (u + ω • (colNormDiagInv (Aᵀ) ⬝ (b - ((A * Aᵀ) ⬝ u))))) := by
@@ -734,7 +804,12 @@ The scalar division of Algorithm 8.3 is replaced by the least-squares problem
 $\min_d \|r - A_i d\|_2$ (`SaadSparse.Chapter08.blockCimmino_isMinResidual`).
 
 The inverse is Mathlib's matrix inverse, which is $0$ for a singular matrix. So if $A_i^T A_i$
-is singular, then $d_i = 0$ and block $i$ adds no correction. -/
+is singular, then $d_i = 0$ and block $i$ adds no correction.
+
+**Generalization.** The book takes blocks from a partition of coordinate columns. Lean allows
+arbitrary basis matrices, including overlapping selections. An update with singular block Gram
+matrix contributes zero; least-squares optimality is asserted under invertibility.
+-/
 noncomputable def blockCimmino (𝒱 : Chapter05.ProjFamily n) (x : E n) : E n :=
   x + ∑ i, ω • ((𝒱.V i * ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))⁻¹ * (A * 𝒱.V i)ᵀ) ⬝ (b - (A ⬝ x)))
 
@@ -744,7 +819,12 @@ variable {A b ω}
 step is one step of the additive projection process of Section 5.4
 (`SaadSparse.Chapter05.additiveStep`) for the normal equations $A^T A x = A^T b$ over the
 family, with all weights equal to $\omega$. For one-dimensional blocks this is
-`SaadSparse.Chapter08.cimmino_eq_additiveStep`. -/
+`SaadSparse.Chapter08.cimmino_eq_additiveStep`.
+
+**Generalization.** The book takes blocks from a partition of coordinate columns. Lean allows
+arbitrary basis matrices, including overlapping selections. An update with singular block Gram
+matrix contributes zero; least-squares optimality is asserted under invertibility.
+-/
 theorem blockCimmino_eq_additiveStep (𝒱 : Chapter05.ProjFamily n) (x : E n) :
     blockCimmino A b ω 𝒱 x = Chapter05.additiveStep 𝒱 (Aᵀ * A) (fun _ => ω) (Aᵀ ⬝ b) x := by
   rw [blockCimmino, Chapter05.additiveStep]
@@ -762,7 +842,12 @@ $A_i = A V_i$ with $A_i^T A_i$ nonsingular. Then for every $r \in \mathbb{R}^n$ 
 $d_i = (A_i^T A_i)^{-1} A_i^T r$ solves the least-squares problem $\min_d \|r - A_i d\|_2$:
 $$\|r - A_i d_i\|_2 \le \|r - A_i d\|_2 \quad \text{for all } d.$$
 So each substep reduces the residual as far as the columns of $A_i$ allow. The proof is
-`SaadSparse.Chapter08.equation_8_1` for the matrix $A_i$. -/
+`SaadSparse.Chapter08.equation_8_1` for the matrix $A_i$.
+
+**Generalization.** The book takes blocks from a partition of coordinate columns. Lean allows
+arbitrary basis matrices, including overlapping selections. An update with singular block Gram
+matrix contributes zero; least-squares optimality is asserted under invertibility.
+-/
 theorem blockCimmino_isMinResidual {𝒱 : Chapter05.ProjFamily n} {i : Fin 𝒱.p}
     (h : IsUnit ((A * 𝒱.V i)ᵀ * (A * 𝒱.V i))) (r : E n) :
     ∀ d : EuclideanSpace ℝ (Fin (𝒱.size i)),
@@ -858,7 +943,11 @@ $(A^T A)^{-1} A^T b$ of the normal equations $A^T A x = A^T b$.
 The book states this as a back-reference to Chapter 4. The proof is Theorem 4.10 applied to the
 symmetric positive definite matrix $A^T A$, through
 `SaadSparse.Chapter08.nrSORSweep_eq_sorStep`. The convergence is stated in plain coordinates,
-through `WithLp.ofLp`. -/
+through `WithLp.ofLp`.
+
+**Reading.** The closing convergence claim is phrased in the source using the second normal matrix.
+Lean proves its NR counterpart using the first normal matrix with a nonsingular square input.
+-/
 theorem sorSweep_tendsto (hA : IsUnit A) (hω0 : 0 < ω) (hω2 : ω < 2) (x₀ : E n) :
     Tendsto (fun k => WithLp.ofLp ((nrSORSweep A b ω)^[k] x₀)) atTop
       (𝓝 ((Aᵀ * A)⁻¹ *ᵥ WithLp.ofLp ((Aᵀ ⬝ b) : E n))) := by

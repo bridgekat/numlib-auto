@@ -62,6 +62,16 @@ normalization of the cardinal polynomials of the book.
 
 ## Deviations from the source
 
+* **(9.28)–(9.30)** (reading). `QuarteroniSaccoSaleri.Chapter09.equation_9_28` uses the total
+  derivative, and the quadrature sums can also take independent derivative data.
+  `QuarteroniSaccoSaleri.Chapter09.hermiteQuadrature_degreeOfExactness` proves exactness through
+  degree $2n+1$ without a sharpness statement.
+* **(9.31) and the composite error** (reading and extension). Smoothness is expressed on an open
+  neighbourhood and the witness lies in the closed interval.
+  `QuarteroniSaccoSaleri.Chapter09.compositeCorrectedTrapezoidalError` gives an exact error
+  formula where the source discusses the fourth-order rate.
+* **Exercise 9.9** (scope). `QuarteroniSaccoSaleri.Chapter09.exercise_9_9` gives the signed
+  error ratio on polynomials of degree at most four, where the fourth derivative is constant.
 * **Equation (9.32)** (correction). The source prints the end correction
   $\frac{(b - a)^2}{12} [f'(a) - f'(b)]$. On $m$ panels it is $\frac{H^2}{12} [f'(a) - f'(b)]$ with
   $H = (b - a)/m$. See `QuarteroniSaccoSaleri.Chapter09.equation_9_32`.
@@ -96,7 +106,10 @@ theorem hermiteBasisL_eq_example_8_6_A {x : Fin (n + 1) → ℝ} (hx : Function.
 
 /-- For all nodes $x_0, \dots, x_n$ and each $k$, the cardinal polynomial
 $\mathcal{M}_k = (x - x_k) l_k^2$ of the book is the polynomial $B_k$ of Example 8.6,
-`QuarteroniSaccoSaleri.Chapter08.example_8_6_B`. -/
+`QuarteroniSaccoSaleri.Chapter08.example_8_6_B`.
+
+**Reading.** Total basis expression equality allows coincident nodes.
+-/
 theorem hermiteBasisM_eq_example_8_6_B (x : Fin (n + 1) → ℝ) (k : Fin (n + 1)) :
     Quadrature.hermiteBasisM x k = Chapter08.example_8_6_B x k := rfl
 
@@ -108,7 +121,10 @@ where $\mathcal{L}_k = [1 - (\omega''(x_k)/\omega'(x_k))(x - x_k)] l_k^2$ and
 $\mathcal{M}_k = (x - x_k) l_k^2$ are polynomials of $\mathbb{P}_{2n+1}$.
 
 The interpolant is `Hermite.interpolate x (fun _ => 1) f`, and $f'$ is `deriv f`. The statement
-is Example 8.6 of Chapter 8 with $\omega''(x_k)/\omega'(x_k) = 2 l_k'(x_k)$. -/
+is Example 8.6 of Chapter 8 with $\omega''(x_k)/\omega'(x_k) = 2 l_k'(x_k)$.
+
+**Reading.** Uses total derivative for arbitrary f instead of requiring defined derivative data.
+-/
 theorem equation_9_28 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (f : ℝ → ℝ) :
     Hermite.interpolate x (fun _ => 1) f
       = ∑ i, C (f (x i)) * Quadrature.hermiteBasisL x i
@@ -123,7 +139,11 @@ $f : \mathbb{R} \to \mathbb{R}$. For every function $f'$ the backbone's
 $$I_n(f) = \sum_{k=0}^{n} \alpha_k f(x_k) + \sum_{k=0}^{n} \beta_k f'(x_k), \qquad \alpha_k =
   \int_a^b \mathcal{L}_k, \qquad \beta_k = \int_a^b \mathcal{M}_k.$$
 When $f'$ is the derivative of $f$, this is the integral over $[a, b]$ of the Hermite
-interpolant (9.28) of $f$. -/
+interpolant (9.28) of $f$.
+
+**Reading.** First identity allows arbitrary independently supplied derivative values; second uses
+total derivative in the exact Hermite integral identity.
+-/
 theorem equation_9_29 {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) (a b : ℝ) (f : ℝ → ℝ) :
     (∀ f' : ℝ → ℝ, Quadrature.hermiteQuadrature x a b f f'
         = ∑ k, (∫ t in a..b, (Quadrature.hermiteBasisL x k).eval t) * f (x k)
@@ -151,7 +171,10 @@ $$\int_a^b p(t)\,dt = \sum_{k=0}^{n} \alpha_k p(x_k) + \sum_{k=0}^{n} \beta_k p'
 
 The book says: "Formula (9.29) has degree of exactness equal to $2n + 1$." The reason is that
 $p$ is its own Hermite interpolant. The proof is the backbone's
-`Quadrature.integral_eq_hermiteQuadrature_of_degree_le`. -/
+`Quadrature.integral_eq_hermiteQuadrature_of_degree_le`.
+
+**Scope.** This proves exactness through degree $2n+1$. The source's exact-degree statement
+also excludes higher degree. -/
 theorem hermiteQuadrature_degreeOfExactness {x : Fin (n + 1) → ℝ} (hx : Function.Injective x)
     (a b : ℝ) {p : ℝ[X]} (hp : p.degree ≤ (2 * n + 1 : ℕ)) :
     (∫ t in a..b, p.eval t)
@@ -169,7 +192,11 @@ $\beta_0 = (b - a)^2/12$ and $\beta_1 = -\beta_0$.
 
 The identity of the two functionals is the backbone's
 `Quadrature.hermiteQuadrature_two_eq_correctedTrapezoid`. The weights follow from it at
-functions that vanish at one node. -/
+functions that vanish at one node.
+
+**Correction.** Same corrected weights, with arbitrary independently supplied derivative function
+and ordered or reversed distinct endpoints.
+-/
 theorem equation_9_30 (hab : a ≠ b) :
     (∀ f f' : ℝ → ℝ, Quadrature.hermiteQuadrature ![a, b] a b f f'
         = (b - a) / 2 * (f a + f b) + (b - a) ^ 2 / 12 * (f' a - f' b)) ∧
@@ -202,7 +229,10 @@ for some $\xi \in [a, b]$.
 
 The error has order $h^5$, like the Cavalieri–Simpson formula, against the $h^3$ of (9.12). The
 book puts $\xi$ in $(a, b)$. The proof is the backbone's
-`Quadrature.exists_sub_correctedTrapezoid_eq`. -/
+`Quadrature.exists_sub_correctedTrapezoid_eq`.
+
+**Reading.** Uses open-neighborhood C⁴ and closed witness, including degenerate a=b.
+-/
 theorem equation_9_31 (hab : a ≤ b) (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.correctedTrapezoid f (deriv f) a b
@@ -246,7 +276,11 @@ $$\int_a^b f(x)\,dx - I_{1,m}^{corr}(f) = \frac{(b - a) H^4}{720} f^{(4)}(\xi)$$
 for some $\xi \in [a, b]$.
 
 This is the order $4$ that Example 9.5 observes. The proof is the backbone's
-`Quadrature.sub_correctedTrapezoidSum_eq`. -/
+`Quadrature.sub_correctedTrapezoidSum_eq`.
+
+**Reading.** Derives exact fourth-order composite error with closed witness beyond the source's
+numerical rate discussion.
+-/
 theorem compositeCorrectedTrapezoidalError (hab : a < b) {m : ℕ} (hm : 1 ≤ m) (hU : IsOpen U)
     (hUab : Icc a b ⊆ U) (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc a b, (∫ x in a..b, f x) - Quadrature.correctedTrapezoidSum f (deriv f) a b m
@@ -270,7 +304,11 @@ $$E_1^{corr}(p) = -4 E_2(p).$$
 The exercise is cited in Example 9.5, and the book writes the result as
 $|E_1^{corr}(f)| \simeq 4 |E_2(f)|$. The error constants of (9.31) and (9.16) are $h^5/720$ and
 $-(h/2)^5/90 = -h^5/2880$ with $h = b - a$, in the ratio $-4$, and the fourth derivative of $p$
-is constant. -/
+is constant.
+
+**Correction.** Exact signed ratio of corrected-trapezoidal to Simpson error for polynomials of
+degree at most four.
+-/
 theorem exercise_9_9 (hab : a < b) {p : ℝ[X]} (hp : p.degree ≤ 4) :
     (∫ x in a..b, p.eval x)
         - Quadrature.correctedTrapezoid (fun x => p.eval x) (deriv fun x => p.eval x) a b

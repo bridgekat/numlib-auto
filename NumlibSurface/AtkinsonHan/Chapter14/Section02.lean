@@ -96,6 +96,9 @@ induction. It spans $\mathcal{V}_n^2$ because $\dim \mathcal{V}_n^2 = n + 1$.
   $B_{n,j}$, $C_{n,j}$ in the recursion. The theorem states the membership of $x_j \varphi$ in
   $\mathcal{V}_{n-1}^d + \mathcal{V}_n^d + \mathcal{V}_{n+1}^d$ and the uniqueness of the three
   components. See `AtkinsonHan.Chapter14.theorem_14_2_3`.
+* **Exercise 14.2.1** (partial translation). The formalized identity moves coordinate
+  multiplication between the two arguments of the inner product. The exercise asks for the
+  resulting matrix formulas (14.2.8)–(14.2.10).
 * **(14.2.13)** (generalization). The book states the bound on $C(\mathbb{B}_d)$. It holds on $C(D)$
   for every compact $D \subseteq \mathbb{R}^d$. See `AtkinsonHan.Chapter14.equation_14_2_13`.
 
@@ -198,24 +201,36 @@ the polynomials of degree at most $n$ that are orthogonal in $L^2(\mu)$ to all p
 degree at most $n - 1$, with $\mathcal{V}_0^d$ the constants. It is the $n$-th orthogonal
 component of the chain $\Pi_0^d \subseteq \Pi_1^d \subseteq \cdots$ inside $L^2(\mu)$.
 
-The definition is `Approximation.orthogonalComponent` of the chain `hw.polyLE`. -/
+The definition is `Approximation.orthogonalComponent` of the chain `hw.polyLE`.
+
+**Reading.** Uses L² classes for any admissible polynomial weight measure.
+-/
 noncomputable abbrev orthPolySpace (hw : IsMvWeight μ) (n : ℕ) : Submodule ℝ (Lp ℝ 2 μ) :=
   orthogonalComponent hw.polyLE n
 
 variable (hw : IsMvWeight μ)
 
-/-- The space $\mathcal{V}_0^d$ is $\Pi_0^d$, the space of constants. -/
+/-- The space $\mathcal{V}_0^d$ is $\Pi_0^d$, the space of constants.
+
+**Reading.** Constants as L² classes for any admissible weight.
+-/
 theorem orthPolySpace_zero : orthPolySpace hw 0 = hw.polyLE 0 := rfl
 
 /-- For every $n \in \mathbb{N}$, an element $f \in L^2(\mu)$ is in $\mathcal{V}_{n+1}^d$ if and
 only if $f \in \Pi_{n+1}^d$ and $(g, f) = 0$ for every $g \in \Pi_n^d$. This is the defining
-property of $\mathcal{V}_{n+1}^d$ in the book. -/
+property of $\mathcal{V}_{n+1}^d$ in the book.
+
+**Reading.** Orthogonality to the previous degree space for general weight measures.
+-/
 theorem mem_orthPolySpace_succ_iff {n : ℕ} {f : Lp ℝ 2 μ} :
     f ∈ orthPolySpace hw (n + 1) ↔ f ∈ hw.polyLE (n + 1) ∧ ∀ g ∈ hw.polyLE n, inner ℝ g f = 0 := by
   rw [orthPolySpace, orthogonalComponent_succ, Submodule.mem_inf, and_comm,
     Submodule.mem_orthogonal]
 
-/-- For every $n$, the space $\mathcal{V}_n^d$ is contained in $\Pi_n^d$. -/
+/-- For every $n$, the space $\mathcal{V}_n^d$ is contained in $\Pi_n^d$.
+
+**Reading.** Degree inclusion for the weighted L² classes.
+-/
 theorem orthPolySpace_le (n : ℕ) : orthPolySpace hw n ≤ hw.polyLE n :=
   orthogonalComponent_le _ n
 
@@ -225,19 +240,28 @@ polynomials on $\mathbb{R}^d$. For every $n \in \mathbb{N}$, $$\Pi_n^d = \mathca
 
 The book writes the sum as a direct sum, $\Pi_n^d = \mathcal{V}_0^d \oplus \cdots \oplus
 \mathcal{V}_n^d$. The orthogonality and the directness are
-`AtkinsonHan.Chapter14.lemma_14_2_1_isOrtho` and `AtkinsonHan.Chapter14.lemma_14_2_1_iSupIndep`. -/
+`AtkinsonHan.Chapter14.lemma_14_2_1_isOrtho` and `AtkinsonHan.Chapter14.lemma_14_2_1_iSupIndep`.
+
+**Reading.** Spanning orthogonal decomposition for any admissible weight measure.
+-/
 theorem lemma_14_2_1 (n : ℕ) :
     (Finset.range (n + 1)).sup (orthPolySpace hw) = hw.polyLE n :=
   finsetSup_orthogonalComponent hw.monotone_polyLE (fun _ => inferInstance) n
 
 /-- **Lemma 14.2.1** of [han2009theoretical], the orthogonality part. For $m \neq n$, the spaces
-$\mathcal{V}_m^d$ and $\mathcal{V}_n^d$ are orthogonal in $L^2(\mu)$. -/
+$\mathcal{V}_m^d$ and $\mathcal{V}_n^d$ are orthogonal in $L^2(\mu)$.
+
+**Reading.** Orthogonality of the degree layers for any admissible weight.
+-/
 theorem lemma_14_2_1_isOrtho {m n : ℕ} (h : m ≠ n) : orthPolySpace hw m ⟂ orthPolySpace hw n :=
   orthogonalComponent_isOrtho hw.monotone_polyLE h
 
 /-- **Lemma 14.2.1** of [han2009theoretical], the directness part. The spaces
 $\mathcal{V}_0^d, \mathcal{V}_1^d, \dots$ are independent: each $\mathcal{V}_n^d$ meets the sum
-of the others only in $0$. -/
+of the others only in $0$.
+
+**Reading.** Independence of all the weight-space degree components.
+-/
 theorem lemma_14_2_1_iSupIndep : iSupIndep (orthPolySpace hw) :=
   iSupIndep_orthogonalComponent hw.monotone_polyLE
 
@@ -248,7 +272,10 @@ of the space of homogeneous polynomials of degree $n + 1$ in $d$ variables.
 
 The theorem is stated for the indices $n + 1 \ge 1$; the case $n = 0$ is
 $\dim \mathcal{V}_0^d = \dim \Pi_0^d = 1$. The proof uses Lemma 14.2.1, the dimension of
-$\Pi_n^d$ and Pascal's rule, without a basis. -/
+$\Pi_n^d$ and Pascal's rule, without a basis.
+
+**Reading.** Same degree-layer dimension on arbitrary weight measure in positive dimension.
+-/
 theorem finrank_orthPolySpace (hd : 1 ≤ d) (n : ℕ) :
     finrank ℝ (orthPolySpace hw (n + 1)) = (n + d).choose (d - 1) := by
   obtain ⟨e, rfl⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
@@ -264,7 +291,10 @@ theorem finrank_orthPolySpace (hd : 1 ≤ d) (n : ℕ) :
   omega
 
 /-- **Section 14.2** of [han2009theoretical], the dimension in the plane. Let $\mu$ be a weight for
-polynomials on $\mathbb{R}^2$. For every $n \in \mathbb{N}$, $\dim \mathcal{V}_n^2 = n + 1$. -/
+polynomials on $\mathbb{R}^2$. For every $n \in \mathbb{N}$, $\dim \mathcal{V}_n^2 = n + 1$.
+
+**Reading.** Planar formula n+1 for arbitrary admissible planar weights.
+-/
 theorem finrank_orthPolySpace_two {μ : Measure (Fin 2 → ℝ)} (hw : IsMvWeight μ) (n : ℕ) :
     finrank ℝ (orthPolySpace hw n) = n + 1 := by
   cases n with
@@ -281,7 +311,10 @@ For $p \in \mathcal{V}_n^d$ and $q \in \mathcal{V}_{n+1}^d$, the expansion of bo
 basis of each space gives $A_{n,j} H_{n+1} = H_n C_{n+1,j}^T$, which is (14.2.10); for an
 orthonormal basis it reads $C_{n+1,j} = A_{n,j}^T$. Exercise 14.2.1 also asks for (14.2.8) and
 (14.2.9), the defining relations of the matrices $A_{n,j}$ and $B_{n,j}$. These matrices are not
-written, so only (14.2.10) is formalized. -/
+written, so only (14.2.10) is formalized.
+
+**Reading.** Only the inner-product identity underlying the matrix formulas, for general weights.
+-/
 theorem exercise_14_2_1 (j : Fin d) (p q : MvPolynomial (Fin d) ℝ) :
     inner ℝ (hw.toL2 (MvPolynomial.X j * p)) (hw.toL2 q) =
       inner ℝ (hw.toL2 p) (hw.toL2 (MvPolynomial.X j * q)) :=
@@ -326,7 +359,11 @@ $b, b' \in \mathcal{V}_{m+1}^d$, $c, c' \in \mathcal{V}_{m+2}^d$ and $a + b + c 
 then $a = a'$, $b = b'$ and $c = c'$.
 
 This is the coordinate-free content of the uniqueness of the matrices $A_{n,j}$, $B_{n,j}$ and
-$C_{n,j}$. It follows from the orthogonality of distinct components. -/
+$C_{n,j}$. It follows from the orthogonality of distinct components.
+
+**Reading.** Uniqueness of the adjacent three components instead of uniqueness of the explicit
+matrices.
+-/
 theorem theorem_14_2_3_unique {m : ℕ} {a b c a' b' c' : Lp ℝ 2 μ}
     (ha : a ∈ orthPolySpace hw m) (hb : b ∈ orthPolySpace hw (m + 1))
     (hc : c ∈ orthPolySpace hw (m + 2)) (ha' : a' ∈ orthPolySpace hw m)
@@ -359,7 +396,10 @@ projection onto $\mathcal{V}_m^d$.
 
 In an orthonormal basis $\{\varphi_{m,\ell}\}_\ell$ of each $\mathcal{V}_m^d$, the $m$-th
 summand is $\sum_\ell (f, \varphi_{m,\ell}) \varphi_{m,\ell}$, so this is the expansion of the
-book without a choice of basis. -/
+book without a choice of basis.
+
+**Reading.** Basis-free sum of degree-layer projections for general weight measures.
+-/
 theorem equation_14_2_12 (n : ℕ) (f : Lp ℝ 2 μ) :
     (hw.polyLE n).starProjection f =
       ∑ m ∈ Finset.range (n + 1), (orthPolySpace hw m).starProjection f :=
@@ -368,7 +408,10 @@ theorem equation_14_2_12 (n : ℕ) (f : Lp ℝ 2 μ) :
 /-- **Equation (14.2.12)** of [han2009theoretical], best approximation. Let $\mu$ be a weight for
 polynomials on $\mathbb{R}^d$. For every $n \in \mathbb{N}$ and $f \in L^2(\mu)$, the orthogonal
 projection $P_n f$ is a best approximation to $f$ from $\Pi_n^d$ in $L^2(\mu)$:
-$\|f - P_n f\| \le \|f - p\|$ for every $p \in \Pi_n^d$. -/
+$\|f - P_n f\| \le \|f - p\|$ for every $p \in \Pi_n^d$.
+
+**Reading.** Best L² approximation in any admissible weight space.
+-/
 theorem equation_14_2_12_isBestApprox (n : ℕ) (f : Lp ℝ 2 μ) :
     IsBestApprox (hw.polyLE n : Set (Lp ℝ 2 μ)) f ((hw.polyLE n).starProjection f) :=
   isBestApprox_starProjection _ f

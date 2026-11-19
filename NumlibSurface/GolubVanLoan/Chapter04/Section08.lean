@@ -153,6 +153,25 @@ four eigensystems), `Numlib.LinearAlgebra.Matrix.Permutation`,
 
 ## Deviations from the source
 
+* **Generalization.** The diagonalization solve identity extends to the totalized inverse of
+  singular matrices. See `GolubVanLoan.Chapter04.equation_4_8_2`.
+* **Generalization.** The Fourier and circulant identities include the empty matrix case. See
+  `GolubVanLoan.Chapter04.map_star_fourierMatrix`, `GolubVanLoan.Chapter04.dft_conjTranspose`,
+  `GolubVanLoan.Chapter04.dft_conjTranspose_mul_self`, `GolubVanLoan.Chapter04.theorem_4_8_2`.
+* **Reading.** The circulant program uses one forward FFT interface and totalized division. See
+  `GolubVanLoan.Chapter04.algorithm_4_8_1`.
+* **Scope.** The circulant solver specification captures correctness for any exact transform. See
+  `GolubVanLoan.Chapter04.algorithm_4_8_1_spec`.
+* **Reading.** The scalar divided-difference identity uses arbitrary nonzero grid step. See
+  `GolubVanLoan.Chapter04.equation_4_8_6`.
+* **Reading.** The Poisson program takes transform callbacks and totalizes zero eigenvalue sums. See
+  `GolubVanLoan.Chapter04.algorithm_4_8_2`.
+* **Generalization.** The exact Poisson solve does not impose a complexity bound on its transforms.
+  See `GolubVanLoan.Chapter04.algorithm_4_8_2_spec`.
+* **Reading.** The Dirichlet Poisson bandwidth bounds count distances from the main diagonal. See
+  `GolubVanLoan.Chapter04.poisson2D_posDef_bandwidth`.
+* **Scope.** The periodic real transform theorem proves column eigen-equations. See
+  `GolubVanLoan.Chapter04.equation_4_8_25`.
 * **Equation (4.8.4)** (typo). The source prints $(V^{-1} \mathcal{D}_n V^{-1})^k$;
   $(V^{-1} \mathcal{D}_n V)^k$ is meant. See `GolubVanLoan.Chapter04.equation_4_8_4`.
 * **Lemma 4.8.1** (reading). The formula $\lambda_{j+1} = \bar\omega_n^j$ is read for every
@@ -185,7 +204,12 @@ nonsingular, and let $\nu \in \mathbb{C}^n$ with $V^{-1} A V = \operatorname{dia
 The source writes $\Lambda = \operatorname{diag}(\lambda_1, \dots, \lambda_n)$ and derives
 $u = A^{-1} b = (V \Lambda V^{-1})^{-1} b$. The statement has no hypothesis that $A$ is
 nonsingular. The inverse is Mathlib's `Matrix.inv`, which is $0$ at a singular matrix, and $A$
-is singular exactly when $\operatorname{diag}(\nu)$ is, so that both sides are then $0$. -/
+is singular exactly when $\operatorname{diag}(\nu)$ is, so that both sides are then $0$.
+
+**Generalization.** The source uses a nonsingular coefficient matrix to solve the system. Lean
+proves the identity for the totalized inverse, which gives zero on both sides when the coefficient
+matrix is singular.
+-/
 theorem equation_4_8_2 {n : ℕ} {A V : Matrix (Fin n) (Fin n) ℂ} {ν : Fin n → ℂ} (hV : IsUnit V)
     (hAV : V⁻¹ * A * V = diagonal ν) (b : Fin n → ℂ) :
     A⁻¹ *ᵥ b = V *ᵥ ((diagonal ν)⁻¹ *ᵥ (V⁻¹ *ᵥ b)) := by
@@ -200,7 +224,11 @@ theorem equation_4_8_2 {n : ℕ} {A V : Matrix (Fin n) (Fin n) ℂ} {ν : Fin n 
 
 /-- **Section 4.8.1** of [golub2013matrix], the conjugate DFT matrix. For every $n$, the entrywise
 complex conjugate $\bar F_n$ of the DFT matrix $F_n$ is the backbone matrix `Matrix.dft n`, with
-entries $\bar\omega_n^{kj}$ for $k, j = 0, \dots, n-1$, where $\bar\omega_n = e^{2\pi i/n}$. -/
+entries $\bar\omega_n^{kj}$ for $k, j = 0, \dots, n-1$, where $\bar\omega_n = e^{2\pi i/n}$.
+
+**Generalization.** The entry and matrix identities also hold for size zero in Lean. The source
+defines the Fourier root using positive size.
+-/
 theorem map_star_fourierMatrix (n : ℕ) : (fourierMatrix n).map star = dft n := by
   ext i j
   simp [fourierMatrix, conjTranspose_apply, dft_apply_comm]
@@ -208,14 +236,22 @@ theorem map_star_fourierMatrix (n : ℕ) : (fourierMatrix n).map star = dft n :=
 /-- **Section 4.8.1** of [golub2013matrix]. For every $n$, $F_n^H = \bar F_n$. The source says: "It
 is easy to verify that $F_n^H = \bar F_n$".
 
-The identity holds because $F_n$ is symmetric. -/
+The identity holds because $F_n$ is symmetric.
+
+**Generalization.** The entry and matrix identities also hold for size zero in Lean. The source
+defines the Fourier root using positive size.
+-/
 theorem dft_conjTranspose (n : ℕ) : (fourierMatrix n)ᴴ = (fourierMatrix n).map star := by
   rw [map_star_fourierMatrix, fourierMatrix, conjTranspose_conjTranspose]
 
 /-- **Section 4.8.1** of [golub2013matrix]. For every $n$, $$F_n^H F_n = n I_n \quad \text{and}
 \quad \bar F_n F_n = n I_n.$$
 
-The proof uses the orthogonality sums $\sum_k \omega_n^{k(q-p)} = n \delta_{pq}$. -/
+The proof uses the orthogonality sums $\sum_k \omega_n^{k(q-p)} = n \delta_{pq}$.
+
+**Generalization.** The entry and matrix identities also hold for size zero in Lean. The source
+defines the Fourier root using positive size.
+-/
 theorem dft_conjTranspose_mul_self (n : ℕ) :
     (fourierMatrix n)ᴴ * fourierMatrix n = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) ∧
       (fourierMatrix n).map star * fourierMatrix n = (n : ℂ) • (1 : Matrix (Fin n) (Fin n) ℂ) := by
@@ -287,7 +323,11 @@ theorem equation_4_8_4 {n : ℕ} [NeZero n] {V : Matrix (Fin n) (Fin n) ℂ} (hV
 $\lambda = \bar F_n z$. Then $$V^{-1} C(z) V = \operatorname{diag}(\lambda_1, \dots,
 \lambda_n).$$
 
-The statement needs no hypothesis on $n$. -/
+The statement needs no hypothesis on $n$.
+
+**Generalization.** The entry and matrix identities also hold for size zero in Lean. The source
+defines the Fourier root using positive size.
+-/
 theorem theorem_4_8_2 {n : ℕ} (z : Fin n → ℂ) :
     (fourierMatrix n)⁻¹ * circulant z * fourierMatrix n =
       diagonal ((fourierMatrix n).map star *ᵥ z) := by
@@ -360,7 +400,12 @@ $x_i \leftarrow \mathrm{fl}(u_i / n)$ for $i = 1, \dots, n$.
 
 The FFT is the program parameter `fft`, a computation of $x \mapsto F_n x$. For $n = 2^t$ it can
 be Algorithm 1.4.1 (`GolubVanLoan.Chapter04.algorithm_4_8_1_fft_spec`). Complex conjugation is
-exact (convention 1 of the library). The program has no hypothesis on $z$. -/
+exact (convention 1 of the library). The program has no hypothesis on $z$.
+
+**Reading.** The forward FFT is a parameter. The program implements the conjugate transforms by
+conjugating the input and output of that same FFT, then rounds the indicated quotients. The program
+totalizes division for singular input.
+-/
 noncomputable def algorithm_4_8_1 (rnd : ℂ → M ℂ) {n : ℕ} (fft : (Fin n → ℂ) → M (Fin n → ℂ))
     (z y : Fin n → ℂ) : M (Fin n → ℂ) := do
   let c ← fft fun i => star (y i)
@@ -400,7 +445,11 @@ Algorithm 4.8.1 returns in exact arithmetic satisfies $C(z) x = y$.
 
 By Theorem 4.8.2, $C(z) F_n = F_n \operatorname{diag}(d)$ with $d = \bar F_n z$. The entries of
 $d$ are nonzero because $C(z)$ is nonsingular, and then $C(z) (F_n (c ./ d) / n) = F_n \bar F_n
-y / n = y$. -/
+y / n = y$.
+
+**Reading.** The theorem assumes that the transform implements the exact Fourier matrix action. It
+proves the solve under this assumption without tracking transform costs.
+-/
 theorem algorithm_4_8_1_spec {n : ℕ} [NeZero n] {z : Fin n → ℂ} (hC : IsUnit (circulant z))
     {fft : (Fin n → ℂ) → Id (Fin n → ℂ)} (hfft : ∀ x, Id.run (fft x) = fourierMatrix n *ᵥ x)
     (y : Fin n → ℂ) : circulant z *ᵥ Id.run (algorithm_4_8_1 pure fft z y) = y := by
@@ -495,7 +544,12 @@ boundary values are $u_0 = u_\alpha$ and $u_m = u_\beta$; the statement holds fo
 $h \neq 0$. The sequence $u$ is indexed by $\mathbb{N}$, so that $u_{i-1}$ at $i = 0$ is $u_0$
 by truncated subtraction; the first identity holds there too. The matrix
 $\mathcal{T}^{(DD)}_{m-1}$ is `Matrix.symmTridiagonalToeplitz (N + 1) (-1) 2`, and the equations
-are indexed from $0$ by `Fin (N + 1)`. -/
+are indexed from $0$ by `Fin (N + 1)`.
+
+**Reading.** The grid step can be any nonzero real number and the matrix form is stated for every
+grid with at least one interior point. The first scalar identity also holds at index zero with
+truncated natural subtraction.
+-/
 theorem equation_4_8_6 (N : ℕ) {h : ℝ} (hh : h ≠ 0) (u f : ℕ → ℝ) :
     (∀ i : ℕ, ((u (i + 1) - u i) / h - (u i - u (i - 1)) / h) / h =
       (u (i - 1) - 2 * u i + u (i + 1)) / h ^ 2) ∧
@@ -760,7 +814,11 @@ parameters `applyVinv`, `applyWinv`, `applyV` and `applyW`, computations of $x \
 and so on, which `GolubVanLoan.Chapter04.transformCols` applies column by column. The
 eigenvalues $\lambda$ and $\mu$ are the parameters `ν` and `μ`, and $b$ is indexed by
 `Fin n₂ × Fin n₁` as $\operatorname{vec}(B)$. The program has no hypotheses; those of the source
-are hypotheses of `GolubVanLoan.Chapter04.algorithm_4_8_2_spec`. -/
+are hypotheses of `GolubVanLoan.Chapter04.algorithm_4_8_2_spec`.
+
+**Reading.** The eigenvalues and forward and inverse transforms are parameters. The program rounds
+the eigenvalue sum and the quotient separately, with totalized division if the computed sum is zero.
+-/
 noncomputable def algorithm_4_8_2 {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ) {n₁ n₂ : ℕ}
     (applyVinv applyV : (Fin n₁ → ℝ) → M (Fin n₁ → ℝ))
     (applyWinv applyW : (Fin n₂ → ℝ) → M (Fin n₂ → ℝ))
@@ -788,7 +846,11 @@ returns in exact arithmetic satisfies $A u = b$.
 
 The algorithm computes $U = V \tilde U W^T$ with $\tilde u_{ij} = \tilde b_{ij} / (\lambda_i +
 \mu_j)$ and $\tilde B = V^{-1} B W^{-T}$, which is the solution of
-`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`. -/
+`FastPoisson.kroneckerSum_mulVec_vec_eq_iff`.
+
+**Generalization.** Any exact transform callbacks suffice for the algebraic solve. The source
+hypothesizes fast decompositions and gives a corresponding operation bound.
+-/
 theorem algorithm_4_8_2_spec {n₁ n₂ : ℕ} {A₁ V : Matrix (Fin n₁) (Fin n₁) ℝ}
     {A₂ W : Matrix (Fin n₂) (Fin n₂) ℝ} (hV : IsUnit V) (hW : IsUnit W) {ν : Fin n₁ → ℝ}
     {μ : Fin n₂ → ℝ} (hA₁ : V⁻¹ * A₁ * V = diagonal ν) (hA₂ : W⁻¹ * A₂ * W = diagonal μ)
@@ -828,7 +890,12 @@ $n_1$.
 The source's bandwidth $n_1 + 1$ counts the diagonal. The Lean statement uses
 `Matrix.HasLowerBandwidth` and `Matrix.HasUpperBandwidth`, under which the entry $(p, q)$
 vanishes for $|p - q| > n_1$. The positional numbering reindexes $A$ by `finProdFinEquiv` from
-`Fin n₂ × Fin n₁` to `Fin (n₂ * n₁)`, which puts the pair $(j, i)$ at position $i + n_1 j$. -/
+`Fin n₂ × Fin n₁` to `Fin (n₂ * n₁)`, which puts the pair $(j, i)$ at position $i + n_1 j$.
+
+**Reading.** The text reports bandwidth $n_1+1$. Lean bounds each off-diagonal distance by $n_1$,
+which means at most $n_1+1$ diagonals per side when including the main diagonal. The Lean statement
+gives support bounds without claiming they are sharp.
+-/
 theorem poisson2D_posDef_bandwidth (n₁ n₂ : ℕ) :
     ((1 : Matrix (Fin n₂) (Fin n₂) ℝ) ⊗ₖ symmTridiagonalToeplitz n₁ (-1) 2
       + symmTridiagonalToeplitz n₂ (-1) 2 ⊗ₖ (1 : Matrix (Fin n₁) (Fin n₁) ℝ)).PosDef ∧
@@ -1424,7 +1491,12 @@ V^{(P)}_n(:, j), \qquad \lambda_j = 4 \sin^2\Bigl(\frac{(j - 1)\pi}{n}\Bigr), \q
 
 Column $j$ of $V^{(P)}_n$, 0-based, is `Matrix.realDftCol n j`. The first part of the statement
 says that it is the real part of $F_n(:, j)$ for $j < m = (n + 2)/2$ (integer division) and the
-imaginary part otherwise. In 0-based form the eigenvalue is $4 \sin^2(j\pi/n)$. -/
+imaginary part otherwise. In 0-based form the eigenvalue is $4 \sin^2(j\pi/n)$.
+
+**Reading.** Lean gives the real and imaginary column formulas and their eigen-equations. The source
+also treats the assembled matrix as an invertible transform. This declaration does not assert that
+the columns are nonzero or form a basis.
+-/
 theorem equation_4_8_25 {n : ℕ} (hn : 3 ≤ n) (j : Fin n) :
     (∀ k : Fin n, realDftCol n j k = if (j : ℕ) < (n + 2) / 2 then (fourierMatrix n k j).re
       else (fourierMatrix n k j).im) ∧

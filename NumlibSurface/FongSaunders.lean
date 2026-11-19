@@ -80,14 +80,52 @@ results of other papers.
 
 ## Deviations from the source
 
+**Section 1**
+
+* **Section 1, Lanczos relations** (generalization). The matrix relations require symmetry
+  in place of positive definiteness. The rectangular relation uses zero columns after
+  termination and is stated for every $k$. See `FongSaunders.lanczos_relation` and
+  `FongSaunders.lanczos_relation_term`.
+* **Section 1, Lanczos basis and termination** (generalization). The Arnoldi basis,
+  coordinate descriptions and grade bound also apply to nonsymmetric matrices. The
+  spanning and coordinate results extend past termination by padding with zero vectors.
+  See `FongSaunders.lanczosVec_orthonormal`, `FongSaunders.span_lanczosVec`,
+  `FongSaunders.mem_krylov_iff_exists_lanczos` and `FongSaunders.lanczosTerm_le`.
+* **Section 1.1, exact solution** (reading). The inverse formula gives $x^*=0$ for a
+  singular matrix by the total inverse convention. See `FongSaunders.xstar`.
+* **Section 1, Lanczos data** (generalization). The basis vectors are defined by Arnoldi
+  for general $A$ and extended by zeros after the grade. The rectangular and square
+  tridiagonal arrays are defined at every index, including the terminal index. See
+  `FongSaunders.lanczosVec`, `FongSaunders.lanczosT` and `FongSaunders.lanczosTsq`.
+
 **Section 2**
 
 * **Energy norm** (reading). Section 2.1 writes $\|v\|_A$ for $v^T A v$; the library defines
   $\|v\|_A = (v^T A v)^{1/2}$, and every statement about it is unchanged by squaring. See
   `FongSaunders.energyNorm`.
+* **Table 2.1** (generalization). The stopped algorithms are extended by a constant state
+  after termination, with $\alpha_0=\beta_0=0$. See `FongSaunders.cg` and `FongSaunders.cr`.
+* **Theorem 2.3** (generalization). The source proves nondecrease. The strict form proves
+  a strict increase at every CR step with nonzero current residual. See
+  `FongSaunders.theorem_2_3_strict`.
+* **Equation (2.1)** (generalization). Residual minimization is defined even for a singular
+  or nonsymmetric matrix. The paper applies it to nonsingular symmetric systems. See
+  `FongSaunders.IsMINRESIterate`.
+* **Section 2.2, MINRES uniqueness** (reading). The declaration establishes uniqueness
+  for positive definite matrices, as needed to identify CR with MINRES. See
+  `FongSaunders.isMINRESIterate_unique`.
+* **Section 2.3, termination indices** (reading). The first zero residual defines the
+  termination index. The formal definition returns $0$ if there is no such residual.
+  See `FongSaunders.cgTerm` and `FongSaunders.crTerm`.
+* **Theorem 2.5** (reading). The strict decrease applies up to the first zero residual.
+  The extended sequence has zero error thereafter. See `FongSaunders.theorem_2_5_cr` and
+  `FongSaunders.theorem_2_5_minres`.
 
 **Section 3**
 
+* **Introduction, stopping before CG** (correction). The comparison proved here assumes
+  $\alpha=0$ in (3.4) and gives that MINRES stops no later than CG. For a positive matrix
+  tolerance, CG can satisfy (3.4) first. See `FongSaunders.minres_stops_first`.
 * **Nonzero data in the backward-error results** (reading). The ratios $\|E\| / \|A\|$ and
   $\|f\| / \|b\|$ presuppose $A \neq 0$ and $b \neq 0$, which the paper leaves implicit. With Lean's
   convention $t / 0 = 0$, every perturbation of a zero matrix would be feasible at every tolerance,
@@ -102,13 +140,35 @@ results of other papers.
   `FongSaunders.nrbe_minres_antitone` states the decrease for all $k$. See
   `FongSaunders.theorem_3_1_minres`, `FongSaunders.theorem_3_1_cr` and
   `FongSaunders.nrbe_minres_antitoneOn`.
+* **Equations (3.1)–(3.4), undefined ratios** (reading). The definitions use Lean's
+  zero-denominator convention, while the stopping-rule equivalence requires a positive
+  denominator. See `FongSaunders.IsAcceptable`, `FongSaunders.nrbe`,
+  `FongSaunders.nrbePhi`, `FongSaunders.nrbePertA` and `FongSaunders.nrbe_le_one_iff`.
+* **Theorem 3.1, CG clause** (reading). The theorem declarations formalize the
+  monotonicity claims for CR and MINRES. The source also states failure of the general
+  monotonicity claim for CG with $\alpha,\beta>0$. See `FongSaunders.theorem_3_1_minres`.
 
 **Section 4**
 
+* **Section 4.1.1, product of residual ratios** (generalization). The exact identity
+  holds for arbitrary sequences with nonzero denominators. The approximation by the
+  stopping tolerance is outside the identity. See `FongSaunders.prod_ratio_residual`.
+* **Example (4.2)** (reading). The statements express failure of monotonicity by existence,
+  with the printed matrix and right-hand side as witnesses. See
+  `FongSaunders.minres_norm_iterate_not_monotone` and
+  `FongSaunders.minres_backwardError_not_antitoneOn`.
+* **Equation (4.1)** (reading). The result assumes $r_k^M \neq 0$, excluding the step
+  that first reaches the exact solution. See `FongSaunders.equation_4_1` and
+  `FongSaunders.equation_4_1_minres`.
+* **Section 4.2, MINRES coordinates** (reading). The source considers symmetric systems that
+  are nonsingular or consistent. The coordinate results here require positive definiteness.
+  See `FongSaunders.minres_subproblem` and `FongSaunders.minres_coeff_unique`.
+* **Steihaug's theorem for CG** (reading). The curvature test uses the direction
+  $p_{j-1}$ entering iteration $j$, as in Table 2.1. See `FongSaunders.steihaug_cg`.
 * **Steihaug's theorem for CR and MINRES** (reading). The paper assumes $p_j^T A p_j > 0$ and
   $r_j^T A r_j > 0$ for $1 \le j \le k$, a local hypothesis that its proof through Theorem 2.2(d)
-  does not support; the library assumes $r_j^T A r_j > 0$ at every iteration before termination and
-  drops the first condition as redundant. See `FongSaunders.steihaug_cr`.
+  does not support. The library gives a sufficient condition using $r_j^T A r_j > 0$ at every
+  iteration before termination. See `FongSaunders.steihaug_cr`.
 
 **Section 5**
 

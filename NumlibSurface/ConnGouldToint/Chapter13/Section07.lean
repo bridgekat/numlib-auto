@@ -46,6 +46,17 @@ is `ConnGouldToint.Chapter13.barrierCoordinateGradient`.
 
 ## Deviations from the source
 
+* **Representation.** Scaled stopping tests are expressed as dual and Hessian inequalities on
+  quadratic forms. See `ConnGouldToint.Chapter13.barrierMetricQuadratic`,
+  `ConnGouldToint.Chapter13.ScaledBarrierDualTest`,
+  `ConnGouldToint.Chapter13.ScaledBarrierHessianTest`.
+* **Reading.** The uniform norm equivalence is stated in terms of explicit primal and dual
+  coordinate bounds. See `ConnGouldToint.Chapter13.theorem_13_7_1`.
+* **Generalization.** The scaled primal-dual conclusions use filter limits and eventual relative
+  complementarity control. See `ConnGouldToint.Chapter13.theorem_13_7_2`.
+* **Correction.** The primal scaled theorem retains a gradient-tolerance rate; a scalar quadratic
+  gives a counterexample without it. See `ConnGouldToint.Chapter13.theorem_13_7_3`,
+  `ConnGouldToint.Chapter13.theorem_13_7_3_counterexample`.
 * **Theorem 13.7.2** (generalization). The bound $\varepsilon^C_k \le L \mu_k$ on the
   complementarity tolerance is assumed only eventually. The condition (13.7.15) implies it after
   increasing the constant. See `ConnGouldToint.Chapter13.theorem_13_7_2`.
@@ -64,7 +75,12 @@ variable {ι : Type*} [Fintype ι]
 /-- **Equations (13.7.2)–(13.7.3)** of [conn2000trust]. For a Hessian form $H$, a primal point $x$
 and a dual point $z$, the **barrier metric quadratic** is
 $$q_{x,z}(d) = H(d) + \sum_i \frac{z_i}{x_i} d_i^2.$$
-The metric (13.7.2) is its square root. -/
+The metric (13.7.2) is its square root.
+
+**Reading.** The scaled norm tests use the underlying quadratic form, a dual pairing inequality and
+a Hessian quadratic-form inequality. This avoids writing a matrix inverse or square root. It agrees
+with the scaled tests when the metric is positive definite.
+-/
 noncomputable def barrierMetricQuadratic (H : (ι → ℝ) → ℝ) (x z d : ι → ℝ) : ℝ :=
   H d + ∑ i, (z i / x i) * (d i) ^ 2
 
@@ -80,7 +96,11 @@ The layer $x_{j,i} \ge \delta$ is the uniformly positive layer supplied by Theor
 taking square roots, the two bounds give AN.1 for the metric (13.7.2). The bound on $z$ is AA.7,
 which contributes the factor $\max\{\delta^{-1}, 1\}$, so the estimate also holds when
 $\delta > 1$. The lower bound is a hypothesis and is restated in the conclusion. The norm
-$\|d\|$ is Euclidean, and $q$ is `ConnGouldToint.Chapter13.barrierMetricQuadratic`. -/
+$\|d\|$ is Euclidean, and $q$ is `ConnGouldToint.Chapter13.barrierMetricQuadratic`.
+
+**Reading.** The uniform metric bounds expose a positive primal lower bound and a dual coordinate
+upper bound directly. The result supplies explicit squared norm equivalence constants.
+-/
 theorem theorem_13_7_1 {x z : ℕ → ι → ℝ} {H : ℕ → (ι → ℝ) → ℝ}
     {δ ε K KH : ℝ} (hδ : 0 < δ) (_hε : 0 < ε) (hK : 0 ≤ K)
     (hx : ∀ j i, δ ≤ x j i) (hz : ∀ j i, 0 ≤ z j i ∧ z j i ≤ K * max (x j i)⁻¹ 1)
@@ -106,7 +126,12 @@ $$\left|\sum_i r_i d_i\right| \le \varepsilon \sqrt{q(d)} \quad \text{for all } 
   \mathbb{R}^n.$$
 
 This is the test (13.7.9) or (13.7.10) on the dual norm of $r$, written as a pointwise bound on
-the dual pairing. -/
+the dual pairing.
+
+**Reading.** The scaled norm tests use the underlying quadratic form, a dual pairing inequality and
+a Hessian quadratic-form inequality. This avoids writing a matrix inverse or square root. It agrees
+with the scaled tests when the metric is positive definite.
+-/
 def ScaledBarrierDualTest (q : (ι → ℝ) → ℝ) (r : ι → ℝ) (ε : ℝ) : Prop :=
   ∀ d : ι → ℝ, |∑ i, r i * d i| ≤ ε * Real.sqrt (q d)
 
@@ -115,7 +140,12 @@ Hessian test** with tolerance $\varepsilon$ for the metric quadratic $q$ if
 $B(d) \ge -\varepsilon q(d)$ for all $d \in \mathbb{R}^n$.
 
 This is the eigenvalue test (13.7.12) or (13.7.13) after the change of variables by the square
-root of the positive-definite metric. -/
+root of the positive-definite metric.
+
+**Reading.** The scaled norm tests use the underlying quadratic form, a dual pairing inequality and
+a Hessian quadratic-form inequality. This avoids writing a matrix inverse or square root. It agrees
+with the scaled tests when the metric is positive definite.
+-/
 def ScaledBarrierHessianTest (q B : (ι → ℝ) → ℝ) (ε : ℝ) : Prop :=
   ∀ d, -ε * q d ≤ B d
 
@@ -174,7 +204,13 @@ with tolerance $\varepsilon^E_k$ for $q_k$. Then:
 assumed only eventually. It follows from (13.7.15) after increasing the constant.
 
 The number $\rho_k$ may be chosen as the smallest primal coordinate of $x_k$. The partial
-derivative $\partial_i f(x_k)$ is `ConnGouldToint.Chapter13.barrierCoordinateGradient`. -/
+derivative $\partial_i f(x_k)$ is `ConnGouldToint.Chapter13.barrierCoordinateGradient`.
+
+**Generalization.** The conclusions hold along a filter for prescribed points satisfying the
+residual tests. The relative complementarity tolerance need only hold eventually, and a positive
+lower bound on all coordinates may replace the exact smallest coordinate in the gradient-tolerance
+rate.
+-/
 theorem theorem_13_7_2 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     {x z : α → ι → ℝ} {H : α → (ι → ℝ) → ℝ}
     {μ εD εC εE ρ : α → ℝ} {K L : ℝ} (hK : 0 ≤ K) (hL : 0 ≤ L)
@@ -293,7 +329,12 @@ metric diverges. The statement assumes the rate (13.7.16) of the primal-dual the
 $\varepsilon^D_k \sqrt{\mu_k} / \rho_k \to 0$. Without it the conclusion fails; see
 `ConnGouldToint.Chapter13.theorem_13_7_3_counterexample`.
 
-The proof applies `ConnGouldToint.Chapter13.theorem_13_7_2` with zero complementarity tolerance. -/
+The proof applies `ConnGouldToint.Chapter13.theorem_13_7_2` with zero complementarity tolerance.
+
+**Correction.** Exact dual values cancel the complementarity residual, but the gradient tolerance
+must also shrink at a rate compensating for the diverging metric. A quadratic counterexample shows
+that vanishing scaled tolerances alone allow a negative limiting gradient.
+-/
 theorem theorem_13_7_3 {α : Type*} {l : Filter α} {f : (ι → ℝ) → ℝ}
     {x : α → ι → ℝ} {H : α → (ι → ℝ) → ℝ} {μ εD εE ρ : α → ℝ} {K : ℝ}
     (hK : 0 ≤ K) (hx : ∀ k i, 0 < x k i) (hμpos : ∀ k, 0 < μ k)
@@ -339,7 +380,12 @@ For the smooth objective $f(x) = (x - 1)^2 / 2$, which is bounded below, $f'(x) 
 $f''(x) = 1$. The two inequalities are the scaled dual and Hessian tests of Theorem 13.7.3 with
 $H = 0$ and the metric weight $\mu_k / x_k^2$, but the gradient $f'(x_k)$ tends to $-1$. The
 proof takes $x_k = \mu_k = t_k^2$, $\varepsilon^D_k = 2 t_k$ and $\varepsilon^E_k = t_k$ with
-$t_k = 1 / (k + 1)$, so the exact dual value $\mu_k / x_k$ equals $1$. -/
+$t_k = 1 / (k + 1)$, so the exact dual value $\mu_k / x_k$ equals $1$.
+
+**Correction.** Exact dual values cancel the complementarity residual, but the gradient tolerance
+must also shrink at a rate compensating for the diverging metric. A quadratic counterexample shows
+that vanishing scaled tolerances alone allow a negative limiting gradient.
+-/
 theorem theorem_13_7_3_counterexample :
     ∃ μ εD εE x : ℕ → ℝ,
       Tendsto μ atTop (𝓝 0) ∧ Tendsto εD atTop (𝓝 0) ∧ Tendsto εE atTop (𝓝 0) ∧

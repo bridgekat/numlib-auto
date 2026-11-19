@@ -72,6 +72,9 @@ The proofs specialize `Numlib.IntegralEquations.SecondKind` and the projection m
 * **(12.1.24)** (reading). The source divides by $\|\lambda - P K\|$. The library states the lower
   bound in product form, so that no quotient by a norm that can vanish occurs. See
   `AtkinsonHan.Chapter12.equation_12_1_24`.
+* **Lemmas 12.1.3 and 12.1.4** (generalization). Lemma 12.1.3 only requires completeness of the
+  domain and names the pointwise limit operator. Lemma 12.1.4 requires pointwise convergence
+  to the identity for bounded linear maps and allows maps that are not projections.
 
 ## Not formalized
 
@@ -100,7 +103,11 @@ $$P (\lambda - K) u_n = P f.$$
 
 This is the backbone's `IsProjectionMethodSolution` for the operator $\lambda - K$, by
 `AtkinsonHan.Chapter12.isProjectionSolution_iff`. The equivalent form (12.1.19), with no
-membership condition, is `AtkinsonHan.Chapter12.isProjectionSolution_iff_smul_sub_comp`. -/
+membership condition, is `AtkinsonHan.Chapter12.isProjectionSolution_iff_smul_sub_comp`.
+
+**Reading.** Single bounded linear map and its range, independent of finite-dimensional trial
+spaces.
+-/
 def IsProjectionSolution (μ : 𝕜) (K P : X →L[𝕜] X) (f un : X) : Prop :=
   un ∈ LinearMap.range (P : X →ₗ[𝕜] X) ∧ P ((μ • 1 - K : X →L[𝕜] X) un) = P f
 
@@ -111,7 +118,10 @@ theorem isProjectionSolution_iff (μ : 𝕜) (K P : X →L[𝕜] X) (f un : X) :
       IsProjectionMethodSolution ((μ • 1 - K : X →L[𝕜] X) : X →ₗ[𝕜] X) f P un :=
   Iff.rfl
 
-/-- If $P$ is idempotent and $u_n$ solves the projection equations, then $P u_n = u_n$. -/
+/-- If $P$ is idempotent and $u_n$ solves the projection equations, then $P u_n = u_n$.
+
+**Reading.** Idempotence yields the projected solution identity on an arbitrary range.
+-/
 theorem IsProjectionSolution.apply_eq_self {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P)
     {f un : X} (h : IsProjectionSolution μ K P f un) : P un = un :=
   IsProjectionMethodSolution.apply_eq_self hP h
@@ -121,7 +131,10 @@ idempotent operator. Then $u_n$ solves the projection equations
 $u_n \in \operatorname{range} P$, $P (\lambda - K) u_n = P f$ if and only if
 $$(\lambda - P K) u_n = P f$$
 on the whole space. The membership $u_n \in \operatorname{range} P$ is not needed on the right,
-because $\lambda u_n = P (f + K u_n)$ implies it. -/
+because $\lambda u_n = P (f + K u_n)$ implies it.
+
+**Reading.** Same rearrangement for arbitrary idempotent P with nonzero λ.
+-/
 theorem isProjectionSolution_iff_smul_sub_comp {μ : 𝕜} (hμ : μ ≠ 0) {K P : X →L[𝕜] X}
     (hP : IsIdempotentElem P) (f un : X) :
     IsProjectionSolution μ K P f un ↔ (μ • 1 - P ∘L K : X →L[𝕜] X) un = P f := by
@@ -153,7 +166,10 @@ normed space has $\|P\| \ge 1$, because $\|P\| = \|P^2\| \le \|P\|^2$.
 
 The norm $\|P_n\|$ enters the error constants of the projection method, in (12.1.24) and in the
 hypothesis of Theorem 12.1.2, so no choice of $P_n$ makes these constants smaller than their
-values at $\|P_n\| = 1$. This is Exercise 3.6.7, `AtkinsonHan.Chapter03.exercise_3_6_7`. -/
+values at $\|P_n\| = 1$. This is Exercise 3.6.7, `AtkinsonHan.Chapter03.exercise_3_6_7`.
+
+**Reading.** Norm bound for any nonzero bounded idempotent, without finite rank.
+-/
 theorem equation_12_1_17 {P : X →L[𝕜] X} (hP : IsIdempotentElem P) (hP0 : P ≠ 0) : 1 ≤ ‖P‖ :=
   Chapter03.exercise_3_6_7 P hP hP0
 
@@ -218,7 +234,11 @@ end Collocation
 
 /-- **Lemma 12.1.3** of [han2009theoretical]. Let $X$ be a Banach space and $W$ a normed space, and
 let $A_n, L \colon X \to W$ be bounded linear operators with $A_n x \to L x$ for every
-$x \in X$. Then $A_n \to L$ uniformly on every compact subset of $X$. -/
+$x \in X$. Then $A_n \to L$ uniformly on every compact subset of $X$.
+
+**Reading.** Only the domain is complete, and the pointwise limit is named as a continuous linear
+map.
+-/
 theorem lemma_12_1_3 [CompleteSpace X] {W : Type*} [NormedAddCommGroup W] [NormedSpace 𝕜 W]
     {A : ℕ → X →L[𝕜] W} {L : X →L[𝕜] W} (hA : ∀ x, Tendsto (fun n => A n x) atTop (𝓝 (L x)))
     {S : Set X} (hS : IsCompact S) :
@@ -230,7 +250,10 @@ operator on $X$, and let $P_n$ be bounded operators with $P_n x \to x$ for every
 $$\|K - P_n K\| \to 0.$$
 
 This is the hypothesis (12.1.21) of Theorem 12.1.2, so that hypothesis holds for every compact
-$K$ when the projections converge pointwise. -/
+$K$ when the projections converge pointwise.
+
+**Reading.** Pointwise identity approximation can use arbitrary bounded linear maps.
+-/
 theorem lemma_12_1_4 [CompleteSpace X] {K : X →L[𝕜] X} (hK : IsCompactOperator K)
     {P : ℕ → X →L[𝕜] X} (hP : ∀ x, Tendsto (fun n => P n x) atTop (𝓝 x)) :
     Tendsto (fun n => ‖K - P n ∘L K‖) atTop (𝓝 0) := by
@@ -287,7 +310,10 @@ idempotent operator and let $\lambda - P K$ be invertible with bounded inverse. 
 $(\lambda - K) u = f$ and $u_n$ solves the projection equations (12.1.18), then
 $$u - u_n = \lambda (\lambda - P K)^{-1} (u - P u).$$
 
-The convergence analysis of the projection method follows from this identity. -/
+The convergence analysis of the projection method follows from this identity.
+
+**Reading.** Error identity for any bounded idempotent with the relevant inverse.
+-/
 theorem equation_12_1_23 {μ : 𝕜} {K P : X →L[𝕜] X} (hP : IsIdempotentElem P) {e' : X ≃L[𝕜] X}
     (he' : (e' : X →L[𝕜] X) = μ • 1 - P ∘L K) {f u un : X}
     (hu : (μ • 1 - K : X →L[𝕜] X) u = f) (hun : IsProjectionSolution μ K P f un) :
@@ -357,7 +383,10 @@ $$\|u - u_n\| \le |\lambda| (1 + \gamma_n) \|(\lambda - K)^{-1}\| \|u - P_n u\|.
 So the constant of the upper bound in (12.1.24) can be taken from the exact inverse. The proof
 takes $\gamma_n = 2 \|(\lambda - K)^{-1}\| \|K - P_n K\|$. The hypothesis $\|K - P_n K\| \to 0$
 is (12.1.21), which holds for a compact $K$ and pointwise convergent projections by Lemma
-12.1.4. -/
+12.1.4.
+
+**Reading.** Sharper error bound for a general sequence of idempotents.
+-/
 theorem exercise_12_1_3 [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
     {P : ℕ → X →L[𝕜] X} (hP : ∀ n, IsIdempotentElem (P n)) {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - K)
@@ -391,7 +420,10 @@ $$\|e_n^{(2)}\| \le \delta_n \|e_n^{(1)}\|.$$
 
 So the error is asymptotically its leading term, which uses the exact inverse. The proof takes
 $\delta_n = 2 \|(\lambda - K)^{-1}\| \|K - P_n K\|$, because $(\lambda - P_n K) e_n^{(2)} = (P_n
-K - K) e_n^{(1)}$. -/
+K - K) e_n^{(1)}$.
+
+**Reading.** Leading error and vanishing relative remainder for general idempotents.
+-/
 theorem exercise_12_1_4 [CompleteSpace X] {μ : 𝕜} {K : X →L[𝕜] X}
     {P : ℕ → X →L[𝕜] X} (hP : ∀ n, IsIdempotentElem (P n)) {e : X ≃L[𝕜] X}
     (he : (e : X →L[𝕜] X) = μ • 1 - K)

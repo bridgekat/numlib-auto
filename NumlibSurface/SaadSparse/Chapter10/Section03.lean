@@ -97,6 +97,23 @@ fill itself.
 
 ## Deviations from the source
 
+* **Generalization.** The elimination factorization uses arbitrary pivot positions and totalized
+  division. See `SaadSparse.Chapter10.equation_10_10`.
+* **Generalization.** Ky Fan's theorem and its Schur-complement consequence are stated at any pivot.
+  See `SaadSparse.Chapter10.theorem_10_1`, `SaadSparse.Chapter10.theorem_10_1_schur`.
+* **Scope.** The factorization existence theorem makes the nonzero pivots explicit and leaves the
+  producing algorithm outside its conclusion. See `SaadSparse.Chapter10.theorem_10_2`,
+  `SaadSparse.Chapter10.theorem_10_2_ilu0`.
+* **Correction.** The level of fill uses the shortest fill-path length, with symmetric sparsity
+  pattern. See `SaadSparse.Chapter10.theorem_10_7`.
+* **Reading.** The fill-path equivalence is for structural fill in a symmetric sparsity pattern. See
+  `SaadSparse.Chapter10.theorem_10_6`.
+* **Generalization.** The static-pattern loop comparison omits the common initial zeroing and
+  permits totalized pivots. See `SaadSparse.Chapter10.iluRowOp`, `SaadSparse.Chapter10.rowOps`,
+  `SaadSparse.Chapter10.ikjSweep`, `SaadSparse.Chapter10.kijSweep`,
+  `SaadSparse.Chapter10.ikjSweep_succ_apply`, `SaadSparse.Chapter10.kijSweep_succ_apply`,
+  `SaadSparse.Chapter10.ikjSweep_row`, `SaadSparse.Chapter10.kijSweep_row`,
+  `SaadSparse.Chapter10.proposition_10_3`.
 * **Theorem 10.1** (generalization). The book states the first elimination step; the formal
   statement holds at every pivot. See `SaadSparse.Chapter10.theorem_10_1`.
 * **Theorem 10.2** (reading). "Algorithm 10.1 does not break down" is read as the existence of the
@@ -189,7 +206,11 @@ $a_{ip} / a_{pp}$ times row $p$ from each row $i > p$.
 
 The factors are `Matrix.elimMul A p` and `Matrix.elimStep A p`. If $a_{pp} = 0$, the multipliers
 are $0$, because Lean's inverse of $0$ is $0$; then $L_1 = I$ and $A_1 = A$, and the identity
-still holds. -/
+still holds.
+
+**Generalization.** The elimination identity works at arbitrary pivot positions. Lean division is
+total and its zero-pivot elimination step leaves the affected column unchanged.
+-/
 theorem equation_10_10 (A : Matrix (Fin n) (Fin n) ℝ) (p : Fin n) :
     A = Matrix.elimMul A p * Matrix.elimStep A p := (Matrix.elimMul_mul_elimStep A p).symm
 
@@ -201,7 +222,11 @@ Gaussian elimination at the pivot $p$ is an M-matrix.
 statement holds at every pivot $p$, which is the form that the rest of the section uses: the
 elimination restarts on the trailing block at every step.
 
-The matrix $A_1$ is `Matrix.elimStep A p`, and an M-matrix is `Matrix.IsMMatrix`. -/
+The matrix $A_1$ is `Matrix.elimStep A p`, and an M-matrix is `Matrix.IsMMatrix`.
+
+**Generalization.** Both the single-step matrix and its Schur complement retain the M-matrix
+property for an arbitrary pivot index. The printed theorem and remark use the first pivot.
+-/
 theorem theorem_10_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) (p : Fin n) :
     (Matrix.elimStep A p).IsMMatrix := hA.isMMatrix_elimStep p
 
@@ -212,7 +237,11 @@ complement of the $1 \times 1$ pivot block,
 $$\bigl(a_{ij} - a_{ip} a_{pp}^{-1} a_{pj}\bigr)_{i, j \neq p}.$$
 
 The elimination argument is iterated in this form. The Schur complement is
-`Matrix.schurComplementSingle`. -/
+`Matrix.schurComplementSingle`.
+
+**Generalization.** Both the single-step matrix and its Schur complement retain the M-matrix
+property for an arbitrary pivot index. The printed theorem and remark use the first pivot.
+-/
 theorem theorem_10_1_schur {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) (p : Fin n) :
     (A.schurComplementSingle p).IsMMatrix := hA.schurComplementSingle p
 
@@ -231,7 +260,12 @@ condition $u_{ii} \neq 0$ for all $i$: no pivot vanishes.
 
 The splitting is $A = M - N$ with $M = LU$ and $N = R$. A regular splitting is
 `Stationary.Splitting.IsRegular`, Definition 4.3 of the book, so the iteration that the
-splitting defines converges (`Matrix.IsILU.complexSpectralRadius_lt_one`). -/
+splitting defines converges (`Matrix.IsILU.complexSpectralRadius_lt_one`).
+
+**Reading.** Lean gives existence of triangular factors with nonzero pivots and a regular splitting.
+It does not identify the existential witnesses with the output of the particular KIJ loop. The
+ILU(0) specialization chooses the matrix's off-diagonal zero pattern.
+-/
 theorem theorem_10_2 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) {P : Set (Fin n × Fin n)}
     (hP : IsZeroPattern P) :
     ∃ (L U : Matrix (Fin n) (Fin n) ℝ) (hu : IsUnit (L * U)),
@@ -260,7 +294,12 @@ factorization of $A$, $u_{ii} \neq 0$ for every $i$, and $A = LU - R$ with $R = 
 regular splitting of $A$.
 
 ILU(0) is `Matrix.IsILU0`, the incomplete factorization for the off-diagonal zero pattern of
-$A$, so $L$ and $U$ have the sparsity patterns of the lower and upper parts of $A$. -/
+$A$, so $L$ and $U$ have the sparsity patterns of the lower and upper parts of $A$.
+
+**Reading.** Lean gives existence of triangular factors with nonzero pivots and a regular splitting.
+It does not identify the existential witnesses with the output of the particular KIJ loop. The
+ILU(0) specialization chooses the matrix's off-diagonal zero pattern.
+-/
 theorem theorem_10_2_ilu0 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsMMatrix) :
     ∃ (L U : Matrix (Fin n) (Fin n) ℝ) (hu : IsUnit (L * U)),
       Matrix.IsILU0 A L U ∧ (∀ i, U i i ≠ 0) ∧ A = L * U - (L * U - A) ∧
@@ -313,8 +352,8 @@ such that $(L, U)$ and $(L', U)$ are both ILU(0) factorizations of $A$ and $L \n
 The witness is `SaadSparse.Chapter10.exampleA`, which has a zero row, so its ILU(0) factors
 satisfy $LU = A$ exactly. The entry of $L$ in the last row and the middle column multiplies only
 that zero row, so it is free, and `SaadSparse.Chapter10.exampleL` gives infinitely many
-factorizations. The standard ILU(0) of Algorithm 10.4 picks one member of the family, which is
-why the book defines it by an algorithm. -/
+factorizations. The example has a zero pivot, so Algorithm 10.4 encounters an undefined
+division on this input. -/
 theorem not_unique_isILU0 :
     ∃ A L L' U : Matrix (Fin 3) (Fin 3) ℝ,
       Matrix.IsILU0 A L U ∧ Matrix.IsILU0 A L' U ∧ L ≠ L' :=
@@ -402,7 +441,13 @@ $< p$". The formal statement makes the minimality explicit.
 
 The level of fill is the result of the updates (10.17), not of the alternative rule (10.18),
 whose characterization differs. The diagonal is excluded because a diagonal position has level
-$0$ throughout. The proof is `Matrix.levelOfFill_eq_iff_isLeast`. -/
+$0$ throughout. The proof is `Matrix.levelOfFill_eq_iff_isLeast`.
+
+**Correction.** The printed statement requires a path of length $p+1$. A longer path can coexist
+with a shorter one, so existence at that particular length is insufficient. Lean uses the least
+length as intended by the proof, assumes a symmetric nonzero pattern for the undirected graph, and
+includes initially present off-diagonal entries.
+-/
 theorem theorem_10_7 (hsymm : ∀ i j, A i j ≠ 0 ↔ A j i ≠ 0) {i j : Fin n} (hij : i ≠ j) (p : ℕ) :
     levelOfFill A n i j = (p : ℕ∞) ↔
       IsLeast {ℓ : ℕ | ∃ w : A.adjGraph.Walk i j, IsFillPath w ∧ w.length = ℓ} (p + 1) :=
@@ -424,7 +469,12 @@ read for finiteness describes it: $\mathrm{lev}(i, j)$ becomes finite at the piv
 when $\mathrm{lev}(i, k)$ and $\mathrm{lev}(k, j)$ are both finite, which is the rule "$a_{ij}$
 becomes nonzero when $a_{ik}$ and $a_{kj}$ are", and complete Gaussian elimination is the
 ILU($p$) process with nothing dropped. Positions with an original nonzero entry are included, as
-the fill-paths of length one. -/
+the fill-paths of length one.
+
+**Reading.** The conclusion is structural reachability, which allows numerical cancellation and
+includes initially nonzero positions. It uses finite level of fill and an equivalent
+retained-position test, assuming symmetric sparsity for the undirected graph.
+-/
 theorem theorem_10_6 (hsymm : ∀ i j, A i j ≠ 0 ↔ A j i ≠ 0) {i j : Fin n} (hij : i ≠ j) :
     (levelOfFill A n i j ≠ ⊤ ↔ ∃ w : A.adjGraph.Walk i j, IsFillPath w) ∧
       ((∃ p : ℕ, (i, j) ∉ levelPattern A p) ↔ ∃ w : A.adjGraph.Walk i j, IsFillPath w) :=
@@ -481,7 +531,12 @@ pivot row $k$ and let $r$ be the current row $i$. If $(i, k) \in P$, the operati
 unchanged. Otherwise it sets $r_k := r_k / p_k$ and then, for every $j > k$ with
 $(i, j) \notin P$,
 $$r_j := r_j - r_k p_j,$$
-with the new value of $r_k$; the other entries are unchanged. -/
+with the new value of $r_k$; the other entries are unchanged.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 noncomputable def iluRowOp (i k : Fin n) (p r : Fin n → ℝ) : Fin n → ℝ :=
   if (i, k) ∈ P then r
   else fun j =>
@@ -492,7 +547,12 @@ noncomputable def iluRowOp (i k : Fin n) (p r : Fin n → ℝ) : Fin n → ℝ :
 /-- **Algorithm 10.3** of [saad2003iterative], the $k$-loop on one row. For a matrix $\rho$ of pivot
 rows, a row index $i$ and a starting row $a$, `rowOps P ρ i a m` applies
 $\mathrm{ope}(\mathrm{row}(i), \mathrm{row}(k))$ for $k = 0, \dots, m - 1$ in this order, with
-row $k$ of $\rho$ as the pivot row. Steps with $k \ge n$ do nothing. -/
+row $k$ of $\rho$ as the pivot row. Steps with $k \ge n$ do nothing.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 noncomputable def rowOps (ρ : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) (a : Fin n → ℝ) :
     ℕ → (Fin n → ℝ)
   | 0 => a
@@ -502,7 +562,12 @@ noncomputable def rowOps (ρ : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) (a : Fin 
 /-- **Algorithm 10.3** of [saad2003iterative], the IKJ variant, after the outer steps
 $i = 0, \dots, I - 1$. Step $i$ replaces row $i$ by the result of the $k$-loop for
 $k = 0, \dots, i - 1$, with the current rows $0, \dots, i - 1$ as pivot rows; these rows are
-already final, and the step does not change them or any other row. -/
+already final, and the step does not change them or any other row.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 noncomputable def ikjSweep (A : Matrix (Fin n) (Fin n) ℝ) : ℕ → Matrix (Fin n) (Fin n) ℝ
   | 0 => A
   | I + 1 => Matrix.of fun i j =>
@@ -515,7 +580,12 @@ every row $i > k$, with the current row $k$ as pivot row, and leaves the rows $i
 unchanged. Steps with $k \ge n$ do nothing.
 
 The rows are updated independently: each reads only its own entries and the pivot row $k$, which
-the step does not change. So this is exactly the $i$-loop of the algorithm. -/
+the step does not change. So this is exactly the $i$-loop of the algorithm.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 noncomputable def kijSweep (A : Matrix (Fin n) (Fin n) ℝ) : ℕ → Matrix (Fin n) (Fin n) ℝ
   | 0 => A
   | K + 1 =>
@@ -526,7 +596,12 @@ noncomputable def kijSweep (A : Matrix (Fin n) (Fin n) ℝ) : ℕ → Matrix (Fi
       else kijSweep A K
 
 /-- One step of Algorithm 10.3, entry by entry: step $I$ replaces row $I$ by the $k$-loop for
-$k < I$ and leaves the other rows unchanged. -/
+$k < I$ and leaves the other rows unchanged.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 theorem ikjSweep_succ_apply (A : Matrix (Fin n) (Fin n) ℝ) (I : ℕ) (i j : Fin n) :
     ikjSweep P A (I + 1) i j
       = if (i : ℕ) = I then rowOps P (ikjSweep P A I) i (fun j' => ikjSweep P A I i j') I j
@@ -534,7 +609,12 @@ theorem ikjSweep_succ_apply (A : Matrix (Fin n) (Fin n) ℝ) (I : ℕ) (i j : Fi
 
 /-- One step of Algorithm 10.1, entry by entry: for $K < n$, step $K$ applies
 $\mathrm{ope}(\mathrm{row}(i), \mathrm{row}(K))$ to each row $i > K$ and leaves the other rows
-unchanged. -/
+unchanged.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 theorem kijSweep_succ_apply (A : Matrix (Fin n) (Fin n) ℝ) {K : ℕ} (h : K < n) (i j : Fin n) :
     kijSweep P A (K + 1) i j
       = if K < (i : ℕ) then
@@ -587,7 +667,12 @@ theorem ikjSweep_apply_of_lt (A : Matrix (Fin n) (Fin n) ℝ) {I : ℕ} {i : Fin
 /-- **Algorithm 10.3** of [saad2003iterative], the rows of the output. Let $P$ be a set of positions
 and let $A \in \mathbb{R}^{n \times n}$. Then row $i$ of the output of Algorithm 10.3 is
 obtained from row $i$ of $A$ by $\mathrm{ope}(\mathrm{row}(i), \mathrm{row}(k))$ for
-$k = 0, \dots, i - 1$, with the final row $k$ of the output as pivot row each time. -/
+$k = 0, \dots, i - 1$, with the final row $k$ of the output as pivot row each time.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 theorem ikjSweep_row (A : Matrix (Fin n) (Fin n) ℝ) (i : Fin n) :
     (fun j => ikjSweep P A n i j)
       = rowOps P (ikjSweep P A n) i (fun j => A i j) (i : ℕ) := by
@@ -612,7 +697,12 @@ $\mathrm{ope}(\mathrm{row}(i), \mathrm{row}(k))$ for $k = 0, \dots, \min(K, i) -
 final row $k$ of Algorithm 10.3 as pivot row each time.
 
 The reason is that the pivot row $k$ is final when step $k$ uses it, and no later step changes
-it. -/
+it.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 theorem kijSweep_row (A : Matrix (Fin n) (Fin n) ℝ) (K : ℕ) : ∀ i : Fin n,
     (fun j => kijSweep P A K i j)
       = rowOps P (ikjSweep P A n) i (fun j => A i j) (min K (i : ℕ)) := by
@@ -654,7 +744,12 @@ invariant `SaadSparse.Chapter10.kijSweep_row` justifies this: in both orders, ro
 $\mathrm{ope}(\mathrm{row}(i), \mathrm{row}(k))$ for $k = 0, \dots, i - 1$ in increasing order
 of $k$, each time with the final row $k$. The pattern must be static, as the book warns: both
 algorithms read the same $P$ throughout, and a pattern determined during the elimination would
-not have this property. -/
+not have this property.
+
+**Generalization.** The formal sweeps omit the common initial zeroing in the printed algorithms and
+allow any fixed set of positions. The row operation uses a totalized quotient at zero pivots. The
+result compares the packed output matrices for both loop orders.
+-/
 theorem proposition_10_3 (A : Matrix (Fin n) (Fin n) ℝ) :
     kijSweep P A n = ikjSweep P A n := by
   ext i j

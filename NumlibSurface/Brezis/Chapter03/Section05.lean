@@ -89,6 +89,8 @@ this module from Corollaries 3.22 and 3.9, by the argument of the source.
 
 ## Deviations from the source
 
+* **Definition of reflexivity** (generalization). The predicate applies to real normed spaces.
+  Reflexivity then implies completeness. See `Brezis.Chapter03.IsReflexive`.
 * **Corollary 3.23** (generalization). The source assumes that $\varphi$ never takes the value
   $-\infty$. The formal statement does not assume this. See `Brezis.Chapter03.corollary_3_23`.
 
@@ -113,8 +115,9 @@ variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [NormedAddComm
 $E$ is **reflexive** if the canonical injection $J : E \to E^{\star\star}$ of Section 1.3 is
 surjective, that is, $J(E) = E^{\star\star}$.
 
-The source makes the definition for a Banach space. Completeness is not part of the predicate,
-because a reflexive normed space is complete (`NormedSpace.completeSpace_of_isReflexive`). -/
+**Generalization.** The source makes the definition for a Banach space. The predicate applies to
+real normed spaces, where reflexivity implies completeness
+(`NormedSpace.completeSpace_of_isReflexive`). -/
 def IsReflexive (E : Type*) [NormedAddCommGroup E] [NormedSpace ℝ E] : Prop :=
   Function.Surjective (inclusionInDoubleDual ℝ E)
 

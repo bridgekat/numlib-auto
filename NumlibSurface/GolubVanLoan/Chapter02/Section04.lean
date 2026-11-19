@@ -91,11 +91,20 @@ argument of the source.
 
 ## Deviations from the source
 
+* **§2.4.1 and Corollaries 2.4.3–2.4.4** (reading). The extremal singular values are zero
+  when the singular-value list is empty. See `GolubVanLoan.Chapter02.sigmaMax`,
+  `GolubVanLoan.Chapter02.sigmaMin`, `GolubVanLoan.Chapter02.corollary_2_4_3`, and
+  `GolubVanLoan.Chapter02.corollary_2_4_4`.
+* **Proof of Corollary 2.4.4** (correction). Its lower bound on $\|Ax\|_2$ need not hold
+  for wide matrices. Singular-value perturbation gives the stated inequalities in every shape.
+  See `GolubVanLoan.Chapter02.corollary_2_4_4`.
 * **Corollary 2.4.5** (reading). The source does not define $\sigma_{\min}$ of an $m \times 0$
   matrix; the corollary assumes $n \ge 1$. See `GolubVanLoan.Chapter02.corollary_2_4_5`.
 * **Remark after Theorem 2.4.8** (reading). The statement that $\sigma_{\min}(A)$ is the distance to
   the rank-deficient matrices assumes $m, n \ge 1$. See
   `GolubVanLoan.Chapter02.sigmaMin_eq_dist_rankDeficient`.
+* **Frobenius-norm remark after Theorem 2.4.8** (generalization). The theorem also gives the
+  exact error of the truncation. See `GolubVanLoan.Chapter02.svdTruncation_isLeast_frobenius`.
 
 ## Not formalized
 
@@ -115,7 +124,8 @@ variable {m n : ℕ}
 $A \in \mathbb{R}^{m \times n}$, $\sigma_{\max}(A)$ is the largest singular value $\sigma_1$ of
 $A$.
 
-It is `A.sortedSingularValues 0`, which is $0$ when $m = 0$ or $n = 0$. -/
+**Reading.** The largest value in the source presupposes a nonempty list. The value is
+`A.sortedSingularValues 0`, which is $0$ when either dimension is zero. -/
 noncomputable def sigmaMax (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
   A.sortedSingularValues 0
 
@@ -124,8 +134,8 @@ $A \in \mathbb{R}^{m \times n}$ and $p = \min\{m, n\}$, $\sigma_{\min}(A)$ is th
 the $p$ singular values $\sigma_1 \ge \dots \ge \sigma_p$ of $A$. It is $0$ when $A$ is rank
 deficient.
 
-It is `A.sortedSingularValues (p - 1)` with natural number subtraction, so for $p = 0$ it is
-`A.sortedSingularValues 0`, which is $0$. -/
+**Reading.** The smallest value in the source presupposes a nonempty list. The declaration
+uses `A.sortedSingularValues (p - 1)`, giving zero when $p=0$. -/
 noncomputable def sigmaMin (A : Matrix (Fin m) (Fin n) ℝ) : ℝ :=
   A.sortedSingularValues (min m n - 1)
 
@@ -230,6 +240,9 @@ open scoped Matrix.Norms.Frobenius
 $p = \min\{m, n\}$,
 $$\|A\|_2 = \sigma_1, \qquad \|A\|_F = \sqrt{\sigma_1^2 + \dots + \sigma_p^2}.$$
 
+**Reading.** The source uses a first singular value. When $p=0$, the declaration uses
+$\sigma_1=0$ and the empty sum is zero.
+
 The singular value $\sigma_i$ is `A.sortedSingularValues (i - 1)`. -/
 theorem corollary_2_4_3 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 2 A = A.sortedSingularValues 0 ∧
@@ -248,8 +261,12 @@ end Frobenius
 $$\sigma_{\max}(A + E) \le \sigma_{\max}(A) + \|E\|_2, \qquad \sigma_{\min}(A + E) \ge
   \sigma_{\min}(A) - \|E\|_2.$$
 
-Both bounds are instances of Weyl's inequality $\sigma_{i+j-1}(A + B) \le \sigma_i(A) +
-\sigma_j(B)$, `Matrix.sortedSingularValues_add_le`. The proof needs no hypothesis $m \ge n$. -/
+**Reading.** Both extremal singular values are zero if the singular-value list is empty.
+
+**Correction.** The source proof uses $\sigma_{\min}(A)\|x\|_2 \le \|Ax\|_2$, which can
+fail for wide matrices. For $A=[1\;0]$ and $x=(0,1)^T$, the two sides are $1$ and $0$.
+The formal proof uses `Matrix.sortedSingularValues_add_le`, which gives the printed
+conclusions for every matrix shape. -/
 theorem corollary_2_4_4 (A E : Matrix (Fin m) (Fin n) ℝ) :
     sigmaMax (A + E) ≤ sigmaMax A + lpOpNorm 2 E ∧
       sigmaMin A - lpOpNorm 2 E ≤ sigmaMin (A + E) := by
@@ -506,8 +523,8 @@ $p = \min\{m, n\}$, let $k < \operatorname{rank}(A)$, and let $A_k$ be the trunc
 Then $A_k$ is a closest matrix of rank $k$ to $A$ in the Frobenius norm, and
 $$\|A - A_k\|_F = \sqrt{\sigma_{k+1}^2 + \dots + \sigma_p^2}.$$
 
-The source states this result without proof; it is due to Mirsky. The proof applies
-`Matrix.isLeast_frobenius_norm_sub_of_rank_le` and `Matrix.frobenius_norm_sub_svdTruncation`. -/
+**Generalization.** The source states optimality in the Frobenius norm. The theorem also
+evaluates the error from the squared discarded singular values. -/
 theorem svdTruncation_isLeast_frobenius {A : Matrix (Fin m) (Fin n) ℝ}
     {U : Matrix (Fin m) (Fin m) ℝ} {σ : ℕ → ℝ} {V : Matrix (Fin n) (Fin n) ℝ} (h : IsSVD A U σ V)
     {k : ℕ} (hk : k < A.rank) :

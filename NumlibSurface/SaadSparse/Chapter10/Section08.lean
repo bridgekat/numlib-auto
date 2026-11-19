@@ -65,6 +65,22 @@ the theorem without proof and cites the literature; the proof here is an inducti
 
 ## Deviations from the source
 
+* **Totalization.** Natural-index row selection returns zero outside the matrix. See
+  `SaadSparse.Chapter10.rowVec`.
+* **Scope.** The incomplete Gram–Schmidt recurrence drops entries only from $L$, uses complex inner
+  products and totalizes normalization. See `SaadSparse.Chapter10.imgsHat`,
+  `SaadSparse.Chapter10.imgsQ`, `SaadSparse.Chapter10.imgsL`, `SaadSparse.Chapter10.imgsLMat`,
+  `SaadSparse.Chapter10.imgsQMat`, `SaadSparse.Chapter10.imgsL_of_gt`,
+  `SaadSparse.Chapter10.imgsL_of_not_drop`, `SaadSparse.Chapter10.imgsHat_eq`,
+  `SaadSparse.Chapter10.imgsL_diag_smul_imgsQ`.
+* **Correction.** The row identity sums through its row index, with no residual from dropping $Q$
+  entries. See `SaadSparse.Chapter10.rowVec_eq_sum`.
+* **Correction.** The incomplete LQ factor has positive diagonal entries, as established in the
+  printed proof. See `SaadSparse.Chapter10.proposition_10_17`.
+* **Correction.** The incomplete Cholesky comparison requires a symmetric drop pattern with a
+  retained diagonal. See `SaadSparse.Chapter10.IsICPattern`.
+* **Reading.** The incomplete Cholesky condition is proved for the classical recurrence with the
+  corrected symmetric pattern. See `SaadSparse.Chapter10.theorem_10_18`.
 * **Theorem 10.18** (correction). The printed condition constrains only pairs $(i, j)$ with $i < j$,
   while Algorithm 10.17 drops entries $l_{ij}$ with $j < i$, so the theorem is false as printed. The
   hypothesis adds the symmetry of $P_L$. See `SaadSparse.Chapter10.IsICPattern`.
@@ -86,7 +102,11 @@ section IncompleteGramSchmidt
 variable {n m : ℕ} {𝕜 : Type*} [RCLike 𝕜]
 
 /-- The row $a_i$ of $A \in \mathbb{K}^{n \times m}$ as a vector of $\mathbb{K}^m$, for $i < n$, and
-the zero vector for $i \ge n$. -/
+the zero vector for $i \ge n$.
+
+**Reading.** Lean uses a natural row index and returns zero at an out-of-range index. The source
+uses only actual rows.
+-/
 noncomputable def rowVec (A : Matrix (Fin n) (Fin m) 𝕜) (i : ℕ) : EuclideanSpace 𝕜 (Fin m) :=
   if h : i < n then WithLp.toLp 2 (A ⟨i, h⟩) else 0
 
@@ -107,7 +127,12 @@ private noncomputable def imgsTerm (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : �
 dropping rule $P_L$, the unnormalized vector is
 $$\hat{q}_i = a_i - \sum_{j < i,\ (i, j) \notin P_L} (a_i, q_j) \, q_j,$$
 where $q_j = \hat{q}_j / \|\hat{q}_j\|_2$. The sum runs over the coefficients that the dropping
-rule retains. -/
+rule retains.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 noncomputable def imgsHat (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : ℕ → ℕ → Bool) :
     ℕ → EuclideanSpace 𝕜 (Fin m)
   | i => rowVec A i - ∑ j : Finset.range i, imgsTerm A dropL i j (imgsHat A dropL j)
@@ -117,7 +142,12 @@ noncomputable def imgsHat (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : ℕ → ℕ
 $$q_i = \hat{q}_i / l_{ii}, \qquad l_{ii} = \|\hat{q}_i\|_2.$$
 
 The book's "if $l_{ii} = 0$ then Stop" is Lean's $x / 0 = 0$, which gives $q_i = 0$ at a
-breakdown. -/
+breakdown.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 noncomputable def imgsQ (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : ℕ → ℕ → Bool) (i : ℕ) :
     EuclideanSpace 𝕜 (Fin m) :=
   ((‖imgsHat A dropL i‖ : 𝕜))⁻¹ • imgsHat A dropL i
@@ -129,20 +159,35 @@ $$l_{ij} = \begin{cases}
   0 & \text{if } j < i \text{ and } (i, j) \in P_L, \\
   \|\hat{q}_i\|_2 & \text{if } j = i, \\
   0 & \text{if } j > i.
-\end{cases}$$ -/
+\end{cases}$$
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 noncomputable def imgsL (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : ℕ → ℕ → Bool) (i j : ℕ) : 𝕜 :=
   if j < i then (if dropL i j then 0 else inner 𝕜 (imgsQ A dropL j) (rowVec A i))
   else if j = i then ((‖imgsHat A dropL i‖ : ℝ) : 𝕜)
   else 0
 
 /-- **Algorithm 10.17** of [saad2003iterative], the lower triangular factor
-$L = (l_{ij}) \in \mathbb{K}^{n \times n}$. -/
+$L = (l_{ij}) \in \mathbb{K}^{n \times n}$.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 noncomputable def imgsLMat (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : ℕ → ℕ → Bool) :
     Matrix (Fin n) (Fin n) 𝕜 :=
   Matrix.of fun i j => imgsL A dropL (i : ℕ) (j : ℕ)
 
 /-- **Algorithm 10.17** of [saad2003iterative], the factor $Q \in \mathbb{K}^{n \times m}$ whose
-rows are the vectors $q_i$. It is not orthogonal in general, because entries of $L$ are dropped. -/
+rows are the vectors $q_i$. It is not orthogonal in general, because entries of $L$ are dropped.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 noncomputable def imgsQMat (A : Matrix (Fin n) (Fin m) 𝕜) (dropL : ℕ → ℕ → Bool) :
     Matrix (Fin n) (Fin m) 𝕜 :=
   Matrix.of fun i j => WithLp.ofLp (imgsQ A dropL (i : ℕ)) j
@@ -168,7 +213,12 @@ theorem imgsL_of_lt {i j : ℕ} (h : i < j) : imgsL A dropL i j = 0 := by
 theorem imgsL_diag (i : ℕ) : imgsL A dropL i i = ((‖imgsHat A dropL i‖ : ℝ) : 𝕜) := by
   simp [imgsL]
 
-/-- For $j < i$, the coefficient $l_{ij}$ is $0$ if $(i, j) \in P_L$ and $(a_i, q_j)$ otherwise. -/
+/-- For $j < i$, the coefficient $l_{ij}$ is $0$ if $(i, j) \in P_L$ and $(a_i, q_j)$ otherwise.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 theorem imgsL_of_gt {i j : ℕ} (h : j < i) :
     imgsL A dropL i j =
       if dropL i j then 0 else inner 𝕜 (imgsQ A dropL j) (rowVec A i) := by
@@ -180,13 +230,23 @@ theorem imgsL_of_drop {i j : ℕ} (h : j < i) (hd : dropL i j) : imgsL A dropL i
   simp [imgsL_of_gt A dropL h, hd]
 
 /-- For $j < i$ and $(i, j) \notin P_L$, the coefficient $l_{ij}$ is $(a_i, q_j)$ (line 2 of
-Algorithm 10.17). -/
+Algorithm 10.17).
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 theorem imgsL_of_not_drop {i j : ℕ} (h : j < i) (hd : ¬ dropL i j) :
     imgsL A dropL i j = inner 𝕜 (imgsQ A dropL j) (rowVec A i) := by
   simp [imgsL_of_gt A dropL h, hd]
 
 /-- Line 4 of Algorithm 10.17 in terms of the coefficients:
-$\hat{q}_i = a_i - \sum_{j < i} l_{ij} q_j$. -/
+$\hat{q}_i = a_i - \sum_{j < i} l_{ij} q_j$.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 theorem imgsHat_eq (i : ℕ) :
     imgsHat A dropL i =
       rowVec A i - ∑ j ∈ Finset.range i, imgsL A dropL i j • imgsQ A dropL j := by
@@ -196,7 +256,12 @@ theorem imgsHat_eq (i : ℕ) :
   rfl
 
 /-- Line 7 of Algorithm 10.17 read backwards: $l_{ii} q_i = \hat{q}_i$. At a breakdown both sides
-are $0$, so no hypothesis is needed. -/
+are $0$, so no hypothesis is needed.
+
+**Reading.** The recurrence accepts a fixed Boolean rule for dropping entries of $L$, while the book
+also allows dropping from $Q$ and choosing patterns dynamically. It extends the scalar formulas to
+complex inner products and normalizes a zero row to zero instead of stopping.
+-/
 theorem imgsL_diag_smul_imgsQ (i : ℕ) :
     imgsL A dropL i i • imgsQ A dropL i = imgsHat A dropL i := by
   rcases eq_or_ne (imgsHat A dropL i) 0 with h | h
@@ -208,7 +273,12 @@ theorem imgsL_diag_smul_imgsQ (i : ℕ) :
 /-- **Equation (10.83)** of [saad2003iterative] with $P_Q = \emptyset$. For every $i$,
 $$a_i = \sum_{j \le i} l_{ij} q_j,$$
 however much is dropped from $L$. So dropping in $L$ alone still gives an exact factorization:
-the vector subtracted on line 4 is built from the retained coefficients themselves. -/
+the vector subtracted on line 4 is built from the retained coefficients themselves.
+
+**Correction.** The source display sums up to $j$ while also using $j$ as the running index. The sum
+goes up to the row index $i$. Lean uses the case with no dropping from $Q$ and the totalized
+normalization, including a zero row remainder.
+-/
 theorem rowVec_eq_sum (i : ℕ) :
     rowVec A i = ∑ j ∈ Finset.range (i + 1), imgsL A dropL i j • imgsQ A dropL j := by
   rw [Finset.sum_range_succ, imgsL_diag_smul_imgsQ, imgsHat_eq]
@@ -283,7 +353,12 @@ $l_{ii} > 0$ for every $i$, $l_{ij} = 0$ for $i < j$, $LQ = A$, and $Q$ is nonsi
 
 The factor $Q$ is not orthogonal in general. The proof is the book's: if $l_{ii} = 0$, then
 (10.83) would write the row $a_i$ as a combination of the earlier rows, against the
-nonsingularity of $A$. -/
+nonsingularity of $A$.
+
+**Correction.** The book says $L$ has positive elements. The algorithm gives positivity only on the
+diagonal: off-diagonal computed coefficients can be zero or negative. Lean asserts precisely
+positive diagonal entries, exact reconstruction, and nonsingular $Q$.
+-/
 theorem proposition_10_17 {A : Matrix (Fin n) (Fin n) ℝ} (dropL : ℕ → ℕ → Bool)
     (hA : IsUnit A) :
     (∀ i : Fin n, 0 < imgsL A dropL (i : ℕ) (i : ℕ)) ∧
@@ -334,15 +409,21 @@ $$(i, j) \in P_L \text{ and } (i, k) \notin P_L \implies (j, k) \in P_L.$$
 **Correction.** The book does not print the symmetry, and the theorem is false without it. The
 printed condition constrains the pairs $(i, j)$ with $i < j$, while the algorithm drops the
 entries $l_{ij}$ with $j < i$, so without a link between the two triangles the hypothesis says
-nothing about what is dropped. For example, with $n = 3$ and $P_L = \{(3, 2)\}$ in the book's
-$1$-based indices, the printed condition holds vacuously, but $L L^T$ misses $b_{32}$. The zero
+nothing about what is dropped. For example, take rows $(1,0,0)$, $(1,1,0)$ and $(1,1,1)$,
+and drop only $(3,1)$ in $1$-based indices. The printed condition holds vacuously, but the
+retained entry $(LL^T)_{32}=1$ differs from $(AA^T)_{32}=2$. The zero
 pattern of a Cholesky factorization is symmetric, because it is the pattern of both $L$ and
 $L^T$; this is the link, and `Matrix.IsIC` asks for it as well.
 
 On the entries that the algorithm drops, the pairs $(i, j)$ with $j < i$, the last condition
 becomes the two statements `SaadSparse.Chapter10.IsICPattern.notDrop_row` and
 `SaadSparse.Chapter10.IsICPattern.notDrop_trans`, which are all that the proof of Theorem 10.18
-uses. -/
+uses.
+
+**Correction.** Symmetry links the upper-triangular pairs in the printed condition with the
+lower-triangular pairs subject to dropping. Lean requires that symmetry and a retained diagonal over
+all natural indices.
+-/
 structure IsICPattern (dropL : ℕ → ℕ → Bool) : Prop where
   /-- $P_L$ contains no diagonal position, $(i, i) \notin P_L$; this is the only restriction that
   the book places on $P_L$ in general. -/
@@ -586,7 +667,13 @@ linearly independent. The book states the theorem without proof and cites the li
 proof here is the orthogonality `SaadSparse.Chapter10.IsICPattern.inner_imgsQ_eq_zero`: under
 the hypothesis on $P_L$, the rows of $Q$ retained in one row of $L$ are pairwise orthogonal, so
 all cross terms of $(a_i, a_j) = \sum_{k, l} l_{ik} l_{jl} (q_k, q_l)$ vanish, and what remains
-is the entry $(i, j)$ of $L L^T$. -/
+is the entry $(i, j)$ of $L L^T$.
+
+**Reading.** Lean proves that the incomplete classical Gram–Schmidt factor satisfies the corrected
+incomplete Cholesky specification. The printed result refers to modified Gram–Schmidt and identifies
+the two factors explicitly. The formal result does not compare two algorithm outputs, and
+positive-diagonal uniqueness can be invoked separately for independent rows.
+-/
 theorem theorem_10_18 :
     Matrix.IsIC {p : Fin n × Fin n | dropL (p.1 : ℕ) (p.2 : ℕ)} (A * Aᵀ) (imgsLMat A dropL) where
   l_eq_zero_of_lt i j hij := imgsL_of_lt A dropL hij

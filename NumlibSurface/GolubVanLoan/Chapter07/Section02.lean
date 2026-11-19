@@ -92,6 +92,14 @@ differentiable eigenvalue branch; `Numlib.LinearAlgebra.Matrix.Sylvester` suppli
 
 ## Deviations from the source
 
+* **§7.2.2** (typo). The source interchanges $x$ and $y$ when assigning them to columns of the
+  right and left Jordan bases. See `GolubVanLoan.Chapter07.inner_ne_zero_of_simple`.
+* **Equation (7.2.2), derivative argument** (reading). The assertion states differentiability at
+  the origin and bounds the derivative for an arbitrary perturbation direction, scaled by its
+  norm. See `GolubVanLoan.Chapter07.equation_7_2_2`.
+* **Theorem 7.2.4 and Corollary 7.2.5** (generalization). The separation and invariant-subspace
+  bounds apply to upper block triangular matrices with arbitrary diagonal blocks. See
+  `GolubVanLoan.Chapter07.theorem_7_2_4` and `GolubVanLoan.Chapter07.corollary_7_2_5`.
 * **Theorem 7.2.3** (generalization). The source takes a Schur decomposition, with $N$ strictly
   upper triangular, and the least $p$ with $|N|^p = 0$. The theorem holds for every $p \ge 1$ with
   $|N|^p = 0$ and every such $N$. See `GolubVanLoan.Chapter07.theorem_7_2_3`.
@@ -287,7 +295,11 @@ satisfies $A x = \lambda x$ and $y \neq 0$ satisfies $y^H A = \lambda y^H$, then
 Hence $s(\lambda) > 0$.
 
 The source argues through the Jordan form. The proof here uses instead that the generalized
-eigenspace of a simple eigenvalue is a line. -/
+eigenspace of a simple eigenvalue is a line.
+
+**Typo.** In the Jordan-basis explanation, the source pairs $y$ with the column of $X$ and $x$
+with the column of $Y$. The right eigenvector $x$ belongs to the column of $X$ and the left
+eigenvector $y$ belongs to the column of $Y$. -/
 theorem inner_ne_zero_of_simple {A : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ}
     (hμ : IsSimpleEigenvalue A μ) {x y : Fin n → ℂ} (hx : A *ᵥ x = μ • x) (hx0 : x ≠ 0)
     (hy : star y ᵥ* A = μ • star y) (hy0 : y ≠ 0) : star y ⬝ᵥ x ≠ 0 := by
@@ -315,7 +327,12 @@ The source derives (7.2.2) by a first-order argument; here the existence of the 
 branches is part of the conclusion. For $\|F\|_2 = 1$ the bound is the condition $1/s(\lambda)$.
 The parameter $\varepsilon$ is complex, the vectors $x(\varepsilon)$ are in
 `EuclideanSpace ℂ (Fin n)`, $y x^H$ is `Matrix.vecMulVec y (star x)`, and the norm is the scoped
-2-norm `Matrix.Norms.L2Operator`. -/
+2-norm `Matrix.Norms.L2Operator`.
+
+**Reading.** The theorem allows any direction $F$ and gives the bound scaled by $\|F\|_2$. It
+states differentiability at the origin for branches satisfying the eigenvector equation
+locally. The source assumes a unit direction and describes differentiable branches in a
+neighborhood. -/
 theorem equation_7_2_2 {A F : Matrix (Fin n) (Fin n) ℂ} {μ : ℂ} (hμ : IsSimpleEigenvalue A μ)
     {x y : Fin n → ℂ} (hx : A *ᵥ x = μ • x) (hxn : ‖WithLp.toLp 2 x‖ = 1)
     (hy : star y ᵥ* A = μ • star y) (hyn : ‖WithLp.toLp 2 y‖ = 1) :
@@ -647,7 +664,10 @@ not needed: $T_{11}$ and $T_{22}$ can be any square blocks. In Lean the index ty
 `Fin r ⊕ Fin s`, the lower left block of `star Q * E * Q` is `(star Q * E * Q).toBlocks₂₁`, and
 the basis is `GolubVanLoan.Chapter07.stewartBasis Q P`. The proof applies
 `Matrix.exists_invariant_graph_of_sep` in the coordinates of the unitary matrix, where the
-Frobenius norm is unitarily invariant. -/
+Frobenius norm is unitarily invariant.
+
+**Generalization.** The diagonal blocks $T_{11}$ and $T_{22}$ can be arbitrary square matrices.
+The source introduces the block partition as a Schur decomposition. -/
 theorem theorem_7_2_4 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin r ⊕ Fin s) ℂ) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ}
@@ -694,7 +714,10 @@ $\operatorname{ran}(\tilde Q_1) = \operatorname{ran}(Q \begin{bmatrix} I \\ P \e
 In the coordinates of $Q$ the gap between $\operatorname{ran} \begin{bmatrix} I \\ 0
 \end{bmatrix}$ and $\operatorname{ran} \begin{bmatrix} I \\ P \end{bmatrix}$ is at most
 $\|P\|_2 \le \|P\|_F$, by `Matrix.gap_range_fromRows_le` and (7.2.6). The route of the source
-through $\|Q_2^H \tilde Q_1\|_2$ is not needed. -/
+through $\|Q_2^H \tilde Q_1\|_2$ is not needed.
+
+**Reading.** Same gap bound in arbitrary upper block triangular representations.
+-/
 theorem corollary_7_2_5 {A E Q : Matrix (Fin r ⊕ Fin s) (Fin r ⊕ Fin s) ℂ}
     (hQ : Q ∈ unitaryGroup (Fin r ⊕ Fin s) ℂ) {T₁₁ : Matrix (Fin r) (Fin r) ℂ}
     {T₁₂ : Matrix (Fin r) (Fin s) ℂ} {T₂₂ : Matrix (Fin s) (Fin s) ℂ}

@@ -84,6 +84,26 @@ not state come from `Numlib.Analysis.Fourier.FourierIntegral`,
 
 ## Deviations from the source
 
+* **Definition 10.1, equation (10.74), and properties 2 and 5** (generalization). The Fourier,
+  inverse Fourier, and convolution formulas use total Bochner integrals. The inverse formula
+  agrees with the symmetric principal-value limit for the integrable transforms used in Property
+  10.3. Scaling holds for all functions under this integral convention.
+* **Examples 10.5–10.7 and equation (10.81)** (reading). The rectangle and sawtooth allow any
+  real amplitude. The rectangle and ideal filter give the removable value at zero, while the
+  sawtooth theorem treats nonzero frequencies. Example 10.6 states the constant and cosine
+  identities as tempered distributions. `equation_10_81` assumes an integrable input and impulse
+  response and takes the output to be their convolution.
+* **Equation (10.82)** (reading). The discrete samples range over all integers and the pointwise
+  alias sum assumes summability in addition to the continuity and compact-support hypotheses.
+* **Definitions 10.2 and 10.3** (generalization). The Laplace predicate uses total truncated
+  integrals without assuming local integrability and the transform is assigned zero outside
+  convergence. The Fourier relation assumes absolute integrability. The Z-transform definition
+  accepts any real sample step, with a total infinite sum. The discrete Laplace identity assumes
+  $\operatorname{Re}s>0$ and absolute summability.
+* **Example 10.9** (reading). `example_10_9` uses the factor $e^{-st}$ in the Laplace
+  integration, with sufficient integrability and decay for integration by parts. The printed
+  prose says $e^{st}$. `example_10_9_solution` establishes the ODE and initial value for $a\neq
+  0$ by differentiating the formula.
 * **Property 3** (correction). The book states the duality with no hypotheses. The library assumes
   that $f$ is continuous and that $f$ and $F$ are integrable. See
   `QuarteroniSaccoSaleri.Chapter10.property_duality`.
@@ -127,14 +147,21 @@ $$F(\nu) = \int_{-\infty}^{\infty} f(t) e^{-2\pi i \nu t} \, dt, \qquad \nu \in 
 
 The definition is the Bochner integral, which is $0$ when the integrand is not integrable. It is
 Mathlib's `𝓕 f` by `QuarteroniSaccoSaleri.Chapter10.definition_10_1_eq_fourierIntegral`. The
-inverse transform is `QuarteroniSaccoSaleri.Chapter10.definition_10_1_inv`. -/
+inverse transform is `QuarteroniSaccoSaleri.Chapter10.definition_10_1_inv`.
+
+**Generalization.** The identity uses total Bochner integration and arbitrary functions. In the
+inverse transform, the integral agrees with the symmetric limit under the source's
+integrability assumption. -/
 noncomputable def definition_10_1 (f : ℝ → ℂ) (ν : ℝ) : ℂ :=
   ∫ t : ℝ, f t * Complex.exp (-(2 * π * ν * t) * I)
 
 /-- **Definition 10.1** of [quarteroni2000numerical], the inverse transform. For
 $F : \mathbb{R} \to \mathbb{C}$ the **inverse Fourier transform** is
 $$f(t) = \int_{-\infty}^{\infty} F(\nu) e^{2\pi i \nu t} \, d\nu, \qquad t \in \mathbb{R}.$$
--/
+
+**Generalization.** The identity uses total Bochner integration and arbitrary functions. In the
+inverse transform, the integral agrees with the symmetric limit under the source's
+integrability assumption. -/
 noncomputable def definition_10_1_inv (F : ℝ → ℂ) (t : ℝ) : ℂ :=
   ∫ ν : ℝ, F ν * Complex.exp ((2 * π * ν * t) * I)
 
@@ -219,7 +246,11 @@ $f_\alpha(t) = f(\alpha t)$. Then for every $\nu \in \mathbb{R}$
 $$\mathcal{F} f_\alpha(\nu) = |\alpha|^{-1} \mathcal{F} f(\nu/\alpha).$$
 
 The statement needs no integrability, because both sides are $0$ when $f$ is not integrable. The
-proof specializes `Real.fourierIntegral_comp_mul_left`. -/
+proof specializes `Real.fourierIntegral_comp_mul_left`.
+
+**Generalization.** The identity uses total Bochner integration and arbitrary functions. In the
+inverse transform, the integral agrees with the symmetric limit under the source's
+integrability assumption. -/
 theorem property_scaling {α : ℝ} (hα : α ≠ 0) (f : ℝ → ℂ) (ν : ℝ) :
     𝓕 (fun t => f (α * t)) ν = ((|α|⁻¹ : ℝ) : ℂ) * 𝓕 f (ν / α) := by
   rw [Real.fourierIntegral_comp_mul_left hα, Complex.real_smul]
@@ -261,7 +292,11 @@ theorem property_parity {f : ℝ → ℝ} (hf : Integrable f) (ν : ℝ) :
 $$(f \star g)(t) = \int_{-\infty}^{\infty} f(\tau) g(t - \tau) \, d\tau.$$
 
 It is Mathlib's `MeasureTheory.convolution` with the multiplication of $\mathbb{C}$, by
-`QuarteroniSaccoSaleri.Chapter10.equation_10_77_eq_convolution`. -/
+`QuarteroniSaccoSaleri.Chapter10.equation_10_77_eq_convolution`.
+
+**Generalization.** The identity uses total Bochner integration and arbitrary functions. In the
+inverse transform, the integral agrees with the symmetric limit under the source's
+integrability assumption. -/
 noncomputable def equation_10_77 (f g : ℝ → ℂ) (t : ℝ) : ℂ :=
   ∫ τ : ℝ, f τ * g (t - τ)
 
@@ -337,7 +372,9 @@ theorem fourierIntegral_indicator_Icc {a : ℝ} (ha : 0 < a) {ν : ℝ} (hν : �
 $T > 0$, and let $r(t) = A$ for $|t| \le T/2$ and $r(t) = 0$ otherwise. Then
 $$\mathcal{F} r(\nu) = AT \frac{\sin(\pi\nu T)}{\pi\nu T} \quad (\nu \neq 0), \qquad \mathcal{F}
   r(0) = AT.$$
--/
+
+**Generalization.** Allows any real amplitude and gives the removable sinc value at zero
+explicitly. -/
 theorem example_10_5_rect {A T : ℝ} (hT : 0 < T) (ν : ℝ) :
     (ν ≠ 0 → 𝓕 (fun t => (A : ℂ) * Set.indicator (Icc (-(T / 2)) (T / 2)) (fun _ => (1 : ℂ)) t) ν
         = ((A * T * (Real.sin (π * ν * T) / (π * ν * T)) : ℝ) : ℂ)) ∧
@@ -373,7 +410,9 @@ $$\mathcal{F} s(\nu) = i \frac{AT}{\pi\nu T} \Bigl(\cos(\pi\nu T) - \frac{\sin(\
 which is purely imaginary and odd in $\nu$.
 
 The proof uses the primitive $e^{-2\pi i\nu t}\bigl(it/(2\pi\nu) + 1/(4\pi^2\nu^2)\bigr)$ of
-$t e^{-2\pi i\nu t}$ and the formulas of Euler. -/
+$t e^{-2\pi i\nu t}$ and the formulas of Euler.
+
+**Reading.** Allows any real amplitude and states the printed fraction for nonzero frequency. -/
 theorem example_10_5_saw {A T : ℝ} (hT : 0 < T) {ν : ℝ} (hν : ν ≠ 0) :
     𝓕 (fun t => Set.indicator (Icc (-(T / 2)) (T / 2)) (fun t : ℝ => ((2 * A * t / T : ℝ) : ℂ)) t) ν
       = I * ((A * T / (π * ν * T) : ℝ) : ℂ)
@@ -439,7 +478,10 @@ $\langle \delta_a, \varphi \rangle = \varphi(a)$.
 The Dirac mass is Mathlib's `TemperedDistribution.delta`. For a Schwartz function $\varphi$ the
 pairing is $\langle \mathcal{F} f, \varphi \rangle = \int f \, \mathcal{F}\varphi$, and $\int
 e^{2\pi i\nu t} \mathcal{F}\varphi(t) \, dt = \mathcal{F}^{-1}(\mathcal{F}\varphi)(\nu) =
-\varphi(\nu)$ by the inversion formula on the Schwartz space. -/
+\varphi(\nu)$ by the inversion formula on the Schwartz space.
+
+**Reading.** States the identities in the space of tempered distributions. The principal-value
+limit and the action of a Dirac mass on a test function are not separately stated here. -/
 theorem example_10_6 (A ν₀ : ℝ) :
     𝓕 ((Function.HasTemperateGrowth.const (E := ℝ) (A : ℂ)).toTemperedDistribution volume)
         = (A : ℂ) • TemperedDistribution.delta (0 : ℝ) ∧
@@ -536,7 +578,10 @@ $$U(\nu) = I(\nu) H(\nu),$$
 where $U$, $I$ and $H$ are the Fourier transforms of $u$, $i$ and $h$. The function $H$ is the
 **transfer function**.
 
-This is the first identity of (10.76). -/
+This is the first identity of (10.76).
+
+**Reading.** Assumes the input and impulse response are integrable and uses their convolution
+for the output. The theorem does not apply the system operator to a Dirac mass. -/
 theorem equation_10_81 {i h : ℝ → ℂ} (hi : Integrable i) (hh : Integrable h) (ν : ℝ) :
     𝓕 (equation_10_77 i h) ν = 𝓕 i ν * 𝓕 h ν :=
   (equation_10_76 hi hh).1 ν
@@ -549,7 +594,13 @@ $$h(t) = \nu_0 \frac{\sin(\pi\nu_0 t)}{\pi\nu_0 t} \quad (t \neq 0), \qquad h(0)
 This is the rectangle of Example 10.5 with $A = 1$ and $T = \nu_0$, since
 $\mathcal{F}^{-1} H(t) = \mathcal{F} H(-t)$. The second claim of the example, that the output
 $u = i \star h$ has the spectrum $IH$, is not stated: it is (10.81) with $h \notin L^1$, which
-needs the $L^2$ theory. -/
+needs the $L^2$ theory.
+
+**Partial.** Computes the impulse response and includes its removable value at zero. The
+output-spectrum assertion for this ideal filter is outside the theorem.
+
+**Reading.** First claim only, with positive cutoff and removable value at zero.
+-/
 theorem example_10_7 {ν₀ : ℝ} (hν₀ : 0 < ν₀) (t : ℝ) :
     (t ≠ 0 → 𝓕⁻ (Set.indicator (Icc (-(ν₀ / 2)) (ν₀ / 2)) fun _ => (1 : ℂ)) t
         = ((ν₀ * (Real.sin (π * ν₀ * t) / (π * ν₀ * t)) : ℝ) : ℂ)) ∧
@@ -579,7 +630,10 @@ k\Delta t}$ of the book. The input of the book may jump at $0$ and $T_0$, where 
 average of the one-sided limits. For this reason the input is assumed continuous here.
 
 The proof specializes `Real.tsum_fourierIntegral_sub_div_eq_tsum_mul`, which comes from
-Mathlib's Poisson summation formula. -/
+Mathlib's Poisson summation formula.
+
+**Reading.** The frequency-side sum is assumed summable at the requested frequency. The samples
+range over all integers. -/
 theorem equation_10_82 {i : ℝ → ℂ} (hi : Continuous i) (hsupp : HasCompactSupport i) {Δt : ℝ}
     (hΔt : 0 < Δt) {ν : ℝ} (hsum : Summable fun j : ℤ => 𝓕 i (ν - j / Δt)) :
     Δt * ∑' k : ℤ, i (k * Δt) * Complex.exp (-(2 * π * ν * k * Δt) * I)
@@ -601,7 +655,10 @@ exists.
 The book takes $f \in L^1_{\mathrm{loc}}([0, \infty))$. The definition does not assume it. The
 predicate is `LaplaceTransform.Converges f s` by
 `QuarteroniSaccoSaleri.Chapter10.definition_10_2_iff`, and the transform is
-`QuarteroniSaccoSaleri.Chapter10.laplace`. -/
+`QuarteroniSaccoSaleri.Chapter10.laplace`.
+
+**Generalization.** Uses total truncated integrals with no separate local integrability
+premise. The transform is set to zero when their limit fails to exist. -/
 def definition_10_2 (f : ℝ → ℂ) (s : ℂ) : Prop :=
   ∃ L : ℂ, Tendsto (fun T : ℝ => ∫ t in (0 : ℝ)..T, f t * Complex.exp (-(s * t))) atTop (𝓝 L)
 
@@ -611,7 +668,10 @@ $L(s) = \int_0^\infty f(t) e^{-st} \, dt$, the limit of the truncated integrals
 $\int_0^T f(t) e^{-st} \, dt$ as $T \to \infty$. Where this limit does not exist, the value is
 $0$.
 
-The definition is the backbone's `LaplaceTransform.laplaceTransform`. -/
+The definition is the backbone's `LaplaceTransform.laplaceTransform`.
+
+**Generalization.** Uses total truncated integrals with no separate local integrability
+premise. The transform is set to zero when their limit fails to exist. -/
 noncomputable def laplace (f : ℝ → ℂ) (s : ℂ) : ℂ := LaplaceTransform.laplaceTransform f s
 
 /-- For $f : \mathbb{R} \to \mathbb{C}$, $s \in \mathbb{C}$ and $T \in \mathbb{R}$, the truncated
@@ -630,7 +690,10 @@ theorem definition_10_2_iff (f : ℝ → ℂ) (s : ℂ) :
 
 /-- Let $f : \mathbb{R} \to \mathbb{C}$ and $s, L \in \mathbb{C}$. If
 $\int_0^T f(t) e^{-st} \, dt \to L$ as $T \to \infty$, then the Laplace transform of $f$ at $s$
-is $L$. -/
+is $L$.
+
+**Generalization.** Uses total truncated integrals with no separate local integrability
+premise. The transform is set to zero when their limit fails to exist. -/
 theorem laplace_eq_of_tendsto {f : ℝ → ℂ} {s L : ℂ}
     (h : Tendsto (fun T : ℝ => ∫ t in (0 : ℝ)..T, f t * Complex.exp (-(s * t))) atTop (𝓝 L)) :
     laplace f s = L := by
@@ -647,7 +710,10 @@ $$L(\sigma + i\omega) = \mathcal{F}\bigl(e^{-\sigma t} \tilde
 **Reading.** The book writes $L(s) = \mathcal{F}(e^{-\sigma t} \tilde f)$ without the argument.
 The argument is $\omega/2\pi$, because Definition 10.1 uses $e^{-2\pi i\nu t}$.
 
-The proof specializes `LaplaceTransform.laplaceTransform_eq_fourier`. -/
+The proof specializes `LaplaceTransform.laplaceTransform_eq_fourier`.
+
+**Reading.** The ordinary Fourier integral requires absolute integrability of the exponentially
+weighted input. -/
 theorem definition_10_2_fourier {f : ℝ → ℂ} {s : ℂ}
     (h : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) * f t) (Ioi 0)) :
     laplace f s = definition_10_1 (fun t => Complex.exp (-(s.re * t)) * Set.indicator (Ioi 0) f t)
@@ -697,7 +763,11 @@ $$s Y(s) - y(0) + a Y(s) = G(s).$$
 
 The proof uses the transform of a derivative (`LaplaceTransform.laplaceTransform_deriv`) and the
 linearity of the transform. The integrability of $e^{-st} g(t)$ is not a hypothesis, because it
-follows from the equation. -/
+follows from the equation.
+
+**Reading.** Uses the factor $e^{-st}$, which gives the printed identity, while the preceding
+sentence prints $e^{st}$. Integrability of the weighted function and its derivative and
+vanishing of the endpoint term are explicit. -/
 theorem example_10_9 {y g : ℝ → ℂ} {a s : ℂ} (hy : ContDiff ℝ 1 y)
     (hode : ∀ t, deriv y t + a * y t = g t)
     (hint : IntegrableOn (fun t : ℝ => Complex.exp (-(s * t)) • y t) (Ioi 0))
@@ -729,7 +799,10 @@ satisfies $y'(t) = 1 - a y(t)$ for every $t \in \mathbb{R}$, and $y(0) = y_0$.
 
 So $y$ solves $y' + ay = g$ for the unit-step forcing $g = 1$. The book obtains $y$ by inverting
 $Y(s) = \frac{1}{a}\bigl(\frac{1}{s} - \frac{1}{s + a}\bigr) + \frac{y_0}{s + a}$. The proof
-differentiates $y$ directly. -/
+differentiates $y$ directly.
+
+**Reading.** Verifies the formula by differentiating it for $a\neq 0$ and evaluating the
+initial value, without using an inverse Laplace operator. -/
 theorem example_10_9_solution {a : ℂ} (ha : a ≠ 0) (y₀ : ℂ) :
     (∀ t : ℝ, HasDerivAt
         (fun t : ℝ => (1 / a) * (1 - Complex.exp (-(a * t))) + y₀ * Complex.exp (-(a * t)))
@@ -754,7 +827,10 @@ $$Z(z) = \sum_{n=0}^{\infty} f(n\Delta t) z^{-n}, \qquad z \in \mathbb{C}.$$
 
 The sum is Mathlib's `tsum`, which is $0$ when the series does not converge absolutely. The
 definition is the backbone's `zTransform` by
-`QuarteroniSaccoSaleri.Chapter10.definition_10_3_eq_zTransform`. -/
+`QuarteroniSaccoSaleri.Chapter10.definition_10_3_eq_zTransform`.
+
+**Generalization.** The sample step is any real number. The series is total, and the root-test
+bound uses an extended nonnegative radius. -/
 noncomputable def definition_10_3 (f : ℝ → ℂ) (Δt : ℝ) (z : ℂ) : ℂ :=
   ∑' n : ℕ, f (n * Δt) * z⁻¹ ^ n
 
@@ -771,7 +847,10 @@ then the series $\sum_{n \ge 0} f(n\Delta t) z^{-n}$ converges absolutely.
 **Reading.** The radius $R$ is read in $[0, \infty]$. In Lean the upper limit is taken in
 `ENNReal`, through the extended norm `‖·‖ₑ`.
 
-The proof is the Cauchy–Hadamard root test `summable_zTransform`. -/
+The proof is the Cauchy–Hadamard root test `summable_zTransform`.
+
+**Generalization.** The sample step is any real number. The series is total, and the root-test
+bound uses an extended nonnegative radius. -/
 theorem definition_10_3_summable {f : ℝ → ℂ} {Δt : ℝ} {z : ℂ}
     (hz : Filter.limsup (fun n : ℕ => ‖f (n * Δt)‖ₑ ^ (1 / (n : ℝ))) atTop < ‖z‖ₑ) :
     Summable fun n : ℕ => f (n * Δt) * z⁻¹ ^ n :=
@@ -790,7 +869,10 @@ $$L(s) = \frac{1 - e^{-s\Delta t}}{s} \, Z(e^{s\Delta t}).$$
 **Typo.** The book prints the substitution as $z = e^{-s\Delta t}$.
 
 The proof specializes `LaplaceTransform.laplaceTransform_stepFun` and
-`zTransform_eq_discreteLaplace`. -/
+`zTransform_eq_discreteLaplace`.
+
+**Reading.** Assumes absolute summability of the weighted samples and $\operatorname{Re}s>0$ to
+identify the transform of the piecewise constant function. -/
 theorem definition_10_3_eq_discreteLaplace {f : ℝ → ℂ} {Δt : ℝ} (hΔt : 0 < Δt) {s : ℂ}
     (hs : 0 < s.re) (hsum : Summable fun n : ℕ => ‖f (n * Δt)‖ * Real.exp (-(n * s.re * Δt))) :
     definition_10_3 f Δt (Complex.exp (s * Δt))

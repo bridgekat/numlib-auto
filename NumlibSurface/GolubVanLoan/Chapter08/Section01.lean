@@ -128,6 +128,19 @@ true and is proved through the polar factor of $X_1$. The proofs do not use Prob
 
 ## Deviations from the source
 
+* **§8.1.1, the Rayleigh quotient and Theorem 8.1.2** (reading).
+  `GolubVanLoan.Chapter08.rayleighQuotient` has a total value at the zero vector, and
+  `GolubVanLoan.Chapter08.theorem_8_1_2_minmax` gives the dual of the source’s max–min
+  statement.
+* **Equation (8.1.2) and Problem P8.1.9** (correction). `GolubVanLoan.Chapter08.sepSymm_eq_sep`
+  compares spectral separation to the Sylvester-operator minimum on the Frobenius unit sphere.
+  The printed unconstrained minimum includes $X=0$.
+* **Theorems 8.1.13–8.1.14** (reading). `GolubVanLoan.Chapter08.theorem_8_1_13_weak` bounds one
+  projected eigenvalue with factor one. `GolubVanLoan.Chapter08.theorem_8_1_14` gives the
+  Frobenius residual minimum for arbitrary real $A$.
+* **Equations (8.1.5)–(8.1.7)** (correction). The intermediate norms use $Q-X_1$ and
+  $X_1^TX_1-I_r$. `GolubVanLoan.Chapter08.equation_8_1_7` uses the full singular-value deviation
+  from one, correcting the printed equality with the smallest singular value alone.
 * **Theorem 8.1.3** (generalization). The source assumes that $A$ is symmetric. The inclusion holds
   for the real eigenvalues of every real $A$. See `GolubVanLoan.Chapter08.theorem_8_1_3`.
 * **Theorem 8.1.7** (generalization). The source assumes that $A$ is symmetric. Only the leading
@@ -239,7 +252,10 @@ $A \in \mathbb{R}^{n \times n}$ and $x \in \mathbb{R}^n$, the **Rayleigh quotien
 $$r(x) = \frac{x^T A x}{x^T x}.$$
 
 The same quotient is (8.2.6). At $x = 0$ the value is $0$, because division by zero gives $0$ in
-Lean. -/
+Lean.
+
+**Reading.** The source uses the quotient for nonzero vectors. The Lean definition is total,
+with value zero at the zero vector. -/
 noncomputable def rayleighQuotient (A : Matrix (Fin n) (Fin n) ℝ) (x : Fin n → ℝ) : ℝ :=
   (x ⬝ᵥ A *ᵥ x) / (x ⬝ᵥ x)
 
@@ -350,7 +366,10 @@ $$\lambda_k(A) = \min_{\dim(S) = n - k + 1} \; \max_{0 \neq y \in S} r(y),$$
 where $S$ ranges over the subspaces of $\mathbb{R}^n$, $r$ is the Rayleigh quotient, and the
 minimum and every maximum are attained.
 
-The index `k : Fin n` is 0-based, so the subspaces have dimension `n - k`. -/
+The index `k : Fin n` is 0-based, so the subspaces have dimension `n - k`.
+
+**Reading.** The source states the maximum of subspace minima. This declaration states the dual
+minimum of subspace maxima. -/
 theorem theorem_8_1_2_minmax {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : Fin n) :
     IsLeast {c | ∃ S : Submodule ℝ (Fin n → ℝ), Module.finrank ℝ S = n - k ∧
       IsGreatest (rayleighQuotient A '' {y | y ∈ S ∧ y ≠ 0}) c} (symmEigenvalue hA k) := by
@@ -657,7 +676,10 @@ $$\operatorname{sep}(B, C) = \min_{\lambda \in \lambda(B), \, \mu \in \lambda(C)
 
 The definition is the infimum over the real eigenvalues of $B$ and $C$, for any real square
 matrices. If $B$ or $C$ has no real eigenvalue, for example when $p = 0$ or $q = 0$, the value
-is $0$. -/
+is $0$.
+
+**Reading.** The source defines a minimum of distances between two nonempty spectra. Lean uses
+a real infimum, with a total value when either spectrum is empty. -/
 noncomputable def sepSymm {p q : ℕ} (B : Matrix (Fin p) (Fin p) ℝ)
     (C : Matrix (Fin q) (Fin q) ℝ) : ℝ :=
   sInf {d | ∃ l ∈ spectrum ℝ B, ∃ m ∈ spectrum ℝ C, d = |l - m|}
@@ -668,7 +690,11 @@ $p, q \ge 1$. Then the separation (7.2.5) of the Sylvester operator,
 $$\min_{X \neq 0} \frac{\|BX - XC\|_F}{\|X\|_F},$$
 equals the eigenvalue gap $\operatorname{sep}(B, C)$ of (8.1.2).
 
-The left side is the backbone's `Matrix.sep`. -/
+The left side is the backbone's `Matrix.sep`.
+
+**Correction.** Problem P8.1.9 prints an unconstrained minimum over $X$, which is always zero
+by taking $X=0$. The backbone separation `Matrix.sep` represents the minimum over $X$ of unit
+Frobenius norm. -/
 theorem sepSymm_eq_sep {p q : ℕ} {B : Matrix (Fin p) (Fin p) ℝ} {C : Matrix (Fin q) (Fin q) ℝ}
     (hB : B.IsSymm) (hC : C.IsSymm) (hp : 0 < p) (hq : 0 < q) : sep B C = sepSymm B C := by
   have : Nonempty (Fin p) := ⟨⟨0, hp⟩⟩
@@ -1108,7 +1134,11 @@ $$|\mu - \theta| \le \|A Q_1 - Q_1 S\|_2.$$
 
 The constant is $1$ instead of $\sqrt{2}$, but distinct eigenvalues $\theta$ need not get
 distinct $\mu$, unlike `GolubVanLoan.Chapter08.theorem_8_1_13`. This form is not a corollary of
-the paired form. -/
+the paired form.
+
+**Reading.** The source pairs eigenvalues with a factor $\sqrt{2}$. This version gives a
+factor-one bound for a single projected eigenvalue, without requiring the choices for different
+projected eigenvalues to be distinct. -/
 theorem theorem_8_1_13_weak {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {r : ℕ}
     {S : Matrix (Fin r) (Fin r) ℝ} (hS : S.IsSymm) {Q₁ : Matrix (Fin n) (Fin r) ℝ}
     (hQ : Q₁ᵀ * Q₁ = 1) {θ : ℝ} (hθ : θ ∈ spectrum ℝ S) :
@@ -1127,7 +1157,11 @@ and the minimum is attained at $S = Q_1^T A Q_1$.
 
 The statement says that the right side is the least element (`IsLeast`) of the set of values of
 $\|A Q_1 - Q_1 S\|_F$. It is the value at $S = Q_1^T A Q_1$, since $(I - Q_1 Q_1^T) A Q_1 = A
-Q_1 - Q_1 (Q_1^T A Q_1)$. The matrix $A$ need not be symmetric. -/
+Q_1 - Q_1 (Q_1^T A Q_1)$. The matrix $A$ need not be symmetric.
+
+**Generalization.** The Frobenius minimum is stated for arbitrary real $A$. The source assumes
+symmetry and identifies the attaining coefficient matrix explicitly; in Lean the stated minimum
+value is attained at $Q_1^TAQ_1$ by the proof. -/
 theorem theorem_8_1_14 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} {Q₁ : Matrix (Fin n) (Fin r) ℝ}
     (hQ : Q₁ᵀ * Q₁ = 1) :
     IsLeast (Set.range fun S : Matrix (Fin r) (Fin r) ℝ => ‖A * Q₁ - Q₁ * S‖)
@@ -1195,7 +1229,11 @@ $Z \in \mathbb{R}^{r \times r}$ be orthogonal with $Z^T (Q_1^T A Q_1) Z =
   some $w \neq 0$ with $(Q_1^T A Q_1) w = \mu w$.
 
 A Ritz pair is `Krylov.IsRitzPair` for the operator `Matrix.toEuclideanLin A` and the subspace
-`LinearMap.range (Matrix.toEuclideanLin Q₁)`. -/
+`LinearMap.range (Matrix.toEuclideanLin Q₁)`.
+
+**Reading.** The source names the pairs arising from the projected diagonalization. Lean
+identifies those pairs with the Galerkin condition and proves the converse correspondence to
+projected eigenvectors. -/
 theorem ritzPair_isRitzPair (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ}
     {Q₁ : Matrix (Fin n) (Fin r) ℝ} (hQ : Q₁ᵀ * Q₁ = 1) {Z : Matrix (Fin r) (Fin r) ℝ}
     (hZ : Z ∈ orthogonalGroup (Fin r) ℝ) {θ : Fin r → ℝ}
@@ -1256,7 +1294,10 @@ $E_1 = A Q - Q S$ satisfies
 $$\|E_1\|_2 \le \|F_1\|_2 + \|Q - X_1\|_2 \, \|A\|_2 \, (1 + \|X_1\|_2^2).$$
 
 **Generalization.** The source takes $Q$ with orthonormal columns. The bound holds for every
-$Q$. -/
+$Q$.
+
+**Typo.** The source writes $\|Q-X\|_2$ where the difference in the preceding identity is
+$Q-X_1$. -/
 theorem equation_8_1_5 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (X₁ Q : Matrix (Fin n) (Fin r) ℝ) :
     lpOpNorm 2 (A * Q - Q * (X₁ᵀ * A * X₁)) ≤ lpOpNorm 2 (A * X₁ - X₁ * (X₁ᵀ * A * X₁)) +
       lpOpNorm 2 (Q - X₁) * lpOpNorm 2 A * (1 + lpOpNorm 2 X₁ ^ 2) := by
@@ -1280,7 +1321,10 @@ theorem equation_8_1_5 (A : Matrix (Fin n) (Fin n) ℝ) {r : ℕ} (X₁ Q : Matr
     _ = _ := by ring
 
 /-- **Equation (8.1.6)** of [golub2013matrix]. Let $X_1 \in \mathbb{R}^{n \times r}$ with
-$\|X_1^T X_1 - I_r\|_2 = \tau$. Then $\|X_1\|_2^2 \le 1 + \tau$. -/
+$\|X_1^T X_1 - I_r\|_2 = \tau$. Then $\|X_1\|_2^2 \le 1 + \tau$.
+
+**Typo.** In the source’s intermediate norm the left factor is printed $X^T$. The matrix in the
+orthogonality defect is $X_1^TX_1$. -/
 theorem equation_8_1_6 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
     (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) : lpOpNorm 2 X₁ ^ 2 ≤ 1 + τ := by
   have h1 : lpOpNorm 2 (1 : Matrix (Fin r) (Fin r) ℝ) ≤ 1 := by
@@ -1313,9 +1357,11 @@ $Q \in \mathbb{R}^{n \times r}$ with $Q^T Q = I_r$ and
 $$\|Q - X_1\|_2 \le \tau.$$
 
 The matrix $Q$ is the $Q = U V^T$ of the source, from the thin SVD $U^T X_1 V = \Sigma$, that
-is, the polar factor of $X_1$ (`Matrix.exists_orthonormal_cols_norm_sub_le`). The intermediate
-claim $1 - \sigma_r^2 = \tau$ of the source is not needed. It holds only when $\sigma_r$ is the
-singular value farthest from $1$. -/
+is, the polar factor of $X_1$ (`Matrix.exists_orthonormal_cols_norm_sub_le`).
+
+**Correction.** The source equates $\tau$ with $1-\sigma_r^2$ and $\|Q-X_1\|_2$ with
+$1-\sigma_r$. A singular value above one can instead determine either norm. The bound uses
+$|1-\sigma_i| \le |1-\sigma_i^2|$ for every singular value. -/
 theorem equation_8_1_7 {r : ℕ} (X₁ : Matrix (Fin n) (Fin r) ℝ) {τ : ℝ}
     (hτ : lpOpNorm 2 (X₁ᵀ * X₁ - 1) = τ) (hτ1 : τ < 1) :
     ∃ Q : Matrix (Fin n) (Fin r) ℝ, Qᵀ * Q = 1 ∧ lpOpNorm 2 (Q - X₁) ≤ τ := by

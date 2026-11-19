@@ -57,6 +57,12 @@ determine a tridiagonal matrix.
 
 ## Deviations from the source
 
+* **(14.46)** (totalization). `SaadSparse.Chapter14.inducedPreconditioner` uses total inverses
+  for the full preconditioner and the inverse principal block. Proposition 14.10 makes the
+  diagonal-block invertibility conditions explicit.
+* **§14.4.2, probing** (scope). `SaadSparse.Chapter14.probeVec` defines the three residue-class
+  probes with 0-based indexing and returns zero for other residue numbers.
+  `SaadSparse.Chapter14.probing_eq` gives uniqueness for an exactly tridiagonal matrix.
 * **Proposition 14.10** (generalization). The book assumes an ILU factorization;
   `SaadSparse.Chapter14.proposition_14_10` assumes only block triangular factors. See
   `SaadSparse.Chapter14.proposition_14_10_of_isILU` for the form of the book.
@@ -108,7 +114,13 @@ the Schur complement is
 $$M_S = (R_y M_A^{-1} R_y^T)^{-1}.$$
 
 To apply $M_S^{-1}$ to $v$ means to solve $M_A (x, y)^T = (0, v)^T$ and to keep $y$, which is
-(14.45). The inverses are Mathlib's `Matrix.inv`, which is $0$ at a singular matrix. -/
+(14.45). The inverses are Mathlib's `Matrix.inv`, which is $0$ at a singular matrix.
+
+**Totalization.** Both matrix inverses are total. The source's preconditioning operation
+presupposes invertibility of the full operator and its inverse principal block.
+
+**Reading.** Double inverse formula with total inverse on every matrix.
+-/
 noncomputable def inducedPreconditioner (MA : Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin q) ℝ) :
     Matrix (Fin q) (Fin q) ℝ :=
   (interfaceRestrictMatrix p q * MA⁻¹ * interfaceProlongMatrix p q)⁻¹
@@ -198,7 +210,10 @@ $$M_S = L_S U_S, \qquad L_S = R_y L_A R_y^T, \quad U_S = R_y U_A R_y^T.$$
 
 This is the form in which the book states the proposition. The incomplete factorization is
 `Matrix.IsILU` for the matrices read in the order `Fin p ⊕ₗ Fin q`. Its factors are block
-triangular, so the proof reduces to `SaadSparse.Chapter14.proposition_14_10`. -/
+triangular, so the proof reduces to `SaadSparse.Chapter14.proposition_14_10`.
+
+**Reading.** Formal ILU predicate and explicit invertible diagonal blocks.
+-/
 theorem proposition_14_10_of_isILU {P : Set ((Fin p ⊕ₗ Fin q) × (Fin p ⊕ₗ Fin q))}
     {A LA UA : Matrix (Fin p ⊕ Fin q) (Fin p ⊕ Fin q) ℝ}
     (h : Matrix.IsILU P (A : Matrix (Fin p ⊕ₗ Fin q) (Fin p ⊕ₗ Fin q) ℝ) LA UA)
@@ -225,7 +240,10 @@ $$w_1 = (1, 0, 0, 1, 0, 0, \dots)^T, \quad w_2 = (0, 1, 0, 0, 1, 0, \dots)^T, \q
   1, 0, 0, 1, \dots)^T.$$
 
 The book's $w_{r+1}$ is `SaadSparse.Chapter14.probeVec m r`: its entry $i$ (counted from $0$) is
-$1$ if $i \equiv r \pmod 3$ and $0$ otherwise. For $r \ge 3$ the vector is $0$. -/
+$1$ if $i \equiv r \pmod 3$ and $0$ otherwise. For $r \ge 3$ the vector is $0$.
+
+**Generalization.** The three probes correspond to residues $0,1,2$. The definition also
+accepts larger residue numbers and returns the zero vector for them. -/
 def probeVec (m : ℕ) (r : ℕ) : Fin m → ℝ := fun i => if (i : ℕ) % 3 = r then 1 else 0
 
 /-- A tridiagonal matrix $T$ has $T_{ij} = 0$ whenever $i + 1 < j$ or $j + 1 < i$. -/

@@ -88,15 +88,28 @@ The proofs specialize `Numlib.LinearAlgebra.Sparse.Pattern`,
 
 ## Deviations from the source
 
+* **Proposition 3.2** (reading). The permutation identities use an arbitrary permutation
+  matrix directly. The ordered products of interchange matrices are factored out.
+  See `SaadSparse.Chapter03.proposition_3_2`.
+* **§3.3.2, graph relabelling** (generalization). The graph isomorphism is also stated
+  for the loopless symmetrized graph, with invariance of colourability and connectivity.
+  See `SaadSparse.Chapter03.adjGraph_submatrix`.
 * **Example 3.3, the arrow matrix** (reading). Figure 3.4 prints a pattern and no values, so the
   pattern is the hypothesis and every clause holds for every matrix with it. The fill claims are
-  stated for one elimination step and for an exhibited $LU$ factorization. See
+  stated for one elimination step and for an exhibited $LU$ factorization with support
+  containment, allowing cancellation in an originally nonzero position. See
   `SaadSparse.Chapter03.example_3_3`.
 * **§3.3.3, level-set orderings** (generalization). The source leaves the connectedness of the graph
   implicit. The statements hold without it. See `SaadSparse.Chapter03.levelSet_blockTridiagonal`.
 * **§3.3.3, the size of an independent set** (generalization). The source states the bound for the
   set that Algorithm 3.4 produces. It holds for every maximal independent set. See
   `SaadSparse.Chapter03.indepSet_card_ge`.
+* **Equation (3.3)** (generalization). The block zero entries follow from any independent
+  set and any reindexing of it. See `SaadSparse.Chapter03.equation_3_3`.
+* **§3.3.3, colour classes and degree bound** (reading). The blocks use the symmetrized
+  graph. The colour bound uses off-diagonal row counts under a symmetric pattern.
+  See `SaadSparse.Chapter03.multicoloring_blocks`,
+  `SaadSparse.Chapter03.exists_multicoloring` and `SaadSparse.Chapter03.greedy_coloring_bounds`.
 * **Algorithm 3.6 and Problem P-3.11** (reading). The traversal of the greedy colouring is the order
   of the index set, so it is the identity ordering of a matrix that is already reordered. See
   `SaadSparse.Chapter03.greedy_coloring_bounds`.
@@ -138,6 +151,10 @@ $$A_{\pi,\ast} = P_\pi A, \qquad A_{\ast,\pi} = A P_\pi^T, \qquad P_\pi^T P_\pi 
 and the symmetric permutation satisfies $A_{\pi,\pi} = P_\pi A P_\pi^T$, so it is a similarity
 transformation of $A$.
 
+**Reading.** Proposition 3.2 describes $P_\pi$ and $Q_\pi$ as products of interchange
+matrices. This theorem gives the identities with the permutation matrix of $\pi$ directly,
+on square matrices and with $Q_\pi=P_\pi^T$.
+
 The row permutation $A_{\pi,\ast}$ is `A.submatrix π id`.
 The column permutation $A_{\ast,\pi}$ is `A.submatrix id π`.
 The symmetric permutation $A_{\pi,\pi}$ is `A.submatrix π π`.
@@ -171,7 +188,11 @@ if that of $A$ is, and $A_{\sigma,\sigma}$ is irreducible if and only if $A$ is.
 This is why every reordering of the source is a symmetric permutation $A_{\sigma,\sigma}$, which
 is `A.submatrix σ σ`. The directed graph is `Matrix.adjDigraph` and the symmetrized graph is
 `Matrix.adjGraph`. Connectivity is `SimpleGraph.Preconnected`. As a graph isomorphism, the
-relabelling is `Matrix.adjGraphIso`. -/
+relabelling is `Matrix.adjGraphIso`.
+
+**Generalization.** The source states edge relabelling for the adjacency graph. The
+theorem includes the symmetrized simple graph and the invariance of colourability,
+preconnectedness and directed irreducibility. -/
 theorem adjGraph_submatrix (A : Matrix (Fin n) (Fin n) ℝ) (σ : Equiv.Perm (Fin n)) :
     (∀ i j, (A.submatrix σ σ).adjDigraph.Adj i j ↔ A.adjDigraph.Adj (σ i) (σ j)) ∧
       (∀ i j, (A.submatrix σ σ).adjGraph.Adj i j ↔ A.adjGraph.Adj (σ i) (σ j)) ∧
@@ -217,14 +238,14 @@ permutation $9, 8, \dots, 1$, and let $B = A_{\sigma,\sigma}$. Then the followin
 Because the graph is a star, the source prefers the name "star matrix". The fill-ins of the
 third clause are the "disastrous fill-ins" of the source. They need no assumption on the values:
 the entry produced is $-a_{i1} a_{1j} / a_{11}$, a quotient of products of nonzero numbers. The
-fourth clause is the statement of the source that the $L$ and $U$ parts of the $LU$
-factorization of $B$ have the same structure as the lower and upper parts of $B$.
+fourth clause is the no-fill property of the reordered matrix.
 
 **Reading.** The source prints a pattern and no values. Here the pattern is the hypothesis, and
 every clause holds for every matrix with this pattern. The fill claims are stated for one
-elimination step and for an exhibited factorization, which is as far as §3.3 can state them. The
-characterization of the fill of complete Gaussian elimination is
-`SaadSparse.Chapter10.theorem_10_6`, and this example is its smallest instance.
+elimination step and for an exhibited factorization. The source describes the factors as
+having the same structure as the matrix. The theorem states support containment.
+For example, if the reordered arrow has unit nonzero entries except for $b_{99}=8$,
+the last pivot in the exhibited $U$ vanishes by cancellation.
 
 Indices are $0$-based: index $1$ of the source is `0` and index $9$ is `8`. The permutation
 $\sigma$ is `Fin.revPerm`, which maps `i` to `8 - i`, and $B$ is
@@ -362,9 +383,9 @@ Cuthill–McKee (Algorithms 3.2 and 3.3), makes $A_{\sigma,\sigma}$ block tridia
 level sets as its blocks. The separator form of the last clause is the one that §3.6.2 uses for
 nested dissection.
 
-**Generalization.** The source leaves the connectedness of the graph implicit, because the
-traversal does not reach every index without it. The statements do not need it, since an index
-unreachable from $v$ has distance zero on both sides of each comparison.
+**Generalization.** The source's single-root traversal presumes a connected graph. For
+an edge in a component away from the root both distances are set to zero. The separator
+statement compares only vertices reachable from the root.
 
 The distance is `SimpleGraph.dist` in `Matrix.adjGraph`, and the level set of distance $k$ is
 `SimpleGraph.sphere`, which contains only indices reachable from $v$. The clauses are
@@ -415,7 +436,10 @@ $A_{\sigma,\sigma}$ is zero whenever $i \neq j$ and $\sigma(i), \sigma(j) \in S$
 So if a reordering puts the indices of $S$ first, the leading diagonal block of the reordered
 matrix is diagonal, and $A_{\sigma,\sigma}$ has the form (3.3),
 $\begin{bmatrix} D & E \\ F & C \end{bmatrix}$ with $D$ diagonal. The proof is
-`Matrix.apply_eq_zero_of_isIndepSet`. -/
+`Matrix.apply_eq_zero_of_isIndepSet`.
+
+**Generalization.** The source places a maximal independent set first. The zero-entry
+statements hold for every independent set, wherever its indices occur after permutation. -/
 theorem equation_3_3 (A : Matrix (Fin n) (Fin n) ℝ) {s : Set (Fin n)}
     (hs : A.adjGraph.IsIndepSet s) (σ : Equiv.Perm (Fin n)) :
     (∀ i j, i ∈ s → j ∈ s → i ≠ j → A i j = 0) ∧
@@ -432,10 +456,9 @@ permutation $\sigma$, the entry $(i, j)$ of $A_{\sigma,\sigma}$ is zero whenever
 $c(\sigma(i)) = c(\sigma(j))$. So an ordering that groups the indices by colour makes every
 diagonal block of $A_{\sigma,\sigma}$ a diagonal matrix.
 
-No hypothesis on the pattern is needed, because `Matrix.adjGraph` is already the symmetrized
-graph. The proof is `Matrix.apply_eq_zero_of_coloring_eq`. With two colours this is Property A
-(Definition 4.11) and the block form (4.42) of the source. The relation with
-`SaadSparse.Chapter04.HasPropertyA` belongs in Chapter 4, which imports this module. -/
+**Reading.** The source groups the matrix indices by colour. A proper colouring of the
+loopless symmetrized graph ensures zero entries between any two distinct vertices of
+the same colour, in either direction and under any permutation. -/
 theorem multicoloring_blocks {α : Type*} (A : Matrix (Fin n) (Fin n) ℝ)
     (c : A.adjGraph.Coloring α) (σ : Equiv.Perm (Fin n)) :
     (∀ i j, i ≠ j → c i = c j → A i j = 0) ∧
@@ -449,12 +472,9 @@ $a_{ji} \neq 0$, and let each row of $A$ have at most $\nu$ nonzero off-diagonal
 there is a colouring $c$ of the indices with $\nu + 1$ colours such that $a_{ij} = 0$ for all
 distinct $i, j$ with $c(i) = c(j)$. So $A$ has a multicolour ordering with $\nu + 1$ colours.
 
-A symmetric pattern is needed here and nowhere else in §3.3.3: the degree of index $i$ in the
-symmetrized graph is the count of nonzeros in row $i$ only when a nonzero $a_{ji}$ forces a
-nonzero $a_{ij}$. The count excludes the diagonal, because the adjacency graph of the source has
-a self-loop at every nonzero diagonal entry and the reorderings act on the loopless graph. The
-colours are `Fin (ν + 1)`, and the proof is `Matrix.exists_coloring_of_le_maxDegree`, the greedy
-bound applied to the adjacency graph. -/
+**Reading.** The source bounds the number of colours by one plus the graph's maximum
+degree. The symmetric-pattern hypothesis turns the off-diagonal row counts in the
+theorem into the degrees of the loopless adjacency graph. -/
 theorem exists_multicoloring (A : Matrix (Fin n) (Fin n) ℝ) {ν : ℕ}
     (hsymm : ∀ i j, A i j ≠ 0 → A j i ≠ 0)
     (hrow : ∀ i, #{j ∈ univ | j ≠ i ∧ A i j ≠ 0} ≤ ν) :
@@ -476,8 +496,9 @@ $\{0, 1, 2, \dots\}$ that no earlier neighbour has. Then the following hold.
 Breadth-first search gives an order with the property of the second clause, and an arbitrary
 traversal does not (Problem P-3.11(a)).
 
-**Reading.** The traversal of Algorithm 3.6 is the order of the index set `Fin n`, so it is the
-identity ordering of a matrix that is already reordered.
+**Reading.** The traversal is the order of the index set `Fin n`, so an intended
+permutation is applied to the matrix first. The bound uses off-diagonal row counts under a
+symmetric pattern, corresponding to the degree of the loopless graph in the source.
 
 The greedy colouring is `SimpleGraph.greedyColoring` of `Matrix.adjGraph`, and the clauses are
 `SimpleGraph.greedyColoring_le_maxDegree` and

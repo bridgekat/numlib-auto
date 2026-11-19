@@ -121,11 +121,22 @@ classes coincide. The proofs specialize `Numlib.Analysis.Convex.Subdifferential.
   `Rockafellar.theorem_24_1_finite_iff`.
 * **Remark after Theorem 24.1** (generalization). The formula for $\partial f(x)$ needs only
   properness of $f$. See `Rockafellar.theorem_24_1_subdifferential`.
+* **Theorem 24.5** (generalization). The sequence approaching $x \in C$ may start outside
+  $C$, since it is eventually in the open set. See `Rockafellar.theorem_24_5_limsup` and
+  `Rockafellar.theorem_24_5_subdifferential`.
 * **Theorem 24.6** (generalization). Closedness of $f$ is not assumed. See
   `Rockafellar.theorem_24_6_lt`.
+* **Section 24, subdifferential supporting sets** (generalization). The set
+  $\partial f(x)_y$ and its maximizer description are defined for arbitrary $f,x,y$.
+  See `Rockafellar.subdifferentialNormal` and `Rockafellar.subdifferentialNormal_eq_sep`.
 * **Theorem 24.7** (reading). The Lipschitz constant is some bound $\alpha$ on the subgradients over
   $S$, not necessarily $\sup\{|x^*| \mid x^* \in \partial f(S)\}$. See
   `Rockafellar.theorem_24_7_bound`.
+* **Theorem 24.7** (generalization). The bounds need no closedness of $f$. Nonemptiness of
+  $\partial f(S)$ also needs no compactness of $S$, and the compactness conclusion allows
+  empty $S$.
+* **Section 24, monotonicity of the subdifferential** (generalization). Properness suffices
+  without convexity. See `Rockafellar.isMonotoneRel_subgradientRel_rn`.
 
 ## Not formalized
 
@@ -503,7 +514,10 @@ every $i \ge i_0$.
 
 This is the inequality $\limsup_i f_i'(x_i; y_i) \le f'(x; y)$, with the limit superior replaced
 by its defining property; `Rockafellar.theorem_24_5_limsup` is the inequality itself. In the
-Lean statement the sequence is `f` and the limit is `g`. -/
+Lean statement the sequence is `f` and the limit is `g`.
+
+**Generalization.** The book places every $x_i$ in $C$. Convergence to $x$ in the open set
+$C$ already gives eventual membership, which suffices for the bound. -/
 theorem theorem_24_5_lt (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hfin : ∀ i, ∀ z ∈ C, f i z ≠ ⊥ ∧ f i z ≠ ⊤) (hg : ConvexFn g)
     (hgfin : ∀ z ∈ C, g z ≠ ⊥ ∧ g z ≠ ⊤)
@@ -524,7 +538,10 @@ $$\limsup_{i \to \infty} f_i'(x_i; y_i) \le f'(x; y).$$
 
 Equality can fail: $f_i(x) = |x|^{p_i}$ with $p_i \downarrow 1$ converges pointwise to $|x|$ on
 $\mathbb{R}$, with $f_i'(0; 1) = 0$ for every $i$ and $f'(0; 1) = 1$. In the Lean statement the
-sequence is `f` and the limit is `g`. -/
+sequence is `f` and the limit is `g`.
+
+**Generalization.** The book assumes $x_i \in C$ for every $i$. Eventual membership follows
+from $x_i \to x \in C$ and openness. -/
 theorem theorem_24_5_limsup (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hfin : ∀ i, ∀ z ∈ C, f i z ≠ ⊥ ∧ f i z ≠ ⊤) (hg : ConvexFn g)
     (hgfin : ∀ z ∈ C, g z ≠ ⊥ ∧ g z ≠ ⊤)
@@ -542,7 +559,10 @@ theorem theorem_24_5_limsup (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, Co
 and $x_i \to x \in C$ be as in the first assertion. Then for every $\varepsilon > 0$ there is an
 index $i_0$ with
 $$\partial f_i(x_i) \subseteq \partial f(x) + \varepsilon B \quad \text{for every } i \ge i_0,$$
-where $B$ is the closed Euclidean unit ball. -/
+where $B$ is the closed Euclidean unit ball.
+
+**Generalization.** The $x_i$ need only be eventually in $C$, which follows from convergence
+and openness. -/
 theorem theorem_24_5_subdifferential (hC : IsOpen C) (hCc : Convex ℝ C) (hf : ∀ i, ConvexFn (f i))
     (hfin : ∀ i, ∀ z ∈ C, f i z ≠ ⊥ ∧ f i z ≠ ⊤) (hg : ConvexFn g)
     (hgfin : ∀ z ∈ C, g z ≠ ⊥ ∧ g z ≠ ⊤)
@@ -595,14 +615,20 @@ $\mathbb{R}^n$ and $x, y \in \mathbb{R}^n$, $\partial f(x)_y$ is the set of
 $x^* \in \partial f(x)$ such that $y$ is normal to $\partial f(x)$ at $x^*$.
 
 Equivalently, it is the face of $\partial f(x)$ exposed by $y$; see
-`Rockafellar.subdifferentialNormal_eq_sep`. -/
+`Rockafellar.subdifferentialNormal_eq_sep`.
+
+**Generalization.** The book uses this set with the hypotheses of Theorem 24.6. The Lean
+definition admits any function and any point and direction. -/
 def subdifferentialNormal (f : Rn n → EReal) (x y : Rn n) : Set (Rn n) :=
   {v ∈ subdifferential (pairing n) f x |
     y ∈ normalCone (pairing n) (subdifferential (pairing n) f x) v}
 
 /-- For a function $f$ on $\mathbb{R}^n$ and $x, y \in \mathbb{R}^n$, the set $\partial f(x)_y$
 consists of the points $x^* \in \partial f(x)$ at which $\langle y, \cdot \rangle$ attains its
-maximum over $\partial f(x)$. -/
+maximum over $\partial f(x)$.
+
+**Generalization.** The maximizer description also holds without the hypotheses of
+Theorem 24.6. -/
 theorem subdifferentialNormal_eq_sep (f : Rn n → EReal) (x y : Rn n) :
     subdifferentialNormal f x y
       = {v ∈ subdifferential (pairing n) f x |
@@ -691,8 +717,11 @@ Then there is a real number $\alpha \ge 0$ such that
 (iii) $|f(y) - f(x)| \le \alpha |y - x|$ for all $x, y \in S$.
 
 **Reading.** The source takes $\alpha = \sup\{|x^*| \mid x^* \in \partial f(S)\}$. The statement
-here asserts only the existence of some such $\alpha$, which follows from the reading of the
-source but is weaker.
+here asserts existence of a common bound $\alpha$ for subgradients, derivatives and
+Lipschitz continuity.
+
+**Generalization.** For these bounds the book assumes $f$ closed and $S$ nonempty. The Lean
+result allows nonclosed $f$ and empty compact $S$.
 
 The Lipschitz condition is `LipschitzOnWith` for the real-valued function
 `fun x => (f x).toReal` on $S$. -/
@@ -716,7 +745,8 @@ $\operatorname{int}(\operatorname{dom} f)$. Then
 $$\partial f(S) = \bigcup \{\partial f(x) \mid x \in S\}$$
 is nonempty.
 
-This is Theorem 23.4 at any point of $S$. -/
+**Generalization.** The book assumes $f$ closed and $S$ compact. Neither is necessary for
+nonemptiness, which follows from Theorem 23.4 at any point of $S$. -/
 theorem theorem_24_7_nonempty (hf : ConvexFn f) (hp : ProperConvex f) (hne : S.Nonempty)
     (hSD : S ⊆ interior (convexDom f)) : ((subgradientRel (pairing n) f).image S).Nonempty :=
   image_subgradientRel_nonempty hf hp hne hSD
@@ -725,21 +755,25 @@ theorem theorem_24_7_nonempty (hf : ConvexFn f) (hp : ProperConvex f) (hne : S.N
 function on $\mathbb{R}^n$, and let $S$ be a compact subset of
 $\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(S)$ is compact.
 
-The closedness of $\partial f(S)$ comes from Theorem 24.4. -/
+**Generalization.** The book assumes $S$ nonempty. Compactness also holds for empty $S$. -/
 theorem theorem_24_7_isCompact (hf : ClosedProperConvexFn f) (hS : IsCompact S)
     (hSD : S ⊆ interior (convexDom f)) : IsCompact ((subgradientRel (pairing n) f).image S) :=
   isCompact_image_subgradientRel hf hS hSD
 
 /-- **Theorem 24.7** of [rockafellar1970convex], closedness. Let $f$ be a closed proper convex
 function on $\mathbb{R}^n$, and let $S$ be a compact subset of
-$\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(S)$ is closed. -/
+$\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(S)$ is closed.
+
+**Generalization.** The book assumes $S$ nonempty. The conclusion also covers empty $S$. -/
 theorem theorem_24_7_isClosed (hf : ClosedProperConvexFn f) (hS : IsCompact S)
     (hSD : S ⊆ interior (convexDom f)) : IsClosed ((subgradientRel (pairing n) f).image S) :=
   (theorem_24_7_isCompact hf hS hSD).isClosed
 
 /-- **Theorem 24.7** of [rockafellar1970convex], boundedness. Let $f$ be a closed proper convex
 function on $\mathbb{R}^n$, and let $S$ be a compact subset of
-$\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(S)$ is bounded. -/
+$\operatorname{int}(\operatorname{dom} f)$. Then $\partial f(S)$ is bounded.
+
+**Generalization.** The book assumes $S$ nonempty. The conclusion also covers empty $S$. -/
 theorem theorem_24_7_isBounded (hf : ClosedProperConvexFn f) (hS : IsCompact S)
     (hSD : S ⊆ interior (convexDom f)) :
     Bornology.IsBounded ((subgradientRel (pairing n) f).image S) :=
@@ -825,9 +859,10 @@ theorem theorem_24_9_unique {g : Rn n → EReal} (hf : ClosedProperConvexFn f)
 $\partial f$ is a monotone mapping: $\langle x_1 - x_2, x_1^* - x_2^* \rangle \ge 0$ whenever
 $x_1^* \in \partial f(x_1)$ and $x_2^* \in \partial f(x_2)$.
 
-This is the case $m = 1$ of cyclic monotonicity. It is kept separate from
-`Rockafellar.theorem_24_9`: the maximal monotonicity of $\partial f$, Corollary 31.5.2, does not
-follow from Theorem 24.9 together with the fact that a cyclically monotone mapping is monotone. -/
+This is the case $m = 1$ of cyclic monotonicity.
+
+**Generalization.** The book assumes $f$ proper convex. Properness suffices for the
+two-point subgradient inequality. -/
 theorem isMonotoneRel_subgradientRel_rn (hp : ProperConvex f) :
     IsMonotoneRel (pairing n) (subgradientRel (pairing n) f) :=
   isMonotoneRel_subgradientRel hp

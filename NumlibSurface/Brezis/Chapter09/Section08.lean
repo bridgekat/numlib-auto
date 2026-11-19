@@ -29,8 +29,8 @@ theorem for an arbitrary symmetric coercive form on $H^1_0(\Omega)$ and names th
 * Theorem 9.31, `Brezis.Chapter09.theorem_9_31_weak`: the backbone Dirichlet eigenbasis satisfies
   the weak eigenvalue equation (83).
 * Theorem 9.31, `Brezis.Chapter09.theorem_9_31`: there are a Hilbert basis $(e_n)$ of $L^2(\Omega)$
-  and an increasing sequence $\lambda_n > 0$ with $\lambda_n \to +\infty$ such that
-  $e_n \in H^1_0(\Omega)$ satisfies (83).
+  and a nondecreasing sequence $\lambda_n > 0$ with $\lambda_n \to +\infty$ such that
+  $e_n \in H^1_0(\Omega)$ satisfies the weak form of (83).
 * Theorem 9.31, `Brezis.Chapter09.theorem_9_31_laplacian`: a $C^2$ representative of a weak
   eigenfunction satisfies $-\Delta e = \lambda e$ at every point of $\Omega$.
 * Theorem 9.31, `Brezis.Chapter09.theorem_9_31_smooth`: the complete theorem, with
@@ -78,9 +78,14 @@ theorem for an arbitrary symmetric coercive form on $H^1_0(\Omega)$ and names th
 ## Deviations from the source
 
 * **Standing assumption on $\Omega$** (reading). The source leaves $\Omega \neq \emptyset$ and
-  $N \ge 1$ implicit. All results assume them, because for an empty $\Omega$ or $N = 0$ the space
+  $N \ge 1$ implicit. The spectral basis results assume them, because for an empty $\Omega$ or
+  $N = 0$ the space
   $L^2(\Omega)$ is finite-dimensional and has no Hilbert basis indexed by `ℕ`. See
   `Brezis.Chapter09.theorem_9_31`.
+* **Theorem 9.31, weak equation and ordering** (reading). The Hilbert-space statements are
+  separated from the pointwise equation and smoothness. The eigenvalues are ordered
+  nondecreasingly. See `Brezis.Chapter09.theorem_9_31` and
+  `Brezis.Chapter09.theorem_9_31_smooth`.
 * **Remark 30** (correction). The source omits the symmetry $a_{ij} = a_{ji}$, without which there
   is no orthonormal basis of eigenfunctions. The library assumes it. The eigenvalues $\lambda_n$
   need not be positive. See `Brezis.Chapter09.remark_9_30`.
@@ -119,7 +124,10 @@ This is the clause of Theorem 9.31 that `Brezis.Chapter09.theorem_9_31` and
 `Brezis.Chapter09.theorem_9_31_smooth` share. The element $u_n$ is
 `Elliptic.dirichletEigenfunction`. Here $u_n$ is an element of `Brezis.Chapter09.hSpace` that
 lies in `Brezis.Chapter09.hZeroSpace`, and $\nabla u_n \cdot \nabla \varphi$ is the sum of the
-products of the weak partial derivatives `Brezis.Chapter09.partialDeriv`. -/
+products of the weak partial derivatives `Brezis.Chapter09.partialDeriv`.
+
+**Reading.** This is the weak equation for the library's chosen eigenbasis. The pointwise
+ equation and smoothness are given by `Brezis.Chapter09.theorem_9_31_smooth`. -/
 theorem theorem_9_31_weak (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty)
     (n : ℕ) :
     ∃ u : hSpace (d + 1) Ω, u ∈ hZeroSpace (d + 1) Ω ∧
@@ -156,7 +164,11 @@ The spectral theorem for compact self-adjoint operators (Theorem 6.11) gives the
 $\lambda_n = 1/\mu_n$ for the eigenvalues $\mu_n$ of $T$. The proof in the source says "repeat
 the proof of Theorem 8.21"; the one-dimensional Sturm–Liouville theorem that it refers to is
 Theorem 8.22. The clause "$e_n \in C^\infty(\Omega)$ and $-\Delta e_n = \lambda_n e_n$ pointwise
-in $\Omega$" is `Brezis.Chapter09.theorem_9_31_smooth`. -/
+in $\Omega$" is `Brezis.Chapter09.theorem_9_31_smooth`.
+
+**Reading.** This statement gives the Hilbert-space clauses and orders the eigenvalues
+ nondecreasingly. The smoothness and pointwise equation are included separately in
+ `Brezis.Chapter09.theorem_9_31_smooth`. -/
 theorem theorem_9_31 (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty) :
     ∃ (e : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))) (lam : ℕ → ℝ),
       (∀ n, 0 < lam n) ∧ Monotone lam ∧ Tendsto lam atTop atTop ∧
@@ -186,7 +198,9 @@ The Laplacian $\Delta$ is Mathlib's. The source derives the regularity from Sect
 25): $e_n \in H^2(\omega)$, hence $e_n \in H^4(\omega)$, and so on for every
 $\omega \subset\subset \Omega$, so $e_n \in C^\infty(\Omega)$. This is the backbone theorem
 `Elliptic.dirichletEigenbasis_exists_contDiffOn`, which also gives the pointwise equation
-(`Brezis.Chapter09.theorem_9_31_laplacian` for the $C^\infty$ representative). -/
+(`Brezis.Chapter09.theorem_9_31_laplacian` for the $C^\infty$ representative).
+
+**Reading.** The eigenvalues are additionally ordered nondecreasingly. -/
 theorem theorem_9_31_smooth (hb : Bornology.IsBounded (Ω : Set 𝔼)) (hne : (Ω : Set 𝔼).Nonempty) :
     ∃ (e : HilbertBasis ℕ ℝ (Lp ℝ 2 (volume.restrict (Ω : Set 𝔼)))) (lam : ℕ → ℝ),
       (∀ n, 0 < lam n) ∧ Monotone lam ∧ Tendsto lam atTop atTop ∧
@@ -213,7 +227,10 @@ $\Omega$, then $-\Delta \tilde e(x) = \lambda \tilde e(x)$ at every $x \in \Omeg
 
 The Laplacian $\Delta$ is Mathlib's. The proof specializes the backbone theorem
 `Elliptic.laplacian_eq_of_eigenfunction`: Step D of Section 9.5, Example 1, for the equation
-$-\Delta u + u = (\lambda + 1) u$, and the continuity of both sides on the open set $\Omega$. -/
+$-\Delta u + u = (\lambda + 1) u$, and the continuity of both sides on the open set $\Omega$.
+
+**Generalization.** The passage from the weak equation to the pointwise equation works for
+ any $C^2$ representative, without assuming it comes from the constructed Hilbert basis. -/
 theorem theorem_9_31_laplacian {e : Lp ℝ 2 (volume.restrict (Ω : Set 𝔼))} {lam : ℝ}
     {u : hSpace (d + 1) Ω} (hue : SobolevMultiIndex.fn u =ᵐ[volume.restrict (Ω : Set 𝔼)] e)
     (heq : ∀ φ ∈ hZeroSpace (d + 1) Ω,
@@ -310,7 +327,10 @@ follows easily from Theorem 9.25, applied to $-\Delta e_n + e_n = (\lambda_n + 1
 iterated (`Brezis.Chapter09.theorem_9_25_smooth`). The proof specializes
 `Elliptic.exists_contDiffOn_closure_eigenfunction`. The first clause of the Remark,
 $e_n \in L^\infty(\Omega)$ for a general bounded $\Omega$, is given in the source without proof
-and is not formalized. -/
+and is not formalized.
+
+**Reading.** This is the smooth-domain assertion. The source also gives the general-domain
+ $L^\infty$ assertion. -/
 theorem remark_9_29 (hΩ : IsOfClassC ⊤ (Ω : Set 𝔼)) (hb : Bornology.IsBounded (Ω : Set 𝔼))
     (hne : (Ω : Set 𝔼).Nonempty) (n : ℕ) :
     ∃ e₀ : 𝔼 → ℝ, ContDiffOnClosure ℝ ∞ e₀ Ω ∧ ContinuousOn e₀ (closure (Ω : Set 𝔼)) ∧

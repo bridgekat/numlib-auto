@@ -63,6 +63,11 @@ For (9.44) the remainder is bounded by the oscillation of $f^{(4)}$
 
 ## Deviations from the source
 
+* **(9.42)** (reading). `QuarteroniSaccoSaleri.Chapter09.equation_9_42` uses smoothness on an
+  open neighbourhood and a witness in the closed interval. The source gives an interior witness.
+* **(9.45)** (source location). `QuarteroniSaccoSaleri.Chapter09.equation_9_45` proves a global
+  bound from allocated bounds on the true local errors. Printed (9.45) uses a computed estimator
+  divided by ten as an acceptance test.
 * **Equations (9.39)–(9.40)** (reading). The source writes an approximate equality $\simeq$ for
   every $n$. The library states it as a bound with a remainder of the next order in $H$, for the
   trapezoidal ($n = 1$) and Simpson ($n = 2$) formulae, the only composite Newton–Cotes formulae for
@@ -100,6 +105,8 @@ noncomputable def eulerMaclaurinTerm (f : ℝ → ℝ) (a b : ℝ) (i : ℕ) : �
 /-- Property 9.3 as a bound. Let $a < b$ and $f \in C^{2k+2}([a, b])$. Then there is a constant $C$
 such that for every $m \ge 1$, with $h_m = (b - a)/m$,
 $$\Bigl|T_m - \int_a^b f(x)\,dx - \sum_{i=1}^{k} c_i h_m^{2i}\Bigr| \le C h_m^{2k+2}.$$
+
+**Reading.** Extracts uniform remainder bound from the signed derivative formula.
 -/
 theorem abs_trapezoidSum_sub_le (hab : a < b) {k : ℕ} (hU : IsOpen U) (hUab : Icc a b ⊆ U)
     (hf : ContDiffOn ℝ ((2 * k + 2 : ℕ) : WithTop ℕ∞) f U) :
@@ -269,6 +276,8 @@ theorem equation_9_40_simpson (hab : a < b) (hU : IsOpen U) (hUab : Icc a b ⊆ 
 $[\alpha, \beta]$:
 $$S_f(\alpha, \beta) = \frac{h_0}{3} [f(\alpha) + 4 f(\alpha + h_0) + f(\beta)], \qquad h_0 =
   \frac{\beta - \alpha}{2}.$$
+
+**Reading.** Algebraic Simpson formula for all endpoint orderings.
 -/
 noncomputable def simpsonRule (f : ℝ → ℝ) (α β : ℝ) : ℝ :=
   (β - α) / 2 / 3 * (f α + 4 * f (α + (β - α) / 2) + f β)
@@ -296,7 +305,10 @@ $$I_f(\alpha, \beta) - S_f(\alpha, \beta) = -\frac{h_0^5}{90} f^{(4)}(\xi), \qqu
   \frac{\beta - \alpha}{2},$$
 for some $\xi \in [\alpha, \beta]$, where $I_f(\alpha, \beta) = \int_\alpha^\beta f(x)\,dx$.
 
-This is (9.16) on $[\alpha, \beta]$. -/
+This is (9.16) on $[\alpha, \beta]$.
+
+**Reading.** Exact error coefficient but closed witness and open-neighborhood regularity.
+-/
 theorem equation_9_42 {α β : ℝ} (hαβ : α < β) (hU : IsOpen U) (hUab : Icc α β ⊆ U)
     (hf : ContDiffOn ℝ 4 f U) :
     ∃ ξ ∈ Icc α β, (∫ x in α..β, f x) - simpsonRule f α β
@@ -345,7 +357,15 @@ So the local constraint on every subinterval ensures the global accuracy $\varep
 writes the local test (9.45) with the estimator, as $|\mathcal{E}_f(\alpha, \beta)|/10 \le
 \varepsilon (\beta - \alpha)/(b - a)$; the statement here takes the resulting bound on the error
 of each $J_j$ as its hypothesis. The points $t_j$ need not be increasing. The proof is the
-triangle inequality together with $\sum_j (t_{j+1} - t_j) = b - a$. -/
+triangle inequality together with $\sum_j (t_{j+1} - t_j) = b - a$.
+
+**Source location.** This theorem formalizes the error allocation preceding (9.45), using true
+local errors. The numbered acceptance test uses a computed estimator with an additional factor
+of $1/10$.
+
+**Reading.** Local true error budget implies global tolerance. Does not claim that printed estimator
+divided by ten controls true error.
+-/
 theorem equation_9_45 (hab : a < b) {N : ℕ} {t : ℕ → ℝ} (ht0 : t 0 = a) (htN : t N = b)
     (hf : ∀ j < N, IntervalIntegrable f MeasureTheory.volume (t j) (t (j + 1))) {J : ℕ → ℝ}
     {ε : ℝ} (hJ : ∀ j < N, |(∫ x in t j..t (j + 1), f x) - J j| ≤ ε * (t (j + 1) - t j) / (b - a)) :

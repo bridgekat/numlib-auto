@@ -66,9 +66,16 @@ The module builds on the basic trust-region algorithm in
 
 ## Deviations from the source
 
-* **Theorem 6.3.3** (reading). The accepted step is taken at the first index at which the Armijo
-  test holds. A sufficient step length bound guarantees that such an index exists, and the rejected
-  predecessor gives the decrease bound. See `ConnGouldToint.Chapter06.theorem_6_3_3`.
+* **Equations (6.3.1)–(6.3.10), Theorem 6.3.1, and Corollary 6.3.2** (generalization).
+  The quadratic model uses a bounded linear operator on a real inner product space. The arc and
+  ratio use a seminorm in displacement coordinates. The ratio is zero at a zero denominator, and
+  the decrease theorem uses the norm property of the seminorm away from zero.
+* **Theorem 6.3.3** (hypotheses). The line search takes a positive radius and a direction with
+  positive seminorm. An explicit quadratic upper bound on the ray gives the first acceptable
+  index. The rejected predecessor gives the decrease bound.
+* **Theorems 6.3.4–6.3.5** (generalization). The gradient is represented in a real inner product
+  space. The last theorem takes a general feasible set with an explicit comparator satisfying the
+  Cauchy decrease and a supplied minimizer.
 -/
 
 namespace ConnGouldToint.Chapter06
@@ -76,7 +83,10 @@ namespace ConnGouldToint.Chapter06
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
 
 /-- **Equation (6.3.1)** of [conn2000trust], for quadratic models. For a quadratic model with
-Hessian $H$, the **curvature bound** is $\beta = 1 + \|H\|$. -/
+Hessian $H$, the **curvature bound** is $\beta = 1 + \|H\|$.
+
+**Reading.** The quadratic specialization uses a bounded operator on a real inner product space.
+-/
 noncomputable def quadraticCurvatureBound (H : E →L[ℝ] E) : ℝ :=
   1 + ‖H‖
 
@@ -84,13 +94,19 @@ noncomputable def quadraticCurvatureBound (H : E →L[ℝ] E) : ℝ :=
 gradient $g$ and a radius $\Delta$, the **Cauchy arc** is the set of steps
 $$\{ s = -tg : t \ge 0, \ \|s\|_k \le \Delta \}.$$
 
-The steps are displacements from the current iterate, which is the origin. -/
+The steps are displacements from the current iterate, which is the origin.
+
+**Reading.** Arc in displacement coordinates with arbitrary seminorm.
+-/
 def cauchyArc (p : Seminorm ℝ E) (g : E) (Δ : ℝ) : Set E :=
   {s | ∃ t : ℝ, 0 ≤ t ∧ s = (-t) • g ∧ p s ≤ Δ}
 
 /-- **Equation (6.3.3)** of [conn2000trust]. A step $s$ is a **Cauchy point** of the model $m$ for
 the gradient $g$ and the radius $\Delta$ if $s$ lies on the Cauchy arc and minimizes $m$ over
-the Cauchy arc. -/
+the Cauchy arc.
+
+**Reading.** Arc minimizer in displacement coordinates for arbitrary seminorm.
+-/
 def IsCauchyPoint (m : E → ℝ) (p : Seminorm ℝ E) (g : E) (Δ : ℝ) (s : E) : Prop :=
   IsMinOn m (cauchyArc p g Δ) s ∧ s ∈ cauchyArc p g Δ
 
@@ -98,10 +114,18 @@ def IsCauchyPoint (m : E → ℝ) (p : Seminorm ℝ E) (g : E) (Δ : ℝ) (s : E
 **norm ratio** is
 $$\nu = \frac{\|g\|}{\|g\|_k}.$$
 
-It is $0$ when $\|g\|_k = 0$, by Lean's convention for division by zero. -/
+It is $0$ when $\|g\|_k = 0$, by Lean's convention for division by zero.
+
+**Reading.** Seminorm and totalized division also define the ratio at the zero gradient.
+-/
 noncomputable def cauchyNormRatio (p : Seminorm ℝ E) (g : E) : ℝ :=
   ‖g‖ / p g
 
+/-- **Theorem 6.3.1 proof** of [conn2000trust].
+
+**Reading.** Quadratic expansion on the ray holds for a bounded operator on any real inner product
+space.
+-/
 private theorem quadraticModel_cauchy (c : ℝ) (g : E) (H : E →L[ℝ] E) (t : ℝ) :
     quadraticModel c g H.toLinearMap ((-t) • g) =
       c - t * ‖g‖ ^ 2 + (1 / 2) * t ^ 2 * inner ℝ g (H g) := by
@@ -116,7 +140,11 @@ s, Hs \rangle$. Then
 $$c - m(s) \ge \tfrac{1}{2} \|g\| \min\left\{ \frac{\|g\|}{\beta}, \nu \Delta \right\},$$
 where $\beta = 1 + \|H\|$ and $\nu = \|g\| / \|g\|_k$.
 
-The norm is a seminorm `p` with `p v = 0 → v = 0`. -/
+The norm is a seminorm `p` with `p v = 0 → v = 0`.
+
+**Reading.** The source Cauchy decrease estimate holds for an abstract quadratic model with a
+separating seminorm.
+-/
 theorem theorem_6_3_1 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ : ℝ} (hΔ : 0 ≤ Δ) {s : E}
     (hs : IsCauchyPoint (quadraticModel c g H.toLinearMap) p g Δ s) :
@@ -166,7 +194,10 @@ theorem theorem_6_3_1 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
 $$m(0) - m(s) \ge \tfrac{1}{2} \|g\| \min\left\{ \frac{\|g\|}{1 + \|H\|}, \nu \Delta \right\}.$$
 
 The model is written in displacement coordinates, so $m(0)$ is the model value at the current
-iterate. -/
+iterate.
+
+**Reading.** Same model-decrease estimate for an abstract quadratic model and separating seminorm.
+-/
 theorem corollary_6_3_2 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ E)
     (hp : ∀ v, p v = 0 → v = 0) {Δ : ℝ} (hΔ : 0 ≤ Δ) {s : E}
     (hs : IsCauchyPoint (quadraticModel c g H.toLinearMap) p g Δ s) :
@@ -177,6 +208,9 @@ theorem corollary_6_3_2 (c : ℝ) (g : E) (H : E →L[ℝ] E) (p : Seminorm ℝ 
 /-- **Equation (6.3.17)** of [conn2000trust]. For $\theta, \Delta \in \mathbb{R}$, a seminorm
 $\|\cdot\|_k$ and a gradient $g$, the $j$-th **trial time** of the approximate Cauchy search is
 $$t_j = \theta^j \frac{\Delta}{\|g\|_k}.$$
+
+**Reading.** The initial ray parameters use totalized division outside the positive-denominator
+domain.
 -/
 noncomputable def approximateCauchyTime (θ Δ : ℝ) (p : Seminorm ℝ E) (g : E) (j : ℕ) : ℝ :=
   θ ^ j * (Δ / p g)
@@ -279,7 +313,10 @@ space. The **model gradient** at the center $x$ is the gradient $g_k = \nabla m(
 $m$.
 
 AM.3 requires it to equal the gradient of the objective at $x$. The gradient is Mathlib's
-`gradient`. -/
+`gradient`.
+
+**Reading.** Real inner product space and displacement model.
+-/
 noncomputable abbrev modelGradient (m : E → ℝ) (x : E) : E := gradient m x
 
 /-- **Theorem 6.3.4** of [conn2000trust]. Let $E$ be a real Hilbert space, let
@@ -287,6 +324,9 @@ $f, m : E \to \mathbb{R}$ and $x, s \in E$, and let $\beta > 0$ and $\Delta > 0$
 $\nabla m(x) = \nabla f(x) \neq 0$ (AM.3 at a noncritical point) and that $s$ gives sufficient
 model decrease (AA.1) for the gradient $\nabla m(x)$. Then
 $$m(x + s) < m(x) \quad \text{and} \quad s \neq 0.$$
+
+**Reading.** Abstract gradient and seminorms with explicit positivity assumptions on radius and
+curvature bound.
 -/
 theorem theorem_6_3_4 {f m : E → ℝ} {x s : E} {β Δ κ : ℝ} (hβ : 0 < β) (hΔ : 0 < Δ)
     (hmatch : modelGradient m x = gradient f x) (hg : gradient f x ≠ 0)
@@ -308,7 +348,11 @@ $m : E \to \mathbb{R}$, $S \subseteq E$, and $x, s, g, u, v \in E$. Suppose that
 * $x + v \in S$, and $v$ gives sufficient model decrease (AA.1) with the constant $\kappa$, and
 * $a \in (0, 1]$ and $a (m(x) - m(u)) \le m(x) - m(x + s)$.
 
-Then $s$ gives sufficient model decrease (AA.1) with the constant $a \kappa$. -/
+Then $s$ gives sufficient model decrease (AA.1) with the constant $a \kappa$.
+
+**Reading.** General feasible set, a supplied Cauchy-style comparator, and a supplied model
+minimizer.
+-/
 theorem theorem_6_3_5 {m : E → ℝ} {S : Set E} {x s g u v : E} {β Δ κ a : ℝ}
     (hopt : IsMinOn m S u) (hv : x + v ∈ S)
     (hdec : HasSufficientModelDecrease m x v g β Δ κ)

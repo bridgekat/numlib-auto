@@ -81,8 +81,12 @@ over `RCLike 𝕜`, at $\mathbb{R}$.
 
 ## Deviations from the source
 
-* **Factorization through the kernel** (typo). The source prints $\|T\| = \|T\|$ for
-  $\|\tilde{T}\| = \|T\|$. See `Brezis.Chapter11.quotKerFactorization`.
+* **Quotient norm and Proposition 11.9** (generalization). The norm formula and the isometric
+  identification of the quotient dual with the annihilator also apply in incomplete normed
+  spaces.
+* **Proposition 11.14, codimension inequality** (restriction). The source allows an infinite
+  codimension on the right. Lean proves the inequality for finite codimension, since its
+  natural-valued codimension is zero for infinite-dimensional quotients.
 
 ## Not formalized
 
@@ -105,7 +109,10 @@ every $x \in E$, $$\|[x]\| = \inf_{m \in M} \|x - m\|,$$ and $\|\pi(x)\| \le \|x
 $\pi$ is bounded with $\|\pi\| \le 1$. Moreover $\|[x]\| = 0$ implies $[x] = 0$.
 
 The last clause is the place where the closedness of $M$ is used. The projection $\pi$ is
-`M.mkQL`, and the infimum runs over the elements of the subtype `M`. -/
+`M.mkQL`, and the infimum runs over the elements of the subtype `M`.
+
+**Reading.** The source assumes a Banach space. The norm and projection statements only need a
+normed space and closedness of the subspace. -/
 theorem quotientNorm_eq_iInf (M : Submodule ℝ E) [IsClosed (M : Set E)] (x : E) :
     ‖(Submodule.Quotient.mk x : E ⧸ M)‖ = ⨅ m : M, ‖x - m‖ ∧ ‖M.mkQL x‖ ≤ ‖x‖ ∧ ‖M.mkQL‖ ≤ 1 ∧
       (‖(Submodule.Quotient.mk x : E ⧸ M)‖ = 0 → (Submodule.Quotient.mk x : E ⧸ M) = 0) := by
@@ -136,7 +143,9 @@ bijection from $(E/M)^*$ onto $M^\perp$, and "in particular $(E/M)^*$ is isomorp
 isometric to $M^\perp$".
 
 The last conjunct says that the backbone isometry `Submodule.strongDualQuotLIEAnnihilator M`,
-from $(E/M)^*$ onto $M^\perp$, is the map $\pi^*$. -/
+from $(E/M)^*$ onto $M^\perp$, is the map $\pi^*$.
+
+**Reading.** The standing Banach assumption of the source is relaxed to a normed space. -/
 theorem proposition_11_9 (M : Submodule ℝ E) [IsClosed (M : Set E)] :
     (∀ (ξ : StrongDual ℝ (E ⧸ M)) (x : E), M.mkQL.strongDualMap ξ x = ξ (M.mkQL x)) ∧
       LinearMap.range (M.mkQL.strongDualMap : StrongDual ℝ (E ⧸ M) →ₗ[ℝ] StrongDual ℝ E) =
@@ -161,9 +170,6 @@ Banach spaces and let $T \in \mathcal{L}(F, G)$. Then the kernel $N(T)$ is close
 $T = \tilde{T} \circ \pi$, where $\pi : F \to F/N(T)$ is the canonical projection and
 $\tilde{T} : F/N(T) \to G$, $\tilde{T}(\pi x) = Tx$. The map $\tilde{T}$ is injective,
 $R(\tilde{T}) = R(T)$, and $\|\tilde{T}\| = \|T\|$.
-
-**Typo.** The source prints $\|T\| = \|T\|$. The intended statement is $\|\tilde{T}\| = \|T\|$,
-which is stated here.
 
 The operator $\tilde{T}$ is Mathlib's `Submodule.liftQL` for $N(T)$ = `T.ker`. -/
 theorem quotKerFactorization {F G : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
@@ -265,7 +271,10 @@ let $N \subseteq E^*$ be a closed subspace of finite codimension. Then $N^\perp$
 finite-dimensional and $$\dim N^\perp \le \operatorname{codim} N.$$
 
 The example of the source that shows that the inequality can be strict,
-$\dim N^\perp < \operatorname{codim} N < \infty$, is not formalized. -/
+$\dim N^\perp < \operatorname{codim} N < \infty$, is not formalized.
+
+**Reading.** The source allows infinite codimension on the right. Lean assumes finite codimension
+to express the bound with natural-valued dimensions. -/
 theorem proposition_11_14_le [CompleteSpace E] (N : Submodule ℝ (StrongDual ℝ E))
     [IsClosed (N : Set (StrongDual ℝ E))] (hN : IsFiniteCodim N) :
     FiniteDimensional ℝ N.strongDualCoannihilator ∧

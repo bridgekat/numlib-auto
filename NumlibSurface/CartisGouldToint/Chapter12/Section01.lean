@@ -120,6 +120,9 @@ conditions, to each other and to the values of $f$ near $x$. The proofs use the 
   `CartisGouldToint.Chapter12.example_12_1_1`.
 * **Theorem 12.1.1** (generalization). The restriction to tuples of nonzero $s_i$ is dropped. See
   `CartisGouldToint.Chapter12.theorem_12_1_1`.
+* **Equations (12.1.10)–(12.1.11)** (generalization). The measure is a supremum
+  on general normed spaces and is totalized on an empty ball.
+  See `CartisGouldToint.Chapter12.phiMeasure`.
 * **Example 12.1.2** (typo). The printed choice $\kappa_1 = 1$, $\kappa_2 = 2$ gives no saddle,
   since then $f = (x_2 - x_1^2/2)^2 + 7 x_1^4/4 \ge 0$. The saddle needs
   $\kappa_1^2 > 4 \kappa_2 \ge 0$, for example $\kappa_1 = 3$, $\kappa_2 = 2$, which the curve
@@ -130,6 +133,10 @@ conditions, to each other and to the values of $f$ near $x$. The proofs use the 
   \in \mathcal{M}, \|d\| \le 1} |T[d]^3|$ with $\mathcal{M} = \ker^1[\nabla f(x)] \cap
   \ker^2[\nabla^2 f(x)]$, and for this norm the first- and second-order hypotheses are not needed.
   See `CartisGouldToint.Chapter12.theorem_12_1_3_iii`.
+* **Theorem 12.1.3 (i)–(ii)** (generalization). The identities use totalized derivatives,
+  and (ii) also gives the converse implication.
+  See `CartisGouldToint.Chapter12.theorem_12_1_3_i` and
+  `CartisGouldToint.Chapter12.theorem_12_1_3_ii`.
 * **Example 12.1.3 (iv)** (correction). The claim that the measures vanish for radii
   $\delta \le 3\|x_*\|/(p-1)$ is false in $n$ variables and is stated in one variable. See
   `CartisGouldToint.Chapter12.example_12_1_3`.
@@ -142,6 +149,8 @@ conditions, to each other and to the values of $f$ near $x$. The proofs use the 
   which does not make $\nabla^2 f(x)$ meaningful; the statement needs $C^2$ in classical terms. The
   constant $\kappa(x)$ is made explicit: $\|\nabla f(x)\|^2 \le \delta^2 \epsilon_2 \max(\|\nabla^2
   f(x)\|, \epsilon_2)$. See `CartisGouldToint.Chapter12.theorem_12_1_6_ii`.
+  The bound with a Hessian-only constant times $\sqrt{\epsilon_2}$ uses
+  $\epsilon_2\le 1$, which the proof invokes.
 * **Theorem 12.1.7** (generalization). The condition $\delta_j \le j \epsilon_j / (2 \|\nabla^j
   f(x)\|)$ is written multiplicatively, so that $\nabla^j f(x) = 0$ is allowed. See
   `CartisGouldToint.Chapter12.theorem_12_1_7`.
@@ -172,12 +181,13 @@ variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 
 /-- **Equations (12.1.10)–(12.1.11)** of [cartis2022evaluation]. For $f : E \to \mathbb{R}$,
 $j \in \mathbb{N}$, $\delta \in \mathbb{R}$ and $x \in E$, the **Taylor-decrement measure** is
-$$\varphi^\delta_{f,j}(x) = f(x) - \min_{\|d\| \le \delta} T_{f,j}(x, d) = \max_{\|d\| \le
-  \delta} \Delta T_{f,j}(x, d),$$
+$$\varphi^\delta_{f,j}(x) = \sup_{\|d\| \le \delta} \Delta T_{f,j}(x, d),$$
 the largest decrease of the Taylor model of order $j$ within distance $\delta$ of $x$.
 
-The measure is `Optimization.taylorMeasure` of the Taylor series `ftaylorSeries ℝ f x` on the
-whole space. For $\delta < 0$ the ball is empty, and the value is $0$. -/
+**Generalization.** The source uses an attained maximum on a finite-dimensional ball
+with $\delta>0$. The supremum extends to normed spaces where attainment can fail.
+For $\delta<0$ the ball is empty and the value is $0$. The measure is
+`Optimization.taylorMeasure` of `ftaylorSeries ℝ f x` on the whole space. -/
 noncomputable abbrev phiMeasure (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) : ℝ :=
   Optimization.taylorMeasure (ftaylorSeries ℝ f x) j δ univ
 
@@ -188,7 +198,11 @@ theorem phiMeasure_def (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
   rfl
 
 /-- Equation (12.1.10) of [cartis2022evaluation]: $\varphi^\delta_{f,j}(x) = \sup_{\|d\| \le \delta}
-\bigl(f(x) - T_{f,j}(x, d)\bigr)$. -/
+\bigl(f(x) - T_{f,j}(x, d)\bigr)$.
+
+**Generalization.** Zeroth term cancels and the decrement is taken over the stated ball. Supremum
+extends beyond the settings of attainment.
+-/
 theorem phiMeasure_eq_sSup (f : E → ℝ) (j : ℕ) (δ : ℝ) (x : E) :
     phiMeasure f j δ x = sSup ((fun d => f x - taylorPolynomial f j x d) '' closedBall 0 δ) := by
   rw [phiMeasure, Optimization.taylorMeasure_eq_sSup, inter_univ]
@@ -226,13 +240,20 @@ hold for every $j \in [1, q]$: for every sequence $s_1, s_2, \dots$ of vectors s
 coefficients of orders $1, \dots, j-1$ vanish, the coefficient of order $j$ is nonnegative.
 
 The coefficients are `Optimization.curveCoeff` of `ftaylorSeries ℝ f x`, built on the index sets
-$\mathcal{P}(j, k)$ of (12.1.5); the definition is `Optimization.IsCurveCritical`. -/
+$\mathcal{P}(j, k)$ of (12.1.5); the definition is `Optimization.IsCurveCritical`.
+
+**Reading.** Uses the same vanishing earlier coefficients and nonnegative current coefficient, with
+directions allowed to be zero.
+-/
 def IsQthOrderMinimizer (f : 𝔼 → ℝ) (x : 𝔼) (q : ℕ) : Prop :=
   Optimization.IsCurveCritical (ftaylorSeries ℝ f x) q
 
 /-- A point $x$ is a $q$-th order minimizer of $f$ if and only if, for every $j \in [1, q]$ and
 every sequence $s$, the vanishing of the curve coefficients of orders $1, \dots, j-1$ implies
-that the coefficient of order $j$ is nonnegative. -/
+that the coefficient of order $j$ is nonnegative.
+
+**Reading.** Spells out all curve coefficient inequalities while allowing zero directions.
+-/
 theorem isQthOrderMinimizer_iff {f : 𝔼 → ℝ} {x : 𝔼} {q : ℕ} :
     IsQthOrderMinimizer f x q ↔ ∀ j ∈ Finset.Icc 1 q, ∀ s : ℕ → 𝔼,
       (∀ i ∈ Finset.Ico 1 j, Optimization.curveCoeff (ftaylorSeries ℝ f x) s i = 0) →
@@ -650,15 +671,18 @@ theorem example_12_1_2 (κ₁ κ₂ : ℝ) :
 /-- **Theorem 12.1.2** of [cartis2022evaluation]: linesearch methods are unsuitable for finding
 high-order minimizers. Let $f$ be Peano's quartic with $\kappa_1 = 3$ and $\kappa_2 = 2$. Then:
 
-1. no line through the origin is a descent line: for every direction $d$ there is $\tau > 0$
-   with $f(0) \le f(t d)$ for every $t \in [0, \tau]$, so a linesearch started at $0$ finds no
-   decrease and stops there;
+1. every direction $d$ has $\tau>0$ with $f(0)\le f(t d)$ for all $t\in[0,\tau]$;
 2. the origin is a third-order minimizer of $f$;
 3. the origin is not a fourth-order minimizer of $f$;
 4. the origin is not a local minimizer of $f$.
 
-The statement uses $\kappa_1 = 3$, $\kappa_2 = 2$, because the choice printed in Example 12.1.2
-gives no saddle (see `CartisGouldToint.Chapter12.example_12_1_2`). -/
+The theorem gives the counterexample for line searches that require a direction of local
+descent. It uses $\kappa_1=3$, $\kappa_2=2$, because the choice printed in Example 12.1.2
+gives no saddle (see `CartisGouldToint.Chapter12.example_12_1_2`).
+
+**Correction.** Gives the line-search obstruction via the corrected Peano parameters and proves
+exact third-order and fourth-order criticality distinction.
+-/
 theorem theorem_12_1_2 :
     (∀ d : EuclideanSpace ℝ (Fin 2), ∃ τ : ℝ, 0 < τ ∧ ∀ t ∈ Icc (0 : ℝ) τ,
       peanoQuartic 3 2 0 ≤ peanoQuartic 3 2 (t • d)) ∧
@@ -712,7 +736,11 @@ $f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$ and $\delta > 0$. Then
 $$\|\nabla f(x)\| = \frac{\varphi^\delta_{f,1}(x)}{\delta},$$
 and hence $\varphi^\delta_{f,1}(x) = 0$ if and only if $\nabla f(x) = 0$.
 
-No smoothness of $f$ is assumed, because Lean's derivatives are total functions. -/
+No smoothness of $f$ is assumed, because Lean's derivatives are total functions.
+
+**Reading.** Exact first-order identity and zero characterization using totalized derivatives
+without a smoothness premise.
+-/
 theorem theorem_12_1_3_i {δ : ℝ} (hδ : 0 < δ) :
     ‖gradient f x‖ = phiMeasure f 1 δ x / δ ∧ (phiMeasure f 1 δ x = 0 ↔ gradient f x = 0) := by
   refine ⟨?_, ?_⟩
@@ -727,7 +755,10 @@ $\lambda_{\min}[\nabla^2 f(x)] \ge 0$, that is, if and only if $x$ is a first- a
 minimizer.
 
 The source states the direction from $\varphi^\delta_{f,2}(x) = 0$; the converse also holds. No
-smoothness of $f$ is assumed, because Lean's derivatives are total functions. -/
+smoothness of $f$ is assumed, because Lean's derivatives are total functions.
+
+**Reading.** Uses totalized derivatives and also proves the converse of the printed implication.
+-/
 theorem theorem_12_1_3_ii {δ : ℝ} (hδ : 0 < δ) :
     phiMeasure f 2 δ x = 0 ↔ gradient f x = 0 ∧ 0 ≤ Chapter01.hessianMinEig f x := by
   rw [phiMeasure, Optimization.taylorMeasure_two_eq_zero_iff _ hδ, ftaylorSeries_one_eq_zero_iff]
@@ -735,14 +766,24 @@ theorem theorem_12_1_3_ii {δ : ℝ} (hδ : 0 < δ) :
 
 /-- The set $\mathcal{M}(x) = \ker^1[\nabla f(x)] \cap \ker^2[\nabla^2 f(x)]$ of Theorem 12.1.3
 (iii) of [cartis2022evaluation]: the directions $d$ with $\nabla f(x)[d] = 0$ and
-$\nabla^2 f(x)[d]^2 = 0$. -/
+$\nabla^2 f(x)[d]^2 = 0$.
+
+**Reading.** Common first- and second-order null directions. Without definiteness the set may be a
+cone instead of a subspace.
+-/
 def nullDirections (f : 𝔼 → ℝ) (x : 𝔼) : Set 𝔼 :=
   {d | iteratedFDeriv ℝ 1 f x (fun _ => d) = 0 ∧ iteratedFDeriv ℝ 2 f x (fun _ => d) = 0}
 
 /-- The projected norm of Theorem 12.1.3 (iii) of [cartis2022evaluation]:
 $$\|P_{\mathcal{M}(x)}[\nabla^3 f(x)]\| = \sup_{d \in \mathcal{M}(x), \, \|d\| \le 1} |\nabla^3
-  f(x)[d]^3|,$$
-the tensor norm (A.7) of the restriction of $\nabla^3 f(x)$ to $\mathcal{M}(x)$. -/
+  f(x)[d]^3|.$$
+Under the source's stationarity and positive semidefiniteness hypotheses, $\mathcal{M}(x)$
+is a subspace and this is the tensor norm (A.7) of the restriction. The supremum also
+defines a value when $\mathcal{M}(x)$ is a cone.
+
+**Generalization.** The supremum on null directions gives the source norm under its assumptions and
+extends to a general null cone.
+-/
 noncomputable def projectedThirdNorm (f : 𝔼 → ℝ) (x : 𝔼) : ℝ :=
   sSup ((fun d => |iteratedFDeriv ℝ 3 f x (fun _ => d)|) '' {d | d ∈ nullDirections f x ∧ ‖d‖ ≤ 1})
 
@@ -806,6 +847,12 @@ near a local minimizer $x$. Then $\varphi^\delta_{f,j}(x) = 0$ for every $\delta
 $j \in \{1, 2\}$ (12.1.16), and for every $j$
 $$\frac{\varphi^\delta_{f,j}(x)}{\delta^j} \to 0 \qquad \text{as } \delta \to 0^+ \quad
   (12.1.17).$$
+
+The source states the limit for $j\ge 1$. At order zero the Taylor decrement vanishes
+identically, so the limit holds there as well.
+
+**Reading.** Exact vanishing at orders one and two, and right limit for all natural orders,
+including the trivial order-zero case.
 -/
 theorem theorem_12_1_4 {j : ℕ} (hf : ContDiffAt ℝ j f x) (hmin : IsLocalMin f x) :
     (j ∈ Finset.Icc 1 2 → ∀ δ, 0 < δ → phiMeasure f j δ x = 0) ∧
@@ -1088,13 +1135,12 @@ $\beta, \sigma > 0$, $e \in \mathbb{R}^n$ with $\|e\| = 1$, and $m(x) = -\beta \
 **Correction.** The source states part 4 in $n$ variables for radii
 $\delta \le 3 \|x_*\|/(p-1)$. Its appeal to Lemma B.4.1 for the directions orthogonal to $x_*$
 does not cover mixed directions, and the $n$-dimensional claim fails. For $p = 3$,
-$\sigma = p!$, $\|x_*\| = 1$ and $\delta = 3/2 = 3 \|x_*\|/(p-1)$, the decrement
-$\Delta T_{m,3}(x_*, d)$ is about $+0.14$ at $d \approx (-1.12, 0.28, 0.96)$, where (12.1.16)
-predicts $\varphi^\delta_{m,3}(x_*) = 0$. The decrement in every direction is
+$\sigma=p!$, $x_*=e_1$ and $\delta=3/2$, the displacement $d=(-11/10,1)$ is feasible
+and has decrement $\Delta T_{m,3}(x_*,d)=29/250>0$. The decrement in every direction is
 `CartisGouldToint.Chapter12.example1213_taylorDecrement_unit`.
 
-Part 3 is the equality of the source, proved over all directions; the maximum is attained at
-$d = -x_*$. -/
+Part 3 uses the unit normalization of the illustrated example, which makes $d=-x_*$ feasible
+at radius $1$. Under that normalization the equality holds over all directions. -/
 theorem example_12_1_3 {p : ℕ} (hp : 1 ≤ p) {β σ : ℝ} (hβ : 0 < β) (hσ : 0 < σ)
     {e : EuclideanSpace ℝ (Fin n)} (he : ‖e‖ = 1) :
     (IsMinOn (example1213Model β σ p e) univ ((β * p ! / σ) ^ (1 / (p : ℝ)) • e) ∧
@@ -1257,7 +1303,11 @@ $L$, if $s = 0$ is a strict local minimizer of $T_{g,6}(0, \cdot)$ and
 $\|\nabla^7 g(0)\| \le L$, then the origin is a local minimizer of $g$.
 
 The printed proof chooses $|\alpha|$ small for each direction separately, so the radius is not
-uniform. The corrected statement is `CartisGouldToint.Chapter12.theorem_12_1_5`. -/
+uniform. The corrected statement is `CartisGouldToint.Chapter12.theorem_12_1_5`.
+
+**Reading.** Exhibits a strict sixth-order Taylor minimum with seventh-order descent on a parabolic
+curve and no local minimum.
+-/
 theorem theorem_12_1_5_counterexample :
     let f : EuclideanSpace ℝ (Fin 2) → ℝ := fun x => (x 1 - x 0 ^ 2) ^ 2 + x 1 ^ 6 - x 0 ^ 7
     ContDiff ℝ ∞ f ∧
@@ -1399,7 +1449,14 @@ theorem IsEpsDeltaApproxMinimizer.mono {q q' : ℕ} {ε δ : ℕ → ℝ}
 /-- **Theorem 12.1.6 (i)** of [cartis2022evaluation] ((12.1.22)). Let
 $f : \mathbb{R}^n \to \mathbb{R}$, $x \in \mathbb{R}^n$, $\epsilon_1 \in \mathbb{R}$ and
 $\delta_1 > 0$. If $\varphi^{\delta_1}_{f,1}(x) \le \epsilon_1 \delta_1$, then
-$\|\nabla f(x)\| \le \epsilon_1$. -/
+$\|\nabla f(x)\| \le \epsilon_1$.
+
+The estimate uses totalized derivatives, extending the source's continuous
+differentiability assumption.
+
+**Reading.** Exact first-order bound using totalized derivatives without assuming continuous
+differentiability.
+-/
 theorem theorem_12_1_6_i {ε₁ δ₁ : ℝ} (hδ : 0 < δ₁) (h : phiMeasure f 1 δ₁ x ≤ ε₁ * δ₁) :
     ‖gradient f x‖ ≤ ε₁ := by
   rw [(theorem_12_1_3_i hδ).1, div_le_iff₀ hδ]
@@ -1416,7 +1473,12 @@ Hence, if also $\epsilon_2 \le 1$, then $\|\nabla f(x)\| \le \delta \, \kappa(x)
 **Correction.** The source assumes that $f$ is continuously differentiable, which does not make
 $\nabla^2 f(x)$ meaningful; in classical terms the statement needs $f \in C^2$. The source also
 leaves the constant $\kappa(x)$ implicit; it is made explicit here. The formal statement needs
-no smoothness hypothesis, because Lean's derivatives are total functions. -/
+no smoothness hypothesis, because Lean's derivatives are total functions.
+
+**Correction.** The last line of the printed proof uses $\epsilon_2\le 1$. Such a
+restriction is needed for a bound of order $\sqrt{\epsilon_2}$ with a constant depending
+only on the Hessian. For $f(t)=a t$ with $a>0$, $\delta=1$ and $\epsilon_2=2a$, the premise
+holds with zero Hessian and the gradient norm is $a$. -/
 theorem theorem_12_1_6_ii {ε₂ δ : ℝ} (hδ : 0 < δ) (hε : 0 ≤ ε₂)
     (h : phiMeasure f 2 δ x ≤ ε₂ * δ ^ 2 / 2) :
     -ε₂ ≤ Chapter01.hessianMinEig f x ∧

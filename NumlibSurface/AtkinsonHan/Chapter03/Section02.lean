@@ -96,6 +96,21 @@ interpolation is `Numlib.Approximation.Hermite`, and the divided differences are
   comes from the Haar condition for `trigPolyLE`, which the backbone proves once in
   `Numlib.Approximation.Chebyshev` by the substitution $z = e^{ix}$ of (3.2.15).
 
+## Deviations from the source
+
+* **Definition 3.2.1, Lemma 3.2.2 and Theorem 3.2.3** (generalization). The abstract
+  interpolation statements work over any nontrivially normed field. The definition theorem
+  identifies independence with unique solvability.
+* **Lagrange interpolation** (reading). Equation (3.2.1) uses real data. The formulas
+  (3.2.2)–(3.2.3) also make sense on repeated node tuples, and (3.2.5) specifies distinctness
+  of the additional evaluation point. Proposition 3.2.4 uses global smoothness.
+* **Hermite interpolation** (reading). Existence and uniqueness use total derivatives with no
+  regularity assumption. The remainder formulas assume global smoothness, and the remainder
+  in Exercise 3.2.6 allows an endpoint as the intermediate point.
+* **Piecewise linear interpolation** (reading). The error estimates (3.2.8)–(3.2.9) are
+  pointwise and allow arbitrary bounds on the step sizes. For (3.2.9) they use a globally
+  smooth extension and an upper bound for its second derivative on the interval.
+
 ## Not formalized
 
 * **The estimates (3.2.10)–(3.2.12)** for piecewise linear interpolation in $H^2(a, b)$. They need
@@ -128,7 +143,11 @@ This holds if and only if the interpolation problem $L_i u_n = b_i$, $i = 1, \do
 exactly one solution $u_n \in V_n$ for every $b \in \mathbb{K}^n$.
 
 The unique solvability is the backbone's `Approximation.IsUnisolvent Vₙ L`, and the proof is
-`Approximation.isUnisolvent_iff_linearIndependent`. The basis `v` only fixes $\dim V_n = n$. -/
+`Approximation.isUnisolvent_iff_linearIndependent`. The basis `v` only fixes $\dim V_n = n$.
+
+**Reading.** The definition in the book specifies independence by the displayed implication.
+The Lean theorem includes the equivalence with unique solvability from Theorem 3.2.3 and works
+over any nontrivially normed field. -/
 theorem definition_3_2_1 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     Approximation.IsUnisolvent Vₙ L ↔
       ∀ c : Fin n → 𝕜, (∀ w ∈ Vₙ, ∑ i, c i * L i w = 0) → ∀ i, c i = 0 := by
@@ -147,7 +166,10 @@ basis $v_1, \dots, v_n$, and let $L_1, \dots, L_n$ be bounded linear functionals
 $L_1, \dots, L_n$ are linearly independent over $V_n$ if and only if
 $$\det(L_i v_j)_{i,j=1}^n \neq 0.$$
 Since the left-hand side does not mention the basis, the nonvanishing of the determinant does
-not depend on the basis. -/
+not depend on the basis.
+
+**Generalization.** The book's setting is real or complex. The determinant criterion holds
+over any nontrivially normed field. -/
 theorem lemma_3_2_2 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     (∀ c : Fin n → 𝕜, (∀ w ∈ Vₙ, ∑ i, c i * L i w = 0) → ∀ i, c i = 0) ↔
       (Matrix.of fun i j => L i (v j : V)).det ≠ 0 :=
@@ -164,7 +186,10 @@ following are equivalent:
 4. for every $b \in \mathbb{K}^n$ the interpolation problem has at least one solution
    $u_n \in V_n$.
 
-The equivalence is stated as `List.TFAE`. -/
+The equivalence is stated as `List.TFAE`.
+
+**Generalization.** The four conditions are stated over any nontrivially normed field.
+The book works over $\mathbb{R}$ or $\mathbb{C}$. -/
 theorem theorem_3_2_3 (v : Module.Basis (Fin n) 𝕜 Vₙ) :
     List.TFAE
       [∀ b : Fin n → 𝕜, ∃! u : Vₙ, ∀ i, L i (u : V) = b i,
@@ -185,7 +210,10 @@ section Lagrange
 variable {a b : ℝ} {n : ℕ}
 
 /-- The Lagrange basis function $\varphi_i$ of (3.2.3) is $\varphi_i(t) = \prod_{j \neq i} (t -
-x_j)/(x_i - x_j)$. -/
+x_j)/(x_i - x_j)$.
+
+**Generalization.** The product appearing in the definition of the cardinal functions remains
+valid for repeated nodes under Lean's total division. -/
 private theorem basisCM_eq_prod (x : Fin (n + 1) → Set.Icc a b) (i : Fin (n + 1))
     (t : Set.Icc a b) :
     Lagrange.basisCM x i t
@@ -198,7 +226,10 @@ $[a, b]$ and let $f \in C[a, b]$. Then there is exactly one $p_n \in \mathcal{P}
 $$p_n(x_i) = f(x_i), \qquad i = 0, \dots, n.$$
 
 $\mathcal{P}_n$ is `polyLE (Set.Icc a b) n`, and the distinctness of the nodes is
-`Function.Injective x`. -/
+`Function.Injective x`.
+
+**Reading.** This proves unique solvability for real continuous data and uses injective node
+indexing. The source also discusses complex-valued data. -/
 theorem equation_3_2_1 {x : Fin (n + 1) → Set.Icc a b} (hx : Function.Injective x)
     (f : C(Set.Icc a b, ℝ)) :
     ∃! p : polyLE (Set.Icc a b) n, ∀ i, (p : C(Set.Icc a b, ℝ)) (x i) = f (x i) :=
@@ -208,7 +239,9 @@ theorem equation_3_2_1 {x : Fin (n + 1) → Set.Icc a b} (hx : Function.Injectiv
 monomial basis $v_j(x) = x^j$ of $\mathcal{P}_n$, the matrix $(L_i v_j) = (x_i^j)$ of the
 Lagrange interpolation problem is the Vandermonde matrix of the nodes, and
 $$\det\bigl(x_i^j\bigr)_{i,j=0}^n = \prod_{0 \le i < j \le n} (x_j - x_i).$$
--/
+
+**Generalization.** The determinant identity applies to arbitrary node tuples. Nonvanishing
+under injectivity is in `equation_3_2_2_ne_zero`. -/
 theorem equation_3_2_2 (x : Fin (n + 1) → ℝ) :
     (Matrix.of fun i j : Fin (n + 1) => ((Polynomial.X : ℝ[X]) ^ (j : ℕ)).eval (x i)).det
       = ∏ i, ∏ j ∈ Finset.Ioi i, (x j - x i) := by
@@ -234,7 +267,10 @@ $$p_n(t) = \sum_{i=0}^n f(x_i) \varphi_i(t), \qquad \varphi_i(t) = \prod_{j \neq
 
 The interpolant is `Lagrange.interpolateCLM x f`. The identity holds for any nodes, with Lean's
 convention that division by $0$ gives $0$. It is the interpolant of (3.2.1) when the nodes are
-distinct. -/
+distinct.
+
+**Generalization.** The formula for the operator holds for any real node tuple by Lean's total
+division. Its interpretation as the unique interpolant uses the distinct-node hypothesis. -/
 theorem equation_3_2_3 (x : Fin (n + 1) → Set.Icc a b) (f : C(Set.Icc a b, ℝ))
     (t : Set.Icc a b) :
     Lagrange.interpolateCLM x f t
@@ -268,7 +304,11 @@ The interpolant is `Lagrange.interpolate`. The backbone's `Lagrange.exists_sub_i
 places $\xi$ strictly inside any interval that contains the nodes and $t$; the interval
 $[\min\{t, x_0\}, \max\{t, x_n\}]$ gives the localization of the source. The statement uses the
 closed interval because the interval is a single point when $t$ is the only node, and there both
-sides of the identity are $0$. -/
+sides of the identity are $0$.
+
+**Reading.** The source assumes $C^{n+1}$ regularity on $[a,b]$. The Lean version assumes global
+$C^{n+1}$ regularity, allows any evaluation point, and uses the closed interval between that
+point and the extreme nodes. -/
 theorem proposition_3_2_4 {f : ℝ → ℝ} (hf : ContDiff ℝ ((n + 1 : ℕ) : WithTop ℕ∞) f)
     {x : Fin (n + 1) → ℝ} (hx : StrictMono x) (t : ℝ) :
     ∃ ξ ∈ Set.Icc (min t (x 0)) (max t (x (Fin.last n))),
@@ -305,7 +345,10 @@ where $f[x_0, \dots, x_n, x]$ is the Newton divided difference of order $n + 1$.
 
 Unlike Proposition 3.2.4, the formula needs nothing of $f$ beyond its values at the nodes and at
 $x$. The source states it in passing and uses it for the Newton form of the interpolant. The
-divided difference is `DividedDifference.newton f (Fin.snoc x t)`. -/
+divided difference is `DividedDifference.newton f (Fin.snoc x t)`.
+
+**Reading.** The Lean version uses a divided difference with pairwise distinct arguments. It
+makes explicit that the evaluation point is distinct from every interpolation node. -/
 theorem equation_3_2_5 {f : ℝ → ℝ} {x : Fin (n + 1) → ℝ} (hx : Function.Injective x) {t : ℝ}
     (ht : ∀ i, x i ≠ t) :
     f t - (Lagrange.interpolate Finset.univ x fun i => f (x i)).eval t
@@ -325,7 +368,11 @@ $$p(x_i) = f(x_i), \qquad p'(x_i) = f'(x_i), \qquad i = 1, \dots, n.$$
 
 The degree bound is `p.degree < 2 * n`, which for $n = 0$ forces $p = 0$. No smoothness of $f$
 is assumed: the statement is about the prescribed numbers $f(x_i)$ and $f'(x_i)$ and holds
-whatever they are. The derivative is `deriv f`, which is $0$ where $f$ is not differentiable. -/
+whatever they are. The derivative is `deriv f`, which is $0$ where $f$ is not differentiable.
+
+**Reading.** The source assumes a continuously differentiable function on a closed interval.
+The theorem uses global real data with Lean's total `deriv`, so the algebraic interpolation
+result needs only the distinctness of the nodes. -/
 theorem equation_3_2_6 {n : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x) (f : ℝ → ℝ) :
     ∃! p : ℝ[X], p.degree < ((2 * n : ℕ) : WithBot ℕ) ∧
       (∀ i, p.eval (x i) = f (x i)) ∧
@@ -354,7 +401,11 @@ $t \in \mathbb{R}$. Then there is a $\xi$ with $\min\{t, x_0\} \le \xi \le \max\
 $$f(t) - p(t) = \frac{f^{(2(n+1))}(\xi)}{(2(n + 1))!} \prod_{i=0}^n (t - x_i)^2.$$
 
 The nodes are indexed by `Fin (n + 1)`, so $n$ of the source is $n + 1$ here. The interpolant is
-`Hermite.interpolate x (fun _ => 1) f`, with multiplicity $1$ at every node. -/
+`Hermite.interpolate x (fun _ => 1) f`, with multiplicity $1$ at every node.
+
+**Reading.** The exercise asks for uniqueness, a representation and a remainder with an interior
+intermediate point. This theorem gives the remainder with global regularity and a closed
+interval, which also handles the degenerate coincident point. Uniqueness is in `equation_3_2_6`. -/
 theorem exercise_3_2_6 {n : ℕ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((2 * (n + 1) : ℕ) : WithTop ℕ∞) f) {x : Fin (n + 1) → ℝ}
     (hx : StrictMono x) (t : ℝ) :
@@ -385,7 +436,10 @@ $p \in \mathcal{P}_N$ with
 $$p^{(j)}(x_i) = f^{(j)}(x_i), \qquad 0 \le j \le m_i, \quad i = 1, \dots, n.$$
 
 The nodes are indexed from $0$. The derivatives of $f$ are `iteratedDeriv j f`, so, as in
-`AtkinsonHan.Chapter03.equation_3_2_6`, no smoothness of $f$ is assumed. -/
+`AtkinsonHan.Chapter03.equation_3_2_6`, no smoothness of $f$ is assumed.
+
+**Reading.** The source prescribes derivative data on an interval. The algebraic solvability
+here uses the total `iteratedDeriv` on $\mathbb R$, and needs no smoothness assumption. -/
 theorem equation_3_2_6_general {n N : ℕ} {x : Fin n → ℝ} (hx : Function.Injective x)
     {m : Fin n → ℕ} (hN : ∑ i, (m i + 1) = N + 1) (f : ℝ → ℝ) :
     ∃! p : ℝ[X], p.degree < ((N + 1 : ℕ) : WithBot ℕ) ∧
@@ -399,7 +453,10 @@ $f \in C^{N+1}(\mathbb{R})$, let $p$ be its Hermite interpolant, and let $t \in 
 there is a $\xi \in [a, b]$ with
 $$f(t) - p(t) = \frac{f^{(N+1)}(\xi)}{(N + 1)!} \prod_{i=1}^n (t - x_i)^{m_i + 1}.$$
 
-The interpolant is `Hermite.interpolate x m f`. -/
+The interpolant is `Hermite.interpolate x m f`.
+
+**Reading.** The source assumes regularity on $[a,b]$. The declaration takes a globally
+$C^{N+1}$ function and keeps the interval condition for the nodes and evaluation point. -/
 theorem equation_3_2_6_general_error {n N : ℕ} {a b : ℝ} {f : ℝ → ℝ}
     (hf : ContDiff ℝ ((N + 1 : ℕ) : WithTop ℕ∞) f) {x : Fin n → ℝ} (hx : Function.Injective x)
     (hxmem : ∀ i, x i ∈ Set.Icc a b) {m : Fin n → ℕ} (hN : ∑ i, (m i + 1) = N + 1) {t : ℝ}
@@ -424,7 +481,10 @@ $$\Pi f(t) = \frac{(x_{j+1} - t) f(x_j) + (t - x_j) f(x_{j+1})}{h_j}, \qquad h_j
   x_j.$$
 
 The interpolant is `piecewiseLinearInterpCLM n x f`. The nodes are a sequence
-`x : ℕ → Set.Icc a b`, of which only $x_0, \dots, x_{n+1}$ are used. -/
+`x : ℕ → Set.Icc a b`, of which only $x_0, \dots, x_{n+1}$ are used.
+
+**Generalization.** The local formula does not require the first and last nodes to be the
+endpoints of the ambient interval. -/
 theorem equation_3_2_7 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (f : C(Set.Icc a b, ℝ))
     {j : ℕ} (hj : j ≤ n) {t : Set.Icc a b} (h1 : (x j : ℝ) ≤ (t : ℝ))
     (h2 : (t : ℝ) ≤ (x (j + 1) : ℝ)) :
@@ -459,7 +519,11 @@ $$|f(t) - \Pi f(t)| \le \omega(f, h),$$
 where $\omega(f, h) = \sup\{|f(u) - f(v)| : u, v \in [a, b], |u - v| \le h\}$ is the modulus of
 continuity of $f$.
 
-The modulus of continuity is `ContinuousMap.modulusOfContinuity f h`. -/
+The modulus of continuity is `ContinuousMap.modulusOfContinuity f h`.
+
+**Reading.** The book uses the maximum step size and the uniform error. This pointwise
+version allows any upper bound on the step sizes; quantifying over the interval recovers the
+uniform estimate. -/
 theorem equation_3_2_8 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) (f : C(Set.Icc a b, ℝ)) {h : ℝ}
     (hmesh : ∀ i ≤ n, (x (i + 1) : ℝ) - (x i : ℝ) ≤ h) (t : Set.Icc a b) :
@@ -478,7 +542,11 @@ $$|f(t) - \Pi f(t)| \le \frac{h^2}{8} M.$$
 
 `C([a, b], ℝ)` carries no derivative of its own, so $f$ is given as a $C^2$ function
 $g : \mathbb{R} \to \mathbb{R}$ that agrees with the continuous function on $[a, b]$. The source
-writes $\|f''\|_\infty$ for $M$. -/
+writes $\|f''\|_\infty$ for $M$.
+
+**Reading.** This pointwise version uses any upper bounds for the step sizes and second
+derivative. It assumes a globally $C^2$ extension of the data, where the book states smoothness
+on the closed interval. -/
 theorem equation_3_2_9 (hstep : ∀ i ≤ n, (x i : ℝ) < (x (i + 1) : ℝ)) (hfirst : (x 0 : ℝ) = a)
     (hlast : (x (n + 1) : ℝ) = b) {g : ℝ → ℝ} (hg : ContDiff ℝ ((2 : ℕ) : WithTop ℕ∞) g)
     {f : C(Set.Icc a b, ℝ)} (hf : ∀ t : Set.Icc a b, f t = g (t : ℝ)) {h M : ℝ}
@@ -637,7 +705,11 @@ Table 3.1 of the source, the maximum errors $\|f - p_n\|_\infty$ for $n = 1, \do
 consists of computed numbers and is not part of the statement. Each entry is a supremum over the
 circle of a transcendental function, so a rigorous value would need verified numerics, which the
 project does not have. The source draws nothing from the table beyond the convergence that §3.7
-proves. -/
+proves.
+
+**Reading.** The example function and interpolant are represented exactly, while the table of
+computed errors is omitted as documented.
+-/
 theorem example_3_2_5 (n : ℕ) :
     ∃ f : C(AddCircle (2 * π), ℝ),
       (∀ x : ℝ, f ((x : ℝ) : AddCircle (2 * π)) = Real.exp (Real.sin x) * Real.sin x) ∧

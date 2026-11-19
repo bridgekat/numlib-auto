@@ -65,6 +65,28 @@ at a feasible point but can fail elsewhere.
 
 ## Deviations from the source
 
+* **Representation.** The run records approximate minimizers and residual bounds without choosing an
+  inner solver or update schedule. See `ConnGouldToint.Chapter14.QuadraticPenaltyRun`,
+  `ConnGouldToint.Chapter14.QuadraticPenaltyRun.multiplier`.
+* **Generalization.** Penalty convergence and local rates are stated on a converging sequence with
+  explicit residual and KKT hypotheses. See `ConnGouldToint.Chapter14.theorem_14_3_1`,
+  `ConnGouldToint.Chapter14.theorem_14_3_1_iii`.
+* **Representation.** The Hessian decomposition and equivalent system use linear operators and
+  adjoints, with nonzero parameter required for elimination. See
+  `ConnGouldToint.Chapter14.fderiv_gradient_augmentedLagrangian_eq`,
+  `ConnGouldToint.Chapter14.penalty_system_iff`.
+* **Correction.** The gradient change uses the old/new parameter ratio minus one. See
+  `ConnGouldToint.Chapter14.gradient_augmentedLagrangian_change_parameter`.
+* **Correction.** The extreme eigenvalue limits require a bounded Lagrangian Hessian term. An
+  infeasible scalar example shows it can diverge. See
+  `ConnGouldToint.Chapter14.lemma_14_3_2_infeasible_counterexample`,
+  `ConnGouldToint.Chapter14.lemma_14_3_2_scaled_extremes`,
+  `ConnGouldToint.Chapter14.lemma_14_3_2_scaled_limits`,
+  `ConnGouldToint.Chapter14.lemma_14_3_2_scaled_limits_of_feasible`.
+* **Correction.** The smallest-eigenvalue limit compresses to the entire nontrivial kernel and uses
+  a fixed Lagrangian Hessian. See `ConnGouldToint.Chapter14.reducedPenaltyHessian`,
+  `ConnGouldToint.Chapter14.reducedPenaltyHessian_symmetric`,
+  `ConnGouldToint.Chapter14.lemma_14_3_2_i`, `ConnGouldToint.Chapter14.lemma_14_3_2_i_of_feasible`.
 * **Equation (14.3.15)** (correction). The scaling factor of the constraint term is $\mu / \nu - 1$.
   See `ConnGouldToint.Chapter14.gradient_augmentedLagrangian_change_parameter`.
 * **Lemma 14.3.2(i)** (correction). The limit is stated for a fixed Lagrangian Hessian, compressed
@@ -94,7 +116,12 @@ $$\|\nabla_x \Phi(x_k, y, \mu_k)\| \le \omega_k$$
 for all $k$.
 
 The run supplies the starting points, the iterates and the tolerances; it does not model the
-inner solver. -/
+inner solver.
+
+**Reading.** The run supplies starts and approximate minimizers with their residual estimates. It
+imposes convergence of positive penalty parameters and tolerances, while the source discusses
+particular update and warm-start choices.
+-/
 structure QuadraticPenaltyRun (f : G → ℝ) (c : G → F) (y : F) where
   /-- The starting points of the inner solves. -/
   start : ℕ → G
@@ -115,7 +142,12 @@ structure QuadraticPenaltyRun (f : G → ℝ) (c : G → F) (y : F) where
     ‖fderiv ℝ (augmentedLagrangian f c y (parameter k)) (iterate k)‖ ≤ tolerance k
 
 /-- **Algorithm 14.3.1** of [conn2000trust], Step 1. The multiplier estimate after the inner solve
-$k$ is the first-order estimate $y - c(x_k) / \mu_k$. -/
+$k$ is the first-order estimate $y - c(x_k) / \mu_k$.
+
+**Reading.** The run supplies starts and approximate minimizers with their residual estimates. It
+imposes convergence of positive penalty parameters and tolerances, while the source discusses
+particular update and warm-start choices.
+-/
 noncomputable def QuadraticPenaltyRun.multiplier {f : G → ℝ} {c : G → F} {y : F}
     (run : QuadraticPenaltyRun f c y) (k : ℕ) : F :=
   firstOrderMultiplier c y (run.parameter k) (run.iterate k)
@@ -131,7 +163,13 @@ $$\|y^F_k - y_*\| \le K_1 \omega_k + K_2 \|x_k - x_*\|, \qquad \|y^{LS}(x_k) - y
 $$\|c(x_k)\| \le \mu_k \big(K_1 \omega_k + \|y - y_*\| + K_2 \|x_k - x_*\|\big).$$
 
 The source considers a convergent subsequence of the iterates. Here the sequence $x_k$ is that
-subsequence, reindexed. -/
+subsequence, reindexed.
+
+**Generalization.** The converging subsequence is represented as a sequence and the standing
+compactness condition is not used once convergence is given. The stronger local bounds use an
+invertible KKT operator and twice continuous differentiability, retaining the dependence on the
+fixed multiplier.
+-/
 theorem theorem_14_3_1 [FiniteDimensional ℝ F] {f : G → ℝ} {c : G → F}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c) {xstar : G}
     (hA : Function.Surjective (fderiv ℝ c xstar)) {x : ℕ → G}
@@ -170,6 +208,11 @@ are $K_3, \dots, K_7 > 0$ such that, for all large $k$,
 $$\|x_k - x_*\| \le K_3 \omega_k + K_4 \mu_k, \qquad \|y^F_k - y_*\| \le K_5 \omega_k + K_6
   \mu_k, \qquad \|y^{LS}(x_k) - y_*\| \le K_7 \omega_k + K_6 \mu_k,$$
 $$\|c(x_k)\| \le K_5 \mu_k \omega_k + K_6 \mu_k^2 + \mu_k \|y - y_*\|.$$
+
+**Generalization.** The converging subsequence is represented as a sequence and the standing
+compactness condition is not used once convergence is given. The stronger local bounds use an
+invertible KKT operator and twice continuous differentiability, retaining the dependence on the
+fixed multiplier.
 -/
 theorem theorem_14_3_1_iii [FiniteDimensional ℝ F] {f : G → ℝ} {c : G → F}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c) {xstar : G}
@@ -216,7 +259,12 @@ private theorem gradient_augmentedLagrangian_eq {f : G → ℝ} {c : G → F} {x
 Then
 $$\nabla_{xx} \Phi(x, y, \mu) = \nabla_{xx} \ell\big(x, y^F(x)\big) + \frac1\mu c'(x)^* c'(x),$$
 where the first-order estimate $y^F(x) = y - c(x) / \mu$ is held fixed in the Hessian of the
-Lagrangian. -/
+Lagrangian.
+
+**Reading.** The Hessian and augmented system are stated for continuous linear maps and adjoints.
+The Hessian decomposition uses the fixed first-order multiplier at its evaluation point. The
+block-system equivalence assumes a nonzero penalty parameter.
+-/
 theorem fderiv_gradient_augmentedLagrangian_eq {f : G → ℝ} {c : G → F}
     (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c) (x : G) (y : F) (μ : ℝ) :
     fderiv ℝ (gradient (augmentedLagrangian f c y μ)) x =
@@ -256,7 +304,12 @@ function $\Phi(x) = c(x)^2 / (2\mu)$ satisfies
 $$\mu\, \Phi''(0) = 3 \quad\text{and}\quad c'(0)^2 = 1.$$
 
 So the scaled Hessian does not tend to $c'(0)^2$ as $\mu \to 0$: the Lagrangian Hessian term
-$-y^F c''(0) = c(0) c''(0) / \mu$ has order $1/\mu$. -/
+$-y^F c''(0) = c(0) c''(0) / \mu$ has order $1/\mu$.
+
+**Correction.** At an infeasible point the Lagrangian part can itself grow at the rate of the
+penalty reciprocal. The scaled eigenvalue bounds require that part to be bounded for the printed
+limits, and feasibility gives a fixed Lagrangian Hessian.
+-/
 theorem lemma_14_3_2_infeasible_counterexample {μ : ℝ} (hμ : 0 < μ) :
     let c : ℝ → ℝ := fun x ↦ 1 + x + x ^ 2
     μ * deriv (deriv (quadraticPenalty (fun _ ↦ 0) c μ)) 0 = 3 ∧
@@ -295,7 +348,12 @@ bounded linear maps, $b, s \in G$, $c \in F$ and $\mu \neq 0$. Then
 $$\Big(M + \frac1\mu A^* A\Big) s = b + \frac1\mu A^* c$$
 if and only if there is $t \in F$ with
 $$M s + A^* t = b \quad\text{and}\quad A s - \mu t = c.$$
-The second block equation determines the auxiliary variable $t$ uniquely. -/
+The second block equation determines the auxiliary variable $t$ uniquely.
+
+**Reading.** The Hessian and augmented system are stated for continuous linear maps and adjoints.
+The Hessian decomposition uses the fixed first-order multiplier at its evaluation point. The
+block-system equivalence assumes a nonzero penalty parameter.
+-/
 theorem penalty_system_iff (M : G →L[ℝ] G) (A : G →L[ℝ] F)
     (b s : G) (c : F) {μ : ℝ} (hμ : μ ≠ 0) :
     M s + μ⁻¹ • A.adjoint (A s) = b + μ⁻¹ • A.adjoint c ↔
@@ -320,7 +378,11 @@ $$\nabla_x \Phi(x, y, \nu) = \nabla_x \Phi(x, y, \mu) + \Big(\frac\mu\nu - 1\Big
 where $y^F(x) = y - c(x) / \mu$ is the first-order estimate for $\mu$.
 
 **Correction.** The scaling factor is $\mu / \nu - 1$. Since $y - y^F(x) = c(x) / \mu$, the
-constraint term is $(1/\nu - 1/\mu)\, c'(x)^* c(x)$; the factor in the printed formula differs. -/
+constraint term is $(1/\nu - 1/\mu)\, c'(x)^* c(x)$; the factor in the printed formula differs.
+
+**Correction.** The coefficient of the adjoint constraint term is the old parameter divided by the
+new parameter minus one. The printed expression has the opposite sign.
+-/
 theorem gradient_augmentedLagrangian_change_parameter
     {f : G → ℝ} {c : G → F} {x : G} (hf : DifferentiableAt ℝ f x)
     (hc : DifferentiableAt ℝ c x) (y : F) {μ ν : ℝ} (hμ : μ ≠ 0) :
@@ -349,7 +411,12 @@ on the Lagrangian Hessian term $H$. At an infeasible point $H$ can grow like $1/
 limits fail; see `ConnGouldToint.Chapter14.lemma_14_3_2_infeasible_counterexample`. Here the
 error is bounded by $\mu \|H\|$.
 
-For the penalty Hessian (14.3.9), $H = \nabla_{xx} \ell(x, y^F(x))$ and $B = c'(x)^* c'(x)$. -/
+For the penalty Hessian (14.3.9), $H = \nabla_{xx} \ell(x, y^F(x))$ and $B = c'(x)^* c'(x)$.
+
+**Correction.** At an infeasible point the Lagrangian part can itself grow at the rate of the
+penalty reciprocal. The scaled eigenvalue bounds require that part to be bounded for the printed
+limits, and feasibility gives a fixed Lagrangian Hessian.
+-/
 theorem lemma_14_3_2_scaled_extremes [FiniteDimensional ℝ G] [Nontrivial G]
     {P B H : G →L[ℝ] G} (hP : P.toLinearMap.IsSymmetric) (hB : B.toLinearMap.IsSymmetric)
     {μ : ℝ} (hμ : 0 < μ) (hmodel : P = H + μ⁻¹ • B) :
@@ -417,7 +484,12 @@ $$\mu_i \lambda_{\min}(P_i) \to \lambda_{\min}(B) \quad\text{and}\quad \mu_i \la
   \to \lambda_{\max}(B).$$
 
 **Correction.** As in `ConnGouldToint.Chapter14.lemma_14_3_2_scaled_extremes`, the operators
-$H_i$ are assumed to be uniformly bounded. -/
+$H_i$ are assumed to be uniformly bounded.
+
+**Correction.** At an infeasible point the Lagrangian part can itself grow at the rate of the
+penalty reciprocal. The scaled eigenvalue bounds require that part to be bounded for the printed
+limits, and feasibility gives a fixed Lagrangian Hessian.
+-/
 theorem lemma_14_3_2_scaled_limits [FiniteDimensional ℝ G] [Nontrivial G]
     {ι : Type*} {l : Filter ι} {μ : ι → ℝ} {P H : ι → G →L[ℝ] G}
     {B : G →L[ℝ] G} (hP : ∀ i, (P i).toLinearMap.IsSymmetric)
@@ -462,14 +534,24 @@ variable [FiniteDimensional ℝ G] (A : G →L[ℝ] F)
 /-- **Lemma 14.3.2(i)** of [conn2000trust], the reduced Hessian. Let $A : G \to F$ and
 $H : G \to G$, and let $N : \ker A \to G$ be the inclusion. The **reduced Hessian** is the
 operator $N^* H N$ on $\ker A$, which represents the restriction of the quadratic form of $H$ to
-$\ker A$. -/
+$\ker A$.
+
+**Correction.** The reduction is on the entire nontrivial kernel of the constraint derivative, not
+an arbitrary orthonormal subfamily. The limit is for a fixed Lagrangian Hessian, which is the
+penalty Hessian's bounded term at a feasible point.
+-/
 noncomputable def reducedPenaltyHessian (H : G →L[ℝ] G) :
     A.toLinearMap.ker →L[ℝ] A.toLinearMap.ker :=
   let N := A.toLinearMap.ker.subtypeL
   N.adjoint.comp (H.comp N)
 
 omit [CompleteSpace F] [FiniteDimensional ℝ G] in
-/-- If $H$ is symmetric, the reduced Hessian $N^* H N$ on $\ker A$ is symmetric. -/
+/-- If $H$ is symmetric, the reduced Hessian $N^* H N$ on $\ker A$ is symmetric.
+
+**Correction.** The reduction is on the entire nontrivial kernel of the constraint derivative, not
+an arbitrary orthonormal subfamily. The limit is for a fixed Lagrangian Hessian, which is the
+penalty Hessian's bounded term at a feasible point.
+-/
 theorem reducedPenaltyHessian_symmetric {H : G →L[ℝ] G} (hH : H.toLinearMap.IsSymmetric) :
     (reducedPenaltyHessian A H).toLinearMap.IsSymmetric := by
   intro v w
@@ -490,7 +572,12 @@ depends on $\mu$ through $y^F(x)$. Here the Lagrangian Hessian $H$ is fixed, and
 is to the entire kernel of $A$. At a feasible point the two Hessians agree; see
 `ConnGouldToint.Chapter14.lemma_14_3_2_i_of_feasible`.
 
-The penalty term forces the directions of least Rayleigh quotient into $\ker A$ in the limit. -/
+The penalty term forces the directions of least Rayleigh quotient into $\ker A$ in the limit.
+
+**Correction.** The reduction is on the entire nontrivial kernel of the constraint derivative, not
+an arbitrary orthonormal subfamily. The limit is for a fixed Lagrangian Hessian, which is the
+penalty Hessian's bounded term at a feasible point.
+-/
 theorem lemma_14_3_2_i [Nontrivial G] [Nontrivial A.toLinearMap.ker]
     {H : G →L[ℝ] G} (hH : H.toLinearMap.IsSymmetric)
     (hP : ∀ μ : ℝ, (H + μ⁻¹ • A.adjoint.comp A).toLinearMap.IsSymmetric) :
@@ -638,7 +725,12 @@ $$\lambda_{\min}\big(\nabla_{xx} \Phi(x, y, \mu)\big) \to \lambda_{\min}(N^* H N
 where $N^* H N$ is the reduced Hessian on $\ker c'(x)$.
 
 At a feasible point $y^F(x) = y$, so the penalty Hessian is $H + \mu^{-1} c'(x)^* c'(x)$ and
-`ConnGouldToint.Chapter14.lemma_14_3_2_i` applies. -/
+`ConnGouldToint.Chapter14.lemma_14_3_2_i` applies.
+
+**Correction.** The reduction is on the entire nontrivial kernel of the constraint derivative, not
+an arbitrary orthonormal subfamily. The limit is for a fixed Lagrangian Hessian, which is the
+penalty Hessian's bounded term at a feasible point.
+-/
 theorem lemma_14_3_2_i_of_feasible [FiniteDimensional ℝ G] [Nontrivial G]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hcx : c x = 0) (y : F) [Nontrivial (fderiv ℝ c x).toLinearMap.ker] :
@@ -678,7 +770,12 @@ $$\mu \lambda_{\min}\big(\nabla_{xx} \Phi(x, y, \mu)\big) \to \lambda_{\min}(A^*
   \lambda_{\max}(A^* A).$$
 
 At a feasible point the correction $y^F(x) - y$ vanishes for every $\mu$, so the Lagrangian
-Hessian term is fixed. -/
+Hessian term is fixed.
+
+**Correction.** At an infeasible point the Lagrangian part can itself grow at the rate of the
+penalty reciprocal. The scaled eigenvalue bounds require that part to be bounded for the printed
+limits, and feasibility gives a fixed Lagrangian Hessian.
+-/
 theorem lemma_14_3_2_scaled_limits_of_feasible [FiniteDimensional ℝ G] [Nontrivial G]
     {f : G → ℝ} {c : G → F} (hf : ContDiff ℝ 2 f) (hc : ContDiff ℝ 2 c)
     {x : G} (hcx : c x = 0) (y : F) :

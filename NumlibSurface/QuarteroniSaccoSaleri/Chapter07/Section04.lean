@@ -50,6 +50,17 @@ The proofs use the energy functional and the energy norm of
 
 ## Deviations from the source
 
+* **Generalization.** The semiconductor formulas allow arbitrary square matrices and real
+  coefficients. See `QuarteroniSaccoSaleri.Chapter07.semiconductorPhi`,
+  `QuarteroniSaccoSaleri.Chapter07.semiconductorPhi_apply`,
+  `QuarteroniSaccoSaleri.Chapter07.semiconductorSystem`.
+* **Correction.** The energy uses the missing factor K and the gradient identity holds for any
+  symmetric matrix. See `QuarteroniSaccoSaleri.Chapter07.semiconductorFunctional`,
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_58`.
+* **Generalization.** The semiconductor minimization result extends to all symmetric positive
+  definite matrices. The energy-norm inequality retains coefficient one-half. See
+  `QuarteroniSaccoSaleri.Chapter07.exercise_7_5`,
+  `QuarteroniSaccoSaleri.Chapter07.equation_7_58_existsUnique`.
 * **Section 7.4.1** (generalization). The results hold for every symmetric positive definite matrix
   $A$, not only for $(\lambda/h)^2 \operatorname{tridiag}(-1, 2, -1)$; the constants $\lambda$ and
   $h$ are absorbed into $A$. See `QuarteroniSaccoSaleri.Chapter07.equation_7_58_existsUnique`.
@@ -79,13 +90,21 @@ variable {n : ℕ}
 
 /-- **Equation (7.57)** of [quarteroni2000numerical], the nonlinearity. For $K \in \mathbb{R}$ and
 $u \in \mathbb{R}^n$, the vector $\phi(u) \in \mathbb{R}^n$ has the coordinates
-$\phi_i(u) = 2K \sinh(u_i)$. -/
+$\phi_i(u) = 2K \sinh(u_i)$.
+
+**Generalization.** The formula allows arbitrary real K and arbitrary real square A. The model in
+the text uses positive K and a scaled tridiagonal matrix.
+-/
 noncomputable def semiconductorPhi (K : ℝ) (u : EuclideanSpace ℝ (Fin n)) :
     EuclideanSpace ℝ (Fin n) :=
   WithLp.toLp 2 fun i => 2 * K * Real.sinh (u i)
 
 /-- **Equation (7.57)** of [quarteroni2000numerical], the coordinates of the nonlinearity:
-$\phi(u)_i = 2K \sinh(u_i)$. -/
+$\phi(u)_i = 2K \sinh(u_i)$.
+
+**Generalization.** The formula allows arbitrary real K and arbitrary real square A. The model in
+the text uses positive K and a scaled tridiagonal matrix.
+-/
 @[simp] theorem semiconductorPhi_apply (K : ℝ) (u : EuclideanSpace ℝ (Fin n)) (i : Fin n) :
     semiconductorPhi K u i = 2 * K * Real.sinh (u i) := rfl
 
@@ -93,6 +112,9 @@ $\phi(u)_i = 2K \sinh(u_i)$. -/
 $K \in \mathbb{R}$ and $b \in \mathbb{R}^n$, the nonlinear system of semiconductor device
 simulation is $F(u) = 0$, where
 $$F(u) = Au + \phi(u) - b.$$
+
+**Generalization.** The formula allows arbitrary real K and arbitrary real square A. The model in
+the text uses positive K and a scaled tridiagonal matrix.
 -/
 noncomputable def semiconductorSystem (A : Matrix (Fin n) (Fin n) ℝ) (K : ℝ)
     (b u : EuclideanSpace ℝ (Fin n)) : EuclideanSpace ℝ (Fin n) :=
@@ -107,7 +129,11 @@ parenthesis and without the factor $K$. The gradient of the second term must be
 $\phi_i(u) = 2K \sinh(u_i)$, so the term is $2K \sum \cosh(u_i)$.
 
 The quadratic part $\frac{1}{2} u^T A u - b^T u$ is the backbone's
-`energyFunctional (toEuclideanLin A) b`, as in (7.35). -/
+`energyFunctional (toEuclideanLin A) b`, as in (7.35).
+
+**Correction.** The hyperbolic-cosine term has coefficient $2K$, required by the $2K\sinh$
+nonlinearity in (7.57). The gradient identity uses any symmetric A.
+-/
 noncomputable def semiconductorFunctional (A : Matrix (Fin n) (Fin n) ℝ) (K : ℝ)
     (b u : EuclideanSpace ℝ (Fin n)) : ℝ :=
   energyFunctional (toEuclideanLin A) b u + 2 * K * ∑ i, Real.cosh (u i)
@@ -125,7 +151,11 @@ critical points of (7.58).
 
 The gradient of the quadratic part is `hasGradientAt_energyFunctional`, and the gradient of the
 other part follows coordinatewise from `Real.hasDerivAt_cosh`. A critical point is
-`QuarteroniSaccoSaleri.Chapter07.IsCriticalPoint`. -/
+`QuarteroniSaccoSaleri.Chapter07.IsCriticalPoint`.
+
+**Correction.** The hyperbolic-cosine term has coefficient $2K$, required by the $2K\sinh$
+nonlinearity in (7.57). The gradient identity uses any symmetric A.
+-/
 theorem equation_7_58 (hA : A.IsSymm) (u : EuclideanSpace ℝ (Fin n)) :
     semiconductorFunctional A K b u
         = (ofLp u ⬝ᵥ (A *ᵥ ofLp u)) / 2 + 2 * K * ∑ i, Real.cosh (u i) - ofLp b ⬝ᵥ ofLp u ∧
@@ -242,7 +272,12 @@ as in the first part. In the Euclidean norm of (7.49), the proof gives $\rho = c
 coercivity constant $c$ of $A$; the formal statement asserts only that some $\rho > 0$ exists.
 
 The quadratic part of $f$ gives the right-hand side exactly, and the strict convexity of $\cosh$
-in a coordinate where $u$ and $v$ differ gives the strict inequality. -/
+in a coordinate where $u$ and $v$ differ gives the strict inequality.
+
+**Generalization.** The energy and minimizer results work for every symmetric positive definite A
+and positive K. The strict inequality preserves the source's factor one-half in the energy norm and
+separately proves strong convexity with a Euclidean modulus.
+-/
 theorem exercise_7_5 (hA : A.PosDef) (hK : 0 < K) :
     (∀ u v : EuclideanSpace ℝ (Fin n), u ≠ v → ∀ lam : ℝ, 0 < lam → lam < 1 →
         1 / 2 * lam * (1 - lam) * energyNorm (toEuclideanLin A) (u - v) ^ 2
@@ -293,7 +328,12 @@ statement holds for every symmetric positive definite $A$, with the constants $\
 absorbed into $A$.
 
 The proof combines Exercise 5 (`QuarteroniSaccoSaleri.Chapter07.exercise_7_5`) with Property
-7.10 (`QuarteroniSaccoSaleri.Chapter07.property_7_10`). -/
+7.10 (`QuarteroniSaccoSaleri.Chapter07.property_7_10`).
+
+**Generalization.** The energy and minimizer results work for every symmetric positive definite A
+and positive K. The strict inequality preserves the source's factor one-half in the energy norm and
+separately proves strong convexity with a Euclidean modulus.
+-/
 theorem equation_7_58_existsUnique (hA : A.PosDef) (hK : 0 < K) :
     (∃! ustar : EuclideanSpace ℝ (Fin n),
         IsMinOn (semiconductorFunctional A K b) univ ustar) ∧

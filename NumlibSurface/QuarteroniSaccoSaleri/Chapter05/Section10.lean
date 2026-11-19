@@ -86,6 +86,27 @@ counts the eigenvalues at most $\mu$. The proofs specialize `Numlib.Eigen.Jacobi
 
 ## Deviations from the source
 
+* **Generalization.** The Jacobi two-coordinate block identity also holds before normalizing the
+  rotation. See `QuarteroniSaccoSaleri.Chapter05.equation_5_60`.
+* **Derivation.** The maximum-entry Jacobi result gives an explicit geometric off-diagonal rate and
+  diagonal limit. See `QuarteroniSaccoSaleri.Chapter05.classicalJacobi`.
+* **Scope.** The cyclic Jacobi sweep formalizes fixed-length iteration and its monotone off-diagonal
+  norm. See `QuarteroniSaccoSaleri.Chapter05.cyclicPairs`,
+  `QuarteroniSaccoSaleri.Chapter05.cyclicJacobiSweep`,
+  `QuarteroniSaccoSaleri.Chapter05.cyclicJacobiIterate`,
+  `QuarteroniSaccoSaleri.Chapter05.cyclicJacobiSweep_spec`.
+* **Reading.** The Sturm determinant recurrence includes the sign needed for a monic characteristic
+  polynomial. See `QuarteroniSaccoSaleri.Chapter05.sturmSeq`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_65`.
+* **Scope.** Strict Sturm interlacing uses an all-index off-diagonal nonvanishing assumption. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_11_interlace`.
+* **Correction.** The Sturm sign count includes eigenvalues equal to the evaluation point. See
+  `QuarteroniSaccoSaleri.Chapter05.property_5_11_count`.
+* **Reading.** Sturm bisection returns closed enclosures with exact interval halving. See
+  `QuarteroniSaccoSaleri.Chapter05.givensBisection`,
+  `QuarteroniSaccoSaleri.Chapter05.givensBisection_spec`,
+  `QuarteroniSaccoSaleri.Chapter05.eigenvalues_mem_Icc_givensBisection`,
+  `QuarteroniSaccoSaleri.Chapter05.givensBisection_error`.
 * **Property 5.11, the sign-change count** (reading). The source says that $s(\mu)$ counts the
   eigenvalues strictly less than $\mu$; under its own sign convention $s(\mu)$ counts the
   eigenvalues at most $\mu$. See `QuarteroniSaccoSaleri.Chapter05.property_5_11_count`.
@@ -130,7 +151,11 @@ c \end{bmatrix}^T \begin{bmatrix} a_{pp} & a_{pq} \\ a_{pq} & a_{qq} \end{bmatri
 The statement holds for any $c$ and $s$, without $c^2 + s^2 = 1$. The matrix $G_{pq}$ is
 `planeRotation p q c (-s)`. The proof specializes `Matrix.conj_planeRotation_apply_jj`,
 `Matrix.conj_planeRotation_apply_jk`, `Matrix.conj_planeRotation_apply_kk` and
-`Matrix.conj_planeRotation_apply_of_ne`. -/
+`Matrix.conj_planeRotation_apply_of_ne`.
+
+**Generalization.** The local block calculation holds for any two scalars $c,s$, including without
+the rotation normalization, and records entries away from both selected coordinates separately.
+-/
 theorem equation_5_60 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {p q : Fin n} (hpq : p ≠ q)
     (c s : ℝ) :
     let G := planeRotation p q c (-s)
@@ -308,7 +333,12 @@ diagonal entries of $\Lambda$ are the eigenvalues of $A$.
 The source states the convergence without a theorem. The iteration is
 `Matrix.classicalJacobiIterate`, and the pair is `Matrix.maxOffDiagPair`. The proof specializes
 `Matrix.isSymm_classicalJacobiIterate`, `Matrix.charpoly_classicalJacobiIterate`,
-`Matrix.offDiagNormSq_classicalJacobiIterate_le` and `Matrix.tendsto_classicalJacobiIterate`. -/
+`Matrix.offDiagNormSq_classicalJacobiIterate_le` and `Matrix.tendsto_classicalJacobiIterate`.
+
+**Reading.** Lean gives a geometric rate in squared off-diagonal norm and actual convergence to a
+diagonal matrix for maximum-entry pivoting. The book introduces the pivot selector and discusses the
+quadratic rate for a different cyclic variant.
+-/
 theorem classicalJacobi [Nonempty (Fin n)] {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm)
     (hn : 2 ≤ n) :
     (∀ ν, (classicalJacobiIterate A ν).IsSymm) ∧
@@ -327,7 +357,12 @@ theorem classicalJacobi [Nonempty (Fin n)] {A : Matrix (Fin n) (Fin n) ℝ} (hA 
 is the list of the pairs $(p, q)$ with $1 \le p < q \le n$: for each row $p = 1, \dots, n - 1$,
 the columns $q = p + 1, \dots, n$.
 
-Indices are 0-based in the Lean list. -/
+Indices are 0-based in the Lean list.
+
+**Reading.** The row-cyclic definitions execute a fixed number of sweeps. Their theorem states
+symmetry, spectrum preservation and monotonicity, without the source's cyclic quadratic estimate or
+tolerance test.
+-/
 def cyclicPairs (n : ℕ) : List (Fin n × Fin n) :=
   (List.finRange n).flatMap fun p => ((List.finRange n).filter fun q => p < q).map fun q => (p, q)
 
@@ -342,13 +377,23 @@ theorem cyclicPairs_ne {pq : Fin n × Fin n} (h : pq ∈ cyclicPairs n) : pq.1 �
 /-- **Section 5.10.1** of [quarteroni2000numerical], one sweep of the row-cyclic Jacobi method
 (Program 40). A sweep applies the Jacobi transformations (5.59)–(5.62) at the pairs $(p, q)$ of
 `QuarteroniSaccoSaleri.Chapter05.cyclicPairs` in row order, $p = 1, \dots, n - 1$ and
-$q = p + 1, \dots, n$. So one sweep is $N = n(n - 1)/2$ transformations. -/
+$q = p + 1, \dots, n$. So one sweep is $N = n(n - 1)/2$ transformations.
+
+**Reading.** The row-cyclic definitions execute a fixed number of sweeps. Their theorem states
+symmetry, spectrum preservation and monotonicity, without the source's cyclic quadratic estimate or
+tolerance test.
+-/
 noncomputable def cyclicJacobiSweep (A : Matrix (Fin n) (Fin n) ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   (cyclicPairs n).foldl (fun M pq => jacobiRotate M pq.1 pq.2) A
 
 /-- **Section 5.10.1** of [quarteroni2000numerical], the row-cyclic Jacobi method. For
 $A \in \mathbb{R}^{n \times n}$ and $k \in \mathbb{N}$, it is the result of $k$ sweeps applied
-to $A$, which is the iterate $A^{(kN)}$ of the source. -/
+to $A$, which is the iterate $A^{(kN)}$ of the source.
+
+**Reading.** The row-cyclic definitions execute a fixed number of sweeps. Their theorem states
+symmetry, spectrum preservation and monotonicity, without the source's cyclic quadratic estimate or
+tolerance test.
+-/
 noncomputable def cyclicJacobiIterate (A : Matrix (Fin n) (Fin n) ℝ) (k : ℕ) :
     Matrix (Fin n) (Fin n) ℝ :=
   cyclicJacobiSweep^[k] A
@@ -379,7 +424,12 @@ $A \in \mathbb{R}^{n \times n}$ be symmetric. For every $k$, the result of $k$ s
 symmetric and has the characteristic polynomial of $A$, and the next sweep does not increase
 $\Psi$: $$\Psi(A^{((k+1)N)}) \le \Psi(A^{(kN)}).$$
 
-The decrease is (5.64) at every transformation of the sweep. -/
+The decrease is (5.64) at every transformation of the sweep.
+
+**Reading.** The row-cyclic definitions execute a fixed number of sweeps. Their theorem states
+symmetry, spectrum preservation and monotonicity, without the source's cyclic quadratic estimate or
+tolerance test.
+-/
 theorem cyclicJacobiSweep_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) (k : ℕ) :
     (cyclicJacobiIterate A k).IsSymm ∧ (cyclicJacobiIterate A k).charpoly = A.charpoly ∧
       equation_5_63 (cyclicJacobiIterate A (k + 1)) ≤ equation_5_63 (cyclicJacobiIterate A k) := by
@@ -409,7 +459,12 @@ $b_1, \dots, b_{n-1}$. The **Sturm sequence** of $T$ is the sequence of polynomi
 \quad (i \ge 2).$$
 
 Indices are 0-based: $d_{i+1}$ and $b_{i+1}$ are `d i` and `b i`. The sequence is defined for
-every $i \in \mathbb{N}$. -/
+every $i \in \mathbb{N}$.
+
+**Reading.** The recurrence is defined for arbitrary infinite diagonal and off-diagonal sequences
+and every prefix. The polynomial is $\det(T_i-xI)$, so in Lean's monic characteristic-polynomial
+convention it equals $(-1)^i\chi_{T_i}$.
+-/
 noncomputable def sturmSeq (d b : ℕ → ℝ) : ℕ → ℝ[X]
   | 0 => 1
   | 1 => C (d 0) - X
@@ -430,7 +485,12 @@ polynomial. In particular $p_n$ is the characteristic polynomial of $T$ in the c
 $\det(T - xI)$ of the book.
 
 The matrix $T_i$ is `Matrix.symmTridiagonalOf d b i`, and $\chi_{T_i}$ is Mathlib's
-`Matrix.charpoly`. The proof specializes `Sturm.seq_eq_det` and `Sturm.seq_eq_charpoly`. -/
+`Matrix.charpoly`. The proof specializes `Sturm.seq_eq_det` and `Sturm.seq_eq_charpoly`.
+
+**Reading.** The recurrence is defined for arbitrary infinite diagonal and off-diagonal sequences
+and every prefix. The polynomial is $\det(T_i-xI)$, so in Lean's monic characteristic-polynomial
+convention it equals $(-1)^i\chi_{T_i}$.
+-/
 theorem equation_5_65 (d b : ℕ → ℝ) (i : ℕ) :
     sturmSeq d b i = ((symmTridiagonalOf d b i).map (C : ℝ → ℝ[X]) -
         (X : ℝ[X]) • (1 : Matrix (Fin i) (Fin i) ℝ[X])).det ∧
@@ -447,7 +507,11 @@ $$\lambda_{k+1}(T_i) < \lambda_k(T_{i-1}) < \lambda_k(T_i) \quad \text{for } k =
 Indices are 0-based: the Lean statement is for $T_i$ and $T_{i+1}$ with `k : Fin i`. The proof
 specializes `Sturm.eigenvalues_succ_lt` and `Sturm.eigenvalues_lt_castSucc`, which are Cauchy
 interlacing for the leading principal submatrix, made strict because consecutive $p_i$ have no
-common root. Hence the eigenvalues of an unreduced $T$ are simple (`Sturm.eigenvalues_simple`). -/
+common root. Hence the eigenvalues of an unreduced $T$ are simple (`Sturm.eigenvalues_simple`).
+
+**Reading.** Strict interlacing is stated for every consecutive prefix under nonvanishing of the
+entire off-diagonal sequence. The printed application needs only the finite prefix in the matrix.
+-/
 theorem property_5_11_interlace (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) (i : ℕ) (k : Fin i) :
     Sturm.eigenvalues d b (i + 1) k.succ < Sturm.eigenvalues d b i k ∧
       Sturm.eigenvalues d b i k < Sturm.eigenvalues d b (i + 1) k.castSucc :=
@@ -468,7 +532,12 @@ $\mu$. The two counts agree when $\mu$ is not an eigenvalue.
 
 The sign and the count are `Sturm.sign` and `Sturm.signChanges`, and the number of eigenvalues
 at most $\mu$ is `Polynomial.countRootsIn (Set.Iic μ)` of the characteristic polynomial. The
-proof specializes `Sturm.eval_ne_zero_or_eval_ne_zero` and `Sturm.signChanges_eq_countRootsIn`. -/
+proof specializes `Sturm.eval_ne_zero_or_eval_ne_zero` and `Sturm.signChanges_eq_countRootsIn`.
+
+**Correction.** The printed convention assigns a zero term the sign opposite to its predecessor.
+With that convention the count includes eigenvalues equal to the evaluation point, so Lean uses the
+closed half-line.
+-/
 theorem property_5_11_count (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) (n : ℕ) (μ : ℝ) :
     (∀ i, (sturmSeq d b i).eval μ ≠ 0 ∨ (sturmSeq d b (i + 1)).eval μ ≠ 0) ∧
       Sturm.signChanges d b n μ =
@@ -488,7 +557,12 @@ $b := c$ if $s(c) > n - i$ and $a := c$ otherwise. The value at $r$ is the pair
 $(a^{(r)}, b^{(r)})$.
 
 The radii $|b_{i-1}| + |b_i|$ are `Sturm.gershgorinRadius`, and the step is
-`Sturm.bisectionStep`. -/
+`Sturm.bisectionStep`.
+
+**Reading.** The recurrence returns closed intervals and uses the count including equality. The
+enclosure and error theorem require a valid label and nonzero off-diagonal sequence. The fixed-step
+rule includes exact halving and a bound in terms of the initial width.
+-/
 noncomputable def givensBisection (d b : ℕ → ℝ) (n i : ℕ) (r : ℕ) : ℝ × ℝ :=
   Sturm.bisectionIterate d b n i
     (⨅ j : Fin n, (d j - Sturm.gershgorinRadius b n j),
@@ -499,7 +573,12 @@ starting interval $[\alpha, \beta]$ contains the spectrum of $T$ (Theorem 5.2), 
 the bisection $c = (a^{(r)} + b^{(r)})/2$, $$(a^{(r+1)}, b^{(r+1)}) = \begin{cases} (a^{(r)}, c)
 & \text{if } s(c) > n - i, \\ (c, b^{(r)}) & \text{otherwise.} \end{cases}$$
 
-The enclosure is `Sturm.spectrum_subset_Icc`. -/
+The enclosure is `Sturm.spectrum_subset_Icc`.
+
+**Reading.** The recurrence returns closed intervals and uses the count including equality. The
+enclosure and error theorem require a valid label and nonzero off-diagonal sequence. The fixed-step
+rule includes exact halving and a bound in terms of the initial width.
+-/
 theorem givensBisection_spec (d b : ℕ → ℝ) (n i : ℕ) :
     spectrum ℝ (symmTridiagonalOf d b n) ⊆
         Set.Icc (givensBisection d b n i 0).1 (givensBisection d b n i 0).2 ∧
@@ -519,7 +598,12 @@ largest eigenvalue $\lambda_i$ of $T$ lies in the closed interval $[a^{(r)}, b^{
 The eigenvalue $\lambda_i$ is `Sturm.eigenvalues d b n ⟨i - 1, _⟩`. The proof specializes
 `Sturm.eigenvalues_mem_Icc_bisectionIterate`: the left end $\alpha$ of the Gershgorin interval
 is at most every eigenvalue (`Sturm.eigenvalues_mem_Icc`), and $s(\beta) = n$
-(`Sturm.count_eq_of_le`). -/
+(`Sturm.count_eq_of_le`).
+
+**Reading.** The recurrence returns closed intervals and uses the count including equality. The
+enclosure and error theorem require a valid label and nonzero off-diagonal sequence. The fixed-step
+rule includes exact halving and a bound in terms of the initial width.
+-/
 theorem eigenvalues_mem_Icc_givensBisection (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) {n i : ℕ}
     (hi : 1 ≤ i) (hin : i ≤ n) (r : ℕ) :
     Sturm.eigenvalues d b n ⟨i - 1, by omega⟩ ∈
@@ -547,7 +631,12 @@ every $r$, so the eigenvalue lies in the closed interval $[a^{(r)}, b^{(r)}]$, w
 error bound needs.
 
 The proof specializes `Sturm.bisectionIterate_length`, with
-`QuarteroniSaccoSaleri.Chapter05.eigenvalues_mem_Icc_givensBisection`. -/
+`QuarteroniSaccoSaleri.Chapter05.eigenvalues_mem_Icc_givensBisection`.
+
+**Reading.** The recurrence returns closed intervals and uses the count including equality. The
+enclosure and error theorem require a valid label and nonzero off-diagonal sequence. The fixed-step
+rule includes exact halving and a bound in terms of the initial width.
+-/
 theorem givensBisection_error (d b : ℕ → ℝ) (hb : ∀ i, b i ≠ 0) {n i : ℕ} (hi : 1 ≤ i)
     (hin : i ≤ n) (r : ℕ) :
     Sturm.eigenvalues d b n ⟨i - 1, by omega⟩ ∈

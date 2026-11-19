@@ -92,6 +92,23 @@ not affected.
 * The 1-based block $A(i_1{:}i_2, j_1{:}j_2)$ of the source is the 0-based `A.submatrix` on
   consecutive indices.
 
+## Deviations from the source
+
+* **Equation (2.3.2), attainment** (reading). The unit-vector conclusion requires positive
+  input dimension. See `GolubVanLoan.Chapter02.equation_2_3_2`.
+* **Equations (2.3.5)–(2.3.6)** (generalization and reading). The target need only carry a
+  seminorm. Attainment requires a nonempty unit sphere. See
+  `GolubVanLoan.Chapter02.equation_2_3_5` and `GolubVanLoan.Chapter02.equation_2_3_6`.
+* **Equations (2.3.8)–(2.3.12)** (reading). Empty maxima and division by a zero square root
+  evaluate to zero. See `GolubVanLoan.Chapter02.equation_2_3_8`,
+  `GolubVanLoan.Chapter02.equation_2_3_9`, `GolubVanLoan.Chapter02.equation_2_3_10`,
+  `GolubVanLoan.Chapter02.equation_2_3_11` and `GolubVanLoan.Chapter02.equation_2_3_12`.
+* **Theorem 2.3.1 and its spectral formula** (reading). The source has no column-count
+  hypothesis. A unit vector and a largest eigenvalue require positive column count. See
+  `GolubVanLoan.Chapter02.theorem_2_3_1` and `GolubVanLoan.Chapter02.l2_opNorm_eq_sqrt_lambdaMax`.
+* **Proof of Theorem 2.3.4** (correction). The proof uses right factorization to control the
+  perturbation by the stated $\|A^{-1}E\|_p$. See `GolubVanLoan.Chapter02.theorem_2_3_4`.
+
 ## Not formalized
 
 * **Equation (2.3.4)**, the definition of a consistent family of norms. The source uses it only in
@@ -151,6 +168,9 @@ $A \in \mathbb{R}^{m \times n}$. The **$p$-norm** of $A$ satisfies
 $$\|A\|_p = \sup_{x \neq 0} \frac{\|Ax\|_p}{\|x\|_p}.$$
 If $n \ge 1$, the supremum is attained on the unit sphere: $\|A\|_p = \|Ax\|_p$ for some $x$
 with $\|x\|_p = 1$. Moreover $\|\cdot\|_p$ is a matrix norm.
+
+**Reading.** The source leaves the positive dimension implicit in the unit-vector statement.
+In dimension zero there is no unit vector and the operator norm is zero.
 
 The second part is the display after (2.3.2) in the source. The $p$-norm is
 `Matrix.lpOpNorm p A`, and the vector $p$-norm $\|x\|_p$ is `‖WithLp.toLp p x‖`. For $n = 0$
@@ -229,9 +249,11 @@ $A \in \mathbb{R}^{m \times n}$, the subordinate norm satisfies
 $$\|A\|_{\alpha,\beta} = \sup_{x \neq 0} \frac{\|Ax\|_\beta}{\|x\|_\alpha},$$
 and $\|Ax\|_\beta \le \|A\|_{\alpha,\beta} \|x\|_\alpha$ for every $x \in \mathbb{R}^n$.
 
-The norm $\|A\|_{\alpha,\beta}$ is `Matrix.inducedNorm β α A`, which is defined as the supremum
-of $\|Ax\|_\beta$ over $\|x\|_\alpha \le 1$. The norm $\alpha$ is a `Seminorm` with the
-definiteness hypothesis `hα`; $\beta$ need not be definite. -/
+**Generalization.** The book takes both vector norms to be definite. The ratio only requires
+definiteness of the input norm, so the target may be a seminorm.
+
+The value is `Matrix.inducedNorm β α A`, the supremum of $\|Ax\|_\beta$ over
+$\|x\|_\alpha \le 1$. -/
 theorem equation_2_3_5 (α : Seminorm ℝ (Fin n → ℝ)) (β : Seminorm ℝ (Fin m → ℝ))
     (hα : ∀ x, α x = 0 → x = 0) (A : Matrix (Fin m) (Fin n) ℝ) :
     inducedNorm β α A = ⨆ x : {x : Fin n → ℝ // x ≠ 0}, β (A *ᵥ (x : Fin n → ℝ)) / α x ∧
@@ -243,7 +265,11 @@ $\mathbb{R}^n$ with $n \ge 1$, let $\|\cdot\|_\beta$ be a seminorm on $\mathbb{R
 $A \in \mathbb{R}^{m \times n}$. Then the supremum (2.3.5) is attained: there is
 $x_* \in \mathbb{R}^n$ with $\|x_*\|_\alpha = 1$ and
 $$\|A\|_{\alpha,\beta} = \|A x_*\|_\beta.$$
--/
+
+**Generalization.** The target may be a seminorm because continuity on the input unit sphere
+is enough for attainment.
+
+**Reading.** The input dimension is positive so the unit sphere is nonempty. -/
 theorem equation_2_3_6 (α : Seminorm ℝ (Fin n → ℝ)) (β : Seminorm ℝ (Fin m → ℝ))
     (hα : ∀ x, α x = 0 → x = 0) (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
     ∃ x : Fin n → ℝ, α x = 1 ∧ inducedNorm β α A = β (A *ᵥ x) :=
@@ -270,7 +296,8 @@ end Frobenius
 /-- **Equation (2.3.8)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
 $$\max_{i,j} |a_{ij}| \le \|A\|_2 \le \sqrt{mn} \, \max_{i,j} |a_{ij}|.$$
 
-The maximum is a supremum over `Fin m` and `Fin n`, which is $0$ when $m = 0$ or $n = 0$. -/
+**Reading.** The book writes a maximum. The supremum convention gives $0$ when either index
+set is empty. -/
 theorem equation_2_3_8 (A : Matrix (Fin m) (Fin n) ℝ) :
     (⨆ i, ⨆ j, |A i j|) ≤ lpOpNorm 2 A ∧
       lpOpNorm 2 A ≤ √((m : ℝ) * n) * ⨆ i, ⨆ j, |A i j| := by
@@ -289,7 +316,8 @@ theorem equation_2_3_8 (A : Matrix (Fin m) (Fin n) ℝ) :
 /-- **Equation (2.3.9)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$, the 1-norm is
 the largest column sum of $|A|$:
 $$\|A\|_1 = \max_{1 \le j \le n} \sum_{i=1}^m |a_{ij}|.$$
--/
+
+**Reading.** If there are no columns, the supremum is zero. -/
 theorem equation_2_3_9 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm 1 A = ⨆ j, ∑ i, |A i j| := by
   rw [lpOpNorm_one_eq_sup_sum_norm, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
@@ -302,7 +330,8 @@ open scoped Matrix.Norms.Operator
 /-- **Equation (2.3.10)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$, the
 $\infty$-norm is the largest row sum of $|A|$:
 $$\|A\|_\infty = \max_{1 \le i \le m} \sum_{j=1}^n |a_{ij}|.$$
--/
+
+**Reading.** If there are no rows, the supremum is zero. -/
 theorem equation_2_3_10 (A : Matrix (Fin m) (Fin n) ℝ) :
     lpOpNorm ∞ A = ⨆ i, ∑ j, |A i j| := by
   rw [lpOpNorm_top, linfty_opNorm_def, Finset.sup_univ_eq_ciSup, NNReal.coe_iSup]
@@ -323,7 +352,8 @@ private theorem one_div_sqrt_mul_le {a b c : ℝ} (hb : 0 ≤ b) (h : a ≤ √c
 /-- **Equation (2.3.11)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
 $$\frac{1}{\sqrt{n}} \|A\|_\infty \le \|A\|_2 \le \sqrt{m} \, \|A\|_\infty.$$
 
-For $n = 0$ the Lean value of $1/\sqrt{n}$ is $0$. -/
+**Reading.** The book's denominator presupposes $n>0$. For $n=0$, Lean gives
+$1/\sqrt{n}=0$ and both operator norms vanish. -/
 theorem equation_2_3_11 (A : Matrix (Fin m) (Fin n) ℝ) :
     1 / √(n : ℝ) * lpOpNorm ∞ A ≤ lpOpNorm 2 A ∧ lpOpNorm 2 A ≤ √(m : ℝ) * lpOpNorm ∞ A := by
   obtain ⟨h1, h2⟩ := l2_opNorm_le_sqrt_card_mul_linfty_opNorm A
@@ -333,7 +363,8 @@ theorem equation_2_3_11 (A : Matrix (Fin m) (Fin n) ℝ) :
 /-- **Equation (2.3.12)** of [golub2013matrix]. For $A \in \mathbb{R}^{m \times n}$,
 $$\frac{1}{\sqrt{m}} \|A\|_1 \le \|A\|_2 \le \sqrt{n} \, \|A\|_1.$$
 
-For $m = 0$ the Lean value of $1/\sqrt{m}$ is $0$. -/
+**Reading.** The book's denominator presupposes $m>0$. For $m=0$, Lean gives
+$1/\sqrt{m}=0$ and both operator norms vanish. -/
 theorem equation_2_3_12 (A : Matrix (Fin m) (Fin n) ℝ) :
     1 / √(m : ℝ) * lpOpNorm 1 A ≤ lpOpNorm 2 A ∧ lpOpNorm 2 A ≤ √(n : ℝ) * lpOpNorm 1 A := by
   obtain ⟨h1, h2⟩ := l2_opNorm_le_sqrt_card_mul_lpOpNorm_one A
@@ -384,8 +415,8 @@ private theorem exists_colSingularValues_eq_lpOpNorm_two (A : Matrix (Fin m) (Fi
 let $\mu = \|A\|_2$. Then there is $z \in \mathbb{R}^n$ with $\|z\|_2 = 1$ and
 $$A^T A z = \mu^2 z.$$
 
-The proof takes for $z$ a right singular vector of the largest singular value of $A$, not the
-gradient computation of the source. -/
+**Reading.** The source leaves the positive column count implicit. The hypothesis is
+needed because the zero-dimensional vector space has no unit vector. -/
 theorem theorem_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
     ∃ z : Fin n → ℝ, ‖WithLp.toLp 2 z‖ = 1 ∧ (Aᵀ * A) *ᵥ z = lpOpNorm 2 A ^ 2 • z := by
   obtain ⟨i, hi, -⟩ := exists_colSingularValues_eq_lpOpNorm_two A hn
@@ -398,6 +429,8 @@ theorem theorem_2_3_1 (A : Matrix (Fin m) (Fin n) ℝ) (hn : 0 < n) :
 with $n \ge 1$. Then
 $$\|A\|_2 = \sqrt{\lambda_{\max}(A^T A)},$$
 and $\|A\|_2^2$ is a zero of the polynomial $p(\lambda) = \det(A^T A - \lambda I)$.
+
+**Reading.** The Gram matrix has positive order so that a largest eigenvalue exists.
 
 The eigenvalue $\lambda_{\max}(A^T A)$ is the first sorted eigenvalue
 `Matrix.IsHermitian.sortedEigenvalues` at index $0$, as in §2.1. The Hermitian matrix is
@@ -470,10 +503,10 @@ $A \in \mathbb{R}^{n \times n}$ be nonsingular, let $E \in \mathbb{R}^{n \times 
 $r = \|A^{-1}E\|_p < 1$. Then $A + E$ is nonsingular and
 $$\|(A + E)^{-1} - A^{-1}\|_p \le \frac{\|E\|_p \|A^{-1}\|_p^2}{1 - r}.$$
 
-The proof uses the factorization $A + E = A(I + A^{-1}E)$ and Lemma 2.3.3, through the normed
-ring result of `Numlib.Analysis.Normed.Ring.Inverse`. The proof in the source writes
-$A + E = (I + F)A$ with $F = -EA^{-1}$ and claims $\|F\|_p = r = \|A^{-1}E\|_p$, which is false
-in general. The statement is true as printed. -/
+**Correction.** The printed proof uses $A+E=(I+F)A$ with $F=-EA^{-1}$ and equates
+$\|F\|_p$ with $\|A^{-1}E\|_p$. With $A=\operatorname{diag}(1,2)$ and $E=e_1e_2^T/2$,
+these norms are $1/4$ and $1/2$. The proof uses $A+E=A(I+A^{-1}E)$, which yields the
+printed bound with its stated $r$. -/
 theorem theorem_2_3_4 (p : ℝ≥0∞) [Fact (1 ≤ p)] {A E : Matrix (Fin n) (Fin n) ℝ} (hA : IsUnit A)
     (hr : lpOpNorm p (A⁻¹ * E) < 1) :
     IsUnit (A + E) ∧

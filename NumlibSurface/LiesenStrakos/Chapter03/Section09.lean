@@ -28,6 +28,11 @@ realization reproduces a specified initial segment of those moments. See §3.9 o
   infinity and at zero, respectively.
 * `cg_scatteringAmplitude_eq` identifies the scattering amplitude at the CG initial residual
   with the squared initial energy error and gives its reduced approximation.
+
+## Deviations from the source
+
+* **Section 3.9** (generalization). The transfer formulas allow complex data and use total
+  inverses, with explicit norm bounds for the expansion domains.
 -/
 
 open Matrix
@@ -36,32 +41,45 @@ namespace LiesenStrakos.Chapter03
 
 /-- The transfer function of the descriptor system with state matrices $A,E$, input $b$, output
 $c^*$ and direct feedthrough $d$ is $d+c^*(\lambda E-A)^{-1}b$ at every $\lambda$ for which the
-pencil matrix is invertible. This is (3.9.2) of [liesen2013krylov]. -/
+pencil matrix is invertible. This is (3.9.2) of [liesen2013krylov].
+
+**Generalization.** Complex system data are allowed. At a singular pencil argument the total
+inverse assigns the feedthrough value $d$. -/
 noncomputable def transferFunction {n : ℕ} (A E : Matrix (Fin n) (Fin n) ℂ)
     (b c : Fin n → ℂ) (d z : ℂ) : ℂ :=
   d + (star c) ⬝ᵥ ((z • E - A)⁻¹ *ᵥ b)
 
 /-- The $k$th Markov parameter for the ordinary system $E=I$, $d=0$ is $c^*A^k b$. This is
-(3.9.6) of [liesen2013krylov], indexed from zero. -/
+(3.9.6) of [liesen2013krylov], indexed from zero.
+
+**Generalization.** Complex system data are allowed and the index begins at zero. -/
 noncomputable def markovParameter {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ)
     (b c : Fin n → ℂ) (k : ℕ) : ℂ :=
   (star c) ⬝ᵥ (A ^ k *ᵥ b)
 
 /-- The $k$th coefficient of the expansion of $-c^*(\lambda I-A)^{-1}b$ at $\lambda=0$ is
 $c^*(A^{-1})^{k+1}b$ for invertible $A$. This is (3.9.7) of [liesen2013krylov], indexed from
-zero. -/
+zero.
+
+**Generalization.** Complex system data are allowed and the total inverse defines a value even
+for singular $A$. -/
 noncomputable def inverseMoment {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ)
     (b c : Fin n → ℂ) (k : ℕ) : ℂ :=
   (star c) ⬝ᵥ ((A⁻¹) ^ (k + 1) *ᵥ b)
 
 /-- A triple $(\widehat A,\widehat b,\widehat c)$ is a partial realization of $(A,b,c)$ of length
-$m$ if their Markov parameters agree at every index below $m$. -/
+$m$ if their Markov parameters agree at every index below $m$.
+
+**Generalization.** The prefix length is arbitrary and the ordinary system data may be complex. -/
 def IsPartialRealization {n r : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (b c : Fin n → ℂ)
     (B : Matrix (Fin r) (Fin r) ℂ) (d e : Fin r → ℂ) (m : ℕ) : Prop :=
   ∀ k < m, markovParameter B d e k = markovParameter A b c k
 
 /-- A partial realization of length $m$ and dimension $r$ is minimal if every realization of
-length $m$ has dimension at least $r$. -/
+length $m$ has dimension at least $r$.
+
+**Generalization.** The minimum dimension criterion uses arbitrary prefix lengths and complex
+system data. -/
 def IsMinimalPartialRealization {n r : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (b c : Fin n → ℂ)
     (B : Matrix (Fin r) (Fin r) ℂ) (d e : Fin r → ℂ) (m : ℕ) : Prop :=
   IsPartialRealization A b c B d e m ∧
@@ -92,7 +110,10 @@ private theorem isUnit_det_one_sub {n : ℕ} (T : Matrix (Fin n) (Fin n) ℂ) (h
 
 /-- **Equation (3.9.4)** of [liesen2013krylov].
 The ordinary transfer function has a convergent Laurent expansion in the Markov parameters
-where the maximum absolute row-sum norm satisfies $\|z^{-1} A\| < 1$. -/
+where the maximum absolute row-sum norm satisfies $\|z^{-1} A\| < 1$.
+
+**Generalization.** The expansion uses complex system data and a sufficient region specified by
+$\|z^{-1}A\|<1$. -/
 theorem transferFunction_hasSum_at_infinity {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ)
     (b c : Fin n → ℂ) {z : ℂ} (hz : z ≠ 0) (h : ‖z⁻¹ • A‖ < 1) :
     HasSum (fun k => z⁻¹ ^ (k + 1) * markovParameter A b c k)
@@ -116,7 +137,10 @@ theorem transferFunction_hasSum_at_infinity {n : ℕ} (A : Matrix (Fin n) (Fin n
 
 /-- **Equation (3.9.8) and Remark 3.9.1** of [liesen2013krylov].
 The expansion at zero for invertible $A$ uses inverse moments. The sum has the opposite sign
-from the transfer function, because the resolvent is written as $(zI-A)^{-1}$. -/
+from the transfer function, because the resolvent is written as $(zI-A)^{-1}$.
+
+**Generalization.** The expansion uses complex system data and a sufficient region specified by
+$\|z A^{-1}\|<1$. -/
 theorem remark_3_9_1 {n : ℕ} (A : Matrix (Fin n) (Fin n) ℂ) (b c : Fin n → ℂ)
     (hA : IsUnit A.det) {z : ℂ} (h : ‖z • A⁻¹‖ < 1) :
     HasSum (fun k => z ^ k * inverseMoment A b c k) (-transferFunction A 1 b c 0 z) := by
@@ -146,7 +170,9 @@ open scoped InnerProductSpace
 /-- **Equation (3.9.10)** of [liesen2013krylov].
 At the CG initial residual $r_0$, the scattering amplitude $r_0^* A^{-1}r_0$ equals the
 squared initial energy error. It is the sum of the reduced inverse moment multiplied
-by $\|r_0\|^2$ and the squared CG energy error at step $n$. -/
+by $\|r_0\|^2$ and the squared CG energy error at step $n$.
+
+**Generalization.** The identity also covers step zero and a zero initial residual. -/
 theorem cg_scatteringAmplitude_eq {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E]
     [InnerProductSpace 𝕜 E] [FiniteDimensional 𝕜 E] {A : E →ₗ[𝕜] E}
     (hA : A.IsSymmetricCoercive) (b x₀ xstar : E) (hstar : A xstar = b) {n : ℕ}

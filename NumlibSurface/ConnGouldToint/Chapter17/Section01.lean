@@ -41,6 +41,10 @@ practical radius update (17.1.4). The proofs are direct computations.
 
 ## Deviations from the source
 
+* **Correction.** Equation (17.1.3) corrects the denominator grouping and includes a counterexample
+  to the printed formula. See `ConnGouldToint.Chapter17.interpolatedRadiusFactor`,
+  `ConnGouldToint.Chapter17.interpolatedRadiusFactor_hits_ratio`,
+  `ConnGouldToint.Chapter17.printedInterpolation_counterexample`.
 * **Equation (17.1.3)** (correction). The factor $1 - \eta_2$ in the denominator multiplies the
   common value and slope only, not the whole denominator. See
   `ConnGouldToint.Chapter17.printedInterpolation_counterexample`.
@@ -77,7 +81,12 @@ multiplies only the common value $a$ and the slope $l$, and then
 `ConnGouldToint.Chapter17.interpolatedRadiusFactor_hits_ratio` holds.
 
 The source uses the threshold $\eta_2$ for $\eta$. When the denominator is $0$, the Lean
-division gives $t = 0$. -/
+division gives $t = 0$.
+
+**Correction.** Only the sum of the starting value and initial slope is multiplied by one minus the
+target ratio in the denominator. The ratio identity needs nonzero denominators, and a concrete
+example refutes the printed formula.
+-/
 noncomputable def interpolatedRadiusFactor (η a l f₁ m₁ : ℝ) : ℝ :=
   (1 - η) * l / ((1 - η) * (a + l) + η * m₁ - f₁)
 
@@ -89,7 +98,12 @@ $a - q_m(t) \neq 0$, then
 $$\frac{a - q_f(t)}{a - q_m(t)} = \eta.$$
 
 The interpolants are `ConnGouldToint.Chapter17.quadraticRayInterpolant` and the factor is
-`ConnGouldToint.Chapter17.interpolatedRadiusFactor`. -/
+`ConnGouldToint.Chapter17.interpolatedRadiusFactor`.
+
+**Correction.** Only the sum of the starting value and initial slope is multiplied by one minus the
+target ratio in the denominator. The ratio identity needs nonzero denominators, and a concrete
+example refutes the printed formula.
+-/
 theorem interpolatedRadiusFactor_hits_ratio (η a l f₁ m₁ : ℝ)
     (hden : (1 - η) * (a + l) + η * m₁ - f₁ ≠ 0)
     (hpred : a - quadraticRayInterpolant a l m₁ (interpolatedRadiusFactor η a l f₁ m₁) ≠ 0) :
@@ -112,7 +126,12 @@ $(a - q_f(t)) / (a - q_m(t))$ of the interpolated decreases is $1/5 \neq \eta$.
 
 The interpolants $q_f$ and $q_m$ are `ConnGouldToint.Chapter17.quadraticRayInterpolant` with end
 values $f_1$ and $m_1$. This shows the correction in
-`ConnGouldToint.Chapter17.interpolatedRadiusFactor`. -/
+`ConnGouldToint.Chapter17.interpolatedRadiusFactor`.
+
+**Correction.** Only the sum of the starting value and initial slope is multiplied by one minus the
+target ratio in the denominator. The ratio identity needs nonzero denominators, and a concrete
+example refutes the printed formula.
+-/
 theorem printedInterpolation_counterexample :
     let η : ℝ := 1 / 2
     let t : ℝ := ((1 - η) * (-1)) / ((1 - η) * (0 + (-1) + η * (-1) - 1))

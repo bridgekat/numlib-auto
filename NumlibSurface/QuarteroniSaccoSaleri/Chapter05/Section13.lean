@@ -51,6 +51,15 @@ counterexample to (5.35). The proofs specialize `Numlib.LinearAlgebra.Matrix.Com
 
 ## Deviations from the source
 
+* **Totalization.** The companion matrix definition includes a totalized leading coefficient. See
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_72`,
+  `QuarteroniSaccoSaleri.Chapter05.equation_5_72_eq`.
+* **Generalization.** The unitary eigenvector transport identity also holds for the zero vector. See
+  `QuarteroniSaccoSaleri.Chapter05.exercise_5_9`.
+* **Reading.** The second-eigenvalue power iteration requires a nonzero second component and
+  identifies the phase-corrected limit. See `QuarteroniSaccoSaleri.Chapter05.exercise_5_10`.
+* **Scope.** The exercise verifies exact spectra and stationarity of basic and single-shift QR. See
+  `QuarteroniSaccoSaleri.Chapter05.exercise_5_14`.
 * **Exercise 10** (reading). The source assumes all the hypotheses of the power method except
   $\alpha_1 \neq 0$; the theorem assumes that $\lambda_2$ dominates the other eigenvalues except
   $\lambda_1$, and $\alpha_2 \neq 0$. See `QuarteroniSaccoSaleri.Chapter05.exercise_5_10`.
@@ -76,14 +85,24 @@ $C \in \mathbb{R}^{n \times n}$ has the first row $$\Big(-\frac{a_{n-1}}{a_n},
 elsewhere.
 
 The Lean definition takes any real polynomial `p` and any `n`, with $a_k$ = `p.coeff k`. If
-$a_n = 0$, the first row is zero, by the convention that division by zero gives zero. -/
+$a_n = 0$, the first row is zero, by the convention that division by zero gives zero.
+
+**Reading.** The top-row companion form is defined for any polynomial and requested order, with zero
+ratios if the specified leading coefficient vanishes. The exercise requires that coefficient to be
+nonzero.
+-/
 noncomputable def equation_5_72 (p : ℝ[X]) (n : ℕ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j =>
     if (i : ℕ) = 0 then -(p.coeff (n - 1 - j) / p.coeff n) else if (i : ℕ) = j + 1 then 1 else 0
 
 /-- For every real polynomial $p$ and every $n$, the companion matrix (5.72) of
 [quarteroni2000numerical] is the backbone's `Matrix.companion` of the polynomial $p / a_n$,
-which is monic when $p$ has degree $n$. -/
+which is monic when $p$ has degree $n$.
+
+**Reading.** The top-row companion form is defined for any polynomial and requested order, with zero
+ratios if the specified leading coefficient vanishes. The exercise requires that coefficient to be
+nonzero.
+-/
 theorem equation_5_72_eq (p : ℝ[X]) (n : ℕ) :
     equation_5_72 p n = companion (C (p.coeff n)⁻¹ * p) n := by
   ext i j
@@ -128,7 +147,11 @@ $U \in \mathbb{C}^{n \times n}$ be unitary. Then the matrix $U^H A U$, which is 
 by a unitary matrix, satisfies $$(U^H A U)(U^H x) = \lambda\, U^H x.$$
 
 The statement does not assume $x \neq 0$. The proof specializes
-`Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`. -/
+`Matrix.mulVec_star_conj_eq_smul_of_mulVec_eq_smul`.
+
+**Generalization.** The similarity identity is stated for any vector satisfying the eigenvector
+equation, including the zero vector.
+-/
 theorem exercise_5_9 {A U : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ Matrix.unitaryGroup (Fin n) ℂ)
     {lam : ℂ} {x : Fin n → ℂ} (hx : A *ᵥ x = lam • x) :
     (Uᴴ * A * U) *ᵥ (Uᴴ *ᵥ x) = lam • (Uᴴ *ᵥ x) := by
@@ -175,7 +198,12 @@ not.
 
 The indices $1$ and $2$ of the book are `i₀` and `i₁`, with `i₁ ≠ i₀`. The proof specializes
 `Krylov.tendsto_smul_powerIterate_of_mem_iSup`, the form of the power method in which the
-domination is needed only on the generalized eigenspaces that the starting vector meets. -/
+domination is needed only on the generalized eigenspaces that the starting vector meets.
+
+**Reading.** The claimed next-eigenvector limit requires a nonzero component along that eigenvector.
+Lean states the condition explicitly and proves convergence of the normalized directions up to
+phase. The accompanying numerical experiment is outside the declaration.
+-/
 theorem exercise_5_10 {A : Matrix (Fin n) (Fin n) ℂ}
     (x : Module.Basis (Fin n) ℂ (EuclideanSpace ℂ (Fin n))) {lam : Fin n → ℂ}
     (hx : ∀ i, toEuclideanLin A (x i) = lam i • x i) {i₀ i₁ : Fin n} (hi : i₁ ≠ i₀)
@@ -254,7 +282,12 @@ iteration does not approach the conclusion of Property 5.9 or a real Schur form.
 The factors are `Matrix.qrQ A` and `Matrix.qrR A`, and the iterations are
 `QuarteroniSaccoSaleri.Chapter05.qrIterate` and `QuarteroniSaccoSaleri.Chapter05.equation_5_53`.
 The spectrum is taken over $\mathbb{C}$ through `algebraMap ℝ ℂ`. The claim of the exercise
-about Program 37, the double-shift variant, which changes only signs, is not formalized. -/
+about Program 37, the double-shift variant, which changes only signs, is not formalized.
+
+**Reading.** The example proves stationarity of basic QR and the trailing-diagonal single shift, and
+computes the exact spectrum. The request to run the double-shift program and inspect its output is
+outside the theorem.
+-/
 theorem exercise_5_14 :
     let A : Matrix (Fin 3) (Fin 3) ℝ := !![0, 0, 1; 1, 0, 0; 0, 1, 0]
     qrQ A = A ∧ qrR A = 1 ∧ (∀ k, qrIterate A k = A) ∧ (∀ k, equation_5_53 A k = A) ∧

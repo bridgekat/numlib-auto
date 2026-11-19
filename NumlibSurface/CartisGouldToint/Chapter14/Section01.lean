@@ -136,7 +136,7 @@ Theorem 12.2.15 to $w = |c|$.
 
 ## Implementation notes
 
-* A closed feasible set $X$ with $x_0 \in X$ is carried throughout, and the measures are taken over
+* A feasible set $X$ with $x_0 \in X$ is carried throughout, and the measures are taken over
   the feasible displacements $\{d : x + d \in X\}$. With $X = \mathbb{R}^n$ the algorithm is ARqpC;
   with a general $X$ it is the variant ARqpC-SC of Section 14.2.
 * A run of ARqpC is the backbone run `Optimization.IsARqpCRun`: the ARqp run
@@ -171,8 +171,12 @@ Theorem 12.2.15 to $w = |c|$.
 
 ## Deviations from the source
 
-* **Assumption h.S0** (typo). The source says that $h$ is subadditive "in $\mathbb{R}$"; the space
-  is $\mathbb{R}^m$. See `CartisGouldToint.Chapter14.AssumptionHS0`.
+* **Assumption h.S0 and (14.1.4)** (typo). The variables in the subadditivity assumption and the
+  magnitude bound belong to $\mathbb{R}^m$. See `CartisGouldToint.Chapter14.AssumptionHS0`.
+* **Assumption w.Bb and Algorithms 14.1.1–14.1.2** (generalization). The objective lower bound,
+  iterates and model-decrease tests are relative to a feasible set $X$, as in Section 14.2.
+  The trace requires the detailed Step 2 at each reached iteration where Step 1 continues.
+  The order-one radius is kept at one when both $h$ and $X$ are convex.
 * **Equation (14.1.2)** (correction). With the componentwise constants of c.D1pL as printed, the
   bound is $\|\nabla^j c(x)\| \le \sqrt{m} L_{c,j-1}$; the source omits the factor $\sqrt{m}$. See
   `CartisGouldToint.Chapter14.AssumptionCD1pL.norm_iteratedFDeriv_le`.
@@ -182,11 +186,18 @@ Theorem 12.2.15 to $w = |c|$.
   $\delta \in (0, 3/5]$, where the source says "smaller than $\frac12$, say". See
   `CartisGouldToint.Chapter14.example_14_1_1`.
 * **Lemma 14.1.3** (generalization). The lower bound on the radii also holds for $j = 1$ when $h$ or
-  $X$ is not convex, and the analysis needs this case; the source states it for $j \in [2 : q]$. See
-  `CartisGouldToint.Chapter14.lemma_14_1_3`.
+  $X$ is not convex, and the analysis needs this case. The long-step branch starts at norm one,
+  consistent with Algorithm 14.1.2. See `CartisGouldToint.Chapter14.lemma_14_1_3`.
+* **Lemmas 14.1.2–14.1.3 and (14.2.10)** (generalization). The pointwise variants use Taylor jet
+  bounds at the point. The anchored variants of the complexity analysis use derivative bounds
+  from the composite sublevel to the trial points, with Lipschitz continuity at the top order.
 * **Lemmas 14.1.4 and 14.1.6** (generalization). Only the smoothness and Lipschitz properties that
   the proofs use are assumed. See `CartisGouldToint.Chapter14.lemma_14_1_4`,
   `CartisGouldToint.Chapter14.lemma_14_1_6`.
+* **Lemma 14.1.5** (reading). The Taylor decrease concerns reached iterations that execute Step 2,
+  which computes $s_k$. See `CartisGouldToint.Chapter14.lemma_14_1_5`.
+* **Lemma 14.1.5** (generalization). The Taylor decrease is positive when Step 2 continues.
+  See `CartisGouldToint.Chapter14.lemma_14_1_5`.
 * **Lemma 14.1.7** (correction). The factor $(1 - \theta)$ is $(\varsigma - \theta)$, the term in
   $\|s_k\|^{p+1}$ has a factor $2$, and the inequality is strict. See
   `CartisGouldToint.Chapter14.lemma_14_1_7`.
@@ -195,9 +206,9 @@ Theorem 12.2.15 to $w = |c|$.
   `CartisGouldToint.Chapter14.lemma_14_1_7`.
 * **Lemma 14.1.7 and Theorem 14.1.10(1)** (generalization). The hypothesis h.S0 is not used. See
   `CartisGouldToint.Chapter14.lemma_14_1_7`, `CartisGouldToint.Chapter14.theorem_14_1_10_i`.
-* **Lemma 14.1.8** (correction). The second case of (14.1.31) needs the factor
-  $\epsilon_j^{(j+1)/(p+1)}$, and $(1 - \theta)$ is $(\varsigma - \theta)$ with
-  $\theta < \varsigma$. See `CartisGouldToint.Chapter14.lemma_14_1_8`.
+* **Lemma 14.1.8** (correction). In (14.1.31), $(1 - \theta)$ is $(\varsigma - \theta)$ with
+  $\theta < \varsigma$. The hypotheses of the two step bounds refer directly to the radii at
+  iterate $k+1$. See `CartisGouldToint.Chapter14.lemma_14_1_8`.
 * **Lemma 14.1.9** (correction). The decreases hold at successful iterations that are not followed
   by termination, under f.D1pL, c.D1pL and h.L, with $(\varsigma - \theta)$ for $(1 - \theta)$. See
   `CartisGouldToint.Chapter14.lemma_14_1_9`.
@@ -316,8 +327,8 @@ def AssumptionHS0 (h : ℝᵐ → ℝ) : Prop := Optimization.IsSubadditive h �
 and $w_{\mathrm{low}} \in \mathbb{R}$. The composite objective $w = f + h \circ c$ is bounded
 below by $w_{\mathrm{low}}$ on $X$: $w(x) \ge w_{\mathrm{low}}$ for every $x \in X$.
 
-In Section 14.1 the feasible set is $X = \mathbb{R}^n$. The form with a general $X$ is the one
-that Section 14.2 uses. -/
+**Generalization.** Section 14.1 imposes the bound on $X = \mathbb{R}^n$. The feasible-set
+version here is the one that Section 14.2 uses. -/
 def AssumptionWBb (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (X : Set ℝⁿ) (wlow : ℝ) : Prop :=
   ∀ x ∈ X, wlow ≤ f x + h (c x)
 
@@ -327,13 +338,19 @@ theorem AssumptionHLip.hasLipschitzConst {h : ℝᵐ → ℝ} {Lh : ℝ} (hh : A
     Optimization.HasLipschitzConst h Lh := hh
 
 /-- Under h.L and h.S0, $|h(a)| \le L_{h,0} \|a\|$ for every $a \in \mathbb{R}^m$. This is (14.1.4)
-of [cartis2022evaluation]. -/
+of [cartis2022evaluation].
+
+**Reading.** Restores the vector domain of h in the magnitude estimate.
+-/
 theorem AssumptionHS0.abs_le {h : ℝᵐ → ℝ} {Lh : ℝ} (hS : AssumptionHS0 h)
     (hL : AssumptionHLip h Lh) (a : ℝᵐ) : |h a| ≤ Lh * ‖a‖ := by
   simpa [hS.2] using hL.abs_sub_le a 0
 
 /-- Under c.D1pL, for every $j \in [1 : p]$ the $j$-th derivative of $c$ is Lipschitz continuous on
-$\mathbb{R}^n$ with constant $\sqrt{m} L_{c,j}$, in the operator norm. -/
+$\mathbb{R}^n$ with constant $\sqrt{m} L_{c,j}$, in the operator norm.
+
+**Reading.** Componentwise Lipschitz estimates give a factor sqrt(m) for the full map.
+-/
 theorem AssumptionCD1pL.lipschitz {c : ℝⁿ → ℝᵐ} {p : ℕ} {Lc : ℕ → ℝ}
     (hc : AssumptionCD1pL c p Lc) {j : ℕ} (hj : j ∈ Finset.Icc 1 p) :
     IteratedFDerivLipschitzOn c j (Real.sqrt m * Lc j) univ :=
@@ -420,13 +437,19 @@ $w = f + h \circ c$ at $x_0$ in $X$ is
 $$\{y \in X : w(y) \le w(x_0)\}.$$
 
 The source writes $\mathcal{L}_f(x_0)$ for the objective $f$ of Section 14.2. Here the set is
-used for $w$. -/
+used for $w$.
+
+**Reading.** The anchor sublevel uses the composite objective and intersects the feasible set.
+-/
 def compositeSublevel (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (X : Set ℝⁿ) (x₀ : ℝⁿ) :
     Set ℝⁿ :=
   {y ∈ X | f y + h (c y) ≤ f x₀ + h (c x₀)}
 
 /-- A point $y$ lies in the sublevel set of $w$ at $x_0$ in $X$ if and only if $y \in X$ and
-$f(y) + h(c(y)) \le f(x_0) + h(c(x_0))$. -/
+$f(y) + h(c(y)) \le f(x_0) + h(c(x_0))$.
+
+**Reading.** The anchor sublevel uses the composite objective and intersects the feasible set.
+-/
 theorem mem_compositeSublevel {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {X : Set ℝⁿ}
     {x₀ y : ℝⁿ} :
     y ∈ compositeSublevel f c h X x₀ ↔ y ∈ X ∧ f y + h (c y) ≤ f x₀ + h (c x₀) := Iff.rfl
@@ -449,7 +472,11 @@ hold with $X_0 = \mathbb{R}^n$ and every anchor set
 (`CartisGouldToint.Chapter14.AnchoredCompositeBounds.of_global`). The assumption f.D1pLaB.X of
 the source, with anchored Lipschitz constants $L_{f,j}$ in (14.2.9) and bounds $B_{f,j}$ in
 (14.2.10) on $A = \mathcal{L}_f(x_0)$, gives the bounds with the constants
-$\max(L_{f,i}, B_{f,i+1})$: the bound of order $i$ enters as the constant of order $i - 1$. -/
+$\max(L_{f,i}, B_{f,i+1})$: the bound of order $i$ enters as the constant of order $i - 1$.
+
+**Reading.** Packages corresponding composite derivative bounds at sublevel anchors, with only the
+top derivative required to be Lipschitz.
+-/
 structure AnchoredCompositeBounds (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (X₀ A : Set ℝⁿ) (p : ℕ)
     (Lf Lc : ℕ → ℝ) : Prop where
   /-- The set $X_0$ is open. -/
@@ -485,7 +512,11 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {X₀ A : Set ℝⁿ} {p :
 
 /-- **Remark after (14.2.10)** of [cartis2022evaluation]. Let $p \ge 1$. If $f$ satisfies f.D1pL
 with constants $L_{f,j}$ and $c$ satisfies c.D1pL with constants $L_{c,j}$, then the anchored
-composite bounds hold with $X_0 = \mathbb{R}^n$ and every anchor set $A \subseteq \mathbb{R}^n$. -/
+composite bounds hold with $X_0 = \mathbb{R}^n$ and every anchor set $A \subseteq \mathbb{R}^n$.
+
+**Reading.** Packages corresponding composite derivative bounds at sublevel anchors, with only the
+top derivative required to be Lipschitz.
+-/
 theorem of_global (hf : Chapter12.AssumptionD1pL f p Lf) (hc : AssumptionCD1pL c p Lc)
     (hp : 1 ≤ p) (A : Set ℝⁿ) : AnchoredCompositeBounds f c univ A p Lf Lc where
   isOpen := isOpen_univ
@@ -579,7 +610,11 @@ composite bounds hold if and only if all of the following hold:
 * $c$ satisfies the same assumption with the constant $\sqrt{m} L_{c,p}$;
 * $L_{f,p} \ge 1$ and $L_{c,p} \ge 0$;
 * $\|\nabla^i f(x)\| \le L_{f,i-1}$ and $\|\nabla^i c(x)\| \le \sqrt{m} L_{c,i-1}$ for all
-  $i \in [2 : p]$ and $x \in A$. -/
+  $i \in [2 : p]$ and $x \in A$.
+
+**Reading.** Packages corresponding composite derivative bounds at sublevel anchors, with only the
+top derivative required to be Lipschitz.
+-/
 theorem _root_.CartisGouldToint.Chapter14.anchoredCompositeBounds_iff :
     AnchoredCompositeBounds f c X₀ A p Lf Lc ↔
       LipschitzDerivsAnchored f X₀ A p p Lf ∧
@@ -768,7 +803,11 @@ every order if $h$ is not convex or the feasible set $X$ is not convex
 
 The algorithm of the source uses the known convexity of $h$ and $X$. If the convexity is not
 known, the algorithm also halves at order $1$. This is the nonconvex case of the analysis, so
-every statement below holds for that variant with the conclusions of the nonconvex case. -/
+every statement below holds for that variant with the conclusions of the nonconvex case.
+
+**Reading.** For the constrained variant, keeping order-one radius at one also requires a convex
+feasible set.
+-/
 noncomputable abbrev halvingSet (h : ℝᵐ → ℝ) (X : Set ℝⁿ) : Set ℕ :=
   Optimization.compositeHalvingSet h X
 
@@ -792,6 +831,9 @@ $(s, \delta_s)$:
   $\delta_j$ is halved and order $j$ is checked again;
 * otherwise $\mu$ is replaced by $(1 + \mu) / 2$ and a new step is computed.
 
+**Generalization.** The feasible steps and displacements are restricted by $X$. Convexity of both
+$h$ and $X$ keeps the order-one radius at one.
+
 The predicate is the backbone transition system `Optimization.DetailedStepTrans`, through
 `Optimization.IsARqpCDetailedStep`. It does not require $x \in X$ or $q \ge 1$; a run of ARqpC
 (`CartisGouldToint.Chapter14.algorithm_14_1_1`) supplies both. Its instance with $h = 0$ and
@@ -801,7 +843,11 @@ abbrev algorithm_14_1_2 (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ
   Optimization.IsARqpCDetailedStep f c h X p q P.toARqpParams ε (halvingSet h X) σ x s δs
 
 /-- The termination test of ARqpC at iteration $k$: the Step-1 test passes at $k$, or Step 2
-terminates with $\hat m_k(s_k) = \hat m_k(0)$ (`Optimization.arqpcStop_iff`). -/
+terminates with $\hat m_k(s_k) = \hat m_k(0)$ (`Optimization.arqpcStop_iff`).
+
+**Reading.** Run certificates are tested on feasible displacements and stop by Step 1 or zero model
+decrease in Step 2.
+-/
 abbrev arqpcStop (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (p q : ℕ) (P : ARqpCParams)
     (ε : ℕ → ℝ) (x s : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ : ℕ → ℕ → ℝ) (d : ℕ → ℕ → ℝⁿ) (k : ℕ) : Prop :=
   Optimization.arqpcStop f c h P.toARqpParams p q ε x s σ δ d k
@@ -827,8 +873,12 @@ the termination test holds:
   unsuccessful one keeps the iterate, the radii and the displacements, and $\sigma_{k+1}$
   follows the update rule of adaptive regularization.
 
-With $X = \mathbb{R}^n$ this is ARqpC. With a closed $X$ it is the variant ARqpC-SC of Section
-14.2.
+**Generalization.** With $X = \mathbb{R}^n$ this is ARqpC. With a closed $X$ it is the variant
+ARqpC-SC of Section 14.2.
+
+**Reading.** Every reached Step 2 uses the detailed algorithm. The source states Step 2 as
+the model-decrease and approximate optimality conditions and then presents the detailed
+procedure as a way of obtaining a step.
 
 The predicate is the backbone run `Optimization.IsARqpCRun` with the halving set
 `CartisGouldToint.Chapter14.halvingSet h X`: the ARqp run `Optimization.IsARqpRun` for $w$ with
@@ -871,7 +921,10 @@ $$\hat m(s) - \hat m(s + d) \ge \frac{\alpha}{2} \frac{\delta^j}{j!},$$
 where $\hat m$ is the model (14.1.11) at $x$ with the weight $\sigma$.
 
 The bound on $\delta$ implies $\alpha > 0$. The derivative $\nabla^i f(x)$ is the term of order
-$i$ of the jet `ftaylorSeries ℝ f x`. -/
+$i$ of the jet `ftaylorSeries ℝ f x`.
+
+**Reading.** Uses jet bounds at the base point rather than global derivative assumptions.
+-/
 theorem lemma_14_1_2_of_jet (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {x : ℝⁿ}
     {Kf Kc : ℝ} (hKf : 1 ≤ Kf) (hKc : 0 ≤ Kc)
     (hDf : ∀ i ∈ Finset.Icc 2 p, ‖ftaylorSeries ℝ f x i‖ ≤ Kf)
@@ -940,7 +993,12 @@ $i \in [2 : p]$. Let $\sigma > 0$, $1 \le q \le p$ and $\epsilon \in (0, 1]^q$. 
 14.1.2 has an output $(s, \delta_s)$ such that $\delta_{s,j} = 1$ at every order $j$ outside the
 halving set and, if $\|s\| < 1$,
 $$\delta_{s,j} \ge \frac{\varsigma \theta}{8(3(K_f + L_{h,0} K_c) + \sigma)} \epsilon_j$$
-for every $j \in [1 : q]$ in the halving set. -/
+for every $j \in [1 : q]$ in the halving set.
+
+**Generalization.** Allows closed feasible sets and extends the radius lower bound to order one
+whenever halving is possible; long steps include norm one, and the jet version only needs local
+bounds.
+-/
 theorem lemma_14_1_3_of_jet (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h)
     (P : ARqpCParams) {q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) {ε : ℕ → ℝ}
     (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1) {X : Set ℝⁿ} (hX : IsClosed X) {x : ℝⁿ}
@@ -1004,7 +1062,11 @@ $X \subseteq \mathbb{R}^n$ be closed, $x_0 \in X$, $1 \le q \le p$, $\epsilon \i
 $\delta_0 \in (0, 1]^q$. Then there is a run of ARqpC that starts at $x_0$.
 
 In the run, Step 2 is the output of `CartisGouldToint.Chapter14.lemma_14_1_3_of_jet` with the
-bounds on the derivatives at the current iterate. -/
+bounds on the derivatives at the current iterate.
+
+**Reading.** Establishes existence of full feasible run traces, with a version omitting smoothness
+of f and c for existence.
+-/
 theorem exists_algorithm_14_1_1_of_hLip (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h)
     (P : ARqpCParams) {q : ℕ} (hq : 1 ≤ q)
     (hqp : q ≤ p) {ε δ₀ : ℕ → ℝ} (hε : ∀ j ∈ Finset.Icc 1 q, 0 < ε j ∧ ε j ≤ 1)
@@ -1022,7 +1084,11 @@ $x_0$.
 
 In the run, the Step-1 displacements are exact maximizers, Step 2 is an output of Lemma 14.1.3,
 and the regularization weights are any admissible updates. The smoothness assumptions are not
-used (`CartisGouldToint.Chapter14.exists_algorithm_14_1_1_of_hLip`). -/
+used (`CartisGouldToint.Chapter14.exists_algorithm_14_1_1_of_hLip`).
+
+**Reading.** Establishes existence of full feasible run traces, with a version omitting smoothness
+of f and c for existence.
+-/
 theorem exists_algorithm_14_1_1 (_hf : Chapter12.AssumptionD1pL f p Lf)
     (_hc : AssumptionCD1pL c p Lc)
     (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) (P : ARqpCParams) {q : ℕ} (hq : 1 ≤ q)
@@ -1045,7 +1111,11 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {X : 
 
 /-- The Step-1 test (14.1.10) of ARqpC at iteration $k$, in terms of the optimality displacements
 $d_{k,j}$ of the run: $\Delta T_{w,j}(x_k, d_{k,j}) \le \varsigma \epsilon_j \delta_{k,j}^j /
-j!$ for every $j \in [1 : q]$. -/
+j!$ for every $j \in [1 : q]$.
+
+**Reading.** Run certificates are tested on feasible displacements and stop by Step 1 or zero model
+decrease in Step 2.
+-/
 abbrev Stop₁ (f : ℝⁿ → ℝ) (c : ℝⁿ → ℝᵐ) (h : ℝᵐ → ℝ) (p q : ℕ) (P : ARqpCParams)
     (ε : ℕ → ℝ) (x : ℕ → ℝⁿ) (σ : ℕ → ℝ) (δ : ℕ → ℕ → ℝ) (d : ℕ → ℕ → ℝⁿ) (k : ℕ) : Prop :=
   Optimization.arqpStop₁ P.toARqpParams q ε (Optimization.arqpcData f c h p x σ) δ d k
@@ -1067,7 +1137,11 @@ $$\phi^{\delta_j}_{w,j}(x_k) \le \epsilon_j \frac{\delta_j^j}{j!} \quad \text{fo
   [1 : q].$$
 
 The measures are taken over the feasible displacements $\{e : x_k + e \in X\}$, and (14.1.9) is
-`Optimization.IsEpsDeltaApproxComposite`. -/
+`Optimization.IsEpsDeltaApproxComposite`.
+
+**Reading.** Uses continuity of derivatives and the Lipschitz property actually needed, and treats
+the reached Step-2 branch relative to the feasible set.
+-/
 theorem lemma_14_1_4_ii (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hL : AssumptionHLip h Lh) (hS : AssumptionHS0 h) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
@@ -1126,7 +1200,12 @@ $$\Delta T_{w,p}(x_k, s_k) \ge \frac{\sigma_k}{(p+1)!} \|s_k\|^{p+1} \quad \text
 and $\Delta T_{w,p}(x_k, s_k) > 0$ unless Step 2 terminates, that is, unless
 $\hat m_k(s_k) = \hat m_k(0)$.
 
-The statement needs no assumption on $f$, $c$ or $h$. -/
+**Reading.** The source says the bound holds at every iteration. The statement applies when
+Step 2 is executed, since that is where the algorithm selects $s_k$.
+
+**Generalization.** The source states the nonstrict bound (14.1.25). When Step 2 continues, its
+model value is strictly smaller than at zero, which also gives a strictly positive Taylor
+decrease. -/
 theorem lemma_14_1_5 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i)
     (h1 : ¬ algorithm_14_1_1.Stop₁ f c h p q P ε x σ δ d k) :
@@ -1149,7 +1228,10 @@ theorem algorithm_14_1_1.w_succ_le (hr : algorithm_14_1_1 f c h X p q P ε δ₀
 
 /-- **Algorithm 14.1.1** of [cartis2022evaluation], the iterates stay in the sublevel set (14.2.8).
 Along a run of ARqpC, $x_k \in \{y \in X : w(y) \le w(x_0)\}$ for every $k$ such that the run
-has not terminated before $k$, that is, up to and including the first termination index. -/
+has not terminated before $k$, that is, up to and including the first termination index.
+
+**Reading.** Sublevel monotonicity applies to the composite objective on the feasible set.
+-/
 theorem algorithm_14_1_1.mem_compositeSublevel
     (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm) {k : ℕ}
     (hk : ∀ i < k, ¬ arqpcStop f c h p q P ε x s σ δ d i) :
@@ -1190,7 +1272,11 @@ theorem lemma_14_1_6 (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs
 ARqpC, and let $X_0 \supseteq X$ be a set on which the anchored composite bounds hold with the
 anchor set $\{y \in X : w(y) \le w(x_0)\}$. Assume h.L. If the run has not terminated before
 iteration $K$, then $\sigma_k \le \sigma_{\max} = \max(\sigma_0, \gamma_3 L_{w,p} / (1 -
-\eta_2))$ for every $k \le K$. -/
+\eta_2))$ for every $k \le K$.
+
+**Reading.** Uses top-order Lipschitz continuity with smoothness, or an anchored variant, up to the
+first stop.
+-/
 theorem lemma_14_1_6_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     {X₀ : Set ℝⁿ} (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
     (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) {K : ℕ}
@@ -1241,7 +1327,10 @@ theorem sigma_le_arqpcSigmaMax (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s
 `CartisGouldToint.Chapter14.arqpcSigmaMax`. Consider a run of ARqpC, let $X_0 \supseteq X$ be a
 set on which the anchored composite bounds hold with the anchor set
 $\{y \in X : w(y) \le w(x_0)\}$, and assume h.L. If the run has not terminated before iteration
-$K$, then $\sigma_k \le \sigma_{\max}$ for every $k \le K$. -/
+$K$, then $\sigma_k \le \sigma_{\max}$ for every $k \le K$.
+
+**Reading.** Top-order comparison need only hold from sublevel anchors to trial points.
+-/
 theorem sigma_le_arqpcSigmaMax_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     {X₀ : Set ℝⁿ} (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
     (hX : X ⊆ X₀) (hL : AssumptionHLip h Lh) {K : ℕ}
@@ -1324,7 +1413,11 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {X : 
 /-- The step-length bound of the first case of (14.1.31):
 $$\left(\frac{\varsigma - \theta}{j! \, A} \cdot \frac{\epsilon_j}{3}\right)^{1/(p-j+1)}, \qquad
   A = L_{w,p} + \sigma_{\max}.$$
-For $j = 1$ it is the bound $((\varsigma - \theta) \epsilon_j / (3 j! A))^{1/p}$ of the source. -/
+For $j = 1$ it is the bound $((\varsigma - \theta) \epsilon_j / (3 j! A))^{1/p}$ of the source.
+
+**Reading.** The unit-radius constant uses varsigma minus theta, with the source exponent when j is
+one.
+-/
 noncomputable def stepBound1 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m j : ℕ) (εj : ℝ) :
     ℝ :=
   ((P.ς - P.θ) / ((j ! : ℝ) * (compositeLipschitzWp Lf Lc Lh p m +
@@ -1334,6 +1427,9 @@ noncomputable def stepBound1 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) 
 $\epsilon_j^{(j+1)/(p+1)}$:
 $$\left(\frac{(\varsigma - \theta) \kappa_{\delta,\min}^j}{3 j! \, A}\right)^{1/(p-j+1)}
   \epsilon_j^{(j+1)/(p+1)}, \qquad A = L_{w,p} + \sigma_{\max}.$$
+
+**Reading.** Retains the tolerance factor printed in the PDF and replaces one minus theta by
+varsigma minus theta.
 -/
 noncomputable def stepBound2 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m j : ℕ) (εj : ℝ) :
     ℝ :=
@@ -1342,13 +1438,21 @@ noncomputable def stepBound2 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) 
       (1 / ((p : ℝ) - j + 1)) * εj ^ (((j : ℝ) + 1) / ((p : ℝ) + 1))
 
 /-- The first bound of (14.1.31) is the backbone bound `Optimization.arqpcStepBoundUnit` for the
-constant $L_{w,p}$. -/
+constant $L_{w,p}$.
+
+**Reading.** The unit-radius constant uses varsigma minus theta, with the source exponent when j is
+one.
+-/
 theorem stepBound1_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m j : ℕ) (εj : ℝ) :
     stepBound1 P Lf Lc Lh p m j εj = Optimization.arqpcStepBoundUnit P.toARqpParams
       (compositeLipschitzWp Lf Lc Lh p m) p j εj := rfl
 
 /-- The second bound of (14.1.31) is the backbone bound `Optimization.arqpcStepBound` for the
-constants $L_{w,p}$ and $L_w$. -/
+constants $L_{w,p}$ and $L_w$.
+
+**Reading.** Retains the tolerance factor printed in the PDF and replaces one minus theta by
+varsigma minus theta.
+-/
 theorem stepBound2_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m j : ℕ) (εj : ℝ) :
     stepBound2 P Lf Lc Lh p m j εj = Optimization.arqpcStepBound P.toARqpParams
       (compositeLipschitzWp Lf Lc Lh p m) (compositeLipschitzW Lf Lc Lh p m) p j εj := rfl
@@ -1365,8 +1469,8 @@ $j \in [1 : q]$ such that, with $A = L_{w,p} + \sigma_{\max}$:
   \theta) \kappa_{\delta,\min}^j / (3 j! A))^{1/(p-j+1)} \epsilon_j^{(j+1)/(p+1)}$, the second
   case of (14.1.31).
 
-**Correction.** The source prints the second case without the factor $\epsilon_j^{(j+1)/(p+1)}$,
-and with $(1 - \theta)$ for $(\varsigma - \theta)$. See
+**Correction.** The two constants replace the printed $(1 - \theta)$ by $(\varsigma - \theta)$.
+The second case retains the factor $\epsilon_j^{(j+1)/(p+1)}$. See
 `CartisGouldToint.Chapter14.lemma_14_1_8`. -/
 theorem lemma_14_1_8_anchored (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hθς : P.θ < P.ς) {X₀ : Set ℝⁿ}
@@ -1397,9 +1501,8 @@ fails at $k + 1$. Then there is $j \in [1 : q]$ such that, with $A = L_{w,p} + \
 
 Long steps, $\|s_k\| \ge 1$, satisfy both bounds.
 
-**Correction.** The source prints the second case without the factor $\epsilon_j^{(j+1)/(p+1)}$,
-which its proof in Appendix B derives. As in Lemma 14.1.7, the source writes $(1 - \theta)$ for
-$(\varsigma - \theta)$.
+**Correction.** As in Lemma 14.1.7, the source writes $(1 - \theta)$ for $(\varsigma - \theta)$.
+The second case retains the factor $\epsilon_j^{(j+1)/(p+1)}$ from the original PDF.
 
 The bounds are `CartisGouldToint.Chapter14.stepBound1` and
 `CartisGouldToint.Chapter14.stepBound2`. The proof specializes
@@ -1436,7 +1539,11 @@ test fails at $k$. Then $\delta_{s_k,j} \ge \kappa_{\delta,\min} \epsilon_j$ for
 $j \in [1 : q]$, whatever the length of the step.
 
 Radii are halved only while short trial steps are checked, so the bound also holds after long
-steps. -/
+steps.
+
+**Reading.** Run trace implies the otherwise-assumed lower bound on step radii, also for order one
+when halving is permitted.
+-/
 theorem algorithm_14_1_1.kappaDeltaMin_mul_le_radius_anchored
     (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     {X₀ : Set ℝⁿ} (hA : AnchoredCompositeBounds f c X₀ (compositeSublevel f c h X (x 0)) p Lf Lc)
@@ -1459,7 +1566,11 @@ terminated before $k$ and the Step-1 test fails at $k$. Then $\delta_{s_k,j} \ge
 \kappa_{\delta,\min} \epsilon_j$ for every $j \in [1 : q]$, whatever the length of the step.
 
 Radii are halved only while short trial steps are checked, so the bound also holds after long
-steps. -/
+steps.
+
+**Reading.** Run trace implies the otherwise-assumed lower bound on step radii, also for order one
+when halving is permitted.
+-/
 theorem algorithm_14_1_1.kappaDeltaMin_mul_le_radius
     (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hf : Chapter12.AssumptionD1pL f p Lf) (hc : AssumptionCD1pL c p Lc)
@@ -1474,7 +1585,11 @@ theorem algorithm_14_1_1.kappaDeltaMin_mul_le_radius
 every iteration $k$ before termination at which the Step-1 test fails, $\|s_k\| \ge 1$ or
 $\delta_{s_k,j} \ge \kappa_{\delta,\min} \epsilon_j$ for every $j \in [1 : q]$; the second
 alternative always holds
-(`CartisGouldToint.Chapter14.algorithm_14_1_1.kappaDeltaMin_mul_le_radius`). -/
+(`CartisGouldToint.Chapter14.algorithm_14_1_1.kappaDeltaMin_mul_le_radius`).
+
+**Reading.** Run trace implies the otherwise-assumed lower bound on step radii, also for order one
+when halving is permitted.
+-/
 theorem algorithm_14_1_1.radius_policy
     (hr : algorithm_14_1_1 f c h X p q P ε δ₀ x s σ δ δs d dm)
     (hf : Chapter12.AssumptionD1pL f p Lf) (hc : AssumptionCD1pL c p Lc)
@@ -1497,6 +1612,8 @@ variable {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {X : 
 /-- The constant $\kappa_{\Delta m}$ of Lemma 14.1.9 in the case $q = 1$ with convex $h$:
 $$\kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!} \left(\frac{\varsigma - \theta}{3(L_{w,p} +
   \sigma_{\max})}\right)^{(p+1)/p}.$$
+
+**Correction.** Corrected constants use varsigma minus theta and the composite W_p constant.
 -/
 noncomputable def kappaDm1 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) : ℝ :=
   P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) /
@@ -1506,6 +1623,8 @@ noncomputable def kappaDm1 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p
 /-- The constant $\kappa_{\Delta m}$ of Lemma 14.1.9 in the general case:
 $$\kappa_{\Delta m} = \frac{\sigma_{\min}}{(p+1)!} \left(\frac{(\varsigma - \theta)
   \kappa_{\delta,\min}^q}{3 q! (L_{w,p} + \sigma_{\max})}\right)^{(p+1)/(p-q+1)}.$$
+
+**Correction.** Corrected constants use varsigma minus theta and the composite W_p constant.
 -/
 noncomputable def kappaDm2 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p q m : ℕ) : ℝ :=
   P.σmin / ((p + 1)! : ℝ) * ((P.ς - P.θ) /
@@ -1513,13 +1632,19 @@ noncomputable def kappaDm2 (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p
       kappaDeltaMin P Lf Lc Lh p m ^ q / 3) ^ (((p : ℝ) + 1) / ((p : ℝ) - q + 1))
 
 /-- The first constant of Lemma 14.1.9 is the backbone constant `Optimization.arqpcKappaDmUnit` for
-the constant $L_{w,p}$. -/
+the constant $L_{w,p}$.
+
+**Correction.** Corrected constants use varsigma minus theta and the composite W_p constant.
+-/
 theorem kappaDm1_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p m : ℕ) :
     kappaDm1 P Lf Lc Lh p m = Optimization.arqpcKappaDmUnit P.toARqpParams
       (compositeLipschitzWp Lf Lc Lh p m) p := rfl
 
 /-- The second constant of Lemma 14.1.9 is the backbone constant `Optimization.arqpcKappaDm` for the
-constants $L_{w,p}$ and $L_w$. -/
+constants $L_{w,p}$ and $L_w$.
+
+**Correction.** Corrected constants use varsigma minus theta and the composite W_p constant.
+-/
 theorem kappaDm2_eq (P : ARqpCParams) (Lf Lc : ℕ → ℝ) (Lh : ℝ) (p q m : ℕ) :
     kappaDm2 P Lf Lc Lh p q m = Optimization.arqpcKappaDm P.toARqpParams
       (compositeLipschitzWp Lf Lc Lh p m) (compositeLipschitzW Lf Lc Lh p m) p q := rfl
@@ -1790,7 +1915,11 @@ $h$ be convex with h.L, let $X$ be convex and $\epsilon_1 \ge 0$. If $x + s \in 
 minimizes the model $\hat m$ at $x$ over the feasible steps $\{t : x + t \in X\}$, then $(s, 1)$
 is an output of Algorithm 14.1.2 with $q = 1$: a long step is returned at once, and for a short
 step the displacement $0$ passes the first-order test with radius $1$, by Lemma 14.1.1 for
-$\hat m$. -/
+$\hat m$.
+
+**Reading.** Identifies global minimizers as valid detailed order-one outputs also for convex
+feasible sets.
+-/
 theorem algorithm_14_1_2_of_isMinOn {f : ℝⁿ → ℝ} {c : ℝⁿ → ℝᵐ} {h : ℝᵐ → ℝ} {Lh : ℝ}
     {X : Set ℝⁿ} {p : ℕ} (hp : 1 ≤ p) (hL : AssumptionHLip h Lh) (hconv : ConvexOn ℝ univ h)
     (hX : Convex ℝ X) (P : ARqpCParams) {ε : ℕ → ℝ} (hε : 0 ≤ ε 1) {σ : ℝ} {x s : ℝⁿ}

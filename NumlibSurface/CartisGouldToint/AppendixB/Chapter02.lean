@@ -51,6 +51,15 @@ y_{k+1}) = (x_k, y_k) + (\varepsilon + \omega_k)(1, (-1)^k)$ with $\omega_k = \v
 
 ## Deviations from the source
 
+* **Correction.** Lemma B.2.1 bounds the initial jet in addition to the endpoint residuals. See
+  `CartisGouldToint.AppendixB.lemma_B_2_1_bound`.
+* **Finite construction and integrality.** Lemma B.2.2 requires an integer stopping count satisfying
+  the source identity and proves the first-hit property through that count. See
+  `CartisGouldToint.AppendixB.lemma_B_2_2`.
+* **Modified corridor construction.** Lemmas B.2.3–B.2.6 use a modified corridor extension that
+  yields a global exact line minimizer. See `CartisGouldToint.AppendixB.lemma_B_2_3`,
+  `CartisGouldToint.AppendixB.lemma_B_2_4`, `CartisGouldToint.AppendixB.lemma_B_2_5`,
+  `CartisGouldToint.AppendixB.lemma_B_2_6`.
 * **Lemma B.2.1** (correction). The bound on the interpolant and its derivatives also needs
   $|f_0|, |g_0|, |H_0| \le \kappa_f$. See `CartisGouldToint.AppendixB.lemma_B_2_1_bound`.
 * **Corridor function (B.2.19) and Lemma B.2.6** (correction). The book's $f_2$ equals
@@ -163,7 +172,11 @@ control the constant and linear terms of $p$, so the bounds $|f_0|, |g_0|, |H_0|
 on the data at $0$ are added. The book's appeal to Theorem A.9.1 needs them implicitly: they are
 the analogue of the hypothesis (A.31) of that theorem.
 
-The proof takes $\kappa_h = 1000 \kappa_f$. -/
+The proof takes $\kappa_h = 1000 \kappa_f$.
+
+**Correction.** A bound on the endpoint residuals alone cannot bound the interpolating polynomial.
+The initial value and both initial derivatives are also bounded by the common constant.
+-/
 theorem lemma_B_2_1_bound {κf : ℝ} (hκ : 1 ≤ κf) :
     ∃ κh : ℝ, 0 < κh ∧ ∀ f₀ g₀ H₀ f₁ g₁ H₁ : ℝ,
       (∀ i, |hermiteResidual f₀ g₀ H₀ f₁ g₁ H₁ i| ≤ κf) → |f₀| ≤ κf → |g₀| ≤ κf → |H₀| ≤ κf →
@@ -229,7 +242,12 @@ The second part says that steepest descent with the step $\sqrt{2}$ from the ori
 zig-zag iterates and terminates after exactly $k_\varepsilon$ iterations. The function is
 `Optimization.zigZagFunction ε k_ε`, the iterates are `Optimization.zigZagIterate ε k_ε k`,
 $\omega_k$ is `Optimization.ZigZag.omega ε k_ε k`, and the first termination index is expressed
-by `Optimization.IsFirstHit`. -/
+by `Optimization.IsFirstHit`.
+
+**Reading.** The exact stopping count is stated for an integer index satisfying the source identity
+with the tolerance. The trajectory is guaranteed through that count, using the actual gradient and
+first-hit condition.
+-/
 theorem lemma_B_2_2 (hε : 0 < ε) (hkε : (kε : ℝ) * ε ^ 2 = 1) :
     (∀ k ≤ kε, gradient (zigZagFunction ε kε) (zigZagIterate ε kε k) =
         -((ε + ZigZag.omega ε kε k) / √2) • !₂[1, (-1) ^ k] ∧
@@ -280,7 +298,13 @@ second partial derivatives, hold on all of $\mathbb{R}^2$.
 
 The corridor function is `Optimization.ZigZag.f₂ ε k_ε`, with the capped square $\psi$ in place
 of the book's (B.2.19); the two agree on the corridor. The middle line $y_{\mathrm{mid}}$ is
-`Optimization.ZigZag.mid ε k_ε`. -/
+`Optimization.ZigZag.mid ε k_ε`.
+
+**Correction.** The corridor is extended by a different twice continuously differentiable function.
+It agrees with the source quadratic on the corridor, extends the stated uniform bounds, and makes
+the first line minimizer global. The lower-bound and derivative assertions concern that modified
+objective.
+-/
 theorem lemma_B_2_3 :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → (kε : ℝ) * ε ^ 2 = 1 →
       ContDiff ℝ 2 (ZigZag.f₂ ε kε) ∧ ∀ z : EuclideanSpace ℝ (Fin 2),
@@ -296,7 +320,13 @@ for every $\varepsilon > 0$ with $k_\varepsilon \varepsilon^2 = 1$ the function
 $f_{\mathrm{SDEX}}$ satisfies $f_{\mathrm{SDEX}}(z) \ge f_{\mathrm{low}}$ for all
 $z \in \mathbb{R}^2$, that is, Assumption f.Bb with a constant independent of $\varepsilon$.
 
-The assumption is `CartisGouldToint.Chapter02.AssumptionBb`. -/
+The assumption is `CartisGouldToint.Chapter02.AssumptionBb`.
+
+**Correction.** The corridor is extended by a different twice continuously differentiable function.
+It agrees with the source quadratic on the corridor, extends the stated uniform bounds, and makes
+the first line minimizer global. The lower-bound and derivative assertions concern that modified
+objective.
+-/
 theorem lemma_B_2_4 :
     ∃ flow : ℝ, ∀ (ε : ℝ) (kε : ℕ), 0 < ε → (kε : ℝ) * ε ^ 2 = 1 →
       Chapter02.AssumptionBb (zigZagFunction ε kε) flow := by
@@ -308,7 +338,13 @@ $\varepsilon > 0$ with $k_\varepsilon \varepsilon^2 = 1$ the function $f_{\mathr
 satisfies Assumption f.gL with constant $L$, is twice continuously differentiable, and satisfies
 $\|\nabla^2 f_{\mathrm{SDEX}}(z)\| \le C$ for all $z \in \mathbb{R}^2$.
 
-The assumption is `CartisGouldToint.Chapter02.AssumptionGL`; it includes $L \ge 1$. -/
+The assumption is `CartisGouldToint.Chapter02.AssumptionGL`; it includes $L \ge 1$.
+
+**Correction.** The corridor is extended by a different twice continuously differentiable function.
+It agrees with the source quadratic on the corridor, extends the stated uniform bounds, and makes
+the first line minimizer global. The lower-bound and derivative assertions concern that modified
+objective.
+-/
 theorem lemma_B_2_5 :
     ∃ L C : ℝ, ∀ (ε : ℝ) (kε : ℕ), 0 < ε → (kε : ℝ) * ε ^ 2 = 1 →
       Chapter02.AssumptionGL (zigZagFunction ε kε) L ∧ ContDiff ℝ 2 (zigZagFunction ε kε) ∧
@@ -333,7 +369,13 @@ decreasing along the ray after the ray leaves the corridor. With the capped squa
 `Optimization.ZigZag.f₂` the line minimizer is global, so the exact linesearch itself is
 realized.
 
-The exact linesearch is `LineSearch.IsExactLineMin`. -/
+The exact linesearch is `LineSearch.IsExactLineMin`.
+
+**Correction.** The corridor is extended by a different twice continuously differentiable function.
+It agrees with the source quadratic on the corridor, extends the stated uniform bounds, and makes
+the first line minimizer global. The lower-bound and derivative assertions concern that modified
+objective.
+-/
 theorem lemma_B_2_6 (hε : 0 < ε) (hkε : (kε : ℝ) * ε ^ 2 = 1) {k : ℕ} (hk : k < kε) :
     LineSearch.IsExactLineMin (zigZagFunction ε kε) (zigZagIterate ε kε k) √2 ∧
       zigZagIterate ε kε (k + 1) = zigZagIterate ε kε k -

@@ -100,6 +100,24 @@ algorithms reuse the Householder and Givens programs of §5.1 and Algorithm 5.2.
   `GolubVanLoan.Chapter07.algorithm_7_4_2_rounding` is Wilkinson's backward error bound with an
   explicit constant.
 
+## Deviations from the source
+
+* **Algorithm 7.4.2** (reading). The program returns the compact storage array and a separate
+  list of reflector vectors and coefficients. The upper Hessenberg part of the array is $H$. See
+  `GolubVanLoan.Chapter07.algorithm_7_4_2`.
+* **§7.4.3, rounding analysis** (reading). The source states a bound with an unspecified
+  constant times $n^2u$. The theorem gives an explicit nested $\gamma$ bound with idempotent
+  rounding and quantitative smallness assumptions. See
+  `GolubVanLoan.Chapter07.algorithm_7_4_2_rounding`.
+* **Theorem 7.4.2** (generalization). The first part allows any prefix with nonzero subdiagonal
+  entries. The essential-uniqueness statement requires only one unreduced output. See
+  `GolubVanLoan.Chapter07.theorem_7_4_2` and `GolubVanLoan.Chapter07.theorem_7_4_2_essential`.
+* **Theorem 7.4.4** (typo). The proof's rank calculation concerns $H - \lambda I$, printed as $A
+  - \lambda I$. See `GolubVanLoan.Chapter07.theorem_7_4_4`.
+* **Equation (7.4.4)** (generalization). The identity $AK=KC$ needs only a solution of $Kc=-A^n
+  x$. Nonsingularity is required for the similarity conclusion. See
+  `GolubVanLoan.Chapter07.equation_7_4_4`.
+
 ## Not formalized
 
 * **§7.4.4, the level-3 block Hessenberg reduction and the WY form.** It is a discussion at the
@@ -334,7 +352,11 @@ vectors below it, together with the reflector data $[(v_1, \beta_1), \dots, (v_{
 
 The data give $U_0$ as `GolubVanLoan.Chapter05.householderProduct`, without rebuilding a
 reflector from a stored vector. The matrix $H$ is `GolubVanLoan.Chapter07.hessenbergPart` of the
-array. Every arithmetic result passes through the rounding hook `rnd`. -/
+array. Every arithmetic result passes through the rounding hook `rnd`.
+
+**Reading.** The source permits compact storage below the subdiagonal. The program returns that
+array together with the reflector vectors and coefficients, so the Hessenberg matrix is its
+`hessenbergPart`. -/
 noncomputable def algorithm_7_4_2 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) :=
   (List.finRange (n - 2)).foldlM (hessenbergReduceStep rnd) (A, [])
@@ -527,7 +549,11 @@ from the returned pairs $(v, \beta)$ and never from the stored vectors. A reflec
 the array with $\beta = 2/(v^T v)$ would be wrong: for $A = \begin{bmatrix} 1 & 2 & 3 \\ 4 & 5 &
 6 \\ 0 & 7 & 8 \end{bmatrix}$, `house` returns $\beta = 0$ at the first step, and the rebuilt
 reflector $\operatorname{diag}(1, -1, 1)$ does not reproduce $H = A$. The number of entries is
-the natural number $n - 2$, which is $0$ for $n \le 2$. -/
+the natural number $n - 2$, which is $0$ for $n \le 2$.
+
+**Correction.** Correctness is formulated for the Hessenberg part of the packed array and its
+returned reflector data.
+-/
 theorem algorithm_7_4_2_spec {N : ℕ} (A : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ) :
     householderProduct (Id.run (algorithm_7_4_2 pure A)).2 ∈ orthogonalGroup (Fin (N + 1)) ℝ ∧
       hessenbergPart (Id.run (algorithm_7_4_2 pure A)).1 =
@@ -731,7 +757,11 @@ form $c n^2 u$ of the source. It comes from the relational calculus of the backb
 Wilkinson's analysis. The matrix $\hat H$ is `GolubVanLoan.Chapter07.hessenbergPart` of the
 returned array, and the factor in the bound is `FloatingPoint.gamma ε (2 * (n - 2))`. The proof
 combines `GolubVanLoan.Chapter07.algorithm_7_4_2_rounds` with
-`FloatingPoint.exists_roundsHessenbergReducePert_eq`. -/
+`FloatingPoint.exists_roundsHessenbergReducePert_eq`.
+
+**Reading.** The source gives an order-$n^2u$ bound with an unspecified small constant. The
+theorem gives an explicit nested $\gamma$ bound under idempotent rounding and the two smallness
+conditions displayed above. -/
 theorem algorithm_7_4_2_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hcard : ((3 * (18 * n + 31) + n + 3 : ℕ) : ℝ) * fp.u < 1)
     (hr : ((2 * (n - 2) : ℕ) : ℝ) * (3 * gamma fp.u (3 * (18 * n + 31) + n + 3)) < 1)
@@ -778,7 +808,11 @@ The source takes for $k$ the position of the first zero subdiagonal entry of $H$
 convention for an unreduced $H$ that all subdiagonal entries are nonzero. Here $k$ is any number
 such that the first $k$ subdiagonal entries are nonzero. In Lean the matrices have size `N + 1`
 and the indices are 0-based: the hypothesis is on the entries `(Qᵀ * A * Q) i.succ i.castSucc`
-for $i < k$, and the columns are `Q.col i` and `V.col i`. -/
+for $i < k$, and the columns are `Q.col i` and `V.col i`.
+
+**Reading.** Any nonzero prefix suffices for the restricted sign and subdiagonal magnitude
+identities.
+-/
 theorem theorem_7_4_2 {N : ℕ} {A Q V : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hV : V ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hH : (Qᵀ * A * Q).IsUpperHessenberg) (hG : (Vᵀ * A * V).IsUpperHessenberg)
@@ -796,7 +830,10 @@ $A \in \mathbb{R}^{n \times n}$ with $n \ge 1$, and let $Q$ and $Z$ be orthogona
 first column, $Q^T A Q = H$ unreduced upper Hessenberg, and $Z^T A Z = G$ upper Hessenberg. Then
 there is $D = \operatorname{diag}(d_1, \dots, d_n)$ with $d_i = \pm 1$ and $d_1 = 1$ such that
 $$Z = Q D, \qquad G = D H D.$$
-Since $D^{-1} = D$, this says that "$G$ and $H$ are essentially equal". -/
+Since $D^{-1} = D$, this says that "$G$ and $H$ are essentially equal".
+
+**Generalization.** It suffices for $H$ to be unreduced. The source's essential-uniqueness
+paragraph asks that both $H$ and $G$ be unreduced. -/
 theorem theorem_7_4_2_essential {N : ℕ} {A Q Z : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hZ : Z ∈ orthogonalGroup (Fin (N + 1)) ℝ)
     (hH : IsUnreduced (Qᵀ * A * Q)) (hG : (Zᵀ * A * Z).IsUpperHessenberg)
@@ -858,7 +895,10 @@ $$\dim \operatorname{null}(H - \lambda I) = 1.$$
 The proof uses that the first $n - 1$ columns of $H - \lambda I$ are linearly independent, so
 that $\operatorname{rank}(H - \lambda I) \ge n - 1$. The source writes $A - \lambda I$ for
 $H - \lambda I$ in this proof. The eigenvalue and the null space are those of
-`Matrix.complexify H`. -/
+`Matrix.complexify H`.
+
+**Typo.** The proof in the source writes $\operatorname{rank}(A - \lambda I)$, although the
+matrix under discussion is $H$. -/
 theorem theorem_7_4_4 {H : Matrix (Fin n) (Fin n) ℝ} (hH : IsUnreduced H) {μ : ℂ}
     (hμ : μ ∈ spectrum ℂ H.complexify) :
     Module.finrank ℂ (Module.End.eigenspace (toLin' H.complexify) μ) = 1 :=
@@ -922,7 +962,11 @@ Krylov matrix. If $K c = -A^n x$, then
 $$A K = K C,$$
 where $C$ is the companion matrix of $c$, and $\det(zI - C) = c_0 + c_1 z + \cdots + c_{n-1}
 z^{n-1} + z^n$. If moreover $K$ is nonsingular, then $K^{-1} A K = C$, and the characteristic
-polynomial of $A$ is $c_0 + c_1 z + \cdots + c_{n-1} z^{n-1} + z^n$. -/
+polynomial of $A$ is $c_0 + c_1 z + \cdots + c_{n-1} z^{n-1} + z^n$.
+
+**Generalization.** The identities $AK=KC$ and the characteristic polynomial of $C$ hold for
+any supplied solution of $Kc=-A^n x$. Invertibility of $K$ is required for the similarity and
+for identifying the characteristic polynomial of $A$. -/
 theorem equation_7_4_4 {A : Matrix (Fin n) (Fin n) ℝ} {x c : Fin n → ℝ}
     (hc : krylovMatrix A x n *ᵥ c = -(A ^ n *ᵥ x)) :
     A * krylovMatrix A x n = krylovMatrix A x n * companion c ∧

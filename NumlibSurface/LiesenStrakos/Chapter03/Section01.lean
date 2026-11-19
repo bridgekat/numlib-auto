@@ -28,6 +28,12 @@ requiring exact agreement on the monomials of orders $0$ through $2n-1$.
 
 The measure $\mu$ represents the mass element $d\omega$. A probability measure concentrated on
 $(a,b]$ represents the normalized distribution with zero mass at the left endpoint.
+
+## Deviations from the source
+
+* **Section 3.1** (reading). The moment and error formulas use total integration. The compact
+  predicate gives exactness through $2n-1$ and leaves probability and support hypotheses to the
+  theorems that use them.
 -/
 
 open MeasureTheory Polynomial
@@ -35,7 +41,10 @@ open scoped Polynomial
 
 namespace LiesenStrakos.Chapter03
 
-/-- The $k$th moment of the distribution $\mu$ is $\int x^k\,d\mu(x)$. -/
+/-- The $k$th moment of the distribution $\mu$ is $\int x^k\,d\mu(x)$.
+
+**Generalization.** The ambient measure may be arbitrary. The total integral is zero for a
+nonintegrable monomial. -/
 noncomputable def stieltjesMoment (μ : Measure ℝ) (k : ℕ) : ℝ :=
   ∫ x, x ^ k ∂μ
 
@@ -47,7 +56,10 @@ def IsStieltjesMomentSolution (μ : Measure ℝ) (ξ : ℕ → ℝ) : Prop :=
     ∀ k : ℕ, Integrable (fun x => x ^ k) μ ∧ stieltjesMoment μ k = ξ k
 
 /-- The distribution function of an atomic rule is the sum of the weights $w_i$ of all nodes
-$x_i$ at or below the evaluation point. This is (3.1.4) of [liesen2013krylov]. -/
+$x_i$ at or below the evaluation point. This is (3.1.4) of [liesen2013krylov].
+
+**Generalization.** The cumulative formula is defined on all real arguments and accepts
+arbitrary nodes and weights. -/
 noncomputable def atomicDistribution {n : ℕ} (x w : Fin n → ℝ) (t : ℝ) : ℝ := by
   classical
   exact ∑ i, if x i ≤ t then w i else 0
@@ -58,7 +70,9 @@ noncomputable def mechanicalQuadrature {n : ℕ} (x w : Fin n → ℝ) (f : ℝ 
   ∑ i, w i * f (x i)
 
 /-- The error of a mechanical quadrature is the difference between the integral and the
-quadrature sum. This is the error in (3.1.7) of [liesen2013krylov]. -/
+quadrature sum. This is the error in (3.1.7) of [liesen2013krylov].
+
+**Generalization.** The difference uses total integration for arbitrary measures and functions. -/
 noncomputable def quadratureError (μ : Measure ℝ) {n : ℕ}
     (x w : Fin n → ℝ) (f : ℝ → ℝ) : ℝ :=
   (∫ t, f t ∂μ) - mechanicalQuadrature x w f
@@ -70,7 +84,10 @@ def HasQuadratureDegree (μ : Measure ℝ) {n : ℕ} (x w : Fin n → ℝ) (d : 
 
 /-- A normalized atomic rule solves Problem 3.1.1 of [liesen2013krylov] for a reference
 distribution on $(a,b]$ if its $n$ nodes in $(a,b]$ are strictly increasing, its weights are
-positive and sum to one, and it integrates the first $2n$ monomials exactly. -/
+positive and sum to one, and it integrates the first $2n$ monomials exactly.
+
+**Reading.** The rule predicate concerns the reduced distribution. The reference measure is a
+separate input and its support and normalization are hypotheses in results that use them. -/
 def SolvesStieltjesProblem (μ : Measure ℝ) (a b : ℝ) {n : ℕ}
     (x w : Fin n → ℝ) : Prop :=
   0 < n ∧ StrictMono x ∧ (∀ i, x i ∈ Set.Ioc a b) ∧
@@ -101,7 +118,11 @@ theorem isExactOnMeasure_iff_moments {μ : Measure ℝ}
           rw [h k (Nat.le_of_lt_succ (Finset.mem_range.1 hk)), integral_const_mul, stieltjesMoment]
 
 /-- For ordered nodes in $(a,b]$ with positive normalized weights, solving Problem 3.1.1 of
-[liesen2013krylov] is equivalent to exactness through degree $2n-1$. -/
+[liesen2013krylov] is equivalent to exactness through degree $2n-1$.
+
+**Reading.** The equivalence states exactness through degree $2n-1$. Maximality also needs
+enough support points to prevent the rule from representing the measure exactly at every
+degree. -/
 theorem solvesStieltjesProblem_iff {μ : Measure ℝ}
     (hint : ∀ k : ℕ, Integrable (fun t : ℝ => t ^ k) μ) {a b : ℝ} {n : ℕ}
     (hn : 0 < n) {x w : Fin n → ℝ} (hx : StrictMono x) (hmem : ∀ i, x i ∈ Set.Ioc a b)

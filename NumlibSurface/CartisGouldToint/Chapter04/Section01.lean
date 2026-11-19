@@ -114,16 +114,28 @@ iterations in terms of the successful ones.
 
 ## Deviations from the source
 
-* **Step 1, (4.1.8)–(4.1.9)** (correction). The source also requires $\mathcal{M}_k \neq \emptyset$,
-  and with it a run can get stuck. The condition is read as "for all $d \in \mathcal{M}_k$", as in
-  the proof of Theorem 4.1.5, and so is (4.1.13). See `CartisGouldToint.Chapter04.arpStopTest` and
-  `CartisGouldToint.Chapter04.algorithm_4_1_1`.
+* **Equations (4.1.3)–(4.1.4)** (reading). The third-order predicate uses a universal
+  inequality on the small-curvature set, including when the set is empty.
+  The book gives a separate label for the empty-set case. See
+  `CartisGouldToint.Chapter04.IsApproxThirdOrderMinimizer`.
+* **Lemma 4.1.1** (reading). The displacement in the model comparison is the same displacement
+  as in the Taylor decrease, with no algorithm-run hypothesis. See
+  `CartisGouldToint.Chapter04.lemma_4_1_1`.
+* **Step 1, (4.1.8)–(4.1.9)** (correction). The printed stopping rule also requires
+  $\mathcal M_k\ne\emptyset$. A run can get stuck with this requirement. Lean uses
+  universal quantification over $\mathcal M_k$. In Step 2 the universal check
+  is equivalent to the guarded maximum (4.1.13). See
+  `CartisGouldToint.Chapter04.arpStopTest` and `CartisGouldToint.Chapter04.algorithm_4_1_1`.
 * **Algorithm 4.1.1 with $\varepsilon_3 < \infty$** (correction). The source takes for granted that
   a step satisfying Step 2 exists; it need not, and Theorem 4.1.5 in the third-order case is a
   statement about runs. See `CartisGouldToint.Chapter04.not_exists_algorithm_4_1_1_third_order`.
 * **Theorem 4.1.5** (reading). The source states one theorem with one constant $\kappa^S$ that mixes
   the three orders. It is split by the order of criticality, each part with the constants of the
   active orders only. See `CartisGouldToint.Chapter04.theorem_4_1_5_i`.
+* **Theorem 4.1.5, third-order certificate** (reading). The strict-minimizer
+  branch certifies $\lambda_{\min}>\varepsilon_2$. The subset and cubic conclusions
+  are supplied in the other branch of the termination test. See
+  `CartisGouldToint.Chapter04.theorem_4_1_5_iii`.
 * **Theorem 4.1.5** (generalization). The hypothesis $(\varepsilon_1, \varepsilon_2, \varepsilon_3)
   \in (0, 1]^3$ is weakened to positive tolerances. See
   `CartisGouldToint.Chapter04.theorem_4_1_5_i`.
@@ -273,7 +285,10 @@ The last condition is vacuous when $\mathcal{Z}_\varepsilon = \emptyset$. For $n
 $\varepsilon_2 \ge 0$ the second-order condition then gives
 $\lambda_{\min}[\nabla^2 f(x)] > \varepsilon_2$. The set $\mathcal{Z}_\varepsilon$ is
 `CartisGouldToint.Chapter04.smallCurvatureSet`, and the second-order condition is
-`CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer`. -/
+`CartisGouldToint.Chapter03.IsApproxSecondOrderMinimizer`.
+
+**Reading.** The third-order predicate allows an empty small-curvature set.
+-/
 def IsApproxThirdOrderMinimizer (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (ε₁ ε₂ ε₃ : ℝ) : Prop :=
   Chapter03.IsApproxSecondOrderMinimizer f x ε₁ ε₂ ∧
@@ -283,14 +298,21 @@ def IsApproxThirdOrderMinimizer (f : EuclideanSpace ℝ (Fin n) → ℝ)
 an $(\varepsilon_1, \varepsilon_2)$-approximate second-order minimizer of $f$, and
 $|\nabla^3 f(x)[d]^3| \le \varepsilon_3$ for every $d$ in a given set $M$ of directions. The
 algorithm uses for $M$ the set $\mathcal{M}_\varepsilon$ of directions of small model curvature
-at termination, in place of $\mathcal{Z}_\varepsilon$. -/
+at termination, in place of $\mathcal{Z}_\varepsilon$.
+
+**Reading.** Allows any direction set in place of the full small-curvature set.
+-/
 def IsApproxThirdOrderMinimizerOn (f : EuclideanSpace ℝ (Fin n) → ℝ)
     (x : EuclideanSpace ℝ (Fin n)) (ε₁ ε₂ ε₃ : ℝ) (M : Set (EuclideanSpace ℝ (Fin n))) : Prop :=
   Chapter03.IsApproxSecondOrderMinimizer f x ε₁ ε₂ ∧
     ∀ d ∈ M, |iteratedFDeriv ℝ 3 f x (fun _ => d)| ≤ ε₃
 
 /-- A point is an $\varepsilon$-approximate third-order minimizer if and only if it satisfies
-`CartisGouldToint.Chapter04.IsApproxThirdOrderMinimizerOn` with $M = \mathcal{Z}_\varepsilon$. -/
+`CartisGouldToint.Chapter04.IsApproxThirdOrderMinimizerOn` with $M = \mathcal{Z}_\varepsilon$.
+
+**Reading.** Specializes the supplied-set predicate to the full small-curvature set, permitting
+emptiness.
+-/
 theorem isApproxThirdOrderMinimizer_iff {f : EuclideanSpace ℝ (Fin n) → ℝ}
     {x : EuclideanSpace ℝ (Fin n)} {ε₁ ε₂ ε₃ : ℝ} :
     IsApproxThirdOrderMinimizer f x ε₁ ε₂ ε₃ ↔
@@ -354,7 +376,10 @@ theorem arpStopTest_none_right {ε₂ : Option ℝ} (hε₂ : ∀ e ∈ ε₂, 0
 /-- With finite tolerances $\varepsilon_2$ and $\varepsilon_3$, the termination test fails if and
 only if $\|\nabla f(x)\| > \varepsilon_1$, or $\lambda_{\min}[\nabla^2 f(x)] \le \varepsilon_2$
 and either $\lambda_{\min}[\nabla^2 f(x)] < -\varepsilon_2$ or some $d \in M$ violates (4.1.8)
-or (4.1.9). -/
+or (4.1.9).
+
+**Reading.** Nontermination criterion of the revised stopping rule without nonemptiness.
+-/
 theorem not_arpStopTest_some_some {e₂ e₃ : ℝ} :
     ¬ arpStopTest f ε₁ (some e₂) (some e₃) M x ↔
       ε₁ < ‖gradient f x‖ ∨ (Chapter01.hessianMinEig f x ≤ e₂ ∧
@@ -399,7 +424,10 @@ let $M$ be a set of unit vectors. If the test holds at $x$ with the set $M$, the
 $(\varepsilon_1, \varepsilon_2)$-approximate second-order minimizer, and either
 $\lambda_{\min}[\nabla^2 f(x)] > \varepsilon_2$ (an approximate strict local minimizer, with
 $\mathcal{Z}_\varepsilon = \emptyset$), or $M \subseteq \mathcal{Z}_\varepsilon$ and
-$|\nabla^3 f(x)[d]^3| \le \varepsilon_3$ for all $d \in M$. -/
+$|\nabla^3 f(x)[d]^3| \le \varepsilon_3$ for all $d \in M$.
+
+**Reading.** Certifies either the strict Hessian branch or small-curvature subset and cubic bound.
+-/
 theorem arpStopTest_some_some_certificate {e₂ e₃ : ℝ} (he₂ : 0 ≤ e₂)
     (hM : ∀ d ∈ M, ‖d‖ = 1) (h : arpStopTest f ε₁ (some e₂) (some e₃) M x) :
     Chapter03.IsApproxSecondOrderMinimizer f x ε₁ e₂ ∧
@@ -433,7 +461,11 @@ def arpOrder : Option ℝ → Option ℝ → ℕ
 and (4.1.14) gives
 $$\mathcal{M}_{k+1} = \{d : \|d\| = 1,\ |\nabla^2 m_k(s_k)[d]^2| \le \theta_2 \|s_k\|^{p-1}\},$$
 with $m_k$ the model (4.1.2) at $x_k$ with weight $\sigma_k$. If $\varepsilon_2 = +\infty$, then
-$\mathcal{M}_0 = \emptyset$. The sets are used only when $\varepsilon_3 < \infty$. -/
+$\mathcal{M}_0 = \emptyset$. The sets are used only when $\varepsilon_3 < \infty$.
+
+**Reading.** Defines the initial set for any finite second tolerance and each later model set
+without a nonemptiness side condition.
+-/
 noncomputable def arpCurvSet (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpParams)
     (ε₂ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) :
     ℕ → Set (EuclideanSpace ℝ (Fin n))
@@ -462,7 +494,10 @@ theorem norm_eq_one_of_mem_arpCurvSet {f : EuclideanSpace ℝ (Fin n) → ℝ} {
   | succ k => exact hd.1
 
 /-- The termination test of iteration $k$ of an ARp run: the test (4.1.5)–(4.1.9) of Step 1 at
-$x_k$, with the set $\mathcal{M}_k$. -/
+$x_k$, with the set $\mathcal{M}_k$.
+
+**Reading.** Uses the revised test with the computable sequence of model direction sets.
+-/
 abbrev arpTest (f : EuclideanSpace ℝ (Fin n) → ℝ) (p : ℕ) (P : ARpParams) (ε₁ : ℝ)
     (ε₂ ε₃ : Option ℝ) (x s : ℕ → EuclideanSpace ℝ (Fin n)) (σ : ℕ → ℝ) (k : ℕ) : Prop :=
   arpStopTest f ε₁ ε₂ ε₃ (arpCurvSet f p P ε₂ x s σ k) (x k)
@@ -654,7 +689,10 @@ T_{f,p}(x, s) + \frac{\sigma}{(p+1)!} \|s\|^{p+1}$ be the model (4.1.2). If $m(s
 then
 $$T_{f,p}(x, 0) - T_{f,p}(x, s) \ge \frac{\sigma}{(p+1)!} \|s\|^{p+1}.$$
 
-The statement needs no assumption on $f$, because $T_{f,p}$ is built from `ftaylorSeries ℝ f x`.
+**Reading.** The source writes $s$ in the model comparison and $s_k$ in (4.1.18). Both denote
+the same displacement. The bound is algebraic and applies to any $s$ satisfying the comparison.
+
+The polynomial $T_{f,p}$ is built from `ftaylorSeries ℝ f x`.
 Along an ARp run the inequality holds strictly at every iteration before termination
 (`CartisGouldToint.Chapter04.algorithm_4_1_1.lt_taylorDecrement`). -/
 theorem lemma_4_1_1 {f : EuclideanSpace ℝ (Fin n) → ℝ} {p : ℕ} {x s : EuclideanSpace ℝ (Fin n)}
@@ -760,6 +798,8 @@ $\varepsilon_2 < \infty$. If the termination test fails at the iterations $0, \d
 iteration $k$ is successful, then for every $d$ in the set $\mathcal{M}_{k+1}$ of (4.1.14),
 $$|\nabla^2 f(x_{k+1})[d]^2| \le \frac{1}{\kappa_{s2}} \|s_k\|^{p-1}, \qquad \kappa_{s2} =
   \frac{(p-1)!}{L_{f,p} + \sigma_{\max} + \theta_2 (p-1)!}.$$
+
+**Reading.** Needs only an active second tolerance rather than an active third tolerance.
 -/
 theorem lemma_4_1_3_iv (hf : AssumptionDpL f p L) (h : algorithm_4_1_1 f p P ε₁ ε₂ ε₃ x s σ)
     (h₂ : ε₂ ≠ none) {k : ℕ} (hk : ∀ j ≤ k, ¬ arpTest f p P ε₁ ε₂ ε₃ x s σ j)
@@ -828,7 +868,10 @@ criticality $q$:
 $$\kappa^S = \frac{(p+1)!}{\eta_1 \sigma_{\min}} \max_{j \in \{1, 2, 3\},\ j \le \max(q, 1)}
   \left(\frac{L_{f,p} + \sigma_{\max} + \theta_j (p-j+1)!}{(p-j+1)!}\right)^{(p+1)/(p-j+1)}.$$
 Only the terms of the active orders $j \le q$ enter the maximum; the term $j = 1$ is always
-present. -/
+present.
+
+**Reading.** Omits inactive orders in the maximum based on the target order.
+-/
 noncomputable def kappaSARp (P : ARpParams) (p : ℕ) (L : ℝ) (q : ℕ) : ℝ :=
   ((p + 1)! : ℝ) / (P.η₁ * P.σmin) *
     max (((L + sigmaMaxARp P L + P.θ₁ * p !) / (p ! : ℝ)) ^ (((p : ℝ) + 1) / p))
@@ -1445,7 +1488,11 @@ $G$ of orders $1$ to $p$ vanish except $G^{(q)}(x_k) = -\alpha_k$; for $k < K$,
 $x_{k+1} - x_k = t^*$ is the global minimizer of the one-dimensional model with weight
 $\sigma_0$, where $t^* = (\alpha_k/\lambda)^{1/(p-q+1)}$ and $\lambda = \sigma_0 (q-1)!/p!$
 (`Optimization.monomialMinimizer`); and $G(x_{k+1}) = G(x_k) - \alpha_k (x_{k+1} - x_k)^q/q!$,
-which is the value $T_{f,p}(x_k, s_k)$ of the Taylor polynomial. -/
+which is the value $T_{f,p}(x_k, s_k)$ of the Taylor polynomial.
+
+**Reading.** Interpolates the spike jets with weights determined by arbitrary initial model weight
+and tolerances up to one.
+-/
 theorem exists_arp_slow_data (P : ARpParams) {p q : ℕ} (hq : 1 ≤ q) (hqp : q ≤ p) :
     ∃ L B : ℝ, 1 ≤ L ∧ 0 ≤ B ∧ ∀ ε : ℝ, 0 < ε → ε ≤ 1 →
       ∃ (G : ℝ → ℝ) (xr : ℕ → ℝ), ContDiff ℝ p G ∧
@@ -1530,7 +1577,11 @@ $\|\nabla f(x_k)\| \le \varepsilon_1$.
 
 Every iteration before termination is very successful, so the run makes $K + 1$ evaluations of
 $f$ and of its derivatives. The source defers the proof to §12.2.2.4. The proof here uses the
-one-dimensional data of Theorem 12.2.15 (`CartisGouldToint.Chapter04.exists_arp_slow_data`). -/
+one-dimensional data of Theorem 12.2.15 (`CartisGouldToint.Chapter04.exists_arp_slow_data`).
+
+**Reading.** Gives an exact first hit at the ceiling, with a fixed-weight global-minimizer run for
+all admissible parameters.
+-/
 theorem theorem_4_1_6_i (P : ARpParams) {p : ℕ} (hp : 1 ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε₁ : ℝ, 0 < ε₁ → ε₁ ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧ AssumptionDpL f p L ∧
@@ -1572,7 +1623,11 @@ $G(x_{k+1}) = G(x_k) - \alpha_k (x_{k+1} - x_k)^q/q!$. Suppose that the terminat
 iterates $x_k e_0$, the steps $(x_{k+1} - x_k) e_0$ and the weights $\sigma_0$ holds at
 $k \le K$ exactly when $k = K$. Then there is an ARp run for the ridge function
 $f(x) = G(\langle e_0, x\rangle)$ from $0$ with iterates $x_k e_0$ and $\sigma_k = \sigma_0$
-that terminates exactly at iteration $K$. -/
+that terminates exactly at iteration $K$.
+
+**Reading.** Realizes the prescribed data as ARp, imposing a small initial regularization weight for
+third-order model tests.
+-/
 theorem exists_algorithm_4_1_1_ridge (P : ARpParams) {p q : ℕ} {ε₁ : ℝ} {ε₂ ε₃ : Option ℝ}
     (hp : 1 ≤ p) (hord : arpOrder ε₂ ε₃ ≤ p) (hε₁ : 0 < ε₁) (hε₂ : ∀ e ∈ ε₂, 0 < e)
     (hε₃ : ∀ e ∈ ε₃, 0 < e) (h32 : ε₂ = none → ε₃ = none) (hq : 1 ≤ q) (hqp : q ≤ p)
@@ -1611,7 +1666,10 @@ $$K = \max\left(\lceil \varepsilon_1^{-(p+1)/p} \rceil, \lceil \varepsilon_2^{-(
 If the first term is the larger, the proof uses the example of the first-order case, which has
 zero curvature. Otherwise it uses an example with zero gradients and
 $\lambda_{\min}[\nabla^2 f(x_k)] = -\alpha_k$, $\alpha_k = \varepsilon_2 + \varepsilon_2 (K -
-k)/K$. -/
+k)/K$.
+
+**Reading.** Constructs the exact first hit at the slower of first- and second-order ceilings.
+-/
 theorem theorem_4_1_6_ii (P : ARpParams) {p : ℕ} (hp : 2 ≤ p) :
     ∃ flow L : ℝ, 1 ≤ L ∧ ∀ ε₁ e₂ : ℝ, 0 < ε₁ → ε₁ ≤ 1 → 0 < e₂ → e₂ ≤ 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, Chapter02.AssumptionBb f flow ∧ AssumptionDpL f p L ∧
@@ -1675,7 +1733,10 @@ theorem theorem_4_1_6_ii (P : ARpParams) {p : ℕ} (hp : 2 ≤ p) :
 
 /-- With finite tolerances, the termination test holds at $x$ when
 $\|\nabla f(x)\| \le \varepsilon_1$, $\lambda_{\min}[\nabla^2 f(x)] \ge -\varepsilon_2$, and
-every $d \in M$ satisfies (4.1.8) and (4.1.9). -/
+every $d \in M$ satisfies (4.1.8) and (4.1.9).
+
+**Reading.** Builds the revised third-order stopping test without the source nonempty-set condition.
+-/
 theorem arpStopTest_some_some_of {f : EuclideanSpace ℝ (Fin n) → ℝ} {ε₁ e₂ e₃ : ℝ}
     {M : Set (EuclideanSpace ℝ (Fin n))} {x : EuclideanSpace ℝ (Fin n)}
     (hg : ‖gradient f x‖ ≤ ε₁) (hl : -e₂ ≤ Chapter01.hessianMinEig f x)

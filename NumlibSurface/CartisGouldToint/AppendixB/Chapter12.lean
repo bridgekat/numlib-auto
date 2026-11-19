@@ -30,6 +30,8 @@ the book gives in this appendix belong to Chapter 12.
 
 ## Deviations from the source
 
+* **Generalization.** Lemma B.12.1 drops the symmetry hypotheses and admits arbitrary radii under
+  the infimum convention. See `CartisGouldToint.AppendixB.lemma_B_12_1`.
 * **Lemma B.12.1** (generalization). The book assumes that $H$ is symmetric and that $T$ is a
   symmetric trilinear form; neither is needed. See `CartisGouldToint.AppendixB.lemma_B_12_1`.
 * **Lemma B.12.1** (generalization). The radius $\Delta$ is arbitrary. For $\Delta < 0$ both minima
@@ -72,7 +74,11 @@ assumption is needed. The radius $\Delta$ is arbitrary: for $\Delta < 0$ both in
 the empty set and are $0$ by the convention `sInf ∅ = 0`.
 
 For $\Delta \ge 0$ the infima are minima, since the closed ball is compact; they are the book's
-minima. The infimum is `sInf` of the image of `Metric.closedBall 0 Δ`. -/
+minima. The infimum is `sInf` of the image of `Metric.closedBall 0 Δ`.
+
+**Generalization.** The quadratic and cubic coefficient maps need no symmetry hypotheses. The result
+uses infima, so even a negative radius is admitted with Lean's empty-set infimum convention.
+-/
 theorem lemma_B_12_1 (g : EuclideanSpace ℝ (Fin n))
     (H : EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin n))
     (T : ContinuousMultilinearMap ℝ (fun _ : Fin 3 => EuclideanSpace ℝ (Fin n)) ℝ) (Δ : ℝ)

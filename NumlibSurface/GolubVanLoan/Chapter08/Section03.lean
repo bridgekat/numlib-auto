@@ -116,16 +116,47 @@ programs call the Householder and Givens programs of §5.1.
 
 ## Deviations from the source
 
+* **§8.3.1, the rank-two update** (generalization).
+  `GolubVanLoan.Chapter08.householder_conj_eq_sub_rankTwo` proves the algebraic formula before
+  requiring a Householder coefficient.
+* **Algorithm 8.3.2, implicit versus explicit step** (reading).
+  `GolubVanLoan.Chapter08.algorithm_8_3_2_spec` proves the explicit-step comparison up to
+  diagonal signs under shifted nonsingularity.
+* **Equation (8.3.6)** (generalization). `GolubVanLoan.Chapter08.IsRitzAcceleration` accepts any
+  real $A$ for which the iterate data include an orthogonal diagonalization of each projected
+  matrix.
+* **Equation (8.3.1) and Algorithm 8.3.1** (reading). The tridiagonal reduction fixes the first
+  coordinate vector. `GolubVanLoan.Chapter08.algorithm_8_3_1` keeps the reflectors separately
+  and mirrors the lower-triangular trailing update. Its rounding theorem gives a dimension-
+  dependent explicit coefficient under stated rounding-model hypotheses.
+* **Theorem 8.3.1 and the spectral split** (generalization).
+  `GolubVanLoan.Chapter08.theorem_8_3_1` uses a tridiagonal reduction without requiring
+  symmetry. `GolubVanLoan.Chapter08.tridiagonal_spectrum_split` uses vanishing couplings on both
+  sides and retains multiplicities.
+* **Equation (8.3.2)** (reading). `GolubVanLoan.Chapter08.explicitShiftedQR` uses the canonical
+  QR decomposition, a rule depending on the current iterate, and a supplied initial matrix. The
+  associated theorem states orthogonal similarity and symmetry for any symmetric start.
+* **Algorithms 8.3.2–8.3.3** (reading). The implicit step accepts a working window and
+  accumulates rotations. The outer algorithm uses a finite pass budget and always accumulates
+  the orthogonal factor. Its error and eigenvalue results are exact-arithmetic estimates for
+  threshold deflations, conditional on the stop flag where diagonalization is needed.
+* **§8.3.6, the Rayleigh quotient connection** (reading).
+  `GolubVanLoan.Chapter08.rayleigh_qr_connection` makes the shifted solve’s nonsingularity
+  explicit and gives the next iterate up to the sign of $r_{nn}$.
+* **§8.3.7, Ritz acceleration** (reading). `GolubVanLoan.Chapter08.ritzAcceleration_residual`
+  formalizes the residual minimum over coefficient matrices in the selected subspace, with
+  invariance under its Ritz rotation.
 * **§8.3.3, preservation of form** (correction). The source states it for every QR factorization
   $T = QR$. For singular $T$ the orthogonal factor is not unique ($T = 0 = Q \cdot 0$ for every
   orthogonal $Q$), and the claim fails. The statements assume that $T$ (or $T - sI$) is nonsingular
   or that $(Q, R)$ is the Givens QR factorization. See
   `GolubVanLoan.Chapter08.qr_tridiagonal_preservation` and
   `GolubVanLoan.Chapter08.shifted_qr_tridiagonal`.
-* **Equation (8.3.3)** (reading). The source does not fix $\operatorname{sign}(0)$. The Wilkinson
-  shift needs $\operatorname{sign}(0) = 1$. See `GolubVanLoan.Chapter08.wilkinsonShift`.
-* **Theorem 8.3.2** (generalization). The source takes $A$ symmetric, which makes $T$ and $S$
-  tridiagonal. The theorem uses only that $T$ and $S$ are tridiagonal. See
+* **Equation (8.3.3)** (reading). The source does not fix $\operatorname{sign}(0)$. Lean uses
+  $\operatorname{sign}(0) = 1$ to select one of the two equally close eigenvalues when $d=0$.
+  See `GolubVanLoan.Chapter08.wilkinsonShift`.
+* **Theorem 8.3.2** (generalization). The source assumes that $A$ is symmetric and that $T$ and
+  $S$ are tridiagonal. The Lean theorem only needs the latter assumption. See
   `GolubVanLoan.Chapter08.theorem_8_3_2`.
 
 ## Not formalized
@@ -151,7 +182,10 @@ variable {n : ℕ}
 /-- **Equation (8.3.1)** of [golub2013matrix], the tridiagonal decomposition. Let
 $A \in \mathbb{R}^{n \times n}$ be symmetric. Then there is an orthogonal
 $Q \in \mathbb{R}^{n \times n}$ such that $T = Q^T A Q$ is symmetric and tridiagonal, and
-$Q e_1 = e_1$ when $n \ge 1$. -/
+$Q e_1 = e_1$ when $n \ge 1$.
+
+**Reading.** The source introduces the tridiagonal reduction. Lean also records that the
+Householder product fixes the first coordinate vector whenever it exists. -/
 theorem equation_8_3_1 {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, (Qᵀ * A * Q).IsSymm ∧ (Qᵀ * A * Q).IsTridiagonal ∧
       ∀ h : 0 < n, Q *ᵥ Pi.single ⟨0, h⟩ 1 = Pi.single ⟨0, h⟩ 1 := by
@@ -172,7 +206,10 @@ $B \in \mathbb{R}^{n \times n}$ be symmetric, $v \in \mathbb{R}^n$, $\beta \in \
 $P = I - \beta v v^T$. With $p = \beta B v$ and $w = p - (\beta p^T v / 2) v$,
 $$P B P = B - v w^T - w v^T.$$
 
-The identity holds for every $\beta$, not only for $\beta = 2/v^T v$. -/
+The identity holds for every $\beta$, not only for $\beta = 2/v^T v$.
+
+**Generalization.** The rank-two formula holds for arbitrary $\beta$ and $v$. The source uses a
+nonzero Householder vector with $\beta=2/(v^Tv)$. -/
 theorem householder_conj_eq_sub_rankTwo {B : Matrix (Fin n) (Fin n) ℝ} (hB : B.IsSymm)
     (v : Fin n → ℝ) (β : ℝ) :
     let p := β • (B *ᵥ v)
@@ -218,7 +255,11 @@ list $T_k = [k + 1, \dots, n - 1]$ (convention 10). It computes:
   $\mathrm{fl}(\mathrm{fl}(a_{ij} - \mathrm{fl}(v_i w_j)) - \mathrm{fl}(w_i v_j))$ for
   $j \le i$, from the entries of $A$ before the update, then mirrored.
 
-It returns the array `GolubVanLoan.Chapter08.tridiagonalizeOut` and $(v, \beta)$. -/
+It returns the array `GolubVanLoan.Chapter08.tridiagonalizeOut` and $(v, \beta)$.
+
+**Reading.** The source describes computing the upper triangle using symmetry. Lean evaluates
+the lower triangle and mirrors the result, computes the subdiagonal length, and returns the
+reflector separately. -/
 noncomputable def tridiagonalizeStep (k : Fin n) (hk : (k : ℕ) + 1 < n)
     (A : Matrix (Fin n) (Fin n) ℝ) : M (Matrix (Fin n) (Fin n) ℝ × ((Fin n → ℝ) × ℝ)) := do
   let T := Chapter05.indexFrom n (k + 1)
@@ -256,7 +297,12 @@ in the order of application (convention 13). These data are the "factored form" 
 Algorithm 8.3.3 accumulates.
 
 The entries $A(k{+}2{:}n, k)$ are left as they were. The source does not overwrite them either,
-and they are never read again. For $n \le 2$ the program does nothing. -/
+and they are never read again. For $n \le 2$ the program does nothing.
+
+**Reading.** The source describes storing reflectors in the subdiagonal portion of the array
+and computing the upper triangular part of the trailing update. Lean returns a separate
+reflector list, computes the lower triangle and mirrors it, and reads the final tridiagonal
+from the band. -/
 noncomputable def algorithm_8_3_1 (A : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ)) :=
   (List.finRange (n - 2)).foldlM (fun (st : Matrix (Fin n) (Fin n) ℝ × List ((Fin n → ℝ) × ℝ))
@@ -619,7 +665,11 @@ $\tilde Q$ is exactly orthogonal and $E$ is a symmetric matrix satisfying
 $\|E\|_F \le c u \|A\|_F$", referring to Wilkinson (*The Algebraic Eigenvalue Problem*, p. 297).
 The theorem gives a rigorous constant, of order $n^2 u$. The constant is $\gamma_{n-2}$
 evaluated at $\epsilon$ instead of $u$, with $\gamma_m(x) = mx/(1 - mx)$ the function
-`FloatingPoint.gamma`. -/
+`FloatingPoint.gamma`.
+
+**Reading.** The source leaves the small constant in its $cu\|A\|_F$ estimate unspecified. Lean
+gives an explicit dimension-dependent coefficient and assumes idempotent rounding and the
+stated smallness bounds. -/
 theorem algorithm_8_3_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hcard : ((6 * (18 * n + 31) + 2 * n + 8 : ℕ) : ℝ) * fp.u < 1)
     (hr : ((n - 2 : ℕ) : ℝ) * (9 * gamma fp.u (6 * (18 * n + 31) + 2 * n + 8) +
@@ -915,7 +965,11 @@ $A_k(k{+}2{:}n, k)$. The proof is a loop invariant: after step $k$ the cleaned a
 $(P_0 \cdots P_k)^T A (P_0 \cdots P_k)$. Each step is $P C P$ by
 `GolubVanLoan.Chapter08.householder_conj_eq_sub_rankTwo` with
 `GolubVanLoan.Chapter05.houseOn_spec`, whose $P x = \|x\|_2 e_1$ makes the new norm the exact
-subdiagonal entry. -/
+subdiagonal entry.
+
+**Reading.** The source describes overwriting $A$ with $T$ and using its subdiagonal storage
+for reflectors. The Lean factorization reads $T$ from the returned band and builds $Q$ from a
+separate list. -/
 theorem algorithm_8_3_1_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) :
     let out := Id.run (algorithm_8_3_1 pure A)
     let Q := Chapter05.householderProduct out.2
@@ -952,7 +1006,11 @@ $\lambda(T) = \lambda(T_1) \cup \lambda(T_2)$ with multiplicity.
 
 The block form is stated after reindexing $T$ by `finSumFinEquiv` to
 `Fin (k + 1) ⊕ Fin (l + 1)`. The two zero entries are at the 0-based positions $(k + 1, k)$ and
-$(k, k + 1)$. -/
+$(k, k + 1)$.
+
+**Generalization.** The source splits a symmetric tridiagonal matrix at a zero subdiagonal
+entry. Lean permits nonsymmetric tridiagonal matrices when both cross-boundary entries vanish
+and uses a characteristic-polynomial product, preserving multiplicities. -/
 theorem tridiagonal_spectrum_split {k l : ℕ}
     {T : Matrix (Fin (k + 1 + (l + 1))) (Fin (k + 1 + (l + 1))) ℝ} (hT : T.IsTridiagonal)
     (h₁ : T (Fin.natAdd (k + 1) 0) (Fin.castAdd (l + 1) (Fin.last k)) = 0)
@@ -1004,7 +1062,10 @@ The Krylov matrix is `GolubVanLoan.Chapter07.krylovMatrix`, and $n = N + 1$. In 
 statement, with 0-based indices, $k = i + 1$ for the first $i$ with $t_{i+1,i} = 0$. The matrix
 $A$ need not be symmetric. The proof uses $Q^T K(A, Q e_1, n) = K(T, e_1, n)$, whose column
 $T^j e_1$ is supported on the first $j + 1$ coordinates with last entry
-$t_{21} \cdots t_{j+1,j}$. -/
+$t_{21} \cdots t_{j+1,j}$.
+
+**Generalization.** The source assumes symmetric $A$ as well as a tridiagonal reduction. The
+Lean theorem needs only the tridiagonal reduction for its Krylov conclusions. -/
 theorem theorem_8_3_1 {N : ℕ} {A Q : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hQ : Q ∈ orthogonalGroup (Fin (N + 1)) ℝ) (hT : (Qᵀ * A * Q).IsTridiagonal) :
     (Qᵀ * Chapter07.krylovMatrix A (Q.col 0) (N + 1)).IsUpperTriangular ∧
@@ -1047,8 +1108,8 @@ for the smallest $k$ with $t_{k+1,k} = 0$, and for $k = n$ if $T$ is unreduced. 
 * $|s_{i,i-1}| = |t_{i,i-1}|$ for $i = 2, \dots, k$;
 * if $k < n$ and $t_{k+1,k} = 0$, then $s_{k+1,k} = 0$.
 
-**Generalization.** The source takes $A$ symmetric, which makes $T$ and $S$ tridiagonal. The
-theorem uses only that $T$ and $S$ are tridiagonal.
+**Generalization.** The source assumes symmetry of $A$ and tridiagonality of $T$ and $S$.
+The Lean theorem only uses tridiagonality of $T$ and $S$.
 
 The Lean index `k` is the $k - 1$ of this statement, and all indices are 0-based. The theorem is
 Theorem 7.4.2 (`GolubVanLoan.Chapter07.theorem_7_4_2`) for the tridiagonal, hence upper
@@ -1242,7 +1303,11 @@ $\mu$ satisfies:
   $\begin{bmatrix} a' & b \\ b & a \end{bmatrix}$;
 * $|\mu - a| \le |\mu' - a|$ for the other root $\mu' = a + d + \sigma \sqrt{d^2 + b^2}$, so
   $\mu$ is the eigenvalue closer to $a$;
-* $\mu = a - b^2 / (d + \sigma \sqrt{d^2 + b^2})$, the form that Algorithm 8.3.2 computes. -/
+* $\mu = a - b^2 / (d + \sigma \sqrt{d^2 + b^2})$, the form that Algorithm 8.3.2 computes.
+
+**Reading.** Proves the eigenvalue equation, distance comparison and rationalized form with explicit
+tie convention.
+-/
 theorem equation_8_3_3 {N : ℕ} (T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) :
     let a := T (Fin.last (N + 1)) (Fin.last (N + 1))
     let a' := T (Fin.last N).castSucc (Fin.last N).castSucc
@@ -1295,7 +1360,11 @@ $$\mu = \mathrm{shift}(T_k), \qquad T_k - \mu I = UR, \qquad T_{k+1} = RU + \mu 
 
 One step is the backbone's `Matrix.shiftedQrStep`, with the canonical QR factorization. Examples
 of shift rules are $T \mapsto t_{nn}$ and the Wilkinson shift
-`GolubVanLoan.Chapter08.wilkinsonShift`. -/
+`GolubVanLoan.Chapter08.wilkinsonShift`.
+
+**Reading.** The source permits any real shift chosen at each iteration and starts with a
+tridiagonal reduction. Lean uses a rule depending on the current matrix, a supplied initial
+matrix, and the canonical QR factorization. -/
 noncomputable def explicitShiftedQR (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
     (T₀ : Matrix (Fin n) (Fin n) ℝ) : ℕ → Matrix (Fin n) (Fin n) ℝ
   | 0 => T₀
@@ -1306,7 +1375,11 @@ symmetric $T_0 \in \mathbb{R}^{n \times n}$ and every $k$, there is an orthogona
 $T_k = Q^T T_0 Q$, and $T_k$ is symmetric.
 
 That one step keeps a symmetric tridiagonal matrix tridiagonal, when the shifted matrix is
-nonsingular, is `GolubVanLoan.Chapter08.shifted_qr_tridiagonal`. -/
+nonsingular, is `GolubVanLoan.Chapter08.shifted_qr_tridiagonal`.
+
+**Reading.** This exact-semantics theorem states orthogonal similarity and symmetry from any
+symmetric initial matrix. The source’s tridiagonal preservation belongs to the separate shifted
+QR result. -/
 theorem equation_8_3_2 (shift : Matrix (Fin n) (Fin n) ℝ → ℝ)
     {T₀ : Matrix (Fin n) (Fin n) ℝ} (hT₀ : T₀.IsSymm) (k : ℕ) :
     ∃ Q ∈ orthogonalGroup (Fin n) ℝ, explicitShiftedQR shift T₀ k = Qᵀ * T₀ * Q ∧
@@ -1426,7 +1499,11 @@ $$d = \mathrm{fl}(\mathrm{fl}(a' - a)/2), \qquad \mu = \mathrm{fl}\Bigl(a -
   \mathrm{fl}\bigl(\mathrm{fl}(b^2) / \mathrm{fl}(d + \operatorname{sign}(d) \,
   \mathrm{fl}(\sqrt{\mathrm{fl}(\mathrm{fl}(d^2) + \mathrm{fl}(b^2))}))\bigr)\Bigr),$$
 with $\operatorname{sign}(0) = 1$. The product with $\operatorname{sign}(d)$ is a copy or a
-negation, and is exact. -/
+negation, and is exact.
+
+**Reading.** Same rationalized shift using rounded operations and a deterministic positive tie
+branch.
+-/
 noncomputable def wilkinsonShiftComputed (a' a b : ℝ) : M ℝ := do
   let d ← rnd ((← rnd (a' - a)) / 2)
   let b2 ← rnd (b * b)
@@ -1473,7 +1550,10 @@ unreduced block. The program also performs the optional accumulation
 $Q \leftarrow Q G_1 \cdots G_{N-1}$ of the source, and returns $(Z^T T Z, QZ)$, where $Z$ acts
 on the window. For $N \le 1$ it does nothing. The shift is
 `GolubVanLoan.Chapter08.wilkinsonShiftComputed` of the last two window indices, and
-$x_0 = \mathrm{fl}(t_{w_0 w_0} - \mu)$. -/
+$x_0 = \mathrm{fl}(t_{w_0 w_0} - \mu)$.
+
+**Reading.** Lean embeds the source step in a consecutive window and updates an accumulated
+factor. The source gives a full-order step and describes accumulation separately. -/
 noncomputable def algorithm_8_3_2 (w : List (Fin n)) (T Q : Matrix (Fin n) (Fin n) ℝ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ) :=
   match w with
@@ -1526,7 +1606,10 @@ noncomputable def unreducedWindow (D : Matrix (Fin n) (Fin n) ℝ) : List (Fin n
 /-- One pass of the loop "until $q = n$" of Algorithm 8.3.3 on the state $(D, Q, \mathrm{done})$. If
 $\mathrm{done}$ holds, the pass does nothing. Otherwise it deflates $D$ and finds the window of
 $D_{22}$; if the window is empty ($q = n$) it sets $\mathrm{done}$, and otherwise it applies
-Algorithm 8.3.2 to the window with the accumulator $Q$. -/
+Algorithm 8.3.2 to the window with the accumulator $Q$.
+
+**Reading.** Same deflation and active step with explicit stopping status.
+-/
 noncomputable def symmetricQRPass (tol : ℝ)
     (st : Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) :=
@@ -1556,7 +1639,11 @@ The initial $D$ is the tridiagonal part of the array of Algorithm 8.3.1; the ent
 array below the subdiagonal hold nothing of $T$. The initial $Q$ is the forward accumulation
 (§5.1.6, `GolubVanLoan.Chapter05.forwardAccumulation`) of the returned reflector data, which are
 never rebuilt (convention 13). The loop "until $q = n$" runs at most `fuel` passes, with a
-`done` flag (convention 3). The result is $(D, Q, \mathrm{done})$. -/
+`done` flag (convention 3). The result is $(D, Q, \mathrm{done})$.
+
+**Reading.** The source loops until the trailing diagonal block is the whole matrix and treats
+accumulating $Q$ as optional. Lean always accumulates $Q$ and returns a stop flag after a
+bounded number of passes. -/
 noncomputable def algorithm_8_3_3 (tol : ℝ) (A : Matrix (Fin n) (Fin n) ℝ) (fuel : ℕ) :
     M (Matrix (Fin n) (Fin n) ℝ × Matrix (Fin n) (Fin n) ℝ × Bool) := do
   let Adata ← algorithm_8_3_1 rnd A
@@ -1821,7 +1908,10 @@ private theorem chaseInv_run {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
         (fun e => by rw [e, ha] at hf₀; omega) (fun e => by rw [e, hb] at hf₀; omega), he₀]
 
 /-- In exact arithmetic, the shift of Algorithm 8.3.2 is $a - b^2 / (d + \operatorname{sign}(d)
-\sqrt{d^2 + b^2})$ with $d = (a' - a)/2$ and $\operatorname{sign}(0) = 1$. -/
+\sqrt{d^2 + b^2})$ with $d = (a' - a)/2$ and $\operatorname{sign}(0) = 1$.
+
+**Reading.** Same rationalized shift with positive sign selected at zero.
+-/
 theorem wilkinsonShiftComputed_pure (a' a b : ℝ) :
     Id.run (wilkinsonShiftComputed pure a' a b) =
       a - b ^ 2 / ((a' - a) / 2 + (if 0 ≤ (a' - a) / 2 then 1 else -1) *
@@ -1867,7 +1957,11 @@ The window is `GolubVanLoan.Chapter07.francisWindow n p m`, the first statement 
 `GolubVanLoan.Chapter07.blockConj p m Z T`, and $Z$ is the product of the $m - p - 1$ rotations.
 The proof is the bulge-chasing invariant: after $j$ rotations the block is tridiagonal except
 for one bulge at $(p + j + 1, p + j - 1)$ (§8.3.5, `GolubVanLoan.Chapter08.bulgeChase_step`),
-and the last rotation pushes the bulge out of the block. -/
+and the last rotation pushes the bulge out of the block.
+
+**Generalization.** The source presents a full-order step on an unreduced tridiagonal. This
+theorem gives the exact rotation and tridiagonal structure for a window of a symmetric
+tridiagonal, with other entries unchanged by the window update. -/
 theorem algorithm_8_3_2_window {p m : ℕ} (hm : m ≤ n) (hpm : p + 2 ≤ m)
     {T : Matrix (Fin n) (Fin n) ℝ} (hTs : T.IsSymm) (hT : T.IsTridiagonal)
     (Q : Matrix (Fin n) (Fin n) ℝ) :
@@ -1964,7 +2058,11 @@ the implicit step is the explicit one up to signs.
 The order is $n = N + 2$, and $\mu$ is `GolubVanLoan.Chapter08.wilkinsonShift T`. The
 triangularity is the implicit-shift principle
 `Matrix.IsUnreducedUpperHessenberg.isUpperTriangular_star_mul_aeval`, which is also behind
-Theorem 8.3.2. The signs come from `Matrix.IsShiftedQrStep.unique_of_isUnit`. -/
+Theorem 8.3.2. The signs come from `Matrix.IsShiftedQrStep.unique_of_isUnit`.
+
+**Reading.** The source describes the explicit and implicit shifted step as essentially the
+same. Lean specifies the first column up to scale and proves diagonal-sign similarity to the
+chosen explicit step when $T-\mu I$ is invertible. -/
 theorem algorithm_8_3_2_spec {N : ℕ} {T : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ}
     (hTs : T.IsSymm) (hT : IsUnreducedTridiagonal T) (Q : Matrix (Fin (N + 2)) (Fin (N + 2)) ℝ) :
     let out := Id.run (algorithm_8_3_2 pure (List.finRange (N + 2)) T Q)
@@ -2724,7 +2822,11 @@ current $D$, of Frobenius norm $\sqrt{2} |d_{i+1,i}| \le 2 \, \mathrm{tol} \, \|
 $n - 1$ deflations. The forward form $Q^T A Q = D + E$ with $E$ supported on the deflated
 positions is false: a later rotation on a window $[p, \dots]$ mixes a deflated entry at
 $(p, p - 1)$ into $(p + 1, p - 1)$. Convergence, that some finite fuel suffices, is Wilkinson's
-theorem and is not claimed. -/
+theorem and is not claimed.
+
+**Reading.** The exact-arithmetic theorem bounds threshold deflation error in Frobenius norm
+for a finite prefix. Diagonalization requires the stop flag. The source describes the spectral-
+norm effect of floating-point error for a completed run. -/
 theorem algorithm_8_3_3_spec {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {tol : ℝ}
     (htol : 0 ≤ tol) (fuel : ℕ) :
     let out := Id.run (algorithm_8_3_3 pure tol A fuel)
@@ -2774,7 +2876,11 @@ $c \, \mathrm{tol} < 1$, and for every $k$:
 
 The computed eigenvalues are the $\hat\lambda_i = d_{ii}$. The proof takes $E$ from
 `GolubVanLoan.Chapter08.algorithm_8_3_3_spec`, for which $D = Q^T (A + E) Q$, and the bound is
-`GolubVanLoan.Chapter08.corollary_8_1_6`. -/
+`GolubVanLoan.Chapter08.corollary_8_1_6`.
+
+**Reading.** The bound for the sorted diagonal results follows from exact-arithmetic threshold
+deflation in Frobenius norm, conditional on stopping. The source discusses eigenvalue error in
+terms of unit roundoff and the spectral norm. -/
 theorem algorithm_8_3_3_eigenvalues {A : Matrix (Fin n) (Fin n) ℝ} (hA : A.IsSymm) {tol : ℝ}
     (htol : 0 ≤ tol) (fuel : ℕ) :
     let out := Id.run (algorithm_8_3_3 pure tol A fuel)
@@ -2818,7 +2924,10 @@ and if $T - \sigma I$ is nonsingular, one step of Rayleigh quotient iteration (8
 $x_0 = e_n$ gives $x_1 = \pm q_n$.
 
 The factorization is the canonical `Matrix.qrQ`, `Matrix.qrR`, and the iteration is
-`GolubVanLoan.Chapter08.rayleighQuotientIteration`. -/
+`GolubVanLoan.Chapter08.rayleighQuotientIteration`.
+
+**Reading.** The source identifies the next iterate with $q_n$. Lean assumes nonsingularity for
+the Rayleigh solve and gives equality up to the sign of the diagonal element $r_{nn}$. -/
 theorem rayleigh_qr_connection {N : ℕ} {T : Matrix (Fin (N + 1)) (Fin (N + 1)) ℝ}
     (hT : T.IsSymm) :
     let σ := T (Fin.last N) (Fin.last N)
@@ -2883,7 +2992,11 @@ $A$ if $Q_0^T Q_0 = I$ and, for every $k \ge 1$:
 * $Q_k = \tilde Q_k U_k$.
 
 The thin QR step is `Matrix.IsOrthogonalIterationStep`, which allows every choice of
-factorization. -/
+factorization.
+
+**Generalization.** The source works in the symmetric eigenproblem setting. The Lean predicate
+takes any real $A$ and requires the projected orthogonal diagonalization as part of the iterate
+data. -/
 def IsRitzAcceleration {r : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
     (Q Qt : ℕ → Matrix (Fin n) (Fin r) ℝ) (S U D : ℕ → Matrix (Fin r) (Fin r) ℝ) : Prop :=
   (Q 0)ᵀ * Q 0 = 1 ∧ ∀ k, IsOrthogonalIterationStep A (Q k) (Qt (k + 1)) ∧
@@ -2903,7 +3016,11 @@ $$\|A Q_k - Q_k D_k\|_F = \|A \tilde Q_k - \tilde Q_k S_k\|_F = \min_{S \in \mat
 So the columns of $Q_k$ are the best basis from the standpoint of minimizing the residual.
 
 The minimum is Theorem 8.1.14 (`GolubVanLoan.Chapter08.theorem_8_1_14`). The matrix $A$ need not
-be symmetric. -/
+be symmetric.
+
+**Reading.** The Lean equality minimizes over all small coefficient matrices for the current
+thin basis and proves invariance under the specified Ritz rotation. It does not compare
+different iterate subspaces. Symmetry of $A$ is unnecessary once the stated Ritz factors exist. -/
 theorem ritzAcceleration_residual {r : ℕ} {A : Matrix (Fin n) (Fin n) ℝ}
     {Q Qt : ℕ → Matrix (Fin n) (Fin r) ℝ} {S U D : ℕ → Matrix (Fin r) (Fin r) ℝ}
     (h : IsRitzAcceleration A Q Qt S U D) (k : ℕ) :

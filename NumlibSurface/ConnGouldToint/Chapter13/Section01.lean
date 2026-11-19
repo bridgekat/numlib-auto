@@ -40,6 +40,14 @@ specializes `Optimization.tendsto_logBarrier_of_bounded_of_infDist_frontier` fro
 
 ## Deviations from the source
 
+* **Representation.** The outer iteration is represented by a run and permits an initial inner point
+  to pass the stopping test. See `ConnGouldToint.Chapter13.BarrierOuterRun`,
+  `ConnGouldToint.Chapter13.BarrierOuterRun.interior_iterate`.
+* **Convention.** The logarithmic objective is totalized outside its positive-coordinate barrier
+  domain. See `ConnGouldToint.Chapter13.logBarrier`, `ConnGouldToint.Chapter13.logBarrierObjective`.
+* **Correction.** Logarithmic boundary divergence requires coordinate control; reciprocal
+  coordinates give a counterexample. See `ConnGouldToint.Chapter13.logBarrier_boundary_divergence`,
+  `ConnGouldToint.Chapter13.logBarrier_unbounded_boundary_counterexample`.
 * **Algorithm 13.1.1** (generalization). An inner run may stop at index $0$ when its starting point
   already passes the stopping test, while the text uses a positive terminal index. See
   `ConnGouldToint.Chapter13.BarrierOuterRun`.
@@ -69,7 +77,12 @@ $x_{k+1} = y_{k,N_k}$.
 run may stop at index $N_k = 0$ when its starting point already passes the stopping test.
 
 The relative interior is `intrinsicInterior ℝ C`. The starting point $y_{k,0}$ of an inner run
-can be chosen independently of the previous outer iterate $x_k$. -/
+can be chosen independently of the previous outer iterate $x_k$.
+
+**Reading.** The algorithm is a predicate on a sequence with a supplied inner solve relation; the
+proof certifies interior feasibility from the accepted inner outputs. An inner solve may stop at its
+initial state, unlike the positive terminal index in the text.
+-/
 structure BarrierOuterRun {E : Type*} [TopologicalSpace E] [AddCommGroup E] [Module ℝ E]
     (C : Set E) (φ : E → ℝ → ℝ)
     (solves : ℝ → (E → ℝ) → (ℕ → E) → ℕ → Prop) where
@@ -101,7 +114,12 @@ structure BarrierOuterRun {E : Type*} [TopologicalSpace E] [AddCommGroup E] [Mod
 on the set $C$, every outer iterate $x_k$ lies in the relative interior of $C$.
 
 The case $k = 0$ is a field of the run, and the case $k + 1$ follows from the update
-$x_{k+1} = y_{k,N_k}$. -/
+$x_{k+1} = y_{k,N_k}$.
+
+**Reading.** The algorithm is a predicate on a sequence with a supplied inner solve relation; the
+proof certifies interior feasibility from the accepted inner outputs. An inner solve may stop at its
+initial state, unlike the positive terminal index in the text.
+-/
 theorem BarrierOuterRun.interior_iterate {E : Type*} [TopologicalSpace E] [AddCommGroup E]
     [Module ℝ E]
     {C : Set E} {φ : E → ℝ → ℝ} {solves : ℝ → (E → ℝ) → (ℕ → E) → ℕ → Prop}
@@ -118,14 +136,22 @@ $$-\mu \sum_{i=1}^n \log x_i.$$
 
 The definition is `Optimization.logBarrier μ x`. It is meant for vectors with positive
 coordinates. At other vectors it uses the Mathlib convention for `Real.log`: $\log 0 = 0$ and
-$\log x = \log |x|$ for $x < 0$. -/
+$\log x = \log |x|$ for $x < 0$.
+
+**Reading.** The logarithmic expression and objective are total real functions using Lean's real
+logarithm. The barrier interpretation uses strictly positive coordinates and positive parameter.
+-/
 noncomputable abbrev logBarrier {ι : Type*} [Fintype ι] (x : ι → ℝ) (μ : ℝ) : ℝ :=
   Optimization.logBarrier μ x
 
 /-- **Equation (13.1.1)** of [conn2000trust]. For an objective $f : \mathbb{R}^n \to \mathbb{R}$, a
 point $x$ and a parameter $\mu$, the **logarithmic barrier objective** is
 $$f(x) - \mu \sum_{i=1}^n \log x_i,$$
-the sum of $f$ and the barrier term `ConnGouldToint.Chapter13.logBarrier`. -/
+the sum of $f$ and the barrier term `ConnGouldToint.Chapter13.logBarrier`.
+
+**Reading.** The logarithmic expression and objective are total real functions using Lean's real
+logarithm. The barrier interpretation uses strictly positive coordinates and positive parameter.
+-/
 noncomputable def logBarrierObjective {ι : Type*} [Fintype ι]
     (f : (ι → ℝ) → ℝ) (x : ι → ℝ) (μ : ℝ) : ℝ :=
   f x + logBarrier x μ
@@ -142,7 +168,12 @@ vectors that approach the boundary. This fails without the bound $M$ on the coor
 
 The boundary is `frontier (Optimization.nonnegativeOrthant ι)`, and the distance is
 `Metric.infDist` for the supremum norm. The proof specializes
-`Optimization.tendsto_logBarrier_of_bounded_of_infDist_frontier`. -/
+`Optimization.tendsto_logBarrier_of_bounded_of_infDist_frontier`.
+
+**Correction.** The logarithmic barrier diverges along positive sequences approaching the boundary
+when the coordinates are bounded above. A sequence with coordinates reciprocal to one another
+approaches the boundary with constant barrier value, contradicting unrestricted AC.8.
+-/
 theorem logBarrier_boundary_divergence {ι : Type*} [Fintype ι] [Nonempty ι]
     {μ M : ℝ} (hμ : 0 < μ) {x : ℕ → ι → ℝ}
     (hx : ∀ n i, 0 < x n i) (hbounded : ∀ n i, x n i ≤ M)
@@ -158,7 +189,12 @@ $\mu = 1$ satisfies $-\log (x_j)_1 - \log (x_j)_2 = 0$ for every $j$. In particu
 term does not tend to $+\infty$.
 
 The sequence is $x_j = (1/(j+1), j+1)$: the second coordinate tends to infinity and cancels the
-logarithm of the first coordinate, which tends to zero. -/
+logarithm of the first coordinate, which tends to zero.
+
+**Correction.** The logarithmic barrier diverges along positive sequences approaching the boundary
+when the coordinates are bounded above. A sequence with coordinates reciprocal to one another
+approaches the boundary with constant barrier value, contradicting unrestricted AC.8.
+-/
 theorem logBarrier_unbounded_boundary_counterexample :
     ∃ x : ℕ → Fin 2 → ℝ, (∀ n i, 0 < x n i) ∧
       Tendsto (fun n ↦ infDist (x n) (frontier (Optimization.nonnegativeOrthant (Fin 2))))

@@ -31,6 +31,8 @@ bounds in terms of the spectrum.
 
 ## Deviations from the source
 
+* **Theorems 5.6.1, 5.6.5 and 5.6.6** (generalization). The energy identities and bounds use
+  total CG sequences, including the terminal update or stationary tail where specified.
 * **Corollary 5.6.2** (generalization). The inverse moment formula holds through the grade even
   when the grade is smaller than the ambient dimension.
 * **Theorem 5.6.3** (correction). Inverse-eigenvalue factors weight each summand once, as required
@@ -56,14 +58,20 @@ local notation "d₀" => grade A (b - A x₀)
 
 /-- **Equation (5.6.3)** of [liesen2013krylov]. The **CG iteration polynomial** at step $n$
 is the characteristic polynomial of the $n$-th Lanczos tridiagonal $T_n$ divided by its
-constant term. When that term is zero this expression gives the zero polynomial. -/
+constant term. When that term is zero this expression gives the zero polynomial.
+
+**Generalization.** The characteristic polynomial is normalized using total division. The CG
+interpretation applies through the grade under the positive definiteness hypothesis. -/
 noncomputable abbrev cgIterationPolynomial (A : E →ₗ[𝕜] E) (r : E) (n : ℕ) : ℝ[X] :=
   Lanczos.normalizedCharpoly A r n
 
 /-- **Theorem 5.6.1** of [liesen2013krylov]. Let $A$ be symmetric coercive, $Ax=b$, and
 $k\le n$. For the CG iterates $x_k,x_n$ from $x_0$, one has
 $$\|x-x_k\|_A^2=\sum_{j=k}^{n-1}\operatorname{Re}(\alpha_j)\|r_j\|^2+\|x-x_n\|_A^2.$$
-The identity also holds after exact termination, when subsequent residuals vanish. -/
+The identity also holds after exact termination, when subsequent residuals vanish.
+
+**Generalization.** The identity includes equal indices and indices beyond the grade using the
+total CG recurrence. -/
 theorem theorem_5_6_1 (hA : A.IsSymmetricCoercive) (hx : A x = b) {k n : ℕ} (hkn : k ≤ n) :
     energyNorm A (x - x[k]) ^ 2 =
       (∑ j ∈ Ico k n, RCLike.re a[j] * ‖r[j]‖ ^ 2) + energyNorm A (x - x[n]) ^ 2 :=
@@ -71,7 +79,9 @@ theorem theorem_5_6_1 (hA : A.IsSymmetricCoercive) (hx : A x = b) {k n : ℕ} (h
 
 /-- **Theorem 5.6.1** of [liesen2013krylov], one-step identity. For symmetric coercive $A$,
 solution $x$ and CG iterates from $x_0$, the difference of the squared energy errors at steps
-$j$ and $j+1$ is $\operatorname{Re}(\alpha_j)\|r_j\|^2$. -/
+$j$ and $j+1$ is $\operatorname{Re}(\alpha_j)\|r_j\|^2$.
+
+**Generalization.** The identity holds also on the stationary tail after convergence. -/
 theorem theorem_5_6_1_one_step (hA : A.IsSymmetricCoercive) (hx : A x = b) (n : ℕ) :
     energyNorm A (x - x[n]) ^ 2 - energyNorm A (x - x[n + 1]) ^ 2 =
       RCLike.re a[n] * ‖r[n]‖ ^ 2 :=
@@ -82,7 +92,10 @@ coercive, $Ax=b$, and $d$ the grade of $r_0$ in a finite-dimensional full Krylov
 For $n \le d$, the squared energy error is
 $$\|x-x_n\|_A^2=\sum_{j=n}^{d-1}\operatorname{Re}(\alpha_j)\|r_j\|^2
  =\|r_0\|^2\big((T_d^{-1}e_1,e_1)-(T_n^{-1}e_1,e_1)\big).$$
-The empty $T_0$ has contribution zero. In the full-grade setting of the book, $d=N$. -/
+The empty $T_0$ has contribution zero. In the full-grade setting of the book, $d=N$.
+
+**Reading.** Final grade replaces ambient dimension and allows step zero.
+-/
 theorem corollary_5_6_2 [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hA : A.IsSymmetricCoercive) (hx : A x = b) {n : ℕ} (hn : n ≤ d₀) :
     energyNorm A (x - x[n]) ^ 2 = ∑ j ∈ Ico n d₀, RCLike.re a[j] * ‖r[j]‖ ^ 2 ∧
@@ -146,7 +159,10 @@ variable [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
 
 /-- **Lemma 5.6.4(1)** of [liesen2013krylov]. Before the grade of the initial residual, the $n$-th
 CG direction is a sum of the previous and current residuals,
-$$p_n=\|r_n\|^2\sum_{j=0}^n\|r_j\|^{-2}r_j.$$ -/
+$$p_n=\|r_n\|^2\sum_{j=0}^n\|r_j\|^{-2}r_j.$$
+
+**Generalization.** This direction identity comes from the recurrence and does not require
+positive definiteness. -/
 theorem lemma_5_6_4_i {n : ℕ} (hn : n < d₀) :
     p[n] = ∑ j ∈ range (n + 1), ((‖r[n]‖ ^ 2 / ‖r[j]‖ ^ 2 : ℝ) : 𝕜) • r[j] :=
   CG.direction_eq_sum_residual b x₀ (CG.residual_ne_zero_of_lt_grade b x₀ hn)
@@ -174,7 +190,10 @@ theorem lemma_5_6_4_iv (hA : A.IsSymmetricCoercive) {n ℓ : ℕ} (hℓn : ℓ �
 
 /-- **Lemma 5.6.4(5)** of [liesen2013krylov]. For symmetric coercive $A$ and $n\le\ell$ with
 $n$ before termination, the inner product of two CG directions is
-$$\langle p_n,p_\ell\rangle=\|p_n\|^2\frac{\|r_\ell\|^2}{\|r_n\|^2}.$$ -/
+$$\langle p_n,p_\ell\rangle=\|p_n\|^2\frac{\|r_\ell\|^2}{\|r_n\|^2}.$$
+
+**Reading.** The index in the denominator is strictly before the grade, and the later index may
+be on the zero tail. -/
 theorem lemma_5_6_4_v (hA : A.IsSymmetricCoercive) {n ℓ : ℕ} (hnℓ : n ≤ ℓ) (hn : n < d₀) :
     inner 𝕜 p[n] p[ℓ] = ((‖p[n]‖ ^ 2 * (‖r[ℓ]‖ ^ 2 / ‖r[n]‖ ^ 2) : ℝ) : 𝕜) :=
   CG.inner_direction_eq_scale b x₀ hA hnℓ (CG.residual_ne_zero_of_lt_grade b x₀ hn)
@@ -185,7 +204,9 @@ end Directions
 the consecutive CG errors $e_n=x-x_n$ and $e_{n+1}=x-x_{n+1}$ before the finite grade of $r_0$
 satisfy
 $$\frac{\|e_n\|^2-\|e_{n+1}\|^2}{\|p_n\|^2}
-  =\frac{\|e_n\|_A^2+\|e_{n+1}\|_A^2}{\|p_n\|_A^2}.$$ -/
+  =\frac{\|e_n\|_A^2+\|e_{n+1}\|_A^2}{\|p_n\|_A^2}.$$
+
+**Generalization.** The identity includes the last update to the exact solution. -/
 theorem theorem_5_6_5 [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀))]
     (hA : A.IsSymmetricCoercive) (hx : A x = b) {n : ℕ} (hn : n < d₀) :
     (‖x - x[n]‖ ^ 2 - ‖x - x[n + 1]‖ ^ 2) / ‖p[n]‖ ^ 2 =
@@ -205,7 +226,10 @@ theorem theorem_5_6_5_strict [FiniteDimensional 𝕜 (fullSubspace A (b - A x₀
 positive finite dimension, with eigenvalues $\mu_i$, and let $Ax=b$. The relative CG energy
 error after $n$ steps from $x_0$ is bounded by
 $$\inf_{\deg p\le n,\,p(0)=1}\max_i |p(\mu_i)|.$$
-A zero initial error gives a ratio of zero. -/
+A zero initial error gives a ratio of zero.
+
+**Generalization.** The bound holds for every step and includes a zero initial error with total
+division. -/
 theorem theorem_5_6_6 [FiniteDimensional 𝕜 E] {N : ℕ} [NeZero N]
     (hN : Module.finrank 𝕜 E = N) (hA : A.IsSymmetricCoercive) (hx : A x = b) (n : ℕ) :
     energyNorm A (x - x[n]) / energyNorm A (x - x₀) ≤
@@ -215,7 +239,10 @@ theorem theorem_5_6_6 [FiniteDimensional 𝕜 E] {N : ℕ} [NeZero N]
 
 /-- **Theorem 5.6.6** of [liesen2013krylov], sharpness. For each step $n$ an initial vector
 attains the spectral minimax bound. The initial error can be chosen to have unit energy norm.
-The result holds for every $n$, including steps at which all CG errors have already vanished. -/
+The result holds for every $n$, including steps at which all CG errors have already vanished.
+
+**Generalization.** The sharpness statement includes steps beyond the minimal-polynomial degree
+and uses a unit initial energy error. -/
 theorem theorem_5_6_6_sharp [FiniteDimensional 𝕜 E] {N : ℕ} [NeZero N]
     (hN : Module.finrank 𝕜 E = N) (hA : A.IsSymmetricCoercive) (hx : A x = b) (n : ℕ) :
     ∃ y₀ : E, energyNorm A (x - y₀) = 1 ∧
@@ -321,7 +348,9 @@ dimension and spectrum in $[a,c]\subset(0,\infty)$. Set $w_i=|\langle u_i,r_0\ra
 orthonormal eigenvectors $u_i$, and let $\theta_j$ be the $n$-th Ritz values. Up to the grade
 of $r_0$, the squared CG energy error equals
 $$\xi^{-(2n+1)}\sum_i w_i\prod_j(\mu_i-\theta_j)^2$$
-for some $\xi\in[a,c]$. The weights incorporate the factor $\|r_0\|^2$ of the source. -/
+for some $\xi\in[a,c]$. The weights incorporate the factor $\|r_0\|^2$ of the source.
+
+**Generalization.** The interval may enclose the spectrum and the formula includes step zero. -/
 theorem theorem_5_6_10 [FiniteDimensional 𝕜 E] {a c : ℝ} (ha : 0 < a) (hac : a ≤ c)
     (hA : A.IsSymmetricBoundedBy a c) {N : ℕ} (hN : Module.finrank 𝕜 E = N)
     (hx : A x = b) {n : ℕ} (hn : n ≤ d₀) :

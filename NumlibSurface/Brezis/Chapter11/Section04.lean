@@ -178,16 +178,33 @@ operators).
 
 ## Deviations from the source
 
+* **Conjugate and biconjugate** (generalization). The definitions and their evaluation formulas
+  also accept functions taking $-\infty$. Proposition 11.25 retains the source's properness
+  hypothesis.
 * **The identities for a complex scalar product** (typo). The displayed expansion of $|u + v|^2$ has
   $|v|^2$ in place of $|u|^2$. See `Brezis.Chapter11.inner_identities`.
-* **Proposition 11.32, display (20)** (correction). The identity $Q(EV(T)) = EV(Q(T))$ fails for a
-  constant polynomial; the library assumes $\deg Q > 0$. See
-  `Brezis.Chapter11.proposition_11_32_eigenvalue`.
+* **Inner-product identities** (generalization). The scalar-product identities, the rotation in
+  Remark 1, the numerical range formula, and the isometry eigenvalue bound apply in incomplete
+  inner-product spaces as well.
+* **Right shift** (choice of model). Lean uses square-summable sequences and gives the shift and
+  its coordinate formulas over both real and complex scalars. The example proving absence of
+  eigenvalues is complex.
+* **Propositions 11.30–11.32 and 11.35** (restriction). The spectrum nonemptiness, attained
+  maximum, and polynomial spectrum statements explicitly require a nonzero ambient space.
+* **Proposition 11.32, display (21)** (correction). The identity $Q(EV(T)) = EV(Q(T))$ fails for a
+  constant polynomial. Lean assumes $\deg Q > 0$ and proves the eigenvalue identity in incomplete
+  normed spaces as well. See `Brezis.Chapter11.proposition_11_32_eigenvalue`.
+* **Proposition 11.33** (convention). In the zero Hilbert space, the numerical range is empty and
+  Lean's distance and reciprocal conventions make the resolvent bound read $\|R(\lambda)\| \le 0$.
 * **Proposition 11.34** (generalization). The source assumes $H$ separable. The library states a
   Hilbert basis indexed by a subset of $H$ without separability. See
   `Brezis.Chapter11.proposition_11_34`.
 * **Proposition 11.36** (generalization). The source assumes $H$ separable. The library states the
   result without separability. See `Brezis.Chapter11.proposition_11_36`.
+* **Derivative of the norm squared** (pointwise form). Lean gives the identity at a single point
+  of differentiability on a real-parameter curve in a complex inner-product space. The source
+  states the identity and continuous differentiability of the squared norm for a $C^1$ curve on
+  $[0,\infty)$ in a Hilbert space.
 
 ## Not formalized
 
@@ -363,13 +380,18 @@ $\varphi : E \to (-\infty, +\infty]$, its **conjugate** $\varphi^* : E^* \to [-\
 is $$\varphi^*(f) = \sup_{x \in E} \{\operatorname{Re} \langle f, x \rangle - \varphi(x)\}.$$
 
 As in Chapter 1, the function $\varphi$ has values in `EReal`. The definition is the backbone's
-`ConvexAnalysis.convexConj` against the pairing `Brezis.Chapter11.rePairing E`. -/
+`ConvexAnalysis.convexConj` against the pairing `Brezis.Chapter11.rePairing E`.
+
+**Reading.** The source excludes $-\infty$ as an input value. The definition accepts any extended-
+real function. -/
 def conjugateC (φ : E → EReal) : StrongDual ℂ E → EReal :=
   ConvexAnalysis.convexConj (rePairing E) φ
 
 /-- The conjugate function of Section 11.4 is the supremum of its definition: for
 $\varphi : E \to [-\infty, +\infty]$ and $f \in E^*$, $\varphi^*(f) = \sup_{x \in E}
-\{\operatorname{Re} \langle f, x \rangle - \varphi(x)\}$. -/
+\{\operatorname{Re} \langle f, x \rangle - \varphi(x)\}$.
+
+**Reading.** The evaluation formula accepts input functions that take $-\infty$. -/
 theorem conjugateC_apply (φ : E → EReal) (f : StrongDual ℂ E) :
     conjugateC φ f = ⨆ x : E, (((f x).re : ℝ) : EReal) - φ x :=
   rfl
@@ -380,7 +402,9 @@ $\varphi : E \to [-\infty, +\infty]$ over $\mathbb{C}$ is the real conjugate
 $\varphi_\mathbb{R}^*$ of Chapter 1 on $E_\mathbb{R}$, evaluated at $If$.
 
 The real conjugate is taken against the pairing `(topDualPairing ℝ E).flip` of $E_\mathbb{R}$
-with $E_\mathbb{R}^*$. -/
+with $E_\mathbb{R}^*$.
+
+**Reading.** The identity also applies to functions taking $-\infty$. -/
 theorem conjugateC_eq (φ : E → EReal) (f : StrongDual ℂ E) :
     conjugateC φ f = ConvexAnalysis.convexConj (topDualPairing ℝ E).flip φ (reDual E f) :=
   rfl
@@ -391,13 +415,17 @@ $$\varphi^{**}(x) = \sup_{f \in E^*} \{\operatorname{Re} \langle f, x \rangle -
 \varphi^*(f)\}.$$
 
 The definition is the backbone's `ConvexAnalysis.convexBiconj` against
-`Brezis.Chapter11.rePairing E`. -/
+`Brezis.Chapter11.rePairing E`.
+
+**Reading.** The definition accepts any extended-real function, including one taking $-\infty$. -/
 def biconjugateC (φ : E → EReal) : E → EReal :=
   ConvexAnalysis.convexBiconj (rePairing E) φ
 
 /-- The biconjugate of Section 11.4 is the supremum of its definition: for
 $\varphi : E \to [-\infty, +\infty]$ and $x \in E$, $\varphi^{**}(x) = \sup_{f \in E^*}
-\{\operatorname{Re} \langle f, x \rangle - \varphi^*(f)\}$. -/
+\{\operatorname{Re} \langle f, x \rangle - \varphi^*(f)\}$.
+
+**Reading.** The evaluation formula also accepts input functions that take $-\infty$. -/
 theorem biconjugateC_apply (φ : E → EReal) (x : E) :
     biconjugateC φ x = ⨆ f : StrongDual ℂ E, (((f x).re : ℝ) : EReal) - conjugateC φ f :=
   rfl
@@ -490,7 +518,10 @@ product of $H_\mathbb{R}$ is $\operatorname{Re}(u, v)$.
 The Lean statement is in Mathlib's convention, with $(u, v)$ = `⟪v, u⟫_ℂ`: the first identity
 reads `⟪l • u, m • v⟫_ℂ = conj l * m * ⟪u, v⟫_ℂ`. The real structure on $H_\mathbb{R}$ is
 Mathlib's `InnerProductSpace.complexToReal`, which makes $H_\mathbb{R}$ a real Hilbert space
-when $H$ is complete. -/
+when $H$ is complete.
+
+**Reading.** These identities only need an inner-product space. The source discusses them in the
+Hilbert space setting. -/
 theorem inner_identities (u v : H) (l m : ℂ) :
     ⟪l • u, m • v⟫_ℂ = conj l * m * ⟪u, v⟫_ℂ ∧
       ‖u + v‖ ^ 2 = ‖u‖ ^ 2 + 2 * (⟪u, v⟫_ℂ).re + ‖v‖ ^ 2 ∧
@@ -697,7 +728,10 @@ u) \ge \alpha |u|^2 \quad \text{for all } u \in H. \tag{19}$$
 
 For the converse, the numerical range $W(T)$ is convex (Proposition 11.33) and has distance at
 least $\alpha$ from $0$, and a rotation moves the projection of $0$ onto $\overline{W(T)}$ to
-the positive real axis. -/
+the positive real axis.
+
+**Reading.** The rotation argument extends from Hilbert spaces to incomplete inner-product spaces.
+-/
 theorem remark_11_1 (T : H →L[ℂ] H) {α : ℝ} (hα : 0 < α) :
     ((∀ u, α * ‖u‖ ^ 2 ≤ (⟪u, T u⟫_ℂ).re) → ∀ u, α * ‖u‖ ^ 2 ≤ ‖⟪u, T u⟫_ℂ‖) ∧
       ((∀ u, α * ‖u‖ ^ 2 ≤ ‖⟪u, T u⟫_ℂ‖) →
@@ -751,16 +785,26 @@ $\mathbb{C}$, the **right shift** on $\ell^2(\mathbb{N}; \mathbb{K})$ is $$Tu = 
 \dots).$$ It is an isometry, see `Brezis.Chapter11.norm_rightShift_apply`.
 
 The operator is the backbone's `lp.shiftRightL 𝕜`. Sequences are indexed from $0$, so
-$(Tu)_0 = 0$ and $(Tu)_{n+1} = u_n$. -/
+$(Tu)_0 = 0$ and $(Tu)_{n+1} = u_n$.
+
+**Reading.** The example in the complex spectrum discussion gives the coordinate rule. Lean
+chooses square-summable sequences and defines the same rule over real scalars too. -/
 def rightShift : lp (fun _ : ℕ => 𝕜) 2 →L[𝕜] lp (fun _ : ℕ => 𝕜) 2 :=
   lp.shiftRightL 𝕜
 
-/-- The first entry of the image under the right shift $T$ is zero: $(Tu)_0 = 0$. -/
+/-- The first entry of the image under the right shift $T$ is zero: $(Tu)_0 = 0$.
+
+**Reading.** The initial entry is zero in the real or complex definition, with zero-based indexing.
+-/
 @[simp]
 theorem rightShift_apply_zero (u : lp (fun _ : ℕ => 𝕜) 2) : rightShift 𝕜 u 0 = 0 :=
   lp.shiftRightL_apply_zero 𝕜 u
 
-/-- The right shift $T$ moves every entry one place to the right: $(Tu)_{n+1} = u_n$. -/
+/-- The right shift $T$ moves every entry one place to the right: $(Tu)_{n+1} = u_n$.
+
+**Reading.** Successive entries are shifted in the real or complex definition; index shift expresses
+the same rule.
+-/
 @[simp]
 theorem rightShift_apply_succ (u : lp (fun _ : ℕ => 𝕜) 2) (n : ℕ) :
     rightShift 𝕜 u (n + 1) = u n :=
@@ -812,7 +856,10 @@ and $T \in \mathcal{L}(E)$. Then the spectrum $\sigma(T)$ is a nonempty compact 
 $$\sigma(T) \subseteq \{\lambda \in \mathbb{C} ; |\lambda| \le \|T\|\}.$$
 
 The nonemptiness is Liouville's theorem, Mathlib's `spectrum.nonempty`, which the source does
-not prove. The hypothesis $E \neq \{0\}$ is `[Nontrivial E]`. -/
+not prove. The hypothesis $E \neq \{0\}$ is `[Nontrivial E]`.
+
+**Reading.** The source does not explicitly exclude the zero space, whose spectrum in Lean is
+empty. -/
 theorem proposition_11_30 [Nontrivial E] (T : E →L[ℂ] E) :
     (spectrum ℂ T).Nonempty ∧ IsCompact (spectrum ℂ T) ∧ spectrum ℂ T ⊆ closedBall 0 ‖T‖ :=
   ⟨spectrum.nonempty T, spectrum.isCompact T, spectrum.subset_closedBall_norm T⟩
@@ -881,7 +928,9 @@ theorem spectralRadius_eq_lim (T : E →L[ℂ] E) :
 
 /-- **Proposition 11.31** of [brezis2011functional]. Let $E \neq \{0\}$ be a complex Banach space
 and $T \in \mathcal{L}(E)$. Then $$r(T) = \max\{|\lambda| ; \lambda \in \sigma(T)\},$$ that is,
-the maximum is attained and equals the spectral radius. -/
+the maximum is attained and equals the spectral radius.
+
+**Reading.** Lean excludes the zero space so the spectral maximum is attained. -/
 theorem proposition_11_31 [Nontrivial E] (T : E →L[ℂ] E) :
     IsGreatest ((fun l : ℂ => ‖l‖) '' spectrum ℂ T) (spectralRadius ℂ T).toReal := by
   obtain ⟨z, hz, hzr⟩ := spectrum.exists_nnnorm_eq_spectralRadius T
@@ -895,19 +944,21 @@ theorem proposition_11_31 [Nontrivial E] (T : E →L[ℂ] E) :
     rwa [ENNReal.coe_toReal, coe_nnnorm] at this
 
 open Polynomial in
-/-- **Proposition 11.32** of [brezis2011functional], display (21). Let $E \neq \{0\}$ be a complex
+/-- **Proposition 11.32** of [brezis2011functional], display (22). Let $E \neq \{0\}$ be a complex
 Banach space, $T \in \mathcal{L}(E)$, and let $Q$ be a polynomial with complex coefficients.
 Then $$\sigma(Q(T)) = Q(\sigma(T)).$$
 
 The proof is Mathlib's `spectrum.map_polynomial_aeval`, which uses the factorization of
-$Q - \mu$ as the source does. -/
+$Q - \mu$ as the source does.
+
+**Reading.** Lean explicitly assumes the ambient space is nonzero. -/
 theorem proposition_11_32_spectrum [Nontrivial E] (T : E →L[ℂ] E) (Q : ℂ[X]) :
     spectrum ℂ (aeval T Q) = (fun l => Q.eval l) '' spectrum ℂ T :=
   spectrum.map_polynomial_aeval T Q
 
 omit [CompleteSpace E] in
 open Polynomial in
-/-- **Proposition 11.32** of [brezis2011functional], display (20). Let $E$ be a complex normed
+/-- **Proposition 11.32** of [brezis2011functional], display (21). Let $E$ be a complex normed
 space, $T \in \mathcal{L}(E)$, and let $Q$ be a polynomial with complex coefficients of positive
 degree. Then $$EV(Q(T)) = Q(EV(T)),$$ where the eigenvalues are those of $T$ and $Q(T)$ as
 linear maps.
@@ -949,7 +1000,10 @@ complex inner product space. The **numerical range** of $T \in \mathcal{L}(H)$ i
 \{(Tu, u) ; u \in H, \ |u| = 1\}.$$ It is equal to the backbone's `LinearMap.numericalRange`,
 the set of the Rayleigh quotients $(Tx, x)/(x, x)$ for $x \neq 0$.
 
-The scalar product $(Tu, u)$ is `⟪u, T u⟫_ℂ`. -/
+The scalar product $(Tu, u)$ is `⟪u, T u⟫_ℂ`.
+
+**Reading.** The unit-vector formula extends from Hilbert spaces to incomplete inner-product
+spaces. -/
 theorem numericalRange_eq (T : H →L[ℂ] H) :
     (T : H →ₗ[ℂ] H).numericalRange = {z | ∃ u : H, ‖u‖ = 1 ∧ ⟪u, T u⟫_ℂ = z} := by
   ext z
@@ -987,7 +1041,11 @@ The inverse in (ii) is Mathlib's `resolvent T λ`, which is
 $(\lambda I - T)^{-1} = -(T - \lambda I)^{-1}$ and has the same norm. If $H = \{0\}$, then
 $W(T)$ is empty, its distance from $\lambda$ is $0$, and the bound reads
 $\|(T - \lambda I)^{-1}\| \le 0$ because $1/0 = 0$ in Lean. Part (iii) is the Toeplitz–Hausdorff
-theorem, which the source quotes from Halmos and the backbone proves. -/
+theorem, which the source quotes from Halmos and the backbone proves.
+
+**Reading.** The resolvent norm bound uses signed-equivalent inverse and defines its right side as
+zero in the zero Hilbert space.
+-/
 theorem proposition_11_33 (T : H →L[ℂ] H) :
     spectrum ℂ T ⊆ closure (T : H →ₗ[ℂ] H).numericalRange ∧
       (∀ l ∉ closure (T : H →ₗ[ℂ] H).numericalRange, l ∈ resolventSet ℂ T ∧
@@ -1072,7 +1130,9 @@ and let $T \in \mathcal{L}(H)$ be a normal operator. Then $$\max\{|\lambda| ; \l
 \sigma(T)\} = \|T\|. \tag{25}$$
 
 The proof combines Mathlib's `IsStarNormal.spectralRadius_eq_nnnorm` in the C⋆-algebra
-$\mathcal{L}(H)$ with Proposition 11.31. -/
+$\mathcal{L}(H)$ with Proposition 11.31.
+
+**Reading.** Lean excludes the zero space so the spectral maximum is attained. -/
 theorem proposition_11_35 [Nontrivial H] {T : H →L[ℂ] H} (hT : IsStarNormal T) :
     IsGreatest ((fun l : ℂ => ‖l‖) '' spectrum ℂ T) ‖T‖ := by
   have := hT
@@ -1128,7 +1188,8 @@ omit [CompleteSpace H] in
 /-- **Proposition 11.37** of [brezis2011functional], eigenvalues. Let $H$ be a complex inner product
 space and let $T \in \mathcal{L}(H)$ be an isometry. Then $$EV(T) \subseteq S^1 = \{\lambda \in
 \mathbb{C} ; |\lambda| = 1\}.$$
--/
+
+**Reading.** The eigenvalue bound extends from Hilbert spaces to incomplete inner-product spaces. -/
 theorem proposition_11_37_eigenvalue {T : H →L[ℂ] H} (hT : Isometry T) :
     {l | Module.End.HasEigenvalue (T : Module.End ℂ H) l} ⊆ sphere (0 : ℂ) 1 := fun l hl => by
   rw [mem_sphere_zero_iff_norm]
@@ -1217,7 +1278,11 @@ with derivative $\varphi'$. Then $|\varphi|^2$ is differentiable at $t$, and $$\
 In Mathlib's convention the derivative is `2 * (⟪φ', φ t⟫_ℂ).re`. The computations of Sections
 7.2–7.4 use this identity over $\mathbb{C}$. The monotonicity condition
 $\operatorname{Re}(Av, v) \ge 0$ is `LinearPMap.IsMonotone` of Chapter 7, which is already
-stated with the real part. -/
+stated with the real part.
+
+**Reading.** The pointwise identity uses differentiability at one time. The source assumes a
+continuously differentiable curve on $[0,\infty)$ and also states continuous differentiability of
+its squared norm. -/
 theorem hasDerivAt_norm_sq {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H]
     {φ : ℝ → H} {φ' : H} {t : ℝ} (h : HasDerivAt φ φ' t) :
     HasDerivAt (fun s => ‖φ s‖ ^ 2) (2 * (⟪φ', φ t⟫_ℂ).re) t := by

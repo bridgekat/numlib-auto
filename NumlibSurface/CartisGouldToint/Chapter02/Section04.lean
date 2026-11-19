@@ -72,8 +72,20 @@ no numbered results.
 
 ## Deviations from the source
 
+* **Equations (2.4.1), (2.4.3), and (2.4.7)** (reading). The model formula is defined
+  for any regularization weight, with positivity enforced by the run. The ratio uses
+  the Taylor decrease as its denominator and is total at a zero gradient. A run
+  terminates before using that case. See `CartisGouldToint.Chapter02.ar1Model` and
+  `CartisGouldToint.Chapter02.ar1_step_eq`.
+* **Lemma 2.4.2** (reading). The parameter bound holds through the termination index.
+  Later sequence values are unconstrained by the run predicate.
+* **Proof of Lemma 2.4.3** (typo). The gradient test is required starting at index $0$, since
+  $\mathcal{S}_k$ can contain $0$. See `CartisGouldToint.Chapter02.lemma_2_4_3`.
 * **"Reasonable values" after Algorithm 2.4.1** (typo). The values $\gamma_1 = 2$,
   $\gamma_2 = \gamma_3 = 0.5$ contradict (2.4.2). They are not used.
+* **Theorem 2.4.5** (reading). The example assumes an integral $\epsilon^{-2}$ and
+  counts the initial evaluations, for $\epsilon^{-2}+1$ objective and gradient
+  evaluations.
 -/
 
 open Set Finset
@@ -105,7 +117,11 @@ where $T_{f,1}(x, s) = f(x) + \langle \nabla f(x), s \rangle$ is the first-order
 polynomial of $f$ at $x$.
 
 The model is `Optimization.regularizedModel` of `ftaylorSeries ℝ f x` with $p = 1$; its explicit
-form is `CartisGouldToint.Chapter02.ar1Model_apply`. -/
+form is `CartisGouldToint.Chapter02.ar1Model_apply`.
+
+**Reading.** The raw model is defined for every real weight, with positive weights enforced in the
+algorithm.
+-/
 noncomputable def ar1Model (f : EuclideanSpace ℝ (Fin n) → ℝ) (x : EuclideanSpace ℝ (Fin n))
     (σ : ℝ) : EuclideanSpace ℝ (Fin n) → ℝ :=
   regularizedModel (ftaylorSeries ℝ f x) 1 σ
@@ -114,7 +130,10 @@ section Model
 
 variable {f : EuclideanSpace ℝ (Fin n) → ℝ} {x s : EuclideanSpace ℝ (Fin n)} {σ : ℝ}
 
-/-- The AR1 model is $m(s) = f(x) + \langle \nabla f(x), s \rangle + \frac12 \sigma \|s\|^2$. -/
+/-- The AR1 model is $m(s) = f(x) + \langle \nabla f(x), s \rangle + \frac12 \sigma \|s\|^2$.
+
+**Reading.** The displayed model formula also holds for zero or negative regularization weights.
+-/
 theorem ar1Model_apply :
     ar1Model f x σ s = f x + ⟪gradient f x, s⟫ + 1 / 2 * σ * ‖s‖ ^ 2 := by
   rw [ar1Model, regularizedModel_def, ← taylorPolynomial_eq_taylorSum,
@@ -152,7 +171,11 @@ Then:
 $$\rho = \frac{\sigma \left( f(x) - f(x - \nabla f(x)/\sigma) \right)}{\|\nabla f(x)\|^2}.$$
 
 The ratio is `Optimization.reductionRatio` with the Taylor decrease as predicted decrease. When
-$\nabla f(x) = 0$, both sides of (2.4.7) are $0$ by Lean's division. -/
+$\nabla f(x) = 0$, both sides of (2.4.7) are $0$ by Lean's division.
+
+**Reading.** Consolidates unique minimization, Taylor decrease and ratio, with total ratio at zero
+gradient.
+-/
 theorem ar1_step_eq (hσ : 0 < σ) :
     (IsMinOn (ar1Model f x σ) univ s ↔ s = -(σ⁻¹ • gradient f x)) ∧
       (ftaylorSeries ℝ f x).taylorDecrement 1 (-(σ⁻¹ • gradient f x)) =
@@ -308,7 +331,11 @@ theorem sigmaMaxAR1_pos (P : ARParams) (L : ℝ) : 0 < sigmaMaxAR1 P L :=
 run. Let $k$ be an iteration with $\|\nabla f(x_j)\| > \epsilon$ for all $j < k$. Then (2.4.9)
 holds:
 $$\sigma_k \le \max\left( \sigma_0, \frac{\gamma_3 L}{2(1 - \eta_2)} \right).$$
-So the bound holds at every iteration up to and including the termination index. -/
+So the bound holds at every iteration up to and including the termination index.
+
+**Reading.** The uniform upper bound holds through algorithm termination, without a condition on
+sequence tails.
+-/
 theorem lemma_2_4_2 (hf : AssumptionGL f L) (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ}
     (hk : ∀ j < k, ¬ ‖gradient f (x j)‖ ≤ ε) : σ k ≤ sigmaMaxAR1 P L := by
   have hforce : ∀ k, (∀ j ≤ k, ¬ IsARRun.Stop (fun k => ‖gradient f (x k)‖ ≤ ε)
@@ -367,9 +394,10 @@ $\|\nabla f(x_j)\| > \epsilon$ for all $j \le k$. Then the number of successful 
 $k$ satisfies (2.4.11):
 $$|\mathcal{S}_k| \le \kappa^S_{\mathrm{AR1}} \frac{f(x_0) - f_{\mathrm{low}}}{\epsilon^2}.$$
 
-The proof in the source assumes $\|\nabla f(x_j)\| > \epsilon$ for $j \in [1 : k]$; the range
-$j \in [0 : k]$ is meant, and it is the hypothesis here. The set $\mathcal{S}_k$ is
-`Optimization.successSet`. -/
+**Typo.** The proof in the source writes $j \in [1 : k]$ for the gradient test. The hypothesis
+uses $j \in [0 : k]$, since $0$ can belong to the success set $\mathcal{S}_k$ in the sum.
+
+The set $\mathcal{S}_k$ is `Optimization.successSet`. -/
 theorem lemma_2_4_3 (hb : AssumptionBb f flow) (hf : AssumptionGL f L)
     (h : algorithm_2_4_1 f P ε x s σ) {k : ℕ} (hk : ∀ j ≤ k, ¬ ‖gradient f (x j)‖ ≤ ε) :
     ((successSet (fun j => P.η₁ ≤ taylorRatio f 1 x s j) k).card : ℝ) ≤
@@ -498,7 +526,11 @@ and an AR1 run from $x_0 = 0$, such that:
 
 The example is that of Theorem 2.2.3 with $t_{\mathrm{ini}} = \sigma_0^{-1}$. The condition that
 $\epsilon^{-2}$ is an integer is stated as $k_\epsilon \epsilon^2 = 1$ for a natural number
-$k_\epsilon$. -/
+$k_\epsilon$.
+
+**Reading.** Uses integral inverse-square tolerances and includes initial evaluations in the
+constant-weight unit-ratio example.
+-/
 theorem theorem_2_4_5 (P : ARParams) :
     ∃ L flow : ℝ, 1 ≤ L ∧ ∀ (ε : ℝ) (kε : ℕ), 0 < ε → ε ≤ 1 → (kε : ℝ) * ε ^ 2 = 1 →
       ∃ f : EuclideanSpace ℝ (Fin 1) → ℝ, AssumptionBb f flow ∧ AssumptionGL f L ∧

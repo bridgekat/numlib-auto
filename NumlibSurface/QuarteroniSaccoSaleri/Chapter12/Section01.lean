@@ -77,6 +77,12 @@ the argument needs and Mathlib does not state are in `Numlib.Analysis.Calculus.C
 
 ## Deviations from the source
 
+* **Equation (12.4) and the Green's function properties** (generalization). The piecewise
+  formula extends to all real arguments, with the same two branches. The symmetry and continuity
+  declarations apply on the whole plane, and the endpoint values are stated on the corresponding
+  half-lines.
+* **Equation (12.5)** (generalization). `equation_12_5_of_forall_le` replaces the maximum of
+  $|f|$ with any uniform bound $M$ on $[0,1]$ and gives the pointwise estimate $|u(x)|\leq M/8$.
 * **Equation (12.5)** (reading). The source writes $f \in C^0(0, 1)$; continuity on the closed
   interval $[0, 1]$ is assumed throughout. See `QuarteroniSaccoSaleri.Chapter12.equation_12_5`.
 -/
@@ -92,16 +98,25 @@ problem (12.1)–(12.2) is
 $$G(x, s) = \begin{cases} s(1 - x), & 0 \le s \le x, \\ x(1 - s), & x \le s \le 1. \end{cases}$$
 
 The two expressions agree at $s = x$. The definition uses the same two expressions on all of
-$\mathbb{R} \times \mathbb{R}$: the first for $s \le x$, the second for $s > x$. -/
+$\mathbb{R} \times \mathbb{R}$: the first for $s \le x$, the second for $s > x$.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 noncomputable def greenFunction (x s : ℝ) : ℝ := if s ≤ x then s * (1 - x) else x * (1 - s)
 
 variable {x s : ℝ}
 
-/-- The first branch of the Green's function (12.4): $G(x, s) = s(1 - x)$ for $s \le x$. -/
+/-- The first branch of the Green's function (12.4): $G(x, s) = s(1 - x)$ for $s \le x$.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem greenFunction_of_le (h : s ≤ x) : greenFunction x s = s * (1 - x) := by
   simp [greenFunction, h]
 
-/-- The second branch of the Green's function (12.4): $G(x, s) = x(1 - s)$ for $x \le s$. -/
+/-- The second branch of the Green's function (12.4): $G(x, s) = x(1 - s)$ for $x \le s$.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem greenFunction_of_ge (h : x ≤ s) : greenFunction x s = x * (1 - s) := by
   unfold greenFunction
   split_ifs with h'
@@ -109,14 +124,20 @@ theorem greenFunction_of_ge (h : x ≤ s) : greenFunction x s = x * (1 - s) := b
   · rfl
 
 /-- The Green's function (12.4) in one formula: $G(x, s) = \min(x, s) \, (1 - \max(x, s))$ for all
-$x, s \in \mathbb{R}$. -/
+$x, s \in \mathbb{R}$.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem greenFunction_eq_min_mul (x s : ℝ) : greenFunction x s = min x s * (1 - max x s) := by
   rcases le_total s x with h | h
   · rw [greenFunction_of_le h, min_eq_right h, max_eq_left h]
   · rw [greenFunction_of_ge h, min_eq_left h, max_eq_right h]
 
 /-- **Section 12.1** of [quarteroni2000numerical], symmetry of the Green's function. For all
-$x, s \in \mathbb{R}$, $G(x, s) = G(s, x)$. -/
+$x, s \in \mathbb{R}$, $G(x, s) = G(s, x)$.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem greenFunction_symm (x s : ℝ) : greenFunction x s = greenFunction s x := by
   rw [greenFunction_eq_min_mul, greenFunction_eq_min_mul, min_comm, max_comm]
 
@@ -127,36 +148,57 @@ theorem greenFunction_nonneg (hx : x ∈ Icc 0 1) (hs : s ∈ Icc 0 1) : 0 ≤ g
   exact mul_nonneg (le_min hx.1 hs.1) (sub_nonneg.2 (max_le hx.2 hs.2))
 
 /-- **Section 12.1** of [quarteroni2000numerical], the Green's function at $x = 0$. For $s \ge 0$,
-$G(0, s) = 0$. -/
+$G(0, s) = 0$.
+
+**Generalization.** The endpoint identity holds on a half-line of the other argument by the
+same piecewise formula. -/
 theorem greenFunction_zero_left (hs : 0 ≤ s) : greenFunction 0 s = 0 := by
   rw [greenFunction_of_ge hs, zero_mul]
 
 /-- **Section 12.1** of [quarteroni2000numerical], the Green's function at $x = 1$. For $s \le 1$,
-$G(1, s) = 0$. -/
+$G(1, s) = 0$.
+
+**Generalization.** The endpoint identity holds on a half-line of the other argument by the
+same piecewise formula. -/
 theorem greenFunction_one_left (hs : s ≤ 1) : greenFunction 1 s = 0 := by
   rw [greenFunction_of_le hs, sub_self, mul_zero]
 
-/-- The Green's function (12.4) at $s = 0$: for $x \ge 0$, $G(x, 0) = 0$. -/
+/-- The Green's function (12.4) at $s = 0$: for $x \ge 0$, $G(x, 0) = 0$.
+
+**Generalization.** The endpoint identity holds on a half-line of the other argument by the
+same piecewise formula. -/
 theorem greenFunction_zero_right (hx : 0 ≤ x) : greenFunction x 0 = 0 := by
   rw [greenFunction_symm, greenFunction_zero_left hx]
 
-/-- The Green's function (12.4) at $s = 1$: for $x \le 1$, $G(x, 1) = 0$. -/
+/-- The Green's function (12.4) at $s = 1$: for $x \le 1$, $G(x, 1) = 0$.
+
+**Generalization.** The endpoint identity holds on a half-line of the other argument by the
+same piecewise formula. -/
 theorem greenFunction_one_right (hx : x ≤ 1) : greenFunction x 1 = 0 := by
   rw [greenFunction_symm, greenFunction_one_left hx]
 
 /-- **Section 12.1** of [quarteroni2000numerical], continuity of the Green's function. The function
 $(x, s) \mapsto G(x, s)$ is continuous on $\mathbb{R} \times \mathbb{R}$, because its two
-branches agree on the diagonal $s = x$. -/
+branches agree on the diagonal $s = x$.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem continuous_greenFunction : Continuous fun p : ℝ × ℝ => greenFunction p.1 p.2 := by
   unfold greenFunction
   exact Continuous.if_le (by fun_prop) (by fun_prop) continuous_snd continuous_fst
     fun p hp => by rw [hp]
 
-/-- For fixed $x$, the Green's function $s \mapsto G(x, s)$ of (12.4) is continuous. -/
+/-- For fixed $x$, the Green's function $s \mapsto G(x, s)$ of (12.4) is continuous.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem continuous_greenFunction_right (x : ℝ) : Continuous (greenFunction x) :=
   continuous_greenFunction.comp (continuous_const.prodMk continuous_id)
 
-/-- For fixed $s$, the Green's function $x \mapsto G(x, s)$ of (12.4) is continuous. -/
+/-- For fixed $s$, the Green's function $x \mapsto G(x, s)$ of (12.4) is continuous.
+
+**Generalization.** The two formulas use only the relative order of $x$ and $s$, and continuity
+and symmetry extend beyond the unit square. -/
 theorem continuous_greenFunction_left (s : ℝ) : Continuous fun x => greenFunction x s :=
   continuous_greenFunction.comp (continuous_id.prodMk continuous_const)
 
@@ -376,7 +418,10 @@ boundary value problem (12.1)–(12.2) with datum $f$. Then $|u(x)| \le M / 8$ f
 $x \in [0, 1]$.
 
 Because $G \ge 0$, $|u(x)| \le \int_0^1 G(x, s) |f(s)|\, ds \le M \int_0^1 G(x, s)\, ds = M
-x(1 - x)/2 \le M/8$. -/
+x(1 - x)/2 \le M/8$.
+
+**Reading.** Assumes continuity on the closed interval and uses any bound $M$ for $|f|$,
+yielding $|u(x)|\leq M/8$. -/
 theorem equation_12_5_of_forall_le (hf : ContinuousOn f (Icc 0 1)) (hu : IsSolution f u) {M : ℝ}
     (hM : ∀ s ∈ Icc 0 1, |f s| ≤ M) : ∀ x ∈ Icc 0 1, |u x| ≤ M / 8 := by
   intro x hx

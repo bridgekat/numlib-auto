@@ -47,6 +47,19 @@ determines the decrease of the merit function.
 
 ## Deviations from the source
 
+* **Explicit model assumptions.** The reduced-gradient model supplies uniform trial bounds and the
+  model-penalty inequality at the updated penalty. See
+  `ConnGouldToint.Chapter15.ByrdOmojokunTangentialData`,
+  `ConnGouldToint.Chapter15.ByrdOmojokunTangentialData.model_penalty`.
+* **Explicit tail assumptions.** Theorem 15.4.22 assumes the feasibility limit, uniform trial
+  estimates and control of accepted-step variation. See `ConnGouldToint.Chapter15.theorem_15_4_22`.
+* **Correction and explicit assumptions.** Theorem 15.4.23 applies to Algorithm 15.4.6 and controls
+  both original and corrected accepted displacements. See
+  `ConnGouldToint.Chapter15.theorem_15_4_23`.
+* **Explicit local control.** Theorem 15.4.24 exposes radius, trapping, multiplier and correction
+  bounds for its local rates. See `ConnGouldToint.Chapter15.theorem_15_4_24`.
+* **Compactness and uniform curvature bounds.** Theorem 15.4.25 uses finite compact-tail coverage
+  and uniform trial and curvature estimates. See `ConnGouldToint.Chapter15.theorem_15_4_25`.
 * **Theorem 15.4.23** (typo). The printed statement refers to the wrong algorithm; the theorem
   concerns Algorithm 15.4.6, the method with the second-order correction. See
   `ConnGouldToint.Chapter15.theorem_15_4_23`.
@@ -89,7 +102,11 @@ successful iterations $S$, the data consist of:
   original trial.
 
 The original, uncorrected trial determines the small-radius guarantee, and the accepted trial
-determines the decrease of the merit function. -/
+determines the decrease of the merit function.
+
+**Reading.** The reduced-gradient data explicitly enforce model consistency and the penalty
+inequality at the updated penalty value.
+-/
 structure ByrdOmojokunTangentialData (P : BTRParams)
     (c : ℕ → Y) (g n : ℕ → E) (H : ℕ → E →L[ℝ] E) (NT : ℕ → E →L[ℝ] Z)
     (σ dN dT d v Δ original : ℕ → ℝ) (S : Set ℕ) where
@@ -192,7 +209,11 @@ omit [NormedSpace ℝ Y] in
 /-- **Equation (15.4.7)** of [conn2000trust]. For every $k$, the data of a run satisfy
 $$\nu \sigma_{k+1} d^N_k \le d_k.$$
 
-If $d^N_k = 0$, the normal decrease bound forces $n_k = 0$, and then $d_k = d^T_k \ge 0$. -/
+If $d^N_k = 0$, the normal decrease bound forces $n_k = 0$, and then $d_k = d^T_k \ge 0$.
+
+**Reading.** The reduced-gradient data explicitly enforce model consistency and the penalty
+inequality at the updated penalty value.
+-/
 theorem ByrdOmojokunTangentialData.model_penalty {P : BTRParams}
     {c : ℕ → Y} {g n : ℕ → E} {H : ℕ → E →L[ℝ] E} {NT : ℕ → E →L[ℝ] Z}
     {σ dN dT d v Δ original : ℕ → ℝ} {S : Set ℕ}
@@ -230,7 +251,12 @@ $$\|N_k^T g_k\| \to 0.$$
 
 Feasibility makes the normal perturbation vanish. The penalty parameter then stabilizes, and on
 the stabilized tail the total predicted decrease dominates a fixed fraction of the tangential
-decrease. -/
+decrease.
+
+**Reading.** The theorem assumes the feasibility limit, uniform trial estimates and an accepted-step
+variation bound. The penalty is unchanged on rejection. These supply the hypotheses for penalty
+stabilization and convergence of the Lagrangian gradient.
+-/
 theorem theorem_15_4_22 {P : BTRParams}
     {c : ℕ → Y} {g n : ℕ → E} {H : ℕ → E →L[ℝ] E} {NT : ℕ → E →L[ℝ] Z}
     {σ dN dT d v Δ original : ℕ → ℝ} {S : Set ℕ}
@@ -303,7 +329,12 @@ Byrd–Omojokun method with the second-order correction step.
 
 The original trial gives the model agreement, and the selected trial gives the actual decrease.
 The uniform rank condition transfers normal criticality to feasibility, after which the
-tangential estimates apply with the same models. -/
+tangential estimates apply with the same models.
+
+**Correction.** The theorem applies to Algorithm 15.4.6 with second-order correction. It retains the
+original prediction and uses separate displacement bounds for the original step and the accepted
+trial. The printed replacement direction of Algorithms 15.4.2 and 15.4.6 is reversed.
+-/
 theorem theorem_15_4_23 {P : BTRParams}
     (f : E → ℝ) (c : E → Y) (a : E → E) (x s correction g n : ℕ → E)
     (H : ℕ → E →L[ℝ] E) (NT : ℕ → E →L[ℝ] Z)
@@ -395,7 +426,12 @@ Then $x_k \to x_*$ Q-superlinearly. If moreover $e_k \le C \|x_k - x_*\|$ eventu
 $C \ge 0$, then $x_k \to x_*$ Q-quadratically.
 
 The nonshrinkage rule for small radii keeps the radius bounded below, so the vanishing standard
-steps fit in their trust regions. The trapping and step bounds are hypotheses. -/
+steps fit in their trust regions. The trapping and step bounds are hypotheses.
+
+**Reading.** A radius floor, trapping neighborhood, multiplier proximity and admissibility of the
+standard small steps are explicit. Quadratic convergence additionally requires the stated
+quantitative bounds on the correction.
+-/
 theorem theorem_15_4_24 (x s u nStandard tStandard : ℕ → E) (xstar : E) (ey Δ : ℕ → ℝ)
     {M D r r₀ γ ξN ξT : ℝ} (hM : 0 ≤ M) (hD : 0 ≤ D) (hr : 0 < r) (hr₀ : 0 < r₀)
     (hγ : 0 < γ) (hξN : 0 < ξN) (hξT : 0 < ξT)
@@ -459,7 +495,12 @@ curvature margin. The coverage of the tail by the finitely many cluster points i
 relative compactness of the iterates supplies it.
 
 The branch with a large normal step and the branch with negative curvature give the sufficient
-decrease. The original or the corrected acceptance ratio decides which trial is accepted. -/
+decrease. The original or the corrected acceptance ratio decides which trial is accepted.
+
+**Reading.** The compact tail is covered by finitely many cluster neighborhoods with a uniform
+curvature threshold and uniform estimates for original and corrected trials. The curvature margin is
+taken with the corrected sign.
+-/
 theorem theorem_15_4_25 {X ι : Type*} [TopologicalSpace X] [Finite ι] [Nonempty ι]
     {P : BTRParams} (z : ℕ → X) (zstar : ι → X) (curvature : X → ℝ)
     (firstOrder : ι → Prop) (v Δ d dN dT nNorm original corrected : ℕ → ℝ)

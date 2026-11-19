@@ -160,6 +160,45 @@ Jacobi).
 
 ## Deviations from the source
 
+* **Generalization.** Convergence of the splitting is characterized by spectral radius without
+  separately assuming a nonsingular coefficient matrix. See
+  `QuarteroniSaccoSaleri.Chapter04.Splitting.tendsto`,
+  `QuarteroniSaccoSaleri.Chapter04.Splitting.forall_tendsto_iff`.
+* **Generalization.** The energy-norm equalities do not need the extra contraction hypothesis. See
+  `QuarteroniSaccoSaleri.Chapter04.property_4_1_energyNorm`,
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_3_energyNorm`.
+* **Correction.** The strict energy decreases are conditional on nonzero error. See
+  `QuarteroniSaccoSaleri.Chapter04.property_4_1_monotone`,
+  `QuarteroniSaccoSaleri.Chapter04.property_4_2_monotone`,
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_5`, `QuarteroniSaccoSaleri.Chapter04.property_4_3`.
+* **Scope.** The JOR and SOR splitting identities assume nonzero relaxation. See
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_12`, `QuarteroniSaccoSaleri.Chapter04.equation_4_15`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_17`.
+* **Generalization.** The JOR convergence interval is also necessary for convergence for all data.
+  See `QuarteroniSaccoSaleri.Chapter04.theorem_4_4_iff`.
+* **Reading.** The A-property uses complex spectra and a contiguous two-block partition. See
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_3`,
+  `QuarteroniSaccoSaleri.Chapter04.definition_4_3_iff`.
+* **Reading.** Zero relaxation has a separate SOR identity, since the splitting is undefined there.
+  See `QuarteroniSaccoSaleri.Chapter04.theorem_4_7`,
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_7_zero`,
+  `QuarteroniSaccoSaleri.Chapter04.property_4_4`.
+* **Scope.** The optimal relaxation minimizes the spectral radius on the convergence interval. See
+  `QuarteroniSaccoSaleri.Chapter04.property_4_4_optimal`.
+* **Generalization.** The example bidiagonal matrix is available in arbitrary dimension. See
+  `QuarteroniSaccoSaleri.Chapter04.example_4_3_matrix`.
+* **Generalization.** The exact bidiagonal solution formula holds in every size. See
+  `QuarteroniSaccoSaleri.Chapter04.example_4_3_mulVec`.
+* **Scope.** The perturbed iterates use an abstract forcing sequence. See
+  `QuarteroniSaccoSaleri.Chapter04.perturbedIterate`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_20_iterate`,
+  `QuarteroniSaccoSaleri.Chapter04.equation_4_20`.
+* **Derivation.** The forcing decomposition yields a geometric bound under Euclidean contraction.
+  See `QuarteroniSaccoSaleri.Chapter04.equation_4_20_bound`.
+* **Scope.** The block Jacobi result gives convergence for a general partition. See
+  `QuarteroniSaccoSaleri.Chapter04.theorem_4_3_block`.
+* **Correction.** The SGS matrix is self-adjoint and positive semidefinite in the coefficient energy
+  inner product. See `QuarteroniSaccoSaleri.Chapter04.property_4_5`.
 * **Property 4.1** (generalization). The energy-norm clauses need only $A$ and $P$ symmetric
   positive definite, not $2P - A$, and they are stated so. See
   `QuarteroniSaccoSaleri.Chapter04.property_4_1_energyNorm`.
@@ -245,7 +284,12 @@ be a splitting with $\rho(P^{-1} N) < 1$. Then for every $b, x^{(0)} \in \mathbb
 iteration (4.6) converges to $A^{-1} b$.
 
 The matrix $A$ is then nonsingular, so the hypothesis of Theorem 4.1 that $A$ is nonsingular is
-not needed. -/
+not needed.
+
+**Generalization.** The convergence criterion applies directly to a splitting, including without a
+separate nonsingularity hypothesis on $A$. Spectral radius below one already implies nonsingularity
+for such a splitting. The equivalence quantifies over all right-hand sides and starting vectors.
+-/
 theorem Splitting.tendsto (s : Splitting A) (hs : complexSpectralRadius s.iterationOperator < 1)
     (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => (s.mulVecStep b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b)) := by
@@ -256,7 +300,12 @@ theorem Splitting.tendsto (s : Splitting A) (hs : complexSpectralRadius s.iterat
 
 /-- **Theorem 4.1** of [quarteroni2000numerical] for a splitting. Let $A = P - N$ be a splitting.
 The iteration (4.6) converges to $A^{-1} b$ for every $b$ and every $x^{(0)}$ if and only if
-$\rho(P^{-1} N) < 1$. -/
+$\rho(P^{-1} N) < 1$.
+
+**Generalization.** The convergence criterion applies directly to a splitting, including without a
+separate nonsingularity hypothesis on $A$. Spectral radius below one already implies nonsingularity
+for such a splitting. The equivalence quantifies over all right-hand sides and starting vectors.
+-/
 theorem Splitting.forall_tendsto_iff (s : Splitting A) :
     (∀ b x₀, Tendsto (fun k => (s.mulVecStep b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
       complexSpectralRadius s.iterationOperator < 1 := by
@@ -315,7 +364,13 @@ The squared norms are $\|e\|_A^2 = (Ae) \cdot e$ and $\|e\|_P^2 = (Pe) \cdot e$.
 specializes `Stationary.Splitting.energyNorm_mulVec_iterationOperator_le_complexSpectralRadius`
 and `Stationary.Splitting.energyNorm_m_mulVec_iterationOperator_le_complexSpectralRadius`.
 Equality holds at a real eigenvector for an eigenvalue of modulus $\rho(B)$
-(`Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul`). -/
+(`Stationary.Splitting.exists_mulVec_iterationOperator_eq_smul`).
+
+**Generalization.** The equalities of the norms with the spectral radius hold under positive
+definiteness of the coefficient and preconditioning matrices alone. Lean expresses the equalities as
+squared bounds with attainment in positive dimension. The additional source hypothesis gives
+contraction.
+-/
 theorem property_4_1_energyNorm [NeZero n] (hA : A.PosDef) (s : Splitting A) (hP : s.m.PosDef) :
     (∀ e, (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) ≤
         (complexSpectralRadius s.iterationOperator).toReal ^ 2 * ((A *ᵥ e) ⬝ᵥ e)) ∧
@@ -339,7 +394,12 @@ So along the error recursion $e^{(k+1)} = B e^{(k)}$ the convergence is monotone
 norms.
 
 The clause for $A$ is `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`. The clause
-for $P$ follows from $\|Be\|_P \le \rho(B) \|e\|_P$ and $\rho(B) < 1$. -/
+for $P$ follows from $\|Be\|_P \le \rho(B) \|e\|_P$ and $\rho(B) < 1$.
+
+**Correction.** Strict contraction is stated for a nonzero error. Once the iterate reaches the
+solution, both consecutive errors are zero, so the strict monotonicity written in Property 4.1
+cannot hold for every index.
+-/
 theorem property_4_1_monotone (hA : A.PosDef) (s : Splitting A) (hP : s.m.PosDef)
     (h2 : (2 • s.m - A).PosDef) {e : Fin n → ℝ} (he : e ≠ 0) :
     (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) < (A *ᵥ e) ⬝ᵥ e ∧
@@ -392,7 +452,12 @@ theorem property_4_2 (hA : A.PosDef) (s : Splitting A) (hQ : (s.m + s.mᵀ - A).
 $A = P - N$ be a splitting with $A$ symmetric positive definite and $P + P^T - A$ positive
 definite, and let $B = P^{-1} N$. Then $\|Be\|_A < \|e\|_A$ for every $e \neq 0$.
 
-The proof specializes `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`. -/
+The proof specializes `Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`.
+
+**Correction.** Strict contraction is stated for a nonzero error. Once the iterate reaches the
+solution, both consecutive errors are zero, so the strict monotonicity written in Property 4.1
+cannot hold for every index.
+-/
 theorem property_4_2_monotone (hA : A.PosDef) (s : Splitting A) (hQ : (s.m + s.mᵀ - A).PosDef)
     {e : Fin n → ℝ} (he : e ≠ 0) :
     (A *ᵥ (s.iterationOperator *ᵥ e)) ⬝ᵥ (s.iterationOperator *ᵥ e) < (A *ᵥ e) ⬝ᵥ e :=
@@ -486,7 +551,12 @@ $x + \omega D^{-1} (b - Ax)$, its fixed points are the solutions of $Ax = b$, so
 is consistent, and for $\omega = 1$ the splitting is the Jacobi splitting.
 
 The splitting is `Matrix.jorSplitting`, and the step identity specializes
-`Matrix.jorSweep_eq_mulVecStep`. -/
+`Matrix.jorSweep_eq_mulVecStep`.
+
+**Reading.** The displayed coordinate or iteration-matrix identities are bundled with a splitting
+that requires nonzero relaxation. The source formulas for the sweep also make sense at zero, where
+the sweep is the identity.
+-/
 theorem equation_4_12 (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) (b x : Fin n → ℝ) :
     (∀ i, jorSweep A ω b x i =
         ω / A i i * (b i - ∑ j ∈ univ.erase i, A i j * x j) + (1 - ω) * x i) ∧
@@ -536,7 +606,12 @@ $$y_i = \frac{\omega}{a_{ii}} \Big( b_i - \sum_{j < i} a_{ij} y_j - \sum_{j > i}
 for every $i$, and it is the step of the splitting $P = \omega^{-1} D - E$.
 
 The splitting is `Matrix.sorSplitting`. The proof specializes `Matrix.sorSweep_apply` and
-`Matrix.sorSweep_eq_mulVecStep`. -/
+`Matrix.sorSweep_eq_mulVecStep`.
+
+**Reading.** The displayed coordinate or iteration-matrix identities are bundled with a splitting
+that requires nonzero relaxation. The source formulas for the sweep also make sense at zero, where
+the sweep is the identity.
+-/
 theorem equation_4_15 (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) (b x : Fin n → ℝ) :
     (∀ i, sorSweep A ω b x i =
         ω / A i i * (b i - ∑ j ∈ univ.filter (· < i), A i j * sorSweep A ω b x j
@@ -581,7 +656,12 @@ $$B(\omega) = (I - \omega D^{-1} E)^{-1} [(1 - \omega) I + \omega D^{-1} F],$$
 and it equals `Matrix.sorIterationMatrix A ω`.
 
 The proof specializes `Matrix.sorSplitting_iterationOperator` and
-`Matrix.sorSplitting_iterationOperator_eq`. -/
+`Matrix.sorSplitting_iterationOperator_eq`.
+
+**Reading.** The displayed coordinate or iteration-matrix identities are bundled with a splitting
+that requires nonzero relaxation. The source formulas for the sweep also make sense at zero, where
+the sweep is the identity.
+-/
 theorem equation_4_17 (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     (sorSplitting A h hω).iterationOperator =
         (1 - ω • ((D A)⁻¹ * E A))⁻¹ * ((1 - ω) • 1 + ω • ((D A)⁻¹ * F A)) ∧
@@ -668,7 +748,13 @@ $\|\cdot\|_D$ are both $\rho(B_J)$, in the sense of
 `QuarteroniSaccoSaleri.Chapter04.property_4_1_energyNorm` with $P = D$:
 
 * $\|B_J e\|_A^2 \le \rho(B_J)^2 \|e\|_A^2$ for every $e$, with equality for some $e \neq 0$;
-* $\|B_J e\|_D^2 \le \rho(B_J)^2 \|e\|_D^2$ for every $e$, with equality for some $e \neq 0$. -/
+* $\|B_J e\|_D^2 \le \rho(B_J)^2 \|e\|_D^2$ for every $e$, with equality for some $e \neq 0$.
+
+**Generalization.** The equalities of the norms with the spectral radius hold under positive
+definiteness of the coefficient and preconditioning matrices alone. Lean expresses the equalities as
+squared bounds with attainment in positive dimension. The additional source hypothesis gives
+contraction.
+-/
 theorem theorem_4_3_energyNorm [NeZero n] (hA : A.PosDef) :
     (∀ e, (A *ᵥ ((jacobiSplitting A hA.diagPart.isUnit).iterationOperator *ᵥ e)) ⬝ᵥ
           ((jacobiSplitting A hA.diagPart.isUnit).iterationOperator *ᵥ e) ≤
@@ -708,6 +794,9 @@ theorem theorem_4_4 [NeZero n] (hA : A.PosDef) {ω : ℝ} (hω0 : 0 < ω)
 $A \in \mathbb{R}^{n \times n}$ be symmetric positive definite, and let $\omega \neq 0$. Then
 the JOR method converges to $A^{-1} b$ for every $b$ and every $x^{(0)}$ if and only if
 $$0 < \omega < \frac{2}{\rho(D^{-1} A)}.$$
+
+**Generalization.** The printed statement gives a sufficient interval. Lean proves an equivalence
+for convergence to the solution for every right-hand side and start under nonzero relaxation.
 -/
 theorem theorem_4_4_iff [NeZero n] (hA : A.PosDef) {ω : ℝ} (hω : ω ≠ 0) :
     (∀ b x₀, Tendsto (fun k => (jorSweep A ω b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
@@ -724,7 +813,12 @@ $\|B_{GS} e\|_A < \|e\|_A$ for every $e \neq 0$.
 This is Property 4.2 with $P = D - E$, for which $P + P^T - A = D$ is positive definite, because
 the diagonal of a positive definite matrix is positive. The proof specializes
 `Matrix.gaussSeidelSplitting_complexSpectralRadius_lt_one_of_posDef` and
-`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`. -/
+`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`.
+
+**Correction.** Strict contraction is stated for a nonzero error. Once the iterate reaches the
+solution, both consecutive errors are zero, so the strict monotonicity written in Property 4.1
+cannot hold for every index.
+-/
 theorem theorem_4_5 (hA : A.PosDef) :
     (∀ b x₀, Tendsto (fun k => (sorSweep A 1 b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ∧
       ∀ e ≠ 0, (A *ᵥ ((gaussSeidelSplitting A hA.diagPart.isUnit).iterationOperator *ᵥ e)) ⬝ᵥ
@@ -798,7 +892,12 @@ Property A of Saad and Young is the second clause, up to a permutation. Only the
 used by (4.18) and Property 4.4.
 
 The first clause is `Matrix.IsConsistentlyOrdered` of the complexification of $M$; see
-`QuarteroniSaccoSaleri.Chapter04.definition_4_3_iff`. The indices are $0$-based. -/
+`QuarteroniSaccoSaleri.Chapter04.definition_4_3_iff`. The indices are $0$-based.
+
+**Reading.** Consistent ordering means independence of the complex spectrum as a set over nonzero
+complex parameters. The two diagonal blocks are contiguous in the given matrix order. The displayed
+inverses are total in Lean, so the predicate is also defined for a zero diagonal entry.
+-/
 def definition_4_3 (M : Matrix (Fin n) (Fin n) ℝ) : Prop :=
   IsConsistentlyOrdered (complexify M) ∧
     ∃ k ≤ n, ∀ i j : Fin n, i ≠ j →
@@ -811,7 +910,12 @@ $\alpha D^{-1} E + \alpha^{-1} D^{-1} F$ over $\mathbb{C}$ equals the spectrum o
 $D^{-1} E + D^{-1} F$.
 
 The backbone `Matrix.jacobiLower` and `Matrix.jacobiUpper` are exactly $D^{-1} E$ and
-$D^{-1} F$. -/
+$D^{-1} F$.
+
+**Reading.** Consistent ordering means independence of the complex spectrum as a set over nonzero
+complex parameters. The two diagonal blocks are contiguous in the given matrix order. The displayed
+inverses are total in Lean, so the predicate is also defined for a zero diagonal entry.
+-/
 theorem definition_4_3_iff (M : Matrix (Fin n) (Fin n) ℝ) :
     IsConsistentlyOrdered (complexify M) ↔ ∀ α : ℂ, α ≠ 0 →
       spectrum ℂ (α • ((complexify (D M))⁻¹ * complexify (E M)) +
@@ -873,7 +977,12 @@ needs $\omega \neq 0$. The case $\omega = 0$ is
 
 The product of the eigenvalues of $B(\omega)$ is $\det B(\omega) = (1 - \omega)^n$. The proof
 specializes `Matrix.abs_one_sub_le_sorSplitting_complexSpectralRadius` and
-`Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`. -/
+`Matrix.lt_two_of_sorSplitting_complexSpectralRadius_lt_one`.
+
+**Reading.** The split SOR matrix requires nonzero relaxation. The unsplit iteration matrix is
+handled separately at zero, where it is the identity. The convergence criterion concerns convergence
+to the solution for all input states.
+-/
 theorem theorem_4_7 [NeZero n] (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω ≠ 0) :
     ENNReal.ofReal |ω - 1| ≤ complexSpectralRadius (sorSplitting A h hω).iterationOperator ∧
       (ω ≤ 0 ∨ 2 ≤ ω → ¬ complexSpectralRadius (sorSplitting A h hω).iterationOperator < 1) := by
@@ -887,7 +996,12 @@ theorem theorem_4_7 [NeZero n] (h : IsUnit (diagPart A)) {ω : ℝ} (hω : ω �
 /-- **Theorem 4.7** of [quarteroni2000numerical] at $\omega = 0$. Let $n \ge 1$, and let
 $A \in \mathbb{R}^{n \times n}$ have nonzero diagonal entries. Then the SOR matrix (4.17) at
 $\omega = 0$ is $B(0) = I$, and $\rho(I) = 1 = |0 - 1|$. The method is then the trivial
-iteration $x^{(k+1)} = x^{(k)}$, which does not converge to the solution in general. -/
+iteration $x^{(k+1)} = x^{(k)}$, which does not converge to the solution in general.
+
+**Reading.** The split SOR matrix requires nonzero relaxation. The unsplit iteration matrix is
+handled separately at zero, where it is the identity. The convergence criterion concerns convergence
+to the solution for all input states.
+-/
 theorem theorem_4_7_zero [NeZero n] (h : IsUnit (diagPart A)) :
     sorIterationMatrix A 0 = 1 ∧ complexSpectralRadius (1 : Matrix (Fin n) (Fin n) ℝ) = 1 := by
   have hDdet : IsUnit (diagPart A).det := (isUnit_iff_isUnit_det _).mp h
@@ -910,7 +1024,12 @@ The equivalence specializes `Matrix.sorSplitting_complexSpectralRadius_lt_one_if
 (Householder–John and Kahan) and Theorem 4.1. The monotonicity is Property 4.2 for
 $P = \omega^{-1} D - E$, for which $P + P^T - A = (2/\omega - 1) D$ is positive definite when
 $0 < \omega < 2$ (`Matrix.sorSplitting_m_add_transpose_sub_posDef`,
-`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`). -/
+`Stationary.Splitting.energyNorm_mulVec_iterationOperator_lt`).
+
+**Correction.** Strict contraction is stated for a nonzero error. Once the iterate reaches the
+solution, both consecutive errors are zero, so the strict monotonicity written in Property 4.1
+cannot hold for every index.
+-/
 theorem property_4_3 [NeZero n] (hA : A.PosDef) {ω : ℝ} (hω : ω ≠ 0) :
     ((∀ b x₀, Tendsto (fun k => (sorSweep A ω b)^[k] x₀) atTop (𝓝 (A⁻¹ *ᵥ b))) ↔
         0 < ω ∧ ω < 2) ∧
@@ -962,7 +1081,12 @@ $0 < \omega < 2$.
 Only the consistent-ordering clause of Definition 4.3 is used. The proof combines Young's theory
 (`Matrix.IsConsistentlyOrdered.spectralRadius_sor_lt_one`,
 `Matrix.IsConsistentlyOrdered.spectralRadius_jacobi_lt_one_of_sor`) with Kahan's condition and
-Theorem 4.1. -/
+Theorem 4.1.
+
+**Reading.** The split SOR matrix requires nonzero relaxation. The unsplit iteration matrix is
+handled separately at zero, where it is the identity. The convergence criterion concerns convergence
+to the solution for all input states.
+-/
 theorem property_4_4 [NeZero n] (hP : definition_4_3 A) (h : IsUnit (diagPart A))
     (hreal : ∀ μ ∈ spectrum ℂ (complexify (jacobiSplitting A h).iterationOperator), μ.im = 0)
     {ω : ℝ} (hω : ω ≠ 0) :
@@ -999,7 +1123,12 @@ $$\rho(B(\omega_{\mathrm{opt}})) = \frac{1 - \sqrt{1 - \rho_J^2}}{1 + \sqrt{1 - 
 
 The SOR matrix $B(\omega)$ of (4.17) is `Matrix.sorIterationMatrix A ω`. The proof specializes
 `Matrix.IsConsistentlyOrdered.isMinOn_complexSpectralRadius_sor` and
-`Matrix.IsConsistentlyOrdered.spectralRadius_sor_optimalRelaxation`. -/
+`Matrix.IsConsistentlyOrdered.spectralRadius_sor_optimalRelaxation`.
+
+**Reading.** The optimizing formula is stated on the interval of convergent SOR parameters when the
+Jacobi spectral radius is below one. This makes the convergence assumption of the printed
+optimization explicit.
+-/
 theorem property_4_4_optimal [NeZero n] (hP : definition_4_3 A) (h : IsUnit (diagPart A))
     (hreal : ∀ μ ∈ spectrum ℂ (complexify (jacobiSplitting A h).iterationOperator), μ.im = 0)
     (hlt : complexSpectralRadius (jacobiSplitting A h).iterationOperator < 1) :
@@ -1036,7 +1165,10 @@ section Forward
 
 /-- **Example 4.3** of [quarteroni2000numerical], the matrix. For $m \in \mathbb{N}$, the **matrix
 of Example 4.3** is the lower bidiagonal matrix of order $m$ with $a_{ii} = 3/2$,
-$a_{i,i-1} = 1$, and all other entries $0$. The book takes $m = 100$. -/
+$a_{i,i-1} = 1$, and all other entries $0$. The book takes $m = 100$.
+
+**Generalization.** The bidiagonal matrix is defined in all finite sizes. The example uses size 100.
+-/
 noncomputable def example_4_3_matrix (m : ℕ) : Matrix (Fin m) (Fin m) ℝ :=
   Matrix.of fun i j => if i = j then 3 / 2 else if (j : ℕ) + 1 = i then 1 else 0
 
@@ -1052,7 +1184,11 @@ private theorem example_4_3_matrix_apply (m : ℕ) (i j : Fin m) :
   · simp [hij]
 
 /-- For every order $m$, the matrix $A$ of Example 4.3 satisfies $Ax = b$ with $b_i = 5/2$ and
-$x_i = 1 - (-2/3)^i$, with $1$-based indices. -/
+$x_i = 1 - (-2/3)^i$, with $1$-based indices.
+
+**Generalization.** The formula for the exact solution is proved in every finite size before
+specializing to 100.
+-/
 private theorem example_4_3_mulVec (m : ℕ) :
     example_4_3_matrix m *ᵥ (fun i : Fin m => 1 - (-2 / 3 : ℝ) ^ ((i : ℕ) + 1)) =
       fun _ => 5 / 2 := by
@@ -1125,7 +1261,12 @@ $$\hat x^{(0)} = x^{(0)}, \qquad \hat x^{(k+1)} = P^{-1} (N \hat x^{(k)} + b - \
 that is, $P \hat x^{(k+1)} = N \hat x^{(k)} + b - \zeta_k$.
 
 It is the backbone `Stationary.forcedIterate` with forcing terms $P^{-1} b - P^{-1} \zeta_k$;
-see `QuarteroniSaccoSaleri.Chapter04.toLp_perturbedIterate`. -/
+see `QuarteroniSaccoSaleri.Chapter04.toLp_perturbedIterate`.
+
+**Reading.** The perturbation sequence is an arbitrary input. This formalizes the recurrence and its
+consequences without requiring the printed decomposition of the perturbation into a backward
+solution error and a right-hand-side error.
+-/
 noncomputable def perturbedIterate (s : Splitting A) (b : Fin n → ℝ) (ζ : ℕ → Fin n → ℝ)
     (x₀ : Fin n → ℝ) : ℕ → Fin n → ℝ
   | 0 => x₀
@@ -1151,7 +1292,12 @@ $A = P - N$ be a splitting with $B = P^{-1} N$, and let $\hat x^{(k)}$ be the co
 of (4.20). Then for every $k$
 $$\hat x^{(k+1)} = B^{k+1} x^{(0)} + \sum_{j=0}^{k} B^j P^{-1} (b - \zeta_{k-j}).$$
 
-The proof specializes `Stationary.forcedIterate_eq`. -/
+The proof specializes `Stationary.forcedIterate_eq`.
+
+**Reading.** The perturbation sequence is an arbitrary input. This formalizes the recurrence and its
+consequences without requiring the printed decomposition of the perturbation into a backward
+solution error and a right-hand-side error.
+-/
 theorem equation_4_20_iterate (s : Splitting A) (b : Fin n → ℝ) (ζ : ℕ → Fin n → ℝ)
     (x₀ : Fin n → ℝ) (k : ℕ) :
     perturbedIterate s b ζ x₀ (k + 1) =
@@ -1175,7 +1321,12 @@ converges. The second term is the propagated rounding error.
 
 The book leaves the analysis of the second term to a paper of Higham;
 `QuarteroniSaccoSaleri.Chapter04.equation_4_20_bound` is its simplest form. The proof
-specializes `Stationary.sub_forcedIterate_eq`. -/
+specializes `Stationary.sub_forcedIterate_eq`.
+
+**Reading.** The perturbation sequence is an arbitrary input. This formalizes the recurrence and its
+consequences without requiring the printed decomposition of the perturbation into a backward
+solution error and a right-hand-side error.
+-/
 theorem equation_4_20 (s : Splitting A) (hA : IsUnit A) (b : Fin n → ℝ) (ζ : ℕ → Fin n → ℝ)
     (x₀ : Fin n → ℝ) (k : ℕ) :
     A⁻¹ *ᵥ b - perturbedIterate s b ζ x₀ (k + 1) =
@@ -1201,7 +1352,12 @@ This is the error of the exact method plus a floor proportional to the rounding 
 
 This is the simplest form of the analysis that the book cites from a paper of Higham. The norm
 of $B$ is the spectral norm (`Matrix.Norms.L2Operator`). The proof specializes
-`Stationary.norm_perturbed_iterate_sub_le`. -/
+`Stationary.norm_perturbed_iterate_sub_le`.
+
+**Reading.** The book gives the error decomposition and refers elsewhere for propagation analysis.
+Lean derives a uniform forcing bound in the Euclidean norm when the iteration operator is a strict
+Euclidean contraction.
+-/
 theorem equation_4_20_bound (s : Splitting A) (hA : IsUnit A) (hB : ‖s.iterationOperator‖ < 1)
     (b : Fin n → ℝ) {ζ : ℕ → Fin n → ℝ} {ε : ℝ}
     (hζ : ∀ k, ‖(toLp 2 (s.m⁻¹ *ᵥ ζ k) : EuclideanSpace ℝ (Fin n))‖ ≤ ε) (x₀ : Fin n → ℝ)
@@ -1259,7 +1415,12 @@ $x^{(0)}$.
 The block diagonal part is `Matrix.blockDiagPart π A`, and the splitting is
 `Matrix.blockJacobiSplitting`. The proof is the Householder–John theorem with $P = D$ symmetric.
 The block Gauss–Seidel and block SOR methods, "introduced in a similar manner", are
-`Matrix.blockGaussSeidelSplitting` and `Matrix.blockSORSplitting`. -/
+`Matrix.blockGaussSeidelSplitting` and `Matrix.blockSORSplitting`.
+
+**Reading.** The block version states convergence with any index partition and invertible block
+diagonal, including uneven blocks. The source transfers Theorem 4.3 in full, including its energy
+norm equalities.
+-/
 theorem theorem_4_3_block (π : Fin n → ι) (hA : A.PosDef) (h : IsUnit (blockDiagPart π A))
     (h2 : (2 • blockDiagPart π A - A).PosDef) (b x₀ : Fin n → ℝ) :
     Tendsto (fun k => ((blockJacobiSplitting π A h).mulVecStep b)^[k] x₀) atTop
@@ -1375,7 +1536,12 @@ $B_{SGS} = I - P_{SGS}^{-1} A$, with $P_{SGS}$ symmetric and $P_{SGS} - A = E D^
 semidefinite. Hence the eigenvalues of $B_{SGS}$ lie in $[0, 1)$.
 
 The proof specializes `Matrix.ssorSplitting_complexSpectralRadius_lt_one` and
-`Matrix.ssorSplitting_iterationOperator_posSemidef_energy` at $\omega = 1$. -/
+`Matrix.ssorSplitting_iterationOperator_posSemidef_energy` at $\omega = 1$.
+
+**Correction.** The source claims Euclidean symmetry and positive definiteness of $B_{SGS}$. Lean
+proves that $A B_{SGS}$ is symmetric positive semidefinite. Diagonal $A$ gives a zero iteration
+matrix, disproving the strict definiteness claim even in the symmetric case.
+-/
 theorem property_4_5 (hA : A.PosDef) :
     (∀ b x₀, Tendsto (fun k => (fun y => backwardSorSweep A 1 b (sorSweep A 1 b y))^[k] x₀) atTop
         (𝓝 (A⁻¹ *ᵥ b))) ∧

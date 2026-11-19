@@ -82,6 +82,18 @@ polynomial and the spectral theorem) and the backbone modules `Numlib.LinearAlge
 * The inverse $A^{-1}$ of a nonsingular matrix is Mathlib's `A⁻¹`. Its value at a singular matrix is
   $0$, which makes (2.1.1) and (2.1.2) hold without hypotheses.
 
+## Deviations from the source
+
+* **Equations (2.1.1) and (2.1.2)** (generalization). The identities also hold for singular
+  matrices with Mathlib's inverse convention. See `GolubVanLoan.Chapter02.equation_2_1_1` and
+  `GolubVanLoan.Chapter02.equation_2_1_2`.
+* **Note after Theorem 2.1.1** (generalization). The complementary spans can be selected from
+  arbitrary disjoint column lists that partition the orthogonal matrix. See
+  `GolubVanLoan.Chapter02.orthogonal_range_submatrix_eq`.
+* **§2.1.7, similarity** (generalization). The theorem gives equality of characteristic
+  polynomials, hence equality of spectra with multiplicity. See
+  `GolubVanLoan.Chapter02.isSimilar_spectrum_eq`.
+
 ## Not formalized
 
 * **Independence, span, basis and dimension, §2.1.1.** These are the vocabulary of Mathlib.
@@ -142,8 +154,8 @@ def IsRankDeficient (A : Matrix (Fin m) (Fin n) ℝ) : Prop :=
 inverses in reverse order: for $A, B \in \mathbb{R}^{n \times n}$,
 $$(AB)^{-1} = B^{-1} A^{-1}.$$
 
-The source assumes that $A$ and $B$ are nonsingular. The statement has no hypotheses, because
-the inverse of a singular matrix is $0$ in Lean, and the identity then holds as well. -/
+**Generalization.** The source uses nonsingular factors. If either factor is singular, the
+product is singular and both sides evaluate to zero under Lean's inverse convention. -/
 theorem equation_2_1_1 (A B : Matrix (Fin n) (Fin n) ℝ) : (A * B)⁻¹ = B⁻¹ * A⁻¹ :=
   Matrix.mul_inv_rev A B
 
@@ -151,8 +163,8 @@ theorem equation_2_1_1 (A B : Matrix (Fin n) (Fin n) ℝ) : (A * B)⁻¹ = B⁻�
 transpose: for $A \in \mathbb{R}^{n \times n}$,
 $$(A^{-1})^T = (A^T)^{-1} \equiv A^{-T}.$$
 
-The source assumes that $A$ is nonsingular. The statement has no hypothesis, because the inverse
-of a singular matrix is $0$ in Lean, and the identity then holds as well. -/
+**Generalization.** The source uses a nonsingular matrix. A singular matrix and its transpose
+both have zero inverse under Lean's convention, so that case also satisfies the equality. -/
 theorem equation_2_1_2 (A : Matrix (Fin n) (Fin n) ℝ) : (A⁻¹)ᵀ = (Aᵀ)⁻¹ :=
   Matrix.transpose_nonsing_inv A
 
@@ -213,9 +225,9 @@ $g : \{1, \dots, s\} \to \{1, \dots, n\}$ be injective column selections with di
 and let $r + s = n$, so that together they select every column once. Then
 $$\mathrm{ran}(V(:, f))^\perp = \mathrm{ran}(V(:, g)).$$
 
-This is the note after Theorem 2.1.1 of the source, in the block form that §2.5 uses. The proof
-is the backbone's `Matrix.range_submatrix_eq_orthogonal`; by counting, the two selections side
-by side, `Sum.elim f g`, are a bijection onto the columns. -/
+**Generalization.** The note after Theorem 2.1.1 takes the two contiguous column blocks.
+The declaration allows any two disjoint column selections of those sizes, since the
+concatenated selections form a permutation of all columns. -/
 theorem orthogonal_range_submatrix_eq {r s : ℕ} {V : Matrix (Fin n) (Fin n) ℝ}
     (hV : V ∈ orthogonalGroup (Fin n) ℝ) {f : Fin r → Fin n} {g : Fin s → Fin n}
     (hf : Function.Injective f) (hg : Function.Injective g) (hfg : ∀ a b, f a ≠ g b)
@@ -319,7 +331,10 @@ theorem mem_spectrum_iff_det_sub_eq_zero (A : Matrix (Fin n) (Fin n) ℂ) (x : �
 
 /-- **§2.1.7** of [golub2013matrix], similarity. Let $A, X \in \mathbb{C}^{n \times n}$ with $X$
 nonsingular, and let $B = X^{-1} A X$. Then $A$ and $B$ have the same characteristic polynomial,
-and so exactly the same eigenvalues. -/
+and so exactly the same eigenvalues.
+
+**Generalization.** The source states equality of the eigenvalue sets. Preserving the
+characteristic polynomial also preserves each algebraic multiplicity. -/
 theorem isSimilar_spectrum_eq (A X : Matrix (Fin n) (Fin n) ℂ) (hX : IsUnit X) :
     (X⁻¹ * A * X).charpoly = A.charpoly ∧ spectrum ℂ (X⁻¹ * A * X) = spectrum ℂ A :=
   ⟨(IsSimilar.charpoly_eq ⟨X, hX, rfl⟩).symm, (IsSimilar.spectrum_eq ⟨X, hX, rfl⟩).symm⟩

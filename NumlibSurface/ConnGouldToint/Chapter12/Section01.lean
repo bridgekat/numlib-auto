@@ -65,6 +65,21 @@ The projection is `bestApprox`, the projected ray is `Optimization.projectedRay`
 
 ## Deviations from the source
 
+* **Correction.** The radial formula applies outside the ball, and interior points project to
+  themselves. See `ConnGouldToint.Chapter12.projection_closedBall`.
+* **Generalization.** The projected-gradient formula and its stopping property extend to negative
+  path parameters in Hilbert space. See `ConnGouldToint.Chapter12.projectedGradientPath`,
+  `ConnGouldToint.Chapter12.theorem_12_1_1`.
+* **Generalization.** The variational inequality and path minimization extend to real Hilbert space.
+  See `ConnGouldToint.Chapter12.theorem_12_1_2`, `ConnGouldToint.Chapter12.theorem_12_1_4`.
+* **Generalization.** The tangent projection limit drops the smooth finite constraint representation
+  assumed in the second part of the source theorem. See `ConnGouldToint.Chapter12.theorem_12_1_3`.
+* **Representation.** The criticality measure uses a supremum, with the printed attained minimum
+  recovered in finite dimension. See `ConnGouldToint.Chapter12.criticality`,
+  `ConnGouldToint.Chapter12.criticality_eq_abs_min`.
+* **Generalization.** Criticality inequalities and continuity hold in Hilbert space without
+  requiring closed feasibility. See `ConnGouldToint.Chapter12.theorem_12_1_5`,
+  `ConnGouldToint.Chapter12.theorem_12_1_6`.
 * **Equation (12.1.3)** (correction). The radial formula holds only outside the closed ball; a point
   inside the ball is its own projection. See `ConnGouldToint.Chapter12.projection_closedBall`.
 * **Theorem 12.1.3** (generalization). The statement does not use the assumptions AC.1 and AC.7 on
@@ -101,14 +116,23 @@ $$x + \frac{r}{\|y - x\|} (y - x)$$
 otherwise.
 
 **Correction.** The source gives the radial formula for every $y$. Inside the ball it moves $y$
-to the sphere, but there $y$ is feasible and is its own projection. -/
+to the sphere, but there $y$ is feasible and is its own projection.
+
+**Correction.** The radial expression applies outside a ball of nonnegative radius. A feasible point
+projects to itself, including the ball's center.
+-/
 theorem projection_closedBall (x y : E) {r : ℝ} (hr : 0 ≤ r) :
     bestApprox (Metric.closedBall x r) y =
       if ‖y - x‖ ≤ r then y else x + (r / ‖y - x‖) • (y - x) :=
   bestApprox_closedBall_eq_radial x y hr
 
 /-- **Equation (12.1.4)** of [conn2000trust]. The **projected-gradient path** of $f$ at $x$ is
-$p(t) = P_C(x - t \nabla f(x))$ for $t \in \mathbb{R}$, where $P_C$ is the projection onto $C$. -/
+$p(t) = P_C(x - t \nabla f(x))$ for $t \in \mathbb{R}$, where $P_C$ is the projection onto $C$.
+
+**Generalization.** The projected ray is defined for all real parameters in a real Hilbert space.
+The normal-cone stopping property consequently allows a negative starting parameter; the text takes
+it nonnegative.
+-/
 noncomputable def projectedGradientPath (C : Set E) (f : E → ℝ) (x : E) (t : ℝ) : E :=
   projectedRay C x (-gradient f x) t
 
@@ -117,7 +141,12 @@ include hclosed hconv
 
 /-- **Theorem 12.1.1** of [conn2000trust]. Let $C$ be a nonempty closed convex subset of a real
 Hilbert space $E$, and let $s \le t$. If $-\nabla f(x)$ lies in the normal cone of $C$ at
-$p(s)$, then $p(t) = p(s)$. -/
+$p(s)$, then $p(t) = p(s)$.
+
+**Generalization.** The projected ray is defined for all real parameters in a real Hilbert space.
+The normal-cone stopping property consequently allows a negative starting parameter; the text takes
+it nonnegative.
+-/
 theorem theorem_12_1_1 (hne : C.Nonempty) {s t : ℝ} (hst : s ≤ t)
     (hd : -gradient f x ∈ normalDirections C (projectedGradientPath C f x s)) :
     projectedGradientPath C f x t = projectedGradientPath C f x s :=
@@ -128,7 +157,12 @@ $E$, and let $x \in C$. Then
 $$\langle \nabla f(x), y - x \rangle \ge 0 \text{ for all } y \in C \iff p(t) = x \text{ for all
   } t \ge 0.$$
 
-For a differentiable objective, the left side is the first-order criticality condition. -/
+For a differentiable objective, the left side is the first-order criticality condition.
+
+**Generalization.** The finite-dimensional assertions extend to real Hilbert space. They use the
+gradient algebraically, so the criticality interpretation of the first equivalence applies wherever
+it is the actual derivative.
+-/
 theorem theorem_12_1_2 (hx : x ∈ C) :
     (∀ y ∈ C, 0 ≤ ⟪gradient f x, y - x⟫) ↔
       ∀ t : ℝ, 0 ≤ t → projectedGradientPath C f x t = x := by
@@ -144,7 +178,12 @@ where $P_{T_C(y)}$ is the projection onto the tangent cone of $C$ at $y$.
 
 **Generalization.** The source assumes AC.1 and AC.7, the smoothness of the constraints and a
 finite representation of $C$. The quantitative bound for projected rays makes these assumptions
-unnecessary, so the statement holds for every closed convex set. -/
+unnecessary, so the statement holds for every closed convex set.
+
+**Generalization.** The second conclusion drops AC.1 and AC.7, which the source assumes in addition
+to closed convex feasibility. Both conclusions hold for arbitrary closed convex sets in a real
+Hilbert space.
+-/
 theorem theorem_12_1_3 (hx : x ∈ C) :
     MonotoneOn (fun t ↦ ‖projectedGradientPath C f x t - x‖) (Set.Ici 0) ∧
     ∀ L : ℝ, Tendsto (fun t ↦ ‖projectedGradientPath C f x t - x‖) atTop (𝓝 L) →
@@ -164,7 +203,12 @@ $E$, let $x \in C$ and $t \ge 0$, and let $d = p(t) - x$. Then $p(t) \in C$, and
 the linear model $w \mapsto \langle \nabla f(x), w \rangle$ on
 $\{w : x + w \in C, \ \|w\| \le \|d\|\}$. If moreover $-\nabla f(x)$ lies in the normal cone of
 $C$ at $p(t)$, then $d$ minimizes the linear model on $\{w : x + w \in C, \ \|w\| \le \theta\}$
-for every $\theta \ge \|d\|$. -/
+for every $\theta \ge \|d\|$.
+
+**Generalization.** The finite-dimensional assertions extend to real Hilbert space. They use the
+gradient algebraically, so the criticality interpretation of the first equivalence applies wherever
+it is the actual derivative.
+-/
 theorem theorem_12_1_4 (hx : x ∈ C) {t : ℝ} (ht : 0 ≤ t) :
     let p := projectedGradientPath C f x t
     let d := p - x
@@ -221,7 +265,12 @@ $$\chi(x, r) = \sup\{\langle -\nabla f(x), d \rangle : x + d \in C, \ \|d\| \le 
 
 The supremum is the real `sSup`, which is $0$ for an empty set or a set that is not bounded
 above. At a feasible point $x$ the zero step is admissible, so $\chi(x, r) = |\inf_d \langle
-\nabla f(x), d \rangle|$ over the same set. -/
+\nabla f(x), d \rangle|$ over the same set.
+
+**Reading.** The primary definition uses the supremum of decrease, which also makes sense without an
+attained minimizer. The absolute minimum of the text is recovered on the nonnegative-radius domain
+for closed sets in finite dimension.
+-/
 noncomputable def criticality (C : Set E) (f : E → ℝ) (x : E) (r : ℝ) : ℝ :=
   linearDecrease C x (-gradient f x) r
 
@@ -229,7 +278,12 @@ noncomputable def criticality (C : Set E) (f : E → ℝ) (x : E) (r : ℝ) : �
 closed, $x \in C$ and $r \ge 0$. Then there is $d$ with $x + d \in C$ and $\|d\| \le r$ that
 minimizes $\langle \nabla f(x), w \rangle$ on $\{w : x + w \in C, \ \|w\| \le r\}$, and
 $$\chi(x, r) = |\langle \nabla f(x), d \rangle|.$$
-The radius $r = 1$ gives (12.1.17). -/
+The radius $r = 1$ gives (12.1.17).
+
+**Reading.** The primary definition uses the supremum of decrease, which also makes sense without an
+attained minimizer. The absolute minimum of the text is recovered on the nonnegative-radius domain
+for closed sets in finite dimension.
+-/
 theorem criticality_eq_abs_min [FiniteDimensional ℝ E] (hC : IsClosed C) (hx : x ∈ C)
     {r : ℝ} (hr : 0 ≤ r) :
     ∃ d : E, x + d ∈ C ∧ ‖d‖ ≤ r ∧
@@ -261,7 +315,12 @@ $$\chi(x, r) \le |\langle \nabla f(x), d \rangle| + 2 r \bigl\|P_{T_C(x + d)}\bi
 * for every $r > 0$, $\chi(x, r)/r \le \|P_{T_C(x)}(-\nabla f(x))\|$.
 
 The proof compares with the tangent projection directly, with sign, and needs no separate
-estimate of the absolute value. -/
+estimate of the absolute value.
+
+**Generalization.** The inequalities and continuity hold for a convex set in a real Hilbert space,
+with no closedness requirement for the feasible set in these statements. Criticality in the last
+result is characterized by the first-order variational inequality.
+-/
 theorem theorem_12_1_5 (hC : Convex ℝ C) (hx : x ∈ C) :
     (ContinuousOn (criticality C f x) (Set.Ici 0) ∧
       MonotoneOn (criticality C f x) (Set.Ici 0)) ∧
@@ -289,6 +348,10 @@ theorem theorem_12_1_5 (hC : Convex ℝ C) (hx : x ∈ C) :
 and let $f$ be continuously differentiable. Then $x \mapsto \chi(x, 1)$ is continuous on $C$,
 and for every $x \in C$, $\chi(x, 1) \ge 0$ and
 $$\chi(x, 1) = 0 \iff \langle \nabla f(x), y - x \rangle \ge 0 \text{ for all } y \in C.$$
+
+**Generalization.** The inequalities and continuity hold for a convex set in a real Hilbert space,
+with no closedness requirement for the feasible set in these statements. Criticality in the last
+result is characterized by the first-order variational inequality.
 -/
 theorem theorem_12_1_6 (hC : Convex ℝ C) (hf : ContDiff ℝ 1 f) :
     ContinuousOn (fun x ↦ criticality C f x 1) C ∧

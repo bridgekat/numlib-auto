@@ -44,6 +44,18 @@ what it produces is the operator `SaadSparse.Chapter02.equation_2_55`.
 * The positive and negative parts of the source, $z^+ = (z + |z|)/2$ and $z^- = (z - |z|)/2$, are
   `max z 0` and `min z 0`. The negative part is nonpositive, unlike Mathlib's `negPart`.
 
+## Deviations from the source
+
+* **Equation (2.53)** (reading). The declaration gives the flux obtained after multiplying the
+  edge value by the normal flux coefficient. See `SaadSparse.Chapter02.equation_2_53`.
+* **Problem P-2.12** (generalization). The sum vanishes for any finite cyclic list of vertices.
+  See `SaadSparse.Chapter02.sum_edgeVec_eq_zero`.
+* **Equations (2.54)–(2.55)** (generalization). The operator sums the contributions of all edges
+  with the same neighbour. See `SaadSparse.Chapter02.equation_2_55_apply_ne`.
+* **§2.5, weak diagonal dominance** (generalization). The theorem uses abstract edge vectors
+  summing to zero and a neighbour map with no self-neighbours. See
+  `SaadSparse.Chapter02.equation_2_55_isDiagDominant`.
+
 ## Not formalized
 
 * **The derivation of the scheme: the conservation law (2.48), its weak form, the cell integration
@@ -95,8 +107,9 @@ theorem sum_succ_eq_sum (f : Fin m → ℝ) : ∑ j, f (j + 1) = ∑ j, f j :=
 zero. For every $m \ge 1$ and all vertices $p_0, \dots, p_{m-1}$ in the plane,
 $$\sum_{j=0}^{m-1} \vec s_j = 0.$$
 
-The source asks for a proof by the divergence theorem. Here the edges $p_{j+1} - p_j$ telescope
-over the cycle and the quarter turn is linear, so no integration is needed. -/
+**Generalization.** The exercise uses the outward edge vectors of a polygon. The theorem takes
+an arbitrary cyclic list of vertices. The edge differences telescope and the quarter turn is
+linear. -/
 theorem sum_edgeVec_eq_zero (p : Fin m → Fin 2 → ℝ) : ∑ j, edgeVec p j = 0 := by
   have key : ∀ f : Fin m → ℝ, ∑ j, (f (j + 1) - f j) = 0 := fun f => by
     rw [Finset.sum_sub_distrib, sum_succ_eq_sum, sub_self]
@@ -125,11 +138,14 @@ and negative parts, $z^+ + z^- = z$. -/
 theorem posPart_add_negPart (z : ℝ) : max z 0 + min z 0 = z := by
   rw [max_zero_eq_half, min_zero_eq_half]; ring
 
-/-- **Equation (2.53)** of [saad2003iterative], the upwind edge value. For all
+/-- **Equation (2.53)** of [saad2003iterative], the upwind edge flux. For all
 $a, b, z \in \mathbb{R}$,
 $$\frac{a + b}{2} z - \frac{|z|}{2} (b - a) = a z^+ + b z^-.$$
 So the average flux $\frac{a + b}{2} z$, corrected by the upwind term $\frac{|z|}{2}(b - a)$, is
 $a z^+ + b z^-$. This identity produces the coefficients (2.54)–(2.55) from the flux balance.
+
+**Reading.** Equation (2.53) gives the edge state. The declaration is its product with the
+normal flux coefficient $z$, as used in the next display. It gives zero flux when $z=0$.
 
 At $a = b = 1$ it is `SaadSparse.Chapter02.posPart_add_negPart`. -/
 theorem equation_2_53 (a b z : ℝ) :
@@ -153,6 +169,9 @@ $$a_{ij} = \delta_{ij} \beta_i + \sum_{k \,:\, \nu(i, k) = j} (\vec\lambda \cdot
 So the diagonal entry is $\beta_i$ when no edge leads back to cell $i$, and the entry at a
 neighbour $j$ collects $\alpha_{ij} = (\vec\lambda \cdot \vec s_{ik})^-$ over the edges $k$ that
 lead to $j$.
+
+**Generalization.** The source gives one edge contribution for each neighbour. The declaration
+allows several edges to lead to the same cell and adds their contributions.
 
 In Lean, `lam` and `nb` are the vector $\vec\lambda$ and the neighbour map $\nu$. The geometry
 enters only through the hypothesis $\sum_k \vec s_{ik} = 0$ of
@@ -179,7 +198,9 @@ omit [Fintype ι] in
 entry of the finite volume operator is the sum of the negative parts over the edges of cell $i$
 that lead to cell $j$:
 $$a_{ij} = \sum_{k \,:\, \nu(i, k) = j} (\vec\lambda \cdot \vec s_{ik})^-.$$
--/
+
+**Generalization.** Equation (2.55) gives a single contribution. Several edges with the same
+neighbour contribute to the same entry, so the statement sums them. -/
 theorem equation_2_55_apply_ne {i j : ι} (hij : i ≠ j) :
     equation_2_55 lam s nb i j = ∑ k with nb i k = j, min (lam ⬝ᵥ s i k) 0 := by
   simp [equation_2_55, hij]
@@ -210,6 +231,9 @@ $$a_{ii} \ge 0, \qquad a_{ij} \le 0 \quad (i \neq j), \qquad \sum_j a_{ij} = 0, 
   \neq i} |a_{ij}| \le |a_{ii}|.$$
 So it is a Z-matrix with "the same desirable property of weak diagonal dominance seen in the
 one-dimensional case".
+
+**Generalization.** The source uses polygonal cells. The theorem assumes the two geometric
+facts needed by the calculation directly, so it applies to abstract edge and neighbour data.
 
 For polygonal cells, the hypothesis on the edge vectors is
 `SaadSparse.Chapter02.sum_edgeVec_eq_zero`. -/

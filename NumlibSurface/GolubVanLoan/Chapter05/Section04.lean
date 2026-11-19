@@ -103,6 +103,19 @@ they use the Householder and Givens programs of §5.1–5.2.
 
 ## Deviations from the source
 
+* **§5.4.3, pivoted QR roundoff and stopping criterion** (reading). The theorem gives an
+  explicit columnwise backward error under idempotent rounding. The singular-value bound is
+  conditional on the trailing-block test. See `GolubVanLoan.Chapter05.algorithm_5_4_1_rounding`
+  and `GolubVanLoan.Chapter05.algorithm_5_4_1_sigma_succ_le`.
+* **Theorem 5.4.1** (reading). The statement requires $m\ge n$ explicitly, as needed by the last
+  diagonal entry. The chosen permutation works for any QR factorization. See
+  `GolubVanLoan.Chapter05.theorem_5_4_1`.
+* **§5.4.5, zero-chasing update** (reading). The implementation allows either sign of the last
+  unit vector, which preserves the last-column norm identity. See
+  `GolubVanLoan.Chapter05.givensRevealUpdate_spec`.
+* **Equation (5.4.13) and Algorithm 5.4.2** (reading). Existence also covers wide matrices. The
+  tall Householder program returns both arrays of reflector coefficients with the packed matrix.
+  See `GolubVanLoan.Chapter05.equation_5_4_13` and `GolubVanLoan.Chapter05.algorithm_5_4_2`.
 * **Algorithm 5.4.1** (typo). The source prints $A(:r{:}m, r{:}n)$; it is $A(r{:}m, r{:}n)$. See
   `GolubVanLoan.Chapter05.algorithm_5_4_1`.
 * **The Kahan matrix, §5.4.3** (generalization). The source takes $c > 0$; the result needs only
@@ -113,8 +126,6 @@ they use the Householder and Givens programs of §5.1–5.2.
   $\|L_{21}\|_2$. See `GolubVanLoan.Chapter05.equation_5_4_11`.
 * **Equation (5.4.11)** (generalization). As for (5.4.10), the separation
   $\sigma_k(A) > \sigma_{k+1}(A)$ is not needed. See `GolubVanLoan.Chapter05.equation_5_4_11`.
-* **Algorithm 5.4.2** (typo). The source prints the second call of `house` as "ho se". See
-  `GolubVanLoan.Chapter05.algorithm_5_4_2`.
 
 ## Not formalized
 
@@ -327,12 +338,18 @@ variable {M : Type → Type} [Monad M] (rnd : ℝ → M ℝ)
 
 /-- The maximum of $0$ and the values $c_i$ for the indices $i$ in a list. It is the number
 $\tau = \max\{c(r+1), \dots, c(n)\}$ of Algorithm 5.4.1 of [golub2013matrix]; the default $0$
-does not change the loop test $\tau > 0$. -/
+does not change the loop test $\tau > 0$.
+
+**Reading.** Adds zero to maximum so empty or negative computed lists give zero.
+-/
 noncomputable def listMax (c : Fin n → ℝ) (l : List (Fin n)) : ℝ :=
   (l.map c).foldl max 0
 
 /-- The state of Algorithm 5.4.1 of [golub2013matrix]: the overwritten array, the scalars $\beta_j$,
-the pivots, the squared column norms $c$, the rank counter $r$ and the current maximum $\tau$. -/
+the pivots, the squared column norms $c$, the rank counter $r$ and the current maximum $\tau$.
+
+**Reading.** Stores book array, pivots, norms and rank with extra reflector coefficients.
+-/
 structure PivotedQRState (m n : ℕ) where
   /-- The overwritten array $A$. -/
   A : Matrix (Fin m) (Fin n) ℝ
@@ -473,7 +490,10 @@ $$\mathrm{Kah}_n(s) = \operatorname{diag}(1, s, \dots, s^{n-1})\,T,$$
 where $T$ is unit upper triangular with every entry above the diagonal equal to $-c$.
 
 The source takes $c, s > 0$ with $c^2 + s^2 = 1$. The definition has no condition on $c$ and
-$s$, and the theorems state the conditions that they need. -/
+$s$, and the theorems state the conditions that they need.
+
+**Reading.** Same entries, also allows arbitrary c and s at definition.
+-/
 def kahanMatrix (n : ℕ) (c s : ℝ) : Matrix (Fin n) (Fin n) ℝ :=
   of fun i j => s ^ (i : ℕ) * (if i = j then 1 else if i < j then -c else 0)
 
@@ -776,7 +796,10 @@ $$|r_{nn}| \le \sqrt n\,\sigma, \qquad \sigma = \|Av\|_2.$$
 
 The source speaks of the QR factorization of $A\Pi$; the bound holds for every one. The theorem
 assumes $m \ge n$, so that $r_{nn}$ is an entry of $R$. In Lean $n = k + 1$, and $r_{nn}$ is the
-entry of $R$ at row $k$ and column `Fin.last k`. -/
+entry of $R$ at row $k$ and column `Fin.last k`.
+
+**Reading.** The statement assumes $m\ge n$, so the entry $r_{nn}$ exists for the rectangular
+factor. The source leaves this size condition implicit. -/
 theorem theorem_5_4_1 {k : ℕ} (A : Matrix (Fin m) (Fin (k + 1)) ℝ) (hkm : k + 1 ≤ m)
     (v : EuclideanSpace ℝ (Fin (k + 1))) (hv : ‖v‖ = 1) :
     ∃ π : Equiv.Perm (Fin (k + 1)), ∀ Q R, IsQR (A.submatrix id π) Q R →
@@ -1640,7 +1663,11 @@ vectors replaced by zeros, and $\Pi$ is the computed column permutation.
 This makes precise the statement of the source that $\hat R^{(k)}$ "is the exact R-factor of a
 matrix $A + E_k$", as in [higham2002accuracy] Theorem 19.4 with exact pivot swaps. The array
 $\hat R^{(r)}$ is `GolubVanLoan.Chapter05.householderQRPartialR`, whose trailing block
-$\hat R_{22}$ is the part not yet reduced, and $\Pi$ is `GolubVanLoan.Chapter05.pivotPerm`. -/
+$\hat R_{22}$ is the part not yet reduced, and $\Pi$ is `GolubVanLoan.Chapter05.pivotPerm`.
+
+**Reading.** The source gives a normwise order-$u$ estimate for the computed partial factor.
+The theorem specifies an idempotent rounding model and provides a columnwise bound with an
+explicit factor. -/
 theorem algorithm_5_4_1_rounding {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent) (hnm : n ≤ m)
     (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1) (A : Matrix (Fin m) (Fin n) ℝ)
     {st : PivotedQRState m n} (h : st ∈ (algorithm_5_4_1 fp.round hnm A).run) :
@@ -1708,7 +1735,11 @@ $$\sigma_{r+1}(A) \le (\varepsilon_1 + \varepsilon_2)\|A\|_2, \qquad \varepsilon
 $\|E_r\|_2 \le \varepsilon_2\|A\|_2$ of the source through the columnwise bound, and
 `GolubVanLoan.Chapter05.sigma_succ_le_of_colPivot` concludes. The block $\hat R_{22}$ has the
 rows $r{+}1{:}m$ and the columns $r{+}1{:}n$ of `GolubVanLoan.Chapter05.householderQRPartialR`,
-and $\sigma_{r+1}(A)$ is `A.sortedSingularValues r`. -/
+and $\sigma_{r+1}(A)$ is `A.sortedSingularValues r`.
+
+**Reading.** The source proposes a stopping test. This result proves the bound conditional on
+the returned trailing block satisfying that test. Algorithm 5.4.1 itself stops on the computed
+pivot norms. -/
 theorem algorithm_5_4_1_sigma_succ_le {fp : RoundingModel ℝ} (hfp : fp.IsIdempotent)
     (hnm : n ≤ m) (hu : ((3 * (18 * m + 31) + m + 3 : ℕ) : ℝ) * fp.u < 1)
     (A : Matrix (Fin m) (Fin n) ℝ) {st : PivotedQRState m n}
@@ -1852,7 +1883,10 @@ section Bidiagonalization
 /-- **Equation (5.4.13)** of [golub2013matrix], bidiagonalization. For every
 $A \in \mathbb{R}^{m \times n}$ there are orthogonal $U_B \in \mathbb{R}^{m \times m}$ and
 $V_B \in \mathbb{R}^{n \times n}$ such that $U_B^TAV_B$ is upper bidiagonal: its entries vanish
-outside the diagonal, with entries $d_i$, and the superdiagonal, with entries $f_i$. -/
+outside the diagonal, with entries $d_i$, and the superdiagonal, with entries $f_i$.
+
+**Generalization.** Existence of the upper bidiagonal form also holds for wide matrices. The
+source introduces the display for $m\ge n$. -/
 theorem equation_5_4_13 (A : Matrix (Fin m) (Fin n) ℝ) :
     ∃ U ∈ orthogonalGroup (Fin m) ℝ, ∃ V ∈ orthogonalGroup (Fin n) ℝ,
       ∀ (i : Fin m) (j : Fin n), (j : ℕ) ≠ i → (j : ℕ) ≠ i + 1 → (Uᵀ * A * V) i j = 0 := by
@@ -1904,10 +1938,11 @@ for j = 1:n
 end
 ```
 
-**Typo.** The source prints the second call of `house` as "ho se".
-
 The program returns the array and the two lists of scalars $\beta$ of the left and the right
-reflectors. One step is `GolubVanLoan.Chapter05.bidiagonalizationStep`. -/
+reflectors. One step is `GolubVanLoan.Chapter05.bidiagonalizationStep`.
+
+**Reading.** The program returns the packed matrix and both arrays of Householder coefficients.
+The diagonal and superdiagonal give the bidiagonal factor. -/
 noncomputable def algorithm_5_4_2 (hnm : n ≤ m) (A : Matrix (Fin m) (Fin n) ℝ) :
     M (Matrix (Fin m) (Fin n) ℝ × (Fin n → ℝ) × (Fin n → ℝ)) :=
   (List.finRange n).foldlM (bidiagonalizationStep rnd hnm) (A, 0, 0)
@@ -2589,7 +2624,10 @@ $A \in \mathbb{R}^{m \times n}$, $Z \in \mathbb{R}^{n \times n}$ and
 $Q \in \mathbb{R}^{m \times n}$ with $AZ = QR$, the updated factors $Z_{\mathrm{new}} = ZZ_G$
 and $Q_{\mathrm{new}} = QQ_G$ satisfy $AZ_{\mathrm{new}} = Q_{\mathrm{new}}R_{\mathrm{new}}$.
 
-In Lean $n = k + 1$, and the update is `GolubVanLoan.Chapter05.givensRevealUpdate`. -/
+In Lean $n = k + 1$, and the update is `GolubVanLoan.Chapter05.givensRevealUpdate`.
+
+**Reading.** The Givens convention can send $v$ to either sign of the last unit vector. Both
+signs give the same last-column norm used in the source. -/
 theorem givensRevealUpdate_spec {k : ℕ} {R : Matrix (Fin (k + 1)) (Fin (k + 1)) ℝ}
     (hR : R.IsUpperTriangular) {v : Fin (k + 1) → ℝ}
     (hv : ‖(toLp 2 v : EuclideanSpace ℝ (Fin (k + 1)))‖ = 1) :

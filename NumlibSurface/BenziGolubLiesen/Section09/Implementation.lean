@@ -14,6 +14,11 @@ and positive definiteness, enabling symmetric Krylov methods on the transformed 
 * `BenziGolubLiesen.isHermitian_symmetricPreconditionedMatrix` and
   `BenziGolubLiesen.posDef_symmetricPreconditionedMatrix`: the congruence preserves the
   corresponding property of $A$.
+
+## Deviations from the source
+
+* **Generalization.** The symmetry statement also applies to a singular factor, whose
+  total inverse is zero. The system equivalence requires an invertible factor.
 -/
 
 namespace BenziGolubLiesen
@@ -51,7 +56,9 @@ theorem exists_symmetricPreconditionedSystem_of_posDef {κ : Type*} [Fintype κ]
   rw [hform]
   exact symmetricPreconditionedSystem_iff A Hᵀ hL u b
 
-/-- **Section 9.3** of [benzi2005numerical]. Splitting the preconditioner preserves symmetry. -/
+/-- **Section 9.3** of [benzi2005numerical]. Splitting the preconditioner preserves symmetry.
+
+**Generalization.** For singular $L$, the total inverse makes the transformed matrix zero. -/
 theorem isHermitian_symmetricPreconditionedMatrix {A : Matrix ι ι ℝ}
     (hA : A.IsHermitian) (L : Matrix ι ι ℝ) : (L⁻¹ * A * Lᵀ⁻¹).IsHermitian := by
   simpa [transpose_nonsing_inv] using isHermitian_mul_mul_conjTranspose L⁻¹ hA

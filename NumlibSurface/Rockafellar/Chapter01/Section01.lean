@@ -69,10 +69,17 @@ the affine-space and inner-product API of Mathlib and almost nothing from the ba
 
 ## Deviations from the source
 
+* **Dimension, Sections 1 and 2** (generalization). The book defines dimension for affine and
+  convex sets. The definition uses the affine hull for every set. See `Rockafellar.dim`,
+  `Rockafellar.dim_of_nonempty` and `Rockafellar.dim_eq_finrank_direction`.
+* **Orthogonality test before Theorem 1.3** (generalization). Orthogonality to a subspace can be
+  checked on any spanning set. See `Rockafellar.mem_orthogonal_span_iff`.
 * **Theorem 1.3** (correction). The book states that every hyperplane is a level set
   $\{x \mid \langle x, b \rangle = \beta\}$ with $b \neq 0$. This fails in $\mathbb{R}^0$, where the
   empty set is a hyperplane and no $b \neq 0$ exists. The statement adds $n > 0$. See
   `Rockafellar.theorem_1_3_exists`.
+* **Theorem 1.6, uniqueness** (generalization). Agreement on an affine basis determines any affine
+  map, including maps that fail to be bijective. See `Rockafellar.theorem_1_6_unique`.
 -/
 
 namespace Rockafellar
@@ -274,10 +281,9 @@ the convention $\dim \emptyset = -1$:
 $$\dim S = \dim \operatorname{span} \{x - y \mid x, y \in S\} - \begin{cases} 1 & S = \emptyset,
   \\ 0 & S \neq \emptyset. \end{cases}$$
 
-The value is an integer because of the convention for the empty set. The book defines the
-dimension for affine sets, as the dimension of the parallel subspace of Theorem 1.2, and for
-convex sets $C$, as $\dim \operatorname{aff} C$ (Section 2). The definition here applies to
-every set and agrees with both. -/
+**Generalization.** The book defines dimension for affine sets using the parallel subspace of
+Theorem 1.2, and for convex sets using their affine hull in Section 2. The definition uses the
+affine hull of every set and agrees with both cases. -/
 noncomputable def dim (S : Set (Rn n)) : ℤ :=
   (Module.finrank ℝ (vectorSpan ℝ S) : ℤ) - if S = ∅ then 1 else 0
 
@@ -286,7 +292,10 @@ noncomputable def dim (S : Set (Rn n)) : ℤ :=
   simp [dim]
 
 /-- For a non-empty set $S \subseteq \mathbb{R}^n$, $\dim S$ is the dimension of the linear span of
-the differences of points of $S$ (the Mathlib `vectorSpan`). -/
+the differences of points of $S$ (the Mathlib `vectorSpan`).
+
+**Generalization.** The book states the dimension formula for affine and convex sets. The
+direction of the affine hull supplies the formula for every non-empty set. -/
 theorem dim_of_nonempty {S : Set (Rn n)} (h : S.Nonempty) :
     dim S = (Module.finrank ℝ (vectorSpan ℝ S) : ℤ) := by
   simp [dim, h.ne_empty]
@@ -294,6 +303,9 @@ theorem dim_of_nonempty {S : Set (Rn n)} (h : S.Nonempty) :
 /-- For a non-empty set $S \subseteq \mathbb{R}^n$, $\dim S$ is the dimension of the direction of
 the affine hull of $S$:
 $$\dim S = \dim (\operatorname{aff} S - \operatorname{aff} S).$$
+
+**Generalization.** In Section 2 the book defines dimension via the affine hull for convex sets.
+The affine hull defines the dimension of every non-empty set in this statement.
 
 This identifies `Rockafellar.dim` with the `Module.finrank` of the direction of the Mathlib
 `affineSpan`. -/
@@ -539,7 +551,10 @@ theorem pairing_sub_eq_zero_iff (u x a : Rn n) :
   rw [inner_sub_right, sub_eq_zero, real_inner_comm x u, real_inner_comm a u]
 
 /-- For $S \subseteq \mathbb{R}^n$ and $v \in \mathbb{R}^n$, $v$ is orthogonal to the linear span of
-$S$ if and only if $\langle u, v \rangle = 0$ for all $u \in S$. -/
+$S$ if and only if $\langle u, v \rangle = 0$ for all $u \in S$.
+
+**Generalization.** The book tests orthogonality on a basis for the subspace. Linearity of the
+inner product gives the equivalence for any spanning set. -/
 theorem mem_orthogonal_span_iff {S : Set (Rn n)} {v : Rn n} :
     v ∈ ((Submodule.span ℝ S)ᗮ : Submodule ℝ (Rn n)) ↔ ∀ u ∈ S, pairing n u v = 0 := by
   simp only [pairing_apply]
@@ -703,8 +718,9 @@ theorem theorem_1_6 {k : ℕ} {b b' : Fin (k + 1) → Rn n}
 be an affinely independent set of $n + 1$ points in $\mathbb{R}^n$. If two affine
 transformations $T_1, T_2$ of $\mathbb{R}^n$ into itself agree at every $b_i$, then $T_1 = T_2$.
 
-So the transformation of `Rockafellar.theorem_1_6` is unique when $m = n$. The statement does
-not need $T_1$ and $T_2$ to be bijective. -/
+**Generalization.** The book asserts uniqueness among the bijections carrying one affinely
+independent family to the other when $m = n$. Agreement on one affine basis already determines
+any affine map, with arbitrary shared images. -/
 theorem theorem_1_6_unique {b : Fin (n + 1) → Rn n} (hb : AffineIndependent ℝ b)
     {T₁ T₂ : Rn n → Rn n} (h₁ : IsAffineMap T₁) (h₂ : IsAffineMap T₂)
     (hT : ∀ i, T₁ (b i) = T₂ (b i)) : T₁ = T₂ := by

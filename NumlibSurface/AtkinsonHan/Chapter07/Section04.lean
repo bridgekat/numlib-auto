@@ -108,6 +108,9 @@ domain, the bound is applied to an extension of $v$ that is bounded both in $H^{
 
 ## Deviations from the source
 
+* **Equation (7.4.2)** (scope). The Fourier formula and norm characterization are stated
+  for $s \ge 0$ and complex-valued $L^2$ data. The source writes the definition for
+  real $s$.
 * **Example 7.4.2** (reading). The source assumes a Lipschitz domain. The statement assumes a
   bounded open set that is a $W^{1,q}$ extension domain for every $q$; the bounded $C^1$ domains of
   Definition 7.2.1 are such sets. See `AtkinsonHan.Chapter07.example_7_4_2`.
@@ -145,7 +148,10 @@ order $s$ is an $L^2$ function; at $s = 0$ this is $L^2(\mathbb{R}^d)$ by
 `TemperedDistribution.memSobolev_zero_iff`. This is not Theorem 7.4.1, whose left side is the
 space $W^{k,2}(\mathbb{R}^d)$ of weak derivatives; `AtkinsonHan.Chapter07.theorem_7_4_1`
 composes this result with the identification of the two spaces. The proof is
-`TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier`. -/
+`TemperedDistribution.memSobolev_two_iff_memLp_symbol_mul_fourier`.
+
+**Reading.** Fourier characterization for nonnegative orders in the complex L2 representation.
+-/
 theorem equation_7_4_2 {s : ℝ} (hs : 0 ≤ s)
     (v : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))) :
     MemSobolev s 2 (v : 𝓢'(EuclideanSpace ℝ (Fin d), ℂ)) ↔
@@ -162,7 +168,11 @@ so the norm of $H^s(\mathbb{R}^d)$ equals the Fourier norm and is not only equiv
 proof is Plancherel's theorem,
 `TemperedDistribution.norm_eq_eLpNorm_symbol_mul_fourier_of_besselPotential_eq`. This is not
 (7.4.1), which compares the Fourier norm with the Sobolev norm of Definition 7.2.2; see
-`AtkinsonHan.Chapter07.equation_7_4_1`. -/
+`AtkinsonHan.Chapter07.equation_7_4_1`.
+
+**Reading.** Identifies weighted Fourier norm with Bessel-potential representative norm for
+nonnegative orders.
+-/
 theorem equation_7_4_2_norm {s : ℝ} (hs : 0 ≤ s)
     {v w : Lp ℂ 2 (volume : Measure (EuclideanSpace ℝ (Fin d)))}
     (hw : besselPotential (EuclideanSpace ℝ (Fin d)) ℂ s (v : 𝓢'(EuclideanSpace ℝ (Fin d), ℂ)) =

@@ -58,6 +58,12 @@ Section 5.4.
 
 ## Deviations from the source
 
+* **Correction.** The ordered basic QR convergence and rates require nonzero eigenvalues and an
+  explicit leading-minor hypothesis. See `QuarteroniSaccoSaleri.Chapter05.property_5_9_hypotheses`,
+  `QuarteroniSaccoSaleri.Chapter05.property_5_9`, `QuarteroniSaccoSaleri.Chapter05.equation_5_37`,
+  `QuarteroniSaccoSaleri.Chapter05.property_5_9_symm`.
+* **Correction.** A stationary diagonal matrix shows why separation alone does not give the printed
+  order. See `QuarteroniSaccoSaleri.Chapter05.property_5_9_counterexample`.
 * **Property 5.9** (correction). With only $|\lambda_1| > \dots > |\lambda_n|$, the property is
   false: the iteration leaves $A = \operatorname{diag}(1, 2)$ fixed. The property is stated with the
   further hypothesis that every leading principal minor of $X^{-1}$ is nonzero, which the theorem of
@@ -93,7 +99,13 @@ $X^{-1}$ be nonzero. Then:
    segment $J$ of the indices, the span of the unit vectors $e_j$ with $j \in J$ meets the span
    of the $x_j$ with $j \notin J$ only in $0$.
 
-The columns are `Matrix.euclideanCol X j`, and an initial segment is a lower set of `Fin N`. -/
+The columns are `Matrix.euclideanCol X j`, and an initial segment is a lower set of `Fin N`.
+
+**Correction.** Magnitude separation by itself does not enforce the printed order in the limit. Lean
+assumes nonzero eigenvalues and nonsingular leading principal minors of the inverse eigenvector
+matrix. For a general matrix it states convergence of the subdiagonal and diagonal entries only. For
+symmetric input it obtains full diagonal convergence.
+-/
 theorem property_5_9_hypotheses {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X)
     {lam : Fin N → ℝ} (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -134,7 +146,13 @@ is the explicit hypothesis that every $\lambda_i$ is nonzero.
 
 The proof specializes the backbone's `Matrix.tendsto_qrIterate`, whose hypothesis of general
 position is the minor condition by
-`Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal`. -/
+`Matrix.forall_isLowerSet_disjoint_iff_isUnit_leadingPrincipal`.
+
+**Correction.** Magnitude separation by itself does not enforce the printed order in the limit. Lean
+assumes nonzero eigenvalues and nonsingular leading principal minors of the inverse eigenvector
+matrix. For a general matrix it states convergence of the subdiagonal and diagonal entries only. For
+symmetric input it obtains full diagonal convergence.
+-/
 theorem property_5_9 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : Fin N → ℝ}
     (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -169,7 +187,12 @@ Then:
 
 The diagonal of $A$ is positive, so the QR factorization of $A$ is $Q = I$, $R = A$. The minor
 condition of `QuarteroniSaccoSaleri.Chapter05.property_5_9` is the only one of its hypotheses
-that fails. -/
+that fails.
+
+**Correction.** The matrix with diagonal $(1,2)$ is stationary and satisfies strict magnitude
+separation when its eigenvalues are indexed $(2,1)$. Its leading minor condition fails and the
+diagonal does not converge in that ordered list.
+-/
 theorem property_5_9_counterexample :
     let A : Matrix (Fin 2) (Fin 2) ℝ := diagonal ![1, 2]
     let X : Matrix (Fin 2) (Fin 2) ℝ := !![0, 1; 1, 0]
@@ -210,7 +233,13 @@ $$|t_{i,i-1}^{(k)}| \le C \left( \frac{|\lambda_i|}{|\lambda_{i-1}|} \right)^k \
   every } k.$$
 
 The proof specializes the backbone's `Matrix.exists_abs_qrIterate_apply_le` with the rate
-parameter $r = |\lambda_i|$, the largest modulus among the eigenvalues after $\lambda_{i-1}$. -/
+parameter $r = |\lambda_i|$, the largest modulus among the eigenvalues after $\lambda_{i-1}$.
+
+**Correction.** Magnitude separation by itself does not enforce the printed order in the limit. Lean
+assumes nonzero eigenvalues and nonsingular leading principal minors of the inverse eigenvector
+matrix. For a general matrix it states convergence of the subdiagonal and diagonal entries only. For
+symmetric input it obtains full diagonal convergence.
+-/
 theorem equation_5_37 {A X : Matrix (Fin N) (Fin N) ℝ} (hX : IsUnit X) {lam : Fin N → ℝ}
     (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)
@@ -240,7 +269,13 @@ $t_{ii}^{(k)} \to \lambda_i$, that is, $T^{(k)} \to \operatorname{diag}(\lambda_
 \lambda_n)$ entrywise.
 
 Every iterate is symmetric, because it is an orthogonal similarity transform of $A$
-(`Matrix.isHermitian_qrIterate`). So the entries above the diagonal are those below it. -/
+(`Matrix.isHermitian_qrIterate`). So the entries above the diagonal are those below it.
+
+**Correction.** Magnitude separation by itself does not enforce the printed order in the limit. Lean
+assumes nonzero eigenvalues and nonsingular leading principal minors of the inverse eigenvector
+matrix. For a general matrix it states convergence of the subdiagonal and diagonal entries only. For
+symmetric input it obtains full diagonal convergence.
+-/
 theorem property_5_9_symm {A X : Matrix (Fin N) (Fin N) ℝ} (hA : A.IsSymm) (hX : IsUnit X)
     {lam : Fin N → ℝ} (hD : X⁻¹ * A * X = diagonal lam) (hne : ∀ i, lam i ≠ 0)
     (hsep : ∀ i j, i < j → |lam j| < |lam i|)

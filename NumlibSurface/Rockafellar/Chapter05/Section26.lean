@@ -139,14 +139,28 @@ and 257). The proofs specialize the backbone modules
 
 ## Deviations from the source
 
+* **Section 26, essential smoothness** (reading). `Rockafellar.EssentiallySmoothBook` isolates
+  the three defining conditions as a predicate on arbitrary functions.
+* **Theorem 26.1**, interior formula (generalization). The subdifferential at an interior
+  point of an essentially smooth convex function is its gradient singleton without closedness.
+* **Lemma 26.2** (reading). Lean assumes closedness, as in the proof. It uses the limit in
+  (c′) without recording monotonicity and extends the pointwise equivalence to any $x$.
+* **Section 26, Legendre domain** (reading). The definition uses the domain interior and the
+  total gradient of the real trace. The source starts from a differentiable function on $C$.
 * **Theorem 26.4** (generalization). The source assumes that $f$ is closed and proper and that $f$
   is differentiable on a non-empty $C$. The well-definedness of $g$ and the formula $g = f^*$ on $D$
   need only convexity, and the inclusion $D \subseteq \operatorname{dom} f^*$ needs in addition only
   differentiability on $C$. See `Rockafellar.theorem_26_4_wellDefined`,
   `Rockafellar.theorem_26_4_eq` and `Rockafellar.theorem_26_4_subset_dom_conj`.
+* **Corollary 26.4.1**, value formula (generalization). The equality on $D$ needs no
+  closedness. See `Rockafellar.corollary_26_4_1_eq`.
+* **Section 26, upper-half-plane example** (reading). The source gives a real-valued formula
+  on the open upper half-plane. Lean extends it by $+\infty$ elsewhere.
 * **Theorem 26.5** (reading). The source says closed convex function, and its proof needs a closed
-  proper convex function. Here $f$ is assumed proper; an improper closed convex function is
-  differentiable at no point. See `Rockafellar.theorem_26_5`.
+  proper convex function. Here $f$ is assumed proper. The forward value formula and
+  continuity of $\nabla f$ need no closedness. See `Rockafellar.theorem_26_5`.
+* **Theorem 26.6**, value formula (generalization). The formula at $\nabla f(x)$ holds without
+  bijectivity of the gradient. See `Rockafellar.theorem_26_6_apply`.
 
 ## Not formalized
 
@@ -231,7 +245,10 @@ $$\|\nabla f(z_i)\| \to +\infty.$$
 Condition (c) is quantified over the boundary points of $C$, as in the source. The norm
 $\|\nabla f(z_i)\|$ is the operator norm of the Fréchet derivative of the real trace of $f$,
 which is the Euclidean norm of the gradient. The backbone's `ConvexAnalysis.EssentiallySmooth`
-is the same condition by `Rockafellar.essentiallySmooth_iff_book`. -/
+is the same condition by `Rockafellar.essentiallySmooth_iff_book`.
+
+**Reading.** The source uses essential smoothness for proper convex functions. Lean defines
+the three conditions independently of properness and convexity. -/
 def EssentiallySmoothBook (f : Rn n → EReal) : Prop :=
   (interior (convexDom f)).Nonempty ∧
     (∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) ∧
@@ -274,7 +291,10 @@ theorem theorem_26_1 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex
 /-- **Theorem 26.1** of [rockafellar1970convex], the clause on interior points. Let $f$ be an
 essentially smooth convex function on $\mathbb{R}^n$, and let
 $x \in \operatorname{int}(\operatorname{dom} f)$. Then $\partial f(x)$ consists of the vector
-$\nabla f(x)$ alone. Closedness and properness are not assumed. -/
+$\nabla f(x)$ alone.
+
+**Generalization.** The formula holds without closedness. Properness follows from convexity
+and differentiability at the interior point. -/
 theorem theorem_26_1_gradient (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
     (hx : x ∈ interior (convexDom f)) :
     subdifferential (pairing n) f x = {gradient (fun w => (f w).toReal) x} := by
@@ -313,8 +333,12 @@ for every $a \in C$ and every $x \notin C$.
 The source writes $\downarrow -\infty$ in (c′), which also records that the left side is
 non-decreasing in $\lambda$. This holds for every convex $f$, so only the limit appears here.
 The source states (c′) for the boundary points $x$ of $C$. Here it is required at every
-$x \notin C$; by `Rockafellar.lemma_26_2_at`, (c′) holds at every point outside
-$\operatorname{cl} C$, where (c) holds vacuously. -/
+$x \notin C$. By `Rockafellar.lemma_26_2_at`, (c′) holds at every point outside
+$\operatorname{cl} C$, where (c) holds vacuously.
+
+**Reading.** Uses the directional-derivative limit at all exterior points. Monotonicity follows from
+convexity.
+-/
 def EssentiallySmoothDir (f : Rn n → EReal) : Prop :=
   (interior (convexDom f)).Nonempty ∧
     (∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z) ∧
@@ -327,7 +351,10 @@ function on $\mathbb{R}^n$ that satisfies (a) and (b), let $a \in C =
 $x$, that $\|\nabla f(z_i)\| \to +\infty$ for every sequence $(z_i)$ in $C$ with $z_i \to x$,
 holds if and only if
 $$f'(x + \lambda(a - x); a - x) \to -\infty \quad \text{as } \lambda \downarrow 0.$$
-Both conditions say that $f$ has no subgradient at $x$. -/
+Both conditions say that $f$ has no subgradient at $x$.
+
+**Reading.** The source restricts $x$ to the boundary of $C$. Lean permits all $x$ and
+assumes closedness, as in the proof. -/
 theorem lemma_26_2_at (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f)
     (hne : (interior (convexDom f)).Nonempty)
     (hdiff : ∀ ⦃z : Rn n⦄, z ∈ interior (convexDom f) → DifferentiableAtFn f z)
@@ -343,7 +370,10 @@ and (c′). That is, in the definition of essential smoothness, condition (c) ma
 condition (c′).
 
 The two definitions are `ConvexAnalysis.EssentiallySmooth` and
-`Rockafellar.EssentiallySmoothDir`. -/
+`Rockafellar.EssentiallySmoothDir`.
+
+**Reading.** The source starts with (a) and (b) and assumes closedness in the proof. Lean
+includes (a) and (b) on both sides and assumes closedness in the statement. -/
 theorem lemma_26_2 (hf : ConvexFn f) (hp : ProperConvex f) (hcl : ClosedConvex f) :
     EssentiallySmooth f ↔ EssentiallySmoothDir f := by
   constructor
@@ -810,7 +840,11 @@ $C = \operatorname{int}(\operatorname{dom} f)$ under the gradient mapping:
 $$D = \{\nabla f(x) \mid x \in C\}.$$
 
 The gradient is Mathlib's `gradient` of the real trace `fun z => (f z).toReal`. Where $f$ is
-differentiable, it is the gradient of $f$. -/
+differentiable, it is the gradient of $f$.
+
+**Reading.** The source starts with a differentiable real-valued function on an open set $C$.
+Lean uses $C = \operatorname{int}(\operatorname{dom} f)$ and defines the image even without
+differentiability on $C$. -/
 noncomputable def legendreDomain (f : Rn n → EReal) : Set (Rn n) :=
   gradient (fun w => (f w).toReal) '' interior (convexDom f)
 
@@ -924,7 +958,8 @@ $x \in \operatorname{int}(\operatorname{dom} f)$. Then
 $$f^*(\nabla f(x)) = \langle x, \nabla f(x) \rangle - f(x),$$
 so $g$ is the restriction of $f^*$ to $D$.
 
-Closedness and properness are not assumed. -/
+**Generalization.** The formula holds without closedness. Properness follows from convexity
+and differentiability at $x$. -/
 theorem corollary_26_4_1_eq (hf : ConvexFn f) (hes : EssentiallySmooth f) {x : Rn n}
     (hx : x ∈ interior (convexDom f)) :
     convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
@@ -982,7 +1017,9 @@ theorem mem_parabola {w : Rn 2} : w ∈ parabola ↔ w 1 = -(w 0) ^ 2 := Iff.rfl
 $\mathbb{R}^2$ is
 $$f(\xi_1, \xi_2) = \begin{cases} \xi_1^2/4\xi_2 & \text{if } \xi_2 > 0, \\ +\infty &
   \text{otherwise,} \end{cases}$$
-so that $C = \operatorname{int}(\operatorname{dom} f)$ is the open upper half-plane. -/
+so that $C = \operatorname{int}(\operatorname{dom} f)$ is the open upper half-plane.
+
+**Reading.** The source defines $f$ on $C$. Lean assigns $+\infty$ off $C$. -/
 noncomputable def halfPlaneFn (x : Rn 2) : EReal :=
   ⨅ _ : 0 < x 1, ((x 0 ^ 2 / (4 * x 1) : ℝ) : EReal)
 
@@ -990,7 +1027,9 @@ noncomputable def halfPlaneFn (x : Rn 2) : EReal :=
 theorem halfPlaneFn_of_pos {x : Rn 2} (hx : 0 < x 1) :
     halfPlaneFn x = ((x 0 ^ 2 / (4 * x 1) : ℝ) : EReal) := iInf_pos hx
 
-/-- For $\xi_2 \le 0$ the example of p. 257 takes the value $+\infty$. -/
+/-- For $\xi_2 \le 0$ the Lean extension of the example of p. 257 takes the value $+\infty$.
+
+**Reading.** These points are outside the domain of the real-valued function in the source. -/
 theorem halfPlaneFn_of_nonpos {x : Rn 2} (hx : ¬ 0 < x 1) : halfPlaneFn x = ⊤ := iInf_neg hx
 
 /-- The example of p. 257 never takes the value $-\infty$. -/
@@ -1314,7 +1353,8 @@ theorem theorem_26_5_legendreDomain (hf : ConvexFn f) (hp : ProperConvex f) (hcl
 /-- **Theorem 26.5** of [rockafellar1970convex], the values of the Legendre conjugate. Let $f$ be a
 convex function of Legendre type on $\mathbb{R}^n$, and let $x \in C$. Then
 $$f^*(\nabla f(x)) = \langle x, \nabla f(x) \rangle - f(x).$$
--/
+
+**Generalization.** This formula holds without closedness. -/
 theorem theorem_26_5_conj_apply (hf : ConvexFn f) (hleg : LegendreType f) {x : Rn n}
     (hx : x ∈ interior (convexDom f)) :
     convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)
@@ -1360,7 +1400,9 @@ theorem theorem_26_5_bijOn (hf : ConvexFn f) (hp : ProperConvex f) (hcl : Closed
   bijOn_gradient_of_legendreType hf hp hcl hleg
 
 /-- **Theorem 26.5** of [rockafellar1970convex], continuity of $\nabla f$. Let $f$ be a proper
-convex function of Legendre type on $\mathbb{R}^n$. Then $\nabla f$ is continuous on $C$. -/
+convex function of Legendre type on $\mathbb{R}^n$. Then $\nabla f$ is continuous on $C$.
+
+**Generalization.** This continuity holds without closedness. -/
 theorem theorem_26_5_continuousOn (hf : ConvexFn f) (hp : ProperConvex f) (hleg : LegendreType f) :
     ContinuousOn (gradient fun w => (f w).toReal) (interior (convexDom f)) :=
   continuousOn_gradient_interior_convexDom hf hp hleg.1
@@ -1439,7 +1481,10 @@ on $\mathbb{R}^n$ that is differentiable at every point. Then for every $x \in \
 $$f^*(\nabla f(x)) = \langle x, \nabla f(x) \rangle - f(x).$$
 When $\nabla f$ is one-to-one from $\mathbb{R}^n$ onto itself, this says that $f^*$ is the
 Legendre conjugate of $f$: $f^*(x^*) = \langle (\nabla f)^{-1}(x^*), x^* \rangle - f((\nabla
-f)^{-1}(x^*))$ for every $x^*$. -/
+f)^{-1}(x^*))$ for every $x^*$.
+
+**Generalization.** The displayed formula at $\nabla f(x)$ holds without gradient
+bijectivity. -/
 theorem theorem_26_6_apply (hf : ConvexFn f) (hdiff : ∀ z : Rn n, DifferentiableAtFn f z)
     (x : Rn n) :
     convexConj (pairing n) f (gradient (fun w => (f w).toReal) x)

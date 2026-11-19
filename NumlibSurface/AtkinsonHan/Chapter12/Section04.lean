@@ -96,11 +96,15 @@ expansion of the Nyström solution (Example 12.4.6). The proofs specialize
   a finite Borel measure, the generality of `IntegralOperator.kernelCLM` and
   `IntegralOperator.nystromCLM`; the case of the source is `IntegralOperator.regionMeasure D`. See
   `AtkinsonHan.Chapter12.theorem_12_4_4`.
-* **Lemma 12.4.7(3)** (generalization). The compact operator $M$ may have any normed space as its
+* **Lemma 12.4.7** (generalization). Compactness of the limit and uniform boundedness in (1) and
+  (2) hold on normed spaces. In (3), the compact operator $M$ may have any normed space as its
   domain. See `AtkinsonHan.Chapter12.lemma_12_4_7_c`.
 * **Theorem 12.4.4** (generalization). The source states the convergence for the Nyström operators
   on $C(D)$. Its proof uses only A1–A3, and the statement holds for every family that satisfies
   them. See `AtkinsonHan.Chapter12.exists_norm_inverse_le_of_isCollectivelyCompactFamily`.
+* **Equations (12.4.39) and (12.4.44)** (reading). The remainder bounds make the fourth-order
+  constants explicit using bounds on fourth derivatives. Example 12.4.6 uses the discrete
+  auxiliary inverse and makes the extra second-order defect bound for the last clause explicit.
 
 ## Not formalized
 
@@ -152,7 +156,11 @@ that converges pointwise to $K$** if $K_n u \to K u$ for every $u \in X$ (A2), a
 $$\{K_n v : n \in \mathbb{N}, \ \|v\| \le 1\}$$ of (12.4.53) has compact closure (A3).
 
 Boundedness (A1) is part of the type `X →L[𝕜] X`, so it needs no field. The limit operator is
-`L` and the family is `K`. -/
+`L` and the family is `K`.
+
+**Reading.** Definition applies to normed spaces and uses bounded linear maps; completeness is used
+when needed in theorems.
+-/
 structure IsCollectivelyCompactFamily (K : ℕ → X →L[𝕜] X) (L : X →L[𝕜] X) : Prop where
   /-- Assumption A2: $K_n u \to K u$ for every $u$. -/
   tendsto : ∀ x, Tendsto (fun n => K n x) atTop (𝓝 (L x))
@@ -202,12 +210,18 @@ theorem isCollectivelyCompactFamily_of_isCollectivelyCompact {K : ℕ → X →L
 variable {K : ℕ → X →L[𝕜] X} {L : X →L[𝕜] X}
 
 /-- **Lemma 12.4.7(1)** of [han2009theoretical]. If $\{K_n\}$ satisfies A1–A3 with limit $K$, then
-$K$ is compact. -/
+$K$ is compact.
+
+**Reading.** Compact pointwise limit on a normed space, without completeness.
+-/
 theorem lemma_12_4_7_a (h : IsCollectivelyCompactFamily K L) : IsCompactOperator L :=
   IsCollectivelyCompact.isCompactOperator_of_tendsto h.isCollectivelyCompact h.tendsto
 
 /-- **Lemma 12.4.7(2)** of [han2009theoretical]. If $\{K_n\}$ satisfies A1–A3, then there is a
-constant $C$ with $\|K_n\| \le C$ for all $n$. -/
+constant $C$ with $\|K_n\| \le C$ for all $n$.
+
+**Reading.** Uniform bound on a normed space, without completeness.
+-/
 theorem lemma_12_4_7_b (h : IsCollectivelyCompactFamily K L) : ∃ C, ∀ n, ‖K n‖ ≤ C :=
   IsCollectivelyCompact.exists_opNorm_le h.isCollectivelyCompact
 
@@ -306,7 +320,10 @@ limit $K$.
 
 A2 is `IntegralOperator.tendsto_nystromCLM` and A3 is
 `IntegralOperator.isCollectivelyCompact_nystromCLM`. Both follow from the uniform convergence of
-the rules on the compact set of functions $s \mapsto k(t, s) u(s)$. -/
+the rules on the compact set of functions $s \mapsto k(t, s) u(s)$.
+
+**Reading.** Compact measured domain and uniform total absolute weights for general quadrature.
+-/
 theorem isCollectivelyCompactFamily_nystromCLM (k : C(D × D, ℝ)) {m : ℕ → ℕ}
     {w : ∀ n, Fin (m n) → ℝ} {x : ∀ n, Fin (m n) → D} {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
     (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
@@ -322,7 +339,10 @@ d\nu(v) - \sum_j w_j k(t, x_j) k(x_j, s)$$ be the quadrature error of the compos
 $(K - K_n) K$ is the integral operator of $e_n$, which is (12.4.14), and $$\|(K - K_n) K\| =
 \sup_t \int |e_n(t, s)|\, d\nu(s),$$ which is (12.4.16).
 
-The kernel $e_n$ is `IntegralOperator.compKernel`. -/
+The kernel $e_n$ is `IntegralOperator.compKernel`.
+
+**Reading.** Kernel composition and norm bound on a compact measured space.
+-/
 theorem lemma_12_4_2_a [SecondCountableTopology D] [Nonempty D] {m : ℕ} (w : Fin m → ℝ)
     (x : Fin m → D) (k : C(D × D, ℝ)) :
     (kernelCLM ν k - nystromCLM w x k) ∘L kernelCLM ν k = kernelCLM ν (compKernel ν w x k) ∧
@@ -335,7 +355,10 @@ theorem lemma_12_4_2_a [SecondCountableTopology D] [Nonempty D] {m : ℕ} (w : F
 space with a finite Borel measure $\nu$, let $k$ be a continuous kernel, and let $w_j$ and
 distinct nodes $x_j$ define a quadrature rule. Then $(K - K_n) K_n$ is the Nyström operator of
 the kernel $e_n$ of the first clause, which is (12.4.15), and $$\|(K - K_n) K_n\| = \sup_t
-\sum_j |w_j e_n(t, x_j)|,$$ which is (12.4.17). -/
+\sum_j |w_j e_n(t, x_j)|,$$ which is (12.4.17).
+
+**Reading.** Quadrature composition on a compact domain, with injective node enumeration.
+-/
 theorem lemma_12_4_2_b [T2Space D] [Nonempty D] {m : ℕ} {w : Fin m → ℝ} {x : Fin m → D}
     (hx : Function.Injective x) (k : C(D × D, ℝ)) :
     (kernelCLM ν k - nystromCLM w x k) ∘L nystromCLM w x k
@@ -353,7 +376,11 @@ $\int v\, d\nu$ for every $v \in C(D)$. Then $$\|(K - K_n) K\| \to 0 \quad \text
 
 The proof shows that $\max_{t, s} |e_n(t, s)| \to 0$ and uses the bounds
 $\|(K - K_n) K\| \le \nu(D) \|e_n\|_\infty$ and $\|(K - K_n) K_n\| \le W \|e_n\|_\infty$, which
-follow from the first two clauses. -/
+follow from the first two clauses.
+
+**Reading.** Uniform kernel difference limit on a compact measured space with explicitly bounded
+quadrature weights.
+-/
 theorem lemma_12_4_2_c [SecondCountableTopology D] {m : ℕ → ℕ} {w : ∀ n, Fin (m n) → ℝ}
     {x : ∀ n, Fin (m n) → D} (k : C(D × D, ℝ)) {W : ℝ} (hW : ∀ n, ∑ j, |w n j| ≤ W)
     (hQ : ∀ v : C(D, ℝ), Tendsto (fun n => Quadrature.functional (w n) (x n) v) atTop
@@ -554,7 +581,10 @@ with an explicit remainder.
 This is the first Euler–Maclaurin term. Unlike `AtkinsonHan.Chapter12.example_12_4_5` it names
 the leading term, which Example 12.4.6 and Richardson extrapolation need. The source quotes the
 result from the literature. It is `Quadrature.abs_sub_trapezoidSum_add_le`, proved by two more
-integrations by parts of the Peano identity on each panel and a telescoping sum. -/
+integrations by parts of the Peano identity on each panel and a telescoping sum.
+
+**Reading.** Replaces O(h⁴) with the explicit fourth-derivative remainder bound.
+-/
 theorem equation_12_4_39 {a b : ℝ} (hab : a < b) {N : ℕ} (hN : 0 < N) {h : ℝ}
     (hh : h = (b - a) / N) {g : ℝ → ℝ} (hg : ContDiff ℝ 4 g) {M : ℝ}
     (hM : ∀ t ∈ Set.Icc a b, |iteratedDeriv 4 g t| ≤ M) :
@@ -590,7 +620,10 @@ open IntegralOperator MeasureTheory
 
 /-- Let $(\lambda - K) u = f$, $(\lambda - K_n) u_n = f$ and $(\lambda - K_n) \gamma_n = d$, with
 $\lambda - K_n$ invertible. Then for every scalar $r$, $u - u_n - r \gamma_n = (\lambda -
-K_n)^{-1} [(K - K_n) u - r d]$; at $r = 0$ this is (12.4.45). -/
+K_n)^{-1} [(K - K_n) u - r d]$; at $r = 0$ this is (12.4.45).
+
+**Reading.** General normed-space identity using the auxiliary equation with the discrete inverse.
+-/
 private theorem sub_smul_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {μ : ℝ}
     {K Kn : V →L[ℝ] V} {en : V ≃L[ℝ] V} (hen : (en : V →L[ℝ] V) = μ • 1 - Kn)
     {u un f d γn : V} (hu : (μ • 1 - K : V →L[ℝ] V) u = f)
@@ -605,7 +638,10 @@ private theorem sub_smul_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace
   rw [← e1, ← hen, ContinuousLinearEquiv.coe_coe, en.symm_apply_apply]
 
 /-- If $(\lambda - K) \gamma = d$ and $(\lambda - K_n) \gamma_n = d$, with $\lambda - K_n$
-invertible, then $\gamma_n - \gamma = (\lambda - K_n)^{-1} (K_n - K) \gamma$. -/
+invertible, then $\gamma_n - \gamma = (\lambda - K_n)^{-1} (K_n - K) \gamma$.
+
+**Reading.** Relates the two auxiliary solutions using the discrete rather than exact inverse.
+-/
 private theorem sub_aux_eq_symm {V : Type*} [NormedAddCommGroup V] [NormedSpace ℝ V] {μ : ℝ}
     {K Kn : V →L[ℝ] V} {en : V ≃L[ℝ] V} (hen : (en : V →L[ℝ] V) = μ • 1 - Kn)
     {d γ γn : V} (hγ : (μ • 1 - K : V →L[ℝ] V) γ = d)
@@ -633,7 +669,10 @@ d\|_\infty \le \frac{(b - a) h^4 M_4}{720},$$ which is (12.4.44) with an explici
 The proof applies `AtkinsonHan.Chapter12.equation_12_4_39` at each row $t$. The bound is uniform
 because $M_4$ does not depend on $t$. The quadrature hypothesis identifies
 `IntegralOperator.nystromCLM` with `Quadrature.trapezoidSum` on the clamped integrand, with the
-help of `IntegralOperator.nystromCLM_apply_eq_functional`. -/
+help of `IntegralOperator.nystromCLM_apply_eq_functional`.
+
+**Reading.** Explicit fourth-order defect bound with derivative witnesses.
+-/
 theorem equation_12_4_44 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
     {N : ℕ} (hN : 0 < N) {h : ℝ} (hh : h = (b - a) / N)
     {m : ℕ} {w : Fin m → ℝ} {x : Fin m → Set.Icc a b}
@@ -725,7 +764,11 @@ clause.
 The proof replaces the $\varepsilon_n = (\lambda - K)^{-1} (K - K_n) u$ of the source by $h_n^2
 \gamma_n = (\lambda - K_n)^{-1} (h_n^2 d)$. Then $(\lambda - K_n)(u - u_n - h_n^2 \gamma_n) =
 (K - K_n) u - h_n^2 d$, whose norm `AtkinsonHan.Chapter12.equation_12_4_44` bounds, and
-$(\lambda - K_n)(\gamma_n - \gamma) = (K_n - K) \gamma$. -/
+$(\lambda - K_n)(\gamma_n - \gamma) = (K_n - K) \gamma$.
+
+**Reading.** Uses the discrete auxiliary inverse and assumes the needed second-order defect on the
+limiting auxiliary solution for the fourth-order bound.
+-/
 theorem example_12_4_6 (hab : a < b) (k : C(Set.Icc a b × Set.Icc a b, ℝ))
     {N : ℕ → ℕ} (hN : ∀ n, 0 < N n) {hs : ℕ → ℝ} (hhs : ∀ n, hs n = (b - a) / N n)
     (hlim : Tendsto hs atTop (𝓝 0))

@@ -52,6 +52,14 @@ their theorems in the backbone module `Numlib.Analysis.PDE.Transport`.
   derivatives are derivatives within that set, so they are one-sided at $t = 0$. The same holds for
   the derivative of a characteristic at $t = 0$.
 
+## Deviations from the source
+
+* **Equations (13.26)–(13.28)** (reading). Classical transport solutions use full within
+  differentiability in space and time on the closed half-plane and satisfy the equation at time
+  zero. The characteristic definitions and derivative identities likewise include time zero. See
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_26` and
+  `QuarteroniSaccoSaleri.Chapter13.equation_13_28`.
+
 ## Not formalized
 
 * Inflow points. The source treats them in prose.
@@ -72,14 +80,20 @@ if $u$ has partial derivatives $u_x$ and $u_t$ on $\mathbb{R} \times [0, \infty)
 the equation at every point of that set, and the initial condition holds for all $x$.
 
 The definition is `Transport.IsSolution` with the constant speed $a$, and with zero coefficient
-$a_0$ and zero source $f$. -/
+$a_0$ and zero source $f$.
+
+**Reading.** Full within differentiability and the PDE are required on the closed half-plane,
+including at $t=0$. -/
 def equation_13_26 (a : ℝ) (u₀ : ℝ → ℝ) (u : ℝ → ℝ → ℝ) : Prop :=
   Transport.IsSolution (fun _ _ => a) 0 0 u₀ u
 
 /-- **Section 13.5** of [quarteroni2000numerical], the solution of (13.26). Let $a \in \mathbb{R}$
 and let $u_0 : \mathbb{R} \to \mathbb{R}$ be differentiable. Then the travelling wave
 $u(x, t) = u_0(x - at)$ is a solution of (13.26), and every solution $u$ of (13.26) satisfies
-$u(x, t) = u_0(x - at)$ for all $x$ and all $t \ge 0$. -/
+$u(x, t) = u_0(x - at)$ for all $x$ and all $t \ge 0$.
+
+**Reading.** The initial datum is differentiable, and uniqueness is among the within-
+differentiable solutions of `QuarteroniSaccoSaleri.Chapter13.equation_13_26`. -/
 theorem equation_13_26_solution {a : ℝ} {u₀ : ℝ → ℝ} (hu₀ : Differentiable ℝ u₀) :
     equation_13_26 a u₀ (fun x t => u₀ (x - a * t)) ∧
       ∀ u : ℝ → ℝ → ℝ, equation_13_26 a u₀ u → ∀ (x t : ℝ), 0 ≤ t → u x t = u₀ (x - a * t) :=
@@ -93,7 +107,10 @@ theorem equation_13_26_solution {a : ℝ} {u₀ : ℝ → ℝ} (hu₀ : Differen
 $$x'(t) = a(x(t), t) \quad \text{for all } t \ge 0.$$
 
 The derivative is taken within $[0, \infty)$, so it is one-sided at $t = 0$. The definition is
-`Transport.IsCharacteristic`. -/
+`Transport.IsCharacteristic`.
+
+**Generalization.** The speed may vary with position and time, and the within derivative is
+required also at time zero. -/
 def equation_13_27 (a : ℝ → ℝ → ℝ) (x₀ : ℝ) (x : ℝ → ℝ) : Prop :=
   Transport.IsCharacteristic a x₀ x
 
@@ -124,7 +141,10 @@ for every $t \ge 0$ the function $s \mapsto u(x(s), s)$ has the derivative
 $$\frac{d}{dt} u(x(t), t) = f(x(t), t) - a_0(x(t), t)\, u(x(t), t)$$
 within $[0, \infty)$ at $t$.
 
-The solution is `Transport.IsSolution a a₀ f u₀ u`. -/
+The solution is `Transport.IsSolution a a₀ f u₀ u`.
+
+**Reading.** The characteristic identity uses a within derivative on $[0,\infty)$, including at
+time zero. -/
 theorem equation_13_28 {a a₀ f : ℝ → ℝ → ℝ} {u₀ : ℝ → ℝ} {u : ℝ → ℝ → ℝ}
     (hu : Transport.IsSolution a a₀ f u₀ u) {x₀ : ℝ} {x : ℝ → ℝ}
     (hx : equation_13_27 a x₀ x) {t : ℝ} (ht : 0 ≤ t) :
