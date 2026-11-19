@@ -12,6 +12,8 @@ import Mathlib.Topology.EMetricSpace.VariationOnFromTo
 import Mathlib.Analysis.Analytic.IsolatedZeros
 import Numlib.Analysis.Calculus.IteratedDeriv.Analytic
 import Mathlib.MeasureTheory.Integral.CurveIntegral.Poincare
+import Mathlib.Analysis.Complex.Liouville
+import Numlib.Analysis.Calculus.SegmentAverage
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy
 
 /-!
@@ -39,6 +41,9 @@ path-integral representation of the primary functional calculus.
   Lipschitz loops in open convex sets.
 * `pfc_eq_sum_complexLineIntegral` recovers the primary functional calculus from finitely many
   such loops with total winding number one at every spectral value.
+* `normalized_complexLineIntegral_cauchy_family` gives the homological
+  Cauchy formula on arbitrary open sets. Its derivative formula yields
+  `pfc_eq_sum_complexLineIntegral_homological` for the primary calculus.
 -/
 
 open Complex Polynomial Set MeasureTheory
@@ -675,31 +680,493 @@ theorem normalized_complexLineIntegral_cauchy_disk {a w c : ℂ} (γ : Path a a)
     normalized_complexLineIntegral_div_sub_pow γ hγ Metric.isOpen_ball
       (convex_ball _ _) hDisk hAvoid hf 0
 
-section Resolvent
+section ComplexContourParameters
 
-variable {B : Type*} [NormedRing B] [NormedAlgebra ℂ B] [CompleteSpace B]
+open Filter Metric Topology Bornology
 
-/-- The normalized weighted resolvent integral on a Lipschitz loop in an open convex set of
-holomorphy has a primary expansion. The coefficient at each spectral value is its Taylor
-coefficient multiplied by its winding number. -/
-theorem complexLineIntegral_smul_resolvent {a : B} (ha : IsIntegral ℂ a) {p : ℂ} {S : Set ℂ}
-    (γ : Path p p) (hγ : γ.IsLipschitz)
-    (hOpen : IsOpen S) (hConvex : Convex ℝ S) (hRange : Set.range γ ⊆ S)
+private theorem complexLineIntegral_hasDerivAt_parameter {a b z₀ : ℂ} {γ : Path a b}
+    (hγ : γ.IsLipschitz) {U : Set ℂ} (hU : IsOpen U) (hz₀ : z₀ ∈ U) {F D : ℂ → ℂ → ℂ}
+    (hF : ∀ z ∈ U, ContinuousOn (F z) (Set.range γ))
+    (hD : ContinuousOn (fun p : ℂ × ℂ => D p.1 p.2) (U ×ˢ Set.range γ))
+    (hd : ∀ z ∈ U, ∀ w ∈ Set.range γ, HasDerivAt (fun x => F x w) (D z w) z) :
+    HasDerivAt (fun z => complexLineIntegral γ (F z)) (complexLineIntegral γ (D z₀)) z₀ := by
+  obtain ⟨K, hK⟩ := hγ.exists_lipschitzWith_extend
+  obtain ⟨r, hr, hrU⟩ := Metric.mem_nhds_iff.mp (hU.mem_nhds hz₀)
+  have hC : Metric.closedBall z₀ (r / 2) ⊆ U :=
+    (Metric.closedBall_subset_ball (half_lt_self hr)).trans hrU
+  have hγC : IsCompact (Set.range γ) := isCompact_range γ.continuous
+  have hBall : IsCompact (Metric.closedBall z₀ (r / 2)) := isCompact_closedBall z₀ (r / 2)
+  obtain ⟨C, hCbound⟩ := (hBall.prod hγC).exists_bound_of_continuousOn
+    (hD.mono (Set.prod_mono hC Subset.rfl))
+  have hMeas {g : ℂ → ℂ} (hg : ContinuousOn g (Set.range γ)) :
+      AEStronglyMeasurable (fun t : ℝ => deriv γ.extend t * g (γ.extend t))
+        (volume.restrict (uIoc (0 : ℝ) 1)) := by
+    rw [uIoc_of_le zero_le_one]
+    have hc : ContinuousOn (g ∘ γ.extend) unitInterval :=
+      hg.comp γ.continuous_extend.continuousOn (path_extend_mapsTo_range γ)
+    exact (measurable_deriv _).aestronglyMeasurable.mul
+      (hc.aestronglyMeasurable_of_subset_isCompact isCompact_Icc measurableSet_Ioc Ioc_subset_Icc_self)
+  have hInt : IntervalIntegrable (fun t : ℝ => deriv γ.extend t * F z₀ (γ.extend t)) volume 0 1 := by
+    apply (complexLineIntegral_intervalIntegrable_lipschitz hγ (hF z₀ hz₀)).congr_ae
+    rw [uIoc_of_le zero_le_one]
+    filter_upwards [derivWithin_path_ae_eq_deriv γ] with t ht
+    simp only [ht, smul_eq_mul]
+  have hD₀ : ContinuousOn (D z₀) (Set.range γ) :=
+    hD.comp (f := fun w : ℂ => (z₀, w)) (by fun_prop) (fun _ hw => ⟨hz₀, hw⟩)
+  simp only [complexLineIntegral_eq_interval_deriv, smul_eq_mul]
+  refine (intervalIntegral.hasDerivAt_integral_of_dominated_loc_of_deriv_le
+    (F' := fun z t => deriv γ.extend t * D z (γ.extend t))
+    (bound := fun _ => (K : ℝ) * C)
+    (ball_mem_nhds z₀ (half_pos hr))
+    (eventually_of_mem (hU.mem_nhds hz₀) fun z hz => hMeas (hF z hz))
+    hInt (hMeas hD₀) ?_ intervalIntegrable_const ?_).2
+  · apply ae_of_all
+    intro t ht z hz
+    rw [uIoc_of_le zero_le_one] at ht
+    have hγt := path_extend_mapsTo_range γ (Ioc_subset_Icc_self ht)
+    rw [norm_mul]
+    exact mul_le_mul (norm_deriv_le_of_lipschitz hK)
+      (hCbound (z, γ.extend t) ⟨ball_subset_closedBall hz, hγt⟩)
+      (norm_nonneg _) K.2
+  · apply ae_of_all
+    intro t ht z hz
+    rw [uIoc_of_le zero_le_one] at ht
+    exact (hd z (hC (ball_subset_closedBall hz)) _
+      (path_extend_mapsTo_range γ (Ioc_subset_Icc_self ht))).const_mul _
+
+/-- Differentiating the Cauchy kernel under the integral along a Lipschitz path. -/
+theorem complexLineIntegral_hasDerivAt_cauchyTransform {a b z : ℂ} {γ : Path a b}
+    (hγ : γ.IsLipschitz) {f : ℂ → ℂ} (hf : ContinuousOn f (Set.range γ)) (hz : z ∉ Set.range γ) :
+    HasDerivAt (fun x => complexLineIntegral γ (fun w => f w / (w - x)))
+      (complexLineIntegral γ (fun w => f w / (w - z) ^ 2)) z := by
+  have hOpen : IsOpen ((Set.range γ)ᶜ) := (isCompact_range γ.continuous).isClosed.isOpen_compl
+  have hne (z : ℂ) (hz : z ∉ Set.range γ) (w : ℂ) (hw : w ∈ Set.range γ) : w - z ≠ 0 :=
+    sub_ne_zero.mpr fun h => hz (h ▸ hw)
+  refine complexLineIntegral_hasDerivAt_parameter hγ hOpen hz
+    (F := fun z w => f w / (w - z)) (D := fun z w => f w / (w - z) ^ 2) ?_ ?_ ?_
+  · intro z hz
+    exact hf.div (continuousOn_id.sub continuousOn_const) fun w hw => hne z hz w hw
+  · have hproj : MapsTo (@Prod.snd ℂ ℂ) ((Set.range γ)ᶜ ×ˢ Set.range γ) (Set.range γ) :=
+      fun _ hp => hp.2
+    exact (hf.comp continuous_snd.continuousOn hproj).div
+      ((continuous_snd.sub continuous_fst).pow 2).continuousOn
+      (fun p hp => pow_ne_zero _ (hne p.1 hp.1 p.2 hp.2))
+  · intro z hz w hw
+    have h := ((hasDerivAt_const z w).sub (hasDerivAt_id z)).inv (hne z hz w hw)
+    have h' := h.const_mul (f w)
+    convert h' using 1
+    · funext x
+      simp [div_eq_mul_inv]
+    · simp [div_eq_mul_inv]
+
+/-- Off the path, the winding index has derivative zero. -/
+theorem complexPathIndex_hasDerivAt_zero {a z : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hz : z ∉ Set.range γ) :
+    HasDerivAt (complexPathIndex γ) 0 z := by
+  have h := complexLineIntegral_hasDerivAt_cauchyTransform hγ
+    (f := fun _ => 1) continuousOn_const hz
+  have hzero := complexLineIntegral_inversePole_succ_eq_zero γ hγ hz (j := 1) one_pos
+  rw [show (fun w : ℂ => (1 : ℂ) / (w - z) ^ 2) = (fun w => ((w - z) ^ (1 + 1))⁻¹) by simp [one_div], hzero] at h
+  have h' := h.const_mul ((2 * π * I)⁻¹)
+  rw [mul_zero] at h'
+  convert h' using 1
+  funext x
+  simp only [complexPathIndex, one_div]
+
+/-- The winding index is locally constant off a closed Lipschitz path. -/
+theorem complexPathIndex_eventuallyEq {a z : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hz : z ∉ Set.range γ) :
+    complexPathIndex γ =ᶠ[𝓝 z] (fun _ => complexPathIndex γ z) := by
+  obtain ⟨r, hr, hrsub⟩ := Metric.mem_nhds_iff.mp
+    ((isCompact_range γ.continuous).isClosed.isOpen_compl.mem_nhds hz)
+  have hDer (w : ℂ) (hw : w ∈ Metric.ball z r) : HasDerivAt (complexPathIndex γ) 0 w :=
+    complexPathIndex_hasDerivAt_zero hγ (hrsub hw)
+  have hConst (w : ℂ) (hw : w ∈ Metric.ball z r) : complexPathIndex γ w = complexPathIndex γ z :=
+    Metric.isOpen_ball.is_const_of_deriv_eq_zero (convex_ball z r).isPreconnected
+    (f := complexPathIndex γ)
+    (fun w hw => (hDer w hw).differentiableAt.differentiableWithinAt)
+    (fun w hw => (hDer w hw).deriv) hw (Metric.mem_ball_self hr)
+  filter_upwards [Metric.ball_mem_nhds z hr] with w hw
+  exact hConst w hw
+
+private theorem complexPathIndex_zero_of_contained_ball {a z : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) {R : ℝ} (hK : Set.range γ ⊆ Metric.ball (0 : ℂ) R) (hz : R ≤ ‖z‖) :
+    complexPathIndex γ z = 0 := by
+  have hne (w : ℂ) (hw : w ∈ Metric.ball (0 : ℂ) R) : w - z ≠ 0 := by
+    refine sub_ne_zero.mpr (fun h => ?_)
+    exact (not_lt_of_ge hz) (by simpa [h] using hw)
+  have hDiff : DifferentiableOn ℂ (fun w : ℂ => (w - z)⁻¹) (Metric.ball (0 : ℂ) R) :=
+    (differentiableOn_id.sub_const z).inv hne
+  rw [complexPathIndex, complexLineIntegral_zero_of_differentiableOn_convex hγ
+    Metric.isOpen_ball (convex_ball _ _) hK hDiff, mul_zero]
+
+end ComplexContourParameters
+
+
+section ComplexContourSlopes
+
+open Filter Metric Topology Bornology
+
+private noncomputable def weightedComplexSegmentAverage (f : ℂ → ℂ) (k : ℕ) (a z : ℂ) : ℂ :=
+  ∫ t in (0 : ℝ)..1, t ^ k • f (a + t • (z - a))
+
+private theorem continuousOn_weightedComplexSegmentAverage {K : Set ℂ}
+    (hK : IsCompact K) (hConv : Convex ℝ K) {f : ℂ → ℂ} (hf : ContinuousOn f K) (k : ℕ) :
+    ContinuousOn (fun p : ℂ × ℂ => weightedComplexSegmentAverage f k p.2 p.1) (K ×ˢ K) := by
+  let : CompactSpace ↥(K ×ˢ K) := isCompact_iff_compactSpace.mp (hK.prod hK)
+  let P (q : ↥(K ×ˢ K) × ℝ) : ℂ :=
+    q.1.1.2 + ((projIcc 0 1 zero_le_one q.2 : Icc (0 : ℝ) 1) : ℝ) • (q.1.1.1 - q.1.1.2)
+  have hPk (q : ↥(K ×ˢ K) × ℝ) : P q ∈ K :=
+    hConv.add_smul_sub_mem q.1.2.2 q.1.2.1 (projIcc 0 1 zero_le_one q.2).2
+  have hPc : Continuous P := by
+    have hp : Continuous fun q : ↥(K ×ˢ K) × ℝ =>
+        ((projIcc 0 1 zero_le_one q.2 : Icc (0 : ℝ) 1) : ℝ) :=
+      continuous_subtype_val.comp (continuous_projIcc.comp continuous_snd)
+    unfold P
+    fun_prop
+  let F (q : ↥(K ×ˢ K)) (t : ℝ) := ((projIcc 0 1 zero_le_one t : Icc (0 : ℝ) 1) : ℝ)^k • f (P (q,t))
+  have hF : Continuous F.uncurry := by
+    have hφ : Continuous (fun q : ↥(K ×ˢ K) × ℝ => f (P q)) :=
+      (continuousOn_iff_continuous_domRestrict.mp hf).comp (hPc.subtype_mk hPk)
+    have hp : Continuous fun q : ↥(K ×ˢ K) × ℝ =>
+        ((projIcc 0 1 zero_le_one q.2 : Icc (0 : ℝ) 1) : ℝ) :=
+      continuous_subtype_val.comp (continuous_projIcc.comp continuous_snd)
+    exact (hp.pow k).smul hφ
+  have hi := continuous_parametric_integral_of_continuous (μ := volume) hF
+    (isCompact_Icc (a := (0 : ℝ)) (b := 1))
+  apply continuousOn_iff_continuous_domRestrict.mpr
+  refine hi.congr fun q => ?_
+  change (∫ t in Icc (0 : ℝ) 1, F q t) = weightedComplexSegmentAverage f k q.1.2 q.1.1
+  rw [weightedComplexSegmentAverage, intervalIntegral.integral_of_le zero_le_one, ← integral_Icc_eq_integral_Ioc]
+  apply setIntegral_congr_fun measurableSet_Icc
+  intro t ht
+  simp [F, P, projIcc_of_mem _ ht]
+
+private theorem dslope_eq_weightedComplexSegmentAverage {U : Set ℂ} (hConv : Convex ℝ U)
+    {f : ℂ → ℂ} (hD : ∀ w ∈ U, HasDerivAt f (deriv f w) w)
+    (hc : ContinuousOn (deriv f) U) {a z : ℂ} (ha : a ∈ U) (hz : z ∈ U) :
+    dslope f a z = weightedComplexSegmentAverage (deriv f) 0 a z := by
+  by_cases he : z = a
+  · subst z
+    simp [dslope_same, weightedComplexSegmentAverage]
+  · rw [dslope_of_ne _ he, slope_def_field]
+    have h := eq_add_smul_integral_comp_segment hConv hD hc ha hz
+    change f z = f a + (z - a) * ∫ t in (0 : ℝ)..1, deriv f (a + t • (z - a)) at h
+    rw [h, add_sub_cancel_left, weightedComplexSegmentAverage]
+    simp only [pow_zero, one_smul]
+    field_simp
+
+private theorem hasDerivAt_dslope_segment {U : Set ℂ} (hOpen : IsOpen U) (hConv : Convex ℝ U)
+    {f : ℂ → ℂ} (hf : AnalyticOnNhd ℂ f U) {a z : ℂ} (ha : a ∈ U) (hz : z ∈ U) :
+    HasDerivAt (dslope f a) (weightedComplexSegmentAverage (deriv (deriv f)) 1 a z) z := by
+  have hD (w : ℂ) (hw : w ∈ U) : HasDerivAt f (deriv f w) w := (hf w hw).differentiableAt.hasDerivAt
+  have hDC := hf.deriv.continuousOn
+  have hi := hasDerivAt_integral_pow_smul_comp_segment hOpen hConv
+    (fun w hw => (hf.deriv w hw).differentiableAt.hasDerivAt) hf.deriv.deriv.continuousOn ha hz 0
+  apply hi.congr_of_eventuallyEq
+  filter_upwards [hOpen.mem_nhds hz] with w hw
+  exact dslope_eq_weightedComplexSegmentAverage hConv hD hDC ha hw
+
+private theorem hasDerivAt_dslope_formula {f : ℂ → ℂ} {z w : ℂ} (hf : DifferentiableAt ℂ f z) (h : z ≠ w) :
+    HasDerivAt (dslope f w) ((deriv f z * (z - w) - (f z - f w)) / (z - w)^2) z := by
+  have hquot := (hf.hasDerivAt.sub_const (f w)).div ((hasDerivAt_id z).sub_const w) (sub_ne_zero.mpr h)
+  have hQ : HasDerivAt (fun x => (f x - f w) / (x - w))
+      ((deriv f z * (z - w) - (f z - f w)) / (z - w)^2) z := by
+    simpa only [id_eq, mul_one, Pi.div_def] using hquot
+  apply hQ.congr_of_eventuallyEq
+  filter_upwards [isOpen_ne.mem_nhds h] with x hx
+  rw [dslope_of_ne _ hx, slope_def_field]
+
+private theorem complexDslope_joint_continuous {U : Set ℂ} (hU : IsOpen U)
+    {f : ℂ → ℂ} (hf : AnalyticOnNhd ℂ f U) :
+    ContinuousOn (fun p : ℂ × ℂ => dslope f p.2 p.1) (U ×ˢ U) ∧
+      ContinuousOn (fun p : ℂ × ℂ => deriv (dslope f p.2) p.1) (U ×ˢ U) := by
+  have hD (w : ℂ) (hw : w ∈ U) : HasDerivAt f (deriv f w) w := (hf w hw).differentiableAt.hasDerivAt
+  have hpair : ∀ p : ℂ × ℂ, p ∈ U ×ˢ U →
+      ContinuousAt (fun p : ℂ × ℂ => dslope f p.2 p.1) p ∧
+      ContinuousAt (fun p : ℂ × ℂ => deriv (dslope f p.2) p.1) p := by
+    intro p hp
+    by_cases he : p.1 = p.2
+    · obtain ⟨r, hr, hrU⟩ := Metric.isOpen_iff.mp hU p.1 hp.1
+      let B := Metric.ball p.1 r
+      let K := Metric.closedBall p.1 (r/2)
+      have hKB : K ⊆ B := closedBall_subset_ball (half_lt_self hr)
+      have hB : B ⊆ U := hrU
+      have hKU : K ⊆ U := hKB.trans hB
+      have hK : K ×ˢ K ∈ 𝓝 p := by
+        rw [nhds_prod_eq]
+        exact prod_mem_prod (closedBall_mem_nhds _ (half_pos hr)) (he ▸ closedBall_mem_nhds _ (half_pos hr))
+      have hBOpen : IsOpen B := isOpen_ball
+      have hBC : Convex ℝ B := convex_ball _ _
+      have hJ₁ := continuousOn_weightedComplexSegmentAverage
+        (K := K) (isCompact_closedBall _ _) (convex_closedBall _ _) (hf.deriv.continuousOn.mono hKU) 0
+      have hJ₂ := continuousOn_weightedComplexSegmentAverage
+        (K := K) (isCompact_closedBall _ _) (convex_closedBall _ _) (hf.deriv.deriv.continuousOn.mono hKU) 1
+      constructor
+      · apply (hJ₁.continuousAt hK).congr
+        filter_upwards [hK] with q hq
+        exact (dslope_eq_weightedComplexSegmentAverage hBC
+          (fun w hw => hD w (hB hw)) (hf.deriv.continuousOn.mono hB) (hKB hq.2) (hKB hq.1)).symm
+      · apply (hJ₂.continuousAt hK).congr
+        filter_upwards [hK] with q hq
+        exact (hasDerivAt_dslope_segment hBOpen hBC (hf.mono hB) (hKB hq.2) (hKB hq.1)).deriv.symm
+    · have hp₁ : ContinuousAt (fun q : ℂ × ℂ => f q.1) p :=
+        (hf p.1 hp.1).continuousAt.comp continuous_fst.continuousAt
+      have hp₂ : ContinuousAt (fun q : ℂ × ℂ => f q.2) p :=
+        (hf p.2 hp.2).continuousAt.comp continuous_snd.continuousAt
+      have hpD : ContinuousAt (fun q : ℂ × ℂ => deriv f q.1) p :=
+        (hf.deriv p.1 hp.1).continuousAt.comp continuous_fst.continuousAt
+      have hsub : ContinuousAt (fun q : ℂ × ℂ => q.1 - q.2) p :=
+        continuous_fst.continuousAt.sub continuous_snd.continuousAt
+      have hne : ∀ᶠ q : ℂ × ℂ in 𝓝 p, q.1 ≠ q.2 := (isOpen_ne_fun continuous_fst continuous_snd).mem_nhds he
+      constructor
+      · apply ((hp₁.sub hp₂).div hsub (sub_ne_zero.mpr he)).congr
+        filter_upwards [hne] with q hq
+        rw [dslope_of_ne _ hq, slope_def_field]
+        rfl
+      · apply (((hpD.mul hsub).sub (hp₁.sub hp₂)).div (hsub.pow 2) (pow_ne_zero _ (sub_ne_zero.mpr he))).congr
+        filter_upwards [hne, (hU.prod hU).mem_nhds hp] with q hq hqU
+        exact (hasDerivAt_dslope_formula (hf q.1 hqU.1).differentiableAt hq).deriv.symm
+  exact ⟨fun p hp => (hpair p hp).1.continuousWithinAt, fun p hp => (hpair p hp).2.continuousWithinAt⟩
+
+private theorem differentiableOn_complexLineIntegral_dslope {a b : ℂ} {γ : Path a b}
+    (hγ : γ.IsLipschitz) {U : Set ℂ} (hU : IsOpen U) (hRange : Set.range γ ⊆ U)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) :
+    DifferentiableOn ℂ (fun z => complexLineIntegral γ (fun w => dslope f w z)) U := by
+  have hA := hf.analyticOnNhd hU
+  have h := complexDslope_joint_continuous hU hA
+  intro z hz
+  apply (complexLineIntegral_hasDerivAt_parameter hγ hU hz
+    (F := fun x w => dslope f w x) (D := fun x w => deriv (dslope f w) x) ?_ ?_ ?_).differentiableAt.differentiableWithinAt
+  · intro x hx
+    exact h.1.comp (f := fun w : ℂ => (x, w)) (by fun_prop) fun _ hw => ⟨hx, hRange hw⟩
+  · exact h.2.mono (Set.prod_mono Subset.rfl hRange)
+  · intro x hx w _
+    exact ((hA x hx).dslope w).differentiableAt.hasDerivAt
+
+end ComplexContourSlopes
+
+
+section HomologicalCauchy
+
+open Filter Metric Topology Bornology
+
+private theorem tendsto_complexLineIntegral_cauchyTransform {a b : ℂ} {γ : Path a b}
+    (hγ : γ.IsLipschitz) {f : ℂ → ℂ} (hf : ContinuousOn f (Set.range γ)) :
+    Tendsto (fun z => complexLineIntegral γ (fun w => f w / (w - z))) (cocompact ℂ) (𝓝 0) := by
+  obtain ⟨K, hK⟩ := hγ.exists_lipschitzWith_extend
+  have hRange : IsCompact (Set.range γ) := isCompact_range γ.continuous
+  obtain ⟨R, hR⟩ := hRange.exists_bound_of_continuousOn (continuousOn_id : ContinuousOn (id : ℂ → ℂ) _)
+  obtain ⟨M, hM⟩ := hRange.exists_bound_of_continuousOn hf
+  have hM₀ : 0 ≤ M := (norm_nonneg (f (γ 0))).trans (hM _ (mem_range_self 0))
+  refine squeeze_zero_norm' (a := fun z => (K : ℝ) * M / (‖z‖ - R)) ?_ ?_
+  · filter_upwards [tendsto_norm_cocompact_atTop.eventually_gt_atTop R] with z hz
+    rw [complexLineIntegral_eq_interval_deriv]
+    have h := intervalIntegral.norm_integral_le_of_norm_le_const
+      (a := (0 : ℝ)) (b := 1) (C := (K : ℝ) * M / (‖z‖ - R))
+      (f := fun t => deriv γ.extend t • (f (γ.extend t) / (γ.extend t - z)))
+    rw [show |(1 : ℝ) - 0| = 1 by norm_num, mul_one] at h
+    apply h
+    intro t ht
+    rw [uIoc_of_le zero_le_one] at ht
+    have hw := path_extend_mapsTo_range γ (Ioc_subset_Icc_self ht)
+    have hR' : ‖γ.extend t‖ ≤ R := hR _ hw
+    have hdist : ‖z‖ - R ≤ ‖γ.extend t - z‖ := by
+      have he := norm_le_norm_sub_add (z : ℂ) (γ.extend t)
+      rw [norm_sub_rev] at he
+      linarith
+    rw [norm_smul, norm_div]
+    have hdiv : ‖f (γ.extend t)‖ / ‖γ.extend t - z‖ ≤ M / (‖z‖ - R) :=
+      div_le_div₀ hM₀ (hM _ hw) (sub_pos.mpr hz) hdist
+    rw [mul_div_assoc]
+    exact mul_le_mul (norm_deriv_le_of_lipschitz hK) hdiv (by positivity) K.2
+  · refine tendsto_const_nhds.div_atTop ?_
+    simpa only [sub_eq_add_neg] using
+      tendsto_atTop_add_const_right _ (-R) (tendsto_norm_cocompact_atTop (E := ℂ))
+
+/-- The total winding number of a finite family of closed paths. -/
+noncomputable def complexTotalPathIndex {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    (γ : (i : ι) → Path (a i) (a i)) (z : ℂ) : ℂ := ∑ i, complexPathIndex (γ i) z
+
+private theorem complexTotalPathIndex_eventuallyEq {ι : Type*} [Fintype ι]
+    {a : ι → ℂ} {γ : (i : ι) → Path (a i) (a i)} (hγ : ∀ i, (γ i).IsLipschitz)
+    {z : ℂ} (hz : ∀ i, z ∉ Set.range (γ i)) :
+    complexTotalPathIndex γ =ᶠ[𝓝 z] (fun _ => complexTotalPathIndex γ z) := by
+  have h : ∀ᶠ w in 𝓝 z, ∀ i, complexPathIndex (γ i) w = complexPathIndex (γ i) z :=
+    eventually_all.mpr fun i => complexPathIndex_eventuallyEq (hγ i) (hz i)
+  exact h.mono fun _ hw => Finset.sum_congr rfl (fun i _ => hw i)
+
+private theorem complexTotalPathIndex_eventually_zero {ι : Type*} [Fintype ι]
+    {a : ι → ℂ} {γ : (i : ι) → Path (a i) (a i)} (hγ : ∀ i, (γ i).IsLipschitz) :
+    ∀ᶠ z in cocompact ℂ, complexTotalPathIndex γ z = 0 ∧ ∀ i, z ∉ Set.range (γ i) := by
+  have hcompact : IsCompact (⋃ i, Set.range (γ i)) := isCompact_iUnion fun i => isCompact_range (γ i).continuous
+  obtain ⟨R, hR⟩ := hcompact.exists_bound_of_continuousOn (continuousOn_id : ContinuousOn (id : ℂ → ℂ) _)
+  have hAll (i : ι) : Set.range (γ i) ⊆ Metric.ball (0 : ℂ) (R + 1) := by
+    intro w hw
+    rw [mem_ball_zero_iff]
+    exact (hR w (mem_iUnion.mpr ⟨i, hw⟩)).trans_lt (lt_add_one R)
+  filter_upwards [tendsto_norm_cocompact_atTop.eventually_ge_atTop (R + 1)] with z hz
+  constructor
+  · exact Finset.sum_eq_zero fun i _ => complexPathIndex_zero_of_contained_ball (hγ i) (hAll i) hz
+  · intro i hi
+    exact (not_lt_of_ge hz) (mem_ball_zero_iff.mp (hAll i hi))
+
+/-- The homological Cauchy formula for the Cauchy transform of a finite family
+of closed Lipschitz paths. The total winding number vanishes outside the open
+set of holomorphy. The set may be nonconvex and the paths may intersect. -/
+theorem normalized_complexLineIntegral_cauchy_family {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    (γ : (i : ι) → Path (a i) (a i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    {U : Set ℂ} (hU : IsOpen U) (hRange : ∀ i, Set.range (γ i) ⊆ U)
+    (hNull : ∀ z ∉ U, complexTotalPathIndex γ z = 0)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) {z : ℂ} (hz : ∀ i, z ∉ Set.range (γ i)) :
+    (2 * π * I)⁻¹ * ∑ i, complexLineIntegral (γ i) (fun w => f w / (w - z)) =
+      complexTotalPathIndex γ z * f z := by
+  classical
+  let K : Set ℂ := ⋃ i, Set.range (γ i)
+  let J := complexTotalPathIndex γ
+  let O : Set ℂ := Kᶜ ∩ {z | J z = 0}
+  let C (z : ℂ) := ∑ i, complexLineIntegral (γ i) (fun w => f w / (w - z))
+  let D (z : ℂ) := ∑ i, complexLineIntegral (γ i) (fun w => dslope f w z)
+  let G (z : ℂ) := if z ∈ U then D z else C z
+  have hK : IsCompact K := isCompact_iUnion fun i => isCompact_range (γ i).continuous
+  have hKU : K ⊆ U := iUnion_subset hRange
+  have hO : IsOpen O := by
+    apply isOpen_iff_mem_nhds.mpr
+    intro w hw
+    have ho := hK.isClosed.isOpen_compl.mem_nhds hw.1
+    have hi := complexTotalPathIndex_eventuallyEq hγ (z := w) (fun i hi => hw.1 (mem_iUnion.mpr ⟨i,hi⟩))
+    filter_upwards [ho,hi] with v hv he
+    exact ⟨hv, he.trans hw.2⟩
+  have hDiffer (w : ℂ) (hwU : w ∈ U) (hwK : w ∉ K) :
+      D w = C w - f w * (2 * π * I) * J w := by
+    have hd (i : ι) : complexLineIntegral (γ i) (fun z => dslope f z w) =
+        complexLineIntegral (γ i) (fun z => f z / (z - w)) -
+          f w * complexLineIntegral (γ i) (fun z => (z - w)⁻¹) := by
+      have hne (z : ℂ) (hz : z ∈ Set.range (γ i)) : z - w ≠ 0 :=
+        sub_ne_zero.mpr fun h => hwK (mem_iUnion.mpr ⟨i, h ▸ hz⟩)
+      have hInv : ContinuousOn (fun z : ℂ => (z - w)⁻¹) (Set.range (γ i)) :=
+        (continuousOn_id.sub continuousOn_const).inv₀ hne
+      have hfDiv : ContinuousOn (fun z : ℂ => f z / (z - w)) (Set.range (γ i)) :=
+        (hf.continuousOn.mono (hRange i)).div (continuousOn_id.sub continuousOn_const) hne
+      have hfInv : ContinuousOn (fun z : ℂ => f w * (z - w)⁻¹) (Set.range (γ i)) :=
+        continuousOn_const.mul hInv
+      have hs := complexLineIntegral_sub_of_continuousOn (hγ i) hfDiv hfInv
+      rw [← complexLineIntegral_scalar_mul, ← hs]
+      apply complexLineIntegral_congr_on_path
+      intro z hz
+      have hn : w ≠ z := fun h => (hne z hz) (sub_eq_zero.mpr h.symm)
+      change dslope f z w = f z / (z - w) - f w * (z - w)⁻¹
+      rw [dslope_of_ne _ hn, slope_def_field]
+      field_simp [hne z hz, sub_ne_zero.mpr hn]
+      ring
+    simp only [D, C, hd, Finset.sum_sub_distrib, ← Finset.mul_sum]
+    congr 1
+    have hk : (2 * π * I : ℂ) ≠ 0 := mul_ne_zero (mul_ne_zero (by norm_num) (ofReal_ne_zero.mpr Real.pi_ne_zero)) I_ne_zero
+    simp only [J, complexTotalPathIndex, complexPathIndex, ← Finset.mul_sum]
+    field_simp
+  have hAgreement : Set.EqOn G C O := by
+    intro w hw
+    by_cases h : w ∈ U
+    · rw [show G w = D w from ite_eq_left h, hDiffer w h hw.1, show J w = 0 from hw.2, mul_zero, sub_zero]
+    · exact ite_eq_right h
+  have hC : DifferentiableOn ℂ C Kᶜ := by
+    intro w hw
+    apply DifferentiableAt.differentiableWithinAt
+    exact DifferentiableAt.fun_sum fun i _ =>
+      (complexLineIntegral_hasDerivAt_cauchyTransform (hγ i) (hf.continuousOn.mono (hRange i))
+        (fun hi => hw (mem_iUnion.mpr ⟨i,hi⟩))).differentiableAt
+  have hD : DifferentiableOn ℂ D U := fun w hw =>
+    DifferentiableWithinAt.fun_sum fun i _ => differentiableOn_complexLineIntegral_dslope (hγ i) hU (hRange i) hf w hw
+  have hG : Differentiable ℂ G := by
+    intro w
+    by_cases hw : w ∈ U
+    · exact (hD.differentiableAt (hU.mem_nhds hw)).congr_of_eventuallyEq
+        (eventually_of_mem (hU.mem_nhds hw) fun _ h => ite_eq_left h)
+    · have hwO : w ∈ O := ⟨fun h => hw (hKU h), hNull w hw⟩
+      exact (hC.differentiableAt (hK.isClosed.isOpen_compl.mem_nhds hwO.1)).congr_of_eventuallyEq
+        (eventually_of_mem (hO.mem_nhds hwO) hAgreement)
+  have hInfinity : Tendsto G (cocompact ℂ) (𝓝 0) := by
+    have h : Tendsto C (cocompact ℂ) (𝓝 0) := by
+      simpa only [Finset.sum_const_zero] using
+        tendsto_finsetSum Finset.univ (fun i _ => tendsto_complexLineIntegral_cauchyTransform (hγ i) (hf.continuousOn.mono (hRange i)))
+    apply h.congr'
+    filter_upwards [complexTotalPathIndex_eventually_zero hγ] with w hw
+    exact (hAgreement ⟨fun hK => by obtain ⟨i, hi⟩ := mem_iUnion.mp hK; exact hw.2 i hi, hw.1⟩).symm
+  have hGzero : G z = 0 := hG.apply_eq_of_tendsto_cocompact z hInfinity
+  have hx : z ∉ K := fun hk => by obtain ⟨i, hi⟩ := mem_iUnion.mp hk; exact hz i hi
+  change (2 * π * I)⁻¹ * C z = J z * f z
+  by_cases h : z ∈ U
+  · rw [show G z = D z from ite_eq_left h, hDiffer z h hx, sub_eq_zero] at hGzero
+    rw [hGzero]
+    have hk : (2 * π * I : ℂ) ≠ 0 := mul_ne_zero (mul_ne_zero (by norm_num) (ofReal_ne_zero.mpr Real.pi_ne_zero)) I_ne_zero
+    field_simp
+  · rw [show G z = C z from ite_eq_right h] at hGzero
+    rw [hGzero, show J z = 0 from hNull z h, mul_zero, zero_mul]
+
+end HomologicalCauchy
+
+
+section HomologicalCauchyJets
+
+/-- Cauchy's formula for derivatives on a finite family of closed Lipschitz
+paths whose total winding vanishes outside the holomorphy domain. -/
+theorem normalized_complexLineIntegral_div_sub_pow_family {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    (γ : (i : ι) → Path (a i) (a i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    {U : Set ℂ} (hU : IsOpen U) (hRange : ∀ i, Set.range (γ i) ⊆ U)
+    (hNull : ∀ z ∉ U, complexTotalPathIndex γ z = 0)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) {z : ℂ} (hz : ∀ i, z ∉ Set.range (γ i)) (j : ℕ) :
+    (2 * π * I)⁻¹ * ∑ i, complexLineIntegral (γ i) (fun w => f w / (w - z) ^ (j + 1)) =
+      complexTotalPathIndex γ z * Hermite.taylorJet f z j := by
+  simp_rw [complexLineIntegral_eq_iterate_dslope (γ _) (hγ _) (hz _) (hf.continuousOn.mono (hRange _)) j]
+  rw [normalized_complexLineIntegral_cauchy_family γ hγ hU hRange hNull
+    (differentiableOn_iterate_dslope hU z hf j) hz]
+  by_cases h : z ∈ U
+  · rw [iterate_dslope_eq_taylorJet (hf.analyticAt (hU.mem_nhds h)) j]
+  · rw [hNull z h, zero_mul, zero_mul]
+
+/-- Cauchy's theorem for cycles in arbitrary open sets, expressed by the vanishing
+of total winding off the domain. -/
+theorem complexLineIntegral_sum_eq_zero_of_total_winding {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    (γ : (i : ι) → Path (a i) (a i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    {U : Set ℂ} (hU : IsOpen U) (hRange : ∀ i, Set.range (γ i) ⊆ U)
+    (hNull : ∀ z ∉ U, complexTotalPathIndex γ z = 0)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) : ∑ i, complexLineIntegral (γ i) f = 0 := by
+  have hE := complexTotalPathIndex_eventually_zero hγ
+  obtain ⟨z, hz₀, hz⟩ := hE.exists
+  have hg : DifferentiableOn ℂ (fun w => (w - z) * f w) U := (differentiableOn_id.sub_const z).mul hf
+  have h := normalized_complexLineIntegral_cauchy_family γ hγ hU hRange hNull hg hz
+  have hInt (i : ι) : complexLineIntegral (γ i) (fun w => (w - z) * f w / (w - z)) =
+      complexLineIntegral (γ i) f := by
+    apply complexLineIntegral_congr_on_path
+    intro w hw
+    change (w - z) * f w / (w - z) = f w
+    have hwz : w - z ≠ 0 := sub_ne_zero.mpr (fun e => hz i (e ▸ hw))
+    field_simp
+  simp only [hInt, hz₀, zero_mul] at h
+  exact (mul_eq_zero.mp h).resolve_left (inv_ne_zero (mul_ne_zero
+    (mul_ne_zero (by norm_num) (ofReal_ne_zero.mpr Real.pi_ne_zero)) I_ne_zero))
+
+end HomologicalCauchyJets
+
+
+/-- The scalar pole expansion of the weighted resolvent integral. The path
+avoids the roots of the minimal polynomial. -/
+theorem complexLineIntegral_smul_resolvent_scalar_expansion {B : Type*}
+    [NormedRing B] [NormedAlgebra ℂ B] [CompleteSpace B] {a : B} (ha : IsIntegral ℂ a)
+    {p : ℂ} (γ : Path p p) (hγ : γ.IsLipschitz)
     (hAvoid : ∀ w ∈ (minpoly ℂ a).roots.toFinset, w ∉ Set.range γ)
-    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f S) :
-    (2 * π * I)⁻¹ • complexLineIntegral γ (fun z =>
-      f z • Ring.inverse (algebraMap ℂ B z - a)) =
+    {f : ℂ → ℂ} (hf : ContinuousOn f (Set.range γ)) :
+    (2 * π * I)⁻¹ • complexLineIntegral γ (fun z => f z • Ring.inverse (algebraMap ℂ B z - a)) =
       ∑ w ∈ (minpoly ℂ a).roots.toFinset, ∑ j ∈ Finset.range ((minpoly ℂ a).rootMultiplicity w),
-        (complexPathIndex γ w * Hermite.taylorJet f w j) •
+        ((2 * π * I)⁻¹ * complexLineIntegral γ (fun z => f z / (z - w) ^ (j + 1))) •
           ((a - algebraMap ℂ B w) ^ j * spectralIdempotent a w) := by
   let X (w : ℂ) (j : ℕ) := (a - algebraMap ℂ B w) ^ j * spectralIdempotent a w
   let F (w : ℂ) (j : ℕ) (z : ℂ) := f z / (z - w) ^ (j + 1)
-  let terms (w : ℂ) (z : ℂ) :=
-    ∑ j ∈ Finset.range ((minpoly ℂ a).rootMultiplicity w), F w j z • X w j
+  let terms (w : ℂ) (z : ℂ) := ∑ j ∈ Finset.range ((minpoly ℂ a).rootMultiplicity w), F w j z • X w j
   have hc (w : ℂ) (hw : w ∈ (minpoly ℂ a).roots.toFinset) (j : ℕ) :
       ContinuousOn (F w j) (Set.range γ) := by
     simp only [F, div_eq_mul_inv]
-    exact (hf.continuousOn.mono hRange).mul (continuousOn_inversePole (hAvoid w hw) (j + 1))
+    exact hf.mul (continuousOn_inversePole (hAvoid w hw) (j + 1))
   have hEq : Set.EqOn (fun z => f z • Ring.inverse (algebraMap ℂ B z - a))
       (fun z => ∑ w ∈ (minpoly ℂ a).roots.toFinset, terms w z) (Set.range γ) := by
     intro z hz
@@ -717,7 +1184,51 @@ theorem complexLineIntegral_smul_resolvent {a : B} (ha : IsIntegral ℂ a) {p : 
     (fun j _ => (hc w hw j).smul continuousOn_const), Finset.smul_sum]
   refine Finset.sum_congr rfl fun j _ => ?_
   rw [complexLineIntegral_smul_const, smul_smul]
-  exact congrArg (· • X w j)
+
+/-- The primary functional calculus is the weighted resolvent integral over
+any finite Lipschitz cycle with the prescribed winding numbers. The open set
+of holomorphy can be nonconvex or multiply connected. -/
+theorem pfc_eq_sum_complexLineIntegral_homological {B : Type*}
+    [NormedRing B] [NormedAlgebra ℂ B] [CompleteSpace B] {a : B} (ha : IsIntegral ℂ a)
+    {ι : Type*} [Fintype ι] {p : ι → ℂ} (γ : (i : ι) → Path (p i) (p i))
+    (hγ : ∀ i, (γ i).IsLipschitz) {U : Set ℂ} (hOpen : IsOpen U) (hRange : ∀ i, Set.range (γ i) ⊆ U)
+    (hNull : ∀ z ∉ U, complexTotalPathIndex γ z = 0)
+    (hAvoid : ∀ i w, w ∈ (minpoly ℂ a).roots.toFinset → w ∉ Set.range (γ i))
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U)
+    (hIndex : ∀ w ∈ (minpoly ℂ a).roots.toFinset, complexTotalPathIndex γ w = 1) :
+    pfc f a = ∑ i, (2 * π * I)⁻¹ • complexLineIntegral (γ i) (fun z =>
+      f z • Ring.inverse (algebraMap ℂ B z - a)) := by
+  rw [pfc_eq_sum_spectralIdempotent ha (IsAlgClosed.splits _) f]
+  simp_rw [complexLineIntegral_smul_resolvent_scalar_expansion ha (γ _) (hγ _) (hAvoid _) (hf.continuousOn.mono (hRange _))]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun w hw => ?_
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [← Finset.sum_smul, ← Finset.mul_sum,
+    normalized_complexLineIntegral_div_sub_pow_family γ hγ hOpen hRange hNull hf (fun i => hAvoid i w hw) j,
+    hIndex w hw, one_mul]
+
+
+section Resolvent
+
+variable {B : Type*} [NormedRing B] [NormedAlgebra ℂ B] [CompleteSpace B]
+
+/-- The normalized weighted resolvent integral on a Lipschitz loop in an open convex set of
+holomorphy has a primary expansion. The coefficient at each spectral value is its Taylor
+coefficient multiplied by its winding number. -/
+theorem complexLineIntegral_smul_resolvent {a : B} (ha : IsIntegral ℂ a) {p : ℂ} {S : Set ℂ}
+    (γ : Path p p) (hγ : γ.IsLipschitz)
+    (hOpen : IsOpen S) (hConvex : Convex ℝ S) (hRange : Set.range γ ⊆ S)
+    (hAvoid : ∀ w ∈ (minpoly ℂ a).roots.toFinset, w ∉ Set.range γ)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f S) :
+    (2 * π * I)⁻¹ • complexLineIntegral γ (fun z =>
+      f z • Ring.inverse (algebraMap ℂ B z - a)) =
+      ∑ w ∈ (minpoly ℂ a).roots.toFinset, ∑ j ∈ Finset.range ((minpoly ℂ a).rootMultiplicity w),
+        (complexPathIndex γ w * Hermite.taylorJet f w j) •
+          ((a - algebraMap ℂ B w) ^ j * spectralIdempotent a w) := by
+  rw [complexLineIntegral_smul_resolvent_scalar_expansion ha γ hγ hAvoid (hf.continuousOn.mono hRange)]
+  refine Finset.sum_congr rfl fun w hw => Finset.sum_congr rfl fun j _ => ?_
+  exact congrArg (· • ((a - algebraMap ℂ B w) ^ j * spectralIdempotent a w))
     (normalized_complexLineIntegral_div_sub_pow γ hγ hOpen hConvex hRange (hAvoid w hw) hf j)
 
 /-- A finite family of Lipschitz loops recovers the primary functional calculus when each

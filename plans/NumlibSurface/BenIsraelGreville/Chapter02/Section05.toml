@@ -103,6 +103,10 @@ source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), one loop'
 [[node]]
 id = 'theorem_11_rectifiable'
 kind = 'theorem'
-desc = '''Represent and integrate along a finite boundary of oriented closed rectifiable Jordan curves of an open spectral neighborhood U. Assume f is analytic on a domain containing the closure of U and prove the normalized resolvent integral equals matrixFunction. The path theorem accepts Lipschitz parametrizations, available for rectifiable paths, and assumes an open convex set of holomorphy for each loop. The geometric winding theorem for arbitrary oriented Jordan boundaries and the Cauchy theorem on nonconvex domains remain to be connected.'''
+desc = '''Relate the geometric customary orientation of the finite rectifiable Jordan boundary to the total winding number. The homological result already handles arbitrary open domains once the total winding is one on the spectrum and zero outside the holomorphy set. Continuous rectifiable parametrizations admit increasing Lipschitz reparametrizations.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), general rectifiable boundary'
-deps = ['theorem_11']
+deps = ['theorem_11_homological']
+
+[[node]]
+id = "theorem_11_homological"
+source = "Ben-Israel and Greville, Chapter 2, Theorem 11, equation (53), arbitrary open domains and total winding"

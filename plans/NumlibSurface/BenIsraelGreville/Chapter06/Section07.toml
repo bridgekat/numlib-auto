@@ -259,6 +259,22 @@ source = 'Ben-Israel and Greville, Chapter 6, Equation (161), path family with t
 [[node]]
 id = "rectangular_contour_calculus_general_jordan_domains"
 kind = "theorem"
-desc = '''Extend the normalized winding formulas to positively oriented rectifiable Jordan contours, with analytic functions defined on a neighborhood of the enclosed regions in the holomorphic calculus. Continuous rectifiable paths have Lipschitz parametrizations. This extension requires the scalar Cauchy formula beyond open convex domains and the geometric winding theorem for oriented Jordan boundaries. The inverse and iterated-integral formulas also require zero winding at the origin.'''
-deps = ["lemma_6_5_path_grouped", "lemma_6_5", "rectangularContourFamilyCalculus_inv", "corollary_6_4", "lemma_6_7", "theorem_6_20"]
+desc = '''Relate the customary positive orientation and geometric enclosure of rectifiable Jordan contours to their winding numbers. The homological versions already handle arbitrary open holomorphy domains, while the inverse and iterated-integral formulas require winding zero at the origin. Continuous rectifiable curves admit increasing Lipschitz reparametrizations.'''
+deps = ["lemma_6_5_path_grouped", "lemma_6_5_homological", "rectangularContourFamilyCalculus_inv", "corollary_6_4_homological", "lemma_6_7_homological", "theorem_6_20"]
 source = 'Ben-Israel and Greville, Chapter 6, Lemmas 5 and 7, Corollary 4, Theorem 20, rectifiable Jordan contours'
+
+[[node]]
+id = "rectangularContourFamilyCalculus_eq_winding_homological"
+source = "Ben-Israel and Greville, Chapter 6, Lemma 5(b), arbitrary open holomorphy domains and total winding"
+
+[[node]]
+id = "lemma_6_5_homological"
+source = "Ben-Israel and Greville, Chapter 6, Lemma 5(b), Equation (160), arbitrary open holomorphy domains"
+
+[[node]]
+id = "corollary_6_4_homological"
+source = "Ben-Israel and Greville, Chapter 6, Corollary 4, Equation (163), arbitrary open holomorphy domains"
+
+[[node]]
+id = "lemma_6_7_homological"
+source = "Ben-Israel and Greville, Chapter 6, Lemma 7, Equation (166), arbitrary open holomorphy domains"

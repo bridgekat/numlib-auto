@@ -582,4 +582,24 @@ theorem theorem_11_path (A : Matrix n n ℂ) (f : analyticFunctions A) {p c : �
     (fun _ => hDisk) (fun _ => hf) (fun _ => hAvoid)
     (fun w hw => by simpa using hIndex w hw)
 
+open scoped Matrix.Norms.L2Operator Real in
+/-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, Equation (53),
+for a finite Lipschitz cycle in an arbitrary open domain of holomorphy.
+The total winding is one at each eigenvalue and zero outside the domain. -/
+theorem theorem_11_homological (A : Matrix n n ℂ) (f : analyticFunctions A) {ι : Type*} [Fintype ι]
+    {p : ι → ℂ} (γ : (i : ι) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    {S : Set ℂ} (hOpen : IsOpen S) (hRange : ∀ i, Set.range (γ i) ⊆ S)
+    (hNull : ∀ w ∉ S, complexTotalPathIndex γ w = 0)
+    (hf : DifferentiableOn ℂ (f : ℂ → ℂ) S)
+    (hAvoid : ∀ i w, w ∈ spectralValues A → w ∉ Set.range (γ i))
+    (hIndex : ∀ w ∈ spectralValues A, complexTotalPathIndex γ w = 1) :
+    matrixFunction A f = ∑ i, (2 * π * Complex.I)⁻¹ •
+      complexLineIntegral (γ i) (fun z => (f : ℂ → ℂ) z • (z • 1 - A)⁻¹) := by
+  rw [matrixFunction_eq_pfc]
+  have hRoots (w : ℂ) (hw : w ∈ (minpoly ℂ A).roots.toFinset) : w ∈ spectralValues A := by
+    rwa [spectralValues_eq_minpoly_roots]
+  simpa only [Algebra.algebraMap_eq_smul_one, Matrix.nonsing_inv_eq_ringInverse] using
+    pfc_eq_sum_complexLineIntegral_homological (Algebra.IsIntegral.isIntegral A) γ hγ hOpen hRange hNull
+      (fun i w hw => hAvoid i w (hRoots w hw)) hf (fun w hw => hIndex w (hRoots w hw))
+
 end BenIsraelGreville.Chapter02

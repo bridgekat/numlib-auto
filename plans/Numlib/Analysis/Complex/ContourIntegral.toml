@@ -9,3 +9,30 @@ id = "complexPathIndex"
 
 [[node]]
 id = "complexLineIntegral_resolvent"
+
+[[node]]
+id = "complexLineIntegral_hasDerivAt_cauchyTransform"
+
+[[node]]
+id = "complexPathIndex_hasDerivAt_zero"
+
+[[node]]
+id = "complexPathIndex_eventuallyEq"
+
+[[node]]
+id = "complexTotalPathIndex"
+
+[[node]]
+id = "normalized_complexLineIntegral_cauchy_family"
+
+[[node]]
+id = "normalized_complexLineIntegral_div_sub_pow_family"
+
+[[node]]
+id = "complexLineIntegral_sum_eq_zero_of_total_winding"
+
+[[node]]
+id = "complexLineIntegral_smul_resolvent_scalar_expansion"
+
+[[node]]
+id = "pfc_eq_sum_complexLineIntegral_homological"

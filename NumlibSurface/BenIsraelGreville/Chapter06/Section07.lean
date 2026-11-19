@@ -1807,6 +1807,84 @@ theorem rectangularContourFamilyCalculus_inv {j : Type*} [Fintype j] {p : j → 
   congr 1
   rw [← Finset.mul_sum, Finset.sum_sub_distrib, hIndex, hIndex₀, sub_zero, mul_one]
 
+/-- The normalized rectangular contour calculus on a finite Lipschitz cycle
+in an arbitrary open holomorphy domain. Each coefficient is weighted by
+the total winding there. -/
+theorem rectangularContourFamilyCalculus_eq_winding_homological
+    {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    {S : Set ℂ} (hOpen : IsOpen S) (hRange : ∀ i, Set.range (γ i) ⊆ S)
+    (hNull : ∀ w ∉ S, complexTotalPathIndex γ w = 0)
+    (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f S) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) f γ =
+      rectangularSpectralExpansion V U (fun s => complexTotalPathIndex γ (d s) * f (d s)) := by
+  unfold rectangularContourFamilyCalculus
+  simp_rw [rectangularContourCalculus_eq_scalar_integrals h (γ _) (hγ _) (hAvoid _) _
+    (hf.continuousOn.mono (hRange _)), rectangularSpectralExpansion_eq_sum]
+  rw [Finset.sum_comm]
+  refine Finset.sum_congr rfl fun s _ => ?_
+  rw [← Finset.sum_smul, ← Finset.mul_sum]
+  apply congrArg (· • rectangularSpectralComponent V U s)
+  simpa only [div_eq_inv_mul] using
+    normalized_complexLineIntegral_cauchy_family γ hγ hOpen hRange hNull hf (fun i => hAvoid i s)
+
+/-- **Lemma 5(b)** of [benIsrael2003generalized], Chapter 6, Equation (160),
+for a finite cycle in any open domain of holomorphy. -/
+theorem lemma_6_5_homological {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    {S : Set ℂ} (hOpen : IsOpen S) (hRange : ∀ i, Set.range (γ i) ⊆ S)
+    (hNull : ∀ w ∉ S, complexTotalPathIndex γ w = 0)
+    (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f S)
+    (hIndex : ∀ s, complexTotalPathIndex γ (d s) = 1) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) f γ = rectangularMatrixFunction V U d f := by
+  rw [rectangularContourFamilyCalculus_eq_winding_homological h γ hγ hAvoid hOpen hRange hNull f hf]
+  simp only [hIndex, one_mul, rectangularMatrixFunction]
+
+/-- **Corollary 4**, Equation (163), without convexity of the holomorphy domain. -/
+theorem corollary_6_4_homological {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    {S : Set ℂ} (hOpen : IsOpen S) (hRange : ∀ i, Set.range (γ i) ⊆ S)
+    (hNull : ∀ w ∉ S, complexTotalPathIndex γ w = 0)
+    (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f S)
+    (hIndex : ∀ s, complexTotalPathIndex γ (d s) = 1) :
+    rectangularMatrixFunction U V d f =
+      (U * Vᴴ) * rectangularContourFamilyCalculus A (U * Vᴴ) f γ * (U * Vᴴ) := by
+  rw [lemma_6_5_homological h γ hγ hAvoid hOpen hRange hNull f hf hIndex]
+  simp only [rectangularMatrixFunction, ← rectangularSpectralExpansion_one U V]
+  rw [rectangularSpectralExpansion_mul _ _ _ h.right_orthonormal,
+    rectangularSpectralExpansion_mul _ _ _ h.left_orthonormal]
+  simp only [one_mul, mul_one]
+
+/-- **Lemma 7**, Equation (166), without convexity of the holomorphy domain. -/
+theorem lemma_6_7_homological {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    {S : Set ℂ} (hOpen : IsOpen S) (hRange : ∀ i, Set.range (γ i) ⊆ S)
+    (hNull : ∀ w ∉ S, complexTotalPathIndex γ w = 0)
+    (f g : ℂ → ℂ) (hf : DifferentiableOn ℂ f S) (hg : DifferentiableOn ℂ g S)
+    (hIndex : ∀ s, complexTotalPathIndex γ (d s) = 1) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) f γ * (U * Vᴴ) *
+        rectangularContourFamilyCalculus A (U * Vᴴ) g γ =
+      rectangularContourFamilyCalculus A (U * Vᴴ) (fun z => f z * g z) γ := by
+  rw [lemma_6_5_homological h γ hγ hAvoid hOpen hRange hNull f hf hIndex,
+    lemma_6_5_homological h γ hγ hAvoid hOpen hRange hNull g hg hIndex,
+    lemma_6_5_homological h γ hγ hAvoid hOpen hRange hNull (fun z => f z * g z) (hf.mul hg) hIndex]
+  simp only [rectangularMatrixFunction, ← rectangularSpectralExpansion_one U V]
+  rw [rectangularSpectralExpansion_mul _ _ _ h.left_orthonormal,
+    rectangularSpectralExpansion_mul _ _ _ h.right_orthonormal]
+  simp only [mul_one]
+
 end GeneralContours
 
 end BenIsraelGreville.Chapter06
