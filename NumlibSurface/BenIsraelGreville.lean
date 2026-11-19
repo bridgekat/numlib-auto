@@ -226,6 +226,8 @@ solutions, group and Drazin inverses, and reduced normal equations.
   also imposes consistency. The leading rows in Equation (66) give the criterion for
   least-squares solutions for every right-hand side.
 
+* **Chapter 2, Exercise 105** (correction). The integral interval constraint is $a\le Ax\le b$.
+
 ## Not formalized
 
 * The remaining results include further prescribed-rank constructions, projector characterizations,

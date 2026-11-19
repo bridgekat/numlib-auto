@@ -4,6 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import NumlibSurface.BenIsraelGreville.Chapter00.Section08
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
+import Mathlib.Data.Fintype.Pi
+import Mathlib.Order.Preorder.Finite
+import Mathlib.Algebra.Polynomial.FieldDivision
+import Mathlib.FieldTheory.RatFunc.Basic
+import Mathlib.LinearAlgebra.FreeModule.PID
 
 /-!
 # Integral solutions of linear equations
@@ -16,6 +21,8 @@ products to describe all integral solutions.
 
 * The last factor of the affine correction in Corollary 14 is a single
   copy of the inverse of `B` constructed from its Smith form.
+
+* **Exercise 105** (correction). The interval constraint applies to $Ax$.
 -/
 
 noncomputable section
@@ -366,5 +373,414 @@ theorem corollary_15_integral_parameters [DecidableEq n] {A : Matrix m n ℤ} {b
     simp
     ring
   exact ⟨x, (corollary_15_solutions hU hb x).mpr ⟨y, hx⟩, hx⟩
+
+section IntervalResults
+
+open Matrix
+
+variable {m n : Type*} [Fintype m] [Fintype n]
+
+/-- The integral vectors satisfying the interval constraints on the image under $A$. -/
+def integerIntervalFeasible (A : Matrix m n ℤ) (a b : m → ℤ) : Set (n → ℤ) :=
+  {x | ∀ i, a i ≤ (A *ᵥ x) i ∧ (A *ᵥ x) i ≤ b i}
+
+/-- The integer image vectors in the box whose Smith test gives an integral lift. -/
+def smithIntervalImages (A : Matrix m n ℤ) (U : Matrix n m ℚ) (a b : m → ℤ) :
+    Set (m → ℤ) :=
+  {y | (∀ i, a i ≤ y i ∧ y i ≤ b i) ∧
+    integerMatrixCast A *ᵥ (U *ᵥ integerVectorCast y) = integerVectorCast y ∧
+    IsIntegralVector (U *ᵥ integerVectorCast y)}
+
+/-- Smith consistency and integrality characterize the attainable integer image vectors. -/
+theorem smithIntervalImages_eq_image {A : Matrix m n ℤ} {U : Matrix n m ℚ}
+    (hU : IsIntegralReflexiveInverse A U) (a b : m → ℤ) :
+    smithIntervalImages A U a b = (A *ᵥ ·) '' integerIntervalFeasible A a b := by
+  ext y
+  constructor
+  · rintro ⟨hy, hcon, hint⟩
+    obtain ⟨x, hx⟩ := (corollary_15 hU ⟨_, hcon⟩).mpr hint
+    exact ⟨x, fun i => hx.symm ▸ hy i, hx⟩
+  · rintro ⟨x, hx, rfl⟩
+    have hcon : integerMatrixCast A *ᵥ (U *ᵥ integerVectorCast (A *ᵥ x)) =
+        integerVectorCast (A *ᵥ x) := by
+      rw [integerVectorCast_mulVec, mulVec_mulVec, mulVec_mulVec, hU.inner]
+    exact ⟨hx, hcon, (corollary_15 hU ⟨_, hcon⟩).mp ⟨x, rfl⟩⟩
+
+/-- A bounded box contains only finitely many attainable integer image vectors. -/
+theorem smithIntervalImages_finite (A : Matrix m n ℤ) (U : Matrix n m ℚ) (a b : m → ℤ) :
+    (smithIntervalImages A U a b).Finite := by
+  refine (Set.Finite.pi fun i => Set.finite_Icc (a i) (b i)).subset ?_
+  intro y hy j _
+  exact hy.1 j
+
+omit [Fintype m] in
+/-- On a nonempty feasible set, a bounded objective vanishes on each integral
+vector in the kernel of the constraint matrix. -/
+theorem dotProduct_eq_zero_of_bddAbove_integerInterval {A : Matrix m n ℤ}
+    {a b : m → ℤ} {c : n → ℤ}
+    (hne : (integerIntervalFeasible A a b).Nonempty)
+    (hbounded : BddAbove ((c ⬝ᵥ ·) '' integerIntervalFeasible A a b))
+    (z : n → ℤ) (hz : A *ᵥ z = 0) : c ⬝ᵥ z = 0 := by
+  obtain ⟨x, hx⟩ := hne
+  obtain ⟨M, hM⟩ := hbounded
+  have hxM : c ⬝ᵥ x ≤ M := hM ⟨x, hx, rfl⟩
+  have hnneg : 0 ≤ M - c ⬝ᵥ x + 1 := by omega
+  have hnpos (w : n → ℤ) (hw : A *ᵥ w = 0) : c ⬝ᵥ w ≤ 0 := by
+    by_contra! hpos
+    let t := M - c ⬝ᵥ x + 1
+    have hAx : A *ᵥ (x + t • w) = A *ᵥ x := by
+      simp only [mulVec_add, mulVec_smul, hw, smul_zero, add_zero]
+    have hf : x + t • w ∈ integerIntervalFeasible A a b := by
+      intro i
+      rw [hAx]
+      exact hx i
+    have hupper := hM ⟨x + t • w, hf, rfl⟩
+    change c ⬝ᵥ (x + t • w) ≤ M at hupper
+    rw [dotProduct_add, dotProduct_smul, smul_eq_mul] at hupper
+    have hprod : t * 1 ≤ t * (c ⬝ᵥ w) :=
+      mul_le_mul_of_nonneg_left (by omega) hnneg
+    dsimp [t] at hupper hprod
+    omega
+  have hpos := hnpos z hz
+  have hn := hnpos (-z) (by rw [mulVec_neg, hz, neg_zero])
+  rw [dotProduct_neg] at hn
+  omega
+
+/-- The objective induced on an attainable image by its canonical Smith lift. -/
+def smithIntervalObjective (U : Matrix n m ℚ) (c : n → ℤ) (y : m → ℤ) : ℚ :=
+  integerVectorCast c ⬝ᵥ (U *ᵥ integerVectorCast y)
+
+private theorem integerInterval_objective_eq_smith {A : Matrix m n ℤ} {U : Matrix n m ℚ}
+    (hU : IsIntegralReflexiveInverse A U) {a b : m → ℤ} {c : n → ℤ}
+    (hbounded : BddAbove ((c ⬝ᵥ ·) '' integerIntervalFeasible A a b))
+    {x : n → ℤ} (hx : x ∈ integerIntervalFeasible A a b) :
+    ((c ⬝ᵥ x : ℤ) : ℚ) = smithIntervalObjective U c (A *ᵥ x) := by
+  have himg : A *ᵥ x ∈ smithIntervalImages A U a b := by
+    rw [smithIntervalImages_eq_image hU]
+    exact ⟨x, hx, rfl⟩
+  obtain ⟨z, hz⟩ := himg.2.2
+  have hAz : A *ᵥ z = A *ᵥ x := by
+    have he := (integerVectorCast_mulVec A z).trans
+      ((congrArg (integerMatrixCast A *ᵥ ·) hz).trans himg.2.1)
+    funext i
+    exact Int.cast_injective (congrFun he i)
+  have hker : A *ᵥ (x - z) = 0 := by rw [mulVec_sub, hAz, sub_self]
+  have hcz := dotProduct_eq_zero_of_bddAbove_integerInterval ⟨x, hx⟩ hbounded (x - z) hker
+  rw [dotProduct_sub, sub_eq_zero] at hcz
+  unfold smithIntervalObjective
+  rw [← hz, hcz]
+  exact RingHom.map_dotProduct (Int.castRingHom ℚ) c z
+
+/-- **Exercise 105** of [benIsrael2003generalized], Chapter 2. For a bounded
+integer interval program, maximize the induced objective over the finite set
+of attainable images. All optimal integer solutions are exactly the affine
+Smith lifts of the maximizing images. A nonempty feasible set has an optimum.
+
+The display in the source gives bounds on $x$ while listing a matrix $A$
+among the input data. Here the bounds are on $Ax$, the form using all four
+listed inputs and reducing to the printed box when $A=I$. -/
+theorem exercise_105 [DecidableEq n] {A : Matrix m n ℤ} {U : Matrix n m ℚ}
+    (hU : IsIntegralReflexiveInverse A U) (a b : m → ℤ) (c : n → ℤ)
+    (hbounded : BddAbove ((c ⬝ᵥ ·) '' integerIntervalFeasible A a b)) :
+    let feasible := integerIntervalFeasible A a b
+    let images := smithIntervalImages A U a b
+    let score := smithIntervalObjective U c
+    (∀ x : n → ℤ, (x ∈ feasible ∧ ∀ z ∈ feasible, c ⬝ᵥ z ≤ c ⬝ᵥ x) ↔
+      ∃ y ∈ images, (∀ w ∈ images, score w ≤ score y) ∧
+        ∃ t : n → ℤ, integerVectorCast x =
+          U *ᵥ integerVectorCast y + (1 - U * integerMatrixCast A) *ᵥ integerVectorCast t) ∧
+    (feasible.Nonempty → ∃ x ∈ feasible, ∀ z ∈ feasible, c ⬝ᵥ z ≤ c ⬝ᵥ x) := by
+  intro feasible images score
+  have himage : images = (A *ᵥ ·) '' feasible := smithIntervalImages_eq_image hU a b
+  have hlift (y : m → ℤ) (hy : y ∈ images) (x : n → ℤ) :
+      A *ᵥ x = y ↔ ∃ t : n → ℤ, integerVectorCast x =
+        U *ᵥ integerVectorCast y + (1 - U * integerMatrixCast A) *ᵥ integerVectorCast t :=
+    corollary_15_solutions hU ⟨_, hy.2.1⟩ x
+  have hscore (x : n → ℤ) (hx : x ∈ feasible) : ((c ⬝ᵥ x : ℤ) : ℚ) = score (A *ᵥ x) :=
+    integerInterval_objective_eq_smith hU hbounded hx
+  have hopt (x : n → ℤ) :
+      (x ∈ feasible ∧ ∀ z ∈ feasible, c ⬝ᵥ z ≤ c ⬝ᵥ x) ↔
+        ∃ y ∈ images, (∀ w ∈ images, score w ≤ score y) ∧
+          ∃ t : n → ℤ, integerVectorCast x =
+            U *ᵥ integerVectorCast y + (1 - U * integerMatrixCast A) *ᵥ integerVectorCast t := by
+    constructor
+    · rintro ⟨hx, hmax⟩
+      have hx' : A *ᵥ x ∈ images := himage.symm ▸ ⟨x, hx, rfl⟩
+      refine ⟨A *ᵥ x, hx', ?_, (hlift (A *ᵥ x) hx' x).mp rfl⟩
+      intro w hw
+      rw [himage] at hw
+      obtain ⟨z, hz, rfl⟩ := hw
+      rw [← hscore z hz, ← hscore x hx]
+      exact_mod_cast hmax z hz
+    · rintro ⟨y, hy, hmax, t, ht⟩
+      have hxy := (hlift y hy x).mpr ⟨t, ht⟩
+      have hx : x ∈ feasible := fun i => hxy.symm ▸ hy.1 i
+      refine ⟨hx, fun z hz => ?_⟩
+      have hz' : A *ᵥ z ∈ images := himage.symm ▸ ⟨z, hz, rfl⟩
+      have he := hmax _ hz'
+      rw [← hxy, ← hscore z hz, ← hscore x hx] at he
+      exact_mod_cast he
+  refine ⟨hopt, fun hne => ?_⟩
+  classical
+  have hi : images.Nonempty := himage.symm ▸ hne.image _
+  have hfin := smithIntervalImages_finite A U a b
+  obtain ⟨y, hy, hmax⟩ := Finset.exists_max_image hfin.toFinset score (by simpa using hi)
+  have hy' : y ∈ images := hfin.mem_toFinset.mp hy
+  obtain ⟨x, hx, hAx⟩ := show y ∈ (A *ᵥ ·) '' feasible from himage ▸ hy'
+  refine ⟨x, (hopt x).mpr ⟨y, hy', ?_, (hlift y hy' x).mp hAx⟩⟩
+  exact fun w hw => hmax w (hfin.mem_toFinset.mpr hw)
+
+end IntervalResults
+
+section PolynomialResults
+
+open Matrix Module
+
+variable {m n : Type*} [Fintype m] [Fintype n]
+variable {R L : Type*} [CommRing R] [IsDomain R] [Field L] [Algebra R L] [IsFractionRing R L]
+
+/-- Entrywise inclusion in the field of fractions. -/
+abbrev fractionMatrixCast (A : Matrix m n R) : Matrix m n L := A.map (algebraMap R L)
+
+/-- A reflexive inverse over the field of fractions with both projections over the base ring. -/
+structure IsFractionalReflexiveInverse (A : Matrix m n R) (U : Matrix n m L) : Prop where
+  /-- The first Penrose equation. -/
+  inner : (fractionMatrixCast A).IsInnerInverse U
+  /-- The second Penrose equation. -/
+  outer : (fractionMatrixCast A).IsOuterInverse U
+  /-- The left projection has entries in the base ring. -/
+  mul : ∃ E : Matrix m m R, fractionMatrixCast E = fractionMatrixCast A * U
+  /-- The right projection has entries in the base ring. -/
+  mul_rev : ∃ E : Matrix n n R, fractionMatrixCast E = U * fractionMatrixCast A
+
+omit [IsDomain R] in
+private theorem equivFun_symm_single {ι M : Type*} [Fintype ι] [DecidableEq ι] [AddCommGroup M]
+    [Module R M] (b : Basis ι R M) (i : ι) :
+    b.equivFun.symm (Pi.single i 1) = b i := by
+  apply b.equivFun.injective
+  ext j
+  rw [LinearEquiv.apply_symm_apply, Basis.equivFun_self, Pi.single_apply]
+  by_cases h : i = j
+  · simp [h]
+  · simp [h, Ne.symm h]
+
+/-- The Smith bases of the image of a matrix over a principal ideal domain
+give a reflexive inverse over its fraction field with both products in
+the original ring. This is Corollary 13 in the setting of Exercise 106. -/
+theorem exists_fractionalReflexiveInverse [IsPrincipalIdealRing R] (A : Matrix m n R) :
+    ∃ U : Matrix n m L, IsFractionalReflexiveInverse A U := by
+  classical
+  let N := A.mulVecLin.range
+  obtain ⟨r, snf⟩ := N.smithNormalForm (Pi.basisFun R m)
+  let P := LinearMap.toMatrix' snf.bM.equivFun.toLinearMap
+  let Pback := LinearMap.toMatrix' snf.bM.equivFun.symm.toLinearMap
+  let V := LinearMap.toMatrix' (snf.bN.equivFun.toLinearMap.comp A.mulVecLin.rangeRestrict)
+  let E := LinearMap.toMatrix' (N.subtype.comp snf.bN.equivFun.symm.toLinearMap)
+  have hA : A = E * V := by
+    apply Matrix.ext_iff_mulVec.mpr
+    intro x
+    rw [← mulVec_mulVec]
+    simp [E, V, N]
+  have hPPback : P * Pback = 1 := by
+    apply Matrix.ext_iff_mulVec.mpr
+    intro x
+    rw [← mulVec_mulVec]
+    simp only [P, Pback, LinearMap.toMatrix'_mulVec, LinearEquiv.coe_coe,
+      LinearEquiv.apply_symm_apply, one_mulVec]
+  have hPbackP : Pback * P = 1 := by
+    apply Matrix.ext_iff_mulVec.mpr
+    intro x
+    rw [← mulVec_mulVec]
+    simp only [P, Pback, LinearMap.toMatrix'_mulVec, LinearEquiv.coe_coe,
+      LinearEquiv.symm_apply_apply, one_mulVec]
+  choose y hy using fun j : Fin r => (snf.bN j).property
+  let Y : Matrix n (Fin r) R := Matrix.of fun i j => y j i
+  have hVY : V * Y = 1 := by
+    ext i j
+    change (V *ᵥ y j) i = _
+    have hyj : A.mulVecLin.rangeRestrict (y j) = snf.bN j := Subtype.ext (hy j)
+    simp [V, hyj, Basis.equivFun_self, Matrix.one_apply, eq_comm]
+  let J : Matrix m (Fin r) R := Matrix.of fun i j => if i = snf.f j then 1 else 0
+  have hJ : Jᵀ * J = 1 := by
+    ext i j
+    simp [J, Matrix.mul_apply, Matrix.one_apply, Finset.sum_ite_eq',
+      snf.f.injective.eq_iff, eq_comm]
+  have hPE : P * E = J * diagonal snf.a := by
+    ext i j
+    change (P *ᵥ E.col j) i = _
+    have hEj : E.col j = (snf.bN j : m → R) := by
+      funext k
+      simp only [E, Matrix.col, Matrix.transpose_apply, LinearMap.toMatrix'_apply,
+        LinearMap.comp_apply, LinearEquiv.coe_coe, equivFun_symm_single, Submodule.subtype_apply]
+    rw [hEj, mul_diagonal]
+    simp [P, J, snf.snf j, eq_comm, ite_mul, mul_ite, Finsupp.single_apply]
+  have hE : E = Pback * J * diagonal snf.a := by
+    calc
+      E = Pback * (P * E) := by rw [← Matrix.mul_assoc, hPbackP, Matrix.one_mul]
+      _ = _ := by rw [hPE, Matrix.mul_assoc]
+  have ha (j : Fin r) : snf.a j ≠ 0 := by
+    intro hj
+    exact snf.bN.ne_zero j (Subtype.ext (by simp [snf.snf j, hj]))
+  let α := algebraMap R L
+  let p := P.map α
+  let pback := Pback.map α
+  let j := J.map α
+  let jT := Jᵀ.map α
+  let v := V.map α
+  let y' := Y.map α
+  let e := E.map α
+  let d := diagonal fun i => α (snf.a i)
+  let dInv := diagonal fun i => (α (snf.a i))⁻¹
+  let f := dInv * jT * p
+  let U := y' * f
+  have hA' : fractionMatrixCast (L := L) A = e * v := by
+    simpa only [Matrix.map_mul] using congrArg (fun W => W.map α) hA
+  have hp : p * pback = 1 := by
+    simpa only [Matrix.map_mul, Matrix.map_one _ (map_zero _) (map_one _)] using
+      congrArg (fun W => W.map α) hPPback
+  have hj : jT * j = 1 := by
+    simpa only [Matrix.map_mul, Matrix.map_one _ (map_zero _) (map_one _)] using
+      congrArg (fun W => W.map α) hJ
+  have hv : v * y' = 1 := by
+    simpa only [Matrix.map_mul, Matrix.map_one _ (map_zero _) (map_one _)] using
+      congrArg (fun W => W.map α) hVY
+  have he : e = pback * j * d := by
+    simpa only [Matrix.map_mul, diagonal_map (map_zero α)] using
+      congrArg (fun W => W.map α) hE
+  have hd : d * dInv = 1 := by
+    change diagonal (fun i => α (snf.a i)) * diagonal (fun i => (α (snf.a i))⁻¹) = 1
+    rw [diagonal_mul_diagonal]
+    have h i : α (snf.a i) ≠ 0 := by
+      rw [← map_zero α]
+      exact (IsFractionRing.injective R L).ne (ha i)
+    simp [h]
+  have hd' : dInv * d = 1 := by
+    change diagonal (fun i => (α (snf.a i))⁻¹) * diagonal (fun i => α (snf.a i)) = 1
+    rw [diagonal_mul_diagonal]
+    have h i : α (snf.a i) ≠ 0 := by
+      rw [← map_zero α]
+      exact (IsFractionRing.injective R L).ne (ha i)
+    simp [h]
+  have hfe : f * e = 1 := by
+    calc
+      f * e = dInv * (jT * (p * pback) * j) * d := by
+        rw [he]
+        simp only [f, Matrix.mul_assoc]
+      _ = 1 := by rw [hp, Matrix.mul_one, hj, Matrix.mul_one, hd']
+  have hleft : fractionMatrixCast A * U = e * f := by
+    rw [hA']
+    calc
+      (e * v) * U = e * (v * y') * f := by simp only [U, Matrix.mul_assoc]
+      _ = _ := by rw [hv, Matrix.mul_one]
+  have hright : U * fractionMatrixCast A = y' * v := by
+    rw [hA']
+    calc
+      U * (e * v) = y' * (f * e) * v := by simp only [U, Matrix.mul_assoc]
+      _ = _ := by rw [hfe, Matrix.mul_one]
+  refine ⟨U, ⟨?_, ?_, ⟨Pback * J * Jᵀ * P, ?_⟩, ⟨Y * V, ?_⟩⟩⟩
+  · rw [isInnerInverse_iff, hleft, hA']
+    calc
+      (e * f) * (e * v) = e * (f * e) * v := by simp only [Matrix.mul_assoc]
+      _ = _ := by rw [hfe, Matrix.mul_one]
+  · rw [isOuterInverse_iff, hright]
+    calc
+      (y' * v) * U = y' * (v * y') * f := by simp only [U, Matrix.mul_assoc]
+      _ = U := by rw [hv, Matrix.mul_one]
+  · rw [hleft]
+    calc
+      _ = pback * j * jT * p := by simp only [fractionMatrixCast, Matrix.map_mul]; rfl
+      _ = pback * j * (d * dInv) * jT * p := by rw [hd, Matrix.mul_one]
+      _ = e * f := by rw [he]; simp only [f, Matrix.mul_assoc]
+  · rw [hright]
+    exact Matrix.map_mul
+
+/-- Entrywise inclusion of vectors in the field of fractions. -/
+abbrev fractionVectorCast (x : n → R) : n → L := algebraMap R L ∘ x
+
+omit [Fintype m] [IsDomain R] [IsFractionRing R L] in
+private theorem fractionVectorCast_mulVec (A : Matrix m n R) (x : n → R) :
+    fractionVectorCast (L := L) (A *ᵥ x) = fractionMatrixCast A *ᵥ fractionVectorCast x :=
+  funext fun i => RingHom.map_mulVec (algebraMap R L) A x i
+
+omit [Fintype n] [IsDomain R] in
+private theorem fractionVectorCast_inj :
+    Function.Injective (fractionVectorCast : (n → R) → (n → L)) :=
+  fun _ _ h => funext fun i => IsFractionRing.injective R L (congrFun h i)
+
+omit [IsDomain R] in
+/-- The solvability test and the complete affine parametrization of
+Corollary 15 over a base ring with fraction field. If the test succeeds,
+each base-ring parameter produces a base-ring solution. -/
+theorem fractionalVectorSolutions [DecidableEq n]
+    {A : Matrix m n R} {U : Matrix n m L} (hU : IsFractionalReflexiveInverse A U)
+    (b : m → R) (hb : ∃ w : n → L, fractionMatrixCast A *ᵥ w = fractionVectorCast b) :
+    ((∃ x : n → R, A *ᵥ x = b) ↔ ∃ x₀ : n → R,
+      fractionVectorCast x₀ = U *ᵥ fractionVectorCast b) ∧
+    (∀ x : n → R, A *ᵥ x = b ↔ ∃ y : n → R, fractionVectorCast x =
+      U *ᵥ fractionVectorCast b + (1 - U * fractionMatrixCast A) *ᵥ fractionVectorCast y) ∧
+    ((∃ x₀ : n → R, fractionVectorCast x₀ = U *ᵥ fractionVectorCast b) →
+      ∀ y : n → R, ∃ x : n → R, A *ᵥ x = b ∧ fractionVectorCast x =
+        U *ᵥ fractionVectorCast b + (1 - U * fractionMatrixCast A) *ᵥ fractionVectorCast y) := by
+  have hbase : fractionMatrixCast A *ᵥ (U *ᵥ fractionVectorCast b) = fractionVectorCast b := by
+    obtain ⟨w, hw⟩ := hb
+    rw [← hw, mulVec_mulVec, mulVec_mulVec, hU.inner]
+  obtain ⟨E, hE⟩ := hU.mul_rev
+  have hsol (x : n → R) : A *ᵥ x = b ↔ ∃ y : n → R, fractionVectorCast x =
+      U *ᵥ fractionVectorCast b + (1 - U * fractionMatrixCast A) *ᵥ fractionVectorCast y := by
+    constructor
+    · rintro rfl
+      refine ⟨x, ?_⟩
+      rw [fractionVectorCast_mulVec, sub_mulVec, one_mulVec, ← mulVec_mulVec]
+      abel
+    · rintro ⟨y, hy⟩
+      have hzero : fractionMatrixCast (L := L) A *
+          ((1 : Matrix n n L) - U * fractionMatrixCast A) = 0 := by
+        rw [Matrix.mul_sub, Matrix.mul_one, ← Matrix.mul_assoc, hU.inner, sub_self]
+      apply fractionVectorCast_inj (L := L)
+      rw [fractionVectorCast_mulVec, hy, mulVec_add, hbase, mulVec_mulVec, hzero, zero_mulVec,
+        add_zero]
+  refine ⟨⟨?_, ?_⟩, hsol, ?_⟩
+  · rintro ⟨x, rfl⟩
+    refine ⟨E *ᵥ x, ?_⟩
+    rw [fractionVectorCast_mulVec, fractionVectorCast_mulVec, hE, mulVec_mulVec]
+  · rintro ⟨x, hx⟩
+    refine ⟨x, fractionVectorCast_inj (L := L) ?_⟩
+    rw [fractionVectorCast_mulVec, hx, hbase]
+  · rintro ⟨x₀, hx₀⟩ y
+    let x := x₀ + y - E *ᵥ y
+    have hx : fractionVectorCast x = U *ᵥ fractionVectorCast b +
+        (1 - U * fractionMatrixCast A) *ᵥ fractionVectorCast y := by
+      have hm : fractionVectorCast (E *ᵥ y) = (U * fractionMatrixCast A) *ᵥ fractionVectorCast y :=
+        (fractionVectorCast_mulVec E y).trans (by rw [hE])
+      rw [sub_mulVec, one_mulVec, ← hx₀, ← hm]
+      funext i
+      change algebraMap R L (x₀ i + y i - (E *ᵥ y) i) =
+        algebraMap R L (x₀ i) + (algebraMap R L (y i) - algebraMap R L ((E *ᵥ y) i))
+      rw [map_sub, map_add, add_sub_assoc]
+    exact ⟨x, (hsol x).mpr ⟨y, hx⟩, hx⟩
+
+/-- **Exercise 106** of [benIsrael2003generalized], Chapter 2.
+In particular for real and complex coefficient fields, a polynomial
+matrix has a rational-function reflexive inverse whose two products are
+polynomial. For every consistent right-hand side, denominator-free Smith
+lifts characterize polynomial solvability and give all polynomial solutions. -/
+theorem exercise_106 [DecidableEq n] {K : Type*} [Field K] (A : Matrix m n (Polynomial K)) :
+    ∃ U : Matrix n m (RatFunc K), IsFractionalReflexiveInverse A U ∧
+      ∀ b : m → Polynomial K,
+        (∃ w : n → RatFunc K, fractionMatrixCast A *ᵥ w = fractionVectorCast b) →
+        (((∃ x : n → Polynomial K, A *ᵥ x = b) ↔ ∃ x₀ : n → Polynomial K,
+          fractionVectorCast x₀ = U *ᵥ fractionVectorCast b) ∧
+        (∀ x : n → Polynomial K, A *ᵥ x = b ↔ ∃ y : n → Polynomial K,
+          fractionVectorCast x =
+            U *ᵥ fractionVectorCast b + (1 - U * fractionMatrixCast A) *ᵥ fractionVectorCast y) ∧
+        ((∃ x₀ : n → Polynomial K, fractionVectorCast x₀ = U *ᵥ fractionVectorCast b) →
+          ∀ y : n → Polynomial K, ∃ x : n → Polynomial K, A *ᵥ x = b ∧
+            fractionVectorCast x =
+              U *ᵥ fractionVectorCast b +
+                (1 - U * fractionMatrixCast A) *ᵥ fractionVectorCast y)) := by
+  obtain ⟨U, hU⟩ := exists_fractionalReflexiveInverse (L := RatFunc K) A
+  exact ⟨U, hU, fractionalVectorSolutions hU⟩
+
+end PolynomialResults
 
 end BenIsraelGreville.Chapter02

@@ -451,4 +451,22 @@ theorem exercise_108_coupled (M : Matrix m n ℝ) (A : Matrix n n ℂ) (v w x y 
 
 end DirectCurrent
 
+section FigureResults
+
+open Matrix
+
+/-- The node–branch incidence matrix of **Figure 1** in Chapter 2 of
+[benIsrael2003generalized], with the printed orientations and order
+of the four nodes and the six branches. -/
+theorem section13_figure1 :
+    incidenceMatrix (![0, 1, 1, 2, 2, 3] : Fin 6 → Fin 4) ![1, 2, 3, 0, 3, 0] =
+      !![1, 0, 0, -1, 0, -1;
+        -1, 1, 1, 0, 0, 0;
+        0, -1, 0, 1, 1, 0;
+        0, 0, -1, 0, -1, 1] := by
+  ext i j
+  fin_cases i <;> fin_cases j <;> norm_num [incidenceMatrix]
+
+end FigureResults
+
 end BenIsraelGreville.Chapter02

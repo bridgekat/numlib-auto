@@ -54,14 +54,52 @@ source = "Ben-Israel and Greville, Ch. 2, §12, Corollary 15, integrality for ev
 
 [[node]]
 id = "exercise_105"
-kind = "theorem"
-desc = "For an interval program with integral data and bounds on Ax, use the Smith inverse criterion to select attainable integer points of the bounded image box, optimize the induced objective over those points when bounded, and lift all optimal images to all integer solutions. The source omits A from the displayed constraint despite listing it among the input data."
-source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105"
-deps = ["corollary_15", "corollary_15_solutions"]
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, corrected bounds on Ax"
 
 [[node]]
 id = "exercise_106"
-kind = "theorem"
-desc = "Establish the analogue of Corollaries 13 and 15 over the real and complex polynomial rings, with the reflexive inverse over the appropriate rational function field and both products over the polynomial ring. Use the Smith form over a polynomial principal ideal domain and exhibit the same affine family."
 source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106"
-deps = ["corollary_13", "corollary_15"]
+
+[[node]]
+id = "integerIntervalFeasible"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, corrected feasible set"
+
+[[node]]
+id = "smithIntervalImages"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, feasible images"
+
+[[node]]
+id = "smithIntervalImages_eq_image"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, feasibility criterion"
+
+[[node]]
+id = "smithIntervalImages_finite"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, finite image box"
+
+[[node]]
+id = "dotProduct_eq_zero_of_bddAbove_integerInterval"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, constancy along each feasible fibre"
+
+[[node]]
+id = "smithIntervalObjective"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 105, objective on the image box"
+
+[[node]]
+id = "fractionMatrixCast"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106, matrix inclusion in the fraction field"
+
+[[node]]
+id = "IsFractionalReflexiveInverse"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106, polynomial projection products"
+
+[[node]]
+id = "exists_fractionalReflexiveInverse"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106, Corollary 13 over a principal ideal domain"
+
+[[node]]
+id = "fractionVectorCast"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106, vector inclusion in the fraction field"
+
+[[node]]
+id = "fractionalVectorSolutions"
+source = "Ben-Israel and Greville, Ch. 2, §12, Exercise 106, Corollary 15 over a principal ideal domain"

@@ -70,10 +70,7 @@ source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 110, rank of connected 
 
 [[node]]
 id = "section13_figure1"
-kind = "theorem"
-desc = "Specialize the incidence matrix formula to Figure 1 and verify all six columns in the listed branch order."
 source = "Ben-Israel and Greville, Ch. 2, §13, Figure 1 and the displayed incidence matrix"
-deps = ["incidenceMatrix"]
 
 [[node]]
 id = "exercise_111"
