@@ -12,6 +12,12 @@ import Numlib.LinearAlgebra.Matrix.RankStabilization
 import Mathlib.Analysis.Normed.Affine.MazurUlam
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
 import Mathlib.Analysis.Normed.Module.Seminorm.Basic
+import Mathlib.Analysis.LocallyConvex.HahnBanach
+import Mathlib.Algebra.Order.Rearrangement
+import Mathlib.Algebra.BigOperators.Module
+import Mathlib.Data.Fin.Tuple.Sort
+import Mathlib.LinearAlgebra.Matrix.Permutation
+import Mathlib.GroupTheory.Perm.ViaEmbedding
 
 /-!
 # Partial isometries and polar decomposition
@@ -30,6 +36,13 @@ and uses them to give canonical polar factors for rectangular matrices.
   the product with supremum norm illustrates the need for this hypothesis.
 * **Exercise 60** (dimensions). A trial partial isometry has the dimensions
   of the adjoint of the given matrix so that the product is square.
+* **Exercise 62(c)** (symmetry). The dual trace formula uses a gauge invariant
+  under signs and permutations. Its unit sphere is nonempty when the smaller
+  matrix dimension is positive. For $A = I_2$ and the nonsymmetric gauge
+  $φ(x) = 2|x_1| + |x_2|$, the scalar dual value at $(1,1)$ is $1$
+  and the matrix trace maximum is $2/3$.
+* **Exercise 62(e)** (dimensions). The defining diagonal embedding uses the
+  matrix shape on which the given norm is defined.
 -/
 
 namespace BenIsraelGreville.Chapter06
@@ -2875,5 +2888,972 @@ theorem exercise_6_62_positiveHomogeneous {m n : Type*} [Fintype m] [Fintype n]
         Real.norm_eq_abs, abs_of_nonneg ht, Pi.smul_apply, smul_eq_mul]
     exact congrArg φ he |>.trans (hH t _ ht)
 
+
+
+private theorem exists_gauge_norming_vector {d : ℕ} (φ : Seminorm ℝ (Fin d → ℝ))
+    (x : Fin d → ℝ) :
+    ∃ y : Fin d → ℝ, (∀ z, z ⬝ᵥ y ≤ φ z) ∧ x ⬝ᵥ y = φ x := by
+  classical
+  by_cases hx : x = 0
+  · refine ⟨0, fun z => ?_, ?_⟩
+    · simpa only [dotProduct_zero] using apply_nonneg φ z
+    · simp [hx]
+  let e := LinearEquiv.toSpanNonzeroSingleton ℝ (Fin d → ℝ) x hx
+  let f : Module.Dual ℝ (ℝ ∙ x) := φ x • e.symm.toLinearMap
+  have hdom (z : ℝ ∙ x) : f z ≤ φ z := by
+    change φ x * e.symm z ≤ φ (z : Fin d → ℝ)
+    have hz : e.symm z • x = (z : Fin d → ℝ) :=
+      LinearEquiv.toSpanNonzeroSingleton_symm_apply_smul ℝ (Fin d → ℝ) x hx z
+    rw [← hz, map_smul_eq_mul, Real.norm_eq_abs, mul_comm (φ x)]
+    exact mul_le_mul_of_nonneg_right (le_abs_self _) (apply_nonneg φ x)
+  obtain ⟨g, hgf, hgφ⟩ := Module.Dual.exists_extension_of_le_seminorm_real (ℝ ∙ x) f hdom
+  let y (i : Fin d) := g (Pi.single i 1)
+  have hdot (z : Fin d → ℝ) : z ⬝ᵥ y = g z := by
+    have he : (∑ i, z i • Pi.single i 1) = z := by
+      funext j
+      simp [Finset.sum_apply, Pi.smul_apply, Pi.single_apply, smul_eq_mul, mul_ite]
+    have hsum := congrArg g he
+    rw [map_sum] at hsum
+    simpa only [dotProduct, y, map_smul, smul_eq_mul] using hsum
+  refine ⟨y, fun z => (hdot z).trans_le ((le_abs_self _).trans (hgφ z)), ?_⟩
+  rw [hdot]
+  have h := hgf (e 1)
+  change g (↑(e 1) : Fin d → ℝ) = φ x * e.symm (e 1) at h
+  have he : (↑(e 1) : Fin d → ℝ) = x := by
+    simp [e]
+  rwa [he, e.symm_apply_apply, mul_one] at h
+
+private noncomputable def sortAbs {d : ℕ} (y : Fin d → ℝ) : Fin d → ℝ :=
+  let z := fun i => |y i|
+  z ∘ Tuple.sortDesc z
+
+private theorem sortAbs_nonneg {d : ℕ} (y : Fin d → ℝ) (i : Fin d) : 0 ≤ sortAbs y i :=
+  abs_nonneg _
+
+private theorem sortAbs_antitone {d : ℕ} (y : Fin d → ℝ) : Antitone (sortAbs y) :=
+  Tuple.antitone_sortDesc (fun i => |y i|)
+
+private theorem dotProduct_le_sortAbs {d : ℕ} {x : Fin d → ℝ}
+    (hx : ∀ i, 0 ≤ x i) (hxa : Antitone x) (y : Fin d → ℝ) :
+    x ⬝ᵥ y ≤ x ⬝ᵥ sortAbs y := by
+  calc
+    _ ≤ x ⬝ᵥ (fun i => |y i|) :=
+      Finset.sum_le_sum fun i _ => mul_le_mul_of_nonneg_left (le_abs_self _) (hx i)
+    _ ≤ _ := by
+      have hm := (hxa.monovary (sortAbs_antitone y)).sum_mul_comp_perm_le_sum_mul
+        (σ := (Tuple.sortDesc (fun i => |y i|)).symm)
+      simpa only [dotProduct, sortAbs, Function.comp_apply, Equiv.apply_symm_apply] using hm
+
+private theorem sortAbs_dual_le {d : ℕ} {φ : Seminorm ℝ (Fin d → ℝ)}
+    (hφ : IsSymmetricGauge φ) {y : Fin d → ℝ} (hy : ∀ z, z ⬝ᵥ y ≤ φ z) :
+    ∀ z, z ⬝ᵥ sortAbs y ≤ φ z := by
+  have hAbs (z : Fin d → ℝ) : z ⬝ᵥ (fun i => |y i|) ≤ φ z := by
+    let w (i : Fin d) := if y i < 0 then -z i else z i
+    have hw : φ w = φ z := by
+      rw [← hφ.abs w, ← hφ.abs z]
+      congr 1
+      funext i
+      dsimp [w]
+      split_ifs <;> simp
+    have hdot : z ⬝ᵥ (fun i => |y i|) = w ⬝ᵥ y := by
+      apply Finset.sum_congr rfl
+      intro i _
+      dsimp [w]
+      split_ifs with hi
+      · rw [abs_of_neg hi, mul_neg, neg_mul]
+      · rw [abs_of_nonneg (le_of_not_gt hi)]
+    rw [hdot, ← hw]
+    exact hy w
+  intro z
+  let p := Tuple.sortDesc (fun i => |y i|)
+  have he : z ⬝ᵥ sortAbs y = (z ∘ p.symm) ⬝ᵥ (fun i => |y i|) := by
+    simpa only [dotProduct, Function.comp_apply, sortAbs, p, Equiv.symm_apply_apply] using
+      (Equiv.sum_comp p (fun i => z (p.symm i) * |y i|))
+  rw [he, ← hφ.perm p.symm z]
+  exact hAbs _
+
+private theorem sorted_norming_vector {d : ℕ} {φ : Seminorm ℝ (Fin d → ℝ)}
+    (hφ : IsSymmetricGauge φ) {x : Fin d → ℝ} (hx : ∀ i, 0 ≤ x i) (hxa : Antitone x) :
+    ∃ y : Fin d → ℝ, (∀ i, 0 ≤ y i) ∧ Antitone y ∧
+      (∀ z, z ⬝ᵥ y ≤ φ z) ∧ x ⬝ᵥ y = φ x := by
+  obtain ⟨y, hy, he⟩ := exists_gauge_norming_vector φ x
+  have h := sortAbs_dual_le hφ hy
+  exact ⟨sortAbs y, sortAbs_nonneg y, sortAbs_antitone y, h,
+    le_antisymm (h x) (he ▸ dotProduct_le_sortAbs hx hxa y)⟩
+
+private def zeroPadGauge {d : ℕ} (x : Fin d → ℝ) (i : ℕ) : ℝ :=
+  if hi : i < d then x ⟨i, hi⟩ else 0
+
+private theorem zeroPadGauge_nonneg {d : ℕ} {x : Fin d → ℝ} (hx : ∀ i, 0 ≤ x i)
+    (j : ℕ) : 0 ≤ zeroPadGauge x j := by
+  unfold zeroPadGauge
+  split_ifs with hj
+  · exact hx ⟨j, hj⟩
+  · exact le_rfl
+
+private theorem zeroPadGauge_antitone {d : ℕ} {x : Fin d → ℝ} (hx : ∀ i, 0 ≤ x i)
+    (hxa : Antitone x) : Antitone (zeroPadGauge x) := by
+  intro i j hij
+  by_cases hj : j < d
+  · have hi := hij.trans_lt hj
+    rw [zeroPadGauge, zeroPadGauge, dite_eq_left hi, dite_eq_left hj]
+    exact hxa (show (⟨i, hi⟩ : Fin d) ≤ ⟨j, hj⟩ from hij)
+  · rw [zeroPadGauge, dite_eq_right hj]
+    exact zeroPadGauge_nonneg hx i
+
+/-- A test matrix whose singular values are a specified sorted nonnegative
+vector and which attains equality in the trace inequality. -/
+theorem exists_trace_aligned_singularValueVector {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℂ)
+    (y : Fin (min m n) → ℝ) (hy : ∀ i, 0 ≤ y i) (hyA : Antitone y) :
+    ∃ X : Matrix (Fin n) (Fin m) ℂ, singularValueVector (min m n) X = y ∧
+      (trace (A * X)).re = singularValueVector (min m n) A ⬝ᵥ y := by
+  obtain ⟨U, V, h⟩ := theorem_6_2 A
+  let D : Matrix (Fin m) (Fin n) ℂ := rectDiagonal (fun i => (A.sortedSingularValues i : ℂ))
+  let F : Matrix (Fin n) (Fin m) ℂ := rectDiagonal (fun i => (zeroPadGauge y i : ℂ))
+  let X := V * F * Uᴴ
+  have hU := h.1.mem_unitaryGroup_left
+  have hV := h.1.mem_unitaryGroup_right
+  have hUU : Uᴴ * U = 1 := mem_unitaryGroup_iff'.1 hU
+  have hVV : Vᴴ * V = 1 := mem_unitaryGroup_iff'.1 hV
+  have hA : A = U * D * Vᴴ := h.1.eq_mul_mul_star
+  have hF : Matrix.IsSVD F 1 (zeroPadGauge y) 1 :=
+    ⟨⟨one_mem _, one_mem _, by simp [F]⟩, zeroPadGauge_antitone hy hyA, zeroPadGauge_nonneg hy⟩
+  refine ⟨X, ?_, ?_⟩
+  · funext i
+    change X.sortedSingularValues i = y i
+    dsimp only [X]
+    rw [sortedSingularValues_unitary_mul_mul F hV (conjTranspose_mem_unitaryGroup hU),
+      ← hF.singularValues_eq (i.isLt.trans_le (min_le_right _ _))
+        (i.isLt.trans_le (min_le_left _ _))]
+    exact dite_eq_left i.isLt
+  · have he : A * X = U * (D * F) * Uᴴ := calc
+      _ = U * D * (Vᴴ * V) * F * Uᴴ := by
+        simp only [hA, X, Matrix.mul_assoc]
+      _ = _ := by rw [hVV, Matrix.mul_one, Matrix.mul_assoc U D F]
+    rw [he, trace_mul_comm, ← Matrix.mul_assoc, hUU, Matrix.one_mul]
+    rw [show trace (D * F) = (∑ i ∈ Finset.range (min m n),
+      A.sortedSingularValues i * zeroPadGauge y i : ℝ) from trace_mul_rectDiagonal_eq _ _,
+      Complex.ofReal_re, Finset.sum_range]
+    exact Finset.sum_congr rfl fun i _ => by
+      rw [zeroPadGauge, dite_eq_left i.isLt]
+      rfl
+
+private theorem singularValueVector_dot_upper {m n : ℕ}
+    (A : Matrix (Fin m) (Fin n) ℂ) (X : Matrix (Fin n) (Fin m) ℂ) :
+    (trace (A * X)).re ≤
+      singularValueVector (min m n) A ⬝ᵥ singularValueVector (min m n) X := by
+  have h := re_trace_mul_le_sum_sortedSingularValues_mul A X
+  rw [Fintype.card_fin, Fintype.card_fin, Finset.sum_range] at h
+  exact h
+
+/-- For a symmetric gauge, its value on the ordered singular values is
+attained by a real trace functional dominated by the matrix gauge. -/
+theorem matrixGaugeValue_exists_norming_trace {m n : ℕ}
+    {φ : Seminorm ℝ (Fin (min m n) → ℝ)} (hφ : IsSymmetricGauge φ)
+    (A : Matrix (Fin m) (Fin n) ℂ) :
+    ∃ X : Matrix (Fin n) (Fin m) ℂ,
+      (∀ B : Matrix (Fin m) (Fin n) ℂ, (trace (B * X)).re ≤ matrixGaugeValue φ B) ∧
+      (trace (A * X)).re = matrixGaugeValue φ A ∧
+      (∀ z, z ⬝ᵥ singularValueVector (min m n) X ≤ φ z) := by
+  have ha : Antitone (singularValueVector (min m n) A) :=
+    fun _ _ h => A.sortedSingularValues_antitone h
+  obtain ⟨y, hy, hyA, hdom, hye⟩ :=
+    sorted_norming_vector hφ (fun i => A.sortedSingularValues_nonneg i) ha
+  obtain ⟨X, hX, htrace⟩ := exists_trace_aligned_singularValueVector A y hy hyA
+  refine ⟨X, fun B => (singularValueVector_dot_upper B X).trans ?_, htrace.trans hye, ?_⟩
+  · rw [hX]
+    exact hdom _
+  · intro z
+    rw [hX]
+    exact hdom _
+
+/-- **Exercise 63** of [benIsrael2003generalized], Chapter 6, Equation
+(104). Every symmetric gauge of the ordered singular values satisfies
+the matrix triangle inequality. -/
+theorem exercise_6_63 {m n : ℕ} {φ : Seminorm ℝ (Fin (min m n) → ℝ)}
+    (hφ : IsSymmetricGauge φ) (A B : Matrix (Fin m) (Fin n) ℂ) :
+    matrixGaugeValue φ (A + B) ≤ matrixGaugeValue φ A + matrixGaugeValue φ B := by
+  obtain ⟨X, hX, htrace, -⟩ := matrixGaugeValue_exists_norming_trace hφ (A + B)
+  rw [← htrace, Matrix.add_mul, trace_add, Complex.add_re]
+  exact add_le_add (hX A) (hX B)
+
+
+/-- The matrix seminorm induced by a symmetric gauge of the ordered singular values. -/
+noncomputable def matrixGaugeSeminorm {m n : ℕ}
+    (φ : Seminorm ℝ (Fin (min m n) → ℝ)) (hφ : IsSymmetricGauge φ) :
+    Seminorm ℂ (Matrix (Fin m) (Fin n) ℂ) :=
+  Seminorm.of (matrixGaugeValue φ) (exercise_6_63 hφ) (by
+    intro t A
+    have he : singularValueVector (min m n) (t • A) =
+        ‖t‖ • singularValueVector (min m n) A := by
+      funext i
+      exact sortedSingularValues_smul t A i
+    change φ (singularValueVector (min m n) (t • A)) = ‖t‖ * φ (singularValueVector (min m n) A)
+    rw [he, map_smul_eq_mul, Real.norm_eq_abs, abs_norm])
+
+/-- Exercise 62(d) of [benIsrael2003generalized], Chapter 6.
+A symmetric gauge induces a definite unitarily invariant matrix seminorm. -/
+theorem exercise_6_62_norm {m n : ℕ}
+    {φ : Seminorm ℝ (Fin (min m n) → ℝ)} (hφ : IsSymmetricGauge φ) :
+    let ν := matrixGaugeSeminorm φ hφ
+    (∀ A : Matrix (Fin m) (Fin n) ℂ, ν A = 0 → A = 0) ∧
+    (∀ (U : Matrix (Fin m) (Fin m) ℂ) (V : Matrix (Fin n) (Fin n) ℂ),
+      U ∈ unitaryGroup (Fin m) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A : Matrix (Fin m) (Fin n) ℂ, ν (U * A * V) = ν A) := by
+  refine ⟨?_, fun U V hU hV A => exercise_6_62_unitaryInvariant φ hU hV A⟩
+  intro A hA
+  have hσ := hφ.eq_zero (singularValueVector (min m n) A) hA
+  have h0 : A.sortedSingularValues 0 = 0 := by
+    by_cases h : 0 < min m n
+    · exact congrFun hσ ⟨0, h⟩
+    · apply A.sortedSingularValues_eq_zero_of_min_le
+      simpa only [Fintype.card_fin] using Nat.le_of_not_gt h
+  exact rank_eq_zero_iff.mp (Nat.eq_zero_of_le_zero
+    ((A.sortedSingularValues_eq_zero_iff_rank_le 0).mp h0))
+
+
+private def gaugeDiagonal {d m n : ℕ} (x : Fin d → ℝ) : Matrix (Fin m) (Fin n) ℂ :=
+  rectDiagonal fun i => (zeroPadGauge x i : ℂ)
+
+private def gaugeDiagonalLinear (d m n : ℕ) : (Fin d → ℝ) →ₗ[ℝ] Matrix (Fin m) (Fin n) ℂ where
+  toFun := gaugeDiagonal
+  map_add' x y := by
+    ext i j
+    simp only [gaugeDiagonal, rectDiagonal_apply, Matrix.add_apply, zeroPadGauge, Pi.add_apply]
+    by_cases h : (i : ℕ) = j <;> by_cases hj : (j : ℕ) < d <;> simp [h, hj]
+  map_smul' t x := by
+    ext i j
+    simp only [gaugeDiagonal, rectDiagonal_apply, Matrix.smul_apply, zeroPadGauge, Pi.smul_apply,
+      smul_eq_mul, Complex.real_smul, RingHom.id_apply]
+    by_cases h : (i : ℕ) = j <;> by_cases hj : (j : ℕ) < d <;> simp [h, hj]
+
+private theorem gaugeDiagonal_injective {d m n : ℕ} (hm : d ≤ m) (hn : d ≤ n) :
+    Function.Injective (gaugeDiagonal (d := d) (m := m) (n := n)) := by
+  intro x y h
+  funext i
+  have h' := congrArg (fun A : Matrix (Fin m) (Fin n) ℂ =>
+    A (Fin.castLE hm i) (Fin.castLE hn i)) h
+  apply Complex.ofReal_injective
+  simpa only [gaugeDiagonal, rectDiagonal_apply, Fin.val_castLE, ite_true, zeroPadGauge,
+    dite_eq_left i.isLt] using h'
+
+private theorem gaugeDiagonal_liftPerm {d m n : ℕ} (hm : d ≤ m) (hn : d ≤ n)
+    (p : Equiv.Perm (Fin d)) (x : Fin d → ℝ) :
+    (gaugeDiagonal x : Matrix (Fin m) (Fin n) ℂ).submatrix
+      (p.viaEmbedding (Fin.castLEEmb hm)) (p.viaEmbedding (Fin.castLEEmb hn)) =
+      gaugeDiagonal (x ∘ p) := by
+  have hp {k : ℕ} (hk : d ≤ k) (i : Fin k) (hi : (i : ℕ) < d) :
+      p.viaEmbedding (Fin.castLEEmb hk) i = Fin.castLE hk (p ⟨i, hi⟩) := by
+    exact Equiv.Perm.viaEmbedding_apply p (Fin.castLEEmb hk) ⟨i, hi⟩
+  have hp' {k : ℕ} (hk : d ≤ k) (i : Fin k) (hi : ¬ (i : ℕ) < d) :
+      p.viaEmbedding (Fin.castLEEmb hk) i = i := by
+    apply Equiv.Perm.viaEmbedding_apply_of_notMem
+    rintro ⟨j, hj⟩
+    have he := congrArg Fin.val hj
+    exact hi (he ▸ j.isLt)
+  ext i j
+  simp only [submatrix_apply, gaugeDiagonal, rectDiagonal_apply]
+  by_cases hi : (i : ℕ) < d <;> by_cases hj : (j : ℕ) < d
+  · rw [hp hm i hi, hp hn j hj]
+    have he : (p ⟨i, hi⟩ : ℕ) = p ⟨j, hj⟩ ↔ (i : ℕ) = j := by
+      rw [← Fin.ext_iff, p.apply_eq_iff_eq, Fin.ext_iff]
+    simp only [Fin.val_castLE, he, zeroPadGauge, dite_eq_left hi,
+      dite_eq_left (p ⟨i, hi⟩).isLt, Function.comp_apply]
+  · rw [hp hm i hi, hp' hn j hj]
+    have he : (p ⟨i, hi⟩ : ℕ) ≠ j := fun h => hj (h ▸ (p ⟨i, hi⟩).isLt)
+    have he' : (i : ℕ) ≠ j := fun h => hj (h ▸ hi)
+    simp only [Fin.val_castLE, he, he', ite_false]
+  · rw [hp' hm i hi, hp hn j hj]
+    have he : (i : ℕ) ≠ p ⟨j, hj⟩ := fun h => hi (h.symm ▸ (p ⟨j, hj⟩).isLt)
+    have he' : (i : ℕ) ≠ j := fun h => hi (h.symm ▸ hj)
+    simp only [Fin.val_castLE, he, he', ite_false]
+  · rw [hp' hm i hi, hp' hn j hj]
+    simp only [zeroPadGauge, dite_eq_right hi, Complex.ofReal_zero, ite_self]
+
+private theorem permMatrix_unitary {m : Type*} [Fintype m] [DecidableEq m] (p : Equiv.Perm m) :
+    p.permMatrix ℂ ∈ unitaryGroup m ℂ := by
+  apply mem_unitaryGroup_iff.mpr
+  change p.permMatrix ℂ * (p.permMatrix ℂ)ᴴ = 1
+  rw [conjTranspose_permMatrix, ← permMatrix_mul, inv_mul_cancel, permMatrix_one]
+
+private theorem gaugeDiagonal_perm_invariant {m n d : ℕ} (hm : d ≤ m) (hn : d ≤ n)
+    (ν : Seminorm ℂ (Matrix (Fin m) (Fin n) ℂ))
+    (hν : ∀ U V, U ∈ unitaryGroup (Fin m) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A, ν (U * A * V) = ν A) (p : Equiv.Perm (Fin d)) (x : Fin d → ℝ) :
+    ν (gaugeDiagonal (x ∘ p)) = ν (gaugeDiagonal x) := by
+  let pₘ := p.viaEmbedding (Fin.castLEEmb hm)
+  let pₙ := p.viaEmbedding (Fin.castLEEmb hn)
+  have he : pₘ.permMatrix ℂ * (gaugeDiagonal x : Matrix (Fin m) (Fin n) ℂ) *
+      (pₙ⁻¹).permMatrix ℂ =
+      gaugeDiagonal (x ∘ p) := by
+    rw [PEquiv.toMatrix_toPEquiv_mul, PEquiv.mul_toMatrix_toPEquiv, Equiv.Perm.inv_def, Equiv.symm_symm,
+      submatrix_submatrix, Function.comp_id, Function.id_comp]
+    exact gaugeDiagonal_liftPerm hm hn p x
+  rw [← he]
+  exact hν _ _ (permMatrix_unitary pₘ) (permMatrix_unitary pₙ⁻¹) _
+
+private theorem gaugeDiagonal_abs {d m n : ℕ} (x : Fin d → ℝ) :
+    ∃ V ∈ unitaryGroup (Fin n) ℂ,
+      (gaugeDiagonal x : Matrix (Fin m) (Fin n) ℂ) * V = gaugeDiagonal (fun i => |x i|) := by
+  let e (j : Fin n) : ℂ := if zeroPadGauge x j < 0 then -1 else 1
+  have he (j : Fin n) : ‖e j‖ = 1 := by dsimp [e]; split_ifs <;> simp
+  refine ⟨diagonal e, unitary_diagonal_of_norm_one e he, ?_⟩
+  ext i j
+  rw [mul_diagonal]
+  by_cases h : (i : ℕ) = j
+  · simp only [gaugeDiagonal, rectDiagonal_apply, h, ite_true]
+    dsimp [e]
+    have hAbs : zeroPadGauge (fun i => |x i|) j = |zeroPadGauge x j| := by
+      unfold zeroPadGauge
+      split_ifs <;> simp
+    rw [hAbs]
+    split_ifs with h'
+    · rw [abs_of_neg h', Complex.ofReal_neg, mul_neg, mul_one]
+    · rw [abs_of_nonneg (le_of_not_gt h'), mul_one]
+  · simp [gaugeDiagonal, rectDiagonal_apply, h]
+
+private theorem exists_gaugeRepresentation {m n : ℕ}
+    (ν : Seminorm ℂ (Matrix (Fin m) (Fin n) ℂ))
+    (hZ : ∀ A, ν A = 0 → A = 0)
+    (hν : ∀ U V, U ∈ unitaryGroup (Fin m) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A, ν (U * A * V) = ν A) :
+    ∃ φ : Seminorm ℝ (Fin (min m n) → ℝ), IsSymmetricGauge φ ∧
+      (∀ A : Matrix (Fin m) (Fin n) ℂ, ν A = matrixGaugeValue φ A) ∧
+      ∀ x, φ x = ν (gaugeDiagonal x) := by
+  let φ := (ν.restrictScalars ℝ).comp (gaugeDiagonalLinear (min m n) m n)
+  have hφ (x : Fin (min m n) → ℝ) : φ x = ν (gaugeDiagonal x) := rfl
+  refine ⟨φ, ⟨?_, ?_, ?_⟩, ?_, hφ⟩
+  · intro x hx
+    have h := hZ (gaugeDiagonal x) (by rwa [hφ] at hx)
+    apply gaugeDiagonal_injective (min_le_left _ _) (min_le_right _ _)
+    rw [h]
+    exact ((gaugeDiagonalLinear (min m n) m n).map_zero).symm
+  · intro p x
+    exact gaugeDiagonal_perm_invariant (min_le_left _ _) (min_le_right _ _) ν hν p x
+  · intro x
+    obtain ⟨V, hV, he⟩ := gaugeDiagonal_abs (m := m) (n := n) x
+    rw [hφ, hφ, ← he]
+    simpa only [Matrix.one_mul] using hν 1 V (one_mem _) hV (gaugeDiagonal x)
+  · intro A
+    obtain ⟨U, V, h⟩ := theorem_6_2 A
+    have he : Uᴴ * A * V = gaugeDiagonal (singularValueVector (min m n) A) := by
+      have hA : Uᴴ * A * V = rectDiagonal (fun i => (A.sortedSingularValues i : ℂ)) :=
+        h.1.star_mul_mul
+      rw [hA]
+      apply rectDiagonal_congr
+      intro i hm hn
+      have hi : i < min m n := lt_min hm hn
+      rw [zeroPadGauge, dite_eq_left hi]
+      rfl
+    exact (hν Uᴴ V (conjTranspose_mem_unitaryGroup h.1.mem_unitaryGroup_left)
+      h.1.mem_unitaryGroup_right A).symm.trans (congrArg ν he)
+
+
+/-- Exercise 62(e) of [benIsrael2003generalized], Chapter 6. A definite
+unitarily invariant seminorm is induced by a symmetric gauge. The gauge
+uses the diagonal embedding into the given rectangular matrix space. -/
+theorem exercise_6_62_converse {m n : ℕ}
+    (ν : Seminorm ℂ (Matrix (Fin m) (Fin n) ℂ))
+    (hZ : ∀ A, ν A = 0 → A = 0)
+    (hν : ∀ U V, U ∈ unitaryGroup (Fin m) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A, ν (U * A * V) = ν A) :
+    ∃ φ : Seminorm ℝ (Fin (min m n) → ℝ), IsSymmetricGauge φ ∧
+      ∀ A : Matrix (Fin m) (Fin n) ℂ, ν A = matrixGaugeValue φ A := by
+  obtain ⟨φ, hφ, hrepr, -⟩ := exists_gaugeRepresentation ν hZ hν
+  exact ⟨φ, hφ, hrepr⟩
+
+private theorem compact_gauge_sublevel {d : ℕ} (φ : (Fin d → ℝ) → ℝ)
+    (hC : Continuous φ) (hN : ∀ x, 0 ≤ φ x) (hZ : ∀ x, φ x = 0 → x = 0)
+    (hH : ∀ (t : ℝ) x, 0 ≤ t → φ (t • x) = t * φ x) :
+    IsCompact {x | φ x ≤ 1} := by
+  refine Metric.isCompact_iff_isClosed_bounded.mpr ⟨isClosed_le hC continuous_const, ?_⟩
+  rcases subsingleton_or_nontrivial (Fin d → ℝ) with hs | hn
+  · refine (Metric.isBounded_closedBall (x := (0 : Fin d → ℝ)) (r := 0)).subset ?_
+    intro x _
+    rw [Subsingleton.elim x 0]
+    simp
+  obtain ⟨w, hw⟩ := exists_ne (0 : Fin d → ℝ)
+  have hw₀ : ‖w‖ ≠ 0 := norm_ne_zero_iff.mpr hw
+  have hS : (Metric.sphere (0 : Fin d → ℝ) 1).Nonempty := by
+    refine ⟨‖w‖⁻¹ • w, ?_⟩
+    rw [Metric.mem_sphere, dist_zero_right, norm_smul, Real.norm_eq_abs,
+      abs_of_nonneg (inv_nonneg.mpr (norm_nonneg _)), inv_mul_cancel₀ hw₀]
+  obtain ⟨v, hv, hmin⟩ := (isCompact_sphere (0 : Fin d → ℝ) 1).exists_isMinOn
+    hS hC.continuousOn
+  have hv₀ : v ≠ 0 := by
+    intro he
+    simp [he] at hv
+  have hp : 0 < φ v := lt_of_le_of_ne (hN v) (Ne.symm fun he => hv₀ (hZ v he))
+  refine (Metric.isBounded_closedBall (x := (0 : Fin d → ℝ)) (r := (φ v)⁻¹)).subset ?_
+  intro x hx
+  rw [Metric.mem_closedBall, dist_zero_right]
+  by_cases hx₀ : x = 0
+  · simpa [hx₀] using (inv_nonneg.mpr hp.le)
+  have hNx : ‖x‖ ≠ 0 := norm_ne_zero_iff.mpr hx₀
+  have hNorm : ‖x‖⁻¹ • x ∈ Metric.sphere (0 : Fin d → ℝ) 1 := by
+    rw [Metric.mem_sphere, dist_zero_right, norm_smul, Real.norm_eq_abs,
+      abs_of_nonneg (inv_nonneg.mpr (norm_nonneg _)), inv_mul_cancel₀ hNx]
+  have hb := hmin hNorm
+  change φ v ≤ φ (‖x‖⁻¹ • x) at hb
+  rw [hH _ _ (inv_nonneg.mpr (norm_nonneg _)), ← div_eq_inv_mul] at hb
+  rw [le_inv_comm₀ (norm_pos_iff.mpr hx₀) hp]
+  exact hb.trans (by simpa only [one_div] using div_le_div_of_nonneg_right hx (norm_nonneg x))
+
+/-- The dual gauge on real vectors in its unit-ball support form. -/
+noncomputable def symmetricGaugeDual {d : ℕ} (φ : (Fin d → ℝ) → ℝ) (y : Fin d → ℝ) : ℝ :=
+  sSup ((fun z => y ⬝ᵥ z) '' {z | φ z ≤ 1})
+
+private theorem exists_sorted_gauge_maximizer {d : ℕ} (φ : (Fin d → ℝ) → ℝ)
+    (hC : Continuous φ) (hN : ∀ x, 0 ≤ φ x) (hZ : ∀ x, φ x = 0 → x = 0)
+    (hH : ∀ (t : ℝ) x, 0 ≤ t → φ (t • x) = t * φ x)
+    (hP : ∀ (e : Equiv.Perm (Fin d)) x, φ (x ∘ e) = φ x)
+    (hAbs : ∀ x, φ (fun i => |x i|) = φ x)
+    (x : Fin d → ℝ) (hx : ∀ i, 0 ≤ x i) (hxA : Antitone x) :
+    ∃ y : Fin d → ℝ, (∀ i, 0 ≤ y i) ∧ Antitone y ∧ φ y ≤ 1 ∧
+      (∀ z, φ z ≤ 1 → x ⬝ᵥ z ≤ x ⬝ᵥ y) := by
+  have h0 : φ 0 = 0 := by simpa using hH 0 (0 : Fin d → ℝ) le_rfl
+  have hF : Continuous fun z : Fin d → ℝ => x ⬝ᵥ z := by
+    unfold dotProduct
+    fun_prop
+  obtain ⟨z, hz, hmax⟩ := (compact_gauge_sublevel φ hC hN hZ hH).exists_isMaxOn
+    ⟨0, by simp [h0]⟩ hF.continuousOn
+  let y := sortAbs z
+  have hφy : φ y = φ z := (hP _ _).trans (hAbs _)
+  exact ⟨y, sortAbs_nonneg z, sortAbs_antitone z,
+    hφy.symm ▸ hz, fun t ht => (hmax ht).trans (dotProduct_le_sortAbs hx hxA z)⟩
+
+private theorem exists_sorted_gauge_sphere_maximizer {d : ℕ} (hd : 0 < d) (φ : (Fin d → ℝ) → ℝ)
+    (hC : Continuous φ) (hN : ∀ x, 0 ≤ φ x) (hZ : ∀ x, φ x = 0 → x = 0)
+    (hH : ∀ (t : ℝ) x, 0 ≤ t → φ (t • x) = t * φ x)
+    (hP : ∀ (e : Equiv.Perm (Fin d)) x, φ (x ∘ e) = φ x)
+    (hAbs : ∀ x, φ (fun i => |x i|) = φ x)
+    (x : Fin d → ℝ) (hx : ∀ i, 0 ≤ x i) (hxA : Antitone x) :
+    ∃ y : Fin d → ℝ, (∀ i, 0 ≤ y i) ∧ Antitone y ∧ φ y = 1 ∧
+      (∀ z, φ z ≤ 1 → x ⬝ᵥ z ≤ x ⬝ᵥ y) := by
+  obtain ⟨y, hy, hyA, hyφ, hyMax⟩ := exists_sorted_gauge_maximizer φ hC hN hZ hH hP hAbs x hx hxA
+  have hpos {z : Fin d → ℝ} (hz : z ≠ 0) : 0 < φ z :=
+    lt_of_le_of_ne (hN z) (Ne.symm fun he => hz (hZ z he))
+  have hnorm (z : Fin d → ℝ) (hz : z ≠ 0) : φ ((φ z)⁻¹ • z) = 1 := by
+    rw [hH _ _ (inv_nonneg.mpr (hN z)), inv_mul_cancel₀ (hpos hz).ne']
+  by_cases hy₀ : y = 0
+  · let v : Fin d → ℝ := fun _ => 1
+    have hv : v ≠ 0 := by
+      intro he
+      have := congrFun he ⟨0, hd⟩
+      norm_num [v] at this
+    refine ⟨(φ v)⁻¹ • v, fun i => mul_nonneg (inv_nonneg.mpr (hN v)) zero_le_one,
+      fun _ _ _ => le_rfl, hnorm v hv, ?_⟩
+    intro z hz
+    have h := hyMax z hz
+    rw [hy₀, dotProduct_zero] at h
+    exact h.trans (Finset.sum_nonneg fun i _ =>
+      mul_nonneg (hx i) (mul_nonneg (inv_nonneg.mpr (hN v)) zero_le_one))
+  · refine ⟨(φ y)⁻¹ • y, fun i => mul_nonneg (inv_nonneg.mpr (hN y)) (hy i),
+      fun _ _ hh => mul_le_mul_of_nonneg_left (hyA hh) (inv_nonneg.mpr (hN y)),
+      hnorm y hy₀, ?_⟩
+    intro z hz
+    refine (hyMax z hz).trans ?_
+    have h1 : 1 ≤ (φ y)⁻¹ := by rwa [one_le_inv₀ (hpos hy₀)]
+    rw [dotProduct_smul, smul_eq_mul]
+    exact le_mul_of_one_le_left (Finset.sum_nonneg fun i _ => mul_nonneg (hx i) (hy i)) h1
+
+/-- **Exercise 62(c)** of [benIsrael2003generalized], Chapter 6, Equation
+(103). A continuous positive homogeneous gauge invariant under signs and
+permutations has the stated dual trace norm. The unit-sphere maximum
+requires a positive smaller matrix dimension. -/
+theorem exercise_6_62 {m n : ℕ} (hDim : 0 < min m n) (φ : (Fin (min m n) → ℝ) → ℝ)
+    (hC : Continuous φ) (hN : ∀ x, 0 ≤ φ x) (hZ : ∀ x, φ x = 0 → x = 0)
+    (hH : ∀ (t : ℝ) x, 0 ≤ t → φ (t • x) = t * φ x)
+    (hP : ∀ (e : Equiv.Perm (Fin (min m n))) x, φ (x ∘ e) = φ x)
+    (hAbs : ∀ x, φ (fun i => |x i|) = φ x)
+    (A : Matrix (Fin m) (Fin n) ℂ) :
+    IsGreatest {t : ℝ | ∃ X : Matrix (Fin n) (Fin m) ℂ,
+      matrixGaugeValue φ X = 1 ∧ (trace (A * X)).re = t}
+      (matrixGaugeValue (symmetricGaugeDual φ) A) := by
+  let s := singularValueVector (min m n) A
+  obtain ⟨y, hy, hyA, hyφ, hmax⟩ := exists_sorted_gauge_sphere_maximizer hDim φ hC hN hZ hH hP hAbs
+    s (fun i => A.sortedSingularValues_nonneg i) (fun _ _ h => A.sortedSingularValues_antitone h)
+  have hDual : matrixGaugeValue (symmetricGaugeDual φ) A = s ⬝ᵥ y := by
+    apply IsGreatest.csSup_eq
+    refine ⟨⟨y, hyφ.le, rfl⟩, ?_⟩
+    rintro _ ⟨z, hz, rfl⟩
+    exact hmax z hz
+  rw [hDual]
+  obtain ⟨X, hX, ht⟩ := exists_trace_aligned_singularValueVector A y hy hyA
+  refine ⟨⟨X, ?_, ht⟩, ?_⟩
+  · change φ (singularValueVector (min m n) X) = 1
+    rw [hX, hyφ]
+  · rintro _ ⟨Y, hY, rfl⟩
+    exact (singularValueVector_dot_upper A Y).trans (hmax _ hY.le)
+
+
+private theorem eigenvalues_le_of_psd_sub {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {A B : Matrix ι ι ℂ} (hA : A.IsHermitian) (hB : B.IsHermitian)
+    (h : (B - A).PosSemidef) (i : Fin (Fintype.card ι)) :
+    hA.eigenvalues₀ i ≤ hB.eigenvalues₀ i := by
+  apply (isSymmetric_toEuclideanLin_iff.mpr hA).eigenvalues_le_of_re_inner_le
+    (isSymmetric_toEuclideanLin_iff.mpr hB) finrank_euclideanSpace _ i
+  intro x
+  have he := (isPositive_toEuclideanLin_iff.mpr h).re_inner_nonneg_left x
+  rw [map_sub, LinearMap.sub_apply, inner_sub_left, map_sub] at he
+  exact sub_nonneg.mp he
+
+private theorem sum_abs_eigenvalues_sub_le {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {A B : Matrix ι ι ℂ} (hA : A.IsHermitian) (hB : B.IsHermitian) :
+    ∑ i, |hA.eigenvalues₀ i - hB.eigenvalues₀ i| ≤
+      ∑ i, |(hA.sub hB).eigenvalues₀ i| := by
+  let hD := hA.sub hB
+  let U : Matrix ι ι ℂ := hD.eigenvectorUnitary
+  let p (i : ι) := max (hD.eigenvalues i) 0
+  let q (i : ι) := max (-hD.eigenvalues i) 0
+  let P := U * diagonal (fun i => (p i : ℂ)) * Uᴴ
+  let Q := U * diagonal (fun i => (q i : ℂ)) * Uᴴ
+  let M := B + P
+  have hp₀ (i : ι) : 0 ≤ (p i : ℂ) := Complex.nonneg_iff.mpr ⟨le_max_right _ _, rfl⟩
+  have hq₀ (i : ι) : 0 ≤ (q i : ℂ) := Complex.nonneg_iff.mpr ⟨le_max_right _ _, rfl⟩
+  have hP : P.PosSemidef := (PosSemidef.diagonal hp₀).mul_mul_conjTranspose_same U
+  have hQ : Q.PosSemidef := (PosSemidef.diagonal hq₀).mul_mul_conjTranspose_same U
+  have hD₀ : A - B = U * diagonal (fun i => (hD.eigenvalues i : ℂ)) * Uᴴ := by
+    have h := hD.spectral_theorem
+    rw [Unitary.conjStarAlgAut_apply, star_eq_conjTranspose] at h
+    exact h
+  have hD₁ : P - Q = A - B := by
+    rw [hD₀]
+    dsimp only [P, Q]
+    rw [← Matrix.sub_mul, ← Matrix.mul_sub, diagonal_sub]
+    congr 3
+    funext i
+    rw [← Complex.ofReal_sub]
+    apply congrArg Complex.ofReal
+    simp only [p, q, max_def]
+    split_ifs <;> linarith
+  have hMP : M - B = P := by dsimp [M]; abel
+  have hMQ : M - A = Q := by
+    have h : P - Q + B = A := by rw [hD₁, sub_add_cancel]
+    rw [← h]
+    dsimp [M]
+    abel
+  let hM : M.IsHermitian := hB.add hP.isHermitian
+  have hUP : Uᴴ * U = 1 := Unitary.coe_star_mul_self hD.eigenvectorUnitary
+  have htd (f : ι → ℝ) : (trace (U * diagonal (fun i => (f i : ℂ)) * Uᴴ)).re = ∑ i, f i := by
+    rw [trace_mul_comm, ← Matrix.mul_assoc, hUP, Matrix.one_mul, trace_diagonal,
+      ← Complex.ofReal_sum, Complex.ofReal_re]
+  have htrace {X : Matrix ι ι ℂ} (hX : X.IsHermitian) :
+      ∑ i, (hM.eigenvalues₀ i - hX.eigenvalues₀ i) = (trace (M - X)).re := by
+    rw [trace_sub, Complex.sub_re, hM.trace_eq_sum_eigenvalues₀, hX.trace_eq_sum_eigenvalues₀,
+      Finset.sum_sub_distrib]
+    change _ = Complex.reCLM (∑ i, (hM.eigenvalues₀ i : ℂ)) -
+      Complex.reCLM (∑ i, (hX.eigenvalues₀ i : ℂ))
+    simp only [map_sum]
+    simp only [Complex.reCLM_apply, Complex.ofReal_re]
+  calc
+    _ ≤ ∑ i, ((hM.eigenvalues₀ i - hA.eigenvalues₀ i) +
+        (hM.eigenvalues₀ i - hB.eigenvalues₀ i)) := by
+      apply Finset.sum_le_sum
+      intro i _
+      have ha := eigenvalues_le_of_psd_sub hA hM (by simpa only [hMQ] using hQ) i
+      have hb := eigenvalues_le_of_psd_sub hB hM (by simpa only [hMP] using hP) i
+      rw [abs_le]
+      constructor <;> linarith
+    _ = ∑ i, (q i + p i) := by
+      rw [Finset.sum_add_distrib, htrace hA, htrace hB, hMQ, hMP, htd q, htd p,
+        Finset.sum_add_distrib]
+    _ = ∑ i, |hD.eigenvalues i| := by
+      refine Finset.sum_congr rfl fun i _ => ?_
+      dsimp only [p, q]
+      rw [abs_eq_max_neg]
+      simp only [max_def]
+      split_ifs <;> linarith
+    _ = _ := by
+      let e : Fin (Fintype.card ι) ≃ ι := Fintype.equivOfCardEq (Fintype.card_fin _)
+      change (∑ i : ι, |hD.eigenvalues₀ (e.symm i)|) = _
+      exact Equiv.sum_comp e.symm (fun i => |hD.eigenvalues₀ i|)
+
+private theorem sum_abs_reflect {N d : ℕ} (hd : 2 * d ≤ N)
+    (f : ℕ → ℝ) (h0 : ∀ i, d ≤ i → f i = 0) :
+    ∑ i ∈ Finset.range N, |f i - f (N - 1 - i)| = 2 * ∑ i ∈ Finset.range d, |f i| := by
+  have hexp (i : ℕ) (hi : i ∈ Finset.range N) :
+      |f i - f (N - 1 - i)| = |f i| + |f (N - 1 - i)| := by
+    have hi' := Finset.mem_range.mp hi
+    rcases lt_or_ge i d with hi' | hi'
+    · rw [h0 (N - 1 - i) (by omega), sub_zero, abs_zero, add_zero]
+    · rw [h0 _ hi', zero_sub, abs_neg, abs_zero, zero_add]
+  rw [Finset.sum_congr rfl hexp, Finset.sum_add_distrib, Finset.sum_range_reflect (fun i => |f i|) N]
+  have hsplit : ∑ i ∈ Finset.range N, |f i| = ∑ i ∈ Finset.range d, |f i| := by
+    refine (Finset.sum_subset (Finset.range_subset_range.mpr (by omega)) fun i _ hi => ?_).symm
+    rw [h0 i (by simpa using hi), abs_zero]
+  rw [hsplit]
+  ring
+
+/-- The sum of the absolute changes in all ordered singular values is
+bounded by the sum of the singular values of the perturbation. -/
+theorem sum_abs_sortedSingularValues_sub_le {m n : Type*}
+    [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n] (A B : Matrix m n ℂ) :
+    (∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)),
+      |A.sortedSingularValues i - B.sortedSingularValues i|) ≤
+    ∑ i ∈ Finset.range (min (Fintype.card m) (Fintype.card n)), (A - B).sortedSingularValues i := by
+  let d := min (Fintype.card m) (Fintype.card n)
+  let N := Fintype.card (n ⊕ m)
+  have hd : 2 * d ≤ N := by dsimp [d, N]; rw [Fintype.card_sum]; omega
+  let f (i : ℕ) := A.sortedSingularValues i - B.sortedSingularValues i
+  let g (i : ℕ) := (A - B).sortedSingularValues i
+  have hf (i : ℕ) (hi : d ≤ i) : f i = 0 := by
+    simp only [f, sortedSingularValues_eq_zero_of_min_le _ hi, sub_self]
+  have hg (i : ℕ) (hi : d ≤ i) : g i = 0 := sortedSingularValues_eq_zero_of_min_le _ hi
+  have hAD := isHermitian_hermitianDilation A
+  have hBD := isHermitian_hermitianDilation B
+  have hAB := sum_abs_eigenvalues_sub_le hAD hBD
+  have hsub : hermitianDilation A - hermitianDilation B = hermitianDilation (A - B) := by
+    ext i j
+    rcases i with i | i <;> rcases j with j | j <;> simp [hermitianDilation]
+  have hright (i : Fin N) : (hAD.sub hBD).eigenvalues₀ i = g i - g (N - 1 - i) := by
+    have hcongr {X Y : Matrix (n ⊕ m) (n ⊕ m) ℂ}
+        (he : X = Y) (hX : X.IsHermitian) (hY : Y.IsHermitian) :
+        hX.eigenvalues₀ i = hY.eigenvalues₀ i := by subst Y; rfl
+    rw [hcongr hsub (hAD.sub hBD) (isHermitian_hermitianDilation (A - B))]
+    exact IsHermitian.eigenvalues₀_hermitianDilation _ i
+  have hleft (i : Fin N) : hAD.eigenvalues₀ i - hBD.eigenvalues₀ i = f i - f (N - 1 - i) := by
+    rw [IsHermitian.eigenvalues₀_hermitianDilation, IsHermitian.eigenvalues₀_hermitianDilation]
+    dsimp [f, N]
+    ring
+  simp only [hleft, hright] at hAB
+  rw [Fin.sum_univ_eq_sum_range (fun i => |f i - f (N - 1 - i)|) N,
+    Fin.sum_univ_eq_sum_range (fun i => |g i - g (N - 1 - i)|) N] at hAB
+  rw [sum_abs_reflect hd f hf, sum_abs_reflect hd g hg] at hAB
+  simp only [g, abs_of_nonneg (sortedSingularValues_nonneg _ _)] at hAB
+  exact le_of_mul_le_mul_left hAB zero_lt_two
+
+
+private theorem svd_unitary_mul_rectDiagonal {m n : ℕ}
+    {U : Matrix (Fin m) (Fin m) ℂ} {V : Matrix (Fin n) (Fin n) ℂ}
+    (hU : U ∈ unitaryGroup (Fin m) ℂ) (hV : V ∈ unitaryGroup (Fin n) ℂ)
+    {s : ℕ → ℝ} (hs : Antitone s) (hn : ∀ i, 0 ≤ s i) :
+    Matrix.IsSVD (U * (rectDiagonal (fun i => (s i : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ) U s V := by
+  refine ⟨⟨hU, hV, ?_⟩, hs, hn⟩
+  set D : Matrix (Fin m) (Fin n) ℂ := rectDiagonal fun i => (s i : ℂ)
+  change Uᴴ * (U * D * Vᴴ) * V = D
+  calc
+    _ = (Uᴴ * U) * D * (Vᴴ * V) := by simp only [Matrix.mul_assoc]
+    _ = _ := by rw [conjTranspose_mul_self_of_mem_unitaryGroup hU,
+      conjTranspose_mul_self_of_mem_unitaryGroup hV, Matrix.one_mul, Matrix.mul_one]
+
+private theorem singularValueVector_abs_diff_subset_le {m n : ℕ}
+    (A B : Matrix (Fin m) (Fin n) ℂ) (I : Finset (Fin (min m n))) :
+    ∑ i ∈ I, |A.sortedSingularValues i - B.sortedSingularValues i| ≤
+      ∑ i ∈ Finset.range I.card, (A - B).sortedSingularValues i := by
+  let d := min m n
+  let E := A - B
+  let s := E.sortedSingularValues
+  let t := s I.card
+  let small (i : ℕ) := min (s i) t
+  let large (i : ℕ) := max (s i - t) 0
+  obtain ⟨U, V, hE⟩ := theorem_6_2 E
+  let F : Matrix (Fin m) (Fin n) ℂ := U * (rectDiagonal (fun i => (small i : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ
+  let G : Matrix (Fin m) (Fin n) ℂ := U * (rectDiagonal (fun i => (large i : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ
+  let C := B + F
+  have ht : 0 ≤ t := E.sortedSingularValues_nonneg _
+  have hFa : Antitone small := fun _ _ hij =>
+    min_le_min (E.sortedSingularValues_antitone hij) le_rfl
+  have hGa : Antitone large := fun _ _ hij =>
+    max_le_max (sub_le_sub_right (E.sortedSingularValues_antitone hij) t) le_rfl
+  have hF := svd_unitary_mul_rectDiagonal hE.1.mem_unitaryGroup_left
+    hE.1.mem_unitaryGroup_right hFa (fun i => le_min (E.sortedSingularValues_nonneg i) ht)
+  have hG := svd_unitary_mul_rectDiagonal hE.1.mem_unitaryGroup_left
+    hE.1.mem_unitaryGroup_right hGa (fun i => le_max_right _ _)
+  have hFG : F + G = E := by
+    rw [hE.1.eq_mul_mul_star]
+    change U * (rectDiagonal (fun i => (small i : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ +
+      U * (rectDiagonal (fun i => (large i : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ =
+        U * (rectDiagonal (fun i => (s i : ℂ)) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ
+    rw [← Matrix.add_mul, ← Matrix.mul_add]
+    congr 2
+    ext i j
+    simp only [Matrix.add_apply, rectDiagonal_apply]
+    by_cases hij : (i : ℕ) = j
+    · simp only [hij, ite_true, ← Complex.ofReal_add]
+      apply congrArg Complex.ofReal
+      simp only [small, large, min_def, max_def]
+      split_ifs <;> linarith
+    · simp [hij]
+  have hAC : A - C = G := by
+    dsimp only [C]
+    have h : A = F + G + B := by rw [hFG]; exact (sub_add_cancel A B).symm
+    rw [h]
+    abel
+  have hF₀ : F.sortedSingularValues 0 ≤ t := by
+    by_cases h : 0 < d
+    · rw [← hF.singularValues_eq (h.trans_le (min_le_left _ _)) (h.trans_le (min_le_right _ _))]
+      exact min_le_right _ _
+    · have h0 : (min (Fintype.card (Fin m)) (Fintype.card (Fin n))) ≤ 0 := by
+        simpa only [Fintype.card_fin] using Nat.le_of_not_gt h
+      rw [F.sortedSingularValues_eq_zero_of_min_le h0]
+      exact ht
+  have hC (i : Fin d) : |C.sortedSingularValues i - B.sortedSingularValues i| ≤ t :=
+    (abs_sortedSingularValues_add_sub_le B F i).trans hF₀
+  have hGsum : ∑ i ∈ Finset.range d, G.sortedSingularValues i =
+      ∑ i ∈ Finset.range I.card, (s i - t) := by
+    have hk : I.card ≤ d := by simpa only [Fintype.card_fin] using I.card_le_univ
+    have hl : ∑ i ∈ Finset.range d, G.sortedSingularValues i =
+        ∑ i ∈ Finset.range d, large i := by
+      refine Finset.sum_congr rfl fun i hi => ?_
+      have hd := Finset.mem_range.mp hi
+      exact (hG.singularValues_eq (hd.trans_le (min_le_left _ _))
+        (hd.trans_le (min_le_right _ _))).symm
+    rw [hl]
+    calc
+      _ = ∑ i ∈ Finset.range I.card, large i := by
+        symm
+        refine Finset.sum_subset (Finset.range_subset_range.mpr hk) fun i hi hi' => ?_
+        have hc : I.card ≤ i := Nat.le_of_not_gt (by simpa only [Finset.mem_range] using hi')
+        exact max_eq_right (sub_nonpos.mpr (E.sortedSingularValues_antitone hc))
+      _ = _ := by
+        refine Finset.sum_congr rfl fun i hi => ?_
+        have hc : i ≤ I.card := (Finset.mem_range.mp hi).le
+        exact max_eq_left (sub_nonneg.mpr (E.sortedSingularValues_antitone hc))
+  have hMajor : ∑ i ∈ I, |A.sortedSingularValues i - C.sortedSingularValues i| ≤
+       ∑ i ∈ Finset.range I.card, (s i - t) := by
+    have hnuc := sum_abs_sortedSingularValues_sub_le A C
+    rw [Fintype.card_fin, Fintype.card_fin, hAC, hGsum] at hnuc
+    refine le_trans ?_ hnuc
+    rw [← Fin.sum_univ_eq_sum_range
+      (fun i => |A.sortedSingularValues i - C.sortedSingularValues i|) d]
+    exact Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) fun _ _ _ => abs_nonneg _
+  calc
+    _ ≤ ∑ i ∈ I, (|A.sortedSingularValues i - C.sortedSingularValues i| + t) := by
+      refine Finset.sum_le_sum fun i _ => ?_
+      exact (abs_sub_le _ _ _).trans (add_le_add le_rfl (hC i))
+    _ = (∑ i ∈ I, |A.sortedSingularValues i - C.sortedSingularValues i|) + I.card * t := by
+      rw [Finset.sum_add_distrib, Finset.sum_const, nsmul_eq_mul]
+    _ ≤ (∑ i ∈ Finset.range I.card, (s i - t)) + I.card * t :=
+      add_le_add hMajor le_rfl
+    _ = _ := by
+      rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul, sub_add_cancel]
+
+
+private theorem weighted_sum_le_of_prefix {d : ℕ} (w x y : ℕ → ℝ)
+    (hw : ∀ i, 0 ≤ w i) (hwA : Antitone w)
+    (h : ∀ k ≤ d, ∑ i ∈ Finset.range k, x i ≤ ∑ i ∈ Finset.range k, y i) :
+    ∑ i ∈ Finset.range d, w i * x i ≤ ∑ i ∈ Finset.range d, w i * y i := by
+  have hx := Finset.sum_range_by_parts w x d
+  have hy := Finset.sum_range_by_parts w y d
+  simp only [smul_eq_mul] at hx hy
+  rw [hx, hy]
+  apply sub_le_sub (mul_le_mul_of_nonneg_left (h d le_rfl) (hw _))
+  apply Finset.sum_le_sum
+  intro i hi
+  refine mul_le_mul_of_nonpos_left (h (i + 1) ?_) (sub_nonpos.mpr (hwA (Nat.le_succ i)))
+  have he := Finset.mem_range.mp hi
+  omega
+
+private theorem sorted_singularValue_diff_prefix_le {m n : ℕ} (A B : Matrix (Fin m) (Fin n) ℂ)
+    {k : ℕ} (hk : k ≤ min m n) :
+    let x (i : Fin (min m n)) := A.sortedSingularValues i - B.sortedSingularValues i
+    ∑ i ∈ Finset.range k, zeroPadGauge (sortAbs x) i ≤
+      ∑ i ∈ Finset.range k, (A - B).sortedSingularValues i := by
+  let d := min m n
+  let x (i : Fin d) := A.sortedSingularValues i - B.sortedSingularValues i
+  let p := Tuple.sortDesc (fun i => |x i|)
+  let e : Fin k ↪ Fin d := (Fin.castLEEmb hk).trans p.toEmbedding
+  let I := Finset.univ.map e
+  have h := singularValueVector_abs_diff_subset_le A B I
+  have hk' : I.card = k := by simp [I]
+  rw [hk'] at h
+  change (∑ i ∈ Finset.univ.map e, |x i|) ≤ _ at h
+  rw [Finset.sum_map] at h
+  refine le_trans (le_of_eq ?_) h
+  rw [Finset.sum_range]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  have hi : (i : ℕ) < d := i.isLt.trans_le hk
+  rw [zeroPadGauge, dite_eq_left hi]
+  rfl
+
+/-- Mirsky's inequality for every symmetric gauge. The gauge of the
+componentwise change of the ordered singular values is bounded by
+the gauge of the singular values of the matrix perturbation. -/
+theorem symmetricGauge_singularValues_sub_le {m n : ℕ}
+    {φ : Seminorm ℝ (Fin (min m n) → ℝ)} (hφ : IsSymmetricGauge φ)
+    (A B : Matrix (Fin m) (Fin n) ℂ) :
+    φ (fun i => A.sortedSingularValues i - B.sortedSingularValues i) ≤
+      matrixGaugeValue φ (A - B) := by
+  let d := min m n
+  let x (i : Fin d) := A.sortedSingularValues i - B.sortedSingularValues i
+  let a := sortAbs x
+  let b := singularValueVector d (A - B)
+  obtain ⟨y, hy, hyA, hdom, hye⟩ := sorted_norming_vector hφ (sortAbs_nonneg x) (sortAbs_antitone x)
+  have ha : φ a = φ x := (hφ.perm _ _).trans (hφ.abs _)
+  have hPref (k : ℕ) (hk : k ≤ d) :
+      ∑ i ∈ Finset.range k, zeroPadGauge a i ≤ ∑ i ∈ Finset.range k, zeroPadGauge b i := by
+    refine (sorted_singularValue_diff_prefix_le A B hk).trans_eq ?_
+    refine Finset.sum_congr rfl fun i hi => ?_
+    have hi' : i < d := (Finset.mem_range.mp hi).trans_le hk
+    rw [zeroPadGauge, dite_eq_left hi']
+    rfl
+  have hW := weighted_sum_le_of_prefix (zeroPadGauge y) (zeroPadGauge a) (zeroPadGauge b)
+    (zeroPadGauge_nonneg hy) (zeroPadGauge_antitone hy hyA) hPref
+  rw [Finset.sum_range, Finset.sum_range] at hW
+  have hdot : a ⬝ᵥ y ≤ b ⬝ᵥ y := by
+    change (∑ i : Fin d, a i * y i) ≤ ∑ i, b i * y i
+    have hpad (v : Fin d → ℝ) (i : Fin d) : zeroPadGauge v i = v i := dite_eq_left i.isLt
+    simp only [hpad] at hW
+    simpa only [mul_comm] using hW
+  change φ x ≤ φ b
+  rw [← ha, ← hye]
+  exact hdot.trans (hdom b)
+
+private theorem leading_columns_mul_conjTranspose {m n k : ℕ}
+    (U : Matrix (Fin m) (Fin m) ℂ) (V : Matrix (Fin n) (Fin n) ℂ)
+    (hm : k ≤ m) (hn : k ≤ n) :
+    U.submatrix id (Fin.castLE hm) * (V.submatrix id (Fin.castLE hn))ᴴ =
+      U * (rectDiagonal (fun i => if i < k then (1 : ℂ) else 0) : Matrix (Fin m) (Fin n) ℂ) * Vᴴ := by
+  have h := Matrix.svdTruncation_eq_sum U (fun _ => (1 : ℝ)) V hm hn
+  simp only [svdTruncation, RCLike.ofReal_one, one_smul, star_eq_conjTranspose] at h
+  rw [h]
+  ext i j
+  simp only [Matrix.mul_apply, Matrix.sum_apply, vecMulVec_apply, Pi.star_apply, col_apply,
+    conjTranspose_apply, submatrix_apply, id_eq]
+
+/-- **Exercise 55** of [benIsrael2003generalized], Chapter 6, rectangular
+Fan–Hoffman inequalities. For any comparison partial isometry, the factor
+from the same number of leading singular vectors gives the lower and upper
+bounds. Taking that number to be the rank of `A` gives the factor of Theorem 7. -/
+theorem exercise_6_55 {m n : ℕ}
+    (ν : Seminorm ℂ (Matrix (Fin m) (Fin n) ℂ)) (hZ : ∀ A, ν A = 0 → A = 0)
+    (hν : ∀ U V, U ∈ unitaryGroup (Fin m) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A, ν (U * A * V) = ν A)
+    {A W : Matrix (Fin m) (Fin n) ℂ} {U : Matrix (Fin m) (Fin m) ℂ}
+    {V : Matrix (Fin n) (Fin n) ℂ} {σ : ℕ → ℝ}
+    (hA : IsSingularValueDecomposition A U σ V) (hW : IsPartialIsometry W) :
+    let E := U.submatrix id (Fin.castLE W.rank_le_height) *
+      (V.submatrix id (Fin.castLE W.rank_le_width))ᴴ
+    ν (A - E) ≤ ν (A - W) ∧ ν (A - W) ≤ ν (A + E) := by
+  obtain ⟨φ, hφ, hrepr, hdiag⟩ := exists_gaugeRepresentation ν hZ hν
+  let E := U.submatrix id (Fin.castLE W.rank_le_height) *
+    (V.submatrix id (Fin.castLE W.rank_le_width))ᴴ
+  have hσ (i : ℕ) (hm : i < m) (hn : i < n) : σ i = A.sortedSingularValues i :=
+    hA.1.singularValues_eq hm hn
+  have hWσ (i : ℕ) : W.sortedSingularValues i = if i < W.rank then 1 else 0 := by
+    by_cases hi : i < W.rank
+    · rw [ite_eq_left hi, (exercise_6_41 W).mp hW i hi]
+    · rw [ite_eq_right hi, (W.sortedSingularValues_eq_zero_iff_rank_le i).mpr (le_of_not_gt hi)]
+  have hE : E = U * (rectDiagonal (fun i => (W.sortedSingularValues i : ℂ)) :
+      Matrix (Fin m) (Fin n) ℂ) * Vᴴ := by
+    dsimp only [E]
+    rw [leading_columns_mul_conjTranspose U V W.rank_le_height W.rank_le_width]
+    simp only [hWσ, apply_ite, Complex.ofReal_zero, Complex.ofReal_one]
+  have hS := svd_unitary_mul_rectDiagonal hA.1.mem_unitaryGroup_left hA.1.mem_unitaryGroup_right
+    W.sortedSingularValues_antitone W.sortedSingularValues_nonneg
+  have hEU : Uᴴ * E * V = rectDiagonal (fun i => (W.sortedSingularValues i : ℂ)) := by
+    rw [hE]
+    exact hS.star_mul_mul
+  have hU := conjTranspose_mem_unitaryGroup hA.1.mem_unitaryGroup_left
+  have hV := hA.1.mem_unitaryGroup_right
+  have hAU : Uᴴ * A * V = rectDiagonal (fun i => (σ i : ℂ)) := hA.1.star_mul_mul
+  let x (i : Fin (min m n)) := A.sortedSingularValues i - W.sortedSingularValues i
+  have hx : Uᴴ * (A - E) * V = gaugeDiagonal x := by
+    rw [Matrix.mul_sub, Matrix.sub_mul, hAU, hEU]
+    ext i j
+    by_cases hij : (i : ℕ) = j
+    · have hjm : (j : ℕ) < m := hij ▸ i.isLt
+      have hj := lt_min hjm j.isLt
+      simp only [gaugeDiagonal, Matrix.sub_apply, rectDiagonal_apply, hij, ite_true,
+        zeroPadGauge, dite_eq_left hj, x, Complex.ofReal_sub, hσ _ hjm j.isLt]
+    · simp [gaugeDiagonal, rectDiagonal_apply, hij]
+  have hlow : ν (A - E) = φ x := by
+    rw [← hν Uᴴ V hU hV (A - E), hx, ← hdiag]
+  let y (i : ℕ) := A.sortedSingularValues i + W.sortedSingularValues i
+  have hy : Uᴴ * (A + E) * V = rectDiagonal (fun i => (y i : ℂ)) := by
+    rw [Matrix.mul_add, Matrix.add_mul, hAU, hEU]
+    ext i j
+    by_cases hij : (i : ℕ) = j
+    · have hjm : (j : ℕ) < m := hij ▸ i.isLt
+      simp only [Matrix.add_apply, rectDiagonal_apply, hij, ite_true, y, Complex.ofReal_add,
+        hσ _ hjm j.isLt]
+    · simp [rectDiagonal_apply, hij]
+  have hsumSVD : Matrix.IsSVD (A + E) U y V :=
+    ⟨⟨hA.1.mem_unitaryGroup_left, hV, hy⟩, A.sortedSingularValues_antitone.add W.sortedSingularValues_antitone,
+      fun i => add_nonneg (A.sortedSingularValues_nonneg i) (W.sortedSingularValues_nonneg i)⟩
+  have hyvec : singularValueVector (min m n) (A + E) =
+      singularValueVector (min m n) A + singularValueVector (min m n) W := by
+    funext i
+    exact (hsumSVD.singularValues_eq (i.isLt.trans_le (min_le_left _ _))
+      (i.isLt.trans_le (min_le_right _ _))).symm
+  have hneg : singularValueVector (min m n) (-W) = singularValueVector (min m n) W := by
+    funext i
+    rw [singularValueVector, singularValueVector, ← neg_one_smul ℂ W,
+      sortedSingularValues_smul, norm_neg, norm_one, one_mul]
+  refine ⟨?_, ?_⟩
+  · rw [hlow, hrepr]
+    exact symmetricGauge_singularValues_sub_le hφ A W
+  · rw [hrepr (A - W), hrepr (A + E)]
+    obtain ⟨X, -, htrace, hdom⟩ := matrixGaugeValue_exists_norming_trace hφ (A - W)
+    have ha := singularValueVector_dot_upper A X
+    have hw := singularValueVector_dot_upper (-W) X
+    rw [hneg] at hw
+    rw [← htrace, sub_eq_add_neg, Matrix.add_mul, trace_add, Complex.add_re]
+    refine (add_le_add ha hw).trans ?_
+    rw [← add_dotProduct, ← hyvec]
+    exact hdom _
+
+/-- Exercise 55 for the supported polar factor of Theorem 7 and every
+partial isometry of the same rank as the matrix. -/
+theorem exercise_6_55_canonical {m n : ℕ}
+    (ν : Seminorm ℂ (Matrix (Fin m) (Fin n) ℂ)) (hZ : ∀ A, ν A = 0 → A = 0)
+    (hν : ∀ U V, U ∈ unitaryGroup (Fin m) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A, ν (U * A * V) = ν A)
+    {A E W : Matrix (Fin m) (Fin n) ℂ} {G : Matrix (Fin m) (Fin m) ℂ}
+    {H : Matrix (Fin n) (Fin n) ℂ}
+    (hA : IsCanonicalPolarDecomposition A E G H) (hW : IsPartialIsometry W)
+    (hRank : W.rank = A.rank) :
+    ν (A - E) ≤ ν (A - W) ∧ ν (A - W) ≤ ν (A + E) := by
+  obtain ⟨U, V, hS⟩ := theorem_6_2 A
+  have hpolar := (hA.unique (theorem_6_7 hS)).1
+  rw [hpolar, leading_columns_mul_conjTranspose _ _ A.rank_le_height A.rank_le_width]
+  have h := exercise_6_55 ν hZ hν hS hW
+  dsimp only at h
+  rw [leading_columns_mul_conjTranspose _ _ W.rank_le_height W.rank_le_width, hRank] at h
+  exact h
+
+/-- **Exercise 55** of [benIsrael2003generalized], Chapter 6, square
+Fan–Hoffman inequalities for any unitary polar factor and any unitary comparator. -/
+theorem exercise_6_55_square {n : ℕ}
+    (ν : Seminorm ℂ (Matrix (Fin n) (Fin n) ℂ)) (hZ : ∀ A, ν A = 0 → A = 0)
+    (hν : ∀ U V, U ∈ unitaryGroup (Fin n) ℂ → V ∈ unitaryGroup (Fin n) ℂ →
+      ∀ A, ν (U * A * V) = ν A)
+    {A U H W : Matrix (Fin n) (Fin n) ℂ} (hU : U ∈ unitaryGroup (Fin n) ℂ)
+    (hH : H.PosSemidef) (hA : A = U * H) (hW : W ∈ unitaryGroup (Fin n) ℂ) :
+    ν (A - U) ≤ ν (A - W) ∧ ν (A - W) ≤ ν (A + U) := by
+  obtain ⟨P, Q, hS⟩ := theorem_6_2 A
+  have hW₀ : IsPartialIsometry W := (isPartialIsometry_iff_reflexive W).mpr (by
+    rw [Matrix.mul_assoc, conjTranspose_mul_self_of_mem_unitaryGroup hW, Matrix.mul_one])
+  have hRank : W.rank = n := (rank_of_isUnit W (isUnit_of_mem_unitaryGroup hW)).trans (Fintype.card_fin n)
+  have hP (X : Matrix (Fin n) (Fin n) ℂ) :
+      X.submatrix id (Fin.castLE (show n ≤ n from le_rfl)) = X := by
+    ext i j
+    rfl
+  have hlead {k : ℕ} (hk : k ≤ n) (he : k = n) :
+      P.submatrix id (Fin.castLE hk) * (Q.submatrix id (Fin.castLE hk))ᴴ = P * Qᴴ := by
+    subst k
+    rw [hP, hP]
+  let E := P * Qᴴ
+  have h := exercise_6_55 ν hZ hν hS hW₀
+  dsimp only at h
+  rw [hlead W.rank_le_height hRank] at h
+  have hpolar : Matrix.IsPolarDecomposition A U H :=
+    ⟨conjTranspose_mul_self_of_mem_unitaryGroup hU, hH, hA⟩
+  have hpolar' := hS.1.isPolarDecomposition_of_square
+  have hH' := hpolar'.eq_cfcSqrt.trans hpolar.eq_cfcSqrt.symm
+  have hA' : A = E * H := hpolar'.eq_mul.trans (congrArg (E * ·) hH')
+  have hE : E ∈ unitaryGroup (Fin n) ℂ :=
+    mul_mem hS.1.mem_unitaryGroup_left (conjTranspose_mem_unitaryGroup hS.1.mem_unitaryGroup_right)
+  have hminus (F : Matrix (Fin n) (Fin n) ℂ) (hF : F ∈ unitaryGroup (Fin n) ℂ)
+      (hAF : A = F * H) : ν (A - F) = ν (H - 1) := by
+    rw [hAF, show F * H - F = F * (H - 1) by rw [Matrix.mul_sub, Matrix.mul_one]]
+    simpa only [Matrix.mul_one] using hν F 1 hF (one_mem _) (H - 1)
+  have hplus (F : Matrix (Fin n) (Fin n) ℂ) (hF : F ∈ unitaryGroup (Fin n) ℂ)
+      (hAF : A = F * H) : ν (A + F) = ν (H + 1) := by
+    rw [hAF, show F * H + F = F * (H + 1) by rw [Matrix.mul_add, Matrix.mul_one]]
+    simpa only [Matrix.mul_one] using hν F 1 hF (one_mem _) (H + 1)
+  rw [hminus U hU hA, hplus U hU hA, ← hminus E hE hA', ← hplus E hE hA']
+  exact h
 
 end BenIsraelGreville.Chapter06

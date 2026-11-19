@@ -154,10 +154,7 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 54, equations (92)–(93)
 
 [[node]]
 id = "exercise_6_55"
-kind = "theorem"
-desc = '''Prove the nearest and farthest unitary polar-factor inequalities for unitarily invariant norms and their appropriate rectangular analogues. The scalar inequalities are proved separately.'''
-deps = ["theorem_6_7"]
-source = 'Ben-Israel and Greville, Chapter 6, Exercise 55'
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 55, rectangular inequalities at any comparison rank'
 
 [[node]]
 id = "exercise_6_56"
@@ -189,15 +186,10 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 61, attainment'
 
 [[node]]
 id = "exercise_6_62"
-kind = "theorem"
-desc = '''Symmetric gauge functions and unitarily invariant matrix norms correspond through the singular-value vector, including the dual norm and the triangle inequality.'''
-source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, equations (102)–(103)'
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(c), equation (103), attained dual trace formula'
 
 [[node]]
 id = "exercise_6_63"
-kind = "theorem"
-desc = '''For every symmetric gauge function, its values on the ordered singular-value vectors satisfy a triangle inequality under matrix addition.'''
-deps = ["exercise_6_62"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 63, equation (104)'
 
 [[node]]
@@ -295,3 +287,43 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(a), continuity of the 
 [[node]]
 id = "exercise_6_62_positiveHomogeneous"
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(a), positive and continuous homogeneous matrix gauge'
+
+[[node]]
+id = "exists_trace_aligned_singularValueVector"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(c), exact trace alignment with any ordered nonnegative singular-value vector'
+
+[[node]]
+id = "matrixGaugeValue_exists_norming_trace"
+source = 'Ben-Israel and Greville, Chapter 6, Exercises 62(d) and 63, dual norming trace functional'
+
+[[node]]
+id = "matrixGaugeSeminorm"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(d), induced matrix seminorm'
+
+[[node]]
+id = "exercise_6_62_norm"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(d), definiteness and unitary invariance'
+
+[[node]]
+id = "exercise_6_62_converse"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(e), symmetric gauge representation for unitarily invariant norms'
+
+[[node]]
+id = "symmetricGaugeDual"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(c), scalar dual gauge'
+
+[[node]]
+id = "sum_abs_sortedSingularValues_sub_le"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 55, sum of the absolute singular-value changes'
+
+[[node]]
+id = "symmetricGauge_singularValues_sub_le"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 55, Mirsky bound for every symmetric gauge'
+
+[[node]]
+id = "exercise_6_55_canonical"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 55, rectangular inequalities for the supported polar factor of Theorem 7'
+
+[[node]]
+id = "exercise_6_55_square"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 55, square inequalities for any unitary polar factor'
