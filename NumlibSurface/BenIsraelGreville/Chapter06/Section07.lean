@@ -7,6 +7,7 @@ import Mathlib.Analysis.Complex.CauchyIntegral
 import Numlib.Analysis.Matrix.Function.CFC
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.LinearAlgebra.Lagrange
+import Numlib.Analysis.Complex.ContourIntegral
 
 /-!
 # Rectangular spectral calculus
@@ -19,6 +20,13 @@ functions and resolvents of rectangular matrices.
 
 * **Corollary 3** (correction). The pseudoinverse uses the adjoints of
   the rectangular spectral components.
+* **Lemma 5, Corollary 4, Lemma 7, and Theorem 20** (contour scope).
+  The line integrals use piecewise continuously differentiable paths.
+  The formulas with general analytic scalar functions assume that each
+  path lies in an open convex set of holomorphy.
+* **Equation (161) and Theorem 20** (correction). The weighted
+  resolvent integrals require winding number zero about the origin,
+  since the integrands introduce an additional pole there.
 * **Lemma 6** (correction). The product on the right side of the first
   resolvent identity contains the aggregate partial isometry between
   the two resolvents, as in the intermediate step of the printed proof.
@@ -1470,5 +1478,333 @@ theorem rectangular_simple_singular_component_unique
   simpa only [hSame] using hh
 
 end SimpleComponents
+
+section GeneralContours
+
+open scoped Matrix.Norms.Frobenius Real
+
+variable {m n k : Type*} [Fintype m] [Fintype n] [Fintype k]
+  [DecidableEq n] [DecidableEq k]
+
+/-- The normalized rectangular resolvent integral along a complex
+closed path, with the chosen aggregate isometry as shift direction. -/
+noncomputable def rectangularContourCalculus {a : ℂ} (A E : Matrix m n ℂ) (f : ℂ → ℂ)
+    (γ : Path a a) : Matrix n m ℂ :=
+  ((2 * (Real.pi : ℂ) * Complex.I)⁻¹ : ℂ) •
+    complexLineIntegral γ (fun z => f z • generalizedResolvent A E z)
+
+/-- **Lemma 5** of [benIsrael2003generalized], Chapter 6, reduced to
+scalar Cauchy integrals for a piecewise continuously differentiable
+contour avoiding the rectangular spectral coefficients. -/
+theorem rectangularContourCalculus_eq_scalar_integrals
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d) {a : ℂ} (γ : Path a a)
+    (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (f : ℂ → ℂ) (hf : ContinuousOn f (Set.range γ)) :
+    rectangularContourCalculus A (U * Vᴴ) f γ =
+      rectangularSpectralExpansion V U (fun i =>
+        (2 * (Real.pi : ℂ) * Complex.I)⁻¹ *
+          complexLineIntegral γ (fun z => (z - d i)⁻¹ * f z)) := by
+  let g (i : k) (z : ℂ) := (z - d i)⁻¹ * f z
+  have hG (i : k) : ContinuousOn (g i) (Set.range γ) := by
+    have hs : ContinuousOn (fun z : ℂ => z - d i) (Set.range γ) :=
+      continuousOn_id.sub continuousOn_const
+    exact (hs.inv₀ fun z hz => sub_ne_zero.mpr (fun he => hAvoid i (he ▸ hz))).mul hf
+  have hF : (fun z => f z • generalizedResolvent A (U * Vᴴ) z) =
+      fun z => ∑ i, g i z • rectangularSpectralComponent V U i := by
+    funext z
+    rw [generalizedResolvent_eq_spectralExpansion h, rectangularSpectralExpansion_eq_sum,
+      Finset.smul_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [smul_smul, mul_comm, show g i z = _ from rfl]
+  rw [rectangularContourCalculus, hF,
+    complexLineIntegral_finset_sum hγ Finset.univ (fun i z => g i z • rectangularSpectralComponent V U i)
+      (fun i _ => (hG i).smul continuousOn_const),
+    Finset.smul_sum, rectangularSpectralExpansion_eq_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [complexLineIntegral_smul_const, smul_smul]
+
+/-- **Lemma 5(a)** of [benIsrael2003generalized], Chapter 6, Equation
+(159). A closed path with winding number one around the selected
+coefficient and zero around the others recovers its grouped adjoint
+component. -/
+theorem lemma_6_5_path_grouped {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ}
+    {d : k → ℂ} (h : IsRectangularSpectralDecomposition A U V d) {a w : ℂ}
+    (γ : Path a a) (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (hIndex : ∀ i, complexPathIndex γ (d i) = if d i = w then 1 else 0) :
+    rectangularContourCalculus A (U * Vᴴ) (fun _ => 1) γ =
+      (rectangularGroupedComponent U V d w)ᴴ := by
+  classical
+  rw [rectangularContourCalculus_eq_scalar_integrals h γ hγ hAvoid _ continuousOn_const,
+    rectangularGroupedComponent, rectangularSpectralExpansion_adjoint]
+  apply congrArg (rectangularSpectralExpansion V U)
+  funext i
+  simp only [mul_one]
+  change complexPathIndex γ (d i) = _
+  rw [hIndex]
+  by_cases he : d i = w <;> simp [he]
+
+/-- The scalar Cauchy integral on a holomorphic disk along any
+piecewise continuously differentiable loop has the corresponding
+winding factor, including for points outside the disk. -/
+theorem normalized_complexLineIntegral_cauchy_disk {a w c : ℂ} (γ : Path a a)
+    (hγ : γ.IsPiecewiseC1) {R : ℝ} (hγD : Set.range γ ⊆ Metric.ball c R)
+    (hAvoid : w ∉ Set.range γ) (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f (Metric.ball c R)) :
+    (2 * (Real.pi : ℂ) * Complex.I)⁻¹ *
+      complexLineIntegral γ (fun z => (z - w)⁻¹ * f z) = complexPathIndex γ w * f w := by
+  exact _root_.normalized_complexLineIntegral_cauchy_disk γ hγ hγD hAvoid f hf
+
+private theorem normalized_complexLineIntegral_two_poles {a w : ℂ} (γ : Path a a)
+    (hγ : γ.IsPiecewiseC1) (hw : w ≠ 0) (h₀ : (0 : ℂ) ∉ Set.range γ)
+    (hAvoid : w ∉ Set.range γ) :
+    (2 * (Real.pi : ℂ) * Complex.I)⁻¹ *
+      complexLineIntegral γ (fun z => (z - w)⁻¹ * z⁻¹) =
+      w⁻¹ * (complexPathIndex γ w - complexPathIndex γ 0) := by
+  have hPF : Set.EqOn (fun z : ℂ => (z - w)⁻¹ * z⁻¹)
+      (fun z => w⁻¹ * ((z - w)⁻¹ - z⁻¹)) (Set.range γ) := by
+    intro z hz
+    have hz₀ : z ≠ 0 := fun he => h₀ (he ▸ hz)
+    have hzw : z - w ≠ 0 := sub_ne_zero.mpr fun he => hAvoid (he ▸ hz)
+    field_simp
+    ring
+  rw [complexLineIntegral_congr_on_path γ hPF, complexLineIntegral_scalar_mul]
+  have hCw : ContinuousOn (fun z : ℂ => (z - w)⁻¹) (Set.range γ) := by
+    have he : ContinuousOn (fun z : ℂ => z - w) (Set.range γ) := continuousOn_id.sub continuousOn_const
+    exact he.inv₀ (fun z hz => sub_ne_zero.mpr fun hz' => hAvoid (hz' ▸ hz))
+  have hC₀ : ContinuousOn (fun z : ℂ => z⁻¹) (Set.range γ) :=
+    continuousOn_id.inv₀ (fun z hz hz' => h₀ (hz' ▸ hz))
+  rw [complexLineIntegral_sub_of_continuousOn hγ hCw hC₀]
+  simp only [complexPathIndex, sub_zero]
+  ring
+
+/-- **Equation (161)** of [benIsrael2003generalized], Chapter 6, for
+piecewise continuously differentiable loops. Winding number one at
+the spectral coefficients and zero at the origin gives the
+Moore–Penrose inverse. -/
+theorem rectangularContourCalculus_inv {A : Matrix m n ℂ} {U : Matrix m k ℂ}
+    {V : Matrix n k ℂ} {d : k → ℂ} (h : IsRectangularSpectralDecomposition A U V d)
+    {a : ℂ} (γ : Path a a) (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (h₀ : (0 : ℂ) ∉ Set.range γ) (hIndex : ∀ i, complexPathIndex γ (d i) = 1)
+    (hIndex₀ : complexPathIndex γ 0 = 0) :
+    rectangularContourCalculus A (U * Vᴴ) (fun z => z⁻¹) γ = A.pinv := by
+  have hf : ContinuousOn (fun z : ℂ => z⁻¹) (Set.range γ) :=
+    continuousOn_id.inv₀ (fun z hz he => h₀ (he ▸ hz))
+  rw [rectangularContourCalculus_eq_scalar_integrals h γ hγ hAvoid _ hf, corollary_6_3 h]
+  apply congrArg (rectangularSpectralExpansion V U)
+  funext i
+  rw [normalized_complexLineIntegral_two_poles γ hγ (h.coeff_ne_zero i) h₀ (hAvoid i),
+    hIndex, hIndex₀, sub_zero, mul_one]
+
+private noncomputable def continLinearMap_mul_left {a b c : Type*}
+    [Fintype a] [Fintype b] [Fintype c] (M : Matrix a b ℂ) :
+    Matrix b c ℂ →L[ℂ] Matrix a c ℂ :=
+  ({ toFun := fun X => M * X
+     map_add' := fun X Y => Matrix.mul_add M X Y
+     map_smul' := fun r X => Matrix.mul_smul M r X } :
+    Matrix b c ℂ →ₗ[ℂ] Matrix a c ℂ).toContinuousLinearMap
+
+private noncomputable def continLinearMap_mul_right {a b c : Type*}
+    [Fintype a] [Fintype b] [Fintype c] (M : Matrix b c ℂ) :
+    Matrix a b ℂ →L[ℂ] Matrix a c ℂ :=
+  ({ toFun := fun X => X * M
+     map_add' := fun X Y => Matrix.add_mul X Y M
+     map_smul' := fun r X => Matrix.smul_mul r X M } :
+    Matrix a b ℂ →ₗ[ℂ] Matrix a c ℂ).toContinuousLinearMap
+
+private theorem continuousOn_inverse_smul_generalizedResolvent
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d) {a : ℂ} (γ : Path a a)
+    (hAvoid : ∀ i, d i ∉ Set.range γ) (h₀ : (0 : ℂ) ∉ Set.range γ) :
+    ContinuousOn (fun z => z⁻¹ • generalizedResolvent A (U * Vᴴ) z) (Set.range γ) := by
+  have hC₀ : ContinuousOn (fun z : ℂ => z⁻¹) (Set.range γ) :=
+    continuousOn_id.inv₀ (fun z hz he => h₀ (he ▸ hz))
+  refine hC₀.smul
+    (show ContinuousOn (fun z => generalizedResolvent A (U * Vᴴ) z) (Set.range γ) from ?_)
+  simp_rw [generalizedResolvent_eq_spectralExpansion h, rectangularSpectralExpansion_eq_sum]
+  apply continuousOn_finsetSum
+  intro i _
+  have hc : ContinuousOn (fun z : ℂ => z - d i) (Set.range γ) :=
+    continuousOn_id.sub continuousOn_const
+  exact (hc.inv₀ (fun z hz => sub_ne_zero.mpr fun he => hAvoid i (he ▸ hz))).smul
+    continuousOn_const
+
+/-- **Theorem 20** of [benIsrael2003generalized], Chapter 6, Equation
+(169), for piecewise continuously differentiable loops. The iterated
+resolvent integral equals the product of the two pseudoinverses
+with the right-hand side between them. -/
+theorem theorem_6_20 {p q l : Type*} [Fintype p] [Fintype q] [Fintype l]
+    [DecidableEq q] [DecidableEq l] {A : Matrix m n ℂ} {B : Matrix p q ℂ} (D : Matrix m q ℂ)
+    {U : Matrix m k ℂ} {V : Matrix n k ℂ} {S : Matrix p l ℂ} {T : Matrix q l ℂ}
+    {a : k → ℂ} {b : l → ℂ}
+    (hA : IsRectangularSpectralDecomposition A U V a)
+    (hB : IsRectangularSpectralDecomposition B S T b)
+    {a₀ b₀ : ℂ} (γA : Path a₀ a₀) (γB : Path b₀ b₀)
+    (hγA : γA.IsPiecewiseC1) (hγB : γB.IsPiecewiseC1)
+    (hAvoidA : ∀ i, a i ∉ Set.range γA) (hAvoidB : ∀ j, b j ∉ Set.range γB)
+    (hA₀ : (0 : ℂ) ∉ Set.range γA) (hB₀ : (0 : ℂ) ∉ Set.range γB)
+    (hIndexA : ∀ i, complexPathIndex γA (a i) = 1)
+    (hIndexB : ∀ j, complexPathIndex γB (b j) = 1)
+    (hIndexA₀ : complexPathIndex γA 0 = 0) (hIndexB₀ : complexPathIndex γB 0 = 0) :
+    let X :=
+      (((2 * (Real.pi : ℂ) * Complex.I)⁻¹ : ℂ) ^ 2) •
+        complexLineIntegral γA (fun z =>
+          complexLineIntegral γB (fun w =>
+            (z * w)⁻¹ • (generalizedResolvent A (U * Vᴴ) z * D *
+              generalizedResolvent B (S * Tᴴ) w)))
+    X = A.pinv * D * B.pinv ∧
+      ((∃ X₀ : Matrix n p ℂ, A * X₀ * B = D) → A * X * B = D) := by
+  let α : ℂ := (2 * (Real.pi : ℂ) * Complex.I)⁻¹
+  let f (z : ℂ) := z⁻¹ • generalizedResolvent A (U * Vᴴ) z
+  let g (z : ℂ) := z⁻¹ • generalizedResolvent B (S * Tᴴ) z
+  let IA := complexLineIntegral γA f
+  let IB := complexLineIntegral γB g
+  have hf := continuousOn_inverse_smul_generalizedResolvent hA γA hAvoidA hA₀
+  have hg := continuousOn_inverse_smul_generalizedResolvent hB γB hAvoidB hB₀
+  have hAinv : α • IA = A.pinv :=
+    rectangularContourCalculus_inv hA γA hγA hAvoidA hA₀ hIndexA hIndexA₀
+  have hBinv : α • IB = B.pinv :=
+    rectangularContourCalculus_inv hB γB hγB hAvoidB hB₀ hIndexB hIndexB₀
+  have hPoint (x y : ℂ) :
+      (x * y)⁻¹ • (generalizedResolvent A (U * Vᴴ) x * D *
+        generalizedResolvent B (S * Tᴴ) y) = f x * D * g y := by
+    simp only [f, g, Matrix.smul_mul, Matrix.mul_smul, smul_smul, _root_.mul_inv_rev]
+  have hInner (x : ℂ) :
+      complexLineIntegral γB (fun y => f x * D * g y) = f x * D * IB :=
+    complexLineIntegral_map hγB hg (continLinearMap_mul_left (f x * D))
+  have hOuter :
+      complexLineIntegral γA (fun x => f x * D * IB) = IA * D * IB := by
+    simp only [Matrix.mul_assoc]
+    exact complexLineIntegral_map hγA hf (continLinearMap_mul_right (D * IB))
+  dsimp only
+  simp_rw [hPoint, hInner, hOuter]
+  have hX : α ^ 2 • (IA * D * IB) = A.pinv * D * B.pinv := by
+    rw [← hAinv, ← hBinv, Matrix.smul_mul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, pow_two]
+  refine ⟨hX, ?_⟩
+  intro hc
+  rw [hX]
+  obtain ⟨X₀, hX₀⟩ := hc
+  rw [← hX₀]
+  calc
+    _ = (A * A.pinv * A) * X₀ * (B * B.pinv * B) := by simp only [Matrix.mul_assoc]
+    _ = _ := by rw [A.mul_pinv_mul_self, B.mul_pinv_mul_self]
+
+/-- The normalized rectangular calculus on a finite collection of
+closed complex paths is the sum over the oriented components. -/
+noncomputable def rectangularContourFamilyCalculus {j : Type*} [Fintype j] {p : j → ℂ}
+    (A E : Matrix m n ℂ) (f : ℂ → ℂ) (γ : (i : j) → Path (p i) (p i)) : Matrix n m ℂ :=
+  ∑ i, rectangularContourCalculus A E f (γ i)
+
+/-- The normalized integral on a piecewise continuously differentiable
+loop in an open convex set of holomorphy weights each rectangular spectral term
+by the winding number at its coefficient. -/
+theorem rectangularContourCalculus_eq_winding
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d) {a : ℂ} {S : Set ℂ} (γ : Path a a)
+    (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (hOpen : IsOpen S) (hConvex : Convex ℝ S) (hRange : Set.range γ ⊆ S)
+    (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f S) :
+    rectangularContourCalculus A (U * Vᴴ) f γ =
+      rectangularSpectralExpansion V U (fun i => complexPathIndex γ (d i) * f (d i)) := by
+  rw [rectangularContourCalculus_eq_scalar_integrals h γ hγ hAvoid _ (hf.continuousOn.mono hRange)]
+  apply congrArg (rectangularSpectralExpansion V U)
+  funext i
+  simpa only [pow_one, zero_add, Hermite.taylorJet_zero, div_eq_inv_mul] using
+    normalized_complexLineIntegral_div_sub_pow γ hγ hOpen hConvex hRange (hAvoid i) hf 0
+
+/-- **Lemma 5(b)** of [benIsrael2003generalized], Chapter 6, Equation
+(160), for a family of piecewise continuously differentiable loops in
+open convex sets of holomorphy. The winding numbers of the family add to one at
+each coefficient. -/
+theorem lemma_6_5 {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    (S : j → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
+    (hRange : ∀ i, Set.range (γ i) ⊆ S i)
+    (f : ℂ → ℂ) (hf : ∀ i, DifferentiableOn ℂ f (S i))
+    (hIndex : ∀ s, ∑ i, complexPathIndex (γ i) (d s) = 1) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) f γ = rectangularMatrixFunction V U d f := by
+  unfold rectangularContourFamilyCalculus rectangularMatrixFunction
+  simp_rw [rectangularContourCalculus_eq_winding h (γ _) (hγ _) (hAvoid _) (hOpen _) (hConvex _) (hRange _) f (hf _),
+    rectangularSpectralExpansion_eq_sum]
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [← Finset.sum_smul]
+  congr 1
+  rw [← Finset.sum_mul, hIndex, one_mul]
+
+/-- **Corollary 4** of [benIsrael2003generalized], Chapter 6, Equation
+(163), for the contour families of Lemma 5. The two aggregate
+partial-isometry factors restore the original matrix shape. -/
+theorem corollary_6_4 {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    (S : j → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
+    (hRange : ∀ i, Set.range (γ i) ⊆ S i)
+    (f : ℂ → ℂ) (hf : ∀ i, DifferentiableOn ℂ f (S i))
+    (hIndex : ∀ s, ∑ i, complexPathIndex (γ i) (d s) = 1) :
+    rectangularMatrixFunction U V d f =
+      (U * Vᴴ) * rectangularContourFamilyCalculus A (U * Vᴴ) f γ * (U * Vᴴ) := by
+  rw [lemma_6_5 h γ hγ hAvoid S hOpen hConvex hRange f hf hIndex]
+  simp only [rectangularMatrixFunction, ← rectangularSpectralExpansion_one U V]
+  rw [rectangularSpectralExpansion_mul _ _ _ h.right_orthonormal,
+    rectangularSpectralExpansion_mul _ _ _ h.left_orthonormal]
+  simp only [one_mul, mul_one]
+
+/-- **Lemma 7** of [benIsrael2003generalized], Chapter 6, Equation
+(166), for the contour families of Lemma 5. Inserting the aggregate
+partial isometry gives the contour integral of the scalar product. -/
+theorem lemma_6_7 {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
+    (S : j → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
+    (hRange : ∀ i, Set.range (γ i) ⊆ S i)
+    (f g : ℂ → ℂ) (hf : ∀ i, DifferentiableOn ℂ f (S i))
+    (hg : ∀ i, DifferentiableOn ℂ g (S i))
+    (hIndex : ∀ s, ∑ i, complexPathIndex (γ i) (d s) = 1) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) f γ * (U * Vᴴ) *
+        rectangularContourFamilyCalculus A (U * Vᴴ) g γ =
+      rectangularContourFamilyCalculus A (U * Vᴴ) (fun z => f z * g z) γ := by
+  rw [lemma_6_5 h γ hγ hAvoid S hOpen hConvex hRange f hf hIndex,
+    lemma_6_5 h γ hγ hAvoid S hOpen hConvex hRange g hg hIndex,
+    lemma_6_5 h γ hγ hAvoid S hOpen hConvex hRange (fun z => f z * g z)
+      (fun i => (hf i).mul (hg i)) hIndex]
+  simp only [rectangularMatrixFunction, ← rectangularSpectralExpansion_one U V]
+  rw [rectangularSpectralExpansion_mul _ _ _ h.left_orthonormal,
+    rectangularSpectralExpansion_mul _ _ _ h.right_orthonormal]
+  simp only [mul_one]
+
+/-- **Equation (161)** of [benIsrael2003generalized], Chapter 6, for
+a finite collection of piecewise continuously differentiable loops.
+The collection has total winding number one at each coefficient
+and zero at the origin. -/
+theorem rectangularContourFamilyCalculus_inv {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (hAvoid : ∀ i s, d s ∉ Set.range (γ i)) (h₀ : ∀ i, (0 : ℂ) ∉ Set.range (γ i))
+    (hIndex : ∀ s, ∑ i, complexPathIndex (γ i) (d s) = 1)
+    (hIndex₀ : ∑ i, complexPathIndex (γ i) 0 = 0) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) (fun z => z⁻¹) γ = A.pinv := by
+  have hf (i : j) : ContinuousOn (fun z : ℂ => z⁻¹) (Set.range (γ i)) :=
+    continuousOn_id.inv₀ (fun z hz he => h₀ i (he ▸ hz))
+  unfold rectangularContourFamilyCalculus
+  simp_rw [rectangularContourCalculus_eq_scalar_integrals h (γ _) (hγ _) (hAvoid _) _ (hf _),
+    normalized_complexLineIntegral_two_poles (γ _) (hγ _) (h.coeff_ne_zero _) (h₀ _) (hAvoid _ _),
+    corollary_6_3 h, rectangularSpectralExpansion_eq_sum]
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [← Finset.sum_smul]
+  congr 1
+  rw [← Finset.mul_sum, Finset.sum_sub_distrib, hIndex, hIndex₀, sub_zero, mul_one]
+
+end GeneralContours
 
 end BenIsraelGreville.Chapter06

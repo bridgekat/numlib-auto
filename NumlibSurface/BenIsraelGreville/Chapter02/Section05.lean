@@ -8,7 +8,7 @@ import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Analysis.Analytic.Basic
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.CStarAlgebra.Matrix
-import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy
+import Numlib.Analysis.Complex.ContourIntegral
 import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.LinearAlgebra.Matrix.Drazin
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
@@ -18,6 +18,10 @@ import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 
 Section 2.5 of [benIsrael2003generalized] constructs matrix functions using the
 projections onto the generalized eigenspaces.
+
+The path version of Theorem 11 uses piecewise continuously differentiable
+loops. Each path is contained in an open convex set on which the scalar
+function is holomorphic. The theorem prescribes the total winding at each eigenvalue.
 -/
 
 namespace BenIsraelGreville.Chapter02
@@ -539,5 +543,42 @@ theorem theorem_11_circle (A : Matrix n n ℂ) (f : analyticFunctions A) (c : �
   rw [matrixFunction_eq_pfc]
   simpa only [Algebra.algebraMap_eq_smul_one, Matrix.nonsing_inv_eq_ringInverse] using
     pfc_eq_circleIntegral (Algebra.IsIntegral.isIntegral A) hf hσ
+
+open scoped Matrix.Norms.L2Operator Real in
+/-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, Equation (53), for
+piecewise $C^1$ contours in open convex sets of holomorphy. A finite family of paths
+avoids the spectrum and has total winding number one at each eigenvalue. -/
+theorem theorem_11 (A : Matrix n n ℂ) (f : analyticFunctions A) {ι : Type*} [Fintype ι]
+    {p : ι → ℂ} (γ : (i : ι) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (S : ι → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
+    (hRange : ∀ i, Set.range (γ i) ⊆ S i)
+    (hf : ∀ i, DifferentiableOn ℂ (f : ℂ → ℂ) (S i))
+    (hAvoid : ∀ i w, w ∈ spectralValues A → w ∉ Set.range (γ i))
+    (hIndex : ∀ w ∈ spectralValues A, ∑ i, complexPathIndex (γ i) w = 1) :
+    matrixFunction A f = ∑ i, (2 * π * Complex.I)⁻¹ •
+      complexLineIntegral (γ i) (fun z => (f : ℂ → ℂ) z • (z • 1 - A)⁻¹) := by
+  rw [matrixFunction_eq_pfc]
+  have hRoots (w : ℂ) (hw : w ∈ (minpoly ℂ A).roots.toFinset) : w ∈ spectralValues A := by
+    rwa [spectralValues_eq_minpoly_roots]
+  simpa only [Algebra.algebraMap_eq_smul_one, Matrix.nonsing_inv_eq_ringInverse] using
+    pfc_eq_sum_complexLineIntegral (Algebra.IsIntegral.isIntegral A) γ hγ S hOpen hConvex hRange
+      (fun i w hw => hAvoid i w (hRoots w hw)) hf (fun w hw => hIndex w (hRoots w hw))
+
+open scoped Matrix.Norms.L2Operator Real in
+/-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, for one
+piecewise $C^1$ loop in a disk of holomorphy with winding number one
+at every eigenvalue. -/
+theorem theorem_11_path (A : Matrix n n ℂ) (f : analyticFunctions A) {p c : ℂ}
+    (γ : Path p p) (hγ : γ.IsPiecewiseC1) {r : ℝ} (hDisk : Set.range γ ⊆ Metric.ball c r)
+    (hf : DifferentiableOn ℂ (f : ℂ → ℂ) (Metric.ball c r))
+    (hAvoid : ∀ w ∈ spectralValues A, w ∉ Set.range γ)
+    (hIndex : ∀ w ∈ spectralValues A, complexPathIndex γ w = 1) :
+    matrixFunction A f = (2 * π * Complex.I)⁻¹ •
+      complexLineIntegral γ (fun z => (f : ℂ → ℂ) z • (z • 1 - A)⁻¹) := by
+  simpa using theorem_11 A f
+    (ι := Unit) (p := fun _ => p) (fun _ => γ) (fun _ => hγ)
+    (fun _ => Metric.ball c r) (fun _ => Metric.isOpen_ball) (fun _ => convex_ball _ _)
+    (fun _ => hDisk) (fun _ => hf) (fun _ => hAvoid)
+    (fun w hw => by simpa using hIndex w hw)
 
 end BenIsraelGreville.Chapter02

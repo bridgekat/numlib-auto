@@ -174,31 +174,19 @@ source = 'Ben-Israel and Greville, Chapter 6, equations (154)–(155)'
 
 [[node]]
 id = "lemma_6_5"
-kind = "theorem"
-desc = '''The normalized Cauchy integrals along positively oriented Jordan contours recover the grouped adjoint components and the reversed rectangular functional calculus.'''
-deps = ["lemma_6_5_circle_family"]
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 5, general contours'
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(b), equation (160), winding-number sum for open convex sets of holomorphy'
 
 [[node]]
 id = "corollary_6_4"
-kind = "theorem"
-desc = '''Sandwich the general contour integral between aggregate partial isometries to recover the rectangular function.'''
-deps = ["lemma_6_5","corollary_6_4_circular"]
-source = 'Ben-Israel and Greville, Chapter 6, Corollary 4, general contours'
+source = 'Ben-Israel and Greville, Chapter 6, Corollary 4, equation (163), for the path families of Lemma 5(b)'
 
 [[node]]
 id = "lemma_6_7"
-kind = "theorem"
-desc = '''For general admissible contours, the twisted product of normalized integrals equals the normalized integral of the product.'''
-deps = ["lemma_6_5","lemma_6_7_circular"]
-source = 'Ben-Israel and Greville, Chapter 6, Lemma 7, general contours'
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 7, equation (166), for the path families of Lemma 5(b)'
 
 [[node]]
 id = "theorem_6_20"
-kind = "theorem"
-desc = '''The displayed iterated integral on contours enclosing the coefficients and excluding zero equals the pseudoinverse product and solves the consistent matrix equation.'''
-deps = ["lemma_6_5","theorem_6_20_circular"]
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, iterated contour integral'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, equation (169), iterated integral on piecewise C¹ loops with zero winding about the origin'
 
 [[node]]
 id = "exercise_6_82"
@@ -235,3 +223,42 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 91, equation (180)'
 [[node]]
 id = "exercise_6_90_supported"
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 90, equation (178), supported imaginary exponential'
+
+[[node]]
+id = "rectangularContourCalculus"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5, normalized integral of the rectangular resolvent along a path'
+
+[[node]]
+id = "rectangularContourCalculus_eq_scalar_integrals"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5, equations (159)–(160), reduction to scalar path integrals'
+
+[[node]]
+id = "lemma_6_5_path_grouped"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(a), equation (159), grouped adjoints from winding numbers'
+
+[[node]]
+id = "normalized_complexLineIntegral_cauchy_disk"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(b), scalar winding-number formula on a disk'
+
+[[node]]
+id = "rectangularContourCalculus_eq_winding"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(b), winding-number expansion on one path in an open convex set'
+
+[[node]]
+id = "rectangularContourFamilyCalculus"
+source = 'Ben-Israel and Greville, Chapter 6, Lemma 5(b), integral over a finite family of paths'
+
+[[node]]
+id = "rectangularContourCalculus_inv"
+source = 'Ben-Israel and Greville, Chapter 6, Equation (161), single loop with zero winding about the origin'
+
+[[node]]
+id = "rectangularContourFamilyCalculus_inv"
+source = 'Ben-Israel and Greville, Chapter 6, Equation (161), path family with total winding zero about the origin'
+
+[[node]]
+id = "rectangular_contour_calculus_general_jordan_domains"
+kind = "theorem"
+desc = '''Extend the normalized winding formulas to positively oriented rectifiable Jordan contours, with analytic functions defined on a neighborhood of the enclosed regions in the holomorphic calculus. This requires the scalar Cauchy formula beyond open convex domains and the integral on rectifiable curves beyond the current piecewise C¹ representation. The inverse and iterated-integral formulas also require zero winding at the origin.'''
+deps = ["lemma_6_5_path_grouped", "lemma_6_5", "rectangularContourFamilyCalculus_inv", "corollary_6_4", "lemma_6_7", "theorem_6_20"]
+source = 'Ben-Israel and Greville, Chapter 6, Lemmas 5 and 7, Corollary 4, Theorem 20, rectifiable Jordan contours'

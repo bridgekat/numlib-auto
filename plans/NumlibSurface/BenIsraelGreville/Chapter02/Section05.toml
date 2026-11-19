@@ -94,7 +94,15 @@ source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, circular contour'
 
 [[node]]
 id = 'theorem_11'
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), piecewise C¹ loops in open convex sets of holomorphy'
+
+[[node]]
+id = 'theorem_11_path'
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), one loop'
+
+[[node]]
+id = 'theorem_11_rectifiable'
 kind = 'theorem'
-desc = '''For analytic f on a domain containing the closure of an open spectral neighborhood with suitable boundary, evaluation at A is the contour integral of f(z)(zI−A)⁻¹ divided by 2πi.'''
-source = 'Ben-Israel and Greville, Ch. 2, Theorem 11'
-deps = ['matrixFunction']
+desc = '''Represent and integrate along a finite boundary of oriented closed rectifiable Jordan curves of an open spectral neighborhood U. Assume f is analytic on a domain containing the closure of U and prove the normalized resolvent integral equals matrixFunction. The current path theorem requires piecewise C¹ regularity and an open convex set of holomorphy for each loop.'''
+source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), general rectifiable boundary'
+deps = ['theorem_11']
