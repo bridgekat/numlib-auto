@@ -1,3 +1,5 @@
+
+
 [[node]]
 id = "Path.IsPiecewiseC1"
 
@@ -90,3 +92,7 @@ id = "rectifiableComplexLineIntegral_eq"
 
 [[node]]
 id = "complexPathIndex_exists_int"
+
+[[node]]
+id = "exists_complexPathIndex_argumentLift"
+source = "Analytic winding of a closed Lipschitz contour as the increment of a continuous argument lift"

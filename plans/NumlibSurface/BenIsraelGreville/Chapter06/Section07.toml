@@ -258,10 +258,7 @@ source = 'Ben-Israel and Greville, Chapter 6, Equation (161), path family with t
 
 [[node]]
 id = "rectangular_contour_calculus_general_jordan_domains"
-kind = "theorem"
-desc = '''Identify geometric positively oriented Jordan enclosure with the integral winding index, in particular winding one on the bounded Jordan component. The exterior zero, local constancy, integrality, and parametrization independence are proved. The index-based rectifiable formula includes nonconvex holomorphy domains. The inverse and iterated-integral formulas also require zero winding at the origin.'''
-deps = ["lemma_6_5_path_grouped", "lemma_6_5_rectifiable_of_index_enclosure", "rectangularContourFamilyCalculus_inv", "corollary_6_4_homological", "lemma_6_7_homological", "theorem_6_20"]
-source = 'Ben-Israel and Greville, Chapter 6, Lemmas 5 and 7, Corollary 4, Theorem 20, rectifiable Jordan contours'
+source = "Ben-Israel and Greville, Chapter 6, Lemmas 5 and 7 and Corollary 4, equations (160), (163), (166), customarily oriented rectifiable Jordan boundaries"
 
 [[node]]
 id = "rectangularContourFamilyCalculus_eq_winding_homological"
@@ -282,3 +279,15 @@ source = "Ben-Israel and Greville, Chapter 6, Lemma 7, Equation (166), arbitrary
 [[node]]
 id = "lemma_6_5_rectifiable_of_index_enclosure"
 source = "Ben-Israel and Greville, Chapter 6, Lemma 5(b), Equation (160), rectifiable index enclosures"
+
+[[node]]
+id = "lemma_6_5_rectifiable_jordan_grouped"
+source = "Ben-Israel and Greville, Chapter 6, Lemma 5(a), equation (159), grouped coefficient on a rectifiable Jordan contour"
+
+[[node]]
+id = "rectangularContourFamilyCalculus_inv_rectifiable_jordan"
+source = "Ben-Israel and Greville, Chapter 6, corrected equation (161), rectifiable Jordan boundaries excluding the origin"
+
+[[node]]
+id = "theorem_6_20_rectifiable_jordan"
+source = "Ben-Israel and Greville, Chapter 6, corrected Theorem 20, equation (169), rectifiable Jordan contours excluding the origin"

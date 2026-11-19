@@ -1,0 +1,41 @@
+[[node]]
+id = "Path.IsRectifiableJordan"
+
+[[node]]
+id = "Path.jordanInterior"
+
+[[node]]
+id = "Path.topologicalWinding"
+
+[[node]]
+id = "Path.HasJordanOrientation"
+
+[[node]]
+id = "Path.complexPathIndex_eq_topologicalWinding"
+
+[[node]]
+id = "Path.LipschitzReparametrization.topologicalWinding_eq"
+
+[[node]]
+id = "Path.IsRectifiableJordan.exists_uniform_topologicalWinding"
+
+[[node]]
+id = "Path.IsRectifiableJordan.complexPathIndex_eq_of_orientation"
+
+[[node]]
+id = "jordanRegionPiece"
+
+[[node]]
+id = "jordanBoundaryEnclosure"
+
+[[node]]
+id = "IsCustomaryJordanBoundary"
+
+[[node]]
+id = "IsCustomaryJordanBoundary.totalIndex_eq"
+
+[[node]]
+id = "IsCustomaryJordanBoundary.indexEnclosure_eq"
+
+[[node]]
+id = "IsCustomaryJordanBoundary.hasPositiveCycleIndex"

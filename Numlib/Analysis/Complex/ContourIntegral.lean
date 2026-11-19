@@ -1620,11 +1620,10 @@ private theorem eventually_subpath_range_subset {a b : ℂ} (γ : Path a b) (t :
     simpa only [dist_comm _ (t : ℝ)] using Real.dist_left_le_of_mem_uIcc hv'
   exact hδS (lt_of_le_of_lt hd hs)
 
-/-- The contour integral of the reciprocal kernel around a closed Lipschitz
-path is an integer multiple of `2 π i`. -/
-theorem complexPathIndex_exists_int {a w : ℂ} {γ : Path a a}
-    (hγ : γ.IsLipschitz) (hw : w ∉ Set.range γ) :
-    ∃ n : ℤ, complexPathIndex γ w = (n : ℂ) := by
+private theorem exp_complexLineIntegralUpTo_recip {a w : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hw : w ∉ Set.range γ) (t : I) :
+    Complex.exp (complexLineIntegralUpTo γ (fun z => (z - w)⁻¹) t) =
+      (γ t - w) / (a - w) := by
   let f (z : ℂ) := (z - w)⁻¹
   let J := complexLineIntegralUpTo γ f
   let Q (t : I) := Complex.exp (J t) / (γ t - w)
@@ -1664,13 +1663,27 @@ theorem complexPathIndex_exists_int {a w : ℂ} {γ : Path a a}
     change Complex.exp (J s) / Complex.exp (J t) = (γ s - w) / (γ t - w) at he
     apply (div_eq_div_iff (hne s) (hne t)).mpr
     exact (div_eq_div_iff (Complex.exp_ne_zero _) (hne t)).mp he |>.trans (mul_comm _ _)
-  have he : Q 1 = Q 0 := hLoc.apply_eq_of_preconnectedSpace 1 0
+  have he : Q t = Q 0 := hLoc.apply_eq_of_preconnectedSpace t 0
+  have hz : a - w ≠ 0 := fun h => hw ((sub_eq_zero.mp h) ▸ ⟨0, γ.source⟩)
+  have h0 : Q 0 = 1 / (a - w) := by
+    simp [Q, J, complexLineIntegralUpTo]
+  rw [h0] at he
+  change Complex.exp (J t) / (γ t - w) = 1 / (a - w) at he
+  exact (eq_div_iff hz).mpr (by
+    simpa [one_mul] using (div_eq_div_iff (hne t) hz).mp he)
+
+/-- The contour integral of the reciprocal kernel around a closed Lipschitz
+path is an integer multiple of `2 π i`. -/
+theorem complexPathIndex_exists_int {a w : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hw : w ∉ Set.range γ) :
+    ∃ n : ℤ, complexPathIndex γ w = (n : ℂ) := by
+  let f (z : ℂ) := (z - w)⁻¹
+  have hz : a - w ≠ 0 := fun h => hw ((sub_eq_zero.mp h) ▸ ⟨0, γ.source⟩)
   have hInt : Complex.exp (complexLineIntegral γ f) = 1 := by
-    have hz : a - w ≠ 0 := fun h => hw ((sub_eq_zero.mp h) ▸ ⟨0, γ.source⟩)
-    apply (div_left_inj' hz).mp
-    simpa only [Q, J, complexLineIntegralUpTo, show ((1 : I) : ℝ) = 1 from rfl,
-      show ((0 : I) : ℝ) = 0 from rfl, intervalIntegral.integral_same, Complex.exp_zero,
-      Path.target, Path.source, ← complexLineIntegral_eq_interval_deriv] using he
+    rw [complexLineIntegral_eq_interval_deriv]
+    simpa only [f, complexLineIntegralUpTo, show ((1 : I) : ℝ) = 1 from rfl,
+      Path.target, div_self hz] using
+      exp_complexLineIntegralUpTo_recip hγ hw 1
   obtain ⟨n, hn⟩ := Complex.exp_eq_one_iff.mp hInt
   refine ⟨n, ?_⟩
   have hC : (2 * π * Complex.I : ℂ) ≠ 0 := mul_ne_zero (mul_ne_zero (by norm_num)
@@ -1678,5 +1691,83 @@ theorem complexPathIndex_exists_int {a w : ℂ} {γ : Path a a}
   change (2 * π * Complex.I)⁻¹ * complexLineIntegral γ f = (n : ℂ)
   rw [hn]
   field_simp
+
+
+/-- The analytic winding index equals the increment of a continuous argument
+lift of the normalized direction from the avoided point to the loop. -/
+theorem exists_complexPathIndex_argumentLift {a w : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hw : w ∉ Set.range γ) :
+    ∃ θ : I → ℝ, Continuous θ ∧
+      (∀ t, Real.cos (θ t) = (γ t - w).re / ‖γ t - w‖ ∧
+        Real.sin (θ t) = (γ t - w).im / ‖γ t - w‖) ∧
+      complexPathIndex γ w = ((θ 1 - θ 0) / (2 * Real.pi) : ℝ) := by
+  let f (z : ℂ) := (z - w)⁻¹
+  let J := complexLineIntegralUpTo γ f
+  have hne (t : I) : γ t - w ≠ 0 :=
+    sub_ne_zero.mpr fun he => hw (he ▸ mem_range_self t)
+  have hfc : ContinuousOn f (Set.range γ) :=
+    (continuousOn_id.sub continuousOn_const).inv₀ fun _ ⟨t, ht⟩ => ht ▸ hne t
+  have hI : IntervalIntegrable (fun u => deriv γ.extend u • f (γ.extend u)) volume 0 1 := by
+    apply (complexLineIntegral_intervalIntegrable_lipschitz hγ hfc).congr_ae
+    rw [uIoc_of_le zero_le_one]
+    filter_upwards [derivWithin_path_ae_eq_deriv γ] with u hu
+    simp only [hu]
+  have hJ : Continuous J := by
+    have hc : ContinuousOn (fun t => ∫ u in (0 : ℝ)..t, deriv γ.extend u • f (γ.extend u))
+        unitInterval := by
+      change ContinuousOn _ (Icc (0 : ℝ) 1)
+      rw [← uIcc_of_le (zero_le_one : (0 : ℝ) ≤ 1)]
+      exact intervalIntegral.continuousOn_primitive_interval' hI left_mem_uIcc
+    exact hc.domRestrict
+  let θ (t : I) := Complex.arg (a - w) + (J t).im
+  refine ⟨θ, continuous_const.add (Complex.continuous_im.comp hJ), ?_, ?_⟩
+  · intro t
+    have hz : a - w ≠ 0 := fun h => hw ((sub_eq_zero.mp h) ▸ ⟨0, γ.source⟩)
+    have hmul := (eq_div_iff hz).mp (exp_complexLineIntegralUpTo_recip hγ hw t)
+    change Complex.exp (J t) * (a - w) = γ t - w at hmul
+    have hnorm : ‖γ t - w‖ = ‖a - w‖ * Real.exp (J t).re := by
+      rw [← hmul, norm_mul, Complex.norm_exp, mul_comm]
+    have hJexp : Complex.exp (J t) =
+        Real.exp (J t).re * Complex.exp ((J t).im * Complex.I) := by
+      nth_rw 1 [← Complex.re_add_im (J t)]
+      rw [Complex.exp_add, Complex.ofReal_exp]
+    have hpolar : ((‖γ t - w‖ : ℝ) : ℂ) * Complex.exp ((θ t : ℂ) * Complex.I) =
+        γ t - w := by
+      calc
+        _ = (‖a - w‖ : ℂ) * Real.exp (J t).re *
+            (Complex.exp ((Complex.arg (a - w) : ℂ) * Complex.I) *
+              Complex.exp ((J t).im * Complex.I)) := by
+          rw [hnorm]
+          simp only [θ, Complex.ofReal_add, Complex.ofReal_mul, add_mul, Complex.exp_add]
+        _ = Complex.exp (J t) * ((‖a - w‖ : ℂ) *
+            Complex.exp ((Complex.arg (a - w) : ℂ) * Complex.I)) := by
+          rw [hJexp]
+          ring
+        _ = γ t - w := by rw [Complex.norm_mul_exp_arg_mul_I, hmul]
+    have hreal := congrArg Complex.re hpolar
+    have himag := congrArg Complex.im hpolar
+    simp only [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, zero_mul, sub_zero,
+      Complex.exp_ofReal_mul_I_re] at hreal
+    simp only [Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im, zero_mul, add_zero,
+      Complex.exp_ofReal_mul_I_im] at himag
+    have hN : ‖γ t - w‖ ≠ 0 := norm_ne_zero_iff.mpr (hne t)
+    exact ⟨(eq_div_iff hN).mpr ((mul_comm _ _).trans hreal),
+      (eq_div_iff hN).mpr ((mul_comm _ _).trans himag)⟩
+  · have hJ0 : J 0 = 0 := by simp [J, complexLineIntegralUpTo]
+    have hJ1 : J 1 = complexLineIntegral γ f := by
+      exact (complexLineIntegral_eq_interval_deriv γ f).symm
+    have hRe : (J 1).re = 0 := by
+      have hz : a - w ≠ 0 := fun h => hw ((sub_eq_zero.mp h) ▸ ⟨0, γ.source⟩)
+      have he : Complex.exp (J 1) = Complex.exp 0 := by
+        simpa only [J, f, Path.target, div_self hz, Complex.exp_zero] using
+          exp_complexLineIntegralUpTo_recip hγ hw 1
+      simpa using Complex.re_eq_re_of_cexp_eq_cexp he
+    have harg : θ 1 - θ 0 = (J 1).im := by simp [θ, hJ0]
+    have hrepr : J 1 = ((J 1).im : ℂ) * Complex.I := by
+      simpa [hRe] using (Complex.re_add_im (J 1)).symm
+    change (2 * π * Complex.I)⁻¹ * complexLineIntegral γ f = _
+    rw [← hJ1, harg, Complex.ofReal_div, Complex.ofReal_mul, Complex.ofReal_ofNat]
+    nth_rw 1 [hrepr]
+    field_simp [Real.pi_ne_zero, Complex.I_ne_zero]
 
 end IntegralWindingNumbers

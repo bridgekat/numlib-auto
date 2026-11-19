@@ -8,6 +8,7 @@ import Numlib.Analysis.Matrix.Function.CFC
 import Mathlib.Analysis.Normed.Algebra.MatrixExponential
 import Mathlib.LinearAlgebra.Lagrange
 import Numlib.Analysis.Complex.ContourIntegral
+import Numlib.Analysis.Complex.JordanContours
 
 /-!
 # Rectangular spectral calculus
@@ -20,12 +21,11 @@ functions and resolvents of rectangular matrices.
 
 * **Corollary 3** (correction). The pseudoinverse uses the adjoints of
   the rectangular spectral components.
-* **Lemma 5, Corollary 4, Lemma 7, and Theorem 20** (contour scope).
-  The line integrals use Lipschitz parametrizations of paths.
-  Continuous rectifiable paths admit such parametrizations by
-  `Path.exists_lipschitz_reparametrization`.
-  The formulas with general analytic scalar functions assume that each
-  path lies in an open convex set of holomorphy.
+* **Lemma 5, Corollary 4, Lemma 7, and Theorem 20** (reading).
+  The line integrals use Lipschitz parametrizations of the rectifiable
+  contours. The Jordan boundary can have several outer curves and holes.
+  The formulas for holomorphic functions apply on arbitrary open domains
+  containing the contours and the enclosure.
 * **Equation (161) and Theorem 20** (correction). The weighted
   resolvent integrals require winding number zero about the origin,
   since the integrands introduce an additional pole there.
@@ -1903,6 +1903,115 @@ theorem lemma_6_5_rectifiable_of_index_enclosure {j : Type*} [Fintype j] {p : j 
   exact lemma_6_5_homological h (fun i => (η i).path) (fun i => (η i).isLipschitz)
     (fun i s => (hCoefficients s).1 i) hOpen hr
     (fun _ hw => hPositive.vanishes_outside hr hEnclose hw) f hf (fun s => (hCoefficients s).2)
+
+/-- **Lemma 5(a)** of [benIsrael2003generalized], Chapter 6, Equation (159).
+A counterclockwise rectifiable Jordan contour isolates the grouped
+coefficient when its bounded component contains exactly that coefficient. -/
+theorem lemma_6_5_rectifiable_jordan_grouped
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    {a w : ℂ} (γ : Path a a) (hγ : γ.IsRectifiableJordan) (hOri : γ.HasJordanOrientation true)
+    (η : γ.LipschitzReparametrization) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (hInside : ∀ i, d i ∈ γ.jordanInterior ↔ d i = w) :
+    IsPartialIsometry (rectangularGroupedComponent U V d w) ∧
+      rectangularContourCalculus A (U * Vᴴ) (fun _ => 1) η.path =
+        (rectangularGroupedComponent U V d w)ᴴ := by
+  classical
+  refine ⟨rectangularGroupedComponent_partialIsometry U V h.left_orthonormal
+    h.right_orthonormal d w, ?_⟩
+  apply lemma_6_5_path_grouped h η.path η.isLipschitz (fun i => η.range_eq.symm ▸ hAvoid i)
+  intro i
+  rw [hγ.complexPathIndex_eq_of_orientation η hOri (hAvoid i), hInside]
+  simp
+
+/-- **Lemma 5(b)**, **Corollary 4**, and **Lemma 7** of [benIsrael2003generalized],
+Chapter 6, Equations (160), (163), and (166), on a customarily oriented
+rectifiable Jordan boundary in an arbitrary open domain of holomorphy. -/
+theorem rectangular_contour_calculus_general_jordan_domains
+    {outer hole : Type*} [Fintype outer] [Fintype hole] {p : outer ⊕ hole → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : outer ⊕ hole) → Path (p i) (p i)) {owner : hole → outer}
+    (hΓ : IsCustomaryJordanBoundary γ owner) (η : ∀ i, (γ i).LipschitzReparametrization)
+    {S : Set ℂ} (hOpen : IsOpen S) (hTraces : ∀ i, Set.range (γ i) ⊆ S)
+    (hEnclose : jordanBoundaryEnclosure γ owner ⊆ S)
+    (hInside : ∀ s, d s ∈ jordanBoundaryEnclosure γ owner)
+    (f g : ℂ → ℂ) (hf : DifferentiableOn ℂ f S) (hg : DifferentiableOn ℂ g S) :
+    let C := fun φ => rectangularContourFamilyCalculus A (U * Vᴴ) φ (fun i => (η i).path)
+    C f = rectangularMatrixFunction V U d f ∧
+      rectangularMatrixFunction U V d f = (U * Vᴴ) * C f * (U * Vᴴ) ∧
+      C f * (U * Vᴴ) * C g = C (fun z => f z * g z) := by
+  have hR (i : outer ⊕ hole) : Set.range (η i).path ⊆ S := (η i).range_eq ▸ hTraces i
+  have hE : complexCycleEnclosure (fun i => (η i).path) ⊆ S :=
+    (hΓ.indexEnclosure_eq η).symm ▸ hEnclose
+  have hD (i : k) : d i ∈ complexCycleEnclosure (fun j => (η j).path) :=
+    (hΓ.indexEnclosure_eq η).symm ▸ hInside i
+  have hP := hΓ.hasPositiveCycleIndex η
+  have hAvoid (i : outer ⊕ hole) (s : k) := (hD s).1 i
+  have hN (w : ℂ) (hw : w ∉ S) := hP.vanishes_outside hR hE hw
+  have hIndex (i : k) := (hD i).2
+  exact ⟨lemma_6_5_homological h _ (fun i => (η i).isLipschitz) hAvoid hOpen hR hN f hf hIndex,
+    corollary_6_4_homological h _ (fun i => (η i).isLipschitz) hAvoid hOpen hR hN f hf hIndex,
+    lemma_6_7_homological h _ (fun i => (η i).isLipschitz) hAvoid hOpen hR hN f g hf hg hIndex⟩
+
+/-- **Equation (161)** of [benIsrael2003generalized], Chapter 6.
+When the origin lies outside the enclosure and off the traces, the
+customarily oriented Jordan integral of the weighted resolvent is the
+Moore–Penrose inverse. -/
+theorem rectangularContourFamilyCalculus_inv_rectifiable_jordan
+    {outer hole : Type*} [Fintype outer] [Fintype hole] {p : outer ⊕ hole → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : outer ⊕ hole) → Path (p i) (p i)) {owner : hole → outer}
+    (hΓ : IsCustomaryJordanBoundary γ owner) (η : ∀ i, (γ i).LipschitzReparametrization)
+    (hInside : ∀ s, d s ∈ jordanBoundaryEnclosure γ owner)
+    (hZeroTrace : ∀ i, (0 : ℂ) ∉ Set.range (γ i))
+    (hZero : (0 : ℂ) ∉ jordanBoundaryEnclosure γ owner) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) (fun z => z⁻¹) (fun i => (η i).path) =
+      A.pinv := by
+  have hD (i : k) : d i ∈ complexCycleEnclosure (fun j => (η j).path) :=
+    (hΓ.indexEnclosure_eq η).symm ▸ hInside i
+  exact rectangularContourFamilyCalculus_inv h _ (fun i => (η i).isLipschitz)
+    (fun i s => (hD s).1 i) (fun i => (η i).range_eq.symm ▸ hZeroTrace i)
+    (fun i => (hD i).2) ((hΓ.totalIndex_eq η hZeroTrace).trans (ite_eq_right hZero))
+
+/-- **Theorem 20** of [benIsrael2003generalized], Chapter 6, Equation (169),
+for positively oriented rectifiable Jordan contours surrounding the two
+coefficient sets and avoiding the additional pole at zero. -/
+theorem theorem_6_20_rectifiable_jordan {p q l : Type*} [Fintype p] [Fintype q] [Fintype l]
+    [DecidableEq q] [DecidableEq l] {A : Matrix m n ℂ} {B : Matrix p q ℂ} (D : Matrix m q ℂ)
+    {U : Matrix m k ℂ} {V : Matrix n k ℂ} {S : Matrix p l ℂ} {T : Matrix q l ℂ}
+    {a : k → ℂ} {b : l → ℂ}
+    (hA : IsRectangularSpectralDecomposition A U V a)
+    (hB : IsRectangularSpectralDecomposition B S T b)
+    {a₀ b₀ : ℂ} (γA : Path a₀ a₀) (γB : Path b₀ b₀)
+    (hγA : γA.IsRectifiableJordan) (hγB : γB.IsRectifiableJordan)
+    (hOriA : γA.HasJordanOrientation true) (hOriB : γB.HasJordanOrientation true)
+    (ηA : γA.LipschitzReparametrization) (ηB : γB.LipschitzReparametrization)
+    (hInsideA : ∀ i, a i ∈ γA.jordanInterior) (hInsideB : ∀ j, b j ∈ γB.jordanInterior)
+    (hA₀ : (0 : ℂ) ∉ Set.range γA) (hB₀ : (0 : ℂ) ∉ Set.range γB)
+    (hExtA : (0 : ℂ) ∉ γA.jordanInterior) (hExtB : (0 : ℂ) ∉ γB.jordanInterior) :
+    let X :=
+      (((2 * (Real.pi : ℂ) * Complex.I)⁻¹ : ℂ) ^ 2) •
+        complexLineIntegral ηA.path (fun z =>
+          complexLineIntegral ηB.path (fun w =>
+            (z * w)⁻¹ • (generalizedResolvent A (U * Vᴴ) z * D *
+              generalizedResolvent B (S * Tᴴ) w)))
+    X = A.pinv * D * B.pinv ∧
+      ((∃ X₀ : Matrix n p ℂ, A * X₀ * B = D) → A * X * B = D) := by
+  have hAvoidA (i : k) : a i ∉ Set.range γA := (hInsideA i).1
+  have hAvoidB (j : l) : b j ∉ Set.range γB := (hInsideB j).1
+  apply theorem_6_20 D hA hB ηA.path ηB.path ηA.isLipschitz ηB.isLipschitz
+    (fun i => ηA.range_eq.symm ▸ hAvoidA i) (fun j => ηB.range_eq.symm ▸ hAvoidB j)
+    (ηA.range_eq.symm ▸ hA₀) (ηB.range_eq.symm ▸ hB₀)
+  · intro i
+    rw [hγA.complexPathIndex_eq_of_orientation ηA hOriA (hAvoidA i)]
+    simp [hInsideA i]
+  · intro j
+    rw [hγB.complexPathIndex_eq_of_orientation ηB hOriB (hAvoidB j)]
+    simp [hInsideB j]
+  · exact (hγA.complexPathIndex_eq_of_orientation ηA hOriA hA₀).trans (ite_eq_right hExtA)
+  · exact (hγB.complexPathIndex_eq_of_orientation ηB hOriB hB₀).trans (ite_eq_right hExtB)
 
 end GeneralContours
 

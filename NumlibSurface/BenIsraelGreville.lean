@@ -91,16 +91,15 @@ import NumlibSurface.BenIsraelGreville.AppendixA.Section03
 /-!
 # Ben-Israel and Greville, *Generalized Inverses: Theory and Applications*
 
-This library follows the second edition of [benIsrael2003generalized]. It studies inverse
-relations for rectangular and singular matrices, their constructions, and their roles in
-solving linear systems and least-squares problems.
+This library follows the second edition of [benIsrael2003generalized]. It studies generalized
+inverses of rectangular and singular matrices and Hilbert-space operators, with applications
+to linear systems, least squares, probability, and differential equations.
 
 ## Coverage
 
-The formalized material includes scalar and vector preliminaries, elementary operations,
-determinants and matrix volume, the algebra of the Penrose inverse classes, the ordinary
-inverse, projectors and constrained linear systems, minimum-norm and regularized least-squares
-solutions, group and Drazin inverses, and reduced normal equations.
+The modules follow the definitions, propositions, algorithms, and supporting exercises across
+Chapters 0–9 and Appendix A. They build on the matrix, operator, normed-space, and analysis
+results in Numlib and Mathlib.
 
 ## Contents
 
@@ -216,22 +215,30 @@ solutions, group and Drazin inverses, and reduced normal equations.
 * **Chapter 1, Exercise 9** (typo). The kernel equality concerns $XA$ and $A$.
 * **Chapter 1, Corollary 2** (typo). The kernel of $AA^H$ equals the kernel of $A^H$.
 * **Chapter 2, Lemma 1(b)** (reading). The spectrum is contained in $\{0,1\}$.
+* **Chapter 2, Theorem 11** (reading). Rectifiable line integrals use increasing Lipschitz
+  parametrizations. The customary orientation assigns negative winding to hole contours.
+* **Chapter 2, Exercise 105** (correction). The integral interval constraint is $a\le Ax\le b$.
 * **Chapter 4, Lemma 1(d)** (reading). The earlier exponents in the comparison are positive.
 * **Chapter 4, Theorem 8** (generalization). The block formula applies to any nonsingular
   and nilpotent diagonal blocks in a similarity decomposition.
 * **Chapter 5, Exercise 6** (typo). The nonsingularity criterion uses $I_r+TS$.
 * **Chapter 5, Theorem 7(b) and Corollary 5** (typos). The kernel basis is given by
   $V$. The right-hand side is indexed by the rows of $A$.
+* **Chapter 6, Equation (161) and Theorem 20** (correction). The weighted resolvent
+  integrals require winding number zero at the origin.
 * **Chapter 7, Equation (65)** (correction). The equation in the full unitary coordinates
   also imposes consistency. The leading rows in Equation (66) give the criterion for
   least-squares solutions for every right-hand side.
-
-* **Chapter 2, Exercise 105** (correction). The integral interval constraint is $a\le Ax\le b$.
-
-## Not formalized
-
-* The remaining results include further prescribed-rank constructions, projector characterizations,
-  weighted and other extremal properties, further spectral and partitioned-matrix results,
-  rectangular spectral theory, computational methods, applications, and generalized inverses
-  on Hilbert spaces.
+* **Chapter 9, Exercise 27** (reading). The adjoint of the weak gradient is maximal negative
+  divergence. The differentiated Green sums converge in the square-integrable norm.
+* **Chapter 9, Exercise 28(b)–(c)** (correction). The free formal-adjoint differential expression
+  is taken on its maximal Sobolev domain.
+* **Chapter 9, Exercise 29** (correction). A full fundamental basis of the unconstrained
+  homogeneous equation gives the Wronskian kernel. The boundary and orthogonal projection
+  corrections give the Moore–Penrose kernel.
+* **Chapter 9, Exercise 30(b), (f)–(g)** (correction). The adjoint endpoint pairing includes
+  the leading coefficient. The Green kernel includes its inverse on the forcing side and
+  uses the boundary correction for endpoint order $(a,b)$.
+* **Chapter 9, Exercise 36, Equations (68)–(69)** (correction). The adjoint null-space
+  projector uses the inverse integrated Gram matrix. The positive Green kernel acts for $t<s$.
 -/

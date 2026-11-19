@@ -53,6 +53,7 @@ import Numlib.Analysis.Calculus.SpaceTime
 import Numlib.Analysis.Calculus.Taylor
 import Numlib.Analysis.Calculus.TaylorSegment
 import Numlib.Analysis.Complex.ContourIntegral
+import Numlib.Analysis.Complex.JordanContours
 import Numlib.Analysis.Complex.Harmonic
 import Numlib.Analysis.Complex.Polynomial.Basic
 import Numlib.Analysis.Convex
@@ -890,6 +891,7 @@ import Numlib.Stationary.Sweep
 import Numlib.Topology.Algebra.InfiniteSum.Group
 import Numlib.Topology.Algebra.Module.ContinuousLinearMap.RestrictScalars
 import Numlib.Topology.Algebra.Polynomial
+import Numlib.Topology.BorsukUlam
 import Numlib.Topology.ContinuousMap.ArzelaAscoli
 import Numlib.Topology.ContinuousMap.Compact
 import Numlib.Topology.Instances.Matrix.UnitaryGroup

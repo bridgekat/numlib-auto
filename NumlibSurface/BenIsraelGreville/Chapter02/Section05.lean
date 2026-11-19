@@ -9,6 +9,7 @@ import Mathlib.Analysis.Analytic.Basic
 import Mathlib.Analysis.Calculus.Deriv.Basic
 import Mathlib.Analysis.CStarAlgebra.Matrix
 import Numlib.Analysis.Complex.ContourIntegral
+import Numlib.Analysis.Complex.JordanContours
 import Numlib.LinearAlgebra.Eigenspace.Spectral
 import Numlib.LinearAlgebra.Matrix.Drazin
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
@@ -19,10 +20,11 @@ import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 Section 2.5 of [benIsrael2003generalized] constructs matrix functions using the
 projections onto the generalized eigenspaces.
 
-The path version of Theorem 11 uses Lipschitz parametrizations of closed
-curves. Continuous rectifiable paths admit such parametrizations by
-`Path.exists_lipschitz_reparametrization`. Each path is contained in an open convex set on which the scalar
-function is holomorphic. The theorem prescribes the total winding at each eigenvalue.
+Theorem 11 integrates around a finite rectifiable Jordan boundary in an
+arbitrary open domain of holomorphy. The outer contours have positive
+orientation and the hole contours have negative orientation. Continuous
+rectifiable paths admit the Lipschitz parametrizations used for the line
+integral by `Path.exists_lipschitz_reparametrization`.
 -/
 
 namespace BenIsraelGreville.Chapter02
@@ -620,5 +622,26 @@ theorem theorem_11_rectifiable_of_index_enclosure (A : Matrix n n ℂ) (f : anal
   exact theorem_11_homological A f (fun i => (η i).path) (fun i => (η i).isLipschitz) hOpen hr
     (fun _ hw => hPositive.vanishes_outside hr hEnclose hw) hf
     (fun i w hw => (hSpectrum hw).1 i) (fun _ hw => (hSpectrum hw).2)
+
+open scoped Matrix.Norms.L2Operator Real in
+/-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, Equation (53).
+The geometric enclosure is assembled from the counterclockwise outer
+boundaries and the clockwise boundaries of the holes. The winding
+hypotheses follow from customary orientation and rectifiability. -/
+theorem theorem_11_rectifiable (A : Matrix n n ℂ) (f : analyticFunctions A)
+    {outer hole : Type*} [Fintype outer] [Fintype hole] {p : outer ⊕ hole → ℂ}
+    (γ : (i : outer ⊕ hole) → Path (p i) (p i)) {owner : hole → outer}
+    (hΓ : IsCustomaryJordanBoundary γ owner) (η : ∀ i, (γ i).LipschitzReparametrization)
+    {S : Set ℂ} (hOpen : IsOpen S) (hTraces : ∀ i, Set.range (γ i) ⊆ S)
+    (hEnclose : jordanBoundaryEnclosure γ owner ⊆ S)
+    (hSpectrum : (↑(spectralValues A) : Set ℂ) ⊆ jordanBoundaryEnclosure γ owner)
+    (hf : DifferentiableOn ℂ (f : ℂ → ℂ) S) :
+    matrixFunction A f = ∑ i, (2 * π * Complex.I)⁻¹ •
+      complexLineIntegral ((η i).path) (fun z => (f : ℂ → ℂ) z • (z • 1 - A)⁻¹) := by
+  apply theorem_11_rectifiable_of_index_enclosure A f γ η hOpen hTraces
+  · simpa only [hΓ.indexEnclosure_eq η] using hEnclose
+  · exact hΓ.hasPositiveCycleIndex η
+  · simpa only [hΓ.indexEnclosure_eq η] using hSpectrum
+  · exact hf
 
 end BenIsraelGreville.Chapter02
