@@ -196,10 +196,7 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(a) and the inequaliti
 
 [[node]]
 id = "exercise_68_upper_sharp"
-kind = "theorem"
-desc = "For every positive tolerance construct an essentially strictly convex norm whose projective bound is within that tolerance of two."
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(b), sharpness of the upper limit"
-deps = ["exercise_68"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(b), ℓᵖ² approaches the upper bound"
 
 [[node]]
 id = "exercise_69"
@@ -229,24 +226,15 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 76, adjoint metric proje
 
 [[node]]
 id = "exercise_77"
-kind = "theorem"
-desc = '''Prove equal projective bounds when both norms are essentially strictly convex, then show strict convexity and projectivity of the dual of a projective norm.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(a)–(c), projectivity and dual norms"
-deps = ["exercise_68", "exercise_76"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(a), equality of the primal and dual projective bounds"
 
 [[node]]
 id = "exercise_79"
-kind = "theorem"
-desc = '''Formulate a typed statement of the involution for all matrices under projectivity, and prove its converse with linearity of the inverse made explicit when the second inverse is defined for linear operators.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, Equation (151), iterated two-norm inverse"
-deps = ["exercise_71", "exercise_73", "exercise_78"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, Equation (151) for nonzero spaces"
 
 [[node]]
 id = "exercise_80"
-kind = "theorem"
-desc = '''Prove the adjoint identity for projective primal norms and their duals, as used in the source proof. An arbitrary two-norm inverse is nonlinear, so the printed essential-strict-convexity hypotheses alone do not define a matrix adjoint.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 80, Equation (152), adjoint of the two-norm inverse"
-deps = ["exercise_76", "exercise_77", "exercise_78"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 80, Equation (152) under projectivity"
 
 [[node]]
 id = "exercise_81"
@@ -466,3 +454,83 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68, Equation (145)"
 [[node]]
 id = "exercise_69_projectiveBound_iff"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, equality to one"
+
+[[node]]
+id = "eq_of_norming_functional_projective"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(b), unique norming functional"
+
+[[node]]
+id = "exercise_77_dual_strictConvex"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(b), dual strict convexity"
+
+[[node]]
+id = "exercise_77_dual_projective"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(c), dual projectivity"
+
+[[node]]
+id = "linearTwoNormInverse"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 79–80, linear two-norm inverse"
+
+[[node]]
+id = "linearTwoNormInverse_apply"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 79–80, linear inverse evaluation"
+
+[[node]]
+id = "linearTwoNormInverse_ker_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, inverse kernel"
+
+[[node]]
+id = "linearTwoNormInverse_range_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, inverse range"
+
+[[node]]
+id = "linearTwoNormInverse_finrank_range"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, equal ranks"
+
+[[node]]
+id = "exercise_79_of_projective"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, forward implication"
+
+[[node]]
+id = "projection_reciprocity_of_twoNormInverse_involution"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 79, involution forces projector reciprocity"
+
+[[node]]
+id = "finrank_range_mixedNormDualAdjoint"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 80, rank of the adjoint"
+
+[[node]]
+id = "norm_projection_le_projectiveBound_mul"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 77(a), projective bound on every projection"
+
+[[node]]
+id = "definition_2_isContinuousHomogeneous"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, continuity and homogeneity of the inverse"
+
+[[node]]
+id = "rankLossDistance"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, mixed norm rank-loss distance"
+
+[[node]]
+id = "exercise_81_upper"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, upper estimate of (153)"
+
+[[node]]
+id = "exercise_81_lower_of_contractive_rangeProjection"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, lower estimate for a linear contractive range projector"
+
+[[node]]
+id = "exercise_81_exact"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, full-row and projective-output exact cases (154)"
+
+[[node]]
+id = "strictConvexOn_complex_norm_rpow"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 68 and 74, strict convexity of a coordinate power"
+
+[[node]]
+id = "essentiallyStrictlyConvex_piLp"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 68 and 74, strict convexity of finite complex ℓᵖ"
+
+[[node]]
+id = "exercise_69_of_ellipsoidal"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, ellipsoid norms are projective"

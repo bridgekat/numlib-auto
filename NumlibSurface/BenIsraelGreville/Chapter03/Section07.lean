@@ -2,6 +2,8 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Analysis.Convex.SpecificFunctions.Deriv
+import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Matrix.ToEuclideanLin
 import Numlib.Analysis.Convex.Duality.InnerPairing
 import Numlib.Analysis.Convex.Duality.Polar
@@ -2991,5 +2993,1136 @@ theorem exercise_69_projectiveBound_iff (h : essentiallyStrictlyConvex E)
 end
 
 end ProjectiveBound
+
+section DualProjectiveExercises
+
+open Set Module
+open scoped Pointwise
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+
+/-- For a unit vector in a projective space, its norming functional is unique. -/
+theorem eq_of_norming_functional_projective (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) {x : E} (hx : ‖x‖ = 1)
+    {f g : StrongDual ℂ E} (hf : ‖f‖ = 1) (hg : ‖g‖ = 1) (hfx : f x = 1) (hgx : g x = 1) :
+    f = g := by
+  have hx₀ : x ≠ 0 := by intro he; simp [he] at hx
+  let L := ℂ ∙ x
+  have hker (u : StrongDual ℂ E) (hu : ‖u‖ = 1) (hux : u x = 1) (z : E) :
+      z ∈ u.ker ↔ definition_1 L z = 0 := by
+    have hxP : definition_1 u.ker x = 0 := (exercise_75 h u.ker hx₀).mpr
+      ⟨u, hu, by rw [hx, hux, Complex.ofReal_one], fun _ hw => hw⟩
+    have hzero (w : E) : w ∈ L ↔ definition_1 u.ker w = 0 := by
+      constructor
+      · rintro hw
+        obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hw
+        rw [definition_1_smul h u.ker, hxP, smul_zero]
+      · intro hw
+        let v := w - u w • x
+        have hv : v ∈ u.ker := by
+          change u (w - u w • x) = 0
+          rw [map_sub, map_smul, smul_eq_mul, hux, mul_one, sub_self]
+        have he := definition_1_add_mem h u.ker (u w • x) hv
+        have hsum : u w • x + v = w := by dsimp [v]; abel
+        rw [hsum, hw, definition_1_smul h u.ker, hxP, smul_zero, zero_add] at he
+        have hww : w = u w • x := eq_of_sub_eq_zero he.symm
+        exact Submodule.mem_span_singleton.mpr ⟨u w, hww.symm⟩
+    exact exercise_70 h u.ker L (exercise_71 h hP u.ker) (hP u.ker) hzero z
+  apply ContinuousLinearMap.ext
+  intro y
+  have hm : y - f y • x ∈ f.ker := by
+    change f (y - f y • x) = 0
+    rw [map_sub, map_smul, smul_eq_mul, hfx, mul_one, sub_self]
+  have he : g (y - f y • x) = 0 :=
+    (hker g hg hgx _).mpr ((hker f hf hfx _).mp hm)
+  rw [map_sub, map_smul, smul_eq_mul, hgx, mul_one] at he
+  exact (sub_eq_zero.mp he).symm
+
+private theorem eq_one_of_re_eq_one_of_norm_le_one {z : ℂ}
+    (hr : z.re = 1) (hn : ‖z‖ ≤ 1) : z = 1 := by
+  have hnorm : ‖z‖ = 1 := le_antisymm hn (hr ▸ Complex.re_le_norm z)
+  have hi : z.im = 0 := Complex.abs_re_eq_norm.mp (by rw [hr, abs_one, hnorm])
+  exact Complex.ext (hr.trans Complex.one_re.symm) (hi.trans Complex.one_im.symm)
+
+/-- **Exercise 77(b)** of [benIsrael2003generalized], Chapter 3.
+The dual norm of an essentially strictly convex projective norm is
+essentially strictly convex. -/
+theorem exercise_77_dual_strictConvex (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) : essentiallyStrictlyConvex (StrongDual ℂ E) := by
+  apply (essentiallyStrictlyConvex_iff _).mpr
+  apply StrictConvexSpace.of_norm_combo_lt_one
+  intro f g hf hg hne
+  let a : ℝ := 1 / 2
+  refine ⟨a, a, by norm_num [a], ?_⟩
+  let k := a • f + a • g
+  change ‖k‖ < 1
+  have hk : ‖k‖ ≤ 1 := by
+    dsimp only [k]
+    calc
+      _ ≤ ‖a • f‖ + ‖a • g‖ := norm_add_le _ _
+      _ = 1 := by rw [norm_smul, norm_smul, hf, hg]; norm_num [a]
+  refine lt_of_le_of_ne hk fun he => ?_
+  have hk₀ : k ≠ 0 := by intro hz; simp [hz] at he
+  obtain ⟨x, hx, hkx⟩ := exercise_59_dual_attainment hk₀
+  rw [he, Complex.ofReal_one] at hkx
+  have hpair : (a : ℂ) * f x + (a : ℂ) * g x = 1 := hkx
+  have hpairR : a * (f x).re + a * (g x).re = 1 := by
+    simpa only [Complex.add_re, Complex.re_ofReal_mul, Complex.one_re] using
+      congrArg Complex.re hpair
+  have hfn : ‖f x‖ ≤ 1 := by simpa only [hf, hx, one_mul] using f.le_opNorm x
+  have hgn : ‖g x‖ ≤ 1 := by simpa only [hg, hx, one_mul] using g.le_opNorm x
+  have hfr := (Complex.re_le_norm (f x)).trans hfn
+  have hgr := (Complex.re_le_norm (g x)).trans hgn
+  dsimp [a] at hpairR
+  have hf₁ : f x = 1 := eq_one_of_re_eq_one_of_norm_le_one (by linarith) hfn
+  have hg₁ : g x = 1 := eq_one_of_re_eq_one_of_norm_le_one (by linarith) hgn
+  exact hne (eq_of_norming_functional_projective h hP hx hf hg hf₁ hg₁)
+
+/-- **Exercise 77(c)** of [benIsrael2003generalized], Chapter 3.
+Projectivity passes to the dual norm. -/
+theorem exercise_77_dual_projective (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) : IsProjectiveNorm (E := StrongDual ℂ E) := by
+  let : FiniteDimensional ℂ (StrongDual ℂ E) :=
+    (LinearMap.toContinuousLinearMap : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E).finiteDimensional
+  let hD := exercise_77_dual_strictConvex h hP
+  intro M f
+  let N := M.strongDualCoannihilator
+  have hNM : N.strongDualAnnihilator = M := by
+    rw [Submodule.strongDualAnnihilator_strongDualCoannihilator,
+      M.closed_of_finiteDimensional.submodule_topologicalClosure_eq]
+  obtain ⟨L, hL⟩ := (corollary_5 h N).1.mp (exercise_71 h hP N)
+  have hNL := exercise_70 h N L (exercise_71 h hP N) (hP N) hL
+  let T := additiveMetricProjection h L (exercise_71 h hP L)
+  have hker : T.ker = N := by ext x; exact (hNL x).symm
+  have hproj := (exercise_76 h hD L (exercise_71 h hP L)).2 f
+  change definition_1 T.ker.strongDualAnnihilator f = mixedNormDualAdjoint T f at hproj
+  rw [hker, hNM] at hproj
+  rw [hproj]
+  have hnorm : ‖T‖ ≤ 1 := T.opNorm_le_bound zero_le_one fun x => by
+    change ‖definition_1 L x‖ ≤ 1 * ‖x‖
+    simpa only [one_mul] using hP L x
+  have he := (mixedNormDualAdjoint T).le_opNorm f
+  rw [← exercise_67 T] at he
+  exact he.trans ((mul_le_mul_of_nonneg_right hnorm (norm_nonneg _)).trans_eq (one_mul _))
+
+end
+
+end DualProjectiveExercises
+
+section LinearInverseExercises
+
+open Set Module
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+/-- The two-norm inverse as a continuous linear map, when the range and
+kernel projectors are additive. -/
+noncomputable def linearTwoNormInverse (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) (A : E →ₗ[ℂ] F)
+    (hR : ∀ y z, definition_1 A.range (y + z) =
+      definition_1 A.range y + definition_1 A.range z)
+    (hK : ∀ x z, definition_1 A.ker (x + z) =
+      definition_1 A.ker x + definition_1 A.ker z) : F →L[ℂ] E :=
+  LinearMap.toContinuousLinearMap
+    { toFun := definition_2 A
+      map_add' := (theorem_12 hα hβ A).2.1 hR hK
+      map_smul' := (theorem_12 hα hβ A).1 }
+
+/-- The underlying function of the linear two-norm inverse. -/
+@[simp]
+theorem linearTwoNormInverse_apply (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) (A : E →ₗ[ℂ] F)
+    (hR : ∀ y z, definition_1 A.range (y + z) =
+      definition_1 A.range y + definition_1 A.range z)
+    (hK : ∀ x z, definition_1 A.ker (x + z) =
+      definition_1 A.ker x + definition_1 A.ker z) (y : F) :
+    linearTwoNormInverse hα hβ A hR hK y = definition_2 A y := rfl
+
+omit [FiniteDimensional ℂ F] in
+/-- The linear inverse kernel is the zero fiber of the original range projection. -/
+theorem linearTwoNormInverse_ker_iff (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) {A : E →ₗ[ℂ] F} {B : F →ₗ[ℂ] E}
+    (hB : ∀ y, B y = definition_2 A y) (y : F) :
+    y ∈ B.ker ↔ definition_1 A.range y = 0 := by
+  rw [LinearMap.mem_ker, hB]
+  exact Set.ext_iff.mp (theorem_12 hα hβ A).2.2.1 y
+
+omit [FiniteDimensional ℂ F] in
+/-- The linear inverse range is the zero fiber of the original kernel projection. -/
+theorem linearTwoNormInverse_range_iff (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) {A : E →ₗ[ℂ] F} {B : F →ₗ[ℂ] E}
+    (hB : ∀ y, B y = definition_2 A y) (x : E) :
+    x ∈ B.range ↔ definition_1 A.ker x = 0 := by
+  have hr : (B.range : Set E) = Set.range (definition_2 A) := by
+    ext z
+    change z ∈ B.range ↔ z ∈ Set.range (definition_2 A)
+    simp only [LinearMap.mem_range, mem_range, hB]
+  rw [show x ∈ B.range ↔ x ∈ Set.range (definition_2 A) from Set.ext_iff.mp hr x]
+  exact Set.ext_iff.mp (theorem_12 hα hβ A).2.2.2.1 x
+
+omit [FiniteDimensional ℂ F] in
+/-- A linear two-norm inverse has the same rank as the original operator. -/
+theorem linearTwoNormInverse_finrank_range (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) {A : E →ₗ[ℂ] F} {B : F →ₗ[ℂ] E}
+    (hB : ∀ y, B y = definition_2 A y) :
+    Module.finrank ℂ B.range = Module.finrank ℂ A.range := by
+  let C : B.range →ₗ[ℂ] A.range := A.rangeRestrict.comp B.range.subtype
+  have hs : Function.Surjective C := by
+    rintro ⟨z, ⟨x, rfl⟩⟩
+    refine ⟨⟨B (A x), LinearMap.mem_range_self B (A x)⟩, Subtype.ext ?_⟩
+    change A (B (A x)) = A x
+    rw [hB, definition_2_apply_left,
+      (definition_1_eq_self_iff A.range (A x)).mpr (LinearMap.mem_range_self A x)]
+  have hi : Function.Injective C := by
+    intro x y he
+    have hx : B (A (x : E)) = x.val := by
+      rw [hB, definition_2_apply_right hβ,
+        (linearTwoNormInverse_range_iff hα hβ hB _).mp x.property, sub_zero]
+    have hy : B (A (y : E)) = y.val := by
+      rw [hB, definition_2_apply_right hβ,
+        (linearTwoNormInverse_range_iff hα hβ hB _).mp y.property, sub_zero]
+    have he' : A x.val = A y.val := congrArg Subtype.val he
+    exact Subtype.ext (hx.symm.trans ((congrArg B he').trans hy))
+  exact (LinearEquiv.ofBijective C ⟨hi, hs⟩).finrank_eq
+
+/-- **Exercise 79**, forward implication, of [benIsrael2003generalized], Chapter 3.
+For projective norms the inverse is linear, and its inverse with the
+two spaces exchanged recovers the original operator. -/
+theorem exercise_79_of_projective (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) (hαP : IsProjectiveNorm (E := F))
+    (hβP : IsProjectiveNorm (E := E)) (A : E →ₗ[ℂ] F) :
+    ∃ B : F →ₗ[ℂ] E, (∀ y, B y = definition_2 A y) ∧
+      ∀ x, definition_2 B x = A x := by
+  let B := (linearTwoNormInverse hα hβ A
+    (exercise_71 hα hαP A.range) (exercise_71 hβ hβP A.ker)).toLinearMap
+  have hB (y : F) : B y = definition_2 A y := rfl
+  have hR := linearTwoNormInverse_range_iff hα hβ hB
+  have hK := linearTwoNormInverse_ker_iff hα hβ hB
+  have hEK := exercise_70 hβ A.ker B.range (exercise_71 hβ hβP A.ker) (hβP A.ker) hR
+  have hFR := exercise_70 hα A.range B.ker (exercise_71 hα hαP A.range) (hαP A.range) hK
+  have hE := (exercise_72 hβ A.ker B.range hR).mp hEK
+  have hF := (exercise_72 hα A.range B.ker hK).mp hFR
+  refine ⟨B, hB, fun x => (exercise_78 hα B A ?_ ?_
+    (linearTwoNormInverse_finrank_range hα hβ hB).symm x).symm⟩
+  · intro z
+    rw [hB, definition_2_apply_right hβ]
+    symm
+    rw [eq_sub_iff_add_eq]
+    exact (add_comm _ _).trans (hE z)
+  · intro y
+    rw [hB, definition_2_apply_left, eq_sub_iff_add_eq]
+    exact hF y
+
+end
+
+end LinearInverseExercises
+
+section InvolutionConverseExercises
+
+open Set Module
+open scoped Pointwise
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+private theorem projective_of_finrank_le_one (hd : Module.finrank ℂ E ≤ 1) :
+    IsProjectiveNorm (E := E) := by
+  intro L x
+  by_cases hL : L = ⊥
+  · have h := definition_1_mem L x
+    rw [hL, Submodule.mem_bot] at h
+    rw [hL, h, norm_zero]
+    exact norm_nonneg _
+  · have hfin : Module.finrank ℂ L ≠ 0 := fun he => hL (Submodule.finrank_eq_zero.mp he)
+    have htop : L = ⊤ := Submodule.eq_top_of_finrank_eq (by
+      have := L.finrank_le
+      omega)
+    rw [(definition_1_eq_self_iff L x).mpr (htop ▸ trivial)]
+
+omit [FiniteDimensional ℂ E] [FiniteDimensional ℂ F] in
+private theorem exists_linearMap_range_eq_of_finrank_one [Nontrivial E]
+    (L : Submodule ℂ F) (hL : Module.finrank ℂ L = 1) :
+    ∃ A : E →ₗ[ℂ] F, A.range = L := by
+  obtain ⟨w, hw⟩ := exists_ne (0 : E)
+  obtain ⟨u, hu, hu₀⟩ := L.ne_bot_iff.mp (by intro he; rw [he, finrank_bot] at hL; omega)
+  obtain ⟨f, _, hfw⟩ := exists_dual_vector ℂ w (norm_ne_zero_iff.mpr hw)
+  have hf : f w ≠ 0 := hfw.symm ▸ Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hw)
+  have hs : Function.Surjective f.toLinearMap := by
+    intro c
+    refine ⟨(c / f w) • w, ?_⟩
+    change f ((c / f w) • w) = c
+    rw [map_smul, smul_eq_mul, div_mul_cancel₀ _ hf]
+  let A := f.toLinearMap.smulRight u
+  refine ⟨A, ?_⟩
+  apply le_antisymm
+  · rintro _ ⟨x, rfl⟩
+    exact L.smul_mem (f x) hu
+  · rw [eq_span_singleton_of_mem_of_finrank_eq_one hL hu hu₀]
+    intro x hx
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hx
+    obtain ⟨y, hy⟩ := hs c
+    exact ⟨y, by change f.toLinearMap y • u = c • u; rw [hy]⟩
+
+omit [FiniteDimensional ℂ F] in
+private theorem exists_linearMap_ker_eq_of_codim_one [Nontrivial F]
+    (L : Submodule ℂ E) (hL : Module.finrank ℂ L + 1 = Module.finrank ℂ E) :
+    ∃ A : E →ₗ[ℂ] F, A.ker = L := by
+  obtain ⟨u, hu⟩ := exists_ne (0 : F)
+  have hdim : Module.finrank ℂ (E ⧸ L) = Module.finrank ℂ ℂ := by
+    rw [finrank_self]
+    have := L.finrank_quotient_add_finrank
+    omega
+  let e := LinearEquiv.ofFinrankEq (E ⧸ L) ℂ hdim
+  let f := e.toLinearMap.comp L.mkQ
+  have hf : f.ker = L := by
+    ext x
+    change e (L.mkQ x) = 0 ↔ x ∈ L
+    rw [← e.map_zero, e.injective.eq_iff]
+    exact Submodule.Quotient.mk_eq_zero L
+  refine ⟨f.smulRight u, ?_⟩
+  ext x
+  change f x • u = 0 ↔ x ∈ L
+  simp only [smul_eq_zero, hu, or_false]
+  exact (show f x = 0 ↔ x ∈ f.ker from Iff.rfl).trans (Set.ext_iff.mp (congrArg
+    (fun L : Submodule ℂ E => (L : Set E)) hf) x)
+
+/-- The two projections and their reciprocal zero fibers forced by a
+linear inverse whose two-norm inverse recovers the original operator. -/
+theorem projection_reciprocity_of_twoNormInverse_involution
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    (A : E →ₗ[ℂ] F) (B : F →ₗ[ℂ] E)
+    (hB : ∀ y, B y = definition_2 A y) (hA : ∀ x, definition_2 B x = A x) :
+    ((∀ y z, definition_1 A.range (y + z) =
+        definition_1 A.range y + definition_1 A.range z) ∧
+      ∀ N : Submodule ℂ F, (∀ y, y ∈ N ↔ definition_1 A.range y = 0) →
+        ∀ y, y ∈ A.range ↔ definition_1 N y = 0) ∧
+    ((∀ x z, definition_1 A.ker (x + z) =
+        definition_1 A.ker x + definition_1 A.ker z) ∧
+      ∀ N : Submodule ℂ E, (∀ x, x ∈ N ↔ definition_1 A.ker x = 0) →
+        ∀ x, x ∈ A.ker ↔ definition_1 N x = 0) := by
+  have hR := linearTwoNormInverse_range_iff hα hβ hB
+  have hK := linearTwoNormInverse_ker_iff hα hβ hB
+  have hAB (y : F) : A (B y) = definition_1 A.range y := by
+    rw [hB, definition_2_apply_left]
+  have hBA (x : E) : B (A x) = definition_1 B.range x := by
+    rw [← hA, definition_2_apply_left]
+  have hF (y : F) : definition_1 A.range y + definition_1 B.ker y = y := by
+    rw [← hAB, ← hA, definition_2_apply_right hα, sub_add_cancel]
+  have hE (x : E) : definition_1 A.ker x + definition_1 B.range x = x := by
+    rw [← hBA, hB, definition_2_apply_right hβ, add_sub_cancel]
+  refine ⟨⟨fun y z => ?_, fun N hN => ?_⟩, ⟨fun x z => ?_, fun N hN => ?_⟩⟩
+  · rw [← hAB, ← hAB, ← hAB, map_add, map_add]
+  · have he : N = B.ker := by ext y; exact (hN y).trans (hK y).symm
+    exact he.symm ▸ (exercise_72 hα A.range B.ker hK).mpr hF
+  · have he (w : E) : definition_1 A.ker w = w - B (A w) := by
+      rw [hB, definition_2_apply_right hβ, sub_sub_cancel]
+    rw [he, he, he, map_add, map_add, add_sub_add_comm]
+  · have he : N = B.range := by ext x; exact (hN x).trans (hR x).symm
+    exact he.symm ▸ (exercise_72 hβ A.ker B.range hR).mpr hE
+
+/-- **Exercise 79** of [benIsrael2003generalized], Chapter 3.
+For two nonzero spaces the two-norm inversion is linear and involutive
+for every operator exactly when both norms are projective. -/
+theorem exercise_79 [Nontrivial E] [Nontrivial F]
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E) :
+    (∀ A : E →ₗ[ℂ] F, ∃ B : F →ₗ[ℂ] E, (∀ y, B y = definition_2 A y) ∧
+      ∀ x, definition_2 B x = A x) ↔ IsProjectiveNorm (E := F) ∧ IsProjectiveNorm (E := E) := by
+  constructor
+  · intro hh
+    constructor
+    · by_cases hd : Module.finrank ℂ F ≤ 1
+      · exact projective_of_finrank_le_one hd
+      apply exercise_73 hα 1 le_rfl (Nat.lt_of_not_ge hd)
+      intro L hL
+      obtain ⟨A, hA⟩ := exists_linearMap_range_eq_of_finrank_one (E := E) L hL
+      obtain ⟨B, hB, he⟩ := hh A
+      exact hA ▸ (projection_reciprocity_of_twoNormInverse_involution hα hβ A B hB he).1
+    · by_cases hd : Module.finrank ℂ E ≤ 1
+      · exact projective_of_finrank_le_one hd
+      apply exercise_73 hβ (Module.finrank ℂ E - 1) (by omega) (by omega)
+      intro L hL
+      obtain ⟨A, hA⟩ := exists_linearMap_ker_eq_of_codim_one (F := F) L (by omega)
+      obtain ⟨B, hB, he⟩ := hh A
+      exact hA ▸ (projection_reciprocity_of_twoNormInverse_involution hα hβ A B hB he).2
+  · rintro ⟨hαP, hβP⟩ A
+    exact exercise_79_of_projective hα hβ hαP hβP A
+
+end
+
+end InvolutionConverseExercises
+
+section AdjointInverseExercises
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+private theorem range_mixedNormDualAdjoint_eq_map (A : E →L[ℂ] F) :
+    (mixedNormDualAdjoint A).toLinearMap.range = A.toLinearMap.dualMap.range.map
+      (LinearMap.toContinuousLinearMap : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E).toLinearMap := by
+  ext f
+  constructor
+  · rintro ⟨g, rfl⟩
+    exact ⟨_, ⟨g.toLinearMap, rfl⟩, rfl⟩
+  · rintro ⟨_, ⟨g, rfl⟩, rfl⟩
+    exact ⟨LinearMap.toContinuousLinearMap g, rfl⟩
+
+/-- A continuous linear operator and its adjoint have the same finite rank. -/
+theorem finrank_range_mixedNormDualAdjoint (A : E →L[ℂ] F) :
+    Module.finrank ℂ (mixedNormDualAdjoint A).toLinearMap.range =
+      Module.finrank ℂ A.toLinearMap.range := by
+  let e : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E := LinearMap.toContinuousLinearMap
+  rw [range_mixedNormDualAdjoint_eq_map A]
+  exact (Submodule.equivMapOfInjective e.toLinearMap e.injective
+    A.toLinearMap.dualMap.range).finrank_eq.symm.trans
+      A.toLinearMap.finrank_range_dualMap_eq_finrank_range
+
+private theorem range_mixedNormDualAdjoint (A : E →L[ℂ] F) :
+    (mixedNormDualAdjoint A).toLinearMap.range = A.ker.strongDualAnnihilator := by
+  rw [range_mixedNormDualAdjoint_eq_map A, LinearMap.range_dualMap_eq_dualAnnihilator_ker]
+  ext f
+  constructor
+  · rintro ⟨g, hg, rfl⟩
+    exact Submodule.mem_strongDualAnnihilator.mpr ((A.ker.mem_dualAnnihilator g).mp hg)
+  · intro hf
+    exact ⟨f.toLinearMap, (A.ker.mem_dualAnnihilator f.toLinearMap).mpr
+      (Submodule.mem_strongDualAnnihilator.mp hf), rfl⟩
+
+omit [FiniteDimensional ℂ E] [FiniteDimensional ℂ F] in
+private theorem ker_mixedNormDualAdjoint (A : E →L[ℂ] F) :
+    (mixedNormDualAdjoint A).ker = A.toLinearMap.range.strongDualAnnihilator := by
+  ext f
+  change mixedNormDualAdjoint A f = 0 ↔ _
+  rw [Submodule.mem_strongDualAnnihilator]
+  constructor
+  · intro h y hy
+    obtain ⟨x, rfl⟩ := LinearMap.mem_range.mp hy
+    exact congrArg (fun g : StrongDual ℂ E => g x) h
+  · intro h
+    exact ContinuousLinearMap.ext fun x => h (A x) (LinearMap.mem_range_self A.toLinearMap x)
+
+/-- **Exercise 80**, with the projectivity hypotheses used in its proof,
+of [benIsrael2003generalized], Chapter 3. The adjoint of the linear
+two-norm inverse is the two-norm inverse of the adjoint in the dual norms. -/
+theorem exercise_80 (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    (hαP : IsProjectiveNorm (E := F)) (hβP : IsProjectiveNorm (E := E))
+    (A : E →L[ℂ] F) :
+    let B := linearTwoNormInverse hα hβ A.toLinearMap
+      (exercise_71 hα hαP A.toLinearMap.range) (exercise_71 hβ hβP A.ker)
+    ∀ f, mixedNormDualAdjoint B f = definition_2 (mixedNormDualAdjoint A).toLinearMap f := by
+  intro B
+  let : FiniteDimensional ℂ (StrongDual ℂ E) :=
+    (LinearMap.toContinuousLinearMap : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E).finiteDimensional
+  let : FiniteDimensional ℂ (StrongDual ℂ F) :=
+    (LinearMap.toContinuousLinearMap : Module.Dual ℂ F ≃ₗ[ℂ] StrongDual ℂ F).finiteDimensional
+  have hαD := exercise_77_dual_strictConvex hα hαP
+  have hβD := exercise_77_dual_strictConvex hβ hβP
+  have hB (y : F) : B.toLinearMap y = definition_2 A.toLinearMap y := rfl
+  have hR := linearTwoNormInverse_range_iff hα hβ hB
+  have hK := linearTwoNormInverse_ker_iff hα hβ hB
+  let L := B.toLinearMap.range
+  let N := B.ker
+  have hEK := exercise_70 hβ A.ker L (exercise_71 hβ hβP A.ker) (hβP A.ker) hR
+  have hFR := exercise_70 hα A.toLinearMap.range N
+    (exercise_71 hα hαP A.toLinearMap.range) (hαP A.toLinearMap.range) hK
+  have hE := (exercise_72 hβ A.ker L hR).mp hEK
+  have hF := (exercise_72 hα A.toLinearMap.range N hK).mp hFR
+  let P := additiveMetricProjection hβ L (exercise_71 hβ hβP L)
+  let S := additiveMetricProjection hα N (exercise_71 hα hαP N)
+  have hPker : P.ker = A.ker := by ext x; exact (hEK x).symm
+  have hSker : S.ker = A.toLinearMap.range := by ext y; exact (hFR y).symm
+  have hP (x : E) : P x = B (A x) := by
+    change definition_1 L x = B.toLinearMap (A.toLinearMap x)
+    rw [hB, definition_2_apply_right hβ, eq_sub_iff_add_eq]
+    exact (add_comm _ _).trans (hE x)
+  have hS (y : F) : S y = y - A (B y) := by
+    change definition_1 N y = y - A.toLinearMap (B.toLinearMap y)
+    rw [hB, definition_2_apply_left, eq_sub_iff_add_eq]
+    exact (add_comm _ _).trans (hF y)
+  apply exercise_78 hαD (mixedNormDualAdjoint A).toLinearMap (mixedNormDualAdjoint B).toLinearMap
+  · intro f
+    have hproj := (exercise_76 hβ hβD L (exercise_71 hβ hβP L)).2 f
+    change definition_1 P.ker.strongDualAnnihilator f = mixedNormDualAdjoint P f at hproj
+    rw [hPker] at hproj
+    rw [range_mixedNormDualAdjoint A, hproj]
+    exact ContinuousLinearMap.ext fun x => congrArg f (hP x).symm
+  · intro g
+    have hproj := (exercise_76 hα hαD N (exercise_71 hα hαP N)).2 g
+    change definition_1 S.ker.strongDualAnnihilator g = mixedNormDualAdjoint S g at hproj
+    rw [hSker] at hproj
+    rw [ker_mixedNormDualAdjoint A, hproj]
+    apply ContinuousLinearMap.ext
+    intro y
+    change g (A (B y)) = g y - g (S y)
+    rw [hS, map_sub, sub_sub_cancel]
+  · rw [finrank_range_mixedNormDualAdjoint, finrank_range_mixedNormDualAdjoint]
+    exact linearTwoNormInverse_finrank_range hα hβ hB
+
+end
+
+end AdjointInverseExercises
+
+section DualProjectiveBoundExercises
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+private theorem isContinuousHomogeneous_metricProjection (h : essentiallyStrictlyConvex E)
+    (L : Submodule ℂ E) : IsContinuousHomogeneous (definition_1 L) :=
+  ⟨continuous_definition_1 h L, definition_1_smul h L⟩
+
+/-- The projective bound controls each projector, including the
+zero and identity projections. -/
+theorem norm_projection_le_projectiveBound_mul (h : essentiallyStrictlyConvex E)
+    (hd : 2 ≤ Module.finrank ℂ E) (L : Submodule ℂ E) (x : E) :
+    ‖definition_1 L x‖ ≤ projectiveBound (E := E) * ‖x‖ := by
+  obtain ⟨M, hM, hx⟩ := exists_finrank_eq_metricProjection h L x 1 le_rfl (by omega)
+  have hb : BddAbove ((fun S : Submodule ℂ E => mixedOperatorNorm (definition_1 S)) ''
+      {S | 1 ≤ Module.finrank ℂ S ∧ Module.finrank ℂ S < Module.finrank ℂ E}) := by
+    refine ⟨2, ?_⟩
+    rintro _ ⟨S, _, rfl⟩
+    exact (mixedOperatorNorm_le_iff (isContinuousHomogeneous_metricProjection h S)
+      (by norm_num)).mpr (definition_1_norm_le S)
+  have hm : mixedOperatorNorm (definition_1 M) ≤ projectiveBound (E := E) :=
+    le_csSup hb ⟨M, ⟨by omega, by omega⟩, rfl⟩
+  rw [← hx]
+  exact (norm_homogeneous_apply_le (isContinuousHomogeneous_metricProjection h M)
+    x).trans (mul_le_mul_of_nonneg_right hm (norm_nonneg _))
+
+private theorem projectiveBound_le_dual (h : essentiallyStrictlyConvex E)
+    (hD : essentiallyStrictlyConvex (StrongDual ℂ E)) (hd : 2 ≤ Module.finrank ℂ E) :
+    projectiveBound (E := E) ≤ projectiveBound (E := StrongDual ℂ E) := by
+  let e : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E := LinearMap.toContinuousLinearMap
+  let : FiniteDimensional ℂ (StrongDual ℂ E) := e.finiteDimensional
+  have hdD : 2 ≤ Module.finrank ℂ (StrongDual ℂ E) := by
+    rw [← e.finrank_eq, Subspace.dual_finrank_eq]
+    exact hd
+  obtain ⟨⟨L, hdimL, hL⟩, _, _⟩ :=
+    exercise_68 h (Module.finrank ℂ E - 1) (by omega) (by omega)
+  obtain ⟨_, hD₁, _⟩ := exercise_68 hD 1 le_rfl (by omega)
+  let ha := corollary_6 h L (by omega)
+  let P := additiveMetricProjection h L ha
+  let Q := mixedNormDualAdjoint P
+  have hQ (f : StrongDual ℂ E) :
+      definition_1 P.ker.strongDualAnnihilator f = Q f := (exercise_76 h hD L ha).2 f
+  have he : ‖P‖ = projectiveBound (E := E) :=
+    (mixedOperatorNorm_eq_opNorm P).symm.trans hL
+  rw [← he, exercise_67 P]
+  change ‖Q‖ ≤ projectiveBound (E := StrongDual ℂ E)
+  apply Q.opNorm_le_bound (zero_le_one.trans hD₁)
+  intro f
+  rw [← hQ]
+  exact norm_projection_le_projectiveBound_mul hD hdD P.ker.strongDualAnnihilator f
+
+private theorem hyperplane_eq_annihilator_line
+    [FiniteDimensional ℂ (StrongDual ℂ E)]
+    (M : Submodule ℂ (StrongDual ℂ E))
+    (hM : Module.finrank ℂ M + 1 = Module.finrank ℂ (StrongDual ℂ E)) :
+    ∃ x : E, x ≠ 0 ∧ M = (ℂ ∙ x).strongDualAnnihilator := by
+  let D := StrongDual ℂ E
+  have hr : Module.finrank ℂ (D ⧸ M) = Module.finrank ℂ ℂ := by
+    rw [Module.finrank_self]
+    change Module.finrank ℂ ((StrongDual ℂ E) ⧸ M) = 1
+    have := M.finrank_quotient_add_finrank
+    omega
+  let e := LinearEquiv.ofFinrankEq (D ⧸ M) ℂ hr
+  let g : StrongDual ℂ D := LinearMap.toContinuousLinearMap (e.toLinearMap.comp M.mkQ)
+  let j := NormedSpace.doubleDualIsometryEquiv ℂ E
+  let x : E := j.symm g
+  have hx (f : D) : f x = g f := congrArg (fun z : StrongDual ℂ D => z f) (j.apply_symm_apply g)
+  have hg (f : D) : g f = 0 ↔ f ∈ M := by
+    change e (M.mkQ f) = 0 ↔ f ∈ M
+    rw [← e.map_zero, e.injective.eq_iff]
+    exact Submodule.Quotient.mk_eq_zero M
+  have hx₀ : x ≠ 0 := by
+    intro he
+    obtain ⟨f, hf⟩ := M.mkQ_surjective (e.symm 1)
+    have hval : g f = 1 := by
+      change e (M.mkQ f) = 1
+      rw [hf, e.apply_symm_apply]
+    rw [← hx, he, map_zero] at hval
+    exact (zero_ne_one hval)
+  refine ⟨x, hx₀, ?_⟩
+  ext f
+  rw [Submodule.mem_strongDualAnnihilator, ← hg, ← hx]
+  constructor
+  · intro hz y hy
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hy
+    simp [hz]
+  · intro hz
+    exact hz x (Submodule.mem_span_singleton_self _)
+
+private theorem exists_metricProjection_ker_line (h : essentiallyStrictlyConvex E)
+    {u : E} (hu : u ≠ 0) :
+    ∃ L : Submodule ℂ E, ∃ ha : ∀ x y, definition_1 L (x + y) =
+        definition_1 L x + definition_1 L y,
+      (additiveMetricProjection h L ha).ker = ℂ ∙ u := by
+  obtain ⟨f, hf, hfu⟩ := exists_dual_vector ℂ u (norm_ne_zero_iff.mpr hu)
+  let L := f.ker
+  have hf₀ : f u ≠ 0 := hfu.symm ▸ Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hu)
+  have hp : definition_1 L u = 0 :=
+    (exercise_75 h L hu).mpr ⟨f, hf, hfu, fun x hx => hx⟩
+  have hker (x : E) : x ∈ ℂ ∙ u ↔ definition_1 L x = 0 := by
+    constructor
+    · rintro hx
+      obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hx
+      rw [definition_1_smul h L, hp, smul_zero]
+    · intro hx
+      let c := f x / f u
+      let y := x - c • u
+      have hy : y ∈ L := by
+        change f (x - c • u) = 0
+        rw [map_sub, map_smul, smul_eq_mul, div_mul_cancel₀ _ hf₀, sub_self]
+      have he := definition_1_add_mem h L (c • u) hy
+      rw [show c • u + y = x by dsimp [y]; abel,
+        definition_1_smul h L, hp, smul_zero, zero_add, hx] at he
+      exact Submodule.mem_span_singleton.mpr ⟨c, (sub_eq_zero.mp he.symm).symm⟩
+  have ha := (corollary_5 h L).1.mpr ⟨ℂ ∙ u, hker⟩
+  exact ⟨L, ha, by ext x; exact (hker x).symm⟩
+
+/-- **Exercise 77(a)** of [benIsrael2003generalized], Chapter 3.
+If both the norm and its dual are essentially strictly convex, their
+projective bounds are equal. -/
+theorem exercise_77 (h : essentiallyStrictlyConvex E)
+    (hD : essentiallyStrictlyConvex (StrongDual ℂ E)) (hd : 2 ≤ Module.finrank ℂ E) :
+    projectiveBound (E := E) = projectiveBound (E := StrongDual ℂ E) := by
+  let e : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E := LinearMap.toContinuousLinearMap
+  let : FiniteDimensional ℂ (StrongDual ℂ E) := e.finiteDimensional
+  let d := Module.finrank ℂ (StrongDual ℂ E)
+  have hdD : 2 ≤ d := by
+    dsimp only [d]
+    rw [← e.finrank_eq, Subspace.dual_finrank_eq]
+    exact hd
+  obtain ⟨⟨M, hMd, hM⟩, _, _⟩ := exercise_68 hD (d - 1) (by omega) (by omega)
+  have hcodim : Module.finrank ℂ M + 1 = Module.finrank ℂ (StrongDual ℂ E) := by omega
+  obtain ⟨u, hu, huM⟩ := hyperplane_eq_annihilator_line M hcodim
+  obtain ⟨L, ha, hker⟩ := exists_metricProjection_ker_line h hu
+  let P := additiveMetricProjection h L ha
+  let Q := mixedNormDualAdjoint P
+  have hnorm (f : StrongDual ℂ E) : definition_1 M f = Q f := by
+    have he := (exercise_76 h hD L ha).2 f
+    change definition_1 P.ker.strongDualAnnihilator f = Q f at he
+    rw [show P.ker = ℂ ∙ u from hker, ← huM] at he
+    exact he
+  have hQ : ‖Q‖ = projectiveBound (E := StrongDual ℂ E) := by
+    rw [← hM, ← mixedOperatorNorm_eq_opNorm Q]
+    exact congrArg mixedOperatorNorm (funext (fun f => (hnorm f).symm))
+  refine le_antisymm (projectiveBound_le_dual h hD hd) ?_
+  rw [← hQ, ← exercise_67 P]
+  obtain ⟨_, h₁, _⟩ := exercise_68 h 1 le_rfl (by omega)
+  apply P.opNorm_le_bound (zero_le_one.trans h₁)
+  exact norm_projection_le_projectiveBound_mul h hd L
+
+end
+
+end DualProjectiveBoundExercises
+
+section RankDistanceExercises
+
+open Set Module
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+/-- The two-norm generalized inverse is continuous and complex homogeneous. -/
+theorem definition_2_isContinuousHomogeneous (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) (A : E →ₗ[ℂ] F) :
+    IsContinuousHomogeneous (definition_2 A) := by
+  refine ⟨?_, (theorem_12 hα hβ A).1⟩
+  unfold definition_2
+  have hf : Continuous (fun y => (exists_linearInnerInverse A).choose (definition_1 A.range y)) :=
+    (LinearMap.continuous_of_finiteDimensional _).comp (continuous_definition_1 hα A.range)
+  exact hf.sub ((continuous_definition_1 hβ A.ker).comp hf)
+
+private theorem norm_twoNormInverse_pos (hα : essentiallyStrictlyConvex F)
+    (hβ : essentiallyStrictlyConvex E) {A : E →ₗ[ℂ] F} (hA : A ≠ 0) :
+    0 < mixedOperatorNorm (definition_2 A) := by
+  have h := definition_2_isContinuousHomogeneous hα hβ A
+  refine lt_of_le_of_ne (mixedOperatorNorm_nonneg h.continuous) (Ne.symm fun he => hA ?_)
+  have hz := (mixedOperatorNorm_eq_zero_iff h).mp he
+  apply LinearMap.ext
+  intro x
+  have hval := definition_2_apply_left A (A x)
+  rw [congrFun hz (A x),
+    (definition_1_eq_self_iff A.range _).mpr (LinearMap.mem_range_self A x)] at hval
+  change A 0 = A x at hval
+  rw [map_zero] at hval
+  exact hval.symm
+
+/-- Distance in the mixed operator norm to the set of operators of smaller rank. -/
+noncomputable def rankLossDistance (A : E →ₗ[ℂ] F) : ℝ :=
+  sInf ((fun X : E →L[ℂ] F => ‖X‖) ''
+    {X : E →L[ℂ] F | Module.finrank ℂ (A + X.toLinearMap).range <
+      Module.finrank ℂ A.range})
+
+/-- **Exercise 81**, upper bound in (153), of [benIsrael2003generalized],
+Chapter 3. A rank-one perturbation lowers the rank and its norm is bounded
+by the range projector norm divided by the norm of the two-norm inverse. -/
+theorem exercise_81_upper (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0) :
+    rankLossDistance A ≤ mixedOperatorNorm (definition_1 A.range) /
+      mixedOperatorNorm (definition_2 A) := by
+  have hM := norm_twoNormInverse_pos hα hβ hA
+  have hnon : Nontrivial F := by
+    by_contra! he
+    let : Subsingleton F := he
+    exact hA (Subsingleton.elim _ _)
+  let : Nontrivial F := hnon
+  obtain ⟨y, hy, hynorm⟩ := (exercise_66 _ (definition_2_isContinuousHomogeneous hα hβ A)).2 hnon
+  let x := definition_2 A y
+  have hx : x ≠ 0 := by
+    have hxp : 0 < ‖x‖ := hynorm.symm ▸ hM
+    exact norm_pos_iff.mp hxp
+  have hxK : definition_1 A.ker x = 0 := definition_2_kernelProjection hβ A y
+  obtain ⟨f, hf, hfx, hfk⟩ := (exercise_75 hβ A.ker hx).mp hxK
+  let K : E →L[ℂ] F := LinearMap.toContinuousLinearMap
+    (f.toLinearMap.smulRight ((-((‖x‖ : ℂ)⁻¹)) • A x))
+  have hK (z : E) : K z = -(f z / (‖x‖ : ℂ)) • A x := by
+    change f z • (-((‖x‖ : ℂ)⁻¹) • A x) = _
+    rw [smul_smul, mul_neg, div_eq_mul_inv]
+  have hxK₀ : (A + K.toLinearMap) x = 0 := by
+    change A x + K x = 0
+    rw [hK, hfx, div_self (Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hx)),
+      neg_one_smul, add_neg_cancel]
+  have hl : A.ker ≤ (A + K.toLinearMap).ker := by
+    intro z hz
+    change A z + K z = 0
+    rw [show A z = 0 from hz, hK, hfk z hz, zero_div, neg_zero, zero_smul, add_zero]
+  have hlt : A.ker < (A + K.toLinearMap).ker := by
+    refine lt_of_le_of_ne hl fun h => hx ?_
+    have hm : x ∈ (A + K.toLinearMap).ker := hxK₀
+    have hxfix := (definition_1_eq_self_iff A.ker x).mpr (h.symm ▸ hm)
+    exact hxfix.symm.trans hxK
+  have hrank : Module.finrank ℂ (A + K.toLinearMap).range < Module.finrank ℂ A.range := by
+    have hdim := Submodule.finrank_lt_finrank_of_lt hlt
+    have ha := A.finrank_range_add_finrank_ker
+    have hk := (A + K.toLinearMap).finrank_range_add_finrank_ker
+    omega
+  have hnorm : ‖K‖ ≤ ‖A x‖ / ‖x‖ := by
+    apply K.opNorm_le_bound (div_nonneg (norm_nonneg _) (norm_nonneg _))
+    intro z
+    rw [hK, norm_smul, norm_neg, norm_div, Complex.norm_real,
+      Real.norm_of_nonneg (norm_nonneg _)]
+    have hle : ‖f z‖ ≤ ‖z‖ := by simpa only [hf, one_mul] using f.le_opNorm z
+    calc
+      _ ≤ ‖z‖ / ‖x‖ * ‖A x‖ :=
+        mul_le_mul_of_nonneg_right (div_le_div_of_nonneg_right hle (norm_nonneg _))
+          (norm_nonneg _)
+      _ = ‖A x‖ / ‖x‖ * ‖z‖ := by ring
+  have hPx : ‖A x‖ ≤ mixedOperatorNorm (definition_1 A.range) := by
+    change ‖A (definition_2 A y)‖ ≤ _
+    rw [definition_2_apply_left]
+    have he := norm_homogeneous_apply_le
+      ⟨continuous_definition_1 hα A.range, definition_1_smul hα A.range⟩ y
+    simpa only [hy, mul_one] using he
+  have hset : BddBelow ((fun X : E →L[ℂ] F => ‖X‖) ''
+      {X : E →L[ℂ] F | Module.finrank ℂ (A + X.toLinearMap).range <
+        Module.finrank ℂ A.range}) := by
+    refine ⟨0, ?_⟩
+    rintro _ ⟨X, _, rfl⟩
+    exact norm_nonneg _
+  refine (csInf_le hset ⟨K, hrank, rfl⟩).trans (hnorm.trans ?_)
+  change ‖A x‖ / ‖definition_2 A y‖ ≤ _
+  rw [hynorm]
+  exact div_le_div_of_nonneg_right hPx hM.le
+
+
+/-- The lower bound in (153) applies whenever the original range
+projection is linear and contractive. -/
+theorem exercise_81_lower_of_contractive_rangeProjection
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0)
+    (P : F →ₗ[ℂ] F) (hP : ∀ y, P y = definition_1 A.range y)
+    (hPc : ∀ y, ‖P y‖ ≤ ‖y‖) :
+    (mixedOperatorNorm (definition_2 A))⁻¹ ≤ rankLossDistance A := by
+  have hM := norm_twoNormInverse_pos hα hβ hA
+  let S := ((fun X : E →L[ℂ] F => ‖X‖) ''
+    {X : E →L[ℂ] F | Module.finrank ℂ (A + X.toLinearMap).range <
+      Module.finrank ℂ A.range})
+  have hRn : A.range ≠ ⊥ := fun h => hA (LinearMap.range_eq_bot.mp h)
+  have hRpos : 0 < Module.finrank ℂ A.range := by
+    have hn : Module.finrank ℂ A.range ≠ 0 := fun h => hRn (Submodule.finrank_eq_zero.mp h)
+    omega
+  have hne : S.Nonempty := by
+    let K : E →L[ℂ] F := LinearMap.toContinuousLinearMap (-A)
+    refine ⟨‖K‖, K, ?_, rfl⟩
+    change Module.finrank ℂ (A + -A).range < Module.finrank ℂ A.range
+    rw [show A + -A = 0 from add_neg_cancel A, LinearMap.range_zero, finrank_bot]
+    exact hRpos
+  change _ ≤ sInf S
+  refine le_csInf hne ?_
+  rintro _ ⟨X, hrank, rfl⟩
+  let B := A + X.toLinearMap
+  let Q : B.range →ₗ[ℂ] A.range :=
+    (P.comp B.range.subtype).codRestrict A.range fun z => by
+      change P z.val ∈ A.range
+      rw [hP]
+      exact definition_1_mem _ _
+  have hlt : Module.finrank ℂ Q.range < Module.finrank ℂ A.range :=
+    Q.finrank_range_le.trans_lt hrank
+  have htop : Q.range ≠ ⊤ := fun he => by
+    rw [he, finrank_top] at hlt
+    exact (lt_irrefl _ hlt)
+  obtain ⟨w, hw⟩ := IsConcreteLE.exists_of_lt (lt_top_iff_ne_top.mpr htop)
+  have hwQ : Q.range.mkQL w ≠ 0 := by
+    rw [Submodule.mkQL_apply, Submodule.mkQ_apply]
+    exact fun he => hw.2 ((Submodule.Quotient.mk_eq_zero Q.range).mp he)
+  let : IsClosed (Q.range : Set A.range) := Q.range.closed_of_finiteDimensional
+  obtain ⟨g, hg, hgw⟩ := exists_dual_vector ℂ (Q.range.mkQL w) (norm_ne_zero_iff.mpr hwQ)
+  let f : StrongDual ℂ A.range := g.comp Q.range.mkQL
+  have hf0 : f ≠ 0 := by
+    intro h
+    have hwz : f w = 0 := by rw [h, zero_apply]
+    change g (Q.range.mkQL w) = 0 at hwz
+    rw [hgw] at hwz
+    exact (Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hwQ)) hwz
+  obtain ⟨y, hy, hfy⟩ := exercise_59_dual_attainment hf0
+  let x := definition_2 A y.val
+  have hAx : A x = y.val := by
+    rw [show x = definition_2 A y.val from rfl, definition_2_apply_left]
+    exact (definition_1_eq_self_iff _ _).mpr y.property
+  let q := Q (B.rangeRestrict x)
+  have hfq : f q = 0 := by
+    change g (Q.range.mkQL q) = 0
+    rw [Submodule.mkQL_apply, Submodule.mkQ_apply,
+      (Submodule.Quotient.mk_eq_zero Q.range).mpr (LinearMap.mem_range_self Q _), map_zero]
+  have hPX : P (X x) ∈ A.range := by rw [hP]; exact definition_1_mem _ _
+  let z : A.range := ⟨P (X x), hPX⟩
+  have heq : q = y + z := by
+    apply Subtype.ext
+    change P (A x + X x) = y.val + P (X x)
+    rw [map_add, hAx, hP y.val, (definition_1_eq_self_iff _ _).mpr y.property]
+  have hfz : f z = - (‖f‖ : ℂ) := by
+    rw [heq, map_add, hfy] at hfq
+    exact eq_neg_of_add_eq_zero_right hfq
+  have hzl := f.le_opNorm z
+  rw [hfz, norm_neg] at hzl
+  have hznorm : ‖(‖f‖ : ℂ)‖ = ‖f‖ := by
+    rw [Complex.norm_real, Real.norm_of_nonneg (ContinuousLinearMap.opNorm_nonneg f)]
+  rw [hznorm] at hzl
+  have hfpos : 0 < ‖f‖ := by
+    have hwf : f w ≠ 0 := by
+      change g (Q.range.mkQL w) ≠ 0
+      rw [hgw]
+      exact Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hwQ)
+    have hpos := (norm_pos_iff.mpr hwf).trans_le (f.le_opNorm w)
+    by_contra! hn
+    exact hpos.not_ge (mul_nonpos_of_nonpos_of_nonneg hn (norm_nonneg w))
+  have hzineq : ‖f‖ * 1 ≤ ‖f‖ * ‖z‖ := by simpa only [mul_one] using hzl
+  have hzn : 1 ≤ ‖z‖ := le_of_mul_le_mul_left hzineq hfpos
+  have hzb : ‖z‖ ≤ ‖X‖ * ‖x‖ := (hPc (X x)).trans (X.le_opNorm x)
+  have hxb : ‖x‖ ≤ mixedOperatorNorm (definition_2 A) := by
+    have h := norm_homogeneous_apply_le (definition_2_isContinuousHomogeneous hα hβ A) y.val
+    change ‖y.val‖ = 1 at hy
+    simpa only [hy, mul_one] using h
+  rw [← one_div, div_le_iff₀ hM]
+  exact hzn.trans (hzb.trans (mul_le_mul_of_nonneg_left hxb (norm_nonneg _)))
+
+/-- **Exercise 81**, full-row-rank and projective-output equality cases.
+The range projection is contractive in either case and the two bounds
+therefore coincide. -/
+theorem exercise_81_exact (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0)
+    (hR : A.range = ⊤ ∨ IsProjectiveNorm (E := F)) :
+    rankLossDistance A = (mixedOperatorNorm (definition_2 A))⁻¹ := by
+  have hP :
+      ∃ P : F →ₗ[ℂ] F, (∀ y, P y = definition_1 A.range y) ∧ (∀ y, ‖P y‖ ≤ ‖y‖) := by
+    rcases hR with hfull | hproj
+    · refine ⟨LinearMap.id, fun y => ((definition_1_eq_self_iff _ _).mpr ?_).symm,
+        fun _ => le_rfl⟩
+      rw [hfull]
+      trivial
+    · exact ⟨(additiveMetricProjection hα A.range (exercise_71 hα hproj A.range)).toLinearMap,
+        fun _ => rfl, hproj A.range⟩
+  obtain ⟨P, hP, hPc⟩ := hP
+  have hnorm : mixedOperatorNorm (definition_1 A.range) ≤ 1 := by
+    apply (mixedOperatorNorm_le_iff
+      ⟨continuous_definition_1 hα A.range, definition_1_smul hα A.range⟩ zero_le_one).mpr
+    intro y
+    rw [← hP, one_mul]
+    exact hPc y
+  refine le_antisymm ((exercise_81_upper hα hβ hA).trans ?_)
+    (exercise_81_lower_of_contractive_rangeProjection hα hβ hA P hP hPc)
+  rw [← one_div]
+  exact div_le_div_of_nonneg_right hnorm (norm_twoNormInverse_pos hα hβ hA).le
+
+end
+
+end RankDistanceExercises
+
+section LpProjectionExercises
+
+open Set Finset
+open scoped ENNReal
+
+section
+
+/-- Strict convexity of the $p$-th power of the norm of a complex
+coordinate for $p>1$. -/
+theorem strictConvexOn_complex_norm_rpow (p : ℝ) (hp : 1 < p) :
+    StrictConvexOn ℝ (univ : Set ℂ) (fun z => ‖z‖ ^ p) := by
+  let : StrictConvexSpace ℝ ℂ := StrictConvexSpace.of_strictConvexOn_norm_rpow
+    one_le_two strictConvexOn_norm_rpow_two
+  exact strictConvexOn_norm_rpow hp
+
+variable {ι : Type*} [Fintype ι] (p : ℝ≥0∞) [Fact (1 ≤ p)]
+
+omit [Fact (1 ≤ p)] in
+private theorem piLp_norm_rpow (hp : 0 < p.toReal) (x : PiLp p fun _ : ι => ℂ) :
+    ‖x‖ ^ p.toReal = ∑ i, ‖x i‖ ^ p.toReal := by
+  have hsum : 0 ≤ ∑ i, ‖x i‖ ^ p.toReal :=
+    sum_nonneg fun _ _ => Real.rpow_nonneg (norm_nonneg _) _
+  rw [PiLp.norm_eq_sum hp, ← Real.rpow_mul hsum, one_div, inv_mul_cancel₀ hp.ne', Real.rpow_one]
+
+/-- Every finite complex $ell^p$ space with $1<p<\infty$ is essentially
+strictly convex, as required for its single-valued metric projection. -/
+theorem essentiallyStrictlyConvex_piLp (hp : 1 < p.toReal) :
+    essentiallyStrictlyConvex (PiLp p fun _ : ι => ℂ) := by
+  intro x y hxy he t ht ht'
+  have hp₀ : 0 < p.toReal := zero_lt_one.trans hp
+  let b := 1 - t
+  have hb : 0 < b := sub_pos.mpr ht'
+  have htb : t + b = 1 := by dsimp [b]; ring
+  obtain ⟨j, hj⟩ : ∃ j, x j ≠ y j := by
+    by_contra! h
+    exact hxy (by ext i; exact h i)
+  apply (Real.rpow_lt_rpow_iff (norm_nonneg _) (norm_nonneg _) hp₀).mp
+  rw [piLp_norm_rpow p hp₀, piLp_norm_rpow p hp₀]
+  change (∑ i, ‖(t • x + b • y) i‖ ^ p.toReal) < ∑ i, ‖x i‖ ^ p.toReal
+  have he₁ : (∑ i, ‖x i‖ ^ p.toReal) = ∑ i, ‖y i‖ ^ p.toReal := by
+    rw [← piLp_norm_rpow p hp₀, ← piLp_norm_rpow p hp₀, he]
+  calc
+    _ < ∑ i, (t * ‖x i‖ ^ p.toReal + b * ‖y i‖ ^ p.toReal) := by
+      refine Finset.sum_lt_sum (fun i _ => ?_) ⟨j, mem_univ _, ?_⟩
+      · simpa only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul] using
+          (strictConvexOn_complex_norm_rpow p.toReal hp).convexOn.2
+            (mem_univ (x i)) (mem_univ (y i)) ht.le hb.le htb
+      · simpa only [PiLp.add_apply, PiLp.smul_apply, smul_eq_mul] using
+          (strictConvexOn_complex_norm_rpow p.toReal hp).2
+            (mem_univ (x j)) (mem_univ (y j)) hj ht hb htb
+    _ = ∑ i, ‖x i‖ ^ p.toReal := by rw [sum_add_distrib, ← mul_sum, ← mul_sum, ← he₁,
+      ← add_mul, htb, one_mul]
+
+end
+
+section SharpBound
+
+open Filter
+open scoped Topology Pointwise
+
+private theorem pow_tangent_le_norm_pow {n : ℕ} (hn : 2 ≤ n) {r : ℝ} (hr : 0 ≤ r)
+    (z : ℂ) : r ^ n + (n : ℝ) * r ^ (n - 1) * (z.re - r) ≤ ‖z‖ ^ n := by
+  let j := fun t : ℝ => t ^ n
+  have hc : ConvexOn ℝ (Ici 0) j := (strictConvexOn_pow hn).convexOn
+  have hd : HasDerivAt j ((n : ℝ) * r ^ (n - 1)) r := hasDerivAt_pow n r
+  have hlin : r ^ n + (n : ℝ) * r ^ (n - 1) * (‖z‖ - r) ≤ ‖z‖ ^ n := by
+    rcases lt_trichotomy r ‖z‖ with h | h | h
+    · have h₁ := hc.le_slope_of_hasDerivAt hr (norm_nonneg z) h hd
+      rw [slope_def_field, le_div_iff₀ (sub_pos.mpr h)] at h₁
+      change (n : ℝ) * r ^ (n - 1) * (‖z‖ - r) ≤ ‖z‖ ^ n - r ^ n at h₁
+      linarith
+    · rw [h, sub_self, mul_zero, add_zero]
+    · have h₁ := hc.slope_le_of_hasDerivAt (norm_nonneg z) hr h hd
+      rw [slope_def_field, div_le_iff₀ (sub_pos.mpr h)] at h₁
+      change r ^ n - ‖z‖ ^ n ≤ (n : ℝ) * r ^ (n - 1) * (r - ‖z‖) at h₁
+      linarith [show (n : ℝ) * r ^ (n - 1) * (‖z‖ - r) =
+          -((n : ℝ) * r ^ (n - 1) * (r - ‖z‖)) by ring]
+  have hmono : (n : ℝ) * r ^ (n - 1) * (z.re - r) ≤
+      (n : ℝ) * r ^ (n - 1) * (‖z‖ - r) :=
+    mul_le_mul_of_nonneg_left (sub_le_sub_right (Complex.re_le_norm z) r) (by positivity)
+  linarith
+
+private theorem piLp_norm_nat_pow {n : ℕ} (hn : 0 < n) (x : PiLp (n : ℝ≥0∞) fun _ : Fin 2 => ℂ) :
+    ‖x‖ ^ n = ‖x 0‖ ^ n + ‖x 1‖ ^ n := by
+  have he := piLp_norm_rpow (n : ℝ≥0∞)
+    (by rw [ENNReal.toReal_natCast]; exact_mod_cast hn) x
+  rw [ENNReal.toReal_natCast] at he
+  simpa only [Real.rpow_natCast, Fin.sum_univ_two] using he
+
+private theorem sharp_bound_pair {n : ℕ} (hn : 2 ≤ n) {a : ℝ} (ha : 0 < a) (ha₁ : a < 1) :
+    letI : Fact (1 ≤ (n : ℝ≥0∞)) := ⟨by exact_mod_cast (show 1 ≤ n by omega)⟩
+    ∃ (L : Submodule ℂ (PiLp (n : ℝ≥0∞) fun _ : Fin 2 => ℂ))
+      (x : PiLp (n : ℝ≥0∞) fun _ : Fin 2 => ℂ),
+      2 * a ≤ ‖definition_1 L x‖ ∧
+        ‖x‖ ≤ (2 : ℝ) ^ (1 / (n : ℝ)) * (1 + 2 * a ^ n) := by
+  let : Fact (1 ≤ (n : ℝ≥0∞)) := ⟨by exact_mod_cast (show 1 ≤ n by omega)⟩
+  let p : ℝ≥0∞ := n
+  let E := PiLp p fun _ : Fin 2 => ℂ
+  have hnR : 0 < (n : ℝ) := by exact_mod_cast (show 0 < n by omega)
+  have hESC : essentiallyStrictlyConvex E := by
+    apply essentiallyStrictlyConvex_piLp p
+    rw [show p.toReal = (n : ℝ) from ENNReal.toReal_natCast n]
+    exact_mod_cast (show 1 < n by omega)
+  let r : E := WithLp.toLp p ![(a : ℂ), 1]
+  let y : E := WithLp.toLp p ![((2 * a : ℝ) : ℂ), ((-2 * a ^ n : ℝ) : ℂ)]
+  let x := y - r
+  let L := ℂ ∙ y
+  have hproj : definition_1 L x = y := by
+    apply (definition_1_eq_iff hESC L x y).mpr
+    refine ⟨Submodule.mem_span_singleton_self _, ?_⟩
+    intro w hw
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp (show w ∈ L from hw)
+    let z := r + (c - 1) • y
+    have h₁ : x - y = -r := by dsimp [x]; abel
+    have h₂ : x - c • y = -z := by
+      dsimp [x, z]
+      rw [sub_smul, one_smul]
+      abel
+    rw [h₁, h₂, norm_neg, norm_neg]
+    apply (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) (by omega : n ≠ 0)).mp
+    rw [piLp_norm_nat_pow (by omega : 0 < n), piLp_norm_nat_pow (by omega : 0 < n)]
+    have hzi : (z 0).re = a + (c.re - 1) * (2 * a) := by
+      change ((a : ℂ) + (c - 1) * ((2 * a : ℝ) : ℂ)).re = _
+      simp only [Complex.add_re, Complex.mul_re, Complex.sub_re, Complex.one_re,
+        Complex.ofReal_re, Complex.ofReal_im, mul_zero, sub_zero]
+    have hzj : (z 1).re = 1 + (c.re - 1) * (-2 * a ^ n) := by
+      change ((1 : ℂ) + (c - 1) * ((-2 * a ^ n : ℝ) : ℂ)).re = _
+      simp only [Complex.add_re, Complex.mul_re, Complex.sub_re, Complex.one_re,
+        Complex.ofReal_re, Complex.ofReal_im, mul_zero, sub_zero]
+    have htan₀ := pow_tangent_le_norm_pow hn ha.le (z 0)
+    have htan₁ := pow_tangent_le_norm_pow hn zero_le_one (z 1)
+    rw [hzi] at htan₀
+    rw [hzj, one_pow, one_pow] at htan₁
+    have hpow : a ^ (n - 1) * a = a ^ n := by
+      rw [← pow_succ, show n - 1 + 1 = n by omega]
+    have hsum : a ^ n + 1 ≤ ‖z 0‖ ^ n + ‖z 1‖ ^ n := by
+      have hcalc :
+          (n : ℝ) * a ^ (n - 1) * (a + (c.re - 1) * (2 * a) - a) +
+            (n : ℝ) * 1 * (1 + (c.re - 1) * (-2 * a ^ n) - 1) = 0 := by
+        linear_combination 2 * (n : ℝ) * (c.re - 1) * hpow
+      linarith
+    have hr₀ : ‖r 0‖ = a := by
+      change ‖(a : ℂ)‖ = a
+      rw [Complex.norm_real, Real.norm_of_nonneg ha.le]
+    have hr₁ : ‖r 1‖ = 1 := norm_one
+    rw [hr₀, hr₁, one_pow]
+    exact hsum
+  refine ⟨L, x, ?_, ?_⟩
+  · rw [hproj]
+    have he : ‖y 0‖ = 2 * a := by
+      change ‖((2 * a : ℝ) : ℂ)‖ = 2 * a
+      rw [Complex.norm_real, Real.norm_of_nonneg (by positivity)]
+    exact he ▸ PiLp.norm_apply_le y 0
+  · let m := 1 + 2 * a ^ n
+    have hm : 0 ≤ m := by dsimp [m]; positivity
+    have hx₀ : ‖x 0‖ = a := by
+      change ‖((2 * a : ℝ) : ℂ) - (a : ℂ)‖ = a
+      rw [← Complex.ofReal_sub, show 2 * a - a = a by ring, Complex.norm_real,
+        Real.norm_of_nonneg ha.le]
+    have hx₁ : ‖x 1‖ = m := by
+      change ‖(((-2 * a ^ n : ℝ) : ℂ) - 1)‖ = m
+      rw [← Complex.ofReal_one, ← Complex.ofReal_sub, show -2 * a ^ n - 1 = -m by
+        dsimp [m]; ring, Complex.ofReal_neg, norm_neg, Complex.norm_real, Real.norm_of_nonneg hm]
+    rw [PiLp.norm_eq_of_nat n rfl, Fin.sum_univ_two, hx₀, hx₁]
+    have hm₁ : 1 ≤ m := by
+      dsimp only [m]
+      linarith [show 0 ≤ 2 * a ^ n by positivity]
+    have ham : a ≤ m := ha₁.le.trans hm₁
+    have hs : a ^ n + m ^ n ≤ 2 * m ^ n := by
+      calc
+        _ ≤ m ^ n + m ^ n := add_le_add (pow_le_pow_left₀ ha.le ham _) le_rfl
+        _ = _ := by ring
+    have he : (m ^ n) ^ (1 / (n : ℝ)) = m := by
+      rw [← Real.rpow_natCast, one_div, Real.rpow_rpow_inv hm hnR.ne']
+    change _ ≤ (2 : ℝ) ^ (1 / (n : ℝ)) * m
+    calc
+      _ ≤ (2 * m ^ n) ^ (1 / (n : ℝ)) := Real.rpow_le_rpow (by positivity) hs (by positivity)
+      _ = _ := by
+        rw [Real.mul_rpow (by norm_num : (0 : ℝ) ≤ 2) (pow_nonneg hm n), he]
+
+/-- **Exercise 68(b)** of [benIsrael2003generalized], Chapter 3.
+The strict upper bound two is sharp. Complex two-coordinate $ell^p$
+norms with finite exponents can have projective bound arbitrarily near two. -/
+theorem exercise_68_upper_sharp (ε : ℝ) (hε : 0 < ε) :
+    ∃ n : ℕ, ∃ hn : 2 ≤ n,
+      letI : Fact (1 ≤ (n : ℝ≥0∞)) := ⟨by exact_mod_cast (show 1 ≤ n by omega)⟩
+      essentiallyStrictlyConvex (PiLp (n : ℝ≥0∞) fun _ : Fin 2 => ℂ) ∧
+        2 - ε < projectiveBound (E := PiLp (n : ℝ≥0∞) fun _ : Fin 2 => ℂ) := by
+  obtain ⟨a, ha, ha₁⟩ := exists_between
+    (show max (0 : ℝ) ((2 - ε) / 2) < 1 from max_lt (by norm_num) (by linarith))
+  have ha₀ : 0 < a := (le_max_left _ _).trans_lt ha
+  have haε : 2 - ε < 2 * a := by linarith [(le_max_right (0 : ℝ) ((2 - ε) / 2)).trans_lt ha]
+  let M := fun n : ℕ => (2 : ℝ) ^ (1 / (n : ℝ)) * (1 + 2 * a ^ n)
+  have hpow : Tendsto (fun n : ℕ => a ^ n) atTop (𝓝 0) :=
+    tendsto_pow_atTop_nhds_zero_of_lt_one ha₀.le ha₁
+  have hroot : Tendsto (fun n : ℕ => (2 : ℝ) ^ (1 / (n : ℝ))) atTop (𝓝 1) := by
+    have hc : ContinuousAt (fun t : ℝ => (2 : ℝ) ^ t) 0 :=
+      (Real.continuous_const_rpow (show (2 : ℝ) ≠ 0 by norm_num)).continuousAt
+    simpa only [Function.comp_def, Real.rpow_zero] using
+      hc.tendsto.comp (tendsto_one_div_atTop_nhds_zero_nat (𝕜 := ℝ))
+  have hM : Tendsto M atTop (𝓝 1) := by
+    simpa [M] using hroot.mul ((hpow.const_mul 2).const_add 1)
+  have hratio : Tendsto (fun n => (2 * a) / M n) atTop (𝓝 (2 * a)) := by
+    have ht : Tendsto ((fun _ : ℕ => 2 * a) / M) atTop (𝓝 (2 * a / 1)) :=
+      tendsto_const_nhds.div hM one_ne_zero
+    rw [div_one] at ht
+    exact ht.congr (fun _ => rfl)
+  obtain ⟨n, hn, hna⟩ := ((eventually_ge_atTop 2).and (hratio.eventually_const_lt haε)).exists
+  refine ⟨n, hn, ?_⟩
+  let : Fact (1 ≤ (n : ℝ≥0∞)) := ⟨by exact_mod_cast (show 1 ≤ n by omega)⟩
+  let E := PiLp (n : ℝ≥0∞) fun _ : Fin 2 => ℂ
+  have hESC : essentiallyStrictlyConvex E := by
+    apply essentiallyStrictlyConvex_piLp (n : ℝ≥0∞)
+    rw [ENNReal.toReal_natCast]
+    exact_mod_cast (show 1 < n by omega)
+  have hdim : 2 ≤ Module.finrank ℂ E := by
+    rw [(WithLp.linearEquiv (n : ℝ≥0∞) ℂ (Fin 2 → ℂ)).finrank_eq]
+    simp
+  obtain ⟨L, x, hL, hx⟩ := sharp_bound_pair hn ha₀ ha₁
+  obtain ⟨_, hQ₁, _⟩ := exercise_68 (E := E) hESC 1 le_rfl (by omega)
+  have hQ := norm_projection_le_projectiveBound_mul hESC hdim L x
+  have hMn : 0 < M n := by
+    dsimp [M]
+    positivity
+  refine ⟨hESC, hna.trans_le ((div_le_iff₀ hMn).mpr ?_)⟩
+  exact hL.trans (hQ.trans (mul_le_mul_of_nonneg_left hx (zero_le_one.trans hQ₁)))
+
+end SharpBound
+
+end LpProjectionExercises
+
+section EllipsoidalExercises
+
+section
+
+variable {E H : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedAddCommGroup H] [InnerProductSpace ℂ H]
+
+/-- **Exercise 69**, the ellipsoidal case, of [benIsrael2003generalized],
+Chapter 3. A finite-dimensional norm linearly isometric to a Hermitian
+inner-product norm has contractive metric projectors. In coordinates an
+ellipsoidal norm has such an isometry given by its positive-definite square root. -/
+theorem exercise_69_of_ellipsoidal [FiniteDimensional ℂ E] (e : E ≃ₗᵢ[ℂ] H) :
+    IsProjectiveNorm (E := E) := by
+  intro L x
+  let M := L.map e.toLinearEquiv.toLinearMap
+  let : FiniteDimensional ℂ M :=
+    (Submodule.equivMapOfInjective e.toLinearEquiv.toLinearMap e.injective L).finiteDimensional
+  have hb := isBestApprox_definition_1 L x
+  have hbest : IsBestApprox (M : Set H) (e x) (e (definition_1 L x)) := by
+    refine ⟨⟨_, hb.1, rfl⟩, ?_⟩
+    rintro _ ⟨z, hz, rfl⟩
+    change ‖e x - e (definition_1 L x)‖ ≤ ‖e x - e z‖
+    rw [← map_sub, ← map_sub, e.norm_map, e.norm_map]
+    exact hb.2 z hz
+  have he := hbest.eq_starProjection M
+  rw [← e.norm_map (definition_1 L x), he, ← e.norm_map x]
+  exact M.norm_starProjection_apply_le (e x)
+
+end
+
+end EllipsoidalExercises
 
 end BenIsraelGreville.Chapter03
