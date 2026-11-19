@@ -294,8 +294,6 @@ source = "Ben-Israel and Greville, Ch. 9, §2, (I), surjectivity and bounded inv
 
 [[node]]
 id = "exercise_9_2_weighted_integral_example"
-kind = "theorem"
-desc = "Formalize the printed weighted integral functional on its natural dense domain of square-integrable functions for which the integral is finite, and verify the approximation in the text. The integral need not converge for every square-integrable function on the whole half-line."
 source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 2, weighted integral example"
 
 [[node]]
@@ -309,3 +307,19 @@ source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 7, square-summable po
 [[node]]
 id = "harmonicLp"
 source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 7, the harmonic sequence"
+
+[[node]]
+id = "weightedHalfLineDomain"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 2, natural domain"
+
+[[node]]
+id = "weightedHalfLineIntegral"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 2, weighted integral"
+
+[[node]]
+id = "weightedHalfLineDomain_dense"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 2, density of the natural domain"
+
+[[node]]
+id = "weightedHalfLineIntegral_unbounded_dense_kernel"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 2, unboundedness and dense kernel"

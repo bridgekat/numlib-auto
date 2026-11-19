@@ -290,6 +290,4 @@ source = "Ben-Israel and Greville, Ch. 9, §3, Theorem 2(i)–(j), graph members
 
 [[node]]
 id = "infinitely_many_dense_or_closedKernel_tsengInverses"
-kind = "theorem"
-desc = "Construct examples with infinitely many Tseng inverses with dense domains and with infinitely many Tseng inverses with closed kernels. Use the proved parameterization by subspaces of the orthogonal complement of the range."
 source = "Ben-Israel and Greville, Ch. 9, §3, consequences following Definition 2"

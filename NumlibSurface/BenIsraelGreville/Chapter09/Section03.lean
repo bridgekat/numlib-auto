@@ -6,6 +6,7 @@ import NumlibSurface.BenIsraelGreville.Chapter09.Section02
 import Mathlib.Analysis.Normed.Operator.Banach
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.Analysis.Normed.Operator.Unbounded.Basic
+import Mathlib.Analysis.InnerProductSpace.l2Space
 
 /-!
 # Generalized inverses of Hilbert space operators
@@ -2234,5 +2235,138 @@ theorem theorem_4b_range_not_le_domain_example [CompleteSpace E]
   exact hv hvD
 
 end InverseGraphs
+
+section InfiniteTsengFamilies
+
+open Filter
+open scoped Topology
+
+private abbrev RealSequenceHilbert := lp (fun _ : ℕ => ℝ) 2
+
+private def polynomialSummableDomain (p : ℕ) : Submodule ℝ RealSequenceHilbert where
+  carrier := {x | Summable fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖x k‖}
+  zero_mem' := by simp
+  add_mem' {x y} hx hy := by
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖x k‖) at hx
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖y k‖) at hy
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖x k + y k‖)
+    apply Summable.of_nonneg_of_le (fun _ => by positivity) _ (hx.add hy)
+    intro k
+    rw [← mul_add]
+    exact mul_le_mul_of_nonneg_left (norm_add_le _ _) (by positivity)
+  smul_mem' c x hx := by
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖x k‖) at hx
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖c * x k‖)
+    simpa only [norm_mul, mul_left_comm (((_ : ℝ) + 1) ^ p)] using hx.mul_left ‖c‖
+
+private theorem single_mem_polynomialSummableDomain (p k : ℕ) (a : ℝ) :
+    lp.single (E := fun _ : ℕ => ℝ) 2 k a ∈ polynomialSummableDomain p := by
+  change Summable (fun j : ℕ => ((j : ℝ) + 1) ^ p * ‖lp.single (E := fun _ : ℕ => ℝ) 2 k a j‖)
+  have hs := (hasSum_ite_eq k (((k : ℝ) + 1) ^ p * ‖a‖)).summable
+  apply hs.congr
+  intro j
+  by_cases h : j = k
+  · subst j
+    rw [ite_eq_left rfl, lp.single_apply_self]
+  · rw [ite_eq_right h, lp.single_apply_ne _ _ _ h, norm_zero, mul_zero]
+
+private theorem dense_polynomialSummableDomain (p : ℕ) :
+    Dense (polynomialSummableDomain p : Set RealSequenceHilbert) := by
+  intro x
+  have hs : HasSum (fun k : ℕ => lp.single 2 k (x k)) x := lp.hasSum_single (by norm_num) x
+  apply mem_closure_of_tendsto hs
+  exact Eventually.of_forall fun s => (polynomialSummableDomain p).sum_mem
+    (fun k _ => single_mem_polynomialSummableDomain p k (x k))
+
+private theorem polynomialSummableDomain_strictAnti : StrictAnti polynomialSummableDomain := by
+  apply strictAnti_nat_of_succ_lt
+  intro p
+  refine lt_of_le_of_ne ?_ ?_
+  · intro x hx
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ (p + 1) * ‖x k‖) at hx
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖x k‖)
+    apply Summable.of_nonneg_of_le (fun _ => by positivity) _ hx
+    intro k
+    apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+    rw [pow_succ]
+    refine le_mul_of_one_le_right (by positivity) ?_
+    linarith [Nat.cast_nonneg (α := ℝ) k]
+  · intro h
+    let w := reciprocalNaturalPowerLp (p + 2) (by omega)
+    have hw (k : ℕ) : ‖w k‖ = (((k : ℝ) + 1) ^ (p + 2))⁻¹ :=
+      Real.norm_of_nonneg (inv_nonneg.mpr (by positivity))
+    have hz (k : ℕ) : (k : ℝ) + 1 ≠ 0 := by positivity
+    have hs (k : ℕ) : ((k : ℝ) + 1) ^ p * ‖w k‖ = 1 / ((k : ℝ) + 1) ^ 2 := by
+      rw [hw, pow_add]
+      field_simp
+    have hf (k : ℕ) : ((k : ℝ) + 1) ^ (p + 1) * ‖w k‖ = 1 / ((k : ℝ) + 1) := by
+      rw [hw, show p + 2 = (p + 1) + 1 by omega, pow_add _ (p + 1), pow_one]
+      field_simp
+    have hyes : w ∈ polynomialSummableDomain p := by
+      change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ p * ‖w k‖)
+      simp_rw [hs]
+      simpa only [Nat.cast_add, Nat.cast_one] using
+        (summable_nat_add_iff (f := fun k : ℕ => 1 / (k : ℝ) ^ 2) 1).mpr
+          (Real.summable_one_div_nat_pow.mpr (by norm_num))
+    have hno : w ∈ polynomialSummableDomain (p + 1) := h.symm ▸ hyes
+    change Summable (fun k : ℕ => ((k : ℝ) + 1) ^ (p + 1) * ‖w k‖) at hno
+    simp_rw [hf] at hno
+    apply Real.not_summable_one_div_natCast
+    apply (summable_nat_add_iff (f := fun k : ℕ => 1 / (k : ℝ)) 1).mp
+    simpa only [Nat.cast_add, Nat.cast_one] using hno
+
+private noncomputable def coordinateKernel (n : ℕ) : Submodule ℝ RealSequenceHilbert :=
+  (lp.evalCLM ℝ (fun _ : ℕ => ℝ) 2 n).ker
+
+private theorem coordinateKernel_injective : Function.Injective coordinateKernel := by
+  intro i j h
+  by_contra hij
+  have hmem : lp.single (E := fun _ : ℕ => ℝ) 2 i 1 ∈ coordinateKernel j := by
+    change lp.single (E := fun _ : ℕ => ℝ) 2 i 1 j = 0
+    exact lp.single_apply_ne _ _ _ (fun he => hij he.symm)
+  rw [← h] at hmem
+  change lp.single (E := fun _ : ℕ => ℝ) 2 i 1 i = 0 at hmem
+  exact one_ne_zero ((lp.single_apply_self (E := fun _ : ℕ => ℝ) 2 i 1).symm.trans hmem)
+
+/-- **Section 9.3**, after Definition 2 of [benIsrael2003generalized]. One
+closed operator has infinitely many distinct Tseng inverses with dense
+domains, and also infinitely many with closed kernels. Both families here
+are inverses of the everywhere-defined zero operator on square-summable sequences. -/
+theorem infinitely_many_dense_or_closedKernel_tsengInverses :
+    ∃ T : RealSequenceHilbert →ₗ.[ℝ] RealSequenceHilbert,
+      ∃ D S : ℕ → RealSequenceHilbert →ₗ.[ℝ] RealSequenceHilbert,
+        Function.Injective D ∧ Function.Injective S ∧
+        (∀ n, IsTsengInverse T (D n) ∧ Dense ((D n).domain : Set RealSequenceHilbert)) ∧
+        ∀ n, IsTsengInverse T (S n) ∧ IsClosed ((S n).ker : Set RealSequenceHilbert) := by
+  let T := (0 : RealSequenceHilbert →ₗ[ℝ] RealSequenceHilbert).toPMap ⊤
+  have hr : T.toFun.range = ⊥ := by
+    ext x
+    change (∃ _ : (⊤ : Submodule ℝ RealSequenceHilbert), (0 : RealSequenceHilbert) = x) ↔ x = 0
+    simp [eq_comm]
+  have hk : T.ker = ⊤ := by
+    dsimp only [T]
+    rw [LinearMap.toPMap_ker, LinearMap.ker_zero, inf_top_eq]
+  have hsplit : T.domain = T.ker ⊔ carrier T := by
+    rw [hk, top_sup_eq]
+    rfl
+  have hExist (L : Submodule ℝ RealSequenceHilbert) :
+      ∃ A, IsTsengInverse T A ∧ A.domain = L ∧ A.ker = L := by
+    have ho : L ≤ T.toFun.rangeᗮ := by simp [hr]
+    obtain ⟨A, hA, hD, hK⟩ := exists_tsengInverseOn T hsplit L ho
+    exact ⟨A, hA, by simpa only [hr, bot_sup_eq] using hD, hK⟩
+  choose A hA hD hK using hExist
+  have hi : Function.Injective A := by
+    intro P Q h
+    exact (hD P).symm.trans ((congrArg LinearPMap.domain h).trans (hD Q))
+  refine ⟨T, A ∘ polynomialSummableDomain, A ∘ coordinateKernel,
+    hi.comp polynomialSummableDomain_strictAnti.injective, hi.comp coordinateKernel_injective,
+    ?_, ?_⟩
+  · intro n
+    exact ⟨hA _, (hD _).symm ▸ dense_polynomialSummableDomain n⟩
+  · intro n
+    rw [Function.comp_apply, hK]
+    exact ⟨hA _, (lp.evalCLM ℝ (fun _ : ℕ => ℝ) 2 n).isClosed_ker⟩
+
+end InfiniteTsengFamilies
 
 end BenIsraelGreville.Chapter09

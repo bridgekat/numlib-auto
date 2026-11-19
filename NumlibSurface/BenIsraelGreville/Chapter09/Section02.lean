@@ -8,6 +8,8 @@ import Mathlib.Analysis.Normed.Operator.Compact.FiniteDimension
 import Numlib.Analysis.Normed.Lp.Sequence
 import Numlib.Analysis.Normed.Operator.Compact
 import Mathlib.Analysis.PSeries
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.MeasureTheory.Function.L2Space
 
 /-!
 # Hilbert spaces and partial linear operators
@@ -22,6 +24,9 @@ operators carry a linear subspace as their domain.
   operator. For a closable operator the right kernel is that of the closure.
 * **Equation (4)** assigns $+\infty$ when the carrier is trivial. This
   includes the zero operator in the positivity criterion.
+
+* **Exercise 2** (correction). The weighted integral is defined on the dense domain
+  where the coordinate-weighted function is integrable.
 -/
 
 namespace BenIsraelGreville.Chapter09
@@ -1682,5 +1687,315 @@ theorem exercise_9_7_harmonic_witness (k : ℝ) (hk : 0 < k) (hk' : k < 1)
       exact (lp.hasSum_single (by norm_num) harmonicLp).tendsto_sum_nat
 
 end HarmonicResults
+
+section WeightedIntegral
+
+open Filter MeasureTheory Set
+open scoped Topology InnerProductSpace
+
+noncomputable abbrev halfLineMeasure : Measure ℝ := volume.restrict (Ici 0)
+
+private def correctionSupport (N : ℕ) : Set ℝ := Icc 1 ((N : ℝ) + 1)
+
+private noncomputable def correctionFunction (N : ℕ) : ℝ → ℝ :=
+  (correctionSupport N).indicator (fun t => ((N : ℝ) * t)⁻¹)
+
+private theorem correctionSupport_subset_halfLine (N : ℕ) : correctionSupport N ⊆ Ici 0 :=
+  fun _ ht => zero_le_one.trans ht.1
+
+private theorem correctionSupport_closedMeasure (N : ℕ) :
+    halfLineMeasure.restrict (correctionSupport N) = volume.restrict (correctionSupport N) :=
+  Measure.restrict_restrict_of_subset (correctionSupport_subset_halfLine N)
+
+private theorem correctionSupport_measure_ne_top (N : ℕ) :
+    halfLineMeasure (correctionSupport N) ≠ ⊤ := by
+  have h := (Measure.restrict_le_self : halfLineMeasure ≤ (volume : Measure ℝ)) (correctionSupport N)
+  exact (h.trans_lt (isCompact_Icc.measure_lt_top : volume (correctionSupport N) < ⊤)).ne
+
+private theorem memLp_correctionFunction (N : ℕ) : MemLp (correctionFunction N) 2 halfLineMeasure := by
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · simp [correctionFunction]
+  let C := (correctionSupport N).indicator (fun _ => (N : ℝ)⁻¹)
+  have hC : MemLp C 2 halfLineMeasure := memLp_indicator_const 2
+    measurableSet_Icc.nullMeasurableSet _ (Or.inr (correctionSupport_measure_ne_top N))
+  have hm : Measurable (correctionFunction N) :=
+    (measurable_const.mul measurable_id).inv.indicator measurableSet_Icc
+  refine hC.mono' hm.aestronglyMeasurable (Eventually.of_forall fun t => ?_)
+  by_cases ht : t ∈ correctionSupport N
+  · change 1 ≤ t ∧ t ≤ (N : ℝ) + 1 at ht
+    have hmem : t ∈ correctionSupport N := ht
+    simp only [correctionFunction, C, indicator_of_mem hmem,
+      Real.norm_of_nonneg (inv_nonneg.mpr (mul_nonneg (Nat.cast_nonneg _) (zero_le_one.trans ht.1)))]
+    exact inv_anti₀ (by positivity) (le_mul_of_one_le_right (Nat.cast_nonneg _) ht.1)
+  · simp [correctionFunction, C, indicator_of_notMem ht]
+
+private noncomputable def correctionLp (N : ℕ) : Lp ℝ 2 halfLineMeasure :=
+  (memLp_correctionFunction N).toLp (correctionFunction N)
+
+private theorem correction_weight_eq (N : ℕ) (t : ℝ) :
+    t * correctionFunction N t = (correctionSupport N).indicator (fun _ => (N : ℝ)⁻¹) t := by
+  by_cases ht : t ∈ correctionSupport N
+  · rw [correctionFunction, indicator_of_mem ht, indicator_of_mem ht, mul_inv_rev, ← mul_assoc,
+      mul_inv_cancel₀ (zero_lt_one.trans_le ht.1).ne', one_mul]
+  · simp [correctionFunction, indicator_of_notMem ht]
+
+private theorem correction_weighted_integrable (N : ℕ) :
+    Integrable (fun t => t * correctionLp N t) halfLineMeasure := by
+  have hC : MemLp ((correctionSupport N).indicator (fun _ => (N : ℝ)⁻¹)) 1 halfLineMeasure :=
+    memLp_indicator_const 1 measurableSet_Icc.nullMeasurableSet _
+      (Or.inr (correctionSupport_measure_ne_top N))
+  refine (memLp_one_iff_integrable.mp hC).congr ?_
+  filter_upwards [(memLp_correctionFunction N).coeFn_toLp] with t ht
+  change (correctionSupport N).indicator (fun _ => (N : ℝ)⁻¹) t = t * correctionLp N t
+  rw [show correctionLp N t = correctionFunction N t from ht, correction_weight_eq]
+
+private theorem integral_weighted_correction (N : ℕ) (hN : 0 < N) :
+    ∫ t, t * correctionLp N t ∂halfLineMeasure = 1 := by
+  have hn : (N : ℝ) ≠ 0 := by positivity
+  calc
+    _ = ∫ t, (correctionSupport N).indicator (fun _ => (N : ℝ)⁻¹) t ∂halfLineMeasure := by
+      apply integral_congr_ae
+      filter_upwards [(memLp_correctionFunction N).coeFn_toLp] with t ht
+      rw [show correctionLp N t = correctionFunction N t from ht, correction_weight_eq]
+    _ = ∫ _ in correctionSupport N, (N : ℝ)⁻¹ := by
+      rw [integral_indicator (show MeasurableSet (correctionSupport N) from measurableSet_Icc),
+        correctionSupport_closedMeasure]
+    _ = _ := by
+      change ∫ _ in Icc 1 ((N : ℝ) + 1), (N : ℝ)⁻¹ = _
+      rw [setIntegral_const, Real.volume_real_Icc_of_le (le_add_of_nonneg_left (Nat.cast_nonneg _)), smul_eq_mul]
+      rw [add_sub_cancel_right, mul_inv_cancel₀ hn]
+
+private theorem norm_sq_correction (N : ℕ) (hN : 0 < N) :
+    ‖correctionLp N‖ ^ 2 = 1 / ((N : ℝ) * ((N : ℝ) + 1)) := by
+  have hnorm : ‖correctionLp N‖ ^ 2 = ∫ t, (correctionLp N t) ^ 2 ∂halfLineMeasure := by
+    rw [← real_inner_self_eq_norm_sq, L2.inner_def]
+    simp only [RCLike.inner_apply, conj_trivial, pow_two]
+  have hPow (t : ℝ) : correctionFunction N t ^ 2 =
+      (correctionSupport N).indicator (fun t => ((N : ℝ)⁻¹ ^ 2) * t ^ (-2 : ℤ)) t := by
+    by_cases ht : t ∈ correctionSupport N
+    · rw [correctionFunction, indicator_of_mem ht, indicator_of_mem ht, mul_inv_rev, mul_pow]
+      rw [show (-2 : ℤ) = -(2 : ℤ) by decide, zpow_neg, zpow_ofNat, inv_pow]
+      exact mul_comm _ _
+    · simp [correctionFunction, indicator_of_notMem ht]
+  rw [hnorm]
+  calc
+    _ = ∫ t, (correctionSupport N).indicator
+        (fun t => ((N : ℝ)⁻¹ ^ 2) * t ^ (-2 : ℤ)) t ∂halfLineMeasure := by
+      apply integral_congr_ae
+      filter_upwards [(memLp_correctionFunction N).coeFn_toLp] with t ht
+      rw [show correctionLp N t = correctionFunction N t from ht, hPow]
+    _ = ∫ t in Icc 1 ((N : ℝ) + 1), ((N : ℝ)⁻¹ ^ 2) * t ^ (-2 : ℤ) := by
+      rw [integral_indicator (show MeasurableSet (correctionSupport N) from measurableSet_Icc),
+        correctionSupport_closedMeasure]
+      rfl
+    _ = _ := by
+      have hn : 1 ≤ (N : ℝ) + 1 := le_add_of_nonneg_left (Nat.cast_nonneg _)
+      have hzero : (0 : ℝ) ∉ Set.uIcc 1 ((N : ℝ) + 1) := by
+        rw [uIcc_of_le hn]
+        norm_num
+      rw [integral_Icc_eq_integral_Ioc, ← intervalIntegral.integral_of_le hn,
+        intervalIntegral.integral_const_mul,
+        integral_zpow (Or.inr ⟨by decide, hzero⟩)]
+      norm_num
+      have hn0 : (N : ℝ) ≠ 0 := by positivity
+      have hn1 : (N : ℝ) + 1 ≠ 0 := by positivity
+      field_simp
+      ring
+
+private noncomputable abbrev HalfLineL2 := Lp ℝ 2 halfLineMeasure
+
+private theorem weighted_integrand_add_ae (x y : HalfLineL2) :
+    (fun t => t * (x + y) t) =ᵐ[halfLineMeasure] fun t => t * x t + t * y t := by
+  filter_upwards [Lp.coeFn_add x y] with t ht
+  rw [ht, Pi.add_apply, mul_add]
+
+private theorem weighted_integrand_smul_ae (a : ℝ) (x : HalfLineL2) :
+    (fun t => t * (a • x) t) =ᵐ[halfLineMeasure] fun t => a * (t * x t) := by
+  filter_upwards [Lp.coeFn_smul a x] with t ht
+  rw [ht, Pi.smul_apply, smul_eq_mul, mul_left_comm]
+
+/-- The natural domain of the half-line functional consists of the $L^2$
+classes for which multiplication by the coordinate gives an integrable function. -/
+noncomputable def weightedHalfLineDomain : Submodule ℝ HalfLineL2 where
+  carrier := {x | Integrable (fun t => t * x t) halfLineMeasure}
+  zero_mem' := by
+    change Integrable (fun t => t * (0 : HalfLineL2) t) halfLineMeasure
+    refine (integrable_zero ℝ ℝ halfLineMeasure).congr ?_
+    filter_upwards [Lp.coeFn_zero (E := ℝ) (p := 2) (μ := halfLineMeasure)] with t ht
+    change (0 : ℝ) = t * (0 : HalfLineL2) t
+    rw [ht, Pi.zero_apply, mul_zero]
+  add_mem' hx hy := (hx.add hy).congr (weighted_integrand_add_ae _ _).symm
+  smul_mem' a _ hx := (hx.const_mul a).congr (weighted_integrand_smul_ae _ _).symm
+
+/-- The coordinate-weighted integral as a partial linear map on the half-line. -/
+noncomputable def weightedHalfLineIntegral : HalfLineL2 →ₗ.[ℝ] ℝ where
+  domain := weightedHalfLineDomain
+  toFun := {
+    toFun := fun x => ∫ t, t * x.val t ∂halfLineMeasure
+    map_add' := fun x y => by
+      change (∫ t, t * (x.val + y.val) t ∂halfLineMeasure) = _
+      rw [integral_congr_ae (weighted_integrand_add_ae _ _), integral_add x.property y.property]
+    map_smul' := fun a x => by
+      change (∫ t, t * (a • x.val) t ∂halfLineMeasure) = _
+      rw [integral_congr_ae (weighted_integrand_smul_ae _ _), integral_const_mul]
+      rfl }
+
+private theorem correctionLp_tendsto_zero :
+    Tendsto (fun n : ℕ => correctionLp (n + 1)) atTop (𝓝 0) := by
+  rw [tendsto_zero_iff_norm_tendsto_zero]
+  have hn : Tendsto (fun n : ℕ => ((n + 1 : ℕ) : ℝ)) atTop atTop :=
+    tendsto_natCast_atTop_atTop.comp (tendsto_add_atTop_nat 1)
+  have he : Tendsto (fun n : ℕ => 1 / ((n + 1 : ℕ) : ℝ)) atTop (𝓝 0) := by
+    simpa only [Function.comp_def, one_div] using tendsto_inv_atTop_zero.comp hn
+  have hsq : Tendsto (fun n : ℕ => ‖correctionLp (n + 1)‖ ^ 2) atTop (𝓝 0) := by
+    refine tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds he (fun n => sq_nonneg _) ?_
+    intro n
+    change ‖correctionLp (n + 1)‖ ^ 2 ≤ 1 / ((n + 1 : ℕ) : ℝ)
+    rw [norm_sq_correction (n + 1) (Nat.succ_pos n)]
+    apply one_div_le_one_div_of_le (by positivity)
+    exact le_mul_of_one_le_right (by positivity) (le_add_of_nonneg_left (Nat.cast_nonneg _))
+  have hs := (Real.continuous_sqrt.continuousAt (x := (0 : ℝ))).tendsto.comp hsq
+  simpa only [Function.comp_def, Real.sqrt_sq (norm_nonneg _), Real.sqrt_zero] using hs
+
+/-- **Exercise 2** of [benIsrael2003generalized], Chapter 9. Each vector in
+the weighted integral's domain is approximated by vectors of zero weighted
+integral. The corrections have the printed support and squared norms. -/
+theorem exercise_9_2_weighted_integral_example (x : weightedHalfLineIntegral.domain) :
+    let a := weightedHalfLineIntegral x
+    ∃ y : ℕ → weightedHalfLineIntegral.domain,
+      (∀ n, weightedHalfLineIntegral (y n) = 0) ∧
+      Tendsto (fun n => (y n).val) atTop (𝓝 x.val) ∧
+      (∀ n, (y n).val =ᵐ[halfLineMeasure] fun t => x.val t - a * correctionFunction (n + 1) t) ∧
+      ∀ n, ‖(y n).val - x.val‖ ^ 2 = a ^ 2 / (((n + 1 : ℕ) : ℝ) * ((n + 1 : ℕ) + 1 : ℝ)) := by
+  intro a
+  let f (n : ℕ) : weightedHalfLineIntegral.domain :=
+    ⟨correctionLp (n + 1), correction_weighted_integrable (n + 1)⟩
+  have hf (n : ℕ) : weightedHalfLineIntegral (f n) = 1 :=
+    integral_weighted_correction _ (Nat.succ_pos _)
+  let y (n : ℕ) := x - a • f n
+  refine ⟨y, ?_, ?_, ?_, ?_⟩
+  · intro n
+    change weightedHalfLineIntegral.toFun (x - a • f n) = 0
+    rw [map_sub, map_smul, show weightedHalfLineIntegral.toFun (f n) = 1 from hf n,
+      smul_eq_mul, mul_one]
+    exact sub_self a
+  · change Tendsto (fun n => x.val - a • correctionLp (n + 1)) atTop (𝓝 x.val)
+    have ha := (tendsto_const_nhds (x := a)).smul correctionLp_tendsto_zero
+    simpa only [smul_zero, sub_zero] using (tendsto_const_nhds (x := x.val)).sub ha
+  · intro n
+    change (x.val - a • correctionLp (n + 1)) =ᵐ[halfLineMeasure] _
+    filter_upwards [Lp.coeFn_sub x.val (a • correctionLp (n + 1)),
+      Lp.coeFn_smul a (correctionLp (n + 1)), (memLp_correctionFunction (n + 1)).coeFn_toLp]
+      with t h₁ h₂ h₃
+    rw [h₁, Pi.sub_apply, h₂, Pi.smul_apply, show correctionLp (n + 1) t = _ from h₃, smul_eq_mul]
+  · intro n
+    change ‖x.val - a • correctionLp (n + 1) - x.val‖ ^ 2 = _
+    rw [sub_sub_cancel_left, norm_neg, norm_smul, mul_pow, Real.norm_eq_abs, sq_abs,
+      norm_sq_correction _ (Nat.succ_pos _), mul_one_div]
+
+private def cutoffSupport (n : ℕ) : Set ℝ := Icc 0 (n : ℝ)
+
+private theorem memLp_cutoff (x : HalfLineL2) (n : ℕ) :
+    MemLp ((cutoffSupport n).indicator (x : ℝ → ℝ)) 2 halfLineMeasure := by
+  have hs : MeasurableSet (cutoffSupport n) := measurableSet_Icc
+  exact (Lp.memLp x).indicator hs.nullMeasurableSet
+
+private noncomputable def cutoffLp (x : HalfLineL2) (n : ℕ) : HalfLineL2 :=
+  (memLp_cutoff x n).toLp ((cutoffSupport n).indicator x)
+
+private theorem cutoffLp_mem_domain (x : HalfLineL2) (n : ℕ) :
+    cutoffLp x n ∈ weightedHalfLineDomain := by
+  let s := cutoffSupport n
+  have hs : MeasurableSet s := measurableSet_Icc
+  have hfin : halfLineMeasure s < ⊤ :=
+    ((Measure.restrict_le_self : halfLineMeasure ≤ volume) s).trans_lt
+      (isCompact_Icc.measure_lt_top : volume s < ⊤)
+  let : IsFiniteMeasure (halfLineMeasure.restrict s) :=
+    ⟨by rw [Measure.restrict_apply_univ]; exact hfin⟩
+  have hx : Integrable (x : ℝ → ℝ) (halfLineMeasure.restrict s) :=
+    ((Lp.memLp x).restrict s).integrable (by norm_num)
+  have htx : Integrable (fun t => t * x t) (halfLineMeasure.restrict s) := by
+    refine (hx.norm.const_mul (n : ℝ)).mono' (aestronglyMeasurable_id.mul hx.aestronglyMeasurable) ?_
+    filter_upwards [ae_restrict_mem hs] with t ht
+    change 0 ≤ t ∧ t ≤ n at ht
+    rw [norm_mul, Real.norm_of_nonneg ht.1]
+    exact mul_le_mul_of_nonneg_right ht.2 (norm_nonneg _)
+  change Integrable (fun t => t * cutoffLp x n t) halfLineMeasure
+  refine ((integrable_indicator_iff hs).mpr htx).congr ?_
+  filter_upwards [(memLp_cutoff x n).coeFn_toLp] with t ht
+  rw [show cutoffLp x n t = s.indicator x t from ht]
+  by_cases h : t ∈ s <;> simp [indicator_of_mem, indicator_of_notMem, h]
+
+private theorem cutoffLp_tendsto (x : HalfLineL2) :
+    Tendsto (cutoffLp x) atTop (𝓝 x) := by
+  let d (n : ℕ) (t : ℝ) := ((cutoffSupport n).indicator x t - x t) ^ 2
+  have hInt (n : ℕ) : ‖cutoffLp x n - x‖ ^ 2 = ∫ t, d n t ∂halfLineMeasure := by
+    rw [← real_inner_self_eq_norm_sq, L2.inner_def]
+    apply integral_congr_ae
+    filter_upwards [Lp.coeFn_sub (cutoffLp x n) x, (memLp_cutoff x n).coeFn_toLp]
+      with t hsub hcut
+    rw [hsub, Pi.sub_apply, show cutoffLp x n t = (cutoffSupport n).indicator x t from hcut]
+    simp only [d, RCLike.inner_apply, conj_trivial, pow_two]
+  have hBound : Integrable (fun t => x t ^ 2) halfLineMeasure :=
+    (memLp_two_iff_integrable_sq (Lp.aestronglyMeasurable x)).mp (Lp.memLp x)
+  have hMeas (n : ℕ) : AEStronglyMeasurable (d n) halfLineMeasure :=
+    (((Lp.aestronglyMeasurable x).indicator measurableSet_Icc).sub
+      (Lp.aestronglyMeasurable x)).pow _
+  have hLe (n : ℕ) (t : ℝ) : ‖d n t‖ ≤ x t ^ 2 := by
+    by_cases h : t ∈ cutoffSupport n
+    · simp [d, indicator_of_mem h, sq_nonneg]
+    · simp only [d, indicator_of_notMem h, zero_sub, neg_sq,
+        Real.norm_of_nonneg (sq_nonneg _), le_rfl]
+  have hConv : ∀ᵐ t ∂halfLineMeasure, Tendsto (fun n => d n t) atTop (𝓝 0) := by
+    filter_upwards [ae_restrict_mem measurableSet_Ici] with t ht
+    have hN : ∀ᶠ n : ℕ in atTop, t ≤ (n : ℝ) :=
+      (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_ge_atTop t
+    apply tendsto_const_nhds.congr'
+    filter_upwards [hN] with n hn
+    have h : t ∈ cutoffSupport n := ⟨ht, hn⟩
+    simp [d, indicator_of_mem h]
+  have h := tendsto_integral_filter_of_dominated_convergence (μ := halfLineMeasure)
+    (F := d) (f := fun _ => (0 : ℝ)) (fun t => x t ^ 2) (Eventually.of_forall hMeas)
+    (Eventually.of_forall fun n => Eventually.of_forall (hLe n)) hBound hConv
+  have hsq : Tendsto (fun n => ‖cutoffLp x n - x‖ ^ 2) atTop (𝓝 0) := by
+    simpa only [hInt, integral_zero] using h
+  apply tendsto_iff_norm_sub_tendsto_zero.mpr
+  have he := (Real.continuous_sqrt.continuousAt (x := (0 : ℝ))).tendsto.comp hsq
+  simpa only [Function.comp_def, Real.sqrt_sq (norm_nonneg _), Real.sqrt_zero] using he
+
+/-- The domain of the coordinate-weighted integral is dense in half-line $L^2$. -/
+theorem weightedHalfLineDomain_dense : Dense (weightedHalfLineDomain : Set HalfLineL2) := by
+  intro x
+  exact mem_closure_of_tendsto (cutoffLp_tendsto x)
+    (Eventually.of_forall (cutoffLp_mem_domain x))
+
+/-- The weighted integral in **Exercise 2** is unbounded and has dense kernel. -/
+theorem weightedHalfLineIntegral_unbounded_dense_kernel :
+    ¬IsBoundedOperator weightedHalfLineIntegral ∧
+      Dense (weightedHalfLineIntegral.ker : Set HalfLineL2) := by
+  constructor
+  · rintro ⟨c, hc⟩
+    let f (n : ℕ) : weightedHalfLineIntegral.domain :=
+      ⟨correctionLp (n + 1), correction_weighted_integrable (n + 1)⟩
+    have ht (n : ℕ) : 1 ≤ c * ‖correctionLp (n + 1)‖ := by
+      have h := hc (f n)
+      change ‖weightedHalfLineIntegral (f n)‖ ≤ c * ‖correctionLp (n + 1)‖ at h
+      simpa only [show weightedHalfLineIntegral (f n) = 1 from
+        integral_weighted_correction _ (Nat.succ_pos _), norm_one] using h
+    have hT := (tendsto_const_nhds (x := c)).mul correctionLp_tendsto_zero.norm
+    have hz : (1 : ℝ) ≤ 0 := ge_of_tendsto (by simpa only [norm_zero, mul_zero] using hT)
+      (Eventually.of_forall ht)
+    exact (not_le_of_gt zero_lt_one) hz
+  · have hi : (weightedHalfLineDomain : Set HalfLineL2) ⊆ closure (weightedHalfLineIntegral.ker : Set HalfLineL2) := by
+      intro x hx
+      obtain ⟨f, h0, hT, _, _⟩ := exercise_9_2_weighted_integral_example ⟨x, hx⟩
+      apply mem_closure_of_tendsto hT
+      exact Eventually.of_forall fun n => LinearPMap.mem_ker_iff.mpr
+        ⟨f n, rfl, h0 n⟩
+    intro x
+    have hx : x ∈ closure (weightedHalfLineDomain : Set HalfLineL2) := weightedHalfLineDomain_dense x
+    exact closure_minimal hi isClosed_closure hx
+
+end WeightedIntegral
 
 end BenIsraelGreville.Chapter09
