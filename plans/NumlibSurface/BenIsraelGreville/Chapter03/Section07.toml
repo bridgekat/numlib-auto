@@ -158,10 +158,7 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, attaining vector wit
 
 [[node]]
 id = "exercise_60"
-kind = "theorem"
-desc = '''For full column rank and codimension one, characterize all minimizing ℓ∞ residuals via equality in the ℓ∞–ℓ¹ estimate. The displayed phase fixes the coordinates where the normal vector is nonzero. Other coordinates range freely in the attained sup-norm disk, so uniqueness of the solution needs all normal coordinates nonzero. For the residual convention r=b−Ax, the lifting formula is A†(b−r).'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, Equations (140)–(142), Chebyshev residual"
-deps = ["exercise_58"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, Equations (140)–(142) with corrected lift and inactive coordinates"
 
 [[node]]
 id = "exercise_61"
@@ -195,10 +192,14 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 67, Equation (144)"
 
 [[node]]
 id = "exercise_68"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(a) and the inequalities in (b)"
+
+[[node]]
+id = "exercise_68_upper_sharp"
 kind = "theorem"
-desc = '''For dimension at least two, define the supremum of metric projection norms over proper positive-dimensional subspaces, prove its attainment in each prescribed dimension, establish the sharp bound 1 ≤ Q < 2, and show that 2 is approached by essentially strictly convex norms.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(a)–(b), Equations (145)–(146), projective bound"
-deps = ["theorem_11", "exercise_66"]
+desc = "For every positive tolerance construct an essentially strictly convex norm whose projective bound is within that tolerance of two."
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(b), sharpness of the upper limit"
+deps = ["exercise_68"]
 
 [[node]]
 id = "exercise_69"
@@ -209,10 +210,7 @@ deps = ["IsProjectiveNorm", "exercise_68"]
 
 [[node]]
 id = "exercise_73"
-kind = "theorem"
-desc = '''Prove projectivity from additive projections and complementary zero-fiber reciprocity in a fixed positive proper dimension using the projective-bound attainment statement.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 73, projectivity from one fixed projection dimension"
-deps = ["exercise_68", "exercise_72"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 73"
 
 [[node]]
 id = "exercise_74"
@@ -436,3 +434,35 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, smoothness of a conv
 [[node]]
 id = "eq_of_normalized_supporting_hyperplanes_eq"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, uniqueness of normalized normals"
+
+[[node]]
+id = "exists_finrank_eq_metricProjection"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 68 and 73, transfer to every positive proper dimension"
+
+[[node]]
+id = "metricProjector_contractive_of_mutual_zeroFibers"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 73, reciprocity gives contractivity"
+
+[[node]]
+id = "chebyshevNormalFunctional"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, Hermitian coordinate normal"
+
+[[node]]
+id = "chebyshevNormalFunctional_apply"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, coordinate sum representation"
+
+[[node]]
+id = "chebyshevResidual_eq_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, all sharp ℓ∞ residuals"
+
+[[node]]
+id = "exercise_60_unique_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 60, exact uniqueness condition for injective systems"
+
+[[node]]
+id = "projectiveBound"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68, Equation (145)"
+
+[[node]]
+id = "exercise_69_projectiveBound_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, equality to one"

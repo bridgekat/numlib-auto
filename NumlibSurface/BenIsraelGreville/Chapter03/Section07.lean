@@ -2525,4 +2525,471 @@ end
 
 end RotundSmoothExercises
 
+section FixedDimensionProjection
+
+open Set Module
+open scoped Pointwise
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedSpace ℝ E] [IsScalarTower ℝ ℂ E] [FiniteDimensional ℂ E]
+
+/-- Every metric projection value occurs for a subspace in each prescribed
+positive proper dimension. A norming functional for the residual supplies
+a hyperplane in which to extend the span of the projected point. -/
+theorem exists_finrank_eq_metricProjection (h : essentiallyStrictlyConvex E)
+    (L : Submodule ℂ E) (x : E) (k : ℕ)
+    (hk₁ : 1 ≤ k) (hk₂ : k < Module.finrank ℂ E) :
+    ∃ M : Submodule ℂ E, Module.finrank ℂ M = k ∧ definition_1 M x = definition_1 L x := by
+  let y := definition_1 L x
+  let z := x - y
+  by_cases hz : z = 0
+  · have hxy : x = y := sub_eq_zero.mp hz
+    obtain ⟨M, _, hx, hdim⟩ := exists_submodule_with_finrank_of_mem
+      (⊤ : Submodule ℂ E) (show x ∈ (⊤ : Submodule ℂ E) from trivial) k hk₁
+      (by simpa only [finrank_top] using hk₂.le)
+    exact ⟨M, hdim, ((definition_1_eq_self_iff M x).mpr hx).trans hxy⟩
+  have hz₀ : definition_1 L z = 0 := definition_1_residual h L x
+  obtain ⟨f, hf, hfz, hL⟩ := (exercise_75 h L hz).mp hz₀
+  have hyF : y ∈ f.ker := hL y (definition_1_mem L x)
+  have hdim : k ≤ Module.finrank ℂ f.ker := by
+    have hr := f.toLinearMap.finrank_range_add_finrank_ker
+    have hr₁ := f.toLinearMap.range.finrank_le
+    rw [finrank_self] at hr₁
+    omega
+  obtain ⟨M, hM, hy, hdimM⟩ := exists_submodule_with_finrank_of_mem
+    f.ker hyF k hk₁ hdim
+  have hzM : definition_1 M z = 0 := (exercise_75 h M hz).mpr
+    ⟨f, hf, hfz, fun w hw => hM hw⟩
+  have hsum : z + y = x := sub_add_cancel x y
+  have he := definition_1_add_mem h M z hy
+  rw [hsum, hzM, zero_add] at he
+  exact ⟨M, hdimM, he⟩
+
+/-- Mutual zero fibers imply that the metric projectors are contractive. -/
+theorem metricProjector_contractive_of_mutual_zeroFibers (h : essentiallyStrictlyConvex E)
+    (L N : Submodule ℂ E)
+    (hN : ∀ x, x ∈ N ↔ definition_1 L x = 0)
+    (hL : ∀ x, x ∈ L ↔ definition_1 N x = 0) (x : E) :
+    ‖definition_1 L x‖ ≤ ‖x‖ := by
+  let y := definition_1 L x
+  let z := x - y
+  have hN₀ : definition_1 N y = 0 := (hL y).mp (definition_1_mem L x)
+  have hz : z ∈ N := (hN z).mpr (definition_1_residual h L x)
+  have hz' := (isBestApprox_definition_1 N y).2 (-z) (N.neg_mem hz)
+  rw [hN₀, sub_zero, sub_neg_eq_add, add_comm, sub_add_cancel] at hz'
+  exact hz'
+
+/-- **Exercise 73** of [benIsrael2003generalized], Chapter 3.
+An essentially strictly convex norm is projective if in one positive proper
+dimension all metric projectors are additive and have reciprocal zero fibers. -/
+theorem exercise_73 (h : essentiallyStrictlyConvex E) (k : ℕ)
+    (hk₁ : 1 ≤ k) (hk₂ : k < Module.finrank ℂ E)
+    (hL : ∀ L : Submodule ℂ E, Module.finrank ℂ L = k →
+      (∀ x y, definition_1 L (x + y) = definition_1 L x + definition_1 L y) ∧
+      ∀ N : Submodule ℂ E, (∀ x, x ∈ N ↔ definition_1 L x = 0) →
+        ∀ x, x ∈ L ↔ definition_1 N x = 0) :
+    IsProjectiveNorm (E := E) := by
+  intro L x
+  obtain ⟨M, hM, hx⟩ := exists_finrank_eq_metricProjection h L x k hk₁ hk₂
+  obtain ⟨hadd, hrecip⟩ := hL M hM
+  obtain ⟨N, hN⟩ := (corollary_5 h M).1.mp hadd
+  rw [← hx]
+  exact metricProjector_contractive_of_mutual_zeroFibers h M N hN (hrecip N hN) x
+
+end
+
+end FixedDimensionProjection
+
+section ChebyshevResidual
+
+open Finset
+
+section
+
+variable {ι E : Type*} [Fintype ι] [AddCommGroup E] [Module ℂ E]
+
+/-- The continuous functional with a given complex coordinate normal. -/
+noncomputable def chebyshevNormalFunctional (u : ι → ℂ) : StrongDual ℂ (ι → ℂ) :=
+  LinearMap.toContinuousLinearMap
+    { toFun := fun x => ∑ i, star (u i) * x i
+      map_add' := fun x y => by simp [mul_add, Finset.sum_add_distrib]
+      map_smul' := fun c x => by
+        change (∑ i, star (u i) * (c * x i)) = c * ∑ i, star (u i) * x i
+        rw [Finset.mul_sum]
+        exact Finset.sum_congr rfl fun _ _ => by ring }
+
+/-- The coordinate sum evaluates the Hermitian normal functional. -/
+@[simp]
+theorem chebyshevNormalFunctional_apply (u x : ι → ℂ) :
+    chebyshevNormalFunctional u x = ∑ i, star (u i) * x i := rfl
+
+private theorem sum_norm_normal_pos {u : ι → ℂ} (hu : u ≠ 0) :
+    0 < ∑ i, ‖u i‖ := by
+  obtain ⟨i, hi⟩ : ∃ i, u i ≠ 0 := by
+    by_contra! h
+    exact hu (funext h)
+  exact (norm_pos_iff.mpr hi).trans_le
+    (Finset.single_le_sum (f := fun i => ‖u i‖) (fun j _ => norm_nonneg _) (mem_univ i))
+
+private theorem star_mul_unit_phase (z : ℂ) (hz : z ≠ 0) :
+    star z * (z / (‖z‖ : ℂ)) = (‖z‖ : ℂ) := by
+  have h₀ : (‖z‖ : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hz)
+  rw [← mul_div_assoc]
+  apply (div_eq_iff h₀).mpr
+  rw [mul_comm (star z)]
+  change z * (starRingEnd ℂ) z = _
+  rw [Complex.mul_conj', pow_two]
+
+private theorem eq_real_of_re_eq_of_norm_le {z : ℂ} {r : ℝ}
+    (hr : 0 ≤ r) (he : z.re = r) (hn : ‖z‖ ≤ r) : z = (r : ℂ) := by
+  have he' : |z.re| = ‖z‖ := by
+    rw [he, abs_of_nonneg hr]
+    exact le_antisymm (he ▸ Complex.re_le_norm z) hn
+  have hi := Complex.abs_re_eq_norm.mp he'
+  exact Complex.ext (by simpa only [Complex.ofReal_re] using he)
+    (by simpa only [Complex.ofReal_im] using hi)
+
+/-- Equality in the ℓ∞ residual bound for a positive real prescribed
+pairing. The coordinates of zero normal may be arbitrary in the disk. -/
+theorem chebyshevResidual_eq_iff (u : ι → ℂ) (hu : u ≠ 0) (s : ℝ) (hs : 0 < s)
+    (r : ι → ℂ) :
+    let ρ := s / (∑ i, ‖u i‖)
+    (chebyshevNormalFunctional u r = (s : ℂ) ∧ ‖r‖ = ρ) ↔
+      (∀ i, u i ≠ 0 → r i = (ρ : ℂ) * (u i / (‖u i‖ : ℂ))) ∧
+        (∀ i, u i = 0 → ‖r i‖ ≤ ρ) := by
+  intro ρ
+  let D := ∑ i, ‖u i‖
+  have hD : 0 < D := sum_norm_normal_pos hu
+  have hρ : 0 < ρ := div_pos hs hD
+  have hρD : ρ * D = s := div_mul_cancel₀ s hD.ne'
+  have hstar (i : ι) (hi : u i ≠ 0) :
+      star (u i) * ((ρ : ℂ) * (u i / (‖u i‖ : ℂ))) =
+        ((ρ * ‖u i‖ : ℝ) : ℂ) := by
+    rw [← mul_left_comm, star_mul_unit_phase _ hi, Complex.ofReal_mul, mul_comm]
+  constructor
+  · rintro ⟨hpair, hnorm⟩
+    have hcoord (i : ι) : ‖r i‖ ≤ ρ := hnorm ▸ norm_le_pi_norm r i
+    have hle (i : ι) : (star (u i) * r i).re ≤ ρ * ‖u i‖ :=
+      (Complex.re_le_norm _).trans (by
+        rw [norm_mul, norm_star, mul_comm]
+        exact mul_le_mul_of_nonneg_right (hcoord i) (norm_nonneg _))
+    have hsum : ∑ i, (ρ * ‖u i‖ - (star (u i) * r i).re) = 0 := by
+      have h := congrArg Complex.re hpair
+      rw [chebyshevNormalFunctional_apply] at h
+      change Complex.reCLM (∑ i, star (u i) * r i) = s at h
+      rw [map_sum] at h
+      change ∑ i, (star (u i) * r i).re = s at h
+      rw [sum_sub_distrib, ← mul_sum, ← show D = ∑ i, ‖u i‖ from rfl, hρD, h, sub_self]
+    have hz (i : ι) : (star (u i) * r i).re = ρ * ‖u i‖ := by
+      have ht := ((sum_eq_zero_iff_of_nonneg fun i _ => sub_nonneg.mpr (hle i)).mp
+        hsum i (mem_univ i))
+      exact (sub_eq_zero.mp ht).symm
+    refine ⟨fun i hi => ?_, fun i _ => hcoord i⟩
+    apply mul_left_cancel₀ (star_ne_zero.mpr hi)
+    rw [hstar i hi]
+    apply eq_real_of_re_eq_of_norm_le (mul_nonneg hρ.le (norm_nonneg _)) (hz i)
+    rw [norm_mul, norm_star, mul_comm]
+    exact mul_le_mul_of_nonneg_right (hcoord i) (norm_nonneg _)
+  · rintro ⟨hactive, hzero⟩
+    have hcoord (i : ι) (hi : u i ≠ 0) : ‖r i‖ = ρ := by
+      rw [hactive i hi, norm_mul, norm_div, Complex.norm_real, Complex.norm_real,
+        Real.norm_of_nonneg hρ.le, Real.norm_of_nonneg (norm_nonneg _),
+        div_self (norm_ne_zero_iff.mpr hi), mul_one]
+    have hterm (i : ι) : star (u i) * r i = ((ρ * ‖u i‖ : ℝ) : ℂ) := by
+      by_cases hi : u i = 0
+      · simp [hi]
+      · rw [hactive i hi, hstar i hi]
+    refine ⟨?_, le_antisymm ((pi_norm_le_iff_of_nonneg hρ.le).mpr fun i => ?_) ?_⟩
+    · rw [chebyshevNormalFunctional_apply]
+      simp_rw [hterm]
+      rw [← Complex.ofReal_sum, ← mul_sum]
+      change ((ρ * D : ℝ) : ℂ) = (s : ℂ)
+      rw [hρD]
+    · by_cases hi : u i = 0
+      · exact hzero i hi
+      · exact (hcoord i hi).le
+    · obtain ⟨i, hi⟩ : ∃ i, u i ≠ 0 := by
+        by_contra! h
+        exact hu (funext h)
+      exact (hcoord i hi).symm.trans_le (norm_le_pi_norm r i)
+
+/-- **Exercise 60**, corrected, of [benIsrael2003generalized], Chapter 3.
+For a codimension-one coordinate range with normal $u$, normalize it
+so that the prescribed residual pairing $s$ is real and positive.
+The minimum ℓ∞ residual norm is $s/\sum_i |u_i|$. Equation (141)
+determines all coordinates with nonzero normal. The remaining components
+may vary throughout the disk of the same radius. The lift is $G(b-r)$. -/
+theorem exercise_60 (A : E →ₗ[ℂ] (ι → ℂ)) (G : (ι → ℂ) →ₗ[ℂ] E)
+    (u : ι → ℂ) (hu : u ≠ 0) (b : ι → ℂ) (s : ℝ) (hs : 0 < s)
+    (hA : A.range = (chebyshevNormalFunctional u).ker)
+    (hG : ∀ x, A (G (A x)) = A x) (hb : chebyshevNormalFunctional u b = (s : ℂ)) :
+    let ρ := s / (∑ i, ‖u i‖)
+    (∀ x : E, ρ ≤ ‖b - A x‖) ∧
+      (∀ r : ι → ℂ,
+        ((∃ x : E, b - A x = r) ∧ ‖r‖ = ρ) ↔
+          (∀ i, u i ≠ 0 → r i = (ρ : ℂ) * (u i / (‖u i‖ : ℂ))) ∧
+            (∀ i, u i = 0 → ‖r i‖ ≤ ρ)) ∧
+      ∃ r : ι → ℂ, b - A (G (b - r)) = r ∧ ‖r‖ = ρ := by
+  classical
+  intro ρ
+  let D := ∑ i, ‖u i‖
+  have hD : 0 < D := sum_norm_normal_pos hu
+  have hρ : 0 < ρ := div_pos hs hD
+  let f := chebyshevNormalFunctional u
+  have character (r : ι → ℂ) :=
+    exists_residual_eq_iff_of_range_eq_ker A f hA b r
+  have hchar (r : ι → ℂ) :
+      ((∃ x : E, b - A x = r) ∧ ‖r‖ = ρ) ↔
+        (∀ i, u i ≠ 0 → r i = (ρ : ℂ) * (u i / (‖u i‖ : ℂ))) ∧
+          (∀ i, u i = 0 → ‖r i‖ ≤ ρ) := by
+    rw [character r]
+    change (f r = f b ∧ _) ↔ _
+    rw [show f b = (s : ℂ) from hb]
+    exact chebyshevResidual_eq_iff u hu s hs r
+  refine ⟨fun x => ?_, hchar, ?_⟩
+  · let r := b - A x
+    have hr := (character r).mp ⟨x, rfl⟩
+    have he : f r = (s : ℂ) := hr.trans hb
+    have hre := congrArg Complex.re he
+    change (f r).re = s at hre
+    apply (div_le_iff₀ hD).mpr
+    rw [← hre]
+    change (∑ i, star (u i) * r i).re ≤ ‖r‖ * D
+    rw [show (∑ i, star (u i) * r i).re = ∑ i, (star (u i) * r i).re from
+      map_sum Complex.reCLM _ _, show D = ∑ i, ‖u i‖ from rfl, mul_sum]
+    exact sum_le_sum fun i _ => (Complex.re_le_norm _).trans (by
+      rw [norm_mul, norm_star, mul_comm]
+      exact mul_le_mul_of_nonneg_right (norm_le_pi_norm r i) (norm_nonneg _))
+  · let r := fun i => if u i = 0 then 0 else (ρ : ℂ) * (u i / (‖u i‖ : ℂ))
+    obtain ⟨⟨x, hx⟩, hnorm⟩ := (hchar r).mpr
+      ⟨fun i hi => ite_eq_right hi, fun i hi => by simp [r, hi, hρ.le]⟩
+    have hAx : A x = b - r := by rw [← hx, sub_sub_cancel]
+    exact ⟨r, by rw [← hAx, hG, hx], hnorm⟩
+
+
+/-- For an injective system, the minimizing solution is unique exactly
+when every coordinate of the normal is active. -/
+theorem exercise_60_unique_iff (A : E →ₗ[ℂ] (ι → ℂ)) (G : (ι → ℂ) →ₗ[ℂ] E)
+    (hAi : Function.Injective A) (u : ι → ℂ) (hu : u ≠ 0) (b : ι → ℂ) (s : ℝ) (hs : 0 < s)
+    (hA : A.range = (chebyshevNormalFunctional u).ker)
+    (hG : ∀ x, A (G (A x)) = A x) (hb : chebyshevNormalFunctional u b = (s : ℂ)) :
+    (∃! x : E, ‖b - A x‖ = s / (∑ i, ‖u i‖)) ↔ ∀ i, u i ≠ 0 := by
+  classical
+  let ρ := s / (∑ i, ‖u i‖)
+  have hρ : 0 < ρ := div_pos hs (sum_norm_normal_pos hu)
+  obtain ⟨_, hchar, r, hr, hn⟩ := exercise_60 A G u hu b s hs hA hG hb
+  change (∃! x : E, ‖b - A x‖ = ρ) ↔ ∀ i, u i ≠ 0
+  have hopt (x : E) (hx : ‖b - A x‖ = ρ) :=
+    (hchar (b - A x)).mp ⟨⟨x, rfl⟩, hx⟩
+  constructor
+  · intro h i hi
+    let v := fun j : ι => if u j = 0 then 0 else (ρ : ℂ) * (u j / (‖u j‖ : ℂ))
+    let w := Function.update v i (ρ : ℂ)
+    have hva : ∀ j, u j ≠ 0 → v j = (ρ : ℂ) * (u j / (‖u j‖ : ℂ)) :=
+      fun j hj => ite_eq_right hj
+    have hvz : ∀ j, u j = 0 → ‖v j‖ ≤ ρ := fun j hj => by simp [v, hj, hρ.le]
+    have hwa : ∀ j, u j ≠ 0 → w j = (ρ : ℂ) * (u j / (‖u j‖ : ℂ)) := by
+      intro j hj
+      have hji : j ≠ i := fun he => hj (he ▸ hi)
+      change Function.update v i (ρ : ℂ) j = _
+      rw [Function.update_of_ne hji]
+      exact hva j hj
+    have hwz : ∀ j, u j = 0 → ‖w j‖ ≤ ρ := by
+      intro j hj
+      by_cases hji : j = i
+      · subst j
+        change ‖Function.update v i (ρ : ℂ) i‖ ≤ ρ
+        rw [Function.update_self, Complex.norm_real, Real.norm_of_nonneg hρ.le]
+      · change ‖Function.update v i (ρ : ℂ) j‖ ≤ ρ
+        rw [Function.update_of_ne hji]
+        exact hvz j hj
+    obtain ⟨⟨x, hx⟩, hv⟩ := (hchar v).mpr ⟨hva, hvz⟩
+    obtain ⟨⟨y, hy⟩, hw⟩ := (hchar w).mpr ⟨hwa, hwz⟩
+    have he : x = y := h.unique (hx ▸ hv) (hy ▸ hw)
+    have hew : v = w := hx.symm.trans (he ▸ hy)
+    have hcoord := congrFun hew i
+    change v i = Function.update v i (ρ : ℂ) i at hcoord
+    rw [Function.update_self] at hcoord
+    simp only [v, hi, ite_true] at hcoord
+    exact (Complex.ofReal_ne_zero.mpr hρ.ne') hcoord.symm
+  · intro hu_all
+    let x := G (b - r)
+    have hx : ‖b - A x‖ = ρ := hr ▸ hn
+    refine ⟨x, hx, fun z hz => ?_⟩
+    apply hAi
+    apply (sub_right_inj (a := b)).mp
+    funext i
+    exact ((hopt z hz).1 i (hu_all i)).trans (((hopt x hx).1 i (hu_all i)).symm)
+
+end
+
+end ChebyshevResidual
+
+section ProjectiveBound
+
+open Set Module
+open scoped Pointwise
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedSpace ℝ E] [IsScalarTower ℝ ℂ E] [FiniteDimensional ℂ E]
+
+/-- The projective bound of a norm, Equation (145), is the supremum
+of the projection norms over positive-dimensional proper subspaces. -/
+noncomputable def projectiveBound : ℝ :=
+  sSup ((fun L : Submodule ℂ E => mixedOperatorNorm (definition_1 L)) ''
+    {L | 1 ≤ Module.finrank ℂ L ∧ Module.finrank ℂ L < Module.finrank ℂ E})
+
+private theorem metricProjection_isContinuousHomogeneous (h : essentiallyStrictlyConvex E)
+    (L : Submodule ℂ E) : IsContinuousHomogeneous (definition_1 L) :=
+  ⟨continuous_definition_1 h L, definition_1_smul h L⟩
+
+omit [IsScalarTower ℝ ℂ E] in
+private theorem norm_metricProjection_lt_two_of_norm_eq_one (h : essentiallyStrictlyConvex E)
+    (L : Submodule ℂ E) {x : E} (hx : ‖x‖ = 1) : ‖definition_1 L x‖ < 2 := by
+  let : StrictConvexSpace ℝ E := (essentiallyStrictlyConvex_iff E).mp h
+  let y := definition_1 L x
+  let z := y - x
+  have hz : ‖z‖ ≤ 1 := by
+    rw [show z = y - x from rfl, norm_sub_rev, ← hx]
+    exact definition_1_residual_norm_le L x
+  have he : x + z = y := by dsimp [z]; abel
+  have hle := norm_add_le x z
+  rw [he, hx] at hle
+  change ‖y‖ < 2
+  by_contra! h₂
+  have hz₁ : ‖z‖ = 1 := by linarith
+  have hy₂ : ‖y‖ = 2 := by linarith
+  have hsum : ‖x + z‖ = ‖x‖ + ‖z‖ := by rw [he, hx, hz₁, hy₂]; norm_num
+  have hzx : x = z := eq_of_norm_eq_of_norm_add_eq (hx.trans hz₁.symm) hsum
+  have hy : y = (2 : ℂ) • x := by
+    rw [two_smul]
+    simpa only [← hzx] using he.symm
+  have hxL : x ∈ L := by
+    have hm := L.smul_mem ((2 : ℂ)⁻¹) (definition_1_mem L x)
+    change (2 : ℂ)⁻¹ • y ∈ L at hm
+    rw [hy, inv_smul_smul₀ (by norm_num : (2 : ℂ) ≠ 0)] at hm
+    exact hm
+  have hyx : y = x := (definition_1_eq_self_iff L x).mpr hxL
+  rw [hyx, hx] at hy₂
+  norm_num at hy₂
+
+private def projectionPairSet (E : Type*) [NormedAddCommGroup E] [NormedSpace ℂ E] :
+    Set (E × E) :=
+  {p | ‖p.1‖ = 1 ∧ ‖p.2‖ ≤ 2 ∧ ∀ c : ℂ, ‖p.1 - p.2‖ ≤ ‖p.1 - c • p.2‖}
+
+omit [NormedSpace ℝ E] [IsScalarTower ℝ ℂ E] in
+private theorem isCompact_projectionPairSet : IsCompact (projectionPairSet E) := by
+  let : ProperSpace E := FiniteDimensional.proper ℂ E
+  apply Metric.isCompact_iff_isClosed_bounded.mpr
+  constructor
+  · change IsClosed ({p : E × E | ‖p.1‖ = 1} ∩ ({p | ‖p.2‖ ≤ 2} ∩
+      {p | ∀ c : ℂ, ‖p.1 - p.2‖ ≤ ‖p.1 - c • p.2‖}))
+    refine (isClosed_eq continuous_fst.norm continuous_const).inter
+      ((isClosed_le continuous_snd.norm continuous_const).inter ?_)
+    have he : {p : E × E | ∀ c : ℂ, ‖p.1 - p.2‖ ≤ ‖p.1 - c • p.2‖} =
+        ⋂ c : ℂ, {p : E × E | ‖p.1 - p.2‖ ≤ ‖p.1 - c • p.2‖} := by
+      ext p
+      simp only [mem_ofPred_eq, mem_iInter]
+    rw [he]
+    exact isClosed_iInter fun c =>
+      isClosed_le (continuous_fst.sub continuous_snd).norm
+        (continuous_fst.sub (continuous_const.smul continuous_snd)).norm
+  · apply (Metric.isBounded_closedBall (x := (0 : E × E)) (r := 2)).subset
+    rintro p ⟨hp₁, hp₂, _⟩
+    rw [Metric.mem_closedBall, dist_zero_right, Prod.norm_def, max_le_iff, hp₁]
+    exact ⟨by norm_num, hp₂⟩
+
+omit [FiniteDimensional ℂ E] in
+private theorem definition_1_span_eq_of_mem_projectionPairSet (h : essentiallyStrictlyConvex E)
+    {p : E × E} (hp : p ∈ projectionPairSet E) :
+    definition_1 (ℂ ∙ p.2) p.1 = p.2 := by
+  refine (definition_1_eq_iff h _ _ _).mpr ⟨Submodule.mem_span_singleton_self _, ?_⟩
+  intro y hy
+  obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hy
+  exact hp.2.2 c
+
+omit [NormedSpace ℝ E] [IsScalarTower ℝ ℂ E] in
+private theorem mem_projectionPairSet_of_definition_1 (L : Submodule ℂ E)
+    {x : E} (hx : ‖x‖ = 1) : (x, definition_1 L x) ∈ projectionPairSet E := by
+  refine ⟨hx, ?_, fun c => (isBestApprox_definition_1 L x).2 _
+    (L.smul_mem c (definition_1_mem L x))⟩
+  simpa only [hx, mul_one] using definition_1_norm_le L x
+
+/-- **Exercise 68(a)** and the inequalities in **Exercise 68(b)** of
+[benIsrael2003generalized], Chapter 3. The finite projective bound is
+attained by a projector of each positive proper rank, and lies in $[1,2)$. -/
+theorem exercise_68 (h : essentiallyStrictlyConvex E) (k : ℕ)
+    (hk₁ : 1 ≤ k) (hk₂ : k < Module.finrank ℂ E) :
+    (∃ L : Submodule ℂ E, Module.finrank ℂ L = k ∧
+      mixedOperatorNorm (definition_1 L) = projectiveBound (E := E)) ∧
+    1 ≤ projectiveBound (E := E) ∧ projectiveBound (E := E) < 2 := by
+  let : Nontrivial E := Module.nontrivial_of_finrank_pos (by omega : 0 < Module.finrank ℂ E)
+  obtain ⟨u, hu₀⟩ := exists_ne (0 : E)
+  let w := ((‖u‖⁻¹ : ℝ) : ℂ) • u
+  have hw : ‖w‖ = 1 := by
+    simpa only [Metric.mem_sphere, dist_zero_right] using norm_inv_smul_mem_unitSphere hu₀
+  have htop : definition_1 (⊤ : Submodule ℂ E) w = w :=
+    (definition_1_eq_self_iff ⊤ w).mpr trivial
+  have hww : (w, w) ∈ projectionPairSet E := by
+    simpa only [htop] using mem_projectionPairSet_of_definition_1 (⊤ : Submodule ℂ E) hw
+  have hcont : Continuous (fun p : E × E => ‖p.2‖) := continuous_snd.norm
+  obtain ⟨p, hp, hmax⟩ :=
+    (isCompact_projectionPairSet (E := E)).exists_isMaxOn ⟨(w, w), hww⟩ hcont.continuousOn
+  have hunit : ‖p.1‖ = 1 := hp.1
+  have h1 : 1 ≤ ‖p.2‖ := hw ▸ hmax hww
+  have hpval := definition_1_span_eq_of_mem_projectionPairSet h hp
+  have h2 : ‖p.2‖ < 2 := hpval ▸ norm_metricProjection_lt_two_of_norm_eq_one h (ℂ ∙ p.2) hunit
+  obtain ⟨L, hdimL, hL⟩ := exists_finrank_eq_metricProjection h (ℂ ∙ p.2) p.1 k hk₁ hk₂
+  have hnorm (M : Submodule ℂ E) : mixedOperatorNorm (definition_1 M) ≤ ‖p.2‖ := by
+    obtain ⟨v, hv, he⟩ :=
+      (exercise_66 _ (metricProjection_isContinuousHomogeneous h M)).2 inferInstance
+    exact he ▸ hmax (mem_projectionPairSet_of_definition_1 M hv)
+  have heq : mixedOperatorNorm (definition_1 L) = ‖p.2‖ := by
+    refine le_antisymm (hnorm L) ?_
+    have he := norm_homogeneous_apply_le (metricProjection_isContinuousHomogeneous h L) p.1
+    rwa [hL, hpval, hunit, mul_one] at he
+  have hQ : projectiveBound (E := E) = ‖p.2‖ := by
+    unfold projectiveBound
+    apply IsGreatest.csSup_eq
+    refine ⟨⟨L, ⟨by omega, by omega⟩, heq⟩, ?_⟩
+    rintro _ ⟨M, _, rfl⟩
+    exact hnorm M
+  rw [hQ]
+  exact ⟨⟨L, hdimL, heq⟩, h1, h2⟩
+
+/-- **Exercise 69**, projective bound criterion, of [benIsrael2003generalized], Chapter 3.
+In dimension at least two, the projective bound equals one exactly when
+every metric projection is contractive. -/
+theorem exercise_69_projectiveBound_iff (h : essentiallyStrictlyConvex E)
+    (hd : 2 ≤ Module.finrank ℂ E) :
+    projectiveBound (E := E) = 1 ↔ IsProjectiveNorm (E := E) := by
+  obtain ⟨⟨L, hdim, hmax⟩, h₁, h₂⟩ :=
+    exercise_68 h 1 le_rfl (by omega)
+  constructor
+  · intro he M x
+    obtain ⟨N, hN, hx⟩ := exists_finrank_eq_metricProjection h M x 1 le_rfl (by omega)
+    have hb : BddAbove ((fun S : Submodule ℂ E => mixedOperatorNorm (definition_1 S)) ''
+        {S | 1 ≤ Module.finrank ℂ S ∧ Module.finrank ℂ S < Module.finrank ℂ E}) := by
+      refine ⟨2, ?_⟩
+      rintro _ ⟨S, _, rfl⟩
+      exact (mixedOperatorNorm_le_iff (metricProjection_isContinuousHomogeneous h S)
+        (by norm_num)).mpr (definition_1_norm_le S)
+    have hn : mixedOperatorNorm (definition_1 N) ≤ 1 :=
+      he ▸ le_csSup hb ⟨N, ⟨by omega, by omega⟩, rfl⟩
+    have hx' := (mixedOperatorNorm_le_iff (metricProjection_isContinuousHomogeneous h N)
+      zero_le_one).mp hn x
+    simpa only [hx, one_mul] using hx'
+  · intro hproj
+    exact le_antisymm (hmax ▸ (mixedOperatorNorm_le_iff
+      (metricProjection_isContinuousHomogeneous h L) zero_le_one).mpr
+      (by simpa only [one_mul] using hproj L)) h₁
+
+end
+
+end ProjectiveBound
+
 end BenIsraelGreville.Chapter03
