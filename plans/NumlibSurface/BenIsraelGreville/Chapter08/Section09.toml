@@ -415,3 +415,11 @@ source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, radial filling o
 [[node]]
 id = "sphereUpperRadialMap_det_fderiv"
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, determinant of the full-dimensional radial filling"
+
+[[node]]
+id = "lintegral_areaFormula"
+source = "Ben-Israel and Greville, Chapter 8, §9, Equation (124), area formula for nonnegative measurable integrands"
+
+[[node]]
+id = "exercise_41_geometric_sphere_area"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, Equation (171), Gamma formula for normalized geometric sphere area"

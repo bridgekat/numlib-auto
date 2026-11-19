@@ -3283,7 +3283,19 @@ private theorem measure_union_of_null_right {Z : Type*} [MeasurableSpace Z] (μ 
       _ = _ := by rw [h, add_zero]
   · exact measure_mono subset_union_left
 
-private theorem normalized_full_sphere_cone (hd : d ≠ 0) {S : Set Y}
+private theorem sphere_one_equator_empty :
+    Metric.sphere (0 : EuclideanSpace ℝ (Fin 1)) 1 ∩
+      {x : EuclideanSpace ℝ (Fin 1) | x (Fin.last 0) = 0} = ∅ := by
+  apply Set.eq_empty_iff_forall_notMem.mpr
+  rintro x ⟨hs, hx⟩
+  have hz : x = 0 := by
+    ext i
+    have hi : i = Fin.last 0 := Subsingleton.elim _ _
+    rw [hi]
+    exact hx
+  simp [hz] at hs
+
+private theorem normalized_full_sphere_cone {S : Set Y}
     (hS : MeasurableSet S) (hsub : S ⊆ Σₛ) :
     (d + 1 : ℝ≥0∞) * V (I • S) = H S := by
   let U := S ∩ {x : Y | 0 < x (Fin.last d)}
@@ -3306,7 +3318,12 @@ private theorem normalized_full_sphere_cone (hd : d ≠ 0) {S : Set Y}
   have hEsub : E ⊆ Σₛ ∩ {x : Y | x (Fin.last d) = 0} := fun _ hx => ⟨hsub hx.1, hx.2⟩
   have hHU : Disjoint U L := Set.disjoint_left.mpr fun x hx hy =>
     lt_asymm (show 0 < x (Fin.last d) from hx.2) (show x (Fin.last d) < 0 from hy.2)
-  have hHE : H E = 0 := measure_mono_null hEsub (exercise_41_equator_measure_zero hd)
+  have hHE : H E = 0 := by
+    apply measure_mono_null hEsub
+    by_cases hd : d = 0
+    · subst d
+      rw [sphere_one_equator_empty, measure_empty]
+    · exact exercise_41_equator_measure_zero hd
   have hVE : V (I • E) = 0 := volume_sphereEquatorialCone inter_subset_right
   obtain ⟨_, hu⟩ := normalized_upper_sphere_cone hU hUsub
   obtain ⟨hLC, hl⟩ := normalized_lower_sphere_cone hL hLsub
@@ -3317,8 +3334,9 @@ private theorem normalized_full_sphere_cone (hd : d ≠ 0) {S : Set Y}
 
 /-- **Exercise 40**, Equations (168)–(169), of [benIsrael2003generalized],
 Chapter 8. The angular measure in the polar decomposition is precisely
-the restriction of normalized Hausdorff measure to the unit sphere. -/
-theorem exercise_40_polar_area_eq_hausdorff (hd : d ≠ 0) :
+the restriction of normalized Hausdorff measure to the unit sphere,
+including the two-point sphere in ambient dimension one. -/
+theorem exercise_40_polar_area_eq_hausdorff :
     Measure.map (Subtype.val : Σₛ → Y) (V).toSphere = (H).restrict Σₛ := by
   apply Measure.ext
   intro S hS
@@ -3328,8 +3346,49 @@ theorem exercise_40_polar_area_eq_hausdorff (hd : d ≠ 0) :
     ext x
     exact ⟨fun ⟨y, hy, e⟩ => e ▸ ⟨hy, y.property⟩, fun hx => ⟨⟨x, hx.2⟩, hx.1, rfl⟩⟩
   rw [hImage, finrank_euclideanSpace, Fintype.card_fin, Nat.cast_add, Nat.cast_one]
-  exact normalized_full_sphere_cone hd (hS.inter Metric.isClosed_sphere.measurableSet) inter_subset_right
+  exact normalized_full_sphere_cone (hS.inter Metric.isClosed_sphere.measurableSet) inter_subset_right
 
 end PolarMeasureEquality
+
+section NonnegativeAreaFormula
+
+open EuclideanSpace
+
+/-- **Equation (124)** of [benIsrael2003generalized], Chapter 8, for the
+nonnegative Lebesgue integral. An injective smooth chart multiplies the
+parameter integrand by the Gram volume of its derivative. -/
+theorem lintegral_areaFormula {n m : ℕ}
+    {Ω S : Set (EuclideanSpace ℝ (Fin n))} (hΩ : IsOpen Ω)
+    (hS : MeasurableSet S) (hsub : S ⊆ Ω)
+    {f : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin m)}
+    {f' : EuclideanSpace ℝ (Fin n) → EuclideanSpace ℝ (Fin n) →L[ℝ] EuclideanSpace ℝ (Fin m)}
+    (hf : ∀ x ∈ Ω, HasFDerivAt f (f' x) x) (hfc : ContinuousOn f' Ω)
+    (hRank : ∀ x ∈ Ω, Function.Injective (f' x)) (hinj : InjOn f S)
+    {g : EuclideanSpace ℝ (Fin m) → ℝ≥0∞} (hg : Measurable g) :
+    (∫⁻ y in f '' S, g y ∂(euclideanHausdorffMeasure n m)) =
+      ∫⁻ x in S, ENNReal.ofReal (EuclideanSpace.gram (f' x)) * g (f x) := by
+  have hCont : ContinuousOn f S := fun x hx => (hf x (hsub hx)).continuousAt.continuousWithinAt
+  have hJ : AEMeasurable (fun x => ENNReal.ofReal (EuclideanSpace.gram (f' x))) (volume.restrict S) :=
+    ((ENNReal.continuous_ofReal.comp continuous_gram).comp_continuousOn (hfc.mono hsub)).aemeasurable hS
+  have hgS : AEMeasurable (fun x => g (f x)) (volume.restrict S) :=
+    hg.comp_aemeasurable (hCont.aemeasurable hS)
+  rw [← map_gram_density_eq_hausdorff hΩ hS hsub hf hfc hRank hinj,
+    (hCont.measurableEmbedding hS hinj).lintegral_map]
+  simp only [Set.domRestrict_apply, ← Function.comp_apply (f := g)]
+  rw [lintegral_subtype_comap hS, restrict_withDensity hS]
+  simpa only [Pi.mul_apply, Function.comp_apply] using
+    lintegral_withDensity_eq_lintegral_mul₀ hJ hgS
+
+end NonnegativeAreaFormula
+
+/-- **Exercise 41**, Equation (171), of [benIsrael2003generalized],
+Chapter 8. The normalized Hausdorff area of the Euclidean unit sphere
+equals the stated Gamma-function formula. -/
+theorem exercise_41_geometric_sphere_area {d : ℕ} (hd : d ≠ 0) :
+    (euclideanHausdorffMeasure d (d + 1)).real
+      (Metric.sphere (0 : EuclideanSpace ℝ (Fin (d + 1))) 1) =
+        2 * Real.pi ^ (((d + 1 : ℕ) : ℝ) / 2) / Real.Gamma (((d + 1 : ℕ) : ℝ) / 2) := by
+  rw [exercise_41_hemisphere_integral hd, ← exercise_41_hemisphere_integral_angular hd,
+    exercise_41_unitSphereArea (Nat.succ_ne_zero d)]
 
 end BenIsraelGreville.Chapter08
