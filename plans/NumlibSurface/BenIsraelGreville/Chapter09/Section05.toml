@@ -166,17 +166,11 @@ source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), pointwise inner inve
 
 [[node]]
 id = "exercise_9_28"
-kind = "theorem"
-desc = '''Construct the closed densely defined scalar expression (49) on the order-n Sobolev space with homogeneous boundary matrix constraint (50). Under the stated continuous coefficient regularity and nowhere-zero leading coefficient, prove nullity n for the unrestricted differential expression and for the maximal realization of its formal differential adjoint. Obtain the corresponding constrained nullity bounds and closed range. Apply the carrier and normally solvable inverse results to obtain (e)–(g) for this concrete operator, including the bounded inverse on the range.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a)–(g), ordinary scalar boundary problem"
-deps = ["scalarDifferentialExpression", "scalarBoundaryValues"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a)–(g), closed scalar Sobolev boundary problem and its bounded Moore–Penrose inverse"
 
 [[node]]
 id = "exercise_9_29"
-kind = "theorem"
-desc = '''With a fundamental basis extending an orthonormal basis of the constrained null space, prove the causal Wronskian kernel (51) gives a particular solution of the unrestricted scalar equation. For forcing in range, prove that the coefficient correction (55), followed by projection off the constrained null space and extension by zero on the orthogonal complement of the range, yields the L² kernel of the maximal inverse.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, (51)–(55), Wronskian Green kernel"
-deps = ["exercise_9_28", "boundaryCorrection_of_innerInverse", "maximalInverse_eq_project_greenKernel"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equations (51)–(55), square-integrable Moore–Penrose kernel from the causal Wronskian and a finite separated correction"
 
 [[node]]
 id = "exercise_9_30_operator"
@@ -210,10 +204,7 @@ source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), expanded k
 
 [[node]]
 id = "exercise_9_36"
-kind = "theorem"
-desc = '''For Lx=x′−Bx with x(0)=x(1)=0, prove the free-endpoint adjoint, its homogeneous basis X⁻*, the Gram projection kernel with middle factor (∫X⁻¹X⁻*)⁻¹, and the projected Green formula. A positive fundamental kernel is causal (t<s), or a negative kernel is anticausal (s<t); the positive anticausal kernel printed in (69) differentiates to minus the forcing.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, (68)–(69), endpoint-zero first-order system"
-deps = ["exercise_9_30_operator", "exercise_9_35_kernel_expansion"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, endpoint-zero first-order equation, corrected (68)–(69), and Loud formula"
 
 [[node]]
 id = "greenKernelProduct"
@@ -653,4 +644,252 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(b), negative classica
 
 [[node]]
 id = "scalarNormalizedCompanion"
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 28 and 29, normalized first-order companion system"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, normalized first-order companion of the scalar expression"
+
+[[node]]
+id = "scalarFundamentalBasis"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, first coordinates of companion fundamental columns"
+
+[[node]]
+id = "scalarWronskian_eq_fundamentalMatrix"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (51), Wronskian is the full fundamental frame"
+
+[[node]]
+id = "scalarWronskianGreenKernel_eq_fundamental"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (51), pointwise Wronskian propagation"
+
+[[node]]
+id = "exists_scalarWronskianGreen_action"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equations (51)–(52), Wronskian representation for every square-integrable forcing"
+
+[[node]]
+id = "scalarAdjointKernel_distributional"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(c), constrained adjoint null vectors solve the distributional formal-adjoint equation"
+
+[[node]]
+id = "contDiffOn_intervalMatrix_inv"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_inv_left"
+
+[[node]]
+id = "intervalVectorSobolevBoundary"
+
+[[node]]
+id = "intervalVectorSobolevBoundaryCLM"
+
+[[node]]
+id = "intervalVectorSobolevBoundaryCLM_apply"
+desc = "The displayed evaluation or membership formula for the preceding construction."
+
+[[node]]
+id = "intervalVectorSobolevBoundary_surjective"
+
+[[node]]
+id = "intervalVectorSobolevBoundarySubmodule"
+
+[[node]]
+id = "mem_intervalVectorSobolevBoundarySubmodule_iff"
+desc = "The displayed evaluation or membership formula for the preceding construction."
+
+[[node]]
+id = "intervalVectorFirstOrderValue"
+
+[[node]]
+id = "intervalVectorFirstOrderValue_apply"
+desc = "The displayed evaluation or membership formula for the preceding construction."
+
+[[node]]
+id = "intervalVectorFirstOrder"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a), vector differential realization"
+
+[[node]]
+id = "mem_intervalVectorFirstOrder_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a), vector differential realization"
+
+[[node]]
+id = "dense_intervalVectorFirstOrder_domain"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a), vector differential realization"
+
+[[node]]
+id = "isClosed_intervalVectorFirstOrder"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a), vector differential realization"
+
+[[node]]
+id = "intervalVectorBoundaryPairing"
+
+[[node]]
+id = "intervalVectorAdjointBoundaryVector"
+
+[[node]]
+id = "intervalVectorBoundaryPairing_eq_dotProduct"
+
+[[node]]
+id = "intervalVectorBoundaryPairing_eq_zero_iff_matrix"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(b), (57)–(58), with the weighted endpoint pairing"
+
+[[node]]
+id = "intervalVectorFirstOrderAdjointValue"
+
+[[node]]
+id = "intervalVectorFirstOrder_green"
+
+[[node]]
+id = "mem_intervalVectorFirstOrder_adjoint_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(b), (57)–(58), with the weighted endpoint pairing"
+
+[[node]]
+id = "intervalVectorL2EuclideanEquiv"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, Hilbert-space identification of coordinate and vector-valued L²"
+
+[[node]]
+id = "intervalVectorL2EuclideanEquiv_apply_ae"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, almost-everywhere compatibility of coordinate and vector representatives"
+
+[[node]]
+id = "endpointZeroCausalKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, corrected causal kernel (69)"
+
+[[node]]
+id = "endpointZeroCausalKernel_integral"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, variation of constants for the corrected causal kernel (69)"
+
+[[node]]
+id = "endpointZeroAdjointGramPrefix"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, integrated Gram coefficient of the inverse-adjoint family"
+
+[[node]]
+id = "endpointZeroAdjointGramKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, corrected Gram projection kernel (68)"
+
+[[node]]
+id = "endpointZeroAdjointGramKernel_integral"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, integral action of the corrected Gram kernel (68)"
+
+[[node]]
+id = "endpointZeroAdjointNullMap"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, inverse-adjoint fundamental columns in vector L²"
+
+[[node]]
+id = "endpointZeroAdjointNullMap_apply_ae"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, representatives of the inverse-adjoint fundamental columns"
+
+[[node]]
+id = "endpointZeroAdjointNullMap_injective"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, independence of the inverse-adjoint fundamental columns"
+
+[[node]]
+id = "endpointZeroAdjointNullMap_adjoint"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, adjoint of the fundamental column map"
+
+[[node]]
+id = "endpointZeroAdjointGramPrefix_one"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, identification of the integrated Gram operator"
+
+[[node]]
+id = "isUnit_endpointZeroAdjointGram"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, invertibility of the Gram coefficient in (68)"
+
+[[node]]
+id = "represents_endpointZeroAdjointGramKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, orthogonal projection onto the inverse-adjoint column span (68)"
+
+[[node]]
+id = "endpointZeroCausal_gram_convolution"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, causal and Gram kernel composition"
+
+[[node]]
+id = "endpointZeroLoudKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, Loud subtraction after (69)"
+
+[[node]]
+id = "endpointZeroLoudKernel_integral"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, integral action of Loud’s corrected kernel"
+
+[[node]]
+id = "represents_endpointZeroLoudKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, kernel action as the causal solution on projected forcing"
+
+[[node]]
+id = "endpointZeroSobolevRep"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, continuous representative of the vector Sobolev domain"
+
+[[node]]
+id = "endpointZeroWeakDerivRep"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, vector weak derivative representative"
+
+[[node]]
+id = "firstOrderEuclideanMatrix"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, matrix of a Euclidean endomorphism"
+
+[[node]]
+id = "firstOrderEuclideanMatrix_mulVec"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, matrix action in Euclidean coordinates"
+
+[[node]]
+id = "endpointZeroFirstOrder"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, weak realization of the endpoint-zero first-order expression"
+
+[[node]]
+id = "mem_endpointZeroFirstOrder_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, operator graph with actual zero traces"
+
+[[node]]
+id = "dense_endpointZeroFirstOrder_domain"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, density of the endpoint-zero domain"
+
+[[node]]
+id = "isClosed_endpointZeroFirstOrder"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, closedness of the endpoint-zero operator"
+
+[[node]]
+id = "endpointZeroCompatibilityMoment"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, right-endpoint condition in fundamental coordinates"
+
+[[node]]
+id = "IsEndpointZeroFundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, normalized fundamental family and inverse ODE"
+
+[[node]]
+id = "exists_endpointZeroFundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, existence of normalized fundamental data on the unit interval"
+
+[[node]]
+id = "endpointZeroFirstOrder_graph_causal"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, causal Green representation on the actual range (69)"
+
+[[node]]
+id = "endpointZeroFirstOrder_range_eq_ker"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, range characterized by the vanishing compatibility moment"
+
+[[node]]
+id = "endpointZeroFirstOrder_ker"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, triviality of the homogeneous kernel with two zero traces"
+
+[[node]]
+id = "endpointZeroFirstOrder_adjoint_ker"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, actual adjoint kernel spanned by the inverse-adjoint columns"
+
+[[node]]
+id = "isNormallySolvable_endpointZeroFirstOrder"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, normal solvability of the endpoint-zero problem"
+
+[[node]]
+id = "endpointZeroFirstOrder_maximalInverse_kernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, maximal inverse on all vector L² inputs via the corrected Loud kernel"
+
+[[node]]
+id = "mem_endpointZeroFirstOrder_adjoint_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, Hilbert adjoint with unrestricted endpoints"
+
+[[node]]
+id = "exists_scalarHomogeneous_classicalRep"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), homogeneous Sobolev solutions have classical representatives on the closed interval"
+
+[[node]]
+id = "scalarFormalAdjointCoefficients_expansion"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b–c), Leibniz expansion of the formal adjoint"
+
+[[node]]
+id = "ker_adjoint_constrainedScalarIntervalOperator_le_formalAdjoint"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(c), inclusion of the Hilbert-adjoint null space in the maximal formal-adjoint null space"
