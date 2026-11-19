@@ -154,35 +154,104 @@ source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 48, Equation (202),
 
 [[node]]
 id = "imageDensity_graph_restricted"
-kind = "theorem"
-desc = "Extend the single-graph change of variables and Theorem 14 to a coordinate inverse defined only on attainable levels, with the fiber integration domains restricted accordingly. The global graph chart and the two restricted sphere branches are proved."
-source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), chart restricted to attainable levels"
-deps = ["imageDensity_graph", "theorem_14"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), change of variables on attainable levels"
 
 [[node]]
 id = "sphereLIntegral_eq_hemispheres"
-kind = "theorem"
-desc = '''For every positive radius and nonnegative measurable integrand, identify the angular sphere integral with the sum of the two hemisphere surface integrals at that radius. The two law-density statements and their almost-everywhere equality for probability densities are proved.'''
 source = "Ben-Israel and Greville, Chapter 8, §10, Corollary 5, Equation (195), pointwise chart evaluation of the spherical integral"
-deps = ["sphereLIntegral", "hemisphereLIntegral", "normSqImageDensity_ae_eq_hemisphereDensity"]
 
 [[node]]
 id = "exercise_8_45"
-kind = "theorem"
-desc = '''For λ>0 and n>0, show the mean of n independent rate-λ exponential variables has density (λn)^n y^(n−1) exp(−λny)/(n−1)! on the nonnegative ray. Identify the positive hyperplane slice as the simplex face in Equation (198) and compute its area factor.'''
-source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, Equation (198), mean of independent exponential variables"
-deps = ["corollary_4"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, Equation (198), gamma density of the average of independent exponential variables"
 
 [[node]]
 id = "exercise_8_46"
-kind = "theorem"
-desc = '''For |ρ|<1 and (a,b)≠(0,0), use the explicit centered bivariate Gaussian density with unit variances and correlation ρ to prove that aX₁+bX₂ has zero mean and variance a²+2abρ+b² and the univariate Gaussian density in Equation (200). Specialize to sums and differences.'''
-source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equations (199)–(200), correlated bivariate normal"
-deps = ["corollary_4_radonTransformAll"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equations (199)–(200), centered Gaussian projection law, mean, variance, and exact density"
 
 [[node]]
 id = "exercise_8_47"
-kind = "theorem"
-desc = '''For independent U([0,1]) coordinates and nonzero a and b, compute the linear-image density as the four absolute-value terms in Equation (201) divided by 2ab. Derive the triangular density for a=b=1. A zero coefficient needs the corresponding one-dimensional result because the displayed quotient requires ab≠0.'''
-source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, Equation (201), linear projection of the uniform square"
-deps = ["corollary_4_nonvertical"]
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, Equation (201), density of a signed projection of the uniform square for nonzero coefficients"
+
+[[node]]
+id = "RestrictedImageGraphChart"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), attainable-level inverse chart"
+
+[[node]]
+id = "RestrictedImageGraphChart.parameters"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), horizontal parameters at an attainable level"
+
+[[node]]
+id = "RestrictedImageGraphChart.measurableSet_parameters"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), measurability of restricted parameter domains"
+
+[[node]]
+id = "RestrictedImageGraphChart.image_height_parameters"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), parametrization of restricted level sets"
+
+[[node]]
+id = "restrictedGraphImageDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), restricted graph integral density"
+
+[[node]]
+id = "theorem_14_restricted"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equations (178)–(185), Theorem 14 for the geometric Hausdorff measure on restricted levels"
+
+[[node]]
+id = "sphereSurfaceMeasure_eq_hausdorff"
+source = "Ben-Israel and Greville, Chapter 8, §10, Equation (195), surface measure on every positive-radius sphere"
+
+[[node]]
+id = "uniformSquareLaw"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, independent unit-interval uniform joint law"
+
+[[node]]
+id = "exercise_8_47_triangular"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, Equation (201), triangular density of the sum of the two coordinates"
+
+[[node]]
+id = "independentExponentialLaw"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, independent exponential law with a common rate"
+
+[[node]]
+id = "independentExponentialDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, explicit product density"
+
+[[node]]
+id = "independentExponentialLaw_density"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, independent product law has the exponential joint density"
+
+[[node]]
+id = "exercise_8_45_simplex_face_area"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 45, Equation (198), Hausdorff area of each positive simplex slice"
+
+[[node]]
+id = "bivariateNormalDensity"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equation (199), explicit correlated bivariate Gaussian density"
+
+[[node]]
+id = "bivariateNormalLaw"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equation (199), centered bivariate Gaussian law"
+
+[[node]]
+id = "bivariateNormalLaw_density"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equation (199), the given density defines a probability law for correlation strictly between minus one and one"
+
+[[node]]
+id = "bivariateNormalProjectionVariance"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equation (200), variance of the linear projection"
+
+[[node]]
+id = "exercise_8_46_sum_sub"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 46, Equation (200), centered Gaussian law of the sum and difference"
+
+[[node]]
+id = "uniformSquareLaw_eq_product"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, product of the independent unit-interval uniform laws"
+
+[[node]]
+id = "exercise_8_47_single"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, uniform density for exactly one nonzero projection coefficient"
+
+[[node]]
+id = "exercise_8_47_zero"
+source = "Ben-Israel and Greville, Chapter 8, §10, Exercise 47, point mass for the zero projection"
