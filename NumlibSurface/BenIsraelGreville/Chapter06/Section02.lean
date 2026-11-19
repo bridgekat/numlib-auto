@@ -7,6 +7,7 @@ import NumlibSurface.BenIsraelGreville.Chapter00.Section06
 import Numlib.LinearAlgebra.Matrix.LeastSquares.Regularized
 import Numlib.Eigen.Normal
 import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
+import Numlib.LinearAlgebra.Matrix.Aeval
 
 /-!
 # The singular value decomposition
@@ -357,6 +358,500 @@ private theorem hermitian_diagonal_has_real_entries {n : Type*} [Fintype n] [Dec
   · simp
   · change 0 = (d i).im
     linarith
+
+section SimultaneousRectangularDiagonalization
+
+open Polynomial
+
+private theorem aeval_mul_of_mul_eq_mul {m n : Type*} [Fintype m] [Fintype n]
+    [DecidableEq m] [DecidableEq n] {X : Matrix m m ℂ} {Y : Matrix n n ℂ}
+    {C : Matrix m n ℂ} (h : X * C = C * Y) (f : ℂ[X]) :
+    aeval X f * C = C * aeval Y f := by
+  have hpow (k : ℕ) : X ^ k * C = C * Y ^ k := by
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      rw [pow_succ', pow_succ', Matrix.mul_assoc, ih, ← Matrix.mul_assoc X, h, Matrix.mul_assoc]
+  induction f using Polynomial.induction_on' with
+  | add f g hf hg => rw [map_add, map_add, Matrix.add_mul, Matrix.mul_add, hf, hg]
+  | monomial k a =>
+    simp only [aeval_monomial, ← Algebra.smul_def, Matrix.smul_mul, Matrix.mul_smul, hpow]
+
+private theorem unitary_coordinate_mul {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
+    [DecidableEq n] {U : Matrix m m ℂ} {V : Matrix n n ℂ} {W : Matrix p p ℂ}
+    (hV : V * Vᴴ = 1) (A : Matrix m n ℂ) (B : Matrix n p ℂ) :
+    (Uᴴ * A * V) * (Vᴴ * B * W) = Uᴴ * (A * B) * W := by
+  simp only [Matrix.mul_assoc]
+  rw [← Matrix.mul_assoc V, hV, Matrix.one_mul]
+
+private theorem unitary_coordinate_adjoint {m n : Type*} [Fintype m] [Fintype n]
+    (U : Matrix m m ℂ) (V : Matrix n n ℂ) (A : Matrix m n ℂ) :
+    (Uᴴ * A * V)ᴴ = Vᴴ * Aᴴ * U := by
+  simp only [conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_assoc]
+
+private theorem unitary_coordinate_normal {m : Type*} [Fintype m] [DecidableEq m]
+    {U X : Matrix m m ℂ} (hU : U ∈ unitaryGroup m ℂ) (hX : IsStarNormal X) :
+    IsStarNormal (Uᴴ * X * U) := by
+  have he := hX.map (Unitary.conjStarAlgAut ℂ (Matrix m m ℂ) (star ⟨U, hU⟩))
+  simpa only [Unitary.conjStarAlgAut_star_apply, Unitary.coe_star, star_eq_conjTranspose] using he
+
+private def splitFin {r m : ℕ} (h : r ≤ m) : (Fin r ⊕ Fin (m - r)) ≃ Fin m :=
+  finSumFinEquiv.trans (finCongr (Nat.add_sub_of_le h))
+
+private theorem splitFin_inl {r m : ℕ} (h : r ≤ m) (i : Fin r) :
+    (splitFin h (Sum.inl i) : ℕ) = i := by simp [splitFin]
+
+private theorem splitFin_inr {r m : ℕ} (h : r ≤ m) (i : Fin (m - r)) :
+    (splitFin h (Sum.inr i) : ℕ) = r + i := by simp [splitFin]
+
+private theorem submatrix_rectDiagonal_split {m n r : ℕ} (hm : r ≤ m) (hn : r ≤ n)
+    (d : ℕ → ℂ) :
+    (rectDiagonal d : Matrix (Fin m) (Fin n) ℂ).submatrix (splitFin hm) (splitFin hn) =
+      fromBlocks (diagonal (fun i : Fin r => d i)) 0 0
+        (rectDiagonal (fun i => d (r + i)) : Matrix (Fin (m - r)) (Fin (n - r)) ℂ) := by
+  ext i j
+  rcases i with i | i <;> rcases j with j | j
+  · simp only [submatrix_apply, rectDiagonal_apply, splitFin_inl, fromBlocks_apply₁₁,
+      diagonal_apply, Fin.ext_iff]
+  · have hn' : (i : ℕ) ≠ r + (j : ℕ) := by omega
+    simp only [submatrix_apply, rectDiagonal_apply, splitFin_inl, splitFin_inr,
+      fromBlocks_apply₁₂, hn', ite_false]
+    rfl
+  · have hn' : r + (i : ℕ) ≠ (j : ℕ) := by omega
+    simp only [submatrix_apply, rectDiagonal_apply, splitFin_inl, splitFin_inr,
+      fromBlocks_apply₂₁, hn', ite_false]
+    rfl
+  · simp only [submatrix_apply, rectDiagonal_apply, splitFin_inr, fromBlocks_apply₂₂,
+      Nat.add_left_cancel_iff]
+
+private theorem submatrix_equiv_normal {m k : Type*} [Fintype m] [Fintype k]
+    [DecidableEq m] [DecidableEq k] (e : k ≃ m) {X : Matrix m m ℂ} (hX : IsStarNormal X) :
+    IsStarNormal (X.submatrix e e) := by
+  refine ⟨?_⟩
+  have he : Xᴴ * X = X * Xᴴ := hX.star_comm_self.eq
+  change (X.submatrix e e)ᴴ * X.submatrix e e = X.submatrix e e * (X.submatrix e e)ᴴ
+  rw [conjTranspose_submatrix, submatrix_mul_equiv, submatrix_mul_equiv, he]
+
+private theorem block_unitary {r s m : Type*} [Fintype r] [Fintype s] [Fintype m]
+    [DecidableEq r] [DecidableEq s] [DecidableEq m] (e : r ⊕ s ≃ m)
+    {Q : Matrix r r ℂ} {P : Matrix s s ℂ} (hQ : Q ∈ unitaryGroup r ℂ)
+    (hP : P ∈ unitaryGroup s ℂ) :
+    (fromBlocks Q 0 0 P).submatrix e.symm e.symm ∈ unitaryGroup m ℂ := by
+  apply mem_unitaryGroup_iff'.mpr
+  rw [star_eq_conjTranspose, conjTranspose_submatrix, submatrix_mul_equiv, fromBlocks_conjTranspose]
+  have hQ₁ : Qᴴ * Q = 1 := mem_unitaryGroup_iff'.mp hQ
+  have hP₁ : Pᴴ * P = 1 := mem_unitaryGroup_iff'.mp hP
+  simp only [conjTranspose_zero, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul,
+    add_zero, zero_add, hQ₁, hP₁, fromBlocks_one, submatrix_one_equiv]
+
+private theorem conjugate_back_from_blocks {m n r : ℕ} (hm : r ≤ m) (hn : r ≤ n)
+    (A : Matrix (Fin m) (Fin n) ℂ) (L : Matrix (Fin r ⊕ Fin (m - r)) (Fin r ⊕ Fin (m - r)) ℂ)
+    (R : Matrix (Fin r ⊕ Fin (n - r)) (Fin r ⊕ Fin (n - r)) ℂ) (d : ℕ → ℂ)
+    (h : Lᴴ * A.submatrix (splitFin hm) (splitFin hn) * R =
+      (rectDiagonal d : Matrix (Fin m) (Fin n) ℂ).submatrix (splitFin hm) (splitFin hn)) :
+    (L.submatrix (splitFin hm).symm (splitFin hm).symm)ᴴ * A *
+      R.submatrix (splitFin hn).symm (splitFin hn).symm = rectDiagonal d := by
+  have he := congrArg (fun X : Matrix (Fin r ⊕ Fin (m - r)) (Fin r ⊕ Fin (n - r)) ℂ =>
+    X.submatrix (splitFin hm).symm (splitFin hn).symm) h
+  rw [← submatrix_mul_equiv _ _ _ (splitFin hn).symm,
+    ← submatrix_mul_equiv _ _ _ (splitFin hm).symm, ← conjTranspose_submatrix,
+    submatrix_submatrix, submatrix_submatrix, Equiv.self_comp_symm, Equiv.self_comp_symm,
+    submatrix_id_id, submatrix_id_id] at he
+  exact he
+
+
+private theorem real_diagonal_isHermitian {r : Type*} [DecidableEq r] (s : r → ℝ) :
+    (diagonal (fun i => (s i : ℂ))).IsHermitian := by
+  change (diagonal (fun i => (s i : ℂ)))ᴴ = _
+  rw [diagonal_conjTranspose]
+  congr 1
+  funext i
+  simp only [Pi.star_apply, Complex.star_def, Complex.conj_ofReal]
+
+private theorem support_blocks_of_gram_intertwining {r m n : ℕ} (s : Fin r → ℝ)
+    (hs : ∀ i, 0 < s i) (C : Matrix (Fin r ⊕ Fin m) (Fin r ⊕ Fin n) ℂ)
+    (h : let D : Matrix (Fin r ⊕ Fin m) (Fin r ⊕ Fin n) ℂ :=
+       fromBlocks (diagonal (fun i => (s i : ℂ))) 0 0 0
+      D * Dᴴ * C = C * (Dᴴ * D)) :
+    C = fromBlocks C.toBlocks₁₁ 0 0 C.toBlocks₂₂ ∧
+      Commute (diagonal (fun i => (s i : ℂ))) C.toBlocks₁₁ := by
+  let S := diagonal (fun i => (s i : ℂ))
+  let E := diagonal (fun i => (s i : ℂ) ^ 2)
+  let D : Matrix (Fin r ⊕ Fin m) (Fin r ⊕ Fin n) ℂ := fromBlocks S 0 0 0
+  change D * Dᴴ * C = C * (Dᴴ * D) at h
+  have hD : Dᴴ = (fromBlocks S 0 0 0 : Matrix (Fin r ⊕ Fin n) (Fin r ⊕ Fin m) ℂ) := by
+    have hS : Sᴴ = S := (real_diagonal_isHermitian s).eq
+    simp only [D, fromBlocks_conjTranspose, conjTranspose_zero, hS]
+  have hE : S * S = E := by
+    simp only [S, E, diagonal_mul_diagonal, pow_two]
+  rw [hD] at h
+  simp only [D, fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul, add_zero, hE] at h
+  rw [← fromBlocks_toBlocks C] at h
+  simp only [fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul, add_zero] at h
+  have hc11 : E * C.toBlocks₁₁ = C.toBlocks₁₁ * E := by
+    simpa only [toBlocks_fromBlocks₁₁] using congrArg Matrix.toBlocks₁₁ h
+  have hc12 : E * C.toBlocks₁₂ = 0 := by
+    simpa only [toBlocks_fromBlocks₁₂] using congrArg Matrix.toBlocks₁₂ h
+  have hc21 : C.toBlocks₂₁ * E = 0 := by
+    simpa only [toBlocks_fromBlocks₂₁] using (congrArg Matrix.toBlocks₂₁ h).symm
+  have hs0 (i : Fin r) : (s i : ℂ) ^ 2 ≠ 0 :=
+    pow_ne_zero _ (Complex.ofReal_ne_zero.mpr (hs i).ne')
+  have h12 : C.toBlocks₁₂ = 0 := by
+    ext i j
+    have he := congrFun (congrFun hc12 i) j
+    rw [show (E * C.toBlocks₁₂) i j = _ from diagonal_mul _ _ _ _] at he
+    exact (mul_eq_zero.mp he).resolve_left (hs0 i)
+  have h21 : C.toBlocks₂₁ = 0 := by
+    ext i j
+    have he := congrFun (congrFun hc21 i) j
+    rw [show (C.toBlocks₂₁ * E) i j = _ from mul_diagonal _ _ _ _] at he
+    exact (mul_eq_zero.mp he).resolve_right (hs0 j)
+  refine ⟨by conv_lhs => rw [← fromBlocks_toBlocks C, h12, h21], ?_⟩
+  change S * C.toBlocks₁₁ = C.toBlocks₁₁ * S
+  ext i j
+  rw [show (S * C.toBlocks₁₁) i j = _ from diagonal_mul _ _ _ _,
+    show (C.toBlocks₁₁ * S) i j = _ from mul_diagonal _ _ _ _]
+  by_cases h0 : C.toBlocks₁₁ i j = 0
+  · rw [h0, mul_zero, zero_mul]
+  have he := congrFun (congrFun hc11 i) j
+  rw [show (E * C.toBlocks₁₁) i j = _ from diagonal_mul _ _ _ _,
+    show (C.toBlocks₁₁ * E) i j = _ from mul_diagonal _ _ _ _, mul_comm (C.toBlocks₁₁ i j)] at he
+  have he' : s i ^ 2 = s j ^ 2 := by exact_mod_cast mul_right_cancel₀ h0 he
+  have hs' := (pow_left_inj₀ (hs i).le (hs j).le two_ne_zero).mp he'
+  change (s i : ℂ) * C.toBlocks₁₁ i j = C.toBlocks₁₁ i j * (s j : ℂ)
+  rw [hs', mul_comm]
+
+private theorem normal_first_block {r m : Type*} [Fintype r] [Fintype m]
+    [DecidableEq r] [DecidableEq m] {X : Matrix r r ℂ} :
+    IsStarNormal (fromBlocks X 0 0 (0 : Matrix m m ℂ)) → IsStarNormal X := by
+  intro h
+  have he : (fromBlocks X 0 0 (0 : Matrix m m ℂ))ᴴ * fromBlocks X 0 0 (0 : Matrix m m ℂ) =
+      fromBlocks X 0 0 (0 : Matrix m m ℂ) * (fromBlocks X 0 0 (0 : Matrix m m ℂ))ᴴ :=
+    h.star_comm_self.eq
+  simp only [fromBlocks_conjTranspose, conjTranspose_zero, fromBlocks_multiply, Matrix.mul_zero,
+    Matrix.zero_mul, add_zero] at he
+  refine ⟨?_⟩
+  change Xᴴ * X = X * Xᴴ
+  simpa only [toBlocks_fromBlocks₁₁] using congrArg Matrix.toBlocks₁₁ he
+
+private theorem hermitian_first_block {r m : Type*} {X : Matrix r r ℂ} :
+    (fromBlocks X 0 0 (0 : Matrix m m ℂ)).IsHermitian → X.IsHermitian := by
+  intro h
+  change Xᴴ = X
+  simpa only [fromBlocks_conjTranspose, toBlocks_fromBlocks₁₁] using
+    congrArg Matrix.toBlocks₁₁ h.eq
+
+private theorem simultaneous_on_positive_support {r : ℕ} (s : Fin r → ℝ) (hs : ∀ i, 0 < s i)
+    (X : Matrix (Fin r) (Fin r) ℂ)
+    (hComm : Commute (diagonal (fun i => (s i : ℂ))) X)
+    (hNormal : IsStarNormal (X * diagonal (fun i => (s i : ℂ)))) :
+    ∃ Q ∈ unitaryGroup (Fin r) ℂ, ∃ (a : Fin r → ℝ) (b : Fin r → ℂ),
+      (∀ i, 0 < a i) ∧
+      Qᴴ * diagonal (fun i => (s i : ℂ)) * Q = diagonal (fun i => (a i : ℂ)) ∧
+      Qᴴ * X * Q = diagonal b ∧
+      ((X * diagonal (fun i => (s i : ℂ))).IsHermitian → ∀ i, ((b i).re : ℂ) = b i) := by
+  let S := diagonal (fun i => (s i : ℂ))
+  let Y := X * S
+  have hS := real_diagonal_isHermitian s
+  have hSn : IsStarNormal S := ⟨by change Sᴴ * S = S * Sᴴ; rw [hS.eq]⟩
+  have hSY : Commute S Y := hComm.mul_right (Commute.refl S)
+  obtain ⟨Q, hQ, a, b, ha, hb⟩ :=
+    Matrix.IsStarNormal.exists_unitary_conj_diagonal_of_commute hSn hNormal hSY
+  change Qᴴ * S * Q = diagonal a at ha
+  change Qᴴ * Y * Q = diagonal b at hb
+  have haPos : ∀ i, 0 < a i := by
+    have hPos : S.PosDef := posDef_diagonal_iff.mpr fun i => Complex.pos_iff.mpr ⟨hs i, rfl⟩
+    have hQinj : Function.Injective Q.mulVec :=
+      Matrix.mulVec_injective_iff_isUnit.mpr (Matrix.isUnit_of_mem_unitaryGroup hQ)
+    have h := hPos.conjTranspose_mul_mul_same hQinj
+    rwa [ha, posDef_diagonal_iff] at h
+  have haReal (i : Fin r) : ((a i).re : ℂ) = a i := by
+    apply Complex.ext
+    · simp
+    · exact (Complex.pos_iff.mp (haPos i)).2
+  have hX : (Qᴴ * X * Q) * diagonal a = diagonal b := by
+    rw [← ha, unitary_coordinate_mul (mem_unitaryGroup_iff.mp hQ), hb]
+  refine ⟨Q, hQ, (fun i => (a i).re), (fun i => b i / a i),
+    fun i => (Complex.pos_iff.mp (haPos i)).1, ?_, ?_, ?_⟩
+  · simpa only [haReal] using ha
+  · ext i j
+    have he := congrFun (congrFun hX i) j
+    rw [mul_diagonal] at he
+    by_cases hij : i = j
+    · subst j
+      rw [diagonal_apply_eq] at he ⊢
+      exact (eq_div_iff (haPos i).ne').mpr he
+    · rw [diagonal_apply_ne _ hij] at he ⊢
+      exact (mul_eq_zero.mp he).resolve_right (haPos j).ne'
+  · intro h i
+    have he := hermitian_diagonal_has_real_entries Q h hb i
+    change ((b i / a i).re : ℂ) = b i / a i
+    rw [← he, ← haReal i, ← Complex.ofReal_div]
+    simp
+
+
+private theorem simultaneous_rectangular_diagonal_of_normal_cross {m n : ℕ}
+    (A B : Matrix (Fin m) (Fin n) ℂ) (hNormal : IsStarNormal (B * Aᴴ))
+    (hGram : (A * Aᴴ) * B = B * (Aᴴ * A)) :
+    ∃ U ∈ unitaryGroup (Fin m) ℂ, ∃ V ∈ unitaryGroup (Fin n) ℂ,
+      ∃ (a : ℕ → ℝ) (b : ℕ → ℂ), (∀ i, 0 ≤ a i) ∧
+        Uᴴ * A * V = rectDiagonal (fun i => (a i : ℂ)) ∧
+        Uᴴ * B * V = rectDiagonal b ∧
+        ((B * Aᴴ).IsHermitian → ∀ i, ((b i).re : ℂ) = b i) := by
+  obtain ⟨U, hU, V, hV, hA⟩ := A.exists_svd
+  let σ := A.sortedSingularValues
+  let D : Matrix (Fin m) (Fin n) ℂ := rectDiagonal fun i => (σ i : ℂ)
+  let C := Uᴴ * B * V
+  change Uᴴ * A * V = D at hA
+  have hUU : U * Uᴴ = 1 := mem_unitaryGroup_iff.mp hU
+  have hVV : V * Vᴴ = 1 := mem_unitaryGroup_iff.mp hV
+  have hCD : C * Dᴴ = Uᴴ * (B * Aᴴ) * U := by
+    rw [← hA, unitary_coordinate_adjoint]
+    exact unitary_coordinate_mul hVV B Aᴴ
+  have hDD₁ : D * Dᴴ = Uᴴ * (A * Aᴴ) * U := by
+    rw [← hA, unitary_coordinate_adjoint]
+    exact unitary_coordinate_mul hVV A Aᴴ
+  have hDD₂ : Dᴴ * D = Vᴴ * (Aᴴ * A) * V := by
+    rw [← hA, unitary_coordinate_adjoint]
+    exact unitary_coordinate_mul hUU Aᴴ A
+  have hC : D * Dᴴ * C = C * (Dᴴ * D) := calc
+    _ = Uᴴ * ((A * Aᴴ) * B) * V := by
+      rw [hDD₁]
+      exact unitary_coordinate_mul hUU (A * Aᴴ) B
+    _ = Uᴴ * (B * (Aᴴ * A)) * V := by rw [hGram]
+    _ = _ := by
+      rw [hDD₂]
+      exact (unitary_coordinate_mul hVV B (Aᴴ * A)).symm
+  let r := A.rank
+  have hm : r ≤ m := A.rank_le_height
+  have hn : r ≤ n := A.rank_le_width
+  let eₘ := splitFin hm
+  let eₙ := splitFin hn
+  let s (i : Fin r) := σ i
+  let S := diagonal (fun i => (s i : ℂ))
+  let X := C.submatrix eₘ eₙ
+  let D' : Matrix (Fin r ⊕ Fin (m - r)) (Fin r ⊕ Fin (n - r)) ℂ := fromBlocks S 0 0 0
+  have hσ (i : Fin r) : 0 < s i :=
+    lt_of_le_of_ne (A.sortedSingularValues_nonneg i)
+      (Ne.symm ((A.sortedSingularValues_eq_zero_iff_rank_le i).not.mpr (not_le.mpr i.isLt)))
+  have hD' : D.submatrix eₘ eₙ = D' := by
+    change (rectDiagonal (fun i => (σ i : ℂ)) : Matrix (Fin m) (Fin n) ℂ).submatrix eₘ eₙ = D'
+    rw [submatrix_rectDiagonal_split hm hn]
+    have h0 (i : ℕ) : σ (r + i) = 0 :=
+      (A.sortedSingularValues_eq_zero_iff_rank_le _).mpr (Nat.le_add_right _ _)
+    simp only [D', S, s, h0, Complex.ofReal_zero]
+    congr 1
+    ext i j
+    simp [rectDiagonal_apply]
+  have hGram' : D' * D'ᴴ * X = X * (D'ᴴ * D') := by
+    have h := congrArg (fun Y : Matrix (Fin m) (Fin n) ℂ => Y.submatrix eₘ eₙ) hC
+    simpa only [← submatrix_mul_equiv _ _ _ eₘ, ← submatrix_mul_equiv _ _ _ eₙ,
+      ← conjTranspose_submatrix, hD', X] using h
+  obtain ⟨hX, hXcomm⟩ := support_blocks_of_gram_intertwining s hσ X hGram'
+  let X₁ := X.toBlocks₁₁
+  let X₂ := X.toBlocks₂₂
+  have hDX : X * D'ᴴ = fromBlocks (X₁ * S) 0 0 (0 : Matrix (Fin (m - r)) (Fin (m - r)) ℂ) := by
+    conv_lhs => rw [hX]
+    have hS : Sᴴ = S := (real_diagonal_isHermitian s).eq
+    simp only [D', fromBlocks_conjTranspose, conjTranspose_zero, hS,
+      fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul, add_zero, X₁]
+  have hCross : X * D'ᴴ = (Uᴴ * (B * Aᴴ) * U).submatrix eₘ eₘ := by
+    have h := congrArg (fun Y : Matrix (Fin m) (Fin m) ℂ => Y.submatrix eₘ eₘ) hCD
+    simpa only [← submatrix_mul_equiv _ _ _ eₙ, ← conjTranspose_submatrix, hD', X] using h
+  have hNormal₁ : IsStarNormal (X₁ * S) := by
+    apply normal_first_block (m := Fin (m - r))
+    rw [← hDX, hCross]
+    exact submatrix_equiv_normal eₘ (unitary_coordinate_normal hU hNormal)
+  obtain ⟨Q, hQ, a, b, haPos, ha, hb, hbReal⟩ :=
+    simultaneous_on_positive_support s hσ X₁ hXcomm hNormal₁
+  obtain ⟨P, hP, R, hR, h₂⟩ := X₂.exists_svd
+  let τ := X₂.sortedSingularValues
+  change Pᴴ * X₂ * R = rectDiagonal (fun i => (τ i : ℂ)) at h₂
+  let L := fromBlocks Q 0 0 P
+  let M := fromBlocks Q 0 0 R
+  let L₀ := L.submatrix eₘ.symm eₘ.symm
+  let M₀ := M.submatrix eₙ.symm eₙ.symm
+  let a₀ (i : ℕ) : ℝ := if h : i < r then a ⟨i, h⟩ else 0
+  let b₀ (i : ℕ) : ℂ := if h : i < r then b ⟨i, h⟩ else (τ (i - r) : ℂ)
+  have hDA : Lᴴ * D.submatrix eₘ eₙ * M =
+      (rectDiagonal (fun i => (a₀ i : ℂ)) : Matrix (Fin m) (Fin n) ℂ).submatrix eₘ eₙ := by
+    rw [hD', submatrix_rectDiagonal_split hm hn]
+    simp only [L, M, D', fromBlocks_conjTranspose, conjTranspose_zero, fromBlocks_multiply,
+      Matrix.mul_zero, Matrix.zero_mul, add_zero]
+    have h00 (i : ℕ) : a₀ (r + i) = 0 := dite_eq_right (by omega)
+    simp only [h00, Complex.ofReal_zero]
+    have ha₀ (i : Fin r) : a₀ i = a i := dite_eq_left i.isLt
+    simp only [ha₀]
+    congr 1
+    ext i j
+    simp [rectDiagonal_apply]
+  have hDB : Lᴴ * C.submatrix eₘ eₙ * M =
+      (rectDiagonal b₀ : Matrix (Fin m) (Fin n) ℂ).submatrix eₘ eₙ := by
+    rw [submatrix_rectDiagonal_split hm hn]
+    change Lᴴ * X * M = _
+    rw [hX]
+    simp only [L, M, fromBlocks_conjTranspose, conjTranspose_zero, fromBlocks_multiply,
+      Matrix.mul_zero, Matrix.zero_mul, zero_add, add_zero, ← show X₁ = X.toBlocks₁₁ from rfl,
+      ← show X₂ = X.toBlocks₂₂ from rfl, hb, h₂]
+    have hb₀ (i : Fin r) : b₀ i = b i := dite_eq_left i.isLt
+    have h₂₀ (i : ℕ) : b₀ (r + i) = (τ i : ℂ) := by
+      dsimp only [b₀]
+      rw [dite_eq_right (by omega), Nat.add_sub_cancel_left]
+    simp only [hb₀, h₂₀]
+  have hLa := conjugate_back_from_blocks hm hn D L M (fun i => (a₀ i : ℂ)) hDA
+  have hMb := conjugate_back_from_blocks hm hn C L M b₀ hDB
+  refine ⟨U * L₀, mul_mem hU (block_unitary eₘ hQ hP),
+    V * M₀, mul_mem hV (block_unitary eₙ hQ hR), a₀, b₀, ?_, ?_, ?_, ?_⟩
+  · intro i
+    dsimp only [a₀]
+    split_ifs with hi
+    · exact (haPos ⟨i, hi⟩).le
+    · exact le_rfl
+  · calc
+      _ = L₀ᴴ * (Uᴴ * A * V) * M₀ := by simp only [conjTranspose_mul, Matrix.mul_assoc]
+      _ = _ := hA ▸ hLa
+  · calc
+      _ = L₀ᴴ * C * M₀ := by simp only [C, conjTranspose_mul, Matrix.mul_assoc]
+      _ = _ := hMb
+  · intro h i
+    have h₁ : (X₁ * S).IsHermitian := by
+      apply hermitian_first_block (m := Fin (m - r))
+      rw [← hDX, hCross]
+      exact (isHermitian_conjTranspose_mul_mul U h).submatrix eₘ
+    dsimp only [b₀]
+    split_ifs with hi
+    · exact hbReal h₁ ⟨i, hi⟩
+    · rw [Complex.ofReal_re]
+
+
+private theorem rectangular_cross_coordinates {m n : ℕ} {A B : Matrix (Fin m) (Fin n) ℂ}
+    {U : Matrix (Fin m) (Fin m) ℂ} {V : Matrix (Fin n) (Fin n) ℂ}
+    (hU : U ∈ unitaryGroup (Fin m) ℂ) (hV : V ∈ unitaryGroup (Fin n) ℂ)
+    {a b : ℕ → ℂ} (hA : Uᴴ * A * V = rectDiagonal a) (hB : Uᴴ * B * V = rectDiagonal b) :
+    Uᴴ * (A * Bᴴ) * U =
+        diagonal (fun i : Fin m => if (i : ℕ) < n then a i * star (b i) else 0) ∧
+      Vᴴ * (Bᴴ * A) * V =
+        diagonal (fun i : Fin n => if (i : ℕ) < m then star (b i) * a i else 0) := by
+  constructor
+  · rw [← unitary_coordinate_mul (mem_unitaryGroup_iff.mp hV) A Bᴴ,
+      ← unitary_coordinate_adjoint U V B, hA, hB, rectDiagonal_conjTranspose,
+      rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
+    rfl
+  · rw [← unitary_coordinate_mul (mem_unitaryGroup_iff.mp hU) Bᴴ A,
+      ← unitary_coordinate_adjoint U V B, hA, hB, rectDiagonal_conjTranspose,
+      rectDiagonal_mul_rectDiagonal, rectDiagonal_eq_diagonal]
+    rfl
+
+private theorem hermitian_of_unitary_coordinate_hermitian {m : Type*} [Fintype m] [DecidableEq m]
+    {U H : Matrix m m ℂ} (hU : U ∈ unitaryGroup m ℂ) (hH : (Uᴴ * H * U).IsHermitian) :
+    H.IsHermitian := by
+  have h := isHermitian_conjTranspose_mul_mul Uᴴ hH
+  rw [conjTranspose_conjTranspose] at h
+  have hUU : U * Uᴴ = 1 := mem_unitaryGroup_iff.mp hU
+  have he : U * (Uᴴ * H * U) * Uᴴ = H := by
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc U Uᴴ, hUU, Matrix.one_mul, Matrix.mul_one]
+  rwa [he] at h
+
+/-- **Exercise 15** of [benIsrael2003generalized], Chapter 6. The two Hermitian
+cross-product conditions also allow the first simultaneous diagonal to be
+chosen nonnegative. -/
+theorem exercise_15_nonnegative {m n : ℕ} (A B : Matrix (Fin m) (Fin n) ℂ)
+    (h₁ : (A * Bᴴ).IsHermitian) (h₂ : (Bᴴ * A).IsHermitian) :
+    ∃ U ∈ unitaryGroup (Fin m) ℂ, ∃ V ∈ unitaryGroup (Fin n) ℂ,
+      ∃ a b : ℕ → ℝ, (∀ i, 0 ≤ a i) ∧
+        Uᴴ * A * V = rectDiagonal (fun i => (a i : ℂ)) ∧
+        Uᴴ * B * V = rectDiagonal (fun i => (b i : ℂ)) := by
+  have h₁' : B * Aᴴ = A * Bᴴ := by
+    simpa only [conjTranspose_mul, conjTranspose_conjTranspose] using h₁.eq
+  have h₂' : Aᴴ * B = Bᴴ * A := by
+    simpa only [conjTranspose_mul, conjTranspose_conjTranspose] using h₂.eq
+  have hX : (B * Aᴴ).IsHermitian := h₁' ▸ h₁
+  have hNormal : IsStarNormal (B * Aᴴ) := ⟨by
+    change (B * Aᴴ)ᴴ * (B * Aᴴ) = (B * Aᴴ) * (B * Aᴴ)ᴴ
+    rw [hX.eq]⟩
+  have hGram : (A * Aᴴ) * B = B * (Aᴴ * A) := by
+    rw [Matrix.mul_assoc, h₂', ← Matrix.mul_assoc, ← h₁', Matrix.mul_assoc]
+  obtain ⟨U, hU, V, hV, a, b, ha, hA, hB, hb⟩ :=
+    simultaneous_rectangular_diagonal_of_normal_cross A B hNormal hGram
+  exact ⟨U, hU, V, hV, a, fun i => (b i).re, ha, hA, by simpa only [hb hX]⟩
+
+/-- **Exercise 15** of [benIsrael2003generalized], Chapter 6. A rectangular
+pair has a simultaneous real diagonalization by two unitary factors if
+and only if both cross products are Hermitian. -/
+theorem exercise_15 {m n : ℕ} (A B : Matrix (Fin m) (Fin n) ℂ) :
+    (∃ U ∈ unitaryGroup (Fin m) ℂ, ∃ V ∈ unitaryGroup (Fin n) ℂ,
+      ∃ a b : ℕ → ℝ,
+        Uᴴ * A * V = rectDiagonal (fun i => (a i : ℂ)) ∧
+        Uᴴ * B * V = rectDiagonal (fun i => (b i : ℂ))) ↔
+      (A * Bᴴ).IsHermitian ∧ (Bᴴ * A).IsHermitian := by
+  constructor
+  · rintro ⟨U, hU, V, hV, a, b, hA, hB⟩
+    obtain ⟨h₁, h₂⟩ := rectangular_cross_coordinates hU hV hA hB
+    refine ⟨hermitian_of_unitary_coordinate_hermitian hU ?_,
+      hermitian_of_unitary_coordinate_hermitian hV ?_⟩
+    · rw [h₁]
+      simpa only [Complex.star_def, Complex.conj_ofReal, ← Complex.ofReal_mul, ← Complex.ofReal_zero,
+        ← apply_ite (fun z : ℝ => (z : ℂ))] using
+        real_diagonal_isHermitian (fun i : Fin m => if (i : ℕ) < n then a i * b i else 0)
+    · rw [h₂]
+      simpa only [Complex.star_def, Complex.conj_ofReal, ← Complex.ofReal_mul, ← Complex.ofReal_zero,
+        ← apply_ite (fun z : ℝ => (z : ℂ))] using
+        real_diagonal_isHermitian (fun i : Fin n => if (i : ℕ) < m then b i * a i else 0)
+  · rintro ⟨h₁, h₂⟩
+    obtain ⟨U, hU, V, hV, a, b, -, hA, hB⟩ := exercise_15_nonnegative A B h₁ h₂
+    exact ⟨U, hU, V, hV, a, b, hA, hB⟩
+
+private theorem fromBlocks_normal_adjoint {m n : Type*} [Fintype m] [Fintype n]
+    [DecidableEq m] [DecidableEq n] {X : Matrix m m ℂ} {Y : Matrix n n ℂ}
+    (hX : IsStarNormal X) (hY : IsStarNormal Y) :
+    IsStarNormal (fromBlocks Xᴴ 0 0 Yᴴ) := by
+  have hXe : Xᴴ * X = X * Xᴴ := hX.star_comm_self.eq
+  have hYe : Yᴴ * Y = Y * Yᴴ := hY.star_comm_self.eq
+  refine ⟨?_⟩
+  change (fromBlocks Xᴴ 0 0 Yᴴ)ᴴ * fromBlocks Xᴴ 0 0 Yᴴ =
+    fromBlocks Xᴴ 0 0 Yᴴ * (fromBlocks Xᴴ 0 0 Yᴴ)ᴴ
+  simp only [fromBlocks_conjTranspose, conjTranspose_conjTranspose, conjTranspose_zero,
+    fromBlocks_multiply, Matrix.mul_zero, Matrix.zero_mul, zero_add, add_zero, hXe, hYe]
+
+/-- **Exercise 17** of [benIsrael2003generalized], Chapter 6. The same
+polynomial in the two adjoint cross products characterizes simultaneous
+complex diagonalization by two unitary factors. -/
+theorem exercise_17 {m n : ℕ} (A B : Matrix (Fin m) (Fin n) ℂ) :
+    (∃ U ∈ unitaryGroup (Fin m) ℂ, ∃ V ∈ unitaryGroup (Fin n) ℂ,
+      ∃ a b : ℕ → ℂ, Uᴴ * A * V = rectDiagonal a ∧ Uᴴ * B * V = rectDiagonal b) ↔
+      ∃ f : ℂ[X], A * Bᴴ = aeval (B * Aᴴ) f ∧ Bᴴ * A = aeval (Aᴴ * B) f := by
+  constructor
+  · rintro ⟨U, hU, V, hV, a, b, hA, hB⟩
+    obtain ⟨h₁, h₂⟩ := rectangular_cross_coordinates hU hV hA hB
+    have hX : IsStarNormal (A * Bᴴ) :=
+      Matrix.IsStarNormal.spectral_theorem.mpr ⟨U, hU, _, h₁⟩
+    have hY : IsStarNormal (Bᴴ * A) :=
+      Matrix.IsStarNormal.spectral_theorem.mpr ⟨V, hV, _, h₂⟩
+    obtain ⟨f, hf⟩ := Matrix.IsStarNormal.exists_aeval_eq_conjTranspose
+      (fromBlocks_normal_adjoint hX hY)
+    simp only [aeval_fromBlocks_zero, fromBlocks_conjTranspose, conjTranspose_conjTranspose,
+      conjTranspose_zero, conjTranspose_mul] at hf
+    refine ⟨f, ?_, ?_⟩
+    · simpa only [toBlocks_fromBlocks₁₁] using (congrArg Matrix.toBlocks₁₁ hf).symm
+    · simpa only [toBlocks_fromBlocks₂₂] using (congrArg Matrix.toBlocks₂₂ hf).symm
+  · rintro ⟨f, hf₁, hf₂⟩
+    have hXF : (B * Aᴴ)ᴴ = aeval (B * Aᴴ) f := by
+      simpa only [conjTranspose_mul, conjTranspose_conjTranspose] using hf₁
+    have hNormal : IsStarNormal (B * Aᴴ) := ⟨by
+      change (B * Aᴴ)ᴴ * (B * Aᴴ) = (B * Aᴴ) * (B * Aᴴ)ᴴ
+      rw [hXF]
+      exact ((Commute.refl (B * Aᴴ)).aeval_left f).eq⟩
+    have h := aeval_mul_of_mul_eq_mul (Matrix.mul_assoc Aᴴ B Aᴴ) f
+    rw [← hf₁, ← hf₂] at h
+    have hGram : (A * Aᴴ) * B = B * (Aᴴ * A) := by
+      simpa only [conjTranspose_mul, conjTranspose_conjTranspose, Matrix.mul_assoc] using
+        congrArg conjTranspose h
+    obtain ⟨U, hU, V, hV, a, b, -, hA, hB, -⟩ :=
+      simultaneous_rectangular_diagonal_of_normal_cross A B hNormal hGram
+    exact ⟨U, hU, V, hV, (fun i => (a i : ℂ)), b, hA, hB⟩
+
+end SimultaneousRectangularDiagonalization
 
 /-- In Exercise 16, the two Hermitian product conditions are equivalent to commutation. -/
 theorem exercise_16_products_iff_commute {n : Type*} [Fintype n] [DecidableEq n]

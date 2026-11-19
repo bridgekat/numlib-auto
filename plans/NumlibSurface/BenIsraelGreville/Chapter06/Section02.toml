@@ -38,9 +38,11 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 14, Equation (33)"
 
 [[node]]
 id = "exercise_15"
-kind = "theorem"
-desc = '''Two rectangular matrices have a simultaneous real diagonalization by the same two unitary factors iff the two cross products are Hermitian.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 15"
+
+[[node]]
+id = "exercise_15_nonnegative"
+source = "Ben-Israel and Greville, Chapter 6, Exercise 15(a), nonnegative first diagonal"
 
 [[node]]
 id = "exercise_16"
@@ -48,8 +50,6 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 16"
 
 [[node]]
 id = "exercise_17"
-kind = "theorem"
-desc = '''Simultaneous complex unitary diagonalization of a pair of rectangular matrices is equivalent to the two polynomial relations between their cross products.'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 17"
 
 [[node]]
