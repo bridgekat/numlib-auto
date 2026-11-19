@@ -394,4 +394,218 @@ theorem exercise_3_47_zero (A : Matrix m n ℝ) (hr : A.rank = r)
 
 end MarginalAverages
 
+section ComplementarySigns
+
+private def complementaryFinset {n k : ℕ} (α : Fin k ↪o Fin n) : Finset (Fin n) :=
+  Finset.univ \ Finset.univ.map α.toEmbedding
+
+private theorem complementaryFinset_card {n k : ℕ} (α : Fin k ↪o Fin n) :
+    (complementaryFinset α).card = n - k := by
+  rw [complementaryFinset, Finset.card_sdiff_of_subset (Finset.subset_univ _), Finset.card_map,
+    Finset.card_univ, Finset.card_univ, Fintype.card_fin, Fintype.card_fin]
+
+private theorem mem_complementaryFinset {n k : ℕ} (α : Fin k ↪o Fin n) (i : Fin n) :
+    i ∈ complementaryFinset α ↔ i ∉ Set.range α := by
+  simp [complementaryFinset, Finset.mem_map]
+
+/-- The increasing selection of all coordinates outside the original selection. -/
+def complementarySelection {n k : ℕ} (α : Fin k ↪o Fin n) : Fin (n - k) ↪o Fin n :=
+  (complementaryFinset α).orderEmbOfFin (complementaryFinset_card α)
+
+/-- A coordinate occurs in the complementary selection exactly when it was omitted. -/
+theorem range_complementarySelection {n k : ℕ} (α : Fin k ↪o Fin n) :
+    Set.range (complementarySelection α) = (Set.range α)ᶜ := by
+  rw [complementarySelection, Finset.range_orderEmbOfFin]
+  ext i
+  exact mem_complementaryFinset α i
+
+private theorem tailIndex_pos {n k : ℕ} (α : Fin (k + 1) ↪o Fin (n + 1)) (i : Fin k) :
+    0 < (α i.succ).val := by
+  have h := α.strictMono (Fin.succ_pos i)
+  exact Nat.zero_le _ |>.trans_lt h
+
+private def removeFirstSelection {n k : ℕ} (α : Fin (k + 1) ↪o Fin (n + 1)) : Fin k ↪o Fin n :=
+  OrderEmbedding.ofStrictMono (fun i => ⟨(α i.succ).val - 1, by
+    have h := (α i.succ).isLt
+    have hp := tailIndex_pos α i
+    omega⟩) (by
+      intro i j hij
+      have hh := α.strictMono (Fin.succ_lt_succ_iff.mpr hij)
+      change (α i.succ).val < (α j.succ).val at hh
+      change (α i.succ).val - 1 < (α j.succ).val - 1
+      have hp := tailIndex_pos α i
+      omega)
+
+private theorem removeFirstSelection_val_add {n k : ℕ} (α : Fin (k + 1) ↪o Fin (n + 1))
+    (i : Fin k) : (removeFirstSelection α i).val + 1 = (α i.succ).val := by
+  change (α i.succ).val - 1 + 1 = _
+  have h := tailIndex_pos α i
+  omega
+
+private theorem succAbove_removeFirstSelection {n k : ℕ}
+    (α : Fin (k + 1) ↪o Fin (n + 1)) (i : Fin k) :
+    (α 0).succAbove (removeFirstSelection α i) = α i.succ := by
+  have hi := α.strictMono (Fin.succ_pos i)
+  change (α 0).val < (α i.succ).val at hi
+  have h := removeFirstSelection_val_add α i
+  rw [Fin.succAbove_of_le_castSucc _ _ (by
+    change (α 0).val ≤ (removeFirstSelection α i).val
+    omega)]
+  exact Fin.ext h
+
+private theorem succAbove_mem_selection_range {n k : ℕ}
+    (α : Fin (k + 1) ↪o Fin (n + 1)) (j : Fin n) :
+    (α 0).succAbove j ∈ Set.range α ↔ j ∈ Set.range (removeFirstSelection α) := by
+  constructor
+  · rintro ⟨i, hi⟩
+    refine Fin.cases ?_ (fun i => ?_) i hi
+    · intro h
+      exact False.elim ((α 0).succAbove_ne j h.symm)
+    · intro h
+      refine ⟨i, (Fin.succAboveOrderEmb (α 0)).injective ?_⟩
+      exact (succAbove_removeFirstSelection α i).trans h
+  · rintro ⟨i, rfl⟩
+    exact ⟨i.succ, (succAbove_removeFirstSelection α i).symm⟩
+
+private def complementSizeEquiv (n k : ℕ) : Fin (n - k) ≃o Fin (n + 1 - (k + 1)) where
+  toEquiv := finCongr (by omega)
+  map_rel_iff' := by intro i j; rfl
+
+private theorem complementarySelection_removeFirst {n k : ℕ}
+    (α : Fin (k + 1) ↪o Fin (n + 1)) :
+    ((complementarySelection (removeFirstSelection α)).trans (Fin.succAboveOrderEmb (α 0))) =
+      (complementSizeEquiv n k).toOrderEmbedding.trans (complementarySelection α) := by
+  have h : ((complementSizeEquiv n k).symm.toOrderEmbedding.trans
+      ((complementarySelection (removeFirstSelection α)).trans (Fin.succAboveOrderEmb (α 0)))) =
+        complementarySelection α := by
+    change _ = (complementaryFinset α).orderEmbOfFin (complementaryFinset_card α)
+    apply Finset.orderEmbOfFin_unique' (complementaryFinset_card α)
+    intro j
+    rw [mem_complementaryFinset]
+    let i := (complementSizeEquiv n k).symm j
+    change (α 0).succAbove (complementarySelection (removeFirstSelection α) i) ∉ Set.range α
+    rw [succAbove_mem_selection_range]
+    have h := Set.mem_range_self (f := complementarySelection (removeFirstSelection α)) i
+    rw [range_complementarySelection] at h
+    exact h
+  apply RelEmbedding.ext
+  intro i
+  let e := complementSizeEquiv n k
+  have he := DFunLike.congr_fun h (e i)
+  change (α 0).succAbove (complementarySelection (removeFirstSelection α) (e.symm (e i))) =
+    complementarySelection α (e i) at he
+  rw [e.symm_apply_apply] at he
+  exact he
+
+private theorem sum_selection_removeFirst {n k : ℕ} (α : Fin (k + 1) ↪o Fin (n + 1)) :
+    (∑ i, (α i).val) = (α 0).val + (∑ i, (removeFirstSelection α i).val) + k := by
+  rw [Fin.sum_univ_succ]
+  have he : (∑ i : Fin k, (α i.succ).val) = ∑ i : Fin k, ((removeFirstSelection α i).val + 1) :=
+    Finset.sum_congr rfl fun i _ => (removeFirstSelection_val_add α i).symm
+  rw [he, Finset.sum_add_distrib]
+  simp [add_assoc]
+
+private theorem replaceSelectedColumns_selected {m k : ℕ} (A : Matrix (Fin m) (Fin m) ℝ)
+    (α β : Fin k ↪o Fin m) (j : Fin k) (i : Fin m) :
+    (replaceSelectedColumns A α.toEmbedding β.toEmbedding) i (β j) =
+      (Pi.single (α j) (1 : ℝ) : Fin m → ℝ) i := by
+  exact congrFun (col_replaceSelectedColumns A α.toEmbedding β.toEmbedding j) i
+
+private theorem replaceSelectedColumns_unchanged {m k : ℕ} (A : Matrix (Fin m) (Fin m) ℝ)
+    (α β : Fin k ↪o Fin m) (i j : Fin m) (hj : j ∉ Set.range β) :
+    (replaceSelectedColumns A α.toEmbedding β.toEmbedding) i j = A i j := by
+  exact congrFun (col_replaceSelectedColumns_of_not_mem A α.toEmbedding β.toEmbedding hj) i
+
+private theorem replaceSelectedColumns_removeFirst {n k : ℕ}
+    (A : Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ)
+    (α β : Fin (k + 1) ↪o Fin (n + 1)) :
+    (replaceSelectedColumns A α.toEmbedding β.toEmbedding).submatrix
+        (α 0).succAbove (β 0).succAbove =
+      replaceSelectedColumns (A.submatrix (α 0).succAbove (β 0).succAbove)
+        (removeFirstSelection α).toEmbedding (removeFirstSelection β).toEmbedding := by
+  ext i j
+  by_cases h : j ∈ Set.range (removeFirstSelection β)
+  · obtain ⟨j, rfl⟩ := h
+    rw [submatrix_apply, succAbove_removeFirstSelection, replaceSelectedColumns_selected,
+      replaceSelectedColumns_selected, ← succAbove_removeFirstSelection α j]
+    simp only [Pi.single_apply, Fin.succAbove_right_inj]
+  · have hj : (β 0).succAbove j ∉ Set.range β :=
+      fun hm => h ((succAbove_mem_selection_range β j).mp hm)
+    rw [submatrix_apply, replaceSelectedColumns_unchanged _ _ _ _ _ hj,
+      replaceSelectedColumns_unchanged _ _ _ _ _ h]
+    rfl
+
+/-- **Equations (107)–(109)** of [benIsrael2003generalized]. The determinant
+with the prescribed identity columns is the determinant of the complementary
+minor, with the cofactor sign from the two selections. -/
+theorem jacobi_complementary_sign {n k : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
+    (α β : Fin k ↪o Fin n) :
+    (replaceSelectedColumns A α.toEmbedding β.toEmbedding).det =
+      (-1) ^ ((∑ i, (α i).val) + ∑ j, (β j).val) *
+        (A.submatrix (complementarySelection α) (complementarySelection β)).det := by
+  classical
+  induction k generalizing n with
+  | zero =>
+      have he : replaceSelectedColumns A α.toEmbedding β.toEmbedding = A := by
+        ext i j
+        exact replaceSelectedColumns_unchanged A α β i j (by simp)
+      have ha := Chapter00.indexSequence_self_unique (complementarySelection α)
+      have hb := Chapter00.indexSequence_self_unique (complementarySelection β)
+      rw [he, ha, hb]
+      simp [Matrix.submatrix_id_id]
+  | succ k ih =>
+      cases n with
+      | zero => exact Fin.elim0 (α 0)
+      | succ n =>
+          let R := replaceSelectedColumns A α.toEmbedding β.toEmbedding
+          have hR (i : Fin (n + 1)) : R i (β 0) = (Pi.single (α 0) (1 : ℝ) : Fin (n + 1) → ℝ) i :=
+            replaceSelectedColumns_selected A α β 0 i
+          change R.det = _
+          rw [R.det_succ_column (β 0), Finset.sum_eq_single (α 0)]
+          · rw [hR, Pi.single_eq_same, mul_one,
+              show R = replaceSelectedColumns A α.toEmbedding β.toEmbedding from rfl,
+              replaceSelectedColumns_removeFirst, ih]
+            let e := complementSizeEquiv n k
+            let C := A.submatrix (complementarySelection α) (complementarySelection β)
+            have he : (A.submatrix (α 0).succAbove (β 0).succAbove).submatrix
+                (complementarySelection (removeFirstSelection α))
+                (complementarySelection (removeFirstSelection β)) = C.submatrix e e := by
+              ext i j
+              have ha := DFunLike.congr_fun (complementarySelection_removeFirst α) i
+              have hb := DFunLike.congr_fun (complementarySelection_removeFirst β) j
+              change (α 0).succAbove (complementarySelection (removeFirstSelection α) i) =
+                complementarySelection α (e i) at ha
+              change (β 0).succAbove (complementarySelection (removeFirstSelection β) j) =
+                complementarySelection β (e j) at hb
+              change A _ _ = A _ _
+              rw [ha, hb]
+            have hdet : (C.submatrix e e).det = C.det := by
+              change (C.submatrix e.toEquiv e.toEquiv).det = _
+              exact det_submatrix_equiv_self e.toEquiv C
+            rw [he, hdet, sum_selection_removeFirst α, sum_selection_removeFirst β]
+            have hs : (α 0).val + (∑ i, (removeFirstSelection α i).val) + k +
+                ((β 0).val + (∑ j, (removeFirstSelection β j).val) + k) =
+                (α 0).val + (β 0).val + ((∑ i, (removeFirstSelection α i).val) +
+                  (∑ j, (removeFirstSelection β j).val)) + 2 * k := by omega
+            rw [hs, pow_add _ _ (2 * k), show (-1 : ℝ) ^ (2 * k) = 1 by simp [pow_mul], mul_one]
+            simp only [pow_add, mul_assoc, C]
+          · intro i _ hi
+            rw [hR, Pi.single_eq_of_ne hi, mul_zero, zero_mul]
+          · intro h
+            exact False.elim (h (Finset.mem_univ _))
+
+/-- **Equation (107)** of [benIsrael2003generalized]. For a nonsingular
+matrix the inverse minor is the signed complementary minor divided by the determinant. -/
+theorem jacobi_complementary_inverse_minor {n k : ℕ} (A : Matrix (Fin n) (Fin n) ℝ)
+    (hA : IsUnit A) (α β : Fin k ↪o Fin n) :
+    (A⁻¹.submatrix β.toEmbedding α.toEmbedding).det =
+      (-1) ^ ((∑ i, (α i).val) + ∑ j, (β j).val) *
+        (A.submatrix (complementarySelection α) (complementarySelection β)).det / A.det := by
+  have hdet := (isUnit_iff_isUnit_det _).mp hA
+  have h := (det_replaceSelectedColumns A hA α.toEmbedding β.toEmbedding).symm.trans
+    (jacobi_complementary_sign A α β)
+  exact (eq_div_iff hdet.ne_zero).mpr (by simpa only [mul_comm A.det] using h)
+
+end ComplementarySigns
+
 end BenIsraelGreville.Chapter03

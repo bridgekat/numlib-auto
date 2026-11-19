@@ -45,11 +45,20 @@ id = "exercise_3_47_zero"
 source = "Ben-Israel and Greville, Ch. 3, §6, Exercise 47, vanishing when a supporting selection is absent"
 
 [[node]]
+id = "complementarySelection"
+source = "Ben-Israel and Greville, Ch. 3, §6, indexing notation for (107)–(109)"
+
+[[node]]
+id = "range_complementarySelection"
+source = "Ben-Israel and Greville, Ch. 3, §6, the complementary coordinate set"
+
+[[node]]
 id = "jacobi_complementary_sign"
-kind = "theorem"
-desc = '''For increasing index selections α and β of equal size in a square matrix, identify det A[β ← Iα] with the deleted-row-and-column determinant multiplied by (−1) raised to the sum of the selected indices. The equivalent column-replacement ratio (110a) and its use in Theorem 8 are formalized.'''
 source = "Ben-Israel and Greville, Ch. 3, §6, (107)–(109), explicit complementary sign"
-deps = ["replaceSelectedColumns"]
+
+[[node]]
+id = "jacobi_complementary_inverse_minor"
+source = "Ben-Israel and Greville, Ch. 3, §6, (107), signed complementary inverse minor"
 
 [[node]]
 id = "det_replaceSelectedColumns_gram"
