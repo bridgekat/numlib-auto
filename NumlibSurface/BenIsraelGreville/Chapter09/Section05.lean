@@ -24,6 +24,12 @@ range of the differential operator.
 * The interval operators use weak Sobolev derivatives and endpoint traces.
 * In Exercise 26(b), the first product is the maximal inverse restricted
   to the adjoint domain, which is a proper subspace of the full space.
+* The sign Green kernels in Exercise 30 use the inverse leading coefficient
+  on the forcing side and evaluate the correction in endpoint order (a, b).
+* Exercise 32 uses a common essentially bounded kernel class. The normalized
+  kernel in Exercise 33 is unique almost everywhere, and its operator range
+  is the intersection of the differential domain with the orthogonal
+  complement of the test columns.
 * In Exercise 34(c)–(d), both Hilbert adjoints of the inverse products
   are the full orthogonal projections.
 -/
@@ -2323,6 +2329,21 @@ private theorem boundedGreenAction_inner_adjoint (G : GreenKernel ℝ X V W)
       rw [hs]
       exact (innerSL ℝ (w s)).integral_comp_comm hI
 
+private theorem represents_adjointGreenKernel
+    (G : GreenKernel ℝ X V W)
+    (hG : AEStronglyMeasurable (fun p : X × X => G p.1 p.2) (μ.prod μ))
+    {C : ℝ} (hC : 0 ≤ C) (hB : ∀ᵐ p : X × X ∂(μ.prod μ), ‖G p.1 p.2‖ ≤ C)
+    (T : Lp V 2 μ →L[ℝ] Lp W 2 μ) (hT : ∀ v, RepresentsGreenAction G v (T v))
+    (w : Lp W 2 μ) : RepresentsGreenAction (adjointGreenKernel G) w (T.adjoint w) := by
+  obtain ⟨u, hu, _⟩ := exists_bounded_greenAction (adjointGreenKernel G)
+    (adjointGreenKernel_measurable G hG) hC (adjointGreenKernel_norm_bound G hB) w
+  have he : T.adjoint w = u := by
+    apply ext_inner_right ℝ
+    intro v
+    rw [T.adjoint_inner_left]
+    exact (boundedGreenAction_inner_adjoint G hG hB (hT v) hu).symm
+  exact he.symm ▸ hu
+
 /-- The adjoint of an operator represented by an essentially bounded Green
 kernel also has essentially bounded output. -/
 theorem memLp_top_adjoint_of_boundedGreenAction (G : GreenKernel ℝ X V W)
@@ -2332,12 +2353,7 @@ theorem memLp_top_adjoint_of_boundedGreenAction (G : GreenKernel ℝ X V W)
     (w : Lp W 2 μ) : MemLp (fun t => (T.adjoint w) t) ∞ μ := by
   obtain ⟨u, hu, hu_top⟩ := exists_bounded_greenAction (adjointGreenKernel G)
     (adjointGreenKernel_measurable G hG) hC (adjointGreenKernel_norm_bound G hB) w
-  have he : T.adjoint w = u := by
-    apply ext_inner_right ℝ
-    intro v
-    rw [T.adjoint_inner_left]
-    exact (boundedGreenAction_inner_adjoint G hG hB (hT v) hu).symm
-  rwa [he]
+  exact hu.output_unique (represents_adjointGreenKernel G hG hC hB T hT w) ▸ hu_top
 
 end EssentiallyBoundedGreenKernels
 
@@ -2375,6 +2391,49 @@ private theorem memLp_top_sum_smul {E : Type*} [NormedAddCommGroup E] [NormedSpa
   refine (Lp.coeFn_fun_finsetSum Finset.univ (fun i => c i • x i)).trans ?_
   filter_upwards [eventually_all.mpr fun i => Lp.coeFn_smul (c i) (x i)] with t ht
   exact Finset.sum_congr rfl fun i _ => ht i
+
+omit [IsFiniteMeasure μ] [IsSeparable μ] in
+private theorem green_memLp_top_sub {E : Type*} [NormedAddCommGroup E] {u v : Lp E 2 μ}
+    (hu : MemLp (fun t => u t) ∞ μ) (hv : MemLp (fun t => v t) ∞ μ) :
+    MemLp (fun t => (u - v) t) ∞ μ :=
+  (memLp_congr_ae (Lp.coeFn_sub u v).symm).mp (hu.sub hv)
+
+omit [IsFiniteMeasure μ] [IsSeparable μ] in
+private theorem greenDifferenceCoefficients_memLp_top
+    {L : Lp W 2 μ →ₗ.[ℝ] Lp V 2 μ}
+    {ι κ : Type*} [Fintype ι] [Fintype κ]
+    (b : OrthonormalBasis ι ℝ L.ker) (c : OrthonormalBasis κ ℝ L.adjoint.ker)
+    (hb : ∀ i, MemLp (fun t => (b i : Lp W 2 μ) t) ∞ μ)
+    (hc : ∀ j, MemLp (fun t => (c j : Lp V 2 μ) t) ∞ μ)
+    (R : Lp V 2 μ →L[ℝ] Lp W 2 μ) (a : ι → Lp V 2 μ) (w : κ → Lp W 2 μ)
+    (hR_eq : R = (∑ i, rankOne ℝ (b i : Lp W 2 μ) (a i)) +
+      ∑ j, rankOne ℝ (w j) (c j : Lp V 2 μ))
+    (hR : ∀ y, MemLp (fun t => (R y) t) ∞ μ)
+    (hR' : ∀ x, MemLp (fun t => (R.adjoint x) t) ∞ μ) :
+    (∀ i, MemLp (fun t => a i t) ∞ μ) ∧ (∀ j, MemLp (fun t => w j t) ∞ μ) := by
+  have ha (i : ι) : MemLp (fun t => a i t) ∞ μ := by
+    have hEq : R.adjoint (b i : Lp W 2 μ) =
+        a i + ∑ j, inner ℝ (w j) (b i : Lp W 2 μ) • (c j : Lp V 2 μ) := by
+      rw [hR_eq, map_add, map_sum, map_sum]
+      simp only [adjoint_rankOne, add_apply, rankOne_sum_values b, sum_apply, rankOne_apply]
+    have hEq' : a i = R.adjoint (b i : Lp W 2 μ) -
+        ∑ j, inner ℝ (w j) (b i : Lp W 2 μ) • (c j : Lp V 2 μ) := by
+      rw [hEq, add_sub_cancel_right]
+    rw [hEq']
+    exact green_memLp_top_sub (hR' (b i : Lp W 2 μ)) (memLp_top_sum_smul
+      (fun j => (c j : Lp V 2 μ)) (fun j => inner ℝ (w j) (b i : Lp W 2 μ)) hc)
+  have hw (j : κ) : MemLp (fun t => w j t) ∞ μ := by
+    have hEq : R (c j : Lp V 2 μ) =
+        (∑ i, inner ℝ (a i) (c j : Lp V 2 μ) • (b i : Lp W 2 μ)) + w j := by
+      rw [hR_eq, add_apply, rankOne_sum_values c]
+      simp only [sum_apply, rankOne_apply]
+    have hEq' : w j = R (c j : Lp V 2 μ) -
+        ∑ i, inner ℝ (a i) (c j : Lp V 2 μ) • (b i : Lp W 2 μ) := by
+      rw [hEq, add_sub_cancel_left]
+    rw [hEq']
+    exact green_memLp_top_sub (hR (c j : Lp V 2 μ)) (memLp_top_sum_smul
+      (fun i => (b i : Lp W 2 μ)) (fun i => inner ℝ (a i) (c j : Lp V 2 μ)) hb)
+  exact ⟨ha, hw⟩
 
 set_option maxHeartbeats 1000000 in
 -- The two coefficients are recovered from the action and adjoint action of the difference.
@@ -2436,35 +2495,13 @@ theorem exercise_9_32_of_representation (L : Lp W 2 μ →ₗ.[ℝ] Lp V 2 μ)
       dsimp only [R]
       rw [hOp]
       abel
-    refine ⟨a, w, ?_, ?_, hEq⟩
-    · intro i
-      have ha : R.adjoint (b i : Lp W 2 μ) =
-          a i + ∑ j, inner ℝ (w j) (b i : Lp W 2 μ) • (c j : Lp V 2 μ) := by
-        rw [hR_eq, map_add, map_sum, map_sum]
-        simp only [adjoint_rankOne, add_apply, rankOne_sum_values b, sum_apply, rankOne_apply]
-      have he : a i = R.adjoint (b i : Lp W 2 μ) -
-          ∑ j, inner ℝ (w j) (b i : Lp W 2 μ) • (c j : Lp V 2 μ) := by
-        rw [ha, add_sub_cancel_right]
-      rw [he]
-      have hr := memLp_top_adjoint_of_boundedGreenAction D hm (add_nonneg hC₂ hC₁)
-        hn R hR (b i : Lp W 2 μ)
-      have hs := memLp_top_sum_smul (fun j => (c j : Lp V 2 μ)) (fun j => inner ℝ (w j) (b i : Lp W 2 μ)) hc
-      exact (memLp_congr_ae (Filter.EventuallyEq.symm (Lp.coeFn_sub _ _))).mp (hr.sub hs)
-    · intro j
-      have hw : R (c j : Lp V 2 μ) =
-          (∑ i, inner ℝ (a i) (c j : Lp V 2 μ) • (b i : Lp W 2 μ)) + w j := by
-        rw [hR_eq, add_apply, rankOne_sum_values c]
-        simp only [sum_apply, rankOne_apply]
-      have he : w j = R (c j : Lp V 2 μ) -
-          ∑ i, inner ℝ (a i) (c j : Lp V 2 μ) • (b i : Lp W 2 μ) := by
-        rw [hw, add_sub_cancel_left]
-      rw [he]
-      obtain ⟨x, hx, hx_top⟩ := exists_bounded_greenAction D hm (add_nonneg hC₂ hC₁) hn
-        (c j : Lp V 2 μ)
-      have hr : MemLp (fun t => (R (c j : Lp V 2 μ)) t) ∞ μ :=
-        (hx.output_unique (hR _)) ▸ hx_top
-      have hs := memLp_top_sum_smul (fun i => (b i : Lp W 2 μ)) (fun i => inner ℝ (a i) (c j : Lp V 2 μ)) hb
-      exact (memLp_congr_ae (Filter.EventuallyEq.symm (Lp.coeFn_sub _ _))).mp (hr.sub hs)
+    have hR_top (y : Lp V 2 μ) : MemLp (fun t => (R y) t) ∞ μ := by
+      obtain ⟨x, hx, hx_top⟩ := exists_bounded_greenAction D hm (add_nonneg hC₂ hC₁) hn y
+      exact hx.output_unique (hR y) ▸ hx_top
+    have hR'_top (x : Lp W 2 μ) : MemLp (fun t => (R.adjoint x) t) ∞ μ :=
+      memLp_top_adjoint_of_boundedGreenAction D hm (add_nonneg hC₂ hC₁) hn R hR x
+    obtain ⟨ha, hw⟩ := greenDifferenceCoefficients_memLp_top b c hb hc R a w hR_eq hR_top hR'_top
+    exact ⟨a, w, ha, hw, hEq⟩
   · rintro ⟨a, w, _, _, he⟩
     exact hL₂.mpr ⟨a, w, he⟩
 
@@ -2495,6 +2532,288 @@ theorem exercise_9_32 (L : Lp W 2 μ →ₗ.[ℝ] Lp V 2 μ)
   exact exercise_9_32_of_representation L hL hD G K hGm hKm hC₁ hC₂ hGb hKb hG T U hT hU b c hb hc
 
 end BoundedGreenDifference
+
+section BiorthogonalGreenKernels
+
+open InnerProductSpace
+
+variable {X V W : Type*} [MeasurableSpace X] {μ : Measure X} [IsFiniteMeasure μ] [IsSeparable μ]
+  [NormedAddCommGroup V] [InnerProductSpace ℝ V] [CompleteSpace V] [FiniteDimensional ℝ V]
+  [NormedAddCommGroup W] [InnerProductSpace ℝ W] [CompleteSpace W] [FiniteDimensional ℝ W]
+
+private theorem exists_nonnegative_bound_of_memLp_top {Y E : Type*} [MeasurableSpace Y]
+    [NormedAddCommGroup E] {ν : Measure Y} {f : Y → E} (hf : MemLp f ∞ ν) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ᵐ t ∂ν, ‖f t‖ ≤ C := by
+  have htop : eLpNormEssSup f ν < ∞ := by
+    simpa only [eLpNorm_exponent_top hf.aestronglyMeasurable] using hf.eLpNorm_lt_top
+  obtain ⟨C, hC⟩ := eLpNormEssSup_lt_top_iff_isBoundedUnder.mp htop
+  refine ⟨C, C.coe_nonneg, ?_⟩
+  filter_upwards [hC] with t ht using NNReal.coe_le_coe.mpr ht
+
+omit [IsFiniteMeasure μ] [IsSeparable μ] [CompleteSpace V] [FiniteDimensional ℝ V]
+  [CompleteSpace W] [FiniteDimensional ℝ W] in
+private theorem memLp_top_rankOneGreenKernel (u : Lp W 2 μ) (v : Lp V 2 μ)
+    (hu : MemLp (fun t => u t) ∞ μ) (hv : MemLp (fun t => v t) ∞ μ) :
+    MemLp (fun p : X × X => rankOneGreenKernel u v p.1 p.2) ∞ (μ.prod μ) := by
+  obtain ⟨B, hB, hBu⟩ := exists_nonnegative_bound_of_memLp_top hu
+  obtain ⟨C, hC, hCv⟩ := exists_nonnegative_bound_of_memLp_top hv
+  apply memLp_top_of_bound (memLp_rankOneGreenKernel u v).aestronglyMeasurable (B * C)
+  have h₁ := (Measure.quasiMeasurePreserving_fst (μ := μ) (ν := μ)).ae hBu
+  have h₂ := (Measure.quasiMeasurePreserving_snd (μ := μ) (ν := μ)).ae hCv
+  filter_upwards [h₁, h₂] with p hp hq
+  change ‖rankOne ℝ (u p.1) (v p.2)‖ ≤ B * C
+  rw [norm_rankOne]
+  exact mul_le_mul hp hq (norm_nonneg _) hB
+
+omit [IsFiniteMeasure μ] [IsSeparable μ] in
+private theorem green_memLp_top_submodule {E : Type*} [NormedAddCommGroup E]
+    [InnerProductSpace ℝ E] [CompleteSpace E] {S : Submodule ℝ (Lp E 2 μ)}
+    {ι : Type*} [Fintype ι] (b : OrthonormalBasis ι ℝ S)
+    (hb : ∀ i, MemLp (fun t => (b i : Lp E 2 μ) t) ∞ μ)
+    (u : S) : MemLp (fun t => (u : Lp E 2 μ) t) ∞ μ := by
+  have he : (∑ i, b.repr u i • (b i : Lp E 2 μ)) = (u : Lp E 2 μ) := by
+    exact_mod_cast b.sum_repr u
+  rw [← he]
+  exact memLp_top_sum_smul (fun i => (b i : Lp E 2 μ)) (fun i => b.repr u i) hb
+
+set_option maxHeartbeats 1000000 in
+-- Finite-rank corrections transfer from represented operators to almost-everywhere kernels.
+omit [IsFiniteMeasure μ] [IsSeparable μ] in
+private theorem exists_memLp_top_greenKernel_of_difference
+    (L : Lp W 2 μ →ₗ.[ℝ] Lp V 2 μ) (hL : IsNormallySolvable L)
+    (hD : Dense (L.domain : Set (Lp W 2 μ)))
+    (G : GreenKernel ℝ X V W) (hG : MemLp (fun p : X × X => G p.1 p.2) ∞ (μ.prod μ))
+    (T U : Lp V 2 μ →L[ℝ] Lp W 2 μ) (hT : ∀ y, RepresentsGreenAction G y (T y))
+    (hTg : ∀ y ∈ L.toFun.range, (T y, y) ∈ L.graph)
+    (hUg : ∀ y ∈ L.toFun.range, (U y, y) ∈ L.graph)
+    {ι κ : Type*} [Fintype ι] [Fintype κ]
+    (b : OrthonormalBasis ι ℝ L.ker) (c : OrthonormalBasis κ ℝ L.adjoint.ker)
+    (hb : ∀ i, MemLp (fun t => (b i : Lp W 2 μ) t) ∞ μ)
+    (hc : ∀ j, MemLp (fun t => (c j : Lp V 2 μ) t) ∞ μ)
+    (hR : ∀ y, MemLp (fun t => ((U - T) y) t) ∞ μ)
+    (hR' : ∀ x, MemLp (fun t => ((U - T).adjoint x) t) ∞ μ) :
+    ∃ K : GreenKernel ℝ X V W, MemLp (fun p : X × X => K p.1 p.2) ∞ (μ.prod μ) ∧
+      ∀ y, RepresentsGreenAction K y (U y) := by
+  obtain ⟨a, w, he⟩ := (greenOperator_difference_iff L hL hD T U hTg b c).mp hUg
+  let R := U - T
+  have hR_eq : R = (∑ i, rankOne ℝ (b i : Lp W 2 μ) (a i)) +
+      ∑ j, rankOne ℝ (w j) (c j : Lp V 2 μ) := by
+    dsimp only [R]
+    rw [he]
+    abel
+  obtain ⟨ha, hw⟩ := greenDifferenceCoefficients_memLp_top b c hb hc R a w hR_eq hR hR'
+  let P (i : ι) := rankOneGreenKernel (b i : Lp W 2 μ) (a i)
+  let Q (j : κ) := rankOneGreenKernel (w j) (c j : Lp V 2 μ)
+  refine ⟨fun s t => G s t + (∑ i, P i s t) + ∑ j, Q j s t, ?_, ?_⟩
+  · have hP : MemLp (fun p : X × X => ∑ i, P i p.1 p.2) ∞ (μ.prod μ) :=
+      memLp_finsetSum (f := fun i (p : X × X) => P i p.1 p.2) Finset.univ fun i _ =>
+        memLp_top_rankOneGreenKernel (b i : Lp W 2 μ) (a i) (hb i) (ha i)
+    have hQ : MemLp (fun p : X × X => ∑ j, Q j p.1 p.2) ∞ (μ.prod μ) :=
+      memLp_finsetSum (f := fun j (p : X × X) => Q j p.1 p.2) Finset.univ fun j _ =>
+        memLp_top_rankOneGreenKernel (w j) (c j : Lp V 2 μ) (hw j) (hc j)
+    exact MemLp.add (MemLp.add hG hP) hQ
+  · intro y
+    have hP := represents_sumGreenKernel P y _ fun i =>
+      represents_rankOneGreenKernel (b i : Lp W 2 μ) (a i) y
+    have hQ := represents_sumGreenKernel Q y _ fun j =>
+      represents_rankOneGreenKernel (w j) (c j : Lp V 2 μ) y
+    rw [he]
+    simpa only [add_apply, sum_apply] using ((hT y).addKernel hP).addKernel hQ
+
+set_option maxHeartbeats 1000000 in
+-- The biorthogonal inverse is first constructed on the Hilbert spaces.
+omit [IsSeparable μ] in
+private theorem normalizedGreenOperator_has_bounded_kernel
+    (L : Lp W 2 μ →ₗ.[ℝ] Lp V 2 μ) (hL : IsNormallySolvable L)
+    (hD : Dense (L.domain : Set (Lp W 2 μ))) (G : GreenKernel ℝ X V W)
+    (hG : MemLp (fun p : X × X => G p.1 p.2) ∞ (μ.prod μ))
+    (T : Lp V 2 μ →L[ℝ] Lp W 2 μ) (hT : ∀ y, RepresentsGreenAction G y (T y))
+    (hTg : ∀ y ∈ L.toFun.range, (T y, y) ∈ L.graph)
+    {ι κ : Type*} [Fintype ι] [Fintype κ]
+    (b : OrthonormalBasis ι ℝ L.ker) (c : OrthonormalBasis κ ℝ L.adjoint.ker)
+    (hb : ∀ i, MemLp (fun t => (b i : Lp W 2 μ) t) ∞ μ)
+    (hc : ∀ j, MemLp (fun t => (c j : Lp V 2 μ) t) ∞ μ) :
+    letI := (L.adjoint_isClosed hD).isClosed_ker.completeSpace_coe
+    ∀ (Θ : Lp W 2 μ →L[ℝ] L.ker) (Ψ : L.adjoint.ker →L[ℝ] Lp V 2 μ),
+      (∀ x : L.ker, Θ (x : Lp W 2 μ) = x) →
+      (∀ u : L.adjoint.ker, L.adjoint.ker.orthogonalProjectionOnto (Ψ u) = u) →
+      ∃ K : GreenKernel ℝ X V W, MemLp (fun p : X × X => K p.1 p.2) ∞ (μ.prod μ) ∧
+        ∀ y, RepresentsGreenAction K y (normalizedGreenOperator L T Θ Ψ y) := by
+  let := (L.adjoint_isClosed hD).isClosed_ker.completeSpace_coe
+  let := hL.1.isClosed_ker.completeSpace_coe
+  intro Θ Ψ hΘ hΨ
+  let P := L.ker.subtypeL.comp Θ
+  let Q := Ψ.comp L.adjoint.ker.orthogonalProjectionOnto
+  let C := normalizedGreenOperator L T Θ Ψ
+  obtain ⟨M, hM, hBG⟩ := exists_nonnegative_bound_of_memLp_top hG
+  have hT_top (y : Lp V 2 μ) : MemLp (fun t => (T y) t) ∞ μ := by
+    obtain ⟨z, hz, hz_top⟩ := exists_bounded_greenAction G hG.aestronglyMeasurable hM hBG y
+    exact hz.output_unique (hT y) ▸ hz_top
+  have hT'_top (x : Lp W 2 μ) : MemLp (fun t => (T.adjoint x) t) ∞ μ :=
+    memLp_top_adjoint_of_boundedGreenAction G hG.aestronglyMeasurable hM hBG T hT x
+  have hC_top (y : Lp V 2 μ) : MemLp (fun t => (C y) t) ∞ μ := by
+    change MemLp (fun t => (T (y - Q y) - (Θ (T (y - Q y)) : Lp W 2 μ)) t) ∞ μ
+    exact green_memLp_top_sub (hT_top _) (green_memLp_top_submodule b hb _)
+  have hC'_top (x : Lp W 2 μ) : MemLp (fun t => (C.adjoint x) t) ∞ μ := by
+    let z := T.adjoint (x - P.adjoint x)
+    have hC' : C.adjoint x = z - (Ψ.adjoint z : Lp V 2 μ) := by
+      simp only [C, normalizedGreenOperator, z, P, ContinuousLinearMap.adjoint_comp, map_sub,
+        ContinuousLinearMap.adjoint_id, Submodule.adjoint_orthogonalProjectionOnto,
+        ContinuousLinearMap.comp_apply, sub_apply, ContinuousLinearMap.id_apply,
+        Submodule.subtypeL_apply, Submodule.coe_sub]
+      abel
+    rw [hC']
+    exact green_memLp_top_sub (hT'_top _) (green_memLp_top_submodule c hc _)
+  obtain ⟨hCg, _, _, _⟩ := normalizedGreenOperator_spec L hL hD T hTg Θ Ψ hΘ hΨ
+  apply exists_memLp_top_greenKernel_of_difference L hL hD G hG T C hT hTg hCg b c hb hc
+  · intro y
+    exact green_memLp_top_sub (hC_top y) (hT_top y)
+  · intro x
+    rw [map_sub, sub_apply]
+    exact green_memLp_top_sub (hC'_top x) (hT'_top x)
+
+/-- The two integral equations in (62). The left equation is written with
+the adjoint coefficient to let the column vectors of the test maps serve as
+inputs to the two integral operators. -/
+def HasGreenNormalization {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [NormedAddCommGroup F] [NormedSpace ℝ F] (K : GreenKernel ℝ X V W)
+    (Θ₀ : E →L[ℝ] Lp W 2 μ) (Ψ₀ : F →L[ℝ] Lp V 2 μ) : Prop :=
+  (∀ u : E, greenIntegral (adjointGreenKernel K) μ (Θ₀ u) =ᵐ[μ] (0 : X → V)) ∧
+    (∀ v : F, greenIntegral K μ (Ψ₀ v) =ᵐ[μ] (0 : X → W))
+
+omit [IsFiniteMeasure μ] [IsSeparable μ] in
+private theorem greenIntegral_ae_zero_iff {U Z : Type*} [NormedAddCommGroup U]
+    [NormedSpace ℝ U] [NormedAddCommGroup Z] [NormedSpace ℝ Z]
+    {K : GreenKernel ℝ X U Z} {u : Lp U 2 μ} {z : Lp Z 2 μ}
+    (hz : RepresentsGreenAction K u z) :
+    greenIntegral K μ u =ᵐ[μ] (0 : X → Z) ↔ z = 0 := by
+  constructor
+  · intro h
+    apply Lp.ext
+    exact (hz.ae_eq_integral.trans h).trans (Lp.coeFn_zero Z 2 μ).symm
+  · rintro rfl
+    exact hz.ae_eq_integral.symm.trans (Lp.coeFn_zero Z 2 μ)
+
+omit [CompleteSpace V] [CompleteSpace W] in
+private theorem greenKernels_ae_eq_of_represents_same
+    (G K : GreenKernel ℝ X V W)
+    (hG : MemLp (fun p : X × X => G p.1 p.2) ∞ (μ.prod μ))
+    (hK : MemLp (fun p : X × X => K p.1 p.2) ∞ (μ.prod μ))
+    (C : Lp V 2 μ →L[ℝ] Lp W 2 μ)
+    (hRepG : ∀ y, RepresentsGreenAction G y (C y))
+    (hRepK : ∀ y, RepresentsGreenAction K y (C y)) :
+    (fun p : X × X => G p.1 p.2) =ᵐ[μ.prod μ] fun p => K p.1 p.2 := by
+  let D : GreenKernel ℝ X V W := fun s t => G s t - K s t
+  have hD : MemLp (fun p : X × X => D p.1 p.2) 2 (μ.prod μ) :=
+    (hG.sub hK).mono_exponent le_top
+  have hR (y : Lp V 2 μ) : RepresentsGreenAction D y 0 := by
+    simpa only [sub_self] using (hRepG y).subKernel (hRepK y)
+  filter_upwards [greenKernel_ae_zero_of_action_zero D hD hR] with p hp
+  exact sub_eq_zero.mp hp
+
+set_option maxHeartbeats 1500000 in
+-- Both integral normalizations are transferred through the represented action and adjoint.
+/-- **Exercise 33** of [benIsrael2003generalized], Chapter 9.
+Invertible pairings of the test columns with the primal and adjoint null
+spaces give a unique bounded generalized Green kernel up to almost-everywhere
+equality. The represented operator has kernel equal to the range of the
+forcing test map and range equal to the normalized part of the differential
+domain. -/
+theorem exercise_9_33
+    (L : Lp W 2 μ →ₗ.[ℝ] Lp V 2 μ) (hL : IsNormallySolvable L)
+    (hD : Dense (L.domain : Set (Lp W 2 μ))) (G : GreenKernel ℝ X V W)
+    (hG : IsGeneralizedGreenKernel L G)
+    (hGb : MemLp (fun p : X × X => G p.1 p.2) ∞ (μ.prod μ))
+    {ι κ : Type*} [Fintype ι] [Fintype κ]
+    (b : OrthonormalBasis ι ℝ L.ker) (c : OrthonormalBasis κ ℝ L.adjoint.ker)
+    (hb : ∀ i, MemLp (fun t => (b i : Lp W 2 μ) t) ∞ μ)
+    (hc : ∀ j, MemLp (fun t => (c j : Lp V 2 μ) t) ∞ μ)
+    (Θ₀ : L.ker →L[ℝ] Lp W 2 μ) (Ψ₀ : L.adjoint.ker →L[ℝ] Lp V 2 μ) :
+    letI := hL.1.isClosed_ker.completeSpace_coe
+    letI := (L.adjoint_isClosed hD).isClosed_ker.completeSpace_coe
+    Function.Bijective (Θ₀.adjoint.comp L.ker.subtypeL) →
+    Function.Bijective (L.adjoint.ker.orthogonalProjectionOnto.comp Ψ₀) →
+    ∃ K : GreenKernel ℝ X V W, ∃ C : Lp V 2 μ →L[ℝ] Lp W 2 μ,
+      MemLp (fun p : X × X => K p.1 p.2) ∞ (μ.prod μ) ∧
+      IsGeneralizedGreenKernel L K ∧ (∀ y, RepresentsGreenAction K y (C y)) ∧
+      HasGreenNormalization K Θ₀ Ψ₀ ∧ C.ker = Ψ₀.range ∧
+      C.range = L.domain ⊓ Θ₀.rangeᗮ ∧
+      ∀ K' : GreenKernel ℝ X V W, MemLp (fun p : X × X => K' p.1 p.2) ∞ (μ.prod μ) →
+        IsGeneralizedGreenKernel L K' → HasGreenNormalization K' Θ₀ Ψ₀ →
+        (fun p : X × X => K' p.1 p.2) =ᵐ[μ.prod μ] fun p => K p.1 p.2 := by
+  let := hL.1.isClosed_ker.completeSpace_coe
+  let := (L.adjoint_isClosed hD).isClosed_ker.completeSpace_coe
+  intro hA hB
+  let A := Θ₀.adjoint.comp L.ker.subtypeL
+  let B := L.adjoint.ker.orthogonalProjectionOnto.comp Ψ₀
+  let Ae := ContinuousLinearEquiv.ofBijective A (LinearMap.ker_eq_bot.mpr hA.1)
+    (LinearMap.range_eq_top.mpr hA.2)
+  let Be := ContinuousLinearEquiv.ofBijective B (LinearMap.ker_eq_bot.mpr hB.1)
+    (LinearMap.range_eq_top.mpr hB.2)
+  let Θ := (Ae.symm : L.ker →L[ℝ] L.ker).comp Θ₀.adjoint
+  let Ψ := Ψ₀.comp (Be.symm : L.adjoint.ker →L[ℝ] L.adjoint.ker)
+  have hΘ (x : L.ker) : Θ (x : Lp W 2 μ) = x := Ae.symm_apply_apply x
+  have hΨ (v : L.adjoint.ker) : L.adjoint.ker.orthogonalProjectionOnto (Ψ v) = v :=
+    Be.apply_symm_apply v
+  have hΘker (x : Lp W 2 μ) : Θ x = 0 ↔ Θ₀.adjoint x = 0 := by
+    change Ae.symm (Θ₀.adjoint x) = 0 ↔ _
+    exact map_eq_zero_iff Ae.symm Ae.symm.injective
+  have hΘeq : Θ.ker = Θ₀.rangeᗮ := by
+    rw [ContinuousLinearMap.orthogonal_range]
+    ext x
+    exact hΘker x
+  have hΨeq : Ψ.range = Ψ₀.range := by
+    ext v
+    rw [LinearMap.mem_range, LinearMap.mem_range]
+    exact ⟨fun ⟨x, hx⟩ => ⟨Be.symm x, hx⟩, fun ⟨x, hx⟩ => ⟨Be x, by
+      change Ψ₀ (Be.symm (Be x)) = v
+      rwa [Be.symm_apply_apply]⟩⟩
+  obtain ⟨MG, hMG, hGe⟩ := exists_nonnegative_bound_of_memLp_top hGb
+  obtain ⟨T, hT⟩ := exists_bounded_greenOperator G hGb.aestronglyMeasurable hMG hGe
+  have hTg := (isGeneralizedGreenKernel_iff_represented_graph L G T hT).mp hG
+  obtain ⟨K, hKb, hK⟩ := normalizedGreenOperator_has_bounded_kernel L hL hD G hGb T hT hTg
+    b c hb hc Θ Ψ hΘ hΨ
+  let C := normalizedGreenOperator L T Θ Ψ
+  change (∀ y, RepresentsGreenAction K y (C y)) at hK
+  obtain ⟨hCg, hCker, hCrange, hUnique⟩ := normalizedGreenOperator_spec L hL hD T hTg Θ Ψ hΘ hΨ
+  change C.ker = Ψ.range at hCker
+  change C.range = L.domain ⊓ Θ.ker at hCrange
+  obtain ⟨MK, hMK, hKe⟩ := exists_nonnegative_bound_of_memLp_top hKb
+  have hKadj := represents_adjointGreenKernel K hKb.aestronglyMeasurable hMK hKe C hK
+  refine ⟨K, C, hKb, (isGeneralizedGreenKernel_iff_represented_graph L K C hK).mpr hCg,
+    hK, ?_, hCker.trans hΨeq, ?_, ?_⟩
+  · constructor
+    · intro u
+      apply (greenIntegral_ae_zero_iff (hKadj (Θ₀ u))).mpr
+      apply ext_inner_right ℝ
+      intro y
+      have hy : C y ∈ C.range := ⟨y, rfl⟩
+      rw [hCrange] at hy
+      have h0 := (hΘker _).mp (LinearMap.mem_ker.mp (Submodule.mem_inf.mp hy).2)
+      rw [C.adjoint_inner_left, ← Θ₀.adjoint_inner_right, h0, inner_zero_right, inner_zero_left]
+    · intro v
+      apply (greenIntegral_ae_zero_iff (hK (Ψ₀ v))).mpr
+      apply LinearMap.mem_ker.mp
+      rw [hCker, hΨeq]
+      exact ⟨v, rfl⟩
+  · rw [hCrange, hΘeq]
+  · intro K' hK'b hK'g hK'n
+    obtain ⟨M', hM', hK'e⟩ := exists_nonnegative_bound_of_memLp_top hK'b
+    obtain ⟨D, hK'⟩ := exists_bounded_greenOperator K' hK'b.aestronglyMeasurable hM' hK'e
+    have hDg := (isGeneralizedGreenKernel_iff_represented_graph L K' D hK').mp hK'g
+    have hK'adj := represents_adjointGreenKernel K' hK'b.aestronglyMeasurable hM' hK'e D hK'
+    have hDθ (y : Lp V 2 μ) : Θ (D y) = 0 := by
+      apply (hΘker _).mpr
+      apply ext_inner_left ℝ
+      intro u
+      have he := (greenIntegral_ae_zero_iff (hK'adj (Θ₀ u))).mp (hK'n.1 u)
+      rw [Θ₀.adjoint_inner_right, ← D.adjoint_inner_left, he, inner_zero_left, inner_zero_right]
+    have hDψ (u : L.adjoint.ker) : D (Ψ u) = 0 :=
+      (greenIntegral_ae_zero_iff (hK' (Ψ₀ (Be.symm u)))).mp (hK'n.2 (Be.symm u))
+    have he : D = C := hUnique D hDg hDθ hDψ
+    exact greenKernels_ae_eq_of_represents_same K' K hK'b hKb C (he ▸ hK') hK
+
+end BiorthogonalGreenKernels
 
 section SignGreen
 

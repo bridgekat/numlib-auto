@@ -204,10 +204,7 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, (61), class of bound
 
 [[node]]
 id = "exercise_9_33"
-kind = "theorem"
-desc = '''For essentially bounded Θ and Ψ with invertible biorthogonality matrices ∫Θ*X₀ and ∫Y₀*Ψ, prove existence and uniqueness up to a.e. equality of the normalized kernel satisfying both integral null constraints. Establish the resulting operator's kernel span Ψ and exact range D(L) ∩ (span Θ)⊥; the ambient orthogonal complement is its closure when the differential domain is dense.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, (62), biorthogonal normalization"
-deps = ["exercise_9_32"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, (62), existence, uniqueness and exact range for biorthogonal normalization"
 
 [[node]]
 id = "exercise_9_34_adjoint_products"
@@ -323,3 +320,7 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), homogeneous corre
 [[node]]
 id = "exercise_9_30_boundaryGreen_classical"
 source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), classical boundary-corrected solution for compatible data"
+
+[[node]]
+id = "HasGreenNormalization"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, (62), integral null constraints"
