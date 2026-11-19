@@ -2,6 +2,8 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Analysis.Calculus.LocalExtr.Basic
+import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 import Mathlib.Analysis.Convex.SpecificFunctions.Deriv
 import Numlib.Analysis.Convex.StrictConvexSpace
 import Numlib.Analysis.Matrix.ToEuclideanLin
@@ -4124,5 +4126,436 @@ theorem exercise_69_of_ellipsoidal [FiniteDimensional ℂ E] (e : E ≃ₗᵢ[�
 end
 
 end EllipsoidalExercises
+
+section SmoothDerivativeExercises
+
+open Set ConvexAnalysis Filter
+open scoped Topology
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
+
+private theorem gauge_pos_of_ne_zero {B : Set E} (hB : IsGaugeConvexBody B)
+    (h₀ : (0 : E) ∈ interior B) {x : E} (hx : x ≠ 0) : 0 < gauge B x := by
+  have h := (exercise_53_gauge hB h₀).1
+  exact lt_of_le_of_ne (h.nonnegative x) (Ne.symm fun he => hx (h.eq_zero x he))
+
+private theorem frontier_gauge_iff {B : Set E} (hB : IsGaugeConvexBody B)
+    (h₀ : (0 : E) ∈ interior B) {x : E} : x ∈ frontier B ↔ gauge B x = 1 := by
+  have h := (exercise_53_gauge hB h₀).2
+  rw [frontier, hB.closed.closure_eq, Set.mem_sdiff]
+  have hx := Set.ext_iff.mp h.1 x
+  have hxi := Set.ext_iff.mp h.2 x
+  change (x ∈ B ↔ gauge B x ≤ 1) at hx
+  change (x ∈ interior B ↔ gauge B x < 1) at hxi
+  rw [hx, hxi, not_lt, le_antisymm_iff]
+
+private theorem gauge_normalize {B : Set E} (hB : IsGaugeConvexBody B)
+    (h₀ : (0 : E) ∈ interior B) {x : E} (hx : x ≠ 0) :
+    gauge B ((gauge B x)⁻¹ • x) = 1 := by
+  have h := gauge_pos_of_ne_zero hB h₀ hx
+  rw [(exercise_53_gauge hB h₀).1.homogeneity _ _ (inv_nonneg.mpr h.le),
+    inv_mul_cancel₀ h.ne']
+
+private theorem isNormalizedSupportingNormal_iff_real_bound {B : Set E}
+    (hB : IsGaugeConvexBody B) (h₀ : (0 : E) ∈ interior B) {x u : E} (hx : x ≠ 0) :
+    letI : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+    IsNormalizedSupportingNormal B ((gauge B x)⁻¹ • x) u ↔
+      inner ℝ x u = gauge B x ∧ ∀ z, inner ℝ z u ≤ gauge B z := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  have hp := gauge_pos_of_ne_zero hB h₀ hx
+  have hmem (z : E) : z ∈ B ↔ gauge B z ≤ 1 :=
+    Set.ext_iff.mp (exercise_53_gauge hB h₀).2.1 z
+  have hre {z : E} : (inner ℂ u z).re = inner ℝ z u := real_inner_comm z u
+  unfold IsNormalizedSupportingNormal
+  have he : (inner ℂ u ((gauge B x)⁻¹ • x)).re = 1 ↔ inner ℝ x u = gauge B x := by
+    rw [hre, real_inner_smul_left, ← div_eq_inv_mul, div_eq_iff hp.ne', one_mul]
+  rw [he]
+  refine and_congr_right fun _ => ?_
+  constructor
+  · intro h z
+    by_cases hz : z = 0
+    · rw [hz, inner_zero_left, gauge_zero]
+    have hz₀ := gauge_pos_of_ne_zero hB h₀ hz
+    have hm := (hmem _).mpr (gauge_normalize hB h₀ hz).le
+    have hle := h _ hm
+    rw [hre, real_inner_smul_left, inv_mul_le_iff₀ hz₀, mul_one] at hle
+    exact hle
+  · intro h z hz
+    rw [hre]
+    exact (h z).trans ((hmem z).mp hz)
+
+private theorem mem_subdifferential_gauge_iff {B : Set E}
+    (hB : IsGaugeConvexBody B) (h₀ : (0 : E) ∈ interior B) {x u : E} :
+    letI : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+    u ∈ subdifferential (innerₗ E) (fun z => ((gauge B z : ℝ) : EReal)) x ↔
+      inner ℝ x u = gauge B x ∧ ∀ z, inner ℝ z u ≤ gauge B z := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  simp only [mem_subdifferential, innerₗ_apply_apply, ← EReal.coe_add, EReal.coe_le_coe_iff]
+  constructor
+  · intro h
+    have hzero := h 0
+    rw [zero_sub, inner_neg_left, gauge_zero] at hzero
+    have htwo := h ((2 : ℝ) • x)
+    rw [two_smul, add_sub_cancel_right,
+      ← two_smul ℝ x, (exercise_53_gauge hB h₀).1.homogeneity _ _ (by norm_num)] at htwo
+    have he : inner ℝ x u = gauge B x := by linarith
+    refine ⟨he, fun z => ?_⟩
+    have hz := h z
+    rw [inner_sub_left, he] at hz
+    linarith
+  · rintro ⟨he, h⟩ z
+    rw [inner_sub_left, he]
+    linarith [h z]
+
+variable [FiniteDimensional ℂ E]
+
+/-- **Exercise 64(b)** of [benIsrael2003generalized], Chapter 3.
+The gauge has a two-sided real directional derivative at every nonzero
+point in every direction exactly when the body has a unique supporting
+hyperplane at each boundary point. -/
+theorem exercise_64b {B : Set E} (hB : IsGaugeConvexBody B) (h₀ : (0 : E) ∈ interior B) :
+    (∀ x : E, x ≠ 0 → ∀ d : E,
+      DifferentiableAt ℝ (fun t : ℝ => gauge B (x + t • d)) 0) ↔ IsSmoothGaugeBody B := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  let : FiniteDimensional ℝ E := FiniteDimensional.trans ℝ ℂ E
+  let φ := gauge B
+  let f := fun z : E => ((φ z : ℝ) : EReal)
+  have hg := (exercise_53_gauge hB h₀).1
+  have hc : ConvexFn f := by
+    apply ConvexOn.convexFn_coe
+    refine ⟨convex_univ, fun x _ y _ a b ha hb _ => ?_⟩
+    exact (hg.subadditive _ _).trans_eq (by
+      rw [hg.homogeneity _ _ ha, hg.homogeneity _ _ hb, smul_eq_mul, smul_eq_mul])
+  have hp : ProperConvex f := properConvex_coe _
+  have hsub (x : E) : (subdifferential (innerₗ E) f x).Nonempty :=
+    subdifferential_nonempty_of_mem_relint_convexDom hc hp (by
+      rw [convexDom_coe, intrinsicInterior_univ]
+      trivial)
+  have hpair (x : E) (hx : x ≠ 0) (u : E) :
+      u ∈ subdifferential (innerₗ E) f x ↔
+        IsNormalizedSupportingNormal B ((φ x)⁻¹ • x) u :=
+    (mem_subdifferential_gauge_iff hB h₀).trans
+      (isNormalizedSupportingNormal_iff_real_bound hB h₀ hx).symm
+  constructor
+  · intro h x hxF
+    have hφx : φ x = 1 := (frontier_gauge_iff hB h₀).mp hxF
+    have hx : x ≠ 0 := by intro he; simp [φ, he] at hφx
+    have hnormal (u : E) :
+        u ∈ subdifferential (innerₗ E) f x ↔ IsNormalizedSupportingNormal B x u := by
+      simpa only [hφx, inv_one, one_smul] using hpair x hx u
+    obtain ⟨u, hu⟩ := hsub x
+    refine ⟨u, (hnormal u).mp hu, fun v hv => ?_⟩
+    have hdir (w : E) (hw : w ∈ subdifferential (innerₗ E) f x) (d : E) :
+        deriv (fun t : ℝ => gauge B (x + t • d)) 0 = inner ℝ d w := by
+      obtain ⟨hxe, hbound⟩ := (mem_subdifferential_gauge_iff hB h₀).mp hw
+      have hD := (h x hx d).hasDerivAt
+      have hline : HasDerivAt (fun t : ℝ => inner ℝ (x + t • d) w) (inner ℝ d w) 0 := by
+        simpa only [inner_add_left, real_inner_smul_left, id_eq, one_mul] using
+          ((hasDerivAt_id (0 : ℝ)).mul_const (inner ℝ d w)).const_add (inner ℝ x w)
+      have hmin : IsLocalMin (fun t : ℝ => gauge B (x + t • d) - inner ℝ (x + t • d) w) 0 :=
+        Filter.Eventually.of_forall fun t => by
+          simp only [zero_smul, add_zero, hxe, sub_self]
+          exact sub_nonneg.mpr (hbound _)
+      exact sub_eq_zero.mp (hmin.hasDerivAt_eq_zero (hD.sub hline))
+    have he (d : E) : inner ℝ d v = inner ℝ d u :=
+      (hdir v ((hnormal v).mpr hv) d).symm.trans (hdir u hu d)
+    have hz : inner ℝ (v - u) (v - u) = 0 := by
+      rw [inner_sub_right, he, sub_self]
+    exact sub_eq_zero.mp (norm_eq_zero.mp (by
+      rw [real_inner_self_eq_norm_sq] at hz
+      nlinarith))
+  · intro h x hx d
+    have hn := gauge_normalize hB h₀ hx
+    have hfr := (frontier_gauge_iff hB h₀).mpr hn
+    obtain ⟨u, hu, huni⟩ := h _ hfr
+    have he : subdifferential (innerₗ E) f x = {u} := by
+      ext v
+      rw [mem_singleton_iff]
+      exact ⟨fun hv => huni v ((hpair x hx v).mp hv),
+        fun hv => (hpair x hx v).mpr (hv.symm ▸ hu)⟩
+    have hgu := hasGradientAtFn_evalCLM_of_subdifferential_eq_singleton hc hp he
+    obtain ⟨g, heq, hd⟩ := hgu
+    have heq' : φ =ᶠ[𝓝 x] g := heq.mono fun z hz => EReal.coe_injective hz
+    have hφ : HasFDerivAt φ (evalCLM (innerₗ E) u) x := hd.congr_of_eventuallyEq heq'
+    have hd₀ : HasDerivAt (fun t : ℝ => x + t • d) d 0 := by
+      simpa only [id_eq, one_smul] using ((hasDerivAt_id (0 : ℝ)).smul_const d).const_add x
+    have hf₀ : DifferentiableAt ℝ φ ((fun t : ℝ => x + t • d) 0) := by
+      simpa only [zero_smul, add_zero] using hφ.differentiableAt
+    have hComp : DifferentiableAt ℝ (φ ∘ (fun t : ℝ => x + t • d)) 0 :=
+      hf₀.comp 0 hd₀.differentiableAt
+    exact hComp
+
+end
+
+end SmoothDerivativeExercises
+
+section NonSmoothBodyExercises
+
+open Set
+open scoped Pointwise Topology
+
+section
+
+private abbrev Plane := EuclideanSpace ℂ (Fin 2)
+
+private noncomputable def roundedCornerLevel (x : Plane) : ℝ := ‖x‖ ^ 2 + ‖x 0‖
+
+/-- An equilibrated convex body with curved boundary and a corner. -/
+def exercise_65_body : Set (EuclideanSpace ℂ (Fin 2)) := {x | roundedCornerLevel x ≤ 1}
+
+private theorem roundedCornerLevel_strictConvex :
+    StrictConvexOn ℝ (univ : Set Plane) roundedCornerLevel := by
+  let : InnerProductSpace ℝ Plane := InnerProductSpace.rclikeToReal ℂ Plane
+  refine ⟨convex_univ, fun x _ y _ hxy a b ha hb hab => ?_⟩
+  have hsq := (strictConvexOn_norm_sq (H := Plane)).2
+    (mem_univ x) (mem_univ y) hxy ha hb hab
+  have hn : ‖(a • x + b • y) 0‖ ≤ a * ‖x 0‖ + b * ‖y 0‖ := by
+    change ‖a • (x 0) + b • (y 0)‖ ≤ _
+    calc
+      _ ≤ ‖a • (x 0)‖ + ‖b • (y 0)‖ := norm_add_le _ _
+      _ = _ := by
+        rw [norm_smul, norm_smul, Real.norm_of_nonneg ha.le, Real.norm_of_nonneg hb.le]
+  change ‖a • x + b • y‖ ^ 2 < a * ‖x‖ ^ 2 + b * ‖y‖ ^ 2 at hsq
+  dsimp only [roundedCornerLevel]
+  rw [smul_eq_mul, smul_eq_mul]
+  linarith
+
+private theorem exercise_65_body_subset_unit :
+    exercise_65_body ⊆ Metric.closedBall (0 : Plane) 1 := by
+  intro x hx
+  change ‖x‖ ^ 2 + ‖x 0‖ ≤ 1 at hx
+  rw [Metric.mem_closedBall, dist_zero_right]
+  nlinarith [norm_nonneg x, norm_nonneg (x 0)]
+
+private theorem exercise_65_body_isClosedConvex :
+    IsGaugeConvexBody exercise_65_body ∧ Balanced ℂ exercise_65_body ∧
+      (0 : Plane) ∈ interior exercise_65_body ∧ StrictConvex ℝ exercise_65_body := by
+  have hc : Continuous roundedCornerLevel := by
+    unfold roundedCornerLevel
+    exact (continuous_norm.pow 2).add ((PiLp.continuous_apply 2 (fun _ : Fin 2 => ℂ) 0).norm)
+  have hn : ∀ x ∈ exercise_65_body, roundedCornerLevel x ≤ 1 := fun _ hx => hx
+  have h₀ : (0 : Plane) ∈ interior exercise_65_body := by
+    have he : roundedCornerLevel (0 : Plane) < 1 := by simp [roundedCornerLevel]
+    have hN : {x | roundedCornerLevel x < 1} ∈ 𝓝 (0 : Plane) :=
+      hc.continuousAt.eventually_lt continuousAt_const he
+    exact mem_interior_iff_mem_nhds.mpr
+      (Filter.mem_of_superset hN fun x hx => (show roundedCornerLevel x < 1 from hx).le)
+  refine ⟨⟨?_, isClosed_le hc continuous_const,
+    Metric.isBounded_closedBall.subset exercise_65_body_subset_unit, ⟨0, h₀⟩⟩, ?_, h₀, ?_⟩
+  · intro x hx y hy a b ha hb hab
+    have h := roundedCornerLevel_strictConvex.convexOn.2
+      (mem_univ x) (mem_univ y) ha hb hab
+    change roundedCornerLevel (a • x + b • y) ≤ 1
+    rw [smul_eq_mul, smul_eq_mul] at h
+    exact h.trans <| (add_le_add (mul_le_of_le_one_right ha (hn x hx))
+      (mul_le_of_le_one_right hb (hn y hy))).trans_eq hab
+  · intro c hc
+    rintro _ ⟨x, hx, rfl⟩
+    change roundedCornerLevel (c • x) ≤ 1
+    apply le_trans _ (hn x hx)
+    simp only [roundedCornerLevel, PiLp.smul_apply, norm_smul, mul_pow]
+    exact add_le_add
+      (mul_le_of_le_one_left (sq_nonneg _) (pow_le_one₀ (norm_nonneg c) hc))
+      (mul_le_of_le_one_left (norm_nonneg _) hc)
+  · intro x hx y hy hxy a b ha hb hab
+    have h := roundedCornerLevel_strictConvex.2
+      (mem_univ x) (mem_univ y) hxy ha hb hab
+    rw [smul_eq_mul, smul_eq_mul] at h
+    have hbelow : roundedCornerLevel (a • x + b • y) < 1 :=
+      h.trans_le ((add_le_add (mul_le_of_le_one_right ha.le (hn x hx))
+        (mul_le_of_le_one_right hb.le (hn y hy))).trans_eq hab)
+    apply interior_mono (show {x | roundedCornerLevel x < 1} ⊆ exercise_65_body from
+      fun x hx => (show roundedCornerLevel x < 1 from hx).le)
+    rw [(isOpen_lt hc continuous_const).interior_eq]
+    exact hbelow
+
+private theorem exercise_65_body_not_smooth : ¬ IsSmoothGaugeBody exercise_65_body := by
+  let y : Plane := WithLp.toLp 2 ![0, 1]
+  let u : Plane := WithLp.toLp 2 ![(1 / 2 : ℂ), 1]
+  let v : Plane := WithLp.toLp 2 ![(-1 / 2 : ℂ), 1]
+  have hy : y = PiLp.single 2 (1 : Fin 2) (1 : ℂ) := by
+    ext i
+    fin_cases i <;> simp [y]
+  have hnorm_y : ‖y‖ = 1 := by rw [hy, PiLp.norm_single, norm_one]
+  have hB := exercise_65_body_isClosedConvex.1
+  have hyB : y ∈ exercise_65_body := by
+    change roundedCornerLevel y ≤ 1
+    simp [roundedCornerLevel, hnorm_y, y]
+  have hyF : y ∈ frontier exercise_65_body := by
+    rw [frontier, hB.closed.closure_eq]
+    refine ⟨hyB, fun hy => ?_⟩
+    have hy' := interior_mono exercise_65_body_subset_unit hy
+    rw [interior_closedBall _ one_ne_zero, Metric.mem_ball, dist_zero_right, hnorm_y] at hy'
+    exact lt_irrefl _ hy'
+  have hpair (s : ℝ) (x : Plane) :
+      (inner ℂ (WithLp.toLp 2 ![(s : ℂ), 1] : Plane) x).re =
+        s * (x 0).re + (x 1).re := by
+    rw [EuclideanSpace.inner_eq_star_dotProduct, dotProduct, Fin.sum_univ_two]
+    simp [mul_comm]
+  have hsupport (s : ℝ) (hs : |s| ≤ 1 / 2) :
+      IsNormalizedSupportingNormal exercise_65_body y (WithLp.toLp 2 ![(s : ℂ), 1]) := by
+    constructor
+    · rw [hpair]
+      simp [y]
+    · intro x hx
+      rw [hpair]
+      change ‖x‖ ^ 2 + ‖x 0‖ ≤ 1 at hx
+      have h₀ : s * (x 0).re ≤ ‖x 0‖ / 2 := by
+        have h := mul_le_mul hs (Complex.abs_re_le_norm (x 0)) (abs_nonneg _) (by norm_num)
+        exact (le_abs_self _).trans (by rw [abs_mul]; linarith)
+      have h₁ := (Complex.re_le_norm (x 1)).trans (PiLp.norm_apply_le x 1)
+      nlinarith [sq_nonneg (‖x‖ - 1)]
+  have hu : IsNormalizedSupportingNormal exercise_65_body y u := by
+    convert hsupport (1 / 2) (by norm_num) using 1
+    norm_num [u]
+  have hv : IsNormalizedSupportingNormal exercise_65_body y v := by
+    convert hsupport (-1 / 2) (by norm_num) using 1
+    norm_num [v]
+  intro h
+  have he := congrArg (fun z : Plane => z 0) ((h y hyF).unique hu hv)
+  change (1 / 2 : ℂ) = -1 / 2 at he
+  norm_num at he
+
+/-- **Exercise 65** of [benIsrael2003generalized], Chapter 3.
+An explicit equilibrated body is strictly convex but its Hermitian polar
+is not strictly convex. The two gauges therefore give the requested
+pair of dual norms with different strict-convexity behavior. -/
+theorem exercise_65 :
+    IsGaugeConvexBody exercise_65_body ∧ Balanced ℂ exercise_65_body ∧
+      StrictConvex ℝ exercise_65_body ∧ ¬ StrictConvex ℝ (hermitianPolar exercise_65_body) := by
+  obtain ⟨hB, hbal, _, hstrict⟩ := exercise_65_body_isClosedConvex
+  obtain ⟨hP, hPbal, hPP, _, _⟩ := exercise_57 hB hbal
+  refine ⟨hB, hbal, hstrict, fun hp => exercise_65_body_not_smooth ?_⟩
+  have h := (exercise_63 hP hPbal).mp hp
+  rwa [hPP] at h
+
+end
+
+end NonSmoothBodyExercises
+
+section LpNonlinearExercises
+
+open Set Finset Filter
+open scoped ENNReal Topology Pointwise
+
+/-- The Euclidean metric projectors are linear. -/
+theorem exercise_74_euclidean {ι : Type*} [Fintype ι] (L : Submodule ℂ (EuclideanSpace ℂ ι)) :
+    ∃ P : EuclideanSpace ℂ ι →ₗ[ℂ] EuclideanSpace ℂ ι,
+      ∀ x, definition_1 L x = P x := by
+  exact ⟨L.starProjection.toLinearMap,
+    fun x => (isBestApprox_definition_1 L x).eq_starProjection L⟩
+
+section
+
+variable (p : ℝ≥0∞) [Fact (1 ≤ p)]
+
+/-- **Exercise 74**, converse, of [benIsrael2003generalized], Chapter 3.
+For every $1<p<\infty$ other than two, projection onto the line spanned by
+$(1,1,1)$ in three complex coordinates fails additivity. -/
+theorem exercise_74_nonlinear (hp : 1 < p.toReal) (hne : p.toReal ≠ 2) :
+    ∃ L : Submodule ℂ (PiLp p fun _ : Fin 3 => ℂ),
+      ¬ (∀ x y, definition_1 L (x + y) = definition_1 L x + definition_1 L y) := by
+  let X := PiLp p fun _ : Fin 3 => ℂ
+  let q := p.toReal
+  have hq : 0 < q := zero_lt_one.trans hp
+  have hESC : essentiallyStrictlyConvex X := essentiallyStrictlyConvex_piLp p hp
+  let w : X := WithLp.toLp p ![1, 1, 1]
+  let u : X := WithLp.toLp p ![1, -1, 0]
+  let v : X := WithLp.toLp p ![1, 0, -1]
+  let L : Submodule ℂ X := ℂ ∙ w
+  have hnorm (x : X) : ‖x‖ ^ q = ‖x 0‖ ^ q + ‖x 1‖ ^ q + ‖x 2‖ ^ q := by
+    have hsum : 0 ≤ ∑ i : Fin 3, ‖x i‖ ^ q :=
+      sum_nonneg fun _ _ => Real.rpow_nonneg (norm_nonneg _) _
+    rw [PiLp.norm_eq_sum hq, ← Real.rpow_mul hsum, one_div, inv_mul_cancel₀ hq.ne',
+      Real.rpow_one, Fin.sum_univ_three, add_assoc]
+  have hconv (c : ℂ) : 2 ≤ ‖1 - c‖ ^ q + ‖-1 - c‖ ^ q := by
+    have h := (strictConvexOn_complex_norm_rpow q hp).convexOn.2
+      (mem_univ (1 - c : ℂ)) (mem_univ (1 + c))
+      (show (0 : ℝ) ≤ 1 / 2 by norm_num) (show (0 : ℝ) ≤ 1 / 2 by norm_num)
+      (show (1 / 2 : ℝ) + 1 / 2 = 1 by norm_num)
+    have he : (1 / 2 : ℝ) • (1 - c) + (1 / 2 : ℝ) • (1 + c) = (1 : ℂ) := by
+      rw [← smul_add, show (1 - c) + (1 + c) = (2 : ℂ) by ring,
+        ← IsScalarTower.algebraMap_smul ℂ]
+      norm_num
+    rw [he] at h
+    change ‖(1 : ℂ)‖ ^ q ≤ (1 / 2) * ‖1 - c‖ ^ q + (1 / 2) * ‖1 + c‖ ^ q at h
+    rw [norm_one, Real.one_rpow] at h
+    rw [show -1 - c = -(1 + c) by ring, norm_neg]
+    linarith
+  have hu : definition_1 L u = 0 := by
+    apply (definition_1_eq_iff hESC L u 0).mpr
+    refine ⟨L.zero_mem, fun z hz => ?_⟩
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp (show z ∈ L from hz)
+    apply (Real.rpow_le_rpow_iff (norm_nonneg _) (norm_nonneg _) hq).mp
+    rw [sub_zero, hnorm, hnorm]
+    change ‖(1 : ℂ)‖ ^ q + ‖(-1 : ℂ)‖ ^ q + ‖(0 : ℂ)‖ ^ q ≤
+      ‖1 - c * 1‖ ^ q + ‖-1 - c * 1‖ ^ q + ‖0 - c * 1‖ ^ q
+    simp only [norm_one, norm_neg, norm_zero, Real.one_rpow, Real.zero_rpow hq.ne',
+      add_zero, mul_one]
+    linarith [hconv c, Real.rpow_nonneg (norm_nonneg (0 - c)) q]
+  have hv : definition_1 L v = 0 := by
+    apply (definition_1_eq_iff hESC L v 0).mpr
+    refine ⟨L.zero_mem, fun z hz => ?_⟩
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp (show z ∈ L from hz)
+    apply (Real.rpow_le_rpow_iff (norm_nonneg _) (norm_nonneg _) hq).mp
+    rw [sub_zero, hnorm, hnorm]
+    change ‖(1 : ℂ)‖ ^ q + ‖(0 : ℂ)‖ ^ q + ‖(-1 : ℂ)‖ ^ q ≤
+      ‖1 - c * 1‖ ^ q + ‖0 - c * 1‖ ^ q + ‖-1 - c * 1‖ ^ q
+    simp only [norm_one, norm_neg, norm_zero, Real.one_rpow, Real.zero_rpow hq.ne',
+      add_zero, mul_one]
+    linarith [hconv c, Real.rpow_nonneg (norm_nonneg (0 - c)) q]
+  refine ⟨L, fun hadd => ?_⟩
+  have huv : definition_1 L (u + v) = 0 := by rw [hadd, hu, hv, add_zero]
+  let f : ℝ → ℝ := fun t => ‖u + v - (t : ℂ) • w‖ ^ q
+  let g : ℝ → ℝ := fun t => (2 - t) ^ q + 2 * (1 + t) ^ q
+  have hmin : IsLocalMin f 0 := by
+    apply Filter.Eventually.of_forall
+    intro t
+    obtain ⟨_, h⟩ := (definition_1_eq_iff hESC L (u + v) 0).mp huv
+    have ht := h ((t : ℂ) • w) (Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _))
+    have hle := Real.rpow_le_rpow (norm_nonneg _) ht hq.le
+    simpa only [f, Complex.ofReal_zero, zero_smul, sub_zero] using hle
+  have heq : f =ᶠ[𝓝 0] g := by
+    filter_upwards [Ioo_mem_nhds (by norm_num : (-1 : ℝ) < 0) (by norm_num : (0 : ℝ) < 1)]
+      with t ht
+    rw [show f t = ‖u + v - (t : ℂ) • w‖ ^ q from rfl, hnorm]
+    change ‖(1 + 1 : ℂ) - (t : ℂ) * 1‖ ^ q + ‖-1 + 0 - (t : ℂ) * 1‖ ^ q +
+      ‖0 + -1 - (t : ℂ) * 1‖ ^ q = g t
+    have h₀ : ‖(1 + 1 : ℂ) - (t : ℂ) * 1‖ = 2 - t := by
+      rw [mul_one, ← Complex.ofReal_one, ← Complex.ofReal_add, ← Complex.ofReal_sub,
+        Complex.norm_real, Real.norm_of_nonneg (by linarith [ht.2])]
+      norm_num
+    have h₁ : ‖(-1 : ℂ) - (t : ℂ) * 1‖ = 1 + t := by
+      rw [mul_one, show (-1 : ℂ) - (t : ℂ) = -(((1 + t : ℝ)) : ℂ) by
+        push_cast
+        ring,
+        norm_neg, Complex.norm_real, Real.norm_of_nonneg (by linarith [ht.1])]
+    rw [add_zero, zero_add, h₀, h₁]
+    dsimp [g]
+    ring
+  have hD₀ : HasDerivAt (fun t : ℝ => (2 - t) ^ q) (-q * 2 ^ (q - 1)) 0 := by
+    have hb : HasDerivAt (fun t : ℝ => 2 - t) (0 - 1) 0 :=
+      (hasDerivAt_const 0 (2 : ℝ)).sub (hasDerivAt_id 0)
+    convert hb.rpow_const (p := q) (Or.inr hp.le) using 1
+    norm_num
+  have hD₁ : HasDerivAt (fun t : ℝ => (1 + t) ^ q) q 0 := by
+    have hb : HasDerivAt (fun t : ℝ => 1 + t) (0 + 1) 0 :=
+      (hasDerivAt_const 0 (1 : ℝ)).add (hasDerivAt_id 0)
+    convert hb.rpow_const (p := q) (Or.inr hp.le) using 1
+    norm_num
+  have hD : HasDerivAt g (-q * 2 ^ (q - 1) + 2 * q) 0 := hD₀.add (hD₁.const_mul 2)
+  have hzero := hmin.hasDerivAt_eq_zero (hD.congr_of_eventuallyEq heq)
+  have hpw : (2 : ℝ) ^ (q - 1) = 2 := by
+    have hm : q * (2 ^ (q - 1) - 2) = 0 := by linarith
+    exact sub_eq_zero.mp ((mul_eq_zero.mp hm).resolve_left hq.ne')
+  have he : q - 1 = 1 := (Real.rpow_right_inj (by norm_num) (by norm_num)).mp
+    (hpw.trans (Real.rpow_one 2).symm)
+  exact hne (by linarith)
+
+end
+
+end LpNonlinearExercises
 
 end BenIsraelGreville.Chapter03

@@ -170,17 +170,11 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, rotundity and smooth
 
 [[node]]
 id = "exercise_64b"
-kind = "theorem"
-desc = '''Prove the equivalence of the two-sided real directional derivative of the norm at every nonzero point and uniqueness of supporting hyperplanes at each unit boundary point. The derivative claim must exclude the origin for a nontrivial norm.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 64(b), Gâteaux differentiability and smoothness"
-deps = ["exercise_63"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 64(b), smoothness and two-sided real directional derivatives away from zero"
 
 [[node]]
 id = "exercise_65"
-kind = "theorem"
-desc = '''Verify the given intersecting-parabola example, or a mathematically equivalent explicit convex body, for balance, rotundity and nonsmoothness, and obtain failure of strict convexity for its polar gauge.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 65, an essentially strictly convex norm with non-strict dual"
-deps = ["exercise_63", "exercise_64a"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 65, strict convexity of the body and failure for its polar"
 
 [[node]]
 id = "exercise_66"
@@ -208,13 +202,6 @@ deps = ["IsProjectiveNorm", "exercise_68"]
 [[node]]
 id = "exercise_73"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 73"
-
-[[node]]
-id = "exercise_74"
-kind = "theorem"
-desc = '''Prove that all projections are linear in the Euclidean case, and construct a nonlinear projection onto a subspace for 1<p<∞ and p≠2 in dimensions sufficient for a counterexample. In dimension two every nontrivial proper subspace is a hyperplane.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 74, linearity of all ℓᵖ projectors"
-deps = ["corollary_6", "theorem_11"]
 
 [[node]]
 id = "exercise_75"
@@ -534,3 +521,15 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 68 and 74, strict conve
 [[node]]
 id = "exercise_69_of_ellipsoidal"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, ellipsoid norms are projective"
+
+[[node]]
+id = "exercise_65_body"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 65, explicit equilibrated corner body"
+
+[[node]]
+id = "exercise_74_euclidean"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 74, all Euclidean projectors are linear"
+
+[[node]]
+id = "exercise_74_nonlinear"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 74, three-coordinate counterexample for all non-Euclidean interior p"
