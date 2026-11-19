@@ -488,3 +488,68 @@ theorem intervalVectorMatrix_green (hab : a < b) (A₁ A₀ : ℝ → Matrix ι 
   linarith
 
 end WeakDerivative
+
+section IntervalMatrixActions
+
+variable {κ ι η : Type*} [Fintype κ] [Fintype ι] [Fintype η] {a b : ℝ}
+
+/-- Multiplication by continuous matrix coefficients respects matrix products. -/
+theorem intervalVectorMatrixL2Mul_comp
+    (A : ℝ → Matrix κ ι ℝ) (B : ℝ → Matrix ι η ℝ)
+    (hA : ∀ i j, ContinuousOn (fun t => A t i j) (Icc a b))
+    (hB : ∀ i j, ContinuousOn (fun t => B t i j) (Icc a b))
+    (hAB : ∀ i j, ContinuousOn (fun t => (A t * B t) i j) (Icc a b)) :
+    (intervalVectorMatrixL2Mul A hA).comp (intervalVectorMatrixL2Mul B hB) =
+      intervalVectorMatrixL2Mul (fun t => A t * B t) hAB := by
+  ext u : 1
+  apply intervalVectorL2_ext
+  filter_upwards [intervalVectorMatrixL2Mul_ae A hA (intervalVectorMatrixL2Mul B hB u),
+    intervalVectorMatrixL2Mul_ae B hB u,
+    intervalVectorMatrixL2Mul_ae (fun t => A t * B t) hAB u] with t h₁ h₂ h₃
+  rw [ContinuousLinearMap.comp_apply, h₁, h₂, h₃, Matrix.mulVec_mulVec]
+
+/-- Multiplication by the identity coefficient is the identity on vector
+square-integrable functions. -/
+theorem intervalVectorMatrixL2Mul_id [DecidableEq ι] :
+    intervalVectorMatrixL2Mul (fun _ => (1 : Matrix ι ι ℝ))
+      (fun _ _ => continuousOn_const) =
+        ContinuousLinearMap.id ℝ (IntervalVectorL2 ι a b) := by
+  ext u : 1
+  apply intervalVectorL2_ext
+  filter_upwards [intervalVectorMatrixL2Mul_ae (fun _ => (1 : Matrix ι ι ℝ))
+    (fun _ _ => continuousOn_const) u] with t ht
+  rw [ContinuousLinearMap.id_apply, ht, Matrix.one_mulVec]
+
+/-- Two continuous coefficient families that agree on the interval induce
+the same operator on interval $L^2$. -/
+theorem intervalVectorMatrixL2Mul_congr
+    (A B : ℝ → Matrix κ ι ℝ)
+    (hA : ∀ i j, ContinuousOn (fun t => A t i j) (Icc a b))
+    (hB : ∀ i j, ContinuousOn (fun t => B t i j) (Icc a b))
+    (he : EqOn A B (Icc a b)) :
+    intervalVectorMatrixL2Mul A hA = intervalVectorMatrixL2Mul B hB := by
+  ext u : 1
+  apply intervalVectorL2_ext
+  filter_upwards [intervalVectorMatrixL2Mul_ae A hA u, intervalVectorMatrixL2Mul_ae B hB u,
+    ae_restrict_mem (μ := volume) measurableSet_Ioo] with t ht ht' hI
+  rw [ht, ht', he (Ioo_subset_Icc_self hI)]
+
+/-- Negating the coefficient negates its multiplication action on interval
+$L^2$. -/
+theorem intervalVectorMatrixL2Mul_neg
+    (A : ℝ → Matrix κ ι ℝ)
+    (hA : ∀ i j, ContinuousOn (fun t => A t i j) (Icc a b)) :
+    intervalVectorMatrixL2Mul (fun t => -A t) (fun i j => (hA i j).neg) =
+      -intervalVectorMatrixL2Mul A hA := by
+  ext u : 1
+  apply intervalVectorL2_ext
+  let v := intervalVectorMatrixL2Mul A hA u
+  have hneg : ∀ᵐ t ∂volume.restrict (Ioo a b), ∀ i, (-v i : Lp ℝ 2
+      (volume.restrict (Ioo a b))) t = -v i t :=
+    eventually_all.mpr fun i => Lp.coeFn_neg (v i)
+  filter_upwards [intervalVectorMatrixL2Mul_ae (fun t => -A t) (fun i j => (hA i j).neg) u,
+    intervalVectorMatrixL2Mul_ae A hA u, hneg] with t h₁ h₂ h₃
+  rw [neg_apply, h₁, Matrix.neg_mulVec]
+  exact (congrArg Neg.neg h₂.symm).trans (funext h₃).symm
+
+end IntervalMatrixActions

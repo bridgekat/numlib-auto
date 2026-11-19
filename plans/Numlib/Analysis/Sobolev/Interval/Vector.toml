@@ -84,3 +84,15 @@ id = "exists_intervalVectorSobolev_iff"
 [[node]]
 id = "intervalVectorMatrix_green"
 source = "Ben-Israel and Greville, Generalized Inverses, Chapter 9, Exercise 30, equations (57)–(58), with the leading coefficient in the boundary form"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_comp"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_id"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_congr"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_neg"
