@@ -174,17 +174,11 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equations (51)–(55
 
 [[node]]
 id = "exercise_9_30_operator"
-kind = "theorem"
-desc = '''For continuous A₀, continuously differentiable pointwise invertible A₁, and a rank-m boundary matrix, prove closedness and density of the first-order realization, construct its adjoint, and derive the nullity bounds, index relation k + m = k* + n and closed primal and dual ranges. The adjoint expression is (57). The endpoint pairing uses A₁(t)*y(t) at t = a,b. In the matrix form use a full column basis of ker M as the test matrix.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a)–(e), (57)–(58), vector boundary problem"
-deps = ["matrixDifferentialExpression", "vectorBoundaryValues"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(a), (c)–(e), vector boundary problem"
 
 [[node]]
 id = "exercise_9_30_green"
-kind = "theorem"
-desc = '''For a fundamental matrix X, verify the sign kernel (59) with the factor A₁(t)⁻¹ on the right. Verify the kernel resulting from its boundary correction −X(s)(M X̂)⁽¹⁾ M applied to the actual two endpoint kernel values. With endpoint order (a,b) this amounts to adding (M X̂)⁽¹⁾ M diag(I,−I) X̂ inside the bracket in (60). The printed kernels omit the leading coefficient factor and (60) uses the opposite sign for this endpoint ordering.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f)–(g), (59)–(60), vector fundamental matrix"
-deps = ["exercise_9_30_operator", "boundaryCorrection_of_innerInverse"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f)–(g), (59)–(60), vector Green matrices with leading and boundary corrections"
 
 [[node]]
 id = "exercise_9_32"
@@ -680,7 +674,7 @@ id = "intervalVectorSobolevBoundaryCLM"
 
 [[node]]
 id = "intervalVectorSobolevBoundaryCLM_apply"
-desc = "The displayed evaluation or membership formula for the preceding construction."
+desc = "The continuous endpoint trace evaluates to the two endpoint values of the vector Sobolev representative."
 
 [[node]]
 id = "intervalVectorSobolevBoundary_surjective"
@@ -690,14 +684,14 @@ id = "intervalVectorSobolevBoundarySubmodule"
 
 [[node]]
 id = "mem_intervalVectorSobolevBoundarySubmodule_iff"
-desc = "The displayed evaluation or membership formula for the preceding construction."
+desc = "A vector Sobolev function satisfies the homogeneous boundary condition exactly when its endpoint trace lies in the prescribed submodule."
 
 [[node]]
 id = "intervalVectorFirstOrderValue"
 
 [[node]]
 id = "intervalVectorFirstOrderValue_apply"
-desc = "The displayed evaluation or membership formula for the preceding construction."
+desc = "The first-order expression adds the leading coefficient applied to the weak derivative and the zeroth-order coefficient applied to the function."
 
 [[node]]
 id = "intervalVectorFirstOrder"
@@ -893,3 +887,104 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b–c), Leibniz expan
 [[node]]
 id = "ker_adjoint_constrainedScalarIntervalOperator_le_formalAdjoint"
 source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(c), inclusion of the Hilbert-adjoint null space in the maximal formal-adjoint null space"
+
+[[node]]
+id = "intervalMatrixActionCLM"
+
+[[node]]
+id = "intervalMatrixActionCLM_apply"
+
+[[node]]
+id = "continuousOn_intervalMatrixActionCLM"
+
+[[node]]
+id = "intervalVectorNormalValue"
+
+[[node]]
+id = "existsUnique_intervalVectorNormalIVP"
+
+[[node]]
+id = "intervalVectorNormalInitialEquiv"
+
+[[node]]
+id = "intervalVectorNormalInitialEquiv_apply"
+
+[[node]]
+id = "intervalVectorFirstOrderInitialEquiv"
+
+[[node]]
+id = "intervalVectorFirstOrderInitialEquiv_apply"
+
+[[node]]
+id = "fundamentalSignGreenKernel_integral_of_integrable"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), (59), with the inverse leading coefficient"
+
+[[node]]
+id = "fundamentalBoundaryGreenKernel_integral_of_integrable"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), (60), with corrected endpoint sign and inverse leading coefficient"
+
+[[node]]
+id = "exists_intervalVectorFundamentalSobolev"
+
+[[node]]
+id = "intervalLeadingEquiv"
+
+[[node]]
+id = "intervalLeadingEquiv_apply"
+
+[[node]]
+id = "intervalLeadingEquiv_symm_apply"
+
+[[node]]
+id = "exists_intervalVectorFirstOrder_fundamentalFamily"
+
+[[node]]
+id = "exercise_9_30_signGreen_L2"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), (59), with the inverse leading coefficient"
+
+[[node]]
+id = "intervalVectorBoundaryConstraint"
+
+[[node]]
+id = "mem_intervalVectorBoundaryConstraint_iff"
+
+[[node]]
+id = "exercise_9_30_boundaryGreen_L2"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), (60), with corrected endpoint sign and inverse leading coefficient"
+
+[[node]]
+id = "intervalVectorL2Regroup"
+
+[[node]]
+id = "intervalVectorL2Regroup_ae"
+
+[[node]]
+id = "intervalVectorL2RegroupOperator"
+
+[[node]]
+id = "mem_intervalVectorL2RegroupOperator_graph_iff"
+
+[[node]]
+id = "intervalVectorL2Regroup_isGeneralizedGreenKernel"
+
+[[node]]
+id = "exercise_9_30_signGreen_isGeneralizedGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), (59), with the inverse leading coefficient"
+
+[[node]]
+id = "exercise_9_30_boundaryGreen_isGeneralizedGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), (60), with corrected endpoint sign and inverse leading coefficient"
+
+[[node]]
+id = "intervalVectorMatrixBoundaryCLM"
+
+[[node]]
+id = "intervalVectorMatrixBoundaryCLM_apply"
+
+[[node]]
+id = "intervalVectorBoundaryConstraint_matrix"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30, equations (50), (56), and (60)"
+
+[[node]]
+id = "intervalVectorFirstOrder_free_nullity"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(c), dimension of the unconstrained homogeneous solution space"
