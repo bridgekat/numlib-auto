@@ -193,13 +193,6 @@ id = "exercise_68_upper_sharp"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 68(b), ℓᵖ² approaches the upper bound"
 
 [[node]]
-id = "exercise_69"
-kind = "theorem"
-desc = '''Identify contractivity of all metric projectors with Q=1 for dimensions with proper positive-dimensional subspaces. Show that ellipsoidal norms are projective, prove the classification in dimension at least three, and verify the real two-dimensional piecewise ℓᵖ/ℓᑫ counterexample.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, classification of projective norms"
-deps = ["IsProjectiveNorm", "exercise_68"]
-
-[[node]]
 id = "exercise_73"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 73"
 
@@ -585,3 +578,63 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, sufficient zero fibe
 [[node]]
 id = "exercise_81_lower_of_additive_kernelProjection"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, input-additive-kernel lower estimate"
+
+[[node]]
+id = "scaledNormingFunctional"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, scaled norming functional"
+
+[[node]]
+id = "scaledNormingFunctional_spec"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, norming functional equalities"
+
+[[node]]
+id = "eq_scaledNormingFunctional"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, unique normalized normer"
+
+[[node]]
+id = "scaledNormingFunctional_apply_eq_zero_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, norming functional orthogonality"
+
+[[node]]
+id = "scaledNormingFunctional_mem_span_image"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, preservation of span incidence"
+
+[[node]]
+id = "continuous_scaledNormingFunctional"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, continuity of norming polarity"
+
+[[node]]
+id = "scaledNormingFunctional_smul"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, conjugate homogeneity"
+
+[[node]]
+id = "exists_ringHom_of_projective_coordinate_ratio"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, three-coordinate projective polarity endomorphism"
+
+[[node]]
+id = "continuous_complex_ringHom_eq_id_or_star"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, continuous coordinate field endomorphisms"
+
+[[node]]
+id = "projective_pairing_positive_weight"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, positive projective coordinate ratio"
+
+[[node]]
+id = "projective_pairing_weighted_hermitian"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, weighted Hermitian form on each coordinate plane"
+
+[[node]]
+id = "hasDerivAt_normSq_along_projective_line"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, derivative of the square of a projective norm"
+
+[[node]]
+id = "norm_sq_projective_coordinate_pair"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, Euclidean restriction to two coordinates"
+
+[[node]]
+id = "exercise_69_projective_parallelogram"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, parallelogram identity in complex dimension at least three"
+
+[[node]]
+id = "exercise_69_complex_ellipsoidal"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, complex projective norm classification"

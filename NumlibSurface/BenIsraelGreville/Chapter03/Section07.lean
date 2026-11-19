@@ -2,6 +2,10 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.InnerProductSpace.OfNorm
+import Mathlib.Analysis.Normed.Operator.BoundedLinearMaps
+import Mathlib.Topology.Maps.Proper.Basic
 import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Numlib.Analysis.Convex.Subdifferential.Uniqueness
@@ -5191,5 +5195,948 @@ theorem exercise_81_lower_of_additive_kernelProjection
 end
 
 end RankLossKernelExercises
+
+section NormingPolarityExercises
+
+open Set
+open scoped Pointwise
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+
+/-- A norming functional scaled to have the norm of its normed vector. -/
+noncomputable def scaledNormingFunctional (x : E) : StrongDual ℂ E := by
+  classical
+  exact if hx : x = 0 then 0
+    else (‖x‖ : ℂ) • (exists_dual_vector ℂ x (norm_ne_zero_iff.mpr hx)).choose
+
+omit [FiniteDimensional ℂ E] in
+/-- The scaled normer has the same norm as its vector and pairs with it
+to give the square of their common norm. -/
+theorem scaledNormingFunctional_spec (x : E) :
+    ‖scaledNormingFunctional x‖ = ‖x‖ ∧
+      scaledNormingFunctional x x = ((‖x‖ ^ 2 : ℝ) : ℂ) := by
+  by_cases hx : x = 0
+  · simp [hx, scaledNormingFunctional]
+  have he := (exists_dual_vector ℂ x (norm_ne_zero_iff.mpr hx)).choose_spec
+  rw [scaledNormingFunctional, dite_eq_right hx]
+  constructor
+  · rw [norm_smul, he.1, mul_one, Complex.norm_real, Real.norm_of_nonneg (norm_nonneg _)]
+  · rw [smul_apply, smul_eq_mul, he.2, pow_two, Complex.ofReal_mul]
+    rfl
+
+/-- In a projective space the scaled normer is uniquely determined. -/
+theorem eq_scaledNormingFunctional (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) {x : E} {f : StrongDual ℂ E}
+    (hf : ‖f‖ = ‖x‖) (hfx : f x = ((‖x‖ ^ 2 : ℝ) : ℂ)) :
+    f = scaledNormingFunctional x := by
+  by_cases hx : x = 0
+  · have hf₀ : f = 0 := norm_eq_zero.mp (hf.trans (by simp [hx]))
+    simp [hx, hf₀, scaledNormingFunctional]
+  let u := ((‖x‖⁻¹ : ℝ) : ℂ) • x
+  have hu : ‖u‖ = 1 := by
+    simpa only [Metric.mem_sphere, dist_zero_right] using norm_inv_smul_mem_unitSphere hx
+  let a := ((‖x‖⁻¹ : ℝ) : ℂ)
+  let g := scaledNormingFunctional x
+  obtain ⟨hg, hgx⟩ := scaledNormingFunctional_spec x
+  have hn := norm_ne_zero_iff.mpr hx
+  have ha₀ : a ≠ 0 := Complex.ofReal_ne_zero.mpr (inv_ne_zero hn)
+  have normer (z : StrongDual ℂ E) (hz : ‖z‖ = ‖x‖)
+      (hzx : z x = ((‖x‖ ^ 2 : ℝ) : ℂ)) :
+      ‖a • z‖ = 1 ∧ (a • z) u = 1 := by
+    constructor
+    · change ‖((‖x‖⁻¹ : ℝ) : ℂ) • z‖ = 1
+      rw [norm_smul, Complex.norm_real, Real.norm_of_nonneg (inv_nonneg.mpr (norm_nonneg _)),
+        hz, inv_mul_cancel₀ hn]
+    · change ((‖x‖⁻¹ : ℝ) : ℂ) * z (((‖x‖⁻¹ : ℝ) : ℂ) • x) = 1
+      rw [map_smul, smul_eq_mul, hzx, ← Complex.ofReal_mul, ← Complex.ofReal_mul,
+        ← Complex.ofReal_one]
+      exact congrArg Complex.ofReal (by field_simp)
+  obtain ⟨hf₁, hfu⟩ := normer f hf hfx
+  obtain ⟨hg₁, hgu⟩ := normer g hg hgx
+  apply smul_right_injective (StrongDual ℂ E) ha₀
+  exact eq_of_norming_functional_projective h hP hu hf₁ hg₁ hfu hgu
+
+/-- Birkhoff–James orthogonality is vanishing against the scaled
+norming functional in a projective norm. -/
+theorem scaledNormingFunctional_apply_eq_zero_iff (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) (x y : E) :
+    scaledNormingFunctional x y = 0 ↔ BirkhoffJamesOrthogonal (𝕜 := ℂ) x y := by
+  by_cases hx : x = 0
+  · subst x
+    simp [scaledNormingFunctional, BirkhoffJamesOrthogonal]
+  let J := scaledNormingFunctional x
+  have hn : 0 < ‖x‖ := norm_pos_iff.mpr hx
+  obtain ⟨hJ, hJx⟩ := scaledNormingFunctional_spec x
+  constructor
+  · intro hz c
+    have he := J.le_opNorm (x - c • y)
+    rw [map_sub, map_smul, show J y = 0 from hz, smul_zero, sub_zero, hJx,
+      Complex.norm_real, Real.norm_of_nonneg (sq_nonneg _), hJ] at he
+    exact le_of_mul_le_mul_left (by simpa only [pow_two] using he) hn
+  · intro ho
+    let L := ℂ ∙ y
+    have hL : definition_1 L x = 0 := by
+      apply (definition_1_eq_iff h L x 0).mpr
+      refine ⟨L.zero_mem, fun z hz => ?_⟩
+      obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
+      simpa only [sub_zero] using ho c
+    obtain ⟨f, hf, hfx, hz⟩ := (exercise_75 h L hx).mp hL
+    have hfNorm : ‖(‖x‖ : ℂ) • f‖ = ‖x‖ := by
+      rw [norm_smul, Complex.norm_real, Real.norm_of_nonneg hn.le, hf, mul_one]
+    have hfEval : ((‖x‖ : ℂ) • f) x = ((‖x‖ ^ 2 : ℝ) : ℂ) := by
+      rw [smul_apply, smul_eq_mul, hfx, pow_two, Complex.ofReal_mul]
+    rw [← eq_scaledNormingFunctional h hP hfNorm hfEval]
+    simp only [smul_apply, hz y (Submodule.mem_span_singleton_self _),
+      smul_zero]
+
+/-- In a projective norm, the scaled norming map preserves span
+incidence. This is the projective-geometric step in the norm classification. -/
+theorem scaledNormingFunctional_mem_span_image (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) (S : Set E) {z : E} (hz : z ∈ Submodule.span ℂ S) :
+    scaledNormingFunctional z ∈ Submodule.span ℂ (scaledNormingFunctional '' S) := by
+  let : FiniteDimensional ℂ (StrongDual ℂ E) :=
+    (LinearMap.toContinuousLinearMap : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E).finiteDimensional
+  let J := scaledNormingFunctional (E := E)
+  let D := Submodule.span ℂ (J '' S)
+  have hsym := (isProjectiveNorm_iff_birkhoffJames_symmetric h).mp hP
+  have he (x y : E) : J x y = 0 ↔ J y x = 0 := by
+    rw [scaledNormingFunctional_apply_eq_zero_iff h hP,
+      scaledNormingFunctional_apply_eq_zero_iff h hP]
+    exact ⟨hsym x y, hsym y x⟩
+  have hDD : D.strongDualCoannihilator.strongDualAnnihilator = D := by
+    rw [Submodule.strongDualAnnihilator_strongDualCoannihilator,
+      D.closed_of_finiteDimensional.submodule_topologicalClosure_eq]
+  change J z ∈ D
+  rw [← hDD, Submodule.mem_strongDualAnnihilator]
+  intro v hv
+  have hvz : z ∈ (J v).ker := by
+    apply Submodule.span_le.mpr ?_ hz
+    intro x hx
+    apply (he x v).mp
+    exact (Submodule.mem_strongDualCoannihilator.mp hv) (J x)
+      (Submodule.subset_span ⟨x, hx, rfl⟩)
+  exact (he v z).mp hvz
+
+
+/-- The scaled norming map of a projective space is continuous. -/
+theorem continuous_scaledNormingFunctional (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) :
+    Continuous (scaledNormingFunctional (E := E)) := by
+  let D := StrongDual ℂ E
+  let : FiniteDimensional ℂ D :=
+    (LinearMap.toContinuousLinearMap : Module.Dual ℂ E ≃ₗ[ℂ] D).finiteDimensional
+  let : ProperSpace D := FiniteDimensional.proper ℂ D
+  apply continuous_iff_continuousAt.mpr
+  intro x
+  let R := ‖x‖ + 1
+  let A := Metric.closedBall (0 : E) R
+  let C := Metric.closedBall (0 : D) R
+  let : CompactSpace C := isCompact_iff_compactSpace.mp (isCompact_closedBall _ _)
+  let j : A → C := fun u => ⟨scaledNormingFunctional u.val, by
+    rw [Metric.mem_closedBall, dist_zero_right, (scaledNormingFunctional_spec u.val).1]
+    have hu := u.property
+    rwa [Metric.mem_closedBall, dist_zero_right] at hu⟩
+  have hgraph : j.graph =
+      {z : A × C | ‖z.2.val‖ = ‖z.1.val‖ ∧
+        z.2.val z.1.val = ((‖z.1.val‖ ^ 2 : ℝ) : ℂ)} := by
+    ext z
+    change j z.1 = z.2 ↔ ‖z.2.val‖ = ‖z.1.val‖ ∧
+      z.2.val z.1.val = ((‖z.1.val‖ ^ 2 : ℝ) : ℂ)
+    constructor
+    · intro he
+      have hu : scaledNormingFunctional z.1.val = z.2.val := congrArg Subtype.val he
+      simpa only [hu] using scaledNormingFunctional_spec z.1.val
+    · rintro ⟨hn, he⟩
+      apply Subtype.ext
+      exact (eq_scaledNormingFunctional h hP hn he).symm
+  have hj : Continuous j := by
+    apply continuous_of_isClosed_graph
+    rw [hgraph]
+    have hfst : Continuous (fun z : A × C => z.1.val) :=
+      continuous_subtype_val.comp continuous_fst
+    have hsnd : Continuous (fun z : A × C => z.2.val) :=
+      continuous_subtype_val.comp continuous_snd
+    exact (isClosed_eq hsnd.norm hfst.norm).inter
+      (isClosed_eq (hsnd.clm_apply hfst) (Complex.continuous_ofReal.comp (hfst.norm.pow 2)))
+  have hco : ContinuousOn (scaledNormingFunctional (E := E)) A :=
+    continuousOn_iff_continuous_domRestrict.mpr (continuous_subtype_val.comp hj)
+  have hA : A ∈ nhds x := Metric.closedBall_mem_nhds_of_mem (by
+    rw [Metric.mem_ball, dist_zero_right]
+    dsimp [R]
+    linarith)
+  exact hco.continuousAt hA
+
+/-- Scaling a vector conjugate-scales its norming functional. -/
+theorem scaledNormingFunctional_smul (h : essentiallyStrictlyConvex E)
+    (hP : IsProjectiveNorm (E := E)) (c : ℂ) (x : E) :
+    scaledNormingFunctional (c • x) = star c • scaledNormingFunctional x := by
+  symm
+  apply eq_scaledNormingFunctional h hP
+  · rw [norm_smul, norm_star, (scaledNormingFunctional_spec x).1, norm_smul]
+  · rw [smul_apply, map_smul, smul_eq_mul, smul_eq_mul,
+      (scaledNormingFunctional_spec x).2, ← mul_assoc, mul_comm (star c)]
+    change c * (starRingEnd ℂ) c * ((‖x‖ ^ 2 : ℝ) : ℂ) = _
+    rw [Complex.mul_conj', norm_smul, mul_pow, Complex.ofReal_mul]
+    simp only [Complex.ofReal_pow]
+
+end
+
+end NormingPolarityExercises
+
+section ProjectiveCoordinatesExercises
+
+section
+
+private abbrev Coordinates := Fin 3 → ℂ
+
+private theorem ratio_of_eq_smul_add_smul {w u v : Coordinates} {i j : Fin 3}
+    {a b : ℂ} (h : w = a • u + b • v) (hi : v i = 0) (hj : v j = 0)
+    (hw : w i ≠ 0) : w j / w i = u j / u i := by
+  have hwi : w i = a * u i := by
+    rw [h, Pi.add_apply, Pi.smul_apply, Pi.smul_apply, hi]
+    simp
+  have hwj : w j = a * u j := by
+    rw [h, Pi.add_apply, Pi.smul_apply, Pi.smul_apply, hj]
+    simp
+  have ha : a ≠ 0 := fun he => hw (by simp [hwi, he])
+  rw [hwi, hwj, mul_div_mul_left _ _ ha]
+
+private theorem ratio_nonzero_of_support {f : Coordinates → Coordinates}
+    (h : ∀ x i, f x i = 0 ↔ x i = 0) {x : Coordinates} {i j : Fin 3}
+    (hi : x i ≠ 0) (hj : x j ≠ 0) : f x j / f x i ≠ 0 :=
+  div_ne_zero (fun he => hj ((h x j).mp he)) (fun he => hi ((h x i).mp he))
+
+/-- The normalized coordinate ratio of a projective map preserving
+coordinate support and conjugate homogeneity is a field homomorphism.
+Three coordinates suffice for the incidence argument. -/
+theorem exists_ringHom_of_projective_coordinate_ratio
+    (f : (Fin 3 → ℂ) → Fin 3 → ℂ)
+    (hzero : ∀ x i, f x i = 0 ↔ x i = 0)
+    (hspan : ∀ u v : Fin 3 → ℂ, ∃ a b : ℂ, f (u + v) = a • f u + b • f v)
+    (hsmul : ∀ (c : ℂ) (x : Fin 3 → ℂ), f (c • x) = star c • f x) :
+    ∃ σ : ℂ →+* ℂ, ∀ t : ℂ,
+      f ![1, t, 0] 1 / f ![1, t, 0] 0 = (f ![1, 1, 0] 1 / f ![1, 1, 0] 0) * σ t := by
+  let A := fun t : ℂ => f ![1, t, 0] 1 / f ![1, t, 0] 0
+  let B := fun t : ℂ => f ![0, 1, t] 2 / f ![0, 1, t] 1
+  let C := fun t : ℂ => f ![1, 0, t] 2 / f ![1, 0, t] 0
+  have hA₀ : A 0 = 0 := by
+    dsimp only [A]
+    rw [(hzero _ _).mpr rfl, zero_div]
+  have hC₀ : C 0 = 0 := by
+    dsimp only [C]
+    rw [(hzero _ _).mpr rfl, zero_div]
+  have hA₁ : A 1 ≠ 0 :=
+    ratio_nonzero_of_support hzero (by norm_num) (by norm_num)
+  have hB₁ : B 1 ≠ 0 :=
+    ratio_nonzero_of_support hzero (by norm_num) (by norm_num)
+  have hC₁ : C 1 ≠ 0 :=
+    ratio_nonzero_of_support hzero (by norm_num) (by norm_num)
+  have hpair01 (s t : ℂ) : f ![1, s, t] 1 / f ![1, s, t] 0 = A s := by
+    obtain ⟨a, b, he⟩ := hspan ![1, s, 0] ![0, 0, t]
+    have hsum : ![1, s, 0] + ![0, 0, t] = ![1, s, t] := by
+      ext i
+      fin_cases i <;> simp
+    rw [hsum] at he
+    exact ratio_of_eq_smul_add_smul he ((hzero _ _).mpr rfl) ((hzero _ _).mpr rfl)
+      (fun h => one_ne_zero ((hzero _ _).mp h))
+  have hpair02 (s t : ℂ) : f ![1, s, t] 2 / f ![1, s, t] 0 = C t := by
+    obtain ⟨a, b, he⟩ := hspan ![1, 0, t] ![0, s, 0]
+    have hsum : ![1, 0, t] + ![0, s, 0] = ![1, s, t] := by
+      ext i
+      fin_cases i <;> simp
+    rw [hsum] at he
+    exact ratio_of_eq_smul_add_smul he ((hzero _ _).mpr rfl) ((hzero _ _).mpr rfl)
+      (fun h => one_ne_zero ((hzero _ _).mp h))
+  have hpair12 (s t : ℂ) (hs : s ≠ 0) :
+      f ![1, s, t] 2 / f ![1, s, t] 1 = B (t / s) := by
+    obtain ⟨a, b, he⟩ := hspan ![0, s, t] ![1, 0, 0]
+    have hsum : ![0, s, t] + ![1, 0, 0] = ![1, s, t] := by
+      ext i
+      fin_cases i <;> simp
+    rw [hsum] at he
+    have hd := ratio_of_eq_smul_add_smul (i := 1) (j := 2) he
+      ((hzero _ _).mpr rfl) ((hzero _ _).mpr rfl) (fun h => hs ((hzero _ _).mp h))
+    have hsc : s • ![0, 1, t / s] = ![0, s, t] := by
+      ext i
+      fin_cases i
+      · simp
+      · simp
+      · simp [mul_div_cancel₀, hs]
+    rw [← hsc, hsmul, Pi.smul_apply, Pi.smul_apply, smul_eq_mul, smul_eq_mul,
+      mul_div_mul_left _ _ (star_ne_zero.mpr hs)] at hd
+    exact hd
+  have hcombine (s t : ℂ) (hs : s ≠ 0) : C t = A s * B (t / s) := by
+    rw [← hpair01 s t, ← hpair02 s t, ← hpair12 s t hs]
+    have hn : f ![1, s, t] 1 ≠ 0 := fun h => hs ((hzero _ _).mp h)
+    have hm : f ![1, s, t] 0 ≠ 0 := fun h => one_ne_zero ((hzero _ _).mp h)
+    field_simp
+  have hCB (t : ℂ) : C t = A 1 * B t := by
+    simpa only [div_one] using hcombine 1 t one_ne_zero
+  have hCA (t : ℂ) : C t = A t * B 1 := by
+    by_cases ht : t = 0
+    · simp [ht, hA₀, hC₀]
+    · simpa only [div_self ht] using hcombine t t ht
+  have hscale (s t : ℂ) : A (s * t) * A 1 = A s * A t := by
+    by_cases hs : s = 0
+    · simp [hs, hA₀]
+    · have hcancel : s * t / s = t := by rw [mul_comm s t, mul_div_cancel_right₀ _ hs]
+      have hd : C (s * t) = A s * B t := by
+        simpa only [hcancel] using hcombine s (s * t) hs
+      apply mul_right_cancel₀ hB₁
+      calc
+        _ = C (s * t) * A 1 := by rw [hCA]; ring
+        _ = A s * (A 1 * B t) := by rw [hd]; ring
+        _ = _ := by rw [← hCB, hCA, mul_assoc]
+  have hadd (s t : ℂ) : A (s + t) = A s + A t := by
+    let u := f ![1, s, 0]
+    let v := f ![0, t, 1]
+    let w := f ![1, s + t, 1]
+    let z := f ![1, t, 1]
+    have huv : ![1, s, 0] + ![0, t, 1] = ![1, s + t, 1] := by
+      ext i
+      fin_cases i <;> simp
+    obtain ⟨a, b, hab⟩ := hspan ![1, s, 0] ![0, t, 1]
+    rw [huv] at hab
+    change w = a • u + b • v at hab
+    have hzu : u 2 = 0 := (hzero _ _).mpr rfl
+    have hzv : v 0 = 0 := (hzero _ _).mpr rfl
+    have hw₀ : w 0 = a * u 0 := by simp [hab, hzv]
+    have hw₁ : w 1 = a * u 1 + b * v 1 := by simp [hab]
+    have hw₂ : w 2 = b * v 2 := by simp [hab, hzu]
+    have hden_u : u 0 ≠ 0 := fun h => one_ne_zero ((hzero _ _).mp h)
+    have hden_w : w 0 ≠ 0 := fun h => one_ne_zero ((hzero _ _).mp h)
+    have hden_z : z 0 ≠ 0 := fun h => one_ne_zero ((hzero _ _).mp h)
+    have hden_z₂ : z 2 ≠ 0 := fun h => one_ne_zero ((hzero _ _).mp h)
+    have hden_v₂ : v 2 ≠ 0 := fun h => one_ne_zero ((hzero _ _).mp h)
+    have hu : u 1 = A s * u 0 := by
+      change u 1 = (u 1 / u 0) * u 0
+      rw [div_mul_cancel₀ _ hden_u]
+    have hwc : w 2 = C 1 * w 0 := by
+      apply (div_eq_iff hden_w).mp
+      exact hpair02 (s + t) 1
+    obtain ⟨c, d, hcd⟩ := hspan ![0, t, 1] ![1, 0, 0]
+    have hzsum : ![0, t, 1] + ![1, 0, 0] = ![1, t, 1] := by
+      ext i
+      fin_cases i <;> simp
+    rw [hzsum] at hcd
+    have hzv' : z 1 / z 2 = v 1 / v 2 :=
+      ratio_of_eq_smul_add_smul (i := 2) (j := 1) hcd
+        ((hzero _ _).mpr rfl) ((hzero _ _).mpr rfl) hden_z₂
+    have hz₁ : z 1 = A t * z 0 := (div_eq_iff hden_z).mp (hpair01 t 1)
+    have hz₂ : z 2 = C 1 * z 0 := (div_eq_iff hden_z).mp (hpair02 t 1)
+    have hvr : v 1 / v 2 = A t / C 1 := by
+      rw [← hzv', hz₁, hz₂, mul_div_mul_right _ _ hden_z]
+    have hvc : C 1 * v 1 = A t * v 2 := by
+      have he := (div_eq_div_iff hden_v₂ hC₁).mp hvr
+      linear_combination he
+    have hsum : w 1 = (A s + A t) * w 0 := by
+      apply mul_left_cancel₀ hC₁
+      calc
+        _ = C 1 * (a * u 1 + b * v 1) := by rw [← hw₁]
+        _ = C 1 * (A s * w 0) + b * (C 1 * v 1) := by rw [hu, hw₀]; ring
+        _ = _ := by rw [hvc, ← mul_assoc b, mul_comm b, mul_assoc, ← hw₂, hwc]; ring
+    rw [← hpair01 (s + t) 1]
+    exact (div_eq_iff hden_w).mpr hsum
+  let σ : ℂ →+* ℂ :=
+    { toFun := fun t => A t / A 1
+      map_one' := div_self hA₁
+      map_zero' := by rw [hA₀, zero_div]
+      map_add' := fun s t => by rw [hadd, add_div]
+      map_mul' := fun s t => by
+        change A (s * t) / A 1 = A s / A 1 * (A t / A 1)
+        field_simp
+        exact hscale s t }
+  refine ⟨σ, fun t => ?_⟩
+  change A t = A 1 * (A t / A 1)
+  rw [mul_div_cancel₀ _ hA₁]
+
+
+/-- A continuous field endomorphism of the complex numbers is the
+identity or complex conjugation. -/
+theorem continuous_complex_ringHom_eq_id_or_star (σ : ℂ →+* ℂ)
+    (hσ : Continuous σ) :
+    (∀ z : ℂ, σ z = z) ∨ (∀ z : ℂ, σ z = star z) := by
+  have hR : (fun r : ℝ => σ (r : ℂ)) = fun r : ℝ => (r : ℂ) := by
+    apply (Rat.denseRange_cast (𝕜 := ℝ)).equalizer (hσ.comp Complex.continuous_ofReal)
+      Complex.continuous_ofReal
+    funext r
+    simp only [Function.comp_apply, Complex.ofReal_ratCast, map_ratCast]
+  have hr (r : ℝ) : σ (r : ℂ) = (r : ℂ) := congrFun hR r
+  have hsq : σ Complex.I ^ 2 = Complex.I ^ 2 := by
+    rw [← map_pow, Complex.I_sq, map_neg, map_one]
+  have hI := sq_eq_sq_iff_eq_or_eq_neg.mp hsq
+  have hz (z : ℂ) : σ z = (z.re : ℂ) + (z.im : ℂ) * σ Complex.I := by
+    have h := congrArg σ (Complex.re_add_im z)
+    rw [map_add, map_mul, hr, hr] at h
+    exact h.symm
+  rcases hI with hI | hI
+  · exact Or.inl fun z => by rw [hz, hI, Complex.re_add_im]
+  · refine Or.inr fun z => ?_
+    rw [hz, hI]
+    apply Complex.ext
+    · simp [Complex.mul_re]
+    · simp [Complex.mul_im]
+
+end
+
+end ProjectiveCoordinatesExercises
+
+section ProjectivePairingExercises
+
+open Set Finset
+open scoped Pointwise
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+
+private theorem normingFunctional_coordinate_of_pairwise_orthogonal
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (e : Fin 3 → E) (he : ∀ i, ‖e i‖ = 1)
+    (ho : ∀ i j, i ≠ j → BirkhoffJamesOrthogonal (𝕜 := ℂ) (e i) (e j)) :
+    ∃ a : ℂ, a ≠ 0 ∧ ∀ t : ℂ,
+      scaledNormingFunctional (e 0 + t • e 1) (e 1) =
+        a * star t * scaledNormingFunctional (e 0 + t • e 1) (e 0) := by
+  let J := scaledNormingFunctional (E := E)
+  let v := fun x : Fin 3 → ℂ => ∑ i, x i • e i
+  let f := fun (x : Fin 3 → ℂ) (i : Fin 3) => J (v x) (e i)
+  have hs := (isProjectiveNorm_iff_birkhoffJames_symmetric h).mp hP
+  have hsym (x y : E) : J x y = 0 ↔ J y x = 0 := by
+    rw [scaledNormingFunctional_apply_eq_zero_iff h hP,
+      scaledNormingFunctional_apply_eq_zero_iff h hP]
+    exact ⟨hs x y, hs y x⟩
+  have hdiag (i j : Fin 3) : J (e i) (e j) = if j = i then 1 else 0 := by
+    by_cases hij : j = i
+    · subst j
+      rw [ite_eq_left rfl, (scaledNormingFunctional_spec (e i)).2, he, one_pow, Complex.ofReal_one]
+    · rw [ite_eq_right hij]
+      exact (scaledNormingFunctional_apply_eq_zero_iff h hP _ _).mpr
+        (ho _ _ (Ne.symm hij))
+  have hproj (x : Fin 3 → ℂ) (i : Fin 3) : J (e i) (v x) = x i := by
+    change J (e i) (∑ j, x j • e j) = _
+    rw [map_sum]
+    simp only [map_smul, smul_eq_mul, hdiag]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro j _ h
+      simp [h]
+    · simp
+  have hzero (x : Fin 3 → ℂ) (i : Fin 3) : f x i = 0 ↔ x i = 0 := by
+    change J (v x) (e i) = 0 ↔ _
+    rw [hsym, hproj]
+  have hv_add (x y : Fin 3 → ℂ) : v (x + y) = v x + v y := by
+    simp only [v, Pi.add_apply, add_smul, Finset.sum_add_distrib]
+  have hspan (x y : Fin 3 → ℂ) : ∃ a b : ℂ, f (x + y) = a • f x + b • f y := by
+    have hm : v (x + y) ∈ Submodule.span ℂ ({v x, v y} : Set E) := by
+      rw [hv_add]
+      exact Submodule.add_mem _ (Submodule.subset_span (by simp)) (Submodule.subset_span (by simp))
+    have hmap := scaledNormingFunctional_mem_span_image h hP {v x, v y} hm
+    rw [Set.image_insert_eq, Set.image_singleton] at hmap
+    obtain ⟨a, b, hab⟩ := Submodule.mem_span_pair.mp hmap
+    exact ⟨a, b, funext fun i => congrArg (fun z : StrongDual ℂ E => z (e i)) hab.symm⟩
+  have hsmul (c : ℂ) (x : Fin 3 → ℂ) : f (c • x) = star c • f x := by
+    have hv : v (c • x) = c • v x := by
+      simp only [v, Pi.smul_apply, smul_eq_mul, Finset.smul_sum, mul_smul]
+    funext i
+    change J (v (c • x)) (e i) = (star c • J (v x)) (e i)
+    rw [hv]
+    exact congrArg (fun z : StrongDual ℂ E => z (e i))
+      (scaledNormingFunctional_smul h hP c (v x))
+  obtain ⟨σ, hσ⟩ := exists_ringHom_of_projective_coordinate_ratio f hzero hspan hsmul
+  let A := fun t : ℂ => f ![1, t, 0] 1 / f ![1, t, 0] 0
+  let a := A 1
+  have ha : a ≠ 0 := div_ne_zero
+    (fun h => one_ne_zero ((hzero _ _).mp h)) (fun h => one_ne_zero ((hzero _ _).mp h))
+  have hvCont : Continuous v := continuous_finsetSum _ fun i _ =>
+    (continuous_apply i).smul continuous_const
+  have hfc (i : Fin 3) : Continuous (fun t : ℂ => f ![1, t, 0] i) := by
+    have hc : Continuous (fun t : ℂ => (![1, t, 0] : Fin 3 → ℂ)) := by
+      apply continuous_pi
+      intro j
+      fin_cases j
+      · exact continuous_const
+      · exact continuous_id
+      · exact continuous_const
+    exact ((continuous_scaledNormingFunctional h hP).comp (hvCont.comp hc)).clm_apply
+      continuous_const
+  have hA : Continuous A := (hfc 1).div (hfc 0)
+    (fun t ht => one_ne_zero ((hzero _ _).mp ht))
+  have hσc : Continuous σ := by
+    have he : (σ : ℂ → ℂ) = fun t => A t / a := by
+      funext t
+      apply (eq_div_iff ha).mpr
+      rw [mul_comm]
+      exact (hσ t).symm
+    rw [he]
+    exact hA.div_const _
+  let u := fun t : ℂ => e 0 + t • e 1
+  have hvu (t : ℂ) : v ![1, t, 0] = u t := by
+    simp [v, u, Fin.sum_univ_three]
+  have hcoeff (t : ℂ) : J (u t) (e 1) = a * σ t * J (u t) (e 0) := by
+    have he := (div_eq_iff (fun ht : f ![1, t, 0] 0 = 0 => one_ne_zero
+      ((hzero _ _).mp ht))).mp (hσ t)
+    change J (v ![1, t, 0]) (e 1) = a * σ t * J (v ![1, t, 0]) (e 0) at he
+    rw [hvu] at he
+    exact he
+  have hu₀ (t : ℂ) : u t ≠ 0 := by
+    intro h
+    have he := hproj ![1, t, 0] 0
+    rw [hvu, h, map_zero] at he
+    exact zero_ne_one he
+  rcases continuous_complex_ringHom_eq_id_or_star σ hσc with hσi | hσa
+  · obtain ⟨t, ht⟩ := IsAlgClosed.exists_pow_nat_eq (-a⁻¹) (n := 2) (by norm_num)
+    have hE : J (u t) (u t) = 0 := by
+      conv_lhs => arg 2; change e 0 + t • e 1
+      rw [map_add, map_smul, smul_eq_mul, hcoeff, hσi]
+      have hfact : (1 : ℂ) + t * (a * t) = 0 := by
+        rw [show t * (a * t) = a * t ^ 2 by ring, ht, mul_neg, mul_inv_cancel₀ ha]
+        ring
+      linear_combination J (u t) (e 0) * hfact
+    have hz := (scaledNormingFunctional_spec (u t)).2
+    rw [show scaledNormingFunctional (u t) (u t) = 0 from hE] at hz
+    exact ((Complex.ofReal_ne_zero.mpr (pow_ne_zero _ (norm_ne_zero_iff.mpr (hu₀ t))))
+      hz.symm).elim
+  · exact ⟨a, ha, fun t => by simpa only [hσa] using hcoeff t⟩
+
+
+/-- On two members of a three-vector mutual orthogonal frame,
+the ratio of normalized supporting functionals is the Hermitian
+coordinate ratio with positive real weights. -/
+theorem projective_pairing_positive_weight
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (e : Fin 3 → E) (he : ∀ i, ‖e i‖ = 1)
+    (ho : ∀ i j, i ≠ j → BirkhoffJamesOrthogonal (𝕜 := ℂ) (e i) (e j)) :
+    ∃ a : ℝ, 0 < a ∧ ∀ t : ℂ,
+      scaledNormingFunctional (e 0 + t • e 1) (e 1) =
+        (a : ℂ) * star t * scaledNormingFunctional (e 0 + t • e 1) (e 0) := by
+  let J := scaledNormingFunctional (E := E)
+  obtain ⟨a, ha, hcoeff⟩ := normingFunctional_coordinate_of_pairwise_orthogonal h hP e he ho
+  let u : ℂ → E := fun t => e 0 + t • e 1
+  have hs := (isProjectiveNorm_iff_birkhoffJames_symmetric h).mp hP
+  have hsym (x y : E) : J x y = 0 ↔ J y x = 0 := by
+    rw [scaledNormingFunctional_apply_eq_zero_iff h hP,
+      scaledNormingFunctional_apply_eq_zero_iff h hP]
+    exact ⟨hs x y, hs y x⟩
+  have hzero : J (e 0) (e 1) = 0 :=
+    (scaledNormingFunctional_apply_eq_zero_iff h hP _ _).mpr (ho 0 1 (by decide))
+  have hone : J (e 0) (e 0) = 1 := by
+    rw [(scaledNormingFunctional_spec (e 0)).2, he, one_pow, Complex.ofReal_one]
+  have hrec (t : ℂ) : J (e 0) (u t) = 1 := by
+    rw [show u t = e 0 + t • e 1 from rfl, map_add, map_smul, hzero, smul_zero,
+      add_zero, hone]
+  have hU (t : ℂ) : u t ≠ 0 := fun hz => one_ne_zero (by
+    simpa only [hz, map_zero] using (hrec t).symm)
+  have hJ₀ (t : ℂ) : J (u t) (e 0) ≠ 0 := fun hz =>
+    one_ne_zero ((hrec t).symm.trans ((hsym _ _).mp hz))
+  have hEval (s t : ℂ) : J (u s) (u t) =
+      (1 + t * (a * star s)) * J (u s) (e 0) := by
+    have hc : J (u s) (e 1) = a * star s * J (u s) (e 0) := hcoeff s
+    rw [show u t = e 0 + t • e 1 from rfl, map_add, map_smul, smul_eq_mul, hc]
+    ring
+  have hfac (t : ℂ) : 1 + t * (a * star t) ≠ 0 := by
+    intro hz
+    have hEq := hEval t t
+    have hnorm := (scaledNormingFunctional_spec (u t)).2
+    rw [hz, zero_mul] at hEq
+    rw [hEq] at hnorm
+    exact (Complex.ofReal_ne_zero.mpr (pow_ne_zero _ (norm_ne_zero_iff.mpr (hU t)))) hnorm.symm
+  let v := -a⁻¹
+  have hva : v * a = -1 := by
+    dsimp only [v]
+    rw [neg_mul, inv_mul_cancel₀ ha]
+  have hv : v ≠ 0 := neg_ne_zero.mpr (inv_ne_zero ha)
+  have h₁ : J (u 1) (u v) = 0 := by
+    rw [hEval, star_one, mul_one, hva, add_neg_cancel, zero_mul]
+  have h₂ := (hsym _ _).mp h₁
+  rw [hEval, one_mul] at h₂
+  have h₃ := (mul_eq_zero.mp h₂).resolve_right (hJ₀ v)
+  have hstar : star a * star v = -1 := by
+    rw [← star_mul, hva, star_neg, star_one]
+  have hreal : a = star a := by
+    refine mul_right_cancel₀ (star_ne_zero.mpr hv) ?_
+    rw [hstar]
+    linear_combination h₃
+  have haR : a = (a.re : ℂ) := by
+    have hi := congrArg Complex.im hreal
+    change a.im = -a.im at hi
+    apply Complex.ext
+    · exact (Complex.ofReal_re _).symm
+    · rw [Complex.ofReal_im]
+      linarith
+  have hpos : 0 < a.re := by
+    by_contra! hn
+    have hr : a.re ≠ 0 := fun he => ha (haR.trans (by simp [he]))
+    have hlt := lt_of_le_of_ne hn hr
+    let t := Real.sqrt (-(a.re)⁻¹)
+    have ht : t ^ 2 = -(a.re)⁻¹ := Real.sq_sqrt (neg_nonneg.mpr (inv_nonpos.mpr hn))
+    have hq : 1 + t * (a.re * t) = 0 := by
+      have he' : t * (a.re * t) = a.re * t ^ 2 := by ring
+      rw [he', ht, mul_neg, mul_inv_cancel₀ hr]
+      ring
+    apply hfac (t : ℂ)
+    rw [show star (t : ℂ) = (t : ℂ) from Complex.conj_ofReal t, haR]
+    exact_mod_cast hq
+  exact ⟨a.re, hpos, fun t => by simpa only [← haR] using hcoeff t⟩
+
+/-- In a coordinate plane of a three-vector mutual orthogonal frame,
+the norming functional is a positive scalar multiple of the weighted
+Hermitian functional on that plane. -/
+theorem projective_pairing_weighted_hermitian
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (e : Fin 3 → E) (he : ∀ i, ‖e i‖ = 1)
+    (ho : ∀ i j, i ≠ j → BirkhoffJamesOrthogonal (𝕜 := ℂ) (e i) (e j)) :
+    ∃ a : ℝ, 0 < a ∧ ∀ s t : ℂ, ∃ b : ℝ, 0 < b ∧ ∀ x y : ℂ,
+      scaledNormingFunctional (s • e 0 + t • e 1) (x • e 0 + y • e 1) =
+        (b : ℂ) * (star s * x + (a : ℂ) * star t * y) := by
+  let J := scaledNormingFunctional (E := E)
+  obtain ⟨a, ha, hcoe⟩ := projective_pairing_positive_weight h hP e he ho
+  refine ⟨a, ha, fun s t => ?_⟩
+  have hunit (i : Fin 3) : J (e i) (e i) = 1 := by
+    rw [(scaledNormingFunctional_spec (e i)).2, he, one_pow, Complex.ofReal_one]
+  have ho₁ : J (e 1) (e 0) = 0 :=
+    (scaledNormingFunctional_apply_eq_zero_iff h hP _ _).mpr (ho 1 0 (by decide))
+  have ho₀ : J (e 0) (e 1) = 0 :=
+    (scaledNormingFunctional_apply_eq_zero_iff h hP _ _).mpr (ho 0 1 (by decide))
+  by_cases hzero : s = 0
+  · subst s
+    refine ⟨a⁻¹, inv_pos.mpr ha, fun x y => ?_⟩
+    rw [zero_smul, zero_add, scaledNormingFunctional_smul h hP, smul_apply,
+      map_add, map_smul, map_smul, ho₁, hunit]
+    simp only [smul_eq_mul, mul_one, zero_add, star_zero, zero_mul, mul_zero,
+      Complex.ofReal_inv]
+    rw [← mul_assoc, ← mul_assoc, inv_mul_cancel₀ (Complex.ofReal_ne_zero.mpr ha.ne'), one_mul]
+  let u := e 0 + (t / s) • e 1
+  have hu : s • u = s • e 0 + t • e 1 := by
+    rw [show u = e 0 + (t / s) • e 1 from rfl, smul_add, smul_smul, mul_comm s,
+      div_mul_cancel₀ _ hzero]
+  have hux : J u (e 1) = (a : ℂ) * star (t / s) * J u (e 0) := hcoe (t / s)
+  let m := 1 + a * ‖t / s‖ ^ 2
+  have hm : 0 < m := by dsimp [m]; positivity
+  have hnorm : J u u = ((‖u‖ ^ 2 : ℝ) : ℂ) := (scaledNormingFunctional_spec u).2
+  have heval : J u u = (m : ℂ) * J u (e 0) := by
+    conv_lhs => arg 2; change e 0 + (t / s) • e 1
+    rw [map_add, map_smul, smul_eq_mul, hux]
+    have heq : 1 + (t / s) * ((a : ℂ) * star (t / s)) = (m : ℂ) := by
+      rw [mul_left_comm]
+      change 1 + (a : ℂ) * ((t / s) * (starRingEnd ℂ) (t / s)) = _
+      rw [Complex.mul_conj']
+      dsimp only [m]
+      push_cast
+      ring
+    rw [← heq]
+    ring
+  let b := ‖u‖ ^ 2 / m
+  have hu' : u ≠ 0 := fun hz => one_ne_zero (by
+    have hEval : J (e 0) u = 1 := by
+      rw [show u = e 0 + (t / s) • e 1 from rfl, map_add, map_smul, ho₀, smul_zero,
+        add_zero, hunit]
+    simpa only [hz, map_zero] using hEval.symm)
+  have hb : 0 < b := div_pos (sq_pos_of_ne_zero (norm_ne_zero_iff.mpr hu')) hm
+  have hB : J u (e 0) = (b : ℂ) := by
+    change J u (e 0) = ((‖u‖ ^ 2 / m : ℝ) : ℂ)
+    rw [Complex.ofReal_div]
+    apply (eq_div_iff (Complex.ofReal_ne_zero.mpr hm.ne')).mpr
+    rw [mul_comm, ← heval, hnorm]
+  refine ⟨b, hb, fun x y => ?_⟩
+  have hstar : star s * star (t / s) = star t := by
+    rw [← star_mul (t / s) s, div_mul_cancel₀ _ hzero]
+  rw [← hu, scaledNormingFunctional_smul h hP, smul_apply, map_add, map_smul, map_smul,
+    smul_eq_mul, smul_eq_mul, smul_eq_mul, hux, hB]
+  linear_combination ((b : ℂ) * (a : ℂ) * y) * hstar
+
+end
+
+end ProjectivePairingExercises
+
+section ProjectiveNormFormulaExercises
+
+open Set Filter
+open scoped Topology Pointwise
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+
+omit [FiniteDimensional ℂ E] in
+private theorem norm_sq_support (x y : E) :
+    ‖x‖ ^ 2 + 2 * ((scaledNormingFunctional x) (y - x)).re ≤ ‖y‖ ^ 2 := by
+  obtain ⟨hn, he⟩ := scaledNormingFunctional_spec x
+  have hle := ((Complex.re_le_norm _).trans ((scaledNormingFunctional x).le_opNorm y))
+  rw [hn] at hle
+  rw [map_sub, he, Complex.sub_re, Complex.ofReal_re]
+  nlinarith [sq_nonneg (‖y‖ - ‖x‖)]
+
+/-- The square of a projective norm has directional derivative given
+by twice the real part of its scaled norming functional. -/
+theorem hasDerivAt_normSq_along_projective_line
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (x y : E) (t₀ : ℝ) :
+    HasDerivAt (fun t : ℝ => ‖x + t • y‖ ^ 2)
+      (2 * ((scaledNormingFunctional (x + t₀ • y)) y).re) t₀ := by
+  let v := fun t : ℝ => x + t • y
+  let f := fun t : ℝ => ‖v t‖ ^ 2
+  let g := fun t : ℝ => 2 * ((scaledNormingFunctional (v t)) y).re
+  change HasDerivAt f (g t₀) t₀
+  have hg : Continuous g := by
+    have hv : Continuous v := continuous_const.add (continuous_id.smul continuous_const)
+    have hc := ((continuous_scaledNormingFunctional h hP).comp hv).clm_apply
+      (continuous_const (y := y))
+    exact (Complex.continuous_re.comp hc).const_mul 2
+  have hsg (s t : ℝ) : f s + (t - s) * g s ≤ f t := by
+    have he := norm_sq_support (v s) (v t)
+    have hsub : v t - v s = (t - s) • y := by
+      dsimp only [v]
+      rw [add_sub_add_left_eq_sub, sub_smul]
+    rw [hsub, ← IsScalarTower.algebraMap_smul ℂ, map_smul, smul_eq_mul] at he
+    change ‖v s‖ ^ 2 + 2 * (((t - s : ℝ) : ℂ) *
+      (scaledNormingFunctional (v s)) y).re ≤ ‖v t‖ ^ 2 at he
+    rw [Complex.re_ofReal_mul] at he
+    change ‖v s‖ ^ 2 + (t - s) * (2 * ((scaledNormingFunctional (v s)) y).re) ≤ _
+    linarith
+  apply hasDerivAt_iff_tendsto_slope_left_right.mpr
+  constructor
+  · apply tendsto_of_tendsto_of_tendsto_of_le_of_le'
+      ((hg.continuousAt (x := t₀)).continuousWithinAt) tendsto_const_nhds
+    · filter_upwards [self_mem_nhdsWithin] with t ht
+      have ht' : t < t₀ := ht
+      rw [slope_comm f t₀ t, slope_def_field, le_div_iff₀ (sub_pos.mpr ht')]
+      nlinarith [hsg t t₀]
+    · filter_upwards [self_mem_nhdsWithin] with t ht
+      have ht' : t < t₀ := ht
+      rw [slope_comm f t₀ t, slope_def_field, div_le_iff₀ (sub_pos.mpr ht')]
+      nlinarith [hsg t₀ t]
+  · apply tendsto_of_tendsto_of_tendsto_of_le_of_le'
+      tendsto_const_nhds ((hg.continuousAt (x := t₀)).continuousWithinAt)
+    · filter_upwards [self_mem_nhdsWithin] with t ht
+      have ht' : t₀ < t := ht
+      rw [slope_def_field, le_div_iff₀ (sub_pos.mpr ht')]
+      nlinarith [hsg t₀ t]
+    · filter_upwards [self_mem_nhdsWithin] with t ht
+      have ht' : t₀ < t := ht
+      rw [slope_def_field, div_le_iff₀ (sub_pos.mpr ht')]
+      nlinarith [hsg t t₀]
+
+/-- The weighted Hermitian coordinates of the norming map in a
+three-vector mutually orthogonal frame force the Euclidean norm on the
+first two coordinates. -/
+theorem norm_sq_projective_coordinate_pair
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (e : Fin 3 → E) (he : ∀ i, ‖e i‖ = 1)
+    (ho : ∀ i j, i ≠ j → BirkhoffJamesOrthogonal (𝕜 := ℂ) (e i) (e j))
+    (s t : ℂ) : ‖s • e 0 + t • e 1‖ ^ 2 = ‖s‖ ^ 2 + ‖t‖ ^ 2 := by
+  obtain ⟨a, ha, hJ⟩ := projective_pairing_weighted_hermitian h hP e he ho
+  have hpair (c : ℂ) : star c * c = ((‖c‖ ^ 2 : ℝ) : ℂ) := by
+    rw [mul_comm]
+    change c * (starRingEnd ℂ) c = _
+    simpa only [Complex.ofReal_pow] using Complex.mul_conj' c
+  have hmain (s t : ℂ) (hs : s ≠ 0) : ‖s • e 0 + t • e 1‖ ^ 2 = ‖s‖ ^ 2 + a * ‖t‖ ^ 2 := by
+    let v := fun r : ℝ => s • e 0 + r • (t • e 1)
+    let f := fun r : ℝ => ‖v r‖ ^ 2
+    let g := fun r : ℝ => ‖s‖ ^ 2 + a * r ^ 2 * ‖t‖ ^ 2
+    have hgPos (r : ℝ) : 0 < g r := by
+      dsimp only [g]
+      positivity
+    have hderiv (r : ℝ) : HasDerivAt (fun u => f u / g u) 0 r := by
+      obtain ⟨b, hb, hB⟩ := hJ s ((r : ℂ) * t)
+      have hVR : v r = s • e 0 + ((r : ℂ) * t) • e 1 := by
+        dsimp [v]
+        rw [← IsScalarTower.algebraMap_smul ℂ r, smul_smul]
+        rfl
+      have hvf : f r = b * g r := by
+        have H := hB s ((r : ℂ) * t)
+        rw [← hVR, (scaledNormingFunctional_spec _).2, hpair, mul_assoc (a : ℂ), hpair,
+          norm_mul, Complex.norm_real, Real.norm_eq_abs, mul_pow, sq_abs] at H
+        have H' := congrArg Complex.re H
+        simp only [Complex.ofReal_re, ← Complex.ofReal_mul, ← Complex.ofReal_add] at H'
+        change ‖v r‖ ^ 2 = b * g r
+        dsimp only [g]
+        linarith
+      have hJderiv := hB 0 t
+      rw [← hVR, zero_smul, zero_add, mul_zero, zero_add, star_mul] at hJderiv
+      have hcoef : (scaledNormingFunctional (v r)) (t • e 1) =
+          ((b * a * r * ‖t‖ ^ 2 : ℝ) : ℂ) := by
+        rw [hJderiv, show star (r : ℂ) = (r : ℂ) from Complex.conj_ofReal r]
+        calc
+          _ = (b : ℂ) * (a : ℂ) * (r : ℂ) * (star t * t) := by ring
+          _ = _ := by
+            rw [hpair]
+            push_cast
+            ring
+      have hfd : HasDerivAt f (2 * (b * a * r * ‖t‖ ^ 2)) r := by
+        have hd := hasDerivAt_normSq_along_projective_line h hP (s • e 0) (t • e 1) r
+        change HasDerivAt f (2 * ((scaledNormingFunctional (v r)) (t • e 1)).re) r at hd
+        rw [hcoef, Complex.ofReal_re] at hd
+        exact hd
+      have hgd : HasDerivAt g (2 * a * r * ‖t‖ ^ 2) r := by
+        have hd := ((hasDerivAt_pow 2 r).const_mul a).mul_const (‖t‖ ^ 2)
+        convert hd.const_add (‖s‖ ^ 2) using 1
+        ring
+      have hd := hfd.div hgd (hgPos r).ne'
+      convert hd using 1
+      rw [hvf]
+      ring
+    have hconst := is_const_of_deriv_eq_zero (fun r => (hderiv r).differentiableAt)
+      (fun r => (hderiv r).deriv) 1 0
+    have hnorm₀ : v 0 = s • e 0 := by simp [v]
+    have hf₀ : f 0 = ‖s‖ ^ 2 := by
+      change ‖v 0‖ ^ 2 = _
+      rw [hnorm₀, norm_smul, he, mul_one]
+    have hg₀ : g 0 = ‖s‖ ^ 2 := by simp [g]
+    rw [hf₀, hg₀, div_self (pow_ne_zero 2 (norm_ne_zero_iff.mpr hs))] at hconst
+    have heq := (div_eq_one_iff_eq (hgPos 1).ne').mp hconst
+    simpa only [f, g, v, one_smul, one_pow, mul_one] using heq
+  have ha₁ : a = 1 := by
+    let p := fun r : ℝ => ‖(r : ℂ) • e 0 + e 1‖ ^ 2
+    have hp : Continuous p := (((Complex.continuous_ofReal.smul continuous_const).add
+      continuous_const).norm.pow 2)
+    have h₁ : Tendsto p (𝓝[≠] (0 : ℝ)) (𝓝 (1 : ℝ)) := by
+      have hpt : p 0 = 1 := by simp [p, he]
+      have ht : Tendsto p (𝓝[≠] (0 : ℝ)) (𝓝 (p 0)) :=
+        (hp.continuousAt (x := 0)).tendsto.mono_left nhdsWithin_le_nhds
+      simpa only [hpt] using ht
+    have h₂ : Tendsto p (𝓝[≠] (0 : ℝ)) (𝓝 a) := by
+      have hq : Continuous (fun r : ℝ => r ^ 2 + a) := (continuous_id.pow 2).add continuous_const
+      have ht₀ : Tendsto (fun r : ℝ => r ^ 2 + a) (𝓝[≠] 0) (𝓝 ((0 : ℝ) ^ 2 + a)) :=
+        (hq.continuousAt (x := 0)).tendsto.mono_left nhdsWithin_le_nhds
+      have ht : Tendsto (fun r : ℝ => r ^ 2 + a) (𝓝[≠] 0) (𝓝 a) := by
+        simpa using ht₀
+      refine ht.congr' ?_
+      filter_upwards [self_mem_nhdsWithin] with r hr
+      have h := hmain (r : ℂ) 1 (Complex.ofReal_ne_zero.mpr hr)
+      rw [one_smul, Complex.norm_real, Real.norm_eq_abs, sq_abs, norm_one, one_pow, mul_one] at h
+      exact h.symm
+    exact tendsto_nhds_unique h₂ h₁
+  by_cases hs : s = 0
+  · subst s
+    simp [norm_smul, he]
+  · simpa only [ha₁, one_mul] using hmain s t hs
+
+
+private theorem birkhoffJamesOrthogonal_of_metricProjection_eq_zero
+    (L : Submodule ℂ E) {x y : E}
+    (hx : definition_1 L x = 0) (hy : y ∈ L) :
+    BirkhoffJamesOrthogonal (𝕜 := ℂ) x y := by
+  intro c
+  have hh := (isBestApprox_definition_1 L x).2 (c • y) (L.smul_mem c hy)
+  simpa only [hx, sub_zero] using hh
+
+/-- **Exercise 69**, complex classification in dimension at least three.
+An essentially strictly convex projective norm on such a space
+satisfies the parallelogram identity. -/
+theorem exercise_69_projective_parallelogram
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (hd : 3 ≤ Module.finrank ℂ E) (x y : E) :
+    ‖x + y‖ ^ 2 + ‖x - y‖ ^ 2 = 2 * (‖x‖ ^ 2 + ‖y‖ ^ 2) := by
+  classical
+  by_cases hx : x = 0
+  · simp [hx]
+    ring
+  let a : ℂ := ‖x‖
+  let u := a⁻¹ • x
+  have ha : a ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hx)
+  have hunit : ‖u‖ = 1 := by
+    change ‖((‖x‖ : ℂ)⁻¹) • x‖ = 1
+    rw [← Complex.ofReal_inv]
+    simpa only [Metric.mem_sphere, dist_zero_right] using norm_inv_smul_mem_unitSphere hx
+  have hxu : x = a • u := (smul_inv_smul₀ ha x).symm
+  let L := ℂ ∙ u
+  let r := y - definition_1 L y
+  obtain ⟨b, hb⟩ := Submodule.mem_span_singleton.mp (definition_1_mem L y)
+  have hry : y = b • u + r := by
+    dsimp [r]
+    rw [hb]
+    abel
+  by_cases hr : r = 0
+  · have hyu : y = b • u := by simpa only [hr, add_zero] using hry
+    rw [hxu, hyu, ← add_smul, ← sub_smul]
+    simp only [norm_smul, hunit, mul_one]
+    exact parallelogram_law_with_norm ℂ a b
+  let c : ℂ := ‖r‖
+  let v := c⁻¹ • r
+  have hc : c ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hr)
+  have hv : ‖v‖ = 1 := by
+    change ‖((‖r‖ : ℂ)⁻¹) • r‖ = 1
+    rw [← Complex.ofReal_inv]
+    simpa only [Metric.mem_sphere, dist_zero_right] using norm_inv_smul_mem_unitSphere hr
+  have hyr : y = b • u + c • v := by
+    rw [hry, show c • v = r from smul_inv_smul₀ hc r]
+  have hzL : definition_1 L v = 0 := by
+    rw [show v = c⁻¹ • r from rfl, definition_1_smul h L,
+      show definition_1 L r = 0 from definition_1_residual h L y, smul_zero]
+  have hvu : BirkhoffJamesOrthogonal (𝕜 := ℂ) v u :=
+    birkhoffJamesOrthogonal_of_metricProjection_eq_zero L hzL
+      (Submodule.mem_span_singleton_self _)
+  let M := Submodule.span ℂ ({u, v} : Set E)
+  have hM : M ≠ ⊤ := by
+    intro he
+    have hs : (({u, v} : Finset E) : Set E) = ({u, v} : Set E) := by simp
+    have hfin : Module.finrank ℂ M ≤ 2 := by
+      change Module.finrank ℂ (Submodule.span ℂ ({u, v} : Set E)) ≤ 2
+      rw [← hs]
+      exact (finrank_span_finset_le_card (R := ℂ) ({u, v} : Finset E)).trans
+        Finset.card_le_two
+    rw [he, finrank_top] at hfin
+    omega
+  obtain ⟨z, hz⟩ := IsConcreteLE.exists_of_lt (lt_top_iff_ne_top.mpr hM)
+  let k := z - definition_1 M z
+  have hk : k ≠ 0 := by
+    intro he
+    have hfix : definition_1 M z = z := (sub_eq_zero.mp he).symm
+    exact hz.2 ((definition_1_eq_self_iff M z).mp hfix)
+  let w := ((‖k‖⁻¹ : ℝ) : ℂ) • k
+  have hw : ‖w‖ = 1 := by
+    simpa only [Metric.mem_sphere, dist_zero_right] using norm_inv_smul_mem_unitSphere hk
+  have hpw : definition_1 M w = 0 := by
+    rw [show w = ((‖k‖⁻¹ : ℝ) : ℂ) • k from rfl, definition_1_smul h M,
+      show definition_1 M k = 0 from definition_1_residual h M z, smul_zero]
+  have hwu : BirkhoffJamesOrthogonal (𝕜 := ℂ) w u :=
+    birkhoffJamesOrthogonal_of_metricProjection_eq_zero M hpw (Submodule.subset_span (by simp))
+  have hwv : BirkhoffJamesOrthogonal (𝕜 := ℂ) w v :=
+    birkhoffJamesOrthogonal_of_metricProjection_eq_zero M hpw (Submodule.subset_span (by simp))
+  have hsym := (isProjectiveNorm_iff_birkhoffJames_symmetric h).mp hP
+  let e : Fin 3 → E := ![u, v, w]
+  have he (i : Fin 3) : ‖e i‖ = 1 := by
+    fin_cases i
+    · exact hunit
+    · exact hv
+    · exact hw
+  have ho (i j : Fin 3) (hij : i ≠ j) : BirkhoffJamesOrthogonal (𝕜 := ℂ) (e i) (e j) := by
+    fin_cases i <;> fin_cases j
+    · exact (hij rfl).elim
+    · exact hsym _ _ hvu
+    · exact hsym _ _ hwu
+    · exact hvu
+    · exact (hij rfl).elim
+    · exact hsym _ _ hwv
+    · exact hwu
+    · exact hwv
+    · exact (hij rfl).elim
+  have hformula (s t : ℂ) : ‖s • u + t • v‖ ^ 2 = ‖s‖ ^ 2 + ‖t‖ ^ 2 :=
+    norm_sq_projective_coordinate_pair h hP e he ho s t
+  have hplus : x + y = (a + b) • u + c • v := by
+    rw [hxu, hyr, add_smul]
+    abel
+  have hminus : x - y = (a - b) • u + (-c) • v := by
+    rw [hxu, hyr, sub_smul, neg_smul]
+    abel
+  rw [hplus, hminus, hformula, hformula, norm_neg, hxu, hyr,
+    hformula, norm_smul, hunit, mul_one]
+  linarith [parallelogram_law_with_norm ℂ a b]
+
+/-- **Exercise 69** of [benIsrael2003generalized], Chapter 3.
+A complex projective norm of dimension at least three is induced by
+a Hermitian inner product on the given normed space. -/
+@[instance_reducible]
+noncomputable def exercise_69_complex_ellipsoidal
+    (h : essentiallyStrictlyConvex E) (hP : IsProjectiveNorm (E := E))
+    (hd : 3 ≤ Module.finrank ℂ E) : InnerProductSpace ℂ E :=
+  InnerProductSpace.ofNorm ℂ fun x y => by
+    simpa only [pow_two] using exercise_69_projective_parallelogram h hP hd x y
+
+end
+
+end ProjectiveNormFormulaExercises
 
 end BenIsraelGreville.Chapter03
