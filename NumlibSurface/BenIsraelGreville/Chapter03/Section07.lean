@@ -6139,4 +6139,68 @@ end
 
 end ProjectiveNormFormulaExercises
 
+section RankLossOddMaps
+
+open Set Module
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+omit [FiniteDimensional ℂ F] in
+/-- Assuming the odd-map dimension theorem, every rank-loss perturbation has
+the kernel intersection witness required for the lower estimate in (153). -/
+theorem exists_rankLoss_zeroFiber_of_odd_dimension_theorem (hβ : essentiallyStrictlyConvex E)
+    (hodd : ∀ (M N : Submodule ℂ E), finrank ℂ N < finrank ℂ M →
+      ∀ f : M → N, Continuous f → (∀ x, f (-x) = -(f x)) →
+        ∃ x : M, x ≠ 0 ∧ f x = 0)
+    (A : E →ₗ[ℂ] F) (X : E →L[ℂ] F)
+    (hX : finrank ℂ (A + X.toLinearMap).range < finrank ℂ A.range) :
+    ∃ x : E, x ≠ 0 ∧ (A + X.toLinearMap) x = 0 ∧ definition_1 A.ker x = 0 := by
+  let B := A + X.toLinearMap
+  let f : B.ker → A.ker := fun z => ⟨definition_1 A.ker z.val, definition_1_mem A.ker _⟩
+  have hlt : finrank ℂ A.ker < finrank ℂ B.ker := by
+    have ha := A.finrank_range_add_finrank_ker
+    have hb := B.finrank_range_add_finrank_ker
+    change finrank ℂ B.range < finrank ℂ A.range at hX
+    omega
+  have hf : Continuous f := ((continuous_definition_1 hβ A.ker).comp
+    continuous_subtype_val).subtype_mk _
+  have hneg (z : B.ker) : f (-z) = -f z := by
+    apply Subtype.ext
+    change definition_1 A.ker (-z.val) = -definition_1 A.ker z.val
+    simpa only [neg_one_smul] using definition_1_smul hβ A.ker (-1) z.val
+  obtain ⟨x, hx₀, hx⟩ := hodd B.ker A.ker hlt f hf hneg
+  exact ⟨x.val, fun he => hx₀ (Subtype.ext he), x.property, congrArg Subtype.val hx⟩
+
+/-- The general lower rank-loss estimate in Exercise 81 follows from the
+odd-map dimension theorem, with no linearity assumption on either norm. -/
+theorem exercise_81_lower_of_odd_dimension_theorem
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    (hodd : ∀ (M N : Submodule ℂ E), finrank ℂ N < finrank ℂ M →
+      ∀ f : M → N, Continuous f → (∀ x, f (-x) = -(f x)) →
+        ∃ x : M, x ≠ 0 ∧ f x = 0)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0) :
+    (mixedOperatorNorm (definition_2 A))⁻¹ ≤ rankLossDistance A := by
+  let S := ((fun X : E →L[ℂ] F => ‖X‖) ''
+    {X : E →L[ℂ] F | finrank ℂ (A + X.toLinearMap).range < finrank ℂ A.range})
+  have hne : S.Nonempty := by
+    let K : E →L[ℂ] F := LinearMap.toContinuousLinearMap (-A)
+    refine ⟨‖K‖, K, ?_, rfl⟩
+    change finrank ℂ (A + -A).range < finrank ℂ A.range
+    rw [show A + -A = 0 from add_neg_cancel A, LinearMap.range_zero, finrank_bot]
+    have hn : finrank ℂ A.range ≠ 0 := fun he => hA
+      (LinearMap.range_eq_bot.mp (Submodule.finrank_eq_zero.mp he))
+    omega
+  change _ ≤ sInf S
+  refine le_csInf hne ?_
+  rintro _ ⟨X, hX, rfl⟩
+  obtain ⟨x, hx₀, hx, hz⟩ := exists_rankLoss_zeroFiber_of_odd_dimension_theorem hβ hodd A X hX
+  exact norm_rankLossPerturbation_lower_of_zeroFiber hα hβ A X hx₀ hx hz
+
+end
+
+end RankLossOddMaps
+
 end BenIsraelGreville.Chapter03

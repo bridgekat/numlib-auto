@@ -638,3 +638,11 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, parallelogram identi
 [[node]]
 id = "exercise_69_complex_ellipsoidal"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, complex projective norm classification"
+
+[[node]]
+id = "exists_rankLoss_zeroFiber_of_odd_dimension_theorem"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, kernel intersection under odd-map dimension theorem"
+
+[[node]]
+id = "exercise_81_lower_of_odd_dimension_theorem"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, general lower estimate reduced to odd-map dimension theorem"
