@@ -1730,4 +1730,1624 @@ theorem exercise_8_26 :
 
 end Exercises
 
+section PathProbabilities
+
+variable {s Ω : Type*} [Fintype s] [DecidableEq s] [MeasurableSpace Ω]
+variable {μ : Measure Ω} [IsProbabilityMeasure μ] {P : Matrix s s ℝ}
+variable {X : ℕ → Ω → s}
+
+omit [IsProbabilityMeasure μ] in
+private theorem measure_split_by_finite_map {ι : Type*} [Fintype ι]
+    {Y : Ω → ι} (hY : ∀ i, MeasurableSet {ω | Y ω = i})
+    {E : Set Ω} (hE : MeasurableSet E) :
+    μ E = ∑ i, μ (E ∩ {ω | Y ω = i}) := by
+  classical
+  have hUnion : E = ⋃ i, E ∩ {ω | Y ω = i} := by
+    ext ω
+    simp only [Set.mem_iUnion, Set.mem_inter_iff, Set.mem_ofPred_eq]
+    exact ⟨fun h => ⟨Y ω, h, rfl⟩, fun ⟨_, h, _⟩ => h⟩
+  have hdisj : Pairwise (fun i j : ι =>
+      Disjoint (E ∩ {ω | Y ω = i}) (E ∩ {ω | Y ω = j})) := by
+    intro i j hij
+    refine Set.disjoint_left.mpr ?_
+    rintro ω ⟨_, ei⟩ ⟨_, ej⟩
+    exact hij (ei.symm.trans ej)
+  calc
+    μ E = μ (⋃ i, E ∩ {ω | Y ω = i}) := congrArg μ hUnion
+    _ = ∑' i, μ (E ∩ {ω | Y ω = i}) := measure_iUnion hdisj (fun i => hE.inter (hY i))
+    _ = ∑ i, μ (E ∩ {ω | Y ω = i}) := tsum_fintype _
+
+private theorem finiteMarkovChain_next_given_past (h : IsFiniteMarkovChain μ P X)
+    (t : ℕ) (i j : s) {E : Set Ω} (hE : MeasurableSet E)
+    (hpast : ∀ ω ω' : Ω, (∀ k ≤ t, X k ω = X k ω') → (ω ∈ E ↔ ω' ∈ E))
+    (hi : ∀ ω ∈ E, X t ω = i) :
+    μ (E ∩ {ω | X (t + 1) ω = j}) = ENNReal.ofReal (P i j) * μ E := by
+  classical
+  let Y (ω : Ω) (k : Fin (t + 1)) := X k.val ω
+  have hY (p : Fin (t + 1) → s) : MeasurableSet {ω | Y ω = p} := by
+    have heq : {ω | Y ω = p} = ⋂ k : Fin (t + 1), {ω | X k.val ω = p k} := by
+      ext ω
+      simp only [Set.mem_ofPred_eq, Set.mem_iInter, Y]
+      exact funext_iff
+    rw [heq]
+    exact MeasurableSet.iInter (fun k => h.measurable_state k.val (p k))
+  rw [measure_split_by_finite_map hY (hE.inter (h.measurable_state (t + 1) j))]
+  conv_rhs => rw [measure_split_by_finite_map hY hE, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro p _
+  by_cases hex : (E ∩ {ω | Y ω = p}).Nonempty
+  · obtain ⟨ω, hω, hωp⟩ := hex
+    have hfull : E ∩ {ω | Y ω = p} = {ω | Y ω = p} := by
+      ext ω'
+      exact ⟨fun hmem => hmem.2, fun hω'p =>
+        ⟨(hpast ω ω' (fun k hk => congrFun (hωp.trans hω'p.symm)
+          ⟨k, Nat.lt_succ_of_le hk⟩)).mp hω, hω'p⟩⟩
+    have hlast : p (Fin.last t) = i := (congrFun hωp (Fin.last t)).symm.trans (hi ω hω)
+    rw [Set.inter_right_comm, hfull, ← hlast]
+    simpa only [Set.ofPred_and, Set.mem_ofPred_eq, Y, funext_iff] using h.transition t p j
+  · have hempty := Set.not_nonempty_iff_eq_empty.mp hex
+    rw [Set.inter_right_comm, hempty, Set.empty_inter, measure_empty, mul_zero]
+
+private theorem finiteMarkovChain_next_measure (h : IsFiniteMarkovChain μ P X)
+    (t : ℕ) (j : s) {E : Set Ω} (hE : MeasurableSet E)
+    (hpast : ∀ ω ω' : Ω, (∀ k ≤ t, X k ω = X k ω') → (ω ∈ E ↔ ω' ∈ E)) :
+    μ (E ∩ {ω | X (t + 1) ω = j}) =
+      ∑ i, ENNReal.ofReal (P i j) * μ (E ∩ {ω | X t ω = i}) := by
+  rw [measure_split_by_finite_map (h.measurable_state t)
+    (hE.inter (h.measurable_state (t + 1) j))]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [Set.inter_right_comm]
+  refine finiteMarkovChain_next_given_past h t i j (hE.inter (h.measurable_state t i)) ?_
+    (fun _ hw => hw.2)
+  intro ω ω' hw
+  simp only [Set.mem_inter_iff, Set.mem_ofPred_eq, hpast ω ω' hw, hw t le_rfl]
+
+private theorem finiteMarkovChain_conditional_div {E F : Set Ω} {p : ℝ≥0∞}
+    (hE : μ E ≠ 0) (hjoint : μ (E ∩ F) = p * μ E) :
+    μ (E ∩ F) / μ E = p := by
+  rw [hjoint]
+  exact ENNReal.mul_div_cancel_right hE (measure_ne_top μ E)
+
+omit [DecidableEq s] in
+private theorem sum_transition_joint (A B : Matrix s s ℝ)
+    (hA : ∀ i j, 0 ≤ A i j) (hB : ∀ i j, 0 ≤ B i j)
+    (i j : s) (p : ℝ≥0∞) :
+    ∑ k, ENNReal.ofReal (B k j) * (ENNReal.ofReal (A i k) * p) =
+      ENNReal.ofReal ((A * B) i j) * p := by
+  classical
+  rw [Matrix.mul_apply, ENNReal.ofReal_sum_of_nonneg (fun k _ => mul_nonneg (hA i k) (hB k j)),
+    Finset.sum_mul]
+  apply Finset.sum_congr rfl
+  intro k _
+  rw [ENNReal.ofReal_mul (hA i k), ← mul_assoc, mul_comm (ENNReal.ofReal (B k j))]
+
+private theorem finiteMarkovChain_nStep_joint
+    (h : IsFiniteMarkovChain μ P X) (t n : ℕ) (i j : s) :
+    μ ({ω | X t ω = i} ∩ {ω | X (t + n) ω = j}) =
+      ENNReal.ofReal (transitionProbability P n i j) * μ {ω | X t ω = i} := by
+  induction n generalizing j with
+  | zero =>
+    rw [transitionProbability_zero]
+    by_cases hij : i = j
+    · subst j
+      simp
+    · have hd : Disjoint {ω | X t ω = i} {ω | X t ω = j} := by
+        refine Set.disjoint_left.mpr ?_
+        exact fun _ hi hj => hij (hi.symm.trans hj)
+      simp [hij, hd.inter_eq]
+  | succ n ih =>
+    rw [Nat.add_succ, finiteMarkovChain_next_measure h (t + n) j (h.measurable_state t i)]
+    · simp_rw [ih]
+      simpa only [transitionProbability, pow_succ] using
+        sum_transition_joint (P ^ n) P (stochastic_pow h.stochastic n).1 h.stochastic.1 i j
+          (μ {ω | X t ω = i})
+    · intro ω ω' hw
+      simp only [Set.mem_ofPred_eq, hw t (Nat.le_add_right t n)]
+
+/-- **Equation (88)** of [benIsrael2003generalized], Chapter 8. The conditional
+probability of being at state j after n steps given state i at time t is
+the corresponding entry of the nth matrix power. -/
+theorem finiteMarkovChain_nStep_conditional
+    (h : IsFiniteMarkovChain μ P X) (t n : ℕ) (i j : s)
+    (hi : μ {ω | X t ω = i} ≠ 0) :
+    μ ({ω | X t ω = i} ∩ {ω | X (t + n) ω = j}) / μ {ω | X t ω = i} =
+      ENNReal.ofReal (transitionProbability P n i j) :=
+  finiteMarkovChain_conditional_div hi (finiteMarkovChain_nStep_joint h t n i j)
+
+/-- The event of being at state i at time t and avoiding state j during the
+next n transitions. The initial time is excluded from the avoidance test. -/
+def passageSurvivalEvent (X : ℕ → Ω → s) (t : ℕ) (i j : s) (n : ℕ) : Set Ω :=
+  {ω | X t ω = i ∧ ∀ k < n, X (t + k + 1) ω ≠ j}
+
+private theorem passageSurvivalEvent_measurable (h : IsFiniteMarkovChain μ P X)
+    (t n : ℕ) (i j : s) : MeasurableSet (passageSurvivalEvent X t i j n) := by
+  have he : passageSurvivalEvent X t i j n =
+      {ω | X t ω = i} ∩ ⋂ k : Fin n, ({ω | X (t + k.val + 1) ω = j})ᶜ := by
+    ext ω
+    simp only [passageSurvivalEvent, Set.mem_ofPred_eq, Set.mem_inter_iff, Set.mem_iInter,
+      Set.mem_compl_iff]
+    exact and_congr_right fun _ =>
+      ⟨fun hv k => hv k.val k.isLt, fun hv k hk => hv ⟨k, hk⟩⟩
+  rw [he]
+  exact (h.measurable_state t i).inter
+    (MeasurableSet.iInter fun k => (h.measurable_state (t + k.val + 1) j).compl)
+
+omit [Fintype s] [DecidableEq s] [MeasurableSpace Ω] in
+private theorem passageSurvivalEvent_succ (X : ℕ → Ω → s) (t n : ℕ) (i j : s) :
+    passageSurvivalEvent X t i j (n + 1) =
+      passageSurvivalEvent X t i j n ∩ {ω | X (t + n + 1) ω ≠ j} := by
+  ext ω
+  simp only [passageSurvivalEvent, Set.mem_ofPred_eq, Set.mem_inter_iff]
+  constructor
+  · rintro ⟨hi, hv⟩
+    exact ⟨⟨hi, fun k hk => hv k (by omega)⟩, hv n (by omega)⟩
+  · rintro ⟨⟨hi, hv⟩, hn⟩
+    refine ⟨hi, fun k hk => ?_⟩
+    obtain hk | rfl := (Nat.lt_succ_iff_lt_or_eq).mp hk
+    · exact hv k hk
+    · exact hn
+
+omit [Fintype s] [DecidableEq s] [MeasurableSpace Ω] in
+private theorem passageSurvivalEvent_determined (t n : ℕ) (i j : s)
+    (ω ω' : Ω) (hω : ∀ k ≤ t + n, X k ω = X k ω') :
+    ω ∈ passageSurvivalEvent X t i j n ↔ ω' ∈ passageSurvivalEvent X t i j n := by
+  simp only [passageSurvivalEvent, Set.mem_ofPred_eq, hω t (Nat.le_add_right t n)]
+  refine and_congr_right fun _ => ?_
+  exact forall_congr' fun k => forall_congr' fun hk => by rw [hω (t + k + 1) (by omega)]
+
+private theorem passageSurvivalEvent_joint (h : IsFiniteMarkovChain μ P X)
+    (t n : ℕ) (i j b : s) :
+    μ (passageSurvivalEvent X t i j n ∩ {ω | X (t + n) ω = b}) =
+      ENNReal.ofReal (((killedTransition P j) ^ n) i b) * μ {ω | X t ω = i} := by
+  have hK := killedTransition_nonneg h.stochastic j
+  induction n generalizing b with
+  | zero =>
+    simpa [passageSurvivalEvent, transitionProbability] using finiteMarkovChain_nStep_joint h t 0 i b
+  | succ n ih =>
+    rw [passageSurvivalEvent_succ, pow_succ]
+    change μ ((passageSurvivalEvent X t i j n ∩ {ω | X (t + n + 1) ω ≠ j}) ∩
+      {ω | X (t + n + 1) ω = b}) =
+        ENNReal.ofReal (((killedTransition P j) ^ n * killedTransition P j) i b) * _
+    by_cases hb : b = j
+    · subst b
+      have hempty : (passageSurvivalEvent X t i j n ∩ {ω | X (t + n + 1) ω ≠ j}) ∩
+          {ω | X (t + n + 1) ω = j} = ∅ := by ext ω; simp
+      simp only [hempty, measure_empty, Matrix.mul_apply, killedTransition, Matrix.of_apply,
+        ite_true, mul_zero, Finset.sum_const_zero, ENNReal.ofReal_zero, zero_mul]
+    · have hrepl : (passageSurvivalEvent X t i j n ∩ {ω | X (t + n + 1) ω ≠ j}) ∩
+          {ω | X (t + n + 1) ω = b} =
+          passageSurvivalEvent X t i j n ∩ {ω | X (t + n + 1) ω = b} := by
+        ext ω
+        simp only [Set.mem_inter_iff, Set.mem_ofPred_eq]
+        exact ⟨fun hw => ⟨hw.1.1, hw.2⟩, fun hw => ⟨⟨hw.1, hw.2 ▸ hb⟩, hw.2⟩⟩
+      rw [hrepl, finiteMarkovChain_next_measure h (t + n) b
+        (passageSurvivalEvent_measurable h t n i j) (passageSurvivalEvent_determined t n i j)]
+      simp_rw [ih]
+      simpa only [Matrix.mul_apply, killedTransition, Matrix.of_apply, ite_eq_right hb] using
+        sum_transition_joint ((killedTransition P j) ^ n) P (pow_apply_nonneg hK n)
+          h.stochastic.1 i b (μ {ω | X t ω = i})
+
+/-- **First passage** in [benIsrael2003generalized], Chapter 8, Section 7.
+The first arrival at state j strictly after time t occurs on transition n+1
+exactly when the path avoids j for the preceding n transitions and then
+enters j. Its conditional probability is the killed-transition formula. -/
+theorem finiteMarkovChain_firstPassage_conditional
+    (h : IsFiniteMarkovChain μ P X) (t n : ℕ) (i j : s)
+    (hi : μ {ω | X t ω = i} ≠ 0) :
+    μ {ω | X t ω = i ∧ (∀ k < n, X (t + k + 1) ω ≠ j) ∧ X (t + n + 1) ω = j} /
+        μ {ω | X t ω = i} = ENNReal.ofReal (firstPassageProbability P i j (n + 1)) := by
+  have hK := killedTransition_nonneg h.stochastic j
+  have he :
+      {ω | X t ω = i ∧ (∀ k < n, X (t + k + 1) ω ≠ j) ∧ X (t + n + 1) ω = j} =
+        {ω | X t ω = i} ∩ (passageSurvivalEvent X t i j n ∩ {ω | X (t + n + 1) ω = j}) := by
+    ext ω
+    simp only [passageSurvivalEvent, Set.mem_inter_iff, Set.mem_ofPred_eq, and_assoc]
+    exact ⟨fun ⟨hi, hv, hj⟩ => ⟨hi, hi, hv, hj⟩, fun ⟨hi, _, hv, hj⟩ => ⟨hi, hv, hj⟩⟩
+  rw [he]
+  apply finiteMarkovChain_conditional_div hi
+  rw [← Set.inter_assoc, Set.inter_eq_right.mpr
+    (show passageSurvivalEvent X t i j n ⊆ {ω | X t ω = i} from fun _ hw => hw.1)]
+  rw [finiteMarkovChain_next_measure h (t + n) j (passageSurvivalEvent_measurable h t n i j)
+    (passageSurvivalEvent_determined t n i j)]
+  simp_rw [passageSurvivalEvent_joint h]
+  exact sum_transition_joint ((killedTransition P j) ^ n) P (pow_apply_nonneg hK n)
+    h.stochastic.1 i j (μ {ω | X t ω = i})
+
+end PathProbabilities
+
+section ClosedClasses
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ} {S T : Set s}
+
+/-- A closed set has zero transition probability to its complement at every time. -/
+theorem IsClosedStateSet.transitionProbability_eq_zero (hS : IsClosedStateSet P S)
+    {i j : s} (hi : i ∈ S) (hj : j ∉ S) (n : ℕ) : transitionProbability P n i j = 0 := by
+  induction n generalizing j with
+  | zero =>
+    have hne : i ≠ j := fun h => hj (h ▸ hi)
+    rw [transitionProbability_zero, ite_eq_right hne]
+  | succ n ih =>
+    rw [transitionProbability, pow_succ, Matrix.mul_apply]
+    apply Finset.sum_eq_zero
+    intro k _
+    by_cases hk : k ∈ S
+    · rw [hS k hk j hj, mul_zero]
+    · rw [← transitionProbability, ih hk, zero_mul]
+
+/-- A state reachable from a member of a closed set belongs to that set. -/
+theorem IsClosedStateSet.mem_of_leadsTo (hS : IsClosedStateSet P S)
+    {i j : s} (hi : i ∈ S) (hij : LeadsTo P i j) : j ∈ S := by
+  by_contra hj
+  obtain ⟨n, _, hn⟩ := hij
+  rw [hS.transitionProbability_eq_zero hi hj n] at hn
+  exact (lt_irrefl 0) hn
+
+/-- The states reachable in zero or more transitions from the given state. -/
+def stateReachableSet (P : Matrix s s ℝ) (i : s) : Set s :=
+  {j | i = j ∨ LeadsTo P i j}
+
+private theorem mem_stateReachableSet_self (P : Matrix s s ℝ) (i : s) :
+    i ∈ stateReachableSet P i :=
+  Or.inl rfl
+
+private theorem stateReachableSet_subset_of_mem (hP : IsStochasticMatrix P)
+    {i j : s} (hij : j ∈ stateReachableSet P i) :
+    stateReachableSet P j ⊆ stateReachableSet P i := by
+  rintro k (rfl | hjk)
+  · exact hij
+  · rcases hij with rfl | hij
+    · exact Or.inr hjk
+    · exact Or.inr (leadsTo_trans hP hij hjk)
+
+private theorem leadsTo_of_pos_entry {i j : s} (hij : 0 < P i j) : LeadsTo P i j :=
+  ⟨1, Nat.one_pos, by simpa [transitionProbability] using hij⟩
+
+/-- The set of all states reachable from a state is closed. -/
+theorem isClosedStateSet_stateReachableSet (hP : IsStochasticMatrix P) (i : s) :
+    IsClosedStateSet P (stateReachableSet P i) := by
+  intro j hj k hk
+  refine le_antisymm (le_of_not_gt fun hpos => hk ?_) (hP.1 j k)
+  exact stateReachableSet_subset_of_mem hP hj (Or.inr (leadsTo_of_pos_entry hpos))
+
+private theorem exists_positive_transition (hP : IsStochasticMatrix P) (i : s) :
+    ∃ j, 0 < P i j := by
+  by_contra h
+  push Not at h
+  have hz : ∑ j, P i j = 0 :=
+    Finset.sum_eq_zero fun j _ => le_antisymm (h j) (hP.1 i j)
+  rw [sum_row_of_mem_rowStochastic hP] at hz
+  exact one_ne_zero hz
+
+/-- A closed communicating class is a minimal nonempty closed set.
+The communicating condition uses positive times, including for self-returns. -/
+theorem isClosedCommunicatingClass_iff_minimal_closed (hP : IsStochasticMatrix P) :
+    IsClosedCommunicatingClass P S ↔
+      S.Nonempty ∧ IsClosedStateSet P S ∧
+        ∀ T ⊆ S, T.Nonempty → IsClosedStateSet P T → T = S := by
+  constructor
+  · rintro ⟨hS, hclosed, hcom⟩
+    refine ⟨hS, hclosed, fun T hTS ⟨i, hi⟩ hT => Set.Subset.antisymm hTS ?_⟩
+    exact fun j hj => hT.mem_of_leadsTo hi (hcom i (hTS hi) j hj).1
+  · rintro ⟨hS, hclosed, hmin⟩
+    refine ⟨hS, hclosed, ?_⟩
+    have hall (i : s) (hi : i ∈ S) : stateReachableSet P i = S :=
+      hmin _ (by
+        rintro j (rfl | hij)
+        · exact hi
+        · exact hclosed.mem_of_leadsTo hi hij)
+        ⟨i, mem_stateReachableSet_self P i⟩ (isClosedStateSet_stateReachableSet hP i)
+    have hreach (i j : s) (hi : i ∈ S) (hj : j ∈ S) : LeadsTo P i j := by
+      have hr : j ∈ stateReachableSet P i := hall i hi ▸ hj
+      rcases hr with rfl | hr
+      · obtain ⟨k, hk⟩ := exists_positive_transition hP i
+        have hik := leadsTo_of_pos_entry hk
+        have hki : i ∈ stateReachableSet P k :=
+          hall k (hclosed.mem_of_leadsTo hi hik) ▸ hi
+        rcases hki with hki | hki
+        · rwa [hki] at hik
+        · exact leadsTo_trans hP hik hki
+      · exact hr
+    exact fun i hi j hj => ⟨hreach i j hi hj, hreach j i hj hi⟩
+
+/-- Every state of a finite stochastic chain reaches some closed communicating
+class, in positive time. -/
+theorem exists_closedCommunicatingClass_of_state (hP : IsStochasticMatrix P) (i : s) :
+    ∃ (S : Set s) (j : s), IsClosedCommunicatingClass P S ∧ j ∈ S ∧ LeadsTo P i j := by
+  let R := stateReachableSet P
+  obtain ⟨j, hj, hmin⟩ := Set.exists_min_image (R i) (fun j => (R j).ncard)
+    (Set.toFinite _) ⟨i, mem_stateReachableSet_self P i⟩
+  have hsubset : R j ⊆ R i := stateReachableSet_subset_of_mem hP hj
+  have hclass : IsClosedCommunicatingClass P (R j) := by
+    rw [isClosedCommunicatingClass_iff_minimal_closed hP]
+    refine ⟨⟨j, mem_stateReachableSet_self P j⟩, isClosedStateSet_stateReachableSet hP j, ?_⟩
+    rintro T hT ⟨k, hk⟩ hclosed
+    have hRT : R k ⊆ T := by
+      rintro l (rfl | hkl)
+      · exact hk
+      · exact hclosed.mem_of_leadsTo hk hkl
+    exact Set.eq_of_subset_of_ncard_le hT
+      ((hmin k (hsubset (hT hk))).trans (Set.ncard_le_ncard hRT))
+  have hjj := mem_stateReachableSet_self P j
+  refine ⟨R j, j, hclass, hjj, ?_⟩
+  rcases hj with h | hj
+  · exact (hclass.2.2 j hjj j hjj).1 |> (h.symm ▸ ·)
+  · exact hj
+
+/-- Distinct closed communicating classes are disjoint. -/
+theorem closedCommunicatingClass_eq_of_mem
+    (hS : IsClosedCommunicatingClass P S) (hT : IsClosedCommunicatingClass P T)
+    {i : s} (hiS : i ∈ S) (hiT : i ∈ T) : S = T :=
+  Set.Subset.antisymm
+    (fun j hj => hT.2.1.mem_of_leadsTo hiT (hS.2.2 i hiS j hj).1)
+    (fun j hj => hS.2.1.mem_of_leadsTo hiS (hT.2.2 i hiT j hj).1)
+
+/-- **Section 8.7** of [benIsrael2003generalized], Chapter 8. A finite
+stochastic chain is absorbing exactly when each closed communicating class
+has a single state. -/
+theorem isAbsorbingChain_iff_closed_classes_singleton (hP : IsStochasticMatrix P) :
+    IsAbsorbingChain P ↔ ∀ S : Set s, IsClosedCommunicatingClass P S → ∃ i, S = {i} := by
+  constructor
+  · intro habs S hS
+    obtain ⟨i, hi⟩ := hS.1
+    obtain ⟨j, hj, hij⟩ := habs i
+    have hjS := hS.2.1.mem_of_leadsTo hi hij
+    have hsingle := (isAbsorbingState_iff_singleton_closed hP j).mp hj
+    exact ⟨j, closedCommunicatingClass_eq_of_mem hS hsingle hjS rfl⟩
+  · intro h i
+    obtain ⟨S, j, hS, hj, hij⟩ := exists_closedCommunicatingClass_of_state hP i
+    obtain ⟨k, rfl⟩ := h S hS
+    have heq : j = k := hj
+    subst k
+    exact ⟨j, (isAbsorbingState_iff_singleton_closed hP j).mpr hS, hij⟩
+
+end ClosedClasses
+
+section RenewalSummability
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ}
+
+private theorem summable_firstPassageProbability (hP : IsStochasticMatrix P) (i j : s) :
+    Summable (fun n : ℕ => firstPassageProbability P i j (n + 1)) := by
+  apply summable_of_sum_range_le (c := 1) (fun n => firstPassageProbability_nonneg hP i j (n + 1))
+  intro n
+  rw [sum_firstPassageProbability hP]
+  exact sub_le_self _ (survivalProbability_nonneg hP i j n)
+
+/-- The passage probabilities have total mass at most one. -/
+theorem eventualPassageProbability_le_one (hP : IsStochasticMatrix P) (i j : s) :
+    eventualPassageProbability P i j ≤ 1 := by
+  rw [eventualPassageProbability, ← ENNReal.ofReal_tsum_of_nonneg
+    (fun n => firstPassageProbability_nonneg hP i j (n + 1)) (summable_firstPassageProbability hP i j),
+    ← ENNReal.ofReal_one]
+  apply ENNReal.ofReal_le_ofReal
+  apply Real.tsum_le_of_sum_range_le (fun n => firstPassageProbability_nonneg hP i j (n + 1))
+  intro n
+  rw [sum_firstPassageProbability hP]
+  exact sub_le_self _ (survivalProbability_nonneg hP i j n)
+
+private theorem sum_range_renewal_triangle (f g : ℕ → ℝ) (N : ℕ) :
+    (∑ n ∈ Finset.range N, ∑ k ∈ Finset.range (n + 1), f k * g (n - k)) =
+      ∑ k ∈ Finset.range N, f k * ∑ l ∈ Finset.range (N - k), g l := by
+  induction N with
+  | zero => simp
+  | succ N ih =>
+    have he :
+        (∑ k ∈ Finset.range N, f k * ∑ l ∈ Finset.range (N + 1 - k), g l) =
+        ∑ k ∈ Finset.range N,
+          (f k * (∑ l ∈ Finset.range (N - k), g l) + f k * g (N - k)) := by
+      apply Finset.sum_congr rfl
+      intro k hk
+      rw [show N + 1 - k = (N - k) + 1 by have := Finset.mem_range.mp hk; omega,
+        Finset.sum_range_succ, mul_add]
+    rw [Finset.sum_range_succ, ih, Finset.sum_range_succ, Finset.sum_range_succ, he,
+      Finset.sum_add_distrib]
+    simp [add_assoc]
+
+/-- **Exercise 22(a)** of [benIsrael2003generalized], Chapter 8. In a transient
+state the positive-time return probabilities are summable, and conversely. -/
+theorem exercise_8_22a (hP : IsStochasticMatrix P) (i : s) :
+    IsTransientState P i ↔ Summable (fun n : ℕ => transitionProbability P (n + 1) i i) := by
+  let f n := firstPassageProbability P i i (n + 1)
+  let u n := transitionProbability P n i i
+  let F := ∑' n, f n
+  have hf : Summable f := summable_firstPassageProbability hP i i
+  have hf0 (n : ℕ) : 0 ≤ f n := firstPassageProbability_nonneg hP i i (n + 1)
+  have hu0 (n : ℕ) : 0 ≤ u n := (stochastic_pow hP n).1 i i
+  have huzero : u 0 = 1 := by simp [u, transitionProbability_zero]
+  have hF0 : 0 ≤ F := tsum_nonneg hf0
+  have hF : eventualPassageProbability P i i = ENNReal.ofReal F :=
+    (ENNReal.ofReal_tsum_of_nonneg hf0 hf).symm
+  have hFle : F ≤ 1 := by
+    have he := eventualPassageProbability_le_one hP i i
+    rwa [hF, ← ENNReal.ofReal_one, ENNReal.ofReal_le_ofReal_iff zero_le_one] at he
+  have hrenewal (n : ℕ) :
+      u (n + 1) = ∑ k ∈ Finset.range (n + 1), f k * u (n - k) :=
+    exercise_8_20 P i i n
+  change eventualPassageProbability P i i ≠ 1 ↔ Summable (fun n : ℕ => u (n + 1))
+  have hFiff : eventualPassageProbability P i i = 1 ↔ F = 1 := by
+    rw [hF, ← ENNReal.ofReal_one, ENNReal.ofReal_eq_ofReal_iff hF0 zero_le_one]
+  rw [ne_eq, hFiff, summable_nat_add_iff 1]
+  constructor
+  · intro hne
+    have hden : 0 < 1 - F := sub_pos.mpr (lt_of_le_of_ne hFle hne)
+    apply summable_of_sum_range_le (c := 1 / (1 - F)) hu0
+    intro N
+    cases N with
+    | zero => simp [hden.le]
+    | succ N =>
+      let U := ∑ n ∈ Finset.range (N + 1), u n
+      have hU0 : 0 ≤ U := Finset.sum_nonneg (fun n _ => hu0 n)
+      have hU : U = 1 + ∑ k ∈ Finset.range N, f k * ∑ l ∈ Finset.range (N - k), u l := by
+        rw [show U = u 0 + ∑ n ∈ Finset.range N, u (n + 1) by
+          dsimp [U]; rw [Finset.sum_range_succ']; exact add_comm _ _]
+        simp_rw [huzero, hrenewal, sum_range_renewal_triangle]
+      have hpartial (k : ℕ) : ∑ l ∈ Finset.range (N - k), u l ≤ U :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.range_mono (by omega)) (fun n _ _ => hu0 n)
+      have hupper : (∑ k ∈ Finset.range N, f k * ∑ l ∈ Finset.range (N - k), u l) ≤ F * U := by
+        calc
+          _ ≤ ∑ k ∈ Finset.range N, f k * U :=
+            Finset.sum_le_sum (fun k _ => mul_le_mul_of_nonneg_left (hpartial k) (hf0 k))
+          _ = (∑ k ∈ Finset.range N, f k) * U := (Finset.sum_mul _ _ _).symm
+          _ ≤ F * U := mul_le_mul_of_nonneg_right (hf.sum_le_tsum _ (fun n _ => hf0 n)) hU0
+      change U ≤ 1 / (1 - F)
+      apply (le_div_iff₀ hden).2
+      linarith [show U * (1 - F) = U - F * U by ring]
+  · intro hu he
+    have hprod :
+        F * (∑' n, u n) = ∑' n, u (n + 1) := by
+      have hf' : Summable (fun n => ‖f n‖) := by simpa only [Real.norm_eq_abs, abs_of_nonneg, hf0] using hf
+      have hu' : Summable (fun n => ‖u n‖) := by simpa only [Real.norm_eq_abs, abs_of_nonneg, hu0] using hu
+      simpa only [← hrenewal] using tsum_mul_tsum_eq_tsum_sum_range_of_summable_norm hf' hu'
+    have hhead := hu.tsum_eq_zero_add
+    rw [he, one_mul] at hprod
+    rw [huzero] at hhead
+    linarith
+
+private theorem transitionProbability_mul_le_of_join (hP : IsStochasticMatrix P)
+    (a b : ℕ) (i j k : s) :
+    transitionProbability P a i j * transitionProbability P b j k ≤
+      transitionProbability P (a + b) i k := by
+  rw [chapmanKolmogorov]
+  exact Finset.single_le_sum
+    (fun t _ => mul_nonneg ((stochastic_pow hP a).1 i t) ((stochastic_pow hP b).1 t k))
+    (Finset.mem_univ j)
+
+/-- **Exercise 23** of [benIsrael2003generalized], Chapter 8. Communicating
+states are recurrent together and transient together. The period equality
+is recorded in the same statement. -/
+theorem exercise_8_23_recurrence (hP : IsStochasticMatrix P) {i j : s}
+    (hij : Communicates P i j) :
+    (IsRecurrentState P i ↔ IsRecurrentState P j) ∧
+      (IsTransientState P i ↔ IsTransientState P j) ∧ statePeriod P i = statePeriod P j := by
+  have htransfer (a b : s) (hab : Communicates P a b)
+      (ha : IsTransientState P a) : IsTransientState P b := by
+    obtain ⟨⟨r, _, hr⟩, ⟨s, _, hs⟩⟩ := hab
+    let c := transitionProbability P r a b * transitionProbability P s b a
+    have hc : 0 < c := mul_pos hr hs
+    have hbound (n : ℕ) : c * transitionProbability P (n + 1) b b ≤
+        transitionProbability P ((n + 1) + (r + s)) a a := by
+      calc
+        _ = (transitionProbability P r a b * transitionProbability P (n + 1) b b) *
+              transitionProbability P s b a := by dsimp [c]; ring
+        _ ≤ transitionProbability P (r + (n + 1)) a b * transitionProbability P s b a :=
+          mul_le_mul_of_nonneg_right (transitionProbability_mul_le_of_join hP r (n + 1) a b b) hs.le
+        _ ≤ transitionProbability P ((n + 1) + (r + s)) a a := by
+          rw [show (n + 1) + (r + s) = (r + (n + 1)) + s by omega]
+          exact transitionProbability_mul_le_of_join hP (r + (n + 1)) s a b a
+    have hsum : Summable (fun n : ℕ => transitionProbability P ((n + 1) + (r + s)) a a) :=
+      (summable_nat_add_iff (r + s)).2 ((exercise_8_22a hP a).mp ha) |>.congr
+        (fun n => congrArg (fun k => transitionProbability P k a a)
+          (show n + (r + s) + 1 = n + 1 + (r + s) by omega))
+    have hscaled : Summable (fun n : ℕ => c * transitionProbability P (n + 1) b b) :=
+      hsum.of_nonneg_of_le (fun n => mul_nonneg hc.le ((stochastic_pow hP (n + 1)).1 b b)) hbound
+    apply (exercise_8_22a hP b).mpr
+    simpa [← mul_assoc, inv_mul_cancel₀ hc.ne'] using hscaled.mul_left c⁻¹
+  have htrans : IsTransientState P i ↔ IsTransientState P j :=
+    ⟨htransfer i j hij, htransfer j i hij.symm⟩
+  exact ⟨by simpa only [IsTransientState, not_iff_not] using htrans, htrans, statePeriod_eq_of_communicates hP hij⟩
+
+end RenewalSummability
+
+section ClosedClassRestriction
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ} {S : Set s}
+
+/-- The matrix obtained by restricting the two state indices to a subset. -/
+def restrictTransition (P : Matrix s s ℝ) (S : Set s) : Matrix S S ℝ :=
+  P.submatrix Subtype.val Subtype.val
+
+omit [Fintype s] [DecidableEq s] in
+/-- Restriction retains the transition coefficient between the two selected states. -/
+@[simp]
+theorem restrictTransition_apply (P : Matrix s s ℝ) (S : Set s) (i j : S) :
+    restrictTransition P S i j = P i.val j.val :=
+  rfl
+
+/-- A closed subset inherits the stochastic row sums. -/
+theorem IsClosedStateSet.stochastic_restrictTransition [Fintype S]
+    (hS : IsClosedStateSet P S) (hP : IsStochasticMatrix P) :
+    IsStochasticMatrix (restrictTransition P S) := by
+  classical
+  rw [isStochasticMatrix_iff_row_sums]
+  refine ⟨fun i j => hP.1 i j, fun i => ?_⟩
+  simp only [restrictTransition_apply, Finset.sum_set_coe]
+  rw [Finset.sum_subset S.toFinset.subset_univ (fun j _ hj =>
+    hS i i.property j (fun h => hj (Set.mem_toFinset.mpr h)))]
+  exact sum_row_of_mem_rowStochastic hP i
+
+/-- A path starting in a closed set has the same transition probabilities
+under restriction to that set. -/
+theorem IsClosedStateSet.transitionProbability_restrictTransition [Fintype S]
+    (hS : IsClosedStateSet P S) (n : ℕ) (i j : S) :
+    transitionProbability (restrictTransition P S) n i j =
+      transitionProbability P n i.val j.val := by
+  classical
+  induction n generalizing j with
+  | zero => simp only [transitionProbability_zero, Subtype.ext_iff]
+  | succ n ih =>
+    rw [chapmanKolmogorov _ n 1, chapmanKolmogorov _ n 1]
+    have hterm (k : S) : transitionProbability (restrictTransition P S) n i k *
+        transitionProbability (restrictTransition P S) 1 k j =
+        transitionProbability P n i.val k.val * transitionProbability P 1 k.val j.val := by
+      rw [ih k]
+      simp [transitionProbability]
+    simp only [hterm]
+    rw [Finset.sum_set_coe (f := fun k =>
+      transitionProbability P n i.val k * transitionProbability P 1 k j.val) S]
+    apply Finset.sum_subset S.toFinset.subset_univ
+    intro k _ hk
+    rw [hS.transitionProbability_eq_zero i.property (fun h => hk (Set.mem_toFinset.mpr h)) n,
+      zero_mul]
+
+/-- The transition matrix on a closed communicating class is irreducible. -/
+theorem IsClosedCommunicatingClass.irreducible_restrictTransition [Fintype S]
+    (hS : IsClosedCommunicatingClass P S) :
+    IsIrreducibleChain (restrictTransition P S) := by
+  intro i j
+  obtain ⟨n, hn, hp⟩ := (hS.2.2 i i.property j j.property).1
+  exact ⟨n, hn, (hS.2.1.transitionProbability_restrictTransition n i j).symm ▸ hp⟩
+
+omit [Fintype s] in
+private theorem restrictTransition_killedTransition (P : Matrix s s ℝ) (S : Set s) (j : S) :
+    restrictTransition (killedTransition P j.val) S = killedTransition (restrictTransition P S) j := by
+  ext a b
+  simp [killedTransition, Subtype.ext_iff]
+
+omit [Fintype s] in
+private theorem IsClosedStateSet.killedTransition_closed (hS : IsClosedStateSet P S) (j : s) :
+    IsClosedStateSet (killedTransition P j) S := by
+  intro a ha b hb
+  simp [killedTransition, hS a ha b hb]
+
+/-- Restriction to a closed set preserves all first-passage probabilities
+between states in the set. -/
+theorem IsClosedStateSet.firstPassageProbability_restrictTransition [Fintype S]
+    (hS : IsClosedStateSet P S) (i j : S) (n : ℕ) :
+    firstPassageProbability (restrictTransition P S) i j n =
+      firstPassageProbability P i.val j.val n := by
+  classical
+  cases n with
+  | zero => rfl
+  | succ n =>
+    rw [firstPassageProbability, firstPassageProbability, ← restrictTransition_killedTransition,
+      Matrix.mul_apply, Matrix.mul_apply]
+    have hpow (b : S) :
+        ((restrictTransition (killedTransition P j.val) S) ^ n) i b =
+          (killedTransition P j.val ^ n) i.val b.val :=
+      (hS.killedTransition_closed j.val).transitionProbability_restrictTransition n i b
+    simp only [hpow, restrictTransition_apply]
+    rw [Finset.sum_set_coe (f := fun b => (killedTransition P j.val ^ n) i.val b * P b j.val) S]
+    apply Finset.sum_subset S.toFinset.subset_univ
+    intro b _ hb
+    have hz := (hS.killedTransition_closed j.val).transitionProbability_eq_zero
+      i.property (fun h => hb (Set.mem_toFinset.mpr h)) n
+    change (killedTransition P j.val ^ n) i.val b = 0 at hz
+    rw [hz, zero_mul]
+
+/-- The eventual passage probabilities between states of a closed set are
+unchanged by restriction. -/
+theorem IsClosedStateSet.eventualPassageProbability_restrictTransition [Fintype S]
+    (hS : IsClosedStateSet P S) (i j : S) :
+    eventualPassageProbability (restrictTransition P S) i j =
+      eventualPassageProbability P i.val j.val := by
+  simp only [eventualPassageProbability, hS.firstPassageProbability_restrictTransition]
+
+/-- The mean passage times between states of a closed set are unchanged by
+restriction. -/
+theorem IsClosedStateSet.meanFirstPassageTime_restrictTransition [Fintype S]
+    (hS : IsClosedStateSet P S) (i j : S) :
+    meanFirstPassageTime (restrictTransition P S) i j =
+      meanFirstPassageTime P i.val j.val := by
+  simp only [meanFirstPassageTime, hS.firstPassageProbability_restrictTransition]
+
+/-- A state has the same period in a closed set and in the full chain. -/
+theorem IsClosedStateSet.statePeriod_restrictTransition [Fintype S]
+    (hS : IsClosedStateSet P S) (i : S) :
+    statePeriod (restrictTransition P S) i = statePeriod P i.val := by
+  simp only [statePeriod, hS.transitionProbability_restrictTransition]
+
+/-- States in a closed communicating class are recurrent and have finite
+mean return times. -/
+theorem IsClosedCommunicatingClass.recurrent_and_mean_return_ne_top
+    (hP : IsStochasticMatrix P) (hS : IsClosedCommunicatingClass P S) (i : S) :
+    IsRecurrentState P i.val ∧ meanFirstPassageTime P i.val i.val ≠ ⊤ := by
+  let := Fintype.ofFinite S
+  have hQ := hS.2.1.stochastic_restrictTransition hP
+  have hirr := hS.irreducible_restrictTransition
+  constructor
+  · unfold IsRecurrentState
+    rw [← hS.2.1.eventualPassageProbability_restrictTransition i i]
+    exact isRecurrentChain_of_irreducible hQ hirr i
+  · rw [← hS.2.1.meanFirstPassageTime_restrictTransition i i,
+      meanFirstPassageTime_eq_killed_inverse hQ i i (fun j => hirr j i)]
+    exact ENNReal.ofReal_ne_top
+
+end ClosedClassRestriction
+
+section LocalRecurrence
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ} {S : Set s}
+
+private theorem survivalProbability_eq_one_on_closed_set (hP : IsStochasticMatrix P)
+    (hS : IsClosedStateSet P S) {i j : s} (hi : i ∈ S) (hj : j ∉ S) (n : ℕ) :
+    survivalProbability P i j n = 1 := by
+  have hrow (a : s) (ha : a ∈ S) (b : s) : killedTransition P j a b = P a b := by
+    by_cases hb : b = j
+    · subst b
+      simp [killedTransition, hS a ha j hj]
+    · simp [killedTransition, hb]
+  have hpow (b : s) : (killedTransition P j ^ n) i b = (P ^ n) i b := by
+    induction n generalizing b with
+    | zero => simp only [pow_zero]
+    | succ n ih =>
+      rw [pow_succ, pow_succ, Matrix.mul_apply, Matrix.mul_apply]
+      apply Finset.sum_congr rfl
+      intro k _
+      rw [ih k]
+      by_cases hk : k ∈ S
+      · rw [hrow k hk]
+      · have hz : (P ^ n) i k = 0 := hS.transitionProbability_eq_zero hi hk n
+        rw [hz, zero_mul, zero_mul]
+  simpa only [survivalProbability, Matrix.mulVec, dotProduct, Pi.one_apply, mul_one, hpow] using
+    sum_row_of_mem_rowStochastic (stochastic_pow hP n) i
+
+private theorem killedTransition_first_pos_entry (hP : IsStochasticMatrix P)
+    (i j : s) (hj : i ≠ j) (hij : LeadsTo P i j) :
+    ∃ n : ℕ, 0 < (killedTransition P i ^ n) i j := by
+  classical
+  have h : ∃ n : ℕ, 0 < transitionProbability P n i j := by
+    obtain ⟨n, _, hn⟩ := hij
+    exact ⟨n, hn⟩
+  let n := Nat.find h
+  have hn : 0 < transitionProbability P n i j := Nat.find_spec h
+  have hn0 : n ≠ 0 := by
+    intro hzero
+    simp [hzero, transitionProbability_zero, hj] at hn
+  have hzero {a : ℕ} (ha : a < n) : (P ^ a) i j = 0 :=
+    le_antisymm (le_of_not_gt fun hpos => (Nat.find_min' h hpos).not_gt ha)
+      ((stochastic_pow hP a).1 i j)
+  let K := killedTransition P i
+  have he := congrArg (fun A : Matrix s s ℝ => A i j) (pow_eq_killed_add_passages P i n)
+  change (P ^ n) i j = (K ^ n +
+    ∑ t ∈ Finset.range n, K ^ t * (P - K) * P ^ (n - (t + 1))) i j at he
+  rw [Matrix.add_apply, Matrix.sum_apply] at he
+  have hs : (∑ t ∈ Finset.range n, (K ^ t * (P - K) * P ^ (n - (t + 1))) i j) = 0 := by
+    apply Finset.sum_eq_zero
+    intro t _
+    rw [Matrix.mul_apply]
+    apply Finset.sum_eq_zero
+    intro k _
+    change (K ^ t * (P - killedTransition P i)) i k * (P ^ (n - (t + 1))) k j = 0
+    rw [mul_killed_defect_entry]
+    split_ifs with hk
+    · subst k
+      rw [hzero (by omega), mul_zero]
+    · rw [zero_mul]
+  rw [hs, add_zero] at he
+  exact ⟨n, he ▸ hn⟩
+
+private theorem survivalProbability_add (P : Matrix s s ℝ) (i j : s) (a b : ℕ) :
+    survivalProbability P i j (a + b) =
+      ∑ k, (killedTransition P j ^ a) i k * survivalProbability P k j b := by
+  unfold survivalProbability
+  rw [pow_add, ← Matrix.mulVec_mulVec]
+  rfl
+
+/-- A state outside a closed set that it can reach is transient. -/
+theorem IsClosedStateSet.isTransient_of_reachable (hP : IsStochasticMatrix P)
+    (hS : IsClosedStateSet P S) {i j : s} (hi : i ∉ S) (hj : j ∈ S)
+    (hij : LeadsTo P i j) : IsTransientState P i := by
+  have hne : i ≠ j := fun e => hi (e.symm ▸ hj)
+  obtain ⟨a, ha⟩ := killedTransition_first_pos_entry hP i j hne hij
+  let c := (killedTransition P i ^ a) i j
+  have hbound (b : ℕ) : c ≤ survivalProbability P i i (a + b) := by
+    rw [survivalProbability_add]
+    have hterm : c = (killedTransition P i ^ a) i j * survivalProbability P j i b := by
+      rw [survivalProbability_eq_one_on_closed_set hP hS hj hi, mul_one]
+    rw [hterm]
+    exact Finset.single_le_sum (fun k _ =>
+      mul_nonneg (pow_apply_nonneg (killedTransition_nonneg hP i) a i k)
+        (survivalProbability_nonneg hP k i b)) (Finset.mem_univ j)
+  have hall (n : ℕ) : c ≤ survivalProbability P i i n := by
+    by_cases h : a ≤ n
+    · simpa only [Nat.add_sub_of_le h] using hbound (n - a)
+    · exact (by simpa only [Nat.add_zero] using hbound 0 : c ≤ survivalProbability P i i a).trans
+        (survivalProbability_antitone hP i i (Nat.le_of_not_ge h))
+  have hsum : (∑' n, firstPassageProbability P i i (n + 1)) ≤ 1 - c := by
+    apply Real.tsum_le_of_sum_range_le (fun n => firstPassageProbability_nonneg hP i i (n + 1))
+    intro n
+    rw [sum_firstPassageProbability hP]
+    exact sub_le_sub_left (hall n) 1
+  unfold IsTransientState IsRecurrentState eventualPassageProbability
+  rw [← ENNReal.ofReal_tsum_of_nonneg (fun n => firstPassageProbability_nonneg hP i i (n + 1))
+    (summable_firstPassageProbability hP i i)]
+  exact ne_of_lt (ENNReal.ofReal_lt_one.mpr (hsum.trans_lt (sub_lt_self 1 ha)))
+
+/-- The recurrent states of a finite chain are exactly those belonging to a
+closed communicating class. -/
+theorem isRecurrentState_iff_mem_closedCommunicatingClass (hP : IsStochasticMatrix P) (i : s) :
+    IsRecurrentState P i ↔ ∃ S : Set s, IsClosedCommunicatingClass P S ∧ i ∈ S := by
+  constructor
+  · intro hR
+    obtain ⟨S, j, hS, hj, hij⟩ := exists_closedCommunicatingClass_of_state hP i
+    refine ⟨S, hS, ?_⟩
+    by_contra hi
+    exact (hS.2.1.isTransient_of_reachable hP hi hj hij) hR
+  · rintro ⟨S, hS, hi⟩
+    exact (hS.recurrent_and_mean_return_ne_top hP ⟨i, hi⟩).1
+
+/-- **Exercise 21** of [benIsrael2003generalized], Chapter 8. A finite chain
+has no null recurrent states. Any nonempty finite chain has a recurrent state. -/
+theorem exercise_8_21 (hP : IsStochasticMatrix P) :
+    (∀ i, ¬IsNullState P i) ∧ (Nonempty s → ∃ i, IsRecurrentState P i) := by
+  constructor
+  · rintro i ⟨hR, hμ⟩
+    obtain ⟨S, hS, hi⟩ := (isRecurrentState_iff_mem_closedCommunicatingClass hP i).mp hR
+    exact (hS.recurrent_and_mean_return_ne_top hP ⟨i, hi⟩).2 hμ
+  · rintro ⟨i⟩
+    obtain ⟨S, j, hS, hj, _⟩ := exists_closedCommunicatingClass_of_state hP i
+    exact ⟨j, (hS.recurrent_and_mean_return_ne_top hP ⟨j, hj⟩).1⟩
+
+/-- **Exercise 22(b)** of [benIsrael2003generalized], Chapter 8. In a finite
+chain the implications for a null state follow from the absence of such states. -/
+theorem exercise_8_22b (hP : IsStochasticMatrix P) (i : s) (hi : IsNullState P i) :
+    (¬ Summable (fun n : ℕ => transitionProbability P (n + 1) i i)) ∧
+      Tendsto (fun n : ℕ => transitionProbability P n i i) atTop (𝓝 0) :=
+  ((exercise_8_21 hP).1 i hi).elim
+
+/-- **Exercise 22(c)** of [benIsrael2003generalized], Chapter 8. The positive
+return probabilities of an ergodic state tend to the reciprocal of its mean
+return time, even when the rest of the chain is reducible. -/
+theorem exercise_8_22c (hP : IsStochasticMatrix P) (i : s) (hi : IsErgodicState P i) :
+    Tendsto (fun n : ℕ => transitionProbability P n i i) atTop
+      (𝓝 ((meanFirstPassageTime P i i).toReal)⁻¹) := by
+  obtain ⟨S, hS, hm⟩ := (isRecurrentState_iff_mem_closedCommunicatingClass hP i).mp hi.1
+  let := Fintype.ofFinite S
+  let a : S := ⟨i, hm⟩
+  let : Nonempty S := ⟨a⟩
+  let Q := restrictTransition P S
+  have hQ := hS.2.1.stochastic_restrictTransition hP
+  have hI := hS.irreducible_restrictTransition
+  have hEa : statePeriod Q a = 1 := (hS.2.1.statePeriod_restrictTransition a).trans hi.2.1
+  have hE : IsErgodicChain Q :=
+    ⟨hI, fun b => (statePeriod_eq_of_communicates hQ ⟨hI b a, hI a b⟩).trans hEa⟩
+  obtain ⟨π, _, _, hlim, hμ, _⟩ := theorem_8 hQ hE
+  have ht := hlim a a
+  rw [hμ a, hS.2.1.meanFirstPassageTime_restrictTransition a a] at ht
+  simpa only [hS.2.1.transitionProbability_restrictTransition] using ht
+
+end LocalRecurrence
+
+section PeriodicReturns
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ}
+
+private theorem statePeriod_pos_of_leadsTo_self {i : s} (hi : LeadsTo P i i) :
+    0 < statePeriod P i := by
+  exact zero_lt_one.trans_le (le_csSup (common_return_divisors_bddAbove hi)
+    (show 1 ∈ {d : ℕ | ∀ n : ℕ, 0 < n → 0 < transitionProbability P n i i → d ∣ n}
+      from fun _ _ _ => one_dvd _))
+
+private theorem transitionProbability_iterated_pow (P : Matrix s s ℝ) (d n : ℕ) (i j : s) :
+    transitionProbability (P ^ d) n i j = transitionProbability P (d * n) i j := by
+  rw [transitionProbability, transitionProbability, pow_mul]
+
+private theorem period_power_isErgodicState (hP : IsStochasticMatrix P)
+    (hI : IsIrreducibleChain P) (i : s) : IsErgodicState (P ^ statePeriod P i) i := by
+  let d := statePeriod P i
+  let Q := P ^ d
+  let S := stateReachableSet Q i
+  have hd : 0 < d := statePeriod_pos_of_leadsTo_self (hI i i)
+  have hQ : IsStochasticMatrix Q := stochastic_pow hP d
+  have hscale {m : ℕ} (hm : 0 < m) (hdm : d ∣ m) {a b : s}
+      (hp : 0 < transitionProbability P m a b) : LeadsTo Q a b := by
+    obtain ⟨k, rfl⟩ := hdm
+    exact ⟨k, Nat.pos_of_ne_zero (fun hk => by simp [hk] at hm),
+      (transitionProbability_iterated_pow P d k a b).symm ▸ hp⟩
+  have hself : LeadsTo Q i i := by
+    obtain ⟨n, hn, hp⟩ := hI i i
+    exact hscale hn (statePeriod_dvd_return hn hp) hp
+  have hfwd (a : s) (ha : a ∈ S) : LeadsTo Q i a := by
+    rcases ha with rfl | ha
+    · exact hself
+    · exact ha
+  have hback (a : s) (ha : a ∈ S) : LeadsTo Q a i := by
+    obtain ⟨n, hn, hip⟩ := hfwd a ha
+    obtain ⟨m, hm, hap⟩ := hI a i
+    rw [transitionProbability_iterated_pow] at hip
+    have hsum : d ∣ d * n + m := statePeriod_dvd_return (by omega)
+      (transitionProbability_pos_add hP hip hap)
+    have hdm : d ∣ m := by
+      simpa only [Nat.add_sub_cancel_left] using Nat.dvd_sub hsum (dvd_mul_right d n)
+    exact hscale hm hdm hap
+  have hclass : IsClosedCommunicatingClass Q S :=
+    ⟨⟨i, Or.inl rfl⟩, isClosedStateSet_stateReachableSet hQ i,
+      fun a ha b hb => ⟨leadsTo_trans hQ (hback a ha) (hfwd b hb),
+        leadsTo_trans hQ (hback b hb) (hfwd a ha)⟩⟩
+  have hdiv (n : ℕ) (hn : 0 < n) (hp : 0 < transitionProbability P n i i) :
+      d * statePeriod Q i ∣ n := by
+    obtain ⟨k, rfl⟩ := (show d ∣ n from statePeriod_dvd_return hn hp)
+    have hk : 0 < k := Nat.pos_of_ne_zero (fun hk => by simp [hk] at hn)
+    exact Nat.mul_dvd_mul_left d (statePeriod_dvd_return hk
+      (show 0 < transitionProbability Q k i i by
+        rw [show Q = P ^ d by rfl, transitionProbability_iterated_pow]
+        exact hp))
+  have hle : d * statePeriod Q i ≤ d :=
+    le_csSup (common_return_divisors_bddAbove (hI i i)) hdiv
+  have hperiod : statePeriod Q i = 1 := by
+    refine le_antisymm ?_ (statePeriod_pos_of_leadsTo_self hself)
+    exact Nat.le_of_mul_le_mul_left (by simpa only [mul_one] using hle) hd
+  have ⟨hrec, hmean⟩ := hclass.recurrent_and_mean_return_ne_top hQ ⟨i, Or.inl rfl⟩
+  exact ⟨hrec, hperiod, hmean⟩
+
+private theorem sum_range_on_multiples (u : ℕ → ℝ) {d : ℕ} (hd : 0 < d)
+    (hz : ∀ n : ℕ, ¬ d ∣ n → u n = 0) (N : ℕ) :
+    (∑ n ∈ Finset.range (d * N), u n) = ∑ n ∈ Finset.range N, u (d * n) := by
+  classical
+  rw [← Finset.sum_filter_of_ne (p := fun n => d ∣ n) (fun n _ hn =>
+    Classical.byContradiction (fun h => hn (hz n h)))]
+  symm
+  refine Finset.sum_bij (fun n _ => d * n) ?_ ?_ ?_ (fun _ _ => rfl)
+  · intro n hn
+    exact Finset.mem_filter.mpr
+      ⟨Finset.mem_range.mpr (Nat.mul_lt_mul_of_pos_left (Finset.mem_range.mp hn) hd),
+        dvd_mul_right d n⟩
+  · intro a _ b _ he
+    exact Nat.eq_of_mul_eq_mul_left hd he
+  · intro n hn
+    obtain ⟨hN, k, rfl⟩ := Finset.mem_filter.mp hn
+    exact ⟨k, Finset.mem_range.mpr (Nat.lt_of_mul_lt_mul_left (Finset.mem_range.mp hN)), rfl⟩
+
+private theorem transitionCesaro_period_subseq (hP : IsStochasticMatrix P)
+    (i : s) (hd : 0 < statePeriod P i) (N : ℕ) :
+    transitionCesaro P (statePeriod P i * (N + 1) - 1) i i =
+      (statePeriod P i : ℝ)⁻¹ * transitionCesaro (P ^ statePeriod P i) N i i := by
+  let d := statePeriod P i
+  let u n := transitionProbability P n i i
+  have hz (n : ℕ) (hn : ¬ d ∣ n) : u n = 0 := by
+    refine le_antisymm (le_of_not_gt fun hpos => hn ?_) ((stochastic_pow hP n).1 i i)
+    have hn0 : n ≠ 0 := fun h => hn (h ▸ dvd_zero d)
+    exact statePeriod_dvd_return (Nat.pos_of_ne_zero hn0) hpos
+  have hpos : 0 < d * (N + 1) := Nat.mul_pos hd (Nat.succ_pos N)
+  have hden : (((d * (N + 1) - 1 : ℕ) : ℝ) + 1) = (d : ℝ) * ((N : ℝ) + 1) := by
+    calc
+      _ = ((d * (N + 1) - 1 + 1 : ℕ) : ℝ) := by norm_cast
+      _ = ((d * (N + 1) : ℕ) : ℝ) := by rw [Nat.sub_add_cancel hpos]
+      _ = _ := by norm_cast
+  simp only [transitionCesaro, Matrix.smul_apply, smul_eq_mul, Matrix.sum_apply]
+  change (((d * (N + 1) - 1 : ℕ) : ℝ) + 1)⁻¹ *
+      (∑ n ∈ Finset.range (d * (N + 1) - 1 + 1), u n) =
+    (d : ℝ)⁻¹ * (((N : ℝ) + 1)⁻¹ *
+      (∑ n ∈ Finset.range (N + 1), transitionProbability (P ^ d) n i i))
+  rw [hden, Nat.sub_add_cancel hpos, sum_range_on_multiples u hd hz,
+    mul_inv, mul_assoc]
+  simp only [transitionProbability_iterated_pow, u]
+  rfl
+
+private theorem periodic_return_limit_irreducible (hP : IsStochasticMatrix P)
+    (hI : IsIrreducibleChain P) (i : s) :
+    Tendsto (fun n : ℕ => transitionProbability P (n * statePeriod P i) i i) atTop
+      (𝓝 ((statePeriod P i : ℝ) * ((meanFirstPassageTime P i i).toReal)⁻¹)) := by
+  let d := statePeriod P i
+  let Q := P ^ d
+  let L := ((meanFirstPassageTime Q i i).toReal)⁻¹
+  let M := ((meanFirstPassageTime P i i).toReal)⁻¹
+  have hd : 0 < d := statePeriod_pos_of_leadsTo_self (hI i i)
+  have hq : Tendsto (fun n : ℕ => transitionProbability Q n i i) atTop (𝓝 L) :=
+    exercise_8_22c (stochastic_pow hP d) i (period_power_isErgodicState hP hI i)
+  have hq_avg : Tendsto (fun n : ℕ => transitionCesaro Q n i i) atTop (𝓝 L) := by
+    have ht := hq.cesaro.comp (tendsto_add_atTop_nat 1)
+    simpa only [Function.comp_def, transitionCesaro, Matrix.smul_apply, smul_eq_mul,
+      Matrix.sum_apply, Nat.cast_add, Nat.cast_one, transitionProbability] using ht
+  have hsub : Tendsto (fun n : ℕ => d * (n + 1) - 1) atTop atTop := by
+    refine tendsto_atTop_mono (fun n => ?_) tendsto_id
+    change n ≤ d * (n + 1) - 1
+    have h := Nat.le_mul_of_pos_left (n + 1) hd
+    omega
+  have hp_avg : Tendsto (fun n : ℕ => transitionCesaro P (d * (n + 1) - 1) i i) atTop (𝓝 M) :=
+    (theorem_7 hP hI i i).comp hsub
+  have hq_avg' :
+      Tendsto (fun n : ℕ => transitionCesaro P (d * (n + 1) - 1) i i) atTop
+        (𝓝 ((d : ℝ)⁻¹ * L)) := by
+    have he : (fun n : ℕ => transitionCesaro P (d * (n + 1) - 1) i i) =
+        fun n : ℕ => (d : ℝ)⁻¹ * transitionCesaro Q n i i :=
+      funext (transitionCesaro_period_subseq hP i hd)
+    rw [he]
+    exact tendsto_const_nhds.mul hq_avg
+  have hcoeff := tendsto_nhds_unique hp_avg hq_avg'
+  have hL : L = (d : ℝ) * M := by
+    rw [hcoeff, ← mul_assoc, mul_inv_cancel₀ (by exact_mod_cast hd.ne'), one_mul]
+  rw [hL] at hq
+  simpa only [Q, d, M, transitionProbability_iterated_pow, Nat.mul_comm] using hq
+
+/-- **Exercise 22(d)** of [benIsrael2003generalized], Chapter 8. Along the
+multiples of its period, a recurrent state's return probabilities tend to
+the period divided by the mean return time. -/
+theorem exercise_8_22d (hP : IsStochasticMatrix P) (i : s) (hi : IsRecurrentState P i)
+    (_hmean : meanFirstPassageTime P i i ≠ ⊤) :
+    Tendsto (fun n : ℕ => transitionProbability P (n * statePeriod P i) i i) atTop
+      (𝓝 ((statePeriod P i : ℝ) * ((meanFirstPassageTime P i i).toReal)⁻¹)) := by
+  obtain ⟨S, hS, hm⟩ := (isRecurrentState_iff_mem_closedCommunicatingClass hP i).mp hi
+  let := Fintype.ofFinite S
+  let j : S := ⟨i, hm⟩
+  simpa only [hS.2.1.transitionProbability_restrictTransition,
+    hS.2.1.statePeriod_restrictTransition, hS.2.1.meanFirstPassageTime_restrictTransition] using
+    periodic_return_limit_irreducible (hS.2.1.stochastic_restrictTransition hP)
+      hS.irreducible_restrictTransition j
+
+/-- **Exercise 22(c,d)** of [benIsrael2003generalized], Chapter 8. Aperiodic
+states have the ordinary return limit, and positive recurrent states have
+the corresponding period-sampled limit. -/
+theorem exercise_8_22cd (hP : IsStochasticMatrix P) (i : s) :
+    (IsErgodicState P i →
+      Tendsto (fun n : ℕ => transitionProbability P n i i) atTop
+        (𝓝 ((meanFirstPassageTime P i i).toReal)⁻¹)) ∧
+    (IsRecurrentState P i → meanFirstPassageTime P i i ≠ ⊤ →
+      Tendsto (fun n : ℕ => transitionProbability P (n * statePeriod P i) i i) atTop
+        (𝓝 ((statePeriod P i : ℝ) * ((meanFirstPassageTime P i i).toReal)⁻¹))) :=
+  ⟨exercise_8_22c hP i, exercise_8_22d hP i⟩
+
+end PeriodicReturns
+
+section ComponentDecomposition
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ}
+
+/-- The communicating component of a state, with the starting state included
+even when it has no positive-time return. -/
+def markovCommunicationComponent (P : Matrix s s ℝ) (i : s) : Set s :=
+  {j | stateReachableSet P j = stateReachableSet P i}
+
+/-- Two states share a communicating component exactly when their reachable sets agree. -/
+@[simp]
+theorem mem_markovCommunicationComponent {i j : s} :
+    j ∈ markovCommunicationComponent P i ↔ stateReachableSet P j = stateReachableSet P i :=
+  Iff.rfl
+
+private theorem mem_stateReachableSet_of_pos_transition {i j : s} {n : ℕ}
+    (h : 0 < transitionProbability P n i j) : j ∈ stateReachableSet P i := by
+  cases n with
+  | zero =>
+    by_cases hi : i = j
+    · exact Or.inl hi
+    · simp [transitionProbability_zero, hi] at h
+  | succ n => exact Or.inr ⟨n + 1, Nat.succ_pos n, h⟩
+
+private theorem transitionProbability_restrict_communicationComponent
+    (hP : IsStochasticMatrix P) (a : s) [Fintype (markovCommunicationComponent P a)]
+    (n : ℕ) (i j : markovCommunicationComponent P a) :
+    transitionProbability (restrictTransition P (markovCommunicationComponent P a)) n i j =
+      transitionProbability P n i.val j.val := by
+  let S := markovCommunicationComponent P a
+  change transitionProbability (restrictTransition P S) n i j = _
+  induction n generalizing j with
+  | zero => simp only [transitionProbability_zero, Subtype.ext_iff]
+  | succ n ih =>
+    rw [chapmanKolmogorov _ n 1, chapmanKolmogorov _ n 1]
+    have hterm (k : S) : transitionProbability (restrictTransition P S) n i k *
+        transitionProbability (restrictTransition P S) 1 k j =
+        transitionProbability P n i.val k.val * transitionProbability P 1 k.val j.val := by
+      rw [ih k]
+      simp [transitionProbability]
+    simp only [hterm]
+    rw [Finset.sum_set_coe (f := fun k =>
+      transitionProbability P n i.val k * transitionProbability P 1 k j.val) S]
+    apply Finset.sum_subset S.toFinset.subset_univ
+    intro k _ hk
+    have hnonneg : 0 ≤ transitionProbability P n i.val k * transitionProbability P 1 k j.val :=
+      mul_nonneg ((stochastic_pow hP n).1 i k) ((stochastic_pow hP 1).1 k j)
+    refine le_antisymm (le_of_not_gt ?_) hnonneg
+    intro hpos
+    have hik := mem_stateReachableSet_of_pos_transition
+      (pos_of_mul_pos_left hpos ((stochastic_pow hP 1).1 k j))
+    have hkj := mem_stateReachableSet_of_pos_transition
+      (pos_of_mul_pos_right hpos ((stochastic_pow hP n).1 i k))
+    have hi : stateReachableSet P i.val = stateReachableSet P a := i.property
+    have hj : stateReachableSet P j.val = stateReachableSet P a := j.property
+    have hKi := stateReachableSet_subset_of_mem hP hik
+    have hJk := stateReachableSet_subset_of_mem hP hkj
+    have hKa : stateReachableSet P k = stateReachableSet P a := by
+      rw [hi] at hKi
+      rw [hj] at hJk
+      exact Set.Subset.antisymm hKi hJk
+    exact hk (Set.mem_toFinset.mpr hKa)
+
+private theorem not_isReducible_restrict_communicationComponent (hP : IsStochasticMatrix P)
+    (a : s) : ¬ BenIsraelGreville.Chapter00.isReducible
+      (restrictTransition P (markovCommunicationComponent P a)) := by
+  let S := markovCommunicationComponent P a
+  let := Fintype.ofFinite S
+  let Q := restrictTransition P S
+  rintro ⟨T, ⟨j, hj⟩, ⟨i, hi⟩, hzero⟩
+  have hc : IsClosedStateSet Q Tᶜ := by
+    intro b hb c hc
+    exact hzero b hb c (Classical.byContradiction hc)
+  have hjR : j.val ∈ stateReachableSet P i.val := by
+    have hiR : stateReachableSet P i.val = stateReachableSet P a := i.property
+    have hjR : stateReachableSet P j.val = stateReachableSet P a := j.property
+    rw [hiR, ← hjR]
+    exact Or.inl rfl
+  rcases hjR with heq | ⟨n, _, hn⟩
+  · exact hi ((Subtype.ext heq).symm ▸ hj)
+  · have hq := hc.transitionProbability_eq_zero hi (fun h => h hj) n
+    rw [transitionProbability_restrict_communicationComponent hP a n i j] at hq
+    rw [hq] at hn
+    exact (lt_irrefl 0) hn
+
+private theorem closedCommunicatingClass_eq_communicationComponent (hP : IsStochasticMatrix P)
+    {S : Set s} (hS : IsClosedCommunicatingClass P S) {i : s} (hi : i ∈ S) :
+    S = markovCommunicationComponent P i := by
+  ext j
+  rw [mem_markovCommunicationComponent]
+  constructor
+  · intro hj
+    have hc := hS.2.2 i hi j hj
+    exact Set.Subset.antisymm (stateReachableSet_subset_of_mem hP (Or.inr hc.1))
+      (stateReachableSet_subset_of_mem hP (Or.inr hc.2))
+  · intro he
+    have hj : j ∈ stateReachableSet P i := he ▸ mem_stateReachableSet_self P j
+    rcases hj with rfl | hj
+    · exact hi
+    · exact hS.2.1.mem_of_leadsTo hi hj
+
+/-- **Exercise 19**, Equation (108) of [benIsrael2003generalized], Chapter 8.
+The state reindexing gives an upper block triangular matrix. Its final blocks
+are exactly the minimal closed classes, are irreducible stochastic matrices,
+and have zero off-diagonal row blocks. The earlier blocks are irreducible
+in the matrix sense, which includes a singleton having zero self-transition. -/
+theorem exercise_8_19 (hP : IsStochasticMatrix P) :
+    ∃ (n k : ℕ) (C : Fin n → Set s) (e : (Σ a, C a) ≃ s),
+      k ≤ n ∧ (∀ a i, e ⟨a, i⟩ = i.val) ∧
+      (∀ a, (C a).Nonempty ∧ ¬ BenIsraelGreville.Chapter00.isReducible (restrictTransition P (C a))) ∧
+      (∀ a, IsClosedCommunicatingClass P (C a) ↔ k ≤ a.val) ∧
+      (∀ S, IsClosedCommunicatingClass P S → ∃ a, S = C a) ∧
+      (∀ (a : Fin n) [Fintype (C a)], k ≤ a.val →
+        IsStochasticMatrix (restrictTransition P (C a)) ∧ IsIrreducibleChain (restrictTransition P (C a))) ∧
+      (∀ (a b : Fin n) (i : C a) (j : C b), b < a ∨ (k ≤ a.val ∧ a ≠ b) →
+        P.submatrix e e ⟨a, i⟩ ⟨b, j⟩ = 0) := by
+  classical
+  let R := Set.range (stateReachableSet P)
+  let F (A : R) : Set s := {i | stateReachableSet P i = A.val}
+  let := Fintype.ofFinite R
+  let r := Fintype.card R
+  let N := Nat.card s
+  let tie := Fintype.equivFin R
+  let closed (A : R) := IsClosedCommunicatingClass P (F A)
+  let score (A : R) := if closed A then N + 1 else N - A.val.ncard
+  let key (A : R) : Lex (ℕ × Fin r) := toLex (score A, tie A)
+  have hkey : Function.Injective key := by
+    intro A B h
+    exact tie.injective (congrArg Prod.snd (toLex.injective h))
+  let K := Set.range key
+  let keyEquiv : R ≃ K := Equiv.ofInjective key hkey
+  let := Fintype.ofFinite K
+  let n := Fintype.card K
+  let order : Fin n ≃o K := Fintype.orderIsoFinOfCardEq K rfl
+  let ord : Fin n ≃ R := order.toEquiv.trans keyEquiv.symm
+  let C (a : Fin n) : Set s := F (ord a)
+  let idx (i : s) : R := ⟨stateReachableSet P i, ⟨i, rfl⟩⟩
+  let index (i : s) : Fin n := ord.symm (idx i)
+  let fibres (a : Fin n) : C a ≃ {i // index i = a} :=
+    Equiv.subtypeEquivRight fun i => by
+      change stateReachableSet P i = (ord a).val ↔ ord.symm (idx i) = a
+      rw [Equiv.symm_apply_eq]
+      exact ⟨fun h => Subtype.ext h, fun h => congrArg Subtype.val h⟩
+  let e : (Σ a, C a) ≃ s := (Equiv.sigmaCongrRight fibres).trans (Equiv.sigmaFiberEquiv index)
+  have hsort {a b : Fin n} (h : score (ord a) < score (ord b)) : a < b := by
+    apply order.lt_iff_lt.mp
+    have he (j : Fin n) : key (ord j) = (order j).val :=
+      congrArg Subtype.val (keyEquiv.apply_symm_apply (order j))
+    change (order a).val < (order b).val
+    rw [← he, ← he]
+    exact Prod.Lex.left _ _ h
+  have hlast (a b : Fin n) (ha : IsClosedCommunicatingClass P (C a))
+      (hb : ¬ IsClosedCommunicatingClass P (C b)) : b < a := by
+    apply hsort
+    change closed (ord a) at ha
+    change ¬closed (ord b) at hb
+    simp only [score, ite_eq_right hb, ite_eq_left ha]
+    omega
+  have hmono (a b : Fin n) (hab : a ≤ b) (ha : IsClosedCommunicatingClass P (C a)) :
+      IsClosedCommunicatingClass P (C b) := by
+    by_contra hb
+    exact (not_lt_of_ge hab) (hlast a b ha hb)
+  have hcut : ∃ k ≤ n, ∀ a : Fin n, IsClosedCommunicatingClass P (C a) ↔ k ≤ a.val := by
+    let A := Finset.univ.filter (fun a : Fin n => IsClosedCommunicatingClass P (C a))
+    by_cases hA : A.Nonempty
+    · let a₀ := A.min' hA
+      have ha₀ : IsClosedCommunicatingClass P (C a₀) :=
+        (Finset.mem_filter.mp (A.min'_mem hA)).2
+      refine ⟨a₀.val, a₀.isLt.le, fun a => ⟨fun ha => ?_, fun hab => hmono _ _ hab ha₀⟩⟩
+      exact A.min'_le a (Finset.mem_filter.mpr ⟨Finset.mem_univ a, ha⟩)
+    · refine ⟨n, le_rfl, fun a => ⟨fun ha => ?_, fun hn => (a.isLt.not_ge hn).elim⟩⟩
+      exact (hA ⟨a, Finset.mem_filter.mpr ⟨Finset.mem_univ a, ha⟩⟩).elim
+  obtain ⟨k, hk, hC⟩ := hcut
+  have hmember (a : Fin n) : ∃ i : s, stateReachableSet P i = (ord a).val := (ord a).property
+  have hfibre {a : Fin n} {i : s} (hi : i ∈ C a) : C a = markovCommunicationComponent P i := by
+    have hi' : stateReachableSet P i = (ord a).val := hi
+    ext j
+    simp only [mem_markovCommunicationComponent, hi']
+    rfl
+  refine ⟨n, k, C, e, hk, fun _ _ => rfl, ?_, hC, ?_, ?_, ?_⟩
+  · intro a
+    obtain ⟨i, hi⟩ := hmember a
+    exact ⟨⟨i, hi⟩, hfibre hi ▸ not_isReducible_restrict_communicationComponent hP i⟩
+  · intro S hS
+    obtain ⟨i, hi⟩ := hS.1
+    refine ⟨index i, (closedCommunicatingClass_eq_communicationComponent hP hS hi).trans ?_⟩
+    exact (hfibre (show i ∈ C (index i) from
+      (congrArg Subtype.val (ord.apply_symm_apply (idx i))).symm)).symm
+  · intro a hFinite ha
+    have hc := (hC a).2 ha
+    exact ⟨hc.2.1.stochastic_restrictTransition hP, hc.irreducible_restrictTransition⟩
+  · intro a b i j hblock
+    change P i.val j.val = 0
+    have hab : a ≠ b := hblock.elim ne_of_gt And.right
+    have hout : j.val ∉ C a := by
+      intro hj
+      have hjb : stateReachableSet P j.val = (ord b).val := j.property
+      exact hab (ord.injective (Subtype.ext ((show stateReachableSet P j.val = (ord a).val from
+        hj).symm.trans hjb)))
+    by_cases ha : IsClosedCommunicatingClass P (C a)
+    · exact ha.2.1 i i.property j hout
+    · have hba : b < a := hblock.elim id (fun h => (ha ((hC a).2 h.1)).elim)
+      refine le_antisymm (le_of_not_gt ?_) (hP.1 i j)
+      intro hpos
+      have hsub := stateReachableSet_subset_of_mem hP
+        (show j.val ∈ stateReachableSet P i.val from Or.inr (leadsTo_of_pos_entry hpos))
+      have hi' : stateReachableSet P i.val = (ord a).val := i.property
+      have hj' : stateReachableSet P j.val = (ord b).val := j.property
+      rw [hi', hj'] at hsub
+      have hstrict : (ord b).val ⊂ (ord a).val :=
+        Set.ssubset_iff_subset_ne.mpr ⟨hsub, fun he => hab (ord.injective (Subtype.ext he.symm))⟩
+      have hcard := Set.ncard_lt_ncard hstrict
+      have hu : (ord a).val.ncard ≤ N := Set.ncard_le_card (ord a).val
+      have hscore : score (ord a) < score (ord b) := by
+        change ¬closed (ord a) at ha
+        by_cases hb : closed (ord b)
+        · simp only [score, ite_eq_right ha, ite_eq_left hb]
+          omega
+        · simp only [score, ite_eq_right ha, ite_eq_right hb]
+          omega
+      exact (not_lt_of_ge hba.le) (hsort hscore)
+
+end ComponentDecomposition
+
+section AbsorbingBlocks
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ}
+
+private theorem matrix_submatrix_equiv_pow {r : Type*} [Fintype r] [DecidableEq r]
+    (M : Matrix s s ℝ) (e : r ≃ s) (n : ℕ) :
+    (M ^ n).submatrix e e = (M.submatrix e e) ^ n := by
+  induction n with
+  | zero => simp only [pow_zero, Matrix.submatrix_one_equiv]
+  | succ n ih =>
+    rw [pow_succ, pow_succ, ← Matrix.submatrix_mul_equiv _ _ e e e, ih]
+
+private theorem absorbing_fromBlocks_pow {r t : Type*} [Fintype r] [DecidableEq r]
+    [Fintype t] [DecidableEq t] (R : Matrix t r ℝ) (K : Matrix t t ℝ) (n : ℕ) :
+    (Matrix.fromBlocks (1 : Matrix r r ℝ) 0 R K) ^ n =
+      Matrix.fromBlocks (1 : Matrix r r ℝ) 0 ((∑ a ∈ Finset.range n, K ^ a) * R) (K ^ n) := by
+  induction n with
+  | zero => simp only [pow_zero, Finset.range_zero, Finset.sum_empty, Matrix.zero_mul, Matrix.fromBlocks_one]
+  | succ n ih =>
+    conv_lhs => rw [pow_succ, ih, Matrix.fromBlocks_multiply]
+    simp only [Matrix.mul_one, Matrix.mul_zero, Matrix.zero_mul, add_zero, zero_add,
+      Finset.sum_range_succ, Matrix.add_mul, pow_succ]
+
+private theorem absorbing_subset_reindex (hP : IsStochasticMatrix P) :
+    ∃ (r t : ℕ) (e : Fin r ⊕ Fin t ≃ s) (R : Matrix (Fin t) (Fin r) ℝ)
+      (K : Matrix (Fin t) (Fin t) ℝ),
+      (∀ i, IsAbsorbingState P i ↔ ∃ a, e (Sum.inl a) = i) ∧
+        P.submatrix e e = Matrix.fromBlocks 1 0 R K := by
+  classical
+  let A := {i : s | IsAbsorbingState P i}
+  let T := {i : s | ¬IsAbsorbingState P i}
+  let := Fintype.ofFinite A
+  let := Fintype.ofFinite T
+  let a := Fintype.equivFin A
+  let b := Fintype.equivFin T
+  let e := (a.symm.sumCongr b.symm).trans (Equiv.sumCompl (IsAbsorbingState P))
+  let R := P.submatrix (e ∘ Sum.inr) (e ∘ Sum.inl)
+  let K := P.submatrix (e ∘ Sum.inr) (e ∘ Sum.inr)
+  have hA (i : Fin (Fintype.card A)) : IsAbsorbingState P (e (Sum.inl i)) :=
+    (a.symm i).property
+  refine ⟨_, _, e, R, K, ?_, ?_⟩
+  · intro i
+    constructor
+    · intro hi
+      refine ⟨a ⟨i, hi⟩, ?_⟩
+      change (a.symm (a ⟨i, hi⟩)).val = i
+      rw [a.symm_apply_apply]
+    · rintro ⟨j, hj⟩
+      exact hj ▸ hA j
+  · ext i j
+    rcases i with i | i <;> rcases j with j | j
+    · change P (e (Sum.inl i)) (e (Sum.inl j)) = (1 : Matrix _ _ ℝ) i j
+      by_cases he : i = j
+      · subst j
+        simpa only [Matrix.one_apply_eq, IsAbsorbingState] using hA i
+      · rw [Matrix.one_apply_ne he]
+        exact absorbing_apply_of_ne hP (hA i) (fun h => he (Sum.inl.inj (e.injective h.symm)))
+    · exact absorbing_apply_of_ne hP (hA i) (by intro h; cases e.injective h)
+    · rfl
+    · rfl
+
+open scoped Matrix.Norms.Operator in
+private theorem absorbing_block_spectralRadius_lt_one (hP : IsStochasticMatrix P)
+    (habs : IsAbsorbingChain P) {r t : ℕ} {e : Fin r ⊕ Fin t ≃ s}
+    {R : Matrix (Fin t) (Fin r) ℝ} {K : Matrix (Fin t) (Fin t) ℝ}
+    (hA : ∀ i, IsAbsorbingState P i ↔ ∃ a, e (Sum.inl a) = i)
+    (hB : P.submatrix e e = Matrix.fromBlocks 1 0 R K) : K.complexSpectralRadius < 1 := by
+  classical
+  have hpowers (n : ℕ) : (P ^ n).submatrix e e =
+      Matrix.fromBlocks 1 0 ((∑ a ∈ Finset.range n, K ^ a) * R) (K ^ n) := by
+    rw [matrix_submatrix_equiv_pow, hB, absorbing_fromBlocks_pow]
+  have hKpow (n : ℕ) (i j : Fin t) :
+      (K ^ n) i j = transitionProbability P n (e (Sum.inr i)) (e (Sum.inr j)) :=
+    (congrFun (congrFun (hpowers n) (Sum.inr i)) (Sum.inr j)).symm
+  have hAdiag (n : ℕ) (j : Fin r) :
+      transitionProbability P n (e (Sum.inl j)) (e (Sum.inl j)) = 1 := by
+    simpa only [Matrix.fromBlocks_apply₁₁, Matrix.one_apply_eq, Matrix.submatrix_apply,
+      transitionProbability] using
+      congrFun (congrFun (hpowers n) (Sum.inl j)) (Sum.inl j)
+  by_cases ht : Nonempty (Fin t)
+  · let := ht
+    have hReach (i : Fin t) : ∃ a : Fin r, LeadsTo P (e (Sum.inr i)) (e (Sum.inl a)) := by
+      obtain ⟨j, hj, hreach⟩ := habs (e (Sum.inr i))
+      obtain ⟨a, rfl⟩ := (hA j).1 hj
+      exact ⟨a, hreach⟩
+    choose a n hn hpos using hReach
+    let N := Finset.univ.sup n
+    have hle (i : Fin t) : n i ≤ N := Finset.le_sup (Finset.mem_univ i)
+    have hN : 0 < N := (hn (Classical.choice ht)).trans_le (hle (Classical.choice ht))
+    have hposN (i : Fin t) :
+        0 < transitionProbability P N (e (Sum.inr i)) (e (Sum.inl (a i))) := by
+      have h := transitionProbability_mul_le_of_join hP (n i) (N - n i)
+        (e (Sum.inr i)) (e (Sum.inl (a i))) (e (Sum.inl (a i)))
+      rw [Nat.add_sub_of_le (hle i), hAdiag, mul_one] at h
+      exact (hpos i).trans_le h
+    have hrows (i : Fin t) : ∑ j, (K ^ N) i j < 1 := by
+      have hs := sum_row_of_mem_rowStochastic (stochastic_pow hP N) (e (Sum.inr i))
+      rw [← Equiv.sum_comp e] at hs
+      simp only [Fintype.sum_sum_type] at hs
+      have hlt : 0 < ∑ j, transitionProbability P N (e (Sum.inr i)) (e (Sum.inl j)) :=
+        (hposN i).trans_le (Finset.single_le_sum
+          (fun j _ => (show 0 ≤ transitionProbability P N (e (Sum.inr i)) (e (Sum.inl j)) from
+            (stochastic_pow hP N).1 _ _)) (Finset.mem_univ (a i)))
+      simp_rw [hKpow]
+      change (∑ j, transitionProbability P N (e (Sum.inr i)) (e (Sum.inl j))) +
+        (∑ j, transitionProbability P N (e (Sum.inr i)) (e (Sum.inr j))) = 1 at hs
+      linarith
+    obtain ⟨i₀, _, hmax⟩ := Finset.exists_max_image Finset.univ
+      (fun i => ∑ j, (K ^ N) i j) Finset.univ_nonempty
+    have hnonneg (i j : Fin t) : 0 ≤ (K ^ N) i j := by
+      rw [hKpow]
+      exact (stochastic_pow hP N).1 _ _
+    have hnorm : ‖K ^ N‖ ≤ ∑ j, (K ^ N) i₀ j := by
+      apply linfty_opNorm_le_of_forall_sum_le (Finset.sum_nonneg (fun j _ => hnonneg i₀ j))
+      intro i
+      simpa only [abs_of_nonneg, hnonneg] using hmax i (Finset.mem_univ i)
+    have hρ : (K ^ N).complexSpectralRadius < 1 := by
+      calc
+        _ ≤ (‖K ^ N‖₊ : ℝ≥0∞) := complexSpectralRadius_le_linfty_opNNNorm (K ^ N)
+        _ = ENNReal.ofReal ‖K ^ N‖ := (ofReal_norm _).symm
+        _ ≤ ENNReal.ofReal (∑ j, (K ^ N) i₀ j) := ENNReal.ofReal_le_ofReal hnorm
+        _ < 1 := ENNReal.ofReal_lt_one.mpr (hrows i₀)
+    rw [complexSpectralRadius_pow K hN.ne'] at hρ
+    exact lt_of_not_ge fun h => not_lt_of_ge (one_le_pow₀ h) hρ
+  · have hz : K = 0 := Matrix.ext fun i _ => (ht ⟨i⟩).elim
+    simp [hz]
+
+private theorem groupInverse_absorbing_fromBlocks {r t : Type*} [Fintype r] [DecidableEq r]
+    [Fintype t] [DecidableEq t] (R : Matrix t r ℝ) (K : Matrix t t ℝ)
+    (hK : K.complexSpectralRadius < 1) :
+    IsGroupInverse (1 - Matrix.fromBlocks (1 : Matrix r r ℝ) 0 R K)
+      (Matrix.fromBlocks (0 : Matrix r r ℝ) 0 (-(((1 - K)⁻¹ : Matrix t t ℝ) ^ 2 * R)) (1 - K)⁻¹) := by
+  let B := 1 - K
+  let U := B⁻¹
+  let Q := Matrix.fromBlocks (0 : Matrix r r ℝ) 0 (-R) B
+  let G := Matrix.fromBlocks (0 : Matrix r r ℝ) 0 (-(U ^ 2 * R)) U
+  have hunit : IsUnit B := isUnit_one_sub_of_complexSpectralRadius_lt_one hK
+  have hBU : B * U = 1 := Matrix.mul_nonsing_inv _ ((Matrix.isUnit_iff_isUnit_det B).mp hunit)
+  have hUB : U * B = 1 := Matrix.nonsing_inv_mul _ ((Matrix.isUnit_iff_isUnit_det B).mp hunit)
+  have h2 : B * (U ^ 2 * R) = U * R := by
+    rw [pow_two, ← Matrix.mul_assoc B, ← Matrix.mul_assoc B, hBU, Matrix.one_mul]
+  have hQ : (1 : Matrix (r ⊕ t) (r ⊕ t) ℝ) - Matrix.fromBlocks 1 0 R K = Q := by
+    rw [← Matrix.fromBlocks_one (l := r) (m := t)]
+    ext i j
+    rcases i with i | i <;> rcases j with j | j <;> simp [Q, B, Matrix.one_apply]
+  rw [hQ, isGroupInverse_iff]
+  change Commute Q G ∧ Q * G * Q = Q ∧ G * Q * G = G
+  let E := Matrix.fromBlocks (0 : Matrix r r ℝ) 0 (-(U * R)) (1 : Matrix t t ℝ)
+  have hQE : Q * G = E := by
+    simp [Q, G, E, Matrix.fromBlocks_multiply, h2, hBU]
+  have hGE : G * Q = E := by
+    simp [Q, G, E, Matrix.fromBlocks_multiply, hUB]
+  refine ⟨hQE.trans hGE.symm, ?_, ?_⟩
+  · rw [hQE]
+    simp [Q, E, Matrix.fromBlocks_multiply]
+  · rw [hGE]
+    simp [G, E, Matrix.fromBlocks_multiply]
+
+private theorem tendsto_absorbing_fromBlocks_pow {r t : Type*} [Fintype r] [DecidableEq r]
+    [Fintype t] [DecidableEq t] (R : Matrix t r ℝ) (K : Matrix t t ℝ)
+    (hK : K.complexSpectralRadius < 1) :
+    Tendsto (fun n : ℕ => (Matrix.fromBlocks (1 : Matrix r r ℝ) 0 R K) ^ n) atTop
+      (𝓝 (Matrix.fromBlocks (1 : Matrix r r ℝ) 0 ((1 - K)⁻¹ * R) 0)) := by
+  simp_rw [absorbing_fromBlocks_pow R K]
+  apply tendsto_pi_nhds.mpr
+  intro i
+  apply tendsto_pi_nhds.mpr
+  intro j
+  rcases i with i | i <;> rcases j with j | j
+  · exact tendsto_const_nhds
+  · exact tendsto_const_nhds
+  · simp only [Matrix.fromBlocks_apply₂₁]
+    have hc : Continuous (fun A : Matrix t t ℝ => (A * R) i j) := by
+      simp only [Matrix.mul_apply]
+      fun_prop
+    have ht := (hasSum_pow_inv_one_sub_of_complexSpectralRadius_lt_one hK).tendsto_sum_nat
+    exact hc.continuousAt.tendsto.comp ht
+  · simpa only [Matrix.fromBlocks_apply₂₂] using
+      tendsto_pi_nhds.mp (tendsto_pi_nhds.mp
+        ((tendsto_pow_iff_complexSpectralRadius_lt_one K).2 hK) i) j
+
+private theorem groupInverse_submatrix_equiv {r : Type*} [Fintype r] [DecidableEq r]
+    (hP : IsStochasticMatrix P) (e : r ≃ s) :
+    IsGroupInverse (1 - P.submatrix e e) ((stochasticGroupInverse P hP).submatrix e e) := by
+  let G := stochasticGroupInverse P hP
+  let Q := 1 - P
+  let M (A : Matrix s s ℝ) := A.submatrix e e
+  have hMQ : M Q = 1 - M P := by simp [M, Q, Matrix.submatrix_sub, Matrix.submatrix_one_equiv]
+  have hMul (A B : Matrix s s ℝ) : M (A * B) = M A * M B :=
+    (Matrix.submatrix_mul_equiv A B e e e).symm
+  have h := isGroupInverse_iff.mp (stochasticGroupInverse_spec P hP)
+  obtain ⟨hc, hi, ho⟩ := h
+  have hc' := congrArg M hc.eq
+  have hi' := congrArg M hi
+  have ho' := congrArg M ho
+  change M (Q * G) = M (G * Q) at hc'
+  change M (Q * G * Q) = M Q at hi'
+  change M (G * Q * G) = M G at ho'
+  simp only [hMul, hMQ] at hc' hi' ho'
+  exact isGroupInverse_iff.mpr ⟨hc', hi', ho'⟩
+
+/-- **Exercise 27(d)** and the absorbing case of **Theorem 10** of
+[benIsrael2003generalized], Chapter 8. The absorbing states form the leading
+identity block. The transient block has spectral radius less than one, and
+the other blocks give the power limit and the group inverse of identity
+minus the transition matrix. -/
+theorem exercise_8_27d (hP : IsStochasticMatrix P) (habs : IsAbsorbingChain P) :
+    ∃ (r t : ℕ) (e : Fin r ⊕ Fin t ≃ s) (R : Matrix (Fin t) (Fin r) ℝ)
+      (K : Matrix (Fin t) (Fin t) ℝ),
+      (∀ i, IsAbsorbingState P i ↔ ∃ a, e (Sum.inl a) = i) ∧
+      P.submatrix e e = Matrix.fromBlocks 1 0 R K ∧ K.complexSpectralRadius < 1 ∧
+      (∀ n : ℕ, (P ^ n).submatrix e e =
+        Matrix.fromBlocks 1 0 ((∑ a ∈ Finset.range n, K ^ a) * R) (K ^ n)) ∧
+      Tendsto (fun n : ℕ => (P ^ n).submatrix e e) atTop
+        (𝓝 (Matrix.fromBlocks 1 0 ((1 - K)⁻¹ * R) 0)) ∧
+      (stationaryProjection P hP).submatrix e e =
+        Matrix.fromBlocks 1 0 ((1 - K)⁻¹ * R) 0 ∧
+      (stochasticGroupInverse P hP).submatrix e e =
+        Matrix.fromBlocks 0 0 (-((1 - K)⁻¹ ^ 2 * R)) (1 - K)⁻¹ := by
+  obtain ⟨r, t, e, R, K, hA, hB⟩ := absorbing_subset_reindex hP
+  have hK := absorbing_block_spectralRadius_lt_one hP habs hA hB
+  have hpowers (n : ℕ) : (P ^ n).submatrix e e =
+      (Matrix.fromBlocks (1 : Matrix (Fin r) (Fin r) ℝ) 0 R K) ^ n := by
+    rw [matrix_submatrix_equiv_pow, hB]
+  have ht : Tendsto (fun n : ℕ => (P ^ n).submatrix e e) atTop
+      (𝓝 (Matrix.fromBlocks 1 0 ((1 - K)⁻¹ * R) 0)) := by
+    simp_rw [hpowers]
+    exact tendsto_absorbing_fromBlocks_pow R K hK
+  refine ⟨r, t, e, R, K, hA, hB, hK, fun n => (hpowers n).trans (absorbing_fromBlocks_pow R K n),
+    ht, ?_, ?_⟩
+  · have hc : Continuous (fun A : Matrix s s ℝ => A.submatrix e e) := by
+      apply continuous_pi_iff.mpr
+      intro i
+      apply continuous_pi_iff.mpr
+      intro j
+      exact (continuous_apply (e j)).comp (continuous_apply (e i))
+    exact tendsto_nhds_unique (hc.continuousAt.tendsto.comp (theorem_10_absorbing hP habs)) ht
+  · have hG := groupInverse_absorbing_fromBlocks R K hK
+    rw [← hB] at hG
+    exact (groupInverse_submatrix_equiv hP e).unique hG
+
+end AbsorbingBlocks
+
+section StationaryBlocks
+
+variable {s : Type*} [Fintype s] [DecidableEq s]
+variable {P : Matrix s s ℝ}
+
+private theorem stationaryProjection_range_finrank_ergodic [Nonempty s]
+    (hP : IsStochasticMatrix P) (hE : IsErgodicChain P) :
+    Module.finrank ℝ (LinearMap.range (stationaryProjection P hP).toLin') = 1 := by
+  let E := (stationaryProjection P hP).toLin'
+  have hfixed (x : s → ℝ) : x ∈ LinearMap.range E ↔ P *ᵥ x = x := by
+    constructor
+    · rintro ⟨y, rfl⟩
+      change P *ᵥ (stationaryProjection P hP *ᵥ y) = stationaryProjection P hP *ᵥ y
+      rw [Matrix.mulVec_mulVec, (stationaryProjection_spec hP).2.1]
+    · intro hx
+      exact ⟨x, stationaryProjection_mulVec_of_fixed hP hx⟩
+  have hr : LinearMap.range E = Submodule.span ℝ {(1 : s → ℝ)} := by
+    ext x
+    rw [hfixed, Submodule.mem_span_singleton]
+    constructor
+    · intro hx
+      obtain ⟨c, hc⟩ := fixed_by_transition_is_constant hP hE.1 hx
+      exact ⟨c, funext fun i => by simpa using (hc i).symm⟩
+    · rintro ⟨c, rfl⟩
+      rw [Matrix.mulVec_smul, (mem_rowStochastic.mp hP).2]
+  change Module.finrank ℝ (LinearMap.range E) = 1
+  rw [hr]
+  exact finrank_span_singleton (K := ℝ) (one_ne_zero : (1 : s → ℝ) ≠ 0)
+
+set_option maxHeartbeats 700000 in
+/-- **Exercise 27(a–c)** of [benIsrael2003generalized], Chapter 8. The range
+and kernel of the stationary projection give a basis with diagonal blocks
+I and K, where 1 is outside the complex spectrum of K. The identity block
+has size one for a nonempty ergodic chain, and the powers of K tend to zero
+for a regular chain. -/
+theorem exercise_8_27abc (hP : IsStochasticMatrix P) :
+    ∃ (k t : ℕ) (e : Fin k ⊕ Fin t ≃ s)
+      (C : Matrix (Fin k ⊕ Fin t) (Fin k ⊕ Fin t) ℝ) (K : Matrix (Fin t) (Fin t) ℝ),
+      IsUnit C ∧ Matrix.fromBlocks (1 : Matrix (Fin k) (Fin k) ℝ) 0 0 K =
+        C⁻¹ * P.submatrix e e * C ∧ (1 : ℂ) ∉ spectrum ℂ (complexify K) ∧
+      (Nonempty s → IsErgodicChain P → k = 1) ∧
+      (IsRegularChain P → Tendsto (fun n : ℕ => K ^ n) atTop (𝓝 0)) := by
+  classical
+  let E := (stationaryProjection P hP).toLin'
+  let L := P.toLin'
+  let F := LinearMap.range E
+  let T := LinearMap.ker E
+  have hE : IsIdempotentElem E := by
+    change E * E = E
+    dsimp only [E]
+    rw [Module.End.mul_eq_comp, ← Matrix.toLin'_mul, (stationaryProjection_spec hP).1]
+  have hFT : IsCompl F T := LinearMap.IsIdempotentElem.isCompl hE
+  let k := Module.finrank ℝ F
+  let t := Module.finrank ℝ T
+  let bF := Module.finBasis ℝ F
+  let bT := Module.finBasis ℝ T
+  let q := F.prodEquivOfIsCompl T hFT
+  let b := (bF.prod bT).map q
+  have hbL (i : Fin k) : b (Sum.inl i) = (bF i).val := by
+    simp [b, q, Submodule.coe_prodEquivOfIsCompl']
+  have hbR (i : Fin t) : b (Sum.inr i) = (bT i).val := by
+    simp [b, q, Submodule.coe_prodEquivOfIsCompl']
+  have hEL (x : s → ℝ) : E (L x) = E x := by
+    change stationaryProjection P hP *ᵥ (P *ᵥ x) = stationaryProjection P hP *ᵥ x
+    rw [Matrix.mulVec_mulVec, (stationaryProjection_spec hP).2.2]
+  have hLF (x : F) : L x.val = x.val := by
+    obtain ⟨y, hy⟩ := x.property
+    change P *ᵥ x.val = x.val
+    rw [← hy]
+    change P *ᵥ (stationaryProjection P hP *ᵥ y) = stationaryProjection P hP *ᵥ y
+    rw [Matrix.mulVec_mulVec, (stationaryProjection_spec hP).2.1]
+  let LT := L.restrict (p := T) (q := T) (fun {x} (hx : E x = 0) => show E (L x) = 0 from (hEL x).trans hx)
+  let K := LinearMap.toMatrix bT bT LT
+  have hK' (j : Fin t) : L (b (Sum.inr j)) = (LT (bT j)).val := by
+    rw [hbR]
+    rfl
+  have hd : LinearMap.toMatrix b b L = Matrix.fromBlocks (1 : Matrix (Fin k) (Fin k) ℝ) 0 0 K := by
+    ext i j
+    rcases j with j | j
+    · have hj : L (b (Sum.inl j)) = b (Sum.inl j) := by rw [hbL]; exact hLF (bF j)
+      cases i <;> simp [LinearMap.toMatrix_apply, hj, Matrix.one_apply, Finsupp.single_apply, eq_comm]
+    · rw [LinearMap.toMatrix_apply, hK']
+      have hq : q.symm (LT (bT j)).val = (0, LT (bT j)) :=
+        Submodule.prodEquivOfIsCompl_symm_apply_right F T hFT _
+      change (bF.prod bT).repr (q.symm (LT (bT j)).val) i = _
+      rw [hq]
+      rcases i with i | i
+      · simp only [Module.Basis.prod_repr_inl, map_zero, Finsupp.zero_apply,
+          Matrix.fromBlocks_apply₁₂, Matrix.zero_apply]
+      · simp only [Module.Basis.prod_repr_inr, Matrix.fromBlocks_apply₂₂, K,
+          LinearMap.toMatrix_apply]
+  let e : Fin k ⊕ Fin t ≃ s := Fintype.equivOfCardEq
+    ((Module.finrank_eq_card_basis b).symm.trans (Module.finrank_fintype_fun_eq_card ℝ))
+  let b₀ := (Pi.basisFun ℝ s).reindex e.symm
+  let C := LinearMap.toMatrix b b₀ (LinearMap.id : (s → ℝ) →ₗ[ℝ] s → ℝ)
+  let D := LinearMap.toMatrix b₀ b (LinearMap.id : (s → ℝ) →ₗ[ℝ] s → ℝ)
+  have hDC : D * C = 1 := by
+    rw [← LinearMap.toMatrix_comp, LinearMap.id_comp, LinearMap.toMatrix_id]
+  have hC : IsUnit C := by
+    rw [Matrix.isUnit_iff_isUnit_det, isUnit_iff_ne_zero]
+    intro hc
+    have hdet := congrArg Matrix.det hDC
+    simp [Matrix.det_mul, hc] at hdet
+  have hD : D = C⁻¹ := (Matrix.inv_eq_left_inv hDC).symm
+  have hPmat : LinearMap.toMatrix b₀ b₀ L = P.submatrix e e := by
+    ext i j
+    simp [LinearMap.toMatrix_apply, b₀, L, Matrix.toLin'_apply]
+  have hsim : Matrix.fromBlocks (1 : Matrix (Fin k) (Fin k) ℝ) 0 0 K =
+      C⁻¹ * P.submatrix e e * C := by
+    rw [← hd, ← hD, ← hPmat, ← LinearMap.toMatrix_comp, ← LinearMap.toMatrix_comp]
+    simp
+  have hspec : (1 : ℝ) ∉ spectrum ℝ K := by
+    intro h
+    obtain ⟨v, hv, hvK⟩ := (Matrix.mem_spectrum_iff_exists_mulVec_eq_smul K (1 : ℝ)).mp h
+    let w := bT.equivFun.symm v
+    have hw : ⇑(bT.repr w) = v := by
+      rw [← bT.equivFun_apply, LinearEquiv.apply_symm_apply]
+    have hfix : LT w = w := by
+      apply bT.equivFun.injective
+      rw [bT.equivFun_apply, bT.equivFun_apply, ← LinearMap.toMatrix_mulVec_repr bT bT,
+        hw, hvK, one_smul]
+    have he : P *ᵥ w.val = w.val := congrArg Subtype.val hfix
+    have hzero : (w : s → ℝ) = 0 :=
+      (stationaryProjection_mulVec_of_fixed hP he).symm.trans w.property
+    have hwz : w = 0 := Subtype.ext hzero
+    exact hv (hw.symm.trans (by simp [hwz]))
+  have hspecC : (1 : ℂ) ∉ spectrum ℂ (complexify K) := by
+    simpa only [Complex.ofReal_one] using
+      (fun h => hspec ((Matrix.ofReal_mem_spectrum_complexify_iff K 1).mp h))
+  refine ⟨k, t, e, C, K, hC, hsim, hspecC, ?_, ?_⟩
+  · intro hs hE
+    let := hs
+    exact stationaryProjection_range_finrank_ergodic hP hE
+  · intro hreg
+    have hpow (n : ℕ) : LinearMap.toMatrix b b (P ^ n).toLin' =
+        Matrix.fromBlocks (1 : Matrix (Fin k) (Fin k) ℝ) 0 0 (K ^ n) := by
+      rw [Matrix.toLin'_pow]
+      change LinearMap.toMatrix b b (L ^ n) = _
+      rw [← LinearMap.toMatrix_pow b L n, hd, Matrix.fromBlocks_diagonal_pow, one_pow]
+    apply tendsto_pi_nhds.mpr
+    intro i
+    apply tendsto_pi_nhds.mpr
+    intro j
+    let g (A : Matrix s s ℝ) := b.coord (Sum.inr i) (A *ᵥ b (Sum.inr j))
+    have hg : Continuous g := by
+      have hc : Continuous (fun A : Matrix s s ℝ => A *ᵥ b (Sum.inr j)) := by
+        apply continuous_pi_iff.mpr
+        intro l
+        simp only [Matrix.mulVec, dotProduct]
+        fun_prop
+      exact (b.coord (Sum.inr i)).continuous_of_finiteDimensional.comp hc
+    have hterm (n : ℕ) : g (P ^ n) = (K ^ n) i j := by
+      have h := congrFun (congrFun (hpow n) (Sum.inr i)) (Sum.inr j)
+      change b.repr (P ^ n *ᵥ b (Sum.inr j)) (Sum.inr i) = _
+      simpa only [LinearMap.toMatrix_apply, Matrix.fromBlocks_apply₂₂, Matrix.toLin'_apply] using h
+    have hG0 : g (stationaryProjection P hP) = 0 := by
+      have hz : stationaryProjection P hP *ᵥ b (Sum.inr j) = 0 := by
+        rw [hbR]
+        exact (bT j).property
+      simp [g, hz]
+    have hconv := hg.continuousAt.tendsto.comp (theorem_10_regular hP hreg)
+    change Tendsto (fun n : ℕ => g (P ^ n)) atTop (𝓝 (g (stationaryProjection P hP))) at hconv
+    simpa only [hterm, hG0, Matrix.zero_apply] using hconv
+
+end StationaryBlocks
+
 end BenIsraelGreville.Chapter08

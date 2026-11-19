@@ -334,77 +334,144 @@ source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 26, explicit Cesàro
 
 [[node]]
 id = "finiteMarkovChain_nStep_conditional"
-kind = "theorem"
-desc = "For a homogeneous finite Markov chain started with a positive-probability event Xₜ=i, show the joint mass of Xₜ=i and Xₜ₊ₙ=j equals the first mass times (Pⁿ)ᵢⱼ. Derive the claim from the full-history Markov condition by summing over histories."
 source = "Ben-Israel and Greville, Chapter 8, §7, Equation (88), probabilistic interpretation of matrix powers"
-deps = ["IsFiniteMarkovChain", "transitionProbability", "chapmanKolmogorov"]
 
 [[node]]
 id = "finiteMarkovChain_firstPassage_conditional"
-kind = "theorem"
-desc = "Identify the killed-transition formula with the measure of the event of avoiding the target for times 1 through n−1 and being at the target at time n, conditional on the given initial state. The algebraic transition formulas and renewal theorem are proved."
 source = "Ben-Israel and Greville, Chapter 8, §7, first-passage probabilities preceding Equation (90)"
-deps = ["IsFiniteMarkovChain", "firstPassageProbability", "finiteMarkovChain_nStep_conditional"]
 
 [[node]]
 id = "isAbsorbingChain_iff_closed_classes_singleton"
-kind = "theorem"
-desc = "Prove that positive-time reachability to an absorbing state from every state is equivalent to every minimal nonempty closed class being a singleton. This includes the all-absorbing case."
 source = "Ben-Israel and Greville, Chapter 8, §7, closed-class characterization of absorbing chains following Equation (89)"
-deps = ["IsClosedCommunicatingClass", "IsAbsorbingChain"]
 
 [[node]]
 id = "exercise_8_19"
-kind = "theorem"
-desc = "Construct a reindexing listing all the minimal closed classes as irreducible stochastic diagonal blocks and show the complementary block is upper triangular by its irreducible communication components."
 source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 19, Equation (108), all minimal closed blocks and the remaining components"
-deps = ["IsClosedCommunicatingClass", "exercise_8_18_closed_block"]
 
 [[node]]
 id = "exercise_8_21"
-kind = "theorem"
-desc = "Show a finite stochastic chain has no null recurrent states and, when its state space is nonempty, has at least one recurrent state. The current killed-transition argument gives finite return means and recurrence when the entire chain is irreducible."
 source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 21, no null states and existence of a recurrent state"
-deps = ["IsNullState", "isRecurrentChain_of_irreducible", "meanFirstPassageTime_eq_killed_inverse", "exercise_8_19"]
 
 [[node]]
 id = "exercise_8_22a"
-kind = "theorem"
-desc = "Prove transience of i iff the positive-time return probabilities p⁽ⁿ⁾ᵢᵢ have a finite sum. Use the first-return renewal identity."
 source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(a), summability criterion for transience"
-deps = ["exercise_8_20", "IsTransientState"]
 
 [[node]]
 id = "exercise_8_22b"
-kind = "theorem"
-desc = "For a null state i prove divergence of the sum and p⁽ⁿ⁾ᵢᵢ→0. In finite chains both facts follow from the absence of null states."
 source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(b), null-state limit"
-deps = ["exercise_8_21", "exercise_8_22a"]
 
 [[node]]
 id = "exercise_8_22cd"
-kind = "theorem"
-desc = "For an ergodic state i show p⁽ⁿ⁾ᵢᵢ→1/μᵢᵢ. For a nonnull recurrent state of period τ show p⁽ⁿτ⁾ᵢᵢ→τ/μᵢᵢ. Restrict to its closed communicating class and derive the cyclic decomposition for the periodic limit."
 source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(c,d), aperiodic and periodic local renewal limits"
-deps = ["theorem_8", "statePeriod", "IsErgodicState", "exercise_8_19"]
 
 [[node]]
 id = "exercise_8_23_recurrence"
-kind = "theorem"
-desc = "Prove mutually reachable states have the same recurrence or transience type. Their periods agree by the proved period comparison."
 source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 23, recurrence and transience of communicating states"
-deps = ["statePeriod_eq_of_communicates", "exercise_8_22a"]
 
 [[node]]
 id = "exercise_8_27abc"
-kind = "theorem"
-desc = "Choose bases of the range and kernel of the stationary projection to exhibit similarity to diag(Iₖ,K), with 1 outside the spectrum of K. For an ergodic chain express k=1. For a regular chain show Kⁿ→0."
-source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 27(a–c), invariant block similarity for a stochastic matrix"
-deps = ["stationaryProjection_spec", "stationaryProjection_mulVec_of_fixed", "stationaryDistribution_eq_groupInverse", "theorem_10_regular"]
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 27(a–c), invariant block similarity for a stochastic matrix, the one-dimensional ergodic stationary block, and the regular complementary power limit"
 
 [[node]]
 id = "exercise_8_27d"
-kind = "theorem"
-desc = "Reindex the r absorbing states first to write P as blocks (Iᵣ,0;R,K). Show ρ(K)<1 and deduce the displayed block formulas for the limit and the group inverse. The ordinary power limit for absorbing chains is independently proved."
-source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 27(d) and Theorem 10 proof, absorbing block form"
-deps = ["IsAbsorbingChain", "theorem_10_absorbing", "stochasticGroupInverse_spec"]
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 27(d) and Theorem 10 proof, absorbing block form, its strict spectral-radius estimate, the exact power limit, and the group inverse"
+
+[[node]]
+id = "passageSurvivalEvent"
+source = "Ben-Israel and Greville, Chapter 8, §7, first-passage avoidance event after the conditioning time"
+
+[[node]]
+id = "IsClosedStateSet.transitionProbability_eq_zero"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed sets have zero exit probability at every time"
+
+[[node]]
+id = "IsClosedStateSet.mem_of_leadsTo"
+source = "Ben-Israel and Greville, Chapter 8, §7, states reachable from closed sets remain in them"
+
+[[node]]
+id = "stateReachableSet"
+source = "Ben-Israel and Greville, Chapter 8, §7, zero-or-more-step reachability set"
+
+[[node]]
+id = "isClosedStateSet_stateReachableSet"
+source = "Ben-Israel and Greville, Chapter 8, §7, positive transitions preserve reachability sets"
+
+[[node]]
+id = "isClosedCommunicatingClass_iff_minimal_closed"
+source = "Ben-Israel and Greville, Chapter 8, §7, characterization by minimal nonempty closed sets"
+
+[[node]]
+id = "exists_closedCommunicatingClass_of_state"
+source = "Ben-Israel and Greville, Chapter 8, §7, every state reaches a closed communicating class"
+
+[[node]]
+id = "closedCommunicatingClass_eq_of_mem"
+source = "Ben-Israel and Greville, Chapter 8, §7, distinct closed communicating classes are disjoint"
+
+[[node]]
+id = "eventualPassageProbability_le_one"
+source = "Ben-Israel and Greville, Chapter 8, §7, the eventual positive-time first-passage mass is at most one"
+
+[[node]]
+id = "restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, transition matrix on a subset of states"
+
+[[node]]
+id = "restrictTransition_apply"
+source = "Ben-Israel and Greville, Chapter 8, §7, entry formula for a restricted transition matrix"
+
+[[node]]
+id = "IsClosedStateSet.stochastic_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, stochasticity of closed diagonal blocks"
+
+[[node]]
+id = "IsClosedStateSet.transitionProbability_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed-state restriction preserves all transition probabilities"
+
+[[node]]
+id = "IsClosedCommunicatingClass.irreducible_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, minimal closed blocks are irreducible"
+
+[[node]]
+id = "IsClosedStateSet.firstPassageProbability_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed-state restriction preserves first-passage masses"
+
+[[node]]
+id = "IsClosedStateSet.eventualPassageProbability_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed-state restriction preserves eventual passage probabilities"
+
+[[node]]
+id = "IsClosedStateSet.meanFirstPassageTime_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed-state restriction preserves mean passage times"
+
+[[node]]
+id = "IsClosedStateSet.statePeriod_restrictTransition"
+source = "Ben-Israel and Greville, Chapter 8, §7, closed-state restriction preserves periods"
+
+[[node]]
+id = "IsClosedCommunicatingClass.recurrent_and_mean_return_ne_top"
+source = "Ben-Israel and Greville, Chapter 8, §7, states in a closed class are recurrent with a finite mean return time"
+
+[[node]]
+id = "IsClosedStateSet.isTransient_of_reachable"
+source = "Ben-Israel and Greville, Chapter 8, §7, reaching a closed set from outside gives transience"
+
+[[node]]
+id = "isRecurrentState_iff_mem_closedCommunicatingClass"
+source = "Ben-Israel and Greville, Chapter 8, §7, recurrent states are exactly those in the minimal closed sets"
+
+[[node]]
+id = "exercise_8_22c"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(c), local aperiodic return limit"
+
+[[node]]
+id = "exercise_8_22d"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 22(d), local return limit along integer multiples of the period"
+
+[[node]]
+id = "markovCommunicationComponent"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 19, the communicating component associated with a state"
+
+[[node]]
+id = "mem_markovCommunicationComponent"
+source = "Ben-Israel and Greville, Chapter 8, §7, Exercise 19, characterization of component membership by the reachable set"
