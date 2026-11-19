@@ -266,56 +266,31 @@ source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 32, geometric interp
 
 [[node]]
 id = "exercise_33_line_integral"
-kind = "theorem"
-desc = '''Prove the weighted speed formula for line integrals on a parametrized arc, its arc length, and the graph specialization parametrized by the first coordinate. For image-based measure assume an injective chart or include multiplicity.'''
-source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 33, (149)–(150)"
-deps = ["exercise_33_jacobian_volume", "integral_areaFormula"]
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 33, (149), regular injective scalar curve integral"
 
 [[node]]
 id = "exercise_34_surface_integral"
-kind = "theorem"
-desc = '''Differentiate the cylindrical chart for a continuously differentiable height and derive its geometric surface integral, using a nonnegative radius and an injective angle chart.'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 34, (151)–(155)"
-deps = ["exercise_34_jacobian_volume", "integral_areaFormula"]
 
 [[node]]
 id = "exercise_35_surface_integral"
-kind = "theorem"
-desc = '''Specialize the cylindrical surface integral to a height depending only on radius.'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 35, (156) and the following integral"
-deps = ["exercise_34_surface_integral", "exercise_35_jacobian_volume"]
 
 [[node]]
 id = "exercise_36_surface_integral"
-kind = "theorem"
-desc = '''Differentiate and integrate the stated radially symmetric spherical chart, with nonnegative radius and physical angle range. Remove the spurious extra radius in the printed definition of the pulled-back integrand in (159b).'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 36, (157)–(159)"
-deps = ["exercise_36_jacobian_volume", "integral_areaFormula"]
 
 [[node]]
 id = "exercise_37_simplex_facet_areas"
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, (160)–(163)"
 
 [[node]]
-id = "exercise_38_regular_simplex"
-kind = "theorem"
-desc = '''Prove that the coordinate faces have area 1/(n−1)! and the upper face has area √n/(n−1)! for the unit-intercept simplex.'''
-source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 38"
-deps = ["exercise_37_simplex_facet_areas"]
-
-[[node]]
 id = "exercise_40_polar_area_eq_hausdorff"
-kind = "theorem"
-desc = '''Identify the angular measure in the polar decomposition with normalized Hausdorff measure on the Euclidean sphere, so the radial derivative, Hausdorff scaling, and unit area theorems refer to the same surface measure.'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, (168)–(169)"
-deps = ["graphMeasure_eq_hausdorff", "exercise_40_sphere_scaling", "exercise_40_unitSphereArea"]
 
 [[node]]
 id = "exercise_41_hemisphere_integral"
-kind = "theorem"
-desc = '''Prove the hemisphere integral for geometric sphere area, justify omitting the equator where the graph derivative is singular, and establish the stated Beta-function recurrence by the radial substitution.'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, (170)–(171)"
-deps = ["exercise_41_hemisphere_density", "exercise_40_polar_area_eq_hausdorff", "exercise_39_beta_eq_gamma"]
 
 [[node]]
 id = "hausdorffMeasure_image_linear"
@@ -363,4 +338,80 @@ source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, upper facet proj
 
 [[node]]
 id = "exercise_38_simplex_facet_areas"
-source = "Ben-Israel and Greville, Chapter 8, §9, "
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 38, areas of the unit-intercept simplex faces"
+
+[[node]]
+id = "exercise_33_arc_length"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 33, (150), Hausdorff arc length as the integral of speed"
+
+[[node]]
+id = "exercise_33_graph_arc_length"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 33, coordinate graph arc length after (150)"
+
+[[node]]
+id = "cylindricalSurfaceChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Equations (151)–(152), cylindrical graph chart"
+
+[[node]]
+id = "exercise_34_surface_jacobian"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 34, Equation (153), derivative of the actual cylindrical chart"
+
+[[node]]
+id = "exercise_34_surface_density"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 34, Equation (154), exact cylindrical chart density"
+
+[[node]]
+id = "exercise_35_surface_density"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 35, Equation (156), exact radial-height chart density"
+
+[[node]]
+id = "sphericalSurfaceChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Equations (157)–(158), axially symmetric spherical chart"
+
+[[node]]
+id = "exercise_36_surface_jacobian"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 36, derivative of the actual spherical chart"
+
+[[node]]
+id = "exercise_36_surface_density"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 36, Equation (159a), exact spherical chart density"
+
+[[node]]
+id = "exercise_41_radial_beta"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, substitution of squared radius into the Beta integral"
+
+[[node]]
+id = "exercise_41_hemisphere_radial_integral"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, shell evaluation of the hemisphere parameter integral"
+
+[[node]]
+id = "exercise_41_sphere_area_beta"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, the Beta recurrence for consecutive sphere areas"
+
+[[node]]
+id = "exercise_41_hemisphere_integral_angular"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, the angular unit sphere area equals twice the explicit hemisphere parameter integral"
+
+[[node]]
+id = "sphereUpperChart"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, positive-height spherical graph chart"
+
+[[node]]
+id = "sphereUpperChart_image_ball"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, image of the open unit parameter ball is the open upper hemisphere"
+
+[[node]]
+id = "exercise_41_upper_hemisphere_integral"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, geometric scalar integrals on the upper hemisphere"
+
+[[node]]
+id = "exercise_41_equator_measure_zero"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 41, the equator is null for the sphere surface measure"
+
+[[node]]
+id = "sphereUpperRadialMap"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, radial filling of the upper hemisphere"
+
+[[node]]
+id = "sphereUpperRadialMap_det_fderiv"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 40, determinant of the full-dimensional radial filling"
