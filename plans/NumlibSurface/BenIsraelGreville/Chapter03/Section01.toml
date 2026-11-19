@@ -74,21 +74,32 @@ source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 11, elimination of the r
 
 [[node]]
 id = "exercise_3_4_double_then_single_rounding"
-kind = "theorem"
-desc = "Specify the machine arithmetic and prove that double-precision Gram multiplication followed by single-precision rounding maps both diagonal entries to 1 under the stated smallness condition. The rank loss and wrong-solution consequences of the entrywise rounding hypotheses are proved."
-source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 4, machine sensitivity"
-deps = ["exercise_3_4"]
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 4, computed Gram product and rank loss"
 
 [[node]]
 id = "exercise_3_5_augmented_gauss_jordan"
-kind = "theorem"
-desc = "Formalize the displayed augmented matrix reduction by row operations, with a nonzero pivot condition wherever a division occurs. Equations (12)–(13) and the exact criterion for the top block to solve the reduced normal equation are proved."
-source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 5, augmented Gauss–Jordan calculation"
-deps = ["exercise_3_5", "exercise_3_5_reduction"]
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 5, augmented Gauss–Jordan calculation"
 
 [[node]]
 id = "exercise_3_6_finite_precision_refinement"
-kind = "theorem"
-desc = "Model the mixed-precision residual and the reuse of the elimination factors for correction solves. The next iterate is proved exact given an exact residual solve. The printed numerical stopping suggestion has no specified error model or convergence bound."
-source = "Ben-Israel and Greville, Ch. 3, §1, Exercise 6, finite-precision iterative refinement"
-deps = ["exercise_3_6"]
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 6, convergence with vanishing net error"
+
+[[node]]
+id = "roundNearestEven"
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 4, binary nearest rounding at the midpoint"
+
+[[node]]
+id = "MixedPrecisionRefinement"
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 6, mixed precision and fixed elimination factors"
+
+[[node]]
+id = "MixedPrecisionRefinement.stopsAt"
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 6, correction ratio"
+
+[[node]]
+id = "MixedPrecisionRefinement.residual_identity"
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 6, residual with arithmetic errors"
+
+[[node]]
+id = "exercise_3_6_refinement_stagnation"
+source = "Ben-Israel and Greville, Chapter 3, §1, Exercise 6, counterexample to unconditional exactness"

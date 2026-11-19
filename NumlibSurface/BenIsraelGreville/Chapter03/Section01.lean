@@ -2,6 +2,12 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.LinearAlgebra.Matrix.SchurComplement
+import Mathlib.LinearAlgebra.Matrix.Transvection
+import Numlib.FloatingPoint.InnerProduct
+import Numlib.FloatingPoint.LU
+import Numlib.FloatingPoint.Substitution
+import Numlib.FloatingPoint.System
 import Numlib.LinearAlgebra.Matrix.LeastSquares
 import NumlibSurface.BenIsraelGreville.Chapter02.Section02
 import NumlibSurface.BenIsraelGreville.Chapter02.Section07
@@ -15,6 +21,15 @@ import Numlib.LinearAlgebra.Matrix.Rank
 Section 3.1 of [benIsrael2003generalized] characterizes $\{1,3\}$-inverses as the matrices
 that send every right-hand side to a least-squares solution. The least-squares solution set
 is an affine space whose direction is the kernel of the original matrix.
+
+## Deviations from the source
+
+* Exercise 4 uses nearest rounding with ties to even for the final
+  rounding. The working-precision midpoint can be attained at the
+  higher precision. The rounding functions use unrestricted exponents.
+* In Exercise 6, convergence gives an exact solution when the net
+  arithmetic error vanishes. An explicit finite-precision run can
+  converge to a point with nonzero exact residual.
 -/
 
 namespace BenIsraelGreville.Chapter03
@@ -456,5 +471,440 @@ theorem exercise_3_11_residual (A : Matrix m n ℂ) (B : Matrix p n ℂ)
     rw [← hr, map_add, hz, ← toEuclideanLin_mul_apply, add_comm]
 
 end Constrained
+
+section BinaryRounding
+
+open Matrix FloatingPoint
+
+/-- Nearest rounding in a floating-point system, with an even integer
+mantissa chosen at an exact midpoint. -/
+noncomputable def roundNearestEven (s : FloatingPoint.System) (x : ℝ) : ℝ :=
+  let μ := s.mantissa x
+  let m := ⌊μ⌋
+  if μ = (m : ℝ) + 1 / 2 ∧ Even m then
+    (SignType.sign x : ℝ) * (m : ℝ) * (s.β : ℝ) ^ (s.exponent x - s.t)
+  else s.round x
+
+private theorem binary_binade (s : FloatingPoint.System) (hs : s.β = 2)
+    {x : ℝ} (hlo : 1 ≤ x) (hhi : x < 2) :
+    s.exponent x = 1 ∧ s.mantissa x = x * (2 : ℝ) ^ ((s.t : ℤ) - 1) := by
+  have hn : 0 ≤ x := by linarith
+  have he : s.exponent x = 1 := s.exponent_eq_of_le_of_lt
+    (by simpa [hs, abs_of_nonneg hn] using hlo) (by simpa [hs, abs_of_nonneg hn] using hhi)
+  exact ⟨he, by simp [FloatingPoint.System.mantissa, he, hs, abs_of_nonneg hn]⟩
+
+private theorem binary_round_zpow (s : FloatingPoint.System) (hs : s.β = 2) (a : ℤ) :
+    s.round ((2 : ℝ) ^ a) = (2 : ℝ) ^ a := by
+  have hp : 0 < (2 : ℝ) ^ a := zpow_pos (by norm_num) _
+  have he : s.exponent ((2 : ℝ) ^ a) = a + 1 := by
+    rw [FloatingPoint.System.exponent, abs_of_pos hp, hs]
+    rw [show (2 : ℝ) = ((2 : ℕ) : ℝ) from rfl, Int.log_zpow (by decide : 1 < 2)]
+  rw [s.round_of_pos hp, FloatingPoint.System.mantissa, he, abs_of_pos hp, hs, Nat.cast_ofNat,
+    ← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0),
+    show a + ((s.t : ℤ) - (a + 1)) = (s.t : ℤ) - 1 by omega]
+  rw [show (2 : ℝ) ^ ((s.t : ℤ) - 1) = (((2 ^ (s.t - 1) : ℕ) : ℤ) : ℝ) by
+    simpa [hs] using (s.natCast_pow_t_sub_one (K := ℝ)).symm, round_intCast]
+  rw [show (((2 ^ (s.t - 1) : ℕ) : ℤ) : ℝ) = (2 : ℝ) ^ ((s.t : ℤ) - 1) by
+    simpa [hs] using (s.natCast_pow_t_sub_one (K := ℝ))]
+  rw [← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0)]
+  congr 1
+  omega
+
+private theorem binary_round_midpoint (s : FloatingPoint.System) (hs : s.β = 2)
+    {t : ℕ} (ht : 0 < t) (hT : t < s.t) :
+    s.round (1 + (2 : ℝ) ^ (-(t : ℤ))) = 1 + (2 : ℝ) ^ (-(t : ℤ)) := by
+  let x := 1 + (2 : ℝ) ^ (-(t : ℤ))
+  have hx : 1 ≤ x := le_add_of_nonneg_right (zpow_nonneg (by norm_num) _)
+  have hx' : x < 2 := by
+    have hp : (2 : ℝ) ^ (-(t : ℤ)) < 1 := zpow_lt_one_of_neg₀ (by norm_num) (by omega)
+    dsimp [x]
+    linarith
+  obtain ⟨he, hm⟩ := binary_binade s hs hx hx'
+  have hnon : 0 ≤ (s.t : ℤ) - 1 - t := by omega
+  let d : ℤ := 2 ^ (s.t - 1) + 2 ^ ((s.t : ℤ) - 1 - t).toNat
+  have hscale : (2 : ℝ) ^ ((s.t : ℤ) - 1) = (((2 ^ (s.t - 1) : ℕ) : ℤ) : ℝ) := by
+    simpa [hs] using (s.natCast_pow_t_sub_one (K := ℝ)).symm
+  have hrest : (2 : ℝ) ^ ((s.t : ℤ) - 1 - t) =
+      (((2 ^ ((s.t : ℤ) - 1 - t).toNat : ℕ) : ℤ) : ℝ) := by
+    push_cast
+    rw [← zpow_natCast, Int.toNat_of_nonneg hnon]
+  have hd : s.mantissa x = (d : ℝ) := by
+    rw [hm]
+    dsimp only [x,d]
+    push_cast
+    rw [add_mul, one_mul, ← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0),
+      show -(t : ℤ) + ((s.t : ℤ) - 1) = (s.t : ℤ) - 1 - t by omega]
+    push_cast at hscale hrest
+    rw [hscale, hrest]
+  change s.round x = x
+  rw [s.round_of_pos (by linarith : 0 < x), hd, round_intCast, ← hd]
+  simpa only [abs_of_nonneg (by linarith : 0 ≤ x)] using
+    (s.abs_eq_mantissa_mul_zpow x).symm
+
+private theorem binary_roundNearestEven_one_binade (s : FloatingPoint.System) (hs : s.β = 2)
+    (ht : 2 ≤ s.t) {x : ℝ} (hlo : 1 ≤ x) (hhi : x ≤ 1 + (2 : ℝ) ^ (-(s.t : ℤ))) :
+    roundNearestEven s x = 1 := by
+  have htop : x < 2 := by
+    have hp : (2 : ℝ) ^ (-(s.t : ℤ)) < 1 := zpow_lt_one_of_neg₀ (by norm_num) (by omega)
+    linarith
+  obtain ⟨he, hm⟩ := binary_binade s hs hlo htop
+  let m : ℤ := (2 : ℕ) ^ (s.t - 1)
+  have hbase : (2 : ℝ) ^ ((s.t : ℤ) - 1) = (m : ℝ) := by
+    simpa [m, hs] using (s.natCast_pow_t_sub_one (K := ℝ)).symm
+  have hm' : (m : ℝ) ≤ s.mantissa x ∧ s.mantissa x ≤ (m : ℝ) + 1 / 2 := by
+    rw [hm, ← hbase]
+    constructor
+    · simpa only [one_mul] using mul_le_mul_of_nonneg_right hlo
+        (zpow_nonneg (by norm_num : 0 ≤ (2 : ℝ)) ((s.t : ℤ) - 1))
+    · calc
+        _ ≤ (1 + (2 : ℝ) ^ (-(s.t : ℤ))) * (2 : ℝ) ^ ((s.t : ℤ) - 1) :=
+          mul_le_mul_of_nonneg_right hhi (zpow_nonneg (by norm_num) _)
+        _ = _ := by
+          rw [add_mul, one_mul, ← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0),
+            show -(s.t : ℤ) + ((s.t : ℤ) - 1) = -1 by omega, _root_.zpow_neg_one]
+          ring
+  have hfloor : ⌊s.mantissa x⌋ = m := Int.floor_eq_iff.mpr ⟨hm'.1, by linarith [hm'.2]⟩
+  have heven : Even m := by
+    obtain ⟨k, hk⟩ : ∃ k : ℕ, s.t - 1 = k + 1 := ⟨s.t - 2, by omega⟩
+    refine ⟨(2 ^ k : ℕ), ?_⟩
+    dsimp [m]
+    rw [hk, pow_succ]
+    ring
+  have hprod : (m : ℝ) * (s.β : ℝ) ^ (s.exponent x - s.t) = 1 := by
+    rw [← hbase, hs, Nat.cast_ofNat, he, ← zpow_add₀ (by norm_num : (2 : ℝ) ≠ 0)]
+    simp
+  by_cases hh : s.mantissa x = (m : ℝ) + 1 / 2
+  · unfold roundNearestEven
+    dsimp only
+    rw [hfloor, ite_eq_left ⟨hh, heven⟩, sign_pos (by linarith : 0 < x)]
+    simpa only [SignType.coe_one, one_mul] using hprod
+  · have hr : _root_.round (s.mantissa x) = m :=
+      round_eq_iff.mpr ⟨by linarith [hm'.1], lt_of_le_of_ne hm'.2 hh⟩
+    simp only [roundNearestEven, hfloor, hh, false_and, ite_false]
+    rw [s.round_of_pos (by linarith), hr, hprod]
+
+/-- **Exercise 4** of [benIsrael2003generalized], Chapter 3.
+With binary working precision and at least one extra digit for the dot
+products, both rounded diagonal entries of the Gram matrix equal one.
+The final rounding uses ties to even since the higher precision can land
+exactly on the working-precision midpoint. -/
+theorem exercise_3_4_double_then_single_rounding
+    (work high : FloatingPoint.System) (hw : work.β = 2) (hh : high.β = 2)
+    (ht : 2 ≤ work.t) (hp : work.t < high.t) (ε : ℝ) (hε : ε ≠ 0)
+    (hsmall : |ε| < √((2 : ℝ) ^ (-(work.t : ℤ)))) :
+    let A : Matrix (Fin 3) (Fin 2) ℝ := !![1, 1; ε, 0; 0, ε]
+    let d := high.round (1 + high.round (ε * ε))
+    let G : Matrix (Fin 2) (Fin 2) ℝ := !![d, 1; 1, d]
+    RoundsMul (high.roundingModel ℝ) Aᵀ A G ∧
+      G.map (roundNearestEven work) = !![1, 1; 1, 1] ∧
+      A.rank = 2 ∧ (G.map (roundNearestEven work)).rank = 1 := by
+  intro A d G
+  have h1 : high.round (1 : ℝ) = 1 := by
+    simpa only [zpow_zero] using binary_round_zpow high hh 0
+  have he : 0 ≤ high.round (ε * ε) := by
+    simpa only [FloatingPoint.System.round_zero] using high.round_mono (mul_self_nonneg ε)
+  have h0 : ε * ε ≤ (2 : ℝ) ^ (-(work.t : ℤ)) := by
+    have hSQ := (sq_lt_sq₀ (abs_nonneg ε) (Real.sqrt_nonneg _)).mpr hsmall
+    rw [sq_abs, Real.sq_sqrt (by positivity), pow_two] at hSQ
+    exact hSQ.le
+  have hR := high.round_mono h0
+  rw [binary_round_zpow high hh] at hR
+  have hd₁ : 1 ≤ d := by
+    have H : (1 : ℝ) ≤ 1 + high.round (ε * ε) := by linarith
+    simpa only [d, h1] using high.round_mono H
+  have hd₂ : d ≤ 1 + (2 : ℝ) ^ (-(work.t : ℤ)) := by
+    have H := high.round_mono (add_le_add (le_refl (1 : ℝ)) hR)
+    rw [binary_round_midpoint high hh (by omega : 0 < work.t) hp] at H
+    exact H
+  have hwork1 := binary_roundNearestEven_one_binade work hw ht (le_refl (1 : ℝ))
+    (le_add_of_nonneg_right (zpow_nonneg (by norm_num) _))
+  have hworkd := binary_roundNearestEven_one_binade work hw ht hd₁ hd₂
+  have hmap : G.map (roundNearestEven work) = !![1, 1; 1, 1] := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [G, hwork1, hworkd]
+  have hRank := exercise_3_4 ε hε (fun _ => 1) rfl rfl
+  refine ⟨?_, hmap, hRank.1, hmap ▸ hRank.2.2.1⟩
+  intro i j
+  let p : Fin 3 → ℝ := fun k => high.round (A k i * A k j)
+  refine ⟨[0, 1, 2], p, by decide, by intro k; fin_cases k <;> decide,
+    fun k => rfl, ?_⟩
+  have hR1 : (high.roundingModel ℝ).Rounds (1 + 0) 1 := by
+    simp [h1]
+  have hRd : (high.roundingModel ℝ).Rounds (1 + high.round (ε * ε)) d := rfl
+  have hRd0 : (high.roundingModel ℝ).Rounds (d + 0) d := by
+    simp [d, FloatingPoint.System.round_round]
+  fin_cases i <;> fin_cases j
+  · simpa [A, G, p, h1, RoundsSum] using
+      (RoundsSumFrom.cons hRd (RoundsSumFrom.cons hRd0 (RoundsSumFrom.nil d)))
+  · simpa [A, G, p, h1, RoundsSum] using
+      (RoundsSumFrom.cons hR1 (RoundsSumFrom.cons hR1 (RoundsSumFrom.nil (1 : ℝ))))
+  · simpa [A, G, p, h1, RoundsSum] using
+      (RoundsSumFrom.cons hR1 (RoundsSumFrom.cons hR1 (RoundsSumFrom.nil (1 : ℝ))))
+  · simpa [A, G, p, h1, RoundsSum] using
+      (RoundsSumFrom.cons hR1 (RoundsSumFrom.cons hRd (RoundsSumFrom.nil d)))
+
+end BinaryRounding
+
+section AugmentedElimination
+
+open Matrix
+
+private theorem nonsingular_factors_for_rows {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (A : Matrix ι ι ℂ) (hA : A.det ≠ 0) :
+    ∃ L : List (Matrix ι ι ℂ), L.prod = A ∧
+      ∀ M ∈ L, (∃ d : ι → ℂ, (∀ i, d i ≠ 0) ∧ M = diagonal d) ∨
+        ∃ t : TransvectionStruct ι ℂ, M = t.toMatrix := by
+  let P : Matrix ι ι ℂ → Prop := fun A =>
+    ∃ L : List (Matrix ι ι ℂ), L.prod = A ∧
+      ∀ M ∈ L, (∃ d : ι → ℂ, (∀ i, d i ≠ 0) ∧ M = diagonal d) ∨
+        ∃ t : TransvectionStruct ι ℂ, M = t.toMatrix
+  apply diagonal_transvection_induction_of_det_ne_zero P A hA
+  · intro d hd
+    have hdi (i : ι) : d i ≠ 0 := by
+      rw [det_diagonal] at hd
+      intro h
+      exact hd (Finset.prod_eq_zero (Finset.mem_univ i) h)
+    refine ⟨[diagonal d], by simp, ?_⟩
+    intro M hM
+    rw [List.mem_singleton] at hM
+    exact Or.inl ⟨d, hdi, hM⟩
+  · intro t
+    refine ⟨[t.toMatrix], by simp, ?_⟩
+    intro M hM
+    exact Or.inr ⟨t, List.mem_singleton.mp hM⟩
+  · rintro A B _ _ ⟨L, hL, hF⟩ ⟨K, hK, hG⟩
+    refine ⟨L ++ K, by rw [List.prod_append, hL, hK], ?_⟩
+    intro M hM
+    exact (List.mem_append.mp hM).elim (hF M) (hG M)
+
+/-- **Exercise 5** of [benIsrael2003generalized], Chapter 3.
+The full augmented matrix admits the displayed row reduction. Each row
+scaling has a nonzero factor, and the other factors are row additions. -/
+theorem exercise_3_5_augmented_gauss_jordan {n p : Type*} [Fintype n] [Fintype p]
+    [DecidableEq n] [DecidableEq p]
+    (A₁ : Matrix n n ℂ) (A₂ : Matrix p n ℂ) (hA₁ : IsUnit A₁)
+    (b₁ : n → ℂ) (b₂ : p → ℂ) :
+    let S := A₂ * A₁⁻¹
+    let B₁ : Matrix n Unit ℂ := Matrix.of fun i _ => b₁ i
+    let B₂ : Matrix p Unit ℂ := Matrix.of fun i _ => b₂ i
+    let M := fromBlocks A₁ (fromCols B₁ 1) A₂ (fromCols B₂ 0)
+    ∃ L : List (Matrix (n ⊕ p) (n ⊕ p) ℂ),
+      (∀ E ∈ L, (∃ d : n ⊕ p → ℂ, (∀ i, d i ≠ 0) ∧ E = diagonal d) ∨
+        ∃ t : TransvectionStruct (n ⊕ p) ℂ, E = t.toMatrix) ∧
+      L.prod * M = fromBlocks 1 (fromCols (A₁⁻¹ * B₁) A₁⁻¹)
+        0 (fromCols (B₂ - S * B₁) (-S)) := by
+  intro S B₁ B₂ M
+  let E := fromBlocks A₁⁻¹ (0 : Matrix n p ℂ) (-S) 1
+  have hdet := (isUnit_iff_isUnit_det _).mp hA₁
+  have hE : E.det ≠ 0 := by
+    change (fromBlocks A₁⁻¹ (0 : Matrix n p ℂ) (-S) (1 : Matrix p p ℂ)).det ≠ 0
+    rw [det_fromBlocks_zero₁₂, det_one, mul_one]
+    exact (isUnit_nonsing_inv_det _ hdet).ne_zero
+  obtain ⟨L, hL, hF⟩ := nonsingular_factors_for_rows E hE
+  refine ⟨L, hF, ?_⟩
+  have hS : S * A₁ = A₂ := by
+    change (A₂ * A₁⁻¹) * A₁ = A₂
+    rw [Matrix.mul_assoc, nonsing_inv_mul _ hdet, Matrix.mul_one]
+  rw [hL]
+  change fromBlocks A₁⁻¹ (0 : Matrix n p ℂ) (-S) 1 *
+      fromBlocks A₁ (fromCols B₁ 1) A₂ (fromCols B₂ 0) = _
+  rw [fromBlocks_multiply, fromBlocks_inj]
+  simp only [Matrix.zero_mul, Matrix.one_mul, add_zero, Matrix.neg_mul, hS, neg_add_cancel,
+    nonsing_inv_mul _ hdet, mul_fromCols, Matrix.mul_one, neg_add_eq_sub, true_and]
+  ext i (j | j) <;> simp [Matrix.sub_apply]
+
+end AugmentedElimination
+
+section MixedPrecisionRefinementExamples
+
+open Filter FloatingPoint Matrix
+open scoped Topology
+
+variable {n : ℕ}
+
+/-- A mixed-precision refinement run with a single working-precision LU
+factorization shared by all correction solves. -/
+structure MixedPrecisionRefinement (work residual : RoundingModel ℝ)
+    (A L U : Matrix (Fin n) (Fin n) ℝ) (b : Fin n → ℝ) (x : ℕ → Fin n → ℝ) where
+  /-- Residual evaluation uses the higher precision. -/
+  roundoff_le : residual.u ≤ work.u
+  /-- The fixed factors are computed at working precision. -/
+  factorization : RoundsLU work A L U
+  /-- The back substitutions use nonzero pivots. -/
+  pivot_ne_zero : ∀ i, U i i ≠ 0
+  /-- The computed high-precision matrix-vector products. -/
+  fitted : ℕ → Fin n → ℝ
+  /-- The residuals before rounding to working precision. -/
+  highResidual : ℕ → Fin n → ℝ
+  /-- The residual right-hand sides used by the triangular solver. -/
+  solveResidual : ℕ → Fin n → ℝ
+  /-- The intermediate forward-substitution solutions. -/
+  intermediate : ℕ → Fin n → ℝ
+  /-- The working-precision corrections. -/
+  correction : ℕ → Fin n → ℝ
+  /-- The dot products in the residual are evaluated at the higher precision. -/
+  fitted_rounds : ∀ k, RoundsMulVec residual A (x k) (fitted k)
+  /-- The residual subtraction is evaluated at the higher precision. -/
+  highResidual_rounds : ∀ k i, residual.Rounds (b i - fitted k i) (highResidual k i)
+  /-- The triangular solver receives a working-precision right-hand side. -/
+  solveResidual_rounds : ∀ k i, work.Rounds (highResidual k i) (solveResidual k i)
+  /-- Every forward substitution uses the same lower factor. -/
+  forward : ∀ k, RoundsForwardSubst work L (solveResidual k) (intermediate k)
+  /-- Every backward substitution uses the same upper factor. -/
+  backward : ∀ k, RoundsBackSubst work U (intermediate k) (correction k)
+  /-- The correction is accumulated at working precision. -/
+  update : ∀ k i, work.Rounds (x k i + correction k i) (x (k + 1) i)
+
+variable {work residual : RoundingModel ℝ} {A L U : Matrix (Fin n) (Fin n) ℝ}
+  {b : Fin n → ℝ} {x : ℕ → Fin n → ℝ}
+
+/-- The printed stopping ratio is defined when the previous correction is nonzero. -/
+def MixedPrecisionRefinement.stopsAt (r : MixedPrecisionRefinement work residual A L U b x)
+    (τ : ℝ) (k : ℕ) : Prop :=
+  r.correction k ≠ 0 ∧ ‖r.correction (k + 1)‖ / ‖r.correction k‖ < τ
+
+/-- The new exact residual is the negative sum of the residual-evaluation
+error, the correction-solve error, and the propagated update error. -/
+theorem MixedPrecisionRefinement.residual_identity
+    (r : MixedPrecisionRefinement work residual A L U b x) (k : ℕ) :
+    b - A *ᵥ x (k + 1) =
+      -(r.solveResidual k - (b - A *ᵥ x k)) - (A *ᵥ r.correction k - r.solveResidual k) -
+        A *ᵥ (x (k + 1) - (x k + r.correction k)) := by
+  rw [Matrix.mulVec_sub, Matrix.mulVec_add]
+  abel
+
+/-- **Exercise 6** of [benIsrael2003generalized], Chapter 3.
+For a convergent mixed-precision run, vanishing net arithmetic defect
+gives an exact solution at the limit. At any finite step the same identity
+gives the exact residual from the three individual errors. -/
+theorem exercise_3_6_finite_precision_refinement
+    (r : MixedPrecisionRefinement work residual A L U b x)
+    (limit : Fin n → ℝ) (hx : Tendsto x atTop (𝓝 limit))
+    (hdefect : Tendsto (fun k =>
+      (r.solveResidual k - (b - A *ᵥ x k)) + (A *ᵥ r.correction k - r.solveResidual k) +
+        A *ᵥ (x (k + 1) - (x k + r.correction k))) atTop (𝓝 0)) :
+    A *ᵥ limit = b := by
+  let T := A.mulVecLin
+  have hT : Continuous T := T.continuous_of_finiteDimensional
+  have hx' : Tendsto (fun k : ℕ => x (k + 1)) atTop (𝓝 limit) :=
+    hx.comp (tendsto_add_atTop_nat 1)
+  have hlimit : Tendsto (fun k => b - A *ᵥ x (k + 1)) atTop (𝓝 (b - A *ᵥ limit)) :=
+    tendsto_const_nhds.sub ((hT.tendsto limit).comp hx')
+  have hzero : Tendsto (fun k => b - A *ᵥ x (k + 1)) atTop (𝓝 0) := by
+    convert hdefect.neg using 1
+    · funext k
+      rw [r.residual_identity]
+      abel
+    · simp
+  exact (sub_eq_zero.mp (tendsto_nhds_unique hlimit hzero)).symm
+
+private def refinementWorkSystem : FloatingPoint.System :=
+  ⟨2, 2, -10, 10, by decide, by decide, by decide⟩
+
+private def refinementResidualSystem : FloatingPoint.System :=
+  ⟨2, 4, -10, 10, by decide, by decide, by decide⟩
+
+private theorem refinement_work_rounds :
+    refinementWorkSystem.round (-(1 / 8 : ℝ)) = -1 / 8 ∧
+      refinementWorkSystem.round (-(1 / 24 : ℝ)) = -3 / 64 ∧
+      refinementWorkSystem.round (21 / 64 : ℝ) = 3 / 8 := by
+  constructor
+  · rw [refinementWorkSystem.round_neg,
+      refinementWorkSystem.round_eq_of_le_of_lt (e := -2)
+        (by norm_num [refinementWorkSystem]) (by norm_num [refinementWorkSystem])]
+    norm_num [refinementWorkSystem, round_eq]
+  constructor
+  · rw [refinementWorkSystem.round_neg,
+      refinementWorkSystem.round_eq_of_le_of_lt (e := -4)
+        (by norm_num [refinementWorkSystem]) (by norm_num [refinementWorkSystem])]
+    norm_num [refinementWorkSystem, round_eq]
+  · rw [refinementWorkSystem.round_eq_of_le_of_lt (e := -1)
+        (by norm_num [refinementWorkSystem]) (by norm_num [refinementWorkSystem])]
+    norm_num [refinementWorkSystem, round_eq]
+
+private theorem refinement_residual_rounds :
+    refinementResidualSystem.round (9 / 8 : ℝ) = 9 / 8 ∧
+      refinementResidualSystem.round (-(1 / 8 : ℝ)) = -1 / 8 := by
+  constructor
+  · rw [refinementResidualSystem.round_eq_of_le_of_lt (e := 1)
+        (by norm_num [refinementResidualSystem]) (by norm_num [refinementResidualSystem])]
+    norm_num [refinementResidualSystem, round_eq]
+  · rw [refinementResidualSystem.round_neg,
+      refinementResidualSystem.round_eq_of_le_of_lt (e := -2)
+        (by norm_num [refinementResidualSystem]) (by norm_num [refinementResidualSystem])]
+    norm_num [refinementResidualSystem, round_eq]
+
+/-- The finite-precision refinement of (3/8) for the scalar equation
+(3x = 1) can stagnate, even when the residual is computed exactly. -/
+theorem exercise_3_6_refinement_stagnation :
+    let A : Matrix (Fin 1) (Fin 1) ℝ := of fun _ _ => 3
+    let b : Fin 1 → ℝ := fun _ => 1
+    let x : ℕ → Fin 1 → ℝ := fun _ _ => 3 / 8
+    Nonempty (MixedPrecisionRefinement (refinementWorkSystem.roundingModel ℝ)
+        (refinementResidualSystem.roundingModel ℝ) A 1 A b x) ∧
+      Tendsto x atTop (𝓝 (x 0)) ∧ A *ᵥ x 0 ≠ b := by
+  intro A b x
+  have hw := refinement_work_rounds
+  have hr := refinement_residual_rounds
+  let work := refinementWorkSystem.roundingModel ℝ
+  let high := refinementResidualSystem.roundingModel ℝ
+  refine ⟨⟨{
+    roundoff_le := by
+      norm_num [work, high, FloatingPoint.System.unitRoundoff, refinementWorkSystem,
+        refinementResidualSystem]
+    factorization := {
+      lower_apply_eq_zero := fun i j hij => False.elim (hij.ne (Subsingleton.elim i j))
+      lower_diag := fun i => Matrix.one_apply_eq i
+      upper_apply_eq_zero := fun i j hij => False.elim (hij.ne (Subsingleton.elim j i))
+      upper := by
+        intro i j _
+        refine ⟨[], List.nodup_nil, fun k => ?_, ⟨0, by simp, RoundsSumFrom.nil _⟩⟩
+        simp [Subsingleton.elim k i]
+      lower := fun i j hij => False.elim (hij.ne (Subsingleton.elim j i))
+    }
+    pivot_ne_zero := by intro i; norm_num [A]
+    fitted := fun _ _ => 9 / 8
+    highResidual := fun _ _ => -1 / 8
+    solveResidual := fun _ _ => -1 / 8
+    intermediate := fun _ _ => -1 / 8
+    correction := fun _ _ => -3 / 64
+    fitted_rounds := by
+      intro k i
+      refine ⟨[0], fun _ => 9 / 8, by simp, fun j => ?_, fun j => ?_, ?_⟩
+      · rw [Subsingleton.elim j 0]
+        simp
+      · change (9 / 8 : ℝ) = refinementResidualSystem.round (3 * (3 / 8 : ℝ))
+        norm_num [hr.1]
+      · exact RoundsSumFrom.nil _
+    highResidual_rounds := by
+      intro k i
+      change (-1 / 8 : ℝ) = refinementResidualSystem.round (1 - (9 / 8 : ℝ))
+      norm_num [hr.2]
+    solveResidual_rounds := by
+      intro k i
+      change (-1 / 8 : ℝ) = refinementWorkSystem.round (-1 / 8 : ℝ)
+      simpa only [neg_div] using hw.1.symm
+    forward := by
+      intro k i
+      refine ⟨[], -1 / 8, List.nodup_nil, fun j => ?_, ⟨0, by simp, RoundsSumFrom.nil _⟩, ?_⟩
+      · simp [Subsingleton.elim j i]
+      · simpa only [Matrix.one_apply_eq, div_one, work,
+          FloatingPoint.System.roundingModel_rounds_iff, neg_div] using hw.1.symm
+    backward := by
+      intro k i
+      refine ⟨[], -1 / 8, List.nodup_nil, fun j => ?_, ⟨0, by simp, RoundsSumFrom.nil _⟩, ?_⟩
+      · simp [Subsingleton.elim j i]
+      · change (-3 / 64 : ℝ) = refinementWorkSystem.round ((-1 / 8) / 3 : ℝ)
+        norm_num [hw.2.1]
+    update := by
+      intro k i
+      change (3 / 8 : ℝ) = refinementWorkSystem.round (3 / 8 + -3 / 64)
+      norm_num [hw.2.2]
+  }⟩, tendsto_const_nhds, ?_⟩
+  intro he
+  have h := congrFun he (0 : Fin 1)
+  norm_num [A, b, x, Matrix.mulVec, dotProduct] at h
+
+end MixedPrecisionRefinementExamples
 
 end BenIsraelGreville.Chapter03
