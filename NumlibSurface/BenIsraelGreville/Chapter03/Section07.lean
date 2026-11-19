@@ -24,6 +24,7 @@ import Mathlib.Analysis.Normed.Operator.Bilinear
 import Mathlib.Topology.Algebra.Module.ContinuousLinearMap.Quotient
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.LinearAlgebra.Matrix.SVD
+import Numlib.Topology.BorsukUlam
 import Mathlib.Analysis.Convex.Gauge
 import Mathlib.Analysis.Normed.Module.HahnBanach
 import Mathlib.Topology.MetricSpace.Sequences
@@ -6202,5 +6203,114 @@ theorem exercise_81_lower_of_odd_dimension_theorem
 end
 
 end RankLossOddMaps
+
+section RankLossExactUpper
+
+open Module
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+/-- **Exercise 81**, upper estimate in Equation (153), with its
+full-row-rank and proper-range constants. -/
+theorem exercise_81_upper_projectiveBound
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0) :
+    rankLossDistance A ≤ (if A.range = ⊤ then 1 else projectiveBound (E := F)) /
+      mixedOperatorNorm (definition_2 A) := by
+  classical
+  refine (exercise_81_upper hα hβ hA).trans
+    (div_le_div_of_nonneg_right ?_ (mixedOperatorNorm_nonneg (definition_2_isContinuousHomogeneous hα hβ A).continuous))
+  by_cases hr : A.range = ⊤
+  · rw [ite_eq_left hr, hr]
+    apply (mixedOperatorNorm_le_iff
+      ⟨continuous_definition_1 hα _, definition_1_smul hα _⟩ zero_le_one).mpr
+    intro x
+    rw [one_mul, (definition_1_eq_self_iff _ _).mpr (Submodule.mem_top : x ∈ (⊤ : Submodule ℂ F))]
+  · rw [ite_eq_right hr]
+    have hpos : 1 ≤ finrank ℂ A.range := by
+      apply Nat.one_le_iff_ne_zero.mpr
+      exact fun h => hA (LinearMap.range_eq_bot.mp (Submodule.finrank_eq_zero.mp h))
+    have hproper : finrank ℂ A.range < finrank ℂ F := Submodule.finrank_lt hr
+    have hd : 2 ≤ finrank ℂ F := by omega
+    have hQ : 0 ≤ projectiveBound (E := F) := zero_le_one.trans (exercise_68 hα _ hpos hproper).2.1
+    exact (mixedOperatorNorm_le_iff ⟨continuous_definition_1 hα _, definition_1_smul hα _⟩ hQ).mpr
+      (norm_projection_le_projectiveBound_mul hα hd A.range)
+
+
+end RankLossExactUpper
+
+section ComplexOddZero
+
+open Set Module
+
+/-- A continuous odd map between finite-dimensional complex subspaces
+of strictly decreasing dimension has a nonzero zero. -/
+theorem odd_complex_submodule_zero
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+    (M N : Submodule ℂ E) (hMN : finrank ℂ N < finrank ℂ M)
+    (f : M → N) (hf : Continuous f) (hodd : ∀ x, f (-x) = -(f x)) :
+    ∃ x : M, x ≠ 0 ∧ f x = 0 := by
+  classical
+  let m := finrank ℝ M
+  let n := finrank ℝ N
+  have hdim : n < m := by
+    dsimp [m, n]
+    rw [finrank_real_of_complex, finrank_real_of_complex]
+    omega
+  let : Nonempty (Fin m) := ⟨⟨0, by omega⟩⟩
+  let E : M ≃L[ℝ] EuclideanSpace ℝ (Fin m) :=
+    ((Module.finBasis ℝ M).equivFun.trans
+      (WithLp.linearEquiv 2 ℝ (Fin m → ℝ)).symm).toContinuousLinearEquiv
+  let F : N ≃L[ℝ] EuclideanSpace ℝ (Fin n) :=
+    ((Module.finBasis ℝ N).equivFun.trans
+      (WithLp.linearEquiv 2 ℝ (Fin n → ℝ)).symm).toContinuousLinearEquiv
+  by_contra! h
+  let g : EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin n) :=
+    fun x => F (f (E.symm x))
+  have hg : Continuous g := F.continuous.comp (hf.comp E.symm.continuous)
+  have hg₀ (x : EuclideanSpace ℝ (Fin m)) (hx : ‖x‖ = 1) : g x ≠ 0 := by
+    have hx₀ : x ≠ 0 := by
+      intro he
+      simp [he] at hx
+    have hz₀ : E.symm x ≠ 0 := fun he => hx₀ (E.symm.injective (he.trans (map_zero E.symm).symm))
+    exact fun he => h (E.symm x) hz₀ (F.injective (he.trans (map_zero F).symm))
+  let G : EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin n) :=
+    fun x => ‖g x‖⁻¹ • g x
+  have hGc : ContinuousOn G {x | ‖x‖ = 1} :=
+    (((continuous_norm.comp hg).continuousOn).inv₀
+      (fun x hx => norm_ne_zero_iff.mpr (hg₀ x hx))).smul hg.continuousOn
+  have hGnorm (x : EuclideanSpace ℝ (Fin m)) (hx : ‖x‖ = 1) : ‖G x‖ = 1 := by
+    have hnorm : 0 < ‖g x‖ := norm_pos_iff.mpr (hg₀ x hx)
+    simp only [G, norm_smul, Real.norm_eq_abs, abs_inv, abs_of_pos hnorm]
+    exact inv_mul_cancel₀ hnorm.ne'
+  have hGodd (x : EuclideanSpace ℝ (Fin m)) (_hx : ‖x‖ = 1) : G (-x) = -(G x) := by
+    have hh : g (-x) = -(g x) := by simp [g, map_neg, hodd]
+    simp [G, hh]
+  have hc := Numlib.oddSphereDimensionBound G hGc hGnorm hGodd
+  exact (not_le_of_gt hdim) (by simpa only [Fintype.card_fin] using hc)
+
+section RankLoss
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+/-- **Exercise 81**, Equations (153)–(154), of [benIsrael2003generalized],
+Chapter 3. The mixed norm controls the distance to rank loss with the
+stated projective bound, with equality for full row rank or a projective
+output norm. -/
+theorem exercise_81 (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0) :
+    (mixedOperatorNorm (definition_2 A))⁻¹ ≤ rankLossDistance A ∧
+      rankLossDistance A ≤ (if A.range = ⊤ then 1 else projectiveBound (E := F)) /
+        mixedOperatorNorm (definition_2 A) ∧
+      (A.range = ⊤ ∨ IsProjectiveNorm (E := F) →
+        rankLossDistance A = (mixedOperatorNorm (definition_2 A))⁻¹) :=
+  ⟨exercise_81_lower_of_odd_dimension_theorem hα hβ odd_complex_submodule_zero hA,
+    exercise_81_upper_projectiveBound hα hβ hA, exercise_81_exact hα hβ hA⟩
+
+end RankLoss
+
+end ComplexOddZero
 
 end BenIsraelGreville.Chapter03

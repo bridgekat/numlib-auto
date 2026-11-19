@@ -1,0 +1,5 @@
+namespace = "Numlib"
+
+[[node]]
+id = "oddSphereDimensionBound"
+source = "Borsuk–Ulam theorem, odd-sphere dimension form. OpenAI math, commit 4eaee87548250b2682affda7d05d947c05554bae, OAI.BorsukNine.SimplicialChains.odd_sphere_dimension_bound_fintype"

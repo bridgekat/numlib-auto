@@ -218,10 +218,7 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 80, Equation (152) under
 
 [[node]]
 id = "exercise_81"
-kind = "theorem"
-desc = '''Prove the lower and upper bounds for the mixed operator norm distance to rank loss, with exact equality in the full-row-rank and projective-norm cases. In the convention of Equation (143), perturbations have input norm β and output norm α, while the inverse has input norm α and output norm β.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, Equations (153)–(154), distance to rank loss"
-deps = ["theorem_12", "exercise_66", "exercise_68"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, Equations (153)–(154), rank-loss distance bounds and exact full-row-rank and projective cases"
 
 [[node]]
 id = "norm_inv_smul_mem_unitSphere"
@@ -646,3 +643,11 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, kernel intersection 
 [[node]]
 id = "exercise_81_lower_of_odd_dimension_theorem"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, general lower estimate reduced to odd-map dimension theorem"
+
+[[node]]
+id = "exercise_81_upper_projectiveBound"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, Equation (153), upper bound with the exact full-row-rank and proper-range projective constants"
+
+[[node]]
+id = "odd_complex_submodule_zero"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, Borsuk–Ulam for the real coordinates of finite-dimensional complex subspaces"
