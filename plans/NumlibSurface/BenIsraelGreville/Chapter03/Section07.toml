@@ -533,3 +533,55 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 74, all Euclidean projec
 [[node]]
 id = "exercise_74_nonlinear"
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 74, three-coordinate counterexample for all non-Euclidean interior p"
+
+[[node]]
+id = "planarLp"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, real two-coordinate ℓᵖ norm"
+
+[[node]]
+id = "piecewisePlanarLp"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, piecewise planar norm"
+
+[[node]]
+id = "planarDot"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, coordinate pairing"
+
+[[node]]
+id = "piecewisePlanarLp_polar"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, polar exchanges conjugate exponents"
+
+[[node]]
+id = "piecewisePlanarLp_smul"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, absolute homogeneity"
+
+[[node]]
+id = "piecewisePlanarLp_isPositiveGauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, real norm axioms"
+
+[[node]]
+id = "exercise_69_planar_contractive"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, projectivity of the real planar example"
+
+[[node]]
+id = "exercise_69_planar_not_ellipsoidal"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, failure of the parallelogram law"
+
+[[node]]
+id = "BirkhoffJamesOrthogonal"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, Birkhoff–James orthogonality"
+
+[[node]]
+id = "norm_bestApprox_le_of_birkhoffJames_symmetric"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, contractivity from orthogonality symmetry"
+
+[[node]]
+id = "isProjectiveNorm_iff_birkhoffJames_symmetric"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 69, reduction of complex norm classification to orthogonality symmetry"
+
+[[node]]
+id = "norm_rankLossPerturbation_lower_of_zeroFiber"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, sufficient zero fiber witness for each perturbation"
+
+[[node]]
+id = "exercise_81_lower_of_additive_kernelProjection"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, input-additive-kernel lower estimate"

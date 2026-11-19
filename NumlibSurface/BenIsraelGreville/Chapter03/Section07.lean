@@ -2,6 +2,7 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Analysis.MeanInequalities
 import Mathlib.Analysis.Calculus.LocalExtr.Basic
 import Numlib.Analysis.Convex.Subdifferential.Uniqueness
 import Mathlib.Analysis.Convex.SpecificFunctions.Deriv
@@ -4557,5 +4558,638 @@ theorem exercise_74_nonlinear (hp : 1 < p.toReal) (hne : p.toReal ≠ 2) :
 end
 
 end LpNonlinearExercises
+
+section PlanarProjectiveExercises
+
+open Set Finset
+open scoped Topology Pointwise NNReal
+
+section
+
+private abbrev RealPlane := ℝ × ℝ
+
+/-- The two-coordinate real $ell^p$ norm for finite exponent $p$. -/
+noncomputable def planarLp (p : ℝ) (x : ℝ × ℝ) : ℝ :=
+  (|x.1| ^ p + |x.2| ^ p) ^ (1 / p)
+
+/-- **Exercise 69**, the real planar example. The first and third
+quadrants use exponent $p$, and the other quadrants use exponent $q$. -/
+noncomputable def piecewisePlanarLp (p q : ℝ) (x : ℝ × ℝ) : ℝ :=
+  if 0 ≤ x.1 * x.2 then planarLp p x else planarLp q x
+
+/-- The usual bilinear pairing of two real coordinate pairs. -/
+def planarDot (x y : RealPlane) : ℝ := x.1 * y.1 + x.2 * y.2
+
+private def planarTurn (x : RealPlane) : RealPlane := (-x.2, x.1)
+
+private theorem planarLp_nonneg (p : ℝ) (x : RealPlane) : 0 ≤ planarLp p x := by
+  unfold planarLp
+  positivity
+
+private theorem planarLp_abs_le (p : ℝ) (hp : 0 < p) (x : RealPlane) :
+    |x.1| ≤ planarLp p x ∧ |x.2| ≤ planarLp p x := by
+  have hf (t u : ℝ) : |t| ≤ (|t| ^ p + |u| ^ p) ^ (1 / p) := by
+    calc
+      _ = (|t| ^ p) ^ (1 / p) := by
+        rw [one_div, Real.rpow_rpow_inv (abs_nonneg _) hp.ne']
+      _ ≤ _ := Real.rpow_le_rpow (by positivity)
+        (le_add_of_nonneg_right (by positivity)) (by positivity)
+  exact ⟨hf _ _, by simpa only [planarLp, add_comm] using hf x.2 x.1⟩
+
+private theorem planarLp_on_axis (p : ℝ) (hp : 0 < p) (x : RealPlane) (hx : x.1 * x.2 = 0) :
+    planarLp p x = |x.1| + |x.2| := by
+  rcases mul_eq_zero.mp hx with h | h
+  · rw [planarLp, h, abs_zero, Real.zero_rpow hp.ne', zero_add, one_div,
+      Real.rpow_rpow_inv (abs_nonneg _) hp.ne', zero_add]
+  · rw [planarLp, h, abs_zero, Real.zero_rpow hp.ne', add_zero, one_div,
+      Real.rpow_rpow_inv (abs_nonneg _) hp.ne', add_zero]
+
+private theorem planarLp_le_one_iff (p : ℝ) (hp : 0 < p) (x : RealPlane) :
+    planarLp p x ≤ 1 ↔ |x.1| ^ p + |x.2| ^ p ≤ 1 := by
+  unfold planarLp
+  conv_lhs => rhs; rw [← Real.one_rpow (1 / p)]
+  exact Real.rpow_le_rpow_iff (by positivity) zero_le_one (by positivity)
+
+private theorem piecewisePlanarLp_abs_le {p q : ℝ} (hp : 0 < p) (hq : 0 < q) (x : RealPlane) :
+    |x.1| ≤ piecewisePlanarLp p q x ∧ |x.2| ≤ piecewisePlanarLp p q x := by
+  unfold piecewisePlanarLp
+  split
+  · exact planarLp_abs_le p hp x
+  · exact planarLp_abs_le q hq x
+
+private theorem planarLp_holder_abs {p q : ℝ} (hpq : p.HolderConjugate q)
+    (x y : RealPlane) :
+    |x.1| * |y.1| + |x.2| * |y.2| ≤ planarLp p x * planarLp q y := by
+  let f : Fin 2 → ℝ := ![|x.1|, |x.2|]
+  let g : Fin 2 → ℝ := ![|y.1|, |y.2|]
+  have h := Real.inner_le_Lp_mul_Lq_of_nonneg (univ : Finset (Fin 2)) hpq
+    (f := f) (g := g) (fun i _ => by fin_cases i <;> exact abs_nonneg _)
+    (fun i _ => by fin_cases i <;> exact abs_nonneg _)
+  simpa [f, g, planarLp, Fin.sum_univ_two] using h
+
+private theorem exists_planarLp_dual_attainment {p q : ℝ} (hpq : p.HolderConjugate q)
+    (x : RealPlane) : ∃ a b : ℝ, 0 ≤ a ∧ 0 ≤ b ∧ a ^ q + b ^ q ≤ 1 ∧
+      |x.1| * a + |x.2| * b = planarLp p x := by
+  let f : Fin 2 → ℝ≥0 := ![⟨|x.1|, abs_nonneg _⟩, ⟨|x.2|, abs_nonneg _⟩]
+  obtain ⟨g, hg, hfg⟩ := (NNReal.isGreatest_Lp (univ : Finset (Fin 2)) f hpq).1
+  refine ⟨g 0, g 1, (g 0).coe_nonneg, (g 1).coe_nonneg, ?_, ?_⟩
+  · have hb : (g 0) ^ q + (g 1) ^ q ≤ 1 := by
+      simpa only [Fin.sum_univ_two] using (show ∑ i, g i ^ q ≤ 1 from hg)
+    exact_mod_cast hb
+  · have he := congrArg (fun a : ℝ≥0 => (a : ℝ)) hfg
+    push_cast at he
+    simp only [f, Fin.sum_univ_two] at he
+    change |x.1| * ↑(g 0) + |x.2| * ↑(g 1) =
+      (|x.1| ^ p + |x.2| ^ p) ^ (1 / p) at he
+    exact he
+
+private theorem planarDot_le_piecewisePlanarLp {p q : ℝ} (hpq : p.HolderConjugate q)
+    (x y : RealPlane) (hy : piecewisePlanarLp p q y ≤ 1) :
+    planarDot x y ≤ piecewisePlanarLp q p x := by
+  have hx := piecewisePlanarLp_abs_le hpq.symm.pos hpq.pos x
+  have hy' := piecewisePlanarLp_abs_le hpq.pos hpq.symm.pos y
+  have h₀ : |y.1| ≤ 1 := hy'.1.trans hy
+  have h₁ : |y.2| ≤ 1 := hy'.2.trans hy
+  have habs : planarDot x y ≤ |x.1| * |y.1| + |x.2| * |y.2| := by
+    unfold planarDot
+    exact add_le_add ((le_abs_self _).trans_eq (abs_mul _ _))
+      ((le_abs_self _).trans_eq (abs_mul _ _))
+  have hmismatch (h : (x.1 * y.1) * (x.2 * y.2) ≤ 0) :
+      planarDot x y ≤ piecewisePlanarLp q p x := by
+    by_cases he : x.1 * y.1 ≤ 0
+    · have hb : x.2 * y.2 ≤ |x.2| := calc
+        _ ≤ |x.2| * |y.2| := (le_abs_self _).trans_eq (abs_mul _ _)
+        _ ≤ _ := mul_le_of_le_one_right (abs_nonneg _) h₁
+      exact (add_le_of_nonpos_left he).trans (hb.trans hx.2)
+    · have hnon : x.2 * y.2 ≤ 0 := nonpos_of_mul_nonpos_right h (lt_of_not_ge he)
+      have hb : x.1 * y.1 ≤ |x.1| := calc
+        _ ≤ |x.1| * |y.1| := (le_abs_self _).trans_eq (abs_mul _ _)
+        _ ≤ _ := mul_le_of_le_one_right (abs_nonneg _) h₀
+      exact (add_le_of_nonpos_right hnon).trans (hb.trans hx.1)
+  by_cases hxprod : 0 ≤ x.1 * x.2 <;> by_cases hyprod : 0 ≤ y.1 * y.2
+  · rw [piecewisePlanarLp, ite_eq_left hxprod]
+    rw [piecewisePlanarLp, ite_eq_left hyprod] at hy
+    exact habs.trans ((planarLp_holder_abs hpq.symm x y).trans
+      (mul_le_of_le_one_right (planarLp_nonneg _ _) hy))
+  · apply hmismatch
+    rw [show (x.1 * y.1) * (x.2 * y.2) = (x.1 * x.2) * (y.1 * y.2) by ring]
+    exact mul_nonpos_of_nonneg_of_nonpos hxprod (le_of_not_ge hyprod)
+  · apply hmismatch
+    rw [show (x.1 * y.1) * (x.2 * y.2) = (x.1 * x.2) * (y.1 * y.2) by ring]
+    exact mul_nonpos_of_nonpos_of_nonneg (le_of_not_ge hxprod) hyprod
+  · rw [piecewisePlanarLp, ite_eq_right hxprod]
+    rw [piecewisePlanarLp, ite_eq_right hyprod] at hy
+    exact habs.trans ((planarLp_holder_abs hpq x y).trans
+      (mul_le_of_le_one_right (planarLp_nonneg _ _) hy))
+
+private theorem exists_planarDot_eq_piecewisePlanarLp {p q : ℝ} (hpq : p.HolderConjugate q)
+    (x : RealPlane) : ∃ y : RealPlane, piecewisePlanarLp p q y ≤ 1 ∧
+      planarDot x y = piecewisePlanarLp q p x := by
+  by_cases h : 0 ≤ x.1 * x.2
+  · obtain ⟨a, b, ha, hb, hab, he⟩ := exists_planarLp_dual_attainment hpq.symm x
+    rw [piecewisePlanarLp, ite_eq_left h]
+    have hsign : (0 ≤ x.1 ∧ 0 ≤ x.2) ∨ (x.1 ≤ 0 ∧ x.2 ≤ 0) := by
+      rcases le_or_gt 0 x.1 with hx | hx <;>
+        rcases le_or_gt 0 x.2 with hy | hy
+      · exact Or.inl ⟨hx, hy⟩
+      · refine Or.inr ⟨le_of_not_gt ?_, hy.le⟩
+        exact fun hx => (not_lt_of_ge h) (mul_neg_of_pos_of_neg hx hy)
+      · refine Or.inr ⟨hx.le, le_of_not_gt ?_⟩
+        exact fun hy => (not_lt_of_ge h) (mul_neg_of_neg_of_pos hx hy)
+      · exact Or.inr ⟨hx.le, hy.le⟩
+    rcases hsign with ⟨hx, hy⟩ | ⟨hx, hy⟩
+    · refine ⟨(a, b), ?_, ?_⟩
+      · rw [piecewisePlanarLp, ite_eq_left (mul_nonneg ha hb), planarLp_le_one_iff p hpq.pos]
+        simpa only [abs_of_nonneg ha, abs_of_nonneg hb] using hab
+      · simpa only [planarDot, abs_of_nonneg hx, abs_of_nonneg hy] using he
+    · refine ⟨(-a, -b), ?_, ?_⟩
+      · rw [piecewisePlanarLp, ite_eq_left (mul_nonneg_of_nonpos_of_nonpos
+          (neg_nonpos.mpr ha) (neg_nonpos.mpr hb)), planarLp_le_one_iff p hpq.pos]
+        simpa only [abs_neg, abs_of_nonneg ha, abs_of_nonneg hb] using hab
+      · simpa only [planarDot, abs_of_nonpos hx, abs_of_nonpos hy, neg_mul, mul_neg] using he
+  · obtain ⟨a, b, ha, hb, hab, he⟩ := exists_planarLp_dual_attainment hpq x
+    rw [piecewisePlanarLp, ite_eq_right h]
+    have hsign := mul_neg_iff.mp (lt_of_not_ge h)
+    have hflip (y : RealPlane) (hy : y.1 * y.2 ≤ 0) (hL : planarLp q y ≤ 1) :
+        piecewisePlanarLp p q y ≤ 1 := by
+      unfold piecewisePlanarLp
+      split
+      · rename_i hs
+        have hzero := le_antisymm hy hs
+        rwa [planarLp_on_axis p hpq.pos y hzero, ← planarLp_on_axis q hpq.symm.pos y hzero]
+      · exact hL
+    rcases hsign with ⟨hx, hy⟩ | ⟨hx, hy⟩
+    · refine ⟨(a, -b), hflip _ (mul_nonpos_of_nonneg_of_nonpos ha (neg_nonpos.mpr hb)) ?_, ?_⟩
+      · rw [planarLp_le_one_iff q hpq.symm.pos]
+        simpa only [abs_neg, abs_of_nonneg ha, abs_of_nonneg hb] using hab
+      · simpa only [planarDot, abs_of_nonneg hx.le, abs_of_nonpos hy.le, neg_mul, mul_neg] using he
+    · refine ⟨(-a, b), hflip _ (mul_nonpos_of_nonpos_of_nonneg (neg_nonpos.mpr ha) hb) ?_, ?_⟩
+      · rw [planarLp_le_one_iff q hpq.symm.pos]
+        simpa only [abs_neg, abs_of_nonneg ha, abs_of_nonneg hb] using hab
+      · simpa only [planarDot, abs_of_nonpos hx.le, abs_of_nonneg hy.le, neg_mul, mul_neg] using he
+
+/-- The exact real polar of the piecewise planar unit ball exchanges the exponents. -/
+theorem piecewisePlanarLp_polar {p q : ℝ} (hpq : p.HolderConjugate q) (x : ℝ × ℝ) :
+    (∀ y : ℝ × ℝ, piecewisePlanarLp p q y ≤ 1 → planarDot x y ≤ 1) ↔
+      piecewisePlanarLp q p x ≤ 1 := by
+  constructor
+  · intro h
+    obtain ⟨y, hy, he⟩ := exists_planarDot_eq_piecewisePlanarLp hpq x
+    exact he ▸ h y hy
+  · intro h y hy
+    exact (planarDot_le_piecewisePlanarLp hpq x y hy).trans h
+
+
+private theorem planarLp_smul (p : ℝ) (hp : 0 < p) (c : ℝ) (x : RealPlane) :
+    planarLp p (c • x) = |c| * planarLp p x := by
+  change (|c * x.1| ^ p + |c * x.2| ^ p) ^ (1 / p) = _
+  rw [abs_mul, abs_mul, Real.mul_rpow (abs_nonneg c) (abs_nonneg x.1),
+    Real.mul_rpow (abs_nonneg c) (abs_nonneg x.2), ← mul_add,
+    Real.mul_rpow (by positivity) (by positivity), one_div,
+    Real.rpow_rpow_inv (abs_nonneg c) hp.ne']
+  simp only [planarLp, one_div]
+
+/-- The real planar piecewise norm is absolutely homogeneous. -/
+theorem piecewisePlanarLp_smul {p q : ℝ} (hp : 0 < p) (hq : 0 < q)
+    (c : ℝ) (x : ℝ × ℝ) :
+    piecewisePlanarLp p q (c • x) = |c| * piecewisePlanarLp p q x := by
+  by_cases hc : c = 0
+  · subst c
+    simp [piecewisePlanarLp, planarLp, Real.zero_rpow hp.ne',
+      Real.zero_rpow (inv_ne_zero hp.ne')]
+  · have hprod : (c • x).1 * (c • x).2 = c ^ 2 * (x.1 * x.2) := by
+      change c * x.1 * (c * x.2) = _
+      ring
+    have hpos : 0 < c ^ 2 := sq_pos_of_ne_zero hc
+    by_cases h : 0 ≤ x.1 * x.2
+    · have h' : 0 ≤ (c • x).1 * (c • x).2 := hprod ▸ mul_nonneg hpos.le h
+      rw [piecewisePlanarLp, ite_eq_left h', piecewisePlanarLp, ite_eq_left h]
+      exact planarLp_smul p hp c x
+    · have h' : ¬0 ≤ (c • x).1 * (c • x).2 := by
+        rw [hprod]
+        exact not_le_of_gt (mul_neg_of_pos_of_neg hpos (lt_of_not_ge h))
+      rw [piecewisePlanarLp, ite_eq_right h', piecewisePlanarLp, ite_eq_right h]
+      exact planarLp_smul q hq c x
+
+private theorem piecewisePlanarLp_zero {p q : ℝ} (hp : 0 < p) :
+    piecewisePlanarLp p q (0 : RealPlane) = 0 := by
+  simp [piecewisePlanarLp, planarLp, Real.zero_rpow hp.ne',
+    Real.zero_rpow (inv_ne_zero hp.ne')]
+
+private theorem piecewisePlanarLp_pos {p q : ℝ} (hp : 0 < p) (hq : 0 < q)
+    {x : RealPlane} (hx : x ≠ 0) : 0 < piecewisePlanarLp p q x := by
+  have h := piecewisePlanarLp_abs_le hp hq x
+  by_contra! he
+  apply hx
+  apply Prod.ext (abs_eq_zero.mp (le_antisymm (h.1.trans he) (abs_nonneg _)))
+  exact abs_eq_zero.mp (le_antisymm (h.2.trans he) (abs_nonneg _))
+
+private theorem piecewisePlanarLp_turn {p q : ℝ} (hp : 0 < p) (hq : 0 < q)
+    (x : RealPlane) : piecewisePlanarLp q p (planarTurn x) = piecewisePlanarLp p q x := by
+  have hprod : (planarTurn x).1 * (planarTurn x).2 = -(x.1 * x.2) := by
+    change -x.2 * x.1 = _
+    ring
+  have hc (r : ℝ) : planarLp r (planarTurn x) = planarLp r x := by
+    change (|-x.2| ^ r + |x.1| ^ r) ^ (1 / r) = (|x.1| ^ r + |x.2| ^ r) ^ (1 / r)
+    rw [abs_neg, add_comm]
+  rcases lt_trichotomy (x.1 * x.2) 0 with h | h | h
+  · rw [piecewisePlanarLp, ite_eq_left (hprod ▸ (neg_nonneg.mpr h.le)),
+      piecewisePlanarLp, ite_eq_right (not_le.mpr h), hc]
+  · rw [piecewisePlanarLp, ite_eq_left (by rw [hprod, h, neg_zero]),
+      piecewisePlanarLp, ite_eq_left h.ge, hc, planarLp_on_axis p hp x h,
+      planarLp_on_axis q hq x h]
+  · rw [piecewisePlanarLp, ite_eq_right (hprod ▸ not_le.mpr (neg_neg_of_pos h)),
+      piecewisePlanarLp, ite_eq_left h.le, hc]
+
+private theorem planarArea_le_piecewisePlanarLp {p q : ℝ} (hpq : p.HolderConjugate q)
+    (v w : RealPlane) :
+    |planarDot (planarTurn v) w| ≤ piecewisePlanarLp p q v * piecewisePlanarLp p q w := by
+  by_cases hw : w = 0
+  · simp [hw, planarDot, piecewisePlanarLp_zero hpq.pos]
+  have hw' := piecewisePlanarLp_pos hpq.pos hpq.symm.pos hw
+  let r := piecewisePlanarLp p q w
+  have hc (u : RealPlane) (hu : piecewisePlanarLp p q u = r) :
+      (r⁻¹ • u) ∈ {y | piecewisePlanarLp p q y ≤ 1} := by
+    change piecewisePlanarLp p q (r⁻¹ • u) ≤ 1
+    rw [piecewisePlanarLp_smul hpq.pos hpq.symm.pos, abs_of_pos (inv_pos.mpr hw'), hu,
+      inv_mul_cancel₀ hw'.ne']
+  have hcPlus := planarDot_le_piecewisePlanarLp hpq (planarTurn v) (r⁻¹ • w) (hc w rfl)
+  have hn : piecewisePlanarLp p q (-w) = r := by
+    simpa only [neg_one_smul, abs_neg, abs_one, one_mul] using
+      piecewisePlanarLp_smul hpq.pos hpq.symm.pos (-1) w
+  have hcMinus := planarDot_le_piecewisePlanarLp hpq (planarTurn v) (r⁻¹ • -w) (hc (-w) hn)
+  rw [piecewisePlanarLp_turn hpq.pos hpq.symm.pos] at hcPlus hcMinus
+  have hdot (u : RealPlane) : planarDot (planarTurn v) (r⁻¹ • u) =
+      r⁻¹ * planarDot (planarTurn v) u := by
+    unfold planarDot
+    change (planarTurn v).1 * (r⁻¹ * u.1) + (planarTurn v).2 * (r⁻¹ * u.2) = _
+    ring
+  rw [hdot, inv_mul_le_iff₀ hw', mul_comm] at hcPlus hcMinus
+  have hneg : planarDot (planarTurn v) (-w) = -planarDot (planarTurn v) w := by
+    unfold planarDot
+    change (planarTurn v).1 * -w.1 + (planarTurn v).2 * -w.2 = _
+    ring
+  rw [hneg] at hcMinus
+  exact abs_le.mpr ⟨neg_le.mp hcMinus, hcPlus⟩
+
+private theorem exists_planarArea_eq_piecewisePlanarLp {p q : ℝ}
+    (hpq : p.HolderConjugate q) {v : RealPlane} (hv : v ≠ 0) :
+    ∃ w : RealPlane, piecewisePlanarLp p q w = 1 ∧
+      planarDot (planarTurn v) w = piecewisePlanarLp p q v := by
+  obtain ⟨w, hw, he⟩ := exists_planarDot_eq_piecewisePlanarLp hpq (planarTurn v)
+  rw [piecewisePlanarLp_turn hpq.pos hpq.symm.pos] at he
+  have h := planarArea_le_piecewisePlanarLp hpq v w
+  have hpos := piecewisePlanarLp_pos hpq.pos hpq.symm.pos hv
+  rw [he, abs_of_pos hpos] at h
+  exact ⟨w, le_antisymm hw (le_of_mul_le_mul_left (by simpa only [mul_one] using h) hpos), he⟩
+
+private theorem planarArea_zero_iff_mem_span {v : RealPlane} (hv : v ≠ 0) (z : RealPlane) :
+    planarDot (planarTurn v) z = 0 ↔ z ∈ ℝ ∙ v := by
+  constructor
+  · intro hz
+    change -v.2 * z.1 + v.1 * z.2 = 0 at hz
+    by_cases h : v.1 = 0
+    · have hn : v.2 ≠ 0 := fun he => hv (Prod.ext h he)
+      rw [h, zero_mul, add_zero] at hz
+      have hzero : z.1 = 0 := (mul_eq_zero.mp hz).resolve_left (neg_ne_zero.mpr hn)
+      refine Submodule.mem_span_singleton.mpr ⟨z.2 / v.2, Prod.ext ?_ ?_⟩
+      · change z.2 / v.2 * v.1 = z.1
+        rw [h, hzero, mul_zero]
+      · exact div_mul_cancel₀ _ hn
+    · refine Submodule.mem_span_singleton.mpr ⟨z.1 / v.1, Prod.ext (div_mul_cancel₀ _ h) ?_⟩
+      change z.1 / v.1 * v.2 = z.2
+      rw [div_mul_eq_mul_div, div_eq_iff h]
+      linarith
+  · intro hz
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
+    change -v.2 * (c * v.1) + v.1 * (c * v.2) = 0
+    ring
+
+/-- **Exercise 69**, projectivity of the real piecewise planar example.
+Every best approximation from a real subspace is contractive in its piecewise norm. -/
+theorem exercise_69_planar_contractive {p q : ℝ} (hpq : p.HolderConjugate q)
+    (L : Submodule ℝ (ℝ × ℝ)) {x y : ℝ × ℝ} (hy : y ∈ L)
+    (hbest : ∀ z ∈ L, piecewisePlanarLp p q (x - y) ≤ piecewisePlanarLp p q (x - z)) :
+    piecewisePlanarLp p q y ≤ piecewisePlanarLp p q x := by
+  let φ := piecewisePlanarLp p q
+  by_cases hL₀ : L = ⊥
+  · have hy₀ : y = 0 := by simpa only [hL₀, Submodule.mem_bot] using hy
+    rw [hy₀, piecewisePlanarLp_zero hpq.pos]
+    exact (abs_nonneg _).trans (piecewisePlanarLp_abs_le hpq.pos hpq.symm.pos x).1
+  by_cases hL₁ : L = ⊤
+  · have h := hbest x (hL₁ ▸ trivial)
+    rw [sub_self, piecewisePlanarLp_zero hpq.pos] at h
+    by_cases he : x = y
+    · exact le_of_eq (congrArg φ he).symm
+    · exact False.elim ((piecewisePlanarLp_pos hpq.pos hpq.symm.pos (sub_ne_zero.mpr he)).not_ge h)
+  have hdim : Module.finrank ℝ (ℝ × ℝ) = 2 := by
+    rw [Module.finrank_prod, Module.finrank_self]
+  have hdimL₁ := Submodule.finrank_lt hL₁
+  have hdimL₀ : Module.finrank ℝ L ≠ 0 := fun he => hL₀ (Submodule.finrank_eq_zero.mp he)
+  have hdimL : Module.finrank ℝ L = 1 := by omega
+  obtain ⟨v, hv, hv₀⟩ := L.ne_bot_iff.mp hL₀
+  have hspan := eq_span_singleton_of_mem_of_finrank_eq_one hdimL hv hv₀
+  have hpos := piecewisePlanarLp_pos hpq.pos hpq.symm.pos hv₀
+  obtain ⟨w, hw, hdet⟩ := exists_planarArea_eq_piecewisePlanarLp hpq hv₀
+  let D := fun a b : RealPlane => planarDot (planarTurn a) b
+  let s := D v x / φ v
+  let y₀ := x - s • w
+  have hy₀ : y₀ ∈ L := by
+    rw [hspan, ← planarArea_zero_iff_mem_span hv₀]
+    change D v (x - s • w) = 0
+    have he : D v (x - s • w) = D v x - s * D v w := by
+      change -v.2 * (x.1 - s * w.1) + v.1 * (x.2 - s * w.2) = _
+      dsimp [D, planarDot, planarTurn]
+      ring
+    rw [he, show D v w = φ v from hdet,
+      show s * φ v = D v x from div_mul_cancel₀ _ hpos.ne', sub_self]
+  have hupper : φ (x - y) ≤ |s| := by
+    have h := hbest y₀ hy₀
+    change piecewisePlanarLp p q (x - y) ≤
+      piecewisePlanarLp p q (x - (x - s • w)) at h
+    rw [sub_sub_cancel, piecewisePlanarLp_smul hpq.pos hpq.symm.pos, hw, mul_one] at h
+    exact h
+  obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp (hspan ▸ hy)
+  let r := x - y
+  have hVr : D v r = D v x := by
+    change D v (x - y) = _
+    rw [← hc]
+    change -v.2 * (x.1 - c * v.1) + v.1 * (x.2 - c * v.2) = _
+    dsimp [D, planarDot, planarTurn]
+    ring
+  have h₁ : |D v r| = φ v * φ r := by
+    have h := planarArea_le_piecewisePlanarLp hpq v r
+    have hsu : |s| = |D v r| / φ v := by
+      rw [hVr, show s = D v x / φ v from rfl, abs_div, abs_of_pos hpos]
+    rw [hsu] at hupper
+    exact le_antisymm h ((mul_comm (φ v) (φ r)).trans_le ((le_div_iff₀ hpos).mp hupper))
+  by_cases hr : r = 0
+  · exact le_of_eq (congrArg φ (sub_eq_zero.mp hr)).symm
+  have hrpos := piecewisePlanarLp_pos hpq.pos hpq.symm.pos hr
+  have hY : D y r = c * D v r := by
+    rw [← hc]
+    change -(c * v.2) * r.1 + (c * v.1) * r.2 = _
+    dsimp [D, planarDot, planarTurn]
+    ring
+  have hXY : D x r = D y r := by
+    change -x.2 * (x.1 - y.1) + x.1 * (x.2 - y.2) =
+      -y.2 * (x.1 - y.1) + y.1 * (x.2 - y.2)
+    ring
+  have he : |D x r| = φ y * φ r := by
+    rw [hXY, hY, abs_mul, h₁, ← hc]
+    change |c| * (φ v * φ r) = piecewisePlanarLp p q (c • v) * φ r
+    rw [piecewisePlanarLp_smul hpq.pos hpq.symm.pos]
+    ring
+  have h := planarArea_le_piecewisePlanarLp hpq x r
+  rw [he] at h
+  exact le_of_mul_le_mul_right h hrpos
+
+
+/-- The piecewise formula of Exercise 69 defines a continuous real norm. -/
+theorem piecewisePlanarLp_isPositiveGauge {p q : ℝ} (hpq : p.HolderConjugate q) :
+    IsPositiveGauge (piecewisePlanarLp p q) := by
+  let φ := piecewisePlanarLp p q
+  have hnn (x : RealPlane) : 0 ≤ φ x :=
+    (abs_nonneg _).trans (piecewisePlanarLp_abs_le hpq.pos hpq.symm.pos x).1
+  have htri (v w : RealPlane) : φ (v + w) ≤ φ v + φ w := by
+    obtain ⟨z, hz, he⟩ := exists_planarDot_eq_piecewisePlanarLp hpq.symm (v + w)
+    have hv := planarDot_le_piecewisePlanarLp hpq.symm v z hz
+    have hw := planarDot_le_piecewisePlanarLp hpq.symm w z hz
+    have hadd : planarDot (v + w) z = planarDot v z + planarDot w z := by
+      unfold planarDot
+      change (v.1 + w.1) * z.1 + (v.2 + w.2) * z.2 = _
+      ring
+    change piecewisePlanarLp p q (v + w) ≤ _
+    rw [← he, hadd]
+    exact add_le_add hv hw
+  have hbd (v : RealPlane) : φ v ≤ 2 * ‖v‖ := by
+    obtain ⟨z, hz, he⟩ := exists_planarDot_eq_piecewisePlanarLp hpq.symm v
+    have hcoord := piecewisePlanarLp_abs_le hpq.symm.pos hpq.pos z
+    have h₀ : v.1 * z.1 ≤ ‖v‖ := calc
+      _ ≤ |v.1| * |z.1| := (le_abs_self _).trans_eq (abs_mul _ _)
+      _ ≤ |v.1| := mul_le_of_le_one_right (abs_nonneg _) (hcoord.1.trans hz)
+      _ ≤ _ := norm_fst_le v
+    have h₁ : v.2 * z.2 ≤ ‖v‖ := calc
+      _ ≤ |v.2| * |z.2| := (le_abs_self _).trans_eq (abs_mul _ _)
+      _ ≤ |v.2| := mul_le_of_le_one_right (abs_nonneg _) (hcoord.2.trans hz)
+      _ ≤ _ := norm_snd_le v
+    change piecewisePlanarLp p q v ≤ _
+    rw [← he, planarDot]
+    linarith
+  have hlip : LipschitzWith 2 φ := LipschitzWith.of_dist_le_mul fun v w => by
+    rw [Real.dist_eq, dist_eq_norm]
+    change |φ v - φ w| ≤ 2 * ‖v - w‖
+    have h₁ := htri (v - w) w
+    have h₂ := htri (w - v) v
+    rw [sub_add_cancel] at h₁ h₂
+    refine abs_le.mpr ⟨?_, ?_⟩
+    · linarith [hbd (w - v), norm_sub_rev w v]
+    · linarith [hbd (v - w)]
+  refine ⟨hlip.continuous, hnn, fun x hx => ?_, fun r x hr => ?_, htri⟩
+  · by_contra h
+    exact (piecewisePlanarLp_pos hpq.pos hpq.symm.pos h).ne' hx
+  · rw [piecewisePlanarLp_smul hpq.pos hpq.symm.pos, abs_of_nonneg hr]
+
+/-- **Exercise 69**, nonellipsoidality of the real two-dimensional
+example for all conjugate finite exponents other than two.
+The squared norm fails the parallelogram identity on the two axes. -/
+theorem exercise_69_planar_not_ellipsoidal {p q : ℝ} (hpq : p.HolderConjugate q) (hp : p ≠ 2) :
+    ∃ x y : ℝ × ℝ,
+      piecewisePlanarLp p q (x + y) ^ 2 + piecewisePlanarLp p q (x - y) ^ 2 ≠
+        2 * piecewisePlanarLp p q x ^ 2 + 2 * piecewisePlanarLp p q y ^ 2 := by
+  let x : RealPlane := (1, 0)
+  let y : RealPlane := (0, 1)
+  have hx : piecewisePlanarLp p q x = 1 := by
+    have he : x.1 * x.2 = 0 := by norm_num [x]
+    rw [piecewisePlanarLp, ite_eq_left he.ge, planarLp_on_axis p hpq.pos x he]
+    norm_num [x]
+  have hy : piecewisePlanarLp p q y = 1 := by
+    have he : y.1 * y.2 = 0 := by norm_num [y]
+    rw [piecewisePlanarLp, ite_eq_left he.ge, planarLp_on_axis p hpq.pos y he]
+    norm_num [y]
+  have h₁ : piecewisePlanarLp p q (x + y) = 2 ^ (1 / p) := by
+    rw [show x + y = (1, 1) by apply Prod.ext <;> norm_num [x, y]]
+    rw [piecewisePlanarLp, ite_eq_left (by norm_num), planarLp]
+    norm_num [Real.one_rpow]
+  have h₂ : piecewisePlanarLp p q (x - y) = 2 ^ (1 / q) := by
+    rw [show x - y = (1, -1) by apply Prod.ext <;> norm_num [x, y]]
+    rw [piecewisePlanarLp, ite_eq_right (by norm_num), planarLp]
+    norm_num [Real.one_rpow]
+  refine ⟨x, y, ?_⟩
+  rw [hx, hy, h₁, h₂]
+  have hsq (r : ℝ) : ((2 : ℝ) ^ (1 / r)) ^ 2 = 2 ^ (2 / r) := by
+    rw [← Real.rpow_natCast, ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 2)]
+    congr 1
+    norm_num
+    ring
+  rw [hsq, hsq]
+  let a : ℝ := 2 ^ (2 / p)
+  let b : ℝ := 2 ^ (2 / q)
+  have he : 2 / p + 2 / q = 2 := by
+    simp only [div_eq_mul_inv]
+    linarith [hpq.inv_add_inv_eq_one]
+  have hab : a * b = 4 := by
+    dsimp only [a, b]
+    rw [← Real.rpow_add (by norm_num : (0 : ℝ) < 2), he, Real.rpow_two]
+    norm_num
+  have ha : a ≠ 2 := by
+    intro h
+    have h' : (2 : ℝ) ^ (2 / p) = 2 ^ (1 : ℝ) := h.trans (Real.rpow_one _).symm
+    have ht := (Real.rpow_right_inj (by norm_num : (0 : ℝ) < 2) (by norm_num)).mp h'
+    have := (div_eq_iff hpq.ne_zero).mp ht
+    apply hp
+    linarith
+  simp only [one_pow, mul_one]
+  intro h
+  change a + b = 2 + 2 at h
+  have he' : a ^ 2 + a * b = (2 + 2) * a := by
+    linarith [congrArg (a * ·) h]
+  nlinarith [sq_pos_of_ne_zero (sub_ne_zero.mpr ha)]
+
+end
+
+end PlanarProjectiveExercises
+
+section BirkhoffJamesExercises
+
+open scoped Pointwise
+
+/-- Birkhoff–James orthogonality: zero is a best approximation
+to the first vector from the span of the second vector. -/
+def BirkhoffJamesOrthogonal {𝕜 E : Type*} [NontriviallyNormedField 𝕜]
+    [NormedAddCommGroup E] [NormedSpace 𝕜 E] (x y : E) : Prop :=
+  ∀ c : 𝕜, ‖x‖ ≤ ‖x - c • y‖
+
+/-- Symmetry of Birkhoff–James orthogonality makes every best
+approximation from a linear subspace contractive. -/
+theorem norm_bestApprox_le_of_birkhoffJames_symmetric
+    {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
+    (h : ∀ x y : E, BirkhoffJamesOrthogonal (𝕜 := 𝕜) x y →
+      BirkhoffJamesOrthogonal (𝕜 := 𝕜) y x)
+    (L : Submodule 𝕜 E) {x y : E} (hy : IsBestApprox (L : Set E) x y) :
+    ‖y‖ ≤ ‖x‖ := by
+  have hxy : BirkhoffJamesOrthogonal (𝕜 := 𝕜) (x - y) y := by
+    intro c
+    have he := hy.2 (y + c • y) (L.add_mem hy.1 (L.smul_mem c hy.1))
+    rw [sub_add_eq_sub_sub] at he
+    exact he
+  have he := h (x - y) y hxy (-1)
+  rwa [neg_one_smul, sub_neg_eq_add, add_comm, sub_add_cancel] at he
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+
+/-- On an essentially strictly convex complex space, projectivity is
+equivalent to symmetry of Birkhoff–James orthogonality. -/
+theorem isProjectiveNorm_iff_birkhoffJames_symmetric (h : essentiallyStrictlyConvex E) :
+    IsProjectiveNorm (E := E) ↔
+      ∀ x y : E, BirkhoffJamesOrthogonal (𝕜 := ℂ) x y →
+        BirkhoffJamesOrthogonal (𝕜 := ℂ) y x := by
+  constructor
+  · intro hP x y hxy
+    let L : Submodule ℂ E := ℂ ∙ y
+    have hx : definition_1 L x = 0 := by
+      apply (definition_1_eq_iff h L x 0).mpr
+      refine ⟨L.zero_mem, fun z hz => ?_⟩
+      obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
+      simpa only [sub_zero] using hxy c
+    have ha := exercise_71 h hP L
+    obtain ⟨N, hN⟩ := (corollary_5 h L).1.mp ha
+    have hxN : x ∈ N := (hN x).mpr hx
+    have hyL : y ∈ L := Submodule.mem_span_singleton_self _
+    have hyN : definition_1 N y = 0 := (exercise_70 h L N ha (hP L) hN y).mp hyL
+    intro c
+    have he := (isBestApprox_definition_1 N y).2 (c • x) (N.smul_mem c hxN)
+    simpa only [hyN, sub_zero] using he
+  · intro hS L x
+    exact norm_bestApprox_le_of_birkhoffJames_symmetric hS L (isBestApprox_definition_1 L x)
+
+end
+
+end BirkhoffJamesExercises
+
+section RankLossKernelExercises
+
+open Set Module
+
+section
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [FiniteDimensional ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [FiniteDimensional ℂ F]
+
+/-- A nonzero vector of the perturbed kernel with zero original kernel
+projection implies the perturbation lower estimate in (153). -/
+theorem norm_rankLossPerturbation_lower_of_zeroFiber
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    (A : E →ₗ[ℂ] F) (X : E →L[ℂ] F) {x : E}
+    (hx : x ≠ 0) (hker : (A + X.toLinearMap) x = 0) (hP : definition_1 A.ker x = 0) :
+    (mixedOperatorNorm (definition_2 A))⁻¹ ≤ ‖X‖ := by
+  let M := mixedOperatorNorm (definition_2 A)
+  have hM : 0 ≤ M :=
+    mixedOperatorNorm_nonneg (definition_2_isContinuousHomogeneous hα hβ A).continuous
+  have hT : definition_2 A (A x) = x := by rw [definition_2_apply_right hβ, hP, sub_zero]
+  have hTx := norm_homogeneous_apply_le (definition_2_isContinuousHomogeneous hα hβ A) (A x)
+  rw [hT] at hTx
+  have hAx : A x = -X x := eq_neg_of_add_eq_zero_left hker
+  rw [hAx, norm_neg] at hTx
+  have he : ‖x‖ ≤ (M * ‖X‖) * ‖x‖ := by
+    rw [mul_assoc]
+    exact hTx.trans (mul_le_mul_of_nonneg_left (X.le_opNorm x) hM)
+  have hab : 1 ≤ M * ‖X‖ := by
+    apply le_of_mul_le_mul_right _ (norm_pos_iff.mpr hx)
+    simpa only [one_mul] using he
+  have hpos : 0 < M := by
+    refine lt_of_le_of_ne hM (Ne.symm fun h => ?_)
+    rw [h, zero_mul] at hab
+    exact (not_le_of_gt zero_lt_one) hab
+  change M⁻¹ ≤ ‖X‖
+  rw [← one_div, div_le_iff₀ hpos, mul_comm]
+  exact hab
+
+/-- **Exercise 81**, a second lower-bound case.
+If the input kernel projector is additive, the rank-loss kernel has a
+nonzero vector in its zero fiber by finite-dimensional rank-nullity. -/
+theorem exercise_81_lower_of_additive_kernelProjection
+    (hα : essentiallyStrictlyConvex F) (hβ : essentiallyStrictlyConvex E)
+    {A : E →ₗ[ℂ] F} (hA : A ≠ 0)
+    (hadd : ∀ x y, definition_1 A.ker (x + y) =
+      definition_1 A.ker x + definition_1 A.ker y) :
+    (mixedOperatorNorm (definition_2 A))⁻¹ ≤ rankLossDistance A := by
+  let S := ((fun X : E →L[ℂ] F => ‖X‖) ''
+    {X : E →L[ℂ] F | Module.finrank ℂ (A + X.toLinearMap).range <
+      Module.finrank ℂ A.range})
+  have hne : S.Nonempty := by
+    let K : E →L[ℂ] F := LinearMap.toContinuousLinearMap (-A)
+    refine ⟨‖K‖, K, ?_, rfl⟩
+    change finrank ℂ (A + -A).range < finrank ℂ A.range
+    rw [show A + -A = 0 from add_neg_cancel A, LinearMap.range_zero, finrank_bot]
+    have hn : finrank ℂ A.range ≠ 0 := fun he => hA
+      (LinearMap.range_eq_bot.mp (Submodule.finrank_eq_zero.mp he))
+    omega
+  change _ ≤ sInf S
+  refine le_csInf hne ?_
+  rintro _ ⟨X, hX, rfl⟩
+  let B := A + X.toLinearMap
+  let P := (additiveMetricProjection hβ A.ker hadd).toLinearMap
+  let C : B.ker →ₗ[ℂ] A.ker :=
+    (P.comp B.ker.subtype).codRestrict A.ker fun z => definition_1_mem A.ker z.val
+  have hlt : finrank ℂ A.ker < finrank ℂ B.ker := by
+    have ha := A.finrank_range_add_finrank_ker
+    have hb := B.finrank_range_add_finrank_ker
+    change finrank ℂ B.range < finrank ℂ A.range at hX
+    omega
+  have hC : C.ker ≠ ⊥ := by
+    intro h
+    have he := C.finrank_le_finrank_of_injective (LinearMap.ker_eq_bot.mp h)
+    exact (not_le_of_gt hlt) he
+  obtain ⟨u, hu, hu₀⟩ := C.ker.ne_bot_iff.mp hC
+  have hz : definition_1 A.ker (u : E) = 0 := congrArg Subtype.val (LinearMap.mem_ker.mp hu)
+  have hu₀' : (u : E) ≠ 0 := fun h => hu₀ (Subtype.ext h)
+  exact norm_rankLossPerturbation_lower_of_zeroFiber hα hβ A X hu₀' u.property hz
+
+end
+
+end RankLossKernelExercises
 
 end BenIsraelGreville.Chapter03
