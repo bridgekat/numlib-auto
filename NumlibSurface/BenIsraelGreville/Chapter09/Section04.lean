@@ -9,7 +9,7 @@ import Numlib.Analysis.Normed.Operator.Compact.Banach
 import Mathlib.Analysis.InnerProductSpace.TensorProduct
 import Mathlib.Analysis.Normed.Operator.Extend
 import Mathlib.LinearAlgebra.TensorProduct.Finiteness
-import Mathlib.Data.Matrix.Mul
+import Mathlib.LinearAlgebra.Matrix.SchurComplement
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Tactic.Module
 
@@ -25,6 +25,8 @@ second-kind integral equations with complex square-integrable kernels.
   conjugated parameter and the conjugate-transpose kernel.
 * In **Exercise 22(b)** the adjoint solution space uses the conjugates
   of the second factors of the separated kernel.
+* At parameter zero, the two resolvent equations select the original
+  kernel even though the inverse representation alone does not.
 * The integral representations hold almost everywhere, as required for
   equality of vectors in (L^2).
 -/
@@ -420,12 +422,17 @@ local notation "H" => Lp ℂ 2 μ
 local notation "K₂" => Lp ℂ 2 (μ.prod μ)
 
 omit [IsFiniteMeasure μ] in
-private theorem memLp_productKernel (u v : H) :
+private theorem memLp_separatedProduct {𝕜 : Type*} [RCLike 𝕜] {u v : X → 𝕜}
+    (hu : MemLp u 2 μ) (hv : MemLp v 2 μ) :
     MemLp (fun p : X × X => u p.1 * v p.2) 2 (μ.prod μ) := by
   apply (memLp_two_iff_integrable_sq_norm ?_).2
-  · simpa [mul_pow] using
-      (Lp.memLp u).norm.integrable_sq.mul_prod (Lp.memLp v).norm.integrable_sq
-  · exact (Lp.memLp u).aestronglyMeasurable.comp_fst.mul (Lp.memLp v).aestronglyMeasurable.comp_snd
+  · simpa [norm_mul, mul_pow] using hu.norm.integrable_sq.mul_prod hv.norm.integrable_sq
+  · exact hu.aestronglyMeasurable.comp_fst.mul hv.aestronglyMeasurable.comp_snd
+
+omit [IsFiniteMeasure μ] in
+private theorem memLp_productKernel (u v : H) :
+    MemLp (fun p : X × X => u p.1 * v p.2) 2 (μ.prod μ) :=
+  memLp_separatedProduct (Lp.memLp u) (Lp.memLp v)
 
 private def productKernel (u v : H) : K₂ := (memLp_productKernel u v).toLp _
 
@@ -1194,6 +1201,23 @@ instance (a b : ℝ) : IsFiniteMeasure (fredholmIntervalMeasure a b) where
     rw [fredholmIntervalMeasure, Measure.restrict_apply_univ]
     exact isCompact_Icc.measure_lt_top
 
+private theorem inverse_pair_of_resolvent_identities
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] {K R : E →L[ℂ] E} (z : ℂ)
+    (hL : R = K + z • (K * R)) (hR : R = K + z • (R * K)) :
+    (1 - z • K) * (1 + z • R) = 1 ∧ (1 + z • R) * (1 - z • K) = 1 := by
+  constructor
+  · apply ContinuousLinearMap.ext
+    intro x
+    change x + z • R x - z • K (x + z • R x) = x
+    have h : R x = K x + z • K (R x) := DFunLike.congr_fun hL x
+    rw [map_add, map_smul, ← h, add_sub_cancel_right]
+  · apply ContinuousLinearMap.ext
+    intro x
+    change x - z • K x + z • R (x - z • K x) = x
+    have h : R x = K x + z • R (K x) := DFunLike.congr_fun hR x
+    rw [map_sub, map_smul, show R x - z • R (K x) = K x by rw [h, add_sub_cancel_right],
+      sub_add_cancel]
+
 section DegenerateKernels
 
 open scoped Matrix TensorProduct
@@ -1311,7 +1335,380 @@ theorem exercise_9_22b (f g : ι → H) {η : ℂ} (hη : η ≠ 0) (x : H) :
   exact ⟨fun he => h f (fun i => star (g i)) (hK ▸ he),
     fun he => h (fun i => star (g i)) f (hA ▸ he)⟩
 
+/-- The separated kernel obtained by applying the inverse of the finite
+second-kind matrix to the coefficient vector. -/
+def fredholmDegenerateResolvent (f g : ι → H) [DecidableEq ι] (z : ℂ) : K₂ :=
+  let C := (1 - z • fredholmDegenerateMatrix f g)⁻¹
+  fredholmDegenerateKernel (fun j => ∑ i, C i j • f i) g
+
+private theorem degenerate_resolvent_border [DecidableEq ι] (A : Matrix ι ι ℂ)
+    (hA : IsUnit A.det) (u v : ι → ℂ) :
+    (Matrix.fromBlocks (0 : Matrix Unit Unit ℂ) (Matrix.of fun _ j => u j)
+      (Matrix.of fun i _ => -v i) A).det / A.det =
+      ∑ j, (∑ i, A⁻¹ i j * u i) * v j := by
+  let : Invertible A.det := hA.nonempty_invertible.some
+  let : Invertible A := Matrix.invertibleOfDetInvertible A
+  rw [Matrix.det_fromBlocks₂₂, Matrix.invOf_eq_nonsing_inv]
+  rw [mul_comm A.det, mul_div_cancel_right₀ _ hA.ne_zero]
+  rw [Matrix.det_unique]
+  simp [Matrix.mul_apply, mul_comm]
+
+/-- **Exercise 22(c)** of [benIsrael2003generalized], Chapter 9.
+The finite inverse defines a two-sided resolvent at every regular parameter.
+Its kernel is given almost everywhere by the bordered determinant ratio. -/
+theorem exercise_9_22c (f g : ι → H) [DecidableEq ι] (z : ℂ)
+    (hz : IsFredholmRegularValue (Lp.memLp (fredholmDegenerateKernel f g)) z) :
+    let A := 1 - z • fredholmDegenerateMatrix f g
+    let r := fredholmDegenerateResolvent f g z
+    IsUnit A.det ∧ IsFredholmResolvent (Lp.memLp (fredholmDegenerateKernel f g)) z (Lp.memLp r) ∧
+      r =ᵐ[μ.prod μ] fun p =>
+        (Matrix.fromBlocks (0 : Matrix Unit Unit ℂ) (Matrix.of fun _ j => f j p.1)
+          (Matrix.of fun i _ => -g i p.2) A).det / A.det := by
+  classical
+  intro A r
+  let M := fredholmDegenerateMatrix f g
+  let C := A⁻¹
+  let U := Fintype.linearCombination ℂ f
+  let L (x : H) : ι → ℂ := fun i => inner ℂ (star (g i)) x
+  let T := fredholmKernelToOperator (fredholmDegenerateKernel f g)
+  let R := fredholmKernelToOperator r
+  have hT (x : H) : T x = U (L x) := by
+    simp only [T, U, L, fredholmKernelToOperator_degenerate, sum_apply,
+      rankOne_apply, Fintype.linearCombination_apply]
+  have hM (w : ι → ℂ) : M *ᵥ w = L (U w) := by
+    funext i
+    simp only [M, L, U, Fintype.linearCombination_apply, fredholmDegenerateMatrix,
+      Matrix.mulVec, dotProduct, Matrix.of_apply, inner_sum, inner_smul_right, mul_comm]
+  have hA : IsUnit A.det := by
+    by_cases h : z = 0
+    · simp [A, h]
+    rw [← Matrix.isUnit_iff_isUnit_det, ← Matrix.mulVec_injective_iff_isUnit]
+    change Function.Injective A.mulVecLin
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro w hw
+    by_contra hn
+    have hw' : w = z • (M *ᵥ w) := by
+      change A *ᵥ w = 0 at hw
+      simpa only [A, M, Matrix.sub_mulVec, Matrix.one_mulVec, Matrix.smul_mulVec,
+        sub_eq_zero] using hw
+    have he : M *ᵥ w = z⁻¹ • w := by
+      calc
+        M *ᵥ w = z⁻¹ • (z • (M *ᵥ w)) := (inv_smul_smul₀ h _).symm
+        _ = z⁻¹ • w := congrArg (z⁻¹ • ·) hw'.symm
+    exact ((exercise_9_22a f g h).mpr ⟨w, hn, he⟩) hz
+  have hR (x : H) : R x = U (C *ᵥ L x) := by
+    simp only [R, r, fredholmDegenerateResolvent, fredholmKernelToOperator_degenerate,
+      sum_apply, rankOne_apply, U, Fintype.linearCombination_apply, L, A, C,
+      Matrix.mulVec, dotProduct, Finset.sum_smul, Finset.smul_sum, smul_smul]
+    rw [Finset.sum_comm]
+    simp only [mul_comm]
+  have hA_apply (w : ι → ℂ) : A *ᵥ w = w - z • (M *ᵥ w) := by
+    simp [A, M, Matrix.sub_mulVec, Matrix.smul_mulVec]
+  have hLeft (x : H) : R x - z • T (R x) = T x := by
+    have h : A *ᵥ (C *ᵥ L x) = L x := by
+      rw [Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv A hA, Matrix.one_mulVec]
+    rw [hA_apply] at h
+    rw [hT (R x), hT x, hR, ← hM, ← U.map_smul, ← U.map_sub, h]
+  have hRight (x : H) : R x - z • R (T x) = T x := by
+    have h : C *ᵥ (A *ᵥ L x) = L x := by
+      rw [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul A hA, Matrix.one_mulVec]
+    rw [hA_apply, Matrix.mulVec_sub, Matrix.mulVec_smul] at h
+    rw [hR x, hR (T x), hT x, ← hM, ← U.map_smul, ← U.map_sub, h]
+  refine ⟨hA, ?_, ?_⟩
+  · change ((1 - z • T) * (1 + z • R) = 1) ∧ ((1 + z • R) * (1 - z • T) = 1)
+    apply inverse_pair_of_resolvent_identities z
+    · apply ContinuousLinearMap.ext
+      intro x
+      exact sub_eq_iff_eq_add.mp (hLeft x)
+    · apply ContinuousLinearMap.ext
+      intro x
+      exact sub_eq_iff_eq_add.mp (hRight x)
+  · have hterms (j : ι) : (fun p : X × X => productKernel (∑ i, C i j • f i) (g j) p)
+        =ᵐ[μ.prod μ] fun p => (∑ i, C i j * f i p.1) * g j p.2 := by
+      have hsum : (fun s => (∑ i, C i j • f i : H) s) =ᵐ[μ]
+          fun s => ∑ i, C i j * f i s := by
+        refine (Lp.coeFn_fun_finsetSum _ _).trans ?_
+        filter_upwards [eventually_all.mpr fun i => Lp.coeFn_smul (C i j) (f i)] with s hs
+        exact Finset.sum_congr rfl (fun i _ => hs i)
+      filter_upwards [productKernel_ae (∑ i, C i j • f i) (g j), ae_eq_prod_fst hsum] with p hp hs
+      exact hp.trans (congrArg (· * g j p.2) hs)
+    change (fun p => (∑ j, productKernel (∑ i, C i j • f i) (g j) : K₂) p) =ᵐ[μ.prod μ] _
+    refine (Lp.coeFn_fun_finsetSum _ _).trans ?_
+    filter_upwards [eventually_all.mpr hterms] with p hp
+    exact (Finset.sum_congr rfl (fun j _ => hp j)).trans
+      (degenerate_resolvent_border A hA (fun j => f j p.1) (fun j => g j p.2)).symm
+
 end DegenerateKernels
+
+section KernelProducts
+
+variable {X : Type*} [MeasurableSpace X] {μ : Measure X} [IsFiniteMeasure μ]
+
+local notation "H" => Lp ℂ 2 μ
+local notation "K₂" => Lp ℂ 2 (μ.prod μ)
+
+private theorem memLp_fredholmProduct_integrand (q r : K₂) :
+    MemLp (fun p : X × X => ∫ u, q (p.1, u) * r (u, p.2) ∂μ) 2 (μ.prod μ) := by
+  let row (s : X) := Real.sqrt (∫ u, ‖q (s, u)‖ ^ 2 ∂μ)
+  let col (t : X) := Real.sqrt (∫ u, ‖r (u, t)‖ ^ 2 ∂μ)
+  have hq := (Lp.memLp q).norm
+  have hr := (Lp.memLp r).norm.comp_measurePreserving Measure.measurePreserving_swap
+  have hrow : MemLp row 2 μ := IntegralOperator.memLp_sqrt_integral_sq_row hq
+  have hcol : MemLp col 2 μ := IntegralOperator.memLp_sqrt_integral_sq_row hr
+  refine (memLp_separatedProduct hrow hcol).mono' ?_ ?_
+  · have hq' : StronglyMeasurable (fun p : (X × X) × X => q (p.1.1, p.2)) :=
+      (Lp.stronglyMeasurable q).comp_measurable
+        ((measurable_fst.comp measurable_fst).prodMk measurable_snd)
+    have hr' : StronglyMeasurable (fun p : (X × X) × X => r (p.2, p.1.2)) :=
+      (Lp.stronglyMeasurable r).comp_measurable (measurable_snd.prodMk
+        (measurable_snd.comp measurable_fst))
+    exact (hq'.mul hr').integral_prod_right'.aestronglyMeasurable
+  · have hq' := (Measure.quasiMeasurePreserving_fst (μ := μ) (ν := μ)).ae
+      (IntegralOperator.ae_memLp_row hq)
+    have hr' := (Measure.quasiMeasurePreserving_snd (μ := μ) (ν := μ)).ae
+      (IntegralOperator.ae_memLp_row hr)
+    filter_upwards [hq', hr'] with p hqp hrp
+    exact (norm_complexKernel_row_le q (fun u => r (u, p.2)) p.1).trans
+      ((le_abs_self _).trans (abs_integral_mul_le_sqrt_mul_sqrt hqp hrp))
+
+/-- Composition of two square-integrable kernels on the finite measure space. -/
+def fredholmKernelProduct (q r : K₂) : K₂ :=
+  fredholmKernelLeftComposition (fredholmKernelToOperator q) r
+
+/-- **Exercise 19**, Equations (38)–(40), of [benIsrael2003generalized].
+Composition has the stated convolution kernel almost everywhere. -/
+theorem fredholmKernelProduct_apply_ae (q r : K₂) :
+    fredholmKernelProduct q r =ᵐ[μ.prod μ]
+      fun p => ∫ u, q (p.1, u) * r (u, p.2) ∂μ := by
+  let hp := memLp_fredholmProduct_integrand q r
+  suffices he : fredholmKernelProduct q r = hp.toLp _ from
+    he ▸ MemLp.coeFn_toLp hp
+  apply fredholmKernelToOperator_injective
+  rw [fredholmKernelProduct, fredholmKernelToOperator_leftComposition,
+    fredholmKernelToOperator_toLp]
+  apply ContinuousLinearMap.ext
+  intro x
+  apply Lp.ext
+  change fredholmIntegralOperator (Lp.memLp q) (fredholmIntegralOperator (Lp.memLp r) x)
+    =ᵐ[μ] fredholmIntegralOperator hp x
+  have hq (s : X) : StronglyMeasurable (fun u => q (s, u)) :=
+    (Lp.stronglyMeasurable q).comp_measurable (measurable_const.prodMk measurable_id)
+  filter_upwards [fredholmIntegralOperator_apply_ae (Lp.memLp q)
+      (fredholmIntegralOperator (Lp.memLp r) x),
+    fredholmIntegralOperator_apply_ae hp x, IntegralOperator.ae_memLp_row (Lp.memLp q).norm]
+    with s hs ht hsq
+  rw [hs, ht]
+  have hqL : MemLp (fun u => q (s, u)) 2 μ := (memLp_norm_iff (hq s).aestronglyMeasurable).mp hsq
+  have hint : Integrable (fun p : X × X => q (s, p.1) * r p * x p.2) (μ.prod μ) := by
+    refine ((Lp.memLp r).integrable_mul (memLp_separatedProduct hqL (Lp.memLp x))).congr
+      (Eventually.of_forall fun p => ?_)
+    change r p * (q (s, p.1) * x p.2) = q (s, p.1) * r p * x p.2
+    ring
+  calc
+    ∫ u, q (s, u) * (fredholmIntegralOperator (Lp.memLp r) x) u ∂μ =
+        ∫ u, ∫ t, q (s, u) * r (u, t) * x t ∂μ ∂μ := by
+      apply integral_congr_ae
+      filter_upwards [fredholmIntegralOperator_apply_ae (Lp.memLp r) x] with u hu
+      rw [hu, ← integral_const_mul]
+      exact integral_congr_ae (Eventually.of_forall fun t => (mul_assoc _ _ _).symm)
+    _ = ∫ t, ∫ u, q (s, u) * r (u, t) * x t ∂μ ∂μ := integral_integral_swap hint
+    _ = ∫ t, (∫ u, q (s, u) * r (u, t) ∂μ) * x t ∂μ := by
+      apply integral_congr_ae
+      exact Eventually.of_forall fun t => integral_mul_const _ _
+
+omit [IsFiniteMeasure μ] in
+private theorem fredholm_defect_algebra (z : ℂ) (K R : H →L[ℂ] H) :
+    1 - (1 - z • K) * (1 + z • R) = z • (K + z • (K * R) - R) ∧
+      1 - (1 + z • R) * (1 - z • K) = z • (K + z • (R * K) - R) := by
+  have h (F G : H →L[ℂ] H) : (z • F) * (z • G) = z • z • (F * G) := by
+    apply ContinuousLinearMap.ext
+    intro x
+    change z • F (z • G x) = z • z • F (G x)
+    rw [map_smul]
+  constructor <;>
+    simp only [mul_add, add_mul, mul_sub, sub_mul, mul_one, one_mul, h, smul_sub, smul_add] <;> abel
+
+omit [IsFiniteMeasure μ] in
+private theorem fredholm_defect_expansion {ι : Type*} [Fintype ι] {S : Submodule ℂ H}
+    [S.HasOrthogonalProjection] (b : OrthonormalBasis ι ℂ S) (D : H →L[ℂ] H)
+    (hD : ∀ x ∈ Sᗮ, D x = 0) :
+    D = ∑ i, rankOne ℂ (D (b i : H)) (b i : H) := by
+  have h : D = D * S.starProjection := by
+    apply ContinuousLinearMap.ext
+    intro x
+    change D x = D (S.starProjection x)
+    have hz := hD _ (S.sub_starProjection_mem_orthogonal x)
+    rwa [map_sub, sub_eq_zero] at hz
+  calc
+    D = D * S.starProjection := h
+    _ = ∑ i, rankOne ℂ (D (b i : H)) (b i : H) := by
+      rw [b.starProjection_eq_sum_rankOne, Finset.mul_sum]
+      simp only [ContinuousLinearMap.mul_def, comp_rankOne]
+
+set_option maxHeartbeats 650000 in
+-- Defect expansions compare both the kernel classes and their bounded operators.
+/-- **Exercise 19**, Equations (38)–(39), of [benIsrael2003generalized].
+The two convolution defects have the displayed finite-rank expansions
+with coefficient families biorthogonal to the corresponding null bases. -/
+theorem exercise_9_19_pseudoresolvent_characterization (q r : K₂) {z : ℂ} (hz : z ≠ 0)
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : OrthonormalBasis ι ℂ (fredholmSecondKind (Lp.memLp q) z).ker)
+    (c : OrthonormalBasis ι ℂ (fredholmSecondKind (Lp.memLp q) z).adjoint.ker) :
+    IsFredholmPseudoresolvent (Lp.memLp q) z (Lp.memLp r) ↔
+      ∃ α β : ι → H,
+        r = q + z • fredholmKernelProduct q r -
+            z⁻¹ • ∑ i, rankOneKernelClass (β i) (c i : H) ∧
+        r = q + z • fredholmKernelProduct r q -
+            z⁻¹ • ∑ i, rankOneKernelClass (b i : H) (α i) ∧
+        (∀ i j, inner ℂ (α i) (b j : H) = if i = j then 1 else 0) ∧
+        (∀ i j, inner ℂ (β i) (c j : H) = if i = j then 1 else 0) := by
+  let K := fredholmKernelToOperator q
+  let R := fredholmKernelToOperator r
+  let A := fredholmSecondKind (Lp.memLp q) z
+  let B : H →L[ℂ] H := 1 + z • R
+  let D : H →L[ℂ] H := 1 - A * B
+  let E : H →L[ℂ] H := 1 - B * A
+  have hC : ∀ i, A.adjoint (c i : H) = 0 := fun i => (c i).2
+  have hB : ∀ i, A (b i : H) = 0 := fun i => (b i).2
+  have hD : D = z • (K + z • (K * R) - R) := (fredholm_defect_algebra z K R).1
+  have hE : E = z • (K + z • (R * K) - R) := (fredholm_defect_algebra z K R).2
+  have expand (k : K₂) (W : K₂) (F : H →L[ℂ] H)
+      (hF : F = z • (K + z • fredholmKernelToOperator W - R)) :
+      F = fredholmKernelToOperator k ↔ r = q + z • W - z⁻¹ • k := by
+    rw [← fredholmKernelToOperator_injective.eq_iff, map_sub, map_add, map_smul, map_smul]
+    change F = fredholmKernelToOperator k ↔ R = K + _ - _
+    constructor
+    · intro h
+      have hh := congrArg (z⁻¹ • ·) (hF.symm.trans h)
+      rw [inv_smul_smul₀ hz] at hh
+      rw [← hh]
+      abel
+    · intro h
+      rw [hF, h, sub_sub_cancel, smul_inv_smul₀ hz]
+  have hKR : fredholmKernelToOperator (fredholmKernelProduct q r) = K * R :=
+    fredholmKernelToOperator_leftComposition K r
+  have hRK : fredholmKernelToOperator (fredholmKernelProduct r q) = R * K :=
+    fredholmKernelToOperator_leftComposition R q
+  have hX : D = z • (K + z • fredholmKernelToOperator (fredholmKernelProduct q r) - R) :=
+    hKR ▸ hD
+  have hY : E = z • (K + z • fredholmKernelToOperator (fredholmKernelProduct r q) - R) :=
+    hRK ▸ hE
+  rw [isFredholmPseudoresolvent_iff]
+  change A * B * A = A ↔ _
+  constructor
+  · intro h
+    have hDA : D * A = 0 := by dsimp [D]; rw [sub_mul, one_mul, h, sub_self]
+    have hAE : A * E = 0 := by dsimp [E]; rw [mul_sub, mul_one, ← mul_assoc, h, sub_self]
+    have hEadj : E.adjoint * A.adjoint = 0 := by
+      have h' : (A ∘L E).adjoint = (0 : H →L[ℂ] H).adjoint :=
+        congrArg (fun T : H →L[ℂ] H => T.adjoint) hAE
+      rw [ContinuousLinearMap.adjoint_comp, map_zero] at h'
+      exact h'
+    have hAcomp := (fredholm_nullity_range (Lp.memLp q) z).2.2.2.2.2
+    change A.range = A.adjoint.kerᗮ ∧ A.adjoint.range = A.kerᗮ at hAcomp
+    let β (i : ι) := D (c i : H)
+    let α (i : ι) := E.adjoint (b i : H)
+    have hDE : D = ∑ i, rankOne ℂ (β i) (c i : H) := by
+      apply fredholm_defect_expansion
+      intro x hx
+      rw [← hAcomp.1] at hx
+      obtain ⟨y, rfl⟩ := hx
+      exact DFunLike.congr_fun hDA y
+    have hEA : E.adjoint = ∑ i, rankOne ℂ (α i) (b i : H) := by
+      apply fredholm_defect_expansion
+      intro x hx
+      rw [← hAcomp.2] at hx
+      obtain ⟨y, rfl⟩ := hx
+      exact DFunLike.congr_fun hEadj y
+    have hEE : E = ∑ i, rankOne ℂ (b i : H) (α i) := by
+      rw [← ContinuousLinearMap.adjoint_adjoint E, hEA, map_sum]
+      simp only [adjoint_rankOne]
+    refine ⟨α, β, (expand _ _ D hX).mp ?_, (expand _ _ E hY).mp ?_, ?_, ?_⟩
+    · simpa only [map_sum, fredholmKernelToOperator_rankOneKernelClass] using hDE
+    · simpa only [map_sum, fredholmKernelToOperator_rankOneKernelClass] using hEE
+    · intro i j
+      have hj : E (b j : H) = (b j : H) := by
+        change (b j : H) - B (A (b j : H)) = _
+        rw [hB j, map_zero, sub_zero]
+      change inner ℂ (E.adjoint (b i : H)) (b j : H) = _
+      rw [E.adjoint_inner_left, hj]
+      exact orthonormal_iff_ite.mp b.orthonormal i j
+    · intro i j
+      have hh : D.adjoint = 1 - B.adjoint * A.adjoint := by
+        change (1 - A * B).adjoint = _
+        rw [map_sub, ContinuousLinearMap.adjoint_one, ContinuousLinearMap.mul_def,
+          ContinuousLinearMap.adjoint_comp, ← ContinuousLinearMap.mul_def]
+      have hj : D.adjoint (c j : H) = (c j : H) := by
+        rw [hh]
+        change (c j : H) - B.adjoint (A.adjoint (c j : H)) = _
+        rw [hC j, map_zero, sub_zero]
+      change inner ℂ (D (c i : H)) (c j : H) = _
+      rw [← D.adjoint_inner_right, hj]
+      exact orthonormal_iff_ite.mp c.orthonormal i j
+  · rintro ⟨α, β, hL, _, _, _⟩
+    have he : D = ∑ i, rankOne ℂ (β i) (c i : H) := by
+      simpa only [map_sum, fredholmKernelToOperator_rankOneKernelClass] using
+        (expand _ _ D hX).mpr hL
+    apply ContinuousLinearMap.ext
+    intro x
+    change A (B (A x)) = A x
+    have hzero : D (A x) = 0 := by
+      rw [he, sum_apply]
+      apply Finset.sum_eq_zero
+      intro i _
+      rw [rankOne_apply, ← A.adjoint_inner_left, hC i, inner_zero_left, zero_smul]
+    change A x - A (B (A x)) = 0 at hzero
+    exact (sub_eq_zero.mp hzero).symm
+
+/-- **Exercise 19**, Equation (40), of [benIsrael2003generalized].
+At a regular parameter the two convolution equations specify a unique kernel,
+which gives the bounded inverse and equals the original kernel at zero. -/
+theorem exercise_9_19_resolvent_equations (q : K₂) (z : ℂ)
+    (hz : IsFredholmRegularValue (Lp.memLp q) z) :
+    ∃! r : K₂, (r = q + z • fredholmKernelProduct q r ∧
+      r = q + z • fredholmKernelProduct r q) ∧
+      IsFredholmResolvent (Lp.memLp q) z (Lp.memLp r) := by
+  let k := fredholmKernelToOperator q
+  have hInv (r : K₂) (hL : r = q + z • fredholmKernelProduct q r)
+      (hR : r = q + z • fredholmKernelProduct r q) :
+      IsFredholmResolvent (Lp.memLp q) z (Lp.memLp r) := by
+    change (1 - z • k) * (1 + z • fredholmKernelToOperator r) = 1 ∧
+      (1 + z • fredholmKernelToOperator r) * (1 - z • k) = 1
+    apply inverse_pair_of_resolvent_identities z
+    · simpa only [map_add, map_smul, fredholmKernelProduct,
+        fredholmKernelToOperator_leftComposition] using congrArg fredholmKernelToOperator hL
+    · simpa only [map_add, map_smul, fredholmKernelProduct,
+        fredholmKernelToOperator_leftComposition] using congrArg fredholmKernelToOperator hR
+  by_cases hz₀ : z = 0
+  · subst z
+    refine ⟨q, ⟨⟨by simp, by simp⟩, hInv q (by simp) (by simp)⟩, ?_⟩
+    intro r hr
+    simpa using hr.1.1
+  obtain ⟨r, hr, hR⟩ := fredholm_resolvent_exists (Lp.memLp q) z hz
+  let p := hr.toLp r
+  have he : fredholmKernelToOperator p = fredholmIntegralOperator hr :=
+    fredholmKernelToOperator_toLp hr
+  have hp : IsFredholmResolvent (Lp.memLp q) z (Lp.memLp p) := by
+    change (1 - z • k) * (1 + z • fredholmKernelToOperator p) = 1 ∧
+      (1 + z • fredholmKernelToOperator p) * (1 - z • k) = 1
+    exact he ▸ hR
+  refine ⟨p, ⟨⟨?_, ?_⟩, hp⟩, ?_⟩
+  · apply fredholmKernelToOperator_injective
+    simp only [map_add, map_smul, fredholmKernelProduct, fredholmKernelToOperator_leftComposition]
+    have h := (fredholm_defect_algebra z k (fredholmKernelToOperator p)).1
+    have hp' : (1 - z • k) * (1 + z • fredholmKernelToOperator p) = 1 := hp.1
+    rw [hp', sub_self] at h
+    exact (sub_eq_zero.mp ((smul_eq_zero.mp h.symm).resolve_left hz₀)).symm
+  · apply fredholmKernelToOperator_injective
+    simp only [map_add, map_smul, fredholmKernelProduct, fredholmKernelToOperator_leftComposition]
+    have h := (fredholm_defect_algebra z k (fredholmKernelToOperator p)).2
+    have hp' : (1 + z • fredholmKernelToOperator p) * (1 - z • k) = 1 := hp.2
+    rw [hp', sub_self] at h
+    exact (sub_eq_zero.mp ((smul_eq_zero.mp h.symm).resolve_left hz₀)).symm
+  · intro w hw
+    exact Lp.ext (fredholm_resolvent_ae_unique _ hz₀ _ _ hw.2 hp)
+
+end KernelProducts
 
 section PolynomialKernels
 
@@ -1465,22 +1862,6 @@ private theorem polynomialOp_add_smul (a b c d e f g h z : ℂ) :
   intro x
   simp only [add_apply, smul_apply, polynomialOp_apply]
   module
-
-private theorem inverse_pair_of_resolvent_identities {K R : H₁ →L[ℂ] H₁} (z : ℂ)
-    (hL : R = K + z • (K * R)) (hR : R = K + z • (R * K)) :
-    (1 - z • K) * (1 + z • R) = 1 ∧ (1 + z • R) * (1 - z • K) = 1 := by
-  constructor
-  · apply ContinuousLinearMap.ext
-    intro x
-    change x + z • R x - z • K (x + z • R x) = x
-    have h : R x = K x + z • K (R x) := DFunLike.congr_fun hL x
-    rw [map_add, map_smul, ← h, add_sub_cancel_right]
-  · apply ContinuousLinearMap.ext
-    intro x
-    change x - z • K x + z • R (x - z • K x) = x
-    have h : R x = K x + z • R (K x) := DFunLike.congr_fun hR x
-    rw [map_sub, map_smul, show R x - z • R (K x) = K x by rw [h, add_sub_cancel_right],
-      sub_add_cancel]
 
 /-- **Exercise 23** of [benIsrael2003generalized], Chapter 9.
 For $z \ne 1/2$, the resolvent of $1+3st$ is $(1+3st)/(1-2z)$. -/
@@ -1726,6 +2107,252 @@ theorem exercise_9_24_nullSpaces :
       change b • (fredholmIntervalOne - (1 / 2 : ℂ) • polynomialOp 1 0 1 3 fredholmIntervalOne) = 0
       rw [polynomialOp_apply, interval_inner_vu, interval_inner_uu]
       norm_num [smul_smul]
+
+/-- The normalized constant vector on the example interval. -/
+def fredholmIntervalNormalizedOne : H₁ :=
+  ((Real.sqrt 2 : ℂ)⁻¹ : ℂ) • fredholmIntervalOne
+
+/-- The normalized coordinate vector on the example interval. -/
+def fredholmIntervalNormalizedCoordinate : H₁ :=
+  ((Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ)) • fredholmIntervalCoordinate
+
+private theorem interval_sqrt_two_sq : (Real.sqrt 2 : ℂ) ^ 2 = 2 := by
+  norm_cast
+  exact Real.sq_sqrt (by norm_num)
+
+private theorem interval_sqrt_three_sq : (Real.sqrt 3 : ℂ) ^ 2 = 3 := by
+  norm_cast
+  exact Real.sq_sqrt (by norm_num)
+
+private theorem interval_sqrt_two_ne : (Real.sqrt 2 : ℂ) ≠ 0 := by
+  intro h
+  have hs := interval_sqrt_two_sq
+  simp [h] at hs
+
+private theorem interval_sqrt_three_ne : (Real.sqrt 3 : ℂ) ≠ 0 := by
+  intro h
+  have hs := interval_sqrt_three_sq
+  simp [h] at hs
+
+private theorem interval_inner_normalized_uu :
+    inner ℂ fredholmIntervalNormalizedOne fredholmIntervalNormalizedOne = 1 := by
+  simp only [fredholmIntervalNormalizedOne, inner_smul_left, inner_smul_right,
+    map_inv₀, Complex.conj_ofReal, interval_inner_uu]
+  field_simp [interval_sqrt_two_ne]
+  linear_combination -interval_sqrt_two_sq
+
+private theorem interval_inner_normalized_vv :
+    inner ℂ fredholmIntervalNormalizedCoordinate fredholmIntervalNormalizedCoordinate = 1 := by
+  simp only [fredholmIntervalNormalizedCoordinate, inner_smul_left, inner_smul_right,
+    map_div₀, Complex.conj_ofReal, interval_inner_vv]
+  field_simp [interval_sqrt_two_ne]
+  linear_combination 2 * interval_sqrt_three_sq - 3 * interval_sqrt_two_sq
+
+private theorem interval_inner_normalized_uv :
+    inner ℂ fredholmIntervalNormalizedOne fredholmIntervalNormalizedCoordinate = 0 := by
+  simp [fredholmIntervalNormalizedOne, fredholmIntervalNormalizedCoordinate,
+    inner_smul_left, inner_smul_right, interval_inner_uv]
+
+private theorem interval_orthonormal_span_exists {ι : Type*} [Fintype ι] {S : Submodule ℂ H₁}
+    (v : ι → H₁) (hv : Orthonormal ℂ v) (hS : Submodule.span ℂ (range v) = S) :
+    ∃ b : OrthonormalBasis ι ℂ S, ∀ i, (b i : H₁) = v i := by
+  classical
+  subst S
+  let b := Module.Basis.span hv.linearIndependent
+  have hb : Orthonormal ℂ b := by
+    rw [orthonormal_iff_ite] at hv ⊢
+    intro i j
+    change inner ℂ (b i : H₁) (b j : H₁) = _
+    rw [Module.Basis.coe_span_apply, Module.Basis.coe_span_apply]
+    exact hv i j
+  refine ⟨b.toOrthonormalBasis hb, fun i => ?_⟩
+  change ((b.toOrthonormalBasis hb : ι → Submodule.span ℂ (range v)) i : H₁) = _
+  rw [Module.Basis.coe_toOrthonormalBasis]
+  exact Module.Basis.coe_span_apply hv.linearIndependent i
+
+private theorem interval_scaledRankOne (a b d : ℂ) (x y : H₁) :
+    d • rankOne ℂ (a • x) (b • y) = (d * conj b * a) • rankOne ℂ x y := by
+  apply ContinuousLinearMap.ext
+  intro w
+  simp only [smul_apply, rankOne_apply, inner_smul_left, smul_smul]
+  congr 1
+  ring
+
+private theorem interval_pair_span (u v : H₁) (x : H₁) :
+    x ∈ Submodule.span ℂ (range ![u, v]) ↔ ∃ a b : ℂ, x = a • u + b • v := by
+  rw [Matrix.range_cons_cons_empty, Submodule.span_insert, Submodule.mem_sup]
+  constructor
+  · rintro ⟨p, hp, q, hq, rfl⟩
+    obtain ⟨a, rfl⟩ := Submodule.mem_span_singleton.mp hp
+    obtain ⟨b, rfl⟩ := Submodule.mem_span_singleton.mp hq
+    exact ⟨a, b, rfl⟩
+  · rintro ⟨a, b, rfl⟩
+    exact ⟨a • u, Submodule.mem_span_singleton.mpr ⟨a, rfl⟩,
+      b • v, Submodule.mem_span_singleton.mpr ⟨b, rfl⟩, rfl⟩
+
+set_option maxHeartbeats 500000 in
+-- Construct the two bases in their concrete kernel subspaces before identifying the correction.
+/-- **Exercise 23** of [benIsrael2003generalized], Chapter 9.
+The two null spaces at one half have the stated normalized bases.
+The corresponding Hurwitz kernel and its resolvent both vanish. -/
+theorem exercise_9_23_normalized_bases :
+    let q := fredholmPolynomialKernel 1 0 0 3
+    let T := fredholmSecondKind (Lp.memLp q) (1 / 2)
+    ∃ (b : OrthonormalBasis (Fin 2) ℂ T.ker) (c : OrthonormalBasis (Fin 2) ℂ T.adjoint.ker),
+      (∀ i, (b i : H₁) = ![fredholmIntervalNormalizedOne, fredholmIntervalNormalizedCoordinate] i) ∧
+      (∀ i, (c i : H₁) = ![fredholmIntervalNormalizedOne, fredholmIntervalNormalizedCoordinate] i) ∧
+      fredholmHurwitzKernel (Lp.memLp q) (1 / 2) b c = 0 ∧
+      ∀ z, IsFredholmResolvent (Lp.memLp (fredholmHurwitzKernel (Lp.memLp q) (1 / 2) b c))
+        z (Lp.memLp (0 : K₁)) := by
+  intro q T
+  let u := fredholmIntervalNormalizedOne
+  let v := fredholmIntervalNormalizedCoordinate
+  let w : Fin 2 → H₁ := ![u, v]
+  have hσ : ((Real.sqrt 2 : ℂ)⁻¹ : ℂ) ≠ 0 := inv_ne_zero interval_sqrt_two_ne
+  have hκ : (Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ) ≠ 0 :=
+    div_ne_zero interval_sqrt_three_ne interval_sqrt_two_ne
+  have ho' : inner ℂ v u = 0 := by
+    rw [← inner_conj_symm, interval_inner_normalized_uv, map_zero]
+  have ho : Orthonormal ℂ w := by
+    rw [orthonormal_iff_ite]
+    intro i j
+    fin_cases i <;> fin_cases j
+    · exact interval_inner_normalized_uu
+    · exact interval_inner_normalized_uv
+    · exact ho'
+    · exact interval_inner_normalized_vv
+  have hker : Submodule.span ℂ (range w) = T.ker := by
+    ext x
+    rw [interval_pair_span, LinearMap.mem_ker]
+    change (∃ a b : ℂ, x = a • u + b • v) ↔ T x = 0
+    have h := exercise_9_23_characteristic x 0
+    dsimp only at h
+    rw [h]
+    have hz₁ : (∫ t, (0 : H₁) t ∂μ₁) = 0 := (interval_inner_one 0).symm.trans
+      (inner_zero_right _)
+    have hz₂ : (∫ t : ℝ, (t : ℂ) * (0 : H₁) t ∂μ₁) = 0 :=
+      (interval_inner_coordinate 0).symm.trans (inner_zero_right _)
+    simp only [hz₁, hz₂, true_and, zero_add]
+    change (∃ a b : ℂ, x = a • (((Real.sqrt 2 : ℂ)⁻¹ : ℂ) • fredholmIntervalOne) +
+      b • (((Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ)) • fredholmIntervalCoordinate)) ↔ _
+    simp only [smul_smul]
+    constructor
+    · rintro ⟨a, b, h⟩
+      exact ⟨_, _, h⟩
+    · rintro ⟨a, b, h⟩
+      refine ⟨a / (Real.sqrt 2 : ℂ)⁻¹, b / ((Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ)), ?_⟩
+      rwa [div_mul_cancel₀ _ hσ, div_mul_cancel₀ _ hκ]
+  have hT : T.adjoint = T := by
+    change (1 - (1 / 2 : ℂ) • polynomialOp 1 0 0 3).adjoint =
+      1 - (1 / 2 : ℂ) • polynomialOp 1 0 0 3
+    have hP : (polynomialOp 1 0 0 3).adjoint = polynomialOp 1 0 0 3 := by
+      simp [polynomialOp, fredholmPolynomialKernel, map_smulₛₗ, map_ofNat,
+        fredholmKernelToOperator_rankOneKernelClass]
+    have hId : (1 : H₁ →L[ℂ] H₁).adjoint = 1 := by
+      simpa only [ContinuousLinearMap.one_def] using
+        (ContinuousLinearMap.adjoint_id (𝕜 := ℂ) (E := H₁))
+    rw [map_sub, map_smulₛₗ, hId, hP]
+    simp only [map_div₀, map_one, map_ofNat]
+  obtain ⟨b, hb⟩ := interval_orthonormal_span_exists w ho hker
+  have hker' : Submodule.span ℂ (range w) = T.adjoint.ker := by rw [hT, hker]
+  obtain ⟨c, hc⟩ := interval_orthonormal_span_exists w ho hker'
+  have hq : fredholmHurwitzKernel (Lp.memLp q) (1 / 2) b c = 0 := by
+    apply fredholmKernelToOperator_injective
+    rw [fredholmHurwitzKernel, map_sub, map_smul, fredholmKernelToOperator_toLp, Fin.sum_univ_two,
+      map_add, hb, hb, hc, hc, fredholmKernelToOperator_rankOneKernelClass,
+      fredholmKernelToOperator_rankOneKernelClass, map_zero]
+    change polynomialOp 1 0 0 3 -
+      (1 / 2 : ℂ)⁻¹ • (rankOne ℂ u u + rankOne ℂ v v) = 0
+    have h₁ : (1 / 2 : ℂ)⁻¹ * (Real.sqrt 2 : ℂ)⁻¹ * (Real.sqrt 2 : ℂ)⁻¹ = 1 := by
+      field_simp [interval_sqrt_two_ne]
+      rw [interval_sqrt_two_sq]
+    have h₂ : (1 / 2 : ℂ)⁻¹ * ((Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ)) *
+        ((Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ)) = 3 := by
+      field_simp [interval_sqrt_two_ne]
+      rw [interval_sqrt_two_sq, interval_sqrt_three_sq]
+    rw [smul_add]
+    simp only [u, v, fredholmIntervalNormalizedOne, fredholmIntervalNormalizedCoordinate,
+      interval_scaledRankOne, map_inv₀, map_div₀, Complex.conj_ofReal, h₁, h₂, one_smul]
+    rw [sub_eq_zero]
+    simp [polynomialOp, fredholmPolynomialKernel, map_add, map_smul,
+      fredholmKernelToOperator_rankOneKernelClass]
+  refine ⟨b, c, hb, hc, hq, fun z => ?_⟩
+  rw [hq]
+  let Q : H₁ →L[ℂ] H₁ := fredholmKernelToOperator (0 : K₁)
+  change (1 - z • Q) * (1 + z • Q) = 1 ∧ (1 + z • Q) * (1 - z • Q) = 1
+  have hQ : Q = 0 := map_zero fredholmKernelToOperator
+  have hz : z • (0 : H₁ →L[ℂ] H₁) = 0 := by
+    apply ContinuousLinearMap.ext
+    intro x
+    change z • (0 : H₁) = 0
+    exact smul_zero z
+  rw [hQ, hz, sub_zero, add_zero, mul_one]
+  exact ⟨rfl, rfl⟩
+
+private theorem interval_span_normalized (a : ℂ) (ha : a ≠ 0) (x : H₁) :
+    Submodule.span ℂ (range fun _ : Unit => a • x) = ℂ ∙ x := by
+  rw [Set.range_const, ← Set.smul_set_singleton,
+    Submodule.span_smul_eq_of_isUnit _ _ (isUnit_iff_ne_zero.mpr ha)]
+
+/-- **Exercise 24** of [benIsrael2003generalized], Chapter 9.
+The normalized null vectors give the displayed Hurwitz kernel.
+Its stated resolvent is a pseudoresolvent of the original kernel. -/
+theorem exercise_9_24_hurwitz_match :
+    let q := fredholmPolynomialKernel 1 1 0 3
+    let T := fredholmSecondKind (Lp.memLp q) (1 / 2)
+    ∃ (b : OrthonormalBasis Unit ℂ T.ker) (c : OrthonormalBasis Unit ℂ T.adjoint.ker),
+      (b () : H₁) = fredholmIntervalNormalizedCoordinate ∧
+      (c () : H₁) = fredholmIntervalNormalizedOne ∧
+      fredholmHurwitzKernel (Lp.memLp q) (1 / 2) b c =
+        fredholmPolynomialKernel 1 1 (-(Real.sqrt 3 : ℂ)) 3 ∧
+      IsFredholmPseudoresolvent (Lp.memLp q) (1 / 2)
+        (Lp.memLp (fredholmPolynomialKernel (-1) (Real.sqrt 3 : ℂ) (-3) (-3))) := by
+  intro q T
+  let u := fredholmIntervalNormalizedOne
+  let v := fredholmIntervalNormalizedCoordinate
+  have hu : Orthonormal ℂ (fun _ : Unit => u) := by
+    rw [orthonormal_iff_ite]
+    rintro ⟨⟩ ⟨⟩
+    simpa using interval_inner_normalized_uu
+  have hv : Orthonormal ℂ (fun _ : Unit => v) := by
+    rw [orthonormal_iff_ite]
+    rintro ⟨⟩ ⟨⟩
+    simpa using interval_inner_normalized_vv
+  have hσ : ((Real.sqrt 2 : ℂ)⁻¹ : ℂ) ≠ 0 := inv_ne_zero interval_sqrt_two_ne
+  have hκ : (Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ) ≠ 0 :=
+    div_ne_zero interval_sqrt_three_ne interval_sqrt_two_ne
+  obtain ⟨hT, hA⟩ := exercise_9_24_nullSpaces
+  obtain ⟨b, hb⟩ := interval_orthonormal_span_exists _ hv
+    ((interval_span_normalized _ hκ _).trans hT.symm)
+  obtain ⟨c, hc⟩ := interval_orthonormal_span_exists _ hu
+    ((interval_span_normalized _ hσ _).trans hA.symm)
+  have hq : fredholmHurwitzKernel (Lp.memLp q) (1 / 2) b c =
+      fredholmPolynomialKernel 1 1 (-(Real.sqrt 3 : ℂ)) 3 := by
+    apply fredholmKernelToOperator_injective
+    simp only [fredholmHurwitzKernel, map_sub, map_smul, fredholmKernelToOperator_toLp,
+      fredholmKernelToOperator_rankOneKernelClass, hb, hc, Fintype.sum_unique]
+    change polynomialOp 1 1 0 3 - (1 / 2 : ℂ)⁻¹ • rankOne ℂ u v =
+      polynomialOp 1 1 (-(Real.sqrt 3 : ℂ)) 3
+    have h : (1 / 2 : ℂ)⁻¹ * ((Real.sqrt 3 : ℂ) / (Real.sqrt 2 : ℂ)) *
+        (Real.sqrt 2 : ℂ)⁻¹ = (Real.sqrt 3 : ℂ) := by
+      field_simp [interval_sqrt_two_ne]
+      rw [interval_sqrt_two_sq]
+    simp only [u, v, fredholmIntervalNormalizedOne, fredholmIntervalNormalizedCoordinate,
+      interval_scaledRankOne, map_div₀, Complex.conj_ofReal, h]
+    apply ContinuousLinearMap.ext
+    intro x
+    simp only [sub_apply, smul_apply, rankOne_apply, polynomialOp_apply,
+      one_mul, zero_mul, smul_smul]
+    module
+  refine ⟨b, c, hb (), hc (), hq, ?_⟩
+  obtain ⟨_, r, hr, hR, hP, _⟩ := exercise_9_18 (Lp.memLp q)
+    (by norm_num : (1 / 2 : ℂ) ≠ 0) b c
+  rw [hq] at hR
+  have h := fredholm_resolvent_ae_unique _ (by norm_num : (1 / 2 : ℂ) ≠ 0)
+    hr _ hR exercise_9_24_resolvent
+  unfold IsFredholmPseudoresolvent at *
+  rw [← fredholmIntegralOperator_congr hr _ h]
+  exact hP
 
 end PolynomialKernels
 

@@ -254,46 +254,44 @@ source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, both one-dimensi
 
 [[node]]
 id = "fredholmKernelProduct_apply_ae"
-kind = "theorem"
-desc = '''Identify the L² kernel obtained by bounded composition with the almost-everywhere formula (KR)(s,t) = ∫ K(s,u)R(u,t) du. Justify the three-variable Fubini step.'''
 source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (38)–(40), convolution of kernels"
-deps = ["fredholmKernelToOperator_leftComposition", "fredholmKernelToOperator_injective"]
 
 [[node]]
 id = "exercise_9_19_pseudoresolvent_characterization"
-kind = "theorem"
-desc = '''Characterize all pseudoresolvent kernels by both operator defects expanded along the two null-space bases, with their biorthogonality conditions. The general inner-inverse equivalence and the displayed coefficient perturbations are proved.'''
-source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (38a)–(39)"
-deps = ["isFredholmPseudoresolvent_iff", "exercise_9_19_perturbation", "fredholmKernelProduct_apply_ae"]
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (38a)–(39), biorthogonal convolution defects"
 
 [[node]]
 id = "exercise_9_19_resolvent_equations"
-kind = "theorem"
-desc = '''Prove the two regular convolution equations and their uniqueness. At zero the equations pick R = K even though the unscaled inverse representation does not identify its kernel.'''
-source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (40)"
-deps = ["fredholm_resolvent_exists", "fredholm_resolvent_ae_unique", "fredholmKernelProduct_apply_ae"]
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, (40), unique regular resolvent"
 
 [[node]]
 id = "exercise_9_22c"
-kind = "theorem"
-desc = '''Express the resolvent of the degenerate kernel using the inverse of I−λB and then identify it with the printed bordered determinant ratio.'''
 source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(c), bordered determinant"
-deps = ["exercise_9_22a", "fredholmDegenerateMatrix_apply", "fredholm_resolvent_exists"]
 
 [[node]]
 id = "exercise_9_23_normalized_bases"
-kind = "theorem"
-desc = '''Normalize the constant and coordinate vectors into orthonormal bases for both null spaces at λ=1/2. Use those named bases in the abstract Hurwitz correction and prove the corrected kernel and its resolvent are zero.'''
-source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 23, (44), normalized bases and Hurwitz correction"
-deps = ["exercise_9_23_characteristic", "exercise_9_23_regular_iff", "exercise_9_18"]
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 23, (44), normalized bases and zero Hurwitz correction"
 
 [[node]]
 id = "exercise_9_24_hurwitz_match"
-kind = "theorem"
-desc = '''Normalize the two spanning vectors of the null spaces and identify the printed modified polynomial with the abstract Hurwitz correction of the original kernel. The spectrum, null spaces, and resolvent of the displayed modification are proved.'''
 source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, normalized bases and the Hurwitz correction"
-deps = ["exercise_9_24_nullSpaces", "exercise_9_24_resolvent", "exercise_9_18"]
 
 [[node]]
 id = "exercise_9_8_integral_kernel_compact"
 source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 8, square-integrable Fredholm kernel and range"
+
+[[node]]
+id = "fredholmDegenerateResolvent"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 22(c), resolvent by the finite system"
+
+[[node]]
+id = "fredholmIntervalNormalizedOne"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, normalized constant vector"
+
+[[node]]
+id = "fredholmIntervalNormalizedCoordinate"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercises 23–24, normalized coordinate vector"
+
+[[node]]
+id = "fredholmKernelProduct"
+source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 19, product of square-integrable kernels"
