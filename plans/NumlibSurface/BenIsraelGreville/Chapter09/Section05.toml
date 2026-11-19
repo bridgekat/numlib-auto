@@ -200,10 +200,7 @@ deps = ["exercise_9_30_operator", "boundaryCorrection_of_innerInverse"]
 
 [[node]]
 id = "exercise_9_32"
-kind = "theorem"
-desc = '''Under a common essentially bounded measurable kernel class, prove the almost-everywhere parametrization H−G = X₀(s)A(t)* + B(s)Y₀(t)* using bases of the primal and adjoint null spaces. The unrestricted L² notion of generalized Green kernel only controls forcing in range and therefore does not force the free coefficients to be essentially bounded.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, (61), class of generalized Green matrices"
-deps = ["exercise_9_30_operator", "IsGeneralizedGreenKernel"]
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, (61), class of bounded generalized Green matrices"
 
 [[node]]
 id = "exercise_9_33"
@@ -242,3 +239,87 @@ source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), represente
 [[node]]
 id = "greenKernelTripleProduct"
 source = "Ben-Israel and Greville, Chapter 9, §5, Exercise 35, (67), iterated double integral"
+
+[[node]]
+id = "normalizedGreenOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, oblique projection realization"
+
+[[node]]
+id = "normalizedGreenOperator_spec"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, uniqueness and exact kernel and range at the operator level"
+
+[[node]]
+id = "greenOperator_difference_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, two finite-rank corrections at the operator level"
+
+[[node]]
+id = "greenKernel_ae_zero_of_action_zero"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 32–33, uniqueness of square-integrable integral kernels"
+
+[[node]]
+id = "rankOneGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, a separated kernel term"
+
+[[node]]
+id = "memLp_rankOneGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, square-integrability of a separated kernel term"
+
+[[node]]
+id = "represents_rankOneGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, the rank-one integral action"
+
+[[node]]
+id = "exercise_9_32_l2"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, square-integrable version of (61)"
+
+[[node]]
+id = "exists_bounded_greenAction"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, essentially bounded output for every square-integrable input"
+
+[[node]]
+id = "exists_bounded_greenOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, boundedness of the integral operator"
+
+[[node]]
+id = "adjointGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 32–33, swapped adjoint kernel"
+
+[[node]]
+id = "memLp_top_adjoint_of_boundedGreenAction"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, essentially bounded output of the adjoint"
+
+[[node]]
+id = "exercise_9_32_of_representation"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 32, bounded decomposition for represented integral operators"
+
+[[node]]
+id = "fundamentalSignGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), corrected sign kernel (59)"
+
+[[node]]
+id = "fundamentalSignGreenSolution"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), variation of constants"
+
+[[node]]
+id = "exercise_9_30_signGreen_classical"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), sign-kernel solution for continuous fundamental data"
+
+[[node]]
+id = "fundamentalBoundaryMap"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), endpoint matrix on the fundamental columns"
+
+[[node]]
+id = "fundamentalSignBoundaryCorrection"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), corrected endpoint coefficient in (60)"
+
+[[node]]
+id = "fundamentalBoundaryGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), corrected boundary kernel (60)"
+
+[[node]]
+id = "fundamentalBoundaryGreenSolution"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), homogeneous correction of the solution"
+
+[[node]]
+id = "exercise_9_30_boundaryGreen_classical"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), classical boundary-corrected solution for compatible data"
