@@ -53,13 +53,89 @@ id = "theorem_6_of_laplace_representation"
 source = "Ben-Israel and Greville, Chapter 8, §6, Theorem 6, inverse-transform transport"
 
 [[node]]
+id = "IsLaplaceExpBounded"
+source = "Ben-Israel and Greville, Chapter 8, §6, exponential order of time-domain signals"
+
+[[node]]
+id = "laplacePoleSignal"
+source = "Ben-Israel and Greville, Chapter 8, §6, time-domain realization of a repeated complex pole"
+
+[[node]]
+id = "laplaceTransform_poleSignal"
+source = "Ben-Israel and Greville, Chapter 8, §6, explicit Laplace integral for every repeated pole"
+
+[[node]]
+id = "laplaceRightHalfPlane"
+source = "Ben-Israel and Greville, Chapter 8, §6, right-half-plane filter for Laplace transforms"
+
+[[node]]
+id = "rationalEvalLaplaceGerm"
+source = "Ben-Israel and Greville, Chapter 8, §6, rational evaluation as a right-half-plane germ"
+
+[[node]]
+id = "rationalEvalLaplaceGerm_eq_eval"
+source = "Ben-Israel and Greville, Chapter 8, §6, agreement with the usual rational evaluation"
+
+[[node]]
+id = "IsRegularCausalSignal"
+source = "Ben-Israel and Greville, Chapter 8, §6, analytic regular trajectories of exponential order"
+
+[[node]]
+id = "CausalLaplaceSignal"
+source = "Ben-Israel and Greville, Chapter 8, §6, causal time signals with a finite Dirac jet"
+
+[[node]]
+id = "causalLaplaceGerm"
+source = "Ben-Israel and Greville, Chapter 8, §6, analytic Laplace transform with the impulse polynomial"
+
+[[node]]
+id = "RationalCausalSignal"
+source = "Ben-Israel and Greville, Chapter 8, §6, signals with real-rational Laplace transforms"
+
+[[node]]
 id = "rationalLaplaceRepresentation"
-kind = "theorem"
-desc = '''
-Construct a concrete causal signal class with a bijective Laplace transform for every
-real rational function, including polynomial terms that represent impulses and their
-derivatives. Prove the initial-data law in that class to specialize the inverse-transform
-statement without an abstract representation assumption.
-'''
-source = "Ben-Israel and Greville, Chapter 8, §6, Equation (84), rational inverse Laplace transform with impulses"
-deps = ["theorem_6_of_laplace_representation"]
+source = "Ben-Israel and Greville, Chapter 8, §6, Equation (84), bijective rational inverse Laplace transform with impulses"
+
+[[node]]
+id = "causalLaplaceGerm_eq_rationalLaplaceRepresentation"
+source = "Ben-Israel and Greville, Chapter 8, §6, agreement of the equivalence with the analytic transform"
+
+[[node]]
+id = "causalLaplacePairing"
+source = "Ben-Israel and Greville, Chapter 8, §6, distributional action on test functions"
+
+[[node]]
+id = "causalDistributionalDerivative"
+source = "Ben-Israel and Greville, Chapter 8, §6, derivative with the boundary impulse"
+
+[[node]]
+id = "causalDistributionalDerivative_pairing"
+source = "Ben-Israel and Greville, Chapter 8, §6, distributional derivative identity on test functions"
+
+[[node]]
+id = "causalLaplaceGerm_eq_pairing"
+source = "Ben-Israel and Greville, Chapter 8, §6, Laplace transform as the pairing against its exponential weight"
+
+[[node]]
+id = "causalLaplaceGerm_derivative"
+source = "Ben-Israel and Greville, Chapter 8, §6, transform of the distributional derivative"
+
+[[node]]
+id = "causalDerivativeWithInitial"
+source = "Ben-Israel and Greville, Chapter 8, §6, Equation (82), derivative with the prescribed left initial jet"
+
+[[node]]
+id = "causalLaplaceGerm_derivativeWithInitial"
+source = "Ben-Israel and Greville, Chapter 8, §6, Equation (82), scalar transform with left initial data"
+
+[[node]]
+id = "rationalCausalDifferentialApply"
+source = "Ben-Israel and Greville, Chapter 8, §6, Equations (80)–(81), differential system on rational causal signals"
+
+[[node]]
+id = "rationalLaplaceRepresentation_differentialApply"
+source = "Ben-Israel and Greville, Chapter 8, §6, Equation (82) with distributional signals and left initial data"
+
+[[node]]
+id = "theorem_6_rationalCausal"
+source = "Ben-Israel and Greville, Chapter 8, §6, Theorem 6, Equations (83)–(84) for the concrete rational causal signal class"
