@@ -165,12 +165,6 @@ id = "isContinuousGeneralizedGreenKernel_iff_innerInverse"
 source = "Ben-Israel and Greville, Ch. 9, §5, (47)–(48), pointwise inner inverse characterization"
 
 [[node]]
-id = "exercise_9_27"
-kind = "theorem"
-desc = '''Define the closed densely defined gradient H¹₀([0,π]²) → L²([0,π]²)², identify its adjoint with negative weak divergence on the maximal L² divergence domain, and identify the first Gram operator with the negative Dirichlet Laplacian. Construct the double sine-series kernel and establish its derivative representation for the Moore–Penrose inverse of the gradient. Smooth vector fields lie in the adjoint domain; the printed C¹ domain is generally a proper subspace of the Hilbert adjoint domain.'''
-source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(a)–(e), Dirichlet gradient on the square"
-
-[[node]]
 id = "exercise_9_28"
 kind = "theorem"
 desc = '''Construct the closed densely defined scalar expression (49) on the order-n Sobolev space with homogeneous boundary matrix constraint (50). Under the stated continuous coefficient regularity and nowhere-zero leading coefficient, prove nullity n for the unrestricted differential expression and for the maximal realization of its formal differential adjoint. Obtain the corresponding constrained nullity bounds and closed range. Apply the carrier and normally solvable inverse results to obtain (e)–(g) for this concrete operator, including the bounded inverse on the range.'''
@@ -324,3 +318,339 @@ source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(g), classical boundar
 [[node]]
 id = "HasGreenNormalization"
 source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 33, (62), integral null constraints"
+
+[[node]]
+id = "weakDirichletGradient"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(a), weak Dirichlet gradient"
+
+[[node]]
+id = "mem_weakDirichletGradient_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(a), exact gradient graph on zero-trace Sobolev functions"
+
+[[node]]
+id = "dense_weakDirichletGradient_domain"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(a), density of the gradient domain"
+
+[[node]]
+id = "isClosed_weakDirichletGradient"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(a), closed gradient"
+
+[[node]]
+id = "IsWeakNegativeDivergence"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(b), maximal weak negative divergence"
+
+[[node]]
+id = "mem_weakDirichletGradient_adjoint_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(b), identification of the gradient adjoint"
+
+[[node]]
+id = "weakDirichletGradient_gram"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(c), identity with the negative Dirichlet Laplacian"
+
+[[node]]
+id = "squareSineBasis"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), orthonormal double sine basis"
+
+[[node]]
+id = "squareSineBasis_apply_ae"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), normalization of double sine modes"
+
+[[node]]
+id = "squareSineEigenvalue"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), double sine eigenvalue"
+
+[[node]]
+id = "squareSineGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), double sine Green series in L²"
+
+[[node]]
+id = "hasSum_squareSineGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), convergence of the Green series"
+
+[[node]]
+id = "squareSineGreenKernel_action_repr"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), diagonal action of the Green series"
+
+[[node]]
+id = "scalarSobolevExpression"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, Equation (49), Sobolev differential expression"
+
+[[node]]
+id = "scalarSobolevExpression_apply_ae"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, Equation (49), expression equals its coefficient-weighted weak derivatives"
+
+[[node]]
+id = "scalarSobolevBoundaryTrace"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, Equation (50), endpoint jet"
+
+[[node]]
+id = "scalarSobolevBoundaryTrace_apply"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, Equation (50), coordinate of an endpoint jet"
+
+[[node]]
+id = "scalarSobolevBoundarySpace"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, Equation (50), Sobolev functions satisfying homogeneous conditions"
+
+[[node]]
+id = "mem_scalarSobolevBoundarySpace_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28, Equation (50), boundary matrix characterization"
+
+[[node]]
+id = "isClosed_scalarSobolevBoundarySpace"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), endpoint constraints define a closed Sobolev subspace"
+
+[[node]]
+id = "scalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), partial operator on a designated Sobolev domain"
+
+[[node]]
+id = "mem_scalarIntervalOperator_graph_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), characterization of the scalar differential graph"
+
+[[node]]
+id = "constrainedScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), realization with homogeneous endpoint constraints"
+
+[[node]]
+id = "freeScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), realization on the full Sobolev domain"
+
+[[node]]
+id = "dense_constrainedScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), constrained domain dense in the interval Hilbert space"
+
+[[node]]
+id = "isClosed_scalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), closedness of scalar realizations on closed Sobolev subspaces"
+
+[[node]]
+id = "isClosed_constrainedScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(a), constrained realization is closed"
+
+[[node]]
+id = "exists_linear_integral_ivp"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b,d), existence and uniqueness of the integral initial-value problem"
+
+[[node]]
+id = "exists_firstOrderFundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 30(c), 30(f) and 36, normalized fundamental family and inverse differential equation"
+
+[[node]]
+id = "exists_firstOrderFundamentalFamily_hasDerivAt"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(f), continuous fundamental data for the sign Green kernel"
+
+[[node]]
+id = "exists_differentialExpression_fundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 30(c) and 30(f), fundamental family for the expression (46)"
+
+[[node]]
+id = "eqOn_firstOrderSolution_iff_eval_fundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 30(c) and 30(f), parameterization of homogeneous solutions by their initial values"
+
+[[node]]
+id = "firstOrderAdjointFundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, inverse-adjoint fundamental family"
+
+[[node]]
+id = "firstOrderAdjointFundamentalFamily_toContinuousLinearMap"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, inverse-adjoint forward map"
+
+[[node]]
+id = "firstOrderAdjointFundamentalFamily_symm_toContinuousLinearMap"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, inverse of the inverse-adjoint map"
+
+[[node]]
+id = "eqOn_adjointFirstOrderSolution_iff_eval_fundamentalFamily"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 36, parameterization of all classical adjoint homogeneous solutions"
+
+[[node]]
+id = "homogeneousBoundaryRange"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(d)–(e), boundary residuals of homogeneous solutions"
+
+[[node]]
+id = "boundaryObstruction"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(e), quotient residual for compatible forcings"
+
+[[node]]
+id = "range_restrictedBoundary_eq_ker_obstruction"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(e), exact range of constrained solutions"
+
+[[node]]
+id = "boundaryObstruction_surjective"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(d), independent boundary conditions"
+
+[[node]]
+id = "isClosed_range_restrictedBoundary"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(e), closed range from finite-dimensional boundary constraints"
+
+[[node]]
+id = "finrank_restrictedBoundary_index"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 30(d), index relation on the Sobolev domain"
+
+[[node]]
+id = "exists_scalarSobolev_initialValue"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b,d), Sobolev solution for every L² forcing and every left endpoint jet"
+
+[[node]]
+id = "scalarSobolev_initialValue_injective"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b,d), the forcing and initial jet determine the unique Sobolev solution"
+
+[[node]]
+id = "scalarSobolevInitialEquiv"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b,d), continuous coordinates by equation and initial jet"
+
+[[node]]
+id = "scalarSobolevInitialEquiv_apply"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b,d), values of the initial-value coordinates"
+
+[[node]]
+id = "scalarSobolevBoundaryResidual"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(d), boundary matrix applied to the full trace"
+
+[[node]]
+id = "mem_constrainedScalarIntervalOperator_range_iff"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(d), range criterion by homogeneous boundary residuals"
+
+[[node]]
+id = "isClosed_range_constrainedScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(d), closed range of the scalar boundary problem"
+
+[[node]]
+id = "constrainedScalarIntervalOperator_carrier_inverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(e–g), carrier restriction and bounded full maximal inverse"
+
+[[node]]
+id = "freeScalarIntervalOperator_ker_equiv"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), unrestricted kernel identified with initial jets"
+
+[[node]]
+id = "finrank_ker_freeScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), unrestricted nullity equals the order of the equation"
+
+[[node]]
+id = "range_freeScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), unrestricted expression is surjective"
+
+[[node]]
+id = "ker_constrainedScalarIntervalOperator_le"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(c), constrained scalar kernel inclusion"
+
+[[node]]
+id = "finrank_ker_constrainedScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(c), both constrained nullities are at most the order"
+
+[[node]]
+id = "constrainedScalarIntervalOperator_inverse_projections"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(g), the two orthogonal projection identities"
+
+[[node]]
+id = "scalarFormalAdjointCoefficients"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), binomial Leibniz expansion of the formal adjoint"
+
+[[node]]
+id = "continuousOn_scalarFormalAdjointCoefficients"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), continuity of the formal adjoint coefficients"
+
+[[node]]
+id = "scalarFormalAdjointCoefficients_leading"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), the signed leading coefficient of the formal adjoint"
+
+[[node]]
+id = "freeScalarFormalAdjointOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), unrestricted realization of the formal differential adjoint"
+
+[[node]]
+id = "finrank_ker_freeScalarFormalAdjointOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), maximal formal adjoint nullity equals the order"
+
+[[node]]
+id = "ker_adjoint_freeScalarIntervalOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 28(b), the literal Hilbert adjoint of the unrestricted realization has zero nullity"
+
+[[node]]
+id = "scalarWronskian"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (51), Wronskian of a fundamental scalar system"
+
+[[node]]
+id = "scalarWronskianGreenKernel"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (51), explicit causal Wronskian kernel"
+
+[[node]]
+id = "scalarWronskianGreenKernel_eq_propagator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (51), Cramer form of scalar causal propagation"
+
+[[node]]
+id = "scalarInitialBoundaryMatrix"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (54), homogeneous boundary matrix"
+
+[[node]]
+id = "scalarInitialBoundaryMatrix_mulVec"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (54), homogeneous boundary action"
+
+[[node]]
+id = "scalarBoundaryCorrectedSolution"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equation (55), compatible correction using a matrix inner inverse"
+
+[[node]]
+id = "scalarBoundaryCorrectedSolution_spec"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, Equations (52–55), corrected Sobolev solution for forcing in the range"
+
+[[node]]
+id = "scalarBoundaryCorrectedSolution_maximalInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 29, orthogonal projection of forcing and solution gives the actual maximal inverse"
+
+[[node]]
+id = "dirichletSquare"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27, open square with homogeneous Dirichlet conditions"
+
+[[node]]
+id = "squareL2Equiv"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), identification of the ambient and product square Hilbert spaces"
+
+[[node]]
+id = "squareSineMode"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), normalized pointwise sine mode"
+
+[[node]]
+id = "squareDirichletMode"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), sine mode in the ambient square Hilbert space"
+
+[[node]]
+id = "squareL2Equiv_dirichletMode"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), transport of normalized sine modes"
+
+[[node]]
+id = "squareDirichletMode_eigen"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), double sine eigenfunctions of the Dirichlet Laplacian"
+
+[[node]]
+id = "squareDirichletGreenOperator"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), integral operator of the double sine Green series"
+
+[[node]]
+id = "squareDirichletGreenOperator_rightInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), Green integral inverts the Laplacian on all L² forcing"
+
+[[node]]
+id = "squareDirichletGreenOperator_leftInverse"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(d), Green integral recovers functions in the Laplacian domain"
+
+[[node]]
+id = "squareDirichletModeGradient"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(e), gradient of a double sine mode"
+
+[[node]]
+id = "squareDirichletModeGradient_apply_ae"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(e), equality of weak and classical partial derivatives of the modes"
+
+[[node]]
+id = "exercise_9_27_gradientSeries"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(e), maximal inverse from the differentiated sine Green series"
+
+[[node]]
+id = "weakDirichletGradient_adjoint_of_contDiffOn"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercise 27(b), negative classical divergence on smooth fields"
+
+[[node]]
+id = "scalarNormalizedCompanion"
+source = "Ben-Israel and Greville, Ch. 9, §5, Exercises 28 and 29, normalized first-order companion system"

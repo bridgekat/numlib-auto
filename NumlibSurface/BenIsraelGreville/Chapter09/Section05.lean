@@ -2,6 +2,18 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Analysis.Calculus.ContDiff.Deriv
+import Mathlib.Analysis.InnerProductSpace.Adjoint
+import Mathlib.Analysis.Normed.Module.FiniteDimension
+import Mathlib.Analysis.Normed.Ring.Units
+import Mathlib.MeasureTheory.SpecificCodomains.Pi
+import Numlib.Analysis.Sobolev.Interval.Vector
+import Mathlib.Analysis.Normed.Ring.InfiniteSum
+import Mathlib.Analysis.PSeries
+import Numlib.Analysis.Fourier.SineBasis
+import Numlib.Analysis.InnerProductSpace.OrthonormalSeries
+import Numlib.Analysis.ODE.Cauchy
+import Numlib.Analysis.PDE.DirichletLaplacian
 import Mathlib.Analysis.Calculus.Deriv.Mul
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 import NumlibSurface.BenIsraelGreville.Chapter09.Section03
@@ -24,6 +36,9 @@ range of the differential operator.
 * The interval operators use weak Sobolev derivatives and endpoint traces.
 * In Exercise 26(b), the first product is the maximal inverse restricted
   to the adjoint domain, which is a proper subspace of the full space.
+* Exercise 27 uses the maximal weak negative divergence as the adjoint.
+  The differentiated Green series is integrated through its finite sums
+  and converges in the square-integrable norm.
 * The sign Green kernels in Exercise 30 use the inverse leading coefficient
   on the forcing side and evaluate the correction in endpoint order (a, b).
 * Exercise 32 uses a common essentially bounded kernel class. The normalized
@@ -3050,5 +3065,2613 @@ theorem exercise_9_30_boundaryGreen_classical (X A₁ : ℝ → E ≃L[ℝ] E)
     exact sub_eq_zero.mpr hB.symm
 
 end SignBoundaryCorrection
+
+section GradientResults
+
+open MeasureTheory Set SobolevMultiIndex TopologicalSpace
+open scoped ENNReal InnerProductSpace Topology
+
+section DirichletGradients
+
+set_option maxHeartbeats 1200000
+set_option autoImplicit false
+
+private abbrev DirichletScalarSpace {n : ℕ} (region : Opens (EuclideanSpace ℝ (Fin n))) :=
+  Lp ℝ 2 (volume.restrict (region : Set (EuclideanSpace ℝ (Fin n))))
+
+private abbrev DirichletVectorSpace {n : ℕ} (region : Opens (EuclideanSpace ℝ (Fin n))) :=
+  PiLp 2 fun _ : Fin n => DirichletScalarSpace region
+
+variable {N : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin N)))
+
+private def weakGradientCLM : SobolevEuclidean N 1 2 Ω →L[ℝ] DirichletVectorSpace Ω := by
+  let A : SobolevEuclidean N 1 2 Ω →ₗ[ℝ] DirichletVectorSpace Ω :=
+    { toFun := fun u => grad u
+      map_add' := grad_add
+      map_smul' := grad_smul }
+  refine A.mkContinuous 1 fun u => ?_
+  change gradNorm u ≤ 1 * ‖u‖
+  rw [one_mul]
+  exact gradNorm_le_norm u
+
+private def weakDirichletGradientGraphMap : SobolevEuclideanZero N 1 2 Ω →L[ℝ] DirichletScalarSpace Ω × DirichletVectorSpace Ω :=
+  (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume).prod
+    ((weakGradientCLM Ω).comp (SobolevEuclideanZero N 1 2 Ω).subtypeL)
+
+private theorem weakDirichletGradientGraph_singleValued :
+    ∀ p : DirichletScalarSpace Ω × DirichletVectorSpace Ω, p ∈ (weakDirichletGradientGraphMap Ω).range → p.1 = 0 → p.2 = 0 := by
+  rintro p ⟨u, rfl⟩ hu
+  have he : u = 0 := (SobolevMultiIndexZero.fnL_injective (F := ℝ)) (by
+    change SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume u =
+      SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume 0
+    rw [map_zero]
+    exact hu)
+  rw [he, map_zero, Prod.snd_zero]
+
+/-- **Exercise 27(a)** of [benIsrael2003generalized], Chapter 9.
+The weak gradient with homogeneous Dirichlet trace, on the scalar and
+vector-valued square-integrable spaces of an open Euclidean domain. -/
+def weakDirichletGradient : DirichletScalarSpace Ω →ₗ.[ℝ] DirichletVectorSpace Ω :=
+  (weakDirichletGradientGraphMap Ω).range.toLinearPMap
+
+/-- The Dirichlet gradient graph consists of a zero-trace Sobolev function
+and its vector of weak first derivatives. -/
+theorem mem_weakDirichletGradient_graph_iff {u : DirichletScalarSpace Ω} {y : DirichletVectorSpace Ω} :
+    (u, y) ∈ (weakDirichletGradient Ω).graph ↔
+      ∃ x : SobolevEuclideanZero N 1 2 Ω, SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume x = u ∧ grad (x : SobolevEuclidean N 1 2 Ω) = y := by
+  rw [weakDirichletGradient, Submodule.toLinearPMap_graph_eq _
+    (weakDirichletGradientGraph_singleValued Ω)]
+  change (∃ x : SobolevEuclideanZero N 1 2 Ω, (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume x, grad (x : SobolevEuclidean N 1 2 Ω)) = (u, y)) ↔ _
+  simp only [Prod.mk.injEq]
+
+/-- The Dirichlet gradient has dense domain in the underlying $L^2$ space. -/
+theorem dense_weakDirichletGradient_domain : Dense ((weakDirichletGradient Ω).domain : Set (DirichletScalarSpace Ω)) := by
+  apply (SobolevEuclideanZero.denseRange_fnL (Ω := Ω)).mono
+  rintro u ⟨x, rfl⟩
+  exact (weakDirichletGradient Ω).mem_domain_of_mem_graph
+    ((mem_weakDirichletGradient_graph_iff Ω).mpr ⟨x, rfl, rfl⟩)
+
+/-- Closedness of the first-order Sobolev graph gives a closed Dirichlet
+gradient on the ambient $L^2$ space. -/
+theorem isClosed_weakDirichletGradient : (weakDirichletGradient Ω).IsClosed := by
+  let A := weakDirichletGradientGraphMap Ω
+  have hbound (x : SobolevEuclideanZero N 1 2 Ω) : ‖x‖ ≤ (2 : ℝ) * ‖A x‖ := by
+    change ‖(x : SobolevEuclidean N 1 2 Ω)‖ ≤ _
+    let f := ‖weakDeriv (x : SobolevEuclidean N 1 2 Ω) 0‖
+    let g := gradNorm (x : SobolevEuclidean N 1 2 Ω)
+    have he : ‖(x : SobolevEuclidean N 1 2 Ω)‖ = Real.sqrt (f ^ 2 + g ^ 2) := by
+      rw [norm_eq_gradNorm (by norm_num : (2 : ℝ≥0∞) ≠ ∞), Real.sqrt_eq_rpow]
+      norm_num [f, g]
+    have hA : ‖A x‖ = max f g := Prod.norm_def _
+    rw [he, hA]
+    have hf : 0 ≤ f := norm_nonneg _
+    have hg : 0 ≤ g := norm_nonneg _
+    have hfg : Real.sqrt (f ^ 2 + g ^ 2) ≤ f + g := by
+      apply (Real.sqrt_le_iff).mpr
+      exact ⟨by positivity, by nlinarith⟩
+    exact hfg.trans (by linarith [le_max_left f g, le_max_right f g])
+  have ht : AntilipschitzWith 2 A := A.antilipschitz_of_bound hbound
+  change IsClosed ((weakDirichletGradient Ω).graph : Set (DirichletScalarSpace Ω × DirichletVectorSpace Ω))
+  rw [weakDirichletGradient, Submodule.toLinearPMap_graph_eq _
+    (weakDirichletGradientGraph_singleValued Ω)]
+  exact ht.isClosed_range A.uniformContinuous
+
+/-- Square-integrable weak negative divergence, tested against the Sobolev
+lifts of compactly supported smooth functions. -/
+def IsWeakNegativeDivergence (y : DirichletVectorSpace Ω) (g : DirichletScalarSpace Ω) : Prop :=
+    ∀ φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume,
+      ⟪grad φ, y⟫_ℝ = ⟪fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume φ, g⟫_ℝ
+
+private theorem weakNegativeDivergence_iff_forall (y : DirichletVectorSpace Ω) (g : DirichletScalarSpace Ω) :
+    IsWeakNegativeDivergence Ω y g ↔
+      ∀ x : SobolevEuclideanZero N 1 2 Ω, ⟪grad (x : SobolevEuclidean N 1 2 Ω), y⟫_ℝ = ⟪SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume x, g⟫_ℝ := by
+  constructor
+  · intro hy x
+    let F := (innerSL ℝ y).comp (weakGradientCLM Ω)
+    let G := (innerSL ℝ g).comp (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume)
+    have hmatch : ∀ φ ∈ testFunctions ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume, F φ = G φ := by
+      intro φ hφ
+      change ⟪y, grad φ⟫_ℝ = ⟪g, fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume φ⟫_ℝ
+      rw [← real_inner_comm y (grad φ), ← real_inner_comm g (fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume φ)]
+      exact hy φ hφ
+    have he := SobolevEuclideanZero.ext_on_testFunctions hmatch x.property
+    change ⟪y, grad (x : SobolevEuclidean N 1 2 Ω)⟫_ℝ = ⟪g, fnL ℝ (EuclideanSpace.basisFun (Fin N) ℝ).toBasis 1 2 Ω volume (x : SobolevEuclidean N 1 2 Ω)⟫_ℝ at he
+    exact (real_inner_comm _ _).trans (he.trans (real_inner_comm _ _))
+  · intro h φ hφ
+    have hmem : φ ∈ SobolevEuclideanZero N 1 2 Ω := subset_closure hφ
+    exact h ⟨φ, hmem⟩
+
+/-- **Exercise 27(b)** of [benIsrael2003generalized], Chapter 9.
+The adjoint graph is the maximal square-integrable weak negative divergence. -/
+theorem mem_weakDirichletGradient_adjoint_graph_iff {y : DirichletVectorSpace Ω} {g : DirichletScalarSpace Ω} :
+    (y, g) ∈ (weakDirichletGradient Ω).adjoint.graph ↔ IsWeakNegativeDivergence Ω y g := by
+  rw [LinearPMap.adjoint_graph_eq_graph_adjoint (dense_weakDirichletGradient_domain Ω),
+    Submodule.mem_adjoint_iff, weakNegativeDivergence_iff_forall]
+  constructor
+  · intro h x
+    apply sub_eq_zero.mp
+    apply h
+    exact (mem_weakDirichletGradient_graph_iff Ω).mpr ⟨x, rfl, rfl⟩
+  · intro h u v huv
+    obtain ⟨x, rfl, rfl⟩ := (mem_weakDirichletGradient_graph_iff Ω).mp huv
+    exact sub_eq_zero.mpr (h x)
+
+private theorem mem_partialComp_graph_iff {E F G : Type*}
+    [NormedAddCommGroup E] [InnerProductSpace ℝ E] [NormedAddCommGroup F] [InnerProductSpace ℝ F]
+    [AddCommGroup G] [Module ℝ G]
+    (A : E →ₗ.[ℝ] F) (B : F →ₗ.[ℝ] G) {x : E} {z : G} :
+    (x, z) ∈ (partialComp B A).graph ↔ ∃ y, (x, y) ∈ A.graph ∧ (y, z) ∈ B.graph := by
+  constructor
+  · intro h
+    obtain ⟨u, rfl, hu⟩ := (partialComp B A).mem_graph_iff.mp h
+    obtain ⟨hx, hy⟩ := (partialComp_mem_domain B A (u : E)).mp u.property
+    exact ⟨A ⟨u, hx⟩, A.mem_graph ⟨u, hx⟩, B.mem_graph_iff.mpr ⟨⟨_, hy⟩, rfl, hu⟩⟩
+  · rintro ⟨y, ha, hb⟩
+    obtain ⟨u, rfl, rfl⟩ := A.mem_graph_iff.mp ha
+    obtain ⟨v, hv, hvz⟩ := B.mem_graph_iff.mp hb
+    change (v : F) = A u at hv
+    let hy : A u ∈ B.domain := hv ▸ v.property
+    exact (partialComp B A).mem_graph_iff.mpr
+      ⟨⟨u, (partialComp_mem_domain B A _).mpr ⟨u.property, hy⟩⟩, rfl,
+        (partialComp_apply B A _ u.property hy).trans (by
+          have he : (⟨A u, hy⟩ : B.domain) = v := Subtype.ext hv.symm
+          rwa [he])⟩
+
+private theorem weakNegativeDivergence_grad_iff (x : SobolevEuclideanZero N 1 2 Ω) (g : DirichletScalarSpace Ω) :
+    IsWeakNegativeDivergence Ω (grad (x : SobolevEuclidean N 1 2 Ω)) g ↔
+      ∀ φ ∈ (SobolevEuclideanZero N 1 2 Ω), Elliptic.dirichletForm Ω (x : SobolevEuclidean N 1 2 Ω) φ = Elliptic.load Ω g φ := by
+  have hForm (φ : SobolevEuclidean N 1 2 Ω) : Elliptic.dirichletForm Ω (x : SobolevEuclidean N 1 2 Ω) φ =
+      ⟪grad φ, grad (x : SobolevEuclidean N 1 2 Ω)⟫_ℝ := by
+    rw [Elliptic.dirichletForm_apply_inner, PiLp.inner_apply]
+    exact Finset.sum_congr rfl fun i _ => real_inner_comm
+      (weakDeriv φ (MultiIndexLE.single i)) (weakDeriv (x : SobolevEuclidean N 1 2 Ω) (MultiIndexLE.single i))
+  rw [weakNegativeDivergence_iff_forall]
+  constructor
+  · intro h φ hφ
+    rw [hForm, Elliptic.load_apply_inner, real_inner_comm (weakDeriv _ 0) g]
+    exact h ⟨φ, hφ⟩
+  · intro h φ
+    have hf := h φ φ.property
+    rw [hForm, Elliptic.load_apply_inner, real_inner_comm (weakDeriv _ 0) g] at hf
+    exact hf
+
+/-- **Exercise 27(c)** of [benIsrael2003generalized], Chapter 9.
+The Gram operator of the closed gradient is exactly the negative Dirichlet
+Laplacian, including equality of the differential operator domains. -/
+theorem weakDirichletGradient_gram :
+    partialComp (weakDirichletGradient Ω).adjoint (weakDirichletGradient Ω) =
+      dirichletLaplacian Ω := by
+  apply LinearPMap.eq_of_eq_graph
+  ext p
+  obtain ⟨u, g⟩ := p
+  rw [mem_partialComp_graph_iff]
+  constructor
+  · rintro ⟨y, hy, hg⟩
+    obtain ⟨x, hx, rfl⟩ := (mem_weakDirichletGradient_graph_iff Ω).mp hy
+    have hr := (weakNegativeDivergence_grad_iff Ω x g).mp
+      ((mem_weakDirichletGradient_adjoint_graph_iff Ω).mp hg)
+    have hd : u ∈ (dirichletLaplacian Ω).domain :=
+      ⟨x, x.property, hx, g, hr⟩
+    exact (dirichletLaplacian Ω).mem_graph_iff.mpr
+      ⟨⟨u, hd⟩, rfl, dirichletLaplacian_apply_unique ⟨u, hd⟩ x.property hx hr⟩
+  · intro h
+    obtain ⟨v, rfl, rfl⟩ := (dirichletLaplacian Ω).mem_graph_iff.mp h
+    obtain ⟨x, hx, he⟩ := dirichletLaplacian_exists_lift v
+    refine ⟨grad x, (mem_weakDirichletGradient_graph_iff Ω).mpr ⟨⟨x, hx⟩, he, rfl⟩, ?_⟩
+    apply (mem_weakDirichletGradient_adjoint_graph_iff Ω).mpr
+    apply (weakNegativeDivergence_grad_iff Ω ⟨x, hx⟩ _).mpr
+    intro φ hφ
+    rw [Elliptic.load_apply_inner]
+    exact (dirichletLaplacian_inner_eq_dirichletForm v hx he hφ).symm
+
+end DirichletGradients
+
+end GradientResults
+
+section SineKernelResults
+
+open Filter MeasureTheory Set
+open scoped ENNReal InnerProductSpace
+
+section ProductSine
+
+private theorem memLp_prod_real {X : Type*} [MeasurableSpace X] {μ : Measure X} [SFinite μ]
+    {u v : X → ℝ} (hu : MemLp u 2 μ) (hv : MemLp v 2 μ) :
+    MemLp (fun p : X × X => u p.1 * v p.2) 2 (μ.prod μ) := by
+  apply (memLp_two_iff_integrable_sq
+    (hu.aestronglyMeasurable.comp_fst.mul hv.aestronglyMeasurable.comp_snd)).mpr
+  simpa only [Pi.mul_apply, mul_pow] using hu.integrable_sq.mul_prod hv.integrable_sq
+
+private def realLpTensor {X : Type*} [MeasurableSpace X] {μ : Measure X} [SFinite μ]
+    (u v : Lp ℝ 2 μ) : Lp ℝ 2 (μ.prod μ) :=
+  (memLp_prod_real (Lp.memLp u) (Lp.memLp v)).toLp _
+
+private theorem realLpTensor_coeFn {X : Type*} [MeasurableSpace X] {μ : Measure X} [SFinite μ]
+    (u v : Lp ℝ 2 μ) :
+    (fun p => realLpTensor u v p) =ᵐ[μ.prod μ] fun p => u p.1 * v p.2 :=
+  MemLp.coeFn_toLp (memLp_prod_real (Lp.memLp u) (Lp.memLp v))
+
+private theorem realLpTensor_inner {X : Type*} [MeasurableSpace X] {μ : Measure X} [SFinite μ]
+    (u v w z : Lp ℝ 2 μ) :
+    ⟪realLpTensor u v, realLpTensor w z⟫_ℝ = ⟪u, w⟫_ℝ * ⟪v, z⟫_ℝ := by
+  simp only [L2.inner_eq_integral_mul]
+  rw [← integral_prod_mul]
+  apply integral_congr_ae
+  filter_upwards [realLpTensor_coeFn u v, realLpTensor_coeFn w z] with p hp hq
+  change realLpTensor u v p * realLpTensor w z p = (u p.1 * w p.1) * (v p.2 * z p.2)
+  rw [hp, hq]
+  ring
+
+private theorem realLpTensor_orthonormal {X ι : Type*} [MeasurableSpace X] {μ : Measure X}
+    [SFinite μ] {e : ι → Lp ℝ 2 μ} (he : Orthonormal ℝ e) :
+    Orthonormal ℝ (fun p : ι × ι => realLpTensor (e p.1) (e p.2)) := by
+  classical
+  rw [orthonormal_iff_ite]
+  intro p q
+  rw [realLpTensor_inner, orthonormal_iff_ite.mp he, orthonormal_iff_ite.mp he]
+  by_cases h₁ : p.1 = q.1 <;> by_cases h₂ : p.2 = q.2 <;> simp [Prod.ext_iff, h₁, h₂]
+
+private theorem row_integral_tensor_inner {X : Type*} [MeasurableSpace X] {μ : Measure X} [SFinite μ]
+    (f : Lp ℝ 2 (μ.prod μ)) (u v : Lp ℝ 2 μ) :
+    ⟪u, IntegralOperator.l2KernelCLM (Lp.memLp f) v⟫_ℝ =
+      ⟪realLpTensor u v, f⟫_ℝ := by
+  have hInt := IntegralOperator.integrable_kernel_mul_prod (Lp.memLp f) (Lp.memLp v) (Lp.memLp u)
+  simp only [L2.inner_eq_integral_mul]
+  calc
+    (∫ s, u s * IntegralOperator.l2KernelCLM (Lp.memLp f) v s ∂μ) =
+        ∫ s, ∫ t, f (s, t) * (v t * u s) ∂μ ∂μ := by
+      apply integral_congr_ae
+      filter_upwards [IntegralOperator.l2KernelCLM_apply_ae (Lp.memLp f) v] with s hs
+      rw [hs, ← integral_const_mul]
+      apply integral_congr_ae
+      filter_upwards with t
+      ring
+    _ = ∫ p : X × X, f p * (v p.2 * u p.1) ∂(μ.prod μ) := (integral_prod _ hInt).symm
+    _ = ∫ p, realLpTensor u v p * f p ∂(μ.prod μ) := by
+      apply integral_congr_ae
+      filter_upwards [realLpTensor_coeFn u v] with p hp
+      rw [hp]
+      ring
+
+private theorem realLpTensor_complete {X ι : Type*} [MeasurableSpace X] {μ : Measure X}
+    [SFinite μ] [Countable ι] (b : HilbertBasis ι ℝ (Lp ℝ 2 μ)) :
+    (Submodule.span ℝ (Set.range fun p : ι × ι => realLpTensor (b p.1) (b p.2)))ᗮ = ⊥ := by
+  rw [Submodule.eq_bot_iff]
+  intro f hf
+  have hfs (i j : ι) : ⟪realLpTensor (b i) (b j), f⟫_ℝ = 0 :=
+    (Submodule.mem_orthogonal _ _).mp hf _ (Submodule.subset_span ⟨(i, j), rfl⟩)
+  have hcol (j : ι) : IntegralOperator.l2KernelCLM (Lp.memLp f) (b j) = 0 := by
+    apply b.repr.injective
+    ext i
+    rw [map_zero, lp.coeFn_zero, Pi.zero_apply, b.repr_apply_apply, row_integral_tensor_inner]
+    exact hfs i j
+  have hrow (j : ι) : ∀ᵐ s ∂μ, (∫ t, f (s, t) * b j t ∂μ) = 0 := by
+    have hh := IntegralOperator.l2KernelCLM_apply_ae (Lp.memLp f) (b j)
+    rw [hcol] at hh
+    filter_upwards [hh, Lp.coeFn_zero ℝ 2 μ] with s hs hz
+    exact hs.symm.trans hz
+  have hae : ∀ᵐ s ∂μ, ∀ᵐ t ∂μ, f (s, t) = 0 := by
+    filter_upwards [IntegralOperator.ae_memLp_row (Lp.memLp f), ae_all_iff.mpr hrow] with s hs ht
+    let g := hs.toLp _
+    have hg : (fun t => g t) =ᵐ[μ] fun t => f (s, t) := MemLp.coeFn_toLp hs
+    have h0 : g = 0 := by
+      apply b.repr.injective
+      ext j
+      rw [map_zero, lp.coeFn_zero, Pi.zero_apply, b.repr_apply_apply, real_inner_comm g,
+        L2.inner_eq_integral_mul]
+      refine (integral_congr_ae (show (fun t => g t * b j t) =ᵐ[μ]
+        fun t => f (s, t) * b j t from ?_)).trans (ht j)
+      filter_upwards [hg] with t h
+      rw [h]
+    rw [h0] at hg
+    filter_upwards [hg, Lp.coeFn_zero ℝ 2 μ] with t h hz
+    exact h.symm.trans hz
+  let fm := (Lp.aestronglyMeasurable f).mk f
+  have hfM : Measurable fm := (Lp.aestronglyMeasurable f).stronglyMeasurable_mk.measurable
+  have haf : (fun p => f p) =ᵐ[μ.prod μ] fm := (Lp.aestronglyMeasurable f).ae_eq_mk
+  have hf0 : fm =ᵐ[μ.prod μ] (0 : X × X → ℝ) := by
+    apply (Measure.ae_prod_iff_ae_ae (measurableSet_eq_fun hfM measurable_const)).mpr
+    filter_upwards [Measure.ae_ae_of_ae_prod haf, hae] with s hs hs0
+    filter_upwards [hs, hs0] with t ht h0
+    exact ht.symm.trans h0
+  exact Lp.ext ((haf.trans hf0).trans (Lp.coeFn_zero ℝ 2 (μ.prod μ)).symm)
+
+/-- The product of the two normalized sine systems is a Hilbert basis of the
+square-integrable functions on $[0,\pi]^2$. Its frequencies start at one. -/
+def squareSineBasis : HilbertBasis (ℕ × ℕ) ℝ (Lp ℝ 2 (halfRangeMeasure.prod halfRangeMeasure)) :=
+  HilbertBasis.mkOfOrthogonalEqBot (realLpTensor_orthonormal sinBasis.orthonormal)
+    (realLpTensor_complete sinBasis)
+
+/-- The sine basis functions on the square have the product normalization
+$2/\pi$. -/
+theorem squareSineBasis_apply_ae (j : ℕ × ℕ) :
+    (fun p => squareSineBasis j p) =ᵐ[halfRangeMeasure.prod halfRangeMeasure]
+      fun p => (2 / Real.pi) * Real.sin ((j.1 + 1) * p.1.val) *
+        Real.sin ((j.2 + 1) * p.2.val) := by
+  unfold squareSineBasis
+  simp only [HilbertBasis.coe_mkOfOrthogonalEqBot]
+  have he₁ := (Measure.quasiMeasurePreserving_fst (ν := halfRangeMeasure)).ae (coeFn_sinLp j.1)
+  have he₂ := (Measure.quasiMeasurePreserving_snd (μ := halfRangeMeasure)).ae (coeFn_sinLp j.2)
+  filter_upwards [realLpTensor_coeFn (sinBasis j.1) (sinBasis j.2), he₁, he₂] with p hp h₁ h₂
+  rw [hp, coe_sinBasis]
+  change sinLp j.1 p.1 = sinFun j.1 p.1 at h₁
+  change sinLp j.2 p.2 = sinFun j.2 p.2 at h₂
+  rw [h₁, h₂]
+  change (Real.sqrt (2 / Real.pi) * Real.sin ((j.1 + 1) * p.1.val)) *
+    (Real.sqrt (2 / Real.pi) * Real.sin ((j.2 + 1) * p.2.val)) = _
+  calc
+    _ = (Real.sqrt (2 / Real.pi) * Real.sqrt (2 / Real.pi)) *
+        Real.sin ((j.1 + 1) * p.1.val) * Real.sin ((j.2 + 1) * p.2.val) := by ring
+    _ = _ := by rw [Real.mul_self_sqrt (by positivity)]
+
+local notation "μ□" => Measure.prod halfRangeMeasure halfRangeMeasure
+
+/-- The positive Dirichlet frequency of the double sine mode. -/
+def squareSineEigenvalue (j : ℕ × ℕ) : ℝ := (j.1 + 1 : ℝ) ^ 2 + (j.2 + 1 : ℝ) ^ 2
+
+private theorem squareSineEigenvalue_pos (j : ℕ × ℕ) : 0 < squareSineEigenvalue j := by
+  unfold squareSineEigenvalue
+  positivity
+
+private theorem summable_sq_inv_squareSineEigenvalue :
+    Summable (fun j : ℕ × ℕ => (squareSineEigenvalue j)⁻¹ ^ 2) := by
+  let a (n : ℕ) : ℝ := ((n + 1 : ℝ) ^ 2)⁻¹
+  have hsum : Summable a := by
+    simpa only [a, Nat.cast_add, Nat.cast_one] using
+      (summable_nat_add_iff (f := fun n : ℕ => ((n : ℝ) ^ (2 : ℕ))⁻¹) 1).mpr
+        (Real.summable_nat_pow_inv.mpr (by decide : 1 < (2 : ℕ)))
+  have ha (n : ℕ) : 0 ≤ a n := by positivity
+  apply Summable.of_nonneg_of_le (fun _ => sq_nonneg _) _ (hsum.mul_of_nonneg hsum ha ha)
+  intro j
+  let u : ℝ := (j.1 + 1 : ℝ) ^ 2
+  let v : ℝ := (j.2 + 1 : ℝ) ^ 2
+  have hu : 0 < u := by positivity
+  have hv : 0 < v := by positivity
+  have huv : 0 < u + v := add_pos hu hv
+  change (u + v)⁻¹ ^ 2 ≤ u⁻¹ * v⁻¹
+  rw [← mul_inv, inv_pow]
+  apply inv_anti₀ (mul_pos hu hv)
+  nlinarith [sq_nonneg (u - v)]
+
+private theorem squareSineGreenModes_orthonormal :
+    Orthonormal ℝ (fun j : ℕ × ℕ => realLpTensor (squareSineBasis j) (squareSineBasis j)) := by
+  classical
+  rw [orthonormal_iff_ite]
+  intro j k
+  rw [realLpTensor_inner, orthonormal_iff_ite.mp squareSineBasis.orthonormal]
+  split_ifs <;> norm_num
+
+/-- **Exercise 27(d)** of [benIsrael2003generalized], Chapter 9.
+The Green series on the square converges in $L^2$ of the product of the
+two squares. Each term is the product of two normalized sine modes
+divided by the positive eigenvalue. -/
+def squareSineGreenKernel : Lp ℝ 2 (μ□.prod μ□) :=
+  ∑' j : ℕ × ℕ, (squareSineEigenvalue j)⁻¹ • realLpTensor (squareSineBasis j) (squareSineBasis j)
+
+/-- The double sine kernel series converges unconditionally in the product
+$L^2$ norm. -/
+theorem hasSum_squareSineGreenKernel :
+    HasSum (fun j : ℕ × ℕ => (squareSineEigenvalue j)⁻¹ •
+      realLpTensor (squareSineBasis j) (squareSineBasis j)) squareSineGreenKernel := by
+  exact ((Orthonormal.summable_smul_iff squareSineGreenModes_orthonormal
+    (fun j => (squareSineEigenvalue j)⁻¹)).mpr summable_sq_inv_squareSineEigenvalue).hasSum
+
+/-- The integral operator of the sine Green series divides the coefficient
+at each frequency by the corresponding positive eigenvalue. -/
+theorem squareSineGreenKernel_action_repr (f : Lp ℝ 2 μ□) (i : ℕ × ℕ) :
+    squareSineBasis.repr (IntegralOperator.l2KernelCLM (Lp.memLp squareSineGreenKernel) f) i =
+      (squareSineEigenvalue i)⁻¹ * squareSineBasis.repr f i := by
+  classical
+  rw [squareSineBasis.repr_apply_apply, row_integral_tensor_inner,
+    squareSineBasis.repr_apply_apply]
+  have h := hasSum_squareSineGreenKernel.mapL (innerSL ℝ (realLpTensor (squareSineBasis i) f))
+  have h' : HasSum (fun j : ℕ × ℕ => if j = i then
+      (squareSineEigenvalue i)⁻¹ * ⟪squareSineBasis i, f⟫_ℝ else 0)
+      ⟪realLpTensor (squareSineBasis i) f, squareSineGreenKernel⟫_ℝ := by
+    apply h.congr_fun
+    intro j
+    simp only [innerSL_apply_apply, real_inner_smul_right, realLpTensor_inner]
+    by_cases hji : j = i
+    · subst j
+      rw [ite_eq_left rfl, orthonormal_iff_ite.mp squareSineBasis.orthonormal, ite_eq_left rfl,
+        one_mul, real_inner_comm (squareSineBasis i) f]
+    · rw [ite_eq_right hji, orthonormal_iff_ite.mp squareSineBasis.orthonormal,
+        ite_eq_right (Ne.symm hji), zero_mul, mul_zero]
+  exact h'.unique (hasSum_ite_eq _ _)
+
+end ProductSine
+
+end SineKernelResults
+
+section ScalarSobolevOperator
+
+open Matrix
+
+variable {n m : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "μ" => volume.restrict (Ioo l r)
+
+private def scalarCoefficientMultiplier (c : ℝ → ℝ) (hc : ContinuousOn c (Icc l r)) :
+    S →L[ℝ] S :=
+  ((ContinuousLinearMap.mul ℝ ℝ).holderL μ 2 ⊤ 2).flip (hc.memLp_top_restrict_Ioo.toLp c)
+
+private theorem scalarCoefficientMultiplier_apply_ae
+    (c : ℝ → ℝ) (hc : ContinuousOn c (Icc l r)) (u : S) :
+    scalarCoefficientMultiplier c hc u =ᵐ[μ] fun t => c t * u t := by
+  have h := (ContinuousLinearMap.mul ℝ ℝ).coeFn_holder (r := 2) u (hc.memLp_top_restrict_Ioo.toLp c)
+  filter_upwards [h, hc.memLp_top_restrict_Ioo.coeFn_toLp] with t ht htc
+  simpa [scalarCoefficientMultiplier, htc, mul_comm] using ht
+
+/-- The differential expression (49) on the order-\(n+1\) Sobolev space,
+with coefficients represented as bounded multipliers on the interval. -/
+def scalarSobolevExpression (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r)) : H →L[ℝ] S :=
+  ∑ j, (scalarCoefficientMultiplier (c j) (hc j)).comp (SobolevInterval.derivL (n + 1) l r j)
+
+/-- The Sobolev expression acts almost everywhere as the coefficient-weighted sum of weak derivatives. -/
+theorem scalarSobolevExpression_apply_ae (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r)) (u : H) :
+    scalarSobolevExpression c hc u =ᵐ[μ] fun t =>
+      ∑ j, c j t * SobolevInterval.deriv u j t := by
+  let f : Fin (n + 2) → S := fun j =>
+    scalarCoefficientMultiplier (c j) (hc j) (SobolevInterval.deriv u j)
+  have hsum (T : Finset (Fin (n + 2))) :
+      (⇑(∑ j ∈ T, f j) : ℝ → ℝ) =ᵐ[μ] fun t => ∑ j ∈ T, c j t * SobolevInterval.deriv u j t := by
+    classical
+    induction T using Finset.induction_on with
+    | empty =>
+      simp only [Finset.sum_empty]
+      exact Lp.coeFn_zero ..
+    | @insert j T hj hT =>
+      simp only [Finset.sum_insert hj]
+      filter_upwards [Lp.coeFn_add (f j) (∑ i ∈ T, f i), hT,
+        scalarCoefficientMultiplier_apply_ae (c j) (hc j) (SobolevInterval.deriv u j)]
+        with t ht hs hj'
+      simp only [Pi.add_apply] at ht
+      rw [ht, hs, hj']
+  simpa only [scalarSobolevExpression, sum_apply,
+    ContinuousLinearMap.comp_apply, SobolevInterval.derivL_apply, f] using hsum Finset.univ
+
+private def scalarSobolevEval (hlr : l < r) (x : Icc l r) (j : Fin (n + 1)) :
+    H →L[ℝ] ℝ :=
+  (ContinuousMap.evalCLM ℝ x).comp ((ContDiffMapIcc.derivCLM hlr.le n j).comp
+    (SobolevIntervalLp.toContDiffMapIcc (p := 2) hlr))
+
+/-- Endpoint values of the derivatives through order \(n\), in the order
+of the two blocks in (50). -/
+def scalarSobolevBoundaryTrace (hlr : l < r) : H →L[ℝ] (Fin (n + 1) ⊕ Fin (n + 1) → ℝ) :=
+  ContinuousLinearMap.pi
+    (Sum.elim (scalarSobolevEval hlr ⟨l, left_mem_Icc.mpr hlr.le⟩)
+      (scalarSobolevEval hlr ⟨r, right_mem_Icc.mpr hlr.le⟩))
+
+/-- The boundary trace picks the appropriate endpoint of each derivative. -/
+theorem scalarSobolevBoundaryTrace_apply (hlr : l < r) (u : H)
+    (j : Fin (n + 1) ⊕ Fin (n + 1)) :
+    scalarSobolevBoundaryTrace hlr u j =
+      Sum.elim (fun k => SobolevIntervalLp.rep (SobolevIntervalLp.derivOne u k) l)
+        (fun k => SobolevIntervalLp.rep (SobolevIntervalLp.derivOne u k) r) j := by
+  cases j <;> simp only [scalarSobolevBoundaryTrace, ContinuousLinearMap.pi_apply,
+    scalarSobolevEval, ContinuousLinearMap.comp_apply, Sum.elim_inl, Sum.elim_inr,
+    ContinuousMap.evalCLM_apply, ContDiffMapIcc.derivCLM_apply,
+    SobolevIntervalLp.deriv_toContDiffMapIcc]
+
+/-- The Sobolev domain satisfying the homogeneous boundary matrix condition
+(50). -/
+def scalarSobolevBoundarySpace (hlr : l < r)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) : Submodule ℝ H :=
+  ((LinearMap.toContinuousLinearMap M.mulVecLin).comp (scalarSobolevBoundaryTrace hlr)).ker
+
+/-- A Sobolev function satisfies the homogeneous trace constraint exactly when its boundary residual is zero. -/
+theorem mem_scalarSobolevBoundarySpace_iff (hlr : l < r)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) (u : H) :
+    u ∈ scalarSobolevBoundarySpace hlr M ↔ M.mulVec (scalarSobolevBoundaryTrace hlr u) = 0 :=
+  Iff.rfl
+
+/-- The homogeneous boundary equations define a closed Sobolev subspace. -/
+theorem isClosed_scalarSobolevBoundarySpace (hlr : l < r)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    IsClosed (scalarSobolevBoundarySpace hlr M : Set H) :=
+  ((LinearMap.toContinuousLinearMap M.mulVecLin).comp (scalarSobolevBoundaryTrace hlr)).isClosed_ker
+
+private def scalarSobolevGraphMap (A : H →L[ℝ] S) (W : Submodule ℝ H) : W →L[ℝ] S × S :=
+  ((SobolevInterval.derivL (n + 1) l r 0).prod A).comp W.subtypeL
+
+private theorem scalarSobolevGraph_singleValued (A : H →L[ℝ] S) (W : Submodule ℝ H) :
+    ∀ p ∈ (scalarSobolevGraphMap A W).toLinearMap.range, p.1 = 0 → p.2 = 0 := by
+  rintro p ⟨u, rfl⟩ hu
+  have h₀ : SobolevInterval.deriv u.val 0 = SobolevInterval.deriv (0 : H) 0 := hu
+  have he : u.val = 0 := SobolevMultiIndex.fnL_injective h₀
+  change A u.val = 0
+  rw [he, map_zero]
+
+/-- The realization of the scalar differential expression on a designated
+subspace of its Sobolev domain. -/
+def scalarIntervalOperator (A : H →L[ℝ] S) (W : Submodule ℝ H) : S →ₗ.[ℝ] S :=
+  (scalarSobolevGraphMap A W).toLinearMap.range.toLinearPMap
+
+/-- The scalar operator graph records the function and image of a permitted Sobolev lift. -/
+theorem mem_scalarIntervalOperator_graph_iff (A : H →L[ℝ] S) (W : Submodule ℝ H) {x y : S} :
+    (x, y) ∈ (scalarIntervalOperator A W).graph ↔
+      ∃ u : W, SobolevInterval.deriv u.val 0 = x ∧ A u.val = y := by
+  rw [scalarIntervalOperator, Submodule.toLinearPMap_graph_eq _ (scalarSobolevGraph_singleValued A W)]
+  change (∃ u : W, (SobolevInterval.deriv u.val 0, A u.val) = (x, y)) ↔ _
+  simp only [Prod.mk.injEq]
+
+/-- The unrestricted Sobolev realization of the scalar expression (49). -/
+abbrev freeScalarIntervalOperator (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r)) : S →ₗ.[ℝ] S :=
+  scalarIntervalOperator (scalarSobolevExpression c hc) ⊤
+
+/-- The scalar differential operator with the homogeneous endpoint
+conditions of **Exercise 28** of [benIsrael2003generalized], Chapter 9. -/
+abbrev constrainedScalarIntervalOperator (hlr : l < r) (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) : S →ₗ.[ℝ] S :=
+  scalarIntervalOperator (scalarSobolevExpression c hc) (scalarSobolevBoundarySpace hlr M)
+
+private theorem scalarSobolevGraph_domain_of_lift (A : H →L[ℝ] S) (W : Submodule ℝ H) (u : W) :
+    SobolevInterval.deriv u.val 0 ∈ (scalarIntervalOperator A W).domain :=
+  LinearPMap.mem_domain_of_mem_graph ((mem_scalarIntervalOperator_graph_iff A W).mpr ⟨u, rfl, rfl⟩)
+
+/-- **Exercise 28(a)** of [benIsrael2003generalized], Chapter 9.
+The homogeneous endpoint conditions contain all test functions in the
+operator domain, which is dense in the Hilbert space. -/
+theorem dense_constrainedScalarIntervalOperator (hlr : l < r) (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    Dense ((constrainedScalarIntervalOperator hlr c hc M).domain : Set S) := by
+  rw [Metric.dense_iff]
+  intro x ε hε
+  obtain ⟨φ, hφ⟩ := exists_testFunction_norm_sub_toLp_le hlr x (half_pos hε)
+  have hd : ContDiff ℝ (n + 1 : ℕ) (φ : ℝ → ℝ) := φ.contDiff.of_le (by simp)
+  let v := ContDiffMapIcc.ofContDiff hlr.le hd
+  let u := ContDiffMapIcc.toSobolevIntervalLp 2 hlr.le hlr (n + 1) v
+  have hfn : SobolevInterval.deriv u 0 = φ.toLp₂ := by
+    apply Lp.ext
+    have h := ContDiffMapIcc.fn_toSobolevIntervalLp_ae_eq (p := 2) hlr.le hlr v
+    filter_upwards [h, φ.coeFn_toLp₂, ae_restrict_mem measurableSet_Ioo] with t ht hφt htI
+    rw [hφt]
+    change u.fn t = φ t
+    exact ht.trans ((v.extend_of_mem (Ioo_subset_Icc_self htI)).trans rfl)
+  have hder (j : Fin (n + 1)) (t : Icc l r) (ht : (t : ℝ) ∉ Ioo l r) :
+      SobolevIntervalLp.rep (SobolevIntervalLp.derivOne u j) t = 0 := by
+    rw [← SobolevIntervalLp.deriv_toContDiffMapIcc (p := 2) hlr u j t,
+      ContDiffMapIcc.deriv_toContDiffMapIcc_toSobolevIntervalLp, ContDiffMapIcc.deriv_ofContDiff]
+    exact (φ.iteratedFDerivApply j fun _ ↦ 1).eq_zero_of_notMem ht
+  have hu : u ∈ scalarSobolevBoundarySpace hlr M := by
+    rw [mem_scalarSobolevBoundarySpace_iff]
+    have hzero : scalarSobolevBoundaryTrace hlr u = 0 := by
+      funext j
+      rw [scalarSobolevBoundaryTrace_apply]
+      cases j with
+      | inl j => exact hder j ⟨l, left_mem_Icc.mpr hlr.le⟩ (fun h => lt_irrefl _ h.1)
+      | inr j => exact hder j ⟨r, right_mem_Icc.mpr hlr.le⟩ (fun h => lt_irrefl _ h.2)
+    rw [hzero, Matrix.mulVec_zero]
+  refine ⟨φ.toLp₂, ?_, hfn ▸ scalarSobolevGraph_domain_of_lift _ _ ⟨u, hu⟩⟩
+  rw [Metric.mem_ball, dist_comm, dist_eq_norm]
+  exact hφ.trans_lt (half_lt_self hε)
+
+end ScalarSobolevOperator
+
+section ScalarSobolevOperatorClosed
+
+variable {n m : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "μ" => volume.restrict (Ioo l r)
+local notation "last" => Fin.last (n + 1)
+
+private theorem inverse_leading_mul_scalarSobolevExpression
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) (u : H) :
+    let invLead := scalarCoefficientMultiplier (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz)
+    let M := fun j : Fin (n + 1) => scalarCoefficientMultiplier
+      (fun t => (c last t)⁻¹ * c j.castSucc t) (((hc last).inv₀ hnz).mul (hc j.castSucc))
+    invLead (scalarSobolevExpression c hc u) =
+      SobolevInterval.deriv u last + ∑ j, M j (SobolevInterval.deriv u j.castSucc) := by
+  dsimp only
+  let f := fun t => (c last t)⁻¹
+  let hf := (hc last).inv₀ hnz
+  let lower : Fin (n + 2) → ℝ → ℝ := fun j t => f t * c j t
+  let hlower : ∀ j, ContinuousOn (lower j) (Icc l r) := fun j => hf.mul (hc j)
+  have hfull :
+      scalarCoefficientMultiplier f hf (scalarSobolevExpression c hc u) =
+        scalarSobolevExpression lower hlower u := by
+    apply Lp.ext
+    filter_upwards [scalarCoefficientMultiplier_apply_ae f hf (scalarSobolevExpression c hc u),
+      scalarSobolevExpression_apply_ae c hc u, scalarSobolevExpression_apply_ae lower hlower u]
+      with t h₁ h₂ h₃
+    rw [h₁, h₂, h₃, Finset.mul_sum]
+    simp only [lower, mul_assoc]
+  rw [hfull, scalarSobolevExpression, Fin.sum_univ_castSucc, add_apply,
+    sum_apply, ContinuousLinearMap.comp_apply, SobolevInterval.derivL_apply,
+    add_comm]
+  congr 1
+  apply Lp.ext
+  filter_upwards [scalarCoefficientMultiplier_apply_ae (lower last) (hlower last)
+    (SobolevInterval.deriv u last), ae_restrict_mem measurableSet_Ioo] with t ht htI
+  rw [ht]
+  change (c last t)⁻¹ * c last t * SobolevInterval.deriv u last t = _
+  rw [inv_mul_cancel₀ (hnz t (Ioo_subset_Icc_self htI)), one_mul]
+
+private theorem scalarSobolev_graph_estimate
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ u : H,
+      ‖u‖ ≤ C * max ‖SobolevInterval.deriv u 0‖ ‖scalarSobolevExpression c hc u‖ := by
+  let A := scalarSobolevExpression c hc
+  let B := scalarCoefficientMultiplier (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz)
+  let M := fun j : Fin (n + 1) => scalarCoefficientMultiplier
+    (fun t => (c last t)⁻¹ * c j.castSucc t) (((hc last).inv₀ hnz).mul (hc j.castSucc))
+  let K : ℝ := 1 + ∑ j, ‖M j‖
+  have hK : 0 < K := by
+    dsimp [K]
+    positivity
+  let ε : ℝ := (2 * K)⁻¹
+  have hε : 0 < ε := by dsimp [ε]; positivity
+  have hI : (Ioo l r).OrdConnected := ordConnected_Ioo
+  have hcomponent (j : Fin (n + 1)) :
+      ∃ C : ℝ, 0 ≤ C ∧ ∀ u : H,
+        ‖SobolevInterval.deriv u j.castSucc‖ ≤
+          ε * ‖SobolevInterval.deriv u last‖ + C * ‖SobolevInterval.deriv u 0‖ := by
+    by_cases hj : j.castSucc = (0 : Fin (n + 2))
+    · refine ⟨1, zero_le_one, ?_⟩
+      intro u
+      rw [hj, one_mul]
+      exact le_add_of_nonneg_left (mul_nonneg hε.le (norm_nonneg _))
+    · exact SobolevIntervalLp.eLpNorm_deriv_le_mul_add hI j.castSucc hj (Fin.castSucc_ne_last j) hε
+  choose C hC hcomponent using hcomponent
+  let D : ℝ := ∑ j, ‖M j‖ * C j
+  have hD : 0 ≤ D := Finset.sum_nonneg fun j _ => mul_nonneg (norm_nonneg _) (hC j)
+  have hhalf : ε * ∑ j, ‖M j‖ ≤ 1 / 2 := by
+    calc
+      ε * ∑ j, ‖M j‖ ≤ ε * K :=
+        mul_le_mul_of_nonneg_left (le_add_of_nonneg_left zero_le_one) hε.le
+      _ = 1 / 2 := by dsimp [ε]; field_simp [hK.ne']
+  obtain ⟨E, hE, hnorm⟩ := SobolevIntervalLp.exists_norm_le_mul_norm_deriv_add (p := 2) (I := TopologicalSpace.Opens.Ioo l r) hI (n + 1)
+  refine ⟨E * (1 + 2 * ‖B‖ + 2 * D), by positivity, fun u => ?_⟩
+  let x := SobolevInterval.deriv u 0
+  let y := A u
+  let z := SobolevInterval.deriv u last
+  have hlow : ‖∑ j, M j (SobolevInterval.deriv u j.castSucc)‖ ≤ ‖z‖ / 2 + D * ‖x‖ := by
+    calc
+      ‖∑ j, M j (SobolevInterval.deriv u j.castSucc)‖ ≤ ∑ j, ‖M j (SobolevInterval.deriv u j.castSucc)‖ :=
+        norm_sum_le ..
+      _ ≤ ∑ j, ‖M j‖ * (ε * ‖z‖ + C j * ‖x‖) :=
+        Finset.sum_le_sum fun j _ => (ContinuousLinearMap.le_opNorm (M j) _).trans
+          (mul_le_mul_of_nonneg_left (hcomponent j u) (norm_nonneg _))
+      _ = ∑ j, ((ε * ‖M j‖) * ‖z‖ + (‖M j‖ * C j) * ‖x‖) := by
+        exact Finset.sum_congr rfl fun j _ => by ring
+      _ = (ε * ∑ j, ‖M j‖) * ‖z‖ + D * ‖x‖ := by
+        rw [Finset.sum_add_distrib, ← Finset.sum_mul, ← Finset.sum_mul, ← Finset.mul_sum]
+      _ ≤ ‖z‖ / 2 + D * ‖x‖ := by
+        apply add_le_add_left
+        rw [div_eq_inv_mul]
+        exact mul_le_mul_of_nonneg_right (by simpa only [one_div] using hhalf) (norm_nonneg _)
+  have hzy : B y = z + ∑ j, M j (SobolevInterval.deriv u j.castSucc) :=
+    inverse_leading_mul_scalarSobolevExpression c hc hnz u
+  have hz : ‖z‖ ≤ ‖B‖ * ‖y‖ + (‖z‖ / 2 + D * ‖x‖) := by
+    have he : z = B y - ∑ j, M j (SobolevInterval.deriv u j.castSucc) := eq_sub_of_add_eq hzy.symm
+    calc
+      ‖z‖ ≤ ‖B y‖ + ‖∑ j, M j (SobolevInterval.deriv u j.castSucc)‖ := by
+        conv_lhs => rw [he]
+        exact norm_sub_le _ _
+      _ ≤ _ := add_le_add (ContinuousLinearMap.le_opNorm _ _) hlow
+  have hz' : ‖z‖ ≤ 2 * ‖B‖ * ‖y‖ + 2 * D * ‖x‖ := by linarith
+  change ‖u‖ ≤ E * (1 + 2 * ‖B‖ + 2 * D) * max ‖x‖ ‖y‖
+  rw [mul_assoc]
+  refine (hnorm u).trans (mul_le_mul_of_nonneg_left ?_ hE)
+  change ‖x‖ + ‖z‖ ≤ _
+  calc
+    ‖x‖ + ‖z‖ ≤ ‖x‖ + (2 * ‖B‖ * ‖y‖ + 2 * D * ‖x‖) := add_le_add_right hz' _
+    _ ≤ max ‖x‖ ‖y‖ + (2 * ‖B‖ * max ‖x‖ ‖y‖ + 2 * D * max ‖x‖ ‖y‖) :=
+      add_le_add (le_max_left _ _) (add_le_add
+        (mul_le_mul_of_nonneg_left (le_max_right _ _) (by positivity))
+        (mul_le_mul_of_nonneg_left (le_max_left _ _) (by positivity)))
+    _ = _ := by ring
+
+/-- A closed subspace of the Sobolev space, equipped with a scalar
+differential expression of nonvanishing leading coefficient, defines a
+closed partial operator on the ambient interval Hilbert space. -/
+theorem isClosed_scalarIntervalOperator
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (W : Submodule ℝ H) (hW : IsClosed (W : Set H)) :
+    (scalarIntervalOperator (scalarSobolevExpression c hc) W).IsClosed := by
+  let := hW.completeSpace_coe
+  obtain ⟨C, hC, hbound⟩ := scalarSobolev_graph_estimate c hc hnz
+  let A := scalarSobolevGraphMap (scalarSobolevExpression c hc) W
+  have hA : AntilipschitzWith ⟨C, hC⟩ A := A.antilipschitz_of_bound fun u => by
+    change ‖u.val‖ ≤ C * ‖A u‖
+    rw [Prod.norm_def]
+    exact hbound u.val
+  change IsClosed ((scalarIntervalOperator (scalarSobolevExpression c hc) W).graph : Set (S × S))
+  rw [scalarIntervalOperator, Submodule.toLinearPMap_graph_eq _ (scalarSobolevGraph_singleValued _ _)]
+  exact hA.isClosed_range A.uniformContinuous
+
+/-- The closed operator assertion in **Exercise 28(a)** of
+[benIsrael2003generalized], Chapter 9. -/
+theorem isClosed_constrainedScalarIntervalOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    (constrainedScalarIntervalOperator hlr c hc M).IsClosed :=
+  isClosed_scalarIntervalOperator c hc hnz _ (isClosed_scalarSobolevBoundarySpace hlr M)
+
+end ScalarSobolevOperatorClosed
+
+section LinearIntegralIVP
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [CompleteSpace E]
+variable {l r : ℝ}
+
+omit [NormedSpace ℝ E] [CompleteSpace E] in
+private theorem intervalIntegrable_of_continuousOn_Icc {h : ℝ → E}
+    (hh : ContinuousOn h (Icc l r)) {t : ℝ} (ht : t ∈ Icc l r) :
+    IntervalIntegrable h volume l t :=
+  ContinuousOn.intervalIntegrable_of_Icc ht.1 (hh.mono (Icc_subset_Icc_right ht.2))
+
+/-- A continuous linear first-order system with integrable forcing has
+a unique continuous solution of its integral initial-value equation. -/
+theorem exists_linear_integral_ivp (hlr : l ≤ r)
+    (B : ℝ → E →L[ℝ] E) (hB : ContinuousOn B (Icc l r))
+    (g : ℝ → E) (hg : IntegrableOn g (Ioo l r)) (v₀ : E) :
+    ∃ q : ℝ → E, ContinuousOn q (Icc l r) ∧
+      (∀ x ∈ Icc l r, q x = v₀ + ∫ t in l..x, B t (q t) + g t) ∧
+      ∀ q' : ℝ → E, ContinuousOn q' (Icc l r) →
+        (∀ x ∈ Icc l r, q' x = v₀ + ∫ t in l..x, B t (q' t) + g t) → EqOn q' q (Icc l r) := by
+  have hgI : IntegrableOn g (Icc l r) := by
+    rwa [IntegrableOn, ← restrict_Ioo_eq_restrict_Icc]
+  let p : ℝ → E := fun x => ∫ t in l..x, g t
+  have hp : ContinuousOn p (Icc l r) := by
+    simpa only [uIcc_of_le hlr] using
+      intervalIntegral.continuousOn_primitive_interval (f := g) (a := l) (b := r)
+        (by simpa only [uIcc_of_le hlr] using hgI)
+  let f : ℝ → E → E := fun t z => B t (z + p t)
+  have hfst : MapsTo (Prod.fst : ℝ × E → ℝ) (Icc l r ×ˢ univ) (Icc l r) := fun _ h => h.1
+  have hf : ContinuousOn (Function.uncurry f) (Icc l r ×ˢ univ) :=
+    (hB.comp continuous_fst.continuousOn hfst).clm_apply
+      (continuous_snd.continuousOn.add (hp.comp continuous_fst.continuousOn hfst))
+  obtain ⟨K, hK⟩ := isCompact_Icc.exists_bound_of_continuousOn hB
+  let K' : NNReal := ⟨max 0 K, le_max_left _ _⟩
+  have hlip (t : ℝ) (ht : t ∈ Icc l r) : LipschitzWith K' (f t) := by
+    refine LipschitzWith.of_dist_le_mul fun x y => ?_
+    rw [show f t x = B t (x + p t) from rfl, show f t y = B t (y + p t) from rfl,
+      dist_eq_norm, ← map_sub, add_sub_add_right_eq_sub, dist_eq_norm]
+    exact (ContinuousLinearMap.le_opNorm (B t) (x - y)).trans
+      (mul_le_mul_of_nonneg_right ((hK t ht).trans (le_max_right _ _)) (norm_nonneg _))
+  have hl : l ∈ Icc l r := left_mem_Icc.mpr hlr
+  obtain ⟨w, hw⟩ := ODE.exists_isSolutionOn_of_lipschitz hl hf hlip v₀
+  have hwint := (ODE.isSolutionOn_iff_integral hl hf hw.continuousOn).mp hw
+  let q := fun x => w x + p x
+  have hq : ContinuousOn q (Icc l r) := hw.continuousOn.add hp
+  have hg' (x : ℝ) (hx : x ∈ Icc l r) : IntervalIntegrable g volume l x :=
+    (hgI.mono_set (uIcc_subset_Icc hl hx)).intervalIntegrable
+  refine ⟨q, hq, ?_, ?_⟩
+  · intro x hx
+    have hA : IntervalIntegrable (fun t => B t (q t)) volume l x :=
+      intervalIntegrable_of_continuousOn_Icc (hB.clm_apply hq) hx
+    rw [intervalIntegral.integral_add hA (hg' x hx)]
+    change w x + p x = v₀ + ((∫ t in l..x, f t (w t)) + p x)
+    rw [hwint x hx, add_assoc]
+  · intro q' hq' heq x hx
+    let w' : ℝ → E := fun t => q' t - p t
+    have hwc : ContinuousOn w' (Icc l r) := hq'.sub hp
+    have hwi (t : ℝ) (ht : t ∈ Icc l r) :
+        w' t = v₀ + ∫ z in l..t, f z (w' z) := by
+      have hA : IntervalIntegrable (fun z => B z (q' z)) volume l t :=
+        intervalIntegrable_of_continuousOn_Icc (hB.clm_apply hq') ht
+      change q' t - p t = _
+      rw [heq t ht, intervalIntegral.integral_add hA (hg' t ht)]
+      have hId : (fun z => f z (w' z)) = (fun z => B z (q' z)) := by
+        funext z
+        simp [f, w']
+      rw [hId]
+      change v₀ + ((∫ z in l..t, B z (q' z)) + p t) - p t = _
+      abel
+    have hw' := (ODE.isSolutionOn_iff_integral hl hf hwc).mpr hwi
+    have he : w' x = w x := by
+      have hr : l + (r - l) = r := by ring
+      exact ODE.isSolutionOn_unique_of_lipschitz
+        (t₀ := l) (T := r - l) (f := f) (K := K') (y₀ := v₀)
+        (by simpa only [hr] using hlip)
+        (by simpa only [hr] using hw') (by simpa only [hr] using hw)
+        (by simpa only [hr] using hx)
+    change q' x - p x = w x at he
+    exact eq_add_of_sub_eq he
+
+end LinearIntegralIVP
+
+section FundamentalFamilyResults
+
+open Set
+open scoped ContDiff NNReal
+
+private theorem continuousMulODE_exists_pair
+    {A : Type*} [NormedRing A] [NormedAlgebra ℝ A] [CompleteSpace A]
+    {a b t₀ : ℝ} (ht₀ : t₀ ∈ Icc a b)
+    {C : ℝ → A} (hC : ContinuousOn C (Icc a b)) :
+    ∃ X Y : ℝ → A,
+      ODE.IsSolutionOn (fun t U => C t * U) t₀ 1 (Icc a b) X ∧
+      ODE.IsSolutionOn (fun t U => -(U * C t)) t₀ 1 (Icc a b) Y ∧
+      ∀ t ∈ Icc a b, Y t * X t = 1 := by
+  obtain ⟨tmax, _, hmax⟩ := isCompact_Icc.exists_isMaxOn ⟨t₀, ht₀⟩ hC.norm
+  let K : ℝ≥0 := ‖C tmax‖₊
+  have hK (t : ℝ) (ht : t ∈ Icc a b) : ‖C t‖ ≤ (K : ℝ) := hmax ht
+  have h₁ : ContinuousOn (fun p : ℝ × A => C p.1) (Icc a b ×ˢ univ) :=
+    hC.comp continuous_fst.continuousOn (fun _ hp => hp.1)
+  have hLeft (t : ℝ) (ht : t ∈ Icc a b) : LipschitzWith K (fun U => C t * U) := by
+    refine LipschitzWith.of_dist_le_mul fun U V => ?_
+    rw [dist_eq_norm, dist_eq_norm, ← mul_sub]
+    exact (norm_mul_le _ _).trans (mul_le_mul_of_nonneg_right (hK t ht) (norm_nonneg _))
+  have hRight (t : ℝ) (ht : t ∈ Icc a b) : LipschitzWith K (fun U => -(U * C t)) := by
+    refine LipschitzWith.of_dist_le_mul fun U V => ?_
+    rw [dist_eq_norm, dist_eq_norm]
+    have hsub : -(U * C t) - -(V * C t) = -((U - V) * C t) := by
+      rw [sub_mul]
+      abel
+    rw [hsub, norm_neg]
+    exact (norm_mul_le _ _).trans (by
+      rw [mul_comm (K : ℝ)]
+      exact mul_le_mul_of_nonneg_left (hK t ht) (norm_nonneg _))
+  obtain ⟨X, hX⟩ := ODE.exists_isSolutionOn_of_lipschitz ht₀
+    (h₁.mul continuous_snd.continuousOn) hLeft (1 : A)
+  obtain ⟨Y, hY⟩ := ODE.exists_isSolutionOn_of_lipschitz ht₀
+    (continuous_snd.continuousOn.mul h₁).neg hRight (1 : A)
+  refine ⟨X, Y, hX, hY, fun t ht => ?_⟩
+  rcases (ht₀.1.trans ht₀.2).lt_or_eq with hab | rfl
+  · have hprod (s : ℝ) (hs : s ∈ Icc a b) :
+        HasDerivWithinAt (fun u => Y u * X u) 0 (Icc a b) s := by
+      have h := (hY.hasDerivWithinAt hs).fun_mul (hX.hasDerivWithinAt hs)
+      simpa only [neg_mul, mul_assoc, neg_add_cancel] using h
+    have hderiv (s : ℝ) (hs : s ∈ Icc a b) :
+        fderivWithin ℝ (fun u => Y u * X u) (Icc a b) s = 0 := by
+      simpa using (hprod s hs).hasFDerivWithinAt.fderivWithin (uniqueDiffOn_Icc hab s hs)
+    calc
+      Y t * X t = Y t₀ * X t₀ :=
+        (convex_Icc a b).is_const_of_fderivWithin_eq_zero
+          (fun s hs => (hprod s hs).differentiableWithinAt) hderiv ht ht₀
+      _ = 1 := by rw [hY.apply_eq, hX.apply_eq, one_mul]
+  · have heq : t = t₀ := (le_antisymm ht.2 ht.1).trans (le_antisymm ht₀.2 ht₀.1).symm
+    rw [heq, hY.apply_eq, hX.apply_eq, one_mul]
+
+private theorem contDiffOn_one_of_Icc_derivative {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] {a b : ℝ} {u v : ℝ → E}
+    (hab : a ≤ b) (h : ∀ t ∈ Icc a b, HasDerivWithinAt u (v t) (Icc a b) t)
+    (hv : ContinuousOn v (Icc a b)) : ContDiffOn ℝ 1 u (Icc a b) := by
+  rcases hab.lt_or_eq with hab | rfl
+  · rw [contDiffOn_one_iff_derivWithin (uniqueDiffOn_Icc hab)]
+    exact ⟨fun t ht => (h t ht).differentiableWithinAt,
+      hv.congr fun t ht => (h t ht).derivWithin (uniqueDiffOn_Icc hab t ht)⟩
+  · apply (contDiffOn_const (c := u a)).congr
+    intro t ht
+    rw [show t = a from le_antisymm ht.2 ht.1]
+
+/-- **Exercises 30 and 36** of [benIsrael2003generalized], Chapter 9.
+A continuous first-order coefficient has a normalized, continuously differentiable
+fundamental family. Its inverse solves the corresponding right-multiplication
+equation with the opposite sign. Both equations use the interval derivative. -/
+theorem exists_firstOrderFundamentalFamily {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+    {a b t₀ : ℝ} (ht₀ : t₀ ∈ Icc a b)
+    {C : ℝ → E →L[ℝ] E} (hC : ContinuousOn C (Icc a b)) :
+    ∃ X : ℝ → E ≃L[ℝ] E,
+      X t₀ = ContinuousLinearEquiv.refl ℝ E ∧
+      ContDiffOn ℝ 1 (fun t => (X t : E →L[ℝ] E)) (Icc a b) ∧
+      ContDiffOn ℝ 1 (fun t => ((X t).symm : E →L[ℝ] E)) (Icc a b) ∧
+      (∀ t ∈ Icc a b,
+        HasDerivWithinAt (fun s => (X s : E →L[ℝ] E))
+          ((C t).comp (X t : E →L[ℝ] E)) (Icc a b) t) ∧
+      (∀ t ∈ Icc a b,
+        HasDerivWithinAt (fun s => ((X s).symm : E →L[ℝ] E))
+          (-((X t).symm : E →L[ℝ] E).comp (C t)) (Icc a b) t) := by
+  let : CompleteSpace E := FiniteDimensional.complete ℝ E
+  obtain ⟨U, V, hU, hV, hVU⟩ := continuousMulODE_exists_pair ht₀ hC
+  classical
+  have hleft (t : ℝ) (ht : t ∈ Icc a b) : Function.LeftInverse (V t) (U t) :=
+    fun x => DFunLike.congr_fun (hVU t ht) x
+  have hright (t : ℝ) (ht : t ∈ Icc a b) : Function.RightInverse (V t) (U t) := by
+    have hsurj : Function.Surjective (U t) := LinearMap.injective_iff_surjective.mp
+      (hleft t ht).injective
+    rintro y
+    obtain ⟨x, rfl⟩ := hsurj y
+    rw [hleft t ht x]
+  let X : ℝ → E ≃L[ℝ] E := fun t =>
+    if ht : t ∈ Icc a b then
+      { toLinearEquiv :=
+          { toLinearMap := (U t).toLinearMap
+            invFun := V t
+            left_inv := hleft t ht
+            right_inv := hright t ht }
+        continuous_toFun := (U t).continuous
+        continuous_invFun := (V t).continuous }
+    else ContinuousLinearEquiv.refl ℝ E
+  have hX (t : ℝ) (ht : t ∈ Icc a b) : (X t : E →L[ℝ] E) = U t := by
+    simp only [X, dite_eq_left ht]
+    rfl
+  have hXinv (t : ℝ) (ht : t ∈ Icc a b) : ((X t).symm : E →L[ℝ] E) = V t := by
+    simp only [X, dite_eq_left ht]
+    ext x
+    rfl
+  have hXd (t : ℝ) (ht : t ∈ Icc a b) :
+      HasDerivWithinAt (fun s => (X s : E →L[ℝ] E))
+        ((C t).comp (X t : E →L[ℝ] E)) (Icc a b) t := by
+    rw [hX t ht]
+    exact (hU.hasDerivWithinAt ht).congr hX (hX t ht)
+  have hXid (t : ℝ) (ht : t ∈ Icc a b) :
+      HasDerivWithinAt (fun s => ((X s).symm : E →L[ℝ] E))
+        (-((X t).symm : E →L[ℝ] E).comp (C t)) (Icc a b) t := by
+    rw [hXinv t ht]
+    exact (hV.hasDerivWithinAt ht).congr hXinv (hXinv t ht)
+  refine ⟨X, ?_, ?_, ?_, hXd, hXid⟩
+  · ext x
+    exact DFunLike.congr_fun ((hX t₀ ht₀).trans hU.apply_eq) x
+  · exact (contDiffOn_one_of_Icc_derivative (ht₀.1.trans ht₀.2)
+      (fun t ht => hU.hasDerivWithinAt ht) (hC.mul hU.continuousOn)).congr hX
+  · exact (contDiffOn_one_of_Icc_derivative (ht₀.1.trans ht₀.2)
+      (fun t ht => hV.hasDerivWithinAt ht) (hV.continuousOn.mul hC).neg).congr hXinv
+
+/-- A fundamental family can be chosen with globally continuous forward and
+inverse maps, and with ordinary derivatives at every point of the interval.
+The coefficient is extended continuously before solving on a larger interval. -/
+theorem exists_firstOrderFundamentalFamily_hasDerivAt {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+    {a b t₀ : ℝ} (ht₀ : t₀ ∈ Icc a b)
+    {C : ℝ → E →L[ℝ] E} (hC : ContinuousOn C (Icc a b)) :
+    ∃ X : ℝ → E ≃L[ℝ] E,
+      X t₀ = ContinuousLinearEquiv.refl ℝ E ∧
+      Continuous (fun t => (X t : E →L[ℝ] E)) ∧
+      Continuous (fun t => ((X t).symm : E →L[ℝ] E)) ∧
+      (∀ t ∈ Icc a b,
+        HasDerivAt (fun s => (X s : E →L[ℝ] E))
+          ((C t).comp (X t : E →L[ℝ] E)) t) ∧
+      (∀ t ∈ Icc a b,
+        HasDerivAt (fun s => ((X s).symm : E →L[ℝ] E))
+          (-((X t).symm : E →L[ℝ] E).comp (C t)) t) := by
+  let a' := a - 1
+  let b' := b + 1
+  have hab : a ≤ b := ht₀.1.trans ht₀.2
+  have hab' : a' ≤ b' := by dsimp [a', b']; linarith
+  have hin (t : ℝ) (ht : t ∈ Icc a b) : t ∈ Ioo a' b' := by
+    exact ⟨by dsimp [a']; linarith [ht.1], by dsimp [b']; linarith [ht.2]⟩
+  let C' : ℝ → E →L[ℝ] E := IccExtend hab (fun t : Icc a b => C t)
+  have hC' : Continuous C' :=
+    continuous_IccExtend_iff.mpr (continuousOn_iff_continuous_domRestrict.mp hC)
+  have hCeq (t : ℝ) (ht : t ∈ Icc a b) : C' t = C t := IccExtend_of_mem hab _ ht
+  obtain ⟨U, hU₀, hUc, hUi, hUd, hUid⟩ :=
+    exists_firstOrderFundamentalFamily (Ioo_subset_Icc_self (hin t₀ ht₀)) hC'.continuousOn
+  let X : ℝ → E ≃L[ℝ] E := IccExtend hab' (fun t : Icc a' b' => U t)
+  have hX (t : ℝ) (ht : t ∈ Icc a' b') : X t = U t := IccExtend_of_mem hab' _ ht
+  refine ⟨X, (hX t₀ (Ioo_subset_Icc_self (hin t₀ ht₀))).trans hU₀, ?_, ?_, ?_, ?_⟩
+  · exact continuous_IccExtend_iff.mpr
+      (continuousOn_iff_continuous_domRestrict.mp hUc.continuousOn)
+  · exact continuous_IccExtend_iff.mpr
+      (continuousOn_iff_continuous_domRestrict.mp hUi.continuousOn)
+  · intro t ht
+    have hm : t ∈ Icc a' b' := Ioo_subset_Icc_self (hin t ht)
+    rw [← hCeq t ht, hX t hm]
+    exact ((hUd t hm).congr
+      (fun s hs => congrArg ContinuousLinearEquiv.toContinuousLinearMap (hX s hs))
+      (congrArg ContinuousLinearEquiv.toContinuousLinearMap (hX t hm))).hasDerivAt
+      (Filter.mem_of_superset (Ioo_mem_nhds (hin t ht).1 (hin t ht).2) Ioo_subset_Icc_self)
+  · intro t ht
+    have hm : t ∈ Icc a' b' := Ioo_subset_Icc_self (hin t ht)
+    rw [← hCeq t ht, hX t hm]
+    exact ((hUid t hm).congr
+      (fun s hs => congrArg (fun W : E ≃L[ℝ] E => (W.symm : E →L[ℝ] E)) (hX s hs))
+      (congrArg (fun W : E ≃L[ℝ] E => (W.symm : E →L[ℝ] E)) (hX t hm))).hasDerivAt
+      (Filter.mem_of_superset (Ioo_mem_nhds (hin t ht).1 (hin t ht).2) Ioo_subset_Icc_self)
+
+/-- **Exercise 30(c), (f)** of [benIsrael2003generalized], Chapter 9.
+For continuous coefficients in a first-order system, the family solving the
+homogeneous equation uses the inverse of the leading coefficient. -/
+theorem exists_differentialExpression_fundamentalFamily {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+    {a b t₀ : ℝ} (ht₀ : t₀ ∈ Icc a b)
+    (A₁ : ℝ → E ≃L[ℝ] E) {A₀ : ℝ → E →L[ℝ] E}
+    (hA₁ : ContinuousOn (fun t => (A₁ t : E →L[ℝ] E)) (Icc a b))
+    (hA₀ : ContinuousOn A₀ (Icc a b)) :
+    ∃ (X : ℝ → E ≃L[ℝ] E) (X' : ℝ → E →L[ℝ] E),
+      X t₀ = ContinuousLinearEquiv.refl ℝ E ∧
+      Continuous (fun t => (X t : E →L[ℝ] E)) ∧
+      Continuous (fun t => ((X t).symm : E →L[ℝ] E)) ∧
+      (∀ t ∈ Icc a b, HasDerivAt (fun s => (X s : E →L[ℝ] E)) (X' t) t) ∧
+      (∀ t ∈ Icc a b,
+        (A₁ t : E →L[ℝ] E).comp (X' t) + (A₀ t).comp (X t : E →L[ℝ] E) = 0) := by
+  let : CompleteSpace E := FiniteDimensional.complete ℝ E
+  have hA₁inv : ContinuousOn (fun t => ((A₁ t).symm : E →L[ℝ] E)) (Icc a b) := by
+    have heq (t : ℝ) : Ring.inverse (A₁ t : E →L[ℝ] E) = (A₁ t).symm := by
+      change Ring.inverse ((A₁ t).toUnit : E →L[ℝ] E) = (A₁ t).symm
+      exact Ring.inverse_unit _
+    intro t ht
+    have hi := (NormedRing.inverse_continuousAt (A₁ t).toUnit).comp_continuousWithinAt_of_eq
+      (hA₁ t ht) rfl
+    exact hi.congr (fun s _ => (heq s).symm) (heq t).symm
+  let C (t : ℝ) : E →L[ℝ] E := -((A₁ t).symm : E →L[ℝ] E).comp (A₀ t)
+  have hC : ContinuousOn C (Icc a b) := (hA₁inv.mul hA₀).neg
+  obtain ⟨X, hX₀, hXc, hXic, hXd, _⟩ := exists_firstOrderFundamentalFamily_hasDerivAt ht₀ hC
+  refine ⟨X, fun t => (C t).comp (X t : E →L[ℝ] E), hX₀, hXc, hXic, hXd, ?_⟩
+  intro t _
+  ext x
+  simp [C]
+
+/-- The normalized fundamental family evaluates to the homogeneous solution
+with a prescribed initial vector. Every interval solution equals this one. -/
+theorem eqOn_firstOrderSolution_iff_eval_fundamentalFamily {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E]
+    {a b t₀ : ℝ} (ht₀ : t₀ ∈ Icc a b)
+    {C : ℝ → E →L[ℝ] E} (X : ℝ → E ≃L[ℝ] E)
+    (hX₀ : X t₀ = ContinuousLinearEquiv.refl ℝ E)
+    (hX : ∀ t ∈ Icc a b,
+      HasDerivWithinAt (fun s => (X s : E →L[ℝ] E))
+        ((C t).comp (X t : E →L[ℝ] E)) (Icc a b) t)
+    (hXi : ∀ t ∈ Icc a b,
+      HasDerivWithinAt (fun s => ((X s).symm : E →L[ℝ] E))
+        (-((X t).symm : E →L[ℝ] E).comp (C t)) (Icc a b) t)
+    (x₀ : E) (u : ℝ → E) :
+    ODE.IsSolutionOn (fun t x => C t x) t₀ x₀ (Icc a b) u ↔
+      EqOn u (fun t => X t x₀) (Icc a b) := by
+  have hsol : ODE.IsSolutionOn (fun t x => C t x) t₀ x₀ (Icc a b) (fun t => X t x₀) := by
+    refine ⟨by simp [hX₀], fun t ht => ?_⟩
+    simpa using (hX t ht).clm_apply (hasDerivWithinAt_const t (Icc a b) x₀)
+  refine ⟨fun hu t ht => ?_, fun hu => hsol.congr hu ((hu ht₀).trans hsol.apply_eq)⟩
+  rcases (ht₀.1.trans ht₀.2).lt_or_eq with hab | rfl
+  · let v (s : ℝ) := (X s).symm (u s)
+    have hV (s : ℝ) (hs : s ∈ Icc a b) : HasDerivWithinAt v 0 (Icc a b) s := by
+      simpa only [neg_apply, ContinuousLinearMap.comp_apply,
+        ContinuousLinearEquiv.coe_coe, neg_add_cancel] using
+        (hXi s hs).clm_apply (hu.hasDerivWithinAt hs)
+    have hderiv (s : ℝ) (hs : s ∈ Icc a b) : fderivWithin ℝ v (Icc a b) s = 0 := by
+      simpa using (hV s hs).hasFDerivWithinAt.fderivWithin (uniqueDiffOn_Icc hab s hs)
+    have hev : v t = v t₀ := (convex_Icc a b).is_const_of_fderivWithin_eq_zero
+      (fun s hs => (hV s hs).differentiableWithinAt) hderiv ht ht₀
+    have hval : (X t).symm (u t) = x₀ := by simpa [v, hX₀, hu.apply_eq] using hev
+    simpa using congrArg (X t) hval
+  · have heq : t = t₀ := (le_antisymm ht.2 ht.1).trans (le_antisymm ht₀.2 ht₀.1).symm
+    simp [heq, hX₀, hu.apply_eq]
+
+section AdjointFundamental
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] [CompleteSpace E]
+
+/-- The inverse adjoint of the fundamental family, bundled with its pointwise inverse. -/
+def firstOrderAdjointFundamentalFamily (X : ℝ → E ≃L[ℝ] E) (t : ℝ) : E ≃L[ℝ] E :=
+  ContinuousLinearEquiv.ofUnit
+    { val := (((X t).symm : E →L[ℝ] E)).adjoint
+      inv := ((X t : E →L[ℝ] E)).adjoint
+      val_inv := by
+        change (((X t).symm : E →L[ℝ] E)).adjoint.comp ((X t : E →L[ℝ] E)).adjoint = 1
+        rw [← ContinuousLinearMap.adjoint_comp]
+        simp [ContinuousLinearMap.adjoint_id, ContinuousLinearMap.one_def]
+      inv_val := by
+        change ((X t : E →L[ℝ] E)).adjoint.comp (((X t).symm : E →L[ℝ] E)).adjoint = 1
+        rw [← ContinuousLinearMap.adjoint_comp]
+        simp [ContinuousLinearMap.adjoint_id, ContinuousLinearMap.one_def] }
+
+/-- The forward map of the adjoint fundamental family is the inverse adjoint. -/
+theorem firstOrderAdjointFundamentalFamily_toContinuousLinearMap
+    (X : ℝ → E ≃L[ℝ] E) (t : ℝ) :
+    (firstOrderAdjointFundamentalFamily X t : E →L[ℝ] E) =
+      ((X t).symm : E →L[ℝ] E).adjoint := rfl
+
+/-- The inverse map of the adjoint fundamental family is the adjoint of the original family. -/
+theorem firstOrderAdjointFundamentalFamily_symm_toContinuousLinearMap
+    (X : ℝ → E ≃L[ℝ] E) (t : ℝ) :
+    ((firstOrderAdjointFundamentalFamily X t).symm : E →L[ℝ] E) =
+      (X t : E →L[ℝ] E).adjoint := rfl
+
+/-- **Exercise 36** of [benIsrael2003generalized], Chapter 9.
+The inverse adjoint solves the adjoint homogeneous system, and every
+adjoint solution is obtained by applying it to an initial vector. -/
+theorem eqOn_adjointFirstOrderSolution_iff_eval_fundamentalFamily
+    {a b t₀ : ℝ} (ht₀ : t₀ ∈ Icc a b)
+    {C : ℝ → E →L[ℝ] E} (X : ℝ → E ≃L[ℝ] E)
+    (hX₀ : X t₀ = ContinuousLinearEquiv.refl ℝ E)
+    (hX : ∀ t ∈ Icc a b,
+      HasDerivWithinAt (fun s => (X s : E →L[ℝ] E))
+        ((C t).comp (X t : E →L[ℝ] E)) (Icc a b) t)
+    (hXi : ∀ t ∈ Icc a b,
+      HasDerivWithinAt (fun s => ((X s).symm : E →L[ℝ] E))
+        (-((X t).symm : E →L[ℝ] E).comp (C t)) (Icc a b) t)
+    (y₀ : E) (v : ℝ → E) :
+    ODE.IsSolutionOn (fun t y => -(C t).adjoint y) t₀ y₀ (Icc a b) v ↔
+      EqOn v (fun t => firstOrderAdjointFundamentalFamily X t y₀) (Icc a b) := by
+  let A : (E →L[ℝ] E) →L[ℝ] E →L[ℝ] E :=
+    (ContinuousLinearMap.adjoint (𝕜 := ℝ)).toContinuousLinearEquiv.toContinuousLinearMap
+  have hA (T : E →L[ℝ] E) : A T = T.adjoint := rfl
+  let Y := firstOrderAdjointFundamentalFamily X
+  have hY₀ : Y t₀ = ContinuousLinearEquiv.refl ℝ E := by
+    apply ContinuousLinearEquiv.coe_injective
+    rw [firstOrderAdjointFundamentalFamily_toContinuousLinearMap, hX₀]
+    simp [ContinuousLinearMap.adjoint_id]
+  have hY (t : ℝ) (ht : t ∈ Icc a b) :
+      HasDerivWithinAt (fun s => (Y s : E →L[ℝ] E))
+        ((-(C t).adjoint).comp (Y t : E →L[ℝ] E)) (Icc a b) t := by
+    have h := A.hasFDerivAt.comp_hasDerivWithinAt t (hXi t ht)
+    simpa [Y, hA, Function.comp_def, firstOrderAdjointFundamentalFamily_toContinuousLinearMap]
+      using h
+  have hYi (t : ℝ) (ht : t ∈ Icc a b) :
+      HasDerivWithinAt (fun s => ((Y s).symm : E →L[ℝ] E))
+        (-((Y t).symm : E →L[ℝ] E).comp (-(C t).adjoint)) (Icc a b) t := by
+    have h := A.hasFDerivAt.comp_hasDerivWithinAt t (hX t ht)
+    simpa [Y, hA, Function.comp_def, firstOrderAdjointFundamentalFamily_symm_toContinuousLinearMap]
+      using h
+  exact eqOn_firstOrderSolution_iff_eval_fundamentalFamily ht₀ Y hY₀ hY hYi y₀ v
+
+end AdjointFundamental
+
+end FundamentalFamilyResults
+
+section BoundaryResults
+
+open Set Module
+
+section BoundaryRange
+
+variable {S Y M : Type*} [NormedAddCommGroup S] [NormedSpace ℝ S]
+  [NormedAddCommGroup Y] [NormedSpace ℝ Y] [NormedAddCommGroup M] [NormedSpace ℝ M]
+
+/-- The boundary data attained by homogeneous solutions of the free
+differential equation. -/
+def homogeneousBoundaryRange (A : S →L[ℝ] Y) (B : S →L[ℝ] M) : Submodule ℝ M :=
+  A.ker.map B.toLinearMap
+
+/-- The obstruction to a boundary solution is the boundary residual of one
+free solution, taken modulo the homogeneous boundary data. -/
+def boundaryObstruction (A : S →L[ℝ] Y) (B : S →L[ℝ] M) (J : Y →L[ℝ] S) :
+    Y →L[ℝ] M ⧸ homogeneousBoundaryRange A B :=
+  (homogeneousBoundaryRange A B).mkQL.comp (B.comp J)
+
+private theorem mem_boundaryObstruction_ker_iff (A : S →L[ℝ] Y) (B : S →L[ℝ] M)
+    (J : Y →L[ℝ] S) (y : Y) :
+    y ∈ (boundaryObstruction A B J).ker ↔ B (J y) ∈ homogeneousBoundaryRange A B := by
+  change (homogeneousBoundaryRange A B).mkQ (B (J y)) = 0 ↔ _
+  simp
+
+/-- A forcing is compatible with the homogeneous boundary conditions
+exactly when its free boundary residual can be canceled by a homogeneous
+solution. -/
+theorem range_restrictedBoundary_eq_ker_obstruction (A : S →L[ℝ] Y) (B : S →L[ℝ] M)
+    (J : Y →L[ℝ] S) (hJ : Function.RightInverse J A) :
+    (A.toLinearMap.domRestrict B.ker).range = (boundaryObstruction A B J).ker := by
+  ext y
+  rw [mem_boundaryObstruction_ker_iff]
+  change (∃ x : B.ker, A (x : S) = y) ↔ ∃ x ∈ A.ker, B x = B (J y)
+  constructor
+  · rintro ⟨x, rfl⟩
+    refine ⟨J (A (x : S)) - (x : S), ?_, ?_⟩
+    · change A (J (A (x : S)) - (x : S)) = 0
+      rw [map_sub, hJ, sub_self]
+    · have hx : B (x : S) = 0 := x.property
+      rw [map_sub, hx, sub_zero]
+  · rintro ⟨x, hx, he⟩
+    have hB : J y - x ∈ B.ker := by
+      change B (J y - x) = 0
+      rw [map_sub, he, sub_self]
+    refine ⟨⟨J y - x, hB⟩, ?_⟩
+    change A (J y - x) = y
+    rw [map_sub, hJ, show A x = 0 from hx, sub_zero]
+
+/-- Independent boundary equations make the finite-dimensional obstruction
+map surjective. -/
+theorem boundaryObstruction_surjective (A : S →L[ℝ] Y) (B : S →L[ℝ] M)
+    (J : Y →L[ℝ] S) (hJ : Function.RightInverse J A) (hB : Function.Surjective B) :
+    Function.Surjective (boundaryObstruction A B J) := by
+  let W := homogeneousBoundaryRange A B
+  intro z
+  obtain ⟨m, rfl⟩ := W.mkQ_surjective z
+  obtain ⟨x, rfl⟩ := hB m
+  refine ⟨A x, ?_⟩
+  change W.mkQ (B (J (A x))) = W.mkQ (B x)
+  apply sub_eq_zero.mp
+  rw [← map_sub, ← map_sub]
+  have hx : J (A x) - x ∈ A.ker := by
+    change A (J (A x) - x) = 0
+    rw [map_sub, hJ, sub_self]
+  have hW : B (J (A x) - x) ∈ W := ⟨_, hx, rfl⟩
+  simpa only [← LinearMap.mem_ker, Submodule.ker_mkQ] using hW
+
+/-- On a finite-dimensional space of boundary data, the constrained
+differential expression has closed range. -/
+theorem isClosed_range_restrictedBoundary [FiniteDimensional ℝ M]
+    (A : S →L[ℝ] Y) (B : S →L[ℝ] M) (J : Y →L[ℝ] S) (hJ : Function.RightInverse J A) :
+    IsClosed ((A.toLinearMap.domRestrict B.ker).range : Set Y) := by
+  let W := homogeneousBoundaryRange A B
+  have hset : ((boundaryObstruction A B J).ker : Set Y) = (B.comp J) ⁻¹' (W : Set M) := by
+    ext y
+    exact mem_boundaryObstruction_ker_iff A B J y
+  rw [range_restrictedBoundary_eq_ker_obstruction A B J hJ, hset]
+  exact W.closed_of_finiteDimensional.preimage (B.comp J).continuous
+
+private def restrictedBoundaryKernelEquiv (A : S →L[ℝ] Y) (B : S →L[ℝ] M) :
+    (A.toLinearMap.domRestrict B.ker).ker ≃ₗ[ℝ] (B.toLinearMap.domRestrict A.ker).ker where
+  toFun u := ⟨⟨u.val.val, show A u.val.val = 0 from u.property⟩, u.val.property⟩
+  invFun v := ⟨⟨v.val.val, show B v.val.val = 0 from v.property⟩, v.val.property⟩
+  left_inv _ :=  Subtype.ext (Subtype.ext rfl)
+  right_inv _ :=  Subtype.ext (Subtype.ext rfl)
+  map_add' _ _ := Subtype.ext (Subtype.ext rfl)
+  map_smul' _ _ := Subtype.ext (Subtype.ext rfl)
+
+/-- **Exercise 30(d)** of [benIsrael2003generalized], Chapter 9, at the
+boundary-constraint level. The nullity of the free operator and the number
+of independent boundary conditions determine the index of the constrained
+realization. -/
+theorem finrank_restrictedBoundary_index [FiniteDimensional ℝ M]
+    (A : S →L[ℝ] Y) (B : S →L[ℝ] M) [FiniteDimensional ℝ A.ker]
+    (J : Y →L[ℝ] S) (hJ : Function.RightInverse J A) (hB : Function.Surjective B) :
+    finrank ℝ (A.toLinearMap.domRestrict B.ker).ker + finrank ℝ M =
+      finrank ℝ (Y ⧸ (A.toLinearMap.domRestrict B.ker).range) + finrank ℝ A.ker := by
+  let W := homogeneousBoundaryRange A B
+  let Ob := boundaryObstruction A B J
+  have hRank := (B.toLinearMap.domRestrict A.ker).finrank_range_add_finrank_ker
+  rw [LinearMap.range_domRestrict] at hRank
+  have hk := (restrictedBoundaryKernelEquiv A B).finrank_eq
+  have hquot := W.finrank_quotient_add_finrank
+  have hEq : finrank ℝ (Y ⧸ Ob.ker) = finrank ℝ (M ⧸ W) :=
+    (Ob.toLinearMap.quotKerEquivOfSurjective (boundaryObstruction_surjective A B J hJ hB)).finrank_eq
+  rw [range_restrictedBoundary_eq_ker_obstruction A B J hJ]
+  change _ + _ = finrank ℝ (Y ⧸ Ob.ker) + _
+  change finrank ℝ W + _ = _ at hRank
+  omega
+
+end BoundaryRange
+
+end BoundaryResults
+
+section ScalarCompanionIVP
+
+open Matrix
+
+variable {n : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "J" => (Fin (n + 1) → ℝ)
+local notation "μ" => volume.restrict (Ioo l r)
+local notation "last" => Fin.last (n + 1)
+
+/-- The normalized companion matrix acts on successive derivatives of a scalar solution. -/
+def scalarNormalizedCompanion (c : Fin (n + 2) → ℝ → ℝ) (t : ℝ) : J →L[ℝ] J :=
+  ContinuousLinearMap.pi (Fin.lastCases 0 (fun j : Fin n => ContinuousLinearMap.proj (R := ℝ) j.succ))
+    - ∑ j : Fin (n + 1), (c j.castSucc t / c last t) •
+      (ContinuousLinearMap.proj (R := ℝ) j).smulRight (Pi.single (Fin.last n) 1)
+
+private theorem scalarNormalizedCompanion_apply_castSucc (c : Fin (n + 2) → ℝ → ℝ) (t : ℝ)
+    (v : J) (j : Fin n) : scalarNormalizedCompanion c t v j.castSucc = v j.succ := by
+  simp [scalarNormalizedCompanion, Fin.castSucc_ne_last, Pi.single_eq_of_ne]
+
+private theorem scalarNormalizedCompanion_apply_last (c : Fin (n + 2) → ℝ → ℝ) (t : ℝ) (v : J) :
+    scalarNormalizedCompanion c t v (Fin.last n) =
+      -∑ j : Fin (n + 1), (c j.castSucc t / c last t) * v j := by
+  simp [scalarNormalizedCompanion]
+
+private theorem continuousOn_scalarNormalizedCompanion (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r)) (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) :
+    ContinuousOn (scalarNormalizedCompanion c) (Icc l r) := by
+  unfold scalarNormalizedCompanion
+  exact continuousOn_const.sub (continuousOn_finsetSum _ fun j _ =>
+    ((hc j.castSucc).div (hc last) hnz).smul continuousOn_const)
+
+private def scalarSobolevJet (u : H) (t : ℝ) : J := fun j =>
+  SobolevIntervalLp.rep (SobolevIntervalLp.derivOne u j) t
+
+private theorem continuousOn_scalarSobolevJet (hlr : l < r) (u : H) :
+    ContinuousOn (scalarSobolevJet u) (Icc l r) := by
+  apply continuousOn_pi.mpr
+  intro j
+  have h := SobolevIntervalLp.continuousOn_rep (SobolevIntervalLp.ordConnected_coe_Ioo l r)
+    (SobolevIntervalLp.derivOne u j)
+  simpa only [SobolevIntervalLp.closure_coe_Ioo hlr, scalarSobolevJet] using h
+
+private theorem scalarSobolevJet_apply_ae (u : H) (j : Fin (n + 1)) :
+    (fun t => scalarSobolevJet u t j) =ᵐ[μ] SobolevInterval.deriv u j.castSucc := by
+  symm
+  have h := SobolevInterval.fn_ae_eq_rep (SobolevIntervalLp.derivOne u j)
+  rwa [← SobolevIntervalLp.deriv_zero, SobolevIntervalLp.deriv_derivOne_zero] at h
+
+private theorem intervalIntegral_congr_ae_Ioo {f g : ℝ → ℝ} (h : f =ᵐ[μ] g)
+    {t : ℝ} (ht : t ∈ Icc l r) :
+    (∫ x in l..t, f x) = ∫ x in l..t, g x := by
+  rw [intervalIntegral.integral_of_le ht.1, intervalIntegral.integral_of_le ht.1,
+    ← restrict_Ioo_eq_restrict_Ioc]
+  exact integral_congr_ae (Filter.EventuallyEq.filter_mono h
+    (ae_mono (Measure.restrict_mono_set volume (Ioo_subset_Ioo_right ht.2))))
+
+private def scalarJetForcing (y : S) (t : ℝ) : J :=
+  Pi.single (Fin.last n) (y t)
+
+private theorem integrableOn_scalarJetForcing (y : S) : IntegrableOn (scalarJetForcing y : ℝ → J)
+    (Ioo l r) := by
+  apply integrable_pi_iff.mpr
+  intro j
+  by_cases hj : j = Fin.last n
+  · subst j
+    simp only [scalarJetForcing, Pi.single_eq_same]
+    exact (Lp.memLp y).integrable one_le_two
+  · simp [scalarJetForcing, Pi.single_eq_of_ne hj]
+
+private theorem scalarSobolevJet_sub_eq_integral (hlr : l < r) (u : H)
+    (j : Fin (n + 1)) {t : ℝ} (ht : t ∈ Icc l r) :
+    scalarSobolevJet u t j - scalarSobolevJet u l j =
+      ∫ x in l..t, SobolevInterval.deriv u j.succ x := by
+  have he := SobolevInterval.toContinuousMap_sub_eq_integral hlr (SobolevIntervalLp.derivOne u j)
+    ⟨l, left_mem_Icc.mpr hlr.le⟩ ⟨t, ht⟩
+  change scalarSobolevJet u t j - scalarSobolevJet u l j =
+    ∫ x in l..t, SobolevInterval.deriv (SobolevIntervalLp.derivOne u j) 1 x at he
+  rwa [show SobolevInterval.deriv (SobolevIntervalLp.derivOne u j) 1 =
+    SobolevInterval.deriv u j.succ from SobolevIntervalLp.deriv_derivOne_one u j] at he
+
+private theorem scalarSobolevJet_solves (hlr : l < r) (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r)) (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (u : H) :
+    let q := scalarSobolevJet u
+    let y := scalarCoefficientMultiplier (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz)
+      (scalarSobolevExpression c hc u)
+    ∀ t ∈ Icc l r, q t = q l + ∫ x in l..t, scalarNormalizedCompanion c x (q x) + scalarJetForcing y x := by
+  dsimp only
+  let q := scalarSobolevJet u
+  let y := scalarCoefficientMultiplier (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz)
+    (scalarSobolevExpression c hc u)
+  intro t ht
+  have hB := (continuousOn_scalarNormalizedCompanion c hc hnz).clm_apply (continuousOn_scalarSobolevJet hlr u)
+  have hgI : IntegrableOn (scalarJetForcing y : ℝ → J) (Icc l r) := by
+    rw [IntegrableOn, ← restrict_Ioo_eq_restrict_Icc]
+    exact integrableOn_scalarJetForcing y
+  let F : ℝ → J := fun x => scalarNormalizedCompanion c x (q x) + scalarJetForcing y x
+  have hi : IntervalIntegrable F volume l t :=
+    (intervalIntegrable_of_continuousOn_Icc hB ht).add
+      ((hgI.mono_set (uIcc_subset_Icc (left_mem_Icc.mpr hlr.le) ht)).intervalIntegrable)
+  funext j
+  let P : J →L[ℝ] ℝ := ContinuousLinearMap.proj j
+  change q t j = (q l + ∫ x in l..t, F x) j
+  have he : ((∫ x in l..t, F x) : J) j = ∫ x in l..t, F x j :=
+    (P.intervalIntegral_comp_comm hi).symm
+  rw [Pi.add_apply, he]
+  rw [add_comm (q l j)]
+  apply sub_eq_iff_eq_add.mp
+  change scalarSobolevJet u t j - scalarSobolevJet u l j = _
+  rw [scalarSobolevJet_sub_eq_integral hlr u j ht]
+  refine intervalIntegral_congr_ae_Ioo (r := r) ?_ ht
+  refine Fin.lastCases ?_ (fun k => ?_) j
+  · have hRep : ∀ᵐ x ∂μ, ∀ k, q x k = SobolevInterval.deriv u k.castSucc x :=
+      ae_all_iff.mpr (scalarSobolevJet_apply_ae u)
+    filter_upwards [scalarCoefficientMultiplier_apply_ae (fun t => (c last t)⁻¹)
+        ((hc last).inv₀ hnz) (scalarSobolevExpression c hc u),
+      scalarSobolevExpression_apply_ae c hc u, hRep, ae_restrict_mem measurableSet_Ioo]
+      with x hy hA hRep hx
+    simp only [F, Pi.add_apply, scalarNormalizedCompanion_apply_last, scalarJetForcing, Pi.single_eq_same,
+      Fin.succ_last]
+    have hA' : (scalarSobolevExpression c hc u) x =
+        (∑ j : Fin (n + 1), c j.castSucc x * SobolevInterval.deriv u j.castSucc x) +
+          c last x * SobolevInterval.deriv u last x :=
+      hA.trans (Fin.sum_univ_castSucc (fun j : Fin (n + 2) => c j x * SobolevInterval.deriv u j x))
+    rw [show y x = _ from hy, hA']
+    have hsum : (∑ j : Fin (n + 1), (c j.castSucc x / c last x) * q x j) =
+        (c last x)⁻¹ * ∑ j : Fin (n + 1), c j.castSucc x * SobolevInterval.deriv u j.castSucc x := by
+      rw [Finset.mul_sum]
+      exact Finset.sum_congr rfl fun j _ => by rw [hRep]; ring
+    rw [hsum, mul_add, ← mul_assoc, inv_mul_cancel₀ (hnz x (Ioo_subset_Icc_self hx)), one_mul]
+    ring
+  · have h := (scalarSobolevJet_apply_ae u k.succ).symm
+    filter_upwards [h] with x hx
+    simp only [F]
+    rw [Pi.add_apply, scalarNormalizedCompanion_apply_castSucc,
+      scalarJetForcing, Pi.single_eq_of_ne (Fin.castSucc_ne_last k), add_zero]
+    simpa only [Fin.succ_castSucc] using hx
+
+end ScalarCompanionIVP
+
+section ScalarInitialValue
+
+variable {n : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "J" => (Fin (n + 1) → ℝ)
+local notation "μ" => volume.restrict (Ioo l r)
+local notation "last" => Fin.last (n + 1)
+
+private theorem scalarHasWeakIteratedDerivOn_of_chain {k : ℕ} (v : Fin (k + 1) → S)
+    (h : ∀ j : Fin k, HasWeakDerivOn (v j.castSucc) (v j.succ) (TopologicalSpace.Opens.Ioo l r)) :
+    ∀ j : Fin (k + 1), HasWeakIteratedDerivOn j (v 0) (v j) (TopologicalSpace.Opens.Ioo l r) := by
+  intro j
+  induction j using Fin.induction with
+  | zero =>
+    exact HasWeakIteratedLineDerivOn.of_length_eq_zero rfl _
+      ((intervalL2_integrable (v 0)).locallyIntegrableOn)
+  | succ j ih =>
+    exact HasWeakIteratedDerivOn.succ_of_hasWeakDerivOn ih (h j)
+
+private theorem scalarSobolev_of_integral_jet (hlr : l < r)
+    (q f : ℝ → J) (hq : ContinuousOn q (Icc l r))
+    (hf : ∀ j, MemLp (fun x => f x j) 2 μ)
+    (hshift : ∀ x (j : Fin n), f x j.castSucc = q x j.succ)
+    (heq : ∀ x ∈ Icc l r, q x = q l + ∫ t in l..x, f t) :
+    ∃ u : H, EqOn (scalarSobolevJet u) q (Icc l r) ∧
+      SobolevInterval.deriv u last =ᵐ[μ] fun x => f x (Fin.last n) := by
+  have hqc (j : Fin (n + 1)) : ContinuousOn (fun x => q x j) (Icc l r) := continuousOn_pi.mp hq j
+  have hqLp (j : Fin (n + 1)) : MemLp (fun x => q x j) 2 μ :=
+    (hqc j).memLp_top_restrict_Ioo.mono_exponent le_top
+  let v : Fin (n + 2) → S :=
+    Fin.lastCases ((hf (Fin.last n)).toLp _) (fun j => (hqLp j).toLp _)
+  have hd (j : Fin (n + 1)) : HasWeakDerivOn (fun x => q x j) (fun x => f x j)
+      (TopologicalSpace.Opens.Ioo l r) := by
+    have hfi : IntegrableOn f (Ioo l r) :=
+      integrable_pi_iff.mpr fun k => (hf k).integrable one_le_two
+    have hj : IntegrableOn (fun x => f x j) (Ioo l r) := (hf j).integrable one_le_two
+    refine (hasWeakDerivOn_integral hlr.le hj (q l j)).congr_ae ?_ EventuallyEq.rfl
+    filter_upwards [ae_restrict_mem measurableSet_Ioo] with x hx
+    have hx' := Ioo_subset_Icc_self hx
+    have hi : IntervalIntegrable f volume l x := by
+      have hI : IntegrableOn f (Icc l r) := by
+        rwa [IntegrableOn, ← restrict_Ioo_eq_restrict_Icc]
+      exact (hI.mono_set (uIcc_subset_Icc (left_mem_Icc.mpr hlr.le) hx')).intervalIntegrable
+    have Hx : q x j = q l j + ((∫ t in l..x, f t) : J) j := congrFun (heq x hx') j
+    let P : J →L[ℝ] ℝ := ContinuousLinearMap.proj j
+    exact ((congrArg (fun z : ℝ => q l j + z) (P.intervalIntegral_comp_comm hi)).trans Hx.symm)
+  have hchain (j : Fin (n + 1)) : HasWeakDerivOn (v j.castSucc) (v j.succ)
+      (TopologicalSpace.Opens.Ioo l r) := by
+    refine Fin.lastCases ?_ (fun j => ?_) j
+    · simp only [v, Fin.lastCases_castSucc, Fin.succ_last, Fin.lastCases_last]
+      exact (hd (Fin.last n)).congr_ae (hqLp _).coeFn_toLp.symm (hf _).coeFn_toLp.symm
+    · simp only [v, Fin.lastCases_castSucc, Fin.succ_castSucc]
+      refine (hd j.castSucc).congr_ae (hqLp _).coeFn_toLp.symm ?_
+      have hs : (fun x => f x j.castSucc) =ᵐ[μ] (fun x => q x j.succ) :=
+        Eventually.of_forall fun x => hshift x j
+      exact hs.trans (hqLp _).coeFn_toLp.symm
+  let u : H := SobolevInterval.mk v (scalarHasWeakIteratedDerivOn_of_chain v hchain)
+  refine ⟨u, ?_, ?_⟩
+  · intro x hx
+    funext j
+    apply SobolevIntervalLp.rep_eq_of_continuousOn (SobolevIntervalLp.ordConnected_coe_Ioo l r)
+      (SobolevIntervalLp.derivOne u j)
+    · simpa only [SobolevIntervalLp.closure_coe_Ioo hlr] using hqc j
+    · rw [← SobolevIntervalLp.deriv_zero, SobolevIntervalLp.deriv_derivOne_zero]
+      change (⇑(v j.castSucc) : ℝ → ℝ) =ᵐ[μ] _
+      simp only [v, Fin.lastCases_castSucc]
+      exact (hqLp j).coeFn_toLp
+    · simpa only [SobolevIntervalLp.closure_coe_Ioo hlr] using hx
+  · change v last =ᵐ[μ] _
+    simp only [v, Fin.lastCases_last]
+    exact (hf (Fin.last n)).coeFn_toLp
+
+/-- The unrestricted scalar problem has a Sobolev solution for every
+square-integrable forcing and prescribed initial jet. -/
+theorem exists_scalarSobolev_initialValue (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) (y : S) (v₀ : J) :
+    ∃ u : H, scalarSobolevExpression c hc u = y ∧
+      scalarSobolevBoundaryTrace hlr u ∘ Sum.inl = v₀ := by
+  let B := scalarNormalizedCompanion c
+  let normedY := scalarCoefficientMultiplier (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz) y
+  let g : ℝ → J := scalarJetForcing normedY
+  obtain ⟨q, hq, heq, _⟩ := exists_linear_integral_ivp hlr.le B
+    (continuousOn_scalarNormalizedCompanion c hc hnz) g (integrableOn_scalarJetForcing normedY) v₀
+  let f : ℝ → J := fun t => B t (q t) + g t
+  have hL : ContinuousOn (fun t => B t (q t)) (Icc l r) :=
+    (continuousOn_scalarNormalizedCompanion c hc hnz).clm_apply hq
+  have hf (j : Fin (n + 1)) : MemLp (fun t => f t j) 2 μ := by
+    have h₁ : MemLp (fun t => B t (q t) j) 2 μ :=
+      (continuousOn_pi.mp hL j).memLp_top_restrict_Ioo.mono_exponent le_top
+    apply h₁.add
+    by_cases hj : j = Fin.last n
+    · subst j
+      simpa [g, scalarJetForcing] using Lp.memLp normedY
+    · simp [g, scalarJetForcing, Pi.single_eq_of_ne hj]
+  have hshift (t : ℝ) (j : Fin n) : f t j.castSucc = q t j.succ := by
+    simp [f, g, B, scalarJetForcing, scalarNormalizedCompanion_apply_castSucc]
+  have hinit : q l = v₀ := by
+    simpa using heq l (left_mem_Icc.mpr hlr.le)
+  obtain ⟨u, hu, htop⟩ := scalarSobolev_of_integral_jet hlr q f hq hf hshift (by simpa only [hinit] using heq)
+  refine ⟨u, ?_, ?_⟩
+  · apply Lp.ext
+    have hRep : ∀ᵐ t ∂μ, ∀ j, SobolevInterval.deriv u j.castSucc t = q t j := by
+      apply ae_all_iff.mpr
+      intro j
+      exact (scalarSobolevJet_apply_ae u j).symm.trans (ae_restrict_of_forall_mem measurableSet_Ioo
+        (fun t ht => congrFun (hu (Ioo_subset_Icc_self ht)) j))
+    filter_upwards [scalarSobolevExpression_apply_ae c hc u, htop, hRep,
+      scalarCoefficientMultiplier_apply_ae (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz) y,
+      ae_restrict_mem measurableSet_Ioo] with t hA hT hRep hy ht
+    rw [hA, Fin.sum_univ_castSucc, hT]
+    simp only [f, B, g, Pi.add_apply, scalarJetForcing, Pi.single_eq_same,
+      scalarNormalizedCompanion_apply_last, hRep]
+    rw [show normedY t = _ from hy, mul_add, ← mul_assoc,
+      mul_inv_cancel₀ (hnz t (Ioo_subset_Icc_self ht)), one_mul]
+    have hz := hnz t (Ioo_subset_Icc_self ht)
+    have hsum : c last t * (∑ j : Fin (n + 1), (c j.castSucc t / c last t) * q t j) =
+        ∑ j : Fin (n + 1), c j.castSucc t * q t j := by
+      rw [Finset.mul_sum]
+      exact Finset.sum_congr rfl fun j _ => by field_simp [hz]
+    rw [mul_neg, hsum]
+    ring
+  · funext j
+    change scalarSobolevBoundaryTrace hlr u (Sum.inl j) = _
+    rw [scalarSobolevBoundaryTrace_apply]
+    exact (congrFun (hu (left_mem_Icc.mpr hlr.le)) j).trans (congrFun hinit j)
+
+private theorem scalarSobolevJet_injective_on {u v : H}
+    (h : EqOn (scalarSobolevJet u) (scalarSobolevJet v) (Icc l r)) : u = v := by
+  apply SobolevMultiIndex.fnL_injective
+  apply Lp.ext
+  have h₁ := (scalarSobolevJet_apply_ae u 0).symm
+  have h₂ := scalarSobolevJet_apply_ae v 0
+  have hmid : (fun t => scalarSobolevJet u t 0) =ᵐ[μ] (fun t => scalarSobolevJet v t 0) :=
+    ae_restrict_of_forall_mem measurableSet_Ioo (fun t ht => congrFun (h (Ioo_subset_Icc_self ht)) 0)
+  exact h₁.trans (hmid.trans h₂)
+
+/-- For fixed square-integrable forcing, the left endpoint jet determines
+a unique Sobolev solution of the unrestricted scalar equation. -/
+theorem scalarSobolev_initialValue_injective (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) {u v : H}
+    (hF : scalarSobolevExpression c hc u = scalarSobolevExpression c hc v)
+    (hI : scalarSobolevBoundaryTrace hlr u ∘ Sum.inl = scalarSobolevBoundaryTrace hlr v ∘ Sum.inl) :
+    u = v := by
+  have hinit : scalarSobolevJet u l = scalarSobolevJet v l := by
+    funext j
+    simpa only [Function.comp_apply, scalarSobolevBoundaryTrace_apply, Sum.elim_inl, scalarSobolevJet] using congrFun hI j
+  let B := scalarNormalizedCompanion c
+  let N := scalarCoefficientMultiplier (fun t => (c last t)⁻¹) ((hc last).inv₀ hnz)
+  let g : ℝ → J := scalarJetForcing (N (scalarSobolevExpression c hc u))
+  obtain ⟨_, _, _, hu⟩ := exists_linear_integral_ivp hlr.le B
+    (continuousOn_scalarNormalizedCompanion c hc hnz) g
+    (integrableOn_scalarJetForcing (N (scalarSobolevExpression c hc u))) (scalarSobolevJet u l)
+  have h₁ := hu _ (continuousOn_scalarSobolevJet hlr u) (scalarSobolevJet_solves hlr c hc hnz u)
+  have h₂ := hu _ (continuousOn_scalarSobolevJet hlr v)
+    (by simpa only [B, g, N, hinit, hF] using scalarSobolevJet_solves hlr c hc hnz v)
+  exact scalarSobolevJet_injective_on (h₁.trans h₂.symm)
+
+end ScalarInitialValue
+
+section ScalarSobolevRange
+
+open Matrix
+
+variable {n m : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "J" => (Fin (n + 1) → ℝ)
+local notation "last" => Fin.last (n + 1)
+
+private def scalarTraceSide (hlr : l < r) (side : Fin (n + 1) → Fin (n + 1) ⊕ Fin (n + 1)) :
+    H →L[ℝ] J :=
+  ContinuousLinearMap.pi (fun j => (ContinuousLinearMap.proj (side j)).comp (scalarSobolevBoundaryTrace hlr))
+
+/-- The scalar equation and its left initial jet give continuous linear
+coordinates on the entire order-\(n+1\) Sobolev space. -/
+def scalarSobolevInitialEquiv (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) : H ≃L[ℝ] S × J :=
+  ContinuousLinearEquiv.ofBijective ((scalarSobolevExpression c hc).prod (scalarTraceSide hlr Sum.inl))
+    (LinearMap.ker_eq_bot.mpr fun u v hv =>
+      scalarSobolev_initialValue_injective hlr c hc hnz
+        (congrArg Prod.fst hv) (congrArg Prod.snd hv))
+    (LinearMap.range_eq_top.mpr fun yz => by
+      obtain ⟨u, he, ht⟩ := exists_scalarSobolev_initialValue hlr c hc hnz yz.1 yz.2
+      exact ⟨u, Prod.ext he ht⟩)
+
+/-- The initial-value coordinates record the forcing and the left endpoint jet. -/
+theorem scalarSobolevInitialEquiv_apply (hlr : l < r) (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r)) (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) (u : H) :
+    scalarSobolevInitialEquiv hlr c hc hnz u =
+      (scalarSobolevExpression c hc u, scalarSobolevBoundaryTrace hlr u ∘ Sum.inl) :=
+  rfl
+
+/-- The boundary matrix applied to the Sobolev trace in (50). -/
+def scalarSobolevBoundaryResidual (hlr : l < r)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) : H →L[ℝ] (Fin m → ℝ) :=
+  (LinearMap.toContinuousLinearMap M.mulVecLin).comp (scalarSobolevBoundaryTrace hlr)
+
+private theorem mem_scalarIntervalOperator_range_iff (A : H →L[ℝ] S) (W : Submodule ℝ H) {y : S} :
+    y ∈ (scalarIntervalOperator A W).toFun.range ↔ ∃ u : W, A u.val = y := by
+  constructor
+  · rintro ⟨x, rfl⟩
+    obtain ⟨u, _, he⟩ := (mem_scalarIntervalOperator_graph_iff A W).mp
+      ((scalarIntervalOperator A W).mem_graph x)
+    exact ⟨u, he⟩
+  · rintro ⟨u, rfl⟩
+    have hr := (mem_scalarIntervalOperator_graph_iff A W).mpr ⟨u, rfl, rfl⟩
+    obtain ⟨x, _, hx⟩ := (scalarIntervalOperator A W).mem_graph_iff.mp hr
+    exact ⟨x, hx⟩
+
+/-- **Exercise 28(d)** of [benIsrael2003generalized], Chapter 9.
+A forcing is solvable precisely when the boundary residual of its
+zero-initial-jet solution belongs to the image of the homogeneous boundary map. -/
+theorem mem_constrainedScalarIntervalOperator_range_iff (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) (y : S) :
+    let F := scalarSobolevInitialEquiv hlr c hc hnz
+    let B := scalarSobolevBoundaryResidual hlr M
+    y ∈ (constrainedScalarIntervalOperator hlr c hc M).toFun.range ↔
+      ∃ z : J, B (F.symm (0, z)) = B (F.symm (y, 0)) := by
+  dsimp only
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  let A := scalarSobolevExpression c hc
+  let W := scalarSobolevBoundarySpace hlr M
+  let B := scalarSobolevBoundaryResidual hlr M
+  change y ∈ (scalarIntervalOperator A W).toFun.range ↔ ∃ z : J, B (F.symm (0, z)) = B (F.symm (y, 0))
+  rw [mem_scalarIntervalOperator_range_iff]
+  have hsplit (y : S) (z : J) : F.symm (y, z) = F.symm (y, 0) + F.symm (0, z) := by
+    rw [← map_add]
+    simp
+  constructor
+  · rintro ⟨u, hu⟩
+    let z := scalarTraceSide hlr Sum.inl u.val
+    have hF : F u.val = (y, z) := Prod.ext hu rfl
+    have he : F.symm (y, z) = u.val := by rw [← hF, F.symm_apply_apply]
+    have hB : B u.val = 0 := u.2
+    refine ⟨-z, ?_⟩
+    have he₀ : (0, -z) = -((0, z) : S × J) := by simp
+    rw [he₀, map_neg, map_neg]
+    rw [← he, hsplit, map_add] at hB
+    have he' : B (F.symm (0, z)) + B (F.symm (y, 0)) = 0 := by
+      rw [add_comm]
+      exact hB
+    exact neg_eq_of_add_eq_zero_right he'
+  · rintro ⟨z, hz⟩
+    let u := F.symm (y, -z)
+    have he₀ : (0, -z) = -((0, z) : S × J) := by simp
+    have hu : B u = 0 := by
+      change B (F.symm (y, -z)) = 0
+      rw [hsplit, he₀, map_neg, map_add, map_neg, hz, add_neg_cancel]
+    refine ⟨⟨u, hu⟩, ?_⟩
+    exact congrArg Prod.fst (F.apply_symm_apply (y, -z))
+
+/-- **Exercise 28(d)** of [benIsrael2003generalized], Chapter 9.
+The constrained scalar differential operator has closed range. -/
+theorem isClosed_range_constrainedScalarIntervalOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    IsClosed ((constrainedScalarIntervalOperator hlr c hc M).toFun.range : Set S) := by
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  let B := scalarSobolevBoundaryResidual hlr M
+  let φ := B.comp (F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inl ℝ S J))
+  let ψ := B.comp (F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inr ℝ S J))
+  have h : ((constrainedScalarIntervalOperator hlr c hc M).toFun.range : Set S) =
+      φ ⁻¹' (ψ.range : Set (Fin m → ℝ)) := by
+    ext y
+    exact mem_constrainedScalarIntervalOperator_range_iff hlr c hc hnz M y
+  rw [h]
+  exact (Submodule.closed_of_finiteDimensional ψ.range).preimage φ.continuous
+
+/-- **Exercise 28(e)–(g)** of [benIsrael2003generalized], Chapter 9.
+The carrier restriction is closed, injective, and has the entire operator
+range. Its inverse is bounded, and the maximal inverse is bounded on the
+full Hilbert space with null space the orthogonal complement of the range. -/
+theorem constrainedScalarIntervalOperator_carrier_inverse (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    let L := constrainedScalarIntervalOperator hlr c hc M
+    (restrictCarrier L).IsClosed ∧ (restrictCarrier L).ker = ⊥ ∧
+      (restrictCarrier L).toFun.range = L.toFun.range ∧ IsBoundedOperator (restrictCarrier L).inverse ∧
+      (maximalTsengInverse L).domain = ⊤ ∧ IsBoundedOperator (maximalTsengInverse L) ∧
+      (maximalTsengInverse L).ker = L.toFun.rangeᗮ := by
+  dsimp only
+  let L := constrainedScalarIntervalOperator hlr c hc M
+  have hL : L.IsClosed := isClosed_constrainedScalarIntervalOperator hlr c hc hnz M
+  have hR : IsClosed (L.toFun.range : Set S) := isClosed_range_constrainedScalarIntervalOperator hlr c hc hnz M
+  have hN : IsNormallySolvable L := ⟨hL, hR⟩
+  exact ⟨restrictCarrier_isClosed L hL, restrictCarrier_ker L,
+    restrictCarrier_range L (isDecomposable_of_isClosed L.ker_le_domain hL.isClosed_ker),
+    (isNormallySolvable_iff L hL).1.mp hN,
+    maximalTsengInverse_domain_eq_top_of_normallySolvable hN,
+    (exercise_9_13 hL).mp hR, maximalTsengInverse_ker L⟩
+
+end ScalarSobolevRange
+
+section ScalarNullities
+
+open Matrix
+
+variable {n m : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "J" => (Fin (n + 1) → ℝ)
+local notation "last" => Fin.last (n + 1)
+
+private theorem mem_scalarIntervalOperator_ker_iff (A : H →L[ℝ] S) (W : Submodule ℝ H) (x : S) :
+    x ∈ (scalarIntervalOperator A W).ker ↔ ∃ u : W, SobolevInterval.deriv u.val 0 = x ∧ A u.val = 0 := by
+  rw [LinearPMap.mem_ker_iff]
+  constructor
+  · rintro ⟨z, rfl, hz⟩
+    have h := (scalarIntervalOperator A W).mem_graph z
+    rw [hz] at h
+    exact (mem_scalarIntervalOperator_graph_iff A W).mp h
+  · rintro ⟨u, hx, hu⟩
+    obtain ⟨z, hz, hz'⟩ := (scalarIntervalOperator A W).mem_graph_iff.mp
+      ((mem_scalarIntervalOperator_graph_iff A W).mpr ⟨u, hx, hu⟩)
+    exact ⟨z, hz.symm, hz'⟩
+
+/-- **Exercise 28(b)** of [benIsrael2003generalized], Chapter 9.
+The unrestricted null space is linearly equivalent to the space of all
+left initial jets. -/
+def freeScalarIntervalOperator_ker_equiv (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) : J ≃ₗ[ℝ] (freeScalarIntervalOperator c hc).ker := by
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  let A := scalarSobolevExpression c hc
+  let L := freeScalarIntervalOperator c hc
+  let G : J →L[ℝ] H := F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inr ℝ S J)
+  have hG (z : J) : A (G z) = 0 := congrArg Prod.fst (F.apply_symm_apply (0, z))
+  let B := ((SobolevInterval.derivL (n + 1) l r 0).comp G).toLinearMap
+  let P : J →ₗ[ℝ] L.ker := B.codRestrict L.ker fun z =>
+    (mem_scalarIntervalOperator_ker_iff A ⊤ _).mpr ⟨⟨G z, Submodule.mem_top⟩, rfl, hG z⟩
+  refine LinearEquiv.ofBijective P ⟨?_, ?_⟩
+  · intro z w hz
+    have h := congrArg (fun x : L.ker => (x : S)) hz
+    have h' : G z = G w := SobolevMultiIndex.fnL_injective h
+    exact congrArg Prod.snd (F.symm.injective h')
+  · intro x
+    obtain ⟨u, hu₀, huA⟩ := (mem_scalarIntervalOperator_ker_iff A ⊤ x.val).mp x.2
+    let z := (F u.val).2
+    have hz : F u.val = (0, z) := Prod.ext huA rfl
+    have h' : G z = u.val := by
+      change F.symm (0, z) = u.val
+      rw [← hz, F.symm_apply_apply]
+    refine ⟨z, Subtype.ext ?_⟩
+    change SobolevInterval.deriv (G z) 0 = x.val
+    rw [h', hu₀]
+
+/-- The nullity in Exercise 28(b) is the order of the expression. -/
+theorem finrank_ker_freeScalarIntervalOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) :
+    Module.finrank ℝ (freeScalarIntervalOperator c hc).ker = n + 1 := by
+  rw [← (freeScalarIntervalOperator_ker_equiv hlr c hc hnz).finrank_eq,
+    Module.finrank_fintype_fun_eq_card, Fintype.card_fin]
+
+/-- The unrestricted scalar expression is onto the entire interval Hilbert space. -/
+theorem range_freeScalarIntervalOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) :
+    (freeScalarIntervalOperator c hc).toFun.range = ⊤ := by
+  apply Submodule.eq_top_iff'.mpr
+  intro y
+  obtain ⟨u, h, _⟩ := exists_scalarSobolev_initialValue hlr c hc hnz y 0
+  exact (mem_scalarIntervalOperator_range_iff (scalarSobolevExpression c hc) ⊤).mpr
+    ⟨⟨u, Submodule.mem_top⟩, h⟩
+
+/-- **Exercise 28(c)** of [benIsrael2003generalized], Chapter 9.
+Requiring the boundary conditions can only reduce the null space. -/
+theorem ker_constrainedScalarIntervalOperator_le (hlr : l < r) (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    (constrainedScalarIntervalOperator hlr c hc M).ker ≤ (freeScalarIntervalOperator c hc).ker := by
+  intro x hx
+  obtain ⟨u, hu₀, huA⟩ := (mem_scalarIntervalOperator_ker_iff _ _ x).mp hx
+  exact (mem_scalarIntervalOperator_ker_iff _ _ x).mpr ⟨⟨u.val, Submodule.mem_top⟩, hu₀, huA⟩
+
+/-- Both constrained nullities in Exercise 28(c) are bounded by the order.
+For the Hilbert adjoint, the right boundary jet of the zero-left-jet
+particular solution separates the orthogonal complement of the range. -/
+theorem finrank_ker_constrainedScalarIntervalOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    let L := constrainedScalarIntervalOperator hlr c hc M
+    Module.finrank ℝ L.ker ≤ n + 1 ∧ Module.finrank ℝ L.adjoint.ker ≤ n + 1 := by
+  dsimp only
+  let L := constrainedScalarIntervalOperator hlr c hc M
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  let R := scalarTraceSide (n := n) hlr Sum.inr
+  let G : S →L[ℝ] H := F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inl ℝ S J)
+  have hG (y : S) : F (G y) = (y, 0) := F.apply_symm_apply (y, 0)
+  let K := freeScalarIntervalOperator_ker_equiv hlr c hc hnz
+  let : Module.Finite ℝ (freeScalarIntervalOperator c hc).ker :=
+    Module.Finite.of_surjective K.toLinearMap K.surjective
+  refine ⟨(Submodule.finrank_mono (ker_constrainedScalarIntervalOperator_le hlr c hc M)).trans
+    (finrank_ker_freeScalarIntervalOperator hlr c hc hnz).le, ?_⟩
+  have hD : Dense (L.domain : Set S) := dense_constrainedScalarIntervalOperator hlr c hc M
+  rw [show L.adjoint.ker = L.toFun.rangeᗮ from ker_adjoint_eq_orthogonal_range L hD]
+  let P := ((R.comp G).toLinearMap).comp L.toFun.rangeᗮ.subtype
+  have hinj : Function.Injective P := by
+    apply LinearMap.ker_eq_bot.mp
+    rw [Submodule.eq_bot_iff]
+    intro y hy
+    have hyP : P y = 0 := LinearMap.mem_ker.mp hy
+    have hleft : scalarTraceSide (n := n) hlr Sum.inl (G y.val) = 0 := congrArg Prod.snd (hG y.val)
+    have hright : R (G y.val) = 0 := hyP
+    have hzero : scalarSobolevBoundaryTrace hlr (G y.val) = 0 := by
+      funext j
+      cases j with
+      | inl j => exact congrFun hleft j
+      | inr j => exact congrFun hright j
+    have hGm : G y.val ∈ scalarSobolevBoundarySpace hlr M := by
+      simp [mem_scalarSobolevBoundarySpace_iff, hzero]
+    have hyR : y.val ∈ L.toFun.range := (mem_scalarIntervalOperator_range_iff _ _).mpr
+      ⟨⟨G y.val, hGm⟩, congrArg Prod.fst (hG y.val)⟩
+    apply Subtype.ext
+    exact inner_self_eq_zero.mp ((Submodule.mem_orthogonal _ _).mp y.2 y.val hyR)
+  simpa only [Module.finrank_fintype_fun_eq_card, Fintype.card_fin] using P.finrank_le_finrank_of_injective hinj
+
+/-- The two orthogonal projection identities in **Exercise 28(g)**. -/
+theorem constrainedScalarIntervalOperator_inverse_projections (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    let L := constrainedScalarIntervalOperator hlr c hc M
+    let P := maximalTsengInverse L
+    let hL := isClosed_constrainedScalarIntervalOperator hlr c hc hnz M
+    letI := (isClosed_range_constrainedScalarIntervalOperator hlr c hc hnz M).completeSpace_coe
+    let h := isTsengInverse_maximalTsengInverse_of_isClosed hL
+    (∀ x : L.domain, P ⟨L x, h.range_le_domain ⟨x, rfl⟩⟩ = L.kerᗮ.starProjection x) ∧
+      (∀ y : P.domain, L ⟨P y, h.inverse_range_le_domain ⟨y, rfl⟩⟩ = L.toFun.range.starProjection y) := by
+  dsimp only
+  let L := constrainedScalarIntervalOperator hlr c hc M
+  have hL : L.IsClosed := isClosed_constrainedScalarIntervalOperator hlr c hc hnz M
+  have hR : IsClosed (L.toFun.range : Set S) := isClosed_range_constrainedScalarIntervalOperator hlr c hc hnz M
+  refine ⟨fun x => maximalTsengInverse_apply_image hL x, ?_⟩
+  have hs := (theorem_2_projections L (isDecomposable_of_isClosed L.ker_le_domain hL.isClosed_ker).2).2
+  have hclosed : L.toFun.range.topologicalClosure = L.toFun.range := by
+    apply SetLike.coe_injective
+    exact hR.closure_eq
+  simpa only [hclosed] using hs
+
+end ScalarNullities
+
+section ScalarFormalAdjoint
+
+variable {n : ℕ} {l r : ℝ}
+
+local notation "S" => IntervalL2 l r
+local notation "last" => Fin.last (n + 1)
+
+/-- The coefficients of the formal adjoint in **Exercise 28(b)**, obtained
+by expanding each term `(-D)^k (cₖ ·)` by the Leibniz formula. -/
+def scalarFormalAdjointCoefficients (l r : ℝ) (c : Fin (n + 2) → ℝ → ℝ)
+    (j : Fin (n + 2)) (t : ℝ) : ℝ :=
+  ∑ k : Fin (n + 2), if j ≤ k then
+    (-1) ^ k.val * (k.val.choose j.val : ℝ) *
+      iteratedDerivWithin (k.val - j.val) (c k) (Icc l r) t else 0
+
+/-- The differentiability assumptions on the original coefficients give continuous formal adjoint coefficients. -/
+theorem continuousOn_scalarFormalAdjointCoefficients (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContDiffOn ℝ j.val (c j) (Icc l r)) (j : Fin (n + 2)) :
+    ContinuousOn (scalarFormalAdjointCoefficients l r c j) (Icc l r) := by
+  unfold scalarFormalAdjointCoefficients
+  apply continuousOn_finsetSum
+  intro k _
+  by_cases hj : j ≤ k
+  · simp only [ite_eq_left hj]
+    have hh : (↑(k.val - j.val) : WithTop ℕ∞) ≤ k.val := by exact_mod_cast Nat.sub_le _ _
+    exact continuousOn_const.mul ((hc k).continuousOn_iteratedDerivWithin hh (uniqueDiffOn_Icc hlr))
+  · simp [hj, continuousOn_const]
+
+/-- The leading formal adjoint coefficient differs by the sign of the differential order. -/
+theorem scalarFormalAdjointCoefficients_leading (c : Fin (n + 2) → ℝ → ℝ) (t : ℝ) :
+    scalarFormalAdjointCoefficients l r c last t = (-1) ^ (n + 1) * c last t := by
+  classical
+  unfold scalarFormalAdjointCoefficients
+  rw [Finset.sum_eq_single last]
+  · simp [iteratedDerivWithin_zero]
+  · intro k _ hk
+    exact ite_eq_right (fun h => hk (le_antisymm (Fin.le_last k) h))
+  · simp
+
+/-- The maximal realization of the formal differential adjoint has the
+same Sobolev order as the original expression. -/
+abbrev freeScalarFormalAdjointOperator (hlr : l < r) (c : Fin (n + 2) → ℝ → ℝ)
+    (hc : ∀ j, ContDiffOn ℝ j.val (c j) (Icc l r)) : S →ₗ.[ℝ] S :=
+  freeScalarIntervalOperator (scalarFormalAdjointCoefficients l r c)
+    (continuousOn_scalarFormalAdjointCoefficients hlr c hc)
+
+/-- The unrestricted realization of the formal adjoint has nullity equal
+to the order in Exercise 28(b). -/
+theorem finrank_ker_freeScalarFormalAdjointOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContDiffOn ℝ j.val (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) :
+    Module.finrank ℝ (freeScalarFormalAdjointOperator hlr c hc).ker = n + 1 := by
+  apply finrank_ker_freeScalarIntervalOperator hlr
+  intro t ht
+  rw [scalarFormalAdjointCoefficients_leading]
+  exact mul_ne_zero (pow_ne_zero _ (by norm_num)) (hnz t ht)
+
+/-- The Hilbert adjoint of the unrestricted operator has trivial null
+space. The maximal realization of the formal adjoint is the different
+operator meant by the second dimension assertion in Exercise 28(b). -/
+theorem ker_adjoint_freeScalarIntervalOperator (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0) :
+    (freeScalarIntervalOperator c hc).adjoint.ker = ⊥ := by
+  let L := freeScalarIntervalOperator c hc
+  have hD : Dense (L.domain : Set S) := by
+    let M : Matrix (Fin 0) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ := 0
+    apply (dense_constrainedScalarIntervalOperator hlr c hc M).mono
+    intro x hx
+    let lOp := constrainedScalarIntervalOperator hlr c hc M
+    have hg : (x, lOp ⟨x, hx⟩) ∈ lOp.graph := lOp.mem_graph ⟨x, hx⟩
+    obtain ⟨u, hu, _⟩ := (mem_scalarIntervalOperator_graph_iff _ _).mp hg
+    exact hu ▸ scalarSobolevGraph_domain_of_lift _ _ ⟨u.val, Submodule.mem_top⟩
+  rw [ker_adjoint_eq_orthogonal_range L hD, range_freeScalarIntervalOperator hlr c hc hnz,
+    Submodule.top_orthogonal_eq_bot]
+
+end ScalarFormalAdjoint
+
+section ScalarGreenAlgebra
+
+open Matrix
+
+variable {n m : ℕ} {l r : ℝ}
+
+local notation "H" => SobolevInterval (n + 1) l r
+local notation "S" => IntervalL2 l r
+local notation "J" => (Fin (n + 1) → ℝ)
+local notation "last" => Fin.last (n + 1)
+
+/-- The Wronskian matrix of the fundamental scalar solutions in (51).
+Column `j` is the jet of the `j`th solution at the stated time. -/
+def scalarWronskian (l r : ℝ) (basis : Fin (n + 1) → ℝ → ℝ) (t : ℝ) :
+    Matrix (Fin (n + 1)) (Fin (n + 1)) ℝ :=
+  Matrix.of fun i j => iteratedDerivWithin i.val (basis j) (Icc l r) t
+
+/-- The causal Wronskian kernel in **Exercise 29**, Equation (51). The
+diagonal value is chosen from the causal branch. -/
+def scalarWronskianGreenKernel (l r : ℝ) (c : Fin (n + 2) → ℝ → ℝ)
+    (basis : Fin (n + 1) → ℝ → ℝ) (s t : ℝ) : ℝ :=
+  if t ≤ s then
+    ∑ j : Fin (n + 1), basis j s *
+      ((scalarWronskian l r basis t).updateCol j (Pi.single (Fin.last n) 1)).det /
+        (c last t * (scalarWronskian l r basis t).det)
+  else 0
+
+/-- Cramer's rule identifies (51) with the scalar component of the causal
+fundamental propagation kernel. -/
+theorem scalarWronskianGreenKernel_eq_propagator
+    (c : Fin (n + 2) → ℝ → ℝ) (basis : Fin (n + 1) → ℝ → ℝ) (s t : ℝ)
+    (hW : IsUnit (scalarWronskian l r basis t).det) :
+    scalarWronskianGreenKernel l r c basis s t =
+      if t ≤ s then
+        (∑ j : Fin (n + 1), basis j s *
+          ((scalarWronskian l r basis t)⁻¹ *ᵥ Pi.single (Fin.last n) 1) j) / c last t
+      else 0 := by
+  unfold scalarWronskianGreenKernel
+  split <;> rename_i h
+  · rw [div_eq_inv_mul, Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro j _
+    let X := scalarWronskian l r basis t
+    let e : J := Pi.single (Fin.last n) 1
+    have hcoe : (X.updateCol j e).det = X.det * (X⁻¹ *ᵥ e) j := by
+      rw [← Matrix.cramer_apply]
+      exact (congrFun (Matrix.det_smul_inv_mulVec_eq_cramer X e hW) j).symm
+    change basis j s * (X.updateCol j e).det / (c last t * X.det) =
+      (c last t)⁻¹ * (basis j s * (X⁻¹ *ᵥ e) j)
+    rw [hcoe, div_eq_mul_inv, mul_inv]
+    calc
+      _ = (c last t)⁻¹ * (basis j s * (X⁻¹ *ᵥ e) j) * (X.det * X.det⁻¹) := by ring
+      _ = _ := by rw [mul_inv_cancel₀ hW.ne_zero, mul_one]
+  · rfl
+
+/-- The homogeneous boundary matrix (Mwidehat X) from (54) in left
+initial-jet coordinates. -/
+def scalarInitialBoundaryMatrix (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) :
+    Matrix (Fin m) (Fin (n + 1)) ℝ :=
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  LinearMap.toMatrix' ((scalarSobolevBoundaryResidual hlr M).comp
+    (F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inr ℝ S J))).toLinearMap
+
+/-- Applying the boundary matrix to the homogeneous initial-value solution gives its boundary residual. -/
+theorem scalarInitialBoundaryMatrix_mulVec (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ) (z : J) :
+    scalarInitialBoundaryMatrix hlr c hc hnz M *ᵥ z =
+      scalarSobolevBoundaryResidual hlr M ((scalarSobolevInitialEquiv hlr c hc hnz).symm (0, z)) := by
+  unfold scalarInitialBoundaryMatrix
+  rw [LinearMap.toMatrix'_mulVec]
+  rfl
+
+/-- The particular scalar solution corrected by the boundary coefficient
+formula (55). Its first Sobolev component is the underlying element of
+the interval Hilbert space. -/
+def scalarBoundaryCorrectedSolution (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ)
+    (U : Matrix (Fin (n + 1)) (Fin m) ℝ) : S →L[ℝ] H :=
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  let B := scalarSobolevBoundaryResidual hlr M
+  let G := F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inl ℝ S J)
+  let X := F.symm.toContinuousLinearMap.comp (ContinuousLinearMap.inr ℝ S J)
+  G - X.comp ((LinearMap.toContinuousLinearMap U.mulVecLin).comp (B.comp G))
+
+/-- **Exercise 29**, Equations (52)–(55). A compatible forcing has a
+solution obtained by correcting the zero initial-jet solution with
+a homogeneous solution. Any inner inverse of the homogeneous boundary
+matrix produces the correct boundary residual. -/
+theorem scalarBoundaryCorrectedSolution_spec (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ)
+    (U : Matrix (Fin (n + 1)) (Fin m) ℝ)
+    (hU : (scalarInitialBoundaryMatrix hlr c hc hnz M).IsInnerInverse U)
+    (y : S) (hy : y ∈ (constrainedScalarIntervalOperator hlr c hc M).toFun.range) :
+    let u := scalarBoundaryCorrectedSolution hlr c hc hnz M U y
+    u ∈ scalarSobolevBoundarySpace hlr M ∧ scalarSobolevExpression c hc u = y := by
+  dsimp only
+  let F := scalarSobolevInitialEquiv hlr c hc hnz
+  let B := scalarSobolevBoundaryResidual hlr M
+  let G := F.symm (y, 0)
+  let a := U.mulVec (B G)
+  have hsplit : scalarBoundaryCorrectedSolution hlr c hc hnz M U y = F.symm (y, -a) := by
+    change G - F.symm (0, a) = F.symm (y, -a)
+    rw [← map_sub]
+    simp
+  rw [hsplit]
+  refine ⟨?_, congrArg Prod.fst (F.apply_symm_apply (y, -a))⟩
+  obtain ⟨z, hz⟩ := (mem_constrainedScalarIntervalOperator_range_iff hlr c hc hnz M y).mp hy
+  have hRange : ∃ v : J, (scalarInitialBoundaryMatrix hlr c hc hnz M).mulVec v = B G := by
+    exact ⟨z, (scalarInitialBoundaryMatrix_mulVec hlr c hc hnz M z).trans hz⟩
+  have he := boundaryCorrection_of_innerInverse hU hRange
+  rw [scalarInitialBoundaryMatrix_mulVec hlr c hc hnz M] at he
+  change B (F.symm (y, -a)) = 0
+  rw [show (y, -a) = (y, 0) + (0, -a) by simp, map_add, map_add]
+  exact he
+
+/-- After projecting the forcing onto the constrained range, the boundary
+correction (55) followed by removal of the constrained null component is
+the Moore–Penrose inverse of the scalar differential operator. -/
+theorem scalarBoundaryCorrectedSolution_maximalInverse (hlr : l < r)
+    (c : Fin (n + 2) → ℝ → ℝ) (hc : ∀ j, ContinuousOn (c j) (Icc l r))
+    (hnz : ∀ t ∈ Icc l r, c last t ≠ 0)
+    (M : Matrix (Fin m) (Fin (n + 1) ⊕ Fin (n + 1)) ℝ)
+    (U : Matrix (Fin (n + 1)) (Fin m) ℝ)
+    (hU : (scalarInitialBoundaryMatrix hlr c hc hnz M).IsInnerInverse U)
+    (y : (maximalTsengInverse (constrainedScalarIntervalOperator hlr c hc M)).domain) :
+    let L := constrainedScalarIntervalOperator hlr c hc M
+    letI := (isClosed_range_constrainedScalarIntervalOperator hlr c hc hnz M).completeSpace_coe
+    maximalTsengInverse L y = L.kerᗮ.starProjection
+      (SobolevInterval.deriv (scalarBoundaryCorrectedSolution hlr c hc hnz M U
+        (L.toFun.range.starProjection y.val)) 0) := by
+  dsimp only
+  let L := constrainedScalarIntervalOperator hlr c hc M
+  have hL : IsNormallySolvable L := ⟨isClosed_constrainedScalarIntervalOperator hlr c hc hnz M,
+    isClosed_range_constrainedScalarIntervalOperator hlr c hc hnz M⟩
+  let G := ((SobolevInterval.derivL (n + 1) l r 0).comp
+    (scalarBoundaryCorrectedSolution hlr c hc hnz M U)).toLinearMap.comp L.toFun.range.subtype
+  have hG : IsInnerInverseOnRange L G := by
+    intro f
+    obtain ⟨hm, hy⟩ := scalarBoundaryCorrectedSolution_spec hlr c hc hnz M U hU f.val f.2
+    exact (mem_scalarIntervalOperator_graph_iff _ _).mpr
+      ⟨⟨scalarBoundaryCorrectedSolution hlr c hc hnz M U f.val, hm⟩, rfl, hy⟩
+  exact maximalInverse_eq_project_innerInverse hL G hG y
+
+end ScalarGreenAlgebra
+
+section SquareGradient
+
+local notation "μ□" => Measure.prod halfRangeMeasure halfRangeMeasure
+
+section SquareSpectralProblem
+
+open EuclideanSpace TopologicalSpace
+open scoped Laplacian
+
+local notation "V₂" => EuclideanSpace ℝ (Fin 2)
+local notation "Iπ" => Set.Icc (0 : ℝ) Real.pi
+local notation "Jπ" => Set.Ioo (0 : ℝ) Real.pi
+
+private def squareCoordinateEquiv : V₂ ≃ᵐ ℝ × ℝ :=
+  (MeasurableEquiv.toLp 2 (Fin 2 → ℝ)).symm.trans (MeasurableEquiv.finTwoArrow (α := ℝ))
+
+private theorem squareCoordinateEquiv_apply (x : V₂) :
+    squareCoordinateEquiv x = (x 0, x 1) := rfl
+
+private theorem squareCoordinateEquiv_preserving :
+    MeasurePreserving squareCoordinateEquiv volume volume :=
+  (volume_preserving_finTwoArrow ℝ).comp
+    ((PiLp.volume_preserving_toLp (Fin 2)).symm (MeasurableEquiv.toLp 2 (Fin 2 → ℝ)))
+
+/-- The open square $(0,\pi)^2$ for the Dirichlet boundary condition. -/
+def dirichletSquare : Opens V₂ :=
+  ⟨squareCoordinateEquiv ⁻¹' (Jπ ×ˢ Jπ), by
+    apply (isOpen_Ioo.prod isOpen_Ioo).preimage
+    rw [show (squareCoordinateEquiv : V₂ → ℝ × ℝ) = fun x => (x 0, x 1) from rfl]
+    fun_prop⟩
+
+private theorem measurableEmbedding_squareInclusion :
+    MeasurableEmbedding (fun p : Iπ × Iπ =>
+      squareCoordinateEquiv.symm (p.1.val, p.2.val)) :=
+  squareCoordinateEquiv.symm.measurableEmbedding.comp
+    ((MeasurableEmbedding.subtype_coe measurableSet_Icc).prodMap
+      (MeasurableEmbedding.subtype_coe measurableSet_Icc))
+
+private theorem squareInclusion_preserving :
+    MeasurePreserving (fun p : Iπ × Iπ => squareCoordinateEquiv.symm (p.1.val, p.2.val))
+      μ□ (volume.restrict (dirichletSquare : Set V₂)) := by
+  have hsub : MeasurePreserving (Subtype.val : Iπ → ℝ)
+      halfRangeMeasure (volume.restrict Jπ) :=
+    ⟨measurable_subtype_coe, by
+      rw [halfRangeMeasure, map_comap_subtype_coe measurableSet_Icc, restrict_Ioo_eq_restrict_Icc]⟩
+  have hsub₂ : MeasurePreserving (fun p : Iπ × Iπ => (p.1.val, p.2.val)) μ□
+      ((volume.restrict Jπ).prod (volume.restrict Jπ)) := hsub.prod hsub
+  rw [Measure.prod_restrict] at hsub₂
+  have he := squareCoordinateEquiv_preserving.restrict_preimage
+    (s := Jπ ×ˢ Jπ) (measurableSet_Ioo.prod measurableSet_Ioo)
+  exact (he.symm squareCoordinateEquiv).comp hsub₂
+
+/-- The measure-preserving product coordinates give a linear isometry on square-integrable functions. -/
+def squareL2Equiv : Lp ℝ 2 (volume.restrict (dirichletSquare : Set V₂)) ≃ₗᵢ[ℝ]
+    Lp ℝ 2 μ□ := by
+  let f (p : Iπ × Iπ) := squareCoordinateEquiv.symm (p.1.val, p.2.val)
+  let T := Lp.compMeasurePreservingₗᵢ ℝ (E := ℝ) (p := 2) f squareInclusion_preserving
+  refine LinearIsometryEquiv.ofSurjective T ?_
+  intro u
+  let g := (Lp.aestronglyMeasurable u).mk u
+  have hm : Measurable g := (Lp.aestronglyMeasurable u).stronglyMeasurable_mk.measurable
+  have hg : (fun p => u p) =ᵐ[μ□] g := (Lp.aestronglyMeasurable u).ae_eq_mk
+  obtain ⟨v, hv, he⟩ := measurableEmbedding_squareInclusion.exists_measurable_extend hm
+    (fun _ => ⟨(0 : ℝ)⟩)
+  have hV : MemLp v 2 (volume.restrict (dirichletSquare : Set V₂)) := by
+    rw [← squareInclusion_preserving.map_eq, measurableEmbedding_squareInclusion.memLp_map_measure_iff,
+      he]
+    exact (memLp_congr_ae hg).mp (Lp.memLp u)
+  refine ⟨hV.toLp _, ?_⟩
+  change Lp.compMeasurePreserving f squareInclusion_preserving (hV.toLp v) = u
+  rw [Lp.toLp_compMeasurePreserving]
+  apply Lp.ext
+  exact (MemLp.coeFn_toLp (hV.comp_measurePreserving squareInclusion_preserving)).trans
+    (he ▸ hg.symm)
+
+private theorem squareL2Equiv_apply_ae
+    (u : Lp ℝ 2 (volume.restrict (dirichletSquare : Set V₂))) :
+    (fun p => squareL2Equiv u p) =ᵐ[μ□]
+      fun p : Iπ × Iπ => u (squareCoordinateEquiv.symm (p.1.val, p.2.val)) :=
+  Lp.coeFn_compMeasurePreserving u squareInclusion_preserving
+
+/-- The smooth normalized product sine mode on the Euclidean square. -/
+def squareSineMode (j : ℕ × ℕ) (x : V₂) : ℝ :=
+  (2 / Real.pi) * Real.sin ((j.1 + 1 : ℝ) * x 0) * Real.sin ((j.2 + 1 : ℝ) * x 1)
+
+private theorem squareSineMode_contDiff (j : ℕ × ℕ) :
+    ContDiff ℝ ⊤ (squareSineMode j) := by unfold squareSineMode; fun_prop
+
+private theorem squareSineMode_zero_frontier (j : ℕ × ℕ) :
+    EqOn (squareSineMode j) 0 (frontier (dirichletSquare : Set V₂)) := by
+  intro x hx
+  have hsub : closure (dirichletSquare : Set V₂) ⊆ squareCoordinateEquiv ⁻¹' (Iπ ×ˢ Iπ) := by
+    apply closure_minimal
+    · intro z hz
+      exact ⟨Ioo_subset_Icc_self hz.1, Ioo_subset_Icc_self hz.2⟩
+    · apply (isClosed_Icc.prod isClosed_Icc).preimage
+      rw [show (squareCoordinateEquiv : V₂ → ℝ × ℝ) = fun x => (x 0, x 1) from rfl]
+      fun_prop
+  have hmem : x 0 ∈ Iπ ∧ x 1 ∈ Iπ := hsub hx.1
+  have hnot : ¬ (x 0 ∈ Jπ ∧ x 1 ∈ Jπ) := by
+    change x ∉ (dirichletSquare : Set V₂)
+    have hO : IsOpen (dirichletSquare : Set V₂) := dirichletSquare.isOpen
+    exact fun he => hx.2 (hO.interior_eq.symm ▸ he)
+  have he : x 0 = 0 ∨ x 0 = Real.pi ∨ x 1 = 0 ∨ x 1 = Real.pi := by
+    by_contra! hn
+    exact hnot ⟨⟨lt_of_le_of_ne hmem.1.1 hn.1.symm, lt_of_le_of_ne hmem.1.2 hn.2.1⟩,
+      ⟨lt_of_le_of_ne hmem.2.1 hn.2.2.1.symm, lt_of_le_of_ne hmem.2.2 hn.2.2.2⟩⟩
+  change squareSineMode j x = 0
+  have hs (n : ℕ) : Real.sin ((n + 1 : ℝ) * Real.pi) = 0 := by
+    simpa only [Nat.cast_add, Nat.cast_one] using Real.sin_nat_mul_pi (n + 1)
+  rcases he with h0 | h0 | h0 | h0 <;> simp [squareSineMode, h0, hs]
+
+private theorem squareSineMode_laplacian (j : ℕ × ℕ) (x : V₂) :
+    -Δ (squareSineMode j) x = squareSineEigenvalue j * squareSineMode j x := by
+  let P (i : Fin 2) : V₂ →L[ℝ] ℝ := PiLp.proj 2 (fun _ : Fin 2 => ℝ) i
+  let a : ℝ := j.1 + 1
+  let b : ℝ := j.2 + 1
+  let c : ℝ := 2 / Real.pi
+  let s (i : Fin 2) (k : ℝ) (y : V₂) := Real.sin (k * y i)
+  let r (i : Fin 2) (k : ℝ) (y : V₂) := Real.cos (k * y i)
+  have hs (i : Fin 2) (k : ℝ) (y : V₂) :
+      HasFDerivAt (s i k) ((k * r i k y) • P i) y := by
+    have hf : HasFDerivAt (fun z : V₂ => k * z i) (k • P i) y :=
+      ((P i).hasFDerivAt (x := y)).const_mul k
+    simpa only [s, r, smul_smul, mul_comm] using hf.sin
+  have hr (i : Fin 2) (k : ℝ) (y : V₂) :
+      HasFDerivAt (r i k) ((-k * s i k y) • P i) y := by
+    have hf : HasFDerivAt (fun z : V₂ => k * z i) (k • P i) y :=
+      ((P i).hasFDerivAt (x := y)).const_mul k
+    have he : -Real.sin (k * y i) * k = -k * s i k y := by dsimp [s]; ring
+    simpa only [r, smul_smul, he] using hf.cos
+  have h1 (y : V₂) : fderiv ℝ (squareSineMode j) y (EuclideanSpace.single 0 1) =
+      c * a * r 0 a y * s 1 b y := by
+    have hh := (((hs 0 a y).mul (hs 1 b y)).const_smul c).fderiv
+    have he : c • (s 0 a * s 1 b) = squareSineMode j := by
+      funext z
+      change c * (s 0 a z * s 1 b z) = squareSineMode j z
+      rw [← mul_assoc, squareSineMode]
+    rw [he] at hh
+    rw [hh]
+    simp [P, PiLp.proj_apply, smul_eq_mul]
+    ring
+  have h2 (y : V₂) : fderiv ℝ (squareSineMode j) y (EuclideanSpace.single 1 1) =
+      c * b * s 0 a y * r 1 b y := by
+    have hh := (((hs 0 a y).mul (hs 1 b y)).const_smul c).fderiv
+    have he : c • (s 0 a * s 1 b) = squareSineMode j := by
+      funext z
+      change c * (s 0 a z * s 1 b z) = squareSineMode j z
+      rw [← mul_assoc, squareSineMode]
+    rw [he] at hh
+    rw [hh]
+    simp [P, PiLp.proj_apply, smul_eq_mul]
+    ring
+  have hd₁ : fderiv ℝ (fun y => c * a * r 0 a y * s 1 b y) x (EuclideanSpace.single 0 1) =
+      -(a ^ 2) * squareSineMode j x := by
+    have hh := (((hr 0 a x).const_smul (c * a)).mul (hs 1 b x)).fderiv
+    change fderiv ℝ ((c * a) • r 0 a * s 1 b) x _ = _
+    rw [hh]
+    simp [P, PiLp.proj_apply, smul_eq_mul, a, b, c, s, r, squareSineMode]
+    ring
+  have hd₂ : fderiv ℝ (fun y => c * b * s 0 a y * r 1 b y) x (EuclideanSpace.single 1 1) =
+      -(b ^ 2) * squareSineMode j x := by
+    have hh := (((hs 0 a x).const_smul (c * b)).mul (hr 1 b x)).fderiv
+    change fderiv ℝ ((c * b) • s 0 a * r 1 b) x _ = _
+    rw [hh]
+    simp [P, PiLp.proj_apply, smul_eq_mul, a, b, c, s, r, squareSineMode]
+    ring
+  rw [Elliptic.laplacian_eq_sum_fderiv_fderiv (Ω := (⊤ : Opens V₂))
+    (squareSineMode_contDiff j |>.of_le (by norm_num) |>.contDiffOn) (by simp),
+    Fin.sum_univ_two, funext h1, funext h2, hd₁, hd₂]
+  change -(-(a ^ 2) * _ + -(b ^ 2) * _) = (a ^ 2 + b ^ 2) * _
+  ring
+
+private theorem isBounded_dirichletSquare : Bornology.IsBounded (dirichletSquare : Set V₂) := by
+  apply Metric.isBounded_closedBall (x := (0 : V₂)) (r := 2 * Real.pi) |>.subset
+  intro x hx
+  have hx' : x 0 ∈ Jπ ∧ x 1 ∈ Jπ := hx
+  rw [Metric.mem_closedBall, dist_zero_right]
+  have h0 : ‖x 0‖ ≤ Real.pi := by
+    rw [Real.norm_of_nonneg hx'.1.1.le]
+    exact hx'.1.2.le
+  have h1 : ‖x 1‖ ≤ Real.pi := by
+    rw [Real.norm_of_nonneg hx'.2.1.le]
+    exact hx'.2.2.le
+  have hn : ‖x‖ ^ 2 = ‖x 0‖ ^ 2 + ‖x 1‖ ^ 2 := by
+    rw [PiLp.norm_sq_eq_of_L2, Fin.sum_univ_two]
+  nlinarith [norm_nonneg x, norm_nonneg (x 0), norm_nonneg (x 1), Real.pi_pos,
+    mul_nonneg (sub_nonneg.mpr h0) (add_nonneg (norm_nonneg (x 0)) Real.pi_pos.le),
+    mul_nonneg (sub_nonneg.mpr h1) (add_nonneg (norm_nonneg (x 1)) Real.pi_pos.le)]
+
+local notation "ν□" => Measure.restrict (volume : Measure V₂) (dirichletSquare : Set V₂)
+
+private theorem squareSineMode_memLp (j : ℕ × ℕ) : MemLp (squareSineMode j) 2 ν□ := by
+  let : IsFiniteMeasure ν□ := by
+    refine ⟨?_⟩
+    rw [Measure.restrict_apply MeasurableSet.univ, univ_inter]
+    exact isBounded_dirichletSquare.measure_lt_top
+  apply MemLp.of_bound (squareSineMode_contDiff j).continuous.aestronglyMeasurable
+    (2 / Real.pi)
+  filter_upwards with x
+  change ‖(2 / Real.pi) * Real.sin ((j.1 + 1) * x 0) *
+    Real.sin ((j.2 + 1) * x 1)‖ ≤ 2 / Real.pi
+  simp only [Real.norm_eq_abs, abs_mul, abs_of_nonneg (show 0 ≤ 2 / Real.pi by positivity)]
+  calc
+    _ ≤ (2 / Real.pi) * 1 * 1 := by
+      gcongr <;> exact abs_le.mpr ⟨Real.neg_one_le_sin _, Real.sin_le_one _⟩
+    _ = _ := by rw [mul_one, mul_one]
+
+/-- The normalized double sine mode in the ambient Hilbert space of the
+Dirichlet square. -/
+def squareDirichletMode (j : ℕ × ℕ) : Lp ℝ 2 ν□ :=
+  (squareSineMode_memLp j).toLp _
+
+/-- The square Dirichlet modes become the product sine basis under the
+measure-preserving identification with the product of the two intervals. -/
+theorem squareL2Equiv_dirichletMode (j : ℕ × ℕ) :
+    squareL2Equiv (squareDirichletMode j) = squareSineBasis j := by
+  apply Lp.ext
+  refine (squareL2Equiv_apply_ae (squareDirichletMode j)).trans ?_
+  have he := squareInclusion_preserving.quasiMeasurePreserving.ae
+    (MemLp.coeFn_toLp (squareSineMode_memLp j))
+  filter_upwards [he, squareSineBasis_apply_ae j] with p hp hq
+  rw [squareDirichletMode, hp, hq]
+  have h := squareCoordinateEquiv.apply_symm_apply (p.1.val, p.2.val)
+  rw [squareCoordinateEquiv_apply] at h
+  have h₁ := Prod.mk.inj h
+  rw [squareSineMode, h₁.1, h₁.2]
+
+/-- **Exercise 27(d)** of [benIsrael2003generalized], Chapter 9.
+Each double sine mode is in the domain of the weak Dirichlet Laplacian
+and has its stated eigenvalue. -/
+theorem squareDirichletMode_eigen (j : ℕ × ℕ) :
+    (squareDirichletMode j, squareSineEigenvalue j • squareDirichletMode j) ∈
+      (dirichletLaplacian dirichletSquare).graph := by
+  let u := squareSineMode j
+  let lam := squareSineEigenvalue j
+  let g := squareDirichletMode j
+  let F := (lam + 1) • u
+  have hMem := (squareSineMode_memLp j).const_smul (lam + 1)
+  have hEq (x : V₂) (_ : x ∈ dirichletSquare) : -Δ u x + u x = F x := by
+    change -Δ (squareSineMode j) x + squareSineMode j x = _
+    rw [squareSineMode_laplacian]
+    change lam * u x + u x = (lam + 1) * u x
+    ring
+  have hc : ContDiff ℝ 2 u := (squareSineMode_contDiff j).of_le (by norm_num)
+  obtain ⟨U, hU, heU, hGal⟩ := Elliptic.isGalerkinSolution_laplace_of_classical dirichletSquare
+    isBounded_dirichletSquare (hc.contDiffOn.contDiffOnClosure dirichletSquare.isOpen)
+    hc.continuous.continuousOn
+    (squareSineMode_zero_frontier j) hMem hEq
+  have h₀ : SobolevMultiIndex.weakDeriv U 0 = g :=
+    Lp.ext (heU.trans (MemLp.coeFn_toLp (squareSineMode_memLp j)).symm)
+  have hF : hMem.toLp F = (lam + 1) • g :=
+    MemLp.toLp_const_smul (lam + 1) (squareSineMode_memLp j)
+  have hForm (v : SobolevEuclidean 2 1 2 dirichletSquare)
+      (hv : v ∈ SobolevEuclideanZero 2 1 2 dirichletSquare) :
+      Elliptic.dirichletForm dirichletSquare U v = Elliptic.load dirichletSquare (lam • g) v := by
+    have h := hGal.2 v hv
+    rw [Elliptic.laplaceForm_apply_eq_dirichletForm_add_weakDeriv, h₀, hF,
+      Elliptic.load_apply_inner, real_inner_smul_left] at h
+    rw [Elliptic.load_apply_inner, real_inner_smul_left]
+    linarith
+  have hd : g ∈ (dirichletLaplacian dirichletSquare).domain := ⟨U, hU, h₀, lam • g, hForm⟩
+  exact (dirichletLaplacian dirichletSquare).mem_graph_iff.mpr
+    ⟨⟨g, hd⟩, rfl, dirichletLaplacian_apply_unique ⟨g, hd⟩ hU h₀ hForm⟩
+
+/-- The integral inverse transported to the ambient square Hilbert space. -/
+def squareDirichletGreenOperator : Lp ℝ 2 ν□ →L[ℝ] Lp ℝ 2 ν□ :=
+  squareL2Equiv.symm.toLinearIsometry.toContinuousLinearMap.comp
+    ((IntegralOperator.l2KernelCLM (Lp.memLp squareSineGreenKernel)).comp
+      squareL2Equiv.toLinearIsometry.toContinuousLinearMap)
+
+private theorem squareDirichletGreenOperator_repr (f : Lp ℝ 2 ν□) (j : ℕ × ℕ) :
+    squareSineBasis.repr (squareL2Equiv (squareDirichletGreenOperator f)) j =
+      (squareSineEigenvalue j)⁻¹ * squareSineBasis.repr (squareL2Equiv f) j := by
+  simp only [squareDirichletGreenOperator, ContinuousLinearMap.comp_apply,
+    LinearIsometry.coe_toContinuousLinearMap, LinearIsometryEquiv.coe_toLinearIsometry, LinearIsometryEquiv.apply_symm_apply]
+  exact squareSineGreenKernel_action_repr _ j
+
+private theorem squareDirichletGreenOperator_mode (j : ℕ × ℕ) :
+    squareDirichletGreenOperator (squareDirichletMode j) =
+      (squareSineEigenvalue j)⁻¹ • squareDirichletMode j := by
+  apply squareL2Equiv.injective
+  apply squareSineBasis.repr.injective
+  ext i
+  rw [squareDirichletGreenOperator_repr, map_smul, map_smul, lp.coeFn_smul, Pi.smul_apply,
+    smul_eq_mul, squareL2Equiv_dirichletMode, squareSineBasis.repr_apply_apply]
+  classical
+  rw [orthonormal_iff_ite.mp squareSineBasis.orthonormal]
+  by_cases he : i = j
+  · rw [he]
+  · simp [he]
+
+private theorem hasSum_squareDirichletMode_repr (f : Lp ℝ 2 ν□) :
+    HasSum (fun j : ℕ × ℕ => squareSineBasis.repr (squareL2Equiv f) j • squareDirichletMode j) f := by
+  have h := (squareSineBasis.hasSum_repr (squareL2Equiv f)).mapL
+    squareL2Equiv.symm.toLinearIsometry.toContinuousLinearMap
+  have h₁ (j : ℕ × ℕ) : squareL2Equiv.symm (squareSineBasis j) = squareDirichletMode j := by
+    rw [← squareL2Equiv_dirichletMode, LinearIsometryEquiv.symm_apply_apply]
+  simpa only [LinearIsometry.coe_toContinuousLinearMap, LinearIsometryEquiv.coe_toLinearIsometry, map_smul, h₁,
+    LinearIsometryEquiv.symm_apply_apply] using h
+
+/-- **Exercise 27(d)** of [benIsrael2003generalized], Chapter 9.
+The operator integrating the double sine Green series is an inverse of the
+weak Dirichlet Laplacian on the entire square-integrable forcing space. -/
+theorem squareDirichletGreenOperator_rightInverse (f : Lp ℝ 2 ν□) :
+    (squareDirichletGreenOperator f, f) ∈ (dirichletLaplacian dirichletSquare).graph := by
+  let L := dirichletLaplacian dirichletSquare
+  let C := squareDirichletGreenOperator
+  let ξ (j : ℕ × ℕ) := squareSineBasis.repr (squareL2Equiv f) j
+  have ht := hasSum_squareDirichletMode_repr f
+  have hu := ht.mapL C
+  have hSum := Filter.Tendsto.prodMk_nhds hu ht
+  apply (dirichletLaplacian_isClosed (Ω := dirichletSquare)).mem_of_tendsto hSum
+  apply Filter.Eventually.of_forall
+  intro s
+  have hs : ((∑ j ∈ s, C (ξ j • squareDirichletMode j)), ∑ j ∈ s, ξ j • squareDirichletMode j) =
+      ∑ j ∈ s, (C (ξ j • squareDirichletMode j), ξ j • squareDirichletMode j) := by
+    apply Prod.ext <;> simp [Prod.fst_sum, Prod.snd_sum]
+  change ((∑ j ∈ s, C (ξ j • squareDirichletMode j)), ∑ j ∈ s, ξ j • squareDirichletMode j) ∈ L.graph
+  rw [hs]
+  apply L.graph.sum_mem
+  intro j _
+  have hmem := L.graph.smul_mem (ξ j * (squareSineEigenvalue j)⁻¹) (squareDirichletMode_eigen j)
+  change (C (ξ j • squareDirichletMode j), ξ j • squareDirichletMode j) ∈ L.graph
+  rw [map_smul, squareDirichletGreenOperator_mode, smul_smul]
+  change ((ξ j * (squareSineEigenvalue j)⁻¹) • squareDirichletMode j, _) ∈ L.graph at hmem
+  have hz : (ξ j * (squareSineEigenvalue j)⁻¹) •
+      (squareSineEigenvalue j • squareDirichletMode j) = ξ j • squareDirichletMode j := by
+    rw [smul_smul, mul_assoc, inv_mul_cancel₀ (squareSineEigenvalue_pos j).ne', mul_one]
+  simpa only [Prod.smul_mk, hz] using hmem
+
+/-- **Exercise 27(d)** of [benIsrael2003generalized], Chapter 9.
+The Green integral recovers every solution in the Dirichlet Laplacian
+domain from its forcing. -/
+theorem squareDirichletGreenOperator_leftInverse
+    (u : (dirichletLaplacian dirichletSquare).domain) :
+    squareDirichletGreenOperator (dirichletLaplacian dirichletSquare u) = u := by
+  let L := dirichletLaplacian dirichletSquare
+  apply squareL2Equiv.injective
+  apply squareSineBasis.repr.injective
+  ext j
+  rw [squareDirichletGreenOperator_repr, squareSineBasis.repr_apply_apply,
+    squareSineBasis.repr_apply_apply, ← squareL2Equiv_dirichletMode,
+    LinearIsometryEquiv.inner_map_map, LinearIsometryEquiv.inner_map_map]
+  have he := squareDirichletMode_eigen j
+  obtain ⟨v, hv, hAv⟩ := L.mem_graph_iff.mp he
+  have hs := (dirichletLaplacian_isFormalAdjoint (Ω := dirichletSquare)) v u
+  change ⟪L v, (u : Lp ℝ 2 ν□)⟫_ℝ = ⟪(v : Lp ℝ 2 ν□), L u⟫_ℝ at hs
+  change (v : Lp ℝ 2 ν□) = squareDirichletMode j at hv
+  rw [← hv, ← hs, hAv, real_inner_smul_left, hv, ← mul_assoc,
+    inv_mul_cancel₀ (squareSineEigenvalue_pos j).ne', one_mul]
+
+private theorem squareGradient_normallySolvable :
+    IsNormallySolvable (weakDirichletGradient dirichletSquare) := by
+  let L := weakDirichletGradient dirichletSquare
+  let S := SobolevEuclideanZero 2 1 2 dirichletSquare
+  let A := (SobolevEuclideanZero.gradₗ 2 2 dirichletSquare).mkContinuous 1
+    (fun x : S => by
+      change SobolevMultiIndex.gradNorm (x : SobolevEuclidean 2 1 2 dirichletSquare) ≤
+        1 * ‖(x : SobolevEuclidean 2 1 2 dirichletSquare)‖
+      rw [one_mul]
+      exact SobolevMultiIndex.gradNorm_le_norm _)
+  obtain ⟨r, hr⟩ := (Metric.isBounded_iff_subset_ball (0 : V₂)).mp isBounded_dirichletSquare
+  let R := max r 1
+  have hR : 0 ≤ R := zero_le_one.trans (le_max_right _ _)
+  have hSub : (dirichletSquare : Set V₂) ⊆ Metric.ball 0 R :=
+    hr.trans (Metric.ball_subset_ball (le_max_left _ _))
+  let c : NNReal := ⟨(1 + (2 * R) ^ (2 : ℝ≥0∞).toReal) ^ (1 / (2 : ℝ≥0∞).toReal),
+    Real.rpow_nonneg (by positivity) _⟩
+  have hA : AntilipschitzWith c A := A.antilipschitz_of_bound fun x =>
+    SobolevEuclideanZero.norm_le_mul_norm_gradₗ (by norm_num : (2 : ℝ≥0∞) ≠ ∞) hR hSub x
+  refine ⟨isClosed_weakDirichletGradient _, ?_⟩
+  have he : L.toFun.range = A.range := by
+    ext y
+    constructor
+    · rintro ⟨x, rfl⟩
+      obtain ⟨u, _, hu⟩ := (mem_weakDirichletGradient_graph_iff _).mp (L.mem_graph x)
+      exact ⟨u, hu⟩
+    · rintro ⟨u, rfl⟩
+      have hgraph := (mem_weakDirichletGradient_graph_iff dirichletSquare).mpr ⟨u, rfl, rfl⟩
+      obtain ⟨x, _, hx⟩ := L.mem_graph_iff.mp hgraph
+      exact ⟨x, hx⟩
+  rw [he]
+  exact hA.isClosed_range A.uniformContinuous
+
+private theorem exists_squareModeGradient (j : ℕ × ℕ) :
+    ∃ y, (squareDirichletMode j, y) ∈ (weakDirichletGradient dirichletSquare).graph ∧
+      (y, squareSineEigenvalue j • squareDirichletMode j) ∈
+        (weakDirichletGradient dirichletSquare).adjoint.graph := by
+  let L := weakDirichletGradient dirichletSquare
+  have he : (squareDirichletMode j, squareSineEigenvalue j • squareDirichletMode j) ∈
+      (partialComp L.adjoint L).graph := by
+    rw [weakDirichletGradient_gram]
+    exact squareDirichletMode_eigen j
+  obtain ⟨u, hu, hform⟩ := (partialComp L.adjoint L).mem_graph_iff.mp he
+  obtain ⟨hx, hy⟩ := (partialComp_mem_domain L.adjoint L (u : Lp ℝ 2 ν□)).mp u.property
+  exact ⟨L ⟨u, hx⟩, L.mem_graph_iff.mpr ⟨⟨u, hx⟩, hu, rfl⟩,
+    L.adjoint.mem_graph_iff.mpr ⟨⟨_, hy⟩, rfl, hform⟩⟩
+
+/-- The weak gradient of each normalized sine mode of the square. -/
+def squareDirichletModeGradient (j : ℕ × ℕ) : PiLp 2 (fun _ : Fin 2 => Lp ℝ 2 ν□) :=
+  (exists_squareModeGradient j).choose
+
+private theorem squareDirichletModeGradient_spec (j : ℕ × ℕ) :
+    (squareDirichletMode j, squareDirichletModeGradient j) ∈
+      (weakDirichletGradient dirichletSquare).graph ∧
+    (squareDirichletModeGradient j, squareSineEigenvalue j • squareDirichletMode j) ∈
+      (weakDirichletGradient dirichletSquare).adjoint.graph :=
+  (exists_squareModeGradient j).choose_spec
+
+/-- The mode gradient uses the ordinary partial derivatives of the smooth
+sine eigenfunction in each coordinate. -/
+theorem squareDirichletModeGradient_apply_ae (j : ℕ × ℕ) (i : Fin 2) :
+    (fun s => squareDirichletModeGradient j i s) =ᵐ[ν□]
+      fun s => fderiv ℝ (squareSineMode j) s (EuclideanSpace.single i 1) := by
+  obtain ⟨u, hu, hv⟩ := (mem_weakDirichletGradient_graph_iff dirichletSquare).mp
+    (squareDirichletModeGradient_spec j).1
+  have hFunction : SobolevMultiIndex.fn (u : SobolevEuclidean 2 1 2 dirichletSquare) =ᵐ[ν□]
+      squareSineMode j := by
+    change (fun s => (SobolevMultiIndexZero.fnL ℝ (EuclideanSpace.basisFun (Fin 2) ℝ).toBasis
+      1 2 dirichletSquare volume u) s) =ᵐ[ν□] _
+    rw [hu]
+    exact MemLp.coeFn_toLp (squareSineMode_memLp j)
+  rw [← hv]
+  exact Elliptic.weakDeriv_single_ae_eq_fderiv_of_contDiffOn dirichletSquare
+    ((squareSineMode_contDiff j).of_le (by norm_num)).contDiffOn hFunction i
+
+/-- **Exercise 27(e)** of [benIsrael2003generalized], Chapter 9.
+Integrating the input against the input-coordinate derivatives of the
+finite double sine Green series converges in $L^2$ to the maximal inverse of
+the Dirichlet gradient. -/
+theorem exercise_9_27_gradientSeries (y : PiLp 2 (fun _ : Fin 2 => Lp ℝ 2 ν□)) :
+    let L := weakDirichletGradient dirichletSquare
+    let y₀ : (maximalTsengInverse L).domain := ⟨y,
+      maximalTsengInverse_domain_eq_top_of_normallySolvable squareGradient_normallySolvable ▸
+        Submodule.mem_top⟩
+    HasSum
+      (fun j : ℕ × ℕ => ((squareSineEigenvalue j)⁻¹ *
+        ∑ i : Fin 2, ∫ s, fderiv ℝ (squareSineMode j) s (EuclideanSpace.single i 1) *
+          y i s ∂ν□) • squareDirichletMode j) (maximalTsengInverse L y₀) := by
+  let L := weakDirichletGradient dirichletSquare
+  let S := maximalTsengInverse L
+  let hN := squareGradient_normallySolvable
+  let h := isTsengInverse_maximalTsengInverse_of_isClosed hN.1
+  let := hN.2.completeSpace_coe
+  let y₀ : S.domain := ⟨y, maximalTsengInverse_domain_eq_top_of_normallySolvable hN ▸
+    Submodule.mem_top⟩
+  let x : L.domain := ⟨S y₀, h.inverse_range_le_domain ⟨y₀, rfl⟩⟩
+  have hP : L x = L.toFun.range.starProjection y :=
+    (exercise_9_34 hN (dense_weakDirichletGradient_domain dirichletSquare)).2.2.1 y₀
+  change HasSum _ (x : Lp ℝ 2 ν□)
+  apply (hasSum_squareDirichletMode_repr (x : Lp ℝ 2 ν□)).congr_fun
+  intro j
+  congr 1
+  let v := squareDirichletModeGradient j
+  have hv : v ∈ L.toFun.range := by
+    obtain ⟨u, _, hu⟩ := L.mem_graph_iff.mp (squareDirichletModeGradient_spec j).1
+    exact ⟨u, hu⟩
+  have hz : inner ℝ v (y - L x) = 0 := by
+    rw [hP]
+    exact (Submodule.mem_orthogonal _ _).mp
+      (L.toFun.range.sub_starProjection_mem_orthogonal y) v hv
+  have h₁ : inner ℝ v y = inner ℝ v (L x) := by
+    rwa [inner_sub_right, sub_eq_zero] at hz
+  have hG := (squareDirichletModeGradient_spec j).2
+  rw [LinearPMap.adjoint_graph_eq_graph_adjoint (dense_weakDirichletGradient_domain _)] at hG
+  have h₂ : inner ℝ (L x) v = inner ℝ (x : Lp ℝ 2 ν□)
+      (squareSineEigenvalue j • squareDirichletMode j) :=
+    sub_eq_zero.mp ((Submodule.mem_adjoint_iff _ _).mp hG _ _ (L.mem_graph x))
+  have hI : inner ℝ v y = ∑ i : Fin 2,
+      ∫ s, fderiv ℝ (squareSineMode j) s (EuclideanSpace.single i 1) * y i s ∂ν□ := by
+    rw [PiLp.inner_apply]
+    exact Finset.sum_congr rfl fun i _ => by
+      rw [L2.inner_eq_integral_mul]
+      exact integral_congr_ae ((squareDirichletModeGradient_apply_ae j i).mul
+        (Filter.EventuallyEq.rfl : (fun s => y i s) =ᵐ[ν□] fun s => y i s))
+  rw [squareSineBasis.repr_apply_apply, ← squareL2Equiv_dirichletMode,
+    LinearIsometryEquiv.inner_map_map, ← hI, h₁, ← real_inner_comm v (L x), h₂,
+    real_inner_smul_right, ← mul_assoc, inv_mul_cancel₀ (squareSineEigenvalue_pos j).ne',
+    one_mul, real_inner_comm]
+
+end SquareSpectralProblem
+
+open MeasureTheory Set SobolevMultiIndex TopologicalSpace
+open scoped ENNReal InnerProductSpace
+
+/-- Smooth fields with square-integrable components and diagonal derivatives
+belong to the maximal adjoint domain. The adjoint acts by negative divergence. -/
+theorem weakDirichletGradient_adjoint_of_contDiffOn
+    {n : ℕ} (Ω : Opens (EuclideanSpace ℝ (Fin n)))
+    (v : Fin n → EuclideanSpace ℝ (Fin n) → ℝ)
+    (hv : ∀ i, ContDiffOn ℝ 1 (v i) Ω)
+    (hvLp : ∀ i, MemLp (v i) 2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin n)))))
+    (hdLp : ∀ i, MemLp (fun s => fderiv ℝ (v i) s (EuclideanSpace.single i 1))
+      2 (volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin n))))) :
+    ((WithLp.toLp 2 (fun i => (hvLp i).toLp (v i))),
+      -(∑ i, (hdLp i).toLp (fun s => fderiv ℝ (v i) s (EuclideanSpace.single i 1)))) ∈
+        (weakDirichletGradient Ω).adjoint.graph := by
+  apply (mem_weakDirichletGradient_adjoint_graph_iff Ω).mpr
+  intro φ hφ
+  obtain ⟨ψ, hψ⟩ := hφ
+  let μ := volume.restrict (Ω : Set (EuclideanSpace ℝ (Fin n)))
+  let d (i : Fin n) (s : EuclideanSpace ℝ (Fin n)) := fderiv ℝ (v i) s (EuclideanSpace.single i 1)
+  have he (i : Fin n) :
+      ⟪SobolevMultiIndex.weakDeriv φ (MultiIndexLE.single i), (hvLp i).toLp (v i)⟫_ℝ =
+        -⟪SobolevMultiIndex.weakDeriv φ 0, (hdLp i).toLp (d i)⟫_ℝ := by
+    have h1 := SobolevMultiIndexZero.weakDeriv_single_ae_eq_testFunction hψ i
+    rw [EuclideanSpace.basisFun_toBasis_apply] at h1
+    have hi := ((hv i).hasWeakIteratedLineDerivOn_single Ω i).integral_smul_eq ψ
+    simp only [iteratedFDeriv_one_apply, Matrix.cons_val_zero, smul_eq_mul, pow_one,
+      neg_one_mul] at hi
+    rw [L2.inner_eq_integral_mul, L2.inner_eq_integral_mul]
+    calc
+      _ = ∫ s, fderiv ℝ ψ s (EuclideanSpace.single i 1) * v i s ∂μ :=
+        integral_congr_ae (h1.mul (hvLp i).coeFn_toLp)
+      _ = -∫ s, ψ s * d i s ∂μ := hi
+      _ = -∫ s, SobolevMultiIndex.weakDeriv φ 0 s * (hdLp i).toLp (d i) s ∂μ :=
+        congrArg Neg.neg (integral_congr_ae (hψ.mul (hdLp i).coeFn_toLp)).symm
+  rw [PiLp.inner_apply, inner_neg_right, inner_sum]
+  exact (Finset.sum_congr rfl fun i _ => he i).trans (Finset.sum_neg_distrib _)
+
+end SquareGradient
 
 end BenIsraelGreville.Chapter09
