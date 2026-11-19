@@ -259,8 +259,8 @@ source = 'Ben-Israel and Greville, Chapter 6, Equation (161), path family with t
 [[node]]
 id = "rectangular_contour_calculus_general_jordan_domains"
 kind = "theorem"
-desc = '''Relate the customary positive orientation and geometric enclosure of rectifiable Jordan contours to their winding numbers. The homological versions already handle arbitrary open holomorphy domains, while the inverse and iterated-integral formulas require winding zero at the origin. Continuous rectifiable curves admit increasing Lipschitz reparametrizations.'''
-deps = ["lemma_6_5_path_grouped", "lemma_6_5_homological", "rectangularContourFamilyCalculus_inv", "corollary_6_4_homological", "lemma_6_7_homological", "theorem_6_20"]
+desc = '''Identify geometric positively oriented Jordan enclosure with the integral winding index, in particular winding one on the bounded Jordan component. The exterior zero, local constancy, integrality, and parametrization independence are proved. The index-based rectifiable formula includes nonconvex holomorphy domains. The inverse and iterated-integral formulas also require zero winding at the origin.'''
+deps = ["lemma_6_5_path_grouped", "lemma_6_5_rectifiable_of_index_enclosure", "rectangularContourFamilyCalculus_inv", "corollary_6_4_homological", "lemma_6_7_homological", "theorem_6_20"]
 source = 'Ben-Israel and Greville, Chapter 6, Lemmas 5 and 7, Corollary 4, Theorem 20, rectifiable Jordan contours'
 
 [[node]]
@@ -278,3 +278,7 @@ source = "Ben-Israel and Greville, Chapter 6, Corollary 4, Equation (163), arbit
 [[node]]
 id = "lemma_6_7_homological"
 source = "Ben-Israel and Greville, Chapter 6, Lemma 7, Equation (166), arbitrary open holomorphy domains"
+
+[[node]]
+id = "lemma_6_5_rectifiable_of_index_enclosure"
+source = "Ben-Israel and Greville, Chapter 6, Lemma 5(b), Equation (160), rectifiable index enclosures"

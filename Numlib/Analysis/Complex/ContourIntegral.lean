@@ -13,6 +13,9 @@ import Mathlib.Analysis.Analytic.IsolatedZeros
 import Numlib.Analysis.Calculus.IteratedDeriv.Analytic
 import Mathlib.MeasureTheory.Integral.CurveIntegral.Poincare
 import Mathlib.Analysis.Complex.Liouville
+import Mathlib.Topology.Subpath
+import Mathlib.Topology.LocallyConstant.Basic
+import Mathlib.Analysis.SpecialFunctions.Complex.LogDeriv
 import Numlib.Analysis.Calculus.SegmentAverage
 import Numlib.Analysis.Normed.Algebra.PrimaryFunctionalCalculus.Cauchy
 
@@ -1291,3 +1294,389 @@ theorem complexLineIntegral_resolvent {a : B} (ha : IsIntegral ℂ a) {z₀ : �
   exact Multiset.mem_toFinset.mp hw
 
 end Resolvent
+
+section IndexEnclosures
+
+open Filter Metric Topology Bornology
+
+/-- The winding index is constant on each connected component of a loop's complement. -/
+theorem complexPathIndex_eq_of_mem_connectedComponentIn {a z w : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hz : z ∉ Set.range γ)
+    (hw : w ∈ connectedComponentIn ((Set.range γ)ᶜ) z) : complexPathIndex γ w = complexPathIndex γ z := by
+  have hOpen : IsOpen ((Set.range γ)ᶜ) := (isCompact_range γ.continuous).isClosed.isOpen_compl
+  have hDer (u : ℂ) (hu : u ∈ connectedComponentIn ((Set.range γ)ᶜ) z) :=
+    complexPathIndex_hasDerivAt_zero hγ (connectedComponentIn_subset _ _ hu)
+  exact hOpen.connectedComponentIn.is_const_of_deriv_eq_zero isPreconnected_connectedComponentIn
+    (fun u hu => (hDer u hu).differentiableAt.differentiableWithinAt)
+    (fun u hu => (hDer u hu).deriv) hw (mem_connectedComponentIn hz)
+
+/-- The winding index is zero in every unbounded connected component of the
+complement of a closed Lipschitz path. -/
+theorem complexPathIndex_eq_zero_of_unbounded_connectedComponentIn {a z : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hz : z ∉ Set.range γ)
+    (h : ¬ IsBounded (connectedComponentIn ((Set.range γ)ᶜ) z)) : complexPathIndex γ z = 0 := by
+  obtain ⟨R, hR⟩ := (isCompact_range γ.continuous).exists_bound_of_continuousOn
+    (continuousOn_id : ContinuousOn (id : ℂ → ℂ) _)
+  have hB : Set.range γ ⊆ Metric.ball (0 : ℂ) (R + 1) := fun w hw =>
+    mem_ball_zero_iff.mpr ((hR w hw).trans_lt (lt_add_one R))
+  have hx : ∃ w ∈ connectedComponentIn ((Set.range γ)ᶜ) z, R + 1 < ‖w‖ := by
+    by_contra! he
+    exact h (isBounded_iff_forall_norm_le.mpr ⟨R + 1, he⟩)
+  obtain ⟨w, hw, hwR⟩ := hx
+  rw [← complexPathIndex_eq_of_mem_connectedComponentIn hγ hz hw]
+  exact complexPathIndex_zero_of_contained_ball hγ hB hwR.le
+
+/-- The open part of the plane on which the cycle winds once. -/
+noncomputable def complexCycleEnclosure {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    (γ : (i : ι) → Path (a i) (a i)) : Set ℂ :=
+  {w | (∀ i, w ∉ Set.range (γ i)) ∧ complexTotalPathIndex γ w = 1}
+
+/-- A cycle has positive index orientation when its total winding off its
+traces is zero or one. The enclosed region then has winding one. -/
+def HasPositiveCycleIndex {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    (γ : (i : ι) → Path (a i) (a i)) : Prop :=
+  ∀ w, (∀ i, w ∉ Set.range (γ i)) → complexTotalPathIndex γ w = 0 ∨ complexTotalPathIndex γ w = 1
+
+/-- The winding-one enclosure is open. -/
+theorem isOpen_complexCycleEnclosure {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    {γ : (i : ι) → Path (a i) (a i)} (hγ : ∀ i, (γ i).IsLipschitz) :
+    IsOpen (complexCycleEnclosure γ) := by
+  have hK : IsCompact (⋃ i, Set.range (γ i)) := isCompact_iUnion fun i => isCompact_range (γ i).continuous
+  apply isOpen_iff_mem_nhds.mpr
+  intro w hw
+  have hNot : w ∉ ⋃ i, Set.range (γ i) := fun he => by
+    obtain ⟨i, hi⟩ := mem_iUnion.mp he
+    exact hw.1 i hi
+  have hCond := hK.isClosed.isOpen_compl.mem_nhds (show w ∈ (⋃ i, Set.range (γ i))ᶜ from hNot)
+  filter_upwards [hCond, complexTotalPathIndex_eventuallyEq hγ hw.1] with z hz hEq
+  exact ⟨fun i hi => hz (mem_iUnion.mpr ⟨i, hi⟩), hEq.trans hw.2⟩
+
+/-- The winding-one enclosure of a finite Lipschitz cycle is bounded. -/
+theorem isBounded_complexCycleEnclosure {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    {γ : (i : ι) → Path (a i) (a i)} (hγ : ∀ i, (γ i).IsLipschitz) :
+    IsBounded (complexCycleEnclosure γ) := by
+  have h : ∀ᶠ z in cocompact ℂ, z ∈ (complexCycleEnclosure γ)ᶜ :=
+    (complexTotalPathIndex_eventually_zero hγ).mono fun z hz hE => zero_ne_one (hz.1.symm.trans hE.2)
+  rw [isBounded_def, Metric.cobounded_eq_cocompact]
+  exact h
+
+/-- Outside a holomorphy domain containing the traces and enclosure of a
+positively index-oriented cycle, the total winding vanishes. -/
+theorem HasPositiveCycleIndex.vanishes_outside {ι : Type*} [Fintype ι] {a : ι → ℂ}
+    {γ : (i : ι) → Path (a i) (a i)} (h : HasPositiveCycleIndex γ)
+    {U : Set ℂ} (hTrace : ∀ i, Set.range (γ i) ⊆ U) (hEnclose : complexCycleEnclosure γ ⊆ U)
+    {w : ℂ} (hw : w ∉ U) : complexTotalPathIndex γ w = 0 := by
+  have hAvoid : ∀ i, w ∉ Set.range (γ i) := fun i hi => hw (hTrace i hi)
+  rcases h w hAvoid with he | he
+  · exact he
+  · exact False.elim (hw (hEnclose ⟨hAvoid, he⟩))
+
+namespace Path
+
+open scoped unitInterval
+
+/-- An increasing Lipschitz parametrization of the same rectifiable path. -/
+structure LipschitzReparametrization {a b : ℂ} (γ : Path a b) where
+  path : Path a b
+  orderIso : I ≃o I
+  isLipschitz : path.IsLipschitz
+  apply_orderIso : ∀ t, path (orderIso t) = γ t
+
+/-- Rectifiability gives a Lipschitz representative with its increasing time change. -/
+noncomputable def LipschitzReparametrization.of_rectifiable {a b : ℂ} (γ : Path a b)
+    (hγ : BoundedVariationOn γ.extend unitInterval) : γ.LipschitzReparametrization := by
+  classical
+  let E := γ.exists_lipschitz_reparametrization hγ
+  let ρ := Classical.choose E
+  let η := Classical.choose (Classical.choose_spec E)
+  let K := Classical.choose (Classical.choose_spec (Classical.choose_spec E))
+  have h := Classical.choose_spec (Classical.choose_spec (Classical.choose_spec E))
+  exact ⟨η, ρ, ⟨K, h.1⟩, h.2⟩
+
+/-- The increasing reparametrization preserves the whole geometric trace. -/
+theorem LipschitzReparametrization.range_eq {a b : ℂ} {γ : Path a b} (η : γ.LipschitzReparametrization) :
+    Set.range η.path = Set.range γ := by
+  apply Set.Subset.antisymm
+  · rintro z ⟨t,rfl⟩
+    obtain ⟨u, hu⟩ := η.orderIso.surjective t
+    exact ⟨u, (η.apply_orderIso u).symm.trans (congrArg η.path hu)⟩
+  · rintro z ⟨t,rfl⟩
+    exact ⟨η.orderIso t, η.apply_orderIso t⟩
+
+end Path
+
+end IndexEnclosures
+
+section ComplexSubpaths
+
+open Filter Metric Topology
+open scoped unitInterval
+
+private theorem complexSubpath_extend_affine {a b : ℂ} (γ : Path a b) (s t : I) {u : ℝ}
+    (hu : u ∈ unitInterval) : (γ.subpath s t).extend u =
+      γ.extend ((s : ℝ) + ((t : ℝ) - (s : ℝ)) * u) := by
+  rw [Path.extend_apply _ hu]
+  change γ (Icc.convexComb s t ⟨u, hu⟩) = _
+  let v := Icc.convexComb s t ⟨u, hu⟩
+  have hv : (v : ℝ) = (s : ℝ) + ((t : ℝ) - (s : ℝ)) * u := by
+    dsimp [v, Icc.convexComb]
+    ring
+  rw [← hv, Path.extend_apply _ v.2]
+
+/-- Lipschitz regularity is preserved on subpaths with their affine parameters. -/
+theorem Path.IsLipschitz.subpath {a b : ℂ} {γ : Path a b} (hγ : γ.IsLipschitz) (s t : I) :
+    (γ.subpath s t).IsLipschitz := by
+  obtain ⟨K, hK⟩ := hγ.exists_lipschitzWith_extend
+  let L : ℝ≥0 := K * Real.nnabs ((t : ℝ) - (s : ℝ))
+  refine ⟨L, LipschitzWith.of_dist_le_mul fun u v => ?_⟩
+  have hEq (u : I) : (γ.subpath s t) u = γ.extend ((s : ℝ) + ((t : ℝ) - (s : ℝ)) * u) := by
+    rw [← Path.extend_apply (γ.subpath s t) u.2]
+    exact complexSubpath_extend_affine γ s t u.2
+  rw [hEq u, hEq v]
+  refine (hK.dist_le_mul _ _).trans_eq ?_
+  change (K : ℝ) * dist _ _ = (K : ℝ) * |(t : ℝ) - s| * dist (u : ℝ) (v : ℝ)
+  simp only [Real.dist_eq, show (s : ℝ) + ((t : ℝ) - s) * u - ((s : ℝ) + ((t : ℝ) - s) * v) =
+    ((t : ℝ) - s) * (u - v) by ring, abs_mul, mul_assoc]
+
+/-- A subpath integral is the restriction of the original parameter integral to the subinterval. -/
+theorem complexLineIntegral_subpath {a b : ℂ} {γ : Path a b} (hγ : γ.IsLipschitz)
+    (s t : I) (f : ℂ → ℂ) :
+    complexLineIntegral (γ.subpath s t) f =
+      ∫ u in (s : ℝ)..(t : ℝ), deriv γ.extend u • f (γ.extend u) := by
+  by_cases h : s = t
+  · subst t
+    rw [Path.subpath_self, intervalIntegral.integral_same, complexLineIntegral, curveIntegral_refl]
+  let c : ℝ := (t : ℝ) - (s : ℝ)
+  let α (u : ℝ) := (s : ℝ) + c * u
+  have hc : c ≠ 0 := sub_ne_zero.mpr (fun e => h (Subtype.ext e.symm))
+  obtain ⟨K, hK⟩ := hγ.exists_lipschitzWith_extend
+  have hQA : QuasiMeasurePreserving α volume volume := by
+    have h1 := (measurePreserving_add_left (volume : Measure ℝ) (s : ℝ)).quasiMeasurePreserving
+    have h2 := MeasureTheory.Measure.quasiMeasurePreserving_smul (volume : Measure ℝ) hc
+    exact h1.comp h2
+  have hDiff : ∀ᵐ u ∂volume, DifferentiableAt ℝ γ.extend (α u) := hQA.ae (hK.ae_differentiableAt (μ := volume))
+  have hEq {u : ℝ} (hu : u ∈ Ioo (0 : ℝ) 1) :
+      (γ.subpath s t).extend =ᶠ[𝓝 u] (γ.extend ∘ α) := by
+    filter_upwards [Ioo_mem_nhds hu.1 hu.2] with v hv
+    exact complexSubpath_extend_affine γ s t (Ioo_subset_Icc_self hv)
+  rw [complexLineIntegral_eq_interval_deriv]
+  let F (u : ℝ) := deriv γ.extend u • f (γ.extend u)
+  have hI : (∫ u in (0 : ℝ)..1, deriv (γ.subpath s t).extend u • f ((γ.subpath s t).extend u)) =
+      ∫ u in (0 : ℝ)..1, c • F (α u) := by
+    apply intervalIntegral.integral_congr_ae_restrict
+    rw [uIoc_of_le zero_le_one, ← Measure.restrict_congr_set Ioo_ae_eq_Ioc]
+    filter_upwards [hDiff.filter_mono (ae_mono Measure.restrict_le_self),
+      ae_restrict_mem (μ := volume) (s := Ioo (0 : ℝ) 1) measurableSet_Ioo] with u hdu hu
+    have hA : HasDerivAt α c u := by
+      simpa only [id_eq, mul_one] using (((hasDerivAt_id u).const_mul c).const_add (s : ℝ))
+    have hd : deriv (γ.subpath s t).extend u = c • deriv γ.extend (α u) :=
+      ((hdu.hasDerivAt.scomp u hA).congr_of_eventuallyEq (hEq hu)).deriv
+    rw [hd, complexSubpath_extend_affine γ s t (Ioo_subset_Icc_self hu)]
+    exact smul_assoc c _ _
+  rw [hI, intervalIntegral.integral_smul]
+  change (c • ∫ u in (0 : ℝ)..1, F ((s : ℝ) + c * u)) = _
+  rw [intervalIntegral.smul_integral_comp_add_mul, mul_zero, add_zero, mul_one]
+  rw [show (s : ℝ) + c = t by dsimp [c]; ring]
+
+end ComplexSubpaths
+
+section OrientedContourReparametrizations
+
+open Filter Metric Topology
+open scoped unitInterval
+
+private noncomputable def complexLineIntegralUpTo {a b : ℂ} (γ : Path a b) (f : ℂ → ℂ) (t : I) : ℂ :=
+  ∫ u in (0 : ℝ)..(t : ℝ), deriv γ.extend u • f (γ.extend u)
+
+private theorem complexLineIntegralUpTo_sub {a b : ℂ} {γ : Path a b} (hγ : γ.IsLipschitz)
+    {f : ℂ → ℂ} (hf : ContinuousOn f (Set.range γ)) (s t : I) :
+    complexLineIntegralUpTo γ f t - complexLineIntegralUpTo γ f s = complexLineIntegral (γ.subpath s t) f := by
+  let w (u : ℝ) := deriv γ.extend u • f (γ.extend u)
+  have hI : IntervalIntegrable w volume 0 1 := by
+    apply (complexLineIntegral_intervalIntegrable_lipschitz hγ hf).congr_ae
+    rw [uIoc_of_le zero_le_one]
+    filter_upwards [derivWithin_path_ae_eq_deriv γ] with u hu
+    simp only [w, hu]
+  have hI' (u : I) : IntervalIntegrable w volume 0 (u : ℝ) := hI.mono_set (by
+    rw [uIcc_of_le u.2.1, uIcc_of_le zero_le_one]
+    exact Icc_subset_Icc_right u.2.2)
+  rw [complexLineIntegral_subpath hγ]
+  exact intervalIntegral.integral_interval_sub_left (hI' t) (hI' s)
+
+/-- An increasing homeomorphism of the parameter preserves a holomorphic
+contour integral when both representatives are Lipschitz. The time change
+itself need only be an order isomorphism. -/
+theorem complexLineIntegral_eq_of_orderIso_reparametrization {a b : ℂ} {γ η : Path a b}
+    (hγ : γ.IsLipschitz) (hη : η.IsLipschitz) (ρ : I ≃o I) (hρ : ∀ t, η (ρ t) = γ t)
+    {U : Set ℂ} (hU : IsOpen U) (hRange : Set.range γ ⊆ U)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) : complexLineIntegral γ f = complexLineIntegral η f := by
+  have hηEq : Set.range η = Set.range γ := le_antisymm (by
+    rintro _ ⟨t,rfl⟩
+    obtain ⟨v,hv⟩ := ρ.surjective t
+    exact ⟨v,(hρ v).symm.trans (congrArg η hv)⟩) (by
+    rintro _ ⟨t,rfl⟩
+    exact ⟨ρ t, hρ t⟩)
+  have hηRange : Set.range η ⊆ U := hηEq ▸ hRange
+  let D (t : I) := complexLineIntegralUpTo γ f t - complexLineIntegralUpTo η f (ρ t)
+  have hLoc : IsLocallyConstant D := by
+    apply (IsLocallyConstant.iff_eventually_eq D).mpr
+    intro t
+    obtain ⟨R, hR, hRU⟩ := isOpen_iff.mp hU (γ t) (hRange (mem_range_self _))
+    let B := Metric.ball (γ t) R
+    obtain ⟨P, hP⟩ := (convex_ball (γ t) R).exists_forall_hasDerivWithinAt (hf.mono hRU)
+    have hDeriv (w : ℂ) (hw : w ∈ B) : HasDerivAt P (f w) w :=
+      (hP w hw).hasDerivAt (Metric.isOpen_ball.mem_nhds hw)
+    have hM : γ ⁻¹' B ∈ 𝓝 t := γ.continuous.continuousAt (Metric.ball_mem_nhds (γ t) hR)
+    obtain ⟨δ, hδ, hδB⟩ := Metric.mem_nhds_iff.mp hM
+    filter_upwards [Metric.ball_mem_nhds t hδ] with s hs
+    have hB (v : I) (hv : v ∈ uIcc t s) : γ v ∈ B := by
+      have hv' : (v : ℝ) ∈ uIcc (t : ℝ) (s : ℝ) :=
+        (show Monotone (Subtype.val : I → ℝ) from fun _ _ h => h).image_uIcc_subset (mem_image_of_mem _ hv)
+      have hd : dist v t ≤ dist s t := by
+        change dist (v : ℝ) (t : ℝ) ≤ dist (s : ℝ) (t : ℝ)
+        simpa only [dist_comm _ (t : ℝ)] using Real.dist_left_le_of_mem_uIcc hv'
+      exact hδB (lt_of_le_of_lt hd hs)
+    have hγ_sub : Set.range (γ.subpath t s) ⊆ B := by
+      rw [Path.range_subpath]
+      rintro _ ⟨v,hv,rfl⟩
+      exact hB v hv
+    have hη_sub : Set.range (η.subpath (ρ t) (ρ s)) ⊆ B := by
+      rw [Path.range_subpath]
+      rintro _ ⟨v,hv,rfl⟩
+      have hv' : ρ.symm v ∈ uIcc t s := by
+        simpa only [ρ.symm_apply_apply] using ρ.symm.monotone.image_uIcc_subset (mem_image_of_mem ρ.symm hv)
+      rw [← ρ.apply_symm_apply v, hρ]
+      exact hB _ hv'
+    have h1 := complexLineIntegral_derivative_lipschitz (hγ.subpath t s) Metric.isOpen_ball hγ_sub hDeriv
+      (hf.continuousOn.mono (hγ_sub.trans hRU))
+    have h2 := complexLineIntegral_derivative_lipschitz (hη.subpath (ρ t) (ρ s)) Metric.isOpen_ball hη_sub hDeriv
+      (hf.continuousOn.mono (hη_sub.trans hRU))
+    rw [← complexLineIntegralUpTo_sub hγ (hf.continuousOn.mono hRange)] at h1
+    rw [← complexLineIntegralUpTo_sub hη (hf.continuousOn.mono hηRange), hρ s, hρ t] at h2
+    dsimp only [D]
+    linear_combination h1 - h2
+  have hOne : ρ 1 = 1 := ρ.map_top
+  have hZero : ρ 0 = 0 := ρ.map_bot
+  have he := hLoc.apply_eq_of_preconnectedSpace 1 0
+  change complexLineIntegralUpTo γ f 1 - complexLineIntegralUpTo η f (ρ 1) =
+    complexLineIntegralUpTo γ f 0 - complexLineIntegralUpTo η f (ρ 0) at he
+  simp only [hOne, hZero, complexLineIntegralUpTo, show ((1 : I) : ℝ) = 1 from rfl, show ((0 : I) : ℝ) = 0 from rfl,
+    intervalIntegral.integral_same, sub_self, ← complexLineIntegral_eq_interval_deriv] at he
+  exact sub_eq_zero.mp he
+
+/-- Increasing Lipschitz representatives of the same rectifiable path define
+one holomorphic contour integral. -/
+theorem Path.LipschitzReparametrization.complexLineIntegral_eq {a b : ℂ} {γ : Path a b}
+    (η ξ : γ.LipschitzReparametrization) {U : Set ℂ} (hU : IsOpen U) (hRange : Set.range γ ⊆ U)
+    {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) : complexLineIntegral η.path f = complexLineIntegral ξ.path f := by
+  let ρ := η.orderIso.symm.trans ξ.orderIso
+  have hρ (t : I) : ξ.path (ρ t) = η.path t := by
+    change ξ.path (ξ.orderIso (η.orderIso.symm t)) = η.path t
+    rw [ξ.apply_orderIso, ← η.apply_orderIso, η.orderIso.apply_symm_apply]
+  exact complexLineIntegral_eq_of_orderIso_reparametrization η.isLipschitz ξ.isLipschitz ρ hρ
+    hU (η.range_eq ▸ hRange) hf
+
+/-- Any two increasing Lipschitz representatives of the same rectifiable
+loop give the same winding index about a point off the original trace. -/
+theorem Path.LipschitzReparametrization.complexPathIndex_eq {a w : ℂ} {γ : Path a a}
+    (η ξ : γ.LipschitzReparametrization) (hw : w ∉ Set.range γ) :
+    complexPathIndex η.path w = complexPathIndex ξ.path w := by
+  have hDiff : DifferentiableOn ℂ (fun z : ℂ => (z - w)⁻¹) {w}ᶜ :=
+    (differentiableOn_id.sub_const w).inv fun z hz => sub_ne_zero.mpr hz
+  have hRange : Set.range γ ⊆ ({w} : Set ℂ)ᶜ := fun _ hz h => hw ((mem_singleton_iff.mp h) ▸ hz)
+  rw [complexPathIndex, complexPathIndex, η.complexLineIntegral_eq ξ isOpen_compl_singleton hRange hDiff]
+
+/-- The holomorphic line integral along a rectifiable path, using an increasing
+Lipschitz parametrization. -/
+noncomputable def rectifiableComplexLineIntegral {a b : ℂ} (γ : Path a b)
+    (hγ : BoundedVariationOn γ.extend unitInterval) (f : ℂ → ℂ) : ℂ :=
+  complexLineIntegral (Path.LipschitzReparametrization.of_rectifiable γ hγ).path f
+
+/-- Any increasing Lipschitz parametrization computes the rectifiable integral
+when the integrand is holomorphic on a neighborhood of the trace. -/
+theorem rectifiableComplexLineIntegral_eq {a b : ℂ} {γ : Path a b}
+    (hγ : BoundedVariationOn γ.extend unitInterval) (η : γ.LipschitzReparametrization)
+    {U : Set ℂ} (hU : IsOpen U) (hRange : Set.range γ ⊆ U) {f : ℂ → ℂ} (hf : DifferentiableOn ℂ f U) :
+    rectifiableComplexLineIntegral γ hγ f = complexLineIntegral η.path f :=
+  (Path.LipschitzReparametrization.of_rectifiable γ hγ).complexLineIntegral_eq η hU hRange hf
+
+end OrientedContourReparametrizations
+
+section IntegralWindingNumbers
+
+open Filter Metric Topology
+open scoped unitInterval
+
+private theorem eventually_subpath_range_subset {a b : ℂ} (γ : Path a b) (t : I)
+    {S : Set ℂ} (h : S ∈ 𝓝 (γ t)) : ∀ᶠ s in 𝓝 t, Set.range (γ.subpath t s) ⊆ S := by
+  obtain ⟨δ, hδ, hδS⟩ := Metric.mem_nhds_iff.mp (γ.continuous.continuousAt h)
+  filter_upwards [Metric.ball_mem_nhds t hδ] with s hs
+  rw [Path.range_subpath]
+  rintro _ ⟨v,hv,rfl⟩
+  have hv' : (v : ℝ) ∈ uIcc (t : ℝ) (s : ℝ) :=
+    (show Monotone (Subtype.val : I → ℝ) from fun _ _ h => h).image_uIcc_subset (mem_image_of_mem _ hv)
+  have hd : dist v t ≤ dist s t := by
+    change dist (v : ℝ) (t : ℝ) ≤ dist (s : ℝ) (t : ℝ)
+    simpa only [dist_comm _ (t : ℝ)] using Real.dist_left_le_of_mem_uIcc hv'
+  exact hδS (lt_of_le_of_lt hd hs)
+
+/-- The contour integral of the reciprocal kernel around a closed Lipschitz
+path is an integer multiple of `2 π i`. -/
+theorem complexPathIndex_exists_int {a w : ℂ} {γ : Path a a}
+    (hγ : γ.IsLipschitz) (hw : w ∉ Set.range γ) :
+    ∃ n : ℤ, complexPathIndex γ w = (n : ℂ) := by
+  let f (z : ℂ) := (z - w)⁻¹
+  let J := complexLineIntegralUpTo γ f
+  let Q (t : I) := Complex.exp (J t) / (γ t - w)
+  have hne (t : I) : γ t - w ≠ 0 :=
+    sub_ne_zero.mpr fun he => hw (he ▸ mem_range_self t)
+  have hc : ContinuousOn f (Set.range γ) :=
+    (continuousOn_id.sub continuousOn_const).inv₀ fun _ ⟨t,ht⟩ => ht ▸ hne t
+  have hLoc : IsLocallyConstant Q := by
+    apply (IsLocallyConstant.iff_eventually_eq Q).mpr
+    intro t
+    let r (z : ℂ) := (z - w) / (γ t - w)
+    let U := r ⁻¹' Complex.slitPlane
+    have hOpen : IsOpen U := Complex.isOpen_slitPlane.preimage (by unfold r; fun_prop)
+    have htU : γ t ∈ U := by
+      change (γ t - w) / (γ t - w) ∈ Complex.slitPlane
+      rw [div_self (hne t)]
+      exact Complex.one_mem_slitPlane
+    let P (z : ℂ) := Complex.log (r z)
+    have hP (z : ℂ) (hz : z ∈ U) : HasDerivAt P (f z) z := by
+      have h₁ : HasDerivAt r (1 / (γ t - w)) z := by
+        simpa only [id_eq] using ((hasDerivAt_id z).sub_const w).div_const (γ t - w)
+      apply ((Complex.hasDerivAt_log hz).comp z h₁).congr_deriv
+      dsimp [f,r]
+      rw [inv_div, one_div]
+      have hz' : z - w ≠ 0 := fun h => Complex.slitPlane_ne_zero hz (by simp [r, h])
+      field_simp [hne t, hz']
+    filter_upwards [eventually_subpath_range_subset γ t (hOpen.mem_nhds htU)] with s hs
+    have h := complexLineIntegral_derivative_lipschitz (hγ.subpath t s) hOpen hs hP
+      (hc.mono (by rw [Path.range_subpath]; exact image_subset_range _ _))
+    rw [← complexLineIntegralUpTo_sub hγ hc] at h
+    change J s - J t = P (γ s) - P (γ t) at h
+    have htP : P (γ t) = 0 := by simp [P, r]
+    rw [htP, sub_zero] at h
+    have he := congrArg Complex.exp h
+    rw [Complex.exp_sub, show Complex.exp (P (γ s)) = r (γ s) from
+      Complex.exp_log (div_ne_zero (hne s) (hne t))] at he
+    change Complex.exp (J s) / Complex.exp (J t) = (γ s - w) / (γ t - w) at he
+    apply (div_eq_div_iff (hne s) (hne t)).mpr
+    exact (div_eq_div_iff (Complex.exp_ne_zero _) (hne t)).mp he |>.trans (mul_comm _ _)
+  have he : Q 1 = Q 0 := hLoc.apply_eq_of_preconnectedSpace 1 0
+  have hInt : Complex.exp (complexLineIntegral γ f) = 1 := by
+    have hz : a - w ≠ 0 := fun h => hw ((sub_eq_zero.mp h) ▸ ⟨0, γ.source⟩)
+    apply (div_left_inj' hz).mp
+    simpa only [Q, J, complexLineIntegralUpTo, show ((1 : I) : ℝ) = 1 from rfl,
+      show ((0 : I) : ℝ) = 0 from rfl, intervalIntegral.integral_same, Complex.exp_zero,
+      Path.target, Path.source, ← complexLineIntegral_eq_interval_deriv] using he
+  obtain ⟨n, hn⟩ := Complex.exp_eq_one_iff.mp hInt
+  refine ⟨n, ?_⟩
+  have hC : (2 * π * Complex.I : ℂ) ≠ 0 := mul_ne_zero (mul_ne_zero (by norm_num)
+    (ofReal_ne_zero.mpr Real.pi_ne_zero)) Complex.I_ne_zero
+  change (2 * π * Complex.I)⁻¹ * complexLineIntegral γ f = (n : ℂ)
+  rw [hn]
+  field_simp
+
+end IntegralWindingNumbers

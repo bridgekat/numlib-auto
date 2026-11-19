@@ -103,10 +103,14 @@ source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), one loop'
 [[node]]
 id = 'theorem_11_rectifiable'
 kind = 'theorem'
-desc = '''Relate the geometric customary orientation of the finite rectifiable Jordan boundary to the total winding number. The homological result already handles arbitrary open domains once the total winding is one on the spectrum and zero outside the holomorphy set. Continuous rectifiable parametrizations admit increasing Lipschitz reparametrizations.'''
+desc = '''Identify the customary orientation of a finite rectifiable Jordan boundary with the index-based enclosure: prove winding one in the enclosed domain, taking account of the orientations of hole boundaries. The winding index is integer valued, constant on complement components, zero on the unbounded component, and independent of the Lipschitz representative. The rectifiable index-based formula already handles arbitrary open holomorphy domains.'''
 source = 'Ben-Israel and Greville, Ch. 2, Theorem 11, equation (53), general rectifiable boundary'
-deps = ['theorem_11_homological']
+deps = ['theorem_11_rectifiable_of_index_enclosure']
 
 [[node]]
 id = "theorem_11_homological"
 source = "Ben-Israel and Greville, Chapter 2, Theorem 11, equation (53), arbitrary open domains and total winding"
+
+[[node]]
+id = "theorem_11_rectifiable_of_index_enclosure"
+source = "Ben-Israel and Greville, Chapter 2, Theorem 11, Equation (53), rectifiable index enclosures"

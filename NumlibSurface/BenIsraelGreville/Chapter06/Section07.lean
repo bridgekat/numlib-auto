@@ -1885,6 +1885,25 @@ theorem lemma_6_7_homological {j : Type*} [Fintype j] {p : j → ℂ}
     rectangularSpectralExpansion_mul _ _ _ h.right_orthonormal]
   simp only [mul_one]
 
+/-- Equation (160) for rectifiable contours and increasing Lipschitz representatives.
+The spectral coefficients lie in the winding-one region of a positively
+index-oriented cycle. -/
+theorem lemma_6_5_rectifiable_of_index_enclosure {j : Type*} [Fintype j] {p : j → ℂ}
+    {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
+    (h : IsRectangularSpectralDecomposition A U V d)
+    (γ : (i : j) → Path (p i) (p i)) (η : ∀ i, (γ i).LipschitzReparametrization)
+    {S : Set ℂ} (hOpen : IsOpen S) (hTraces : ∀ i, Set.range (γ i) ⊆ S)
+    (hEnclose : complexCycleEnclosure (fun i => (η i).path) ⊆ S)
+    (hPositive : HasPositiveCycleIndex (fun i => (η i).path))
+    (hCoefficients : ∀ s, d s ∈ complexCycleEnclosure (fun i => (η i).path))
+    (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f S) :
+    rectangularContourFamilyCalculus A (U * Vᴴ) f (fun i => (η i).path) =
+      rectangularMatrixFunction V U d f := by
+  have hr (i : j) : Set.range (η i).path ⊆ S := (η i).range_eq ▸ hTraces i
+  exact lemma_6_5_homological h (fun i => (η i).path) (fun i => (η i).isLipschitz)
+    (fun i s => (hCoefficients s).1 i) hOpen hr
+    (fun _ hw => hPositive.vanishes_outside hr hEnclose hw) f hf (fun s => (hCoefficients s).2)
+
 end GeneralContours
 
 end BenIsraelGreville.Chapter06

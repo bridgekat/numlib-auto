@@ -36,3 +36,57 @@ id = "complexLineIntegral_smul_resolvent_scalar_expansion"
 
 [[node]]
 id = "pfc_eq_sum_complexLineIntegral_homological"
+
+[[node]]
+id = "complexPathIndex_eq_of_mem_connectedComponentIn"
+
+[[node]]
+id = "complexPathIndex_eq_zero_of_unbounded_connectedComponentIn"
+
+[[node]]
+id = "complexCycleEnclosure"
+
+[[node]]
+id = "HasPositiveCycleIndex"
+
+[[node]]
+id = "isOpen_complexCycleEnclosure"
+
+[[node]]
+id = "isBounded_complexCycleEnclosure"
+
+[[node]]
+id = "HasPositiveCycleIndex.vanishes_outside"
+
+[[node]]
+id = "Path.LipschitzReparametrization"
+
+[[node]]
+id = "Path.LipschitzReparametrization.of_rectifiable"
+
+[[node]]
+id = "Path.LipschitzReparametrization.range_eq"
+
+[[node]]
+id = "Path.IsLipschitz.subpath"
+
+[[node]]
+id = "complexLineIntegral_subpath"
+
+[[node]]
+id = "complexLineIntegral_eq_of_orderIso_reparametrization"
+
+[[node]]
+id = "Path.LipschitzReparametrization.complexLineIntegral_eq"
+
+[[node]]
+id = "Path.LipschitzReparametrization.complexPathIndex_eq"
+
+[[node]]
+id = "rectifiableComplexLineIntegral"
+
+[[node]]
+id = "rectifiableComplexLineIntegral_eq"
+
+[[node]]
+id = "complexPathIndex_exists_int"

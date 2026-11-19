@@ -602,4 +602,23 @@ theorem theorem_11_homological (A : Matrix n n ℂ) (f : analyticFunctions A) {�
     pfc_eq_sum_complexLineIntegral_homological (Algebra.IsIntegral.isIntegral A) γ hγ hOpen hRange hNull
       (fun i w hw => hAvoid i w (hRoots w hw)) hf (fun w hw => hIndex w (hRoots w hw))
 
+open scoped Matrix.Norms.L2Operator Real in
+/-- Equation (53) for rectifiable paths and increasing Lipschitz representatives.
+The spectral points lie in the winding-one region, and the function is holomorphic
+on a neighborhood of that region and the original traces. -/
+theorem theorem_11_rectifiable_of_index_enclosure (A : Matrix n n ℂ) (f : analyticFunctions A)
+    {ι : Type*} [Fintype ι] {p : ι → ℂ} (γ : (i : ι) → Path (p i) (p i))
+    (η : ∀ i, (γ i).LipschitzReparametrization)
+    {S : Set ℂ} (hOpen : IsOpen S) (hTraces : ∀ i, Set.range (γ i) ⊆ S)
+    (hEnclose : complexCycleEnclosure (fun i => (η i).path) ⊆ S)
+    (hPositive : HasPositiveCycleIndex (fun i => (η i).path))
+    (hSpectrum : (↑(spectralValues A) : Set ℂ) ⊆ complexCycleEnclosure (fun i => (η i).path))
+    (hf : DifferentiableOn ℂ (f : ℂ → ℂ) S) :
+    matrixFunction A f = ∑ i, (2 * π * Complex.I)⁻¹ •
+      complexLineIntegral ((η i).path) (fun z => (f : ℂ → ℂ) z • (z • 1 - A)⁻¹) := by
+  have hr (i : ι) : Set.range (η i).path ⊆ S := (η i).range_eq ▸ hTraces i
+  exact theorem_11_homological A f (fun i => (η i).path) (fun i => (η i).isLipschitz) hOpen hr
+    (fun _ hw => hPositive.vanishes_outside hr hEnclose hw) hf
+    (fun i w hw => (hSpectrum hw).1 i) (fun _ hw => (hSpectrum hw).2)
+
 end BenIsraelGreville.Chapter02
