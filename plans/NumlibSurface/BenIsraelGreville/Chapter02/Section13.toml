@@ -73,24 +73,32 @@ id = "section13_figure1"
 source = "Ben-Israel and Greville, Ch. 2, §13, Figure 1 and the displayed incidence matrix"
 
 [[node]]
+id = "FixedCardSubset"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111, subset indices"
+
+[[node]]
+id = "setInclusionMatrix"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111, set inclusion incidence"
+
+[[node]]
+id = "setIntersectionMatrix"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111, disjointness incidence"
+
+[[node]]
+id = "setIncidenceMatrix_zero_row"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111, empty set row"
+
+[[node]]
 id = "exercise_111"
-kind = "theorem"
-desc = "Define the two set-inclusion and set-intersection incidence matrices for r-element and c-element subsets of an n-element set. Prove the stated alternating sum for the Moore–Penrose inverse of the inclusion matrix for 0 ≤ r ≤ c ≤ n−r."
-source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 111, Bapat's alternating sum"
 
 [[node]]
 id = "exercise_112"
-kind = "theorem"
-desc = "Characterize the spanning tree selected by m−1 independent columns, show every remaining incidence column has its unique signed tree-path decomposition, and derive a unique fundamental cycle for each extra branch."
-source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112"
-deps = ["exercise_110"]
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(a)"
 
 [[node]]
 id = "exercise_113"
-kind = "theorem"
-desc = "For a connected network, express det(A P_R(Mᵀ) + P_ker M) as the sum of products of branch weights over all spanning trees divided by the number of unweighted spanning trees. The printed formula omits this normalization. At A = I the determinant is one, while the unnormalized sum counts spanning trees."
-source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113"
-deps = ["networkVoltageSpace_eq_orthogonal", "exercise_112"]
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113, corrected normalized discriminant"
 
 [[node]]
 id = "IsACNetworkState"
@@ -103,3 +111,71 @@ source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 108, uncoupled complex 
 [[node]]
 id = "exercise_108_coupled"
 source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 108, symmetric admittance and mutual coupling"
+
+[[node]]
+id = "networkSimpleGraph"
+source = "Ben-Israel and Greville, Ch. 2, §13, unoriented graph of the network"
+
+[[node]]
+id = "networkSimpleGraph_connected"
+source = "Ben-Israel and Greville, Ch. 2, §13, orientation-free reachability"
+
+[[node]]
+id = "incidence_independent_distinct_edges"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(a), exclusion of loops and repeated edges"
+
+[[node]]
+id = "spanningTree_incidence_range"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(a)–(b), incidence column space"
+
+[[node]]
+id = "networkWalkCoefficients"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(b), signed walk coefficient vector"
+
+[[node]]
+id = "incidenceMatrix_mulVec_walkCoefficients"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(b), cancellation at internal nodes"
+
+[[node]]
+id = "networkWalkCoefficients_unit"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(b), coefficients of a trail"
+
+[[node]]
+id = "exercise_112_signed_tree_path"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(b)"
+
+[[node]]
+id = "IsFundamentalNetworkCircuit"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(c), circuit from a tree path"
+
+[[node]]
+id = "exercise_112_fundamentalCircuit"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 112(c)"
+
+[[node]]
+id = "incidenceMinor_det_sign"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113, incidence minors have signs or zero"
+
+[[node]]
+id = "reducedNetworkIncidence"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113, incidence with a reference node removed"
+
+[[node]]
+id = "reducedNetworkIncidence_transpose_injective"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113, full row rank of reduced incidence"
+
+[[node]]
+id = "networkDiscriminant_eq_reducedGram_ratio"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113, reduction to a Gram determinant ratio"
+
+[[node]]
+id = "networkSpanningTrees"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercises 112–113, finite spanning tree family"
+
+[[node]]
+id = "mem_networkSpanningTrees_iff"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercises 112–113, spanning tree membership"
+
+[[node]]
+id = "networkSpanningTrees_nonempty"
+source = "Ben-Israel and Greville, Ch. 2, §13, Exercise 113, nonzero tree count"
