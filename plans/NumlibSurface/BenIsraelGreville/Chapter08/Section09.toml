@@ -254,24 +254,15 @@ source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 44, planar Gaussian 
 
 [[node]]
 id = "integral_areaFormula"
-kind = "theorem"
-desc = '''Prove the area formula for a smooth injective immersion on a measurable parameter domain, with n ≤ m and normalized n-dimensional Hausdorff measure on the image. A construction of a pullback weighted measure alone does not identify it with Hausdorff measure.'''
-source = "Ben-Israel and Greville, Chapter 8, §9, (124)"
-deps = ["gram_fderiv_eq_matrixVolume_jacobian"]
+source = "Ben-Israel and Greville, Chapter 8, §9, (124), integral under normalized Hausdorff measure"
 
 [[node]]
 id = "graphMeasure_eq_hausdorff"
-kind = "theorem"
-desc = '''Identify the graph measure with normalized Hausdorff measure restricted to the graph piece, and obtain the corresponding geometric surface area and integrals.'''
-source = "Ben-Israel and Greville, Chapter 8, §9, (130), (133)–(134), Example 2"
-deps = ["integral_areaFormula", "integral_graph"]
+source = "Ben-Israel and Greville, Chapter 8, §9, (130), (133)–(134), Example 2, geometric graph measure"
 
 [[node]]
 id = "exercise_32_angle_area"
-kind = "theorem"
-desc = '''Derive the parallelogram area as the product of the column norms times the absolute sine of their angle. Characterize orthogonality of the images of coordinate directions and isotropic scaling when the column norms also agree.'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 32, geometric interpretation of (147)"
-deps = ["exercise_32"]
 
 [[node]]
 id = "exercise_33_line_integral"
@@ -303,10 +294,7 @@ deps = ["exercise_36_jacobian_volume", "integral_areaFormula"]
 
 [[node]]
 id = "exercise_37_simplex_facet_areas"
-kind = "theorem"
-desc = '''Identify the hypotenuse simplex facet’s coordinate projections with the orthogonal simplex facets, and prove the ratio of their geometric areas and the resulting Pythagorean sum. The matrix-level projected-volume identity is proved separately.'''
 source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, (160)–(163)"
-deps = ["exercise_37_projected_volumes", "integral_areaFormula"]
 
 [[node]]
 id = "exercise_38_regular_simplex"
@@ -332,3 +320,47 @@ deps = ["exercise_41_hemisphere_density", "exercise_40_polar_area_eq_hausdorff",
 [[node]]
 id = "hausdorffMeasure_image_linear"
 source = "Ben-Israel and Greville, Chapter 8, §9, Equation (124), injective linear charts"
+
+[[node]]
+id = "hausdorffMeasure_image_eq_lintegral_gram"
+source = "Ben-Israel and Greville, Chapter 8, §9, (124), weighted measure of a smooth injective immersion"
+
+[[node]]
+id = "exercise_32_isotropic_scaling"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 32, common length scaling and preservation of all angles for orthogonal equally long columns"
+
+[[node]]
+id = "unitInterceptSimplex"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 38, unit-intercept coordinate simplex"
+
+[[node]]
+id = "volume_unitInterceptSimplex"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 38, factorial volume of the coordinate simplex in its parameter dimension"
+
+[[node]]
+id = "interceptSimplex"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, Equation (160), positive-intercept simplex"
+
+[[node]]
+id = "interceptSimplexUpperFacet"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, Equation (161a), upper facet"
+
+[[node]]
+id = "interceptSimplexCoordinateFacet"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, Equation (161b), coordinate facet"
+
+[[node]]
+id = "simplexFacetProjection"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, coordinate hyperplane projection"
+
+[[node]]
+id = "simplexFacetProjection_apply"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, coordinates of the facet projection"
+
+[[node]]
+id = "simplexFacetProjection_image_upperFacet"
+source = "Ben-Israel and Greville, Chapter 8, §9, Exercise 37, upper facet projects onto every coordinate facet"
+
+[[node]]
+id = "exercise_38_simplex_facet_areas"
+source = "Ben-Israel and Greville, Chapter 8, §9, "

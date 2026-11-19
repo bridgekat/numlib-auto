@@ -2,6 +2,9 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Analysis.Calculus.MeanValue
+import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+import Mathlib.Geometry.Euclidean.Angle.Unoriented.Basic
 import NumlibSurface.BenIsraelGreville.Chapter08.Section05
 import NumlibSurface.BenIsraelGreville.Chapter00.Section05
 import Numlib.Analysis.Sobolev.Boundary.GraphMeasure
@@ -1195,5 +1198,899 @@ theorem hausdorffMeasure_image_linear (L : 𝔼ₙ →L[ℝ] 𝔼ₘ) (hL : Func
   exact Measure.addHaar_image_continuousLinearMap volume A U
 
 end LinearArea
+
+section SmoothArea
+
+open MeasureTheory Filter Set EuclideanSpace TopologicalSpace InnerProductSpace
+open scoped ENNReal NNReal Topology
+
+variable {n m : ℕ}
+
+local notation "X" => EuclideanSpace ℝ (Fin n)
+local notation "Y" => EuclideanSpace ℝ (Fin m)
+local notation "H" => euclideanHausdorffMeasure n m
+
+private theorem continuous_gram : Continuous (EuclideanSpace.gram : (X →L[ℝ] Y) → ℝ) := by
+  have h (L : X →L[ℝ] Y) : EuclideanSpace.gram L = Real.sqrt (Matrix.gram ℝ (fun i : Fin n => L (single i 1))).det := by
+    rw [EuclideanSpace.gram, gramDet_eq_det_of_inner]
+    rfl
+  change Continuous (fun L : X →L[ℝ] Y => EuclideanSpace.gram L)
+  simp_rw [h]
+  apply Real.continuous_sqrt.comp
+  apply Continuous.matrix_det
+  change Continuous (fun L : X →L[ℝ] Y =>
+    (Matrix.of fun i j : Fin n => inner ℝ (L (single i 1)) (L (single j 1))))
+  apply continuous_matrix
+  intro i j
+  change Continuous (fun L : X →L[ℝ] Y => inner ℝ (L (single i 1)) (L (single j 1)))
+  fun_prop
+
+private theorem gram_pos_of_injective (L : X →L[ℝ] Y) (hL : Function.Injective L) :
+    0 < EuclideanSpace.gram L := by
+  unfold EuclideanSpace.gram
+  rw [gramDet_eq_det_of_inner]
+  apply Real.sqrt_pos_of_pos
+  apply Matrix.PosDef.det_pos
+  exact Matrix.posDef_gram_of_linearIndependent
+    ((orthonormal_single (𝕜 := ℝ) (ι := Fin n)).linearIndependent.map' L.toLinearMap
+      (LinearMap.ker_eq_bot.mpr hL))
+
+private theorem hausdorff_image_compare {f g : X → Y} {s : Set X} {r : ℝ≥0}
+    (hg : InjOn g s)
+    (hle : ∀ a ∈ s, ∀ b ∈ s, dist (f a) (f b) ≤ (r : ℝ) * dist (g a) (g b)) :
+    H (f '' s) ≤ (r : ℝ≥0∞) ^ n * H (g '' s) := by
+  let inv : Y → X := Function.invFunOn g s
+  have hInv : LeftInvOn inv g s := hg.leftInvOn_invFunOn
+  have hL : LipschitzOnWith r (f ∘ inv) (g '' s) := by
+    rw [lipschitzOnWith_iff_dist_le_mul]
+    rintro _ ⟨a, ha, rfl⟩ _ ⟨b, hb, rfl⟩
+    simp only [Function.comp_apply, hInv ha, hInv hb]
+    exact hle a ha b hb
+  have he : (f ∘ inv) '' (g '' s) = f '' s := by
+    rw [image_image]
+    exact image_congr fun x hx => congrArg f (hInv hx)
+  have hHaus := hL.hausdorffMeasure_image_le (d := (n : ℝ)) (by positivity)
+  rw [he, ENNReal.rpow_natCast] at hHaus
+  let c := Measure.addHaarScalarFactor (volume : Measure X)
+    (Measure.hausdorffMeasure (Module.finrank ℝ X : ℝ))
+  change c * _ ≤ (r : ℝ≥0∞) ^ n * (c * _)
+  rw [mul_left_comm]
+  gcongr
+  exact hHaus
+
+/-- On a small convex neighborhood of a full-rank derivative, the chart and the
+linearization distort their respective pairwise distances by at most the given factor. -/
+private theorem local_hausdorff_chart_control {Ω : Set X} (hΩ : IsOpen Ω)
+    {f : X → Y} {f' : X → X →L[ℝ] Y} (hf : ∀ x ∈ Ω, HasFDerivAt f (f' x) x)
+    (hfc : ContinuousOn f' Ω) (hRank : ∀ x ∈ Ω, Function.Injective (f' x))
+    {r : ℝ≥0} (hr : 1 < r) (x : X) (hx : x ∈ Ω) :
+    ∃ (δ : ℝ), 0 < δ ∧ Metric.ball x δ ⊆ Ω ∧
+      (∀ y ∈ Metric.ball x δ, EuclideanSpace.gram (f' y) ≤ r * EuclideanSpace.gram (f' x) ∧ EuclideanSpace.gram (f' x) ≤ r * EuclideanSpace.gram (f' y)) ∧
+      (∀ a ∈ Metric.ball x δ, ∀ b ∈ Metric.ball x δ,
+        dist (f a) (f b) ≤ r * dist (f' x a) (f' x b) ∧
+        dist (f' x a) (f' x b) ≤ r * dist (f a) (f b)) := by
+  let L := f' x
+  have hr' : (1 : ℝ) < r := hr
+  obtain ⟨C, hC, hInv⟩ := L.injective_iff_antilipschitz.mp (hRank x hx)
+  have hC' : 0 < (C : ℝ) := hC
+  let e : ℝ := min ((r : ℝ) - 1) (1 - (r : ℝ)⁻¹)
+  have he : 0 < e := lt_min (sub_pos.mpr hr') (sub_pos.mpr (inv_lt_one_of_one_lt₀ hr'))
+  have hdiv : 0 < e / C := div_pos he hC'
+  have hg : 0 < EuclideanSpace.gram L := gram_pos_of_injective L (hRank x hx)
+  let d : ℝ := min (((r : ℝ) - 1) * EuclideanSpace.gram L) ((1 - (r : ℝ)⁻¹) * EuclideanSpace.gram L)
+  have hd : 0 < d := lt_min (mul_pos (sub_pos.mpr hr') hg)
+    (mul_pos (sub_pos.mpr (inv_lt_one_of_one_lt₀ hr')) hg)
+  have hOpen : Ω ∈ 𝓝 x := hΩ.mem_nhds hx
+  have hcont : ContinuousAt f' x := (hfc x hx).continuousAt hOpen
+  have hgcont : ContinuousAt (EuclideanSpace.gram ∘ f') x := continuous_gram.continuousAt.comp hcont
+  have hMem : Ω ∩ ((f' ⁻¹' Metric.ball L (e / C)) ∩
+      ((EuclideanSpace.gram ∘ f') ⁻¹' Metric.ball (EuclideanSpace.gram L) d)) ∈ 𝓝 x :=
+    inter_mem hOpen (inter_mem (hcont (Metric.ball_mem_nhds L hdiv))
+      (hgcont (Metric.ball_mem_nhds (EuclideanSpace.gram L) hd)))
+  obtain ⟨δ₀, hδ₀, hδ⟩ := Metric.mem_nhds_iff.mp hMem
+  refine ⟨δ₀, hδ₀, fun y hy => (hδ hy).1, ?_, ?_⟩
+  · intro y hy
+    have hb : |EuclideanSpace.gram (f' y) - EuclideanSpace.gram L| < d := by
+      simpa only [Set.mem_preimage, Metric.mem_ball, Real.dist_eq, Function.comp_apply] using (hδ hy).2.2
+    obtain ⟨hb₁, hb₂⟩ := abs_lt.mp hb
+    have h₁ : d ≤ ((r : ℝ) - 1) * EuclideanSpace.gram L := min_le_left ..
+    have h₂ : d ≤ (1 - (r : ℝ)⁻¹) * EuclideanSpace.gram L := min_le_right ..
+    constructor
+    · linarith
+    · have : (r : ℝ)⁻¹ * EuclideanSpace.gram L ≤ EuclideanSpace.gram (f' y) := by linarith
+      rwa [inv_mul_eq_div, div_le_iff₀ (by positivity : (0 : ℝ) < r), mul_comm] at this
+  · intro a ha b hb
+    have ht : ‖f b - f a - L (b - a)‖ ≤ (e / C) * ‖b - a‖ := by
+      apply (convex_ball x δ₀).norm_image_sub_le_of_norm_hasFDerivWithin_le'
+        (fun y hy => (hf y (hδ hy).1).hasFDerivWithinAt) ?_ ha hb
+      intro y hy
+      have hz := (hδ hy).2.1
+      exact (by simpa only [Set.mem_preimage, Metric.mem_ball, dist_eq_norm] using hz :
+        ‖f' y - L‖ < e / C).le
+    have ht' : ‖f b - f a - L (b - a)‖ ≤ e * ‖L (b - a)‖ := by
+      refine ht.trans ?_
+      have hc : ‖b - a‖ ≤ (C : ℝ) * ‖L (b - a)‖ := by
+        rw [map_sub]
+        change AntilipschitzWith C L at hInv
+        simpa only [dist_eq_norm] using hInv.le_mul_dist b a
+      calc
+        (e / C) * ‖b - a‖ ≤ (e / C) * (C * ‖L (b - a)‖) :=
+          mul_le_mul_of_nonneg_left hc hdiv.le
+        _ = e * ‖L (b - a)‖ := by rw [← mul_assoc, div_mul_cancel₀ _ hC'.ne']
+    have h₁ := (norm_sub_norm_le (f b - f a) (L (b - a))).trans ht'
+    have h₂ : ‖L (b - a)‖ - ‖f b - f a‖ ≤ e * ‖L (b - a)‖ := by
+      refine (norm_sub_norm_le (L (b - a)) (f b - f a)).trans ?_
+      rw [norm_sub_rev (L (b - a))]
+      exact ht'
+    have h₃ : e * ‖L (b - a)‖ ≤ ((r : ℝ) - 1) * ‖L (b - a)‖ :=
+      mul_le_mul_of_nonneg_right (min_le_left ..) (norm_nonneg _)
+    have h₄ : e * ‖L (b - a)‖ ≤ (1 - (r : ℝ)⁻¹) * ‖L (b - a)‖ :=
+      mul_le_mul_of_nonneg_right (min_le_right ..) (norm_nonneg _)
+    rw [dist_comm (f a) (f b), dist_comm (f' x a) (f' x b), dist_eq_norm, dist_eq_norm,
+      ← map_sub (f' x)]
+    constructor
+    · linarith
+    · have : (r : ℝ)⁻¹ * ‖L (b - a)‖ ≤ ‖f b - f a‖ := by linarith
+      rwa [inv_mul_eq_div, div_le_iff₀ (by positivity : (0 : ℝ) < r), mul_comm] at this
+
+private theorem gram_lintegral_compare {f g : X → Y} {D : Set X}
+    (hD : MeasurableSet D) {J : X → ℝ} {j : ℝ} {r : ℝ≥0}
+    (hg : ∀ x ∈ D, J x ≤ r * j ∧ j ≤ r * J x)
+    (hF : H (g '' D) = ENNReal.ofReal j * volume D)
+    (hfg : H (f '' D) ≤ (r : ℝ≥0∞) ^ n * H (g '' D))
+    (hgf : H (g '' D) ≤ (r : ℝ≥0∞) ^ n * H (f '' D)) :
+    H (f '' D) ≤ (r : ℝ≥0∞) ^ (n + 1) * (∫⁻ x in D, ENNReal.ofReal (J x)) ∧
+      (∫⁻ x in D, ENNReal.ofReal (J x)) ≤ (r : ℝ≥0∞) ^ (n + 1) * H (f '' D) := by
+  have h₁ : (∫⁻ x in D, ENNReal.ofReal (J x)) ≤ (r : ℝ≥0∞) * H (g '' D) := by
+    rw [hF, ← mul_assoc, ← Measure.restrict_apply_univ (μ := volume) D, ← lintegral_const]
+    apply lintegral_mono_ae
+    filter_upwards [ae_restrict_mem hD] with x hx
+    rw [← ENNReal.ofReal_coe_nnreal, ← ENNReal.ofReal_mul r.coe_nonneg]
+    exact ENNReal.ofReal_le_ofReal (hg x hx).1
+  have h₂ : H (g '' D) ≤ (r : ℝ≥0∞) * (∫⁻ x in D, ENNReal.ofReal (J x)) := by
+    rw [hF, ← Measure.restrict_apply_univ (μ := volume) D, ← lintegral_const,
+      ← lintegral_const_mul' _ _ ENNReal.coe_ne_top]
+    apply lintegral_mono_ae
+    filter_upwards [ae_restrict_mem hD] with x hx
+    rw [← ENNReal.ofReal_coe_nnreal, ← ENNReal.ofReal_mul r.coe_nonneg]
+    exact ENNReal.ofReal_le_ofReal (hg x hx).2
+  constructor
+  · calc
+      H (f '' D) ≤ (r : ℝ≥0∞) ^ n * H (g '' D) := hfg
+      _ ≤ (r : ℝ≥0∞) ^ n * ((r : ℝ≥0∞) * (∫⁻ x in D, ENNReal.ofReal (J x))) := by gcongr
+      _ = _ := by rw [pow_succ, mul_assoc]
+  · calc
+      _ ≤ (r : ℝ≥0∞) * H (g '' D) := h₁
+      _ ≤ (r : ℝ≥0∞) * ((r : ℝ≥0∞) ^ n * H (f '' D)) := by gcongr
+      _ = _ := by rw [pow_succ, mul_left_comm, mul_assoc]
+
+private theorem global_hausdorff_chart_comparison {Ω S : Set X} (hΩ : IsOpen Ω)
+    (hS : MeasurableSet S) (hsub : S ⊆ Ω) {f : X → Y} {f' : X → X →L[ℝ] Y}
+    (hf : ∀ x ∈ Ω, HasFDerivAt f (f' x) x) (hfc : ContinuousOn f' Ω)
+    (hRank : ∀ x ∈ Ω, Function.Injective (f' x)) (hinj : InjOn f S)
+    {r : ℝ≥0} (hr : 1 < r) :
+    H (f '' S) ≤ (r : ℝ≥0∞) ^ (n + 1) * (∫⁻ x in S, ENNReal.ofReal (EuclideanSpace.gram (f' x))) ∧
+      (∫⁻ x in S, ENNReal.ofReal (EuclideanSpace.gram (f' x))) ≤ (r : ℝ≥0∞) ^ (n + 1) * H (f '' S) := by
+  by_cases hSEmpty : S = ∅
+  · simp [hSEmpty]
+  have hSn : S.Nonempty := Set.nonempty_iff_ne_empty.mpr hSEmpty
+  let : Nonempty Ω := by
+    obtain ⟨x, hx⟩ := hSn
+    exact ⟨⟨x, hsub hx⟩⟩
+  have hB (x : Ω) := local_hausdorff_chart_control hΩ hf hfc hRank hr x.val x.property
+  choose δ hδ hBΩ hGram hComp using hB
+  have hCover : S ⊆ ⋃ x : Ω, Metric.ball x.val (δ x) := by
+    intro x hx
+    exact mem_iUnion.mpr ⟨⟨x, hsub hx⟩, Metric.mem_ball_self (hδ ⟨x, hsub hx⟩)⟩
+  obtain ⟨a, ha⟩ :=
+    (HereditarilyLindelofSpace.isLindelof S).indexed_countable_subcover _ (fun _ => Metric.isOpen_ball) hCover
+  let B (k : ℕ) := Metric.ball (a k).val (δ (a k))
+  let T (k : ℕ) := S ∩ disjointed B k
+  have hBT (k : ℕ) : T k ⊆ B k := inter_subset_right.trans (disjointed_subset B k)
+  have hTS (k : ℕ) : T k ⊆ S := inter_subset_left
+  have hT (k : ℕ) : MeasurableSet (T k) :=
+    hS.inter (MeasurableSet.disjointed (fun _ => measurableSet_ball) k)
+  have hDisj : Pairwise (Function.onFun Disjoint T) :=
+    pairwise_disjoint_mono (disjoint_disjointed B) (fun _ => inter_subset_right)
+  have hUnion : (⋃ k, T k) = S := by
+    change ⋃ k, S ∩ disjointed B k = S
+    rw [← inter_iUnion, iUnion_disjointed, inter_eq_self_of_subset_left ha]
+  have hCont : ContinuousOn f S := fun x hx => (hf x (hsub hx)).continuousAt.continuousWithinAt
+  have hImMeas (k : ℕ) : MeasurableSet (f '' T k) :=
+    (hT k).image_of_continuousOn_injOn (hCont.mono (hTS k)) (hinj.mono (hTS k))
+  have hImDisj : Pairwise (Function.onFun Disjoint (fun k => f '' T k)) := by
+    intro i j hij
+    apply Set.disjoint_left.mpr
+    rintro z ⟨x, hx, rfl⟩ ⟨y, hy, hey⟩
+    have hh := hinj (hTS j hy) (hTS i hx) hey
+    exact Set.disjoint_left.mp (hDisj hij) hx (hh ▸ hy)
+  have hIm : H (f '' S) = ∑' k, H (f '' T k) := by
+    rw [← hUnion, image_iUnion, measure_iUnion hImDisj hImMeas]
+  have hJI : (∫⁻ x in S, ENNReal.ofReal (EuclideanSpace.gram (f' x))) =
+      ∑' k, ∫⁻ x in T k, ENNReal.ofReal (EuclideanSpace.gram (f' x)) := by
+    rw [← hUnion, lintegral_iUnion hT hDisj]
+  have hLoc (k : ℕ) :=
+    gram_lintegral_compare (n := n) (m := m) (f := f) (g := f' (a k))
+      (hT k) (fun x hx => hGram (a k) x (hBT k hx))
+      (hausdorffMeasure_image_linear _ (hRank (a k) (a k).property) (T k))
+      (hausdorff_image_compare (hRank (a k) (a k).property).injOn
+        (fun x hx y hy => (hComp (a k) x (hBT k hx) y (hBT k hy)).1))
+      (hausdorff_image_compare (hinj.mono (hTS k))
+        (fun x hx y hy => (hComp (a k) x (hBT k hx) y (hBT k hy)).2))
+  rw [hIm, hJI, ← ENNReal.tsum_mul_left, ← ENNReal.tsum_mul_left]
+  exact ⟨tsum_le_tsum (fun k => (hLoc k).1), tsum_le_tsum (fun k => (hLoc k).2)⟩
+
+private theorem ennreal_le_of_all_factors {a b : ℝ≥0∞} (n : ℕ)
+    (h : ∀ r : ℝ≥0, 1 < r → a ≤ (r : ℝ≥0∞) ^ n * b) : a ≤ b := by
+  have hpow : Tendsto (fun r : ℝ≥0 => (r : ℝ≥0∞) ^ n) (𝓝[>] 1) (𝓝 1) := by
+    have hc : Continuous (fun r : ℝ≥0 => (r : ℝ≥0∞) ^ n) := by fun_prop
+    have ht := hc.continuousAt (x := (1 : ℝ≥0))
+    simpa only [ContinuousWithinAt, ENNReal.coe_one, one_pow] using
+      ht.continuousWithinAt (s := Ioi (1 : ℝ≥0))
+  have hlim := ENNReal.Tendsto.mul_const hpow (b := b) (Or.inl one_ne_zero)
+  rw [one_mul] at hlim
+  apply ge_of_tendsto hlim
+  filter_upwards [self_mem_nhdsWithin] with r hr
+  exact h r hr
+
+/-- **Equation (124)** of [benIsrael2003generalized], Chapter 8.
+For an injective chart with continuous, injective derivative on a
+neighborhood, normalized Hausdorff measure equals the weighted
+Lebesgue measure of the parameters. -/
+theorem hausdorffMeasure_image_eq_lintegral_gram {Ω S : Set X} (hΩ : IsOpen Ω)
+    (hS : MeasurableSet S) (hsub : S ⊆ Ω) {f : X → Y} {f' : X → X →L[ℝ] Y}
+    (hf : ∀ x ∈ Ω, HasFDerivAt f (f' x) x) (hfc : ContinuousOn f' Ω)
+    (hRank : ∀ x ∈ Ω, Function.Injective (f' x)) (hinj : InjOn f S) :
+    H (f '' S) = ∫⁻ x in S, ENNReal.ofReal (EuclideanSpace.gram (f' x)) := by
+  apply le_antisymm <;> apply ennreal_le_of_all_factors (n + 1) <;> intro r hr
+  · exact (global_hausdorff_chart_comparison hΩ hS hsub hf hfc hRank hinj hr).1
+  · exact (global_hausdorff_chart_comparison hΩ hS hsub hf hfc hRank hinj hr).2
+
+private theorem map_gram_density_eq_hausdorff {Ω S : Set X} (hΩ : IsOpen Ω)
+    (hS : MeasurableSet S) (hsub : S ⊆ Ω) {f : X → Y} {f' : X → X →L[ℝ] Y}
+    (hf : ∀ x ∈ Ω, HasFDerivAt f (f' x) x) (hfc : ContinuousOn f' Ω)
+    (hRank : ∀ x ∈ Ω, Function.Injective (f' x)) (hinj : InjOn f S) :
+    Measure.map (S.domRestrict f)
+        (Measure.comap Subtype.val (volume.withDensity (fun x => ENNReal.ofReal (EuclideanSpace.gram (f' x))))) =
+      (H).restrict (f '' S) := by
+  have hCont : ContinuousOn f S := fun x hx => (hf x (hsub hx)).continuousAt.continuousWithinAt
+  have hEmb := hCont.measurableEmbedding hS hinj
+  let J (x : X) := ENNReal.ofReal (EuclideanSpace.gram (f' x))
+  apply Measure.ext
+  intro T hT
+  let U := Subtype.val '' (S.domRestrict f ⁻¹' T)
+  have hUm : MeasurableSet U :=
+    (MeasurableEmbedding.subtype_coe hS).measurableSet_image.mpr (hEmb.measurable hT)
+  have hUS : U ⊆ S := by
+    rintro _ ⟨x, _, rfl⟩
+    exact x.property
+  have hUT : f '' U = T ∩ f '' S := by
+    ext y
+    constructor
+    · rintro ⟨_, ⟨x, hx, rfl⟩, rfl⟩
+      exact ⟨hx, mem_image_of_mem f x.property⟩
+    · rintro ⟨hy, ⟨x, hx, rfl⟩⟩
+      exact ⟨x, ⟨⟨x, hx⟩, hy, rfl⟩, rfl⟩
+  change (Measure.map (S.domRestrict f) (Measure.comap Subtype.val (volume.withDensity J))) T =
+    (H).restrict (f '' S) T
+  rw [Measure.map_apply hEmb.measurable hT, (MeasurableEmbedding.subtype_coe hS).comap_apply,
+    withDensity_apply J hUm, Measure.restrict_apply hT, ← hUT]
+  symm
+  exact hausdorffMeasure_image_eq_lintegral_gram hΩ hUm (hUS.trans hsub) hf hfc hRank (hinj.mono hUS)
+
+/-- **Equation (124)** of [benIsrael2003generalized], Chapter 8.
+Integration over the image of a smooth injective immersion uses
+normalized Hausdorff measure and the Gram factor in the parameters. -/
+theorem integral_areaFormula {Ω S : Set X} (hΩ : IsOpen Ω)
+    (hS : MeasurableSet S) (hsub : S ⊆ Ω) {f : X → Y} {f' : X → X →L[ℝ] Y}
+    (hf : ∀ x ∈ Ω, HasFDerivAt f (f' x) x) (hfc : ContinuousOn f' Ω)
+    (hRank : ∀ x ∈ Ω, Function.Injective (f' x)) (hinj : InjOn f S)
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] (g : Y → E) :
+    ∫ y in f '' S, g y ∂H = ∫ x in S, EuclideanSpace.gram (f' x) • g (f x) := by
+  have hCont : ContinuousOn f S := fun x hx => (hf x (hsub hx)).continuousAt.continuousWithinAt
+  have hJ : AEMeasurable (fun x => (EuclideanSpace.gram (f' x)).toNNReal) (volume.restrict S) :=
+    ((continuous_real_toNNReal.comp continuous_gram).comp_continuousOn (hfc.mono hsub)).aemeasurable hS
+  rw [← map_gram_density_eq_hausdorff hΩ hS hsub hf hfc hRank hinj,
+    (hCont.measurableEmbedding hS hinj).integral_map]
+  simp only [Set.domRestrict_apply, ← Function.comp_apply (f := g), ENNReal.ofReal]
+  rw [← (MeasurableEmbedding.subtype_coe hS).integral_map, map_comap_subtype_coe hS,
+    setIntegral_withDensity_eq_setIntegral_smul₀ hJ _ hS]
+  congr with x
+  rw [NNReal.smul_def, Real.coe_toNNReal _ (gram_nonneg _)]
+
+/-- **Equations (130), (133)–(134)** of [benIsrael2003generalized], Chapter 8.
+The weighted chart measure is exactly normalized Hausdorff measure on
+the graph piece. -/
+theorem graphMeasure_eq_hausdorff {d : ℕ}
+    (T : EuclideanSpace ℝ (Fin (d + 1)) ≃ᵃⁱ[ℝ] EuclideanSpace ℝ (Fin (d + 1)))
+    {g : EuclideanSpace ℝ (Fin d) → ℝ} (hg : ContDiff ℝ 1 g)
+    {U : Set (EuclideanSpace ℝ (Fin d))} (hU : MeasurableSet U) :
+    graphMeasure T g U = (euclideanHausdorffMeasure d (d + 1)).restrict (graphParam T g '' U) := by
+  let f := graphParam T g
+  have hC : ContDiff ℝ 1 f := contDiff_graphParam hg
+  have hdf (u : _) := (hC.differentiable one_ne_zero u).hasFDerivAt
+  have hRank (u : _) : Function.Injective (fderiv ℝ f u) :=
+    injective_fderiv_graphParam (T := T) (hg.differentiable one_ne_zero u)
+  apply Measure.ext
+  intro S hS
+  have hUS : MeasurableSet (U ∩ f ⁻¹' S) := hU.inter (hC.continuous.measurable hS)
+  have hI : f '' (U ∩ f ⁻¹' S) = S ∩ f '' U := by rw [image_inter_preimage, inter_comm]
+  have hArea := hausdorffMeasure_image_eq_lintegral_gram isOpen_univ hUS (subset_univ _)
+    (fun u _ => hdf u) (hC.continuous_fderiv one_ne_zero).continuousOn (fun u _ => hRank u)
+    graphParam_injective.injOn
+  rw [graphMeasure_apply hg.continuous U hS, Measure.restrict_apply hS]
+  change (∫⁻ u in U ∩ f ⁻¹' S, ENNReal.ofReal (graphDensity g u)) =
+    euclideanHausdorffMeasure d (d + 1) (S ∩ f '' U)
+  rw [← hI, hArea]
+  simp_rw [graphDensity_eq_gram T (hg.differentiable one_ne_zero _)]
+  rfl
+
+end SmoothArea
+
+section Parallelogram
+open EuclideanSpace InnerProductGeometry
+
+variable {m : ℕ}
+
+private theorem volume_euclideanUnitSquare :
+    (volume : Measure (EuclideanSpace ℝ (Fin 2)))
+      {x | ∀ i, 0 ≤ x i ∧ x i ≤ 1} = 1 := by
+  let S : Set (Fin 2 → ℝ) := Set.pi Set.univ (fun _ => Set.Icc 0 1)
+  have hS : MeasurableSet S := MeasurableSet.pi Set.countable_univ (fun _ _ => measurableSet_Icc)
+  have hs : {x : EuclideanSpace ℝ (Fin 2) | ∀ i, 0 ≤ x i ∧ x i ≤ 1} =
+      WithLp.ofLp ⁻¹' S := by
+    ext x
+    simp only [Set.mem_ofPred_eq, Set.mem_preimage, S, Set.mem_pi, Set.mem_univ, true_implies, Set.mem_Icc]
+  rw [hs, (PiLp.volume_preserving_ofLp (Fin 2)).measure_preimage hS.nullMeasurableSet]
+  simp only [S, volume_pi_pi, Real.volume_Icc, sub_zero, ENNReal.ofReal_one, Finset.prod_const_one]
+
+private theorem gram_two_columns_as_angle (L : EuclideanSpace ℝ (Fin 2) →L[ℝ]
+    EuclideanSpace ℝ (Fin m)) :
+    let u := L (single 0 1)
+    let v := L (single 1 1)
+    EuclideanSpace.gram L = ‖u‖ * ‖v‖ * |Real.sin (angle u v)| := by
+  dsimp only
+  rw [EuclideanSpace.gram, gramDet_eq_det_of_inner, Matrix.det_fin_two]
+  simp only [Matrix.of_apply, abs_of_nonneg (sin_angle_nonneg _ _)]
+  rw [real_inner_comm (L (single 0 1)) (L (single 1 1))]
+  exact (sin_angle_mul_norm_mul_norm _ _).symm.trans (mul_comm _ _)
+
+/-- **Exercise 32**, Equation (147), of [benIsrael2003generalized], Chapter 8.
+The geometric area of the parallelogram spanned by the two columns equals
+the product of their lengths and the absolute sine of their angle. A zero
+off-diagonal Gram entry is exactly preservation of the coordinate right angle. -/
+theorem exercise_32_angle_area
+    (L : EuclideanSpace ℝ (Fin 2) →L[ℝ] EuclideanSpace ℝ (Fin m))
+    (hL : Function.Injective L) :
+    let u := L (single 0 1)
+    let v := L (single 1 1)
+    (euclideanHausdorffMeasure 2 m).real (L '' {x | ∀ i, 0 ≤ x i ∧ x i ≤ 1}) =
+        ‖u‖ * ‖v‖ * |Real.sin (angle u v)| ∧
+      (⟪u, v⟫_ℝ = 0 ↔ angle u v = Real.pi / 2) := by
+  dsimp only
+  refine ⟨?_, inner_eq_zero_iff_angle_eq_pi_div_two _ _⟩
+  unfold Measure.real
+  rw [hausdorffMeasure_image_linear L hL, volume_euclideanUnitSquare, mul_one,
+    gram_two_columns_as_angle]
+  rw [ENNReal.toReal_ofReal]
+  exact mul_nonneg (mul_nonneg (norm_nonneg _) (norm_nonneg _)) (abs_nonneg _)
+
+private theorem expand_two_coordinates (x : EuclideanSpace ℝ (Fin 2)) :
+    x = x 0 • EuclideanSpace.single (0 : Fin 2) (1 : ℝ) +
+      x 1 • EuclideanSpace.single (1 : Fin 2) (1 : ℝ) := by
+  ext i
+  fin_cases i <;> simp
+
+/-- **Exercise 32**, after Equation (147), of [benIsrael2003generalized],
+Chapter 8. Orthogonal columns with equal lengths give a common positive
+length scale in every direction and preserve all angles. -/
+theorem exercise_32_isotropic_scaling
+    (L : EuclideanSpace ℝ (Fin 2) →L[ℝ] EuclideanSpace ℝ (Fin m))
+    (hL : Function.Injective L)
+    (horth : ⟪L (single 0 1), L (single 1 1)⟫_ℝ = 0)
+    (heq : ‖L (single 0 1)‖ = ‖L (single 1 1)‖) :
+    ∃ c : ℝ, 0 < c ∧ (∀ x, ‖L x‖ = c * ‖x‖) ∧
+      ∀ x y, angle (L x) (L y) = angle x y := by
+  let u := L (single 0 1)
+  let v := L (single 1 1)
+  let c := ‖u‖
+  have hne : u ≠ 0 := by
+    intro h
+    have hzero := hL (show L (single 0 1) = L 0 by simpa only [map_zero] using h)
+    have h1 := congrArg (fun x : EuclideanSpace ℝ (Fin 2) => x 0) hzero
+    simp at h1
+  have hc : 0 < c := norm_pos_iff.mpr hne
+  have huv : ⟪u, v⟫_ℝ = 0 := horth
+  have hsym : ⟪v, u⟫_ℝ = 0 := (real_inner_comm u v).trans huv
+  have hinner (x y : EuclideanSpace ℝ (Fin 2)) : ⟪L x, L y⟫_ℝ = c ^ 2 * ⟪x, y⟫_ℝ := by
+    have hxy : ⟪x, y⟫_ℝ = x 0 * y 0 + x 1 * y 1 := by
+      simp [inner_eq_star_dotProduct, dotProduct, Fin.sum_univ_two, mul_comm]
+    have hLx : L x = x 0 • u + x 1 • v := by
+      conv_lhs => rw [expand_two_coordinates x, map_add, map_smul, map_smul]
+    have hLy : L y = y 0 • u + y 1 • v := by
+      conv_lhs => rw [expand_two_coordinates y, map_add, map_smul, map_smul]
+    rw [hLx, hLy, hxy]
+    have hu : ⟪u, u⟫_ℝ = c ^ 2 := real_inner_self_eq_norm_sq _
+    have hv : ⟪v, v⟫_ℝ = c ^ 2 := (real_inner_self_eq_norm_sq _).trans (congrArg (fun r : ℝ => r ^ 2) heq.symm)
+    simp only [inner_add_left, inner_add_right, real_inner_smul_left, real_inner_smul_right,
+      huv, hsym, hu, hv, mul_zero, zero_add, add_zero]
+    ring
+  have hdil (x : EuclideanSpace ℝ (Fin 2)) : ‖L x‖ = c * ‖x‖ := by
+    have h := hinner x x
+    rw [real_inner_self_eq_norm_sq, real_inner_self_eq_norm_sq] at h
+    exact (sq_eq_sq₀ (norm_nonneg _) (mul_nonneg hc.le (norm_nonneg _))).mp (by rw [mul_pow]; exact h)
+  refine ⟨c, hc, hdil, fun x y => ?_⟩
+  change Real.arccos (⟪L x, L y⟫_ℝ / (‖L x‖ * ‖L y‖)) =
+    Real.arccos (⟪x, y⟫_ℝ / (‖x‖ * ‖y‖))
+  rw [hinner, hdil, hdil, show c * ‖x‖ * (c * ‖y‖) = c ^ 2 * (‖x‖ * ‖y‖) by ring,
+    mul_div_mul_left _ _ (pow_ne_zero 2 hc.ne')]
+
+end Parallelogram
+
+section UnitInterceptSimplex
+open scoped ENNReal Pointwise BigOperators
+open EuclideanSpace
+
+/-- The coordinate simplex of dimension d has nonnegative coordinates with
+sum bounded by one. -/
+def unitInterceptSimplex (d : ℕ) : Set (EuclideanSpace ℝ (Fin d)) :=
+  {x | (∀ i, 0 ≤ x i) ∧ (∑ i, x i) ≤ 1}
+
+private theorem measurableSet_unitInterceptSimplex (d : ℕ) :
+    MeasurableSet (unitInterceptSimplex d) := by
+  have hs : unitInterceptSimplex d =
+      (⋂ i : Fin d, {x : EuclideanSpace ℝ (Fin d) | 0 ≤ x i}) ∩ {x | (∑ i, x i) ≤ 1} := by
+    ext x
+    simp [unitInterceptSimplex]
+  rw [hs]
+  apply MeasurableSet.inter
+  · exact MeasurableSet.iInter (fun i => measurableSet_le measurable_const (by fun_prop))
+  · exact measurableSet_le (by fun_prop) measurable_const
+
+private theorem simplexSection_eq_smul (d : ℕ) {c : ℝ} (hc : 0 < c) :
+    {u : EuclideanSpace ℝ (Fin d) | (∀ i, 0 ≤ u i) ∧ ∑ i, u i ≤ c} =
+      c • unitInterceptSimplex d := by
+  ext u
+  change (∀ i, 0 ≤ u i) ∧ ∑ i, u i ≤ c ↔ ∃ v ∈ unitInterceptSimplex d, c • v = u
+  constructor
+  · intro hu
+    refine ⟨c⁻¹ • u, ?_, ?_⟩
+    · refine ⟨fun i => mul_nonneg (inv_nonneg.mpr hc.le) (hu.1 i), ?_⟩
+      change ∑ i, c⁻¹ * u i ≤ 1
+      rw [← Finset.mul_sum, ← div_eq_inv_mul, div_le_iff₀ hc, one_mul]
+      exact hu.2
+    · rw [smul_smul, mul_inv_cancel₀ hc.ne', one_smul]
+  · rintro ⟨v, hv, rfl⟩
+    refine ⟨fun i => mul_nonneg hc.le (hv.1 i), ?_⟩
+    change ∑ i, c * v i ≤ c
+    rw [← Finset.mul_sum]
+    simpa only [mul_one] using mul_le_mul_of_nonneg_left hv.2 hc.le
+
+/-- The Lebesgue volume of the unit-intercept coordinate simplex is 1/d!.
+This includes the zero-dimensional simplex of volume one. -/
+theorem volume_unitInterceptSimplex (d : ℕ) :
+    (volume : Measure (EuclideanSpace ℝ (Fin d))) (unitInterceptSimplex d) =
+      ENNReal.ofReal ((d.factorial : ℝ)⁻¹) := by
+  induction d with
+  | zero =>
+    rw [volume_euclideanSpace_eq_dirac, Measure.dirac_apply' _ (measurableSet_unitInterceptSimplex 0)]
+    simp [unitInterceptSimplex]
+  | succ d ih =>
+    let S : Set (ℝ × EuclideanSpace ℝ (Fin d)) :=
+      (lastInitEquiv d).symm ⁻¹' unitInterceptSimplex (d + 1)
+    have hS : MeasurableSet S :=
+      (measurableSet_unitInterceptSimplex (d + 1)).preimage (lastInitEquiv d).symm.measurable
+    have hpre : (lastInitEquiv d) ⁻¹' S = unitInterceptSimplex (d + 1) := by
+      ext x
+      simp [S]
+    rw [← hpre, (measurePreserving_lastInit d).measure_preimage hS.nullMeasurableSet]
+    change ((volume : Measure ℝ).prod (volume : Measure (EuclideanSpace ℝ (Fin d)))) S = _
+    rw [Measure.prod_apply hS]
+    have hsect (t : ℝ) : Prod.mk t ⁻¹' S =
+        {u : EuclideanSpace ℝ (Fin d) | (∀ i, 0 ≤ u i) ∧ 0 ≤ t ∧ ∑ i, u i ≤ 1 - t} := by
+      ext u
+      simp only [S, Set.mem_preimage, lastInitEquiv_symm_apply, unitInterceptSimplex,
+        Set.mem_ofPred_eq, Fin.forall_fin_succ', Fin.sum_univ_castSucc,
+        snocLast_apply_last, snocLast_apply_castSucc]
+      rw [le_sub_iff_add_le]
+      exact ⟨fun h => ⟨h.1.1, h.1.2, h.2⟩, fun h => ⟨⟨h.1, h.2.1⟩, h.2.2⟩⟩
+    let g (t : ℝ) := (1 - t) ^ d * ((d.factorial : ℝ)⁻¹)
+    have ha :
+        (fun t => volume (Prod.mk t ⁻¹' S)) =ᵐ[volume]
+          (Set.Ioc (0 : ℝ) 1).indicator (fun t => ENNReal.ofReal (g t)) := by
+      have hne (z : ℝ) : ∀ᵐ t ∂(volume : Measure ℝ), t ≠ z := by simp [ae_iff]
+      filter_upwards [hne 0, hne 1]
+        with t h0 h1
+      by_cases ht : t ∈ Ioc (0 : ℝ) 1
+      · have hc : 0 < 1 - t := sub_pos.mpr (lt_of_le_of_ne ht.2 h1)
+        rw [Set.indicator_of_mem ht, hsect]
+        have he : {u : EuclideanSpace ℝ (Fin d) | (∀ i, 0 ≤ u i) ∧ 0 ≤ t ∧ ∑ i, u i ≤ 1 - t} =
+            (1 - t) • unitInterceptSimplex d := by
+          rw [← simplexSection_eq_smul d hc]
+          simp [ht.1.le]
+        rw [he, Measure.addHaar_smul_of_nonneg volume hc.le, ih, finrank_euclideanSpace,
+          Fintype.card_fin, ← ENNReal.ofReal_mul (pow_nonneg hc.le _)]
+      · rw [Set.indicator_of_notMem ht, hsect]
+        have he : {u : EuclideanSpace ℝ (Fin d) | (∀ i, 0 ≤ u i) ∧ 0 ≤ t ∧ ∑ i, u i ≤ 1 - t} =
+            ∅ := by
+          apply Set.eq_empty_iff_forall_notMem.mpr
+          rintro u ⟨hu, ht₀, hsum⟩
+          have hnonneg : 0 ≤ ∑ i, u i := Finset.sum_nonneg fun i _ => hu i
+          exact ht ⟨lt_of_le_of_ne ht₀ h0.symm, by linarith⟩
+        rw [he, measure_empty]
+    rw [lintegral_congr_ae ha, lintegral_indicator measurableSet_Ioc]
+    have hg : IntervalIntegrable g volume 0 1 := by
+      apply Continuous.intervalIntegrable
+      dsimp [g]
+      fun_prop
+    have hg' : Integrable g ((volume : Measure ℝ).restrict (Ioc 0 1)) :=
+      hg.1
+    have hgn : 0 ≤ᵐ[(volume : Measure ℝ).restrict (Ioc 0 1)] g := by
+      filter_upwards [ae_restrict_mem measurableSet_Ioc] with t ht
+      exact mul_nonneg (pow_nonneg (sub_nonneg.mpr ht.2) _) (by positivity)
+    rw [← ofReal_integral_eq_lintegral_ofReal hg' hgn,
+      ← intervalIntegral.integral_of_le (by norm_num : (0 : ℝ) ≤ 1)]
+    congr 1
+    change (∫ t in (0 : ℝ)..1, (1 - t) ^ d * ((d.factorial : ℝ)⁻¹)) =
+      ((d + 1).factorial : ℝ)⁻¹
+    rw [intervalIntegral.integral_mul_const,
+      show (∫ t in (0 : ℝ)..1, (1 - t) ^ d) = ∫ t in (0 : ℝ)..1, t ^ d by
+        simpa only [sub_self, sub_zero] using
+          intervalIntegral.integral_comp_sub_left (fun t : ℝ => t ^ d) (a := 0) (b := 1) 1,
+      integral_pow]
+    simp [Nat.factorial_succ, Nat.cast_mul, Nat.cast_add]
+    ring
+
+
+end UnitInterceptSimplex
+
+section SimplexFacets
+
+open EuclideanSpace
+open scoped InnerProductSpace BigOperators
+
+variable {d : ℕ}
+
+/-- The positive-intercept simplex in Equation (160). -/
+def interceptSimplex (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) :
+    Set (EuclideanSpace ℝ (Fin (d + 1))) :=
+  {x | (∀ i, 0 ≤ x i) ∧ ∑ i, a i * x i ≤ a₀}
+
+/-- The upper facet, where the linear bound of the simplex is attained. -/
+def interceptSimplexUpperFacet (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) :
+    Set (EuclideanSpace ℝ (Fin (d + 1))) :=
+  {x | (∀ i, 0 ≤ x i) ∧ ∑ i, a i * x i = a₀}
+
+/-- The coordinate facet with coordinate j equal to zero. -/
+def interceptSimplexCoordinateFacet (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ)
+    (j : Fin (d + 1)) : Set (EuclideanSpace ℝ (Fin (d + 1))) :=
+  interceptSimplex a a₀ ∩ {x | x j = 0}
+
+/-- Orthogonal projection onto the coordinate plane with coordinate j zero. -/
+def simplexFacetProjection (j : Fin (d + 1)) (x : EuclideanSpace ℝ (Fin (d + 1))) :
+    EuclideanSpace ℝ (Fin (d + 1)) :=
+  x - x j • EuclideanSpace.single j 1
+
+/-- The coordinate projection sets the selected coordinate to zero. -/
+@[simp]
+theorem simplexFacetProjection_apply (j : Fin (d + 1)) (x : EuclideanSpace ℝ (Fin (d + 1)))
+    (i : Fin (d + 1)) :
+    simplexFacetProjection j x i = if i = j then 0 else x i := by
+  by_cases h : i = j
+  · subst i
+    simp [simplexFacetProjection]
+  · simp [simplexFacetProjection, h]
+
+/-- Deleting the jth coordinate maps the upper facet onto the jth coordinate
+facet, as in the proof of Exercise 37. -/
+theorem simplexFacetProjection_image_upperFacet
+    (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ)
+    (ha : ∀ i, 0 < a i) (j : Fin (d + 1)) :
+    simplexFacetProjection j '' interceptSimplexUpperFacet a a₀ =
+      interceptSimplexCoordinateFacet a a₀ j := by
+  ext x
+  constructor
+  · rintro ⟨y, hy, rfl⟩
+    have hpy (i : Fin (d + 1)) : 0 ≤ simplexFacetProjection j y i := by
+      rw [simplexFacetProjection_apply]
+      split_ifs with hi
+      · exact le_rfl
+      · exact hy.1 i
+    refine ⟨⟨hpy, ?_⟩, by simp⟩
+    rw [← hy.2]
+    apply Finset.sum_le_sum
+    intro i _
+    apply mul_le_mul_of_nonneg_left _ (ha i).le
+    rw [simplexFacetProjection_apply]
+    split_ifs
+    · exact hy.1 i
+    · rfl
+  · intro hx
+    let t := (a₀ - ∑ i, a i * x i) / a j
+    have ht : 0 ≤ t := div_nonneg (sub_nonneg.mpr hx.1.2) (ha j).le
+    let y := x + t • EuclideanSpace.single j 1
+    have hy (i : Fin (d + 1)) : y i = x i + if i = j then t else 0 := by
+      by_cases hi : i = j
+      · subst i
+        simp [y]
+      · simp [y, hi]
+    refine ⟨y, ⟨fun i => ?_, ?_⟩, ?_⟩
+    · rw [hy]
+      exact add_nonneg (hx.1.1 i) (by split_ifs <;> positivity)
+    · have he (i : Fin (d + 1)) :
+          a i * y i = a i * x i + if i = j then a j * t else 0 := by
+        rw [hy, mul_add]
+        split_ifs with hi
+        · rw [hi]
+        · rw [mul_zero]
+      simp only [he, Finset.sum_add_distrib, Finset.sum_ite_eq', Finset.mem_univ, ite_true]
+      dsimp [t]
+      field_simp [(ha j).ne']
+      ring
+    · ext i
+      by_cases hi : i = j
+      · subst i
+        simpa only [simplexFacetProjection_apply, ite_true] using hx.2.symm
+      · rw [simplexFacetProjection_apply, ite_eq_right hi, hy, ite_eq_right hi, add_zero]
+
+private def lastFacetParameter (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) :
+    Set (EuclideanSpace ℝ (Fin d)) :=
+  {u | (∀ i, 0 ≤ u i) ∧ ∑ i : Fin d, a i.castSucc * u i ≤ a₀}
+
+private theorem weightedSum_snocLast (a : EuclideanSpace ℝ (Fin (d + 1)))
+    (u : EuclideanSpace ℝ (Fin d)) (t : ℝ) :
+    ∑ i, a i * snocLast u t i = (∑ i : Fin d, a i.castSucc * u i) + a (Fin.last d) * t := by
+  rw [Fin.sum_univ_castSucc]
+  simp only [snocLast_apply_castSucc, snocLast_apply_last]
+
+private theorem lastFacetCoordinate_eq_image (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) :
+    interceptSimplexCoordinateFacet a a₀ (Fin.last d) =
+      snocLastL (0 : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) '' lastFacetParameter a a₀ := by
+  ext x
+  constructor
+  · intro hx
+    have hz : x (Fin.last d) = 0 := hx.2
+    have hsnoc : snocLast (init x) 0 = x := by
+      rw [← hz, snocLast_init_last]
+    refine ⟨init x, ⟨fun i => hx.1.1 i.castSucc, ?_⟩, ?_⟩
+    · have hs := hx.1.2
+      change (∑ i, a i * x i) ≤ a₀ at hs
+      rw [← hsnoc, weightedSum_snocLast, mul_zero, add_zero] at hs
+      exact hs
+    · simpa only [snocLastL_apply, zero_apply] using hsnoc
+  · rintro ⟨u, hu, rfl⟩
+    change ((∀ i, 0 ≤ snocLast u 0 i) ∧ ∑ i, a i * snocLast u 0 i ≤ a₀) ∧
+      snocLast u 0 (Fin.last d) = 0
+    refine ⟨⟨?_, ?_⟩, snocLast_apply_last _ _⟩
+    · simp only [Fin.forall_fin_succ', snocLast_apply_castSucc, snocLast_apply_last]
+      exact ⟨hu.1, le_rfl⟩
+    · rw [weightedSum_snocLast, mul_zero, add_zero]
+      exact hu.2
+
+private def slopeLastFacet (a : EuclideanSpace ℝ (Fin (d + 1))) :
+    EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ :=
+  InnerProductSpace.toDual ℝ _ (-(a (Fin.last d))⁻¹ • init a)
+
+private theorem slopeLastFacet_apply (a : EuclideanSpace ℝ (Fin (d + 1)))
+    (u : EuclideanSpace ℝ (Fin d)) :
+    slopeLastFacet a u = -(∑ i : Fin d, a i.castSucc * u i) / a (Fin.last d) := by
+  change ⟪-(a (Fin.last d))⁻¹ • init a, u⟫_ℝ = _
+  rw [real_inner_smul_left]
+  have h : ⟪init a, u⟫_ℝ = ∑ i : Fin d, a i.castSucc * u i := by
+    simp only [inner_eq_star_dotProduct, star_trivial, dotProduct]
+    exact Finset.sum_congr rfl (fun i _ => mul_comm (u i) (a i.castSucc))
+  rw [h]
+  ring
+
+private theorem lastFacetUpper_eq_image (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ)
+    (ha : 0 < a (Fin.last d)) :
+    interceptSimplexUpperFacet a a₀ =
+      (fun x : EuclideanSpace ℝ (Fin (d + 1)) => x + snocLast 0 (a₀ / a (Fin.last d))) ''
+        (snocLastL (slopeLastFacet a) '' lastFacetParameter a a₀) := by
+  let p := snocLast (0 : EuclideanSpace ℝ (Fin d)) (a₀ / a (Fin.last d))
+  have hp (u : EuclideanSpace ℝ (Fin d)) :
+      snocLastL (slopeLastFacet a) u + p =
+        snocLast u ((a₀ - ∑ i : Fin d, a i.castSucc * u i) / a (Fin.last d)) := by
+    ext i
+    refine Fin.lastCases ?_ (fun j => ?_) i
+    · simp only [PiLp.add_apply, snocLastL_apply, snocLast_apply_last, p, slopeLastFacet_apply]
+      ring
+    · simp [p, snocLastL_apply]
+  ext x
+  constructor
+  · intro hx
+    let u := init x
+    have hsum := hx.2
+    change ∑ i, a i * x i = a₀ at hsum
+    rw [← snocLast_init_last x, weightedSum_snocLast] at hsum
+    have hlast : (a₀ - ∑ i : Fin d, a i.castSucc * u i) / a (Fin.last d) = x (Fin.last d) := by
+      apply (div_eq_iff ha.ne').2
+      dsimp only [u]
+      linarith only [hsum]
+    refine ⟨snocLastL (slopeLastFacet a) u, ⟨u, ⟨fun i => hx.1 i.castSucc, ?_⟩, rfl⟩, ?_⟩
+    · dsimp only [u]
+      linarith only [hsum, mul_nonneg ha.le (hx.1 (Fin.last d))]
+    · change snocLastL (slopeLastFacet a) u + p = x
+      rw [hp, hlast]
+      exact snocLast_init_last x
+  · rintro ⟨_, ⟨u, hu, rfl⟩, rfl⟩
+    change snocLastL (slopeLastFacet a) u + p ∈ _
+    rw [hp]
+    change (∀ i, 0 ≤ snocLast u _ i) ∧ ∑ i, a i * snocLast u _ i = a₀
+    refine ⟨?_, ?_⟩
+    · simp only [Fin.forall_fin_succ', snocLast_apply_castSucc, snocLast_apply_last]
+      exact ⟨hu.1, div_nonneg (sub_nonneg.mpr hu.2) ha.le⟩
+    · rw [weightedSum_snocLast]
+      field_simp [ha.ne']
+      ring
+
+private theorem euclideanHausdorffMeasure_image_self {m k : ℕ}
+    {f : EuclideanSpace ℝ (Fin m) → EuclideanSpace ℝ (Fin m)} (hf : Isometry f)
+    (S : Set (EuclideanSpace ℝ (Fin m))) :
+    euclideanHausdorffMeasure k m (f '' S) = euclideanHausdorffMeasure k m S := by
+  simp only [euclideanHausdorffMeasure, Measure.smul_apply]
+  rw [hf.hausdorffMeasure_image (Or.inl (Nat.cast_nonneg k))]
+
+private theorem snocLastL_injective (ℓ : EuclideanSpace ℝ (Fin d) →L[ℝ] ℝ) :
+    Function.Injective (snocLastL ℓ) := by
+  intro x y h
+  simpa only [snocLastL_apply, init_snocLast] using congrArg init h
+
+private theorem measure_lastCoordinateFacet (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) :
+    euclideanHausdorffMeasure d (d + 1) (interceptSimplexCoordinateFacet a a₀ (Fin.last d)) =
+      volume (lastFacetParameter a a₀) := by
+  rw [lastFacetCoordinate_eq_image, hausdorffMeasure_image_linear _ (snocLastL_injective _),
+    gram_snocLastL, norm_zero, zero_pow (by decide : (2 : ℕ) ≠ 0), add_zero, Real.sqrt_one,
+    ENNReal.ofReal_one, one_mul]
+
+private theorem area_lastFacet_ratio (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ)
+    (ha : 0 < a (Fin.last d)) :
+    (euclideanHausdorffMeasure d (d + 1)).real (interceptSimplexUpperFacet a a₀) =
+      (‖a‖ / a (Fin.last d)) *
+        (euclideanHausdorffMeasure d (d + 1)).real
+          (interceptSimplexCoordinateFacet a a₀ (Fin.last d)) := by
+  have h𝓁 : ‖slopeLastFacet a‖ = ‖init a‖ / a (Fin.last d) := by
+    rw [slopeLastFacet, LinearIsometryEquiv.norm_map, norm_smul, Real.norm_eq_abs, abs_neg,
+      abs_inv, abs_of_pos ha, div_eq_mul_inv, mul_comm]
+  have hnorm : ‖a‖ ^ 2 = ‖init a‖ ^ 2 + (a (Fin.last d)) ^ 2 := by
+    rw [EuclideanSpace.real_norm_sq_eq, EuclideanSpace.real_norm_sq_eq, Fin.sum_univ_castSucc]
+    rfl
+  have hgram : EuclideanSpace.gram (snocLastL (slopeLastFacet a)) = ‖a‖ / a (Fin.last d) := by
+    rw [gram_snocLastL, h𝓁, ← Real.sqrt_sq (div_nonneg (norm_nonneg a) ha.le)]
+    congr 1
+    field_simp [ha.ne']
+    linarith only [hnorm]
+  have hiso : Isometry (fun x : EuclideanSpace ℝ (Fin (d + 1)) =>
+      x + snocLast 0 (a₀ / a (Fin.last d))) :=
+    (IsometryEquiv.vaddConst (V := EuclideanSpace ℝ (Fin (d + 1)))
+      (snocLast 0 (a₀ / a (Fin.last d)))).isometry
+  unfold Measure.real
+  rw [lastFacetUpper_eq_image a a₀ ha, euclideanHausdorffMeasure_image_self hiso,
+    hausdorffMeasure_image_linear _ (snocLastL_injective _), measure_lastCoordinateFacet,
+    hgram, ENNReal.toReal_mul, ENNReal.toReal_ofReal (div_nonneg (norm_nonneg a) ha.le)]
+
+private def facetSwap (j : Fin (d + 1)) :
+    EuclideanSpace ℝ (Fin (d + 1)) ≃ₗᵢ[ℝ] EuclideanSpace ℝ (Fin (d + 1)) :=
+  LinearIsometryEquiv.piLpCongrLeft 2 ℝ ℝ (Equiv.swap j (Fin.last d))
+
+private theorem facetSwap_apply (j : Fin (d + 1)) (x : EuclideanSpace ℝ (Fin (d + 1)))
+    (i : Fin (d + 1)) : facetSwap j x i = x ((Equiv.swap j (Fin.last d)).symm i) := rfl
+
+private theorem facetSwap_images
+    (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) (j : Fin (d + 1)) :
+    (facetSwap j '' interceptSimplexUpperFacet a a₀ =
+      interceptSimplexUpperFacet (facetSwap j a) a₀) ∧
+    (facetSwap j '' interceptSimplexCoordinateFacet a a₀ j =
+      interceptSimplexCoordinateFacet (facetSwap j a) a₀ (Fin.last d)) := by
+  let e := Equiv.swap j (Fin.last d)
+  let E := facetSwap j
+  have he (x : EuclideanSpace ℝ (Fin (d + 1))) (i : Fin (d + 1)) : E x i = x (e.symm i) :=
+    facetSwap_apply j x i
+  have hn (x : EuclideanSpace ℝ (Fin (d + 1))) :
+      (∀ i, 0 ≤ E x i) ↔ (∀ i, 0 ≤ x i) := by
+    constructor
+    · intro h i
+      simpa only [he, Equiv.symm_apply_apply] using h (e i)
+    · intro h i
+      rw [he]
+      exact h _
+  have hs (x : EuclideanSpace ℝ (Fin (d + 1))) :
+      ∑ i, E a i * E x i = ∑ i, a i * x i := by
+    simp_rw [he]
+    exact Equiv.sum_comp e.symm (fun i => a i * x i)
+  have hl (x : EuclideanSpace ℝ (Fin (d + 1))) : E x (Fin.last d) = x j := by
+    rw [he, show e.symm (Fin.last d) = j by simp [e]]
+  have himage (S T : Set (EuclideanSpace ℝ (Fin (d + 1))))
+      (h : ∀ x, E x ∈ T ↔ x ∈ S) : E '' S = T := by
+    ext y
+    obtain ⟨x, rfl⟩ := E.surjective y
+    exact ⟨fun ⟨z, hz, hz'⟩ => (h x).2 (E.injective hz' ▸ hz), fun hy => ⟨x, (h x).1 hy, rfl⟩⟩
+  constructor
+  · apply himage
+    intro x
+    change ((∀ i, 0 ≤ E x i) ∧ ∑ i, E a i * E x i = a₀) ↔ _
+    rw [hn, hs]
+    rfl
+  · apply himage
+    intro x
+    change (((∀ i, 0 ≤ E x i) ∧ ∑ i, E a i * E x i ≤ a₀) ∧ E x (Fin.last d) = 0) ↔ _
+    rw [hn, hs, hl]
+    rfl
+
+/-- **Exercise 37**, Equations (162)–(163), of [benIsrael2003generalized],
+Chapter 8. The upper facet's area is the coordinate facet's area times the
+ratio of the normal's length to the selected coordinate. The squared upper
+area is the sum of the squared coordinate facet areas. -/
+theorem exercise_37_simplex_facet_areas
+    (a : EuclideanSpace ℝ (Fin (d + 1))) (a₀ : ℝ) (ha : ∀ i, 0 < a i) (_ha₀ : 0 < a₀) :
+    let H := (euclideanHausdorffMeasure d (d + 1)).real
+    let A₀ := H (interceptSimplexUpperFacet a a₀)
+    let A := fun j => H (interceptSimplexCoordinateFacet a a₀ j)
+    (∀ j, A₀ = (‖a‖ / a j) * A j) ∧ A₀ ^ 2 = ∑ j, (A j) ^ 2 := by
+  dsimp only
+  let H := (euclideanHausdorffMeasure d (d + 1)).real
+  let A₀ := H (interceptSimplexUpperFacet a a₀)
+  let A := fun j => H (interceptSimplexCoordinateFacet a a₀ j)
+  change (∀ j, A₀ = (‖a‖ / a j) * A j) ∧ A₀ ^ 2 = ∑ j, (A j) ^ 2
+  have hratio (j : Fin (d + 1)) : A₀ = (‖a‖ / a j) * A j := by
+    let E := facetSwap j
+    have hE : (E a) (Fin.last d) = a j := by rw [facetSwap_apply, Equiv.symm_swap, Equiv.swap_apply_right]
+    obtain ⟨hup, hcoord⟩ := facetSwap_images a a₀ j
+    have h := area_lastFacet_ratio (E a) a₀ (hE ▸ ha j)
+    rw [hE, E.norm_map, ← hup, ← hcoord] at h
+    unfold Measure.real at h
+    rw [euclideanHausdorffMeasure_image_self E.isometry,
+      euclideanHausdorffMeasure_image_self E.isometry] at h
+    exact h
+  refine ⟨hratio, ?_⟩
+  have hnorm : ‖a‖ ≠ 0 := by
+    rw [norm_ne_zero_iff]
+    exact fun h => (ha (Fin.last d)).ne' (congrArg (fun x : EuclideanSpace ℝ (Fin (d + 1)) =>
+      x (Fin.last d)) h)
+  have hA (j : Fin (d + 1)) : A j = A₀ * a j / ‖a‖ := by
+    rw [hratio j]
+    field_simp [(ha j).ne', hnorm]
+  simp_rw [hA, div_pow, mul_pow]
+  rw [← Finset.sum_div, ← Finset.mul_sum, ← EuclideanSpace.real_norm_sq_eq,
+    mul_div_cancel_right₀ _ (pow_ne_zero 2 hnorm)]
+
+/-- **Exercise 38** of [benIsrael2003generalized], Chapter 8. The coordinate
+facets of the unit-intercept simplex have area 1/d!, and the upper facet has
+area √(d+1)/d!. -/
+theorem exercise_38_simplex_facet_areas (d : ℕ) :
+    let a : EuclideanSpace ℝ (Fin (d + 1)) := WithLp.toLp 2 fun _ => 1
+    let H := (euclideanHausdorffMeasure d (d + 1)).real
+    (∀ j, H (interceptSimplexCoordinateFacet a 1 j) = ((d.factorial : ℝ)⁻¹)) ∧
+      H (interceptSimplexUpperFacet a 1) = Real.sqrt (d + 1) / (d.factorial : ℝ) := by
+  dsimp only
+  let a : EuclideanSpace ℝ (Fin (d + 1)) := WithLp.toLp 2 fun _ => 1
+  let H := (euclideanHausdorffMeasure d (d + 1)).real
+  have hcoord (j : Fin (d + 1)) : H (interceptSimplexCoordinateFacet a 1 j) = ((d.factorial : ℝ)⁻¹) := by
+    let E := facetSwap j
+    have he : E a = a := by
+      ext i
+      rfl
+    have hm := (facetSwap_images a 1 j).2
+    rw [he] at hm
+    unfold H Measure.real
+    rw [← euclideanHausdorffMeasure_image_self (facetSwap j).isometry, hm, measure_lastCoordinateFacet]
+    have hP : lastFacetParameter a 1 = unitInterceptSimplex d := by
+      ext u
+      simp [lastFacetParameter, unitInterceptSimplex, a]
+    rw [hP, volume_unitInterceptSimplex, ENNReal.toReal_ofReal (by positivity)]
+  refine ⟨hcoord, ?_⟩
+  have h := (exercise_37_simplex_facet_areas a 1 (fun _ => zero_lt_one) zero_lt_one).1 (Fin.last d)
+  change H (interceptSimplexUpperFacet a 1) =
+    ‖a‖ / a (Fin.last d) * H (interceptSimplexCoordinateFacet a 1 (Fin.last d)) at h
+  change H (interceptSimplexUpperFacet a 1) = _
+  rw [h, hcoord (Fin.last d)]
+  have hnorm : ‖a‖ = Real.sqrt (d + 1) := by
+    rw [EuclideanSpace.norm_eq]
+    simp [a, Nat.cast_add]
+  rw [hnorm]
+  change Real.sqrt (d + 1) / 1 * ((d.factorial : ℝ)⁻¹) = _
+  rw [div_one, div_eq_mul_inv]
+
+end SimplexFacets
 
 end BenIsraelGreville.Chapter08
