@@ -82,10 +82,7 @@ source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 11, exact output of 
 
 [[node]]
 id = "exercise_11_trace"
-kind = "theorem"
-desc = '''Evaluate the three intermediate leading-column inverses and the exact arithmetic of the final dependent update for the matrix of Exercise 5.'''
 source = "Ben-Israel and Greville, Chapter 7, §5, Exercise 11, intermediate numerical updates"
-deps = ["exercise_11", "grevilleInverse_eq_pinv"]
 
 [[node]]
 id = "exercise_12"
@@ -105,7 +102,28 @@ source = "Ben-Israel and Greville, Chapter 7, §5, Equation (22), residual proje
 
 [[node]]
 id = "greville_action_only_recursion"
-kind = "theorem"
-desc = '''Implement the action-only recursion that carries the products of the leading inverse with the remaining columns and the right-hand sides, using the update formulas without constructing each full inverse.'''
 source = "Ben-Israel and Greville, Chapter 7, §5, Equations (39)–(44), action-only recursion"
-deps = ["grevilleColumnAction_dependent", "grevilleColumnAction_independent"]
+
+[[node]]
+id = "grevilleActionOnly"
+source = "Ben-Israel and Greville, Chapter 7 §5, Equations (39)–(42), action-only recursion"
+
+[[node]]
+id = "exercise_8_gramSchmidt"
+source = "Ben-Israel and Greville, Chapter 7, §4, Exercise 8"
+
+[[node]]
+id = "modifiedGramSchmidtLastResidual"
+source = "Ben-Israel and Greville, Chapter 7 §4, Exercise 8, last-column modified Gram–Schmidt sweep"
+
+[[node]]
+id = "modifiedGramSchmidtLastResidual_eq"
+source = "Ben-Israel and Greville, Chapter 7 §4, Exercise 8, equality with the Gram–Schmidt residual"
+
+[[node]]
+id = "gramSchmidtResidual_eq_grevilleColumnResidual"
+source = "Ben-Israel and Greville, Chapter 7 §4, Exercise 8, equality of the two residuals in the inverse update"
+
+[[node]]
+id = "gramSchmidtInverse"
+source = "Ben-Israel and Greville, Chapter 7 §4, Exercise 8, modified Gram–Schmidt inverse recursion"
