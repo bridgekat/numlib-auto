@@ -150,7 +150,8 @@ source = 'Ben-Israel and Greville, Chapter 6, §6, Exercise 81, acuteness with s
 
 [[node]]
 id = "theorem_6_17_mixed_estimates_of_unitary_invariance"
-kind = "theorem"
-desc = '''Derive the mixed multiplication estimates across rectangular shapes from unitarily invariant norms induced by a common symmetric gauge. The factor-three perturbation bound with the mixed estimates as hypotheses is proved.'''
-deps = ["theorem_6_17_unitarilyInvariant"]
 source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, general norm-family justification'
+
+[[node]]
+id = "theorem_6_17_commonGauge"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, two matrix seminorms represented by a common gauge'

@@ -2673,4 +2673,207 @@ end Cayley
 
 end Exercises
 
+/-- A symmetric gauge is a definite real seminorm invariant under coordinate
+permutations and absolute values. -/
+structure IsSymmetricGauge {d : ℕ} (φ : Seminorm ℝ (Fin d → ℝ)) : Prop where
+  eq_zero : ∀ x, φ x = 0 → x = 0
+  perm : ∀ (e : Equiv.Perm (Fin d)) x, φ (x ∘ e) = φ x
+  abs : ∀ x, φ (fun i => |x i|) = φ x
+
+private theorem gauge_update_le {d : ℕ} (φ : Seminorm ℝ (Fin d → ℝ))
+    (hφ : ∀ x, φ (fun i => |x i|) = φ x) (z : Fin d → ℝ) (i : Fin d)
+    {u : ℝ} (hu : |u| ≤ |z i|) :
+    φ (Function.update z i u) ≤ φ z := by
+  by_cases hz : z i = 0
+  · have h0 : u = 0 := abs_eq_zero.mp (le_antisymm (by simpa only [hz, abs_zero] using hu)
+      (abs_nonneg _))
+    rw [h0, ← hz, Function.update_eq_self]
+  let t := u / z i
+  have ht : |t| ≤ 1 := by rw [abs_div, div_le_one (abs_pos.mpr hz)]; exact hu
+  let a := (1 + t) / 2
+  let b := (1 - t) / 2
+  have ha : 0 ≤ a := by dsimp [a]; linarith [(abs_le.mp ht).1]
+  have hb : 0 ≤ b := by dsimp [b]; linarith [(abs_le.mp ht).2]
+  let w := Function.update z i (-z i)
+  have hw : φ w = φ z := by
+    rw [← hφ w, ← hφ z]
+    congr 1
+    funext j
+    by_cases hj : j = i
+    · subst j
+      simp [w]
+    · simp [w, Function.update_of_ne hj]
+  have he : Function.update z i u = a • z + b • w := by
+    funext j
+    by_cases hj : j = i
+    · subst j
+      simp only [Function.update_self, Pi.add_apply, Pi.smul_apply, smul_eq_mul, w]
+      calc
+        u = t * z i := (div_mul_cancel₀ _ hz).symm
+        _ = _ := by dsimp [a, b]; ring
+    · simp only [Function.update_of_ne hj, Pi.add_apply, Pi.smul_apply, smul_eq_mul, w]
+      dsimp [a, b]
+      ring
+  rw [he]
+  calc
+    φ (a • z + b • w) ≤ φ (a • z) + φ (b • w) := map_add_le_add φ _ _
+    _ = φ z := by
+      rw [map_smul_eq_mul, map_smul_eq_mul, Real.norm_eq_abs, Real.norm_eq_abs,
+        abs_of_nonneg ha, abs_of_nonneg hb, hw]
+      dsimp [a, b]
+      ring
+
+/-- A real seminorm invariant under absolute values is monotone in the
+coordinatewise absolute values. -/
+theorem absolute_gauge_mono {d : ℕ} (φ : Seminorm ℝ (Fin d → ℝ))
+    (hφ : ∀ x, φ (fun i => |x i|) = φ x) {x y : Fin d → ℝ}
+    (hxy : ∀ i, |x i| ≤ |y i|) : φ x ≤ φ y := by
+  let z (s : Finset (Fin d)) (i : Fin d) := if i ∈ s then x i else y i
+  have hz (s : Finset (Fin d)) : φ (z s) ≤ φ y := by
+    induction s using Finset.induction_on with
+    | empty => simp [z]
+    | @insert i s hi ih =>
+      have he : z (insert i s) = Function.update (z s) i (x i) := by
+        funext j
+        by_cases hj : j = i
+        · subst j
+          simp [z]
+        · simp [z, hj]
+      rw [he]
+      exact (gauge_update_le φ hφ (z s) i (by simpa [z, hi] using hxy i)).trans ih
+  simpa [z] using hz Finset.univ
+
+/-- The first $d$ singular values, with zero padding when $d$ exceeds the
+smaller matrix dimension. -/
+noncomputable def singularValueVector (d : ℕ) {m n : Type*} [Fintype m] [Fintype n]
+    [DecidableEq n] (A : Matrix m n ℂ) : Fin d → ℝ :=
+  fun i => A.sortedSingularValues i
+
+/-- Equation (102) of [benIsrael2003generalized], Chapter 6. The matrix
+value obtained by applying a gauge to its ordered singular values. -/
+noncomputable def matrixGaugeValue {d : ℕ} (φ : (Fin d → ℝ) → ℝ)
+    {m n : Type*} [Fintype m] [Fintype n] [DecidableEq n] (A : Matrix m n ℂ) : ℝ :=
+  φ (singularValueVector d A)
+
+/-- Exercise 62(b) of [benIsrael2003generalized], Chapter 6.
+Unitary invariance requires no additional properties of the scalar function. -/
+theorem exercise_6_62_unitaryInvariant {d : ℕ} (φ : (Fin d → ℝ) → ℝ)
+    {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+    {U : Matrix m m ℂ} {V : Matrix n n ℂ}
+    (hU : U ∈ unitaryGroup m ℂ) (hV : V ∈ unitaryGroup n ℂ) (A : Matrix m n ℂ) :
+    matrixGaugeValue φ (U * A * V) = matrixGaugeValue φ A := by
+  apply congrArg φ
+  funext i
+  exact congrFun (sortedSingularValues_unitary_mul_mul A hU hV) i
+
+open scoped Matrix.Norms.L2Operator in
+/-- Left multiplication bounds every singular value by the corresponding
+singular value of the right factor times the spectral norm of the left factor. -/
+theorem sortedSingularValues_mul_le_left {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
+    [DecidableEq n] [DecidableEq p] (L : Matrix m n ℂ) (A : Matrix n p ℂ) (i : ℕ) :
+    (L * A).sortedSingularValues i ≤ ‖L‖ * A.sortedSingularValues i := by
+  have he (x : EuclideanSpace ℂ p) :
+      ‖toEuclideanLin (L * A) x‖ ≤ ‖toEuclideanLin ((‖L‖ : ℂ) • A) x‖ := by
+    rw [toEuclideanLin_mul_apply, map_smul, LinearMap.smul_apply, norm_smul,
+      Complex.norm_real, Real.norm_eq_abs, abs_norm]
+    exact norm_toEuclideanLin_apply_le L _
+  have h := (toEuclideanLin (L * A)).singularValues_le_of_forall_norm_le he i
+  change (L * A).sortedSingularValues i ≤ (((‖L‖ : ℂ) • A).sortedSingularValues i) at h
+  simpa only [sortedSingularValues_smul, Complex.norm_real, Real.norm_eq_abs, abs_norm] using h
+
+open scoped Matrix.Norms.L2Operator in
+/-- The analogous right multiplication bound for ordered singular values. -/
+theorem sortedSingularValues_mul_le_right {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
+    [DecidableEq m] [DecidableEq n] [DecidableEq p]
+    (A : Matrix m n ℂ) (R : Matrix n p ℂ) (i : ℕ) :
+    (A * R).sortedSingularValues i ≤ A.sortedSingularValues i * ‖R‖ := by
+  have h := sortedSingularValues_mul_le_left Rᴴ Aᴴ i
+  rw [← conjTranspose_mul, sortedSingularValues_conjTranspose, sortedSingularValues_conjTranspose,
+    l2_opNorm_conjTranspose, mul_comm ‖R‖] at h
+  exact h
+
+
+/-- Conjugate transposition preserves the value of the singular-value gauge. -/
+theorem matrixGaugeValue_conjTranspose {d : ℕ} (φ : (Fin d → ℝ) → ℝ)
+    {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+    (A : Matrix m n ℂ) : matrixGaugeValue φ Aᴴ = matrixGaugeValue φ A := by
+  apply congrArg φ
+  funext i
+  exact congrFun (sortedSingularValues_conjTranspose A) i
+
+open scoped Matrix.Norms.L2Operator in
+/-- The left mixed multiplication estimate for a common absolute gauge on all shapes. -/
+theorem matrixGaugeValue_mul_le_left {d : ℕ} (φ : Seminorm ℝ (Fin d → ℝ))
+    (hφ : ∀ x, φ (fun i => |x i|) = φ x)
+    {m n p : Type*} [Fintype m] [Fintype n] [Fintype p] [DecidableEq n] [DecidableEq p]
+    (L : Matrix m n ℂ) (A : Matrix n p ℂ) :
+    matrixGaugeValue φ (L * A) ≤ ‖L‖ * matrixGaugeValue φ A := by
+  calc
+    _ ≤ φ (‖L‖ • singularValueVector d A) := by
+      apply absolute_gauge_mono φ hφ
+      intro i
+      change |(L * A).sortedSingularValues i| ≤ |‖L‖ * A.sortedSingularValues i|
+      rw [abs_of_nonneg ((L * A).sortedSingularValues_nonneg i),
+        abs_of_nonneg (mul_nonneg (norm_nonneg _) (A.sortedSingularValues_nonneg i))]
+      exact sortedSingularValues_mul_le_left L A i
+    _ = _ := by rw [map_smul_eq_mul, Real.norm_eq_abs, abs_norm]; rfl
+
+open scoped Matrix.Norms.L2Operator in
+/-- The right mixed multiplication estimate for a common absolute gauge on all shapes. -/
+theorem matrixGaugeValue_mul_le_right {d : ℕ} (φ : Seminorm ℝ (Fin d → ℝ))
+    (hφ : ∀ x, φ (fun i => |x i|) = φ x)
+    {m n p : Type*} [Fintype m] [Fintype n] [Fintype p]
+    [DecidableEq m] [DecidableEq n] [DecidableEq p]
+    (A : Matrix m n ℂ) (R : Matrix n p ℂ) :
+    matrixGaugeValue φ (A * R) ≤ matrixGaugeValue φ A * ‖R‖ := by
+  have h := matrixGaugeValue_mul_le_left φ hφ Rᴴ Aᴴ
+  rw [← conjTranspose_mul, matrixGaugeValue_conjTranspose, matrixGaugeValue_conjTranspose,
+    l2_opNorm_conjTranspose, mul_comm ‖R‖] at h
+  exact h
+
+
+open scoped Matrix.Norms.Frobenius in
+/-- Each finite singular-value vector is continuous in the matrix entries. -/
+theorem continuous_singularValueVector (d : ℕ) {m n : Type*} [Fintype m] [Fintype n]
+    [DecidableEq m] [DecidableEq n] :
+    Continuous (singularValueVector d : Matrix m n ℂ → Fin d → ℝ) := by
+  apply continuous_pi
+  intro i
+  apply (LipschitzWith.of_dist_le_mul (K := 1) (f := fun A : Matrix m n ℂ =>
+    A.sortedSingularValues i) ?_).continuous
+  intro A B
+  have hi := abs_sortedSingularValues_add_sub_le_frobenius_norm B (A - B) i
+  simpa only [singularValueVector, add_sub_cancel, Real.dist_eq, NNReal.coe_one, one_mul,
+    dist_eq_norm, Real.norm_eq_abs] using hi
+
+/-- Equation (102) preserves the first three gauge axioms, with no
+symmetry or subadditivity requirement on the scalar function. -/
+theorem exercise_6_62_positiveHomogeneous {m n : Type*} [Fintype m] [Fintype n]
+    [DecidableEq m] [DecidableEq n]
+    (φ : (Fin (min (Fintype.card m) (Fintype.card n)) → ℝ) → ℝ)
+    (hC : Continuous φ) (hN : ∀ x, 0 ≤ φ x) (hZ : ∀ x, φ x = 0 → x = 0)
+    (hH : ∀ (t : ℝ) x, 0 ≤ t → φ (t • x) = t * φ x) :
+    Continuous (matrixGaugeValue φ : Matrix m n ℂ → ℝ) ∧
+      (∀ A : Matrix m n ℂ, 0 ≤ matrixGaugeValue φ A) ∧
+      (∀ A : Matrix m n ℂ, matrixGaugeValue φ A = 0 → A = 0) ∧
+      (∀ (t : ℝ) (A : Matrix m n ℂ), 0 ≤ t →
+        matrixGaugeValue φ ((t : ℂ) • A) = t * matrixGaugeValue φ A) := by
+  refine ⟨hC.comp (continuous_singularValueVector _), fun A => hN _, ?_, ?_⟩
+  · intro A hA
+    have hσ := hZ _ hA
+    have h0 : A.sortedSingularValues 0 = 0 := by
+      by_cases h : 0 < min (Fintype.card m) (Fintype.card n)
+      · exact congrFun hσ ⟨0, h⟩
+      · exact A.sortedSingularValues_eq_zero_of_min_le (Nat.le_of_not_gt h)
+    exact Matrix.rank_eq_zero_iff.mp (Nat.eq_zero_of_le_zero
+      ((A.sortedSingularValues_eq_zero_iff_rank_le 0).mp h0))
+  · intro t A ht
+    have he : singularValueVector _ ((t : ℂ) • A) =
+        t • singularValueVector (min (Fintype.card m) (Fintype.card n)) A := by
+      funext i
+      simp only [singularValueVector, sortedSingularValues_smul, Complex.norm_real,
+        Real.norm_eq_abs, abs_of_nonneg ht, Pi.smul_apply, smul_eq_mul]
+    exact congrArg φ he |>.trans (hH t _ ht)
+
+
 end BenIsraelGreville.Chapter06

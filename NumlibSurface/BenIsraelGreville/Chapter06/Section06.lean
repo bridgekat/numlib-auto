@@ -787,6 +787,46 @@ theorem theorem_6_17_unitarilyInvariant
     mul_le_mul_of_nonneg_right hq (apply_nonneg μ E),
     mul_le_mul_of_nonneg_right hpq (apply_nonneg μ E)]
 
+
+open scoped Matrix.Norms.L2Operator in
+/-- The mixed estimates used in Theorem 17 follow for two seminorms
+represented by the same absolute gauge of the singular values. The common
+gauge fixes the relative normalization of the two shapes. -/
+theorem theorem_6_17_mixed_estimates_of_unitary_invariance {d : ℕ}
+    (φ : Seminorm ℝ (Fin d → ℝ)) (hφ : ∀ x, φ (fun i => |x i|) = φ x)
+    (μ : Seminorm ℂ (Matrix m n ℂ)) (ν : Seminorm ℂ (Matrix n m ℂ))
+    (hμ : ∀ X, μ X = matrixGaugeValue φ X) (hν : ∀ X, ν X = matrixGaugeValue φ X) :
+    (∀ X : Matrix m n ℂ, ν Xᴴ = μ X) ∧
+      (∀ (L : Matrix n n ℂ) (X : Matrix n m ℂ), ν (L * X) ≤ ‖L‖ * ν X) ∧
+      (∀ (X : Matrix n m ℂ) (R : Matrix m m ℂ), ν (X * R) ≤ ν X * ‖R‖) ∧
+      (∀ (L R : Matrix n m ℂ) (X : Matrix m n ℂ), ν (L * X * R) ≤ ‖L‖ * μ X * ‖R‖) := by
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · intro X
+    rw [hν, hμ, matrixGaugeValue_conjTranspose]
+  · intro L X
+    rw [hν, hν]
+    exact matrixGaugeValue_mul_le_left φ hφ L X
+  · intro X R
+    rw [hν, hν]
+    exact matrixGaugeValue_mul_le_right φ hφ X R
+  · intro L R X
+    rw [hν, hμ]
+    exact (matrixGaugeValue_mul_le_right φ hφ (L * X) R).trans
+      (mul_le_mul_of_nonneg_right (matrixGaugeValue_mul_le_left φ hφ L X) (norm_nonneg R))
+
+open scoped Matrix.Norms.L2Operator in
+/-- Theorem 17 with a common absolute gauge, using the squared spectral
+norms of the inverse factors. -/
+theorem theorem_6_17_commonGauge {d : ℕ}
+    (φ : Seminorm ℝ (Fin d → ℝ)) (hφ : ∀ x, φ (fun i => |x i|) = φ x)
+    (μ : Seminorm ℂ (Matrix m n ℂ)) (ν : Seminorm ℂ (Matrix n m ℂ))
+    (hμ : ∀ X, μ X = matrixGaugeValue φ X) (hν : ∀ X, ν X = matrixGaugeValue φ X)
+    (A B : Matrix m n ℂ) :
+    ν (B.pinv - A.pinv) ≤ 3 * max (‖A.pinv‖ ^ 2) (‖B.pinv‖ ^ 2) * μ (B - A) := by
+  obtain ⟨hAdj, hLeft, hRight, hBoth⟩ :=
+    theorem_6_17_mixed_estimates_of_unitary_invariance φ hφ μ ν hμ hν
+  exact theorem_6_17_unitarilyInvariant μ ν hAdj hLeft hRight hBoth A B
+
 open scoped Matrix.Norms.Frobenius in
 /-- **Theorem 17** of [benIsrael2003generalized], Chapter 6, Equation
 (137), in the Frobenius norm with spectral norms on the inverse factors.

@@ -247,3 +247,51 @@ source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 57, restriction to t
 [[node]]
 id = "exercise_6_58_common_range"
 source = 'Ben-Israel and Greville, Chapter 6, §4, Exercise 58, bound on the two minimal transforms on their common range'
+
+[[node]]
+id = "IsSymmetricGauge"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, symmetric gauge'
+
+[[node]]
+id = "absolute_gauge_mono"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, coordinatewise monotonicity of absolute gauges'
+
+[[node]]
+id = "singularValueVector"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, vector of ordered singular values'
+
+[[node]]
+id = "matrixGaugeValue"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, equation (102)'
+
+[[node]]
+id = "exercise_6_62_unitaryInvariant"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(b)'
+
+[[node]]
+id = "sortedSingularValues_mul_le_left"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, left multiplication estimate on singular values'
+
+[[node]]
+id = "sortedSingularValues_mul_le_right"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, right multiplication estimate on singular values'
+
+[[node]]
+id = "matrixGaugeValue_conjTranspose"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62, adjoint compatibility'
+
+[[node]]
+id = "matrixGaugeValue_mul_le_left"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, left mixed gauge estimate'
+
+[[node]]
+id = "matrixGaugeValue_mul_le_right"
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 17, right mixed gauge estimate'
+
+[[node]]
+id = "continuous_singularValueVector"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(a), continuity of the singular-value vector'
+
+[[node]]
+id = "exercise_6_62_positiveHomogeneous"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 62(a), positive and continuous homogeneous matrix gauge'
