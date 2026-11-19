@@ -19,8 +19,9 @@ import Numlib.LinearAlgebra.Matrix.GeneralizedInverse
 Section 2.5 of [benIsrael2003generalized] constructs matrix functions using the
 projections onto the generalized eigenspaces.
 
-The path version of Theorem 11 uses piecewise continuously differentiable
-loops. Each path is contained in an open convex set on which the scalar
+The path version of Theorem 11 uses Lipschitz parametrizations of closed
+curves. Continuous rectifiable paths admit such parametrizations by
+`Path.exists_lipschitz_reparametrization`. Each path is contained in an open convex set on which the scalar
 function is holomorphic. The theorem prescribes the total winding at each eigenvalue.
 -/
 
@@ -546,10 +547,10 @@ theorem theorem_11_circle (A : Matrix n n ℂ) (f : analyticFunctions A) (c : �
 
 open scoped Matrix.Norms.L2Operator Real in
 /-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, Equation (53), for
-piecewise $C^1$ contours in open convex sets of holomorphy. A finite family of paths
+Lipschitz contours in open convex sets of holomorphy. A finite family of paths
 avoids the spectrum and has total winding number one at each eigenvalue. -/
 theorem theorem_11 (A : Matrix n n ℂ) (f : analyticFunctions A) {ι : Type*} [Fintype ι]
-    {p : ι → ℂ} (γ : (i : ι) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    {p : ι → ℂ} (γ : (i : ι) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
     (S : ι → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
     (hRange : ∀ i, Set.range (γ i) ⊆ S i)
     (hf : ∀ i, DifferentiableOn ℂ (f : ℂ → ℂ) (S i))
@@ -566,10 +567,10 @@ theorem theorem_11 (A : Matrix n n ℂ) (f : analyticFunctions A) {ι : Type*} [
 
 open scoped Matrix.Norms.L2Operator Real in
 /-- **Theorem 11** of [benIsrael2003generalized], Chapter 2, for one
-piecewise $C^1$ loop in a disk of holomorphy with winding number one
+Lipschitz loop in a disk of holomorphy with winding number one
 at every eigenvalue. -/
 theorem theorem_11_path (A : Matrix n n ℂ) (f : analyticFunctions A) {p c : ℂ}
-    (γ : Path p p) (hγ : γ.IsPiecewiseC1) {r : ℝ} (hDisk : Set.range γ ⊆ Metric.ball c r)
+    (γ : Path p p) (hγ : γ.IsLipschitz) {r : ℝ} (hDisk : Set.range γ ⊆ Metric.ball c r)
     (hf : DifferentiableOn ℂ (f : ℂ → ℂ) (Metric.ball c r))
     (hAvoid : ∀ w ∈ spectralValues A, w ∉ Set.range γ)
     (hIndex : ∀ w ∈ spectralValues A, complexPathIndex γ w = 1) :

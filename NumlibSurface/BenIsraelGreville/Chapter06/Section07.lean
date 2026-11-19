@@ -21,7 +21,9 @@ functions and resolvents of rectangular matrices.
 * **Corollary 3** (correction). The pseudoinverse uses the adjoints of
   the rectangular spectral components.
 * **Lemma 5, Corollary 4, Lemma 7, and Theorem 20** (contour scope).
-  The line integrals use piecewise continuously differentiable paths.
+  The line integrals use Lipschitz parametrizations of paths.
+  Continuous rectifiable paths admit such parametrizations by
+  `Path.exists_lipschitz_reparametrization`.
   The formulas with general analytic scalar functions assume that each
   path lies in an open convex set of holomorphy.
 * **Equation (161) and Theorem 20** (correction). The weighted
@@ -1494,12 +1496,12 @@ noncomputable def rectangularContourCalculus {a : ℂ} (A E : Matrix m n ℂ) (f
     complexLineIntegral γ (fun z => f z • generalizedResolvent A E z)
 
 /-- **Lemma 5** of [benIsrael2003generalized], Chapter 6, reduced to
-scalar Cauchy integrals for a piecewise continuously differentiable
+scalar Cauchy integrals for a Lipschitz
 contour avoiding the rectangular spectral coefficients. -/
 theorem rectangularContourCalculus_eq_scalar_integrals
     {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
     (h : IsRectangularSpectralDecomposition A U V d) {a : ℂ} (γ : Path a a)
-    (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (hγ : γ.IsLipschitz) (hAvoid : ∀ i, d i ∉ Set.range γ)
     (f : ℂ → ℂ) (hf : ContinuousOn f (Set.range γ)) :
     rectangularContourCalculus A (U * Vᴴ) f γ =
       rectangularSpectralExpansion V U (fun i =>
@@ -1530,7 +1532,7 @@ coefficient and zero around the others recovers its grouped adjoint
 component. -/
 theorem lemma_6_5_path_grouped {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ}
     {d : k → ℂ} (h : IsRectangularSpectralDecomposition A U V d) {a w : ℂ}
-    (γ : Path a a) (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (γ : Path a a) (hγ : γ.IsLipschitz) (hAvoid : ∀ i, d i ∉ Set.range γ)
     (hIndex : ∀ i, complexPathIndex γ (d i) = if d i = w then 1 else 0) :
     rectangularContourCalculus A (U * Vᴴ) (fun _ => 1) γ =
       (rectangularGroupedComponent U V d w)ᴴ := by
@@ -1545,17 +1547,17 @@ theorem lemma_6_5_path_grouped {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Ma
   by_cases he : d i = w <;> simp [he]
 
 /-- The scalar Cauchy integral on a holomorphic disk along any
-piecewise continuously differentiable loop has the corresponding
+Lipschitz loop has the corresponding
 winding factor, including for points outside the disk. -/
 theorem normalized_complexLineIntegral_cauchy_disk {a w c : ℂ} (γ : Path a a)
-    (hγ : γ.IsPiecewiseC1) {R : ℝ} (hγD : Set.range γ ⊆ Metric.ball c R)
+    (hγ : γ.IsLipschitz) {R : ℝ} (hγD : Set.range γ ⊆ Metric.ball c R)
     (hAvoid : w ∉ Set.range γ) (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f (Metric.ball c R)) :
     (2 * (Real.pi : ℂ) * Complex.I)⁻¹ *
       complexLineIntegral γ (fun z => (z - w)⁻¹ * f z) = complexPathIndex γ w * f w := by
   exact _root_.normalized_complexLineIntegral_cauchy_disk γ hγ hγD hAvoid f hf
 
 private theorem normalized_complexLineIntegral_two_poles {a w : ℂ} (γ : Path a a)
-    (hγ : γ.IsPiecewiseC1) (hw : w ≠ 0) (h₀ : (0 : ℂ) ∉ Set.range γ)
+    (hγ : γ.IsLipschitz) (hw : w ≠ 0) (h₀ : (0 : ℂ) ∉ Set.range γ)
     (hAvoid : w ∉ Set.range γ) :
     (2 * (Real.pi : ℂ) * Complex.I)⁻¹ *
       complexLineIntegral γ (fun z => (z - w)⁻¹ * z⁻¹) =
@@ -1578,12 +1580,12 @@ private theorem normalized_complexLineIntegral_two_poles {a w : ℂ} (γ : Path 
   ring
 
 /-- **Equation (161)** of [benIsrael2003generalized], Chapter 6, for
-piecewise continuously differentiable loops. Winding number one at
+Lipschitz loops. Winding number one at
 the spectral coefficients and zero at the origin gives the
 Moore–Penrose inverse. -/
 theorem rectangularContourCalculus_inv {A : Matrix m n ℂ} {U : Matrix m k ℂ}
     {V : Matrix n k ℂ} {d : k → ℂ} (h : IsRectangularSpectralDecomposition A U V d)
-    {a : ℂ} (γ : Path a a) (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    {a : ℂ} (γ : Path a a) (hγ : γ.IsLipschitz) (hAvoid : ∀ i, d i ∉ Set.range γ)
     (h₀ : (0 : ℂ) ∉ Set.range γ) (hIndex : ∀ i, complexPathIndex γ (d i) = 1)
     (hIndex₀ : complexPathIndex γ 0 = 0) :
     rectangularContourCalculus A (U * Vᴴ) (fun z => z⁻¹) γ = A.pinv := by
@@ -1629,7 +1631,7 @@ private theorem continuousOn_inverse_smul_generalizedResolvent
     continuousOn_const
 
 /-- **Theorem 20** of [benIsrael2003generalized], Chapter 6, Equation
-(169), for piecewise continuously differentiable loops. The iterated
+(169), for Lipschitz loops. The iterated
 resolvent integral equals the product of the two pseudoinverses
 with the right-hand side between them. -/
 theorem theorem_6_20 {p q l : Type*} [Fintype p] [Fintype q] [Fintype l]
@@ -1639,7 +1641,7 @@ theorem theorem_6_20 {p q l : Type*} [Fintype p] [Fintype q] [Fintype l]
     (hA : IsRectangularSpectralDecomposition A U V a)
     (hB : IsRectangularSpectralDecomposition B S T b)
     {a₀ b₀ : ℂ} (γA : Path a₀ a₀) (γB : Path b₀ b₀)
-    (hγA : γA.IsPiecewiseC1) (hγB : γB.IsPiecewiseC1)
+    (hγA : γA.IsLipschitz) (hγB : γB.IsLipschitz)
     (hAvoidA : ∀ i, a i ∉ Set.range γA) (hAvoidB : ∀ j, b j ∉ Set.range γB)
     (hA₀ : (0 : ℂ) ∉ Set.range γA) (hB₀ : (0 : ℂ) ∉ Set.range γB)
     (hIndexA : ∀ i, complexPathIndex γA (a i) = 1)
@@ -1694,13 +1696,13 @@ noncomputable def rectangularContourFamilyCalculus {j : Type*} [Fintype j] {p : 
     (A E : Matrix m n ℂ) (f : ℂ → ℂ) (γ : (i : j) → Path (p i) (p i)) : Matrix n m ℂ :=
   ∑ i, rectangularContourCalculus A E f (γ i)
 
-/-- The normalized integral on a piecewise continuously differentiable
+/-- The normalized integral on a Lipschitz
 loop in an open convex set of holomorphy weights each rectangular spectral term
 by the winding number at its coefficient. -/
 theorem rectangularContourCalculus_eq_winding
     {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
     (h : IsRectangularSpectralDecomposition A U V d) {a : ℂ} {S : Set ℂ} (γ : Path a a)
-    (hγ : γ.IsPiecewiseC1) (hAvoid : ∀ i, d i ∉ Set.range γ)
+    (hγ : γ.IsLipschitz) (hAvoid : ∀ i, d i ∉ Set.range γ)
     (hOpen : IsOpen S) (hConvex : Convex ℝ S) (hRange : Set.range γ ⊆ S)
     (f : ℂ → ℂ) (hf : DifferentiableOn ℂ f S) :
     rectangularContourCalculus A (U * Vᴴ) f γ =
@@ -1712,13 +1714,13 @@ theorem rectangularContourCalculus_eq_winding
     normalized_complexLineIntegral_div_sub_pow γ hγ hOpen hConvex hRange (hAvoid i) hf 0
 
 /-- **Lemma 5(b)** of [benIsrael2003generalized], Chapter 6, Equation
-(160), for a family of piecewise continuously differentiable loops in
+(160), for a family of Lipschitz loops in
 open convex sets of holomorphy. The winding numbers of the family add to one at
 each coefficient. -/
 theorem lemma_6_5 {j : Type*} [Fintype j] {p : j → ℂ}
     {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
     (h : IsRectangularSpectralDecomposition A U V d)
-    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
     (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
     (S : j → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
     (hRange : ∀ i, Set.range (γ i) ⊆ S i)
@@ -1741,7 +1743,7 @@ partial-isometry factors restore the original matrix shape. -/
 theorem corollary_6_4 {j : Type*} [Fintype j] {p : j → ℂ}
     {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
     (h : IsRectangularSpectralDecomposition A U V d)
-    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
     (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
     (S : j → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
     (hRange : ∀ i, Set.range (γ i) ⊆ S i)
@@ -1761,7 +1763,7 @@ partial isometry gives the contour integral of the scalar product. -/
 theorem lemma_6_7 {j : Type*} [Fintype j] {p : j → ℂ}
     {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
     (h : IsRectangularSpectralDecomposition A U V d)
-    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
     (hAvoid : ∀ i s, d s ∉ Set.range (γ i))
     (S : j → Set ℂ) (hOpen : ∀ i, IsOpen (S i)) (hConvex : ∀ i, Convex ℝ (S i))
     (hRange : ∀ i, Set.range (γ i) ⊆ S i)
@@ -1781,13 +1783,13 @@ theorem lemma_6_7 {j : Type*} [Fintype j] {p : j → ℂ}
   simp only [mul_one]
 
 /-- **Equation (161)** of [benIsrael2003generalized], Chapter 6, for
-a finite collection of piecewise continuously differentiable loops.
+a finite collection of Lipschitz loops.
 The collection has total winding number one at each coefficient
 and zero at the origin. -/
 theorem rectangularContourFamilyCalculus_inv {j : Type*} [Fintype j] {p : j → ℂ}
     {A : Matrix m n ℂ} {U : Matrix m k ℂ} {V : Matrix n k ℂ} {d : k → ℂ}
     (h : IsRectangularSpectralDecomposition A U V d)
-    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsPiecewiseC1)
+    (γ : (i : j) → Path (p i) (p i)) (hγ : ∀ i, (γ i).IsLipschitz)
     (hAvoid : ∀ i s, d s ∉ Set.range (γ i)) (h₀ : ∀ i, (0 : ℂ) ∉ Set.range (γ i))
     (hIndex : ∀ s, ∑ i, complexPathIndex (γ i) (d s) = 1)
     (hIndex₀ : ∑ i, complexPathIndex (γ i) 0 = 0) :

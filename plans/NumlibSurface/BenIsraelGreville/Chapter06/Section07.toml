@@ -186,7 +186,7 @@ source = 'Ben-Israel and Greville, Chapter 6, Lemma 7, equation (166), for the p
 
 [[node]]
 id = "theorem_6_20"
-source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, equation (169), iterated integral on piecewise C¹ loops with zero winding about the origin'
+source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, equation (169), iterated integral on Lipschitz loops with zero winding about the origin'
 
 [[node]]
 id = "exercise_6_82"
@@ -259,6 +259,6 @@ source = 'Ben-Israel and Greville, Chapter 6, Equation (161), path family with t
 [[node]]
 id = "rectangular_contour_calculus_general_jordan_domains"
 kind = "theorem"
-desc = '''Extend the normalized winding formulas to positively oriented rectifiable Jordan contours, with analytic functions defined on a neighborhood of the enclosed regions in the holomorphic calculus. This requires the scalar Cauchy formula beyond open convex domains and the integral on rectifiable curves beyond the current piecewise C¹ representation. The inverse and iterated-integral formulas also require zero winding at the origin.'''
+desc = '''Extend the normalized winding formulas to positively oriented rectifiable Jordan contours, with analytic functions defined on a neighborhood of the enclosed regions in the holomorphic calculus. Continuous rectifiable paths have Lipschitz parametrizations. This extension requires the scalar Cauchy formula beyond open convex domains and the geometric winding theorem for oriented Jordan boundaries. The inverse and iterated-integral formulas also require zero winding at the origin.'''
 deps = ["lemma_6_5_path_grouped", "lemma_6_5", "rectangularContourFamilyCalculus_inv", "corollary_6_4", "lemma_6_7", "theorem_6_20"]
 source = 'Ben-Israel and Greville, Chapter 6, Lemmas 5 and 7, Corollary 4, Theorem 20, rectifiable Jordan contours'
