@@ -166,16 +166,10 @@ source = 'Ben-Israel and Greville, Chapter 6, Exercise 91, equation (179)'
 
 [[node]]
 id = "rectangular_simple_singular_component_unique"
-kind = "theorem"
-desc = '''The phase-normalized rank-one component for a simple positive singular value is independent of the chosen vectors.'''
-deps = ["theorem_6_18","rectangularSpectralComponent_eq_vecMulVec"]
 source = 'Ben-Israel and Greville, Chapter 6, Theorem 18, simple singular values'
 
 [[node]]
 id = "normal_rectangular_decomposition"
-kind = "theorem"
-desc = '''Choosing eigenvalue phases for a normal matrix allows the same left and right singular vectors and recovers spectral projectors.'''
-deps = ["theorem_6_18"]
 source = 'Ben-Israel and Greville, Chapter 6, equations (154)–(155)'
 
 [[node]]
@@ -208,55 +202,36 @@ source = 'Ben-Israel and Greville, Chapter 6, Theorem 20, iterated contour integ
 
 [[node]]
 id = "exercise_6_82"
-kind = "theorem"
-desc = '''For a normal matrix the rectangular calculus with eigenvalue phases becomes the classical calculus after adding the contribution on the kernel.'''
-deps = ["normal_rectangular_decomposition"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 82, equation (170)'
 
 [[node]]
 id = "rectangularPower_odd_negative"
-kind = "theorem"
-desc = '''Use inverse powers on the Gram support to state and prove the odd-power identities for negative exponents.'''
-deps = ["rectangularPower_odd_nat","rectangularPower_neg_one"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 84(b), negative Gram powers'
 
 [[node]]
 id = "exercise_6_85"
-kind = "theorem"
-desc = '''For normal eigenvalue phases, positive generalized powers agree with ordinary powers, zero is the range projection, and negative powers are positive powers of the Moore–Penrose inverse.'''
-deps = ["normal_rectangular_decomposition","rectangularPower_add"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 85, equation (174)'
 
 [[node]]
 id = "exercise_6_87"
-kind = "theorem"
-desc = '''Recover the Moore–Penrose inverse of a Hermitian matrix from the specified factorization of a vanishing polynomial.'''
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 87, equations (175)–(176)'
 
 [[node]]
 id = "exercise_6_88"
-kind = "theorem"
-desc = '''Recover the rectangular Moore–Penrose inverse from a factorized annihilator of the column Gram matrix.'''
-deps = ["exercise_6_87"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 88, equation (177)'
 
 [[node]]
 id = "exercise_6_89"
-kind = "theorem"
-desc = '''A partial isometry is a phase exponential in a supported rectangular spectral representation, and conversely.'''
-deps = ["theorem_6_18","rectangularSpectralComponent_rank_one"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 89'
 
 [[node]]
 id = "exercise_6_90"
-kind = "theorem"
-desc = '''A square unitary matrix is the classical imaginary exponential of a Hermitian matrix, equivalently the supported exponential plus the kernel projector.'''
-deps = ["exercise_6_82"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 90, equations (178), (178′)'
 
 [[node]]
 id = "rectangularPower_polar_factors"
-kind = "theorem"
-desc = '''With fixed normal polar factors, generalized powers agree with their ordinary or supported inverse powers multiplied by the common partial isometry.'''
-deps = ["rectangularMatrixFunction_polar_factors","rectangularPower_add"]
 source = 'Ben-Israel and Greville, Chapter 6, Exercise 91, equation (180)'
+
+[[node]]
+id = "exercise_6_90_supported"
+source = 'Ben-Israel and Greville, Chapter 6, Exercise 90, equation (178), supported imaginary exponential'

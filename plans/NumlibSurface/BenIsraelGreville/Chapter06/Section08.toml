@@ -38,38 +38,15 @@ source = "Ben-Israel and Greville, Chapter 6, Remark 1(d), rank and common-kerne
 
 [[node]]
 id = "bSvd_orthonormal_kernel_columns"
-kind = "theorem"
-desc = '''
-Refine the simultaneous factorization so that the columns for the common zero pairs
-form an orthonormal basis for the common kernel, and the remaining columns span its
-orthogonal complement. The block construction in the proof uses the stacked SVD and
-a unitary change within its positive singular subspace.
-'''
 source = "Ben-Israel and Greville, Chapter 6, Equations (184–188) and Remark 1(c–d), adapted coordinate construction"
-deps = ["theorem_6_21", "rank_fromRows_lt_iff_ker_inf_ne_bot"]
 
 [[node]]
 id = "bSingularValues_ne_ratios_of_separately_sorted_values"
-kind = "theorem"
-desc = '''
-For A = diag(1,2) and B = diag(2,1), both ordinary sorted singular sequences
-are the same while the B-singular values of A are 1/2 and 2. This records the
-failure of the ratio of separately sorted singular values in Remark 1(a).
-'''
 source = "Ben-Israel and Greville, Chapter 6, Remark 1(a), counterexample to separate ordering"
-deps = ["bSingularValues_eq_mul_inv"]
 
 [[node]]
 id = "example_6_8_1"
-kind = "theorem"
-desc = '''
-The minimum-norm solution of the stacked weighted least-squares problem has the
-coordinate coefficients in (192) in orthogonally split GSVD coordinates. The
-equality of objectives in (191) includes constant squares from any extra
-rows of either diagonally transformed matrix.
-'''
 source = "Ben-Israel and Greville, Chapter 6, Section 8.1, Example 1, Equations (189–192)"
-deps = ["bSvd_orthonormal_kernel_columns"]
 
 [[node]]
 id = "weightedSquaredQuotient"
@@ -109,14 +86,7 @@ source = "Ben-Israel and Greville, Chapter 6, Theorem 22, Equations (194–196) 
 
 [[node]]
 id = "exercise_6_92"
-kind = "theorem"
-desc = '''
-For consistent constraints, prove the minimum-norm solution with coordinates
-(199) and transfer it using the orthogonal split for the common kernel.
-The same transformed formula should include rank-deficient constraints.
-'''
 source = "Ben-Israel and Greville, Chapter 6, Exercise 92, Equations (197–199)"
-deps = ["bSvd_orthonormal_kernel_columns"]
 
 [[node]]
 id = "exercise_6_93_operator"
@@ -125,3 +95,31 @@ source = "Ben-Israel and Greville, Chapter 6, Exercise 93, Equation (201), squar
 [[node]]
 id = "exercise_6_93"
 source = "Ben-Israel and Greville, Chapter 6, Exercise 93, Equations (200–201), least-squares minimization and uniqueness"
+
+[[node]]
+id = "IsBSVDOrthogonalSplit"
+source = "Ben-Israel and Greville, Chapter 6 §8, Remark 1(c–d), orthogonality of the common-zero and active columns"
+
+[[node]]
+id = "bSvd_kernel_columns"
+source = "Ben-Israel and Greville, Chapter 6 §8, Remark 1(c–d), column descriptions of the individual and common kernels"
+
+[[node]]
+id = "bSvdPaddedCoordinate"
+source = "Ben-Israel and Greville, Chapter 6 §8, Example 1, Equation (190), padding by zero outside the row dimension"
+
+[[node]]
+id = "bSvd_diagonal_residual_sq"
+source = "Ben-Israel and Greville, Chapter 6 §8, Example 1, Equation (191), extra-row constants"
+
+[[node]]
+id = "bSvdWeightedObjective"
+source = "Ben-Israel and Greville, Chapter 6 §8, Example 1, Equation (189)"
+
+[[node]]
+id = "bSvdWeightedObjective_eq_sum"
+source = "Ben-Israel and Greville, Chapter 6 §8, Example 1, Equation (191), exact coordinate expansion"
+
+[[node]]
+id = "bSvd_constraint_iff"
+source = "Ben-Israel and Greville, Chapter 6 §8, Exercise 92, Equations (197)–(198), equality of constraints"

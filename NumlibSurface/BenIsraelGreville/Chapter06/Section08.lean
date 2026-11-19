@@ -9,6 +9,7 @@ import Numlib.LinearAlgebra.Matrix.UnitaryEquiv
 import Mathlib.Analysis.Calculus.Deriv.Inv
 import Mathlib.Analysis.InnerProductSpace.Rayleigh
 import Mathlib.Data.Fin.Tuple.Sort
+import Numlib.Analysis.Matrix.SingularValues
 
 /-!
 # Generalized and weighted singular values
@@ -812,5 +813,734 @@ theorem exercise_6_93 {A : Matrix (Fin a) (Fin b) ℂ}
     exact ⟨hp.1, fun y hy => hp.2 (f y) hy⟩
 
 end WeightedFactorization
+
+open scoped InnerProductSpace
+
+/-- The common-zero columns of a B-SVD right factor are orthonormal and
+orthogonal to the columns of nonzero coefficient pairs. -/
+def IsBSVDOrthogonalSplit {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
+    (X : Matrix (Fin n) (Fin n) 𝕜) (α β : ℕ → ℝ) : Prop :=
+  (∀ i j : Fin n, (α i ≠ 0 ∨ β i ≠ 0) → α j = 0 → β j = 0 →
+    inner 𝕜 (WithLp.toLp 2 (X.col i) : EuclideanSpace 𝕜 (Fin n))
+      (WithLp.toLp 2 (X.col j)) = 0) ∧
+  (∀ i j : Fin n, α i = 0 → β i = 0 → α j = 0 → β j = 0 →
+    inner 𝕜 (WithLp.toLp 2 (X.col i) : EuclideanSpace 𝕜 (Fin n))
+      (WithLp.toLp 2 (X.col j)) = if i = j then 1 else 0)
+
+private theorem mulVec_bSvdDiagonal_iff_zero {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+    (γ : ℕ → ℝ) (hγ : ∀ i : Fin n, m ≤ i.val → γ i = 0) (y : Fin n → 𝕜) :
+    (rectDiagonal (fun i => (γ i : 𝕜)) : Matrix (Fin m) (Fin n) 𝕜) *ᵥ y = 0 ↔
+      ∀ i : Fin n, γ i ≠ 0 → y i = 0 := by
+  constructor
+  · intro h i hi
+    have him : i.val < m := lt_of_not_ge fun hem => hi (hγ i hem)
+    have hv := congrFun h (⟨i.val, him⟩ : Fin m)
+    have hrow := rectDiagonal_mulVec (m := m) (n := n) (fun j => (γ j : 𝕜)) y
+      ⟨i.val, him⟩ i.isLt
+    have hz : (γ i : 𝕜) * y i = 0 := hrow.symm.trans hv
+    exact (mul_eq_zero.mp hz).resolve_left (RCLike.ofReal_ne_zero.mpr hi)
+  · intro h
+    funext i
+    by_cases hi : i.val < n
+    · rw [rectDiagonal_mulVec _ _ _ hi]
+      by_cases hz : γ i = 0
+      · simp [hz]
+      · rw [h ⟨i.val, hi⟩ hz, mul_zero]
+        rfl
+    · rw [rectDiagonal_mulVec_of_le _ _ _ (Nat.le_of_not_gt hi)]
+      rfl
+
+private theorem mulVec_unitary_eq_zero_iff {𝕜 : Type*} [RCLike 𝕜] {m : ℕ}
+    {U : Matrix (Fin m) (Fin m) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜) (v : Fin m → 𝕜) :
+    U *ᵥ v = 0 ↔ v = 0 := by
+  constructor
+  · intro h
+    have hh := congrArg (Uᴴ *ᵥ ·) h
+    simpa only [mulVec_mulVec, conjTranspose_mul_self_of_mem_unitaryGroup hU,
+      one_mulVec, mulVec_zero] using hh
+  · rintro rfl
+    exact mulVec_zero _
+
+private theorem mulVec_bSvd_coordinates_zero_iff {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+    {M : Matrix (Fin m) (Fin n) 𝕜} {U : Matrix (Fin m) (Fin m) 𝕜}
+    {X : Matrix (Fin n) (Fin n) 𝕜} (hU : U ∈ unitaryGroup (Fin m) 𝕜)
+    (γ : ℕ → ℝ) (hγ : ∀ i : Fin n, m ≤ i.val → γ i = 0)
+    (hD : Uᴴ * M * X = rectDiagonal (fun i => (γ i : 𝕜))) (y : Fin n → 𝕜) :
+    M *ᵥ (X *ᵥ y) = 0 ↔ ∀ i : Fin n, γ i ≠ 0 → y i = 0 := by
+  have hMX := mul_eq_mul_of_star_mul_mul_eq hU hD
+  rw [mulVec_mulVec, hMX, ← mulVec_mulVec, mulVec_unitary_eq_zero_iff hU,
+    mulVec_bSvdDiagonal_iff_zero γ hγ]
+
+private theorem mulVec_eq_sum_smul_cols {𝕜 : Type*} [RCLike 𝕜] {m n : ℕ}
+    (X : Matrix (Fin m) (Fin n) 𝕜) (y : Fin n → 𝕜) :
+    X *ᵥ y = ∑ i, y i • X.col i := by
+  rw [mulVec_eq_sum]
+  simp only [op_smul_eq_smul]
+  rfl
+
+private theorem bSvd_span_columns_of_zero_predicate {𝕜 : Type*} [RCLike 𝕜] {n : ℕ}
+    {X : Matrix (Fin n) (Fin n) 𝕜} (hX : IsUnit X) (K : Submodule 𝕜 (Fin n → 𝕜))
+    (S : Set (Fin n)) (h : ∀ y : Fin n → 𝕜, X *ᵥ y ∈ K ↔ ∀ i, i ∉ S → y i = 0) :
+    K = Submodule.span 𝕜 (X.col '' S) := by
+  classical
+  apply le_antisymm
+  · intro x hx
+    let y := X⁻¹ *ᵥ x
+    have he : X *ᵥ y = x := by
+      change X *ᵥ (X⁻¹ *ᵥ x) = _
+      rw [mulVec_mulVec, mul_nonsing_inv X ((isUnit_iff_isUnit_det X).mp hX), one_mulVec]
+    have hy := (h y).mp (he.symm ▸ hx)
+    rw [← he, mulVec_eq_sum_smul_cols]
+    apply Submodule.sum_mem
+    intro i _
+    by_cases hi : i ∈ S
+    · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, hi, rfl⟩)
+    · rw [hy i hi, zero_smul]
+      exact Submodule.zero_mem _
+  · apply Submodule.span_le.mpr
+    rintro _ ⟨i, hi, rfl⟩
+    have he : X *ᵥ Pi.single i 1 = X.col i := mulVec_single_one X i
+    rw [← he]
+    apply (h _).mpr
+    intro j hj
+    have hne : j ≠ i := by
+      intro he
+      subst j
+      exact hj hi
+    rw [Pi.single_eq_of_ne hne]
+
+/-- In the unshifted diagonal form of the B-SVD, the columns with a zero
+second coefficient span the kernel of $B$. The columns with two zero
+coefficients span the common kernel. -/
+theorem bSvd_kernel_columns {𝕜 : Type*} [RCLike 𝕜] {a b n : ℕ}
+    {A : Matrix (Fin a) (Fin n) 𝕜} {B : Matrix (Fin b) (Fin n) 𝕜}
+    {U : Matrix (Fin a) (Fin a) 𝕜} {V : Matrix (Fin b) (Fin b) 𝕜}
+    {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
+    (hna : n ≤ a) (hU : U ∈ unitaryGroup (Fin a) 𝕜)
+    (hV : V ∈ unitaryGroup (Fin b) 𝕜) (hX : IsUnit X)
+    (hβ : ∀ i : Fin n, b ≤ i.val → β i = 0)
+    (hA : Uᴴ * A * X = rectDiagonal (fun i => (α i : 𝕜)))
+    (hB : Vᴴ * B * X = rectDiagonal (fun i => (β i : 𝕜))) :
+    LinearMap.ker B.mulVecLin = Submodule.span 𝕜 (X.col '' {i | β i = 0}) ∧
+      LinearMap.ker A.mulVecLin ⊓ LinearMap.ker B.mulVecLin =
+        Submodule.span 𝕜 (X.col '' {i | α i = 0 ∧ β i = 0}) := by
+  have ha i := mulVec_bSvd_coordinates_zero_iff hU α
+    (fun j hj => False.elim ((not_lt_of_ge (hna.trans hj)) j.isLt)) hA i
+  have hb i := mulVec_bSvd_coordinates_zero_iff hV β hβ hB i
+  constructor
+  · apply bSvd_span_columns_of_zero_predicate hX
+    intro y
+    change B *ᵥ (X *ᵥ y) = 0 ↔ _
+    exact hb y
+  · apply bSvd_span_columns_of_zero_predicate hX
+    intro y
+    change (A *ᵥ (X *ᵥ y) = 0 ∧ B *ᵥ (X *ᵥ y) = 0) ↔ _
+    rw [ha y, hb y]
+    simp only [Set.mem_ofPred_eq, not_and_or]
+    constructor
+    · rintro ⟨hα, hβ⟩ i (hi | hi)
+      · exact hα i hi
+      · exact hβ i hi
+    · intro h
+      exact ⟨fun i hi => h i (Or.inl hi), fun i hi => h i (Or.inr hi)⟩
+
+private theorem bSvd_norm_sq_split {n : ℕ}
+    {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
+    (h : IsBSVDOrthogonalSplit X α β) {y d : Fin n → ℝ}
+    (hy : ∀ i : Fin n, α i = 0 → β i = 0 → y i = 0)
+    (hd : ∀ i : Fin n, α i ≠ 0 ∨ β i ≠ 0 → d i = 0) :
+    ‖(WithLp.toLp 2 (X *ᵥ (y + d)) : EuclideanSpace ℝ (Fin n))‖ ^ 2 =
+      ‖(WithLp.toLp 2 (X *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ ^ 2 +
+        ‖(WithLp.toLp 2 (X *ᵥ d) : EuclideanSpace ℝ (Fin n))‖ ^ 2 := by
+  rw [mulVec_add, WithLp.toLp_add]
+  simp only [pow_two]
+  apply norm_add_sq_eq_norm_sq_add_norm_sq_real
+  rw [mulVec_eq_sum_smul_cols, mulVec_eq_sum_smul_cols]
+  let e := (WithLp.linearEquiv 2 ℝ (Fin n → ℝ)).symm
+  change inner ℝ (e (∑ i, y i • X.col i)) (e (∑ i, d i • X.col i)) = 0
+  rw [map_sum, map_sum, sum_inner]
+  apply Finset.sum_eq_zero
+  intro i _
+  rw [inner_sum]
+  apply Finset.sum_eq_zero
+  intro j _
+  by_cases hi : α i ≠ 0 ∨ β i ≠ 0
+  · by_cases hj : α j ≠ 0 ∨ β j ≠ 0
+    · simp [hd j hj]
+    · push Not at hj
+      simp [e, inner_smul_left, inner_smul_right, h.1 i j hi hj.1 hj.2]
+  · push Not at hi
+    simp [hy i hi.1 hi.2]
+
+private theorem bSvd_compare_norm {n : ℕ} {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
+    (h : IsBSVDOrthogonalSplit X α β) (y y₀ : Fin n → ℝ)
+    (hzero : ∀ i : Fin n, α i = 0 → β i = 0 → y₀ i = 0)
+    (hag : ∀ i : Fin n, α i ≠ 0 ∨ β i ≠ 0 → y i = y₀ i) :
+    ‖(WithLp.toLp 2 (X *ᵥ y₀) : EuclideanSpace ℝ (Fin n))‖ ≤
+      ‖(WithLp.toLp 2 (X *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ ∧
+    (‖(WithLp.toLp 2 (X *ᵥ y₀) : EuclideanSpace ℝ (Fin n))‖ =
+      ‖(WithLp.toLp 2 (X *ᵥ y) : EuclideanSpace ℝ (Fin n))‖ → X *ᵥ y = X *ᵥ y₀) := by
+  have hs := bSvd_norm_sq_split h (y := y₀) (d := y - y₀) hzero
+    (fun i hi => sub_eq_zero.mpr (hag i hi))
+  rw [show y₀ + (y - y₀) = y by abel, mulVec_sub, WithLp.toLp_sub] at hs
+  constructor
+  · exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).mp
+      (hs.symm ▸ le_add_of_nonneg_right (sq_nonneg _))
+  · intro he
+    rw [he, eq_comm, add_eq_left, sq_eq_zero_iff, norm_eq_zero] at hs
+    exact congrArg WithLp.ofLp (sub_eq_zero.mp hs)
+
+/-- A transformed right-hand side, continued by zero outside its row
+dimension so that its coordinates can be indexed by the columns. -/
+def bSvdPaddedCoordinate {m : ℕ} (v : Fin m → ℝ) (i : ℕ) : ℝ :=
+  if hi : i < m then v ⟨i, hi⟩ else 0
+
+/-- **Equation (191)** of [benIsrael2003generalized], Chapter 6, residual
+of one block. Extra rows contribute constants, including when a block
+has more rows than columns. -/
+theorem bSvd_diagonal_residual_sq {m n : ℕ} (γ : ℕ → ℝ)
+    (hγ : ∀ i : Fin n, m ≤ i.val → γ i = 0) (v : Fin m → ℝ) (y : Fin n → ℝ) :
+    ‖(WithLp.toLp 2 ((rectDiagonal γ : Matrix (Fin m) (Fin n) ℝ) *ᵥ y - v) :
+      EuclideanSpace ℝ (Fin m))‖ ^ 2 =
+      (∑ i : Fin n, (γ i * y i - bSvdPaddedCoordinate v i) ^ 2) +
+        ∑ i : Fin m, if n ≤ i.val then v i ^ 2 else 0 := by
+  rw [EuclideanSpace.norm_sq_eq]
+  simp only [Real.norm_eq_abs, sq_abs]
+  let F (i : Fin n) := (γ i * y i - bSvdPaddedCoordinate v i) ^ 2
+  change (∑ i : Fin m, (((rectDiagonal γ : Matrix (Fin m) (Fin n) ℝ) *ᵥ y) i - v i) ^ 2) =
+    (∑ i : Fin n, F i) + ∑ i : Fin m, if n ≤ i.val then v i ^ 2 else 0
+  by_cases hnm : n ≤ m
+  · let G (i : Fin m) := (((rectDiagonal γ : Matrix (Fin m) (Fin n) ℝ) *ᵥ y) i - v i) ^ 2
+    have hFG (i : Fin n) : F i = G (Fin.castLE hnm i) := by
+      change _ = (((rectDiagonal γ : Matrix (Fin m) (Fin n) ℝ) *ᵥ y) (Fin.castLE hnm i) -
+        v (Fin.castLE hnm i)) ^ 2
+      have hr := rectDiagonal_mulVec (m := m) (n := n) γ y (Fin.castLE hnm i)
+        (show (Fin.castLE hnm i).val < n from i.isLt)
+      rw [hr]
+      simp [F, bSvdPaddedCoordinate, i.isLt.trans_le hnm]
+      rfl
+    change (∑ i, G i) = _
+    simp_rw [hFG, Fin.sum_castLE_eq_sum_ite hnm G, ← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro i _
+    by_cases hi : i.val < n
+    · simp [hi, not_le_of_gt hi]
+    · dsimp only [G]
+      rw [rectDiagonal_mulVec_of_le _ _ _ (Nat.le_of_not_gt hi)]
+      simp [hi, Nat.le_of_not_gt hi]
+  · have hmn := Nat.le_of_not_ge hnm
+    have hz : (∑ i : Fin m, if n ≤ i.val then (v i) ^ 2 else 0) = 0 :=
+      Finset.sum_eq_zero fun i _ =>
+        ite_eq_right (not_le_of_gt (i.isLt.trans_le hmn))
+    rw [hz, add_zero]
+    let G (i : Fin m) := (((rectDiagonal γ : Matrix (Fin m) (Fin n) ℝ) *ᵥ y) i - v i) ^ 2
+    have hFG (i : Fin m) : G i = F (Fin.castLE hmn i) := by
+      dsimp only [G]
+      rw [rectDiagonal_mulVec γ y i (i.isLt.trans_le hmn)]
+      simp [F, bSvdPaddedCoordinate, i.isLt]
+      rfl
+    change (∑ i, G i) = _
+    simp_rw [hFG, Fin.sum_castLE_eq_sum_ite hmn F]
+    apply Finset.sum_congr rfl
+    intro i _
+    by_cases hi : i.val < m
+    · simp [hi]
+    · simp [F, bSvdPaddedCoordinate, hi, hγ i (Nat.le_of_not_gt hi)]
+
+private theorem bSvd_residual_sq_change_coordinates {m n : ℕ}
+    {M : Matrix (Fin m) (Fin n) ℝ} {U : Matrix (Fin m) (Fin m) ℝ}
+    {X : Matrix (Fin n) (Fin n) ℝ} {γ : ℕ → ℝ}
+    (hU : U ∈ unitaryGroup (Fin m) ℝ) (hD : Uᴴ * M * X = rectDiagonal γ)
+    (v : Fin m → ℝ) (y : Fin n → ℝ) :
+    ‖(WithLp.toLp 2 (M *ᵥ (X *ᵥ y) - v) : EuclideanSpace ℝ (Fin m))‖ ^ 2 =
+      ‖(WithLp.toLp 2 ((rectDiagonal γ : Matrix (Fin m) (Fin n) ℝ) *ᵥ y - Uᴴ *ᵥ v) :
+        EuclideanSpace ℝ (Fin m))‖ ^ 2 := by
+  have hV : Uᴴ ∈ unitaryGroup (Fin m) ℝ := Unitary.star_mem hU
+  have he := norm_toEuclideanLin_apply_of_mem_unitaryGroup hV
+    (WithLp.toLp 2 (M *ᵥ (X *ᵥ y) - v))
+  rw [toEuclideanLin_toLp, mulVec_sub, mulVec_mulVec, mulVec_mulVec, hD] at he
+  exact congrArg (· ^ 2) he.symm
+
+/-- The two-block squared residual from Equation (189). -/
+noncomputable def bSvdWeightedObjective {a b n : ℕ}
+    (A : Matrix (Fin a) (Fin n) ℝ) (B : Matrix (Fin b) (Fin n) ℝ)
+    (v : Fin a → ℝ) (w : Fin b → ℝ) (t : ℝ) (x : Fin n → ℝ) : ℝ :=
+  ‖(WithLp.toLp 2 (A *ᵥ x - v) : EuclideanSpace ℝ (Fin a))‖ ^ 2 +
+    t ^ 2 * ‖(WithLp.toLp 2 (B *ᵥ x - w) : EuclideanSpace ℝ (Fin b))‖ ^ 2
+
+/-- **Equation (191)** of [benIsrael2003generalized], Chapter 6.
+The objective separates into coordinate quadratics and the two extra-row
+constants. -/
+theorem bSvdWeightedObjective_eq_sum {a b n : ℕ}
+    {A : Matrix (Fin a) (Fin n) ℝ} {B : Matrix (Fin b) (Fin n) ℝ}
+    {U : Matrix (Fin a) (Fin a) ℝ} {V : Matrix (Fin b) (Fin b) ℝ}
+    {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
+    (hna : n ≤ a) (hU : U ∈ unitaryGroup (Fin a) ℝ) (hV : V ∈ unitaryGroup (Fin b) ℝ)
+    (hβ : ∀ i : Fin n, b ≤ i.val → β i = 0)
+    (hA : Uᴴ * A * X = rectDiagonal α) (hB : Vᴴ * B * X = rectDiagonal β)
+    (v : Fin a → ℝ) (w : Fin b → ℝ) (t : ℝ) (y : Fin n → ℝ) :
+    let v' := Uᴴ *ᵥ v
+    let w' := Vᴴ *ᵥ w
+    bSvdWeightedObjective A B v w t (X *ᵥ y) =
+      (∑ i : Fin n, ((α i * y i - bSvdPaddedCoordinate v' i) ^ 2 +
+        t ^ 2 * (β i * y i - bSvdPaddedCoordinate w' i) ^ 2)) +
+      (∑ i : Fin a, if n ≤ i.val then v' i ^ 2 else 0) +
+      t ^ 2 * ∑ i : Fin b, if n ≤ i.val then w' i ^ 2 else 0 := by
+  dsimp only
+  rw [bSvdWeightedObjective, bSvd_residual_sq_change_coordinates hU hA,
+    bSvd_residual_sq_change_coordinates hV hB, bSvd_diagonal_residual_sq α
+      (fun i hi => False.elim ((not_lt_of_ge (hna.trans hi)) i.isLt)),
+    bSvd_diagonal_residual_sq β hβ, Finset.sum_add_distrib, ← Finset.mul_sum]
+  ring
+
+private theorem bSvd_scalar_gap (a b c d t y : ℝ) :
+    let D := a ^ 2 + t ^ 2 * b ^ 2
+    let z := (a * c + t ^ 2 * b * d) / D
+    ((a * y - c) ^ 2 + t ^ 2 * (b * y - d) ^ 2) -
+      ((a * z - c) ^ 2 + t ^ 2 * (b * z - d) ^ 2) = D * (y - z) ^ 2 := by
+  let D := a ^ 2 + t ^ 2 * b ^ 2
+  let z := (a * c + t ^ 2 * b * d) / D
+  change _ = D * (y - z) ^ 2
+  by_cases hD : D = 0
+  · have h : a ^ 2 + (t * b) ^ 2 = 0 := by
+      rw [mul_pow]; exact hD
+    have ha : a = 0 := sq_eq_zero_iff.mp (by nlinarith [sq_nonneg (t * b)])
+    have hb : t * b = 0 := sq_eq_zero_iff.mp (by nlinarith [sq_nonneg a])
+    rcases mul_eq_zero.mp hb with hl | hb
+    · simp [ha, hl, hD]
+    · simp [ha, hb, hD]
+  · have hz : D * z = a * c + t ^ 2 * b * d := by
+      dsimp only [z]
+      rw [mul_comm D, div_mul_cancel₀ _ hD]
+    linear_combination 2 * (y - z) * hz
+
+private theorem exists_coordinate_vector {n : ℕ} {X : Matrix (Fin n) (Fin n) ℝ}
+    (hX : IsUnit X) (x : Fin n → ℝ) : ∃ y, X *ᵥ y = x := by
+  refine ⟨X⁻¹ *ᵥ x, ?_⟩
+  rw [mulVec_mulVec, mul_nonsing_inv X ((isUnit_iff_isUnit_det X).mp hX), one_mulVec]
+
+/-- **Example 1**, Equations (189)–(192), of [benIsrael2003generalized],
+Chapter 6. In orthogonally split B-SVD coordinates, the scalar
+least-squares coefficients give the unique minimum-norm minimizer. -/
+theorem example_6_8_1 {a b n : ℕ}
+    {A : Matrix (Fin a) (Fin n) ℝ} {B : Matrix (Fin b) (Fin n) ℝ}
+    {U : Matrix (Fin a) (Fin a) ℝ} {V : Matrix (Fin b) (Fin b) ℝ}
+    {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
+    (hna : n ≤ a) (hU : U ∈ unitaryGroup (Fin a) ℝ) (hV : V ∈ unitaryGroup (Fin b) ℝ)
+    (hX : IsUnit X) (hs : IsBSVDOrthogonalSplit X α β)
+    (hβ : ∀ i : Fin n, b ≤ i.val → β i = 0)
+    (hA : Uᴴ * A * X = rectDiagonal α) (hB : Vᴴ * B * X = rectDiagonal β)
+    (v : Fin a → ℝ) (w : Fin b → ℝ) {t : ℝ} (ht : 0 < t) :
+    let v' := bSvdPaddedCoordinate (Uᴴ *ᵥ v)
+    let w' := bSvdPaddedCoordinate (Vᴴ *ᵥ w)
+    let y₀ (i : Fin n) :=
+      (α i * v' i + t ^ 2 * β i * w' i) / (α i ^ 2 + t ^ 2 * β i ^ 2)
+    let x₀ := X *ᵥ y₀
+    let f := bSvdWeightedObjective A B v w t
+    (∀ i : Fin n, β i = 0 → y₀ i = if α i = 0 then 0 else v' i / α i) ∧
+    (∀ x, f x₀ ≤ f x) ∧
+      ∀ x, f x = f x₀ →
+        ‖(WithLp.toLp 2 x₀ : EuclideanSpace ℝ (Fin n))‖ ≤
+          ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin n))‖ ∧
+        (‖(WithLp.toLp 2 x₀ : EuclideanSpace ℝ (Fin n))‖ =
+          ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin n))‖ → x = x₀) := by
+  let v' := bSvdPaddedCoordinate (Uᴴ *ᵥ v)
+  let w' := bSvdPaddedCoordinate (Vᴴ *ᵥ w)
+  let d (i : Fin n) := α i ^ 2 + t ^ 2 * β i ^ 2
+  let y₀ (i : Fin n) := (α i * v' i + t ^ 2 * β i * w' i) / d i
+  let x₀ := X *ᵥ y₀
+  let f := bSvdWeightedObjective A B v w t
+  let g (i : Fin n) (s : ℝ) := (α i * s - v' i) ^ 2 + t ^ 2 * (β i * s - w' i) ^ 2
+  have hgap (y : Fin n → ℝ) :
+      f (X *ᵥ y) - f x₀ = ∑ i : Fin n, d i * (y i - y₀ i) ^ 2 := by
+    dsimp only [f, x₀]
+    rw [bSvdWeightedObjective_eq_sum hna hU hV hβ hA hB,
+      bSvdWeightedObjective_eq_sum hna hU hV hβ hA hB]
+    calc
+      _ = ∑ i : Fin n, (g i (y i) - g i (y₀ i)) := by
+        rw [Finset.sum_sub_distrib]
+        dsimp only [g, v', w']
+        ring
+      _ = _ := Finset.sum_congr rfl fun i _ =>
+        bSvd_scalar_gap (α i) (β i) (v' i) (w' i) t (y i)
+  have hd (i : Fin n) : 0 ≤ d i := add_nonneg (sq_nonneg _) (mul_nonneg (sq_nonneg _) (sq_nonneg _))
+  have hpos (i : Fin n) (hi : α i ≠ 0 ∨ β i ≠ 0) : 0 < d i := by
+    rcases hi with hi | hi
+    · exact add_pos_of_pos_of_nonneg (sq_pos_of_ne_zero hi) (mul_nonneg (sq_nonneg _) (sq_nonneg _))
+    · exact add_pos_of_nonneg_of_pos (sq_nonneg _) (mul_pos (sq_pos_of_pos ht) (sq_pos_of_ne_zero hi))
+  change (∀ i : Fin n, β i = 0 → y₀ i = if α i = 0 then 0 else v' i / α i) ∧
+    (∀ x, f x₀ ≤ f x) ∧ _
+  constructor
+  · intro i hi
+    by_cases ha : α i = 0
+    · simp [y₀, d, hi, ha]
+    · simp only [y₀, d, hi, ha, not_false_eq_true, mul_zero, ite_eq_right]
+      field_simp
+      ring
+  · constructor
+    · intro x
+      obtain ⟨y, rfl⟩ := exists_coordinate_vector hX x
+      apply sub_nonneg.mp
+      rw [hgap]
+      exact Finset.sum_nonneg fun i _ => mul_nonneg (hd i) (sq_nonneg _)
+    · intro x hx
+      obtain ⟨y, rfl⟩ := exists_coordinate_vector hX x
+      have hz := (hgap y).symm.trans (sub_eq_zero.mpr hx)
+      apply bSvd_compare_norm hs y y₀ (fun i hi hj => by simp [y₀, d, hi, hj])
+      intro i hi
+      have hzi := (Finset.sum_eq_zero_iff_of_nonneg
+        (fun j _ => mul_nonneg (hd j) (sq_nonneg _))).mp hz i (Finset.mem_univ i)
+      exact sub_eq_zero.mp (sq_eq_zero_iff.mp ((mul_eq_zero.mp hzi).resolve_left (hpos i hi).ne'))
+
+/-- **Equation (198)** of [benIsrael2003generalized], Chapter 6.
+The constraint becomes the same rectangular diagonal equation after
+the unitary change of its right-hand side. -/
+theorem bSvd_constraint_iff {b n : ℕ}
+    {B : Matrix (Fin b) (Fin n) ℝ} {V : Matrix (Fin b) (Fin b) ℝ}
+    {X : Matrix (Fin n) (Fin n) ℝ} {β : ℕ → ℝ}
+    (hV : V ∈ unitaryGroup (Fin b) ℝ)
+    (hB : Vᴴ * B * X = rectDiagonal β) (w : Fin b → ℝ) (y : Fin n → ℝ) :
+    B *ᵥ (X *ᵥ y) = w ↔
+      (rectDiagonal β : Matrix (Fin b) (Fin n) ℝ) *ᵥ y = Vᴴ *ᵥ w := by
+  have htrans : Vᴴ *ᵥ (B *ᵥ (X *ᵥ y)) = (rectDiagonal β : Matrix (Fin b) (Fin n) ℝ) *ᵥ y := by
+    rw [mulVec_mulVec, mulVec_mulVec, hB]
+  constructor
+  · intro h
+    rw [← htrans, h]
+  · intro h
+    apply sub_eq_zero.mp
+    apply (mulVec_unitary_eq_zero_iff (show Vᴴ ∈ unitaryGroup (Fin b) ℝ from Unitary.star_mem hV) _).mp
+    rw [mulVec_sub, htrans, h, sub_self]
+
+/-- **Exercise 92**, Equations (197)–(199), of [benIsrael2003generalized],
+Chapter 6. For a consistent constraint, the constrained coordinates
+are fixed by the constraint and the others minimize the first-block
+residual. The split gives the unique solution of minimum Euclidean norm. -/
+theorem exercise_6_92 {a b n : ℕ}
+    {A : Matrix (Fin a) (Fin n) ℝ} {B : Matrix (Fin b) (Fin n) ℝ}
+    {U : Matrix (Fin a) (Fin a) ℝ} {V : Matrix (Fin b) (Fin b) ℝ}
+    {X : Matrix (Fin n) (Fin n) ℝ} {α β : ℕ → ℝ}
+    (hna : n ≤ a) (hU : U ∈ unitaryGroup (Fin a) ℝ) (hV : V ∈ unitaryGroup (Fin b) ℝ)
+    (hX : IsUnit X) (hs : IsBSVDOrthogonalSplit X α β)
+    (hβ : ∀ i : Fin n, b ≤ i.val → β i = 0)
+    (hA : Uᴴ * A * X = rectDiagonal α) (hB : Vᴴ * B * X = rectDiagonal β)
+    (v : Fin a → ℝ) (w : Fin b → ℝ) (hw : ∃ x, B *ᵥ x = w) :
+    let v' := bSvdPaddedCoordinate (Uᴴ *ᵥ v)
+    let w' := bSvdPaddedCoordinate (Vᴴ *ᵥ w)
+    let y₀ (i : Fin n) := if β i = 0 then v' i / α i else w' i / β i
+    let x₀ := X *ᵥ y₀
+    let f (x : Fin n → ℝ) := ‖(WithLp.toLp 2 (A *ᵥ x - v) : EuclideanSpace ℝ (Fin a))‖ ^ 2
+    B *ᵥ x₀ = w ∧
+      (∀ x, B *ᵥ x = w → f x₀ ≤ f x) ∧
+        ∀ x, B *ᵥ x = w → f x = f x₀ →
+          ‖(WithLp.toLp 2 x₀ : EuclideanSpace ℝ (Fin n))‖ ≤
+            ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin n))‖ ∧
+          (‖(WithLp.toLp 2 x₀ : EuclideanSpace ℝ (Fin n))‖ =
+            ‖(WithLp.toLp 2 x : EuclideanSpace ℝ (Fin n))‖ → x = x₀) := by
+  let v' := bSvdPaddedCoordinate (Uᴴ *ᵥ v)
+  let w' := bSvdPaddedCoordinate (Vᴴ *ᵥ w)
+  let y₀ (i : Fin n) := if β i = 0 then v' i / α i else w' i / β i
+  let x₀ := X *ᵥ y₀
+  let f (x : Fin n → ℝ) := ‖(WithLp.toLp 2 (A *ᵥ x - v) : EuclideanSpace ℝ (Fin a))‖ ^ 2
+  let D : Matrix (Fin b) (Fin n) ℝ := rectDiagonal β
+  have hEq (y : Fin n → ℝ) : B *ᵥ (X *ᵥ y) = w ↔ D *ᵥ y = Vᴴ *ᵥ w :=
+    bSvd_constraint_iff hV hB w y
+  have hfix (y : Fin n → ℝ) (hy : B *ᵥ (X *ᵥ y) = w) (i : Fin n) (hi : β i ≠ 0) :
+      y i = y₀ i := by
+    have hib : i.val < b := lt_of_not_ge (fun hb => hi (hβ i hb))
+    have hz := congrFun ((hEq y).mp hy) (⟨i.val, hib⟩ : Fin b)
+    have hrow := rectDiagonal_mulVec (m := b) (n := n) β y ⟨i.val, hib⟩ i.isLt
+    have he : β i * y i = (Vᴴ *ᵥ w) ⟨i.val, hib⟩ := hrow.symm.trans hz
+    simp only [y₀, ite_eq_right hi, w', bSvdPaddedCoordinate, dite_eq_left hib]
+    exact (eq_div_iff hi).mpr ((mul_comm _ _).trans he)
+  have hfeasible : B *ᵥ x₀ = w := by
+    obtain ⟨x, hx⟩ := hw
+    obtain ⟨y, rfl⟩ := exists_coordinate_vector hX x
+    apply (hEq y₀).mpr
+    rw [← (hEq y).mp hx, ← sub_eq_zero, ← mulVec_sub]
+    exact (mulVec_bSvdDiagonal_iff_zero β hβ (y₀ - y)).mpr fun i hi =>
+      sub_eq_zero.mpr (hfix y hx i hi).symm
+  have hgap (y : Fin n → ℝ) (hy : B *ᵥ (X *ᵥ y) = w) :
+      f (X *ᵥ y) - f x₀ = ∑ i : Fin n, α i ^ 2 * (y i - y₀ i) ^ 2 := by
+    simp only [f, x₀, bSvd_residual_sq_change_coordinates hU hA]
+    rw [bSvd_diagonal_residual_sq α (fun i hi => False.elim ((not_lt_of_ge (hna.trans hi)) i.isLt)),
+      bSvd_diagonal_residual_sq α (fun i hi => False.elim ((not_lt_of_ge (hna.trans hi)) i.isLt)),
+      add_sub_add_right_eq_sub, ← Finset.sum_sub_distrib]
+    apply Finset.sum_congr rfl
+    intro i _
+    by_cases hb : β i = 0
+    · by_cases ha : α i = 0
+      · simp [ha]
+      · rw [show y₀ i = v' i / α i by simp [y₀, hb]]
+        change ((α i * y i - v' i) ^ 2 - (α i * (v' i / α i) - v' i) ^ 2) = _
+        field_simp
+        ring
+    · simp [hfix y hy i hb]
+  refine ⟨hfeasible, ?_, ?_⟩
+  · intro x hx
+    obtain ⟨y, rfl⟩ := exists_coordinate_vector hX x
+    apply sub_nonneg.mp
+    rw [hgap y hx]
+    exact Finset.sum_nonneg fun i _ => mul_nonneg (sq_nonneg _) (sq_nonneg _)
+  · intro x hx hf
+    obtain ⟨y, rfl⟩ := exists_coordinate_vector hX x
+    have hz := (hgap y hx).symm.trans (sub_eq_zero.mpr hf)
+    apply bSvd_compare_norm hs y y₀ (fun i hi hj => by simp [y₀, hi, hj])
+    intro i hi
+    rcases hi with hi | hi
+    · have hzi := (Finset.sum_eq_zero_iff_of_nonneg
+        (fun _ _ => mul_nonneg (sq_nonneg _) (sq_nonneg _))).mp hz i (Finset.mem_univ i)
+      exact sub_eq_zero.mp (sq_eq_zero_iff.mp
+        ((mul_eq_zero.mp hzi).resolve_left (pow_ne_zero 2 hi)))
+    · exact hfix y hx i hi
+
+/-- **Remark 1(c–d)** and Equations (184)–(188) of
+[benIsrael2003generalized], Chapter 6. Any simultaneous B-SVD diagonal
+form can retain both diagonals while its common-zero columns become an
+orthonormal basis of the common kernel. Its other columns span the
+orthogonal complement of the common kernel. -/
+theorem bSvd_orthonormal_kernel_columns {𝕜 : Type*} [RCLike 𝕜] {a b n : ℕ}
+    {A : Matrix (Fin a) (Fin n) 𝕜} {B : Matrix (Fin b) (Fin n) 𝕜}
+    {U : Matrix (Fin a) (Fin a) 𝕜} {V : Matrix (Fin b) (Fin b) 𝕜}
+    {X : Matrix (Fin n) (Fin n) 𝕜} {α β : ℕ → ℝ}
+    (hna : n ≤ a) (hU : U ∈ unitaryGroup (Fin a) 𝕜) (hV : V ∈ unitaryGroup (Fin b) 𝕜)
+    (hX : IsUnit X) (hβ : ∀ i : Fin n, b ≤ i.val → β i = 0)
+    (hA : Uᴴ * A * X = rectDiagonal (fun i => (α i : 𝕜)))
+    (hB : Vᴴ * B * X = rectDiagonal (fun i => (β i : 𝕜))) :
+    ∃ Y : Matrix (Fin n) (Fin n) 𝕜, IsUnit Y ∧ IsBSVDOrthogonalSplit Y α β ∧
+      Uᴴ * A * Y = rectDiagonal (fun i => (α i : 𝕜)) ∧
+      Vᴴ * B * Y = rectDiagonal (fun i => (β i : 𝕜)) ∧
+      (let K := A.toEuclideanLin.ker ⊓ B.toEuclideanLin.ker
+       let c (i : Fin n) : EuclideanSpace 𝕜 (Fin n) := WithLp.toLp 2 (Y.col i)
+       K = Submodule.span 𝕜 (c '' {i | α i = 0 ∧ β i = 0}) ∧
+         Kᗮ = Submodule.span 𝕜 (c '' {i | α i ≠ 0 ∨ β i ≠ 0})) := by
+  classical
+  let E := EuclideanSpace 𝕜 (Fin n)
+  let Z := {i : Fin n // α i = 0 ∧ β i = 0}
+  let e := (WithLp.linearEquiv 2 𝕜 (Fin n → 𝕜)).symm
+  let c (i : Fin n) : E := e (X.col i)
+  let K : Submodule 𝕜 E := Submodule.span 𝕜 (Set.range fun i : Z => c i)
+  have hKc (i : Fin n) (hi : α i = 0 ∧ β i = 0) : c i ∈ K :=
+    Submodule.subset_span ⟨⟨i, hi⟩, rfl⟩
+  have hRaw := (bSvd_kernel_columns hna hU hV hX hβ hA hB).2
+  have hTrans : (A.mulVecLin.ker ⊓ B.mulVecLin.ker).map e.toLinearMap =
+      A.toEuclideanLin.ker ⊓ B.toEuclideanLin.ker := by
+    ext x
+    constructor
+    · rintro ⟨y, hy, rfl⟩
+      have ha : A *ᵥ y = 0 := hy.1
+      have hb : B *ᵥ y = 0 := hy.2
+      change A.toEuclideanLin (WithLp.toLp 2 y) = 0 ∧
+        B.toEuclideanLin (WithLp.toLp 2 y) = 0
+      simp [ha, hb]
+    · intro hx
+      refine ⟨e.symm x, ?_, e.apply_symm_apply x⟩
+      have ha : A.toEuclideanLin (WithLp.toLp 2 (e.symm x)) = 0 := by
+        change A.toEuclideanLin (e (e.symm x)) = 0
+        rw [e.apply_symm_apply]
+        exact hx.1
+      have hb : B.toEuclideanLin (WithLp.toLp 2 (e.symm x)) = 0 := by
+        change B.toEuclideanLin (e (e.symm x)) = 0
+        rw [e.apply_symm_apply]
+        exact hx.2
+      rw [toEuclideanLin_toLp] at ha hb
+      exact ⟨congrArg WithLp.ofLp ha, congrArg WithLp.ofLp hb⟩
+  have hKactual : A.toEuclideanLin.ker ⊓ B.toEuclideanLin.ker = K := by
+    rw [← hTrans, hRaw, Submodule.map_span, Set.image_image]
+    apply congrArg (Submodule.span 𝕜)
+    ext z
+    constructor
+    · rintro ⟨i, hi, rfl⟩
+      exact ⟨⟨i, hi⟩, rfl⟩
+    · rintro ⟨i, rfl⟩
+      exact ⟨i, i.2, rfl⟩
+  have hKrank : Module.finrank 𝕜 K = Fintype.card Z := by
+    have hli := ((linearIndependent_cols_of_isUnit hX).comp
+      (fun i : Z => (i : Fin n)) Subtype.val_injective).map' e.toLinearMap
+      (LinearMap.ker_eq_bot.mpr e.injective)
+    exact finrank_span_eq_card hli
+  let q : OrthonormalBasis Z 𝕜 K :=
+    (stdOrthonormalBasis 𝕜 K).reindex (Fintype.equivOfCardEq (by simpa using hKrank))
+  let w (i : Fin n) : E :=
+    if hi : α i = 0 ∧ β i = 0 then (q ⟨i, hi⟩ : E) else c i - K.starProjection (c i)
+  let Y : Matrix (Fin n) (Fin n) 𝕜 := Matrix.of fun i j => (e.symm (w j)) i
+  have hw (i : Fin n) : e (Y.col i) = w i := e.apply_symm_apply _
+  have hActive (i : Fin n) (hi : α i ≠ 0 ∨ β i ≠ 0) : w i ∈ Kᗮ := by
+    have hp : ¬(α i = 0 ∧ β i = 0) := not_and_or.mpr hi
+    simp [w, hp]
+  have hZero (i : Fin n) (hi : α i = 0 ∧ β i = 0) : w i ∈ K := by
+    rw [show w i = (q ⟨i, hi⟩ : E) from dite_eq_left hi]
+    exact (q ⟨i, hi⟩).property
+  have hSplit : IsBSVDOrthogonalSplit Y α β := by
+    constructor
+    · intro i j hi hjα hjβ
+      change inner 𝕜 (e (Y.col i)) (e (Y.col j)) = 0
+      rw [hw, hw]
+      exact (Submodule.mem_orthogonal' K _).mp (hActive i hi) _ (hZero j ⟨hjα, hjβ⟩)
+    · intro i j hiα hiβ hjα hjβ
+      change inner 𝕜 (e (Y.col i)) (e (Y.col j)) = _
+      rw [hw, hw, show w i = (q ⟨i, hiα, hiβ⟩ : E) from dite_eq_left ⟨hiα, hiβ⟩,
+        show w j = (q ⟨j, hjα, hjβ⟩ : E) from dite_eq_left ⟨hjα, hjβ⟩,
+        ← Submodule.coe_inner, orthonormal_iff_ite.mp q.orthonormal]
+      by_cases hij : i = j
+      · subst j
+        simp
+      · have hne : (⟨i, hiα, hiβ⟩ : Z) ≠ ⟨j, hjα, hjβ⟩ :=
+          fun he => hij (congrArg Subtype.val he)
+        rw [ite_eq_right hne, ite_eq_right hij]
+  have hcolEq {m : ℕ} (M : Matrix (Fin m) (Fin n) 𝕜)
+      (hKker : K ≤ M.toEuclideanLin.ker) : M * Y = M * X := by
+    ext k j
+    have he : M.toEuclideanLin (w j) = M.toEuclideanLin (c j) := by
+      by_cases hi : α j = 0 ∧ β j = 0
+      · exact (hKker (hZero j hi)).trans (hKker (hKc j hi)).symm
+      · rw [show w j = c j - K.starProjection (c j) from dite_eq_right hi, map_sub,
+          show M.toEuclideanLin (K.starProjection (c j)) = 0 from
+            hKker (K.starProjection_apply_mem _), sub_zero]
+    have hv := congrArg WithLp.ofLp (show M.toEuclideanLin (e (Y.col j)) =
+        M.toEuclideanLin (e (X.col j)) from (congrArg M.toEuclideanLin (hw j)).trans he)
+    change WithLp.ofLp (M.toEuclideanLin (WithLp.toLp 2 (Y.col j))) =
+      WithLp.ofLp (M.toEuclideanLin (WithLp.toLp 2 (X.col j))) at hv
+    rw [toEuclideanLin_toLp, toEuclideanLin_toLp] at hv
+    simpa only [← col_mul_eq_mulVec_col, col_apply] using congrFun hv k
+  have hα : ∀ i : Fin n, a ≤ i.val → α i = 0 := fun i hi =>
+    False.elim ((not_lt_of_ge (hna.trans hi)) i.isLt)
+  have hAY : A * Y = A * X := hcolEq A (by rw [← hKactual]; exact inf_le_left)
+  have hBY : B * Y = B * X := hcolEq B (by rw [← hKactual]; exact inf_le_right)
+  have hAYD : Uᴴ * A * Y = rectDiagonal (fun i => (α i : 𝕜)) := by
+    rw [Matrix.mul_assoc, hAY, ← Matrix.mul_assoc]; exact hA
+  have hBYD : Vᴴ * B * Y = rectDiagonal (fun i => (β i : 𝕜)) := by
+    rw [Matrix.mul_assoc, hBY, ← Matrix.mul_assoc]; exact hB
+  have hcoeff (y : Fin n → 𝕜) (j : Z) : inner 𝕜 (w j) (e (Y *ᵥ y)) = y j := by
+    rw [mulVec_eq_sum_smul_cols, map_sum, inner_sum,
+      Finset.sum_eq_single (j : Fin n)]
+    · rw [map_smul, inner_smul_right, hw]
+      have h := hSplit.2 j j j.2.1 j.2.2 j.2.1 j.2.2
+      change inner 𝕜 (e (Y.col j)) (e (Y.col j)) = _ at h
+      rw [hw, ite_eq_left rfl] at h
+      rw [h, mul_one]
+    · intro i _ hi
+      rw [map_smul, inner_smul_right, hw]
+      have ho : inner 𝕜 (w j) (w i) = 0 := by
+        by_cases hz : α i = 0 ∧ β i = 0
+        · have h := hSplit.2 j i j.2.1 j.2.2 hz.1 hz.2
+          change inner 𝕜 (e (Y.col j)) (e (Y.col i)) = _ at h
+          simpa only [hw, ite_eq_right hi.symm] using h
+        · exact (Submodule.mem_orthogonal K _).mp
+            (hActive i (not_and_or.mp hz)) _ (hZero j j.2)
+      rw [ho, mul_zero]
+    · simp
+  have hY : IsUnit Y := by
+    apply mulVec_injective_iff_isUnit.mp
+    change Function.Injective Y.mulVecLin
+    apply LinearMap.ker_eq_bot.mp
+    rw [LinearMap.ker_eq_bot']
+    intro y hy
+    change Y *ᵥ y = 0 at hy
+    have ha := (mulVec_bSvd_coordinates_zero_iff hU α hα hAYD y).mp
+      (by rw [hy, mulVec_zero])
+    have hb := (mulVec_bSvd_coordinates_zero_iff hV β hβ hBYD y).mp
+      (by rw [hy, mulVec_zero])
+    funext i
+    by_cases hi : α i = 0 ∧ β i = 0
+    · simpa [hy] using (hcoeff y ⟨i, hi⟩).symm
+    · rcases not_and_or.mp hi with hi | hi
+      · exact ha i hi
+      · exact hb i hi
+  refine ⟨Y, hY, hSplit, hAYD, hBYD, ?_⟩
+  dsimp only
+  rw [hKactual]
+  constructor
+  · have hspan := congrArg (fun P : Submodule 𝕜 K => P.map K.subtype) q.toBasis.span_eq
+    rw [Submodule.map_span, ← Set.range_comp, Submodule.map_top, Submodule.range_subtype] at hspan
+    have hset : (fun i => WithLp.toLp 2 (Y.col i) : Fin n → E) '' {i | α i = 0 ∧ β i = 0} =
+        Set.range (K.subtype ∘ q.toBasis) := by
+      ext x
+      constructor
+      · rintro ⟨i, hi, rfl⟩
+        exact ⟨⟨i, hi⟩, (dite_eq_left hi).symm.trans (hw i).symm⟩
+      · rintro ⟨i, rfl⟩
+        exact ⟨i, i.2, (hw i).trans (dite_eq_left i.2)⟩
+    rw [hset]
+    exact hspan.symm
+  · apply le_antisymm
+    · intro x hx
+      let y := Y⁻¹ *ᵥ e.symm x
+      have hxy : e (Y *ᵥ y) = x := by
+        change e (Y *ᵥ (Y⁻¹ *ᵥ e.symm x)) = x
+        rw [mulVec_mulVec, mul_nonsing_inv _ ((isUnit_iff_isUnit_det Y).mp hY),
+          one_mulVec, e.apply_symm_apply]
+      rw [← hxy, mulVec_eq_sum_smul_cols, map_sum]
+      refine Submodule.sum_mem _ fun i _ => ?_
+      rw [map_smul]
+      by_cases hi : α i ≠ 0 ∨ β i ≠ 0
+      · exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, hi, rfl⟩)
+      · have hz : α i = 0 ∧ β i = 0 := by
+          by_contra hz
+          exact hi (not_and_or.mp hz)
+        have hyi : y i = 0 := by
+          have he := hcoeff y ⟨i, hz⟩
+          rw [hxy] at he
+          exact he.symm.trans ((Submodule.mem_orthogonal K _).mp hx _ (hZero i hz))
+        simp [hyi]
+    · apply Submodule.span_le.mpr
+      rintro _ ⟨i, hi, rfl⟩
+      change e (Y.col i) ∈ Kᗮ
+      rw [hw]
+      exact hActive i hi
+
+/-- **Remark 1(a)** of [benIsrael2003generalized], Chapter 6.
+Pairing the ordinary singular values after sorting each matrix separately
+can change the ratios. The two diagonal matrices here have identical
+ordinary singular-value sequences, while the pencil roots are $1/2$ and $2$. -/
+theorem bSingularValues_ne_ratios_of_separately_sorted_values :
+    let A : Matrix (Fin 2) (Fin 2) ℂ := diagonal ![1, 2]
+    let B : Matrix (Fin 2) (Fin 2) ℂ := diagonal ![2, 1]
+    A.sortedSingularValues = B.sortedSingularValues ∧
+      bSingularValues A B = ({(1 : ℝ) / 2, 2} : Set ℝ) ∧
+      bSingularValues A B ≠ {μ | ∃ i : Fin 2,
+        μ = A.sortedSingularValues i / B.sortedSingularValues i} := by
+  let A : Matrix (Fin 2) (Fin 2) ℂ := diagonal ![1, 2]
+  let B : Matrix (Fin 2) (Fin 2) ℂ := diagonal ![2, 1]
+  let α : Fin 2 → ℝ := ![1, 2]
+  let β : Fin 2 → ℝ := ![2, 1]
+  let e : Fin 2 ≃ Fin 2 := Equiv.swap 0 1
+  have he : A.submatrix e e = B := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> norm_num [A, B, e, Matrix.submatrix_apply, diagonal_apply]
+  have hσ : A.sortedSingularValues = B.sortedSingularValues := by
+    rw [← he, sortedSingularValues_submatrix_equiv]
+  have hA : (1 : Matrix (Fin 2) (Fin 2) ℂ)ᴴ * (Aᴴ * A) * 1 =
+      diagonal (fun i => ((α i ^ 2 : ℝ) : ℂ)) := by
+    rw [conjTranspose_one, Matrix.one_mul, Matrix.mul_one]
+    unfold A
+    rw [diagonal_conjTranspose, diagonal_mul_diagonal]
+    apply congrArg diagonal
+    funext i
+    fin_cases i <;> norm_num [α]
+  have hB : (1 : Matrix (Fin 2) (Fin 2) ℂ)ᴴ * (Bᴴ * B) * 1 =
+      diagonal (fun i => ((β i ^ 2 : ℝ) : ℂ)) := by
+    rw [conjTranspose_one, Matrix.one_mul, Matrix.mul_one]
+    unfold B
+    rw [diagonal_conjTranspose, diagonal_mul_diagonal]
+    apply congrArg diagonal
+    funext i
+    fin_cases i <;> norm_num [β]
+  have hspec : bSingularValues A B = ({(1 : ℝ) / 2, 2} : Set ℝ) := by
+    ext μ
+    rw [mem_bSingularValues_iff_of_congruence isUnit_one hA hB
+      (fun i => by fin_cases i <;> norm_num [α]) (fun i => by fin_cases i <;> norm_num [β]),
+      Fin.exists_fin_two]
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
+    simp [α, β]
+    rintro (h | h) <;> subst μ <;> norm_num
+  refine ⟨hσ, hspec, ?_⟩
+  intro h
+  have hhalf : (1 : ℝ) / 2 ∈ bSingularValues A B := by simp [hspec]
+  rw [h] at hhalf
+  obtain ⟨i, hi⟩ := hhalf
+  change (1 : ℝ) / 2 = A.sortedSingularValues i / B.sortedSingularValues i at hi
+  rw [hσ] at hi
+  by_cases hn : B.sortedSingularValues i = 0 <;> norm_num [hn] at hi
 
 end BenIsraelGreville.Chapter06
