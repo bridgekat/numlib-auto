@@ -355,6 +355,7 @@ import Numlib.Analysis.Sobolev.Interval.Dual
 import Numlib.Analysis.Sobolev.Interval.Embedding
 import Numlib.Analysis.Sobolev.Interval.Extension
 import Numlib.Analysis.Sobolev.Interval.Higher
+import Numlib.Analysis.Sobolev.Interval.Vector
 import Numlib.Analysis.Sobolev.Interval.Zero
 import Numlib.Analysis.Sobolev.Korn
 import Numlib.Analysis.Sobolev.Mollification

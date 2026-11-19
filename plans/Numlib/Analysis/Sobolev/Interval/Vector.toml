@@ -1,0 +1,86 @@
+[[node]]
+id = "IntervalVectorL2"
+
+[[node]]
+id = "IntervalVectorSobolev"
+
+[[node]]
+id = "intervalVectorSobolevDeriv"
+
+[[node]]
+id = "intervalVectorSobolevDerivCLM"
+
+[[node]]
+id = "intervalVectorSobolevDerivCLM_apply"
+
+[[node]]
+id = "intervalVectorSobolevRep"
+
+[[node]]
+id = "intervalVectorL2Rep"
+
+[[node]]
+id = "continuousOn_intervalVectorSobolevRep"
+
+[[node]]
+id = "intervalVectorSobolevDeriv_zero_ae_eq_rep"
+
+[[node]]
+id = "intervalVectorSobolevTraceCLM"
+
+[[node]]
+id = "intervalVectorSobolevTraceCLM_apply"
+
+[[node]]
+id = "intervalVectorSobolev_inner_deriv_add"
+source = "Ben-Israel and Greville, Generalized Inverses, Chapter 9, Exercise 30, equations (57)–(58), with the leading coefficient in the boundary form"
+
+[[node]]
+id = "intervalSobolevOfContDiffOn"
+
+[[node]]
+id = "intervalSobolevOfContDiffOn_rep"
+
+[[node]]
+id = "intervalSobolevOfContDiffOn_deriv_ae"
+
+[[node]]
+id = "intervalVectorMatrixSobolevMul"
+source = "Brezis, Functional Analysis, Sobolev Spaces and Partial Differential Equations, Chapter 8, Corollary 8.10, applied entrywise"
+
+[[node]]
+id = "intervalVectorMatrixSobolevMul_rep"
+source = "Brezis, Functional Analysis, Sobolev Spaces and Partial Differential Equations, Chapter 8, Corollary 8.10, applied entrywise"
+
+[[node]]
+id = "intervalVectorMatrixSobolevMul_deriv_ae"
+source = "Brezis, Functional Analysis, Sobolev Spaces and Partial Differential Equations, Chapter 8, Corollary 8.10, applied entrywise"
+
+[[node]]
+id = "exists_intervalVectorSobolev_endpoint_values"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_ae"
+
+[[node]]
+id = "intervalVectorMatrixL2Mul_transpose_inner"
+
+[[node]]
+id = "intervalVectorMatrixSobolevMul_deriv_zero"
+source = "Brezis, Functional Analysis, Sobolev Spaces and Partial Differential Equations, Chapter 8, Corollary 8.10, applied entrywise"
+
+[[node]]
+id = "intervalVectorSobolevDeriv_zero_injective"
+
+[[node]]
+id = "intervalVectorL2_ext"
+
+[[node]]
+id = "exists_intervalVectorSobolev_iff"
+
+[[node]]
+id = "intervalVectorMatrix_green"
+source = "Ben-Israel and Greville, Generalized Inverses, Chapter 9, Exercise 30, equations (57)–(58), with the leading coefficient in the boundary form"
