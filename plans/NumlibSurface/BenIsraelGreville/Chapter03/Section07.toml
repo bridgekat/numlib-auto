@@ -134,45 +134,27 @@ source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 78, (150), uniqueness by
 
 [[node]]
 id = "exercise_52_dual_gauge"
-kind = "theorem"
-desc = '''Define coordinate permutation and phase symmetry of gauges, prove the suprema and their attainment on both normalized spheres, transfer positivity, continuity, homogeneity and symmetry to the dual, and prove bipolarity for subadditive gauges. The (G1)–(G4) predicate is formalized.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(a)–(d), Equations (130)–(134)"
-deps = ["IsPositiveGauge", "exercise_51"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(b)"
 
 [[node]]
 id = "exercise_55"
-kind = "theorem"
-desc = '''Package the correspondence between absolutely homogeneous positive gauges and vector norm functions on finite-dimensional coordinate spaces, and identify the unit ball as the inverse assignment.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 55, Equations (135)–(137)"
-deps = ["exercise_53_gauge", "exercise_53_converse", "exercise_54"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 55, balanced convex body correspondence"
 
 [[node]]
 id = "exercise_56"
-kind = "theorem"
-desc = '''Prove that a unitarily invariant norm has permutation and coordinate-phase symmetry. Show that the converse fails in dimension at least two, for instance for the ℓ¹ norm.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 56, unitary invariance and symmetric gauge functions"
-deps = ["exercise_52_dual_gauge"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 56, unitary invariance implies symmetry"
 
 [[node]]
 id = "exercise_57"
-kind = "theorem"
-desc = '''Define the polar using the real part of the Hermitian pairing. Show that balanced convex bodies containing zero in their interior have balanced convex polar bodies, compute the gauge of the polar as the dual norm and prove the bipolar identities.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(a)–(d), Equations (138)–(139), polar bodies and dual norms"
-deps = ["exercise_53_gauge", "exercise_52_dual_gauge"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(a)–(d)"
 
 [[node]]
 id = "exercise_58"
-kind = "theorem"
-desc = '''Prove the dual scalar norm under the complex Hermitian pairing for finite coordinates for all conjugate exponents, including 1 and ∞. The real product dual norm in the backbone does not give this complex version directly.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 58, ℓᵖ and ℓᑫ duality"
-deps = ["exercise_57"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 58, duality for all Hölder conjugate exponents"
 
 [[node]]
 id = "exercise_59_dual_attainment"
-kind = "theorem"
-desc = '''Prove that a nonzero functional on the finite-dimensional coordinate space attains its norm at a unit vector, with a phase chosen for equality in the real-pairing inequality. The inequality and the norming functional for each nonzero vector are formalized.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, attaining vector for each nonzero dual functional"
-deps = ["dualPairing_le_norm_mul", "exercise_59_norming"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, attaining vector with positive real pairing"
 
 [[node]]
 id = "exercise_60"
@@ -183,17 +165,11 @@ deps = ["exercise_58"]
 
 [[node]]
 id = "exercise_61"
-kind = "theorem"
-desc = '''For a norm on the residual space, prove the optimum formula using the dual vector condition and codimension-one residual hyperplane, with the residual scaled to satisfy the complex pairing equation. Use the sign of the chosen residual convention in the lift.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 61, dual-norm Chebyshev generalization"
-deps = ["exercise_59_dual_attainment"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 61, signed lift and normalized dual vector"
 
 [[node]]
 id = "exercise_63"
-kind = "theorem"
-desc = '''Define uniqueness of supporting hyperplanes for balanced convex bodies and prove that strict convexity of a body is equivalent to smoothness of its polar.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, rotundity and smoothness of polar bodies"
-deps = ["exercise_57", "exercise_62"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, rotundity and smoothness of the polar"
 
 [[node]]
 id = "exercise_64b"
@@ -211,17 +187,11 @@ deps = ["exercise_63", "exercise_64a"]
 
 [[node]]
 id = "exercise_66"
-kind = "theorem"
-desc = '''Define the mixed norm of continuous complex-homogeneous maps, prove unit-sphere attainment in nonzero finite dimensions and properties (a)–(f), with the zero-domain case interpreted separately.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(a)–(f), Equation (143), homogeneous operator norm"
-deps = ["theorem_11"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66, maximum on a nonzero input space"
 
 [[node]]
 id = "exercise_67"
-kind = "theorem"
-desc = '''Establish that the mixed norm of a linear map equals the mixed norm of its adjoint with the two dual norms exchanged.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 67, Equation (144), adjoint operator norm"
-deps = ["exercise_57", "exercise_59_dual_attainment", "exercise_66"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 67, Equation (144)"
 
 [[node]]
 id = "exercise_68"
@@ -253,17 +223,11 @@ deps = ["corollary_6", "theorem_11"]
 
 [[node]]
 id = "exercise_75"
-kind = "theorem"
-desc = '''Characterize a nonzero zero-fiber vector by a norming dual functional vanishing on the subspace, with existence proved through the quotient norm or an equivalent Hahn–Banach argument.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 75, dual vectors for the zero fiber"
-deps = ["exercise_59_norming", "metricProjector_fibers"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 75"
 
 [[node]]
 id = "exercise_76"
-kind = "theorem"
-desc = '''For both primal and dual norms essentially strictly convex and the primal projector additive, identify the dual zero fiber and prove that its complementary metric projector is the adjoint of the primal projector.'''
-source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 76(a)–(b), dual metric projector"
-deps = ["exercise_75", "exercise_72"]
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 76, adjoint metric projection and its zero fiber"
 
 [[node]]
 id = "exercise_77"
@@ -292,3 +256,183 @@ kind = "theorem"
 desc = '''Prove the lower and upper bounds for the mixed operator norm distance to rank loss, with exact equality in the full-row-rank and projective-norm cases. In the convention of Equation (143), perturbations have input norm β and output norm α, while the inverse has input norm α and output norm β.'''
 source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 81, Equations (153)–(154), distance to rank loss"
 deps = ["theorem_12", "exercise_66", "exercise_68"]
+
+[[node]]
+id = "norm_inv_smul_mem_unitSphere"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 59, unit normalization"
+
+[[node]]
+id = "mixedNormDualAdjoint"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 67, dual adjoint"
+
+[[node]]
+id = "mixedNormDualAdjoint_apply"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 67, adjoint pairing"
+
+[[node]]
+id = "IsContinuousHomogeneous"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66, homogeneous transformations"
+
+[[node]]
+id = "mixedOperatorNorm"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66, Equation (143)"
+
+[[node]]
+id = "mixedOperatorNorm_nonneg"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(a), nonnegativity"
+
+[[node]]
+id = "mixedOperatorNorm_le_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66, optimal bound"
+
+[[node]]
+id = "norm_homogeneous_apply_le"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66, bound on each output"
+
+[[node]]
+id = "mixedOperatorNorm_eq_zero_iff"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(a), definiteness"
+
+[[node]]
+id = "mixedOperatorNorm_smul"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(b)"
+
+[[node]]
+id = "mixedOperatorNorm_add_le"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(c)"
+
+[[node]]
+id = "mixedOperatorNorm_eq_sInf_unitBall"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(d)"
+
+[[node]]
+id = "mixedOperatorNorm_comp_le"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(e)"
+
+[[node]]
+id = "mixedOperatorNorm_eq_opNorm"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 66(f)"
+
+[[node]]
+id = "dualNorm_eq_sSup_real_pairing"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 58, real-pairing ratio for the continuous dual"
+
+[[node]]
+id = "lpNorm_eq_norm_finite_lp"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 58, finite-coordinate ℓᵖ norm including the endpoint"
+
+[[node]]
+id = "additiveMetricProjection"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 76, linearization of an additive metric projection"
+
+[[node]]
+id = "additiveMetricProjection_apply"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 76, underlying metric projection"
+
+[[node]]
+id = "balancedGaugeConvexBody_zero_mem_interior"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 54, origin of an equilibrated convex body"
+
+[[node]]
+id = "isVectorNorm_iff_positiveGauge_absoluteHomogeneity"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 55, vector norm criterion"
+
+[[node]]
+id = "hermitianPolar"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57, Equation (138)"
+
+[[node]]
+id = "hermitianPolar_balanced"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(a), balance"
+
+[[node]]
+id = "hermitianPolar_isGaugeConvexBody"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(a), bounded convex polar with interior"
+
+[[node]]
+id = "hermitianPolar_polar"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(b), bipolar identity"
+
+[[node]]
+id = "hermitianDualGauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercises 52 and 57, Equations (130) and (139)"
+
+[[node]]
+id = "hermitianDualGauge_eq_sSup_unitSublevel"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(c), support computation"
+
+[[node]]
+id = "hermitianDualGauge_eq_gauge_polar"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 57(c), gauge of the polar"
+
+[[node]]
+id = "exists_residual_eq_iff_of_range_eq_ker"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 61, corrected residual hyperplane (142)"
+
+[[node]]
+id = "norm_residual_lower_bound_of_eval_eq"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 61, optimal lower bound"
+
+[[node]]
+id = "IsPositiveHomogeneousGauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52, (G1)–(G3)"
+
+[[node]]
+id = "exercise_52_dual_attainment"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(a), normalized sphere attainment"
+
+[[node]]
+id = "exercise_52_dual_invariant"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(c), unitary symmetry transfer"
+
+[[node]]
+id = "exercise_52_dual_dual"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(d)"
+
+[[node]]
+id = "IsPermutationInvariantGauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52, (G5)"
+
+[[node]]
+id = "IsPhaseInvariantGauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52, (G6)"
+
+[[node]]
+id = "exercise_52_dual_permutation"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(c), permutation symmetry"
+
+[[node]]
+id = "exercise_52_dual_phase"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(c), coordinate phase symmetry"
+
+[[node]]
+id = "coordinateL1Gauge"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52, Equation (131b)"
+
+[[node]]
+id = "coordinateL1Gauge_isVectorNorm"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 56, ℓ¹ norm"
+
+[[node]]
+id = "exercise_52_dual_attainment_coordinateL1"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 52(a), attainment in Equation (131b)"
+
+[[node]]
+id = "coordinateL1Gauge_isSymmetric"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 56, symmetry of ℓ¹"
+
+[[node]]
+id = "exercise_56_converse_failure"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 56, false converse in dimension two"
+
+[[node]]
+id = "IsNormalizedSupportingNormal"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, normalized supporting hyperplane"
+
+[[node]]
+id = "IsSmoothGaugeBody"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, smoothness of a convex body"
+
+[[node]]
+id = "eq_of_normalized_supporting_hyperplanes_eq"
+source = "Ben-Israel and Greville, Ch. 3, §7, Exercise 63, uniqueness of normalized normals"

@@ -2,6 +2,17 @@
 Copyright (c) 2026 Great Bay University. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Numlib.Analysis.Matrix.ToEuclideanLin
+import Numlib.Analysis.Convex.Duality.InnerPairing
+import Numlib.Analysis.Convex.Duality.Polar
+import Mathlib.Analysis.LocallyConvex.Basic
+import Numlib.Analysis.Normed.Lp.Sequence
+import Numlib.Analysis.Normed.Module.Annihilator
+import Numlib.Analysis.Normed.Module.NormEquivalence
+import NumlibSurface.BenIsraelGreville.Chapter00.Section01
+import Mathlib.Analysis.Normed.Group.Quotient
+import Mathlib.Analysis.Normed.Operator.Bilinear
+import Mathlib.Topology.Algebra.Module.ContinuousLinearMap.Quotient
 import Numlib.Analysis.Normed.Module.BestApprox
 import Numlib.LinearAlgebra.Matrix.SVD
 import Mathlib.Analysis.Convex.Gauge
@@ -1103,5 +1114,1415 @@ theorem exercise_71 (h : essentiallyStrictlyConvex E) (hProj : IsProjectiveNorm 
   · exact corollary_7 h 1 le_rfl hl L (Nat.one_le_iff_ne_zero.mpr hdim)
 
 end FurtherProjectionResults
+
+section DualityExercises
+
+open Set
+
+variable {E F : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F]
+
+/-- The unit sphere is the set of vectors of norm one. A nonzero vector
+normalizes to a member of it by a positive real rescaling. -/
+theorem norm_inv_smul_mem_unitSphere {x : E} (hx : x ≠ 0) :
+    ((‖x‖⁻¹ : ℝ) : ℂ) • x ∈ Metric.sphere (0 : E) 1 := by
+  rw [Metric.mem_sphere, dist_zero_right, norm_smul, Complex.norm_real, Real.norm_of_nonneg,
+    inv_mul_cancel₀ (norm_ne_zero_iff.mpr hx)]
+  positivity
+
+/-- **Exercise 59** of [benIsrael2003generalized], Chapter 3. A nonzero
+functional on a finite-dimensional normed space has a norm-one vector on
+which its value equals its norm as a nonnegative real number. -/
+theorem exercise_59_dual_attainment [FiniteDimensional ℂ E]
+    {f : StrongDual ℂ E} (hf : f ≠ 0) :
+    ∃ x : E, ‖x‖ = 1 ∧ f x = (‖f‖ : ℂ) := by
+  have hne : (Metric.sphere (0 : E) 1).Nonempty := by
+    by_contra! hempty
+    apply hf
+    ext x
+    by_cases hx : x = 0
+    · simp [hx]
+    · have hmem := norm_inv_smul_mem_unitSphere hx
+      rw [hempty] at hmem
+      exact hmem.elim
+  let : ProperSpace E := FiniteDimensional.proper ℂ E
+  obtain ⟨u, hu, hmax⟩ := (isCompact_sphere (0 : E) 1).exists_isMaxOn hne
+    f.continuous.norm.continuousOn
+  have hu₁ : ‖u‖ = 1 := by simpa only [Metric.mem_sphere, dist_zero_right] using hu
+  have hn : ‖f u‖ = ‖f‖ := by
+    refine le_antisymm (by simpa only [hu₁, mul_one] using f.le_opNorm u)
+      (f.opNorm_le_bound (norm_nonneg _) fun x => ?_)
+    by_cases hx : x = 0
+    · simp [hx]
+    have he := hmax (norm_inv_smul_mem_unitSphere hx)
+    change ‖f (((‖x‖⁻¹ : ℝ) : ℂ) • x)‖ ≤ ‖f u‖ at he
+    rw [map_smul, norm_smul, Complex.norm_real, Real.norm_of_nonneg (by positivity)] at he
+    exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mp (by simpa only [div_eq_mul_inv, mul_comm] using he)
+  obtain ⟨c, hc, he⟩ := RCLike.exists_norm_eq_mul_self (f u)
+  refine ⟨c • u, by simp [norm_smul, hc, hu₁], ?_⟩
+  rw [map_smul, smul_eq_mul, ← he, hn]
+  rfl
+
+/-- Pullback on the continuous dual is the adjoint corresponding to
+the dual pairing of the two normed spaces. -/
+noncomputable def mixedNormDualAdjoint (A : E →L[ℂ] F) :
+    StrongDual ℂ F →L[ℂ] StrongDual ℂ E :=
+  (ContinuousLinearMap.compL ℂ E F ℂ).flip A
+
+/-- The adjoint acts on a functional by precomposition with the original map. -/
+@[simp]
+theorem mixedNormDualAdjoint_apply (A : E →L[ℂ] F) (f : StrongDual ℂ F) :
+    mixedNormDualAdjoint A f = f.comp A := rfl
+
+/-- **Exercise 67, Equation (144)** of [benIsrael2003generalized], Chapter 3.
+The operator norm of a linear transformation agrees with that of its
+adjoint, with the domain and codomain carrying the exchanged dual norms. -/
+theorem exercise_67 (A : E →L[ℂ] F) : ‖A‖ = ‖mixedNormDualAdjoint A‖ := by
+  refine le_antisymm (A.opNorm_le_bound (ContinuousLinearMap.opNorm_nonneg _) fun x => ?_)
+    ((mixedNormDualAdjoint A).opNorm_le_bound (ContinuousLinearMap.opNorm_nonneg _) fun f => ?_)
+  · obtain ⟨f, hf, hfx⟩ := exists_dual_vector'' ℂ (A x)
+    have he : ‖(mixedNormDualAdjoint A f) x‖ = ‖A x‖ := by
+      change ‖f (A x)‖ = ‖A x‖
+      rw [hfx]
+      change ‖(‖A x‖ : ℂ)‖ = ‖A x‖
+      rw [Complex.norm_real, Real.norm_of_nonneg (norm_nonneg _)]
+    calc
+      ‖A x‖ = ‖(mixedNormDualAdjoint A f) x‖ := he.symm
+      _ ≤ ‖mixedNormDualAdjoint A f‖ * ‖x‖ := (mixedNormDualAdjoint A f).le_opNorm x
+      _ ≤ (‖mixedNormDualAdjoint A‖ * ‖f‖) * ‖x‖ :=
+        mul_le_mul_of_nonneg_right ((mixedNormDualAdjoint A).le_opNorm f) (norm_nonneg _)
+      _ ≤ ‖mixedNormDualAdjoint A‖ * ‖x‖ :=
+        mul_le_mul_of_nonneg_right
+          (mul_le_of_le_one_right (ContinuousLinearMap.opNorm_nonneg _) hf) (norm_nonneg _)
+  · rw [mixedNormDualAdjoint_apply, mul_comm]
+    exact f.opNorm_comp_le A
+
+variable [NormedSpace ℝ E] [IsScalarTower ℝ ℂ E] [FiniteDimensional ℂ E]
+
+/-- **Exercise 75** of [benIsrael2003generalized], Chapter 3.
+A nonzero vector lies in the zero fiber of the metric projection exactly
+when a norm-one functional norms it and annihilates the subspace. -/
+theorem exercise_75 (h : essentiallyStrictlyConvex E) (L : Submodule ℂ E)
+    {x : E} (hx : x ≠ 0) :
+    definition_1 L x = 0 ↔
+      ∃ f : StrongDual ℂ E, ‖f‖ = 1 ∧ f x = (‖x‖ : ℂ) ∧ ∀ z ∈ L, f z = 0 := by
+  constructor
+  · intro hzero
+    let : IsClosed (L : Set E) := L.closed_of_finiteDimensional
+    have hbest : IsBestApprox (L : Set E) x 0 :=
+      (definition_1_eq_iff h L x 0).mp hzero
+    have hquot : ‖L.mkQL x‖ = ‖x‖ := by
+      change ‖(QuotientAddGroup.mk x : E ⧸ L.toAddSubgroup)‖ = _
+      rw [QuotientAddGroup.norm_mk]
+      change Metric.infDist x (L : Set E) = ‖x‖
+      simpa only [sub_zero] using hbest.norm_sub_eq_infDist.symm
+    obtain ⟨g, hg, hgx⟩ := exists_dual_vector ℂ (L.mkQL x) (by
+      rw [hquot]; exact norm_ne_zero_iff.mpr hx)
+    let f : StrongDual ℂ E := g.comp L.mkQL
+    have hfx : f x = (‖x‖ : ℂ) := by
+      change g (L.mkQL x) = _
+      rw [hgx, hquot]
+      rfl
+    have hfle : ‖f‖ ≤ 1 := by
+      apply f.opNorm_le_bound zero_le_one
+      intro z
+      change ‖g (L.mkQL z)‖ ≤ 1 * ‖z‖
+      rw [one_mul]
+      exact (by simpa only [hg, one_mul] using g.le_opNorm (L.mkQL z) :
+        ‖g (L.mkQL z)‖ ≤ ‖L.mkQL z‖).trans (Submodule.Quotient.norm_mk_le L z)
+    have hfge : 1 ≤ ‖f‖ := by
+      have he := f.le_opNorm x
+      rw [hfx, Complex.norm_real, Real.norm_of_nonneg (norm_nonneg _)] at he
+      exact le_of_mul_le_mul_right (by simpa only [one_mul] using he) (norm_pos_iff.mpr hx)
+    refine ⟨f, le_antisymm hfle hfge, hfx, fun z hz => ?_⟩
+    change g (L.mkQL z) = 0
+    rw [Submodule.mkQL_apply, Submodule.mkQ_apply,
+      (Submodule.Quotient.mk_eq_zero L).mpr hz, map_zero]
+  · rintro ⟨f, hf, hfx, hL⟩
+    apply (definition_1_eq_iff h L x 0).mpr
+    refine ⟨L.zero_mem, fun z hz => ?_⟩
+    have hval := f.le_opNorm (x - z)
+    rw [map_sub, hL z hz, sub_zero, hfx, Complex.norm_real,
+      Real.norm_of_nonneg (norm_nonneg _), hf, one_mul] at hval
+    simpa only [sub_zero] using hval
+
+end DualityExercises
+
+section MixedNormExercises
+
+open Set
+open scoped Pointwise
+
+variable {E F G : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F] [NormedAddCommGroup G] [NormedSpace ℂ G]
+
+/-- Continuity and complex homogeneity of a transformation in Exercise 66. -/
+structure IsContinuousHomogeneous (f : E → F) : Prop where
+  continuous : Continuous f
+  smul : ∀ (c : ℂ) (x : E), f (c • x) = c • f x
+
+/-- **Equation (143)** of [benIsrael2003generalized], Chapter 3.
+The mixed operator norm is the supremum of output norms on the input
+unit sphere, with value zero for the zero space. -/
+noncomputable def mixedOperatorNorm (f : E → F) : ℝ :=
+  sSup ((fun x => ‖f x‖) '' Metric.sphere (0 : E) 1)
+
+private theorem IsContinuousHomogeneous.map_zero {f : E → F}
+    (hf : IsContinuousHomogeneous f) : f 0 = 0 := by
+  simpa only [zero_smul] using hf.smul 0 (0 : E)
+
+omit [NormedSpace ℂ F] in
+private theorem mixedNorm_bddAbove [FiniteDimensional ℂ E] {f : E → F} (hf : Continuous f) :
+    BddAbove ((fun x => ‖f x‖) '' Metric.sphere (0 : E) 1) := by
+  let : ProperSpace E := FiniteDimensional.proper ℂ E
+  exact (isCompact_sphere _ _).bddAbove_image hf.norm.continuousOn
+
+/-- **Exercise 66, Equation (143)** of [benIsrael2003generalized].
+The ratio of output to input norm has the same supremum as on the unit
+sphere. In nonzero finite dimension the latter supremum is a maximum. -/
+theorem exercise_66 [FiniteDimensional ℂ E] (f : E → F) (hf : IsContinuousHomogeneous f) :
+    mixedOperatorNorm f = sSup ((fun x => ‖f x‖ / ‖x‖) '' {x : E | x ≠ 0}) ∧
+      (Nontrivial E → ∃ x : E, ‖x‖ = 1 ∧ ‖f x‖ = mixedOperatorNorm f) := by
+  constructor
+  · unfold mixedOperatorNorm
+    congr 1
+    ext y
+    constructor
+    · rintro ⟨x, hx, rfl⟩
+      have hx₁ : ‖x‖ = 1 := by simpa only [Metric.mem_sphere, dist_zero_right] using hx
+      exact ⟨x, fun hz => by simp [hz] at hx₁, by simp [hx₁]⟩
+    · rintro ⟨x, hx, rfl⟩
+      refine ⟨((‖x‖⁻¹ : ℝ) : ℂ) • x, norm_inv_smul_mem_unitSphere hx, ?_⟩
+      change ‖f (((‖x‖⁻¹ : ℝ) : ℂ) • x)‖ = ‖f x‖ / ‖x‖
+      rw [hf.smul, norm_smul, Complex.norm_real, Real.norm_of_nonneg (by positivity),
+        div_eq_mul_inv, mul_comm]
+  · intro hE
+    let : Nontrivial E := hE
+    let : ProperSpace E := FiniteDimensional.proper ℂ E
+    obtain ⟨w, hw⟩ := exists_ne (0 : E)
+    have hne : (Metric.sphere (0 : E) 1).Nonempty := ⟨_, norm_inv_smul_mem_unitSphere hw⟩
+    obtain ⟨x, hx, hmax⟩ := (isCompact_sphere (0 : E) 1).exists_isMaxOn hne
+      hf.continuous.norm.continuousOn
+    refine ⟨x, by simpa only [Metric.mem_sphere, dist_zero_right] using hx, ?_⟩
+    have hg : IsGreatest ((fun x => ‖f x‖) '' Metric.sphere (0 : E) 1) ‖f x‖ :=
+      ⟨⟨x, hx, rfl⟩, fun y ⟨u, hu, hy⟩ => hy ▸ hmax hu⟩
+    exact hg.csSup_eq.symm
+
+omit [NormedSpace ℂ F] in
+/-- The mixed norm is nonnegative, including for a zero input space. -/
+theorem mixedOperatorNorm_nonneg [FiniteDimensional ℂ E] {f : E → F} (hf : Continuous f) :
+    0 ≤ mixedOperatorNorm f := by
+  by_cases h : (Metric.sphere (0 : E) 1).Nonempty
+  · obtain ⟨x, hx⟩ := h
+    exact (norm_nonneg (f x)).trans (le_csSup (mixedNorm_bddAbove hf) ⟨x, hx, rfl⟩)
+  · simp [mixedOperatorNorm, Set.not_nonempty_iff_eq_empty.mp h]
+
+/-- The mixed norm is the least nonnegative constant in the pointwise norm bound. -/
+theorem mixedOperatorNorm_le_iff [FiniteDimensional ℂ E] {f : E → F}
+    (hf : IsContinuousHomogeneous f) {a : ℝ} (ha : 0 ≤ a) :
+    mixedOperatorNorm f ≤ a ↔ ∀ x, ‖f x‖ ≤ a * ‖x‖ := by
+  constructor
+  · intro h x
+    by_cases hx : x = 0
+    · simp [hx, hf.map_zero]
+    have he := (le_csSup (mixedNorm_bddAbove hf.continuous) (show
+      ‖f (((‖x‖⁻¹ : ℝ) : ℂ) • x)‖ ∈
+        (fun x => ‖f x‖) '' Metric.sphere (0 : E) 1 from
+        ⟨_, norm_inv_smul_mem_unitSphere hx, rfl⟩)).trans h
+    rw [hf.smul, norm_smul, Complex.norm_real, Real.norm_of_nonneg (by positivity)] at he
+    exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mp
+      (by simpa only [div_eq_mul_inv, mul_comm] using he)
+  · intro h
+    by_cases hs : (Metric.sphere (0 : E) 1).Nonempty
+    · apply csSup_le (hs.image _)
+      rintro _ ⟨x, hx, rfl⟩
+      have hx₁ : ‖x‖ = 1 := by simpa only [Metric.mem_sphere, dist_zero_right] using hx
+      simpa only [hx₁, mul_one] using h x
+    · simpa only [mixedOperatorNorm, Set.not_nonempty_iff_eq_empty.mp hs,
+        Set.image_empty, Real.sSup_empty] using ha
+
+/-- Every output norm is bounded by the mixed norm times the input norm. -/
+theorem norm_homogeneous_apply_le [FiniteDimensional ℂ E] {f : E → F}
+    (hf : IsContinuousHomogeneous f) (x : E) : ‖f x‖ ≤ mixedOperatorNorm f * ‖x‖ :=
+  (mixedOperatorNorm_le_iff hf (mixedOperatorNorm_nonneg hf.continuous)).mp le_rfl x
+
+/-- **Exercise 66(a)**. The mixed norm vanishes exactly for the zero map. -/
+theorem mixedOperatorNorm_eq_zero_iff [FiniteDimensional ℂ E] {f : E → F}
+    (hf : IsContinuousHomogeneous f) : mixedOperatorNorm f = 0 ↔ f = 0 := by
+  constructor
+  · intro h
+    funext x
+    exact norm_eq_zero.mp (le_antisymm (by simpa [h] using norm_homogeneous_apply_le hf x)
+      (norm_nonneg _))
+  · intro h
+    refine le_antisymm ((mixedOperatorNorm_le_iff hf le_rfl).mpr fun x => ?_)
+      (mixedOperatorNorm_nonneg hf.continuous)
+    simp [h]
+
+/-- **Exercise 66(b)**. Scaling a homogeneous map scales its mixed norm
+by the modulus of the scalar. -/
+theorem mixedOperatorNorm_smul [FiniteDimensional ℂ E] {f : E → F}
+    (hf : IsContinuousHomogeneous f) (a : ℂ) :
+    mixedOperatorNorm (fun x => a • f x) = ‖a‖ * mixedOperatorNorm f := by
+  let g := fun x => a • f x
+  have hg : IsContinuousHomogeneous g :=
+    ⟨continuous_const.smul hf.continuous, fun c x => by
+      change a • f (c • x) = c • a • f x
+      rw [hf.smul, smul_comm a]⟩
+  refine le_antisymm ((mixedOperatorNorm_le_iff hg (mul_nonneg (norm_nonneg _)
+    (mixedOperatorNorm_nonneg hf.continuous))).mpr fun x => ?_) ?_
+  · change ‖a • f x‖ ≤ _
+    rw [norm_smul, mul_assoc]
+    exact mul_le_mul_of_nonneg_left (norm_homogeneous_apply_le hf x) (norm_nonneg _)
+  · by_cases ha : a = 0
+    · change ‖a‖ * mixedOperatorNorm f ≤ mixedOperatorNorm g
+      rw [ha, norm_zero, zero_mul]
+      exact mixedOperatorNorm_nonneg hg.continuous
+    have ha₀ : 0 < ‖a‖ := norm_pos_iff.mpr ha
+    have h := (mixedOperatorNorm_le_iff hf (div_nonneg
+      (mixedOperatorNorm_nonneg hg.continuous) ha₀.le)).mpr fun x => ?_
+    · exact (le_div_iff₀' ha₀).mp h
+    · have hx := norm_homogeneous_apply_le hg x
+      change ‖a • f x‖ ≤ _ at hx
+      rw [norm_smul] at hx
+      rw [div_mul_eq_mul_div, le_div_iff₀' ha₀]
+      exact hx
+
+/-- **Exercise 66(c)**. The mixed norm satisfies the triangle inequality. -/
+theorem mixedOperatorNorm_add_le [FiniteDimensional ℂ E] {f g : E → F}
+    (hf : IsContinuousHomogeneous f) (hg : IsContinuousHomogeneous g) :
+    mixedOperatorNorm (fun x => f x + g x) ≤ mixedOperatorNorm f + mixedOperatorNorm g := by
+  have hfg : IsContinuousHomogeneous (fun x => f x + g x) :=
+    ⟨hf.continuous.add hg.continuous, fun c x => by simp only [hf.smul, hg.smul, smul_add]⟩
+  apply (mixedOperatorNorm_le_iff hfg (add_nonneg (mixedOperatorNorm_nonneg hf.continuous)
+    (mixedOperatorNorm_nonneg hg.continuous))).mpr
+  intro x
+  rw [add_mul]
+  exact (norm_add_le _ _).trans (add_le_add (norm_homogeneous_apply_le hf x)
+    (norm_homogeneous_apply_le hg x))
+
+/-- **Exercise 66(d)**. The mixed norm is the infimum of the positive
+dilation factors that contain the image of the input unit ball. -/
+theorem mixedOperatorNorm_eq_sInf_unitBall [FiniteDimensional ℂ E] {f : E → F}
+    (hf : IsContinuousHomogeneous f) :
+    mixedOperatorNorm f = sInf {a : ℝ | 0 < a ∧
+      f '' Metric.closedBall (0 : E) 1 ⊆ (a : ℂ) • Metric.closedBall (0 : F) 1} := by
+  let S := {a : ℝ | 0 < a ∧
+    f '' Metric.closedBall (0 : E) 1 ⊆ (a : ℂ) • Metric.closedBall (0 : F) 1}
+  have hN := mixedOperatorNorm_nonneg hf.continuous
+  have hmem (a : ℝ) (ha : 0 < a) : a ∈ S ↔ mixedOperatorNorm f ≤ a := by
+    constructor
+    · intro h
+      apply (mixedOperatorNorm_le_iff hf ha.le).mpr
+      intro x
+      by_cases hx : x = 0
+      · simp [hx, hf.map_zero]
+      let u := ((‖x‖⁻¹ : ℝ) : ℂ) • x
+      have hu : u ∈ Metric.closedBall (0 : E) 1 :=
+        Metric.sphere_subset_closedBall (norm_inv_smul_mem_unitSphere hx)
+      obtain ⟨v, hv, hvf⟩ := h.2 ⟨u, hu, rfl⟩
+      have hv₁ : ‖v‖ ≤ 1 := by simpa only [Metric.mem_closedBall, dist_zero_right] using hv
+      have he : ‖f u‖ ≤ a := by
+        rw [← hvf, norm_smul, Complex.norm_real, Real.norm_of_nonneg ha.le]
+        exact mul_le_of_le_one_right ha.le hv₁
+      change ‖f (((‖x‖⁻¹ : ℝ) : ℂ) • x)‖ ≤ a at he
+      rw [hf.smul, norm_smul, Complex.norm_real, Real.norm_of_nonneg (by positivity)] at he
+      exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mp
+        (by simpa only [div_eq_mul_inv, mul_comm] using he)
+    · intro h
+      refine ⟨ha, ?_⟩
+      rintro _ ⟨x, hx, rfl⟩
+      have hx₁ : ‖x‖ ≤ 1 := by simpa only [Metric.mem_closedBall, dist_zero_right] using hx
+      have hab := ((mixedOperatorNorm_le_iff hf ha.le).mp h x).trans
+        (mul_le_of_le_one_right ha.le hx₁)
+      refine ⟨((a⁻¹ : ℝ) : ℂ) • f x, ?_, ?_⟩
+      · rw [Metric.mem_closedBall, dist_zero_right, norm_smul, Complex.norm_real,
+          Real.norm_of_nonneg (inv_nonneg.mpr ha.le)]
+        rw [mul_comm, ← div_eq_mul_inv]
+        exact (div_le_iff₀ ha).mpr (by simpa only [one_mul] using hab)
+      · change (a : ℂ) • ((a⁻¹ : ℝ) : ℂ) • f x = f x
+        rw [Complex.ofReal_inv, smul_inv_smul₀ ((Complex.ofReal_ne_zero).mpr ha.ne')]
+  have hpos : 0 < mixedOperatorNorm f + 1 := by linarith
+  have hne : S.Nonempty := ⟨_, (hmem _ hpos).mpr (by linarith)⟩
+  refine le_antisymm (le_csInf hne fun a ha => (hmem a ha.1).mp ha) ?_
+  apply le_of_forall_pos_le_add
+  intro ε hε
+  have hε' : 0 < mixedOperatorNorm f + ε := by linarith
+  exact csInf_le ⟨mixedOperatorNorm f, fun a ha => (hmem a ha.1).mp ha⟩
+    ((hmem _ hε').mpr (by linarith))
+
+/-- **Exercise 66(e)**. Composition is submultiplicative with the
+appropriate input, intermediate, and output norms. -/
+theorem mixedOperatorNorm_comp_le [FiniteDimensional ℂ E] [FiniteDimensional ℂ F]
+    {f : E → F} {g : F → G} (hf : IsContinuousHomogeneous f) (hg : IsContinuousHomogeneous g) :
+    mixedOperatorNorm (g ∘ f) ≤ mixedOperatorNorm f * mixedOperatorNorm g := by
+  have hgf : IsContinuousHomogeneous (g ∘ f) :=
+    ⟨hg.continuous.comp hf.continuous, fun c x => by
+      simp only [Function.comp_apply, hf.smul, hg.smul]⟩
+  apply (mixedOperatorNorm_le_iff hgf (mul_nonneg (mixedOperatorNorm_nonneg hf.continuous)
+    (mixedOperatorNorm_nonneg hg.continuous))).mpr
+  intro x
+  calc
+    ‖(g ∘ f) x‖ ≤ mixedOperatorNorm g * ‖f x‖ := norm_homogeneous_apply_le hg (f x)
+    _ ≤ mixedOperatorNorm g * (mixedOperatorNorm f * ‖x‖) :=
+      mul_le_mul_of_nonneg_left (norm_homogeneous_apply_le hf x)
+        (mixedOperatorNorm_nonneg hg.continuous)
+    _ = _ := by ring
+
+/-- **Exercise 66(f)**. For a linear map the mixed norm is the usual
+induced operator norm for the given domain and codomain norms. -/
+theorem mixedOperatorNorm_eq_opNorm [FiniteDimensional ℂ E] (f : E →L[ℂ] F) :
+    mixedOperatorNorm f = ‖f‖ := by
+  have hf : IsContinuousHomogeneous f := ⟨f.continuous, fun c x => map_smul f c x⟩
+  exact le_antisymm ((mixedOperatorNorm_le_iff hf f.opNorm_nonneg).mpr f.le_opNorm)
+    (f.opNorm_le_bound (mixedOperatorNorm_nonneg f.continuous) (norm_homogeneous_apply_le hf))
+
+end MixedNormExercises
+
+section LpDualExercises
+
+open Set
+open scoped ENNReal
+open BenIsraelGreville.Chapter00 (lpNorm)
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+
+/-- The continuous dual norm is the supremum of the real-pairing ratios
+over nonzero vectors. Phasing a vector replaces the real part of its
+pairing by its modulus. -/
+theorem dualNorm_eq_sSup_real_pairing (f : StrongDual ℂ E) :
+    ‖f‖ = sSup ((fun x => (f x).re / ‖x‖) '' {x : E | x ≠ 0}) := by
+  let S := (fun x => (f x).re / ‖x‖) '' {x : E | x ≠ 0}
+  change ‖f‖ = sSup S
+  by_cases hE : ∃ x : E, x ≠ 0
+  · have hphase (x : E) (hx : x ≠ 0) : ‖f x‖ / ‖x‖ ∈ S := by
+      obtain ⟨c, hc, he⟩ := RCLike.exists_norm_eq_mul_self (f x)
+      have hc₀ : c ≠ 0 := by intro h; simp [h] at hc
+      refine ⟨c • x, smul_ne_zero hc₀ hx, ?_⟩
+      change (f (c • x)).re / ‖c • x‖ = _
+      rw [map_smul, smul_eq_mul, ← he, norm_smul, hc, one_mul]
+      rfl
+    have hbound : ‖f‖ ∈ upperBounds S := by
+      rintro _ ⟨x, hx, rfl⟩
+      exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mpr
+        ((Complex.re_le_norm _).trans (f.le_opNorm x))
+    have hbdd : BddAbove S := ⟨_, hbound⟩
+    obtain ⟨u, hu⟩ := hE
+    have hn : 0 ≤ sSup S :=
+      (div_nonneg (norm_nonneg _) (norm_nonneg _)).trans (le_csSup hbdd (hphase u hu))
+    refine le_antisymm (f.opNorm_le_bound hn fun x => ?_) (csSup_le ⟨_, hphase u hu⟩ hbound)
+    by_cases hx : x = 0
+    · simp [hx]
+    exact (div_le_iff₀ (norm_pos_iff.mpr hx)).mp (le_csSup hbdd (hphase x hx))
+  · have hz (x : E) : x = 0 := by by_contra hx; exact hE ⟨x, hx⟩
+    have hf : f = 0 := ContinuousLinearMap.ext fun x => by simp [hz x]
+    have hS : S = ∅ := by
+      ext y
+      constructor
+      · rintro ⟨x, hx, _⟩
+        exact (hx (hz x)).elim
+      · simp
+    rw [hf, norm_zero, hS, Real.sSup_empty]
+
+/-- The finite-coordinate norm of Chapter 0 agrees with the sequence-space
+norm on the same entries, including the maximum norm at exponent infinity. -/
+theorem lpNorm_eq_norm_finite_lp {ι : Type*} [Fintype ι] (p : ℝ≥0∞) [hp : Fact (1 ≤ p)]
+    (x : lp (fun _ : ι => ℂ) p) : lpNorm p (fun i => x i) = ‖x‖ := by
+  by_cases h : p = ∞
+  · subst p
+    rw [lpNorm, ite_eq_left rfl, lp.norm_eq_ciSup]
+  · rw [lpNorm, ite_eq_right h, lp.norm_eq_tsum_rpow
+      (ENNReal.toReal_pos (zero_lt_one.trans_le hp.out).ne' h), tsum_fintype]
+
+/-- **Exercise 58** of [benIsrael2003generalized], Chapter 3.
+With the complex Hermitian pairing, the dual of a finite-coordinate
+$ell^p$ norm is the $ell^q$ norm for any conjugate exponents.
+The same statement includes $p=1$, $q=infty$, and their reverse. -/
+theorem exercise_58 {ι : Type*} [Fintype ι] (p q : ℝ≥0∞) [hpq : p.HolderConjugate q]
+    (y : ι → ℂ) :
+    lpNorm q y = sSup ((fun x : ι → ℂ => (∑ i, star (y i) * x i).re / lpNorm p x) ''
+      {x : ι → ℂ | x ≠ 0}) := by
+  let : Fact (1 ≤ p) := ⟨ENNReal.HolderConjugate.one_le p q⟩
+  let : Fact (1 ≤ q) := ⟨ENNReal.HolderConjugate.one_le q p⟩
+  let u : lp (fun _ : ι => ℂ) q := ⟨y, Memℓp.all y⟩
+  let f := lp.toDualCLM ℂ ι p q (star u)
+  have hf : ‖f‖ = lpNorm q y := by
+    rw [show f = lp.toDualCLM ℂ ι p q (star u) from rfl, lp.norm_toDualCLM_apply, norm_star]
+    exact (lpNorm_eq_norm_finite_lp q u).symm
+  rw [← hf, dualNorm_eq_sSup_real_pairing]
+  congr 1
+  have hpair (x : lp (fun _ : ι => ℂ) p) :
+      f x = ∑ i, star (y i) * x i := by
+    rw [show f = lp.toDualCLM ℂ ι p q (star u) from rfl,
+      lp.toDualCLM_apply, tsum_fintype]
+    rfl
+  ext t
+  constructor
+  · rintro ⟨x, hx, rfl⟩
+    refine ⟨fun i => x i, ?_, ?_⟩
+    · intro h
+      apply hx
+      ext i
+      exact congrFun h i
+    · change (∑ i, star (y i) * x i).re / lpNorm p (fun i => x i) =
+        (f x).re / ‖x‖
+      rw [hpair x, lpNorm_eq_norm_finite_lp p x]
+  · rintro ⟨x, hx, rfl⟩
+    let v : lp (fun _ : ι => ℂ) p := ⟨x, Memℓp.all x⟩
+    refine ⟨v, ?_, ?_⟩
+    · intro h
+      apply hx
+      funext i
+      exact congrArg (fun w : lp (fun _ : ι => ℂ) p => w i) h
+    · change (f v).re / ‖v‖ = (∑ i, star (y i) * x i).re / lpNorm p x
+      rw [hpair v, ← lpNorm_eq_norm_finite_lp p v]
+
+end LpDualExercises
+
+section DualProjectionExercises
+
+open Set
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedSpace ℝ E] [IsScalarTower ℝ ℂ E] [FiniteDimensional ℂ E]
+
+/-- An additive metric projection in an essentially strictly convex norm
+as a continuous complex-linear projection. -/
+noncomputable def additiveMetricProjection (h : essentiallyStrictlyConvex E)
+    (L : Submodule ℂ E)
+    (hadd : ∀ x y, definition_1 L (x + y) = definition_1 L x + definition_1 L y) :
+    E →L[ℂ] E where
+  toLinearMap :=
+    { toFun := definition_1 L
+      map_add' := hadd
+      map_smul' := definition_1_smul h L }
+  cont := continuous_definition_1 h L
+
+/-- The continuous linear projection still takes the unique closest point. -/
+@[simp]
+theorem additiveMetricProjection_apply (h : essentiallyStrictlyConvex E)
+    (L : Submodule ℂ E) (hadd : ∀ x y, definition_1 L (x + y) =
+      definition_1 L x + definition_1 L y) (x : E) :
+    additiveMetricProjection h L hadd x = definition_1 L x := rfl
+
+/-- **Exercise 76** of [benIsrael2003generalized], Chapter 3.
+If the primal and dual norms are essentially strictly convex, the
+adjoint of an additive metric projection is the metric projection onto
+the annihilator of its zero subspace. Its own zero subspace is the
+annihilator of the original range. -/
+theorem exercise_76 (h : essentiallyStrictlyConvex E)
+    (hD : essentiallyStrictlyConvex (StrongDual ℂ E)) (L : Submodule ℂ E)
+    (hadd : ∀ x y, definition_1 L (x + y) = definition_1 L x + definition_1 L y) :
+    let P := additiveMetricProjection h L hadd
+    let N := P.ker
+    (∀ f : StrongDual ℂ E, f ∈ L.strongDualAnnihilator ↔
+      definition_1 N.strongDualAnnihilator f = 0) ∧
+    ∀ f : StrongDual ℂ E, definition_1 N.strongDualAnnihilator f = mixedNormDualAdjoint P f := by
+  intro P N
+  let : FiniteDimensional ℂ (StrongDual ℂ E) :=
+    (LinearMap.toContinuousLinearMap : Module.Dual ℂ E ≃ₗ[ℂ] StrongDual ℂ E).finiteDimensional
+  have hPme (x : E) : P x ∈ L := definition_1_mem L x
+  have hPfix {x : E} (hx : x ∈ L) : P x = x :=
+    (definition_1_eq_self_iff L x).mpr hx
+  have hproj (f : StrongDual ℂ E) :
+      definition_1 N.strongDualAnnihilator f = mixedNormDualAdjoint P f := by
+    let g := mixedNormDualAdjoint P f
+    let d := f - g
+    have hg : g ∈ N.strongDualAnnihilator := by
+      rw [Submodule.mem_strongDualAnnihilator]
+      intro x hx
+      change f (P x) = 0
+      rw [show P x = 0 from hx, map_zero]
+    apply (definition_1_eq_iff hD N.strongDualAnnihilator f g).mpr
+    refine ⟨hg, fun z hz => ?_⟩
+    change ‖d‖ ≤ ‖f - z‖
+    by_cases hd : d = 0
+    · simp [hd]
+    obtain ⟨x, hn, hdx⟩ := exercise_59_dual_attainment hd
+    have hx₀ : x ≠ 0 := by intro he; simp [he] at hn
+    have hn₀ : ‖d‖ ≠ 0 := norm_ne_zero_iff.mpr hd
+    let e : StrongDual ℂ E := ((‖d‖⁻¹ : ℝ) : ℂ) • d
+    have he₁ : ‖e‖ = 1 := by
+      change ‖((‖d‖⁻¹ : ℝ) : ℂ) • d‖ = 1
+      rw [norm_smul, Complex.norm_real, Real.norm_of_nonneg (by positivity), inv_mul_cancel₀ hn₀]
+    have hex : e x = (‖x‖ : ℂ) := by
+      change ((‖d‖⁻¹ : ℝ) : ℂ) * d x = (‖x‖ : ℂ)
+      rw [hdx, ← Complex.ofReal_mul, inv_mul_cancel₀ hn₀, hn]
+    have heL (y : E) (hy : y ∈ L) : e y = 0 := by
+      change ((‖d‖⁻¹ : ℝ) : ℂ) * (f y - f (P y)) = 0
+      rw [hPfix hy, sub_self, mul_zero]
+    have hxN : x ∈ N := (exercise_75 h L hx₀).mpr ⟨e, he₁, hex, heL⟩
+    have hzx : z x = 0 := (Submodule.mem_strongDualAnnihilator.mp hz) x hxN
+    have hval : (f - z) x = d x := by
+      change f x - z x = f x - f (P x)
+      rw [hzx, show P x = 0 from hxN, map_zero]
+    have hb := (f - z).le_opNorm x
+    rw [hval, hdx, Complex.norm_real, Real.norm_of_nonneg (norm_nonneg _), hn, mul_one] at hb
+    exact hb
+  refine ⟨fun f => ?_, hproj⟩
+  rw [hproj f, Submodule.mem_strongDualAnnihilator]
+  constructor
+  · intro hf
+    ext x
+    exact hf _ (hPme x)
+  · intro hf x hx
+    have he := congrArg (fun g : StrongDual ℂ E => g x) hf
+    change f (P x) = 0 at he
+    rwa [hPfix hx] at he
+
+end DualProjectionExercises
+
+section NormBodiesExercises
+
+open Set
+open scoped Pointwise
+open BenIsraelGreville.Chapter00 (IsVectorNorm)
+
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+  [NormedSpace ℝ E]
+
+/-- The origin is interior to a balanced convex body. -/
+theorem balancedGaugeConvexBody_zero_mem_interior {B : Set E}
+    (hB : IsGaugeConvexBody B) (hbal : Balanced ℂ B) : (0 : E) ∈ interior B := by
+  obtain ⟨x, hx⟩ := hB.interior_nonempty
+  by_cases hx₀ : x = 0
+  · rwa [hx₀] at hx
+  have hneg : -x ∈ insert 0 (interior B) := by
+    simpa only [neg_one_smul] using hbal.zero_insert_interior (-1 : ℂ)
+      (show ‖(-1 : ℂ)‖ ≤ 1 by simp)
+      (show (-1 : ℂ) • x ∈ (-1 : ℂ) • insert 0 (interior B) from
+        ⟨x, Set.mem_insert_of_mem _ hx, rfl⟩)
+  have hy : -x ∈ interior B :=
+    (Set.mem_insert_iff.mp hneg).resolve_left (neg_ne_zero.mpr hx₀)
+  have hmid := hB.convex.interior hx hy (show 0 ≤ (1 / 2 : ℝ) by norm_num)
+    (show 0 ≤ (1 / 2 : ℝ) by norm_num) (show (1 / 2 : ℝ) + 1 / 2 = 1 by norm_num)
+  simpa only [smul_neg, add_neg_cancel] using hmid
+
+variable [FiniteDimensional ℂ E] [IsScalarTower ℝ ℂ E]
+
+/-- A vector norm in finite dimension is precisely an absolutely
+homogeneous positive gauge. -/
+theorem isVectorNorm_iff_positiveGauge_absoluteHomogeneity (φ : E → ℝ) :
+    IsVectorNorm φ ↔ IsPositiveGauge φ ∧ ∀ (c : ℂ) (x : E), φ (c • x) = ‖c‖ * φ x := by
+  constructor
+  · intro h
+    let : FiniteDimensional ℝ E := FiniteDimensional.trans ℝ ℂ E
+    let p : Seminorm ℂ E := Seminorm.of φ h.triangle h.smul
+    have hcont : Continuous φ := (p.restrictScalars ℝ).continuous_of_finiteDimensional
+    refine ⟨⟨hcont, h.nonneg, fun x hx => (h.eq_zero_iff x).mp hx, ?_, h.triangle⟩, h.smul⟩
+    intro r x hr
+    rw [← IsScalarTower.algebraMap_smul ℂ r x]
+    change φ ((r : ℂ) • x) = r * φ x
+    rw [h.smul, Complex.norm_real, Real.norm_of_nonneg hr]
+  · rintro ⟨h, hh⟩
+    refine ⟨h.nonnegative, fun x => ⟨h.eq_zero x, ?_⟩, hh, h.subadditive⟩
+    rintro rfl
+    simpa only [zero_smul, norm_zero, zero_mul] using hh (0 : ℂ) (0 : E)
+
+/-- **Exercise 55** of [benIsrael2003generalized], Chapter 3.
+Vector norms correspond bijectively to balanced convex bodies, by the
+unit sublevel set in one direction and the Minkowski gauge in the other. -/
+noncomputable def exercise_55 :
+    {φ : E → ℝ // IsVectorNorm φ} ≃
+      {B : Set E // IsGaugeConvexBody B ∧ Balanced ℂ B} where
+  toFun φ := by
+    let : FiniteDimensional ℝ E := FiniteDimensional.trans ℝ ℂ E
+    have h := (isVectorNorm_iff_positiveGauge_absoluteHomogeneity φ.val).mp φ.property
+    refine ⟨{x | φ.val x ≤ 1}, (exercise_53_converse φ.val h.1).1, ?_⟩
+    intro c hc
+    rintro _ ⟨x, hx, rfl⟩
+    change φ.val (c • x) ≤ 1
+    rw [φ.property.smul]
+    exact (mul_le_of_le_one_right (norm_nonneg c) hx).trans hc
+  invFun B := by
+    have h₀ := balancedGaugeConvexBody_zero_mem_interior B.property.1 B.property.2
+    exact ⟨gauge B.val, (isVectorNorm_iff_positiveGauge_absoluteHomogeneity _).mpr
+      ⟨(exercise_53_gauge B.property.1 h₀).1, (exercise_54 B.property.1 h₀).mp B.property.2⟩⟩
+  left_inv φ := by
+    apply Subtype.ext
+    exact positiveGauge_gauge_eq _
+      ((isVectorNorm_iff_positiveGauge_absoluteHomogeneity _).mp φ.property).1
+  right_inv B := by
+    apply Subtype.ext
+    exact (exercise_53_gauge B.property.1
+      (balancedGaugeConvexBody_zero_mem_interior B.property.1 B.property.2)).2.1.symm
+
+end NormBodiesExercises
+
+section PolarGaugeExercises
+
+open Set ConvexAnalysis
+open scoped Pointwise
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
+
+/-- The polar defined by the real part of the complex Hermitian pairing, Equation (138). -/
+def hermitianPolar (B : Set E) : Set E := {y | ∀ x ∈ B, (inner ℂ y x).re ≤ 1}
+
+private theorem hermitianPolar_eq_polarSet (B : Set E) :
+    letI : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+    hermitianPolar B = polarSet (innerₗ E) B := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  ext y
+  change (∀ x ∈ B, (inner ℝ y x) ≤ 1) ↔ ∀ x ∈ B, (innerₗ E) x y ≤ 1
+  simp only [innerₗ_apply_apply]
+  exact forall_congr' fun x => by rw [real_inner_comm y x]
+
+/-- Equilibrated bodies have equilibrated polars. -/
+theorem hermitianPolar_balanced {B : Set E} (hB : Balanced ℂ B) :
+    Balanced ℂ (hermitianPolar B) := by
+  intro c hc
+  rintro _ ⟨y, hy, rfl⟩
+  intro x hx
+  have hcx := hB.smul_mem (by simpa only [norm_star] using hc : ‖star c‖ ≤ 1) hx
+  have he := hy (star c • x) hcx
+  change (inner ℂ (c • y) x).re ≤ 1
+  simpa only [inner_smul_right, inner_smul_left, starRingEnd_apply] using he
+
+/-- For every bounded set with zero in its interior, the polar is a convex
+body containing the origin in its interior. -/
+theorem hermitianPolar_isGaugeConvexBody {B : Set E} (hb : Bornology.IsBounded B)
+    (h₀ : (0 : E) ∈ interior B) :
+    IsGaugeConvexBody (hermitianPolar B) ∧ (0 : E) ∈ interior (hermitianPolar B) := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  obtain ⟨r, hr, hrB⟩ := Metric.mem_nhds_iff.mp (mem_interior_iff_mem_nhds.mp h₀)
+  obtain ⟨R, hR, hupper⟩ := hb.exists_pos_norm_le
+  have hP₀ : (0 : E) ∈ interior (hermitianPolar B) := by
+    refine mem_interior_iff_mem_nhds.mpr (Metric.mem_nhds_iff.mpr ⟨R⁻¹, inv_pos.mpr hR, ?_⟩)
+    intro y hy x hx
+    have hy' : ‖y‖ < R⁻¹ := by simpa only [Metric.mem_ball, dist_zero_right] using hy
+    calc
+      _ ≤ ‖y‖ * ‖x‖ := re_inner_le_norm (𝕜 := ℂ) _ _
+      _ ≤ ‖y‖ * R := mul_le_mul_of_nonneg_left (hupper _ hx) (norm_nonneg _)
+      _ ≤ R⁻¹ * R := mul_le_mul_of_nonneg_right hy'.le hR.le
+      _ = 1 := inv_mul_cancel₀ hR.ne'
+  refine ⟨⟨?_, ?_, ?_, ⟨0, hP₀⟩⟩, hP₀⟩
+  · rw [hermitianPolar_eq_polarSet]
+    exact convex_polarSet _ _
+  · rw [hermitianPolar_eq_polarSet]
+    exact isClosed_polarSet
+  · refine isBounded_iff_forall_norm_le.mpr ⟨(r / 2)⁻¹, ?_⟩
+    intro y hy
+    by_cases hy₀ : y = 0
+    · simpa [hy₀] using inv_nonneg.mpr (half_pos hr).le
+    have hny : 0 < ‖y‖ := norm_pos_iff.mpr hy₀
+    let t : ℝ := (r / 2) / ‖y‖
+    have ht : 0 < t := div_pos (half_pos hr) hny
+    have hty : t * ‖y‖ = r / 2 := div_mul_cancel₀ _ hny.ne'
+    have hmem : t • y ∈ B := by
+      apply hrB
+      rw [Metric.mem_ball, dist_zero_right, norm_smul, Real.norm_eq_abs, abs_of_pos ht, hty]
+      exact half_lt_self hr
+    have hyb := hy (t • y) hmem
+    change inner ℝ y (t • y) ≤ 1 at hyb
+    rw [real_inner_smul_right, real_inner_self_eq_norm_mul_norm, ← mul_assoc, hty] at hyb
+    rw [← one_div]
+    exact (le_div_iff₀ (half_pos hr)).mpr (by simpa only [mul_comm] using hyb)
+
+/-- A closed convex set containing zero is its Hermitian bipolar. -/
+theorem hermitianPolar_polar {B : Set E} [CompleteSpace E]
+    (hc : Convex ℝ B) (hb : IsClosed B) (h₀ : (0 : E) ∈ B) :
+    hermitianPolar (hermitianPolar B) = B := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  rw [hermitianPolar_eq_polarSet, hermitianPolar_eq_polarSet]
+  simpa only [flip_eq_self] using polarSet_polarSet (B := innerₗ E) hc hb h₀
+
+private theorem sSup_eq_zero_of_subset_singleton_zero {S : Set ℝ}
+    (h : S ⊆ {0}) : sSup S = 0 := by
+  by_cases hS : S.Nonempty
+  · obtain ⟨x, hx⟩ := hS
+    have hx₀ : x = 0 := h hx
+    rw [Set.Subset.antisymm h (by simpa only [Set.singleton_subset_iff, ← hx₀] using hx),
+      csSup_singleton]
+  · rw [Set.not_nonempty_iff_eq_empty.mp hS, Real.sSup_empty]
+
+/-- The Hermitian conjugate of a gauge, Equation (130). -/
+noncomputable def hermitianDualGauge (φ : E → ℝ) (y : E) : ℝ :=
+  sSup ((fun x => (inner ℂ y x).re / φ x) '' {x | x ≠ 0})
+
+/-- The dual gauge can be computed as the support value of the primal
+unit sublevel set. Only positivity and positive homogeneity are needed
+for this identity. -/
+theorem hermitianDualGauge_eq_sSup_unitSublevel (φ : E → ℝ) (hzero : φ 0 = 0)
+    (hpos : ∀ x ≠ 0, 0 < φ x)
+    (hhom : ∀ (t : ℝ) (x : E), 0 ≤ t → φ (t • x) = t * φ x)
+    (hb : Bornology.IsBounded {x | φ x ≤ 1}) (y : E) :
+    hermitianDualGauge φ y = sSup ((fun x => (inner ℂ y x).re) '' {x | φ x ≤ 1}) := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  let S := (fun x => inner ℝ y x / φ x) '' {x | x ≠ 0}
+  let T := (fun x => inner ℝ y x) '' {x | φ x ≤ 1}
+  change sSup S = sSup T
+  have hnorm (x : E) (hx : x ≠ 0) : (φ x)⁻¹ • x ∈ {z | φ z ≤ 1} := by
+    change φ ((φ x)⁻¹ • x) ≤ 1
+    rw [hhom _ _ (inv_nonneg.mpr (hpos x hx).le), inv_mul_cancel₀ (hpos x hx).ne']
+  have hST : S ⊆ T := by
+    rintro _ ⟨x, hx, rfl⟩
+    refine ⟨_, hnorm x hx, ?_⟩
+    change inner ℝ y ((φ x)⁻¹ • x) = inner ℝ y x / φ x
+    rw [real_inner_smul_right, div_eq_inv_mul]
+  obtain ⟨R, _, hR⟩ := hb.exists_pos_norm_le
+  have hbT : BddAbove T := by
+    refine ⟨‖y‖ * R, ?_⟩
+    rintro _ ⟨x, hx, rfl⟩
+    exact (re_inner_le_norm (𝕜 := ℂ) y x).trans
+      (mul_le_mul_of_nonneg_left (hR x hx) (norm_nonneg _))
+  have hbS := hbT.mono hST
+  have hT : T.Nonempty := ⟨0, 0, by simp [hzero], inner_zero_right _⟩
+  by_cases hy : y = 0
+  · have he : sSup S = 0 := sSup_eq_zero_of_subset_singleton_zero (by
+      rintro _ ⟨x, hx, rfl⟩
+      simp [hy])
+    have hf : sSup T = 0 := sSup_eq_zero_of_subset_singleton_zero (by
+      rintro _ ⟨x, hx, rfl⟩
+      simp [hy])
+    rw [he, hf]
+  have hS : S.Nonempty := ⟨_, y, hy, rfl⟩
+  have hn : 0 ≤ sSup S := le_trans
+    (div_nonneg (real_inner_self_nonneg) (hpos y hy).le)
+    (le_csSup hbS (show inner ℝ y y / φ y ∈ S from ⟨y, hy, rfl⟩))
+  refine le_antisymm (csSup_le_csSup hbT hS hST) (csSup_le hT ?_)
+  rintro _ ⟨x, hx, rfl⟩
+  by_cases h : 0 ≤ inner ℝ y x
+  · by_cases hx₀ : x = 0
+    · simpa [hx₀] using hn
+    exact (le_div_iff₀ (hpos x hx₀)).mpr
+      (mul_le_of_le_one_right h hx) |>.trans (le_csSup hbS ⟨x, hx₀, rfl⟩)
+  · exact (le_of_not_ge h).trans hn
+
+/-- The conjugate of a gauge equals the Minkowski gauge of the polar
+of its unit sublevel set. The sublevel set need not be convex. -/
+theorem hermitianDualGauge_eq_gauge_polar (φ : E → ℝ) (hzero : φ 0 = 0)
+    (hpos : ∀ x ≠ 0, 0 < φ x)
+    (hhom : ∀ (t : ℝ) (x : E), 0 ≤ t → φ (t • x) = t * φ x)
+    (hb : Bornology.IsBounded {x | φ x ≤ 1})
+    (h₀ : (0 : E) ∈ interior {x | φ x ≤ 1}) :
+    hermitianDualGauge φ = gauge (hermitianPolar {x | φ x ≤ 1}) := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  let B := {x : E | φ x ≤ 1}
+  obtain ⟨hP, hP₀⟩ := hermitianPolar_isGaugeConvexBody hb h₀
+  obtain ⟨hg, he, _⟩ := exercise_53_gauge hP hP₀
+  obtain ⟨R, _, hR⟩ := hb.exists_pos_norm_le
+  funext y
+  rw [hermitianDualGauge_eq_sSup_unitSublevel φ hzero hpos hhom hb]
+  let S := (fun x => inner ℝ y x) '' B
+  change sSup S = gauge (hermitianPolar B) y
+  have hS : S.Nonempty := ⟨0, 0, by simp [B, hzero], inner_zero_right _⟩
+  have hbS : BddAbove S := by
+    refine ⟨‖y‖ * R, ?_⟩
+    rintro _ ⟨x, hx, rfl⟩
+    exact (re_inner_le_norm (𝕜 := ℂ) y x).trans
+      (mul_le_mul_of_nonneg_left (hR x hx) (norm_nonneg _))
+  by_cases hy : y = 0
+  · rw [hy, gauge_zero]
+    apply sSup_eq_zero_of_subset_singleton_zero
+    rintro _ ⟨x, hx, rfl⟩
+    simp [hy]
+  let g := gauge (hermitianPolar B) y
+  have hgpos : 0 < g := lt_of_le_of_ne (hg.nonnegative y)
+    (Ne.symm fun h => hy (hg.eq_zero y h))
+  have hbound : sSup S ≤ g := by
+    apply csSup_le hS
+    rintro _ ⟨x, hx, rfl⟩
+    have hm : g⁻¹ • y ∈ hermitianPolar B := by
+      rw [he]
+      change gauge (hermitianPolar B) (g⁻¹ • y) ≤ 1
+      rw [hg.homogeneity _ _ (inv_nonneg.mpr hgpos.le), inv_mul_cancel₀ hgpos.ne']
+    have hh := hm x hx
+    change inner ℝ (g⁻¹ • y) x ≤ 1 at hh
+    simpa only [real_inner_smul_left, inv_mul_le_iff₀ hgpos, mul_one] using hh
+  refine le_antisymm hbound ?_
+  have hs : 0 < sSup S := by
+    have hh := le_csSup hbS
+      (show inner ℝ y ((φ y)⁻¹ • y) ∈ S from
+        ⟨_, by
+          change φ ((φ y)⁻¹ • y) ≤ 1
+          rw [hhom _ _ (inv_nonneg.mpr (hpos y hy).le), inv_mul_cancel₀ (hpos y hy).ne'], rfl⟩)
+    rw [real_inner_smul_right, real_inner_self_eq_norm_mul_norm] at hh
+    exact (mul_pos (inv_pos.mpr (hpos y hy))
+      (mul_pos (norm_pos_iff.mpr hy) (norm_pos_iff.mpr hy))).trans_le hh
+  have hm : (sSup S)⁻¹ • y ∈ hermitianPolar B := by
+    intro x hx
+    change inner ℝ ((sSup S)⁻¹ • y) x ≤ 1
+    rw [real_inner_smul_left, inv_mul_le_iff₀ hs, mul_one]
+    exact le_csSup hbS ⟨x, hx, rfl⟩
+  exact gauge_le_of_mem hs.le ⟨_, hm, smul_inv_smul₀ hs.ne' y⟩
+
+/-- **Exercise 57(a)–(d)** of [benIsrael2003generalized], Chapter 3.
+The Hermitian polar of an equilibrated convex body is equilibrated,
+polarity is involutive, and the corresponding norms are dual to one another. -/
+theorem exercise_57 [CompleteSpace E] {B : Set E} (hB : IsGaugeConvexBody B)
+    (hbal : Balanced ℂ B) :
+    IsGaugeConvexBody (hermitianPolar B) ∧ Balanced ℂ (hermitianPolar B) ∧
+    hermitianPolar (hermitianPolar B) = B ∧
+    hermitianDualGauge (gauge B) = gauge (hermitianPolar B) ∧
+    hermitianDualGauge (hermitianDualGauge (gauge B)) = gauge B := by
+  have h₀ := balancedGaugeConvexBody_zero_mem_interior hB hbal
+  obtain ⟨hP, hP₀⟩ := hermitianPolar_isGaugeConvexBody hB.bounded h₀
+  have hPP := hermitianPolar_polar hB.convex hB.closed (interior_subset h₀)
+  have key {U : Set E} (hU : IsGaugeConvexBody U) (hu : (0 : E) ∈ interior U) :
+      hermitianDualGauge (gauge U) = gauge (hermitianPolar U) := by
+    obtain ⟨hg, he, _⟩ := exercise_53_gauge hU hu
+    rw [hermitianDualGauge_eq_gauge_polar (gauge U) gauge_zero
+      (fun x hx => lt_of_le_of_ne (hg.nonnegative x) (Ne.symm fun h => hx (hg.eq_zero x h)))
+      hg.homogeneity (he ▸ hU.bounded) (he ▸ hu), ← he]
+  exact ⟨hP, hermitianPolar_balanced hbal, hPP, key hB h₀, by
+    rw [key hB h₀, key hP hP₀, hPP]⟩
+
+end PolarGaugeExercises
+
+section HyperplaneResidualExercises
+
+section
+
+variable {E F : Type*} [AddCommGroup E] [Module ℂ E]
+  [NormedAddCommGroup F] [NormedSpace ℂ F]
+
+/-- With residual convention $r=b-Ax$, the possible residuals for a
+range hyperplane $\ker f$ are exactly the solutions of $f(r)=f(b)$. -/
+theorem exists_residual_eq_iff_of_range_eq_ker (A : E →ₗ[ℂ] F) (f : StrongDual ℂ F)
+    (hA : A.range = f.ker) (b r : F) :
+    (∃ x : E, b - A x = r) ↔ f r = f b := by
+  constructor
+  · rintro ⟨x, rfl⟩
+    have hx : A x ∈ f.ker := hA ▸ LinearMap.mem_range_self A x
+    have hx₀ : f (A x) = 0 := LinearMap.mem_ker.mp hx
+    rw [map_sub, hx₀, sub_zero]
+  · intro hr
+    have hm : b - r ∈ f.ker := by
+      change f (b - r) = 0
+      rw [map_sub, hr, sub_self]
+    obtain ⟨x, hx⟩ := LinearMap.mem_range.mp (hA.symm ▸ hm)
+    exact ⟨x, by rw [hx, sub_sub_cancel]⟩
+
+/-- The lower bound for residuals constrained by a nonzero functional. -/
+theorem norm_residual_lower_bound_of_eval_eq {f : StrongDual ℂ F} (hf : f ≠ 0)
+    {r b : F} (hr : f r = f b) : ‖f b‖ / ‖f‖ ≤ ‖r‖ := by
+  apply (div_le_iff₀ (norm_pos_iff.mpr hf)).mpr
+  rw [← hr, mul_comm]
+  exact f.le_opNorm r
+
+variable [FiniteDimensional ℂ F]
+
+/-- **Exercise 61** of [benIsrael2003generalized], Chapter 3.
+For a codimension-one range specified by its nonzero dual normal $f$,
+choose a unit vector $v$ with $f(v)=\|f\|$. The optimal residual is
+$(f(b)/\|f\|)v$. Any inner inverse sends $b-r$ to a minimizing solution.
+The error is the modulus of the prescribed pairing divided by the dual norm. -/
+theorem exercise_61 (A : E →ₗ[ℂ] F) (G : F →ₗ[ℂ] E) (f : StrongDual ℂ F) (hf : f ≠ 0)
+    (hA : A.range = f.ker) (hG : ∀ x, A (G (A x)) = A x) (b : F) :
+    ∃ v : F, ‖v‖ = 1 ∧ f v = (‖f‖ : ℂ) ∧
+      let r := (f b / (‖f‖ : ℂ)) • v
+      b - A (G (b - r)) = r ∧ ‖r‖ = ‖f b‖ / ‖f‖ ∧
+        ∀ x : E, ‖r‖ ≤ ‖b - A x‖ := by
+  obtain ⟨v, hv, hfv⟩ := exercise_59_dual_attainment hf
+  refine ⟨v, hv, hfv, ?_⟩
+  dsimp only
+  let r := (f b / (‖f‖ : ℂ)) • v
+  change b - A (G (b - r)) = r ∧ ‖r‖ = ‖f b‖ / ‖f‖ ∧
+    ∀ x : E, ‖r‖ ≤ ‖b - A x‖
+  have hd : (‖f‖ : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr (norm_ne_zero_iff.mpr hf)
+  have hr : f r = f b := by
+    rw [show r = (f b / (‖f‖ : ℂ)) • v from rfl, map_smul, hfv, smul_eq_mul,
+      div_mul_cancel₀ _ hd]
+  obtain ⟨x, hx⟩ := (exists_residual_eq_iff_of_range_eq_ker A f hA b r).mpr hr
+  have hAx : A x = b - r := by rw [← hx, sub_sub_cancel]
+  have he : ‖r‖ = ‖f b‖ / ‖f‖ := by
+    rw [show r = (f b / (‖f‖ : ℂ)) • v from rfl, norm_smul, hv, mul_one, norm_div,
+      Complex.norm_real, Real.norm_of_nonneg (norm_nonneg _)]
+  refine ⟨?_, he, fun y => he.trans_le ?_⟩
+  · rw [← hAx, hG, hx]
+  · exact norm_residual_lower_bound_of_eval_eq hf
+      ((exists_residual_eq_iff_of_range_eq_ker A f hA b _).mp ⟨y, rfl⟩)
+
+end
+
+end HyperplaneResidualExercises
+
+section ConjugateGaugeExercises
+
+open Set
+open scoped Topology
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
+
+/-- Conditions (G1)–(G3). Subadditivity is unnecessary for taking the conjugate. -/
+structure IsPositiveHomogeneousGauge (φ : E → ℝ) : Prop where
+  continuous : Continuous φ
+  nonnegative : ∀ x, 0 ≤ φ x
+  eq_zero : ∀ x, φ x = 0 → x = 0
+  homogeneity : ∀ (r : ℝ) (x : E), 0 ≤ r → φ (r • x) = r * φ x
+
+variable {φ : E → ℝ}
+
+private theorem IsPositiveHomogeneousGauge.zero (hφ : IsPositiveHomogeneousGauge φ) :
+    φ 0 = 0 := by simpa only [zero_smul, zero_mul] using hφ.homogeneity 0 (0 : E) le_rfl
+
+private theorem IsPositiveHomogeneousGauge.pos (hφ : IsPositiveHomogeneousGauge φ)
+    {x : E} (hx : x ≠ 0) : 0 < φ x :=
+  lt_of_le_of_ne (hφ.nonnegative x) (Ne.symm fun he => hx (hφ.eq_zero x he))
+
+private theorem IsPositiveHomogeneousGauge.normalize (hφ : IsPositiveHomogeneousGauge φ)
+    {x : E} (hx : x ≠ 0) : φ ((φ x)⁻¹ • x) = 1 := by
+  rw [hφ.homogeneity _ _ (inv_nonneg.mpr (hφ.nonnegative x)),
+    inv_mul_cancel₀ (hφ.pos hx).ne']
+
+private theorem positiveHomogeneousGauge_of_positiveGauge (hφ : IsPositiveGauge φ) :
+    IsPositiveHomogeneousGauge φ :=
+  ⟨hφ.continuous, hφ.nonnegative, hφ.eq_zero, hφ.homogeneity⟩
+
+private theorem IsPositiveHomogeneousGauge.interior_unitSublevel
+    (hφ : IsPositiveHomogeneousGauge φ) : (0 : E) ∈ interior {x | φ x ≤ 1} := by
+  have hN : {x | φ x < 1} ∈ 𝓝 (0 : E) :=
+    hφ.continuous.continuousAt.eventually_lt continuousAt_const
+      (by simpa only [hφ.zero] using (zero_lt_one : (0 : ℝ) < 1))
+  exact mem_interior_iff_mem_nhds.mpr
+    (Filter.mem_of_superset hN fun x hx => (show φ x < 1 from hx).le)
+
+variable [FiniteDimensional ℂ E]
+
+private theorem IsPositiveHomogeneousGauge.isBounded_unitSublevel
+    (hφ : IsPositiveHomogeneousGauge φ) : Bornology.IsBounded {x | φ x ≤ 1} := by
+  let : ProperSpace E := FiniteDimensional.proper ℂ E
+  by_cases hE : Nontrivial E
+  · let : Nontrivial E := hE
+    obtain ⟨w, hw⟩ := exists_ne (0 : E)
+    have hnorm (x : E) (hx : x ≠ 0) : ‖x‖⁻¹ • x ∈ Metric.sphere (0 : E) 1 := by
+      rw [Metric.mem_sphere, dist_zero_right, norm_smul, Real.norm_eq_abs,
+        abs_of_nonneg (inv_nonneg.mpr (norm_nonneg _)), inv_mul_cancel₀ (norm_ne_zero_iff.mpr hx)]
+    obtain ⟨v, hv, hmin⟩ := (isCompact_sphere (0 : E) 1).exists_isMinOn
+      ⟨_, hnorm w hw⟩ hφ.continuous.continuousOn
+    have hv₀ : v ≠ 0 := by intro he; simp [he] at hv
+    have hp := hφ.pos hv₀
+    refine isBounded_iff_forall_norm_le.mpr ⟨(φ v)⁻¹, fun x hx => ?_⟩
+    by_cases hx₀ : x = 0
+    · simpa [hx₀] using inv_nonneg.mpr hp.le
+    have hn := norm_pos_iff.mpr hx₀
+    have hle := hmin (hnorm x hx₀)
+    change φ v ≤ φ (‖x‖⁻¹ • x) at hle
+    rw [hφ.homogeneity _ _ (inv_nonneg.mpr hn.le), ← div_eq_inv_mul] at hle
+    rw [← one_div, le_div_iff₀ hp, mul_comm]
+    exact ((le_div_iff₀ hn).mp hle).trans hx
+  · let : Subsingleton E := not_nontrivial_iff_subsingleton.mp hE
+    exact isBounded_iff_forall_norm_le.mpr ⟨0, fun x _ => by simp [Subsingleton.elim x 0]⟩
+
+/-- **Exercise 52(a)** of [benIsrael2003generalized], Chapter 3.
+The dual ratio attains its supremum on any positively homogeneous
+normalization sphere, in particular the primal gauge sphere and the
+coordinate $ell^1$ sphere. -/
+theorem exercise_52_dual_attainment [Nontrivial E] (φ ψ : E → ℝ)
+    (hφ : IsPositiveHomogeneousGauge φ) (hψ : IsPositiveHomogeneousGauge ψ) (y : E) :
+    ∃ x : E, ψ x = 1 ∧
+      (inner ℂ y x).re / φ x = hermitianDualGauge φ y ∧
+      ∀ z, ψ z = 1 → (inner ℂ y z).re / φ z ≤ (inner ℂ y x).re / φ x := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  let G := {x | ψ x = 1}
+  let f := fun x : E => inner ℝ y x / φ x
+  have hclosed : IsClosed G := isClosed_eq hψ.continuous continuous_const
+  let : ProperSpace E := FiniteDimensional.proper ℂ E
+  have hcompact : IsCompact G :=
+    (Metric.isCompact_iff_isClosed_bounded.mpr ⟨hclosed, hψ.isBounded_unitSublevel.subset
+      (fun x hx => (show ψ x = 1 from hx).le)⟩)
+  obtain ⟨u, hu⟩ := exists_ne (0 : E)
+  have hne : G.Nonempty := ⟨_, hψ.normalize hu⟩
+  have hz (x : E) (hx : x ∈ G) : x ≠ 0 := by
+    intro he
+    change ψ x = 1 at hx
+    simp [he, hψ.zero] at hx
+  have hcont : ContinuousOn f G :=
+    (continuous_const.inner continuous_id).continuousOn.div hφ.continuous.continuousOn
+      (fun x hx => (hφ.pos (hz x hx)).ne')
+  obtain ⟨x, hx, hmax⟩ := hcompact.exists_isMaxOn hne hcont
+  let S := f '' {z : E | z ≠ 0}
+  change ∃ x : E, ψ x = 1 ∧ f x = sSup S ∧ ∀ z, ψ z = 1 → f z ≤ f x
+  have hbound : ∀ r ∈ S, r ≤ f x := by
+    rintro _ ⟨z, hz, rfl⟩
+    have hm := hmax (show (ψ z)⁻¹ • z ∈ G from hψ.normalize hz)
+    have he : f ((ψ z)⁻¹ • z) = f z := by
+      have hp := inv_pos.mpr (hψ.pos hz)
+      dsimp [f]
+      rw [real_inner_smul_right, hφ.homogeneity _ _ hp.le,
+        mul_div_mul_left _ _ hp.ne']
+    exact he ▸ hm
+  refine ⟨x, hx, le_antisymm ?_ (csSup_le ⟨_, x, hz x hx, rfl⟩ hbound), ?_⟩
+  · exact le_csSup ⟨_, hbound⟩ ⟨x, hz x hx, rfl⟩
+  · exact fun z hz => hmax hz
+
+/-- **Exercise 52(b)** of [benIsrael2003generalized], Chapter 3.
+The conjugate of a positive homogeneous gauge is a subadditive positive gauge. -/
+theorem exercise_52_dual_gauge (φ : E → ℝ) (hφ : IsPositiveHomogeneousGauge φ) :
+    IsPositiveGauge (hermitianDualGauge φ) := by
+  have hP := hermitianPolar_isGaugeConvexBody
+    hφ.isBounded_unitSublevel hφ.interior_unitSublevel
+  rw [hermitianDualGauge_eq_gauge_polar φ hφ.zero (fun _ => hφ.pos)
+    hφ.homogeneity hφ.isBounded_unitSublevel hφ.interior_unitSublevel]
+  exact (exercise_53_gauge hP.1 hP.2).1
+
+omit [FiniteDimensional ℂ E] in
+/-- **Exercise 52(c)** of [benIsrael2003generalized], Chapter 3.
+Every unitary symmetry of the primal gauge is a symmetry of its conjugate. -/
+theorem exercise_52_dual_invariant (φ : E → ℝ) (U : E ≃ₗᵢ[ℂ] E)
+    (hU : ∀ x, φ (U x) = φ x) (y : E) :
+    hermitianDualGauge φ (U y) = hermitianDualGauge φ y := by
+  rw [hermitianDualGauge, hermitianDualGauge]
+  congr 1
+  ext a
+  constructor
+  · rintro ⟨x, hx, rfl⟩
+    refine ⟨U.symm x, ?_, ?_⟩
+    · exact fun he => hx (by simpa using congrArg U he)
+    · change (inner ℂ y (U.symm x)).re / φ (U.symm x) = (inner ℂ (U y) x).re / φ x
+      have he := hU (U.symm x)
+      rw [U.apply_symm_apply] at he
+      rw [← he, ← U.inner_map_map, U.apply_symm_apply]
+  · rintro ⟨x, hx, rfl⟩
+    exact ⟨U x, fun he => hx (U.injective (he.trans U.map_zero.symm)),
+      by
+        change (inner ℂ (U y) (U x)).re / φ (U x) = (inner ℂ y x).re / φ x
+        rw [U.inner_map_map, hU]⟩
+
+/-- **Exercise 52(d)** of [benIsrael2003generalized], Chapter 3.
+An ordinary positive gauge agrees with its double conjugate. -/
+theorem exercise_52_dual_dual (φ : E → ℝ) (hφ : IsPositiveGauge φ) :
+    hermitianDualGauge (hermitianDualGauge φ) = φ := by
+  let : FiniteDimensional ℝ E := FiniteDimensional.trans ℝ ℂ E
+  let B := {x | φ x ≤ 1}
+  obtain ⟨hB, h₀, he⟩ := exercise_53_converse φ hφ
+  have form (ψ : E → ℝ) (hψ : IsPositiveGauge ψ) :=
+    hermitianDualGauge_eq_gauge_polar ψ (positiveHomogeneousGauge_of_positiveGauge hψ).zero
+      (fun _ => (positiveHomogeneousGauge_of_positiveGauge hψ).pos)
+      hψ.homogeneity (positiveHomogeneousGauge_of_positiveGauge hψ).isBounded_unitSublevel
+      (positiveHomogeneousGauge_of_positiveGauge hψ).interior_unitSublevel
+  obtain ⟨hP, hP₀⟩ := hermitianPolar_isGaugeConvexBody hB.bounded h₀
+  have hPset := (exercise_53_gauge hP hP₀).2.1
+  rw [form _ (exercise_52_dual_gauge φ (positiveHomogeneousGauge_of_positiveGauge hφ)),
+    form _ hφ, ← hPset, hermitianPolar_polar hB.convex hB.closed (interior_subset h₀)]
+  exact he
+
+end
+
+end ConjugateGaugeExercises
+
+section CoordinateGaugeExercises
+
+open Set Finset
+open scoped Matrix
+open BenIsraelGreville.Chapter00 (IsVectorNorm)
+
+variable {ι : Type*} [Fintype ι]
+
+/-- Condition (G5) of Exercise 52, invariance under coordinate permutations. -/
+def IsPermutationInvariantGauge (φ : EuclideanSpace ℂ ι → ℝ) : Prop :=
+  ∀ (σ : ι ≃ ι) (x : EuclideanSpace ℂ ι),
+    φ (WithLp.toLp 2 fun i => x (σ i)) = φ x
+
+/-- Condition (G6) of Exercise 52, invariance under coordinate phases. -/
+def IsPhaseInvariantGauge (φ : EuclideanSpace ℂ ι → ℝ) : Prop :=
+  ∀ (ζ : ι → ℂ), (∀ i, ‖ζ i‖ = 1) → ∀ (x : EuclideanSpace ℂ ι),
+    φ (WithLp.toLp 2 fun i => ζ i * x i) = φ x
+
+private noncomputable def scalarPhaseLinearIsometry (ζ : ℂ) (hζ : ‖ζ‖ = 1) :
+    ℂ ≃ₗᵢ[ℂ] ℂ where
+  toFun x := ζ * x
+  invFun x := ζ⁻¹ * x
+  left_inv x := by
+    change ζ⁻¹ * (ζ * x) = x
+    rw [← mul_assoc, inv_mul_cancel₀ (by intro h; simp [h] at hζ), one_mul]
+  right_inv x := by
+    change ζ * (ζ⁻¹ * x) = x
+    rw [← mul_assoc, mul_inv_cancel₀ (by intro h; simp [h] at hζ), one_mul]
+  map_add' x y := mul_add _ _ _
+  map_smul' c x := by simp only [smul_eq_mul, RingHom.id_apply]; ring
+  norm_map' x := by
+    change ‖ζ * x‖ = ‖x‖
+    rw [norm_mul, hζ, one_mul]
+
+/-- **Exercise 52(c)** of [benIsrael2003generalized], Chapter 3.
+Coordinate permutation symmetry passes to the conjugate gauge. -/
+theorem exercise_52_dual_permutation (φ : EuclideanSpace ℂ ι → ℝ)
+    (hφ : IsPermutationInvariantGauge φ) :
+    IsPermutationInvariantGauge (hermitianDualGauge φ) := by
+  intro σ x
+  exact exercise_52_dual_invariant φ
+    (LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ σ.symm) (hφ σ) x
+
+/-- **Exercise 52(c)** of [benIsrael2003generalized], Chapter 3.
+Coordinate phase symmetry passes to the conjugate gauge. -/
+theorem exercise_52_dual_phase (φ : EuclideanSpace ℂ ι → ℝ)
+    (hφ : IsPhaseInvariantGauge φ) :
+    IsPhaseInvariantGauge (hermitianDualGauge φ) := by
+  intro ζ hζ x
+  exact exercise_52_dual_invariant φ
+    (LinearIsometryEquiv.piLpCongrRight 2 fun i => scalarPhaseLinearIsometry (ζ i) (hζ i))
+    (hφ ζ hζ) x
+
+/-- **Exercise 56** of [benIsrael2003generalized], Chapter 3.
+Unitary invariance implies the two symmetries required of a symmetric gauge. -/
+theorem exercise_56 (φ : EuclideanSpace ℂ ι → ℝ)
+    (hφ : ∀ (U : EuclideanSpace ℂ ι ≃ₗᵢ[ℂ] EuclideanSpace ℂ ι) x, φ (U x) = φ x) :
+    IsPermutationInvariantGauge φ ∧ IsPhaseInvariantGauge φ := by
+  exact ⟨fun σ => hφ (LinearIsometryEquiv.piLpCongrLeft 2 ℂ ℂ σ.symm),
+    fun ζ hζ => hφ (LinearIsometryEquiv.piLpCongrRight 2 fun i =>
+      scalarPhaseLinearIsometry (ζ i) (hζ i))⟩
+
+/-- The sum of coordinate moduli, used for the sphere in Equation (131b). -/
+noncomputable def coordinateL1Gauge (x : EuclideanSpace ℂ ι) : ℝ := ∑ i, ‖x i‖
+
+/-- The coordinate $ell^1$ gauge is a vector norm. -/
+theorem coordinateL1Gauge_isVectorNorm :
+    IsVectorNorm (coordinateL1Gauge : EuclideanSpace ℂ ι → ℝ) := by
+  refine ⟨fun x => sum_nonneg fun i _ => norm_nonneg (x i), ?_, ?_, ?_⟩
+  · intro x
+    constructor
+    · intro hx
+      ext i
+      exact norm_eq_zero.mp ((sum_eq_zero_iff_of_nonneg fun i _ => norm_nonneg (x i)).mp
+        hx i (mem_univ _))
+    · rintro rfl
+      simp [coordinateL1Gauge]
+  · intro c x
+    simp only [coordinateL1Gauge, PiLp.smul_apply, norm_smul, Finset.mul_sum]
+  · intro x y
+    unfold coordinateL1Gauge
+    rw [← Finset.sum_add_distrib]
+    exact Finset.sum_le_sum fun i _ => norm_add_le (x i) (y i)
+
+/-- **Exercise 52(a)** of [benIsrael2003generalized], Chapter 3.
+The conjugate ratio attains its supremum on the coordinate $ell^1$ sphere. -/
+theorem exercise_52_dual_attainment_coordinateL1 [Nonempty ι]
+    (φ : EuclideanSpace ℂ ι → ℝ) (hφ : IsPositiveHomogeneousGauge φ)
+    (y : EuclideanSpace ℂ ι) :
+    ∃ x : EuclideanSpace ℂ ι, coordinateL1Gauge x = 1 ∧
+      (inner ℂ y x).re / φ x = hermitianDualGauge φ y ∧
+      ∀ z, coordinateL1Gauge z = 1 → (inner ℂ y z).re / φ z ≤ (inner ℂ y x).re / φ x := by
+  have h := ((isVectorNorm_iff_positiveGauge_absoluteHomogeneity _).mp
+    (coordinateL1Gauge_isVectorNorm (ι := ι))).1
+  exact exercise_52_dual_attainment φ coordinateL1Gauge hφ
+    ⟨h.continuous, h.nonnegative, h.eq_zero, h.homogeneity⟩ y
+
+/-- The coordinate $ell^1$ norm satisfies (G5) and (G6). -/
+theorem coordinateL1Gauge_isSymmetric :
+    IsPermutationInvariantGauge (coordinateL1Gauge : EuclideanSpace ℂ ι → ℝ) ∧
+      IsPhaseInvariantGauge (coordinateL1Gauge : EuclideanSpace ℂ ι → ℝ) := by
+  constructor
+  · intro σ x
+    exact Fintype.sum_equiv σ (fun i => ‖x (σ i)‖) (fun i => ‖x i‖) (fun _ => rfl)
+  · intro ζ hζ x
+    exact sum_congr rfl fun i _ => by
+      change ‖ζ i * x i‖ = ‖x i‖
+      rw [norm_mul, hζ i, one_mul]
+
+/-- **Exercise 56** of [benIsrael2003generalized], Chapter 3.
+The converse fails on two complex coordinates. The normalized Hadamard
+matrix sends the first coordinate vector to one of strictly larger
+$ell^1$ norm. -/
+theorem exercise_56_converse_failure :
+    ∃ (φ : EuclideanSpace ℂ (Fin 2) → ℝ)
+      (U : EuclideanSpace ℂ (Fin 2) ≃ₗᵢ[ℂ] EuclideanSpace ℂ (Fin 2))
+      (x : EuclideanSpace ℂ (Fin 2)),
+      IsVectorNorm φ ∧ IsPermutationInvariantGauge φ ∧ IsPhaseInvariantGauge φ ∧
+      φ (U x) ≠ φ x := by
+  let s := (Real.sqrt 2)⁻¹
+  have hs : 0 < s := inv_pos.mpr (Real.sqrt_pos.2 (by norm_num))
+  have hsq : s * s = 1 / 2 := by
+    dsimp only [s]
+    rw [← mul_inv, Real.mul_self_sqrt (by norm_num)]
+    norm_num
+  let a : ℂ := s
+  have hsq' : a * a = 1 / 2 := by
+    simpa only [Complex.ofReal_mul, Complex.ofReal_div, Complex.ofReal_one,
+      Complex.ofReal_ofNat] using congrArg Complex.ofReal hsq
+  let H : Matrix (Fin 2) (Fin 2) ℂ := !![a, a; a, -a]
+  have hH : H ∈ Matrix.unitaryGroup (Fin 2) ℂ := by
+    rw [Matrix.mem_unitaryGroup_iff]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [H, Matrix.mul_apply, Fin.sum_univ_two, a] <;>
+      linear_combination 2 * hsq'
+  let x : EuclideanSpace ℂ (Fin 2) := WithLp.toLp 2 ![1, 0]
+  let U := Matrix.unitaryLinearIsometryEquiv hH
+  refine ⟨coordinateL1Gauge, U, x, coordinateL1Gauge_isVectorNorm,
+    coordinateL1Gauge_isSymmetric.1, coordinateL1Gauge_isSymmetric.2, ?_⟩
+  have hval : coordinateL1Gauge (U x) = 2 * s := by
+    rw [coordinateL1Gauge, Fin.sum_univ_two]
+    rw [show U x = Matrix.toEuclideanLin H x from Matrix.unitaryLinearIsometryEquiv_apply hH x]
+    simp [x, H, a, Real.norm_of_nonneg hs.le, two_mul]
+  have hx : coordinateL1Gauge x = 1 := by simp [coordinateL1Gauge, x, Fin.sum_univ_two]
+  rw [hval, hx]
+  intro he
+  nlinarith
+
+end CoordinateGaugeExercises
+
+section RotundSmoothExercises
+
+open Set
+
+section
+
+variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℂ E]
+
+/-- A normal of the supporting real affine hyperplane through $y$,
+normalized so that the supporting level equals one. -/
+def IsNormalizedSupportingNormal (B : Set E) (y u : E) : Prop :=
+  (inner ℂ u y).re = 1 ∧ u ∈ hermitianPolar B
+
+/-- Smoothness of a body with the origin in its interior, stated as
+uniqueness of a normalized supporting hyperplane at every boundary point. -/
+def IsSmoothGaugeBody (B : Set E) : Prop :=
+  ∀ y ∈ frontier B, ∃! u : E, IsNormalizedSupportingNormal B y u
+
+/-- Distinct normalized supporting normals through the same point
+specify distinct hyperplanes. -/
+theorem eq_of_normalized_supporting_hyperplanes_eq {y u v : E}
+    (hu : (inner ℂ u y).re = 1) (hv : (inner ℂ v y).re = 1)
+    (he : {x : E | (inner ℂ u x).re = 1} = {x : E | (inner ℂ v x).re = 1}) :
+    u = v := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  change inner ℝ u y = 1 at hu
+  change inner ℝ v y = 1 at hv
+  have key (x : E) : inner ℝ u x = inner ℝ v x := by
+    let z := y + x - (inner ℝ u x) • y
+    have huz : z ∈ {x : E | (inner ℂ u x).re = 1} := by
+      change inner ℝ u (y + x - (inner ℝ u x) • y) = 1
+      rw [inner_sub_right, inner_add_right, real_inner_smul_right, hu, mul_one]
+      ring
+    have hvz := he ▸ huz
+    change inner ℝ v (y + x - (inner ℝ u x) • y) = 1 at hvz
+    rw [inner_sub_right, inner_add_right, real_inner_smul_right, hv, mul_one] at hvz
+    linarith
+  have hz : inner ℝ (u - v) (u - v) = 0 := by
+    rw [inner_sub_left, key, sub_self]
+  have hz' : ‖u - v‖ ^ 2 = 0 := (real_inner_self_eq_norm_sq (u - v)).symm.trans hz
+  exact sub_eq_zero.mp (norm_eq_zero.mp (by nlinarith))
+
+private theorem re_inner_lt_one_of_mem_interior {B : Set E} {y x : E}
+    (hy : y ∈ hermitianPolar B) (hy₀ : y ≠ 0) (hx : x ∈ interior B) :
+    (inner ℂ y x).re < 1 := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  obtain ⟨r, hr, hB⟩ := Metric.mem_nhds_iff.mp (mem_interior_iff_mem_nhds.mp hx)
+  let t := (r / 2) / ‖y‖
+  have hn := norm_pos_iff.mpr hy₀
+  have ht : 0 < t := div_pos (half_pos hr) hn
+  have hm : x + t • y ∈ B := by
+    apply hB
+    rw [Metric.mem_ball, dist_eq_norm, add_sub_cancel_left, norm_smul, Real.norm_eq_abs,
+      abs_of_pos ht, div_mul_cancel₀ _ hn.ne']
+    exact half_lt_self hr
+  have he := hy _ hm
+  change inner ℝ y (x + t • y) ≤ 1 at he
+  rw [inner_add_right, real_inner_smul_right, real_inner_self_eq_norm_sq] at he
+  exact lt_of_lt_of_le (lt_add_of_pos_right _ (mul_pos ht (sq_pos_of_pos hn))) he
+
+variable [FiniteDimensional ℂ E]
+
+private theorem exists_polar_normal_of_frontier {B : Set E} (hB : IsGaugeConvexBody B)
+    (h₀ : (0 : E) ∈ interior B) {x : E} (hx : x ∈ frontier B) :
+    ∃ y, IsNormalizedSupportingNormal B x y := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  have ⟨hxB, hxint⟩ : x ∈ B ∧ x ∉ interior B := by
+    simpa only [frontier, hB.closed.closure_eq, Set.mem_sdiff] using hx
+  have hg := exercise_53_gauge hB h₀
+  have hgx₁ : gauge B x ≤ 1 := (Set.ext_iff.mp hg.2.1 x).mp hxB
+  have hgx₂ : ¬ gauge B x < 1 := by
+    intro h
+    exact hxint ((Set.ext_iff.mp hg.2.2 x).mpr h)
+  have hgx : gauge B x = 1 := le_antisymm hgx₁ (le_of_not_gt hgx₂)
+  obtain ⟨hP, hP₀⟩ := hermitianPolar_isGaugeConvexBody hB.bounded h₀
+  have hPP := hermitianPolar_polar hB.convex hB.closed (interior_subset h₀)
+  obtain ⟨hp, hpset, _⟩ := exercise_53_gauge hP hP₀
+  have hpos (y : E) (hy : y ≠ 0) : 0 < gauge (hermitianPolar B) y :=
+    lt_of_le_of_ne (hp.nonnegative y) (Ne.symm fun he => hy (hp.eq_zero y he))
+  have hsup : sSup ((fun y => inner ℝ x y) '' hermitianPolar B) = 1 := by
+    change sSup ((fun y => (inner ℂ x y).re) '' hermitianPolar B) = 1
+    rw [hpset]
+    rw [← hermitianDualGauge_eq_sSup_unitSublevel _ gauge_zero hpos hp.homogeneity
+      (hpset ▸ hP.bounded)]
+    rw [hermitianDualGauge_eq_gauge_polar _ gauge_zero hpos hp.homogeneity
+      (hpset ▸ hP.bounded) (hpset ▸ hP₀), ← hpset, hPP, hgx]
+  let : ProperSpace E := FiniteDimensional.proper ℂ E
+  have hc := Metric.isCompact_iff_isClosed_bounded.mpr ⟨hP.closed, hP.bounded⟩
+  have hcont : Continuous (fun y : E => inner ℝ x y) :=
+    continuous_const.inner continuous_id
+  obtain ⟨y, hy, hmax⟩ := hc.exists_isMaxOn ⟨0, interior_subset hP₀⟩ hcont.continuousOn
+  have hxy : inner ℝ x y = 1 := by
+    rw [← hsup]
+    have hbd : ∀ t ∈ (fun y => inner ℝ x y) '' hermitianPolar B, t ≤ inner ℝ x y := by
+      rintro _ ⟨z, hz, rfl⟩
+      exact hmax hz
+    exact le_antisymm (le_csSup ⟨_, hbd⟩ ⟨y, hy, rfl⟩)
+      (csSup_le ⟨_, y, hy, rfl⟩ hbd)
+  exact ⟨y, (real_inner_comm x y).trans hxy, hy⟩
+
+/-- **Exercise 63** of [benIsrael2003generalized], Chapter 3.
+An equilibrated convex body is rotund exactly when its Hermitian
+polar has a unique supporting hyperplane at every boundary point. -/
+theorem exercise_63 {B : Set E} (hB : IsGaugeConvexBody B) (hbal : Balanced ℂ B) :
+    StrictConvex ℝ B ↔ IsSmoothGaugeBody (hermitianPolar B) := by
+  let : InnerProductSpace ℝ E := InnerProductSpace.rclikeToReal ℂ E
+  have h₀ := balancedGaugeConvexBody_zero_mem_interior hB hbal
+  obtain ⟨hP, hP₀⟩ := hermitianPolar_isGaugeConvexBody hB.bounded h₀
+  have hPP := hermitianPolar_polar hB.convex hB.closed (interior_subset h₀)
+  constructor
+  · intro h y hy
+    obtain ⟨u, hu⟩ := exists_polar_normal_of_frontier hP hP₀ hy
+    refine ⟨u, hu, fun v hv => ?_⟩
+    have huvB : u ∈ B := hPP ▸ hu.2
+    have hvvB : v ∈ B := hPP ▸ hv.2
+    by_contra he
+    have hmid := h hvvB huvB he (by norm_num : (1 / 2 : ℝ) > 0)
+      (by norm_num : (1 / 2 : ℝ) > 0) (by norm_num)
+    have hyP : y ∈ hermitianPolar B := hP.closed.frontier_subset hy
+    have hy₀ : y ≠ 0 := by
+      intro he
+      have hv₀ := hv.1
+      simp [he] at hv₀
+    have hlt := re_inner_lt_one_of_mem_interior hyP hy₀ hmid
+    change inner ℝ y ((1 / 2 : ℝ) • v + (1 / 2 : ℝ) • u) < 1 at hlt
+    have hu₁ : inner ℝ u y = 1 := hu.1
+    have hv₁ : inner ℝ v y = 1 := hv.1
+    rw [inner_add_right, real_inner_smul_right, real_inner_smul_right,
+      real_inner_comm v y, real_inner_comm u y, hv₁, hu₁] at hlt
+    norm_num at hlt
+  · intro h u hu v hv huv a b ha hb hab
+    let x := a • u + b • v
+    by_contra hx
+    have hxB : x ∈ B := hB.convex hu hv ha.le hb.le hab
+    have hxf : x ∈ frontier B := by
+      rw [frontier, hB.closed.closure_eq]
+      exact ⟨hxB, hx⟩
+    obtain ⟨y, hys, hyP⟩ := exists_polar_normal_of_frontier hB h₀ hxf
+    have hyf : y ∈ frontier (hermitianPolar B) := by
+      rw [frontier, hP.closed.closure_eq]
+      refine ⟨hyP, fun hI => ?_⟩
+      have hx₀ : x ≠ 0 := by intro he; simp [he] at hys
+      have ht := re_inner_lt_one_of_mem_interior
+        (show x ∈ hermitianPolar (hermitianPolar B) from hPP.symm ▸ hxB) hx₀ hI
+      change inner ℝ x y < 1 at ht
+      change inner ℝ y x = 1 at hys
+      rw [real_inner_comm y x, hys] at ht
+      exact (lt_irrefl _ ht)
+    have hule : inner ℝ y u ≤ 1 := hyP u hu
+    have hvle : inner ℝ y v ≤ 1 := hyP v hv
+    change inner ℝ y (a • u + b • v) = 1 at hys
+    rw [inner_add_right, real_inner_smul_right, real_inner_smul_right] at hys
+    have hu₁ : inner ℝ y u = 1 := by
+      have := mul_nonneg hb.le (sub_nonneg.mpr hvle)
+      by_contra he
+      have hlt := mul_lt_mul_of_pos_left (lt_of_le_of_ne hule he) ha
+      linarith
+    have hv₁ : inner ℝ y v = 1 := by
+      rw [hu₁, mul_one] at hys
+      exact (mul_right_inj' hb.ne').mp (by linarith)
+    have huS : IsNormalizedSupportingNormal (hermitianPolar B) y u :=
+      ⟨(real_inner_comm y u).trans hu₁, hPP.symm ▸ hu⟩
+    have hvS : IsNormalizedSupportingNormal (hermitianPolar B) y v :=
+      ⟨(real_inner_comm y v).trans hv₁, hPP.symm ▸ hv⟩
+    exact huv ((h y hyf).unique huS hvS)
+
+end
+
+end RotundSmoothExercises
 
 end BenIsraelGreville.Chapter03
