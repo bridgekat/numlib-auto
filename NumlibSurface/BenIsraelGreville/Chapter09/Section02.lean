@@ -7,6 +7,7 @@ import Mathlib.Analysis.Normed.Operator.Extend
 import Mathlib.Analysis.Normed.Operator.Compact.FiniteDimension
 import Numlib.Analysis.Normed.Lp.Sequence
 import Numlib.Analysis.Normed.Operator.Compact
+import Mathlib.Analysis.PSeries
 
 /-!
 # Hilbert spaces and partial linear operators
@@ -1598,5 +1599,88 @@ theorem exercise_9_8b [CompleteSpace E] [CompleteSpace F]
     exact T.range.closed_of_finiteDimensional
 
 end Exercises
+
+section HarmonicResults
+
+open Filter
+open scoped Topology
+
+/-- The reciprocal positive integer powers of the positive integers form a square-summable
+sequence. Index zero represents the denominator one. -/
+noncomputable def reciprocalNaturalPowerLp (p : ℕ) (hp : 0 < p) : lp (fun _ : ℕ => ℝ) 2 := by
+  refine ⟨fun n : ℕ => (((n : ℝ) + 1) ^ p)⁻¹, ?_⟩
+  change Memℓp (fun n : ℕ => (((n : ℝ) + 1) ^ p)⁻¹) 2
+  refine (memℓp_gen_iff (by norm_num : 0 < (2 : ENNReal).toReal)).mpr ?_
+  have hs : Summable (fun n : ℕ => 1 / (n : ℝ) ^ (p * 2)) :=
+    Real.summable_one_div_nat_pow.mpr (by omega)
+  have ht := (summable_nat_add_iff (f := fun n : ℕ => 1 / (n : ℝ) ^ (p * 2)) 1).mpr hs
+  apply ht.congr
+  intro n
+  have hn : 0 ≤ (((n : ℝ) + 1) ^ p)⁻¹ := inv_nonneg.mpr (by positivity)
+  rw [Nat.cast_add, Nat.cast_one, Real.norm_eq_abs, abs_of_nonneg hn, ENNReal.toReal_ofNat]
+  rw [show (2 : ℝ) = (2 : ℕ) by norm_num, Real.rpow_natCast, ← inv_pow, ← pow_mul, one_div, inv_pow]
+
+/-- The square-summable harmonic sequence, with indexing starting at zero. -/
+noncomputable def harmonicLp : lp (fun _ : ℕ => ℝ) 2 := reciprocalNaturalPowerLp 1 Nat.one_pos
+
+/-- **Exercise 7** of [benIsrael2003generalized], Chapter 9. The harmonic
+sequence is outside the range of the geometric diagonal operator. Its
+truncations have explicit inverses and converge to it in square-sum norm. -/
+theorem exercise_9_7_harmonic_witness (k : ℝ) (hk : 0 < k) (hk' : k < 1)
+    (T : lp (fun _ : ℕ => ℝ) 2 →L[ℝ] lp (fun _ : ℕ => ℝ) 2)
+    (hT : ∀ x n, T x n = k ^ n * x n) :
+    (∀ n : ℕ, harmonicLp n = ((n : ℝ) + 1)⁻¹) ∧
+    harmonicLp ∉ Set.range T ∧
+      ∃ x : ℕ → lp (fun _ : ℕ => ℝ) 2,
+        (∀ N n, x N n = if n < N then ((n : ℝ) + 1)⁻¹ / k ^ n else 0) ∧
+        Tendsto (fun N => T (x N)) atTop (𝓝 harmonicLp) := by
+  classical
+  have hy (n : ℕ) : harmonicLp n = ((n : ℝ) + 1)⁻¹ := by
+    change (((n : ℝ) + 1) ^ 1)⁻¹ = _
+    rw [pow_one]
+  refine ⟨hy, ?_, ?_⟩
+  · rintro ⟨x, hx⟩
+    have hle (n : ℕ) : 1 / ((n : ℝ) + 1) ≤ ‖x‖ * k ^ n := by
+      have h := congrArg (fun y : lp (fun _ : ℕ => ℝ) 2 => y n) hx
+      rw [hT, hy] at h
+      calc
+        _ = ‖k ^ n * x n‖ := by rw [h, inv_eq_one_div,
+          Real.norm_of_nonneg (by positivity)]
+        _ = ‖x n‖ * k ^ n := by rw [norm_mul, Real.norm_of_nonneg (pow_nonneg hk.le _), mul_comm]
+        _ ≤ _ := mul_le_mul_of_nonneg_right (lp.norm_apply_le_norm (by norm_num) x n)
+          (pow_nonneg hk.le _)
+    have hs := Summable.of_nonneg_of_le (fun n => by positivity) hle
+      ((summable_geometric_of_lt_one hk.le hk').mul_left ‖x‖)
+    apply Real.not_summable_one_div_natCast
+    apply (summable_nat_add_iff (f := fun n : ℕ => 1 / (n : ℝ)) 1).mp
+    simpa only [Nat.cast_add, Nat.cast_one] using hs
+  · let x (N : ℕ) := ∑ i ∈ Finset.range N, lp.single 2 i (harmonicLp i / k ^ i)
+    refine ⟨x, ?_, ?_⟩
+    · intro N n
+      have hx : x N n = ∑ i ∈ Finset.range N, lp.single 2 i (harmonicLp i / k ^ i) n := by
+        exact map_sum (lp.evalCLM ℝ (fun _ : ℕ => ℝ) 2 n) _ _
+      rw [hx]
+      by_cases hn : n < N
+      · rw [ite_eq_left hn, Finset.sum_eq_single n]
+        · rw [lp.single_apply_self, hy]
+        · intro i _ hi
+          exact lp.single_apply_ne _ _ _ (Ne.symm hi)
+        · exact fun h => False.elim (h (Finset.mem_range.mpr hn))
+      · rw [ite_eq_right hn]
+        exact Finset.sum_eq_zero fun i hi => lp.single_apply_ne _ _ _ (fun h =>
+          hn (h ▸ Finset.mem_range.mp hi))
+    · have he (N : ℕ) : T (x N) = ∑ i ∈ Finset.range N, lp.single 2 i (harmonicLp i) := by
+        rw [show x N = ∑ i ∈ Finset.range N, lp.single 2 i (harmonicLp i / k ^ i) from rfl, map_sum]
+        apply Finset.sum_congr rfl
+        intro i _
+        ext j
+        by_cases hj : j = i
+        · subst j
+          rw [hT, lp.single_apply_self, lp.single_apply_self, mul_div_cancel₀ _ (pow_ne_zero _ hk.ne')]
+        · rw [hT, lp.single_apply_ne _ _ _ hj, lp.single_apply_ne _ _ _ hj, mul_zero]
+      simp_rw [he]
+      exact (lp.hasSum_single (by norm_num) harmonicLp).tendsto_sum_nat
+
+end HarmonicResults
 
 end BenIsraelGreville.Chapter09

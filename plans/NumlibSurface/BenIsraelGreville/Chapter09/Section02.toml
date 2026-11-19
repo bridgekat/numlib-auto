@@ -300,12 +300,12 @@ source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 2, weighted integral exa
 
 [[node]]
 id = "exercise_9_7_harmonic_witness"
-kind = "theorem"
-desc = "Exhibit the square-summable harmonic sequence and its truncated weighted preimages. The diagonal operator and its dense nonclosed range are already proved."
 source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 7, explicit harmonic witness"
 
 [[node]]
-id = "exercise_9_8_integral_kernel_compact"
-kind = "theorem"
-desc = "Relate the printed integral formulas for the two operators to the compact square-integrable kernel operator and the identity minus that operator from Section 9.4."
-source = "Ben-Israel and Greville, Ch. 9, §2, Exercise 8, square-integrable Fredholm kernel"
+id = "reciprocalNaturalPowerLp"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 7, square-summable powers"
+
+[[node]]
+id = "harmonicLp"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 7, the harmonic sequence"

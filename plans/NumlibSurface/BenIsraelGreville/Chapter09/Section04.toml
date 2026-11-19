@@ -293,3 +293,7 @@ kind = "theorem"
 desc = '''Normalize the two spanning vectors of the null spaces and identify the printed modified polynomial with the abstract Hurwitz correction of the original kernel. The spectrum, null spaces, and resolvent of the displayed modification are proved.'''
 source = "Ben-Israel and Greville, Chapter 9, §4, Exercise 24, normalized bases and the Hurwitz correction"
 deps = ["exercise_9_24_nullSpaces", "exercise_9_24_resolvent", "exercise_9_18"]
+
+[[node]]
+id = "exercise_9_8_integral_kernel_compact"
+source = "Ben-Israel and Greville, Chapter 9 §2, Exercise 8, square-integrable Fredholm kernel and range"

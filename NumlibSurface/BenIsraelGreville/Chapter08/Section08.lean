@@ -939,4 +939,98 @@ theorem differenceRegularSolution_eq (A B : Matrix n n ℂ) {z w : ℂ}
     mulVec_differencePastSum hPast₁, mulVec_differencePastSum hPast₂, hT, hP, hG, hk,
     funext hC, funext hD]
 
+open Matrix
+
+section NilpotentBlockCoordinates
+
+variable {p q : Type*} [Fintype p] [Fintype q] [DecidableEq p] [DecidableEq q]
+
+omit [DecidableEq p] [DecidableEq q] in
+private theorem blockDiagonal_mulVec_sumElim (C : Matrix p p ℂ) (N : Matrix q q ℂ)
+    (x : p → ℂ) (y : q → ℂ) :
+    (fromBlocks C 0 0 N) *ᵥ Sum.elim x y = Sum.elim (C *ᵥ x) (N *ᵥ y) := by
+  rw [fromBlocks_mulVec]
+  funext i
+  cases i <;> simp [zero_mulVec]
+
+private theorem homogeneousBlock_rec_iff (C : Matrix p p ℂ) (N : Matrix q q ℂ)
+    (z : ℂ) (a : ℕ → p → ℂ) (b : ℕ → q → ℂ) :
+    IsDifferenceSolution (fromBlocks C 0 0 N) (fromBlocks (z • C - 1) 0 0 (z • N - 1))
+      0 (fun t => Sum.elim (a t) (b t)) ↔
+      (∀ t, C *ᵥ a (t + 1) = (z • C - 1) *ᵥ a t) ∧
+      (∀ t, N *ᵥ b (t + 1) = (z • N - 1) *ᵥ b t) := by
+  unfold IsDifferenceSolution
+  simp only [Pi.zero_apply, add_zero, blockDiagonal_mulVec_sumElim]
+  constructor
+  · intro h
+    exact ⟨fun t => congrArg (fun x => x ∘ Sum.inl) (h t),
+      fun t => congrArg (fun x => x ∘ Sum.inr) (h t)⟩
+  · rintro ⟨hC, hN⟩ t
+    rw [hC t, hN t]
+
+private theorem homogeneous_nilpotent_component_zero (N : Matrix q q ℂ) (z : ℂ)
+    (b : ℕ → q → ℂ) {k : ℕ} (hN : N ^ k = 0)
+    (hRec : ∀ t, N *ᵥ b (t + 1) = (z • N - 1) *ᵥ b t) : ∀ t, b t = 0 := by
+  have hstep (t : ℕ) : b t = N *ᵥ (z • b t - b (t + 1)) := by
+    rw [mulVec_sub, mulVec_smul, hRec t, sub_mulVec, smul_mulVec, one_mulVec, sub_sub_cancel]
+  have hAll (e : ℕ) (t : ℕ) : ∃ y, b t = N ^ e *ᵥ y := by
+    induction e generalizing t with
+    | zero => exact ⟨b t, by simp⟩
+    | succ e ih =>
+        obtain ⟨x, hx⟩ := ih t
+        obtain ⟨y, hy⟩ := ih (t + 1)
+        refine ⟨z • x - y, ?_⟩
+        calc
+          b t = N *ᵥ (z • b t - b (t + 1)) := hstep t
+          _ = N *ᵥ (N ^ e *ᵥ (z • x - y)) := by
+            have hxy : N ^ e *ᵥ (z • x - y) = z • b t - b (t + 1) := by
+              rw [mulVec_sub, mulVec_smul, ← hx, ← hy]
+            rw [hxy]
+          _ = _ := by rw [mulVec_mulVec, pow_succ']
+  intro t
+  obtain ⟨y, hy⟩ := hAll k t
+  rw [hN, zero_mulVec] at hy
+  exact hy
+
+/-- **Equations (117)–(118)** of [benIsrael2003generalized]. In the
+invertible and nilpotent coordinates of a regular homogeneous difference
+system, the nilpotent component vanishes and the other is propagated by
+powers from its own initial value. -/
+theorem homogeneousSolution_nilpotent_block (C : Matrix p p ℂ) (N : Matrix q q ℂ)
+    (z : ℂ) (hC : IsUnit C) {k : ℕ} (hN : N ^ k = 0) (a : ℕ → p → ℂ) (b : ℕ → q → ℂ) :
+    IsDifferenceSolution (fromBlocks C 0 0 N) (fromBlocks (z • C - 1) 0 0 (z • N - 1))
+      0 (fun t => Sum.elim (a t) (b t)) ↔
+      (∀ t, b t = 0) ∧ (∀ t, a t = (C⁻¹ ^ t * (z • C - 1) ^ t) *ᵥ a 0) := by
+  rw [homogeneousBlock_rec_iff]
+  let D := z • C - 1
+  let X := C⁻¹ * D
+  have hd := (isUnit_iff_isUnit_det C).mp hC
+  have hL : C⁻¹ * C = 1 := nonsing_inv_mul C hd
+  have hR : C * C⁻¹ = 1 := mul_nonsing_inv C hd
+  have hcomm : Commute C⁻¹ D := by
+    change C⁻¹ * (z • C - 1) = (z • C - 1) * C⁻¹
+    rw [Matrix.mul_sub, Matrix.sub_mul, Matrix.mul_smul, Matrix.smul_mul, Matrix.mul_one,
+      Matrix.one_mul, hL, hR]
+  have hp (t : ℕ) : X ^ t = C⁻¹ ^ t * D ^ t := hcomm.mul_pow t
+  constructor
+  · rintro ⟨ha, hb⟩
+    refine ⟨homogeneous_nilpotent_component_zero N z b hN hb, ?_⟩
+    have hRec (t : ℕ) : a (t + 1) = X *ᵥ a t := by
+      have h := congrArg (C⁻¹ *ᵥ ·) (ha t)
+      simpa only [mulVec_mulVec, hL, one_mulVec] using h
+    have hAll (t : ℕ) : a t = X ^ t *ᵥ a 0 := by
+      induction t with
+      | zero => simp
+      | succ t ih => rw [hRec t, ih, mulVec_mulVec, pow_succ']
+    intro t
+    exact (hAll t).trans (congrArg (· *ᵥ a 0) (hp t))
+  · rintro ⟨hb, ha⟩
+    refine ⟨?_, fun t => by rw [hb, hb, mulVec_zero, mulVec_zero]⟩
+    have ha' (t : ℕ) : a t = X ^ t *ᵥ a 0 := (ha t).trans (congrArg (· *ᵥ a 0) (hp t).symm)
+    intro t
+    rw [ha' (t + 1), ha' t, pow_succ', mulVec_mulVec, mulVec_mulVec, ← Matrix.mul_assoc C X,
+      show C * X = D by rw [show X = C⁻¹ * D from rfl, ← Matrix.mul_assoc, hR, Matrix.one_mul]]
+
+end NilpotentBlockCoordinates
+
 end BenIsraelGreville.Chapter08

@@ -1729,4 +1729,30 @@ theorem exercise_9_24_nullSpaces :
 
 end PolynomialKernels
 
+section RangeResults
+
+open MeasureTheory
+
+variable {X : Type*} [MeasurableSpace X] {μ : Measure X} [IsFiniteMeasure μ]
+variable {k : X × X → ℂ}
+
+/-- **Exercise 8** of [benIsrael2003generalized], Chapter 9. The two bounded
+operators are represented almost everywhere by the stated integral formulas.
+The first is compact, so its range is closed exactly in the finite-dimensional
+case. The second always has closed range. -/
+theorem exercise_9_8_integral_kernel_compact (hk : MemLp k 2 (μ.prod μ)) :
+    let T₁ := fredholmIntegralOperator hk
+    let T₂ := fredholmSecondKind hk 1
+    (∀ v : Lp ℂ 2 μ, T₁ v =ᵐ[μ] fun s => ∫ t, k (s, t) * v t ∂μ) ∧
+    (∀ v : Lp ℂ 2 μ, T₂ v =ᵐ[μ] fun s => v s - ∫ t, k (s, t) * v t ∂μ) ∧
+    IsCompactOperator T₁ ∧ IsClosed (T₂.range : Set (Lp ℂ 2 μ)) ∧
+      (IsClosed (T₁.range : Set (Lp ℂ 2 μ)) ↔ FiniteDimensional ℂ T₁.range) := by
+  intro T₁ T₂
+  have hc : IsCompactOperator T₁ := isCompactOperator_fredholmIntegralOperator hk
+  refine ⟨fredholmIntegralOperator_apply_ae hk, fun v => ?_, hc, ?_, exercise_9_8b T₁ hc⟩
+  · simpa only [one_mul] using fredholmSecondKind_apply_ae hk 1 v
+  · simpa only [T₂, fredholmSecondKind, one_smul] using exercise_9_8a T₁ hc
+
+end RangeResults
+
 end BenIsraelGreville.Chapter09

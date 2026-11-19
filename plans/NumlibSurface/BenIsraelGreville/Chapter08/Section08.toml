@@ -46,10 +46,7 @@ source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 12, Equation (115)"
 
 [[node]]
 id = "homogeneousSolution_nilpotent_block"
-kind = "theorem"
-desc = '''In the invertible and nilpotent coordinates of (117), prove the explicit zero nilpotent component and the invertible-block solution in (118). The last factor in the second formula is the initial invertible component.'''
 source = "Ben-Israel and Greville, Chapter 8, §8, Theorem 12 proof, Equations (117)–(118)"
-deps = ["theorem_12"]
 
 [[node]]
 id = "differencePastSum"
